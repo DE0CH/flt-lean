@@ -1751,6 +1751,25 @@ lemma revSext_sub_one (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) {R : Type*} [CommRin
         + (c₂ : R) * u ^ 3 + (c₁ : R) * u ^ 4 + (c₀ : R) * u ^ 5) := by
   simp only [revSext]; ring
 
+/-- The reversed sextic as a POLYNOMIAL: `1 + c₅X + c₄X² + c₃X³ + c₂X⁴ + c₁X⁵ + c₀X⁶`. -/
+noncomputable def revSextPoly (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) (R : Type*) [CommRing R] : R[X] :=
+  1 + (c₅ : R[X]) * X + (c₄ : R[X]) * X ^ 2 + (c₃ : R[X]) * X ^ 3
+    + (c₂ : R[X]) * X ^ 4 + (c₁ : R[X]) * X ^ 5 + (c₀ : R[X]) * X ^ 6
+
+lemma aeval_revSextPoly (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) {K F : Type*} [CommRing K] [CommRing F]
+    [Algebra K F] (u : F) :
+    aeval u (revSextPoly c₀ c₁ c₂ c₃ c₄ c₅ K)
+      = revSext c₀ c₁ c₂ c₃ c₄ c₅ u := by
+  simp [revSextPoly, revSext]
+
+/-- `revSext (1/x) = sext x / x⁶` (PROVEN), the reflection identity in the other direction. -/
+lemma revSext_inv_eq (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) {R : Type*} [Field R] {x : R} (hx : x ≠ 0) :
+    revSext c₀ c₁ c₂ c₃ c₄ c₅ x⁻¹
+      = sext c₀ c₁ c₂ c₃ c₄ c₅ x * (x⁻¹) ^ 6 := by
+  simp only [revSext, sext]
+  field_simp
+
+
 /-- **The reflection identity, as an identity of VALUES in a field**: no `Polynomial.reflect`
 is needed, because `u ≠ 0` lets `field_simp` do the work. -/
 lemma sext_inv_eq (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) {R : Type*} [Field R] {u : R} (hu : u ≠ 0) :
@@ -3118,6 +3137,320 @@ theorem two_ne_zero (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) : (2 : K) �
   have hb : (Sum.inr true : Pt c₀ c₁ c₂ c₃ c₄ c₅ K) = Sum.inr false := D.pt_injective h
   simp at hb
 
+/-! ### `O_v` IS the local ring of a smooth chart point (PROVEN, 2026-07-30)
+
+The two `exists_localDenom_*` leaves below both say the same thing in a different chart: a
+function regular at the place of a rational point is a chart fraction whose DENOMINATOR does
+not vanish at that point, i.e. `O_v` is not merely a valuation ring DOMINATING the local ring
+of the plane model — it EQUALS it.
+
+The classical proof of that is "a valuation ring of `Frac R` dominating a DVR `R` is `R`",
+which needs the coordinate ring built as a Lean object, localised at the point, and shown to
+be regular.  None of that is needed here.  What replaces it is a DESCENT on `ord_v` of the
+denominator, over the interface's valuation axioms alone:
+
+* `ord_chart_eq_zero_iff`: a chart expression is a unit at `v` exactly when its value at the
+  point is nonzero.  So "admissible denominator" IS "denominator of order `0`", and the
+  descent's stopping condition is the conclusion.
+* if the denominator vanishes then so does the numerator (`chart_value_eq_zero`, since `z` is
+  regular), and one uniformiser cancels from both — `exists_localDenom_step`.
+* the order of the denominator drops by `ord_v` of that uniformiser, which is `≥ 1`, so the
+  descent terminates: `exists_localDenom_chart`.
+
+**Which uniformiser it is depends on the point, and this is exactly where smoothness enters.**
+At a point with `2β ≠ 0` it is `t − α`, and the cancellation is made visible by multiplying by
+the CONJUGATE `s + β`, a unit there, using `(s − β)(s + β) = g(t) − β² = (t − α)·h(t)`.  At a
+point with `β = 0` that fails — `s + β = s` is not a unit — and the uniformiser is `s`
+instead, with `t − α = s²/h(t)`; that needs `h(α) ≠ 0`, which for `β = 0` is `g'(α) ≠ 0`, i.e.
+separability.  The disjunction `2β ≠ 0 ∨ (β = 0 ∧ h(α) ≠ 0)` is smoothness of the chart at the
+point, and the audit on `finrank_residue_pt_eq_one` shows the leaf is FALSE without it.
+-/
+
+/-- A chart expression lies in the valuation ring (PROVEN). -/
+lemma chart_mem_valRing (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places) {t s : D.F} {α β : K}
+    (ht : D.VanishesAt v (t - algebraMap K D.F α))
+    (hs : D.VanishesAt v (s - algebraMap K D.F β)) (e₁ e₂ : K[X]) :
+    0 ≤ D.ord v (aeval t e₁ + aeval t e₂ * s) := by
+  have htm : t ∈ D.valRing v := mem_valRing_of_vanishesAt_sub D v ht
+  have hsm : s ∈ D.valRing v := mem_valRing_of_vanishesAt_sub D v hs
+  have h1 : aeval t e₁ ∈ D.valRing v := aeval_mem_valRing D v htm e₁
+  have h2 : aeval t e₂ ∈ D.valRing v := aeval_mem_valRing D v htm e₂
+  exact (D.valRing v).add_mem h1 ((D.valRing v).mul_mem h2 hsm)
+
+/-- A vanishing constant is `0` (PROVEN). -/
+lemma eq_zero_of_vanishesAt_algebraMap (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places) {c : K}
+    (h : D.VanishesAt v (algebraMap K D.F c)) : c = 0 := by
+  by_contra hc
+  rcases h with h | h
+  · exact hc ((map_eq_zero_iff _ (algebraMap K D.F).injective).1 h)
+  · rw [D.ord_algebraMap v c hc] at h
+    exact lt_irrefl 0 h
+
+/-- **A chart expression is a unit at `v` exactly when its value at the point is nonzero**
+(PROVEN).  This is what makes the induction below terminate in the right place: the order of
+the denominator is `0` precisely when the denominator is admissible. -/
+lemma ord_chart_eq_zero_iff (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places) {t s : D.F}
+    {α β : K} (ht : D.VanishesAt v (t - algebraMap K D.F α))
+    (hs : D.VanishesAt v (s - algebraMap K D.F β)) {e₁ e₂ : K[X]}
+    (hne : aeval t e₁ + aeval t e₂ * s ≠ 0) :
+    D.ord v (aeval t e₁ + aeval t e₂ * s) = 0 ↔ e₁.eval α + e₂.eval α * β ≠ 0 := by
+  have hV := vanishesAt_chart_sub D v ht hs e₁ e₂
+  constructor
+  · intro h0 hδ
+    rw [hδ, map_zero, sub_zero] at hV
+    rcases hV with hV | hV
+    · exact hne hV
+    · omega
+  · intro hδ
+    exact (ord_eq_zero_of_vanishesAt_sub D v hδ hV).2
+
+/-- The value of a chart expression whose order is positive is `0` (PROVEN). -/
+lemma chart_value_eq_zero (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places) {t s : D.F}
+    {α β : K} (ht : D.VanishesAt v (t - algebraMap K D.F α))
+    (hs : D.VanishesAt v (s - algebraMap K D.F β)) {e₁ e₂ : K[X]}
+    (hpos : 0 < D.ord v (aeval t e₁ + aeval t e₂ * s)) :
+    e₁.eval α + e₂.eval α * β = 0 := by
+  have hV := vanishesAt_chart_sub D v ht hs e₁ e₂
+  have hne : aeval t e₁ + aeval t e₂ * s ≠ 0 := by
+    intro h0; rw [h0, D.ord_zero] at hpos; exact lt_irrefl 0 hpos
+  refine eq_zero_of_vanishesAt_algebraMap D v (c := e₁.eval α + e₂.eval α * β) ?_
+  have hsum := vanishesAt_add (D := D) (v := v) (Or.inr hpos) (vanishesAt_neg hV)
+  have hid : (aeval t e₁ + aeval t e₂ * s)
+      + -(aeval t e₁ + aeval t e₂ * s - algebraMap K D.F (e₁.eval α + e₂.eval α * β))
+      = algebraMap K D.F (e₁.eval α + e₂.eval α * β) := by ring
+  rwa [hid] at hsum
+
+/-- **The identity that cancels the uniformiser at a point with `2β ≠ 0`** (PROVEN).
+
+At such a point `t − α` is the uniformiser, and multiplying a chart expression that VANISHES
+at the point by the conjugate `s + β` makes the factor `t − α` visible.  `s² = g(t)` and
+`g − β² = (X − α)·h` are what turn `(s − β)(s + β)` into `(t − α)·h(t)`. -/
+lemma chart_mul_conj (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {t s : D.F} {α β : K} {g h : K[X]}
+    (hcurve : s ^ 2 = aeval t g)
+    (hg : g = Polynomial.C (β ^ 2) + (Polynomial.X - Polynomial.C α) * h)
+    {P Q P₁ Q₁ : K[X]}
+    (hP : P = Polynomial.C (P.eval α) + (Polynomial.X - Polynomial.C α) * P₁)
+    (hQ : Q = Polynomial.C (Q.eval α) + (Polynomial.X - Polynomial.C α) * Q₁)
+    (hPQ : P.eval α + Q.eval α * β = 0) :
+    (aeval t P + aeval t Q * s) * (algebraMap K D.F β + s)
+      = (t - algebraMap K D.F α)
+        * (aeval t (P₁ * Polynomial.C β + Q₁ * g + Polynomial.C (Q.eval α) * h)
+            + aeval t (P₁ + Q₁ * Polynomial.C β) * s) := by
+  have hPe : aeval t P
+      = algebraMap K D.F (P.eval α) + (t - algebraMap K D.F α) * aeval t P₁ := by
+    rw [hP]; simp
+  have hQe : aeval t Q
+      = algebraMap K D.F (Q.eval α) + (t - algebraMap K D.F α) * aeval t Q₁ := by
+    rw [hQ]; simp
+  have hGe : aeval t g
+      = (algebraMap K D.F β) ^ 2 + (t - algebraMap K D.F α) * aeval t h := by
+    rw [hg]; simp [map_pow]
+  have hPQF : algebraMap K D.F (P.eval α)
+      + algebraMap K D.F (Q.eval α) * algebraMap K D.F β = 0 := by
+    rw [← map_mul, ← map_add, hPQ, map_zero]
+  rw [hGe] at hcurve
+  simp only [map_add, map_mul, aeval_C, hGe]
+  rw [hPe, hQe]
+  linear_combination (algebraMap K D.F (Q.eval α)
+      + (t - algebraMap K D.F α) * aeval t Q₁) * hcurve
+    + (s + algebraMap K D.F β) * hPQF
+
+/-- **The identity that cancels the uniformiser at a point with `β = 0` and `g'(α) ≠ 0`**
+(PROVEN).  There the uniformiser is `s`, not `t − α`: `t − α = s²/h(t)` with `h(α) = g'(α)`
+a unit, and multiplying by `h(t)` makes the factor `s` visible. -/
+lemma chart_mul_deriv (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {t s : D.F} {α : K} {g h : K[X]}
+    (hcurve : s ^ 2 = aeval t g)
+    (hg : g = (Polynomial.X - Polynomial.C α) * h)
+    {P Q P₁ : K[X]}
+    (hP : P = (Polynomial.X - Polynomial.C α) * P₁) :
+    (aeval t P + aeval t Q * s) * aeval t h
+      = s * (aeval t (Q * h) + aeval t P₁ * s) := by
+  have hPe : aeval t P = (t - algebraMap K D.F α) * aeval t P₁ := by rw [hP]; simp
+  have hGe : aeval t g = (t - algebraMap K D.F α) * aeval t h := by rw [hg]; simp
+  rw [hGe] at hcurve
+  simp only [map_mul]
+  rw [hPe]
+  linear_combination (-(aeval t P₁)) * hcurve
+
+
+/-- Taylor's formula to first order (PROVEN): `P = P(α) + (X − α)·P₁`. -/
+lemma exists_sub_eval_factor (P : K[X]) (α : K) :
+    ∃ P₁ : K[X], P = Polynomial.C (P.eval α) + (Polynomial.X - Polynomial.C α) * P₁ := by
+  obtain ⟨P₁, hP₁⟩ : (Polynomial.X - Polynomial.C α) ∣ (P - Polynomial.C (P.eval α)) :=
+    dvd_iff_isRoot.2 (by simp [IsRoot])
+  exact ⟨P₁, by rw [← hP₁]; ring⟩
+
+/-- **One step of the descent on the denominator** (PROVEN).
+
+If a chart fraction `z = (A(t) + B(t)s)/(e₁(t) + e₂(t)s)` has a denominator that VANISHES at
+the point, then so does its numerator (because `z` is regular), and one uniformiser can be
+cancelled from both — leaving another chart fraction for the SAME `z` whose denominator has
+strictly smaller order.  Which uniformiser it is depends on the point: `t − α` where
+`2β ≠ 0`, and `s` where `β = 0` and `g'(α) ≠ 0`.  Smoothness of the chart at the point is
+exactly the disjunction of those two. -/
+lemma exists_localDenom_step (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places)
+    {t s : D.F} {α β : K} {g h : K[X]}
+    (hcurve : s ^ 2 = aeval t g)
+    (hg : g = Polynomial.C (β ^ 2) + (Polynomial.X - Polynomial.C α) * h)
+    (ht : D.VanishesAt v (t - algebraMap K D.F α)) (ht0 : t - algebraMap K D.F α ≠ 0)
+    (hs : D.VanishesAt v (s - algebraMap K D.F β)) (hs0 : s ≠ 0)
+    (hsm : (2 : K) * β ≠ 0 ∨ (β = 0 ∧ h.eval α ≠ 0))
+    {z : D.F} (hz0 : z ≠ 0) (hz : 0 ≤ D.ord v z)
+    {A B e₁ e₂ : K[X]}
+    (hden : aeval t e₁ + aeval t e₂ * s ≠ 0)
+    (hdpos : 0 < D.ord v (aeval t e₁ + aeval t e₂ * s))
+    (heq : z * (aeval t e₁ + aeval t e₂ * s) = aeval t A + aeval t B * s) :
+    ∃ A' B' f₁ f₂ : K[X], (aeval t f₁ + aeval t f₂ * s ≠ 0) ∧
+      D.ord v (aeval t f₁ + aeval t f₂ * s) < D.ord v (aeval t e₁ + aeval t e₂ * s) ∧
+      z * (aeval t f₁ + aeval t f₂ * s) = aeval t A' + aeval t B' * s := by
+  have hnum0 : aeval t A + aeval t B * s ≠ 0 := by rw [← heq]; exact mul_ne_zero hz0 hden
+  have hnumpos : 0 < D.ord v (aeval t A + aeval t B * s) := by
+    rw [← heq, D.ord_mul v _ _ hz0 hden]; omega
+  have hδnum : A.eval α + B.eval α * β = 0 := chart_value_eq_zero D v ht hs hnumpos
+  have hδden : e₁.eval α + e₂.eval α * β = 0 := chart_value_eq_zero D v ht hs hdpos
+  have htm : t ∈ D.valRing v := mem_valRing_of_vanishesAt_sub D v ht
+  have htpos : 0 < D.ord v (t - algebraMap K D.F α) := by
+    rcases ht with hc | hc
+    · exact absurd hc ht0
+    · exact hc
+  rcases hsm with h2β | ⟨hβ0, hhα⟩
+  · -- the uniformiser is `t − α`; multiply by the conjugate `s + β`
+    obtain ⟨A₁, hA⟩ := exists_sub_eval_factor A α
+    obtain ⟨B₁, hB⟩ := exists_sub_eval_factor B α
+    obtain ⟨E₁, he₁⟩ := exists_sub_eval_factor e₁ α
+    obtain ⟨E₂, he₂⟩ := exists_sub_eval_factor e₂ α
+    have hμ : algebraMap K D.F β + s ≠ 0 ∧ D.ord v (algebraMap K D.F β + s) = 0 := by
+      refine ord_eq_zero_of_vanishesAt_sub D v (α := 2 * β) h2β ?_
+      have hid : algebraMap K D.F β + s - algebraMap K D.F (2 * β)
+          = s - algebraMap K D.F β := by
+        rw [map_mul, show (algebraMap K D.F) (2 : K) = 2 from map_ofNat _ 2]; ring
+      rw [hid]; exact hs
+    have hN := chart_mul_conj D hcurve hg hA hB hδnum
+    have hM := chart_mul_conj D hcurve hg he₁ he₂ hδden
+    refine ⟨A₁ * Polynomial.C β + B₁ * g + Polynomial.C (B.eval α) * h,
+      A₁ + B₁ * Polynomial.C β,
+      E₁ * Polynomial.C β + E₂ * g + Polynomial.C (e₂.eval α) * h,
+      E₁ + E₂ * Polynomial.C β, ?_, ?_, ?_⟩
+    · intro h0
+      rw [h0, mul_zero] at hM
+      exact (mul_ne_zero hden hμ.1) hM
+    · have hMc0 : aeval t (E₁ * Polynomial.C β + E₂ * g + Polynomial.C (e₂.eval α) * h)
+          + aeval t (E₁ + E₂ * Polynomial.C β) * s ≠ 0 := by
+        intro h0
+        rw [h0, mul_zero] at hM
+        exact (mul_ne_zero hden hμ.1) hM
+      have h3 : D.ord v (t - algebraMap K D.F α)
+          + D.ord v (aeval t (E₁ * Polynomial.C β + E₂ * g + Polynomial.C (e₂.eval α) * h)
+              + aeval t (E₁ + E₂ * Polynomial.C β) * s)
+          = D.ord v (aeval t e₁ + aeval t e₂ * s) + D.ord v (algebraMap K D.F β + s) := by
+        rw [← D.ord_mul v _ _ ht0 hMc0, ← D.ord_mul v _ _ hden hμ.1, hM]
+      rw [hμ.2] at h3
+      omega
+    · have hMc0 : aeval t (E₁ * Polynomial.C β + E₂ * g + Polynomial.C (e₂.eval α) * h)
+          + aeval t (E₁ + E₂ * Polynomial.C β) * s ≠ 0 := by
+        intro h0
+        rw [h0, mul_zero] at hM
+        exact (mul_ne_zero hden hμ.1) hM
+      refine mul_left_cancel₀ ht0 ?_
+      calc (t - algebraMap K D.F α) * (z *
+            (aeval t (E₁ * Polynomial.C β + E₂ * g + Polynomial.C (e₂.eval α) * h)
+              + aeval t (E₁ + E₂ * Polynomial.C β) * s))
+          = z * ((t - algebraMap K D.F α) *
+            (aeval t (E₁ * Polynomial.C β + E₂ * g + Polynomial.C (e₂.eval α) * h)
+              + aeval t (E₁ + E₂ * Polynomial.C β) * s)) := by ring
+        _ = z * ((aeval t e₁ + aeval t e₂ * s) * (algebraMap K D.F β + s)) := by rw [← hM]
+        _ = (z * (aeval t e₁ + aeval t e₂ * s)) * (algebraMap K D.F β + s) := by ring
+        _ = (aeval t A + aeval t B * s) * (algebraMap K D.F β + s) := by rw [heq]
+        _ = _ := hN
+  · -- the uniformiser is `s`; multiply by `h(t)`, a unit because `h(α) = g'(α) ≠ 0`
+    have hg' : g = (Polynomial.X - Polynomial.C α) * h := by
+      rw [hg, hβ0]; simp
+    have hAα : A.eval α = 0 := by rw [hβ0] at hδnum; simpa using hδnum
+    have he₁α : e₁.eval α = 0 := by rw [hβ0] at hδden; simpa using hδden
+    obtain ⟨A₁, hA⟩ : (Polynomial.X - Polynomial.C α) ∣ A := dvd_iff_isRoot.2 hAα
+    obtain ⟨E₁, he₁⟩ : (Polynomial.X - Polynomial.C α) ∣ e₁ := dvd_iff_isRoot.2 he₁α
+    have hμ : aeval t h ≠ 0 ∧ D.ord v (aeval t h) = 0 :=
+      ord_eq_zero_of_vanishesAt_sub D v hhα (vanishesAt_aeval_sub_eval D v htm ht h)
+    have hspos : 0 < D.ord v s := by
+      rw [hβ0, map_zero, sub_zero] at hs
+      rcases hs with hc | hc
+      · exact absurd hc hs0
+      · exact hc
+    have hN := chart_mul_deriv D hcurve hg' (Q := B) hA
+    have hM := chart_mul_deriv D hcurve hg' (Q := e₂) he₁
+    refine ⟨B * h, A₁, e₂ * h, E₁, ?_, ?_, ?_⟩
+    · intro h0
+      rw [h0, mul_zero] at hM
+      exact (mul_ne_zero hden hμ.1) hM
+    · have hMc0 : aeval t (e₂ * h) + aeval t E₁ * s ≠ 0 := by
+        intro h0
+        rw [h0, mul_zero] at hM
+        exact (mul_ne_zero hden hμ.1) hM
+      have h3 : D.ord v s + D.ord v (aeval t (e₂ * h) + aeval t E₁ * s)
+          = D.ord v (aeval t e₁ + aeval t e₂ * s) + D.ord v (aeval t h) := by
+        rw [← D.ord_mul v _ _ hs0 hMc0, ← D.ord_mul v _ _ hden hμ.1, hM]
+      rw [hμ.2] at h3
+      omega
+    · refine mul_left_cancel₀ hs0 ?_
+      calc s * (z * (aeval t (e₂ * h) + aeval t E₁ * s))
+          = z * (s * (aeval t (e₂ * h) + aeval t E₁ * s)) := by ring
+        _ = z * ((aeval t e₁ + aeval t e₂ * s) * aeval t h) := by rw [← hM]
+        _ = (z * (aeval t e₁ + aeval t e₂ * s)) * aeval t h := by ring
+        _ = (aeval t A + aeval t B * s) * aeval t h := by rw [heq]
+        _ = _ := hN
+
+/-- **`O_v` IS the local ring of the chart at the point** (PROVEN).
+
+Every function regular at `v` is a chart fraction whose denominator does not vanish at the
+point.  The proof is a descent on `ord_v` of the denominator: `exists_localDenom_step` cancels
+one uniformiser whenever the denominator vanishes, and `ord_chart_eq_zero_iff` says order `0`
+is exactly admissibility, so the descent stops precisely at the conclusion.
+
+This is the statement that `O_v` DOMINATES the local ring of the chart and no more — the
+classical route proves it by "a valuation ring dominating a DVR with the same fraction field
+IS that DVR", which needs the local ring built as a Lean object and shown regular; the descent
+needs neither, only the interface's valuation axioms and smoothness at the point. -/
+theorem exists_localDenom_chart (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places)
+    {t s : D.F} {α β : K} {g h : K[X]}
+    (hcurve : s ^ 2 = aeval t g)
+    (hg : g = Polynomial.C (β ^ 2) + (Polynomial.X - Polynomial.C α) * h)
+    (ht : D.VanishesAt v (t - algebraMap K D.F α)) (ht0 : t - algebraMap K D.F α ≠ 0)
+    (hs : D.VanishesAt v (s - algebraMap K D.F β)) (hs0 : s ≠ 0)
+    (hsm : (2 : K) * β ≠ 0 ∨ (β = 0 ∧ h.eval α ≠ 0))
+    (hgen : ∀ z : D.F, ∃ A B e₁ e₂ : K[X], (aeval t e₁ + aeval t e₂ * s ≠ 0) ∧
+      z * (aeval t e₁ + aeval t e₂ * s) = aeval t A + aeval t B * s)
+    {z : D.F} (hz : 0 ≤ D.ord v z) :
+    ∃ A B e₁ e₂ : K[X], e₁.eval α + e₂.eval α * β ≠ 0 ∧
+      z * (aeval t e₁ + aeval t e₂ * s) = aeval t A + aeval t B * s := by
+  have key : ∀ n : ℕ, ∀ A B e₁ e₂ : K[X], (aeval t e₁ + aeval t e₂ * s ≠ 0) →
+      D.ord v (aeval t e₁ + aeval t e₂ * s) ≤ (n : ℤ) →
+      z * (aeval t e₁ + aeval t e₂ * s) = aeval t A + aeval t B * s →
+      ∃ A' B' f₁ f₂ : K[X], f₁.eval α + f₂.eval α * β ≠ 0 ∧
+        z * (aeval t f₁ + aeval t f₂ * s) = aeval t A' + aeval t B' * s := by
+    intro n
+    induction n with
+    | zero =>
+      intro A B e₁ e₂ hden hle heq
+      have h0 : D.ord v (aeval t e₁ + aeval t e₂ * s) = 0 :=
+        le_antisymm (by exact_mod_cast hle) (chart_mem_valRing D v ht hs e₁ e₂)
+      exact ⟨A, B, e₁, e₂, (ord_chart_eq_zero_iff D v ht hs hden).1 h0, heq⟩
+    | succ m ih =>
+      intro A B e₁ e₂ hden hle heq
+      rcases eq_or_lt_of_le (chart_mem_valRing D v ht hs e₁ e₂) with h0 | hpos
+      · exact ⟨A, B, e₁, e₂, (ord_chart_eq_zero_iff D v ht hs hden).1 h0.symm, heq⟩
+      · rcases eq_or_ne z 0 with rfl | hz0
+        · exact ⟨0, 0, 1, 0, by simp, by simp⟩
+        · obtain ⟨A', B', f₁, f₂, hne', hlt', heq'⟩ :=
+            exists_localDenom_step D v hcurve hg ht ht0 hs hs0 hsm hz0 hz hden hpos heq
+          refine ih A' B' f₁ f₂ hne' ?_ heq'
+          push_cast at hle ⊢
+          omega
+  obtain ⟨A, B, e₁, e₂, hne, heq⟩ := hgen z
+  exact key (D.ord v (aeval t e₁ + aeval t e₂ * s)).toNat A B e₁ e₂ hne
+    (by rw [Int.toNat_of_nonneg (chart_mem_valRing D v ht hs e₁ e₂)]) heq
+
+
+
 end PlaceData
 
 section Genus
@@ -3422,7 +3755,17 @@ theorem transcendental_ratFuncEquiv_xx (D : PlaceData c₀ c₁ c₂ c₃ c₄ c
 
 end Genus
 
-/-- **LEAF: `O_v` at an affine rational point is the LOCAL RING of the plane model there.**
+/-- **LEAF, PROVEN 2026-07-30: `O_v` at an affine rational point is the LOCAL RING of the
+plane model there.**
+
+The proof is `PlaceData.exists_localDenom_chart` in the chart `(t, s) = (x, y)` at `(α, β) = q`
+— see the section docstring there for why the descent replaces the classical
+"valuation ring dominating a DVR" argument.  `hsep` IS used, exactly as the audit below
+predicted and only in the branch `β = 0`: there `2β = 0`, the conjugate `s + β` is not a unit,
+and the uniformiser is `s` rather than `x − α`, which needs `f'(α) = h(α) ≠ 0`.  That is
+supplied by `IsCoprime f f'` (which is what `Separable` unfolds to) together with
+`not_isUnit_X_sub_C`: a common root of `f` and `f'` would make `X − α` a unit.  For `β ≠ 0` the
+hypothesis is not needed, and `PlaceData.two_ne_zero` is what turns `β ≠ 0` into `2β ≠ 0`.
 
 Every `z` without a pole at `v = pt (a, b)` is a quotient of two elements of the coordinate
 ring `K[x, y] = K[x] ⊕ K[x]·y` whose denominator does not vanish at `(a, b)`.  This is the
@@ -3447,9 +3790,78 @@ theorem exists_localDenom_affine {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type
     ∃ a b e₁ e₂ : K[X],
       Polynomial.eval q.1.1 e₁ + Polynomial.eval q.1.1 e₂ * q.1.2 ≠ 0 ∧
       z * (aeval D.xx e₁ + aeval D.xx e₂ * D.yy)
-        = aeval D.xx a + aeval D.xx b * D.yy := sorry
+        = aeval D.xx a + aeval D.xx b * D.yy := by
+  set α : K := q.1.1 with hα
+  set β : K := q.1.2 with hβ
+  obtain ⟨hxo, hyo⟩ := D.ord_pt_affine q
+  -- the curve equation in the chart
+  have hcurve : D.yy ^ 2 = aeval D.xx (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) := by
+    rw [aeval_sextPoly]; exact D.eqn
+  -- the sextic factors through the point
+  have hroot : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).eval α = β ^ 2 := by
+    rw [eval_sextPoly, hα, hβ]; exact q.2.symm
+  obtain ⟨h, hh⟩ : (Polynomial.X - Polynomial.C α)
+      ∣ (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K - Polynomial.C (β ^ 2)) :=
+    dvd_iff_isRoot.2 (by simp [IsRoot, hroot])
+  have hg : sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K
+      = Polynomial.C (β ^ 2) + (Polynomial.X - Polynomial.C α) * h := by
+    rw [← hh]; ring
+  -- the abscissa is not a constant, and the ordinate is not zero
+  have hsext0 : sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K ≠ 0 := fun h0 => by
+    have hd := natDegree_sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K
+    rw [h0] at hd; simp at hd
+  have ht0 : D.xx - algebraMap K D.F α ≠ 0 := by
+    intro h0
+    refine D.transcendental_xx ⟨Polynomial.X - Polynomial.C α, ?_, ?_⟩
+    · exact Polynomial.X_sub_C_ne_zero α
+    · simpa using h0
+  have hs0 : D.yy ≠ 0 := by
+    intro h0
+    refine D.transcendental_xx ⟨sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K, hsext0, ?_⟩
+    rw [← hcurve, h0]
+    ring
+  -- smoothness at the point: `2β ≠ 0`, or `β = 0` and separability gives `h(α) = f'(α) ≠ 0`
+  have hsm : (2 : K) * β ≠ 0 ∨ (β = 0 ∧ h.eval α ≠ 0) := by
+    rcases eq_or_ne β 0 with hβ0 | hβ0
+    · refine Or.inr ⟨hβ0, fun hhα => ?_⟩
+      have hgf : sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K = (Polynomial.X - Polynomial.C α) * h := by
+        rw [hg, hβ0]; simp
+      have hdvd1 : (Polynomial.X - Polynomial.C α) ∣ h := dvd_iff_isRoot.2 hhα
+      have hdvd2 : (Polynomial.X - Polynomial.C α)
+          ∣ Polynomial.derivative (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) := by
+        rw [hgf, Polynomial.derivative_mul]
+        exact dvd_add (Dvd.dvd.mul_left hdvd1 _) (Dvd.dvd.mul_right dvd_rfl _)
+      have hdvd3 : (Polynomial.X - Polynomial.C α) ∣ sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K :=
+        ⟨h, hgf⟩
+      have hco : IsCoprime (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K)
+          (Polynomial.derivative (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K)) := hsep
+      exact Polynomial.not_isUnit_X_sub_C α (hco.isUnit_of_dvd' hdvd3 hdvd2)
+    · exact Or.inl (mul_ne_zero (D.two_ne_zero) hβ0)
+  -- the chart generates, with a denominator in the abscissa alone
+  have hgen : ∀ w : D.F, ∃ A B e₁ e₂ : K[X],
+      (aeval D.xx e₁ + aeval D.xx e₂ * D.yy ≠ 0) ∧
+      w * (aeval D.xx e₁ + aeval D.xx e₂ * D.yy) = aeval D.xx A + aeval D.xx B * D.yy := by
+    intro w
+    obtain ⟨A, B, d, hd, hw⟩ := D.gen w
+    exact ⟨A, B, d, 0, by simpa using hd, by simpa using hw⟩
+  exact PlaceData.exists_localDenom_chart D (D.pt (Sum.inl q)) hcurve hg (Or.inr hxo) ht0 (Or.inr hyo)
+    hs0 hsm hgen hz
 
-/-- **LEAF: `O_v` at a point at infinity is the LOCAL RING of the chart at infinity.**
+/-- **LEAF, PROVEN 2026-07-30: `O_v` at a point at infinity is the LOCAL RING of the chart at
+infinity.**
+
+`PlaceData.exists_localDenom_chart` again, in the chart `(t, s) = (1/x, y/x³)` at `(0, ±1)`,
+with `g = revSextPoly` the reversed sextic.  **`hsep` is NOT used and is underscored**, as the
+paragraph below predicted: the branch at infinity has `β = ±1`, so `2β ≠ 0` follows from
+`PlaceData.two_ne_zero` and the `β = 0` branch — the only one that needs separability — is
+never taken.
+
+The one piece of real work beyond the affine instantiation is that the chart at infinity must
+GENERATE: `gen` supplies `z = (a(x) + b(x)y)/d(x)`, and turning that into a fraction in
+`(1/x, y/x³)` is `Polynomial.reflect` — `aeval (1/x) (reflect m p) = aeval x p · x^{-m}`, which
+is mathlib's `eval₂_reflect_mul_pow` (`⅟x = x⁻¹`).  With `m` chosen `≥ deg d, deg a` and
+`≥ deg b + 3`, the three reflections clear the denominator `x^m` simultaneously, the `+3` being
+exactly the weight of `y`.
 
 The same statement as `exists_localDenom_affine`, in the chart `u = 1/x`, `w = y/x³`, where
 the curve becomes `w² = u⁶f(1/u) = 1 + c₅u + c₄u² + c₃u³ + c₂u⁴ + c₁u⁵ + c₀u⁶` and the two
@@ -3467,12 +3879,113 @@ The hypothesis is carried because every consumer has it and a weaker leaf is an 
 a proof that does not use it should underscore it. -/
 theorem exists_localDenom_infinite {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
     (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
-    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (s : Bool)
-    {z : D.F} (hz : 0 ≤ D.ord (D.pt (Sum.inr s)) z) :
+    (_hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (sgn : Bool)
+    {z : D.F} (hz : 0 ≤ D.ord (D.pt (Sum.inr sgn)) z) :
     ∃ a b e₁ e₂ : K[X],
-      Polynomial.eval 0 e₁ + Polynomial.eval 0 e₂ * (if s then (1 : K) else -1) ≠ 0 ∧
+      Polynomial.eval 0 e₁ + Polynomial.eval 0 e₂ * (if sgn then (1 : K) else -1) ≠ 0 ∧
       z * (aeval D.xx⁻¹ e₁ + aeval D.xx⁻¹ e₂ * (D.yy * D.xx⁻¹ ^ 3))
-        = aeval D.xx⁻¹ a + aeval D.xx⁻¹ b * (D.yy * D.xx⁻¹ ^ 3) := sorry
+        = aeval D.xx⁻¹ a + aeval D.xx⁻¹ b * (D.yy * D.xx⁻¹ ^ 3) := by
+  set v := D.pt (Sum.inr sgn) with hv
+  obtain ⟨hx1, hx2⟩ := D.ord_pt_infinite sgn
+  rw [← hv] at hx1 hx2
+  have hxne : D.xx ≠ 0 := by intro h0; rw [h0, D.ord_zero] at hx1; omega
+  have hine : D.xx⁻¹ ≠ 0 := inv_ne_zero hxne
+  have hiord : D.ord v D.xx⁻¹ = 1 := by rw [PlaceData.ord_inv D v _ hxne, hx1]; norm_num
+  have hsext0 : sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K ≠ 0 := fun h0 => by
+    have hd := natDegree_sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K
+    rw [h0] at hd; simp at hd
+  have hyne : D.yy ≠ 0 := by
+    intro h0
+    refine D.transcendental_xx ⟨sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K, hsext0, ?_⟩
+    have := D.eqn
+    rw [h0] at this
+    rw [aeval_sextPoly, ← this]
+    ring
+  -- the curve equation in the chart at infinity
+  have hcurve : (D.yy * D.xx⁻¹ ^ 3) ^ 2 = aeval D.xx⁻¹ (PlaceAtInfinity.revSextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) := by
+    rw [PlaceAtInfinity.aeval_revSextPoly, PlaceAtInfinity.revSext_inv_eq _ _ _ _ _ _ hxne,
+      ← D.eqn]
+    field_simp
+  -- the chart sextic has constant term `1 = ε²`
+  have hε2 : (if sgn then (1 : K) else -1) ^ 2 = 1 := by cases sgn <;> norm_num
+  have hg : PlaceAtInfinity.revSextPoly c₀ c₁ c₂ c₃ c₄ c₅ K
+      = Polynomial.C ((if sgn then (1 : K) else -1) ^ 2)
+        + (Polynomial.X - Polynomial.C (0 : K))
+          * ((c₅ : K[X]) + (c₄ : K[X]) * X + (c₃ : K[X]) * X ^ 2
+              + (c₂ : K[X]) * X ^ 3 + (c₁ : K[X]) * X ^ 4 + (c₀ : K[X]) * X ^ 5) := by
+    rw [hε2]
+    simp only [PlaceAtInfinity.revSextPoly, map_one, map_zero, sub_zero]
+    ring
+  -- the two chart congruences
+  have ht : D.VanishesAt v (D.xx⁻¹ - algebraMap K D.F (0 : K)) := by
+    rw [map_zero, sub_zero]
+    exact Or.inr (by rw [hiord]; norm_num)
+  have ht0 : D.xx⁻¹ - algebraMap K D.F (0 : K) ≠ 0 := by
+    rw [map_zero, sub_zero]; exact hine
+  have hεF : (if sgn then (1 : D.F) else -1)
+      = algebraMap K D.F (if sgn then (1 : K) else -1) := by cases sgn <;> simp
+  have hchart : D.yy * D.xx⁻¹ ^ 3 - algebraMap K D.F (if sgn then (1 : K) else -1)
+      = (D.yy - (if sgn then (1 : D.F) else -1) * D.xx ^ 3) * D.xx⁻¹ ^ 3 := by
+    rw [← hεF]; field_simp
+  have hs : D.VanishesAt v
+      (D.yy * D.xx⁻¹ ^ 3 - algebraMap K D.F (if sgn then (1 : K) else -1)) := by
+    rw [hchart]
+    rcases eq_or_ne (D.yy - (if sgn then (1 : D.F) else -1) * D.xx ^ 3) 0 with hA | hA
+    · exact Or.inl (by rw [hA, zero_mul])
+    · refine Or.inr ?_
+      rw [D.ord_mul v _ _ hA (pow_ne_zero _ hine), PlaceData.ord_pow D v _ hine 3, hiord]
+      push_cast
+      omega
+  have hs0 : D.yy * D.xx⁻¹ ^ 3 ≠ 0 := mul_ne_zero hyne (pow_ne_zero _ hine)
+  -- the chart at infinity is smooth at `(0, ±1)` because `2 ≠ 0`
+  have hsm : (2 : K) * (if sgn then (1 : K) else -1) ≠ 0 := by
+    have h2 := D.two_ne_zero
+    cases sgn <;> simpa using h2
+  -- the chart at infinity generates, by reflecting the polynomials of the affine chart
+  have hkey : ∀ (p : K[X]) (m : ℕ), p.natDegree ≤ m →
+      aeval D.xx⁻¹ (Polynomial.reflect m p) = aeval D.xx p * D.xx⁻¹ ^ m := by
+    intro p m hp
+    haveI : Invertible D.xx := invertibleOfNonzero hxne
+    have h := Polynomial.eval₂_reflect_mul_pow (algebraMap K D.F) D.xx m p hp
+    have hinv : (⅟D.xx : D.F) = D.xx⁻¹ := invOf_eq_inv D.xx
+    rw [hinv, ← Polynomial.aeval_def, ← Polynomial.aeval_def] at h
+    have hxu : D.xx * D.xx⁻¹ = 1 := mul_inv_cancel₀ hxne
+    calc aeval D.xx⁻¹ (Polynomial.reflect m p)
+        = aeval D.xx⁻¹ (Polynomial.reflect m p) * (D.xx * D.xx⁻¹) ^ m := by
+          rw [hxu, one_pow, mul_one]
+      _ = (aeval D.xx⁻¹ (Polynomial.reflect m p) * D.xx ^ m) * D.xx⁻¹ ^ m := by ring
+      _ = aeval D.xx p * D.xx⁻¹ ^ m := by rw [h]
+  have hgen : ∀ y : D.F, ∃ A B e₁ e₂ : K[X],
+      (aeval D.xx⁻¹ e₁ + aeval D.xx⁻¹ e₂ * (D.yy * D.xx⁻¹ ^ 3) ≠ 0) ∧
+      y * (aeval D.xx⁻¹ e₁ + aeval D.xx⁻¹ e₂ * (D.yy * D.xx⁻¹ ^ 3))
+        = aeval D.xx⁻¹ A + aeval D.xx⁻¹ B * (D.yy * D.xx⁻¹ ^ 3) := by
+    intro y
+    obtain ⟨a, b, d, hd, hy⟩ := D.gen y
+    set m : ℕ := max d.natDegree (max a.natDegree b.natDegree) with hm
+    have hdm : d.natDegree ≤ m + 3 := by rw [hm]; omega
+    have ham : a.natDegree ≤ m + 3 := by
+      rw [hm]
+      have : a.natDegree ≤ max d.natDegree (max a.natDegree b.natDegree) := by
+        exact le_trans (le_max_left _ b.natDegree) (le_max_right _ _)
+      omega
+    have hbm : b.natDegree ≤ m := by
+      rw [hm]
+      exact le_trans (le_max_right a.natDegree _) (le_max_right _ _)
+    refine ⟨Polynomial.reflect (m + 3) a, Polynomial.reflect m b,
+      Polynomial.reflect (m + 3) d, 0, ?_, ?_⟩
+    · rw [hkey d (m + 3) hdm]
+      simp only [map_zero, zero_mul, add_zero]
+      exact mul_ne_zero hd (pow_ne_zero _ hine)
+    · rw [hkey d (m + 3) hdm, hkey a (m + 3) ham, hkey b m hbm]
+      simp only [map_zero, zero_mul, add_zero]
+      have hxu : D.xx * D.xx⁻¹ = 1 := mul_inv_cancel₀ hxne
+      calc y * (aeval D.xx d * D.xx⁻¹ ^ (m + 3))
+          = (y * aeval D.xx d) * D.xx⁻¹ ^ (m + 3) := by ring
+        _ = (aeval D.xx a + aeval D.xx b * D.yy) * D.xx⁻¹ ^ (m + 3) := by rw [hy]
+        _ = aeval D.xx a * D.xx⁻¹ ^ (m + 3)
+              + aeval D.xx b * D.xx⁻¹ ^ m * (D.yy * D.xx⁻¹ ^ 3) := by
+          rw [pow_add]; ring
+  exact PlaceData.exists_localDenom_chart D v hcurve hg ht ht0 hs hs0 (Or.inl hsm) hgen hz
 
 /-- **PROVEN: at an affine rational point every element of `O_v` is congruent to a constant.**
 
