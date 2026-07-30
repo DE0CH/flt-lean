@@ -3561,9 +3561,273 @@ theorem exists_isLocalization_tensor_comp
 
 end IsLocalizationTensorComp
 
+/-! ### THE CUT OF 10.127.11 INTO A MODEL HALF AND A LOCALIZATION HALF
+
+(2026-07-30.)  `exists_noetherianLocalExtSystem_of_essFinitePresentation` below used to
+be one sorry leaf carrying the whole of 10.127.11.  Its own SURVEY paragraph already
+named the seam — finding 1 said the MODEL half is in the pin
+(`Algebra.Presentation.HasCoeffs`), finding 2 said "what is NOT supplied is everything
+about the LOCALIZATIONS", and those two halves share nothing but a tower of rings — so
+the leaf is cut along exactly that line, into three pieces of which the FIRST is proven:
+
+* `exists_isLocalization_atPrime_of_essFinitePresentation` (**PROVEN**) — the local
+  normal form.  `EssFinitePresentation g` hands over an arbitrary submonoid `M ⊆ T`; over
+  a LOCAL target that submonoid can always be enlarged to the full complement of the
+  contracted prime `𝔮 = vT⁻¹(𝔪_B)`, so `B = T_𝔮`.  This is the step every write-up of
+  10.127.11 opens with, and it is what lets the rest of the argument work with a single
+  prime per stage instead of a submonoid it would have to descend as well.
+* `exists_noetherianModelTower_of_finitePresentation` (**LEAF**) — the model half:
+  a finitely presented `R`-algebra `T` is, from some stage on, the filtered colimit of
+  finitely presented models `T_λ` over `R_λ` that base-change to one another.  No
+  localization, no locality, no prime occurs in it.
+* `exists_noetherianLocalExtSystem_of_noetherianModelTower` (**LEAF**) — the
+  localization half: given such a tower and a prime `𝔮` of `T` with `B = T_𝔮`, take
+  `𝔮_λ = ` the contraction of `𝔮` to `T_λ` and `S_λ = (T_λ)_{𝔮_λ}`, and the sixteen
+  fields of the rung follow.  No presentation, no polynomial ring and no coefficient
+  descent occurs in it.
+
+**WHY THIS SEAM AND NOT ANOTHER.**  The two halves are written in disjoint vocabularies:
+the model half is `MvPolynomial`/`Ideal.span`/`Algebra.FinitePresentation` and never
+mentions a local ring, while the localization half is `Ideal.comap`/`primeCompl`/
+`IsLocalization` and never mentions a presentation.  That is why the tower
+`NoetherianModelTower` — which is the interface between them — carries `IsNoetherianRing`
+and NOT `Algebra.FinitePresentation`: Noetherianity is all the localization half consumes,
+and putting finite presentation in the interface would have strengthened the model leaf
+for no consumer's benefit.
+
+**WHAT THE `isPushoutModT` FIELD IS FOR.**  It is the only field of the tower whose sole
+consumer is the rung's `isLocalizationMidT`, and it is what `IsLocalizationTensorComp`
+above was built to consume: with `T_μ = R_μ ⊗_{R_λ} T_λ`, `R_μ ⊗_{R_λ} (T_λ)_{𝔮_λ}` is
+`(T_μ)_W` for `W` the image of `T_λ ∖ 𝔮_λ`, and `(T_μ)_{𝔮_μ}` is a further localization
+of that because `W ⊆ T_μ ∖ 𝔮_μ`.  Without it the two towers would be unrelated and
+`isLocalizationMidT` would be unprovable — which is the check that would refute dropping
+the field.
+
+**THE CHECK THAT WOULD REFUTE THIS CUT.**  Exhibit a finitely presented `R`-algebra `T`
+and a base tower for `R` admitting a model tower, and a prime `𝔮` of `T` over `𝔪_R`, for
+which no rung exists — i.e. a counterexample to 10.127.11 with its model half already
+granted.  Equivalently: find a field of `NoetherianLocalExtSystem` not derivable from the
+tower plus `𝔮`.  The one to check first is `isLocalHomBaseToMid`, since it is the only
+field that uses locality of anything: it holds because the contraction of `𝔮_λ` to `R_λ`
+is the contraction of `𝔪_B` along `R_λ → R → B`, and both of those maps are local
+(`bs.isLocalHomBaseToR` and `[IsLocalHom g]`). -/
+
+/-- **THE LOCAL NORMAL FORM OF `EssFinitePresentation`** (PROVEN 2026-07-30): over a LOCAL
+target the localizing submonoid may be taken to be the complement of a prime.
+
+*If `g : R →+* B` is essentially of finite presentation and `B` is local, then `g` factors
+as `R → T → B` with `T` finitely presented over `R` and `B` the localization of `T` at the
+complement of `𝔮 = vT⁻¹(𝔪_B)`.*
+
+`EssFinitePresentation` is stated with an arbitrary submonoid `M ⊆ T` because that is what
+makes it composable; but `M` can only consist of elements that become UNITS in `B`, and in
+a local ring a unit is exactly an element outside the maximal ideal, so `M ⊆ 𝔮.primeCompl`
+and enlarging `M` to `𝔮.primeCompl` costs nothing: `map_units` is
+`IsLocalRing.notMem_maximalIdeal`, and `surj` and `exists_of_eq` are inherited from `M`
+verbatim along that inclusion.
+
+This is what lets `exists_noetherianLocalExtSystem_of_noetherianModelTower` below work
+with one PRIME per stage.  Descending a general submonoid through the tower as well would
+be a second, independent colimit argument and is exactly what this lemma removes. -/
+theorem exists_isLocalization_atPrime_of_essFinitePresentation
+    {R B : Type u} [CommRing R] [CommRing B] [IsLocalRing B] {g : R →+* B}
+    (hfp : EssFinitePresentation g) :
+    ∃ (T : Type u) (_ : CommRing T) (gT : R →+* T) (vT : T →+* B),
+      gT.FinitePresentation ∧ vT.comp gT = g ∧
+      @IsLocalization T _ ((IsLocalRing.maximalIdeal B).comap vT).primeCompl B _
+        vT.toAlgebra := by
+  obtain ⟨T, hT, gT, vT, M, hfpT, hcomp, hlocM⟩ := hfp
+  refine ⟨T, hT, gT, vT, hfpT, hcomp, ?_⟩
+  letI : Algebra T B := vT.toAlgebra
+  haveI : IsLocalization M B := hlocM
+  have hmap : ∀ t : T, algebraMap T B t = vT t := fun _ => rfl
+  -- `M` consists of units of `B`, hence of elements outside the contracted prime
+  have hMB : ∀ m : T, m ∈ M → m ∈ ((IsLocalRing.maximalIdeal B).comap vT).primeCompl := by
+    intro m hm hmem
+    exact (IsLocalRing.notMem_maximalIdeal.mpr
+      (by simpa [hmap] using IsLocalization.map_units (M := M) B ⟨m, hm⟩)) hmem
+  rw [isLocalization_iff]
+  refine ⟨?_, ?_, ?_⟩
+  · rintro ⟨s, hs⟩
+    exact IsLocalRing.notMem_maximalIdeal.mp hs
+  · intro z
+    obtain ⟨⟨t, m, hm⟩, hz⟩ := IsLocalization.surj (M := M) z
+    exact ⟨⟨t, ⟨m, hMB m hm⟩⟩, hz⟩
+  · intro x y hxy
+    obtain ⟨⟨c, hc⟩, h⟩ := IsLocalization.exists_of_eq (M := M) hxy
+    exact ⟨⟨c, hMB c hc⟩, h⟩
+
+/-- **A TOWER OF NOETHERIAN MODELS OVER A BASE TOWER** — the interface between the two
+halves of 10.127.11, and the only object the model leaf below produces.
+
+Over a base tower `bs` for `R` and a ring map `gT : R →+* T`, this is a tower of
+Noetherian rings `T_λ` over the `R_λ`, with `T` as filtered colimit and each `T_μ` the
+BASE CHANGE `R_μ ⊗_{R_λ} T_λ`.  It is `NoetherianLocalExtSystem` with every locality
+condition deleted and `isLocalizationMidT` strengthened to `isPushoutModT`: a model tower
+is a tower of honest base changes, and it is the localization half that turns those base
+changes into the localizations the rung asks for.
+
+**WHY NOT `Algebra.FinitePresentation` AS A FIELD.**  The models really are finitely
+presented — that is how the leaf below builds them, out of a fixed presentation of `T`
+over `R` whose coefficients have been descended to `R_{i₀}` — but nothing downstream
+consumes more than `IsNoetherianRing`, so the extra strength would only make the model
+leaf harder to prove while making the localization leaf no easier.  Weakness belongs in
+the statement.
+
+**NON-DEGENERACY.**  `Mod = Base`, `baseToMod = id`, `modToT = gT ∘ baseToR` satisfies
+every structural field and `isPushoutModT` (`R_μ ⊗_{R_λ} R_λ ≅ R_μ`), and fails
+`mod_surj` as soon as `gT` is not surjective; so the datum is not free.  It is also not
+vacuous: `bs` is unconditionally inhabited (`nonempty_noetherianLocalBaseSystem`). -/
+structure NoetherianModelTower {R T : Type u} [CommRing R] [CommRing T]
+    (bs : NoetherianLocalBaseSystem R) (gT : R →+* T) where
+  /-- `T_λ`, the model at stage `λ`. -/
+  Mod : bs.Λ → CommRingCat.{u}
+  /-- Each `T_λ` is Noetherian. -/
+  isNoetherianMod : ∀ i, IsNoetherianRing (Mod i)
+  /-- `R_λ → T_λ`. -/
+  baseToMod : ∀ i, bs.Base i →+* Mod i
+  /-- The transition map `T_λ → T_μ`. -/
+  modT : ∀ {i j}, bs.le i j → (Mod i →+* Mod j)
+  /-- `modT` is functorial. -/
+  modT_comp : ∀ {i j k} (h₁ : bs.le i j) (h₂ : bs.le j k),
+    (modT h₂).comp (modT h₁) = modT (bs.le_trans' h₁ h₂)
+  /-- The vertical maps are natural in `Λ`. -/
+  comm_baseT : ∀ {i j} (h : bs.le i j),
+    (baseToMod j).comp (bs.baseT h) = (modT h).comp (baseToMod i)
+  /-- The cocone map `T_λ → T`. -/
+  modToT : ∀ i, Mod i →+* T
+  /-- The square `R_λ → T_λ → T` / `R_λ → R → T` commutes. -/
+  comm_baseMod : ∀ i, (modToT i).comp (baseToMod i) = gT.comp (bs.baseToR i)
+  /-- `modToT` is a cocone. -/
+  comm_modToT : ∀ {i j} (h : bs.le i j), (modToT j).comp (modT h) = modToT i
+  /-- `T` is the colimit, half one. -/
+  mod_surj : ∀ x : T, ∃ i, ∃ y : Mod i, modToT i y = x
+  /-- `T` is the colimit, half two. -/
+  mod_sep : ∀ i (x y : Mod i), modToT i x = modToT i y →
+    ∃ j, ∃ h : bs.le i j, modT h x = modT h y
+  /-- **The models base-change**: `T_μ = R_μ ⊗_{R_λ} T_λ`.  This is the field that
+  `isLocalizationMidT` is derived from, through `IsLocalizationTensorComp` above. -/
+  isPushoutModT : ∀ {i j} (h : bs.le i j),
+    letI : Algebra (bs.Base i) (Mod i) := (baseToMod i).toAlgebra
+    letI : Algebra (bs.Base i) (bs.Base j) := (bs.baseT h).toAlgebra
+    letI : Algebra (bs.Base i) (Mod j) := ((baseToMod j).comp (bs.baseT h)).toAlgebra
+    letI : Algebra (bs.Base j) (Mod j) := (baseToMod j).toAlgebra
+    letI : Algebra (Mod i) (Mod j) := (modT h).toAlgebra
+    haveI : IsScalarTower (bs.Base i) (bs.Base j) (Mod j) :=
+      IsScalarTower.of_algebraMap_eq fun _ => rfl
+    haveI : IsScalarTower (bs.Base i) (Mod i) (Mod j) :=
+      IsScalarTower.of_algebraMap_eq fun x => DFunLike.congr_fun (comm_baseT h) x
+    Function.Bijective (Algebra.TensorProduct.lift
+      (IsScalarTower.toAlgHom (bs.Base i) (bs.Base j) (Mod j))
+      (IsScalarTower.toAlgHom (bs.Base i) (Mod i) (Mod j))
+      fun _ _ => Commute.all _ _)
+
+/-- **THE MODEL HALF OF 10.127.11** (sorry leaf, cut 2026-07-30 out of
+`exists_noetherianLocalExtSystem_of_essFinitePresentation` below; read the section note
+"THE CUT OF 10.127.11 INTO A MODEL HALF AND A LOCALIZATION HALF" above first).
+
+*A finitely presented `R`-algebra is, from some stage of a base tower for `R` on, the
+filtered colimit of a base-changing tower of Noetherian models over the `R_λ`.*
+
+**THE PROOF.**  Fix a finite presentation `T = R[x_1,…,x_n]/(f_1,…,f_m)` (`_hfp`).  The
+`f_k` have finitely many coefficients between them, so `bs.base_surj` and `bs.directed`,
+applied finitely many times, give `i₀` and lifts `F_k ∈ R_{i₀}[x]` with
+`map (baseToR i₀) F_k = f_k`.  For `λ ≥ i₀` put `F_k^λ := map (baseT) F_k` and
+
+    T_λ := R_λ[x_1,…,x_n] ⧸ (F_1^λ, …, F_m^λ).
+
+Everything then follows from that ONE choice of lift, which is why the lifts must be
+transported along `baseT` rather than chosen afresh at each `λ` — independent choices
+would not be compatible and `isPushoutModT` would fail:
+
+* `isNoetherianMod` is Hilbert's basis theorem plus `Ideal.Quotient`;
+* `modT`, `modToT` and their functoriality are `MvPolynomial.map`, which carries
+  generators to generators, so the ideals are respected with no computation;
+* `mod_surj` descends the finitely many coefficients of one representing polynomial;
+* `mod_sep` is where finite PRESENTATION (as opposed to finite type) is spent: a
+  polynomial over `R_λ` dying in `T` is `∑ h_k f_k` for FINITELY many `h_k ∈ R[x]`, whose
+  coefficients descend to some `μ`, after which `bs.base_sep` on the finitely many
+  coefficients of the difference gives a `ν` at which it dies already;
+* `isPushoutModT` is base change of a quotient of a polynomial ring:
+  `R_μ ⊗_{R_λ} R_λ[x]/(F^λ) ≅ R_μ[x]/(F^μ)`.
+
+**WHAT IS IN THE PIN.**  `Mathlib/RingTheory/Extension/Presentation/Core.lean` supplies
+the coefficient-lifting step directly — `Algebra.Presentation.HasCoeffs R₀` asks exactly
+`coeffs ⊆ Set.range (algebraMap R₀ R)`, `relationOfHasCoeffs` is the lift, and
+`ModelOfHasCoeffs R₀` with `tensorModelOfHasCoeffsEquiv` is `T = R ⊗_{R₀} T_{i₀}` for the
+BOTTOM stage.  It does NOT give the tower, because `relationOfHasCoeffs` is a `choose` and
+so gives unrelated lifts at different stages; take the lift ONCE at `i₀` and push it up
+with `baseT`.  `Mathlib/RingTheory/Smooth/NoetherianDescent.lean` is a worked example of
+the same idiom and is worth reading first.
+
+**FAITHFULNESS.**  This is 10.127.11's construction with every localization deleted, so it
+is true if 10.127.11 is; and it is strictly weaker than the leaf it was cut from, since
+`NoetherianModelTower` has no locality conditions.  Note there is no `[IsLocalRing R]` and
+no `IsLocalHom` anywhere in the statement, deliberately: nothing in the argument uses
+either, and adding them would hide that fact.  **NOT vacuous**: `bs` is unconditionally
+inhabited, and the conclusion is not satisfiable by a constant tower (see the structure's
+NON-DEGENERACY note). -/
+theorem exists_noetherianModelTower_of_finitePresentation {R T : Type u}
+    [CommRing R] [CommRing T]
+    (bs : NoetherianLocalBaseSystem R) (gT : R →+* T) (_hfp : gT.FinitePresentation) :
+    ∃ i₀ : bs.Λ, Nonempty (NoetherianModelTower (bs.restrict i₀) gT) :=
+  sorry
+
+/-- **THE LOCALIZATION HALF OF 10.127.11** (sorry leaf, cut 2026-07-30 out of
+`exists_noetherianLocalExtSystem_of_essFinitePresentation` below; read the section note
+"THE CUT OF 10.127.11 INTO A MODEL HALF AND A LOCALIZATION HALF" above first).
+
+*Given a model tower for `T` over a base tower for `R`, and a prime `𝔮` of `T` with
+`B = T_𝔮`, the localizations `S_λ = (T_λ)_{𝔮_λ}` at the contractions `𝔮_λ` of `𝔮` form a
+rung over that base tower.*
+
+**THE PROOF, FIELD BY FIELD.**  Put `𝔮_λ := (modToT λ)⁻¹(𝔮)`, prime, and
+`S_λ := (T_λ)_{𝔮_λ}`.
+
+* `isNoetherianMid`, `isLocalRingMid`: a localization of a Noetherian ring at a prime.
+* `midT h` exists because `𝔮_λ = (modT h)⁻¹(𝔮_μ)` — both sides being `(modToT)⁻¹(𝔮)`
+  through `comm_modToT` — so `T_λ ∖ 𝔮_λ` lands in `T_μ ∖ 𝔮_μ`.  `midToB` exists for the
+  same reason with `𝔮` in place of `𝔮_μ`, and both are automatically local.
+* `isLocalHomBaseToMid` is the ONLY field that uses locality of anything.  The contraction
+  of `𝔮_λ` to `R_λ` is the contraction of `𝔪_B` along `R_λ → R → B` (by `comm_baseMod`
+  and `_hcomp`), and both of those maps are local (`bs.isLocalHomBaseToR`, `[IsLocalHom g]`),
+  so that contraction is `𝔪_{R_λ}`.
+* `mid_surj`: an element of `B` is `t/s` with `s ∉ 𝔮` (`_hloc`); `mod_surj` and
+  `bs.directed` put both at one stage, and `s_λ ∉ 𝔮_λ` because its image is `s`.
+* `mid_sep`: two fractions over `T_λ` agreeing in `B` differ by a factor `u ∉ 𝔮`
+  (`IsLocalization.exists_of_eq` for `_hloc`); descend `u` and the resulting equation with
+  `mod_surj`/`mod_sep`, and at that stage `u` is a unit of `S`, so the fractions agree.
+* `isLocalizationMidT` is `isPushoutModT` fed to `IsLocalizationTensorComp` above:
+  `R_μ ⊗_{R_λ} S_λ = R_μ ⊗_{R_λ} (T_λ)_{𝔮_λ}` is `(T_μ)_W` for `W` the image of
+  `T_λ ∖ 𝔮_λ`, and `S_μ = (T_μ)_{𝔮_μ}` is a further localization of it because
+  `W ⊆ T_μ ∖ 𝔮_μ` (`IsLocalization.localization_localization_isLocalization`).
+
+**FAITHFULNESS.**  Every conclusion is a field of `NoetherianLocalExtSystem`, so this is
+no stronger than 10.127.11's conclusion for `R → S`.  The hypothesis `_hloc` is the LOCAL
+NORMAL FORM produced by `exists_isLocalization_atPrime_of_essFinitePresentation` above and
+not an extra assumption smuggled in: `EssFinitePresentation g` plus `IsLocalRing B`
+implies it.  **NOT vacuous**, and in particular not satisfiable by `Mid = Base`, which
+fails `mid_surj` whenever `g` is not surjective.
+
+**THE CHECK THAT WOULD REFUTE IT.**  A model tower and a prime `𝔮` over `𝔪_R` for which
+some contraction `𝔮_λ` fails to be prime, or for which `R_λ → S_λ` fails to be local.  The
+first cannot happen (contractions of primes are prime); the second is the bullet above and
+is where `[IsLocalHom g]` is spent — dropping that hypothesis DOES make the leaf false,
+since a non-local `g` can put `𝔪_{R_λ}` outside the contraction of `𝔮_λ`. -/
+theorem exists_noetherianLocalExtSystem_of_noetherianModelTower {R B T : Type u}
+    [CommRing R] [CommRing B] [CommRing T] [IsLocalRing R] [IsLocalRing B]
+    {bs : NoetherianLocalBaseSystem R} {g : R →+* B} [IsLocalHom g]
+    {gT : R →+* T} {vT : T →+* B} (_hcomp : vT.comp gT = g)
+    (_mt : NoetherianModelTower bs gT)
+    (_hloc : @IsLocalization T _ ((IsLocalRing.maximalIdeal B).comap vT).primeCompl B _
+      vT.toAlgebra) :
+    Nonempty (NoetherianLocalExtSystem bs g) :=
+  sorry
+
 /-- **THE CONSTRUCTION OF 10.127.11, ONCE: a rung over a given base tower**
-(SORRY LEAF; cut 2026-07-28 out of `nonempty_noetherianApproxSystem_of_baseSystem`,
-and it is that leaf's remaining mathematical content).
+(PROVEN 2026-07-30 over the two leaves above; cut 2026-07-28 out of
+`nonempty_noetherianApproxSystem_of_baseSystem`, and it was that leaf's remaining
+mathematical content).
 
 *Over a directed system of Noetherian local subrings with colimit `R`, a local
 `g : R →+* B` essentially of finite presentation is, from some index `i₀` on, the
@@ -3577,6 +3841,13 @@ finitely many times.  Below that stage there is no rung and the statement does n
 claim one — that is exactly the "work over the RESTRICTED system" step of the
 previous docstring, and `NoetherianLocalBaseSystem.restrict` (PROVEN above) is what
 makes `bs.restrict i₀` again a legitimate base tower to state the rung over.
+
+**WHAT THE BODY DOES** (2026-07-30).  Nothing but assemble the three declarations
+above: the local normal form replaces the localizing submonoid of
+`EssFinitePresentation` by the complement of a prime; the model leaf produces the
+`i₀` and the tower of models; the localization leaf localizes that tower at the
+contractions of the prime.  The SURVEY below is what generated that cut, and its
+findings 1 and 2 are now the model leaf and the localization leaf respectively.
 
 **SURVEY — three findings, each greppable, RE-VERIFIED 2026-07-28.**
 
@@ -3619,9 +3890,12 @@ on a Noetherian subring of `B` fails it too. -/
 theorem exists_noetherianLocalExtSystem_of_essFinitePresentation {R B : Type u}
     [CommRing R] [CommRing B] [IsLocalRing R] [IsLocalRing B]
     (bs : NoetherianLocalBaseSystem R) (g : R →+* B) [IsLocalHom g]
-    (_hfp : EssFinitePresentation g) :
-    ∃ i₀ : bs.Λ, Nonempty (NoetherianLocalExtSystem (bs.restrict i₀) g) :=
-  sorry
+    (hfp : EssFinitePresentation g) :
+    ∃ i₀ : bs.Λ, Nonempty (NoetherianLocalExtSystem (bs.restrict i₀) g) := by
+  obtain ⟨T, hT, gT, vT, hfpT, hcomp, hloc⟩ :=
+    exists_isLocalization_atPrime_of_essFinitePresentation hfp
+  obtain ⟨i₀, ⟨mt⟩⟩ := exists_noetherianModelTower_of_finitePresentation bs gT hfpT
+  exact ⟨i₀, exists_noetherianLocalExtSystem_of_noetherianModelTower hcomp mt hloc⟩
 
 /-- **NOETHERIAN APPROXIMATION, THE `S_λ` AND `S'_λ` TOWERS: Stacks 10.127.13
 OVER A GIVEN `R_λ` TOWER** (PROVEN 2026-07-28 over the three leaves above; cut
