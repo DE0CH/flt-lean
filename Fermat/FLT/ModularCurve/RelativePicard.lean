@@ -1257,7 +1257,155 @@ read it before starting.
 
 Both leaves in this pair need the SAME bridge, so build it once as a
 free-standing "`L` is free of rank one on `U`, in ambient sections" statement
-and prove both from it. -/
+and prove both from it.
+
+**THAT BRIDGE IS BUILT AND COMPILER-CHECKED — PASTE IT IN (2026-07-30).**  Every
+declaration below was elaborated and ACCEPTED against this pin, in a scratch
+module importing only `Mathlib.AlgebraicGeometry.Modules.Sheaf`.  It is recorded
+here rather than as declarations because this project forbids free-floating code
+and nothing can consume it until one of the two leaves closes — the same reason
+`isInvertibleSheaf_modUnit` and `modTensorSymmIso` spent time as docstring
+one-liners in this file.  `res_res`, `resL_resL`, `res_self` and `resL_self` are
+already declared above in `ModDual` (only `resL_self` is missing there and is
+three lines, the `CommRingCat.id_apply` of `res_self` replaced by
+`ConcreteCategory.id_apply`).
+
+**The crossing lemma is the whole trick**, and it is what the paragraph above
+says cannot be done by defeq: state it with the scalar action in BUNDLED
+`Scheme.Modules.smul` form, so the two sides pin their two different modules
+instead of letting instance search collapse them, and then mathlib's own
+`smul_restrictAppIso_hom_apply` plus `Scheme.Opens.ι_appIso` proves it.
+
+    variable {L : Z.Modules} {U : Z.Opens}
+
+    lemma smul_restrict_eq (W : (U : Scheme.{u}).Opens) (r : Γ((U : Scheme.{u}), W))
+        (x : Γ(L.restrict U.ι, W)) :
+        ((L.restrict U.ι).smul r).hom x = (L.smul r).hom x := by
+      have h := Scheme.Modules.smul_restrictAppIso_hom_apply U.ι L W r x
+      rw [Scheme.Opens.ι_appIso] at h
+      exact h
+
+    /-- A morphism `L|_U ⟶ 𝒪_U`, read as a map of AMBIENT sections. -/
+    noncomputable def trAt (ψ : L.restrict U.ι ⟶ modUnit (U : Scheme.{u}))
+        (W : (U : Scheme.{u}).Opens) (x : Γ(L, U.ι ''ᵁ W)) : Γ(Z, U.ι ''ᵁ W) :=
+      ψ.val.app (op W) x
+
+    noncomputable def trAtInv (χ : modUnit (U : Scheme.{u}) ⟶ L.restrict U.ι)
+        (W : (U : Scheme.{u}).Opens) (r : Γ(Z, U.ι ''ᵁ W)) : Γ(L, U.ι ''ᵁ W) :=
+      χ.val.app (op W) r
+
+    lemma trAt_add (ψ : L.restrict U.ι ⟶ modUnit (U : Scheme.{u}))
+        (W : (U : Scheme.{u}).Opens) (x y : Γ(L, U.ι ''ᵁ W)) :
+        trAt ψ W (x + y) = trAt ψ W x + trAt ψ W y :=
+      map_add (ψ.val.app (op W)).hom x y
+
+    lemma trAt_smul (ψ : L.restrict U.ι ⟶ modUnit (U : Scheme.{u}))
+        (W : (U : Scheme.{u}).Opens) (r : Γ(Z, U.ι ''ᵁ W)) (x : Γ(L, U.ι ''ᵁ W)) :
+        trAt ψ W (r • x) = r * trAt ψ W x := by
+      calc trAt ψ W (r • x)
+          = trAt ψ W ((L.smul r).hom x) := by rw [Scheme.Modules.smul_apply]
+        _ = trAt ψ W (((L.restrict U.ι).smul r).hom x) :=
+            congrArg (trAt ψ W) (smul_restrict_eq W r x).symm
+        _ = r * trAt ψ W x := Scheme.Modules.Hom.app_smul ψ r x
+
+    lemma trAt_nat (ψ : L.restrict U.ι ⟶ modUnit (U : Scheme.{u}))
+        {W W' : (U : Scheme.{u}).Opens} (h : W' ≤ W) (x : Γ(L, U.ι ''ᵁ W)) :
+        trAt ψ W' (L.presheaf.map (homOfLE (Scheme.Hom.image_mono U.ι h)).op x) =
+          Z.presheaf.map (homOfLE (Scheme.Hom.image_mono U.ι h)).op (trAt ψ W x) :=
+      PresheafOfModules.naturality_apply ψ.val (homOfLE h).op x
+
+    lemma trAtInv_trAt (φ : L.restrict U.ι ≅ modUnit (U : Scheme.{u}))
+        (W : (U : Scheme.{u}).Opens) (x : Γ(L, U.ι ''ᵁ W)) :
+        trAtInv φ.inv W (trAt φ.hom W x) = x := by
+      show ((φ.hom ≫ φ.inv).val.app (op W)) x = x
+      rw [φ.hom_inv_id]
+      rfl
+
+    lemma trAt_trAtInv (φ : L.restrict U.ι ≅ modUnit (U : Scheme.{u}))
+        (W : (U : Scheme.{u}).Opens) (r : Γ(Z, U.ι ''ᵁ W)) :
+        trAt φ.hom W (trAtInv φ.inv W r) = r := by
+      show ((φ.inv ≫ φ.hom).val.app (op W)) r = r
+      rw [φ.inv_hom_id]
+      rfl
+
+    lemma le_image_preimage {V : Z.Opens} (hV : V ≤ U) : V ≤ U.ι ''ᵁ (U.ι ⁻¹ᵁ V) := by
+      rw [Scheme.Hom.image_preimage_eq_opensRange_inf, Scheme.Opens.opensRange_ι]
+      exact le_inf hV le_rfl
+
+    section
+    variable (φ : L.restrict U.ι ≅ modUnit (U : Scheme.{u}))
+
+    /-- The trivialization read at an AMBIENT open `V ≤ U`. -/
+    noncomputable def tr {V : Z.Opens} (hV : V ≤ U) (x : Γ(L, V)) : Γ(Z, V) :=
+      Z.presheaf.map (homOfLE (le_image_preimage hV)).op
+        (trAt φ.hom (U.ι ⁻¹ᵁ V) (L.presheaf.map (homOfLE (U.ι.image_preimage_le V)).op x))
+
+    noncomputable def trInv {V : Z.Opens} (hV : V ≤ U) (r : Γ(Z, V)) : Γ(L, V) :=
+      L.presheaf.map (homOfLE (le_image_preimage hV)).op
+        (trAtInv φ.inv (U.ι ⁻¹ᵁ V) (Z.presheaf.map (homOfLE (U.ι.image_preimage_le V)).op r))
+
+    lemma tr_add {V : Z.Opens} (hV : V ≤ U) (x y : Γ(L, V)) :
+        tr φ hV (x + y) = tr φ hV x + tr φ hV y := by
+      simp only [tr, map_add, trAt_add]
+
+    lemma tr_smul {V : Z.Opens} (hV : V ≤ U) (r : Γ(Z, V)) (x : Γ(L, V)) :
+        tr φ hV (r • x) = r * tr φ hV x := by
+      rw [tr, tr, Scheme.Modules.map_smul, trAt_smul, map_mul, res_res, res_self]
+
+    lemma trInv_tr {V : Z.Opens} (hV : V ≤ U) (x : Γ(L, V)) : trInv φ hV (tr φ hV x) = x := by
+      rw [trInv, tr, res_res, res_self, trAtInv_trAt, resL_resL, resL_self]
+
+    lemma tr_trInv {V : Z.Opens} (hV : V ≤ U) (r : Γ(Z, V)) : tr φ hV (trInv φ hV r) = r := by
+      rw [trInv, tr, resL_resL, resL_self, trAt_trAtInv, res_res, res_self]
+
+    lemma tr_injective {V : Z.Opens} (hV : V ≤ U) : Function.Injective (tr φ hV) :=
+      Function.LeftInverse.injective (trInv_tr φ hV)
+
+    lemma tr_nat {V W : Z.Opens} (hV : V ≤ U) (hWV : W ≤ V) (x : Γ(L, V)) :
+        tr φ (hWV.trans hV) (L.presheaf.map (homOfLE hWV).op x) =
+          Z.presheaf.map (homOfLE hWV).op (tr φ hV x) := by
+      have hpre : U.ι ⁻¹ᵁ W ≤ U.ι ⁻¹ᵁ V := fun a ha => hWV ha
+      rw [tr, tr, resL_resL,
+        ← resL_resL L (Scheme.Hom.image_mono U.ι hpre) (U.ι.image_preimage_le V),
+        trAt_nat, res_res, res_res]
+      exact hpre
+
+    /-- The local generator: the preimage of `1`. -/
+    noncomputable def gen {V : Z.Opens} (hV : V ≤ U) : Γ(L, V) := trInv φ hV 1
+
+    lemma tr_gen {V : Z.Opens} (hV : V ≤ U) : tr φ hV (gen φ hV) = 1 := tr_trInv φ hV 1
+
+    /-- **`L` IS FREE OF RANK ONE ON `U`, IN AMBIENT SECTIONS.** -/
+    lemma eq_smul_gen {V : Z.Opens} (hV : V ≤ U) (x : Γ(L, V)) :
+        x = tr φ hV x • gen φ hV := by
+      refine tr_injective φ hV ?_
+      rw [tr_smul, tr_gen, mul_one]
+
+    lemma gen_res {V W : Z.Opens} (hV : V ≤ U) (hWV : W ≤ V) :
+        L.presheaf.map (homOfLE hWV).op (gen φ hV) = gen φ (hWV.trans hV) := by
+      refine tr_injective φ (hWV.trans hV) ?_
+      rw [tr_nat (hV := hV), tr_gen, tr_gen, map_one]
+
+    end
+
+**WHAT IS LEFT FOR THIS LEAF, and the mathematics of it is already checked by
+hand — only the `ModuleCat`/`isoMk` plumbing remains.**  Write `A := U.ι ''ᵁ W`
+for `W : U.Opens`, so `hA : A ≤ U` is `U.ι_image_le W`, and note
+`Γ((modDual L).restrict U.ι, W) = ModDual.DualSec L A` by `rfl`.  Then
+
+* forward: `ψ ↦ ψ.φ ⟨A, le_rfl⟩ (gen φ hA)`.  Additive by `DualSec.add_φ`;
+  `Γ(Z,A)`-linear by `ModDual.dualSec_smul_apply_self`, which is ALREADY PROVEN
+  above and exists for exactly this purpose;
+* backward: `r ↦ ⟨fun V => fun x => tr φ (V.2.trans hA) x * (r restricted to V.1),
+  …⟩`, whose compatibility clause is `tr_nat` + `res_res` + `map_mul`;
+* `forward ∘ backward = id` is `tr_gen` and `res_self`;
+* `backward ∘ forward = id` is `ψ.compat` + `gen_res` + `eq_smul_gen`;
+* naturality in `W` is again `ψ.compat` + `gen_res`.
+
+The template to copy for the plumbing is mathlib's own
+`Scheme.Modules.restrictUnitIso`, which builds an iso of exactly this shape
+(`(fullyFaithfulForget _).preimageIso <| PresheafOfModules.isoMk (fun U ↦ …) …`,
+then `ModuleCat.isoMk` from an `Ab`-iso plus one linearity check). -/
 theorem isInvertibleSheaf_modDual {Z : Scheme.{u}} {L : Z.Modules}
     (_hL : IsInvertibleSheaf L) : IsInvertibleSheaf (modDual L) :=
   sorry
