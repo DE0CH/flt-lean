@@ -81,11 +81,16 @@ form "the pullback ratio is constant"); the `y`-witnesses, the zero map and the
 crossing of the finite kernel by Zariski density are all discharged there.
 `psi_ne_zero_of_two_nsmul_ne_zero` is proven with it.
 
-Still open, and this is the whole remaining mathematics of the file:
+**STATUS AS OF 2026-07-30: exactly TWO leaves remain, and `isDiffChar_add`'s
+doubling branch is closed.** `isDiffChar_mulByHom_two` (`λ([2]) = 2`) is PROVEN,
+along the route its docstring prescribed; the only open declarations in this file
+are
 
 * `exists_diffCharScalar` — the pullback ratio `φ*ω'/ω` is CONSTANT;
-* `isDiffChar_add` — `λ` is additive;
-* `isDiffChar_comp` — `λ` is multiplicative on composites.
+* `isDiffCharCert_add_of_ne` — the chord branch of additivity.
+
+(`isDiffChar_comp` was already proven; `isDiffChar_add` is an assembly over the
+chord branch alone now.)
 
 **Do not attack them from the raw definition.** The section "What the certificate
 really says" below is PROVEN infrastructure written for exactly this purpose:
@@ -109,7 +114,7 @@ identities are the actual remaining content.
 `IsRationalMap.add` is cut, into a doubling branch and a chord branch:
 
 * `isDiffChar_mulByHom_two` — `λ([2]) = 2`, which carries the case `φ = ψ`
-  through `isDiffChar_comp` and `φ + φ = φ ∘ [2]`;
+  through `isDiffChar_comp` and `φ + φ = φ ∘ [2]`. **PROVEN 2026-07-30**;
 * `isDiffCharCert_add_of_ne` — the certificate of a sum at a point where the
   chord formula applies (both maps nonzero at `P`, distinct image
   `x`-coordinates, denominators nonvanishing).
@@ -709,9 +714,9 @@ theorem IsDiffChar.isRationalMap {φ : W.Point →+ W'.Point} {c : F}
 /-! ### The open geometry
 
 The statements below were the six leaves of this cut. `isDiffChar_comp` is now
-PROVEN, and `isDiffChar_add` is now an ASSEMBLY over the two branch leaves
-`isDiffChar_mulByHom_two` and `isDiffCharCert_add_of_ne`; the rest remain open.
-Each is a standard fact
+PROVEN, and so is `isDiffChar_mulByHom_two` (2026-07-30), so `isDiffChar_add` is
+now an ASSEMBLY over the single branch leaf `isDiffCharCert_add_of_ne`.
+Each remaining statement is a standard fact
 about the invariant differential (Silverman, *AEC* III.5); none of them is in
 the mathlib pin, in `~/cs/FLT`, or elsewhere in `Fermat/` — the pin has the
 invariant differential nowhere, and this project has only the universal
@@ -1185,7 +1190,158 @@ statement is not vacuous; note that `IsIsogeny.add` is FALSE (see the falsity
 audit there) — which is exactly why `IsDiffChar` is built over `IsRationalMap`
 rather than over `IsIsogeny`. -/
 
-/-- **LEAF (doubling branch of additivity): `λ([2]) = 2`.**
+/-! #### The doubling branch, PROVEN
+
+`isDiffChar_mulByHom_two` is closed (2026-07-30) by the route its own docstring
+prescribes: verify the certificate through `isDiffCharCert_of_cofinite` +
+`isDiffCharCert_of_reduced`, at the points off the (finite) `2`-torsion. Written out,
+the reduced certificate for the duplication witnesses `(Φ₂, Ψ₂Sq)` of
+`veluPointX_nsmul` is
+
+  `2 · Ψ₂Sq(x)² · ψ₂(2P) = (Φ₂′·Ψ₂Sq − Φ₂·Ψ₂Sq′)(x) · ψ₂(P)`,
+
+and since `Ψ₂Sq(x) = ψ₂(P)²` on the curve (`TorsionCard.eval_Ψ₂Sq_eq_sq`) this is
+`2·ψ₂(P)³·ψ₂(2P) = Wr(x)`, i.e. the duplication formula differentiated. The `y` in
+`ψ₂(2P)` cancels: the four lemmas below split the computation into
+
+* `eval_Φ_two` / `eval_derivative_Φ_two` / `eval_Ψ₂Sq'` / `eval_derivative_Ψ₂Sq` —
+  the explicit polynomials `Φ₂ = X⁴ − b₄X² − 2b₆X − b₈` and
+  `Ψ₂Sq = 4X³ + b₂X² + 2b₄X + b₆` and their derivatives, evaluated;
+* `diffChar_two_wronskian_eval` — the one-variable identity
+  `Wr = 2·(−2(3x² + 2a₂x + a₄)(Φ₂ − xΨ₂Sq) − 4f·Ψ₂Sq − a₁(a₁x + a₃)Φ₂
+        − a₃(a₁x + a₃)Ψ₂Sq)`, a `ring` call once `b₂ … b₈` are expanded;
+* `velu_two_nsmul_coords` — the tangent slope `L` of the doubling, with
+  `L·ψ₂(P) = 3x² + 2a₂x + a₄ − a₁y` and `y(2P)` in terms of `L` and `x(2P)`;
+* `diffChar_two_core` — the point-level algebra, one `linear_combination` over the
+  curve equation (cofactor `−8ψ₂³`), the slope relation (cofactor
+  `4ψ₂³(x − x(2P))`) and `x(2P)·ψ₂² = Φ₂`.
+
+The `y`-witnesses `C, D, E` of `exists_y_witness_two` never have to be written out:
+the reduced certificate carries `E(x)` as a common factor on both sides, so the
+whole content is the `x`-map, exactly as the note on `isDiffCharCert_add_of_ne`
+predicts.
+-/
+
+omit [DecidableEq F] in
+/-- `Φ₂ = X⁴ − b₄X² − 2b₆X − b₈`, evaluated. -/
+theorem eval_Φ_two (W : Affine F) (t : F) :
+    (W.Φ 2).eval t = t ^ 4 - W.b₄ * t ^ 2 - 2 * W.b₆ * t - W.b₈ := by
+  rw [Φ_two]; simp
+
+omit [DecidableEq F] in
+/-- `Φ₂′ = 4X³ − 2b₄X − 2b₆`, evaluated. -/
+theorem eval_derivative_Φ_two (W : Affine F) (t : F) :
+    (derivative (W.Φ 2)).eval t = 4 * t ^ 3 - 2 * W.b₄ * t - 2 * W.b₆ := by
+  rw [Φ_two]
+  simp only [derivative_sub, derivative_mul, derivative_C, derivative_X, derivative_X_pow,
+    zero_mul, zero_add, mul_one, eval_sub, eval_mul, eval_C, eval_X, eval_pow, eval_zero]
+  push_cast
+  ring
+
+omit [DecidableEq F] in
+/-- `Ψ₂Sq = 4X³ + b₂X² + 2b₄X + b₆`, evaluated. -/
+theorem eval_Ψ₂Sq' (W : Affine F) (t : F) :
+    W.Ψ₂Sq.eval t = 4 * t ^ 3 + W.b₂ * t ^ 2 + 2 * W.b₄ * t + W.b₆ := by
+  rw [Ψ₂Sq]; simp
+
+omit [DecidableEq F] in
+/-- `Ψ₂Sq′ = 12X² + 2b₂X + 2b₄`, evaluated. -/
+theorem eval_derivative_Ψ₂Sq (W : Affine F) (t : F) :
+    (derivative W.Ψ₂Sq).eval t = 12 * t ^ 2 + 2 * W.b₂ * t + 2 * W.b₄ := by
+  rw [Ψ₂Sq]
+  simp only [derivative_add, derivative_mul, derivative_C, derivative_X, derivative_X_pow,
+    zero_mul, zero_add, mul_one, eval_add, eval_mul, eval_C, eval_X, eval_pow, eval_zero]
+  push_cast
+  ring
+
+omit [DecidableEq F] in
+/-- **The Wronskian of the duplication `x`-witness pair**, in the shape the
+point-level computation of `isDiffChar_mulByHom_two` produces. Pure `ring` over the
+expansions of `b₂, b₄, b₆, b₈`. -/
+theorem diffChar_two_wronskian_eval (W : Affine F) (t : F) :
+    (derivative (W.Φ 2)).eval t * W.Ψ₂Sq.eval t
+        - (W.Φ 2).eval t * (derivative W.Ψ₂Sq).eval t
+      = 2 * (-2 * (3 * t ^ 2 + 2 * W.a₂ * t + W.a₄)
+              * ((W.Φ 2).eval t - t * W.Ψ₂Sq.eval t)
+            - 4 * (t ^ 3 + W.a₂ * t ^ 2 + W.a₄ * t + W.a₆) * W.Ψ₂Sq.eval t
+            - W.a₁ * (W.a₁ * t + W.a₃) * (W.Φ 2).eval t
+            - W.a₃ * (W.a₁ * t + W.a₃) * W.Ψ₂Sq.eval t) := by
+  rw [eval_Φ_two, eval_derivative_Φ_two, eval_Ψ₂Sq', eval_derivative_Ψ₂Sq, b₂, b₄, b₆, b₈]
+  ring
+
+/-- **The tangent slope of the doubling map, with `y(2P)` in terms of it.** Off the
+`2`-torsion `2 • P = P + P` is `Affine.Point.add_self_of_Y_ne`, whose slope is
+`(3x² + 2a₂x + a₄ − a₁y)/ψ₂(P)`; the `x`-coordinate is not asserted here because
+`veluPointX_nsmul` already supplies it in cleared form. -/
+theorem velu_two_nsmul_coords [W.IsElliptic] {P : W.Point} (hP : (2 : ℕ) • P ≠ 0) :
+    ∃ L : F,
+      L * (2 * veluPointY P + W.a₁ * veluPointX P + W.a₃)
+          = 3 * veluPointX P ^ 2 + 2 * W.a₂ * veluPointX P + W.a₄ - W.a₁ * veluPointY P
+        ∧ veluPointY ((2 : ℕ) • P)
+            = -(L * (veluPointX ((2 : ℕ) • P) - veluPointX P) + veluPointY P)
+              - W.a₁ * veluPointX ((2 : ℕ) • P) - W.a₃ := by
+  cases P with
+  | zero => exact absurd (smul_zero 2) hP
+  | some x y h =>
+    by_cases hy2 : y = -y - W.a₁ * x - W.a₃
+    · refine absurd ?_ hP
+      rw [two_nsmul]
+      exact Affine.Point.add_self_of_Y_eq (by simpa [Affine.negY] using hy2)
+    have hd : (2 * y + W.a₁ * x + W.a₃) ≠ 0 := fun hc => hy2 (by linear_combination hc)
+    have hy2' : y ≠ W.negY x y := by simpa [Affine.negY] using hy2
+    have hdbl : (2 : ℕ) • (Affine.Point.some x y h : W.Point)
+        = Affine.Point.some _ _
+            (Affine.nonsingular_add h h fun hxy => hy2' hxy.right) := by
+      rw [two_nsmul]; exact Affine.Point.add_self_of_Y_ne hy2'
+    refine ⟨W.slope x x y y, ?_, ?_⟩
+    · rw [Affine.slope_of_Y_ne' hy2,
+        show y - (-y - W.a₁ * x - W.a₃) = 2 * y + W.a₁ * x + W.a₃ from by ring]
+      simp only [veluPointX_some, veluPointY_some]
+      exact div_mul_cancel₀ _ hd
+    · rw [hdbl]
+      simp only [veluPointX_some, veluPointY_some, Affine.addY, Affine.negAddY, Affine.addX,
+        Affine.negY]
+
+omit [DecidableEq F] in
+/-- **The point-level algebra behind `λ([2]) = 2`**, isolated from the curve as a
+statement about a field and nothing else. `X₂ = x(2P)` and `Φ = Φ₂(x)` are related
+only by `hx`, and the whole identity is one `linear_combination`. -/
+theorem diffChar_two_core (a₁ a₂ a₃ a₄ a₆ t y L X₂ Φ : F)
+    (hEq : y ^ 2 + a₁ * t * y + a₃ * y = t ^ 3 + a₂ * t ^ 2 + a₄ * t + a₆)
+    (hLd : L * (2 * y + a₁ * t + a₃) = 3 * t ^ 2 + 2 * a₂ * t + a₄ - a₁ * y)
+    (hx : X₂ * (2 * y + a₁ * t + a₃) ^ 2 = Φ) :
+    2 * ((2 * y + a₁ * t + a₃) ^ 2) ^ 2
+        * (2 * (-(L * (X₂ - t) + y) - a₁ * X₂ - a₃) + a₁ * X₂ + a₃)
+      = 2 * (-2 * (3 * t ^ 2 + 2 * a₂ * t + a₄) * (Φ - t * (2 * y + a₁ * t + a₃) ^ 2)
+            - 4 * (t ^ 3 + a₂ * t ^ 2 + a₄ * t + a₆) * (2 * y + a₁ * t + a₃) ^ 2
+            - a₁ * (a₁ * t + a₃) * Φ
+            - a₃ * (a₁ * t + a₃) * (2 * y + a₁ * t + a₃) ^ 2)
+        * (2 * y + a₁ * t + a₃) := by
+  linear_combination (4 * (2 * y + a₁ * t + a₃) ^ 3 * (t - X₂)) * hLd
+    + (-4 * (3 * t ^ 2 + 2 * a₂ * t + a₄ - a₁ * y) * (2 * y + a₁ * t + a₃)
+        - 2 * a₁ * (2 * y + a₁ * t + a₃) ^ 2) * hx
+    + (-8 * (2 * y + a₁ * t + a₃) ^ 3) * hEq
+
+/-- **`[2]` is not the zero homomorphism**, which is what discharges the guard
+clause of `IsDiffChar` for `isDiffChar_mulByHom_two`. Its kernel is finite
+(`finite_nsmulKer`) while `W.Point` is not — `veluPointX` is onto the infinite
+field `F` by `exists_point_veluPointX_eq`. No hypothesis on the characteristic: in
+characteristic `2` the `2`-torsion is smaller still. -/
+theorem mulByHom_two_ne_zero [IsAlgClosed F] [W.IsElliptic] :
+    mulByHom W 2 ≠ (0 : W.Point →+ W.Point) := by
+  intro hc
+  have hall : ∀ P : W.Point, (2 : ℕ) • P = 0 := fun P => by
+    simpa using DFunLike.congr_fun hc P
+  have hfin : ({P : W.Point | (2 : ℕ) • P = 0}).Finite := finite_nsmulKer (W := W) two_ne_zero
+  have huniv : {P : W.Point | (2 : ℕ) • P = 0} = Set.univ :=
+    Set.eq_univ_of_forall fun P => hall P
+  haveI : Finite W.Point := Set.finite_univ_iff.mp (huniv ▸ hfin)
+  haveI : Finite F := Finite.of_surjective (veluPointX (W := W)) fun t => by
+    obtain ⟨P, -, hPx⟩ := exists_point_veluPointX_eq (W := W) t
+    exact ⟨P, hPx⟩
+  exact not_finite F
+
+/-- **PROVEN 2026-07-30 (doubling branch of additivity): `λ([2]) = 2`.**
 
 `[2] : W → W` is rational (`isRationalMap_mulByHom_two`, PROVEN in
 `Isogeny.lean`, with the `x`-witness `Φ₂/ΨSq₂` and the `y`-witness supplied by
@@ -1202,13 +1358,63 @@ duplication formula differentiated. Equivalently, by
 `isDiffCharCert_of_cofinite` it is enough to check it at a generic `P`, where
 every denominator may be inverted.
 
-**THE CHECK THAT WOULD REFUTE THIS LEAF**: an elliptic curve on which the
-pullback of `ω` along `[2]` is not `2·ω`. In characteristic `2` this is still
-true — `λ([2]) = 2 = 0` there, and `[2]` is then inseparable, which is exactly
-the `λ = 0` case the module docstring flags. -/
+**IT HOLDS IN CHARACTERISTIC `2` AS WELL** — `λ([2]) = 2 = 0` there, and `[2]` is
+then inseparable, which is exactly the `λ = 0` case the module docstring flags.
+Nothing in the proof divides by `2`: the guard clause is discharged by
+`mulByHom_two_ne_zero`, which counts points rather than inverting anything, and the
+bad locus is the `2`-torsion, still finite in characteristic `2`. -/
 theorem isDiffChar_mulByHom_two [IsAlgClosed F] [W.IsElliptic] :
-    IsDiffChar (mulByHom W 2) (2 : F) :=
-  sorry
+    IsDiffChar (mulByHom W 2) (2 : F) := by
+  classical
+  obtain ⟨Cp, Dp, Ep, hEp, hyw⟩ := exists_y_witness_two (W := W)
+  have hB : W.ΨSq (2 : ℤ) ≠ 0 := ΨSq_ne_zero' W (by norm_num)
+  have hrat : ∀ P : W.Point, mulByHom W 2 P ≠ 0 →
+      veluPointX (mulByHom W 2 P) * (W.ΨSq (2 : ℤ)).eval (veluPointX P)
+          = (W.Φ (2 : ℤ)).eval (veluPointX P) ∧
+        veluPointY (mulByHom W 2 P) * Ep.eval (veluPointX P)
+          = Cp.eval (veluPointX P) * veluPointY P + Dp.eval (veluPointX P) := by
+    intro P hP
+    refine ⟨?_, hyw P hP⟩
+    have h := veluPointX_nsmul (W := W) (n := 2) (by norm_num) P (by simpa using hP)
+    simp only [Nat.cast_ofNat] at h
+    simpa using h
+  refine ⟨fun hz => absurd hz mulByHom_two_ne_zero, W.Φ (2 : ℤ), W.ΨSq (2 : ℤ),
+    Cp, Dp, Ep, hB, hEp, hrat, ?_⟩
+  -- The certificate need only be checked off the (finite) `2`-torsion, where the
+  -- rational-map relations for `[2]` are available.
+  refine isDiffCharCert_of_cofinite_ne_zero
+    (S := veluPointX '' {P : W.Point | (2 : ℕ) • P = 0})
+    ((finite_nsmulKer (W := W) two_ne_zero).image _) ?_
+  intro P hP0 hPS
+  have h2P : (2 : ℕ) • P ≠ 0 := fun hcc => hPS ⟨P, hcc, rfl⟩
+  have h2P' : mulByHom W 2 P ≠ 0 := by simpa using h2P
+  obtain ⟨hx, hy⟩ := hrat P h2P'
+  refine isDiffCharCert_of_reduced hx hy ?_
+  obtain ⟨L, hLd, hY2⟩ := velu_two_nsmul_coords (W := W) h2P
+  have hEqP0 : W.Equation (veluPointX P) (veluPointY P) := velu_point_equation W hP0
+  -- `Ψ₂Sq(x) = ψ₂(P)²` on the curve, which is what turns the reduced certificate
+  -- into the differentiated duplication formula.
+  have hSq : (W.ΨSq (2 : ℤ)).eval (veluPointX P)
+      = (2 * veluPointY P + W.a₁ * veluPointX P + W.a₃) ^ 2 := by
+    rw [ΨSq_two, show (2 * veluPointY P + W.a₁ * veluPointX P + W.a₃)
+      = (2 * veluPointY P + (W.a₁ * veluPointX P + W.a₃)) from by ring]
+    haveI : (W⁄F).IsElliptic := inferInstanceAs W.IsElliptic
+    exact TorsionCard.eval_Ψ₂Sq_eq_sq W hEqP0
+  have hEqP : veluPointY P ^ 2 + W.a₁ * veluPointX P * veluPointY P
+        + W.a₃ * veluPointY P
+      = veluPointX P ^ 3 + W.a₂ * veluPointX P ^ 2 + W.a₄ * veluPointX P + W.a₆ :=
+    (Affine.equation_iff ..).1 hEqP0
+  have hWr := diffChar_two_wronskian_eval W (veluPointX P)
+  have hcore := diffChar_two_core W.a₁ W.a₂ W.a₃ W.a₄ W.a₆ (veluPointX P) (veluPointY P) L
+    (veluPointX ((2 : ℕ) • P)) ((W.Φ (2 : ℤ)).eval (veluPointX P)) hEqP hLd
+    (by rw [← hSq]; exact hx)
+  have hY2' : veluPointY (mulByHom W 2 P)
+      = -(L * (veluPointX ((2 : ℕ) • P) - veluPointX P) + veluPointY P)
+        - W.a₁ * veluPointX ((2 : ℕ) • P) - W.a₃ := by simpa using hY2
+  have hX2' : veluPointX (mulByHom W 2 P) = veluPointX ((2 : ℕ) • P) := by simp
+  rw [ΨSq_two] at hSq ⊢
+  rw [hWr, hY2', hX2', hSq]
+  linear_combination Ep.eval (veluPointX P) * hcore
 
 /-- **LEAF (chord branch of additivity): the differential certificate of a sum,
 at a generic point.**
