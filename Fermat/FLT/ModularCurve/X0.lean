@@ -65464,6 +65464,23 @@ theorem isReduced_specLoc (R : Subring ℚ) : IsReduced (SpecLoc R) := by
   haveI : _root_.IsReduced ↥R := inferInstance
   infer_instance
 
+/-- **`Spec ↥R` is LOCALLY NOETHERIAN** (PROVEN) — `↥R` is a PID by
+`isPrincipalIdealRing_subring_rat`, hence Noetherian, and `Spec` of a
+Noetherian ring is locally Noetherian.
+
+This is what discharges `isReduced_of_smooth`'s Noetherian hypothesis at
+the single call site below.  Mathlib's reducedness descent along a flat
+morphism carries that hypothesis (with a standing `TODO: get rid of the
+noetherian assumption` in
+`Mathlib/AlgebraicGeometry/Geometrically/Reduced.lean`), so this lemma is
+exactly the price of using it, and the price is zero here because a
+subring of `ℚ` is a PID. -/
+theorem isLocallyNoetherian_specLoc (R : Subring ℚ) : IsLocallyNoetherian (SpecLoc R) := by
+  haveI : IsPrincipalIdealRing ↥R := isPrincipalIdealRing_subring_rat R
+  haveI : IsNoetherianRing ↥R := PrincipalIdealRing.isNoetherianRing
+  haveI : IsNoetherianRing (CommRingCat.of ↥R) := this
+  infer_instance
+
 /-- **`Spec ℚ ⟶ Spec ↥R` hits the GENERIC POINT, and only it** (PROVEN):
 `R.subtype` is injective, so the contraction of the zero ideal of `ℚ` is
 the zero ideal of `↥R`.
@@ -65570,39 +65587,67 @@ theorem eq_of_generic_of_isSeparated (R : Subring ℚ) {Z ZQ BZ : Scheme.{0}}
   exact AlgebraicGeometry.ext_of_isDominant_of_isSeparated bstrZ (by rw [hu, hv])
     genZ.universalPoint.1 huv
 
-/-- **A SCHEME SMOOTH OVER A REDUCED BASE IS REDUCED** (sorry leaf, new
-2026-07-30) — EGA IV 17.5.7 with 11.3.13: a smooth morphism is flat with
-geometrically regular fibres, hence regular, and a scheme regular over a
-reduced base is reduced (EGA IV 3.3.5, or: reducedness of the local rings
-descends from flatness plus reducedness of the fibres and of the base).
+/-- **A SCHEME SMOOTH OVER A REDUCED, LOCALLY NOETHERIAN BASE IS REDUCED**
+(**PROVEN 2026-07-30**, in three lines, from the pin plus one project
+shim) — EGA IV 17.5.7 with 11.3.13, i.e. reducedness descending along a
+smooth morphism.
 
-TRUE and SHALLOW, and it is the only geometric input
-`eq_of_generic_of_isSeparated` still needs from outside mathlib.  Stated
-mathlib-facing — over an arbitrary base scheme `S`, with no mention of `ℚ`,
-`SpecLoc` or Néron models — because it is a general fact and because three
-other open leaves in the Néron block will want it.
+**THE "ABSENT FROM THE PIN" AUDIT THAT USED TO STAND HERE IS WITHDRAWN, AND
+IT IS INSTRUCTIVE WHY IT WAS WRONG.**  It read:
 
-**ABSENT FROM THE PIN, checked by statement shape and not by name**: a
-grep of `Mathlib/AlgebraicGeometry/Properties.lean` for every `IsReduced`
-declaration returns transfers along open immersions, open covers, `Spec`,
-affineness and integrality, and no transfer along ANY morphism property;
-`Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean` mentions `IsReduced`
-once, as a HYPOTHESIS of
-`Scheme.Hom.genericPoint_mem_smoothLocus_of_perfectField`; and
-`Mathlib/RingTheory/Smooth/` and `Mathlib/RingTheory/Etale/` do not
-mention it at all.
+> **ABSENT FROM THE PIN, checked by statement shape and not by name**: a
+> grep of `Mathlib/AlgebraicGeometry/Properties.lean` for every `IsReduced`
+> declaration returns transfers along open immersions, open covers, `Spec`,
+> affineness and integrality, and no transfer along ANY morphism property;
+> `Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean` mentions `IsReduced`
+> once, as a HYPOTHESIS of
+> `Scheme.Hom.genericPoint_mem_smoothLocus_of_perfectField`; and
+> `Mathlib/RingTheory/Smooth/` and `Mathlib/RingTheory/Etale/` do not
+> mention it at all.
 
-**WHERE THE HYPOTHESIS ENTERS.**  `hS` is load-bearing: **drop it and the
+Every one of those four observations is literally TRUE, and the conclusion
+drawn from them is false.  The theorem is at the pin, in a file none of the
+four greps touched, and it is not indexed under `Smooth` at all but under
+`GeometricallyReduced` — a THIRD concept that neither the source property
+nor the target property names:
+
+* `AlgebraicGeometry.GeometricallyReduced.isReduced_of_flat_of_isLocallyNoetherian`
+  (`Mathlib/AlgebraicGeometry/Geometrically/Reduced.lean:106`) descends
+  `IsReduced` along a flat, geometrically reduced morphism over a reduced
+  locally Noetherian base;
+* `AlgebraicGeometry.GeometricallyReduced.of_smooth`
+  (`Fermat/FLT/Mathlib/AlgebraicGeometry/Morphisms/SmoothReduced.lean:241`,
+  already `public import`ed by this module) supplies `GeometricallyReduced`
+  from `Smooth`, over `isReduced_of_smooth_over_field`;
+* `Smooth ⟹ Flat` is `instance [Smooth f] : Flat f`
+  (`Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean:113`).
+
+So the audit's mistake was searching the two properties in the STATEMENT
+(`Smooth`, `IsReduced`) rather than the property the argument FACTORS
+THROUGH.  A negative grep over the files that name your hypothesis and your
+conclusion does not bound the pin; it bounds the files you looked in.
+
+**WHERE THE HYPOTHESES ENTER.**  `hS` is load-bearing: **drop it and the
 statement is FALSE**, the witness being `S := Spec (ℚ[ε]/ε²)` and
 `zstr := 𝟙 S`, which is smooth (an isomorphism) with `Z = S` not reduced.
 So this is not "smoothness implies reduced"; it is reducedness descending
-along a smooth morphism.
+along a smooth morphism.  `hN` is the price of mathlib's proof, not of the
+mathematics — that file carries a standing `TODO: get rid of the noetherian
+hypothesis` — and it costs this development nothing, because the only base
+it is used over here is `Spec ↥R` for `R : Subring ℚ`, which is Noetherian
+by `isLocallyNoetherian_specLoc` above.  It is taken as an explicit
+argument rather than an instance so that the call site is forced to name
+where it comes from.
 
 **NON-VACUITY.**  `S := Spec ℚ`, `Z := Spec ℚ`, `zstr := 𝟙`: smooth over a
-reduced base, and reduced. -/
+reduced Noetherian base, and reduced. -/
 theorem isReduced_of_smooth {S Z : Scheme.{0}} (zstr : Z ⟶ S) (hz : Smooth zstr)
-    (hS : IsReduced S) : IsReduced Z :=
-  sorry
+    (hS : IsReduced S) (hN : IsLocallyNoetherian S) : IsReduced Z := by
+  haveI := hz
+  haveI := hS
+  haveI := hN
+  haveI := GeometricallyReduced.of_smooth zstr
+  exact GeometricallyReduced.isReduced_of_flat_of_isLocallyNoetherian zstr
 
 /-- **NÉRON MODELS EXIST, existence half: an EXTENSION, not a UNIQUE one**
 (sorry leaf, new 2026-07-30, replacing the `∃!` form of
@@ -65698,12 +65743,19 @@ only the first is still open:
   `R`-scheme `Z` are equal, because the generic fibre is dense in `Z`
   (`isDominant_universalPoint_generic`, from flatness) and `Z` is reduced.
 
-Reducedness of `Z` is the one shallow obligation this creates
-(`isReduced_of_smooth`, a sorry leaf); it is supplied with
-`isReduced_specLoc`, which is PROVEN.  This is why the frontier count for
-this block RISES by two while both of its `∃!`-shaped leaves close: the
-`∃!` is disclosed as `∃` plus a density argument plus a reducedness
-transfer, and only the first of those three is deep.
+Reducedness of `Z` is the one further obligation this creates, and it
+turned out NOT to be a leaf: `isReduced_of_smooth` above is PROVEN, from
+mathlib's `GeometricallyReduced.isReduced_of_flat_of_isLocallyNoetherian`
+through this project's `GeometricallyReduced.of_smooth`, with its two base
+hypotheses discharged by `isReduced_specLoc` and
+`isLocallyNoetherian_specLoc` — both PROVEN, the latter over
+`isPrincipalIdealRing_subring_rat`.
+
+So the whole of the `∃!` mapping property is disclosed as three things —
+an EXTENSION, a density argument, and a reducedness transfer — of which
+only the first is still open, and the frontier count for this block
+therefore rises by exactly ONE per leaf closed here (`∃!` in, `∃` out)
+rather than by two.
 
 **WHERE THE HYPOTHESIS ENTERS.**  `abB` is what makes `B` an abelian
 VARIETY — proper, smooth, geometrically connected over `ℚ`, with a group
@@ -65740,7 +65792,8 @@ theorem exists_isNeronModelAtBase (R : Subring ℚ) {B : Scheme.{0}} {bstr : B �
   refine ⟨uZ, ⟨h1, h2⟩, ?_⟩
   rintro uZ' ⟨h1', h2'⟩
   exact eq_of_generic_of_isSeparated R inferInstance
-    (isReduced_of_smooth zstr hz (isReduced_specLoc R)) hsep genZ h1' h1 (h2'.symm.trans h2)
+    (isReduced_of_smooth zstr hz (isReduced_specLoc R) (isLocallyNoetherian_specLoc R))
+    hsep genZ h1' h1 (h2'.symm.trans h2)
 
 /-! #### BLR 7.4/5 SPLIT along the (a)/(b) axis its own audit named
 
@@ -66031,8 +66084,7 @@ theorem exists_abelianSchemeStruct_of_neronModelSpread (R : Subring ℚ)
       ∀ (T : Scheme.{0}) (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R)
         (h : g ≫ SpecLoc.generic R = g₀) (x y : RelPoint bstr g),
         nB.gen.toEquiv g g₀ h (abB.add x y)
-          = abZ.add (nB.gen.toEquiv g g₀ h x) (nB.gen.toEquiv g g₀ h y) :=
- by
+          = abZ.add (nB.gen.toEquiv g g₀ h x) (nB.gen.toEquiv g g₀ h y) := by
   obtain ⟨hproper, hconn⟩ := isProper_geometricallyConnected_of_neronModelSpread R abJ abB abZJ
     genJ hgenJ π hπ hadd hsurj nB spread hspread hsq
   exact exists_abelianSchemeStruct_of_isProper_of_neronModelSpread R abJ abB abZJ genJ hgenJ π hπ
