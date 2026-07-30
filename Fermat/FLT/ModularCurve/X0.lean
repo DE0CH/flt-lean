@@ -25735,10 +25735,121 @@ theorem exists_stableCyclic_j_of_gamma0Datum_algClos {N : ℕ} (hN : N ≠ 0)
   obtain ⟨E', hE', g', hE'j, hg', hstab⟩ := exists_stableCyclic_twist_of_autStable hN E g hg haut
   exact ⟨E', hE', g', hE'j.trans hEj, hg', hstab⟩
 
+/-- **CASE `j = 0`: `p ∈ {2, 3}`** (sorry leaf, cut 2026-07-30 out of
+`mem_mazurIsogenyPrimes_of_stableCyclic_j_special` below, along the `j`-value).
+
+Here `End(E⁄ℚ̄) = ℤ[ζ₃]`, `K = ℚ(ζ₃)`, `disc K = −3`, `h(K) = 1`.  The two cases of
+the parent's argument specialise to:
+
+1. ***`C` is `𝒪_K`-stable***, i.e. `C = E[𝔭]` for a prime `𝔭 ∣ p` of `ℤ[ζ₃]`.
+   Complex conjugation carries `𝔭` to `𝔭̄`, so Galois-stability of `C` forces
+   `𝔭 = 𝔭̄`, i.e. `p` ramifies in `K`, i.e. `p ∣ 3`, i.e. `p = 3`.  (`p` inert is
+   impossible outright: `ℤ[ζ₃]/p` is then a field and `E[p]` has no proper nonzero
+   `𝒪_K`-submodule.)
+2. ***`C` is not `𝒪_K`-stable***.  Then `E/C` has CM by the conductor-`p` order
+   `ℤ + pℤ[ζ₃]`, of discriminant `−3p²`, and the first main theorem of complex
+   multiplication gives `h(−3p²) = 1`.  `h(−3p²) = (p − (−3/p))/3` exceeds `1` for
+   `p ≥ 5`, so `p ∈ {2, 3}`.  PARI/GP `qfbclassno`, re-quoted from the parent:
+   `h(−3p²) = 1, 1, 2, 2, 4, 4, 6, 6, 8, 10, 10` at `p = 2, 3, 5, …, 31`.
+
+Both values really occur, so `p = 2 ∨ p = 3` cannot be sharpened here: `y² = x³ + 1`
+has `j = 0` and the rational `2`-torsion point `(−1, 0)`, and `y² = x³ + 16` has a
+rational `3`-isogeny.
+
+**THIS IS THE MORE EXPENSIVE HALF OF THE CUT, and that is why the cut exists.**  The
+parent's MACHINERY survey records that the CM engine available in this tree —
+`WeierstrassCurve.classNumberOne_of_end_closure_eq_top` in
+`Fermat/FLT/FreyCurve/MazurTorsion.lean`, itself PROVEN — encodes only the orders
+`ℤ[√−n]`, of discriminant `−4n`.  The order needed here is
+`ℤ + pℤ[ζ₃] = ℤ[pζ₃]`, satisfying `(pζ₃)² + p·(pζ₃) + p² = 0`, which is NOT of that
+shape.  So case 2 here owes a genuine generalisation of the encoding to
+`ψ² = [−n] + b·ψ`, on top of the hoist that the `j = 1728` half needs — and that
+asymmetry was invisible while the two `j`-values sat inside one leaf.
+
+Also genuinely missing, and shared with the sibling: `End(E⁄ℚ̄) = ℤ[ζ₃]` at `j = 0`.
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/Aut.lean` covers only
+`j ∉ {0, 1728}`; `SexticTwist.lean`'s `WeierstrassCurve.exists_smul_eq_sexticModel`
+(PROVEN) puts the curve in the form `y² = x³ + b`, which is the natural place to read
+`ψ : (x, y) ↦ (ζ₃x, y)` off.  `WeierstrassCurve.exists_velu_quotient_isogeny_of_subgroup`
+(`Fermat/FLT/EllipticCurve/Velu.lean`, in this module's `public` import cone) supplies
+case 2's `E/C` over `ℚ`, so that step is available rather than missing.
+
+`hp : p.Prime` is load-bearing: at composite order the subgroup need not be
+`𝔭`-torsion for a single prime and neither case closes.  `hstab` is load-bearing too —
+without it every `p` split in `ℚ(ζ₃)` supplies a subgroup, e.g. `p = 31 = 5² + 5 + 1`.
+
+**The check that would refute this leaf**: an elliptic curve over `ℚ` with `j = 0`
+carrying a Galois-stable cyclic subgroup of prime order `p ≥ 5`; equivalently a
+rational point of `Y_0(p)` with CM by an order of discriminant `−3`.  There is
+none. -/
+theorem eq_two_or_eq_three_of_stableCyclic_j_eq_zero {p : ℕ} (hp : p.Prime)
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] (hj : E.j = 0)
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = p)
+    (hstab : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g) :
+    p = 2 ∨ p = 3 :=
+  sorry
+
+/-- **CASE `j = 1728`: `p ∈ {2, 3}`** (sorry leaf, cut 2026-07-30 out of
+`mem_mazurIsogenyPrimes_of_stableCyclic_j_special` below, along the `j`-value).
+
+Here `End(E⁄ℚ̄) = ℤ[i]`, `K = ℚ(i)`, `disc K = −4`, `h(K) = 1`, and both cases give
+`p = 2`:
+
+1. ***`C` is `𝒪_K`-stable***: conjugation forces `p` to ramify in `ℚ(i)`, i.e.
+   `p ∣ 4`, i.e. `p = 2`.
+2. ***`C` is not `𝒪_K`-stable***: `E/C` has CM by `ℤ + pℤ[i]`, of discriminant
+   `−4p²`, so `h(−4p²) = 1`; `h(−4p²) = (p − (−4/p))/2`, and the PARI/GP table
+   re-quoted from the parent — `h(−4p²) = 1, 2, 2, 4, 6, 6, 8, 10, 12, 14, 16` at
+   `p = 2, 3, 5, …, 31` — has `h = 1` only at `p = 2`.
+
+**THE CONCLUSION IS DELIBERATELY WEAKER THAN THE ARGUMENT.**  The truth here is
+`p = 2`; the leaf asks only for `p = 2 ∨ p = 3`, which is what the consumer needs and
+what its sibling can also deliver.  Stating the two halves uniformly keeps the
+assembly a one-line `rcases`, and understating a leaf is the safe direction: a leaf
+stated stronger than its checked argument is the failure mode this file's
+FAITHFULNESS rule is about.  Strengthening this to `p = 2` once it is proven costs
+nothing.
+
+**THIS IS THE CHEAPER HALF, and its blocker is a HOIST rather than new theory.**
+`WeierstrassCurve.classNumberOne_of_end_closure_eq_top` (PROVEN 2026-07-27 over the
+single leaf `exists_represents_one_of_end_closure_eq_top`) says exactly "an elliptic
+curve over `ℚ` with `End(E⁄ℚ̄) = ℤ[ψ]` and `ψ² = [−n]` has `h(−4n) = 1`", in Gauss's
+reduced-form encoding — and `−4n` IS the discriminant shape case 2 needs here.  It
+lives in `Fermat/FLT/FreyCurve/MazurTorsion.lean`, which carries
+`public import Fermat.FLT.ModularCurve.X0`, so it cannot be cited from here; but
+`MazurCMForm` and that theorem depend only on `WeierstrassCurve.End` and on binary
+quadratic forms, both upstream of this module, so the first concrete step is to hoist
+them, not to build anything.
+
+Still genuinely missing, and shared with the sibling: `End(E⁄ℚ̄) = ℤ[i]` at
+`j = 1728`.  `QuarticTwist.lean`'s `WeierstrassCurve.exists_smul_eq_quarticModel`
+(PROVEN) puts the curve in the form `y² = x³ + ax`, which is where
+`ψ : (x, y) ↦ (−x, i·y)` is read off; `Aut.lean` covers only `j ∉ {0, 1728}`.
+
+`hp` and `hstab` are load-bearing exactly as on the sibling.
+
+**The check that would refute this leaf**: an elliptic curve over `ℚ` with
+`j = 1728` carrying a Galois-stable cyclic subgroup of prime order `p ≥ 5`;
+equivalently a rational point of `Y_0(p)` with CM by an order of discriminant `−4`.
+There is none. -/
+theorem eq_two_or_eq_three_of_stableCyclic_j_eq_1728 {p : ℕ} (hp : p.Prime)
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] (hj : E.j = 1728)
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = p)
+    (hstab : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g) :
+    p = 2 ∨ p = 3 :=
+  sorry
+
 /-- **THE CM/RAMIFICATION CORE: an elliptic curve over `ℚ` with `j ∈ {0, 1728}`
 carrying a Galois-stable cyclic subgroup of PRIME order `p` forces
 `p ∈ mazurIsogenyPrimes`** (sorry leaf, opened 2026-07-28 as the arithmetic half
-of the cut of `not_isSpecialJ_of_gamma0Datum_fieldOfModuli` below).
+of the cut of `not_isSpecialJ_of_gamma0Datum_fieldOfModuli` below; **DECOMPOSED
+and PROVEN 2026-07-30** over the two leaves immediately above).
 
 This is the entire arithmetic content of that node, and it is **elementary**: no
 scheme, no moduli space, no datum, no base change — an elliptic curve over `ℚ`, a
@@ -25841,7 +25952,36 @@ that Mazur makes vacuous; but its OWN hypotheses carry no `hmem` and are not
 known to be contradictory except by the CM argument itself, so it must be proved
 on its merits.  `hp : p.Prime` is load-bearing — at composite order the subgroup
 need not be `𝔭`-torsion for a single prime and neither case closes — and so is
-`hstab`: without it every `p` split in `K` supplies a subgroup. -/
+`hstab`: without it every `p` split in `K` supplies a subgroup.
+
+## DECOMPOSED 2026-07-30 ALONG THE `j`-VALUE, WHICH IS THE AXIS THE BLOCKERS LIE ON
+
+This node is no longer a leaf.  The MACHINERY paragraph above already records that
+the two special `j`-values are not equally far from done — "the hoist covers
+`j = 1728`, and a genuine generalisation of the encoding (`ψ² = [−n] + b·ψ`) is
+owed for `j = 0`" — so the two halves have DIFFERENT costs and DIFFERENT missing
+pieces, and welding them into one leaf meant the cheaper one could not be
+dispatched on its own.  The two leaves are
+`eq_two_or_eq_three_of_stableCyclic_j_eq_zero` and
+`eq_two_or_eq_three_of_stableCyclic_j_eq_1728`, immediately below.
+
+**The split is NOT the only thing the assembly does.**  Both leaves are stated with
+the sharp conclusion `p = 2 ∨ p = 3` rather than `p ∈ mazurIsogenyPrimes`, and the
+`Finset`-membership bookkeeping — the only part of this node that was ever
+mechanical — is discharged here, once, by `decide`.  That is the whole of the
+proof below, which is why it is four lines.
+
+Stating the halves sharply is safe and was checked against the two cases: at
+`j = 0` (`K = ℚ(ζ₃)`, `disc = −3`) case 1 gives the ramified prime `3` and case 2
+gives `h(−3·2²) = h(−12) = 1`, so `p ∈ {2, 3}` and both values occur (`y² = x³ + 1`
+carries the rational `2`-torsion point `(−1, 0)`); at `j = 1728`
+(`K = ℚ(i)`, `disc = −4`) case 1 gives only the ramified prime `2` and the table
+above has `h(−4p²) = 1` only at `p = 2`, so the truth there is the strictly sharper
+`p = 2`.  **The `j = 1728` leaf is nevertheless stated as `p = 2 ∨ p = 3`**,
+deliberately: it is the weaker statement, it is what the consumer needs, and a leaf
+stated stronger than its argument has been checked to yield is exactly the shape
+this file's FAITHFULNESS rule warns about.  A successor who proves `p = 2` there may
+of course strengthen it. -/
 theorem mem_mazurIsogenyPrimes_of_stableCyclic_j_special {p : ℕ} (hp : p.Prime)
     (E : WeierstrassCurve ℚ) [E.IsElliptic] (hj : E.j = 0 ∨ E.j = 1728)
     (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = p)
@@ -25849,8 +25989,12 @@ theorem mem_mazurIsogenyPrimes_of_stableCyclic_j_special {p : ℕ} (hp : p.Prime
       WeierstrassCurve.Affine.Point.map
         (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
         AddSubgroup.zmultiples g) :
-    p ∈ mazurIsogenyPrimes :=
-  sorry
+    p ∈ mazurIsogenyPrimes := by
+  have h23 : p = 2 ∨ p = 3 := by
+    rcases hj with hj0 | hj1728
+    · exact eq_two_or_eq_three_of_stableCyclic_j_eq_zero hp E hj0 g hg hstab
+    · exact eq_two_or_eq_three_of_stableCyclic_j_eq_1728 hp E hj1728 g hg hstab
+  rcases h23 with rfl | rfl <;> decide
 
 /-- **A `Γ₀(p)`-datum over `ℚ̄` with field of moduli `ℚ` and `p ∉
 mazurIsogenyPrimes` has `j ∉ {0, 1728}`** (a sorry leaf from 2026-07-28;
