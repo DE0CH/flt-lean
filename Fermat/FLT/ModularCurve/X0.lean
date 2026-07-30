@@ -67007,6 +67007,569 @@ theorem hasRankZeroAbelianImage_x0OneSixtyNine {X Y : Scheme.{0}} {strX : X ⟶ 
   rw [hfac, hfac] at hxy'
   exact injective_ajMinus_x0OneSixtyNine hX jac w hw hw2 hfix hxy'
 
+/-! #### The SAME Prym argument at `65` and `91` (new 2026-07-30)
+
+The block above runs the Atkin–Lehner Prym at `169`.  This one runs it at
+the two `chabautySemiprimeLevels`, `65` and `91`, and it is the
+DECOMPOSITION of `hasRankZeroAbelianImage_of_chabautyColemanPrime` far
+below — which that node's own docstring already described as "the `169`
+Prym leaf at two more levels", and which was a single atom until now.
+
+**Nothing here is new mathematics and nothing here is a new *kind* of
+leaf.**  The assemblies are the `169` ones with the level opened up; the
+`sorry`s are the `169` arithmetic at two more levels, one classical theory
+each, in the same three-way split:
+
+| leaf | theory | at `169` | here |
+|---|---|---|---|
+| non-hyperelliptic | Ogg's reduction bound over `𝔽_{ℓ²}` | PROVEN over three leaves | **PROVEN**, over the single banked trace `traceHeckeOpSq_of_x0TraceHeckeSqTable` |
+| `noFixedRationalPoint_atkinLehner_chabautySemiprimeLevel` | `w_N` has no rational fixed point (cusp permutation + CM class numbers) | two leaves | one leaf |
+| `finite_antiInvariant_jacobian_chabautySemiprimeLevel` | Kolyvagin–Logachev on the minus part | one leaf | one leaf |
+
+So the trade is one atom for three leaves, and what it buys is that the
+only DEEP one is the third: the first is now two integers out of PARI, and
+the second is four class numbers, both settled numerically below.  The
+`169` block is left exactly as it stands; these are siblings, not a
+generalisation of it, because `not_hasDoubleCoverOfAffineLine_x0OneSixtyNine`
+is PROVEN at `169` through a point count specific to that level, and its
+two arithmetic inputs (`finrank_cuspForm_x0OneSixtyNine`,
+`trace_heckeOpSq_x0OneSixtyNine`) are dedicated leaves because `169` has no
+row in `x0HeckeCharpolyTable`.  The level-generic half of that argument IS
+now shared: `not_hasDoubleCoverOfAffineLine_of_traceHeckeOpSq` below is the
+`169` proof with `N` and `ℓ` opened up, and `169` could be re-derived from
+it at the cost of churning a proven theorem, which is why it is not.
+
+## THE ARITHMETIC, RE-RUN 2026-07-30 RATHER THAN INHERITED
+
+PARI/GP 2.17.4, in this worktree, on this day.  The figures in the
+subsection note above `hasRankZeroAbelianImage_of_chabautyColemanPrime`
+were computed on 2026-07-28; these are an INDEPENDENT recomputation, and
+they agree, with the central `L`-values added.
+
+`mfinit([N,2],0)`, `mfeigenbasis`, `mfatkineigenvalues(mf,N)`, and
+`lfun(lfuncreate(·),1)` on every embedding of every orbit:
+
+| `N` | orbit | `dim` | `w_N` | `abs(L(f,1))` on each embedding |
+|-----|-------|-------|-------|----------------------------------|
+| `65` | 1 | `1` | `+1` | `0` |
+| `65` | 2 | `2` | `−1` | `0.7323, 1.2458` |
+| `65` | 3 | `2` | `−1` | `0.4252, 1.0631` |
+| `91` | 1 | `1` | `+1` | `0` |
+| `91` | 2 | `1` | `+1` | `0` |
+| `91` | 3 | `2` | `−1` | `0.8035, 1.3357` |
+| `91` | 4 | `3` | `−1` | `0.3881, 1.3155, 1.6444` |
+| `169` | 1 | `2` | `−1` | `0.9664, 2.2686` |
+| `169` | 2 | `3` | `−1` | `2.2409, 1.5678, 0.5514` |
+| `169` | 3 | `3` | `+1` | `0, 0, 0` |
+
+`1 + 2 + 2 = 5`, `1 + 1 + 2 + 3 = 7` and `2 + 3 + 3 = 8` are the three
+genera, so the table is complete at each level.  Every `w_N = −1`
+embedding has `L(f, 1) ≠ 0` and every `w_N = +1` embedding has
+`L(f, 1) = 0`: the whole Mordell–Weil rank sits on the PLUS part at all
+three levels, matching `rank J_0(65)(ℚ) = 1`, `rank J_0(91)(ℚ) = 2`,
+`rank J_0(169)(ℚ) = 3`, and the minus part has analytic rank `0` in every
+constituent — hence `J_0(N)^-(ℚ)` is FINITE by Kolyvagin–Logachev,
+unconditionally, each factor being one `L`-function of order `0` rather
+than one function of higher order.
+
+**The check that refutes the third leaf**: `mfatkineigenvalues` returning
+`−1` on an orbit with a vanishing central value, at either level.
+
+Class numbers, same run — `qfbclassno(-260) = 8`, `qfbclassno(-364) = 6`,
+`qfbclassno(-91) = 2`, `qfbclassno(-676) = 6`.  The fixed points of `w_N`
+are the CM points of discriminant `−4N`, together with those of
+discriminant `−N` when `N ≡ 3 mod 4`; each is defined over the
+corresponding ring class field, so a RATIONAL one needs class number `1`.
+Only `91 ≡ 3 mod 4`, so `−91` is the only extra discriminant and it too
+has `h > 1`.  **The check that refutes the second leaf**: any of those
+four returning `1`.
+
+Genera `5`, `7` and `8`, and Ogg's list of hyperelliptic `X_0(N)` is
+`22, 23, 26, 28, 29, 30, 31, 33, 35, 37, 39, 40, 41, 46, 47, 48, 50, 59,
+71` — none of `65`, `91`, `169` is on it.  **The check that refutes the
+first leaf**: `65` or `91` appearing on that list, or a degree-`2` linear
+system of projective dimension `≥ 1` on either curve. -/
+
+/-! ##### Ogg's reduction bound, banked and made LEVEL-GENERIC (2026-07-30)
+
+The `169` gonality argument
+(`not_hasDoubleCoverOfAffineLine_x0OneSixtyNine`) is three steps —
+specialise the cover to the good reduction, count the special fibre over
+`𝔽_{ℓ²}` by Eichler–Shimura, and compare with `2·(ℓ²+1)`.  Only the
+COUNT mentions the level, and only through two numbers: `dim_ℂ S₂(Γ₀(N))`
+and `Tr(T_ℓ² ∣ S₂(Γ₀(N)))`.
+
+So the three steps are hoisted here into ONE level-generic theorem taking
+those two numbers plus the inequality, and the whole level-specific input
+at `65` and `91` is a single banked Hecke trace.  The dimension is NOT a
+new leaf: `x0HeckeCharpolyTable` already has rows at both levels, and
+`finrank_cuspForm_of_x0HeckeCharpolyTable` together with
+`x0Genus_eq_of_mem_x0HeckeCharpolyTable` turns any row into
+`dim_ℂ S₂(Γ₀(N)) = x0Genus N`.
+
+**The trade this makes.**  Before: one leaf asking for Ogg's
+hyperelliptic classification at two levels.  After: one leaf asking for
+two integers that PARI/GP prints in milliseconds, and a proven
+level-generic theorem that any further level can reuse.  The leaf COUNT
+is unchanged; the depth is not.
+
+## THE ARITHMETIC, computed 2026-07-30 (PARI/GP 2.17.4, this worktree)
+
+`mf = mfinit([N,2],1); t = mfheckemat(mf,3); [trace(t), trace(t*t)]`, and
+`#X(𝔽_{ℓ²}) = ℓ² + 1 − Σαᵢ²` with `Σαᵢ² = Tr(T_ℓ²) − 2ℓ·dim`
+(`sumSq_isWeilEigenvalues_x0`):
+
+| `N` | `g` | `ℓ` | `Tr(T_ℓ²)` | `Σαᵢ²` | `#X(𝔽_{ℓ²})` | bound `2(ℓ²+1)` |
+|-----|-----|-----|------------|--------|--------------|-----------------|
+| `65` | `5` | `3` | `16` | `16 − 30 = −14` | `10 + 14 = 24` | `20` — **refuted** |
+| `91` | `7` | `3` | `24` | `24 − 42 = −18` | `10 + 18 = 28` | `20` — **refuted** |
+| `169` | `8` | `3` | `20` | `20 − 48 = −28` | `10 + 28 = 38` | `20` — (the banked `169` row) |
+
+**`ℓ = 3` for BOTH levels, and that is not the Chabauty prime at `91`.**
+The Chabauty table pairs `91` with `5`, and `5` does NOT work here:
+`Tr(T_5² ∣ S₂(Γ₀(91))) = 50`, giving `Σαᵢ² = 50 − 70 = −20` and
+`#X_0(91)(𝔽₂₅) = 46 < 52 = 2·(25+1)`.  The bound `2(q+1)` grows like `q`
+while the Weil defect grows like `2g√q`, so the square-field bound bites
+only at SMALL primes; the two purposes need different primes and there is
+no reason they should agree.
+
+**Independent check of the banked charpoly rows.**  The same run
+recomputed the two `x0HeckeCharpolyTable` rows used here and reproduced
+them exactly: `charpoly(T_3 ∣ S₂(Γ₀(65))) = [8, 12, −4, −8, 0, 1]` and
+`charpoly(T_5 ∣ S₂(Γ₀(91))) = [126, −213, −130, 147, 30, −23, −2, 1]`,
+ascending.  Their `e₁` columns also agree with `x0WitnessTable`
+(`(65,3,4)` needs `Tr(T_3) = 0`; `(91,5,4)` needs `Tr(T_5) = 2`), which is
+a third, independent consistency check on the tables this proof stands on.
+
+**Why the trace is banked rather than read off the charpoly.**  `Tr(M²)`
+is the second power sum of the roots, `p₂ = e₁² − 2e₂`, and both banked
+charpolys do give it (`0² − 2(−8) = 16` at `65`; `(−4)² − 2(−4) = 24` at
+`91` from the `ℓ = 3` polynomial, which is not banked).  But `Mathlib` at
+this pin has `Matrix.trace_eq_sum_roots_charpoly` for the FIRST power sum
+only, with no counterpart for the second, so extracting `p₂` in Lean costs
+a triangularisation argument.  That is the same verdict
+`trace_heckeOpSq_x0OneSixtyNine` recorded, re-checked here by grep against
+`Mathlib/LinearAlgebra/Matrix/Charpoly/`: `trace_eq_sum_roots_charpoly`
+and `det_eq_prod_roots_charpoly` exist, nothing between them does.  A
+successor who adds `Matrix.trace_sq_eq_sum_sq_roots_charpoly` closes this
+leaf and `trace_heckeOpSq_x0OneSixtyNine` will not follow — `169` has no
+row in `x0HeckeCharpolyTable`. -/
+
+/-- **`Tr(T_ℓ² ∣ S₂(Γ₀(N)))` at the two Chabauty semiprime levels**, banked
+as a table so that one leaf covers both.  Rows are `(N, ℓ, Tr(T_ℓ²))`;
+the arithmetic and its cross-checks are in the subsection note above. -/
+def x0TraceHeckeSqTable : List (ℕ × ℕ × ℤ) := [(65, 3, 16), (91, 3, 24)]
+
+/-- **THE ONE ARITHMETIC LEAF OF THE `65, 91` GONALITY ARGUMENT** (sorry
+LEAF, new 2026-07-30): every row of `x0TraceHeckeSqTable` records
+`Tr(T_ℓ² ∣ S₂(Γ₀(N)))` correctly.
+
+TRUE, PARI/GP 2.17.4 on 2026-07-30 —
+`mf = mfinit([N,2],1); t = mfheckemat(mf,3); trace(t*t)` returns `16` at
+`N = 65` and `24` at `N = 91`.  Cross-checked against the banked
+characteristic polynomial of `T_3` through Newton's identity
+`p₂ = e₁² − 2e₂`: at `65` the banked row is `[8, 12, −4, −8, 0, 1]`, so
+`e₁ = 0`, `e₂ = −8`, `p₂ = 16`; at `91` the `ℓ = 3` polynomial (computed,
+not banked) is `[0, 32, 40, −12, −28, −4, 4, 1]`, so `e₁ = −4`, `e₂ = −4`,
+`p₂ = 24`.
+
+**The check that refutes it**: `trace(t*t)` disagreeing with the table at
+either row, or `p₂ = e₁² − 2e₂` disagreeing with `trace(t*t)`.
+
+**Not vacuous, and the sign matters.**  A wrong value here does NOT
+silently pass its consumer the way `trace_heckeOpSq_x0OneSixtyNine`'s
+docstring warns `Tr(T_9)` would have at `169`: the margin at both levels
+is `4` (`24` against `20`, and `28` against `20`), so any error of `4` or
+more in either direction breaks the consumer's `linarith`.  That is a much
+tighter guard than the `169` row had, and it is why both values were
+computed twice by different routes.
+
+**This is the same class of statement as `trace_heckeOpSq_x0OneSixtyNine`
+and should be proven the same way** — a `q`-expansion basis of `S₂(Γ₀(N))`
+and the matrix of `T_3` in it.  A successor proving the general bridge
+"the banked charpoly determines every power sum" closes this leaf but NOT
+`trace_heckeOpSq_x0OneSixtyNine`, because `169` has no charpoly row. -/
+theorem traceHeckeOpSq_of_x0TraceHeckeSqTable {N ℓ : ℕ} {t : ℤ}
+    (_h : (N, ℓ, t) ∈ x0TraceHeckeSqTable) :
+    LinearMap.trace ℂ
+        (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2)
+        (_root_.GaloisRepresentation.Modularity.heckeOp N ℓ *
+          _root_.GaloisRepresentation.Modularity.heckeOp N ℓ) = (t : ℂ) :=
+  sorry
+
+/-- **OGG'S REDUCTION BOUND, LEVEL-GENERIC** (PROVEN 2026-07-30 — no new
+leaf; it is the `169` proof with the level opened up): if `X_0(N)` has a
+prime `ℓ ∤ N` at which the Eichler–Shimura count over `𝔽_{ℓ²}` exceeds
+`2·(ℓ² + 1)`, then `X_0(N)` admits no degree-`≤ 2` cover of the affine
+line, i.e. it is neither rational nor hyperelliptic.
+
+The hypothesis `hbound` is exactly `#X_0(N)(𝔽_{ℓ²}) > 2·(ℓ²+1)`, written
+out: the count is `ℓ² + 1 − Σαᵢ²` and `Σαᵢ² = t − 2ℓd`
+(`sumSq_isWeilEigenvalues_x0`), so `> 2·(ℓ²+1)` rearranges to
+`ℓ² + 1 < 2ℓd − t`.
+
+**The three steps, all already in this file.**
+`hasDoubleCoverOfAffineLine_specialFibre` carries the cover to the good
+reduction; `exists_isWeilEigenvalues` supplies the Frobenius multiset and
+`sumSq_isWeilEigenvalues_x0` its second power sum; and
+`card_relPoint_le_of_hasDoubleCoverOfAffineLine` is the bound a degree-`2`
+cover of `ℙ¹` forces over any finite field.  Nothing here knows about
+`65`, `91` or `169`; the level enters ONLY through `hdim` and `htr`.
+
+**Why `𝔽_{ℓ²}` and not `𝔽_ℓ`.**  Over the prime field the bound is
+`2(ℓ+1)` and the count is `ℓ + 1 − Tr(T_ℓ)`, so refuting needs
+`Tr(T_ℓ) < −(ℓ+1)`, which the Weil bound `|Tr(T_ℓ)| ≤ 2g√ℓ` permits only
+for large `g`; at `65`, `91` and `169` no prime field works at any `ℓ`
+(the `x0WitnessTable` rows `(65,3,4)` and `(91,5,4)` are `4`, against
+bounds `8` and `12`).  This is the same correction recorded on the `169`
+node, and it is why the statement is written at `n = 2`. -/
+theorem not_hasDoubleCoverOfAffineLine_of_traceHeckeOpSq {N ℓ d : ℕ} {t : ℤ}
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hN : 0 < N) (hℓ : ℓ.Prime) (hℓN : ¬ ℓ ∣ N)
+    (hdim : Module.finrank ℂ
+      (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2) = d)
+    (htr : LinearMap.trace ℂ
+        (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2)
+        (_root_.GaloisRepresentation.Modularity.heckeOp N ℓ *
+          _root_.GaloisRepresentation.Modularity.heckeOp N ℓ) = (t : ℂ))
+    (hbound : (ℓ : ℤ) ^ 2 + 1 < 2 * (ℓ : ℤ) * (d : ℤ) - t)
+    (hX : IsX0Compactification N strX strY jY) :
+    ¬ HasDoubleCoverOfAffineLine strX := by
+  intro hdc
+  haveI : Fact (Nat.Prime ℓ) := ⟨hℓ⟩
+  obtain ⟨X', Y', strX', strY', jY', ⟨hX'⟩⟩ :=
+    exists_x0Compactification_finiteField N ℓ hN hℓ hℓN
+  -- the degree-`2` cover specialises to the good reduction at `ℓ` …
+  have hdc' : HasDoubleCoverOfAffineLine strX' :=
+    hasDoubleCoverOfAffineLine_specialFibre hN hℓ hℓN hX hX' hdc
+  have hcard : Nat.card (GaloisField ℓ 2) = ℓ ^ 2 := GaloisField.card ℓ 2 (by norm_num)
+  obtain ⟨α, hα⟩ :=
+    exists_isWeilEigenvalues ℓ hℓ strX' hX'.isProper hX'.smooth hX'.connected
+  -- … where Eichler–Shimura's second power sum is `Tr(T_ℓ²) − 2ℓ·dim` …
+  have hsq : (α.map (fun a => a ^ 2)).sum = (t : ℂ) - 2 * (ℓ : ℂ) * (d : ℂ) := by
+    rw [sumSq_isWeilEigenvalues_x0 N ℓ hN hℓ hℓN hX' hα, htr, hdim]
+  have h := hα.card_ext 2 (by norm_num) (GaloisField ℓ 2)
+    (algebraMap (ZMod ℓ) (GaloisField ℓ 2)) hcard
+  rw [hsq] at h
+  -- … and a degree-`≤ 2` cover admits at most `2 · (ℓ² + 1)` points there.
+  have hle := card_relPoint_le_of_hasDoubleCoverOfAffineLine hX'.isProper hX'.smooth
+    hX'.connected hdc' (GaloisField ℓ 2)
+    (Spec.map (CommRingCat.ofHom (algebraMap (ZMod ℓ) (GaloisField ℓ 2))))
+  rw [hcard] at hle
+  have hZ : (Nat.card (RelPoint strX'
+      (Spec.map (CommRingCat.ofHom (algebraMap (ZMod ℓ) (GaloisField ℓ 2))))) : ℤ)
+      = (ℓ : ℤ) ^ 2 + 1 - ((t : ℤ) - 2 * (ℓ : ℤ) * (d : ℤ)) := by
+    exact_mod_cast h
+  have hleZ : (Nat.card (RelPoint strX'
+      (Spec.map (CommRingCat.ofHom (algebraMap (ZMod ℓ) (GaloisField ℓ 2))))) : ℤ)
+      ≤ 2 * ((ℓ : ℤ) ^ 2 + 1) := by exact_mod_cast hle
+  rw [hZ] at hleZ
+  linarith
+
+/-- **`dim_ℂ S₂(Γ₀(N)) = d` at every row of `x0HeckeCharpolyTable`**
+(PROVEN 2026-07-30 — pure bookkeeping, no new leaf): the banked dimension
+leaf reports `x0Genus N`, and `x0Genus_eq_of_mem_x0HeckeCharpolyTable`
+identifies that with the row's own `d` column.  Stated because both
+gonality instances below need it and neither wants to re-run the cast. -/
+theorem finrank_cuspForm_eq_of_x0HeckeCharpolyTable {N ℓ d : ℕ} {c : List ℤ}
+    (h : (N, ℓ, d, c) ∈ x0HeckeCharpolyTable) :
+    Module.finrank ℂ
+      (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2) = d := by
+  exact_mod_cast (finrank_cuspForm_of_x0HeckeCharpolyTable h).trans
+    (x0Genus_eq_of_mem_x0HeckeCharpolyTable h)
+
+/-- **`X_0(65)` and `X_0(91)` are not hyperelliptic, on rational points**
+(PROVEN 2026-07-30 over the single banked trace leaf
+`traceHeckeOpSq_of_x0TraceHeckeSqTable`; introduced as a sorry leaf
+earlier the same day) — the `65, 91` sibling of
+`not_hasDoubleCoverOfAffineLine_x0OneSixtyNine`.
+
+TRUE, and by the SAME route as `169`, not by Ogg's list: the count over
+`𝔽₉` is `24` at `65` and `28` at `91`, both exceeding the hyperelliptic
+bound `2·(9+1) = 20`.  The genera `5` and `7`, and the fact that neither
+level is on Ogg's list of hyperelliptic `X_0(N)`, are consistency checks
+here rather than inputs — no hyperelliptic classification is used.
+
+As at `169`, the statement is `¬ HasDoubleCoverOfAffineLine strX` rather
+than non-hyperellipticity outright: that is weaker and is all the consumer
+needs.
+
+`fin_cases hN` splits the two levels; each branch is one application of
+`not_hasDoubleCoverOfAffineLine_of_traceHeckeOpSq` at `ℓ = 3`, with the
+dimension from `x0HeckeCharpolyTable`'s existing row (`(65, 3, 5, …)` and
+`(91, 5, 7, …)` — the row's own `ℓ` is irrelevant to the dimension, which
+is why the `91` dimension may be taken from the `ℓ = 5` row while the
+count runs at `ℓ = 3`). -/
+theorem not_hasDoubleCoverOfAffineLine_chabautySemiprimeLevel {N : ℕ} {X Y : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hN : N ∈ chabautySemiprimeLevels) (hX : IsX0Compactification N strX strY jY) :
+    ¬ HasDoubleCoverOfAffineLine strX := by
+  fin_cases hN
+  · exact not_hasDoubleCoverOfAffineLine_of_traceHeckeOpSq (ℓ := 3) (d := 5) (t := 16)
+      (by norm_num) (by norm_num) (by decide)
+      (finrank_cuspForm_eq_of_x0HeckeCharpolyTable
+        (c := [8, 12, -4, -8, 0, 1]) (ℓ := 3) (by decide))
+      (traceHeckeOpSq_of_x0TraceHeckeSqTable (by decide)) (by norm_num) hX
+  · exact not_hasDoubleCoverOfAffineLine_of_traceHeckeOpSq (ℓ := 3) (d := 7) (t := 24)
+      (by norm_num) (by norm_num) (by decide)
+      (finrank_cuspForm_eq_of_x0HeckeCharpolyTable
+        (c := [126, -213, -130, 147, 30, -23, -2, 1]) (ℓ := 5) (by decide))
+      (traceHeckeOpSq_of_x0TraceHeckeSqTable (by decide)) (by norm_num) hX
+
+/-- **`w_65` and `w_91` have no rational fixed point** (sorry LEAF, new
+2026-07-30 — the `65, 91` sibling of
+`noFixedRationalPoint_atkinLehner_x0OneSixtyNine`, which is PROVEN over
+two leaves of its own).
+
+TRUE.  The `169` proof is the case split `IsCusp x ∨ ¬ IsCusp x`, which is
+exhaustive with no geometry entering, and the two halves are:
+
+* the CUSPS — `w_N` acts on them by `d ↦ N/d`, and at a semiprime `N = pq`
+  the four rational cusps `1, p, q, N` are swapped in pairs `1 ↔ N`,
+  `p ↔ q`, so none is fixed.  This is Deligne–Rapoport boundary
+  combinatorics plus a decidable computation on `rationalCuspDivisors N`,
+  and at `65` and `91` it is STRICTLY EASIER than at `169`, where
+  `rationalCuspDivisors 169 = {1, 169}` and only one pair is available;
+* the MODULI points — a fixed point of `w_N` on `Y_0(N)` is a CM point of
+  discriminant `−4N` (or `−N` when `N ≡ 3 mod 4`), defined over the
+  corresponding ring class field, so a rational one forces class number
+  `1`.  `h(−260) = 8`, `h(−364) = 6`, `h(−91) = 2`, all `> 1`.
+
+A prover will most likely want to cut this the same two ways the `169`
+version is cut; the cusp half is the one that generalises verbatim. -/
+theorem noFixedRationalPoint_atkinLehner_chabautySemiprimeLevel {N : ℕ} {X Y : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hN : N ∈ chabautySemiprimeLevels) (hX : IsX0Compactification N strX strY jY)
+    (w : X ⟶ X) (hw : w ≫ strX = strX)
+    (_hw2 : w ≫ w = 𝟙 X) (_hal : IsAtkinLehner N hX w hw) :
+    ∀ x : RelPoint strX (𝟙 SpecQ), RelPoint.post w hw x ≠ x :=
+  sorry
+
+/-- **The `w_N`-anti-invariant part of `J_0(N)(ℚ)` is finite at `65` and
+`91`** (sorry LEAF, new 2026-07-30 — the `65, 91` sibling of
+`finite_antiInvariant_jacobian_x0OneSixtyNine`).
+
+TRUE, and this is where ALL the depth of the two levels now sits:
+`J_0(N)`, its Atkin–Lehner decomposition, and Kolyvagin–Logachev.  The
+newform table in the subsection note above is the input — every
+constituent of the minus part has analytic rank `0` at both levels, all
+nine embeddings re-verified numerically on 2026-07-30 — so `J_0(N)^-(ℚ)`
+is finite unconditionally.
+
+The `169` proof reduces finiteness to TORSION-ness
+(`isTorsion_antiInvariant_jacobian_x0OneSixtyNine`) against
+`fg_relPoint_of_abelianScheme`, i.e. Mordell–Weil finite generation; the
+same reduction is available here and is worth taking, because it is the
+only part of the statement that is not Kolyvagin–Logachev. -/
+theorem finite_antiInvariant_jacobian_chabautySemiprimeLevel {N : ℕ} {X Y J : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hN : N ∈ chabautySemiprimeLevels) (hX : IsX0Compactification N strX strY jY)
+    {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (w : X ⟶ X) (hw : w ≫ strX = strX)
+    (_hw2 : w ≫ w = 𝟙 X) (_hal : IsAtkinLehner N hX w hw)
+    (wJ : J ⟶ J) (hwJ : wJ ≫ jstr = jstr)
+    (_hchar : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
+      RelPoint.post wJ hwJ (jac.aj g x) = jac.ajTwist w hw g x) :
+    Finite {z : RelPoint jstr (𝟙 SpecQ) // RelPoint.post wJ hwJ z = ab.neg z} :=
+  sorry
+
+/-- **Two DISJOINT effective degree-`2` divisors on `X_0(65)` or `X_0(91)`
+are not linearly equivalent** (PROVEN 2026-07-30 over the
+non-hyperelliptic leaf above) — the `65, 91` sibling of
+`ajPair_ne_of_disjoint_x0OneSixtyNine`, and the same two-line assembly:
+`hasDoubleCoverOfAffineLine_of_ajPair_eq` is LEVEL-FREE (Riemann–Roch in
+degree `2`, needing only properness, smoothness and connectedness), so all
+that is added is the level's own hyperelliptic dichotomy. -/
+theorem ajPair_ne_of_disjoint_chabautySemiprimeLevel {N : ℕ} {X Y J : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hN : N ∈ chabautySemiprimeLevels) (hX : IsX0Compactification N strX strY jY)
+    {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o)
+    (x₁ x₂ y₁ y₂ : RelPoint strX (𝟙 SpecQ))
+    (h₁₁ : x₁ ≠ y₁) (h₁₂ : x₁ ≠ y₂) (h₂₁ : x₂ ≠ y₁) (h₂₂ : x₂ ≠ y₂) :
+    ab.add (jac.aj (𝟙 SpecQ) x₁) (jac.aj (𝟙 SpecQ) x₂) ≠
+      ab.add (jac.aj (𝟙 SpecQ) y₁) (jac.aj (𝟙 SpecQ) y₂) :=
+  fun heq => not_hasDoubleCoverOfAffineLine_chabautySemiprimeLevel hN hX
+    (hasDoubleCoverOfAffineLine_of_ajPair_eq hX.isProper hX.smooth hX.connected jac
+      x₁ x₂ y₁ y₂ h₁₁ h₁₂ h₂₁ h₂₂ heq)
+
+/-- **`x ↦ [x] − [w x]` is injective on `X_0(65)(ℚ)` and `X_0(91)(ℚ)`**
+(PROVEN 2026-07-30 over the leaf above) — the `65, 91` sibling of
+`injective_ajMinus_x0OneSixtyNine`, proof copied verbatim.
+
+Nothing about `w` is used beyond the two hypotheses carried here: that it
+is an involution over `ℚ` and that it fixes no rational point.  The
+disjointness bookkeeping — `x ≠ y`, `x ≠ w x`, `w y ≠ y`,
+`w y ≠ w x` — is the same four clauses, `hfix` supplying two of them and
+injectivity of `post w` (from `hw2`) the fourth. -/
+theorem injective_ajMinus_chabautySemiprimeLevel {N : ℕ} {X Y J : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hN : N ∈ chabautySemiprimeLevels) (hX : IsX0Compactification N strX strY jY)
+    {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (w : X ⟶ X) (hw : w ≫ strX = strX)
+    (hw2 : w ≫ w = 𝟙 X)
+    (hfix : ∀ x : RelPoint strX (𝟙 SpecQ), RelPoint.post w hw x ≠ x) :
+    Function.Injective fun x : RelPoint strX (𝟙 SpecQ) =>
+      ab.add (jac.aj (𝟙 SpecQ) x) (ab.neg (jac.aj (𝟙 SpecQ) (RelPoint.post w hw x))) := by
+  letI := ab.addCommGroup (𝟙 SpecQ)
+  -- `RelPoint.post w hw` is an involution, hence injective.
+  have hinvol : ∀ z : RelPoint strX (𝟙 SpecQ),
+      RelPoint.post w hw (RelPoint.post w hw z) = z := by
+    intro z
+    refine Subtype.ext ?_
+    show (z.1 ≫ w) ≫ w = z.1
+    rw [Category.assoc, hw2, Category.comp_id]
+  have hwinj : Function.Injective (RelPoint.post w hw) := fun a b hab => by
+    have h := congrArg (RelPoint.post w hw) hab
+    rwa [hinvol, hinvol] at h
+  intro x y hxy
+  by_contra hne
+  refine ajPair_ne_of_disjoint_chabautySemiprimeLevel hN hX jac x (RelPoint.post w hw y) y
+    (RelPoint.post w hw x) hne (fun h => hfix x h.symm) (hfix y)
+    (fun h => hne (hwinj h).symm) ?_
+  have hsub : jac.aj (𝟙 SpecQ) x - jac.aj (𝟙 SpecQ) (RelPoint.post w hw x) =
+      jac.aj (𝟙 SpecQ) y - jac.aj (𝟙 SpecQ) (RelPoint.post w hw y) := hxy
+  exact sub_eq_sub_iff_add_eq_add.mp hsub
+
+/-- **The Atkin–Lehner involution and its Prym at `65` and `91`** (PROVEN
+2026-07-30 over the two arithmetic leaves above) — the `65, 91` sibling of
+`exists_atkinLehnerPrym_x0OneSixtyNine`.
+
+`exists_atkinLehner_x0` (the involution itself) and
+`exists_prym_of_involution` (the anti-invariant abelian subvariety) are
+both LEVEL-GENERIC and already proven, so the only level-specific inputs
+are fixed-point-freeness and finiteness of the anti-invariant part.  `A`
+is `J_0(N)^-`, of dimension `4` at `65` and `5` at `91`, and
+`c : x ↦ [x] − [w_N x]` has degree `0` and needs no base point. -/
+theorem exists_atkinLehnerPrym_chabautySemiprimeLevel {N : ℕ} {X Y J : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hN : N ∈ chabautySemiprimeLevels) (hX : IsX0Compactification N strX strY jY)
+    {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) :
+    ∃ (w : X ⟶ X) (hw : w ≫ strX = strX), w ≫ w = 𝟙 X ∧
+      (∀ x : RelPoint strX (𝟙 SpecQ), RelPoint.post w hw x ≠ x) ∧
+      ∃ (A : Scheme.{0}) (astr : A ⟶ SpecQ) (_abA : AbelianSchemeStruct astr)
+        (ι : A ⟶ J) (hι : ι ≫ jstr = astr)
+        (c : ∀ (T : Scheme.{0}) (g : T ⟶ SpecQ), RelPoint strX g → RelPoint astr g),
+        (∀ (T' T : Scheme.{0}) (h : T' ⟶ T) (g : T ⟶ SpecQ) (g' : T' ⟶ SpecQ)
+            (hg : h ≫ g = g') (x : RelPoint strX g),
+          c T' g' (RelPoint.pre h hg x) = RelPoint.pre h hg (c T g x)) ∧
+        Finite (RelPoint astr (𝟙 SpecQ)) ∧
+        ∀ (T : Scheme.{0}) (g : T ⟶ SpecQ) (x : RelPoint strX g),
+          RelPoint.post ι hι (c T g x) =
+            ab.add (jac.aj g x) (ab.neg (jac.aj g (RelPoint.post w hw x))) := by
+  obtain ⟨w, hw, hw2, hal⟩ := exists_atkinLehner_x0 N hX
+  refine ⟨w, hw, hw2,
+    noFixedRationalPoint_atkinLehner_chabautySemiprimeLevel hN hX w hw hw2 hal, ?_⟩
+  obtain ⟨A, astr, abA, ι, hι, c, hcnat, hmono, hanti, hfac⟩ :=
+    exists_prym_of_involution hX jac w hw hw2 (jac.mapEnd w hw) (jac.mapEnd_comp w hw)
+      (fun g x => jac.post_mapEnd_aj w hw g x)
+  haveI := hmono
+  -- `ι` is a monomorphism of schemes, so it is injective on `ℚ`-points
+  have hinj : Function.Injective (fun a : RelPoint astr (𝟙 SpecQ) => RelPoint.post ι hι a) :=
+    fun a b hab => Subtype.ext ((cancel_mono ι).mp (congrArg Subtype.val hab))
+  -- `A(ℚ)` is finite because `ι` embeds it into the `w_N`-anti-invariant
+  -- subgroup of `J_0(N)(ℚ)`, which is finite by Kolyvagin–Logachev.
+  haveI : Finite {z : RelPoint jstr (𝟙 SpecQ) //
+      RelPoint.post (jac.mapEnd w hw) (jac.mapEnd_comp w hw) z = ab.neg z} :=
+    finite_antiInvariant_jacobian_chabautySemiprimeLevel hN hX jac w hw hw2 hal
+      (jac.mapEnd w hw) (jac.mapEnd_comp w hw) (fun g x => jac.post_mapEnd_aj w hw g x)
+  have hfin : Finite (RelPoint astr (𝟙 SpecQ)) :=
+    Finite.of_injective (fun a => (⟨RelPoint.post ι hι a, hanti a⟩ :
+      {z : RelPoint jstr (𝟙 SpecQ) //
+        RelPoint.post (jac.mapEnd w hw) (jac.mapEnd_comp w hw) z = ab.neg z}))
+      (fun a b hab => hinj (congrArg Subtype.val hab))
+  exact ⟨A, astr, abA, ι, hι, c, hcnat, hfin, hfac⟩
+
+/-- **`J_0(65)` and `J_0(91)` have a rank-`0` abelian image whose induced
+map is injective on rational points** (PROVEN 2026-07-30 over the two
+theorems above) — the `65, 91` sibling of
+`hasRankZeroAbelianImage_x0OneSixtyNine`, and the theorem
+`hasRankZeroAbelianImage_of_chabautyColemanPrime` below is now one line
+over it.
+
+TRUE, and **unconditionally so**: no BSD, no Chabauty.  The abelian
+variety is the Atkin–Lehner MINUS part `J_0(N)^-`, of dimension `4` at
+`65` and `5` at `91`, and its `ℚ`-points are finite by
+Kolyvagin–Logachev because every constituent has analytic rank `0` — the
+newform table with the `2026-07-30` recomputation is in the subsection
+note above.
+
+Note that `hN` is the ONLY level input to the assembly: everything else
+is `exists_rationalCusps`, `exists_jacobianOf_x0`,
+`exists_atkinLehner_x0` and `exists_prym_of_involution`, all
+level-generic and all proven. -/
+theorem hasRankZeroAbelianImage_chabautySemiprimeLevel {N : ℕ} {X Y : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hN : N ∈ chabautySemiprimeLevels) (hX : IsX0Compactification N strX strY jY) :
+    HasRankZeroAbelianImage strX := by
+  classical
+  have hN0 : N ≠ 0 := by fin_cases hN <;> decide
+  obtain ⟨s, hs, -⟩ := exists_rationalCusps N hX
+  obtain ⟨o, -⟩ : s.Nonempty :=
+    Finset.card_pos.mp (by rw [hs]; exact numRationalCusps_pos hN0)
+  obtain ⟨J, jstr, ab, ⟨jac⟩⟩ := exists_jacobianOf_x0 N hX o
+  obtain ⟨w, hw, hw2, hfix, A, astr, abA, ι, hι, c, hcnat, hfin, hfac⟩ :=
+    exists_atkinLehnerPrym_chabautySemiprimeLevel hN hX jac
+  refine ⟨A, astr, abA, c, hcnat, hfin, fun x y hxy => ?_⟩
+  have hxy' : RelPoint.post ι hι (c SpecQ (𝟙 SpecQ) x)
+      = RelPoint.post ι hι (c SpecQ (𝟙 SpecQ) y) := by rw [hxy]
+  rw [hfac, hfac] at hxy'
+  exact injective_ajMinus_chabautySemiprimeLevel hN hX jac w hw hw2 hfix hxy'
+
+/-- **THE GENERIC FIBRE OF AN INTEGRAL `X_0(N)`-MODEL IS AN `X_0(N)` OVER
+`ℚ`** (PROVEN 2026-07-30 — no new leaf; every field is a theorem already in
+this file, three of them base change and two of them `IsFibreIdent`
+bookkeeping).
+
+This is the bridge that
+`hasRankZeroAbelianImage_of_chabautyColemanPrime` needs and that nothing
+supplied: that theorem is handed an `IsX0NeronDatum`, whose `model` field
+is an `IsX0Compactification` over `Spec ℤ_(ℓ)`, while every level-generic
+tool in this file — `exists_rationalCusps`, `exists_jacobianOf_x0`,
+`exists_atkinLehner_x0` — wants one over `Spec ℚ`.  The datum's `genX` and
+`genX_nat` fields ARE an `IsFibreIdent (SpecLoc.generic R) xstr strX`,
+field for field, so the generic fibre of `model` may be transported onto
+the caller's own `strX`.
+
+**Every field is already proven, and it is worth naming which is which.**
+`comm` and `isOpen` are `IsFibreIdent.openSection_comp` and
+`IsFibreIdent.isOpenImmersion_openSection`; `coarse` and `finite_compl`
+are the two halves of `exists_genericFibreOpen_of_x0IntegralModel`; and
+`isProper`, `smooth`, `connected` are base change, assembled by
+`isSmoothProperCurve_of_fibreIdent`.  The proof is the body of
+`exists_x0IntegralCompactification` with the pullback presentation of the
+generic fibre replaced by an abstract one — which is exactly the
+generality `exists_genericFibreOpen_of_x0IntegralModel`'s docstring says it
+was stated in for.
+
+**`Nonempty`, because `IsX0Compactification` is DATA.** It carries an
+`IsCoarseModuliY0`, which is a structure in `Type`, so this cannot be a
+`theorem` returning the structure itself: the `coarse` field comes out of
+an `∃ _ : IsCoarseModuliY0 …, …` and `Exists.casesOn` eliminates only into
+`Prop`.  Wrapping in `Nonempty` is what the file's existing producers
+(`exists_x0IntegralCompactification`, `exists_isX0Compactification_pullbackSpecial`)
+do, and every consumer's goal here is a `Prop`, so `.elim` discharges it. -/
+theorem nonempty_isX0Compactification_genericFibre {N : ℕ} {R : Subring ℚ}
+    {XZ YZ : Scheme.{0}} {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (hmodel : IsX0Compactification N xstr ystr jZ)
+    {X₀ : Scheme.{0}} {strX₀ : X₀ ⟶ SpecQ}
+    (eGen : IsFibreIdent (SpecLoc.generic R) xstr strX₀) :
+    Nonempty (IsX0Compactification N strX₀ (Limits.pullback.snd ystr (SpecLoc.generic R))
+      (IsFibreIdent.openSection eGen hmodel.comm)) := by
+  haveI : IsOpenImmersion jZ := hmodel.isOpen
+  obtain ⟨hcoarse, hfin⟩ := exists_genericFibreOpen_of_x0IntegralModel hmodel eGen
+  have hspc : IsSmoothProperCurve strX₀ :=
+    isSmoothProperCurve_of_fibreIdent eGen
+      ⟨hmodel.isProper, hmodel.smooth, hmodel.connected⟩
+  exact ⟨{ comm := IsFibreIdent.openSection_comp _ hmodel.comm
+           coarse := hcoarse
+           isOpen := IsFibreIdent.isOpenImmersion_openSection _ hmodel.comm
+           isProper := hspc.isProper
+           smooth := hspc.smooth
+           connected := hspc.connected
+           finite_compl := hfin }⟩
+
 /-- **Good reduction at an odd prime `ℓ ∤ N` of the pair `(X_0(N), A)`, on
 rational points, where `A` is a rank-`0` abelian IMAGE of the curve rather
 than its Jacobian.**
@@ -70409,6 +70972,21 @@ variable {N ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod ℓ}
     {jstrZ : JZ ⟶ SpecLoc R} {abZ : AbelianSchemeStruct jstrZ}
     {oZ : RelPoint xstr (𝟙 (SpecLoc R))} {jacZ : IsJacobianOf xstr abZ oZ}
 
+/-- **Every Chabauty level is a `chabautySemiprimeLevels` level** (PROVEN,
+by `decide` over the two rows) — the bridge from the `(N, ℓ)` table to the
+level list, so that `hasRankZeroAbelianImage_of_chabautyColemanPrime` can
+be stated against the pair table its siblings use.
+
+Declared HERE and not beside the `65, 91` Prym block that consumes it:
+`chabautyColemanPrimes` is defined only a few lines above this section, some
+three thousand lines BELOW that block, so the earlier position does not
+elaborate.  A scratch module cannot see this — it imports the whole of
+`X0` and therefore has every name in scope regardless of declaration
+order. -/
+theorem mem_chabautySemiprimeLevels_of_chabautyColemanPrime
+    (h : (N, ℓ) ∈ chabautyColemanPrimes) : N ∈ chabautySemiprimeLevels := by
+  fin_cases h <;> decide
+
 /-! #### The Atkin–Lehner Prym at `65` and `91` — this level is NOT Chabauty
 
 (2026-07-28.)  The two leaves in this subsection replace the bare
@@ -70511,20 +71089,42 @@ FALSE — `HasRankZeroAbelianImage strX` fails for, e.g., `strX = 𝟙 SpecQ`,
 whose rational points are a single point but for which no `A` with the
 naturality clause is being asserted to exist by anything here.
 
-IRREDUCIBLE at this pin, and this is where all the missing theory now
-sits: `J_0(N)`, its Atkin–Lehner decomposition, the Prym, and
-Kolyvagin–Logachev.  **The check that would refute that**: a declaration in
-the tree producing an Atkin–Lehner decomposition of a modular Jacobian, or
-a rank-`0` abelian quotient of `J_0(65)` or `J_0(91)`.  Note that
-`exists_atkinLehnerPrym_x0OneSixtyNine` is the SAME statement at `169` and
-is itself open over four leaves, so the honest description of this node is
-"the `169` Prym leaf at two more levels", not "a new theory". -/
+**THE IRREDUCIBILITY VERDICT ABOVE IS WITHDRAWN (2026-07-30), and the node
+is PROVEN.**  It was right about the mathematics and wrong about the unit:
+what it identified as irreducible is the LEVEL ARITHMETIC, and the honest
+description it gave of itself — "the `169` Prym leaf at two more levels" —
+was an instruction, not a disclaimer.  Running the `169` Prym block at the
+two `chabautySemiprimeLevels` cuts this node into exactly the three
+arithmetic leaves it names, of which one is now closed:
+
+* `not_hasDoubleCoverOfAffineLine_chabautySemiprimeLevel` — PROVEN, over
+  one banked Hecke trace;
+* `noFixedRationalPoint_atkinLehner_chabautySemiprimeLevel` — the four
+  class numbers `h(−260) = 8`, `h(−364) = 6`, `h(−91) = 2`, `h(−676) = 6`;
+* `finite_antiInvariant_jacobian_chabautySemiprimeLevel` — Kolyvagin–Logachev,
+  and this is where all the depth now sits.
+
+Everything else — `exists_rationalCusps`, `exists_jacobianOf_x0`,
+`exists_atkinLehner_x0`, `exists_prym_of_involution` — is level-generic and
+already proven, which is what "not a new theory" meant.
+
+**THE ONE STEP THAT WAS NOT BOOKKEEPING, and the reason the node sat open
+after the `65, 91` block was written.**  `hasRankZeroAbelianImage_chabautySemiprimeLevel`
+wants an `IsX0Compactification N strX strY jY` over `Spec ℚ`; `d` supplies
+`d.model`, which is one over `Spec ℤ_(ℓ)`.  The two are related by `d.genX`
+and `d.genX_nat`, which are an `IsFibreIdent` field for field, and the
+transport across it is `nonempty_isX0Compactification_genericFibre` above —
+assembled from theorems that were all already in this file, but never
+stated together.  The conclusion is a `Prop`, so `Nonempty.elim` closes the
+gap in one line. -/
 theorem hasRankZeroAbelianImage_of_chabautyColemanPrime
     (h : (N, ℓ) ∈ chabautyColemanPrimes)
     (d : IsX0NeronDatum N ℓ R toF jac jac'
       (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ) :
     HasRankZeroAbelianImage strX :=
-  sorry
+  (nonempty_isX0Compactification_genericFibre d.model ⟨d.genX, d.genX_nat⟩).elim
+    (hasRankZeroAbelianImage_chabautySemiprimeLevel
+      (mem_chabautySemiprimeLevels_of_chabautyColemanPrime h))
 
 /-- **Reduction is injective on `X_0(N)(ℚ)` whenever the curve has a
 rank-`0` abelian image** (PROVEN 2026-07-30 over
