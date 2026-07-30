@@ -1003,6 +1003,226 @@ theorem exists_conj_of_charFrob_eq_away.{uK, uW, uW'}
   _root_.GaloisRepresentation.exists_conj_of_charFrob_eq_away
     hW hirr hW' τ S hcf
 
+/-! ### The TRACE-ONLY conjugacy node (PROVEN 2026-07-30, `flt-lean-69`)
+
+`exists_conj_of_charFrob_eq_away` above wants the FULL Frobenius characteristic
+polynomial to match away from `S`.  Every `ℚ`-side statement of this file carries
+residual data only as the LINEAR coefficient of `charFrob` (`charFrob_compat`'s
+shape, and `IsAuxWeaklyUniversalOnFrames`'s), so a consumer of the full-charpoly
+node must first reconstruct the constant coefficient — which is what the
+determinant-pinning cluster `coeff_zero_charFrob_eq_of_det_eq` /
+`monic_natDegree_two_ext` is for, and it needs the determinant of BOTH
+representations pinned to the cyclotomic character.
+
+**That reconstruction is not necessary, and asking for it is what made the
+raised-level universality bridge look blocked.**  In rank two over a field with
+`2 ≠ 0`, TRACES ALONE determine the characteristic polynomial: Chebotarev makes
+trace agreement away from `S` into trace agreement at every group element, and
+Cayley–Hamilton (`2 · det f = (tr f)² − tr (f²)`) then recovers the determinant.
+The `2 ≠ 0` side condition is free here, `k` being a finite field of
+characteristic `p` with `p` ODD.
+
+So the three lemmas below are the trace-only twin of the node above, and they
+need NO determinant hypothesis on either representation.  They are proved by
+delegation to `charpoly_eq_of_charFrob_eq_away_of_two_ne_zero`'s argument
+(`BrauerNesbittConjugacy.lean`), whose only use of the charpoly hypothesis is to
+extract traces from it — that step is simply skipped when traces are what one is
+handed.  See `isAuxWeaklyUniversalOnFrames_of_isStrictlyUniversalOnFramesFor`
+far below for the consumer, and for the recorded blocker this removes. -/
+
+/-- **The linear `charFrob` coefficient IS minus the Frobenius trace** (PROVEN
+2026-07-30): read off `charpoly f = X² − (tr f)·X + det f` at degree `1`. -/
+lemma coeff_one_charFrob_eq_neg_trace {K : Type*} [Field K] [NumberField K]
+    {k : Type*} [CommRing k] [Nontrivial k] [TopologicalSpace k]
+    [IsTopologicalRing k]
+    {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (hfr : Module.finrank k W = 2)
+    (ρ : GaloisRep K k W) (v : HeightOneSpectrum (NumberField.RingOfIntegers K)) :
+    (ρ.charFrob v).coeff 1 =
+      -(LinearMap.trace k W (ρ (globalFrob v))) := by
+  rw [GaloisRep.charFrob_eq_charpoly_globalFrob,
+    charpoly_eq_quadratic_of_finrank_two hfr, coeff_one_quadratic]
+
+/-- **Chebotarev from TRACES: matching linear `charFrob` coefficients away from a
+finite set force matching characteristic polynomials EVERYWHERE** (PROVEN
+2026-07-30, `flt-lean-69`), in rank two over a Hausdorff topological field with
+`2 ≠ 0`.  No irreducibility, and no determinant hypothesis.
+
+Verbatim `GaloisRepresentation.charpoly_eq_of_charFrob_eq_away_of_two_ne_zero`
+with its first step deleted: that proof's `hsub` converts the charpoly hypothesis
+into a trace equality via `trace_eq_of_charpoly_eq_finrank_two` and never uses it
+again, so a trace hypothesis enters at exactly the same place.  The remaining
+argument — trace-agreement locus closed (the trace is `k`-linear out of the
+module-topology endomorphism space `GaloisRep` is continuous into, and `k` is
+Hausdorff), conjugation-stable (`charpoly_conj_mul_inv`), dense by
+`dense_conjClasses_globalFrob`, then `two_mul_det_eq_of_finrank_two` to recover
+the determinant — is unchanged. -/
+theorem charpoly_eq_of_coeff_one_charFrob_eq_away_of_two_ne_zero
+    {K : Type*} [Field K] [NumberField K]
+    {k : Type*} [Field k] [TopologicalSpace k] [IsTopologicalRing k]
+    [T2Space k] (h2 : (2 : k) ≠ 0)
+    {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (hW : Module.rank k W = 2)
+    {W' : Type*} [AddCommGroup W'] [Module k W'] [Module.Finite k W']
+    [Module.Free k W'] (hW' : Module.rank k W' = 2)
+    (ρ : GaloisRep K k W) (τ : GaloisRep K k W')
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers K)))
+    (htr : ∀ v : HeightOneSpectrum (NumberField.RingOfIntegers K), v ∉ S →
+      (τ.charFrob v).coeff 1 = (ρ.charFrob v).coeff 1) :
+    ∀ g : Field.absoluteGaloisGroup K, (τ g).charpoly = (ρ g).charpoly := by
+  classical
+  have hfrW : Module.finrank k W = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast hW)
+  have hfrW' : Module.finrank k W' = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast hW')
+  letI : TopologicalSpace (Module.End k W) :=
+    moduleTopology k (Module.End k W)
+  letI : TopologicalSpace (Module.End k W') :=
+    moduleTopology k (Module.End k W')
+  haveI : IsModuleTopology k (Module.End k W) := ⟨rfl⟩
+  haveI : IsModuleTopology k (Module.End k W') := ⟨rfl⟩
+  -- the trace-agreement locus is closed …
+  have hcont1 : Continuous fun g : Field.absoluteGaloisGroup K =>
+      LinearMap.trace k W' (τ g) :=
+    (IsModuleTopology.continuous_of_linearMap
+      (LinearMap.trace k W')).comp (ContinuousMonoidHom.continuous_toFun τ)
+  have hcont2 : Continuous fun g : Field.absoluteGaloisGroup K =>
+      LinearMap.trace k W (ρ g) :=
+    (IsModuleTopology.continuous_of_linearMap
+      (LinearMap.trace k W)).comp (ContinuousMonoidHom.continuous_toFun ρ)
+  have hclosed : IsClosed {g : Field.absoluteGaloisGroup K |
+      LinearMap.trace k W' (τ g) = LinearMap.trace k W (ρ g)} :=
+    isClosed_eq hcont1 hcont2
+  -- … and contains the dense set of Frobenius conjugates off `S`
+  have hsub : {x : Field.absoluteGaloisGroup K |
+      ∃ v : HeightOneSpectrum (NumberField.RingOfIntegers K), v ∉ S ∧
+        ∃ g, x = g * globalFrob v * g⁻¹} ⊆
+      {g : Field.absoluteGaloisGroup K |
+        LinearMap.trace k W' (τ g) = LinearMap.trace k W (ρ g)} := by
+    rintro x ⟨v, hvS, g, rfl⟩
+    have hval := htr v hvS
+    rw [coeff_one_charFrob_eq_neg_trace hfrW' τ v,
+      coeff_one_charFrob_eq_neg_trace hfrW ρ v, neg_inj] at hval
+    show LinearMap.trace k W' (τ (g * globalFrob v * g⁻¹)) =
+      LinearMap.trace k W (ρ (g * globalFrob v * g⁻¹))
+    rw [trace_eq_of_charpoly_eq_finrank_two hfrW' hfrW'
+        (charpoly_conj_mul_inv τ g (globalFrob v)),
+      trace_eq_of_charpoly_eq_finrank_two hfrW hfrW
+        (charpoly_conj_mul_inv ρ g (globalFrob v))]
+    exact hval
+  have halltr : ∀ g : Field.absoluteGaloisGroup K,
+      LinearMap.trace k W' (τ g) = LinearMap.trace k W (ρ g) := by
+    intro g
+    have hdense := dense_conjClasses_globalFrob (K := K) S
+    have huniv : (Set.univ : Set (Field.absoluteGaloisGroup K)) ⊆
+        {g : Field.absoluteGaloisGroup K |
+          LinearMap.trace k W' (τ g) = LinearMap.trace k W (ρ g)} :=
+      hdense.closure_eq ▸ hclosed.closure_subset_iff.mpr hsub
+    exact huniv (Set.mem_univ g)
+  -- traces everywhere ⟹ determinants everywhere (Cayley–Hamilton, `2` a unit)
+  intro g
+  have hsq : LinearMap.trace k W' (τ g * τ g) =
+      LinearMap.trace k W (ρ g * ρ g) := by
+    rw [← map_mul, ← map_mul]
+    exact halltr (g * g)
+  have hdet : LinearMap.det (τ g) = LinearMap.det (ρ g) := by
+    refine mul_left_cancel₀ h2 ?_
+    rw [two_mul_det_eq_of_finrank_two hfrW' (τ g),
+      two_mul_det_eq_of_finrank_two hfrW (ρ g), halltr g, hsq]
+  rw [charpoly_eq_quadratic_of_finrank_two hfrW' (τ g),
+    charpoly_eq_quadratic_of_finrank_two hfrW (ρ g), halltr g, hdet]
+
+/-- **TRACE-ONLY Chebotarev–Brauer–Nesbitt conjugacy** (PROVEN 2026-07-30,
+`flt-lean-69`): matching LINEAR `charFrob` coefficients away from a finite set,
+against an irreducible rank-two `ρbar`, already force conjugacy — over a
+Hausdorff topological field with `2 ≠ 0`.
+
+`charpoly_eq_of_coeff_one_charFrob_eq_away_of_two_ne_zero` above followed by the
+abstract Brauer–Nesbitt core `exists_linearEquiv_of_charpoly_eq_of_two_ne_zero`,
+assembled exactly as in
+`GaloisRepresentation.exists_conj_of_charFrob_eq_away_of_two_ne_zero`. -/
+theorem exists_conj_of_coeff_one_charFrob_eq_away_of_two_ne_zero
+    {K : Type*} [Field K] [NumberField K]
+    {k : Type*} [Field k] [TopologicalSpace k] [IsTopologicalRing k]
+    [T2Space k] (h2 : (2 : k) ≠ 0)
+    {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (hW : Module.rank k W = 2)
+    {ρbar : GaloisRep K k W} (hirr : ρbar.IsIrreducible)
+    {W' : Type*} [AddCommGroup W'] [Module k W'] [Module.Finite k W']
+    [Module.Free k W'] (hW' : Module.rank k W' = 2)
+    (τ : GaloisRep K k W')
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers K)))
+    (htr : ∀ v : HeightOneSpectrum (NumberField.RingOfIntegers K), v ∉ S →
+      (τ.charFrob v).coeff 1 = (ρbar.charFrob v).coeff 1) :
+    ∃ e : W' ≃ₗ[k] W, τ.conj e = ρbar := by
+  classical
+  have hfrW : Module.finrank k W = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast hW)
+  have hfrW' : Module.finrank k W' = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast hW')
+  have hall : ∀ g : Field.absoluteGaloisGroup K,
+      (τ g).charpoly = (ρbar g).charpoly :=
+    charpoly_eq_of_coeff_one_charFrob_eq_away_of_two_ne_zero h2 hW hW' ρbar τ S
+      htr
+  obtain ⟨e, he⟩ := exists_linearEquiv_of_charpoly_eq_of_two_ne_zero h2
+    hfrW hfrW' ρbar.toRepresentation τ.toRepresentation hirr hall
+  refine ⟨e, GaloisRep.ext fun σ => LinearMap.ext fun x => ?_⟩
+  have h1 : e (τ σ (e.symm x)) = ρbar σ (e (e.symm x)) := he σ (e.symm x)
+  rw [e.apply_symm_apply] at h1
+  calc (τ.conj e) σ x = (e.conj (τ σ)) x := by rw [GaloisRep.conj_apply]
+    _ = e (τ σ (e.symm x)) := by rw [LinearEquiv.conj_apply]; rfl
+    _ = ρbar σ x := h1
+
+/-- **`2 ≠ 0` in a finite field receiving `ℤ_p` with `p` odd** (PROVEN
+2026-07-30): `charP_of_ringHom_padicInt` gives `CharP k p`, and `p ∣ 2` with both
+prime forces `p = 2`.
+
+Named because it is the side condition of the trace-only conjugacy node above,
+and because the identical four-line `have` is currently repeated inline four
+times in this file (at `false_of_trace_eq_zero_of_isHardlyRamified` and three
+places below it); those copies are proven and were deliberately left alone. -/
+lemma two_ne_zero_of_algebra_padicInt {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type*} [Field k] [Finite k] [Algebra ℤ_[p] k] : (2 : k) ≠ 0 := by
+  haveI := charP_of_ringHom_padicInt (algebraMap ℤ_[p] k)
+  intro h
+  have hd : p ∣ 2 :=
+    (CharP.cast_eq_zero_iff k p 2).mp (by exact_mod_cast h)
+  have hp2 : p = 2 :=
+    (Nat.prime_dvd_prime_iff_eq (Fact.out : p.Prime) Nat.prime_two).mp hd
+  rw [hp2] at hpodd
+  have hcontra := Nat.odd_iff.mp hpodd
+  omega
+
+/-- **The trace-only conjugacy node in this file's `q : ℕ` indexing** (PROVEN
+2026-07-30, `flt-lean-69`): the exact twin of `exists_conj_of_charFrob_eq_away`
+above with the FULL-charpoly hypothesis weakened to its LINEAR coefficient, at
+the cost of `Odd p` — which every statement of this file carries anyway.
+
+The place-indexing conversion is `exists_prime_toHeightOneSpectrum`: every
+height-one prime of `𝓞 ℚ` is `hq.toHeightOneSpectrumRingOfIntegersRat` for a
+rational prime `q`, exactly as in the full-charpoly node. -/
+theorem exists_conj_of_coeff_one_charFrob_eq_away {p : ℕ} (hpodd : Odd p)
+    [Fact p.Prime]
+    {k : Type*} [Field k] [Finite k] [Algebra ℤ_[p] k] [TopologicalSpace k]
+    [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (hW : Module.rank k W = 2)
+    {ρbar : GaloisRep ℚ k W} (hirr : ρbar.IsIrreducible)
+    {W' : Type*} [AddCommGroup W'] [Module k W'] [Module.Finite k W']
+    [Module.Free k W'] (hW' : Module.rank k W' = 2)
+    (τ : GaloisRep ℚ k W')
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (htr : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+      (τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 =
+        (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) :
+    ∃ e : W' ≃ₗ[k] W, τ.conj e = ρbar := by
+  refine exists_conj_of_coeff_one_charFrob_eq_away_of_two_ne_zero
+    (two_ne_zero_of_algebra_padicInt hpodd) hW hirr hW' τ S ?_
+  intro v hvS
+  obtain ⟨q, hq, rfl⟩ := exists_prime_toHeightOneSpectrum v
+  exact htr q hq hvS
+
 /-!
 ## Conjugation and reframing transport (PROVEN)
 
@@ -14164,9 +14384,22 @@ stated after them.
    docstring's own route, the `pushforwardFrame_apply` dictionary, is of course
    still correct; it is simply not forced.)
 
-What genuinely remains is TWO leaves, not one: the level-ideal system
-`exists_levelIdealSystem_aux_of_clauses`, and the weak/strict universality
-bridge `isAuxWeaklyUniversalOnFrames_of_isStrictlyUniversalOnFramesFor`. -/
+What genuinely remained after those four was TWO leaves, not one: the
+level-ideal system `exists_levelIdealSystem_aux_of_clauses`, and the weak/strict
+universality bridge
+`isAuxWeaklyUniversalOnFrames_of_isStrictlyUniversalOnFramesFor`.
+
+**UPDATE 2026-07-30 (`flt-lean-69`): the second of those is now PROVEN**, and
+with it `exists_universalFrame_profinite_auxDeformation_of_clauses` below became
+an assembly.  The level-ideal system is the ONLY leaf left in this block.  The
+bridge did NOT need the four extra hypotheses its cut carried (`hπcont`,
+`hπalg`, `hres`, `hquotPF`) and did NOT need the one-line strengthening of
+`exists_universalFrame_profinite_of_levelIdealSystem` that was prescribed
+upstream: rank-two Brauer–Nesbitt runs on TRACES ALONE when `2 ≠ 0`
+(`exists_conj_of_coeff_one_charFrob_eq_away`, proven near the top of this file),
+so no determinant for `ρbar` is required.  See that bridge's docstring, which
+also records that the route the cut prescribed is universe-obstructed and could
+not have been run. -/
 
 set_option linter.checkUnivs false in
 open scoped TensorProduct in
@@ -14433,7 +14666,8 @@ theorem exists_levelIdealSystem_aux_of_clauses.{uK, uW, uR}
 set_option linter.checkUnivs false in
 open scoped TensorProduct in
 /-- **From STRICT universality on frames to the WEAK raised-level universality**
-(sorry node, LEAF A2′-2d′-i-2 — new 2026-07-30, `flt-lean-166`).
+(PROVEN 2026-07-30, `flt-lean-69`; cut as LEAF A2′-2d′-i-2 on 2026-07-30 by
+`flt-lean-166`).
 
 `exists_universalFrame_profinite_of_levelIdealSystem` concludes with
 `IsStrictlyUniversalOnFramesFor`, whose test objects arrive carrying a STRICT
@@ -14441,49 +14675,65 @@ residual identification `∃ e : (k ⊗[A] (Fin 2 → A)) ≃ₗ[k] W,
 (ρA.baseChange k).conj e = ρbar`.  `IsAuxWeaklyUniversalOnFrames` — the shape the
 consumer `exists_isWeaklyUniversal_auxDeformationDatum_of_clauses` needs — asks
 its test objects only for the LINEAR `charFrob` COEFFICIENTS to match those of
-`ρbar` away from a finite `SA`.  That is strictly weaker, so this is a genuine
-obligation and not plumbing.
+`ρbar` away from a finite `SA`.  That is strictly weaker, so this was a genuine
+obligation and not plumbing: Brauer–Nesbitt at rank two is what closes the gap.
 
-**THE ROUTE, AND WHY EVERY INPUT IS PRESENT.**
+**THE PROOF, IN THREE STEPS.**
 
 * *Continuity of `πA`* is free: `A` is finite DISCRETE, so
   `continuous_of_discreteTopology`.
-* *Trace ⟹ conjugacy* is `exists_conj_of_charFrob_eq_away` above (PROVEN), which
-  upgrades "`charFrob` agrees away from a finite set, `ρbar` irreducible" to an
-  actual `e` with `(ρA.baseChange k).conj e = ρbar`.  It wants the FULL
-  characteristic polynomial, and the hypothesis supplies only `coeff 1`.  The
-  missing coefficient is supplied by monic-quadratic reconstruction —
-  `charFrob_monic`, `charFrob_natDegree`, `monic_natDegree_two_ext` and
-  `coeff_zero_charFrob_eq_of_det_eq`, all PROVEN above — which needs the
-  DETERMINANT of both representations pinned to the cyclotomic character.
-* For `ρA` the determinant is `IsRaisedLevelHardlyRamified.det`, which the test
-  object carries.
-* **For `ρbar` the determinant is NOT a hypothesis of the consumer, and this is
-  the one point a prover should check before starting.**  It is nevertheless
-  available, by pushing `ρuniv` forward along `πuniv` itself: `k` is a finite
-  discrete local `ℤ_p`-algebra and `πuniv` is a surjective continuous
-  `ℤ_p`-algebra map, so the machine's own levelwise pushforward clause applies at
-  `A := k`, and `hres` identifies the result with `ρbar` up to
-  `TensorProduct.piScalarRight` and `e`; `isRaisedLevelHardlyRamified_conj` then
-  gives `ρbar` the raised-level condition, hence its `det`.  That is why `hres`
-  and the pushforward clause `hquotPF` are both hypotheses here rather than only
-  `hstrict`.  (The one thing that route needs and the machine's conclusion does
-  NOT state is `πuniv.comp (algebraMap ℤ_[p] R) = algebraMap ℤ_[p] k`; it is
-  therefore carried explicitly as `hπalg`, and the assembly below cannot supply
-  it — see the STATUS note on the consumer.  A prover who closes this leaf should
-  say whether `hπalg` was genuinely needed, since if not it should be dropped,
-  and if so `exists_universalFrame_profinite_of_levelIdealSystem`'s conclusion
-  should be strengthened to state it, which is a one-line change there —
-  `hevalg` is already one of its hypotheses.)
+* *Traces ⟹ residual identification.*  The test object's trace clause transports
+  along `charFrob_baseChange` into "`ρA.baseChange k` and `ρbar` have equal
+  linear `charFrob` coefficients away from `SA`", and
+  `exists_conj_of_coeff_one_charFrob_eq_away` (PROVEN above) turns that into the
+  strict identification `hstrict` demands.
 * *The conclusion side is free*: `(ρuniv.baseChange A).conj e = ρA` gives
   `ρA.charFrob = (ρuniv.charFrob).map ψ` at EVERY prime by `charFrob_conj` and
   `charFrob_baseChange`, so `Suniv := ∅` and the `∉ SA` hypothesis is unused in
   that direction.
 
+# THE RECORDED BLOCKER WAS AN ARTEFACT OF THE FULL-CHARPOLY NODE, AND IS GONE
+
+The superseded docstring routed the middle step through
+`exists_conj_of_charFrob_eq_away`, which wants the FULL Frobenius characteristic
+polynomial, and therefore had to reconstruct the constant coefficient from
+`coeff_zero_charFrob_eq_of_det_eq` — which needs the determinant of BOTH
+representations pinned to the cyclotomic character.  `ρA`'s is carried by
+`IsRaisedLevelHardlyRamified.det`; `ρbar`'s is not a hypothesis anywhere in this
+chain, and recovering it was recorded as "THE ONE BLOCKER TO WRITING THE ASSEMBLY
+NOW" on the consumer, to be paid for by four extra hypotheses here (`hπcont`,
+`hπalg`, `hres`, `hquotPF`) plus a one-line strengthening of
+`exists_universalFrame_profinite_of_levelIdealSystem`'s conclusion in
+`Deformation.lean`.
+
+**None of that is needed, and the recorded route does not in fact typecheck.**
+Two independent findings, 2026-07-30:
+
+1. *The route is universe-obstructed.*  It instantiates the machine's levelwise
+   pushforward clause "at `A := k`".  That clause quantifies over
+   `A : Type uR`, while `k : Type uK`, and the two universes are independent
+   throughout this file BY DESIGN (that independence is the whole subject of the
+   consumer's own universe note).  So `hquotPF` cannot be applied at `k` at all,
+   and no `ULift` repairs it — `ULift.{uR} k : Type (max uK uR)`.
+2. *The determinant is not needed.*  In rank two over a field with `2 ≠ 0`,
+   TRACES DETERMINE THE CHARACTERISTIC POLYNOMIAL: Chebotarev upgrades trace
+   agreement away from a finite set to trace agreement at every group element,
+   and Cayley–Hamilton (`2 · det = (tr)² − tr(·²)`) recovers the determinant.
+   `2 ≠ 0` is free here, `k` being finite of characteristic `p` with `p` odd.
+   That is `exists_conj_of_coeff_one_charFrob_eq_away` above, whose proof is
+   `GaloisRepresentation.charpoly_eq_of_charFrob_eq_away_of_two_ne_zero`'s with
+   its first step (charpoly ⟹ trace) deleted.
+
+Hence all four extra hypotheses ARE DROPPED — the answer to the question the
+superseded docstring asked a prover to report on — and the upstream one-line
+change to `Deformation.lean` is NOT required.  `hπalg` was never needed for any
+purpose: it is in any case FREE by `ringHom_padicInt_eq`, both sides being ring
+homomorphisms `ℤ_[p] →+* k` into a finite field.
+
 **Check that would refute it**: a finite discrete raised-level `(A, ρA, πA, SA)`
 whose linear `charFrob` coefficients match `ρbar`'s away from `SA` but which is
 NOT residually identified with `ρbar` — i.e. a failure of Brauer–Nesbitt at rank
-2 with the determinant pinned, which `hirr` is there to exclude. -/
+2, which `hirr` and `Odd p` (through `2 ≠ 0`) exclude. -/
 theorem isAuxWeaklyUniversalOnFrames_of_isStrictlyUniversalOnFramesFor.{uK, uW, uR}
     {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
     {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
@@ -14496,27 +14746,47 @@ theorem isAuxWeaklyUniversalOnFrames_of_isStrictlyUniversalOnFramesFor.{uK, uW, 
     {R : Type uR} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
     [IsLocalRing R] [Algebra ℤ_[p] R]
     (ρuniv : GaloisRep ℚ R (Fin 2 → R)) (πuniv : R →+* k)
-    (hπcont : Continuous πuniv)
-    (hπalg : πuniv.comp (algebraMap ℤ_[p] R) = algebraMap ℤ_[p] k)
-    (hres : IsResidualIdentifiedFrame (ℓ := p) ρbar ρuniv πuniv hπcont)
-    (hquotPF : ∀ (A : Type uR) [CommRing A] [TopologicalSpace A]
-      [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[p] A] [Finite A]
-      [DiscreteTopology A] (φ : R →+* A) (hφ : Continuous φ),
-      φ.comp (algebraMap ℤ_[p] R) = algebraMap ℤ_[p] A →
-      IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun A)
-        (pushforwardFrame φ hφ ρuniv))
     (hstrict : IsStrictlyUniversalOnFramesFor (ℓ := p)
       (fun A iCR iTS iTR iLR iAlg ρA =>
         letI := iCR; letI := iTS; letI := iTR; letI := iLR; letI := iAlg
         IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun A) ρA)
       ρbar ρuniv πuniv) :
-    IsAuxWeaklyUniversalOnFrames.{uR, uK, uW} hpodd Q ρbar ρuniv πuniv ∅ :=
-  sorry
+    IsAuxWeaklyUniversalOnFrames.{uR, uK, uW} hpodd Q ρbar ρuniv πuniv ∅ := by
+  intro A _ _ _ _ _ _ _ ρA hρA πA hπAsurj SA hSA
+  -- `A` is finite DISCRETE, so its residual map is automatically continuous
+  have hπAcont : Continuous πA := continuous_of_discreteTopology
+  letI : Algebra A k := πA.toAlgebra
+  letI : ContinuousSMul A k := continuousSMul_of_algebraMap A k
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hπAcont)
+  have hrankA : Module.rank k (k ⊗[A] (Fin 2 → A)) = 2 := by
+    rw [Module.rank_baseChange, rank_finTwoFun]
+    simp
+  -- **the test object's TRACE clause already gives the STRICT identification**
+  have hstr : ∃ e : (k ⊗[A] (Fin 2 → A)) ≃ₗ[k] W,
+      ((ρA.baseChange k).conj e) = ρbar := by
+    refine exists_conj_of_coeff_one_charFrob_eq_away hpodd hW hirr hrankA
+      (ρA.baseChange k) SA ?_
+    intro q hq hqS
+    rw [charFrob_baseChange, Polynomial.coeff_map, RingHom.algebraMap_toAlgebra]
+    exact hSA q hq hqS
+  obtain ⟨ψ, hψcont, hψalg, hψπ, hcj⟩ :=
+    hstrict A ρA hρA πA hπAsurj hπAcont hstr
+  refine ⟨ψ, hψcont, hψalg, hψπ, ?_⟩
+  -- the trace clause of the CONCLUSION holds at every prime, `Suniv = ∅`
+  intro q hq _ _
+  letI : Algebra R A := ψ.toAlgebra
+  letI : ContinuousSMul R A := continuousSMul_of_algebraMap R A
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hψcont)
+  obtain ⟨e, he⟩ := hcj
+  rw [← he, charFrob_conj, charFrob_baseChange, Polynomial.coeff_map,
+    RingHom.algebraMap_toAlgebra]
 
 set_option linter.checkUnivs false in
 open scoped TensorProduct in
 /-- **Pro-representability of the RAISED-LEVEL problem over `ℚ`, PROFINITE
-form** (sorry node, LEAF A2′-2d′-i — new 2026-07-28, the CONSTRUCTION half of
+form** (PROVEN 2026-07-30, `flt-lean-69`, over the single remaining leaf
+`exists_levelIdealSystem_aux_of_clauses`; cut as LEAF A2′-2d′-i on 2026-07-28 as
+the CONSTRUCTION half of
 the 2026-07-28 cut of `exists_universalFrame_auxDeformation_of_clauses` below,
 and the exact `ℚ`-side raised-level twin of the base-level
 `exists_universalFrame_profinite_of_deformationCondition` in
@@ -14609,37 +14879,40 @@ and the machine's levelwise `pushforwardFrame` clause is converted to this
 statement's `baseChange` clause by
 `isRaisedLevelHardlyRamified_baseChange_of_pushforwardFrame`.
 
-What remains, and what the assembly here is waiting on:
+**STATUS 2026-07-30 (`flt-lean-69`): THIS IS NOW AN ASSEMBLY, NOT A LEAF.**  The
+universality bridge `isAuxWeaklyUniversalOnFrames_of_isStrictlyUniversalOnFramesFor`
+is PROVEN above and the assembly is written below.  ONE open leaf is left under
+it:
 
 * `exists_levelIdealSystem_aux_of_clauses` (the arithmetic; `hglue`, `hfin` and
-  `𝒟₀` are spent there and nowhere else), and
-* `isAuxWeaklyUniversalOnFrames_of_isStrictlyUniversalOnFramesFor` (the machine
-  concludes with STRICT universality, whose test objects arrive residually
-  identified; this statement's conclusion asks only for matching linear
-  `charFrob` coefficients away from a finite set, which is strictly weaker, so
-  the bridge is Brauer–Nesbitt at rank 2 and is a genuine obligation).
+  `𝒟₀` are spent there and nowhere else).
 
-**THE ONE BLOCKER TO WRITING THE ASSEMBLY NOW, recorded so it is not
-rediscovered.**  The universality bridge needs the determinant of `ρbar` pinned
-to the cyclotomic character, and this statement does not hypothesise it.  It IS
-recoverable — push `ρuniv` forward along `πuniv` itself, `k` being a finite
-discrete local `ℤ_p`-algebra, and transport along `hres` — but that application
-needs `πuniv.comp (algebraMap ℤ_[p] R) = algebraMap ℤ_[p] k`, which
-`exists_universalFrame_profinite_of_levelIdealSystem` establishes internally (as
-a `have`, from its own hypothesis `hevalg`) and does NOT state in its conclusion.
-So the bridge carries it as the explicit hypothesis `hπalg`, and the assembly
-cannot discharge it from the machine's conclusion as that conclusion currently
-stands.
+**THE RECORDED BLOCKER DID NOT EXIST, and its own route was universe-obstructed.**
+The superseded text here read: "the universality bridge needs the determinant of
+`ρbar` pinned to the cyclotomic character, and this statement does not
+hypothesise it … recoverable — push `ρuniv` forward along `πuniv` itself … but
+that application needs `πuniv.comp (algebraMap ℤ_[p] R) = algebraMap ℤ_[p] k`,
+which `exists_universalFrame_profinite_of_levelIdealSystem` … does NOT state in
+its conclusion", the prescribed fix being a one-line strengthening of that
+theorem's conclusion in `Deformation.lean`.
 
-The fix is one line upstream — add that equation to
-`exists_universalFrame_profinite_of_levelIdealSystem`'s conclusion and to its
-final `refine`, where `hπalg` is already in scope.  It was NOT done here because
-adding a conjunct changes the destructuring for all three of its proven
-consumers in `Deformation.lean`, a file with other active owners; that edit
-belongs to whoever owns that chain, and it is the cheapest way to unblock this
-assembly.  A prover who closes the universality bridge should also report whether
-`hπalg` was genuinely needed — if another route to `ρbar`'s determinant exists,
-the hypothesis should simply be dropped and no upstream change is required.
+Both halves are wrong, and in opposite directions.  The proposed route cannot be
+run at all — it instantiates the machine's levelwise clause "at `A := k`", and
+that clause quantifies over `A : Type uR` while `k : Type uK`, universes this
+file keeps independent by design (see the universe note above, which is the same
+observation used correctly one paragraph earlier).  And the equation it wanted is
+free in any case, by `ringHom_padicInt_eq`.  Meanwhile the determinant is not
+needed: rank-two Brauer–Nesbitt runs on TRACES ALONE when `2 ≠ 0`, which is what
+`exists_conj_of_coeff_one_charFrob_eq_away` above provides.  **So no upstream
+change to `Deformation.lean` is required, and none was made.**
+
+`hfunc` is NOT consumed by this assembly and is retained only so that the
+signature — and hence its caller `exists_universalFrame_auxDeformation_of_clauses`
+— is unchanged; the levelwise transfer the construction needs is
+`isRaisedLevelHardlyRamified_pushforwardFrame`, proven outright, and the quotient
+conjunct `IsAuxFunctorialityClause` supplies is never reached.  It is bound as
+`_hfunc` for that reason.  Whoever next revises this cut should either drop it
+here and at the caller, or find the consumer it was meant to have.
 
 Superseded note, kept because it was the recorded reason for this node's shape
 and is no longer true: "the base-level chain is NOT predicate-generic" and "binds
@@ -14665,7 +14938,7 @@ theorem exists_universalFrame_profinite_auxDeformation_of_clauses.{uK, uW, uR}
     (hirr : ρbar.IsIrreducible)
     (Q : Finset ℕ)
     (𝒟₀ : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar)
-    (hfunc : IsAuxFunctorialityClause.{uR} hpodd Q)
+    (_hfunc : IsAuxFunctorialityClause.{uR} hpodd Q)
     (hglue : IsAuxFibreProductClause.{uR, uK, uW} hpodd Q ρbar)
     (hfin : IsAuxFiniteFramesClause.{uR} hpodd Q) :
     ∃ (R : Type uR) (_ : CommRing R) (_ : TopologicalSpace R)
@@ -14699,8 +14972,68 @@ theorem exists_universalFrame_profinite_auxDeformation_of_clauses.{uK, uW, uR}
         pushforwardFrame φ₁ hφ₁ ρuniv = pushforwardFrame φ₂ hφ₂ ρuniv →
         φ₁ = φ₂) ∧
       IsAuxWeaklyUniversalOnFrames.{uR, uK, uW} hpodd Q ρbar ρuniv πuniv
-        Suniv :=
-  sorry
+        Suniv := by
+  classical
+  -- ## the ARITHMETIC half: the raised-level level-ideal system
+  obtain ⟨e0, P, iCRP, iAlgP, evbar, hevsurj, hevalg, M, 𝒥, hne, hdir, hker,
+      hlev, hresM, hrep, hclass, hsep⟩ :=
+    exists_levelIdealSystem_aux_of_clauses.{uK, uW, uR} hpodd hW hirr Q 𝒟₀
+      hglue hfin
+  letI := iCRP
+  letI := iAlgP
+  -- ## Schlessinger's machine, instantiated at the RAISED-LEVEL condition
+  obtain ⟨R, iCR, iTS, iTR, iLR, iAlg, iCompact, iT2, ρuniv, πuniv, hπsurj,
+      hπcont, hbasis, hresid, hquotPF, hinj, hstrict⟩ :=
+    exists_universalFrame_profinite_of_levelIdealSystem
+      (ℓ := p) (k := k) (V := W)
+      (fun A iCR iTS iTR iLR iAlg ρA =>
+        letI := iCR; letI := iTS; letI := iTR; letI := iLR; letI := iAlg
+        IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun A) ρA)
+      (fun A _ _ _ _ _ ρA hρA e => isRaisedLevelHardlyRamified_conj Q _ hρA e)
+      (fun ψ hψ halg _ρ hρ =>
+        isRaisedLevelHardlyRamified_pushforwardFrame Q ψ hψ halg hρ)
+      e0 evbar hevsurj hevalg M 𝒥 hne hdir hker hlev hresM hrep hclass hsep
+  letI := iCR; letI := iTS; letI := iTR; letI := iLR; letI := iAlg
+  letI := iCompact; letI := iT2
+  refine ⟨R, iCR, iTS, iTR, iLR, iAlg, iCompact, iT2, ρuniv, πuniv, hπsurj,
+    hπcont, ∅, hbasis, ?_, ?_, hquotPF, hinj, ?_⟩
+  · -- **the residual identification computes the WHOLE `charFrob`**, so the
+    -- exceptional set may be taken EMPTY
+    intro q hq _
+    rw [← charFrob_map_of_isResidualIdentifiedFrame ρuniv πuniv hπcont hresid
+      hq.toHeightOneSpectrumRingOfIntegersRat, Polynomial.coeff_map]
+  · -- **the levelwise clause**, converted from `pushforwardFrame` shape (which
+    -- is what the machine delivers) to `baseChange` shape at an OPEN ideal
+    intro I hI _ hdimI
+    -- `I` open makes `R ⧸ I` discrete, and `R` compact makes it FINITE
+    haveI hdisc : DiscreteTopology (R ⧸ I) := by
+      rw [discreteTopology_iff_isOpen_singleton_zero]
+      have hzero : ({0} : Set (R ⧸ I)) =
+          Ideal.Quotient.mk I '' ((I : Ideal R) : Set R) := by
+        ext x
+        constructor
+        · rintro rfl
+          exact ⟨0, I.zero_mem, map_zero _⟩
+        · rintro ⟨y, hy, rfl⟩
+          exact (Ideal.Quotient.eq_zero_iff_mem).mpr hy
+      rw [hzero]
+      exact (QuotientRing.isOpenQuotientMap_mk _).isOpenMap _ hI
+    haveI hcomp : CompactSpace (R ⧸ I) :=
+      ⟨by
+        have hrng :=
+          isCompact_range (QuotientRing.isOpenQuotientMap_mk I).continuous
+        rwa [(QuotientRing.isOpenQuotientMap_mk I).surjective.range_eq] at hrng⟩
+    haveI hfinq : Finite (R ⧸ I) := finite_of_compact_of_discrete
+    have hmk : Continuous (Ideal.Quotient.mk I) :=
+      (QuotientRing.isOpenQuotientMap_mk I).continuous
+    refine isRaisedLevelHardlyRamified_baseChange_of_pushforwardFrame Q I hmk
+      hdimI (hquotPF (R ⧸ I) (Ideal.Quotient.mk I) hmk ?_)
+    ext x
+    simp
+  · -- **the universality bridge**: STRICT (what the machine gives) to WEAK
+    -- (what the raised-level category asks), by rank-two Brauer–Nesbitt
+    exact isAuxWeaklyUniversalOnFrames_of_isStrictlyUniversalOnFramesFor
+      hpodd hW hirr Q ρuniv πuniv hstrict
 
 set_option linter.checkUnivs false in
 open scoped TensorProduct in
@@ -14719,8 +15052,9 @@ weak universality on finite discrete raised-level frames.
 
 **STATUS 2026-07-28 (`flt-lean-257`): this is now an ASSEMBLY, not a leaf**, over
 the profinite construction `exists_universalFrame_profinite_auxDeformation_of_clauses`
-immediately above.  The ONE open leaf of the raised-level Schlessinger machine is
-that construction.
+immediately above.  **UPDATED 2026-07-30 (`flt-lean-69`): that construction is
+now an assembly too**, so the ONE open leaf of the raised-level Schlessinger
+machine is the level-ideal system `exists_levelIdealSystem_aux_of_clauses`.
 
 **A CORRECTION, recorded because it was the stated reason for this node's shape.**
 The superseded text here read: Mazur's `Φ_ℓ` criterion
