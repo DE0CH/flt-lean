@@ -4414,6 +4414,7 @@ def IsSwanExponentAt (ρ : GaloisRep K A M) (v : HeightOneSpectrum (𝓞 K))
     (s : ℕ) : Prop :=
   Nonempty (RamificationFiltration v) ∧
   ∀ F : RamificationFiltration v, ∃ μ : ℕ → ℚ,
+    (∀ k < ρ.wildCodim v, 0 < μ k) ∧
     (∀ u : ℚ, 0 < u →
         Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp u)) =
           ((Finset.range (ρ.wildCodim v)).filter fun k => u ≤ μ k).card) ∧
@@ -4822,6 +4823,45 @@ is the codimension function `u ↦ dim V − dim V^{G^u}`.
 Serre, *Corps Locaux* VI §2; Katz, *Gauss Sums, Kloosterman Sums and
 Monodromy* 1.1.
 
+**THE POSITIVITY CLAUSE IS PART OF THE CONCLUSION (2026-07-30), and it is
+where the retired `gp_eq_wild` really lived.** `0 < μ k` for every
+`k < ρ.wildCodim v` is not decoration. What it says about the codimension
+function is that `c(u) = ρ.wildCodim v` for all SMALL `u > 0` (a
+non-positive entry is invisible to every test `u > 0`, so it would depress
+the counting function below `d` everywhere). That is the true content of
+the false axiom, in the one place it belongs: the axiom asserted
+`G^u = P_v` on `(0,1]`, which is a statement about a FIXED interval and is
+false; what holds is that the codimension function reaches its maximum
+near `0`, with no uniform interval on which it does so.
+
+It is a strictly stronger obligation than the counting clause alone, and
+a prover owes nothing extra for it: Serre's break decomposition produces
+positive breaks, the positive breaks being precisely the wild part.
+
+**A CLAIM MADE HERE ON 2026-07-30 AND WITHDRAWN THE SAME DAY**, because it
+misdirects the prover. This paragraph said the clause "cannot be proved
+from the repaired axioms", citing the WITHDRAWN note on `one_le_break`.
+What that note actually rules out is a `μ k ≥ c > 0` theorem with a
+UNIFORM `c` — and it is right about that. Positivity itself IS reachable
+from the repaired axioms, over ONE further input, and the derivation is
+written out in full in the THIRD FALSITY AUDIT on
+`GaloisRep.IsSwanExponentAt`. In brief: for a level `D` with `D.lvl ≤ N`,
+`gp_herbrand` at `m = 1` plus `P_v ≤ D.gp 1` plus Dedekind gives
+`P_v = F.gp (D.phi 1) ⊔ (D.lvl ⊓ P_v)`, whose second summand acts
+trivially — so `c (D.phi 1) = ρ.wildCodim v` at the POSITIVE value
+`D.phi 1`, and the counting clause there forces `D.phi 1 ≤ μ k` for every
+`k < d`. The bound is not uniform (it depends on the level), which is
+exactly why `one_le_break` is false and this is not.
+
+The further input, `P_v ≤ D.gp 1`, is a theorem about
+`LowerRamificationData.mem_gp` and not a strengthening of any axiom:
+`mem_gp` DEFINES `D.gp` elementwise, `D.gp 1` is therefore the pulled-back
+`G₁(L/Kᵥ)` of the finite level, `L ∩ Kᵥᵗᵃᵐᵉ = L^{G₁}`, and
+`P_v = Gal(Kᵥᵃˡᵍ/Kᵥᵗᵃᵐᵉ)` maps onto `G₁(L/Kᵥ)`. It is worth building
+independently of this leaf — it is small, it is the input the retired-axiom
+era kept reaching for and never named correctly, and it makes the clause
+below a derived fact.
+
 THE ROUTE, and the three facts it needs about `c(u) := dim V − dim V^{G^u}`:
 
 1. `c` is NON-INCREASING (`gp_le_gp` plus `fixedSubmodule_mono`) and equals
@@ -4856,13 +4896,30 @@ whole section now lives; see the section docstring above. It is stated for
 EVERY admissible `F`, and `gp_herbrand` pins `F` only at the Herbrand
 values, so an admissible-but-not-genuine `F` would be a counterexample.
 Refuting it with such an `F` is a fully successful outcome, and the repair
-is then to strengthen `RamificationFiltration`, never to weaken this. -/
+is then to strengthen `RamificationFiltration`, never to weaken this.
+
+**WHERE IN THIS STATEMENT THAT RISK IS, AND WHERE IT IS NOT (2026-07-30).**
+Adding the positivity clause did not add risk: by the derivation above it
+holds for EVERY admissible `F`, over the single input `P_v ≤ D.gp 1`. The
+risk lives entirely in the COUNTING clause, and specifically in the
+attainment of the suprema in step 3 — `c` non-increasing with values in
+`{0, …, d}` has at most `d` jumps for free, and `c` reaching both `d` (the
+derivation above) and `0` (`hfin`) is settled, but a break list exists only
+if `c` is LEFT-continuous at each jump. That is the sharp place to look for
+a refuting `F`: an admissible filtration whose `c` is `1` on `(0, 1)` and
+`0` on `[1, ∞)` admits no `μ`, since `μ 0` would have to be both `≥ u` for
+every `u < 1` and `< 1`. Whether `gp_of_forall_lt` already excludes it
+(with `hfin` converting the intersection of the `G^w` into a union of fixed
+submodules) is the one question a prover — or a refuter — should settle
+first. It is cheaper than the rest of the leaf and it decides which of the
+two outcomes to aim for. -/
 theorem exists_breaks_of_hasFiniteWildMonodromyAt (ρ : GaloisRep K A M)
     (v : HeightOneSpectrum (𝓞 K)) (hfin : ρ.HasFiniteWildMonodromyAt v)
     (F : RamificationFiltration v) :
-    ∃ μ : ℕ → ℚ, ∀ u : ℚ, 0 < u →
-      Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp u)) =
-        ((Finset.range (ρ.wildCodim v)).filter fun k => u ≤ μ k).card := sorry
+    ∃ μ : ℕ → ℚ, (∀ k < ρ.wildCodim v, 0 < μ k) ∧
+      ∀ u : ℚ, 0 < u →
+        Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp u)) =
+          ((Finset.range (ρ.wildCodim v)).filter fun k => u ≤ μ k).card := sorry
 
 /-- **HASSE–ARF: THE BREAK SUM IS AN INTEGER** (SORRY LEAF, cut 2026-07-28
 out of step `hsum` of `GaloisRep.exists_isSwanExponentAt`).
@@ -4881,10 +4938,21 @@ that integrality is part of what is proved rather than smuggled in by the
 type.
 
 `hfin` is carried because the statement is about a break list, which exists
-only under it. -/
+only under it.
+
+**`hpos` IS NECESSARY, NOT DECORATION (added 2026-07-30).** Without it the
+statement is FALSE, and cheaply: the counting clause tests only at `u > 0`,
+so an entry `μ k ≤ 0` is invisible to it and free to be anything. Take
+`d = 2`, a codimension function equal to `1` on `(0, 1/2]` and `0` above,
+and `μ = (1/2, 0)`: the counting clause holds and `∑ μ = 1/2`, which is no
+natural number. The same slack refutes UNIQUENESS of the Swan exponent —
+`μ = (3, 0)` and `μ = (3, −1)` have identical counting functions and sums
+`3` and `2` — which is why `GaloisRep.IsSwanExponentAt` now carries the
+positivity clause too. -/
 theorem exists_nat_eq_sum_breaks (ρ : GaloisRep K A M)
     (v : HeightOneSpectrum (𝓞 K)) (hfin : ρ.HasFiniteWildMonodromyAt v)
     (F : RamificationFiltration v) (μ : ℕ → ℚ)
+    (hpos : ∀ k < ρ.wildCodim v, 0 < μ k)
     (hμ : ∀ u : ℚ, 0 < u →
       Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp u)) =
         ((Finset.range (ρ.wildCodim v)).filter fun k => u ≤ μ k).card) :
@@ -5254,6 +5322,112 @@ theorem isSwanExponentAt_swanExponentAux (ρ : GaloisRep K A M)
     (v : HeightOneSpectrum (𝓞 K)) (hfin : ρ.HasFiniteWildMonodromyAt v) :
     ρ.IsSwanExponentAt v (ρ.swanExponentAux v) :=
   Nat.sInf_mem (ρ.exists_isSwanExponentAt v hfin)
+
+/-- **THE SWAN EXPONENT SPECIFICATION IS SINGLE-VALUED** (2026-07-28).
+
+`GaloisRep.IsSwanExponentAt ρ v` holds of AT MOST ONE natural number.
+The docstring of `IsSwanExponentAt` asserted this ("since the set is a
+singleton — the true filtration pins it"); it is now a theorem.
+
+THE ARGUMENT, and note it needs no arithmetic at all. Both witnesses are
+tested against the SAME filtration `F` — available because
+`IsSwanExponentAt` carries `Nonempty (RamificationFiltration v)` as its
+first conjunct — so their break lists `μ`, `μ'` have literally the same
+counting function `u ↦ dim V − dim V^{G^u}` on `(0, ∞)`. Both lists are
+entrywise POSITIVE, and positivity plus equal counting functions forces
+equal sums (`sum_eq_of_card_filter_eq_of_dense`, whose density hypothesis
+is satisfied trivially by taking `z := u`), and the sums ARE the two
+witnesses.
+
+**REPROVED 2026-07-30, AND THE FIRST PROOF WAS UNSOUND.** The original
+took positivity from `RamificationFiltration.gp_eq_wild` at `u = 1`,
+which made the counting function constantly `wildCodim` on `(0,1]` and so
+forced `μ k ≥ 1`. That axiom is FALSE and is retired (SECOND FALSITY
+AUDIT on `RamificationFiltration`), and with it went the ONLY route from
+the counting clause to positivity — see the WITHDRAWN note on
+`one_le_break`, and the THIRD FALSITY AUDIT on `IsSwanExponentAt`, which
+exhibits two break lists with identical counting functions and different
+sums. So this theorem was not merely unproved after that release: it was
+FALSE of the specification as it then stood. It is true of the
+specification as it stands now, because positivity is a CLAUSE of the
+break list rather than a hoped-for consequence of the axioms, and the
+proof reads it off directly.
+
+WHY IT MATTERS BEYOND TIDINESS: it makes
+`swanExponentAux_eq_of_isSwanExponentAt` below available, which severs
+the dependence of every Swan COMPUTATION on the satisfiability leaf
+`exists_isSwanExponentAt`. See that declaration. -/
+theorem isSwanExponentAt_unique (ρ : GaloisRep K A M)
+    (v : HeightOneSpectrum (𝓞 K)) {s₁ s₂ : ℕ}
+    (h₁ : ρ.IsSwanExponentAt v s₁) (h₂ : ρ.IsSwanExponentAt v s₂) : s₁ = s₂ := by
+  classical
+  obtain ⟨F⟩ := h₁.1
+  obtain ⟨μ, hpos, hcount, hsum⟩ := h₁.2 F
+  obtain ⟨μ', hpos', hcount', hsum'⟩ := h₂.2 F
+  have hs : ∑ k ∈ Finset.range (ρ.wildCodim v), μ k
+      = ∑ k ∈ Finset.range (ρ.wildCodim v), μ' k := by
+    refine sum_eq_of_card_filter_eq_of_dense _ μ μ' hpos hpos' fun w u hw hwu => ?_
+    refine ⟨u, hwu, le_rfl, ?_⟩
+    rw [← hcount u (hw.trans hwu), ← hcount' u (hw.trans hwu)]
+  have hq : (s₁ : ℚ) = (s₂ : ℚ) := by rw [hsum, hs, ← hsum']
+  exact_mod_cast hq
+
+/-- **THE SWAN CONDUCTOR IS READ OFF FROM ANY BREAK DECOMPOSITION**
+(2026-07-28) — and this is what makes `swanExponentAux` usable BEFORE
+`exists_isSwanExponentAt` is closed.
+
+`swanExponentAux ρ v = sInf {s | ρ.IsSwanExponentAt v s}`, so on the face
+of it computing it needs both a member and a minimality argument, and
+`isSwanExponentAt_swanExponentAux` above buys the member only at the
+price of the open leaf `exists_isSwanExponentAt`. By
+`isSwanExponentAt_unique` the set has at most one element, so exhibiting
+ONE break decomposition determines the value outright — and, as a
+by-product, discharges `exists_isSwanExponentAt` at that `v`.
+
+**CONSEQUENCE FOR DISPATCH, and it corrects a standing note.** A leaf of
+the form `ρ.swanExponent v = c` is NOT downstream of
+`exists_isSwanExponentAt`: it is equivalent to producing the break
+decomposition, which is what a prover would have to do in any case.
+`Fermat/FLT/Modularity/Interface.lean`'s
+`swanExponent_eq_sub_two_of_isWeightTwoNewform_of_three_le` said
+otherwise ("do not dispatch a prover here before that one is closed")
+and has been corrected in place. -/
+theorem swanExponentAux_eq_of_isSwanExponentAt (ρ : GaloisRep K A M)
+    (v : HeightOneSpectrum (𝓞 K)) {s : ℕ} (h : ρ.IsSwanExponentAt v s) :
+    ρ.swanExponentAux v = s := by
+  have hmem : ρ.IsSwanExponentAt v (ρ.swanExponentAux v) := by
+    rw [swanExponentAux]
+    exact Nat.sInf_mem (⟨s, h⟩ : {n : ℕ | ρ.IsSwanExponentAt v n}.Nonempty)
+  exact ρ.isSwanExponentAt_unique v hmem h
+
+/-- **A tamely ramified representation has no wild codimension**: the
+wild inertia fixes everything, so `V^{P_v} = V`. This is item 1 of the
+list in the `IsSwanExponentAt` docstring, now a declaration. -/
+theorem wildCodim_eq_zero_of_isTamelyRamifiedAt (ρ : GaloisRep K A M)
+    (v : HeightOneSpectrum (𝓞 K)) (h : ρ.IsTamelyRamifiedAt v) :
+    ρ.wildCodim v = 0 := by
+  have htop : ρ.fixedSubmodule v (wildInertiaGroup v) = ⊤ :=
+    eq_top_iff.mpr fun x _ σ hσ => h σ hσ x
+  rw [wildCodim, htop]
+  simp
+
+/-- **A NONZERO SWAN EXPONENT WITNESSES WILD RAMIFICATION.** Contrapositive
+of `wildCodim_eq_zero_of_isTamelyRamifiedAt`: under tameness the break
+list is indexed by `range 0`, so its sum — the exponent — is `0`.
+
+This is the form in which a Swan COMPUTATION discharges the `if` in
+`GaloisRep.swanExponent`: a prover who exhibits a break decomposition
+summing to something nonzero gets `¬ IsTamelyRamifiedAt` for free and
+need not argue it separately. -/
+theorem not_isTamelyRamifiedAt_of_isSwanExponentAt (ρ : GaloisRep K A M)
+    (v : HeightOneSpectrum (𝓞 K)) {s : ℕ} (h : ρ.IsSwanExponentAt v s)
+    (hs : s ≠ 0) : ¬ ρ.IsTamelyRamifiedAt v := by
+  intro htame
+  obtain ⟨F⟩ := h.1
+  obtain ⟨μ, _, _, hsum⟩ := h.2 F
+  rw [wildCodim_eq_zero_of_isTamelyRamifiedAt ρ v htame] at hsum
+  simp only [Finset.range_zero, Finset.sum_empty] at hsum
+  exact hs (by exact_mod_cast hsum)
 
 open scoped Classical in
 /-- **The wild part of the Artin conductor exponent** at `v`, i.e. the
