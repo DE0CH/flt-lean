@@ -582,15 +582,49 @@ def r7_action(s):
         note(s, f"7  re-baselined to {s['main']} with no release behind it "
                 f"(main moved without changing any Lean input)")
         return
-    # The claim is DELIVERED, so it is discharged. Leaving it set would make
-    # ".inflight non-empty with no merger record" ambiguous between "a claim was
-    # dropped on the floor" and "a claim was honoured" -- and r11_action now
-    # recovers the first, so it must be able to tell them apart. Row 9 already
-    # clears it on the failure path; this is the success path saying the same
-    # thing.
+    # A DELIVERY IS NOT A RECEIPT FOR THE WHOLE CLAIM. Adopting used to
+    # discharge .inflight wholesale, on the strength of the release being
+    # complete -- and a release is complete when main moved and the snapshot
+    # and audit are current, which says NOTHING about how much of the payload
+    # got merged. So a merger that merged 18 of its 55 branches and then died
+    # (r6_guard defers to r7_guard: "the full delivery is on disk, ADOPT takes
+    # it") had the other 37 dropped in this one assignment, exactly as fault 3
+    # dropped 46 in r11_action's. Their worktrees stayed awaiting_merge for
+    # ever after, because a worker is freed only by its branch BECOMING an
+    # ancestor of main and nothing was left to merge it. 78 worktrees -- one
+    # full day of the fleet's output -- were lost this way before the anomaly
+    # block was written and saw the two numbers fail to add up.
+    #
+    # The receipt is ANCESTRY, and every outcome the merger is allowed already
+    # produces it: a merge makes the branch an ancestor, and so does a DECLINE,
+    # which this fleet records as an explicit empty merge commit (CLAUDE.md,
+    # class 7: `git checkout HEAD -- <files>`, so the diff against the first
+    # parent is empty on purpose). A claimed branch that is neither is one the
+    # merger never dealt with, so it goes back to the batch and the next merger
+    # gets it. Partial delivery is now self-correcting rather than a leak.
+    #
+    # `wstate(...) == "awaiting_merge"` matters as much as the ancestry test:
+    # row 7 sits ABOVE this one and may already have freed the branches that
+    # DID land, and s["ancestor"] is only computed for awaiting_merge workers,
+    # so a freed worker reads back as "not an ancestor". Without the state
+    # test, every branch row 7 had just freed would be re-batched -- the leak
+    # inverted into a duplicate merge.
+    claim = list(s["inflight"] or [])
+    unmerged = [b for b in claim
+                if wstate(s, b) == "awaiting_merge" and not s["ancestor"].get(b)]
+    # Discharged only after the unmerged remainder has been taken out of it.
+    # Leaving it set would make ".inflight non-empty with no merger record"
+    # ambiguous between "a claim was dropped on the floor" and "a claim was
+    # honoured" -- and r11_action recovers the first, so it must be able to
+    # tell them apart. Row 9 already clears it on the failure path; this is the
+    # success path saying the same thing.
     s["inflight"] = None
+    if unmerged:
+        s["batch"] = unmerged + [b for b in s["batch"] if b not in unmerged]
     note(s, f"7  ADOPTED release {s['main']}: snapshot current, "
-            f"queue1 AUDITED with {len(s['queue1']['tasks'])} task(s)")
+            f"queue1 AUDITED with {len(s['queue1']['tasks'])} task(s)"
+            + (f"; {len(unmerged)} claimed branch(es) never landed -> batch"
+               if unmerged else ""))
 
 
 def r11_guard(s):
