@@ -173,67 +173,47 @@ def ssh(host, cmd, timeout=60):
                            host, cmd], capture_output=True, text=True, timeout=timeout)
 
 
-DISCORD_ENV = pathlib.Path.home() / ".claude" / "channels" / "discord" / ".env"
+NOTIFY = str(pathlib.Path.home() / ".local" / "bin" / "notify")
+# Homebrew's python -- which `/usr/bin/env python3` picks in a NON-interactive
+# shell -- reports cafile=None and looks only in ~/homebrew/etc/openssl@3/certs,
+# so it never sees the valid system bundle and every send died with
+# CERTIFICATE_VERIFY_FAILED. Pointing at the real bundle fixes it with
+# verification left ON; the same class of bug as `claude` not being on PATH.
+CA_BUNDLE = "/etc/ssl/certs/ca-certificates.crt"
 
 
-def _discord_conf():
-    """Token + DM target, from the same file the discord plugin uses.
+def notify(subject, body=""):
+    """Tell Deyao. Uses the existing `notify` CLI -- it DMs him and pushes to
+    his phone.
 
-    Read fresh each call rather than cached: the loop outlives any particular
-    configuration, and a token dropped in while it is running should start
-    working without needing a restart.
-    """
-    conf = {}
-    for line in (rd(DISCORD_ENV, "") or "").splitlines():
-        line = line.strip()
-        if line and not line.startswith("#") and "=" in line:
-            k, _, v = line.partition("=")
-            conf[k.strip()] = v.strip().strip("'").strip('"')
-    return conf
+    This replaced a Discord client I had written myself, which was the wrong
+    instinct: the working tool already existed, and building a second one meant
+    a second thing to configure, to break, and to not notice was broken.
 
-
-def notify(subject, body):
-    """Tell Deyao, over Discord's REST API -- no Bun, no MCP server needed.
-
-    Every message is written to notify.log FIRST, before any attempt to send.
-    These notifications exist to report things nobody is watching for, so a
-    message that cannot be delivered must still exist somewhere; dropping one
-    silently is worse than not sending it at all.
+    Logged to notify.log FIRST, before any send. These messages report things
+    nobody is watching for, so one that cannot be delivered must still exist
+    somewhere. Exit codes from the CLI: 0 sent, 1 Discord refused, 2 not
+    configured -- recorded so a silent failure is impossible to mistake for
+    delivery.
     """
     try:
         with open(STATE / "notify.log", "a") as fh:
             fh.write("%s | %s\n%s\n" % (time.strftime("%F %T"), subject, body))
     except OSError:
         pass
-
-    c = _discord_conf()
-    tok = c.get("DISCORD_BOT_TOKEN")
-    chan = c.get("DISCORD_CHANNEL_ID")
-    uid = c.get("DISCORD_USER_ID")
-    if not tok or not (chan or uid):
-        return False                        # unconfigured: logged, not lost
-
-    def api(path, payload):
-        req = urllib.request.Request(
-            "https://discord.com/api/v10" + path,
-            data=json.dumps(payload).encode(),
-            headers={"Authorization": "Bot " + tok,
-                     "Content-Type": "application/json",
-                     "User-Agent": "flt-loop (https://localhost, 1.0)"})
-        with urllib.request.urlopen(req, timeout=30) as r:
-            return json.loads(r.read() or b"{}")
-
+    env = dict(os.environ, SSL_CERT_FILE=CA_BUNDLE)
     try:
-        if not chan:
-            chan = api("/users/@me/channels", {"recipient_id": uid})["id"]
-        msg = "**%s**\n%s" % (subject, body)
-        for i in range(0, min(len(msg), 5700), 1900):   # 2000-char cap per message
-            api("/channels/%s/messages" % chan, {"content": msg[i:i + 1900]})
-        return True
+        r = subprocess.run([NOTIFY, "--title", subject[:200], body[:3500]],
+                           capture_output=True, text=True, timeout=60, env=env)
+        if r.returncode != 0:
+            with open(STATE / "notify.log", "a") as fh:
+                fh.write("  !! notify exit %d: %s\n"
+                         % (r.returncode, (r.stderr or r.stdout).strip()[:300]))
+        return r.returncode == 0
     except Exception as e:
         try:
             with open(STATE / "notify.log", "a") as fh:
-                fh.write("  !! discord send failed: %r\n" % (e,))
+                fh.write("  !! notify failed: %r\n" % (e,))
         except OSError:
             pass
         return False
@@ -355,6 +335,24 @@ containing exactly one JSON object:
      "to_merger": ["<one thing the next merge worker must know>", ...],
      "to_medic":  ""}
 
+NO HUMAN READS ANY OF THIS. NOBODY WILL FOLLOW UP.
+There is no operator watching, no review step, and no one to escalate to. Every
+output you produce is consumed by a Python state machine or by another agent
+that is equally unsupervised. So there is no such thing as "I cannot decide",
+"this needs a human", "flagging for review", "someone should check", or leaving
+a choice open for later. Nobody will make it. If you leave a decision unmade it
+stays unmade forever, and the work is simply lost.
+
+When you are genuinely uncertain: DECIDE ANYWAY, on the best evidence you have,
+do the work, and record what you assumed and what would change your mind -- in
+the commit message, and in `to_merger` if it affects the merge. A decision made
+on stated assumptions can be checked and reversed by whoever comes next. A
+question addressed to nobody cannot.
+
+The one exception is `to_medic`, and it is not an escape hatch for hard
+mathematics: it is only for the LOOP being broken, and it summons a repair
+agent, not a person.
+
 DO NOT WRITE A REPORT. There is no reader for one. The loop is a Python state
 machine; it cannot read prose, cannot summarise, and cannot pass anything on
 that is not addressed to a specific recipient. A summary field would be thrown
@@ -452,6 +450,22 @@ DO ALL FIVE, IN ORDER
     success and carry nothing -- and a dropped payload still builds. Empty for
     a branch that changed files means reset and re-merge. Decline a branch
     that will not reconcile and say so; declining is a result, not a panic.
+
+    EVERY branch on that list must end up an ANCESTOR of the main you publish,
+    and that is the loop's only receipt for it. A merge gives you one. So does
+    a decline, PROVIDED you record it the way CLAUDE.md's class-7 section
+    prescribes -- `git checkout HEAD -- <the files>`, then commit the merge, so
+    the diff against the first parent is empty ON PURPOSE and the commit
+    message says the payload was declined. `git merge --abort` and walking away
+    is NOT a decline: it leaves no receipt.
+
+    A branch you neither merge nor decline that way comes back to you, or to
+    the next merge worker, next release -- the loop folds the remainder of your
+    claim back into the batch. That is deliberate, and it is why running out of
+    time is safe: merge what you can, publish, and the rest is queued again
+    rather than lost. It used to be lost. A merger that merged 18 of 55
+    branches and was killed before reporting had the other 37 silently
+    discharged, and 78 worktrees' work was stranded that way in one day.
  2. Build main clean and leave the artifacts at %(snapshot)s. Every agent
     dispatched after you copies its .lake from there, so a torn or stale one
     poisons all of them.
