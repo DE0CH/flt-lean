@@ -24721,28 +24721,45 @@ NOT above `ℓ`** (LEAF — new 2026-07-30, flt-lean-104; the one arithmetic inp
 local inertia group at a place `w ∤ ℓ` of `F` acts trivially on all `ℓⁿ`-th roots
 of unity, and `cyclotomicCharacter` evaluates to `1`.
 
-THE ROUTE, and it is the `ℓ`-adic, `F`-level twin of `Threeadic.lean`'s
-`cyclotomicCharacterModL_eq_one_of_mem_localInertiaGroup` (mod `3`, over `ℚ`,
-PROVEN 2026-07-24), whose docstring should be read as the model — that lemma is
-NOT usable here, being fixed at `ℓ = 3`, at the mod-`ℓ` character, and over `ℚ`,
-and its module is outside this one's import cone in any case:
+THE ROUTE AS PROVEN (2026-07-30, flt-lean-37). The 2026-07-30 draft route
+recorded below the line was NOT followed and NOTHING of it is needed: the
+inertia half is already in this module's import cone, and the descent needs no
+primitive root, no index `j`, and no cyclotomic product formula.
 
-* `localInertiaGroup w` consists of the automorphisms acting trivially modulo the
-  maximal ideal `𝔪` of the integral closure of `𝒪_w` in `F̄_w`;
-* fix `n` and a primitive `ℓⁿ`-th root of unity `ζ ∈ ℚ̄`; its image under the
-  embedding `ℚ̄ → F̄_w` underlying the two `Field.absoluteGaloisGroup.map`s
-  (`IsAlgClosed.lift`, compatibility `AlgHom.restrictNormal_commutes`) is again a
-  primitive `ℓⁿ`-th root of unity, and is integral over `𝒪_w`;
+* **Descent.** `Field.absoluteGaloisGroup.lift_map` twice, through the two
+  INJECTIVE maps of algebraic closures `ℚᵃˡᵍ → Fᵃˡᵍ → (F_w)ᵃˡᵍ`, turns
+  `map g₁ (map g₂ ι) ζ = ζ` into `ι η = η` for `η` the image of `ζ`, which is
+  again an `ℓⁿ`-th root of unity because a ring map preserves `x ^ ℓⁿ = 1`.
+* **Inertia.** `ArtinConductor.lean`'s
+  `smul_eq_self_of_pow_eq_one_algebraicClosure` — PROVEN 2026-07-27 and in this
+  module's public import closure — says exactly that inertia at `v` fixes every
+  `n`-th root of unity of `Kᵥᵃˡᵍ` when `(n : 𝓞 K) ∉ v.asIdeal`. It is applied at
+  `n := ℓⁿ`, whose side condition follows from `hwℓ` because `w.asIdeal` is
+  PRIME (`Ideal.IsPrime.mem_of_pow_mem`). Its own proof is the separability of
+  `Xⁿ − 1` in the residue characteristic, written without residue-field theory:
+  `u := (σ • ζ)·ζ^{n−1}` satisfies `uⁿ = 1` and `u − 1 ∈ 𝔪`, so
+  `(∑_{i<n} uⁱ)(u − 1) = 0` with `∑_{i<n} uⁱ ≡ n` a UNIT, forcing `u = 1`.
+* **Assembly.** `PadicInt.ext_of_toZModPow` reduces `χ = 1` in `ℤ_[ℓ]ˣ` to one
+  congruence per level; `cyclotomicCharacter.toZModPow` turns level `k` into
+  `modularCyclotomicCharacter` at `ℓ^k`, and `modularCyclotomicCharacter.unique`
+  with `c := ((1 : ℕ) : ZMod (ℓ^k))` closes it from the fixing statement. The
+  `ℕ`-cast spelling of `c` is what makes `ZMod.val_natCast` plus
+  `pow_eq_pow_mod` discharge the exponent at `k = 0` too, where
+  `(1 : ZMod 1).val = 0`; a bare `(1 : ZMod (ℓ^k))` would need `1 < ℓ^k`.
+
+THE DRAFT ROUTE (2026-07-30, superseded — kept only because it names the `ℚ`
+model). It is the `ℓ`-adic, `F`-level twin of `Threeadic.lean`'s
+`cyclotomicCharacterModL_eq_one_of_mem_localInertiaGroup` (mod `3`, over `ℚ`,
+PROVEN 2026-07-24), which is NOT usable here, being fixed at `ℓ = 3`, at the
+mod-`ℓ` character, and over `ℚ`, and outside this module's import cone:
+
+* fix `n` and a primitive `ℓⁿ`-th root of unity `ζ ∈ ℚ̄`;
 * `∏_{0 < i < ℓⁿ} (1 − ζ^i) = ℓⁿ` up to a unit, and `ℓ` is a UNIT of `𝒪_w`
-  because `w ∤ ℓ` (`isUnit_natCast_adicCompletionIntegers`), so `1 − ζ^i` is a
-  unit for every `i ≢ 0`;
-* `σ ζ = ζ^j` for some `j`, and `σ ζ ≡ ζ mod 𝔪` gives
-  `ζ(ζ^{j−1} − 1) ∈ 𝔪` with `ζ` a unit, hence `1 − ζ^{j−1} ∈ 𝔪` — impossible
-  unless `j ≡ 1 mod ℓⁿ`, since otherwise that element is a unit. So `σ` fixes
-  `μ_{ℓⁿ}` pointwise and `cyclotomicCharacter.spec` evaluates the character to
-  `1` modulo `ℓⁿ`;
-* `n` was arbitrary, so the value is `1` in `ℤ_[ℓ]ˣ`
-  (`cyclotomicCharacter.toZModPow`, then `ℤ_[ℓ] = lim ℤ/ℓⁿ`).
+  because `w ∤ ℓ`, so `1 − ζ^i` is a unit for every `i ≢ 0`;
+* `σ ζ = ζ^j` for some `j`, and `σ ζ ≡ ζ mod 𝔪` forces `j ≡ 1 mod ℓⁿ`.
+
+The product formula and the index `j` are exactly what the `u := (σ•ζ)·ζ^{n−1}`
+trick above replaces, which is why nothing of this paragraph was written.
 
 FAITHFULNESS. The hypothesis `w ∤ ℓ` is load-bearing and the statement is FALSE
 without it: at `w ∣ ℓ` the character restricted to inertia is the local
@@ -24761,8 +24778,49 @@ theorem cyclotomicCharacter_map_map_eq_one_of_mem_localInertiaGroup (ℓ : ℕ)
     cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ
       (Field.absoluteGaloisGroup.map (algebraMap ℚ F)
         (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F)) ι)).toRingEquiv
-      = 1 :=
-  sorry
+      = 1 := by
+  -- `w` divides no power of `ℓ` either, `w.asIdeal` being prime.
+  have hwpow : ∀ n : ℕ, ((ℓ ^ n : ℕ) : 𝓞 F) ∉ w.asIdeal := by
+    intro n hmem
+    rw [Nat.cast_pow] at hmem
+    exact hwℓ (w.isPrime.mem_of_pow_mem n hmem)
+  -- STEP 1: the image in `Γ ℚ` fixes every `ℓ`-power root of unity of `ℚᵃˡᵍ`.
+  have hfix : ∀ (n : ℕ) (ζ : ℚ ᵃˡᵍ), ζ ^ ℓ ^ n = 1 →
+      Field.absoluteGaloisGroup.map (algebraMap ℚ F)
+        (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F)) ι) ζ = ζ := by
+    intro n ζ hζ
+    apply (AlgebraicClosure.map (algebraMap ℚ F)).injective
+    rw [Field.absoluteGaloisGroup.lift_map (algebraMap ℚ F)
+      (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F)) ι) ζ]
+    have hζ1 : (AlgebraicClosure.map (algebraMap ℚ F) ζ) ^ ℓ ^ n = 1 := by
+      rw [← map_pow, hζ, map_one]
+    apply (AlgebraicClosure.map (algebraMap F (w.adicCompletion F))).injective
+    rw [Field.absoluteGaloisGroup.lift_map (algebraMap F (w.adicCompletion F)) ι
+      (AlgebraicClosure.map (algebraMap ℚ F) ζ)]
+    have hη : (AlgebraicClosure.map (algebraMap F (w.adicCompletion F))
+        (AlgebraicClosure.map (algebraMap ℚ F) ζ)) ^ ℓ ^ n = 1 := by
+      rw [← map_pow, hζ1, map_one]
+    exact smul_eq_self_of_pow_eq_one_algebraicClosure w hι (hwpow n) hη
+  -- STEP 2: a character fixing all `ℓ`-power roots of unity is trivial.
+  haveI : ∀ i : ℕ, NeZero (ℓ ^ i) :=
+    fun i => ⟨pow_ne_zero i (Fact.out : ℓ.Prime).ne_zero⟩
+  refine Units.ext ?_
+  refine PadicInt.ext_of_toZModPow.mp fun k => ?_
+  rw [cyclotomicCharacter.toZModPow, Units.val_one, map_one]
+  have huniq := modularCyclotomicCharacter.unique (ℚ ᵃˡᵍ)
+    (HasEnoughRootsOfUnity.natCard_rootsOfUnity (ℚ ᵃˡᵍ) (ℓ ^ k))
+    (g := (Field.absoluteGaloisGroup.map (algebraMap ℚ F)
+      (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F)) ι)).toRingEquiv)
+    (c := (((1 : ℕ) : ZMod (ℓ ^ k)))) ?_
+  · rw [← huniq, Nat.cast_one]
+  · intro t ht
+    have h1 : (t : ℚ ᵃˡᵍ) ^ ℓ ^ k = 1 := by
+      rw [← Units.val_pow_eq_pow_val, (mem_rootsOfUnity _ t).mp ht, Units.val_one]
+    have h2 : (Field.absoluteGaloisGroup.map (algebraMap ℚ F)
+        (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F)) ι)).toRingEquiv
+        (t : ℚ ᵃˡᵍ) = (t : ℚ ᵃˡᵍ) := hfix k (t : ℚ ᵃˡᵍ) h1
+    rw [h2, ZMod.val_natCast]
+    simpa using pow_eq_pow_mod 1 h1
 
 end HilbertAuxSplitTorusFibreProduct
 
