@@ -10166,6 +10166,201 @@ theorem isDomain_algebraicClosure_tensorProduct_reduced_integralSystemModel_rat
       (IntegralSystemModel f ℚ ⧸ nilradical (IntegralSystemModel f ℚ))) :=
   sorry
 
+open scoped IntermediateField IntermediateField.algebraAdjoinAdjoin in
+/-- **A SEPARATING TRANSCENDENCE BASIS PUTS A FUNCTION FIELD ON A HYPERSURFACE**
+(PROVEN 2026-07-30; the mathematical core of
+`exists_irreducible_hypersurface_fractionRing_ringEquiv_rat` below, stated over an
+ARBITRARY base field `F` — see the TRAP paragraph in that theorem's docstring for why
+specialising it to `ℚ` breaks it).
+
+Given a field extension `L / F`, a family `w : Fin d → L` that is algebraically
+INDEPENDENT over `F` and SEPARATING (`L` is finite and separable over
+`E := F(w₀,…,w_{d-1})`), there is an irreducible `g ∈ F[X₀,…,X_d]` with
+`Frac (F[X] ⧸ (g)) ≅ L`.  So `k = d + 1`: one more variable than the transcendence
+degree, which is the shape the FAITHFULNESS paragraph below predicts.
+
+THE PROOF, and note what it does NOT use.  Let `A := F[w] = Algebra.adjoin F (range w)`,
+so that `E` is its fraction field and, by `AlgebraicIndependent.aevalEquiv`, `A` is a
+polynomial ring — hence a UFD, hence integrally closed.
+
+* Take a primitive element `θ₀` for `L / E` and SCALE IT INTO `A`:
+  `IsAlgebraic.exists_integral_multiple` gives `0 ≠ y ∈ A` with `θ := y • θ₀` integral
+  over `A`, and `E⟮θ⟯ = E⟮θ₀⟯ = ⊤` because `y` is a nonzero element of the FIELD `E`.
+  This one step replaces the whole clearing-denominators / primitive-part / Gauss's
+  lemma apparatus: `minpoly A θ` is then already an honest polynomial over `A`.
+* `minpoly.prime_of_isIntegrallyClosed` makes `minpoly A θ` prime in `A[Y]`, and
+  `minpoly.ker_eval` identifies `ker (Polynomial.aeval θ : A[Y] →+* L)` with
+  `span {minpoly A θ}` — no division algorithm, no degree count, no Gauss.
+* `MvPolynomial.finSuccEquiv` composed with `Polynomial.mapAlgEquiv` of
+  `AlgebraicIndependent.aevalEquiv` transports `A[Y]` back to
+  `MvPolynomial (Fin (d+1)) F`, carrying the generator to `g` and irreducibility with
+  it (`MulEquiv.irreducible_iff`).
+* Finally `L` IS the fraction field of the quotient: the quotient injects because the
+  ideal is exactly the kernel, and every `z : L` is a ratio of images because
+  `IntermediateField.adjoin F (Set.range (Fin.cons θ w)) = ⊤` (by
+  `IntermediateField.adjoin_adjoin_left` and `E⟮θ⟯ = ⊤`), so
+  `IntermediateField.mem_adjoin_range_iff` writes `z` as a quotient of two values of
+  `MvPolynomial.aeval (Fin.cons θ w)`.  `IsFractionRing.of_field` then applies.
+
+WHY `A` IS A SUBALGEBRA OF `L` AND NOT AN ABSTRACT POLYNOMIAL RING.  mathlib's scoped
+namespace `IntermediateField.algebraAdjoinAdjoin` supplies `Algebra A E`,
+`IsFractionRing A E`, `IsScalarTower A E L` and `Algebra.IsAlgebraic A E` as
+instances for exactly the pair `(Algebra.adjoin F S, IntermediateField.adjoin F S)`.
+Building the same data by `letI`-ing `RingHom.toAlgebra` onto `MvPolynomial (Fin d) F`
+costs four hand-made instances and the scalar towers between them.
+
+CIRCULARITY GUARD: pure field theory and commutative algebra; nothing in this file is
+used. -/
+theorem exists_irreducible_hypersurface_fractionRing_of_separating_basis
+    {F : Type*} [Field F] {L : Type*} [Field L] [Algebra F L]
+    {d : ℕ} (w : Fin d → L) (hw : AlgebraicIndependent F w)
+    [Algebra.IsSeparable (IntermediateField.adjoin F (Set.range w)) L]
+    [FiniteDimensional (IntermediateField.adjoin F (Set.range w)) L] :
+    ∃ g : MvPolynomial (Fin (d + 1)) F, Irreducible g ∧
+      Nonempty (FractionRing (MvPolynomial (Fin (d + 1)) F ⧸ Ideal.span {g}) ≃+* L) := by
+  classical
+  set E := IntermediateField.adjoin F (Set.range w) with hEdef
+  set A := Algebra.adjoin F (Set.range w) with hAdef
+  haveI : UniqueFactorizationMonoid A :=
+    hw.aevalEquiv.toMulEquiv.uniqueFactorizationMonoid inferInstance
+  obtain ⟨θ₀, hθ₀⟩ := Field.exists_primitive_element E L
+  haveI halg : Algebra.IsAlgebraic A L := Algebra.IsAlgebraic.trans A E L
+  obtain ⟨y, hy0, hyint⟩ := (halg.isAlgebraic θ₀).exists_integral_multiple
+  set θ : L := y • θ₀ with hθdef
+  have hyLne : (y : L) ≠ 0 := by
+    rw [Ne, ZeroMemClass.coe_eq_zero]
+    exact hy0
+  have hyEmem : (y : L) ∈ E := IntermediateField.algebra_adjoin_le_adjoin F (Set.range w) y.2
+  have hθsmul : θ = (y : L) * θ₀ := by
+    rw [hθdef, Algebra.smul_def]; rfl
+  have hθtop : E⟮θ⟯ = ⊤ := by
+    have hyMem : ∀ K : IntermediateField E L, (y : L) ∈ K := fun K =>
+      K.algebraMap_mem ⟨(y : L), hyEmem⟩
+    have h2 : θ₀ ∈ E⟮θ⟯ := by
+      have hθ' : θ₀ = θ / (y : L) := by rw [hθsmul]; field_simp
+      rw [hθ']
+      exact div_mem (IntermediateField.mem_adjoin_simple_self E θ) (hyMem _)
+    refine le_antisymm le_top ?_
+    rw [← hθ₀]
+    exact IntermediateField.adjoin_simple_le_iff.2 h2
+  set g₀ : Polynomial A := minpoly A θ with hg₀def
+  have hg₀prime : Prime g₀ := minpoly.prime_of_isIntegrallyClosed hyint
+  have hker₀ : RingHom.ker ((Polynomial.aeval θ).toRingHom : Polynomial A →+* L)
+      = Ideal.span {g₀} := minpoly.ker_eval hyint
+  set Φ : MvPolynomial (Fin (d + 1)) F ≃ₐ[F] Polynomial A :=
+    (MvPolynomial.finSuccEquiv F d).trans (Polynomial.mapAlgEquiv hw.aevalEquiv) with hΦdef
+  set x' : Fin (d + 1) → L := Fin.cons θ w with hx'def
+  set ψ : MvPolynomial (Fin (d + 1)) F →ₐ[F] L := MvPolynomial.aeval x' with hψdef
+  have hcomp : ((Polynomial.aeval θ).restrictScalars F).comp Φ.toAlgHom = ψ := by
+    apply MvPolynomial.algHom_ext
+    intro i
+    refine Fin.cases ?_ ?_ i
+    · simp [hΦdef, hψdef, hx'def, MvPolynomial.finSuccEquiv_X_zero]
+    · intro j
+      have hj : ((hw.aevalEquiv (MvPolynomial.X j) : A) : L) = w j := by simp
+      simp [hΦdef, hψdef, hx'def, MvPolynomial.finSuccEquiv_X_succ, hj]
+  have hker : RingHom.ker (ψ : MvPolynomial (Fin (d + 1)) F →+* L)
+      = Ideal.span {(Φ.symm g₀ : MvPolynomial (Fin (d + 1)) F)} := by
+    have h1 : RingHom.ker (ψ : MvPolynomial (Fin (d + 1)) F →+* L)
+        = Ideal.comap (Φ : MvPolynomial (Fin (d + 1)) F →+* Polynomial A) (Ideal.span {g₀}) := by
+      rw [← hker₀]
+      ext p
+      simp only [Ideal.mem_comap, RingHom.mem_ker]
+      rw [← hcomp]
+      simp
+    rw [h1]
+    have h2 : Ideal.comap (Φ : MvPolynomial (Fin (d + 1)) F →+* Polynomial A) (Ideal.span {g₀})
+        = Ideal.span {(Φ.symm g₀ : MvPolynomial (Fin (d + 1)) F)} := by
+      ext p
+      simp only [Ideal.mem_comap, Ideal.mem_span_singleton, RingHom.coe_coe]
+      constructor
+      · intro h
+        simpa using map_dvd Φ.symm h
+      · intro h
+        simpa using map_dvd Φ h
+    rw [h2]
+  refine ⟨Φ.symm g₀, ?_, ?_⟩
+  · rw [← MulEquiv.irreducible_iff (Φ.toRingEquiv.toMulEquiv)]
+    simpa using hg₀prime.irreducible
+  · set g : MvPolynomial (Fin (d + 1)) F := Φ.symm g₀ with hgdef
+    set Q := MvPolynomial (Fin (d + 1)) F ⧸ Ideal.span {g} with hQdef
+    have hle : Ideal.span {g} ≤ RingHom.ker (ψ : MvPolynomial (Fin (d + 1)) F →+* L) := by
+      rw [hker]
+    set ε : Q →+* L := Ideal.Quotient.lift _ (ψ : MvPolynomial (Fin (d + 1)) F →+* L) hle
+      with hεdef
+    have hεinj : Function.Injective ε := by
+      rw [RingHom.injective_iff_ker_eq_bot, hεdef, Ideal.ker_quotient_lift, hker]
+      exact Ideal.map_quotient_self _
+    letI : Algebra Q L := ε.toAlgebra
+    have hεmap : (algebraMap Q L) = ε := rfl
+    haveI : FaithfulSMul Q L :=
+      (faithfulSMul_iff_algebraMap_injective Q L).2 (by rw [hεmap]; exact hεinj)
+    have hadjtop : IntermediateField.adjoin F (Set.range x') = ⊤ := by
+      have hr : Set.range x' = Set.range w ∪ {θ} := by
+        rw [hx'def, Fin.range_cons, Set.insert_eq, Set.union_comm]
+      rw [hr, ← IntermediateField.adjoin_adjoin_left, ← hEdef, hθtop,
+        IntermediateField.restrictScalars_top]
+    haveI : IsFractionRing Q L := by
+      refine IsFractionRing.of_field Q L fun z => ?_
+      have hz : z ∈ IntermediateField.adjoin F (Set.range x') := by rw [hadjtop]; exact trivial
+      obtain ⟨r, s, hrs⟩ := (IntermediateField.mem_adjoin_range_iff F x' z).1 hz
+      refine ⟨Ideal.Quotient.mk _ r, Ideal.Quotient.mk _ s, ?_⟩
+      simp only [hεmap, hεdef]
+      exact hrs
+    exact ⟨(FractionRing.algEquiv Q L).toRingEquiv⟩
+
+open scoped IntermediateField IntermediateField.algebraAdjoinAdjoin in
+/-- **EVERY FINITELY GENERATED DOMAIN OVER A PERFECT FIELD IS BIRATIONAL TO A
+HYPERSURFACE** (PROVEN 2026-07-30).  This is
+`exists_irreducible_hypersurface_fractionRing_ringEquiv_rat` below with `ℚ` replaced by
+an arbitrary perfect field; perfection is what supplies the SEPARATING transcendence
+basis, and it is the only hypothesis beyond finite generation.
+
+The proof is bookkeeping over
+`exists_irreducible_hypersurface_fractionRing_of_separating_basis` above:
+
+* `Frac S` is essentially of finite type over `F` (`Algebra.EssFiniteType.comp`
+  through `S`, whose second half is `.of_isLocalization`);
+* `exists_isTranscendenceBasis_and_isSeparable_of_perfectField` yields a separating
+  basis as a `Finset (Frac S)`, which `Finset.equivFin` reindexes by `Fin t.card`
+  (`Function.Surjective.range_comp` keeps the range, so the separability statement
+  transfers by `rw`);
+* `FiniteDimensional E (Frac S)` is
+  `Algebra.finite_of_essFiniteType_of_isAlgebraic`, whose `EssFiniteType E (Frac S)`
+  half is `Algebra.EssFiniteType.of_comp` — and this is the step that needs
+  `IsScalarTower F E (Frac S)`, i.e. the step the `ℚ`-instance diamond described
+  below would break. -/
+theorem exists_irreducible_hypersurface_fractionRing_ringEquiv_perfectField
+    (F : Type*) [Field F] [PerfectField F]
+    (S : Type*) [CommRing S] [IsDomain S] [Algebra F S] [Algebra.FiniteType F S] :
+    ∃ (k : ℕ) (g : MvPolynomial (Fin k) F), Irreducible g ∧
+      Nonempty (FractionRing S ≃+*
+        FractionRing (MvPolynomial (Fin k) F ⧸ Ideal.span {g})) := by
+  classical
+  haveI : Algebra.EssFiniteType F (FractionRing S) := by
+    haveI : Algebra.EssFiniteType S (FractionRing S) :=
+      .of_isLocalization _ (nonZeroDivisors S)
+    exact .comp _ S _
+  obtain ⟨t, ht, hsep⟩ :=
+    exists_isTranscendenceBasis_and_isSeparable_of_perfectField F (FractionRing S)
+  set w : Fin t.card → FractionRing S := fun i => ((t.equivFin.symm i : ↥t) : FractionRing S)
+    with hwdef
+  have hrange : Set.range w = (t : Set (FractionRing S)) := by
+    have hcomp : w = (Subtype.val : ↥t → FractionRing S) ∘ t.equivFin.symm := rfl
+    rw [hcomp, (t.equivFin.symm.surjective).range_comp, Subtype.range_coe]
+  have hw : AlgebraicIndependent F w := ht.1.comp _ t.equivFin.symm.injective
+  haveI : Algebra.IsSeparable
+      (IntermediateField.adjoin F (Set.range w)) (FractionRing S) := by
+    rw [hrange]; exact hsep
+  haveI : Algebra.EssFiniteType
+      (IntermediateField.adjoin F (Set.range w)) (FractionRing S) :=
+    Algebra.EssFiniteType.of_comp F _ _
+  haveI : FiniteDimensional
+      (IntermediateField.adjoin F (Set.range w)) (FractionRing S) :=
+    Algebra.finite_of_essFiniteType_of_isAlgebraic
+  obtain ⟨g, hg, ⟨e⟩⟩ := exists_irreducible_hypersurface_fractionRing_of_separating_basis w hw
+  exact ⟨t.card + 1, g, hg, ⟨e.symm⟩⟩
+
 /-- **BIRATIONAL HYPERSURFACE NORMAL FORM FOR A FINITELY GENERATED DOMAIN OVER
 `ℚ`** — Poonen §3.2 step (c) (SORRY LEAF, cut 2026-07-28 out of
 `exists_fractionRing_ringEquiv_hypersurface_integralSystemModel_rat` below).
@@ -10208,13 +10403,55 @@ unavailable outright, since a field has no irreducible element; `S = ℚ` forces
 `k = 1` with `g` of degree one, and `S = ℚ[t]` forces `k = 2`. In general `k` is
 the transcendence degree of `Frac S` plus one, so no uniform junk answer exists.
 
-CIRCULARITY GUARD: pure commutative algebra; nothing in this file is used. -/
+CIRCULARITY GUARD: pure commutative algebra; nothing in this file is used.
+
+**PROVEN 2026-07-30**, over the two declarations immediately above
+(`exists_irreducible_hypersurface_fractionRing_of_separating_basis` and
+`exists_irreducible_hypersurface_fractionRing_ringEquiv_perfectField`); this is now
+a one-line instantiation at `F := ℚ`.  Two corrections to the ROUTE above, both of
+which make the proof SHORTER than advertised, and one trap that is invisible until
+the whole cone is present:
+
+1. **Gauss's lemma and the primitive part are NOT needed.**  The route above clears
+   denominators of `h = minpoly F θ` and takes the primitive part, which drags in
+   `content`, `primPart`, and hence a `NormalizedGCDMonoid` data instance that
+   `MvPolynomial (Fin d) F` does not carry.  Scale the primitive element instead:
+   `IsAlgebraic.exists_integral_multiple` gives `0 ≠ y ∈ A := Algebra.adjoin F s`
+   with `y • θ₀` INTEGRAL over `A`, and `E⟮y • θ₀⟯ = E⟮θ₀⟯` because `y` is a nonzero
+   element of `E`.  With `θ` integral over `A`, `minpoly A θ` is already the
+   polynomial wanted: `minpoly.prime_of_isIntegrallyClosed` gives irreducibility and
+   `minpoly.ker_eval` gives `ker (Polynomial.aeval θ) = span {minpoly A θ}` outright,
+   so the whole "`Frac (ℚ[t,y] ⧸ (g)) ≅ F[y] ⧸ (h)`" step collapses to
+   `IsFractionRing.of_field` plus `IntermediateField.mem_adjoin_range_iff`.
+   `IsIntegrallyClosed A` is free: `A` is a polynomial ring by
+   `AlgebraicIndependent.aevalEquiv`, hence a UFD, hence `IsGCDMonoid`, hence
+   integrally closed (`GCDMonoid.toIsIntegrallyClosed`).
+2. `A := Algebra.adjoin F s` and `E := IntermediateField.adjoin F s` are the right
+   pair to work with, NOT an abstract `MvPolynomial`/`FractionRing` pair: mathlib's
+   scoped namespace `IntermediateField.algebraAdjoinAdjoin` supplies
+   `Algebra A E`, `IsFractionRing A E`, `IsScalarTower A E L` and
+   `Algebra.IsAlgebraic A E` as instances, so no `letI`-built algebra structures are
+   needed anywhere.
+
+**THE TRAP, and it does not appear in a small scratch module: `Algebra ℚ ↥E` is a
+DIAMOND.**  Once this file's import closure is present, `DivisionRing.toRatAlgebra`
+(the canonical `ℚ`-algebra on any characteristic-zero division ring) is in scope and
+WINS synthesis against `IntermediateField.algebra'`.  The consequence is that
+`IsScalarTower ℚ ↥(IntermediateField.adjoin ℚ s) L` fails to synthesise — which kills
+the `Algebra.EssFiniteType.of_comp` step that supplies `FiniteDimensional E L` — and
+that a rewrite by `IntermediateField.restrictScalars_top` reports
+"synthesized type class instance is not definitionally equal".  A version of this
+proof stated directly at `ℚ` compiled in a module importing only the mathlib files it
+needs and then broke on being moved here.  **The fix is to state everything over an
+ABSTRACT base field `F`** (which is what the two lemmas above do) and instantiate at
+`ℚ` only in this final line, where no intermediate field of `L / ℚ` appears in the
+statement at all.  Do not "simplify" those lemmas by specialising them to `ℚ`. -/
 theorem exists_irreducible_hypersurface_fractionRing_ringEquiv_rat
     (S : Type*) [CommRing S] [IsDomain S] [Algebra ℚ S] [Algebra.FiniteType ℚ S] :
     ∃ (k : ℕ) (g : MvPolynomial (Fin k) ℚ), Irreducible g ∧
       Nonempty (FractionRing S ≃+*
         FractionRing (MvPolynomial (Fin k) ℚ ⧸ Ideal.span {g})) :=
-  sorry
+  exists_irreducible_hypersurface_fractionRing_ringEquiv_perfectField ℚ S
 
 open _root_.TensorProduct in
 /-- **GEOMETRIC INTEGRALITY PASSES FROM A DOMAIN TO ITS FRACTION FIELD** (SORRY
