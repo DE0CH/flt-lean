@@ -8422,7 +8422,56 @@ would most likely get wrong:
 3. **THE LEAF'S OWN LEVELS ARE UNAFFECTED.**  Everything this leaf and
    `exists_qAdicWeilSystem_of_mult` use is at `I = (q^N)`, `n = q^N` over
    the NUMBER field `F`, where `(q^N : F) ≠ 0` holds for free.  So the
-   conclusion below did not change and neither did any call site. -/
+   conclusion below did not change and neither did any call site.
+
+**THE OBVIOUS DECOMPOSITION OF THIS LEAF IS UNSAFE — DO NOT MAKE IT**
+(searched and rejected 2026-07-30, while the sibling leaf
+`exists_finset_abelianReductionDatum_of_mult` was being cut successfully at
+the analogous seam; recorded because the two look alike and only one of
+them works).
+
+The conclusion is `∃ d hom, IsQAdicWeilTower d x q ∧ IsQAdicPolarizationHom
+d x q hom`, and `IsQAdicWeilTower d x q` does not mention `hom` at all.  So
+it appears to split cleanly into
+
+* `∃ d : DualStruct ab m, IsQAdicWeilTower d x q` — the dual with its
+  cross-level compatibility, and
+* `∀ d : DualStruct ab m, IsQAdicWeilTower d x q →
+    ∃ hom, IsQAdicPolarizationHom d x q hom` — the polarization,
+
+two genuinely different books (Grothendieck representability of `Pic⁰` and
+Silverman *AEC* III.8.1(e) on one side, Mumford §16 and §23 on the other).
+The second half is the trap: it quantifies UNIVERSALLY over `d`, and
+`DualStruct` does NOT pin `d` to be the true dual.  The sibling cut is safe
+precisely because its five base clauses do pin `ι(O)` up to the `Γ_F`-orbit
+of places above `w`; there is no comparable set of clauses here, and none
+was found.
+
+WHAT WAS ACTUALLY CHECKED, because "it might be false" is not a finding.
+Junk duals satisfying every axiom of `DualStruct` do exist — take
+`dualAb := A × A` with `weil (y, (z₁, z₂)) := e (y, λ z₁)` for a principal
+`λ`, which satisfies `weil_add_left`, `weil_add_right`, `weil_gal`,
+`weil_act` (`weil_act` needs the Rosati involution trivial on `𝒪_D`, which
+`[IsTotallyReal D]` gives) and the gated `weil_nondegenerate`.  That
+particular junk dual DOES admit a `hom`, namely `y ↦ (λ y, 0)`, so it is
+not a counterexample; and the two cheap degenerate candidates are both
+excluded by the nondegeneracy axiom rather than by the polarization
+clause — `dualAb` of relative dimension `0` forces `A[I](F̄) = 0`, and
+halving the pairing (`weil := e(·, λ ·)^2` at `q = 2`) kills it on `A[2]`.
+So the nondegeneracy axiom is strong, and no counterexample was produced.
+It was also not RULED OUT: the perfectness clause of
+`IsQAdicPolarizationHom` asks for a map `A[q^N] → dualAb[q^N]` whose
+induced pairing separates points of `A[q^N]`, and for an arbitrary `d` that
+is the existence of a polarization on an object that need not be an abelian
+variety's true dual — classically supplied by ampleness, which `DualStruct`
+nowhere asserts.
+
+So the second half is a statement nobody has checked, of exactly the shape
+CLAUDE.md says is worse than open (a false leaf can never be closed and
+everything above it is worthless).  **This leaf therefore stays atomic
+until someone either finds a junk `d` admitting no `hom` — which refutes
+the cut and settles it — or adds a clause to `DualStruct` pinning `d` as
+the dual, at which point the cut becomes safe and should be made.** -/
 theorem exists_dualPolarization_of_mult
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
