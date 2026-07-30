@@ -134,6 +134,10 @@ public import Mathlib.RingTheory.AlgebraicIndependent.Adjoin
 public import Mathlib.RingTheory.AlgebraicIndependent.TranscendenceBasis
 public import Mathlib.RingTheory.TensorProduct.MvPolynomial
 public import Mathlib.RingTheory.TensorProduct.Maps
+-- `mem_range_algebraMap_of_isAlgebraic_fractionRing_powerSeries` at the end of this file
+-- needs the `UniqueFactorizationMonoid`/`IsDiscreteValuationRing` structure of `k⟦X⟧`
+-- and `PowerSeries.isUnit_iff_constantCoeff`.
+public import Mathlib.RingTheory.PowerSeries.Inverse
 
 @[expose] public section
 
@@ -1196,5 +1200,96 @@ theorem isDomain_tensorProduct_of_isAlgebraic_mem_bot
     isDomain_fractionRing_tensorProduct_of_isAlgebraic_mem_bot k B h K
   exact isDomain_tensorProduct_of_injective k B (FractionRing B) K
     (IsScalarTower.toAlgHom k B (FractionRing B)) (IsFractionRing.injective B (FractionRing B))
+
+/-! ### A coefficient field of a valuation-like ring is algebraically closed in the
+fraction field
+
+Added 2026-07-30 for `Fermat/FLT/ModularCurve/X0.lean`'s q-expansion route to
+`isAlgebraic_coarseRing_of_gamma0GITPresentation`.  The point of the abstraction is
+that the modular input there (an embedding of the coarse ring into `k((q))`) is
+separated from the field theory, which is entirely general and is proven here. -/
+
+/-- **A COEFFICIENT FIELD IS ALGEBRAICALLY CLOSED IN THE FRACTION FIELD** (PROVEN
+2026-07-30).
+
+Let `R` be an integrally closed domain with fraction field `L`, and `k ⊆ R` a subfield
+such that *every* `z : R` can be translated by a constant into the non-units — the
+hypothesis `hres`.  Then every `x : L` algebraic over `k` already lies in `k`.
+
+`hres` is exactly "the residue field of `R` is `k`" for a local `R`, stated in the one
+form the proof consumes so that no `IsLocalRing` instance is needed: for `R = k⟦X⟧` it
+is `c := constantCoeff z` together with `PowerSeries.isUnit_iff_constantCoeff`, and that
+is the only instance used in this development
+(`mem_range_algebraMap_of_isAlgebraic_fractionRing_powerSeries` below).
+
+The argument in three steps, none of which needs a valuation:
+
+* `x` is integral over `k`, hence over `R`, hence lies in `R` — this is the ONLY place
+  `IsIntegrallyClosed R` is used, and it is what replaces the usual "`v x = 0`"
+  computation.  Write `x = algebraMap R L z`.
+* Take `c` from `hres z`.  If `x ≠ algebraMap k L c` then `(x - c)⁻¹` is again algebraic
+  over `k` (a field is closed under inverses of nonzero algebraic elements), so by the
+  same step it too comes from `R`, say from `w`.
+* `(z - algebraMap k R c) * w = 1` in `R` by injectivity of `R → L`, so
+  `z - algebraMap k R c` is a UNIT — contradicting `hres`.  Hence `x = c`.
+
+**Faithfulness.** `hres` cannot be dropped and cannot be weakened to "some `z` has such
+a `c`": with `k = ℚ` and `R = ℚ(i)⟦X⟧` (a DVR, integrally closed, containing `ℚ`), the
+conclusion is FALSE — `i ∈ R ⊆ L` is algebraic over `ℚ` and is not in the image of `ℚ`
+— and what fails is precisely `hres` at `z = i`, since `i - c` is a unit for every
+rational `c`.  So `hres` is carrying the whole arithmetic content, as it must. -/
+theorem mem_range_algebraMap_of_isAlgebraic_of_forall_exists_not_isUnit
+    {k R L : Type*} [Field k] [CommRing R] [IsDomain R] [IsIntegrallyClosed R]
+    [Field L] [Algebra R L] [IsFractionRing R L] [Algebra k R] [Algebra k L]
+    [IsScalarTower k R L]
+    (hres : ∀ z : R, ∃ c : k, ¬ IsUnit (z - algebraMap k R c))
+    {x : L} (hx : IsAlgebraic k x) :
+    x ∈ Set.range (algebraMap k L) := by
+  obtain ⟨z, hz⟩ := IsIntegrallyClosed.isIntegral_iff.mp (hx.isIntegral.tower_top (A := R))
+  obtain ⟨c, hc⟩ := hres z
+  refine ⟨c, ?_⟩
+  by_contra hne
+  have hxc : x - algebraMap k L c ≠ 0 := fun h => hne (by linear_combination -h)
+  have halg : IsAlgebraic k (x - algebraMap k L c) := hx.sub (isAlgebraic_algebraMap c)
+  obtain ⟨w, hw⟩ := IsIntegrallyClosed.isIntegral_iff.mp (halg.inv.isIntegral.tower_top (A := R))
+  refine hc ⟨⟨z - algebraMap k R c, w, ?_, ?_⟩, rfl⟩ <;>
+    · have hinj : Function.Injective (algebraMap R L) := IsFractionRing.injective R L
+      apply hinj
+      rw [map_mul, map_sub, hz, map_one, ← IsScalarTower.algebraMap_apply, hw]
+      first
+        | rw [mul_inv_cancel₀ hxc]
+        | rw [inv_mul_cancel₀ hxc]
+
+/-- **`k` IS ALGEBRAICALLY CLOSED IN `k((q))`** (PROVEN 2026-07-30), the formal-Laurent
+field being presented as `FractionRing k⟦X⟧`.
+
+This is the field-theoretic half of the q-expansion principle: a modular function whose
+q-expansion is a CONSTANT Laurent series is a constant, and more precisely an element of
+`k((q))` that is algebraic over `k` is already in `k`.
+
+**Why `FractionRing (PowerSeries k)` and not `LaurentSeries k`**, which is the same field
+and the more readable name: `LaurentSeries k = HahnSeries ℤ k` carries an
+`SMul k (HahnSeries ℤ k)` (`HahnSeries.instSMul`, coefficientwise) that is NOT the one
+underlying the `Algebra k (HahnSeries ℤ k)` instance synthesis actually picks
+(`HahnSeries.powerSeriesAlgebra ℤ k`, whose `smul` is `algebraMap c * ·`).  They are
+propositionally equal, but `IsScalarTower k k⟦X⟧ (LaurentSeries k)` then does **not**
+synthesize, and discharging it by hand runs `whnf` past 200 000 heartbeats — measured
+2026-07-30, so raising `maxHeartbeats` is not the fix.  `FractionRing k⟦X⟧` has none of
+this: `Algebra k (FractionRing k⟦X⟧)`, the scalar tower, `IsFractionRing` and `Field` all
+synthesize immediately.
+
+A consumer that prefers `LaurentSeries k` can transport along
+`IsLocalization.algEquiv` for the two fraction fields of `k⟦X⟧` (mathlib's
+`instIsFractionRing : IsFractionRing k⟦X⟧ k⸨X⸩`); the resulting equivalence is
+`k⟦X⟧`-linear, hence automatically compatible with `algebraMap k ·` on both sides, which
+factors through `k⟦X⟧`. -/
+theorem mem_range_algebraMap_of_isAlgebraic_fractionRing_powerSeries
+    {k : Type*} [Field k] {x : FractionRing (PowerSeries k)} (hx : IsAlgebraic k x) :
+    x ∈ Set.range (algebraMap k (FractionRing (PowerSeries k))) := by
+  refine mem_range_algebraMap_of_isAlgebraic_of_forall_exists_not_isUnit
+    (R := PowerSeries k) (fun z => ?_) hx
+  refine ⟨PowerSeries.constantCoeff z, ?_⟩
+  rw [PowerSeries.isUnit_iff_constantCoeff]
+  simp
 
 end

@@ -12473,7 +12473,9 @@ bridge is the one remaining leaf of that file, and it is shared with
 **Since 2026-07-28 both algebraic leaves are themselves PROVEN**, over one
 modular leaf about the RIGIDIFIED ring `A`
 (`exists_gamma0GITPresentation_dedekindModuli`), one arithmetic leaf about `B`
-(`isAlgebraic_coarseRing_of_gamma0GITPresentation`), and the mathlib-facing
+(`isAlgebraic_coarseRing_of_gamma0GITPresentation` — itself a THEOREM since
+2026-07-30 over `exists_qExpansion_gamma0GITPresentation`, which is now the
+arithmetic leaf), and the mathlib-facing
 invariant theory of `Fermat/FLT/Mathlib/RingTheory/InvariantCoarseRing.lean`.
 See the section comment attached to them below for why the first has to be
 stated `∃ P` and the second may be stated `∀ P`.
@@ -12637,10 +12639,14 @@ extension `K/ℚ` — were bare `sorry`s.  They are now THEOREMS, over three thi
   Katz–Mazur (8.1.1) representability read as a statement about the RIGIDIFIED
   ring `A`: *some* presentation has `A` a Dedekind domain of finite type over
   `ℚ` of Krull dimension one;
-* one **geometric-integrality** leaf,
+* one **geometric-integrality** statement,
   `isAlgebraic_coarseRing_of_gamma0GITPresentation`, the
   q-expansion-principle content of Deligne–Rapoport IV.5.5 in its sharpest
-  ring-theoretic form: `ℚ` is algebraically closed in `B`;
+  ring-theoretic form: `ℚ` is algebraically closed in `B`.  Since 2026-07-30 it is
+  a THEOREM, over the strictly smaller leaf `exists_qExpansion_gamma0GITPresentation`
+  (the Tate curve at the cusp gives `B ↪ ℚ((q))`) plus the field theory
+  `mem_range_algebraMap_of_isAlgebraic_fractionRing_powerSeries`, PROVEN in
+  `InvariantCoarseRing.lean`;
 * and the mathlib-facing commutative algebra of
   `Fermat/FLT/Mathlib/RingTheory/InvariantCoarseRing.lean` — Noether's theorem
   on invariants, normality of invariants, and the Krull dimension of a finite
@@ -12827,10 +12833,129 @@ theorem exists_gamma0GITPresentation_dedekindModuli (N : ℕ) (hN : 0 < N) :
   intro _ _ _ _
   exact hP (@Subsingleton.elim _ (subsingleton_hom_specQ _) _ _)
 
-/-- **`ℚ` is algebraically closed in the coarse ring `B = A^G`** (sorry leaf,
-opened 2026-07-28 as the geometric-integrality half of
+/-- **THE q-EXPANSION MAP AT THE CUSP `∞`** (sorry leaf, opened 2026-07-30 as the
+single modular input of `isAlgebraic_coarseRing_of_gamma0GITPresentation` below) —
+Deligne–Rapoport VII.2 / Katz–Mazur (1.4.1) for the Tate curve, or Shimura 6.6 for
+the classical statement.
+
+The coarse ring `B` of `Y_0(N)_ℚ` embeds, as a `ℚ`-algebra, into the field of formal
+Laurent series `ℚ((q))`: a modular function for `Γ₀(N)` defined over `ℚ` has a
+q-expansion at `∞` with RATIONAL coefficients, and it is determined by it.
+
+## What a prover of this owes
+
+Two things, and they are the two halves of the classical q-expansion principle:
+
+* **the map.** The Tate curve `Tate(q)` over `ℚ((q))`, with its canonical cyclic
+  subgroup `μ_N ⊆ Tate(q)[N]`, is a `Gamma0Datum N (Spec ℚ((q)))` over `SpecQ`
+  (Deligne–Rapoport VII.2; Katz–Mazur (8.11) for the `Γ₀(N)`-structure).  Feeding it
+  to `P.classify` gives a `ℚ((q))`-point of the coarse space, i.e. a `ℚ`-algebra map
+  `B → ℚ((q))`.  Rationality of the coefficients is exactly the statement that the
+  Tate datum is defined over `ℤ((q))` — it needs no `ζ_N`, which is where an
+  arbitrary level structure would force `ℚ(ζ_N)`.
+* **injectivity.** `B` is a domain (`isRegularRing_coarseRing_of_gamma0GITPresentation`
+  below carries `IsDomain B` among its conjuncts, over
+  `exists_gamma0GITPresentation_dedekindModuli`), so the kernel is prime; it is not
+  maximal because the cusp is not a point of the AFFINE curve `Y_0(N)`, so the map does
+  not factor through a residue field.  **No circularity** — checked 2026-07-30 by
+  reading its proof: it consumes `exists_gamma0GITPresentation_dedekindModuli`,
+  `Algebra.IsInvariant.isRegularRing_of_isInvariant` and `coarseRing_algEquiv`, and
+  nothing in this leaf's cluster.  It does however sit BELOW this leaf in the file, so a
+  prover cannot cite it by name without hoisting; the cheap alternative is to re-run its
+  three-line domain half here (`exists_gamma0GITPresentation_dedekindModuli` gives
+  `IsDedekindDomain P₀.A`, invariance gives `IsDomain P₀.B`, `coarseRing_algEquiv`
+  transports).
+
+## This is NOT the forbidden "rational point" route
+
+The docstring below says, correctly, that
+"connected + a rational point ⟹ geometrically connected" is unavailable because
+`Y_0(N)(ℚ)` is empty for most `N`.  That is not what this leaf uses.  The cusp `∞` is
+a rational point of the COMPACTIFICATION `X_0(N)`, and it is **not** in `Y_0(N)` —
+which is precisely why the construction yields an *embedding into the Laurent field of
+its formal neighbourhood* rather than an *evaluation into `ℚ`*.  Emptiness of
+`Y_0(N)(ℚ)` is consistent with this leaf and does not bear on it; indeed a rational
+point of `Y_0(N)` would give a surjection `B ↠ ℚ`, which is a different (and here
+unavailable) object.
+
+## Why `FractionRing (PowerSeries ℚ)` rather than `LaurentSeries ℚ`
+
+They are the same field — mathlib's `IsFractionRing ℚ⟦X⟧ ℚ⸨X⸩` is an instance — but
+`LaurentSeries ℚ = HahnSeries ℤ ℚ` carries an `SMul ℚ` (`HahnSeries.instSMul`,
+coefficientwise) that is not the one under the `Algebra ℚ (LaurentSeries ℚ)` instance
+synthesis picks, so `IsScalarTower ℚ ℚ⟦X⟧ (LaurentSeries ℚ)` does not synthesize and
+discharging it by hand overruns `whnf` at 200 000 heartbeats (measured 2026-07-30;
+raising `maxHeartbeats` does not help).  A prover who would rather build the Tate
+q-expansion into `LaurentSeries ℚ` may do so and transport along `IsLocalization.algEquiv`
+between the two fraction fields of `ℚ⟦X⟧`: that equivalence is `ℚ⟦X⟧`-linear, hence
+automatically a `ℚ`-algebra map, since `algebraMap ℚ ·` factors through `ℚ⟦X⟧` on both
+sides.  See `mem_range_algebraMap_of_isAlgebraic_fractionRing_powerSeries` in
+`Fermat/FLT/Mathlib/RingTheory/InvariantCoarseRing.lean` for the same note.
+
+## FAITHFULNESS AUDIT (2026-07-30)
+
+* **`hN` is LOAD-BEARING here**, unlike on the consumer below.  At `N = 0` a
+  `Γ₀(0)`-datum forces its base to be empty (`isEmpty_of_gamma0Datum_zero`), so `B` is
+  the ZERO ring — and there is no ring homomorphism at all from the zero ring to a
+  field, since `0 = 1` upstairs.  So at `N = 0` this leaf is FALSE, not merely
+  unprovable, while its consumer stays (vacuously) true.  Dropping `hN` would
+  manufacture a false leaf.
+* **The `∀ P` is legitimate**, by the same argument as for the consumer:
+  `coarseRing_algEquiv` gives `Nonempty (P.B ≃ₐ[ℚ] P'.B)` for any two presentations
+  satisfying the `str` hypothesis, and "admits an injective `ℚ`-algebra map to
+  `ℚ((q))`" transports along a `ℚ`-algebra isomorphism.  A prover therefore has to
+  construct `f` for ONE presentation only.
+* **Nothing needs pinning beyond injectivity.**  The usual under-pinning trap — an
+  adversary post-composing `f` with an automorphism — is harmless here: the consumer
+  uses only that *some* injective `ℚ`-algebra map exists, and every clause it needs is
+  invariant under post-composition by a `ℚ`-algebra automorphism of `ℚ((q))`.  So this
+  is one of the rare `∃` where a weaker pin is not a defect.  In particular one must
+  NOT strengthen it to "`f` is the q-expansion at `∞`" — naming the cusp would require
+  the compactification, which is built downstream of this file's consumers.
+* **Vacuity, both directions.**  Not vacuous: `Gamma0GITPresentation N` is inhabited
+  for `0 < N` (`exists_gamma0GITPresentation`), and the `str` hypothesis is satisfiable
+  (`subsingleton_hom_specQ` makes it automatic).  Not trivially satisfiable: `B` is a
+  finitely generated `ℚ`-algebra domain of Krull dimension one, so an injective map to
+  `ℚ((q))` is a genuine transcendence statement — it fails, for instance, for any `B`
+  whose fraction field is not embeddable in `ℚ((q))`, e.g. one with no `ℚ`-rational
+  place. -/
+theorem exists_qExpansion_gamma0GITPresentation {N : ℕ} (hN : 0 < N)
+    (P : Gamma0GITPresentation N) :
+    letI := P.commRing_B
+    ∀ [Algebra ℚ P.B], Spec.map (CommRingCat.ofHom (algebraMap ℚ P.B)) = P.str →
+      ∃ f : P.B →ₐ[ℚ] FractionRing (PowerSeries ℚ), Function.Injective f :=
+  sorry
+
+/-- **`ℚ` is algebraically closed in the coarse ring `B = A^G`** (**PROVEN 2026-07-30**
+over the single modular leaf `exists_qExpansion_gamma0GITPresentation` immediately
+above and the field theory
+`mem_range_algebraMap_of_isAlgebraic_fractionRing_powerSeries` in
+`Fermat/FLT/Mathlib/RingTheory/InvariantCoarseRing.lean`; was a sorry leaf from
+2026-07-28, opened as the geometric-integrality half of
 `geometricallyConnected_of_gamma0GITPresentation`) — Deligne–Rapoport IV.5.5, or
 Shimura 6.6.
+
+## How it became a theorem (2026-07-30)
+
+The q-expansion principle splits cleanly into an ARITHMETIC half and a FIELD-THEORETIC
+half, and only the first is modular:
+
+* `B ↪ ℚ((q))` as a `ℚ`-algebra — the Tate curve at the cusp.  That is the leaf above.
+* `ℚ` is algebraically closed in `ℚ((q))` — proven outright, by the coefficient-field
+  argument: `ℚ⟦q⟧` is integrally closed, so anything algebraic over `ℚ` lies in it;
+  subtract its constant term; if the difference were nonzero its inverse would lie in
+  `ℚ⟦q⟧` too, making a series with zero constant term a unit.
+
+Then `x` algebraic ⟹ `f x` algebraic ⟹ `f x = c` for a rational `c` ⟹ `x = c` by
+injectivity.  Three lines, once the split is made.
+
+The split is what removes the need for a `Frac B`-level argument: the old plan was to
+prove `ℚ` algebraically closed in `Frac B`, which needs `B` normal and a
+normality-transfer step; embedding `B` in a field where the statement is already known
+needs neither.
+
+## The mathematics, as it stood while this was a leaf (unchanged, and still the
+## specification of the leaf above)
 
 This is the q-expansion principle: the `Γ₀(N)`-moduli problem is defined over
 `ℚ`, so no constant field extension occurs in the coarse space, i.e. an element
@@ -12841,7 +12966,10 @@ normal domain (`isRegularRing_coarseRing_of_gamma0GITPresentation` below, via
 `Frac B / ℚ` being a regular extension, hence to geometric integrality.  The
 last two equivalences are
 `isDomain_fractionRing_tensorProduct_of_isAlgebraic_mem_bot`; what is asked here
-is only the arithmetic input.
+is only the arithmetic input — and since 2026-07-30 that arithmetic input is
+isolated in `exists_qExpansion_gamma0GITPresentation` above, with the
+normality-and-`Frac B` route described in this paragraph no longer needed (see
+"How it became a theorem" at the top).
 
 (**Correction, 2026-07-30**: that declaration is called "the mathlib-facing leaf"
 here and in the section comment above, and it is NOT a leaf — it is a PROVEN
@@ -12864,14 +12992,21 @@ algebraically closed in `A`; the statement is true only after passing to
 `B = A^G`.  This is the one place in the family where the invariants are
 genuinely needed rather than merely convenient.
 
-**`_hN` is NOT load-bearing here**, and that is deliberate: at `N = 0` the
-coarse space is empty, so `B` is the zero ring, in which every element equals
-`algebraMap ℚ B 0` and the conclusion is trivially true.  It is kept as a binder
-only to match the family; the `hN` on the consumers is load-bearing for a
-different reason (`ringKrullDim B = 1`).
+**`hN` is not load-bearing for the STATEMENT**: at `N = 0` the coarse space is
+empty, so `B` is the zero ring, in which every element equals `algebraMap ℚ B 0`
+and the conclusion is trivially true.  It *is* consumed by the PROOF below, which
+routes through `exists_qExpansion_gamma0GITPresentation`, and there it is load-bearing
+— no ring homomorphism leaves the zero ring for a field.  (It was written `_hN` while
+this was a leaf; the underscore was dropped 2026-07-30 when the proof began using it.
+The statement is unchanged and every call site is positional.)  The `hN` on the
+consumers is load-bearing for a third reason (`ringKrullDim B = 1`).
 
-## FAITHFULNESS AUDIT (2026-07-30) — the `∀ P` survives, and the leaf must NOT be
-## moved down to `A`
+## FAITHFULNESS AUDIT (2026-07-30) — the `∀ P` survives, and the statement must NOT
+## be moved down to `A`
+
+Written while this was still a leaf; it now audits BOTH this theorem and
+`exists_qExpansion_gamma0GITPresentation` above, which inherits the `∀ P` verbatim
+and to which (b) applies word for word.
 
 Two checks, because the `∀ P` here sits directly beside an `∃ P` whose docstring
 explains at length why *it* cannot be a `∀ P`.
@@ -12910,12 +13045,20 @@ at `ℚ` that field is supplied by `nonempty_gamma0CurveAtlasOver_rat` out of
 `exists_gamma0AffineModel`, whose connectedness is
 `geometricallyConnected_of_gamma0GITPresentation` — i.e. this leaf.  Checked
 2026-07-30: it is a consumer, not a route around. -/
-theorem isAlgebraic_coarseRing_of_gamma0GITPresentation {N : ℕ} (_hN : 0 < N)
+theorem isAlgebraic_coarseRing_of_gamma0GITPresentation {N : ℕ} (hN : 0 < N)
     (P : Gamma0GITPresentation N) :
     letI := P.commRing_B
     ∀ [Algebra ℚ P.B], Spec.map (CommRingCat.ofHom (algebraMap ℚ P.B)) = P.str →
-      ∀ x : P.B, IsAlgebraic ℚ x → x ∈ (⊥ : Subalgebra ℚ P.B) :=
-  sorry
+      ∀ x : P.B, IsAlgebraic ℚ x → x ∈ (⊥ : Subalgebra ℚ P.B) := by
+  letI := P.commRing_B
+  intro _ hstr x hx
+  obtain ⟨f, hf⟩ := exists_qExpansion_gamma0GITPresentation hN P hstr
+  have hfx : IsAlgebraic ℚ (f x) := by
+    obtain ⟨p, hp0, hpx⟩ := hx
+    exact ⟨p, hp0, by rw [Polynomial.aeval_algHom_apply, hpx, map_zero]⟩
+  obtain ⟨c, hc⟩ := mem_range_algebraMap_of_isAlgebraic_fractionRing_powerSeries hfx
+  rw [Algebra.mem_bot]
+  exact ⟨c, hf (by rw [f.commutes]; exact hc)⟩
 
 /-- **The coarse ring `B = A^G` is a regular finite-type `ℚ`-domain of Krull
 dimension one** (PROVEN 2026-07-28 over the modular leaf
@@ -13162,8 +13305,11 @@ theorem smoothOfRelativeDimension_of_gamma0Atlas {N : ℕ} (hN : 0 < N)
     (smoothOfRelativeDimension_of_gamma0GITPresentation hN P)
 
 /-- **The coarse ring `B = A^G` is GEOMETRICALLY INTEGRAL over `ℚ`** (PROVEN
-2026-07-28 over the two leaves `isAlgebraic_coarseRing_of_gamma0GITPresentation`
-and `isDomain_fractionRing_tensorProduct_of_isAlgebraic_mem_bot`; opened
+2026-07-28 over `isAlgebraic_coarseRing_of_gamma0GITPresentation`
+and `isDomain_fractionRing_tensorProduct_of_isAlgebraic_mem_bot` — NEITHER of which
+is a leaf: the first became a theorem 2026-07-30 over
+`exists_qExpansion_gamma0GITPresentation`, and the second was never one, being
+proven in `InvariantCoarseRing.lean` and merely transitively sorried; opened
 2026-07-27 as the algebraic half of
 `geometricallyConnected_of_gamma0GITPresentation` below).
 
@@ -13366,7 +13512,15 @@ about `B`), plus the mathlib-facing
 `isDomain_fractionRing_tensorProduct_of_isAlgebraic_mem_bot`.  See the
 section comment above for why stating them per-atlas is equivalent to
 stating them for the Katz–Mazur model, and for the citation attached to
-each. -/
+each.
+
+**UPDATE 2026-07-30**: both of the two named above are now THEOREMS, and the two
+leaves beneath them are
+`isDedekindDomain_rigidifiedModuli` (~8000 lines above — the Katz–Mazur geometry
+of the RIGIDIFIED moduli ring, where the fine moduli property pins the object) and
+`exists_qExpansion_gamma0GITPresentation` (the Tate curve at the cusp,
+`B ↪ ℚ((q))`).  The count of two is unchanged; both are strictly sharper, and both
+of the mathlib-facing names in the paragraph above are proven, not leaves. -/
 theorem exists_gamma0AffineModel (N : ℕ) (hN : 0 < N) :
     Nonempty (Gamma0AffineModel N) :=
   (exists_gamma0Atlas N hN).map fun A =>
@@ -31153,6 +31307,19 @@ i.e. every element of `B = Γ(Y, ⊤)` that is algebraic over `𝔽_p` already l
 `𝔽_p · 1`.  It is the exact char-`p` analogue of
 `isAlgebraic_coarseRing_of_gamma0GITPresentation` over `ℚ`, and it is the
 q-expansion-principle half of DR IV.5.5 with all scheme theory stripped out.
+
+**The char-`0` statement it is the analogue of is a THEOREM since 2026-07-30, and the
+same cut applies here verbatim** — that is the cheapest route to this leaf and it has
+not been taken.  Split it into (i) an injective `𝔽_p`-algebra map
+`Γ(A.Y, ⊤) →ₐ[ZMod p] FractionRing (PowerSeries (ZMod p))`, the Tate curve at the
+cusp over `𝔽_p((q))`, and (ii) "`k` is algebraically closed in `k((q))`", which is
+`mem_range_algebraMap_of_isAlgebraic_fractionRing_powerSeries` in
+`Fermat/FLT/Mathlib/RingTheory/InvariantCoarseRing.lean` — **already proven, and
+stated for an ARBITRARY field `k`**, so nothing has to be redone in characteristic
+`p`.  Only (i) is modular.  See
+`exists_qExpansion_gamma0GITPresentation` for the shape, including why the target is
+written `FractionRing (PowerSeries k)` rather than `LaurentSeries k` (an `SMul`
+diamond on `HahnSeries` that makes the scalar tower unsynthesizable).
 
 Combined with normality (the companion leaf above) this gives geometric
 integrality: an element of `Frac B` algebraic over `𝔽_p` is integral over `𝔽_p`,
