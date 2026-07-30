@@ -2166,9 +2166,621 @@ theorem etale_nTorsion_of_fieldBase (n : ℕ) (hn : 3 ≤ n)
   exact AlgebraicGeometry.etale_of_isReduced_pullback _
     (isReduced_geomFibre_nTorsion_field n hn K hchar ab g)
 
+section IsomTorsorCoverX1
+
+open CategoryTheory.Limits
+
+/-! #### The `Isom`-torsor, built as a CLOPEN LOCUS in `E[n] ×_T E[n]`
+
+`exists_isomTorsor_of_etale_nTorsion_noBase` below is PROVEN over this
+section (2026-07-30).  The route is the "concrete route that avoids the
+general representability machinery" its own docstring recommended, carried
+out; no `Isom`-sheaf is ever formed and no descent theory is used.
+
+The cover is `T' ⊆ V := E[n] ×_T E[n]`, cut out as the locus where the two
+tautological sections `P, Q` are INDEPENDENT.  Three facts make that work,
+and each is proven below:
+
+* the locus is a finite intersection of CLOPEN sets.  For each of the
+  `n² − 1` nonzero `c ∈ Fin n × Fin n` the equalizer of `c₁·P + c₂·Q` with
+  the zero section is a clopen subscheme of `V`: OPEN because `E[n] ⟶ T` is
+  étale hence its diagonal is an open immersion, CLOSED because `[n]` is
+  proper hence `E[n] ⟶ T` is separated and its diagonal is a closed
+  immersion.  Both come out of one construction, `exists_clopen_equalizer`.
+  Since `bad` is a FINITE union of clopens it is clopen, so its complement
+  is an OPEN subscheme (flat) which is also topologically closed (hence
+  quasi-compact over `V`) — which is exactly the `Flat ∧ QuasiCompact` the
+  consumer asks for, `V ⟶ T` being finite flat.
+* INDEPENDENCE UPGRADES TO A BASIS at a geometric point
+  (`geomBasis_of_indep_geomPoint`), so the cover really carries a basis and
+  not merely an independent pair.  The surprise here — and the reason no
+  characteristic hypothesis is needed — is that independence ALONE forces
+  `n` invertible (`natCast_ne_zero_of_indep_point`): if `p = char K` divides
+  `n = p·m` then `E[p]` is cyclic (`TorsionCharP.exists_zsmul_eq_of_charP`),
+  so `m·y` and `m·z` are dependent and the pair is not independent after
+  all.  With `(n : K) ≠ 0` in hand, `E(K)[n] ≃ (ℤ/n)²` has exactly `n²`
+  elements, so an injection out of `Fin n × Fin n` is onto and spanning is
+  free (`spans_of_indep`).
+* a basis at a geometric point IS an independent pair (`indep_of_geomBasis`),
+  which is what lets the lifting clause be discharged.
+
+Note that `X0.lean`'s `exists_isomTorsor_of_etale_nTorsion` is the same
+statement with an inert `g : T ⟶ SpecQ` bolted on, so this section closes
+that node too, as this file has said all along.  This file cannot be
+imported by `X0.lean`; MOVING this section there is the tidy-up, and it
+requires no mathematical work.
+
+**One hypothesis was ADDED to the leaf, and it was already in the caller's
+hand.**  The lifting clause used to read "if the `n`-torsion at `t` has a
+`Fin n × Fin n`-basis `(y, z)` then `t` lifts"; it now reads "… a basis
+`(y, z)` WITH `n • y = 0` and `n • z = 0` …".  The reason is that the bare
+basis property does NOT visibly imply `n • y = 0` — the statement
+`∀ x, n • x = 0 ↔ ∃! c, x = c₁·y + c₂·z` constrains `y` only through the
+elements it represents, and applying it at `x = y` needs the very
+uniqueness one is trying to prove.  A search over cyclic groups of order
+`≤ 40` and products `ℤ/m × ℤ/m'` with `m, m' ≤ 12`, for `n ∈ {3, 4, 5}`,
+found no counterexample, so the implication is probably true; it is not
+NEEDED, because the sole caller (`exists_torsionBasisCover_field` below)
+builds its basis out of `exists_zmodBasis_torsion_geomPoint_field`, which
+returns the two torsion facts alongside it and was discarding them.  The
+caller's own statement is unchanged. -/
+
+/-- **A `ℤ`-multiple of an `n`-torsion element is a `ℕ`-multiple below `n`**
+(PROVEN 2026-07-30) — Euclidean division of the coefficient by `n`, the
+quotient part being killed by `n • z = 0`.  Bookkeeping for
+`natCast_ne_zero_of_indep_point` below and for
+`natCast_ne_zero_of_geomBasis_point` far below, both of whose one appeal to
+the literature (`TorsionCharP.exists_zsmul_eq_of_charP`) returns a
+`ℤ`-multiple while the basis property speaks of `Fin n`-coefficients. -/
+theorem exists_lt_nsmul_eq_zsmul {G : Type*} [AddCommGroup G] {n : ℕ} (hn : n ≠ 0)
+    {z : G} (hz : n • z = 0) (a : ℤ) : ∃ r : ℕ, r < n ∧ a • z = r • z := by
+  have hnpos : (0 : ℤ) < (n : ℤ) := by exact_mod_cast Nat.pos_of_ne_zero hn
+  refine ⟨(a % (n : ℤ)).toNat, ?_, ?_⟩
+  · have h1 : a % (n : ℤ) < (n : ℤ) := Int.emod_lt_of_pos a hnpos
+    have h2 : (0 : ℤ) ≤ a % (n : ℤ) := Int.emod_nonneg a (by omega)
+    omega
+  · have hz' : ((n : ℤ)) • z = 0 := by rw [natCast_zsmul]; exact hz
+    have hsplit : a = (n : ℤ) * (a / (n : ℤ)) + a % (n : ℤ) :=
+      (Int.mul_ediv_add_emod a (n : ℤ)).symm
+    have h2 : (0 : ℤ) ≤ a % (n : ℤ) := Int.emod_nonneg a (by omega)
+    calc a • z = ((n : ℤ) * (a / (n : ℤ)) + a % (n : ℤ)) • z := by rw [← hsplit]
+      _ = (a / (n : ℤ)) • ((n : ℤ) • z) + (a % (n : ℤ)) • z := by
+          rw [add_zsmul, mul_comm, mul_zsmul]
+      _ = (a % (n : ℤ)) • z := by rw [hz', smul_zero, zero_add]
+      _ = ((a % (n : ℤ)).toNat : ℤ) • z := by rw [Int.toNat_of_nonneg h2]
+      _ = (a % (n : ℤ)).toNat • z := natCast_zsmul _ _
+
+/-- **AN INDEPENDENT PAIR IN A GROUP WHOSE `n`-TORSION IS `(ℤ/n)²` SPANS IT**
+(PROVEN 2026-07-30) — pure counting: `(a, b) ↦ a·y + b·z` is an injection of
+`Fin n × Fin n` into the `n`-torsion, which has exactly `n²` elements, so it
+is a bijection.
+
+Injectivity is where the shift by `n − c'ᵢ` happens: `hindep` speaks of
+NATURAL coefficients, and the difference of two `Fin n`-coefficients need
+not be one, so the two sides are compared after adding `n` to each. -/
+theorem spans_of_indep {A : Type*} [AddCommGroup A] {n : ℕ}
+    (hn : 0 < n) (ψ : Submodule.torsionBy ℤ A (n : ℤ) ≃+ ZMod n × ZMod n)
+    {y z : A} (hy : n • y = 0) (hz : n • z = 0)
+    (hindep : ∀ a b : ℕ, a • y + b • z = 0 → n ∣ a ∧ n ∣ b) :
+    ∀ x : A, n • x = 0 → ∃ a b : ℕ, x = a • y + b • z := by
+  haveI : NeZero n := ⟨hn.ne'⟩
+  have hmem : ∀ x : A, n • x = 0 ↔ x ∈ Submodule.torsionBy ℤ A (n : ℤ) := fun x => by
+    rw [Submodule.mem_torsionBy_iff, natCast_zsmul]
+  -- the torsion submodule is finite, of cardinality `n * n`
+  letI : Fintype (Submodule.torsionBy ℤ A (n : ℤ)) := Fintype.ofEquiv _ ψ.toEquiv.symm
+  have hcard : Fintype.card (Submodule.torsionBy ℤ A (n : ℤ)) = n * n := by
+    rw [Fintype.card_congr ψ.toEquiv, Fintype.card_prod, ZMod.card]
+  -- the coordinate map
+  set g : Fin n × Fin n → Submodule.torsionBy ℤ A (n : ℤ) := fun c =>
+    ⟨(c.1 : ℕ) • y + (c.2 : ℕ) • z, by
+      refine (hmem _).1 ?_
+      have h1 : n • ((c.1 : ℕ) • y) = 0 := by
+        rw [← mul_nsmul', mul_comm n (c.1 : ℕ), mul_nsmul', hy, nsmul_zero]
+      have h2 : n • ((c.2 : ℕ) • z) = 0 := by
+        rw [← mul_nsmul', mul_comm n (c.2 : ℕ), mul_nsmul', hz, nsmul_zero]
+      rw [smul_add, h1, h2, add_zero]⟩ with hg
+  have hginj : Function.Injective g := by
+    intro c c' h
+    have h' : (c.1 : ℕ) • y + (c.2 : ℕ) • z = (c'.1 : ℕ) • y + (c'.2 : ℕ) • z :=
+      congrArg Subtype.val h
+    have expand : ∀ a b : ℕ, (a + (n - (c'.1 : ℕ))) • y + (b + (n - (c'.2 : ℕ))) • z
+        = (a • y + b • z) + ((n - (c'.1 : ℕ)) • y + (n - (c'.2 : ℕ)) • z) := by
+      intro a b; rw [add_nsmul, add_nsmul]; abel
+    have e1 : ((c'.1 : ℕ) + (n - (c'.1 : ℕ))) = n := Nat.add_sub_cancel' (le_of_lt c'.1.isLt)
+    have e2 : ((c'.2 : ℕ) + (n - (c'.2 : ℕ))) = n := Nat.add_sub_cancel' (le_of_lt c'.2.isLt)
+    have key : ((c.1 : ℕ) + (n - (c'.1 : ℕ))) • y + ((c.2 : ℕ) + (n - (c'.2 : ℕ))) • z = 0 := by
+      rw [expand, h', ← expand, e1, e2, hy, hz, add_zero]
+    obtain ⟨hd1, hd2⟩ := hindep _ _ key
+    have hlt1 : (c.1 : ℕ) + (n - (c'.1 : ℕ)) < 2 * n := by
+      have := c.1.isLt; have := c'.1.isLt; omega
+    have hlt2 : (c.2 : ℕ) + (n - (c'.2 : ℕ)) < 2 * n := by
+      have := c.2.isLt; have := c'.2.isLt; omega
+    have hne1 : (c.1 : ℕ) + (n - (c'.1 : ℕ)) ≠ 0 := by have := c'.1.isLt; omega
+    have hne2 : (c.2 : ℕ) + (n - (c'.2 : ℕ)) ≠ 0 := by have := c'.2.isLt; omega
+    have f1 := Nat.eq_of_dvd_of_lt_two_mul hne1 hd1 hlt1
+    have f2 := Nat.eq_of_dvd_of_lt_two_mul hne2 hd2 hlt2
+    have g1 : (c.1 : ℕ) = (c'.1 : ℕ) := by have := c'.1.isLt; omega
+    have g2 : (c.2 : ℕ) = (c'.2 : ℕ) := by have := c'.2.isLt; omega
+    exact Prod.ext (Fin.ext g1) (Fin.ext g2)
+  have hgsurj : Function.Surjective g := by
+    refine (Fintype.bijective_iff_injective_and_card g).2 ⟨hginj, ?_⟩ |>.2
+    rw [hcard]
+    simp
+  intro x hx
+  obtain ⟨c, hc⟩ := hgsurj ⟨x, (hmem x).1 hx⟩
+  exact ⟨(c.1 : ℕ), (c.2 : ℕ), (congrArg Subtype.val hc).symm⟩
+
+/-- **INDEPENDENCE ALONE FORCES `n` INVERTIBLE** (PROVEN 2026-07-30) — the
+independence-side twin of `natCast_ne_zero_of_geomBasis_point` below, and
+what makes `exists_isomTorsor_of_etale_nTorsion_noBase` need no
+characteristic hypothesis of its own.
+
+If `p := char K` divides `n`, write `n = p·m` with `0 < m < n`.  Then `m·y`
+and `m·z` are `p`-torsion, and the `p`-torsion of an elliptic curve in
+characteristic `p` is CYCLIC (`μ_p`-ordinary) or trivial (supersingular) —
+`TorsionCharP.exists_zsmul_eq_of_charP` — so `m·y = k·(m·z)` for some
+`k : ℤ`, provided `m·z ≠ 0`, which independence itself supplies (`n ∤ m`).
+Reducing `k·m` modulo `n` (`exists_lt_nsmul_eq_zsmul`) gives
+`m·y + (n − r)·z = 0` with `m < n`, contradicting independence in its first
+coordinate.
+
+## Faithfulness
+
+`hn : 3 ≤ n` is not sharp — `2 ≤ n` would do — and is carried to match the
+consumer.  What IS load-bearing is `hindep` at BOTH coordinates: the proof
+uses it once with `(0, m)` to know `m·z ≠ 0` and once with `(m, n − r)` for
+the contradiction. -/
+theorem natCast_ne_zero_of_indep_point {K : Type} [Field K] [IsAlgClosed K] [DecidableEq K]
+    (W : WeierstrassCurve K) [W.IsElliptic] (n : ℕ) (hn : 3 ≤ n)
+    (y z : (W⁄K).Point) (hy : n • y = 0) (hz : n • z = 0)
+    (hindep : ∀ a b : ℕ, a • y + b • z = 0 → n ∣ a ∧ n ∣ b) :
+    (n : K) ≠ 0 := by
+  intro hchar
+  have hn0 : n ≠ 0 := by omega
+  have hpdvd : ringChar K ∣ n := (ringChar.spec K n).mp hchar
+  have hp0 : ringChar K ≠ 0 := by
+    rintro h
+    rw [h] at hpdvd
+    exact hn0 (Nat.eq_zero_of_zero_dvd hpdvd)
+  have hp : (ringChar K).Prime := by
+    haveI := ringChar.charP K
+    rcases CharP.char_is_prime_or_zero K (ringChar K) with h | h
+    · exact h
+    · exact absurd h hp0
+  have hcharp : ((ringChar K : ℕ) : K) = 0 := ringChar.Nat.cast_ringChar
+  obtain ⟨m, hm⟩ := hpdvd
+  have hm0 : m ≠ 0 := by rintro rfl; simp at hm; exact hn0 hm
+  have hmlt : m < n := by
+    have h2 := hp.two_le
+    have : 1 * m < ringChar K * m :=
+      Nat.mul_lt_mul_of_lt_of_le (by omega) (le_refl m) (Nat.pos_of_ne_zero hm0)
+    omega
+  have hnm : ¬ (n ∣ m) := fun h => by
+    have := Nat.le_of_dvd (Nat.pos_of_ne_zero hm0) h; omega
+  have hPtor : ((ringChar K : ℕ) : ℤ) • (m • y) = 0 := by
+    rw [natCast_zsmul, smul_smul, ← hm]; exact hy
+  have hQtor : ((ringChar K : ℕ) : ℤ) • (m • z) = 0 := by
+    rw [natCast_zsmul, smul_smul, ← hm]; exact hz
+  have hQ0 : m • z ≠ 0 := by
+    intro h
+    exact hnm (hindep 0 m (by rw [zero_nsmul, zero_add]; exact h)).2
+  obtain ⟨kk, hkk⟩ :=
+    TorsionCharP.exists_zsmul_eq_of_charP W hp hcharp (m • y) (m • z) hPtor hQtor hQ0
+  obtain ⟨r, hrlt, hr⟩ := exists_lt_nsmul_eq_zsmul hn0 hz (kk * (m : ℤ))
+  have hPr : m • y = r • z := by
+    rw [hkk, ← natCast_zsmul z m, ← mul_zsmul, hr]
+  have key : m • y + (n - r) • z = 0 := by
+    rw [hPr, ← add_nsmul, Nat.add_sub_cancel' (le_of_lt hrlt)]
+    exact hz
+  exact hnm (hindep m (n - r) key).1
+
+/-- **A `Fin n × Fin n`-BASIS IS IN PARTICULAR AN INDEPENDENT PAIR** (PROVEN
+2026-07-30) — pure algebra, and the direction the lifting clause of
+`exists_isomTorsor_of_etale_nTorsion_noBase` needs.
+
+Read the basis property at `x = 0`: both `(a % n, b % n)` and `(0, 0)` are
+`Fin n`-coordinate pairs representing `0`, so uniqueness identifies them. -/
+theorem indep_of_geomBasis {G : Type*} [AddCommGroup G] {n : ℕ} (hn : n ≠ 0) {y z : G}
+    (hy : n • y = 0) (hz : n • z = 0)
+    (hb : ∀ x : G, n • x = 0 ↔ ∃! c : Fin n × Fin n, x = (c.1 : ℕ) • y + (c.2 : ℕ) • z) :
+    ∀ a b : ℕ, a • y + b • z = 0 → n ∣ a ∧ n ∣ b := by
+  haveI : NeZero n := ⟨hn⟩
+  have hred : ∀ (m : ℕ) (w : G), n • w = 0 → m • w = (m % n) • w := by
+    intro m w hw
+    conv_lhs => rw [← Nat.div_add_mod m n]
+    rw [add_nsmul, mul_nsmul, hw, nsmul_zero, zero_add]
+  intro a b hab
+  obtain ⟨c, -, huniq⟩ := (hb 0).mp (by simp)
+  have e1 : (0 : G)
+      = ((((⟨a % n, Nat.mod_lt _ (Nat.pos_of_ne_zero hn)⟩ : Fin n),
+            (⟨b % n, Nat.mod_lt _ (Nat.pos_of_ne_zero hn)⟩ : Fin n)) :
+          Fin n × Fin n).1 : ℕ) • y
+        + ((((⟨a % n, Nat.mod_lt _ (Nat.pos_of_ne_zero hn)⟩ : Fin n),
+            (⟨b % n, Nat.mod_lt _ (Nat.pos_of_ne_zero hn)⟩ : Fin n)) :
+          Fin n × Fin n).2 : ℕ) • z := by
+    simpa [← hred a y hy, ← hred b z hz] using hab.symm
+  have e2 : (0 : G)
+      = ((((0 : Fin n), (0 : Fin n)) : Fin n × Fin n).1 : ℕ) • y
+        + ((((0 : Fin n), (0 : Fin n)) : Fin n × Fin n).2 : ℕ) • z := by simp
+  have hcc := (huniq _ e1).trans (huniq _ e2).symm
+  have h1 : a % n = 0 := by simpa using congrArg Fin.val (congrArg Prod.fst hcc)
+  have h2 : b % n = 0 := by simpa using congrArg Fin.val (congrArg Prod.snd hcc)
+  exact ⟨Nat.dvd_of_mod_eq_zero h1, Nat.dvd_of_mod_eq_zero h2⟩
+
+/-- **INDEPENDENCE AT A GEOMETRIC POINT UPGRADES TO THE FULL BASIS
+PROPERTY, OVER AN ARBITRARY BASE** (PROVEN 2026-07-30) — the converse of
+`indep_of_geomBasis`, and the only step of
+`exists_isomTorsor_of_etale_nTorsion_noBase` that touches the elliptic
+curve at all.
+
+`exists_weierstrassModel_geomFibreAddEquiv_of_geomPoint` reads the geometric
+fibre as the points of a Weierstrass curve; `natCast_ne_zero_of_indep_point`
+turns the independence of the transported pair into `(n : K) ≠ 0`;
+`WeierstrassCurve.n_torsion_dimension` (Silverman *AEC* III.6.4) then gives
+`E(K)[n] ≃ (ℤ/n)²`, and `spans_of_indep` counts. -/
+theorem geomBasis_of_indep_geomPoint (n : ℕ) (hn : 3 ≤ n)
+    {E T : Scheme.{0}} {f : E ⟶ T} (ab : AbelianSchemeStruct f)
+    (hdim : SmoothOfRelativeDimension 1 f)
+    (K : Type) [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ T)
+    (y z : RelPoint f t)
+    (hy : letI := ab.addCommGroup t; n • y = 0)
+    (hz : letI := ab.addCommGroup t; n • z = 0)
+    (hindep : letI := ab.addCommGroup t; ∀ a b : ℕ, a • y + b • z = 0 → n ∣ a ∧ n ∣ b) :
+    letI := ab.addCommGroup t
+    ∀ x : RelPoint f t, n • x = 0 ↔
+      ∃! c : Fin n × Fin n, x = (c.1 : ℕ) • y + (c.2 : ℕ) • z := by
+  letI := ab.addCommGroup t
+  letI : DecidableEq K := Classical.typeDecidableEq K
+  obtain ⟨W, hW, ⟨φ⟩⟩ := exists_weierstrassModel_geomFibreAddEquiv_of_geomPoint ab hdim K t
+  haveI := hW
+  have hnK : (n : K) ≠ 0 := by
+    refine natCast_ne_zero_of_indep_point W n hn (φ y) (φ z) ?_ ?_ ?_
+    · rw [← map_nsmul, hy, map_zero]
+    · rw [← map_nsmul, hz, map_zero]
+    · intro a b hab
+      refine hindep a b (φ.injective ?_)
+      rw [map_add, map_nsmul, map_nsmul, map_zero]
+      exact hab
+  obtain ⟨χ⟩ := W.n_torsion_dimension (n := n) hnK
+  exact fun x => nsmul_eq_zero_iff_existsUnique_finPair (by omega) hy hz
+    (spans_of_indep (by omega) ((TorsionCounting.torsionByCongr (n : ℤ) φ).trans χ)
+      hy hz hindep) hindep x
+
+/-- **THE EQUALIZER OF TWO `n`-TORSION RELATIVE POINTS OVER AN ARBITRARY BASE
+MORPHISM IS A CLOPEN SUBSCHEME** (PROVEN 2026-07-30), delivered with both
+halves of its universal property.
+
+`isOpenImmersion_equalizer_of_etale_nTorsion` below is the special case
+`g = 𝟙 Z`, where the equalizer can be presented as `pullback x.1 y.1`.  That
+presentation is NOT available here: for a general base `x.1` and `y.1` are
+not sections of anything, `pullback.snd x.1 y.1 ≠ pullback.fst x.1 y.1`, and
+`pullback x.1 y.1` is a fibre product rather than an equalizer.  The
+equalizer proper is the pullback of `pullback.diagonal q` along the pairing
+`e : Z ⟶ E[n] ×_T E[n]` of the two lifts `sx, sy : Z ⟶ E[n]`, which is what
+is built here — and it is exactly the object the special-case proof
+constructs internally before transporting it across an isomorphism.
+
+OPEN because `E[n] ⟶ T` is étale, so its diagonal is an open immersion;
+CLOSED because `[n]` is proper (`isProper_mulByNat`), so `E[n] ⟶ T` is
+separated and its diagonal is a closed immersion.  Both are base changes of
+the diagonal along `e`. -/
+theorem exists_clopen_equalizer (n : ℕ)
+    {E T : Scheme.{0}} {f : E ⟶ T} (ab : AbelianSchemeStruct f)
+    (hetale : AlgebraicGeometry.Etale
+      (pullback.fst (ab.mulByNat n) ab.zeroSection ≫ f))
+    {Z : Scheme.{0}} {g : Z ⟶ T} (x y : RelPoint f g)
+    (hx : letI := ab.addCommGroup g; n • x = 0)
+    (hy : letI := ab.addCommGroup g; n • y = 0) :
+    ∃ (W : Scheme.{0}) (j : W ⟶ Z), IsOpenImmersion j ∧ IsClosedImmersion j ∧
+      j ≫ x.1 = j ≫ y.1 ∧
+      ∀ {U : Scheme.{0}} (w : U ⟶ Z), w ≫ x.1 = w ≫ y.1 → ∃ k : U ⟶ W, k ≫ j = w := by
+  letI := ab.addCommGroup g
+  haveI hq : AlgebraicGeometry.Etale (pullback.snd (ab.mulByNat n) ab.zeroSection) := by
+    rw [← nTorsionStructure_eq_snd n ab]; exact hetale
+  haveI : IsSeparated (ab.mulByNat n) := (ab.isProper_mulByNat n).toIsSeparated
+  haveI : IsSeparated (pullback.snd (ab.mulByNat n) ab.zeroSection) := inferInstance
+  have hxx : x.1 ≫ ab.mulByNat n = g ≫ ab.zeroSection := by
+    rw [← ab.nsmul_val n x, ← ab.zero_val g]
+    exact congrArg Subtype.val hx
+  have hyy : y.1 ≫ ab.mulByNat n = g ≫ ab.zeroSection := by
+    rw [← ab.nsmul_val n y, ← ab.zero_val g]
+    exact congrArg Subtype.val hy
+  set ι := pullback.fst (ab.mulByNat n) ab.zeroSection with hι
+  set q := pullback.snd (ab.mulByNat n) ab.zeroSection with hqdef
+  set sx : Z ⟶ pullback (ab.mulByNat n) ab.zeroSection := pullback.lift x.1 g hxx with hsxdef
+  set sy : Z ⟶ pullback (ab.mulByNat n) ab.zeroSection := pullback.lift y.1 g hyy with hsydef
+  have hsxι : sx ≫ ι = x.1 := pullback.lift_fst _ _ _
+  have hsyι : sy ≫ ι = y.1 := pullback.lift_fst _ _ _
+  have hsxq : sx ≫ q = g := pullback.lift_snd _ _ _
+  have hsyq : sy ≫ q = g := pullback.lift_snd _ _ _
+  have hst : sx ≫ q = sy ≫ q := by rw [hsxq, hsyq]
+  set e : Z ⟶ pullback q q := pullback.lift sx sy hst with hedef
+  have hefst : e ≫ pullback.fst q q = sx := pullback.lift_fst _ _ _
+  have hesnd : e ≫ pullback.snd q q = sy := pullback.lift_snd _ _ _
+  refine ⟨pullback e (pullback.diagonal q), pullback.fst e (pullback.diagonal q),
+    inferInstance, inferInstance, ?_, ?_⟩
+  · have hDsx : pullback.fst e (pullback.diagonal q) ≫ sx
+        = pullback.snd e (pullback.diagonal q) := by
+      have h := pullback.condition (f := e) (g := pullback.diagonal q)
+      have h2 := congrArg (fun k => k ≫ pullback.fst q q) h
+      simpa [Category.assoc, hefst, pullback.diagonal_fst] using h2
+    have hDsy : pullback.fst e (pullback.diagonal q) ≫ sy
+        = pullback.snd e (pullback.diagonal q) := by
+      have h := pullback.condition (f := e) (g := pullback.diagonal q)
+      have h2 := congrArg (fun k => k ≫ pullback.snd q q) h
+      simpa [Category.assoc, hesnd, pullback.diagonal_snd] using h2
+    rw [← hsxι, ← hsyι, ← Category.assoc, ← Category.assoc, hDsx, hDsy]
+  · intro U w hw
+    have hws : w ≫ sx = w ≫ sy := by
+      refine pullback.hom_ext ?_ ?_
+      · rw [Category.assoc, Category.assoc, hsxι, hsyι]; exact hw
+      · rw [Category.assoc, Category.assoc, hsxq, hsyq]
+    have hcond : w ≫ e = (w ≫ sx) ≫ pullback.diagonal q := by
+      refine pullback.hom_ext ?_ ?_
+      · rw [Category.assoc, hefst, Category.assoc, pullback.diagonal_fst, Category.comp_id]
+      · rw [Category.assoc, hesnd, Category.assoc, pullback.diagonal_snd, Category.comp_id,
+          ← hws]
+    exact ⟨pullback.lift w (w ≫ sx) hcond, pullback.lift_fst _ _ _⟩
+
+/-- **THE INDEPENDENT-PAIR COVER** (PROVEN 2026-07-30) — the whole geometric
+content of `exists_isomTorsor_of_etale_nTorsion_noBase`, stated with
+INDEPENDENCE in place of the basis property so that no elliptic-curve input
+enters it.
+
+`T'` is the open subscheme of `V := E[n] ×_T E[n]` complementary to
+`bad := ⋃_{c ≠ 0} image(equalizer of c₁·P + c₂·Q with 0)`, where `P, Q` are
+the two tautological sections.  `bad` is a FINITE union of clopens
+(`exists_clopen_equalizer`), hence clopen, so:
+
+* `T' ⟶ V` is an open immersion, hence flat; and its range is closed, hence
+  the preimage of a compact open is compact and it is quasi-compact.  `V ⟶ T`
+  is a base change of `E[n] ⟶ T`, finite and flat by
+  `isFinite_flat_nTorsion_noBase`.  So `p : T' ⟶ T` is flat and quasi-compact.
+* a geometric point of `T'` avoids every equalizer, so no nonzero
+  `Fin n`-combination of `P, Q` vanishes there — that is independence, after
+  reducing the coefficients modulo `n`.
+* conversely an independent pair `(y, z)` at a geometric point `t` of `T`
+  assembles into a point `w` of `V` over `t` with `w*P = y`, `w*Q = z`.  If
+  `w` met some equalizer then, `Spec K` being preconnected and the
+  equalizer's range clopen, `w` would factor through it entirely
+  (`IsOpenImmersion.lift`) and `(y, z)` would satisfy a nonzero relation.
+  So `w` lands in `T'`.
+
+## Faithfulness
+
+`hetale` is load-bearing in both directions: without it the diagonal of
+`E[n] ⟶ T` is not open, `bad` is not open, and `T'` is not a scheme at all;
+mathematically, in characteristic dividing `n` the group scheme `E[n]` is
+infinitesimal and no independent pair exists at any geometric point, so the
+`T'` produced would be empty and the lifting clause false.  `hn` is
+load-bearing at `n = 0` (`Fin 0` is empty while `0 • x = 0` always); only
+`0 < n` is used, and `3 ≤ n` is carried to match the consumer. -/
+theorem exists_independentPairCover (n : ℕ) (hn : 3 ≤ n)
+    {E T : Scheme.{0}} {f : E ⟶ T} (ab : AbelianSchemeStruct f)
+    (hetale : AlgebraicGeometry.Etale
+      (pullback.fst (ab.mulByNat n) ab.zeroSection ≫ f)) :
+    ∃ (T' : Scheme.{0}) (p : T' ⟶ T),
+      AlgebraicGeometry.Flat p ∧ QuasiCompact p ∧
+      ∃ P Q : RelPoint f p,
+        (letI := ab.addCommGroup p; n • P = 0 ∧ n • Q = 0) ∧
+        (∀ (K : Type) [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ T'),
+          letI := ab.addCommGroup (t ≫ p)
+          ∀ a b : ℕ, a • RelPoint.pre t rfl P + b • RelPoint.pre t rfl Q = 0 →
+            n ∣ a ∧ n ∣ b) ∧
+        (∀ (K : Type) [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ T),
+          (letI := ab.addCommGroup t
+            ∃ y z : RelPoint f t, n • y = 0 ∧ n • z = 0 ∧
+              ∀ a b : ℕ, a • y + b • z = 0 → n ∣ a ∧ n ∣ b) →
+          ∃ t' : Spec (CommRingCat.of K) ⟶ T', t' ≫ p = t) := by
+  have hn0 : n ≠ 0 := by omega
+  haveI : NeZero n := ⟨hn0⟩
+  set ι := pullback.fst (ab.mulByNat n) ab.zeroSection with hιdef
+  set q := pullback.snd (ab.mulByNat n) ab.zeroSection with hqdef
+  have hιf : ι ≫ f = q := nTorsionStructure_eq_snd n ab
+  have hιcond : ι ≫ ab.mulByNat n = q ≫ ab.zeroSection := pullback.condition
+  haveI hfinq : IsFinite q := by rw [← hιf]; exact (isFinite_flat_nTorsion_noBase n hn ab).1
+  haveI hflatq : AlgebraicGeometry.Flat q := by
+    rw [← hιf]; exact (isFinite_flat_nTorsion_noBase n hn ab).2
+  -- the double torsion scheme and its two tautological points
+  set pV : pullback q q ⟶ T := pullback.fst q q ≫ q with hpVdef
+  have hVcond : pullback.snd q q ≫ q = pV := by rw [hpVdef, pullback.condition]
+  set P : RelPoint f pV := ⟨pullback.fst q q ≫ ι, by rw [Category.assoc, hιf]⟩ with hPdef
+  set Q : RelPoint f pV := ⟨pullback.snd q q ≫ ι, by rw [Category.assoc, hιf, hVcond]⟩ with hQdef
+  letI := ab.addCommGroup pV
+  have hnP : n • P = 0 := by
+    refine Subtype.ext ?_
+    have h0 : (0 : RelPoint f pV).1 = pV ≫ ab.zeroSection := ab.zero_val pV
+    rw [ab.nsmul_val n P, h0, hPdef]
+    show (pullback.fst q q ≫ ι) ≫ ab.mulByNat n = pV ≫ ab.zeroSection
+    rw [Category.assoc, hιcond, ← Category.assoc, ← hpVdef]
+  have hnQ : n • Q = 0 := by
+    refine Subtype.ext ?_
+    have h0 : (0 : RelPoint f pV).1 = pV ≫ ab.zeroSection := ab.zero_val pV
+    rw [ab.nsmul_val n Q, h0, hQdef]
+    show (pullback.snd q q ≫ ι) ≫ ab.mulByNat n = pV ≫ ab.zeroSection
+    rw [Category.assoc, hιcond, ← Category.assoc, hVcond]
+  -- the nonzero linear combinations, all `n`-torsion
+  have hsmulzero : ∀ (a : ℕ) (x : RelPoint f pV), n • x = 0 → n • (a • x) = 0 := by
+    intro a x hx
+    rw [← mul_nsmul', mul_comm n a, mul_nsmul', hx, nsmul_zero]
+  set Scomb : Fin n × Fin n → RelPoint f pV :=
+    fun c => (c.1 : ℕ) • P + (c.2 : ℕ) • Q with hScomb
+  have hnS : ∀ c, n • Scomb c = 0 := by
+    intro c
+    rw [hScomb]
+    show n • ((c.1 : ℕ) • P + (c.2 : ℕ) • Q) = 0
+    rw [smul_add, hsmulzero _ _ hnP, hsmulzero _ _ hnQ, add_zero]
+  have hzero : n • (0 : RelPoint f pV) = 0 := smul_zero n
+  -- the clopen equalizers of the nonzero combinations with zero
+  have hEx : ∀ c : {c : Fin n × Fin n // c ≠ 0},
+      ∃ (W : Scheme.{0}) (j : W ⟶ pullback q q), IsOpenImmersion j ∧ IsClosedImmersion j ∧
+        j ≫ (Scomb c.1).1 = j ≫ (0 : RelPoint f pV).1 ∧
+        ∀ {U : Scheme.{0}} (w : U ⟶ pullback q q),
+          w ≫ (Scomb c.1).1 = w ≫ (0 : RelPoint f pV).1 → ∃ k : U ⟶ W, k ≫ j = w := by
+    intro c
+    exact exists_clopen_equalizer n ab hetale (Scomb c.1) 0 (hnS c.1) hzero
+  choose W jj hjopen hjclosed hjeq hjlift using hEx
+  set bad : Set ↥(pullback q q) := ⋃ c, Set.range ⇑(jj c).base with hbaddef
+  have hbadClosed : IsClosed bad := by
+    refine isClosed_iUnion_of_finite fun c => ?_
+    haveI := hjclosed c
+    exact (jj c).isClosedEmbedding.isClosed_range
+  have hbadOpen : IsOpen bad := by
+    refine isOpen_iUnion fun c => ?_
+    haveI := hjopen c
+    exact (jj c).isOpenEmbedding.isOpen_range
+  set U : (pullback q q).Opens := ⟨badᶜ, hbadClosed.isOpen_compl⟩ with hUdef
+  have hrangeU : Set.range ⇑U.ι.base = badᶜ := U.range_ι
+  refine ⟨U.toScheme, U.ι ≫ pV, ?_, ?_, RelPoint.pre U.ι rfl P, RelPoint.pre U.ι rfl Q,
+    ⟨RelPoint.nsmul_pre_eq_zero ab U.ι rfl hnP, RelPoint.nsmul_pre_eq_zero ab U.ι rfl hnQ⟩,
+    ?_, ?_⟩
+  · -- FLAT
+    haveI : AlgebraicGeometry.Flat (pullback.fst q q) := inferInstance
+    infer_instance
+  · -- QUASI-COMPACT
+    haveI hqcU : QuasiCompact U.ι := by
+      refine ⟨fun O _ hOc => ?_⟩
+      refine U.ι.isOpenEmbedding.isInducing.isCompact_preimage ?_ hOc
+      rw [hrangeU]
+      exact hbadOpen.isClosed_compl
+    haveI : QuasiCompact (pullback.fst q q) := inferInstance
+    infer_instance
+  · -- INDEPENDENCE at every geometric point of the cover
+    intro K _ _ t
+    letI := ab.addCommGroup (t ≫ (U.ι ≫ pV))
+    intro a b hab
+    haveI : Nonempty ↥(Spec (CommRingCat.of K)) :=
+      inferInstanceAs (Nonempty (PrimeSpectrum K))
+    set w : Spec (CommRingCat.of K) ⟶ pullback q q := t ≫ U.ι with hwdef
+    have hwb : w ≫ pV = t ≫ (U.ι ≫ pV) := Category.assoc _ _ _
+    have hPw : RelPoint.pre t rfl (RelPoint.pre U.ι rfl P) = RelPoint.pre w hwb P :=
+      Subtype.ext (Category.assoc t U.ι P.1).symm
+    have hQw : RelPoint.pre t rfl (RelPoint.pre U.ι rfl Q) = RelPoint.pre w hwb Q :=
+      Subtype.ext (Category.assoc t U.ι Q.1).symm
+    rw [hPw, hQw] at hab
+    have hnPw : n • RelPoint.pre w hwb P = 0 := RelPoint.nsmul_pre_eq_zero ab w hwb hnP
+    have hnQw : n • RelPoint.pre w hwb Q = 0 := RelPoint.nsmul_pre_eq_zero ab w hwb hnQ
+    have hred : ∀ (m : ℕ) (x : RelPoint f (t ≫ (U.ι ≫ pV))), n • x = 0 →
+        m • x = (m % n) • x := by
+      intro m x hx
+      conv_lhs => rw [← Nat.div_add_mod m n]
+      rw [add_nsmul, mul_nsmul, hx, nsmul_zero, zero_add]
+    rw [hred a _ hnPw, hred b _ hnQw] at hab
+    set c : Fin n × Fin n :=
+      (⟨a % n, Nat.mod_lt _ (Nat.pos_of_ne_zero hn0)⟩,
+        ⟨b % n, Nat.mod_lt _ (Nat.pos_of_ne_zero hn0)⟩) with hcdef
+    have hc0 : c = 0 := by
+      by_contra hc
+      have hadd : RelPoint.pre w hwb ((c.1 : ℕ) • P + (c.2 : ℕ) • Q)
+          = RelPoint.pre w hwb ((c.1 : ℕ) • P) + RelPoint.pre w hwb ((c.2 : ℕ) • Q) :=
+        ab.pre_add w hwb _ _
+      have e1 : RelPoint.pre w hwb ((c.1 : ℕ) • P) = (c.1 : ℕ) • RelPoint.pre w hwb P :=
+        ab.pre_nsmul w hwb _ _
+      have e2 : RelPoint.pre w hwb ((c.2 : ℕ) • Q) = (c.2 : ℕ) • RelPoint.pre w hwb Q :=
+        ab.pre_nsmul w hwb _ _
+      have hSc : RelPoint.pre w hwb (Scomb c) = 0 := by
+        show RelPoint.pre w hwb ((c.1 : ℕ) • P + (c.2 : ℕ) • Q) = 0
+        rw [hadd, e1, e2]
+        exact hab
+      have hmor : w ≫ (Scomb c).1 = w ≫ (0 : RelPoint f pV).1 := by
+        have h1 : w ≫ (Scomb c).1 = (RelPoint.pre w hwb (Scomb c)).1 := rfl
+        have h2 : (0 : RelPoint f (t ≫ (U.ι ≫ pV))).1 = (t ≫ (U.ι ≫ pV)) ≫ ab.zeroSection :=
+          ab.zero_val _
+        have h3 : (0 : RelPoint f pV).1 = pV ≫ ab.zeroSection := ab.zero_val pV
+        rw [h1, hSc, h2, h3, ← Category.assoc w pV ab.zeroSection, hwb]
+      obtain ⟨k, hk⟩ := hjlift ⟨c, hc⟩ w hmor
+      obtain ⟨pt⟩ := ‹Nonempty ↥(Spec (CommRingCat.of K))›
+      have hin : w.base pt ∈ bad := by
+        refine Set.mem_iUnion.2 ⟨⟨c, hc⟩, ⟨k.base pt, ?_⟩⟩
+        rw [← hk]
+        rfl
+      have hout : w.base pt ∈ badᶜ := by
+        rw [← hrangeU, hwdef]
+        exact ⟨t.base pt, rfl⟩
+      exact hout hin
+    have h1 : a % n = 0 := congrArg Fin.val (congrArg Prod.fst hc0)
+    have h2 : b % n = 0 := congrArg Fin.val (congrArg Prod.snd hc0)
+    exact ⟨Nat.dvd_of_mod_eq_zero h1, Nat.dvd_of_mod_eq_zero h2⟩
+  · -- LIFTING: a geometric point carrying an independent pair lifts to the cover
+    intro K _ _ t ht
+    letI := ab.addCommGroup t
+    obtain ⟨y, z, hy, hz, hindep⟩ := ht
+    haveI : PreconnectedSpace ↥(Spec (CommRingCat.of K)) :=
+      inferInstanceAs (PreconnectedSpace (PrimeSpectrum K))
+    have hy' : y.1 ≫ ab.mulByNat n = t ≫ ab.zeroSection := by
+      rw [← ab.nsmul_val n y, ← ab.zero_val t]
+      exact congrArg Subtype.val hy
+    have hz' : z.1 ≫ ab.mulByNat n = t ≫ ab.zeroSection := by
+      rw [← ab.nsmul_val n z, ← ab.zero_val t]
+      exact congrArg Subtype.val hz
+    set sy : Spec (CommRingCat.of K) ⟶ pullback (ab.mulByNat n) ab.zeroSection :=
+      pullback.lift y.1 t hy' with hsydef
+    set sz : Spec (CommRingCat.of K) ⟶ pullback (ab.mulByNat n) ab.zeroSection :=
+      pullback.lift z.1 t hz' with hszdef
+    have hsyι : sy ≫ ι = y.1 := pullback.lift_fst _ _ _
+    have hszι : sz ≫ ι = z.1 := pullback.lift_fst _ _ _
+    have hsyq : sy ≫ q = t := pullback.lift_snd _ _ _
+    have hszq : sz ≫ q = t := pullback.lift_snd _ _ _
+    set w : Spec (CommRingCat.of K) ⟶ pullback q q :=
+      pullback.lift sy sz (by rw [hsyq, hszq]) with hwdef
+    have hwfst : w ≫ pullback.fst q q = sy := pullback.lift_fst _ _ _
+    have hwsnd : w ≫ pullback.snd q q = sz := pullback.lift_snd _ _ _
+    have hwb : w ≫ pV = t := by rw [hpVdef, ← Category.assoc, hwfst, hsyq]
+    have hwP : RelPoint.pre w hwb P = y := by
+      refine Subtype.ext ?_
+      show w ≫ (pullback.fst q q ≫ ι) = y.1
+      rw [← Category.assoc, hwfst, hsyι]
+    have hwQ : RelPoint.pre w hwb Q = z := by
+      refine Subtype.ext ?_
+      show w ≫ (pullback.snd q q ≫ ι) = z.1
+      rw [← Category.assoc, hwsnd, hszι]
+    -- `w` avoids every equalizer, hence lands in the open subscheme
+    have havoid : Set.range ⇑w.base ⊆ badᶜ := by
+      rintro _ ⟨pt, rfl⟩ hmem
+      obtain ⟨c, hpt⟩ := Set.mem_iUnion.1 hmem
+      haveI := hjopen c
+      haveI := hjclosed c
+      have hcont : Continuous ⇑w.base := by fun_prop
+      have hclopen : IsClopen (⇑w.base ⁻¹' Set.range ⇑(jj c).base) :=
+        ⟨((jj c).isClosedEmbedding.isClosed_range).preimage hcont,
+          ((jj c).isOpenEmbedding.isOpen_range).preimage hcont⟩
+      have huniv := hclopen.eq_univ ⟨pt, hpt⟩
+      have hsub : Set.range ⇑w.base ⊆ Set.range ⇑(jj c).base := by
+        rintro _ ⟨x, rfl⟩
+        have : x ∈ (⇑w.base ⁻¹' Set.range ⇑(jj c).base) := by rw [huniv]; trivial
+        exact this
+      have hfac : IsOpenImmersion.lift (jj c) w hsub ≫ jj c = w :=
+        IsOpenImmersion.lift_fac _ _ _
+      have hmor : w ≫ (Scomb c.1).1 = w ≫ (0 : RelPoint f pV).1 := by
+        rw [← hfac, Category.assoc, Category.assoc, hjeq c]
+      have hSc : RelPoint.pre w hwb (Scomb c.1) = 0 := by
+        refine Subtype.ext ?_
+        have h1 : (RelPoint.pre w hwb (Scomb c.1)).1 = w ≫ (Scomb c.1).1 := rfl
+        have h2 : (0 : RelPoint f t).1 = t ≫ ab.zeroSection := ab.zero_val t
+        have h3 : (0 : RelPoint f pV).1 = pV ≫ ab.zeroSection := ab.zero_val pV
+        rw [h1, hmor, h3, h2, ← Category.assoc, hwb]
+      have hadd : RelPoint.pre w hwb ((c.1.1 : ℕ) • P + (c.1.2 : ℕ) • Q)
+          = RelPoint.pre w hwb ((c.1.1 : ℕ) • P) + RelPoint.pre w hwb ((c.1.2 : ℕ) • Q) :=
+        ab.pre_add w hwb _ _
+      have e1 : RelPoint.pre w hwb ((c.1.1 : ℕ) • P) = (c.1.1 : ℕ) • RelPoint.pre w hwb P :=
+        ab.pre_nsmul w hwb _ _
+      have e2 : RelPoint.pre w hwb ((c.1.2 : ℕ) • Q) = (c.1.2 : ℕ) • RelPoint.pre w hwb Q :=
+        ab.pre_nsmul w hwb _ _
+      have hSc2 : RelPoint.pre w hwb ((c.1.1 : ℕ) • P + (c.1.2 : ℕ) • Q) = 0 := hSc
+      rw [hadd, e1, e2, hwP, hwQ] at hSc2
+      obtain ⟨hd1, hd2⟩ := hindep _ _ hSc2
+      refine c.2 (Prod.ext (Fin.ext ?_) (Fin.ext ?_))
+      · simpa using Nat.eq_zero_of_dvd_of_lt hd1 c.1.1.isLt
+      · simpa using Nat.eq_zero_of_dvd_of_lt hd2 c.1.2.isLt
+    refine ⟨IsOpenImmersion.lift U.ι w (by rw [hrangeU]; exact havoid), ?_⟩
+    rw [← Category.assoc, IsOpenImmersion.lift_fac, hwb]
+
+end IsomTorsorCoverX1
+
 /-- **The `Isom`-scheme of the level-`n` torsor, over an ARBITRARY base**
-(sorry leaf, opened 2026-07-30) — `X0.lean`'s
-`exists_isomTorsor_of_etale_nTorsion` **with its `g : T ⟶ SpecQ` deleted**.
+(**PROVEN 2026-07-30**, the day after it was opened; formerly a sorry leaf)
+— `X0.lean`'s `exists_isomTorsor_of_etale_nTorsion` **with its
+`g : T ⟶ SpecQ` deleted**.
 
 That hypothesis is inert there: the node's own docstring says it "owes
 nothing about characteristic, ranks, flatness or finiteness: `hetale` is
@@ -2179,21 +2791,34 @@ have one owner.  It is restated here rather than generalised in place only
 because `X0.lean` has several concurrent owners and cannot import this file;
 if it is ever generalised there, delete this declaration.
 
-## What the prover owes, and it is unchanged from the `Γ₀` node
+## How it is proven, and WHY THE CITATION WAS NOT NEEDED
 
-The `Isom`-sheaf `Isom_T((ℤ/n)²_T, E[n])`: that it is representable by a
-finite étale `T`-scheme `T'` (Katz–Mazur 8.1.1), that the tautological
-isomorphism over `T'` is a pair of sections `P, Q` of `E[n]` — hence killed
-by `n` ON THE NOSE over `T'`, which is the last conjunct — and that `T'` has
-a point over exactly those geometric points of `T` at which `E[n]` admits a
-basis.
+This node asked for the `Isom`-sheaf `Isom_T((ℤ/n)²_T, E[n])` and its
+representability by a finite étale `T`-scheme (Katz–Mazur 8.1.1).  **None of
+that is used.**  The route actually taken is the alternative this docstring
+itself recommended — "a concrete route that avoids the general
+representability machinery, and which is available because `hetale` is a
+hypothesis rather than a goal" — carried out in full in
+`section IsomTorsorCoverX1` above, whose section comment is the place to
+read the argument.  In one line: `T'` is the complement, inside
+`V := E[n] ×_T E[n]`, of the union of the `n² − 1` equalizers of the nonzero
+`Fin n`-combinations of the two tautological sections with the zero section;
+each such equalizer is CLOPEN (étale gives open, proper `[n]` gives closed),
+a finite union of clopens is clopen, and a complement of a clopen is an open
+subscheme with closed range — flat and quasi-compact over the finite flat
+`V ⟶ T`.  The whole thing is `exists_independentPairCover`.
 
-A concrete route that avoids the general representability machinery, and
-which is available because `hetale` is a hypothesis rather than a goal:
-`E[n] ×_T E[n]` is finite étale over `T` (composition and base change of
-finite étale morphisms, both stable), "being a basis" is a locally constant
-condition on a finite étale scheme, so the basis locus is a clopen
-subscheme, and it is the `T'` wanted.
+The two remaining halves are arithmetic and not geometric:
+`geomBasis_of_indep_geomPoint` upgrades independence at a geometric point to
+the full basis property (via `natCast_ne_zero_of_indep_point`, which is why
+this node needs no characteristic hypothesis at all), and
+`indep_of_geomBasis` runs the trivial converse for the lifting clause.
+
+**One hypothesis was added to the lifting clause and the sole call site was
+updated in the same commit**: `n • y = 0` and `n • z = 0` are now demanded
+alongside the basis property.  See the section comment above for why the
+bare basis property does not visibly imply them, and why the caller had them
+in hand anyway.
 
 Note the conclusion asks only for `Flat` and `QuasiCompact` on `p`;
 SURJECTIVITY is not asked for, because it is derived by the consumer from
@@ -2223,11 +2848,25 @@ theorem exists_isomTorsor_of_etale_nTorsion_noBase (n : ℕ) (hn : 3 ≤ n)
               x = (c.1 : ℕ) • RelPoint.pre t rfl P + (c.2 : ℕ) • RelPoint.pre t rfl Q) ∧
         (∀ (K : Type) [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ T),
           (letI := ab.addCommGroup t
-            ∃ y z : RelPoint f t, ∀ x : RelPoint f t, n • x = 0 ↔
-              ∃! c : Fin n × Fin n, x = (c.1 : ℕ) • y + (c.2 : ℕ) • z) →
+            ∃ y z : RelPoint f t, n • y = 0 ∧ n • z = 0 ∧
+              ∀ x : RelPoint f t, n • x = 0 ↔
+                ∃! c : Fin n × Fin n, x = (c.1 : ℕ) • y + (c.2 : ℕ) • z) →
           ∃ t' : Spec (CommRingCat.of K) ⟶ T', t' ≫ p = t) ∧
-        (letI := ab.addCommGroup p; n • P = 0 ∧ n • Q = 0) :=
-  sorry
+        (letI := ab.addCommGroup p; n • P = 0 ∧ n • Q = 0) := by
+  obtain ⟨T', p, hflat, hqc, P, Q, ⟨hnP, hnQ⟩, hindep, hlift⟩ :=
+    exists_independentPairCover n hn ab hetale
+  refine ⟨T', p, hflat, hqc, P, Q, ?_, ?_, ⟨hnP, hnQ⟩⟩
+  · intro K _ _ t
+    letI := ab.addCommGroup (t ≫ p)
+    exact geomBasis_of_indep_geomPoint n hn ab hdim K (t ≫ p)
+      (RelPoint.pre t rfl P) (RelPoint.pre t rfl Q)
+      (RelPoint.nsmul_pre_eq_zero ab t rfl hnP)
+      (RelPoint.nsmul_pre_eq_zero ab t rfl hnQ)
+      (hindep K t)
+  · intro K _ _ t ht
+    letI := ab.addCommGroup t
+    obtain ⟨y, z, hy, hz, hb⟩ := ht
+    exact hlift K t ⟨y, z, hy, hz, indep_of_geomBasis (by omega) hy hz hb⟩
 
 /-- **The level-`n` torsor over an arbitrary base field: after a flat
 surjective quasi-compact cover the `n`-torsion of an abelian scheme of
@@ -2297,8 +2936,12 @@ theorem exists_torsionBasisCover_field (n : ℕ) (hn : 3 ≤ n)
       (etale_nTorsion_of_fieldBase n hn K hchar ab g)
   exact ⟨T', p, hflat,
     surjective_of_exists_lift_geomPoint p
-      (fun L _ _ t =>
-        hlift L t (exists_torsionBasis_geomPoint_field n hn K hchar ab hdim g L t)),
+      (fun L _ _ t => hlift L t (by
+        letI := ab.addCommGroup t
+        obtain ⟨y, z, hy, hz, hspan, hind⟩ :=
+          exists_zmodBasis_torsion_geomPoint_field n hn K hchar ab hdim g L t
+        exact ⟨y, z, hy, hz,
+          nsmul_eq_zero_iff_existsUnique_finPair (by omega) hy hz hspan hind⟩)),
     hqc, P, Q, hbasis, htors⟩
 
 /-- **Every `Γ₁(N)`-datum over a `K`-scheme acquires a full level-`n`
@@ -2815,7 +3458,37 @@ hypotheses these are: `hn` and `hcharn` are load-bearing for TRUTH (at
 scheme `E[n]` is not étale and `AbelianFullLevelStructure n dM.ab` is
 unsatisfiable over a nonempty base), `hcharN` is what makes `[Γ₁(N)]`
 étale rather than merely finite flat, and `_hN` is not load-bearing and is
-carried only to match the consumer. -/
+carried only to match the consumer.
+
+### FALSITY AUDIT of the quantifier shape (2026-07-30, PASSES)
+
+`universal` quantifies over **every** scheme `T` and **every**
+`g : T ⟶ Spec K`, while `Gamma1Datum N T` and `AbelianFullLevelStructure n`
+mention `g` nowhere.  That is the shape this development has been burned by
+before, so it was checked rather than assumed, and the worry is concrete:
+fix one datum-with-level-structure `(d, L)` over `T` and let `g` range over
+the (generally many) `K`-structures on `T` — e.g. `T = Spec K`, `K = ℚ(i)`,
+`g` and `g ∘ Spec(conjugation)` — and `universal` demands a DIFFERENT unique
+`m` for each `g`.  A statement of that shape is false whenever the
+classifying map is determined by `(d, L)` alone.
+
+It is not false here, and the reason is that the classifying map is NOT
+determined by `(d, L)` alone.  `hcharN` and `hcharn` make `K` a
+`ℤ[1/Nn]`-algebra, so `T` is a `ℤ[1/Nn]`-scheme and the Katz–Mazur moduli
+scheme `𝔐` over `ℤ[1/Nn]` gives `Hom_{ℤ[1/Nn]}(T, 𝔐) = {(d, L) over T}`.
+Taking `M := 𝔐 ×_{ℤ[1/Nn]} Spec K`, a `Spec K`-morphism `T ⟶ M` over `g` is
+exactly a pair (a `ℤ[1/Nn]`-morphism `T ⟶ 𝔐`, and `g` itself), so for each
+`g` separately there is exactly one `m`, and the several `m` belonging to
+the several `g` are the Galois twists of one another.  The functor being
+represented is `(T, g) ↦ {(d, L) over T}`, whose value genuinely does not
+depend on `g`; that is consistent because the representing bijection does.
+
+So the leaf is an ordinary open citation and not a quantifier trap.  What
+a prover owes is unchanged: Katz–Mazur representability, which is not
+available in the pin in any form and is not reducible to anything in this
+file or in `X0.lean` — the `Γ₀` twins `exists_rigidifiedModuliScheme` and
+`isAffine_of_rigidifiedModuliScheme` are themselves open leaves, and are
+over `Spec ℚ` rather than `Spec K` besides. -/
 theorem exists_gamma1RigidifiedModuliScheme (N : ℕ) (_hN : 4 ≤ N) (n : ℕ) (hn : 3 ≤ n)
     (K : Type) [Field K] (hcharN : ¬ ringChar K ∣ N) (hcharn : ¬ ringChar K ∣ n) :
     Nonempty (Gamma1RigidifiedModuliScheme N n (Spec (CommRingCat.of K))) :=
@@ -2846,7 +3519,24 @@ any two inhabitants are related by a unique isomorphism (apply each one's
 composites are identities).  `IsAffine` is invariant under isomorphism of
 schemes.  So "the Katz–Mazur `𝔐(𝒫, 𝒮)` is affine" and "every inhabitant
 of `Gamma1RigidifiedModuliScheme N n (Spec K)` has affine `M`" are the same
-statement, exactly as on the `Γ₀` side. -/
+statement, exactly as on the `Γ₀` side.
+
+### What was checked on 2026-07-30, and why no cut was made
+
+The quantifier audit of `exists_gamma1RigidifiedModuliScheme` above applies
+here verbatim — this leaf quantifies over the same structure — and it
+passes for the same reason.  The obvious decomposition, following the route
+quoted above, would be into "`𝔐([Γ(n)])_K` is affine" plus "the forgetful
+morphism `𝔐([Γ₁(N)], [Γ(n)]) ⟶ 𝔐([Γ(n)])` is affine", the composite then
+being free.  It was NOT taken, because the file has no `𝔐([Γ(n)])_K` to
+state either half about: `X0.lean`'s `RigidifiedModuliScheme` is the
+`Γ₀(N) + Γ(n)` problem over `Spec ℚ`, not the `Γ(n)` problem over `Spec K`,
+so the cut would have to introduce a third moduli structure and would turn
+one citation into two citations plus a definition.  That is a worse trade by
+this development's own tie-breaker (fewer OPEN leaves after), so this stays
+a single citation leaf until somebody formalises Katz–Mazur representability
+proper — at which point `exists_gamma1RigidifiedModuliScheme` and this leaf
+close together. -/
 theorem isAffine_of_gamma1RigidifiedModuliScheme (N : ℕ) (_hN : 4 ≤ N) (n : ℕ) (hn : 3 ≤ n)
     (K : Type) [Field K] (hcharN : ¬ ringChar K ∣ N) (hcharn : ¬ ringChar K ∣ n)
     (R : Gamma1RigidifiedModuliScheme N n (Spec (CommRingCat.of K))) : IsAffine R.M :=
@@ -3224,29 +3914,11 @@ section EqualizerOpenX1
 
 open CategoryTheory.Limits
 
-/-- **A `ℤ`-multiple of an `n`-torsion element is a `ℕ`-multiple below `n`**
-(PROVEN 2026-07-30) — Euclidean division of the coefficient by `n`, the
-quotient part being killed by `n • z = 0`.  Bookkeeping for
-`natCast_ne_zero_of_geomBasis_point` below, whose one appeal to the
-literature (`TorsionCharP.exists_zsmul_eq_of_charP`) returns a `ℤ`-multiple
-while the basis property speaks of `Fin n`-coefficients. -/
-theorem exists_lt_nsmul_eq_zsmul {G : Type*} [AddCommGroup G] {n : ℕ} (hn : n ≠ 0)
-    {z : G} (hz : n • z = 0) (a : ℤ) : ∃ r : ℕ, r < n ∧ a • z = r • z := by
-  have hnpos : (0 : ℤ) < (n : ℤ) := by exact_mod_cast Nat.pos_of_ne_zero hn
-  refine ⟨(a % (n : ℤ)).toNat, ?_, ?_⟩
-  · have h1 : a % (n : ℤ) < (n : ℤ) := Int.emod_lt_of_pos a hnpos
-    have h2 : (0 : ℤ) ≤ a % (n : ℤ) := Int.emod_nonneg a (by omega)
-    omega
-  · have hz' : ((n : ℤ)) • z = 0 := by rw [natCast_zsmul]; exact hz
-    have hsplit : a = (n : ℤ) * (a / (n : ℤ)) + a % (n : ℤ) :=
-      (Int.mul_ediv_add_emod a (n : ℤ)).symm
-    have h2 : (0 : ℤ) ≤ a % (n : ℤ) := Int.emod_nonneg a (by omega)
-    calc a • z = ((n : ℤ) * (a / (n : ℤ)) + a % (n : ℤ)) • z := by rw [← hsplit]
-      _ = (a / (n : ℤ)) • ((n : ℤ) • z) + (a % (n : ℤ)) • z := by
-          rw [add_zsmul, mul_comm, mul_zsmul]
-      _ = (a % (n : ℤ)) • z := by rw [hz', smul_zero, zero_add]
-      _ = ((a % (n : ℤ)).toNat : ℤ) • z := by rw [Int.toNat_of_nonneg h2]
-      _ = (a % (n : ℤ)).toNat • z := natCast_zsmul _ _
+/-! `exists_lt_nsmul_eq_zsmul`, which the next theorem consumes, used to be
+declared here.  It was MOVED UP to `section IsomTorsorCoverX1` on 2026-07-30
+because `natCast_ne_zero_of_indep_point` there — the independence-side twin of
+`natCast_ne_zero_of_geomBasis_point` below — needs it several thousand lines
+earlier in the file.  Nothing about it changed. -/
 
 /-- **A `Fin n × Fin n`-BASIS OF THE `n`-TORSION OF AN ELLIPTIC CURVE FORCES
 `n` INVERTIBLE** (PROVEN 2026-07-30) — the arithmetic heart of the count
