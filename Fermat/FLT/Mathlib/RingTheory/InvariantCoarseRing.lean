@@ -37,6 +37,25 @@ the same Krull dimension as `S`.  The three inputs are:
 
 Regularity is then free: mathlib has `[IsDedekindDomain R] : IsRegularRing R`.
 
+## Smoothness of the invariants, and the one thing the pin does not have
+
+The `Γ₁` consumer (`ModularCurve/X1.lean`) needs more than the Dedekind package
+above: over a general base field the rigidified moduli scheme is not integral, so
+what it can offer about `S` is SMOOTHNESS rather than `IsDedekindDomain`, and what
+it needs about `R = S^G` is `Algebra.Smooth k R`.  Two pieces live here.
+
+* `Algebra.IsInvariant.faithfullyFlat_of_isInvariant` — PROVEN.  For an invariant
+  extension with `algebraMap R S` injective, FLAT implies FAITHFULLY flat, by
+  lying over.  This is what lets the modular leaf ask only for `Module.Flat R S`.
+* `Algebra.FormallySmooth.of_faithfullyFlat` — a **sorry leaf**, Stacks `02VL` at
+  the ring level: smoothness descends along a faithfully flat finitely presented
+  cover of the TARGET.  Mathlib's smoothness descent
+  (`Mathlib/RingTheory/Etale/Descent.lean`) descends along a faithfully flat
+  extension of the BASE instead, and the substitute route through geometric
+  regularity is unavailable at this pin.  This is the single mathlib-facing gap
+  under `smooth_coarseRing_of_gamma1GITPresentation`, and it has no modular
+  content at all — see its docstring for the checks that would close it.
+
 ## Geometric integrality
 
 The second half of the consumer's needs is that `B ⊗[ℚ] K` is a domain for every
@@ -115,6 +134,9 @@ public import Mathlib.RingTheory.Algebraic.Integral
 public import Mathlib.FieldTheory.AlgebraicClosure
 public import Mathlib.RingTheory.TensorProduct.Basic
 public import Mathlib.RingTheory.Flat.Basic
+public import Mathlib.RingTheory.Flat.FaithfullyFlat.Basic
+public import Mathlib.RingTheory.Smooth.Basic
+public import Mathlib.RingTheory.FinitePresentation
 public import Mathlib.RingTheory.Polynomial.IsIntegral
 public import Mathlib.FieldTheory.LinearDisjoint
 public import Mathlib.FieldTheory.PrimitiveElement
@@ -348,7 +370,116 @@ theorem isRegularRing_of_isInvariant (k R S : Type*) [CommRing k] [CommRing R] [
   haveI := hded
   exact ⟨hdom, inferInstance, hft, ringKrullDim_eq_one_of_isInvariant R S G hinj hdim⟩
 
+/-! ### Faithful flatness of the quotient map -/
+
+/-- **A FLAT invariant extension is automatically FAITHFULLY flat** (PROVEN
+2026-07-30) — lying over, and nothing else.
+
+Flatness of `R = S^G ⊆ S` is a genuine hypothesis (it is what freeness of the
+`G`-action buys, and it fails for a non-free action), but *faithfulness* is
+formal: mathlib's `Module.FaithfullyFlat.iff_flat_and_proper_ideal` asks that
+`I • S ≠ S` for every proper `I ⊆ R`, and `Algebra.IsInvariant.isIntegral` makes
+`S` integral over `R`, so `Ideal.exists_ideal_over_maximal_of_isIntegral` puts a
+maximal `Q ⊆ S` over any maximal `m ⊇ I`.  Then `I • S ⊆ Q ≠ S`.
+
+Recorded separately because it is what lets the modular leaf
+`exists_gamma1GITPresentation_smoothModuli` (`ModularCurve/X1.lean`) ask only for
+`Module.Flat B A` — the statement Katz–Mazur 8.2.1 actually supplies — instead of
+carrying `Module.FaithfullyFlat B A`, which mixes a geometric input with a
+formality.  `hinj` is load-bearing: without it `R` may have a maximal ideal
+containing the kernel's complement and lying over fails. -/
+theorem faithfullyFlat_of_isInvariant (R S : Type*) [CommRing R] [CommRing S] [Algebra R S]
+    (G : Type*) [Group G] [Finite G] [MulSemiringAction G S] [SMulCommClass G R S]
+    [Algebra.IsInvariant R S G] [Module.Flat R S]
+    (hinj : Function.Injective (algebraMap R S)) :
+    Module.FaithfullyFlat R S := by
+  haveI : Algebra.IsIntegral R S := Algebra.IsInvariant.isIntegral R S G
+  have hker : RingHom.ker (algebraMap R S) = ⊥ := (RingHom.injective_iff_ker_eq_bot _).mp hinj
+  rw [Module.FaithfullyFlat.iff_flat_and_proper_ideal]
+  refine ⟨inferInstance, fun I hI hsmul => ?_⟩
+  obtain ⟨m, hm, hIm⟩ := I.exists_le_maximal hI
+  haveI := hm
+  obtain ⟨Q, hQ, hQc⟩ := Ideal.exists_ideal_over_maximal_of_isIntegral (R := R) (S := S) m
+    (by rw [hker]; exact bot_le)
+  have hle : I • (⊤ : Submodule R S) ≤ Q.restrictScalars R := by
+    refine Submodule.smul_le.2 (fun r hr s _ => ?_)
+    have hrQ : algebraMap R S r ∈ Q := by
+      have : r ∈ Q.comap (algebraMap R S) := by rw [hQc]; exact hIm hr
+      simpa using this
+    simpa [Algebra.smul_def] using Ideal.mul_mem_right s Q hrQ
+  rw [hsmul, top_le_iff] at hle
+  exact hQ.ne_top (by simpa using hle)
+
 end Algebra.IsInvariant
+
+/-! ### Descent of smoothness along a faithfully flat cover of the TARGET
+
+Stacks `02VL`, at the ring level.  This is the one commutative-algebra input that
+`ModularCurve/X1.lean`'s `smooth_coarseRing_of_gamma1GITPresentation` still owes,
+and it has no modular content whatsoever. -/
+
+/-- **Stacks `02VL` at the ring level: formal smoothness descends along a
+faithfully flat, finitely presented extension of the TARGET** (sorry leaf, opened
+2026-07-30) — "if `X → Y` is surjective, flat and locally of finite presentation
+and `X → S` is smooth, then `Y → S` is smooth", transcribed for
+`k → R → S` with `Spec S → Spec R` the cover.
+
+## Why it is stated here and why it is a leaf
+
+Mathlib's descent at this pin goes the OTHER way:
+`Algebra.Smooth.of_smooth_tensorProduct_of_faithfullyFlat` and
+`RingHom.Smooth.codescendsAlong_faithfullyFlat`
+(`Mathlib/RingTheory/Etale/Descent.lean`) descend smoothness along a faithfully
+flat extension of the BASE `k`, not along a cover of the target `R`.  Nothing in
+`Mathlib/RingTheory/Smooth/` concludes `Smooth k R` from `Smooth k S` and
+flatness of `R → S`; the natural substitute route — "smooth over a field
+= finitely presented + geometrically regular", plus faithfully flat descent of
+regularity — is unavailable too, because the pin has neither geometric
+regularity nor descent of `IsRegularRing` (`grep -rn "IsRegularRing" Mathlib/`
+returns two files, both about regular LOCAL rings).
+
+*The checks that would refute this paragraph and close the leaf*: a lemma in
+`Mathlib/RingTheory/Smooth/` or `Mathlib/AlgebraicGeometry/Morphisms/`
+concluding `Algebra.Smooth R B` from `Algebra.Smooth R A` and faithful flatness
+of `B → A`; or faithfully flat descent of `IsRegularRing` together with a
+geometric-regularity criterion for `Algebra.Smooth` over a field.
+
+## Hypotheses, and why the finite-presentation ones are FREE rather than lazy
+
+`Algebra.FinitePresentation k R` is a hypothesis rather than a conclusion,
+which makes this statement strictly WEAKER than `02VL` (whose finite-presentation
+half is Stacks `02LA`, fppf descent of finite presentation).  That costs the
+consumer nothing: over a field `k`, Noether's theorem on invariants
+(`Algebra.IsInvariant.finiteType_of_isInvariant` above) gives
+`Algebra.FiniteType k R`, and `Algebra.FinitePresentation.of_finiteType` upgrades
+it because a field is Noetherian.  `Algebra.FinitePresentation R S` is free the
+same way.  So the content of the leaf is exactly the formal smoothness of `R`,
+and every other clause is bookkeeping the caller already holds.
+
+`Module.FaithfullyFlat R S` is the "surjective and flat" half of `02VL`: for a
+ring map, faithful flatness is flatness plus surjectivity of
+`Spec S → Spec R`. -/
+theorem Algebra.FormallySmooth.of_faithfullyFlat (k R S : Type*)
+    [CommRing k] [CommRing R] [CommRing S]
+    [Algebra k R] [Algebra R S] [Algebra k S] [IsScalarTower k R S]
+    [Module.FaithfullyFlat R S] [Algebra.FinitePresentation R S]
+    [Algebra.FinitePresentation k R] [Algebra.Smooth k S] :
+    Algebra.FormallySmooth k R :=
+  sorry
+
+/-- **Stacks `02VL`, packaged** (PROVEN over
+`Algebra.FormallySmooth.of_faithfullyFlat`).
+
+`Algebra.Smooth` is `FormallySmooth` plus `FinitePresentation`, and the latter is
+a hypothesis here for the reason recorded on the leaf, so this is the leaf plus
+`inferInstance`. -/
+theorem Algebra.Smooth.of_faithfullyFlat (k R S : Type*)
+    [CommRing k] [CommRing R] [CommRing S]
+    [Algebra k R] [Algebra R S] [Algebra k S] [IsScalarTower k R S]
+    [Module.FaithfullyFlat R S] [Algebra.FinitePresentation R S]
+    [Algebra.FinitePresentation k R] [Algebra.Smooth k S] :
+    Algebra.Smooth k R :=
+  ⟨Algebra.FormallySmooth.of_faithfullyFlat k R S, inferInstance⟩
 
 /-! ### Regular field extensions and geometric integrality -/
 
