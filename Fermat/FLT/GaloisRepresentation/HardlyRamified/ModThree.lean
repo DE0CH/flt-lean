@@ -14721,13 +14721,175 @@ theorem eq_one_of_restrictToLEHom_sup_eq_one
     (Subgroup.mem_zpowers g)
   simpa using hfixw
 
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **THE RESIDUE FIELD OF `𝒪₃ᵥ` HAS THREE ELEMENTS** (PROVEN 2026-07-30).
+
+`Fermat/FLT/DedekindDomain/ResidueCardinality.lean`'s
+`natCard_residue_quotient_toHeightOneSpectrum` states this for the CONTRACTION to
+`𝒪₃ᵥ` of the maximal ideal of `IntegralClosure 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ` rather than for
+`maximalIdeal 𝒪₃ᵥ` itself; the two ideals agree because the contraction of a maximal
+ideal along an integral extension is maximal (`Ideal.IsMaximal.under`) and a local
+ring has only one maximal ideal (`IsLocalRing.eq_maximalIdeal`).  That is the whole
+proof, and it is the same three lines `WeilPairing.lean` runs inline at its
+`hcardKv`; it is hoisted here because the residue-field extension below needs it
+twice — once for `CharP … 3` and once for the bijectivity of `ZMod.castHom`. -/
+theorem natCard_residueField_three :
+    Nat.card (IsLocalRing.ResidueField 𝒪₃ᵥ) = 3 := by
+  have h1 := GaloisRepresentation.natCard_residue_quotient_toHeightOneSpectrum
+    Nat.prime_three
+  have hunder : ((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ)).under 𝒪₃ᵥ) =
+      IsLocalRing.maximalIdeal 𝒪₃ᵥ :=
+    IsLocalRing.eq_maximalIdeal
+      (Ideal.IsMaximal.under 𝒪₃ᵥ (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ)))
+  rw [hunder] at h1
+  exact h1
+
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **A SEPARABLE RESIDUE-FIELD EXTENSION OF EVERY PRESCRIBED DEGREE** (PROVEN
+2026-07-30): the input that `exists_unramified_extension_of_residueField` — the
+theorem the unramified-twist leaves below are waiting on — takes as its `k'`.
+
+The five components of the conclusion are exactly that theorem's hypothesis block
+(`Field k'`, `Algebra (ResidueField R) k'`, `FiniteDimensional`,
+`Algebra.IsSeparable`), plus the degree, so its consumer can feed the output straight
+in with no further construction.
+
+WHY IT IS NOT JUST `GaloisField 3 d`.  `GaloisField 3 d` is an algebra over `ZMod 3`,
+and the theorem wants an algebra over `ResidueField 𝒪₃ᵥ`.  Those are isomorphic but
+not identical, so the structure is transported along `ZMod.castHom (dvd_refl 3)`,
+which is injective for any `CharP` and is BIJECTIVE here by the cardinality count
+`natCard_residueField_three`; the same count also supplies the `CharP … 3` the cast
+map needs (`charP_of_card_eq_prime`), so the arithmetic of `3` enters exactly once.
+
+Separability is free rather than checked: `ResidueField 𝒪₃ᵥ` is finite, hence perfect
+(`PerfectField.ofFinite`), and an algebraic extension of a perfect field is separable
+(`Algebra.IsAlgebraic.isSeparable_of_perfectField`).
+
+The degree is a cardinality count and not a `GaloisField` API lemma: over the base of
+cardinality `3` a module of finrank `f` has `3 ^ f` elements
+(`Module.card_eq_pow_finrank`), against `GaloisField.card 3 d = 3 ^ d`, and
+`Nat.pow_right_injective` finishes.  `hd` is LOAD-BEARING through
+`GaloisField.card`'s `d ≠ 0` side condition — and the statement is false at `d = 0`
+anyway, there being no field of finrank `0`. -/
+theorem exists_residueField_extension_finrank_eq (d : ℕ) (hd : 0 < d) :
+    ∃ (k' : Type) (_ : Field k') (_ : Algebra (IsLocalRing.ResidueField 𝒪₃ᵥ) k')
+      (_ : FiniteDimensional (IsLocalRing.ResidueField 𝒪₃ᵥ) k')
+      (_ : Algebra.IsSeparable (IsLocalRing.ResidueField 𝒪₃ᵥ) k'),
+      Module.finrank (IsLocalRing.ResidueField 𝒪₃ᵥ) k' = d := by
+  haveI hfact : Fact (Nat.Prime 3) := ⟨Nat.prime_three⟩
+  have hcard := natCard_residueField_three
+  haveI hfin : Finite (IsLocalRing.ResidueField 𝒪₃ᵥ) :=
+    Nat.finite_of_card_ne_zero (by rw [hcard]; norm_num)
+  haveI hft : Fintype (IsLocalRing.ResidueField 𝒪₃ᵥ) := Fintype.ofFinite _
+  have hcardf : Fintype.card (IsLocalRing.ResidueField 𝒪₃ᵥ) = 3 := by
+    rw [← Nat.card_eq_fintype_card]; exact hcard
+  haveI hchar : CharP (IsLocalRing.ResidueField 𝒪₃ᵥ) 3 := charP_of_card_eq_prime hcardf
+  have ebij : Function.Bijective
+      (ZMod.castHom (dvd_refl 3) (IsLocalRing.ResidueField 𝒪₃ᵥ)) := by
+    refine (Nat.bijective_iff_injective_and_card _).mpr
+      ⟨(ZMod.castHom (dvd_refl 3) (IsLocalRing.ResidueField 𝒪₃ᵥ)).injective, ?_⟩
+    rw [Nat.card_zmod, hcard]
+  set e : ZMod 3 ≃+* IsLocalRing.ResidueField 𝒪₃ᵥ := RingEquiv.ofBijective _ ebij with he
+  letI : Algebra (IsLocalRing.ResidueField 𝒪₃ᵥ) (GaloisField 3 d) :=
+    RingHom.toAlgebra
+      ((algebraMap (ZMod 3) (GaloisField 3 d)).comp (e.symm : _ →+* ZMod 3))
+  haveI : FiniteDimensional (IsLocalRing.ResidueField 𝒪₃ᵥ) (GaloisField 3 d) :=
+    Module.Finite.of_finite
+  haveI : PerfectField (IsLocalRing.ResidueField 𝒪₃ᵥ) := PerfectField.ofFinite
+  haveI : Algebra.IsSeparable (IsLocalRing.ResidueField 𝒪₃ᵥ) (GaloisField 3 d) :=
+    Algebra.IsAlgebraic.isSeparable_of_perfectField
+  refine ⟨GaloisField 3 d, inferInstance, inferInstance, inferInstance, inferInstance, ?_⟩
+  have hGF : Nat.card (GaloisField 3 d) = 3 ^ d := GaloisField.card 3 d hd.ne'
+  haveI : Fintype (GaloisField 3 d) := Fintype.ofFinite _
+  have hpow : Fintype.card (GaloisField 3 d) =
+      Fintype.card (IsLocalRing.ResidueField 𝒪₃ᵥ) ^
+        Module.finrank (IsLocalRing.ResidueField 𝒪₃ᵥ) (GaloisField 3 d) :=
+    Module.card_eq_pow_finrank
+  rw [Nat.card_eq_fintype_card] at hGF
+  rw [hGF, hcardf] at hpow
+  exact (Nat.pow_right_injective (by norm_num) hpow).symm
+
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 1000000 in
-/-- **THE EXISTENCE HALF, IN THE VOCABULARY THE INPUT SPEAKS** (SORRY LEAF, cut
-2026-07-28 out of `exists_inertia_eq_bot_and_finrank_eq` below): for every `d > 0`
-there is a finite Galois `U ⊆ ℚ₃ᵥᵃˡᵍ` of degree `d` in which `3` still GENERATES the
-maximal ideal, i.e. `e(U/ℚ₃ᵥ) = 1`.
+/-- **THE EXISTENCE HALF, GIVEN THE RESIDUE-FIELD EXTENSION** (SORRY LEAF, cut
+2026-07-30 out of `exists_span_three_eq_maximalIdeal_and_finrank_eq` below, which is
+now glue over this and the PROVEN `exists_residueField_extension_finrank_eq` above).
+
+Everything the parent's docstring says applies verbatim; read it there.  What changed
+is only that the residue-field extension `k'` of degree `d` is no longer something
+this leaf has to build — it arrives as the hypothesis block, in EXACTLY the shape
+`exists_unramified_extension_of_residueField`
+(`Fermat/FLT/Mathlib/RingTheory/Unramified/LocalRing.lean`) consumes, so the first
+step of the proof is a single application of that theorem with `R = 𝒪₃ᵥ`, `K = ℚ₃ᵥ`
+and this `k'`.
+
+WHAT REMAINS, and it is the whole of items 2 and 3 of the parent's route:
+* embed the abstract field `L` that theorem returns into the algebraically closed
+  `ℚ₃ᵥᵃˡᵍ` (`IsAlgClosed.lift`, as at `ModThree.lean:2061` and in
+  `FreyConditions.lean`) and take `U` to be the `IntermediateField` image, so that
+  `Module.finrank ℚ₃ᵥ U = Module.finrank ℚ₃ᵥ L = d` — the first equality by transport
+  along the embedding, the second by that theorem's `finrank` clause together with
+  `hk`;
+* `IsGalois ℚ₃ᵥ U`: separability is automatic in characteristic zero, normality is
+  the standard uniqueness of the unramified extension of a given degree (equivalently
+  that it is the splitting field of `X^(3^d − 1) − 1`);
+* identify `IntegralClosure 𝒪₃ᵥ U` with the DVR `S` — both are the integral closure
+  of `𝒪₃ᵥ` in `U` — and carry `𝔪_S = 𝔪_{𝒪₃ᵥ}·S` across.  This is the step that
+  produces the conclusion, and it is the one no cut so far has helped with.
+
+THE IMPORT CAUTION, re-checked 2026-07-30 and still accurate:
+`Fermat.FLT.Mathlib.RingTheory.Unramified.LocalRing` is NOT in this file's public
+import closure — it is reached only by a PRIVATE `import` in
+`KnownIn1980s/EllipticCurves/QuadraticTwists/SplitMultiplicativeReduction.lean`, and
+a transitively-reached private import does not make the name available even in proof
+bodies.  Whoever takes this leaf adds
+`public import Fermat.FLT.Mathlib.RingTheory.Unramified.LocalRing` to this file's
+header.  Its own imports are `Mathlib.RingTheory.Unramified.LocalRing` and two
+`Fermat.FLT.Mathlib.RingTheory.DiscreteValuationRing.*` shims, so there is no cycle.
+The import is deliberately NOT added by this cut, because nothing proven here uses
+it — the hypothesis block is stated purely in terms of `IsLocalRing.ResidueField`.
+
+AND THAT IMPORT IS THE ONLY THING MISSING — CHECKED 2026-07-30, so the next owner
+need not re-check it.  In a scratch module importing exactly
+`Fermat.FLT.DedekindDomain.ResidueCardinality` (which IS in this file's public
+closure) plus `Fermat.FLT.Mathlib.RingTheory.Unramified.LocalRing`, all three of the
+following elaborate with `infer_instance` and no preamble whatever:
+`IsDiscreteValuationRing 𝒪₃ᵥ`, `IsFractionRing 𝒪₃ᵥ ℚ₃ᵥ`, and the full application
+`exists_unramified_extension_of_residueField (R := 𝒪₃ᵥ) (K := ℚ₃ᵥ) k'` against this
+leaf's own hypothesis block.  So step one of the proof costs one import line and one
+`obtain`; nothing has to be constructed to make the theorem applicable, and in
+particular no `IsDiscreteValuationRing` or `IsFractionRing` instance is owed.  (The
+DVR instance is mathlib's, at
+`Mathlib/NumberTheory/NumberField/Completion/FinitePlace.lean:76`; it arrives here
+transitively and does not need importing by name.)
+
+`hd` is retained even though the residue-field construction has already spent it:
+the conclusion is false at `d = 0` (no `U` has `finrank ℚ₃ᵥ U = 0`), so the leaf owes
+it independently of where `k'` came from. -/
+theorem exists_span_three_eq_maximalIdeal_and_finrank_eq_of_residueField
+    (d : ℕ) (_hd : 0 < d)
+    (k' : Type) [Field k'] [Algebra (IsLocalRing.ResidueField 𝒪₃ᵥ) k']
+    [FiniteDimensional (IsLocalRing.ResidueField 𝒪₃ᵥ) k']
+    [Algebra.IsSeparable (IsLocalRing.ResidueField 𝒪₃ᵥ) k']
+    (_hk : Module.finrank (IsLocalRing.ResidueField 𝒪₃ᵥ) k' = d) :
+    ∃ (U : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (_ : FiniteDimensional ℚ₃ᵥ U) (_ : IsGalois ℚ₃ᵥ U),
+      Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ U)} =
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ U) ∧
+      Module.finrank ℚ₃ᵥ U = d := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **THE EXISTENCE HALF, IN THE VOCABULARY THE INPUT SPEAKS** (cut 2026-07-28 out of
+`exists_inertia_eq_bot_and_finrank_eq` below as a sorry leaf; **PROVEN AS GLUE
+2026-07-30** over `exists_residueField_extension_finrank_eq` and the remaining leaf
+`exists_span_three_eq_maximalIdeal_and_finrank_eq_of_residueField`, both immediately
+above): for every `d > 0` there is a finite Galois `U ⊆ ℚ₃ᵥᵃˡᵍ` of degree `d` in
+which `3` still GENERATES the maximal ideal, i.e. `e(U/ℚ₃ᵥ) = 1`.
 
 This is the whole content of the parent — see the parent's docstring for the honest
 accounting of what the cut does and does not buy, and for the full route.  The one
@@ -14744,13 +14906,43 @@ algebraically closed `ℚ₃ᵥᵃˡᵍ` and take `U` to be its image; get `IsGa
 separability (automatic in characteristic zero) plus normality; and identify
 `IntegralClosure 𝒪₃ᵥ U` with `S`, both being the integral closure of `𝒪₃ᵥ` in `U`.
 That last identification is the step that carries `𝔪_S = 𝔪_R·S` across, and it is
-the one this cut does NOT help with. -/
+the one this cut does NOT help with.
+
+**DECOMPOSED AGAIN 2026-07-30**, along the FIRST of those three items.  `k' = GF(3^d)`
+over `ResidueField 𝒪₃ᵥ` is now CONSTRUCTED
+(`exists_residueField_extension_finrank_eq`, PROVEN below, over the equally new and
+proven `natCard_residueField_three`), and the remaining open leaf
+`exists_span_three_eq_maximalIdeal_and_finrank_eq_of_residueField` RECEIVES it as a
+hypothesis.  This theorem is now glue over the two.
+
+BE HONEST ABOUT WHAT THAT BUYS, in the same terms the 2026-07-28 cut used on itself:
+it is the SMALLEST of the three items, and items 2 and 3 — the embedding into
+`ℚ₃ᵥᵃˡᵍ` with `IsGalois`, and the identification of `IntegralClosure 𝒪₃ᵥ U` with `S`
+— are untouched and are where the work still is.  What it does buy is that the
+residue-field input is no longer something the next owner has to build before it can
+start: the interface it needs from `exists_unramified_extension_of_residueField`
+(`Field k'`, an `Algebra` structure over `ResidueField 𝒪₃ᵥ`, `FiniteDimensional`,
+`Algebra.IsSeparable`, and `finrank = d`) is exactly the hypothesis block of the leaf
+below, so the leaf can be opened by feeding `k'` straight in.
+
+The construction of `k'` is worth recording because it is not the one the docstring
+above suggested.  `GaloisField 3 d` is an algebra over `ZMod 3`, not over
+`ResidueField 𝒪₃ᵥ`, so the algebra structure has to be transported along a ring
+isomorphism `ZMod 3 ≃+* ResidueField 𝒪₃ᵥ`; that isomorphism is `ZMod.castHom`, which
+is injective for any `CharP`, promoted to a bijection by a CARDINALITY count —
+`Nat.card (ResidueField 𝒪₃ᵥ) = 3`, which is `natCard_residue_quotient_toHeightOneSpectrum`
+of `Fermat/FLT/DedekindDomain/ResidueCardinality.lean` after contracting the maximal
+ideal of `IntegralClosure 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ`.  The same count then supplies `CharP … 3` in
+the first place (`charP_of_card_eq_prime`), so the cardinality is used twice and is
+the only input specific to `3`. -/
 theorem exists_span_three_eq_maximalIdeal_and_finrank_eq (d : ℕ) (hd : 0 < d) :
     ∃ (U : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (_ : FiniteDimensional ℚ₃ᵥ U) (_ : IsGalois ℚ₃ᵥ U),
       Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ U)} =
         IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ U) ∧
       Module.finrank ℚ₃ᵥ U = d := by
-  sorry
+  obtain ⟨k', hF, hA, hFD, hSep, hk⟩ := exists_residueField_extension_finrank_eq d hd
+  exact @exists_span_three_eq_maximalIdeal_and_finrank_eq_of_residueField
+    d hd k' hF hA hFD hSep hk
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
