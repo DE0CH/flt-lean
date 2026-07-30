@@ -163,6 +163,13 @@ public import Mathlib.AlgebraicGeometry.Morphisms.FlatRank
 -- closed field is a finite product of copies of it.  This is what counts the
 -- `K`-points of `ker [a]` in `card_fibrePt_eq_of_finrank_eq`.
 public import Mathlib.RingTheory.Etale.Field
+-- `KaehlerDifferential.D`: the universal `k`-derivation of a `k`-algebra.  This is
+-- what states the two halves of `exists_pow_eq_stalkMap_mulByNat_prime`
+-- (`kaehler_stalkMap_mulByNat_prime_eq_zero` and
+-- `exists_pow_eq_of_kaehler_stalk_eq_zero`).  Almost certainly already in the cone
+-- through `Etale.Field` above; imported explicitly because those two statements
+-- name it.
+public import Mathlib.RingTheory.Kaehler.Basic
 public import Mathlib.RingTheory.Artinian.Ring
 public import Fermat.FLT.Deformations.RepresentationTheory.GaloisRep
 -- `GaloisRepresentation.globalFrob` and `dense_conjClasses_globalFrob`: the
@@ -15621,11 +15628,168 @@ theorem exists_pow_eq_app_of_forall_stalk {X Y : Scheme.{u}} [AlgebraicGeometry.
   intro x hx
   exact TopologicalSpace.Opens.mem_iSup.mpr ⟨⟨x, hx⟩, hxW x hx⟩
 
-/-- **THE STALK MAPS OF `[p]` LAND IN `p`-th POWERS** (sorry leaf, CUT
-2026-07-30 out of `exists_pow_eq_app_mulByNat_prime` immediately below, which is
-PROVEN over it; that statement was itself cut 2026-07-28 out of
+/-! #### The stalk statement, split into a DIFFERENTIAL and a POWER half
+
+**CUT 2026-07-30.**  `exists_pow_eq_stalkMap_mulByNat_prime` below is now PROVEN
+over the two leaves in this subsection.  They are `d ∘ [p]^{\#} = 0` and
+"`d b = 0 ⟹ b` is a `p`-th power", and the composite is exactly the old leaf.
+
+**THE ACCOUNTING IS HONEST: this trades ONE leaf for TWO.**  What buys the extra
+leaf is that the two halves need DISJOINT theories and disjoint hypotheses, and
+the split is sharp enough to be checked rather than asserted:
+
+* the ABELIAN VARIETY enters only in the first half, and PERFECTNESS of `k` only
+  in the second.  `kaehler_stalkMap_mulByNat_prime_eq_zero` is true over EVERY
+  field of characteristic `p`, imperfect ones included, and takes no `hfin`;
+  `exists_pow_eq_of_kaehler_stalk_eq_zero` knows nothing of group laws and is
+  refuted over `𝔽_p(u)` by the witness that used to sit on the composite
+  statement.  So the imperfection counterexample recorded below has MOVED to the
+  second leaf, where it now refutes that leaf alone;
+* neither half needs the Verschiebung.  The classical route to the old leaf goes
+  through quotients by infinitesimal group schemes and fppf descent (`ker Fr` is
+  killed by `p`, and `Fr` exhibits `A'` as the quotient by it), none of which
+  exists at this pin.  The first half needs only `Ω` of the group scheme and the
+  additivity of `f ↦ f^*` on invariant differentials; the second is Cartier's
+  criterion, standard commutative algebra with a `p`-basis.
+
+Refuting check for the claim that the split is sharp, one grep each: the first
+leaf's statement contains no `Finite k` and no `PerfectField`, the second
+contains no `AbelianSchemeStruct`. -/
+
+/-- **THE `k`-ALGEBRA STRUCTURE ON A STALK OF A `k`-SCHEME** (PROVEN
+2026-07-30), namely the composite `k ⟶ Γ(Spec k, ⊤) ⟶ Γ(X, ⊤) ⟶ 𝒪_{X, x}` read
+as an algebra map.  This is the same composite that
+`natCast_sections_eq_zero_of_over` (`Modularity/SchemeFrobenius.lean`) uses to
+push `(p : k) = 0` down to sections, one step further along the germ map.
+
+It cannot be an `instance`: it depends on the structure morphism `aX`, which is
+not recoverable from `X` and `x`.  Both leaves below therefore introduce it with
+the same `letI`, which is what makes them composable — an algebra structure
+introduced two different ways would give two different `Ω[𝒪_{X,x}⁄k]`. -/
+@[reducible] noncomputable def stalkAlgebraOver {k : Type u} [CommRing k] {X : Scheme.{u}}
+    (aX : X ⟶ Spec (CommRingCat.of k)) (x : X) : Algebra k (X.presheaf.stalk x) :=
+  (((Scheme.ΓSpecIso (CommRingCat.of k)).inv ≫ aX.appTop ≫
+      X.presheaf.germ ⊤ x trivial).hom).toAlgebra
+
+/-- **`[p]^{\#}` KILLS KÄHLER DIFFERENTIALS ON EVERY STALK** (sorry leaf, cut
+2026-07-30 out of `exists_pow_eq_stalkMap_mulByNat_prime` below — Mumford
+*Abelian Varieties* §11 and §13, Milne *Abelian Varieties* §I.2).  This is the
+ABELIAN-VARIETY half of that leaf, and it carries all of its group theory.
+
+Since `d` is natural — `d (φ b)` is the image of `d b` under the map
+`Ω[𝒪_{A', [p]x}⁄k] ⟶ Ω[𝒪_{A', x}⁄k]` induced by `φ = ([p])^{\#}_x` — the
+statement says precisely that **that induced map is ZERO**, i.e. that
+`[p]^* = 0` on differentials.
+
+**THE CLASSICAL PROOF, in two steps neither of which leaves the group scheme.**
+
+* `Ω_{A'/k}` is a FREE `𝒪_{A'}`-module on the INVARIANT differentials, i.e.
+  `Ω_{A'/k} ≅ 𝒪_{A'} ⊗_k e^* Ω_{A'/k}` for `e` the zero section.  This holds for
+  every smooth group scheme over a field and is proved by translating: the
+  translation `T_y` is an isomorphism, so an invariant differential is determined
+  by its value at `e` and every value at `e` extends.
+* `f ↦ f^*` is ADDITIVE on invariant differentials: for `ω` invariant,
+  `m^* ω = pr₁^* ω + pr₂^* ω` on `A' × A'` (this IS invariance, read on the
+  multiplication), so `(f + g)^* ω = f^* ω + g^* ω`.  Applied to
+  `[p] = id + ⋯ + id` this gives `[p]^* ω = p · ω`, which is `0` because
+  `p = 0` on sections (`hchar`).
+
+Then `d b = Σ f_i ω_i` with `ω_i` invariant, and its image is
+`Σ φ(f_i) · [p]^* ω_i = 0`.
+
+**WHAT IS LOAD-BEARING, AND WHAT IS DELIBERATELY ABSENT.**  `ab'` is essential —
+without a group law `[p]` is not even defined, and the additivity step is the
+whole argument.  `hchar` is essential: in characteristic `0`, `[p]^* = p ≠ 0`.
+But `k` is NOT assumed finite and NOT assumed perfect, and neither may be added
+by a well-meaning successor "for symmetry with the consumer": this leaf is TRUE
+over every field of characteristic `p`, including `𝔽_p(u)`, and that is exactly
+what localises the imperfection obstruction in the SECOND leaf rather than here.
+Refuting check, one grep: `Finite` and `PerfectField` do not occur in the
+statement below.
+
+**`hp` IS NOT CONSUMED**, and the sketch above says why: `[p]^* ω = p · ω` and
+`hchar` are the whole argument, and neither cares whether `p` is prime — the
+statement is true for every natural number `p` killing the sections.  It is
+retained for the same reason `exists_pow_eq_app_mulByNat` retains `hN`: the
+consumer holds it, and dropping it would change that consumer for no gain.  A
+successor proving this leaf should NOT go looking for the step that uses
+primality; there is none.  (Primality is genuinely used in the SECOND leaf, where
+the `p`-basis expansion needs it.)
+
+WHERE THIS BELONGS: beside the sheaf of differentials of an abelian scheme, once
+this development has one; it is stated here to keep the cut inside one region. -/
+theorem kaehler_stalkMap_mulByNat_prime_eq_zero
+    {k : Type u} [Field k] (p : ℕ) (hp : p.Prime)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    (hchar : ∀ U : A'.Opens, (p : Γ(A', U)) = 0)
+    (x : A') (y : A'.presheaf.stalk ((ab'.mulByNat p).base x)) :
+    letI : Algebra k (A'.presheaf.stalk x) := stalkAlgebraOver f' x
+    (KaehlerDifferential.D k (A'.presheaf.stalk x))
+      (((ab'.mulByNat p).stalkMap x).hom y) = 0 :=
+  sorry
+
+/-- **CARTIER'S CRITERION: A GERM KILLED BY `d` IS A `p`-th POWER** (sorry leaf,
+cut 2026-07-30 out of `exists_pow_eq_stalkMap_mulByNat_prime` below — Matsumura
+*Commutative Ring Theory* §26 and §30, Bourbaki *Algèbre* V §13 (`p`-bases)).
+This is the COMMUTATIVE-ALGEBRA half of that leaf, and it carries all of its use
+of perfectness.  There is no group law and no abelian variety in it.
+
+**THE CLASSICAL PROOF, in three steps.**
+
+* `𝒪_{X,x}` is a regular local ring (`isRegularLocalRing_stalk_of_smooth`, proven
+  in `Modularity/AbelianSchemeIsogeny.lean`) hence a normal domain
+  (`isDomain_of_isRegularLocalRing`, used the same way by
+  `isReduced_of_smooth_over_field_stalkwise` above).  Write `K` for its fraction
+  field.
+* `ker (d : K ⟶ Ω[K⁄k]) = K^p`.  `K` is finitely generated over the PERFECT
+  field `k`, hence separably generated, so it has a `p`-basis `x₁, …, xₙ`: the
+  monomials `x^α` with `0 ≤ αᵢ < p` are a `K^p`-basis of `K`, and `d x₁, …, d xₙ`
+  are a `K`-basis of `Ω[K⁄k]`.  Expanding `b = Σ_α c_α^p x^α` and differentiating
+  gives `Σ_α αᵢ c_α^p x^{α - eᵢ} = 0` for each `i`; those monomials are
+  `K^p`-independent, so `c_α = 0` unless every `αᵢ ≡ 0 (mod p)`, i.e. unless
+  `α = 0`.  Hence `b = c_0^p`.
+* The root descends: `c ∈ K` satisfies `c^p - b = 0` with `b ∈ 𝒪_{X,x}`, so `c`
+  is integral over `𝒪_{X,x}`, which is integrally closed; hence `c ∈ 𝒪_{X,x}`.
+
+**FALSITY AUDIT — `PerfectField k` IS NECESSARY, with an explicit witness.**
+This is the SAME witness that stood on `exists_pow_eq_stalkMap_mulByNat_prime`
+before the cut, and the cut has moved it here because here is where it bites.
+Let `k = 𝔽_p(u)`, `X = 𝔸¹_k = Spec k[t]` — smooth over `k`, so every other
+hypothesis holds — and `b = u`, the image of `u ∈ k` in any stalk.  Then
+`d b = 0` because `d` is `k`-LINEAR and kills `k`; but `u` is not a `p`-th power
+in `k[t]` nor in any of its localisations, since `k[t]^p ⊆ k^p[t^p]` and
+`u ∉ k^p`.  So the conclusion fails.  One grep to check the seam is still sound:
+`grep -n 'PerfectField' Fermat/FLT/Modularity/TateModule.lean`.
+
+**WHAT IS NOT NEEDED.**  No group structure, no properness, no finiteness of `k`
+(the statement is true over `𝔽̄_p`, which is infinite and perfect — as the
+docstring of the consumer already recorded, imperfection and not infinitude is
+the obstruction), and no relation between `p` and any cardinality.  `hchar` is
+used only to know `p = 0` in the stalk; a successor may replace it by
+`(p : k) = 0`, which follows from it because `k ⟶ 𝒪_{X,x}` is a ring map out of
+a field into a nonzero ring, hence injective.
+
+WHERE THIS BELONGS: `Fermat/FLT/Mathlib/RingTheory/Kaehler/`, as a statement
+about a localisation of a smooth algebra over a perfect field; it is stated in
+scheme form here because that is the form the consumer needs and because the
+regular-local input is already available in that form. -/
+theorem exists_pow_eq_of_kaehler_stalk_eq_zero
+    {k : Type u} [Field k] [PerfectField k] (p : ℕ) (hp : p.Prime)
+    {X : Scheme.{u}} (aX : X ⟶ Spec (CommRingCat.of k)) [Smooth aX]
+    (hchar : ∀ U : X.Opens, (p : Γ(X, U)) = 0)
+    (x : X) (b : X.presheaf.stalk x)
+    (hb : letI : Algebra k (X.presheaf.stalk x) := stalkAlgebraOver aX x
+      (KaehlerDifferential.D k (X.presheaf.stalk x)) b = 0) :
+    ∃ c : X.presheaf.stalk x, c ^ p = b :=
+  sorry
+
+/-- **THE STALK MAPS OF `[p]` LAND IN `p`-th POWERS** (**PROVEN 2026-07-30** over
+the two leaves immediately above; it was a sorry leaf from earlier the same day,
+when it was itself CUT out of `exists_pow_eq_app_mulByNat_prime` immediately
+below, which is PROVEN over it; that statement was in turn cut 2026-07-28 out of
 `exists_pow_eq_app_mulByNat` — Mumford *AV* §15, Milne *AV* §I.5).  This is all
-that is left of the Verschiebung, and it is now a statement about LOCAL RINGS
+that is left of the Verschiebung, and it is a statement about LOCAL RINGS
 alone: for every point `x` of `A'`, the image of the stalk map
 `𝒪_{A', [p] x} ⟶ 𝒪_{A', x}` lies inside the `p`-th powers.
 
@@ -15657,30 +15821,48 @@ counting it as progress.  What it buys is METHOD, and concretely:
   scheme-level interface written first.  Against the stalk statement it needs
   only `Ω[𝒪_{A',x} ⁄ k]`, which exists.  That is the one concrete thing this cut
   changes about the route, and it is why the cut was made in this direction.
+  **It was acted on the same day**: the two leaves above are exactly the two
+  halves named in that sentence, and `stalkAlgebraOver` is the whole of the
+  interface they needed.
 
 **WHAT IS LOAD-BEARING.**  The statement needs exactly that `k` is **PERFECT**.
 It needs neither finiteness, nor `p ^ a = #k`, nor any tie between an exponent
 and the size of `k`.  `hfin` is kept because it is what the caller holds and
 `PerfectField.ofFinite` is an INSTANCE, so a prover gets `PerfectField k` by
 synthesis alone; a successor may weaken `hfin` to `[PerfectField k]` together
-with `(p : k) = 0` without touching any consumer.
+with `(p : k) = 0` without touching any consumer.  The proof below is where that
+weakening would have to be made: `hfin` is consumed by `haveI` and by nothing
+else, feeding `PerfectField.ofFinite` into the second leaf.
 
-**PERFECTNESS IS ALSO NECESSARY, with an explicit witness.**  Let `k` be
-IMPERFECT of characteristic `p` — say `k = 𝔽_p(u)`.  `[p]` is a `k`-morphism, so
-`([p])^{\#}` is a `k`-algebra map and fixes `u`, and so is every one of its stalk
-maps.  Were `u` a `p`-th power in a stalk `𝒪_{A', x}`, it would be a `p`-th power
-in the function field `k(A')`; but `A'` is geometrically integral, so `k(A')/k`
-is separable and `k` is algebraically closed in it, whence `u^{1/p} ∉ k(A')`.
-So the leaf is FALSE over every imperfect base — and TRUE over `𝔽̄_p`, which is
-infinite.  Imperfection, not infinitude, is the obstruction. -/
+**PERFECTNESS IS ALSO NECESSARY, and the witness now lives ONE LEVEL DOWN.**
+Let `k` be IMPERFECT of characteristic `p` — say `k = 𝔽_p(u)`.  `[p]` is a
+`k`-morphism, so `([p])^{\#}` is a `k`-algebra map and fixes `u`, and so is every
+one of its stalk maps.  Were `u` a `p`-th power in a stalk `𝒪_{A', x}`, it would
+be a `p`-th power in the function field `k(A')`; but `A'` is geometrically
+integral, so `k(A')/k` is separable and `k` is algebraically closed in it, whence
+`u^{1/p} ∉ k(A')`.  So this statement is FALSE over every imperfect base — and
+TRUE over `𝔽̄_p`, which is infinite.  Imperfection, not infinitude, is the
+obstruction.  Since the cut of 2026-07-30, the SAME witness refutes
+`exists_pow_eq_of_kaehler_stalk_eq_zero` above and does not touch
+`kaehler_stalkMap_mulByNat_prime_eq_zero`, which is true over `𝔽_p(u)`; that is
+the check that the cut separated the two hypotheses correctly rather than
+merely plausibly.
+
+**THE PROOF** is the composition of the two leaves and nothing else:
+`d (([p])^{\#} y) = 0` by the first, so `([p])^{\#} y` is a `p`-th power by the
+second.  `ab'` enters the second leaf only through `ab'.smooth`, which is what
+makes the stalks regular local. -/
 theorem exists_pow_eq_stalkMap_mulByNat_prime
     {k : Type u} [Field k] (hfin : Finite k) (p : ℕ) (hp : p.Prime)
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
     (ab' : AbelianSchemeStruct f')
     (hchar : ∀ U : A'.Opens, (p : Γ(A', U)) = 0)
     (x : A') (y : A'.presheaf.stalk ((ab'.mulByNat p).base x)) :
-    ∃ τ : A'.presheaf.stalk x, τ ^ p = ((ab'.mulByNat p).stalkMap x).hom y :=
-  sorry
+    ∃ τ : A'.presheaf.stalk x, τ ^ p = ((ab'.mulByNat p).stalkMap x).hom y := by
+  haveI := hfin
+  haveI := ab'.smooth
+  exact exists_pow_eq_of_kaehler_stalk_eq_zero p hp f' hchar x _
+    (kaehler_stalkMap_mulByNat_prime_eq_zero p hp ab' hchar x y)
 
 /-- **`[p]^{\#}` LANDS IN `p`-th POWERS** (**PROVEN 2026-07-30** over the stalk
 leaf `exists_pow_eq_stalkMap_mulByNat_prime` immediately above; it was a sorry
@@ -18259,6 +18441,41 @@ sequence `0 → T_I B → T_I A' → T_I C → 0` — exact precisely because
 `q ≠ char k` — forces `T_I C = 0` and hence `V_I C = 0`.  Contradiction;
 so `C = 0` and `ι` is surjective.
 
+**ROUTE AUDIT (2026-07-30) — ONE WORD OF THAT SKETCH HIDES THE DEEP
+INPUT, and a prover who follows it will stop there.**  The word is
+"Hence", in "the action … is FAITHFUL … Hence `D ⊗ ℚ_q` acts faithfully
+on `V_q C`".  That implication is NOT formal, and the paragraph as
+written reads as though it were:
+
+* what IS formal, and needs only that `D` is a field, is that `D` acts
+  faithfully on the abelian variety `C` itself (the kernel is a proper
+  ideal of a field, hence `0`);
+* what is NOT formal is passing from there to `V_q C`.  `V_q C` is a
+  module over `D ⊗ ℚ_q = ∏_{J ∣ q} D_J`, and faithfulness of `D` alone
+  does not force any single factor to act nontrivially: the kernel of
+  `D ⊗ ℚ_q ⟶ End (V_q C)` is a sub-product `∏_{J ∈ S} D_J`, and
+  `D ∩ ∏_{J ∈ S} D_J = 0` holds automatically for every `S` not
+  containing all of the factors, because `D` is a field and each
+  projection `D ⟶ D_J` is injective.  So "`D` is faithful on `C`" is
+  consistent, formally, with `V_I C = 0`.
+
+The statement that closes the gap is **Mumford *AV* §19 Thm 3**:
+`End (C) ⊗ ℤ_q ⟶ End (T_q C)` is INJECTIVE.  Given it, the rest of the
+sketch is immediate and is worth writing in the form a prover will use:
+the idempotent `e_I ∈ D ⊗ ℚ_q` cutting out the `I`-factor is nonzero, it
+lies in `End⁰(C) ⊗ ℚ_q`, and `V_I C = 0` makes it act as `0` on `V_q C`
+— so injectivity gives `e_I = 0`, which is false.
+
+Nothing here changes the statement, which remains true; what changes is
+the estimate of what it costs.  The chain to build is: the quotient
+abelian variety `C = A'/B`; exactness of `0 → T_I B → T_I A' → T_I C → 0`
+away from the residue characteristic; and Mumford §19 Thm 3.  A cut of
+this leaf that does not name all three is understating it, and none of
+the three can be STATED in this development yet, because the quotient of
+an abelian scheme by a closed abelian subscheme has no name here.  That
+absence, and not the difficulty of any one step, is why this leaf was not
+cut on 2026-07-30.
+
 **`hqN` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT IT.**  At the
 residue characteristic the displayed sequence of Tate modules is not
 exact and `A'[pⁿ](k̄)` is too small to see `C`: in the supersingular case
@@ -18351,7 +18568,10 @@ variety on which `D` acts, and the action is FAITHFUL because `D` is a
 field and `1 ↦ 1 ≠ 0`; hence `D ⊗ ℚ_q = ∏_{J ∣ q} D_J` acts faithfully on
 `V_q C`, so every factor acts nontrivially and in particular
 `V_I C ≠ 0`.  But `T_I B = T_I A'` by construction, so `V_I C = 0` — a
-contradiction.  Therefore `B = A'_{k̄}`, and density descends to `|A'|`
+contradiction.  (That "hence" is not formal — see the ROUTE AUDIT of
+2026-07-30 in `range_eq_univ_of_abelianSubscheme_torsion_finiteBase`
+above, which names the theorem it needs.  The sketch is repeated here
+only for readability; the audit is the maintained copy.)  Therefore `B = A'_{k̄}`, and density descends to `|A'|`
 because `|A'_{k̄}| → |A'|` is surjective: the preimage of the closure of
 the image of `T` is closed and contains `T`, hence is everything.
 
