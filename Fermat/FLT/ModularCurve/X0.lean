@@ -50448,6 +50448,14 @@ theorem Gamma0AtlasOver.exists_bcIso {N : ℕ} {S S' : Scheme.{0}}
 /-- **`BcUniversal` transports between ANY two atlases over the same base**
 (PROVEN — no flatness, no field, no hypothesis on `q`).
 
+**NAME CHANGED AT INTEGRATION (2026-07-30).**  This was
+`Gamma0AtlasOver.bcUniversal_transport`, and so is the lemma ~22 000 lines above
+(added the same release by flt-lean-94's `73a66543`, this one by `31cf3537`) —
+two independent proofs of the same fact under one name, which does not compile.
+The one above takes the intertwining isomorphism `a` as a hypothesis and has the
+live consumer (`bcUniversal_of_field`); this one is the hypothesis-free form, so
+it keeps the content and gives up the name.
+
 This is the lemma `Gamma0AtlasOver.BcUniversal`'s docstring presupposes and
 `bcUniversal_of_field`'s route audit consumes: since the predicate mentions the
 atlas only through `str` and `classify`, and initiality makes any two atlases
@@ -50462,7 +50470,7 @@ back through this theorem, then through
 
 `Gamma0AtlasOver.exists_bcIso` does the work; here we only carry the `∃!`
 across the iso, using the two conjuncts in both directions. -/
-theorem Gamma0AtlasOver.bcUniversal_transport {N : ℕ} {S S' : Scheme.{0}}
+theorem Gamma0AtlasOver.bcUniversal_transport_atlas {N : ℕ} {S S' : Scheme.{0}}
     (A A₀ : Gamma0AtlasOver N S) (q : S' ⟶ S) (h₀ : A₀.BcUniversal q) :
     A.BcUniversal q := by
   obtain ⟨E, hEstr, hEcl⟩ := Gamma0AtlasOver.exists_bcIso A A₀ q
@@ -50500,8 +50508,8 @@ reason recorded on `bcUniversal_of_field`: `BcQuotient` quantifies over
 morphisms out of `A.bcM q`, so a proof carried out on an affine GIT model —
 which is the only known route — could not be transported to the given atlas.
 `BcUniversal` mentions `A` only through `str` and `classify`, and
-`Gamma0AtlasOver.bcUniversal_transport` (PROVEN just above) is what makes that
-freedom usable.
+`Gamma0AtlasOver.bcUniversal_transport_atlas` (PROVEN just above) is what makes
+that freedom usable.
 
 **TRUE, and by the flatness criterion rather than by a new argument.**  `ℚ` is
 the fraction field of every subring of `ℚ` — each contains `ℤ`, and if
