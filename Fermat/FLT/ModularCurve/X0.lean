@@ -3515,10 +3515,365 @@ theorem etale_nTorsion_of_specQBase (n : ℕ) (hn : 3 ≤ n)
   exact AlgebraicGeometry.etale_of_isReduced_pullback _
     (isReduced_geomFibre_nTorsion_of_specQBase n hn ab hdim g)
 
+/-! #### The machinery of the basis locus (written 2026-07-30)
+
+`exists_isomTorsor_of_etale_nTorsion` below is PROVEN over this block, along
+exactly the route its own docstring records: the basis locus inside
+`W := E[n] ×_T E[n]` is `W` minus the `n² − 1` loci `a·P + b·Q = 0`, each of
+which is CLOPEN, so the locus is a clopen open subscheme of `W` — open for
+`Flat p`, closed for `QuasiCompact p`.
+
+Three groups of lemmas, and none of them is about the moduli problem:
+
+* **`eqPt` and the four `eqLocus` lemmas** — the equalizer of two `Z'`-points
+  of `π : K ⟶ Z`, as a base change of the diagonal of `π`.  This is the
+  *general* form of `isOpenImmersion_equalizer_of_nsmul_eq_zero` far below,
+  which is stated only for SECTIONS (relative points over `𝟙`); the tautological
+  pair on `W` is not a pair of sections, so the general form is what the
+  construction needs.  Open when `π` is formally unramified and locally of
+  finite type; CLOSED when `π` is separated; and the two range lemmas say a
+  point lies in the equalizer exactly when the two points agree on it.
+* **`nTorsionSch` / `nTorsionInc` / `nTorsionPrj`** — abbreviations for
+  `E[n]`, `E[n] ⟶ E` and `E[n] ⟶ T`, with `exists_factor_nTorsion` and
+  `nsmul_eq_zero_of_factor_nTorsion` the two directions of "an `n`-torsion
+  relative point is one that factors through `E[n]`".  The first is
+  `exists_factor_nTorsion_of_nsmul_eq_zero` (far below) with the gratuitous
+  `g = 𝟙` dropped and the base-point compatibility recorded; the second is
+  its converse and is what makes the tautological pair `n`-torsion ON THE NOSE.
+* **the counting step** — `exists_nsmul_span_of_indep`: inside a group whose
+  `n`-torsion is free of rank two over `ℤ/n`, an INDEPENDENT pair already
+  SPANS, because `(a, b) ↦ a·P + b·Q` is then a self-injection of a finite
+  type.  This is what turns "no nontrivial combination vanishes" — a finite
+  boolean combination of equalizers — into the `∃!` of clause (A), with no
+  fibrewise-isomorphism criterion anywhere.
+
+Everything here is stated for a general base point `g : Z ⟶ T`, not for
+sections, which is the whole reason it is a separate block rather than a reuse
+of the section-level lemmas below. -/
+
+section BasisLocusMachinery
+
+open _root_.CategoryTheory.Limits
+
+section EqLocus
+
+variable {K Z Z' : Scheme.{u}} (π : K ⟶ Z)
+
+/-- **The comparison map into `K ×_Z K` of two `Z'`-points of `K` agreeing over
+`Z`** (PROVEN).  Its fibre product with the diagonal of `π` is their equalizer,
+so `pullback.fst (eqPt π x y h) (pullback.diagonal π)` is the inclusion of the
+locus in `Z'` where `x` and `y` agree. -/
+noncomputable abbrev eqPt (x y : Z' ⟶ K) (h : x ≫ π = y ≫ π) : Z' ⟶ pullback π π :=
+  pullback.lift x y h
+
+/-- **The equalizer of two points of a formally unramified, locally
+finite-type morphism is an OPEN immersion** (PROVEN 2026-07-30) — the diagonal
+of such a `π` is an open immersion (`FormallyUnramified.isOpenImmersion_diagonal`)
+and open immersions are stable under base change. -/
+theorem isOpenImmersion_eqLocus [FormallyUnramified π] [LocallyOfFiniteType π]
+    (x y : Z' ⟶ K) (h : x ≫ π = y ≫ π) :
+    IsOpenImmersion (pullback.fst (eqPt π x y h) (pullback.diagonal π)) :=
+  inferInstance
+
+/-- **The equalizer of two points of a SEPARATED morphism is a CLOSED
+immersion** (PROVEN 2026-07-30) — the free half. -/
+theorem isClosedImmersion_eqLocus [IsSeparated π]
+    (x y : Z' ⟶ K) (h : x ≫ π = y ≫ π) :
+    IsClosedImmersion (pullback.fst (eqPt π x y h) (pullback.diagonal π)) := by
+  haveI := IsSeparated.isClosedImmersion_diagonal (f := π)
+  infer_instance
+
+/-- **Hence the equalizer has CLOPEN range** (PROVEN 2026-07-30) — the two
+lemmas above read on ranges.  This is what makes a finite boolean combination
+of equalizers clopen, which is what the basis locus is. -/
+theorem isClopen_range_eqLocus [FormallyUnramified π] [LocallyOfFiniteType π] [IsSeparated π]
+    (x y : Z' ⟶ K) (h : x ≫ π = y ≫ π) :
+    IsClopen (Set.range (pullback.fst (eqPt π x y h) (pullback.diagonal π)).base) := by
+  haveI := isOpenImmersion_eqLocus π x y h
+  haveI := isClosedImmersion_eqLocus π x y h
+  exact ⟨(pullback.fst (eqPt π x y h) (pullback.diagonal π)).isClosedEmbedding.isClosed_range,
+    (pullback.fst (eqPt π x y h) (pullback.diagonal π)).isOpenEmbedding.isOpen_range⟩
+
+/-- **Anything on which the two points AGREE lands in the equalizer**
+(PROVEN 2026-07-30) — no hypothesis on `π` at all: the cone
+`(t, t ≫ x)` factors through the fibre product. -/
+theorem range_subset_eqLocus {X : Scheme.{u}} (x y : Z' ⟶ K) (h : x ≫ π = y ≫ π)
+    (t : X ⟶ Z') (ht : t ≫ x = t ≫ y) :
+    Set.range t.base ⊆
+      Set.range (pullback.fst (eqPt π x y h) (pullback.diagonal π)).base := by
+  have hcomm : t ≫ eqPt π x y h = (t ≫ x) ≫ pullback.diagonal π := by
+    refine pullback.hom_ext ?_ ?_
+    · rw [Category.assoc, pullback.lift_fst, Category.assoc,
+        pullback.diagonal_fst, Category.comp_id]
+    · rw [Category.assoc, pullback.lift_snd, Category.assoc,
+        pullback.diagonal_snd, Category.comp_id, ht]
+  have hfac : pullback.lift t (t ≫ x) hcomm ≫
+      pullback.fst (eqPt π x y h) (pullback.diagonal π) = t := pullback.lift_fst _ _ _
+  rw [← hfac]
+  simp only [Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp]
+  exact Set.image_subset_range _ _
+
+/-- **Conversely, anything landing in the equalizer makes the two points
+agree** (PROVEN 2026-07-30) — this direction spends unramifiedness, through the
+open immersion of `isOpenImmersion_eqLocus`, whose `lift` supplies the
+factorisation that a mere inclusion of ranges does not. -/
+theorem eq_of_range_subset_eqLocus [FormallyUnramified π] [LocallyOfFiniteType π]
+    {X : Scheme.{u}} (x y : Z' ⟶ K) (h : x ≫ π = y ≫ π) (t : X ⟶ Z')
+    (ht : Set.range t.base ⊆
+      Set.range (pullback.fst (eqPt π x y h) (pullback.diagonal π)).base) :
+    t ≫ x = t ≫ y := by
+  haveI := isOpenImmersion_eqLocus π x y h
+  set l := IsOpenImmersion.lift (pullback.fst (eqPt π x y h) (pullback.diagonal π)) t ht with hl
+  have hfac : l ≫ pullback.fst (eqPt π x y h) (pullback.diagonal π) = t :=
+    IsOpenImmersion.lift_fac _ _ ht
+  have key : l ≫ pullback.snd (eqPt π x y h) (pullback.diagonal π) ≫ pullback.diagonal π
+      = t ≫ eqPt π x y h := by
+    rw [← pullback.condition, ← Category.assoc, hfac]
+  have h1 : t ≫ x = l ≫ pullback.snd (eqPt π x y h) (pullback.diagonal π) := by
+    have := congrArg (fun m => m ≫ pullback.fst π π) key
+    simp only [Category.assoc, pullback.diagonal_fst, Category.comp_id,
+      pullback.lift_fst] at this
+    exact this.symm
+  have h2 : t ≫ y = l ≫ pullback.snd (eqPt π x y h) (pullback.diagonal π) := by
+    have := congrArg (fun m => m ≫ pullback.snd π π) key
+    simp only [Category.assoc, pullback.diagonal_snd, Category.comp_id,
+      pullback.lift_snd] at this
+    exact this.symm
+  rw [h1, h2]
+
+end EqLocus
+
+/-- `E[n]`, the kernel of `[n]` on an abelian scheme — the same construction
+`CyclicSubgroupOfOrder.torsionScheme` carries with `c.ι` replaced by `𝟙`. -/
+noncomputable abbrev nTorsionSch (n : ℕ) {E T : Scheme.{u}} {f : E ⟶ T}
+    (ab : AbelianSchemeStruct f) : Scheme.{u} :=
+  pullback (ab.mulByNat n) ab.zeroSection
+
+/-- `E[n] ⟶ E`, a base change of the zero section and hence a closed
+immersion. -/
+noncomputable abbrev nTorsionInc (n : ℕ) {E T : Scheme.{u}} {f : E ⟶ T}
+    (ab : AbelianSchemeStruct f) : nTorsionSch n ab ⟶ E :=
+  pullback.fst (ab.mulByNat n) ab.zeroSection
+
+/-- `E[n] ⟶ T`, the morphism `etale_nTorsion_of_specQBase` above proves
+étale. -/
+noncomputable abbrev nTorsionPrj (n : ℕ) {E T : Scheme.{u}} {f : E ⟶ T}
+    (ab : AbelianSchemeStruct f) : nTorsionSch n ab ⟶ T :=
+  nTorsionInc n ab ≫ f
+
+section Factor
+
+variable {n : ℕ} {E T : Scheme.{u}} {f : E ⟶ T} (ab : AbelianSchemeStruct f)
+
+/-- **An `n`-torsion relative point over ANY base point factors through
+`E[n]`** (PROVEN 2026-07-30) — `exists_factor_nTorsion_of_nsmul_eq_zero` far
+below with the gratuitous `g = 𝟙` dropped, and with the factorisation's
+compatibility with the two structure morphisms recorded, which is what lets the
+factorisation be fed to `pullback.lift`. -/
+theorem exists_factor_nTorsion {Z : Scheme.{u}} {g : Z ⟶ T} (x : RelPoint f g)
+    (hx : letI := ab.addCommGroup g; n • x = 0) :
+    ∃ x' : Z ⟶ nTorsionSch n ab,
+      x' ≫ nTorsionInc n ab = x.1 ∧ x' ≫ nTorsionPrj n ab = g := by
+  letI := ab.addCommGroup g
+  have hval : (n • x).1 = x.1 ≫ ab.mulByNat n := ab.nsmul_val n x
+  have heq : x.1 ≫ ab.mulByNat n = g ≫ ab.zeroSection := by
+    rw [← hval, show (n • x) = ab.zero g from hx, ab.zero_val]
+  refine ⟨pullback.lift x.1 g heq, pullback.lift_fst _ _ _, ?_⟩
+  show pullback.lift x.1 g heq ≫ pullback.fst _ _ ≫ f = g
+  rw [← Category.assoc, pullback.lift_fst, x.2]
+
+/-- **Conversely, anything factoring through `E[n]` is `n`-torsion**
+(PROVEN 2026-07-30) — `pullback.condition` plus `zeroSection_comp`, and nothing
+else.  This is what makes the two tautological projections of
+`E[n] ×_T E[n]` `n`-torsion points ON THE NOSE, with nothing fibrewise. -/
+theorem nsmul_eq_zero_of_factor_nTorsion {Z : Scheme.{u}} {g : Z ⟶ T} (x : RelPoint f g)
+    (x' : Z ⟶ nTorsionSch n ab) (hx' : x' ≫ nTorsionInc n ab = x.1) :
+    letI := ab.addCommGroup g; n • x = 0 := by
+  letI := ab.addCommGroup g
+  have hsnd : x' ≫ pullback.snd (ab.mulByNat n) ab.zeroSection = g := by
+    have h := congrArg (fun m => m ≫ f) (pullback.condition (f := ab.mulByNat n)
+      (g := ab.zeroSection))
+    simp only [Category.assoc, ab.mulByNat_comp, ab.zeroSection_comp,
+      Category.comp_id] at h
+    calc x' ≫ pullback.snd (ab.mulByNat n) ab.zeroSection
+        = x' ≫ pullback.fst (ab.mulByNat n) ab.zeroSection ≫ f := by rw [← h]
+      _ = g := by rw [← Category.assoc, hx', x.2]
+  apply Subtype.ext
+  rw [ab.nsmul_val n x]
+  show x.1 ≫ ab.mulByNat n = (ab.zero g).1
+  rw [ab.zero_val]
+  calc x.1 ≫ ab.mulByNat n
+      = x' ≫ pullback.fst (ab.mulByNat n) ab.zeroSection ≫ ab.mulByNat n := by
+        rw [← Category.assoc, hx']
+    _ = x' ≫ pullback.snd (ab.mulByNat n) ab.zeroSection ≫ ab.zeroSection := by
+        rw [pullback.condition]
+    _ = g ≫ ab.zeroSection := by rw [← Category.assoc, hsnd]
+
+/-- **`n`-torsion is inherited by restriction** (PROVEN 2026-07-30) —
+`pre_nsmul` and `pre_zero`, the naturality axioms, and nothing else. -/
+theorem nsmul_pre_eq_zero {Z Z' : Scheme.{u}} (h : Z' ⟶ Z) {g : Z ⟶ T} {g' : Z' ⟶ T}
+    (hg : h ≫ g = g') {x : RelPoint f g}
+    (hx : letI := ab.addCommGroup g; n • x = 0) :
+    letI := ab.addCommGroup g'; n • RelPoint.pre h hg x = 0 := by
+  letI := ab.addCommGroup g
+  letI := ab.addCommGroup g'
+  rw [← ab.pre_nsmul h hg n x, show (n • x) = ab.zero g from hx]
+  exact ab.pre_zero h hg
+
+/-- **An `ℕ`-combination of two `n`-torsion relative points is `n`-torsion**
+(PROVEN 2026-07-30) — the `ℕ`-coefficient form of `nsmul_comb_eq_zero` below,
+stated here because the basis-locus construction is indexed by `Fin n × Fin n`
+rather than by `ZMod n × ZMod n` and so never needs `ZMod.val`. -/
+theorem nsmul_linComb_eq_zero {Z : Scheme.{u}} {g : Z ⟶ T} (a b : ℕ) {P Q : RelPoint f g}
+    (hP : letI := ab.addCommGroup g; n • P = 0)
+    (hQ : letI := ab.addCommGroup g; n • Q = 0) :
+    letI := ab.addCommGroup g; n • (a • P + b • Q) = 0 := by
+  letI := ab.addCommGroup g
+  rw [smul_add, smul_comm n, smul_comm n, hP, hQ, smul_zero, smul_zero, add_zero]
+
+/-- **Restriction commutes with `ℕ`-combinations** (PROVEN 2026-07-30) —
+`pre_add` and `pre_nsmul`; the `ℕ`-coefficient form of `RelPoint.pre_comb`
+below. -/
+theorem pre_linComb {Z Z' : Scheme.{u}} (h : Z' ⟶ Z) {g : Z ⟶ T} {g' : Z' ⟶ T}
+    (hg : h ≫ g = g') (a b : ℕ) (P Q : RelPoint f g) :
+    letI := ab.addCommGroup g
+    letI := ab.addCommGroup g'
+    RelPoint.pre h hg (a • P + b • Q)
+      = a • RelPoint.pre h hg P + b • RelPoint.pre h hg Q := by
+  letI := ab.addCommGroup g
+  letI := ab.addCommGroup g'
+  rw [show (a • P + b • Q) = ab.add (a • P) (b • Q) from rfl,
+    ab.pre_add h hg, ab.pre_nsmul h hg, ab.pre_nsmul h hg]
+  rfl
+
+end Factor
+
+/-- **`m • x` depends only on `m % n` for an `n`-torsion `x`** (PROVEN) — the
+`hred` step of `nsmul_eq_zero_iff_existsUnique_finPair` above, extracted so that
+the basis-locus construction can reduce an arbitrary `ℕ`-coefficient into
+`Fin n`. -/
+theorem nsmul_mod_eq {G : Type*} [AddCommGroup G] {n : ℕ} {x : G} (hx : n • x = 0) (a : ℕ) :
+    a • x = (a % n) • x := by
+  conv_lhs => rw [← Nat.div_add_mod a n]
+  rw [add_nsmul, mul_nsmul, hx, nsmul_zero, zero_add]
+
+/-- **`Fin n`-coordinates against an INDEPENDENT pair are unique** (PROVEN) —
+the injectivity half of `nsmul_eq_zero_iff_existsUnique_finPair` above,
+extracted so that the counting argument below can apply it to a SECOND pair. -/
+theorem finPair_comb_injective {G : Type*} [AddCommGroup G] {n : ℕ}
+    {y z : G} (hy : n • y = 0) (hz : n • z = 0)
+    (hindep : ∀ a b : ℕ, a • y + b • z = 0 → n ∣ a ∧ n ∣ b) :
+    Function.Injective (fun c : Fin n × Fin n => (c.1 : ℕ) • y + (c.2 : ℕ) • z) := by
+  intro c c' h
+  simp only at h
+  have expand : ∀ a b : ℕ, (a + (n - (c'.1 : ℕ))) • y + (b + (n - (c'.2 : ℕ))) • z
+      = (a • y + b • z) + ((n - (c'.1 : ℕ)) • y + (n - (c'.2 : ℕ)) • z) := by
+    intro a b; rw [add_nsmul, add_nsmul]; abel
+  have e1 : ((c'.1 : ℕ) + (n - (c'.1 : ℕ))) = n := Nat.add_sub_cancel' (le_of_lt c'.1.isLt)
+  have e2 : ((c'.2 : ℕ) + (n - (c'.2 : ℕ))) = n := Nat.add_sub_cancel' (le_of_lt c'.2.isLt)
+  have key : ((c.1 : ℕ) + (n - (c'.1 : ℕ))) • y + ((c.2 : ℕ) + (n - (c'.2 : ℕ))) • z = 0 := by
+    rw [expand, h, ← expand, e1, e2, hy, hz, add_zero]
+  obtain ⟨hd1, hd2⟩ := hindep _ _ key
+  have hlt1 : (c.1 : ℕ) + (n - (c'.1 : ℕ)) < 2 * n := by
+    have := c.1.isLt; have := c'.1.isLt; omega
+  have hlt2 : (c.2 : ℕ) + (n - (c'.2 : ℕ)) < 2 * n := by
+    have := c.2.isLt; have := c'.2.isLt; omega
+  have hne1 : (c.1 : ℕ) + (n - (c'.1 : ℕ)) ≠ 0 := by have := c'.1.isLt; omega
+  have hne2 : (c.2 : ℕ) + (n - (c'.2 : ℕ)) ≠ 0 := by have := c'.2.isLt; omega
+  have f1 := Nat.eq_of_dvd_of_lt_two_mul hne1 hd1 hlt1
+  have f2 := Nat.eq_of_dvd_of_lt_two_mul hne2 hd2 hlt2
+  have g1 : (c.1 : ℕ) = (c'.1 : ℕ) := by have := c'.1.isLt; omega
+  have g2 : (c.2 : ℕ) = (c'.2 : ℕ) := by have := c'.2.isLt; omega
+  exact Prod.ext (Fin.ext g1) (Fin.ext g2)
+
+/-- **An INDEPENDENT pair inside a rank-two `ℤ/n`-torsion group already SPANS
+it** (PROVEN 2026-07-30) — pure counting, and the whole reason the basis locus
+may be cut out by `n² − 1` equalizers rather than by a fibrewise-isomorphism
+criterion.
+
+The `n`-torsion of `G` is in bijection with `Fin n × Fin n` because `(y, z)` is
+a basis; `(a, b) ↦ a·P + b·Q` is another map `Fin n × Fin n → n`-torsion,
+injective by `hindep`; and a self-injection of a finite type is surjective. -/
+theorem exists_nsmul_span_of_indep {G : Type*} [AddCommGroup G] {n : ℕ} (hn : 0 < n)
+    {y z P Q : G} (hy : n • y = 0) (hz : n • z = 0)
+    (hspan : ∀ x : G, n • x = 0 → ∃ a b : ℕ, x = a • y + b • z)
+    (hindepyz : ∀ a b : ℕ, a • y + b • z = 0 → n ∣ a ∧ n ∣ b)
+    (hP : n • P = 0) (hQ : n • Q = 0)
+    (hindep : ∀ a b : ℕ, a • P + b • Q = 0 → n ∣ a ∧ n ∣ b) :
+    ∀ x : G, n • x = 0 → ∃ a b : ℕ, x = a • P + b • Q := by
+  have hkill : ∀ (m : ℕ) (w : G), n • w = 0 → n • (m • w) = 0 := by
+    intro m w hw
+    rw [← mul_nsmul', mul_comm n m, mul_nsmul', hw, nsmul_zero]
+  let Tt := {w : G // n • w = 0}
+  let φ : Fin n × Fin n → Tt := fun c =>
+    ⟨(c.1 : ℕ) • y + (c.2 : ℕ) • z, by
+      rw [smul_add, hkill _ y hy, hkill _ z hz, add_zero]⟩
+  let ψ : Fin n × Fin n → Tt := fun c =>
+    ⟨(c.1 : ℕ) • P + (c.2 : ℕ) • Q, by
+      rw [smul_add, hkill _ P hP, hkill _ Q hQ, add_zero]⟩
+  have hφinj : Function.Injective φ := by
+    intro c c' h
+    exact finPair_comb_injective hy hz hindepyz (congrArg Subtype.val h)
+  have hφsurj : Function.Surjective φ := by
+    rintro ⟨x, hx⟩
+    obtain ⟨a, b, rfl⟩ := hspan x hx
+    refine ⟨(⟨a % n, Nat.mod_lt _ hn⟩, ⟨b % n, Nat.mod_lt _ hn⟩), ?_⟩
+    apply Subtype.ext
+    show (a % n) • y + (b % n) • z = a • y + b • z
+    rw [← nsmul_mod_eq hy a, ← nsmul_mod_eq hz b]
+  have hψinj : Function.Injective ψ := by
+    intro c c' h
+    exact finPair_comb_injective hP hQ hindep (congrArg Subtype.val h)
+  let e : (Fin n × Fin n) ≃ Tt := Equiv.ofBijective φ ⟨hφinj, hφsurj⟩
+  have hg : Function.Injective (fun c : Fin n × Fin n => e.symm (ψ c)) :=
+    e.symm.injective.comp hψinj
+  have hgs : Function.Surjective (fun c : Fin n × Fin n => e.symm (ψ c)) :=
+    (Finite.injective_iff_bijective.mp hg).2
+  intro x hx
+  obtain ⟨c, hc⟩ := hgs (e.symm ⟨x, hx⟩)
+  refine ⟨(c.1 : ℕ), (c.2 : ℕ), ?_⟩
+  have : ψ c = ⟨x, hx⟩ := e.symm.injective hc
+  exact (congrArg Subtype.val this).symm
+
+end BasisLocusMachinery
+
 /-- **The `Isom`-scheme of the level-`n` torsor, given the ÉTALE torsion
-scheme** (sorry leaf, opened 2026-07-28) — what is left of
+scheme** (opened 2026-07-28; **PROVEN 2026-07-30**) — what is left of
 `exists_isomTorsor_of_finiteFlat_nTorsion` once the characteristic-zero
 input has been extracted into `etale_nTorsion_of_specQBase` above.
+
+**It was closed along the route recorded below** under
+*A CONSTRUCTION of the basis locus that needs no `Isom`-sheaf*, over the
+`BasisLocusMachinery` block immediately above — so no `Isom`-sheaf, no
+representability theorem and no fibrewise-isomorphism criterion appear in the
+proof at all.  Two amendments to that route were needed and are worth recording,
+because both are places where the obvious reading is wrong:
+
+1. **The equalizer lemmas had to be RESTATED for a general base point.**
+   `isOpenImmersion_equalizer_of_nsmul_eq_zero` and
+   `isClopen_range_equalizer_of_nsmul_eq_zero` far below are about relative
+   points over `𝟙 Z`, i.e. SECTIONS, and the tautological pair on
+   `W := E[n] ×_T E[n]` is not a pair of sections.  The route above proposed
+   base-changing `E` to `W` and using `relPointBaseChangeIdAddEquiv`; that works
+   but drags the whole abelian-scheme structure through a base change.  What is
+   actually needed is the equalizer of two `W`-points of `E[n] ⟶ T`, which is
+   `eqPt` above — a base change of the diagonal of `E[n] ⟶ T`, with no group
+   structure and no base change of `E` anywhere.  The pair `(P, Q)` is compared
+   *inside `E[n]`*, not inside `E`, which is what makes the argument short.
+2. **Clause (B) needs no hypothesis.**  It is stated as an implication —
+   *if* a basis exists at the geometric point `t`, *then* `t` lifts — and the
+   hypothesis is never used: `exists_zmodBasis_torsion_geomPoint` above already
+   produces a basis at EVERY geometric point of a `ℚ`-scheme, so every geometric
+   point of `T` lifts to the basis locus unconditionally.  The hypothesis is
+   harmless and was left in place because the consumer supplies it.
+
+Where each hypothesis went: `hetale` is spent making `E[n] ⟶ T` formally
+unramified (the open half of each equalizer); `g` and `hdim` are spent ONLY
+inside `exists_zmodBasis_torsion_geomPoint`, in both clauses; `hn` gives
+`NeZero n`, hence `Fin n`'s `Zero` and the finiteness of the index set
+`Fin n × Fin n`; `ab.proper` gives separatedness of `f`, hence that `E[n] ⟶ E`
+is a closed immersion, hence that `E[n] ⟶ T` is separated and quasi-compact —
+which is the closed half of each equalizer and `QuasiCompact p`.
 
 This node owes **only** the `Isom`-sheaf and its representability, and it
 owes nothing about characteristic, ranks, flatness or finiteness: `hetale`
@@ -3559,6 +3914,13 @@ this*: `grep -rn 'IsomSheaf\|IsFiniteEtale' Fermat/
 .lake/packages/mathlib/Mathlib/AlgebraicGeometry/ ~/cs/FLT/FLT/`.
 
 ## A CONSTRUCTION of the basis locus that needs no `Isom`-sheaf (2026-07-30)
+
+**THIS IS THE ROUTE THAT WAS TAKEN**, so what follows is a description of the
+proof rather than a proposal; read it against the two amendments listed on the
+declaration's own docstring, and note that the pieces named "below" were
+restated ABOVE for a general base point (`eqPt` and the `eqLocus` lemmas,
+`exists_factor_nTorsion`, `nsmul_linComb_eq_zero`, `pre_linComb`) because the
+tautological pair is not a pair of sections.
 
 The concrete route above still owes "being a basis is a locally constant
 condition on a finite étale scheme", which is the fibrewise-isomorphism
@@ -3661,8 +4023,202 @@ theorem exists_isomTorsor_of_etale_nTorsion (n : ℕ) (hn : 3 ≤ n)
             ∃ y z : RelPoint f t, ∀ x : RelPoint f t, n • x = 0 ↔
               ∃! c : Fin n × Fin n, x = (c.1 : ℕ) • y + (c.2 : ℕ) • z) →
           ∃ t' : Spec (CommRingCat.of K) ⟶ T', t' ≫ p = t) ∧
-        (letI := ab.addCommGroup p; n • P = 0 ∧ n • Q = 0) :=
-  sorry
+        (letI := ab.addCommGroup p; n • P = 0 ∧ n • Q = 0) := by
+  classical
+  haveI hq : AlgebraicGeometry.Etale (nTorsionPrj n ab) := hetale
+  haveI hn0 : NeZero n := ⟨by omega⟩
+  haveI := ab.proper
+  haveI : IsClosedImmersion (ab.zeroSection ≫ f) := by
+    rw [ab.zeroSection_comp]; infer_instance
+  haveI : IsClosedImmersion ab.zeroSection := IsClosedImmersion.of_comp _ f
+  haveI : IsClosedImmersion (nTorsionInc n ab) := inferInstance
+  haveI : IsSeparated (nTorsionPrj n ab) := inferInstance
+  haveI : QuasiCompact (nTorsionPrj n ab) := inferInstance
+  haveI : Mono (nTorsionInc n ab) := inferInstance
+  -- `W := E[n] ×_T E[n]`, its structure morphism, and the tautological pair.
+  have hQ2 : (Limits.pullback.snd (nTorsionPrj n ab) (nTorsionPrj n ab) ≫ nTorsionInc n ab) ≫ f
+      = Limits.pullback.fst (nTorsionPrj n ab) (nTorsionPrj n ab) ≫ nTorsionPrj n ab := by
+    rw [Category.assoc]
+    exact Limits.pullback.condition.symm
+  set pW : Limits.pullback (nTorsionPrj n ab) (nTorsionPrj n ab) ⟶ T :=
+    Limits.pullback.fst (nTorsionPrj n ab) (nTorsionPrj n ab) ≫ nTorsionPrj n ab with hpW
+  set P : RelPoint f pW :=
+    ⟨Limits.pullback.fst (nTorsionPrj n ab) (nTorsionPrj n ab) ≫ nTorsionInc n ab, by
+      rw [hpW, Category.assoc]⟩ with hPdef
+  set Q : RelPoint f pW :=
+    ⟨Limits.pullback.snd (nTorsionPrj n ab) (nTorsionPrj n ab) ≫ nTorsionInc n ab, hQ2⟩ with hQdef
+  letI := ab.addCommGroup pW
+  have hPtor : n • P = 0 := nsmul_eq_zero_of_factor_nTorsion ab P
+    (Limits.pullback.fst (nTorsionPrj n ab) (nTorsionPrj n ab)) rfl
+  have hQtor : n • Q = 0 := nsmul_eq_zero_of_factor_nTorsion ab Q
+    (Limits.pullback.snd (nTorsionPrj n ab) (nTorsionPrj n ab)) rfl
+  -- Factor each of the `n²` combinations `a·P + b·Q` through `E[n]`.
+  choose k hkinc hkprj using fun c : Fin n × Fin n =>
+    exists_factor_nTorsion ab ((c.1 : ℕ) • P + (c.2 : ℕ) • Q)
+      (nsmul_linComb_eq_zero ab (c.1 : ℕ) (c.2 : ℕ) hPtor hQtor)
+  have hkk : ∀ c : Fin n × Fin n,
+      k c ≫ nTorsionPrj n ab = k 0 ≫ nTorsionPrj n ab := fun c => by
+    rw [hkprj c, hkprj 0]
+  have hz0 : (((0 : Fin n × Fin n).1 : ℕ) • P + ((0 : Fin n × Fin n).2 : ℕ) • Q) = 0 := by
+    show ((0 : Fin n) : ℕ) • P + ((0 : Fin n) : ℕ) • Q = 0
+    simp
+  -- The `n² − 1` equalizer loci, and the basis locus as their common complement.
+  set S := fun c : Fin n × Fin n =>
+    Set.range (Limits.pullback.fst (eqPt (nTorsionPrj n ab) (k c) (k 0) (hkk c))
+      (Limits.pullback.diagonal (nTorsionPrj n ab))).base with hS
+  have hclopen : ∀ c, IsClopen (S c) := fun c =>
+    isClopen_range_eqLocus (nTorsionPrj n ab) (k c) (k 0) (hkk c)
+  set U := {w | ∀ c : Fin n × Fin n, c ≠ 0 → w ∉ S c} with hU
+  have hUeq : U = ⋂ c : {c : Fin n × Fin n // c ≠ 0}, (S c.1)ᶜ := by
+    ext w
+    simp only [hU, Set.mem_setOf_eq, Set.mem_iInter, Set.mem_compl_iff, Subtype.forall]
+  have hUopen : IsOpen U := by
+    rw [hUeq]
+    exact isOpen_iInter_of_finite fun c => (hclopen c.1).1.isOpen_compl
+  have hUclosed : IsClosed U := by
+    rw [hUeq]
+    exact isClosed_iInter fun c => (hclopen c.1).2.isClosed_compl
+  set TU : (Limits.pullback (nTorsionPrj n ab) (nTorsionPrj n ab)).Opens := ⟨U, hUopen⟩ with hTU
+  have hrangeι : Set.range TU.ι.base = U := TU.range_ι
+  refine ⟨↑TU, TU.ι ≫ pW, ?_, ?_, RelPoint.pre TU.ι rfl P, RelPoint.pre TU.ι rfl Q,
+    ?_, ?_, ?_⟩
+  · -- FLAT: an open immersion followed by a base change of an étale morphism.
+    haveI : AlgebraicGeometry.Flat pW := by rw [hpW]; infer_instance
+    infer_instance
+  · -- QUASI-COMPACT: this is where CLOSEDNESS of the basis locus is spent.
+    haveI : QuasiCompact pW := by rw [hpW]; infer_instance
+    haveI : QuasiCompact TU.ι := by
+      constructor
+      intro V hVopen hVcompact
+      have himg : TU.ι.base '' (TU.ι.base ⁻¹' V) = V ∩ U := by
+        rw [Set.image_preimage_eq_inter_range, hrangeι]
+      rw [TU.ι.isOpenEmbedding.isEmbedding.isCompact_iff, himg]
+      exact hVcompact.inter_right hUclosed
+    infer_instance
+  · -- CLAUSE (A): unique `Fin n`-coordinates at every geometric point of the locus.
+    intro K _ _ t
+    letI := ab.addCommGroup (t ≫ (TU.ι ≫ pW))
+    have hPt : n • RelPoint.pre t rfl (RelPoint.pre TU.ι rfl P) = 0 :=
+      nsmul_pre_eq_zero ab t rfl (nsmul_pre_eq_zero ab TU.ι rfl hPtor)
+    have hQt : n • RelPoint.pre t rfl (RelPoint.pre TU.ι rfl Q) = 0 :=
+      nsmul_pre_eq_zero ab t rfl (nsmul_pre_eq_zero ab TU.ι rfl hQtor)
+    have hbase : (t ≫ TU.ι) ≫ pW = t ≫ (TU.ι ≫ pW) := Category.assoc _ _ _
+    have hPeq : RelPoint.pre (t ≫ TU.ι) hbase P
+        = RelPoint.pre t rfl (RelPoint.pre TU.ι rfl P) :=
+      Subtype.ext (Category.assoc _ _ _)
+    have hQeq : RelPoint.pre (t ≫ TU.ι) hbase Q
+        = RelPoint.pre t rfl (RelPoint.pre TU.ι rfl Q) :=
+      Subtype.ext (Category.assoc _ _ _)
+    have hzz : RelPoint.pre (t ≫ TU.ι) hbase
+        (((0 : Fin n × Fin n).1 : ℕ) • P + ((0 : Fin n × Fin n).2 : ℕ) • Q) = 0 := by
+      rw [hz0]; exact ab.pre_zero _ hbase
+    -- INDEPENDENCE, and it is the only place membership of the basis locus is used.
+    have hindep : ∀ a b : ℕ,
+        a • RelPoint.pre t rfl (RelPoint.pre TU.ι rfl P)
+          + b • RelPoint.pre t rfl (RelPoint.pre TU.ι rfl Q) = 0 → n ∣ a ∧ n ∣ b := by
+      intro a b hab
+      set c : Fin n × Fin n :=
+        (⟨a % n, Nat.mod_lt _ (by omega)⟩, ⟨b % n, Nat.mod_lt _ (by omega)⟩) with hc
+      have hcz : RelPoint.pre (t ≫ TU.ι) hbase ((c.1 : ℕ) • P + (c.2 : ℕ) • Q) = 0 := by
+        rw [pre_linComb ab (t ≫ TU.ι) hbase (c.1 : ℕ) (c.2 : ℕ) P Q, hPeq, hQeq]
+        show (a % n) • RelPoint.pre t rfl (RelPoint.pre TU.ι rfl P)
+          + (b % n) • RelPoint.pre t rfl (RelPoint.pre TU.ι rfl Q) = 0
+        rw [← nsmul_mod_eq hPt a, ← nsmul_mod_eq hQt b]
+        exact hab
+      have hmor : (t ≫ TU.ι) ≫ ((c.1 : ℕ) • P + (c.2 : ℕ) • Q).1
+          = (t ≫ TU.ι) ≫
+            (((0 : Fin n × Fin n).1 : ℕ) • P + ((0 : Fin n × Fin n).2 : ℕ) • Q).1 :=
+        (congrArg Subtype.val hcz).trans (congrArg Subtype.val hzz).symm
+      have h4 : ((t ≫ TU.ι) ≫ k c) ≫ nTorsionInc n ab
+          = ((t ≫ TU.ι) ≫ k 0) ≫ nTorsionInc n ab := by
+        simp only [Category.assoc, hkinc]
+        simpa only [Category.assoc] using hmor
+      have hkeq : (t ≫ TU.ι) ≫ k c = (t ≫ TU.ι) ≫ k 0 :=
+        (cancel_mono (nTorsionInc n ab)).mp h4
+      have hsub := range_subset_eqLocus (nTorsionPrj n ab) (k c) (k 0) (hkk c) (t ≫ TU.ι) hkeq
+      have hmem : (t ≫ TU.ι).base (IsLocalRing.closedPoint K) ∈ S c := by
+        rw [hS]; exact hsub ⟨_, rfl⟩
+      have hmemU : (t ≫ TU.ι).base (IsLocalRing.closedPoint K) ∈ U := by
+        rw [← hrangeι]
+        exact ⟨t.base (IsLocalRing.closedPoint K), by simp⟩
+      rw [hU] at hmemU
+      have hc0 : c = 0 := by
+        by_contra hne
+        exact absurd hmem (hmemU c hne)
+      have h1 : a % n = 0 := by
+        have := congrArg (fun d : Fin n × Fin n => (d.1 : ℕ)) hc0
+        simpa [hc] using this
+      have h2 : b % n = 0 := by
+        have := congrArg (fun d : Fin n × Fin n => (d.2 : ℕ)) hc0
+        simpa [hc] using this
+      exact ⟨Nat.dvd_of_mod_eq_zero h1, Nat.dvd_of_mod_eq_zero h2⟩
+    obtain ⟨y, z, hy, hz, hspan, hindepyz⟩ :=
+      exists_zmodBasis_torsion_geomPoint n hn ab hdim g K (t ≫ (TU.ι ≫ pW))
+    intro x
+    exact nsmul_eq_zero_iff_existsUnique_finPair (by omega) hPt hQt
+      (exists_nsmul_span_of_indep (by omega) hy hz hspan hindepyz hPt hQt hindep) hindep x
+  · -- CLAUSE (B): a geometric point of `T` lifts to the basis locus.
+    intro K _ _ t _hbasis
+    letI := ab.addCommGroup t
+    obtain ⟨y, z, hy, hz, hspan, hindepyz⟩ :=
+      exists_zmodBasis_torsion_geomPoint n hn ab hdim g K t
+    obtain ⟨yN, hyNinc, hyNprj⟩ := exists_factor_nTorsion ab y hy
+    obtain ⟨zN, hzNinc, hzNprj⟩ := exists_factor_nTorsion ab z hz
+    have hwc : yN ≫ nTorsionPrj n ab = zN ≫ nTorsionPrj n ab := by rw [hyNprj, hzNprj]
+    set w := Limits.pullback.lift yN zN hwc with hwdef
+    have hw1 : w ≫ Limits.pullback.fst (nTorsionPrj n ab) (nTorsionPrj n ab) = yN :=
+      Limits.pullback.lift_fst _ _ _
+    have hw2 : w ≫ Limits.pullback.snd (nTorsionPrj n ab) (nTorsionPrj n ab) = zN :=
+      Limits.pullback.lift_snd _ _ _
+    have hwpW : w ≫ pW = t := by rw [hpW, ← Category.assoc, hw1, hyNprj]
+    have hPw : RelPoint.pre w hwpW P = y :=
+      Subtype.ext (by
+        show w ≫ (Limits.pullback.fst (nTorsionPrj n ab) (nTorsionPrj n ab)
+          ≫ nTorsionInc n ab) = y.1
+        rw [← Category.assoc, hw1, hyNinc])
+    have hQw : RelPoint.pre w hwpW Q = z :=
+      Subtype.ext (by
+        show w ≫ (Limits.pullback.snd (nTorsionPrj n ab) (nTorsionPrj n ab)
+          ≫ nTorsionInc n ab) = z.1
+        rw [← Category.assoc, hw2, hzNinc])
+    haveI : Subsingleton ↥(Spec (CommRingCat.of K)) :=
+      inferInstanceAs (Subsingleton (PrimeSpectrum K))
+    have hsub : Set.range w.base ⊆ U := by
+      rintro _ ⟨x, rfl⟩
+      rw [Subsingleton.elim x (IsLocalRing.closedPoint K), hU]
+      simp only [Set.mem_setOf_eq]
+      intro c hc hmem
+      have hsub' : Set.range w.base ⊆ S c := by
+        rintro _ ⟨x', rfl⟩
+        rw [Subsingleton.elim x' (IsLocalRing.closedPoint K)]
+        exact hmem
+      simp only [hS] at hsub'
+      have hkeq := eq_of_range_subset_eqLocus (nTorsionPrj n ab) (k c) (k 0) (hkk c) w hsub'
+      have hmor : w ≫ ((c.1 : ℕ) • P + (c.2 : ℕ) • Q).1
+          = w ≫ (((0 : Fin n × Fin n).1 : ℕ) • P + ((0 : Fin n × Fin n).2 : ℕ) • Q).1 := by
+        rw [← hkinc c, ← hkinc 0, ← Category.assoc, ← Category.assoc, hkeq]
+      have hzz : RelPoint.pre w hwpW
+          (((0 : Fin n × Fin n).1 : ℕ) • P + ((0 : Fin n × Fin n).2 : ℕ) • Q) = 0 := by
+        rw [hz0]; exact ab.pre_zero _ hwpW
+      have hcombzero : (c.1 : ℕ) • y + (c.2 : ℕ) • z = 0 := by
+        have h1 : RelPoint.pre w hwpW ((c.1 : ℕ) • P + (c.2 : ℕ) • Q)
+            = RelPoint.pre w hwpW
+              (((0 : Fin n × Fin n).1 : ℕ) • P + ((0 : Fin n × Fin n).2 : ℕ) • Q) :=
+          Subtype.ext hmor
+        rw [pre_linComb ab w hwpW (c.1 : ℕ) (c.2 : ℕ) P Q, hPw, hQw, hzz] at h1
+        exact h1
+      have hdvd := hindepyz (c.1 : ℕ) (c.2 : ℕ) hcombzero
+      have h1 : c.1 = 0 := by
+        apply Fin.ext
+        simpa using Nat.eq_zero_of_dvd_of_lt hdvd.1 c.1.isLt
+      have h2 : c.2 = 0 := by
+        apply Fin.ext
+        simpa using Nat.eq_zero_of_dvd_of_lt hdvd.2 c.2.isLt
+      exact hc (Prod.ext h1 h2)
+    refine ⟨IsOpenImmersion.lift TU.ι w (by rw [hrangeι]; exact hsub), ?_⟩
+    rw [← Category.assoc, IsOpenImmersion.lift_fac, hwpW]
+  · -- The `n`-torsion clause.
+    exact ⟨nsmul_pre_eq_zero ab TU.ι rfl hPtor, nsmul_pre_eq_zero ab TU.ι rfl hQtor⟩
 
 /-- **The `Isom`-scheme of the level-`n` torsor, given the finite flat
 torsion scheme** (opened 2026-07-28; DECOMPOSED and its own proof written
@@ -6034,7 +6590,20 @@ first brick of the construction recorded in the docstring of
 `exists_isomTorsor_of_etale_nTorsion` above, written now because it is a
 two-line corollary of the leaf that was just closed and would otherwise have to
 be rediscovered.  A floating-code sweep will report it; the right response is to
-write the consumer, not to delete the lemma. -/
+write the consumer, not to delete the lemma.
+
+**AMENDMENT, later the same day: the consumer was written, and it does NOT use
+this lemma — it uses the GENERAL form `isClopen_range_eqLocus` above.**
+`exists_isomTorsor_of_etale_nTorsion` is now PROVEN, and its basis locus is
+built out of equalizers of two `W`-points of `E[n] ⟶ T` rather than of two
+SECTIONS of `f`; the pair being compared is the tautological pair of
+`W := E[n] ×_T E[n]`, whose members are relative points over `W ⟶ T` and not
+over `𝟙`.  So this specialisation is genuinely redundant: it is the
+`Z' = Z`, `π = f` case of `isClopen_range_eqLocus` composed with the
+factorisation through `E[n]`, and it remains free-floating.  A sweep may delete
+it; nothing in the development depends on it.  It is left here rather than
+deleted because the general lemma above is the thing to reach for, and this note
+is the only place that says so. -/
 theorem isClopen_range_equalizer_of_nsmul_eq_zero (n : ℕ) (hn : 3 ≤ n)
     {Z E : Scheme.{0}} (g : Z ⟶ SpecQ) {f : E ⟶ Z} (ab : AbelianSchemeStruct f)
     (hdim : SmoothOfRelativeDimension 1 f) (x y : RelPoint f (𝟙 Z))
