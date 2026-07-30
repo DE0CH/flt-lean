@@ -21141,7 +21141,11 @@ theorem irreducible_of_irreducible_map {N p : ℕ} [Fact p.Prime]
 separates characteristic-zero birational geometry from arithmetic spreading out:
 
 * `exists_rationalHypersurfaceCertificate` — Schmidt Chapter VI Theorem 4D and
-  the `ℤ`-descent, with NO PRIME IN ITS STATEMENT;
+  the `ℤ`-descent, with NO PRIME IN ITS STATEMENT. **PROVEN 2026-07-29**: the
+  `ℤ`-descent half is now discharged (`exists_intCertificateWitness_of_rat` and
+  its three helpers), and what remains of it is the leaf
+  `exists_ratMembershipHypersurfaceCertificate` — the same statement with the
+  cofactors `A, B` over `ℚ` and one extra clause `Prime S₀`;
 * `exists_bound_not_isPrime_radical_integralSystemIdeal_zmod` — the DEGENERATE
   half of EGA IV 9.7.7: a generic fibre that is *not* geometrically irreducible
   has no geometrically irreducible fibre mod `p` for large `p`.
@@ -21995,8 +21999,479 @@ theorem exists_bound_not_isPrime_radical_integralSystemIdeal_zmod {n m : ℕ}
   · exact hnotin ap Pp hPpzero hapP h
   · exact hnotin bp Qp hQpzero hbqQ h
 
-/-- **LEAF (B): SCHMIDT'S THEOREM 4D OVER `ℚ`, DESCENDED TO `ℤ`** (SORRY LEAF,
-cut 2026-07-27 out of `exists_integralHypersurfaceCertificate` below).
+/-! #### The `ℤ`-descent for the hypersurface certificate
+
+Schmidt's Theorem 4D is proven over `ℚ`, and the certificate the consumer eats is
+stated over `ℤ`. The four declarations here are the bridge, and they are the
+formal content of the sentence in the leaf docstring below that reads "over `ℚ`
+the identities hold with `A, B ∈ ℚ[X, T]`, so `N·q ∈ J_ℤ` for some nonzero
+integer `N` … therefore `N·q ∈ J_ℤ` with `N ≠ 0` already forces `q ∈ J_ℤ`".
+
+Nothing here mentions `f`, `hQ`, a variety or a prime `p`: the whole block is the
+statement that the ideal `J = (S', g₀'·T − 1) ⊆ ℤ[X₀ … X_e, T]` is SATURATED with
+respect to `ℤ` as soon as `S₀` is a PRIME of `ℤ[X₀ … X_e]` (i.e. primitive and
+irreducible over `ℚ`, by Gauss) which does not divide `g₀`. -/
+
+/-- Denominator clearing with an INTEGER multiplier (PROVEN).
+
+`exists_integralMultiple` ~12 000 lines above produces a multiplier `c : ℚ`,
+which is not what a `ℤ`-descent can use: the descent needs to divide by the
+multiplier INSIDE `ℤ[X]`, so the multiplier must be an integer. The proof is the
+same denominator sweep, run as an induction over `MvPolynomial.induction_on`
+rather than over the support. -/
+theorem exists_intMultiple_map_rat {k : ℕ} (A : MvPolynomial (Fin k) ℚ) :
+    ∃ (N : ℤ) (A' : MvPolynomial (Fin k) ℤ), N ≠ 0 ∧
+      MvPolynomial.map (Int.castRingHom ℚ) A' = MvPolynomial.C (N : ℚ) * A := by
+  induction A using MvPolynomial.induction_on with
+  | C a =>
+      refine ⟨(a.den : ℤ), MvPolynomial.C a.num, by exact_mod_cast a.den_ne_zero, ?_⟩
+      rw [MvPolynomial.map_C, ← MvPolynomial.C_mul]
+      congr 1
+      simp only [eq_intCast]
+      push_cast
+      rw [← Rat.mul_den_eq_num a]
+      ring
+  | add p q hp hq =>
+      obtain ⟨N₁, A₁, hN₁, h₁⟩ := hp
+      obtain ⟨N₂, A₂, hN₂, h₂⟩ := hq
+      refine ⟨N₁ * N₂, MvPolynomial.C N₂ * A₁ + MvPolynomial.C N₁ * A₂,
+        mul_ne_zero hN₁ hN₂, ?_⟩
+      rw [map_add, _root_.map_mul, _root_.map_mul, MvPolynomial.map_C, MvPolynomial.map_C,
+        h₁, h₂]
+      simp only [eq_intCast, Int.cast_mul, MvPolynomial.C_mul]
+      ring
+  | mul_X p i hp =>
+      obtain ⟨N, A', hN, h⟩ := hp
+      exact ⟨N, A' * MvPolynomial.X i, hN, by
+        rw [_root_.map_mul, MvPolynomial.map_X, h]; ring⟩
+
+/-- **NORMAL FORM MODULO `g₀'·T − 1`** (PROVEN): every `q ∈ ℤ[X₀ … X_e, T]` is
+congruent, modulo the single relation that makes `T` a formal inverse of `g₀`, to
+`h·T^d` for some `h ∈ ℤ[X₀ … X_e]` and some `d`.
+
+This is the algebraic form of "an element of `ℤ[X][1/g₀]` has a numerator and a
+`g₀`-power denominator", written without ever building the localisation. The
+induction is `MvPolynomial.induction_on`; the only nonformal step is the BUMP
+`h·T^d ≡ (h·g₀^j)·T^{d+j}`, which holds because `g₀'T − 1` divides
+`(g₀'T)^j − 1` and is what lets two normal forms be brought to a common
+exponent. -/
+theorem exists_awayNormalForm_int {e : ℕ} (G : MvPolynomial (Fin (e + 1)) ℤ)
+    (q : MvPolynomial (Fin (e + 2)) ℤ) :
+    ∃ (d : ℕ) (h : MvPolynomial (Fin (e + 1)) ℤ),
+      q - MvPolynomial.rename Fin.castSucc h * MvPolynomial.X (Fin.last (e + 1)) ^ d
+        ∈ Ideal.span {MvPolynomial.rename Fin.castSucc G *
+            MvPolynomial.X (Fin.last (e + 1)) - 1} := by
+  classical
+  have bump : ∀ (d : ℕ) (h : MvPolynomial (Fin (e + 1)) ℤ) (j : ℕ),
+      MvPolynomial.rename Fin.castSucc h * MvPolynomial.X (Fin.last (e + 1)) ^ d
+        - MvPolynomial.rename Fin.castSucc (h * G ^ j) *
+            MvPolynomial.X (Fin.last (e + 1)) ^ (d + j)
+        ∈ Ideal.span {MvPolynomial.rename Fin.castSucc G *
+            MvPolynomial.X (Fin.last (e + 1)) - 1} := by
+    intro d h j
+    have hfac : MvPolynomial.rename Fin.castSucc h * MvPolynomial.X (Fin.last (e + 1)) ^ d
+        - MvPolynomial.rename Fin.castSucc (h * G ^ j) *
+            MvPolynomial.X (Fin.last (e + 1)) ^ (d + j)
+        = (MvPolynomial.rename Fin.castSucc h * MvPolynomial.X (Fin.last (e + 1)) ^ d) *
+            (1 - (MvPolynomial.rename Fin.castSucc G *
+              MvPolynomial.X (Fin.last (e + 1))) ^ j) := by
+      rw [_root_.map_mul, map_pow]
+      ring
+    rw [hfac]
+    refine Ideal.mul_mem_left _ _ ?_
+    refine Ideal.mem_span_singleton.mpr ?_
+    exact dvd_sub_comm.mp (sub_one_dvd_pow_sub_one _ j)
+  induction q using MvPolynomial.induction_on with
+  | C a => exact ⟨0, MvPolynomial.C a, by simp⟩
+  | add p q hp hq =>
+      obtain ⟨d₁, h₁, hh₁⟩ := hp
+      obtain ⟨d₂, h₂, hh₂⟩ := hq
+      refine ⟨d₁ + d₂, h₁ * G ^ d₂ + h₂ * G ^ d₁, ?_⟩
+      have e₁ : p - MvPolynomial.rename Fin.castSucc (h₁ * G ^ d₂) *
+            MvPolynomial.X (Fin.last (e + 1)) ^ (d₁ + d₂)
+          ∈ Ideal.span {MvPolynomial.rename Fin.castSucc G *
+              MvPolynomial.X (Fin.last (e + 1)) - 1} := by
+        have hsum := Ideal.add_mem _ hh₁ (bump d₁ h₁ d₂)
+        have hrw : p - MvPolynomial.rename Fin.castSucc (h₁ * G ^ d₂) *
+              MvPolynomial.X (Fin.last (e + 1)) ^ (d₁ + d₂)
+            = (p - MvPolynomial.rename Fin.castSucc h₁ *
+                MvPolynomial.X (Fin.last (e + 1)) ^ d₁)
+              + (MvPolynomial.rename Fin.castSucc h₁ *
+                  MvPolynomial.X (Fin.last (e + 1)) ^ d₁
+                - MvPolynomial.rename Fin.castSucc (h₁ * G ^ d₂) *
+                  MvPolynomial.X (Fin.last (e + 1)) ^ (d₁ + d₂)) := by ring
+        rw [hrw]; exact hsum
+      have e₂ : q - MvPolynomial.rename Fin.castSucc (h₂ * G ^ d₁) *
+            MvPolynomial.X (Fin.last (e + 1)) ^ (d₁ + d₂)
+          ∈ Ideal.span {MvPolynomial.rename Fin.castSucc G *
+              MvPolynomial.X (Fin.last (e + 1)) - 1} := by
+        have hsum := Ideal.add_mem _ hh₂ (bump d₂ h₂ d₁)
+        have hrw : q - MvPolynomial.rename Fin.castSucc (h₂ * G ^ d₁) *
+              MvPolynomial.X (Fin.last (e + 1)) ^ (d₁ + d₂)
+            = (q - MvPolynomial.rename Fin.castSucc h₂ *
+                MvPolynomial.X (Fin.last (e + 1)) ^ d₂)
+              + (MvPolynomial.rename Fin.castSucc h₂ *
+                  MvPolynomial.X (Fin.last (e + 1)) ^ d₂
+                - MvPolynomial.rename Fin.castSucc (h₂ * G ^ d₁) *
+                  MvPolynomial.X (Fin.last (e + 1)) ^ (d₂ + d₁)) := by
+          rw [add_comm d₂ d₁]; ring
+        rw [hrw]; exact hsum
+      have hrw2 : p + q - MvPolynomial.rename Fin.castSucc (h₁ * G ^ d₂ + h₂ * G ^ d₁) *
+            MvPolynomial.X (Fin.last (e + 1)) ^ (d₁ + d₂)
+          = (p - MvPolynomial.rename Fin.castSucc (h₁ * G ^ d₂) *
+              MvPolynomial.X (Fin.last (e + 1)) ^ (d₁ + d₂))
+            + (q - MvPolynomial.rename Fin.castSucc (h₂ * G ^ d₁) *
+              MvPolynomial.X (Fin.last (e + 1)) ^ (d₁ + d₂)) := by
+        rw [map_add]; ring
+      rw [hrw2]
+      exact Ideal.add_mem _ e₁ e₂
+  | mul_X p i hp =>
+      obtain ⟨d, h, hh⟩ := hp
+      induction i using Fin.lastCases with
+      | last =>
+          refine ⟨d + 1, h, ?_⟩
+          have hmul := Ideal.mul_mem_right (MvPolynomial.X (Fin.last (e + 1))) _ hh
+          have hrw : p * MvPolynomial.X (Fin.last (e + 1))
+                - MvPolynomial.rename Fin.castSucc h *
+                  MvPolynomial.X (Fin.last (e + 1)) ^ (d + 1)
+              = (p - MvPolynomial.rename Fin.castSucc h *
+                  MvPolynomial.X (Fin.last (e + 1)) ^ d) *
+                MvPolynomial.X (Fin.last (e + 1)) := by ring
+          rw [hrw]; exact hmul
+      | cast j =>
+          refine ⟨d, h * MvPolynomial.X j, ?_⟩
+          have hmul := Ideal.mul_mem_right (MvPolynomial.X (Fin.castSucc j)) _ hh
+          have hrw : p * MvPolynomial.X (Fin.castSucc j)
+                - MvPolynomial.rename Fin.castSucc (h * MvPolynomial.X j) *
+                  MvPolynomial.X (Fin.last (e + 1)) ^ d
+              = (p - MvPolynomial.rename Fin.castSucc h *
+                  MvPolynomial.X (Fin.last (e + 1)) ^ d) *
+                MvPolynomial.X (Fin.castSucc j) := by
+            rw [_root_.map_mul, MvPolynomial.rename_X]; ring
+          rw [hrw]; exact hmul
+
+/-- **THE EVALUATION STEP** (PROVEN, stated over an abstract domain so that the
+`Fin (e + 1)`-vs-`Fin (e + 2)` bookkeeping is done once).
+
+Send `X_j ↦ π(X_j)` and `T ↦ 1/π(g₀)` into the fraction field of a domain `A` in
+which `π(S₀) = 0` and `π(g₀) ≠ 0`. Both generators of the ideal die, so the whole
+ideal does, and `π(h)·π(g₀)^{−d} = 0` forces `π(h) = 0`. This is the only place
+where the certificate's ideal is used as an ideal rather than manipulated
+formally. -/
+theorem apply_eq_zero_of_awayNormalForm_mem {e : ℕ} {S G : MvPolynomial (Fin (e + 1)) ℤ}
+    {A : Type*} [CommRing A] [IsDomain A] (π : MvPolynomial (Fin (e + 1)) ℤ →+* A)
+    (hS0 : π S = 0) (hG0 : π G ≠ 0) (d : ℕ) (h : MvPolynomial (Fin (e + 1)) ℤ)
+    (hmem : MvPolynomial.rename Fin.castSucc h * MvPolynomial.X (Fin.last (e + 1)) ^ d
+      ∈ Ideal.span {MvPolynomial.rename Fin.castSucc S,
+          MvPolynomial.rename Fin.castSucc G * MvPolynomial.X (Fin.last (e + 1)) - 1}) :
+    π h = 0 := by
+  classical
+  set ι : A →+* FractionRing A := algebraMap A (FractionRing A) with hι
+  have hιinj : Function.Injective ι := IsFractionRing.injective A (FractionRing A)
+  have hGK : ι (π G) ≠ 0 := fun h0 => hG0 (hιinj (by simpa using h0))
+  set v : Fin (e + 2) → FractionRing A :=
+    Fin.lastCases (ι (π G))⁻¹ (fun j => ι (π (MvPolynomial.X j))) with hv
+  set ev : MvPolynomial (Fin (e + 2)) ℤ →+* FractionRing A :=
+    MvPolynomial.eval₂Hom (Int.castRingHom (FractionRing A)) v with hev
+  have hrename : ∀ p : MvPolynomial (Fin (e + 1)) ℤ,
+      ev (MvPolynomial.rename Fin.castSucc p) = ι (π p) := by
+    intro p
+    have hcomp : ev.comp (MvPolynomial.rename (R := ℤ) Fin.castSucc).toRingHom = ι.comp π := by
+      refine MvPolynomial.ringHom_ext ?_ ?_
+      · intro r
+        simp [hev]
+      · intro j
+        simp [hev, hv]
+    exact congrArg (fun F : MvPolynomial (Fin (e + 1)) ℤ →+* FractionRing A => F p) hcomp
+  have hSzero : ev (MvPolynomial.rename Fin.castSucc S) = 0 := by
+    rw [hrename, hS0, map_zero]
+  have hTval : ev (MvPolynomial.X (Fin.last (e + 1))) = (ι (π G))⁻¹ := by
+    simp [hev, hv]
+  have hGzero : ev (MvPolynomial.rename Fin.castSucc G *
+      MvPolynomial.X (Fin.last (e + 1)) - 1) = 0 := by
+    rw [map_sub, _root_.map_mul, hrename, hTval, map_one, mul_inv_cancel₀ hGK, sub_self]
+  obtain ⟨a, b, hab⟩ := Ideal.mem_span_pair.1 hmem
+  have h0 : ev (MvPolynomial.rename Fin.castSucc h *
+      MvPolynomial.X (Fin.last (e + 1)) ^ d) = 0 := by
+    rw [← hab, map_add, _root_.map_mul, _root_.map_mul, hSzero, hGzero, mul_zero, mul_zero,
+      add_zero]
+  rw [_root_.map_mul, map_pow, hrename, hTval] at h0
+  rcases mul_eq_zero.1 h0 with h1 | h1
+  · exact hιinj (by simpa using h1)
+  · exact absurd h1 (pow_ne_zero _ (inv_ne_zero hGK))
+
+/-- `S₀ ∣ h` whenever the normal form `h·T^d` lies in the certificate ideal
+(PROVEN): apply the evaluation step to `A := ℤ[X] ⧸ (S₀)`, a domain because `S₀`
+is prime, in which `g₀` is nonzero because `S₀ ∤ g₀`. -/
+theorem dvd_of_awayNormalForm_mem {e : ℕ} {S G : MvPolynomial (Fin (e + 1)) ℤ} (hS : Prime S)
+    (hSG : ¬ S ∣ G) (d : ℕ) (h : MvPolynomial (Fin (e + 1)) ℤ)
+    (hmem : MvPolynomial.rename Fin.castSucc h * MvPolynomial.X (Fin.last (e + 1)) ^ d
+      ∈ Ideal.span {MvPolynomial.rename Fin.castSucc S,
+          MvPolynomial.rename Fin.castSucc G * MvPolynomial.X (Fin.last (e + 1)) - 1}) :
+    S ∣ h := by
+  classical
+  haveI hpr : (Ideal.span ({S} : Set (MvPolynomial (Fin (e + 1)) ℤ))).IsPrime :=
+    (Ideal.span_singleton_prime hS.ne_zero).2 hS
+  haveI : IsDomain (MvPolynomial (Fin (e + 1)) ℤ ⧸
+      Ideal.span ({S} : Set (MvPolynomial (Fin (e + 1)) ℤ))) :=
+    Ideal.Quotient.isDomain_iff_prime _ |>.2 hpr
+  have hS0 : (Ideal.Quotient.mk (Ideal.span ({S} : Set (MvPolynomial (Fin (e + 1)) ℤ)))) S = 0 :=
+    Ideal.Quotient.eq_zero_iff_mem.2 (Ideal.mem_span_singleton.2 dvd_rfl)
+  have hG0 : (Ideal.Quotient.mk (Ideal.span ({S} : Set (MvPolynomial (Fin (e + 1)) ℤ)))) G ≠ 0 :=
+    fun h0 => hSG (Ideal.mem_span_singleton.1 (Ideal.Quotient.eq_zero_iff_mem.1 h0))
+  have hzero := apply_eq_zero_of_awayNormalForm_mem _ hS0 hG0 d h hmem
+  exact Ideal.mem_span_singleton.1 (Ideal.Quotient.eq_zero_iff_mem.1 hzero)
+
+/-- **THE `ℤ`-DESCENT OF A CERTIFICATE IDENTITY** (PROVEN).
+
+If a polynomial `q` with INTEGER coefficients lies in the ideal
+`J_ℚ = (S₀', g₀'·T − 1) ⊆ ℚ[X₀ … X_e, T]`, then it already lies in `J_ℤ`,
+PROVIDED `S₀` is a prime of `ℤ[X₀ … X_e]` (equivalently: primitive and
+irreducible over `ℚ`, by Gauss) which does not divide `g₀`.
+
+WHY IT IS TRUE, and why the hypotheses are exactly these. Clearing denominators
+gives `C N · q ∈ J_ℤ` with `N ≠ 0`. Bring `q` to the normal form `h·T^d`
+(`exists_awayNormalForm_int`); then `(C N · h)·T^d ∈ J_ℤ`, so `S₀ ∣ C N · h`
+(`dvd_of_awayNormalForm_mem`). `S₀` is prime and does not divide the CONSTANT
+`C N` — that is the only role of `hSu`, since a divisor of a nonzero constant is
+a unit after mapping to `ℚ` — so `S₀ ∣ h`, and then `h·T^d ∈ J_ℤ` and `q ∈ J_ℤ`.
+
+NOT WEAKENABLE. Drop `Prime S₀` and the statement is FALSE: take `e = 0`,
+`S₀ = 2·X₀`, `g₀ = 1`, `q = X₀`. Then over `ℚ`, `X₀ = (1/2)·S₀ + 0·(T − 1) ∈ J_ℚ`,
+while over `ℤ` the substitution `T ↦ 1` carries `J_ℤ = (2X₀, T − 1)` ONTO the
+ideal `(2X₀) ⊆ ℤ[X₀]`, and `X₀ ∉ (2X₀)` — so `X₀ ∉ J_ℤ`. Every other hypothesis
+holds of that datum: `2X₀` is irreducible over `ℚ̄` (degree one, and `2` is a unit
+there), it is not a unit over `ℚ`, and it does not divide `g₀ = 1`. It is NOT
+primitive, hence not prime in `ℤ[X₀]` — which is exactly
+the failure `Prime S₀` rules out, and exactly why the leaf below is required to
+hand over a primitive `S₀` rather than merely an irreducible one. -/
+theorem exists_intCertificateWitness_of_rat {e : ℕ} {S G : MvPolynomial (Fin (e + 1)) ℤ}
+    (hS : Prime S) (hSu : ¬ IsUnit (MvPolynomial.map (Int.castRingHom ℚ) S)) (hSG : ¬ S ∣ G)
+    (q : MvPolynomial (Fin (e + 2)) ℤ)
+    (hq : ∃ A B : MvPolynomial (Fin (e + 2)) ℚ,
+      MvPolynomial.map (Int.castRingHom ℚ) q
+        = A * MvPolynomial.map (Int.castRingHom ℚ) (MvPolynomial.rename Fin.castSucc S)
+          + B * (MvPolynomial.map (Int.castRingHom ℚ) (MvPolynomial.rename Fin.castSucc G)
+              * MvPolynomial.X (Fin.last (e + 1)) - 1)) :
+    ∃ A B : MvPolynomial (Fin (e + 2)) ℤ,
+      q = A * MvPolynomial.rename Fin.castSucc S
+        + B * (MvPolynomial.rename Fin.castSucc G * MvPolynomial.X (Fin.last (e + 1)) - 1) := by
+  classical
+  obtain ⟨A, B, hAB⟩ := hq
+  obtain ⟨N₁, A', hN₁, hA'⟩ := exists_intMultiple_map_rat A
+  obtain ⟨N₂, B', hN₂, hB'⟩ := exists_intMultiple_map_rat B
+  have hNq : MvPolynomial.C (N₁ * N₂ : ℤ) * q
+      = (MvPolynomial.C N₂ * A') * MvPolynomial.rename Fin.castSucc S
+        + (MvPolynomial.C N₁ * B') * (MvPolynomial.rename Fin.castSucc G *
+            MvPolynomial.X (Fin.last (e + 1)) - 1) := by
+    apply MvPolynomial.map_injective (Int.castRingHom ℚ) Int.cast_injective
+    simp only [map_add, _root_.map_mul, map_sub, MvPolynomial.map_X,
+      map_one, hA', hB', hAB, eq_intCast, map_intCast]
+    ring
+  have hmemNq : MvPolynomial.C (N₁ * N₂ : ℤ) * q ∈
+      Ideal.span {MvPolynomial.rename Fin.castSucc S,
+        MvPolynomial.rename Fin.castSucc G * MvPolynomial.X (Fin.last (e + 1)) - 1} :=
+    Ideal.mem_span_pair.2 ⟨MvPolynomial.C N₂ * A', MvPolynomial.C N₁ * B', hNq.symm⟩
+  obtain ⟨d, h, hh⟩ := exists_awayNormalForm_int G q
+  have hsub : Ideal.span ({MvPolynomial.rename Fin.castSucc G *
+        MvPolynomial.X (Fin.last (e + 1)) - 1} : Set (MvPolynomial (Fin (e + 2)) ℤ))
+      ≤ Ideal.span {MvPolynomial.rename Fin.castSucc S,
+        MvPolynomial.rename Fin.castSucc G * MvPolynomial.X (Fin.last (e + 1)) - 1} := by
+    rw [Ideal.span_le, Set.singleton_subset_iff]
+    exact Ideal.subset_span (by simp)
+  have hqJ := hsub hh
+  have hstep : MvPolynomial.rename Fin.castSucc (MvPolynomial.C (N₁ * N₂ : ℤ) * h) *
+      MvPolynomial.X (Fin.last (e + 1)) ^ d ∈
+      Ideal.span {MvPolynomial.rename Fin.castSucc S,
+        MvPolynomial.rename Fin.castSucc G * MvPolynomial.X (Fin.last (e + 1)) - 1} := by
+    have h1 : MvPolynomial.C (N₁ * N₂ : ℤ) *
+        (q - MvPolynomial.rename Fin.castSucc h * MvPolynomial.X (Fin.last (e + 1)) ^ d)
+        ∈ _ := Ideal.mul_mem_left _ _ hqJ
+    have h2 := Ideal.sub_mem _ hmemNq h1
+    have hrw : MvPolynomial.rename Fin.castSucc (MvPolynomial.C (N₁ * N₂ : ℤ) * h) *
+        MvPolynomial.X (Fin.last (e + 1)) ^ d
+        = MvPolynomial.C (N₁ * N₂ : ℤ) * q - MvPolynomial.C (N₁ * N₂ : ℤ) *
+          (q - MvPolynomial.rename Fin.castSucc h *
+            MvPolynomial.X (Fin.last (e + 1)) ^ d) := by
+      rw [_root_.map_mul, MvPolynomial.rename_C]
+      ring
+    rw [hrw]; exact h2
+  have hdvd := dvd_of_awayNormalForm_mem hS hSG d _ hstep
+  have hSN : ¬ S ∣ MvPolynomial.C (N₁ * N₂ : ℤ) := by
+    rintro ⟨u, hu⟩
+    refine hSu ?_
+    have hmul : MvPolynomial.map (Int.castRingHom ℚ) S *
+        MvPolynomial.map (Int.castRingHom ℚ) u
+        = MvPolynomial.C (((N₁ * N₂ : ℤ) : ℚ)) := by
+      rw [← _root_.map_mul, ← hu, MvPolynomial.map_C]
+      simp
+    refine isUnit_of_mul_isUnit_left (y := MvPolynomial.map (Int.castRingHom ℚ) u) ?_
+    rw [hmul]
+    exact (MvPolynomial.C (σ := Fin (e + 1)) (R := ℚ)).isUnit_map
+      (isUnit_iff_ne_zero.2 (by exact_mod_cast mul_ne_zero hN₁ hN₂))
+  have hSh : S ∣ h := (hS.dvd_mul.1 hdvd).resolve_left hSN
+  obtain ⟨c, hc⟩ := hSh
+  have hlast : MvPolynomial.rename Fin.castSucc h * MvPolynomial.X (Fin.last (e + 1)) ^ d ∈
+      Ideal.span {MvPolynomial.rename Fin.castSucc S,
+        MvPolynomial.rename Fin.castSucc G * MvPolynomial.X (Fin.last (e + 1)) - 1} := by
+    rw [hc, _root_.map_mul]
+    exact Ideal.mul_mem_right _ _ (Ideal.mul_mem_right _ _ (Ideal.subset_span (by simp)))
+  have hqmem : q ∈ Ideal.span {MvPolynomial.rename Fin.castSucc S,
+      MvPolynomial.rename Fin.castSucc G * MvPolynomial.X (Fin.last (e + 1)) - 1} := by
+    have hsum := Ideal.add_mem _ hqJ hlast
+    simpa using hsum
+  obtain ⟨a, b, hab⟩ := Ideal.mem_span_pair.1 hqmem
+  exact ⟨a, b, hab.symm⟩
+
+/-- **LEAF (B′): SCHMIDT'S THEOREM 4D OVER `ℚ`, WITH THE IDENTITIES STILL OVER
+`ℚ`** (SORRY LEAF, cut 2026-07-29 out of `exists_rationalHypersurfaceCertificate`
+below, which is now PROVEN over this leaf and the four declarations immediately
+above).
+
+WHAT CHANGED AGAINST THE PARENT, and nothing else did. The DATA are the same and
+still integral: `S₀, g₀, P, R, w` all have `ℤ` coefficients. Only the COFACTORS
+`A, B` witnessing the three ideal memberships are relaxed from `ℤ` to `ℚ`, and in
+exchange the prover must deliver one extra clause, `Prime S₀`.
+
+WHY THAT IS THE RIGHT CUT. The parent's own docstring names the `ℤ`-descent as
+"the one step where clearing denominators is not automatic" and gives the
+argument: over `ℚ` the identities hold with `A, B ∈ ℚ[X, T]`, so `N·q ∈ J_ℤ` for
+a nonzero integer `N`, and a PRIMITIVE `S₀` makes `ℤ[X] ⧸ (S₀)` a domain of
+characteristic zero, hence `ℤ`-torsion-free, so `q ∈ J_ℤ` already. That argument
+is now PROVEN, as `exists_intCertificateWitness_of_rat` above, and this leaf is
+exactly the hypothesis it consumes. So the two statements are EQUIVALENT modulo
+the `Prime S₀` clause, and no faithfulness is lost by the relaxation — see the
+audit below.
+
+WHY `Prime S₀` IS FREE, and why it must be asked for HERE rather than derived.
+`S₀` is produced by clearing the denominators of a minimal polynomial, so it is
+only determined up to a nonzero rational factor; replacing it by its PRIMITIVE
+PART changes neither `V(S₀)`, nor `Irreducible (map ℚ̄ S₀)` (the factor becomes a
+unit of `ℚ̄[X]`), nor the ideal `J_ℚ`, nor any of the three identities. Gauss's
+lemma then turns "primitive and irreducible over `ℚ`" into "irreducible in
+`ℤ[X]`", and `ℤ[X₀ … X_e]` is a UFD, so irreducible = prime. It cannot be derived
+from the parent's conclusion, because `Irreducible (map ℚ̄ S₀)` is invariant under
+multiplying `S₀` by `2` while `Prime S₀` is not — `2X₀` is a counterexample, and
+it is the SAME counterexample that refutes the descent without primitivity.
+
+WHY THE DATA MUST STAY INTEGRAL even though `A, B` need not. `P, R, w` are the
+MAPS; scaling them changes the map, so their denominators cannot be cleared by an
+overall factor. They are cleared instead by ENLARGING `g₀`: if
+`P_j = D_j(X)/(N·g₀^K)` as a function on the open set, replace `g₀` by `N·g₀^K`,
+whose formal inverse `T` then makes `P_j = D_j·T` integral. That shrinks the open
+set and keeps it dense, and `S₀ ∤ N·g₀^K` still holds because `S₀` is prime,
+`S₀ ∤ g₀` and `N` is a unit over `ℚ̄`. This is part of CONSTRUCTING the maps, so
+it belongs on this side of the cut, not with the descent.
+
+EVERYTHING ELSE — the route (Schmidt Chapter VI Theorem 4D, the primitive-element
+induction, `Mathlib/AlgebraicGeometry/Birational/`'s
+`RationalMap.equivFunctionFieldOver` as this pin's Theorem 4B, Chapter VI §6
+Remark (1) for absolute irreducibility, §7 eq. (7.3) for the injection
+`S ∖ M ↪ V`), and the reason the three identities are ideal memberships rather
+than mere vanishing (the Nullstellensatz on the PRIME ideal `J`, `ℚ[X, T] ⧸ J`
+being the localisation `(ℚ[X] ⧸ (S₀))[1/g₀]` of a domain) — is UNCHANGED and is
+recorded on the parent below. Read that docstring; this one records only the
+delta.
+
+**A SECOND ROUTE, not noticed when the parent was cut.** This file already
+carries the same geometry in ABSTRACT form, ~10 000 lines above: step (c) of
+Poonen §3.2 is `exists_irreducible_hypersurface_fractionRing_ringEquiv_rat` (an
+open leaf, but stated for an ARBITRARY finitely generated domain over `ℚ` and
+carrying no geometric hypothesis), step (b) is
+`isDomain_algebraicClosure_tensorProduct_reduced_integralSystemModel_rat`, and
+`nonempty_ringEquiv_localizationAway_of_fractionRing_ringEquiv` (PROVEN) converts
+the resulting isomorphism of FUNCTION FIELDS into an isomorphism
+`Localization.Away s ≃+* Localization.Away b` of principal localisations. A
+prover of this leaf can take `S₀ := g` from that chain and read `P`, `R`, `w` off
+the two directions of that isomorphism — `P_j` is the image of `Y_j` in
+`(ℚ[X] ⧸ (g))[1/b]`, written over a common `b`-power denominator, and `R_l` is
+the image of `X_l` under the inverse, written over a common `s`-power
+denominator, with `w` a lift of `s`. Everything that is left is then the
+denominator bookkeeping described above. Note that the packaged entry points
+`exists_birationalHypersurface_reduced_integralSystemModel_rat` and
+`exists_birationalNormalForm_integralSystemModel_rat` carry a spurious
+`Algebra.FormallySmooth` hypothesis (their own docstrings say it is unused, and
+`exists_fractionRing_ringEquiv_hypersurface_integralSystemModel_rat` underscores
+it), which is NOT available here — so a prover taking this route must call the
+four hsm-free pieces directly rather than the packaged entry points.
+
+FAITHFULNESS, RE-RUN AGAINST THE COMPOSITE STATEMENT (this leaf is a RESTATEMENT
+of the parent, so the parent's audit is void for it and is re-derived here).
+
+* `e` is still NOT under-pinned even though no clause bounds it: assertion (4)
+  exhibits `R` as a LEFT INVERSE of `φ = P ∘ Fin.castSucc` on the open set, so
+  `φ` is injective there, so the `e`-dimensional irreducible `V(S₀) ∖ V(g₀)`
+  (nonempty and dense because `S₀` is irreducible over `ℚ̄` and `S₀ ∤ g₀`) injects
+  into `V(f) ⊆ 𝔸ⁿ`, forcing `e ≤ n`. Relaxing the cofactors to `ℚ` does not touch
+  this argument, since a `ℚ`-membership still gives the vanishing on the open set
+  that the injectivity argument uses. Do NOT add a bound on `e`.
+* The relaxation to `ℚ` cannot be gamed, because it is not a relaxation:
+  `exists_intCertificateWitness_of_rat` converts each `ℚ`-membership back into a
+  `ℤ`-membership using only `Prime S₀`, `Irreducible (map ℚ̄ S₀)` and `S₀ ∤ g₀`,
+  all of which are conclusions of this very statement.
+* `Prime S₀` is not vacuous and is not implied by the other clauses: a unit is
+  never prime, so it rules out the degenerate witness `S₀ = 1` outright — but
+  note that the degenerate branch is the CONSUMER's business
+  (`exists_integralHypersurfaceCertificate` case-splits on `hQ` and only reaches
+  this chain in the honest branch), so `hQ` is available here and `S₀ = 1` was
+  never admissible anyway.
+* `hQ` is load-bearing: without it the system may have no `ℚ̄`-point at all, and
+  then no nonempty `V(S₀) ∖ V(g₀)` can inject into `V(f)`, so assertions (3)–(5)
+  are unsatisfiable together with (1). `f = (x² + 1, x² + 2)` in one variable is
+  the witness — the ideal over `ℚ̄` is `⊤`, whose radical is not prime.
+
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ℤ`, `ℚ` and `ℚ̄`
+only, no prime `p`, no Galois representation, no modular form, nothing from
+`Family.lean`, `Lift.lean` or `Modularity/Interface.lean`. -/
+theorem exists_ratMembershipHypersurfaceCertificate {n m : ℕ}
+    (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (hQ : (integralSystemIdeal f (AlgebraicClosure ℚ)).radical.IsPrime) :
+    ∃ (e : ℕ) (S₀ g₀ : MvPolynomial (Fin (e + 1)) ℤ)
+      (P : Fin (n + 1) → MvPolynomial (Fin (e + 2)) ℤ)
+      (R : Fin (e + 1) → MvPolynomial (Fin (n + 1)) ℤ)
+      (w : MvPolynomial (Fin n) ℤ),
+      Irreducible (MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) S₀) ∧
+      Prime S₀ ∧
+      ¬ MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) S₀ ∣
+          MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) g₀ ∧
+      (∀ i : Fin m, ∃ A B : MvPolynomial (Fin (e + 2)) ℚ,
+          MvPolynomial.map (Int.castRingHom ℚ)
+              (MvPolynomial.eval₂ MvPolynomial.C (fun j => P j.castSucc) (f i))
+            = A * MvPolynomial.map (Int.castRingHom ℚ)
+                (MvPolynomial.rename Fin.castSucc S₀)
+              + B * (MvPolynomial.map (Int.castRingHom ℚ)
+                  (MvPolynomial.rename Fin.castSucc g₀)
+                  * MvPolynomial.X (Fin.last (e + 1)) - 1)) ∧
+      (∀ l : Fin (e + 1), ∃ A B : MvPolynomial (Fin (e + 2)) ℚ,
+          MvPolynomial.map (Int.castRingHom ℚ)
+              (MvPolynomial.eval₂ MvPolynomial.C P (R l) - MvPolynomial.X l.castSucc)
+            = A * MvPolynomial.map (Int.castRingHom ℚ)
+                (MvPolynomial.rename Fin.castSucc S₀)
+              + B * (MvPolynomial.map (Int.castRingHom ℚ)
+                  (MvPolynomial.rename Fin.castSucc g₀)
+                  * MvPolynomial.X (Fin.last (e + 1)) - 1)) ∧
+      (∃ A B : MvPolynomial (Fin (e + 2)) ℚ,
+          MvPolynomial.map (Int.castRingHom ℚ)
+              (MvPolynomial.eval₂ MvPolynomial.C (fun j => P j.castSucc) w
+                * P (Fin.last n) - 1)
+            = A * MvPolynomial.map (Int.castRingHom ℚ)
+                (MvPolynomial.rename Fin.castSucc S₀)
+              + B * (MvPolynomial.map (Int.castRingHom ℚ)
+                  (MvPolynomial.rename Fin.castSucc g₀)
+                  * MvPolynomial.X (Fin.last (e + 1)) - 1)) :=
+  sorry
+
+/-- **LEAF (B): SCHMIDT'S THEOREM 4D OVER `ℚ`, DESCENDED TO `ℤ`** (**PROVEN
+2026-07-29** over `exists_ratMembershipHypersurfaceCertificate` immediately above
+— the same statement with the three cofactor pairs `A, B` living over `ℚ` and one
+extra clause `Prime S₀` — together with the four PROVEN declarations of the
+`ℤ`-descent block above it. It was cut as a bare `sorry` on 2026-07-27 out of
+`exists_integralHypersurfaceCertificate` below).
+
+WHAT THE PROOF BELOW DISCHARGES, so nobody redoes it: the `ℤ`-DESCENT, i.e. the
+paragraph "WHY THE `ℤ`-DESCENT IS LEGITIMATE" below, which is now the proven
+`exists_intCertificateWitness_of_rat`. Everything else in this docstring is
+UNCHANGED and is still open, on the leaf immediately above.
 
 **NO PRIME APPEARS IN THIS STATEMENT.** That is the point of the cut: this is
 characteristic-zero birational geometry plus one denominator-clearing step, and
@@ -22116,12 +22591,32 @@ theorem exists_rationalHypersurfaceCertificate {n m : ℕ} (f : Fin m → MvPoly
               * P (Fin.last n) - 1
             = A * MvPolynomial.rename Fin.castSucc S₀
               + B * (MvPolynomial.rename Fin.castSucc g₀
-                  * MvPolynomial.X (Fin.last (e + 1)) - 1)) :=
-  sorry
+                  * MvPolynomial.X (Fin.last (e + 1)) - 1)) := by
+  classical
+  obtain ⟨e, S₀, g₀, P, R, w, hirr, hprime, hdvd, hsys, hinv, hden⟩ :=
+    exists_ratMembershipHypersurfaceCertificate f hQ
+  have hmapmap : MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) S₀
+      = MvPolynomial.map (algebraMap ℚ (AlgebraicClosure ℚ))
+          (MvPolynomial.map (Int.castRingHom ℚ) S₀) := by
+    rw [MvPolynomial.map_map, RingHom.ext_int
+      ((algebraMap ℚ (AlgebraicClosure ℚ)).comp (Int.castRingHom ℚ))
+      (Int.castRingHom (AlgebraicClosure ℚ))]
+  have hSu : ¬ IsUnit (MvPolynomial.map (Int.castRingHom ℚ) S₀) := by
+    intro hu
+    refine hirr.not_isUnit ?_
+    rw [hmapmap]
+    exact hu.map (MvPolynomial.map (algebraMap ℚ (AlgebraicClosure ℚ)))
+  have hSG : ¬ S₀ ∣ g₀ := fun hd =>
+    hdvd (map_dvd (MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ))) hd)
+  exact ⟨e, S₀, g₀, P, R, w, hirr, hdvd,
+    fun i => exists_intCertificateWitness_of_rat hprime hSu hSG _ (hsys i),
+    fun l => exists_intCertificateWitness_of_rat hprime hSu hSG _ (hinv l),
+    exists_intCertificateWitness_of_rat hprime hSu hSG _ hden⟩
 
 /-- **THE INTEGRAL HYPERSURFACE CERTIFICATE** (**PROVEN 2026-07-27** over the two
 leaves immediately above — `exists_rationalHypersurfaceCertificate`, which is
-Theorem 4D and the `ℤ`-descent with no prime in its statement, and
+Theorem 4D and the `ℤ`-descent with no prime in its statement and is itself
+PROVEN as of 2026-07-29 over `exists_ratMembershipHypersurfaceCertificate`, and
 `exists_bound_not_isPrime_radical_integralSystemIdeal_zmod`, the degenerate half
 of EGA IV 9.7.7 — together with four PROVEN lemmas in this block and
 `exists_inverted_irreducible_map_algClosureZMod` (Noether–Ostrowski) far above.
@@ -23267,7 +23762,9 @@ NAMED LEAVES, split along the line the literature itself draws:
   the evaluation-and-counting argument on top of them is proven. That certificate
   is now **ALSO PROVEN** (2026-07-27), over exactly two leaves:
   `exists_rationalHypersurfaceCertificate` (Theorem 4D over `ℚ` plus the
-  `ℤ`-descent, no prime in its statement) and
+  `ℤ`-descent, no prime in its statement — itself **PROVEN** 2026-07-29, the
+  `ℤ`-descent discharged and the residue now the leaf
+  `exists_ratMembershipHypersurfaceCertificate`) and
   `exists_bound_not_isPrime_radical_integralSystemIdeal_zmod` (the degenerate
   half of EGA IV 9.7.7). Everything arithmetic between them — total degree,
   absolute irreducibility and non-divisibility under reduction, and the EMPTY
@@ -23644,9 +24141,11 @@ these EIGHT:
 * the Bertini–Noether side — `exists_irreducible_planeSection_of_irreducible`
   and `exists_noetherBadLocusForms`, the two halves of the now-proven
   `exists_bertiniNoetherWitness_of_three_le`;
-* the hypersurface certificate — `exists_rationalHypersurfaceCertificate` and
-  `exists_bound_not_isPrime_radical_integralSystemIdeal_zmod`, which replaced
-  `exists_integralHypersurfaceCertificate` when that was PROVEN over them.
+* the hypersurface certificate — `exists_ratMembershipHypersurfaceCertificate`
+  (which on 2026-07-29 replaced `exists_rationalHypersurfaceCertificate` when
+  THAT was proven over it plus the `ℤ`-descent block) and
+  `exists_bound_not_isPrime_radical_integralSystemIdeal_zmod`, which together
+  replaced `exists_integralHypersurfaceCertificate` when it was PROVEN over them.
 
 All the glue between them is written and compiles, and this leaf itself has
 nothing left to prove.
