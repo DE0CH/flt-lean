@@ -438,8 +438,9 @@ open in them has been split along the theories it needed:
 | ~~`exists_weierstrassCurve_pointOfExactOrder`~~ | PROVEN 2026-07-30: Silverman *AEC* III.6.4 was already in cone as `WeierstrassCurve.n_torsion_dimension` (`EllipticCurve/Torsion.lean`), so the leaf was that theorem at `WeierstrassCurve.ofJ (0 : L)` plus additive-order bookkeeping; no longer a leaf | — |
 | `nonempty_gamma1Datum_of_weierstrassPoint` | the base-generalisation of `nonempty_gamma1Datum_of_ratPoint`, which is the SAME statement at `ℚ` and is PROVEN.  Its whole obstruction is that `EllipticScheme.lean` is written at the concrete base `ℚ`; no new mathematics.  Cut out of `exists_gamma1Datum_fieldExtension` 2026-07-28, which is PROVEN over it and the row above (and `geometricComponents_of_gamma1GITPresentation` over that plus the two rows below, and `nontrivial_A_of_gamma1GITPresentation` over that alone). | any field `L` |
 | ~~`isReduced_A_of_gamma1GITPresentation`~~ | PROVEN 2026-07-28 over `smoothCurve_A_of_gamma1GITPresentation` and the in-tree `Algebra.Smooth.isReduced_of_isField`; no longer a leaf | — |
-| `transitiveMinimalPrimes_of_gamma1GITPresentation` | Deligne-Rapoport IV.5.5: `det` is onto, so `G` permutes the components of `Spec A` transitively | any `K`, `char K ∤ N` |
-| `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation` | Deligne-Rapoport IV.5.5 — `det` is onto for `[Γ₁(N)]`, i.e. `Spec (B ⊗[K] L)` is IRREDUCIBLE for every field extension `L/K`.  Cut 2026-07-30 out of `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation`, which is now PROVEN over it and `smoothInvariants_of_gamma1GITPresentation`: the REDUCEDNESS half of "regular extension" is free from smoothness, so only the primary half is modular.  `connectedSpace_tensorProduct_of_gamma1GITPresentation` is PROVEN over that, 2026-07-28. | any `K`, `char K ∤ N` |
+| `transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation` | Deligne-Rapoport IV.5.5: `det` is onto, so `G` permutes the components of `Spec (A ⊗[K] L)` transitively for EVERY field extension `L/K`.  MERGED 2026-07-30 out of the two former leaves `transitiveMinimalPrimes_of_gamma1GITPresentation` and `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation`, BOTH of which are now PROVEN over it — the first at `L := K` through `Algebra.TensorProduct.rid`, the second through the new `isDomain_of_minimalPrimes_transitive_family` plus `smoothCurve_A_of_gamma1GITPresentation` and `nontrivial_A_of_gamma1GITPresentation`.  Two leaves stating one sentence of IV.5.5 at two generalities became one leaf at the stronger generality. | any `K`, `char K ∤ N`, any field extension `L/K` |
+| ~~`transitiveMinimalPrimes_of_gamma1GITPresentation`~~ | PROVEN 2026-07-30 over the row above at `L := K`; no longer a leaf | — |
+| ~~`isPrime_nilradical_tensorProduct_of_gamma1GITPresentation`~~ | PROVEN 2026-07-30 over the row above; no longer a leaf.  `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation` and `connectedSpace_tensorProduct_of_gamma1GITPresentation` are unchanged and still read it | — |
 | `exists_rationalCuspPointsX1_field` | `φ(N)/2` rational cusps of `X_1(N)` (Deligne-Rapoport VI.5).  Base field FREED 2026-07-28: this single leaf now carries the former `exists_rationalCuspPointsX1` (over `ℚ`, PROVEN over it) and the `≥` half of the former `card_cuspLocusPoints_x1_finiteField` (over `𝔽_3`) — one sentence of Deligne-Rapoport that used to be two open leaves at two bases. | any `K` with `N` invertible |
 | `exists_isFineGamma1Moduli` | Katz–Mazur 4.7.1: `[Γ₁(N)]` is REPRESENTABLE at `N ≥ 4`, `ℓ` prime, `ℓ ∤ N` — a universal family `dM` over `M`, classified uniquely.  (`exists_fineGamma1Atlas` is PROVEN over it, 2026-07-28, through the formal `Gamma1Atlas.ofFineModuli`; that node was itself `nonempty_relPoint_atlas_of_relPoint`, REFUTED and restated the same day — see its FALSITY AUDIT.) | `𝔽_ℓ` |
 | `nonempty_gamma1Datum_baseChange` | base change of a `Γ₁(N)`-datum — formal, no arithmetic | any |
@@ -568,9 +569,9 @@ along the GIT axis its own docstring named as NOT SEARCHED.  This is the
 | `exists_descendClassify` (PROVEN) | `exists_descendClassifyGamma1` (PROVEN) |
 | `exists_gamma0Datum_baseChange` (PROVEN) | `exists_gamma1Datum_baseChange` (PROVEN) |
 | `gamma0Atlas_isIso` + `isAffine_of_gamma0Atlas` (PROVEN) | not needed — see the section comment on the geometry below |
-| `isDomain_of_gamma0GITPresentation` (leaf) | `geometricComponents_of_gamma1GITPresentation` (PROVEN 2026-07-28 over `exists_gamma1Datum_fieldExtension`, `isReduced_A_of_gamma1GITPresentation` — itself PROVEN later the same day over `smoothCurve_A_of_gamma1GITPresentation` — and `transitiveMinimalPrimes_of_gamma1GITPresentation`); `isDomain_of_gamma1GITPresentation` is PROVEN over it |
+| `isDomain_of_gamma0GITPresentation` (leaf) | `geometricComponents_of_gamma1GITPresentation` (PROVEN 2026-07-28 over `exists_gamma1Datum_fieldExtension`, `isReduced_A_of_gamma1GITPresentation` — itself PROVEN later the same day over `smoothCurve_A_of_gamma1GITPresentation` — and `transitiveMinimalPrimes_of_gamma1GITPresentation`, itself PROVEN 2026-07-30 over `transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation`); `isDomain_of_gamma1GITPresentation` is PROVEN over it |
 | `smoothOfRelativeDimension_of_gamma0GITPresentation` (leaf) | `locallyStandardSmooth_of_gamma1GITPresentation` (leaf); `smoothOfRelativeDimension_of_gamma1GITPresentation` is PROVEN over it |
-| `geometricallyConnected_of_gamma0GITPresentation` (leaf) | `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation` (leaf, cut 2026-07-30); `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation`, `connectedSpace_tensorProduct_of_gamma1GITPresentation` and `geometricallyConnected_of_gamma1GITPresentation` are PROVEN over it |
+| `geometricallyConnected_of_gamma0GITPresentation` (leaf) | `transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation` (leaf, 2026-07-30); `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation`, `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation`, `connectedSpace_tensorProduct_of_gamma1GITPresentation` and `geometricallyConnected_of_gamma1GITPresentation` are PROVEN over it |
 | `Gamma0AffineModel` / `exists_gamma0AffineModel` (PROVEN) | `Gamma1AffineModel` / `exists_gamma1AffineModel` (PROVEN) |
 
 `specInvariants_universal` (`X0.lean`, PROVEN and sorry-free) is REUSED
@@ -632,7 +633,9 @@ thing `Nontrivial A` needs), `isReduced_A_of_gamma1GITPresentation`
 (8.2.1, smoothness — itself PROVEN later the same day over
 `smoothCurve_A_of_gamma1GITPresentation`) and
 `transitiveMinimalPrimes_of_gamma1GITPresentation` (IV.5.5, the
-`det`-surjectivity).  The ROUTE AUDIT on the last of those records why
+`det`-surjectivity — itself PROVEN 2026-07-30 over its base-changed form
+`transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation`, which is
+where the open obligation now sits).  The ROUTE AUDIT on the last of those records why
 neither `Algebra.IsInvariant.exists_smul_of_under_eq` nor an
 existentially-quantified algebra of components cuts it any further, and
 that the honest next step is a Weil-pairing FIELD on
@@ -4063,7 +4066,7 @@ geometric statements is equivalent to a statement about the `K`-algebra
 |---|---|---|
 | `isDomain_of_gamma1GITPresentation` | `geometricComponents_of_gamma1GITPresentation` | `Scheme.ΓSpecIso` + `isDomain_of_minimalPrimes_transitive` |
 | `smoothOfRelativeDimension_of_gamma1GITPresentation` | `locallyStandardSmooth_of_gamma1GITPresentation` | `HasRingHomProperty.Spec_iff` |
-| `geometricallyConnected_of_gamma1GITPresentation` | `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation` (2026-07-30; `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation` is PROVEN over it) | `geometrically_iff_of_commRing_of_isClosedUnderIsomorphisms` + `pullbackSpecIso`, then (2026-07-28) `isDomain_tensorProduct_of_injective` |
+| `geometricallyConnected_of_gamma1GITPresentation` | `transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation` (2026-07-30; `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation` and then `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation` are PROVEN over it) | `geometrically_iff_of_commRing_of_isClosedUnderIsomorphisms` + `pullbackSpecIso`, then (2026-07-28) `isDomain_tensorProduct_of_injective` |
 
 So a prover sent at any of the three open leaves below works in
 commutative algebra over `K` and never touches a scheme.  This is the
@@ -4101,33 +4104,41 @@ theorem Gamma1GITPresentation.specMap_algebraMap {N : ℕ} {K : Type} [Field K]
   rw [CommRingCat.ofHom_hom]
   exact (Spec.map_surjective P.str).choose_spec
 
-/-- **A ring of invariants is a DOMAIN as soon as the group permutes the
-minimal primes transitively** (PROVEN 2026-07-27, pure commutative
-algebra — no moduli problem, no base field, mathlib-facing).
+/-- **A subring of a reduced ring is a DOMAIN as soon as SOME family of ring
+endomorphisms fixing it permutes the minimal primes transitively** (PROVEN
+2026-07-30, pure commutative algebra — no group, no moduli problem, no base
+field, mathlib-facing).
 
-This is the general form of "`Y_1(N)` is irreducible even though
-`𝔐([Γ₁(N)], [Γ(n)])` is not", and it is exactly what makes the `Γ₁`
-side over a general `K` different from the `Γ₀` side over `ℚ`, where
-`Function.Injective.isDomain` applied to `IsDomain A` suffices.
+The generalisation of `isDomain_of_minimalPrimes_transitive` below, which is
+now proved from it in three lines.  The point of the generalisation is that
+the group-action form is unusable after base change: the endomorphisms of
+`A ⊗[K] L` induced by `σ ∈ G` are perfectly good ring maps fixing `B ⊗[K] L`,
+but assembling them into a `MulSemiringAction G (A ⊗[K] L)` instance is pure
+bookkeeping (functoriality of `Algebra.TensorProduct.map`, `one_smul`,
+`mul_smul`) that the proof never uses.  A bare FAMILY is all the argument
+needs, and it is what
+`isPrime_nilradical_tensorProduct_of_gamma1GITPresentation` consumes.
+
+Inspecting the proof: `Finite ι` is not needed, `ι` may even be empty (then
+`htrans` forces `minimalPrimes A` to have at most one element, which is the
+conclusion), and the `f i` are not required to be injective, bijective, or
+closed under composition.  Only three things are used — `hfix`, `htrans`, and
+`IsReduced A`.
 
 The proof: `A` reduced means `⋂ {p | p ∈ minimalPrimes A} = 0`
 (`Ideal.sInf_minimalPrimes` at `⊥`, then `nilradical_eq_zero`).  Given
-`x y = 0` in `B` with `x ≠ 0`, pick a minimal prime `p` missing the image
-`a` of `x`; then the image `b` of `y` lies in `p`.  Images of `B` are
-`G`-fixed (`smul_algebraMap`, which is where `SMulCommClass G B A` is
-consumed), so for any minimal `q` and any `σ` with
-`comap σ p = q` we get `b ∈ q`.  Transitivity makes that every `q`, so
-`b = 0` and `y = 0` by injectivity.
-
-Note `Algebra.IsInvariant B A G` is NOT needed: only that the image of
-`B` is contained in `A^G`, which `SMulCommClass` already gives.  The
-hypothesis `Nontrivial A` is what supplies `Nontrivial B`. -/
-theorem isDomain_of_minimalPrimes_transitive
-    {B A : Type} [CommRing B] [CommRing A] [Algebra B A]
-    (G : Type) [Group G] [MulSemiringAction G A] [SMulCommClass G B A]
+`x y = 0` in `B` with `x ≠ 0`, pick a minimal prime `p` missing the image `a`
+of `x`; then the image `b` of `y` lies in `p`.  Images of `B` are fixed by
+every `f i` (`hfix`), so for any minimal `q` and any `i` with
+`comap (f i) p = q` we get `b ∈ q`.  Transitivity makes that every `q`, so
+`b = 0` and `y = 0` by injectivity. -/
+theorem isDomain_of_minimalPrimes_transitive_family
+    {ι : Type} {B A : Type} [CommRing B] [CommRing A] [Algebra B A]
+    (f : ι → (A →+* A))
+    (hfix : ∀ (i : ι) (b : B), f i (algebraMap B A b) = algebraMap B A b)
     (hinj : Function.Injective (algebraMap B A)) [Nontrivial A] [IsReduced A]
     (htrans : ∀ p ∈ minimalPrimes A, ∀ q ∈ minimalPrimes A,
-      ∃ σ : G, Ideal.comap (MulSemiringAction.toRingHom G A σ) p = q) :
+      ∃ i : ι, Ideal.comap (f i) p = q) :
     IsDomain B := by
   have hbot : ∀ a : A, (∀ p ∈ minimalPrimes A, a ∈ p) → a = 0 := by
     intro a ha
@@ -4157,13 +4168,45 @@ theorem isDomain_of_minimalPrimes_transitive
     refine hinj ?_
     rw [map_zero]
     refine hbot _ fun q hq => ?_
-    obtain ⟨σ, hσ⟩ := htrans p hp q hq
-    rw [← hσ, Ideal.mem_comap]
-    have hfix : MulSemiringAction.toRingHom G A σ (algebraMap B A y) = algebraMap B A y := by
-      simp [MulSemiringAction.toRingHom]
-    rw [hfix]
+    obtain ⟨i, hi⟩ := htrans p hp q hq
+    rw [← hi, Ideal.mem_comap, hfix i y]
     exact hbp
   exact NoZeroDivisors.to_isDomain B
+
+/-- **A ring of invariants is a DOMAIN as soon as the group permutes the
+minimal primes transitively** (PROVEN 2026-07-27, pure commutative
+algebra — no moduli problem, no base field, mathlib-facing; reproved
+2026-07-30 as the `ι := G` case of
+`isDomain_of_minimalPrimes_transitive_family` above, with the proof text
+retained there).
+
+This is the general form of "`Y_1(N)` is irreducible even though
+`𝔐([Γ₁(N)], [Γ(n)])` is not", and it is exactly what makes the `Γ₁`
+side over a general `K` different from the `Γ₀` side over `ℚ`, where
+`Function.Injective.isDomain` applied to `IsDomain A` suffices.
+
+The proof: `A` reduced means `⋂ {p | p ∈ minimalPrimes A} = 0`
+(`Ideal.sInf_minimalPrimes` at `⊥`, then `nilradical_eq_zero`).  Given
+`x y = 0` in `B` with `x ≠ 0`, pick a minimal prime `p` missing the image
+`a` of `x`; then the image `b` of `y` lies in `p`.  Images of `B` are
+`G`-fixed (`smul_algebraMap`, which is where `SMulCommClass G B A` is
+consumed), so for any minimal `q` and any `σ` with
+`comap σ p = q` we get `b ∈ q`.  Transitivity makes that every `q`, so
+`b = 0` and `y = 0` by injectivity.
+
+Note `Algebra.IsInvariant B A G` is NOT needed: only that the image of
+`B` is contained in `A^G`, which `SMulCommClass` already gives.  The
+hypothesis `Nontrivial A` is what supplies `Nontrivial B`. -/
+theorem isDomain_of_minimalPrimes_transitive
+    {B A : Type} [CommRing B] [CommRing A] [Algebra B A]
+    (G : Type) [Group G] [MulSemiringAction G A] [SMulCommClass G B A]
+    (hinj : Function.Injective (algebraMap B A)) [Nontrivial A] [IsReduced A]
+    (htrans : ∀ p ∈ minimalPrimes A, ∀ q ∈ minimalPrimes A,
+      ∃ σ : G, Ideal.comap (MulSemiringAction.toRingHom G A σ) p = q) :
+    IsDomain B :=
+  isDomain_of_minimalPrimes_transitive_family
+    (fun σ : G => MulSemiringAction.toRingHom G A σ)
+    (fun _ _ => by simp [MulSemiringAction.toRingHom]) hinj htrans
 
 /-! #### The cut of `exists_gamma1Datum_fieldExtension`, 2026-07-28
 
@@ -4790,10 +4833,232 @@ theorem isReduced_A_of_gamma1GITPresentation {N : ℕ} (hN : 4 ≤ N)
   haveI := (smoothCurve_A_of_gamma1GITPresentation hN hchar P).1
   exact Algebra.Smooth.isReduced_of_isField (Field.toIsField K)
 
+/-! #### The deck group acts `K`-linearly, hence on every base change
+
+Four small declarations, all PROVEN 2026-07-30, whose only purpose is to
+give the base-changed transitivity leaf below something to say.  The
+non-formal one is the first: `strM_invariant` is a statement about
+`Spec`, and what the tensor product needs is the RING-level fact that `σ`
+fixes `K` pointwise.  `Spec` is fully faithful, so the two are the same
+fact — the proof is `Gamma1GITPresentation.specMap_algebraMap_A` followed
+by `Spec.map_injective`, exactly as in
+`Gamma1GITPresentation.isScalarTower`. -/
+
+/-- **Every `σ ∈ G` fixes `K` pointwise inside `A`** (PROVEN 2026-07-30) —
+the ring-level content of `Gamma1GITPresentation.strM_invariant`.
+
+`strM_invariant σ` says `Spec σ ≫ strM = strM`; `specMap_algebraMap_A` says
+`strM = Spec (algebraMap K A)`; `Spec.map_injective` turns the composite
+into `σ ∘ algebraMap K A = algebraMap K A`.  Nothing modular is used. -/
+theorem Gamma1GITPresentation.smul_algebraMap_A {N : ℕ} {K : Type} [Field K]
+    (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) (σ : P.G) :
+    letI := P.commRing_A; letI := P.algebraA; letI := P.group_G; letI := P.action_GA;
+    ∀ c : K, MulSemiringAction.toRingHom P.G P.A σ (algebraMap K P.A c) = algebraMap K P.A c := by
+  letI := P.commRing_A
+  letI := P.algebraA
+  letI := P.group_G
+  letI := P.action_GA
+  intro c
+  have key : CommRingCat.ofHom
+      ((MulSemiringAction.toRingHom P.G P.A σ).comp (algebraMap K P.A)) =
+      CommRingCat.ofHom (algebraMap K P.A) := by
+    apply Spec.map_injective
+    rw [CommRingCat.ofHom_comp, Spec.map_comp, P.specMap_algebraMap_A]
+    exact P.strM_invariant σ
+  have h2 : (MulSemiringAction.toRingHom P.G P.A σ).comp (algebraMap K P.A) =
+      algebraMap K P.A := by
+    simpa using congrArg CommRingCat.Hom.hom key
+  simpa using RingHom.congr_fun h2 c
+
+/-- **`σ ∈ G` as a `K`-algebra endomorphism of `A`** (PROVEN 2026-07-30) —
+`MulSemiringAction.toRingHom` upgraded along `smul_algebraMap_A`. -/
+noncomputable def Gamma1GITPresentation.algHomA {N : ℕ} {K : Type} [Field K]
+    (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) (σ : P.G) :
+    letI := P.commRing_A; letI := P.algebraA; letI := P.group_G; letI := P.action_GA;
+    P.A →ₐ[K] P.A :=
+  letI := P.commRing_A
+  letI := P.algebraA
+  letI := P.group_G
+  letI := P.action_GA
+  AlgHom.mk (MulSemiringAction.toRingHom P.G P.A σ) (P.smul_algebraMap_A σ)
+
+/-- **`σ ∈ G` acting on the base change `A ⊗[K] L`** (PROVEN 2026-07-30) —
+`σ ⊗ 1`, which is a ring map because `σ` is `K`-linear.
+
+Stated as a bare `AlgHom` rather than as a `MulSemiringAction P.G (A ⊗[K] L)`
+instance on purpose: the group structure is never used downstream (see
+`isDomain_of_minimalPrimes_transitive_family`), and assembling it would cost
+the functoriality of `Algebra.TensorProduct.map` for no gain. -/
+noncomputable def Gamma1GITPresentation.tensorAlgHomA {N : ℕ} {K : Type} [Field K]
+    (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) (L : Type) [Field L] [Algebra K L]
+    (σ : P.G) :
+    letI := P.commRing_A; letI := P.algebraA; letI := P.group_G; letI := P.action_GA;
+    TensorProduct K P.A L →ₐ[K] TensorProduct K P.A L :=
+  letI := P.commRing_A
+  letI := P.algebraA
+  letI := P.group_G
+  letI := P.action_GA
+  Algebra.TensorProduct.map (P.algHomA σ) (AlgHom.id K L)
+
+/-- **`(σ ⊗ 1)(a ⊗ l) = σa ⊗ l`** (PROVEN 2026-07-30, definitionally). -/
+theorem Gamma1GITPresentation.tensorAlgHomA_tmul {N : ℕ} {K : Type} [Field K]
+    (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) (L : Type) [Field L] [Algebra K L]
+    (σ : P.G) :
+    letI := P.commRing_A; letI := P.algebraA; letI := P.group_G; letI := P.action_GA;
+    ∀ (a : P.A) (l : L),
+      P.tensorAlgHomA L σ (a ⊗ₜ[K] l) = (MulSemiringAction.toRingHom P.G P.A σ a) ⊗ₜ[K] l := by
+  letI := P.commRing_A
+  letI := P.algebraA
+  letI := P.group_G
+  letI := P.action_GA
+  intro a l
+  rfl
+
+/-! #### `minimalPrimes` transported along a ring isomorphism
+
+Three lines of general order theory, needed only to read the base-changed
+leaf below at `L := K`.  `Ideal.comap` along a ring isomorphism is an order
+isomorphism on ideals preserving `IsPrime` in both directions, so
+`Minimal Ideal.IsPrime` transports; `minimalPrimes_eq_minimals` is the
+bridge to `minimalPrimes`.  GENERAL COMMUTATIVE ALGEBRA: it belongs in
+`Fermat/FLT/Mathlib/RingTheory/`, and lives here only because it has a
+single consumer. -/
+
+/-- **`comap e.symm ∘ comap e = id` on ideals** (PROVEN 2026-07-30). -/
+theorem comap_comap_ringEquiv {R S : Type} [CommRing R] [CommRing S] (e : R ≃+* S)
+    (I : Ideal S) :
+    Ideal.comap (e.symm : S →+* R) (Ideal.comap (e : R →+* S) I) = I :=
+  Ideal.ext fun x => by
+    rw [Ideal.mem_comap, Ideal.mem_comap]
+    simp
+
+/-- **`comap e ∘ comap e.symm = id` on ideals** (PROVEN 2026-07-30). -/
+theorem comap_comap_ringEquiv' {R S : Type} [CommRing R] [CommRing S] (e : R ≃+* S)
+    (J : Ideal R) :
+    Ideal.comap (e : R →+* S) (Ideal.comap (e.symm : S →+* R) J) = J :=
+  Ideal.ext fun x => by
+    rw [Ideal.mem_comap, Ideal.mem_comap]
+    simp
+
+/-- **`comap` along a ring isomorphism is injective** (PROVEN 2026-07-30). -/
+theorem comap_injective_ringEquiv {R S : Type} [CommRing R] [CommRing S] (e : R ≃+* S) :
+    Function.Injective (fun I : Ideal S => Ideal.comap (e : R →+* S) I) := by
+  intro I J h
+  rw [← comap_comap_ringEquiv e I, ← comap_comap_ringEquiv e J]
+  exact congrArg _ h
+
+/-- **A minimal prime pulls back to a minimal prime along a ring
+isomorphism** (PROVEN 2026-07-30). -/
+theorem mem_minimalPrimes_comap_ringEquiv {R S : Type} [CommRing R] [CommRing S] (e : R ≃+* S)
+    {p : Ideal S} (hp : p ∈ minimalPrimes S) :
+    Ideal.comap (e : R →+* S) p ∈ minimalPrimes R := by
+  rw [minimalPrimes_eq_minimals] at hp ⊢
+  haveI := hp.prop
+  refine ⟨Ideal.comap_isPrime _ _, ?_⟩
+  intro q hq hle
+  haveI := hq
+  have h1 : Ideal.comap (e.symm : S →+* R) q ≤ p := by
+    have := Ideal.comap_mono (f := (e.symm : S →+* R)) hle
+    rwa [comap_comap_ringEquiv e p] at this
+  have h2 : p ≤ Ideal.comap (e.symm : S →+* R) q := hp.le_of_le (Ideal.comap_isPrime _ _) h1
+  have := Ideal.comap_mono (f := (e : R →+* S)) h2
+  rwa [comap_comap_ringEquiv' e q] at this
+
+/-- **The deck group permutes the components of EVERY BASE CHANGE of the
+rigidified moduli scheme transitively** (sorry leaf, NEW 2026-07-30) —
+Deligne–Rapoport IV.5.5, Katz–Mazur (8.1.1), and after this cut the ONLY
+open modular input to the geometric irreducibility of `Y_1(N)`.
+
+**What this replaces, and why the count goes DOWN.**  It replaces TWO
+leaves, both of which are now theorems over it:
+
+| former leaf | how it is now proved |
+|---|---|
+| `transitiveMinimalPrimes_of_gamma1GITPresentation` (immediately below) | this leaf at `L := K`, transported along `Algebra.TensorProduct.rid` |
+| `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation` (far below) | this leaf plus `isDomain_of_minimalPrimes_transitive_family`, `smoothCurve_A_of_gamma1GITPresentation` and `nontrivial_A_of_gamma1GITPresentation` |
+
+So this is a MERGE, not a decomposition: two open leaves become one, and
+the survivor is the statement Deligne–Rapoport actually prove.  That is
+also why it is strictly STRONGER than the leaf below rather than a
+reformulation of it — `A ⊗[K] L` genuinely has more components than `A`
+(over `K(ζ_n)` the rigidified curve splits into `φ(n)` pieces where over
+`K` it may be irreducible), and it is exactly those components that IV.5.5
+is about.  A prover of the untensored statement was already having to run
+the geometric argument over `K̄`, so nothing extra is being asked for; what
+changes is that the extra strength is now recorded instead of thrown away.
+
+TRUE and classical, and this is the form of IV.5.5 that survives base
+change to an arbitrary `K`.  The geometric components of
+`𝔐([Γ₁(N)], [Γ(n)])` are indexed by the value of the Weil pairing on the
+level-`n` structure, i.e. by the primitive `n`-th roots of unity, and
+`G = GL₂(ℤ/n)` moves that value through `det`, which is SURJECTIVE onto
+`(ℤ/n)ˣ` — so the action on the geometric components is transitive.  Over a
+general `L` the components of `Spec (A ⊗[K] L)` are the `Gal(L̄/L)`-orbits
+of the geometric ones, and `G` acts `L`-linearly, hence commutes with that
+Galois action and stays transitive on the orbits.  This is why the
+base-changed form costs a prover nothing beyond the untensored one.
+
+**FAITHFULNESS.**  The base-change axis introduces no new vacuity and no new
+strength beyond the components: `L` is an arbitrary field extension, at
+`L := K` the statement is the old leaf verbatim (via
+`Algebra.TensorProduct.rid`), and `A ⊗[K] L` is nontrivial and reduced for
+every such `L` — nontrivial because `L` is a faithfully flat `K`-module and
+`A` is nontrivial (`nontrivial_A_of_gamma1GITPresentation`), reduced because
+`Algebra.Smooth K A` base changes (`smoothCurve_A_of_gamma1GITPresentation`
+plus `Algebra.Smooth.isReduced_of_isField`).  So `minimalPrimes (A ⊗[K] L)`
+is a nonempty set of genuine components in every instance and the
+quantifiers are never vacuous.  The transitivity clause is phrased with
+`Ideal.comap` rather than a pointwise ideal action for the same reason as on
+the leaf below: it is the form the proof consumes and it needs no
+`Pointwise` scope.
+
+The hypotheses are REQUIRED for the same reasons as on the leaf below: at
+`N = 0`, or at `char K ∣ N`, the moduli problem is not representable by a
+nonempty smooth scheme and `minimalPrimes (A ⊗[K] L)` is not the component
+set of anything.
+
+**The ROUTE AUDIT is on the leaf immediately below** and applies verbatim
+here, because it is an audit of the transitivity CONTENT, which is what
+moved: both routes it closes (the mathlib invariant-theory route, which is
+circular with the only consumer; and the component-algebra route, which
+needs the cyclotomic datum as STRUCTURE) are insensitive to whether the
+statement is read over `K` or over `L`.  The audit's recommendation —
+carry the level-`n` torsor and its `det`-equivariant Weil pairing as a
+FIELD of `Gamma1Rigidification` / `Gamma1GITPresentation` — is the
+recommended route for THIS leaf too, and if anything it is more natural
+here, since a pairing valued in `μ_n` is a statement about a base change. -/
+theorem transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation {N : ℕ} (_hN : 4 ≤ N)
+    {K : Type} [Field K] (_hchar : ¬ ringChar K ∣ N)
+    (P : Gamma1GITPresentation N (Spec (CommRingCat.of K)))
+    (L : Type) [Field L] [Algebra K L] :
+    letI := P.commRing_A; letI := P.algebraA; letI := P.group_G; letI := P.action_GA;
+    ∀ p ∈ minimalPrimes (TensorProduct K P.A L),
+      ∀ q ∈ minimalPrimes (TensorProduct K P.A L),
+        ∃ σ : P.G, Ideal.comap (P.tensorAlgHomA L σ).toRingHom p = q :=
+  sorry
+
 /-- **The deck group permutes the components of the rigidified moduli
-scheme transitively** (sorry leaf, cut 2026-07-28 out of
+scheme transitively** (**PROVEN 2026-07-30** over
+`transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation` above, at
+`L := K`; a sorry leaf from 2026-07-28, when it was cut out of
 `geometricComponents_of_gamma1GITPresentation`) — Deligne–Rapoport
 IV.5.5, Katz–Mazur (8.1.1).
+
+**The statement is unchanged and no consumer moved.**  What happened is
+that the base-changed form of the same sentence had to be opened anyway,
+for `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation`, and it
+IMPLIES this one: `A ⊗[K] K ≅ A` as `K`-algebras `G`-equivariantly
+(`Algebra.TensorProduct.rid`), `Ideal.comap` along that isomorphism is an
+order isomorphism carrying minimal primes to minimal primes
+(`mem_minimalPrimes_comap_ringEquiv`), and it intertwines `σ ⊗ 1` with `σ`
+because `σ` is `K`-linear (`Gamma1GITPresentation.smul_algebraMap_A`).  So
+rather than leave two leaves stating one fact at two generalities, this one
+is derived and the frontier carries only the stronger.
+
+**The ROUTE AUDIT below is RETAINED deliberately** and is about the leaf
+above, not about this declaration: it records what a prover of the
+transitivity content must not waste a cycle on, and that obligation moved
+upward without changing.
 
 TRUE and classical, and this is the form of IV.5.5 that survives base
 change to an arbitrary `K`.  The geometric components of
@@ -4896,13 +5161,46 @@ separating `(x)` from `(y)`.
 The hypotheses are REQUIRED: at `N = 0`, or at `char K ∣ N`, the moduli
 problem is not representable by a nonempty smooth scheme and
 `minimalPrimes A` is not the component set of anything. -/
-theorem transitiveMinimalPrimes_of_gamma1GITPresentation {N : ℕ} (_hN : 4 ≤ N)
-    {K : Type} [Field K] (_hchar : ¬ ringChar K ∣ N)
+theorem transitiveMinimalPrimes_of_gamma1GITPresentation {N : ℕ} (hN : 4 ≤ N)
+    {K : Type} [Field K] (hchar : ¬ ringChar K ∣ N)
     (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
     letI := P.commRing_A; letI := P.group_G; letI := P.action_GA;
     ∀ p ∈ minimalPrimes P.A, ∀ q ∈ minimalPrimes P.A,
-      ∃ σ : P.G, Ideal.comap (MulSemiringAction.toRingHom P.G P.A σ) p = q :=
-  sorry
+      ∃ σ : P.G, Ideal.comap (MulSemiringAction.toRingHom P.G P.A σ) p = q := by
+  letI := P.commRing_A
+  letI := P.algebraA
+  letI := P.group_G
+  letI := P.action_GA
+  intro p hp q hq
+  set e : TensorProduct K P.A K ≃+* P.A :=
+    (Algebra.TensorProduct.rid K K P.A).toRingEquiv with he
+  obtain ⟨σ, hσ⟩ := transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation hN hchar P K
+    (Ideal.comap (e : TensorProduct K P.A K →+* P.A) p)
+    (mem_minimalPrimes_comap_ringEquiv e hp)
+    (Ideal.comap (e : TensorProduct K P.A K →+* P.A) q)
+    (mem_minimalPrimes_comap_ringEquiv e hq)
+  -- `e` intertwines `σ ⊗ 1` with `σ`, because `σ` is `K`-linear
+  have hpt : ∀ z : TensorProduct K P.A K,
+      e (P.tensorAlgHomA K σ z) = MulSemiringAction.toRingHom P.G P.A σ (e z) := by
+    intro z
+    induction z using TensorProduct.induction_on with
+    | zero => simp
+    | tmul a c =>
+        rw [P.tensorAlgHomA_tmul K σ]
+        show (Algebra.TensorProduct.rid K K P.A) ((σ • a) ⊗ₜ[K] c) =
+          σ • ((Algebra.TensorProduct.rid K K P.A) (a ⊗ₜ[K] c))
+        rw [Algebra.TensorProduct.rid_tmul, Algebra.TensorProduct.rid_tmul,
+          Algebra.smul_def, Algebra.smul_def, smul_mul',
+          show σ • (algebraMap K P.A) c = (algebraMap K P.A) c from P.smul_algebraMap_A σ c]
+    | add x y hx hy => simp only [map_add, hx, hy]
+  have hint : (e : TensorProduct K P.A K →+* P.A).comp (P.tensorAlgHomA K σ).toRingHom =
+      (MulSemiringAction.toRingHom P.G P.A σ).comp (e : TensorProduct K P.A K →+* P.A) :=
+    RingHom.ext hpt
+  refine ⟨σ, comap_injective_ringEquiv e ?_⟩
+  show Ideal.comap (e : TensorProduct K P.A K →+* P.A)
+      (Ideal.comap (MulSemiringAction.toRingHom P.G P.A σ) p) =
+    Ideal.comap (e : TensorProduct K P.A K →+* P.A) q
+  rw [Ideal.comap_comap, ← hint, ← Ideal.comap_comap, hσ]
 
 /-- **The rigidified moduli scheme is nonempty and reduced, and its deck
 group permutes its components transitively** (PROVEN 2026-07-28 over the
@@ -5411,11 +5709,59 @@ theorem isDomain_fractionRing_tensorProduct_of_isDomain_tensorProduct {K B : Typ
       exact (hunit s₂).mul_right_eq_zero.1 e₂
   exact NoZeroDivisors.to_isDomain _
 
+set_option maxHeartbeats 1000000 in
 /-- **`Spec (B ⊗[K] L)` is IRREDUCIBLE for every field extension `L/K`**
-(sorry leaf, cut 2026-07-30 out of
+(**PROVEN 2026-07-30** over
+`transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation`,
+`smoothCurve_A_of_gamma1GITPresentation` and
+`nontrivial_A_of_gamma1GITPresentation`; opened as a sorry leaf earlier the
+same day, cut out of
 `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation`, which is now
 a THEOREM over it) — Deligne–Rapoport IV.5.5, and the whole of what that
 leaf's docstring identified as its genuinely modular residue.
+
+## HOW IT IS PROVED (2026-07-30), and why the frontier went DOWN by one
+
+**The statement is unchanged.**  What changed is that the modular content was
+recognised as the base change of a leaf that was ALREADY OPEN one screen up —
+`transitiveMinimalPrimes_of_gamma1GITPresentation`, "the deck group permutes
+the components of the rigidified moduli scheme transitively".  Both are
+Deligne–Rapoport IV.5.5, one read on `B = A^G` after base change and one read
+on `A` over `K`; the base-changed form of the transitivity statement implies
+BOTH.  So the two leaves were merged into
+`transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation` and this
+declaration and that one are now theorems over it.
+
+The route is exactly the one the untensored pair already used, run one level
+up.  `Spec (A ⊗ L) → Spec (B ⊗ L)` is not needed at all; what is needed is:
+
+1. `B ⊗ L → A ⊗ L` is INJECTIVE — `P.injective_algebraMap` plus flatness of
+   `L` over the field `K` (`Module.Flat.rTensor_preserves_injective_linearMap`,
+   the same idiom as `isDomain_fractionRing_tensorProduct_of_isDomain_tensorProduct`
+   below).
+2. `A ⊗ L` is NONTRIVIAL and REDUCED — nontrivial from
+   `nontrivial_A_of_gamma1GITPresentation` and faithful flatness of `L`,
+   reduced from `smoothCurve_A_of_gamma1GITPresentation` through
+   `Algebra.Smooth.baseChange` and `Algebra.Smooth.isReduced_of_isField`.
+   This is the same two-line step as `isReduced_A_of_gamma1GITPresentation`,
+   after base change.
+3. every `σ ∈ G` acts on `A ⊗ L` as `σ ⊗ 1` and FIXES the image of `B ⊗ L`
+   pointwise — `Gamma1GITPresentation.tensorAlgHomA` and `smul_algebraMap`.
+   Note step 3 is where `σ` has to be known `K`-LINEAR, which is
+   `Gamma1GITPresentation.smul_algebraMap_A`, the ring-level reading of
+   `strM_invariant`.
+4. `isDomain_of_minimalPrimes_transitive_family` — the FAMILY form of
+   `isDomain_of_minimalPrimes_transitive`, generalised for this consumer
+   because `{σ ⊗ 1}` is not naturally a `MulSemiringAction` and the proof
+   never needed one.
+
+That gives `IsDomain (B ⊗[K] L)`, which is STRICTLY STRONGER than the
+conclusion stated here; only the weaker form is stated, because that is what
+`isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation` below consumes
+and restating it would move a consumer for no gain.  (The strengthening is
+free and not an accident: reducedness of `B ⊗ L` is separately free from
+smoothness of `B`, so the consumer recombines the two into the same domain
+statement anyway.)
 
 `(nilradical R).IsPrime` is exactly `IrreducibleSpace (PrimeSpectrum R)` —
 `PrimeSpectrum.irreducibleSpace_iff_isPrime_nilradical`
@@ -5465,14 +5811,66 @@ asymmetry with the `Γ₀` side is preserved here rather than quietly dropped.
 `hN` and `hchar` are REQUIRED: at `N = 0`, or at `char K ∣ N`, the moduli
 problem is not representable by a nonempty smooth curve and `_hB` itself
 fails. -/
-theorem isPrime_nilradical_tensorProduct_of_gamma1GITPresentation {N : ℕ} (_hN : 4 ≤ N)
-    {K : Type} [Field K] (_hchar : ¬ ringChar K ∣ N)
+theorem isPrime_nilradical_tensorProduct_of_gamma1GITPresentation {N : ℕ} (hN : 4 ≤ N)
+    {K : Type} [Field K] (hchar : ¬ ringChar K ∣ N)
     (P : Gamma1GITPresentation N (Spec (CommRingCat.of K)))
-    (_hB : letI := P.commRing_B; IsDomain P.B)
+    (hB : letI := P.commRing_B; IsDomain P.B)
     (L : Type) [Field L] [Algebra K L] :
     letI := P.commRing_B; letI := P.algebraB;
-    (nilradical (TensorProduct K P.B L)).IsPrime :=
-  sorry
+    (nilradical (TensorProduct K P.B L)).IsPrime := by
+  letI := P.commRing_A
+  letI := P.commRing_B
+  letI := P.algebra_BA
+  letI := P.algebraA
+  letI := P.algebraB
+  letI := P.group_G
+  letI := P.finite_G
+  letI := P.action_GA
+  letI := P.smulComm_GBA
+  haveI := P.isScalarTower
+  haveI := hB
+  -- the rigidified ring, base changed: nontrivial and reduced
+  haveI : Nontrivial P.A := nontrivial_A_of_gamma1GITPresentation hN hchar P
+  haveI : Algebra.Smooth K P.A := (smoothCurve_A_of_gamma1GITPresentation hN hchar P).1
+  haveI : IsReduced (TensorProduct K P.A L) := by
+    haveI : IsReduced (TensorProduct K L P.A) :=
+      Algebra.Smooth.isReduced_of_isField (R := L) (Field.toIsField L)
+    exact isReduced_of_injective (Algebra.TensorProduct.comm K P.A L).toRingHom
+      (Algebra.TensorProduct.comm K P.A L).injective
+  haveI : Nontrivial (TensorProduct K P.A L) :=
+    Algebra.TensorProduct.nontrivial_of_algebraMap_injective_of_flat_left (R := K) P.A L
+      (FaithfulSMul.algebraMap_injective K L)
+  -- `B ⊗ L → A ⊗ L`, injective because `L` is flat over the field `K`
+  set φ : TensorProduct K P.B L →ₐ[K] TensorProduct K P.A L :=
+    Algebra.TensorProduct.map (IsScalarTower.toAlgHom K P.B P.A) (AlgHom.id K L) with hφdef
+  letI : Algebra (TensorProduct K P.B L) (TensorProduct K P.A L) := φ.toRingHom.toAlgebra
+  have hmap : (algebraMap (TensorProduct K P.B L) (TensorProduct K P.A L)) = φ.toRingHom := rfl
+  have hφinj : Function.Injective φ :=
+    Module.Flat.rTensor_preserves_injective_linearMap _ P.injective_algebraMap
+  -- each `σ ⊗ 1` fixes the image of `B ⊗ L` pointwise
+  have hfix : ∀ (σ : P.G) (b : TensorProduct K P.B L),
+      (P.tensorAlgHomA L σ).toRingHom
+        (algebraMap (TensorProduct K P.B L) (TensorProduct K P.A L) b) =
+      algebraMap (TensorProduct K P.B L) (TensorProduct K P.A L) b := by
+    intro σ b
+    rw [hmap]
+    induction b using TensorProduct.induction_on with
+    | zero => simp
+    | tmul x l =>
+        show P.tensorAlgHomA L σ (φ (x ⊗ₜ[K] l)) = φ (x ⊗ₜ[K] l)
+        rw [hφdef, Algebra.TensorProduct.map_tmul, P.tensorAlgHomA_tmul L σ]
+        congr 1
+        show σ • (algebraMap P.B P.A x) = algebraMap P.B P.A x
+        exact smul_algebraMap σ x
+    | add a b ha hb => simp only [map_add, ha, hb]
+  haveI : IsDomain (TensorProduct K P.B L) := by
+    refine isDomain_of_minimalPrimes_transitive_family
+      (fun σ : P.G => (P.tensorAlgHomA L σ).toRingHom) hfix ?_ ?_
+    · rw [hmap]; exact hφinj
+    · exact transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation hN hchar P L
+  haveI : IsReduced (TensorProduct K P.B L) := inferInstance
+  rw [nilradical_eq_zero]
+  simpa using (Ideal.isPrime_bot : (⊥ : Ideal (TensorProduct K P.B L)).IsPrime)
 
 /-- **`Frac B` is a REGULAR field extension of `K`** (**PROVEN 2026-07-30**
 over `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation` and
@@ -5828,8 +6226,9 @@ LIVE leaves are:
   `exists_gamma1DeckAction` (`exists_gamma1Rigidification` and
   `exists_gamma1GITPresentation` are PROVEN over them);
 * the domain property — `exists_gamma1Datum_fieldExtension`,
-  `transitiveMinimalPrimes_of_gamma1GITPresentation`
-  (`geometricComponents_of_gamma1GITPresentation` and
+  `transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation`
+  (`transitiveMinimalPrimes_of_gamma1GITPresentation`,
+  `geometricComponents_of_gamma1GITPresentation` and
   `isDomain_of_gamma1GITPresentation` are PROVEN over them, together with
   the smoothness row below: `isReduced_A_of_gamma1GITPresentation` was
   itself PROVEN on 2026-07-28 over `smoothCurve_A_of_gamma1GITPresentation`,
@@ -5842,9 +6241,9 @@ LIVE leaves are:
   — `smooth_coarseRing_of_gamma1GITPresentation`,
   `locallyStandardSmooth_of_gamma1GITPresentation` and
   `smoothOfRelativeDimension_of_gamma1GITPresentation` are PROVEN over them;
-* geometric connectedness —
-  `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation` (cut
-  2026-07-30), over which
+* geometric connectedness — the SAME leaf as the domain property since
+  2026-07-30, `transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation`,
+  over which `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation`,
   `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation` and in turn
   `connectedSpace_tensorProduct_of_gamma1GITPresentation` are PROVEN.
 
