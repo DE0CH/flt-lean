@@ -5028,7 +5028,55 @@ arithmetic content of `RamificationFiltration.gp_herbrand`. Serre, *Corps
 Locaux* IV §3, Prop. 14.
 
 (SORRY LEAF, promoted 2026-07-29 from the anonymous `have hherb` inside
-`GaloisRep.exists_isSwanExponentAt`.) -/
+`GaloisRep.exists_isSwanExponentAt`.)
+
+**FAITHFULNESS AUDIT, 2026-07-30 — TRUE, and it is genuine Herbrand; do not
+look for a counterexample.** Unfolding the two sides at `m ≥ 1` (where
+`phi m > 0`, `phi_strictMono` and `phi_zero`) the claim is
+
+  `D.gp m ≤ (P_v ⊓ ⨅_{D'} D'.gp (ψ_{D'} (φ_D m))) ⊔ D.lvl`,
+
+and `upperRamificationFiltration` really is the classical `G^u`: `psiNat` is
+`⌈ψ⌉`, which is the correct index under the left-continuous convention
+`G_t = G_{⌈t⌉}`, so `D'.gp (ψ_{D'} u)` is `G^u(L'/Kᵥ)` pulled back to `Γ Kᵥ`
+and the `⨅` over levels is the inverse limit of Serre IV §3 "Passage à la
+limite". At `m = 0` it degenerates to `D.gp 0 ≤ I_v ⊔ D.lvl`, i.e. that the
+inertia SURJECTS onto `G₀(L/Kᵥ)`, which is also true and is not free either.
+No rescaling or admissibility slack is available here — both sides are
+constructed, not axiomatic.
+
+**WHY IT IS THE DEEP ONE, stated as the decomposition a prover will need.**
+The classical proof of `G_m(L/Kᵥ) = image of G^{φ_{L/Kᵥ}(m)}` is four steps,
+and only the first is available in this file today:
+
+1. *Cofinality of the levels.* Given `D` and any `D'`, `D.lvl ⊓ D'.lvl` is
+   open normal, so `exists_lowerRamificationData_lvl_eq` produces a common
+   refinement `D''` with `D''.lvl ≤ D.lvl ⊓ D'.lvl`. AVAILABLE.
+2. *Herbrand for one tower*: for `L ⊆ L''`, `G_m(L/Kᵥ)` is the image in
+   `Gal(L/Kᵥ)` of `G_{ψ_{L''/L}(m)}(L''/Kᵥ)`. Serre IV §3 Prop. 14. NOT
+   available, and not even STATABLE: it needs the ramification data of
+   `L''/L`, while `LowerRamificationData` is always relative to `Kᵥ` — the
+   structure has no relative `φ`, and building one is the real cost of this
+   leaf.
+3. *Transitivity of `φ`*, `φ_{L''/Kᵥ} = φ_{L/Kᵥ} ∘ φ_{L''/L}`, which is what
+   turns step 2's index `ψ_{L''/L}(m)` into `ψ_{D''}(φ_D m)`. Same missing
+   relative theory.
+4. *A compactness step.* Steps 1–3 give, for each single `D'`, a `λ ∈ D.lvl`
+   with `σλ ∈ D'.gp (ψ_{D'} (φ_D m))`; the conclusion needs ONE `λ` working
+   for every `D'` at once. That is the intersection of a downward-directed
+   family of nonempty CLOSED subsets of the compact `D.lvl`, so it needs the
+   `D'.gp` to be closed — see the note on
+   `exists_breaks_of_hasFiniteWildMonodromyAt` below, where the same
+   closedness is the missing ingredient for a different reason. They are
+   closed: `ContinuousSMulDiscrete` makes `{σ | σ • x = y}` open, so each
+   condition `unif ^ (i+1) ∣ σ • x − x` cuts out a CLOPEN set and `D'.gp i`
+   is an intersection of clopens.
+
+So a prover should expect to build a relative `LowerRamificationData` (or a
+`φ` for a tower of two levels) first. Step 2 is where the cost is; steps 1 and
+4 are cheap once the closedness lemma of step 4 is written, and it is worth
+writing on its own because the break-decomposition leaf below needs the very
+same fact. -/
 theorem LowerRamificationData.gp_le_upperRamificationFiltration_sup_lvl
     {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)} (D : LowerRamificationData v)
     (m : ℕ) :
@@ -5506,7 +5554,9 @@ naming where:
 `exists_nat_forall_sum_breaks_eq` (`hsum`, PROVEN)
       → `sum_eq_of_card_filter_eq_of_dense` (pure combinatorics, PROVEN)
       → `pos_of_card_filter_eq` (PROVEN: the breaks are POSITIVE)
-          → `LowerRamificationData.wildInertiaGroup_le_gp_one` (LEAF)
+          → `LowerRamificationData.wildInertiaGroup_le_gp_one` (PROVEN
+            2026-07-30, over `dvd_smul_unif_sub_of_mem_wildInertiaGroup` and
+            `mem_gp_one_of_dvd_smul_unif_sub`)
       → `fixedSubmodule_gp_phi_eq` (PROVEN, and its proof is `gp_herbrand`
         plus Dedekind's modular law)
       → `exists_lowerRamificationData_phi_mem_Ioc` (LEAF: the arithmetic
@@ -5936,11 +5986,59 @@ derivation above) and `0` (`hfin`) is settled, but a break list exists only
 if `c` is LEFT-continuous at each jump. That is the sharp place to look for
 a refuting `F`: an admissible filtration whose `c` is `1` on `(0, 1)` and
 `0` on `[1, ∞)` admits no `μ`, since `μ 0` would have to be both `≥ u` for
-every `u < 1` and `< 1`. Whether `gp_of_forall_lt` already excludes it
-(with `hfin` converting the intersection of the `G^w` into a union of fixed
-submodules) is the one question a prover — or a refuter — should settle
-first. It is cheaper than the rest of the leaf and it decides which of the
-two outcomes to aim for. -/
+every `u < 1` and `< 1`.
+
+**THAT DECIDING QUESTION, SETTLED 2026-07-30 — the answer is NO, and the
+missing ingredient is CLOSEDNESS of the `F.gp u`.** The question posed here
+was whether `gp_of_forall_lt`, with `hfin` converting the intersection of the
+`G^w` into a union of fixed submodules, already excludes such an `F`. Half of
+that conversion works and half does not, and it is worth being exact because
+the gap is a single group-theoretic identity.
+
+*What `hfin` DOES give.* Let `Q := N ⊓ P_v` be the subgroup it supplies; `Q`
+acts trivially on `M`, and `Q` is open in the compact `P_v`, so `[P_v : Q]` is
+finite and there are only FINITELY many subgroups of `P_v` containing `Q`. For
+`u > 0`, `gp_le_wild` puts `F.gp u ≤ P_v`, and since `Q` acts trivially
+`V^{F.gp u} = V^{F.gp u ⊔ Q}`. So `u ↦ F.gp u ⊔ Q` is an antitone map into a
+finite poset: for EVERY `u > 0` there is `0 < w₀ < u` with `F.gp w ⊔ Q`
+constant on `[w₀, u)`, hence **`c` is constant on a left-neighbourhood of every
+`u`**. In particular `c` has finitely many jumps for a second reason, and the
+only thing left is the value AT the jump.
+
+*What is left, and it is exactly one identity.* `gp_of_forall_lt` plus
+`gp_le_gp` give `F.gp u = ⋂_{0 < w < u} F.gp w`. Left continuity of `c` at `u`
+is therefore
+
+  `(⋂_{0 < w < u} F.gp w) ⊔ Q = ⋂_{0 < w < u} (F.gp w ⊔ Q)`,
+
+i.e. that `⊔ Q` commutes with a decreasing intersection. **This is NOT formal,
+and the axioms as they stand do not supply it.** Abstract counterexample, to
+show no rearrangement of the present axioms can work: in `ℤ_p` take
+`Q = pℤ_p` (open, index `p`) and `G_n = ℤ · a_n` with `a_n` units and
+`a_{n+1} = k_n a_n` for integers `k_n ≥ 2` prime to `p`. Every `G_n` is dense,
+so `G_n ⊔ Q = ℤ_p` for all `n`, while `⋂_n G_n = 0` and `0 ⊔ Q = Q ≠ ℤ_p`. A
+decreasing family of NON-CLOSED subgroups with constant `Q`-saturation and
+collapsing intersection is precisely the shape a refuting `F` would need.
+
+*Why this is a repair rather than a refutation.* With the `F.gp u` CLOSED the
+identity holds: pass to the normal core `Q₀ ≤ Q` (open, normal in the open
+subgroup `F.gp w₀ ⊔ Q`), note `F.gp w · Q₀` is then a genuine product subgroup,
+closed, and that a decreasing family of nonempty compact sets
+`(x Q₀) ∩ F.gp w` has nonempty intersection — which gives
+`(⋂ F.gp w) · Q₀ = ⋂ (F.gp w · Q₀)`, and saturating by `Q` finishes. And the
+genuine filtration IS closed-valued: `upperRamificationFiltration` is built
+from the `D.gp i`, each of which is an intersection of CLOPEN sets, because
+`ContinuousSMulDiscrete` makes `{σ | σ • x = y}` open and the condition
+`unif ^ (i+1) ∣ σ • x − x` is a union of such sets with open complement.
+
+So the recommended move is NOT to hunt a counterexample but to add a
+`gp_isClosed : ∀ u, IsClosed (F.gp u : Set (Γ Kᵥ))` field to
+`RamificationFiltration` and discharge it in `nonempty_ramificationFiltration`
+from the clopen-ness of `D.gp i`. That is a signature change to the structure,
+so it must land with its one construction site in the same commit. It also
+supplies step 4 of `gp_le_upperRamificationFiltration_sup_lvl` above, which
+needs the identical compactness fact — which is the reason to believe the
+axiom is the right one rather than a patch. -/
 theorem exists_breaks_of_hasFiniteWildMonodromyAt (ρ : GaloisRep K A M)
     (v : HeightOneSpectrum (𝓞 K)) (hfin : ρ.HasFiniteWildMonodromyAt v)
     (F : RamificationFiltration v) :
