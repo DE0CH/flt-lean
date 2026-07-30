@@ -98,7 +98,24 @@ written and the frontier moves.
 - ~~`finiteDimensional_h1_adZeroTwistRestricted`~~ — PROVEN (verified 2026-07-30;
   this one had already caused a phantom dispatch in the 2026-07-28 release
   window, per CLAUDE.md's list of leaves agents were sent at after they closed)
-- `exists_poitouTatePairing_sha2_sha1Twist` — **OPEN.** (cut out 2026-07-29; THE
+- `exists_poitouTateExactness_sha2_sha1Twist` — **OPEN.** (cut out 2026-07-30 as
+  the nine-term-sequence form of the Poitou–Tate input, and it is now the ONLY
+  open leaf of that subsection: the arrow `γ : H¹(G_{ℚ,S}, ad⁰(1))^∨ →
+  H²(G_{ℚ,S}, ad⁰)` of NSW VIII.6.7 together with the two exactness statements
+  flanking it, `range γ = Ш²_S(ad⁰)` and `ker γ = (Ш¹_S(ad⁰(1)))ᵃⁿⁿ`.
+  `exists_poitouTatePairing_sha2_sha1Twist` below is PROVEN over it, so it now
+  carries all FIVE declarations of the chain.  Frontier `1 → 1`.  The cut is
+  EXACT — the two statements are equivalent given the PROVEN
+  `finiteDimensional_h1_adZeroTwistRestricted`, so this is a decomposition and not
+  a strengthening — and it refutes the standing verdict that this axis "needs the
+  local pairing to even type-check": `range θ = (Ш¹)ᵃⁿⁿ` intrinsically, because
+  local duality is an isomorphism and `range (f^∨) = (ker f)ᵃⁿⁿ`.  It does NOT
+  reduce the infrastructure cost: the cup product and the local invariant map are
+  still the gate, and the build order is unchanged.  See its own docstring for the
+  faithfulness audit and for what the cut does and does not buy)
+- ~~`exists_poitouTatePairing_sha2_sha1Twist`~~ — **PROVEN 2026-07-30** over the
+  leaf above plus the nucleus `exists_nondegenerate_of_ker_eq_dualAnnihilator`.
+  (Cut out 2026-07-29; THE
   Poitou–Tate input — a `k`-bilinear pairing `Ш²_S(ad⁰) × Ш¹_S(ad⁰(1)) → k`,
   nondegenerate on both sides.  It REPLACES the two leaves
   `finiteDimensional_sha2` and `finrank_sha2_le_finrank_sha1Twist`, which are
@@ -117,13 +134,19 @@ written and the frontier moves.
   **2026-07-30: this leaf also now discharges
   `exists_injective_sha2_dual_sha1Twist_of_selfDual`**, which was a separate
   `sorry` for one obligation the STRENGTH AUDIT had already shown it implies, so
-  proving it closes FOUR declarations rather than two)
+  proving it closes FOUR declarations rather than two — FIVE counting this one,
+  which is now the fifth because the leaf above discharges it)
 - `card_sha1Twist_le_card_dualNumberPoints` — **OPEN.** (re-cut 2026-07-28 in `ℕ`
   and over `D.IsUniversal`, then re-cut again the same day as a COUNT of
   `k[ε]`-points; `finrank_sha1Twist_le_cotangentFinrank` and
   `rank_sha1Twist_le_cotangentFinrank` are now both PROVEN over it. Gated on the
-  SAME single object as the pairing leaf above — the local Tate pairing — so the
-  two are one cost and belong to one owner. **Its COMPOSITE FAITHFULNESS RE-AUDIT
+  SAME single object as `exists_poitouTateExactness_sha2_sha1Twist` above — the
+  local Tate pairing — so the
+  two are one cost and belong to one owner. **The 2026-07-30 nine-term cut of that
+  sibling did NOT narrow this leaf**: its gate is Greenberg–Wiles, which needs
+  `H¹_{L^⊥}` and therefore the local pairing itself, not merely a statement that
+  can name its annihilator — see the note added to its own docstring that day for
+  why the `Patching.lean` dodge does not transplant. **Its COMPOSITE FAITHFULNESS RE-AUDIT
   is VOID as of the third re-cut and has been re-run 2026-07-30; verdict still
   FAITHFUL — see the fresh audit on the declaration** for why the `Nat.card`
   junk value cannot make it either vacuous or false)
@@ -19632,10 +19655,205 @@ theorem injective_of_forall_apply_eq_zero {K : Type*} [Field K] {A B : Type*}
   have h0 : x - x' = 0 := hT _ fun y => by simp [map_sub, hxx]
   exact sub_eq_zero.mp h0
 
+/-- **DUALITY FROM EXACTNESS: a map out of a dual space whose KERNEL is an
+annihilator and whose RANGE is a given submodule induces a pairing between that
+range and the annihilated submodule, nondegenerate on BOTH sides** (PROVEN,
+added 2026-07-30 as the nucleus of the nine-term-sequence cut of
+`exists_poitouTatePairing_sha2_sha1Twist` below; elementary, and it is the whole
+reason that cut is available).
+
+Read `γ : (Dual K X) →ₗ H` as the arrow `H¹(G_S, M*)^∨ → H²(G_S, M)` of the
+Poitou–Tate nine-term sequence, `W ≤ X` as `Ш¹_S(M*)` and `Z ≤ H` as `Ш²_S(M)`.
+Then the two hypotheses are exactness at those two spots (see the leaf below for
+why `range θ = ann Ш¹` is the intrinsic form of exactness at `H¹(G_S, M*)^∨`),
+and the conclusion is the perfect pairing.
+
+**NO FINITENESS ANYWHERE, which is what makes the cut exact rather than
+lossy.**  The proof is a chain of three isomorphisms, all of them available for
+arbitrary vector spaces over a field:
+`Z ≅ range γ ≅ (Dual K X) ⧸ ker γ = (Dual K X) ⧸ ann W ≅ Dual K W`, the last
+step being `Subspace.quotAnnihilatorEquiv` (which rests on
+`Submodule.dualRestrict_surjective`, i.e. on extending a functional from a
+subspace — a splitting, not a dimension count).  Since the composite is a
+`LinearEquiv`, LEFT nondegeneracy is injectivity and RIGHT nondegeneracy is
+surjectivity, so both clauses of the conclusion come out of the same object
+rather than needing separate arguments.  In particular the consumer below needs
+no finiteness hypothesis on `Ш²_S(ad⁰)` and none on `Ш¹_S(ad⁰(1))` — the latter
+is still consumed, but by `finiteDimensional_sha2` further below, exactly as
+before this cut. -/
+theorem exists_nondegenerate_of_ker_eq_dualAnnihilator {K : Type*} [Field K]
+    {X : Type*} [AddCommGroup X] [Module K X]
+    {H : Type*} [AddCommGroup H] [Module K H]
+    (W : Submodule K X) (Z : Submodule K H)
+    (γ : Module.Dual K X →ₗ[K] H)
+    (hker : LinearMap.ker γ = W.dualAnnihilator)
+    (hrange : LinearMap.range γ = Z) :
+    ∃ B : ↥Z →ₗ[K] ↥W →ₗ[K] K,
+      (∀ x, (∀ y, B x y = 0) → x = 0) ∧ (∀ y, (∀ x, B x y = 0) → y = 0) := by
+  let e : ↥Z ≃ₗ[K] Module.Dual K ↥W :=
+    (LinearEquiv.ofEq _ _ hrange.symm).trans <|
+      (γ.quotKerEquivRange.symm.trans
+        ((Submodule.quotEquivOfEq _ _ hker).trans (Subspace.quotAnnihilatorEquiv W)))
+  refine ⟨e.toLinearMap, ?_, ?_⟩
+  · intro x hx
+    have : e x = 0 := LinearMap.ext fun y => hx y
+    simpa using e.map_eq_zero_iff.mp this
+  · intro y hy
+    refine (Module.forall_dual_apply_eq_zero_iff K y).mp fun φ => ?_
+    obtain ⟨x, rfl⟩ := e.surjective φ
+    exact hy x
+
+/-- **THE Poitou–Tate input, stated in the nine-term sequence's OWN vocabulary:
+the arrow `H¹(G_{ℚ,S}, ad⁰(1))^∨ → H²(G_{ℚ,S}, ad⁰)`, with its kernel and its
+range** (sorry leaf, cut out 2026-07-30).  It is the sole arithmetic input of
+`exists_poitouTatePairing_sha2_sha1Twist` immediately below, which is PROVEN over
+it, and hence of the FOUR declarations that leaf discharges
+(`finiteDimensional_sha2`, `finrank_sha2_le_finrank_sha1Twist`,
+`exists_injective_sha2_dual_sha1Twist_of_selfDual`, and
+`exists_injective_sha2_dual_sha1Twist` through it).  Frontier `1 → 1`.
+
+**WHAT IT SAYS AND WHERE IT COMES FROM.**  Neukirch–Schmidt–Wingberg VIII.6.7
+gives, for a finite `G_S`-module `M` with dual `M* = Hom(M, μ)`, the nine-term
+exact sequence
+
+  `… → P¹_S(M) --θ--> H¹(G_S, M*)^∨ --γ--> H²(G_S, M) --loc--> P²_S(M) → …`
+
+where `Pⁱ_S(N) = ⊕_{v ∈ S} Hⁱ(ℚ_v, N)`.  This leaf asks for that `γ`, and for
+exactly the two exactness statements flanking it, specialised to `M = ad⁰ ρbar`
+and `M* ≅ ad⁰(1)`:
+
+* `range γ = Ш²_S(ad⁰)` is exactness at `H²(G_S, M)`, since `Ш²` is by
+  definition `ker loc`;
+* `ker γ = (Ш¹_S(ad⁰(1)))ᵃⁿⁿ` is exactness at `H¹(G_S, M*)^∨` — see the next
+  paragraph, which is the whole point of this cut.
+
+**WHY THIS CUT IS AVAILABLE, AND WHAT IT REFUTES.**  The IRREDUCIBILITY VERDICT
+on `exists_injective_sha2_dual_sha1Twist_of_selfDual` below lists this axis as
+*NOT searched*, with the reason "cutting there means stating the exact sequence,
+which needs the local pairing to even type-check.  So this axis is gated on the
+same object, not free of it."  **That reason is wrong, and this leaf is the
+counterexample.**  Exactness at `H¹(G_S, M*)^∨` says `ker γ = range θ`, and `θ`
+is the composite of the LOCAL DUALITY isomorphism `P¹_S(M) ≅ P¹_S(M*)^∨` with
+the dual of the localisation `loc¹ : H¹(G_S, M*) → P¹_S(M*)`.  Since the first
+factor is an isomorphism,
+
+  `range θ = range ((loc¹)^∨) = (ker loc¹)ᵃⁿⁿ = (Ш¹_S(M*))ᵃⁿⁿ`
+
+by `LinearMap.range_dualMap_eq_dualAnnihilator_ker`, which holds over a field
+with NO finiteness hypothesis.  So the local pairing, the local invariant map and
+the product objects `Pⁱ_S` are all needed to PROVE this leaf and none of them is
+needed to STATE it: the intrinsic description of `range θ` is an annihilator in
+the already-existing `Module.Dual k (continuousCohomology 1 …)`.  Neither
+`P¹_S`, nor `⊕_{v ∈ S}`, nor any pairing appears in the statement, which is why
+the earlier verdict's "would produce free-floating definitions" objection (see
+the SUPERSEDED note on the leaf below) also does not apply.
+
+**FAITHFULNESS AUDIT, 2026-07-30.  VERDICT: FAITHFUL.**
+
+* *Both exactness clauses are literally NSW VIII.6.7* for `S ⊇ {∞} ∪ {v : v ∣ #M}`.
+  `#ad⁰ = (#k)³` is a power of `ℓ`, and `ℓ ∈ hardlyRamifiedPlaces ℓ`, so the
+  hypothesis on `S` is met; `2 ∈ S` is extra and harmless (enlarging `S` is
+  allowed, and both `Ш` groups here are defined over the same `S`).
+* *The archimedean place.*  NSW's `Pⁱ_S` includes `v = ∞` while
+  `hardlyRamifiedPlaces` admits only height-one primes, so this leaf's `Ш` groups
+  omit it.  Harmless in BOTH clauses and for the SAME reason in both:
+  `Gal(ℂ/ℝ)` has order `2`, `ad⁰` and `ad⁰(1)` are `ℓ`-groups with `ℓ` odd, so
+  `Hⁱ(ℝ, −) = 0` for `i ≥ 1`; the `∞` component of `loc` into `P²` is zero (so
+  `ker loc` is unchanged, giving clause 1) and the `∞` summand of `P¹` is zero
+  (so `range θ` is unchanged, giving clause 2).  This is the same audit
+  `hardlyRamifiedPlaces` above and the leaf below already carry, now checked
+  against the two clauses individually rather than against a pairing.
+* *`γ = 0` is not a cheat.*  It satisfies the statement exactly when
+  `Ш²_S(ad⁰) = ⊥` and `(Ш¹_S(ad⁰(1)))ᵃⁿⁿ = ⊤`, i.e. when both `Ш` groups vanish
+  — which is the honest content of Poitou–Tate in that case, not a junk witness.
+  There is no other degenerate solution: the two clauses pin `range γ` and
+  `ker γ` outright.
+* *No junk-value hazard of the `Nat.card` kind* (contrast
+  `card_sha1Twist_le_card_dualNumberPoints` below): every object here is a
+  submodule or a kernel/range, and the statement asserts equalities of
+  submodules, so there is no numeric value that could silently be `0`.
+
+**THE CUT IS EXACT — this leaf is EQUIVALENT to the pairing leaf below, not
+stronger and not weaker.**  Recorded because the STRENGTH AUDIT on that leaf
+warns, correctly, that a sorry leaf logically equivalent to an already-PROVEN
+declaration is a circular re-cut rather than a decomposition; this is the other
+case, an equivalence with a still-open leaf, and the audit is what shows it.
+
+* *This leaf `⟹` the pairing* is the proof below, via
+  `exists_nondegenerate_of_ker_eq_dualAnnihilator` above; it uses no finiteness.
+* *The pairing `⟹` this leaf*, using `finiteDimensional_h1_adZeroTwistRestricted`
+  above (PROVEN).  Left nondegeneracy embeds `Ш²` in the finite-dimensional
+  `(Ш¹)^∨`, so `Ш²` is finite-dimensional with `dim Ш² ≤ dim Ш¹`; right
+  nondegeneracy embeds `Ш¹` in `(Ш²)^∨`, so `dim Ш¹ ≤ dim Ш²`.  Hence
+  `Ш² ≅ (Ш¹)^∨`, and `γ := (that iso)⁻¹ ∘ dualRestrict` has
+  `range γ = Ш²` (`Submodule.dualRestrict_surjective`) and
+  `ker γ = ker dualRestrict = (Ш¹)ᵃⁿⁿ`.
+* In particular this leaf still forces `dim Ш² = dim Ш¹_S(ad⁰(1))`, so it is
+  strictly stronger than `exists_injective_sha2_dual_sha1Twist` below exactly as
+  the pairing leaf was, and the circularity the STRENGTH AUDIT guards against is
+  avoided for the same reason.
+
+The converse direction is deliberately NOT written as Lean code: it would be a
+declaration with no consumer, i.e. free-floating.
+
+**WHAT THIS CUT BUYS, AND — SAID PLAINLY — WHAT IT DOES NOT.**  It does NOT
+reduce the infrastructure cost by one line: the nine-term sequence still needs
+the cup product and the local invariant map, and the build order recorded below
+is unchanged.  What it buys is that everything on the near side of the sequence
+now lives in compiler-checked linear algebra instead of inside the leaf.  A
+successor holding NSW VIII.6.7 previously had to (i) transport the `ℚ/ℤ`-valued
+pairing to a `k`-valued `k`-bilinear one, (ii) build a bilinear map out of the
+sequence by choosing preimages and proving well-definedness, (iii) prove
+nondegeneracy twice, and (iv) do the `range (f^∨) = ann (ker f)` step by hand.
+Steps (ii)–(iv) are now `exists_nondegenerate_of_ker_eq_dualAnnihilator` above,
+and step (i) is folded into the local duality that produces `θ` — where the
+reference performs it anyway.  The leaf that remains is read off the sequence
+line by line.
+
+**THE AUDITS THIS LEAF OWES ARE STATED ON THE DECLARATION IMMEDIATELY BELOW, and
+they transfer verbatim** — the FAITHFULNESS note on the `ℚ/ℤ`-to-`k` passage, the
+`ad⁰* ≅ ad⁰(1)` trace-form identification and why it needs `ℓ` odd, the PORTING
+AUDIT for the cup product from `~/cs/FLT`, the absence of local class field
+theory from all three trees, the shared-gate note with
+`card_sha1Twist_le_card_dualNumberPoints` below, and the CIRCULARITY GUARD.  They
+are left there rather than copied because they are unchanged by this cut and the
+text is long; the STATUS paragraph below says which leaf now owes them.  `hirr`
+is NOT an input here either, for the reason recorded there: Poitou–Tate holds for
+any finite `G_S`-module.
+
+References: Neukirch–Schmidt–Wingberg, *Cohomology of Number Fields*, VIII.6.7
+(the nine-term sequence — this leaf IS two of its exactness statements) and VII.2
+(local duality, which is what turns `range θ` into an annihilator);
+Darmon–Diamond–Taylor, §2.6–2.7. -/
+theorem exists_poitouTateExactness_sha2_sha1Twist
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar) :
+    ∃ γ : Module.Dual k (continuousCohomology 1
+          (adZeroTwistRestricted ℓ ρbar (hardlyRamifiedPlaces ℓ))) →ₗ[k]
+        continuousCohomology 2 (adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ)),
+      LinearMap.ker γ = (Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)).dualAnnihilator ∧
+      LinearMap.range γ = Sha2 ρbar (hardlyRamifiedPlaces ℓ) :=
+  sorry
+
 /-- **THE Poitou–Tate input: a nondegenerate `k`-bilinear pairing**
-`Ш²_S(ad⁰) × Ш¹_S(ad⁰(1)) → k` (sorry leaf, cut out 2026-07-29; it is the ONE
-arithmetic input behind the two theorems immediately below, both of which are
-PROVEN over it).
+`Ш²_S(ad⁰) × Ш¹_S(ad⁰(1)) → k` (**PROVEN 2026-07-30** over
+`exists_poitouTateExactness_sha2_sha1Twist` immediately above and the
+linear-algebra nucleus `exists_nondegenerate_of_ker_eq_dualAnnihilator` above —
+**NOT a sorry node any more**; cut out 2026-07-29 as the ONE arithmetic input
+behind the two theorems immediately below, both of which are PROVEN over it).
+
+**STATUS 2026-07-30: THIS NODE IS NO LONGER A LEAF, AND EVERY AUDIT BELOW IS NOW
+OWED BY THE LEAF ABOVE.**  It is the two-line assembly "take `γ` from the
+nine-term sequence, feed its kernel and range to
+`exists_nondegenerate_of_ker_eq_dualAnnihilator`".  Nothing in the STATEMENT
+changed, so all four consumers are untouched; what changed is that the leaf now
+sits one step further from the pairing and one step closer to NSW VIII.6.7.  See
+that leaf for why the axis is available at all — the earlier verdict that it
+"needs the local pairing to even type-check" is refuted there — and for the proof
+that the two statements are EQUIVALENT, so that this is a decomposition and not a
+strengthening.  **Everything from here down is the mathematical record and applies
+verbatim to the leaf ABOVE; the Poitou–Tate content is untouched and still gated
+on the local invariant map.**
 
 This is Neukirch–Schmidt–Wingberg VIII.6.7 (the nine-term Poitou–Tate sequence,
 whence the perfect pairing `Ш¹_S(M*) × Ш²_S(M) → ℚ/ℤ`) specialised to
@@ -19794,16 +20012,26 @@ Two things arrived here on that date, neither of them new mathematics:
   unramified-outside-`S` condition instead of as an orthogonal complement.  It
   does not transplant by copying, and it is the cheapest lead in this subtree.
 
-**HOW TO DECOMPOSE IT FURTHER — and why that was NOT done here.**  The next
-level down is genuine but is a construction, not a restatement: the nine-term
-sequence needs `P^i_S(M) = ⊕_{v ∈ S} H^i(ℚ_v, M)` (a two-term product here,
-since `S = {2, ℓ}`), the local pairings, `inv_v`, and the exactness statements
-at `P¹`, at `H¹(G_S, M*)^∨` and at `H²(G_S, M)`.  Each of those is a `def` with
-no consumer until the assembly deriving THIS pairing from them is written, so
-cutting them now would produce free-floating definitions — exactly what the
-glue-first rule forbids.  A successor should write that assembly and the
-definitions together, in one module, and consume this leaf's statement as the
-target.  Nothing above needs to change when they do.
+**HOW TO DECOMPOSE IT FURTHER — SUPERSEDED 2026-07-30, and the paragraph that
+stood here was wrong about the reason.**  It read: "the nine-term sequence needs
+`P^i_S(M) = ⊕_{v ∈ S} H^i(ℚ_v, M)`, the local pairings, `inv_v`, and the
+exactness statements at `P¹`, at `H¹(G_S, M*)^∨` and at `H²(G_S, M)`.  Each of
+those is a `def` with no consumer until the assembly deriving THIS pairing from
+them is written, so cutting them now would produce free-floating definitions —
+exactly what the glue-first rule forbids."
+
+The conclusion followed from an unstated assumption: that exactness at
+`H¹(G_S, M*)^∨` can only be stated by naming `P¹_S(M)` and the local pairing.
+It cannot only be stated that way.  `range θ` has the intrinsic description
+`(Ш¹_S(M*))ᵃⁿⁿ` — the local duality is an isomorphism and
+`range (f^∨) = (ker f)ᵃⁿⁿ` over a field — so the two exactness statements this
+leaf needs can be written with NO new definitions at all, hence with nothing
+free-floating.  That is `exists_poitouTateExactness_sha2_sha1Twist` above, and the
+assembly it feeds is compiler-checked.  What survives of the old paragraph is
+only its positive advice, which still stands: a successor should write `P^i_S`,
+`inv_v` and the local pairings together with the proof of that leaf, in one
+module, consuming its statement as the target — and nothing above needs to change
+when they do.
 
 **CIRCULARITY GUARD — INHERITED VERBATIM** from
 `rank_sha2_le_rank_sha1_twist` below; see there for the BANNED INPUTS clause
@@ -19817,8 +20045,9 @@ theorem exists_poitouTatePairing_sha2_sha1Twist
     {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar) :
     ∃ B : ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) →ₗ[k]
         ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) →ₗ[k] k,
-      (∀ x, (∀ y, B x y = 0) → x = 0) ∧ (∀ y, (∀ x, B x y = 0) → y = 0) :=
-  sorry
+      (∀ x, (∀ y, B x y = 0) → x = 0) ∧ (∀ y, (∀ x, B x y = 0) → y = 0) := by
+  obtain ⟨γ, hker, hrange⟩ := exists_poitouTateExactness_sha2_sha1Twist hℓOdd hdim hℓ5 h
+  exact exists_nondegenerate_of_ker_eq_dualAnnihilator _ _ γ hker hrange
 
 /-- **`Ш²_S(ad⁰)` is finite-dimensional over `k`** (**PROVEN 2026-07-29** over
 `exists_poitouTatePairing_sha2_sha1Twist` immediately above plus
@@ -21738,6 +21967,44 @@ hypothesis to lean on, and adding one would be restating the target to make it
 provable. The transplantable part is the DESCRIPTION of the dual Selmer group,
 not the hypothesis. Note also that `Patching.lean` is DOWNSTREAM of this module,
 so nothing there is consumable here; a shared version would have to be hoisted.
+
+**THE DODGE WAS READ, NOT MERELY CITED, ON 2026-07-30 — AND THERE IS NOTHING
+LEFT TO TRANSPLANT, BECAUSE THIS LEAF ALREADY HAS THE WHOLE BENEFIT OF IT.**
+(Recorded by the owner of the nine-term cut of
+`exists_poitouTateExactness_sha2_sha1Twist` above, who read
+`Patching.lean`'s `DualSelmerVocabulary` section — `h1TwistUnramified`,
+`h1TwistLocalKer`, `mem_h1TwistUnramified`, `h1TwistLocalKer_anti` — precisely
+because this paragraph calls it the cheapest lead in the subtree.)  Two findings,
+and the second is the one that saves a successor an afternoon.
+
+* The transplantable half — *describe the dual-Selmer source by an explicit
+  vanishing condition instead of as an orthogonal complement* — is ALREADY DONE
+  here, and was done before the dodge was noticed.  `Sha1Twist` above is
+  `⨅ v ∈ S, ker (locResTwist1 …)`, an explicit condition; no `L^⊥` occurs in this
+  leaf's statement, and none is needed to state it.  What `Patching.lean` gets
+  from the dodge that this leaf cannot is the other half — the dual-Selmer
+  VANISHING, which it takes as a hypothesis (the global conjunct of
+  `IsTaylorWilesPrimeSet`).  This leaf's consumer holds no such hypothesis, so
+  adding one would be restating the target to make it provable.  So the paragraph
+  above is right that the dodge does not transplant, but the reason recorded there
+  — "this leaf's consumer holds no dual-Selmer hypothesis to lean on" — understates
+  it: there is also no remaining benefit to import.
+* **Correction to the framing of THE GATE above.**  It says `H¹_{L^⊥}` "cannot even
+  be STATED without" the local Tate pairing, and reasons from that to the shared
+  gate.  The conclusion is right and the reason is not the operative one: this
+  leaf's statement names no `L^⊥` at all.  The gate is the PROOF — the
+  Greenberg–Wiles formula, whose local term is the aggregate
+  `Σ_v (dim L_v − dim H⁰(ℚ_v, ad⁰))` together with the archimedean `−1`.
+* **And that aggregate is exactly why the nine-term cut of the sibling leaf does
+  NOT have an analogue here.**  That cut worked because the local data entered the
+  Poitou–Tate statement only through `range θ`, an IMAGE, which has the intrinsic
+  global description `(Ш¹)ᵃⁿⁿ`.  Here the local data enters as a SUM OF LOCAL
+  DIMENSIONS, and a numeric aggregate over `v ∈ S` has no description that avoids
+  naming the local conditions `L_v` as objects.  So restating this leaf cannot
+  eliminate them, and a successor should not spend time looking for a way: the
+  local computations at `2`, at `ℓ` and at `∞` (Washington, in
+  Cornell–Silverman–Stevens) have to be built, and they are what the local Tate
+  pairing is for.
 
 **FAITHFULNESS RE-AUDIT No. 2, 2026-07-30 — THE COMPOSITE AUDIT ABOVE WAS VOID,
 AND THIS ONE REPLACES IT.  VERDICT: FAITHFUL.**
