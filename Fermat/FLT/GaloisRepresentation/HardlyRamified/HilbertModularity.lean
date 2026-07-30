@@ -25876,8 +25876,15 @@ theorem hilbertAuxQuotient_inf_isLevel {P : Type u} [CommRing P] [Algebra ℤ_[�
       rw [RingHom.mem_ker, map_one] at h2
       exact one_ne_zero h2
     haveI : IsLocalRing (P ⧸ (J₁ ⊔ J₂)) := IsLocalRing.of_surjective' f₁ hf1surj
+    -- `IsHilbertAuxFibreProductClause` asks for surjectivity of the evaluation map
+    -- between `πB` and the charpoly condition; `evJ` inherits it from `ev` through
+    -- `hevJmk`, exactly as `hunitJ` derives `hsurjJ` further up this file.
+    have hevJsurj : Function.Surjective evJ := by
+      intro y
+      obtain ⟨x, rfl⟩ := hevsurj y
+      exact ⟨Ideal.Quotient.mk (J₁ ⊓ J₂) x, hevJmk x⟩
     refine hglue f₁ f₂ hf2surj q₁ q₂ continuous_of_discreteTopology
-      continuous_of_discreteTopology ?_ ?_ ?_ ?_ ?_ evJ hcpJ hpf1 hpf2
+      continuous_of_discreteTopology ?_ ?_ ?_ ?_ ?_ evJ hevJsurj hcpJ hpf1 hpf2
     · refine RingHom.ext fun r => ?_
       show q₁ (Ideal.Quotient.mk (J₁ ⊓ J₂) (algebraMap ℤ_[ℓ] P r)) = _
       rw [hq1mk]
