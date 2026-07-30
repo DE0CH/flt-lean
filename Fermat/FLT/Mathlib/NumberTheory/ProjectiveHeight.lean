@@ -273,11 +273,19 @@ other direction it is not *too* strong: every symmetric very ample `L` on
 an abelian variety over `ℚ` supplies all five data, by the theorem of the
 cube and the projective Nullstellensatz.
 
-*It is cheap exactly when `A(ℚ) `is finite* — with `dim = 1`,
-`coords ≡ ![1]`, `cube = z`, `certDeg = 0`, `cert = 1` the whole package
-holds for the trivial group.  That is correct rather than a defect: a
-finite group is finitely generated, so the consumer's conclusion holds for
-that reason anyway.
+*It is cheap exactly when `A(ℚ)` is finite.*  That is correct rather than a
+defect: a finite group is finitely generated, so the consumer's conclusion
+holds for that reason anyway.
+
+**CORRECTED 2026-07-30 (flt-lean-167) — the witness this note used to quote
+covers only the TRIVIAL group.**  It read "`dim = 1`, `coords ≡ ![1]`,
+`cube = z`, `certDeg = 0`, `cert = 1`", and `dim = 1` is fatal to it *whatever
+`coords` is*: `coords_ne_zero` forces the single coordinate to be nonzero, so
+`coords P = (coords P i₀ / coords Q i₀) • coords Q` holds for every `P, Q`, and
+`injective_of_smul` then hands back `P = Q`.  Machine-checked as
+`cm.dim = 1 → Subsingleton A` against `CubeModel` (the same four fields appear
+here), so it is a refutation and not a reading.  The correct witness for a
+general finite `A` is on `CubeModel` below.
 
 *`dim = 0` is uninhabited*, since `coords_ne_zero` is unsatisfiable when
 there are no coordinates.  Nothing has to rule it out by hand.
@@ -607,10 +615,42 @@ used to *prove* `cube_eval` — for non-symmetric `L` the cube gives
 `σ*L ⊗ δ*L ≅ p₁*(L ⊗ [−1]*L) ⊗ p₂*(L ⊗ [−1]*L)` instead — and adding it as a
 field would record a hypothesis that no consumer reads.
 
-*It is cheap exactly when `A(ℚ)` is finite* — `dim = 1`, `coords ≡ ![1]`,
-`cube = z`, `relDim = 0`, and `cube_nonvanishing` holds because
-`z ≠ 0` forces `z (0,0) ≠ 0`.  That is correct rather than a defect: a finite
-group is finitely generated, so the consumer's conclusion holds anyway.
+*It is cheap exactly when `A(ℚ)` is finite.*  That is correct rather than a
+defect: a finite group is finitely generated, so the consumer's conclusion
+holds anyway.
+
+**THE WITNESS, CORRECTED 2026-07-30 (flt-lean-167).**  This note used to
+exhibit `dim = 1`, `coords ≡ ![1]`, `cube = z`, `relDim = 0`, with
+`cube_nonvanishing` holding "because `z ≠ 0` forces `z (0,0) ≠ 0`".  That
+package exists only for the TRIVIAL group, and the obstruction is `dim = 1`
+alone rather than the particular `coords`: `coords_ne_zero` makes the single
+coordinate nonzero, so `coords P = (coords P i₀ / coords Q i₀) • coords Q` for
+*every* pair, and `injective_of_smul` returns `P = Q`.  Machine-checked as
+`cm.dim = 1 → Subsingleton A`, from `coords_ne_zero` and `injective_of_smul`
+and nothing else.  `relDim = 0` is wrong for a second, independent reason:
+with no relations, `cube_nonvanishing` would have to hold at every nonzero
+`z`, not only on the cone over the Segre image.
+
+The construction that DOES work for an arbitrary finite `A`, and which a
+successor should use if this non-vacuity is ever wanted as a Lean term rather
+than as an audit, is the INDICATOR basis: `dim = Nat.card A` with `coords P`
+the indicator of `P`, so that the Segre point of `(P, Q)` is the indicator of
+`(P, Q)`.  Then
+
+* `cube k = ∑_{(P,Q) : P+Q = k.1, P−Q = k.2} z (P,Q) ^ 2`, homogeneous of
+  degree `2`, and `cube_eval` holds with `c = 1`;
+* `relDim` counts the pairs `m ≠ m'`, with `rel = z m * z m'` and
+  `relDeg = 2`; these vanish at every Segre point because at most one
+  coordinate there is nonzero;
+* `cube_nonvanishing`: those relations force a nonzero `z` on the cone to have
+  exactly one nonzero coordinate `z (P,Q) = t`, and then
+  `cube (P+Q, P−Q) z = t² ≠ 0` — every other summand of that form vanishes, so
+  no `2`-torsion coincidence in `P' + Q' = P + Q`, `P' − Q' = P − Q` can
+  cancel it.
+
+`coords_ne_zero` and `injective_of_smul` are immediate for the indicator basis.
+It is deliberately NOT declared as a lemma here: nothing in the root cone
+consumes it, so it would be free-floating code.
 
 **A WARNING ABOUT CUTTING THIS FURTHER, and the axis that was searched.**  The
 obvious next cut is to split the embedding (`dim`, `coords`,
