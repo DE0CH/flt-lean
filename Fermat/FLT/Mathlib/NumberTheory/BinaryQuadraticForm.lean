@@ -64,24 +64,29 @@ missed) together with `Heegner.exists_int_gammaTwo`.
 
 `Heegner.exists_rat_gammaTwo_heegnerPoint` has since been decomposed and PROVEN in turn, over
 `Heegner.exists_real_gammaTwo_heegnerPoint` (`γ₂(τ₀) ∈ ℝ` — PROVEN here, by conjugation
-through `η`'s infinite product) and the two class-field leaves listed below.
+through `η`'s infinite product) and two `K = ℚ(√−p)`-valued class-field leaves. Those two,
+`Heegner.exists_quadratic_jInvariant_heegnerPoint` and
+`Heegner.exists_quadratic_gammaTwo_of_jInvariant`, are ALSO PROVEN now (2026-07-30,
+`LEAF 4 RECUT`): `j(τ₀)` is real, so the `K` in both was pure dressing, and each follows from
+a statement about the single number `j(τ₀)` — the two leaves listed below.
 
 SIX leaves remain, each stated so that it can be worked on alone.  (The
 Diophantine leaf `eq_of_two_mul_mul_cube_add_one_eq_sq`, which an earlier version
 of this list counted, was PROVEN concurrently — see its bullet above; and
-`exists_rat_gammaTwo_heegnerPoint`, which it also counted, was replaced by the
-two class-field leaves below.)
+`exists_rat_gammaTwo_heegnerPoint`, which it also counted, was replaced by the two
+class-field leaves, which have in turn been replaced by the two `j`-statements below.)
 
 * `Heegner.exists_intCubic_weberAlpha`, `Heegner.intCast_indep_weberAlpha_pow_four`
   — `α` is an algebraic integer generating a cubic field (Weber's theory of the
   ring class field of the order of discriminant `−4p`, whose class number is `3`);
 * `Heegner.isIntegral_gammaTwo_heegnerPoint` — `γ₂(τ₀)` is an algebraic integer
   (`q`-expansion combinatorics, no class field theory);
-* `Heegner.exists_quadratic_jInvariant_heegnerPoint` — `j(τ₀) ∈ K = ℚ(√−p)`; **this is the
-  main theorem of complex multiplication and is the only leaf here that needs it**, and the
-  only one that consumes `hcl`;
-* `Heegner.exists_quadratic_gammaTwo_of_jInvariant` — `γ₂(τ₀) ∈ K` once `j(τ₀) ∈ K` (Weber's
-  level-`3` descent; needs only `3 ∤ p`);
+* `Heegner.exists_rat_jInvariant_heegnerPoint` — `j(τ₀) ∈ ℚ`; **this is the main theorem of
+  complex multiplication and is the only leaf here that needs it**, and the only one that
+  consumes `hcl`;
+* `Heegner.exists_ratCube_jInvariant_heegnerPoint` — `j(τ₀)` is a CUBE in `ℚ`, given that it
+  is rational (Weber's level-`3` descent; the load-bearing input is `3 ∤ p`, and the witness
+  for that is `p = 27`, where `j(τ₀) = −12288000 = −2¹⁵·3·5³` is rational and not a cube);
 
 `Heegner.gammaTwo_pow_three_eq_jInvariant` (Weber's `γ₂³ = j`) and
 `Heegner.exp_pi_sqrt_le_of_jInvariant_eq` (the bound `exp(π√p) ≤ 745 − j(τ₀)`) are now both
@@ -98,15 +103,16 @@ PROVEN, over three new analytic leaves:
   `Heegner.cexp_heegnerPoint` (`q = −Q` at `τ₀`), `Heegner.E_second_order` (the shared
   `q`-expansion split) and `Heegner.abs_tsum_shift_le` (a geometric-majorant tail bound).
 
-So this file has SIX open leaves — regenerated from the MERGED source at release 19, not
-inherited from either side: `exists_intCubic_weberAlpha`,
+So this file has SIX open leaves — regenerated 2026-07-30 from the compiler's own
+`declaration uses 'sorry'` set (six warnings, and exactly six `sorry` tokens with comments
+stripped, so no anonymous inner `sorry` hides in any of them): `exists_intCubic_weberAlpha`,
 `intCast_indep_weberAlpha_pow_four`, `isIntegral_gammaTwo_heegnerPoint`, the two
-class-field leaves `exists_quadratic_jInvariant_heegnerPoint` and
-`exists_quadratic_gammaTwo_of_jInvariant` that replaced
-`exists_rat_gammaTwo_heegnerPoint`, and the single modular-form identity
-`Heegner.eta_pow_24_add_eta_two_pow_24`.  The Diophantine
-`eq_of_two_mul_mul_cube_add_one_eq_sq` and `exists_rat_gammaTwo_heegnerPoint` itself are
-PROVEN. -/
+`j`-statements `exists_rat_jInvariant_heegnerPoint` and
+`exists_ratCube_jInvariant_heegnerPoint` that replaced the two class-field leaves, and the
+single modular-form identity `Heegner.eta_pow_24_add_eta_two_pow_24`.  The Diophantine
+`eq_of_two_mul_mul_cube_add_one_eq_sq`, `exists_rat_gammaTwo_heegnerPoint` itself, and both
+`K`-valued leaves `exists_quadratic_jInvariant_heegnerPoint` /
+`exists_quadratic_gammaTwo_of_jInvariant` are PROVEN. -/
 module
 
 public import Mathlib.Tactic
@@ -1268,11 +1274,17 @@ theorem isIntegral_gammaTwo_heegnerPoint {p : ℕ} (hp : p.Prime) (hp8 : p % 8 =
 `γ₂(τ₀) ∈ ℚ` splits into a REAL-ANALYTIC half and a CLASS-FIELD half, and the first of the
 two costs no arithmetic at all:
 
-* `exists_real_gammaTwo_heegnerPoint` — `γ₂(τ₀) ∈ ℝ`. **PROVEN**, from `0 < p` alone.
+* `exists_real_gammaTwo_heegnerPoint` — `γ₂(τ₀) ∈ ℝ`. **PROVEN** here, from `0 < p` alone.
 * `exists_quadratic_jInvariant_heegnerPoint` — `j(τ₀) ∈ K = ℚ(√−p)`. The first main theorem
-  of complex multiplication; the ONLY place `hcl` is consumed.
+  of complex multiplication; the ONLY place `hcl` is consumed. **PROVEN 2026-07-30** over
+  `exists_rat_jInvariant_heegnerPoint` (`j(τ₀) ∈ ℚ`), which is the open CM leaf.
 * `exists_quadratic_gammaTwo_of_jInvariant` — `γ₂(τ₀) ∈ K` once `j(τ₀) ∈ K`. Weber's
-  level-`3` descent, which needs only `3 ∤ p`.
+  level-`3` descent, which needs only `3 ∤ p`. **PROVEN 2026-07-30** over
+  `exists_ratCube_jInvariant_heegnerPoint` (`j(τ₀)` is a rational cube), which is the open
+  level-`3` leaf.
+
+Both of those proofs, and the two leaves they rest on, live below
+`gammaTwo_pow_three_eq_jInvariant` — search `LEAF 4 RECUT`.
 
 The assembly is then arithmetic: `K ∩ ℝ = ℚ`, i.e. `x = u + v√−p` real forces `v = 0`.
 That IS the classical argument's shape — CM puts `j` in the ring class field, `h(−p) = 1`
@@ -1408,127 +1420,11 @@ theorem exists_real_gammaTwo_heegnerPoint (p : ℕ) (hp : 0 < p) :
     rw [hrw, map_div₀, map_add, map_pow, conj_weberF2_heegnerPoint_pow_eight, map_ofNat]
   exact ⟨_, Complex.conj_eq_iff_re.mp hconj⟩
 
-/-- **LEAF 4b — `j(τ₀) ∈ K = ℚ(√−p)`. THE FIRST MAIN THEOREM OF COMPLEX MULTIPLICATION.**
-
-`τ₀ = (3+√−p)/2 = 1 + (1+√−p)/2`, so `ℤ + ℤτ₀ = ℤ[(1+√−p)/2] = 𝒪_K`, the MAXIMAL order (here
-`p ≡ 3 mod 4` follows from `p ≡ 3 mod 8`). By the first main theorem of CM (Booher Theorem
-34/36; Cox §11) `K(j(𝒪_K))` is the Hilbert class field of `K` and `[K(j(𝒪_K)) : K] = h(−p)`.
-`hcl` says every positive definite form of discriminant `−p` is properly equivalent to every
-other, i.e. `h(−p) = 1`, so that field is `K` itself and `j(τ₀) ∈ K`.
-
-`hcl` IS LOAD-BEARING AND IS CONSUMED ONLY HERE. Drop it and the statement is FALSE, with an
-explicit witness that satisfies every OTHER hypothesis (`PARI/GP`-checked 2026-07-28):
-`p = 59` is prime, `59 ≡ 3 mod 8`, `3 < 59`, and `h(−59) = 3`. There `j(τ₀) = −30197682742.99…`
-is a root of the IRREDUCIBLE cubic
-
-  `x³ + 30197678080x² − 140811576541184x + 374643194001883136`
-
-(`polclass(-59)`, `polisirreducible` = 1), so `[ℚ(j(τ₀)) : ℚ] = 3` and `j(τ₀)` lies in no
-quadratic field, let alone `K`. Note that `j(τ₀)` is still REAL there — which is precisely
-why `LEAF 4a` needs no `hcl` and is strictly weaker than this leaf.
-
-WHAT IT WOULD TAKE. Complex multiplication, ring class fields and the Galois action
-`σ_𝔞(j(𝔟)) = j(𝔞𝔟)` are absent from mathlib at this pin, from `~/cs/FLT` and from this
-project — re-verified 2026-07-28, see the section note above for the exact greps. The route
-is Cox §11: the modular polynomial `Φ_N ∈ ℤ[X, Y]`, then that `Gal(ℚ̄/ℚ)` permutes the finite
-set `{j(τ_f) : f of discriminant −p}`, then `h = 1` makes that set a singleton, so `j(τ₀)` is
-fixed by every automorphism. Building `Φ_N` is the bulk of it and is a project in its own
-right; **that** is where the next cut belongs, not here.
-
-CHEAPER ALTERNATIVE WORTH CHECKING FIRST: Stark's remark (quoted at the end of Booher) that
-"nothing more modern is required" — Weber's own computations replace the class field theory.
-Nobody in this development has yet costed that route; doing so is a legitimate outcome for
-whoever owns this leaf. -/
-theorem exists_quadratic_jInvariant_heegnerPoint {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3)
-    (h3 : 3 < p)
-    (hcl : ∀ f g : BinaryQuadraticForm, f.IsPosDef → g.IsPosDef →
-      f.discr = -(p : ℤ) → g.discr = -(p : ℤ) → f.Equivalent g) :
-    ∃ u v : ℚ, jInvariant (heegnerPoint p hp.pos)
-      = (u : ℂ) + (v : ℂ) * (Complex.I * (Real.sqrt p : ℂ)) :=
-  sorry
-
-/-- **LEAF 4c — `γ₂(τ₀)` descends with `j(τ₀)`.** Weber's level-`3` result (Booher §3.2 and
-Theorem 36): for `3 ∤ D`, `K(γ₂(τ)) = K(j(τ))`.
-
-`γ₂³ = j` gives `ℚ(j) ⊆ ℚ(γ₂)` for free; ALL the content is the reverse inclusion, i.e. that
-the cube root does not enlarge the field. `γ₂` is a modular function for a level-`3` group,
-so `[K(γ₂(τ)) : K(j(τ))]` divides `3`, and `3 ∤ D` forces it to be `1`.
-
-WHAT A PROVER MAY USE, and it collapses this leaf considerably. `exists_real_gammaTwo_heegnerPoint`
-(PROVEN above) plus `gammaTwo_pow_three_eq_jInvariant` (`LEAF 5`) turn `hj` into `j(τ₀) ∈ ℚ`
-— reality kills the `√−p` component — and reduce the conclusion to the single arithmetic
-statement **`j(τ₀)` is a perfect cube in `ℚ`**, with `γ₂(τ₀)` its real cube root. That is the
-honest residue of this leaf and is how it should be attacked.
-
-ONLY `3 ∤ p` IS EXPECTED TO BE LOAD-BEARING, and it comes from `hp` with `h3`; `hp8` is
-passed for uniformity with its siblings and is not expected to be needed. `3 ∤ p` genuinely
-cannot be dropped: at `D` divisible by `3` the cube root does enlarge the field, which is
-exactly why Booher's Theorem 36 carries the hypothesis.
-
-NOT VACUOUS, and note `hj` is not idle: without it the conclusion is a statement about an
-unconstrained transcendental-looking quantity, and with it the leaf is the `[K(γ₂):K(j)] = 1`
-step alone. Machine-checked at all five admissible `p`: `j(τ₀)` is an exact rational cube
-(see the section note). -/
-theorem exists_quadratic_gammaTwo_of_jInvariant {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3)
-    (h3 : 3 < p)
-    (hj : ∃ u v : ℚ, jInvariant (heegnerPoint p hp.pos)
-      = (u : ℂ) + (v : ℂ) * (Complex.I * (Real.sqrt p : ℂ))) :
-    ∃ u v : ℚ, gammaTwo (heegnerPoint p hp.pos)
-      = (u : ℂ) + (v : ℂ) * (Complex.I * (Real.sqrt p : ℂ)) :=
-  sorry
-
-/-- **LEAF 4 — `γ₂(τ₀)` is RATIONAL. This is the main theorem of complex multiplication.**
-
-By the first main theorem of CM (Booher Theorem 34/36; Cox §11), `K(j(τ₀))` is the Hilbert
-class field of `K = ℚ(√−p)` and `[K(j(τ₀)) : K] = h(−p)`; with `h(−p) = 1` that field is `K`
-itself, and since `j(τ₀)` is real it lies in `ℚ`. Because `3 ∤ p`, Weber's `γ₂` generates the
-same field (Booher Theorem 36), so `γ₂(τ₀) ∈ ℚ` too.
-
-Together with LEAF 3 this gives `γ₂(τ₀) ∈ ℤ` — see `exists_int_gammaTwo`, which is PROVEN
-from the two, using that `ℤ` is integrally closed in `ℚ`.
-
-MACHINE-CHECKED FAITHFULNESS: at the five admissible `p`, `(f₂(τ₀)²⁴+16)/f₂(τ₀)⁸` evaluates
-(`PARI/GP`, 60 digits, `η` as a 400-term product) to
-`−32, −96, −960, −5280, −640320` with imaginary part `< 10⁻⁷⁰`.
-
-THIS IS THE REAL COST OF THE DEEP LEAF. Complex multiplication, ring class fields, and the
-Galois action `σ_a(j(b)) = j(ab)` are absent from mathlib at this pin, from `~/cs/FLT`, and
-from this project; building them is a project in its own right and this is where a further
-decomposition should cut. The elementary route Stark points out (Booher's closing remark:
-"nothing more modern is required") replaces the class field theory by Weber's own
-computations, and is the cheaper target if this is ever attacked directly.
-
-**DECOMPOSED 2026-07-28 (`flt-lean-329`), and this declaration is now PROVEN** over the three
-leaves in the section above — the first of which is itself PROVEN here:
-
-* `exists_real_gammaTwo_heegnerPoint` — `γ₂(τ₀) ∈ ℝ`. **PROVEN**, from `0 < p` alone;
-* `exists_quadratic_jInvariant_heegnerPoint` — `j(τ₀) ∈ K = ℚ(√−p)` (the CM half, and the
-  only consumer of `hcl`);
-* `exists_quadratic_gammaTwo_of_jInvariant` — `γ₂(τ₀) ∈ K` given `j(τ₀) ∈ K` (Weber's
-  level-`3` descent, needing only `3 ∤ p`).
-
-The assembly below is the step "`K ∩ ℝ = ℚ`": reality forces the `√−p` coefficient `v` to
-vanish, since `√p > 0`. No complex multiplication is used HERE — all of it is in the second
-leaf, which is now the only place in this cluster that needs class field theory. -/
-theorem exists_rat_gammaTwo_heegnerPoint {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3) (h3 : 3 < p)
-    (hcl : ∀ f g : BinaryQuadraticForm, f.IsPosDef → g.IsPosDef →
-      f.discr = -(p : ℤ) → g.discr = -(p : ℤ) → f.Equivalent g) :
-    ∃ r : ℚ, (r : ℂ) = gammaTwo (heegnerPoint p hp.pos) := by
-  obtain ⟨x, hx⟩ := exists_real_gammaTwo_heegnerPoint p hp.pos
-  obtain ⟨u, v, huv⟩ := exists_quadratic_gammaTwo_of_jInvariant hp hp8 h3
-    (exists_quadratic_jInvariant_heegnerPoint hp hp8 h3 hcl)
-  have hsqrt : 0 < Real.sqrt p := Real.sqrt_pos.mpr (by exact_mod_cast hp.pos)
-  have him := congrArg Complex.im (hx.trans huv)
-  simp only [Complex.ofReal_im, Complex.add_im, Complex.ratCast_im, Complex.mul_im,
-    Complex.ratCast_re, Complex.I_re, Complex.I_im, Complex.ofReal_re, Complex.ofReal_im,
-    Complex.mul_re, zero_mul, mul_zero, zero_add, add_zero, one_mul, sub_zero] at him
-  have hv : v = 0 := by
-    have hv' : (v : ℝ) = 0 := by
-      rcases mul_eq_zero.mp him.symm with h | h
-      · exact h
-      · exact absurd h (ne_of_gt hsqrt)
-    exact_mod_cast hv'
-  exact ⟨u, by rw [huv, hv]; simp⟩
+/-! **`LEAF 4b`, `LEAF 4c` AND THE `LEAF 4` ASSEMBLY NOW LIVE FURTHER DOWN** — search
+`LEAF 4 RECUT`.
+They were moved (2026-07-30) because their proofs consume `gammaTwo_pow_three_eq_jInvariant`
+(`γ₂³ = j`), which is declared below this point; only `LEAF 4a`, which needs nothing from `j`,
+stays here. -/
 
 /-! ### Reduction of LEAVES 5 and 6 to their analytic cores
 
@@ -2182,6 +2078,264 @@ theorem exp_pi_sqrt_le_of_jInvariant_eq {p : ℕ} (hp : 11 ≤ p) {n : ℤ}
     linear_combination (1728 * Q) * hnR
   nlinarith [hC, hDpos, hkey]
 
+/-! #### `LEAF 4 RECUT` (2026-07-30) — the `K`-dressing removed; two pure `j`-statements left
+
+`j(τ₀)` is REAL (`exists_real_jInvariant_heegnerPoint` below — `LEAF 4a` plus `γ₂³ = j`), so a
+`K = ℚ(√−p)`-valued statement about it is EQUIVALENT to a `ℚ`-valued one: the `√−p` component
+of a real number vanishes. That makes the `K` in `LEAF 4b`/`LEAF 4c` pure dressing, and both
+are now PROVEN over the two statements that carry their actual content:
+
+* `exists_rat_jInvariant_heegnerPoint` — `j(τ₀) ∈ ℚ`. The first main theorem of complex
+  multiplication, and the ONLY consumer of `hcl` in this file;
+* `exists_ratCube_jInvariant_heegnerPoint` — given `j(τ₀) ∈ ℚ`, `j(τ₀)` is a rational CUBE.
+  Weber's level-`3` descent (`ℚ(γ₂(τ₀)) = ℚ(j(τ₀))`) with `γ₂`, `K` and `Complex.I` all gone:
+  a statement about a single rational number.
+
+This is exactly the recut `LEAF 4c`'s own docstring asked for ("that is the honest residue of
+this leaf and is how it should be attacked"). The leaf COUNT is unchanged, 2 → 2 — what changes
+is the attack surface, and that the reality bookkeeping is now done ONCE here rather than being
+owed by each of the two leaves. Everything in this block sits below
+`gammaTwo_pow_three_eq_jInvariant` because that is what the assemblies consume.
+
+FAITHFULNESS AUDIT, re-run 2026-07-30 against the NEW statements (`PARI/GP`, `ellj`, 50
+digits). The 2026-07-28 audit is VOID for these — a restated leaf does not inherit an audit —
+so every hypothesis was re-tested from scratch, and two of the four were found not to be
+load-bearing.
+
+`exists_rat_jInvariant_heegnerPoint`:
+* `hcl` LOAD-BEARING, re-confirmed rather than inherited. `p = 59` is prime, `59 % 8 = 3`,
+  `3 < 59`, `h(−59) = 3`, and `j(τ₀) = −30197682742.993188780766…` is a root of the
+  IRREDUCIBLE cubic `x³ + 30197678080x² − 140811576541184x + 374643194001883136`
+  (`polclass(-59)`; `polisirreducible = 1`), hence irrational.
+* `hp8` LOAD-BEARING — and the mechanism is NOT a mod-`8` phenomenon, it is that `hcl` goes
+  VACUOUS. `discr = b² − 4ac ≡ 0` or `1 mod 4`, so when `p ≡ 1 mod 4` NO form at all has
+  `discr = −p` and `hcl` holds for free. Witness `p = 5`: prime, `3 < 5`, `hcl` vacuously
+  true; `τ₀ = (3+√−5)/2` is a root of the primitive form `(2, −6, 7)` of discriminant `−20`,
+  `h(−20) = 2`, and `j(τ₀) = −538.90947514050932022704…` is a root of
+  `x² − 1264000x − 681472000` whose discriminant `1264000² + 4·681472000` is not a square
+  (`issquare = 0`) — irrational. NOTE the first draft of this audit tried `p = 23`
+  (`h(−23) = 3`); `23 % 8 = 7`, so `p = 23` fails `hp8` itself and refutes nothing. Among
+  `p ≡ 3 mod 4` there IS no counterexample: `hcl` then forces `h(−p) = 1`, and the only such
+  `p ≡ 7 mod 8` is `p = 7`, where `j(τ₀) = −3375 ∈ ℚ`.
+* `h3` is NOT load-bearing: at `p = 3` all other hypotheses hold (`(1,1,1)` is the only form
+  of discriminant `−3`, so `hcl` is true) and the conclusion is TRUE, `j(τ₀) = 0`. Kept
+  because the consumer supplies it and every binder must be consumed.
+* `hp` is NOT load-bearing: the only composite `p` with `p % 8 = 3`, `3 < p` and `h(−p) = 1`
+  is `p = 27`, and there `j(τ₀) = −12288000 ∈ ℚ`, so the conclusion holds. Kept because
+  `hp.pos` occurs in the statement.
+
+`exists_ratCube_jInvariant_heegnerPoint`:
+* `hj` LOAD-BEARING and not idle: without it the conclusion is a claim about an unconstrained
+  transcendental-looking quantity, and with it the leaf is the `[ℚ(γ₂) : ℚ(j)] = 1` step alone.
+* `hp` LOAD-BEARING, through `3 ∤ p`, and the witness lies INSIDE this very family — which is
+  worth recording, because the old docstring could only gesture at "`3 | D`" abstractly.
+  `p = 27`: `27 % 8 = 3`, `3 < 27`, `27` is NOT prime, `h(−27) = 1` so `hj` HOLDS with
+  `j(τ₀) = −12288000` exactly. But `−12288000 = −2¹⁵·3·5³` is NOT a rational cube — its cube
+  root is `−160·∛3` — so the conclusion is FALSE. That is Booher's Theorem 36 failing at
+  `3 | D`, realised at a `τ₀` of this family, and it also shows `γ₂(τ₀)` genuinely generates a
+  cubic extension of `ℚ(j(τ₀))` there.
+* `hp8` is NOT load-bearing; this was CHECKED, not inherited, and it is retained only so that
+  no binder goes unused. Without it the statement still holds: for `p ≡ 1 mod 4` the point
+  `τ₀` has discriminant `−4p` and `h(−4p) ≥ 2` for every prime `p > 3` (no `−4p` is among the
+  class-number-one discriminants divisible by `4`, namely `−4, −8, −12, −16, −28`; checked
+  `h(−20) = 2`, `h(−52) = 2`, `h(−68) = 4`), so `j(τ₀) ∉ ℚ` and `hj` is vacuous; and for
+  `p ≡ 7 mod 8` with `j(τ₀) ∈ ℚ` the only prime is `p = 7`, where
+  `j(τ₀) = −3375 = (−15)³` IS a cube.
+* `h3` is used by the intended route (with `hp` it supplies `3 ∤ p`); at `p = 3` the conclusion
+  holds anyway, `j(τ₀) = 0 = 0³`.
+
+MACHINE-CHECKED at the five admissible `p`: `j(τ₀) = −32768, −884736, −884736000,
+−147197952000, −262537412640768000`, exactly the cubes of `−32, −96, −960, −5280, −640320`.
+
+WHAT THE REMAINING CM LEAF WOULD TAKE is unchanged by the recut and is restated on
+`exists_rat_jInvariant_heegnerPoint` below. -/
+
+/-- **`j(τ₀)` is REAL.** Immediate from `LEAF 4a` (`γ₂(τ₀) ∈ ℝ`, proven from `0 < p` alone)
+together with `γ₂³ = j`: the cube of a real number is real. Consumed by
+`rat_of_quadratic_jInvariant_heegnerPoint`. -/
+lemma exists_real_jInvariant_heegnerPoint (p : ℕ) (hp : 0 < p) :
+    ∃ x : ℝ, (x : ℂ) = jInvariant (heegnerPoint p hp) := by
+  obtain ⟨x, hx⟩ := exists_real_gammaTwo_heegnerPoint p hp
+  refine ⟨x ^ 3, ?_⟩
+  rw [← gammaTwo_pow_three_eq_jInvariant, ← hx]
+  push_cast
+  ring
+
+/-- **Reality collapses `K` to `ℚ`.** A `K = ℚ(√−p)`-valued statement about `j(τ₀)` is a
+`ℚ`-valued one, because `j(τ₀)` is real and `√p > 0` forces the `√−p` coefficient to vanish.
+This is the whole of the `K`-dressing that `LEAF 4b` and `LEAF 4c` used to carry. -/
+lemma rat_of_quadratic_jInvariant_heegnerPoint (p : ℕ) (hp : 0 < p)
+    (hj : ∃ u v : ℚ, jInvariant (heegnerPoint p hp)
+      = (u : ℂ) + (v : ℂ) * (Complex.I * (Real.sqrt p : ℂ))) :
+    ∃ u : ℚ, (u : ℂ) = jInvariant (heegnerPoint p hp) := by
+  obtain ⟨x, hx⟩ := exists_real_jInvariant_heegnerPoint p hp
+  obtain ⟨u, v, huv⟩ := hj
+  have hsqrt : 0 < Real.sqrt p := Real.sqrt_pos.mpr (by exact_mod_cast hp)
+  have him := congrArg Complex.im (hx.trans huv)
+  simp only [Complex.ofReal_im, Complex.add_im, Complex.ratCast_im, Complex.mul_im,
+    Complex.ratCast_re, Complex.I_re, Complex.I_im, Complex.ofReal_re, Complex.ofReal_im,
+    Complex.mul_re, zero_mul, mul_zero, zero_add, add_zero, one_mul, sub_zero] at him
+  have hv : v = 0 := by
+    have hv' : (v : ℝ) = 0 := by
+      rcases mul_eq_zero.mp him.symm with h | h
+      · exact h
+      · exact absurd h (ne_of_gt hsqrt)
+    exact_mod_cast hv'
+  exact ⟨u, by rw [huv, hv]; simp⟩
+
+/-- **LEAF 4b′ — `j(τ₀) ∈ ℚ`. THE FIRST MAIN THEOREM OF COMPLEX MULTIPLICATION.**
+
+This replaces the `K`-valued `LEAF 4b` (see the section note: the two are equivalent, because
+`j(τ₀)` is real), and it is the ONLY leaf in this file that needs complex multiplication.
+
+`τ₀ = (3+√−p)/2 = 1 + (1+√−p)/2`, so `ℤ + ℤτ₀ = ℤ[(1+√−p)/2] = 𝒪_K`, the MAXIMAL order (here
+`p ≡ 3 mod 4` follows from `p ≡ 3 mod 8`). By the first main theorem of CM (Booher Theorem
+34/36; Cox §11) `K(j(𝒪_K))` is the Hilbert class field of `K` and `[K(j(𝒪_K)) : K] = h(−p)`.
+`hcl` says every positive definite form of discriminant `−p` is properly equivalent to every
+other, i.e. `h(−p) = 1`, so that field is `K` itself; with `j(τ₀)` real that gives `j(τ₀) ∈ ℚ`.
+
+WHAT IT WOULD TAKE. Complex multiplication, ring class fields and the Galois action
+`σ_𝔞(j(𝔟)) = j(𝔞𝔟)` are absent from mathlib at this pin, from `~/cs/FLT` and from this
+project. The route is Cox §11: the modular polynomial `Φ_N ∈ ℤ[X, Y]`, then that `Gal(ℚ̄/ℚ)`
+permutes the finite set `{j(τ_f) : f of discriminant −p}`, then `h = 1` makes that set a
+singleton, so `j(τ₀)` is fixed by every automorphism. Building `Φ_N` is the bulk of it and is a
+project in its own right; **that** is where the next cut belongs, not here.
+
+WHAT THE 2026-07-30 RECUT COSTED THE NEXT CUT: nothing was lost, and one thing was gained.
+`hcl` enters only through "`h(−p) = 1`", and this file already has the elementary theory of
+reduction of positive definite forms (`exists_reduced_equivalent`, `not_represents_one`,
+`Equivalent.represents`) — so the intermediate statement "all `j(τ_f)`, `f` of discriminant
+`−p`, coincide" is elementary GIVEN `SL₂(ℤ)`-invariance of `j`, which is in reach from
+mathlib (`E₄ : ModularForm 𝒮ℒ 4` and `Δ` as a weight-`12` cusp form, so the weight-`12`
+factors cancel in `E₄³/Δ`). The irreducible remainder is then exactly "the class polynomial
+has rational coefficients", which is the standard shape of the theorem and the right thing to
+vendor. That refinement is deliberately NOT done here: it needs a `Finset` of form classes and
+a `form ↦ τ_f` map, i.e. new infrastructure, and this leaf is already the honest residue.
+
+CHEAPER ALTERNATIVE STILL UNCOSTED: Stark's remark (quoted at the end of Booher) that
+"nothing more modern is required" — Weber's own computations replace the class field theory.
+Nobody in this development has costed that route; doing so is a legitimate outcome for whoever
+owns this leaf. -/
+theorem exists_rat_jInvariant_heegnerPoint {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3)
+    (h3 : 3 < p)
+    (hcl : ∀ f g : BinaryQuadraticForm, f.IsPosDef → g.IsPosDef →
+      f.discr = -(p : ℤ) → g.discr = -(p : ℤ) → f.Equivalent g) :
+    ∃ u : ℚ, (u : ℂ) = jInvariant (heegnerPoint p hp.pos) :=
+  sorry
+
+/-- **LEAF 4b — `j(τ₀) ∈ K = ℚ(√−p)`. NOW PROVEN**, from `LEAF 4b′` (`j(τ₀) ∈ ℚ`) by taking
+the `√−p` coefficient to be `0`. The `K` was always dressing — see the section note. -/
+theorem exists_quadratic_jInvariant_heegnerPoint {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3)
+    (h3 : 3 < p)
+    (hcl : ∀ f g : BinaryQuadraticForm, f.IsPosDef → g.IsPosDef →
+      f.discr = -(p : ℤ) → g.discr = -(p : ℤ) → f.Equivalent g) :
+    ∃ u v : ℚ, jInvariant (heegnerPoint p hp.pos)
+      = (u : ℂ) + (v : ℂ) * (Complex.I * (Real.sqrt p : ℂ)) := by
+  obtain ⟨u, hu⟩ := exists_rat_jInvariant_heegnerPoint hp hp8 h3 hcl
+  refine ⟨u, 0, ?_⟩
+  rw [← hu]
+  push_cast
+  ring
+
+/-- **LEAF 4c′ — `j(τ₀)` IS A CUBE IN `ℚ`. Weber's level-`3` descent.**
+
+This replaces the `K`-valued `LEAF 4c`, and it is that leaf's honest residue: `γ₂³ = j` gives
+`ℚ(j) ⊆ ℚ(γ₂)` for free, so ALL the content is the reverse inclusion — that the cube root does
+not enlarge the field. `γ₂` is a modular function for a level-`3` group, so
+`[K(γ₂(τ)) : K(j(τ))] ∣ 3`, and `3 ∤ D` forces it to be `1` (Booher §3.2 and Theorem 36).
+Stated over `ℚ` with `γ₂` eliminated: `γ₂(τ₀)` is real (`LEAF 4a`) and is A cube root of
+`j(τ₀)`, so it is rational exactly when `j(τ₀)` is a rational cube, the real cube root being
+unique.
+
+`3 ∤ p` IS THE LOAD-BEARING INPUT and comes from `hp` with `h3`; the section note gives the
+explicit witness `p = 27` (where `j(τ₀) = −12288000` is rational but not a cube), together
+with the check that `hp8` is not needed. -/
+theorem exists_ratCube_jInvariant_heegnerPoint {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3)
+    (h3 : 3 < p)
+    (hj : ∃ u : ℚ, (u : ℂ) = jInvariant (heegnerPoint p hp.pos)) :
+    ∃ r : ℚ, (r : ℂ) ^ 3 = jInvariant (heegnerPoint p hp.pos) :=
+  sorry
+
+/-- **LEAF 4c — `γ₂(τ₀)` descends with `j(τ₀)`. NOW PROVEN**, from `LEAF 4c′`.
+
+Given that `j(τ₀) = r³` with `r ∈ ℚ`, and that `γ₂(τ₀)` is the REAL number `x` with `x³ = j(τ₀)`
+(`LEAF 4a` and `γ₂³ = j`), we get `x³ = r³` in `ℝ`; and `x ↦ x³` is injective on `ℝ`, because
+`x³ − r³ = (x − r)(x² + xr + r²)` and `4(x² + xr + r²) = (2x + r)² + 3r²` vanishes only at
+`x = r = 0`. So `γ₂(τ₀) = r ∈ ℚ ⊆ K`. -/
+theorem exists_quadratic_gammaTwo_of_jInvariant {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3)
+    (h3 : 3 < p)
+    (hj : ∃ u v : ℚ, jInvariant (heegnerPoint p hp.pos)
+      = (u : ℂ) + (v : ℂ) * (Complex.I * (Real.sqrt p : ℂ))) :
+    ∃ u v : ℚ, gammaTwo (heegnerPoint p hp.pos)
+      = (u : ℂ) + (v : ℂ) * (Complex.I * (Real.sqrt p : ℂ)) := by
+  obtain ⟨r, hr⟩ := exists_ratCube_jInvariant_heegnerPoint hp hp8 h3
+    (rat_of_quadratic_jInvariant_heegnerPoint p hp.pos hj)
+  obtain ⟨x, hx⟩ := exists_real_gammaTwo_heegnerPoint p hp.pos
+  have hcube : (x : ℂ) ^ 3 = (r : ℂ) ^ 3 := by
+    rw [hx, gammaTwo_pow_three_eq_jInvariant, ← hr]
+  have hx3 : x ^ 3 = (r : ℝ) ^ 3 := by exact_mod_cast hcube
+  have hfac : (x - (r : ℝ)) * (x ^ 2 + x * (r : ℝ) + (r : ℝ) ^ 2) = 0 := by
+    linear_combination hx3
+  have hxr : x = (r : ℝ) := by
+    rcases mul_eq_zero.mp hfac with h | h
+    · linarith
+    · have hr0 : (r : ℝ) = 0 := by
+        nlinarith [sq_nonneg (2 * x + (r : ℝ)), sq_nonneg ((r : ℝ))]
+      have hx0 : x = 0 := by nlinarith [sq_nonneg (2 * x + (r : ℝ))]
+      rw [hx0, hr0]
+  refine ⟨r, 0, ?_⟩
+  rw [← hx, hxr]
+  push_cast
+  ring
+
+/-- **LEAF 4 — `γ₂(τ₀)` is RATIONAL. This is the main theorem of complex multiplication.**
+
+By the first main theorem of CM (Booher Theorem 34/36; Cox §11), `K(j(τ₀))` is the Hilbert
+class field of `K = ℚ(√−p)` and `[K(j(τ₀)) : K] = h(−p)`; with `h(−p) = 1` that field is `K`
+itself, and since `j(τ₀)` is real it lies in `ℚ`. Because `3 ∤ p`, Weber's `γ₂` generates the
+same field (Booher Theorem 36), so `γ₂(τ₀) ∈ ℚ` too.
+
+Together with LEAF 3 this gives `γ₂(τ₀) ∈ ℤ` — see `exists_int_gammaTwo`, which is PROVEN
+from the two, using that `ℤ` is integrally closed in `ℚ`.
+
+MACHINE-CHECKED FAITHFULNESS: at the five admissible `p`, `(f₂(τ₀)²⁴+16)/f₂(τ₀)⁸` evaluates
+(`PARI/GP`, 60 digits, `η` as a 400-term product) to
+`−32, −96, −960, −5280, −640320` with imaginary part `< 10⁻⁷⁰`.
+
+**DECOMPOSED 2026-07-28 (`flt-lean-329`) and RECUT 2026-07-30 (`flt-lean-185`).** PROVEN over
+
+* `exists_real_gammaTwo_heegnerPoint` — `γ₂(τ₀) ∈ ℝ`. **PROVEN**, from `0 < p` alone;
+* `exists_quadratic_jInvariant_heegnerPoint` — `j(τ₀) ∈ K`. **PROVEN** above over
+  `exists_rat_jInvariant_heegnerPoint` (`j(τ₀) ∈ ℚ`), which is OPEN and is the CM leaf;
+* `exists_quadratic_gammaTwo_of_jInvariant` — `γ₂(τ₀) ∈ K` given `j(τ₀) ∈ K`. **PROVEN**
+  above over `exists_ratCube_jInvariant_heegnerPoint` (`j(τ₀)` is a rational cube), which is
+  OPEN and is Weber's level-`3` descent.
+
+So the two open leaves under this node are now both statements about the single rational-or-not
+number `j(τ₀)`, with no `K`, no `γ₂` and no `Complex.I` in them.
+
+The assembly below is the step "`K ∩ ℝ = ℚ`": reality forces the `√−p` coefficient `v` to
+vanish, since `√p > 0`. No complex multiplication is used HERE. -/
+theorem exists_rat_gammaTwo_heegnerPoint {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3) (h3 : 3 < p)
+    (hcl : ∀ f g : BinaryQuadraticForm, f.IsPosDef → g.IsPosDef →
+      f.discr = -(p : ℤ) → g.discr = -(p : ℤ) → f.Equivalent g) :
+    ∃ r : ℚ, (r : ℂ) = gammaTwo (heegnerPoint p hp.pos) := by
+  obtain ⟨x, hx⟩ := exists_real_gammaTwo_heegnerPoint p hp.pos
+  obtain ⟨u, v, huv⟩ := exists_quadratic_gammaTwo_of_jInvariant hp hp8 h3
+    (exists_quadratic_jInvariant_heegnerPoint hp hp8 h3 hcl)
+  have hsqrt : 0 < Real.sqrt p := Real.sqrt_pos.mpr (by exact_mod_cast hp.pos)
+  have him := congrArg Complex.im (hx.trans huv)
+  simp only [Complex.ofReal_im, Complex.add_im, Complex.ratCast_im, Complex.mul_im,
+    Complex.ratCast_re, Complex.I_re, Complex.I_im, Complex.ofReal_re, Complex.ofReal_im,
+    Complex.mul_re, zero_mul, mul_zero, zero_add, add_zero, one_mul, sub_zero] at him
+  have hv : v = 0 := by
+    have hv' : (v : ℝ) = 0 := by
+      rcases mul_eq_zero.mp him.symm with h | h
+      · exact h
+      · exact absurd h (ne_of_gt hsqrt)
+    exact_mod_cast hv'
+  exact ⟨u, by rw [huv, hv]; simp⟩
+
 /-- **`γ₂(τ₀) ∈ ℤ`** — PROVEN from LEAF 3 (algebraic integer) and LEAF 4 (rational), using
 that `ℤ` is integrally closed in `ℚ`. -/
 theorem exists_int_gammaTwo {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3) (h3 : 3 < p)
@@ -2328,7 +2482,9 @@ values in `PARI/GP`, minimum slack `1.0000`:
 
 The constant `745` is essentially forced: `744` would leave slack `0.0000` at `p = 163`.
 
-DECOMPOSED, and now PROVEN over six leaves in the `Heegner` namespace above. `j = E₄³/Δ`,
+DECOMPOSED, and now PROVEN over the leaves of the `Heegner` namespace above — five of them in
+this node's own subtree, listed below, plus the modular-form identity that `γ₂³ = j` rests on.
+`j = E₄³/Δ`,
 `f₂ = √2·η(2τ)/η(τ)`, `γ₂ = (f₂²⁴+16)/f₂⁸`, `τ₀ = (3+√−p)/2` and `α = ζ₈⁻¹f₂(τ₀)²` are all
 DEFINED there over mathlib's `ModularForm.eta`, `ModularForm.discriminant` and
 `ModularForm.E₄`; the double-squaring match — the step Weber missed — is PROVEN
@@ -2338,23 +2494,24 @@ DEFINED there over mathlib's `ModularForm.eta`, `ModularForm.discriminant` and
 * `Heegner.exists_intCubic_weberAlpha` — `α` satisfies a monic integral cubic;
 * `Heegner.intCast_indep_weberAlpha_pow_four` — `1, α⁴, α⁸` are independent;
 * `Heegner.isIntegral_gammaTwo_heegnerPoint` — `γ₂(τ₀)` is an algebraic integer;
-* `Heegner.exists_quadratic_jInvariant_heegnerPoint` — `j(τ₀) ∈ K = ℚ(√−p)` (**the main
-  theorem of CM**);
-* `Heegner.exists_quadratic_gammaTwo_of_jInvariant` — `γ₂(τ₀) ∈ K` once `j(τ₀) ∈ K` (Weber's
-  level-`3` descent);
-* `Heegner.gammaTwo_pow_three_eq_jInvariant` — Weber's `γ₂³ = j`;
-* `Heegner.exp_pi_sqrt_le_of_jInvariant_eq` — the `q`-expansion bound.
+* `Heegner.exists_rat_jInvariant_heegnerPoint` — `j(τ₀) ∈ ℚ` (**the main theorem of CM**);
+* `Heegner.exists_ratCube_jInvariant_heegnerPoint` — `j(τ₀)` is a CUBE in `ℚ` (Weber's
+  level-`3` descent).
 
 `Heegner.exists_rat_gammaTwo_heegnerPoint` is no longer among them: it was decomposed and
-PROVEN on 2026-07-28 over the fourth and fifth items together with
+PROVEN on 2026-07-28 over two `K = ℚ(√−p)`-valued leaves together with
 `Heegner.exists_real_gammaTwo_heegnerPoint` (`γ₂(τ₀) ∈ ℝ`, PROVEN outright — the reality that
-cuts `K` down to `ℚ`).
+cuts `K` down to `ℚ`). Those two, `Heegner.exists_quadratic_jInvariant_heegnerPoint` and
+`Heegner.exists_quadratic_gammaTwo_of_jInvariant`, were themselves PROVEN on 2026-07-30 over
+the two `j`-statements listed above, once reality was used to remove the `K` (see
+`LEAF 4 RECUT`); they are no longer leaves either.
+`Heegner.gammaTwo_pow_three_eq_jInvariant` (Weber's `γ₂³ = j`) and
+`Heegner.exp_pi_sqrt_le_of_jInvariant_eq` (the `q`-expansion bound) are likewise PROVEN, the
+first over the single modular-form identity `Heegner.eta_pow_24_add_eta_two_pow_24`, which IS
+still open and is counted in the file header's list.
 
 Of these only the fourth needs class field theory; the fifth needs Weber's level-`3` modular
-theory but no class field theory. The sixth is classical elliptic-function theory over
-machinery mathlib already has (`η`, `Δ = η²⁴`, `E₄`, `Δ = (E₄³−E₆²)/1728`, `qExpansion`), and
-the seventh is a real-analytic estimate on the `q`-expansion of `j`; both are the cheap
-targets. -/
+theory but no class field theory. -/
 theorem exists_heegnerRelation_of_classNumberOne {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3)
     (h3 : 3 < p)
     (hcl : ∀ f g : BinaryQuadraticForm, f.IsPosDef → g.IsPosDef →
