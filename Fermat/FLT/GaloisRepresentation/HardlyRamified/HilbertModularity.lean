@@ -21856,6 +21856,75 @@ here is what keeps every consumer's statement true, and it is the cheap form of
 the structural repair `Modularity/Patching.lean`'s audit declined as too
 expensive on the `ℚ` side.
 
+# STATUS 2026-07-30 (flt-lean-37): THE `ℤ_[ℓ]` SHORTCUT LOOKS AVAILABLE AND IS
+NOT, AND THE BLOCKING LEAF IS DOWNSTREAM OF THIS MODULE
+
+Two facts a successor will find in this order; the second is why the first is
+not a discharge, and finding it early saves the whole detour.
+
+* **`Modularity.TaylorWilesCoefficients.padicInt ℓ` IS reachable from here**
+  (`Modularity/PatchingCore.lean`, which this module `public import`s), and it
+  satisfies the 2026-07-30 clause `𝔪_𝒪 = (ℓ)` exactly. Nor does the CONSUMER
+  force `𝒪 = W(k)`: `Modularity.TaylorWilesLevelRaw` carries
+  `pres : MvPowerSeries (Fin q) coeff.carrier →+* R` and
+  `diamond : MvPowerSeries (Fin q) ℤ_[p] →+* R` as SEPARATE fields, and
+  `exists_hilbertTaylorWilesBottomLevel` below builds `diamond` over `ℤ_[ℓ]`
+  with no reference to `coeff`. There is also no UPPER bound on `q` in this
+  statement, so padding is free. So "take `𝒪 := ℤ_[ℓ]`, pad `q`" reads as a
+  complete discharge needing no Witt vectors at all.
+
+* **It is not, and the obstruction needs no continuity, no locality of `φ` and
+  no reference to `Modularity.surjective_of_span_range_eq_maximalIdeal` at all**
+  (sharpened 2026-07-30 by flt-lean-37; the earlier form of this bullet argued
+  that `φ` sends each `X i` into `𝔪_R`, which is true only for a LOCAL or
+  CONTINUOUS `φ`, and this statement demands neither — it asks for a bare
+  `Function.Surjective pres`. The sharper argument closes that hole.)
+
+  `MvPowerSeries σ S` is a LOCAL ring whenever `S` is
+  (`Mathlib/RingTheory/MvPowerSeries/Inverse.lean`, the instance
+  `IsLocalRing (MvPowerSeries σ R)`; a series is a unit iff its constant
+  coefficient is), and its residue field is that of `S` — the maximal ideal is
+  `{φ | constantCoeff φ ∈ 𝔪_S}`. Now let `P` be local with maximal ideal `M`
+  and let `ψ : P →+* R` be ANY surjective ring map. Maximal ideals of `R`
+  correspond to maximal ideals of `P` containing `ker ψ`, of which there is
+  exactly one, so `R` is local and `R/𝔪_R ≅ P/M` as fields.
+
+  Take `P := MvPowerSeries (Fin q) ℤ_[ℓ]`, whose residue field is `𝔽_ℓ`. Any
+  surjective `pres` therefore forces `k ≅ 𝒟.R/𝔪 ≅ 𝔽_ℓ`. So for
+  `k = 𝔽_{ℓ^f}` with `f > 1` there is NO surjection whatever, local or not:
+  `coeff := TaylorWilesCoefficients.padicInt ℓ` is not merely awkward, it is
+  impossible. A coefficient ring with residue field `k` is FORCED, and Cohen's
+  coefficient-ring map is genuinely owed. Finding (1) of the survey above
+  stands.
+
+* **And it cannot be paid HERE at all, at any price.** The only inhabitant of
+  `Modularity.TaylorWilesCoefficients` with residue field `k` is
+  `Modularity.TaylorWilesCoefficients.wittVector`, and it — with
+  `Modularity.exists_ringHom_wittVector_of_isAdicComplete` and that theorem's
+  own OPEN leaf `Modularity.existsUnique_ringHom_wittVector_of_isNilpotent`,
+  which is "the ENTIRE remaining content of Cohen's coefficient-ring map" in its
+  own words — lives in `Modularity/Patching.lean`, which transitively IMPORTS
+  this module. Probed 2026-07-30:
+  `#check @Modularity.TaylorWilesCoefficients.wittVector` from a scratch module
+  `public import`ing this one reports `Unknown identifier`.
+
+  Note what is and is not blocked. The STRUCTURE `TaylorWilesCoefficients` is
+  upstream (`PatchingCore.lean`), so a Witt-vector inhabitant could in principle
+  be BUILT here rather than cited — but building one is exactly
+  `existsUnique_ringHom_wittVector_of_isNilpotent`, so that route is the same
+  debt under another name, paid twice. Note also the universe: `carrier : Type`
+  while `k : Type u`, so any such inhabitant must be indexed by `Shrink.{0} k`,
+  which is what `Patching.lean`'s `wittVector p (Shrink.{0} k)` already does.
+
+So the hoist recorded above is a PREREQUISITE for this leaf, not an
+optimisation — no work inside this file can close it — and finding (1) still
+applies to the hoist itself: it MERGES this sorry with the `ℚ`-level
+`existsUnique_ringHom_wittVector_of_isNilpotent` rather than closing either.
+The honest ordering for a successor is therefore: prove that Witt-vector leaf
+first, in `Patching.lean` where it lives; hoist second; discharge this leaf by
+citation third. Dispatching an agent at THIS declaration before step 1 cannot
+succeed.
+
 References: as for `exists_hilbertTaylorWilesBottomLevel` below. -/
 theorem exists_hilbertTaylorWilesBottomPresentation
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
@@ -23693,6 +23762,63 @@ def IsHilbertAuxFibreProductClause (ℓ : ℕ) [Fact ℓ.Prime]
     IsHilbertRaisedLevelHardlyRamified ℓ F Q (rank_finTwoPi A₂)
       (framePushforward p₂ hp₂ ρ) →
     IsHilbertRaisedLevelHardlyRamified ℓ F Q (rank_finTwoPi B) ρ
+
+/-- **RAISED-LEVEL residual-distinctness clause** (NEW 2026-07-30, flt-lean-37):
+the purely LOCAL half of `IsHilbertTaylorWilesPrimeSet`, packaged as a clause so
+that the clause-parameterised frame-ring chain can consume it.
+
+Two facts about each `w ∈ Q`, and nothing else: `w ∤ ℓ`, and the residual
+Frobenius charpoly SPLITS WITH DISTINCT ROOTS in `k`.
+
+**WHY IT HAS TO BE A SEPARATE CLAUSE RATHER THAN A CONSEQUENCE OF `hglue`.**
+`isHilbertSplitTorusAt_of_subring_entries` — the split-torus half of the subring
+descent, and the one genuinely new obligation of the raised-level frame-ring
+construction — is NOT a consequence of the fibre-product clause: the descent
+`C ⊆ A` is a fibre product `C = A ×_{A/J} (C/J)` only for an ideal `J` of `A`
+with `J ⊆ C`, and the resulting recursion asks the clause for the raised-level
+condition at `C/J ⊆ A/J`, i.e. for the same subring descent one length down. It
+is residual distinctness, exactly as for the two sibling split-torus leaves
+`isHilbertSplitTorusAt_of_fibreProduct` and
+`isHilbertSplitTorusAt_of_forall_isOpen_quotient`, that actually closes it: with
+`α ≠ β` in `k` and `C ↠ k`, `exists_frobEigenBasis_of_charFrob_map_eq` fires
+over `C` itself and no basis has to be descended from `A` at all.
+
+Those two siblings take `(n, hQ)` directly, because their consumers
+(`isHilbertAuxFibreProductClause`, `isHilbertAuxProLimitClause`) have them. The
+frame-ring chain does not — it is parameterised by CLAUSES throughout — so the
+same content enters it in clause form. `isHilbertAuxResidualDistinctClause`
+below discharges it from `hQ.1`, and `n` is not needed: only the first and last
+conjuncts of `hQ.1` are used, never the congruence `Nat.card ≡ 1 [MOD ℓ^n]`.
+
+WEAKER THAN `hQ` IN TWO WAYS, deliberately: no depth `n`, and no global
+dual-Selmer vanishing. That keeps the frame-ring chain's hypotheses honest —
+the construction really does use only this much of `hQ`. -/
+def IsHilbertAuxResidualDistinctClause (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F]
+    (Q : Finset (HeightOneSpectrum (𝓞 F)))
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V) : Prop :=
+  ∀ w ∈ Q, ((ℓ : ℕ) : 𝓞 F) ∉ w.asIdeal ∧
+    ∃ α β : k, α ≠ β ∧
+      (ρbar.map (algebraMap ℚ F)).charFrob w =
+        (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β)
+
+/-- **THE RESIDUAL-DISTINCTNESS CLAUSE HOLDS FOR A TAYLOR–WILES PRIME SET**
+(PROVEN 2026-07-30, flt-lean-37): it is the first and fourth conjuncts of
+`IsHilbertTaylorWilesPrimeSet`'s local half, verbatim.
+
+The depth `n` is consumed by neither conjunct, which is why the clause does not
+carry one; it is bound here only because `hQ` mentions it. -/
+theorem isHilbertAuxResidualDistinctClause (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F]
+    (n : ℕ) (Q : Finset (HeightOneSpectrum (𝓞 F)))
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] {ρbar : GaloisRep ℚ k V}
+    (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q) :
+    IsHilbertAuxResidualDistinctClause ℓ F Q ρbar :=
+  fun w hw => ⟨(hQ.1 w hw).1, (hQ.1 w hw).2.2.2⟩
 
 /-- **RAISED-LEVEL finiteness clause** (Schlessinger's H3) — the verbatim
 mirror of `IsHilbertFiniteFramesClause`.
@@ -26043,8 +26169,11 @@ theorem hilbertAuxFrameLevels_directed {ρbar : GaloisRep ℚ k V}
     hglue h1ker h1fin h1loc h1rep h2ker h2fin h2loc h2rep
   exact ⟨J₁ ⊓ J₂, ⟨le_trans inf_le_left h1ker, hfin, hloc, hrep⟩, le_refl _⟩
 
-/-- **THE SPLIT-TORUS CLAUSE DESCENDS TO THE IMAGE SUBRING** — LEAF, and the
-ONE genuinely new obligation in the whole raised-level frame-ring construction.
+/-- **THE SPLIT-TORUS CLAUSE DESCENDS TO THE IMAGE SUBRING** (**PROVEN
+2026-07-30, flt-lean-37**; was the ONE genuinely new obligation in the whole
+raised-level frame-ring construction).  See the RESOLVED section below for what
+had to be added to the statement, and the RESIDUAL PINNING sections above it for
+why the hypothesis-free form is false.
 
 **THIS CONTRADICTS THE "VERBATIM MIRROR" READING OF
 `exists_hilbertAuxLevelIdealSystem_of_clauses`, and the contradiction is not a
@@ -26112,13 +26241,109 @@ theorem, and `hcpA` is `_hres` combined with `hmat`.
 `IsHilbertRaisedLevelHardlyRamified` at `ρC`, verbatim; at `Q = ∅` the leaf is
 vacuous by `Finset.notMem_empty` and the raised-level condition collapses to the
 base one by `isHilbertRaisedLevelHardlyRamified_empty_iff`, which is the
-consistency check that this leaf adds nothing at base level. -/
+consistency check that this leaf adds nothing at base level.
+
+# RESOLVED 2026-07-30 (flt-lean-37): PROVEN BY ROUTE 1, WITH THE TWO MISSING
+HYPOTHESES ADDED AND DISCHARGED AT THE CALL SITE
+
+The leaf is closed.  Route 1 is the one that works; the two things it needed and
+this statement did not carry are now hypotheses, `hπCsurj` and `hdist`, and both
+are free where the chain is fed.  `hglue` turned out NOT to be needed at all and
+is now `_hglue` — route 2 below is circular, and is kept as a record of why.
+
+(a) `Function.Surjective (πA.comp C.subtype)`, i.e. `C ↠ k`.  The paragraph
+    above asserts it ("`C` contains the image of the frame ring"), but that is a
+    fact about the CALL SITE, not something derivable here — `C` is quantified
+    over arbitrary subrings carrying only `IsLocalRing C` and `Algebra ℤ_[ℓ] C`,
+    and for `C` the image of `ℤ_[ℓ]` it is simply FALSE.  It is free at the call
+    site: `hilbertAuxFrameLevels_repClause_ker` sets `C := f.range` with
+    `hres : πA.comp f = hilbertFrameEv ℓ F k ρbar e0`, and
+    `hilbertFrameEv_surjective` makes that composite surjective.  So it stops
+    here and is threaded no further.
+
+(b) RESIDUAL DISTINCTNESS of the two Frobenius eigenvalues at `w`, without which
+    `exists_frobEigenBasis_of_charFrob_map_eq` cannot fire over `C`.  This is
+    `hdist : IsHilbertAuxResidualDistinctClause ℓ F Q ρbar`, and it is threaded
+    the whole way up the frame-ring chain — through
+    `isHilbertRaisedLevelHardlyRamified_of_subring_entries`,
+    `hilbertAuxFrameLevels_repClause_ker`,
+    `hilbertAuxFrameLevels_classification`,
+    `exists_hilbertAuxLevelIdealSystem_of_clauses`,
+    `exists_universalFrame_profinite_hilbertAux_of_clauses` and
+    `exists_isWeaklyUniversal_hilbertAuxDeformationDatum_of_clauses` — where
+    `exists_isWeaklyUniversal_hilbertAuxDeformationDatum` discharges it from its
+    `hQ` by `isHilbertAuxResidualDistinctClause`.  A CLAUSE, not `(n, hQ)`,
+    because the frame-ring chain is clause-parameterised throughout; see that
+    definition for why the weaker object is the honest one.
+
+**The proof, once (a) and (b) are in hand, needs no descent of a basis at all.**
+It is the sibling leaves' mechanism verbatim, run over `C` rather than over `A`:
+the pinning `hcpA` transports through `C.subtype` to give
+`(ρC.charFrob w).map (πA ∘ C.subtype) = (X − α)(X − β)` with `α ≠ β`, so
+`exists_frobEigenBasis_of_charFrob_map_eq` diagonalises `ρC(Frob_w)` OVER `C`;
+`commute_toLocal_of_isHilbertSplitTorusAt`, applied to the splitting `hHRA`
+already provides over `A` and pulled back through the INJECTION `C → A`, gives
+the commutation of `ρC.toLocal w g` with `ρC.toLocal w Frob`; and
+`toLocal_diagonal_of_frobDiagonal_of_commute` then diagonalises the whole local
+image.  The determinant clause of `hHRA` descends entrywise, `w ∤ ℓ` (the first
+conjunct of `hdist`) makes `cyclotomicCharacter` trivial on inertia by
+`cyclotomicCharacter_map_map_eq_one_of_mem_localInertiaGroup`, so `χ·δ = 1` on
+inertia, and `forall_map_eq_one_of_isHilbertSplitTorusAt_of_mul_eq_one` turns
+that into `δ = 1` on inertia.  So `A` is used only for the COMMUTATION and for
+the determinant, never as a source of a basis — which is exactly why the
+counterexample below, which is about descending a basis, does not bite.
+
+**Route 2 (Schlessinger dévissage against `hglue`) is CIRCULAR as sketched**,
+and this is why `_hglue` is unused.
+Write the step as `C_i = C_{i+1} ×_{C_{i+1}/J} (C_i/J)` with `J := t·C_{i+1}`,
+an ideal of `C_{i+1}` contained in `C_i`.  That IS a genuine fibre product of
+the shape `IsHilbertAuxFibreProductClause` demands: given `(a, c̄)` with
+`a ≡ c̄`, one has `a ∈ C_i + J = C_i`.  But the clause then requires the
+raised-level condition at `A₂ := C_i/J`, and `C_i/J` is a SUBRING of
+`C_{i+1}/J`, not a quotient of `C_{i+1}` — so discharging it is another instance
+of the very subring descent being proved.  Descending induction along the chain
+does not break the circle; it reproduces it one level down.
+
+**The counterexample printed above does NOT survive the determinant clause, and
+must be repaired before it is quoted again.**  Two independent failures of the
+printed witness: `M = [[0, uw],[0, u]]` is not INVERTIBLE (`det M = 0`), so it is
+`ρ(g)` for no `g`; and its unit shift `[[1, uw],[0, 1+u]]` has `det = 1 + u`,
+which is not in the image of `ℤ_[ℓ] → A` (that image is the prime field), so
+`IsHilbertRaisedLevelHardlyRamified.det` excludes it outright.  The shape that
+survives both, and the one to keep, is
+
+    M = [[1 + u, uw], [0, 1 − u]]   over  A = k[u,w]/(u², w²),
+    C = k ⊕ k·u ⊕ k·uw,             det M = 1 − u² = 1.
+
+`M` IS diagonalisable over `A`, in the basis `{(1, 0), (−w/2, 1)}` — this is
+where `2` must be a unit, i.e. `ℓ` odd, which the call site supplies (`hodd`).
+It is NOT diagonalisable over `C`: an eigenvector `(x, y)` for `1 − u` satisfies
+`2u·x + uw·y = 0`, and extending it to a `C`-basis forces `y` to be a UNIT
+(every `1+u`-eigenvector has second coordinate in `Ann(u) = 𝔪_C`), whence
+`u·(2x) = −uw·y` with `u·C = k·u` while `uw·y ∈ k^× · uw`, and `u`, `uw` are
+independent in `A`.  Confirmed at `ℓ = 5` by exhaustive search over all
+`5³ = 125` elements of `C`: 3125 eigenvectors, no diagonalising `C`-basis.
+
+Note the residual eigenvalues here are `1` and `1` — EQUAL, which is exactly
+what (b) forbids.  So the determinant clause does not make (b) redundant:
+residual distinctness is doing real work, not saving a case, and the repaired
+witness is the reason (b) had to be threaded rather than argued away.
+
+**THE COUNTEREXAMPLE IS NOT A REFUTATION OF THE STATEMENT AS IT NOW STANDS**,
+and it never could have been: the configuration above is linear algebra only,
+and realising it as an actual `FramedGaloisRep F A (Fin 2)` satisfying `hHRA`
+in full (`det = χ_cyc` at EVERY `g`, unramified off `Q ∪ {2, ℓ}`, flat at `ℓ`,
+tame at `2`) was never attempted.  What it does show, and all it shows, is that
+the hypothesis-free form is false — which is why `hdist` is a hypothesis here
+and not a lemma. -/
 theorem isHilbertSplitTorusAt_of_subring_entries {ρbar : GaloisRep ℚ k V}
-    (hglue : IsHilbertAuxFibreProductClause ℓ F Q ρbar)
+    (_hglue : IsHilbertAuxFibreProductClause ℓ F Q ρbar)
+    (hdist : IsHilbertAuxResidualDistinctClause ℓ F Q ρbar)
     {A : Type u} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
     [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A] [DiscreteTopology A]
-    (πA : A →+* k) (hπsurj : Function.Surjective πA)
+    (πA : A →+* k) (_hπsurj : Function.Surjective πA)
     (C : Subring A) [IsLocalRing C] [Algebra ℤ_[ℓ] C]
+    (hπCsurj : Function.Surjective (πA.comp C.subtype))
     {ρC : FramedGaloisRep F C (Fin 2)} {ρA : FramedGaloisRep F A (Fin 2)}
     (hent : ∀ (g : Γ F) (i j : Fin 2),
       ((LinearMap.toMatrix' (ρC g) i j : C) : A) =
@@ -26130,13 +26355,132 @@ theorem isHilbertSplitTorusAt_of_subring_entries {ρbar : GaloisRep ℚ k V}
     ∃ (e : (Fin 2 → C) ≃ₗ[C] C × C) (χ δ : GaloisRep (w.adicCompletion F) C C),
       (∀ (g : Γ (w.adicCompletion F)) (v : Fin 2 → C),
         e (ρC.toLocal w g v) = (χ g (e v).1, δ g (e v).2)) ∧
-      localInertiaGroup w ≤ δ.ker :=
-  sorry
+      localInertiaGroup w ≤ δ.ker := by
+  classical
+  haveI : Finite C := Subtype.finite
+  haveI : IsAdicComplete (IsLocalRing.maximalIdeal C) C := inferInstance
+  set Fr := Field.AbsoluteGaloisGroup.adicArithFrob w with hFrdef
+  obtain ⟨hwℓ, α, β, hαβ, hcfbar⟩ := hdist w hw
+  -- the inclusion `C → A`, and the identification of `ρA` with the pushforward
+  set p : C →+* A := C.subtype with hpdef
+  have hpcont : Continuous p := continuous_of_discreteTopology
+  have hinjp : Function.Injective p := by
+    intro x y h
+    exact Subtype.val_injective h
+  have hpush : framePushforward p hpcont ρC = ρA := by
+    refine GaloisRep.ext fun g => ?_
+    refine LinearMap.toMatrix'.injective (Matrix.ext fun i j => ?_)
+    rw [toMatrix'_framePushforward p hpcont ρC g, Matrix.map_apply]
+    exact hent g i j
+  -- ## residual distinctness at `w ∈ Q`, transported to `C` by the pinning
+  have hπC : ∀ g : Γ F, ((ρC g).charpoly).map (πA.comp p) =
+      ((ρbar.map (algebraMap ℚ F)) g).charpoly := by
+    intro g
+    have h1 : ((ρC g).charpoly).map (πA.comp p)
+        = (((ρC g).charpoly).map p).map πA := by
+      rw [Polynomial.map_map]
+    have h2 : ((ρC g).charpoly).map p = (ρA g).charpoly := by
+      rw [charpoly_eq_charpoly_toMatrix', charpoly_eq_charpoly_toMatrix',
+        ← Matrix.charpoly_map]
+      congr 1
+      ext i j
+      exact hent g i j
+    rw [h1, h2]
+    exact hcpA g
+  have hchar : (ρC.charFrob w).map (πA.comp p) =
+      (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β) := by
+    rw [← hcfbar]
+    show ((ρC.toLocal w Fr).charpoly).map (πA.comp p)
+      = ((ρbar.map (algebraMap ℚ F)).toLocal w Fr).charpoly
+    rw [GaloisRep.toLocal_apply, GaloisRep.toLocal_apply]
+    exact hπC _
+  obtain ⟨e, a, b, hab, hdiag⟩ :=
+    exists_frobEigenBasis_of_charFrob_map_eq w (πA.comp p) hπCsurj ρC α β hαβ hchar
+  -- ## the determinant clause over `C`
+  have halgC : ∀ r : ℤ_[ℓ], p (algebraMap ℤ_[ℓ] C r) = algebraMap ℤ_[ℓ] A r := by
+    intro r
+    have h := hilbertRingHom_padicInt_ext_finite (ℓ := ℓ)
+      ((C.subtype : C →+* A).comp (algebraMap ℤ_[ℓ] C)) (algebraMap ℤ_[ℓ] A)
+    exact RingHom.congr_fun h r
+  have hdetC : ∀ g : Γ F, ρC.det g = algebraMap ℤ_[ℓ] C
+      (cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ F) g).toRingEquiv) := by
+    intro g
+    refine hinjp ?_
+    have hd1 : ((LinearMap.det (ρC g) : C) : A) = LinearMap.det (ρA g) := by
+      rw [← LinearMap.det_toMatrix' (ρC g), ← LinearMap.det_toMatrix' (ρA g)]
+      have hmap : (LinearMap.toMatrix' (ρC g)).map (fun c : C => (c : A)) =
+          LinearMap.toMatrix' (ρA g) := by
+        ext i j
+        exact hent g i j
+      rw [← hmap]
+      exact (RingHom.map_det (C.subtype : C →+* A) (LinearMap.toMatrix' (ρC g))).symm
+    show ((ρC.det g : C) : A) = _
+    rw [GaloisRep.det_apply, hd1, halgC, ← GaloisRep.det_apply]
+    exact hHRA.det g
+  -- ## commutation with Frobenius, read off the single level `A`
+  have key : ∀ (h : Γ (w.adicCompletion F)) (y : Fin 2 → C),
+      (framePushforward p hpcont ρC).toLocal w h (fun j => p (y j))
+        = fun j => p (ρC.toLocal w h y j) := by
+    intro h y
+    funext i
+    rw [GaloisRep.toLocal_apply, GaloisRep.toLocal_apply]
+    exact framePushforward_apply_map p hpcont ρC _ y i
+  have hsplitA : ∃ (eA : (Fin 2 → A) ≃ₗ[A] A × A)
+      (χ δ : GaloisRep (w.adicCompletion F) A A),
+      (∀ (g : Γ (w.adicCompletion F)) (v : Fin 2 → A),
+        eA ((framePushforward p hpcont ρC).toLocal w g v)
+          = (χ g (eA v).1, δ g (eA v).2)) ∧
+      localInertiaGroup w ≤ δ.ker := by
+    rw [hpush]
+    exact hHRA.isSplitTorusAt w hw
+  have hcommFr : ∀ (g : Γ (w.adicCompletion F)) (x : Fin 2 → C),
+      ρC.toLocal w g (ρC.toLocal w Fr x) = ρC.toLocal w Fr (ρC.toLocal w g x) := by
+    intro g x
+    funext i
+    refine hinjp ?_
+    have hlev := commute_toLocal_of_isHilbertSplitTorusAt w
+      (ρS := framePushforward p hpcont ρC) hsplitA g Fr (fun j => p (x j))
+    rw [key Fr x, key g x, key g (ρC.toLocal w Fr x),
+      key Fr (ρC.toLocal w g x)] at hlev
+    exact congrFun hlev i
+  -- ## the DIAGONAL form over `C`
+  obtain ⟨c, d, hkey⟩ : ∃ c d : Γ (w.adicCompletion F) → C,
+      ∀ (g : Γ (w.adicCompletion F)) (v : Fin 2 → C),
+        e (ρC.toLocal w g v) = (c g * (e v).1, d g * (e v).2) :=
+    ⟨_, _, toLocal_diagonal_of_frobDiagonal_of_commute w ρC e a b hab hdiag hcommFr⟩
+  -- ## the DETERMINANT is trivial on inertia at `w`, because `w ∤ ℓ`
+  have hprod : ∀ ι ∈ localInertiaGroup w, c ι * d ι = 1 := by
+    intro ι hι
+    have hD := det_eq_mul_of_toLocal_diagonal e (ρC.toLocal w ι) (c ι) (d ι) (hkey ι)
+    rw [← hD]
+    have h := hdetC (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F)) ι)
+    rw [GaloisRep.det_apply] at h
+    show LinearMap.det (ρC (Field.absoluteGaloisGroup.map
+      (algebraMap F (w.adicCompletion F)) ι)) = 1
+    rw [h, cyclotomicCharacter_map_map_eq_one_of_mem_localInertiaGroup ℓ F w hwℓ ι hι]
+    simp
+  -- ## the unramified character is trivial on inertia over `C`
+  have h₁' := forall_map_eq_one_of_isHilbertSplitTorusAt_of_mul_eq_one w p hpcont ρC
+    hsplitA e a b hab hdiag c d hkey hprod
+  have hd1 : ∀ ι ∈ localInertiaGroup w, d ι = 1 := by
+    intro ι hι
+    refine hinjp ?_
+    rw [(h₁' ι hι).2, map_one]
+  have hiner : ∀ ι ∈ localInertiaGroup w,
+      ρC.toLocal w ι (e.symm ((0 : C), (1 : C))) = e.symm ((0 : C), (1 : C)) := by
+    intro ι hι
+    apply e.injective
+    rw [hkey ι, e.apply_symm_apply, hd1 ι hι]
+    simp
+  obtain ⟨χ, δ, hint, hδ⟩ :=
+    exists_splitTorus_of_frobDiagonal_of_commute w ρC e a b hab hdiag hcommFr hiner
+  exact ⟨e, χ, δ, hint, hδ⟩
 
 open scoped TensorProduct in
 /-- **RAISED-LEVEL SUBRING DESCENT** — the raised-level twin of
-`isHilbertHardlyRamified_of_subring_entries`, PROVEN over the single new leaf
-`isHilbertSplitTorusAt_of_subring_entries` above.
+`isHilbertHardlyRamified_of_subring_entries`, PROVEN (its fifth clause over
+`isHilbertSplitTorusAt_of_subring_entries` above, itself PROVEN 2026-07-30).
 
 Four of the five clauses are the base-level proof one line for one line: `det`
 and `isTameAtTwo` are literally the same two applications (the tame clause
@@ -26145,16 +26489,20 @@ only `ρA`'s determinant and its tame clause and therefore does not care which o
 the two local conditions supplied them), `isFlat` is the same base-change
 transport, and `isUnramified` is the same "an element killed by `ρA` is killed
 by `ρC`" argument, merely restricted to `w ∉ Q`.  The fifth clause,
-`isSplitTorusAt`, is the leaf — see its docstring for the counterexample showing
-it is NOT a transcription. -/
+`isSplitTorusAt`, is NOT a transcription — see the counterexample on
+`isHilbertSplitTorusAt_of_subring_entries`, and note that closing it is what
+put `hdist` and `hπCsurj` in this signature.  `hπCsurj` stops here (the caller
+supplies it for free from `C = f.range`); `hdist` is threaded on upwards. -/
 theorem isHilbertRaisedLevelHardlyRamified_of_subring_entries
     {ρbar : GaloisRep ℚ k V}
     (hglue : IsHilbertAuxFibreProductClause ℓ F Q ρbar)
+    (hdist : IsHilbertAuxResidualDistinctClause ℓ F Q ρbar)
     {A : Type u} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
     [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A] [DiscreteTopology A]
     (h2 : IsUnit (2 : A))
     (πA : A →+* k) (hπsurj : Function.Surjective πA)
     (C : Subring A) [IsLocalRing C] [Algebra ℤ_[ℓ] C]
+    (hπCsurj : Function.Surjective (πA.comp C.subtype))
     {ρC : FramedGaloisRep F C (Fin 2)} {ρA : FramedGaloisRep F A (Fin 2)}
     (hent : ∀ (g : Γ F) (i j : Fin 2),
       ((LinearMap.toMatrix' (ρC g) i j : C) : A) =
@@ -26244,8 +26592,8 @@ theorem isHilbertRaisedLevelHardlyRamified_of_subring_entries
     exact isHilbertTameAtTwo_of_subring_entries ℓ F h2 C hent hHRA.det
       hHRA.isTameAtTwo w hw (htsep w hw)
   · intro w hw
-    exact isHilbertSplitTorusAt_of_subring_entries ℓ F k Q hglue πA hπsurj C
-      hent hcpA hHRA w hw
+    exact isHilbertSplitTorusAt_of_subring_entries ℓ F k Q hglue hdist πA hπsurj C
+      hπCsurj hent hcpA hHRA w hw
 
 /-- **THE REPRESENTATION CLAUSE FOR `ker f` AT RAISED LEVEL** — the raised-level
 twin of `hilbertFrameLevels_repClause_ker`, its four steps unchanged, with
@@ -26263,6 +26611,7 @@ theorem hilbertAuxFrameLevels_repClause_ker {ρbar : GaloisRep ℚ k V}
     (hodd : Odd ℓ) (e0 : V ≃ₗ[k] (Fin 2 → k))
     (hbase : IsHilbertAuxBaseChangeClause ℓ F Q)
     (hglue : IsHilbertAuxFibreProductClause ℓ F Q ρbar)
+    (hdist : IsHilbertAuxResidualDistinctClause ℓ F Q ρbar)
     (_hfin : IsHilbertAuxFiniteFramesClause ℓ F Q)
     (htsep : IsHilbertTameSeparationClause ℓ F)
     (A : Type u) [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
@@ -26364,9 +26713,19 @@ theorem hilbertAuxFrameLevels_repClause_ker {ρbar : GaloisRep ℚ k V}
       show ((fC (hilbertFrameMat ℓ F k g i j) : C) : A) = _
       rw [hfC, ← hentf g i j]
     rw [hent g i j, hR]
+  -- The image subring `C = f.range` surjects onto `k`, because `πA ∘ f` is the
+  -- frame evaluation, which does.  This is the hypothesis `hπCsurj` of the
+  -- split-torus half of the descent, and it is free exactly here.
+  have hπCsurj : Function.Surjective (πA.comp C.subtype) := by
+    intro x
+    obtain ⟨y, hy⟩ := hilbertFrameEv_surjective ℓ F k ρbar e0 x
+    have hmem : f y ∈ C := by rw [hCdef]; exact ⟨y, rfl⟩
+    refine ⟨⟨f y, hmem⟩, ?_⟩
+    show πA (f y) = x
+    rw [← RingHom.comp_apply, hres, hy]
   have hHRC : IsHilbertRaisedLevelHardlyRamified ℓ F Q (rank_finTwoPi C) ρC :=
-    isHilbertRaisedLevelHardlyRamified_of_subring_entries ℓ F k Q hglue h2 πA
-      hπsurj C hent hcpA hHRA htsep
+    isHilbertRaisedLevelHardlyRamified_of_subring_entries ℓ F k Q hglue hdist h2 πA
+      hπsurj C hπCsurj hent hcpA hHRA htsep
   -- STEP 4: transport along `range f ≃+* P ⧸ ker f`.
   obtain ⟨σ, hσfC⟩ : ∃ σ : C →+* (hilbertFrameRing ℓ F k ⧸ RingHom.ker f),
       ∀ x : hilbertFrameRing ℓ F k,
@@ -26396,6 +26755,7 @@ theorem hilbertAuxFrameLevels_classification {ρbar : GaloisRep ℚ k V}
     (𝒟₀ : HilbertAuxDeformationDatum ℓ F Q ρbar)
     (hbase : IsHilbertAuxBaseChangeClause ℓ F Q)
     (hglue : IsHilbertAuxFibreProductClause ℓ F Q ρbar)
+    (hdist : IsHilbertAuxResidualDistinctClause ℓ F Q ρbar)
     (hfin : IsHilbertAuxFiniteFramesClause ℓ F Q)
     (htsep : IsHilbertTameSeparationClause ℓ F)
     (hrig : IsHilbertResidualRigidityClause F ρbar)
@@ -26551,15 +26911,17 @@ theorem hilbertAuxFrameLevels_classification {ρbar : GaloisRep ℚ k V}
     rw [Ideal.Quotient.lift_mk, Ideal.Quotient.lift_mk] at hxy
     rw [Ideal.Quotient.eq, RingHom.mem_ker, map_sub, hxy, sub_self]
   · intro _ _ _ _ _
-    exact hilbertAuxFrameLevels_repClause_ker ℓ F k Q hodd e0 hbase hglue hfin
+    exact hilbertAuxFrameLevels_repClause_ker ℓ F k Q hodd e0 hbase hglue hdist hfin
       htsep A πA hπsurj ρA' hHRA' f hc2 (fun g => by rw [hmatf g, ← hρA'mat g])
 
 
 end HilbertAuxFrameLevels
 
-/-- **The RAISED-LEVEL level-ideal system** (**PROVEN 2026-07-30, flt-lean-162**,
-over the single new leaf `isHilbertSplitTorusAt_of_subring_entries` in the
-`HilbertAuxFrameRing` block immediately above; cut 2026-07-29, flt-lean-64, as
+/-- **The RAISED-LEVEL level-ideal system** (**PROVEN 2026-07-30, flt-lean-162**;
+its last leaf `isHilbertSplitTorusAt_of_subring_entries` in the
+`HilbertAuxFrameRing` block immediately above was closed 2026-07-30 by
+flt-lean-37, which is where the `hdist` argument came from; cut 2026-07-29,
+flt-lean-64, as
 the raised-level twin of `exists_hilbertLevelIdealSystem_of_clauses` above, and
 its statement verbatim with `IsHilbertRaisedLevelHardlyRamified ℓ F Q` in place
 of `IsHilbertHardlyRamified ℓ F` and the four clauses replaced by their `Aux`
@@ -26587,9 +26949,11 @@ recorded on the declarations concerned:
   `isHilbertHardlyRamified_of_subring_entries`, which descends four clauses
   along a subring `C ⊆ A`.  The fifth, raised-level, clause `isSplitTorusAt`
   does NOT descend — see the explicit `k[u,w]/(u²,w²)` counterexample on
-  `isHilbertSplitTorusAt_of_subring_entries`.  That is the single remaining
-  leaf of this construction, and it is a genuine obligation, not a
-  proof-search difficulty.
+  `isHilbertSplitTorusAt_of_subring_entries`.  It was the last leaf of this
+  construction; it is now PROVEN (2026-07-30, flt-lean-37) from
+  `IsHilbertAuxResidualDistinctClause`, which is why every declaration in the
+  chain carries an `hdist`.  It was a genuine obligation, not a proof-search
+  difficulty: the hypothesis-free form is refuted by that counterexample.
 
 One released declaration was GENERALISED (not weakened for anything else) to
 make the reuse possible: `isHilbertTameAtTwo_of_subring_entries` used to take
@@ -26653,6 +27017,7 @@ theorem exists_hilbertAuxLevelIdealSystem_of_clauses
     (𝒟₀ : HilbertAuxDeformationDatum ℓ F Q ρbar)
     (hbase : IsHilbertAuxBaseChangeClause ℓ F Q)
     (hglue : IsHilbertAuxFibreProductClause ℓ F Q ρbar)
+    (hdist : IsHilbertAuxResidualDistinctClause ℓ F Q ρbar)
     (hfin : IsHilbertAuxFiniteFramesClause ℓ F Q)
     (htsep : IsHilbertTameSeparationClause ℓ F)
     (hrig : IsHilbertResidualRigidityClause F ρbar) :
@@ -26705,7 +27070,7 @@ theorem exists_hilbertAuxLevelIdealSystem_of_clauses
     fun J hJ => hJ.1, fun J hJ => ⟨hJ.2.1, hJ.2.2.1⟩,
     hilbertFrameMat_map_frameEv_charpoly ℓ F k ρbar e0,
     fun J hJ _ _ _ _ _ => hJ.2.2.2,
-    hilbertAuxFrameLevels_classification ℓ F k Q hodd hirrF 𝒟₀ hbase hglue hfin
+    hilbertAuxFrameLevels_classification ℓ F k Q hodd hirrF 𝒟₀ hbase hglue hdist hfin
       htsep hrig e0,
     fun A _ _ _ πA f₁ f₂ h₁ h₂ hM =>
       hilbertFrameRing_rigid ℓ F k e0 A πA f₁ f₂ h₁ h₂ hM⟩
@@ -27106,6 +27471,7 @@ theorem exists_universalFrame_profinite_hilbertAux_of_clauses
     (𝒟₀ : HilbertAuxDeformationDatum ℓ F Q ρbar)
     (hbase : IsHilbertAuxBaseChangeClause ℓ F Q)
     (hglue : IsHilbertAuxFibreProductClause ℓ F Q ρbar)
+    (hdist : IsHilbertAuxResidualDistinctClause ℓ F Q ρbar)
     (hfin : IsHilbertAuxFiniteFramesClause ℓ F Q)
     (htsep : IsHilbertTameSeparationClause ℓ F)
     (hrig : IsHilbertResidualRigidityClause F ρbar) :
@@ -27136,7 +27502,7 @@ theorem exists_universalFrame_profinite_hilbertAux_of_clauses
   obtain ⟨P, iP, iPalg, evbar, hevsurj, M, 𝒥, hne, hdir, hker, hlev,
       hres, hrep, hclass, hsep⟩ :=
     exists_hilbertAuxLevelIdealSystem_of_clauses ℓ F Q hodd hirrF 𝒟₀ hbase hglue
-      hfin htsep hrig
+      hdist hfin htsep hrig
   letI := iP
   letI := iPalg
   exact exists_universalFrame_profinite_hilbertAux_of_levelIdealSystem ℓ F Q hbase
@@ -27419,6 +27785,7 @@ theorem exists_isWeaklyUniversal_hilbertAuxDeformationDatum_of_clauses
     (𝒟₀ : HilbertAuxDeformationDatum ℓ F Q ρbar)
     (hbase : IsHilbertAuxBaseChangeClause ℓ F Q)
     (hglue : IsHilbertAuxFibreProductClause ℓ F Q ρbar)
+    (hdist : IsHilbertAuxResidualDistinctClause ℓ F Q ρbar)
     (hfin : IsHilbertAuxFiniteFramesClause ℓ F Q)
     (htsep : IsHilbertTameSeparationClause ℓ F)
     (hlim : IsHilbertAuxProLimitClause ℓ F Q ρbar)
@@ -27428,7 +27795,7 @@ theorem exists_isWeaklyUniversal_hilbertAuxDeformationDatum_of_clauses
   obtain ⟨R, iCR, iTS, iTR, iLR, iAlg, iCompact, iT2, ρuniv, πuniv, hπsurj,
       hπcont, hbasis, hres, hquot, hinj, huniv⟩ :=
     exists_universalFrame_profinite_hilbertAux_of_clauses ℓ F Q hodd hirrF 𝒟₀
-      hbase hglue hfin htsep hrig
+      hbase hglue hdist hfin htsep hrig
   -- **The `πuniv`-compatible continuous points of `R` in a finite DISCRETE test
   -- ring are finite in number**: `hinj` injects them into the raised-level
   -- frames over that ring, of which `hfin` gives finitely many.
@@ -27554,6 +27921,7 @@ theorem exists_isWeaklyUniversal_hilbertAuxDeformationDatum
     ((Fact.out : ℓ.Prime).odd_of_ne_two (by omega)) hirrF 𝒟₀
     (isHilbertAuxBaseChangeClause ℓ F Q)
     (isHilbertAuxFibreProductClause ℓ hℓ5 F hw2 n Q hQ)
+    (isHilbertAuxResidualDistinctClause ℓ F n Q hQ)
     (isHilbertAuxFiniteFramesClause ℓ F Q)
     (isHilbertTameSeparationClause ℓ
       ((Fact.out : ℓ.Prime).odd_of_ne_two (by omega)) F hw2)
