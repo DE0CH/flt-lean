@@ -35,6 +35,23 @@ most two points lie over each `x` (`TorsionCard.pointsAt_card` and the
 Note that no separate nonvanishing input is needed: `ΨSqₚ ≠ 0` already
 follows from coprimality with `Φₚ`, which has degree `p² > 0` and is
 therefore not a unit (`ΨSq_ne_zero`).
+
+ADDED 2026-07-30, and it is the OTHER half of the dichotomy — cyclicity
+above bounds `E(k)[p]` from ABOVE, and what a consumer usually wants next is
+whether it is nonzero at all.  `exists_ne_zero_torsion_iff_natDegree_ΨSq_ne_zero`
+turns that existence question into a statement about a single explicit
+polynomial:
+
+    (∃ P ≠ 0, n • P = 0)  ↔  (ΨSqₙ).natDegree ≠ 0.
+
+It is characteristic-AGNOSTIC and holds for every `n ≠ 0` — the only inputs
+are `TorsionCard.smul_some_eq_zero_iff` (an affine point is `n`-torsion iff
+its `x`-coordinate is a root of `ΨSqₙ`), `ΨSq_ne_zero`, and the surjectivity
+of the `x`-coordinate map over an algebraically closed field
+(`exists_nonsingular_of_isAlgClosed`).  At `n = p` in characteristic `p` it
+reads, through `exists_pow_eq_ΨSq_of_charP`, as `deg g ≥ 1`: ORDINARY on the
+left, SUPERSINGULAR (`ΨSqₚ` constant) on the right.  `HasseBound.lean`
+consumes it in exactly that case.
 -/
 module
 
@@ -325,5 +342,72 @@ theorem exists_zsmul_eq_of_charP [IsAlgClosed k] {p : ℕ} (hp : p.Prime) (hchar
     ⟨p * p, Nat.mul_le_mul_left p hp.two_le, hcount⟩
   have := hp.two_le
   omega
+
+omit [DecidableEq k] in
+/-- **Over an algebraically closed field every `x` carries a point of the
+curve** (PROVEN 2026-07-30): the `y`-fibre quadratic `yQuad` is monic of
+degree `2`, hence has a root, and for an elliptic curve `Δ ≠ 0` promotes the
+resulting `Equation` to `Nonsingular`
+(`WeierstrassCurve.Affine.equation_iff_nonsingular`).
+
+This is the surjectivity of the `x`-coordinate map, and it is what turns a
+ROOT of a division polynomial into an actual torsion POINT. -/
+theorem exists_nonsingular_of_isAlgClosed [IsAlgClosed k] (x : k) :
+    ∃ y : k, (E⁄k).toAffine.Nonsingular x y := by
+  haveI : (E⁄k).IsElliptic := inferInstanceAs ((E.map (algebraMap k k)).IsElliptic)
+  have hne := TorsionCard.yQuad_ne_zero E x
+  have hdeg : (TorsionCard.yQuad E x).degree ≠ 0 := by
+    rw [Polynomial.degree_eq_natDegree hne, TorsionCard.yQuad_natDegree]
+    exact by decide
+  obtain ⟨y, hy⟩ := IsAlgClosed.exists_root _ hdeg
+  exact ⟨y, (WeierstrassCurve.Affine.equation_iff_nonsingular (W := (E⁄k).toAffine)).mp
+    ((TorsionCard.eval_yQuad_eq_zero_iff_equation E x y).mp hy)⟩
+
+/-- **Nonzero `n`-torsion exists exactly when the `n`-division polynomial is
+NON-CONSTANT** (PROVEN 2026-07-30), over an algebraically closed field, in
+ANY characteristic and for every `n ≠ 0`.
+
+This is the dictionary that lets an existence question about the geometric
+torsion be asked instead about a single explicit polynomial over the base
+field — `ΨSqₙ` is defined over the base and `natDegree` survives base change
+along a field map, so the right-hand side may be read on the base curve.
+
+* `→` is `TorsionCard.smul_some_eq_zero_iff`: a nonzero point is affine, its
+  `x`-coordinate is a root of `ΨSqₙ`, and a nonzero polynomial with a root is
+  non-constant.
+* `←` is the same equivalence run backwards, with `IsAlgClosed.exists_root`
+  supplying the `x` and `exists_nonsingular_of_isAlgClosed` the `y`.
+
+Both directions need `ΨSqₙ ≠ 0`, which is `ΨSq_ne_zero` — available with no
+characteristic hypothesis, which is why this statement needs none either. In
+characteristic `p` at `n = p` it is exactly the ordinary/supersingular
+dichotomy: `ΨSqₚ = gᵖ` (`exists_pow_eq_ΨSq_of_charP`), so the right-hand side
+reads `deg g ≥ 1`, and `deg g = 0` is the supersingular case `E(k)[p] = 0`. -/
+theorem exists_ne_zero_torsion_iff_natDegree_ΨSq_ne_zero [IsAlgClosed k]
+    {n : ℤ} (hn : n ≠ 0) :
+    (∃ P : (E⁄k).Point, P ≠ 0 ∧ n • P = 0) ↔ ((E⁄k).ΨSq n).natDegree ≠ 0 := by
+  haveI : (E⁄k).IsElliptic := inferInstanceAs ((E.map (algebraMap k k)).IsElliptic)
+  have hΨne : (E⁄k).ΨSq n ≠ 0 := ΨSq_ne_zero E hn
+  constructor
+  · rintro ⟨P, hP0, hPn⟩ hdeg
+    obtain ⟨x, y, h, rfl⟩ :
+        ∃ (x : k) (y : k) (h : (E⁄k).toAffine.Nonsingular x y),
+          P = Affine.Point.some x y h := by
+      cases P with
+      | zero => exact absurd rfl hP0
+      | some x y h => exact ⟨x, y, h, rfl⟩
+    have hev : ((E⁄k).ΨSq n).eval x = 0 :=
+      (TorsionCard.smul_some_eq_zero_iff E hn h).mp hPn
+    rw [Polynomial.eq_C_of_natDegree_eq_zero hdeg, Polynomial.eval_C] at hev
+    exact hΨne (by rw [Polynomial.eq_C_of_natDegree_eq_zero hdeg, hev, map_zero])
+  · intro hdeg
+    have hdeg' : ((E⁄k).ΨSq n).degree ≠ 0 := by
+      rw [Polynomial.degree_eq_natDegree hΨne]
+      exact fun h => hdeg (by exact_mod_cast h)
+    obtain ⟨x, hx⟩ := IsAlgClosed.exists_root _ hdeg'
+    obtain ⟨y, h⟩ := exists_nonsingular_of_isAlgClosed E x
+    refine ⟨Affine.Point.some x y h, ?_, ?_⟩
+    · exact fun hh => nomatch hh.trans (show (0 : (E⁄k).Point) = Affine.Point.zero from rfl)
+    · exact (TorsionCard.smul_some_eq_zero_iff E hn h).mpr hx
 
 end TorsionCharP
