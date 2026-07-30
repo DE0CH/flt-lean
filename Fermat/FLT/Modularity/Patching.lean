@@ -11926,9 +11926,60 @@ theorem commute_toLocal_of_forall_isOpen_quotient.{a} {p : ℕ} (hpodd : Odd p)
   have hzero := hsep _ (fun n => hlevelcomm n i)
   simpa [sub_eq_zero] using hzero
 
+open Polynomial in
+/-- **THE CONVERSE of `exists_linearEquiv_prod_of_charpoly_eq_mul`** (PROVEN
+2026-07-30): a diagonalised endomorphism of a free module has the SPLIT
+characteristic polynomial `(X - a)(X - b)`.
+
+Neither localness nor a unit gap is needed in this direction — the content is
+just that `e` conjugates `M` to `prodMap (a • id) (b • id)`, whose trace is
+`a + b` and whose determinant is `a * b`, read through
+`charpoly_eq_quadratic_of_finrank_two`.  (Going through the quadratic form rather
+than `LinearMap.charpoly_prodMap` avoids having to identify the charpoly of a
+scalar on a rank-ONE free module, which mathlib does not carry directly.)
+
+This is the "residual splitting" half of
+`exists_charpoly_toLocal_eq_mul_of_forall_isOpen_quotient` below: the level datum
+supplies the diagonalisation and this lemma turns it into the polynomial
+identity that Hensel's lemma is then applied to. -/
+theorem charpoly_eq_mul_of_linearEquiv_prod {A : Type*} [CommRing A] [Nontrivial A]
+    {V : Type*} [AddCommGroup V] [Module A V] [Module.Free A V] [Module.Finite A V]
+    (M : Module.End A V) (a b : A) (e : V ≃ₗ[A] A × A)
+    (h : ∀ x, e (M x) = (a * (e x).1, b * (e x).2)) :
+    LinearMap.charpoly M = (X - C a) * (X - C b) := by
+  classical
+  set D : Module.End A (A × A) :=
+    LinearMap.prodMap (a • LinearMap.id) (b • LinearMap.id) with hD
+  have hconj : e.conj M = D := by
+    refine LinearMap.ext fun y => ?_
+    have hy : (e.conj M) y = e (M (e.symm y)) := rfl
+    rw [hy, h (e.symm y), e.apply_symm_apply]
+    simp [hD, smul_eq_mul]
+  have hfr : Module.finrank A V = 2 := by
+    rw [e.finrank_eq]
+    simp
+  have htr : LinearMap.trace A V M = a + b := by
+    have h1 : LinearMap.trace A (A × A) (e.conj M) = LinearMap.trace A V M :=
+      LinearMap.trace_conj' M e
+    rw [hconj] at h1
+    rw [← h1, hD, LinearMap.trace_prodMap']
+    simp
+  have hdet : LinearMap.det M = a * b := by
+    have h1 : LinearMap.det (e.conj M) = LinearMap.det M := by
+      rw [LinearEquiv.conj_apply]
+      exact LinearMap.det_conj M e
+    rw [hconj] at h1
+    rw [← h1, hD, LinearMap.det_prodMap]
+    simp
+  rw [charpoly_eq_quadratic_of_finrank_two hfr M, htr, hdet]
+  ring_nf
+  simp [C_add, C_mul]
+  ring
+
 set_option linter.checkUnivs false in
+open Polynomial in
 /-- **HENSEL: the local Frobenius characteristic polynomial splits over `R` with unit
-root difference** (SORRY LEAF, cut 2026-07-29; sub-leaf (B) of
+root difference** (PROVEN 2026-07-30; cut 2026-07-29 as sub-leaf (B) of
 `raisedLevelSplitTorusAt_of_charFrob_residually_distinct` below).
 
 # ROUTE
@@ -11972,7 +12023,37 @@ DISCARDING it - and it is the minimal such hypothesis: what the proof needs is
 
 `hlev` is load-bearing (step 1) and so is `hdist` (step 2); neither implies the other.
 `hcomplete` is load-bearing for Hensel.  `hqQ` is load-bearing, since `hlev` constrains
-the local behaviour only at primes of `Q`.  No hypothesis on `rhobar` appears. -/
+the local behaviour only at primes of `Q`.  No hypothesis on `rhobar` appears.
+
+# THE PROOF AS TAKEN (2026-07-30) — the prescribed three steps, unchanged
+
+1. `hadic` makes `m = m ^ 1` open, so `hlev` applies at `I = m`, and its
+   `isSplitTorusAt` at `q` diagonalises the residual local representation.
+   `charpoly_eq_mul_of_linearEquiv_prod` (just above) converts that
+   diagonalisation into `(charFrob q).map (mk m) = (X - a₀)(X - b₀)` with BOTH
+   roots in the residue field, via `charFrob_baseChange`.  (An eigenvalue here is
+   `chi Frob 1`: the split-torus datum's characters are valued in
+   `Module.End (R/m) (R/m)`, and `phi z = z * phi 1` for such a `phi`.)
+2. `hπRker` makes `πR` factor as `ι ∘ mk m`, so mapping step 1 along `ι` and
+   comparing with `hdist` gives `(X - ι a₀)(X - ι b₀) = (X - α)(X - β)` in `k[X]`.
+   Distinctness of `a₀` and `b₀` is then read off by EVALUATING at `α` and at `β`:
+   if `a₀ = b₀ =: u` then `(α - ι u)² = 0` and `(β - ι u)² = 0`, so `α = β` in the
+   field `k`, against `hdist`.  (No injectivity of `ι` is needed — the evaluation
+   argument does not use it.)
+3. `IsAdicComplete.henselianRing` gives `HenselianRing R m`; `charFrob` is monic
+   (`charFrob_monic`) of degree two (`charFrob_natDegree`), its value at any lift
+   `A₀` of `a₀` lies in `m`, and its derivative there reduces to `a₀ - b₀`, a unit
+   because `R ⧸ m` is a field.  Dividing the resulting root out
+   (`mul_divByMonic_eq_iff_isRoot`, cofactor monic of degree one by
+   `Monic.of_mul_monic_left` and `natDegree_divByMonic`) gives `b`, and cancelling
+   `X - a₀` in the DOMAIN `(R ⧸ m)[X]` identifies `b` mod `m` with `b₀`.  Hence
+   `A - b ∉ m`, i.e. a unit.
+
+The residue-field structure is used only through `IsField (R ⧸ m)` and
+`IsDomain (R ⧸ m)`, deliberately NOT through a `Field (R ⧸ m)` instance: a local
+`haveI` of the latter forks the `Zero` instance away from `Ideal.Quotient`'s and
+makes `isUnit_iff_ne_zero` inapplicable to a hypothesis stated with the ring's own
+zero. -/
 theorem exists_charpoly_toLocal_eq_mul_of_forall_isOpen_quotient.{a, uK} {p : ℕ}
     (hpodd : Odd p) [Fact p.Prime] (Q : Finset ℕ)
     {k : Type uK} [Field k]
@@ -11994,7 +12075,136 @@ theorem exists_charpoly_toLocal_eq_mul_of_forall_isOpen_quotient.{a, uK} {p : �
           (Field.AbsoluteGaloisGroup.adicArithFrob
             hq.toHeightOneSpectrumRingOfIntegersRat)) =
       (Polynomial.X - Polynomial.C a) * (Polynomial.X - Polynomial.C b) ∧
-      IsUnit (a - b) := sorry
+      IsUnit (a - b) := by
+  classical
+  obtain ⟨α, β, hαβ, hsplit⟩ := hdist
+  haveI := hcomplete
+  haveI : (IsLocalRing.maximalIdeal R).IsMaximal := IsLocalRing.maximalIdeal.isMaximal R
+  haveI hnt : Nontrivial (R ⧸ IsLocalRing.maximalIdeal R) :=
+    Ideal.Quotient.nontrivial_iff.mpr (IsLocalRing.maximalIdeal.isMaximal R).ne_top
+  haveI hlocQ : IsLocalRing (R ⧸ IsLocalRing.maximalIdeal R) :=
+    IsLocalRing.of_surjective' (Ideal.Quotient.mk _) Ideal.Quotient.mk_surjective
+  haveI hdom : IsDomain (R ⧸ IsLocalRing.maximalIdeal R) :=
+    (Ideal.Quotient.isDomain_iff_prime _).mpr
+      (IsLocalRing.maximalIdeal.isMaximal R).isPrime
+  have hIF : IsField (R ⧸ IsLocalRing.maximalIdeal R) :=
+    (Ideal.Quotient.maximal_ideal_iff_isField_quotient _).mp
+      (IsLocalRing.maximalIdeal.isMaximal R)
+  -- STEP 1: `m` is open, so the level datum applies at `I = m`
+  have hmopen : IsOpen ((IsLocalRing.maximalIdeal R : Ideal R) : Set R) := by
+    have h := (isAdic_iff.mp hadic).1 1
+    rwa [pow_one] at h
+  have hrk : Module.rank (R ⧸ IsLocalRing.maximalIdeal R)
+      ((R ⧸ IsLocalRing.maximalIdeal R) ⊗[R] (Fin 2 → R)) = 2 := by simp
+  obtain ⟨eA, χA, δA, hdA, -⟩ :=
+    (hlev (IsLocalRing.maximalIdeal R) hmopen hrk).isSplitTorusAt q hqQ hq
+  set F := Field.AbsoluteGaloisGroup.adicArithFrob
+    hq.toHeightOneSpectrumRingOfIntegersRat with hF
+  set a₀ : R ⧸ IsLocalRing.maximalIdeal R := χA F 1 with ha₀
+  set b₀ : R ⧸ IsLocalRing.maximalIdeal R := δA F 1 with hb₀
+  have hEndVal : ∀ (φ : Module.End (R ⧸ IsLocalRing.maximalIdeal R)
+      (R ⧸ IsLocalRing.maximalIdeal R)) (z : R ⧸ IsLocalRing.maximalIdeal R),
+      φ z = z * φ 1 := by
+    intro φ z
+    have hz : φ (z • (1 : R ⧸ IsLocalRing.maximalIdeal R)) = z • φ 1 := map_smul φ z 1
+    simpa [smul_eq_mul] using hz
+  have hcharA : LinearMap.charpoly
+      ((ρ.baseChange (R ⧸ IsLocalRing.maximalIdeal R)).toLocal
+        hq.toHeightOneSpectrumRingOfIntegersRat F) = (X - C a₀) * (X - C b₀) := by
+    refine charpoly_eq_mul_of_linearEquiv_prod _ a₀ b₀ eA fun x => ?_
+    rw [hdA F x, hEndVal (χA F) (eA x).1, hEndVal (δA F) (eA x).2]
+    exact Prod.ext (mul_comm _ _) (mul_comm _ _)
+  have hbc : (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map
+      (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R)) = (X - C a₀) * (X - C b₀) := by
+    have h := charFrob_baseChange (B := R ⧸ IsLocalRing.maximalIdeal R)
+      hq.toHeightOneSpectrumRingOfIntegersRat ρ
+    rw [Ideal.Quotient.algebraMap_eq] at h
+    rw [← h]
+    exact hcharA
+  -- STEP 2: `πR` factors through `R ⧸ m`, and `hdist` forces `a₀ ≠ b₀`
+  have hkm : IsLocalRing.maximalIdeal R ≤ RingHom.ker πR := hπRker.ge
+  set ι : (R ⧸ IsLocalRing.maximalIdeal R) →+* k :=
+    Ideal.Quotient.lift _ πR (fun x hx => hkm hx) with hι
+  have hιcomp : ι.comp (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R)) = πR := by
+    ext x; rfl
+  have hkey : (X - C (ι a₀)) * (X - C (ι b₀)) = (X - C α) * (X - C β) := by
+    have h1 : ((ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map
+        (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R))).map ι =
+        (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map πR := by
+      rw [Polynomial.map_map, hιcomp]
+    rw [hbc] at h1
+    rw [hsplit] at h1
+    simpa [Polynomial.map_mul] using h1
+  have ha₀b₀ : a₀ ≠ b₀ := by
+    intro heq
+    have hα : (α - ι b₀) * (α - ι b₀) = 0 := by
+      have h := congrArg (fun P : Polynomial k => P.eval α) hkey
+      simpa [heq] using h
+    have hβ : (β - ι b₀) * (β - ι b₀) = 0 := by
+      have h := congrArg (fun P : Polynomial k => P.eval β) hkey
+      simpa [heq] using h
+    have hα' : α = ι b₀ := sub_eq_zero.mp (by
+      rcases mul_eq_zero.mp hα with h | h <;> exact h)
+    have hβ' : β = ι b₀ := sub_eq_zero.mp (by
+      rcases mul_eq_zero.mp hβ with h | h <;> exact h)
+    exact hαβ (hα'.trans hβ'.symm)
+  -- STEP 3: Hensel, then divide the root out
+  set f := ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat with hfdef
+  have hfmonic : f.Monic := charFrob_monic _ ρ
+  have hfdeg : f.natDegree = 2 := charFrob_natDegree _ ρ (rank_finTwoFun R)
+  obtain ⟨A₀, hA₀⟩ :=
+    Ideal.Quotient.mk_surjective (I := IsLocalRing.maximalIdeal R) a₀
+  have hroot : f.eval A₀ ∈ IsLocalRing.maximalIdeal R := by
+    rw [← Ideal.Quotient.eq_zero_iff_mem]
+    have h : Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (f.eval A₀) =
+        ((X - C a₀) * (X - C b₀)).eval
+          (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) A₀) := by
+      rw [← hbc, Polynomial.eval_map, Polynomial.eval₂_at_apply]
+    rw [h, hA₀]
+    simp
+  have hderivunit : IsUnit (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R)
+      (f.derivative.eval A₀)) := by
+    have h : Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (f.derivative.eval A₀) =
+        (f.map (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R))).derivative.eval
+          (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) A₀) := by
+      rw [Polynomial.derivative_map, Polynomial.eval_map, Polynomial.eval₂_at_apply]
+    rw [h, hbc, hA₀]
+    have hval : ((X - C a₀) * (X - C b₀) :
+        Polynomial (R ⧸ IsLocalRing.maximalIdeal R)).derivative.eval a₀ = a₀ - b₀ := by
+      simp
+    rw [hval]
+    obtain ⟨u, hu⟩ := hIF.mul_inv_cancel (sub_ne_zero_of_ne ha₀b₀)
+    exact IsUnit.of_mul_eq_one _ hu
+  obtain ⟨A, hAroot, hAsub⟩ := HenselianRing.is_henselian
+    (R := R) (I := IsLocalRing.maximalIdeal R) f hfmonic A₀ hroot hderivunit
+  have hfac : (X - C A) * (f /ₘ (X - C A)) = f :=
+    Polynomial.mul_divByMonic_eq_iff_isRoot.mpr hAroot
+  have hgmonic : (f /ₘ (X - C A)).Monic :=
+    (Polynomial.monic_X_sub_C A).of_mul_monic_left (by rw [hfac]; exact hfmonic)
+  have hgdeg : (f /ₘ (X - C A)).natDegree = 1 := by
+    rw [Polynomial.natDegree_divByMonic _ (Polynomial.monic_X_sub_C A), hfdeg,
+      Polynomial.natDegree_X_sub_C]
+  set b : R := -((f /ₘ (X - C A)).coeff 0) with hbdef
+  have hgeq : f /ₘ (X - C A) = X - C b := by
+    rw [hbdef, map_neg, sub_neg_eq_add]
+    exact hgmonic.eq_X_add_C hgdeg
+  have hfsplit : f = (X - C A) * (X - C b) := by rw [← hfac, hgeq]
+  have hAa₀ : Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) A = a₀ := by
+    rw [← hA₀, Ideal.Quotient.eq]
+    exact hAsub
+  have hbb₀ : Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) b = b₀ := by
+    have h := hbc
+    rw [hfsplit, Polynomial.map_mul, Polynomial.map_sub, Polynomial.map_X,
+      Polynomial.map_C, Polynomial.map_sub, Polynomial.map_X, Polynomial.map_C,
+      hAa₀] at h
+    have hcan := mul_left_cancel₀ (Polynomial.monic_X_sub_C a₀).ne_zero h
+    have h2 := congrArg (fun P : Polynomial (R ⧸ IsLocalRing.maximalIdeal R) =>
+      P.coeff 0) hcan
+    simpa using h2
+  refine ⟨A, b, hfsplit, ?_⟩
+  refine IsLocalRing.notMem_maximalIdeal.mp fun hmem => ?_
+  rw [← Ideal.Quotient.eq_zero_iff_mem, map_sub, hAa₀, hbb₀, sub_eq_zero] at hmem
+  exact ha₀b₀ hmem
 
 set_option linter.checkUnivs false in
 /-- **ONE OF THE TWO CHARACTERS KILLS INERTIA** (SORRY LEAF, cut 2026-07-29; sub-leaf
