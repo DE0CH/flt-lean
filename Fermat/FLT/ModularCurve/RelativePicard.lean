@@ -3298,8 +3298,165 @@ theorem IsRelPicOf.eq_of_relPicEquiv_tensor {X P S T : Scheme.{u}} {strX : X ⟶
     (relPicEquiv_trans strX g (relPicEquiv_trans strX g hp (relPicEquiv_symm strX g hq))
       (relPicEquiv_of_iso strX g (modTensorSymmIso (hP.sheaf q) I)))
 
+/-! ### The ideal sheaf of a section, OFF the section
+
+`isInvertibleSheaf_sectionIdeal` below is a statement about every point of
+`X_T`, and the points fall into two classes that have nothing to do with each
+other.  Off the image of the section the ideal sheaf is not merely invertible,
+it is the STRUCTURE SHEAF, and that is provable here with no geometry at all —
+it is a fact about the kernel of a map into a pushforward whose sections vanish.
+On the image it is the local-coordinate statement, which is the whole geometric
+content and is cut out below as `exists_trivialization_sectionIdeal_at`.
+
+The four declarations in this subsection are the off-image half.  They are
+stated for an arbitrary closed immersion `σ : T ⟶ Z` rather than for
+`relSection x`, because nothing in the argument knows about curves. -/
+
+/-- **Sections over a fixed open, as a functor `Z.Modules ⥤ Ab`.**
+
+Named only so that `PreservesLimitsOfShape WalkingParallelPair` can be
+registered on it: the composite is what carries the kernel of a map of
+`𝒪`-modules to the kernel of the map on sections, which is the one thing the
+off-image argument needs. -/
+noncomputable def modSectionsAt (Z : Scheme.{u}) (W : Z.Opens) : Z.Modules ⥤ Ab.{u} :=
+  Scheme.Modules.toPresheaf Z ⋙ (CategoryTheory.evaluation (Z.Opensᵒᵖ) Ab.{u}).obj (Opposite.op W)
+
+instance (Z : Scheme.{u}) (W : Z.Opens) :
+    PreservesLimitsOfShape WalkingParallelPair (modSectionsAt Z W) := by
+  haveI h1 : PreservesLimitsOfShape WalkingParallelPair (Scheme.Modules.toPresheaf Z) := by
+    haveI : PreservesLimitsOfSize.{0, 0} (Scheme.Modules.toPresheaf Z) :=
+      preservesLimitsOfSize_shrink _
+    infer_instance
+  haveI h2 : PreservesLimitsOfShape WalkingParallelPair
+      ((CategoryTheory.evaluation (Z.Opensᵒᵖ) Ab.{u}).obj (Opposite.op W)) := inferInstance
+  unfold modSectionsAt
+  exact @comp_preservesLimitsOfShape _ _ _ _ _ _ _ _ _ _ h1 h2
+
+instance (Z : Scheme.{u}) (W : Z.Opens) : (modSectionsAt Z W).PreservesZeroMorphisms :=
+  ⟨fun _ _ => rfl⟩
+
+/-- **Over an open where the TARGET has no sections, the kernel inclusion is an
+isomorphism on sections** (PROVEN).  `modSectionsAt Z W` preserves kernels, so
+`Γ(ker φ, W) = ker (Γ(φ, W))`, and `Γ(φ, W) = 0` because its target is zero. -/
+theorem isIso_kernel_ι_app_of_isZero {Z : Scheme.{u}} {A B : Z.Modules} (φ : A ⟶ B)
+    (W : Z.Opens) (hW : IsZero Γ(B, W)) : IsIso (Scheme.Modules.Hom.app (kernel.ι φ) W) := by
+  have hz : (modSectionsAt Z W).map φ = 0 := hW.eq_zero_of_tgt _
+  haveI : IsIso ((PreservesKernel.iso (modSectionsAt Z W) φ).inv ≫
+      Scheme.Modules.Hom.app (kernel.ι φ) W) := by
+    show IsIso ((PreservesKernel.iso (modSectionsAt Z W) φ).inv ≫
+      (modSectionsAt Z W).map (kernel.ι φ))
+    rw [PreservesKernel.iso_inv_ι]
+    exact kernel.ι_of_zero hz
+  exact IsIso.of_isIso_comp_left (PreservesKernel.iso (modSectionsAt Z W) φ).inv _
+
+/-- **A pushforward has no sections over an open that misses the image**
+(PROVEN) — `σ ⁻¹ᵁ W = ⊥`, and a sheaf's sections over `⊥` are terminal. -/
+theorem isZero_sections_pushforward_of_notMem {Z T : Scheme.{u}} (σ : T ⟶ Z) (N : T.Modules)
+    {W : Z.Opens} (hW : ∀ t : T, σ.base t ∉ W) :
+    IsZero Γ((Scheme.Modules.pushforward σ).obj N, W) := by
+  have h : σ ⁻¹ᵁ W = ⊥ := by
+    ext t
+    simpa using hW t
+  exact (TopCat.Sheaf.isTerminalOfEqEmpty ⟨N.presheaf, N.isSheaf⟩ h).isZero
+
+/-- **OFF THE IMAGE OF A CLOSED IMMERSION THE IDEAL SHEAF IS TRIVIAL** (PROVEN)
+— the off-image half of `isInvertibleSheaf_sectionIdeal`, and it needs neither
+smoothness nor a curve.
+
+The trivializing neighbourhood is the whole complement of the (closed) image:
+over any open contained in it the target of the adjunction unit has no sections,
+so `kernel.ι` is an isomorphism on sections there, hence
+`(sectionIdeal σ)|_U ≅ 𝒪_Z|_U ≅ 𝒪_U`. -/
+theorem sectionIdeal_restrict_iso_unit_of_notMem_range {Z T : Scheme.{u}} (σ : T ⟶ Z)
+    (hσ : IsClosedImmersion σ) (z : Z) (hz : z ∉ Set.range σ.base) :
+    ∃ U : Z.Opens, z ∈ U ∧
+      Nonempty ((sectionIdeal σ).restrict U.ι ≅ modUnit (U : Scheme.{u})) := by
+  haveI := hσ
+  have hcl : IsClosed (Set.range σ.base) := σ.isClosedEmbedding.isClosed_range
+  refine ⟨⟨(Set.range σ.base)ᶜ, hcl.isOpen_compl⟩, hz, ?_⟩
+  set U : Z.Opens := ⟨(Set.range σ.base)ᶜ, hcl.isOpen_compl⟩ with hU
+  set η := (Scheme.Modules.pullbackPushforwardAdjunction σ).unit.app (modUnit Z) with hη
+  have hiso : IsIso ((Scheme.Modules.restrictFunctor U.ι).map (kernel.ι η)) := by
+    refine Scheme.Modules.Hom.isIso_iff_isIso_app.mpr fun V => ?_
+    have hzero : IsZero Γ((Scheme.Modules.pushforward σ).obj
+        (modPullback σ (modUnit Z)), U.ι ''ᵁ V) := by
+      refine isZero_sections_pushforward_of_notMem σ _ fun t ht => ?_
+      have h1 : σ.base t ∈ U := U.ι_image_le V ht
+      exact (h1 : σ.base t ∈ (Set.range σ.base)ᶜ) ⟨t, rfl⟩
+    exact isIso_kernel_ι_app_of_isZero η (U.ι ''ᵁ V) hzero
+  exact ⟨(@asIso _ _ _ _ _ hiso) ≪≫ Scheme.Modules.restrictUnitIso U.ι⟩
+
+/-- **A relative point IS a section of the base-changed curve** (PROVEN) —
+`relSection x ≫ π_g = 𝟙 T`, one `pullback.lift_snd`, named because three
+arguments below start with it. -/
+theorem relSection_comp_proj {X S T : Scheme.{u}} {strX : X ⟶ S} {g : T ⟶ S}
+    (x : RelPoint strX g) : relSection x ≫ curveBaseChangeProj strX g = 𝟙 T :=
+  pullback.lift_snd _ _ _
+
+/-- **A SECTION OF A PROPER MORPHISM IS A CLOSED IMMERSION** (PROVEN) — this is
+the ONLY place `_hproper` enters `isInvertibleSheaf_sectionIdeal`, and it enters
+only through separatedness of the base-changed projection: `relSection x`
+followed by `π_g` is the identity, hence a closed immersion, and
+`IsClosedImmersion.of_comp` then peels off the second factor because `π_g` is
+separated. -/
+theorem isClosedImmersion_relSection {X S T : Scheme.{u}} {strX : X ⟶ S}
+    (hproper : IsProper strX) {g : T ⟶ S} (x : RelPoint strX g) :
+    IsClosedImmersion (relSection x) := by
+  haveI : IsProper strX := hproper
+  haveI : IsSeparated (curveBaseChangeProj strX g) := inferInstance
+  haveI : IsClosedImmersion (relSection x ≫ curveBaseChangeProj strX g) := by
+    rw [relSection_comp_proj]; infer_instance
+  exact IsClosedImmersion.of_comp (relSection x) (curveBaseChangeProj strX g)
+
+/-- **THE LOCAL COORDINATE AT A POINT OF THE SECTION** (sorry leaf, cut
+2026-07-30 out of `isInvertibleSheaf_sectionIdeal`) — the ON-IMAGE half, and
+all of that leaf's geometry.
+
+Stacks 0C4S / EGA IV 17.12.1.  `π_g : X ×_S T ⟶ T` is smooth of relative
+dimension `1` (both properties are stable under base change), so at `σ(t)` there
+is an affine neighbourhood on which `π_g` is standard smooth of relative
+dimension `1` and the section is cut out by a single element `s` whose image in
+the fibre over `t` generates the maximal ideal of a regular one-dimensional
+local ring.  `s` is then a nonzerodivisor, so `𝒪 ⥤ 𝒪`, `1 ↦ s` is injective with
+image the ideal — i.e. `(sectionIdeal σ)|_U ≅ 𝒪_U`.
+
+**FAITHFULNESS — what is load-bearing here, and what is inherited decoration.**
+
+* `_hsmooth` is the whole statement and cannot be dropped.  For the nodal cubic
+  `y² = x³ + x²` over a field, the ideal of a section through the node needs two
+  generators, because the local ring is not regular there.  The
+  relative-dimension-`1` part is equally load-bearing and fails in the *other*
+  direction: at relative dimension `2` a section is a regular immersion of
+  CODIMENSION `2`, so its ideal has rank `2` along the section — `𝔸²_T` with the
+  zero section is the smallest witness.
+* `_hproper` is passed on from the parent and is **not known to be necessary for
+  THIS half.**  The parent's audit refutes the properness-free statement with
+  the affine line with doubled origin, and that witness works at the SECOND
+  origin — a point which is *off* the image of the section, hence handled by
+  `sectionIdeal_restrict_iso_unit_of_notMem_range` above, which is where
+  properness is genuinely spent (through `isClosedImmersion_relSection`).  At a
+  point ON the image, a section of a merely separated-or-worse morphism is still
+  a closed immersion into some open neighbourhood, and the argument above goes
+  through.  The hypothesis is kept because it costs the caller nothing (the
+  parent holds it) and because dropping a hypothesis from a leaf is a signature
+  change; a prover may ignore it.
+
+**NOT VACUOUS.**  `t` ranges over the points of `T`, which is nonempty whenever
+`T` is, and the conclusion is an honest local triviality — the trivial witness
+`U = ⊤` is *not* available, since `sectionIdeal σ ≅ 𝒪_{X_T}` globally would say
+the divisor `[x]` is trivial. -/
+theorem exists_trivialization_sectionIdeal_at {X S T : Scheme.{u}} {strX : X ⟶ S}
+    (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
+    {g : T ⟶ S} (x : RelPoint strX g) (t : T) :
+    ∃ U : (curveBaseChange strX g).Opens, (relSection x).base t ∈ U ∧
+      Nonempty ((sectionIdeal (relSection x)).restrict U.ι ≅ modUnit (U : Scheme.{u})) :=
+  sorry
+
 /-- **A SECTION OF A SMOOTH RELATIVE CURVE IS AN EFFECTIVE CARTIER DIVISOR**
-(sorry leaf, cut 2026-07-29 out of `exists_abelJacobiPoint`) — its ideal sheaf
+(PROVEN 2026-07-30 over `exists_trivialization_sectionIdeal_at` and
+`sectionIdeal_restrict_iso_unit_of_notMem_range`; formerly a bare sorry leaf,
+and the audit below is the one written while it was one — every word of it still
+applies, now to the on-image leaf it was decomposed into) — its ideal sheaf
 `𝒪(−σ)` is invertible.
 
 Stacks 0C4S / EGA IV 17.12.1: for `f : Y ⟶ T` smooth of relative dimension `1`
@@ -3340,14 +3497,159 @@ off the image the kernel is all of `𝒪_Y` and the statement is the (proven)
 with a section, which is the situation the whole module is about; `X = S`,
 `strX = 𝟙 S` is excluded because that is relative dimension `0`, and the
 statement is not vacuously true by an empty quantifier — `IsInvertibleSheaf` is
-a `∀` over the points of `X ×_S T`, which is nonempty as soon as `T` is. -/
+a `∀` over the points of `X ×_S T`, which is nonempty as soon as `T` is.
+
+**THE CUT (2026-07-30).**  The `∀ z` splits on whether `z` lies in the image of
+the section — a decidable-by-`by_cases` disjunction, not a geometric one — and
+the two branches share nothing.  Off the image the answer is
+`sectionIdeal σ|_U = 𝒪_U` on the whole complement, proven above from the
+definition of `sectionIdeal` as a kernel; on the image it is the local
+coordinate, which is the leaf.  Properness is spent ONLY in the off-image
+branch, through `isClosedImmersion_relSection`; smoothness ONLY in the
+on-image one. -/
 theorem isInvertibleSheaf_sectionIdeal {X S T : Scheme.{u}} {strX : X ⟶ S}
     (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
     {g : T ⟶ S} (x : RelPoint strX g) :
-    IsInvertibleSheaf (sectionIdeal (relSection x)) := sorry
+    IsInvertibleSheaf (sectionIdeal (relSection x)) := by
+  intro z
+  by_cases hz : z ∈ Set.range (relSection x).base
+  · obtain ⟨t, rfl⟩ := hz
+    exact exists_trivialization_sectionIdeal_at _hproper _hsmooth x t
+  · exact sectionIdeal_restrict_iso_unit_of_notMem_range _
+      (isClosedImmersion_relSection _hproper x) z hz
 
-/-- **`𝒪(−σ)` COMMUTES WITH BASE CHANGE** (sorry leaf, cut 2026-07-29 out of
-`exists_abelJacobiPoint`) — `φ^* 𝒪(−x) ≅ 𝒪(−x_{T'})` for
+/-! ### The base-change square of a section, and what it does NOT say
+
+The two lemmas here are the geometry `nonempty_modPullback_sectionIdeal` needs
+and the only part of it a prover has to check by hand; the docstring of that
+leaf already named them.  Both are PROVEN, so what is left of that leaf is a
+single statement about ideal sheaves under base change, cut out below. -/
+
+/-- **THE SECTIONS MATCH** (PROVEN): `σ' ≫ φ = h ≫ σ` for `σ = relSection x`,
+`σ' = relSection (RelPoint.pre h hg x)` and `φ = curveBaseChangeMap strX h hg`.
+
+Both sides have first component `h ≫ x.1` — which is `(RelPoint.pre h hg x).1`
+by definition — and second component `h`.  It is *not* `rfl`: each side is a
+`pullback.lift` applied to a different pair, so the check is two applications of
+`pullback.hom_ext` and `pullback.lift_fst`/`lift_snd`. -/
+theorem relSection_comp_curveBaseChangeMap {X S T T' : Scheme.{u}} {strX : X ⟶ S}
+    {g : T ⟶ S} {g' : T' ⟶ S} (h : T' ⟶ T) (hg : h ≫ g = g') (x : RelPoint strX g) :
+    relSection (RelPoint.pre h hg x) ≫ curveBaseChangeMap strX h hg = h ≫ relSection x := by
+  apply pullback.hom_ext
+  · rw [Category.assoc, curveBaseChangeMap, pullback.lift_fst, relSection, relSection,
+      pullback.lift_fst, Category.assoc, pullback.lift_fst]
+    rfl
+  · rw [Category.assoc, curveBaseChangeMap, pullback.lift_snd, relSection, relSection,
+      ← Category.assoc, pullback.lift_snd, Category.assoc, pullback.lift_snd,
+      Category.id_comp, Category.comp_id]
+
+/-- **`X ×_S T' = (X ×_S T) ×_T T'`** (PROVEN) — the base-change square of the
+curve is cartesian, i.e. `curveBaseChangeMap` really is the base change of
+`π_g` along `h`.  This is what makes the divisor `D_{x'}` the pullback of `D_x`
+rather than merely a divisor mapping to it.
+
+Proved by pasting: `curveBaseChangeMap ≫ pullback.fst strX g = pullback.fst
+strX (h ≫ g)`, so the outer rectangle and the right-hand square are both the
+defining pullback of `strX` against a morphism, and `IsPullback.of_right` peels
+the left square off. -/
+theorem isPullback_curveBaseChangeMap {X S T T' : Scheme.{u}} (strX : X ⟶ S)
+    {g : T ⟶ S} {g' : T' ⟶ S} (h : T' ⟶ T) (hg : h ≫ g = g') :
+    IsPullback (curveBaseChangeMap strX h hg) (curveBaseChangeProj strX g')
+      (curveBaseChangeProj strX g) h := by
+  subst hg
+  refine IsPullback.of_right (h₁₂ := pullback.fst strX g) ?_ (curveBaseChangeMap_proj strX h rfl)
+    (IsPullback.of_hasPullback strX g)
+  have : curveBaseChangeMap strX h (rfl : h ≫ g = h ≫ g) ≫ pullback.fst strX g
+      = pullback.fst strX (h ≫ g) := pullback.lift_fst _ _ _
+  rw [this]
+  exact IsPullback.of_hasPullback strX (h ≫ g)
+
+/-- **`T' = T ×_{X_T} X_{T'}`** (PROVEN) — the section square is cartesian too,
+which is the form in which the classical statement is usually quoted ("`D_{x'}`
+is the scheme-theoretic preimage of `D_x`").
+
+It is a CONSEQUENCE of the two lemmas above rather than an extra input: paste
+the section square onto the projection square, note that both composites
+`σ' ≫ π_{g'}` and `σ ≫ π_g` are identities, so the outer rectangle is the
+trivially-cartesian square `𝟙, h, h, 𝟙`, and peel the right square off again.
+
+**It is recorded but deliberately NOT used as the hypothesis of the leaf
+below** — see that leaf's falsity audit, where this square alone is refuted. -/
+theorem isPullback_relSection_curveBaseChangeMap {X S T T' : Scheme.{u}} {strX : X ⟶ S}
+    {g : T ⟶ S} {g' : T' ⟶ S} (h : T' ⟶ T) (hg : h ≫ g = g') (x : RelPoint strX g) :
+    IsPullback (relSection (RelPoint.pre h hg x)) h (curveBaseChangeMap strX h hg)
+      (relSection x) := by
+  refine IsPullback.of_right (h₁₂ := curveBaseChangeProj strX g') ?_
+    (relSection_comp_curveBaseChangeMap h hg x) (isPullback_curveBaseChangeMap strX h hg).flip
+  rw [relSection_comp_proj, relSection_comp_proj]
+  exact IsPullback.of_horiz_isIso ⟨by simp⟩
+
+/-- **THE IDEAL OF A SECTION COMMUTES WITH BASE CHANGE OF THE AMBIENT SCHEME**
+(sorry leaf, cut 2026-07-30 out of `nonempty_modPullback_sectionIdeal`) — all of
+that leaf's content, stated for a bare section of a bare morphism because
+nothing in the argument knows about curves.
+
+Set-up: `π : Z ⟶ T` with a section `σ`, and `Z' = Z ×_T T'` with `φ` and `π'`
+the two projections, so that `σ' : T' ⟶ Z'` is *forced* to be the base-changed
+section (`_hσ'` and `_hcomm` pin it uniquely, by the universal property of the
+pullback).  The claim is `φ^* 𝒪(−σ) ≅ 𝒪(−σ')`.
+
+**ROUTE.**  `σ` is a closed immersion, so `D := σ(T) ≅ T` and the defining
+sequence of `sectionIdeal σ` is `0 ⟶ I ⟶ 𝒪_Z ⟶ σ_*𝒪_T ⟶ 0`.  `φ^*` is only
+right exact, so the content is that no `Tor` appears: locally
+`𝒪_{Z'} = 𝒪_Z ⊗_{𝒪_T} 𝒪_{T'}` because the square is cartesian, so
+`Tor^{𝒪_Z}_i(σ_*𝒪_T, 𝒪_{Z'}) = Tor^{𝒪_T}_i(𝒪_T, 𝒪_{T'}) = 0` for `i > 0` —
+`σ_*𝒪_T` is `𝒪_T` as an `𝒪_T`-module, hence flat over `T`, and THAT is the
+"`D_x` is flat over `T`" the parent's docstring names.  Then `φ^*` of the
+sequence is exact, `φ^*(σ_*𝒪_T) ≅ σ'_*𝒪_{T'}` by affine base change
+(a closed immersion is affine, which is what `_hclosed` is for), and comparing
+kernels gives the isomorphism.
+
+**FALSITY AUDIT — the tempting weaker hypothesis is REFUTED.**  It is natural to
+ask only that the SECTION square be cartesian, i.e. `T' = T ×_Z Z'`, which is
+`isPullback_relSection_curveBaseChangeMap` above and looks like the right
+statement ("`D'` is the preimage of `D`").  **That version is FALSE**, with an
+explicit witness:
+
+    Z = 𝔸¹_k = Spec k[t],  T = Spec k,  π the structure map,  σ = the origin;
+    Z' = Spec k[t]/(t),    T' = Spec k, π' = 𝟙,  h = 𝟙,  σ' = 𝟙,  φ the closed
+    immersion of the origin.
+
+Then `σ' ≫ φ = φ = h ≫ σ`, and `T ×_Z Z' = Spec (k ⊗_{k[t]} k[t]/(t)) = Spec k
+= T'`, so the section square IS cartesian; `sectionIdeal σ = (t)` is invertible
+and `σ` is a closed immersion, so every other hypothesis holds.  But
+`sectionIdeal σ' = ker(𝒪_{Z'} ⟶ 𝟙_*𝒪_{T'}) = 0` while `φ^*(t) ≅ 𝒪_{Z'} ≠ 0`, so
+no isomorphism exists.  What kills the witness is exactly `_hbase`:
+`Z ×_T T' = 𝔸¹_k`, not `Spec k[t]/(t)`.  So the load-bearing hypothesis is that
+`Z'` is the base change of `Z` **over `T`**, not that `D'` is the preimage of
+`D`.
+
+**The other hypotheses.**  `_hσ` and `_hσ'` make `σ`, `σ'` sections rather than
+arbitrary morphisms; drop `_hσ'` and `σ'` is unconstrained by `_hcomm` alone, so
+the statement is false for any `σ'` that is not the base-changed section.
+`_hclosed` is used for the affine base change of `σ_*` and is available for free
+wherever this is applied (`isClosedImmersion_relSection`).  `_hinv` is the
+hypothesis the parent's docstring predicted would be needed and is likewise free
+at the call site; the `Tor` argument above does **not** visibly consume it — the
+flatness it stands for comes from `D ≅ T`, not from invertibility of `I` — so it
+is offered rather than demanded, and a prover may ignore it.
+
+**NOT VACUOUS.**  Instantiated immediately below, and already at `h = 𝟙 T`,
+where `φ` is a nontrivial automorphism of the pullback rather than the
+identity. -/
+theorem nonempty_modPullback_sectionIdeal_of_isPullback {Z Z' T T' : Scheme.{u}}
+    {π : Z ⟶ T} {π' : Z' ⟶ T'} {φ : Z' ⟶ Z} {h : T' ⟶ T}
+    (σ : T ⟶ Z) (σ' : T' ⟶ Z')
+    (_hσ : σ ≫ π = 𝟙 T) (_hσ' : σ' ≫ π' = 𝟙 T')
+    (_hbase : IsPullback φ π' π h) (_hcomm : σ' ≫ φ = h ≫ σ)
+    (_hclosed : IsClosedImmersion σ) (_hinv : IsInvertibleSheaf (sectionIdeal σ)) :
+    Nonempty (modPullback φ (sectionIdeal σ) ≅ sectionIdeal σ') :=
+  sorry
+
+/-- **`𝒪(−σ)` COMMUTES WITH BASE CHANGE** (PROVEN 2026-07-30 over
+`nonempty_modPullback_sectionIdeal_of_isPullback`, the two square lemmas above
+and `isInvertibleSheaf_sectionIdeal`; formerly a bare sorry leaf, and the audit
+below is the one written while it was one) — `φ^* 𝒪(−x) ≅ 𝒪(−x_{T'})` for
 `φ = curveBaseChangeMap strX h hg`.
 
 The second of the two genuinely new geometric obligations, and the only one
@@ -3386,7 +3688,12 @@ theorem nonempty_modPullback_sectionIdeal {X S T T' : Scheme.{u}} {strX : X ⟶ 
     (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
     {g : T ⟶ S} {g' : T' ⟶ S} (h : T' ⟶ T) (hg : h ≫ g = g') (x : RelPoint strX g) :
     Nonempty (modPullback (curveBaseChangeMap strX h hg) (sectionIdeal (relSection x))
-      ≅ sectionIdeal (relSection (RelPoint.pre h hg x))) := sorry
+      ≅ sectionIdeal (relSection (RelPoint.pre h hg x))) :=
+  nonempty_modPullback_sectionIdeal_of_isPullback (relSection x)
+    (relSection (RelPoint.pre h hg x)) (relSection_comp_proj x) (relSection_comp_proj _)
+    (isPullback_curveBaseChangeMap strX h hg) (relSection_comp_curveBaseChangeMap h hg x)
+    (isClosedImmersion_relSection _hproper x)
+    (isInvertibleSheaf_sectionIdeal _hproper _hsmooth x)
 
 /-- **THE ABEL–JACOBI MAP INTO `Pic`** (PROVEN 2026-07-29 over the two geometric
 leaves `isInvertibleSheaf_sectionIdeal` and `nonempty_modPullback_sectionIdeal`,
@@ -3637,9 +3944,15 @@ theorem smooth_isSeparated_of_isRelPicOf {X P S : Scheme.{u}} {strX : X ⟶ S} {
   ⟨smooth_of_isRelPicOf hproper hsmooth hconn hP hpush,
     isSeparated_of_isRelPicOf hproper hsmooth hconn hP hpush⟩
 
-/-- **`Pic⁰` IS AN ABELIAN SCHEME INSIDE `Pic`** (sorry leaf, cut
-2026-07-29) — BLR 9.4/4's geometric half, and the whole of what that
-theorem is usually cited for.
+/-! ### `Pic⁰` IS AN ABELIAN SCHEME INSIDE `Pic` — the audit
+
+This was one sorry leaf (`exists_relPicZeroSubgroup`, cut 2026-07-29) until
+2026-07-30, when it was decomposed; the survey below is the audit written while
+it was one, kept verbatim because it is still what a reader needs, and it now
+describes the pair of leaves stated after it rather than a single declaration.
+
+BLR 9.4/4's geometric half, and the whole of what that theorem is usually cited
+for.
 
 Given `Pic` and the Abel–Jacobi map into it, cut out the identity
 component and show it is an abelian scheme over `S`.  Concretely the
@@ -3693,7 +4006,228 @@ a hypothesis that only positive genus can meet.
 `hequiv` is derivable in this file (`relPicEquiv_equivalence`) and is
 passed in anyway, matching the parent's own hypothesis list: the
 subfunctor of degree-zero classes is only well defined once
-`Pic(X_T)/Pic(T)` is a quotient set. -/
+`Pic(X_T)/Pic(T)` is a quotient set.
+
+**DECOMPOSED 2026-07-30 into the two classical steps that remain**, the
+audit above being left intact because it is still what a reader needs; see
+the subsection immediately below for the cut and why it is one. -/
+
+/-! ### BLR 9.4/4, steps two and three
+
+`exists_relPicZeroSubgroup` receives step ONE (`Pic ⟶ S` smooth and separated)
+as the hypotheses `_hPsmooth`, `_hPsep`, cut out earlier as
+`smooth_isSeparated_of_isRelPicOf`.  What it still owes is BLR's remaining two:
+
+* **the identity component exists as a smooth open subgroup** —
+  `exists_relPicZeroGroupScheme`.  This is where "there is no identity-component
+  construction for group schemes at `a3364fa`" is spent, and it produces `J`
+  together with its group law and its Abel–Jacobi clause;
+* **that subgroup is proper over `S`** — `isProper_of_relPicZeroGroupScheme`,
+  the valuative criterion for line bundles on a relative curve.
+
+**WHY THIS IS A CUT AND NOT A RELOCATION**, stated honestly, because unlike the
+earlier cuts in this file the two halves are NOT independent — the second takes
+the first's output as data.  What makes it a cut is that it takes that output
+only as DATA: the valuative criterion argues about `J`'s points over a discrete
+valuation base and never re-opens how `J` was built, while the identity-component
+construction never mentions properness.  They are different theorems in different
+chapters of BLR (9.4 versus 8.4/1's criterion), with different literature, and a
+prover of either does not have to read the other.  The tie-breaker recorded in
+this project's notes — "fewer OPEN leaves after" — is *not* met by this cut (one
+becomes two); it is made anyway because neither half is within reach as part of
+the other, and because the assembly between them is genuine, PROVEN content
+rather than a renaming.
+
+**`RelGroupSchemeStruct` is `AbelianSchemeStruct` minus `proper`**, and exists
+only so that the first half can hand over a group scheme it does not yet know to
+be proper.  It is deliberately not a `structure extends`: `AbelianSchemeStruct`
+is consumed all over the development and changing its shape is exactly the kind
+of interface edit that splits across a merge. -/
+
+/-- **A smooth `S`-group scheme with geometrically connected fibres, WITHOUT the
+properness that would make it abelian** — every field of `AbelianSchemeStruct`
+except `proper`.
+
+This is what the identity-component construction can produce before the
+valuative criterion has been run, and `toAbelianSchemeStruct` below is the one
+line that closes the gap. -/
+structure RelGroupSchemeStruct {A S : Scheme.{u}} (f : A ⟶ S) where
+  /-- addition of relative points -/
+  add : ∀ {T : Scheme.{u}} {g : T ⟶ S}, RelPoint f g → RelPoint f g → RelPoint f g
+  /-- the zero section, read as a relative point -/
+  zero : ∀ {T : Scheme.{u}} (g : T ⟶ S), RelPoint f g
+  /-- inversion of relative points -/
+  neg : ∀ {T : Scheme.{u}} {g : T ⟶ S}, RelPoint f g → RelPoint f g
+  /-- associativity of the group law -/
+  add_assoc : ∀ {T : Scheme.{u}} {g : T ⟶ S} (x y z : RelPoint f g),
+    add (add x y) z = add x (add y z)
+  /-- commutativity of the group law -/
+  add_comm : ∀ {T : Scheme.{u}} {g : T ⟶ S} (x y : RelPoint f g), add x y = add y x
+  /-- the unit law -/
+  zero_add : ∀ {T : Scheme.{u}} {g : T ⟶ S} (x : RelPoint f g), add (zero g) x = x
+  /-- the inverse law -/
+  neg_add : ∀ {T : Scheme.{u}} {g : T ⟶ S} (x : RelPoint f g), add (neg x) x = zero g
+  /-- naturality of addition -/
+  pre_add : ∀ {T' T : Scheme.{u}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+    (hg : h ≫ g = g') (x y : RelPoint f g),
+    RelPoint.pre h hg (add x y) = add (RelPoint.pre h hg x) (RelPoint.pre h hg y)
+  /-- naturality of the zero section -/
+  pre_zero : ∀ {T' T : Scheme.{u}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+    (hg : h ≫ g = g'), RelPoint.pre h hg (zero g) = zero g'
+  /-- smooth over the base -/
+  smooth : Smooth f
+  /-- geometrically connected fibres -/
+  connected : GeometricallyConnected f
+
+/-- **Properness is the only thing between the two structures** (PROVEN). -/
+def RelGroupSchemeStruct.toAbelianSchemeStruct {A S : Scheme.{u}} {f : A ⟶ S}
+    (G : RelGroupSchemeStruct f) (hproper : IsProper f) : AbelianSchemeStruct f where
+  add := G.add
+  zero := G.zero
+  neg := G.neg
+  add_assoc := G.add_assoc
+  add_comm := G.add_comm
+  zero_add := G.zero_add
+  neg_add := G.neg_add
+  pre_add := G.pre_add
+  pre_zero := G.pre_zero
+  proper := hproper
+  smooth := G.smooth
+  connected := G.connected
+
+/-- **The five point-level clauses that pin `Pic⁰` inside `Pic`**, abbreviated so
+that the two leaves below and the assembly all read exactly the same list rather
+than three copies that can drift apart.
+
+It is the conclusion of `exists_relPicZeroSubgroup` verbatim, with
+`ab : AbelianSchemeStruct jstr` replaced by `G : RelGroupSchemeStruct jstr` —
+the clauses mention only `G.zero` and `G.add`, so nothing is lost. -/
+def IsRelPicZeroIncl {X P S J : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S} {jstr : J ⟶ S}
+    (hP : IsRelPicOf strX pstr) (G : RelGroupSchemeStruct jstr)
+    (aj : ∀ (T : Scheme.{u}) (g : T ⟶ S), RelPoint strX g → RelPoint pstr g)
+    (incl : ∀ (T : Scheme.{u}) (g : T ⟶ S), RelPoint jstr g → RelPoint pstr g) : Prop :=
+  (∀ (T : Scheme.{u}) (g : T ⟶ S) (p q : RelPoint jstr g), incl T g p = incl T g q → p = q) ∧
+    (∀ (T : Scheme.{u}) (g : T ⟶ S), incl T g (G.zero g) = hP.zeroPoint g) ∧
+      (∀ (T : Scheme.{u}) (g : T ⟶ S) (p q : RelPoint jstr g),
+          incl T g (G.add p q) = hP.addPoint (incl T g p) (incl T g q)) ∧
+        (∀ (T' T : Scheme.{u}) (h : T' ⟶ T) (g : T ⟶ S) (g' : T' ⟶ S) (hg : h ≫ g = g')
+            (p : RelPoint jstr g),
+            incl T' g' (RelPoint.pre h hg p) = RelPoint.pre h hg (incl T g p)) ∧
+          (∀ (T : Scheme.{u}) (g : T ⟶ S) (x : RelPoint strX g),
+              ∃ p : RelPoint jstr g, incl T g p = aj T g x)
+
+/-- **THE IDENTITY COMPONENT OF `Pic` AS AN OPEN SUBGROUP SCHEME** (sorry leaf,
+cut 2026-07-30 out of `exists_relPicZeroSubgroup`) — BLR 9.4/4 step two, and the
+step that is genuinely absent from the pin.
+
+`Pic ⟶ S` is smooth (`_hPsmooth`) and separated (`_hPsep`), so its fibres are
+smooth group schemes over fields and each has an open-and-closed identity
+component; SGA 3 VI_B 3.10 assembles these into an open subgroup scheme
+`Pic⁰ ⊆ Pic`, smooth over `S` because `Pic` is and open immersions are smooth,
+with geometrically connected fibres by construction.  The Abel–Jacobi clause
+holds because `aj T g x` is the class of `𝒪(x − o)`, which has degree `0` on
+every geometric fibre, and the degree-`0` part of `Pic` of a geometrically
+connected smooth proper curve IS the identity component.
+
+**FAITHFULNESS.**  The three clauses that pin `Pic⁰` are analysed in the parent's
+audit and every word of it applies here unchanged, with ONE difference that
+matters: this leaf does *not* claim properness, so the junk witness the parent
+rules out by properness — `J = P`, `incl = id` — is **not** ruled out here.  That
+is deliberate and is the entire content of the cut: `J = P` satisfies every
+clause of `IsRelPicZeroIncl` and is killed only by
+`isProper_of_relPicZeroGroupScheme` below, which is therefore not a formality.
+Two of the parent's three clauses do still bite here:
+
+* drop the **Abel–Jacobi clause** and `J = S`, `jstr = 𝟙 S` survives, exactly as
+  the parent records — `RelPoint (𝟙 S) g` is a singleton, so injectivity,
+  the homomorphism clause and naturality are free, and `𝟙 S` is smooth with
+  connected fibres;
+* drop **injectivity** of `incl` and any smooth connected group scheme mapping
+  onto `Pic⁰` will do, e.g. `Pic⁰ × 𝔾ₐ`.
+
+`_hpush` and `_hequiv` are carried because the parent carries them and because
+the degree function used to identify the Abel–Jacobi image with `Pic⁰` is only
+well defined on the quotient `Pic(X_T)/Pic(T)`.
+
+**NOT VACUOUS.**  `IsRelPicOf strX pstr` is satisfiable (`exists_relPicFull`),
+and the conclusion is an existential over a nonempty class — `J = P` is a
+witness of everything except what the next leaf adds. -/
+theorem exists_relPicZeroGroupScheme {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
+    (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
+    (_hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S))
+    (hP : IsRelPicOf strX pstr)
+    (_hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX)
+    (_hPsmooth : Smooth pstr) (_hPsep : IsSeparated pstr)
+    (_hequiv : ∀ {T : Scheme.{u}} (g : T ⟶ S), Equivalence (RelPicEquiv strX g))
+    (aj : ∀ (T : Scheme.{u}) (g : T ⟶ S), RelPoint strX g → RelPoint pstr g)
+    (_haj : ∀ (T : Scheme.{u}) (g : T ⟶ S) (x : RelPoint strX g),
+      RelPicEquiv strX g (modTensor (hP.sheaf (aj T g x)) (sectionIdeal (relSection x)))
+        (sectionIdeal (relSection (relBasePoint o g)))) :
+    ∃ (J : Scheme.{u}) (jstr : J ⟶ S) (G : RelGroupSchemeStruct jstr)
+      (incl : ∀ (T : Scheme.{u}) (g : T ⟶ S), RelPoint jstr g → RelPoint pstr g),
+      IsRelPicZeroIncl hP G aj incl :=
+  sorry
+
+/-- **THE IDENTITY COMPONENT IS PROPER** (sorry leaf, cut 2026-07-30 out of
+`exists_relPicZeroSubgroup`) — BLR 9.4/4 step three, the valuative criterion for
+line bundles on a relative curve, and the clause that turns the group scheme of
+the previous leaf into an ABELIAN scheme.
+
+`Pic⁰ ⟶ S` is of finite type and separated (inherited from `Pic`), so
+properness is the existence half of the valuative criterion: given a discrete
+valuation ring `R` with fraction field `K` over `S` and a degree-`0` line bundle
+on `X_K`, extend it to `X_R`.  On a REGULAR total space this is the classical
+"take the closure of the divisor" argument — `X_R` is regular because `X ⟶ S` is
+smooth and `R` is regular — and the extension is unique up to a twist from `R`,
+i.e. unique in the relative Picard group, which is the uniqueness half.  This is
+where the smooth-relative-CURVE hypothesis is spent a second time, and it is the
+only place in this file where a valuation base appears.
+
+**FAITHFULNESS — this leaf is NOT vacuous and NOT free.**  Its hypotheses
+include the entire output of `exists_relPicZeroGroupScheme`, so a reader may
+suspect it is implied by them.  It is not: the junk witness `J = P`,
+`incl = id`, `G` the group data of `Pic` itself satisfies `IsRelPicZeroIncl` in
+full, and `Pic ⟶ S` is **not** proper — it has infinitely many components,
+one per degree, already for `X` an elliptic curve over `S = Spec k`.  So the
+conclusion is false for that witness and this leaf is exactly the statement
+that the witness handed over was the identity component rather than all of
+`Pic`.  In particular it may NOT be proven from `_hincl` alone; a prover must
+use how `J` was constructed, which is why the two leaves are stated with the
+same hypothesis list.
+
+**Where the hypotheses are spent.**  `_hproper`/`_hsmooth`/`_hconn` give the
+regularity of `X_R` and the degree theory on the geometric fibres; `o` and
+`_hpush` are what make the relative Picard group a quotient SET in which
+"unique up to a twist" is literally uniqueness; `_hPsep` supplies separatedness,
+without which the valuative criterion gives at most universal closedness. -/
+theorem isProper_of_relPicZeroGroupScheme {X P S J : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
+    (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
+    (_hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S))
+    (hP : IsRelPicOf strX pstr)
+    (_hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX)
+    (_hPsmooth : Smooth pstr) (_hPsep : IsSeparated pstr)
+    (_hequiv : ∀ {T : Scheme.{u}} (g : T ⟶ S), Equivalence (RelPicEquiv strX g))
+    (aj : ∀ (T : Scheme.{u}) (g : T ⟶ S), RelPoint strX g → RelPoint pstr g)
+    (_haj : ∀ (T : Scheme.{u}) (g : T ⟶ S) (x : RelPoint strX g),
+      RelPicEquiv strX g (modTensor (hP.sheaf (aj T g x)) (sectionIdeal (relSection x)))
+        (sectionIdeal (relSection (relBasePoint o g))))
+    {jstr : J ⟶ S} (_G : RelGroupSchemeStruct jstr)
+    (_incl : ∀ (T : Scheme.{u}) (g : T ⟶ S), RelPoint jstr g → RelPoint pstr g)
+    (_hincl : IsRelPicZeroIncl hP _G aj _incl) :
+    IsProper jstr :=
+  sorry
+
+/-- **`Pic⁰` IS AN ABELIAN SCHEME INSIDE `Pic`** (PROVEN 2026-07-30 over
+`exists_relPicZeroGroupScheme` and `isProper_of_relPicZeroGroupScheme`; the
+audit above this subsection is the one written while it was one node, and still
+says what a reader needs).
+
+The assembly is the one line the cut was made for: take the group scheme the
+first leaf produces, feed its data to the second to get properness, and
+`RelGroupSchemeStruct.toAbelianSchemeStruct` closes the gap.  The five clauses
+are `IsRelPicZeroIncl` unfolded, and they are literally the same propositions —
+`toAbelianSchemeStruct` leaves `add` and `zero` untouched, which is why no
+rewrite is needed anywhere below. -/
 theorem exists_relPicZeroSubgroup {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
     (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
     (_hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S))
@@ -3716,8 +4250,12 @@ theorem exists_relPicZeroSubgroup {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : 
             (p : RelPoint jstr g),
             incl T' g' (RelPoint.pre h hg p) = RelPoint.pre h hg (incl T g p)) ∧
         (∀ (T : Scheme.{u}) (g : T ⟶ S) (x : RelPoint strX g),
-            ∃ p : RelPoint jstr g, incl T g p = aj T g x) :=
-  sorry
+            ∃ p : RelPoint jstr g, incl T g p = aj T g x) := by
+  obtain ⟨J, jstr, G, incl, hincl⟩ := exists_relPicZeroGroupScheme _hproper _hsmooth _hconn o hP
+    _hpush _hPsmooth _hPsep _hequiv aj _haj
+  exact ⟨J, jstr, G.toAbelianSchemeStruct (isProper_of_relPicZeroGroupScheme _hproper _hsmooth
+    _hconn o hP _hpush _hPsmooth _hPsep _hequiv aj _haj G incl hincl), incl, hincl.1,
+    hincl.2.1, hincl.2.2.1, hincl.2.2.2.1, hincl.2.2.2.2⟩
 
 /-- **`Pic⁰` IS AN ABELIAN SCHEME, GIVEN `Pic`** — BLR 9.4/4 (PROVEN
 2026-07-29, over `exists_abelJacobiPoint` and `exists_relPicZeroSubgroup`).
