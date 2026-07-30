@@ -8649,13 +8649,27 @@ any appeal to a mathlib DVR characterisation, and
 `Module.basisOfFiniteTypeTorsionFree'` then does all of the structure
 theory.
 
-ONE STALE POINTER CORRECTED (2026-07-30).  A dispatch note described
-`mem_span_natCast_pow_iff` and `sub_natCast_mem_span_of_modEq` as "newly
-proven upstream" and as "the working vocabulary for congruences in this
-cluster".  **Neither exists** — zero hits across `Fermat/` and across every
-local branch.  Congruence handling here is `Ideal.span_singleton_pow` plus
-`Ideal.mem_span_singleton` / `Ideal.mem_span_singleton'`, which is what the
-proofs above use.
+A DISPATCH NOTE, AND A "CORRECTION" OF IT, BOTH WRONG (2026-07-30).  A
+dispatch note described `mem_span_natCast_pow_iff` and
+`sub_natCast_mem_span_of_modEq` as "newly proven upstream" and as "the
+working vocabulary for congruences in this cluster"; a first pass at this
+section then recorded that **neither exists**, "zero hits across `Fermat/`
+and across every local branch".  That denial is FALSE and has been removed:
+both are proven, sorry-free, IN THIS FILE — see the `theorem` lines a few
+hundred lines below, and their seven uses in the `exists_linearMap_congr_of_adicPin`
+cluster.  They are present on `main` and on `merger` as well, so they
+predate this section entirely.
+
+What is true is narrower, and is the only reason the two proofs above do not
+call them: both sit BELOW this point in the file, so they are out of scope
+here by DECLARATION ORDER, and both are statements about `ℤ_q` (`x ∈ (q)^k`
+iff `x` dies in `ZMod (q^k)`) rather than about `O`.  The congruences needed
+above are congruences in `O`, and run through `Ideal.span_singleton_pow`
+plus `Ideal.mem_span_singleton` / `Ideal.mem_span_singleton'`.
+
+Recorded at length because the failure mode is the expensive one: a grep
+that returns nothing is evidence about a SPELLING, never about a theorem,
+and a denial written into a docstring outlives the mistake that produced it.
 -/
 
 /-- **`(j π)` is the maximal ideal of `O`** (PROVEN 2026-07-29).
