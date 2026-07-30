@@ -182,25 +182,35 @@ local instance isEllipticBaseChangeCoc {E : WeierstrassCurve K} [E.IsElliptic] :
     (E⁄Ω).IsElliptic :=
   inferInstanceAs (E.map (algebraMap K Ω)).IsElliptic
 
-/-- **THE `u`-COEFFICIENT IS DETERMINED UP TO SIGN** (sorry leaf, opened 2026-07-28 by
-decomposing `exists_muThree_cocycle_of_autStable_of_j_eq_zero`): any two automorphisms of
-`E⁄Ω` that carry `σ⟨g⟩` into `⟨g⟩` have the same `u²`.
+omit [CharZero K] in
+/-- **THE `u`-COEFFICIENT IS DETERMINED UP TO SIGN** (opened as a sorry leaf 2026-07-28 by
+decomposing `exists_muThree_cocycle_of_autStable_of_j_eq_zero`; **PROVEN 2026-07-31**): any
+two automorphisms of `E⁄Ω` that carry `σ⟨g⟩` into `⟨g⟩` have the same `u²`.
 
 This is the whole `A = μ₂` content of the `j = 0` descent, and it is where `ι`, `hmove`,
 `hu6` and `hu2` are consumed.
 
-#### What has to be proved
+#### The proof
 
-Write `A := {C : C • (E⁄Ω) = (E⁄Ω) ∧ autMap C preserves ⟨g⟩}`.  On the normal form
-`y² = x³ + a₆` every automorphism is `⟨u,0,0,0⟩` with `u⁶ = 1` (`aut_eq_diag_sextic`), and
-`u` is injective on automorphisms, so `A ↪ μ₆`.  `A` contains `-1`, which acts as negation
-(`autMap_diag_neg`) and so preserves every `AddSubgroup`; `hmove` says `ι ∉ A`, and
-`hu6`/`hu2` say `ι.u` has order `3` or `6`.  The only subgroup of `μ₆` containing `μ₂` and
-not containing an element of order `3` or `6` is `μ₂` itself, so `u(A) = μ₂`.
+Write `A ⊆ μ₆` for the set of `u` with `u⁶ = 1` whose diagonal automorphism `[u]` carries
+`⟨g⟩` into itself.  On the normal form `y² = x³ + a₆` every automorphism is `⟨u,0,0,0⟩` with
+`u⁶ = 1` (`aut_eq_diag_sextic`), diagonal automorphisms compose by multiplying their `u`
+(`autMap_mul` through `VariableChange.mul_def`, since `⟨v,0,0,0⟩ * ⟨v',0,0,0⟩ = ⟨vv',0,0,0⟩`),
+and `[-v] = -[v]` (`autMap_diag_neg`), which every `AddSubgroup` absorbs.  So `A` is closed
+under multiplication and under `v ↦ -v`.
 
-Given `C` and `C'` both stable for the SAME `σ`, the ratio lies in `A`: `⟨g⟩` is finite
-(`hg`, `hN`) and `autMap` is injective (`autPoint_injective`), so `autMap C ∘ map σ` and
-`autMap C' ∘ map σ` are BIJECTIONS of `⟨g⟩`, whence `C'⁻¹C ∈ A` and `(C'.u)⁻¹C.u = ±1`.
+*The ratio lies in `A`.*  Put `w := C.u⁻¹C'.u`.  `⟨g⟩` is FINITE (`hg`, `hN`) and
+`autMap C ∘ map σ` is injective — `autMap` is a variable change composed with a transport,
+so `mapVariableChangeFun_injective` gives it — hence that map is ONTO `⟨g⟩`
+(`exists_mem_zmultiples_eq`).  Writing an arbitrary `y ∈ ⟨g⟩` as `autMap C (σ x)` with
+`x ∈ ⟨g⟩` turns `[w] y` into `autMap C' (σ x)`, which lies in `⟨g⟩` by `hmem'`.  So `w ∈ A`,
+and with it `w²`, `-w`, `-w²`.
+
+*`A` contains no element of order `3` or `6`.*  Suppose `w² ≠ 1`.  Then `w²` and `ι.u²` are
+both PRIMITIVE cube roots of unity: `z⁶ = 1` with `z² ≠ 1` forces `(z²)² + z² + 1 = 0` after
+cancelling `z² − 1` from `z⁶ − 1`.  A quadratic has at most two roots, and here they are
+`w²` and `(w²)²`, so `ι.u² = w²` or `ι.u² = (w²)²`; either way `ι.u = ±w` or `ι.u = ±w²`,
+all four of which lie in `A` — contradicting `hmove`.  Hence `w² = 1`, i.e. `C.u² = C'.u²`.
 
 #### Why the conclusion is `u²` and not `u`
 
@@ -231,8 +241,124 @@ theorem sq_u_eq_sq_u_of_autStable {N : ℕ} (hN : N ≠ 0) (E : WeierstrassCurve
       autMap h (Affine.Point.map σ.toAlgHom x) ∈ AddSubgroup.zmultiples g)
     (hmem' : ∀ x ∈ AddSubgroup.zmultiples g,
       autMap h' (Affine.Point.map σ.toAlgHom x) ∈ AddSubgroup.zmultiples g) :
-    (C.u : Ω) ^ 2 = (C'.u : Ω) ^ 2 :=
-  sorry
+    (C.u : Ω) ^ 2 = (C'.u : Ω) ^ 2 := by
+  classical
+  obtain ⟨hCdiag, hCu6⟩ := aut_eq_diag_sextic h₁ h₂ h₃ h₄ ha₆ h
+  obtain ⟨hC'diag, hC'u6⟩ := aut_eq_diag_sextic h₁ h₂ h₃ h₄ ha₆ h'
+  obtain ⟨hιdiag, hιu6⟩ := aut_eq_diag_sextic h₁ h₂ h₃ h₄ ha₆ hι
+  -- every sixth root of unity is a diagonal automorphism of `E⁄Ω`
+  have hd : ∀ v : Ωˣ, (v : Ω) ^ 6 = 1 →
+      (⟨v, 0, 0, 0⟩ : VariableChange Ω) • (E⁄Ω) = (E⁄Ω) :=
+    fun _ hv => smul_diag_self_sextic h₁ h₂ h₃ h₄ hv
+  -- the product of two diagonal variable changes is diagonal
+  have hprod : ∀ v v' : Ωˣ,
+      (⟨v, 0, 0, 0⟩ : VariableChange Ω) * ⟨v', 0, 0, 0⟩ = ⟨v * v', 0, 0, 0⟩ := by
+    intro v v'
+    simp [VariableChange.mul_def]
+  -- hence diagonal automorphisms compose by multiplying their `u`
+  have hcomp : ∀ (v v' : Ωˣ)
+      (hv : (⟨v, 0, 0, 0⟩ : VariableChange Ω) • (E⁄Ω) = (E⁄Ω))
+      (hv' : (⟨v', 0, 0, 0⟩ : VariableChange Ω) • (E⁄Ω) = (E⁄Ω))
+      (hvv' : (⟨v * v', 0, 0, 0⟩ : VariableChange Ω) • (E⁄Ω) = (E⁄Ω))
+      (P : (E⁄Ω).toAffine.Point), autMap hvv' P = autMap hv' (autMap hv P) := by
+    intro v v' hv hv' hvv' P
+    have hp : ((⟨v, 0, 0, 0⟩ : VariableChange Ω) * ⟨v', 0, 0, 0⟩) • (E⁄Ω) = (E⁄Ω) := by
+      rw [hprod]; exact hvv'
+    rw [autMap_congr (hprod v v').symm hvv' hp]
+    exact autMap_mul hv hv' hp P
+  -- `autMap` is injective, being a variable change followed by a transport
+  have hautinj : ∀ {D : VariableChange Ω} (hD : D • (E⁄Ω) = (E⁄Ω)),
+      Function.Injective (autMap hD) := by
+    intro D hD P Q hPQ
+    refine (equivOfEq hD.symm).injective (mapVariableChangeFun_injective (E⁄Ω) D ?_)
+    rw [← autMap_apply, ← autMap_apply]
+    exact hPQ
+  -- the ratio `w` of the two witnesses
+  obtain ⟨w, hwval⟩ : ∃ w : Ωˣ, C.u * w = C'.u :=
+    ⟨C.u⁻¹ * C'.u, mul_inv_cancel_left _ _⟩
+  have hCu6' : C.u ^ 6 = 1 := Units.ext (by push_cast; exact hCu6)
+  have hC'u6' : C'.u ^ 6 = 1 := Units.ext (by push_cast; exact hC'u6)
+  have hw6' : w ^ 6 = 1 := by
+    have hmul : C.u ^ 6 * w ^ 6 = 1 := by rw [← mul_pow, hwval, hC'u6']
+    rwa [hCu6', one_mul] at hmul
+  have hw6 : (w : Ω) ^ 6 = 1 := by
+    rw [← Units.val_pow_eq_pow_val, hw6', Units.val_one]
+  have hwvalΩ : (C.u : Ω) * (w : Ω) = (C'.u : Ω) := by rw [← Units.val_mul, hwval]
+  have hCd : (⟨C.u, 0, 0, 0⟩ : VariableChange Ω) • (E⁄Ω) = (E⁄Ω) := hd _ hCu6
+  have hC'd : (⟨C'.u, 0, 0, 0⟩ : VariableChange Ω) • (E⁄Ω) = (E⁄Ω) := hd _ hC'u6
+  have hιd : (⟨ι.u, 0, 0, 0⟩ : VariableChange Ω) • (E⁄Ω) = (E⁄Ω) := hd _ hιu6
+  have hwd : (⟨w, 0, 0, 0⟩ : VariableChange Ω) • (E⁄Ω) = (E⁄Ω) := hd _ hw6
+  -- **THE RATIO PRESERVES `⟨g⟩`.**  `autMap C ∘ map σ` is an injective self-map of the FINITE
+  -- group `⟨g⟩`, hence onto it; writing `y` as `autMap C (σ x)` turns `[w] y` into
+  -- `autMap C' (σ x)`, which lies in `⟨g⟩` by `hmem'`.
+  have hwpres : ∀ y ∈ AddSubgroup.zmultiples g, autMap hwd y ∈ AddSubgroup.zmultiples g := by
+    intro y hy
+    obtain ⟨x, hx, hxy⟩ := exists_mem_zmultiples_eq hN hg
+      ((autMap h).comp (Affine.Point.map σ.toAlgHom))
+      (fun P Q hPQ => Affine.Point.map_injective σ.toAlgHom (hautinj h hPQ))
+      (fun z hz => hmem z hz) hy
+    have hxy' : autMap h (Affine.Point.map σ.toAlgHom x) = y := hxy
+    have huwd : (⟨C.u * w, 0, 0, 0⟩ : VariableChange Ω) • (E⁄Ω) = (E⁄Ω) := by
+      rw [hwval]; exact hC'd
+    rw [← hxy', autMap_congr hCdiag h hCd, ← hcomp C.u w hCd hwd huwd,
+      autMap_congr (show (⟨C.u * w, 0, 0, 0⟩ : VariableChange Ω) = C' by
+        rw [hwval]; exact hC'diag.symm) huwd h']
+    exact hmem' x hx
+  -- `w²` preserves `⟨g⟩` too, being `[w]` applied twice
+  have hww6 : ((w * w : Ωˣ) : Ω) ^ 6 = 1 := by
+    push_cast; rw [mul_pow, hw6, one_mul]
+  have hwwd : (⟨w * w, 0, 0, 0⟩ : VariableChange Ω) • (E⁄Ω) = (E⁄Ω) := hd _ hww6
+  have hwwpres : ∀ y ∈ AddSubgroup.zmultiples g, autMap hwwd y ∈ AddSubgroup.zmultiples g := by
+    intro y hy
+    rw [hcomp w w hwd hwd hwwd y]
+    exact hwpres _ (hwpres y hy)
+  -- and so does `-v` whenever `v` does: `[-v]` is `-[v]`, and `⟨g⟩` absorbs negation
+  have hnegpres : ∀ (v : Ωˣ) (hv : (⟨v, 0, 0, 0⟩ : VariableChange Ω) • (E⁄Ω) = (E⁄Ω))
+      (hnv : (⟨-v, 0, 0, 0⟩ : VariableChange Ω) • (E⁄Ω) = (E⁄Ω)),
+      (∀ y ∈ AddSubgroup.zmultiples g, autMap hv y ∈ AddSubgroup.zmultiples g) →
+      ∀ y ∈ AddSubgroup.zmultiples g, autMap hnv y ∈ AddSubgroup.zmultiples g := by
+    intro v hv hnv hpres y hy
+    rw [autMap_diag_neg h₁ h₃ hv hnv y]
+    exact neg_mem (hpres y hy)
+  -- **`hmove` FORBIDS `ι.u = ±v` FOR ANY `v` PRESERVING `⟨g⟩`.**
+  have hfinal : ∀ (v : Ωˣ) (hv : (⟨v, 0, 0, 0⟩ : VariableChange Ω) • (E⁄Ω) = (E⁄Ω)),
+      (∀ y ∈ AddSubgroup.zmultiples g, autMap hv y ∈ AddSubgroup.zmultiples g) →
+      (ι.u : Ω) ^ 2 = (v : Ω) ^ 2 → False := by
+    intro v hv hvpres hsq
+    obtain ⟨x, hx, hxmove⟩ := hmove
+    refine hxmove ?_
+    rw [autMap_congr hιdiag hι hιd]
+    rcases mul_eq_zero.mp (show ((ι.u : Ω) - (v : Ω)) * ((ι.u : Ω) + (v : Ω)) = 0 by
+        linear_combination hsq) with he | he
+    · have hvι : (⟨ι.u, 0, 0, 0⟩ : VariableChange Ω) = ⟨v, 0, 0, 0⟩ := by
+        rw [show ι.u = v from Units.ext (sub_eq_zero.mp he)]
+      rw [autMap_congr hvι hιd hv]
+      exact hvpres x hx
+    · have hvι : (⟨ι.u, 0, 0, 0⟩ : VariableChange Ω) = ⟨-v, 0, 0, 0⟩ := by
+        rw [show ι.u = -v from Units.ext (by push_cast; linear_combination he)]
+      have hnv : (⟨-v, 0, 0, 0⟩ : VariableChange Ω) • (E⁄Ω) = (E⁄Ω) := hvι ▸ hιd
+      rw [autMap_congr hvι hιd hnv]
+      exact hnegpres v hv hnv hvpres x hx
+  -- **THE `μ₆`-ARITHMETIC.**  Were `w² ≠ 1`, both `w²` and `ι.u²` would be PRIMITIVE cube
+  -- roots of unity, hence roots of `X² + X + 1`, which has only two; so `ι.u² = w²` or
+  -- `ι.u² = (w²)²`, and either way `hfinal` contradicts `hmove`.
+  by_contra hne
+  have hwsq : (w : Ω) ^ 2 ≠ 1 := fun hcon => hne (by
+    rw [← hwvalΩ, mul_pow, hcon, mul_one])
+  have hprim : ∀ z : Ω, z ^ 6 = 1 → z ^ 2 ≠ 1 → (z ^ 2) ^ 2 + z ^ 2 + 1 = 0 := by
+    intro z h6 h2
+    rcases mul_eq_zero.mp (show (z ^ 2 - 1) * ((z ^ 2) ^ 2 + z ^ 2 + 1) = 0 by
+        linear_combination h6) with hc | hc
+    · exact absurd (by linear_combination hc) h2
+    · exact hc
+  have haw := hprim (w : Ω) hw6 hwsq
+  have hbι := hprim (ι.u : Ω) hu6 hu2
+  have ha3 : ((w : Ω) ^ 2) ^ 3 = 1 := by linear_combination ((w : Ω) ^ 2 - 1) * haw
+  rcases mul_eq_zero.mp (show ((ι.u : Ω) ^ 2 - (w : Ω) ^ 2)
+      * ((ι.u : Ω) ^ 2 - ((w : Ω) ^ 2) ^ 2) = 0 by
+      linear_combination hbι - (ι.u : Ω) ^ 2 * haw + ha3) with hc | hc
+  · exact hfinal w hwd hwpres (by linear_combination hc)
+  · exact hfinal (w * w) hwwd hwwpres (by push_cast; linear_combination hc)
 
 /-- **THE FINITE GALOIS LEVEL** (opened as a sorry leaf 2026-07-28 by decomposing
 `exists_muThree_cocycle_of_autStable_of_j_eq_zero`; **PROVEN 2026-07-30**, with
@@ -328,9 +454,9 @@ theorem exists_finiteGaloisLevel_of_addOrder [Normal K Ω]
 
 /-- **THE `μ₃`-VALUED DESCENT COCYCLE AT `j = 0`, in normal form** (PROVEN 2026-07-28 over the
 two leaves `sq_u_eq_sq_u_of_autStable` and `exists_finiteGaloisLevel_of_addOrder`; the second
-of those was CLOSED 2026-07-30, so `sq_u_eq_sq_u_of_autStable` is now the only leaf left under
-this declaration.  Its `Algebra.IsAlgebraic K Ω` became `Normal K Ω` at the same time — see
-`exists_finiteGaloisLevel_of_addOrder` for why that strengthening is not cosmetic).
+was CLOSED 2026-07-30 and the first 2026-07-31, so **this declaration is now unconditional**.
+`exists_finiteGaloisLevel_of_addOrder`'s `Algebra.IsAlgebraic K Ω` became `Normal K Ω` when it
+closed — see there for why that strengthening is not cosmetic).
 
 Everything that is not "the `u` is determined up to sign" or "the level is finite" is proved
 here.  In particular the COCYCLE IDENTITY is proven outright, and it is the mathematically
@@ -424,7 +550,7 @@ theorem exists_muThreeCocycle_of_autStable_of_sextic {N : ℕ} (hN : N ≠ 0)
 
 /-- **THE `μ₃`-VALUED DESCENT COCYCLE AT `j = 0`** (PROVEN 2026-07-28 over the two leaves
 `sq_u_eq_sq_u_of_autStable` and `exists_finiteGaloisLevel_of_addOrder`; the latter was CLOSED
-2026-07-30, leaving `sq_u_eq_sq_u_of_autStable` as the only leaf here).
+2026-07-30 and the former 2026-07-31, so **this declaration is now unconditional**).
 
 This is `exists_muThreeCocycle_of_autStable_of_sextic` with the normal-form hypotheses
 replaced by `hj : E.j = 0`.  The proof puts `E` in the form `y² = x³ + b` over `K`
