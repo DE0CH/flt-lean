@@ -4263,7 +4263,67 @@ last of these is PROVEN and still present, contrary to a report that it had been
 as free-floating).  **This module still does not import that file**; the import would be
 acyclic (its own imports are `Mathlib`-only) but its cone cost should be measured first.
 Bertini itself is absent from `Mathlib` and from `~/cs/FLT` (`grep -rlni bertini`
-returns nothing in either), so item 4 remains genuinely open. -/
+returns nothing in either), so item 4 remains genuinely open.
+
+SECOND FALSITY AUDIT, RUN 2026-07-30 AGAINST THE COMPOSITE STATEMENT — VERDICT: TRUE.
+Required because this leaf was CUT out of a different statement on 2026-07-29 and the
+audit above is INHERITED; an inherited audit certifies a statement that no longer exists,
+so it is void until re-run.  Re-run here against the hypotheses as they actually stand.
+The verdict is unchanged, and both witnesses survive the transport verbatim:
+
+* `hgen`.  The `n = 0` witness must still satisfy the OTHER hypotheses of THIS leaf, and
+  it does: `A = K[s,t]`, `y = ![]`.  `K[s,t]` is smooth, `PrimeSpectrum` irreducible, and
+  `topologicalKrullDim = 2 > 1`, so `hirr` and `hdim` hold; only `hgen` fails.  The cut
+  form is `(∑ i : Fin 0, …) − algebraMap K A (w (Fin.last 0)) = −w₀`, so for every
+  `w₀ ≠ 0` the span is `⊤`, the quotient is the ZERO ring and its `Spec` is EMPTY.
+  `ConnectedSpace` extends `Nonempty`, and a nonzero `G ∈ K[X₀]` has finitely many roots
+  while `K` is infinite, so no `G` works.  Load-bearing.
+* `hdim`.  The conic witness satisfies `hgen` (`s,t` generate) as well as smoothness and
+  irreducibility, so the two hypotheses are independent, as claimed above.  Note the
+  witness is disconnected in TWO ways as `w` varies — two reduced points for a transverse
+  line, and the EMPTY scheme when `w₀ = w₁ = 0 ≠ w₂` — and a nonzero `G` avoids neither
+  locus.  Load-bearing.
+
+TWO HYPOTHESES ARE *NOT* LOAD-BEARING, and a prover should not spend effort on them:
+`Algebra.Smooth K A` and `CharZero K`.  The literature statement (Jouanolou, *Théorèmes de
+Bertini et applications*, Thm 6.3) is irreducibility of the general hyperplane section of
+an IRREDUCIBLE closed subvariety of `ℙⁿ` of dimension `≥ 2`, in ARBITRARY characteristic
+and with no smoothness hypothesis — it is the Bertini SMOOTHNESS theorem, not the
+irreducibility theorem, that needs `char 0`.  They are harmless (a stronger hypothesis on
+a leaf costs the consumer nothing here, since the consumer supplies both), but a proof
+that routes through smoothness or through char `0` is doing avoidable work.
+
+ROUTE CORRECTION, 2026-07-30 — WHERE THE DIFFICULTY ACTUALLY IS.  The route above names
+the projective closure first, which makes the projective-closure interface look like the
+next thing to build.  It is not, and the cone cost warned about above should not be paid
+before the following is understood.  The INCIDENCE VARIETY of this family is irreducible
+for a completely trivial reason, with no dimension hypothesis and no Bertini:
+
+    A[t₀,…,t_n] ⧸ (∑_{i<n} tᵢ yᵢ − t_n)  ≅  A[t₀,…,t_{n−1}]
+
+— the relation SOLVES for `t_n`, so the incidence variety is `Spec A × 𝔸ⁿ`, irreducible
+whenever `Spec A` is.  Consequently the generic fibre of the projection to `𝔸ⁿ⁺¹` is
+irreducible too, for the equally cheap reason that the generic point of an irreducible
+total space lies in it and dominates every point of it.
+
+So NONE of the content of this leaf is in producing an irreducible object.  All of it is
+in the two steps that irreducibility of the generic fibre does NOT give:
+
+  (i) GEOMETRIC irreducibility of the generic fibre over `L = K(t₀,…,t_n)`.  Irreducible
+      does not imply geometrically irreducible — `𝔸¹ → 𝔸¹`, `t ↦ t²`, has irreducible
+      total space and generic fibre `Spec L[t]/(t² − s)`, a FIELD, hence irreducible and
+      not geometrically so.  This is the actual Bertini theorem, and the classical proof
+      of it uses that the linear system separates points (i.e. `hgen`), which is precisely
+      why `hgen` is load-bearing and smoothness is not.
+  (ii) The passage from the generic fibre to a dense open set of SPECIAL fibres, i.e.
+      constructibility of the geometrically-irreducible locus (EGA IV 9.7.7).  Absent from
+      `Mathlib` (`Mathlib/AlgebraicGeometry/Geometrically/Irreducible.lean` has the
+      definition and the base-change API, not the constructibility theorem).
+
+A cut into (i) and (ii) is therefore available and is the honest decomposition, but it
+replaces one hard leaf by two hard leaves and has NOT been taken here for that reason.
+Recorded so the next prover starts from the real obstruction rather than from the
+projective closure, which enters the classical proof of (i) but is not itself the gap. -/
 theorem exists_bertiniConnectedLocus_isAlgClosed {K : Type u} [Field K] [IsAlgClosed K]
     [CharZero K] {A : Type u} [CommRing A] [Algebra K A] [Algebra.Smooth K A]
     (hirr : IrreducibleSpace (PrimeSpectrum A))
@@ -11841,8 +11901,106 @@ theorem exists_pos_forall_prime_not_dvd_notMem_span_singleton_map
         Ideal.span {MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) g} :=
   sorry
 
+/-- **THE PURE DESCENT: A `ℚ`-DIAGRAM WITH AN INTEGRAL DENOMINATOR SPREADS OUT TO
+ALMOST EVERY FIBRE** (SORRY LEAF, cut 2026-07-30 out of
+`exists_inverted_intLift_retraction_localizationAway_integralSystemModel`
+immediately below, which is now GLUE ONLY over it).
+
+WHAT THE CUT REMOVES FROM THE CONSUMER. The consumer receives its `b` as a bare
+CLASS in `MvPolynomial (Fin k) ℚ ⧸ (g)` and must (i) lift it to an INTEGER
+polynomial, (ii) show the lift's class over `ℚ` is still nonzero, and (iii)
+transport the `ℚ`-side isomorphism `θ` along the change of denominator. None of
+that is descent: it is `exists_integralMultiple` for the lift and
+`nonempty_ringEquiv_localizationAway_of_eq_isUnit_mul` for the transport (a
+nonzero rational scalar is a unit, and localising away from `c * x` is
+localising away from `x`). It is done once, below, and this leaf never sees it:
+here `b` is an INTEGER polynomial fixed in advance, and the `ℚ`-side data
+arrives as an explicit PAIR of ring maps rather than as an isomorphism.
+
+WHAT REMAINS IS EXACTLY DENOMINATOR CLEARING, and nothing else. Write
+`A_R := IntegralSystemModel f R`, `α_R := integralSystemClass f R a`,
+`B_R := MvPolynomial (Fin k) R ⧸ (g)`, `β_R := ⟦b⟧`. The hypothesis is a pair
+`Ψ : A_ℚ[1/α] → B_ℚ[1/β]`, `Λ : B_ℚ[1/β] → (A_ℚ[1/α])_red` with `Λ ∘ Ψ = mk` on
+the nose; the conclusion is the same pair over `𝔽̄_p`, with the identity only on
+the image of the model.
+
+ROUTE, in the shape that avoids ever CONSTRUCTING a map (recorded 2026-07-30;
+each step names the proven tool it uses).
+
+1. NEITHER MAP HAS TO BE BUILT AS A MAP — both are TUPLES SATISFYING EQUATIONS.
+   `IsLocalization.Away.lift` turns a ring map out of `A_p[1/α]` into a ring map
+   out of `A_p` sending `α_p` to a unit, and `Ideal.Quotient.lift` composed with
+   `MvPolynomial.eval₂` turns THAT into a tuple `u : Fin n → B_p[1/β]` with
+   `f_j(u) = 0` for every `j` and `a(u)` a unit. Dually `lam` is a tuple
+   `w : Fin k → A_p[1/α]` with every `g(w)` NILPOTENT and `b(w)` a unit modulo
+   nilpotents — the target being the REDUCTION is what turns `g(w) = 0` into the
+   strictly weaker `g(w)^M = 0`, and that weakening is what makes the leaf true.
+2. AFTER CLEARING DENOMINATORS EVERY CONDITION IS A MEMBERSHIP OF INTEGRAL
+   POLYNOMIALS. `Ψ` and `Λ` are determined by finitely many values (`ℚ` maps into
+   any ring in exactly one way, so no coefficient data escapes), each of the form
+   `⟦P_i⟧ / β^e` resp. `⟦Q_j⟧ / α^d`; `exists_integralMultiple` makes the `P_i`
+   and `Q_j` INTEGRAL at the cost of one integer `N₀`. The conditions of step 1
+   then read `β^t · f_j(P) ∈ span {g}`, `α^t · g(Q)^M ∈ integralSystemIdeal f _`,
+   `α^t · (P_i(Q) − α^? · x_i)^M ∈ integralSystemIdeal f _`, plus two unit
+   witnesses — all with INTEGER left-hand sides.
+3. THE ONE NEW INGREDIENT IS THEREFORE A SINGLE TRANSFER: a membership
+   `P ∈ integralSystemIdeal f ℚ` (resp. `span {g}` over `ℚ`) holds over `𝔽̄_p`
+   for every `p` outside an explicit finite set. Its proof is Bézout: the
+   certificate `P = Σ c_j f_j` has finitely many rational `c_j`, so
+   `N · P = Σ c'_j f_j` with `c'_j` integral, and `N` is a unit mod `p`. The
+   file's `exists_intPoly_map_eq_intCast_mul` and
+   `exists_pos_forall_prime_not_dvd_exists_eval_ne_zero` are the two proven
+   lemmas of exactly this shape, and `exists_reducibilityCertificates` uses the
+   device in the same way one screen above.
+
+WHY THE `ℚ` SIDE IS FREE. `Λ ∘ Ψ = mk` is imposed as a hypothesis rather than
+derived, so a prover here never has to produce the birational isomorphism; the
+consumer manufactures the pair from `θ` and `θ.symm`, where the identity holds by
+`RingEquiv.symm_apply_apply`.
+
+FAITHFULNESS. Not dischargeable by a junk `ψ`. The zero map into the zero ring
+forces `lam 0 = 1`, hence `1 = 0` in `(A_p[1/α])_red`, hence `A_p[1/α] = 0` — so
+the escape is available only where the conclusion is itself vacuous. The
+hypothesis is the STRONGEST form of the `ℚ`-side identity (`∀ z`, not merely on
+the image of the model) and the conclusion the WEAKEST form of the `𝔽̄_p`-side
+one, so the cut is sound in the only direction that matters: anything proving
+this leaf proves the consumer.
+
+CIRCULARITY GUARD: inherited from the consumer; pure commutative algebra, no
+Galois representation, no route through `Family.lean`, `Lift.lean` or
+`Modularity/Interface.lean`. -/
+theorem exists_pos_forall_prime_not_dvd_reduction_retraction_localizationAway_integralSystemModel
+    {n m k : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ) (g : MvPolynomial (Fin k) ℤ)
+    (a : MvPolynomial (Fin n) ℤ) (b : MvPolynomial (Fin k) ℤ)
+    (Ψ : Localization.Away (integralSystemClass f ℚ a) →+*
+      Localization.Away (Ideal.Quotient.mk
+        (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g})
+        (MvPolynomial.map (Int.castRingHom ℚ) b)))
+    (Λ : Localization.Away (Ideal.Quotient.mk
+        (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g})
+        (MvPolynomial.map (Int.castRingHom ℚ) b)) →+*
+      Localization.Away (integralSystemClass f ℚ a) ⧸
+        nilradical (Localization.Away (integralSystemClass f ℚ a)))
+    (hcomp : ∀ z, Λ (Ψ z) = Ideal.Quotient.mk _ z) :
+    ∃ N : ℕ, 0 < N ∧ ∀ (p : ℕ) [Fact p.Prime], ¬ (p ∣ N) →
+      ∃ (ψ : Localization.Away (integralSystemClass f (AlgebraicClosure (ZMod p)) a) →+*
+            Localization.Away (Ideal.Quotient.mk
+              (Ideal.span {MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) g})
+              (MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) b)))
+        (lam : Localization.Away (Ideal.Quotient.mk
+              (Ideal.span {MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) g})
+              (MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) b)) →+*
+            Localization.Away (integralSystemClass f (AlgebraicClosure (ZMod p)) a) ⧸
+              nilradical (Localization.Away
+                (integralSystemClass f (AlgebraicClosure (ZMod p)) a))),
+        ∀ y : IntegralSystemModel f (AlgebraicClosure (ZMod p)),
+          lam (ψ (algebraMap _ _ y)) = Ideal.Quotient.mk _ (algebraMap _ _ y) :=
+  sorry
+
 /-- **THE SPREADING-OUT OF THE BIRATIONAL DIAGRAM: THE MAP AND ITS RETRACTION
-MODULO NILPOTENTS** (SORRY LEAF, cut 2026-07-28 out of
+MODULO NILPOTENTS** (**PROVEN 2026-07-30**, GLUE ONLY over
+`exists_pos_forall_prime_not_dvd_reduction_retraction_localizationAway_integralSystemModel`
+immediately above; cut 2026-07-28 out of
 `exists_inverted_nilpotentKer_ringHom_localizationAway_integralSystemModel`
 immediately below, which is now PROVEN over this leaf, over
 `exists_pos_forall_prime_not_dvd_notMem_span_singleton_map` above and over the
@@ -11927,8 +12085,45 @@ theorem exists_inverted_intLift_retraction_localizationAway_integralSystemModel
                 nilradical (Localization.Away
                   (integralSystemClass f (AlgebraicClosure (ZMod p)) a))),
           ∀ y : IntegralSystemModel f (AlgebraicClosure (ZMod p)),
-            lam (ψ (algebraMap _ _ y)) = Ideal.Quotient.mk _ (algebraMap _ _ y) :=
-  sorry
+            lam (ψ (algebraMap _ _ y)) = Ideal.Quotient.mk _ (algebraMap _ _ y) := by
+  classical
+  -- The `ℚ`-side datum arrives as a class `b₀` in `ℚ[Y]/(g)`; name a representative.
+  obtain ⟨b₀, hb₀ne, ⟨θ⟩⟩ := hQ
+  obtain ⟨β, rfl⟩ := Ideal.Quotient.mk_surjective b₀
+  -- STEP 1: clear denominators in the representative, producing an INTEGER `b`.
+  obtain ⟨b, c, hc0, hcb⟩ := exists_integralMultiple β
+  set C := MvPolynomial (Fin k) ℚ ⧸
+    Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g} with hC
+  have hu : IsUnit (algebraMap ℚ C c) := (Ne.isUnit hc0).map (algebraMap ℚ C)
+  have hmk : (Ideal.Quotient.mk (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g})
+      (MvPolynomial.map (Int.castRingHom ℚ) b))
+      = algebraMap ℚ C c * Ideal.Quotient.mk _ β := by
+    rw [hcb, Algebra.smul_def, map_mul]
+    rfl
+  -- STEP 2: changing the denominator by a UNIT does not change the localization.
+  obtain ⟨e⟩ := nonempty_ringEquiv_localizationAway_of_eq_isUnit_mul
+    (algebraMap ℚ C c) (Ideal.Quotient.mk _ β) _ hu hmk
+  -- STEP 3: the `ℚ`-side non-membership of the integral lift.
+  have hbne : MvPolynomial.map (Int.castRingHom ℚ) b ∉
+      Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g} := by
+    rw [← Ideal.Quotient.eq_zero_iff_mem]
+    rw [hmk]
+    exact fun h => hb₀ne (by
+      obtain ⟨v, hv⟩ := hu
+      have := congrArg (fun x => (↑v⁻¹ : C) * x) h
+      simpa [← mul_assoc, ← hv] using this)
+  -- STEP 4: the descent, over the explicit `ℚ`-side pair `(θ ∘ mk, θ.symm)` transported
+  -- along `e`.  The composite identity is `RingEquiv.symm_apply_apply`, twice.
+  obtain ⟨N, hN, hmain⟩ :=
+    exists_pos_forall_prime_not_dvd_reduction_retraction_localizationAway_integralSystemModel
+      f g a b
+      ((e.toRingHom.comp θ.toRingHom).comp
+        (Ideal.Quotient.mk (nilradical (Localization.Away (integralSystemClass f ℚ a)))))
+      (θ.symm.toRingHom.comp e.symm.toRingHom)
+      (fun z => by
+        show θ.symm (e.symm (e (θ (Ideal.Quotient.mk _ z)))) = Ideal.Quotient.mk _ z
+        rw [RingEquiv.symm_apply_apply, RingEquiv.symm_apply_apply])
+  exact ⟨N, b, hN, hbne, hmain⟩
 
 /-- **THE SPREADING-OUT OF THE BIRATIONAL DIAGRAM, WITH THE KERNEL CONDITION
 REPLACED BY A NILPOTENCY EXPONENT** (**PROVEN 2026-07-28**, having been cut on
