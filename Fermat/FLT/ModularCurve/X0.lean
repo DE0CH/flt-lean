@@ -63653,24 +63653,46 @@ def HasDoubleCoverOfAffineLine {X S : Scheme.{0}} (strX : X ⟶ S) : Prop :=
       u₁ ≫ φ = k → u₂ ≫ φ = k → u₃ ≫ φ = k → u₁ = u₂ ∨ u₁ = u₃ ∨ u₂ = u₃
 
 /-- **ABEL IN DEGREE `2`, VIA AUTODUALITY: `aj x₁ + aj x₂ = aj y₁ + aj y₂`
-says exactly `𝒪(−x₁ − x₂) ≅ 𝒪(−y₁ − y₂)`** (sorry leaf, 2026-07-28) — the
-degree-`2` copy of `relPicEquiv_sectionIdeal_of_aj_eq`, and the first half
-of `hasDoubleCoverOfAffineLine_of_ajPair_eq`.
+says exactly `𝒪(−x₁ − x₂) ≅ 𝒪(−y₁ − y₂)`** (PROVEN 2026-07-29; introduced
+as a sorry leaf 2026-07-28) — the degree-`2` copy of
+`relPicEquiv_sectionIdeal_of_aj_eq`, and the first half of
+`hasDoubleCoverOfAffineLine_of_ajPair_eq`.
 
 TRUE, and it is the same classical autoduality: `IsJacobianOf` presents
 `J` by the ALBANESE property, which mentions no line bundle, while the
 `g¹₂` the consumer has to produce is a statement about DIVISORS.  The
 identification is `IsRelPicZeroOf` (`ModularCurve/RelativePicard.lean`),
-reached exactly as in degree `1` — `exists_relPicZero`, then
-`IsRelPicZeroOf.isAlbaneseOf` and `IsAlbaneseOf.isJacobianOf`, then the
-`∃!` of `IsJacobianOf` to transport the Picard data along the resulting
-`aj`-compatible isomorphism.  What is different from degree `1`, and the
-whole reason this is a SEPARATE leaf rather than a corollary, is that the
-group law is now used: `P.sheaf_add` turns the sum in `J` into a tensor
-product of classes, and `P.aj_spec` applied four times then cancels the
-two copies of `𝒪(−o)`.  Deriving this from the degree-`1` statement would
-need cancellation of an arbitrary invertible sheaf, i.e. inverses in the
-relative Picard group, which `RelPicEquiv` does not carry.
+reached exactly as in degree `1`, through `exists_relPicZero`.  What is
+different from degree `1`, and the whole reason this is a SEPARATE leaf
+rather than a corollary, is that the group law is now used:
+`IsRelPicZeroOf.sheaf_add` turns the sum in `J` into a tensor product of
+classes, and `aj_spec` applied four times then cancels the two copies of
+`𝒪(−o)`.
+
+**THE PROOF, AND THE ONE INGREDIENT DEGREE `1` DID NOT NEED.**
+`exists_relPicZero` supplies `P : IsRelPicZeroOf strX ab' o` — this is
+where all three curve hypotheses are consumed, and the only place — and
+`jac.universal`, applied to `P.aj` itself as the pointed natural map
+(`P.aj_pre` is its naturality, `P.aj_base` its pointedness), supplies
+`u : J ⟶ J'` with `(P.aj z).1 = (jac.aj g z).1 ≫ u` at every test object.
+Degree `1` stops there, because it only has to transport an EQUALITY of
+`aj` values along `u`.  Here the hypothesis is an equality of SUMS, so `u`
+has to be a HOMOMORPHISM — and that is exactly `isAdditiveOn_of_post_zero`
+(relative RIGIDITY, PROVEN ~26 000 lines above in this file): `u` carries
+the origin to the origin because `jac.aj_base` and `P.aj_base` both name
+it, hence `u` is additive on relative points.  Transporting `heq` along it
+gives `ab'.add (P.aj x₁) (P.aj x₂) = ab'.add (P.aj y₁) (P.aj y₂)`, and the
+rest is Picard algebra: writing `Lᵢ = P.sheaf (P.aj xᵢ)` (that is
+`𝒪(xᵢ − o)`), `Iᵢ = 𝒪(−xᵢ)` and likewise `Mᵢ`, `Jᵢ` for the `y`'s,
+
+    (L₁ ⊗ L₂) ⊗ (I₁ ⊗ I₂) ≅ (L₁ ⊗ I₁) ⊗ (L₂ ⊗ I₂) ~ 𝒪(−o) ⊗ 𝒪(−o)
+
+— the isomorphism is the middle-four interchange, the equivalence is
+`aj_spec` twice — and the same for `y`; `sheaf_add` twice turns the
+transported hypothesis into `L₁ ⊗ L₂ ~ M₁ ⊗ M₂`; and
+`RelPicEquiv.cancel_left` deletes the common invertible factor
+`M₁ ⊗ M₂`, which is invertible by `isInvertibleSheaf_modTensor` from
+`P.invertible`.
 
 **THE BASE POINT CANCELS, AND THAT IS THE CONTENT OF THE `2`.**
 `aj x = [x] − [o]`, so the hypothesis is
@@ -63713,26 +63735,56 @@ tensor API, all of it in THIS file's PUBLIC cone
 So the honest residual inventory is smaller and sharper than "tensor
 algebra": (i) transport of `IsRelPicZeroOf` along an `aj`-compatible
 isomorphism of abelian schemes, and (ii) an INVERSE for an invertible
-sheaf, hence CANCELLATION.  Only (ii) is genuinely absent, and the reason
-is visible in the definition: `IsInvertibleSheaf L`
-(`ModularCurve/RelativePicard.lean`) is LOCAL triviality, `∀ z, ∃ U ∋ z,
-L|_U ≅ 𝒪_U`, which hands back no global dual — the dual sheaf has to be
-constructed and shown to satisfy `L ⊗ L^∨ ≅ 𝒪`.  With the associator,
-braiding and unitor already available, cancellation is exactly that one
-missing step and nothing more.  (`nonempty_modTensor_modPullback`, the
-compatibility of `modTensor` with `modPullback`, is still a sorry in
-`AmpleSheaf.lean` and is likely wanted too, since `RelPicEquiv` is a
-quotient by pulled-back sheaves.)
+sheaf, hence CANCELLATION.
+
+**SECOND INVENTORY CORRECTION, 2026-07-29 — the paragraph above is now
+wrong in BOTH of its items, and one of them was never right.**
+
+* **(i) IS NOT NEEDED AT ALL**, and the identical correction was made on
+  `relPicEquiv_sectionIdeal_of_aj_eq` when that leaf closed the day
+  before.  The proof transports no `IsRelPicZeroOf` and constructs no
+  isomorphism of abelian schemes; `jac.universal` at `P.aj` is applied
+  directly.  What the inventory should have named in its place is
+  RIGIDITY — that the resulting `u : J ⟶ J'` is additive — and that was
+  already sitting PROVEN in this same file as
+  `isAdditiveOn_of_post_zero`, some 26 000 lines above.  A cut author's
+  inventory is a hypothesis about the file, not a reading of it.
+* **(ii) IS SUPPLIED**: `exists_modTensor_inverse` (`AmpleSheaf.lean`,
+  2026-07-28, over the leaf `exists_modDual`) gives the tensor inverse,
+  and `RelPicEquiv.symm`, `.trans`, `.cancel_left` are built on it there.
+  So the residual inventory of THIS leaf is empty.
+* **"Deriving this from the degree-`1` statement would need cancellation
+  of an arbitrary invertible sheaf ... which `RelPicEquiv` does not
+  carry"** (the sentence that used to close the opening paragraph) —
+  `RelPicEquiv` carries cancellation now, and that still does NOT make
+  this a corollary of degree `1`.  The obstruction was never cancellation:
+  the degree-`1` statement consumes `jac.aj x = jac.aj y`, an equality of
+  INDIVIDUAL `aj` values, and no such equality follows from an equality of
+  SUMS.  This leaf is a corollary of degree `1`'s METHOD plus rigidity,
+  not of its STATEMENT at any price.
+* The route sketch "`IsRelPicZeroOf.isAlbaneseOf` and
+  `IsAlbaneseOf.isJacobianOf`, then the `∃!` of `IsJacobianOf`" is not
+  what the proof does either: only the `∃!` is used, and neither of those
+  two declarations appears in it.
+
+**STATED ONCE RATHER THAN INSIDE THIS PROOF**, as the paragraph below
+asked.  Three declarations are new in `Fermat/FLT/Modularity/AmpleSheaf.lean`
+(2026-07-29) and are what the `Pic` statements in
+`AbelianSchemeIsogeny.lean` should also consume:
+`nonempty_modTensor_middleFour` — the shuffle
+`(A ⊗ B) ⊗ (C ⊗ D) ≅ (A ⊗ C) ⊗ (B ⊗ D)`, which is the one piece of tensor
+algebra a degree-`2` divisor computation needs and a degree-`1` one does
+not; `RelPicEquiv.of_iso`; and `RelPicEquiv.tensor`, the statement that
+`RelPicEquiv` is a CONGRUENCE for `⊗` (the twisting sheaves multiply).
 
 Both (i) and (ii) are shared VERBATIM with `relPicEquiv_sectionIdeal_of_aj_eq`
 and with the `Pic` statements in `AbelianSchemeIsogeny.lean`, so they
 should be stated ONCE as their own leaves rather than proven inside
 either proof.
 
-**The check that would refute this note**: a route from `IsJacobianOf` to
-a divisor statement that does not pass through a representing object for
-`Pic⁰`; or a construction of `L^∨` with `L ⊗ L^∨ ≅ 𝒪` from
-`IsInvertibleSheaf` appearing anywhere in `Fermat/`. -/
+This leaf is now transitively sorried only through `exists_relPicZero`,
+`exists_modDual` and `exists_modPullback_modTensor` — none of which
+mentions a Jacobian. -/
 theorem relPicEquiv_sectionIdeal_of_aj_add_eq {X J : Scheme.{0}} {strX : X ⟶ SpecQ}
     (hproper : IsProper strX) (hcurve : SmoothOfRelativeDimension 1 strX)
     (hconn : GeometricallyConnected strX) {jstr : J ⟶ SpecQ}
@@ -63742,8 +63794,49 @@ theorem relPicEquiv_sectionIdeal_of_aj_add_eq {X J : Scheme.{0}} {strX : X ⟶ S
       ab.add (jac.aj (𝟙 SpecQ) y₁) (jac.aj (𝟙 SpecQ) y₂)) :
     RelPicEquiv strX (𝟙 SpecQ)
       (modTensor (sectionIdeal (relSection x₁)) (sectionIdeal (relSection x₂)))
-      (modTensor (sectionIdeal (relSection y₁)) (sectionIdeal (relSection y₂))) :=
-  sorry
+      (modTensor (sectionIdeal (relSection y₁)) (sectionIdeal (relSection y₂))) := by
+  obtain ⟨J', jstr', ab', ⟨P⟩⟩ := exists_relPicZero strX hproper hcurve hconn o
+  obtain ⟨u, ⟨hucomp, hu⟩, -⟩ := jac.universal ab' (fun _ z => P.aj z)
+    (by intro _ _ hh _ _ hg z; exact P.aj_pre hh hg z) P.aj_base
+  have hpost : ∀ {T : Scheme.{0}} {g : T ⟶ SpecQ} (z : RelPoint strX g),
+      RelPoint.post u hucomp (jac.aj g z) = P.aj z := fun z => Subtype.ext (hu _ z).symm
+  have h0 : RelPoint.post u hucomp (ab.zero (𝟙 SpecQ)) = ab'.zero (𝟙 SpecQ) := by
+    rw [← jac.aj_base, hpost, P.aj_base]
+  have hadd : ∀ {T : Scheme.{0}} {g : T ⟶ SpecQ} (a b : RelPoint jstr g),
+      RelPoint.post u hucomp (ab.add a b)
+        = ab'.add (RelPoint.post u hucomp a) (RelPoint.post u hucomp b) :=
+    isAdditiveOn_of_post_zero ab ab' hucomp h0
+  have hsum : ab'.add (P.aj x₁) (P.aj x₂) = ab'.add (P.aj y₁) (P.aj y₂) := by
+    rw [← hpost x₁, ← hpost x₂, ← hadd, heq, hadd, hpost, hpost]
+  have hsheaf : RelPicEquiv strX (𝟙 SpecQ)
+      (modTensor (P.sheaf (P.aj x₁)) (P.sheaf (P.aj x₂)))
+      (modTensor (P.sheaf (P.aj y₁)) (P.sheaf (P.aj y₂))) := by
+    refine (P.sheaf_add (P.aj x₁) (P.aj x₂)).symm.trans ?_
+    rw [hsum]
+    exact P.sheaf_add (P.aj y₁) (P.aj y₂)
+  have hX : RelPicEquiv strX (𝟙 SpecQ)
+      (modTensor (modTensor (P.sheaf (P.aj x₁)) (P.sheaf (P.aj x₂)))
+        (modTensor (sectionIdeal (relSection x₁)) (sectionIdeal (relSection x₂))))
+      (modTensor (sectionIdeal (relSection (relBasePoint o (𝟙 SpecQ))))
+        (sectionIdeal (relSection (relBasePoint o (𝟙 SpecQ))))) :=
+    (RelPicEquiv.of_iso (nonempty_modTensor_middleFour _ _ _ _).some).trans
+      (RelPicEquiv.tensor (P.aj_spec x₁) (P.aj_spec x₂))
+  have hY : RelPicEquiv strX (𝟙 SpecQ)
+      (modTensor (modTensor (P.sheaf (P.aj y₁)) (P.sheaf (P.aj y₂)))
+        (modTensor (sectionIdeal (relSection y₁)) (sectionIdeal (relSection y₂))))
+      (modTensor (sectionIdeal (relSection (relBasePoint o (𝟙 SpecQ))))
+        (sectionIdeal (relSection (relBasePoint o (𝟙 SpecQ))))) :=
+    (RelPicEquiv.of_iso (nonempty_modTensor_middleFour _ _ _ _).some).trans
+      (RelPicEquiv.tensor (P.aj_spec y₁) (P.aj_spec y₂))
+  have hcong : RelPicEquiv strX (𝟙 SpecQ)
+      (modTensor (modTensor (P.sheaf (P.aj x₁)) (P.sheaf (P.aj x₂)))
+        (modTensor (sectionIdeal (relSection x₁)) (sectionIdeal (relSection x₂))))
+      (modTensor (modTensor (P.sheaf (P.aj y₁)) (P.sheaf (P.aj y₂)))
+        (modTensor (sectionIdeal (relSection x₁)) (sectionIdeal (relSection x₂)))) :=
+    RelPicEquiv.tensor hsheaf (RelPicEquiv.refl _)
+  exact RelPicEquiv.cancel_left
+    (isInvertibleSheaf_modTensor (P.invertible _) (P.invertible _))
+    (hcong.symm.trans (hX.trans hY.symm))
 
 /-- **`Pic` OF A FIELD POINT IS TRIVIAL: over `Spec K` the relative
 Picard relation is an honest isomorphism of sheaves** (sorry leaf,
@@ -63997,6 +64090,8 @@ So the node is now
 * `relPicEquiv_sectionIdeal_of_aj_add_eq` — AUTODUALITY: the sum of
   Abel–Jacobi classes is the tensor product of ideal sheaves, i.e.
   `𝒪(−x₁ − x₂) ≅ 𝒪(−y₁ − y₂)`.  Mentions no `𝔸¹` and no linear system.
+  **PROVEN 2026-07-29**, so the whole Jacobian half of this node is
+  closed and only the geometric half below is open.
 * `hasDoubleCoverOfAffineLine_of_relPicEquiv` — the `g¹₂` proper:
   linear equivalence of two DISJOINT effective degree-`2` divisors gives
   a degree-`2` map to the line.  Mentions no Jacobian.

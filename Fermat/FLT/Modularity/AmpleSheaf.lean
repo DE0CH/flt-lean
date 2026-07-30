@@ -2517,6 +2517,30 @@ theorem nonempty_iso_of_modTensor_left {Z : Scheme.{u}} {L A B : Z.Modules}
     modTensorMapIso (Iso.refl M) e ≪≫ aB.symm ≪≫ modTensorMapIso eML (Iso.refl B) ≪≫
     modTensorUnitLeftIso B⟩
 
+/-- **THE MIDDLE-FOUR INTERCHANGE** `(A ⊗ B) ⊗ (C ⊗ D) ≅ (A ⊗ C) ⊗ (B ⊗ D)`
+(PROVEN 2026-07-29 over `nonempty_modTensor_assoc` and `modTensorComm`).
+
+The one shuffle a DEGREE-`2` divisor computation needs and a degree-`1` one
+does not: `aj_spec` is read at two points at once, so the four factors
+`𝒪(x₁ − o) ⊗ 𝒪(−x₁)` and `𝒪(x₂ − o) ⊗ 𝒪(−x₂)` have to be regrouped as
+`(𝒪(x₁ − o) ⊗ 𝒪(x₂ − o)) ⊗ (𝒪(−x₁) ⊗ 𝒪(−x₂))` before
+`RelPicEquiv.cancel_left` can delete the Jacobian half.  Consumed by
+`RelPicEquiv.tensor` below and by
+`relPicEquiv_sectionIdeal_of_aj_add_eq` in `ModularCurve/X0.lean`.
+
+Nothing here is specific to invertible sheaves: `A`, `B`, `C`, `D` are
+arbitrary `𝒪_Z`-modules, and the proof is the usual symmetric-monoidal
+five-step, associate right, braid the middle pair, associate left. -/
+theorem nonempty_modTensor_middleFour {Z : Scheme.{u}} (A B C D : Z.Modules) :
+    Nonempty (modTensor (modTensor A B) (modTensor C D) ≅
+      modTensor (modTensor A C) (modTensor B D)) := by
+  obtain ⟨a₁⟩ := nonempty_modTensor_assoc A B (modTensor C D)
+  obtain ⟨a₂⟩ := nonempty_modTensor_assoc B C D
+  obtain ⟨a₃⟩ := nonempty_modTensor_assoc C B D
+  obtain ⟨a₄⟩ := nonempty_modTensor_assoc A C (modTensor B D)
+  exact ⟨a₁ ≪≫ modTensorMapIso (Iso.refl A) (a₂.symm ≪≫
+    modTensorMapIso (modTensorComm B C) (Iso.refl D) ≪≫ a₃) ≪≫ a₄.symm⟩
+
 section RelPicGroupoid
 
 variable {X S T : Scheme.{u}} {strX : X ⟶ S} {g : T ⟶ S}
@@ -2574,6 +2598,41 @@ theorem RelPicEquiv.cancel_left {L A B : (curveBaseChange strX g).Modules}
   obtain ⟨a⟩ := nonempty_modTensor_assoc L B (modPullback (curveBaseChangeProj strX g) N)
   obtain ⟨f⟩ := nonempty_iso_of_modTensor_left hL (e ≪≫ a)
   exact ⟨N, hN, ⟨f⟩⟩
+
+/-- **AN ISOMORPHISM IS A RELATIVE PICARD EQUIVALENCE** (PROVEN): take the
+twisting sheaf to be `𝒪_T`, exactly as in `RelPicEquiv.refl`, of which this
+is the generalisation from `Iso.refl` to an arbitrary `e`. -/
+theorem RelPicEquiv.of_iso {L L' : (curveBaseChange strX g).Modules} (e : L ≅ L') :
+    RelPicEquiv strX g L L' :=
+  ⟨modUnit T, isInvertibleSheaf_modUnit T,
+    ⟨e ≪≫ (modTensorUnitRightIso L').symm ≪≫
+      modTensorMapIso (Iso.refl L') (modPullbackUnitIso _).symm⟩⟩
+
+/-- **`RelPicEquiv` IS A CONGRUENCE FOR `modTensor`** (PROVEN over
+`nonempty_modTensor_middleFour` and `nonempty_modPullback_modTensor`): the
+relative Picard group is a group under `⊗`, not merely a set with an
+equivalence relation on it.
+
+The twisting sheaves MULTIPLY, which is why this needs the middle-four
+interchange rather than associativity alone: from `A ≅ A' ⊗ p^* N` and
+`B ≅ B' ⊗ p^* M` one gets `A ⊗ B ≅ (A' ⊗ B') ⊗ (p^* N ⊗ p^* M)`, and the
+last factor is `p^* (N ⊗ M)` by compatibility of pullback with `⊗`.
+
+Together with `RelPicEquiv.cancel_left` this is what makes the degree-`2`
+Abel computation (`relPicEquiv_sectionIdeal_of_aj_add_eq`,
+`ModularCurve/X0.lean`) a formal consequence of `aj_spec` and
+`IsRelPicZeroOf.sheaf_add`. -/
+theorem RelPicEquiv.tensor {A A' B B' : (curveBaseChange strX g).Modules}
+    (h : RelPicEquiv strX g A A') (h' : RelPicEquiv strX g B B') :
+    RelPicEquiv strX g (modTensor A B) (modTensor A' B') := by
+  obtain ⟨N, hN, ⟨e⟩⟩ := h
+  obtain ⟨M, hM, ⟨e'⟩⟩ := h'
+  obtain ⟨m⟩ := nonempty_modTensor_middleFour A'
+    (modPullback (curveBaseChangeProj strX g) N) B'
+    (modPullback (curveBaseChangeProj strX g) M)
+  obtain ⟨pnm⟩ := nonempty_modPullback_modTensor (curveBaseChangeProj strX g) N M
+  exact ⟨modTensor N M, isInvertibleSheaf_modTensor hN hM,
+    ⟨modTensorMapIso e e' ≪≫ m ≪≫ modTensorMapIso (Iso.refl _) pnm.symm⟩⟩
 
 end RelPicGroupoid
 
