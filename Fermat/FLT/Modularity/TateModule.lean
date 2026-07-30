@@ -1615,6 +1615,64 @@ section Frame
 
 variable {R : Type*} [CommRing R] [IsDedekindDomain R] {P : Type*} [AddCommGroup P] [Module R P]
 
+/-- **`#A[Iⁿ] = (#A[I])ⁿ`** (PROVEN 2026-07-30), given only that
+multiplication by a uniformizer `π` carries each torsion level onto the
+previous one.
+
+This is the counting half of `exists_linearEquiv_tors_pow` below, hoisted
+out of its proof so that it can be run in the OTHER direction: there it
+combines with `hcard : #A[I] = (#R/I)²` to give `#A[Iⁿ] = (#R/I)^{2n}`,
+while `exists_levelTateFrameTower_of_levelTateFrame_finiteBase` has a
+frame at ONE level `n₁ ≠ 0` — hence the left-hand side at `n = n₁` — and
+needs to extract `hcard` from it by taking `n₁`-th roots.  No rank
+hypothesis and no cardinality input occur, which is exactly why it can
+serve both.
+
+The induction is the classical one: `·π` is a surjection
+`A[Iⁿ⁺¹] ↠ A[Iⁿ]` (that is `hsurj`) whose kernel is `A[I]`
+(`mem_tors_of_smul_eq_zero`, where `hπ2` is spent), so each level
+multiplies the count by `#A[I]`. -/
+theorem card_tors_pow_eq (I : Ideal R) (hI : I.IsMaximal) (hI0 : I ≠ ⊥)
+    {π : R} (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (hsurj : ∀ (k : ℕ) (y : P), y ∈ Submodule.torsionBySet R P ((I ^ k : Ideal R) : Set R) →
+      ∃ z ∈ Submodule.torsionBySet R P ((I ^ (k + 1) : Ideal R) : Set R), π • z = y)
+    (n : ℕ) :
+    Nat.card (Submodule.torsionBySet R P ((I ^ n : Ideal R) : Set R))
+      = Nat.card (Submodule.torsionBySet R P ((I : Ideal R) : Set R)) ^ n := by
+  classical
+  induction n with
+  | zero => simp [pow_zero, Ideal.one_eq_top]
+  | succ k ih =>
+      have hmem : ∀ z : (Submodule.torsionBySet R P ((I ^ (k + 1) : Ideal R) : Set R)),
+          π • (z : P) ∈ Submodule.torsionBySet R P ((I ^ k : Ideal R) : Set R) := fun z =>
+        smul_tors_le I k (Submodule.smul_mem_smul hπ z.2)
+      set g : (Submodule.torsionBySet R P ((I ^ (k + 1) : Ideal R) : Set R)) →ₗ[R]
+          (Submodule.torsionBySet R P ((I ^ k : Ideal R) : Set R)) :=
+        LinearMap.codRestrict _
+          ((LinearMap.lsmul R P π).comp
+            (Submodule.torsionBySet R P ((I ^ (k + 1) : Ideal R) : Set R)).subtype) hmem with hg
+      have hgapp : ∀ z, ((g z : _) : P) = π • (z : P) := fun z => rfl
+      have hgsurj : Function.Surjective g := by
+        intro y
+        obtain ⟨z, hz, hzy⟩ := hsurj k (y : P) y.2
+        exact ⟨⟨z, hz⟩, Subtype.ext (by rw [hgapp]; exact hzy)⟩
+      have hkercard : Nat.card (LinearMap.ker g)
+          = Nat.card (Submodule.torsionBySet R P ((I : Ideal R) : Set R)) := by
+        refine Nat.card_congr ⟨fun z => ⟨(z.1 : P), ?_⟩, fun y => ⟨⟨(y : P), ?_⟩, ?_⟩,
+          fun _ => rfl, fun _ => rfl⟩
+        · refine mem_tors_of_smul_eq_zero I hI hI0 hπ hπ2 k z.1.2 ?_
+          have hz0 : ((g z.1 : _) : P) = 0 := by rw [LinearMap.mem_ker.mp z.2]; rfl
+          rwa [hgapp] at hz0
+        · exact tors_mono (Ideal.pow_le_self k.succ_ne_zero) y.2
+        · simp only [LinearMap.mem_ker]
+          exact Subtype.ext (by rw [hgapp]; exact (mem_tors_iff _ _).mp y.2 π hπ)
+      have hquot : Nat.card
+          ((Submodule.torsionBySet R P ((I ^ (k + 1) : Ideal R) : Set R)) ⧸ LinearMap.ker g)
+          = Nat.card (Submodule.torsionBySet R P ((I ^ k : Ideal R) : Set R)) :=
+        Nat.card_congr (g.quotKerEquivOfSurjective hgsurj).toEquiv
+      rw [Submodule.card_eq_card_quotient_mul_card (LinearMap.ker g), hkercard, hquot, ih]
+      ring
+
 /-- **The `Iⁿ`-torsion of an abstract module is free of rank two over
 `R/Iⁿ`** (PROVEN 2026-07-26), given only that the `I`-torsion has
 `(#R/I)²` elements and that multiplication by a uniformizer `π` carries
@@ -15718,7 +15776,14 @@ correspondingly two new leaves rather than one:
 `exists_globalFrobCharScalar_atPrime_of_levelScalar_finiteBase`
 (integrality at one prime) and
 `exists_levelTateFrameTower_of_levelTateFrame_finiteBase` (one rank-two
-level propagates to a whole tower). -/
+level propagates to a whole tower).
+
+**UPDATED 2026-07-30**: the second of those two is now PROVEN, and it
+needed no abelian-variety input at all — its conclusion leaves the prime
+existential, so the tower is built at the SAME prime the hypothesis names
+and the `I`-independence step it was written for is never taken.  See its
+own docstring.  So the trace branch's residue is back to ONE leaf, the
+integrality. -/
 
 /-- **CAYLEY–HAMILTON IN DIMENSION TWO, COORDINATEWISE** (PROVEN).  For a
 `2 × 2` matrix `Φ` over any commutative ring, `Φ² + det Φ = tr Φ · Φ`,
@@ -17532,10 +17597,58 @@ theorem dense_torsionGeomPt_finiteBase
     ι abB mB hιcl hadd hact htor
 
 
+set_option linter.unusedVariables false in
 open _root_.NumberField in
-/-- **ONE RANK-TWO LEVEL FORCES A FULL PRIME-TO-`N` TOWER** (sorry leaf —
-the abelian-variety input of the `I`-independence cut; Mumford *Abelian
-Varieties* §6 and §19, Milne *Abelian Varieties* §I.7).
+/-- **ONE RANK-TWO LEVEL FORCES A FULL PRIME-TO-`N` TOWER** (**PROVEN
+2026-07-30** over the counting lemma `LevelFrame.card_tors_pow_eq` and
+the algebraic engine `LevelFrame.exists_linearEquiv_tors_pow`, hence over
+the single geometric leaf `exists_nsmul_eq_geomFibrePt` — which is itself
+PROVEN — and over NO new input; the abelian-variety input of the
+`I`-independence cut; Mumford *Abelian Varieties* §6 and §19, Milne
+*Abelian Varieties* §I.7).
+
+**HOW IT WAS PROVEN, AND WHY IT NEEDED NO ABELIAN-VARIETY THEORY AT ALL.**
+The route sketched below — `V_I A'` free of rank `2·dim A'/[D:ℚ]`
+independently of `I` — is not the one that was taken, and it is much more
+than the statement needs.  Take `q := q₁` and `I := I₁`: the conclusion
+leaves both EXISTENTIAL, so the tower may be built at the very prime the
+hypothesis is stated at, and then no comparison between two primes is
+required and neither `dim A'` nor `[D:ℚ]` is ever mentioned.
+
+What remains is the two-line observation that the frame gate at ONE level
+`n₁ ≠ 0` already contains the residual count that
+`exists_levelTateFrame_finiteBase` gets from `hdim'`:
+
+* the frame `c₁` is a bijection onto `A'[I₁^{n₁}]`, so
+  `#A'[I₁^{n₁}] = #(𝒪_D/I₁^{n₁})² = #(𝒪_D/I₁)^{2n₁}`
+  (`Submodule.cardQuot_pow_of_prime` for the middle step);
+* independently, `#A'[I₁ⁿ] = (#A'[I₁])ⁿ` for every `n`
+  (`LevelFrame.card_tors_pow_eq`, whose only input is surjectivity of
+  `·π` along the tower — `exists_mem_torsion_act_uniformizer_eq`, proven,
+  and stated over a bare field so it applies at a finite base unchanged);
+* comparing at `n = n₁` gives
+  `(#A'[I₁])^{n₁} = (#(𝒪_D/I₁)²)^{n₁}`, and `n₁ ≠ 0` lets one take
+  `n₁`-th roots in `ℕ` (`Nat.pow_left_injective`) — which is EXACTLY
+  where `hn₁` is spent, and it is the same degeneracy the audit below
+  describes: at `n₁ = 0` both sides are `1` and nothing is learned.
+
+That count is the hypothesis `hcard` of
+`LevelFrame.exists_linearEquiv_tors_pow`, which then produces the frame
+at every level `I₁ⁿ` — the same final assembly as
+`exists_levelTateFrame_finiteBase`, minus `hdim'`.
+
+`hfin`, `hN`, `hq₁`, `hq₁N` and `hq₁I₁` are therefore carried but NOT
+consumed: they are what makes the conclusion's `¬ q ∣ N` and
+`(q : 𝒪_D) ∈ I` dischargeable by `q := q₁`, `I := I₁`, and nothing else
+in the proof looks at the residue characteristic.  That is not an
+accident of the proof — it is the reason the leaf was free: the
+prime-to-`N` condition is only ever needed to CREATE a rank-two level,
+and here one is handed in.  `[NumberField.IsTotallyReal D]` is likewise
+unused, for the same reason (it enters `hdim'`'s route through the
+polarization, which is bypassed).
+
+The original docstring's route, kept because it records what the
+statement means rather than how it was closed:
 
 If `A'[I₁^{n₁}]` is free of rank two over `𝒪_D/I₁^{n₁}` for a SINGLE
 maximal `I₁` of residue characteristic prime to `N` and a single
@@ -17590,8 +17703,78 @@ theorem exists_levelTateFrameTower_of_levelTateFrame_finiteBase
         (q : NumberField.RingOfIntegers D) ∈ I ∧
         ∀ n : ℕ, ∃ c : (Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ n) →
             GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
-          IsLevelTateFrame m' (𝟙 (Spec (CommRingCat.of k))) (I ^ n) c :=
-  sorry
+          IsLevelTateFrame m' (𝟙 (Spec (CommRingCat.of k))) (I ^ n) c := by
+  classical
+  refine ⟨q₁, hq₁, hq₁N, I₁, hI₁, hq₁I₁, ?_⟩
+  haveI : I₁.IsMaximal := hI₁
+  have hI0 : I₁ ≠ ⊥ :=
+    (I₁.bot_lt_of_maximal (NumberField.RingOfIntegers.not_isField D)).ne'
+  obtain ⟨π, hπ, hπ2⟩ := exists_mem_notMem_sq_of_isMaximal hI₁ hI0
+  haveI : Finite (𝓞 D ⧸ I₁) := Ideal.finiteQuotientOfFreeOfNeBot I₁ hI0
+  letI := ab'.addCommGroup (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+  letI := m'.module (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+  -- ### surjectivity of `·π` along the tower, PROVEN upstream over a bare field
+  have hsurj : ∀ (j : ℕ) (y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))),
+      y ∈ Submodule.torsionBySet (𝓞 D) (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+        ((I₁ ^ j : Ideal (𝓞 D)) : Set (𝓞 D)) →
+      ∃ z ∈ Submodule.torsionBySet (𝓞 D) (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+        ((I₁ ^ (j + 1) : Ideal (𝓞 D)) : Set (𝓞 D)), π • z = y := fun j y hy =>
+    exists_mem_torsion_act_uniformizer_eq m' (𝟙 (Spec (CommRingCat.of k))) I₁ hI₁ π hπ hπ2 j y hy
+  -- ### the frame at level `n₁` COUNTS the `I₁ ^ n₁`-torsion
+  have hI1n0 : I₁ ^ n₁ ≠ ⊥ := pow_ne_zero _ hI0
+  haveI : Finite (𝓞 D ⧸ I₁ ^ n₁) := Ideal.finiteQuotientOfFreeOfNeBot _ hI1n0
+  have hbij : Nat.card (Submodule.torsionBySet (𝓞 D)
+        (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+        ((I₁ ^ n₁ : Ideal (𝓞 D)) : Set (𝓞 D)))
+      = Nat.card (Fin 2 → 𝓞 D ⧸ I₁ ^ n₁) := by
+    refine (Nat.card_congr (Equiv.ofBijective
+      (fun u => (⟨c₁ u, hc₁.1 u⟩ : Submodule.torsionBySet (𝓞 D)
+        (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+        ((I₁ ^ n₁ : Ideal (𝓞 D)) : Set (𝓞 D)))) ⟨?_, ?_⟩)).symm
+    · intro u v h
+      exact hc₁.2.2.1 (congrArg Subtype.val h)
+    · intro y
+      obtain ⟨u, hu⟩ := hc₁.2.2.2.1 y.1 y.2
+      exact ⟨u, Subtype.ext hu⟩
+  -- ### and the source of the frame has `#(𝒪_D/I₁)^{2 n₁}` elements
+  have hcardsrc : Nat.card (Fin 2 → 𝓞 D ⧸ I₁ ^ n₁) = (Nat.card (𝓞 D ⧸ I₁) ^ 2) ^ n₁ := by
+    have hpow : Nat.card (𝓞 D ⧸ I₁ ^ n₁) = Nat.card (𝓞 D ⧸ I₁) ^ n₁ := by
+      have := cardQuot_pow_of_prime (S := 𝓞 D) (P := I₁) hI0 (i := n₁)
+      rwa [Submodule.cardQuot_apply, Submodule.cardQuot_apply] at this
+    rw [Nat.card_fun, hpow]
+    simp [Nat.card_eq_fintype_card, pow_right_comm]
+  -- ### the residual count at `I₁`, by taking `n₁`-th roots — this is where `hn₁` is spent
+  have hcard : Nat.card (Submodule.torsionBySet (𝓞 D)
+        (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+        ((I₁ : Ideal (𝓞 D)) : Set (𝓞 D)))
+      = Nat.card (𝓞 D ⧸ I₁) ^ 2 := by
+    have key : Nat.card (Submodule.torsionBySet (𝓞 D)
+          (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+          ((I₁ : Ideal (𝓞 D)) : Set (𝓞 D))) ^ n₁
+        = (Nat.card (𝓞 D ⧸ I₁) ^ 2) ^ n₁ := by
+      rw [← LevelFrame.card_tors_pow_eq I₁ hI₁ hI0 hπ hπ2 hsurj n₁, hbij, hcardsrc]
+    exact Nat.pow_left_injective hn₁ key
+  -- ### the frame at every level, by the algebraic engine
+  intro n
+  obtain ⟨e⟩ :=
+    LevelFrame.exists_linearEquiv_tors_pow
+      (P := GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) I₁ hI₁ hI0 hπ hπ2 hsurj hcard n
+  refine ⟨fun u => (e u : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))),
+    fun u => (e u).2, ?_, ?_, ?_, ?_⟩
+  · intro u v
+    exact congrArg Subtype.val (e.map_add u v)
+  · intro u v huv
+    exact e.injective (Subtype.ext huv)
+  · intro y hy
+    obtain ⟨u, hu⟩ := e.surjective ⟨y, hy⟩
+    exact ⟨u, congrArg Subtype.val hu⟩
+  · intro a u
+    have hsmul : (fun i => Ideal.Quotient.mk (I₁ ^ n) a * u i) = a • u := by
+      funext i
+      show Ideal.Quotient.mk (I₁ ^ n) a * u i = a • u i
+      rw [Algebra.smul_def, Ideal.Quotient.algebraMap_eq]
+    rw [hsmul]
+    exact congrArg Subtype.val (e.map_smul a u)
 
 open _root_.NumberField in
 /-- **THE FROBENIUS CHARACTERISTIC SCALAR IS INTEGRAL, AT ONE PRIME**
