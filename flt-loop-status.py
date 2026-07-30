@@ -61,11 +61,19 @@ def main():
     # so it must be read BEFORE either is called an alarm -- otherwise the
     # watch reports "spawning is broken" every ten minutes throughout a wait
     # that is entirely correct, and the real alarms drown in it.
-    q = rd(STATE / "quota-until").strip()
-    blocked = q.isdigit() and time.time() < int(q)
+    # There is no deadline any more: the block is a fact re-checked by probing
+    # the credential on disk, because a rotator can swap accounts underneath us.
+    qb = rd(STATE / "quota-blocked").strip()
+    blocked = bool(qb)
     if blocked:
-        out.append("quota        : BLOCKED until %s -- not spawning, by design"
-                   % time.strftime("%H:%M", time.localtime(int(q))))
+        import json as _j
+        try:
+            since = _j.loads(qb).get("since", 0)
+            mins = int((time.time() - since) / 60)
+            out.append("quota        : REFUSED %d min ago -- not spawning; probing "
+                       "every 5 min with the key on disk" % mins)
+        except Exception:
+            out.append("quota        : REFUSED -- not spawning; probing")
 
     pid = loop_pid()
     out.append("loop pid       : %s" % (pid or "NOT RUNNING"))
