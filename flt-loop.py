@@ -518,21 +518,28 @@ DO ALL FIVE, IN ORDER
     lines reading exactly `=== TASK ===`. Drop tasks whose leaf is already
     proven.
 
-    THEN REFILL IT FROM THE WHOLE FRONTIER. Run:
+    THEN SATISFY THIS INVARIANT, which is the whole point of the step:
 
-        cd ~/flt-lean && python3 flt-frontier.py
+        EVERY OPEN SORRY IN THE REPO IS EITHER QUEUED OR BEING WORKED ON.
 
-    It enumerates every open leaf on main -- the count is in the hundreds. For
-    EVERY leaf that no live agent holds and no queued task already names,
-    write a task. Not a sample, not the ones you happened to notice while
-    merging: all of them.
+    queue1 + the leaves live agents hold must COVER the frontier. Not a
+    sample, not the ones you noticed while merging -- every one. Check it,
+    do not assume it:
 
-    This is the fleet's only source of work. queue1 is the sole thing dispatch
-    reads, and nothing else refills it, so the number of agents that can run
+        cd ~/flt-lean && python3 flt-frontier.py --json
+
+    That lists every open leaf on main; the count is in the hundreds. Subtract
+    the leaves live agents hold (%(state)s/jobs/*.json -- an agent record's
+    `payload` is its task text, and the leaf name appears in it) and the leaves
+    already named in queue1. Whatever is left is uncovered, and every one of
+    those gets a task.
+
+    WHY THIS MATTERS MORE THAN IT LOOKS: queue1 is the sole thing dispatch
+    reads and nothing else refills it, so the number of agents that can run
     until the next release is exactly the number of tasks you leave here. A
     release that queued 17 against a 320-leaf frontier left 403 worktrees
-    running 18 agents. Under-filling this is not conservative; it idles the
-    fleet.
+    running 18 agents, with 300 leaves untouched. Under-filling is not
+    caution; it idles the fleet until the next release.
 
     A leaf a LIVE agent is working on is NOT unowned -- queueing it hands the
     same target to a second worker. `%(state)s/jobs/*.json` says who holds
