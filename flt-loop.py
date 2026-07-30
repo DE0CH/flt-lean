@@ -20,6 +20,7 @@ import hashlib
 import json
 import os
 import pathlib
+import re
 import shlex
 import subprocess
 import sys
@@ -413,9 +414,155 @@ still live. Put your explanation, for a human, in "why".
 """
 
 
+# ------------------------------------------------------------------- quota
+# The account's session limit is a real resource the loop must respect, and it
+# cannot see it any other way: a refused spawn and a job that started and
+# exited quickly look identical from outside. The ONE place the difference is
+# visible is the job's own log, which carries the refusal verbatim along with
+# the reset time.
+#
+# Twice on 2026-07-30 the loop spent hours relaunching into a wall -- ~17
+# attempts a minute, ~500 in half an hour -- because nothing recorded that the
+# door was shut. This makes "the door is shut, and until when" a piece of
+# state, so the wait becomes a deliberate idle rather than a retry storm.
+LIMIT_MARK = "session limit"
+
+
+def parse_reset(text):
+    """'resets 9:50pm (Europe/London)' -> epoch of the next such local time."""
+    m = re.search(r"resets\s+(\d{1,2}):(\d{2})\s*([ap]m)", text, re.I)
+    if not m:
+        return time.time() + 3600           # unknown wording: wait an hour
+    h, mi, ap = int(m.group(1)), int(m.group(2)), m.group(3).lower()
+    h = h % 12 + (12 if ap == "pm" else 0)
+    now = time.localtime()
+    e = time.mktime((now.tm_year, now.tm_mon, now.tm_mday, h, mi, 0, 0, 0, -1))
+    return e + 86400 if e <= time.time() else e
+
+
+PROBE_EVERY = 300        # seconds between "is the door open yet" checks
+CREDS = pathlib.Path.home() / ".claude" / ".credentials.json"
+
+
+def creds_stamp():
+    try:
+        return int(CREDS.stat().st_mtime)
+    except OSError:
+        return 0
+
+
+def probe_quota():
+    """Ask the API, with the key currently on disk, whether it will serve us.
+
+    NOT a timer. The refusal message carries a reset time, but that time
+    describes whichever ACCOUNT was live when it was printed, and a rotator
+    swaps ~/.claude/.credentials.json underneath us from a bank of accounts. So
+    the deadline is unreliable in BOTH directions: it can expire while we are
+    still refused, and -- what happened here -- remain in the future long after
+    a rotation has already made us servable. The logs even disagreed with each
+    other, 9:30pm against 9:50pm.
+
+    Everywhere else this loop observes rather than believes: `ancestor` asks
+    git, `alive` asks /proc, `main` asks the repo. This applies the same rule
+    to the one place that was trusting a string.
+    """
+    result = STATE / "quota-probe.json"
+    if result.exists():
+        rm(result)
+        rm(STATE / "quota-probe")
+        return True
+    st = STATE / "quota-probe"
+    last = float((rd(st, "") or "0").strip() or 0)
+    if time.time() - last < PROBE_EVERY:
+        return False
+    wr(st, str(time.time()))
+    inner = ('exec -a flt-job-quotaprobe %s --dangerously-skip-permissions -p %s'
+             % (shlex.quote(CLAUDE),
+                shlex.quote('Write the file %s containing exactly {"ok":true} '
+                            'and nothing else, then stop.' % result)))
+    try:
+        ssh(sorted(set(worker_hosts().values()))[0],
+            "setsid --fork nohup bash -c %s >%s 2>&1 </dev/null"
+            % (shlex.quote(inner),
+               shlex.quote(str(STATE / "joblogs" / "quota-probe.log"))),
+            timeout=30)
+    except Exception:
+        pass
+    return False
+
+
+def quota_until():
+    """Are we currently refused? A fact to be re-checked, not a sentence to serve.
+
+    The state file records only THAT we were refused and which credential was
+    live at the time. It clears when a probe succeeds. A rotation (the
+    credentials file changing underneath us) forces the next probe immediately
+    rather than waiting out the interval, because a new account is the most
+    likely reason the answer has changed.
+    """
+    v = rd(STATE / "quota-blocked")
+    if not v:
+        return None
+    try:
+        d = json.loads(v)
+    except json.JSONDecodeError:
+        rm(STATE / "quota-blocked")
+        return None
+    if d.get("creds") and d["creds"] != creds_stamp():
+        rm(STATE / "quota-probe")          # rotated: probe now, do not wait
+    if probe_quota():
+        rm(STATE / "quota-blocked")
+        email("flt-loop: quota available again, resuming",
+              "A probe with the credential now on disk was served, so the "
+              "block was lifted on evidence. Spawning has resumed.")
+        return None
+    return d.get("since", 1)               # truthy == still blocked
+
+
+def note_quota(reset_epoch, why):
+    wr(STATE / "quota-blocked",
+       json.dumps({"since": int(time.time()), "creds": creds_stamp(),
+                   "log_said": int(reset_epoch)}))
+    email("flt-loop: quota exhausted, idling",
+          "Spawning is being refused. The loop is IDLING rather than retrying, "
+          "and probes every %ds with whatever credential is on disk -- the "
+          "reset time in the message is only a hint, since the rotator can "
+          "swap accounts underneath us.\n\n%s" % (PROBE_EVERY, why))
+
+
+def refused(name, j):
+    """Did this job's log say it was refused? Only asked about dead-looking jobs.
+
+    The log is EVIDENCE, and evidence has to be consumed. A job refused an hour
+    ago keeps "session limit" in its log forever, and a refusal does not change
+    the job's token, so the same file is read again on every tick. That made
+    the block un-clearable: a probe would lift it and the very same load() pass
+    would re-arm it from a stale line -- both emails landed in the same second,
+    21:55:57, and the fleet never resumed.
+
+    So the file is moved aside once it has been acted on. The history is kept
+    (renamed, not deleted) but it is out of the evidence path, and only a
+    genuinely new refusal -- written by a fresh spawn attempt -- can block again.
+    """
+    log = STATE / "joblogs" / ("%s-%s.log" % (name, j["token"]))
+    t = rd(log, "") or ""
+    if LIMIT_MARK not in t:
+        return None
+    try:
+        log.rename(log.with_suffix(".log.refused-%d" % time.time()))
+    except OSError:
+        rm(log)
+    return t
+
+
 # --------------------------------------------------------------- spawn
+GRACE = 120     # seconds a freshly spawned job is presumed alive
+
+
 def do_spawn(s, name, j):
     """Start a real, detached claude process on the worker host."""
+    # Stamped BEFORE the ssh, so the grace period covers the launch itself.
+    j["spawned_at"] = time.time()
     host = j.get("host") or flt_loop_rows.MEDIC_HOST
     prompt = compose(j["kind"], name, j, s)
     wr(STATE / "jobs" / (name + ".prompt"), prompt)
@@ -500,7 +647,31 @@ def load():
                     j["sentinel"] = d
             except json.JSONDecodeError:
                 j["sentinel"] = None      # truncated = not finished
-        j["alive"] = j["token"] in tokens
+        # A freshly spawned job is presumed alive until the grace period
+        # expires. The liveness sweep is cached for ALIVE_CACHE seconds, so a
+        # job spawned at T is otherwise judged against a token snapshot taken
+        # BEFORE it existed -- it reads as dead on its very first tick, and
+        # `died` (started, not alive, no sentinel) fires immediately.
+        #
+        # That is what was killing every merge worker: spawned, declared dead
+        # ~12s later, record dropped, recreated, respawned -- seven times, with
+        # no release possible and the batch growing the whole while. Agents hid
+        # it because their death path respawns them, so the churn looked like
+        # ordinary turnover.
+        fresh = time.time() - (j.get("spawned_at") or 0) < GRACE
+        j["alive"] = (j["token"] in tokens) or (j["started"] and fresh)
+        # A job that is started, not alive and has no sentinel would be read as
+        # DEAD and re-dispatched. Before believing that, ask its log whether it
+        # ever got to run: a refusal is not a death, and treating it as one is
+        # what produced the retry storm.
+        if j["started"] and not j["alive"] and not j["sentinel"]:
+            txt = refused(n, j)
+            if txt:
+                if not quota_until():
+                    note_quota(parse_reset(txt), "%s (%s) was refused: %s"
+                               % (n, j["kind"], txt.strip().splitlines()[0]))
+                j["started"] = False       # unspawned again, retried after the block
+                j["alive"] = False
         j.setdefault("retries", 0)
         jobs[n] = j
     wh = worker_hosts()
@@ -554,6 +725,7 @@ def load():
         "ancestor": anc,
         "healthy": {k: v == "1" for k, v in _pairs("healthy").items()},
         "hosts": refresh_hosts(),
+        "quota_until": quota_until(),
         "log": [], "git": [], "email": [],
     }
 
