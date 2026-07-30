@@ -243,4 +243,131 @@ theorem chordDeriv_core {K : Type*} [Field K] (D : K → K)
     linear_combination (-(c + d) * (x2 - x1) ^ 2) * hg3
   exact mul_right_cancel₀ hcube hfin
 
+/-! ### The chord branch as a polynomial identity
+
+`polyForm_add` is `chordDeriv_core` instantiated at `RatFunc F`, with every quantity a
+fraction of polynomials.  It is the whole bridge between the field computation above and
+the polynomial world its consumer lives in, and it mentions nothing elliptic: the ten
+constants `a₁ … a₆` (source) and `al1 … al6` (target) are arbitrary field elements. -/
+
+/-- **THE CHORD BRANCH, AS A POLYNOMIAL IDENTITY.**  Given, for two maps with witnesses
+`(Aᵢ, Bᵢ, Cᵢ, Dᵢ, Eᵢ)`,
+
+* `(Aᵢ′Bᵢ − AᵢBᵢ′)·Eᵢ = cᵢ·Cᵢ·Bᵢ²`  (the differential certificate, `diffChar_polyForm`),
+* `2DᵢBᵢ + a₁′AᵢEᵢ + a₃′BᵢEᵢ = CᵢBᵢ(a₁X + a₃)`  (`diffChar_yWitness_onePart`),
+* the target curve's equation at the image point, `y`-free (`diffChar_curveEq`),
+
+together with the chord formula for the sum's witnesses `(A, B, Cp, ·, E)` — `hx3` for the
+`x`-coordinate and `hg3` for the `y`-multiplier, both pure group-law bookkeeping — the sum
+satisfies `(A′B − AB′)·E = (c + d)·Cp·B²`.
+
+`Cᵢ ≠ 0` is `diffChar_yMultiplier_ne_zero` and `A₂B₁ − A₁B₂ ≠ 0` says the two maps have
+different `x`-coordinate functions.  Everything is proven by moving to `RatFunc F`, where
+`xᵢ = Aᵢ/Bᵢ`, `γᵢ = Cᵢ/Eᵢ`, `δᵢ = Dᵢ/Eᵢ`, `x₃ = A/B`, `γ₃ = Cp/E`, applying
+`chordDeriv_core` with `D = rderiv`, and clearing denominators back. -/
+theorem polyForm_add {a1 a2 a3 a4 a6 al1 al2 al3 al4 al6 c d : F}
+    {A₁ B₁ C₁ D₁ E₁ A₂ B₂ C₂ D₂ E₂ A B Cp E : F[X]}
+    (hB₁ : B₁ ≠ 0) (hE₁ : E₁ ≠ 0) (hB₂ : B₂ ≠ 0) (hE₂ : E₂ ≠ 0)
+    (hB : B ≠ 0) (hE : E ≠ 0) (hC₁ : C₁ ≠ 0) (hC₂ : C₂ ≠ 0)
+    (hG : A₂ * B₁ - A₁ * B₂ ≠ 0)
+    (hp1 : (derivative A₁ * B₁ - A₁ * derivative B₁) * E₁ = C c * C₁ * B₁ ^ 2)
+    (hp2 : (derivative A₂ * B₂ - A₂ * derivative B₂) * E₂ = C d * C₂ * B₂ ^ 2)
+    (ho1 : C 2 * D₁ * B₁ + C al1 * A₁ * E₁ + C al3 * B₁ * E₁
+      = C₁ * B₁ * (C a1 * X + C a3))
+    (ho2 : C 2 * D₂ * B₂ + C al1 * A₂ * E₂ + C al3 * B₂ * E₂
+      = C₂ * B₂ * (C a1 * X + C a3))
+    (hq1 : C₁ ^ 2 * (X ^ 3 + C a2 * X ^ 2 + C a4 * X + C a6) * B₁ ^ 3 + D₁ ^ 2 * B₁ ^ 3
+        + C al1 * A₁ * D₁ * E₁ * B₁ ^ 2 + C al3 * D₁ * E₁ * B₁ ^ 3
+      = E₁ ^ 2 * (A₁ ^ 3 + C al2 * A₁ ^ 2 * B₁ + C al4 * A₁ * B₁ ^ 2 + C al6 * B₁ ^ 3))
+    (hq2 : C₂ ^ 2 * (X ^ 3 + C a2 * X ^ 2 + C a4 * X + C a6) * B₂ ^ 3 + D₂ ^ 2 * B₂ ^ 3
+        + C al1 * A₂ * D₂ * E₂ * B₂ ^ 2 + C al3 * D₂ * E₂ * B₂ ^ 3
+      = E₂ ^ 2 * (A₂ ^ 3 + C al2 * A₂ ^ 2 * B₂ + C al4 * A₂ * B₂ ^ 2 + C al6 * B₂ ^ 3))
+    (hx3 : A * ((E₁ * E₂) ^ 2 * (A₂ * B₁ - A₁ * B₂) ^ 2 * (B₁ * B₂))
+      = B * ((B₁ * B₂) ^ 3 * ((C₂ * E₁ - C₁ * E₂) ^ 2
+              * (X ^ 3 + C a2 * X ^ 2 + C a4 * X + C a6) + (D₂ * E₁ - D₁ * E₂) ^ 2)
+          + C al1 * (D₂ * E₁ - D₁ * E₂) * (A₂ * B₁ - A₁ * B₂) * (B₁ * B₂) ^ 2 * (E₁ * E₂)
+          - (C al2 * (B₁ * B₂) + (A₁ * B₂ + A₂ * B₁))
+            * (A₂ * B₁ - A₁ * B₂) ^ 2 * (E₁ * E₂) ^ 2))
+    (hg3 : Cp * (A₂ * B₁ - A₁ * B₂) * (E₁ * E₂) * B
+        + C₁ * (A₂ * B₁ - A₁ * B₂) * E * E₂ * B
+        + (C₂ * E₁ - C₁ * E₂) * (A * B₁ - A₁ * B) * E * B₂ = 0) :
+    (derivative A * B - A * derivative B) * E = C (c + d) * Cp * B ^ 2 := by
+  have iB₁ : (ι B₁) ≠ 0 := RatFunc.algebraMap_ne_zero hB₁
+  have iE₁ : (ι E₁) ≠ 0 := RatFunc.algebraMap_ne_zero hE₁
+  have iB₂ : (ι B₂) ≠ 0 := RatFunc.algebraMap_ne_zero hB₂
+  have iE₂ : (ι E₂) ≠ 0 := RatFunc.algebraMap_ne_zero hE₂
+  have iB : (ι B) ≠ 0 := RatFunc.algebraMap_ne_zero hB
+  have iE : (ι E) ≠ 0 := RatFunc.algebraMap_ne_zero hE
+  have iC₁ : (ι C₁) ≠ 0 := RatFunc.algebraMap_ne_zero hC₁
+  have iC₂ : (ι C₂) ≠ 0 := RatFunc.algebraMap_ne_zero hC₂
+  have iG : (ι (A₂ * B₁ - A₁ * B₂)) ≠ 0 := RatFunc.algebraMap_ne_zero hG
+  -- the derivative of a constant vanishes
+  have hDC : ∀ a : F, rderiv (ι (C a)) = 0 := by
+    intro a; rw [rderiv_algebraMap, derivative_C, map_zero]
+  have hne : ι A₂ / ι B₂ - ι A₁ / ι B₁ ≠ 0 := by
+    have h : ι A₂ / ι B₂ - ι A₁ / ι B₁ = ι (A₂ * B₁ - A₁ * B₂) / (ι B₂ * ι B₁) := by
+      rw [map_sub, map_mul, map_mul]; field_simp
+    rw [h]
+    exact div_ne_zero iG (mul_ne_zero iB₂ iB₁)
+  have key := RationalDerivation.chordDeriv_core (K := RatFunc F) rderiv rderiv_add rderiv_mul
+    (al1 := ι (C al1)) (al2 := ι (C al2)) (al3 := ι (C al3)) (al4 := ι (C al4))
+    (al6 := ι (C al6)) (c := ι (C c)) (d := ι (C d))
+    (f := ι X ^ 3 + ι (C a2) * ι X ^ 2 + ι (C a4) * ι X + ι (C a6))
+    (p := ι (C a1) * ι X + ι (C a3))
+    (x1 := ι A₁ / ι B₁) (x2 := ι A₂ / ι B₂) (g1 := ι C₁ / ι E₁) (g2 := ι C₂ / ι E₂)
+    (q1 := ι D₁ / ι E₁) (q2 := ι D₂ / ι E₂) (x3 := ι A / ι B) (g3 := ι Cp / ι E)
+    (hDC al1) (hDC al2) (hDC al3) (hDC al4) (hDC al6)
+    (div_ne_zero iC₁ iE₁) (div_ne_zero iC₂ iE₂) hne
+    ?hx1 ?hx2 ?hO1 ?hO2 ?hC1 ?hC2 ?hx3 ?hg3
+  · -- the conclusion, cleared
+    rw [rderiv_div] at key
+    simp only [wr, map_mul, map_sub] at key
+    have hfin : ι ((derivative A * B - A * derivative B) * E) = ι (C (c + d) * Cp * B ^ 2) := by
+      simp only [map_mul, map_sub, map_pow, map_add]
+      field_simp at key
+      linear_combination key
+    exact RatFunc.algebraMap_injective F hfin
+  case hx1 =>
+    rw [rderiv_div]
+    have h := congrArg (algebraMap F[X] (RatFunc F)) hp1
+    simp only [wr, map_mul, map_sub, map_pow] at h ⊢
+    field_simp
+    linear_combination h
+  case hx2 =>
+    rw [rderiv_div]
+    have h := congrArg (algebraMap F[X] (RatFunc F)) hp2
+    simp only [wr, map_mul, map_sub, map_pow] at h ⊢
+    field_simp
+    linear_combination h
+  case hO1 =>
+    have h := congrArg (algebraMap F[X] (RatFunc F)) ho1
+    simp only [map_mul, map_add, map_ofNat] at h ⊢
+    field_simp
+    linear_combination h
+  case hO2 =>
+    have h := congrArg (algebraMap F[X] (RatFunc F)) ho2
+    simp only [map_mul, map_add, map_ofNat] at h ⊢
+    field_simp
+    linear_combination h
+  case hC1 =>
+    have h := congrArg (algebraMap F[X] (RatFunc F)) hq1
+    simp only [map_mul, map_pow, map_add] at h ⊢
+    field_simp
+    linear_combination h
+  case hC2 =>
+    have h := congrArg (algebraMap F[X] (RatFunc F)) hq2
+    simp only [map_mul, map_pow, map_add] at h ⊢
+    field_simp
+    linear_combination h
+  case hx3 =>
+    have h := congrArg (algebraMap F[X] (RatFunc F)) hx3
+    simp only [map_mul, map_sub, map_pow, map_add] at h ⊢
+    field_simp
+    linear_combination h
+  case hg3 =>
+    have h := congrArg (algebraMap F[X] (RatFunc F)) hg3
+    simp only [map_mul, map_sub, map_add, map_zero] at h ⊢
+    field_simp
+    linear_combination h
+
 end RationalDerivation
