@@ -55534,28 +55534,250 @@ structure IsJLineZ (R : Subring ℚ) where
   jtZ_model : ∀ (W : WeierstrassCurve ℚ) [W.IsElliptic] (d : Gamma0Datum 1 SpecQ),
     IsWeierstrassModel d.ab W → jLineZCoord (jtZ (SpecLoc.generic R) d) = W.j
 
-/-- **The level structure is ÉTALE over `ℤ_(q)` when `q ∤ N`** (sorry leaf —
-Cartier / Katz–Mazur ch. 1; the mixed-characteristic companion of
-`CyclicSubgroupOfOrder.etale_of_specQBase`).
+/-! ##### The étale block, made BASE-FREE — and the REFUTATION of
+`etale_of_specLocBase` that it exposes (2026-07-30)
 
-TRUE for `q ∤ N`, and the hypothesis is load-bearing rather than inherited:
-`N` is a UNIT in `R = ℤ_(q)` exactly when `q ∤ N`, and a finite flat subgroup
-scheme of order `N` over a base on which `N` is invertible is étale (Cartier,
-in the relative form SGA 3 VI_B 1.6.1).  At `q ∣ N` the statement is FALSE —
-that is precisely where `Y_0(N)` acquires bad reduction, and the whole reason
-`_hqN` is carried through this subsection.
+`etale_of_specQBase` (far above) is assembled from three ingredients, and
+exactly ONE of them looks at the base: `finrank_eq_of_specQBase` calls
+`isReduced_geomFibre_of_specQBase`, whose own proof spends `q` on a single
+`haveI : CharZero K`.  Everything else in that chain — the geometric-point
+count, `etale_of_finrank`, `eq_zero_of_liesIn_of_squareZero_of_finrank` — is
+already stated over a RANK hypothesis and carries no base datum at all.
 
-**This is NOT a transposition of `etale_of_specQBase`, and its proof will not
-be one.**  That theorem is assembled from `locallyOfFinitePresentation_of_specQBase`
-and `eq_zero_of_liesIn_of_squareZero`, both of which are statements about a
-`ℚ`-base and neither of which holds over `ℤ_(q)` for the reason given there
-(characteristic `0`).  Here the invertibility of `N` replaces characteristic `0`
-and the argument is Cartier's, which is why this is recorded as an independent
-leaf rather than as a generalisation.
+So the three theorems below are the same chain with the base removed:
+reduced geometric fibres ⟹ rank `N` ⟹ étale, plus Cartier in the form that
+asks only for `CharZero K`.  `etale_of_specQBase` is left untouched (it is
+consumed in many places and is byte-identical to what these prove); the point of
+restating them is that they are what ANY mixed-characteristic attempt has to run
+on, and they make the char-`0` half of such an attempt FREE.
 
-`_hbase` is what makes `R` the valuation ring `ℤ_(q)` rather than an arbitrary
-subring of `ℚ`; it is load-bearing in the intended proof, since it is what makes
-"`q ∤ N` implies `N` invertible in `R`" true. -/
+Doing that is what showed the mixed-characteristic leaf below to be FALSE.  Over
+`Spec ℤ_(q)` the geometric fibres split into characteristic `0` (discharged here)
+and characteristic `q` (not), and in characteristic `q` the required reducedness
+is exactly what fails — see the FALSITY AUDIT on `etale_of_specLocBase`. -/
+
+/-- **Rank `N` from REDUCED geometric fibres alone** (PROVEN 2026-07-30) —
+`finrank_eq_of_specQBase` with the base removed.
+
+The body is that theorem's body with its one call to
+`isReduced_geomFibre_of_specQBase q K g` replaced by `hred K g`; `q` occurs
+nowhere else in it, which is the observation this declaration records. -/
+theorem CyclicSubgroupOfOrder.finrank_eq_of_isReduced_geomFibre
+    {E T : Scheme.{0}} {f : E ⟶ T} {ab : AbelianSchemeStruct f} {N : ℕ}
+    (c : CyclicSubgroupOfOrder ab N)
+    (hred : ∀ (K : Type) [Field K] [IsAlgClosed K] (g : Spec (CommRingCat.of K) ⟶ T),
+      AlgebraicGeometry.IsReduced (Limits.pullback (c.ι ≫ f) g))
+    (t : T) : Scheme.Hom.finrank (c.ι ≫ f) t = N := by
+  classical
+  haveI := c.isFinite
+  haveI := c.flat
+  haveI := c.isClosedImmersion
+  let K := AlgebraicClosure (T.residueField t)
+  let g : Spec (CommRingCat.of K) ⟶ T :=
+    Spec.map (CommRingCat.ofHom (algebraMap (T.residueField t) K)) ≫
+      T.fromSpecResidueField t
+  obtain ⟨y0⟩ : Nonempty (Spec (CommRingCat.of K)) := inferInstance
+  have hpt : g y0 = t := by
+    have hmem : T.fromSpecResidueField t
+        (Spec.map (CommRingCat.ofHom (algebraMap (T.residueField t) K)) y0)
+          ∈ Set.range (T.fromSpecResidueField t) := ⟨_, rfl⟩
+    rw [Scheme.range_fromSpecResidueField] at hmem
+    exact hmem
+  rw [← hpt, Scheme.Hom.finrank_eq_card_geometricPoints (c.ι ≫ f) g (hred K g) y0]
+  letI := ab.addCommGroup g
+  obtain ⟨w, -, hword, hwall⟩ := c.geom_cyclic K g
+  have hbij : Function.Bijective
+      (fun s : {s : Spec (CommRingCat.of K) ⟶ c.C // s ≫ (c.ι ≫ f) = g} =>
+        (⟨⟨s.1 ≫ c.ι, by rw [Category.assoc]; exact s.2⟩,
+          (hwall _).mp ⟨s.1, rfl⟩⟩ : AddSubgroup.zmultiples w)) := by
+    constructor
+    · intro s₁ s₂ hs
+      exact Subtype.ext ((cancel_mono c.ι).mp
+        (congrArg Subtype.val (congrArg Subtype.val hs)))
+    · intro z
+      obtain ⟨u, hu⟩ := (hwall z.1).mpr z.2
+      refine ⟨⟨u, by rw [← Category.assoc, hu]; exact z.1.2⟩, ?_⟩
+      exact Subtype.ext (Subtype.ext hu)
+  rw [Nat.card_congr (Equiv.ofBijective _ hbij), Nat.card_zmultiples, hword]
+
+/-- **Étaleness from REDUCED geometric fibres alone** (PROVEN 2026-07-30) —
+`etale_of_specQBase` with the base removed, over `etale_of_finrank`.
+
+This is the theorem a mixed-characteristic attempt should aim at: it reduces
+étaleness of the level structure to ONE statement about geometric fibres, with no
+`SpecQ`, no `SpecLoc` and no `IsReductionBase` in sight. -/
+theorem CyclicSubgroupOfOrder.etale_of_isReduced_geomFibre
+    {E T : Scheme.{0}} {f : E ⟶ T} {ab : AbelianSchemeStruct f} {N : ℕ}
+    (c : CyclicSubgroupOfOrder ab N)
+    (hred : ∀ (K : Type) [Field K] [IsAlgClosed K] (g : Spec (CommRingCat.of K) ⟶ T),
+      AlgebraicGeometry.IsReduced (Limits.pullback (c.ι ≫ f) g)) :
+    AlgebraicGeometry.Etale (c.ι ≫ f) :=
+  c.etale_of_finrank (c.finrank_eq_of_isReduced_geomFibre hred)
+
+/-- **Cartier's theorem, with the base replaced by `CharZero K`** (PROVEN
+2026-07-30) — `isReduced_geomFibre_of_specQBase` with `q` removed.
+
+That theorem's proof uses `q` for one thing only: to produce a ring map `ℚ → K`
+and hence `CharZero K`.  Taking `CharZero K` directly is therefore strictly more
+general, and it is the form that a `ℤ_(q)`-base can actually use — over
+`Spec ℤ_(q)` the characteristic-`0` geometric fibres are exactly the ones lying
+over the generic point, and this discharges all of them. -/
+theorem CyclicSubgroupOfOrder.isReduced_geomFibre_of_charZero
+    {E T : Scheme.{0}} {f : E ⟶ T} {ab : AbelianSchemeStruct f} {N : ℕ}
+    (c : CyclicSubgroupOfOrder ab N)
+    (K : Type) [Field K] [IsAlgClosed K] [CharZero K]
+    (g : Spec (CommRingCat.of K) ⟶ T) :
+    AlgebraicGeometry.IsReduced (Limits.pullback (c.ι ≫ f) g) := by
+  obtain ⟨A, _, _, _, ⟨e⟩⟩ := c.exists_hopfAlgebra_geomFibre K g
+  haveI : _root_.IsReduced A := _root_.CartierTheorem.isReduced_of_charZero K A
+  exact AlgebraicGeometry.isReduced_of_isOpenImmersion e.hom
+
+/-- **A `ℤ_(q)`-scheme structure on `Spec K` is a ring map `R → K`** (PROVEN
+2026-07-30) — `nonempty_ringHom_of_hom_specQ` verbatim with `ℚ` replaced by an
+arbitrary subring, since `SpecLoc R` is `Spec R` and the proof is `ΓSpecIso` on
+both sides of `t.appTop`. -/
+theorem nonempty_ringHom_of_hom_specLoc {K : Type} [Field K] {R : Subring ℚ}
+    (t : Spec (CommRingCat.of K) ⟶ SpecLoc R) : Nonempty (R →+* K) :=
+  ⟨((Scheme.ΓSpecIso (CommRingCat.of R)).inv ≫ t.appTop ≫
+    (Scheme.ΓSpecIso (CommRingCat.of K)).hom).hom⟩
+
+/-- **A field receiving `ℤ_(q)` has characteristic `0` or `q`** (PROVEN
+2026-07-30) — the two-fibre structure of `Spec ℤ_(q)`, in the only form a
+geometric point can use.
+
+Every prime `p ≠ q` is a UNIT in `R = ℤ_(q)` (it is not in the maximal ideal, so
+`ker_eq_nonunits` applies), and a unit cannot map to `0` in a nonzero ring; so
+no residue characteristic other than `0` and `q` is available.  This is what
+splits a `SpecLoc R`-base into the half `isReduced_geomFibre_of_charZero`
+discharges and the half it does not. -/
+theorem ringChar_eq_zero_or_eq_of_isReductionBase {q : ℕ} (hq : q.Prime)
+    {R : Subring ℚ} {toF : R →+* ZMod q} (hbase : IsReductionBase q R toF)
+    (K : Type) [Field K] (ψ : R →+* K) : ringChar K = 0 ∨ ringChar K = q := by
+  rcases Nat.eq_zero_or_pos (ringChar K) with h0 | hpos
+  · exact Or.inl h0
+  right
+  haveI : CharP K (ringChar K) := ringChar.charP K
+  have hp : (ringChar K).Prime :=
+    (CharP.char_is_prime_or_zero K (ringChar K)).resolve_right hpos.ne'
+  by_contra hne
+  have hnd : ¬ (q ∣ (ringChar K)) := fun hdvd =>
+    hne ((Nat.prime_dvd_prime_iff_eq hq hp).mp hdvd).symm
+  have hu : IsUnit ((ringChar K : ℕ) : R) := by
+    by_contra hnu
+    have hker := (hbase.ker_eq_nonunits ((ringChar K : ℕ) : R)).mpr hnu
+    rw [map_natCast] at hker
+    exact hnd ((ZMod.natCast_eq_zero_iff _ _).mp hker)
+  have hz : ((ringChar K : ℕ) : K) = 0 := by
+    simpa using (CharP.cast_eq_zero_iff K (ringChar K) (ringChar K)).mpr dvd_rfl
+  have hun : IsUnit ((ringChar K : ℕ) : K) := by
+    have h := hu.map ψ
+    rwa [map_natCast] at h
+  rw [hz] at hun
+  exact not_isUnit_zero hun
+
+/-- **The level structure is ÉTALE over `ℤ_(q)` once its CHARACTERISTIC-`q`
+geometric fibres are reduced** (PROVEN 2026-07-30) — the correct form of
+`etale_of_specLocBase` below, which is FALSE.
+
+This is what the base-free block above buys: over `Spec ℤ_(q)` a geometric point
+has residue characteristic `0` or `q`
+(`ringChar_eq_zero_or_eq_of_isReductionBase`), the characteristic-`0` half is
+discharged outright by Cartier (`isReduced_geomFibre_of_charZero`), and the
+characteristic-`q` half is the whole of the remaining obligation.
+
+`hredq` is NOT derivable from the datum — that is precisely the refutation
+recorded below — so it is a hypothesis rather than a call. -/
+theorem CyclicSubgroupOfOrder.etale_of_specLocBase_of_isReduced_charP {N q : ℕ}
+    (hq : q.Prime) {R : Subring ℚ} {toF : R →+* ZMod q}
+    (hbase : IsReductionBase q R toF) {E T : Scheme.{0}} {f : E ⟶ T}
+    {ab : AbelianSchemeStruct f} (c : CyclicSubgroupOfOrder ab N)
+    (g : T ⟶ SpecLoc R)
+    (hredq : ∀ (K : Type) [Field K] [IsAlgClosed K] (_ : ringChar K = q)
+      (t : Spec (CommRingCat.of K) ⟶ T),
+      AlgebraicGeometry.IsReduced (Limits.pullback (c.ι ≫ f) t)) :
+    AlgebraicGeometry.Etale (c.ι ≫ f) := by
+  refine c.etale_of_isReduced_geomFibre ?_
+  intro K _ _ t
+  obtain ⟨ψ⟩ := nonempty_ringHom_of_hom_specLoc (t ≫ g)
+  rcases ringChar_eq_zero_or_eq_of_isReductionBase hq hbase K ψ with h0 | hqK
+  · haveI : CharP K 0 := h0 ▸ ringChar.charP K
+    haveI : CharZero K := CharP.charP_to_charZero K
+    exact c.isReduced_geomFibre_of_charZero K t
+  · exact hredq K hqK t
+
+/-- **The level structure is ÉTALE over `ℤ_(q)` when `q ∤ N`** —
+**FALSE AS STATED (REFUTED 2026-07-30).  DO NOT ATTEMPT TO PROVE IT.**
+
+`q ∤ N` is the WRONG HYPOTHESIS, and this is the file's own `flat_torsionι`
+audit (far above, at `exists_torsionSubscheme`) applied to a leaf written two
+days after it.  That audit's verdict, verbatim:
+
+> `CyclicSubgroupOfOrder.geom_cyclic` pins the CARDINALITY of the geometric
+> fibres; Katz–Mazur (6.7.1) pin the RANK … The two agree exactly when `C ⟶ T`
+> is étale — which the field's own docstring notes is automatic over a
+> `ℚ`-scheme, where `N` is invertible and Cartier's theorem applies, and which
+> is the only case this development ever evaluates.  Over a general base they
+> come apart.
+
+Cartier needs the RANK of `C` to be invertible on the base.  `q ∤ N` makes the
+GEOMETRIC POINT COUNT invertible, and over `Spec ℤ_(q)` those are two different
+numbers.  So the hypothesis constrains the wrong quantity, and no strengthening
+of it can repair the statement.
+
+**THE WITNESS** (checked against the fields of `CyclicSubgroupOfOrder`, not
+recalled).  Take `q = p` any prime, `N = 1` — note `¬ p ∣ 1`, so `_hqN` HOLDS —
+`k = 𝔽̄_p`, `T = Spec k`, mapped to `SpecLoc R = Spec ℤ_(p)` by
+`Spec k ⟶ Spec 𝔽_p = ` `SpecLoc.special toF`, so `g` exists.  Let `E / k` be an
+elliptic curve, `ab` its abelian-scheme structure, and
+
+    C := ker (F : E ⟶ E⁽ᵖ⁾),  the kernel of relative Frobenius,
+
+a finite flat subgroup scheme of RANK `p`, infinitesimal — as a scheme it is
+`Spec k[u]/(uᵖ)`.  Then every field of `CyclicSubgroupOfOrder ab 1` holds:
+
+* `isClosedImmersion`, `isFinite`, `flat` — `k[u]/(uᵖ)` is free of rank `p` over
+  the FIELD `k`, and the kernel of a group-scheme homomorphism is closed;
+* `zero_liesIn`, `add_liesIn`, `neg_liesIn` — `C` is a subgroup scheme;
+* `geom_cyclic` with `y = 0`: `addOrderOf 0 = 1 = N`, and for every
+  algebraically closed `K` and every `t : Spec K ⟶ T`, a `K`-point of `C` over
+  `t` is a `K`-algebra map `K[u]/(uᵖ) ⟶ K`, i.e. sends `u` to a nilpotent
+  element of a FIELD, i.e. to `0`.  So `LiesIn ι x ↔ x = 0`, which is
+  `x ∈ AddSubgroup.zmultiples 0`.
+
+And the conclusion fails: `c.ι ≫ f` is `Spec k[u]/(uᵖ) ⟶ Spec k`, which is not
+reduced and hence not unramified, for every `p ≥ 2`.
+
+**NOT an `N = 1` artefact.**  For any `N` coprime to `p`, take
+`A = E ×_k E'` with `P ∈ E'(k)` of order `N` and
+`C := ker F × ⟨P⟩` — rank `pN`, geometric point count `N`, `¬ p ∣ N`, still not
+étale.  This is the audit's own `(ℤ/p)_T × ker F²` witness moved out of the
+`p ∣ N` regime that `_hqN` excludes.
+
+**WHY THE REPAIR IS NOT LOCAL, and where it belongs.**  The obligation cannot be
+pushed anywhere.  The sole consumer is `exists_x0IntegralJLine` below, whose
+`het` would become a hypothesis; threading it up gives
+`exists_x0GenericJIntegral` → `exists_x0SpecialJ` →
+`exists_x0IntegralJ_of_curveModel` → `exists_x0JGenericOpen_of_curveModel` →
+`exists_x0JOpenModel_of_curveModel` → `exists_x0JNeronDatum`, and there the
+chain STOPS: `exists_x0JNeronDatum` chooses `R` itself
+(`exists_isReductionBase`), so the hypothesis would have to be discharged there
+— against the same witness.  The defect is in the DATUM, exactly as the
+`flat_torsionι` audit says: **`CyclicSubgroupOfOrder` carries `geom_cyclic`
+where Katz–Mazur (6.7.1) carry the RANK.**  The repair is a `finrank` field on
+`CyclicSubgroupOfOrder` (or `[Etale (ι ≫ f)]` as a field), which is a
+cross-module change touching every producer of that structure — and with the
+rank in hand the leaf is not a citation at all but the one line
+`c.etale_of_finrank`, already PROVEN far above.
+
+**WHAT IS KEPT AND IS TRUE**: `etale_of_specLocBase_of_isReduced_charP`
+immediately above.  It is this statement with the missing input supplied
+explicitly, it is PROVEN, and the characteristic-`0` half of the old intended
+proof is discharged inside it — so the eventual repair is to supply `hredq` (or
+the rank) and delete this declaration, not to prove it.
+
+The statement is left UNCHANGED so that the consumer chain still compiles; it is
+a `sorry` that cannot be honoured, which is why this audit is the loudest thing
+in its docstring. -/
 theorem CyclicSubgroupOfOrder.etale_of_specLocBase {N q : ℕ} (_hq : q.Prime)
     (_hqN : ¬ q ∣ N) {R : Subring ℚ} {toF : R →+* ZMod q}
     (_hbase : IsReductionBase q R toF) {E T : Scheme.{0}} {f : E ⟶ T}
@@ -59316,14 +59538,133 @@ theorems: uniqueness is faithfully flat descent *of morphisms* and needs
 neither `hadd` nor `hker`, existence is the descent *of the map `u`
 itself* and needs both.  And `Epi h.map` is reusable on its own. -/
 
-/-- **A cyclic `N`-isogeny is an EPIMORPHISM of schemes** (sorry leaf,
-2026-07-28) — the uniqueness half of
+/-! ##### THE ROUTE ACTUALLY TAKEN (2026-07-30): both halves through `[N]`,
+never through `h.map`'s own morphism properties
+
+Both leaves below closed on 2026-07-30, and NOT by the route their docstrings
+prescribed.  The prescribed route was to establish `Flat`, `Surjective` and
+`QuasiCompact` **of `h.map`** and then invoke the fpqc instance.  Each of those
+three is a real theorem about an isogeny (the flatness one needs the fibrewise
+criterion), and none of them was needed.
+
+The observation is that `IsNIsogenyPair` carries a morphism BOTH WAYS whose two
+composites are `[N]`, and `[N]` already has all three properties in the pin:
+
+* `dual_comp_map_eq` — `map_dual` read at the TAUTOLOGICAL point
+  `RelPoint.self d'.f`, so Yoneda turns the pointwise field into the equation of
+  morphisms `h.dual ≫ h.map = d'.ab.mulByNat N`.  `nsmul_val` is what evaluates
+  the right-hand side.  (`h.map ≫ h.dual = [N]` on `d.E` is the same statement
+  for `h.symm`, and is not separately needed.)
+* `epi_mulByNat` — `flat_mulByNat`, `surjective_mulByNat` (both PROVEN in
+  `Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`) and `QuasiCompact` free from
+  `isProper_mulByNat`, fed to the fpqc `EffectiveEpi` instance.
+
+`Epi h.map` is then `cancel_epi [N]`, and — the step that also kills the descent
+half — `EffectiveEpi (h.dual ≫ h.map)` is `EffectiveEpi [N]` after a `rw`, so
+`EffectiveEpi.desc` descends `h.dual ≫ u` along it and `Epi h.dual` (which is
+`Epi h.symm.map`, the SAME leaf applied to the symmetric pair) cancels the
+`h.dual` back off.  So the two-sidedness of the isogeny is doing the work that
+finiteness and flatness of `h.map` were expected to do.
+
+The descent half's coequalizing hypothesis is `comp_eq_of_comp_map_eq` below,
+and that IS where `hadd` and `hker` are consumed, exactly as the audit above
+says: `h.map` is a homomorphism by rigidity (`isAdditiveOn_map`), so a pair of
+points identified by `h.map` differs by an element of `ker h.map = d.cyc`
+(`ker_map`), which `hker` sends to zero and `hadd` distributes over.
+
+`N = 0` is degenerate in both, and by the route the audit predicted:
+`isEmpty_of_gamma0Datum_zero` empties `T`, hence `d.E` and `d'.E`, and
+`isInitialOfIsEmpty` makes every morphism out of them unique. -/
+
+/-- **`[n]` is an EPIMORPHISM of schemes for `n ≠ 0`** (PROVEN 2026-07-30).
+
+Flat (`flat_mulByNat`), surjective (`surjective_mulByNat`) and quasi-compact
+(free from `isProper_mulByNat`, `IsProper` extending `QuasiCompact`), hence an
+`EffectiveEpi` by the fpqc instance in
+`Mathlib/AlgebraicGeometry/Sites/Fpqc.lean`, hence an `Epi`.
+
+Stated for an arbitrary `AbelianSchemeStruct` rather than for a `Gamma0Datum`
+because nothing about the level structure or the relative dimension enters; it
+is declared here rather than in the `AbelianSchemeStruct` block far above only
+to keep this closure to one hunk. -/
+theorem epi_mulByNat {A S : Scheme.{u}} {f : A ⟶ S} (ab : AbelianSchemeStruct f)
+    (n : ℕ) (hn : n ≠ 0) : Epi (ab.mulByNat n) := by
+  haveI : IsProper (ab.mulByNat n) := ab.isProper_mulByNat n
+  haveI : AlgebraicGeometry.Flat (ab.mulByNat n) := flat_mulByNat ab n hn
+  haveI : Surjective (ab.mulByNat n) := surjective_mulByNat ab n hn
+  exact CategoryTheory.epi_of_effectiveEpi _
+
+/-- **`h.dual ≫ h.map = [N]` AS AN EQUATION OF MORPHISMS** (PROVEN
+2026-07-30) — `map_dual` is stated on relative points at every base, so
+reading it at the tautological point `RelPoint.self d'.f` is already the
+Yoneda step; `nsmul_val` evaluates `N • self`. -/
+theorem IsNIsogenyPair.dual_comp_map_eq {N : ℕ} {T : Scheme.{0}}
+    {d d' : Gamma0Datum N T} (h : IsNIsogenyPair N d d') :
+    h.dual ≫ h.map = d'.ab.mulByNat N := by
+  have hy := h.map_dual (g := d'.f) (RelPoint.self d'.f)
+  letI := d'.ab.addCommGroup d'.f
+  have h1 := congrArg Subtype.val hy
+  rw [d'.ab.nsmul_val N (RelPoint.self d'.f)] at h1
+  simpa [RelPoint.post, RelPoint.self] using h1
+
+/-- **An additive `u` killing `d.cyc` COEQUALIZES every pair that `h.map`
+coequalizes** (PROVEN 2026-07-30) — the whole content of `hadd` and `hker`,
+in the form `EffectiveEpiStruct.desc` asks for.
+
+Given `a₁, a₂ : Z ⟶ d.E` with `a₁ ≫ h.map = a₂ ≫ h.map`, both are relative
+points of `d.f` over the SAME base point `a₁ ≫ d.f` (that is `h.comm`), so
+their difference is meaningful; `isAdditiveOn_map` makes `post h.map` additive
+and hence kills that difference, `ker_map` puts it in `d.cyc`, and `hker`
+followed by `hadd` transports the conclusion to `u`.
+
+No hypothesis on `Z` is needed and none is available — `Z` is an arbitrary test
+scheme, not a scheme over `T`. -/
+theorem IsNIsogenyPair.comp_eq_of_comp_map_eq {N : ℕ} {T : Scheme.{0}}
+    {d d' : Gamma0Datum N T} (h : IsNIsogenyPair N d d') {A : Scheme.{0}} {af : A ⟶ T}
+    (abA : AbelianSchemeStruct af) {u : d.E ⟶ A} (hu : u ≫ af = d.f)
+    (hadd : IsAdditiveOn d.ab abA u hu)
+    (hker : ∀ {T' : Scheme.{0}} {g : T' ⟶ T} (x : RelPoint d.f g),
+      RelPoint.LiesIn d.cyc.ι x → RelPoint.post u hu x = abA.zero g)
+    {Z : Scheme.{0}} (a₁ a₂ : Z ⟶ d.E) (hz : a₁ ≫ h.map = a₂ ≫ h.map) :
+    a₁ ≫ u = a₂ ≫ u := by
+  set g : Z ⟶ T := a₁ ≫ d.f with hg
+  have h2 : a₂ ≫ d.f = g := by
+    rw [hg, ← h.comm, ← Category.assoc, ← Category.assoc, hz]
+  let x₁ : RelPoint d.f g := ⟨a₁, rfl⟩
+  let x₂ : RelPoint d.f g := ⟨a₂, h2⟩
+  letI := d.ab.addCommGroup g
+  letI := d'.ab.addCommGroup g
+  letI := abA.addCommGroup g
+  let φ : RelPoint d.f g →+ RelPoint d'.f g :=
+    AddMonoidHom.mk' (RelPoint.post h.map h.comm) h.isAdditiveOn_map
+  have hφ : φ (x₁ - x₂) = 0 := by
+    rw [map_sub]
+    have hx : φ x₁ = φ x₂ := Subtype.ext hz
+    rw [hx, sub_self]
+  have hlies : RelPoint.LiesIn d.cyc.ι (x₁ - x₂) := (h.ker_map (x₁ - x₂)).mp hφ
+  let ψ : RelPoint d.f g →+ RelPoint af g :=
+    AddMonoidHom.mk' (RelPoint.post u hu) hadd
+  have hψ : ψ (x₁ - x₂) = 0 := hker (x₁ - x₂) hlies
+  rw [map_sub, sub_eq_zero] at hψ
+  exact congrArg Subtype.val hψ
+
+/-- **A cyclic `N`-isogeny is an EPIMORPHISM of schemes** (PROVEN
+2026-07-30 — see the subsection note above for the route, which is NOT
+the one prescribed below) — the uniqueness half of
 `existsUnique_factor_of_isNIsogenyPair`, split off because it is a
 different theorem from the descent half and is reusable on its own.
 
 TRUE.  `h.map` is finite locally free and surjective, i.e. an fppf
 covering, and an fppf covering is an (effective) epimorphism of schemes —
 faithfully flat descent of morphisms, Stacks 04R3 / SGA 1 VIII.5.1.
+
+**THE THREE MORPHISM PROPERTIES BELOW WERE NEVER NEEDED** (2026-07-30).  The
+survey in this docstring is accurate and the fpqc instance it names is what the
+proof ultimately runs on — but it is applied to `[N]`, where all three
+properties are already PROVEN in the pin, and never to `h.map`, whose flatness
+would have needed the fibrewise criterion.  See the subsection note above.  The
+rest of this docstring is the original route, kept because its inventory of the
+fields of `IsNIsogenyPair` is still the right map of the statement.
 
 **THE DESCENT HALF IS ALREADY IN THE PIN — do not build it.**  This leaf
 needs no descent theory whatsoever, only the three morphism properties:
@@ -59359,11 +59700,21 @@ morphism between initial objects is an isomorphism.
 **The check that would refute it**: two distinct morphisms out of `d'.E`
 agreeing after `h.map`. -/
 theorem epi_of_isNIsogenyPair {N : ℕ} {T : Scheme.{0}}
-    {d d' : Gamma0Datum N T} (h : IsNIsogenyPair N d d') : Epi h.map :=
-  sorry
+    {d d' : Gamma0Datum N T} (h : IsNIsogenyPair N d d') : Epi h.map := by
+  classical
+  rcases Nat.eq_zero_or_pos N with hN | hN
+  · subst hN
+    have hT : IsEmpty T := isEmpty_of_gamma0Datum_zero d
+    have hE : IsEmpty d'.E := Function.isEmpty d'.f.base
+    exact ⟨fun _ _ _ => (isInitialOfIsEmpty (X := d'.E)).hom_ext _ _⟩
+  · haveI := epi_mulByNat d'.ab N hN.ne'
+    refine ⟨fun {_Z} u v huv => ?_⟩
+    have hmul : d'.ab.mulByNat N ≫ u = d'.ab.mulByNat N ≫ v := by
+      rw [← h.dual_comp_map_eq, Category.assoc, Category.assoc, huv]
+    exact (cancel_epi (d'.ab.mulByNat N)).mp hmul
 
-/-- **A homomorphism killing `C` FACTORS through the isogeny** (sorry leaf,
-2026-07-28) — the existence half of
+/-- **A homomorphism killing `C` FACTORS through the isogeny** (PROVEN
+2026-07-30 — see the subsection note above for the route) — the existence half of
 `existsUnique_factor_of_isNIsogenyPair`, with the uniqueness clause
 removed to `epi_of_isNIsogenyPair`.
 
@@ -59389,11 +59740,41 @@ that does not factor through `h.map`. -/
 theorem exists_factor_of_isNIsogenyPair {N : ℕ} {T : Scheme.{0}}
     {d d' : Gamma0Datum N T} (h : IsNIsogenyPair N d d')
     {A : Scheme.{0}} {af : A ⟶ T} (abA : AbelianSchemeStruct af)
-    {u : d.E ⟶ A} (hu : u ≫ af = d.f) (_hadd : IsAdditiveOn d.ab abA u hu)
-    (_hker : ∀ {T' : Scheme.{0}} {g : T' ⟶ T} (x : RelPoint d.f g),
+    {u : d.E ⟶ A} (hu : u ≫ af = d.f) (hadd : IsAdditiveOn d.ab abA u hu)
+    (hker : ∀ {T' : Scheme.{0}} {g : T' ⟶ T} (x : RelPoint d.f g),
       RelPoint.LiesIn d.cyc.ι x → RelPoint.post u hu x = abA.zero g) :
-    ∃ v : d'.E ⟶ A, v ≫ af = d'.f ∧ h.map ≫ v = u :=
-  sorry
+    ∃ v : d'.E ⟶ A, v ≫ af = d'.f ∧ h.map ≫ v = u := by
+  classical
+  haveI : Epi h.map := epi_of_isNIsogenyPair h
+  rcases Nat.eq_zero_or_pos N with hN | hN
+  · subst hN
+    have hT : IsEmpty T := isEmpty_of_gamma0Datum_zero d
+    have hE' : IsEmpty d'.E := Function.isEmpty d'.f.base
+    have hE : IsEmpty d.E := Function.isEmpty d.f.base
+    exact ⟨(isInitialOfIsEmpty (X := d'.E)).to A,
+      (isInitialOfIsEmpty (X := d'.E)).hom_ext _ _,
+      (isInitialOfIsEmpty (X := d.E)).hom_ext _ _⟩
+  · -- `h.dual` is epi because it is `h.symm.map`
+    haveI : Epi h.dual := epi_of_isNIsogenyPair h.symm
+    haveI : IsProper (d'.ab.mulByNat N) := d'.ab.isProper_mulByNat N
+    haveI : AlgebraicGeometry.Flat (d'.ab.mulByNat N) := flat_mulByNat d'.ab N hN.ne'
+    haveI : Surjective (d'.ab.mulByNat N) := surjective_mulByNat d'.ab N hN.ne'
+    haveI : EffectiveEpi (h.dual ≫ h.map) := by
+      rw [h.dual_comp_map_eq]; infer_instance
+    have key : ∀ {Z : Scheme.{0}} (g₁ g₂ : Z ⟶ d'.E),
+        g₁ ≫ (h.dual ≫ h.map) = g₂ ≫ (h.dual ≫ h.map) →
+        g₁ ≫ (h.dual ≫ u) = g₂ ≫ (h.dual ≫ u) := by
+      intro Z g₁ g₂ hgs
+      rw [← Category.assoc, ← Category.assoc]
+      refine h.comp_eq_of_comp_map_eq abA hu hadd hker _ _ ?_
+      rw [Category.assoc, Category.assoc]; exact hgs
+    have hmv : h.map ≫ EffectiveEpi.desc (h.dual ≫ h.map) (h.dual ≫ u) key = u := by
+      refine (cancel_epi h.dual).mp ?_
+      rw [← Category.assoc]
+      exact EffectiveEpi.fac (h.dual ≫ h.map) (h.dual ≫ u) key
+    refine ⟨_, ?_, hmv⟩
+    refine (cancel_epi h.map).mp ?_
+    rw [← Category.assoc, hmv, hu, h.comm]
 
 /-- **A cyclic `N`-isogeny is the CATEGORICAL QUOTIENT by its kernel**
 (PROVEN 2026-07-28 over `exists_factor_of_isNIsogenyPair` and
