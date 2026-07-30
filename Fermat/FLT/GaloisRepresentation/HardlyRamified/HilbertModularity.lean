@@ -29701,21 +29701,62 @@ GLUE over it).
 
 `exists_hilbertAuxHeckeModuleData` below produces `toRuniv` as well as
 `diamond`, and its docstring explains at length why `diamond` cannot be
-RECEIVED. Two of the things it owes are nevertheless free, and they are what
-this cut removes from the leaf:
+RECEIVED. Exactly ONE of the things it owes is free, and it is what this cut
+removes from the leaf. The other candidate was tried and withdrawn the same
+day, so it is recorded first — a reader who skips it will re-propose it:
 
-* **`toRuniv` and its surjectivity.** `toRuniv` is weak universality `h𝒟Q`
-  applied to `𝒟.toAux hr`, and `htoRuniv` is
-  `surjective_of_hilbertAux_classifying`; both are proven above and both are
-  copied verbatim out of the body of `exists_hilbertAuxDiamondControl`. So this
-  leaf RECEIVES `toRuniv` together with its full specification — `htoRuniv`,
-  `halg`, `hπ`, `hρ` — exactly as `exists_hilbertAuxDiamondQuotient` above
-  already does, and for the same reason: fixing `toRuniv` first is what makes
-  `hker` a statement about a determined object rather than about a chosen one.
-  Note this is NOT the defect §5a of the declaration below refutes. That defect
-  is about receiving `diamond`, whose specification the receiver must then
-  DECIDE; here it is `diamond` that is produced, and it is produced against a
-  `toRuniv` that is already pinned, which is strictly the easier direction.
+* **NOT `toRuniv`. It is PRODUCED here, and the reason is a CONTROL-MAP AUDIT
+  (2026-07-30, later the same day; it reverses this bullet's first version).**
+  Between the two commits of 2026-07-30 this leaf RECEIVED `toRuniv` together
+  with `htoRuniv`, `halg`, `hπ`, `hρ`, on the stated ground that "fixing
+  `toRuniv` first is what makes `hker` a statement about a determined object
+  rather than about a chosen one". **That ground is false, and checkably so.**
+  `HilbertAuxDeformationDatum.IsWeaklyUniversal` is a bare `∃` with no
+  uniqueness clause — its own docstring says "Only the EXISTENCE half is asked
+  … never a comparison of two" — and `HilbertAuxDeformationDatum` carries no
+  trace-generation field, so `hρ` does not pin `toRuniv` either (it would, if
+  the charpoly coefficients of `𝒟Q.ρ` topologically generated `𝒟Q.R`, which is
+  exactly what `IsTraceGenerated` would assert and what is available for `𝒟`
+  via `h𝒟t` but not for `𝒟Q`). The specification therefore admits a FAMILY of
+  surjections `R_Q ↠ R_∅`, and a received `toRuniv` made this leaf assert
+  `ker toRuniv = 𝔫.map diamond` for EVERY member of it.
+
+  That is strictly stronger than the classical control theorem, which produces
+  one canonical surjection with that kernel and says nothing about rival ones:
+  two valid maps may have kernels `I ≠ I'` with `R_Q ⧸ I ≅ R_Q ⧸ I' ≅ R_∅`, and
+  nothing in the hypothesis package excludes it. It is not a refutation — a
+  rival `toRuniv` may simply take a rival `diamond`, since `diamond` is chosen
+  after it — but it is an unvouched generalisation, and CLAUDE.md's rule is that
+  a `sorry` is a promise the statement is provable.
+
+  The repair is free and is this leaf's own §5a maxim applied to itself: **a
+  leaf that produces `diamond` must produce every map whose specification
+  mentions it.** `toRuniv` is now existentially quantified here, so the prover
+  chooses the canonical one and proves the classical theorem about it. The
+  construction is three lines copied verbatim from the body of
+  `exists_hilbertAuxDiamondControl` above — `h𝒟Q` applied to `𝒟.toAux hr` for
+  `hr := isHilbertRaisedLevelHardlyRamified_of_isHilbertTaylorWilesPrimeSet`,
+  then `surjective_of_hilbertAux_classifying` — which is why `hlk`, `h𝒟t`,
+  `h𝒟e` and `h𝒟Q` remain hypotheses of THIS declaration. The consumer loses
+  nothing: `exists_hilbertAuxHeckeModuleData` below exports `toRuniv` with only
+  `Function.Surjective` and the `hker` clause, never `halg`/`hπ`/`hρ`, so its
+  statement and its call site are UNCHANGED by this.
+
+  **The precedent cited for the received shape is a precedent FOR the hazard,
+  not against it — checked, not assumed.** `exists_hilbertAuxDiamondQuotient`
+  above, and the live leaf `exists_hilbertAuxDiamondQuotient_of_exponents`
+  behind it, BOTH receive `toRuniv` and BOTH assert
+  `ker toRuniv = 𝔫.map diamond` in their conclusions. That is precisely the
+  shape repaired here, so they carry precisely this open check. What they are
+  glue for does not: `exists_hilbertAuxDiamondControl` above — PROVEN GLUE —
+  PRODUCES `toRuniv` in its existential, with `Function.Surjective toRuniv` and
+  the same `hker` clause, by the very three lines quoted above. So the file
+  already contains both shapes, and this repair moves the HECKE chain onto the
+  one whose glue is proven, matching the DIAMOND chain's own top level.
+
+  The diamond chain is deliberately NOT touched here: repairing it changes
+  another leaf's signature and its call sites, which is a separate edit. The
+  check transfers to it verbatim and is reported rather than acted on.
 * **The `≥` half of `ker diamond = 𝔟_ex`.** This leaf asserts only
   `𝔟_ex ≤ ker diamond`, which is what local class field theory at the places of
   `Q` actually proves and is the same clause
@@ -29738,8 +29779,20 @@ not duplicated.
 
 # WHAT THIS LEAF OWES
 
-Exactly items 1–3 of that declaration's "WHAT THIS LEAF OWES", plus the
-`diamond` half of its item 0:
+Exactly items 0–3 of that declaration's "WHAT THIS LEAF OWES" — ALL of item 0,
+including its `toRuniv` half, which the CONTROL-MAP AUDIT above moved back here
+on 2026-07-30. That half is not arithmetic and is three copyable lines:
+
+    have hr := isHilbertRaisedLevelHardlyRamified_of_isHilbertTaylorWilesPrimeSet
+      ℓ F n Q hQ 𝒟
+    obtain ⟨toRuniv, halg, hπ, hρ⟩ := h𝒟Q (𝒟.toAux hr)
+    have hsurj : Function.Surjective toRuniv :=
+      surjective_of_hilbertAux_classifying ℓ F hlk 𝒟 h𝒟t 𝒟Q toRuniv halg hπ hρ
+
+verbatim from the body of `exists_hilbertAuxDiamondControl` above, which is why
+`hlk`, `h𝒟t`, `h𝒟e` and `h𝒟Q` are hypotheses here. Do it FIRST: `hker` is a
+statement about which map `toRuniv` is, so it can only be proven against a
+`toRuniv` this proof has itself chosen. The arithmetic is then:
 
 * **`diamond`**, from local class field theory at the places of `Q`: the
   split-torus clause of `IsHilbertRaisedLevelHardlyRamified` gives at each
@@ -29799,14 +29852,12 @@ theorem exists_hilbertAuxHeckeDiamondModuleData
     (hfπ : H.πT.comp f = 𝒟Q.π)
     (hfρ : ∀ g : Γ F, ((𝒟Q.ρ g).charpoly).map f = (H.ρT g).charpoly)
     [instRM : Module 𝒟Q.R H.M]
-    (hfsmul : ∀ (x : 𝒟Q.R) (m : H.M), x • m = f x • m)
-    (toRuniv : 𝒟Q.R →+* 𝒟.R) (htoRuniv : Function.Surjective toRuniv)
-    (halg : toRuniv.comp (algebraMap ℤ_[ℓ] 𝒟Q.R) = algebraMap ℤ_[ℓ] 𝒟.R)
-    (hπ : 𝒟.π.comp toRuniv = 𝒟Q.π)
-    (hρ : ∀ g : Γ F, ((𝒟Q.ρ g).charpoly).map toRuniv = (𝒟.ρ g).charpoly) :
+    (hfsmul : ∀ (x : 𝒟Q.R) (m : H.M), x • m = f x • m) :
     ∃ (diamond : MvPowerSeries (Fin q) ℤ_[ℓ] →+* 𝒟Q.R)
+      (toRuniv : 𝒟Q.R →+* 𝒟.R)
       (M : Type u) (_ : AddCommGroup M) (_ : Module 𝒟Q.R M)
       (_ : Module (MvPowerSeries (Fin q) ℤ_[ℓ]) M) (projM : M →+ M0),
+      Function.Surjective toRuniv ∧
       RingHom.ker toRuniv = (Modularity.taylorWilesAug ℓ q).map diamond ∧
       Modularity.taylorWilesLevelIdeal ℓ ex ≤ RingHom.ker diamond ∧
       (∀ (x : MvPowerSeries (Fin q) ℤ_[ℓ]) (m : M), x • m = diamond x • m) ∧
@@ -29828,16 +29879,21 @@ the audits below discuss, the HECKE half of the 2026-07-27 RING/HECKE cut of
 
 # 2026-07-30, SECOND CHANGE OF THE DAY — THIS IS NOW GLUE, NOT A LEAF
 
-The body does exactly two things that its sub-leaf cannot, and neither is
+The body does exactly one thing that its sub-leaf cannot, and it is not
 arithmetic:
 
-1. **It builds `toRuniv` and its surjectivity**, three lines copied verbatim
-   from `exists_hilbertAuxDiamondControl` above — `h𝒟Q` applied to `𝒟.toAux hr`
-   for `hr := isHilbertRaisedLevelHardlyRamified_of_isHilbertTaylorWilesPrimeSet`,
-   then `surjective_of_hilbertAux_classifying` (which is why `hlk`, `h𝒟t` and
-   `h𝒟e` are hypotheses here at all). `toRuniv` is then handed DOWN, fully
-   specified, so the sub-leaf identifies the kernel of a determined map instead
-   of choosing one.
+1. **IT NO LONGER BUILDS `toRuniv` — WITHDRAWN the same day, see the
+   CONTROL-MAP AUDIT in the sub-leaf's docstring above.** The first version of
+   this glue built `toRuniv` from `h𝒟Q` and handed it DOWN "fully specified, so
+   the sub-leaf identifies the kernel of a determined map instead of choosing
+   one". The map is NOT determined: `IsWeaklyUniversal` is a bare `∃`, and
+   `HilbertAuxDeformationDatum` has no trace-generation field, so the
+   specification `(halg, hπ, hρ)` admits a family of surjections and the
+   sub-leaf was quantifying `ker toRuniv = 𝔫.map diamond` over all of them —
+   strictly stronger than the classical control theorem. `toRuniv` is produced
+   in the sub-leaf again; this statement and its call site are UNCHANGED by
+   that, because the `toRuniv` exported below carries only
+   `Function.Surjective` and the `hker` clause.
 2. **It runs (★)**, upgrading the sub-leaf's `𝔟_ex ≤ ker diamond` to the
    equality this statement exports, via `ker_le_of_free_of_smul_eq` and
    `one_le_of_surjective_of_nontrivial` above. Those two lemmas are the ones
@@ -30242,10 +30298,12 @@ or a hypothesis below, that fails for `M := H.M × H.M`.
 
 **SINCE 2026-07-30 IT OWES NOTHING — read this section as the specification of
 `exists_hilbertAuxHeckeDiamondModuleData` above, which is where a prover works.**
-Item 0 splits between the two declarations: the `toRuniv` half is discharged in
-the body below, the `diamond` half is the sub-leaf's. Items 1–3 are the
-sub-leaf's entire, and item 2 has become an inclusion there, the equality being
-derived below by (★).
+Item 0 is the sub-leaf's ENTIRE — both halves. Its `toRuniv` half briefly sat in
+the body below and was moved back on 2026-07-30 by the CONTROL-MAP AUDIT above;
+it is three copyable lines, not arithmetic, but it must be discharged where
+`hker` is proven, because `hker` says which map `toRuniv` is. Items 1–3 are the
+sub-leaf's too, and item 2 has become an inclusion there, the equality being
+derived below by (★) — which is now the body's only content.
 
 The deformation-theoretic input has already happened: `𝒟Q` is the weakly
 universal raised-level datum, `H` is the raised-level Hecke algebra CARRYING the
@@ -30370,22 +30428,15 @@ theorem exists_hilbertAuxHeckeModuleData
       (∀ m : M, projM m = 0 →
         m ∈ (Modularity.taylorWilesAug ℓ q • ⊤ :
           Submodule (MvPowerSeries (Fin q) ℤ_[ℓ]) M)) := by
-  -- The base-level datum `𝒟`, viewed at raised level `Q`.  Only the
-  -- split-torus clause at the places of `Q` is new.
-  have hr := isHilbertRaisedLevelHardlyRamified_of_isHilbertTaylorWilesPrimeSet
-    ℓ F n Q hQ 𝒟
-  -- Weak universality of `R_Q`, applied to that datum, IS the control map: no
-  -- arithmetic is needed to PRODUCE `toRuniv`, only to identify its kernel.
-  obtain ⟨toRuniv, halg, hπ, hρ⟩ := h𝒟Q (𝒟.toAux hr)
-  -- Surjectivity is exactly trace generation of the base ring.
-  have hsurj : Function.Surjective toRuniv :=
-    surjective_of_hilbertAux_classifying ℓ F hlk 𝒟 h𝒟t 𝒟Q toRuniv halg hπ hρ
-  -- The arithmetic, at this now-FIXED and fully specified `toRuniv`.
-  obtain ⟨diamond, M, instMadd, instMR, instLM, projM, hker, hbex, hdsmul,
-      ⟨ecoord⟩, hprojsurj, hprojsmul, hprojker⟩ :=
+  -- The arithmetic.  `toRuniv` is produced THERE, not here: see the
+  -- 2026-07-30 CONTROL-MAP AUDIT on that declaration, which found that
+  -- `IsWeaklyUniversal` pins no map, so a received `toRuniv` would have made
+  -- the sub-leaf quantify over an undetermined family of surjections.
+  obtain ⟨diamond, toRuniv, M, instMadd, instMR, instLM, projM, hsurj, hker,
+      hbex, hdsmul, ⟨ecoord⟩, hprojsurj, hprojsmul, hprojker⟩ :=
     exists_hilbertAuxHeckeDiamondModuleData ℓ hℓ5 F hlk htr hgal hirrF 𝒟 𝒟T
       h𝒟w h𝒟t h𝒟e T e ψ hψalg hψπ hψρ q d coeff M0 hM0 hbot n Q hQcard hQ 𝒟Q
-      h𝒟Q H hbad ex hex hexpin f hfalg hfπ hfρ hfsmul toRuniv hsurj halg hπ hρ
+      h𝒟Q H hbad ex hex hexpin f hfalg hfπ hfρ hfsmul
   -- (★).  The coordinate clause forces `ker diamond ≤ 𝔟_ex`, so the sub-leaf's
   -- `hbex` — which is all local class field theory at `Q` proves — upgrades to
   -- the equality this statement exports, with no further arithmetic input.
