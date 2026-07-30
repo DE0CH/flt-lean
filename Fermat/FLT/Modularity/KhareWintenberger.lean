@@ -4917,8 +4917,10 @@ single place:
   EXISTENCE — Dirichlet/Chebotarev for a ray class, and it carries NO parity
   hypothesis at all): some totally negative `b ≡ 1 (mod 2ⁿ)` generates a PRIME
   ideal. **PROVEN 2026-07-28**, over
-  `exists_prime_generator_sub_mem_of_sup_eq_top` (also proven), over the single
-  remaining leaf `exists_heightOneSpectrum_mul_span_eq_span_of_sup_eq_top`;
+  `exists_prime_generator_sub_mem_of_sup_eq_top` (also proven), over
+  `exists_heightOneSpectrum_mul_span_eq_span_of_sup_eq_top` — itself PROVEN
+  since 2026-07-31, so the single remaining leaf of this whole block is now the
+  class field theory citation `exists_narrowRayArtin_of_sup_eq_top`;
 * `exists_sq_eq_neg_one_adicCompletion_of_span_eq_of_even_nrRealPlaces`
   (STEP 1a-i′-c-2, RECIPROCITY — Hilbert's product formula, and **the only
   place in the whole ABHN chain where `Even (nrRealPlaces F)` is spent**): for
@@ -4968,7 +4970,9 @@ mathematics:
   class, stated with integral ideals only and with NO ray class group in the
   statement): the narrow ray class of `(a)` modulo `𝔣 · ∏_{v real} v` contains
   a PRIME, exhibited in the integral form `𝔭 · (β) = (a·α)` with `α, β`
-  totally positive and `≡ 1 (mod 𝔣)`;
+  totally positive and `≡ 1 (mod 𝔣)`. **PROVEN 2026-07-31** over the
+  ABELIAN-only citation `exists_narrowRayArtin_of_sup_eq_top` and the in-tree
+  Chebotarev theorem; see the RECUT note above it;
 * `exists_prime_generator_sub_mem_of_sup_eq_top` (STEP 1a-i′-c-1-β, PROVEN):
   from that ideal identity, `c := aα/β` is an ALGEBRAIC INTEGER generating
   `𝔭`, congruent to `a` modulo `𝔣`, and with the same sign as `a` at every
@@ -5008,9 +5012,179 @@ exponent `n + 1` makes the seed `≤ -1` for every `n : ℕ` uniformly while
 keeping `a ≡ 1 (mod 2ⁿ)`, which is why `-β` carries the hypothesis `a ≠ 0`
 explicitly rather than leaving it implicit. -/
 
+/-! #### STEP 1a-i′-c-1-α, RECUT (2026-07-31) — CHEBOTAREV IS ALREADY IN THE
+TREE, so the leaf keeps only the ABELIAN EXISTENCE half
+
+`exists_heightOneSpectrum_mul_span_eq_span_of_sup_eq_top` below is now a PROVEN
+assembly over the single citation
+`exists_narrowRayArtin_of_sup_eq_top` immediately below it, together with the
+**proven, sorry-free** `GaloisRepresentation.infinite_setOf_isArithFrobAt` of
+`GaloisRepresentation/Chebotarev.lean` (already `public import`ed here).
+
+WHY THIS CUT AND NOT THE ONE THE OLD DOCSTRING FORBADE. The 2026-07-30
+EQUIVALENCE AUDIT below is right that no *normalisation* of the `α`/`β` shape is
+a cut — total positivity and the congruences-to-`1` are free operations on a
+ray-class relation, so every restatement in that family is the same theorem. It
+then prescribed the honest next step: "build `Cl_𝔪(F)` and its class field".
+This recut is the first half of exactly that, and it is available because of a
+fact the audit's own machinery inventory missed.
+
+**THE INVENTORY WAS STALE IN THE DECISIVE PLACE.** The paragraph below lists,
+from `Chebotarev.lean`, only `infinite_setOf_isArithFrobAt`,
+`exists_frobenius_conj_mem_coset` and `dense_conjClasses_globalFrob`, and
+concludes "the DENSITY half does not have to be rebuilt". Both halves of that
+sentence understate what is there:
+
+* `infinite_setOf_isArithFrobAt` is FULL CHEBOTAREV in the ideal-theoretic
+  existence form — for EVERY finite normal `L/F` and EVERY `τ ∈ Gal(L/F)`,
+  infinitely many places `w` of `F` are unramified in `L` and carry `τ` as an
+  arithmetic Frobenius — and it is proven, with no `sorry` anywhere in its
+  13 000-line file. That is precisely the input that turns "the ray class of
+  `(a)` is cut out by a Frobenius condition" into "the ray class of `(a)`
+  contains a prime", which is what this leaf was asking for;
+* the same file also carries the *counting* core of Dirichlet for narrow ray
+  classes, which no audit in this block mentions: `IsNarrowRayEquiv` (narrow ray
+  equivalence of ideals for a rational-integer modulus, with `symm`/`trans`/
+  `mul_mul`/`natCast_absNorm_eq`), `exists_finset_forall_isNarrowRayEquiv`
+  (finiteness of the narrow ray classes), `finite_quotient_narrowRaySetoid`,
+  and **Weber's theorem** `exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow`
+  — `#{I : N(I) ≤ n, I ∼ I₀} = κ·n + O(n^r)` with `κ` independent of the class
+  and `r < 1` — all PROVEN. So the analytic apparatus that a purely analytic
+  proof of this leaf would need (Weber counting, the power-saving cancellation
+  `exists_forall_norm_sum_dirichletCharacter_mul_card_absNorm_le_rpow`, and an
+  `L(1, χ) ≠ 0` argument `exists_forall_le_norm_LSeries_near_one`) exists in
+  full for the *norm-residue* character group and would have to be re-run for
+  ray-class characters, not built from nothing.
+
+Refuting checks, one grep each:
+`grep -n "theorem infinite_setOf_isArithFrobAt\b" Fermat/FLT/GaloisRepresentation/Chebotarev.lean`,
+`grep -c sorry Fermat/FLT/GaloisRepresentation/Chebotarev.lean` (the only hit is
+the word inside its header docstring),
+`grep -n "IsNarrowRayEquiv\|exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow" Fermat/FLT/GaloisRepresentation/Chebotarev.lean`.
+
+WHAT IS LEFT, THEREFORE, IS THE ABELIAN EXISTENCE THEOREM AND NOTHING ELSE.
+The citation below asks for a finite normal `L/F` and a `τ ∈ Gal(L/F)` such that
+*every* place `w` coprime to `𝔣` that is unramified in `L` with arithmetic
+Frobenius `τ` lies in the narrow ray class of `(a)` modulo `𝔣·∏_{v real} v`.
+Classically that is `L := H_𝔪` and `τ := Artin((a))`, i.e. the existence theorem
+of class field theory for the modulus `𝔪` plus the Artin reciprocity
+isomorphism — with no analysis in it at all. The DENSITY half is now discharged
+in-tree rather than merely "not needing to be rebuilt".
+
+NOTE ALSO, and it is new since the inventory below was written: the UNRAMIFIED
+case of exactly this existence theorem has landed in the tree —
+`Fermat/FLT/NumberField/UnramifiedClassFieldExistence.lean`
+(`exists_hilbertClassField_artinIso`, `exists_classField_of_subgroup`,
+`exists_hilbertClassField`) and `Fermat/FLT/NumberField/ArtinSymbol.lean`
+(`artinMap`, `artinMap_toPrincipalIdeal`, `exists_classGroupHom_eq_frobAt`).
+Those are the `𝔪 = (1)` shadow of the citation below; a prover of it should
+read them first, since the ramified case is the same argument with the ray class
+group in place of the class group. They are NOT in this module's import cone
+today, and wiring them in is part of the job, not a blocker to be reported.
+
+WHY THE CITATION IS NOT VACUOUSLY DISCHARGEABLE. A tempting cheat is to pick an
+`L` and `τ` for which no `w` satisfies the Frobenius hypothesis, making the
+implication empty. Chebotarev forbids it: for every `L` and every `τ` the set of
+such `w` is INFINITE, and only finitely many places divide `𝔣`
+(`Ideal.finite_factors`), so infinitely many `w` reach the conclusion. That is
+the same theorem the assembly below consumes, so the non-vacuity is mechanical
+rather than a promise. -/
+
+/-- **STEP 1a-i′-c-1-α′ — THE EXISTENCE THEOREM OF CLASS FIELD THEORY, IN
+FROBENIUS-PINNED FORM** (sorry leaf; CUT 2026-07-31 out of
+`exists_heightOneSpectrum_mul_span_eq_span_of_sup_eq_top` below, which is now a
+PROVEN assembly over this leaf and the in-tree Chebotarev theorem
+`GaloisRepresentation.infinite_setOf_isArithFrobAt`).
+
+STATEMENT, unpacked. Given a nonzero modulus `𝔣` and a nonzero `a ∈ 𝒪_F` whose
+ideal is coprime to `𝔣`, there are a finite normal extension `L/F` inside a
+fixed algebraic closure and an automorphism `τ ∈ Gal(L/F)` such that every
+height-one prime `w` of `𝒪_F` which is
+
+* coprime to `𝔣`, and
+* unramified in `L` (`Q.inertia = ⊥` for some prime `Q` of `𝒪_L` over `w`) with
+  `τ` as an arithmetic Frobenius at `Q`
+
+satisfies `w · (β) = (a·α)` for some `α, β ∈ 𝒪_F` totally positive and
+`≡ 1 (mod 𝔣)` — i.e. `w` lies in the narrow ray class of `(a)` modulo
+`𝔪 = 𝔣·∏_{v real} v`.
+
+ROUTE. `L := H_𝔪`, the narrow ray class field of modulus `𝔪` (the existence
+theorem of class field theory), and `τ := Artin_𝔪((a))`. Artin reciprocity says
+the Artin map `I_𝔪 → Gal(H_𝔪/F)` is surjective with kernel exactly `P_𝔪`, the
+ray-principal ideals; for `w` coprime to `𝔣` and unramified in `H_𝔪` the
+arithmetic Frobenius at `w` IS `Artin_𝔪(w)`, so the hypothesis reads
+`Artin_𝔪(w) = Artin_𝔪((a))`, i.e. `w·(a)⁻¹ ∈ P_𝔪`, i.e. `w·(a)⁻¹ = (γ)` with
+`γ ≻ 0` and `γ ≡ 1 (mod^× 𝔣)`. Clearing denominators and applying the two FREE
+normalisations recorded in the EQUIVALENCE AUDIT below (multiply numerator and
+denominator by an inverse of the denominator mod `𝔣`; then multiply both by the
+denominator to make both totally positive) writes `γ = α/β` with `α, β ∈ 𝒪_F`
+totally positive and `≡ 1 (mod 𝔣)`, which is the conclusion. `L` abelian is what
+makes "arithmetic Frobenius at `Q`" independent of the choice of `Q` over `w`;
+the statement does not assume abelianness because it does not need to — a
+witness may take `L` abelian.
+
+FAITHFULNESS. TRUE, by the route above. Every hypothesis is load-bearing, and
+two of them for reasons worth recording because they are where a careless
+statement of this leaf goes FALSE.
+
+* `hwcop : w.asIdeal ⊔ 𝔣 = ⊤` is NOT bookkeeping and must not be dropped. At a
+  `w` dividing `𝔣` the conclusion is UNSATISFIABLE, not merely unproven:
+  `w ∣ w·(β) = (a)·(α)`, and `w ∤ (a)` by `hcop`, so `w ∣ (α)`; but
+  `α ≡ 1 (mod 𝔣)` and `𝔣 ⊆ w.asIdeal` give `α ≡ 1 (mod w)`, whence `1 ∈ w` —
+  contradiction. Such a `w` can genuinely satisfy the Frobenius hypothesis
+  (a prime dividing `𝔣` but not the CONDUCTOR of `H_𝔪` is unramified in `H_𝔪`),
+  so without this clause the leaf would be false rather than hard.
+* `h𝔣 : 𝔣 ≠ ⊥` and `ha0 : a ≠ 0` are inherited from the consumer and are
+  load-bearing there for the reasons its own audit records (at `𝔣 = ⊥` the
+  congruences force `α = β = 1` and the conclusion says `(a)` is prime; at
+  `a = 0` the identity forces `β = 0`).
+
+NOT VACUOUS, and mechanically so: see the RECUT note above — Chebotarev makes
+the set of `w` satisfying the Frobenius hypothesis infinite for EVERY `L` and
+`τ`, and only finitely many places divide `𝔣`, so a witness must deliver the
+conclusion at infinitely many `w`. In particular the cheat `L := F`, `τ := 1`
+(which makes the hypothesis hold at every unramified `w`) fails: it would assert
+that EVERY prime coprime to `𝔣` lies in the narrow ray class of `(a)`, refuted
+already over `F = ℚ`, `𝔣 = (4)`, `a = -7` by `w = (3)`.
+
+CHECK AT `F = ℚ`, `𝔣 = (4)`, `a = -7`, where the ray class field is
+`ℚ(ζ₄) = ℚ(i)` and the narrow ray class of `(-7)` mod `4∞` is the set of primes
+`(p)` with a generator `≡ -7 ≡ 1 (mod 4)` and negative — i.e. `p ≡ 3 (mod 4)`:
+`w = (7)` works with `α = β = 1`, and `w = (3)` does not, which is what makes
+the `τ`-pin do work. -/
+theorem exists_narrowRayArtin_of_sup_eq_top
+    (F : Type u) [Field F] [NumberField F]
+    (𝔣 : Ideal (NumberField.RingOfIntegers F)) (h𝔣 : 𝔣 ≠ ⊥)
+    (a : NumberField.RingOfIntegers F) (ha0 : a ≠ 0)
+    (hcop : Ideal.span {a} ⊔ 𝔣 = ⊤) :
+    ∃ (L : IntermediateField F (AlgebraicClosure F)) (_ : FiniteDimensional F L)
+      (_ : Normal F L) (τ : L ≃ₐ[F] L),
+      ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+        w.asIdeal ⊔ 𝔣 = ⊤ →
+        (∃ Q : Ideal (NumberField.RingOfIntegers L), Q.IsPrime ∧
+            Q.LiesOver w.asIdeal ∧
+            Q.inertia (L ≃ₐ[F] L) = ⊥ ∧
+            IsArithFrobAt (NumberField.RingOfIntegers F) τ Q) →
+        ∃ α β : NumberField.RingOfIntegers F,
+          β ≠ 0 ∧ α - 1 ∈ 𝔣 ∧ β - 1 ∈ 𝔣 ∧
+          (∀ (v : NumberField.InfinitePlace F) (hv : v.IsReal),
+            0 < NumberField.InfinitePlace.embedding_of_isReal hv
+                  (algebraMap (NumberField.RingOfIntegers F) F α)) ∧
+          (∀ (v : NumberField.InfinitePlace F) (hv : v.IsReal),
+            0 < NumberField.InfinitePlace.embedding_of_isReal hv
+                  (algebraMap (NumberField.RingOfIntegers F) F β)) ∧
+          w.asIdeal * Ideal.span {β} = Ideal.span {a * α} :=
+  sorry
+
 /-- **STEP 1a-i′-c-1-α — CLASS FIELD THEORY: A NARROW RAY CLASS CONTAINS A
-PRIME** (sorry leaf, CUT 2026-07-28 out of
-`exists_totallyNegative_sub_one_mem_span_eq_asIdeal`).
+PRIME** (**PROVEN 2026-07-31** as an assembly over
+`exists_narrowRayArtin_of_sup_eq_top` immediately above and the in-tree
+Chebotarev theorem `GaloisRepresentation.infinite_setOf_isArithFrobAt`; a sorry
+leaf from its cut on 2026-07-28 out of
+`exists_totallyNegative_sub_one_mem_span_eq_asIdeal` until then. Everything
+below is retained as the record of the mathematics — the RECUT note above says
+what moved and why).
 
 This is Dirichlet's theorem on primes in an arithmetic progression for a
 number field, in its narrow (totally positive) ray-class form, and **it
@@ -5045,8 +5219,27 @@ for one all have to be built. What EXISTS and is usable is the Chebotarev
 material in this module's own import cone
 (`GaloisRepresentation/Chebotarev.lean`, `public import`ed at line 443:
 `infinite_setOf_isArithFrobAt`, `exists_frobenius_conj_mem_coset`,
-`dense_conjClasses_globalFrob`), so only the ABELIAN side is missing. This
-tree also carries ray-class-flavoured material that does NOT found this leaf:
+`dense_conjClasses_globalFrob`), so only the ABELIAN side is missing.
+
+**CORRECTED 2026-07-31, AND THE CORRECTION IS WHAT MADE THIS DECLARATION
+PROVABLE.** The inventory above is right about the mathlib pin and wrong about
+what the in-tree half is worth. `infinite_setOf_isArithFrobAt` is not merely
+"the density half not needing to be rebuilt": it is FULL Chebotarev in existence
+form for every finite normal `L/F` and every `τ ∈ Gal(L/F)`, proven, in a file
+with no `sorry` in it — so once the ray class is presented as a FROBENIUS
+CONDITION rather than as a class, the prime is produced by in-tree code. That is
+the recut recorded in the section note above this block, and it is why this
+declaration now has a body. The same file also carries the counting core of
+Dirichlet for narrow ray classes (`IsNarrowRayEquiv`,
+`exists_finset_forall_isNarrowRayEquiv`, Weber's
+`exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow`), which no audit in
+this block had noticed; and the UNRAMIFIED existence theorem has since landed at
+`Fermat/FLT/NumberField/UnramifiedClassFieldExistence.lean` and
+`Fermat/FLT/NumberField/ArtinSymbol.lean`. So "the ray class group, the ray
+class field and the Artin map for one all have to be built" is now: the RAMIFIED
+case of a theorem whose unramified case is in the tree.
+
+This tree also carries ray-class-flavoured material that does NOT found this leaf:
 `HardlyRamified/ModThree.lean`'s `charKernelRayClass`, `muFixerRayClass`,
 `IsRamifiedCharRayClass` (Galois-side subgroups, PROVEN) and
 `exists_artinDivisorNormIndex_le_ray_class` (sorried, but the model for the
@@ -5129,7 +5322,15 @@ A NARROW RAY CLASS and nothing else: the narrowness is the `γ ≻ 0` clause and
 NOT removable (it is what the consumer spends to get the sign of `b`), and the
 ray class group, the ray class field and the Artin map for it all still have zero
 hits in the pin. The honest next step is to build `Cl_𝔪(F)` and its class field,
-not to re-cut this statement. -/
+not to re-cut this statement.
+
+*What was done with that prescription, 2026-07-31.* Its first half is now taken:
+the statement is not restated, it is DERIVED, from a citation that asks for the
+class field as a Galois object (`exists_narrowRayArtin_of_sup_eq_top`) rather
+than for a prime. The audit's verdict — that no normalisation of the `α`/`β`
+shape is a cut — is untouched and is why the derivation below spends its work on
+CHEBOTAREV and not on the `α`/`β` bookkeeping, which the citation hands over
+already normalised. -/
 theorem exists_heightOneSpectrum_mul_span_eq_span_of_sup_eq_top
     (F : Type u) [Field F] [NumberField F]
     (𝔣 : Ideal (NumberField.RingOfIntegers F)) (h𝔣 : 𝔣 ≠ ⊥)
@@ -5144,8 +5345,27 @@ theorem exists_heightOneSpectrum_mul_span_eq_span_of_sup_eq_top
       (∀ (v : NumberField.InfinitePlace F) (hv : v.IsReal),
         0 < NumberField.InfinitePlace.embedding_of_isReal hv
               (algebraMap (NumberField.RingOfIntegers F) F β)) ∧
-      w.asIdeal * Ideal.span {β} = Ideal.span {a * α} :=
-  sorry
+      w.asIdeal * Ideal.span {β} = Ideal.span {a * α} := by
+  classical
+  -- the class field theory: a finite normal `L/F` and a `τ ∈ Gal(L/F)` whose
+  -- Frobenius places all lie in the narrow ray class of `(a)` modulo `𝔣∞`.
+  obtain ⟨L, hfd, hnormal, τ, hτ⟩ := exists_narrowRayArtin_of_sup_eq_top F 𝔣 h𝔣 a ha0 hcop
+  -- CHEBOTAREV (in-tree, proven): infinitely many places carry `τ` as an
+  -- arithmetic Frobenius and are unramified in `L`.
+  have hinf := GaloisRepresentation.infinite_setOf_isArithFrobAt (K := F) L τ
+  -- only finitely many places divide `𝔣`, so one of those infinitely many is
+  -- coprime to `𝔣` — which is the hypothesis the citation needs, and which it
+  -- genuinely needs (its FAITHFULNESS note refutes the conclusion at `w ∣ 𝔣`).
+  have hfin : {w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) |
+      w.asIdeal ∣ 𝔣}.Finite := Ideal.finite_factors h𝔣
+  obtain ⟨w, hwmem, hwdvd⟩ := (hinf.sdiff hfin).nonempty
+  have hwcop : w.asIdeal ⊔ 𝔣 = ⊤ := by
+    by_contra hne
+    have hmax : w.asIdeal.IsMaximal := w.isMaximal
+    have hle : w.asIdeal ⊔ 𝔣 = w.asIdeal := (hmax.eq_of_le hne le_sup_left).symm
+    exact hwdvd (Ideal.dvd_iff_le.mpr (le_sup_right.trans hle.le))
+  obtain ⟨α, β, h1, h2, h3, h4, h5, h6⟩ := hτ w hwcop hwmem
+  exact ⟨w, α, β, h1, h2, h3, h4, h5, h6⟩
 
 /-- **STEP 1a-i′-c-1-β — GENERATOR EXTRACTION: A NARROW RAY CLASS CONTAINING A
 PRIME CONTAINS A PRIME *GENERATOR* WITH THE PRESCRIBED CONGRUENCE AND SIGNS**
@@ -5293,6 +5513,14 @@ material in this module's own import cone
 `exists_frobenius_conj_mem_coset`, `dense_conjClasses_globalFrob`), so the
 DENSITY half does not have to be rebuilt; what has to be built is the abelian
 side that produces `H_𝔪` and identifies `Gal(H_𝔪/F) ≅ Cl_𝔪(F)`.
+
+*Updated 2026-07-31: that is now literally the only thing left, and it is a
+named leaf.* The density half is not merely "not needing to be rebuilt" — it is
+SPENT: `exists_heightOneSpectrum_mul_span_eq_span_of_sup_eq_top` is proven by
+applying `infinite_setOf_isArithFrobAt` to the citation
+`exists_narrowRayArtin_of_sup_eq_top`, which asks for `H_𝔪` and the Artin
+symbol of `(a)` and for nothing else. Read that leaf's docstring, not this
+paragraph, for the current state of the machinery inventory.
 
 CORRECTION to the "absent from this tree" half of the older note (it was too
 strong, and the correction does not change the verdict). This tree does carry
