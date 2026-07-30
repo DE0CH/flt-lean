@@ -3965,11 +3965,43 @@ theorem LowerRamificationData.iInf_lvl_eq_bot
 /-- **THE INERTIA LANDS IN `G_0` AT EVERY LEVEL**: an inertia element acts
 trivially on the residue field of `L`, i.e. `unif ∣ σ • x − x`.
 
-(SORRY LEAF, promoted 2026-07-29 from the anonymous `have hin` inside
-`GaloisRep.exists_isSwanExponentAt`.) -/
+(PROVEN 2026-07-30; promoted 2026-07-29 from the anonymous `have hin` inside
+`GaloisRep.exists_isSwanExponentAt`.)
+
+`localInertiaGroup v` is by definition the inertia of the maximal ideal of
+`IntegralClosure 𝒪ᵥ Kᵥᵃˡᵍ`, i.e. `σ • x − x ∈ 𝔪` for EVERY `x` of that ring.
+For `x` fixed by the level `N`, normality of `N` makes `σ • x` fixed by `N`
+too (`τ • σ • x = σ • ((σ⁻¹τσ) • x) = σ • x`), hence so is `σ • x − x`; and
+`𝔪` is exactly the non-units. So `unif_spec` — "every `N`-fixed non-unit is
+divisible by `unif`" — applies and gives `unif ^ (0+1) ∣ σ • x − x`, which is
+`mem_gp` at `i = 0`.
+
+Note the step that is NOT available without `unif_spec`: membership in `𝔪`
+alone does not give divisibility by `unif`, because the value group of
+`Kᵥᵃˡᵍ` is DIVISIBLE and `𝔪` is not principal — `y ∈ 𝔪` says `v y > 0`,
+while `unif ∣ y` says `v y ≥ v unif`. The descent to the level, where the
+valuation IS discrete, is the whole content. -/
 theorem LowerRamificationData.localInertiaGroup_le_gp_zero
     {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)} (D : LowerRamificationData v) :
-    localInertiaGroup v ≤ D.gp 0 := sorry
+    localInertiaGroup v ≤ D.gp 0 := by
+  intro σ hσ
+  rw [D.mem_gp]
+  intro x hx
+  have hconj : ∀ τ ∈ D.lvl, σ⁻¹ * τ * σ ∈ D.lvl := by
+    intro τ hτ
+    simpa using D.lvl_normal.conj_mem τ hτ σ⁻¹
+  have hfix : ∀ τ ∈ D.lvl, τ • (σ • x - x) = σ • x - x := by
+    intro τ hτ
+    have h1 : τ • (σ • x) = σ • x := by
+      rw [smul_smul]
+      have hrw : τ * σ = σ * (σ⁻¹ * τ * σ) := by group
+      rw [hrw, ← smul_smul, hx _ (hconj τ hτ)]
+    rw [smul_sub, h1, hx τ hτ]
+  have hmem : σ • x - x ∈ IsLocalRing.maximalIdeal
+      (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+        (AlgebraicClosure (v.adicCompletion K))) := hσ x
+  have hnu : ¬ IsUnit (σ • x - x) := (IsLocalRing.mem_maximalIdeal _).mp hmem
+  simpa using D.unif_spec _ hfix hnu
 
 /-- **THE WILD INERTIA LANDS IN `G_1` AT EVERY LEVEL**, `P_v ≤ G_1(L/Kᵥ)`.
 
