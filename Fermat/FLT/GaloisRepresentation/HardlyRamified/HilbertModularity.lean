@@ -21213,9 +21213,100 @@ theorem exists_mem_hilbertInertiaOutsideSubgroups_resSubgroup_eq_zero
         c ∈ LinearMap.ker (hilbertResSubgroupTwist1 F ρbar N).hom.toLinearMap :=
   sorry
 
+namespace HilbertResKer
+
+open ContinuousCohomology TopRep ContRepresentation
+
+/-- `ad⁰` is a finite-dimensional `k`-space: it is a subspace of `Module.End k V`
+(through `HilbertAdZero.equivKer`), which is finite-dimensional because `V` is
+finite free. Stated as a theorem rather than an instance so that nothing else in
+this 28 000-line module has its instance search perturbed. -/
+theorem moduleFinite_hilbertAdZero {k : Type u} [Field k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] : Module.Finite k (HilbertAdZero k V) := by
+  haveI : Module.Finite k (Module.End k V) := Module.Finite.linearMap k k V V
+  haveI : Module.Finite k ↥(LinearMap.ker (LinearMap.trace k V)) :=
+    Submodule.finiteDimensional_of_le (le_refl _)
+  exact Module.Finite.equiv (HilbertAdZero.equivKer k V).symm
+
+/-- **`ad⁰ρbar(1)` at `g` depends only on `ρbar|_{Γ F}` at `g`** (PROVEN
+2026-07-30): the twist is `det ρbar|_{Γ F} σ • conj (ρbar|_{Γ F} σ)`, and
+`ρbar|_{Γ F} σ⁻¹` is determined by `ρbar|_{Γ F} σ` as its inverse in the monoid
+`Module.End k V`. -/
+theorem rho_hilbertAdZeroTwist_eq_of_map_eq (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V) {g h : Γ F}
+    (hgh : (ρbar.map (algebraMap ℚ F)) g = (ρbar.map (algebraMap ℚ F)) h) :
+    (hilbertAdZeroTwist F ρbar).ρ g = (hilbertAdZeroTwist F ρbar).ρ h := by
+  set ρF := ρbar.map (algebraMap ℚ F) with hρF
+  have hinv : ρF g⁻¹ = ρF h⁻¹ := by
+    have h1 : ρF g⁻¹ * ρF g = 1 := by rw [← map_mul, inv_mul_cancel, map_one]
+    have h2 : ρF h * ρF h⁻¹ = 1 := by rw [← map_mul, mul_inv_cancel, map_one]
+    calc ρF g⁻¹ = ρF g⁻¹ * (ρF h * ρF h⁻¹) := by rw [h2, mul_one]
+      _ = (ρF g⁻¹ * ρF g) * ρF h⁻¹ := by rw [← hgh, mul_assoc]
+      _ = ρF h⁻¹ := by rw [h1, one_mul]
+  have hdet : ρF.det g = ρF.det h := by
+    rw [GaloisRep.det_apply, GaloisRep.det_apply, hgh]
+  show (ρF.det g) • (HilbertAdZero.rep ρF g) = (ρF.det h) • (HilbertAdZero.rep ρF h)
+  rw [hdet]
+  congr 1
+  refine ContinuousLinearMap.ext fun x => HilbertAdZero.ext ?_
+  show HilbertAdZero.toEnd k V (HilbertAdZero.conjL (ρF g) (ρF g⁻¹)
+        (by rw [← map_mul, inv_mul_cancel, map_one]) x) =
+      HilbertAdZero.toEnd k V (HilbertAdZero.conjL (ρF h) (ρF h⁻¹)
+        (by rw [← map_mul, inv_mul_cancel, map_one]) x)
+  rw [HilbertAdZero.toEnd_conjL, HilbertAdZero.toEnd_conjL, hgh, hinv]
+
+/-- **The orbit map `g ↦ ρ g m` of `ad⁰ρbar(1)` is CONTINUOUS** (PROVEN
+2026-07-30).
+
+This is the one hypothesis that `ContinuousCohomology.cocycleClass_eq_zero_of_
+eval₁_eq_sub` and the degree-`0` cochain `g ↦ ρ g m` need and that
+`ContRepresentation` deliberately does NOT carry (see that lemma's docstring:
+the datum only asks each `ρ g` to be continuous on `M`, so that `coind₁` can be
+formed with no hypothesis on the topology of `G`).
+
+Here it is free, and the two ingredients are exactly the two discreteness
+hypotheses this module keeps: `ρ g` depends only on `ρbar|_{Γ F} g`
+(`rho_hilbertAdZeroTwist_eq_of_map_eq`), and `ρbar|_{Γ F}` is continuous into
+`Module.End k V`, which carries the DISCRETE module topology because `k` is
+discrete and `V` is finite free (`discreteTopology_moduleTopology`). A map that
+factors through a continuous map into a discrete space is continuous, whatever
+the target. -/
+theorem continuous_rho_hilbertAdZeroTwist_apply
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V)
+    (m : ↥(hilbertAdZeroTwist F ρbar)) :
+    Continuous fun g : Γ F => (hilbertAdZeroTwist F ρbar).ρ g m := by
+  classical
+  letI := moduleTopology k (Module.End k V)
+  haveI : DiscreteTopology (Module.End k V) :=
+    GaloisRepresentation.discreteTopology_moduleTopology k (Module.End k V)
+  set ρF := ρbar.map (algebraMap ℚ F) with hρF
+  set Φ : Module.End k V → ↥(hilbertAdZeroTwist F ρbar) := fun e =>
+    if h : ∃ g : Γ F, ρF g = e then
+      (hilbertAdZeroTwist F ρbar).ρ h.choose m else 0 with hΦ
+  have hfact : ∀ g : Γ F, (hilbertAdZeroTwist F ρbar).ρ g m = Φ (ρF g) := by
+    intro g
+    have hex : ∃ g' : Γ F, ρF g' = ρF g := ⟨g, rfl⟩
+    rw [hΦ]
+    simp only [dif_pos hex]
+    rw [rho_hilbertAdZeroTwist_eq_of_map_eq F ρbar hex.choose_spec]
+  have h1 : Continuous fun g : Γ F => ρF g := ρF.continuous_toFun
+  have hcont : Continuous (Φ ∘ fun g : Γ F => ρF g) :=
+    Continuous.comp continuous_of_discreteTopology h1
+  exact hcont.congr fun g => (hfact g).symm
+
+end HilbertResKer
+
+set_option maxHeartbeats 1000000 in
 /-- **Inflation–restriction: the kernel of restriction to an open normal
-subgroup is FINITE-DIMENSIONAL over `k`** (SORRY LEAF, cut out 2026-07-28 as the
-fourth of the four inputs of `finite_hilbertH1TwistUnramified` below).
+subgroup is FINITE-DIMENSIONAL over `k`** (cut out 2026-07-28 as the
+fourth of the four inputs of `finite_hilbertH1TwistUnramified` below;
+**PROVEN 2026-07-30**).
 
 For `N ≤ Γ F` open, normal and of finite index, the kernel of
 `res : H¹(Γ F, ad⁰ρbar(1)) → H¹(N, ad⁰ρbar(1))` is a finite-dimensional
@@ -21264,12 +21355,34 @@ is finite-dimensional. So this leaf and
 `exists_mem_hilbertInertiaOutsideSubgroups_resSubgroup_eq_zero` share the same
 apparatus and are best given to ONE owner.
 
-Both-ways audit: `hnorm`, `hopen` and `hFI` are all load-bearing. Dropping
-`hopen` makes the statement FALSE as a matter of continuous cohomology (a
-non-closed `N` of finite index has no inflation–restriction sequence), and
-dropping `hFI` makes `Γ F ⧸ N` infinite and the kernel infinite-dimensional —
-this is exactly the `dim_k H¹(Γ F, ad⁰(1)) = ℵ₀` computation recorded on
-`Sha1Twist` in `HardlyRamified/Deformation.lean`, at `N = 1`. -/
+Both-ways audit, AS WRITTEN 2026-07-28: "`hnorm`, `hopen` and `hFI` are all
+load-bearing. Dropping `hopen` makes the statement FALSE as a matter of
+continuous cohomology (a non-closed `N` of finite index has no
+inflation–restriction sequence), and dropping `hFI` makes `Γ F ⧸ N` infinite and
+the kernel infinite-dimensional — this is exactly the
+`dim_k H¹(Γ F, ad⁰(1)) = ℵ₀` computation recorded on `Sha1Twist` in
+`HardlyRamified/Deformation.lean`, at `N = 1`."
+
+**CORRECTION (2026-07-30, from the proof below): only `hFI` is load-bearing.
+`hnorm` and `hopen` are NOT USED, and the statement is TRUE without them.**
+The audit's clause about `hopen` is right about the route it had in mind and
+wrong about the statement. The elementary route above never forms an
+inflation–restriction SEQUENCE, so it never needs `N` closed:
+
+* `Γ F ⧸ N` is the coset space, which `Subgroup.finite_quotient_of_finiteIndex`
+  makes finite from `hFI` ALONE — mathlib's `G ⧸ H` needs no normality, so
+  `hnorm` is not needed either;
+* the one place topology genuinely enters is the degree-`0` cochain
+  `g ↦ ρ g m` used to subtract the coboundary, and its continuity comes from
+  DISCRETENESS of the coefficients
+  (`HilbertResKer.continuous_rho_hilbertAdZeroTwist_apply`), not from `N` being
+  open. That is the same discreteness that makes `ad⁰ρbar(1)` a discrete module
+  in the first place, so it is already paid for.
+
+Both binders are KEPT in the signature: every consumer has them in hand (they
+come out of `hilbertInertiaOutsideSubgroups`), and dropping an argument from a
+positional call chain is exactly the interface split that CLAUDE.md's seventh
+invisibility class is about. They are dead weight, not a defect. -/
 theorem finiteDimensional_ker_hilbertResSubgroupTwist1
     (F : Type u) [Field F] [NumberField F]
     {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
@@ -21278,8 +21391,122 @@ theorem finiteDimensional_ker_hilbertResSubgroupTwist1
     (N : Subgroup (Γ F)) (hnorm : N.Normal)
     (hopen : IsOpen (N : Set (Γ F))) (hFI : N.FiniteIndex) :
     Module.Finite k
-      ↥(LinearMap.ker (hilbertResSubgroupTwist1 F ρbar N).hom.toLinearMap) :=
-  sorry
+      ↥(LinearMap.ker (hilbertResSubgroupTwist1 F ρbar N).hom.toLinearMap) := by
+  classical
+  haveI := hFI
+  haveI : Fintype (Γ F ⧸ N) := Fintype.ofFinite _
+  set X : TopRep.{max u v} k (Γ F) := hilbertAdZeroTwist F ρbar with hXdef
+  set Y : TopRep.{max u v} k ↥N := hilbertAdZeroTwistSubgroup F ρbar N with hYdef
+  set φ : ↥N →ₜ* Γ F := hilbertSubgroupToGlobalHom F N with hφdef
+  haveI : Module.Finite k ↥X := HilbertResKer.moduleFinite_hilbertAdZero
+  -- the `k`-linear map "underlying inhomogeneous cochain"
+  set E : ↥(TopModuleCat.ker ((TopRep.homogeneousCochains X).d 1 (1 + 1))) →ₗ[k]
+      (Γ F → ↥X) :=
+    { toFun := fun z => ContinuousCohomology.eval₁ X z.1
+      map_add' := fun _ _ => rfl
+      map_smul' := fun _ _ => rfl } with hEdef
+  -- `B`: the cocycles whose inhomogeneous cochain vanishes on `N`
+  set B : Submodule k
+      ↥(TopModuleCat.ker ((TopRep.homogeneousCochains X).d 1 (1 + 1))) :=
+    LinearMap.ker ((LinearMap.funLeft k ↥X (fun σ : ↥N => (σ : Γ F))).comp E) with hBdef
+  have hBmem : ∀ z, z ∈ B ↔ ∀ σ : Γ F, σ ∈ N →
+      ContinuousCohomology.eval₁ X z.1 σ = 0 := by
+    intro z
+    constructor
+    · intro hz σ hσ
+      exact congrFun (LinearMap.mem_ker.mp hz) (⟨σ, hσ⟩ : ↥N)
+    · intro hz
+      exact LinearMap.mem_ker.mpr (funext fun σ => hz σ σ.2)
+  -- `B` is finite-dimensional: a cochain vanishing on `N` is constant on left cosets
+  have hinj : Function.Injective
+      (((LinearMap.funLeft k ↥X (fun q : Γ F ⧸ N => Quotient.out q)).comp E).comp
+        B.subtype) := by
+    rw [← LinearMap.ker_eq_bot]
+    refine (Submodule.eq_bot_iff _).mpr fun z hz => ?_
+    have hz0 : ∀ q : Γ F ⧸ N,
+        ContinuousCohomology.eval₁ X (z : ↥(TopModuleCat.ker
+          ((TopRep.homogeneousCochains X).d 1 (1 + 1)))).1 (Quotient.out q) = 0 := by
+      intro q
+      exact congrFun (LinearMap.mem_ker.mp hz) q
+    have hall : ∀ g : Γ F, ContinuousCohomology.eval₁ X (z : ↥(TopModuleCat.ker
+        ((TopRep.homogeneousCochains X).d 1 (1 + 1)))).1 g = 0 := by
+      intro g
+      have hout : ((Quotient.out ((g : Γ F ⧸ N)) : Γ F) : Γ F ⧸ N) = (g : Γ F ⧸ N) :=
+        Quotient.out_eq _
+      have hmem : (Quotient.out ((g : Γ F ⧸ N)))⁻¹ * g ∈ N := QuotientGroup.eq.mp hout
+      have hgg : g = Quotient.out ((g : Γ F ⧸ N)) *
+          ((Quotient.out ((g : Γ F ⧸ N)))⁻¹ * g) := by group
+      rw [hgg, ContinuousCohomology.cocycles₁_eval₁_mul, hz0 (g : Γ F ⧸ N),
+        (hBmem _).mp z.2 _ hmem]
+      simp
+    refine Subtype.ext (Subtype.ext (Subtype.ext ?_))
+    ext g l
+    rw [ContinuousCohomology.cocycle_apply
+      (ContinuousCohomology.cocycles₁_d_eq_zero (z : ↥(TopModuleCat.ker
+        ((TopRep.homogeneousCochains X).d 1 (1 + 1))))), hall, hall]
+    simp
+    rfl
+  haveI hBfin : Module.Finite k ↥B := FiniteDimensional.of_injective _ hinj
+  -- every class in the kernel is the class of an element of `B`
+  have hle : LinearMap.ker (hilbertResSubgroupTwist1 F ρbar N).hom.toLinearMap ≤
+      Submodule.map (ContinuousCohomology.cocycleClass X 1) B := by
+    intro c hc
+    obtain ⟨z, hz⟩ := ContinuousCohomology.exists_cocycleClass_eq (X := X) 1 c
+    have hres : ContinuousCohomology.map φ
+        (CategoryTheory.CategoryStruct.id Y) 1
+        (ContinuousCohomology.cocycleClass X 1 z) = 0 := by
+      rw [hz]; exact LinearMap.mem_ker.mp hc
+    have hzero : ContinuousCohomology.cocycleClass Y 1
+        (ContinuousCohomology.cocyclesMapKer φ
+          (CategoryTheory.CategoryStruct.id Y) 1 z) = 0 := by
+      rw [← ContinuousCohomology.map_cocycleClass_cocyclesMapKer]
+      exact hres
+    obtain ⟨m, hm⟩ : ∃ m : ↥X, ∀ σ : ↥N,
+        ContinuousCohomology.eval₁ Y (ContinuousCohomology.cocyclesMapKer φ
+          (CategoryTheory.CategoryStruct.id Y) 1 z).1 σ = X.ρ (σ : Γ F) m - m :=
+      ContinuousCohomology.exists_eval₁_eq_sub_of_cocycleClass_eq_zero _ hzero
+    have hmval : ∀ σ : ↥N,
+        ContinuousCohomology.eval₁ X z.1 (σ : Γ F) = X.ρ (σ : Γ F) m - m := by
+      intro σ
+      have h1 := hm σ
+      rw [ContinuousCohomology.eval₁_cocyclesMapKer] at h1
+      exact h1
+    -- the coboundary cochain of `m`
+    have hcont : Continuous fun g : Γ F => X.ρ g m :=
+      HilbertResKer.continuous_rho_hilbertAdZeroTwist_apply F ρbar m
+    have hinvm : (⟨fun g : Γ F => X.ρ g m, hcont⟩ : C(Γ F, ↥X)) ∈
+        (X.resolution'.X 0).ρ.invariants := by
+      intro σ
+      ext x
+      have hval : ∀ y : Γ F, (⟨fun g : Γ F => X.ρ g m, hcont⟩ : C(Γ F, ↥X)) y =
+          X.ρ y m := fun _ => rfl
+      simp only [ContRepresentation.coind₁_apply_apply, hval]
+      rw [ContinuousCohomology.rho_mul_apply X σ⁻¹ x m]
+      exact ContinuousCohomology.rho_apply_inv X σ _
+    set Fm : ↥((TopRep.homogeneousCochains X).X 0) :=
+      ⟨⟨fun g : Γ F => X.ρ g m, hcont⟩, hinvm⟩ with hFmdef
+    have hFm1 : Fm.1 1 = m := by
+      show X.ρ (1 : Γ F) m = m
+      simp
+    set z' : ↥(TopModuleCat.ker ((TopRep.homogeneousCochains X).d 1 (1 + 1))) :=
+      z - ContinuousCohomology.bdryKer X 1 Fm with hz'def
+    have hz'B : z' ∈ B := by
+      refine (hBmem _).mpr fun σ hσ => ?_
+      have h1 : ContinuousCohomology.eval₁ X z'.1 σ =
+          ContinuousCohomology.eval₁ X z.1 σ -
+            ContinuousCohomology.eval₁ X
+              (ContinuousCohomology.bdryKer X 1 Fm) σ := rfl
+      rw [h1, hmval ⟨σ, hσ⟩, ContinuousCohomology.eval₁_bdryKer, hFm1, sub_self]
+    refine ⟨z', hz'B, ?_⟩
+    have hbd : ContinuousCohomology.cocycleClass X 1
+        (ContinuousCohomology.bdryKer X 1 Fm) = 0 :=
+      (ContinuousCohomology.cocycleClass_eq_zero_iff X 1 _).mpr ⟨Fm, rfl⟩
+    rw [hz'def, map_sub, hbd, sub_zero, hz]
+  have hBfg : B.FG := Module.Finite.iff_fg.mp hBfin
+  haveI : Module.Finite k
+      ↥(Submodule.map (ContinuousCohomology.cocycleClass X 1) B) :=
+    Module.Finite.iff_fg.mpr (hBfg.map _)
+  exact Submodule.finiteDimensional_of_le hle
 
 /-- **Finiteness of the unramified-outside-`hilbertHardlyRamifiedPlaces` part of
 `H¹(F, ad⁰ρbar(1))`** (cut out 2026-07-28 as the first of the two
