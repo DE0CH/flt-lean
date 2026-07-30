@@ -19486,7 +19486,106 @@ this leaf is FALSE and the honest repair is to thread the quadratic enlargement
 of `k` through `IsTaylorWilesPrimeSet`, as the `ℚ`-level SHAPE AUDIT already
 recommends.
 
-**FALSITY AUDIT (2026-07-27) — THIS LEAF IS FALSE AS STATED, AND `isTameAtTwo`
+**REPAIRED 2026-07-30 BY ONE HYPOTHESIS, `[NumberField.IsTotallyReal F]`. THE
+FALSITY AUDIT BELOW IS ARITHMETICALLY CORRECT — every figure in it was re-checked
+independently and agrees — BUT ITS COUNTEREXAMPLE FIELD IS TOTALLY IMAGINARY, AND
+NECESSARILY SO, so it does not touch the statement as it now stands. Read this
+section before the audit; the audit is kept verbatim because its analysis of the
+`ℚ(μ_ℓ)`-free case is what forces the repair to be the one taken.**
+
+WHY THE COUNTEREXAMPLE FIELD CANNOT BE TOTALLY REAL — and this is FORCED, not an
+artefact of the choice of curve. The audit takes `F ⊇ F₀`, the fixed field of
+`ρ̄⁻¹(H)` for `H = N(T_ns) ∩ SL₂(𝔽₇)`. The `det` clause of
+`IsHilbertHardlyRamified`, transported to the residual level by `𝒟₀.resid`, gives
+`det ρbar|_{Γ F} = χ̄_ℓ|_{Γ F}`. Since `H ⊆ SL₂`, that character is TRIVIAL on
+`Γ F₀`, i.e. `Γ F₀ ⊆ ker χ̄_ℓ = Γ ℚ(μ_ℓ)`, i.e. `ℚ(μ_ℓ) ⊆ F₀ ⊆ F`. For `ℓ ≥ 5`
+odd, `ℚ(μ_ℓ)` is a CM field, so `F` has NO real place at all. **The same one-line
+argument kills EVERY counterexample whose residual image over `F` lies in `SL₂`
+— which is the shape of all of them**: the `Q₈` obstruction, the binary-dihedral
+`H` of the audit, and the whole SHARPENED FALSITY AUDIT above are statements
+about subgroups of `SL₂(k)`, and total realness makes that containment
+impossible.
+
+WHAT TOTAL REALNESS BUYS, POSITIVELY. `exists_map_eq_complexConj` above (PROVEN,
+and it is exactly this hypothesis that it consumes) puts a complex conjugation
+`c : Γ F` inside `Γ F`. Then `ρbar(c)² = 1` and `det ρbar(c) = χ̄_ℓ(c) = −1`, so
+`ρbar(c)` has eigenvalues `1` and `−1` — DISTINCT and `k`-rational — with
+`tr² − 4 det = 0 + 4 = 2²`, nonzero because `2 ≠ 0` in `k`
+(`two_ne_zero_of_hilbertDeformationDatum`). **At `n = 0` the roots-of-unity
+clause is vacuous and `σ = c`, `δ = 2` proves the leaf outright.**
+
+AND THE `μ_{ℓⁿ}`-FIXING CLAUSE COSTS NOTHING AT ANY `n`. For every `g : Γ F` the
+COMMUTATOR `σ_g = c g c⁻¹ g⁻¹` lies in `Γ F` and fixes every `ℓⁿ`-th root of
+unity, for EVERY `n` at once: the action of `Γ ℚ` on `μ_{ℓⁿ}` factors through the
+ABELIAN group `Gal(ℚ(μ_{ℓⁿ})/ℚ)`, so the whole commutator subgroup is in the
+kernel. So what is left of this leaf, once `F` is totally real, is purely
+group-theoretic:
+
+  (★) `k` a field with `2 ≠ 0`, `G ≤ GL₂(k)` irreducible, `X ∈ G` with `X² = 1`
+      and `det X = −1`. Then some commutator `[X, Y]`, `Y ∈ G`, has two DISTINCT
+      `k`-rational eigenvalues.
+
+(★) IS NOT FREE, AND ITS FAILURE MODE NAMES THE REMAINING OBLIGATION. It fails
+for `G ⊆ N(T_ns)`: every commutator lies in `G ∩ SL₂ ⊆ H`, whose discriminant set
+is `{0, 3, 5}` at `k = 𝔽₇` (enumerated). Such an `X` does exist in `N(T_ns)` —
+the `GL₂(𝔽₇)`-class of `diag(1, −1)` has `56` elements and meets `N(T_ns)` in
+`8`. So the ONLY surviving counterexample shape is the residually DIHEDRAL/CM
+one: `ρbar` of nonsplit-torus-normalizer type with FULL determinant.
+
+**AND THAT SHAPE IS EXACTLY WHAT THE SUPERSEDED PARAGRAPH ABOVE ("SO WHERE MUST
+THE PROOF COME FROM? `isTameAtTwo`") ALREADY EXCLUDED — SO THAT PARAGRAPH IS
+REINSTATED.** Its natural realisation is the `ℓ`-adic Tate module of a CM
+elliptic curve at an `ℓ` inert in the CM field (`y² = x³ − x`, conductor `32`,
+`ℓ = 7` inert in `ℚ(i)`), and it fails `isTameAtTwo` precisely because CM forces
+potentially good reduction, whence the eigenvalues of `ρ(Frob_w)` are Weil
+numbers of absolute value `√(N w)` and can never be the `±1` that the
+square-trivial unramified quotient character demands. The 2026-07-27 audit
+overturned that paragraph with a NON-CM curve (`54b1`) — correctly, but only over
+a totally imaginary `F`, so it never touched the totally real case.
+
+MACHINE CONFIRMATION OF THE AUDIT'S ARITHMETIC (re-run independently 2026-07-30,
+PARI/GP plus direct enumeration; every figure below agrees with the audit).
+`54b1 = [1, −1, 1, 1, −1]`: conductor `54`, `j = 9261/8`, `v₂(j) = −3`,
+`v₃(j) = 3`, `v₇(j) = 3`; Kodaira `I₃` with `f = 1` and `a₂ = +1` at `2`, i.e.
+SPLIT multiplicative; type `II` with `f = 3` at `3`; `I₀` with `f = 0` at `7`,
+i.e. good; isogeny-matrix degrees `{1, 3, 9}` only, so NO rational `7`-isogeny;
+and `a_q²/q mod 7` attains ALL of `𝔽₇` over `q < 400`, so the mod-`7` image is
+surjective. Group side: `|T_ns| = 48`, `|N(T_ns)| = 96`, `|H| = 16`, the
+discriminant set of `H` is exactly `{0, 3, 5}` against squares `{1, 2, 4}`, `H`
+has NO common eigenvector in `P¹(𝔽₇)`, EVERY subgroup of `H` of order `≥ 4` is
+irreducible, and `det N(T_ns) = 𝔽₇ˣ` in full. Nothing in the audit is wrong; what
+it missed is that its `F` contains `ℚ(μ₇)`.
+
+WHY THE HYPOTHESIS COSTS NOTHING DOWNSTREAM — it is DISCHARGED, not deferred.
+`[NumberField.IsTotallyReal F]` was threaded in the SAME commit through this leaf,
+`exists_hilbertFixing_rootsOfUnity_charpoly_split`, `exists_hilbertTaylorWilesPrime`,
+`IsHilbertTaylorWilesPrimeSet.exists_insert`/`.exists_card_eq` and
+`exists_hilbertTaylorWilesPrimeSet` (and, for the same reason, through the
+surviving-locus chain — see
+`exists_mem_hilbertSurvivingLocus_inter_hilbertTaylorWilesLocus` below). The first
+consumer beyond that chain, `injective_classifyingMap_hilbertHeckeDatum`, ALREADY
+carried `htr : NumberField.IsTotallyReal F` as an explicit hypothesis, and the
+terminal consumer `exists_finiteIndex_isIntegral_charpolyCoeff_of_isHardlyRamified`
+ALREADY opens with `haveI : NumberField.IsTotallyReal P.F := P.totallyReal`. So
+no new obligation reaches any consumer, and the module's own semantics — Hilbert
+modular forms over a TOTALLY REAL base — were assuming this all along; the
+hypothesis was simply missing from the statement.
+
+**THIS SUPERSEDES THE RECOMMENDATION PROPAGATED INTO
+`Modularity/KhareWintenberger.lean`** (three places: its warnings on the
+injectivity half) that a closer of this cluster should expect an ENLARGED
+residual field `k`. No enlargement of `k` is needed, and
+`HilbertHeckeAlgebra.πT`'s target is untouched.
+
+CHECKS THAT WOULD REFUTE THIS REPAIR, in increasing cost: exhibit a subgroup
+`G ≤ GL₂(k)` that is irreducible, contains `X` with `X² = 1` and `det X = −1`,
+and all of whose commutators `[X, Y]` have non-split characteristic polynomial,
+AND that arises as `ρbar(Γ F)` for a hardly ramified `F`-level datum over a
+totally real `F`; or refute the `isTameAtTwo` argument against residually CM
+`ρbar`; or exhibit a totally real `F` containing `ℚ(μ_ℓ)` for some `ℓ ≥ 5`.
+
+**FALSITY AUDIT (2026-07-27) — FALSE AS STATED *BEFORE* THE 2026-07-30 REPAIR
+ABOVE, WHICH ITS COUNTEREXAMPLE DOES NOT SURVIVE. `isTameAtTwo`
 DOES NOT SAVE IT.** This CORRECTS the paragraph immediately above, which
 concluded that `isTameAtTwo` is the load-bearing hypothesis and told a prover to
 attack it there. It is not, and the reason is that the nearest-miss curve chosen
@@ -19572,7 +19671,7 @@ CIRCULARITY GUARD (inherited): nothing from `Family.lean`, `Lift.lean`,
 through `not_isIrreducible_of_isHardlyRamified_of_five_le` is FORBIDDEN. -/
 theorem exists_hilbertFixing_rootsOfUnity_discrim_isSquare
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    (F : Type u) [Field F] [NumberField F]
+    (F : Type u) [Field F] [NumberField F] [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [TopologicalSpace k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -19676,7 +19775,7 @@ discharging the twin by `exfalso` through the odd-prime dichotomy
 dichotomy being proven over pillar α, which is proven over this cluster. -/
 theorem exists_hilbertFixing_rootsOfUnity_charpoly_split
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    (F : Type u) [Field F] [NumberField F]
+    (F : Type u) [Field F] [NumberField F] [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [TopologicalSpace k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -19745,7 +19844,7 @@ irreducibly. It is kept in the signature because the consumer supplies it and
 the leaf needs it. -/
 theorem exists_hilbertTaylorWilesPrime
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    (F : Type u) [Field F] [NumberField F]
+    (F : Type u) [Field F] [NumberField F] [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [TopologicalSpace k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -19916,7 +20015,7 @@ that *is* sound, as against the shrinking the deleted
 `exists_card_eq_isHilbertTaylorWilesPrimeSet` performed. -/
 theorem IsHilbertTaylorWilesPrimeSet.exists_insert
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    (F : Type u) [Field F] [NumberField F]
+    (F : Type u) [Field F] [NumberField F] [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -19953,7 +20052,7 @@ Taylor–Wiles number — which is all a dimension count can deliver, since a si
 place may cut more than one dimension. -/
 theorem IsHilbertTaylorWilesPrimeSet.exists_card_eq
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    (F : Type u) [Field F] [NumberField F]
+    (F : Type u) [Field F] [NumberField F] [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -20990,6 +21089,45 @@ from `hirrF` — so `z|_{Γ L} ≠ 0`. Now `ρ σ` has two DISTINCT eigenvalues,
 (`ContinuousCohomology.cocycles₁_eval₁_mul`) to move out. Either `σ` or `σ τ`
 then lies in the intersection.
 
+# FALSITY AUDIT 2026-07-30 — THIS LEAF WAS FALSE AS STATED, FOR THE SAME REASON
+AS `exists_hilbertFixing_rootsOfUnity_discrim_isSquare`, AND IS REPAIRED THE SAME
+WAY: `[NumberField.IsTotallyReal F]`, ADDED THIS DAY.
+
+THE REDUCTION, which is why this leaf could never have been attacked
+independently of that one. A point of the intersection lies in
+`hilbertTaylorWilesLocus ℓ F ρbar n`, i.e. it IS a `σ` fixing `μ_{ℓⁿ}` whose
+residual charpoly splits with distinct roots. **So this leaf IMPLIES the
+conclusion of `exists_hilbertFixing_rootsOfUnity_discrim_isSquare` whenever its
+own hypotheses are satisfiable** — and the only hypothesis of this leaf that the
+other one does not have is `hc0 : c ≠ 0`, i.e. that
+`hilbertH1TwistUnramified ℓ F ρbar ≠ ⊥`.
+
+SO THE 54b1 COUNTEREXAMPLE REFUTES THIS LEAF TOO, and the Selmer group is not a
+loophole but the opposite. There `k = 𝔽₇` (discrete, as this leaf requires),
+`ρbar(Γ F) = H = N(T_ns) ∩ SL₂(𝔽₇)`, and NO element of `H` has distinct
+`𝔽₇`-rational eigenvalues, so `hilbertTaylorWilesLocus` is EMPTY and the
+intersection is empty at every `n`. Meanwhile `hilbertH1TwistUnramified` imposes
+NO local condition at the places over `2` and `ℓ` — it is the full
+`H¹(G_{F,S}, ad⁰ρbar(1))` for `S = hilbertHardlyRamifiedPlaces ℓ F` — and that
+group is enormous there: `F ⊇ ℚ(μ₇)` (see the audit on the sibling leaf) is
+totally IMAGINARY, so the Greenberg–Wiles formula gives
+`dim_{𝔽₇} H¹_S(F, M) ≥ 3[F : ℚ] − (3/2)[F : ℚ] − 3 = (3/2)[F : ℚ] − 3 ≥ 186`
+(the `v ∣ ℓ` local terms contribute `[F_v : ℚ_ℓ]·dim M` each, summing to
+`3[F : ℚ]`; the `[F : ℚ]/2` complex places subtract `dim M = 3` each; and
+`dim H⁰(F, M*) ≤ 3`). Far from being the vacuity escape the "Both-ways audit"
+below hoped for, the totally imaginary case is exactly where the Selmer group is
+LARGE. That is the classical reason the Taylor–Wiles method needs a totally real
+base, and it is what the missing hypothesis encodes.
+
+WHAT THE REPAIR CHANGES FOR THE ROUTE. Nothing above is invalidated; total
+realness is an ADDITION to the route, entering at its one arithmetic input.
+`exists_hilbertFixing_rootsOfUnity_charpoly_split` now carries the same
+hypothesis, so the `σ` the route asks for is still supplied by it; and with `F`
+totally real, `exists_map_eq_complexConj` also puts a complex conjugation inside
+`Γ F`, which is what makes that `σ` exist at all (see the sibling leaf's audit
+for the `n = 0` case, which is now outright provable, and for the commutator
+construction that discharges the `μ_{ℓⁿ}`-fixing clause at every `n`).
+
 **THE DATUM `𝒟₀` IS LOAD-BEARING AND MAY NOT BE DROPPED.** It is what supplies
 the Galois element of the nonemptiness half, through
 `exists_hilbertFixing_rootsOfUnity_charpoly_split`; and deviation (1) of
@@ -21009,7 +21147,7 @@ FORBIDDEN, that dichotomy being proven over pillar α, which is proven over this
 cluster. -/
 theorem exists_mem_hilbertSurvivingLocus_inter_hilbertTaylorWilesLocus
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    (F : Type u) [Field F] [NumberField F]
+    (F : Type u) [Field F] [NumberField F] [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -21034,7 +21172,7 @@ below calls it exactly as before. All that happened is that the openness clause
 stopped being a citation. -/
 theorem isOpen_hilbertSurvivingLocus_and_meets_hilbertTaylorWilesLocus
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    (F : Type u) [Field F] [NumberField F]
+    (F : Type u) [Field F] [NumberField F] [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -21130,7 +21268,7 @@ below independent of the cochain model: the consumer never mentions `cocycles₁
 Both-ways audit and CIRCULARITY GUARD: inherited from the two halves. -/
 theorem exists_hilbertSeparatingOpen_locResDecomp
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    (F : Type u) [Field F] [NumberField F]
+    (F : Type u) [Field F] [NumberField F] [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -21254,7 +21392,7 @@ discharging by `exfalso` through the odd-prime dichotomy
 dichotomy being proven over pillar α, which is proven over this cluster. -/
 theorem exists_hilbertTaylorWilesPrime_locResDecomp_ne_zero
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    (F : Type u) [Field F] [NumberField F]
+    (F : Type u) [Field F] [NumberField F] [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -21366,7 +21504,7 @@ come out SMALLER than `dim_k U`. That is why
 the only place the two differ. -/
 theorem exists_hilbertTaylorWilesPrimeSet_core
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    (F : Type u) [Field F] [NumberField F]
+    (F : Type u) [Field F] [NumberField F] [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -21540,7 +21678,7 @@ References: Wiles, Ann. of Math. 141 (1995), ch. 3; Diamond–Darmon–Taylor
 algebras in the totally real case*, §3; Skinner–Wiles, Duke 107 (2001), §2. -/
 theorem exists_hilbertTaylorWilesPrimeSet
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    (F : Type u) [Field F] [NumberField F]
+    (F : Type u) [Field F] [NumberField F] [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -30938,6 +31076,11 @@ theorem injective_classifyingMap_hilbertHeckeDatum
     (hψπ : 𝒟T.π.comp ψ = 𝒟.π)
     (hψρ : ∀ g : Γ F, ((𝒟.ρ g).charpoly).map ψ = (𝒟T.ρ g).charpoly) :
     Function.Injective ψ :=
+  -- Total realness is now a BINDER of the Taylor–Wiles-prime cluster as well
+  -- (see the FALSITY AUDIT on `exists_hilbertFixing_rootsOfUnity_discrim_isSquare`:
+  -- without it that leaf is refuted, the refuting `F` being forced to contain
+  -- `ℚ(μ_ℓ)` and hence to be totally IMAGINARY).  `htr` already supplies it.
+  haveI : NumberField.IsTotallyReal F := htr
   (exists_hilbertTaylorWilesPrimeSet ℓ hℓ5 F hirrF 𝒟).elim fun q0 hTW =>
     (exists_hilbertPatchedModule ℓ hℓ5 F hw2 htr hgal hirrF 𝒟 𝒟T T e h𝒟w h𝒟t ψ
         hψalg hψπ hψρ q0 hTW).elim
