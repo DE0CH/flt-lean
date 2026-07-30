@@ -145,6 +145,18 @@ public import Mathlib.NumberTheory.DirichletCharacter.Basic
 -- half of `exists_specSection_of_specGal_invariant` below.  `public` because that theorem's
 -- statement mentions `Field.absoluteGaloisGroup`; see the private-import trap in the doctrine.
 public import Mathlib.FieldTheory.Galois.Infinite
+-- the analytic inputs of `exists_cuspForm_gamma1GL_zero_lacunary` below:
+-- `differentiableOn_tsum_of_summable_norm` (holomorphy of a locally-uniformly convergent
+-- series), `UpperHalfPlane.mdifferentiable_iff` and the `MDiff` notation,
+-- `summable_pow_mul_geometric_of_norm_lt_one`, `Real.pi_gt_three`, and
+-- `OnePoint.IsZeroAt` / `UpperHalfPlane.IsZeroAtImInfty.slash`.  `public` because `MDiff`
+-- appears in the SIGNATURE of `mdiff_lacunaryTwoSeries`; see the private-import trap in
+-- the doctrine, whose second shape bites proof bodies too.
+public import Mathlib.Analysis.Complex.LocallyUniformLimit
+public import Mathlib.Analysis.Complex.UpperHalfPlane.Manifold
+public import Mathlib.Analysis.SpecificLimits.Normed
+public import Mathlib.Analysis.Real.Pi.Bounds
+public import Mathlib.NumberTheory.ModularForms.BoundedAtCusp
 
 @[expose] public section
 
@@ -10817,10 +10829,297 @@ theorem lacunaryTwoCoeff_atkin (c : ℂ) (p : ℕ) (hp : p.Prime) (n : ℕ) (hn 
   · rw [lacunaryTwoCoeff_eq_zero_of_odd_prime_dvd hp hp2 ⟨n, mul_comm n p⟩,
       lacunaryTwoCoeff_eq_zero_of_odd_prime_dvd hp hp2 dvd_rfl, zero_mul]
 
+/-! #### The lacunary `q`-series as an honest cusp form on `Γ₁(0) = ⟨T⟩`
+
+The analytic construction the leaf below needs, in eight steps and with no
+theory: a coefficient bound, the norm of one term, summability, holomorphy
+by locally-uniform convergence, `1`-periodicity, exponential decay at
+`i∞`, the identification of the cusps of `⟨T⟩`, and the assembly.
+
+The whole thing turns on the SIZE bound
+`‖lacunaryTwoCoeff c n‖ ≤ n ^ s` for any `s` with `‖c‖ ≤ 2 ^ s`
+(`norm_lacunaryTwoCoeff_le`), which is exact at `n = 2 ^ k`:
+`‖c‖ ^ k ≤ (2 ^ s) ^ k = (2 ^ k) ^ s`.  It converts the lacunary series
+into an ORDINARY polynomially-bounded `q`-series, after which
+`summable_pow_mul_geometric_of_norm_lt_one` does all the analytic work and
+`2 ^ k` never has to outrun `‖c‖ ^ k` explicitly.  That is why no `c` is
+excluded and no theory is needed.
+-/
+
+section LacunaryLevelZero
+
+open Complex UpperHalfPlane Filter
+open scoped Real ModularForm Manifold
+
+/-- Every complex number is bounded by a power of `2`; `s` is the exponent
+in the coefficient bound below. -/
+theorem exists_two_pow_ge_norm (c : ℂ) : ∃ s : ℕ, ‖c‖ ≤ 2 ^ s := by
+  refine ⟨⌈‖c‖⌉₊, (Nat.le_ceil ‖c‖).trans ?_⟩
+  exact_mod_cast (Nat.lt_two_pow_self (n := ⌈‖c‖⌉₊)).le
+
+/-- **The lacunary coefficients are polynomially bounded**: with
+`‖c‖ ≤ 2 ^ s` one has `‖lacunaryTwoCoeff c n‖ ≤ n ^ s`.  At `n = 2 ^ k`
+this reads `‖c‖ ^ k ≤ (2 ^ k) ^ s`, which is the whole content; off the
+powers of `2` the coefficient is `0`. -/
+theorem norm_lacunaryTwoCoeff_le {c : ℂ} {s : ℕ} (hc : ‖c‖ ≤ 2 ^ s) (n : ℕ) :
+    ‖lacunaryTwoCoeff c n‖ ≤ (n : ℝ) ^ s := by
+  rw [lacunaryTwoCoeff]
+  split_ifs with h
+  · have h2 : ((2 : ℝ) ^ Nat.log 2 n) = (n : ℝ) := by exact_mod_cast h
+    rw [norm_pow]
+    calc ‖c‖ ^ Nat.log 2 n ≤ ((2 : ℝ) ^ s) ^ Nat.log 2 n :=
+          pow_le_pow_left₀ (norm_nonneg c) hc _
+      _ = ((2 : ℝ) ^ Nat.log 2 n) ^ s := by rw [← pow_mul, ← pow_mul, Nat.mul_comm]
+      _ = (n : ℝ) ^ s := by rw [h2]
+  · simp [pow_nonneg (Nat.cast_nonneg n : (0 : ℝ) ≤ n) s]
+
+/-- The `n`-th term of the lacunary `q`-expansion, as a function of a
+COMPLEX variable — the extension off `ℍ` is what lets the holomorphy be
+proved by mathlib's `differentiableOn_tsum_of_summable_norm`, which lives
+on open subsets of `ℂ`. -/
+noncomputable def lacunaryTwoTerm (c : ℂ) (n : ℕ) (z : ℂ) : ℂ :=
+  lacunaryTwoCoeff c (n + 1) *
+    Complex.exp (2 * (Real.pi : ℂ) * Complex.I * ((n : ℂ) + 1) * z)
+
+theorem norm_exp_two_pi_I_natMul (m : ℕ) (z : ℂ) :
+    ‖Complex.exp (2 * (Real.pi : ℂ) * Complex.I * (m : ℂ) * z)‖
+      = Real.exp (-(2 * Real.pi * z.im)) ^ m := by
+  rw [Complex.norm_exp, ← Real.exp_nat_mul]
+  congr 1
+  simp only [Complex.mul_re, Complex.mul_im, Complex.I_re, Complex.I_im, Complex.ofReal_re,
+    Complex.ofReal_im, Complex.natCast_re, Complex.natCast_im, Complex.re_ofNat,
+    Complex.im_ofNat]
+  ring
+
+theorem norm_lacunaryTwoTerm_le {c : ℂ} {s : ℕ} (hc : ‖c‖ ≤ 2 ^ s) (n : ℕ) (z : ℂ) :
+    ‖lacunaryTwoTerm c n z‖
+      ≤ ((n : ℝ) + 1) ^ s * Real.exp (-(2 * Real.pi * z.im)) ^ (n + 1) := by
+  have hcast : ((n : ℂ) + 1) = ((n + 1 : ℕ) : ℂ) := by push_cast; ring
+  rw [lacunaryTwoTerm, norm_mul, hcast, norm_exp_two_pi_I_natMul]
+  have h1 : ‖lacunaryTwoCoeff c (n + 1)‖ ≤ ((n : ℝ) + 1) ^ s := by
+    have := norm_lacunaryTwoCoeff_le hc (n + 1)
+    push_cast at this
+    exact this
+  exact mul_le_mul_of_nonneg_right h1 (pow_nonneg (Real.exp_nonneg _) _)
+
+/-- Polynomial times geometric, shifted by one — the majorant every
+estimate below runs on. -/
+theorem summable_natSucc_pow_mul_geometric (s : ℕ) {r : ℝ} (hr0 : 0 ≤ r) (hr : r < 1) :
+    Summable fun n : ℕ => ((n : ℝ) + 1) ^ s * r ^ (n + 1) := by
+  have h := summable_pow_mul_geometric_of_norm_lt_one (R := ℝ) s
+    (r := r) (by rwa [Real.norm_eq_abs, abs_of_nonneg hr0])
+  have h2 := (summable_nat_add_iff (f := fun m : ℕ => (m : ℝ) ^ s * r ^ m) 1).mpr h
+  refine h2.congr fun n => ?_
+  push_cast
+  ring
+
+theorem summable_lacunaryTwoTerm (c : ℂ) {z : ℂ} (hz : 0 < z.im) :
+    Summable fun n : ℕ => lacunaryTwoTerm c n z := by
+  obtain ⟨s, hs⟩ := exists_two_pow_ge_norm c
+  have hr1 : Real.exp (-(2 * Real.pi * z.im)) < 1 := by
+    rw [Real.exp_lt_one_iff]
+    have : 0 < 2 * Real.pi * z.im := by positivity
+    linarith
+  exact Summable.of_norm_bounded
+    (summable_natSucc_pow_mul_geometric s (Real.exp_nonneg _) hr1)
+    fun n => norm_lacunaryTwoTerm_le hs n z
+
+/-- The lacunary `q`-series `∑_{k ≥ 0} c ^ k q ^ (2 ^ k)`, written as a
+sum over ALL `n` with the off-power-of-two terms zero, so that it matches
+the `qExpansion` field of `IsWeightTwoEigenformOn` verbatim. -/
+noncomputable def lacunaryTwoSeries (c : ℂ) (z : ℂ) : ℂ :=
+  ∑' n : ℕ, lacunaryTwoTerm c n z
+
+/-- **Holomorphy on every half-plane `im z > b`, `b > 0`.**  The bound
+`‖term n z‖ ≤ (n + 1) ^ s (e ^ (-2π b)) ^ (n + 1)` is UNIFORM there, which
+is exactly what mathlib's Weierstrass-type theorem asks for.  It is not
+uniform on all of `ℍ` — hence the exhaustion in the next lemma. -/
+theorem differentiableOn_lacunaryTwoSeries (c : ℂ) {b : ℝ} (hb : 0 < b) :
+    DifferentiableOn ℂ (lacunaryTwoSeries c) {z : ℂ | b < z.im} := by
+  obtain ⟨s, hs⟩ := exists_two_pow_ge_norm c
+  have hr1 : Real.exp (-(2 * Real.pi * b)) < 1 := by
+    rw [Real.exp_lt_one_iff]
+    have : 0 < 2 * Real.pi * b := by positivity
+    linarith
+  refine differentiableOn_tsum_of_summable_norm
+    (u := fun n : ℕ => ((n : ℝ) + 1) ^ s * Real.exp (-(2 * Real.pi * b)) ^ (n + 1))
+    (summable_natSucc_pow_mul_geometric s (Real.exp_nonneg _) hr1) (fun n => ?_) ?_
+    (fun n w hw => ?_)
+  · exact ((Differentiable.cexp (by fun_prop)).const_mul _).differentiableOn
+  · exact isOpen_lt continuous_const Complex.continuous_im
+  · have hw' : b < w.im := hw
+    refine (norm_lacunaryTwoTerm_le hs n w).trans ?_
+    refine mul_le_mul_of_nonneg_left ?_ (by positivity)
+    refine pow_le_pow_left₀ (Real.exp_nonneg _) ?_ _
+    exact Real.exp_le_exp.2 (by nlinarith [Real.pi_pos])
+
+/-- **The `holo'` field**: `MDiff` on `ℍ`, obtained from the previous
+lemma at `b = im z / 2` through `UpperHalfPlane.mdifferentiable_iff`. -/
+theorem mdiff_lacunaryTwoSeries (c : ℂ) :
+    MDiff (fun τ : ℍ => lacunaryTwoSeries c (τ : ℂ)) := by
+  rw [UpperHalfPlane.mdifferentiable_iff]
+  intro z hz
+  have hzpos : 0 < z.im := hz
+  have hcongr : ∀ w ∈ {w : ℂ | z.im / 2 < w.im},
+      ((fun τ : ℍ => lacunaryTwoSeries c (τ : ℂ)) ∘ ofComplex) w = lacunaryTwoSeries c w := by
+    intro w hw
+    have hw' : z.im / 2 < w.im := hw
+    have hw0 : 0 < w.im := lt_trans (half_pos hzpos) hw'
+    simp [Function.comp_apply, ofComplex_apply_of_im_pos hw0]
+  have hopen : IsOpen {w : ℂ | z.im / 2 < w.im} :=
+    isOpen_lt continuous_const Complex.continuous_im
+  have hmem : z ∈ {w : ℂ | z.im / 2 < w.im} := half_lt_self hzpos
+  exact (((differentiableOn_lacunaryTwoSeries c (half_pos hzpos)).congr hcongr).differentiableAt
+    (hopen.mem_nhds hmem)).differentiableWithinAt
+
+theorem lacunaryTwoTerm_add_intCast (c : ℂ) (n : ℕ) (b : ℤ) (z : ℂ) :
+    lacunaryTwoTerm c n (z + (b : ℂ)) = lacunaryTwoTerm c n z := by
+  rw [lacunaryTwoTerm, lacunaryTwoTerm]
+  congr 1
+  rw [mul_add, Complex.exp_add]
+  have hb : (2 * (Real.pi : ℂ) * Complex.I * ((n : ℂ) + 1) * (b : ℂ))
+      = (((n + 1 : ℕ) * b : ℤ) : ℂ) * (2 * (Real.pi : ℂ) * Complex.I) := by
+    push_cast; ring
+  rw [hb, Complex.exp_int_mul_two_pi_mul_I, mul_one]
+
+/-- `1`-periodicity, i.e. invariance under `q ↦ q`: the only thing the
+slash-invariance under `⟨T⟩` needs. -/
+theorem lacunaryTwoSeries_add_intCast (c : ℂ) (b : ℤ) (z : ℂ) :
+    lacunaryTwoSeries c (z + (b : ℂ)) = lacunaryTwoSeries c z :=
+  tsum_congr fun n => lacunaryTwoTerm_add_intCast c n b z
+
+/-- **`Γ₁(0) = ⟨T⟩` entrywise.**  `ZMod 0 = ℤ` and the cast is faithful,
+so the congruences `a ≡ 1`, `d ≡ 1`, `c ≡ 0` mod `0` are EQUALITIES: every
+element is `![![1, b], ![0, 1]]` with `b : ℤ`.  This is the one place the
+degeneracy of level `0` is used, and everything else in this subsection
+follows from it. -/
+theorem gamma1GL_zero_entries {g : GL (Fin 2) ℝ} (hg : g ∈ Gamma1GL 0) :
+    g 1 0 = 0 ∧ g 1 1 = 1 ∧ g 0 0 = 1 ∧ ∃ b : ℤ, g 0 1 = (b : ℝ) := by
+  obtain ⟨A, hA, rfl⟩ := hg
+  rw [SetLike.mem_coe, CongruenceSubgroup.Gamma1_mem] at hA
+  obtain ⟨h00, h11, h10⟩ := hA
+  have e00 : A.1 0 0 = 1 := by
+    have : ((A.1 0 0 : ℤ) : ZMod 0) = ((1 : ℤ) : ZMod 0) := by simpa using h00
+    exact_mod_cast this
+  have e11 : A.1 1 1 = 1 := by
+    have : ((A.1 1 1 : ℤ) : ZMod 0) = ((1 : ℤ) : ZMod 0) := by simpa using h11
+    exact_mod_cast this
+  have e10 : A.1 1 0 = 0 := by
+    have : ((A.1 1 0 : ℤ) : ZMod 0) = ((0 : ℤ) : ZMod 0) := by simpa using h10
+    exact_mod_cast this
+  refine ⟨?_, ?_, ?_, ⟨A.1 0 1, ?_⟩⟩ <;>
+    simp [Matrix.map_apply, e00, e11, e10]
+
+/-- **The `slash_action_eq'` field.**  `det = 1` kills both the
+`|det| ^ (k - 1)` factor and the twist `σ`, `denom = 1` kills the
+automorphy factor, and `g • τ = τ + b`; the rest is
+`lacunaryTwoSeries_add_intCast`. -/
+theorem slashInvariant_lacunaryTwoSeries (c : ℂ) {g : GL (Fin 2) ℝ} (hg : g ∈ Gamma1GL 0) :
+    (fun τ : ℍ => lacunaryTwoSeries c (τ : ℂ)) ∣[(2 : ℤ)] g
+      = fun τ : ℍ => lacunaryTwoSeries c (τ : ℂ) := by
+  obtain ⟨h10, h11, h00, b, hb⟩ := gamma1GL_zero_entries hg
+  have hdet : g.det.val = 1 := by
+    have hd := g.1.det_fin_two
+    rw [GeneralLinearGroup.val_det_apply, hd, h00, h11, h10]
+    ring
+  have hσ : ∀ w : ℂ, UpperHalfPlane.σ g w = w := by
+    intro w
+    simp [UpperHalfPlane.σ, hdet]
+  funext τ
+  rw [ModularForm.slash_apply, hσ, hdet]
+  have hden : UpperHalfPlane.denom g (τ : ℂ) = 1 := by
+    simp [UpperHalfPlane.denom, h10, h11]
+  have hsmul : ((g • τ : ℍ) : ℂ) = (τ : ℂ) + (b : ℂ) := by
+    rw [UpperHalfPlane.coe_smul_of_det_pos (by rw [hdet]; norm_num), hden,
+      UpperHalfPlane.num, h00, hb]
+    push_cast
+    ring
+  rw [hsmul, lacunaryTwoSeries_add_intCast, hden]
+  norm_num
+
+/-- The constant in the exponential-decay bound. -/
+noncomputable def lacunaryTwoBound (s : ℕ) : ℝ :=
+  ∑' n : ℕ, ((n : ℝ) + 1) ^ s * (1 / 2 : ℝ) ^ (n + 1)
+
+/-- **Exponential decay above the line `im z = 1`.**  There
+`e ^ (-2π im z) ≤ 1/2` (because `e ^ (2π) ≥ 2π + 1 > 2`), so one factor of
+`q` can be pulled out of the majorant and the remaining series is a
+CONSTANT.  This is the quantitative form of "the leading term is `q`". -/
+theorem norm_lacunaryTwoSeries_le (c : ℂ) {s : ℕ} (hc : ‖c‖ ≤ 2 ^ s) {z : ℂ} (hz : 1 ≤ z.im) :
+    ‖lacunaryTwoSeries c z‖
+      ≤ (2 * lacunaryTwoBound s) * Real.exp (-(2 * Real.pi * z.im)) := by
+  have hzpos : 0 < z.im := lt_of_lt_of_le zero_lt_one hz
+  set t := Real.exp (-(2 * Real.pi * z.im)) with ht
+  have ht0 : 0 < t := Real.exp_pos _
+  have hthalf : t ≤ 1 / 2 := by
+    have h1 : (2 : ℝ) ≤ Real.exp (2 * Real.pi * z.im) := by
+      have h2 : 2 * Real.pi * z.im + 1 ≤ Real.exp (2 * Real.pi * z.im) :=
+        Real.add_one_le_exp _
+      nlinarith [Real.pi_gt_three]
+    rw [ht, Real.exp_neg, inv_le_comm₀ (Real.exp_pos _) (by norm_num)]
+    simpa using h1
+  have hsum1 : Summable fun n : ℕ => ((n : ℝ) + 1) ^ s * t ^ (n + 1) :=
+    summable_natSucc_pow_mul_geometric s ht0.le (lt_of_le_of_lt hthalf (by norm_num))
+  have hhalf : Summable fun n : ℕ => ((n : ℝ) + 1) ^ s * (1 / 2 : ℝ) ^ (n + 1) :=
+    summable_natSucc_pow_mul_geometric s (by norm_num) (by norm_num : (1 / 2 : ℝ) < 1)
+  have hsum2 : Summable fun n : ℕ =>
+      (2 * t) * (((n : ℝ) + 1) ^ s * (1 / 2 : ℝ) ^ (n + 1)) := hhalf.mul_left (2 * t)
+  have hnorms : Summable fun n : ℕ => ‖lacunaryTwoTerm c n z‖ :=
+    Summable.of_nonneg_of_le (fun n => norm_nonneg _)
+      (fun n => norm_lacunaryTwoTerm_le hc n z) hsum1
+  calc ‖lacunaryTwoSeries c z‖ ≤ ∑' n : ℕ, ‖lacunaryTwoTerm c n z‖ :=
+        norm_tsum_le_tsum_norm hnorms
+    _ ≤ ∑' n : ℕ, (2 * t) * (((n : ℝ) + 1) ^ s * (1 / 2 : ℝ) ^ (n + 1)) := by
+        refine Summable.tsum_le_tsum (fun n => ?_) hnorms hsum2
+        refine (norm_lacunaryTwoTerm_le hc n z).trans ?_
+        have hstep : (2 * t) * (((n : ℝ) + 1) ^ s * (1 / 2 : ℝ) ^ (n + 1))
+            = t * (((n : ℝ) + 1) ^ s * (1 / 2 : ℝ) ^ n) := by
+          rw [pow_succ]; ring
+        have hstep' : ((n : ℝ) + 1) ^ s * t ^ (n + 1)
+            = t * (((n : ℝ) + 1) ^ s * t ^ n) := by rw [pow_succ]; ring
+        rw [hstep, hstep']
+        refine mul_le_mul_of_nonneg_left ?_ ht0.le
+        refine mul_le_mul_of_nonneg_left ?_ (by positivity)
+        exact pow_le_pow_left₀ ht0.le hthalf n
+    _ = (2 * lacunaryTwoBound s) * t := by rw [lacunaryTwoBound, tsum_mul_left]; ring
+
+theorem isZeroAtImInfty_lacunaryTwoSeries (c : ℂ) :
+    IsZeroAtImInfty (fun τ : ℍ => lacunaryTwoSeries c (τ : ℂ)) := by
+  obtain ⟨s, hs⟩ := exists_two_pow_ge_norm c
+  refine squeeze_zero_norm'
+    (a := fun τ : ℍ =>
+      (2 * lacunaryTwoBound s) * Real.exp (-(2 * Real.pi * (τ : ℂ).im))) ?_ ?_
+  · rw [Filter.eventually_iff, UpperHalfPlane.atImInfty_mem]
+    exact ⟨1, fun τ hτ => norm_lacunaryTwoSeries_le c hs hτ⟩
+  · have h1 : Tendsto (fun τ : ℍ => (τ : ℂ).im) atImInfty atTop := tendsto_comap
+    have h2 : Tendsto (fun y : ℝ => 2 * Real.pi * y) atTop atTop :=
+      Filter.Tendsto.const_mul_atTop (by positivity) tendsto_id
+    have h3 : Tendsto (fun y : ℝ => Real.exp (-(2 * Real.pi * y))) atTop (nhds 0) :=
+      Real.tendsto_exp_atBot.comp (tendsto_neg_atTop_atBot.comp h2)
+    have h4 : Tendsto (fun y : ℝ =>
+        (2 * lacunaryTwoBound s) * Real.exp (-(2 * Real.pi * y))) atTop (nhds 0) := by
+      simpa using h3.const_mul (2 * lacunaryTwoBound s)
+    exact h4.comp h1
+
+/-- **`∞` IS THE ONE AND ONLY CUSP OF `Γ₁(0) = ⟨T⟩`**, which is the
+statement the leaf below turns on and the reason it is TRUE rather than
+false — see that docstring's trap.  `mathlib`'s
+`GeneralLinearGroup.parabolicFixedPoint` is `∞` exactly when the lower-left
+entry vanishes, and by `gamma1GL_zero_entries` it always does here; a
+parabolic element has a UNIQUE fixed point on `OnePoint ℝ`, so any cusp
+of `⟨T⟩` is `∞`.  Nothing quantifies over `SL(2, ℤ)`, so `0` is NOT a
+cusp. -/
+theorem eq_infty_of_isCusp_gamma1GL_zero {x : OnePoint ℝ} (hx : IsCusp x (Gamma1GL 0)) :
+    x = OnePoint.infty := by
+  obtain ⟨g, hgmem, hgpar, hgx⟩ := hx
+  obtain ⟨h10, -, -, -⟩ := gamma1GL_zero_entries hgmem
+  rw [hgpar.smul_eq_self_iff] at hgx
+  rw [hgx, GeneralLinearGroup.parabolicFixedPoint, if_pos h10]
+
 /-- **A weight-two cusp form for `Γ₁(0) = ⟨T⟩` with the lacunary
-`q`-expansion `∑_{k ≥ 0} c^k q^{2^k}`** (sorry leaf, NEW 2026-07-28) —
-the one analytic input of the level-`0` refutation above, and the ONLY
-new sorry this repair introduces.
+`q`-expansion `∑_{k ≥ 0} c^k q^{2^k}`** (**PROVEN 2026-07-30**; a sorry
+leaf from 2026-07-28) —
+the one analytic input of the level-`0` refutation above.
 
 TRUE, and the argument is short enough to state completely.  `Gamma1 0`
 is `⟨T⟩` (see the section docstring), so mathlib's
@@ -10855,16 +11154,50 @@ not quantify over a larger group.  A prover who reaches for
 `CuspForm` had before it was generalised — will refute this leaf rather
 than prove it, and the refutation will be of the wrong statement.
 
-**WHAT IS MISSING** is only mathlib plumbing: locally-uniform convergence
-of a lacunary `q`-series and the resulting `MDiff`, plus the
-identification of the parabolic elements of `⟨T⟩`.  No theory. -/
+**WHAT WAS MISSING** was only mathlib plumbing: locally-uniform
+convergence of a lacunary `q`-series and the resulting `MDiff`, plus the
+identification of the parabolic elements of `⟨T⟩`.  No theory — and that
+prediction held.  All of it is the subsection immediately above:
+
+* `slashInvariant_lacunaryTwoSeries` over `gamma1GL_zero_entries`
+  (`ZMod 0 = ℤ`, so the congruences are equalities) and
+  `lacunaryTwoSeries_add_intCast` (`1`-periodicity of `q`);
+* `mdiff_lacunaryTwoSeries` over `differentiableOn_lacunaryTwoSeries`,
+  which is mathlib's `differentiableOn_tsum_of_summable_norm` on each
+  half-plane `im z > b` — the majorant is uniform there but not on all of
+  `ℍ`, hence the exhaustion at `b = im z / 2`;
+* `eq_infty_of_isCusp_gamma1GL_zero` and
+  `isZeroAtImInfty_lacunaryTwoSeries`, the latter via the explicit bound
+  `‖f‖ ≤ C · e ^ (-2π im τ)` above `im τ = 1`
+  (`norm_lacunaryTwoSeries_le`).
+
+**THE ONE IDEA WORTH REUSING**, because it is what makes the analysis
+routine rather than delicate.  The heading above says `2 ^ k` "outruns
+`|c| ^ k`", which is true but awkward to formalise directly.  Instead
+choose `s` with `‖c‖ ≤ 2 ^ s` and observe
+`‖lacunaryTwoCoeff c n‖ ≤ n ^ s` for EVERY `n`
+(`norm_lacunaryTwoCoeff_le`): at `n = 2 ^ k` this is
+`‖c‖ ^ k ≤ (2 ^ s) ^ k = (2 ^ k) ^ s`, and off the powers of `2` the
+coefficient vanishes.  The lacunary series is then an ORDINARY
+polynomially-bounded `q`-series and
+`summable_pow_mul_geometric_of_norm_lt_one` supplies every estimate.  The
+lacunarity is never used again after that one line. -/
 theorem exists_cuspForm_gamma1GL_zero_lacunary (c : ℂ) :
     ∃ f : CuspForm (Gamma1GL 0) 2,
       (∀ τ : UpperHalfPlane, f τ = ∑' n : ℕ, lacunaryTwoCoeff c (n + 1) *
           Complex.exp (2 * Real.pi * Complex.I * (n + 1) * (τ : ℂ))) ∧
         ∀ τ : UpperHalfPlane, Summable fun n : ℕ => lacunaryTwoCoeff c (n + 1) *
-          Complex.exp (2 * Real.pi * Complex.I * (n + 1) * (τ : ℂ)) :=
-  sorry
+          Complex.exp (2 * Real.pi * Complex.I * (n + 1) * (τ : ℂ)) := by
+  refine ⟨⟨⟨fun τ => lacunaryTwoSeries c (τ : ℂ),
+      fun g hg => slashInvariant_lacunaryTwoSeries c hg⟩,
+    mdiff_lacunaryTwoSeries c, fun {x} hx => ?_⟩,
+    fun τ => rfl, fun τ => summable_lacunaryTwoTerm c τ.im_pos⟩
+  rw [eq_infty_of_isCusp_gamma1GL_zero hx]
+  intro g hginf
+  exact UpperHalfPlane.IsZeroAtImInfty.slash 2
+    (OnePoint.smul_infty_eq_self_iff.mp hginf) (isZeroAtImInfty_lacunaryTwoSeries c)
+
+end LacunaryLevelZero
 
 /-- **Every `c : ℂ` is the second coefficient of a level-`0` eigenform**
 (PROVEN 2026-07-28, over `exists_cuspForm_gamma1GL_zero_lacunary`) — the
