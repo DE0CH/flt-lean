@@ -2370,10 +2370,51 @@ and therefore circular for anyone trying to use this leaf to prove
 route (`E[N] ≅ (ℤ/N)²`, then any element of exact order `N`) needs no
 such locus and is the one the leaf below is stated for. -/
 
+/-- **Every field carries an elliptic curve** (PROVEN 2026-07-30) — the
+existence half of `exists_weierstrassCurve_pointOfExactOrder` below, and
+the place where its characteristic-`2` and `-3` corner cases live.
+
+There is **no single integral Weierstrass equation that works in every
+characteristic**: `Δ = ±1` is impossible over `ℤ` (no elliptic curve over
+`ℚ` has everywhere-good reduction), so the docstring below's suggested
+witness `⟨1, 0, 0, 0, 1⟩` — of discriminant `-433` — dies in
+characteristic `433`.  Two witnesses are needed, and TWO suffice because
+their bad characteristics are different primes:
+
+* `y² + y = x³`, i.e. `⟨0, 0, 1, 0, 0⟩`, has `Δ = -27`, a unit unless
+  `char = 3`;
+* `y² = x³ + x`, i.e. `⟨0, 0, 0, 1, 0⟩`, has `Δ = -64 = -2⁶`, a unit
+  unless `char = 2`.
+
+The case split below is on `(2 : L) = 0`, which is all that is needed:
+in characteristic `2` the first curve has `Δ = -27 = -1`. -/
+theorem exists_isElliptic_of_field (L : Type) [Field L] :
+    ∃ E : WeierstrassCurve L, E.IsElliptic := by
+  by_cases h2 : (2 : L) = 0
+  · refine ⟨⟨0, 0, 1, 0, 0⟩, ⟨?_⟩⟩
+    rw [isUnit_iff_ne_zero]
+    have hΔ : (WeierstrassCurve.mk (0 : L) 0 1 0 0).Δ = -27 := by
+      simp [WeierstrassCurve.Δ, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+        WeierstrassCurve.b₆, WeierstrassCurve.b₈]
+    rw [hΔ]
+    have h27 : (27 : L) = 1 := by
+      have h : (27 : L) = 1 + 13 * 2 := by norm_num
+      rw [h, h2]; ring
+    rw [h27]
+    exact neg_ne_zero.mpr one_ne_zero
+  · refine ⟨⟨0, 0, 0, 1, 0⟩, ⟨?_⟩⟩
+    rw [isUnit_iff_ne_zero]
+    have hΔ : (WeierstrassCurve.mk (0 : L) 0 0 1 0).Δ = -(2 ^ 6) := by
+      simp [WeierstrassCurve.Δ, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+        WeierstrassCurve.b₆, WeierstrassCurve.b₈]
+      ring
+    rw [hΔ]
+    exact neg_ne_zero.mpr (pow_ne_zero _ h2)
+
 /-- **Over an algebraically closed field of characteristic prime to `N`,
-some elliptic curve carries a point of exact order `N`** (sorry leaf,
-opened 2026-07-28) — Silverman *AEC* III.6.4, and pure elliptic-curve
-arithmetic: no schemes, no moduli, no `Γ₁`.
+some elliptic curve carries a point of exact order `N`** (**PROVEN
+2026-07-30**; a sorry leaf from 2026-07-28) — Silverman *AEC* III.6.4, and
+pure elliptic-curve arithmetic: no schemes, no moduli, no `Γ₁`.
 
 ## The route
 
@@ -2383,10 +2424,24 @@ then has exact order `N`.  The only other thing owed is that SOME
 elliptic curve exists over `L` at all, which is where the
 characteristic-2 and -3 corner cases live: the short form
 `y² = x³ + a₄x + a₆` is singular in characteristic `2`, so the witness
-must be given in the general five-coefficient form (e.g.
-`⟨1, 0, 0, 0, 1⟩`, of discriminant a unit in every characteristic — a
-`decide`-able check once written down) rather than by specialising the
-short Weierstrass form.
+must be given in the general five-coefficient form.  That half is
+`exists_isElliptic_of_field` immediately above — and note the correction
+recorded there: the old suggestion "`⟨1, 0, 0, 0, 1⟩`, of discriminant a
+unit in every characteristic" is FALSE (its discriminant is `-433`), and
+in fact no single integral equation works, so two witnesses are used.
+
+## How it is proven
+
+`exists_isElliptic_of_field` supplies `E`; `hchar` is turned into
+`(N : L) ≠ 0` by `ringChar.spec`; `WeierstrassCurve.n_torsion_dimension`
+(`EllipticCurve/Torsion.lean`, the III.6.4 citation, stated for
+`IsSepClosed` which `IsAlgClosed` supplies) gives
+`E.nTorsion N ≃+ ZMod N × ZMod N`; the preimage of `(1, 0)` has order
+`lcm N 1 = N` by `Prod.addOrderOf` and `ZMod.addOrderOf_one`, and
+`addOrderOf_injective` carries that order back along the equivalence and
+then along `Submodule.subtype`.  Note this works verbatim at `N = 0` too
+(`ZMod 0 = ℤ` and `addOrderOf (1 : ℤ) = 0`), though the hypothesis is
+unsatisfiable there.
 
 ## Faithfulness
 
@@ -2406,8 +2461,23 @@ theorem exists_weierstrassCurve_pointOfExactOrder (N : ℕ)
     (L : Type) [Field L] [DecidableEq L] [IsAlgClosed L] (hchar : ¬ ringChar L ∣ N) :
     ∃ (E : WeierstrassCurve L) (hE : E.IsElliptic),
       letI := hE
-      ∃ P : E.toAffine.Point, addOrderOf P = N :=
-  sorry
+      ∃ P : E.toAffine.Point, addOrderOf P = N := by
+  have hNL : (N : L) ≠ 0 := fun h => hchar ((ringChar.spec L N).mp h)
+  obtain ⟨E, hE⟩ := exists_isElliptic_of_field L
+  refine ⟨E, hE, ?_⟩
+  letI := hE
+  obtain ⟨φ⟩ := E.n_torsion_dimension (n := N) hNL
+  set v : E.nTorsion N := φ.symm ((1 : ZMod N), (0 : ZMod N)) with hv
+  have hvord : addOrderOf v = N := by
+    have h1 : addOrderOf (φ v) = addOrderOf v :=
+      addOrderOf_injective φ.toAddMonoidHom φ.injective v
+    rw [hv, AddEquiv.apply_symm_apply] at h1
+    rw [← h1, Prod.addOrderOf]
+    simp [ZMod.addOrderOf_one]
+  refine ⟨v.1, ?_⟩
+  exact (addOrderOf_injective
+    ((Submodule.subtype (Submodule.torsionBy ℤ E.toAffine.Point (N : ℤ))).toAddMonoidHom)
+    (Submodule.injective_subtype _) v).trans hvord
 
 /-- **A point of exact order `N` on an elliptic curve over an arbitrary
 field `L` gives a `Γ₁(N)`-structure over `Spec L`** (sorry leaf, opened
