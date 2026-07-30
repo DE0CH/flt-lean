@@ -9820,6 +9820,244 @@ theorem exists_tateWeilPairing_of_approx
       exact Ideal.add_mem _ (hsub h1) hvm
     exact (mem_nonunits_iff.mp ((IsLocalRing.mem_maximalIdeal _).mp hum)) hts
 
+/-- **THE UNNORMALISED FAMILY OF LEVEL-`N` CONSTANTS, WITH ITS MULTIPLIER** —
+what the `q`-adic Weil system produces DIRECTLY, before the corrected
+normalisation of `exists_tateWeilRawFamily_of_qAdicWeilSystem` is applied
+(cut 2026-07-30).
+
+`C N` is the family of constants returned by trace duality at `I`-adic level
+`N`, read off the `q`-adic pairing at `q`-level `e·N` where `e` is the
+ramification index of `I` over `q`.  Classically
+
+  `C N t s ≡ u^{2N} · E t s   (mod (j π)^N)`,  `u = q / π^e ∈ 𝒪_{D,I}ˣ`,
+
+and THAT is the whole difference between this predicate and
+`IsTateWeilApprox`: the drifting factor `u^{2N}`.  It is invisible in the
+first six clauses — they are homogeneous of degree one in `C N`, so a
+multiplier cancels — and it is the entire content of the seventh, which
+says only that consecutive levels are related by a FIXED `v` (`= u²`):
+
+  `C (N+1) t s ≡ v · C N t s   (mod (j π)^N)`.
+
+**THIS IS THE PRECISE FORM OF CORRECTION 1 AND CORRECTION 2** of
+`exists_tateWeilRawFamily_of_qAdicWeilSystem`, and stating it this way is
+what makes the correction PROVABLE rather than prose:
+`exists_tateWeilApprox_of_rawFamily` below performs the reindexing —
+read `C` along `N_k = (k+1)·M_k`, where `M_k` is the order of `v` modulo
+`(j π)^k` — and produces a genuinely Cauchy family.  Neither correction
+survives into `IsTateWeilApprox`, and no successor has to rediscover the
+subsequence.
+
+**THE EIGHTH CLAUSE IS WHERE THE FINITENESS LIVES, AND IT IS NOT
+AUTOMATIC.**  `∀ k, ∃ M ≥ 1, v^M ≡ 1 (mod (j π)^k)` cannot be got from
+`(O / (j π)^k)ˣ` being finite — it need not be, and the standing witness is
+`O = 𝒪_{D,I}⟦X⟧` with `j` landing in the constants, whose residue ring is
+`𝔽⟦X⟧`.  The finiteness the argument actually uses is that of `𝒪_D / I^k`,
+through `hker`: `v` is a limit of `j a_n` with `a_n ∈ 𝒪_D ∖ I`, and the
+class of `a_n` lies in the FINITE group `(𝒪_D / I^k)ˣ`.  That is why the
+clause is a hypothesis here rather than a lemma.
+
+Note also what is NOT demanded: `IsUnit v`.  It is not needed and it is not
+obviously available — `hker` at `n = 1` gives only `j a ∉ span {j π}` for
+`a ∉ I`, and `span {j π}` may be strictly smaller than the maximal ideal of
+`O` (same witness).  The eighth clause already implies `v` is invertible
+MODULO each `(j π)^k`, with inverse `v^{M-1}`, and that is all the
+reindexing uses.
+
+The sixth clause is stated at a level `k ≤ N` rather than at `N` itself
+because that is what the reindexing consumes: `C' k = C (N_k)` with
+`N_k ≥ k`, so continuity has to be available at the SHALLOWER level `k`
+from the DEEPER family `C (N_k)`.  It is no stronger a demand — the
+constant at level `N` is congruent to `E` modulo `(j π)^N`, hence agrees
+with it modulo `(j π)^k` for every `k ≤ N`. -/
+def IsTateWeilRawFamily {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (q : ℕ) [Fact q.Prime]
+    (I : Ideal (NumberField.RingOfIntegers D)) (π : NumberField.RingOfIntegers D)
+    {O : Type u} [CommRing O] [Algebra ℤ_[q] O]
+    (j : NumberField.RingOfIntegers D →+* O)
+    (v : O)
+    (C : ℕ → TatePt m x I π → TatePt m x I π → O) : Prop :=
+  (∀ (N : ℕ) (t t' t'' s : TatePt m x I π), (∀ n, t''.1 n = ab.add (t.1 n) (t'.1 n)) →
+      C N t'' s - (C N t s + C N t' s) ∈ Ideal.span {j π} ^ N) ∧
+  (∀ (N : ℕ) (t s s' s'' : TatePt m x I π), (∀ n, s''.1 n = ab.add (s.1 n) (s'.1 n)) →
+      C N t s'' - (C N t s + C N t s') ∈ Ideal.span {j π} ^ N) ∧
+  (∀ (N : ℕ) (t : TatePt m x I π), C N t t ∈ Ideal.span {j π} ^ N) ∧
+  (∀ (N : ℕ) (a : NumberField.RingOfIntegers D) (t t' s : TatePt m x I π),
+      (∀ n, t'.1 n = m.act a (t.1 n)) →
+      C N t' s - j a * C N t s ∈ Ideal.span {j π} ^ N) ∧
+  (∀ (N : ℕ) (σ : Field.absoluteGaloisGroup F) (t t' s s' : TatePt m x I π),
+      (∀ n, t'.1 n = ab.galSMul x σ (t.1 n)) →
+      (∀ n, s'.1 n = ab.galSMul x σ (s.1 n)) →
+      C N t' s' - algebraMap ℤ_[q] O
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) q
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ).toRingEquiv) : ℤ_[q]ˣ) : ℤ_[q])
+        * C N t s ∈ Ideal.span {j π} ^ N) ∧
+  (∀ (N k : ℕ), k ≤ N → ∀ t t' s s' : TatePt m x I π, t.1 k = t'.1 k → s.1 k = s'.1 k →
+      C N t s - C N t' s' ∈ Ideal.span {j π} ^ k) ∧
+  (∀ (N : ℕ) (t s : TatePt m x I π), C (N + 1) t s - v * C N t s ∈ Ideal.span {j π} ^ N) ∧
+  (∀ k : ℕ, ∃ M : ℕ, 1 ≤ M ∧ v ^ M - 1 ∈ Ideal.span {j π} ^ k) ∧
+  (∀ N : ℕ, 1 ≤ N → ∃ t s : TatePt m x I π, IsUnit (C N t s))
+
+/-- **THE CORRECTED NORMALISATION, PROVEN** (2026-07-30): a raw family with
+a multiplier of finite order modulo every `(j π)^k` becomes a Cauchy family
+after reindexing along a subsequence.
+
+This is the formal content of THE CORRECTED NORMALISATION paragraph of
+`exists_tateWeilRawFamily_of_qAdicWeilSystem`, and it is the reason that
+paragraph no longer has to be re-derived by hand.  The subsequence is
+
+  `N (k+1) = N k + (k+1) * M (k+1)`,   `M k = ` the LEAST `M ≥ 1` with
+                                               `v ^ M ≡ 1 (mod (j π)^k)`,
+
+and the three facts that make it work are proven below rather than
+asserted:
+
+* `M k ∣ a` for EVERY `a` with `v^a ≡ 1 (mod (j π)^k)` — the usual
+  minimal-exponent division argument, which needs `v` invertible modulo
+  `(j π)^k` and gets it from `v^{M k} ≡ 1` itself, NOT from `IsUnit v`
+  (which is unavailable, see `IsTateWeilRawFamily`);
+* hence `M k ∣ M (k+1)`, since `M (k+1)` works at level `k` too — this is
+  what makes the subsequence's INCREMENTS divisible by `M k`, and it is the
+  step a naive "take `N` along multiples of the order" prescription hides;
+* `C (N + b) t s ≡ v^b · C N t s (mod (j π)^N)`, by iterating the multiplier
+  clause.
+
+The sequence is built by RECURSION rather than by a closed formula —
+`N (k+1) = N k + (k+1) · M (k+1)` — for the mundane but load-bearing reason
+that its INCREMENT is then a term one can name, `Δ = (k+1)·M (k+1)`, with no
+truncated subtraction anywhere; `M k ∣ Δ` is then immediate from
+`M k ∣ M (k+1)`.
+
+Then `C (N (k+1)) t s - C (N k) t s` splits as
+`(C (N k + Δ) - v^Δ C (N k)) + (v^Δ - 1) C (N k)`; the first term is in
+`(j π)^{N k} ⊆ (j π)^k` because `N k ≥ k`, and the second because
+`M k ∣ Δ`.  The other seven clauses transfer for the single reason
+`N k ≥ k`, with the sixth using exactly the `k ≤ N` form in which
+`IsTateWeilRawFamily` states continuity.
+
+NO COMPLETENESS AND NO LOCALITY IS USED HERE — `hcplt` and `IsLocalRing`
+belong to `exists_tateWeilPairing_of_approx`, one step later.  This step is
+pure exponent arithmetic in `O`. -/
+theorem exists_tateWeilApprox_of_rawFamily
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (q : ℕ) [Fact q.Prime]
+    (I : Ideal (NumberField.RingOfIntegers D)) (π : NumberField.RingOfIntegers D)
+    (O : Type u) [CommRing O] [Algebra ℤ_[q] O]
+    (j : NumberField.RingOfIntegers D →+* O)
+    (v : O) (C : ℕ → TatePt m x I π → TatePt m x I π → O)
+    (hC : IsTateWeilRawFamily m x q I π j v C) :
+    ∃ C' : ℕ → TatePt m x I π → TatePt m x I π → O, IsTateWeilApprox m x q I π j C' := by
+  classical
+  obtain ⟨hadd1, hadd2, halt, hact, hgal, hcont, hmult, hord, hunit⟩ := hC
+  -- `z ≡ 1` is inherited by every power of `z`.
+  have hpow1 : ∀ (k : ℕ) (z : O) (b : ℕ), z - 1 ∈ Ideal.span {j π} ^ k →
+      z ^ b - 1 ∈ Ideal.span {j π} ^ k := by
+    intro k z b hz
+    induction b with
+    | zero => rw [pow_zero, sub_self]; exact Submodule.zero_mem _
+    | succ n ih =>
+        have hrw : z ^ (n + 1) - 1 = z ^ n * (z - 1) + (z ^ n - 1) := by ring
+        rw [hrw]
+        exact Ideal.add_mem _ (Ideal.mul_mem_left _ _ hz) ih
+  -- THE ORDER OF `v` MODULO `(j π)^k`, together with its divisibility property.
+  have hchoice : ∀ k : ℕ, ∃ M : ℕ, 1 ≤ M ∧ v ^ M - 1 ∈ Ideal.span {j π} ^ k ∧
+      ∀ a : ℕ, v ^ a - 1 ∈ Ideal.span {j π} ^ k → M ∣ a := by
+    intro k
+    refine ⟨Nat.find (hord k), (Nat.find_spec (hord k)).1, (Nat.find_spec (hord k)).2, ?_⟩
+    intro a ha
+    set Mk : ℕ := Nat.find (hord k) with hMk
+    rcases Nat.eq_zero_or_pos (a % Mk) with h0 | hpos
+    · exact Nat.dvd_of_mod_eq_zero h0
+    · exfalso
+      have hb : v ^ (Mk * (a / Mk)) - 1 ∈ Ideal.span {j π} ^ k := by
+        rw [pow_mul]
+        exact hpow1 k (v ^ Mk) (a / Mk) (Nat.find_spec (hord k)).2
+      have hsplit : v ^ a = v ^ (Mk * (a / Mk)) * v ^ (a % Mk) := by
+        rw [← pow_add, Nat.div_add_mod]
+      have hr : v ^ (a % Mk) - 1 ∈ Ideal.span {j π} ^ k := by
+        have h1 : v ^ (a % Mk) * (v ^ (Mk * (a / Mk)) - 1) ∈ Ideal.span {j π} ^ k :=
+          Ideal.mul_mem_left _ _ hb
+        have hrw : v ^ (a % Mk) - 1
+            = (v ^ a - 1) - v ^ (a % Mk) * (v ^ (Mk * (a / Mk)) - 1) := by
+          rw [hsplit]; ring
+        rw [hrw]
+        exact Ideal.sub_mem _ ha h1
+      exact Nat.find_min (hord k) (Nat.mod_lt a (Nat.find_spec (hord k)).1) ⟨hpos, hr⟩
+  choose M hM1 hMspec hMdvd using hchoice
+  have hMmono : ∀ k : ℕ, M k ∣ M (k + 1) := fun k =>
+    hMdvd k (M (k + 1)) (Ideal.pow_le_pow_right (Nat.le_succ k) (hMspec (k + 1)))
+  -- THE SUBSEQUENCE, built by RECURSION so that its increments are explicit and
+  -- no truncated subtraction is ever formed.
+  obtain ⟨Nn, hNnsucc⟩ : ∃ Nn : ℕ → ℕ,
+      ∀ k : ℕ, Nn (k + 1) = Nn k + (k + 1) * M (k + 1) :=
+    ⟨fun k => Nat.rec 0 (fun n ih => ih + (n + 1) * M (n + 1)) k, fun _ => rfl⟩
+  have hNge : ∀ k : ℕ, k ≤ Nn k := by
+    intro k
+    induction k with
+    | zero => exact Nat.zero_le _
+    | succ n ih =>
+        have h1 : n + 1 ≤ (n + 1) * M (n + 1) := by
+          calc n + 1 = (n + 1) * 1 := by ring
+          _ ≤ (n + 1) * M (n + 1) := Nat.mul_le_mul_left _ (hM1 (n + 1))
+        rw [hNnsucc n]
+        omega
+  -- ITERATING THE MULTIPLIER CLAUSE.
+  have hiter : ∀ (t s : TatePt m x I π) (N b : ℕ),
+      C (N + b) t s - v ^ b * C N t s ∈ Ideal.span {j π} ^ N := by
+    intro t s N b
+    induction b with
+    | zero => rw [Nat.add_zero, pow_zero, one_mul, sub_self]; exact Submodule.zero_mem _
+    | succ n ih =>
+        have h1 : C (N + n + 1) t s - v * C (N + n) t s ∈ Ideal.span {j π} ^ N :=
+          Ideal.pow_le_pow_right (Nat.le_add_right N n) (hmult (N + n) t s)
+        have h2 : v * (C (N + n) t s - v ^ n * C N t s) ∈ Ideal.span {j π} ^ N :=
+          Ideal.mul_mem_left _ _ ih
+        have hrw : C (N + n + 1) t s - v ^ (n + 1) * C N t s
+            = (C (N + n + 1) t s - v * C (N + n) t s)
+              + v * (C (N + n) t s - v ^ n * C N t s) := by ring
+        show C (N + (n + 1)) t s - v ^ (n + 1) * C N t s ∈ _
+        rw [show N + (n + 1) = N + n + 1 from rfl, hrw]
+        exact Ideal.add_mem _ h1 h2
+  refine ⟨fun k t s => C (Nn k) t s, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · intro k t t' t'' s ht''
+    exact Ideal.pow_le_pow_right (hNge k) (hadd1 (Nn k) t t' t'' s ht'')
+  · intro k t s s' s'' hs''
+    exact Ideal.pow_le_pow_right (hNge k) (hadd2 (Nn k) t s s' s'' hs'')
+  · intro k t
+    exact Ideal.pow_le_pow_right (hNge k) (halt (Nn k) t)
+  · intro k a t t' s ht'
+    exact Ideal.pow_le_pow_right (hNge k) (hact (Nn k) a t t' s ht')
+  · intro k σ t t' s s' ht' hs'
+    exact Ideal.pow_le_pow_right (hNge k) (hgal (Nn k) σ t t' s s' ht' hs')
+  · intro k t t' s s' hts hss
+    exact hcont (Nn k) k (hNge k) t t' s s' hts hss
+  · -- THE CAUCHY CLAUSE: this is where the reindexing earns its keep.
+    intro k t s
+    obtain ⟨d, hd⟩ : M k ∣ (k + 1) * M (k + 1) := (hMmono k).mul_left (k + 1)
+    have h1 : C (Nn k + (k + 1) * M (k + 1)) t s
+        - v ^ ((k + 1) * M (k + 1)) * C (Nn k) t s ∈ Ideal.span {j π} ^ k :=
+      Ideal.pow_le_pow_right (hNge k) (hiter t s (Nn k) ((k + 1) * M (k + 1)))
+    have h2 : (v ^ ((k + 1) * M (k + 1)) - 1) * C (Nn k) t s ∈ Ideal.span {j π} ^ k := by
+      refine Ideal.mul_mem_right _ _ ?_
+      rw [hd, pow_mul]
+      exact hpow1 k (v ^ M k) d (hMspec k)
+    have hrw : C (Nn (k + 1)) t s - C (Nn k) t s
+        = (C (Nn k + (k + 1) * M (k + 1)) t s
+            - v ^ ((k + 1) * M (k + 1)) * C (Nn k) t s)
+          + (v ^ ((k + 1) * M (k + 1)) - 1) * C (Nn k) t s := by
+      rw [hNnsucc k]; ring
+    rw [hrw]
+    exact Ideal.add_mem _ h1 h2
+  · exact hunit (Nn 1) (hNge 1)
+
 /-- **The `q`-adic Weil system refines to an `I`-adic Weil pairing ON THE
 TATE MODULE** (SORRY LEAF, cut 2026-07-29 out of
 `exists_tateWeilSystem_of_qAdicWeilSystem` — the whole mathematical content
@@ -9919,41 +10157,55 @@ argument and is PROVEN), `IsTraceDualFunctional`'s third and fourth clauses
 for the refinement, and the seventh clause of `IsQAdicWeilSystem` (the
 INTEGER-tower compatibility) for the limit.
 
-**RESTATED 2026-07-30 — the conclusion is now `IsTateWeilApprox` rather than
-`IsTateWeilPairing`, and the limit has been PROVEN off it.**  Everything
-above is unchanged and describes this leaf verbatim; what changed is that
-the final passage to the limit — which is `hcplt` and nothing else — is no
-longer part of the burden.  It is `exists_tateWeilPairing_of_approx`, and
-`exists_tateWeilPairing_of_qAdicWeilSystem` immediately below is now PROVEN
-over this leaf.  Concretely, what a successor must now produce is the
-family of level-`k` constants
+**RESTATED 2026-07-30 — the conclusion is now `IsTateWeilRawFamily`, and
+BOTH the corrected normalisation and the limit have been PROVEN off it.**
+Everything above is unchanged and describes this leaf verbatim; what changed
+is that neither the subsequence nor `hcplt` is any longer part of the
+burden.  The chain below this leaf is
 
-  `C k t s = ` the constant returned by `IsTraceDualFunctional`'s third
-  clause for the functional `b ↦ L N (w N (m.act b (t.1 (e·N))) (s.1 (e·N)))`,
+  `exists_tateWeilRawFamily_of_qAdicWeilSystem`   (this leaf)
+    ↓ `exists_tateWeilApprox_of_rawFamily`        (PROVEN — reindexing)
+    ↓ `exists_tateWeilPairing_of_approx`          (PROVEN — the limit)
+  `exists_tateWeilPairing_of_qAdicWeilSystem`     (PROVEN)
 
-at the level `N` prescribed by THE CORRECTED NORMALISATION above, together
-with its eight congruence clauses.  Seven of those eight are formal: each
-is the corresponding clause of `IsQAdicWeilSystem` (bi-multiplicativity of
-`w N`, the `𝒪_D`-adjointness clause, the `Γ_F`-equivariance clause) pushed
-through the additivity of `L N` (`hLadd`, `hLgal`) and the linearity of `θ`
-(`hθ`'s first two clauses), then transported across the uniqueness clause
-`hθ.4`.  **The eighth — the CAUCHY clause `C (k+1) t s ≡ C k t s` — is the
-whole of CORRECTION 1 and CORRECTION 2, and it is the only clause where the
-unit `u = q/π^e` appears at all.**  That is the point of the cut: it
-confines the normalisation problem to one clause of one predicate.
+and what a successor must now produce is exactly two things:
+
+* the family of level-`N` constants
+
+    `C N t s = ` the constant returned by `IsTraceDualFunctional`'s third
+    clause for the functional
+    `b ↦ L (e·N) (w (e·N) (m.act b (t.1 (e·N))) (s.1 (e·N)))`,
+
+  with its six congruence clauses and its perfectness clause.  All seven
+  are FORMAL: each is the corresponding clause of `IsQAdicWeilSystem`
+  (bi-multiplicativity of `w N`, the `𝒪_D`-adjointness clause, the
+  `Γ_F`-equivariance clause) pushed through the additivity of `L N`
+  (`hLadd`, `hLgal`) and the linearity of `θ` (`hθ`'s first two clauses),
+  then transported across the uniqueness clause `hθ.4`.  No normalisation
+  and no limit occurs in any of them;
+
+* the MULTIPLIER `v = u²` and its finite order modulo each `(j π)^k`.
+  This is all that survives of CORRECTION 1 and CORRECTION 2.  `v` is the
+  `hcplt`-limit of `j a_n` for `a_n → q/π^e` in `𝒪_{D,I}`, and its finite
+  order comes from the finiteness of `(𝒪_D/I^k)ˣ` through `hker` — the
+  argument written out under THE CORRECTED NORMALISATION above, which is
+  now the only part of that paragraph still owed.  **`IsUnit v` is NOT
+  demanded and should not be attempted**: see `IsTateWeilRawFamily`, where
+  the witness `O = 𝒪_{D,I}⟦X⟧` shows it is not available from `hker`, and
+  the reindexing does not use it.
 
 **AND THIS IS NOT THE SPLIT REFUTED IN THE PARAGRAPH ABOVE.**  The split
 rejected there is the one that builds the `ℤ_q`-valued form first and calls
 the trace-duality refinement formal; it fails because the natural
 nondegeneracy of the `ℤ_q`-form, `∃ t s, IsUnit (θ (E t s))`, does not
 deliver a UNIT OF `O`.  The split taken here never leaves the
-`O`-vocabulary: `IsTateWeilApprox`'s perfectness clause is
-`∃ t s, IsUnit (C 1 t s)` — an honest unit of `O` at level one, exactly the
-form `IsTateWeilPairing` demands — and `θ` does not occur in the predicate.
-The refuting check is the same one that paragraph prescribes: look for `θ`
-or `ℤ_[q]`-valued quantities in `IsTateWeilApprox`.  There are none except
+`O`-vocabulary: the perfectness clause of `IsTateWeilRawFamily` is
+`∃ t s, IsUnit (C N t s)` — an honest unit of `O`, exactly the form
+`IsTateWeilPairing` demands — and `θ` does not occur in the predicate.  The
+refuting check is the same one that paragraph prescribes: look for `θ` or
+`ℤ_[q]`-valued quantities in `IsTateWeilRawFamily`.  There are none except
 the cyclotomic multiplier, which `IsTateWeilPairing` carries too. -/
-theorem exists_tateWeilApprox_of_qAdicWeilSystem
+theorem exists_tateWeilRawFamily_of_qAdicWeilSystem
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D]
     (m : Mult ab (NumberField.RingOfIntegers D))
@@ -9989,7 +10241,8 @@ theorem exists_tateWeilApprox_of_qAdicWeilSystem
       ζ ^ q ^ k = 1 ∧ L k ζ - r ∈ Ideal.span {(q : ℤ_[q])} ^ k)
     (hdiv : ∀ (a : NumberField.RingOfIntegers D), a ≠ 0 →
       ∀ y : GeomFibrePt f x, ∃ z : GeomFibrePt f x, m.act a z = y) :
-    ∃ C : ℕ → TatePt m x I π → TatePt m x I π → O, IsTateWeilApprox m x q I π j C :=
+    ∃ (v : O) (C : ℕ → TatePt m x I π → TatePt m x I π → O),
+      IsTateWeilRawFamily m x q I π j v C :=
   sorry
 
 /-- **The `q`-adic Weil system refines to an `I`-adic Weil pairing on the
@@ -9997,12 +10250,15 @@ Tate module** (PROVEN 2026-07-30 over the single leaf
 `exists_tateWeilApprox_of_qAdicWeilSystem` immediately above, which is this
 statement with the passage to the limit removed).
 
-The proof is three lines of glue plus the one step that is genuinely about
-`O` rather than about the pairing: `hker` at `n = 1` together with the
-maximality of `I` says `j π` is a NON-UNIT, which is what puts
-`span {j π}` inside the maximal ideal of the local ring `O` and so lets the
-perfectness clause survive the limit.  That step is identical to the one in
-`exists_tateWeilPairing_of_mult`, and it is the only use of `hI` here.
+The proof is the two-step chain
+`exists_tateWeilApprox_of_rawFamily` (the corrected normalisation) followed
+by `exists_tateWeilPairing_of_approx` (the `(j π)`-adic limit), plus the one
+step that is genuinely about `O` rather than about the pairing: `hker` at
+`n = 1` together with the maximality of `I` says `j π` is a NON-UNIT, which
+is what puts `span {j π}` inside the maximal ideal of the local ring `O` and
+so lets the perfectness clause survive the limit.  That step is identical to
+the one in `exists_tateWeilPairing_of_mult`, and it is the only use of `hI`
+here.
 
 WHICH HYPOTHESES THIS ASSEMBLY ITSELF USES: `hI`, `hker` and `hcplt`, and
 nothing else.  Every other binder is passed through untouched to the leaf,
@@ -10048,9 +10304,10 @@ theorem exists_tateWeilPairing_of_qAdicWeilSystem
     (hdiv : ∀ (a : NumberField.RingOfIntegers D), a ≠ 0 →
       ∀ y : GeomFibrePt f x, ∃ z : GeomFibrePt f x, m.act a z = y) :
     ∃ E : TatePt m x I π → TatePt m x I π → O, IsTateWeilPairing m x q I π j E := by
-  obtain ⟨C, hC⟩ := exists_tateWeilApprox_of_qAdicWeilSystem m x q I hI hqI π hπ hπ2 O j
+  obtain ⟨v, C, hC⟩ := exists_tateWeilRawFamily_of_qAdicWeilSystem m x q I hI hqI π hπ hπ2 O j
     hcplt hker w hw θ hθ L hLadd hLgal hLtower hLinj hLsurj hdiv
-  refine exists_tateWeilPairing_of_approx m x q I π O j hcplt ?_ C hC
+  obtain ⟨C', hC'⟩ := exists_tateWeilApprox_of_rawFamily m x q I π O j v C hC
+  refine exists_tateWeilPairing_of_approx m x q I π O j hcplt ?_ C' hC'
   -- `j π` is a non-unit: were `span {j π}` the unit ideal, `hker` at `n = 1`
   -- would put `1` in `I`, contradicting maximality.
   intro hu
