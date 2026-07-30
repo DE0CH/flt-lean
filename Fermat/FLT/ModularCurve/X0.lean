@@ -14713,7 +14713,9 @@ decomposing `exists_stableCyclic_twist_of_autStable_of_j_eq_zero`; the FIRST of 
 two halves.  **PROVEN 2026-07-28** over the two leaves
 `WeierstrassCurve.sq_u_eq_sq_u_of_autStable` and
 `WeierstrassCurve.exists_finiteGaloisLevel_of_addOrder`, both in
-`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/AutCocycle.lean`.)
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/AutCocycle.lean`.  The second of those
+was **CLOSED 2026-07-30**, so `sq_u_eq_sq_u_of_autStable` is the only leaf remaining under
+this declaration.)
 
 #### What is now proven, and what is left
 
@@ -14736,9 +14738,10 @@ is one `exact` onto it.  Proven there:
 * the normal-form reduction to `y² = x³ + b` and the transport of `g`, `haut`, `ι`, `hmove`
   along it.
 
-The two residues are the `A = μ₂` argument (`sq_u_eq_sq_u_of_autStable`) and the finiteness
-of the level (`exists_finiteGaloisLevel_of_addOrder`).  Everything about `ι`, `hmove`,
-`hu6`, `hu2` is consumed by the first; `hN` and `hg` by the second.
+The one remaining residue is the `A = μ₂` argument (`sq_u_eq_sq_u_of_autStable`); the
+finiteness of the level (`exists_finiteGaloisLevel_of_addOrder`) was closed 2026-07-30.
+Everything about `ι`, `hmove`, `hu6`, `hu2` is consumed by the first; `hN` and `hg` by the
+second.
 
 #### The original statement of the route
 
@@ -14817,6 +14820,16 @@ theorem exists_muThree_cocycle_of_autStable_of_j_eq_zero {N : ℕ} (hN : N ≠ 0
   -- `AlgebraicClosure.isAlgebraic` IS an instance and this module imports it, but synthesis
   -- does not find it here; supplying the term directly avoids the search.
   haveI : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) := AlgebraicClosure.isAlgebraic ℚ
+  -- `Normal ℚ ℚ̄` replaced `Algebra.IsAlgebraic ℚ ℚ̄` on the callee when
+  -- `exists_finiteGaloisLevel_of_addOrder` was proven (2026-07-30): its normal closure route
+  -- needs `Ω` to be normal, and `Normal` implies `Algebra.IsAlgebraic`, so nothing is lost.
+  -- Supplied by hand for the same reason as the line above — and built from `Normal.mk`
+  -- rather than from `IsAlgClosure.normal`, because the same diamond makes
+  -- `IsAlgClosure ℚ ℚ̄` fail to synthesise here (verified: it is the one error the first
+  -- build of this change reported).
+  haveI : Normal ℚ (AlgebraicClosure ℚ) :=
+    { toIsAlgebraic := AlgebraicClosure.isAlgebraic ℚ
+      splits' := fun _ => IsAlgClosed.splits _ }
   exact WeierstrassCurve.exists_muThreeCocycle_of_autStable_of_j_eq_zero hN E hj g hg haut
     ι hι hmove hu6 hu2
 

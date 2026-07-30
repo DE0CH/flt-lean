@@ -7,6 +7,7 @@ module
 
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.SexticTwist
 public import Mathlib.FieldTheory.Galois.Basic
+public import Mathlib.FieldTheory.Normal.Closure
 
 /-!
 # The Galois action on automorphisms of a base-changed elliptic curve
@@ -30,6 +31,8 @@ here the coefficients genuinely move.
 * `WeierstrassCurve.smul_map_of_smul_baseChange` : the Galois conjugate of an automorphism of
   `E⁄Ω` is an automorphism of `E⁄Ω`.
 * `WeierstrassCurve.Affine.Point.map_autMap` : `σ(C·P) = (σC)·(σP)`.
+* `WeierstrassCurve.Affine.Point.coordSet` : the (at most two) coordinates of an affine point,
+  as a set — the handle by which a finite set of points pins down a finite subextension.
 -/
 
 @[expose] public section
@@ -39,6 +42,25 @@ namespace WeierstrassCurve
 open scoped WeierstrassCurve.Affine
 
 open Affine.Point
+
+namespace Affine.Point
+
+/-- **The coordinates of an affine point, as a set** — empty at the point at infinity and
+`{x, y}` at `some x y h`.
+
+This is the bridge from "finitely many points" to "one finite subextension": a set of points
+whose `coordSet`s are all contained in a subfield `M` is acted on by `Gal` through `M`, which
+is exactly what `exists_finiteGaloisLevel_of_addOrder` needs. -/
+def coordSet {F : Type*} [Field F] {W : WeierstrassCurve F} :
+    W.toAffine.Point → Set F
+  | .zero => ∅
+  | .some x y _ => {x, y}
+
+lemma finite_coordSet {F : Type*} [Field F] {W : WeierstrassCurve F}
+    (P : W.toAffine.Point) : (coordSet P).Finite := by
+  cases P <;> simp [coordSet]
+
+end Affine.Point
 
 section GaloisConj
 
@@ -130,6 +152,21 @@ lemma map_autMap (E : WeierstrassCurve K) [E.IsElliptic] (σ : Ω ≃ₐ[K] Ω)
 
 end Affine.Point
 
+/-- **Two automorphisms agreeing on a point's coordinates agree on the point.**  The
+converse direction of `coordSet` being the right handle: the whole Galois-theoretic content
+of `exists_finiteGaloisLevel_of_addOrder` is that finitely many points have finitely many
+coordinates, and this is what turns agreement on coordinates back into agreement on points. -/
+lemma map_eq_map_of_eqOn_coordSet (E : WeierstrassCurve K) (σ τ : Ω ≃ₐ[K] Ω)
+    (P : (E⁄Ω).toAffine.Point)
+    (h : ∀ a ∈ Affine.Point.coordSet P, σ a = τ a) :
+    WeierstrassCurve.Affine.Point.map (σ.toAlgHom : Ω →ₐ[K] Ω) P
+      = WeierstrassCurve.Affine.Point.map (τ.toAlgHom : Ω →ₐ[K] Ω) P := by
+  rcases P with _ | ⟨x, y, hns⟩
+  · rfl
+  · exact Affine.Point.some_eq_some (E⁄Ω)
+      (h x (by show x ∈ ({x, y} : Set Ω); exact Set.mem_insert _ _))
+      (h y (by show y ∈ ({x, y} : Set Ω); exact Set.mem_insert_of_mem _ rfl))
+
 end GaloisConj
 
 /-! ### The `μ₃`-valued descent cocycle at `j = 0` -/
@@ -197,44 +234,103 @@ theorem sq_u_eq_sq_u_of_autStable {N : ℕ} (hN : N ≠ 0) (E : WeierstrassCurve
     (C.u : Ω) ^ 2 = (C'.u : Ω) ^ 2 :=
   sorry
 
-/-- **THE FINITE GALOIS LEVEL** (sorry leaf, opened 2026-07-28 by decomposing
-`exists_muThree_cocycle_of_autStable_of_j_eq_zero`): the finitely many points of `⟨g⟩`, and
-the cube roots of unity, are all defined over ONE finite Galois extension of `K`.
+/-- **THE FINITE GALOIS LEVEL** (opened as a sorry leaf 2026-07-28 by decomposing
+`exists_muThree_cocycle_of_autStable_of_j_eq_zero`; **PROVEN 2026-07-30**, with
+`Algebra.IsAlgebraic K Ω` REPLACED by the strictly stronger `Normal K Ω` — see below, and
+note that `Normal` already implies `Algebra.IsAlgebraic`, so no hypothesis was lost): the
+finitely many points of `⟨g⟩`, and the cube roots of unity, are all defined over ONE finite
+Galois extension of `K`.
 
 This is the continuity of the descent cocycle, in the concrete form the consumer needs: `c`
 is inflated from `Gal(L/K)`, which is what makes Hilbert 90 applicable to it.
 
-#### What has to be proved
+#### The proof
 
-`⟨g⟩` is finite of order `N` (`hg`, `hN`).  Each of its points has coordinates in `Ω`, which
-is algebraic over `K` in the intended application, so the subfield they generate together
-with a primitive cube root of unity is finitely generated and algebraic, hence finite over
-`K`; its normal closure is finite Galois.  Two automorphisms agreeing on `L` then agree on
-every coordinate of every point of `⟨g⟩`, hence act identically on `⟨g⟩`.
+`⟨g⟩` is finite (`IsOfFinAddOrder.finite_zmultiples`, from `hg` and `hN`) and each of its
+points contributes at most two coordinates (`Affine.Point.coordSet`), so the set `S` of all
+coordinates of all points of `⟨g⟩` together with the cube roots of unity in `Ω` — at most
+three more, being roots of `X ^ 3 - 1` — is FINITE.  Every element of `S` is integral over
+`K` (`Algebra.IsIntegral`, from algebraicity), so `M := K⟮S⟯` is finite over `K`, and
+`L := normalClosure K M Ω` is finite (`normalClosure.is_finiteDimensional`) and Galois
+(`IsGalois.normalClosure`).  Both conclusions then read off `S ⊆ M ≤ L`: the cube roots are
+in `L` by construction, and two automorphisms agreeing on `L` agree on every coordinate of
+every point of `⟨g⟩`, hence on the points themselves
+(`map_eq_map_of_eqOn_coordSet`).
 
-#### The hypothesis that is genuinely load-bearing
+#### WHY `Normal K Ω`, AND WHY IT IS NOT A COSMETIC STRENGTHENING (2026-07-30)
 
-`Algebra.IsAlgebraic K Ω` cannot be dropped: over a transcendental extension the coordinates
-of `g` need not be algebraic and no finite `L` exists.  In the application `Ω = K̄`, so it
-holds.
+The leaf as originally cut asked only for `Algebra.IsAlgebraic K Ω`, and the route recorded
+in its docstring — "its normal closure is finite Galois" — DOES NOT RUN under that
+hypothesis, because a normal closure taken *inside* `Ω` is normal only when `Ω` itself is
+(mathlib's `normalClosure.normal` and `IsGalois.normalClosure` both require it, and the
+requirement is real, not an artefact: `Normal K L` asks a minimal polynomial with a root in
+`L` to SPLIT in `L`, and `Ω` need not contain the missing roots).
 
-#### What refutes this leaf
+The obstruction is not merely that this proof fails; the statement itself is in doubt over a
+non-normal `Ω`.  Write `G = Aut(Ω/K)`, `M ⊆ Ω` for the coordinate field of `⟨g⟩`, and
+`G_X ≤ G` for the subgroup fixing `X` pointwise.  The conclusion says exactly that
+`G_L ⊆ G_M` for some finite Galois `L ⊆ Ω`; since every such `L` lies in the maximal
+Galois-generated subfield `Ω^{gal}`, it requires `G_{Ω^{gal}} ⊆ G_M`.  That can fail:
+for `K = ℚ` and `Ω = ℚ(ω, 2 ^ (1/9))` one has `Aut(Ω/ℚ) ≅ S₃`, `Ω^{gal} = ℚ(ω, 2 ^ (1/3))`
+(computed from the Galois closure `ℚ(ζ₉, 2 ^ (1/9))`, in which the subgroup cutting out `Ω`
+has normal closure of index `6`), and the order-`3` automorphism `2 ^ (1/9) ↦ ω · 2 ^ (1/9)`
+fixes every finite Galois subfield of `Ω` while moving `ℚ(2 ^ (1/9))`.  What is NOT supplied
+here is the last mile — an elliptic curve over `ℚ` and a torsion point whose coordinates sit
+in `Ω \ ℚ(ω, 2 ^ (1/3))` — so this is a structural obstruction, not a checked
+counterexample, and the leaf is NOT recorded as refuted.  A successor who wants the weaker
+hypothesis back must either produce that curve (refuting the original cut) or find a route
+that does not go through a normal closure.
 
-A `g` of finite additive order whose coordinates generate an infinite-degree extension of
-`K` — impossible under `Algebra.IsAlgebraic K Ω`, since a field generated by finitely many
-algebraic elements is finite over `K`. -/
-theorem exists_finiteGaloisLevel_of_addOrder [Algebra.IsAlgebraic K Ω]
+`Normal K Ω` holds in the application, where `Ω = K̄`: `IsAlgClosure.normal`.
+
+#### The hypotheses that are genuinely load-bearing
+
+Algebraicity (now carried by `Normal`) cannot be dropped: over a transcendental extension the
+coordinates of `g` need not be algebraic and no finite `L` exists.  `hN` and `hg` enter only
+through the FINITENESS of `⟨g⟩`; at `N = 0`, `addOrderOf g = 0` means `⟨g⟩` is infinite and
+the coordinate set need not be finite, which is why `hN` cannot be dropped either.
+`[E.IsElliptic]` is not used by the proof and is retained only to keep the signature aligned
+with its siblings in this section. -/
+theorem exists_finiteGaloisLevel_of_addOrder [Normal K Ω]
     {N : ℕ} (hN : N ≠ 0) (E : WeierstrassCurve K) [E.IsElliptic]
     (g : (E⁄Ω).toAffine.Point) (hg : addOrderOf g = N) :
     ∃ (L : IntermediateField K Ω) (_ : FiniteDimensional K L) (_ : IsGalois K L),
       (∀ z : Ω, z ^ 3 = 1 → z ∈ L) ∧
       ∀ σ τ : Ω ≃ₐ[K] Ω, (∀ x ∈ L, σ x = τ x) →
         ∀ P ∈ AddSubgroup.zmultiples g,
-          Affine.Point.map σ.toAlgHom P = Affine.Point.map τ.toAlgHom P :=
-  sorry
+          Affine.Point.map σ.toAlgHom P = Affine.Point.map τ.toAlgHom P := by
+  classical
+  haveI : IsGalois K Ω := ⟨⟩
+  have hcube : {z : Ω | z ^ 3 = 1}.Finite := by
+    refine Set.Finite.subset (Finset.finite_toSet (Polynomial.nthRoots 3 (1 : Ω)).toFinset) ?_
+    intro z hz
+    simpa [Polynomial.mem_nthRoots] using hz
+  have hpos : 0 < addOrderOf g := by rw [hg]; exact Nat.pos_of_ne_zero hN
+  have hfo : IsOfFinAddOrder g := addOrderOf_pos_iff.mp hpos
+  have hzfin : ((AddSubgroup.zmultiples g : AddSubgroup ((E⁄Ω).toAffine.Point)) :
+      Set ((E⁄Ω).toAffine.Point)).Finite := hfo.finite_zmultiples
+  set S : Set Ω := {z : Ω | z ^ 3 = 1} ∪
+    ⋃ P ∈ (AddSubgroup.zmultiples g : Set ((E⁄Ω).toAffine.Point)),
+      Affine.Point.coordSet P with hSdef
+  have hSfin : S.Finite :=
+    hcube.union (hzfin.biUnion fun P _ => Affine.Point.finite_coordSet P)
+  haveI : Finite S := hSfin
+  haveI : FiniteDimensional K (IntermediateField.adjoin K S) :=
+    IntermediateField.finiteDimensional_adjoin fun x _ => Algebra.IsIntegral.isIntegral x
+  have hsub : ∀ a ∈ S, a ∈ IntermediateField.normalClosure K (IntermediateField.adjoin K S) Ω :=
+    fun a ha =>
+      (IntermediateField.le_normalClosure (IntermediateField.adjoin K S))
+        (IntermediateField.subset_adjoin K S ha)
+  refine ⟨IntermediateField.normalClosure K (IntermediateField.adjoin K S) Ω, inferInstance,
+    inferInstance, fun z hz => hsub z (Or.inl hz), fun σ τ hστ P hP => ?_⟩
+  refine map_eq_map_of_eqOn_coordSet E σ τ P fun a ha => hστ a (hsub a (Or.inr ?_))
+  exact Set.mem_biUnion hP ha
 
 /-- **THE `μ₃`-VALUED DESCENT COCYCLE AT `j = 0`, in normal form** (PROVEN 2026-07-28 over the
-two leaves `sq_u_eq_sq_u_of_autStable` and `exists_finiteGaloisLevel_of_addOrder`).
+two leaves `sq_u_eq_sq_u_of_autStable` and `exists_finiteGaloisLevel_of_addOrder`; the second
+of those was CLOSED 2026-07-30, so `sq_u_eq_sq_u_of_autStable` is now the only leaf left under
+this declaration.  Its `Algebra.IsAlgebraic K Ω` became `Normal K Ω` at the same time — see
+`exists_finiteGaloisLevel_of_addOrder` for why that strengthening is not cosmetic).
 
 Everything that is not "the `u` is determined up to sign" or "the level is finite" is proved
 here.  In particular the COCYCLE IDENTITY is proven outright, and it is the mathematically
@@ -250,7 +346,7 @@ in `⟨g⟩` by applying stability for `τ` and then for `σ`.  Reading off `u` 
 `((σC_τ) * C_σ).u = σ(C_τ.u) · C_σ.u`, and squaring is the identity
 `c(στ) = c(σ) · σ(c(τ))`. -/
 theorem exists_muThreeCocycle_of_autStable_of_sextic {N : ℕ} (hN : N ≠ 0)
-    [Algebra.IsAlgebraic K Ω] (E : WeierstrassCurve K)
+    [Normal K Ω] (E : WeierstrassCurve K)
     [E.IsElliptic] (h₁ : (E⁄Ω).a₁ = 0) (h₂ : (E⁄Ω).a₂ = 0) (h₃ : (E⁄Ω).a₃ = 0)
     (h₄ : (E⁄Ω).a₄ = 0) (ha₆ : (E⁄Ω).a₆ ≠ 0)
     (g : (E⁄Ω).toAffine.Point) (hg : addOrderOf g = N)
@@ -327,7 +423,8 @@ theorem exists_muThreeCocycle_of_autStable_of_sextic {N : ℕ} (hN : N ≠ 0)
   · exact fun σ => ⟨C σ, hC σ, rfl, hCmem σ⟩
 
 /-- **THE `μ₃`-VALUED DESCENT COCYCLE AT `j = 0`** (PROVEN 2026-07-28 over the two leaves
-`sq_u_eq_sq_u_of_autStable` and `exists_finiteGaloisLevel_of_addOrder`).
+`sq_u_eq_sq_u_of_autStable` and `exists_finiteGaloisLevel_of_addOrder`; the latter was CLOSED
+2026-07-30, leaving `sq_u_eq_sq_u_of_autStable` as the only leaf here).
 
 This is `exists_muThreeCocycle_of_autStable_of_sextic` with the normal-form hypotheses
 replaced by `hj : E.j = 0`.  The proof puts `E` in the form `y² = x³ + b` over `K`
@@ -340,7 +437,7 @@ normal form, and the witness clause is recovered on the ORIGINAL curve by conjug
 `sq_u_eq_sq_u_of_autStable` there: conjugation does not change `u`, so `(C.u)² = c σ` for
 the original `C`.  That is why only the forward direction of
 `exists_conj_autMap_baseChange` is ever needed. -/
-theorem exists_muThreeCocycle_of_autStable_of_j_eq_zero [Algebra.IsAlgebraic K Ω] {N : ℕ}
+theorem exists_muThreeCocycle_of_autStable_of_j_eq_zero [Normal K Ω] {N : ℕ}
     (hN : N ≠ 0) (E : WeierstrassCurve K) [E.IsElliptic] (hj : E.j = 0)
     (g : (E⁄Ω).toAffine.Point) (hg : addOrderOf g = N)
     (haut : ∀ σ : Ω ≃ₐ[K] Ω, ∃ (C : VariableChange Ω) (h : C • (E⁄Ω) = (E⁄Ω)),
