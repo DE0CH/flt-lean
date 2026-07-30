@@ -821,7 +821,10 @@ def anomalies(s):
     # Found 2026-07-30 with 97 awaiting_merge against 19 queued branches: when
     # a merge worker DECLINES a branch, the branch leaves .inflight but nothing
     # frees its worker, so the worker is stranded and the pool silently shrinks.
-    lost = sorted(aw - queued)
+    # A worker whose branch has ALREADY LANDED is not stranded -- row 7 frees
+    # it on the next tick. That window is opened by every release, so counting
+    # it as a fault would panic on the loop's own normal operation.
+    lost = sorted(w for w in (aw - queued) if not s["ancestor"].get(w))
     if lost:
         out.append("%d worker(s) awaiting_merge with no branch in batch or "
                    "inflight -- stranded, pool shrinking: %s%s"
@@ -855,6 +858,16 @@ def anomalies(s):
 
 
 def anomaly_guard(s):
+    """Fires only when nothing else can make progress.
+
+    Deliberately the LAST row before idle. Half the states that look wrong for
+    an instant are ones the very next row repairs -- a release leaves workers
+    awaiting_merge until row 7 frees them, an agent finishes before row 6
+    batches it. Checking above those rows would report the loop's own normal
+    operation as a fault. Sitting here means every row that could act has
+    declined, so what remains is a state the loop cannot progress out of, which
+    is what an anomaly actually is.
+    """
     # Self-disabling in the same way the reported-panic row is: once a medic
     # exists the violation is being handled, and re-firing would rebuild the
     # medic record every tick and never let it start.
@@ -883,7 +896,6 @@ ROWS = [
     (4, "medic in flight -> SAFE MODE (all rows below suspended)",
      rmedic_wait_guard, rmedic_wait_action),
     (5, "a job REPORTED panic -> notify + medic", reported_panic_guard, reported_panic_action),
-    (17, "INVARIANT VIOLATED -> notify + medic", anomaly_guard, anomaly_action),
     (6, "agent finished -> integrate, awaiting_merge", r2_guard, r2_action),
     (7, "awaiting_merge ∧ ancestor(main) -> free", r3_guard, r3_action),
     (8, "agent died -> resume from transcript", r4_guard, r4_action),
@@ -891,6 +903,7 @@ ROWS = [
     (10, "merger delivered main+snapshot+audit -> ADOPT", r7_guard, r7_action),
     (11, "batch ∨ derived-from-main is stale -> create merger record", r11_guard, r11_action),
     (12, "dispatch: pop queue1 -> agent records", r15_guard, r15_action),
+    (17, "INVARIANT VIOLATED -> notify + medic", anomaly_guard, anomaly_action),
     (13, "idle -- every live job is justified", idle_guard, lambda s: None),
     (14, "ILLEGAL STATE -> notify + medic", lambda s: (True, ""), inferred_panic),
 ]
