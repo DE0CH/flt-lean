@@ -35749,6 +35749,75 @@ def IsAdditiveOn {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
     RelPoint.post u hu (abA.add x y)
       = abB.add (RelPoint.post u hu x) (RelPoint.post u hu y)
 
+/-- **An additive map carries the zero section to the zero section**
+(PROVEN) — `u(0) = u(0 + 0) = u(0) + u(0)`.
+
+**HOISTED here 2026-07-30 from ~22 000 lines below**, verbatim, because
+`IsAdditiveOn.post_listSum` immediately after it needs it and
+`IsRelPicZeroOf.eq_of_aj_eq` needs THAT.  Its proof uses only
+`RelPoint.post` (declared just above) and `AbelianSchemeStruct.addCommGroup`
+(upstream), so the move adds no dependency.
+
+**DUPLICATE, and this is the third statement of it in the file**:
+`IsAdditiveOn.post_zero` further down (in the `IsAdditiveOn.comp` block) is
+the same theorem with a different proof, and it has consumers, so it is left
+alone rather than churned; the follow-up is to delete it and redirect them
+here.  A `grep -n 'post_zero\|postZero' Fermat/FLT/ModularCurve/X0.lean`
+refutes this note if it ever stops being true. -/
+theorem IsAdditiveOn.postZero {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    {abA : AbelianSchemeStruct af} {abB : AbelianSchemeStruct bf} {u : A ⟶ B}
+    {hu : u ≫ bf = af} (h : IsAdditiveOn abA abB u hu) {T : Scheme.{0}} (g : T ⟶ S) :
+    RelPoint.post u hu (abA.zero g) = abB.zero g := by
+  letI := abB.addCommGroup g
+  have h2 : RelPoint.post u hu (abA.zero g) + RelPoint.post u hu (abA.zero g)
+      = abB.zero g + RelPoint.post u hu (abA.zero g) := by
+    show abB.add _ _ = abB.add _ _
+    rw [← h (abA.zero g) (abA.zero g), abA.zero_add, abB.zero_add]
+  exact add_right_cancel h2
+
+/-- **The sum of a LIST of relative points**, in the group law of an abelian
+scheme.
+
+A `List` rather than a `Finset` or a `Fin n → _` on purpose: the only fact
+consumed downstream is that postcomposition by a homomorphism distributes over
+it (`IsAdditiveOn.post_listSum`), for which list recursion gives `rfl`
+equation lemmas and needs no `AddCommMonoid` instance in the STATEMENT —
+`AbelianSchemeStruct.addCommGroup` is a `def`, not an instance, so a `∑` would
+have to be written with an explicit instance argument at every occurrence. -/
+def AbelianSchemeStruct.listSum {A S : Scheme.{0}} {fs : A ⟶ S}
+    (ab : AbelianSchemeStruct fs) {T : Scheme.{0}} {g : T ⟶ S} :
+    List (RelPoint fs g) → RelPoint fs g
+  | [] => ab.zero g
+  | x :: l => ab.add x (ab.listSum l)
+
+@[simp] theorem AbelianSchemeStruct.listSum_nil {A S : Scheme.{0}} {fs : A ⟶ S}
+    (ab : AbelianSchemeStruct fs) {T : Scheme.{0}} (g : T ⟶ S) :
+    ab.listSum ([] : List (RelPoint fs g)) = ab.zero g := rfl
+
+@[simp] theorem AbelianSchemeStruct.listSum_cons {A S : Scheme.{0}} {fs : A ⟶ S}
+    (ab : AbelianSchemeStruct fs) {T : Scheme.{0}} {g : T ⟶ S} (x : RelPoint fs g)
+    (l : List (RelPoint fs g)) :
+    ab.listSum (x :: l) = ab.add x (ab.listSum l) := rfl
+
+/-- **A homomorphism of abelian schemes distributes over a list sum** (PROVEN,
+one induction over `postZero` and the binary additivity that IS
+`IsAdditiveOn`).
+
+This is the whole formal content of "a homomorphism is determined by its values
+on a generating set" that `IsRelPicZeroOf.eq_of_aj_eq` below consumes: with it,
+that leaf's remaining obligation is the purely geometric statement that the
+Abel–Jacobi image generates, and nothing about group laws is left in it. -/
+theorem IsAdditiveOn.post_listSum {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    {abA : AbelianSchemeStruct af} {abB : AbelianSchemeStruct bf} {u : A ⟶ B}
+    {hu : u ≫ bf = af} (h : IsAdditiveOn abA abB u hu) {T : Scheme.{0}} {g : T ⟶ S}
+    (l : List (RelPoint af g)) :
+    RelPoint.post u hu (abA.listSum l) = abB.listSum (l.map (RelPoint.post u hu)) := by
+  induction l with
+  | nil => simpa using h.postZero g
+  | cons x l ih =>
+      rw [AbelianSchemeStruct.listSum_cons, h x (abA.listSum l), ih, List.map_cons,
+        AbelianSchemeStruct.listSum_cons]
+
 /-! ### RELOCATED 2026-07-27: the Albanese/relative-Picard block, and the
 `Spec ℚ` Jacobian that consumes it
 
@@ -36213,6 +36282,71 @@ theorem IsRelPicZeroOf.exists_albaneseFactorisation {C J S : Scheme.{0}} {f : C 
         (c g x).1 = (P.aj x).1 ≫ u :=
   sorry
 
+/-- **FPPF-LOCAL SURJECTIVITY OF ABEL–JACOBI** (sorry leaf, 2026-07-30) — the
+one geometric input of `IsRelPicZeroOf.eq_of_aj_eq` below, which is PROVEN over
+it.  It mentions no second abelian scheme, no morphism `u`, and no additivity:
+everything formal has been peeled off into `IsAdditiveOn.post_listSum` and
+`AlgebraicGeometry.Flat.epi_of_flat_of_surjective`.
+
+TRUE and classical, and this is exactly `Sym^d C ↠ Pic^d` — **without needing
+`Sym^d` to be constructed.**  Let `L` be the invertible sheaf on `C_T`
+classified by `p` and put `d := max (2g − 1) 1` for `g` the (locally constant)
+genus of `f` on the image of `T`.  Then `L(d·o)` has fibre degree `d ≥ 2g − 1`,
+so `R¹π_* = 0`, `π_*L(d·o)` is locally free of rank `d − g + 1 > 0`, and the
+projective bundle `ℙ(π_*L(d·o)) ⟶ T` is smooth surjective; its tautological
+section cuts a relative effective divisor of degree `d` in the class.  Splitting
+that divisor into `d` individual sections costs one further étale cover (a
+smooth surjection has sections étale-locally, Stacks 054F, applied on the open
+locus where the divisor is étale over the base — nonempty in every fibre once
+the residue field is enlarged).  A composite of a smooth surjection and an étale
+surjection is flat and surjective, which is all the conclusion asks for.
+`P.inj`, `P.sheaf_add` and `P.aj_spec` then upgrade the equality of CLASSES to
+the equality of POINTS that is stated.  Literature: Milne, *Jacobian Varieties*
+§§2–5; BLR *Néron Models* 9.4; ACGH ch. IV for `Sym^d C ⟶ Pic^d`.
+
+**`[CompactSpace T]` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT IT.**
+The list `l` has ONE length, and `d` above is bounded only because the genus
+takes finitely many values on a quasi-compact `T`.  Witness: let
+`S = ⨆_{g ≥ 2} Spec ℚ` and `C = ⨆_{g ≥ 2} C_g` with `C_g` a smooth projective
+curve over `ℚ` of genus `g`, so `f` is a smooth proper relative curve with
+geometrically connected fibres, and take `T = J`, `p` the universal point
+`⟨𝟙 J, _⟩`.  For any list of length `n` the composite `h` factors set-
+theoretically through the image of the `n`-fold sum map `C^n ⟶ J`, whose
+restriction over the genus-`g` component has dimension at most `n`; so on any
+component with `g > n` that image is a proper closed subscheme of the
+`g`-dimensional `J_g` and `h` cannot be surjective.  Hence no `(T', h, l)`
+exists.  This is why the reduction to affine opens sits in `eq_of_aj_eq`'s
+proof and not here: `eq_of_aj_eq` itself is TRUE over such a base, because an
+equation between morphisms is Zariski-local on the source.
+
+**NOT VACUOUS, in either direction.**  `l = []` forces
+`RelPoint.pre h rfl p = ab.zero _`, which is false for a `p` of nonzero class,
+so the conclusion is not discharged by the empty list; and `T' = ∅` is excluded
+by `Surjective h` whenever `T` is nonempty (over an empty `T` the statement is
+trivially satisfiable, which is the correct degenerate reading and is what the
+consumer's affine cover of an empty `J` uses).  `P` is load-bearing: without it
+`ab` is an arbitrary abelian scheme with no relation to `C`, and no `aj` exists
+to sum.
+
+**WHY THE `EffectiveEpi` STRENGTHENING IS NOT TAKEN.**  `Flat`
+`.epi_of_flat_of_surjective` needs no finiteness, so `Epi h` — all this leaf's
+consumer uses — is available from `Flat h` and `Surjective h` alone.
+`Mathlib/AlgebraicGeometry/Sites/Fpqc.lean` gives `EffectiveEpi h` under the
+extra `QuasiCompact h` or `LocallyOfFinitePresentation h`, and the construction
+sketched above delivers both; they are omitted because adding an unconsumed
+hypothesis to a leaf makes it strictly harder to prove for no gain.  A future
+consumer that needs to DESCEND a morphism (rather than an equation) — the
+Albanese half — should add `QuasiCompact h` here rather than restate the
+leaf. -/
+theorem IsRelPicZeroOf.exists_flatSurj_ajListSum {C J S : Scheme.{0}} {f : C ⟶ S}
+    {jf : J ⟶ S} {ab : AbelianSchemeStruct jf} {o : RelPoint f (𝟙 S)}
+    (P : IsRelPicZeroOf f ab o) (_hf : IsSmoothProperCurve f)
+    {T : Scheme.{0}} [CompactSpace T] {g : T ⟶ S} (p : RelPoint jf g) :
+    ∃ (T' : Scheme.{0}) (h : T' ⟶ T), Flat h ∧ Surjective h ∧
+      ∃ l : List (RelPoint f (h ≫ g)),
+        RelPoint.pre h rfl p = ab.listSum (l.map (fun y => P.aj y)) :=
+  sorry
+
 /-- **GENERATION: the image of the Abel–Jacobi map generates `Pic⁰`**
 (sorry node), in the form actually consumed — two HOMOMORPHISMS of
 abelian schemes that agree on `aj(C)` are equal.  The second of the two
@@ -36249,17 +36383,65 @@ with `0` on the image of `aj₁`.
 `Sym^g` construction and its surjectivity onto `Pic⁰`), plus the fppf
 descent that turns a local surjection into generation.  Its literature is
 disjoint from `IsRelPicZeroOf.exists_albaneseFactorisation`'s, which is
-why the two are separate leaves and not one. -/
+why the two are separate leaves and not one.
+
+**SUPERSEDED 2026-07-30: THIS IS NO LONGER A LEAF.**  It is PROVEN below over
+the single leaf `IsRelPicZeroOf.exists_flatSurj_ajListSum`, and the paragraph
+above is corrected in two places by that cut, both checkable in one command:
+
+* **the fppf descent half is FREE at this pin.**  `AlgebraicGeometry.Flat`
+  `.epi_of_flat_of_surjective` (`Mathlib/AlgebraicGeometry/Morphisms/Flat.lean`,
+  Stacks 02VW) says a flat surjective morphism of schemes is an epimorphism,
+  which is exactly "an equation between morphisms out of `J` may be checked
+  after an fppf cover".  `Mathlib/AlgebraicGeometry/Sites/Fpqc.lean` even
+  upgrades it to `EffectiveEpi` for a flat surjective morphism that is
+  quasi-compact (or locally of finite presentation).  So "plus the fppf
+  descent" was priced as missing and is not;
+* **the `Sym^g` half is the ONLY remaining content**, and it does not need
+  `Sym^g` to be CONSTRUCTED — only its surjectivity, stated as the existence of
+  a flat surjective cover over which the universal point of `J` becomes a
+  finite sum of `aj`-classes.  That is the new leaf.
+
+The "disjoint literature" claim SURVIVES, and the check that could have refuted
+it fails: the Albanese half is *not* reducible to the same leaf, because
+descending `Σ c(yᵢ)` from the cover needs it to be WELL DEFINED on divisor
+classes — i.e. that the map `Sym^d C ⟶ A` factors through `Pic⁰` — which is the
+theorem of the cube / rigidity, not descent.  `EffectiveEpi` supplies the
+descent and leaves that gap untouched, so the two leaves stay separate. -/
 theorem IsRelPicZeroOf.eq_of_aj_eq {C J S : Scheme.{0}} {f : C ⟶ S}
     {jf : J ⟶ S} {ab : AbelianSchemeStruct jf} {o : RelPoint f (𝟙 S)}
-    (_hf : IsSmoothProperCurve f) (P : IsRelPicZeroOf f ab o)
+    (hf : IsSmoothProperCurve f) (P : IsRelPicZeroOf f ab o)
     {A : Scheme.{0}} {astr : A ⟶ S} (ab' : AbelianSchemeStruct astr)
     {u v : J ⟶ A} (hu : u ≫ astr = jf) (hv : v ≫ astr = jf)
-    (_hadu : IsAdditiveOn ab ab' u hu) (_hadv : IsAdditiveOn ab ab' v hv)
-    (_hagree : ∀ {T : Scheme.{0}} (g : T ⟶ S) (y : RelPoint f g),
+    (hadu : IsAdditiveOn ab ab' u hu) (hadv : IsAdditiveOn ab ab' v hv)
+    (hagree : ∀ {T : Scheme.{0}} (g : T ⟶ S) (y : RelPoint f g),
       (P.aj y).1 ≫ u = (P.aj y).1 ≫ v) :
-    u = v :=
-  sorry
+    u = v := by
+  -- The generation leaf is stated over a QUASI-COMPACT test object, so the
+  -- reduction to affines is part of this proof rather than of the leaf; see the
+  -- FAITHFULNESS section of `exists_flatSurj_ajListSum` for why that hypothesis
+  -- may not be dropped.
+  refine Scheme.Cover.hom_ext J.affineCover u v fun i => ?_
+  obtain ⟨T', h, hflat, hsurj, l, hl⟩ :=
+    P.exists_flatSurj_ajListSum hf (T := J.affineCover.X i)
+      (g := J.affineCover.f i ≫ jf) ⟨J.affineCover.f i, rfl⟩
+  haveI := hflat
+  haveI := hsurj
+  haveI : Epi h := Flat.epi_of_flat_of_surjective h
+  -- `u` and `v` agree on the pulled-back universal point, because it is a sum
+  -- of `aj`-classes and both are homomorphisms.
+  have step : RelPoint.post u hu (RelPoint.pre h rfl
+        (⟨J.affineCover.f i, rfl⟩ : RelPoint jf (J.affineCover.f i ≫ jf)))
+      = RelPoint.post v hv (RelPoint.pre h rfl
+        (⟨J.affineCover.f i, rfl⟩ : RelPoint jf (J.affineCover.f i ≫ jf))) := by
+    rw [hl, hadu.post_listSum, hadv.post_listSum, List.map_map, List.map_map]
+    refine congrArg ab'.listSum (List.map_congr_left fun y _ => ?_)
+    exact Subtype.ext (hagree _ y)
+  -- Read that on underlying morphisms and cancel the epimorphism.
+  have hval : (h ≫ J.affineCover.f i) ≫ u = (h ≫ J.affineCover.f i) ≫ v :=
+    congrArg Subtype.val step
+  rw [Category.assoc, Category.assoc] at hval
+  exact (cancel_epi h).1 hval
 
 /-- **A representing object for `Pic⁰` IS the Albanese** (PROVEN, over
 the two leaves above and nothing else).
@@ -57968,18 +58150,10 @@ universal point of `J`, in the same two lines as `negHom`, and its
 defining equation on relative points is `ab.pre_add` read along `z.1`.
 No group-scheme structure beyond `AbelianSchemeStruct` is needed. -/
 
-/-- **An additive map carries the zero section to the zero section**
-(PROVEN) — `u(0) = u(0 + 0) = u(0) + u(0)`. -/
-theorem IsAdditiveOn.postZero {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
-    {abA : AbelianSchemeStruct af} {abB : AbelianSchemeStruct bf} {u : A ⟶ B}
-    {hu : u ≫ bf = af} (h : IsAdditiveOn abA abB u hu) {T : Scheme.{0}} (g : T ⟶ S) :
-    RelPoint.post u hu (abA.zero g) = abB.zero g := by
-  letI := abB.addCommGroup g
-  have h2 : RelPoint.post u hu (abA.zero g) + RelPoint.post u hu (abA.zero g)
-      = abB.zero g + RelPoint.post u hu (abA.zero g) := by
-    show abB.add _ _ = abB.add _ _
-    rw [← h (abA.zero g) (abA.zero g), abA.zero_add, abB.zero_add]
-  exact add_right_cancel h2
+/-! **`IsAdditiveOn.postZero` USED TO BE HERE** and was HOISTED on 2026-07-30 to
+just below the definition of `IsAdditiveOn`, ~22 000 lines above, because
+`IsAdditiveOn.post_listSum` and `IsRelPicZeroOf.eq_of_aj_eq` need it there.
+Nothing else changed; `postNeg` immediately below still consumes it by name. -/
 
 /-- **An additive map commutes with inversion** (PROVEN) — from
 `postZero` and `u(−x) + u(x) = u(0) = 0`. -/
