@@ -814,6 +814,13 @@ public import Mathlib.NumberTheory.NumberField.Discriminant.Basic
 -- `maxRecDepth 8000` at `163`).  A resource bump is the wrong tool for a decision
 -- procedure that has a norm_num extension upstream; this is that extension.
 public import Mathlib.Tactic.NormNum.Prime
+-- `WeierstrassCurve.exists_monic_dvd_preΨ'_of_j_eq`, which PROVES
+-- `exists_monic_dvd_preΨ_of_j_eq` below: the transformation law of `preΨ'` under a change of
+-- Weierstrass coordinates, which mathlib does not have in any form (it has `map_preΨ'` and
+-- `baseChange_preΨ'` only).  Kept in its own mathlib-facing module because it is uniform in
+-- everything — no prime, no `j`-table, no modular curves — and because a 67k-line file is the
+-- wrong place to develop an EDS scaling law.
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomialTwist
 
 @[expose] public section
 
@@ -18218,9 +18225,8 @@ theorem j_mul_Δ_of_isElliptic (E : WeierstrassCurve ℚ) [E.IsElliptic] :
   linear_combination E.c₄ ^ 3 * hinv
 
 /-- **A monic factor of `Ψ_q` transports along an equality of `j`-invariants**
-(sorry leaf, cut 2026-07-28 out of
-`not_monic_dvd_preΨ_of_mem_isolatedNonCMJInvariants`; the UNIFORM half — no
-prime, no table, no arithmetic).
+(cut 2026-07-28 out of `not_monic_dvd_preΨ_of_mem_isolatedNonCMJInvariants` as
+the UNIFORM half — no prime, no table, no arithmetic; **PROVEN 2026-07-30**).
 
 This is the formal content of the remark "TWIST-INVARIANCE is not an extra
 hypothesis and must not be added as one", which the consumer's docstring makes
@@ -18228,22 +18234,43 @@ and then uses informally.  Making it a leaf is exactly what lets the six
 arithmetic rows below be stated about ONE explicit integral model apiece
 instead of about "any curve with this `j`".
 
-**THE ARGUMENT.**  `E.j = E'.j` with `j ∉ {0, 1728}` forces `Aut_ℚ̄(E) = {±1}`,
-so `E'` is a quadratic twist of `E`: there are `u : ℚˣ` and `r s t : ℚ` with
-`E' = (u, r, s, t) • E`.  Under a variable change `preΨ'` transforms by the
-substitution `x ↦ u²x + r` together with a scalar, so
-`g(X) := u^n · f((X − r)/u²)` is monic of degree `n` and divides `E'.preΨ' q`.
-An affine substitution over `ℚ` is a `ℚ`-algebra automorphism of `ℚ[X]`, hence
-preserves degrees and divisibility; nothing here is special to `q`, to `n`, or
-to the six rows.
+The proof is `WeierstrassCurve.exists_monic_dvd_preΨ'_of_j_eq` in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/DivisionPolynomialTwist.lean`,
+stated there over an arbitrary field of characteristic zero.
 
-`WeierstrassCurve.exists_variableChange_of_j_eq` (mathlib,
-`AlgebraicGeometry/EllipticCurve/IsomOfJ.lean`) supplies the variable change.
-The transformation law for `preΨ'` under `VariableChange` is **NOT** in the pin
-— checked 2026-07-28: mathlib has `map_preΨ'` and `baseChange_preΨ'` for BASE
-CHANGE and nothing at all for `variableChange` — so that law is the one
-genuinely new piece of infrastructure this leaf needs, and it is worth stating
-separately, since the rest of the division-polynomial API will want it too.
+**A CORRECTION TO THE INHERITED ROUTE NOTE, and it is the whole difficulty.**
+The note said: "`E.j = E'.j` with `j ∉ {0, 1728}` forces `Aut_ℚ̄(E) = {±1}`, so
+there are `u : ℚˣ` and `r s t : ℚ` with `E' = (u, r, s, t) • E`", citing
+`WeierstrassCurve.exists_variableChange_of_j_eq`.  **Both halves are wrong over
+`ℚ`.**  That mathlib lemma carries `[IsSepClosed F]` — checked 2026-07-30,
+`Mathlib/AlgebraicGeometry/EllipticCurve/IsomOfJ.lean:333` — and it has to: two
+curves over `ℚ` with the same `j` are quadratic twists, and a quadratic twist by
+a NON-SQUARE `d` is by construction *not* `ℚ`-isomorphic.  There is no such `u`
+in `ℚˣ`.  Taking the cited lemma at face value would have produced a proof of a
+false intermediate step.
+
+What rescues the statement is that the twisting scalar enters only as `u²`.  The
+weight of `preΨ' n` is `n² − 1` for odd `n` and `n² − 4` for even `n`, both
+**even**, and the substitution is `x ↦ u²x + r`; so the entire transformation law
+is a law about `w := u² ∈ ℚˣ`, which IS rational even when `u` is not.  Concretely,
+for two short models `y² = x³ + Ax + B` and `y² = x³ + A'x + B'` of equal `j`,
+equal `j` gives `A³B'² = A'³B²`, so `w := BA'/(B'A)` satisfies `A = w²A'`,
+`B = w³B'`, and `x ↦ wx` is defined over `ℚ`.  (The same `w` is constructed inside
+`WeierstrassCurve.exists_variableChange_of_j_eq_of_split` in
+`Fermat/FLT/KnownIn1980s/EllipticCurves/TateCurve.lean`, which then needs `w` to
+be a square — precisely the step that is unavailable here and not needed.)
+
+The transformation law for `preΨ'` under `VariableChange` is **NOT** in the pin —
+re-checked 2026-07-30: mathlib has `map_preΨ'` and `baseChange_preΨ'` for BASE
+CHANGE and nothing at all for `variableChange` — so that law was the genuinely new
+infrastructure, and it is now stated separately, as the note asked.  Its core is
+`preNormEDS'_scale`: scaling the three seeds of a normalised EDS by `α^6, α^4, α^6`
+scales the `n`-th term by `α^(edsWeight n)`, uniformly, in any commutative ring.
+
+One trap worth recording for anyone extending that file: the `preΨ₄` seed identity
+is **not** a formal consequence of mathlib's four `variableChange_b₂ … b₈` laws.  It
+needs `4b₈ = b₂b₆ − b₄²` (`WeierstrassCurve.b_relation`), which `ring` cannot see,
+so the seed identities must be proven after unfolding all the way to the `aᵢ`.
 
 **`hj0` AND `hj1728` ARE LOAD-BEARING — dropping either makes this FALSE.**  At
 `j = 0` the curves with that `j` are the SEXTIC twists `y² = x³ + d`, and the
@@ -18251,17 +18278,15 @@ substitution relating `y² = x³ + 1` to `y² = x³ + 2` is `x ↦ 2^(1/3) x`, w
 is not defined over `ℚ`; their `Ψ_q` have different rational factorisation
 types.  Same at `j = 1728` with quartic twists.  Both hypotheses are free for
 the consumer, where every entry of `isolatedJInvariants` is strictly negative.
-
-**THE CHECK THAT WOULD REFUTE THIS LEAF**: two elliptic curves over `ℚ` with the
-same `j`-invariant outside `{0, 1728}` whose `q`-division polynomials have
-different multisets of rational irreducible-factor degrees. -/
+Formally they are what makes `A ≠ 0` and `B ≠ 0` in the short model, which is
+what the scaling twist above needs. -/
 theorem exists_monic_dvd_preΨ_of_j_eq {q n : ℕ} (E E' : WeierstrassCurve ℚ)
-    [E.IsElliptic] [E'.IsElliptic] (_hjj : E.j = E'.j)
-    (_hj0 : E.j ≠ 0) (_hj1728 : E.j ≠ 1728)
-    (f : Polynomial ℚ) (_hf : f.Monic) (_hdeg : f.natDegree = n)
-    (_hdvd : f ∣ E.preΨ' q) :
+    [E.IsElliptic] [E'.IsElliptic] (hjj : E.j = E'.j)
+    (hj0 : E.j ≠ 0) (hj1728 : E.j ≠ 1728)
+    (f : Polynomial ℚ) (hf : f.Monic) (hdeg : f.natDegree = n)
+    (hdvd : f ∣ E.preΨ' q) :
     ∃ g : Polynomial ℚ, g.Monic ∧ g.natDegree = n ∧ g ∣ E'.preΨ' q :=
-  sorry
+  _root_.WeierstrassCurve.exists_monic_dvd_preΨ'_of_j_eq E E' hjj hj0 hj1728 f hf hdeg hdvd
 
 /-! #### The six minimal models
 
