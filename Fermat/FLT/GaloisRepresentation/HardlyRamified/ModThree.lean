@@ -15740,7 +15740,9 @@ of `~/cs/FLT` and FALSE of this repository:
 `exists_unramified_extension_of_residueField` — a finite separable extension `k'`
 of the residue field of a discrete valuation ring `R` with fraction field `K`
 lifts to `L/K` with `[L : K] = [k' : k]`, together with a DVR `S` with fraction
-field `L`, `𝔪_S = 𝔪_R·S` (ramification index one) and
+field `L`, ramification index one (but see the ROUTE CORRECTION in the leaf's own
+docstring above: that clause is NOT in the theorem's conclusion, only in its
+module docstring, and recovering it costs one dimension count) and
 `ResidueField S ≃ₐ[ResidueField R] k'`.  Apply it with `R = 𝒪₃ᵥ`, `K = ℚ₃ᵥ` and
 `k' = GF(3^d)` over `ResidueField 𝒪₃ᵥ`.
 
@@ -15784,10 +15786,20 @@ are EQUIVALENT in strength, because `#I(U) = e(U/ℚ₃ᵥ)` is already proven h
 content whatever — it is a RESTATEMENT, and its whole value is that it restates the
 open goal in the vocabulary the available input actually speaks: item 3 of the
 "WHAT REMAINS" list above ("read `#I(U) = 1` off `𝔪_S = 3·S` through
-`span_three_eq_maximalIdeal_pow_card_inertia`") is now discharged, and
-`exists_unramified_extension_of_residueField` delivers `𝔪_S = 𝔪_R·S` verbatim
-rather than an inertia statement.  Items 1 and 2 — the embedding into `ℚ₃ᵥᵃˡᵍ` and
-`IsGalois` — are untouched and are where the work still is.
+`span_three_eq_maximalIdeal_pow_card_inertia`") is now discharged, and the
+restated goal is in ideal-theoretic vocabulary rather than inertia vocabulary,
+which is what a consumer of `exists_unramified_extension_of_residueField` can
+actually feed.  Items 1 and 2 — the embedding into `ℚ₃ᵥᵃˡᵍ` and `IsGalois` — are
+untouched and are where the work still is.
+
+**CORRECTED 2026-07-30**: an earlier version of this sentence said that
+`exists_unramified_extension_of_residueField` "delivers `𝔪_S = 𝔪_R·S` verbatim".
+It does not — the ideal identity is absent from its conclusion, appearing only as a
+parenthetical remark in its module docstring.  The one-lemma repair (a
+`finrank_quotient_map` dimension count against `ResidueField S ≃ₐ k'`) is written
+out in the leaf's own docstring above, together with the two available ways to
+construct `k'`.  So the cut is still worth what it was worth; it just does not
+discharge item 3 for free the way this paragraph claimed.
 
 **CORRECTION 2026-07-30 to the paragraph immediately above, which was false when
 written**: `exists_unramified_extension_of_residueField` did NOT deliver `𝔪_S = 𝔪_R·S`
@@ -50057,6 +50069,68 @@ theorem map_pow_muAction_iff_ray_class (F : Type u) [Field F] [NumberField F]
 /-- **`AlgebraicClosure.map (algebraMap ℚ F)` IS BIJECTIVE** (PROVEN
 2026-07-30, axiom-clean; the first of the three seam lemmas that make
 `exists_badPrimes_mul_muFixer_eq_top_ray_class` below glue).
+/-- **Integers prime to `q` are units of the completed integer ring
+`ℤ_qˆ`** (PROVEN 2026-07-24 — cast-arithmetic helper for the
+unramifiedness bridge `map_localInertiaGroup_fixes_sqrt_neg_three`
+below): if `q ∤ r`, then `r` is a unit of
+`𝒪ᵥ = adicCompletionIntegers ℚ v_q`. A non-unit of the local ring
+`𝒪ᵥ` lies in `𝔪ᵥ = (q)`
+(`maximalIdeal_adicCompletionIntegers_eq_span`), so `r = q·s`; the
+Bézout identity `1 = q·a + r·b` (`Nat.gcd_eq_gcd_ab`, `gcd = 1` since
+`q` is prime and `q ∤ r`) then makes `q` itself a unit, forcing
+`𝔪ᵥ = ⊤`. -/
+theorem isUnit_intCast_adicCompletionIntegers_of_not_dvd
+    {q : ℕ} (hq : q.Prime) (r : ℤ) (hr : ¬ ((q : ℤ) ∣ r)) :
+    IsUnit ((r : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) := by
+  by_contra hnu
+  have hmem : ((r : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) ∈
+      IsLocalRing.maximalIdeal
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat) := by
+    rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff]
+    exact hnu
+  rw [maximalIdeal_adicCompletionIntegers_eq_span hq,
+    Ideal.mem_span_singleton] at hmem
+  obtain ⟨s, hs⟩ := hmem
+  -- Bézout: `1 = q·a + r·b` over `ℤ`
+  have hcop : Nat.gcd q r.natAbs = 1 :=
+    (Nat.Prime.coprime_iff_not_dvd hq).mpr fun hdvd =>
+      hr (Int.dvd_natAbs.mp (Int.natCast_dvd_natCast.mpr hdvd))
+  have hbez := Nat.gcd_eq_gcd_ab q r.natAbs
+  rw [hcop] at hbez
+  have hbez' : (1 : ℤ) = q * Nat.gcdA q r.natAbs +
+      (r.natAbs : ℤ) * Nat.gcdB q r.natAbs := by exact_mod_cast hbez
+  obtain ⟨b, hZ⟩ : ∃ b : ℤ, (1 : ℤ) = q * Nat.gcdA q r.natAbs + r * b := by
+    rcases Int.natAbs_eq r with habs | habs
+    · refine ⟨Nat.gcdB q r.natAbs, ?_⟩
+      rw [← habs] at hbez'
+      exact hbez'
+    · refine ⟨-Nat.gcdB q r.natAbs, ?_⟩
+      have habs' : ((r.natAbs : ℤ)) = -r := by omega
+      rw [habs'] at hbez'
+      linear_combination hbez'
+  have hO := congrArg (fun t : ℤ =>
+    (t : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) hZ
+  push_cast at hO
+  rw [hs] at hO
+  have hqu : IsUnit ((q : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) :=
+    IsUnit.of_mul_eq_one
+      ((Nat.gcdA q r.natAbs : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat) + s * b) (by linear_combination hO.symm)
+  have hqmem : ((q : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) ∈
+      IsLocalRing.maximalIdeal
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat) := by
+    rw [maximalIdeal_adicCompletionIntegers_eq_span hq]
+    exact Ideal.mem_span_singleton_self _
+  exact (IsLocalRing.maximalIdeal.isMaximal _).ne_top
+    (Ideal.eq_top_of_isUnit_mem _ hqmem hqu)
+
 
 `Fᵃˡᵍ` is algebraic over `ℚ` hence over `ℚᵃˡᵍ`, and an algebraic extension of an
 algebraically closed field is trivial
@@ -66074,68 +66148,6 @@ theorem exists_kummer_element_of_quadratic_character_ray_class
       rcases mul_eq_zero.mp h3 with h4 | h4
       · norm_num at h4
       · exact sub_ne_zero_of_ne (Ne.symm hg₀t) h4
-
-/-- **Integers prime to `q` are units of the completed integer ring
-`ℤ_qˆ`** (PROVEN 2026-07-24 — cast-arithmetic helper for the
-unramifiedness bridge `map_localInertiaGroup_fixes_sqrt_neg_three`
-below): if `q ∤ r`, then `r` is a unit of
-`𝒪ᵥ = adicCompletionIntegers ℚ v_q`. A non-unit of the local ring
-`𝒪ᵥ` lies in `𝔪ᵥ = (q)`
-(`maximalIdeal_adicCompletionIntegers_eq_span`), so `r = q·s`; the
-Bézout identity `1 = q·a + r·b` (`Nat.gcd_eq_gcd_ab`, `gcd = 1` since
-`q` is prime and `q ∤ r`) then makes `q` itself a unit, forcing
-`𝔪ᵥ = ⊤`. -/
-theorem isUnit_intCast_adicCompletionIntegers_of_not_dvd
-    {q : ℕ} (hq : q.Prime) (r : ℤ) (hr : ¬ ((q : ℤ) ∣ r)) :
-    IsUnit ((r : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
-      hq.toHeightOneSpectrumRingOfIntegersRat)) := by
-  by_contra hnu
-  have hmem : ((r : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
-      hq.toHeightOneSpectrumRingOfIntegersRat)) ∈
-      IsLocalRing.maximalIdeal
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
-          hq.toHeightOneSpectrumRingOfIntegersRat) := by
-    rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff]
-    exact hnu
-  rw [maximalIdeal_adicCompletionIntegers_eq_span hq,
-    Ideal.mem_span_singleton] at hmem
-  obtain ⟨s, hs⟩ := hmem
-  -- Bézout: `1 = q·a + r·b` over `ℤ`
-  have hcop : Nat.gcd q r.natAbs = 1 :=
-    (Nat.Prime.coprime_iff_not_dvd hq).mpr fun hdvd =>
-      hr (Int.dvd_natAbs.mp (Int.natCast_dvd_natCast.mpr hdvd))
-  have hbez := Nat.gcd_eq_gcd_ab q r.natAbs
-  rw [hcop] at hbez
-  have hbez' : (1 : ℤ) = q * Nat.gcdA q r.natAbs +
-      (r.natAbs : ℤ) * Nat.gcdB q r.natAbs := by exact_mod_cast hbez
-  obtain ⟨b, hZ⟩ : ∃ b : ℤ, (1 : ℤ) = q * Nat.gcdA q r.natAbs + r * b := by
-    rcases Int.natAbs_eq r with habs | habs
-    · refine ⟨Nat.gcdB q r.natAbs, ?_⟩
-      rw [← habs] at hbez'
-      exact hbez'
-    · refine ⟨-Nat.gcdB q r.natAbs, ?_⟩
-      have habs' : ((r.natAbs : ℤ)) = -r := by omega
-      rw [habs'] at hbez'
-      linear_combination hbez'
-  have hO := congrArg (fun t : ℤ =>
-    (t : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
-      hq.toHeightOneSpectrumRingOfIntegersRat)) hZ
-  push_cast at hO
-  rw [hs] at hO
-  have hqu : IsUnit ((q : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
-      hq.toHeightOneSpectrumRingOfIntegersRat)) :=
-    IsUnit.of_mul_eq_one
-      ((Nat.gcdA q r.natAbs : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
-        hq.toHeightOneSpectrumRingOfIntegersRat) + s * b) (by linear_combination hO.symm)
-  have hqmem : ((q : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
-      hq.toHeightOneSpectrumRingOfIntegersRat)) ∈
-      IsLocalRing.maximalIdeal
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
-          hq.toHeightOneSpectrumRingOfIntegersRat) := by
-    rw [maximalIdeal_adicCompletionIntegers_eq_span hq]
-    exact Ideal.mem_span_singleton_self _
-  exact (IsLocalRing.maximalIdeal.isMaximal _).ne_top
-    (Ideal.eq_top_of_isUnit_mem _ hqmem hqu)
 
 set_option maxHeartbeats 1000000 in
 /-- **Local inertia away from `3` fixes `√-3`** (PROVEN 2026-07-24 —
