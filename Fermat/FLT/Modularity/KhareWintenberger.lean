@@ -9234,7 +9234,9 @@ theorem exists_padicCoefficientField (p : ℕ) [Fact p.Prime]
     (E : Type u) [Field E] [NumberField E] :
     ∃ (L : Type u) (_ : Field L) (_ : Algebra ℚ_[p] L) (_ : Module.Finite ℚ_[p] L)
       (ψ : E →+* AlgebraicClosure ℚ_[p]) (ι : L →+* AlgebraicClosure ℚ_[p])
-      (ψL : E →+* L), ι.comp ψL = ψ := by
+      (ψL : E →+* L),
+      (∀ x : ℚ_[p], ι (algebraMap ℚ_[p] L x) =
+        algebraMap ℚ_[p] (AlgebraicClosure ℚ_[p]) x) ∧ ι.comp ψL = ψ := by
   classical
   obtain ⟨α, hα⟩ := Field.exists_primitive_element ℚ E
   let ψ : E →ₐ[ℚ] AlgebraicClosure ℚ_[p] := IsAlgClosed.lift
@@ -9262,9 +9264,16 @@ theorem exists_padicCoefficientField (p : ℕ) [Fact p.Prime]
     (ψ : E →+* AlgebraicClosure ℚ_[p]),
     (L₀.subtype : L₀ →+* _).comp (ULift.ringEquiv : ULift.{u} L₀ ≃+* L₀).toRingHom,
     (ULift.ringEquiv : ULift.{u} L₀ ≃+* L₀).symm.toRingHom.comp
-      (RingHom.codRestrict (ψ : E →+* AlgebraicClosure ℚ_[p]) L₀.toSubfield hrange), ?_⟩
-  ext x
-  rfl
+      (RingHom.codRestrict (ψ : E →+* AlgebraicClosure ℚ_[p]) L₀.toSubfield hrange),
+    ?_, ?_⟩
+  · -- `ι` is a `ℚ_[p]`-ALGEBRA map, not merely a ring map: it is the inclusion of
+    -- an intermediate field of `AlgebraicClosure ℚ_[p] / ℚ_[p]`, transported
+    -- across `ULift`.  Its consumer needs this — see the ROUND-10 note on
+    -- `nonempty_carayolJacobianPackage_of_heckeAlgebraCharacter`.
+    intro x
+    rfl
+  · ext x
+    rfl
 
 /-- **STEP 2a″-β, THE CITED CORE** (sorry leaf; CUT 2026-07-29, ROUND-9, out of
 `exists_carayolJacobianPackage_of_heckeAlgebraCharacter` below, which is now a
@@ -9288,6 +9297,45 @@ permitted. **The topology is NOT quantified over**: it is pinned to
 `moduleTopology ℚ_[3] L` in the conclusion. That is load-bearing — over a
 DISCRETE `L` a continuous `GaloisRep` has finite image and the leaf would be
 FALSE, so do not relax the `letI`s into instance binders.
+
+**ROUND-10 COMPATIBILITY REPAIR (2026-07-30) — `hιalg` WAS MISSING, AND THE
+PARAGRAPH ABOVE IS THE PLACE THE GAP HID.** As stated in ROUND 9, `ι` was an
+arbitrary `RingHom L →+* AlgebraicClosure ℚ_[3]`, with no compatibility asked
+between it and the `Algebra ℚ_[3] L` instance that PINS THE TOPOLOGY of the
+conclusion. Read the safety argument above against that: "`ι L` contains the
+completion of the eigenvalue field" is a statement about the `3`-adic
+topology of `ι L`, and it holds only when `ι` is a `ℚ_[3]`-embedding — then
+`ι L` is finite over `ℚ_[3]`, hence complete, hence contains the closure of
+`ψ₃ E`. For a general ring map the two topologies on `L` — its own
+`moduleTopology ℚ_[3] L`, and the one pulled back along `ι` — are unrelated,
+and the argument says nothing.
+
+The gap is not cosmetic; the package CONSTRAINS `P` integrally, so a
+mismatched `ι` makes `hP` satisfiable by a `P` no package can realise. From
+`congruence` at `w ∉ badF`, `tauJ (Frob w)` is invertible and
+
+    hecke w = tauJ (Frob w) + (P w).coeff 0 • tauJ (Frob w)⁻¹ ,
+
+while `Γ_F` is compact and `tauJ` continuous, so `tauJ (Frob w)` and its
+inverse preserve an `𝒪_L`-lattice of `Vlam` and `hecke w` is bounded on it —
+whence its eigenvalue `-(P w).coeff 1` from `eigen_idempotent` satisfies
+`‖(P w).coeff 1‖ ≤ 1`. (`(P w).coeff 0` is not at risk: it equals the RATIONAL
+integer `N w` by `hnorm`, every ring map fixes `ℚ`, and `hbad3` keeps `3 ∤ N w`
+— which is what that hypothesis is for.) So `(P w).coeff 1` is forced into
+`𝒪_L`. Nothing in the ROUND-9 hypotheses forced that: a field embedding
+`ℚ_[3] ↪ AlgebraicClosure ℚ_[3]` that is not the canonical one exists (map a
+transcendence basis of `ℚ_[3]` over `ℚ` to a different one and extend
+algebraically), it is not continuous, and along such an `ι` the preimage of the
+`3`-adic integer `ψ₃ (heckeF w).coeff 1` need not be an integer of `L`. The
+leaf was then FALSE at that `ι`.
+
+This is REPAIR, not refutation: the witness above needs a transcendence basis
+and is not constructible here, so it is recorded as an argument rather than
+asserted as a counterexample. `hιalg` is added instead, which weakens the leaf,
+deletes no instance of it, and is supplied for free by the sole call site —
+`exists_padicCoefficientField` builds `ι` as the inclusion of an intermediate
+field of `AlgebraicClosure ℚ_[3] / ℚ_[3]` transported across `ULift`, so the
+compatibility is `rfl` and that theorem now returns it as a conjunct.
 
 READ THE ROUND-9 AUDIT on the assembly below before working here: it records
 that a prover owes only a two-dimensional Galois representation (no Shimura
@@ -9324,6 +9372,11 @@ theorem nonempty_carayolJacobianPackage_of_heckeAlgebraCharacter
     (L : Type u) [Field L] [Algebra ℚ_[3] L] [Module.Finite ℚ_[3] L]
     (ψ₃ : E →+* AlgebraicClosure ℚ_[3])
     (ι : L →+* AlgebraicClosure ℚ_[3])
+    -- `ι` IS A `ℚ_[3]`-ALGEBRA MAP (added 2026-07-30, ROUND-10).  Load-bearing,
+    -- and the docstring's own safety argument silently assumed it; see the
+    -- ROUND-10 COMPATIBILITY REPAIR above.
+    (hιalg : ∀ x : ℚ_[3], ι (algebraMap ℚ_[3] L x) =
+      algebraMap ℚ_[3] (AlgebraicClosure ℚ_[3]) x)
     (P : HeightOneSpectrum (NumberField.RingOfIntegers F) → Polynomial L)
     (hP : ∀ w ∉ badF, (P w).map ι = (heckeF w).map ψ₃) :
     letI : TopologicalSpace L := moduleTopology ℚ_[3] L
@@ -9561,7 +9614,8 @@ theorem exists_carayolJacobianPackage_of_heckeAlgebraCharacter
         (P : HeightOneSpectrum (NumberField.RingOfIntegers F) → Polynomial L),
         (∀ w ∉ badF, (P w).map ι = (heckeF w).map ψ₃) ∧
           Nonempty (CarayolJacobianPackage F L badF P) := by
-  obtain ⟨L, hLfield, hLalg, hLfin, ψ₃, ι, ψL, hcomp⟩ := exists_padicCoefficientField 3 E
+  obtain ⟨L, hLfield, hLalg, hLfin, ψ₃, ι, ψL, hιalg, hcomp⟩ :=
+    exists_padicCoefficientField 3 E
   letI := hLfield
   letI := hLalg
   letI := hLfin
@@ -9570,7 +9624,7 @@ theorem exists_carayolJacobianPackage_of_heckeAlgebraCharacter
     rw [Polynomial.map_map, hcomp]
   exact ⟨L, hLfield, hLalg, hLfin, ψ₃, ι, fun w => (heckeF w).map ψL, hmap,
     nonempty_carayolJacobianPackage_of_heckeAlgebraCharacter F hFtr E badF heckeF
-      hbad3 hmonic hdeg hnorm D p 𝒮 θ hSbad hQbad hθ L ψ₃ ι
+      hbad3 hmonic hdeg hnorm D p 𝒮 θ hSbad hQbad hθ L ψ₃ ι hιalg
       (fun w => (heckeF w).map ψL) hmap⟩
 
 /-- **STEP 2a″ — INHABITATION of the quaternionic Shimura-curve JACOBIAN
