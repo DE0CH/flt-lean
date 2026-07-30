@@ -63497,7 +63497,20 @@ over the primes of `n` avoiding `N` sends `0` to `1`, and `0` is coprime to `N`
 when `N = 1` — so at level `1` the identity `coprimePart N n = n` for `n` coprime
 to `N`, which is what `isotypic` needs, would fail at `n = 0`.  The `if` makes
 that identity unconditional.  (`coprimeCore` is still what carries the
-multiplicativity; the `if` branch is discharged from it.) -/
+multiplicativity; the `if` branch is discharged from it.)
+
+**THE SAME REPAIR IS WHAT `exists_modularHeckeAction_atkinLehnerCommuting` ABOVE
+NEEDS**, and that is the only other place in the development that builds a
+Hecke system by truncating the arity.  The release-18 revert took BOTH proofs
+down for one cause, and it recorded the cause without recording a fix; this
+block is the fix, and it is stated once here rather than inside either proof so
+that the second consumer is a citation and not a rediscovery.  The shape there is
+the same — `T' n := (the truncated family)` becomes `T' n := (… ∘ coprimePart N)`
+— and `coprimePart_one` / `coprimePart_mul` / `coprimePart_eq_self` /
+`coprimePart_dvd` are exactly the four facts its four `IsModularHeckeAction`
+clauses will ask for, in that order.  Note this block sits BELOW that declaration
+in the file, so closing it means hoisting these six declarations above it; they
+depend on nothing in between. -/
 
 /-- `∏_{p ∣ n, p ∤ N} p ^ v_p(n)` — the largest divisor of `n` all of whose prime
 factors avoid `N`. -/
