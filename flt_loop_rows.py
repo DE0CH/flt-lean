@@ -537,6 +537,13 @@ def r7_guard(s):
 
 def r7_action(s):
     s["rebaselined"] = s["main"]
+    # The claim is DELIVERED, so it is discharged. Leaving it set would make
+    # ".inflight non-empty with no merger record" ambiguous between "a claim was
+    # dropped on the floor" and "a claim was honoured" -- and r11_action now
+    # recovers the first, so it must be able to tell them apart. Row 9 already
+    # clears it on the failure path; this is the success path saying the same
+    # thing.
+    s["inflight"] = None
     s["jobs"].pop("merger", None)
     note(s, f"7  ADOPTED release {s['main']}: snapshot current, "
             f"queue1 AUDITED with {len(s['queue1']['tasks'])} task(s)")
@@ -558,16 +565,41 @@ def r11_action(s):
     # exists. The merger is what refreshes them, so it must be startable with
     # nothing to merge -- otherwise that state is a silent deadlock in which
     # dispatch is blocked forever on a snapshot nobody will ever rebuild.
-    s["inflight"] = list(s["batch"])
+    #
+    # FOLDED, never overwritten. This line used to read
+    # `s["inflight"] = list(s["batch"])`, which DESTROYS an outstanding claim,
+    # and it destroyed a real one: the bootstrap handed the loop the stopped
+    # fleet's 46-branch merge batch in .inflight with no merger record to own
+    # it, this row fired eleven minutes later because the snapshot was stale,
+    # and all 46 were gone in one assignment. 37 of them were still unmerged
+    # 2 hours later -- every one ahead of main with real work on it, their
+    # worktrees pinned in awaiting_merge forever, since a branch is only freed
+    # by BECOMING an ancestor of main and nothing was ever going to merge it.
+    # Nothing panicked, because no guard asks about an unowned claim: the loop
+    # cannot distinguish work it dropped from work that was never there.
+    #
+    # A non-empty .inflight with no merger record is precisely that dropped
+    # claim -- r7_action discharges the claim it delivers and row 9 restores
+    # the claim it fails to, so the only way to reach this row with one
+    # outstanding is that its owner vanished without either. It is work to be
+    # merged, this is the row that creates the merger, so it joins the claim.
+    # (The simulator has always had a `corrupt: orphan .inflight` injection for
+    # exactly this state. It exercised the path; nobody checked that clobbering
+    # was the wrong answer to it.)
+    orphaned = list(s["inflight"] or [])
+    claim = orphaned + [b for b in s["batch"] if b not in orphaned]
+    s["inflight"] = claim
     s["batch"] = []
     s["jobs"]["merger"] = {
         "kind": "merger", "worktree": "flt-staging", "payload": s["inflight"],
         "token": tok(), "retries": 0, "started": False, "alive": False,
         "sentinel": None,
     }
-    note(s, "11 merger record created; claimed %d branch(es)%s"
-            % (len(s["inflight"]),
-               "" if s["inflight"] else " (refresh only -- nothing to merge)"))
+    note(s, "11 merger record created; claimed %d branch(es)%s%s"
+            % (len(claim),
+               "" if claim else " (refresh only -- nothing to merge)",
+               " [recovered %d orphaned by a vanished merger]" % len(orphaned)
+               if orphaned else ""))
 
 
 def r15_guard(s):

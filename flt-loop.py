@@ -30,6 +30,15 @@ STATE = pathlib.Path.home() / ".flt-loop"
 REPO = pathlib.Path.home() / "flt-lean"
 HOSTMAP = pathlib.Path.home() / ".flt-worker-host"
 SNAPSHOT = pathlib.Path.home() / ".flt-release-lake" / "build"
+# The marker naming the sha those artifacts were built from. It lives BESIDE
+# them, not in the state dir, for two reasons. It has exactly one writer (the
+# merger, as its last act, after the publishing rename), so it cannot disagree
+# with what is on disk. And it is not in a git repo a medic is invited to
+# `diff its way back` through: a state-dir revert would resurrect a stale sha
+# as if it were a fresh observation of the artifacts, which is the one lie the
+# loop cannot survive -- every agent dispatched afterwards seeds its .lake from
+# artifacts believed to be for a different main.
+SNAPSHOT_SHA = pathlib.Path.home() / ".flt-release-lake" / "sha"
 DOCTRINE = pathlib.Path.home() / ".flt-agent-doctrine.md"
 CLAUDE = str(pathlib.Path.home() / ".local" / "bin" / "claude")
 TICK = 10
@@ -76,6 +85,29 @@ def git_repo(*a):
 
 def main_sha():
     return git_repo("rev-parse", "--short", "main").stdout.strip()
+
+
+def canon_sha(v):
+    """Canonical short sha, or the value verbatim if git cannot resolve it.
+
+    Rows 10 and 12 compare `audited` and the snapshot sha against `main` with
+    `==`, and `main` is `rev-parse --short`. The merger is asked for "the main
+    sha you produced" and naturally writes all 40 characters, so release 20 --
+    a complete, green, correct release -- read as UNAUDITED and the loop
+    panicked on its own merge worker. Normalising the spelling here, in the one
+    layer that can ask git what a sha means, keeps the guards' comparison exact
+    rather than loosening them to a prefix test: a prefix test would be a
+    second way to be wrong ("r2" is a prefix of "r20") and the guards are the
+    last place to put an approximation.
+
+    A value git does not recognise is returned unchanged, so a placeholder like
+    `stale-release-19` still correctly compares unequal to main.
+    """
+    v = (v or "").strip()
+    if not v:
+        return v
+    r = git_repo("rev-parse", "--short", "--verify", "-q", v + "^{commit}")
+    return r.stdout.strip() if r.returncode == 0 and r.stdout.strip() else v
 
 
 def is_ancestor(branch):
@@ -255,7 +287,8 @@ def compose(kind, name, j, s):
         body = body.replace("{{FLT_WORKTREE}}", str(pathlib.Path.home() / j["worktree"]))
     elif kind == "merger":
         body = MERGER_TASK % {"inflight": ", ".join(j["payload"]) or "(nothing)",
-                              "snapshot": SNAPSHOT, "state": STATE}
+                              "snapshot": SNAPSHOT, "state": STATE,
+                              "snapshot_sha": SNAPSHOT_SHA}
     elif kind == "medic":
         body = MEDIC_TASK % {"reason": body, "state": STATE,
                              "src": pathlib.Path(__file__).resolve()}
@@ -266,7 +299,7 @@ MERGER_TASK = """\
 You are the merge worker. You produce EVERY derived fact about main, and the
 loop refuses your release if any is missing. Work in ~/flt-staging.
 
-DO ALL FOUR, IN ORDER
+DO ALL FIVE, IN ORDER
  1. Merge these branches into main: %(inflight)s
     After EACH merge run `git diff --stat HEAD^1 HEAD`. A merge can report
     success and carry nothing -- and a dropped payload still builds. Empty for
@@ -282,6 +315,21 @@ DO ALL FOUR, IN ORDER
     is working on is NOT unowned, and queueing it hands the same target to a
     second worker.
  4. Set queue1's first line to `AUDITED: <the main sha you produced>`.
+ 5. LAST, after the artifacts are in place: write that same sha into
+    %(snapshot_sha)s -- the file contents are the sha and nothing else.
+
+    That marker is how the loop learns which main the artifacts at
+    %(snapshot)s belong to, and it CANNOT derive it any other way: a build
+    directory does not say what it was built from. Without it the loop cannot
+    adopt your release and cannot dispatch a single agent, however green your
+    build is. Release 20 was complete, correct and green, and the loop
+    panicked on it because this step did not exist.
+
+    Write it LAST, after the publishing rename, so the marker never names a
+    release whose artifacts are not yet on disk. If you declined branches or
+    the build is not clean, do not write it -- an absent marker correctly says
+    "there is no snapshot to dispatch against", and a wrong one seeds every
+    agent in the fleet with a .lake for the wrong main.
 """
 
 MEDIC_TASK = """\
@@ -375,7 +423,7 @@ def load():
     aud = None
     if q1 and q1[0].startswith("AUDITED:"):
         v = q1[0].split(":", 1)[1].strip()
-        aud = None if v in ("none", "") else v
+        aud = None if v in ("none", "") else canon_sha(v)
         q1 = q1[1:]
     tokens = live_tokens()
     jobs = {}
@@ -403,7 +451,18 @@ def load():
         j.setdefault("retries", 0)
         jobs[n] = j
     wh = worker_hosts()
-    snap = rd(STATE / "snapshot.json")
+    # An OBSERVATION of the artifacts on disk, read from the marker the merger
+    # leaves beside them -- not loop state, so save() never writes it back.
+    # Nothing wrote it at all until release 20 panicked: the merger's task text
+    # said "leave the artifacts at <path>" and never mentioned the marker the
+    # ADOPT guard demands, so row 10 could not fire and never once did in the
+    # loop's whole history. The simulator hid it -- its fake merger sets
+    # s["snapshot"] itself (flt-loop-fs.py, "s['snapshot'] = {'sha': s['main']}"),
+    # so the ROWS were tested against a world that produced a fact the real
+    # world had nobody to produce. Shared rules are not enough; the two
+    # environments have to agree about who writes what.
+    ssha = canon_sha(rd(SNAPSHOT_SHA, "") or "")
+    snap = {"sha": ssha} if ssha and SNAPSHOT.is_dir() else None
     stored = _pairs("workers")
     sha = main_sha()
     # Only awaiting_merge branches can be ancestors that matter, and the answer
@@ -424,8 +483,8 @@ def load():
     return {
         "stop": (STATE / "STOP").exists(),
         "main": main_sha(),
-        "rebaselined": (rd(STATE / "rebaselined", "") or "").strip(),
-        "snapshot": json.loads(snap) if snap else None,
+        "rebaselined": canon_sha(rd(STATE / "rebaselined", "") or ""),
+        "snapshot": snap,
         "queue1": {"audited": aud, "tasks": split_tasks("\n".join(q1))},
         "queue2": split_tasks(rd(STATE / "queue2", "") or ""),
         "batch": [b for b in (rd(STATE / "batch", "") or "").splitlines() if b.strip()],
@@ -452,11 +511,13 @@ def save(s):
         rm(STATE / "inflight")
     else:
         wr(STATE / "inflight", "".join(b + "\n" for b in s["inflight"]))
-    if s["snapshot"] is None:
-        rm(STATE / "snapshot.json")
-    else:
-        wr(STATE / "snapshot.json", json.dumps(s["snapshot"]))
-    wr(STATE / "workers", "".join("%s %s\n" % (w, st)
+    # NOT written: s["snapshot"]. It is an observation of ~/.flt-release-lake,
+    # and the merger is its only writer. Mirroring it into the state repo would
+    # give the loop a second, revertable copy of a fact about the world -- and
+    # an inert file that still looks authoritative is a trap for the next
+    # medic. `rebaselined` and the row-10 commit message already carry the
+    # released sha into the transition trace.
+    wr(STATE / "workers","".join("%s %s\n" % (w, st)
                                   for w, st in sorted(s["workers"].items()) if st))
     if s["stop"]:
         wr(STATE / "STOP", "halted\n")
