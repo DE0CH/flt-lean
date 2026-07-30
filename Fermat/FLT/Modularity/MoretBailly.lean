@@ -85,6 +85,12 @@ public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
 -- because it is pure group theory, shares nothing with this module, and this
 -- module is already 38k lines (the file is the unit of elaboration).
 public import Fermat.FLT.Modularity.DivisibleTorsionParam
+-- The classification of an involution of a divisible group whose `n`-torsion is
+-- `(ℤ/n)²`, i.e. the whole content of what used to be the sorry leaf
+-- `exists_adaptedFrame_level` below.  Split out for the same reason as the
+-- module above: it is pure abelian group theory, and the file is the unit of
+-- elaboration.
+public import Fermat.FLT.Modularity.InvolutionFrame
 -- The VENDORED quaternionic automorphic-forms development (weight-2 forms on a
 -- totally definite quaternion algebra over a totally real field, with their
 -- Hecke algebras).  It is imported HERE, and only here, because
@@ -43053,7 +43059,391 @@ theorem exists_torsionParam_of_divisible {P : Type*} [AddCommGroup P]
       (∀ n : ℕ, n ≠ 0 → ∀ y : P, (n : ℤ) • y = 0 → ∃ v, θ v = y) :=
   DivisibleTorsion.exists_torsionParam hcard
 
-/-- **THE ADAPTED FRAME OF THE INVOLUTION** (sorry leaf, cut 2026-07-27 out of
+section AdaptedFrame
+
+namespace DivisibleTorsion
+
+variable {P : Type*} [AddCommGroup P]
+
+/-- **AN ADAPTED FRAME AT LEVEL `n`** (2026-07-28): a `ℤ/n`-basis `(p, q)` of the
+`n`-torsion of `P` in which the involution `c` is the matrix `[[1, ε], [0, −1]]`.
+
+This is `IsTorsionBasis` (same file) plus the two intertwining equations, and it
+is the finite-level shadow of the ADAPTED FRAME that
+`exists_conjFrame_realConjAdd` below asks for over `ℚ/ℤ`. -/
+structure IsAdaptedFrame (ε : Bool) (c : P →+ P) (n : ℕ) (pq : P × P) : Prop where
+  basis : IsTorsionBasis n pq
+  fix : c pq.1 = pq.1
+  twist : c pq.2 = (if ε then pq.1 else 0) - pq.2
+
+/-- Restricting an adapted frame at level `m * d` to one at level `m`.
+
+Adaptedness costs NOTHING here: `c` is additive, so it commutes with `d • −`, and
+both equations survive the restriction verbatim.  All the content is
+`IsTorsionBasis.restrict`.  This is the reason the Kőnig argument below is a
+transcription of `exists_compatibleBasis` rather than a new argument. -/
+theorem IsAdaptedFrame.restrict {ε : Bool} {c : P →+ P} {m d : ℕ} (hm : m ≠ 0) (hd : d ≠ 0)
+    {pq : P × P} (h : IsAdaptedFrame ε c (m * d) pq) :
+    IsAdaptedFrame ε c m ((d : ℤ) • pq.1, (d : ℤ) • pq.2) where
+  basis := h.basis.restrict hm hd
+  fix := by
+    show c ((d : ℤ) • pq.1) = (d : ℤ) • pq.1
+    rw [map_zsmul, h.fix]
+  twist := by
+    show c ((d : ℤ) • pq.2) = (if ε then (d : ℤ) • pq.1 else 0) - (d : ℤ) • pq.2
+    rw [map_zsmul, h.twist]
+    cases ε <;> simp [smul_sub]
+
+/-- **A COMPATIBLE SYSTEM OF ADAPTED FRAMES** (PROVEN 2026-07-28), by Kőnig's
+lemma over the divisibility order, exactly as `exists_compatibleBasis` does it
+for plain torsion bases: the sets of adapted frames of the `i !`-torsion are
+finite and nonempty, and the transition maps are the restrictions above.
+
+Note the hypothesis is FINITENESS of each torsion subgroup, not the count `n²`
+that `exists_compatibleBasis` asks for.  The count is used there only to derive
+finiteness; nonemptiness comes from `hlevel` here, so the weaker hypothesis
+suffices and is much cheaper for a consumer to supply. -/
+theorem exists_compatibleAdaptedFrame {ε : Bool} {c : P →+ P}
+    (hfinT : ∀ n : ℕ, n ≠ 0 → Finite {x : P // (n : ℤ) • x = 0})
+    (hlevel : ∀ n : ℕ, n ≠ 0 → ∃ pq : P × P, IsAdaptedFrame ε c n pq) :
+    ∃ f : ℕ → P × P, (∀ i, IsAdaptedFrame ε c (Nat.factorial i) (f i)) ∧
+      ∀ i j, i ≤ j → (cfac i j : ℤ) • (f j).1 = (f i).1 ∧
+        (cfac i j : ℤ) • (f j).2 = (f i).2 := by
+  have hne : ∀ i : ℕ, Nonempty {pq : P × P // IsAdaptedFrame ε c (Nat.factorial i) pq} := by
+    intro i
+    obtain ⟨pq, h⟩ := hlevel _ (Nat.factorial_ne_zero i)
+    exact ⟨⟨pq, h⟩⟩
+  have hfin : ∀ i : ℕ, Finite {pq : P × P // IsAdaptedFrame ε c (Nat.factorial i) pq} := by
+    intro i
+    haveI := hfinT _ (Nat.factorial_ne_zero i)
+    refine Finite.of_injective
+      (fun x : {pq : P × P // IsAdaptedFrame ε c (Nat.factorial i) pq} =>
+        ((⟨x.1.1, x.2.basis.smul_fst⟩ : {y : P // ((Nat.factorial i : ℕ) : ℤ) • y = 0}),
+         (⟨x.1.2, x.2.basis.smul_snd⟩ : {y : P // ((Nat.factorial i : ℕ) : ℤ) • y = 0}))) ?_
+    intro x y hxy
+    have h1 : x.1.1 = y.1.1 := congrArg Subtype.val (congrArg Prod.fst hxy)
+    have h2 : x.1.2 = y.1.2 := congrArg Subtype.val (congrArg Prod.snd hxy)
+    exact Subtype.ext (Prod.ext h1 h2)
+  let α : ℕ → Type _ := fun i => {pq : P × P // IsAdaptedFrame ε c (Nat.factorial i) pq}
+  let π : {i j : ℕ} → (hij : i ≤ j) → α j → α i := fun {i j} hij x =>
+    ⟨((cfac i j : ℤ) • x.1.1, (cfac i j : ℤ) • x.1.2),
+      IsAdaptedFrame.restrict (Nat.factorial_ne_zero i) (cfac_ne_zero hij)
+        (by rw [cfac_spec hij]; exact x.2)⟩
+  obtain ⟨g, hg⟩ := @exists_seq_forall_proj_of_forall_finite α (hfin 0) hne π
+    (fun i a => by
+      apply Subtype.ext
+      show ((cfac i i : ℤ) • a.1.1, (cfac i i : ℤ) • a.1.2) = a.1
+      rw [cfac_self]
+      simp)
+    (fun i j k hij hjk a => by
+      apply Subtype.ext
+      show ((cfac i j : ℤ) • ((cfac j k : ℤ) • a.1.1), (cfac i j : ℤ) • ((cfac j k : ℤ) • a.1.2))
+          = ((cfac i k : ℤ) • a.1.1, (cfac i k : ℤ) • a.1.2)
+      rw [smul_smul, smul_smul, ← Nat.cast_mul, cfac_trans hij hjk])
+    (fun i a => by
+      haveI := hfin (i + 1)
+      exact Set.toFinite _)
+  refine ⟨fun i => (g i).1, fun i => (g i).2, fun i j hij => ⟨?_, ?_⟩⟩
+  · exact congrArg (fun z => z.1.1) (hg hij)
+  · exact congrArg (fun z => z.1.2) (hg hij)
+
+/-- **THE ADAPTED PARAMETRISATION** (PROVEN 2026-07-28): from adapted frames at
+every finite level, a pair of additive maps `u, w : ℚ/ℤ → P` intertwining
+`realConjAdd ε` with `c`, injective as a pair, with image the whole torsion
+subgroup.
+
+This is `exists_torsionParam` (same file) carrying the involution along.  The
+two intertwining equations hold because `qmap` sends `x` to `a • rₖ` for a single
+integer `a` and a single level `k`, so they are the frame's own equations scaled
+by `a` — no compatibility argument is needed for them, only for the system. -/
+theorem exists_adaptedParam {ε : Bool} {c : P →+ P}
+    (hfinT : ∀ n : ℕ, n ≠ 0 → Finite {x : P // (n : ℤ) • x = 0})
+    (hlevel : ∀ n : ℕ, n ≠ 0 → ∃ pq : P × P, IsAdaptedFrame ε c n pq) :
+    ∃ u w : (ℚ ⧸ (1 : Submodule ℤ ℚ)) →+ P,
+      (∀ t, c (u t) = u t) ∧
+      (∀ t, c (w t) = (if ε then u t else 0) - w t) ∧
+      Function.Injective (fun v : Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ)) => u (v 0) + w (v 1)) ∧
+      (∀ y : P, (∃ n : ℕ, n ≠ 0 ∧ (n : ℤ) • y = 0) →
+        ∃ v : Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ)), u (v 0) + w (v 1) = y) := by
+  obtain ⟨f, hframe, hcompat⟩ := exists_compatibleAdaptedFrame hfinT hlevel
+  have hbasis : ∀ i, IsTorsionBasis (Nat.factorial i) (f i) := fun i => (hframe i).basis
+  have hp : ∀ i j : ℕ, i ≤ j → (cfac i j : ℤ) • (fun i => (f i).1) j = (fun i => (f i).1) i :=
+    fun i j h => (hcompat i j h).1
+  have hq : ∀ i j : ℕ, i ≤ j → (cfac i j : ℤ) • (fun i => (f i).2) j = (fun i => (f i).2) i :=
+    fun i j h => (hcompat i j h).2
+  have hp0 : (fun i => (f i).1) 0 = 0 := by
+    have h := (hbasis 0).smul_fst
+    simpa using h
+  have hq0 : (fun i => (f i).2) 0 = 0 := by
+    have h := (hbasis 0).smul_snd
+    simpa using h
+  set U := qquot hp hp0 with hU
+  set W := qquot hq hq0 with hW
+  have hcU : ∀ x : ℚ, c (qmap (fun i => (f i).1) x) = qmap (fun i => (f i).1) x := by
+    intro x
+    show c ((x * ((Nat.factorial x.den : ℕ) : ℚ)).num • (f x.den).1) = _
+    rw [map_zsmul, (hframe x.den).fix]
+    rfl
+  have hcW : ∀ x : ℚ, c (qmap (fun i => (f i).2) x)
+      = (if ε then qmap (fun i => (f i).1) x else 0) - qmap (fun i => (f i).2) x := by
+    intro x
+    show c ((x * ((Nat.factorial x.den : ℕ) : ℚ)).num • (f x.den).2) = _
+    rw [map_zsmul, (hframe x.den).twist]
+    cases ε <;> simp [qmap, smul_sub]
+  have hrep : ∀ v : Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ)), ∃ (k : ℕ) (a b : ℤ),
+      U (v 0) + W (v 1) = a • (f k).1 + b • (f k).2 ∧
+      v 0 = Submodule.Quotient.mk ((a : ℚ) / ((Nat.factorial k : ℕ) : ℚ)) ∧
+      v 1 = Submodule.Quotient.mk ((b : ℚ) / ((Nat.factorial k : ℕ) : ℚ)) := by
+    intro v
+    obtain ⟨x, hx⟩ := Submodule.Quotient.mk_surjective (1 : Submodule ℤ ℚ) (v 0)
+    obtain ⟨y, hy⟩ := Submodule.Quotient.mk_surjective (1 : Submodule ℤ ℚ) (v 1)
+    have hkpos : 0 < x.den * y.den :=
+      Nat.mul_pos (Nat.pos_of_ne_zero x.den_ne_zero) (Nat.pos_of_ne_zero y.den_ne_zero)
+    have hkfac : x.den * y.den ∣ Nat.factorial (x.den * y.den) := Nat.dvd_factorial hkpos le_rfl
+    obtain ⟨a, ha⟩ := exists_num_of_dvd (dvd_trans ⟨y.den, rfl⟩ hkfac)
+    obtain ⟨b, hb⟩ := exists_num_of_dvd (dvd_trans ⟨x.den, mul_comm x.den y.den⟩ hkfac)
+    have hfacne : ((Nat.factorial (x.den * y.den) : ℕ) : ℚ) ≠ 0 := by
+      exact_mod_cast Nat.factorial_ne_zero _
+    have hxa : (a : ℚ) / ((Nat.factorial (x.den * y.den) : ℕ) : ℚ) = x := by
+      rw [← ha]; field_simp
+    have hyb : (b : ℚ) / ((Nat.factorial (x.den * y.den) : ℕ) : ℚ) = y := by
+      rw [← hb]; field_simp
+    refine ⟨x.den * y.den, a, b, ?_, ?_, ?_⟩
+    · rw [← hx, ← hy, hU, hW, qquot_mk, qquot_mk, qmap_eq hp ha, qmap_eq hq hb]
+    · rw [hxa, hx]
+    · rw [hyb, hy]
+  refine ⟨U.toAddMonoidHom, W.toAddMonoidHom, ?_, ?_, ?_, ?_⟩
+  · intro t
+    obtain ⟨x, rfl⟩ := Submodule.Quotient.mk_surjective (1 : Submodule ℤ ℚ) t
+    show c (U (Submodule.Quotient.mk x)) = U (Submodule.Quotient.mk x)
+    rw [hU, qquot_mk]
+    exact hcU x
+  · intro t
+    obtain ⟨x, rfl⟩ := Submodule.Quotient.mk_surjective (1 : Submodule ℤ ℚ) t
+    show c (W (Submodule.Quotient.mk x))
+      = (if ε then U (Submodule.Quotient.mk x) else 0) - W (Submodule.Quotient.mk x)
+    rw [hU, hW, qquot_mk, qquot_mk]
+    exact hcW x
+  · intro v w hvw
+    have hvw' : U (v 0) + W (v 1) = U (w 0) + W (w 1) := hvw
+    have hzero : U ((v - w) 0) + W ((v - w) 1) = 0 := by
+      simp only [Pi.sub_apply, map_sub]
+      rw [sub_add_sub_comm, hvw', sub_self]
+    obtain ⟨k, a, b, hsum, h0, h1⟩ := hrep (v - w)
+    rw [hsum] at hzero
+    obtain ⟨hda, hdb⟩ := (hbasis k).indep a b hzero
+    have hmk : ∀ e : ℤ, ((Nat.factorial k : ℕ) : ℤ) ∣ e →
+        (Submodule.Quotient.mk ((e : ℚ) / ((Nat.factorial k : ℕ) : ℚ)) :
+          ℚ ⧸ (1 : Submodule ℤ ℚ)) = 0 := by
+      intro e he
+      obtain ⟨e', rfl⟩ := he
+      have hfacne : ((Nat.factorial k : ℕ) : ℚ) ≠ 0 := by exact_mod_cast Nat.factorial_ne_zero k
+      have hrw : ((((Nat.factorial k : ℕ) : ℤ) * e' : ℤ) : ℚ) / ((Nat.factorial k : ℕ) : ℚ)
+          = ((e' : ℤ) : ℚ) := by push_cast; field_simp
+      rw [hrw, Submodule.Quotient.mk_eq_zero]
+      exact Submodule.mem_one.mpr ⟨e', by simp⟩
+    have hv0 : (v - w) 0 = 0 := by rw [h0]; exact hmk a hda
+    have hv1 : (v - w) 1 = 0 := by rw [h1]; exact hmk b hdb
+    funext i
+    fin_cases i
+    · have h := hv0
+      simp only [Pi.sub_apply] at h
+      exact sub_eq_zero.mp h
+    · have h := hv1
+      simp only [Pi.sub_apply] at h
+      exact sub_eq_zero.mp h
+  · rintro y ⟨n, hn, hy⟩
+    have hnd : (n : ℤ) ∣ ((Nat.factorial n : ℕ) : ℤ) := by
+      exact_mod_cast Nat.dvd_factorial (Nat.pos_of_ne_zero hn) le_rfl
+    have hy' : ((Nat.factorial n : ℕ) : ℤ) • y = 0 := by
+      obtain ⟨e, he⟩ := hnd
+      rw [he, mul_comm (n : ℤ) e, ← smul_smul, hy, smul_zero]
+    obtain ⟨a, b, hab⟩ := (hbasis n).span y hy'
+    have hfacne : ((Nat.factorial n : ℕ) : ℚ) ≠ 0 := by exact_mod_cast Nat.factorial_ne_zero n
+    refine ⟨![Submodule.Quotient.mk ((a : ℚ) / ((Nat.factorial n : ℕ) : ℚ)),
+      Submodule.Quotient.mk ((b : ℚ) / ((Nat.factorial n : ℕ) : ℚ))], ?_⟩
+    have hU' : U (Submodule.Quotient.mk ((a : ℚ) / ((Nat.factorial n : ℕ) : ℚ)))
+        = a • (f n).1 := by
+      rw [hU, qquot_mk]
+      refine qmap_eq hp ?_
+      field_simp
+    have hW' : W (Submodule.Quotient.mk ((b : ℚ) / ((Nat.factorial n : ℕ) : ℚ)))
+        = b • (f n).2 := by
+      rw [hW, qquot_mk]
+      refine qmap_eq hq ?_
+      field_simp
+    show U (![Submodule.Quotient.mk ((a : ℚ) / ((Nat.factorial n : ℕ) : ℚ)),
+        Submodule.Quotient.mk ((b : ℚ) / ((Nat.factorial n : ℕ) : ℚ))] 0)
+      + W (![Submodule.Quotient.mk ((a : ℚ) / ((Nat.factorial n : ℕ) : ℚ)),
+        Submodule.Quotient.mk ((b : ℚ) / ((Nat.factorial n : ℕ) : ℚ))] 1) = y
+    simp only [Matrix.cons_val_zero, Matrix.cons_val_one]
+    rw [hU', hW', hab]
+
+/-- Every `n`-torsion element of `ℚ/ℤ` is `a/n` for an integer `a`. -/
+theorem exists_intDiv_of_ratQuot_torsion {n : ℕ} (hn : n ≠ 0)
+    {x : ℚ ⧸ (1 : Submodule ℤ ℚ)} (hx : (n : ℤ) • x = 0) :
+    ∃ a : ℤ, x = Submodule.Quotient.mk ((a : ℚ) / (n : ℚ)) := by
+  obtain ⟨r, rfl⟩ := Submodule.Quotient.mk_surjective (1 : Submodule ℤ ℚ) x
+  have hnq : (n : ℚ) ≠ 0 := Nat.cast_ne_zero.mpr hn
+  have h0 : (Submodule.Quotient.mk ((n : ℚ) * r) : ℚ ⧸ (1 : Submodule ℤ ℚ)) = 0 := by
+    rw [show ((n : ℚ) * r) = ((n : ℤ) • r) by rw [zsmul_eq_mul]; push_cast; ring]
+    exact hx
+  obtain ⟨a, ha⟩ := Submodule.mem_one.mp (Submodule.Quotient.mk_eq_zero _ |>.mp h0)
+  refine ⟨a, ?_⟩
+  have ha' : (a : ℚ) = (n : ℚ) * r := by rw [← ha]; simp
+  rw [ha']
+  congr 1
+  field_simp
+
+/-- The `n`-torsion of `ℚ/ℤ` is finite (it is `ℤ/n`, but only finiteness is
+needed downstream). -/
+theorem finite_ratQuot_torsion {n : ℕ} (hn : n ≠ 0) :
+    Finite {x : ℚ ⧸ (1 : Submodule ℤ ℚ) // (n : ℤ) • x = 0} := by
+  haveI : NeZero n := ⟨hn⟩
+  have hnq : (n : ℚ) ≠ 0 := Nat.cast_ne_zero.mpr hn
+  have hmem : ∀ a : ℤ, (n : ℤ) •
+      (Submodule.Quotient.mk ((a : ℚ) / (n : ℚ)) : ℚ ⧸ (1 : Submodule ℤ ℚ)) = 0 := by
+    intro a
+    show (Submodule.Quotient.mk ((n : ℤ) • ((a : ℚ) / (n : ℚ))) : ℚ ⧸ (1 : Submodule ℤ ℚ)) = 0
+    rw [Submodule.Quotient.mk_eq_zero]
+    refine Submodule.mem_one.mpr ⟨a, ?_⟩
+    have halg : (algebraMap ℤ ℚ) a = (a : ℚ) := by simp
+    rw [halg, zsmul_eq_mul]
+    push_cast
+    field_simp
+  refine Finite.of_surjective
+    (fun a : ZMod n => (⟨Submodule.Quotient.mk (((a.val : ℤ) : ℚ) / (n : ℚ)),
+      hmem (a.val : ℤ)⟩ : {x : ℚ ⧸ (1 : Submodule ℤ ℚ) // (n : ℤ) • x = 0})) ?_
+  rintro ⟨x, hx⟩
+  obtain ⟨a, rfl⟩ := exists_intDiv_of_ratQuot_torsion hn hx
+  refine ⟨(a : ZMod n), Subtype.ext ?_⟩
+  have hdvd : (n : ℤ) ∣ (((a : ZMod n).val : ℤ) - a) := by
+    have h := (ZMod.intCast_zmod_eq_zero_iff_dvd (((a : ZMod n).val : ℤ) - a) n).mp (by
+      push_cast [ZMod.natCast_val, ZMod.intCast_cast, ZMod.cast_id]
+      ring)
+    exact h
+  obtain ⟨e, he⟩ := hdvd
+  show (Submodule.Quotient.mk ((((a : ZMod n).val : ℤ) : ℚ) / (n : ℚ)) :
+    ℚ ⧸ (1 : Submodule ℤ ℚ)) = Submodule.Quotient.mk ((a : ℚ) / (n : ℚ))
+  rw [Submodule.Quotient.eq]
+  refine Submodule.mem_one.mpr ⟨e, ?_⟩
+  have hz : ((((a : ZMod n).val : ℤ) : ℚ)) - (a : ℚ) = ((n : ℚ)) * (e : ℚ) := by
+    exact_mod_cast congrArg (fun z : ℤ => (z : ℚ)) he
+  show ((e : ℤ) : ℚ) = ((((a : ZMod n).val : ℤ) : ℚ) / (n : ℚ)) - ((a : ℚ) / (n : ℚ))
+  field_simp
+  linarith [hz]
+
+/-- Every element of `(ℚ/ℤ)²` is torsion.  This is what turns the injectivity and
+torsion-surjectivity of `exists_adaptedParam` into BIJECTIVITY. -/
+theorem exists_smul_eq_zero_ratQuotSq (v : Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) :
+    ∃ n : ℕ, n ≠ 0 ∧ (n : ℤ) • v = 0 := by
+  obtain ⟨x, hx⟩ := Submodule.Quotient.mk_surjective (1 : Submodule ℤ ℚ) (v 0)
+  obtain ⟨y, hy⟩ := Submodule.Quotient.mk_surjective (1 : Submodule ℤ ℚ) (v 1)
+  refine ⟨x.den * y.den, Nat.mul_ne_zero x.den_ne_zero y.den_ne_zero, ?_⟩
+  have hkill : ∀ (r : ℚ) (m : ℕ), r.den ∣ m →
+      ((m : ℤ) • (Submodule.Quotient.mk r : ℚ ⧸ (1 : Submodule ℤ ℚ))) = 0 := by
+    intro r m hm
+    obtain ⟨a, ha⟩ := exists_num_of_dvd (x := r) (N := m) hm
+    show (Submodule.Quotient.mk ((m : ℤ) • r) : ℚ ⧸ (1 : Submodule ℤ ℚ)) = 0
+    rw [Submodule.Quotient.mk_eq_zero]
+    refine Submodule.mem_one.mpr ⟨a, ?_⟩
+    rw [show ((m : ℤ) • r) = r * (m : ℚ) by rw [zsmul_eq_mul]; push_cast; ring, ha]
+    simp
+  funext i
+  fin_cases i
+  · show (((x.den * y.den : ℕ) : ℤ) • v 0) = 0
+    rw [← hx]
+    exact hkill x _ ⟨y.den, rfl⟩
+  · show (((x.den * y.den : ℕ) : ℤ) • v 1) = 0
+    rw [← hy]
+    exact hkill y _ ⟨x.den, mul_comm x.den y.den⟩
+
+/-- The `n`-torsion of `(ℚ/ℤ)²` is finite. -/
+theorem finite_ratQuotSq_torsion {n : ℕ} (hn : n ≠ 0) :
+    Finite {x : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) // (n : ℤ) • x = 0} := by
+  haveI := finite_ratQuot_torsion hn
+  refine Finite.of_injective
+    (fun x : {x : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) // (n : ℤ) • x = 0} =>
+      ((⟨x.1 0, congrFun x.2 0⟩ : {z : ℚ ⧸ (1 : Submodule ℤ ℚ) // (n : ℤ) • z = 0}),
+       (⟨x.1 1, congrFun x.2 1⟩ : {z : ℚ ⧸ (1 : Submodule ℤ ℚ) // (n : ℤ) • z = 0}))) ?_
+  intro x y hxy
+  have h0 : x.1 0 = y.1 0 := congrArg Subtype.val (congrArg Prod.fst hxy)
+  have h1 : x.1 1 = y.1 1 := congrArg Subtype.val (congrArg Prod.snd hxy)
+  refine Subtype.ext (funext fun i => ?_)
+  fin_cases i
+  · exact h0
+  · exact h1
+
+end DivisibleTorsion
+
+/-- **THE FINITE-LEVEL CLASSIFICATION OF THE INVOLUTION** (**PROVEN 2026-07-30**,
+sorry-free; it was a bare `sorry` leaf cut 2026-07-28 out of
+`exists_conjFrame_realConjAdd` below): the involution `c` of `(ℚ/ℤ)²` admits an
+ADAPTED FRAME AT EVERY FINITE LEVEL `n ≠ 0` — a `ℤ/n`-basis `(p, q)` of `A[n]`
+with `c p = p` and `c q = [ε]·p − q`.
+
+The proof is `InvolutionFrame.exists_frame_ratQuotSq`
+(`Modularity/InvolutionFrame.lean`, new); this declaration is that theorem plus
+one constructor, `IsFrame` being `IsAdaptedFrame` written as a conjunction so
+that the upstream module does not have to import this one.  With it the whole
+archimedean-conjugation cluster from `exists_realWeierstrassCurveWithConjTorsion`
+down is `sorry`-free.
+
+WHAT THE PROOF IS *NOT*, and this is the finding of the task that closed it.  The
+plan recorded here — "`A[n] ≅ (ℤ/n)²`, split `n` by CRT and argue prime by prime,
+Diederichsen–Reiner at `2^k`" — cannot work as stated, because **the level-`n`
+statement is FALSE for an abstract involution of `(ℤ/n)²` satisfying the level-`n`
+hypotheses.**  Counterexample: over `ℤ/8`, `c = diag(1, 3)` is an involution
+(`3² = 9 = 1`), is `≠ ±1` mod `4` (it is `diag(1,−1)` there), and fixes all four
+points of `A[2]` (`c ≡ 1` mod `2`), so it satisfies every hypothesis read at
+levels dividing `8`; but its `(−1)`-eigenspace is `{x : 2x = 0} × {y : 4y = 0}`,
+whose elements all have order at most `4`, so there is NO adapted frame at level
+`8`.  What excludes it here is that `diag(1, 3)` is not the reduction of any
+involution of `(ℚ/ℤ)²`: `u² = 1` in `ℤ₂` forces `u = ±1`, and `±1 mod 8 ∈ {1, 7}`.
+
+So a proof MUST use levels beyond `n` — equivalently, the global group.  The one
+given uses DIVISIBILITY of `(ℚ/ℤ)²` throughout, and never mentions `M₂(Ẑ)`,
+lattices, or the Diederichsen–Reiner classification:
+
+* `ε = false` (`c` fixes `A[2]`): then `1 − c` kills `A[2]`, so by divisibility it
+  is `2f` for an endomorphism `f`, and `f` is idempotent because `End` of a
+  divisible group is torsion-free.  `A = ker f ⊕ im f` with `c = ±1` on the
+  summands, both summands divisible, and a divisible subgroup whose `p`-torsion
+  has `p` points for every prime has CYCLIC `n`-torsion of order `n` at every
+  level; the two generators are the frame.  `hne_id`/`hne_neg` are read at `p²`
+  (never at `p`), which is what rules out a summand's being everything.
+* `ε = true`: no such `f` exists, and `ker(c−1)`, `ker(c+1)` meet in a group of
+  order `2` at every even level, so they never split `A[n]`.  Instead both kernels
+  are shown DIVISIBLE — the `2`-divisibility step is exactly where `hfix2` is
+  used — which gives cyclic `n`-torsion of order `n` again; at odd levels the two
+  generators give the frame after a `½` shear, at levels `2^k` the frame is
+  `(v + cv, v)` for any lift `v` of an unfixed `w ∈ A[2]`, and frames at coprime
+  levels add.
+
+WHY THE HYPOTHESES SUFFICE is therefore not the level-by-level check that was
+recorded here (that check is unsound, as above): it is that `hne_id`/`hne_neg` at
+`p²` for every prime `p` pin the two eigen-subgroups' `p`-torsion to `p` points
+each, and `hfix2` decides which of the two global shapes `c` has. -/
+theorem exists_adaptedFrame_level (ε : Bool)
+    (c : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) →+ (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))))
+    (hc : ∀ x, c (c x) = x)
+    (hne_id : ∀ n : ℕ, 3 ≤ n → ∃ x, (n : ℤ) • x = 0 ∧ c x ≠ x)
+    (hne_neg : ∀ n : ℕ, 3 ≤ n → ∃ x, (n : ℤ) • x = 0 ∧ c x ≠ -x)
+    (hfix2 : Nat.card {x : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) //
+      (2 : ℤ) • x = 0 ∧ c x = x} = if ε then 2 else 4)
+    (n : ℕ) (hn : n ≠ 0) :
+    ∃ pq : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) × (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))),
+      DivisibleTorsion.IsAdaptedFrame ε c n pq := by
+  obtain ⟨pq, hbasis, hfix, htwist⟩ :=
+    InvolutionFrame.exists_frame_ratQuotSq ε hc hne_id hne_neg hfix2 n hn
+  exact ⟨pq, ⟨hbasis, hfix, htwist⟩⟩
+
+end AdaptedFrame
+
+/-- **THE ADAPTED FRAME OF THE INVOLUTION** (**PROVEN 2026-07-28** over
+`exists_adaptedFrame_level` above, which is itself PROVEN as of 2026-07-30, so this
+node is now `sorry`-free; formerly a bare `sorry`, cut 2026-07-27
+out of
 `exists_conj_realConjAdd`, itself cut the same day out of
 `exists_realWeierstrassCurveWithConjTorsion`): an involution `c` of `(ℚ/ℤ)²`
 which is neither `+1` nor `−1` on any `n`-torsion with `n ≥ 3`, and whose fixed
@@ -43102,7 +43492,15 @@ so this is not vacuous.
 CUT 2026-07-27 (this task): the existential over `≃+` is replaced by an
 existential over an ADAPTED FRAME (`exists_conjFrame_realConjAdd` below), and the
 assembly — building the automorphism out of the frame and checking the
-intertwining equation — is real code. -/
+intertwining equation — is real code.
+
+CUT 2026-07-28: this leaf is PROVEN from `exists_adaptedFrame_level` above, the
+same statement read at a single finite level.  The passage from finite levels to
+`ℚ/ℤ` — the inverse limit over the divisibility order, the two intertwining
+identities, injectivity, and surjectivity onto the torsion subgroup — is
+`DivisibleTorsion.exists_adaptedParam`, real code built by carrying the
+involution through the machinery that already existed for
+`exists_torsionParam_of_divisible`. -/
 theorem exists_conjFrame_realConjAdd (ε : Bool)
     (c : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) →+ (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))))
     (hc : ∀ x, c (c x) = x)
@@ -43114,8 +43512,13 @@ theorem exists_conjFrame_realConjAdd (ε : Bool)
       (∀ t, c (u t) = u t) ∧
       (∀ t, c (w t) = (if ε then u t else 0) - w t) ∧
       Function.Bijective
-        (fun v : Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ)) => u (v 0) + w (v 1)) :=
-  sorry
+        (fun v : Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ)) => u (v 0) + w (v 1)) := by
+  obtain ⟨u, w, hfix, htwist, hinj, hsurj⟩ :=
+    DivisibleTorsion.exists_adaptedParam
+      (fun n hn => DivisibleTorsion.finite_ratQuotSq_torsion hn)
+      (exists_adaptedFrame_level ε c hc hne_id hne_neg hfix2)
+  exact ⟨u, w, hfix, htwist, hinj,
+    fun y => hsurj y (DivisibleTorsion.exists_smul_eq_zero_ratQuotSq y)⟩
 
 /-- **THE CLASSIFICATION OF THE INVOLUTION** (PROVEN 2026-07-27 from
 `exists_conjFrame_realConjAdd`; formerly a sorry leaf, cut 2026-07-27 out of
@@ -43136,9 +43539,34 @@ and, from `c ∘ u = u` and `c ∘ w = [ε]·u − w`, exactly the same value fo
 `c (α v)`.  So the whole mathematical content is now in the frame leaf, and the
 `≃+` bookkeeping is discharged.
 
-WHAT REMAINS OPEN, and it is the honest cost of this cut: the frame leaf.  It
-still asks for the `ℤ₂`-lattice classification described above.  Two routes, both
-recorded so a successor need not rediscover them:
+NOTHING REMAINS OPEN (updated 2026-07-30): the frame leaf and its FINITE-LEVEL
+shadow `exists_adaptedFrame_level` are both PROVEN, so this whole cluster is
+`sorry`-free.  Note the finite-level leaf was NOT proven along the `ℤ₂`-lattice
+route sketched below: that route is unsound as an argument about `A[n]` alone —
+`diag(1, 3)` over `ℤ/8` satisfies every level-`≤ 8` hypothesis with no adapted
+frame at level `8` — and the proof that works uses divisibility of `(ℚ/ℤ)²`
+instead.  See `exists_adaptedFrame_level`'s docstring and
+`Modularity/InvolutionFrame.lean`.
+
+CORRECTION to the second route below, which was STALE when written and is the
+reason this note is being rewritten rather than deleted: it says the inverse-limit
+machinery is "the SAME machinery the sibling `exists_torsionParam_of_divisible`
+needs, so building it once discharges both".  That machinery was ALREADY BUILT
+and sorry-free, in `Fermat/FLT/Modularity/DivisibleTorsionParam.lean` — Kőnig's
+lemma over the divisibility order (`exists_compatibleBasis`), the `ℚ → P`
+attached to a compatible system (`qmap`/`qhom`/`qquot`), and the parametrisation
+itself (`exists_torsionParam`).  Nothing had to be built; the involution only had
+to be CARRIED THROUGH it, which is `DivisibleTorsion.exists_adaptedParam` and
+cost one extra field on the frame predicate plus a two-line restriction lemma
+(`c` is additive, so it commutes with `d • −`, and both intertwining equations
+survive verbatim).
+
+The two routes, kept as a record of what was TRIED.  The SECOND is done and is
+what the code does.  The FIRST is the classical statement, and it is NOT what
+closed the finite-level leaf — read at a single level `n` it is not even true (see
+that leaf's docstring for the `ℤ/8` counterexample); over `Ẑ` it is true, but the
+divisibility argument in `Modularity/InvolutionFrame.lean` gets the same
+conclusion without `M₂(Ẑ)` or the lattice classification:
 
 * *Ẑ-lattices*: `End((ℚ/ℤ)²) = M₂(Ẑ)` and the problem splits over the primes; at
   odd `p` the idempotent `(1+c)/2` splits the `ℤ_p`-lattice and `c|A[p] ≠ ±1`
@@ -43149,9 +43577,13 @@ recorded so a successor need not rediscover them:
   finite and (by the previous item at level `n`) nonempty, the restriction maps
   make an inverse system over the divisibility order, and
   `nonempty_sections_of_finite_cofiltered_system` (Mathlib,
-  `CategoryTheory/CofilteredSystem.lean`) produces a section — the SAME
-  machinery the sibling `exists_torsionParam_of_divisible` needs, so building it
-  once discharges both.
+  `CategoryTheory/CofilteredSystem.lean`) produces a section.  DONE 2026-07-28 as
+  `DivisibleTorsion.exists_compatibleAdaptedFrame` /
+  `DivisibleTorsion.exists_adaptedParam`, over the pre-existing machinery in
+  `DivisibleTorsionParam.lean` (which routes the section through
+  `exists_seq_forall_proj_of_forall_finite` rather than the cofiltered-system
+  lemma named here — a detail, but a successor grepping for the latter will not
+  find it).
 
 FAITHFULNESS: the conclusion is an equation of maps, so no junk `α` satisfies it,
 and both values of `ε` are genuinely reachable (the two conjugacy classes above),
@@ -43582,44 +44014,190 @@ theorem realConj_mul_eq_one_of_pow_eq_one
       rw [← hpowdown, hxx]; rfl
     nlinarith [sq_nonneg x.down]
 
+/-- **AN ALTERNATING FORM ON A FREE RANK-TWO MODULE IS THE COORDINATE
+DETERMINANT SCALED BY ITS BASIS VALUE** (PROVEN 2026-07-28), over an arbitrary
+commutative ring: for a basis `b : Fin 2 → M`,
+
+`e x y = (b.repr x 0 · b.repr y 1 − b.repr x 1 · b.repr y 0) · e (b 0) (b 1)`.
+
+Companion to `coordDet_map_eq_det_mul` above: that lemma says the coordinate
+determinant form transforms by `LinearMap.det`, this one says every alternating
+form IS that form up to the scalar `e (b 0) (b 1)`.  Together they give
+`det_eq_of_alternating_scaling_fin_two` below, which is the composite-level
+replacement for `WeilPairing.det_eq_of_conj` — that lemma needs a FIELD and
+`Module.rank = 2`, and `ZMod n` is not a field unless `n` is prime.
+
+Nothing here divides, so no field is needed. -/
+lemma alternating_eq_coordDet_mul_fin_two {R : Type*} [CommRing R] {M : Type*}
+    [AddCommGroup M] [Module R M] (b : Module.Basis (Fin 2) R M)
+    (e : M →ₗ[R] M →ₗ[R] R) (halt : ∀ v, e v v = 0) (x y : M) :
+    e x y = (b.repr x 0 * b.repr y 1 - b.repr x 1 * b.repr y 0) * e (b 0) (b 1) := by
+  classical
+  have hskew : ∀ v w : M, e w v = -e v w := by
+    intro v w
+    have h := halt (v + w)
+    simp only [map_add, LinearMap.add_apply, halt v, halt w, zero_add, add_zero] at h
+    linear_combination h
+  have hx : x = (b.repr x 0) • b 0 + (b.repr x 1) • b 1 := by
+    have h := b.sum_repr x
+    rw [Fin.sum_univ_two] at h
+    exact h.symm
+  have hy : y = (b.repr y 0) • b 0 + (b.repr y 1) • b 1 := by
+    have h := b.sum_repr y
+    rw [Fin.sum_univ_two] at h
+    exact h.symm
+  obtain ⟨x0, x1, rfl⟩ : ∃ a c : R, x = a • b 0 + c • b 1 := ⟨_, _, hx⟩
+  obtain ⟨y0, y1, rfl⟩ : ∃ a c : R, y = a • b 0 + c • b 1 := ⟨_, _, hy⟩
+  simp only [map_add, map_smul, LinearMap.add_apply, LinearMap.smul_apply, smul_eq_mul,
+    Finsupp.coe_add, Finsupp.coe_smul, Pi.add_apply, Pi.smul_apply,
+    Module.Basis.repr_self_apply, halt, hskew (b 0) (b 1)]
+  norm_num
+  ring
+
+/-- **RANK TWO: AN ENDOMORPHISM SCALING A UNIT-VALUED ALTERNATING FORM BY `c` HAS
+DETERMINANT `c`** (PROVEN 2026-07-28), over an arbitrary commutative ring.
+
+Nondegeneracy is asked for in the only form that survives over a ring that is not
+a field: SOME value of the form is a UNIT.  Over a field "nonzero" and "a unit"
+agree, which is why `WeilPairing.det_eq_of_conj` can ask for the weaker-looking
+`∃ x y, e x y ≠ 0`; over `ZMod n` with `n` composite the two differ, and the
+weaker one is NOT enough — a form with all values in a proper ideal is scaled by
+many `c`.  For the level-`n` Weil pairing the unit clause is exactly "`e(P, Q)`
+is a PRIMITIVE `n`-th root of unity on a basis `P, Q`". -/
+lemma det_eq_of_alternating_scaling_fin_two {R : Type*} [CommRing R] {M : Type*}
+    [AddCommGroup M] [Module R M] (b : Module.Basis (Fin 2) R M)
+    (e : M →ₗ[R] M →ₗ[R] R) (halt : ∀ v, e v v = 0) (hu : ∃ x y, IsUnit (e x y))
+    (f : M →ₗ[R] M) (c : R) (hf : ∀ x y, e (f x) (f y) = c * e x y) :
+    LinearMap.det f = c := by
+  classical
+  have hD0 : b.repr (b 0) 0 = 1 := by simp
+  have hD1 : b.repr (b 0) 1 = 0 := by simp
+  have hD2 : b.repr (b 1) 0 = 0 := by simp
+  have hD3 : b.repr (b 1) 1 = 1 := by simp
+  have hunit : IsUnit (e (b 0) (b 1)) := by
+    obtain ⟨x, y, hxy⟩ := hu
+    rw [alternating_eq_coordDet_mul_fin_two b e halt x y] at hxy
+    exact isUnit_of_mul_isUnit_right hxy
+  have h1 : e (f (b 0)) (f (b 1)) = LinearMap.det f * e (b 0) (b 1) := by
+    rw [alternating_eq_coordDet_mul_fin_two b e halt (f (b 0)) (f (b 1)),
+      coordDet_map_eq_det_mul b f (b 0) (b 1), hD0, hD1, hD2, hD3]
+    ring
+  have h2 : e (f (b 0)) (f (b 1)) = c * e (b 0) (b 1) := hf _ _
+  have h3 : e (b 0) (b 1) * LinearMap.det f = e (b 0) (b 1) * c := by
+    rw [mul_comm _ (LinearMap.det f), mul_comm _ c, ← h1, ← h2]
+  exact hunit.mul_left_cancel h3
+
+/-- **THE `μ_n`-VALUED WEIL PAIRING OVER THE ALGEBRAIC CLOSURE OF A
+CHARACTERISTIC-ZERO FIELD** (sorry leaf, cut 2026-07-28 out of
+`det_nTorsion_eq_neg_one_of_conj_inv` below).  This is the ONE genuinely missing
+piece of mathematics in the whole archimedean cluster; everything between it and
+`exists_weilPairing_real` is now proven.
+
+WHAT IT SAYS.  On `E[n]` over `F̄` (`F` of characteristic zero, `n ≥ 1`) there is
+a multiplicatively bilinear, alternating pairing valued in `F̄ˣ`, killed by `n`,
+taking a PRIMITIVE `n`-th root of unity as a value, and natural for the FULL
+absolute Galois group: `e(τx, τy) = τ(e(x, y))` for every `τ`.
+
+This is Silverman *AEC* III.8.1(a)–(e) verbatim, with the base field of
+`WeilPairing.exists_weilPairing_mu` (namely `𝔽_q`, `p` prime) replaced by an
+arbitrary characteristic-zero `F` and an arbitrary level `n`.  The construction
+is identical — the coordinate ring of `E ⊗ F̄` is Dedekind, `E[n]` sits in its
+class group through `Point.toClass`, the `n`-th power of a point ideal is
+principal with a Miller generator `f_P`, and `e(P, Q) = f_P(D_Q)/f_Q(D_P)` is
+well defined by Weil reciprocity — and it never uses finiteness of the base or
+the existence of a Frobenius.  What it DOES use is `(n : F̄) ≠ 0`, which
+`CharZero` supplies for every `n ≥ 1`; this is the exact analogue of `p ≠ q`
+there.
+
+WHY THE VALUE CLAUSE IS `IsPrimitiveRoot` AND NOT `∃ y, e x y ≠ 1`.  Over `ZMod n`
+with `n` composite, "nondegenerate" in the weak sense does not pin the scalar by
+which an endomorphism scales the form, and the consumer's determinant identity
+fails.  `IsPrimitiveRoot (e x y) n` is what makes the discrete logarithm of the
+reference pair a UNIT, which is the hypothesis of
+`det_eq_of_alternating_scaling_fin_two` above.  Exactly the same clause is
+carried by the finite-field composite-level sibling
+`MazurTorsion.exists_weilPairing_mu_of_coprime`, for exactly this reason.
+
+NOT VACUOUS, and the junk-witness test it survives: `e ≡ 1` satisfies
+bilinearity, alternation, `eⁿ = 1` and Galois naturality, but has no primitive
+value once `n > 1`; and an alternating form on a rank-two module is determined up
+to a scalar, so the primitive-value clause forces `e` to be the Weil pairing up
+to a unit.  The Galois clause then carries the arithmetic — it is what yields
+`det τ = χ_n(τ)`.
+
+THE CHECK THAT WOULD REFUTE THE "missing" CLAIM: a `μ_n`-valued pairing on
+`nTorsion n` over a base that is not a finite field, anywhere in `Fermat/`,
+`.lake/packages/mathlib/` or `~/cs/FLT/`.  THE AXIS SEARCHED (2026-07-28): every
+`exists_weilPairing*` in this project (`WeilPairing.lean` — `𝔽_q`, prime level;
+`MazurTorsion.lean` — `𝔽_q`, composite level, itself still a leaf;
+`WeilPairing.exists_weilPairing` / `det_galoisRep_eq_cyclotomic` — `ℚ`, but
+routed through reduction mod `q`, Frobenius and Chebotarev, which is what makes
+them unusable over a base with no residue field), plus `grep` for
+`weilPairing`/`WeilPairing` in mathlib (NO hits — mathlib has no Weil pairing at
+all) and in `~/cs/FLT` (`FLT/KnownIn1980s/EllipticCurves/WeilPairing.lean`, whose
+`WeierstrassCurve.weilPairing` is a bare `sorry` with no API).
+
+`hn : 1 ≤ n` is load-bearing: at `n = 0` the `0`-torsion is all of `E(F̄)`, which
+is not free of rank two, and no primitive `0`-th root of unity exists. -/
+theorem exists_weilPairing_mu_charZero {F : Type u} [Field F] [CharZero F]
+    (E : WeierstrassCurve F) [E.IsElliptic] (n : ℕ) (hn : 1 ≤ n) :
+    letI : DecidableEq (AlgebraicClosure F) := Classical.typeDecidableEq _
+    ∃ e : ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n) →
+          ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n) →
+          (AlgebraicClosure F)ˣ,
+      (∀ x y z, e (x + y) z = e x z * e y z) ∧
+      (∀ x y z, e x (y + z) = e x y * e x z) ∧
+      (∀ x, e x x = 1) ∧
+      (∀ x y, (e x y) ^ n = 1) ∧
+      (∃ x y, IsPrimitiveRoot (e x y) n) ∧
+      (∀ (τ : Field.absoluteGaloisGroup F) x y,
+        e (TorsionCounting.endRestrict (WeierstrassCurve.Affine.Point.map (W' := E)
+              (τ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom) (n : ℤ) x)
+          (TorsionCounting.endRestrict (WeierstrassCurve.Affine.Point.map (W' := E)
+              (τ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom) (n : ℤ) y)
+          = Units.map
+              (τ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom.toRingHom.toMonoidHom
+              (e x y)) :=
+  sorry
+
 /-- **THE WEIL PAIRING, IN THE ONE FORM THIS NODE NEEDS: `det(τ | E[n]) = −1`
-WHENEVER `τ` INVERTS `μ_n`** (sorry leaf, cut 2026-07-28 out of
-`exists_weilPairing_real`).  Nothing archimedean survives the cut: the statement
-is over an ARBITRARY field `F` of characteristic zero, and the only trace of the
-real place is the hypothesis `hinv`, which
+WHENEVER `τ` INVERTS `μ_n`** (**PROVEN 2026-07-28** over the single leaf
+`exists_weilPairing_mu_charZero` above; formerly a bare `sorry`, cut the same day
+out of `exists_weilPairing_real`).  Nothing archimedean survives the cut: the
+statement is over an ARBITRARY field `F` of characteristic zero, and the only
+trace of the real place is the hypothesis `hinv`, which
 `realConj_mul_eq_one_of_pow_eq_one` above DISCHARGES over `ULift ℝ`.
 
 This is `det(τ | E[n]) = χ_n(τ)` (Silverman *AEC* III.8.1(e) plus
 III.8.1(a)–(d)) specialized to `χ_n(τ) = −1`, and it is the ONLY genuinely
 missing mathematics in the whole archimedean cluster.
 
-INTENDED PROOF, and the exact shape of the gap.  The tree already has the two
-halves of the argument, but for a base that is too small:
+THE PROOF, which is now real code (2026-07-28 — this is the "NATURAL FURTHER
+CUT" the previous version of this docstring described and declined).  The
+declining reason was that "the log half is not free and would add a second open
+leaf without removing any mathematics"; the first half is true and the second is
+NOT — the log half is entirely level-generic and base-generic, so proving it
+removes it from the frontier permanently and leaves the arithmetic input alone.
+The steps:
 
-* `WeilPairing.exists_weilPairing_mu` builds the `μ_p`-valued pairing over
-  `𝔽_q` from divisor classes (Silverman III.8, the Miller-function route);
-* `WeilPairing.exists_weilPairing` / `WeilPairing.det_galoisRep_eq_cyclotomic`
-  assemble `det ρ = χ` over `ℚ`, but route the arithmetic through REDUCTION MOD
-  `q` AND FROBENIUS (`det_frobeniusTorsionEnd`, `det_galoisRep_globalFrob`,
-  Chebotarev density), which is unavailable over `ℝ` — there is no residue
-  field to reduce to.
+* `WeierstrassCurve.n_torsion_dimension` at the separably closed `F̄` gives
+  `E[n] ≃+ (ZMod n)²` (this is where `(n : F̄) ≠ 0`, i.e. `CharZero` and
+  `1 ≤ n`, is consumed); `ZMod.map_smul` upgrades it to a `ZMod n`-linear
+  equivalence and `Module.Basis.finTwoProd` transports the standard basis back;
+* `exists_weilPairing_mu_charZero` supplies the `μ_n`-valued pairing `e₀`;
+* the DISCRETE LOGARITHM base the primitive value `ζ := e₀(x₀, y₀)` — via
+  `IsPrimitiveRoot.zpowers_eq` (which identifies `μ_n` with `zpowers ζ`) and
+  `IsPrimitiveRoot.zmodEquivZPowers` (which identifies that with `ZMod n`
+  additively) — turns `e₀` into a `ZMod n`-bilinear alternating form `e`.  The
+  reference pair logs to `1`, so `e` takes a UNIT value; this is precisely the
+  step that fails if the leaf only asserted nondegeneracy;
+* `hinv` applied to the value of `e₀` (legal because `e₀ x y` is killed by `n`)
+  turns the Galois clause `e₀(τx, τy) = τ(e₀(x, y))` into
+  `e₀(τx, τy) = e₀(x, y)⁻¹`, hence `e(τx, τy) = −e(x, y)`;
+* `det_eq_of_alternating_scaling_fin_two` above reads off `det = −1`.
 
-So what has to be written is the divisor-theoretic pairing DIRECTLY over the
-separably closed field `AlgebraicClosure F` — the same construction as
-`exists_weilPairing_mu` with `AlgebraicClosure (ZMod q)` replaced by
-`AlgebraicClosure F` — together with its equivariance
-`e(τx, τy) = τ(e(x, y))` for an arbitrary `τ ∈ Gal`.  Given that pairing, this
-leaf follows in a few lines: `hinv` says `τ` acts on `μ_n` by inversion, so
-`e(τx, τy) = e(x, y)⁻¹`, and transporting the multiplicative pairing to the
-additive `ZMod n`-valued one along a generator of `μ_n` turns that into
-`det τ = −1` via `coordDet_map_eq_det_mul` above.
-
-A NATURAL FURTHER CUT, if a successor wants to shrink this leaf rather than
-close it: state the `μ_n`-valued pairing over a separably closed field as its
-own leaf, and PROVE this one from it plus the cyclicity of `μ_n` (which needs
-`IsPrimitiveRoot` and a discrete logarithm `μ_n ≃+ ZMod n`).  That was not done
-here because the log half is not free and would have added a second open leaf
-without removing any mathematics.
+The only place the argument could have needed `ℝ` or an archimedean input is the
+inversion of `μ_n`, and that is the hypothesis rather than a step.
 
 FAITHFULNESS.  `hn : 1 ≤ n` is load-bearing: for `n = 0` the `0`-torsion is all
 of `E(F̄)`, which is not free of rank two, and `LinearMap.det` would fall back on
@@ -43640,8 +44218,126 @@ theorem det_nTorsion_eq_neg_one_of_conj_inv {F : Type u} [Field F] [CharZero F]
             (τ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom) (n : ℤ))
           : ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n) →ₗ[ZMod n]
             ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n))
-      = -1 :=
-  sorry
+      = -1 := by
+  letI : DecidableEq (AlgebraicClosure F) := Classical.typeDecidableEq _
+  haveI : NeZero n := ⟨by omega⟩
+  haveI hcharK : CharZero (AlgebraicClosure F) :=
+    charZero_of_injective_algebraMap (algebraMap F (AlgebraicClosure F)).injective
+  have hn0 : ((n : ℕ) : AlgebraicClosure F) ≠ 0 := Nat.cast_ne_zero.mpr (by omega)
+  -- the rank-two basis of the `n`-torsion at the separably closed `F̄`
+  obtain ⟨φ⟩ := WeierstrassCurve.n_torsion_dimension
+    (E.map (algebraMap F (AlgebraicClosure F))) hn0
+  let ψ : ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n) ≃ₗ[ZMod n]
+      (ZMod n × ZMod n) := { φ with map_smul' := ZMod.map_smul φ.toAddMonoidHom }
+  let b : Module.Basis (Fin 2) (ZMod n)
+      ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n) :=
+    (Module.Basis.finTwoProd (ZMod n)).map ψ.symm
+  set S : ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n) →ₗ[ZMod n]
+      ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n) :=
+    AddMonoidHom.toZModLinearMap n
+      (TorsionCounting.endRestrict (WeierstrassCurve.Affine.Point.map (W' := E)
+        (τ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom) (n : ℤ)) with hSdef
+  -- the `μ_n`-valued pairing
+  obtain ⟨e₀, hbl, hbr, halt, hord, ⟨x₀, y₀, hprim⟩, hgal⟩ :=
+    exists_weilPairing_mu_charZero E n hn
+  -- the discrete logarithm base the primitive value supplied by the leaf
+  set ζu : (AlgebraicClosure F)ˣ := e₀ x₀ y₀ with hζudef
+  have hmem : ∀ x y, e₀ x y ∈ Subgroup.zpowers ζu := by
+    intro x y
+    rw [hprim.zpowers_eq]
+    exact (mem_rootsOfUnity n _).mpr (hord x y)
+  set dlog : ∀ (_ _ : ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n)), ZMod n :=
+    fun x y => hprim.zmodEquivZPowers.symm
+      (Additive.ofMul (⟨e₀ x y, hmem x y⟩ : Subgroup.zpowers ζu)) with hdlogdef
+  -- the reference pair logs to `1`, which is where the unit value comes from
+  have hdunit : IsUnit (dlog x₀ y₀) := by
+    have hval1 : ((Additive.toMul
+        (hprim.zmodEquivZPowers (((1 : ℕ) : ZMod n)))) : Subgroup.zpowers ζu).1 = ζu := by
+      rw [hprim.zmodEquivZPowers_apply_coe_nat 1]
+      exact pow_one ζu
+    have helt : (⟨e₀ x₀ y₀, hmem x₀ y₀⟩ : Subgroup.zpowers ζu) =
+        Additive.toMul (hprim.zmodEquivZPowers (((1 : ℕ) : ZMod n))) :=
+      Subtype.ext hval1.symm
+    have h2 : dlog x₀ y₀ = ((1 : ℕ) : ZMod n) := by
+      show hprim.zmodEquivZPowers.symm
+        (Additive.ofMul (⟨e₀ x₀ y₀, hmem x₀ y₀⟩ : Subgroup.zpowers ζu)) = _
+      rw [helt]
+      exact hprim.zmodEquivZPowers.symm_apply_apply _
+    rw [h2, Nat.cast_one]
+    exact isUnit_one
+  -- transfer of the pairing laws through the logarithm
+  have hdadd_l : ∀ x y z, dlog (x + y) z = dlog x z + dlog y z := by
+    intro x y z
+    simp only [hdlogdef]
+    have hsub : (⟨e₀ (x + y) z, hmem (x + y) z⟩ : Subgroup.zpowers ζu) =
+        (⟨e₀ x z, hmem x z⟩ : Subgroup.zpowers ζu) * ⟨e₀ y z, hmem y z⟩ :=
+      Subtype.ext (hbl x y z)
+    rw [hsub, ofMul_mul, map_add]
+  have hdadd_r : ∀ x y z, dlog x (y + z) = dlog x y + dlog x z := by
+    intro x y z
+    simp only [hdlogdef]
+    have hsub : (⟨e₀ x (y + z), hmem x (y + z)⟩ : Subgroup.zpowers ζu) =
+        (⟨e₀ x y, hmem x y⟩ : Subgroup.zpowers ζu) * ⟨e₀ x z, hmem x z⟩ :=
+      Subtype.ext (hbr x y z)
+    rw [hsub, ofMul_mul, map_add]
+  have hdalt : ∀ x, dlog x x = 0 := by
+    intro x
+    simp only [hdlogdef]
+    have hsub : (⟨e₀ x x, hmem x x⟩ : Subgroup.zpowers ζu) = 1 := Subtype.ext (halt x)
+    rw [hsub]
+    rw [show Additive.ofMul (1 : Subgroup.zpowers ζu) = 0 from rfl, map_zero]
+  -- `hinv` turns the Galois clause into inversion, hence negation after the log
+  have hinvval : ∀ x y, e₀ (S x) (S y) = (e₀ x y)⁻¹ := by
+    intro x y
+    have hg := hgal τ x y
+    have hpow : ((e₀ x y : (AlgebraicClosure F)ˣ) : AlgebraicClosure F) ^ n = 1 := by
+      rw [← Units.val_pow_eq_pow_val, hord x y, Units.val_one]
+    have hmul := hinv ((e₀ x y : (AlgebraicClosure F)ˣ) : AlgebraicClosure F) hpow
+    have hu1 : Units.map
+        (τ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom.toRingHom.toMonoidHom
+        (e₀ x y) * (e₀ x y) = 1 := Units.ext hmul
+    exact hg.trans (eq_inv_of_mul_eq_one_left hu1)
+  have hdgal : ∀ x y, dlog (S x) (S y) = -dlog x y := by
+    intro x y
+    simp only [hdlogdef]
+    have hsub : (⟨e₀ (S x) (S y), hmem _ _⟩ : Subgroup.zpowers ζu) =
+        (⟨e₀ x y, hmem x y⟩ : Subgroup.zpowers ζu)⁻¹ :=
+      Subtype.ext (hinvval x y)
+    rw [hsub, ofMul_inv, map_neg]
+  -- package the logarithm as a `ZMod n`-bilinear form
+  have hdzero_r : ∀ x, dlog x 0 = 0 := by
+    intro x
+    have h2 := hdadd_r x 0 0
+    rw [add_zero] at h2
+    exact add_left_cancel (h2.symm.trans (add_zero _).symm)
+  have hdzero_l : ∀ y, dlog 0 y = 0 := by
+    intro y
+    have h2 := hdadd_l 0 0 y
+    rw [add_zero] at h2
+    exact add_left_cancel (h2.symm.trans (add_zero _).symm)
+  have heinner : ∀ x : ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n),
+      ∃ f : (((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n) →ₗ[ZMod n] ZMod n),
+      ∀ y, f y = dlog x y := by
+    intro x
+    exact ⟨AddMonoidHom.toZModLinearMap n ⟨⟨dlog x, hdzero_r x⟩, hdadd_r x⟩, fun y => rfl⟩
+  choose einner heinnerval using heinner
+  have houter : ∃ e : ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n) →ₗ[ZMod n]
+      (((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n) →ₗ[ZMod n] ZMod n),
+      ∀ x y, e x y = dlog x y := by
+    refine ⟨AddMonoidHom.toZModLinearMap n ⟨⟨einner, ?_⟩, ?_⟩, fun x y => heinnerval x y⟩
+    · refine LinearMap.ext fun y => ?_
+      rw [heinnerval]
+      exact hdzero_l y
+    · intro x₁ x₂
+      refine LinearMap.ext fun y => ?_
+      rw [LinearMap.add_apply, heinnerval, heinnerval, heinnerval]
+      exact hdadd_l x₁ x₂ y
+  obtain ⟨e, he⟩ := houter
+  refine det_eq_of_alternating_scaling_fin_two b e (fun v => (he v v).trans (hdalt v))
+    ⟨x₀, y₀, by rw [he]; exact hdunit⟩ S (-1) ?_
+  intro x y
+  rw [he, he, hdgal x y]
+  ring
 
 /-- **CONJUGATION IS NEITHER `+1` NOR `−1` ON THE `n`-TORSION, `n ≥ 3`** (sorry
 leaf, cut 2026-07-27 out of `exists_realWeierstrassCurveWithConjTorsion`).  This
@@ -43674,10 +44370,26 @@ CUT 2026-07-27: the leaf is discharged from the single sub-leaf
 ONLY form the node consumes — plus a real assembly.  See that leaf's docstring
 for why the pairing form was chosen over the determinant form.
 
-STATUS 2026-07-28: `exists_weilPairing_real` is itself now PROVEN, over the
-single sub-leaf `det_nTorsion_eq_neg_one_of_conj_inv` above.  The archimedean
-half is closed (`realConj_mul_eq_one_of_pow_eq_one`); what is left is purely
-algebraic and holds over any characteristic-zero field.
+STATUS 2026-07-28 (updated later the same day): `exists_weilPairing_real` is
+PROVEN over `det_nTorsion_eq_neg_one_of_conj_inv`, and THAT is now PROVEN too,
+over the single leaf `exists_weilPairing_mu_charZero`.  So the whole chain from
+this node down is real code except for one statement: the `μ_n`-valued Weil
+pairing over `F̄` for `F` of characteristic zero.  The archimedean half is closed
+(`realConj_mul_eq_one_of_pow_eq_one`), the discrete-logarithm and rank-two
+linear-algebra halves are closed
+(`alternating_eq_coordDet_mul_fin_two`, `det_eq_of_alternating_scaling_fin_two`,
+`coordDet_map_eq_det_mul`), and what remains is base-generic and level-generic
+arithmetic.
+
+CORRECTION to the "MISSING MACHINERY" paragraph above, which said the needed
+pairing is "the pairing itself over `ULift ℝ`": `ULift ℝ` is not the right
+generality and stating it there would have produced a leaf nobody else can
+reuse.  The leaf as cut is over an ARBITRARY characteristic-zero field, which is
+the same construction and is shared with any future consumer.  The paragraph's
+other suggestion — "a direct argument on `E[n]` may be shorter than a full
+pairing" — was searched and rejected: `det(τ | E[n]) = χ_n(τ)` has no known proof
+that avoids a pairing, and the `E(F̄)`-level shortcut is refuted two paragraphs
+below by divisibility.
 
 **WHY THE PAIRING MUST LIVE ON THE `n`-TORSION AND NOT ON `E(ℝ̄)`.**  A tempting
 simplification is to state a biadditive `e : E(ℝ̄) × E(ℝ̄) → ZMod n` and require
