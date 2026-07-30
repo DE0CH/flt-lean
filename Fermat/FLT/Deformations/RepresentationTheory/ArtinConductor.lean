@@ -5094,8 +5094,8 @@ theorem exists_nat_forall_sum_breaks_eq (ρ : GaloisRep K A M)
         Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp u)) =
           ((Finset.range (ρ.wildCodim v)).filter fun k => u ≤ μ k).card) →
       (s : ℚ) = ∑ k ∈ Finset.range (ρ.wildCodim v), μ k := by
-  obtain ⟨μ₀, hμ₀⟩ := ρ.exists_breaks_of_hasFiniteWildMonodromyAt v hfin F₀
-  obtain ⟨s, hs⟩ := ρ.exists_nat_eq_sum_breaks v hfin F₀ μ₀ hμ₀
+  obtain ⟨μ₀, hμ₀pos, hμ₀⟩ := ρ.exists_breaks_of_hasFiniteWildMonodromyAt v hfin F₀
+  obtain ⟨s, hs⟩ := ρ.exists_nat_eq_sum_breaks v hfin F₀ μ₀ hμ₀pos hμ₀
   refine ⟨s, fun F μ hμ => ?_⟩
   rw [hs]
   refine sum_eq_of_card_filter_eq_of_dense (ρ.wildCodim v) μ₀ μ
@@ -5270,8 +5270,8 @@ theorem exists_isSwanExponentAt (ρ : GaloisRep K A M)
   refine ⟨s, ⟨F₀⟩, fun F => ?_⟩
   -- STEP 2 (`hbreak`): with finite wild monodromy, every admissible
   -- filtration has a finite list of rational breaks.
-  obtain ⟨μ, hμ⟩ := ρ.exists_breaks_of_hasFiniteWildMonodromyAt v hfin F
-  exact ⟨μ, hμ, hs F μ hμ⟩
+  obtain ⟨μ, hμpos, hμ⟩ := ρ.exists_breaks_of_hasFiniteWildMonodromyAt v hfin F
+  exact ⟨μ, hμpos, hμ, hs F μ hμ⟩
 
 /-- **The Swan conductor `Sw_v(V)`**, the wild part of the Artin
 conductor exponent — a REAL DEFINITION since 2026-07-27, no longer an

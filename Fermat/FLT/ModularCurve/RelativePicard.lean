@@ -924,8 +924,8 @@ what makes `RelPicEquiv` a congruence for `⊗` on the right
 moved past the new right factor `M`. -/
 theorem nonempty_modTensor_middleFourPic {Z : Scheme.{u}} (L M N : Z.Modules) :
     Nonempty (modTensor (modTensor L M) N ≅ modTensor (modTensor L N) M) := by
-  obtain ⟨a1⟩ := nonempty_modTensor_assocPic L M N
-  obtain ⟨a2⟩ := nonempty_modTensor_assocPic L N M
+  obtain ⟨a1⟩ := nonempty_modTensor_assoc L M N
+  obtain ⟨a2⟩ := nonempty_modTensor_assoc L N M
   exact ⟨a1 ≪≫ modTensorMapIso (Iso.refl L) (modTensorSymmIso M N) ≪≫ a2.symm⟩
 
 /-! #### Global-from-local, and the dual sheaf
@@ -1722,8 +1722,8 @@ theorem nonempty_iso_of_modTensorPic_left {Z : Scheme.{u}} {L A B : Z.Modules}
     (hL : IsInvertibleSheaf L) (e : modTensor L A ≅ modTensor L B) : Nonempty (A ≅ B) := by
   obtain ⟨M, -, ⟨eLM⟩⟩ := exists_modTensor_inv hL
   have eML : modTensor M L ≅ modUnit Z := modTensorSymmIso M L ≪≫ eLM
-  obtain ⟨aA⟩ := nonempty_modTensor_assocPic M L A
-  obtain ⟨aB⟩ := nonempty_modTensor_assocPic M L B
+  obtain ⟨aA⟩ := nonempty_modTensor_assoc M L A
+  obtain ⟨aB⟩ := nonempty_modTensor_assoc M L B
   exact ⟨(modTensorUnitLeftIso A).symm ≪≫ modTensorMapIso eML.symm (Iso.refl A) ≪≫ aA ≪≫
     modTensorMapIso (Iso.refl M) e ≪≫ aB.symm ≪≫ modTensorMapIso eML (Iso.refl B) ≪≫
     modTensorUnitLeftIso B⟩
@@ -1992,7 +1992,7 @@ theorem relPicEquiv_cancel_left {X S T : Scheme.{u}} (strX : X ⟶ S) (g : T ⟶
     {L A B : (curveBaseChange strX g).Modules} (hL : IsInvertibleSheaf L)
     (h : RelPicEquiv strX g (modTensor L A) (modTensor L B)) : RelPicEquiv strX g A B := by
   obtain ⟨N, hN, ⟨e⟩⟩ := h
-  obtain ⟨a⟩ := nonempty_modTensor_assocPic L B (modPullback (curveBaseChangeProj strX g) N)
+  obtain ⟨a⟩ := nonempty_modTensor_assoc L B (modPullback (curveBaseChangeProj strX g) N)
   obtain ⟨f⟩ := nonempty_iso_of_modTensorPic_left hL (e ≪≫ a)
   exact ⟨N, hN, ⟨f⟩⟩
 
@@ -3171,7 +3171,7 @@ theorem exists_abelJacobiPoint {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P �
     intro T g x
     refine relPicEquiv_trans strX g
       (relPicEquiv_tensor_right strX g _ (haj T g x)) (relPicEquiv_of_iso strX g ?_)
-    refine (nonempty_modTensor_assocPic _ (Jinv T g x) (sectionIdeal (relSection x))).some ≪≫ ?_
+    refine (nonempty_modTensor_assoc _ (Jinv T g x) (sectionIdeal (relSection x))).some ≪≫ ?_
     refine modTensorMapIso (Iso.refl _) ?_ ≪≫ modTensorUnitRightIso _
     exact modTensorSymmIso (Jinv T g x) (sectionIdeal (relSection x)) ≪≫ (hJ T g x).some
   refine ⟨aj, hspec, ?_, ?_⟩
