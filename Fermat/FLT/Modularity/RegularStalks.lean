@@ -10,6 +10,21 @@ This module carries ONE theorem and its private commutative-algebra tower:
   smooth and `K` is a field, then every stalk `𝒪_{Z,z}` is a regular
   local ring.
 
+…​and, since 2026-07-28, the three-step geometric consequence that stands on it:
+domain stalks, an irreducible open neighbourhood of every point, and finally
+
+  `geometricallyIrreducible_of_smooth_of_geometricallyConnected` — a SMOOTH,
+  GEOMETRICALLY CONNECTED morphism of schemes is GEOMETRICALLY IRREDUCIBLE.
+
+That last one was written in `Modularity/MoretBailly.lean` at the fixed base
+`Spec (ULift ℚ)` and restated as a fresh sorry leaf in
+`ModularCurve/X0.lean` at an arbitrary field, because `MoretBailly.lean` is a
+34 000-line module whose import cone nothing sane will take on for three
+formalities.  It is hoisted here instead, at an ARBITRARY BASE SCHEME — the
+proof never mentions the base except as a fixed object, so the generalisation
+is free — and both files now consume it.  `MoretBailly.lean` `public import`s
+this module, so its own call site resolves unqualified and unchanged.
+
 **WHY IT LIVES HERE AND NOT WHERE IT WAS PROVEN.**  The whole tower was
 written inside `Modularity/KhareWintenberger.lean`, which is strictly
 DOWNSTREAM of `Modularity/AbelianSchemeIsogeny.lean`
@@ -38,17 +53,30 @@ existing reference resolves unchanged.
   the Jacobian criterion, presenting the stalk as regular-local modulo an
   independent list.
 * `isRegularLocalRing_stalk_of_smooth_over_field` — the assembly.
-
-`isDomain_of_isRegularLocalRing` was deliberately NOT hoisted: it is not in
-this theorem's dependency cone (it is a sibling consumer of the exchange
-lemma), and it stays in `KhareWintenberger.lean` with its own consumers.
+* `isDomain_of_isRegularLocalRing_aux` / `isDomain_of_isRegularLocalRing` —
+  regular local ⟹ domain, mathlib's own recorded TODO.  (An earlier version of
+  this docstring said this pair was deliberately left behind in
+  `KhareWintenberger.lean`; it was hoisted here too, and that sentence is
+  withdrawn.)
+* `isDomain_stalk_of_smooth_over_field` — the composite of the previous two.
+* `exists_isOpen_isIrreducible_of_smooth_over_field` — smoothness supplies both
+  the domain stalks and, through `LocallyOfFiniteType.isLocallyNoetherian`, the
+  local noetherianity that
+  `AlgebraicGeometry.exists_isOpen_isIrreducible_nhds_of_isDomain_stalk`
+  (`Fermat/FLT/Mathlib/AlgebraicGeometry/IrreducibleNhds.lean`) needs.
+* `geometricallyIrreducible_of_smooth_of_geometricallyConnected` — the assembly,
+  over `irreducibleSpace_of_isOpen_isIrreducible_nhds` from the same shim.
 -/
 module
 
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.IrreducibleNhds
 public import Mathlib.Algebra.Module.SpanRank
 public import Mathlib.Algebra.MvPolynomial.PDeriv
 public import Mathlib.AlgebraicGeometry.AffineScheme
+public import Mathlib.AlgebraicGeometry.Geometrically.Connected
+public import Mathlib.AlgebraicGeometry.Geometrically.Irreducible
 public import Mathlib.AlgebraicGeometry.Morphisms.Smooth
+public import Mathlib.AlgebraicGeometry.Noetherian
 public import Mathlib.Data.ENat.Basic
 public import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 public import Mathlib.LinearAlgebra.Span.Basic
@@ -1105,5 +1133,113 @@ contribution. -/
 theorem isDomain_of_isRegularLocalRing (R : Type u) [CommRing R] [IsRegularLocalRing R] :
     IsDomain R :=
   isDomain_of_isRegularLocalRing_aux _ R rfl
+
+open CategoryTheory AlgebraicGeometry in
+/-- **SMOOTH OVER A FIELD ⟹ THE STALKS ARE DOMAINS** (PROVEN, over
+`isRegularLocalRing_stalk_of_smooth_over_field` and
+`isDomain_of_isRegularLocalRing`, both above and both sorry-free).
+
+For `Z` smooth over `Spec K` with `K` any field, every local ring `𝒪_{Z,z}` is
+an integral domain.
+
+THE CLASSICAL ARGUMENT names TWO mathlib gaps and this module closes both: a
+smooth morphism has geometrically regular fibres (EGA IV 17.5.1), so `Z` is a
+regular scheme over any field; and a regular local ring is an integral domain
+(mathlib's own recorded TODO in `Mathlib/RingTheory/RegularLocalRing/Defs.lean`,
+closed here by `isDomain_of_isRegularLocalRing_aux` over Nakayama, prime
+avoidance and Krull's height theorem — in particular NOT over the associated
+graded ring).
+
+Note this SUBSUMES the weaker "smooth over a field ⟹ reduced".
+
+Stated with `hf` an explicit hypothesis rather than an instance because the
+call sites have `Smooth` as a hypothesis of a theorem, not in the instance
+cache.
+
+HOISTED here from `Modularity/MoretBailly.lean` on 2026-07-28, byte-identical,
+so that `ModularCurve/X0.lean` can reach it without importing that 34 000-line
+module. -/
+theorem isDomain_stalk_of_smooth_over_field {K : Type u} [Field K]
+    {Z : AlgebraicGeometry.Scheme.{u}}
+    (f : Z ⟶ AlgebraicGeometry.Spec (CommRingCat.of K))
+    (hf : AlgebraicGeometry.Smooth f) (z : Z) :
+    IsDomain (Z.presheaf.stalk z) :=
+  haveI := isRegularLocalRing_stalk_of_smooth_over_field f hf z
+  isDomain_of_isRegularLocalRing _
+
+open CategoryTheory AlgebraicGeometry in
+/-- **SMOOTH OVER A FIELD ⟹ LOCALLY IRREDUCIBLE** (PROVEN over the two
+statements above).
+
+Smoothness enters twice and in two different ways, which is exactly why the
+two inputs are separate: it supplies the domain stalks
+(`isDomain_stalk_of_smooth_over_field`, the geometric content), and — through
+`Smooth ⟹ LocallyOfFinitePresentation ⟹ LocallyOfFiniteType` and
+`LocallyOfFiniteType.isLocallyNoetherian` over the noetherian base `Spec K` —
+the local noetherianity that
+`AlgebraicGeometry.exists_isOpen_isIrreducible_nhds_of_isDomain_stalk`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/IrreducibleNhds.lean`) needs.
+
+HOISTED here from `Modularity/MoretBailly.lean` on 2026-07-28,
+byte-identical. -/
+theorem exists_isOpen_isIrreducible_of_smooth_over_field {K : Type u} [Field K]
+    {Z : AlgebraicGeometry.Scheme.{u}}
+    (f : Z ⟶ AlgebraicGeometry.Spec (CommRingCat.of K))
+    (hf : AlgebraicGeometry.Smooth f) (z : Z) :
+    ∃ U : Set Z, IsOpen U ∧ z ∈ U ∧ IsIrreducible U := by
+  have : AlgebraicGeometry.Smooth f := hf
+  have : AlgebraicGeometry.IsLocallyNoetherian Z :=
+    AlgebraicGeometry.LocallyOfFiniteType.isLocallyNoetherian f
+  exact AlgebraicGeometry.exists_isOpen_isIrreducible_nhds_of_isDomain_stalk z
+    (isDomain_stalk_of_smooth_over_field f hf z)
+
+open CategoryTheory AlgebraicGeometry in
+/-- **SMOOTH + GEOMETRICALLY CONNECTED ⟹ GEOMETRICALLY IRREDUCIBLE** (PROVEN
+over the four statements above — the formal half of Bertini irreducibility,
+isolated so that the Lefschetz content lives alone in
+`exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible`).
+
+A scheme smooth over a base whose geometric fibres are connected has
+irreducible geometric fibres.  No Bertini theorem, no hyperplanes and no
+parameter space occur here: it is the standard chain
+
+* `X_K ⟶ Spec K` is smooth for every field `K` and every `Spec K ⟶ Y`, since
+  `Smooth` is a `MorphismProperty.IsStableUnderBaseChange`;
+* a scheme smooth over a field is REGULAR, so all of its local rings are
+  regular local rings, hence integral domains;
+* a locally noetherian scheme whose local rings are domains has its
+  irreducible components equal to its connected components — through a point
+  lying on two components the local ring would have two minimal primes — so
+  CONNECTED ⟹ IRREDUCIBLE.
+
+`GeometricallyConnected` already carries nonemptiness (`ConnectedSpace`
+extends `Nonempty`), which is what `IrreducibleSpace` also demands, so no
+extra hypothesis is needed.
+
+**THE BASE IS ARBITRARY, and that is not a strengthening of the mathematics.**
+`geometrically P` quantifies over all `Spec K ⟶ Y` with `K` a field, so the
+statement is about the geometric fibres and the base `Y` appears in the proof
+only as the fixed object those morphisms land in.  The version this replaces
+was stated at `Spec (ULift ℚ)` in `Modularity/MoretBailly.lean` and restated as
+a separate sorry leaf at an arbitrary field in `ModularCurve/X0.lean`; both are
+instances of this one.
+
+HOISTED here on 2026-07-28, with that generalisation, so that both consumers
+can reach it: `MoretBailly.lean` `public import`s this module and
+`ModularCurve/X0.lean` reaches it through
+`Modularity/AbelianSchemeIsogeny.lean`. -/
+theorem geometricallyIrreducible_of_smooth_of_geometricallyConnected
+    {X Y : AlgebraicGeometry.Scheme.{u}}
+    (h : X ⟶ Y)
+    (hsm : AlgebraicGeometry.Smooth h)
+    (hconn : AlgebraicGeometry.GeometricallyConnected h) :
+    AlgebraicGeometry.GeometricallyIrreducible h := by
+  have : AlgebraicGeometry.Smooth h := hsm
+  refine ⟨AlgebraicGeometry.geometrically_iff_of_isClosedUnderIsomorphisms.mpr fun K _ y ↦ ?_⟩
+  have : ConnectedSpace ↥(Limits.pullback h y) :=
+    AlgebraicGeometry.pullback_of_geometrically hconn.geometrically_connectedSpace K y
+  exact irreducibleSpace_of_isOpen_isIrreducible_nhds
+    (fun z ↦ exists_isOpen_isIrreducible_of_smooth_over_field
+      (Limits.pullback.snd h y) inferInstance z)
 
 end GaloisRepresentation.Modularity
