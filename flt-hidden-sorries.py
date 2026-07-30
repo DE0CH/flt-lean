@@ -115,7 +115,15 @@ def main():
     targets = sys.argv[1:] or ["Fermat"]
     files = []
     for t in targets:
-        p = (ROOT / t) if not Path(t).is_absolute() else Path(t)
+        # A relative path resolves against the CURRENT directory when it names
+        # something there, and only then falls back to ROOT.  Resolving against
+        # ROOT unconditionally silently measured the MAIN repo whenever this was
+        # run from one of the ~/flt-lean-N worktrees, so an agent that had just
+        # closed a leaf saw its own work as absent -- the file it got back was
+        # main's copy, not the one it had edited.
+        p = Path(t)
+        if not p.is_absolute() and not p.exists():
+            p = ROOT / t
         files += sorted(p.rglob("*.lean")) if p.is_dir() else [p]
 
     total_decls = total_tokens = 0
