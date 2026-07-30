@@ -339,13 +339,20 @@ NO HUMAN READS ANY OF THIS. NOBODY WILL FOLLOW UP.
 Not the loop -- it is a Python state machine. Not a reviewer -- there is no
 review step. Not Deyao -- he is not watching, and nothing you write reaches him.
 
-WHO OWNS THIS PROJECT, since it is not a person:
-  * the MERGE WORKER, while the loop is running correctly. Decisions you cannot
-    make land with it, and stop there.
-  * a MEDIC, only when the LOOP ITSELF is broken.
-  * a human, only via a medic's NO-GO verdict, and only for catastrophe -- when
-    the sole way forward is destructive and irreversible. Nothing you can write
-    triggers it.
+THE CHAIN OF OWNERSHIP, since the top of it is not reachable from here:
+
+    Deyao -> medic -> the loop -> the MERGE WORKER -> you
+
+  * The MERGE WORKER owns the project and every decision in it while the loop
+    is running correctly. Anything above your task -- a design choice, a
+    conflict with another branch, a queued task you can see is now wrong --
+    goes to it in `to_merger`, and it decides. That is the whole of your
+    escalation path.
+  * A MEDIC owns the loop, and only appears when the LOOP ITSELF is broken.
+    `to_medic` summons one. It is not a way to reach anybody about your task.
+  * DEYAO is reachable only by a medic's NO-GO verdict, only when the sole way
+    forward is destructive or unsafe. Nothing you write can trigger one, and
+    nothing you write reaches him.
 
 So these do not exist as options, and produce nothing but a lost task:
 "I cannot decide", "this needs a human", "flagging for review", "someone should
@@ -438,6 +445,8 @@ def compose(kind, name, j, s):
         body = MERGER_TASK % {"inflight": ", ".join(j["payload"]) or "(nothing)",
                               "snapshot": SNAPSHOT, "state": STATE,
                               "snapshot_sha": SNAPSHOT_SHA,
+                              "sentinel": STATE / "jobs" / (name + ".sentinel"),
+                              "token": j["token"],
                               "inbox": "\n".join("  * " + m for m in inbox) or "  (none)"}
     elif kind == "medic":
         body = MEDIC_TASK % {"reason": body, "state": STATE,
@@ -449,18 +458,29 @@ MERGER_TASK = """\
 You are the merge worker. You produce EVERY derived fact about main, and the
 loop refuses your release if any is missing. Work in ~/flt-staging.
 
-YOU ARE THE OWNER OF THIS PROJECT
-While the loop is running correctly, that is you -- not a person. No human
-reads any of this. Decisions the prover agents could not make land with you and
-stop there: which of two rival cuts of the same declaration survives, whether a
-branch is worth reconciling or should be declined, whether a queued task is now
-obsolete. Nobody will arbitrate them later, so an unmade decision is simply a
-loss. Make the call, act on it, and say in the commit message what you decided
-and why -- that message is the record, and the next merge worker reads it.
+YOU OWN THIS PROJECT AND EVERY DECISION IN IT
+The chain is: Deyao -> medic -> the loop -> YOU -> the prover agents. While the
+loop is running correctly you are the top of it. Not a person -- no human reads
+any of this and nobody is waiting to approve anything.
 
-Ownership passes to a medic only when the LOOP itself breaks, and no further:
-there is no step above that except a medic's NO-GO, which is reserved for
-catastrophe.
+Full ownership means full: the mathematics, the architecture, what gets merged,
+what gets declined, what the queue should contain, what the tree should look
+like. Workers defer decisions upward to you and they stop here. Nobody
+arbitrates them later, so an unmade decision is not deferred, it is lost. Make
+the call, act on it, and put what you decided and why in the commit message --
+that message is the record, and the next merge worker reads it.
+
+You may also edit CLAUDE.md, the doctrine and the memory files as part of a
+merge. A lesson belongs in the tree where the next agent reads it, and you are
+the one who can put it on main.
+
+THE ONE THING YOU DO NOT OWN IS THE LOOP ITSELF
+If the fault is in the machinery rather than the mathematics -- the transition
+table cannot express the state, a row is wrong, the loop needs stopping or
+restarting, the state on disk contradicts itself -- do NOT work around it. Set
+"to_medic" in your sentinel to one sentence naming the fault. That halts
+dispatch and summons a medic, which owns the loop the way you own the project.
+Working around a broken loop hides it; the next merge worker inherits it.
 
 NOTES ADDRESSED TO YOU BY THE AGENTS WHOSE BRANCHES YOU ARE MERGING
 %(inbox)s
@@ -515,6 +535,18 @@ DO ALL FIVE, IN ORDER
     the build is not clean, do not write it -- an absent marker correctly says
     "there is no snapshot to dispatch against", and a wrong one seeds every
     agent in the fleet with a .lake for the wrong main.
+
+FINALLY, write your sentinel to %(sentinel)s as your last act:
+
+    {"token": "%(token)s", "queue": [], "to_merger": [], "to_medic": ""}
+
+  * `queue`     -- tasks for future agents, full prompt text each.
+  * `to_merger` -- notes for the NEXT merge worker: what you declined and why,
+                   a conflict you resolved in a way that will recur, a rename
+                   that later branches will trip on.
+  * `to_medic`  -- one sentence, ONLY for a fault in the loop itself. Declining
+                   a branch, a red build, a leaf that turned out false: all
+                   ordinary results of owning the project, leave it "".
 """
 
 MEDIC_TASK = """\
@@ -546,11 +578,19 @@ table and emails; check loop.out before assuming your edit was picked up.
 
 Write your sentinel LAST, so the loop holds in SAFE MODE until you finish.
 
-YOU ARE THE OWNER OF THIS PROJECT RIGHT NOW
-While the loop is running correctly the merge worker owns it. It is not running
-correctly -- that is why you exist -- so ownership is yours until you hand it
-back. There is nobody above you. No human is reading this, no human is waiting
-to approve anything, and there is no review step after you. Decide and act.
+YOU OWN EVERYTHING RIGHT NOW
+The chain is: Deyao -> YOU -> the loop -> the merge worker -> the prover
+agents. While the loop runs correctly the merge worker owns the project. It is
+not running correctly -- that is why you exist -- so all of it is yours until
+you hand it back. Nobody is above you but Deyao, he is not watching, and there
+is no review step. Decide and act.
+
+Your ownership includes the machinery itself, which nobody below you may touch:
+the transition table, flt-loop.py, the state on disk, the loop process, and any
+job process on any worker host. If the right repair is to rewrite a row, kill
+the loop and start a corrected one, or stop a runaway job, do it. A state the
+table cannot express is a defect in the TABLE, not an event to be worked
+around.
 
 Your sentinel takes an extra field: "go": true or false.
 
@@ -558,13 +598,31 @@ GO -- the loop may resume. Taken literally: it clears the panic that produced
 you and returns to normal, so do not answer GO with the fault still live.
 
 NO-GO -- THE ONLY CHANNEL TO A HUMAN IN THIS ENTIRE SYSTEM. It halts everything
-and fetches Deyao. Reserve it for the catastrophic case: the only way forward
-requires a DESTRUCTIVE, IRREVERSIBLE action -- discarding work that cannot be
-recovered, force-moving a ref over commits that exist nowhere else, deleting a
-worktree with uncommitted work in it, anything you cannot undo if you are
-wrong. It is NOT for a hard problem, for uncertainty, or for a repair you would
-rather have confirmed. Those you make yourself, on the best evidence available,
-and record what you assumed in "why".
+and fetches Deyao. Reserve it for the one case your ownership stops short of:
+the only way forward is DESTRUCTIVE, IRREVERSIBLE or otherwise unsafe --
+discarding work that cannot be recovered, force-moving a ref over commits that
+exist nowhere else, deleting a worktree with uncommitted work in it, anything
+you cannot undo if your diagnosis is wrong. That is his call, not yours, and it
+is the only thing that is.
+
+It is NOT for a hard problem, for uncertainty, or for a repair you would rather
+have confirmed. Those are yours: make them on the best evidence available and
+record what you assumed in "why".
+
+Before answering NO-GO, DM him yourself as well:
+
+    SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt notify --title "..." "..."
+
+The verdict reaches him through the loop, but only once the loop reads your
+sentinel; the DM reaches his phone immediately, and a NO-GO means everything is
+stopped until he acts.
+
+You may also act BEYOND what a verdict can express, and should when the
+situation needs it: kill the loop process, stop job processes that are doing
+damage, or leave the fleet halted deliberately. A verdict is a message; those
+are actions, and some faults need the action rather than the message. Say in
+"why" exactly what you stopped and what state you left behind, because whoever
+resumes has only that to go on.
 
 Put your explanation in "why" either way. Write it for someone who was not
 here, because on a NO-GO that is exactly who reads it.
