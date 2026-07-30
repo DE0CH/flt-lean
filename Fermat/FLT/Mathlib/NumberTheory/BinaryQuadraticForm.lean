@@ -1945,7 +1945,25 @@ and this really is new theory.  Two routes, both classical:
   `b = q^{1/3}(1 + O(q^{1/2}))`, `c = 16q^{1/3}·q^{1/2}(1 + O(q))`.
 
 An equivalent purely `q`-series form, with `x = e^{πiz}`, is
-`∏(1−(−1)ⁿxⁿ)⁸ = ∏(1−xⁿ)⁸ + 16x·∏(1−x⁴ⁿ)⁸`. -/
+`∏(1−(−1)ⁿxⁿ)⁸ = ∏(1−xⁿ)⁸ + 16x·∏(1−x⁴ⁿ)⁸`.
+
+ABSENCE RE-VERIFIED INDEPENDENTLY (2026-07-30, `flt-lean-185`, searched by STATEMENT SHAPE and
+not only by name, over `.lake/packages/mathlib` on the worker host). The route note above
+stands, and here is what is actually at this pin, so the next owner need not re-grep:
+`JacobiTheta/{OneVariable, TwoVariable, Manifold, Bounds}.lean` define `jacobiTheta₂ z τ` and
+`jacobiTheta τ` **as `∑' n : ℤ` only**, and the strongest results are
+`jacobiTheta₂_functional_equation`, `jacobiTheta_S_smul`, `jacobiTheta_T_sq_smul`,
+`jacobiTheta₂_add_left/right`, `jacobiTheta₂_conj`. There is NO product formula, no
+`jacobiTheta₃/₄` at all (so the `θ₂, θ₃, θ₄` of the derivation above have no mathlib names to
+specialise), and a search for `triple_product` in `Mathlib/` returns only
+`LinearAlgebra/CrossProduct.lean`. `ModularForm.eta` appears only in
+`ModularForms/{Delta, Discriminant}.lean` and `EisensteinSeries/E2/MDifferentiable.lean`.
+
+SO THE TWO ROUTES ARE THE ROUTES, and a warning against a third that looks cheaper than it is:
+this identity is exactly `θ₃⁴ = θ₂⁴ + θ₄⁴`, whose classical proofs all go through either the
+triple product plus an addition/duplication formula, or the valence formula for `Γ(2)` (also
+absent). It should NOT be cut into sub-leaves until one of those is in hand — a `1 → 3` split
+with no piece closable is a worse cut than the single honest leaf standing here. -/
 theorem eta_two_torsion_key (z : ℍ) :
     ModularForm.eta ((z : ℂ) / 2) ^ 8 * ModularForm.eta (2 * (z : ℂ)) ^ 8 *
         (ModularForm.eta ((z : ℂ) / 2) ^ 8 + 16 * ModularForm.eta (2 * (z : ℂ)) ^ 8)
@@ -3311,7 +3329,36 @@ a `form ↦ τ_f` map, i.e. new infrastructure, and this leaf is already the hon
 CHEAPER ALTERNATIVE STILL UNCOSTED: Stark's remark (quoted at the end of Booher) that
 "nothing more modern is required" — Weber's own computations replace the class field theory.
 Nobody in this development has costed that route; doing so is a legitimate outcome for whoever
-owns this leaf. -/
+owns this leaf.
+
+FALSITY AUDIT (2026-07-30, `flt-lean-185`, run FRESH against this statement — the leaf was cut
+the same day, so no earlier audit covers it). The statement is TRUE and NOT VACUOUS: `hcl` is
+satisfiable exactly at `p ∈ {11, 19, 43, 67, 163}` (`PARI/GP`, every `p ≡ 3 mod 8` below `400`),
+and at all five `j(τ₀) = −32768, −884736, −884736000, −147197952000, −262537412640768000`, each
+a rational integer.
+
+**`hp8` IS LOAD-BEARING, AND THE MECHANISM IS THE EMPTY-FAMILY TRAP, NOT THE CLASS NUMBER.**
+`hcl` quantifies over forms of discriminant `−p`, and `discr f = b² − 4ac ≡ b² ≡ 0 or 1 (mod 4)`
+for EVERY form. So when `p ≡ 1 mod 4` we have `−p ≡ 3 (mod 4)` and **no form of discriminant
+`−p` exists at all**: `hcl` is vacuously true and constrains nothing, class number or otherwise.
+Witness that this refutes the leaf without `hp8`: **`p = 5`** — prime, `3 < 5`, `hcl` vacuous;
+but `τ₀ = (3+√−5)/2` satisfies `2τ₀² − 6τ₀ + 7 = 0`, of discriminant `−20`, and `h(−20) = 2`
+with `polclass(−20) = x² − 1264000x − 681472000` irreducible over `ℚ`, so
+`j(τ₀) = −538.90947514050932022704741070342…` is a quadratic irrational and the conclusion
+`∃ u : ℚ, (u : ℂ) = j(τ₀)` is FALSE. Same at `p = 13, 17, 29, 37, 41, 53` (`h(−4p) = 2, 4, 6,
+2, 8, 6`).
+
+SHARP FORM: `hp8` may be weakened to `p % 4 = 3` and the leaf stays TRUE — that is all the proof
+above uses (it is what makes `−p` a discriminant and `ℤ + ℤτ₀` the maximal order), and the only
+`p ≡ 7 mod 8` admitted is `p = 7`, where `h(−7) = 1` and `j(τ₀) = −3375 ∈ ℚ`. Weakening past
+`p % 4 = 3` is fatal, by the witness above.
+
+This applies verbatim to every `hcl`-taking declaration in this file
+(`natDegree_minpoly_weberAlpha_le`, `intCast_indep_weberAlpha_pow_four`, `exists_int_gammaTwo`,
+`exists_rat_gammaTwo_heegnerPoint`, `exists_quadratic_jInvariant_heegnerPoint`,
+`exists_heegnerRelation_of_classNumberOne`). All of them carry `hp8`, so none is broken — but
+the reason none is broken is `hp8`, not anything about class numbers, and a future weakening of
+that binder must not treat `hcl` as if it still said `h(−p) = 1`. -/
 theorem exists_rat_jInvariant_heegnerPoint {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3)
     (h3 : 3 < p)
     (hcl : ∀ f g : BinaryQuadraticForm, f.IsPosDef → g.IsPosDef →
@@ -3345,7 +3392,27 @@ unique.
 
 `3 ∤ p` IS THE LOAD-BEARING INPUT and comes from `hp` with `h3`; the section note gives the
 explicit witness `p = 27` (where `j(τ₀) = −12288000` is rational but not a cube), together
-with the check that `hp8` is not needed. -/
+with the check that `hp8` is not needed.
+
+FALSITY AUDIT RE-RUN INDEPENDENTLY (2026-07-30, `flt-lean-185`, `PARI/GP`) — the leaf was cut
+the same day, so this is its first audit by a second pair of hands, and every claim above
+survived:
+
+* NOT VACUOUS. `hj` holds exactly at `p ∈ {11, 19, 43, 67, 163}` (the same five, since
+  `disc τ₀ = −p` here and `j(τ₀) ∈ ℚ` iff `h(−p) = 1`), and at all five `j(τ₀)` IS a cube:
+  `−32768 = (−32)³`, `−884736 = (−96)³`, `−884736000 = (−960)³`,
+  `−147197952000 = (−5280)³`, `−262537412640768000 = (−640320)³` (`ispower(·,3) = 1` each).
+* `hp` witness reproduced: `h(−27) = 1` so `hj` HOLDS at `p = 27` with `j(τ₀) = −12288000`,
+  and `ispower(−12288000, 3) = 0` — `−12288000 = −2¹⁵·3·5³` exactly as claimed.
+* `hp8` NOT load-bearing, both halves rechecked. For `p ≡ 1 mod 4`, `disc τ₀ = −4p` and
+  `h(−4p) ∈ {2, 2, 4, 6, 2, 8, 6}` at `p = 5, 13, 17, 29, 37, 41, 53`, so `j(τ₀) ∉ ℚ` and `hj`
+  is vacuous. For `p ≡ 7 mod 8`, the only prime with `h(−p) = 1` is `p = 7` (checked to
+  `10000`), where `j(τ₀) = −3375 = (−15)³` IS a cube.
+
+Note the contrast with `exists_rat_jInvariant_heegnerPoint` above, and that it is not an
+accident: THIS leaf's non-degeneracy input is `hj`, a statement about a concrete number, which
+cannot go vacuous the way a `∀`-over-forms hypothesis can. That is exactly why `hp8` is
+dispensable here and load-bearing there. -/
 theorem exists_ratCube_jInvariant_heegnerPoint {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3)
     (h3 : 3 < p)
     (hj : ∃ u : ℚ, (u : ℂ) = jInvariant (heegnerPoint p hp.pos)) :
