@@ -1956,12 +1956,16 @@ characteristic three with MORE THAN THREE ELEMENTS; the discharge is
 any `Ind` machinery by writing the anticyclotomic index-two induction as
 an explicit dihedral cocycle. REFUTED as originally stated and repaired
 2026-07-26, the cardinality bound being the repair. The only class field
-theory left in it is `nonempty_ringClassArtinData_anticyclotomic`
-(2026-07-28 — for the imaginary quadratic `M = ℚ(√d)` cut out by `e` and any
-`K ≥ 1`, the existence of a finite abelian `Cl` with an Artin surjection
-`Γ_M ↠ Cl` of open kernel, inverted by complex conjugation, and containing an
-element of order divisible by `K`; equivalently, a cyclic ANTICYCLOTOMIC
-extension of `M` of degree divisible by `K`. The conductor-map wrapper
+theory left in it is `nonempty_ringClassArtinData_anticyclotomic_primePow`
+(2026-07-28, restated at PRIME POWERS 2026-07-30 — for the imaginary quadratic
+`M = ℚ(√d)` cut out by `e` and any prime power `l ^ k`, the existence of a finite
+abelian `Cl` with an Artin surjection `Γ_M ↠ Cl` of open kernel, inverted by
+complex conjugation, and containing an element of order divisible by `l ^ k`;
+equivalently, a cyclic ANTICYCLOTOMIC extension of `M` of degree divisible by
+`l ^ k`. The general-`K` form `nonempty_ringClassArtinData_anticyclotomic` is
+PROVEN over it by the compositum lemma
+`nonempty_ringClassArtinData_of_primePow`, which is finite group theory. The
+conductor-map wrapper
 `exists_ringClassArtinData_conductorMap_of_inertPrime` is PROVEN over it — the
 inert-prime hypotheses turn out to be unused, since `ker j ⊆ 𝔽_pˣ · μ_24` in the
 cyclic `𝔽_{p²}ˣ` is only a statement about the order of a cyclic subgroup of
@@ -32420,7 +32424,20 @@ for ANY `t`, `w` and `ε > 0` — so no choice of `(d, t, w, ε)` discharges thi
 that is the same fact as the `d = 0` collapse recorded in the CUT-STRENGTH AUDIT, seen from
 the other side. (ii) `hdim`/`hXdim` are `≤ 1` and so admit dimension `0`, but that case is
 excluded rather than assumed away: a smooth proper geometrically irreducible `X̄/ℚ` of
-dimension `0` is `Spec ℚ`, `hZ` then forces `C = ∅`, and `hreal` contradicts that. -/
+dimension `0` is `Spec ℚ`, `hZ` then forces `C = ∅`, and `hreal` contradicts that.
+
+**ABSENCE SURVEY RE-RUN AND UNCHANGED AT `85ee56a7` (2026-07-30, release 23).**
+Datestamp only — nothing moved, and the point of saying so is that a prover
+dispatched here today still has nothing to write. `SymmetricPower` matches ZERO
+files under `Mathlib/AlgebraicGeometry/` (§3.2's `X̄^(d)`); `SerreDuality`,
+`CartierDivisor`, `WeilDivisor`, `IsVeryAmple` and `HilbertScheme` each match zero
+files under `Mathlib/AlgebraicGeometry/` and `Mathlib/Geometry/`; `genus` matches
+zero lines in the whole of `Mathlib/`, case-insensitively; and
+`StrongApproximation`/`GeneralisedJacobian`/`AltmanKleiman` match nothing in either
+tree. Corrections (A) and (B) below still stand as the live boundary: the Picard
+scheme, `Pic⁰`, the invertible sheaf, ampleness and `Hⁿ(X̄, ℒ)` ARE available, so
+what is missing is §3.2's symmetric power and the THEOREMS of §3.5–3.6 and
+§3.10.2, not the objects. -/
 theorem exists_skolemBallDatum_of_projectiveCompactification
     {C Xbar : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
     (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
@@ -36947,21 +36964,265 @@ theorem natCard_rootsOfUnity_succ_galoisField (p : ℕ) [Fact p.Prime] :
     rw [orderOf_pow, hordg, hgcd, hfact, Nat.mul_div_cancel_left _ (by omega : 0 < p - 1)]
   exact (IsPrimitiveRoot.iff_orderOf.mpr hordz).card_rootsOfUnity'
 
+/-! #### The COMPOSITUM STEP of the anticyclotomic leaf (PROVEN 2026-07-30)
+
+The class field theory leaf below used to be stated for an arbitrary `K`, and its
+own FAITHFULNESS note described the intended proof as *"the anticyclotomic
+`ℤ_ℓ`-extension exists for every prime `ℓ` … and the compositum of the
+`ℓ^{v_ℓ(K)}`-layers is cyclic anticyclotomic of order exactly `K`"*. **That
+compositum step is pure finite group theory and needs no class field theory at
+all**, so it is discharged here and the leaf is restated at PRIME POWERS, which
+is the shape the `ℤ_ℓ`-extension argument actually delivers.
+
+The four declarations below are the whole of it:
+
+* `RingClassArtinData.ofDvd` — the order clause is monotone downwards in
+  divisibility, so a datum for a MULTIPLE of `K` is a datum for `K`;
+* `RingClassArtinData.imageSubgroup` — the image of `Γ_M = ker e` under two Artin
+  maps, inside the product of the two ring class groups. It has to be the IMAGE
+  and not the whole product: `art_surjOn` is a field of the structure, and the
+  product of two surjections need not be surjective (the two ring class fields
+  may intersect above `M`);
+* `RingClassArtinData.lcm` — the compositum itself. Every clause transports
+  componentwise; the only arithmetic is the order clause, and it goes through the
+  EXPONENT rather than through any independence statement about the two fields:
+  each `D_i.Cl` receives a surjection from the image group, so
+  `K_i ∣ exp (image)`, hence `lcm K₁ K₂ ∣ exp (image)`, and a finite abelian
+  group has an element of order equal to its exponent
+  (`Monoid.exists_orderOf_eq_exponent`). This is why NO linear disjointness of the
+  two ring class fields is needed — the naive proof would want it, and it is not
+  available from the structure's fields;
+* `nonempty_ringClassArtinData_of_primePow` — the induction. Peel
+  `ordProj[minFac K] K` off `K`; the complementary factor is coprime to it, so the
+  `lcm` is the product, and strong induction closes it.
+
+All four are stated for an ARBITRARY `e : Γ_ℚ →* ℤˣ`: none of them uses `d < 0`,
+`x`, or the fact that `ker e` cuts out a quadratic field. They are group theory
+about the interface, and that is exactly why they could be proven while the leaf
+they serve cannot. -/
+
+/-- `art` is normalised at `1` (PROVEN): a consequence of `art_mul`, not a
+separate axiom of the structure. -/
+theorem RingClassArtinData.art_one {e : Field.absoluteGaloisGroup ℚ →* ℤˣ} {K : ℕ}
+    (D : RingClassArtinData e K) : D.art 1 = 1 := by
+  have h := D.art_mul 1 1 (by simp) (by simp)
+  rw [mul_one] at h
+  exact left_eq_mul.mp h
+
+/-- `art` inverts inverses ON `Γ_M` (PROVEN); again a consequence of `art_mul`. -/
+theorem RingClassArtinData.art_inv {e : Field.absoluteGaloisGroup ℚ →* ℤˣ} {K : ℕ}
+    (D : RingClassArtinData e K) {g : Field.absoluteGaloisGroup ℚ} (hg : e g = 1) :
+    D.art g⁻¹ = (D.art g)⁻¹ := by
+  have hgi : e g⁻¹ = 1 := by rw [map_inv, hg, inv_one]
+  have h := D.art_mul g g⁻¹ hg hgi
+  rw [mul_inv_cancel, D.art_one] at h
+  exact (inv_eq_of_mul_eq_one_right h.symm).symm
+
+/-- **A datum for a MULTIPLE of `K` is a datum for `K`** (PROVEN): every clause
+except `exists_orderOf_dvd` is independent of `K`, and that one is monotone
+downwards in divisibility. -/
+def RingClassArtinData.ofDvd {e : Field.absoluteGaloisGroup ℚ →* ℤˣ} {K K' : ℕ}
+    (h : K ∣ K') (D : RingClassArtinData e K') : RingClassArtinData e K where
+  Cl := D.Cl
+  commGroup := D.commGroup
+  finite := D.finite
+  art := D.art
+  H := D.H
+  isOpen_H := D.isOpen_H
+  H_le_ker := D.H_le_ker
+  art_coset := D.art_coset
+  art_mul := D.art_mul
+  art_conj := D.art_conj
+  art_surjOn := D.art_surjOn
+  exists_orderOf_dvd := by
+    obtain ⟨a, ha⟩ := D.exists_orderOf_dvd
+    exact ⟨a, h.trans ha⟩
+
+/-- **The image of `Γ_M` under two Artin maps**, as a subgroup of the product of
+the two ring class groups. This — not the whole product — is the group of the
+compositum, because `art_surjOn` demands surjectivity and the product of two
+surjections is not surjective in general. It is a subgroup because `art` is a
+homomorphism on `ker e` (`art_mul`, `art_one`, `art_inv`) and `ker e` is a
+subgroup. -/
+def RingClassArtinData.imageSubgroup {e : Field.absoluteGaloisGroup ℚ →* ℤˣ} {K₁ K₂ : ℕ}
+    (D₁ : RingClassArtinData e K₁) (D₂ : RingClassArtinData e K₂) :
+    Subgroup (D₁.Cl × D₂.Cl) where
+  carrier := {y | ∃ g, e g = 1 ∧ (D₁.art g, D₂.art g) = y}
+  mul_mem' := by
+    rintro y z ⟨g, hg, rfl⟩ ⟨h, hh, rfl⟩
+    refine ⟨g * h, by rw [map_mul, hg, hh, mul_one], ?_⟩
+    rw [Prod.mk_mul_mk, D₁.art_mul g h hg hh, D₂.art_mul g h hg hh]
+  one_mem' := ⟨1, by simp, by rw [D₁.art_one, D₂.art_one]; rfl⟩
+  inv_mem' := by
+    rintro y ⟨g, hg, rfl⟩
+    refine ⟨g⁻¹, by rw [map_inv, hg, inv_one], ?_⟩
+    rw [Prod.inv_mk, D₁.art_inv hg, D₂.art_inv hg]
+
+/-- **THE COMPOSITUM: two anticyclotomic data compose, with `lcm` of the orders**
+(PROVEN 2026-07-30).
+
+`Cl` is the image group above, `art` the pair of the two Artin maps on `Γ_M`
+(junk `1` off `Γ_M`, which the structure explicitly permits), `H` the
+intersection of the two open subgroups. Every clause is componentwise. The order
+clause avoids any independence hypothesis by routing through the exponent: the
+two projections `image ↠ D_i.Cl` are surjective by construction, so an element of
+`D_i.Cl` of order divisible by `K_i` lifts to an element of the image whose order
+is divisible by `K_i`, hence `K_i ∣ exp`; then `lcm K₁ K₂ ∣ exp`, and the
+exponent IS the order of some element because the group is finite abelian. -/
+noncomputable def RingClassArtinData.lcm {e : Field.absoluteGaloisGroup ℚ →* ℤˣ} {K₁ K₂ : ℕ}
+    (D₁ : RingClassArtinData e K₁) (D₂ : RingClassArtinData e K₂) :
+    RingClassArtinData e (Nat.lcm K₁ K₂) := by
+  classical
+  set Cl := ↥(D₁.imageSubgroup D₂)
+  have hmem : ∀ g : Field.absoluteGaloisGroup ℚ, e g = 1 →
+      (D₁.art g, D₂.art g) ∈ D₁.imageSubgroup D₂ := fun g hg => ⟨g, hg, rfl⟩
+  refine
+    { Cl := Cl
+      art := fun g => if hg : e g = 1 then ⟨(D₁.art g, D₂.art g), hmem g hg⟩ else 1
+      H := D₁.H ⊓ D₂.H
+      isOpen_H := ?_
+      H_le_ker := ?_
+      art_coset := ?_
+      art_mul := ?_
+      art_conj := ?_
+      art_surjOn := ?_
+      exists_orderOf_dvd := ?_ }
+  · exact D₁.isOpen_H.inter D₂.isOpen_H
+  · exact fun h hh => D₁.H_le_ker h hh.1
+  · intro g h hg hh
+    have hh1 : e h = 1 := D₁.H_le_ker h hh.1
+    have hgh : e (g * h) = 1 := by rw [map_mul, hg, hh1, mul_one]
+    rw [dif_pos hgh, dif_pos hg]
+    exact Subtype.ext (Prod.ext (D₁.art_coset g h hg hh.1) (D₂.art_coset g h hg hh.2))
+  · intro g h hg hh
+    have hgh : e (g * h) = 1 := by rw [map_mul, hg, hh, mul_one]
+    rw [dif_pos hgh, dif_pos hg, dif_pos hh]
+    exact Subtype.ext (Prod.ext (D₁.art_mul g h hg hh) (D₂.art_mul g h hg hh))
+  · intro c g hc hg
+    have hcgc : e (c * g * c⁻¹) = 1 := by
+      rw [map_mul, map_mul, map_inv, hg, mul_one, mul_inv_cancel]
+    rw [dif_pos hcgc, dif_pos hg]
+    exact Subtype.ext (Prod.ext (D₁.art_conj c g hc hg) (D₂.art_conj c g hc hg))
+  · rintro ⟨y, g, hg, rfl⟩
+    exact ⟨g, hg, by rw [dif_pos hg]⟩
+  · have hex : Monoid.ExponentExists Cl := Monoid.ExponentExists.of_finite
+    obtain ⟨a, ha⟩ := Monoid.exists_orderOf_eq_exponent hex
+    refine ⟨a, ?_⟩
+    rw [ha]
+    refine Nat.lcm_dvd ?_ ?_
+    · obtain ⟨a₁, ha₁⟩ := D₁.exists_orderOf_dvd
+      obtain ⟨g₁, hg₁, hga₁⟩ := D₁.art_surjOn a₁
+      set y : Cl := ⟨(D₁.art g₁, D₂.art g₁), hmem g₁ hg₁⟩ with hy
+      have hπ : ((MonoidHom.fst D₁.Cl D₂.Cl).comp (D₁.imageSubgroup D₂).subtype) y = a₁ := by
+        simp [hy, hga₁]
+      have h1 : orderOf a₁ ∣ orderOf y := by rw [← hπ]; exact orderOf_map_dvd _ y
+      exact ha₁.trans (h1.trans (Monoid.order_dvd_exponent y))
+    · obtain ⟨a₂, ha₂⟩ := D₂.exists_orderOf_dvd
+      obtain ⟨g₂, hg₂, hga₂⟩ := D₂.art_surjOn a₂
+      set y : Cl := ⟨(D₁.art g₂, D₂.art g₂), hmem g₂ hg₂⟩ with hy
+      have hπ : ((MonoidHom.snd D₁.Cl D₂.Cl).comp (D₁.imageSubgroup D₂).subtype) y = a₂ := by
+        simp [hy, hga₂]
+      have h2 : orderOf a₂ ∣ orderOf y := by rw [← hπ]; exact orderOf_map_dvd _ y
+      exact ha₂.trans (h2.trans (Monoid.order_dvd_exponent y))
+
+/-- **PRIME POWERS SUFFICE** (PROVEN 2026-07-30): anticyclotomic data at every
+prime power give anticyclotomic data at every nonzero `K`.
+
+Strong induction on `K`. At `K = 1` take `l ^ 0` for any prime and weaken by
+`ofDvd`. For `K > 1` let `l = minFac K` and peel `ordProj[l] K`: the
+complementary factor `ordCompl[l] K` is coprime to it
+(`Nat.coprime_ordCompl`), so the `lcm` of the two is their product, which is `K`
+(`Nat.ordProj_mul_ordCompl_eq_self`), and it is strictly smaller than `K` because
+`ordProj[l] K ≥ l ≥ 2`.
+
+This is stated for an arbitrary `e`; it is group theory, not arithmetic of `M`. -/
+theorem nonempty_ringClassArtinData_of_primePow {e : Field.absoluteGaloisGroup ℚ →* ℤˣ}
+    (hpp : ∀ (l k : ℕ), l.Prime → Nonempty (RingClassArtinData e (l ^ k)))
+    (K : ℕ) (hK : K ≠ 0) : Nonempty (RingClassArtinData e K) := by
+  induction K using Nat.strong_induction_on with
+  | _ K ih =>
+    rcases eq_or_lt_of_le (Nat.one_le_iff_ne_zero.mpr hK) with h1 | h1
+    · exact ⟨((hpp 2 0 Nat.prime_two).some).ofDvd (by rw [← h1]; exact one_dvd _)⟩
+    · set l := K.minFac
+      have hlp : l.Prime := Nat.minFac_prime (by omega)
+      have hldvd : l ∣ K := Nat.minFac_dvd K
+      set k := K.factorization l
+      set K' := K / l ^ k
+      have hmul : l ^ k * K' = K := Nat.ordProj_mul_ordCompl_eq_self K l
+      have hK'0 : K' ≠ 0 := by
+        intro h; rw [h, mul_zero] at hmul; exact hK hmul.symm
+      have hkpos : 0 < k := hlp.factorization_pos_of_dvd hK hldvd
+      have hl2 : 2 ≤ l ^ k := by
+        calc 2 ≤ l := hlp.two_le
+        _ = l ^ 1 := (pow_one l).symm
+        _ ≤ l ^ k := Nat.pow_le_pow_right hlp.pos hkpos
+      have hlt : K' < K := by
+        have : 2 * K' ≤ l ^ k * K' := Nat.mul_le_mul_right _ hl2
+        omega
+      have hcop : Nat.Coprime (l ^ k) K' :=
+        Nat.Coprime.pow_left _ (Nat.coprime_ordCompl hlp hK)
+      have hlcm : Nat.lcm (l ^ k) K' = K := by rw [hcop.lcm_eq_mul, hmul]
+      exact ⟨hlcm ▸ ((hpp l k hlp).some.lcm (ih K' hlt hK'0).some)⟩
+
 /-- **THE CLASS FIELD THEORY LEAF, IN ITS MINIMAL FORM: AN IMAGINARY QUADRATIC
-FIELD HAS ANTICYCLOTOMIC ABELIAN QUOTIENTS OF EVERY ORDER** (sorry node, cut
-2026-07-28 out of `exists_ringClassArtinData_conductorMap_of_inertPrime` just
-below, which is now PROVEN over it — and which is the ONLY consumer).
+FIELD HAS ANTICYCLOTOMIC ABELIAN QUOTIENTS OF EVERY PRIME-POWER ORDER** (sorry
+node, cut 2026-07-28 out of `exists_ringClassArtinData_conductorMap_of_inertPrime`
+below; **RESTATED AT PRIME POWERS 2026-07-30**, the general `K` now being PROVEN
+over this one by `nonempty_ringClassArtinData_of_primePow` just above).
+
+**WHAT THE 2026-07-30 RESTATEMENT DID, AND WHY IT IS NOT A RECUT OF THE
+MATHEMATICS.** The FAITHFULNESS note below already described the intended proof as
+"the anticyclotomic `ℤ_ℓ`-extension exists for every prime `ℓ` … and the
+compositum of the `ℓ^{v_ℓ(K)}`-layers is cyclic anticyclotomic of order exactly
+`K`". That compositum step is finite group theory — it needs no class field
+theory, no linear disjointness of the two ring class fields, and no arithmetic of
+`M` at all — so it has been discharged, and what is asked here is now only the
+`ℓ`-primary case, which is what a `ℤ_ℓ`-extension delivers directly. The general
+statement `nonempty_ringClassArtinData_anticyclotomic` is unchanged, still carries
+the same hypothesis list, and its single call site in
+`exists_ringClassArtinData_conductorMap_of_inertPrime` is untouched.
+
+**FAITHFULNESS AUDIT OF THE RESTATED STATEMENT (2026-07-30; the earlier audit is
+NOT inherited, per the standing rule that a restated leaf must be re-audited).**
+The new statement is the OLD one specialised to `K = l ^ k` — same hypotheses in
+the same order, with `K` replaced by `l ^ k` and `(l : ℕ)` prime added. So it is
+LOGICALLY WEAKER than what was audited before, and specialising a statement cannot
+turn a true statement false: every refuting check recorded below still refutes
+nothing, and no new degeneracy is introduced. Two clauses of the old audit change
+status and are restated here rather than left to be re-derived:
+
+* **The old audit's "`hK : K ≠ 0` is load-bearing and the statement is FALSE
+  without it" is now DISCHARGED STRUCTURALLY, not dropped.** `exists_orderOf_dvd`
+  at `K = 0` reads `∃ a, orderOf a = 0`, impossible in a finite group; and
+  `l ^ k ≠ 0` for `l` prime, so the hypothesis is no longer needed and no longer
+  appears. Nothing was weakened by removing it.
+* **Non-vacuity survives, and at `k = 0` the statement is TRIVIAL.** `l ^ 0 = 1`
+  and `Cl = Unit` satisfies every clause, so the content is entirely in `k ≥ 1`;
+  the reduction above calls this leaf at `k = K.factorization l ≥ 1` for the
+  primes actually dividing `K`, and additionally at `k = 0` once, to start the
+  induction. That trivial call is deliberate and is the only reason the `k = 0`
+  case is admitted.
+
+`hd : d < 0`, `hx`, `he` are load-bearing exactly as recorded below, unchanged by
+the restatement.
 
 **THIS IS NOW THE ONLY CLASS-FIELD-THEORETIC CONTENT anywhere under
 `exists_dihedralOddGaloisRep_of_charThree`.** Unwound, it says: for the
-imaginary quadratic `M = ℚ(√d)` cut out by `e` (so `ker e = Γ_M`) and any
-`K ≥ 1`, there is a FINITE ABELIAN group `Cl`, an OPEN subgroup `H ≤ Γ_M`, and
-a map `art : Γ_ℚ → Cl` which on `Γ_M` is a homomorphism ONTO `Cl`, is constant
+imaginary quadratic `M = ℚ(√d)` cut out by `e` (so `ker e = Γ_M`) and any prime
+power `l ^ k`, there is a FINITE ABELIAN group `Cl`, an OPEN subgroup `H ≤ Γ_M`,
+and a map `art : Γ_ℚ → Cl` which on `Γ_M` is a homomorphism ONTO `Cl`, is constant
 on cosets of `H`, and is INVERTED by complex conjugation — with `Cl` containing
-an element of order divisible by `K`. Equivalently: *`M` admits a cyclic
-anticyclotomic extension of degree divisible by `K`*, i.e. a generalized
+an element of order divisible by `l ^ k`. Equivalently: *`M` admits a cyclic
+anticyclotomic extension of degree divisible by `l ^ k`*, i.e. a generalized
 dihedral extension of `ℚ` containing `M` whose group over `M` is cyclic of that
-order.
+order. This is exactly the `l`-primary layer of the anticyclotomic
+`ℤ_l`-extension.
+
+**IN THE FIVE PARAGRAPHS BELOW, WRITTEN BEFORE THE 2026-07-30 RESTATEMENT, `K`
+MEANS THE ORDER ASKED FOR — READ IT AS `l ^ k`.** They are retained verbatim
+because every one of their claims is about the CFT content, which the restatement
+did not touch; the two clauses whose status the restatement DID change are
+recorded in the audit above.
 
 **WHY THIS REPLACED THE INERT-PRIME/CONDUCTOR-MAP FORMULATION** (2026-07-28).
 The leaf below asked for the ring class field of conductor `p` at an inert `p`
@@ -37043,6 +37304,31 @@ mathematics, not by module structure.
 
 References: Neukirch ch. VI; Childress, *Class Field Theory*; Cox, *Primes of the
 Form x² + ny²*, ch. 8–9 (ring class fields). -/
+theorem nonempty_ringClassArtinData_anticyclotomic_primePow
+    (d : ℚ) (hd : d < 0) (x : AlgebraicClosure ℚ)
+    (hx : x ^ 2 = algebraMap ℚ (AlgebraicClosure ℚ) d)
+    (e : Field.absoluteGaloisGroup ℚ →* ℤˣ)
+    (he : ∀ g, e g = 1 ↔ g x = x)
+    (l k : ℕ) (hl : l.Prime) :
+    Nonempty (RingClassArtinData e (l ^ k)) :=
+  sorry
+
+/-- **AN IMAGINARY QUADRATIC FIELD HAS ANTICYCLOTOMIC ABELIAN QUOTIENTS OF EVERY
+ORDER** (**PROVEN 2026-07-30** as an assembly; it was the sorry node cut
+2026-07-28).
+
+Two inputs, and nothing else:
+
+* `nonempty_ringClassArtinData_anticyclotomic_primePow` — the class field theory,
+  i.e. the `ℓ`-primary case. That leaf carries every hypothesis this statement
+  does, and its docstring is where the missing-machinery survey and the
+  faithfulness audit now live;
+* `nonempty_ringClassArtinData_of_primePow` — the compositum, which is finite
+  group theory.
+
+WHAT THIS MEANS FOR THE CONSUMER
+(`exists_ringClassArtinData_conductorMap_of_inertPrime`): nothing. The statement,
+its hypothesis list and its single call site are unchanged. -/
 theorem nonempty_ringClassArtinData_anticyclotomic
     (d : ℚ) (hd : d < 0) (x : AlgebraicClosure ℚ)
     (hx : x ^ 2 = algebraMap ℚ (AlgebraicClosure ℚ) d)
@@ -37050,7 +37336,9 @@ theorem nonempty_ringClassArtinData_anticyclotomic
     (he : ∀ g, e g = 1 ↔ g x = x)
     (K : ℕ) (hK : K ≠ 0) :
     Nonempty (RingClassArtinData e K) :=
-  sorry
+  nonempty_ringClassArtinData_of_primePow
+    (fun l k hl =>
+      nonempty_ringClassArtinData_anticyclotomic_primePow d hd x hx e he l k hl) K hK
 
 /-- **THE RING CLASS FIELD OF CONDUCTOR `p` AT AN INERT PRIME, TOGETHER WITH THE
 CONDUCTOR MAP OF THE WHOLE RESIDUE UNIT GROUP** (**PROVEN 2026-07-28** over
@@ -39964,7 +40252,19 @@ even though the descent block no longer needs them here: they may or may not be
 needed for the construction itself (Serre's route only visibly consumes `horb`
 and `hopen`), and supplying them costs the prover nothing while omitting one
 that turns out to be needed would cost a recut. Whoever proves this should
-record in this docstring which of them the proof actually consumes. -/
+record in this docstring which of them the proof actually consumes.
+
+**THE 2026-07-28 CORRECTION RE-VERIFIED AT `85ee56a7` (2026-07-30, release 23),
+name by name, and UNCHANGED.** `Mathlib/CategoryTheory/Sites/Descent/` still
+carries `IsStack` (`IsStack.lean:49`, a `class`) alongside `DescentData`,
+`DescentDataAsCoalgebra`, `DescentDataPrime`, `IsPrestack` and `Precoverage`;
+`Mathlib/AlgebraicGeometry/Sites/Fpqc.lean` still defines `fpqcPrecoverage`. And
+the two absences that make this a leaf rather than an assembly are also unchanged:
+`IsStack` matches ZERO files under `Mathlib/AlgebraicGeometry/` (so effectivity is
+stated but never instantiated for schemes), and `quotientScheme` /
+`IsQuasiProjective` / `QuasiProjective` match zero files there. So the plan in the
+paragraph above is still the plan, and the finite-group quotient is still the one
+piece that has to be built from nothing. -/
 theorem exists_isGaloisTwistForm_of_isOpenKernel {K : Type u} [Field K] [Algebra ℚ K]
     (hac : IsAlgClosed K) (halg : Algebra.IsAlgebraic ℚ K)
     (b : QGaloisBaseAction K) {X₀ : Scheme.{u}}
