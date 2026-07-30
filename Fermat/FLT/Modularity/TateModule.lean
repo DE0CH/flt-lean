@@ -2860,6 +2860,108 @@ theorem card_tors_eq_sq_of_principal
     omega
   rw [hcardr, hr2]
 
+/-- **ONE RANK-TWO LEVEL PROPAGATES TO THE WHOLE TOWER** (PROVEN
+2026-07-30).  Pure module theory over `𝒪_D`, and the exact CONVERSE
+direction of `card_tors_pow`: that lemma turns the count at level ONE
+into the count at every level `Jⁿ`, and this one turns the count at ONE
+level `J^{n₁}` with `n₁ ≥ 1` into the count at every level.
+
+Given, for an `𝒪_D`-module `P`,
+
+* `hsurj` — surjectivity of `·π` from each torsion level onto the
+  previous one (divisibility), for a uniformizer `π ∈ J ∖ J²`, and
+* `hcard₁` — `#P[J^{n₁}] = #(𝒪_D/J^{n₁})²` at the SINGLE level `n₁ ≠ 0`,
+
+the same count holds at every level `Jⁿ`.
+
+THE ARGUMENT, and it is `card_tors_eq_sq_of_principal`'s steps 3–5 with
+the input moved.  `P[J]` sits inside the finite `P[J^{n₁}]`, so it is a
+finite vector space over the residue field `𝒪_D/J`; write
+`r = dim_{𝒪_D/J} P[J]`, so `#P[J] = #(𝒪_D/J)^r`.  `card_tors_pow` then
+gives `#P[J^{n₁}] = #(𝒪_D/J)^{r·n₁}`, while `hcard₁` and
+`card_quotient_pow` give `#(𝒪_D/J)^{2·n₁}` for the same number; since
+`#(𝒪_D/J) ≥ 2` the exponents agree, and `n₁ ≠ 0` cancels to `r = 2`.
+Feeding `r = 2` back into `card_tors_pow` is the conclusion.
+
+**`hn₁` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT IT.**  At
+`n₁ = 0` the ideal `J⁰` is `⊤`, so `P[⊤] = 0` (`tors_top`) and
+`𝒪_D ⧸ ⊤` is the ZERO ring: `hcard₁` reads `1 = 1²` and holds for EVERY
+module `P`, including `P = 0`, whose count at level one is `1` and not
+`#(𝒪_D/J)² ≥ 4`.  It is exactly the cancellation `r·n₁ = 2·n₁ ⟹ r = 2`
+that consumes it. -/
+theorem card_tors_pow_of_card_tors_pow_eq_sq
+    {D : Type*} [Field D] [NumberField D]
+    {P : Type*} [AddCommGroup P] [Module (𝓞 D) P]
+    (J : Ideal (𝓞 D)) (hJ : J.IsMaximal) (hJ0 : J ≠ ⊥)
+    {π : 𝓞 D} (hπ : π ∈ J) (hπ2 : π ∉ J ^ 2)
+    (hsurj : ∀ (k : ℕ) (y : P),
+      y ∈ Submodule.torsionBySet (𝓞 D) P ((J ^ k : Ideal (𝓞 D)) : Set (𝓞 D)) →
+      ∃ z ∈ Submodule.torsionBySet (𝓞 D) P ((J ^ (k + 1) : Ideal (𝓞 D)) : Set (𝓞 D)),
+        π • z = y)
+    (n₁ : ℕ) (hn₁ : n₁ ≠ 0)
+    (hcard₁ : Nat.card (Submodule.torsionBySet (𝓞 D) P
+        ((J ^ n₁ : Ideal (𝓞 D)) : Set (𝓞 D)))
+      = Nat.card (𝓞 D ⧸ J ^ n₁) ^ 2)
+    (n : ℕ) :
+    Nat.card (Submodule.torsionBySet (𝓞 D) P ((J ^ n : Ideal (𝓞 D)) : Set (𝓞 D)))
+      = Nat.card (𝓞 D ⧸ J ^ n) ^ 2 := by
+  classical
+  haveI : J.IsMaximal := hJ
+  -- ### 1. the residue field is finite and has at least two elements
+  have hNJ : Nat.card (𝓞 D ⧸ J) = Ideal.absNorm J := by
+    simp [Ideal.absNorm_apply, Submodule.cardQuot_apply]
+  haveI : Finite (𝓞 D ⧸ J) := by
+    refine (Nat.card_ne_zero.mp ?_).2
+    rw [hNJ]
+    exact fun hz => hJ0 (Ideal.absNorm_eq_zero_iff.mp hz)
+  letI : Field (𝓞 D ⧸ J) := Ideal.Quotient.field J
+  have hq2 : 2 ≤ Nat.card (𝓞 D ⧸ J) := Finite.one_lt_card
+  -- ### 2. the level-`n₁` torsion is finite, hence so is the level-one torsion
+  haveI hfin₁ : Finite (Submodule.torsionBySet (𝓞 D) P
+      ((J ^ n₁ : Ideal (𝓞 D)) : Set (𝓞 D))) := by
+    refine (Nat.card_ne_zero.mp ?_).2
+    rw [hcard₁, card_quotient_pow]
+    exact pow_ne_zero _ (pow_ne_zero _ (by omega))
+  have hle : (Submodule.torsionBySet (𝓞 D) P ((J : Ideal (𝓞 D)) : Set (𝓞 D)))
+      ≤ Submodule.torsionBySet (𝓞 D) P ((J ^ n₁ : Ideal (𝓞 D)) : Set (𝓞 D)) :=
+    tors_mono (Ideal.pow_le_self hn₁)
+  haveI hfin : Finite (Submodule.torsionBySet (𝓞 D) P ((J : Ideal (𝓞 D)) : Set (𝓞 D))) :=
+    Finite.of_injective
+      (fun x : Submodule.torsionBySet (𝓞 D) P ((J : Ideal (𝓞 D)) : Set (𝓞 D)) =>
+        (⟨(x : P), hle x.2⟩ :
+          Submodule.torsionBySet (𝓞 D) P ((J ^ n₁ : Ideal (𝓞 D)) : Set (𝓞 D))))
+      (by
+        intro x y hxy
+        simp only [Subtype.mk.injEq] at hxy
+        exact Subtype.ext hxy)
+  haveI : Module.Finite (𝓞 D ⧸ J)
+      (Submodule.torsionBySet (𝓞 D) P ((J : Ideal (𝓞 D)) : Set (𝓞 D))) :=
+    Module.Finite.of_finite
+  -- ### 3. the residual rank `r`, and the count at level one it gives
+  set r : ℕ := Module.finrank (𝓞 D ⧸ J)
+    (Submodule.torsionBySet (𝓞 D) P ((J : Ideal (𝓞 D)) : Set (𝓞 D))) with hrdef
+  have hcardr : Nat.card (Submodule.torsionBySet (𝓞 D) P ((J : Ideal (𝓞 D)) : Set (𝓞 D)))
+      = Nat.card (𝓞 D ⧸ J) ^ r := by
+    haveI := Fintype.ofFinite (𝓞 D ⧸ J)
+    haveI := Fintype.ofFinite
+      (Submodule.torsionBySet (𝓞 D) P ((J : Ideal (𝓞 D)) : Set (𝓞 D)))
+    have hcc := Module.card_eq_pow_finrank (K := 𝓞 D ⧸ J)
+      (V := (Submodule.torsionBySet (𝓞 D) P ((J : Ideal (𝓞 D)) : Set (𝓞 D))))
+    rw [← Nat.card_eq_fintype_card, ← Nat.card_eq_fintype_card] at hcc
+    exact hcc
+  -- ### 4. `r = 2`, read off the level-`n₁` count through the tower
+  have htower₁ := card_tors_pow J hJ hJ0 hπ hπ2 hsurj r hcardr n₁
+  rw [hcard₁, card_quotient_pow, ← pow_mul] at htower₁
+  have hrn : n₁ * 2 = r * n₁ := Nat.pow_right_injective hq2 htower₁
+  have hr2 : r = 2 := by
+    have h2 : r * n₁ = 2 * n₁ := by rw [← hrn, Nat.mul_comm]
+    exact Nat.eq_of_mul_eq_mul_right (Nat.pos_of_ne_zero hn₁) h2
+  -- ### 5. and then the count at `J ^ n`, from the tower again
+  have htower := card_tors_pow J hJ hJ0 hπ hπ2 hsurj r hcardr n
+  rw [hr2] at htower
+  rw [card_quotient_pow, ← pow_mul, Nat.mul_comm n 2]
+  exact htower
+
 end LevelFrame
 
 /-! #### Base change of a multiplication, and the reduction of the Betti
@@ -3450,9 +3552,324 @@ theorem card_fibrePt_eq_of_finrank_eq {X Y : Scheme.{u}} (φ : X ⟶ Y)
           Iso.hom_inv_id, Category.comp_id]
   rw [Nat.card_congr (E1.trans E2.symm)]
 
+/-- **THE RANK OF `Ω` IS UNCHANGED BY LOCALIZATION, FOR A STANDARD SMOOTH
+ALGEBRA** (PROVEN 2026-07-30).
+
+If `A` is standard smooth of relative dimension `n` over `K` and `B` is any
+localization of `A` at a submonoid `M` (with `B` nontrivial), then
+`rank_B Ω[B⁄K] = n` as well.
+
+There is no dimension theory in this: `Ω[A⁄K]` is FREE over `A`
+(`IsStandardSmooth` supplies the basis), `Ω[B⁄K]` is its localization
+(`KaehlerDifferential.map K K A B` is an `IsLocalizedModule`), and a basis
+localizes to a basis on the SAME index type (`Basis.ofIsLocalizedModule`).
+So the two ranks are the cardinality of one and the same index set.  In
+particular no Krull dimension of `B` is ever mentioned, which is what makes
+this usable at the STALK, where `M` is a prime complement and the
+localization is far from an `Away`.
+
+`Nontrivial B` is load-bearing on both sides: it is what
+`rank_kaehlerDifferential` needs at `A` (which it gives, since a ring hom
+out of a subsingleton ring forces `1 = 0` in the target), and without it
+`B = 0` has `Ω[B⁄K] = 0` of rank `0`, refuting the conclusion for every
+`n ≠ 0`. -/
+theorem rank_kaehlerDifferential_of_isLocalization
+    {K A B : Type u} [CommRing K] [CommRing A] [CommRing B]
+    [Algebra K A] [Algebra K B] [Algebra A B] [IsScalarTower K A B]
+    (M : Submonoid A) [IsLocalization M B] [Nontrivial B]
+    {n : ℕ} [Algebra.IsStandardSmoothOfRelativeDimension n K A] :
+    Module.rank B (Ω[B⁄K]) = n := by
+  have hA : Nontrivial A := by
+    refine (subsingleton_or_nontrivial A).resolve_left (fun h => ?_)
+    haveI := h
+    exact one_ne_zero (α := B)
+      (by rw [← map_one (algebraMap A B), Subsingleton.elim (1 : A) 0, map_zero])
+  haveI := hA
+  haveI : Algebra.IsStandardSmooth K A :=
+    Algebra.IsStandardSmoothOfRelativeDimension.isStandardSmooth n
+  have hrank : Module.rank A (Ω[A⁄K]) = n :=
+    Algebra.IsStandardSmoothOfRelativeDimension.rank_kaehlerDifferential n
+  let b := Module.Free.chooseBasis A (Ω[A⁄K])
+  let b' := b.ofIsLocalizedModule B M (KaehlerDifferential.map K K A B)
+  have h1 : Module.rank B (Ω[B⁄K]) = Cardinal.mk (Module.Free.ChooseBasisIndex A (Ω[A⁄K])) :=
+    b'.mk_eq_rank''.symm
+  have h2 : Module.rank A (Ω[A⁄K]) = Cardinal.mk (Module.Free.ChooseBasisIndex A (Ω[A⁄K])) :=
+    b.mk_eq_rank''.symm
+  rw [h1, ← h2, hrank]
+
+/-- **THE LOCUS OF POINTS CARRYING A STANDARD-SMOOTH CHART OF RELATIVE
+DIMENSION `n`** (2026-07-30).
+
+Literally the `n`-th clause of `SmoothOfRelativeDimension`, read as a subset
+of `X` rather than as a `∀`: `SmoothOfRelativeDimension n f` says exactly
+that `smoothRelDimLocus f n = Set.univ`.  It exists so that the
+equidimensionality argument can be run as a clopen decomposition of `X`. -/
+def smoothRelDimLocus {X Y : Scheme.{u}} (f : X ⟶ Y) (n : ℕ) : Set X :=
+  {x | ∃ (U : Y.Opens) (_ : IsAffineOpen U) (V : X.Opens) (_ : IsAffineOpen V) (_ : x ∈ V)
+    (e : V ≤ f ⁻¹ᵁ U), RingHom.IsStandardSmoothOfRelativeDimension n (f.appLE U V e).hom}
+
+/-- **EACH RELATIVE-DIMENSION LOCUS IS OPEN** (PROVEN 2026-07-30), and it is
+open for a reason with no content: a chart witnessing `x` witnesses every
+OTHER point of the same chart, so the witness `V` is itself an open
+neighbourhood contained in the locus. -/
+theorem isOpen_smoothRelDimLocus {X Y : Scheme.{u}} (f : X ⟶ Y) (n : ℕ) :
+    IsOpen (smoothRelDimLocus f n) := by
+  rw [isOpen_iff_forall_mem_open]
+  rintro x ⟨U, hU, V, hV, hxV, e, hsm⟩
+  exact ⟨V.1, fun y hy => ⟨U, hU, V, hV, hy, e, hsm⟩, V.2, hxV⟩
+
+/-- **THE RELATIVE-DIMENSION LOCI COVER A SMOOTH MORPHISM** (PROVEN
+2026-07-30).
+
+`Smooth f` gives a standard-smooth chart at every point, and a
+standard-smooth chart carries a submersive presentation `P`; `P.dimension`
+is then a relative dimension for that chart.  So "smooth" is "smooth of SOME
+relative dimension" POINTWISE, for free — all the content of the
+equidimensionality statement is that the dimension does not vary, not that
+it exists. -/
+theorem exists_mem_smoothRelDimLocus {X Y : Scheme.{u}} (f : X ⟶ Y) [Smooth f] (x : X) :
+    ∃ n, x ∈ smoothRelDimLocus f n := by
+  obtain ⟨U, hU, V, hV, hxV, e, hsm⟩ := Smooth.exists_isStandardSmooth f x
+  letI : Algebra Γ(Y, U) Γ(X, V) := (f.appLE U V e).hom.toAlgebra
+  have hsm' : Algebra.IsStandardSmooth Γ(Y, U) Γ(X, V) := hsm
+  obtain ⟨ι, σ, hσ, hι, ⟨P⟩⟩ := hsm'.out
+  refine ⟨P.dimension, U, hU, V, hV, hxV, e, ?_⟩
+  show Algebra.IsStandardSmoothOfRelativeDimension P.dimension Γ(Y, U) Γ(X, V)
+  exact P.isStandardSmoothOfRelativeDimension rfl
+
+/-- **THE RELATIVE DIMENSION AT A POINT IS WELL DEFINED, OVER A ONE-POINT
+BASE** (PROVEN 2026-07-30) — i.e. the loci `smoothRelDimLocus f n` are
+PAIRWISE DISJOINT.
+
+THE ARGUMENT, and it is where `Subsingleton Y` is spent.  Two charts
+`V₁ ∋ x` and `V₂ ∋ x` come with base opens `U₁, U₂ ∋ f x`; because `Y` has
+one point both are `⊤`, so the two charts are algebras over the SAME ring
+`Γ(Y, ⊤)`.  (Over a general base they would not be, and one would have to
+descend to the stalk of `Y` as well.)  The stalk `𝒪_{X,x}` is a localization
+of `Γ(X, V₁)` and of `Γ(X, V₂)` (`IsAffineOpen.isLocalization_stalk`),
+compatibly with the base — that is the one coherence fact,
+`f.appLE ⊤ Vᵢ eᵢ ≫ germ = germ ≫ f.stalkMap x` — and it is nontrivial as a
+ring, being local.  So `rank_kaehlerDifferential_of_isLocalization` evaluates
+the SINGLE cardinal `rank_{𝒪_{X,x}} Ω[𝒪_{X,x}⁄Γ(Y,⊤)]` as `n` and as `m`.
+
+Note what is NOT needed: no dimension theory, no integrality of `X`, no
+comparison of the two charts with each other — only that both localize to
+the same stalk. -/
+theorem eq_of_mem_smoothRelDimLocus {X Y : Scheme.{u}} [Subsingleton Y] (f : X ⟶ Y)
+    {x : X} {n m : ℕ} (hn : x ∈ smoothRelDimLocus f n) (hm : x ∈ smoothRelDimLocus f m) :
+    n = m := by
+  obtain ⟨U₁, hU₁, V₁, hV₁, hx₁, e₁, h₁⟩ := hn
+  obtain ⟨U₂, hU₂, V₂, hV₂, hx₂, e₂, h₂⟩ := hm
+  have hUtop : ∀ U : Y.Opens, f.base x ∈ U → U = ⊤ := by
+    intro U hU
+    ext y
+    simp only [TopologicalSpace.Opens.coe_top, Set.mem_univ, iff_true]
+    rwa [Subsingleton.elim y (f.base x)]
+  obtain rfl : U₁ = ⊤ := hUtop U₁ (e₁ hx₁)
+  obtain rfl : U₂ = ⊤ := hUtop U₂ (e₂ hx₂)
+  letI : Algebra Γ(Y, (⊤ : Y.Opens)) (X.presheaf.stalk x) :=
+    (Y.presheaf.germ ⊤ (f.base x) trivial ≫ f.stalkMap x).hom.toAlgebra
+  have key : ∀ (V : X.Opens) (hV : IsAffineOpen V) (hxV : x ∈ V) (e : V ≤ f ⁻¹ᵁ (⊤ : Y.Opens))
+      (k : ℕ), RingHom.IsStandardSmoothOfRelativeDimension k (f.appLE ⊤ V e).hom →
+      Module.rank (X.presheaf.stalk x) (Ω[X.presheaf.stalk x⁄Γ(Y, (⊤ : Y.Opens))]) = k := by
+    intro V hV hxV e k hk
+    letI : Algebra Γ(Y, (⊤ : Y.Opens)) Γ(X, V) := (f.appLE ⊤ V e).hom.toAlgebra
+    letI : Algebra Γ(X, V) (X.presheaf.stalk x) :=
+      X.presheaf.algebra_section_stalk (U := V) ⟨x, hxV⟩
+    haveI : IsScalarTower Γ(Y, (⊤ : Y.Opens)) Γ(X, V) (X.presheaf.stalk x) := by
+      refine IsScalarTower.of_algebraMap_eq' ?_
+      show (Y.presheaf.germ ⊤ (f.base x) trivial ≫ f.stalkMap x).hom
+        = (X.presheaf.germ V x hxV).hom.comp (f.appLE ⊤ V e).hom
+      rw [← CommRingCat.hom_comp]
+      congr 1
+      simp only [Scheme.Hom.appLE, Category.assoc, X.presheaf.germ_res',
+        ← Scheme.Hom.germ_stalkMap]
+    haveI : IsLocalization ((hV.primeIdealOf ⟨x, hxV⟩).asIdeal.primeCompl)
+        (X.presheaf.stalk x) := hV.isLocalization_stalk ⟨x, hxV⟩
+    haveI := hk.toAlgebra
+    exact rank_kaehlerDifferential_of_isLocalization (A := Γ(X, V))
+      (hV.primeIdealOf ⟨x, hxV⟩).asIdeal.primeCompl
+  have r₁ := key V₁ hV₁ hx₁ e₁ n h₁
+  have r₂ := key V₂ hV₂ hx₂ e₂ m h₂
+  exact_mod_cast r₁.symm.trans r₂
+
+/-- **A SMOOTH MORPHISM WITH CONNECTED SOURCE OVER A ONE-POINT BASE IS
+SMOOTH OF A SINGLE GLOBAL RELATIVE DIMENSION** (PROVEN 2026-07-30).
+
+The loci `smoothRelDimLocus f n` are open, cover `X`, and are pairwise
+disjoint, so each of them is CLOPEN (its complement is the union of the
+others).  A connected `X` therefore meets exactly one, and `ConnectedSpace`
+supplies the point `x₀` that says which.
+
+**`ConnectedSpace X` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT
+IT**: `X = Spec K ⊔ (𝔸¹_K ∖ 0)` over `K` is smooth, with relative dimension
+`0` on the first component and `1` on the second, so no single `n` works.
+**`Subsingleton Y` IS LOAD-BEARING TOO**, though more mildly: over a base
+with two points the two charts at one point of `X` may lie over different
+affine opens of `Y` and are then algebras over different rings, so the
+disjointness argument does not even typecheck — and the conclusion genuinely
+fails for a disjoint union of an `n`-dimensional and an `m`-dimensional
+family over a disconnected base. -/
+theorem exists_smoothOfRelativeDimension_of_connected_of_subsingleton
+    {X Y : Scheme.{u}} (f : X ⟶ Y) [Smooth f] [ConnectedSpace X] [Subsingleton Y] :
+    ∃ n : ℕ, SmoothOfRelativeDimension n f := by
+  classical
+  obtain ⟨x₀⟩ := (inferInstance : Nonempty X)
+  obtain ⟨n, hn⟩ := exists_mem_smoothRelDimLocus f x₀
+  refine ⟨n, ?_⟩
+  have hcompl : (smoothRelDimLocus f n)ᶜ = ⋃ m ∈ {m : ℕ | m ≠ n}, smoothRelDimLocus f m := by
+    ext y
+    simp only [Set.mem_compl_iff, Set.mem_iUnion, Set.mem_setOf_eq, exists_prop]
+    constructor
+    · intro hy
+      obtain ⟨m, hm⟩ := exists_mem_smoothRelDimLocus f y
+      exact ⟨m, fun h => hy (h ▸ hm), hm⟩
+    · rintro ⟨m, hmn, hm⟩ hyn
+      exact hmn (eq_of_mem_smoothRelDimLocus f hm hyn)
+  have hclopen : IsClopen (smoothRelDimLocus f n) := by
+    refine ⟨?_, isOpen_smoothRelDimLocus f n⟩
+    rw [← isOpen_compl_iff, hcompl]
+    exact isOpen_biUnion fun m _ => isOpen_smoothRelDimLocus f m
+  have huniv : smoothRelDimLocus f n = Set.univ := hclopen.eq_univ ⟨x₀, hn⟩
+  refine ⟨fun x => ?_⟩
+  have hx : x ∈ smoothRelDimLocus f n := huniv ▸ Set.mem_univ x
+  obtain ⟨U, hU, V, hV, hxV, e, hsm⟩ := hx
+  exact ⟨U, hU, V, hV, hxV, e, hsm⟩
+
+/-- **AN ABELIAN SCHEME OVER A FIELD IS SMOOTH OF SOME RELATIVE
+DIMENSION** (**PROVEN 2026-07-30**; it was a sorry leaf for a few hours the
+same day, cut out of
+`smoothOfRelativeDimension_of_levelTateFrame_finiteBase`.  EGA IV 17.10,
+Stacks 02G1/0B2C, Milne *Abelian Varieties* §I.1).
+
+`AbelianSchemeStruct` records only `Smooth fK` — mathlib's
+`Locally IsStandardSmooth`, i.e. a standard-smooth chart at every point
+with NO claim that the charts share a dimension.  This says that for a base
+which is the spectrum of a FIELD the dimension is nevertheless global.
+
+THE ROUTE, and it is pure algebraic geometry with no arithmetic in it.  It
+is the four declarations immediately above, specialised at `Y = Spec K`:
+
+1. `exists_mem_smoothRelDimLocus` — a standard-smooth chart carries a
+   submersive presentation, so `∃ d, SmoothOfRelativeDimension d` holds
+   POINTWISE for free;
+2. `isOpen_smoothRelDimLocus` — and it holds on a whole chart at once, so
+   each "relative dimension `d` here" locus is open;
+3. `eq_of_mem_smoothRelDimLocus` — the loci are DISJOINT, because both
+   charts at a point localize to the one stalk `𝒪_{X,x}` and
+   `rank_{𝒪_{X,x}} Ω[𝒪_{X,x}⁄K]` is a single cardinal.  This is where
+   `Spec K` being a ONE-POINT space is spent: it forces both charts to lie
+   over `U = ⊤`, hence to be algebras over the same ring;
+4. so each locus is clopen, and `abK.connected` picks one out.
+
+Note the invariant that does the work is the rank of `Ω` at the STALK, not
+at a chart: `Algebra.IsStandardSmoothOfRelativeDimension.iff_of_isStandardSmooth`
+compares a chart's dimension with `Module.rank Γ(X, V) Ω[Γ(X, V)⁄K]`, but two
+charts at one point have no map between them — only a common localization.
+Going through the stalk is what removes the need for any integrality or
+dimension theory of `X`.
+
+**`abK.connected` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT IT.**
+Witness: `X = Spec K ⊔ (𝔸¹_K ∖ 0)`, smooth of relative dimension `0` on the
+first component and `1` on the second, so no single `g` works.  Only
+`GeometricallyConnected` excludes it; `proper` does not (a disjoint union of
+proper schemes is proper), and neither does the group law, since a
+disconnected group scheme such as `μ_n` over `K` is smooth of relative
+dimension `0` throughout and is therefore not itself a counterexample — the
+counterexample has to mix dimensions, which is exactly what connectedness
+forbids.
+
+`abK.proper` and the group structure are NOT used.  Nor is emptiness a case
+to worry about: `GeometricallyConnected` yields `ConnectedSpace X`, which
+includes `Nonempty X`, so the point `x₀` that names `g` always exists. -/
+theorem exists_smoothOfRelativeDimension_of_abelianSchemeStruct
+    {X : Scheme.{u}} {K : Type u} [Field K] {fK : X ⟶ Spec (CommRingCat.of K)}
+    (abK : AbelianSchemeStruct fK) :
+    ∃ g : ℕ, SmoothOfRelativeDimension g fK := by
+  haveI := abK.smooth
+  haveI := abK.connected
+  haveI : ConnectedSpace ↥X := GeometricallyConnected.connectedSpace_of_subsingleton fK
+  exact exists_smoothOfRelativeDimension_of_connected_of_subsingleton fK
+
+open _root_.NumberField in
+/-- **THE DEGREE OF `[a]` IS `N_{D/ℚ}(a)^{2g/[D:ℚ]}`, WITH THE RELATIVE
+DIMENSION `g` FREE — THE THEOREM OF THE CUBE** (sorry leaf, cut
+2026-07-30; Mumford *Abelian Varieties* §6, §16, §18, §19 (Thm 4: `deg`
+is a homogeneous polynomial function of degree `2g` on `End⁰(A)`), Milne
+*Abelian Varieties* I.7, I.10, Shimura §5.1).
+
+This is `finrank_mulByElt_of_field` below with the hypothesis
+`g = [D : ℚ]` DROPPED, and it SUBSUMES it — that declaration is now
+proven from this one in three lines, so the theorem of the cube is stated
+exactly once in this file.
+
+**THE `[D:ℚ]`-TH POWER IS THE POINT OF THE STATEMENT'S SHAPE.**  The
+classical identity is `deg [a] = |N_{D/ℚ}(a)|^{2g/e}` with
+`e = [D : ℚ]`, and `e ∣ 2g` is part of its content rather than a
+hypothesis one may assume.  Raising to the `e`-th power removes the
+division without weakening anything: `deg [a]^e = |N(a)|^{2g}` is
+equivalent to the identity whenever `|N(a)| ≥ 2` and is the form every
+consumer can use, since `x ↦ x^e` is injective on `ℕ` for `e ≥ 1`.
+
+THE ROUTE, which is Mumford §19 Theorem 4 plus one rigidity step, and is
+the same in every characteristic:
+
+1. `deg : End⁰(A) → ℚ` is a homogeneous POLYNOMIAL function of degree
+   `2g` — the theorem of the cube — and it is multiplicative.
+2. Restrict it to the `e`-dimensional ℚ-vector space `D` and base-change
+   to `ℚ̄`, where `D ⊗ ℚ̄ ≅ ℚ̄^e`.  A multiplicative polynomial function
+   on `ℚ̄^e` is a monomial `∏ xᵢ^{dᵢ}`, and homogeneity of degree `2g`
+   makes `∑ dᵢ = 2g`.
+3. `deg` is defined over ℚ, so the monomial is stable under
+   `Gal(ℚ̄/ℚ)`, which permutes the `e` coordinates TRANSITIVELY because
+   `D` is a FIELD.  Hence all `dᵢ` are equal to `2g/e`, and
+   `deg|_D = |N_{D/ℚ}|^{2g/e}`.
+
+Step 3 is where "`D` is a field" is spent, and it is the step that
+CANNOT be replaced by a rank count on a single Tate module: over a field
+of characteristic `p`, `V_ℓ A` is a module over the PRODUCT
+`D ⊗ ℚ_ℓ = ∏_λ D_λ`, and a module over a product of fields need not be
+free — the exponents `dᵢ` are the local ranks, and their equality is
+precisely what the Galois argument supplies and what a count at one `λ`
+cannot see.  A successor should prove the polynomiality of `deg` and the
+monomial rigidity, NOT the freeness of a Tate module.
+
+**`hdim` IS LOAD-BEARING**, though not in the way the specialised
+statement needed it: with `g` free the identity is TRUE at `g = 0`
+(`fK = 𝟙 (Spec K)` has `[a] = 𝟙`, `deg = 1 = N(a)^0`), so it is no
+longer excluding a degenerate base — it is what NAMES the exponent, and
+without some `SmoothOfRelativeDimension g fK` there is no `g` to state
+the right-hand side with.
+
+**`ha` IS LOAD-BEARING**: at `a = 0` the morphism `[0]` factors through
+the zero section and is not finite, so its `finrank` carries no
+information, while `Nat.card (𝒪_D ⧸ (0)) = 0` makes the right-hand side
+`0` for every `g ≥ 1`.
+
+**DO NOT PROVE THIS FROM ANY POINT COUNT IN THIS FILE.**  Every count
+below — `card_torsion_span_singleton_of_field`,
+`card_torsion_of_isMaximal_finiteBase`, `exists_bettiFrame`, the whole
+char-`0` cluster — is proven over THIS statement, directly or through
+`finrank_mulByElt_of_field`. -/
+theorem finrank_mulByElt_of_relativeDimension {X : Scheme.{u}} {K : Type u} [Field K]
+    {fK : X ⟶ Spec (CommRingCat.of K)} {abK : AbelianSchemeStruct fK}
+    {D : Type u} [Field D] [NumberField D]
+    (m : Mult abK (𝓞 D))
+    (g : ℕ) (hdim : SmoothOfRelativeDimension g fK)
+    (a : 𝓞 D) (ha : a ≠ 0) (x : X) :
+    (m.mulByElt a).finrank x ^ Module.finrank ℚ D
+      = Nat.card (𝓞 D ⧸ (Ideal.span {a} : Ideal (𝓞 D))) ^ (2 * g) :=
+  sorry
+
 open _root_.NumberField in
 /-- **THE DEGREE OF `[a]` IS `N_{D/ℚ}(a)²`, OVER AN ARBITRARY FIELD BASE
-— THE THEOREM OF THE CUBE** (sorry leaf, cut 2026-07-28; Mumford
+— THE THEOREM OF THE CUBE** (**PROVEN 2026-07-30** over
+`finrank_mulByElt_of_relativeDimension` immediately above, which is this
+statement with the relative dimension `g` left free; it was a sorry leaf
+from 2026-07-28 until then.  Everything the docstring below says about the
+mathematics is unchanged — it now describes that leaf, and this
+declaration is its specialisation to `g = [D : ℚ]`, obtained by taking
+`[D:ℚ]`-th roots of `deg [a]^{[D:ℚ]} = N(a)^{2[D:ℚ]}`.  Mumford
 *Abelian Varieties* §6, §16, §18, §19 (Thm 4: `deg` is a homogeneous
 polynomial function of degree `2g` on `End⁰(A)`), Milne *Abelian
 Varieties* I.7, I.10, Goren *Lectures on Hilbert Modular Varieties* I.1,
@@ -3528,8 +3945,13 @@ theorem finrank_mulByElt_of_field {X : Scheme.{u}} {K : Type u} [Field K]
     (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) fK)
     (a : 𝓞 D) (ha : a ≠ 0) (x : X) :
     (m.mulByElt a).finrank x
-      = Nat.card (𝓞 D ⧸ (Ideal.span {a} : Ideal (𝓞 D))) ^ 2 :=
-  sorry
+      = Nat.card (𝓞 D ⧸ (Ideal.span {a} : Ideal (𝓞 D))) ^ 2 := by
+  have hepos : 0 < Module.finrank ℚ D := Module.finrank_pos
+  have he0 : Module.finrank ℚ D ≠ 0 := by omega
+  refine Nat.pow_left_injective he0 ?_
+  show (m.mulByElt a).finrank x ^ Module.finrank ℚ D
+    = (Nat.card (𝓞 D ⧸ (Ideal.span {a} : Ideal (𝓞 D))) ^ 2) ^ Module.finrank ℚ D
+  rw [finrank_mulByElt_of_relativeDimension m (Module.finrank ℚ D) hdim a ha x, ← pow_mul]
 
 open _root_.NumberField in
 /-- **THE DEGREE OF `[a]` IS `N_{D/ℚ}(a)²` — THE THEOREM OF THE CUBE**
@@ -4574,7 +4996,11 @@ over `DualStruct`; the standing refutation test is the proven
 LEVEL-GUARDED — `PolarizationStruct d 𝒩 𝔞 𝔞pos` asserts it only at
 `I ∈ 𝒩` — after a second repair the same day; an unguarded version forces
 a PRINCIPAL polarization, see the docstring of
-`exists_tateWeilPairing_of_mult` below.
+`exists_tateWeilPairing_of_mult` below. Since 2026-07-30 it is also
+CHARACTERISTIC-GUARDED by `(n : F) ≠ 0`, without which the axiom is
+contradictory at any level divisible by the residue characteristic of a
+point of `S`; that repair, its witness and its cost are recorded on
+`exists_dualPolarization_of_mult`.
 
 A THIRD repair the same day added POSITIVITY, which is why the structure
 now takes four parameters: the level-guard released it onto every
@@ -13017,6 +13443,20 @@ re-run each REFUTING CHECK rather than trust this list:
    docstring of `exists_tateWeilPairing_of_mult` above. A successor
    pursuing gap 2 must therefore ask for `PolarizationStruct d {I}` at
    the level it needs, never for an unindexed one.
+   **THIRD REPAIR TO THIS AXIOM, 2026-07-30 (`flt-lean-71`): a SECOND
+   guard, `(n : F) ≠ 0`, orthogonal to `hI`.** `𝒩` is a parameter, so it
+   may contain an ideal above the residue characteristic of a point of
+   `S`, and there `d.weil` lands in a TRIVIAL group — the axiom then
+   concludes `A[I](F̄) = 0` for a fibre that may have positive `p`-rank.
+   The same defect on `DualStruct.weil_nondegenerate` made THAT structure
+   uninhabitable outright; the audit and the witness (`X₀(11)` over
+   `Spec ℤ[1/11]`, the point `Spec 𝔽_5`, `I = (5)`, `n = 5`) are on
+   `exists_dualPolarization_of_mult` below. So `pairing_nondegenerate`,
+   `exists_pairing_ne_one`, `torsion_eq_zero_of_hom_eq_zero` and
+   `posElt_ne_zero` now each take `hnF : (n : F) ≠ 0` as well as `hI`,
+   and a successor must carry "the level is prime to the residue
+   characteristic" to the point of use. In characteristic zero it says
+   only `n ≠ 0`, so nothing over a number field is affected.
 
 The same remaining gaps block the sibling `card_torsion_of_isMaximal`,
 where gap 1 does NOT bite (that leaf is level one), and where the layer
@@ -18754,23 +19194,25 @@ theorem natCast_ne_zero_of_coprime_natCard {k : Type*} [Field k] [Finite k]
   exact hpp.ne_one (Nat.dvd_one.mp hp1)
 
 open _root_.NumberField in
-/-- **`#A[(a)] = #(𝒪_D/(a))²` AT A PRINCIPAL LEVEL PRIME TO THE
-CHARACTERISTIC, OVER AN ARBITRARY FIELD BASE** (**PROVEN 2026-07-28**
-over the single degree leaf `finrank_mulByElt_of_field`; Mumford
-*Abelian Varieties* §6, §19, Milne *Abelian Varieties* I.7, I.10).
+/-- **THE `(a)`-TORSION OF `A'(k̄)` IS COUNTED BY THE DEGREE OF `[a]`, AT
+A PRINCIPAL LEVEL PRIME TO THE CHARACTERISTIC** (PROVEN 2026-07-30 — the
+étale-count assembly of `card_torsion_span_singleton_of_field` below with
+the DEGREE left as a parameter, extracted so that it can be used in BOTH
+directions).
 
-`A'` is an abelian scheme over an arbitrary field `k` — NOT assumed
-finite, NOT assumed algebraically closed, NOT of characteristic zero —
-with real multiplication by `𝒪_D` and relative dimension `g = [D : ℚ]`.
-The claim counts the `(a)`-torsion of the GEOMETRIC fibre `A'(k̄)`, which
-is the shape the three finite-base leaves of this subsection are stated
-in, and it is the ONLY input the two proven below need.
+`hdeg` says the finite flat morphism `[a]` has constant rank `dg`; the
+conclusion is that `#A'[(a)](k̄) = dg`.  Nothing here evaluates `dg` —
+that is the theorem of the cube
+(`finrank_mulByElt_of_relativeDimension`), and keeping it out is the
+whole point: the consumer below reads the equation LEFT to RIGHT to get
+the count from the degree, and
+`smoothOfRelativeDimension_of_levelTateFrame_finiteBase` reads it RIGHT
+to LEFT to get the degree from a count supplied by a level frame.  A
+single statement serves both because it is an equality and neither side
+mentions the relative dimension.
 
 **THE PROOF IS `card_torsion_span_singleton_of_isAlgClosed`'S, WITH THE
-BASE POINT MOVED.**  That theorem counts the `K`-points of an abelian
-variety already over an algebraically closed `K`, i.e. relative points
-over `𝟙 (Spec K)`; here the base point is `specAlgClos k`, so the same
-three steps are run over it:
+BASE POINT MOVED**, in three steps:
 
 1. by Yoneda (`Mult.act_val`) the `(a)`-torsion of `A'(k̄)` is the set of
    `u : Spec k̄ ⟶ A'` with `u ≫ [a] = specAlgClos k ≫ e`, and such a `u`
@@ -18779,34 +19221,29 @@ three steps are run over it:
 2. those are counted by the rank of `[a]`
    (`card_fibrePt_eq_of_finrank_eq`, applied over the algebraically
    closed field `AlgebraicClosure k`);
-3. the rank is evaluated by `finrank_mulByElt_of_field`.
+3. `hdeg` supplies that rank.
 
 **WHERE THE CHARACTERISTIC ENTERS, AND IT IS EXACTLY ONE HYPOTHESIS.**
 `hchar` says the absolute norm `N = N_{D/ℚ}(a)` is invertible in `k`.
 It is consumed ONCE, by `formallyUnramified_mulByElt_of_field`, which is
 what makes `[a]` étale rather than merely finite flat — and étaleness is
 precisely what `card_fibrePt_eq_of_finrank_eq` needs and what fails at
-`char k`.  Everything else in the proof (finiteness, flatness, finite
-presentation, and the degree itself) holds in every characteristic.
+`char k`.  **Without it the statement is FALSE**: for a supersingular
+fibre in characteristic `p` and `a = p` the left-hand side is `1` while
+`[p]` still has rank `p^(2g)`.
 
-**`hchar` IS LOAD-BEARING AND WITHOUT IT THE STATEMENT IS FALSE**: for a
-supersingular fibre in characteristic `p` and `a = p` the left-hand side
-is `1` while the right-hand side is `p^(2g)`.  It is stated as
-`(N : k) ≠ 0` rather than as a coprimality because that is the form the
-geometry consumes; `natCast_ne_zero_of_coprime_natCard` above converts
-the coprimality hypotheses of the finite-base leaves into it, and `Finite
-k` is needed for THAT conversion only — not here. -/
-theorem card_torsion_span_singleton_of_field {k : Type u} [Field k]
+`ha` is load-bearing for the same reason it is in the degree leaf: at
+`a = 0` the morphism `[0]` is not finite. -/
+theorem card_torsion_span_singleton_of_finrank_mulByElt {k : Type u} [Field k]
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
     {ab' : AbelianSchemeStruct f'}
     {D : Type u} [Field D] [NumberField D]
     (m' : Mult ab' (𝓞 D))
-    (hdim' : SmoothOfRelativeDimension (Module.finrank ℚ D) f')
     (a : 𝓞 D) (ha : a ≠ 0)
-    (hchar : ((Ideal.absNorm (Ideal.span {a} : Ideal (𝓞 D)) : ℕ) : k) ≠ 0) :
+    (hchar : ((Ideal.absNorm (Ideal.span {a} : Ideal (𝓞 D)) : ℕ) : k) ≠ 0)
+    (dg : ℕ) (hdeg : ∀ y : A', (m'.mulByElt a).finrank y = dg) :
     Nat.card (m'.torsion (𝟙 (Spec (CommRingCat.of k)))
-        (Ideal.span {a} : Ideal (𝓞 D))).1
-      = Nat.card (𝓞 D ⧸ (Ideal.span {a} : Ideal (𝓞 D))) ^ 2 := by
+      (Ideal.span {a} : Ideal (𝓞 D))).1 = dg := by
   classical
   rw [m'.cardTorsion_geomFibre (𝟙 (Spec (CommRingCat.of k))) (Ideal.span {a})]
   set g : Spec (CommRingCat.of (AlgebraicClosure k)) ⟶ Spec (CommRingCat.of k) :=
@@ -18860,10 +19297,71 @@ theorem card_torsion_span_singleton_of_field {k : Type u} [Field k]
       fun y => ?_, fun u => ?_⟩
     · exact Subtype.ext (Subtype.ext rfl)
     · exact Subtype.ext rfl
-  -- ### 2 and 3.  Count them by the rank of `[a]`, and evaluate that rank.
+  -- ### 2 and 3.  Count them by the rank of `[a]`, which `hdeg` supplies.
   rw [step1]
-  exact card_fibrePt_eq_of_finrank_eq (m'.mulByElt a) _
-    (fun y => finrank_mulByElt_of_field m' hdim' a ha y) (g ≫ ab'.zeroSection)
+  exact card_fibrePt_eq_of_finrank_eq (m'.mulByElt a) dg hdeg (g ≫ ab'.zeroSection)
+
+open _root_.NumberField in
+/-- **`#A[(a)] = #(𝒪_D/(a))²` AT A PRINCIPAL LEVEL PRIME TO THE
+CHARACTERISTIC, OVER AN ARBITRARY FIELD BASE** (**PROVEN 2026-07-28**
+over the single degree leaf `finrank_mulByElt_of_field`; REFACTORED
+2026-07-30 into `card_torsion_span_singleton_of_finrank_mulByElt`
+immediately above plus that degree statement, so that the étale count and
+the degree evaluation are separately citable — the proof described below
+now lives in the extracted lemma and this declaration is its
+specialisation.  Mumford
+*Abelian Varieties* §6, §19, Milne *Abelian Varieties* I.7, I.10).
+
+`A'` is an abelian scheme over an arbitrary field `k` — NOT assumed
+finite, NOT assumed algebraically closed, NOT of characteristic zero —
+with real multiplication by `𝒪_D` and relative dimension `g = [D : ℚ]`.
+The claim counts the `(a)`-torsion of the GEOMETRIC fibre `A'(k̄)`, which
+is the shape the three finite-base leaves of this subsection are stated
+in, and it is the ONLY input the two proven below need.
+
+**THE PROOF IS `card_torsion_span_singleton_of_isAlgClosed`'S, WITH THE
+BASE POINT MOVED.**  That theorem counts the `K`-points of an abelian
+variety already over an algebraically closed `K`, i.e. relative points
+over `𝟙 (Spec K)`; here the base point is `specAlgClos k`, so the same
+three steps are run over it:
+
+1. by Yoneda (`Mult.act_val`) the `(a)`-torsion of `A'(k̄)` is the set of
+   `u : Spec k̄ ⟶ A'` with `u ≫ [a] = specAlgClos k ≫ e`, and such a `u`
+   automatically lies over `specAlgClos k`, because `[a] ≫ f' = f'` and
+   `e ≫ f' = 𝟙` — so no compatibility with the base has to be carried;
+2. those are counted by the rank of `[a]`
+   (`card_fibrePt_eq_of_finrank_eq`, applied over the algebraically
+   closed field `AlgebraicClosure k`);
+3. the rank is evaluated by `finrank_mulByElt_of_field`.
+
+**WHERE THE CHARACTERISTIC ENTERS, AND IT IS EXACTLY ONE HYPOTHESIS.**
+`hchar` says the absolute norm `N = N_{D/ℚ}(a)` is invertible in `k`.
+It is consumed ONCE, by `formallyUnramified_mulByElt_of_field`, which is
+what makes `[a]` étale rather than merely finite flat — and étaleness is
+precisely what `card_fibrePt_eq_of_finrank_eq` needs and what fails at
+`char k`.  Everything else in the proof (finiteness, flatness, finite
+presentation, and the degree itself) holds in every characteristic.
+
+**`hchar` IS LOAD-BEARING AND WITHOUT IT THE STATEMENT IS FALSE**: for a
+supersingular fibre in characteristic `p` and `a = p` the left-hand side
+is `1` while the right-hand side is `p^(2g)`.  It is stated as
+`(N : k) ≠ 0` rather than as a coprimality because that is the form the
+geometry consumes; `natCast_ne_zero_of_coprime_natCard` above converts
+the coprimality hypotheses of the finite-base leaves into it, and `Finite
+k` is needed for THAT conversion only — not here. -/
+theorem card_torsion_span_singleton_of_field {k : Type u} [Field k]
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    {ab' : AbelianSchemeStruct f'}
+    {D : Type u} [Field D] [NumberField D]
+    (m' : Mult ab' (𝓞 D))
+    (hdim' : SmoothOfRelativeDimension (Module.finrank ℚ D) f')
+    (a : 𝓞 D) (ha : a ≠ 0)
+    (hchar : ((Ideal.absNorm (Ideal.span {a} : Ideal (𝓞 D)) : ℕ) : k) ≠ 0) :
+    Nat.card (m'.torsion (𝟙 (Spec (CommRingCat.of k)))
+        (Ideal.span {a} : Ideal (𝓞 D))).1
+      = Nat.card (𝓞 D ⧸ (Ideal.span {a} : Ideal (𝓞 D))) ^ 2 :=
+  card_torsion_span_singleton_of_finrank_mulByElt m' a ha hchar _
+    (fun y => finrank_mulByElt_of_field m' hdim' a ha y)
 
 /-- **A MULTIPLICATIVE PAIRING THAT IS ALTERNATING, ADJOINT AND
 NONDEGENERATE UPGRADES TO AN ALTERNATING NONDEGENERATE `κ`-BILINEAR
