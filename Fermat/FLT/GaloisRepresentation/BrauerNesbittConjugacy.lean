@@ -1250,6 +1250,118 @@ coefficient field is out of reach there.
 
 open IsDedekindDomain NumberField in
 set_option backward.isDefEq.respectTransparency false in
+/-- **Chebotarev alone propagates charpoly agreement from "off a finite
+set of places" to EVERY element of the absolute Galois group** — the
+irreducibility-free half of the conjugacy node below (cut out
+2026-07-30).
+
+Two continuous representations of `Gal(K̄/K)`, `K` any number field, on
+2-dimensional spaces over a Hausdorff topological field `k` with
+`2 ≠ 0`, whose Frobenius characteristic polynomials agree at all finite
+places outside a finite set `S`, have EQUAL characteristic polynomials
+at every group element.
+
+This is exactly the first two thirds of
+`exists_conj_of_charFrob_eq_away_of_two_ne_zero` below, which now consumes
+it rather than repeating it. It is worth having under its own name
+because it needs **no irreducibility hypothesis at all**: the
+trace-agreement locus is closed (the trace is `k`-linear out of a
+module-topology endomorphism space and `k` is Hausdorff), Chebotarev
+(`dense_conjClasses_globalFrob`) makes it everything, and rank-two
+Cayley–Hamilton (`two_mul_det_eq_of_finrank_two`, with `2` a unit) turns
+traces everywhere back into charpolys everywhere. Irreducibility enters
+only in the LAST step of the conjugacy node, where an intertwiner is
+produced — so a consumer that wants only the charpoly VALUES need not
+pay for it.
+
+PROVENANCE (2026-07-30, `flt-lean-183`). Cut out while costing the
+Chebotarev route to strong multiplicity one in `Modularity/Interface.lean`,
+which wanted precisely this weaker statement — the two attached
+representations there are irreducible, but nothing needs to know it. That
+route turned out to be CIRCULAR for an unrelated reason (the
+Eichler–Shimura attachment in this tree is downstream of strong
+multiplicity one; see the docstring of
+`qCoeff_prime_eq_of_isWeightTwoNewform_of_not_dvd_mul`), so the separation
+is kept here for its own sake: it makes the irreducibility-free content of
+the node explicit and removes a duplicated forty-line argument. -/
+theorem charpoly_eq_of_charFrob_eq_away_of_two_ne_zero
+    {K : Type*} [Field K] [NumberField K]
+    {k : Type uk} [Field k] [TopologicalSpace k] [IsTopologicalRing k]
+    [T2Space k] (h2 : (2 : k) ≠ 0)
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2)
+    {W' : Type uW'} [AddCommGroup W'] [Module k W'] [Module.Finite k W']
+    [Module.Free k W']
+    (hW' : Module.rank k W' = 2)
+    (ρ : GaloisRep K k W) (τ : GaloisRep K k W')
+    (S : Finset (HeightOneSpectrum (𝓞 K)))
+    (hcf : ∀ v : HeightOneSpectrum (𝓞 K), v ∉ S →
+      τ.charFrob v = ρ.charFrob v) :
+    ∀ g : Field.absoluteGaloisGroup K, (τ g).charpoly = (ρ g).charpoly := by
+  classical
+  have hfrW : Module.finrank k W = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast hW)
+  have hfrW' : Module.finrank k W' = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast hW')
+  letI : TopologicalSpace (Module.End k W) :=
+    moduleTopology k (Module.End k W)
+  letI : TopologicalSpace (Module.End k W') :=
+    moduleTopology k (Module.End k W')
+  haveI : IsModuleTopology k (Module.End k W) := ⟨rfl⟩
+  haveI : IsModuleTopology k (Module.End k W') := ⟨rfl⟩
+  -- the trace-agreement locus is closed: the trace is `k`-linear out of a
+  -- module-topology endomorphism space, and `k` is Hausdorff
+  have hcont1 : Continuous fun g : Field.absoluteGaloisGroup K =>
+      LinearMap.trace k W' (τ g) :=
+    (IsModuleTopology.continuous_of_linearMap
+      (LinearMap.trace k W')).comp (ContinuousMonoidHom.continuous_toFun τ)
+  have hcont2 : Continuous fun g : Field.absoluteGaloisGroup K =>
+      LinearMap.trace k W (ρ g) :=
+    (IsModuleTopology.continuous_of_linearMap
+      (LinearMap.trace k W)).comp (ContinuousMonoidHom.continuous_toFun ρ)
+  have hclosed : IsClosed {g : Field.absoluteGaloisGroup K |
+      LinearMap.trace k W' (τ g) = LinearMap.trace k W (ρ g)} :=
+    isClosed_eq hcont1 hcont2
+  -- … and it contains the dense set of Frobenius conjugates off `S`
+  have hsub : {x : Field.absoluteGaloisGroup K |
+      ∃ v : HeightOneSpectrum (𝓞 K), v ∉ S ∧
+        ∃ g, x = g * globalFrob v * g⁻¹} ⊆
+      {g : Field.absoluteGaloisGroup K |
+        LinearMap.trace k W' (τ g) = LinearMap.trace k W (ρ g)} := by
+    rintro x ⟨v, hvS, g, rfl⟩
+    have hval := hcf v hvS
+    rw [GaloisRep.charFrob_eq_charpoly_globalFrob,
+      GaloisRep.charFrob_eq_charpoly_globalFrob] at hval
+    have hcpx : (τ (g * globalFrob v * g⁻¹)).charpoly =
+        (ρ (g * globalFrob v * g⁻¹)).charpoly := by
+      rw [charpoly_conj_mul_inv τ, charpoly_conj_mul_inv ρ]
+      exact hval
+    exact trace_eq_of_charpoly_eq_finrank_two hfrW' hfrW hcpx
+  have halltr : ∀ g : Field.absoluteGaloisGroup K,
+      LinearMap.trace k W' (τ g) = LinearMap.trace k W (ρ g) := by
+    intro g
+    have hdense := dense_conjClasses_globalFrob (K := K) S
+    have huniv : (Set.univ : Set (Field.absoluteGaloisGroup K)) ⊆
+        {g : Field.absoluteGaloisGroup K |
+          LinearMap.trace k W' (τ g) = LinearMap.trace k W (ρ g)} :=
+      hdense.closure_eq ▸ hclosed.closure_subset_iff.mpr hsub
+    exact huniv (Set.mem_univ g)
+  -- traces everywhere ⟹ determinants everywhere (Cayley–Hamilton, `2` a unit)
+  intro g
+  have hsq : LinearMap.trace k W' (τ g * τ g) =
+      LinearMap.trace k W (ρ g * ρ g) := by
+    rw [← map_mul, ← map_mul]
+    exact halltr (g * g)
+  have hdet : LinearMap.det (τ g) = LinearMap.det (ρ g) := by
+    refine mul_left_cancel₀ h2 ?_
+    rw [two_mul_det_eq_of_finrank_two hfrW' (τ g),
+      two_mul_det_eq_of_finrank_two hfrW (ρ g), halltr g, hsq]
+  rw [charpoly_eq_quadratic_of_finrank_two hfrW' (τ g),
+    charpoly_eq_quadratic_of_finrank_two hfrW (ρ g), halltr g, hdet]
+
+open IsDedekindDomain NumberField in
+set_option backward.isDefEq.respectTransparency false in
 /-- **Chebotarev–Brauer–Nesbitt conjugacy over a general number field
 and a coefficient field of characteristic `≠ 2`** — the
 characteristic-zero/general-base analogue of
@@ -1303,63 +1415,10 @@ theorem exists_conj_of_charFrob_eq_away_of_two_ne_zero
     Module.finrank_eq_of_rank_eq (by exact_mod_cast hW)
   have hfrW' : Module.finrank k W' = 2 :=
     Module.finrank_eq_of_rank_eq (by exact_mod_cast hW')
-  letI : TopologicalSpace (Module.End k W) :=
-    moduleTopology k (Module.End k W)
-  letI : TopologicalSpace (Module.End k W') :=
-    moduleTopology k (Module.End k W')
-  haveI : IsModuleTopology k (Module.End k W) := ⟨rfl⟩
-  haveI : IsModuleTopology k (Module.End k W') := ⟨rfl⟩
-  -- the trace-agreement locus is closed: the trace is `k`-linear out of a
-  -- module-topology endomorphism space, and `k` is Hausdorff
-  have hcont1 : Continuous fun g : Field.absoluteGaloisGroup K =>
-      LinearMap.trace k W' (τ g) :=
-    (IsModuleTopology.continuous_of_linearMap
-      (LinearMap.trace k W')).comp (ContinuousMonoidHom.continuous_toFun τ)
-  have hcont2 : Continuous fun g : Field.absoluteGaloisGroup K =>
-      LinearMap.trace k W (ρbar g) :=
-    (IsModuleTopology.continuous_of_linearMap
-      (LinearMap.trace k W)).comp (ContinuousMonoidHom.continuous_toFun ρbar)
-  have hclosed : IsClosed {g : Field.absoluteGaloisGroup K |
-      LinearMap.trace k W' (τ g) = LinearMap.trace k W (ρbar g)} :=
-    isClosed_eq hcont1 hcont2
-  -- … and it contains the dense set of Frobenius conjugates off `S`
-  have hsub : {x : Field.absoluteGaloisGroup K |
-      ∃ v : HeightOneSpectrum (𝓞 K), v ∉ S ∧
-        ∃ g, x = g * globalFrob v * g⁻¹} ⊆
-      {g : Field.absoluteGaloisGroup K |
-        LinearMap.trace k W' (τ g) = LinearMap.trace k W (ρbar g)} := by
-    rintro x ⟨v, hvS, g, rfl⟩
-    have hval := hcf v hvS
-    rw [GaloisRep.charFrob_eq_charpoly_globalFrob,
-      GaloisRep.charFrob_eq_charpoly_globalFrob] at hval
-    have hcpx : (τ (g * globalFrob v * g⁻¹)).charpoly =
-        (ρbar (g * globalFrob v * g⁻¹)).charpoly := by
-      rw [charpoly_conj_mul_inv τ, charpoly_conj_mul_inv ρbar]
-      exact hval
-    exact trace_eq_of_charpoly_eq_finrank_two hfrW' hfrW hcpx
-  have halltr : ∀ g : Field.absoluteGaloisGroup K,
-      LinearMap.trace k W' (τ g) = LinearMap.trace k W (ρbar g) := by
-    intro g
-    have hdense := dense_conjClasses_globalFrob (K := K) S
-    have huniv : (Set.univ : Set (Field.absoluteGaloisGroup K)) ⊆
-        {g : Field.absoluteGaloisGroup K |
-          LinearMap.trace k W' (τ g) = LinearMap.trace k W (ρbar g)} :=
-      hdense.closure_eq ▸ hclosed.closure_subset_iff.mpr hsub
-    exact huniv (Set.mem_univ g)
-  -- traces everywhere ⟹ determinants everywhere (Cayley–Hamilton, `2` a unit)
+  -- Chebotarev plus rank-two Cayley–Hamilton, with no irreducibility used
   have hall : ∀ g : Field.absoluteGaloisGroup K,
-      (τ g).charpoly = (ρbar g).charpoly := by
-    intro g
-    have hsq : LinearMap.trace k W' (τ g * τ g) =
-        LinearMap.trace k W (ρbar g * ρbar g) := by
-      rw [← map_mul, ← map_mul]
-      exact halltr (g * g)
-    have hdet : LinearMap.det (τ g) = LinearMap.det (ρbar g) := by
-      refine mul_left_cancel₀ h2 ?_
-      rw [two_mul_det_eq_of_finrank_two hfrW' (τ g),
-        two_mul_det_eq_of_finrank_two hfrW (ρbar g), halltr g, hsq]
-    rw [charpoly_eq_quadratic_of_finrank_two hfrW' (τ g),
-      charpoly_eq_quadratic_of_finrank_two hfrW (ρbar g), halltr g, hdet]
+      (τ g).charpoly = (ρbar g).charpoly :=
+    charpoly_eq_of_charFrob_eq_away_of_two_ne_zero h2 hW hW' ρbar τ S hcf
   obtain ⟨e, he⟩ := exists_linearEquiv_of_charpoly_eq_of_two_ne_zero h2
     hfrW hfrW' ρbar.toRepresentation τ.toRepresentation hirr hall
   refine ⟨e, GaloisRep.ext fun σ => LinearMap.ext fun x => ?_⟩
