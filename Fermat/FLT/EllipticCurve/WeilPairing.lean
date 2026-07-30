@@ -4138,7 +4138,7 @@ admissible setup with value `1` instead of consuming the given
 witness. -/
 theorem weilValueProp_self_of_two (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic]
-    (p : ℕ) [Fact p.Prime] (hqp : q ≠ p) (hp2 : p = 2)
+    (p : ℕ) [Fact (1 < p)] (_hqp : ¬ q ∣ p) (hp2 : p = 2)
     (hDD : IsDedekindDomain (Wbar.map (algebraMap (ZMod q)
       (AlgebraicClosure (ZMod q)))).toAffine.CoordinateRing)
     (huniq : ∀ (v w : (Wbar.map (algebraMap (ZMod q)
@@ -4202,6 +4202,72 @@ theorem weilValueProp_self_of_two (q : ℕ) [Fact q.Prime]
       hP hS hR hPS hQR h2t hPSc hQRc hxSP hxRP hxPSP hxQRP
       hxRS hxRPS hxQRnS hxQRnPS
       aP aQ haP haQ hA heq)
+
+/-- **Alternation at an EVEN level greater than `2`** (sorry leaf, opened
+2026-07-30 while generalizing this file's Weil-pairing chain from a prime `p`
+to an arbitrary level `p ≥ 2`; Silverman *AEC* III.8.1(b)): an admissible
+Miller value for a self-pair `(x, x)` is `1`.
+
+**WHY THIS LEAF EXISTS, AND WHY IT IS EXACTLY THE ODD-`p` GAP.**  In
+`exists_weilPairing_mu` alternation is obtained from two facts the construction
+supplies for free: the swap argument gives `z * z = 1` (exchanging the two
+auxiliary configurations of the admissible setup), and the order clause gives
+`z ^ p = 1`.  Together they give `z ^ gcd(2, p) = 1`, so:
+
+* `p` odd — `z = z ^ p = 1`, which is the branch proved inline there;
+* `p = 2` — `z * z = 1` is all one has, and the missing input is the
+  `2`-torsion geometry `⊖P = P`, supplied by `weilValueProp_self_of_two`
+  above (PROVEN);
+* `p` even and `p > 2` — `z * z = 1` is again all one has, and `⊖P = P` is
+  FALSE (a point of order `4` is not its own negative), so neither branch
+  applies.  That is this leaf, and it is empty at prime level: no prime is
+  even and `> 2`.  It is the ONLY node of the chain that primality was hiding.
+
+**THE ARGUMENT OWED** (Silverman *AEC* III.8.1(b), verbatim at level `p`; it is
+geometric and does not go through bilinearity at all, so it covers every `p`
+uniformly and would subsume `weilValueProp_self_of_two` if written).  Let
+`P = x` and let `f` be the Miller generator, `div f = p(P) − p(O)`.  Then
+
+    div (∏_{i=0}^{p−1} f ∘ τ_{[i]P}) = Σ_{i=0}^{p−1} p((1−i)P) − p((−i)P) = 0,
+
+because `i ↦ (1−i)P` and `i ↦ (−i)P` enumerate the same multiset of points of
+`⟨P⟩`; so that product is a constant `c`.  Pick `P'` with `[p]P' = P` and `g`
+with `g ^ p = f ∘ [p]` (the descent's L4-1/L4-7 data, already available in
+`WeilPairingDescent.lean`).  Then `(∏_{i=0}^{p−1} g ∘ τ_{[i]P'}) ^ p = c` is
+constant, hence so is `h := ∏_{i=0}^{p−1} g ∘ τ_{[i]P'}`.  Translating by `P'`
+permutes the factors cyclically, `h ∘ τ_{P'} = h`, and cancelling the `p − 1`
+common factors leaves `g ∘ τ_{[p]P'} = g`, i.e. `g ∘ τ_P = g` — which is
+precisely `e(P, P) = 1`.
+
+**FAITHFULNESS AUDIT (2026-07-30).**  The statement is TRUE: the Weil pairing
+`e_m` is alternating at every level `m ≥ 1`, not merely at prime level
+(Silverman *AEC* III.8.1(b) is stated for arbitrary `m` with `char k ∤ m`, which
+is exactly `hqp` here).  The hypotheses are the same ones
+`weilValueProp_self_of_two` carries, so this is a drop-in for the branch it
+covers; `huniq` is what lets the value be pinned once an admissible setup is
+evaluated, and `hqp` is what makes `[p]` separable so that `P'` above exists.
+No quantifier here ranges more widely than in the prime-level statement it
+generalizes: `x` ranges over `p`-torsion exactly as before.
+
+Reduction to a smaller leaf, if a later owner wants one: only the `p = 2^k`
+part is genuinely new, since for `p = 2^k·m` with `m` odd the argument above is
+level-uniform anyway — there is no cheaper cut that does not just re-run
+III.8.1(b). -/
+theorem weilValueProp_self_of_even_of_ne_two (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic]
+    (p : ℕ) [Fact (1 < p)] (hqp : ¬ q ∣ p) (hp2 : 2 ∣ p) (hne : p ≠ 2)
+    (hDD : IsDedekindDomain (Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).toAffine.CoordinateRing)
+    (huniq : ∀ (v w : (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion p)
+      (z₁ z₂ : (AlgebraicClosure (ZMod q))ˣ),
+      weilValueProp q Wbar p v w z₁ → weilValueProp q Wbar p v w z₂ →
+      z₁ = z₂)
+    (x : (Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).nTorsion p)
+    (z : (AlgebraicClosure (ZMod q))ˣ)
+    (hz : weilValueProp q Wbar p x x z) : z = 1 :=
+  sorry
 
 section TranslationCharDegenerate
 
@@ -4612,7 +4678,7 @@ evaluations are nonzero by `coordRing_evalEval_ne_zero_of_notMem`
 avoidance). -/
 theorem exists_weilValueSetup_avoiding (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic]
-    (p : ℕ) [Fact p.Prime] (_hqp : q ≠ p)
+    (p : ℕ) [Fact (1 < p)] (_hqp : ¬ q ∣ p)
     (G : Subfield (AlgebraicClosure (ZMod q)))
     (hGfin : (G : Set (AlgebraicClosure (ZMod q))).Finite)
     (xP yP : AlgebraicClosure (ZMod q))
@@ -5115,7 +5181,7 @@ mirror side with the level-`p²` telescope) — whose ratio cancels the
 common `p`-th power through the proven `crossRatio_eq_of_stages`. -/
 theorem translationChar_setup_value (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic]
-    (p : ℕ) [Fact p.Prime] (_hqp : q ≠ p)
+    (p : ℕ) [Fact (1 < p)] (_hqp : ¬ q ∣ p)
     [Fintype ((Wbar.map (algebraMap (ZMod q)
       (AlgebraicClosure (ZMod q)))).nTorsion p)]
     (x : (Wbar.map (algebraMap (ZMod q)
@@ -5302,7 +5368,7 @@ theorem translationChar_setup_value (q : ℕ) [Fact q.Prime]
       (AlgebraicClosure (ZMod q)))).nTorsion (p ^ 2)) :=
     Nat.finite_of_card_ne_zero (by
       rw [hcard2]
-      exact pow_ne_zero 2 (pow_ne_zero 2 (Fact.out : p.Prime).ne_zero))
+      exact pow_ne_zero 2 (pow_ne_zero 2 ((Nat.zero_lt_of_lt (Fact.out : 1 < p)).ne')))
   -- ── THE BAD SET: the coordinates of all `p²`-torsion translates
   --    `T'⊕κ⊕λ`, `⊖κ⊕λ` of the divisor support of `g = a/∏(X − x_κ)`
   let coords : (Wbar.map (algebraMap (ZMod q)
@@ -5491,7 +5557,7 @@ of the pullback stages of Stage B.  See Howe, *The Weil pairing and
 the Hilbert symbol*, and HLEG-NOTES.md §4(B) L4-9. -/
 theorem weilValueProp_translationChar_witness (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic]
-    (p : ℕ) [Fact p.Prime] (hqp : q ≠ p)
+    (p : ℕ) [Fact (1 < p)] (hqp : ¬ q ∣ p)
     [Fintype ((Wbar.map (algebraMap (ZMod q)
       (AlgebraicClosure (ZMod q)))).nTorsion p)]
     (x : (Wbar.map (algebraMap (ZMod q)
@@ -5592,20 +5658,28 @@ theorem weilValueProp_translationChar_witness (q : ℕ) [Fact q.Prime]
   -- `c` is nonzero of exact order `p`, so `c^e ≠ 1` for `e ∈ {1, p−1}`
   have hc0 : c ≠ 0 := by
     intro h0
-    rw [h0, zero_pow (Fact.out : p.Prime).ne_zero] at hcp
+    rw [h0, zero_pow ((Nat.zero_lt_of_lt (Fact.out : 1 < p)).ne')] at hcp
     exact zero_ne_one hcp
-  have horder : orderOf c = p := orderOf_eq_prime hcp hc1
+  -- LEVEL-GENERIC (2026-07-30): this used to go through
+  -- `orderOf_eq_prime hcp hc1`, i.e. `orderOf c = p`, which needs `p` prime.
+  -- Neither value of `e` needs the exact order: `e = 1` is `hc1` verbatim, and
+  -- for `e = p − 1` the order of `c` divides both `p` (by `hcp`) and `p − 1`,
+  -- hence divides `p − (p − 1) = 1` — so `c = 1`, contradicting `hc1`.  That
+  -- argument is valid at COMPOSITE level, which is what lets the level-`N`
+  -- pairing reuse this bridge.
   have hce : ∀ e : ℕ, e = 1 ∨ e = p - 1 → c ^ e ≠ 1 := by
     intro e he h1
-    have hdvd : p ∣ e := horder ▸ orderOf_dvd_of_pow_eq_one h1
-    have hp2 : 2 ≤ p := (Fact.out : p.Prime).two_le
     rcases he with he | he
     · subst he
-      exact absurd (Nat.le_of_dvd one_pos hdvd) (by omega)
+      rw [pow_one] at h1
+      exact hc1 h1
     · subst he
-      have h0 : 0 < p - 1 := by omega
-      have hle := Nat.le_of_dvd h0 hdvd
-      omega
+      have hd1 : orderOf c ∣ p - 1 := orderOf_dvd_of_pow_eq_one h1
+      have hd2 : orderOf c ∣ p := orderOf_dvd_of_pow_eq_one hcp
+      have hsub : orderOf c ∣ p - (p - 1) := Nat.dvd_sub' hd2 hd1
+      have hp2 : 2 ≤ p := Fact.out (p := 1 < p)
+      rw [show p - (p - 1) = 1 from by omega] at hsub
+      exact hc1 (orderOf_eq_one_iff.mp (Nat.dvd_one.mp hsub))
   -- Stage B: the character-data bad subfield and the value law
   obtain ⟨G₀, hG₀fin, hval⟩ := translationChar_setup_value q Wbar p hqp
     x T' hT hΔ a ha hspan i₀ xκ yκ hκ hpt c hc1 hcp hτa hτv heq hp0 hcard
@@ -5690,10 +5764,18 @@ pair `(κ₀, x)` evaluates — through the L4-7 pullback factorization
 cocycle of `g` collapses the `p`-th power to `χ(κ₀) = c` times
 coboundaries, so the setup's cross-ratio is `c^{±1} ≠ 1`; existence of
 an admissible setup follows the μ-theorem's own `hexval` construction.
-See also Howe, *The Weil pairing and the Hilbert symbol*. -/
+See also Howe, *The Weil pairing and the Hilbert symbol*.
+
+**CONCLUSION PINNED TO THE COLUMN AT `x`, 2026-07-30.**  It used to read
+`∃ v w z, weilValueProp q Wbar p v w z ∧ z ≠ 1`.  The proof's last line was
+already `⟨i₀, x, z, hz, hz1⟩` — the second slot is *always* the `x` this theorem
+is discharging — so quantifying `w` threw away information for free.  Pinning it
+is what lets `weilValueProp_eq_zero_of_column_one` below hypothesise a single
+COLUMN rather than the whole pairing, which in turn removes the only
+field-dependent node of the nondegeneracy chain.  No other caller exists. -/
 theorem weilValue_of_translationChar (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic]
-    (p : ℕ) [Fact p.Prime] (hqp : q ≠ p)
+    (p : ℕ) [Fact (1 < p)] (hqp : ¬ q ∣ p)
     [Fintype ((Wbar.map (algebraMap (ZMod q)
       (AlgebraicClosure (ZMod q)))).nTorsion p)]
     (x : (Wbar.map (algebraMap (ZMod q)
@@ -5760,10 +5842,10 @@ theorem weilValue_of_translationChar (q : ℕ) [Fact q.Prime]
               (AlgebraicClosure (ZMod q)))).nTorsion p =>
               (κ.val : (Wbar.map (algebraMap (ZMod q)
                 (AlgebraicClosure (ZMod q)))).toAffine.Point))) :
-    ∃ (v w : (Wbar.map (algebraMap (ZMod q)
+    ∃ (v : (Wbar.map (algebraMap (ZMod q)
         (AlgebraicClosure (ZMod q)))).nTorsion p)
       (z : (AlgebraicClosure (ZMod q))ˣ),
-      weilValueProp q Wbar p v w z ∧ z ≠ 1 := by
+      weilValueProp q Wbar p v x z ∧ z ≠ 1 := by
   classical
   -- degenerate branch `κ₀ = O`: the translate is the tautological
   -- point, forcing `c = 1` — excluded by `hc1`
@@ -5792,8 +5874,8 @@ theorem weilValue_of_translationChar (q : ℕ) [Fact q.Prime]
     haveI : CharP (AlgebraicClosure (ZMod q)) q :=
       charP_of_injective_algebraMap
         (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))).injective q
-    exact CharP.cast_ne_zero_of_ne_of_prime
-      (R := AlgebraicClosure (ZMod q)) (Fact.out : p.Prime) hqp
+    exact fun h0 =>
+      hqp ((CharP.cast_eq_zero_iff (AlgebraicClosure (ZMod q)) q p).mp h0)
   have hcard : Fintype.card ((Wbar.map (algebraMap (ZMod q)
       (AlgebraicClosure (ZMod q)))).nTorsion p) = p ^ 2 := by
     rw [← Nat.card_eq_fintype_card]
@@ -5801,16 +5883,35 @@ theorem weilValue_of_translationChar (q : ℕ) [Fact q.Prime]
   obtain ⟨z, hz, hz1⟩ := weilValueProp_translationChar_witness q Wbar p hqp
     x T' hT hΔ a ha hspan i₀ xκ yκ hκ hpt c hc1 hcp hτa hτv heq hp0 hcard
     hi0 hx0
-  exact ⟨i₀, x, z, hz, hz1⟩
+  exact ⟨i₀, z, hz, hz1⟩
 
 /-- **Nondegeneracy descent core** (Silverman AEC
 III.8.1(c), the `g = h∘[p]` descent; staged plan L4-1..9 on record in
 HLEG-NOTES.md §4(B)): if `1` is an admissible Miller value for every
-pair of `p`-torsion points, then the whole `p`-torsion group is
-trivial.  Since the `p`-torsion has `p² > 1` elements, contrapositively
-some pair carries a nontrivial value — the single global input to
-nondegeneracy (`hleg4` of the μ-theorem, through
-`pairing_trivial_of_radical`).  Sketch: for `x ≠ 0` with affine
+pair `(v, x)` with `x` FIXED, then `x = 0`.
+
+**STRENGTHENED FROM A ROW TO A COLUMN, AND RENAMED, 2026-07-30.**  The previous
+statement hypothesised `hall : ∀ v w, weilValueProp q Wbar p v w 1` — every pair
+— and concluded that the whole `p`-torsion is trivial; the old name
+`weilValueProp_all_one_torsion_trivial` recorded that shape.  But the proof
+below never used more than the single COLUMN at the point it is discharging: the
+nontrivial value the L4-9 dichotomy manufactures is for the pair `(κ₀, x)` with
+that very `x` in the second slot (see `weilValue_of_translationChar`, whose
+conclusion is `⟨i₀, x, …⟩`).  So the column hypothesis suffices, and the
+conclusion `x = 0` is the honest per-point statement.
+
+Why the difference matters rather than being cosmetic: it is exactly what makes
+NONDEGENERACY available at COMPOSITE level.  At prime level the μ-theorem could
+afford the weak form, bridging from "some pair is nontrivial" to "every nonzero
+`x` has a partner" through `pairing_trivial_of_radical`, whose proof extends a
+nonzero vector to a basis and therefore needs `ZMod p` to be a FIELD.  Over
+`ZMod N` with `N` composite that step is false — `x = (2,0)` in `(ℤ/4)²` does not
+extend to a basis — so the row/column distinction is the whole obstruction, and
+removing it removes the only field-dependent node in the chain.
+`pairing_trivial_of_radical` was deleted in the same commit as dead code (it is
+recoverable from git history if some later argument wants it).
+
+Sketch: for `x ≠ 0` with affine
 representative `P`, pick `T'` with `p•T' = P`
 (`TorsionCard.smul_surjective`, L4-1); build `g` with
 `div g = Σ_{κ ∈ E[p]} (T'⊕κ) − (κ)` by multiset zero-sum principality
@@ -5821,7 +5922,7 @@ translation action (`Fix(E[p]) = [p]^*K`, L4-5/6) to `g = h∘[p]`,
 forcing `div h = (P⊕S) − (S)` and hence — `toClass` injectivity —
 `P = O`, a contradiction; if `χ(κ₀) ≠ 1`, the discrete bridge lemma
 (Silverman Ex. 3.16(c)) evaluates an admissible setup for `(κ₀, ·)`
-to `χ(κ₀)^{±1} ≠ 1`, contradicting `hall` through `huniq`
+to `χ(κ₀)^{±1} ≠ 1`, contradicting `hcol` through `huniq`
 (instantiated in the μ-theorem with its in-proof `huniqval`).
 STAGING STATUS (2026-07-24, second pass): L4-1 (`T'` via
 `TorsionCard.smul_surjective`), L4-2 (the `p²`-enumeration of `E[p]`),
@@ -5838,35 +5939,34 @@ sorried stage nodes: `exists_translationChar` (L4-8) and
 branch) in WeilPairingDescent.lean, and the bridge lemma
 `weilValue_of_translationChar` (L4-9 second branch, Silverman
 Ex. 3.16(c)) above. -/
-theorem weilValueProp_all_one_torsion_trivial (q : ℕ) [Fact q.Prime]
+theorem weilValueProp_eq_zero_of_column_one (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic]
-    (p : ℕ) [Fact p.Prime] (hqp : q ≠ p)
+    (p : ℕ) [Fact (1 < p)] (hqp : ¬ q ∣ p)
     (huniq : ∀ (v w : (Wbar.map (algebraMap (ZMod q)
         (AlgebraicClosure (ZMod q)))).nTorsion p)
       (z₁ z₂ : (AlgebraicClosure (ZMod q))ˣ),
       weilValueProp q Wbar p v w z₁ → weilValueProp q Wbar p v w z₂ →
       z₁ = z₂)
-    (hall : ∀ v w : (Wbar.map (algebraMap (ZMod q)
-        (AlgebraicClosure (ZMod q)))).nTorsion p,
-      weilValueProp q Wbar p v w 1)
     (x : (Wbar.map (algebraMap (ZMod q)
-      (AlgebraicClosure (ZMod q)))).nTorsion p) : x = 0 := by
+      (AlgebraicClosure (ZMod q)))).nTorsion p)
+    (hcol : ∀ v : (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion p,
+      weilValueProp q Wbar p v x 1) : x = 0 := by
   classical
   -- The descent's outcome (both branches of the L4-9 dichotomy land
   -- here): the divisor class of the representative vanishes.  In the
   -- `χ ≡ 1` branch the auxiliary `g` descends through the fixed field
   -- of the translation action to `g = h∘[p]` with
   -- `div h = (P⊕S) − (S)`, making the point ideal principal; in the
-  -- `χ(κ₀) ≠ 1` branch the bridge lemma contradicts `hall` through
+  -- `χ(κ₀) ≠ 1` branch the bridge lemma contradicts `hcol` through
   -- `huniq`, so anything follows — in particular this.
   have hclass : WeierstrassCurve.Affine.Point.toClass x.val = 0 := by
     -- L4-1: a `p`-division point `T'` of the representative
     haveI : CharP (AlgebraicClosure (ZMod q)) q :=
       charP_of_injective_algebraMap
         (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))).injective q
-    have hp0 : ((p : ℕ) : AlgebraicClosure (ZMod q)) ≠ 0 :=
-      CharP.cast_ne_zero_of_ne_of_prime
-        (R := AlgebraicClosure (ZMod q)) (Fact.out : p.Prime) hqp
+    have hp0 : ((p : ℕ) : AlgebraicClosure (ZMod q)) ≠ 0 := fun h0 =>
+      hqp ((CharP.cast_eq_zero_iff (AlgebraicClosure (ZMod q)) q p).mp h0)
     obtain ⟨T', hT'⟩ := TorsionCard.smul_surjective
       (E := Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))))
       hp0 x.val
@@ -5879,7 +5979,7 @@ theorem weilValueProp_all_one_torsion_trivial (q : ℕ) [Fact q.Prime]
         (AlgebraicClosure (ZMod q)))).nTorsion p) :=
       Nat.finite_of_card_ne_zero (by
         rw [hcard]
-        exact pow_ne_zero 2 (Fact.out : p.Prime).ne_zero)
+        exact pow_ne_zero 2 ((Nat.zero_lt_of_lt (Fact.out : 1 < p)).ne'))
     haveI : Fintype ((Wbar.map (algebraMap (ZMod q)
         (AlgebraicClosure (ZMod q)))).nTorsion p) := Fintype.ofFinite _
     -- the divisor multiset `Σ_{κ ∈ E[p]} (T'⊕κ) + (⊖κ)` — the affine
@@ -5947,116 +6047,56 @@ theorem weilValueProp_all_one_torsion_trivial (q : ℕ) [Fact q.Prime]
           hcardF hT2 hx0 ha hspan with
         h0 | ⟨i₀, xκ, yκ, hκ, hpt, c, hc1, hcp, hτa, hτv, heq⟩
       · exact h0
-      · obtain ⟨v, w, z, hz, hz1⟩ := weilValue_of_translationChar q Wbar p hqp
+      · obtain ⟨v, z, hz, hz1⟩ := weilValue_of_translationChar q Wbar p hqp
           x T' hT2 hΔ a ha hspan i₀ xκ yκ hκ hpt c hc1 hcp hτa hτv heq
-        exact absurd (huniq v w z 1 hz (hall v w)) hz1
+        exact absurd (huniq v x z 1 hz (hcol v)) hz1
     -- L4-3: the Miller generator of the zero-sum divisor multiset
     obtain ⟨g, hg0, hgspan⟩ := exists_span_eq_prod_pointIdeal D hsum
     exact hres g hg0 hgspan
   exact ZeroMemClass.coe_eq_zero.mp
     ((WeierstrassCurve.Affine.Point.toClass_eq_zero x.val).mp hclass)
 
-/-- **Radical-triviality reduction** for a multiplicative pairing on a
-`2`-dimensional space over `ZMod p`: if a nonzero vector `x` pairs
-trivially with everything, then — by bilinearity, alternation, and the
-resulting skew-symmetry — the whole pairing is trivial. Read
-contrapositively, this reduces nondegeneracy of the Weil pairing at
-every nonzero point to a single globally nontrivial value
-(`hleg4`'s `hglobal`). -/
-theorem pairing_trivial_of_radical {p : ℕ} [Fact p.Prime]
-    {M : Type*} [AddCommGroup M] [Module (ZMod p) M]
-    [Module.Finite (ZMod p) M]
-    (hfr : Module.finrank (ZMod p) M = 2)
-    {G : Type*} [CommGroup G] (e : M → M → G)
-    (hl : ∀ x y z, e (x + y) z = e x z * e y z)
-    (hr : ∀ x y z, e x (y + z) = e x y * e x z)
-    (halt : ∀ x, e x x = 1)
-    (x : M) (hx : x ≠ 0) (hxall : ∀ y, e x y = 1) :
-    ∀ u v, e u v = 1 := by
-  haveI : NeZero p := ⟨(Fact.out : p.Prime).ne_zero⟩
-  -- zero laws by cancellation
-  have hzl : ∀ y, e 0 y = 1 := fun y => by
-    have h := hl 0 0 y
-    rw [add_zero] at h
-    have h2 : e 0 y * e 0 y = e 0 y * 1 := by rw [mul_one, ← h]
-    exact mul_left_cancel h2
-  have hzr : ∀ u, e u 0 = 1 := fun u => by
-    have h := hr u 0 0
-    rw [add_zero] at h
-    have h2 : e u 0 * e u 0 = e u 0 * 1 := by rw [mul_one, ← h]
-    exact mul_left_cancel h2
-  -- skew-symmetry from alternation + bilinearity
-  have hskew : ∀ a b, e b a = (e a b)⁻¹ := by
-    intro a b
-    have h := halt (a + b)
-    rw [hl, hr, hr, halt a, halt b, one_mul, mul_one] at h
-    exact eq_inv_of_mul_eq_one_right h
-  -- ℕ-power laws
-  have hnl : ∀ (n : ℕ) (u v : M), e (n • u) v = e u v ^ n := by
-    intro n u v
-    induction n with
-    | zero => rw [zero_nsmul, pow_zero]; exact hzl v
-    | succ n ih => rw [succ_nsmul, hl, ih, pow_succ]
-  have hnr : ∀ (n : ℕ) (u v : M), e u (n • v) = e u v ^ n := by
-    intro n u v
-    induction n with
-    | zero => rw [zero_nsmul, pow_zero]; exact hzr u
-    | succ n ih => rw [succ_nsmul, hr, ih, pow_succ]
-  -- `ZMod p`-scalars through their ℕ-lift
-  have hcast : ∀ (c : ZMod p) (u : M), c • u = c.val • u := by
-    intro c u
-    have h1 : ((c.val : ℕ) : ZMod p) = c := by
-      rw [ZMod.natCast_val, ZMod.cast_id]
-    conv_lhs => rw [← h1]
-    exact Nat.cast_smul_eq_nsmul _ _ _
-  -- a companion `s` making `{x, s}` a spanning pair
-  obtain ⟨s, hs⟩ : ∃ s : M, ∀ w : M, ∃ c d : ZMod p, w = c • x + d • s := by
-    let b := Module.finBasisOfFinrankEq (ZMod p) M hfr
-    by_cases h0 : b.repr x 0 = 0
-    · -- the second coordinate is nonzero; `s := b 0`
-      have h1 : b.repr x 1 ≠ 0 := by
-        intro h1
-        exact hx (b.ext_elem fun i => by fin_cases i <;> simp [h0, h1])
-      refine ⟨b 0, fun w => ⟨b.repr w 1 / b.repr x 1,
-        b.repr w 0 - b.repr w 1 / b.repr x 1 * b.repr x 0, ?_⟩⟩
-      refine b.ext_elem fun i => ?_
-      fin_cases i <;>
-        (simp only [map_add, map_smul, Finsupp.coe_add, Finsupp.coe_smul,
-          Pi.add_apply, Pi.smul_apply, smul_eq_mul,
-          Module.Basis.repr_self, Finsupp.single_apply]
-         try norm_num
-         try field_simp)
-    · -- the first coordinate is nonzero; `s := b 1`
-      have h0' : b.repr x 0 ≠ 0 := h0
-      refine ⟨b 1, fun w => ⟨b.repr w 0 / b.repr x 0,
-        b.repr w 1 - b.repr w 0 / b.repr x 0 * b.repr x 1, ?_⟩⟩
-      refine b.ext_elem fun i => ?_
-      fin_cases i <;>
-        (simp only [map_add, map_smul, Finsupp.coe_add, Finsupp.coe_smul,
-          Pi.add_apply, Pi.smul_apply, smul_eq_mul,
-          Module.Basis.repr_self, Finsupp.single_apply]
-         try norm_num
-         try field_simp)
-  -- `s` pairs trivially with `x`
-  have hsx : e s x = 1 := by rw [hskew, hxall, inv_one]
-  -- expand an arbitrary pair through the spanning pair
-  intro u v
-  obtain ⟨cu, du, hu⟩ := hs u
-  obtain ⟨cv, dv, hv⟩ := hs v
-  rw [hu, hv]
-  simp only [hl, hr, hcast, hnl, hnr, hxall, hsx, halt, one_pow, one_mul]
-
 set_option maxHeartbeats 16000000 in
 /-- **The `μ_p`-valued Weil pairing over a finite field** (PROVEN —
 the canonical arithmetic input): on the `p`-torsion of an elliptic
-curve over `𝔽_q` (`p ≠ q`) there is a multiplicatively bilinear,
+curve over `𝔽_q` (`q ∤ p`) there is a multiplicatively bilinear,
 alternating, nondegenerate pairing valued in the `p`-th roots of unity
 of `𝔽̄_q`, natural for the `q`-power Frobenius:
 `e(Fx, Fy) = F(e(x, y))`. This is Silverman AEC III.8.1 together with
-Galois-equivariance III.8.1(e) specialized to Frobenius. -/
+Galois-equivariance III.8.1(e) specialized to Frobenius.
+
+**LEVEL `p` IS AN ARBITRARY NATURAL NUMBER `> 1`, NOT A PRIME (2026-07-30).**
+The binder used to be `[Fact p.Prime] (hqp : q ≠ p)`; it is now
+`[Fact (1 < p)] (hqp : ¬ q ∣ p)`, which for a prime `p` says exactly the same
+thing (`q` prime, `q ∤ p` ⟺ `q ≠ p`).  A prime-level caller adapts in one line:
+
+    haveI : Fact (1 < p) := ⟨(Fact.out : p.Prime).one_lt⟩
+    exists_weilPairing_mu q Wbar p (fun h => hqp ((Nat.prime_dvd_prime_iff_eq
+      (Fact.out : q.Prime) (Fact.out : p.Prime)).mp h))
+
+An audit of every use of primality in this chain found exactly three things
+asked of it and one genuine obstruction:
+
+* `p ≠ 0`, `0 < p`, `2 ≤ p` — all from `1 < p`;
+* `((p : 𝔽̄_q) : _) ≠ 0`, which is `¬ q ∣ p` through `CharP.cast_eq_zero_iff`
+  rather than `CharP.cast_ne_zero_of_ne_of_prime`;
+* NONDEGENERACY used to be spread from one global nontrivial value by
+  `pairing_trivial_of_radical`, which needs `ZMod p` to be a FIELD.  That node
+  is gone — the descent core proves the per-point statement directly (see
+  `weilValueProp_eq_zero_of_column_one`) — and it was buying nothing even at
+  prime level;
+* ALTERNATION at EVEN level `> 2` is the one branch primality was genuinely
+  hiding, and it is the leaf `weilValueProp_self_of_even_of_ne_two`.  The swap
+  argument gives `z·z = 1` and the order clause gives `z^p = 1`, so
+  `z^gcd(2,p) = 1` settles odd `p` outright; `p = 2` is
+  `weilValueProp_self_of_two` (PROVEN); even `p > 2` is empty at prime level
+  and is exactly that leaf.
+
+This is what lets the composite-level pairing
+`MazurTorsion.exists_weilPairing_mu_nondeg_of_coprime` run on it. -/
 theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic]
-    (p : ℕ) [Fact p.Prime] (hqp : q ≠ p) :
+    (p : ℕ) [Fact (1 < p)] (hqp : ¬ q ∣ p) :
     ∃ e : ((Wbar.map (algebraMap (ZMod q)
         (AlgebraicClosure (ZMod q)))).nTorsion p) → ((Wbar.map (algebraMap (ZMod q)
         (AlgebraicClosure (ZMod q)))).nTorsion p) → (AlgebraicClosure (ZMod q))ˣ,
@@ -14491,83 +14531,49 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
       exact weilValueProp_self_of_two q Wbar p hqp hp2 hDD huniqval x
         (e x x) (hespec x x)
     intro x
-    rcases eq_or_ne p 2 with h2 | hne
-    · exact htwo h2 x
-    · obtain ⟨k, hk⟩ := (Fact.out : p.Prime).odd_of_ne_two hne
-      have hk' : p = 2 * k + 1 := by omega
+    rcases Nat.even_or_odd p with hev | hodd
+    · -- EVEN level.  `z·z = 1` and `z^p = 1` give nothing (`gcd(2,p) = 2`),
+      -- so the `2`-torsion geometry is needed: at `p = 2` that is
+      -- `weilValueProp_self_of_two` (PROVEN), and at even `p > 2` it is
+      -- `weilValueProp_self_of_even_of_ne_two` — a branch that is EMPTY at
+      -- prime level, which is why primality was hiding it.
+      rcases eq_or_ne p 2 with h2 | hne
+      · exact htwo h2 x
+      · exact weilValueProp_self_of_even_of_ne_two q Wbar p hqp hev.two_dvd
+          hne hDD huniqval x (e x x) (hespec x x)
+    · obtain ⟨k, hk⟩ := hodd
       have hzz : e x x ^ p = e x x := by
-        rw [hk', pow_succ, pow_mul, pow_two, hswap x, one_pow, one_mul]
+        rw [hk, pow_succ, pow_mul, pow_two, hswap x, one_pow, one_mul]
       exact hzz.symm.trans (hleg5 x x)
   have hleg4 : ∀ x, x ≠ 0 → ∃ y, e x y ≠ 1 := by
-    -- global nontriviality — THE descent core (Silverman III.8.1(c)),
-    -- externalized as the top-level node (PROVEN)
-    -- `weilValueProp_all_one_torsion_trivial`: assuming `e ≡ 1`, every
-    -- pair admits the value `1`, so the descent forces the whole
-    -- `p`-torsion to vanish — absurd, since it has `p² > 1` elements
-    -- (`TorsionCard.card_torsionBy`). See HLEG-NOTES.md §4(B).
-    have hglobal : ∃ u v, e u v ≠ 1 := by
-      by_contra hcon
-      push Not at hcon
-      have hall : ∀ v w, IsWeilValue v w 1 := by
-        intro v w
-        have h := hespec v w
-        rwa [hcon v w] at h
-      have htriv : ∀ y : ((Wbar.map (algebraMap (ZMod q)
-          (AlgebraicClosure (ZMod q)))).nTorsion p), y = 0 := fun y =>
-        weilValueProp_all_one_torsion_trivial q Wbar p hqp huniqval
-          hall y
-      haveI : CharP (AlgebraicClosure (ZMod q)) q :=
-        charP_of_injective_algebraMap
-          (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))).injective q
-      have hcard2 : Nat.card ((Wbar.map (algebraMap (ZMod q)
-          (AlgebraicClosure (ZMod q)))).nTorsion p) = p ^ 2 :=
-        TorsionCard.card_torsionBy _ p
-          (CharP.cast_ne_zero_of_ne_of_prime
-            (R := AlgebraicClosure (ZMod q)) (Fact.out : p.Prime) hqp)
-      have hone : Nat.card ((Wbar.map (algebraMap (ZMod q)
-          (AlgebraicClosure (ZMod q)))).nTorsion p) = 1 := by
-        haveI : Subsingleton ((Wbar.map (algebraMap (ZMod q)
-            (AlgebraicClosure (ZMod q)))).nTorsion p) :=
-          ⟨fun a b => (htriv a).trans (htriv b).symm⟩
-        exact Nat.card_of_subsingleton 0
-      have hpp : p ^ 2 = 1 := hcard2.symm.trans hone
-      have h2le := (Fact.out : p.Prime).two_le
-      nlinarith [hpp, h2le]
-    -- the radical reduction on the rank-2 torsion space
-    haveI : CharP (AlgebraicClosure (ZMod q)) q :=
-      charP_of_injective_algebraMap
-        (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))).injective q
-    have hcard : Nat.card ((Wbar.map (algebraMap (ZMod q)
-        (AlgebraicClosure (ZMod q)))).nTorsion p) = p ^ 2 :=
-      TorsionCard.card_torsionBy _ p
-        (CharP.cast_ne_zero_of_ne_of_prime
-          (R := AlgebraicClosure (ZMod q)) (Fact.out : p.Prime) hqp)
-    haveI : Finite ((Wbar.map (algebraMap (ZMod q)
-        (AlgebraicClosure (ZMod q)))).nTorsion p) :=
-      Nat.finite_of_card_ne_zero (by
-        rw [hcard]
-        exact pow_ne_zero 2 (Fact.out : p.Prime).ne_zero)
-    haveI : Fintype ((Wbar.map (algebraMap (ZMod q)
-        (AlgebraicClosure (ZMod q)))).nTorsion p) := Fintype.ofFinite _
-    haveI : Module.Finite (ZMod p) ((Wbar.map (algebraMap (ZMod q)
-        (AlgebraicClosure (ZMod q)))).nTorsion p) := Module.Finite.of_finite
-    have hfr : Module.finrank (ZMod p) ((Wbar.map (algebraMap (ZMod q)
-        (AlgebraicClosure (ZMod q)))).nTorsion p) = 2 := by
-      have h := Module.card_eq_pow_finrank (K := ZMod p)
-        (V := ((Wbar.map (algebraMap (ZMod q)
-          (AlgebraicClosure (ZMod q)))).nTorsion p))
-      rw [ZMod.card] at h
-      have h2 : p ^ 2 = p ^ Module.finrank (ZMod p) ((Wbar.map (algebraMap
-          (ZMod q) (AlgebraicClosure (ZMod q)))).nTorsion p) := by
-        rw [← hcard, Nat.card_eq_fintype_card]
-        exact h
-      exact Nat.pow_right_injective (Fact.out : p.Prime).two_le h2.symm
+    -- POINTWISE nondegeneracy, straight off the descent core (Silverman
+    -- III.8.1(c)), externalized as `weilValueProp_eq_zero_of_column_one`
+    -- (PROVEN): if the COLUMN at `x` is identically `1`, the descent forces
+    -- `x = 0`.  See HLEG-NOTES.md §4(B).
+    --
+    -- LEVEL-GENERIC SINCE 2026-07-30.  This used to run through a global
+    -- nontriviality statement (`∃ u v, e u v ≠ 1`) and then spread it to every
+    -- nonzero `x` by `pairing_trivial_of_radical`, which extends a nonzero
+    -- vector to a basis and therefore needs `ZMod p` to be a FIELD.  That was
+    -- the ONLY field-dependent node of the chain, and it is gone: the descent
+    -- core already proves the per-point statement, so the radical detour was
+    -- buying nothing even at prime level.  `pairing_trivial_of_radical` was
+    -- deleted with it.
     intro x hx
     by_contra hcon
     push Not at hcon
-    obtain ⟨u, v, huv⟩ := hglobal
-    exact huv (pairing_trivial_of_radical hfr e hleg1 hleg2 hleg3 x hx
-      hcon u v)
+    -- skew-symmetry, to turn the ROW hypothesis `hcon` into a COLUMN
+    have hskew : ∀ a b, e b a = (e a b)⁻¹ := by
+      intro a b
+      have h := hleg3 (a + b)
+      rw [hleg1, hleg2, hleg2, hleg3 a, hleg3 b, one_mul, mul_one] at h
+      exact eq_inv_of_mul_eq_one_right h
+    have hcol : ∀ v, IsWeilValue v x 1 := by
+      intro v
+      have h1 : e v x = 1 := by rw [hskew x v, hcon v, inv_one]
+      have h := hespec v x
+      rwa [h1] at h
+    exact hx (weilValueProp_eq_zero_of_column_one q Wbar p hqp huniqval x hcol)
   have hleg6 : ∀ x y, e ((frobeniusTorsionEnd q Wbar p) x)
       ((frobeniusTorsionEnd q Wbar p) y) =
       (Units.map (frobAlgHom q).toRingHom) (e x y) := by
@@ -14607,8 +14613,10 @@ theorem exists_weilPairing_frobenius (q : ℕ) [Fact q.Prime]
       ∀ x y, e (frobeniusTorsionEnd q Wbar p x)
           (frobeniusTorsionEnd q Wbar p y) = (q : ZMod p) * e x y := by
   classical
+  haveI : Fact (1 < p) := ⟨(Fact.out : p.Prime).one_lt⟩
   obtain ⟨e₀, hbl, hbr, halt, hnd, hord, hfrob⟩ :=
-    exists_weilPairing_mu q Wbar p hqp
+    exists_weilPairing_mu q Wbar p (fun h => hqp
+      ((Nat.prime_dvd_prime_iff_eq (Fact.out : q.Prime) (Fact.out : p.Prime)).mp h))
   -- a primitive `p`-th root of unity in `𝔽̄_q`, at the unit level
   haveI : NeZero ((p : ℕ) : (AlgebraicClosure (ZMod q))) := by
     haveI : CharP (AlgebraicClosure (ZMod q)) q :=
