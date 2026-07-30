@@ -60204,11 +60204,14 @@ scheme-theoretic image: `B := u.image`, `ι := u.imageι`,
   `exists_relPointGroup_schemeTheoreticImage_of_isAdditiveOn`, because
   `Mono ι` makes `RelPoint.post ι` injective at every test object.
 
-Three leaves remain, one theory each and all LEVEL-GENERIC:
-`exists_relPointGroup_schemeTheoreticImage_of_isAdditiveOn` (the image is
-a subgroup scheme), `smooth_schemeTheoreticImage_of_isAdditiveOn`
-(Cartier), `flat_toImage_of_isAdditiveOn` (a surjective homomorphism of
-abelian varieties is flat). -/
+Three leaves remain, all LEVEL-GENERIC, but only TWO of them are theory
+(corrected 2026-07-30): `exists_relPointGroup_schemeTheoreticImage_of_isAdditiveOn`
+(the image is a subgroup scheme) and `smooth_schemeTheoreticImage_of_isAdditiveOn`
+(Cartier).  The third, `flat_toImage_of_isAdditiveOn`, is **already proven** — it
+is `flat_of_surjective_of_isAdditiveOn` ~1700 lines below, and the only thing in
+the way is Lean's declaration order.  Its docstring carries the instantiation,
+the relocation and the check that the relocation is safe; a prover should NOT
+attack miracle flatness. -/
 
 /-- **The scheme-theoretic image of a homomorphism of abelian varieties is
 a SUBGROUP SCHEME** (sorry leaf, 2026-07-28) — the group-theoretic half of
@@ -60318,7 +60321,79 @@ surjective, and is not epi), so flatness is doing real work rather than
 packaging.
 
 **The check that refutes it**: a surjective homomorphism of abelian
-varieties over `ℚ` that is not flat — impossible by homogeneity. -/
+varieties over `ℚ` that is not flat — impossible by homogeneity.
+
+## THIS LEAF IS ALREADY PROVEN 1700 LINES BELOW — the obstruction is
+## DECLARATION ORDER, not mathematics (found 2026-07-30)
+
+**Do not prove miracle flatness.**  `flat_of_surjective_of_isAdditiveOn`
+(PROVEN 2026-07-28, currently at line ~62260, over
+`smooth_of_surjective_of_isAdditiveOn` and the shear/homogeneity development)
+is exactly this statement for an arbitrary surjective homomorphism of abelian
+schemes over `ℚ`, and `u.toImage` IS such a homomorphism.  Instantiating it
+needs four inputs, and none of them is a new theory:
+
+* `abJ` — given;
+* `AbelianSchemeStruct (u.imageι ≫ astr)` — this is precisely the structure
+  built inside `exists_surjectiveAbelianImage_of_isAdditiveOn` below, and that
+  construction does **NOT** use this leaf.  It uses only
+  `exists_relPointGroup_schemeTheoreticImage_of_isAdditiveOn`,
+  `smooth_schemeTheoreticImage_of_isAdditiveOn` and
+  `geometricallyConnected_schemeTheoreticImage_of_surjective`.  So there is no
+  circularity: this leaf is consumed by that theorem for the `Epi π` clause
+  ALONE (one line, `Flat.epi_of_flat_of_surjective`), and for nothing else;
+* `Surjective u.toImage` — four lines, already written inline in that theorem
+  (proper plus dominant, so closed range plus dense);
+* `IsAdditiveOn abJ abB u.toImage hπ` — the only genuinely new step, and it is
+  formal: push both sides through `RelPoint.post u.imageι rfl`, which is
+  INJECTIVE because `u.imageι` is a closed immersion hence a monomorphism (that
+  injectivity is `hinj` in the theorem below), and then the transport equation
+  `hpadd` of the group leaf plus `u.toImage_imageι` turns the goal into `hadd`.
+
+**THE RELOCATION, and the check that makes it safe.**  Lean's declaration order
+is the whole obstruction, so the fix is to move the three theorems
+`exists_surjectiveAbelianImage_of_isAdditiveOn`,
+`exists_abelianImage_of_isAdditiveOn` and `exists_prym_of_involution`
+(currently lines ~60434–60842, one contiguous block) to just after
+`flat_of_surjective_of_isAdditiveOn`, and to DELETE this leaf, inlining the
+instantiation above at the `Epi π` step.  Moving code DOWN can never break the
+moved code's own dependencies, so the only thing that has to be checked is that
+nothing between the old and new positions consumes the block — and it does not:
+
+* `exists_surjectiveAbelianImage_of_isAdditiveOn` has exactly one call site,
+  inside `exists_abelianImage_of_isAdditiveOn` (moving with it);
+* `exists_abelianImage_of_isAdditiveOn` has exactly one, inside
+  `exists_prym_of_involution` (moving with it);
+* `exists_prym_of_involution` has exactly one CODE call site, at line ~66357 —
+  comfortably below the destination.  Every other occurrence of the three names
+  in this file is prose in a docstring.
+
+That last item is the fact worth having written down, because it is what a
+successor would otherwise have to re-derive by hand, and a naive `grep` makes
+`exists_prym_of_involution` look heavily used (it appears at lines 58742, 60077,
+60167, 60396, 60506, 60512, 63081, 65072, 68135, 68210 and in
+`FreyCurve/MazurTorsion.lean` — all commentary).
+
+**Not taken here** because a ~450-line relocation inside a 72 000-line file is
+the merge hazard this project has actually been bitten by (see `CLAUDE.md` on
+`flt-lean-123`'s hoist producing duplicate declarations), and it should be done
+by whoever holds `X0.lean` alone, in a release window, in one commit that
+touches nothing else.  The net effect is `−1` leaf and no new mathematics.
+
+**A SECOND ROUTE THAT REMOVES THE LEAF WITHOUT MOVING ANYTHING**, recorded
+because it is independent and may be cheaper.  Flatness is used only to get
+`Epi u.toImage`, and `u.toImage` is a surjection whose `app` maps are INJECTIVE
+on every open — that is `Scheme.Hom.toImage_app_injective` in
+`Mathlib/AlgebraicGeometry/IdealSheaf/Subscheme.lean` (stated for the opens
+`u.imageι ⁻¹ᵁ U`, which by `u.imageι.isEmbedding` is all of them).  A surjection
+with injective `app` is an epimorphism of schemes: the base maps of two
+competitors agree because `u.toImage` is surjective on points, and their `app`
+maps then agree by injectivity, so `Scheme.Hom.ext` finishes.  What makes this
+route awkward rather than short is `Scheme.Hom.ext`: with a base equality that is
+not `rfl` the `app` components have to be transported along `eqToHom`, which is
+why mathlib's own `Flat.epi_of_flat_of_surjective` descends to `SheafedSpace`
+(`SheafedSpace.epi_of_base_surjective_of_stalk_mono`) instead — and that lemma
+wants the stalk maps MONO, which `app`-injectivity does not give. -/
 theorem flat_toImage_of_isAdditiveOn {J A : Scheme.{0}}
     {jstr : J ⟶ SpecQ} {astr : A ⟶ SpecQ}
     (abJ : AbelianSchemeStruct jstr) (abA : AbelianSchemeStruct astr)
