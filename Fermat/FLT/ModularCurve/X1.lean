@@ -446,11 +446,12 @@ open in them has been split along the theories it needed:
 | `exists_weierstrassModel_of_abelianSchemeStruct_finiteField` | **Riemann-Roch on a genus-one curve** — a Weierstrass model of an abelian scheme of relative dimension one over `Spec 𝔽_ℓ`; NO modular curves and no level structure.  Cut 2026-07-28 as the geometry half of `exists_weierstrassEquiv_of_gamma1Datum` (now PROVEN over it).  The ℚ-side chain in `EllipticScheme.lean` is hardcoded to `Spec ℚ` and its own three leaves are open, so there is nothing to instantiate. | `𝔽_ℓ` |
 | `exists_relPointAddEquiv_of_weierstrassModel_finiteField` | the transport half of the same cut: given the model, the `𝔽_ℓ`-SECTIONS are `W(𝔽_ℓ)`.  The content is that the abelian scheme's group law agrees with the chord-and-tangent law (rigidity); strictly easier than the ℚ-side `exists_geomFibreAddEquiv_of_weierstrassModel`, which needs a `Γ_ℚ`-equivariant equivalence on geometric fibres. | `𝔽_ℓ` |
 | `exists_cuspSymbolEmbedding_x1_finiteField` | the hard direction of Ogg's description, DECOMPOSED 2026-07-28 into geometry and arithmetic: the `𝔽_ℓ`-rational cusp points inject into the Frobenius-fixed cusp symbols `Γ_1(N)∖ℙ¹(ℚ)`.  Carries NO counting — that is `card_fixedCuspSymbolX1` (`ModularCurve/CuspSymbolX1.lean`), PROVEN, and `card_cuspLocusPoints_x1_finiteField_le` is PROVEN over the two.  The lower bound is the `exists_rationalCuspPointsX1_field` row above. | `𝔽_ℓ`, `ℓ ∤ N`, `N ≥ 5` |
-| `exists_x1CurveReductionModel` | Deligne-Rapoport VI.6.9: the smooth proper model over `ℤ_(ℓ)`.  NO moduli in the conclusion — the modular input is the hypothesis `hX` | `ℚ → 𝔽_ℓ` |
-| `exists_isX1Compactification_specialFibre` | Igusa / Katz-Mazur 5.1.1: the special fibre of that model IS `X_1(N)` over `𝔽_ℓ`.  (`exists_x1CurveModel_of_base` is PROVEN over this row and the one above, 2026-07-28, splitting the two classical theorems it had cited jointly; `exists_x1ReductionAt` is PROVEN over that plus the moduli-free `NeronReduction.lean`.) | `ℚ → 𝔽_ℓ` |
+| `exists_x1SmoothProperCurveModel` | Deligne-Rapoport VI.6.9: the smooth proper model over `ℤ_(ℓ)` together with the identification of its GENERIC fibre.  NO moduli in the conclusion — the modular input is the hypothesis `hX`.  (Replaces `exists_x1CurveReductionModel`, which is **PROVEN** over this row alone since 2026-07-30: the special fibre is the pullback along the closed point, so `spX`/`spX_nat` are `fibreIdentPullback`, and `properX` is `bijective_pre_generic_of_isProper` — the three obligations that need no modular geometry, discharged as `X0.lean` had already done on the `Γ₀` side.) | `ℚ → 𝔽_ℓ` |
+| `exists_isX1Compactification_specialFibre` | Igusa / Katz-Mazur 5.1.1: the special fibre of that model IS `X_1(N)` over `𝔽_ℓ`.  (`exists_x1CurveModel_of_base` is PROVEN over this row and the one above, 2026-07-28, splitting the two classical theorems it had cited jointly; `exists_x1ReductionAt` is PROVEN over that plus the moduli-free `NeronReduction.lean`.  Since 2026-07-30 the row above is the weaker `exists_x1SmoothProperCurveModel`; the leaf COUNT here is unchanged.) | `ℚ → 𝔽_ℓ` |
 | `exists_section_of_galoisInvariant` | Galois descent of a rational point to a section | `ℚ` |
 | `exists_heckeCorrespondenceFamilyGamma1` | the `Γ₁` Hecke correspondence as a natural family on points — the geometric half, and the `Γ₁` twin of `X0.lean`'s `exists_heckeCorrespondenceFamily`.  (`exists_heckeAction_isotypicQuotients_gamma1` was a leaf until 2026-07-28 and is now **PROVEN** over this row and the next, via the `Γ₁` moduli pin `IsModularHeckeActionGamma1`; `exists_modularHeckeAction_gamma1` is PROVEN over this row alone.) | `ℚ` |
-| `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` | Shimura's `A_f` on `Γ₁(N)`, one factor, given the PINNED Hecke action — the "build one factor" half of Eichler-Shimura.  (`IsIsotypicQuotient` is reused verbatim from `X0.lean`; it is shape-free.) | `ℚ` |
+| `isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1` | Shimura's algebraicity theorem for `Γ₁(N)`: the `a n` are algebraic integers.  MENTIONS NO SCHEME — the only obligation of `IsIsotypicQuotient` that does not, and it can be attacked from the integral-homology side or from the Hecke recursions plus a bound.  Cannot be an instance of `X0.lean`'s `isIntegral_coeff_of_isWeightTwoEigenform`: the `Γ₁` coefficients generate `ℚ(χ)`. | `ℚ` |
+| `exists_isotypicQuotient_of_isIntegral_gamma1` | Shimura's `A_f` on `Γ₁(N)`, one factor, given the PINNED Hecke action AND algebraicity — the "build one factor" half of Eichler-Shimura, and the `Γ₁` twin of `X0.lean`'s `exists_isotypicQuotient_of_isIntegral`.  (`IsIsotypicQuotient` is reused verbatim from `X0.lean`; it is shape-free.  `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` is **PROVEN** over this row and the one above since 2026-07-30, transporting the `Γ₀` recut of the same day; its FALSITY AUDIT was discharged that day too and the statement is TRUE.) | `ℚ` |
 | `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` | the "assemble the factors" half: finiteness of the index set, the oldform multiplicities, `finite_ker`, and the `neben` labelling.  It no longer owns the `N = 0` case: that case was REFUTED on 2026-07-28 (`isEmpty_isHeckeIsotypicDecompositionGamma1_zero`) and the leaf now carries `hN : N ≠ 0`; see its docstring | `ℚ` |
 | `isTorsion_factor_of_heckeIsotypic_gamma1` | Kolyvagin-Logachev on an isotypic factor | `ℚ` |
 | `cuspPeriod_ne_zero_x1TwentyFive` | the `L`-value numerics — the DEEP one, and the only row where `25` survives.  (`lFunction_apply_one_ne_zero_x1TwentyFive` was decomposed along the period 2026-07-28; its analytic half `lFunction_apply_one_eq_two_pi_mul_cuspPeriod_gamma1` is PROVEN the same day, as the `G = Γ₁(N)` instance of `lFunction_apply_one_eq_two_pi_mul_cuspPeriodOn`, which is in turn the group-generic form of `X0.lean`'s proven theorem.) | `ℚ` |
@@ -8743,10 +8744,25 @@ What the split buys: the first leaf's conclusion mentions no moduli at all
 two fibre identifications and the valuative criterion), so a prover of it
 needs no modular geometry in the conclusion — the moduli input is confined
 to the hypothesis `hX`.  All of the moduli content is in the second.
+
+**AMENDED 2026-07-30: the geometric half is now a PROOF, and the leaf under
+it is smaller.**  `exists_x1CurveReductionModel` is PROVEN over the new leaf
+`exists_x1SmoothProperCurveModel`, which asks only for the model and the
+identification of its GENERIC fibre.  The special fibre, its naturality and
+the valuative criterion were the three obligations that needed no modular
+geometry at all, and they are discharged in Lean here rather than promised —
+`X0.lean`'s `exists_x0CurveModel_of_base` had done exactly this on the `Γ₀`
+side since 2026-07-27 and the `Γ₁` side had not caught up.  So the node is
+still PROVEN over TWO leaves, and they are now
+`exists_x1SmoothProperCurveModel` and
+`exists_isX1Compactification_specialFibre`; the leaf COUNT is unchanged and
+the first of the two got strictly weaker.
 -/
 
-/-- **Deligne–Rapoport: `X_1(N)` has GOOD REDUCTION at every `ℓ ∤ N`**
-(sorry leaf, NEW 2026-07-28) — the GEOMETRIC half of the node below.
+/-- **Deligne–Rapoport: `X_1(N)` has a SMOOTH PROPER MODEL over `ℤ_(ℓ)`
+whose GENERIC FIBRE is the given `X`** (sorry leaf, NEW 2026-07-30) — the
+whole of the modular content of `exists_x1CurveReductionModel` below, which
+is now PROVEN over this leaf alone.
 
 TRUE, and classical: Deligne–Rapoport Thm. VI.6.9, or Katz–Mazur Thm. 5.1.1
 plus Cor. 6.7.2.  For `ℓ ∤ N` the level structure is étale over the base,
@@ -8754,14 +8770,59 @@ which is exactly what makes the model SMOOTH rather than merely
 semistable; at `ℓ ∣ N` the special fibre acquires the Deligne–Rapoport
 singularities and no smooth model exists.
 
-**No moduli appears in the conclusion.**  `IsCurveReductionModel` asks only
-for a smooth proper geometrically connected curve over `SpecLoc R`, the two
-fibre identifications as functors of points, their naturality, and the
-valuative criterion.  The modular input enters solely through `_hX`, which
-is what says the generic fibre is `X_1(N)` rather than an arbitrary curve.
-So a successor working here is proving good reduction of a *given* curve,
-and can leave the moduli interpretation of the special fibre entirely to
-`exists_isX1Compactification_specialFibre` below.
+**WHY THIS LEAF EXISTS: THE `Γ₀` SIDE ALREADY DISCHARGED THREE OF THE SEVEN
+OBLIGATIONS AND THE `Γ₁` SIDE WAS STILL CARRYING THEM** (2026-07-30).  The
+statement below used to ask for a whole `IsCurveReductionModel`, i.e. seven
+fields.  `X0.lean`'s `exists_x0CurveModel_of_base` shows that four of them
+are FREE once the model and its generic fibre are in hand, and its own
+docstring says so in terms ("what a Deligne–Rapoport specialist is now asked
+for is the model and its generic fibre, and nothing else"):
+
+* the SPECIAL fibre `X'` is existentially quantified in the conclusion below,
+  so it need not be posited — take it to be `Limits.pullback xstr
+  (SpecLoc.special toF)`, literally `𝒳 ×_{ℤ_(ℓ)} 𝔽_ℓ`, and then `spX` /
+  `spX_nat` are the universal property of that pullback, i.e.
+  `fibreIdentPullback`, which is PROVEN;
+* `properX`, the valuative criterion, is `bijective_pre_generic_of_isProper`
+  applied to `curve.isProper`, and that is PROVEN — mathlib's valuative
+  criterion over the observation that `IsReductionBase` makes `R` a
+  valuation ring;
+* `genX` / `genX_nat` are the two fields of the `IsFibreIdent` this leaf
+  returns, so they are field copying.
+
+So this leaf is STRICTLY WEAKER than the statement it replaces, and no leaf
+was added: the node below went from `sorry` to a proof, and this is what it
+is a proof over.
+
+**No moduli appears in the conclusion**, exactly as before: a smooth proper
+geometrically connected curve over `SpecLoc R` together with the
+identification of its generic fibre as a FUNCTOR of points.  The modular
+input enters solely through `_hX`, which is what says that fibre is `X_1(N)`
+rather than an arbitrary curve.
+
+**THE ROUTE, and it is the `Γ₀` one step for step.**  `X0.lean` proves the
+corresponding `exists_x0CompactificationModel` by (i) building the model
+over `ℤ_(ℓ)` from the local coarse space
+(`exists_x0IntegralCompactification`), (ii) comparing the caller's `X` with
+the model's generic fibre through the initiality of coarse moduli
+(`exists_iso_of_isCoarseModuliY0`, then
+`exists_iso_of_isX0Compactification`), and (iii) transporting
+`fibreIdentPullback (SpecLoc.generic R) xstr` along that isomorphism with
+`IsFibreIdent.congrFibre`.  Only step (i) is irreducible along the moduli
+axis; the `Γ₁` analogues of the three `Γ₀` leaves it rests on are
+
+* the `Γ₁(N)`-coarse space exists over `ℤ_(ℓ)` (Katz–Mazur ch. 8) —
+  `exists_isCoarseModuliY0_loc`'s twin;
+* it has a smooth proper compactification with finite cusp locus there
+  (Deligne–Rapoport IV.3, Katz–Mazur 13.11);
+* INITIALITY of the generic fibre, i.e. coarse moduli commutes with the flat
+  base change `ℤ_(ℓ) → ℚ` (Katz–Mazur 8.1).
+
+They are deliberately NOT cut here: three leaves in place of one buys
+nothing until somebody is actually working the moduli axis, and step (ii)'s
+`Γ₁` ingredients (`IsCoarseModuliY1.exists_inverse` and
+`exists_inverse_of_smoothCompactification`, both PROVEN and used together in
+`nonempty_relPointEquiv_of_isX1Compactification` above) are already here.
 
 **Each hypothesis is load-bearing** (the underscores record only that a
 `sorry` consumes nothing): `_hℓ` makes `ZMod ℓ` a field, without which
@@ -8775,13 +8836,47 @@ model with an `IsX0Compactification` at some other level `N'` is dead —
 `X_1(N)` is not `X_0(N')` for any `N'` in the range that matters (at
 `N = 25`, `X_0(25)` has genus `0` against `X_1(25)`'s `12`), and `N' = 0`
 is refuted by `isEmpty_of_gamma0Datum_zero`. -/
-theorem exists_x1CurveReductionModel (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
+theorem exists_x1SmoothProperCurveModel (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
     (R : Subring ℚ) (toF : R →+* ZMod ℓ) (_hbase : IsReductionBase ℓ R toF)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (_hX : IsX1Compactification N strX strY jY) :
-    ∃ (X' XZ : Scheme.{0}) (strX' : X' ⟶ SpecF ℓ) (xstr : XZ ⟶ SpecLoc R),
-      Nonempty (IsCurveReductionModel ℓ R toF (strX := strX) (strX' := strX') xstr) :=
+    ∃ (XZ : Scheme.{0}) (xstr : XZ ⟶ SpecLoc R),
+      IsSmoothProperCurve xstr ∧ Nonempty (IsFibreIdent (SpecLoc.generic R) xstr strX) :=
   sorry
+
+/-- **Deligne–Rapoport: `X_1(N)` has GOOD REDUCTION at every `ℓ ∤ N`**
+(**PROVEN 2026-07-30** over the single strictly weaker leaf
+`exists_x1SmoothProperCurveModel` immediately above; a sorry leaf from
+2026-07-28 until then) — the GEOMETRIC half of the node below.
+
+The statement is UNCHANGED apart from the binders losing their underscores,
+and its sole caller `exists_x1CurveModel_of_base` calls it exactly as
+before.  What changed is that the four obligations of
+`IsCurveReductionModel` that need no modular geometry — the special fibre,
+its naturality, and the valuative criterion — are now DISCHARGED here
+rather than promised by a `sorry`; see the leaf's docstring for the
+accounting, which is `X0.lean`'s `exists_x0CurveModel_of_base` transported
+step for step.
+
+`X'` is `𝒳 ×_{ℤ_(ℓ)} 𝔽_ℓ`, which is what makes `spX` free; `exists_isX1Compactification_specialFibre` below is what says that scheme
+IS `X_1(N)` over `𝔽_ℓ`, and it remains a separate leaf. -/
+theorem exists_x1CurveReductionModel (N ℓ : ℕ) (hℓ : ℓ.Prime) (hℓN : ¬ ℓ ∣ N)
+    (R : Subring ℚ) (toF : R →+* ZMod ℓ) (hbase : IsReductionBase ℓ R toF)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX1Compactification N strX strY jY) :
+    ∃ (X' XZ : Scheme.{0}) (strX' : X' ⟶ SpecF ℓ) (xstr : XZ ⟶ SpecLoc R),
+      Nonempty (IsCurveReductionModel ℓ R toF (strX := strX) (strX' := strX') xstr) := by
+  obtain ⟨XZ, xstr, hcurve, ⟨eGen⟩⟩ :=
+    exists_x1SmoothProperCurveModel N ℓ hℓ hℓN R toF hbase hX
+  -- the special fibre is not posited: it is the pullback along the closed point
+  exact ⟨Limits.pullback xstr (SpecLoc.special toF), XZ,
+    Limits.pullback.snd xstr (SpecLoc.special toF), xstr,
+    ⟨{ curve := hcurve
+       genX := eGen.toEquiv
+       spX := (fibreIdentPullback (SpecLoc.special toF) xstr).toEquiv
+       genX_nat := eGen.nat
+       spX_nat := (fibreIdentPullback (SpecLoc.special toF) xstr).nat
+       properX := bijective_pre_generic_of_isProper ℓ R toF hbase xstr hcurve.isProper }⟩⟩
 
 /-- **Igusa: the special fibre of a good model of `X_1(N)` IS `X_1(N)` over
 `𝔽_ℓ`** (sorry leaf, NEW 2026-07-28) — the MODULI half of the node below,
@@ -11743,7 +11838,82 @@ then become true and no consumer's statement changes; the honest cost is that
 leaves, since `𝟙 J` off the pinned arities no longer satisfies the pin.  The
 cheaper alternative — restricting `IsIsotypicQuotient.isotypic`/`.equivariant`
 to primes `ℓ ∤ N` — is a change to a structure shared with `X0.lean` and must
-likewise be made once, for both sides. -/
+likewise be made once, for both sides.
+
+## RECUT 2026-07-30 ALONG `integral` — the `Γ₀` recut of the same day, transported
+
+This statement is UNCHANGED and every consumer calls it exactly as before; it is
+now the one-line assembly of the two leaves immediately below.  `X0.lean` split
+`exists_isotypicQuotient_of_isWeightTwoEigenform` along
+`IsIsotypicQuotient.integral` on 2026-07-30, into
+`isIntegral_coeff_of_isWeightTwoEigenform` (Shimura's algebraicity theorem, a
+statement about the coefficient SEQUENCE with no scheme in it) and
+`exists_isotypicQuotient_of_isIntegral` (the geometry, receiving algebraicity as
+`hint`).  The `Γ₁` twins are `isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1`
+and `exists_isotypicQuotient_of_isIntegral_gamma1`.
+
+**Why transport it rather than leave the two sides divergent.**  `integral` is a
+field of `IsIsotypicQuotient`, and that structure is REUSED VERBATIM here — so
+the obligation being split off is literally the same obligation on both sides,
+and the `Γ₁` geometric half is then literally the `Γ₁` twin of `X0.lean`'s.
+Leaving one side split and the other not is how the two files drift into rival
+cuts of one node, which this file has paid for before.
+
+**The algebraicity leaf CANNOT be shared with `X0.lean`'s, and must not be
+stated shape-free.**  `isIntegral_coeff_of_isWeightTwoEigenform` is about
+`IsWeightTwoEigenform N f a` with `f : CuspForm (Gamma0GL N) 2`; the `Γ₁` form
+carries a nebentypus and its coefficients generate `ℚ(χ)` rather than a
+subfield of `ℝ`, so no instance of the `Γ₀` statement implies it.  Nor may the
+`G` of `IsWeightTwoEigenformOn` be left free: at `G = ⟨T⟩` the `qExpansion`
+fields still hold, `hecke`/`atkin` are the level-`0` degeneracy, and the
+transcendental witness `a (2 ^ k) = π ^ k` recorded above satisfies every field
+while `IsIntegral ℤ (a 2)` fails.  So `G := Gamma1GL N` is load-bearing in the
+leaf below, exactly as `hN : N ≠ 0` is. -/
+theorem isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1 (N : ℕ) (_hN : N ≠ 0)
+    (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ)
+    (_hf : IsWeightTwoEigenformOn (Gamma1GL N) N χ f a) (n : ℕ) :
+    IsIntegral ℤ (a n) :=
+  sorry
+
+/-- **SHIMURA'S `A_f` FOR `Γ₁(N)`, GIVEN ALGEBRAICITY OF THE EIGENVALUES**
+(sorry leaf, NEW 2026-07-30) — the GEOMETRIC half of
+`exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` below, and the `Γ₁`
+twin of `X0.lean`'s `exists_isotypicQuotient_of_isIntegral`.
+
+The mathematics, the load-bearing hypotheses (`hmod`, `hN`, and — through `jac`
+and `H` — the identification of `J` as the Jacobian of `X_1(N)`), and the
+inventory of what is still missing are all recorded on the assembly below and
+are not repeated here.  What this leaf does NOT have to do, and the undivided
+statement did, is produce a field about `ℂ`-valued eigenvalues in the middle of
+building an abelian variety: `hint` is handed to it.
+
+`hint` is stated for EVERY `n`, not merely for `n` coprime to `N`, because
+`IsIsotypicQuotient.integral` is — `minpoly ℤ (a n) = 0` for a non-integral
+`a n` would degenerate `isotypic` to `(0 : ℤ) • x = 0` at that `n`, and
+`isotypic`'s own restriction to `Nat.Coprime n N` is a statement about which
+`T n` are controlled, not about which `a n` are algebraic. -/
+theorem exists_isotypicQuotient_of_isIntegral_gamma1 (N : ℕ) (_hN : N ≠ 0)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (H : IsX1Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (T : ℕ → (J ⟶ J))
+    (T_comp : ∀ n, T n ≫ jstr = jstr) (_T_add : ∀ n, IsAdditiveOn ab ab (T n) (T_comp n))
+    (_hmod : IsModularHeckeActionGamma1 N H jac T T_comp)
+    (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ)
+    (_hf : IsWeightTwoEigenformOn (Gamma1GL N) N χ f a)
+    (_hint : ∀ n, IsIntegral ℤ (a n)) :
+    Nonempty (IsIsotypicQuotient ab T N a) :=
+  sorry
+
+/-- **SHIMURA'S `A_f` FOR `Γ₁(N)`: EVERY WEIGHT-TWO EIGENFORM OF LEVEL `N` AND
+ANY NEBENTYPUS CUTS OUT AN ISOTYPIC QUOTIENT OF `J_1(N)`** (**PROVEN
+2026-07-30** over the two leaves immediately above; a sorry leaf from
+2026-07-28 until then).  The statement is unchanged — every consumer calls it
+exactly as before — and this declaration is now the one-line assembly that
+hands Shimura's algebraicity theorem to the geometry.  The mathematics, the
+level-`0` falsity witness, the `hmod` refutation, the discharged FALSITY AUDIT
+and the inventory of what is still missing are all in the long docstring above
+this cluster; see the two leaves for what each half owns. -/
 theorem exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1 (N : ℕ) (hN : N ≠ 0)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (H : IsX1Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
@@ -11754,7 +11924,8 @@ theorem exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1 (N : ℕ) (hN :
     (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ)
     (hf : IsWeightTwoEigenformOn (Gamma1GL N) N χ f a) :
     Nonempty (IsIsotypicQuotient ab T N a) :=
-  sorry
+  exists_isotypicQuotient_of_isIntegral_gamma1 N hN H jac T T_comp T_add hmod χ f a hf
+    (fun n => isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1 N hN χ f a hf n)
 
 /-- **SHIMURA'S `A_f` FOR `Γ₁(N)`, TOGETHER WITH THE HECKE ACTION IT ACTS
 THROUGH** (**PROVEN 2026-07-28**, over the two leaves
@@ -12761,33 +12932,27 @@ route through `Γ₁(N)\ℍ*`, which is how the classical proof identifies the
 factors in the first place.  Everything above is the algebraic-moduli
 axis.
 
-## ⚠ THIS IS NO LONGER A REDUCTION (found 2026-07-30, and it is a one-line fix)
+## ⚠ THE SECTION THAT STOOD HERE IS STALE — THE FIX IT PRESCRIBED IS IN THE STATEMENT BELOW
 
-`IsHeckeIsotypicDecompositionGamma1` gained a `heckeModuli :
-IsModularHeckeActionGamma1 …` field on 2026-07-29.  `hquot` below was written
-the day before and hands over an **unpinned** `T`.  So the conclusion now
-demands of `T` something `hquot` does not supply, and the ONE object this cut
-exists to remove from the leaf — the genuine Hecke action — has to be built
-here after all.  A prover who reaches for `hquot`'s `T` to fill `heckeModuli`
-will find it cannot be done, and the fault is in the cut, not in the prover.
+It was headed "THIS IS NO LONGER A REDUCTION (found 2026-07-30, and it is a
+one-line fix)", it correctly diagnosed that `hquot` handed over an **unpinned**
+`T` while the conclusion had gained `heckeModuli`, and it ended "It is left
+unmade here deliberately".  **It was made** — commit `1452a0bf`, the same day —
+and `hquot` below now carries `IsModularHeckeActionGamma1 N h.some jac T T_comp`
+as the second conjunct.  The paragraph four blocks up ("THE CUT HAD LEAKED, AND
+`hquot` NOW CARRIES THE MODULI PIN") is the current record and is correct.
 
-Everything in the four bullets above is still owned here and still correct;
-what is wrong is only the claim, implicit in the shape of `hquot`, that the
-action comes for free.  The fix is to add
-`IsModularHeckeActionGamma1 N h.some jac T T_comp` to `hquot`'s conjunction,
-which costs nothing at the supply side —
-`exists_heckeAction_isotypicQuotients_gamma1`, the sole caller, obtains that
-very pin from `exists_modularHeckeAction_gamma1` and currently DISCARDS it.
-That is the shape CLAUDE.md records as usual: the missing hypothesis is
-already in the caller's hand.
+So this docstring was for a while asserting both that the repair was made and
+that it was deliberately not made, which is the shape this development treats as
+worse than an open sorry: the two halves were written by different branches, both
+landed, and neither could see the other.  Removed rather than annotated, because
+the SOURCE settles it — read `hquot`'s conjunction.
 
-It is left unmade here deliberately, because it is entangled with the FALSITY
-of `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` (same arity gap,
-same pin) and the audit's standing instruction is that the pin be repaired by
-ONE owner across both files.  Doing the easy half first would make the pin
-mean two different things at two call sites in one file.  See "⚠ CORRECTION
-(2026-07-30)" on `exists_heckeAction_isotypicQuotients_gamma1` above for which
-of the two prescribed repairs is now the cheaper one. -/
+The two entangling reasons the removed section gave for waiting are also gone.
+The FALSITY of `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` was
+repaired on 2026-07-30 (see the header of its own FALSITY AUDIT: the pin now
+carries the three anemic relations, so the arity gap is closed), and the pin
+therefore means the SAME thing at both call sites in this file. -/
 theorem exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1 (N : ℕ) (hN : N ≠ 0)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (h : ModularLevelShape.IsCompactification .gamma1 N strX strY jY) {jstr : J ⟶ SpecQ}
@@ -14721,7 +14886,9 @@ disappearing:
 | `exists_heckeAction_isotypicQuotients_gamma1` | Shimura's `A_f` + the Hecke action | no | here, **PROVEN 2026-07-28** |
 | `exists_heckeCorrespondenceFamilyGamma1` | the `Γ₁` Hecke correspondence, on points | no | here |
 | `exists_modularHeckeAction_gamma1` | `T_ℓ` as an endomorphism of `J_1(N)` | no | here, **PROVEN 2026-07-28** |
-| `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` | Shimura's `A_f`, one factor | no | here, **FALSE as stated — see its FALSITY AUDIT** |
+| `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` | Shimura's `A_f`, one factor | no | here, **PROVEN 2026-07-30** over the two rows below.  (This row read "**FALSE as stated**" until 2026-07-30; that was STALE — the FALSITY AUDIT's own header records the repair, which strengthened `IsModularHeckeActionGamma1` and left this statement untouched.) |
+| `isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1` | Shimura's algebraicity, no scheme in it | no | here, NEW 2026-07-30 |
+| `exists_isotypicQuotient_of_isIntegral_gamma1` | Shimura's `A_f` given algebraicity | no | here, NEW 2026-07-30 — the `Γ₁` twin of `X0.lean`'s `exists_isotypicQuotient_of_isIntegral` |
 | `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` | multiplicities, `finite_ker`, `neben` (now under `hN : N ≠ 0`) | no | here |
 | `exists_cuspForm_gamma1GL_zero_lacunary` | the lacunary level-`0` cusp form; input to the `N = 0` refutation | no | here, **PROVEN 2026-07-30** — the `LacunaryLevelZero` section, six lemmas, no theory |
 | `isTorsion_factor_of_heckeIsotypic_gamma1` | Kolyvagin–Logachev | no | here |
