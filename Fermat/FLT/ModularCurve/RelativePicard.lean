@@ -1781,23 +1781,40 @@ exactly this leaf's three: `Smooth strX` comes from `_hsmooth` by
 `SmoothOfRelativeDimension.smooth`
 (`Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean`).
 
-Precisely: it carries **no direct `sorry`** — it is at
-`ProperPushforward.lean:2193` and that file's direct-sorry warning set is
-`{1225, 1534, 1666}` — but it is still TRANSITIVELY sorried through them.
+Precisely: it carries **no direct `sorry`**, but it is still TRANSITIVELY
+sorried through that file's own leaves.
 
-**The names of those leaves are CORRECTED here (2026-07-29).**  This
-paragraph used to name them `finiteType_appTop_of_isProper` and
-`surjective_quotientMap_appTop_of_isIso_appTop_fiber`.  The first is right
-(`:1225`); the second **does not exist in that file** — the other two
-leaves are `inf_smul_top_le_smul_ker_of_forall_isMaximal_comap_le`
-(`:1534`) and `exists_finiteFree_ker_linearEquiv_appTop_of_isIso_appTop_fiber`
-(`:1666`), and there are THREE, not two.  Read off the compiler's warning
-set, not off this docstring's predecessor.
+**RE-COUNTED 2026-07-30 (third correction).**  This paragraph has now been
+wrong three times, each time in a different way, and the third error was
+introduced by a correction of the second.  It first named
+`finiteType_appTop_of_isProper` and
+`surjective_quotientMap_appTop_of_isIso_appTop_fiber`; it was then corrected
+to a set of THREE at `{1225, 1534, 1666}` naming
+`inf_smul_top_le_smul_ker_of_forall_isMaximal_comap_le` and
+`exists_finiteFree_ker_linearEquiv_appTop_of_isIso_appTop_fiber`, both of
+which have since been PROVEN.  **That second correction also asserted that
+`surjective_quotientMap_appTop_of_isIso_appTop_fiber` "does not exist in
+that file", and that assertion is FALSE** — the declaration is there and is
+PROVEN (2026-07-28).  What was true of it is only that it is not an open
+leaf, and "not on the direct-sorry list" was written down as "not a
+declaration"; the two are different claims and a `grep` separates them in
+one command.  Do not repeat that inference: a name absent from a leaf list
+is a name to `grep`, not a name to declare nonexistent.
+
+The file's direct-sorry set is, as of 2026-07-30, **TWO**:
+`adjoin_le_span_one_sup_smul_of_isIso_appTop_fiber` and
+`eq_span_one_sup_smul_top_appTop_of_isIso_appTop_fiber`.  Note the first of
+those replaced `finiteType_appTop_of_isProper` the same day — that theorem
+was PROVEN over it — so a fourth version of this list would have been wrong
+too.  **Line numbers in this paragraph have been dropped deliberately** —
+every version of them has gone stale within a day, and the names are what a
+`grep` can check.  Read the count off the compiler's warning set, never off
+this docstring.
 
 That distinction does not change the advice: the statement is available to
-CONSUME here, and those three leaves belong to `ProperPushforward.lean`'s
+CONSUME here, and those leaves belong to `ProperPushforward.lean`'s
 owner, not to this one.  Rebuilding the argument in this module would
-duplicate it and inherit the same three leaves.
+duplicate it and inherit the same leaves.
 
 **AMENDED 2026-07-29 — that import is now IN THE HEADER, and this
 paragraph used to say the opposite.**  It formerly read "It is NOT in this
@@ -1968,14 +1985,14 @@ ceremony:
   consumer, and `public import
   Fermat.FLT.Mathlib.AlgebraicGeometry.ProperPushforward` is now in the
   header.  It carries no direct `sorry`, though it is transitively
-  sorried through that file's own THREE leaves —
-  `finiteType_appTop_of_isProper`,
-  `inf_smul_top_le_smul_ker_of_forall_isMaximal_comap_le` and
-  `exists_finiteFree_ker_linearEquiv_appTop_of_isIso_appTop_fiber`
-  (`:1225`, `:1534`, `:1666`) — which belong to that file's owner, not to
-  this one.  (Corrected 2026-07-29: the name
-  `surjective_quotientMap_appTop_of_isIso_appTop_fiber` stood here and in
-  the leaf docstring above, and no such declaration exists.)
+  sorried through that file's own leaves — as of 2026-07-30 exactly TWO,
+  `adjoin_le_span_one_sup_smul_of_isIso_appTop_fiber` and
+  `eq_span_one_sup_smul_top_appTop_of_isIso_appTop_fiber` — which belong to
+  that file's owner, not to this one.  (Corrected three times; see the
+  leaf docstring above for the history.  In particular the claim that
+  `surjective_quotientMap_appTop_of_isIso_appTop_fiber` "does not exist"
+  stood here and is FALSE — it exists and is proven; it is merely not an
+  open leaf.  Line numbers deliberately omitted.)
 * **`_hequiv` is discharged over five named leaves** by
   `relPicEquiv_equivalence`.  This is not ceremony either: without it
   `IsRelPicOf` is not merely hard to satisfy, it is not obviously

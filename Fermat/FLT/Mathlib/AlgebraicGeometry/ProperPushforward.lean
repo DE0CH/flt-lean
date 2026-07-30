@@ -101,9 +101,28 @@ run is for `pushoutSection`, not for `directImage`.
     `Γ(S, ⊤)`-module — Grothendieck's finiteness theorem for a proper morphism, in degree
     `0` — over the single leaf `finiteType_appTop_of_isProper`, since
     `finite = integral + finite type` and the integral half is already in the pin
-    (`isIntegral_appTop_of_universallyClosed`).
-  * `finiteType_appTop_of_isProper` — **LEAF** (2026-07-28): `Γ(X, ⊤)` is a finite-TYPE
-    `Γ(S, ⊤)`-algebra.  All that is left of Grothendieck finiteness in degree `0`.
+    (`isIntegral_appTop_of_universallyClosed`).  **RESTATED 2026-07-29** to carry the
+    fibrewise hypothesis `h`, inherited from the leaf below.
+  * `finiteType_appTop_of_isProper` — was the LEAF (2026-07-28), **REFUTED AND RESTATED
+    2026-07-29**, **PROVEN 2026-07-30** over `adjoin_le_span_one_sup_smul_of_isIso_appTop_fiber`
+    below: `Γ(X, ⊤)` is a finite-TYPE `Γ(S, ⊤)`-algebra **under the fibrewise hypothesis `h`**.
+    Without `h` the statement is FALSE over a non-noetherian base — audit block (A) in its
+    docstring gives the witness in full (a wild multiple fibre of `(E × P¹)/(ℤ/2)` in char `2`
+    puts `t`-torsion in `H¹(𝒪)`, and `R = k[t, x₁, x₂, …]/(t·xᵢ)` turns that torsion into a
+    non-finitely-generated `Tor₁` inside `Γ(X, 𝒪_X)`).  With `h` it is the constant-`h⁰` case
+    of cohomology and base change, true over an arbitrary base, and all three call sites
+    already had `h`.  Audit block (D) carries the two results the proof came out of: (D1) the
+    obvious shortcut — derive `A = R` from integrality plus `A = R + 𝔪A` and skip the Nakayama
+    block — is REFUTED by `A = ℤ_p ⋉ ℚ_p`, so the leaf could not be dodged by re-ordering the
+    file; (D2) the route that worked, via the proper surjection `X ⟶ Spec R[a]`.
+  * `adjoin_le_span_one_sup_smul_of_isIso_appTop_fiber` — **LEAF** (CUT 2026-07-30 out of the
+    theorem above): `R[a] = R·1 + 𝔪·R[a]` for every `a : Γ(X, ⊤)` and every maximal `𝔪`.
+    This is leaf 3's degree-zero base-change injectivity with `Γ(X, ⊤)` replaced by a **finite**
+    subalgebra of it, which is what makes it reachable without limit theory: integrality makes
+    `R[a]` a finite `R`-module, so `eq_bot_of_fg_of_le_smul_of_forall_isMaximal` applies to it
+    and nothing needs `Module.Finite ↥Γ(S,⊤) ↥Γ(X,⊤)`.  Its docstring says what remains
+    geometrically (the fibres of `Spec R[a] ⟶ S` are single `κ(𝔪)`-points; show they are
+    REDUCED) and warns against the abstract weakening `𝔪A ∩ R[a] ⊆ 𝔪·R[a]`, which is false.
   * `surjective_quotientMap_appTop_of_isIso_appTop_fiber` — **PROVEN** (2026-07-28) over the
     leaf below: `R/𝔪 ⟶ A/𝔪A` is SURJECTIVE at every maximal ideal.  All this adds to the
     leaf is linear algebra over the field `R/𝔪` — a nonzero vector in a space of dimension
@@ -124,8 +143,15 @@ run is for `pushoutSection`, not for `directImage`.
     composition series, and an induction on `dim R` using a nonzerodivisor (with the
     `𝔪`-power torsion handled separately in the depth-zero case).  That route uses **no
     higher cohomology, no Grothendieck complex and no theorem on formal functions**; it does
-    need a NOETHERIAN base, which is the same gap already recorded for
-    `finiteType_appTop_of_isProper`, so one limit-theory build unlocks both remaining leaves.
+    need a NOETHERIAN base.  **Corrected 2026-07-29:** this used to read "the same gap
+    already recorded for `finiteType_appTop_of_isProper`, so one limit-theory build unlocks
+    both remaining leaves".  The two gaps are NOT the same.  This leaf already carries `h`,
+    so its statement is TRUE over an arbitrary base — the noetherian hypothesis is a
+    limitation of the *route*, and a limit/approximation argument really would close it.
+    `finiteType_appTop_of_isProper`'s missing noetherian hypothesis was FATAL: without `h`
+    that statement is false over a non-noetherian base (witness in its docstring), and no
+    limit theory could ever have closed it.  `h` has now been added there too, which makes
+    the two gaps genuinely the same kind — but only after the repair, not before.
   * `exists_flatRange_ker_linearEquiv_appTop_of_isIso_appTop_fiber` — **PROVEN**
     (2026-07-29) over the leaf above, by the witness `C₀ = C₁ = Γ(X, ⊤)`, `d = 0` that its
     own non-vacuity paragraph had already identified.  It used to be the leaf, in the shape
@@ -225,9 +251,14 @@ run is for `pushoutSection`, not for `directImage`.
   `sorry` apart from the `hpush` hypothesis it takes in.**  (This bullet used to name
   `isIso_appTop_of_isProper_of_flat` as "the only `sorry` anywhere in this file's cone".
   That was false in both halves and is corrected here, 2026-07-28: that theorem is PROVEN,
-  by a tactic proof containing no `sorry`, and the file's actual open leaves are
-  `finiteType_appTop_of_isProper` and `surjective_quotientMap_appTop_of_isIso_appTop_fiber`.
-  Anyone dispatched at the old name finds nothing to do.)  The mechanism is that the
+  by a tactic proof containing no `sorry`.  Anyone dispatched at the old name finds nothing
+  to do.  **Re-counted 2026-07-30:** this bullet then named the open leaves as
+  `finiteType_appTop_of_isProper` and
+  `surjective_quotientMap_appTop_of_isIso_appTop_fiber`, and the second has since been
+  PROVEN, and `finiteType_appTop_of_isProper` has been proven since; the current set is
+  `adjoin_le_span_one_sup_smul_of_isIso_appTop_fiber` and
+  `eq_span_one_sup_smul_top_appTop_of_isIso_appTop_fiber`.  Read it off the compiler's
+  warning set, not off this bullet.)  The mechanism is that the
   projection away from
   `X ×_S X` is an OPEN map once restricted to a fibre of `q`, because everything there is
   flat over the field `κ(s)`; the input is `Mathlib`'s
@@ -1080,6 +1111,60 @@ Corollary 2) is *not* needed on this route: III.12.11 has no such hypothesis, wh
 here because the bases this development feeds in are arbitrary.  Nothing below has been
 "simplified to Grauert". -/
 
+/-- **LEAF 1a′ — `R[a] = R·1 + 𝔪·R[a]` FOR EVERY `a ∈ Γ(X, ⊤)` AND EVERY MAXIMAL `𝔪`**
+(LEAF, CUT 2026-07-30 out of `finiteType_appTop_of_isProper` below, which is PROVEN over it).
+
+**What it says.**  `R = Γ(S, ⊤)`, `A = Γ(X, ⊤)`, `φ = f.appTop` giving `A` its `R`-algebra
+structure.  For each `a : A` the subalgebra `R[a] = Algebra.adjoin R {a}` is generated as an
+`R`-module by `1` together with `𝔪 · R[a]`.  Equivalently `R[a] ⊗_R κ(𝔪) = κ(𝔪)`, i.e. the
+degree-zero comparison map `R[a] ⊗_R κ(𝔪) ⟶ Γ(X_𝔪, 𝒪)` is INJECTIVE (surjectivity onto
+`Γ(X_𝔪, 𝒪) ≅ κ(𝔪)` is free from `h`).  It is the SAME statement as leaf 3's injectivity —
+see `surjective_quotientMap_appTop_of_isIso_appTop_fiber` — with `A` replaced throughout by a
+**finite** subalgebra of it, and that replacement is the entire point of the cut.
+
+**WHY THIS CUT.**  `finiteType_appTop_of_isProper` was the last piece of Grothendieck
+finiteness in degree `0`, and the only route recorded for it needed limits and object descent
+(audit block (B) on that theorem: EGA IV 8.8.2 / Stacks 01ZM, the one half `Mathlib` does not
+have).  Audit block (D2) there gives a second, independent route which needs no limit theory
+at all, and this is its target.  Since integrality makes `R[a]` a **finite** `R`-module,
+`eq_bot_of_fg_of_le_smul_of_forall_isMaximal` above applies to it directly, and the theorem
+below is exactly that Nakayama step.  Nothing in the cut uses
+`Module.Finite ↥Γ(S,⊤) ↥Γ(X,⊤)`, so it is not circular.
+
+**FAITHFULNESS — VOUCHED, AND `h` IS LOAD-BEARING.**  The statement is TRUE under these
+hypotheses: `h` plus properness, flatness and finite presentation give `𝒪_S ≅ f_*𝒪_X` over an
+arbitrary base (Stacks 0E0S), so `A = R·1` and the inclusion is trivial.  It is *not* vacuous
+and `h` cannot be dropped: for `X = S ×_k Z` with `Z` a proper non-reduced `k`-scheme having
+`ε ∈ Γ(Z, 𝒪)`, `ε² = 0`, `ε ∉ k`, the element `a = ε` gives `R[ε] = R·1 ⊕ R·ε` while
+`R·1 + 𝔪·R[ε] = R·1 ⊕ 𝔪·ε` does not contain `ε`.  Such an `f` is proper, flat and of finite
+presentation and fails only `h`.
+
+**WHAT NOT TO DO.**  Do **not** weaken this to the abstract `𝔪A ∩ R[a] ⊆ 𝔪 · R[a]`, which is
+what the statement looks like it is about.  That version is FALSE — audit block (D1) below
+refutes it with `R = ℤ_p`, `A = ℤ_p ⋉ ℚ_p`, `a = x` — so any proof that never mentions the
+fibre `X_𝔪` is wrong.  The geometric input, written out in (D2), is that `a` induces a proper
+surjection `X ⟶ Spec R[a]` over `S` whose fibres are single points with residue field
+`κ(𝔪)`; what remains is that those fibres are also REDUCED.
+
+**HOW IT RELATES TO THE OTHER OPEN LEAF, AND WHY IT IS NOT SUBSUMED BY IT.**
+`eq_span_one_sup_smul_top_appTop_of_isIso_appTop_fiber` is the same equation for `A` itself
+rather than for `R[a]`.  It does **not** imply this leaf: descending `A = R·1 + 𝔪A` to `R[a]`
+requires exactly `𝔪A ∩ R[a] ⊆ 𝔪 · R[a]`, which (D1) refutes.  It implies this leaf only via
+`Module.Finite ↥Γ(S,⊤) ↥Γ(X,⊤)`, which is downstream of *this* leaf — so as the file is
+ordered the two are separate obligations and neither subsumes the other.  They are
+nevertheless the same mathematics at different generality, so anyone closing that leaf should
+check whether the argument also gives this one for finite subalgebras; if it does, both close
+at once and the file's noetherian gap disappears with them. -/
+theorem adjoin_le_span_one_sup_smul_of_isIso_appTop_fiber (f : X ⟶ S) [IsAffine S]
+    [IsProper f] [Flat f] [LocallyOfFinitePresentation f]
+    (h : ∀ s : S, IsIso (f.fiberToSpecResidueField s).appTop) :
+    letI : Algebra ↥Γ(S, ⊤) ↥Γ(X, ⊤) := f.appTop.hom.toAlgebra
+    ∀ (a : ↥Γ(X, ⊤)) (m : Ideal ↥Γ(S, ⊤)), m.IsMaximal →
+      (Algebra.adjoin ↥Γ(S, ⊤) {a}).toSubmodule ≤
+        Submodule.span ↥Γ(S, ⊤) {(1 : ↥Γ(X, ⊤))} ⊔
+          m • (Algebra.adjoin ↥Γ(S, ⊤) {a}).toSubmodule :=
+  sorry
+
 /-- **LEAF 1a — `Γ(X, ⊤)` IS A FINITE-TYPE `Γ(S, ⊤)`-ALGEBRA** (LEAF, 2026-07-28), the whole
 remaining content of Grothendieck's finiteness theorem in degree `0` (EGA III 3.2.1,
 Stacks 02O5 / 0B91) once the integral half is discharged.
@@ -1248,59 +1333,121 @@ universal closedness) is what excludes it.
 
 **AUDIT BLOCK (2026-07-29).**  Three findings, kept separate from the paragraphs above so
 that the concurrent rewrite of them merges cleanly.  Nothing here is proven in Lean; all of
-it is evidence about *where* the leaf stands.
+it is evidence about *where* the leaf stands.  **(A) is a FALSITY AUDIT and it settled: the
+statement as it stood was false, and the hypothesis `h` in the signature below is the
+repair.**  Everything written *above* this block was audited against the `h`-free statement
+and remains accurate as a description of the geometry, but its recurring phrase "this leaf"
+now means the `h`-carrying statement.
 
-**(A) FAITHFULNESS CONCERN, UNRESOLVED: this leaf is not known to be TRUE over a
-NON-NOETHERIAN base, and the standard references do not assert it there.**  This is the
-first thing a prover should settle, because if it is false the leaf must be restated before
-any theory is built against it.
+**(A) REFUTED AND REPAIRED (2026-07-29).  WITHOUT the fibrewise hypothesis `h` this leaf is
+FALSE over a non-noetherian base.**  The 2026-07-29 audit that stood here recorded the
+obstruction exactly and asked for a single missing witness; the witness exists, in char `2`,
+and is written out below.  `h` has therefore been ADDED to this leaf and to
+`module_finite_appTop_of_isProper`; all three call sites already carried it, so the repair
+cost nothing downstream.  **Do not "generalise" it away again.**
 
-The classical finiteness theorem (EGA III 3.2.1, Stacks 02O5) is stated for a **locally
-noetherian** base.  The non-noetherian statement that *is* in the literature is Stacks 0B91:
-for `f` proper, flat and of finite presentation and `F` finitely presented and `S`-flat,
-`Rf_*F` is a **perfect** object of `D(𝒪_S)` whose formation commutes with base change.
-Perfect means locally a bounded complex of finite free modules — it does **not** say the
-individual cohomology modules are finite, and in general they are not: `H⁰` of a two-term
-complex `[Rᵃ ⟶ Rᵇ]` is a kernel, and a kernel of a matrix over a non-noetherian ring need
-not be finitely generated.
+*Step 1 — the reduction (this part was already correct).*  The classical finiteness theorem
+(EGA III 3.2.1, Stacks 02O5) is stated for a **locally noetherian** base.  The
+non-noetherian statement that *is* in the literature is Stacks 0B91: for `f` proper, flat
+and of finite presentation and `F` finitely presented and `S`-flat, `Rf_*F` is a **perfect**
+object of `D(𝒪_S)` whose formation commutes with base change.  Perfect means locally a
+bounded complex of finite free modules — it does **not** say the individual cohomology
+modules are finite, and in general they are not: `H⁰` of a two-term complex `[Rᵃ ⟶ Rᵇ]` is a
+kernel, and a kernel of a matrix over a non-noetherian ring need not be finitely generated.
 
-The obstruction is locatable exactly.  Write `S = Spec R` with `R` an `R₀`-algebra, `R₀`
-noetherian, and let `K` be a bounded complex of finite free `R₀`-modules computing
-`Rf₀_*𝒪_{X₀}` for a model `X₀ ⟶ Spec R₀` (this is the standard "Mumford complex", EGA III
-6.10.5).  Base change plus universal coefficients give
+Write `S = Spec R` with `R` an `R₀`-algebra, `R₀` noetherian, and let `K` be a bounded
+complex of finite free `R₀`-modules computing `Rf₀_*𝒪_{X₀}` for a model `X₀ ⟶ Spec R₀` (the
+standard "Mumford complex", EGA III 6.10.5; Mumford, *Abelian Varieties* §5).  For `R₀` a
+PID the universal-coefficient sequence of `K` is exact, giving
 
-  `0 ⟶ H⁰(X₀, 𝒪) ⊗_{R₀} R ⟶ Γ(X, 𝒪_X) ⟶ Tor₁^{R₀}(H¹(X₀, 𝒪), R) ⟶ 0`.
+  `0 ⟶ H⁰(X₀, 𝒪) ⊗_{R₀} R ⟶ Γ(X, 𝒪_X) ⟶ Tor₁^{R₀}(H¹(X₀, 𝒪), R) ⟶ 0`
 
-So `Γ(X, 𝒪_X)` is a finite `R`-module **iff** `Tor₁^{R₀}(H¹(X₀, 𝒪), R)` is, and that group
-is `ann_R(a)` when `H¹(X₀, 𝒪)` has a torsion class killed by `a ∈ R₀`.  Taking
-`R = R₀[x₁, x₂, …]/(a·x₁, a·x₂, …)` makes `ann_R(a) ⊇ (x₁, x₂, …)` **not finitely
-generated**, and `R` is a perfectly good base: base change preserves `IsProper`, `Flat` and
-`LocallyOfFinitePresentation`, so the hypotheses of this leaf survive intact.
+for `X = X₀ ×_{Spec R₀} Spec R`.  The left term is a finite `R`-module, so `Γ(X, 𝒪_X)` is a
+finite `R`-module **iff** `Tor₁^{R₀}(H¹(X₀, 𝒪), R)` is.  Base change preserves `IsProper`,
+`Flat` and `LocallyOfFinitePresentation`, so every hypothesis of this leaf survives, and
+`Spec R` is affine.
 
-**What is missing to turn this into a refutation** — and it is a single, self-contained
-question: exhibit a proper flat finitely-presented `X₀ ⟶ Spec R₀` over a *noetherian* `R₀`
-with a **torsion class in `H¹(X₀, 𝒪_{X₀})`**.  Torsion there is equivalent to `h⁰(𝒪)`
-jumping on a special fibre, which is why the usual families do not supply it: for a flat
-family of curves `χ(𝒪)` is constant and `h⁰` is forced to `1` as soon as the fibres stay
-connected and reduced (Zariski connectedness via the Stein factorization), and for families
-of plane curves or of conics degenerating to line pairs `h⁰ ≡ 1`, so `R¹f_*𝒪` is locally
-free and there is no torsion.  Candidates that are *believed* to work but were **not**
-verified here: an elliptic fibration with a **wild** multiple fibre (torsion in `R¹f_*𝒪`
-exists exactly at wild fibres, so char `p`; in char `0` all multiple fibres are tame and
-`R¹f_*𝒪` is locally free — the char-`0` Dolgachev-surface version of this example does
-**not** work, which is the trap), and non-reduced degenerations with an extra global
-function.  Do not repeat the char-`0` elliptic-surface attempt; it was checked and fails.
+*Step 2 — the witness, a WILD multiple fibre in char 2.*  What was missing was a proper flat
+finitely-presented family over a noetherian ring with **torsion in `H¹(𝒪)`**.  In char `0`
+there is none of the expected shape — all multiple fibres of an elliptic fibration are tame
+and `R¹f_*𝒪` is locally free, which is why the Dolgachev-surface attempt fails and must not
+be retried.  Torsion needs a **wild** fibre, hence char `p`, and the smallest one is
+explicit:
 
-**The repair, if the concern is confirmed, is cheap and needs no new theory.**  Both
-consumers of `module_finite_appTop_of_isProper` — `module_flat_appTop_of_isIso_appTop_fiber`
-and `isIso_appTop_of_isIso_appTop_fiber` — already carry the fibrewise hypothesis
-`h : ∀ s, IsIso (f.fiberToSpecResidueField s).appTop`, and neither passes it here.  With `h`
-the statement becomes the **constant-`h⁰`** case of cohomology and base change (III.12.11 /
-Grauert), which is true over an arbitrary base and is what the consumers actually need.
-Note this is *not* a circular cut: `h` plus `A/𝔪A ≅ R/𝔪` yields `A = R` only through
-Nakayama, which needs the finiteness this leaf supplies, so a finiteness proof from `h` must
-still run a genuine base-change argument.  Adding `h` to this leaf is therefore the
-conservative move, and it costs the two call sites one extra argument each.
+Let `k = 𝔽₂` and let `E : y² + xy = x³ + 1` be the elliptic curve over `k`.  It is
+**ordinary** (`j = 1/Δ = 1 ≠ 0`; `#E(𝔽₂) = 4`, so `a₂ = -1` is odd), and its unique nonzero
+`2`-torsion point is `τ = (0, 1)`: negation on `y² + a₁xy = x³ + a₆` sends `(x, y)` to
+`(x, y + a₁x)`, here `(x, y + x)`, so `P = -P` forces `x = 0`, and then `y² = 1`, `y = 1`.
+*(Verified in PARI/GP: `j = 1`, `ellorder(E, [0,1]) = 2`, `#E(𝔽₂) = 4`.)*
+Translation by `τ` is a fixed-point-free involution of `E`.
+
+Let `C = P¹` with coordinate `x` and let `σ : x ↦ x + 1`, an involution in char `2` whose
+only fixed point is `∞` — Artin–Schreier, so the ramification at `∞` is **wild** and
+`C ⟶ C/σ = P¹` is given by the invariant `y = x² + x`.  Let `G = ℤ/2` act on `E × C`
+diagonally by `(e, x) ↦ (e + τ, x + 1)`.  The action is **free** (it is free on the `E`
+factor), so
+
+  `X := (E × C)/G`
+
+is a smooth projective surface and `f : X ⟶ C/G = P¹_y` is proper; `X` is integral and
+`P¹_y` is a smooth curve, so `f` is **flat**.
+
+`h⁰(𝒪)` JUMPS at `y = ∞`.  For `y = a ≠ ∞` the equation `x² + x = a` is separable, so its
+fibre in `C` is two points swapped by `σ` and `f⁻¹(a) ≅ E`, with `h⁰(𝒪) = 1`.  At `y = ∞`
+put `u = 1/x`; then `σ(u) = u/(1 + u)` and the base parameter is
+`s = 1/y = 1/(x² + x) = u²·(1 + u)⁻¹`, a unit times `u²`.  So the scheme-theoretic fibre of
+`C ⟶ C/G` over `∞` is `Spec k[u]/(u²)`, and on it
+
+  `σ(u) = u/(1+u) = u + u² + … ≡ u  (mod u²)` — **`σ` acts trivially**.
+
+Since `G` acts freely, `E × Spec k[u]/(u²) ⟶ F := f⁻¹(∞)` is a `G`-torsor and
+`Γ(F, 𝒪_F) = (Γ(E, 𝒪_E) ⊗_k k[u]/(u²))^G = (k[u]/(u²))^G = k[u]/(u²)`, of dimension **2**.
+So `F = 2E'` with `E' = E/⟨τ⟩` is a multiple fibre with `h⁰(𝒪_F) = 2 > 1`: it is wild, and
+equivalently its normal bundle `𝒪_X(-E')|_{E'} ≅ I/I² = (u)/(u²)` is **trivial** (the
+`G`-linearisation on `(u)/(u²)` is trivial), of order `1 < m = 2`.  (`χ(𝒪_F) = 0` as it must
+be, with `h¹(𝒪_F) = 2`.)
+
+Now take `R₀ = k[t]` with `t = 1/y`, a **PID**, and `X₀ = f⁻¹(Spec k[t]) ⟶ Spec R₀`: proper,
+flat, and finitely presented (finite type over noetherian).  `f_*𝒪_X = 𝒪_{P¹}` (Stein
+factorization: `X` is normal with connected fibres), so `H⁰(K) = k[t]` is free of rank `1`,
+and the universal-coefficient sequence at `N = k[t]/(t) = k` reads
+`2 = h⁰(𝒪_F) = dim(H⁰(K) ⊗ k) + dim Tor₁(M, k) = 1 + dim Tor₁(M, k)` where
+`M := H¹(X₀, 𝒪_{X₀})`.  Hence **`M` has nonzero `t`-torsion**, which is exactly the class
+the reduction asked for.
+
+*Step 3 — the non-noetherian base.*  Set
+
+  `R := k[t, x₁, x₂, …]/(t·x₁, t·x₂, …)`,
+
+whose `k`-basis is `{tⁿ}_{n ≥ 0} ∪ {x-monomials of positive degree}`; write `m` for the span
+of the latter, an ideal.  `M` is finitely generated over the PID `R₀`, so
+`M ≅ R₀ʳ ⊕ ⨁ⱼ R₀/(dⱼ)` and `Tor₁^{R₀}(M, R) ≅ ⨁ⱼ ann_R(dⱼ)` **as `R`-modules**.  One `dⱼ` is
+divisible by `t`, say `dⱼ = tᵉ·g` with `e ≥ 1` and `g(0) ≠ 0`; in `R`, `tᵉg` kills `m`
+(because `t·m = 0` and `g` acts on `m` as the nonzero scalar `g(0)`) and is a nonzerodivisor
+on `k[t] ⊂ R`, so `ann_R(dⱼ) = m` exactly.  And `m` is **not** a finitely generated ideal:
+`m/m²` is killed by `t` and by every `xᵢ`, hence is a `k`-vector space, and it has the
+infinite basis `{x₁, x₂, …}`, so no finite set generates it.
+
+Therefore `Tor₁^{R₀}(M, R)` has `m` as a direct summand and is not a finite `R`-module, so
+`Γ(X, 𝒪_X)` is not a finite `R`-module either.  But `f` is proper, hence universally closed,
+so `AlgebraicGeometry.isIntegral_appTop_of_universallyClosed` makes `Γ(S, ⊤) ⟶ Γ(X, ⊤)`
+**integral**; integral + finite type would force finite.  **So `f.appTop.hom.FiniteType` is
+FALSE for this `f`, with `S = Spec R` affine and `f` proper, flat and of finite
+presentation.**  ∎
+
+*Step 4 — why `h` repairs it, and why the repaired leaf is not vacuous or circular.*  In the
+counterexample `Γ(F, 𝒪_F) = k[u]/(u²) ≇ k`, so `h` fails at the wild fibre — as it must.
+Conversely `h` says `κ(s) ≅ Γ(X_s, 𝒪)` for every `s`, and since `X_s` is proper this survives
+any field extension of `κ(s)` by flat base change; so every geometric fibre is connected and
+reduced, and `𝒪_S ⟶ f_*𝒪_X` is an isomorphism for `f` proper, flat and of finite
+presentation over an **arbitrary** base.  That is **Stacks 0E0S**, verified verbatim on
+2026-07-29: *"Let `f : X → Y` be a morphism of algebraic spaces.  Assume `f` is proper, flat,
+and of finite presentation, and the geometric fibres of `f` are reduced and connected.  Then
+`f_*𝒪_X = 𝒪_Y` and this holds after any base change."*  No noetherian hypothesis appears.
+`FiniteType` is then immediate.  This is *not* circular: `h` plus
+`A/𝔪A ≅ R/𝔪` yields `A = R` only through Nakayama, which needs the finiteness this leaf
+supplies, so a proof of the repaired leaf must still run a genuine base-change argument.
+It is also not vacuous — `f = 𝟙` and any `X = S ×_k Z` with `Γ(Z, 𝒪) = k` satisfy `h`.
 
 **(B) CORRECTION — "limits / approximation of schemes are absent from the pin" is FALSE.**
 Re-checked at pin `a3364faec4` on 2026-07-29.  `Mathlib/AlgebraicGeometry/
@@ -1340,11 +1487,120 @@ the work happens.  Making the shortcut usable would mean weakening
 `HasUniversallyTrivialPushforward` to quantify only over base changes along morphisms from
 normal (or smooth-over-`ℚ`) schemes and re-checking every use in the rigidity lemma — an
 architectural change with a real chance of success, since the base changes the rigidity proof
-performs are to products of smooth `ℚ`-schemes, but not one to make from inside this leaf. -/
+performs are to products of smooth `ℚ`-schemes, but not one to make from inside this leaf.
+
+**(D) NEGATIVE RESULT (2026-07-30) — THIS LEAF CANNOT BE CLOSED BY INVERTING THE FILE'S OWN
+CHAIN.  Integrality plus fibrewise triviality is STRICTLY WEAKER than finiteness, and there
+is an explicit counterexample.**  Record this before attempting the obvious shortcut, which
+is the first thing the surrounding architecture suggests.
+
+*The shortcut.*  Two facts here do **not** depend on this leaf:
+`isIntegral_appTop_of_universallyClosed` makes `φ : R = Γ(S,⊤) ⟶ A = Γ(X,⊤)` integral, and
+`h` is fibrewise data.  Downstream, `bijective_quotientMap_appTop_of_isIso_appTop_fiber`
+gives `R/𝔪 ≅ A/𝔪A`, i.e. `A = R·1 + 𝔪A`, for every maximal `𝔪`.  So one is tempted to run
+the assembly backwards — derive `A = R·1` from *integrality + `A = R·1 + 𝔪A` at every
+maximal `𝔪`* — which would give `FiniteType` for free (a surjection is generated by `∅`) and
+make `module_finite_appTop_of_isProper`, leaf 2 and the Nakayama block all unnecessary.
+
+*It is false as a statement of commutative algebra.*  Take `R = ℤ_p` and
+
+  `A = ℤ_p ⋉ ℚ_p = ℤ_p ⊕ ℚ_p·x`,  `x² = 0`,
+
+the square-zero extension: `(a, q)(a', q') = (aa', aq' + a'q)`.  Then
+
+* `A` is a commutative `R`-algebra and `R ⟶ A` is injective;
+* `A` is **integral** over `ℤ_p`: `((a,q) - (a,0))² = (0,q)² = 0`, so `(a,q)` is a root of the
+  monic `T² - 2aT + a² ∈ ℤ_p[T]`.  Every element is integral of degree `≤ 2`;
+* `𝔪 = pℤ_p` is the only maximal ideal, and `𝔪A = pℤ_p ⊕ ℚ_p·x` because `p·ℚ_p = ℚ_p`.
+  Hence `R·1 + 𝔪A = ℤ_p ⊕ ℚ_p·x = A`, and `R/𝔪 ⟶ A/𝔪A` is the **isomorphism** `𝔽_p ≅ 𝔽_p`;
+* yet `A ≠ R·1`.
+
+So every ring-theoretic hypothesis the shortcut wants is satisfied and the conclusion fails.
+`Module.Finite` is doing irreplaceable work in
+`bijective_algebraMap_of_finite_of_flat_of_bijective_quotientMap`, and no re-ordering of this
+file avoids the leaf.  The same example kills the `𝔪`-adic iteration one tries next:
+`A = R + 𝔪A` iterated gives `A = R + 𝔪ⁿA` for every `n`, so `a ∈ ⋂ₙ (R + 𝔪ⁿA)`, but here
+`⋂ₙ 𝔪ⁿA = ℚ_p·x ≠ 0` and the intersection is all of `A`.  A Krull-intersection argument needs
+`A` to be `𝔪`-adically separated, which is exactly the finiteness being sought.
+
+*The POSITIVE by-product, and the smallest statement so far known to imply this leaf.*  The
+geometric refinement of the shortcut does not collapse, and it locates the residual difficulty
+at one point.  Fix `a ∈ A`.  Then `B := R[a] ⊆ A` is a **finite** `R`-algebra (integrality),
+so `Spec B ⟶ S` is finite and `a` induces `g : X ⟶ Spec B` over `S` by the `Γ`-`Spec`
+adjunction.  Three steps, each elementary:
+
+1. `g` is **proper** (`f` proper, `Spec B ⟶ S` separated) and `ker (B ⟶ A) = 0`, so the
+   scheme-theoretic image of `g` is all of `Spec B`; a proper morphism has closed set-image,
+   so `g` is **surjective**.
+2. Fix `s ∈ S`.  Surjectivity is stable under base change and `X_s = X ×_{Spec B} (Spec B)_s`,
+   so `X_s ⟶ Spec (B ⊗_R κ(s))` is surjective; it factors through
+   `Spec Γ(X_s, 𝒪_{X_s}) = Spec κ(s)` by `h s`.  Hence `B ⊗_R κ(s)` is a **local** `κ(s)`-algebra
+   with residue field `κ(s)` and **nilpotent** maximal ideal `J` — equivalently
+   `Spec B ⟶ S` is a finite universal homeomorphism.
+3. If `J = 0` then `B = R·1 + 𝔪B` with `B` a **finite** `R`-module, so
+   `eq_bot_of_fg_of_le_smul_of_forall_isMaximal` (above, and it needs only finite generation
+   of `B`, never of `A`) gives `B = R·1`, i.e. `a ∈ range φ`.  Ranging over `a`, `φ` is
+   surjective and `FiniteType` follows.
+
+So the whole leaf reduces to: **for every `a : Γ(X,⊤)` and every maximal `𝔪`, the degree-zero
+comparison map `R[a] ⊗_R κ(𝔪) ⟶ Γ(X_𝔪, 𝒪)` is INJECTIVE.**  That is leaf 3's injectivity
+statement (see the equivalent form in the docstring of
+`surjective_quotientMap_appTop_of_isIso_appTop_fiber`) restricted to **finite** `R`-subalgebras
+of `A`, and the restriction is the whole point: it is a statement about finite modules, so the
+existing Nakayama toolkit in this file applies to it directly, and it is **not** circular —
+nothing in steps 1–3 uses `Module.Finite ↥Γ(S,⊤) ↥Γ(X,⊤)`.
+
+*Two warnings about that reduction.*  First, it is **not** equivalent to the abstract
+`𝔪A ∩ R[a] ⊆ 𝔪·R[a]`, and must not be weakened to it: the counterexample above refutes the
+abstract form (`a = x`, `B = ℤ_p ⊕ ℤ_p·x`, `𝔪A ∩ B = pℤ_p ⊕ ℤ_p·x ⊋ pℤ_p ⊕ pℤ_p·x = 𝔪B`), so
+genuine input from `X` is needed and any proof that never mentions `X_𝔪` is wrong.  Second,
+steps 1–3 are verified **on paper only**; in Lean each needs plumbing that is not yet here
+(`Γ`-`Spec` adjunction for a map into an affine, properness of `X ⟶ Spec B`, the
+scheme-theoretic image of a quasi-compact morphism into an affine, and the identification
+`X ×_S (Spec B)_s = X_s`).  The Nakayama lemma step 3 needs is available where it is wanted —
+`eq_bot_of_fg_of_le_smul_of_forall_isMaximal` sits *above* this leaf, applied to
+`N = ⊤ : Submodule R (B ⧸ R·1)` — but note that anything borrowed from the fibrewise block
+(`surjective_of_isIso_appTop_fiber` and below) sits *underneath* it, so realising steps 1–3
+may mean moving declarations and not only writing a proof.
+
+**THIS THEOREM IS NOW PROVEN over the single leaf
+`adjoin_le_span_one_sup_smul_of_isIso_appTop_fiber` immediately below** (2026-07-30), by the
+route (D2) records.  Audit blocks (A)–(D) are kept verbatim rather than moved: (A) is what
+justifies the hypothesis `h` and must stay attached to the statement it repaired, and
+(B)–(D) describe the geometry of *this* statement, which the cut did not change. -/
 theorem finiteType_appTop_of_isProper (f : X ⟶ S) [IsAffine S]
-    [IsProper f] [Flat f] [LocallyOfFinitePresentation f] :
-    f.appTop.hom.FiniteType :=
-  sorry
+    [IsProper f] [Flat f] [LocallyOfFinitePresentation f]
+    (h : ∀ s : S, IsIso (f.fiberToSpecResidueField s).appTop) :
+    f.appTop.hom.FiniteType := by
+  letI : Algebra ↥Γ(S, ⊤) ↥Γ(X, ⊤) := f.appTop.hom.toAlgebra
+  have halg : algebraMap ↥Γ(S, ⊤) ↥Γ(X, ⊤) = f.appTop.hom :=
+    RingHom.algebraMap_toAlgebra _
+  have hint : f.appTop.hom.IsIntegral := isIntegral_appTop_of_universallyClosed f
+  have hleaf := adjoin_le_span_one_sup_smul_of_isIso_appTop_fiber f h
+  -- `φ` is SURJECTIVE, which is more than `FiniteType`; only `FiniteType` is exported, so
+  -- that the Nakayama assembly downstream is left exactly as it is.  See the leaf docstring.
+  refine RingHom.FiniteType.of_surjective f.appTop.hom ?_
+  intro a
+  -- `B` is the subalgebra generated by `a` — FINITE, by integrality — and `P = R·1`.
+  set B : Submodule ↥Γ(S, ⊤) ↥Γ(X, ⊤) := (Algebra.adjoin ↥Γ(S, ⊤) {a}).toSubmodule
+  set P : Submodule ↥Γ(S, ⊤) ↥Γ(X, ⊤) := Submodule.span ↥Γ(S, ⊤) {(1 : ↥Γ(X, ⊤))}
+  have haint : _root_.IsIntegral ↥Γ(S, ⊤) a := by
+    have := hint a
+    rwa [RingHom.IsIntegralElem, ← halg] at this
+  have hBfg : B.FG := haint.fg_adjoin_singleton
+  -- Nakayama over every maximal ideal, applied inside `Γ(X, ⊤) ⧸ P`: the leaf says the image
+  -- of `B` there is killed by passing to `𝔪 •` it, and that image is finitely generated.
+  have hbot : B.map P.mkQ = ⊥ := by
+    refine eq_bot_of_fg_of_le_smul_of_forall_isMaximal (hBfg.map _) ?_
+    intro m hm
+    have hmap := Submodule.map_mono (f := P.mkQ) (hleaf a m hm)
+    rw [Submodule.map_sup, Submodule.map_smul'', Submodule.mkQ_map_self, bot_sup_eq] at hmap
+    exact hmap
+  have hBP : B ≤ P := by
+    have hcomap := Submodule.map_le_iff_le_comap.mp hbot.le
+    rwa [Submodule.comap_bot, Submodule.ker_mkQ] at hcomap
+  obtain ⟨r, hr⟩ := Submodule.mem_span_singleton.mp (hBP (Algebra.subset_adjoin rfl))
+  exact ⟨r, by rw [← halg, ← hr, Algebra.smul_def, mul_one]⟩
 
 /-- **LEAF 1 — `Γ(X, ⊤)` IS A FINITE `Γ(S, ⊤)`-MODULE** — **PROVEN** (2026-07-28) over the
 single leaf `finiteType_appTop_of_isProper` above, by
@@ -1370,12 +1626,18 @@ even when it is integral over `R` — Nagata's examples of a noetherian domain w
 closure in a finite field extension is not module-finite already show that integrality plus
 an ambient finite-type algebra cannot suffice.  So properness has to be used again here, and
 the cut merely *records* that the integral half is discharged; it does not make the geometry
-disappear. -/
+disappear.
+
+**The fibrewise hypothesis `h` (added 2026-07-29) is inherited from
+`finiteType_appTop_of_isProper` and is NOT bookkeeping.**  Without it the statement is FALSE
+over a non-noetherian base — see audit block (A) on that leaf for the char-`2` wild-fibre
+witness.  All three call sites of this theorem already had `h` in scope. -/
 theorem module_finite_appTop_of_isProper (f : X ⟶ S) [IsAffine S]
-    [IsProper f] [Flat f] [LocallyOfFinitePresentation f] :
+    [IsProper f] [Flat f] [LocallyOfFinitePresentation f]
+    (h : ∀ s : S, IsIso (f.fiberToSpecResidueField s).appTop) :
     letI : Algebra ↥Γ(S, ⊤) ↥Γ(X, ⊤) := f.appTop.hom.toAlgebra
     Module.Finite ↥Γ(S, ⊤) ↥Γ(X, ⊤) :=
-  (isIntegral_appTop_of_universallyClosed f).to_finite (finiteType_appTop_of_isProper f)
+  (isIntegral_appTop_of_universallyClosed f).to_finite (finiteType_appTop_of_isProper f h)
 
 /-! #### Surjectivity of `f`, and the two consequences of it that replace III.12.11(b)
 
@@ -2493,7 +2755,7 @@ theorem exists_finiteFree_ker_linearEquiv_appTop_of_isIso_appTop_fiber (f : X �
   obtain ⟨C₀, C₁, d, hB, e, hfib⟩ :=
     exists_flatRange_ker_linearEquiv_appTop_of_isIso_appTop_fiber f h
   haveI : Module.Flat ↥Γ(S, ⊤) ↥(LinearMap.range d.hom) := hB
-  haveI : Module.Finite ↥Γ(S, ⊤) ↥Γ(X, ⊤) := module_finite_appTop_of_isProper f
+  haveI : Module.Finite ↥Γ(S, ⊤) ↥Γ(X, ⊤) := module_finite_appTop_of_isProper f h
   have hsurj : Function.Surjective (algebraMap ↥Γ(S, ⊤) ↥Γ(X, ⊤)) :=
     surjective_algebraMap_of_finite_of_forall_isMaximal fun m hm a =>
       exists_sub_algebraMap_mem_of_fibre_span e m (hfib m hm)
@@ -2678,7 +2940,7 @@ theorem module_flat_appTop_of_isIso_appTop_fiber (f : X ⟶ S) [IsAffine S]
     Module.Flat ↥Γ(S, ⊤) ↥Γ(X, ⊤) := by
   letI : Algebra ↥Γ(S, ⊤) ↥Γ(X, ⊤) := f.appTop.hom.toAlgebra
   show Module.Flat ↥Γ(S, ⊤) ↥Γ(X, ⊤)
-  haveI : Module.Finite ↥Γ(S, ⊤) ↥Γ(X, ⊤) := module_finite_appTop_of_isProper f
+  haveI : Module.Finite ↥Γ(S, ⊤) ↥Γ(X, ⊤) := module_finite_appTop_of_isProper f h
   haveI := surjective_of_isIso_appTop_fiber f h
   have hsurj : Function.Surjective (algebraMap ↥Γ(S, ⊤) ↥Γ(X, ⊤)) := by
     refine surjective_algebraMap_of_finite_of_forall_isMaximal ?_
@@ -2762,7 +3024,7 @@ theorem isIso_appTop_of_isIso_appTop_fiber (f : X ⟶ S) [IsAffine S]
     (h : ∀ s : S, IsIso (f.fiberToSpecResidueField s).appTop) :
     IsIso f.appTop := by
   letI : Algebra ↥Γ(S, ⊤) ↥Γ(X, ⊤) := f.appTop.hom.toAlgebra
-  haveI : Module.Finite ↥Γ(S, ⊤) ↥Γ(X, ⊤) := module_finite_appTop_of_isProper f
+  haveI : Module.Finite ↥Γ(S, ⊤) ↥Γ(X, ⊤) := module_finite_appTop_of_isProper f h
   haveI : Module.Flat ↥Γ(S, ⊤) ↥Γ(X, ⊤) := module_flat_appTop_of_isIso_appTop_fiber f h
   have hb := bijective_algebraMap_of_finite_of_flat_of_bijective_quotientMap
     (bijective_quotientMap_appTop_of_isIso_appTop_fiber f h)
@@ -4174,9 +4436,12 @@ the fibres of `q`, over a field).  Nothing under *this* theorem is sorried; the 
 
 (Corrected 2026-07-28: this paragraph used to say "the only `sorry` anywhere in this file's
 cone is `isIso_appTop_of_isProper_of_flat`".  Both halves were false —
-`isIso_appTop_of_isProper_of_flat` is PROVEN, and the file's open leaves are
+`isIso_appTop_of_isProper_of_flat` is PROVEN, and the open leaves are far upstream of the
+rigidity block.  Re-counted 2026-07-30: that correction named the leaves as
 `finiteType_appTop_of_isProper` and `surjective_quotientMap_appTop_of_isIso_appTop_fiber`,
-both far upstream of the rigidity block.)
+and the second has since been proven, as has `finiteType_appTop_of_isProper`; the set is now
+`adjoin_le_span_one_sup_smul_of_isIso_appTop_fiber` and
+`eq_span_one_sup_smul_top_appTop_of_isIso_appTop_fiber`.)
 
 The concrete obstruction the earlier audit named is still worth recording, because it is
 what the covering step had to get past: the reduction to an affine target cannot be done
