@@ -138,7 +138,10 @@ characteristic-zero `Mathlib/FieldTheory/Differential/` pair.
 namespace Algebra
 
 /-! #### **A regular local ring essentially of finite type over a perfect field is
-formally smooth over it** (sorry leaf, opened 2026-07-27).
+formally smooth over it** (opened as a sorry leaf 2026-07-27; **PROVEN 2026-07-28**
+as `Algebra.FormallySmooth.of_isRegularLocalRing_of_perfectField` in
+`Fermat/FLT/Mathlib/RingTheory/Smooth/RegularLocal.lean`, which is itself now
+sorry-free).
 
 This is the local form of Stacks `056S` ("regular is equivalent to smooth over a
 perfect field"), equivalently Matsumura *Commutative Ring Theory* §28, and it is
@@ -163,7 +166,7 @@ form.
 `Mathlib/RingTheory/Smooth/` or `Mathlib/AlgebraicGeometry/` returning anything —
 at this pin it returns nothing in either.
 
-## The intended route
+## The route, and it is the one that was taken
 
 Present `A = P/I` with `P` a localization of a polynomial ring at a prime, so
 that ingredient 2 applies, and prove injectivity of `κ ⊗ I/I² → κ ⊗ Ω[P⁄K]` by
