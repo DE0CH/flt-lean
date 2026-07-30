@@ -442,7 +442,7 @@ def tick():
     # history of what did. Everything else commits, PANIC especially: its
     # message is written by the row itself and must reach git before the
     # medic touches anything.
-    if firing != 18:
+    if firing != 13:
         extra = f" [{s['spawned']}]" if s.get("spawned") else ""
         commit_fs(s["git"][0] if s["git"] else f"row {firing}: {label}{extra}")
     return firing, s
@@ -454,16 +454,48 @@ def mutate_fs(job, what):
     # state is then read back from it -- rather than the state being asserted
     # and the repo left as decoration.
     if what == "release" or (what == "finish" and job == "merger"):
+        # The merger does the WHOLE job now: merge, build, audit. Everything
+        # below is work the loop used to sequence across three jobs and five
+        # rows, and it is done here because the merger is the one agent that
+        # already has the tree checked out at the new main.
         landed = merge_branches(list(s["inflight"] or []))
+        s["main"] = head_sha()
+
+        # The audit, done truthfully against the repo rather than asserted:
+        # keep queued tasks whose leaf is still open (someone else may have
+        # closed it on a branch that just landed), and adopt any open leaf
+        # nobody has queued -- the unowned-leaf sweep, which is the only check
+        # that finds work no agent ever reported.
+        queued = s["queue1"]["tasks"] + s["queue2"]
+        leaves = set(open_leaves())
+        kept = [t for t in queued if t in leaves]
+        dropped = [t for t in queued if t not in leaves]
+        # A leaf a LIVE agent is working on is not unowned. Without this the
+        # sweep re-queues exactly the leaves currently being proven, and the
+        # next dispatch hands the same target to a second worker -- the
+        # duplicate-cut failure, arrived at by an audit that was trying to
+        # prevent it. Ownership is a live job with that payload, not a record
+        # in any list.
+        working = {j["payload"] for j in s["jobs"].values()
+                   if j["kind"] == "agent" and j["alive"]}
+        unowned = [l for l in sorted(leaves) if l not in set(kept) and l not in working]
+        s["queue1"] = {"audited": s["main"], "tasks": kept + unowned}
+        s["queue2"] = []
+        s["snapshot"] = {"sha": s["main"]}
+
         m = s["jobs"].get("merger")
         if m:
             kill_job(m.get("pid"), m["token"])
             m["alive"] = False
-            m["sentinel"] = {"released": head_sha(), "merged": landed}
+            m["sentinel"] = {"released": s["main"], "merged": landed,
+                             "snapshot": s["main"], "audited": s["main"],
+                             "panic": False}
         s["inflight"] = None
-        s["main"] = head_sha()
-        s["log"].append("~  merger merged %s -> main %s" % (landed or "nothing", s["main"]))
-        s["git"].append("inject: merger released %s (landed %s)"
+        s["log"].append(
+            "~  merger: merged %s -> %s; built snapshot; audited queue1 "
+            "(kept %d, dropped %d already-closed, adopted %d unowned)"
+            % (landed or "nothing", s["main"], len(kept), len(dropped), len(unowned)))
+        s["git"].append("inject: merger delivered %s (landed %s)"
                         % (s["main"], ", ".join(landed) or "nothing"))
     elif what == "finish" and job in s["jobs"] and s["jobs"][job]["kind"] == "agent":
         j = s["jobs"][job]
@@ -471,7 +503,7 @@ def mutate_fs(job, what):
         agent_commit(j["worktree"], j["payload"], succ)
         kill_job(j.get("pid"), j["token"])
         j["alive"] = False
-        j["sentinel"] = {"opened": succ}
+        j["sentinel"] = {"opened": succ, "panic": False}
         s["log"].append("~  %s committed on its branch: closed %s" % (job, j["payload"]))
     else:
         before = {n: j["alive"] for n, j in s["jobs"].items()}
@@ -594,11 +626,11 @@ async function post(p){const d=await api(p,{});T=0;render(d);}
 function run(){if(timer){clearInterval(timer);timer=null;$('runbtn').textContent='auto';}
  else{timer=setInterval(step,700);$('runbtn').textContent='stop';}}
 $('inject').innerHTML=`
- <div class="ctl"><label>release (main moves)</label><button onclick="mut(null,'release')">go</button></div>
+ <div class="ctl"><label>merger delivers (merge+build+audit)</label><button onclick="mut(null,'release')">go</button></div>
  <div class="ctl"><label>merger dies (no sentinel)</label><button onclick="mut(null,'merger_die')">go</button></div>
  <div class="ctl"><label>merger reports OK, main unmoved (illegal)</label><button onclick="mut(null,'merger_noop')">go</button></div>
- <div class="ctl"><label>build fails</label><button onclick="mut(null,'build_fail')">go</button></div>
  <div class="ctl"><label>corrupt: orphan .inflight</label><button onclick="mut(null,'corrupt')">go</button></div>
+ <div class="ctl"><label>a job reports PANIC (broken .lake)</label><button onclick="mut(null,'job_panic')">go</button></div>
  <div class="ctl"><label>medic GO</label><button onclick="mut(null,'medic_go')">go</button></div>
  <div class="ctl"><label>medic NO-GO</label><button onclick="mut(null,'medic_nogo')">go</button></div>
  <div class="ctl"><label>STOP file</label><button onclick="mut(null,'stop')">go</button></div>`;

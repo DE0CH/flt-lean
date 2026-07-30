@@ -47,12 +47,6 @@ def unjustified(s):
                 bad.append((n, "merger alive but main already moved"))
             elif not s["inflight"]:
                 bad.append((n, "merger alive with nothing claimed in .inflight"))
-        elif k == "lakebuild":
-            if s["snapshot"] and s["snapshot"]["sha"] == s["main"]:
-                bad.append((n, "lakebuild alive but the snapshot is already current"))
-        elif k == "editor":
-            if s["queue1"]["audited"] == s["main"]:
-                bad.append((n, "editor alive but queue1 is already audited at main"))
         elif k == "agent":
             w = j["worktree"]
             if w not in s["workers"]:
@@ -306,92 +300,57 @@ def r6_action(s):
 
 
 def r7_guard(s):
-    # Rebaseline is not "a release happened" -- it is "the queue we dispatch
-    # from is no longer the right one". Exhaustion qualifies: without this,
-    # queue1 empty + queue2 non-empty + batch empty is a permanent deadlock,
-    # which is exactly the state reached when agents finish without commits.
-    exhausted = (not s["queue1"]["tasks"]) and bool(s["queue2"])
-    if s["main"] == s["rebaselined"] and not exhausted:
-        return (False, "main == rebaselined and queue1 still has work")
+    """The merger delivered. Adopt its results.
+
+    The merger is now the ONE producer of everything derived from main: it
+    merges the batch, moves main, builds the clean .lake, and rewrites the
+    queue (remainder of queue1 ahead of queue2, audited against the main it
+    just produced). Folding those into the agent that already has the tree
+    checked out removes a build job, an editor job, and the five rows that
+    sequenced them -- and removes the window where main has moved but the
+    snapshot and the audit still describe the previous release.
+
+    So this guard demands the FULL delivery. A merger that moved main without
+    also leaving a current snapshot and a current audit has broken its
+    contract; the guard fails, its stopped record is consumed by nobody, and
+    idle rejects it into PANIC. That is the intended path -- a partial
+    delivery is not a case to handle, it is a violation to report.
+    """
+    if s["main"] == s["rebaselined"]:
+        return (False, "main == rebaselined -- nothing new to adopt")
     m = s["jobs"].get("merger")
     if m and m["alive"]:
         return (False, "a merger is still alive")
+    if not (s["snapshot"] and s["snapshot"]["sha"] == s["main"]):
+        return (False, f"merger moved main to {s['main']} but left no snapshot for it")
+    if s["queue1"]["audited"] != s["main"]:
+        return (False, f"merger moved main to {s['main']} but left queue1 unaudited")
     return (True, "")
 
 
 def r7_action(s):
-    s["queue2"] = s["queue1"]["tasks"] + s["queue2"]
-    s["queue1"] = {"audited": None, "tasks": s["queue2"]}
-    s["queue2"] = []
     s["rebaselined"] = s["main"]
     s["jobs"].pop("merger", None)
-    if s["jobs"].pop("editor", None):
-        note(s, "7  ... stale editor stopped (its audit predates this release)")
-    note(s, f"7  REBASELINE at {s['main']}: queues swapped, queue1 AUDITED:none")
-
-
-def r8_guard(s):
-    if s["snapshot"] and s["snapshot"]["sha"] == s["main"]:
-        return (False, "snapshot already reflects main")
-    if "lakebuild" in s["jobs"]:
-        return (False, "a lakebuild record already exists")
-    return (True, "")
-
-
-def r8_action(s):
-    s["jobs"]["lakebuild"] = {
-        "kind": "lakebuild", "worktree": "flt-main-build", "payload": s["main"],
-        "token": tok(), "retries": 0, "started": False, "alive": False,
-        "sentinel": None,
-    }
-    note(s, f"8  lakebuild record created for {s['main']}")
-
-
-def r9_guard(s):
-    b = s["jobs"].get("lakebuild")
-    if not b:
-        return (False, "no lakebuild record")
-    if not finished(b):
-        return (False, "lakebuild is not started ∧ ¬alive ∧ sentinel")
-    return (True, "")
-
-
-def r9_action(s):
-    b = s["jobs"]["lakebuild"]
-    ok = b["sentinel"].get("rc") == 0 and b["sentinel"].get("sha") == b["payload"]
-    if ok:
-        s["snapshot"] = {"sha": b["payload"]}
-        note(s, f"9  snapshot verified and published at {b['payload']}")
-    else:
-        note(s, f"9  snapshot FAILED verification (rc={b['sentinel'].get('rc')}) -- retrying")
-    del s["jobs"]["lakebuild"]
-
-
-def r10_guard(s):
-    b = s["jobs"].get("lakebuild")
-    if not b:
-        return (False, "no lakebuild record")
-    if not died(b):
-        return (False, "lakebuild is not started ∧ ¬alive ∧ ¬sentinel")
-    return (True, "")
-
-
-def r10_action(s):
-    del s["jobs"]["lakebuild"]
-    note(s, "10 lakebuild died -- record dropped, row 8 will restart it")
+    note(s, f"7  ADOPTED release {s['main']}: snapshot current, "
+            f"queue1 AUDITED with {len(s['queue1']['tasks'])} task(s)")
 
 
 def r11_guard(s):
-    if not (s["snapshot"] and s["snapshot"]["sha"] == s["main"]):
-        return (False, "snapshot does not reflect main yet")
     if "merger" in s["jobs"]:
         return (False, "a merger record already exists")
-    if not s["batch"]:
-        return (False, "batch is empty -- nothing to merge")
+    stale = (not s["snapshot"] or s["snapshot"]["sha"] != s["main"]
+             or s["queue1"]["audited"] != s["main"])
+    if not s["batch"] and not stale:
+        return (False, "nothing to merge and nothing derived from main is stale")
     return (True, "")
 
 
 def r11_action(s):
+    # An empty batch is allowed: main can move without us (a tooling commit),
+    # and then the snapshot and the audit describe a main that no longer
+    # exists. The merger is what refreshes them, so it must be startable with
+    # nothing to merge -- otherwise that state is a silent deadlock in which
+    # dispatch is blocked forever on a snapshot nobody will ever rebuild.
     s["inflight"] = list(s["batch"])
     s["batch"] = []
     s["jobs"]["merger"] = {
@@ -399,55 +358,9 @@ def r11_action(s):
         "token": tok(), "retries": 0, "started": False, "alive": False,
         "sentinel": None,
     }
-    note(s, f"11 merger record created; claimed {len(s['inflight'])} branch(es)")
-
-
-def r12_guard(s):
-    if s["queue1"]["audited"] == s["main"]:
-        return (False, "queue1 is already AUDITED at main")
-    if "editor" in s["jobs"]:
-        return (False, "an editor record already exists")
-    return (True, "")
-
-
-def r12_action(s):
-    s["jobs"]["editor"] = {
-        "kind": "editor", "worktree": "flt-lean", "payload": "queue1",
-        "token": tok(), "retries": 0, "started": False, "alive": False,
-        "sentinel": None,
-    }
-    note(s, "12 queue editor record created")
-
-
-def r13_guard(s):
-    e = s["jobs"].get("editor")
-    if not e:
-        return (False, "no editor record")
-    if not finished(e):
-        return (False, "editor is not started ∧ ¬alive ∧ sentinel")
-    return (True, "")
-
-
-def r13_action(s):
-    s["queue1"]["audited"] = s["main"]
-    del s["jobs"]["editor"]
-    note(s, f"13 editor finished; queue1 AUDITED:{s['main']}")
-
-
-def r14_guard(s):
-    e = s["jobs"].get("editor")
-    if not e:
-        return (False, "no editor record")
-    if not died(e):
-        return (False, "editor is not started ∧ ¬alive ∧ ¬sentinel")
-    return (True, "")
-
-
-def r14_action(s):
-    e = s["jobs"]["editor"]
-    e["alive"] = True
-    e["retries"] += 1
-    note(s, f"14 editor resumed (retries={e['retries']})")
+    note(s, "11 merger record created; claimed %d branch(es)%s"
+            % (len(s["inflight"]),
+               "" if s["inflight"] else " (refresh only -- nothing to merge)"))
 
 
 def r15_guard(s):
@@ -490,54 +403,80 @@ def r15_action(s):
     note(s, f"15 dispatched {n} agent record(s); spawn happens in row 5")
 
 
-ROWS = [
-    (1, "STOP exists", r1_guard, r1_action),
-    (2, "medic finished -> apply GO / NO-GO verdict",
-     rmedic_done_guard, rmedic_done_action),
-    (3, "medic in flight -> SAFE MODE (all rows below suspended)",
-     rmedic_wait_guard, rmedic_wait_action),
-    (4, "agent finished -> integrate, awaiting_merge", r2_guard, r2_action),
-    (5, "awaiting_merge ∧ ancestor(main) -> free", r3_guard, r3_action),
-    (6, "agent died -> resume from transcript", r4_guard, r4_action),
-    (7, "record ∧ ¬started ∧ no process -> SPAWN", r5_guard, r5_action),
-    (8, "merger died without releasing -> restore .inflight", r6_guard, r6_action),
-    (9, "main ≠ rebaselined ∨ queue1 exhausted -> REBASELINE", r7_guard, r7_action),
-    (10, "snapshot ≠ main -> create lakebuild record", r8_guard, r8_action),
-    (11, "lakebuild finished -> verify + publish snapshot", r9_guard, r9_action),
-    (12, "lakebuild died -> drop record", r10_guard, r10_action),
-    (13, "snapshot == main ∧ batch -> create merger record", r11_guard, r11_action),
-    (14, "queue1.AUDITED ≠ main -> create editor record", r12_guard, r12_action),
-    (15, "editor finished -> queue1 AUDITED := main", r13_guard, r13_action),
-    (16, "editor died -> resume", r14_guard, r14_action),
-    (17, "dispatch: pop queue1 -> agent records", r15_guard, r15_action),
-    (18, "idle -- every live job is justified",
-     idle_guard, lambda s: None),
-    # There is deliberately NO "done" row. Reaching "no jobs, no queues, no
-    # batch" in a tree with hundreds of open sorries means the state was eaten,
-    # not that the work finished -- and treating it as a clean exit would
-    # silently swallow exactly the corruption the catch-all exists to catch.
-    # Even genuine completion is better served by panicking: it emails a human,
-    # which is what you want for an event that momentous.
-    (19, "PANIC -- illegal state, no row matches",
-     lambda s: (True, ""), lambda s: panic(s)),
-]
-
-
-def panic(s):
-    """No row matched and nothing is running: the state cannot be explained.
+def panic(s, reason="no row matched"):
+    """The state cannot be explained. Commit it, report it, hand it to a medic.
 
     Three things, in this order. The commit first, because everything after it
     is a side effect and the record of WHAT WENT WRONG must exist before any
     attempt to change it.
+
+    Reached two ways. INFERRED: no row matched, so the loop cannot account for
+    what it is looking at. REPORTED: a job came back saying its preconditions
+    were broken. Both mean the same thing -- the machinery is not in a state
+    the loop knows how to drive -- and both take the same path.
     """
-    commit(s, "PANIC: no row matched")
-    s["email"].append("PANIC: loop reached a state no transition matches")
+    commit(s, "PANIC: " + reason)
+    s["email"].append("PANIC: " + reason)
     s["jobs"]["medic"] = {
         "kind": "medic", "worktree": "flt-loop-state", "payload": "diagnose",
         "token": tok(), "retries": 0, "started": False, "alive": False,
         "sentinel": None,
     }
-    note(s, "18 PANIC: committed, emailed, medic record created -> SAFE MODE")
+    note(s, "PANIC: committed, emailed, medic record created -> SAFE MODE")
+
+
+def reported_panic_guard(s):
+    """A job came back saying the LOOP's preconditions are broken.
+
+    Every job is asked to return one binary field. It is emphatically NOT a
+    verdict on the work: a proof that does not go through, a leaf that turns
+    out to be false, a merge that has to decline a branch -- those are ordinary
+    outcomes and the loop wants them reported as results, not as alarms. It
+    means the job could not operate at all: the .lake it was told to copy is
+    not there, the worktree is on a branch nobody claimed, the snapshot
+    directory is torn.
+
+    That distinction is the whole value of the field. The loop cannot tell the
+    two apart from outside -- a failed proof and a missing .lake both look like
+    "agent finished, leaf still open" -- and treating every failure as a panic
+    would make panic meaningless within an hour, since failed proofs are the
+    normal case here.
+
+    Checked ABOVE the rows that consume sentinels, so a panicking job is never
+    quietly integrated first.
+    """
+    hits = [(n, j) for n, j in s["jobs"].items()
+            if finished(j) and j["sentinel"].get("panic")]
+    if not hits:
+        return (False, "no job reported panic")
+    n, j = hits[0]
+    return (True, "%s: %s" % (n, j["sentinel"].get("why", "no reason given")))
+
+
+def reported_panic_action(s):
+    n, j = next((n, j) for n, j in s["jobs"].items()
+                if finished(j) and j["sentinel"].get("panic"))
+    why = j["sentinel"].get("why", "no reason given")
+    # The record is kept, not consumed: the medic needs to see what came back.
+    panic(s, "%s (%s) reported PANIC: %s" % (n, j["kind"], why))
+
+
+ROWS = [
+    (1, "STOP exists", r1_guard, r1_action),
+    (2, "medic finished -> apply GO / NO-GO verdict", rmedic_done_guard, rmedic_done_action),
+    (3, "medic in flight -> SAFE MODE (all rows below suspended)", rmedic_wait_guard, rmedic_wait_action),
+    (4, "a job REPORTED panic -> email + medic", reported_panic_guard, reported_panic_action),
+    (5, "agent finished -> integrate, awaiting_merge", r2_guard, r2_action),
+    (6, "awaiting_merge ∧ ancestor(main) -> free", r3_guard, r3_action),
+    (7, "agent died -> resume from transcript", r4_guard, r4_action),
+    (8, "record ∧ ¬started ∧ no process -> SPAWN", r5_guard, r5_action),
+    (9, "merger died without releasing -> restore .inflight", r6_guard, r6_action),
+    (10, "merger delivered main+snapshot+audit -> ADOPT", r7_guard, r7_action),
+    (11, "batch ∨ derived-from-main is stale -> create merger record", r11_guard, r11_action),
+    (12, "dispatch: pop queue1 -> agent records", r15_guard, r15_action),
+    (13, "idle -- every live job is justified", idle_guard, lambda s: None),
+    (14, "ILLEGAL STATE -> email + medic", lambda s: (True, ""), panic),
+]
 
 
 def evaluate(s):
@@ -625,6 +564,14 @@ def mutate(s, job, what):
         s["inflight"] = ["flt-lean-9"]
         s["jobs"].pop("merger", None)
         note(s, "~  .inflight orphaned (merger record vanished)")
+    elif what == "job_panic":
+        for n, j in s["jobs"].items():
+            if j["alive"] and j["kind"] in ("agent", "merger"):
+                j["alive"] = False
+                j["sentinel"] = {"panic": True,
+                                 "why": "no .lake at the snapshot path; cannot build"}
+                note(s, f"~  {n} returned PANIC (environment, not mathematics)")
+                break
     elif what == "medic_go":
         j = s["jobs"].get("medic")
         if j:
