@@ -63745,9 +63745,125 @@ theorem relPicEquiv_sectionIdeal_of_aj_add_eq {X J : Scheme.{0}} {strX : X ⟶ S
       (modTensor (sectionIdeal (relSection y₁)) (sectionIdeal (relSection y₂))) :=
   sorry
 
+/-- **`Pic` OF A FIELD POINT IS TRIVIAL: over `Spec K` the relative
+Picard relation is an honest isomorphism of sheaves** (sorry leaf,
+2026-07-29) — the first of the two halves of the `g¹₂` leaf below, and
+the one that has nothing to do with curves.
+
+`RelPicEquiv strX g L L'` compares two invertible sheaves on `X_T` UP TO
+the pullback of an invertible sheaf from `T` — that quotient is what
+makes `IsRelPicZeroOf.inj` a demanding field rather than a false one (see
+`RelPicEquiv`'s own docstring).  When `T` is `Spec` of a FIELD the
+quotient is trivial and the relation collapses to `L ≅ L'`.
+
+TRUE, and it is three separate small facts, none of them about curves:
+
+* an invertible sheaf on `Spec K` is trivial.  `IsInvertibleSheaf N` asks
+  for a neighbourhood of each point on which `N` restricts to `𝒪`;
+  `Spec K` has exactly one point and exactly one nonempty open, so the
+  witness at that point IS a global trivialisation `N ≅ 𝒪_{Spec K}`;
+* `modPullback f (modUnit Z) ≅ modUnit W` — pullback of the structure
+  sheaf is the structure sheaf;
+* the UNITOR `modTensor L (modUnit _) ≅ L`, together with enough
+  functoriality of `modTensor` in its second argument to transport the
+  first two isomorphisms through it.
+
+**THE SECOND AND THIRD ARE ALREADY BUILT — on an UNMERGED branch, and
+this is the reason to check `merger` before starting.**  On `main`,
+`modTensor`'s docstring still says "Only the object part is defined.
+Nothing below needs functoriality of `⊗`, an associator, or a unitor …",
+and that is true of `main`.  On `merger` as of 2026-07-29
+`ModularCurve/RelativePicard.lean` already carries `modTensorMapIso`
+(functoriality in BOTH arguments), `modTensorUnitLeftIso`,
+`modTensorUnitRightIso`, `modPullbackUnitIso`, `modPullbackMapIso`,
+`isInvertibleSheaf_modUnit`, `exists_modTensor_inv` and the
+`relPicEquiv_refl/symm/trans` API — every ingredient of this leaf except
+the FIRST bullet.  So a prover should rebase on that work rather than
+rebuild it, and the residue is then exactly:
+
+> an `IsInvertibleSheaf` on `Spec K` for a field `K` is isomorphic to
+> `modUnit (Spec K)`,
+
+which is a two-line argument once one knows `Spec K` has a unique
+nonempty open (its only point's witness is already global).
+
+**Stated over an arbitrary base `S` and an arbitrary `K`-point `g`**, not
+just at `S = T = Spec ℚ`, because nothing in the argument sees the base:
+only the SOURCE of `g` being `Spec` of a field is used, through
+`curveBaseChangeProj strX g : X_T ⟶ T`.
+
+**Not vacuous, and not trivially true**: `RelPicEquiv` is a strictly
+weaker relation than `≅` over a general `T` — at `T` with `Pic T ≠ 0` it
+identifies `L` with every twist of it — so the conclusion is real
+content, and it fails verbatim over such a `T`.  That is why the field
+hypothesis is in the statement and why this is not a `simp` lemma. -/
+theorem nonempty_iso_of_relPicEquiv_specField {K : Type} [Field K] {X S : Scheme.{0}}
+    {strX : X ⟶ S} {g : Spec (CommRingCat.of K) ⟶ S}
+    {L L' : (curveBaseChange strX g).Modules}
+    (_h : RelPicEquiv strX g L L') : Nonempty (L ≅ L') :=
+  sorry
+
+/-- **THE `g¹₂`, WITH THE PICARD TWIST ALREADY REMOVED: two DISJOINT
+effective degree-`2` divisors with ISOMORPHIC sheaves make the curve
+hyperelliptic or rational** (sorry leaf, 2026-07-29) — the second half of
+`hasDoubleCoverOfAffineLine_of_relPicEquiv` below, and **the whole of its
+remaining Riemann–Roch content**.
+
+This is that leaf with `hlin : RelPicEquiv …` replaced by the honest
+isomorphism `hiso`, which `nonempty_iso_of_relPicEquiv_specField` above
+supplies.  Everything in the audit reproduced on the consumer applies
+verbatim — the disjointness discussion, the counterexamples for each
+dropped hypothesis, the "`x₁ = x₂` is allowed" remark, and the list of
+what is still missing — because the first sentence of that audit is
+exactly "`Pic (Spec ℚ)` is trivial, so `hlin` is a plain isomorphism".
+The cut simply performs that sentence.
+
+**WHAT IT STILL NEEDS, rechecked against the pin on 2026-07-29 and
+UNCHANGED as a verdict, but with one addition to the route.**  The three
+missing inputs recorded on the consumer — `h⁰` of an invertible sheaf on
+a curve, linear systems, and the passage from a base-point-free pencil to
+a morphism — are genuinely absent: `Mathlib` at this pin has no coherent
+cohomology of sheaves on schemes at all (`AlgebraicGeometry/Modules/`
+contains only `Presheaf`, `Sheaf`, `Tilde`), no `LinearSystem`, no
+`gonality`, no `Hyperelliptic`, no projective space over a scheme (only
+`Proj` of a graded ring), and no genus of a scheme, in any capitalisation.
+
+**The addition, and it was not in the previous audit**:
+`Mathlib/AlgebraicGeometry/Normalization.lean` supplies the third item in
+the ℙ¹-FREE form this file's predicate is phrased in.
+`Scheme.Hom.normalization` builds the normalization of a target in a
+source, `fromNormalization` is `IsIntegralHom`, `toNormalization` is
+`IsDominant`, `normalizationDesc` is its universal property, and
+`IsIntegral X → IsIntegral f.normalization`.  So a nonconstant `f` in the
+function field with `[K(X) : K(f)] ≤ 2` yields a FINITE morphism to
+`𝔸¹_ℚ` from a normal curve birational to `X`, with no projective line
+anywhere — which is precisely the degree-`2` analogue of the route
+`birationalOver_affineLine_of_isDominant` (Lüroth) already takes in
+degree `1`, and of the `Birational ↔ functionField ≃` bridge in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/BirationalFunctionField.lean`.
+What remains missing on that route is the FIRST step only — producing the
+degree-`≤ 2` subfield from the linear equivalence, which is the `h⁰ ≥ 2`
+count — plus the identification of the resulting normal curve with a
+dense open of `X`.  `Mathlib/AlgebraicGeometry/OrderOfVanishing.lean`
+(`Scheme.ord`) is enough to STATE a divisor of a rational function, which
+is what a further cut along that seam would need. -/
+theorem hasDoubleCoverOfAffineLine_of_iso_sectionIdeal {X : Scheme.{0}} {strX : X ⟶ SpecQ}
+    (_hproper : IsProper strX) (_hcurve : SmoothOfRelativeDimension 1 strX)
+    (_hconn : GeometricallyConnected strX)
+    (x₁ x₂ y₁ y₂ : RelPoint strX (𝟙 SpecQ))
+    (_h₁₁ : x₁ ≠ y₁) (_h₁₂ : x₁ ≠ y₂) (_h₂₁ : x₂ ≠ y₁) (_h₂₂ : x₂ ≠ y₂)
+    (_hiso : Nonempty
+      (modTensor (sectionIdeal (relSection x₁)) (sectionIdeal (relSection x₂)) ≅
+        modTensor (sectionIdeal (relSection y₁)) (sectionIdeal (relSection y₂)))) :
+    HasDoubleCoverOfAffineLine strX :=
+  sorry
+
 /-- **THE `g¹₂`: two DISJOINT effective degree-`2` divisors with
-isomorphic sheaves make the curve hyperelliptic or rational** (sorry leaf,
-2026-07-28) — the geometric half of
+isomorphic sheaves make the curve hyperelliptic or rational**
+(**DECOMPOSED 2026-07-29** over `nonempty_iso_of_relPicEquiv_specField`
+and `hasDoubleCoverOfAffineLine_of_iso_sectionIdeal` above, along the
+seam this docstring's own second sentence names; introduced as a sorry
+leaf 2026-07-28) — the geometric half of
 `hasDoubleCoverOfAffineLine_of_ajPair_eq`, with the Jacobian removed:
 neither `J`, nor `AbelianSchemeStruct`, nor `IsJacobianOf` occurs in the
 statement, and this is the ONLY remaining Riemann–Roch obligation of the
@@ -63798,7 +63914,19 @@ this leaf is the coherent cohomology that computes `h⁰`.  Note also
 already in this file's cone), which supplies the "a morphism from a dense
 open of a smooth proper curve into a proper target extends" step for
 free.  **The check that would refute this verdict**: an `h⁰`, a genus, or
-a linear-system statement appearing in any of the three trees. -/
+a linear-system statement appearing in any of the three trees.
+
+**RE-RUN 2026-07-29, and the verdict STANDS with one addition.**  The
+absence claim was checked again, case-insensitively and by statement
+shape rather than by expected name: `Mathlib` at this pin has no
+cohomology of sheaves on schemes (`AlgebraicGeometry/Modules/` is
+`Presheaf`, `Sheaf`, `Tilde` and nothing else), no `LinearSystem`, no
+`gonality`, no `Hyperelliptic`, no projective space over a scheme, and no
+genus.  The ADDITION is `Mathlib/AlgebraicGeometry/Normalization.lean`,
+which the previous audit did not list and which supplies the third
+missing item in ℙ¹-free form — see
+`hasDoubleCoverOfAffineLine_of_iso_sectionIdeal` above, where the route
+is written out. -/
 theorem hasDoubleCoverOfAffineLine_of_relPicEquiv {X : Scheme.{0}} {strX : X ⟶ SpecQ}
     (hproper : IsProper strX) (hcurve : SmoothOfRelativeDimension 1 strX)
     (hconn : GeometricallyConnected strX)
@@ -63808,7 +63936,8 @@ theorem hasDoubleCoverOfAffineLine_of_relPicEquiv {X : Scheme.{0}} {strX : X ⟶
       (modTensor (sectionIdeal (relSection x₁)) (sectionIdeal (relSection x₂)))
       (modTensor (sectionIdeal (relSection y₁)) (sectionIdeal (relSection y₂)))) :
     HasDoubleCoverOfAffineLine strX :=
-  sorry
+  hasDoubleCoverOfAffineLine_of_iso_sectionIdeal hproper hcurve hconn x₁ x₂ y₁ y₂
+    h₁₁ h₁₂ h₂₁ h₂₂ (nonempty_iso_of_relPicEquiv_specField (K := ℚ) hlin)
 
 /-- **RIEMANN–ROCH IN DEGREE `2`, LEVEL-FREE: two disjoint effective
 degree-`2` divisors in one class make the curve hyperelliptic or
@@ -64074,51 +64203,151 @@ theorem card_relPoint_le_of_hasDoubleCoverOfAffineLine {X S : Scheme.{0}} {strX 
     omega
   · simp [Nat.card_eq_zero_of_infinite]
 
+/-- **`HasDoubleCoverOfAffineLine` TRANSPORTS ALONG AN ISOMORPHISM OVER
+THE BASE** (PROVEN 2026-07-29).
+
+The predicate is a statement about a dense open of `X` and a finite map
+out of it, so an inverse pair `w : X ⇄ X' : w'` over `S` carries it
+across by replacing `ι` with `ι ≫ w` and keeping `U` and `φ` untouched.
+Nothing about the three-point clause changes, because `φ` is literally
+the same morphism.
+
+Stated with an explicit inverse PAIR rather than with `X ≅ X'` because
+that is the shape every producer in this file returns
+(`exists_inverse_of_isX0Compactification`,
+`IsCoarseModuliY0.exists_inverse`, `IsFibreIdent.compareIso`'s two
+identities), so no consumer has to package an `Iso` first.  Note `hw'`
+(`w' ≫ strX = strX'`) is NOT needed and is deliberately absent: it
+follows from `hw` and the inverse identities. -/
+theorem HasDoubleCoverOfAffineLine.ofInverse {X X' S : Scheme.{0}} {strX : X ⟶ S}
+    {strX' : X' ⟶ S} {w : X ⟶ X'} {w' : X' ⟶ X}
+    (hw : w ≫ strX' = strX) (hww' : w ≫ w' = 𝟙 X) (hw'w : w' ≫ w = 𝟙 X')
+    (h : HasDoubleCoverOfAffineLine strX) : HasDoubleCoverOfAffineLine strX' := by
+  obtain ⟨U, ι, φ, hι, hdom, hφ, hcomm, hthree⟩ := h
+  haveI : IsIso w := ⟨w', hww', hw'w⟩
+  haveI := hι
+  haveI := hdom
+  refine ⟨U, ι ≫ w, φ, inferInstance, inferInstance, hφ, ?_, hthree⟩
+  rw [hcomm, Category.assoc, hw]
+
+/-- **SPECIALISATION OF GONALITY ON A SMOOTH PROPER MODEL OVER `ℤ_(ℓ)`**
+(sorry leaf, 2026-07-29) — the LEVEL-FREE geometric residue of
+`hasDoubleCoverOfAffineLine_specialFibre` below, and the ONLY thing that
+leaf still needs.  It mentions neither `N`, nor `IsX0Compactification`,
+nor a modular curve: it is a statement about an arbitrary smooth proper
+geometrically connected relative curve over the local base.
+
+TRUE and classical (Frey; the specialisation-of-gonality lemma every
+proof of Ogg's theorem uses).  `hbase` makes `R` the local ring `ℤ_(ℓ)` —
+a one-dimensional valuation ring, by `valuationRing_of_isReductionBase`
+above — so `𝒳 = XZ` is a regular two-dimensional scheme whose special
+fibre is an irreducible reduced curve (smoothness over the base).  Given
+a finite degree-`≤ 2` map from a dense open of the generic fibre, its
+extension `𝒳 ⇢ ℙ¹_{ℤ_(ℓ)}` is defined at the GENERIC POINT of the
+special fibre — the local ring there is a DVR, and a rational map from a
+DVR into a proper scheme extends — hence on a dense open of the special
+fibre; and a smooth proper curve receives the extension over its whole
+self (`exists_unique_extension_of_isSmoothProperCurve`, PROVEN and in
+this file's cone).  Restricting to the preimage of `𝔸¹` gives the
+conclusion.
+
+**THE STEP THAT IS NOT BOOKKEEPING**, and a prover should attack it
+first: showing the specialised map is NONCONSTANT, i.e. that the degree
+does not all escape onto exceptional components of a resolution.  That is
+where the smoothness of `xstr` over the base is used and it is the only
+delicate point; everything else is the universal property of the closure
+of the graph.
+
+**ALL FOUR HYPOTHESES ARE LOAD-BEARING.**  `_hbase` is what makes the
+base a DVR (over a base of dimension `≥ 2`, or a non-normal one, the
+codimension-one extension step fails outright).  `_hproper` is what makes
+the special fibre a proper curve, so the extension has somewhere to land.
+`_hcurve` (relative dimension `1`, smooth) is what makes the special
+fibre REDUCED and IRREDUCIBLE — on a model with a reducible special fibre
+the degree splits between components and each component can carry degree
+`0`, so the conclusion is false.  `_hconn` is what makes the special
+fibre connected, hence (with smoothness) irreducible; on `𝔸¹ ⊔ 𝔸¹`-like
+models it fails for the same reason.
+
+**NOT VACUOUS in either direction.**  It is satisfied: take `XZ` the
+constant model `ℙ¹_{ℤ_(ℓ)}` (any smooth proper genus-`0` model), where
+both fibres have a degree-`1` cover.  And it is not discharged by an
+empty antecedent: `HasDoubleCoverOfAffineLine` of the generic fibre HOLDS
+for every genus-`≤ 2` model.  The degenerate `XZ = ∅` case is harmless —
+both fibres are then empty, `HasDoubleCoverOfAffineLine` holds of the
+empty scheme (take `U = ∅`), and the implication is true.  Note also that
+a smooth (hence flat) proper morphism over a LOCAL base has open-and-closed
+image, so a nonempty special fibre forces a nonempty generic fibre: the
+hypothesis cannot be vacuously true while the conclusion is false.
+
+**The check that would refute this verdict**: a smooth proper curve over
+a DVR whose generic fibre is hyperelliptic (or rational) and whose special
+fibre is not — there is none, which is exactly the content; or a
+counterexample to the nonconstancy step, which would mean the statement
+needs a hypothesis it does not have. -/
+theorem hasDoubleCoverOfAffineLine_specialFibre_of_model {ℓ : ℕ} {R : Subring ℚ}
+    {toF : R →+* ZMod ℓ} (_hbase : IsReductionBase ℓ R toF)
+    {XZ : Scheme.{0}} {xstr : XZ ⟶ SpecLoc R}
+    (_hproper : IsProper xstr) (_hcurve : SmoothOfRelativeDimension 1 xstr)
+    (_hconn : GeometricallyConnected xstr)
+    (_hdc : HasDoubleCoverOfAffineLine (Limits.pullback.snd xstr (SpecLoc.generic R))) :
+    HasDoubleCoverOfAffineLine (Limits.pullback.snd xstr (SpecLoc.special toF)) :=
+  sorry
+
 /-- **A DOUBLE COVER OF THE LINE SPECIALISES TO THE GOOD REDUCTION**
-(sorry leaf, 2026-07-28) — gonality does not RISE under specialisation at
+(**PROVEN 2026-07-29** by decomposition over the single new leaf
+`hasDoubleCoverOfAffineLine_specialFibre_of_model` — the level-free
+geometry — with everything else already present in this file; introduced
+as a sorry leaf 2026-07-28) — gonality does not RISE under specialisation at
 a prime of good reduction, in the only form this file needs it.  This is
 the half of Ogg's argument that carries the integral model, and it is
 LEVEL-GENERIC: `N` enters only through `ℓ ∤ N`.
 
-TRUE and classical (Frey; the specialisation-of-gonality lemma every
-proof of Ogg's theorem uses).  For `ℓ ∤ N`, `X_0(N)` has good reduction
-at `ℓ`: `exists_x0CurveModel_of_base` — PROVEN, in this file — produces a
-smooth proper model `𝒳 ⟶ Spec ℤ_(ℓ)` with generic fibre `X` and special
-fibre `X'`, and `IsReductionBase` pins the base.  Given a degree-`≤ 2`
-map on the generic fibre, take the scheme-theoretic closure of its graph
-in `𝒳 ×_{ℤ_(ℓ)} ℙ¹`; that closure is proper and birational over `𝒳`, an
-isomorphism over the generic fibre, and resolves the finitely many points
-of indeterminacy on the special fibre.  The total degree `≤ 2` on the
-special fibre distributes over its components, and the strict transform
-of `X'` — which is `X'` itself, `𝒳` being smooth over the base, so the
-special fibre is irreducible — carries a nonconstant map of degree `≤ 2`.
-Restricting to the preimage of `𝔸¹` gives `HasDoubleCoverOfAffineLine
-strX'`.
+**THE ASSEMBLY, and what each step costs.**  Everything below the
+level-free geometry leaf was ALREADY PROVEN in this file; the whole of
+this node's modular content is bookkeeping between four existing results:
 
-**THE STEP THAT IS NOT BOOKKEEPING**, and a prover should attack it
-first: showing the specialised map is NONCONSTANT, i.e. that the degree
-does not all escape onto exceptional components. That is where the
-smoothness of `𝒳` over `Spec ℤ_(ℓ)` is used and it is the only delicate
-point; everything else is the universal property of the closure.
+1. `exists_isReductionBase` (PROVEN, already above in this file) supplies
+   `ℤ_(ℓ)` and its reduction map.  **This is the step that made the leaf
+   look harder than it is**: every consumer of the integral model in this
+   file quantifies over `(R, toF, hbase)`, so a reader scanning for a
+   producer sees only hypothesis binders — but the producer exists, and
+   `exists_x0NeronDatum_of_base` and `exists_sharpSievePrime` already use
+   it.  (This audit initially concluded no producer existed and wrote a
+   second copy; the duplicate was caught before it was committed.)
+2. `exists_x0CurveModel_of_base` (PROVEN) turns `hX` into a smooth proper
+   model `xstr : XZ ⟶ Spec ℤ_(ℓ)` together with `IsX0Compactification N`
+   for it and the FUNCTOR-OF-POINTS identification of its generic fibre
+   with `X`.
+3. `IsFibreIdent.compareIso` (PROVEN — Yoneda in the slice category)
+   upgrades that identification to an honest inverse pair of schemes over
+   `Spec ℚ`, so `HasDoubleCoverOfAffineLine.ofInverse` moves `hdc` onto
+   `XZ ×_{ℤ_(ℓ)} ℚ`.  **This is the step the previous audit of this leaf
+   did not see was available**: it recorded `IsX0CurveModel` as
+   identifying the fibres "only through a natural transformation", which
+   is true and is exactly what `compareIso` converts.
+4. `exists_isX0Compactification_pullbackSpecial` (PROVEN) says the
+   model's special fibre is itself an `IsX0Compactification N` over
+   `𝔽_ℓ`, and `IsCoarseModuliY0.exists_inverse` +
+   `exists_inverse_of_isX0Compactification` (both PROVEN) identify it
+   with the caller's `X'`.  That is the content the old docstring
+   deferred to "any two are isomorphic over `𝔽_ℓ` because both are coarse
+   spaces of the same moduli problem" — it is a theorem here, not a
+   remark.
 
 **WHY `hX'` IS A HYPOTHESIS AND NOT AN OUTPUT.**  The special fibre of
-the model is again an `IsX0Compactification N` over `𝔽_ℓ`
-(`exists_isX0Compactification_specialFibre`, PROVEN in this file, and
-`exists_x0Compactification_finiteField` produces one abstractly), and any
-two are isomorphic over `𝔽_ℓ` because both are coarse spaces of the same
-moduli problem.  Quantifying over `hX'` rather than producing it keeps
-this leaf free of that identification, which is a separate — and already
-available — piece of work.
+the model is again an `IsX0Compactification N` over `𝔽_ℓ`, and any two
+such are isomorphic over `𝔽_ℓ`; quantifying over `hX'` rather than
+producing it keeps the STATEMENT free of that identification even though
+the proof now performs it.
 
 **NOT VACUOUS, and the hypothesis is satisfiable**: at `N = 1`,
 `X_0(1) = ℙ¹` over both `ℚ` and `𝔽_ℓ`, `hdc` holds and so does the
 conclusion.  So the leaf is not discharged by an empty antecedent.
 
-**The check that would refute this verdict**: a smooth proper curve over
-`ℤ_(ℓ)` whose generic fibre is hyperelliptic and whose special fibre is
-not — there is none, which is exactly the content; or, formally, a
-counterexample to the nonconstancy step above, which would mean the
-statement needs a hypothesis it does not have. -/
+**`_hN : 0 < N` IS NOT USED** by this proof and never was; it is kept
+because the consumer supplies it and dropping it would change the
+interface.  It is underscored so the emptiness is mechanically visible. -/
 theorem hasDoubleCoverOfAffineLine_specialFibre {N ℓ : ℕ} (_hN : 0 < N) (_hℓ : ℓ.Prime)
     (_hℓN : ¬ ℓ ∣ N)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
@@ -64126,8 +64355,25 @@ theorem hasDoubleCoverOfAffineLine_specialFibre {N ℓ : ℕ} (_hN : 0 < N) (_h�
     {X' Y' : Scheme.{0}} {strX' : X' ⟶ SpecF ℓ} {strY' : Y' ⟶ SpecF ℓ} {jY' : Y' ⟶ X'}
     (_hX' : IsX0Compactification N strX' strY' jY')
     (_hdc : HasDoubleCoverOfAffineLine strX) :
-    HasDoubleCoverOfAffineLine strX' :=
-  sorry
+    HasDoubleCoverOfAffineLine strX' := by
+  obtain ⟨R, toF, hbase⟩ := exists_isReductionBase ℓ _hℓ
+  obtain ⟨X₀, XZ, YZ, strX₀, xstr, ystr, jZ, cm, -, -⟩ :=
+    exists_x0CurveModel_of_base N ℓ _hℓ _hℓN R toF hbase _hX
+  -- Yoneda moves the cover onto the generic fibre of the integral model …
+  have hgen : HasDoubleCoverOfAffineLine (Limits.pullback.snd xstr (SpecLoc.generic R)) :=
+    HasDoubleCoverOfAffineLine.ofInverse cm.genIdent.compareHom_snd
+      cm.genIdent.compareHom_compareInv cm.genIdent.compareInv_compareHom _hdc
+  -- … Frey's specialisation lemma carries it to the special fibre …
+  have hsp : HasDoubleCoverOfAffineLine (Limits.pullback.snd xstr (SpecLoc.special toF)) :=
+    hasDoubleCoverOfAffineLine_specialFibre_of_model hbase cm.model.isProper cm.model.smooth
+      cm.model.connected hgen
+  -- … and the special fibre is an `X_0(N)` over `𝔽_ℓ`, hence isomorphic to `X'`.
+  obtain ⟨Y'', strY'', j'', ⟨h₀⟩⟩ :=
+    exists_isX0Compactification_pullbackSpecial _hℓ _hℓN hbase cm.model
+  obtain ⟨u, v, hu, hv, huv, hvu⟩ := IsCoarseModuliY0.exists_inverse h₀.coarse _hX'.coarse
+  obtain ⟨w, w', hw, -, hww', hw'w, -⟩ :=
+    exists_inverse_of_isX0Compactification _hℓ h₀ _hX' hu hv huv hvu
+  exact HasDoubleCoverOfAffineLine.ofInverse hw hww' hw'w hsp
 
 /-- **EICHLER–SHIMURA, SECOND POWER SUM: `Σ αᵢ² = Tr(T_ℓ²) − 2ℓ·dim
 S₂(Γ₀(N))`** (sorry leaf, 2026-07-28) — the geometric half of
