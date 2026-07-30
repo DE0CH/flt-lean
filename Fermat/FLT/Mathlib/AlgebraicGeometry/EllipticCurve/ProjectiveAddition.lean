@@ -920,7 +920,28 @@ theorem exists_units_smul_infty_left (hR : _root_.IsField R) (hQ : Equation W' Q
   · refine Or.inl ⟨(hunit _ hz).unit, ?_⟩
     rw [addXYZ_of_infty_left, IsUnit.unit_spec]
 
-/-- **The second triple again satisfies the Weierstrass equation** (sorry node).
+/-  **`equation_add2XYZ` LIVES IN A SIBLING MODULE NOW** (2026-07-28) --
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveEquationAdd2.lean`.
+
+It had to move: its proof consumes `equation_addXYZ`, which lives in
+`ProjectiveEquationAdd.lean`, and these two modules must not import each other
+(see the header).  The new module imports BOTH and is itself cheap.
+
+**The `linear_combination` route recorded here is abandoned, not merely
+unfinished.**  The measurements below stand and are why: the `Singular`
+certificate (158 + 280 monomials, denominator-free) was compiled twice and both
+runs were killed still allocating, at 4 h 08 m / 294 GB and 3 h 52 m / 298 GB.
+
+What replaced it: `addZ ^ 3 * W(add2XYZ) = add2Z ^ 3 * W(addXYZ) = 0` derived
+from `add2X_mul_addZ`, `add2Y_mul_addZ` and the degree-`3` homogeneity of the
+Weierstrass cubic **with all six forms kept as ATOMS** -- seconds, not hours --
+followed by the cancellation of `addZ ^ 3` performed ONCE in the universal ring
+`ℤ[a₁, a₂, a₃, a₄, a₆, Px, …, Qz] ⧸ (W(P), W(Q))`, which is a domain.  Note in
+particular that the "412 929 monomials, do not take this route" verdict below is
+about EXPANDING that identity, which the new proof never does.
+
+The original note is kept below because its cost data is still the best record of
+what the direct route costs.
 
 Exactly what `equation_addXYZ` proves for the standard law, for the law of the
 line `Y = 0`.  It was VERIFIED in `Singular` -- `W(add2X, add2Y, add2Z)` reduces
@@ -994,9 +1015,6 @@ normaliser than `ring1`; a decomposition that keeps every intermediate STATEMENT
 small (a `def` does not help -- it is unfolded again before `ring1` sees it); or a
 restatement carrying a non-zerodivisor hypothesis on `addZ`, which collapses the
 whole thing to the short argument above. -/
-theorem equation_add2XYZ (hP : Equation W' P) (hQ : Equation W' Q) :
-    Equation W' (add2XYZ W' P Q) :=
-  sorry
 
 /-- **The two addition laws are PROPORTIONAL** (PROVEN) -- they compute the
 same point of `P²` wherever both are non-degenerate.
