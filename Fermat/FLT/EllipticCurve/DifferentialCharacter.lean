@@ -1102,6 +1102,98 @@ at the points `P` whose `x`-coordinate avoids one finite set of your choosing �
 hypotheses. Do NOT try to verify the raw nine-term `IsDiffCharCert` at every point;
 that is what made these leaves look atomic. -/
 
+/-- **LEAF (hoisted out of `exists_diffCharScalar_poly` on 2026-07-30): the pullback
+ratio takes the SAME VALUE at any two good points.**
+
+With `p := (A′B − AB′)·E` and `q := Cx·B²`, this says `p/q` is constant on the
+complement of the finite bad locus (the roots of `B·E·Cx` together with the `x`-image
+of `ker φ`), with the denominators cleared so that no division appears.  It was an
+anonymous inner `have … := sorry` inside `exists_diffCharScalar_poly`; a warning counts
+DECLARATIONS, so an inner sorry is ownerless by construction and no frontier scan can
+dispatch at it.  Naming it costs the parent nothing — everything else in
+`exists_diffCharScalar_poly` is real code, and it now consumes this.
+
+**WHAT IT REALLY IS, in one line: `Λ(S) ∈ F` for the function-field point `S`.**  Put
+`K := F(W)`, the function field of `W`, and let `D` be the invariant derivation on `K`
+(`D x = ψ₂ = 2y + a₁x + a₃`, `D y = 3x² + 2a₂x + a₄ − a₁y`; equivalently `D = ψ₂·d/dx`,
+which kills the Weierstrass polynomial).  For a `K`-point `S = (α, β)` of `W′` put
+
+  `Λ(S) := D(α) / (2β + a₁′α + a₃′)`.
+
+The witnesses of `φ` give one such point, `S = (u, γ·y + δ)` with `u = A/B`, `γ = Cx/E`,
+`δ = D/E`, and `Λ(S) = u′/γ = p/q`.  So the leaf says exactly `Λ(S) ∈ F`.
+
+**THE HOMOMORPHISM HYPOTHESIS IS NOT NEEDED — and seeing why is what makes the route
+concrete (2026-07-30).**  `(u, γy + δ)` lies on `W′` over `K` iff two identities hold:
+the `y`-part `2δ = γ(a₁x + a₃) − a₁′u − a₃′`, which is exactly
+`diffChar_yWitness_onePart`, and the `1`-part, which is `W′`'s equation.  `φ` being a
+group homomorphism is used ONLY to produce the first.  So the leaf is an instance of
+
+  *for every `K`-point `S` of `W′`, `Λ(S)` is a constant*,
+
+which is true because a `K`-point of `W′` is the same thing as a morphism `W → W′` of
+curves, i.e. an isogeny followed by a translation, and every such pulls `ω′` back to a
+constant multiple of `ω`.  This reframing is not a weakening of the leaf: it is the
+statement in the form in which the proof below is written.
+
+**THE ROUTE, in five pieces, each of which is a self-contained obligation.**  Fix a
+nonzero `T ∈ W(F)`; write `τ` for the tautological point `(x, y) ∈ W(K)` and `x₃, y₃`
+for the coordinates of `τ + T` (the chord formulas, elements of `K`; note `x ≠ x(T)`
+in `K` because `x` is transcendental over `F`, so only the CHORD case is ever needed —
+no tangent case, no `2`-torsion case).
+
+* (A) `D` exists: the Hamiltonian derivation `F_Y·∂_X − F_X·∂_Y` on `F[X][Y]` kills the
+  curve polynomial, descends to `W.CoordinateRing`, and extends to `K` by the quotient
+  rule.  `InvariantDerivation.lean` does exactly this for the UNIVERSAL curve
+  (`PsiSumCompanion.Dham`, `DB`, `DK`); the construction is parametric in the base and
+  needs only to be repeated for a general `W/F`.
+* (B) **Translation invariance**, `D x₃ = 2y₃ + a₁x₃ + a₃`.  This is *AEC* III.5.1, and
+  it is PURE FIELD ALGEBRA over an arbitrary derivation of an arbitrary field — the same
+  shape as `RationalDerivation.chordDeriv_core`: with `L(x − x₂) = y − y₂`,
+  `DL·(x − x₂)² = Dy·(x − x₂) − (y − y₂)·Dx`, `x₃ = L² + a₁L − a₂ − x − x₂` one has
+  `Dx₃ = (2L + a₁)·DL − Dx`, and the claim is a `linear_combination` of the two curve
+  equations.  More generally, and this is the form actually used, the identity is
+  HOMOGENEOUS OF DEGREE ONE in `D`: if `Dx = c·ψ₂` and `Dy = c·φ₂` then
+  `Dx₃ = c·ψ₂(x₃, y₃)`.
+* (C) The chain rule, `D(A.eval z) = (derivative A).eval z · D z` for `z ∈ K`
+  (`Derivation.aeval`), which is what turns `Λ` of a point built from `A, B, Cx, D, E`
+  into `p/q` evaluated at a coordinate.
+* (D) `S_T = S + φ(T)` in `W′(K)`, where `S_T` is `S` with `x, y` replaced by `x₃, y₃`.
+  This is the ONLY place `φ`'s additivity enters, and it is a density argument: both
+  sides are `K`-points whose coordinates agree under evaluation at every good `P ∈ W(F)`,
+  by `φ (P + T) = φ P + φ T`; an element of `W.CoordinateRing` vanishing at cofinitely
+  many `F`-points is `0`, because `p(X) + q(X)·Y` vanishing at both points above a given
+  `x₀` forces `q(x₀) = p(x₀) = 0`.
+* (E) The glue: `Λ(S_T) = h(x₃)` by (B) on `W` and (C); `Λ(S + φT) = Λ(S) = h(x)` by (B)
+  on `W′` (translation by the constant point `φ T`, using that `D α = Λ(S)·ψ₂′(S)` and
+  `D β = Λ(S)·φ₂′(S)` — the latter by differentiating `W′`'s equation); so
+  `h(x₃) = h(x)`, and `x₃` ranges over the `x`-coordinates of all translates of `τ`.
+
+Note (E) needs only invariance of `Λ` under translation by a CONSTANT point, not the
+full additivity of `Λ` on `W′(K)`, because (B) is homogeneous in `D`.  That is what
+keeps the group law out of the proof.
+
+**THE CHECK THAT WOULD REFUTE IT**: a rational map of Weierstrass curves over an
+algebraically closed field, with witnesses `A, …, E`, and two points off the bad locus
+at which `p/q` takes different values.  Note that the refutation of the *`φ`-free*
+generalisation recorded on `exists_diffCharScalar_poly` (the characteristic-`2` pair
+`u = X + 1`, `γ = (X + 1)/X` on `y² + xy = x³ + 1`) is NOT a refutation of this leaf:
+that pair satisfies `Ψ_{W′}(u) = γ²Ψ_W` but admits no `δ`, so it is not a `K`-point of
+`W′` and the `y`-part identity fails for it. -/
+theorem diffChar_pullbackRatio_eq [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
+    {φ : W.Point →+ W'.Point} {A B Cx D E : F[X]} (hφ0 : φ ≠ 0) (hB : B ≠ 0) (hE : E ≠ 0)
+    (hrat : ∀ P : W.Point, φ P ≠ 0 →
+      veluPointX (φ P) * B.eval (veluPointX P) = A.eval (veluPointX P) ∧
+      veluPointY (φ P) * E.eval (veluPointX P)
+        = Cx.eval (veluPointX P) * veluPointY P + D.eval (veluPointX P))
+    (P₁ P₂ : W.Point) (hP₁ : P₁ ≠ 0) (hP₂ : P₂ ≠ 0) (hφ₁ : φ P₁ ≠ 0) (hφ₂ : φ P₂ ≠ 0)
+    (hZ₁ : (B * E * Cx).eval (veluPointX P₁) ≠ 0)
+    (hZ₂ : (B * E * Cx).eval (veluPointX P₂) ≠ 0) :
+    ((derivative A * B - A * derivative B) * E).eval (veluPointX P₁)
+        * (Cx * B ^ 2).eval (veluPointX P₂)
+      = ((derivative A * B - A * derivative B) * E).eval (veluPointX P₂)
+        * (Cx * B ^ 2).eval (veluPointX P₁) := sorry
+
 /-- **LEAF: the pullback ratio `φ*ω'/ω` is a CONSTANT.**
 
 This is the ONE geometric input of `exists_isDiffChar`, isolated from all of its
@@ -1196,10 +1288,12 @@ constant.  So the leaf's `D`-witness — equivalently the full `hrat` — must b
 reduction that discards it needs a `CharZero`/`2 ≠ 0` hypothesis that this leaf does not
 have.
 
-**GLUE-FIRST RESTRUCTURE (2026-07-30): the polynomial bookkeeping below is DISCHARGED, and
-the proof carries exactly ONE inner `sorry`** — the `have hconst`, whose statement is "the
-pullback ratio takes the same value at any two points off the finite bad locus", with
-denominators cleared:
+**GLUE-FIRST RESTRUCTURE (2026-07-30): the polynomial bookkeeping below is DISCHARGED,
+and this declaration is now `sorry`-FREE** — its one remaining input is the NAMED leaf
+`diffChar_pullbackRatio_eq` above (hoisted out of the `have hconst` that used to sit
+here, so that the open node has a name a frontier scan can dispatch at, and carries the
+route notes).  Its statement is "the pullback ratio takes the same value at any two
+points off the finite bad locus", with denominators cleared:
 
   `(A′B − AB′)(x P₁)·E(x P₁) · (Cx·B²)(x P₂)
      = (A′B − AB′)(x P₂)·E(x P₂) · (Cx·B²)(x P₁)`
@@ -1212,13 +1306,15 @@ finally cancellation of the nonzero constant `C q(t₀)`.
 
 So a successor has ONE point-level statement to prove, and it is exactly translation
 invariance: because `φ` is a homomorphism, `φ ∘ τ_Q = τ_{φQ} ∘ φ`, so `h = φ*ω′/ω`
-satisfies `h(P + Q) = h(P)` for every `Q`; taking `Q = P₂ − P₁` gives `h(P₁) = h(P₂)`.  The
-`sorry` is VOUCHED — it is Silverman *AEC* III.5.1 and it is equivalent to the leaf itself,
-so nothing has been assumed beyond what the leaf already asserts.  Note the missing
-machinery is a DERIVATION ON THE COORDINATE RING of `W`, not on `F(X)`: `x(P + Q)` genuinely
-involves `y(P)`, so `RationalDerivation.rderiv` (which lives on `RatFunc F`) does not reach
-it.  The one case where the `y` does drop out is `Q ∈ W[2]`, since `x(−P + T) = x(P + T)`
-for `2T = 0` — but that identifies only finitely many points and is not enough. -/
+satisfies `h(P + Q) = h(P)` for every `Q`; taking `Q = P₂ − P₁` gives `h(P₁) = h(P₂)`.  It
+is VOUCHED — it is Silverman *AEC* III.5.1 and it is equivalent to the leaf itself, so
+nothing has been assumed beyond what the leaf already asserts.  Note the missing machinery
+is a DERIVATION ON THE COORDINATE RING of `W`, not on `F(X)`: `x(P + Q)` genuinely involves
+`y(P)`, so `RationalDerivation.rderiv` (which lives on `RatFunc F`) does not reach it.  The
+one case where the `y` does drop out is `Q ∈ W[2]`, since `x(−P + T) = x(P + T)` for
+`2T = 0` — but that identifies only finitely many points and is not enough.  The five-piece
+route for building that derivation and using it is written out on
+`diffChar_pullbackRatio_eq`, which is where a successor should start. -/
 theorem exists_diffCharScalar_poly [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
     {φ : W.Point →+ W'.Point} {A B Cx D E : F[X]} (hφ0 : φ ≠ 0) (hB : B ≠ 0) (hE : E ≠ 0)
     (hrat : ∀ P : W.Point, φ P ≠ 0 →
@@ -1230,15 +1326,17 @@ theorem exists_diffCharScalar_poly [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic
   have hker : (AddMonoidHom.ker φ : Set W.Point).Finite :=
     IsRationalMap.finite_ker ⟨A, B, Cx, D, E, hB, hE, hrat⟩ hφ0
   have hCx : Cx ≠ 0 := diffChar_yMultiplier_ne_zero hφ0 hker hB hE hrat
-  -- **THE ONE REMAINING SORRY** — translation invariance of `ω` (*AEC* III.5.1), in the
+  -- **THE ONE REMAINING GAP** — translation invariance of `ω` (*AEC* III.5.1), in the
   -- form "the pullback ratio `φ*ω′/ω` takes the same value at any two points off the
-  -- finite bad locus", denominators cleared.  Everything after it is real code.
+  -- finite bad locus", denominators cleared.  It is the NAMED leaf
+  -- `diffChar_pullbackRatio_eq` above; everything here is real code.
   have hconst : ∀ P₁ P₂ : W.Point, P₁ ≠ 0 → P₂ ≠ 0 → φ P₁ ≠ 0 → φ P₂ ≠ 0 →
       (B * E * Cx).eval (veluPointX P₁) ≠ 0 → (B * E * Cx).eval (veluPointX P₂) ≠ 0 →
       ((derivative A * B - A * derivative B) * E).eval (veluPointX P₁)
           * (Cx * B ^ 2).eval (veluPointX P₂)
         = ((derivative A * B - A * derivative B) * E).eval (veluPointX P₂)
-          * (Cx * B ^ 2).eval (veluPointX P₁) := sorry
+          * (Cx * B ^ 2).eval (veluPointX P₁) :=
+    diffChar_pullbackRatio_eq hφ0 hB hE hrat
   have hZ0 : B * E * Cx ≠ 0 := mul_ne_zero (mul_ne_zero hB hE) hCx
   have hbad : ({t : F | (B * E * Cx).eval t = 0}
       ∪ veluPointX '' (AddMonoidHom.ker φ : Set W.Point)).Finite :=
