@@ -32,9 +32,15 @@ material into `Interface.lean`.
   theorem at modulus `1`: every subgroup of `Cl(𝓞 K)` is the norm class group
   of a finite abelian extension unramified at every finite prime and at every
   infinite place. This is where the class field theory is.
-* `NumberField.index_relNormClassSubgroup_le_finrank` — **OPEN LEAF.** The
-  first inequality `[I_K : P_K · N_{L/K} I_L] ≤ [L : K]`, in the direction
-  OPPOSITE to `finrank_le_index_relNormClassSubgroup` of the companion file.
+* `NumberField.exists_surjective_aut_classGroupQuotient` — **OPEN LEAF.** The
+  Artin map in the direction `Gal(L/K) ↠ Cl(𝓞 K) ⧸ relNormClassSubgroup K L`,
+  cut out of the first inequality on 2026-07-30. The mirror image of the
+  companion file's `exists_surjective_classGroupHom_aut_of_unramified_abelian`,
+  and NOT implied by it: this one survives ramification at the infinite places.
+* `NumberField.index_relNormClassSubgroup_le_finrank` — PROVEN from the leaf
+  above by counting. The first inequality `[I_K : P_K · N_{L/K} I_L] ≤ [L : K]`,
+  in the direction OPPOSITE to `finrank_le_index_relNormClassSubgroup` of the
+  companion file.
 * `NumberField.exists_classField_finrank_eq_index` — PROVEN from the two
   leaves above together with the companion file's
   `finrank_le_index_relNormClassSubgroup`, by `le_antisymm`.
@@ -173,10 +179,92 @@ theorem exists_classField_of_subgroup (N : Subgroup (ClassGroup (𝓞 K))) :
 
 variable (L : Type*) [Field L] [NumberField L] [Algebra K L]
 
+/-- **THE ARTIN MAP AT MODULUS `1`, IN THE DIRECTION `Gal(L/K) ↠ Cl(𝓞 K)/N`: for
+`L/K` finite abelian and unramified at every finite prime there is a SURJECTIVE
+homomorphism `Gal(L/K) →* Cl(𝓞 K) ⧸ relNormClassSubgroup K L`** (SORRY LEAF, cut
+2026-07-30 out of `index_relNormClassSubgroup_le_finrank` below, which is now
+proven from it by counting).
+
+This is the mirror image of the cut the companion file made on 2026-07-28, where
+`finrank_le_index_relNormClassSubgroup` was reduced to
+`exists_surjective_classGroupHom_aut_of_unramified_abelian` — the surjection
+`Cl(𝓞 K) ↠ Gal(L/K)`. **The two nodes are genuinely different theorems and
+neither implies the other**: that one is FALSE for extensions ramified at an
+infinite place (its docstring records `K = ℚ(√3)`, `h = 1`, narrow `h⁺ = 2`), and
+this one is true for all of them — which is exactly why
+`IsUnramifiedAtInfinitePlaces` must NOT be added here (see the ⚠ note on the
+consumer below).
+
+**Soundness — the intended inhabitant.** Let `𝐇` be the Hilbert class field of
+`K` and `Art : Cl(𝓞 K) ≃ Gal(𝐇/K)` the Artin isomorphism. Both `𝐇/K` and `L/K`
+are Galois, so `M := 𝐇 ∩ L` is Galois over `K`, and the class field
+correspondence identifies `Art (N_{L/K} Cl(𝓞 L)) = Gal(𝐇/M)`, i.e.
+`Cl(𝓞 K) ⧸ relNormClassSubgroup K L ≃ Gal(M/K)`. Since `M ⊆ L`, restriction
+`Gal(L/K) ↠ Gal(M/K)` is surjective, and `ψ` is that restriction followed by the
+inverse of the isomorphism above. Note the two inclusions in
+`Art (N_{L/K} Cl(𝓞 L)) = Gal(𝐇/M)` are of very different depth: `≤` is the
+Frobenius computation `Frob_𝔭^{f(𝔓/𝔭)} = 1`, while `≥` is Chebotarev applied to
+`𝐇L/L`. It is the second one that makes this a genuine theorem of class field
+theory rather than bookkeeping — an arbitrary subgroup of `Cl(𝓞 K)` is not the
+norm group of anything, and the whole content is that the norm classes of `L`
+already fill up `Art⁻¹ Gal(𝐇/(𝐇 ∩ L))`.
+
+**Why a MONOID HOM and not merely a surjective function — this is the whole point
+of the cut.** A surjective FUNCTION `Gal(L/K) → Cl(𝓞 K) ⧸ N` exists if and only
+if the cardinality inequality below holds, so stating the node with a bare
+function would make it logically equivalent to its own consumer and the
+"decomposition" would be empty. Asking for a group homomorphism is strictly
+stronger, it is what the Artin map actually is, and it is what makes the
+consumer's proof three lines of counting.
+
+**PINNING.** Only surjectivity is used, and the inequality below follows from ANY
+surjective hom, so an adversary who post-composes an automorphism of the
+quotient, or produces a different surjection, still yields a true consumer. The
+intended `ψ` is the inverse Artin map and is canonical; asking for more (that `ψ`
+send `Frob_𝔭` to the class of `𝔭`) would make the leaf harder without helping the
+consumer, exactly as recorded for the companion file's sibling node.
+
+**⚠ NEITHER HYPOTHESIS IS LOAD-BEARING** — the argument above never used them:
+`M/K` is Galois whether or not `L/K` is abelian, and enlarging the modulus by the
+ramified finite primes handles ramification (see the consumer's own audit, which
+records `K = ℚ`, `L = ℚ(√5)`, index `1 ≤ 2` as the sanity check). They are kept
+because every consumer already holds them, because the consumer's statement has
+them, and because a prover who has the companion file's node in hand can then
+reuse the same modulus. A prover who finds the general statement no harder is
+free to prove that and specialise.
+
+**Route.** Neukirch VI (7.3) and (6.9); Childress ch. 5; Lang *ANT* ch. X. The
+mathlib survey in the companion file's
+`exists_surjective_classGroupHom_aut_of_unramified_abelian` applies verbatim: ray
+class groups, the Hilbert class field, the Artin map, reciprocity and Chebotarev
+are all absent from this pin and from `~/cs/FLT`, so the correspondence must be
+built. Whoever builds it should look at all three leaves of this cluster at once
+— they are three faces of one theorem.
+
+**The check that would refute it**: a finite abelian extension `L/K` of number
+fields, unramified at every finite prime, for which no group homomorphism
+`Gal(L/K) → Cl(𝓞 K) ⧸ relNormClassSubgroup K L` is surjective — equivalently
+(by the counting below) one with `(relNormClassSubgroup K L).index > [L : K]`. -/
+theorem exists_surjective_aut_classGroupQuotient [IsGalois K L]
+    (habel : ∀ a b : L ≃ₐ[K] L, a * b = b * a)
+    (hunr : ∀ (Q : Ideal (𝓞 L)) (_ : Q.IsPrime), Q ≠ ⊥ →
+      Algebra.IsUnramifiedAt (𝓞 K) Q) :
+    ∃ ψ : (L ≃ₐ[K] L) →* ClassGroup (𝓞 K) ⧸ relNormClassSubgroup K L,
+      Function.Surjective ψ :=
+  sorry
+
 /-- **THE FIRST INEQUALITY AT MODULUS `1`: for `L/K` finite abelian,
-`[I_K : P_K · N_{L/K} I_L] ≤ [L : K]`** (SORRY LEAF, cut 2026-07-29 out of
+`[I_K : P_K · N_{L/K} I_L] ≤ [L : K]`** (cut 2026-07-29 out of
 `exists_unramifiedAbelian_primePow_dvd_finrank_of_dvd` in
-`Fermat/FLT/Modularity/Interface.lean`).
+`Fermat/FLT/Modularity/Interface.lean`; PROVEN 2026-07-30 from
+`exists_surjective_aut_classGroupQuotient` above by counting, and from nothing
+else).
+
+**The step performed here.** `Subgroup.index` IS `Nat.card` of the quotient by
+definition, a surjection cannot increase `Nat.card` on a finite source
+(`Nat.card_le_card_of_surjective`, applicable because `Gal(L/K)` is finite), and
+`IsGalois.card_aut_eq_finrank` turns `Nat.card Gal(L/K)` into `[L : K]`. All the
+mathematics is in the leaf above; nothing here is specific to number fields.
 
 This is the direction OPPOSITE to the companion file's
 `finrank_le_index_relNormClassSubgroup`, and the two together say that the norm
@@ -228,8 +316,12 @@ theorem index_relNormClassSubgroup_le_finrank [IsGalois K L]
     (habel : ∀ a b : L ≃ₐ[K] L, a * b = b * a)
     (hunr : ∀ (Q : Ideal (𝓞 L)) (_ : Q.IsPrime), Q ≠ ⊥ →
       Algebra.IsUnramifiedAt (𝓞 K) Q) :
-    (relNormClassSubgroup K L).index ≤ Module.finrank K L :=
-  sorry
+    (relNormClassSubgroup K L).index ≤ Module.finrank K L := by
+  obtain ⟨ψ, hψ⟩ := exists_surjective_aut_classGroupQuotient K L habel hunr
+  calc (relNormClassSubgroup K L).index
+      = Nat.card (ClassGroup (𝓞 K) ⧸ relNormClassSubgroup K L) := rfl
+    _ ≤ Nat.card (L ≃ₐ[K] L) := Nat.card_le_card_of_surjective _ hψ
+    _ = Module.finrank K L := IsGalois.card_aut_eq_finrank K L
 
 /-- **THE CLASS FIELD OF A SUBGROUP HAS DEGREE ITS INDEX: for every subgroup
 `N ≤ Cl(𝓞 K)` there is a finite abelian extension of `K`, unramified at every
