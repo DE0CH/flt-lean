@@ -3124,9 +3124,9 @@ theorem locallyOfFinitePresentation_nTorsion (n : ℕ)
   rw [nTorsionStructure_eq_snd n ab]
   infer_instance
 
-/-- **Every geometric fibre of `E[n]` is REDUCED over a `ℚ`-base** (sorry
-leaf, opened 2026-07-28) — and this is the ONLY place in the level-`n`
-torsor where the `ℚ`-base `g` is spent.
+/-- **Every geometric fibre of `E[n]` is REDUCED over a `ℚ`-base** (opened as
+a sorry leaf 2026-07-28; **PROVEN 2026-07-30**) — and this is the ONLY place
+in the level-`n` torsor where the `ℚ`-base `g` is spent.
 
 This is the leaf that used to be hidden inside
 `exists_isomTorsor_of_finiteFlat_nTorsion`'s prose ("it is ÉTALE by
@@ -3167,18 +3167,30 @@ Fix `K` algebraically closed and `t : Spec K ⟶ T`.
    change.
 4. **Formally unramified over a field ⟹ reduced.**
    `Algebra.FormallyUnramified.isReduced_of_field`
-   (`Mathlib/RingTheory/Unramified/Field.lean:123`).  What is owed here is
+   (`Mathlib/RingTheory/Unramified/Field.lean:123`).  What was owed here was
    only the affine-local translation from the scheme-level
-   `AlgebraicGeometry.FormallyUnramified (X ⟶ Spec K)` to `IsReduced X`
-   — `FormallyUnramified` is a `HasRingHomProperty`, so this is
-   `IsReduced` being local on `X` plus `isReduced_of_field` on each affine
-   piece.
+   `AlgebraicGeometry.FormallyUnramified (X ⟶ Spec K)` to `IsReduced X`;
+   that is now
+   `AlgebraicGeometry.isReduced_of_formallyUnramified_over_field`
+   (`Fermat/FLT/Mathlib/AlgebraicGeometry/EtaleOfGeometricFibres.lean`,
+   written and PROVEN 2026-07-30 for this node — it sits in that file
+   because it is the *supplier* for the `hred` hypothesis of
+   `etale_of_isReduced_pullback`, which lives there too).
+
+   One correction to the route as it was written: `isReduced_of_field`
+   also requires `Algebra.EssFiniteType K A`, which the original sketch did
+   not mention.  It is free here — the fibre is FINITE over `Spec K`, so
+   `IsFinite` supplies `IsAffineHom` and `LocallyOfFiniteType`
+   simultaneously, and the affine form of the translation needs no open
+   cover at all.  This is why `hfin` is threaded in below; it is the same
+   `isFinite_flat_nTorsion` the étale assembly already uses.
 
 *The check that would refute this route*: `grep -n 'isPullback_ker_baseChange\|theorem
 formallyUnramified_mulByNat' Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`
 (both must be present and sorry-free), and
 `grep -n 'isReduced_of_field' .lake/packages/mathlib/Mathlib/RingTheory/Unramified/Field.lean`.
-All three were checked on 2026-07-28.
+All three were checked on 2026-07-28, and the route was executed unchanged
+on 2026-07-30.
 
 ## Faithfulness
 
@@ -3191,16 +3203,54 @@ flat of rank `p²`.  So the statement is FALSE without a hypothesis forcing
 `hn` is load-bearing only through `(n : K) ≠ 0`, which over a
 characteristic-zero field is just `n ≠ 0`.
 
-`hdim` is NOT load-bearing: the kernel of `[n]` is étale, hence reduced, on
-an abelian scheme of any relative dimension over a `ℚ`-base.  It is
-`_`-prefixed. -/
+`hdim` is NOT load-bearing for the mathematics: the kernel of `[n]` is
+étale, hence reduced, on an abelian scheme of any relative dimension over a
+`ℚ`-base.  It is retained UNDERSCORED-free below only because the proof
+feeds it to `isFinite_flat_nTorsion`, whose own docstring records that it
+does not use it either; dropping it from both signatures at once would be a
+faithful simplification, and is deliberately not done here so that the
+three siblings keep one uniform hypothesis list.
+
+`IsAlgClosed K` is NOT used: the argument is "formally unramified over a
+field ⟹ reduced", and no algebraic closedness enters.  It is kept because
+the conclusion is consumed through
+`AlgebraicGeometry.etale_of_isReduced_pullback`, whose `hred` argument
+quantifies over algebraically closed `K`. -/
 theorem isReduced_geomFibre_nTorsion_of_specQBase (n : ℕ) (hn : 3 ≤ n)
     {E T : Scheme.{0}} {f : E ⟶ T} (ab : AbelianSchemeStruct f)
-    (_hdim : SmoothOfRelativeDimension 1 f) (g : T ⟶ SpecQ) :
+    (hdim : SmoothOfRelativeDimension 1 f) (g : T ⟶ SpecQ) :
     ∀ (K : Type) [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ T),
       IsReduced (Limits.pullback
-        (Limits.pullback.fst (ab.mulByNat n) ab.zeroSection ≫ f) t) :=
-  sorry
+        (Limits.pullback.fst (ab.mulByNat n) ab.zeroSection ≫ f) t) := by
+  intro K _ _ t
+  -- STEP 1.  The `ℚ`-base forces `CharZero K`, hence `(n : K) ≠ 0`.
+  haveI : CharZero K := by
+    obtain ⟨ψ⟩ : Nonempty (ℚ →+* K) :=
+      ⟨((Scheme.ΓSpecIso (CommRingCat.of ℚ)).inv ≫ (t ≫ g).appTop ≫
+        (Scheme.ΓSpecIso (CommRingCat.of K)).hom).hom⟩
+    letI : Algebra ℚ K := ψ.toAlgebra
+    exact charZero_of_injective_algebraMap ψ.injective
+  have hnK : (n : K) ≠ 0 := Nat.cast_ne_zero.mpr (by omega)
+  -- Read the structure morphism of `E[n]` as the base change of `[n]`.
+  haveI hfin : IsFinite (Limits.pullback.snd (ab.mulByNat n) ab.zeroSection) := by
+    rw [← nTorsionStructure_eq_snd n ab]
+    exact (isFinite_flat_nTorsion n hn ab hdim g).1
+  rw [nTorsionStructure_eq_snd n ab]
+  -- STEP 2.  The geometric fibre IS `ker[n]` of the base-changed abelian scheme.
+  set abK := ab.baseChange t
+  have hP := ab.isPullback_ker_baseChange t n
+  haveI : IsFinite (Limits.pullback.snd (abK.mulByNat n) abK.zeroSection) :=
+    MorphismProperty.IsStableUnderBaseChange.of_isPullback hP hfin
+  -- STEP 3.  `[n]` is formally unramified over `Spec K`, and so is its base change.
+  haveI : FormallyUnramified (abK.mulByNat n) := formallyUnramified_mulByNat K abK n hnK
+  haveI : FormallyUnramified (Limits.pullback.snd (abK.mulByNat n) abK.zeroSection) :=
+    MorphismProperty.IsStableUnderBaseChange.of_isPullback (IsPullback.of_hasPullback _ _)
+      inferInstance
+  -- STEP 4.  Finite + formally unramified over a field ⟹ reduced.
+  haveI : IsReduced (Limits.pullback (abK.mulByNat n) abK.zeroSection) :=
+    AlgebraicGeometry.isReduced_of_formallyUnramified_over_field
+      (Limits.pullback.snd (abK.mulByNat n) abK.zeroSection)
+  exact isReduced_of_isOpenImmersion hP.isoPullback.inv
 
 /-- **`E[n] ⟶ T` is ÉTALE over a `ℚ`-base** (PROVEN 2026-07-28 over the
 single leaf `isReduced_geomFibre_nTorsion_of_specQBase` above).
@@ -3269,9 +3319,38 @@ this*: `grep -rn 'IsomSheaf\|IsFiniteEtale' Fermat/
 
 ## Faithfulness
 
-`hetale` is TRUE (it is `etale_nTorsion_of_specQBase` above), so assuming it
-does not weaken this node into vacuity — it is the parent statement with a
-true hypothesis exposed, exactly as `hfin`/`hflat` were.
+`hetale` is TRUE (it is `etale_nTorsion_of_specQBase` above, now proven
+outright), so assuming it does not weaken this node into vacuity — it is the
+parent statement with a true hypothesis exposed, exactly as `hfin`/`hflat`
+were.
+
+**Every clause of the conclusion re-checked against the concrete route
+(2026-07-30), and the statement survives.**  Take `T'` to be the basis locus
+inside `W := E[n] ×_T E[n]` and `p` its structure morphism.
+
+* `Flat p`: `W ⟶ T` is étale (base change and composition of étale) hence
+  flat, and the clopen immersion `T' ⟶ W` is an open immersion hence flat;
+  flatness is stable under composition.
+* `QuasiCompact p`: `W ⟶ T` is finite, hence affine, hence quasi-compact,
+  and a CLOSED immersion is quasi-compact; again stable under composition.
+  Both halves of "clopen" are used, one for each of these two clauses —
+  which is why the route wants clopen rather than merely open.
+* the last conjunct `n • P = 0 ∧ n • Q = 0`: `P` and `Q` factor through
+  `E[n]`, so `[n] ∘ P = 0 ∘ p` holds ON THE NOSE by
+  `Limits.pullback.condition`; nothing fibrewise is needed.
+* clause (A) (the `∃!` over `Fin n × Fin n` at geometric points OF `T'`) is
+  the definition of the basis locus, and the UNIQUENESS half is exactly
+  freeness of rank two over `ℤ/n`, i.e. `nsmul_eq_zero_iff_existsUnique_finPair`
+  above applied to the pair `(P, Q)`.
+* clause (B) (lifting a geometric point of `T` that admits a basis) is
+  immediate for that `T'`: a basis `(y, z)` at `t` IS a `K`-point of `W`
+  lying in the basis locus.
+
+So the node is hard but not false; what it needs is the *construction*, not
+a restatement.  In particular do not weaken it by dropping `IsAlgClosed` or
+by replacing the `∃!` with a bare `∃`: at a non-basis geometric point the
+existence half can hold with the uniqueness failing, and the torsor property
+downstream needs uniqueness.
 
 `hdim` is load-bearing HERE, and this is now the only node of the three where
 it is: a *two*-element basis is what relative dimension one buys, and at
@@ -3319,7 +3398,9 @@ had two independent jobs — make `E[n]` étale (spending `g`), then build the
 `Isom`-sheaf — so those are now the two declarations immediately above:
 
 * `etale_nTorsion_of_specQBase`, itself PROVEN over the single leaf
-  `isReduced_geomFibre_nTorsion_of_specQBase`;
+  `isReduced_geomFibre_nTorsion_of_specQBase` — which is in turn PROVEN as of
+  2026-07-30, so this half is now closed outright and spends nothing that is
+  not already in the file;
 * `exists_isomTorsor_of_etale_nTorsion`, which carries the `Isom`-sheaf and
   its representability and nothing else.
 
@@ -3488,11 +3569,11 @@ prose inside `exists_isomTorsor_of_finiteFlat_nTorsion`; on being written
 out it turned out that finiteness, flatness and finite presentation of
 `E[n] ⟶ T` are ALL free, and that the entire characteristic-zero content is
 the reducedness of the geometric fibres.  That is now
-`isReduced_geomFibre_nTorsion_of_specQBase`, the only open leaf on the étale
-branch, with `etale_nTorsion_of_specQBase` proven over it.  So the frontier
-under this node is exactly two declarations:
-`isReduced_geomFibre_nTorsion_of_specQBase` and
-`exists_isomTorsor_of_etale_nTorsion`.
+`isReduced_geomFibre_nTorsion_of_specQBase`, which was the only open leaf on
+the étale branch and is **PROVEN as of 2026-07-30** — so the étale branch is
+closed end to end and the frontier under this node is exactly ONE
+declaration, `exists_isomTorsor_of_etale_nTorsion`, i.e. the `Isom`-sheaf and
+its representability and nothing else.
 
 ## Faithfulness
 

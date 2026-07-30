@@ -18,6 +18,7 @@ public import Mathlib.RingTheory.LocalRing.Module
 public import Mathlib.RingTheory.Unramified.Locus
 public import Mathlib.RingTheory.Support
 public import Mathlib.AlgebraicGeometry.Fiber
+public import Mathlib.AlgebraicGeometry.Morphisms.Finite
 
 /-!
 # A finite flat morphism with REDUCED geometric fibres is étale
@@ -44,6 +45,11 @@ geometric fibre into étaleness of the morphism.
 * `AlgebraicGeometry.isNilpotent_ker_SpecMap` — a small proven bridge: `Spec` of a ring map with
   nilpotent kernel is an infinitesimal thickening in the sense
   `AlgebraicGeometry.FormallyUnramified.hom_ext` wants.
+* `AlgebraicGeometry.isReduced_of_formallyUnramified_over_field` — the tool a CONSUMER needs to
+  DISCHARGE the `hred` hypothesis of the headline: an affine scheme, of finite type and formally
+  unramified over a field, is reduced.  It is the scheme-level form of mathlib's
+  `Algebra.FormallyUnramified.isReduced_of_field` and points the other way from everything else
+  here, so it is stated at the end rather than folded into the assembly.
 
 **No characteristic hypothesis appears anywhere here, and none is needed**: over `𝔽_p`,
 `ker F ⊆ 𝔾ₐ` is finite flat and NOT étale, but its geometric fibre `Spec 𝔽̄_p[x]/(x^p)` is not
@@ -364,5 +370,67 @@ theorem etale_of_isReduced_pullback {X Y : Scheme.{u}} (h : X ⟶ Y)
     AlgebraicGeometry.Etale h :=
   etale_of_etale_fiberToSpecResidueField h
     (fun y => etale_fiberToSpecResidueField_of_isReduced_pullback h hred y)
+
+/-- **A scheme affine and of finite type over a field, formally unramified over it, is REDUCED**
+(PROVEN 2026-07-30).
+
+This is the *supplier* for the `hred` hypothesis of `etale_of_isReduced_pullback` above, and it is
+the only statement in this file that points from unramifiedness towards reducedness rather than the
+other way.  Its first consumer is
+`Fermat.isReduced_geomFibre_nTorsion_of_specQBase` (`Fermat/FLT/ModularCurve/X0.lean`), where `X` is
+a geometric fibre of `E[n]` and the unramifiedness comes from `Fermat.formallyUnramified_mulByNat`.
+
+## The proof is the affine-local translation, and nothing else
+
+`Algebra.FormallyUnramified.isReduced_of_field` (`Mathlib/RingTheory/Unramified/Field.lean`) is the
+whole mathematical content.  What is owed is only the passage from the scheme-level property to a
+statement about `Γ(X, ⊤)` as a `K`-algebra, and that is:
+
+* `IsAffineHom h` makes `X` affine (the target `Spec K` is), so `X` is determined by `Γ(X, ⊤)` and
+  `isReduced_of_isAffine_isReduced` closes the goal — no open cover is needed;
+* `FormallyUnramified` and `LocallyOfFiniteType` are both `HasRingHomProperty`s, so
+  `HasRingHomProperty.iff_of_isAffine` turns each into the corresponding property of `h.appTop`;
+* the `K`-algebra structure is `h.appTop` precomposed with `(Scheme.ΓSpecIso _).inv : K ⟶ Γ(Spec K, ⊤)`,
+  which is an isomorphism, hence surjective, hence both formally unramified and of finite type — so
+  the two ring properties transfer across it by their composition lemmas.
+
+## Faithfulness
+
+**`LocallyOfFiniteType` is not decoration**: `isReduced_of_field` requires
+`Algebra.EssFiniteType K A`, and this hypothesis is exactly what supplies it (via
+`Algebra.FiniteType`).  Formal unramifiedness alone does not force reducedness for arbitrary
+`K`-algebras — the finiteness is what makes the Kähler-differential argument bite.
+
+**`IsAffineHom` is not removable as stated**, though it is not essential mathematics: for a general
+`X` one would run the same argument over `X.affineCover` and conclude with
+`IsReduced.of_openCover`, at the cost of `LocallyOfFiniteType` being checked on each piece (which is
+automatic, being Zariski-local at the source).  Every consumer here has a *finite* `h`, which gives
+`IsAffineHom` and `LocallyOfFiniteType` simultaneously, so the affine form is the one written.
+
+There is **no characteristic hypothesis**, consistently with the rest of this file: over `𝔽_p`,
+`Spec 𝔽_p[x]/(xᵖ) ⟶ Spec 𝔽_p` is affine and finite but *not* formally unramified
+(`Ω = 𝔽_p[x]/(xᵖ) dx ≠ 0`), so the hypothesis is unsatisfiable there rather than false. -/
+theorem isReduced_of_formallyUnramified_over_field
+    {X : Scheme.{u}} {K : Type u} [Field K] (h : X ⟶ Spec (CommRingCat.of K))
+    [FormallyUnramified h] [IsAffineHom h] [LocallyOfFiniteType h] : IsReduced X := by
+  haveI : IsAffine X := isAffine_of_isAffineHom h
+  set φ : CommRingCat.of K ⟶ Γ(X, ⊤) := (Scheme.ΓSpecIso (CommRingCat.of K)).inv ≫ h.appTop
+    with hφ
+  letI : Algebra K Γ(X, ⊤) := φ.hom.toAlgebra
+  have hiso : Function.Surjective (Scheme.ΓSpecIso (CommRingCat.of K)).inv.hom :=
+    (ConcreteCategory.bijective_of_isIso (Scheme.ΓSpecIso (CommRingCat.of K)).inv).surjective
+  have hfu : RingHom.FormallyUnramified φ.hom := by
+    rw [hφ]
+    exact RingHom.FormallyUnramified.comp (RingHom.FormallyUnramified.of_surjective hiso)
+      (HasRingHomProperty.iff_of_isAffine.mp ‹FormallyUnramified h›)
+  have hft : RingHom.FiniteType φ.hom := by
+    rw [hφ]
+    exact RingHom.finiteType_stableUnderComposition _ _
+      (RingHom.FiniteType.of_surjective _ hiso)
+      (HasRingHomProperty.iff_of_isAffine.mp ‹LocallyOfFiniteType h›)
+  haveI : Algebra.FormallyUnramified K Γ(X, ⊤) := hfu
+  haveI : Algebra.FiniteType K Γ(X, ⊤) := hft
+  haveI : _root_.IsReduced Γ(X, ⊤) := Algebra.FormallyUnramified.isReduced_of_field K _
+  exact isReduced_of_isAffine_isReduced X
 
 end AlgebraicGeometry
