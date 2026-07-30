@@ -65835,6 +65835,53 @@ theorem relPicEquiv_sectionIdeal_of_aj_add_eq {X J : Scheme.{0}} {strX : X ⟶ S
     (isInvertibleSheaf_modTensor (P.invertible _) (P.invertible _))
     (hcong.symm.trans (hX.trans hY.symm))
 
+/-- **AN INVERTIBLE SHEAF ON A ONE-POINT SCHEME IS TRIVIAL** (PROVEN
+2026-07-30) — the first bullet of `nonempty_iso_of_relPicEquiv_specField`
+below, which is the only thing that leaf needed and did not already have.
+
+`IsInvertibleSheaf N` hands back, at the unique point, an open `U` containing
+it together with `N|_U ≅ 𝒪_U`.  On a scheme whose underlying space is a
+singleton the only such `U` is `⊤`, and `Scheme.topIso : (⊤ : Z.Opens) ≅ Z`
+transports the trivialization back to `Z`: restrict along `Z.topIso.inv`,
+compose the two restrictions with `Scheme.Modules.restrictFunctorComp`, and
+collapse `restrictFunctor (𝟙 Z)` with `restrictFunctorId`.
+
+**Stated for `[Unique Z]` rather than for `Spec K`.**  Nothing in the argument
+sees the ring: only that the space has exactly one point, which for `Spec K`
+is mathlib's `Unique (Spec (.of K))` instance for a field.  `Nonempty` is as
+load-bearing as `Subsingleton` — on the EMPTY scheme `IsInvertibleSheaf` is
+vacuous and gives no trivialization at all, so `[Subsingleton Z]` alone would
+not do.
+
+**A field-specific twin, `nonempty_iso_modUnit_of_isInvertibleSheaf_of_field`,
+is a sorry leaf in `Modularity/AbelianSchemeIsogeny.lean`** (cut the same day,
+upstream of this file, and separately owned).  This declaration proves it in
+one line — `nonempty_iso_modUnit_of_isInvertibleSheaf_unique hM` — so when that
+leaf closes, the two should be reconciled to one; they are kept apart here only
+because editing another owner's region mid-flight is what merges cannot fix. -/
+theorem nonempty_iso_modUnit_of_isInvertibleSheaf_unique {Z : Scheme.{u}} [Unique Z]
+    {N : Z.Modules} (hN : IsInvertibleSheaf N) : Nonempty (N ≅ modUnit Z) := by
+  obtain ⟨U, hzU, ⟨φ⟩⟩ := hN default
+  have hUtop : U = ⊤ := by
+    ext z
+    have hz : z = default := Subsingleton.elim _ _
+    subst hz
+    simpa using hzU
+  subst hUtop
+  have hcomp : Z.topIso.inv ≫ (⊤ : Z.Opens).ι = 𝟙 Z := Z.toIso_inv_ι
+  haveI : IsOpenImmersion Z.topIso.inv := inferInstance
+  refine ⟨?_⟩
+  calc N ≅ (Scheme.Modules.restrictFunctor (𝟙 Z)).obj N :=
+        ((Scheme.Modules.restrictFunctorId (X := Z)).app N).symm
+    _ ≅ (Scheme.Modules.restrictFunctor (Z.topIso.inv ≫ (⊤ : Z.Opens).ι)).obj N :=
+        ((Scheme.Modules.restrictFunctorCongr hcomp).app N).symm
+    _ ≅ (Scheme.Modules.restrictFunctor (⊤ : Z.Opens).ι ⋙
+          Scheme.Modules.restrictFunctor Z.topIso.inv).obj N :=
+        (Scheme.Modules.restrictFunctorComp Z.topIso.inv (⊤ : Z.Opens).ι).app N
+    _ ≅ (modUnit ((⊤ : Z.Opens) : Scheme.{u})).restrict Z.topIso.inv :=
+        (Scheme.Modules.restrictFunctor Z.topIso.inv).mapIso φ
+    _ ≅ modUnit Z := Scheme.Modules.restrictUnitIso _
+
 /-- **`Pic` OF A FIELD POINT IS TRIVIAL: over `Spec K` the relative
 Picard relation is an honest isomorphism of sheaves** (sorry leaf,
 2026-07-29) — the first of the two halves of the `g¹₂` leaf below, and
@@ -65886,12 +65933,24 @@ only the SOURCE of `g` being `Spec` of a field is used, through
 weaker relation than `≅` over a general `T` — at `T` with `Pic T ≠ 0` it
 identifies `L` with every twist of it — so the conclusion is real
 content, and it fails verbatim over such a `T`.  That is why the field
-hypothesis is in the statement and why this is not a `simp` lemma. -/
+hypothesis is in the statement and why this is not a `simp` lemma.
+
+**PROVEN 2026-07-30** over `nonempty_iso_modUnit_of_isInvertibleSheaf_unique`
+immediately above, exactly along the three bullets: the twisting sheaf `N`
+handed back by `RelPicEquiv` is trivial because `Spec K` is a one-point
+scheme, `modPullbackUnitIso` carries `𝒪_{Spec K}` to `𝒪_{X_T}`, and
+`modTensorUnitRightIso` — the RIGHT unitor, which is the side `RelPicEquiv`
+puts the twist on — removes it.  Every ingredient the second bullet of the
+paragraph above listed as living only on `merger` is on `main` now
+(`RelativePicard.lean`), so nothing had to be rebuilt. -/
 theorem nonempty_iso_of_relPicEquiv_specField {K : Type} [Field K] {X S : Scheme.{0}}
     {strX : X ⟶ S} {g : Spec (CommRingCat.of K) ⟶ S}
     {L L' : (curveBaseChange strX g).Modules}
-    (_h : RelPicEquiv strX g L L') : Nonempty (L ≅ L') :=
-  sorry
+    (_h : RelPicEquiv strX g L L') : Nonempty (L ≅ L') := by
+  obtain ⟨N, hN, ⟨e⟩⟩ := _h
+  obtain ⟨eN⟩ := nonempty_iso_modUnit_of_isInvertibleSheaf_unique hN
+  exact ⟨e ≪≫ modTensorMapIso (Iso.refl L')
+      (modPullbackMapIso _ eN ≪≫ modPullbackUnitIso _) ≪≫ modTensorUnitRightIso L'⟩
 
 /-- **THE `g¹₂`, WITH THE PICARD TWIST ALREADY REMOVED: two DISJOINT
 effective degree-`2` divisors with ISOMORPHIC sheaves make the curve
@@ -66113,6 +66172,97 @@ theorem hasDoubleCoverOfAffineLine_of_ajPair_eq {X J : Scheme.{0}} {strX : X ⟶
     h₁₁ h₁₂ h₂₁ h₂₂
     (relPicEquiv_sectionIdeal_of_aj_add_eq hproper hcurve hconn jac x₁ x₂ y₁ y₂ heq)
 
+/-- **A TYPE IN WHICH ANY THREE ELEMENTS ADMIT A COINCIDENCE EMBEDS INTO
+`Bool`** (PROVEN 2026-07-30) — the set-theoretic content of "a fibre has at
+most two points", in the form the three-point clause of
+`HasDoubleCoverOfAffineLine` actually delivers it.
+
+Stated as an embedding rather than as `Nat.card T ≤ 2` because the consumer
+`card_le_two_mul_of_fibre` needs it FIBREWISE and uniformly in the fibre, and
+an embedding composes with the fibre projection where a cardinality bound does
+not.  Pick any `a₀` (if `T` is empty there is nothing to do) and send `x` to
+`decide (x = a₀)`: two elements both distinct from `a₀` are equal by the
+hypothesis applied to `a₀, x, y`. -/
+theorem nonempty_embedding_bool_of_forall_three {T : Type u}
+    (h : ∀ a b c : T, a = b ∨ a = c ∨ b = c) : Nonempty (T ↪ Bool) := by
+  classical
+  by_cases hT : Nonempty T
+  · obtain ⟨a₀⟩ := hT
+    refine ⟨⟨fun x => decide (x = a₀), ?_⟩⟩
+    intro x y hxy
+    simp only [decide_eq_decide] at hxy
+    by_cases hx : x = a₀
+    · exact hx.trans (hxy.mp hx).symm
+    · have hy : ¬ y = a₀ := fun hy => hx (hxy.mpr hy)
+      rcases h a₀ x y with h1 | h1 | h1
+      · exact absurd h1.symm hx
+      · exact absurd h1.symm hy
+      · exact h1
+  · exact ⟨⟨fun x => absurd (Nonempty.intro x) hT, fun x => absurd (Nonempty.intro x) hT⟩⟩
+
+/-- **COUNTING THROUGH FIBRES OF SIZE AT MOST TWO** (PROVEN 2026-07-30) — a map
+to a FINITE type all of whose fibres have at most two points has domain of size
+at most twice the target's.
+
+The hypothesis is phrased as "of any three elements with a common image, two
+coincide" rather than as `Nat.card (fibre) ≤ 2` because that is the shape
+`HasDoubleCoverOfAffineLine`'s degree clause has, and converting costs a lemma
+either way.  Finiteness of the DOMAIN is a conclusion, not a hypothesis: it
+comes out of `Equiv.sigmaFiberEquiv` together with the fibrewise embedding into
+`Bool`, which is why the proof goes through `Nat.card (B × Bool)` rather than
+through a sum over fibres. -/
+theorem card_le_two_mul_of_fibre {A B : Type u} [Finite B] (F : A → B)
+    (hfib : ∀ a b c : A, F a = F b → F a = F c → a = b ∨ a = c ∨ b = c) :
+    Nat.card A ≤ 2 * Nat.card B := by
+  classical
+  have he : ∀ b : B, Nonempty ({a : A // F a = b} ↪ Bool) := by
+    intro b
+    refine nonempty_embedding_bool_of_forall_three ?_
+    rintro ⟨x, hx⟩ ⟨y, hy⟩ ⟨z, hz⟩
+    have h1 : F x = F y := by rw [hx, hy]
+    have h2 : F x = F z := by rw [hx, hz]
+    rcases hfib x y z h1 h2 with h | h | h
+    · exact Or.inl (Subtype.ext h)
+    · exact Or.inr (Or.inl (Subtype.ext h))
+    · exact Or.inr (Or.inr (Subtype.ext h))
+  set e : ∀ b : B, {a : A // F a = b} ↪ Bool := fun b => (he b).some
+  have hinj : Function.Injective
+      (fun p : Σ b : B, {a : A // F a = b} => (p.1, e p.1 p.2)) := by
+    rintro ⟨b, x⟩ ⟨b', x'⟩ hp
+    simp only [Prod.mk.injEq] at hp
+    obtain ⟨rfl, hx⟩ := hp
+    exact congrArg (Sigma.mk b) ((e b).injective hx)
+  have hcard : Nat.card (Σ b : B, {a : A // F a = b}) ≤ Nat.card (B × Bool) :=
+    Nat.card_le_card_of_injective _ hinj
+  rw [Nat.card_congr (Equiv.sigmaFiberEquiv F)] at hcard
+  rw [Nat.card_prod] at hcard
+  simpa [Nat.card_eq_fintype_card, mul_comm] using hcard
+
+/-- **THE `K`-POINTS OF THE AFFINE LINE OVER A `K`-POINT OF THE BASE ARE `K`**
+(PROVEN 2026-07-30) — `Hom_S(Spec K, 𝔸¹_S) = Γ(Spec K) = K`, which is the target
+count in the leaf below.
+
+Mathlib's `AffineSpace.homOverEquiv` is the statement, phrased with the `Over`
+TYPECLASS (`f.IsOver S`) where `RelPoint` carries the equation `x ≫ (𝔸 ↘ S) = k`
+as data; the two differ only by `Equiv.subtypeEquivRight` once the instance
+`(Spec K).Over S := ⟨k⟩` is installed by hand.  The remaining two steps are
+`Scheme.ΓSpecIso` and `Equiv.funUnique`.
+
+**Stated over an arbitrary base `S`**, and no finiteness is asked for here — the
+leaf below supplies `[Finite K]` and gets `Finite` of this type from the
+equivalence. -/
+theorem nonempty_equiv_relPoint_affineLine {K : Type} [Field K] {S : Scheme.{0}}
+    (k : Spec (CommRingCat.of K) ⟶ S) :
+    Nonempty (RelPoint (𝔸(Unit; S) ↘ S) k ≃ K) := by
+  letI : (Spec (CommRingCat.of K)).Over S := ⟨k⟩
+  have e1 : RelPoint (𝔸(Unit; S) ↘ S) k
+      ≃ { f : Spec (CommRingCat.of K) ⟶ 𝔸(Unit; S) // f.IsOver S } :=
+    Equiv.subtypeEquivRight (fun _ => ⟨fun h => ⟨h⟩, fun h => h.1⟩)
+  have e2 := AffineSpace.homOverEquiv (n := Unit) (S := S) (X := Spec (CommRingCat.of K))
+  have e3 : Γ(Spec (CommRingCat.of K), ⊤) ≃ K :=
+    (Scheme.ΓSpecIso (CommRingCat.of K)).commRingCatIsoToRingEquiv.toEquiv
+  exact ⟨e1.trans (e2.trans ((Equiv.funUnique Unit _).trans e3))⟩
+
 /-- **THE `K`-POINTS THAT LIE IN `U` NUMBER AT MOST `2·#K`** (sorry leaf,
 2026-07-28) — the first half of
 `card_relPoint_le_of_hasDoubleCoverOfAffineLine`, and the half that needs
@@ -66209,7 +66359,24 @@ morphism.
 `card_relPoint_liesIn_le_of_finite_toAffineLine` for why that seam is the
 right one: it confines the `ℙ¹` requirement — the only genuinely missing
 theory here — to the COMPLEMENT half, while the `U` half needs nothing but
-the `K`-points of `𝔸¹` and the three-point clause. -/
+the `K`-points of `𝔸¹` and the three-point clause.
+
+**PROVEN 2026-07-30**, exactly along the two steps above, over the three
+declarations immediately preceding it — `nonempty_equiv_relPoint_affineLine`
+for the target count and `card_le_two_mul_of_fibre` (over
+`nonempty_embedding_bool_of_forall_three`) for the fibrewise count.
+
+**ONE CORRECTION TO THE PARAGRAPH ABOVE: `_hι` IS NOT LOAD-BEARING EITHER.**
+That paragraph says `_hcomm` and `_hι` are "both genuinely load-bearing", the
+second "for uniqueness of the lift".  Uniqueness is not needed: the map to
+`𝔸¹(K)` may send `x` to `u ≫ φ` for an ARBITRARILY CHOSEN lift `u`, because
+what is fed to `_hthree` is that choice, and what comes back out — an equality
+of two chosen lifts — gives `x = y` directly through `u ≫ ι = x`, with no
+appeal to `ι` being a monomorphism at any point.  So `_hι` joins `_hφ` as
+carried-but-unused, and both are underscore-prefixed accordingly.  `_hcomm`
+IS load-bearing, as stated: it is what puts `u ≫ φ` in the fibre over `k`.
+(The hypotheses are left in place: they cost the consumer nothing, and a
+successor reformulating the fibre count may want them.) -/
 theorem card_relPoint_liesIn_le_of_finite_toAffineLine {X S U : Scheme.{0}} {strX : X ⟶ S}
     (ι : U ⟶ X) (φ : U ⟶ 𝔸(Unit; S))
     (_hι : IsOpenImmersion ι) (_hφ : IsFinite φ)
@@ -66218,8 +66385,30 @@ theorem card_relPoint_liesIn_le_of_finite_toAffineLine {X S U : Scheme.{0}} {str
       (u₁ u₂ u₃ : Spec (CommRingCat.of K) ⟶ U),
       u₁ ≫ φ = k → u₂ ≫ φ = k → u₃ ≫ φ = k → u₁ = u₂ ∨ u₁ = u₃ ∨ u₂ = u₃)
     (K : Type) [Field K] [Finite K] (k : Spec (CommRingCat.of K) ⟶ S) :
-    Nat.card {x : RelPoint strX k // RelPoint.LiesIn ι x} ≤ 2 * Nat.card K :=
-  sorry
+    Nat.card {x : RelPoint strX k // RelPoint.LiesIn ι x} ≤ 2 * Nat.card K := by
+  classical
+  obtain ⟨eK⟩ := nonempty_equiv_relPoint_affineLine (S := S) k
+  haveI : Finite (RelPoint (𝔸(Unit; S) ↘ S) k) := Finite.of_equiv _ eK.symm
+  set F : {x : RelPoint strX k // RelPoint.LiesIn ι x} → RelPoint (𝔸(Unit; S) ↘ S) k :=
+    fun x => ⟨x.2.choose ≫ φ, by
+      rw [Category.assoc, _hcomm, ← Category.assoc, x.2.choose_spec, x.1.2]⟩
+  have hfib : ∀ a b c, F a = F b → F a = F c → a = b ∨ a = c ∨ b = c := by
+    intro a b c hab hac
+    have hab' : b.2.choose ≫ φ = a.2.choose ≫ φ := congrArg Subtype.val hab.symm
+    have hac' : c.2.choose ≫ φ = a.2.choose ≫ φ := congrArg Subtype.val hac.symm
+    have key := _hthree K (a.2.choose ≫ φ) a.2.choose b.2.choose c.2.choose rfl hab' hac'
+    have step : ∀ p q : {x : RelPoint strX k // RelPoint.LiesIn ι x},
+        p.2.choose = q.2.choose → p = q := by
+      intro p q h
+      refine Subtype.ext (Subtype.ext ?_)
+      rw [← p.2.choose_spec, ← q.2.choose_spec, h]
+    rcases key with h | h | h
+    · exact Or.inl (step a b h)
+    · exact Or.inr (Or.inl (step a c h))
+    · exact Or.inr (Or.inr (step b c h))
+  calc Nat.card {x : RelPoint strX k // RelPoint.LiesIn ι x}
+      ≤ 2 * Nat.card (RelPoint (𝔸(Unit; S) ↘ S) k) := card_le_two_mul_of_fibre F hfib
+    _ = 2 * Nat.card K := by rw [Nat.card_congr eK]
 
 /-- **THE COMPLEMENT OF `U` CONTRIBUTES AT MOST `2` `K`-POINTS** (sorry
 leaf, 2026-07-28) — the second half of
