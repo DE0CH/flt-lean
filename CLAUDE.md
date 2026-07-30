@@ -1112,8 +1112,14 @@ dropped-merge bug of class six.
    (comments stripped) against the resolved file.* This is what found `flt-lean-366`'s breakage
    before a build ran.
 
-And the standing one, which is what caught the other two: **the release build is not optional and
-its first failure is not its last.** Fix, rebuild, repeat; three rounds this release.
+And the standing one, which is what caught the rest: **the release build is not optional and its
+first failure is not its last.** Fix, rebuild, repeat — FOUR rounds this release, and the reason is
+structural rather than bad luck. **The errors are serialised behind each other by the import
+graph**, so round *n* only reveals what round *n−1*'s failure was hiding: one interface change
+(`IsSwanExponentAt` gaining a third clause) broke a consumer in its own module, found in round 1,
+and a second consumer 79 000 lines away in another module from another branch, found only in round
+4 after twenty minutes of elaboration. Budget three rounds minimum, and schedule nothing behind the
+first green one.
 
 ## RIVAL CUTS ARE OFTEN COMPLEMENTARY — check before choosing
 
