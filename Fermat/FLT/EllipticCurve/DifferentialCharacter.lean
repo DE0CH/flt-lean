@@ -101,6 +101,25 @@ equally the tool the chord branch's own docstring asks for.
 (`isDiffChar_comp` was already proven; `isDiffChar_add` is an assembly over the chord
 branch alone now.)
 
+**LATER ON 2026-07-30 — the chord branch's MISSING MACHINERY is built and proven, and
+what is left of that leaf is group-law bookkeeping.**  `RationalDerivation.lean` (new,
+`public import`ed below) supplies `d/dX` on `F(X)` and `chordDeriv_core`, the
+differentiated chord formula over an arbitrary derivation of an arbitrary field; and
+four more bricks landed here:
+
+* `diffChar_polyForm` — a certificate at every nonzero point IS the polynomial
+  identity `(A′B − AB′)·E = c·Cx·B²`.  So `IsDiffChar φ c` and
+  `exists_diffCharScalar_poly` are the SAME statement, and the whole theory is a
+  computation in `F(X)`;
+* `diffChar_curveEq` — the target curve's equation at the image point, `y` eliminated;
+* `diffChar_yMultiplier_ne_zero` — `Cx ≠ 0` for `φ ≠ 0` (the map does not land in
+  `W'[2]`);
+* plus `diffChar_psi_image_eq` and `diffChar_yWitness_onePart` from earlier the same day.
+
+Together these are eight of `chordDeriv_core`'s ten hypotheses.  The remaining two are
+written out in full, with their pointwise forms and their proof pattern, at the bottom
+of `isDiffCharCert_add_of_ne`'s docstring; neither mentions a derivative.
+
 **Do not attack them from the raw definition.** The section "What the certificate
 really says" below is PROVEN infrastructure written for exactly this purpose:
 `isDiffCharCert_reduced` / `isDiffCharCert_of_reduced` show that, given the
@@ -1106,7 +1125,27 @@ i.e. `(x ∘ φ)′ = c·γ` for `γ = C/E` the `y`-multiplier — no `∀ P`, n
 point. `exists_diffCharScalar` below is PROVEN over it, and this docstring's route notes
 (the `y`-elimination to `(A′B − AB′)²·Ψ₂Sq_W = C(c²)·B·(4A³ + b₂′A²B + 2b₄′AB² + b₆′B³)`,
 and the `[n]`-case Wronskian behind `separable_preΨ'`) apply verbatim to the new leaf,
-which is the form they were written for. A successor should attack that name. -/
+which is the form they were written for. A successor should attack that name.
+
+**AND IT IS EXACTLY EQUIVALENT TO `IsDiffChar` (2026-07-30, `diffChar_polyForm`).**  That
+declaration proves the converse direction — a certificate at every nonzero point gives
+this very identity back — so nothing has been lost or gained in the restatement, and the
+leaf is precisely "the pullback ratio `(x ∘ φ)′/γ` is a CONSTANT".  Two consequences worth
+knowing before starting.
+
+*The `y`-multiplier drops out of the question.*  In `F(X)` the pair `(x₁, γ₁) = (A/B, Cx/E)`
+satisfies `Ψ_{W′}(x₁) = γ₁²·Ψ_W` (square both sides of `diffChar_psi_image_eq` and use
+`ψ₂² = 4X³ + b₂X² + 2b₄X + b₆`), which determines `γ₁` up to sign from `x₁` alone.  So the
+leaf is a statement about the single rational function `x ∘ φ`.
+
+*And it is NOT algebraic — do not look for a `linear_combination`.*  Differentiating
+`Ψ_{W′}(x₁) = γ₁²Ψ_W` gives only `Θ_{W′}(x₁)·x₁′ = γ₁γ₁′Ψ_W + γ₁²Θ_W` (with `2Θ = Ψ′`),
+which is one relation short of pinning `x₁′/γ₁`, and no further differentiation helps: the
+pair `(x₁, γ₁)` with `Ψ_{W′}(x₁) = γ₁²Ψ_W` is exactly a morphism `W → W′` of curves — an
+isogeny composed with a TRANSLATION — and "the pullback factor of a morphism is constant"
+is Abel–Jacobi, i.e. genuinely divisor theory.  That is why this leaf survived while the
+chord branch's did not: the chord branch has `c` and `d` handed to it, and this one has to
+produce one. -/
 theorem exists_diffCharScalar_poly [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
     {φ : W.Point →+ W'.Point} {A B Cx D E : F[X]} (hφ0 : φ ≠ 0) (hB : B ≠ 0) (hE : E ≠ 0)
     (hrat : ∀ P : W.Point, φ P ≠ 0 →
@@ -1825,15 +1864,75 @@ and `4 = 4`.) They say `Dλ = x₁ − x₃` in the first slot and `Dλ = x₂ �
 the second, which is Silverman *AEC* III.5.1 — translation invariance of `ω` —
 in coordinates.
 
-**THE MISSING MACHINERY** is `D` itself: this project has no derivation on the
+**THE MISSING MACHINERY** was `D` itself: this project had no derivation on the
 coordinate ring of a general `W/F` (only `PsiSumCompanion.DK` for the UNIVERSAL
-curve, in `InvariantDerivation.lean`). Two routes: build the rank-2 model
-`p(x) + q(x)y` of the coordinate ring with the explicit derivation
+curve, in `InvariantDerivation.lean`). Two routes were on offer: build the rank-2
+model `p(x) + q(x)y` of the coordinate ring with the explicit derivation
 `D(p + qy) = [2p' − (a₁x + a₃)q' − a₁q]·y + [(a₁x + a₃)p' + 2q'f + q(3x² + 2a₂x + a₄)]`
 and prove Leibniz; or eliminate `y` first — `x₃` is `y`-free because
 `x(−Q) = x(Q)`, so every quantity above can be pushed into `F(x)` and `D`
-becomes `ψ₂·d/dx` with ordinary `Polynomial.derivative`. The second route needs
-no new theory but pays for it in degree bookkeeping.
+becomes `ψ₂·d/dx` with ordinary `Polynomial.derivative`.
+
+**IT IS NO LONGER MISSING (2026-07-30): the SECOND route is built and PROVEN, and it
+turned out to need no coordinate ring at all.**  `RationalDerivation.lean` (`public
+import`ed here) supplies `rderiv : F(X) → F(X)` — `d/dX` on rational functions,
+`rderiv (A/B) = wr A B / B²` for every representation, additive and Leibniz — and
+`RationalDerivation.chordDeriv_core`, which is the whole display above with `y`
+eliminated, over an ARBITRARY derivation of an ARBITRARY field.  The two identities
+shown above are its internal `hI1`/`hI2`; they are `linear_combination`s exactly as
+predicted here, with integer coefficients, so no characteristic hypothesis is needed.
+
+**WHAT REMAINS IS PURE GROUP-LAW BOOKKEEPING, and here it is in full.**  Take the
+witnesses `A₁ … E₁` of `φ` and `A₂ … E₂` of `ψ`, and put
+
+  `K = B₁B₂`,  `G = A₂B₁ − A₁B₂`,  `L = E₁E₂`,
+  `N = C₂E₁ − C₁E₂`,  `M = D₂E₁ − D₁E₂`,  `S = A₁B₂ + A₂B₁`,
+  `f = X³ + a₂X² + a₄X + a₆`.
+
+Instantiate `chordDeriv_core` in `K := RatFunc F` at
+
+  `xᵢ = Aᵢ/Bᵢ`,  `γᵢ = Cᵢ/Eᵢ`,  `δᵢ = Dᵢ/Eᵢ`,  `x₃ = A/B`,  `γ₃ = Cp/E`,
+  `D = rderiv`,  `c, d, aⱼ, aⱼ′` the images of the constants.
+
+Then, of its ten hypotheses, EIGHT are already theorems in this file:
+
+* `D xᵢ = cᵢγᵢ` is `diffChar_polyForm` (PROVEN above);
+* `2δᵢ = γᵢp − a₁′xᵢ − a₃′` is `diffChar_yWitness_onePart` (PROVEN above);
+* the target-curve equation at `Qᵢ`, `y`-free, is `diffChar_curveEq` (PROVEN above);
+* `γᵢ ≠ 0` is `diffChar_yMultiplier_ne_zero` (PROVEN above);
+* `x₂ − x₁ ≠ 0` is `G ≠ 0`, which is discharged exactly as
+  `IsRationalMap.add_of_ne` discharges its own `hG` (from `φ ≠ ψ`, which `hxne`
+  gives, and `φ + ψ ≠ 0`, which `hsumP` gives, through
+  `eq_or_add_eq_zero_of_finite_compl`).
+
+TWO remain, and both are the CHORD FORMULA of the group law cleared of denominators —
+no differentials, no derivation, nothing about `c` or `d`.  Each is proven by the
+density pattern this file already uses three times (`diffChar_xWitness_eq`,
+`diffChar_yWitness_onePart`, `isDiffCharCert_of_cofinite`): pick a point over a
+generic `t`, read off the identity, conclude by `Polynomial.eq_zero_of_infinite_isRoot`.
+
+1. *The `x`-coordinate.*
+   `A·(L²G²K) = B·(K³(N²f + M²) + a₁′MGK²L − (a₂′K + S)G²L²)`.
+   Pointwise this is `x₃(x₂ − x₁)² = Γ²f + Δ² + a₁′Δ(x₂ − x₁) − (a₂′ + x₁ + x₂)(x₂ − x₁)²`
+   (`Γ = γ₂ − γ₁`, `Δ = δ₂ − δ₁`), i.e. `x₃ = λ² + a₁′λ − a₂′ − x₁ − x₂` with `y`
+   eliminated by `y² = f − py`; the `y`-coefficient of `λ²` is
+   `Γ·(2Δ − Γp + a₁′(x₂ − x₁))`, killed by `diffChar_yWitness_onePart`, which is why
+   the cleared form has no `y` in it.  Note `G = K(x₂ − x₁)`, `N = LΓ`, `M = LΔ`,
+   `S = K(x₁ + x₂)`, `A = x₃B`, so the displayed identity is literally the pointwise
+   one multiplied by `B·L²K³`.
+2. *The `y`-multiplier.*
+   `Cp·G·L·B·B₁ + C₁·G·E·E₂·B·B₁ + N·(AB₁ − A₁B)·E·K = 0`.
+   Pointwise this is `γ₃(x₂ − x₁) = −Γ(x₃ − x₁) − γ₁(x₂ − x₁)`, and it comes out of
+   `diffChar_psi_image_eq` applied to `φ + ψ` and to `φ` WITHOUT any `±P`
+   symmetrisation: those two give `ψ₂′(Q₃) = γ₃ψ₂(P)` and `ψ₂′(Q₁) = γ₁ψ₂(P)`, the
+   group law gives `ψ₂′(Q₃) = −ψ₂′(Q₁) − (2λ + a₁′)(x₃ − x₁)`, and
+   `(2λ + a₁′)(x₂ − x₁) = Γ·ψ₂(P)` (again by the `1`-part identity), so the whole
+   relation carries a factor `ψ₂(P)` which is nonzero off the `2`-torsion.
+
+With those two, `chordDeriv_core` returns `rderiv x₃ = (c + d)γ₃`, i.e. the polynomial
+identity `(A′B − AB′)·E = (c + d)·Cp·B²`; and the certificate AT THE GIVEN `P` then
+follows from `isDiffCharCert_of_reduced` plus `diffChar_psi_image_eq` for `φ + ψ`,
+cancelling the single factor `B(x P)` that `hBP` provides.
 
 **A SIMPLIFICATION WORTH KNOWING** (and the reason
 `isDiffCharCert_of_cofinite` is stated as it is): writing `y ∘ φ = γ(x)y + δ(x)`
