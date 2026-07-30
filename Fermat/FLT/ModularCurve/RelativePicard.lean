@@ -886,22 +886,166 @@ theorem nonempty_modTensor_assoc {Z : Scheme.{u}} (L M N : Z.Modules) :
       (modTensorLocIso L (modTensor M N)).symm
   exact ⟨{ hom := e.hom, inv := e.inv, hom_inv_id := e.hom_inv_id, inv_hom_id := e.inv_hom_id }⟩
 
-/-- **PULLBACK COMMUTES WITH `modTensor`** (sorry leaf — **BUT SEE THE
-WARNING**).
+/-! #### Pullback and `modTensor`: the sheafification is FREE, the presheaf pullback is not
 
-`Scheme.Modules.pullback` is a left adjoint and the presheaf pullback is
-strong monoidal, so the content is again that sheafification is monoidal:
-the sheafification inside `modTensor` has to move across the pullback.
+**Amended 2026-07-31, and this REVERSES the route this section used to record.**
+The old docstring of `nonempty_modPullback_modTensorPic` said
 
-**DO NOT DISPATCH A PROVER AT THIS.**  It is the verbatim twin of
-`Fermat.nonempty_modPullback_modTensor` in
-`Fermat/FLT/Modularity/AmpleSheaf.lean`, which is an open leaf there with
-a live owner as of 2026-07-28.  Same reason as the leaf above: it could
-not be hoisted without colliding with that owner's work.  **The correct
-action is the hoist**, once that owner has finished. -/
-theorem nonempty_modPullback_modTensorPic {Z W : Scheme.{u}} (h : W ⟶ Z) (L M : Z.Modules) :
-    Nonempty (modPullback h (modTensor L M) ≅ modTensor (modPullback h L) (modPullback h M)) :=
+> `Scheme.Modules.pullback` is a left adjoint and the presheaf pullback is
+> strong monoidal, so the content is again that sheafification is monoidal:
+> the sheafification inside `modTensor` has to move across the pullback.
+
+**Both halves are wrong, and they are wrong in opposite directions.**
+
+* *Moving sheafification across the pullback is FREE* — it is
+  `SheafOfModules.sheafificationCompPullback` in the pin,
+  `a_Z ⋙ f^*_{sheaf} ≅ f^*_{presheaf} ⋙ a_W`, together with
+  `SheafOfModules.pullbackIso`.  Nothing has to be proven for it.
+* *The presheaf pullback is NOT strong monoidal in general.*  It is the left
+  adjoint of `pushforward φ`, which factors as restriction of scalars along
+  `φ` (left adjoint = base change, strong monoidal) after precomposition with
+  `F` (left adjoint = a relative left Kan extension, **not** monoidal).  For
+  `F : C ⥤ D` collapsing two objects `x, y` of a discrete `C` to one object
+  `a` of `D`, with constant ring `k`, `(Lan M)(a) = M x ⊕ M y`, so
+  `Lan M ⊗ Lan N` has four summands where `Lan (M ⊗ N)` has two.  So a proof
+  of the leaf below may NOT be attempted at the generality of an arbitrary
+  morphism of presheaves of rings over an arbitrary continuous functor — it is
+  false there.
+
+What rescues it here is that the site is `Opens`: `Opens.map h.base` preserves
+finite meets, so `{U : Z.Opens // V ≤ h ⁻¹ᵁ U}` is CODIRECTED, the Kan extension
+`(Lan M)(V) = colim_{U ⊇ h(V)} M(U) ⊗_{Γ(Z,U)} Γ(W,V)` is a FILTERED colimit,
+and tensor products commute with filtered colimits.  That is the whole
+mathematical content, and it is now isolated in one leaf,
+`nonempty_presheafModPullback_tensor`, with no sheaf theory in it at all.
+
+The consequence for dispatch is the reverse of what stood here: the leaf below
+is PROVEN and is no longer a dispatch target, and there is no hoist to wait for.
+Its twin `Fermat.nonempty_modPullback_modTensor` in
+`Fermat/FLT/Modularity/AmpleSheaf.lean` — which is DOWNSTREAM and is proven
+there only over that module's still-open `isIso_modPullbackTensorComparison` —
+should now be redirected to this declaration, and
+`isIso_modPullbackTensorComparison` together with `modPullbackTensorComparison`
+and `modPullbackTensorComparison_tensorSection` DELETED.  That is a strict
+removal of a leaf, not a hoist, and it is left to that module's owner because it
+is a downstream edit. -/
+
+/-- **The PRESHEAF-level pullback** of presheaves of modules along a morphism of
+schemes, i.e. `Scheme.Modules.pullback h` before sheafification.
+
+`SheafOfModules.pullbackIso` and `SheafOfModules.sheafificationCompPullback`
+relate it to `modPullback`; it exists as a named abbreviation only so that the
+one genuine leaf about it can be stated. -/
+noncomputable abbrev presheafModPullback {Z W : Scheme.{u}} (h : W ⟶ Z) :
+    PresheafOfModules.{u} Z.ringCatSheaf.obj ⥤ PresheafOfModules.{u} W.ringCatSheaf.obj :=
+  PresheafOfModules.pullback.{u} (Scheme.Hom.toRingCatSheafHom h).hom
+
+/-- **SHEAFIFYING A PRESHEAF TENSOR PRODUCT IS `modTensor` OF THE SHEAFIFICATIONS**
+(PROVEN — free from the localized monoidal structure): `a(A ⊗ B) ≅ a A ⊗ a B`.
+
+This is the step that lets an identity proven for PRESHEAVES be pushed into
+`Z.Modules`, and it is exactly where `modLocW_isMonoidal` is spent: `μ` compares
+`a A ⊗ a B` with `a (A ⊗ B)` in `ModLM W`, and `modTensorLocIso` compares
+`modTensor (a A) (a B)` — which is `a ((a A).val ⊗ (a B).val)` by definition —
+with the same thing.  No comparison of `A` with `(a A).val` is needed anywhere,
+which is why the unit of the sheafification adjunction never appears. -/
+noncomputable def modSheafifyTensorIso {W : Scheme.{u}}
+    (A B : PresheafOfModules.{u} W.ringCatSheaf.obj) :
+    (PresheafOfModules.sheafification (𝟙 W.ringCatSheaf.obj)).obj (A ⊗ B) ≅
+      modTensor ((PresheafOfModules.sheafification (𝟙 W.ringCatSheaf.obj)).obj A)
+        ((PresheafOfModules.sheafification (𝟙 W.ringCatSheaf.obj)).obj B) :=
+  letI e : toModLM ((PresheafOfModules.sheafification (𝟙 W.ringCatSheaf.obj)).obj (A ⊗ B)) ≅
+      toModLM (modTensor ((PresheafOfModules.sheafification (𝟙 W.ringCatSheaf.obj)).obj A)
+        ((PresheafOfModules.sheafification (𝟙 W.ringCatSheaf.obj)).obj B)) :=
+    (Localization.Monoidal.μ _ (modLocW W) (modLocEps W) A B).symm ≪≫
+      (modTensorLocIso ((PresheafOfModules.sheafification (𝟙 W.ringCatSheaf.obj)).obj A)
+        ((PresheafOfModules.sheafification (𝟙 W.ringCatSheaf.obj)).obj B)).symm
+  { hom := e.hom, inv := e.inv, hom_inv_id := e.hom_inv_id, inv_hom_id := e.inv_hom_id }
+
+/-- **THE PRESHEAF PULLBACK IS STRONG MONOIDAL ON THE SITE OF OPENS** (sorry
+leaf, cut 2026-07-31 out of `nonempty_modPullback_modTensorPic`) — and this is
+now the ONLY open obligation behind "pullback commutes with `⊗`".
+
+No sheaf, no sheafification, no Grothendieck topology: `PresheafOfModules.pullback`
+is the left adjoint of `PresheafOfModules.pushforward`, and the claim is that it
+carries the pointwise tensor product of presheaves of modules to the pointwise
+tensor product.
+
+**ROUTE, and the only one that can work** (see the section header for why the
+statement is FALSE at greater generality, with the two-point counterexample).
+
+`pushforward φ` is `precomposition with Opens.map h.base` followed by
+`restrictScalars φ`.  Take left adjoints in the other order:
+
+1. *Base change of rings* `Γ(W, h ⁻¹ᵁ −) ⊗_{Γ(Z,−)} −` is STRONG monoidal, by
+   `TensorProduct.congr`-style associativity of base change — no colimits.
+2. *The relative left Kan extension* along `Opens.map h.base` is the filtered
+   colimit `(Lan M)(V) = colim_{U ⊇ h(V)} M(U) ⊗_{Γ(Z,U)} Γ(W,V)`.  The index
+   poset `{U : Z.Opens // V ≤ h ⁻¹ᵁ U}` is CODIRECTED (it is closed under `⊓`,
+   because `h ⁻¹ᵁ (U₁ ⊓ U₂) = h ⁻¹ᵁ U₁ ⊓ h ⁻¹ᵁ U₂`, and contains `⊤`), so the
+   colimit is FILTERED, and `M ↦ M ⊗ N` commutes with filtered colimits.
+
+What the pin does NOT give is that formula: `PresheafOfModules.pullback` is
+defined abstractly as `(pushforward φ).leftAdjoint`, with existence obtained
+through `pullbackObjIsDefined_eq_top` and no description of the object.  So a
+prover has two honest options, and should price both before choosing:
+
+* establish the colimit formula above and run the argument, or
+* run the *generators* argument, which avoids the formula entirely.  Every
+  presheaf of modules is a colimit of `(free S).obj (yoneda.obj U)` — mathlib's
+  `PresheafOfModules.isColimitFreeYonedaCoproductsCokernelCofork` — the pullback
+  preserves colimits (left adjoint) and sends `(free S).obj (yoneda.obj U)` to
+  `(free R).obj (yoneda.obj (h ⁻¹ᵁ U))`
+  (`PresheafOfModules.pushforwardCompCoyonedaFreeYonedaCorepresentableBy`),
+  `− ⊗ N` preserves colimits (the tensor product is computed sectionwise and
+  colimits of presheaves of modules are sectionwise), and on generators
+  `free (yoneda U) ⊗ free (yoneda U') ≅ free (yoneda (U ⊓ U'))` **because
+  `Opens` is a poset with binary meets** — which is the same fact about the site
+  as in the colimit route, and the same fact that fails in the counterexample.
+
+**NOT VACUOUS and NOT trivially reducible.**  Take `h` a closed immersion of a
+point into `𝔸¹` and `P = Q` the ideal sheaf of the point: `h^*P` is the
+one-dimensional conormal space, `h^*(P ⊗ P)` is one-dimensional too, and the
+comparison is an isomorphism only because the tensor product is taken over the
+pulled-back ring `Γ(W, −)` and not over `Γ(Z, −)`.  Nothing here is formal in
+the sense of holding for any adjunction. -/
+theorem nonempty_presheafModPullback_tensor {Z W : Scheme.{u}} (h : W ⟶ Z)
+    (P Q : PresheafOfModules.{u} Z.ringCatSheaf.obj) :
+    Nonempty ((presheafModPullback h).obj (P ⊗ Q) ≅
+      (presheafModPullback h).obj P ⊗ (presheafModPullback h).obj Q) :=
   sorry
+
+/-- **PULLBACK COMMUTES WITH `modTensor`** (**PROVEN 2026-07-31**, formerly a
+sorry leaf carrying a "DO NOT DISPATCH — do the hoist" warning; both the warning
+and the route it rested on are withdrawn, see the section header).
+
+Four steps, every one of them either in the pin or proven immediately above:
+
+* `SheafOfModules.sheafificationCompPullback` moves the sheafification of
+  `modTensor L M` OUT through the pullback, leaving
+  `a (h^*_{presheaf} (L.val ⊗ M.val))`;
+* `nonempty_presheafModPullback_tensor` — the one leaf — splits the presheaf
+  pullback across the presheaf tensor product;
+* `modSheafifyTensorIso` turns the sheafification of a presheaf tensor product
+  into a `modTensor` of sheafifications;
+* `SheafOfModules.pullbackIso` identifies each `a (h^*_{presheaf} L.val)` back
+  with `modPullback h L`.
+
+Note what is NOT needed: no naturality of the presheaf comparison, no monoidal
+functor structure, no coherence.  A bare `Nonempty` isomorphism at the presheaf
+level suffices, because every other step is a *natural* isomorphism supplied by
+the pin and the two ends of the chain are the two sides of the statement. -/
+theorem nonempty_modPullback_modTensorPic {Z W : Scheme.{u}} (h : W ⟶ Z) (L M : Z.Modules) :
+    Nonempty (modPullback h (modTensor L M) ≅ modTensor (modPullback h L) (modPullback h M)) := by
+  obtain ⟨cmp⟩ := nonempty_presheafModPullback_tensor h L.val M.val
+  refine ⟨?_⟩
+  refine (SheafOfModules.sheafificationCompPullback
+    (Scheme.Hom.toRingCatSheafHom h)).app (L.val ⊗ M.val) ≪≫ ?_
+  refine (PresheafOfModules.sheafification (𝟙 W.ringCatSheaf.obj)).mapIso cmp ≪≫ ?_
+  refine modSheafifyTensorIso _ _ ≪≫ ?_
+  exact modTensorMapIso
+    ((SheafOfModules.pullbackIso (Scheme.Hom.toRingCatSheafHom h)).app L).symm
+    ((SheafOfModules.pullbackIso (Scheme.Hom.toRingCatSheafHom h)).app M).symm
 
 /-- **RESTRICTION COMMUTES WITH `modTensor`** (PROVEN over
 `nonempty_modPullback_modTensorPic`) — the special case the invertibility
