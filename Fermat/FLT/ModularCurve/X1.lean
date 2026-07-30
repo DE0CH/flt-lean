@@ -6123,7 +6123,82 @@ statement is read over `K` or over `L`.  The audit's recommendation —
 carry the level-`n` torsor and its `det`-equivariant Weil pairing as a
 FIELD of `Gamma1Rigidification` / `Gamma1GITPresentation` — is the
 recommended route for THIS leaf too, and if anything it is more natural
-here, since a pairing valued in `μ_n` is a statement about a base change. -/
+here, since a pairing valued in `μ_n` is a statement about a base change.
+
+## PINCH AUDIT, 2026-07-31 — THIS LEAF SURVIVES THE COUNTEREXAMPLE THAT KILLED
+## ITS NEIGHBOUR, AND THE CLASS IT IS QUANTIFIED OVER HAS SINCE SHRUNK
+
+`smoothCurve_A_of_gamma1GITPresentation` was REFUTED on 2026-07-30 by PINCHING
+an honest presentation: for `P₀` an inhabitant with ring `A₀`, group `G₀`,
+invariants `B₀`, and a `G₀`-stable ideal `0 ≠ I ⊊ A₀`,
+
+    A := A₀ ×_{A₀ ⧸ I} A₀ = {(f, g) : f - g ∈ I},   G := G₀ × ℤ⧸2,
+
+`G₀` acting diagonally and the generator of `ℤ⧸2` swapping the factors, with
+`dM := (Spec Δ)^* dM₀` for `Δ : A₀ → A`, `a ↦ (a, a)`, satisfies **every field
+of `Gamma1GITPresentation`** while `A` is a node, hence not smooth.  See that
+declaration's FALSITY AUDIT for the field-by-field table.
+
+**Every leaf of the shape `∀ P : Gamma1GITPresentation N (Spec K), <property of
+A>` inherits that suspicion**, because `classify_dM` pins `B` and does NOT pin
+`A`.  This leaf has that shape.  It was audited against the pinch on 2026-07-31
+and **survives it**; the check is written down so it is not run a third time.
+
+**1. The swap pinch satisfies this leaf, so it is not a counterexample.**
+Tensoring the defining sequence `0 → A → A₀ × A₀ → A₀ ⧸ I` with the flat
+`K`-module `L` gives `A ⊗ L = (A₀ ⊗ L) ×_{(A₀ ⧸ I) ⊗ L} (A₀ ⊗ L)`, and
+`A₀ × A₀` is integral over `A` — `(f, g)` kills
+`X² - (f + g, f + g) X + (fg, fg)`, both coefficients being diagonal hence in
+`A` — so `Spec (A₀ ⊗ L) ⊔ Spec (A₀ ⊗ L) → Spec (A ⊗ L)` is surjective and
+`minimalPrimes (A ⊗ L)` is TWO disjoint copies of `minimalPrimes (A₀ ⊗ L)`
+(the pinch is an isomorphism away from `V(I)`, and `I` is the ideal of a
+`G₀`-orbit of closed points, so `V(I)` contains no generic point).  On that
+doubled set `G₀` acts within each copy exactly as it acts for `P₀`, and the
+swap exchanges the copies — so `G₀` transitive downstairs makes
+`G₀ × ℤ⧸2` transitive upstairs.  **Gluing cannot create a `G`-inaccessible
+component; it can only destroy regularity.**  That is the whole reason the
+pinch separates the two leaves.
+
+**2. Dropping the swap is what would break transitivity, and it is NOT
+admissible.**  The pinched `A` has two components and `G₀` alone does not
+exchange them, so `G := G₀` with the diagonal action would refute this leaf.
+It fails a different field: `A^{G₀} = {(u, v) ∈ B₀ × B₀ : u - v ∈ I}
+= B₀ ×_{B₀ ⧸ (I ∩ B₀)} B₀`, which equals `B₀` only when `I ∩ B₀ = 0`, and
+`classify_dM` pins `B` to `B₀` (the refuted leaf's audit shows the pinch of
+`B` is refuted by `classify_dM`, which is exactly the asymmetry that makes the
+swap version work).  The obstruction to `I ∩ B₀ = 0` is the TRACE: for
+`a ∈ I`, `Tr(a) = Σ_{σ ∈ G₀} σ a` lies in `I` (stability) and in `B₀`, so
+`I ∩ B₀ ≠ 0` as soon as `Tr` is nonzero somewhere on `I`.
+
+*Where a counterexample could still live, stated so it can be closed or
+exploited*: an `I` on which `Tr` vanishes identically and with `I ∩ B₀ = 0`
+— possible a priori only when `char K ∣ |G₀|`, i.e. `char K ∣ #GL₂(ℤ⧸n)`,
+which `hchar` does not forbid.  Producing one, together with the `cover` clause
+for `G := G₀` (which needs `Spec A ⟶ 𝔐` to remain an fpqc epimorphism), would
+REFUTE this leaf.  Nobody has tried; the estimate here is that it fails,
+because `I ∩ B₀ = 0` forces `Spec B₀` to be covered by the image of `V(I)`,
+against `dim B₀ = 1` and `V(I)` finite.
+
+**3. The class quantified over is STRICTLY SMALLER than when the ROUTE AUDIT
+above was written**, and this is the standing "two individually-correct
+repairs" hazard in reverse.  The repair of the refuted leaf added
+`smoothM : SmoothOfRelativeDimension 1 strM` as a FIELD of
+`Gamma1Rigidification` and `Gamma1GITPresentation` (on `merger`, 2026-07-30;
+it reaches `main` at the next release).  **With that field present the pinched
+`P` is not an inhabitant at all** — its `A` is a node — so:
+
+* every audit of THIS leaf written before 2026-07-30, including the two routes
+  closed above, quantified over a strictly larger class of `P` than now
+  exists, and none of them is automatically void, but none of them is evidence
+  about the smaller class either;
+* route (2)'s precondition is no longer a leaf to be cited but a FIELD:
+  `A` is smooth, hence normal, for every admissible `P` by
+  `P.smoothM` alone, with no appeal to `smoothCurve_A_of_gamma1GITPresentation`
+  and no `hN`/`hchar`.  Re-running the component-algebra route against the
+  smaller class is the recommended next step, and it is cheaper than it was.
+
+Route (1) is unaffected: it is a circularity, and shrinking the class of `P`
+does not break a circle. -/
 theorem transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation {N : ℕ} (_hN : 4 ≤ N)
     {K : Type} [Field K] (_hchar : ¬ ringChar K ∣ N)
     (P : Gamma1GITPresentation N (Spec (CommRingCat.of K)))
