@@ -607,10 +607,54 @@ used to *prove* `cube_eval` — for non-symmetric `L` the cube gives
 `σ*L ⊗ δ*L ≅ p₁*(L ⊗ [−1]*L) ⊗ p₂*(L ⊗ [−1]*L)` instead — and adding it as a
 field would record a hypothesis that no consumer reads.
 
-*It is cheap exactly when `A(ℚ)` is finite* — `dim = 1`, `coords ≡ ![1]`,
-`cube = z`, `relDim = 0`, and `cube_nonvanishing` holds because
-`z ≠ 0` forces `z (0,0) ≠ 0`.  That is correct rather than a defect: a finite
-group is finitely generated, so the consumer's conclusion holds anyway.
+*It is cheap when `A` is finite — but NOT by the witness this audit used to
+give* (corrected 2026-07-31).  The recipe that stood here — `dim = 1`,
+`coords ≡ ![1]`, `cube = z`, `relDim = 0`, "`cube_nonvanishing` holds because
+`z ≠ 0` forces `z (0,0) ≠ 0`" — is wrong twice over, and both errors point the
+same way, at a witness far narrower than the one claimed:
+
+* a CONSTANT `coords` satisfies `injective_of_smul` only when `A` is a
+  SUBSINGLETON.  Take `c = 1`: `coords P = 1 • coords Q` holds for *every*
+  pair, so the field forces `P = Q` for every `P, Q`.  It witnesses the trivial
+  group and nothing else, not "`A` finite";
+* `cube = z` is homogeneous of degree `1`, not `2`, so it fails
+  `cube_homogeneous`.  The degree-`2` form in the single Segre variable is
+  `z ^ 2`, whose `cube_eval` scalar is `c = 1`.
+
+**The claim itself survives, with an INDICATOR witness.**  For `A` finite pick
+`e : A ≃ Fin (Fintype.card A)`, and take `dim = Fintype.card A` with
+`coords P = Pi.single (e P) 1`.  Then `coords P ≠ 0`, and
+`coords P = c • coords Q` with `c ≠ 0` equates two vectors of support
+`{e P}` and `{e Q}`, so `e P = e Q` and `P = Q`.  A Segre point
+`z (i, j) = coords P i * coords Q j` is therefore supported at the single
+index `(e P, e Q)`.  Take
+
+* `rel` the products `z k * z l` over the pairs `k ≠ l`, each homogeneous of
+  degree `2`.  They vanish at every Segre point, and their common zero locus
+  over `ℚ̄` is exactly the vectors supported at one index;
+* `cube (a, b) = ∑ (z (e P, e Q)) ^ 2` over the pairs `(P, Q)` with
+  `P + Q = e.symm a` and `P − Q = e.symm b`, homogeneous of degree `2`.
+
+At the Segre point of `(P, Q)` every summand is `0` except the one indexed by
+`(P, Q)` itself, which is `1`, and it occurs exactly when
+`(a, b) = (e (P + Q), e (P − Q))` — that is `cube_eval` with `c = 1`.  And a
+one-index vector `z (e P, e Q) = t ≠ 0` has
+`cube (e (P + Q), e (P − Q))` equal to `t ^ 2 ≠ 0` — that is
+`cube_nonvanishing`.  Checked by hand, not elaborated; recorded here rather
+than kept as a declaration because nothing consumes it and this project does
+not allow free-floating declarations.
+
+Either way the conclusion drawn from the cheap case is unchanged: a finite
+group is finitely generated, so the consumer's conclusion holds for that
+reason anyway, and the cheapness is correct rather than a defect.
+
+**Why a wrong cheap-witness is worth correcting.**  The cheap case is the
+evidence that the structure is not asking a producer for MORE than the
+geometry supplies.  A recipe that in fact covers only the trivial group is
+evidence for a far weaker statement than the one it is quoted for — and it
+*was* quoted, verbatim, in the non-vacuity audit of
+`Fermat.nonempty_cubeModel_of_isAmpleSheaf_cube` (`ModularCurve/X0.lean`),
+which is the leaf that has to produce this structure.
 
 **A WARNING ABOUT CUTTING THIS FURTHER, and the axis that was searched.**  The
 obvious next cut is to split the embedding (`dim`, `coords`,
