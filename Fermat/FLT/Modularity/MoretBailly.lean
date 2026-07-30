@@ -557,6 +557,9 @@ public import Mathlib.GroupTheory.FiniteAbelian.Duality
 public import Mathlib.NumberTheory.Padics.PadicNorm
 public import Mathlib.RingTheory.EssentialFiniteness
 public import Mathlib.RingTheory.Flat.TorsionFree
+public import Mathlib.RingTheory.Flat.FaithfullyFlat.Algebra
+public import Mathlib.RingTheory.Ideal.GoingDown
+public import Mathlib.RingTheory.TensorProduct.Free
 public import Mathlib.RingTheory.Polynomial.Basic
 public import Mathlib.RingTheory.Smooth.Field
 public import Mathlib.RingTheory.Smooth.Fiber
@@ -4268,6 +4271,45 @@ theorem exists_bertiniConnectedLocus_isAlgClosed {K : Type u} [Field K] [IsAlgCl
             - algebraMap K A (w (Fin.last n))}))) := by
   sorry
 
+open _root_.TensorProduct in
+/-- `S ⊗[k] K` is faithfully flat over `S` whenever `K` is an extension field of `k`
+(PROVEN 2026-07-29): a `k`-basis of `K` becomes an `S`-basis of `S ⊗[k] K` by
+`Algebra.TensorProduct.basis`, and a free nontrivial module is faithfully flat.
+Note the FACTOR ORDER — on this side the `Algebra S` structure is the standard
+global one, which is what lets `topologicalKrullDim_le_baseChange` below avoid
+`Algebra.TensorProduct.rightAlgebra` entirely. -/
+theorem faithfullyFlat_tensorProduct_field (k : Type u) [Field k] (S : Type u) [CommRing S]
+    [Algebra k S] (K : Type u) [Field K] [Algebra k K] :
+    Module.FaithfullyFlat S (S ⊗[k] K) := by
+  haveI : Module.Free S (S ⊗[k] K) :=
+    Module.Free.of_basis (Algebra.TensorProduct.basis S (Module.Free.chooseBasis k K))
+  infer_instance
+
+/-- **KRULL DIMENSION DOES NOT DROP ALONG A FAITHFULLY FLAT ALGEBRA** (PROVEN
+2026-07-29). Mathlib-facing, and absent from the pin: `ringKrullDim`'s own file
+carries only `ringKrullDim_le_of_surjective`, `ringKrullDim_quotient_le` and the
+polynomial/regular-sequence bounds — nothing comparing a ring with a flat
+extension of it. The refuting grep is
+
+    grep -rn "ringKrullDim" .lake/packages/mathlib/Mathlib | grep -i "faithful\|goingdown"
+
+which returns nothing at `a3364fa`.
+
+Two mathlib lemmas glued: `Ideal.exists_isPrime_liesOver_of_faithfullyFlat` lifts
+the TOP of a chain of primes, and `Ideal.exists_ltSeries_of_hasGoingDown`
+(available because `Algebra.HasGoingDown.of_flat` is an instance) lifts the rest
+of the chain underneath it, LENGTH PRESERVED. -/
+theorem ringKrullDim_le_of_faithfullyFlat (R T : Type*) [CommRing R] [CommRing T]
+    [Algebra R T] [Module.FaithfullyFlat R T] : ringKrullDim R ≤ ringKrullDim T := by
+  rw [ringKrullDim, ringKrullDim, Order.krullDim]
+  refine iSup_le fun l => ?_
+  obtain ⟨P, hP, hlo⟩ :=
+    Ideal.exists_isPrime_liesOver_of_faithfullyFlat (A := R) (B := T) l.last.asIdeal
+  haveI := hP
+  haveI := hlo
+  obtain ⟨L, hlen, -, -⟩ := Ideal.exists_ltSeries_of_hasGoingDown (R := R) (S := T) l P
+  exact hlen ▸ Order.LTSeries.length_le_krullDim L
+
 open CategoryTheory AlgebraicGeometry _root_.TensorProduct in
 /-- **LEDGER ITEM 2: THE KRULL DIMENSION DOES NOT DROP UNDER A BASE FIELD EXTENSION**
 (sorry leaf, CUT 2026-07-29 out of `exists_bertiniConnectedLocus_algebraicClosure` below).
@@ -4300,12 +4342,33 @@ an `abbrev` carrying `attribute [local instance]` — so the `S`-algebra structu
 `Flat S (S ⊗[k] K)` with the OTHER factor order, so a side-swap is needed.  That is the
 same instance ambiguity `nonempty_ringEquiv_tensor_of_baseRingEquiv`'s docstring below
 records as expensive in this file, which is why this was left as a leaf rather than
-proven inline while cutting. -/
+proven inline while cutting.
+
+**CLOSED 2026-07-29, AND THE FRICTION POINT IS AVOIDABLE.** The `rightAlgebra`
+observation above is correct — `Algebra.TensorProduct.rightAlgebra` really is an
+`abbrev` with `attribute [local instance]`, so `Algebra S (K ⊗[k] S)` is not
+available by synthesis — but it is not on the critical path. Do the whole
+argument on the OTHER side, `S ⊗[k] K`, where the `Algebra S` structure IS the
+standard global one, and pay for the swap exactly once at the end with
+`ringKrullDim_eq_of_ringEquiv (Algebra.TensorProduct.comm k S K).toRingEquiv`.
+On that side freeness is `Algebra.TensorProduct.basis` applied to a `k`-basis of
+`K`, faithful flatness is the `[Nontrivial M] [Module.Free R M]` instance, and no
+`letI` is needed anywhere. -/
 theorem topologicalKrullDim_le_baseChange {k : Type u} [Field k] {S : Type u} [CommRing S]
     [Algebra k S] (K : Type u) [Field K] [Algebra k K] :
     topologicalKrullDim (AlgebraicGeometry.Spec (CommRingCat.of S)) ≤
       topologicalKrullDim (AlgebraicGeometry.Spec (CommRingCat.of (K ⊗[k] S))) := by
-  sorry
+  have hS : topologicalKrullDim (AlgebraicGeometry.Spec (CommRingCat.of S))
+      = ringKrullDim S := PrimeSpectrum.topologicalKrullDim_eq_ringKrullDim _
+  have hKS : topologicalKrullDim (AlgebraicGeometry.Spec (CommRingCat.of (K ⊗[k] S)))
+      = ringKrullDim (K ⊗[k] S) := PrimeSpectrum.topologicalKrullDim_eq_ringKrullDim _
+  rw [hS, hKS]
+  haveI := faithfullyFlat_tensorProduct_field k S K
+  have h1 : ringKrullDim S ≤ ringKrullDim (S ⊗[k] K) :=
+    ringKrullDim_le_of_faithfullyFlat S (S ⊗[k] K)
+  have h2 : ringKrullDim (S ⊗[k] K) = ringKrullDim (K ⊗[k] S) :=
+    ringKrullDim_eq_of_ringEquiv (Algebra.TensorProduct.comm k S K).toRingEquiv
+  exact h2 ▸ h1
 
 open _root_.TensorProduct in
 /-- **LEDGER ITEMS 2 + 4: BERTINI IRREDUCIBILITY, OVER `k̄`** (sorry leaf, NAMED
