@@ -158,6 +158,10 @@ original leaf:
     at presheaf level, pinned on pure tensors over EVERY open (hence unique).
     It contains no mathematics; it is mathlib's missing
     `(PresheafOfModules.restrictScalars α).LaxMonoidal`, objectwise.
+    **PROVEN 2026-07-30** — and objectwise is all it needed: the instance itself
+    was never built.  See its docstring for the one real obstacle, which is a
+    `CommRing` re-keying and not any part of the bilinearity the route audit
+    warned about.
   - `isIso_modPullbackTensorComparison` is all of the mathematics.  The
     open-immersion case — which is what everything below actually consumes — is
     strictly easier and should be done first; see its docstring.
@@ -236,6 +240,7 @@ public import Mathlib.CategoryTheory.Localization.Monoidal.Basic
 public import Mathlib.AlgebraicGeometry.QuasiAffine
 public import Mathlib.AlgebraicGeometry.Morphisms.ClosedImmersion
 public import Mathlib.Algebra.Category.ModuleCat.Sheaf.PullbackFree
+public import Mathlib.Algebra.Category.ModuleCat.Monoidal.Adjunction
 
 @[expose] public section
 
@@ -703,7 +708,23 @@ way in.  Note also that mathlib needs
 `Presheaf/Monoidal.lean` for the very same reason; expect to need it.
 
 So: `exists_modPushforwardTensorPre` is bounded, mechanical, and contains NO
-mathematics.  `isIso_modPullbackTensorComparison` contains all of it. -/
+mathematics.  `isIso_modPullbackTensorComparison` contains all of it.
+
+**CLOSED 2026-07-30 — and the prediction above was right about the input and
+wrong about the packaging.**  `restrictScalars_μ_tmul` is indeed exactly what
+was needed, and `set_option backward.isDefEq.respectTransparency false` is
+indeed needed throughout (on the def, on the pinning lemma, and on the theorem
+— omitting it on the last one makes `rw [ConcreteCategory.comp_apply]` fail to
+match a goal it does match with it).  But **`(PresheafOfModules.restrictScalars
+α).LaxMonoidal` was never built**, because `ν₀` consumes only its object part
+and the presheaf tensor is objectwise: `modPushforwardTensorPreApp` is mathlib's
+`μ` at each open, and naturality is one application of
+`PresheafOfModules.naturality_apply` to `modTensorMk` after
+`ModuleCat.MonoidalCategory.tensor_ext` reduces to pure tensors.  Both steps
+that make this work — `(tensorObj P Q).map g` on a pure tensor, and
+`(f_*M).val.map g = M.val.map (f⁻¹ᵁ g)` — are `rfl`, which is why the naturality
+proof is four lines and mentions no bilinearity at all.  Anyone who still wants
+the general instance should note the residue is bookkeeping, not content. -/
 
 /-- **`modTensor` is functorial on arbitrary morphisms.**  The file already had
 `modTensorMapIso` for isomorphisms; this is the same construction without the
@@ -737,8 +758,50 @@ lemma modTensorMap_tensorSection {Z : Scheme.{u}} {L L' M M' : Z.Modules}
       ((SheafOfModules.forget _).map e'))
   exact congr($(hn).app (op ⊤) (a ⊗ₜ b)).symm
 
-/-- **LEAF (plumbing — contains NO mathematics): the presheaf-level lax monoidal
-structure map of `f_*`.**
+set_option backward.isDefEq.respectTransparency false in
+/-- **`ν₀` AT ONE OPEN.**  `PresheafOfModules.Monoidal.tensorObj` is objectwise
+and `(f_*A).val.obj V` is `ModuleCat.restrictScalars (f^♯_V)` applied to
+`A.val.obj (f ⁻¹ᵁ V)`, so at `V` the required map is literally mathlib's lax
+monoidal structure map of `ModuleCat.restrictScalars` followed by
+`restrictScalars` of the sheafification unit `modTensorMk`:
+
+    Γ(f_*A, V) ⊗_{Γ(Y,V)} Γ(f_*B, V)  --μ-->  Γ(A, f⁻¹V) ⊗_{Γ(X,f⁻¹V)} Γ(B, f⁻¹V)
+                                      --a-->  Γ(A ⊗ B, f⁻¹V)
+
+reading both sides as `Γ(Y,V)`-modules.  `μ` is where the four bilinearity
+obligations of the failed hand-rolled attempt live, discharged once and for all
+in mathlib. -/
+noncomputable def modPushforwardTensorPreApp {X Y : Scheme.{u}} (f : X ⟶ Y) (A B : X.Modules)
+    (V : (Opens ↥Y)ᵒᵖ) :
+    (PresheafOfModules.Monoidal.tensorObj (R := Y.presheaf)
+        ((Scheme.Modules.pushforward f).obj A).val
+        ((Scheme.Modules.pushforward f).obj B).val).obj V ⟶
+      (((Scheme.Modules.pushforward f).obj (modTensor A B)).val).obj V :=
+  Functor.LaxMonoidal.μ (ModuleCat.restrictScalars _) (A.val.obj (op (f ⁻¹ᵁ V.unop)))
+      (B.val.obj (op (f ⁻¹ᵁ V.unop))) ≫
+    (ModuleCat.restrictScalars _).map ((modTensorMk A B).app (op (f ⁻¹ᵁ V.unop)))
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The pinning clause, at one open.**  `restrictScalars_μ_tmul` is exactly
+this; the two `letI`s are the re-keying described in
+`exists_modPushforwardTensorPre`'s docstring, and the trailing `rfl` inside
+`Eq.trans` absorbs `(restrictScalars _).map φ` being `φ` on elements. -/
+lemma modPushforwardTensorPreApp_tmul {X Y : Scheme.{u}} (f : X ⟶ Y) (A B : X.Modules)
+    (V : (Opens ↥Y)ᵒᵖ)
+    (a : ↑(((Scheme.Modules.pushforward f).obj A).val.obj V))
+    (b : ↑(((Scheme.Modules.pushforward f).obj B).val.obj V)) :
+    modPushforwardTensorPreApp f A B V (a ⊗ₜ b) =
+      (modTensorMk A B).app (op (f ⁻¹ᵁ V.unop)) (a ⊗ₜ b) := by
+  letI : CommRing ↑(Y.ringCatSheaf.obj.obj V) := inferInstanceAs (CommRing ↑(Y.presheaf.obj V))
+  letI : CommRing ↑(X.ringCatSheaf.obj.obj (op (f ⁻¹ᵁ V.unop))) :=
+    inferInstanceAs (CommRing ↑(X.presheaf.obj (op (f ⁻¹ᵁ V.unop))))
+  unfold modPushforwardTensorPreApp
+  rw [ConcreteCategory.comp_apply]
+  exact Eq.trans (congrArg _ (ModuleCat.restrictScalars_μ_tmul _ _ _ _ _)) rfl
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **PROVEN 2026-07-30 (plumbing — contains NO mathematics): the presheaf-level
+lax monoidal structure map of `f_*`.**
 
 `ν₀ : f_*A ⊗ f_*B ⟶ f_*(A ⊗ B)` at the level of presheaves of modules, PINNED
 by its value on every pure tensor over every open — which determines it
@@ -747,7 +810,8 @@ completely, since `PresheafOfModules.Monoidal.tensorObj` is objectwise and each
 form this development replaced, there is no room for an adversary here: any two
 witnesses are equal.
 
-Route, and the trap: see the section docstring above.  In one sentence — do NOT
+Route, and the trap (the pre-proof audit, kept verbatim; read the AMENDMENT
+below it): see the section docstring above.  In one sentence — do NOT
 try to build this with `ModuleCat.MonoidalCategory.tensorLift` directly; supply
 `(PresheafOfModules.restrictScalars α).LaxMonoidal` objectwise from mathlib's
 `(ModuleCat.restrictScalars f).LaxMonoidal` and take `ν₀` to be its `μ`
@@ -756,7 +820,35 @@ then exactly the pinning clause below.
 
 `PresheafOfModules.pushforward φ` is definitionally
 `pushforward₀ F R ⋙ restrictScalars φ` with `pushforward₀OfCommRingCat` already
-strong `Monoidal`, so that one instance finishes the whole lax structure. -/
+strong `Monoidal`, so that one instance finishes the whole lax structure.
+
+**PROVEN 2026-07-30, and by exactly that route — but WITHOUT building the
+missing instance.**  The route audit above is right that
+`(PresheafOfModules.restrictScalars α).LaxMonoidal` is what packages the
+plumbing, and it is right that mathlib has the objectwise input
+(`ModuleCat.restrictScalars_μ_tmul`).  What it over-priced is the packaging:
+`ν₀` needs only the OBJECT part of that instance, and a presheaf tensor is
+objectwise, so the whole instance is not required — `modPushforwardTensorPreApp`
+below is mathlib's `μ` at each open, and its naturality is
+`PresheafOfModules.naturality_apply` for `modTensorMk` on pure tensors.  Nothing
+here is bilinearity: `μ` carries all four obligations, which is precisely why
+the hand-rolled `tensorLift` attempt recorded above died and this does not.
+
+THE ONE REAL OBSTACLE, recorded because it is not the one the audit predicted
+and it cost the first attempt at this leaf.  `Γ(Z, V)` has TWO spellings here,
+`↑(Z.ringCatSheaf.obj.obj V)` and `↑((Z.presheaf ⋙ forget₂ CommRingCat
+RingCat).obj V)`.  They are definitionally equal, mathlib's `CommRing` instance
+(`Presheaf/Monoidal.lean`) is stated for the SECOND, and typeclass search cannot
+invert `ringCatSheaf` to reach it — the same re-keying failure that
+`presheafOfModulesMonoidal` fixes for `MonoidalCategory`.
+`modPushforwardTensorPreApp` itself
+elaborates (its rings arrive in the good spelling from the expected type), so
+the failure appears only when `ModuleCat.restrictScalars_μ_tmul` is APPLIED, and
+it appears as `failed to synthesize CommRing ↑(Y.ringCatSheaf.obj.obj V)` inside
+a proof whose statement elaborated fine.  Two `letI`s in the proof below supply
+it.  They are deliberately NOT a global instance: a global `CommRing` on that
+spelling would sit in a diamond with the `Ring` instance `RingCat` already
+carries, and nothing outside this proof needs it. -/
 theorem exists_modPushforwardTensorPre {X Y : Scheme.{u}} (f : X ⟶ Y) (A B : X.Modules) :
     ∃ ν₀ : PresheafOfModules.Monoidal.tensorObj (R := Y.presheaf)
         ((Scheme.Modules.pushforward f).obj A).val
@@ -765,7 +857,21 @@ theorem exists_modPushforwardTensorPre {X Y : Scheme.{u}} (f : X ⟶ Y) (A B : X
       ∀ (V : (Opens ↥Y)ᵒᵖ)
         (a : ↑(((Scheme.Modules.pushforward f).obj A).val.obj V))
         (b : ↑(((Scheme.Modules.pushforward f).obj B).val.obj V)),
-        ν₀.app V (a ⊗ₜ b) = (modTensorMk A B).app (op (f ⁻¹ᵁ V.unop)) (a ⊗ₜ b) := sorry
+        ν₀.app V (a ⊗ₜ b) = (modTensorMk A B).app (op (f ⁻¹ᵁ V.unop)) (a ⊗ₜ b) :=
+  ⟨{ app := modPushforwardTensorPreApp f A B
+     naturality := fun {V V'} g => by
+       apply ModuleCat.MonoidalCategory.tensor_ext
+       intro m n
+       rw [ConcreteCategory.comp_apply, ConcreteCategory.comp_apply]
+       show modPushforwardTensorPreApp f A B V'
+             ((((Scheme.Modules.pushforward f).obj A).val.map g m) ⊗ₜ
+               (((Scheme.Modules.pushforward f).obj B).val.map g n))
+           = ((Scheme.Modules.pushforward f).obj (modTensor A B)).val.map g
+               (modPushforwardTensorPreApp f A B V (m ⊗ₜ n))
+       rw [modPushforwardTensorPreApp_tmul, modPushforwardTensorPreApp_tmul]
+       exact PresheafOfModules.naturality_apply (modTensorMk A B)
+         ((Opens.map f.base).op.map g) (m ⊗ₜ n) },
+    modPushforwardTensorPreApp_tmul f A B⟩
 
 /-- The presheaf-level lax comparison map of `f_*`, named. -/
 noncomputable def modPushforwardTensorPre {X Y : Scheme.{u}} (f : X ⟶ Y) (A B : X.Modules) :
@@ -872,7 +978,8 @@ ROUTES, in increasing order of generality.
   what remains is that sheafification commutes with restriction to an open
   subsite, the mate of `restrictFunctorIsoPullback`.  A prover who only needs
   the consumers in this file should do this case FIRST.
-* IN GENERAL, after `exists_modPushforwardTensorPre` supplies the lax structure,
+* IN GENERAL — and note `exists_modPushforwardTensorPre` is PROVEN as of
+  2026-07-30, so the lax structure it supplies is no longer a hypothesis —
   `CategoryTheory.Functor.Monoidal.ofOplaxMonoidal` upgrades the oplax
   `PresheafOfModules.pullback φ` (via
   `CategoryTheory.Adjunction.leftAdjointOplaxMonoidal`) to strong given
@@ -961,6 +1068,16 @@ writing the lax structure map by hand out of
 section docstring above so that it is not repeated.  What survives of the leaf
 is exactly that instance (`exists_modPushforwardTensorPre`, no mathematics) plus
 `isIso_modPullbackTensorComparison` (all of the mathematics).
+
+**AMENDED 2026-07-30.**  The audit named the right obstacle and the wrong
+granularity: the instance is what *packages* the plumbing, but `ν₀` needs only
+its OBJECT part, and mathlib's `ModuleCat.restrictScalars` already supplies that
+(`Functor.LaxMonoidal.μ` plus `restrictScalars_μ_tmul`).  So
+`exists_modPushforwardTensorPre` is now PROVEN with no new instance at all, and
+`isIso_modPullbackTensorComparison` is the module's only remaining leaf on this
+route.  Read that as a caution about audits of the form "one missing instance
+blocks this": the instance may be blocking a *general* statement while the
+particular one factors through a single object.
 
 PIN CHECK 2026-07-28, re-run 2026-07-29 and STANDS:
 `Mathlib/Algebra/Category/ModuleCat/Presheaf/PushforwardZeroMonoidal.lean` is
