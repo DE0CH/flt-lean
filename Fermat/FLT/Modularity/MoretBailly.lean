@@ -10651,6 +10651,46 @@ ROUTE, with every ingredient checked to be in the pin.
   field and is the localisation of the left-hand ring at the nonzero elements of
   `ℚ[t]`.
 
+**ROUTE CORRECTION 2026-07-30, from a scoping pass that did NOT start the proof.
+Take the NOETHER NORMALISATION branch, not the separating-transcendence-basis
+one; the parenthesis above calls them equivalent and they are not.** The two
+obligations the first branch carries are absent from the ingredient list, and
+both are real:
+
+* `exists_isTranscendenceBasis_and_isSeparable_of_perfectField` returns
+  `∃ s, IsTranscendenceBasis ℚ Subtype.val ∧ Algebra.IsSeparable ↥(adjoin ℚ ↑s) K`
+  where `s` is a **`Set`, not a `Finset`** — checked against the pin, the
+  signature carries NO finiteness. The route above writes `s : Finset (Frac S)`
+  and then `MvPolynomial s ℚ`, so the finiteness of the transcendence basis is a
+  silent extra step.
+* Identifying `F = IntermediateField.adjoin ℚ s` with
+  `FractionRing (MvPolynomial (Fin d) ℚ)` needs an `IsFractionRing` bridge
+  between `Algebra.adjoin ℚ s` (which `AlgebraicIndependent.aevalEquiv` does
+  give as `MvPolynomial ι ℚ`) and `IntermediateField.adjoin ℚ s`. That bridge is
+  not in the ingredient list either.
+
+`exists_integral_inj_algHom_of_fg ℚ S` avoids BOTH: it returns `s : ℕ` together
+with `g : MvPolynomial (Fin s) ℚ →ₐ[ℚ] S` injective and integral, so
+`P := MvPolynomial (Fin s) ℚ` is on the nose a polynomial ring and
+`F := FractionRing P` is on the nose its fraction field — no `IntermediateField`
+anywhere, and no separating basis, which also means characteristic zero is used
+only later, for separability of `K / F`.
+
+What that branch then needs, in order, with the pieces located:
+`Algebra.FiniteType.of_restrictScalars_finiteType` gives `Algebra.FiniteType P S`,
+so `Algebra.IsIntegral.finite` gives `Module.Finite P S`;
+`Module.Finite.of_isLocalization` (`Mathlib/RingTheory/Localization/Finiteness.lean`,
+already an INSTANCE at `M := P⁰`) gives `Module.Finite F L` for
+`L := Localization (Algebra.algebraMapSubmonoid S P⁰)`; `L` is a domain
+(`IsLocalization.isDomain_of_le_nonZeroDivisors`, since `g` is injective) that is
+finite over the field `F`, hence a FIELD (`isField_of_isIntegral_of_isField'`),
+hence its own fraction field — which is what identifies `L` with `Frac S` through
+`IsFractionRing.isFractionRing_of_isDomain_of_isLocalization`. Only after that do
+`Field.exists_primitive_element` and the Gauss/`finSuccEquiv` bookkeeping apply.
+**That chain — "the localisation of `S` at `P ∖ 0` is already a field" — is the
+step the route note above compresses into the words "`Frac S` is finite over
+`F`", and it is several lemmas, not one.**
+
 FAITHFULNESS. Not vacuous, and the two conjuncts pull against each other: `g` must
 be irreducible AND cut out a ring with the same function field as `S`. `k = 0` is
 unavailable outright, since a field has no irreducible element; `S = ℚ` forces
