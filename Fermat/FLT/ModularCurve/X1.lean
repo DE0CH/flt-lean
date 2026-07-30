@@ -439,7 +439,7 @@ open in them has been split along the theories it needed:
 | `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` | the "assemble the factors" half: finiteness of the index set, the oldform multiplicities, `finite_ker`, and the `neben` labelling.  It no longer owns the `N = 0` case: that case was REFUTED on 2026-07-28 (`isEmpty_isHeckeIsotypicDecompositionGamma1_zero`) and the leaf now carries `hN : N ≠ 0`; see its docstring | `ℚ` |
 | `exists_cuspForm_gamma1GL_zero_lacunary` | a weight-two cusp form for `Γ₁(0) = ⟨T⟩` with `q`-expansion `∑ c^k q^(2^k)` — the lone analytic input of that refutation, and pure mathlib plumbing (locally-uniform convergence of a lacunary `q`-series; the only cusp of `⟨T⟩` is `∞`) | — |
 | `isTorsion_factor_of_heckeIsotypic_gamma1` | Kolyvagin-Logachev on an isotypic factor | `ℚ` |
-| `lFunction_apply_one_ne_zero_x1TwentyFive` | `L`-value numerics — the DEEP one | `ℚ` |
+| `cuspPeriod_ne_zero_x1TwentyFive` | `L`-value numerics — the DEEP one, and after the 2026-07-28 cut the ONLY declaration in the cluster mentioning `25`.  (`lFunction_apply_one_ne_zero_x1TwentyFive`, which this row named until 2026-07-30, is PROVEN over it; its analytic partner `lFunction_apply_one_eq_two_pi_mul_cuspPeriod_gamma1` is **PROVEN 2026-07-30** as the `G = Γ₁(N)` instance of `lFunction_apply_one_eq_two_pi_mul_cuspPeriodOn_of_le`, so all that is left here is the certified basis of `S₂(Γ₁(25))`.) | `ℚ` |
 | `hasNoFibreAffineLine_of_one_le_x1Genus` | the genus formula, fibrewise — `genus X_1(N) ≥ 1` puts no rational curve in any fibre.  (`hasNonconstantAbelianMap_of_one_le_x1Genus` is PROVEN over it, 2026-07-28, together with `X0.lean`'s level-free `mono_ajHom_of_hasNoFibreAffineLine` and `not_isIso_of_smoothOfRelativeDimension_one`.) | any |
 
 (Table regenerated at the release-10 integration, 2026-07-28, from the
@@ -7909,6 +7909,146 @@ theorem exists_isLFunctionOf_of_isWeightTwoEigenformOn_of_le (N : ℕ) (hN : N �
         (Complex.Gamma s * (Complex.Gamma s)⁻¹) * LSeries a s from by ring,
       hcancel, mul_inv_cancel₀ hΓ, one_mul, one_mul]
 
+/-- **Hecke's Mellin transform at `s = 1`, on any group between `Γ₁(N)`
+and `Γ₀(N)`: `L(f, 1) = 2π ∫₀^∞ f(iy) dy`** (PROVEN 2026-07-30) — the
+group-generic form of `WeightTwoEigenform.lean`'s
+`lFunction_apply_one_eq_two_pi_mul_cuspPeriod`, and the theorem
+`lFunction_apply_one_eq_two_pi_mul_cuspPeriod_gamma1` below is its
+instance at `G = Γ₁(N)`.
+
+**THIS IS THE HOIST THE `Γ₁` LEAF'S DOCSTRING ASKED FOR, and it cost a
+citation rather than a theory build.**  That docstring diagnosed the
+situation exactly — "`X0.lean`'s theorem is proven, and its proof uses
+nothing about `Γ₀(N)` beyond the TYPE of `f`" — and prescribed replacing
+`Gamma0GL N` by a variable `G` in `axisRestrict`, `cuspFEPair` and the
+four analytic leaves.  **That work had already been done**, on
+2026-07-28, in the `HeckeOn` subsection above: `axisRestrictOn`,
+`exists_frickeInvolutionOn`, `cuspFEPairOn`,
+`isStrongFEPair_cuspFEPairOn`, `hasSum_axisRestrictOn` and
+`mellin_axisRestrictOn` are all group-generic and all PROVEN, because
+`exists_isLFunctionOf_of_isWeightTwoEigenformOn_of_le` immediately above
+needed exactly the same generalisation.  So the only thing missing was
+this second consumer of that machinery, and its proof is the `Γ₀` one
+with `axisRestrict N f ↦ axisRestrictOn G N f` and
+`cuspFEPair N hN f ↦ cuspFEPairOn N hN G h1 h0 f` — no step of the
+argument changes.
+
+The four ingredients, in the order the proof uses them:
+
+* `isStrongFEPair_cuspFEPairOn` makes `Λ` of the pair `(f, f ∣ W_N)`
+  entire (`IsStrongFEPair.differentiable_Λ`), so
+  `s ↦ (2π/√N)^s Λ(s) / Γ(s)` is entire — `1/Γ` being entire;
+* `mellin_axisRestrictOn` identifies `Λ(s) = Γ(s)(2π/√N)^{-s} L(f, s)` on
+  `Re s > 2`, so that function IS the Dirichlet series there;
+* `IsLFunctionOf` says `L` is entire and agrees with the Dirichlet series
+  on `Re s > 2`, so the identity theorem
+  (`AnalyticOnNhd.eqOn_of_preconnected_of_eventuallyEq` on the
+  preconnected `Set.univ`, seeded at `s = 3`) forces
+  `L 1 = (2π/√N)·Λ(1)`, using `Γ(1) = 1`;
+* `hasSum_axisRestrictOn` turns `Λ(1) = ∫₀^∞ f(iy/√N) dy` into
+  `√N · cuspPeriod a` by the change of variables `y ↦ y/√N`
+  (`integral_comp_mul_left_Ioi`), which is where `cuspPeriod`'s own
+  normalisation — a sum of `exp (-2π(n+1)y)`, no `√N` — is matched.
+
+`hN : N ≠ 0` is load-bearing twice: it is what makes `√N > 0`, hence the
+rescaling legitimate, and it is inherited from `mellin_axisRestrictOn`
+(through `isBigO_atTop_coeffOn`'s FALSITY REPAIR — `Γ₁(0)` has infinite
+index in `SL(2, ℤ)` and no polynomial coefficient bound holds).
+
+`χ` and the eigenform fields `hecke`/`atkin` are inert: `hf` is consumed
+only through `qExpansion`, `qExpansionSummable` (inside
+`hasSum_axisRestrictOn`) and `isBigO_atTop_coeffOn`. -/
+theorem lFunction_apply_one_eq_two_pi_mul_cuspPeriodOn_of_le (N : ℕ) (hN : N ≠ 0)
+    (G : Subgroup (GL (Fin 2) ℝ)) (h1 : Gamma1GL N ≤ G) (h0 : G ≤ Gamma0GL N)
+    (χ : DirichletCharacter ℂ N) (f : CuspForm G 2) (a : ℕ → ℂ)
+    (hf : IsWeightTwoEigenformOn G N χ f a)
+    (L : ℂ → ℂ) (hL : IsLFunctionOf a L) :
+    L 1 = 2 * (Real.pi : ℂ) * cuspPeriod a := by
+  have hsq : (0 : ℝ) < Real.sqrt N :=
+    Real.sqrt_pos.mpr (by exact_mod_cast Nat.pos_of_ne_zero hN)
+  have hcpos : (0 : ℝ) < 2 * Real.pi / Real.sqrt N := by positivity
+  have hcC : ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ≠ 0 :=
+    Complex.ofReal_ne_zero.mpr hcpos.ne'
+  have hstrong : IsStrongFEPair (cuspFEPairOn N hN G h1 h0 f) :=
+    isStrongFEPair_cuspFEPairOn N hN G h1 h0 f
+  -- `s ↦ c^s Λ(s) / Γ(s)` is entire: `Λ` is entire and `1/Γ` is entire.
+  have hFentire : AnalyticOnNhd ℂ
+      (fun s : ℂ => ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ s *
+        (cuspFEPairOn N hN G h1 h0 f).Λ s * (Complex.Gamma s)⁻¹) Set.univ := by
+    rw [Complex.analyticOnNhd_univ_iff_differentiable]
+    exact ((differentiable_id.const_cpow (Or.inl hcC)).mul
+      hstrong.differentiable_Λ).mul Complex.differentiable_one_div_Gamma
+  -- and it is the Dirichlet series on `Re s > 2`
+  have hFeq : ∀ s : ℂ, 2 < s.re →
+      ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ s * (cuspFEPairOn N hN G h1 h0 f).Λ s *
+        (Complex.Gamma s)⁻¹ = LSeries a s := by
+    intro s hs
+    have hΛ : (cuspFEPairOn N hN G h1 h0 f).Λ s =
+        Complex.Gamma s * ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ (-s) * LSeries a s := by
+      rw [congr_fun hstrong.Λ_eq s]
+      exact mellin_axisRestrictOn hN h1 hf hs
+    have hΓ : Complex.Gamma s ≠ 0 := Complex.Gamma_ne_zero_of_re_pos (by linarith)
+    have hcancel : ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ s *
+        ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ (-s) = 1 := by
+      rw [← Complex.cpow_add _ _ hcC, add_neg_cancel, Complex.cpow_zero]
+    rw [hΛ, show ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ s *
+        (Complex.Gamma s * ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ (-s) * LSeries a s) *
+        (Complex.Gamma s)⁻¹
+      = (((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ s *
+          ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ (-s)) *
+        (Complex.Gamma s * (Complex.Gamma s)⁻¹) * LSeries a s from by ring,
+      hcancel, mul_inv_cancel₀ hΓ, one_mul, one_mul]
+  -- identity theorem: two entire functions agreeing on `Re s > 2` agree at `s = 1`
+  have hL1 : L 1 = ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) *
+      (cuspFEPairOn N hN G h1 h0 f).Λ 1 := by
+    have hopen : IsOpen {z : ℂ | 2 < z.re} := isOpen_lt continuous_const Complex.continuous_re
+    have hmem : (3 : ℂ) ∈ {z : ℂ | 2 < z.re} := by norm_num
+    have key : Set.EqOn L (fun s : ℂ => ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ s *
+        (cuspFEPairOn N hN G h1 h0 f).Λ s * (Complex.Gamma s)⁻¹) Set.univ := by
+      refine hL.entire.eqOn_of_preconnected_of_eventuallyEq hFentire isPreconnected_univ
+        (Set.mem_univ (3 : ℂ)) ?_
+      filter_upwards [hopen.mem_nhds hmem] with z hz
+      rw [hL.eq_lseries z hz, hFeq z hz]
+    have := key (Set.mem_univ (1 : ℂ))
+    simpa [Complex.cpow_one, Complex.Gamma_one] using this
+  -- the completed transform at `s = 1` is `√N` times the period
+  have hΛ1 : (cuspFEPairOn N hN G h1 h0 f).Λ 1 =
+      ((Real.sqrt N : ℝ) : ℂ) * cuspPeriod a := by
+    have hmel : (cuspFEPairOn N hN G h1 h0 f).Λ 1
+        = ∫ y in Set.Ioi (0 : ℝ), axisRestrictOn G N f y := by
+      rw [congr_fun hstrong.Λ_eq 1]
+      simp only [mellin, sub_self, Complex.cpow_zero, one_smul]
+      rfl
+    have hpt : ∀ y ∈ Set.Ioi (0 : ℝ), axisRestrictOn G N f y =
+        (fun u : ℝ => ∑' n : ℕ,
+            a (n + 1) * Complex.exp (-(2 * (Real.pi : ℂ) * (n + 1) * (u : ℂ))))
+          ((Real.sqrt N)⁻¹ * y) := by
+      intro y hy
+      have hy' : (0 : ℝ) < y := hy
+      have h := (hasSum_axisRestrictOn hN hf hy').tsum_eq
+      rw [← h]
+      refine tsum_congr fun n => ?_
+      congr 1
+      rw [Complex.ofReal_exp]
+      congr 1
+      push_cast
+      ring
+    have hint : (∫ y in Set.Ioi (0 : ℝ), axisRestrictOn G N f y)
+        = ∫ y in Set.Ioi (0 : ℝ), (fun u : ℝ => ∑' n : ℕ,
+            a (n + 1) * Complex.exp (-(2 * (Real.pi : ℂ) * (n + 1) * (u : ℂ))))
+          ((Real.sqrt N)⁻¹ * y) :=
+      MeasureTheory.setIntegral_congr_fun measurableSet_Ioi hpt
+    rw [hmel, hint,
+      MeasureTheory.integral_comp_mul_left_Ioi (fun u : ℝ => ∑' n : ℕ,
+        a (n + 1) * Complex.exp (-(2 * (Real.pi : ℂ) * (n + 1) * (u : ℂ)))) 0
+        (inv_pos.mpr hsq)]
+    rw [cuspPeriod]
+    rw [mul_zero, inv_inv, Complex.real_smul]
+  rw [hL1, hΛ1]
+  have hsqC : ((Real.sqrt N : ℝ) : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr hsq.ne'
+  push_cast
+  field_simp
+
 end HeckeOn
 
 /-- **Hecke: the `L`-function of a weight-two eigenform on `Γ₁(N)`
@@ -9554,12 +9694,34 @@ theorem isTorsion_jacobian_of_lFunction_ne_zero_of_levelShape
       fun χ f a hf => hL χ trivial f a hf
 
 /-- **Hecke's Mellin transform at `s = 1` on `Γ₁(N)`:
-`L(f, 1) = 2π ∫₀^∞ f(iy) dy`** (sorry leaf, NEW 2026-07-28) — the `Γ₁`
+`L(f, 1) = 2π ∫₀^∞ f(iy) dy`** (**PROVEN 2026-07-30, by citation**; a
+sorry leaf from 2026-07-28 until then) — the `Γ₁`
 transposition of `X0.lean`'s **PROVEN**
 `lFunction_apply_one_eq_two_pi_mul_cuspPeriod`.  LEVEL-FREE and
 NEBENTYPUS-FREE: it is the whole of the *analysis* under
 `lFunction_apply_one_ne_zero_x1TwentyFive` below, and `25` does not
 appear in it.
+
+**THIS IS NOW AN ASSEMBLY, NOT A LEAF.**  It is
+`lFunction_apply_one_eq_two_pi_mul_cuspPeriodOn_of_le` (in the `HeckeOn`
+subsection above) at `G = Γ₁(N)`, with the two side conditions `le_rfl`
+and `gamma1GL_le_gamma0GL`.  **The route the sections below prescribe was
+right about what was needed and wrong about where it was**: the
+group-generic machinery it asks for does not have to be built in
+`WeightTwoEigenform.lean`, because it was already built HERE on
+2026-07-28 — `axisRestrictOn`, `exists_frickeInvolutionOn`,
+`cuspFEPairOn`, `isStrongFEPair_cuspFEPairOn`, `hasSum_axisRestrictOn`,
+`mellin_axisRestrictOn`, all PROVEN, for the sake of
+`exists_isLFunctionOf_of_isWeightTwoEigenformOn_of_le`.  So the whole
+cost of closing this node was writing the *second* consumer of that
+machinery, which is the `Γ₀` proof with two names changed and no step of
+the argument altered.
+
+The analysis below is therefore a correct account of the mathematics and
+an obsolete account of the frontier; it is kept because the `Γ₁`-specific
+fact it records — that `W_N` normalises `Γ₁(N)`, computed out in full —
+is the one input the `Γ₀` docstring does not contain, and it is what
+makes `exists_frickeInvolutionOn` applicable at `G = Γ₁(N)`.
 
 TRUE, and it is the SAME classical theorem as the `Γ₀` one rather than an
 analogue of it.  Writing `Λ(s) = ∫₀^∞ f(iy/√N) y^{s-1} dy`:
@@ -9575,7 +9737,11 @@ analogue of it.  Writing `Λ(s) = ∫₀^∞ f(iy/√N) y^{s-1} dy`:
   since `Λ(1) = ∫₀^∞ f(iy/√N) dy = √N · cuspPeriod a` by the change of
   variables `y ↦ y/√N`.
 
-### WHY THIS IS A LEAF AND NOT AN APPLICATION OF THE `Γ₀` THEOREM
+### WHY THIS WAS A LEAF AND NOT AN APPLICATION OF THE `Γ₀` THEOREM
+
+(Historical, and it is the diagnosis that turned out to be correct — the
+hoist it prescribes is what `lFunction_apply_one_eq_two_pi_mul_cuspPeriodOn_of_le`
+now is.)
 
 `X0.lean`'s theorem is proven, and **its proof uses nothing about
 `Γ₀(N)` beyond the TYPE of `f`.**  All of it — `axisPoint`,
@@ -9642,7 +9808,8 @@ theorem lFunction_apply_one_eq_two_pi_mul_cuspPeriod_gamma1 (N : ℕ) (hN : N �
     (hf : IsWeightTwoEigenformOn (Gamma1GL N) N χ f a)
     (L : ℂ → ℂ) (hL : IsLFunctionOf a L) :
     L 1 = 2 * (Real.pi : ℂ) * cuspPeriod a :=
-  sorry
+  lFunction_apply_one_eq_two_pi_mul_cuspPeriodOn_of_le N hN (Gamma1GL N) le_rfl
+    (gamma1GL_le_gamma0GL N) χ f a hf L hL
 
 /-- **The period `∫₀^∞ f(iy) dy` of a weight-two eigenform of
 `S₂(Γ_1(25))` is nonzero** (sorry leaf, NEW 2026-07-28) — the ARITHMETIC
@@ -10274,7 +10441,8 @@ disappearing:
 | `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` | multiplicities, `finite_ker`, `neben` (now under `hN : N ≠ 0`) | no | here |
 | `exists_cuspForm_gamma1GL_zero_lacunary` | the lacunary level-`0` cusp form; input to the `N = 0` refutation | no | here, NEW 2026-07-28 |
 | `isTorsion_factor_of_heckeIsotypic_gamma1` | Kolyvagin–Logachev | no | here |
-| `lFunction_apply_one_ne_zero_x1TwentyFive` | `L`-value numerics | **yes** | here |
+| `lFunction_apply_one_eq_two_pi_mul_cuspPeriod_gamma1` | Hecke's Mellin transform at `s = 1` | no | here, **PROVEN 2026-07-30** — the `G = Γ₁(N)` instance of `lFunction_apply_one_eq_two_pi_mul_cuspPeriodOn_of_le` |
+| `cuspPeriod_ne_zero_x1TwentyFive` | `L`-value numerics (`lFunction_apply_one_ne_zero_x1TwentyFive` is PROVEN over this and the row above) | **yes** | here |
 | `injective_aj_of_not_isIso_jacobian` | Riemann–Roch | no | `X0.lean`, REUSED |
 | `hasNoFibreAffineLine_of_one_le_x1Genus` | genus formula, fibrewise | **yes** | here |
 | `not_isIso_of_smoothOfRelativeDimension_one` | rel. dimension of a standard smooth presentation | no | `CurveCompactification.lean`, REUSED, **PROVEN 2026-07-28** |
