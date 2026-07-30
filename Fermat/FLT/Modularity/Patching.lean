@@ -5875,146 +5875,6 @@ lemma mem_taylorWilesLocus_mul.{uK, uW}
   · rw [map_mul, hτ1, mul_one]
     exact hpoly
 
-/-- **`ρ σ` always has a NONZERO FIXED VECTOR on `ad⁰ρbar(1)` when `σ`
-fixes `μ_p`** (PROVEN 2026-07-28) — step 2 of the nonemptiness route,
-discharged here rather than left to the leaf.
-
-Fixing `μ_p` makes the cyclotomic twist trivial
-(`adZeroCycloChar_eq_one_of_fixes_rootsOfUnity`), so `ρ σ` is plain
-conjugation by `A = ρbar σ`, and conjugation by `A` fixes anything
-commuting with `A`.  Writing `c = tr A / 2` — legitimate because `p` is
-odd and `k` has characteristic `p`, so `(2 : k) ≠ 0` — the traceless part
-`E = A - c · 1` has `tr E = tr A - c · 2 = 0` and commutes with `A`.
-
-The two cases are genuinely different and BOTH are needed:
-
-* `E ≠ 0`: take `E` itself.
-* `E = 0`, i.e. `A` is the scalar `c`: then conjugation by `A` is the
-  IDENTITY on everything, so any nonzero trace-zero endomorphism will do,
-  and one exists because `LinearMap.trace k W` cannot be injective —
-  `finrank_k (W →ₗ[k] W) = 4 > 1 = finrank_k k`.
-
-Note what is NOT used: the charpoly clause of `taylorWilesLocus`, hence
-`α ≠ β`.  The eigenvalue `1` of the adjoint action is present for EVERY
-`A`; distinctness of the eigenvalues is what pins the fixed space to be
-exactly one-dimensional, and mere properness of `(ρ σ - 1) · M` does not
-need that.  So this lemma is stated with the roots-of-unity hypothesis
-alone, which is also why it can be applied at `max n 1` in the assembly
-before any charpoly information is extracted. -/
-lemma exists_ne_zero_rho_eq_self_of_fixes_rootsOfUnity.{uK, uW}
-    (p : ℕ) [Fact p.Prime] (hpodd : Odd p)
-    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
-    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
-    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W] [Module.Free k W]
-    (hW : Module.rank k W = 2) (ρbar : GaloisRep ℚ k W)
-    {σ : Field.absoluteGaloisGroup ℚ}
-    (hσ : ∀ ζ : AlgebraicClosure ℚ, ζ ^ p = 1 → σ ζ = ζ) :
-    ∃ m : ↥(adZeroTwist p ρbar), m ≠ 0 ∧ (adZeroTwist p ρbar).ρ σ m = m := by
-  classical
-  haveI : CharP k p := charP_of_ringHom_padicInt (algebraMap ℤ_[p] k)
-  have h2 : (2 : k) ≠ 0 := by
-    intro h
-    have hd : p ∣ 2 := by
-      have h' : ((2 : ℕ) : k) = 0 := by exact_mod_cast h
-      exact (CharP.cast_eq_zero_iff k p 2).mp h'
-    have hp2 := (Nat.prime_dvd_prime_iff_eq (Fact.out : p.Prime) Nat.prime_two).mp hd
-    rw [hp2] at hpodd
-    exact (Nat.not_odd_iff_even.mpr (by decide)) hpodd
-  have hfr : Module.finrank k W = 2 := Module.finrank_eq_of_rank_eq (by exact_mod_cast hW)
-  have htr1 : LinearMap.trace k W (1 : Module.End k W) = (2 : k) := by
-    rw [show (1 : Module.End k W) = LinearMap.id from rfl, LinearMap.trace_id, hfr]
-    norm_num
-  have hcomm : ∃ e : Module.End k W, e ≠ 0 ∧ LinearMap.trace k W e = 0 ∧
-      ρbar σ * e = e * ρbar σ := by
-    set c : k := (LinearMap.trace k W (ρbar σ)) / 2 with hc
-    by_cases hE : ρbar σ - c • (1 : Module.End k W) = 0
-    · have hA : ρbar σ = c • (1 : Module.End k W) := by rwa [sub_eq_zero] at hE
-      have hker : LinearMap.ker (LinearMap.trace k W) ≠ ⊥ := by
-        intro hb
-        have hinj : Function.Injective (LinearMap.trace k W) := LinearMap.ker_eq_bot.mp hb
-        have hle := LinearMap.finrank_le_finrank_of_injective hinj
-        rw [Module.finrank_self] at hle
-        have h4 : Module.finrank k (W →ₗ[k] W) = 4 := by
-          rw [Module.finrank_linearMap, hfr]
-        rw [h4] at hle
-        omega
-      obtain ⟨e, he, hene⟩ := (Submodule.ne_bot_iff _).mp hker
-      refine ⟨e, hene, LinearMap.mem_ker.mp he, ?_⟩
-      rw [hA, smul_mul_assoc, one_mul, mul_smul_comm, mul_one]
-    · refine ⟨ρbar σ - c • 1, hE, ?_, ?_⟩
-      · rw [map_sub, map_smul, htr1, smul_eq_mul, hc, div_mul_cancel₀ _ h2, sub_self]
-      · rw [mul_sub, sub_mul, mul_smul_comm, smul_mul_assoc, mul_one, one_mul]
-  obtain ⟨e, hene, hetr, hecomm⟩ := hcomm
-  have hχ : adZeroCycloChar p k σ = 1 := adZeroCycloChar_eq_one_of_fixes_rootsOfUnity p hσ
-  refine ⟨(⟨e, LinearMap.mem_ker.mpr hetr⟩ :
-    ↥(LinearMap.ker (LinearMap.trace k W))), ?_, ?_⟩
-  · intro h0
-    exact hene ((congrArg (AdZero.toEnd k W) h0).trans (map_zero (AdZero.toEnd k W)))
-  · refine AdZero.ext ?_
-    have hval : (adZeroTwist p ρbar).ρ σ
-        (⟨e, LinearMap.mem_ker.mpr hetr⟩ : ↥(LinearMap.ker (LinearMap.trace k W)))
-        = (adZeroCycloChar p k σ : k) • ((AdZero.rep ρbar) σ
-            (⟨e, LinearMap.mem_ker.mpr hetr⟩ :
-              ↥(LinearMap.ker (LinearMap.trace k W)))) := rfl
-    have hrep : (AdZero.rep ρbar) σ
-        (⟨e, LinearMap.mem_ker.mpr hetr⟩ : ↥(LinearMap.ker (LinearMap.trace k W)))
-        = AdZero.conjL (ρbar σ) (ρbar σ⁻¹)
-            (by rw [← map_mul, inv_mul_cancel, map_one])
-            (⟨e, LinearMap.mem_ker.mpr hetr⟩ :
-              ↥(LinearMap.ker (LinearMap.trace k W))) := rfl
-    rw [hval, hχ, Units.val_one, one_smul, hrep, AdZero.toEnd_conjL]
-    show ρbar σ * e * ρbar σ⁻¹ = e
-    have hinv : ρbar σ * ρbar σ⁻¹ = 1 := by rw [← map_mul, mul_inv_cancel, map_one]
-    rw [hecomm, mul_assoc, hinv, mul_one]
-
-/-- **`(ρ σ - 1) · ad⁰ρbar(1)` is a PROPER subset** (PROVEN 2026-07-28) —
-step 2 of the nonemptiness route in the form the surviving locus consumes,
-and the hypothesis `hproper` of the leaf below.
-
-`ad⁰ρbar(1)` is finite-dimensional over `k` (a submodule of
-`W →ₗ[k] W`), so on it a `k`-linear endomorphism is injective iff
-surjective.  `ρ σ - 1` kills the nonzero vector produced by
-`exists_ne_zero_rho_eq_self_of_fixes_rootsOfUnity`, hence is not
-injective, hence not surjective; and its range as a `Set` is exactly the
-set `survivingLocus` tests membership against.
-
-This is what makes the leaf's remaining task purely the ARITHMETIC one:
-without it, a proof of the leaf would have to redo the linear algebra
-before it could even start. -/
-lemma range_rho_sub_ne_univ_of_fixes_rootsOfUnity.{uK, uW}
-    (p : ℕ) [Fact p.Prime] (hpodd : Odd p)
-    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
-    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
-    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W] [Module.Free k W]
-    (hW : Module.rank k W = 2) (ρbar : GaloisRep ℚ k W)
-    {σ : Field.absoluteGaloisGroup ℚ}
-    (hσ : ∀ ζ : AlgebraicClosure ℚ, ζ ^ p = 1 → σ ζ = ζ) :
-    Set.range (fun m : ↥(adZeroTwist p ρbar) =>
-      (adZeroTwist p ρbar).ρ σ m - m) ≠ Set.univ := by
-  classical
-  obtain ⟨m0, hm0ne, hm0fix⟩ :=
-    exists_ne_zero_rho_eq_self_of_fixes_rootsOfUnity p hpodd hW ρbar hσ
-  haveI : FiniteDimensional k ↥(adZeroTwist p ρbar) :=
-    inferInstanceAs (FiniteDimensional k ↥(LinearMap.ker (LinearMap.trace k W)))
-  set f : ↥(adZeroTwist p ρbar) →ₗ[k] ↥(adZeroTwist p ρbar) :=
-    ((adZeroTwist p ρbar).ρ σ).toLinearMap - LinearMap.id with hf
-  have hfm0 : f m0 = 0 := by
-    rw [hf]
-    simp [hm0fix]
-  have hnotinj : ¬ Function.Injective f := by
-    intro hinj
-    exact hm0ne (hinj (by rw [hfm0, map_zero]))
-  have hnotsurj : ¬ Function.Surjective f := fun hs =>
-    hnotinj (LinearMap.injective_iff_surjective.mpr hs)
-  intro hcon
-  refine hnotsurj fun y => ?_
-  have hy : y ∈ Set.range (fun m : ↥(adZeroTwist p ρbar) =>
-      (adZeroTwist p ρbar).ρ σ m - m) := by rw [hcon]; trivial
-  obtain ⟨m, hm⟩ := hy
-  refine ⟨m, ?_⟩
-  rw [hf]
-  simpa using hm
-
 /-! #### The arithmetic core of DDT 2.48, decomposed
 
 Added 2026-07-29 by the decomposition of
@@ -6201,10 +6061,172 @@ lemma range_subRho_ne_top_of_mem_taylorWilesLocus.{uK, uW}
     simp [hmfix]
   exact hm0 (hinj hzero)
 
-/-- **Step 1 of DDT 2.48's arithmetic core (SORRY LEAF, cut 2026-07-29):
-the restriction of `z` to `N = ker ρbar ∩ Fix(μ_{p^n})` is NONZERO.**
+/-- **`N = ker ρbar ∩ Fix(μ_{p^n})`, the group whose fixed field is `L`**
+(added 2026-07-30 by the decomposition of `exists_mem_kerFix_eval₁_ne_zero`
+below).  This is the subgroup the Step-1 leaf quantifies over, packaged so
+that the inflation–restriction input can be STATED — `resSubgroupTwist1`
+needs a `Subgroup`, and the leaf's conclusion was written as a bare
+conjunction of the two membership conditions.
 
-# ROUTE
+It is OPEN and NORMAL (`ker ρbar` is closed normal since `ρbar` is
+continuous into a discrete target; `Fix(μ_{p^n})` is the kernel of
+`Γ ℚ → Gal(ℚ(μ_{p^n})/ℚ)`), and for `n ≥ 1` it acts TRIVIALLY on
+`ad⁰ρbar(1)` — but none of that is needed to state it, so none of it is
+proven here; it is needed only inside the leaf below, which is where it is
+recorded. -/
+def kerFixSubgroup.{uK, uW} (p : ℕ) [Fact p.Prime]
+    {k : Type uK} [Field k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (ρbar : GaloisRep ℚ k W) (n : ℕ) :
+    Subgroup (Field.absoluteGaloisGroup ℚ) where
+  carrier := {g | ρbar g = 1 ∧ ∀ ζ : AlgebraicClosure ℚ, ζ ^ p ^ n = 1 → g ζ = ζ}
+  one_mem' := ⟨map_one _, fun _ _ => rfl⟩
+  mul_mem' := fun {a b} ha hb => ⟨by rw [map_mul, ha.1, hb.1, mul_one],
+    fun ζ hζ => by rw [AlgEquiv.mul_apply, hb.2 ζ hζ, ha.2 ζ hζ]⟩
+  inv_mem' := fun {a} ha => ⟨by
+      have h1 : ρbar a⁻¹ * ρbar a = 1 := by
+        rw [← map_mul, inv_mul_cancel, map_one]
+      rw [ha.1, mul_one] at h1
+      exact h1,
+    fun ζ hζ => by
+      have hfix := ha.2 ζ hζ
+      calc a⁻¹ ζ = a⁻¹ (a ζ) := by rw [hfix]
+        _ = ζ := by simp⟩
+
+/-- **`H¹(Gal(L/ℚ), ad⁰ρbar(1)) = 0`, in the form inflation–restriction
+delivers it (SORRY LEAF, cut 2026-07-30 out of
+`exists_mem_kerFix_eval₁_ne_zero` below): a class unramified outside
+`{2, p}` that DIES under restriction to `N = ker ρbar ∩ Fix(μ_{p^n})` is
+ZERO.**
+
+This is DDT Lemma 2.48 / Wiles Lemma 1.12 proper, and it is ALL that is
+left of the Step-1 leaf: the rest of that leaf — that a cocycle vanishing
+identically on `N` has a class killed by `res^{Γ ℚ}_N`, and the
+contradiction with `hc0` — is discharged below without any arithmetic.
+
+# WHY THIS SHAPE AND NOT `ker (res) = ⊥`
+
+The classical statement is the unrestricted one, `ker res^{Γ ℚ}_N = 0`:
+`N` is open and normal and (for `n ≥ 1`) acts trivially on
+`M = ad⁰ρbar(1)`, so inflation–restriction identifies that kernel with
+`H¹(Γ ℚ ⧸ N, M^N) = H¹(Gal(L/ℚ), M)` — and unramifiedness plays no part in
+Wiles' proof of its vanishing.  **It is deliberately NOT stated that way
+here.**  The unrestricted form is STRICTLY STRONGER than the consumer
+needs, and a decomposition must not strengthen what it decomposes: with
+`hcunr` retained this leaf is a CONSEQUENCE of the leaf it was cut from
+(given `res_N c = 0`, the restricted cocycle is a coboundary `τ ↦ ρ τ m − m`
+on `N`, which VANISHES because `N` acts trivially, so `hc0` would be
+contradicted by the parent), whereas dropping `hcunr` would make it a new
+and larger claim.  An owner who finds the unrestricted form more convenient
+may prove it and specialise — it implies this one immediately — but the
+converse is not available and the weaker form is what is needed.
+
+# WHAT IS LOAD-BEARING
+
+* `hn : 1 ≤ n` — WITHOUT it `N` need not act trivially on `M` (the
+  cyclotomic twist is untrivialised, `adZeroCycloChar` being killed only by
+  fixing `μ_p`), `M^N ≠ M`, and the identification of the kernel with
+  `H¹(Gal(L/ℚ), M)` fails.  Note it is NOT used in the consumer's proof
+  below — the consumer needs only "`z` vanishes on `N` ⟹ `res_N [z] = 0`",
+  which is the `m = 0` case of the coboundary criterion and needs no
+  triviality at all.  So `hn` is consumed HERE and nowhere else in Step 1.
+* `hρbar` and `hirr` — the classical proof consumes ABSOLUTE irreducibility
+  of `ρbar|_{ℚ(ζ_p)}` together with `p ≥ 5`, extracted from these with `p`
+  odd.  Only `Odd p` is available in this statement, matching the parent;
+  at `p = 3` the hypothesis set is classically EMPTY
+  (`IsHardlyRamified.mod_three_reducible`) so the statement is true but
+  vacuously, and that horn is not available non-circularly — exactly the
+  situation the parent records for itself.
+
+Both-ways audit: not vacuous — `h1TwistUnramified` contains classes and the
+kernel is a genuine subspace; and the hypothesis set being classically
+empty is what makes the statement true outright rather than refutable.
+
+# RESOURCE POINTER (added 2026-07-30, verified by grep and by a sorry scan)
+
+Wiles' proof of Lemma 1.12 is a CASE ANALYSIS on the image of the projective
+representation attached to `ρbar`: the exceptional and dihedral cases have order
+prime to `p` (so `H¹` vanishes for order reasons on a `p`-torsion module), and the
+`PSL₂`/`PGL₂` cases are the ones needing `p ≥ 5`.  **That classification is
+already in this tree and is SORRY-FREE**, which no note on this leaf had said:
+
+* `Dickson.classification_tame` (`KnownIn1980s/PGL2/Defs.lean`) — a finite
+  subgroup of `PGL p` of order PRIME to `p` is cyclic, dihedral of order `2n`
+  (`n ≥ 2`), `A₄`, `S₄` or `A₅`;
+* `Dickson.classification_wild` (same file) — order DIVISIBLE by `p`: an
+  elementary-abelian-by-cyclic semidirect product, `PSL₂(𝔽_{p^m})`,
+  `PGL₂(𝔽_{p^m})`, or (`p = 3` only) `A₅`.
+
+Both are thin wrappers over `Dickson.classification_tame_slop`
+(`Slop/PGL2/FiniteSubgroups/TameClassification.lean`) and
+`Dickson.classification_wild_slop` (`.../WildClassification.lean`); all twelve
+modules of `Slop/PGL2/FiniteSubgroups/` contain zero `sorry` tokens, and the
+wrapper module is `public import`ed by
+`GaloisRepresentation/HardlyRamified/ModThree.lean`.  It is NOT currently in this
+module's import cone — an owner of this leaf will have to add the import.
+
+**FALSE CITATION CORRECTED while checking that.**
+`Slop/PGL2/FiniteSubgroups/DicksonClassification.lean` advertises a main theorem
+`Dickson.dickson_classification` in its module docstring.  **That declaration does
+not exist**: the file is 54 lines of header and imports with NO declarations at
+all, and the combined statement is nowhere assembled — only the tame and wild
+halves are.  Cite the two halves, not the name the docstring gives.
+
+CIRCULARITY GUARD, inherited verbatim from the consumer: it must not be
+discharged through `not_isIrreducible_of_isHardlyRamified_of_five_le`,
+`IsHardlyRamified.mod_three_reducible`, `Family.lean` or anything
+downstream of them — a proof ending in `exfalso` on `hirr` is the circular
+discharge and is BANNED. -/
+theorem ker_resSubgroupTwist1_kerFix_eq_zero.{uK, uW}
+    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hpodd hW ρbar) (hirr : ρbar.IsIrreducible)
+    {n : ℕ} (hn : 1 ≤ n) :
+    ∀ c ∈ h1TwistUnramified p ρbar,
+      c ∈ LinearMap.ker
+        (resSubgroupTwist1 p ρbar (kerFixSubgroup p ρbar n)).hom.toLinearMap → c = 0 := sorry
+
+/-- **Step 1 of DDT 2.48's arithmetic core (cut 2026-07-29; **PROVEN
+2026-07-30** over the single leaf `ker_resSubgroupTwist1_kerFix_eq_zero`
+above): the restriction of `z` to `N = ker ρbar ∩ Fix(μ_{p^n})` is
+NONZERO.**
+
+# WHAT WAS CLOSED HERE, AND WHAT IS LEFT
+
+The proof below is the contrapositive and is pure cochain bookkeeping, with
+NO arithmetic and NO triviality of the action: if `eval₁ z` vanishes
+identically on `N`, then the transported cocycle
+`cocyclesMapKer (subgroupToGlobalHom N) 𝟙 1 z` satisfies
+`eval₁ · = ρ · 0 − 0` on the nose, so
+`cocycleClass_eq_zero_of_eval₁_eq_sub` (at `m = 0`, the one instance whose
+continuity side condition is free) kills its class, and
+`map_cocycleClass_cocyclesMapKer` transports that back to
+`res^{Γ ℚ}_N c = 0`.  The leaf above then gives `c = 0`, against `hc0`.
+
+So the whole of the classical content — `H¹(Gal(L/ℚ), M) = 0` together with
+the inflation–restriction injectivity that turns it into a statement about
+`res` — now sits in ONE named declaration, stated over the packaged
+subgroup `kerFixSubgroup`, and nothing else in Step 1 is open.
+
+Two hypothesis facts, recorded because they moved:
+
+* `hn : 1 ≤ n` is NOT consumed here.  The earlier route note said it was
+  load-bearing "through the trivial action of `N` on `M`, without which
+  `z|_N` is not even a homomorphism" — true of the route as then imagined,
+  which read `z|_N` as an element of `Hom(N, M)`.  The proof actually taken
+  never forms that `Hom`: it only needs the zero cocycle to be the zero
+  coboundary, which holds for any `N`.  `hn` is passed straight through to
+  the leaf, where it IS load-bearing (see its docstring).
+* `hcunr` IS consumed, by being handed to the leaf.  It could have been
+  dropped by stating the leaf as `ker res = ⊥`; that would have
+  STRENGTHENED the cut, and the reason it was not done is recorded on the
+  leaf.
+
+# ROUTE (as recorded when the leaf was cut, retained for the leaf above)
 
 `N` is an OPEN NORMAL subgroup of `Γ ℚ` acting trivially on
 `M = ad⁰ρbar(1)` (`adZeroTwist_rho_apply_eq_self`, using `n ≥ 1` so that
@@ -6259,13 +6281,1103 @@ theorem exists_mem_kerFix_eval₁_ne_zero.{uK, uW}
     (hcunr : c ∈ h1TwistUnramified p ρbar) (hc0 : c ≠ 0) :
     ∃ τ : Field.absoluteGaloisGroup ℚ, ρbar τ = 1 ∧
       (∀ ζ : AlgebraicClosure ℚ, ζ ^ p ^ n = 1 → τ ζ = ζ) ∧
-      ContinuousCohomology.eval₁ (adZeroTwist p ρbar) z.1 τ ≠ 0 := sorry
+      ContinuousCohomology.eval₁ (adZeroTwist p ρbar) z.1 τ ≠ 0 := by
+  classical
+  set N : Subgroup (Field.absoluteGaloisGroup ℚ) := kerFixSubgroup p ρbar n with hNdef
+  by_contra hcon
+  -- the cocycle vanishes identically on `N`
+  have hzero : ∀ g : Field.absoluteGaloisGroup ℚ, g ∈ N →
+      ContinuousCohomology.eval₁ (adZeroTwist p ρbar) z.1 g = 0 := by
+    intro g hg
+    by_contra h0
+    exact hcon ⟨g, hg.1, hg.2, h0⟩
+  -- hence its class dies under restriction to `N`
+  have hkerc : c ∈ LinearMap.ker (resSubgroupTwist1 p ρbar N).hom.toLinearMap := by
+    have hzero' : ContinuousCohomology.cocycleClass (adZeroTwistSubgroup p ρbar N) 1
+        (ContinuousCohomology.cocyclesMapKer (subgroupToGlobalHom N)
+          (CategoryTheory.CategoryStruct.id (adZeroTwistSubgroup p ρbar N)) 1 z) = 0 := by
+      refine ContinuousCohomology.cocycleClass_eq_zero_of_eval₁_eq_sub _ 0
+        (by simpa using continuous_const) ?_
+      intro h
+      rw [ContinuousCohomology.eval₁_cocyclesMapKer, map_zero, sub_zero]
+      exact hzero h.1 h.2
+    have hmc := ContinuousCohomology.map_cocycleClass_cocyclesMapKer
+      (subgroupToGlobalHom N)
+      (CategoryTheory.CategoryStruct.id (adZeroTwistSubgroup p ρbar N)) 1 z
+    rw [hzero', hzc] at hmc
+    exact hmc
+  rw [hNdef] at hkerc
+  exact hc0 (ker_resSubgroupTwist1_kerFix_eq_zero hpodd hW hρbar hirr hn c hcunr hkerc)
+
+section AdZeroTraceForm
+
+-- `[Finite k]` and the (discrete) topology on `k` are not used by the
+-- mathematics here, but `AdZero.toEnd_injective` carries them in its
+-- signature, so they are carried too.
+variable {k : Type*} [Field k] [Finite k]
+  [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+  {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W] [Module.Free k W]
+
+/-- **The trace pairing on `End k W` is left-separating** (rank `2` case; added
+2026-07-30 with the proof of `adZeroTwist_eq_top_of_map_rho_le_of_ne_bot`
+below).  `X · Y ↦ tr (X * Y)` is the standard nondegenerate pairing on a matrix
+algebra; this is the left kernel statement, obtained from
+`Matrix.ext_iff_trace_mul_right` through a basis. -/
+lemma end_eq_zero_of_forall_trace_mul_eq_zero (hfr : Module.finrank k W = 2)
+    (X : Module.End k W)
+    (h : ∀ Z : Module.End k W, LinearMap.trace k W (X * Z) = 0) : X = 0 := by
+  classical
+  set b := Module.finBasisOfFinrankEq k W hfr with hb
+  have hmat : ∀ Y : Matrix (Fin 2) (Fin 2) k,
+      (LinearMap.toMatrix b b X * Y).trace = (LinearMap.toMatrix b b 0 * Y).trace := by
+    intro Y
+    have hZ : LinearMap.toMatrix b b ((LinearMap.toMatrix b b).symm Y) = Y := by
+      simp
+    have h1 : (LinearMap.toMatrix b b X * Y).trace = 0 := by
+      rw [← hZ, ← LinearMap.toMatrix_mul, ← LinearMap.trace_eq_matrix_trace k b]
+      exact h _
+    rw [h1, map_zero]
+    simp
+  have := Matrix.ext_iff_trace_mul_right.mpr hmat
+  exact (LinearMap.toMatrix b b).injective this
+
+/-- **The trace pairing restricted to `ad⁰ = ker tr` is still left-separating**,
+provided `(2 : k) ≠ 0`.
+
+`(2 : k) ≠ 0` IS load-bearing: the splitting `End = ad⁰ ⊕ k·1` used here needs
+`tr (c • 1) = 2c` to be surjective onto `k`.  In characteristic `2` the
+statement is FALSE for `W` of rank `2` — there `1 ∈ ad⁰`, and `1` pairs to
+`tr (X * 1) = tr X = 0` against every `X ∈ ad⁰`, so the form on `ad⁰` is
+degenerate (its radical contains `1 ≠ 0`). -/
+lemma adZero_eq_zero_of_forall_trace_mul_eq_zero (h2 : (2 : k) ≠ 0)
+    (hfr : Module.finrank k W = 2) (X : AdZero k W)
+    (h : ∀ Y : AdZero k W,
+      LinearMap.trace k W (AdZero.toEnd k W X * AdZero.toEnd k W Y) = 0) : X = 0 := by
+  classical
+  have hXtr : LinearMap.trace k W (AdZero.toEnd k W X) = 0 := X.2
+  refine AdZero.toEnd_injective ?_
+  rw [map_zero]
+  refine end_eq_zero_of_forall_trace_mul_eq_zero hfr _ fun Z => ?_
+  set c : k := LinearMap.trace k W Z / 2 with hc
+  have htr1 : LinearMap.trace k W (1 : Module.End k W) = (2 : k) := by
+    rw [show (1 : Module.End k W) = LinearMap.id from rfl, LinearMap.trace_id, hfr]
+    norm_num
+  have hY0 : Z - c • (1 : Module.End k W) ∈ LinearMap.ker (LinearMap.trace k W) := by
+    rw [LinearMap.mem_ker, map_sub, map_smul, htr1, smul_eq_mul, hc,
+      div_mul_cancel₀ _ h2, sub_self]
+  have hsplit : Z = AdZero.toEnd k W (⟨Z - c • (1 : Module.End k W), hY0⟩ : AdZero k W)
+      + c • (1 : Module.End k W) := by
+    show Z = (Z - c • (1 : Module.End k W)) + c • (1 : Module.End k W)
+    abel
+  rw [hsplit, mul_add, map_add, h ⟨Z - c • (1 : Module.End k W), hY0⟩,
+    mul_smul_comm, mul_one, map_smul, hXtr, smul_zero, add_zero]
+
+/-- **`dim_k ad⁰ W = 3` when `dim_k W = 2` and `(2 : k) ≠ 0`.**
+
+`(2 : k) ≠ 0` is again load-bearing and again for surjectivity of `tr`: in
+characteristic `2` the trace on `2 × 2` matrices kills `1`, its range is still
+`k` (it is onto: `tr (E₀₀) = 1`), so in fact the rank–nullity count survives —
+but the SPLITTING used by the caller does not, which is why the hypothesis is
+carried here as well and the two lemmas are used together. -/
+lemma finrank_adZero (h2 : (2 : k) ≠ 0) (hfr : Module.finrank k W = 2) :
+    Module.finrank k (AdZero k W) = 3 := by
+  classical
+  have htr1 : LinearMap.trace k W (1 : Module.End k W) = (2 : k) := by
+    rw [show (1 : Module.End k W) = LinearMap.id from rfl, LinearMap.trace_id, hfr]
+    norm_num
+  have hsurj : Function.Surjective (LinearMap.trace k W) := by
+    intro c
+    refine ⟨(c / 2) • (1 : Module.End k W), ?_⟩
+    rw [map_smul, htr1, smul_eq_mul, div_mul_cancel₀ _ h2]
+  have hrange : LinearMap.range (LinearMap.trace k W) = ⊤ := LinearMap.range_eq_top.mpr hsurj
+  have hEnd : Module.finrank k (Module.End k W) = 4 := by
+    rw [Module.finrank_linearMap, hfr]
+  have hkey := LinearMap.finrank_range_add_finrank_ker (LinearMap.trace k W)
+  rw [hrange, hEnd] at hkey
+  have htop : Module.finrank k (⊤ : Submodule k k) = 1 := by
+    rw [Submodule.topEquiv.finrank_eq, Module.finrank_self]
+  rw [htop] at hkey
+  show Module.finrank k ↥(LinearMap.ker (LinearMap.trace k W)) = 3
+  omega
+
+end AdZeroTraceForm
+
+/-- **`ad⁰ρbar(1) ↪ End k W`**, the underlying `k`-linear inclusion of the
+carrier of `adZeroTwist` (a `Submodule`-coercion dressed as a `LinearMap` so
+that the trace form below can be written).  The cyclotomic twist changes the
+`Γ ℚ`-action, not the carrier, so this is the same map for every twist. -/
+noncomputable def adZeroTwistToEnd.{uK, uW} (p : ℕ) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (ρbar : GaloisRep ℚ k W) :
+    ↥(adZeroTwist p ρbar) →ₗ[k] Module.End k W where
+  toFun x := AdZero.toEnd k W x
+  map_add' _ _ := rfl
+  map_smul' _ _ := rfl
+
+lemma adZeroTwistToEnd_injective.{uK, uW} (p : ℕ) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (ρbar : GaloisRep ℚ k W) :
+    Function.Injective (adZeroTwistToEnd p ρbar) := fun _ _ h => AdZero.toEnd_injective h
+
+lemma trace_adZeroTwistToEnd.{uK, uW} (p : ℕ) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (ρbar : GaloisRep ℚ k W) (x : ↥(adZeroTwist p ρbar)) :
+    LinearMap.trace k W (adZeroTwistToEnd p ρbar x) = 0 := x.2
+
+/-- **The `Γ ℚ`-action on `ad⁰ρbar(1)` read on endomorphisms**: `ρ g` is the
+cyclotomic scalar `χ g` times conjugation by `ρbar g`.  This is the ONE place
+the twist is visible, and it is exactly why the submodule lattice of
+`ad⁰ρbar(1)` coincides with that of `ad⁰ρbar` — a nonzero scalar does not move
+subspaces. -/
+lemma adZeroTwistToEnd_rho.{uK, uW} (p : ℕ) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (ρbar : GaloisRep ℚ k W)
+    (g : Field.absoluteGaloisGroup ℚ) (y : ↥(adZeroTwist p ρbar)) :
+    adZeroTwistToEnd p ρbar ((adZeroTwist p ρbar).ρ g y)
+      = (adZeroCycloChar p k g : k) •
+        (ρbar g * adZeroTwistToEnd p ρbar y * ρbar g⁻¹) := by
+  show AdZero.toEnd k W ((adZeroTwist p ρbar).ρ g y)
+      = (adZeroCycloChar p k g : k) • (ρbar g * AdZero.toEnd k W y * ρbar g⁻¹)
+  have hval : (adZeroTwist p ρbar).ρ g y
+      = (adZeroCycloChar p k g : k) • ((AdZero.rep ρbar) g y) := rfl
+  have hrep : (AdZero.rep ρbar) g y
+      = AdZero.conjL (ρbar g) (ρbar g⁻¹)
+        (by rw [← map_mul, inv_mul_cancel, map_one]) y := rfl
+  rw [hval, map_smul, hrep, AdZero.toEnd_conjL]
+
+/-- **The trace pairing on `ad⁰ρbar(1)`**, `⟨X, Y⟩ = tr (X * Y)`.  It is
+`Γ ℚ`-equivariant up to the scalar `χ g ^ 2` (see `hBequiv` inside
+`adZeroTwist_eq_top_of_map_rho_le_of_ne_bot`), which is all that is needed for
+the orthogonal complement of a stable subspace to be stable. -/
+noncomputable def adZeroTwistTraceForm.{uK, uW} (p : ℕ) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (ρbar : GaloisRep ℚ k W) :
+    LinearMap.BilinForm k ↥(adZeroTwist p ρbar) :=
+  LinearMap.mk₂ k
+    (fun X Y => LinearMap.trace k W
+      (adZeroTwistToEnd p ρbar X * adZeroTwistToEnd p ρbar Y))
+    (fun _ _ _ => by rw [map_add, add_mul, map_add])
+    (fun _ _ _ => by rw [map_smul, smul_mul_assoc, map_smul])
+    (fun _ _ _ => by rw [map_add, mul_add, map_add])
+    (fun _ _ _ => by rw [map_smul, mul_smul_comm, map_smul])
+
+@[simp]
+lemma adZeroTwistTraceForm_apply.{uK, uW} (p : ℕ) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (ρbar : GaloisRep ℚ k W) (X Y : ↥(adZeroTwist p ρbar)) :
+    adZeroTwistTraceForm p ρbar X Y = LinearMap.trace k W
+      (adZeroTwistToEnd p ρbar X * adZeroTwistToEnd p ρbar Y) := rfl
+
+lemma adZeroTwistTraceForm_nondegenerate.{uK, uW} (p : ℕ) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (ρbar : GaloisRep ℚ k W)
+    (h2 : (2 : k) ≠ 0) (hfr : Module.finrank k W = 2) :
+    (adZeroTwistTraceForm p ρbar).Nondegenerate := by
+  constructor
+  · intro X hX
+    exact adZero_eq_zero_of_forall_trace_mul_eq_zero h2 hfr X fun Y => hX Y
+  · intro Y hY
+    refine adZero_eq_zero_of_forall_trace_mul_eq_zero h2 hfr Y fun X => ?_
+    rw [LinearMap.trace_mul_comm]
+    exact hY X
+
+/-! #### Rank-`2` Cayley–Hamilton and the CENTRALIZER of a traceless unit
+
+Added 2026-07-30 by the reduction of the dihedral horn
+`not_isUnit_stable_traceZero_of_exists_ne` below to the `E`-free arithmetic leaf
+`not_index_two_commutative_of_isHardlyRamified`.  Nothing here mentions `p`, `ρbar`
+or `Γ ℚ`: it is the linear algebra that turns "`ρbar g` centralises `E`" into
+"`ρbar(ker ε)` is COMMUTATIVE", which is what lets the surviving leaf be stated
+without `E` at all.
+
+The route worth recording, because it avoids picking a basis adapted to `E` — and
+hence avoids needing `E`'s eigenvalues to lie in `k`, which for a NONSPLIT torus
+they do not: for TRACELESS `X, Y` in rank `2` the ANTICOMMUTATOR `X * Y + Y * X`
+is a SCALAR, by applying `Z ^ 2 = -det Z • 1` to `X`, `Y` and `X + Y` and nothing
+else.  So if `A` commutes with a traceless unit `E`, then `2 • (A' * E)` is a
+scalar for `A'` the traceless part of `A`, and multiplying by `E` (using
+`E ^ 2 = -det E • 1` with `det E ≠ 0`) puts `A'` in `k · E`.  No `det(X + Y)`
+expansion is needed either — the scalar is left anonymous. -/
+
+/-- **Cayley–Hamilton in rank `2` for a TRACELESS endomorphism** (PROVEN
+2026-07-30): `E ^ 2 = -det E · 1`.
+
+Through a `Fin 2`-basis and `Matrix.charpoly_fin_two`, which is the only place our
+pin states the quadratic charpoly in `trace`/`det` form; `LinearMap.charpoly_toMatrix`
+transports it back and `LinearMap.aeval_self_charpoly` evaluates it.  No hypothesis
+on the characteristic. -/
+lemma sq_eq_neg_det_smul_one_of_trace_eq_zero.{u1, u2}
+    {k : Type u1} [Field k] {W : Type u2} [AddCommGroup W] [Module k W]
+    [Module.Finite k W] [Module.Free k W] (hW : Module.rank k W = 2)
+    (E : Module.End k W) (hEtr : LinearMap.trace k W E = 0) :
+    E * E = (-LinearMap.det E) • (1 : Module.End k W) := by
+  classical
+  have hfr : Module.finrank k W = 2 := Module.finrank_eq_of_rank_eq hW
+  let b := Module.finBasisOfFinrankEq k W hfr
+  have htr : (LinearMap.toMatrix b b E).trace = LinearMap.trace k W E :=
+    (LinearMap.trace_eq_matrix_trace k b E).symm
+  have hdet : (LinearMap.toMatrix b b E).det = LinearMap.det E :=
+    LinearMap.det_toMatrix b E
+  have hCH : Polynomial.aeval E E.charpoly = 0 := LinearMap.aeval_self_charpoly E
+  rw [← LinearMap.charpoly_toMatrix E b, Matrix.charpoly_fin_two] at hCH
+  rw [map_add, map_sub, map_mul, map_pow, Polynomial.aeval_X, Polynomial.aeval_C,
+    Polynomial.aeval_C, htr, hdet, hEtr, map_zero, zero_mul, sub_zero,
+    Algebra.algebraMap_eq_smul_one, pow_two] at hCH
+  rw [neg_smul]
+  exact add_eq_zero_iff_eq_neg.mp hCH
+
+/-- **The ANTICOMMUTATOR of two TRACELESS rank-`2` endomorphisms is a SCALAR**
+(PROVEN 2026-07-30).
+
+Three applications of `sq_eq_neg_det_smul_one_of_trace_eq_zero` — to `X`, to `Y`
+and to `X + Y` — and the expansion of `(X + Y) ^ 2`.  The scalar is
+`-det (X + Y) + det X + det Y`, which classically equals `tr (X * Y)`; that
+identification is deliberately NOT made, since it would need the `det (X + Y)`
+expansion and no consumer wants the value. -/
+lemma exists_anticomm_eq_smul_one.{u1, u2}
+    {k : Type u1} [Field k] {W : Type u2} [AddCommGroup W] [Module k W]
+    [Module.Finite k W] [Module.Free k W] (hW : Module.rank k W = 2)
+    (X Y : Module.End k W) (hX : LinearMap.trace k W X = 0)
+    (hY : LinearMap.trace k W Y = 0) :
+    ∃ s : k, X * Y + Y * X = s • (1 : Module.End k W) := by
+  have hXY : LinearMap.trace k W (X + Y) = 0 := by rw [map_add, hX, hY, add_zero]
+  have h1 := sq_eq_neg_det_smul_one_of_trace_eq_zero hW X hX
+  have h2 := sq_eq_neg_det_smul_one_of_trace_eq_zero hW Y hY
+  have h3 := sq_eq_neg_det_smul_one_of_trace_eq_zero hW (X + Y) hXY
+  refine ⟨-LinearMap.det (X + Y) - (-LinearMap.det X) - (-LinearMap.det Y), ?_⟩
+  have hexp : (X + Y) * (X + Y) = X * X + (X * Y + Y * X) + Y * Y := by
+    rw [add_mul, mul_add, mul_add]; abel
+  rw [h1, h2, h3] at hexp
+  have hval : X * Y + Y * X =
+      (-LinearMap.det (X + Y)) • (1 : Module.End k W)
+        - (-LinearMap.det X) • (1 : Module.End k W)
+        - (-LinearMap.det Y) • (1 : Module.End k W) := by
+    rw [hexp]; abel
+  rw [hval, ← sub_smul, ← sub_smul]
+
+/-- **The CENTRALIZER of a traceless INVERTIBLE rank-`2` endomorphism is
+`k · 1 + k · E`** (PROVEN 2026-07-30).
+
+`(2 : k) ≠ 0` is load-bearing twice: to form the traceless part
+`A' = A - (tr A / 2) · 1` at all, and to divide the anticommutator identity
+`A' * E + E * A' = s · 1` by `2`.  `IsUnit E` is load-bearing through
+`det E ≠ 0`, which is what makes multiplying `A' * E = (s/2) · 1` by `E`
+recover `A'` rather than losing it.
+
+**Note what is NOT needed: a basis in which `E` is diagonal.**  Over a finite `k`
+a traceless unit `E` with `-det E` a NONSQUARE has no eigenvector in `W` at all
+(`k[E]` is then the quadratic extension of `k` and `W` is a line over it), so the
+eigenbasis route would need `k` enlarged.  The anticommutator identity is
+basis-free and covers both cases at once. -/
+lemma exists_eq_smul_one_add_smul_of_commute.{u1, u2}
+    {k : Type u1} [Field k] {W : Type u2} [AddCommGroup W] [Module k W]
+    [Module.Finite k W] [Module.Free k W] (hW : Module.rank k W = 2)
+    (h2 : (2 : k) ≠ 0) {E : Module.End k W} (hEtr : LinearMap.trace k W E = 0)
+    (hEunit : IsUnit E) {A : Module.End k W} (hA : A * E = E * A) :
+    ∃ a α : k, A = a • (1 : Module.End k W) + α • E := by
+  classical
+  have hfr : Module.finrank k W = 2 := Module.finrank_eq_of_rank_eq hW
+  have hd0 : LinearMap.det E ≠ 0 :=
+    (hEunit.map (LinearMap.det : Module.End k W →* k)).ne_zero
+  have hE2 := sq_eq_neg_det_smul_one_of_trace_eq_zero hW E hEtr
+  set a : k := LinearMap.trace k W A / 2 with hadef
+  set A' : Module.End k W := A - a • (1 : Module.End k W) with hA'def
+  have htr1 : LinearMap.trace k W (1 : Module.End k W) = (2 : k) := by
+    rw [show (1 : Module.End k W) = LinearMap.id from rfl, LinearMap.trace_id, hfr]
+    norm_num
+  have hA'tr : LinearMap.trace k W A' = 0 := by
+    rw [hA'def, map_sub, map_smul, htr1, hadef, smul_eq_mul, div_mul_cancel₀ _ h2,
+      sub_self]
+  have hA'E : A' * E = E * A' := by
+    rw [hA'def, sub_mul, mul_sub, hA, smul_mul_assoc, one_mul, mul_smul_comm, mul_one]
+  obtain ⟨s, hs⟩ := exists_anticomm_eq_smul_one hW A' E hA'tr hEtr
+  rw [← hA'E] at hs
+  have hsmul2 : (2 : k) • (A' * E) = s • (1 : Module.End k W) := by
+    rw [two_smul]; exact hs
+  have hA'E' : A' * E = (2⁻¹ * s) • (1 : Module.End k W) := by
+    have h := congrArg (fun X : Module.End k W => ((2 : k)⁻¹) • X) hsmul2
+    simp only [smul_smul, inv_mul_cancel₀ h2, one_smul] at h
+    exact h
+  have hstep : (2⁻¹ * s) • E = (-LinearMap.det E) • A' := by
+    calc (2⁻¹ * s) • E = ((2⁻¹ * s) • (1 : Module.End k W)) * E := by
+          rw [smul_mul_assoc, one_mul]
+      _ = (A' * E) * E := by rw [hA'E']
+      _ = A' * (E * E) := by rw [mul_assoc]
+      _ = A' * ((-LinearMap.det E) • (1 : Module.End k W)) := by rw [hE2]
+      _ = (-LinearMap.det E) • A' := by rw [mul_smul_comm, mul_one]
+  have hdne : (-LinearMap.det E) ≠ 0 := neg_ne_zero.mpr hd0
+  have hA'eq : A' = ((-LinearMap.det E)⁻¹ * (2⁻¹ * s)) • E := by
+    have h := congrArg (fun X : Module.End k W => ((-LinearMap.det E)⁻¹) • X) hstep
+    simp only [smul_smul, inv_mul_cancel₀ hdne, one_smul] at h
+    exact h.symm
+  refine ⟨a, (-LinearMap.det E)⁻¹ * (2⁻¹ * s), ?_⟩
+  have hAsplit : A = A' + a • (1 : Module.End k W) := by rw [hA'def]; abel
+  rw [hAsplit, hA'eq]; abel
+
+/-- **Two endomorphisms COMMUTING with a traceless invertible rank-`2`
+endomorphism COMMUTE WITH EACH OTHER** (PROVEN 2026-07-30): the centralizer
+`k · 1 + k · E` of `exists_eq_smul_one_add_smul_of_commute` is a COMMUTATIVE
+subalgebra. -/
+lemma commute_of_commute_traceZero_isUnit.{u1, u2}
+    {k : Type u1} [Field k] {W : Type u2} [AddCommGroup W] [Module k W]
+    [Module.Finite k W] [Module.Free k W] (hW : Module.rank k W = 2)
+    (h2 : (2 : k) ≠ 0) {E : Module.End k W} (hEtr : LinearMap.trace k W E = 0)
+    (hEunit : IsUnit E) {A B : Module.End k W} (hA : A * E = E * A)
+    (hB : B * E = E * B) :
+    A * B = B * A := by
+  obtain ⟨a, α, hAeq⟩ :=
+    exists_eq_smul_one_add_smul_of_commute hW h2 hEtr hEunit hA
+  obtain ⟨b, β, hBeq⟩ :=
+    exists_eq_smul_one_add_smul_of_commute hW h2 hEtr hEunit hB
+  have key : ∀ x y u v : k,
+      Commute (x • (1 : Module.End k W) + y • E) (u • (1 : Module.End k W) + v • E) := by
+    intro x y u v
+    have c11 : Commute (x • (1 : Module.End k W)) (u • (1 : Module.End k W)) :=
+      ((Commute.refl (1 : Module.End k W)).smul_left x).smul_right u
+    have c1E : Commute (x • (1 : Module.End k W)) (v • E) :=
+      ((Commute.one_left E).smul_left x).smul_right v
+    have cE1 : Commute (y • E) (u • (1 : Module.End k W)) :=
+      ((Commute.one_right E).smul_left y).smul_right u
+    have cEE : Commute (y • E) (v • E) :=
+      ((Commute.refl E).smul_left y).smul_right v
+    exact (c11.add_right c1E).add_left (cE1.add_right cEE)
+  rw [hAeq, hBeq]; exact (key a α b β).eq
+
+/-- **The IMAGE of an irreducible hardly ramified `ρbar` is NONCOMMUTATIVE**
+(PROVEN 2026-07-30).
+
+One line of content: if the image is commutative then EVERY `ρbar g` commutes
+with the whole image, so `exists_smul_eq_of_commute_of_isIrreducible`
+(`HardlyRamified/Deformation.lean` — Schur after upgrading `k`-irreducibility to
+absolute irreducibility through complex conjugation) makes every `ρbar g` a
+SCALAR, and then every line of `W` is `Γ ℚ`-stable, against `hirr`.
+
+`hρbar` is consumed only through that theorem, which uses only its `det` field.
+`hpodd` is not consumed here at all beyond being `exists_smul_eq_…`'s own
+parameter.
+
+**Why this is stated rather than left implicit.** It is what makes the leaf
+`not_index_two_commutative_of_isHardlyRamified` below no stronger than the
+dihedral horn it replaces: without it, that leaf's hypotheses would also cover
+the degenerate configuration "`ρbar(H)` consists of SCALARS", which is a real
+configuration (`H` any index-two open subgroup of an ABELIAN irreducible image,
+e.g. `ρbar` valued in a nonsplit torus `k'ˣ`) admitting no traceless
+`ρbar`-normalised `E` at all.  With `hnc` present that configuration is excluded
+by this theorem, so the leaf really is the DIHEDRAL one. -/
+theorem not_forall_commute_of_isHardlyRamified.{uK, uW}
+    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hpodd hW ρbar) (hirr : ρbar.IsIrreducible) :
+    ¬ ∀ g h : Field.absoluteGaloisGroup ℚ, ρbar g * ρbar h = ρbar h * ρbar g := by
+  classical
+  intro hcomm
+  have hfr : Module.finrank k W = 2 := Module.finrank_eq_of_rank_eq hW
+  have hscal : ∀ g : Field.absoluteGaloisGroup ℚ,
+      ∃ c : k, ρbar g = c • (1 : Module.End k W) := by
+    intro g
+    exact exists_smul_eq_of_commute_of_isIrreducible hpodd hW hρbar hirr (ρbar g)
+      (fun h => hcomm g h)
+  obtain ⟨-, hsub⟩ := (Slop.OddRep.isIrreducible_iff_forall ρbar.toRepresentation).mp hirr
+  haveI hnt : Nontrivial W :=
+    Module.nontrivial_of_finrank_pos (R := k) (by rw [hfr]; norm_num)
+  obtain ⟨v, hv0⟩ := exists_ne (0 : W)
+  have hst : ∀ g : Field.absoluteGaloisGroup ℚ, ∀ w ∈ Submodule.span k {v},
+      ρbar.toRepresentation g w ∈ Submodule.span k {v} := by
+    intro g w hw
+    obtain ⟨c, hc⟩ := hscal g
+    have h1 : ρbar.toRepresentation g w = ρbar g w := rfl
+    rw [h1, hc]
+    have h2 : (c • (1 : Module.End k W)) w = c • w := by simp
+    rw [h2]
+    exact Submodule.smul_mem _ c hw
+  rcases hsub (Submodule.span k {v}) hst with h | h
+  · rw [Submodule.span_singleton_eq_bot] at h; exact hv0 h
+  · have h1 : Module.finrank k (Submodule.span k {v}) = 1 := finrank_span_singleton hv0
+    rw [h, finrank_top, hfr] at h1
+    exact absurd h1 (by norm_num)
+
+/-- **The `ε = 1` horn of the dihedral dichotomy, PROVEN 2026-07-30 — and it was
+an ASSEMBLY, not the sub-task the note below priced it as.**  A nonzero traceless
+`E` cannot be CENTRALISED by the whole image of an irreducible hardly ramified
+`ρbar`.
+
+The docstring of `not_isUnit_stable_traceZero` below described this horn as "a
+self-contained sub-task with all its inputs present", the inputs being complex
+conjugation and the value of the cyclotomic character on it, from which one
+upgrades `k`-irreducibility to ABSOLUTE irreducibility and then applies Schur.
+**That entire chain is already ONE PROVEN THEOREM in this tree**, and not a
+distant one: `GaloisRepresentation.exists_smul_eq_of_commute_of_isIrreducible`
+(`GaloisRepresentation/HardlyRamified/Deformation.lean`, proven 2026-07-26,
+`public import`ed DIRECTLY by this module) says exactly *an endomorphism
+commuting with the whole image of an irreducible hardly ramified `ρbar` is a
+scalar*.  Its proof is verbatim the argument the note sketched — `J := ρbar
+complexConj` is an involution with `det J = −1`, so `J ≠ ±1`, so it has a
+one-dimensional `+1`-eigenspace, and Schur finishes — and it consumes `hρbar`
+ONLY through the `det` field.  So nothing had to be built here: what was left
+was `Commute` plumbing plus `tr (c • 1) = 2 c`.
+
+Recorded because it cost a search: the note found `ComplexConjugation.lean` by
+grepping for the CONCLUSION shape after the name `complexConjugation` failed,
+and stopped there — one step short of the theorem that already consumed it.
+Searching for the *statement* rather than the *vocabulary* would have found this
+lemma directly.
+
+`hEunit` is deliberately NOT a hypothesis: `E ≠ 0` suffices, since a traceless
+scalar is zero when `(2 : k) ≠ 0`.
+
+(2026-07-30, later the same day: the `ε ≠ 1` horn
+`not_isUnit_stable_traceZero_of_exists_ne` below was then PROVEN too, over the
+`E`-free arithmetic leaf `not_index_two_commutative_of_isHardlyRamified`, which is
+the SOLE remainder of this cluster.) -/
+theorem not_commute_stable_traceZero.{uK, uW}
+    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hpodd hW ρbar) (hirr : ρbar.IsIrreducible)
+    {E : Module.End k W} (hEtr : LinearMap.trace k W E = 0) (hE0 : E ≠ 0)
+    (hEcomm : ∀ g : Field.absoluteGaloisGroup ℚ, ρbar g * E * ρbar g⁻¹ = E) :
+    False := by
+  classical
+  haveI hchar : CharP k p := charP_of_ringHom_padicInt (algebraMap ℤ_[p] k)
+  have h2 : (2 : k) ≠ 0 := by
+    intro h
+    have hd : p ∣ 2 := by
+      have h' : ((2 : ℕ) : k) = 0 := by exact_mod_cast h
+      exact (CharP.cast_eq_zero_iff k p 2).mp h'
+    have hp2 := (Nat.prime_dvd_prime_iff_eq (Fact.out : p.Prime) Nat.prime_two).mp hd
+    rw [hp2] at hpodd
+    exact (Nat.not_odd_iff_even.mpr (by decide)) hpodd
+  have hfr : Module.finrank k W = 2 := Module.finrank_eq_of_rank_eq hW
+  -- `hEcomm` says exactly that `E` centralises the image
+  have hcomm : ∀ g : Field.absoluteGaloisGroup ℚ, Commute E (ρbar g) := by
+    intro g
+    have hinv1 : ρbar g⁻¹ * ρbar g = 1 := by rw [← map_mul, inv_mul_cancel, map_one]
+    have h1 : ρbar g * E * ρbar g⁻¹ * ρbar g = E * ρbar g := by rw [hEcomm g]
+    have h2' : ρbar g * E * ρbar g⁻¹ * ρbar g = ρbar g * E := by
+      calc ρbar g * E * ρbar g⁻¹ * ρbar g = ρbar g * E * (ρbar g⁻¹ * ρbar g) := by
+            simp only [mul_assoc]
+        _ = ρbar g * E := by rw [hinv1, mul_one]
+    exact h1.symm.trans h2'
+  -- Schur plus oddness — ALREADY PROVEN, `Deformation.lean`
+  obtain ⟨c, hc⟩ :=
+    exists_smul_eq_of_commute_of_isIrreducible hpodd hW hρbar hirr E hcomm
+  -- a traceless scalar is `0`, because `tr 1 = 2 ≠ 0`
+  have htr1 : LinearMap.trace k W (1 : Module.End k W) = (2 : k) := by
+    rw [show (1 : Module.End k W) = LinearMap.id from rfl, LinearMap.trace_id, hfr]
+    norm_num
+  rw [hc, map_smul, htr1, smul_eq_mul] at hEtr
+  have hc0 : c = 0 := by
+    rcases mul_eq_zero.mp hEtr with h | h
+    · exact h
+    · exact absurd h h2
+  rw [hc, hc0, zero_smul] at hE0
+  exact hE0 rfl
+
+/-- **`ρbar` IS NOT DIHEDRAL (SORRY LEAF, cut 2026-07-30 out of the `ε ≠ 1` horn
+`not_isUnit_stable_traceZero_of_exists_ne` below, which is PROVEN over it): an
+irreducible hardly ramified `ρbar` has no INDEX-TWO open subgroup on which its
+image is COMMUTATIVE.**
+
+This is now the WHOLE of what is open under
+`adZeroTwist_eq_top_of_map_rho_le_of_ne_bot`, and — the point of the cut — it
+mentions no `E`, no `ad⁰`, and no cohomology.  It is the classical statement
+"the projective image of `ρbar` is not dihedral", in the form the classification
+of subgroups of `PGL₂` produces it: `H` cuts out a quadratic field `F`
+(`hHopen` + `hHidx`), `ρbar|_{Γ F}` is abelian, so `ρbar = Ind_{Γ F}^{Γ ℚ} χ`.
+
+# WHAT EACH HYPOTHESIS IS FOR, AND THAT ALL FIVE ARE DISCHARGED BY THE CONSUMER
+
+* `hHker : ρbar.ker ≤ H` — the arithmetic hinge.  It says `H` is cut out by a
+  quadratic character FACTORING THROUGH `ρbar`'s image, so the quadratic field
+  `F` is unramified wherever `ρbar` is: `hρbar.isUnramified` then confines `F` to
+  `ℚ(√d)` with `d ∣ 2p` up to sign.  Without it `F` is an arbitrary quadratic
+  field and no arithmetic is available at all.
+* `hHopen` — openness, NOT merely finite index, is what makes `H` correspond to a
+  field (`Γ ℚ` is not topologically finitely generated, so a finite-index subgroup
+  need not be closed).  It follows from `hHker` and
+  `isOpen_setOf_galoisRep_eq_one`; supplied anyway so the owner need not redo it.
+* `hHidx : H.index = 2` — the scaling character is quadratic, so `[Γ ℚ : H] = 2`
+  exactly.
+* `hHcomm` — `ρbar(H)` is COMMUTATIVE.  This is the `E`-free residue of "`ρbar g`
+  centralises `E` for `g ∈ H`": the centralizer of a traceless unit in rank `2` is
+  the commutative algebra `k · 1 + k · E`
+  (`commute_of_commute_traceZero_isUnit` above).
+* `hnc` — `ρbar`'s image is NONCOMMUTATIVE.  Discharged by the PROVEN
+  `not_forall_commute_of_isHardlyRamified` above, and carried explicitly because
+  it is what makes this leaf **no stronger than the horn it replaces**: see the
+  audit below.
+
+# BOTH-WAYS AUDIT
+
+*Not vacuous as a statement about representations.*  Drop `hρbar` and the
+configuration is realisable over any `k`: take `F` quadratic, `χ : Γ F → kˣ` with
+`χ ≠ χ^σ`, `ρbar = Ind_{Γ F}^{Γ ℚ} χ` (irreducible over `k`), `H = Γ F`.  Then
+`ρbar(H)` is diagonal hence commutative, `ρbar.ker ≤ H`, `H` is open of index two,
+and the image is noncommutative because the other coset is anti-diagonal.  Every
+hypothesis except `hρbar` holds and the conclusion fails — so `hρbar` is
+load-bearing and this leaf is FALSE without it, exactly as its consumer is.
+
+*True here, and vacuously.*  `hρbar ∧ hirr` is classically UNSATISFIABLE (an
+irreducible hardly ramified `ρbar` does not exist), so the statement holds; that
+horn is not available non-circularly.
+
+*No strengthening.*  The one configuration these hypotheses admit that the
+`E`-shaped horn did not is `ρbar(H)` consisting of SCALARS — real (an abelian
+irreducible `ρbar` valued in a nonsplit torus `k'ˣ`, with `H` any index-two open
+subgroup) and admitting no traceless `ρbar`-normalised `E`.  `hnc` excludes it,
+and `hnc` is a theorem here, so nothing is lost and nothing is added.  The
+remaining gap — `ρbar(H)` non-scalar commutative with `E := 2 A - (tr A) · 1`
+NILPOTENT rather than invertible — is excluded by the parent's OTHER horn
+`not_stable_of_not_isUnit`, which is proven.
+
+# WHAT WOULD DISCHARGE IT, AND WHAT WOULD NOT
+
+Absolute irreducibility of `ρbar|_{ℚ(ζ_p)}` would NOT: a dihedral `Ind χ` with
+`χ ≠ χ^σ` IS absolutely irreducible, and `ad⁰ (Ind χ) = δ_F ⊕ Ind (χ / χ^σ)`
+still contains the `δ_F` line.  That input is what kills the `ε = 1` horn
+(`not_commute_stable_traceZero`, through
+`exists_smul_eq_of_commute_of_isIrreducible`) and it is spent.
+
+What this needs is ARITHMETIC bounding `F`: `hHker` with `hρbar.isUnramified`
+confines `F` to `{2, p}`, and `hρbar.isFlat` at `p` together with
+`hρbar.isTameAtTwo` must exclude every surviving `F`.  None of that is formalised
+in this tree.
+
+CIRCULARITY GUARD, inherited from the consumer: not to be discharged through
+`not_isIrreducible_of_isHardlyRamified_of_five_le`,
+`IsHardlyRamified.mod_three_reducible`, `Family.lean` or anything downstream of
+them — a proof ending in `exfalso` on `hirr` is the circular discharge and is
+BANNED. -/
+theorem not_index_two_commutative_of_isHardlyRamified.{uK, uW}
+    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hpodd hW ρbar) (hirr : ρbar.IsIrreducible)
+    {H : Subgroup (Field.absoluteGaloisGroup ℚ)}
+    (hHker : ρbar.ker ≤ H)
+    (hHopen : IsOpen ((H : Subgroup (Field.absoluteGaloisGroup ℚ)) :
+      Set (Field.absoluteGaloisGroup ℚ)))
+    (hHidx : H.index = 2)
+    (hHcomm : ∀ g ∈ H, ∀ h ∈ H, ρbar g * ρbar h = ρbar h * ρbar g)
+    (hnc : ¬ ∀ g h : Field.absoluteGaloisGroup ℚ,
+      ρbar g * ρbar h = ρbar h * ρbar g) :
+    False := sorry
+
+/-- **The `ε ≠ 1` horn: the genuinely DIHEDRAL configuration — PROVEN 2026-07-30
+over the single `E`-free leaf `not_index_two_commutative_of_isHardlyRamified`
+above.**
+
+An invertible traceless `E`, normalised by `ρbar` up to scalars, whose scaling
+character is NONTRIVIAL — witnessed by `hne`, a single `g₀` scaling `E` by some
+`ε₀ ≠ 1`.
+
+# WHAT THIS PROOF DOES: IT ELIMINATES `E`
+
+The scaling scalar is unique (`E ≠ 0`), so `ε : Γ ℚ → k` is a genuine function;
+it is multiplicative, `ε g ^ 2 = 1` by taking determinants (`det E ≠ 0` from
+`hEunit`), hence `ε g = ± 1` since `(2 : k) ≠ 0`.  `H := {g | ε g = 1}` is then a
+subgroup with
+
+* `ρbar.ker ≤ H` (a `g` with `ρbar g = 1` conjugates trivially),
+* `H` open, by `isOpen_setOf_galoisRep_eq_one` and `Subgroup.isOpen_mono`,
+* `H.index = 2` via `Subgroup.index_eq_two_iff` at `a := g₀`: `ε b = 1` gives
+  `ε (b g₀) = ε₀ ≠ 1`, and `ε b = -1` gives `ε (b g₀) = (-1)(-1) = 1`,
+* `ρbar(H)` COMMUTATIVE, because every `ρbar g` with `g ∈ H` centralises `E` and
+  the centralizer of a traceless unit in rank `2` is `k · 1 + k · E`
+  (`commute_of_commute_traceZero_isUnit`).
+
+`hnc` for the leaf comes from `not_forall_commute_of_isHardlyRamified`.  So `E`
+appears nowhere in the leaf, which is why the arithmetic can be attacked without
+carrying the `ad⁰` bookkeeping along.
+
+`(2 : k) ≠ 0` is derived here from `hpodd` exactly as in
+`not_commute_stable_traceZero` above; so `hpodd` IS consumed by this horn, unlike
+by the linear-algebra step of Step 3.
+
+# WHY `hne` IS THE RIGHT EXTRA HYPOTHESIS, AND WHY IT IS NOT `ε₀ = -1`
+
+`ε₀ ≠ 1` is all the consumer can hand over and all this proof needs to be the
+dihedral case.  One *could* state it as `ε₀ = -1`: `E ^ 2 = -det E • 1` is a
+nonzero scalar (Cayley–Hamilton, `E` invertible), conjugation fixes scalars, so
+`ε₀ ^ 2 = 1`, and `ε₀ ≠ 1` with `(2 : k) ≠ 0` gives `ε₀ = -1`.  That derivation
+is deliberately NOT made a hypothesis here: it belongs to whoever proves this
+leaf, it costs the consumer an extra obligation, and `ε₀ ≠ 1` is the form the
+`by_cases` in the consumer produces for free.
+
+# THE CONFIGURATION THIS DESCRIBES, EXACTLY
+
+`ker ε` is an index-two subgroup, cutting out a quadratic field `F`; `ρbar|_{Γ F}`
+centralises `E`, and any `g ∉ Γ F` anti-commutes with it.  So
+`ρbar = Ind_{Γ F}^{Γ ℚ} χ`, DIHEDRAL, and `k · E` is the `δ_F`-line of
+`ad⁰ ρbar = δ_F ⊕ Ind (χ / χ^σ)`.
+
+**STALE CLAIM CORRECTED (2026-07-30).**  This section previously read the
+configuration off "`E`'s eigenbasis (eigenvalues `± a`, `a ≠ 0`, distinct because
+`(2 : k) ≠ 0`)", with `Γ F` diagonal and the other coset anti-diagonal.  **`E`
+need not be diagonalisable over `k`.**  Cayley–Hamilton gives `E ^ 2 = -det E · 1`
+with `-det E ≠ 0`, and when `-det E` is a NONSQUARE in `k` the algebra
+`k[E] ≅ k(√(-det E))` is a FIELD, `W` is a line over it, and `E` has no
+eigenvector in `W` at all — the image of `Γ F` sits in a NONSPLIT torus.  The
+`Ind χ` description survives (over `k(√(-det E))`), but any argument that picks
+an eigenbasis over `k` does not.  This is why the proof below and
+`exists_eq_smul_one_add_smul_of_commute` go through the ANTICOMMUTATOR identity
+instead of a basis.
+
+# WHERE THE ARITHMETIC WENT
+
+Nowhere in this theorem: it is entirely linear algebra plus group theory, and the
+arithmetic is the leaf `not_index_two_commutative_of_isHardlyRamified` above,
+whose docstring carries the falsity audit, the `hρbar`-dropping witness, the
+"absolute irreducibility does NOT help" correction, and the circularity guard.
+Do not re-litigate them here. -/
+theorem not_isUnit_stable_traceZero_of_exists_ne.{uK, uW}
+    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hpodd hW ρbar) (hirr : ρbar.IsIrreducible)
+    {E : Module.End k W} (hEtr : LinearMap.trace k W E = 0) (hEunit : IsUnit E)
+    (hEst : ∀ g : Field.absoluteGaloisGroup ℚ, ∃ ε : k, ρbar g * E * ρbar g⁻¹ = ε • E)
+    (hne : ∃ (g₀ : Field.absoluteGaloisGroup ℚ) (ε₀ : k), ε₀ ≠ 1 ∧
+      ρbar g₀ * E * ρbar g₀⁻¹ = ε₀ • E) :
+    False := by
+  classical
+  haveI hchar : CharP k p := charP_of_ringHom_padicInt (algebraMap ℤ_[p] k)
+  have h2 : (2 : k) ≠ 0 := by
+    intro h
+    have hd : p ∣ 2 := by
+      have h' : ((2 : ℕ) : k) = 0 := by exact_mod_cast h
+      exact (CharP.cast_eq_zero_iff k p 2).mp h'
+    have hp2 := (Nat.prime_dvd_prime_iff_eq (Fact.out : p.Prime) Nat.prime_two).mp hd
+    rw [hp2] at hpodd
+    exact (Nat.not_odd_iff_even.mpr (by decide)) hpodd
+  have hfr : Module.finrank k W = 2 := Module.finrank_eq_of_rank_eq hW
+  haveI hfinW : Finite W := Module.finite_of_finite k
+  haveI hnt : Nontrivial W :=
+    Module.nontrivial_of_finrank_pos (R := k) (by rw [hfr]; norm_num)
+  have hE0 : E ≠ 0 := by
+    intro h
+    rw [h] at hEunit
+    exact (not_isUnit_zero (M₀ := Module.End k W)) hEunit
+  have hdE0 : LinearMap.det E ≠ 0 :=
+    (hEunit.map (LinearMap.det : Module.End k W →* k)).ne_zero
+  -- the scaling scalar is UNIQUE, because `E ≠ 0`
+  have hunique : ∀ c c' : k, c • E = c' • E → c = c' := by
+    intro c c' h
+    have h0 : (c - c') • E = 0 := by rw [sub_smul, h, sub_self]
+    rcases smul_eq_zero.mp h0 with h' | h'
+    · exact sub_eq_zero.mp h'
+    · exact absurd h' hE0
+  have hinv2 : ∀ g : Field.absoluteGaloisGroup ℚ, ρbar g * ρbar g⁻¹ = 1 := by
+    intro g; rw [← map_mul, mul_inv_cancel, map_one]
+  have hinv1 : ∀ g : Field.absoluteGaloisGroup ℚ, ρbar g⁻¹ * ρbar g = 1 := by
+    intro g; rw [← map_mul, inv_mul_cancel, map_one]
+  -- the scaling character `ε`
+  set ε : Field.absoluteGaloisGroup ℚ → k := fun g => (hEst g).choose with hεdef
+  have hε : ∀ g : Field.absoluteGaloisGroup ℚ, ρbar g * E * ρbar g⁻¹ = ε g • E :=
+    fun g => (hEst g).choose_spec
+  have hε1 : ε 1 = 1 := by
+    refine hunique _ _ ?_
+    rw [← hε 1, one_smul, inv_one, map_one, one_mul, mul_one]
+  have hεmul : ∀ g h : Field.absoluteGaloisGroup ℚ, ε (g * h) = ε g * ε h := by
+    intro g h
+    refine hunique _ _ ?_
+    rw [← hε (g * h)]
+    calc ρbar (g * h) * E * ρbar (g * h)⁻¹
+        = ρbar g * (ρbar h * E * ρbar h⁻¹) * ρbar g⁻¹ := by
+          rw [mul_inv_rev, map_mul, map_mul]; simp only [mul_assoc]
+      _ = ρbar g * (ε h • E) * ρbar g⁻¹ := by rw [hε h]
+      _ = ε h • (ρbar g * E * ρbar g⁻¹) := by rw [mul_smul_comm, smul_mul_assoc]
+      _ = ε h • (ε g • E) := by rw [hε g]
+      _ = (ε g * ε h) • E := by rw [smul_smul, mul_comm]
+  -- `ε` is QUADRATIC, by taking determinants
+  have hεsq : ∀ g : Field.absoluteGaloisGroup ℚ, ε g * ε g = 1 := by
+    intro g
+    have hd := congrArg (LinearMap.det : Module.End k W →* k) (hε g)
+    simp only [map_mul] at hd
+    rw [LinearMap.det_smul, hfr] at hd
+    have hdg : LinearMap.det (ρbar g) * LinearMap.det (ρbar g⁻¹) = 1 := by
+      rw [← map_mul, hinv2 g, map_one]
+    have key : (ε g * ε g - 1) * LinearMap.det E = 0 := by
+      linear_combination -hd + LinearMap.det E * hdg
+    rcases mul_eq_zero.mp key with h | h
+    · exact sub_eq_zero.mp h
+    · exact absurd h hdE0
+  have hεpm : ∀ g : Field.absoluteGaloisGroup ℚ, ε g = 1 ∨ ε g = -1 := by
+    intro g
+    have hfac : (ε g - 1) * (ε g + 1) = 0 := by linear_combination hεsq g
+    rcases mul_eq_zero.mp hfac with h' | h'
+    · exact Or.inl (sub_eq_zero.mp h')
+    · exact Or.inr (eq_neg_of_add_eq_zero_left h')
+  -- `H = ker ε`
+  set H : Subgroup (Field.absoluteGaloisGroup ℚ) :=
+    { carrier := {g | ε g = 1}
+      one_mem' := hε1
+      mul_mem' := by
+        intro a b ha hb
+        show ε (a * b) = 1
+        rw [hεmul, ha, hb, mul_one]
+      inv_mem' := by
+        intro a ha
+        show ε a⁻¹ = 1
+        have h := hεmul a⁻¹ a
+        rw [inv_mul_cancel, hε1, (show ε a = 1 from ha), mul_one] at h
+        exact h.symm } with hHdef
+  have hmemH : ∀ g : Field.absoluteGaloisGroup ℚ, g ∈ H ↔ ε g = 1 := fun _ => Iff.rfl
+  have hHker : ρbar.ker ≤ H := by
+    intro g hg
+    have hg1 : ρbar g = 1 := hg
+    have hg2 : ρbar g⁻¹ = 1 := by
+      have h := hinv2 g; rw [hg1, one_mul] at h; exact h
+    refine (hmemH g).mpr (hunique _ _ ?_)
+    rw [← hε g, hg1, hg2, one_mul, mul_one, one_smul]
+  have hHopen : IsOpen ((H : Subgroup (Field.absoluteGaloisGroup ℚ)) :
+      Set (Field.absoluteGaloisGroup ℚ)) :=
+    Subgroup.isOpen_mono hHker (isOpen_setOf_galoisRep_eq_one ρbar hfinW)
+  obtain ⟨g₀, ε₀, hε₀ne, hε₀⟩ := hne
+  have hεg₀ : ε g₀ = ε₀ := hunique _ _ (by rw [← hε g₀, hε₀])
+  have hg₀ne : ε g₀ ≠ 1 := by rw [hεg₀]; exact hε₀ne
+  have hg₀m : ε g₀ = -1 := by
+    rcases hεpm g₀ with h | h
+    · exact absurd h hg₀ne
+    · exact h
+  have hHidx : H.index = 2 := by
+    refine Subgroup.index_eq_two_iff.mpr ⟨g₀, fun b => ?_⟩
+    by_cases hb : b ∈ H
+    · refine Or.inr ⟨hb, ?_⟩
+      intro hmem
+      have h : ε (b * g₀) = 1 := hmem
+      rw [hεmul, (show ε b = 1 from hb), one_mul] at h
+      exact hg₀ne h
+    · refine Or.inl ⟨?_, hb⟩
+      have hbm : ε b = -1 := by
+        rcases hεpm b with h | h
+        · exact absurd h hb
+        · exact h
+      show ε (b * g₀) = 1
+      rw [hεmul, hbm, hg₀m]
+      norm_num
+  -- `ρbar(H)` is COMMUTATIVE: it centralises the traceless unit `E`
+  have hHcomm : ∀ g ∈ H, ∀ h ∈ H, ρbar g * ρbar h = ρbar h * ρbar g := by
+    have hcE : ∀ g ∈ H, ρbar g * E = E * ρbar g := by
+      intro g hg
+      have h := hε g
+      rw [(show ε g = 1 from hg), one_smul] at h
+      calc ρbar g * E = ρbar g * E * (ρbar g⁻¹ * ρbar g) := by rw [hinv1, mul_one]
+        _ = (ρbar g * E * ρbar g⁻¹) * ρbar g := by simp only [mul_assoc]
+        _ = E * ρbar g := by rw [h]
+    intro g hg h hh
+    exact commute_of_commute_traceZero_isUnit hW h2 hEtr hEunit (hcE g hg) (hcE h hh)
+  exact not_index_two_commutative_of_isHardlyRamified hpodd hW hρbar hirr hHker hHopen
+    hHidx hHcomm (not_forall_commute_of_isHardlyRamified hpodd hW hρbar hirr)
+
+/-- **The DIHEDRAL exclusion (cut 2026-07-30 out of
+`adZeroTwist_eq_top_of_map_rho_le_of_ne_bot` below; **PROVEN the same day** over
+its `ε ≠ 1` horn alone, `not_isUnit_stable_traceZero_of_exists_ne` above): an
+INVERTIBLE traceless `E ∈ End k W` cannot be normalised by `ρbar` up to
+scalars.**
+
+This is ALL that is left of the `ad⁰ρbar(1)`-irreducibility leaf.  Everything
+else in that leaf — that `dim ad⁰ = 3`, that a stable subspace has dimension
+`1` or `2`, that the trace form is nondegenerate and equivariant so that the
+orthogonal complement of a stable `2`-plane is a stable LINE, that a stable
+line gives a `ρbar`-normalised traceless `E`, and that a NON-invertible such
+`E` is already excluded by `hirr` alone (`not_stable_of_not_isUnit`) — is
+proven below.
+
+The `by_cases` in the proof is on whether the scaling character is trivial, and
+the two horns are now VERY differently placed: the `ε = 1` horn is PROVEN
+(`not_commute_stable_traceZero`), and the `ε ≠ 1` horn is the single remaining
+`sorry` of this cluster.
+
+# WHAT THE STATEMENT REALLY SAYS
+
+Write `ε g` for the scalar; it is unique because `E ≠ 0` (`E` is invertible),
+and `g ↦ ε g` is then a character `Γ ℚ → kˣ`.  Cayley–Hamilton for a traceless
+`2 × 2` endomorphism gives `E ^ 2 = -det E • 1`, a NONZERO scalar, and
+conjugating that identity gives `ε g ^ 2 = 1`.  So `ε` is a QUADRATIC
+character, and there are exactly two horns:
+
+* **`ε = 1`.**  Then `E` centralises the image of `ρbar`, so `E ∈ End_{Γ}(W)`.
+  For ABSOLUTELY irreducible `ρbar` Schur's lemma forces `E ∈ k · 1`, and a
+  traceless scalar is `0` when `(2 : k) ≠ 0` — contradiction.  So this horn is
+  exactly the failure of ABSOLUTE (as against `k`-) irreducibility.
+* **`ε ≠ 1`.**  Let `F` be the quadratic field cut out by `ε`.  Then `ρbar` is
+  DIHEDRAL — induced from a character of `Γ F` — and `E` is a genuine
+  counterexample.
+
+# THIS LEAF IS FALSE WITHOUT `hρbar`, AND THE WITNESS IS EXPLICIT
+
+Drop `hρbar` and take `k = 𝔽_p`, `F` any quadratic field, `χ : Γ F → kˣ` a
+character with `χ ≠ χ ^ σ`, and `ρbar = Ind_{Γ F}^{Γ ℚ} χ`, which is
+irreducible over `k`.  In the induced basis `Γ F` acts diagonally and any
+`g ∉ Γ F` acts anti-diagonally, so `E = diag (1, -1)` is traceless, invertible,
+and satisfies `ρbar g * E * ρbar g⁻¹ = δ_F g • E` with `δ_F` the quadratic
+character of `F`.  Every hypothesis except `hρbar` holds and the conclusion
+fails.  Equivalently: `ad⁰ρbar` contains the line `k · E` carrying `δ_F`, which
+is the standard decomposition `ad⁰ (Ind χ) = δ_F ⊕ Ind (χ / χ^σ)`.
+
+**Hence this leaf is exactly as strong as its parent and no stronger**, and it
+is not refutable HERE for exactly the parent's reason: the hypothesis set
+`hρbar ∧ hirr` is classically UNSATISFIABLE (an irreducible hardly ramified
+`ρbar` does not exist), so the statement is true, but vacuously, and that horn
+is not available non-circularly.
+
+# WHAT DISCHARGED THE `ε = 1` HORN — AND THE SEARCH THAT NEARLY MISSED IT TWICE
+
+**This section previously ended "the `ε = 1` horn is a self-contained sub-task
+with all its inputs present".  It was not a sub-task: it was already a THEOREM,
+and the horn is now closed by `not_commute_stable_traceZero` above.**  Recorded
+in full because the near-miss happened twice in a row, at two different levels:
+
+1. A first pass grepped `Fermat/` for `complexConjugation` (one word, camel-cased
+   that way), got only prose in `MoretBailly.lean` and `KhareWintenberger.lean`,
+   and was about to record that no `c : Γ ℚ` with `c ^ 2 = 1` and
+   `cyclotomicCharacter c = -1` existed in the tree.  FALSE: the spelling is
+   `complexConj`, in the sorry-free
+   `GaloisRepresentation/ComplexConjugation.lean`, which supplies `complexConj`,
+   `complexConj_mul_self` and `cyclotomicCharacter_complexConj`.  Found by
+   searching for the CONCLUSION shape (`cyclotomicCharacter … = -1`) rather than
+   for a name.
+2. Having found the *vocabulary*, the note then planned to rebuild the
+   *argument* (upgrade `k`-irreducibility to ABSOLUTE irreducibility via a `g`
+   with a one-dimensional `1`-eigenspace, then Schur).  That argument is ALSO
+   already proven, as one theorem, in a module this file `public import`s
+   DIRECTLY: `GaloisRepresentation.exists_smul_eq_of_commute_of_isIrreducible`
+   (`HardlyRamified/Deformation.lean`, 2026-07-26) — *an endomorphism commuting
+   with the whole image of an irreducible hardly ramified `ρbar` is a scalar*,
+   proved by exactly that route and consuming `hρbar` only through `det`.
+
+The moral, since the same shape has now cost two searches: after locating the
+vocabulary a route needs, grep for the ROUTE'S CONCLUSION before building it —
+in this tree an argument assembled from available inputs has often already been
+assembled.
+
+# WHAT IS LEFT, AND A CORRECTION ABOUT WHAT WOULD DISCHARGE IT
+
+The `ε ≠ 1` horn is the DIHEDRAL case; it is
+`not_isUnit_stable_traceZero_of_exists_ne` above and is **PROVEN 2026-07-30**,
+over the single `E`-free leaf `not_index_two_commutative_of_isHardlyRamified` —
+"`ρbar` is not dihedral", i.e. no index-two open subgroup carries a commutative
+image.  That leaf is the SOLE remainder of this cluster and is where the
+arithmetic sits: `ρbar` is unramified outside `{2, p}` and the leaf's `hHker`
+confines the quadratic field `F` to that set, after which `hρbar.isFlat` at `p`
+together with `hρbar.isTameAtTwo` must exclude every surviving `F`; none of that
+is formalised here.
+
+**CORRECTION to `adZeroTwist_eq_top_of_map_rho_le_of_ne_bot`'s docstring below,
+and to the task note that repeated it.**  Both say an owner will need ABSOLUTE
+irreducibility of `ρbar|_{ℚ(ζ_p)}`.  That is what kills the `ε = 1` horn, and it
+is now spent; it does **not** touch this one.  A dihedral `ρbar = Ind χ` with
+`χ ≠ χ^σ` IS absolutely irreducible — over `k̄`, `Ind χ` is irreducible exactly
+when `χ ≠ χ^σ` — while `ad⁰ (Ind χ) = δ_F ⊕ Ind (χ / χ^σ)` still contains the
+`δ_F` LINE.  So absolute irreducibility, however obtained, cannot discharge the
+remaining horn, and an owner who extracts it will find nothing has moved.
+
+CIRCULARITY GUARD, inherited from the consumer: it must not be discharged
+through `not_isIrreducible_of_isHardlyRamified_of_five_le`,
+`IsHardlyRamified.mod_three_reducible`, `Family.lean` or anything downstream of
+them — a proof ending in `exfalso` on `hirr` is the circular discharge and is
+BANNED. -/
+theorem not_isUnit_stable_traceZero.{uK, uW}
+    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hpodd hW ρbar) (hirr : ρbar.IsIrreducible)
+    {E : Module.End k W} (hEtr : LinearMap.trace k W E = 0) (hEunit : IsUnit E)
+    (hEst : ∀ g : Field.absoluteGaloisGroup ℚ, ∃ ε : k, ρbar g * E * ρbar g⁻¹ = ε • E) :
+    False := by
+  classical
+  have hE0 : E ≠ 0 := by
+    intro h
+    rw [h] at hEunit
+    haveI hnt : Nontrivial W := by
+      have hfr : Module.finrank k W = 2 := Module.finrank_eq_of_rank_eq hW
+      exact Module.nontrivial_of_finrank_pos (R := k) (by rw [hfr]; norm_num)
+    exact (not_isUnit_zero (M₀ := Module.End k W)) hEunit
+  by_cases hall : ∀ g : Field.absoluteGaloisGroup ℚ, ρbar g * E * ρbar g⁻¹ = E
+  · -- `ε = 1`: `E` centralises the image, so Schur plus oddness makes it a
+    -- traceless scalar, i.e. `0`
+    exact not_commute_stable_traceZero hpodd hW hρbar hirr hEtr hE0 hall
+  · -- `ε ≠ 1`: the genuinely dihedral horn
+    push Not at hall
+    obtain ⟨g₀, hg₀⟩ := hall
+    obtain ⟨ε₀, hε₀⟩ := hEst g₀
+    refine not_isUnit_stable_traceZero_of_exists_ne hpodd hW hρbar hirr hEtr hEunit hEst
+      ⟨g₀, ε₀, ?_, hε₀⟩
+    intro h1
+    rw [h1, one_smul] at hε₀
+    exact hg₀ hε₀
+
+/-- **The NON-invertible horn of the same dichotomy, PROVEN 2026-07-30 from
+`hirr` ALONE.**  If `E ≠ 0` is normalised by `ρbar` up to scalars and is not
+invertible, then `ker E` is a nonzero proper `ρbar`-stable subspace of `W`,
+contradicting irreducibility.
+
+The scalars are automatically NONZERO (`hεne`): if `ρbar g * E * ρbar g⁻¹ = 0`
+then conjugating back gives `E = 0`.  That is the only place `hE0` is used
+beyond `ker E ≠ ⊤`, and it is why no invertibility of `ε` need be assumed.
+
+Note this needs neither `hρbar`, nor `Finite k`, nor `p`: it is a statement
+about an arbitrary `k`-representation of `Γ ℚ`. -/
+lemma not_stable_of_not_isUnit.{uK, uW}
+    {k : Type uK} [Field k] [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] {ρbar : GaloisRep ℚ k W} (hirr : ρbar.IsIrreducible)
+    {E : Module.End k W} (hE0 : E ≠ 0) (hEunit : ¬ IsUnit E)
+    (hEst : ∀ g : Field.absoluteGaloisGroup ℚ, ∃ ε : k, ρbar g * E * ρbar g⁻¹ = ε • E) :
+    False := by
+  classical
+  haveI hfd : FiniteDimensional k W := inferInstance
+  have hinv1 : ∀ g : Field.absoluteGaloisGroup ℚ, ρbar g⁻¹ * ρbar g = 1 := by
+    intro g; rw [← map_mul, inv_mul_cancel, map_one]
+  have hconjback : ∀ g : Field.absoluteGaloisGroup ℚ,
+      ρbar g⁻¹ * (ρbar g * E * ρbar g⁻¹) * ρbar g = E := by
+    intro g
+    calc ρbar g⁻¹ * (ρbar g * E * ρbar g⁻¹) * ρbar g
+        = (ρbar g⁻¹ * ρbar g) * E * (ρbar g⁻¹ * ρbar g) := by simp only [mul_assoc]
+      _ = E := by rw [hinv1, one_mul, mul_one]
+  have hεne : ∀ (g : Field.absoluteGaloisGroup ℚ) (ε : k),
+      ρbar g * E * ρbar g⁻¹ = ε • E → ε ≠ 0 := by
+    intro g ε hg h0
+    rw [h0, zero_smul] at hg
+    refine hE0 ?_
+    rw [← hconjback g, hg, mul_zero, zero_mul]
+  have hker0 : LinearMap.ker E ≠ ⊥ := fun h => hEunit ((LinearMap.isUnit_iff_ker_eq_bot E).mpr h)
+  have hkertop : LinearMap.ker E ≠ ⊤ := fun h => hE0 (LinearMap.ker_eq_top.mp h)
+  have hstable : ∀ (g : Field.absoluteGaloisGroup ℚ) (v : W),
+      v ∈ LinearMap.ker E → ρbar.toRepresentation g v ∈ LinearMap.ker E := by
+    intro g v hv
+    obtain ⟨ε, hε⟩ := hEst g
+    have hεne' := hεne g ε hε
+    have happ : (ρbar g * E * ρbar g⁻¹) (ρbar g v) = (ε • E) (ρbar g v) := by rw [hε]
+    have hvv : ρbar g⁻¹ (ρbar g v) = v := by
+      have h1 : (ρbar g⁻¹ * ρbar g) v = v := by rw [hinv1]; rfl
+      rwa [Module.End.mul_apply] at h1
+    rw [Module.End.mul_apply, Module.End.mul_apply, hvv, LinearMap.mem_ker.mp hv,
+      map_zero, LinearMap.smul_apply] at happ
+    rcases smul_eq_zero.mp happ.symm with h | h
+    · exact absurd h hεne'
+    · exact LinearMap.mem_ker.mpr h
+  obtain ⟨-, hsub⟩ := (Slop.OddRep.isIrreducible_iff_forall ρbar.toRepresentation).mp hirr
+  rcases hsub (LinearMap.ker E) (fun g v hv => hstable g v hv) with h | h
+  · exact hker0 h
+  · exact hkertop h
+
+/-- **`ad⁰ρbar(1)` has no `Γ ℚ`-stable LINE** (PROVEN 2026-07-30 over the single
+leaf `not_isUnit_stable_traceZero`).
+
+A stable line `L` is spanned by one `x ≠ 0`, and stability says
+`ρ g x = ε g • x`; reading that through `adZeroTwistToEnd_rho` and dividing by
+the NONZERO cyclotomic scalar `χ g` turns it into
+`ρbar g * E * ρbar g⁻¹ = (χ g)⁻¹ ε g • E` for `E` the image of `x` in
+`End k W`, which is traceless and nonzero.  The two horns of `IsUnit E` are
+then `not_stable_of_not_isUnit` and the leaf. -/
+lemma adZeroTwist_no_stable_finrank_one.{uK, uW}
+    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hpodd hW ρbar) (hirr : ρbar.IsIrreducible)
+    {L : Submodule k ↥(adZeroTwist p ρbar)} (hL1 : Module.finrank k ↥L = 1)
+    (hLst : ∀ g : Field.absoluteGaloisGroup ℚ,
+      Submodule.map ((adZeroTwist p ρbar).ρ g).toLinearMap L ≤ L) : False := by
+  classical
+  haveI hfd : FiniteDimensional k ↥(adZeroTwist p ρbar) :=
+    inferInstanceAs (FiniteDimensional k ↥(LinearMap.ker (LinearMap.trace k W)))
+  have hLbot : L ≠ ⊥ := by
+    intro h
+    rw [h] at hL1
+    simp at hL1
+  obtain ⟨x, hxL, hx0⟩ := (Submodule.ne_bot_iff L).mp hLbot
+  have hspanle : Submodule.span k {x} ≤ L := by
+    rw [Submodule.span_le, Set.singleton_subset_iff]; exact hxL
+  have hspan : Submodule.span k {x} = L :=
+    Submodule.eq_of_le_of_finrank_eq hspanle (by rw [finrank_span_singleton hx0, hL1])
+  have hscal : ∀ g : Field.absoluteGaloisGroup ℚ,
+      ∃ ε : k, (adZeroTwist p ρbar).ρ g x = ε • x := by
+    intro g
+    have hmem : (adZeroTwist p ρbar).ρ g x ∈ L := hLst g ⟨x, hxL, rfl⟩
+    rw [← hspan] at hmem
+    obtain ⟨ε, hε⟩ := Submodule.mem_span_singleton.mp hmem
+    exact ⟨ε, hε.symm⟩
+  set E : Module.End k W := adZeroTwistToEnd p ρbar x with hEdef
+  have hE0 : E ≠ 0 := by
+    intro h
+    refine hx0 (adZeroTwistToEnd_injective p ρbar ?_)
+    rw [map_zero, ← hEdef, h]
+  have hEtr : LinearMap.trace k W E = 0 := trace_adZeroTwistToEnd p ρbar x
+  have hEst : ∀ g : Field.absoluteGaloisGroup ℚ,
+      ∃ ε : k, ρbar g * E * ρbar g⁻¹ = ε • E := by
+    intro g
+    obtain ⟨ε, hε⟩ := hscal g
+    have h1 : (adZeroCycloChar p k g : k) • (ρbar g * E * ρbar g⁻¹) = ε • E := by
+      have h0 := congrArg (adZeroTwistToEnd p ρbar) hε
+      rw [adZeroTwistToEnd_rho, map_smul] at h0
+      exact h0
+    have hχ0 : (adZeroCycloChar p k g : k) ≠ 0 := (adZeroCycloChar p k g).ne_zero
+    exact ⟨(adZeroCycloChar p k g : k)⁻¹ * ε, by
+      rw [mul_smul, ← h1, smul_smul, inv_mul_cancel₀ hχ0, one_smul]⟩
+  by_cases hu : IsUnit E
+  · exact not_isUnit_stable_traceZero hpodd hW hρbar hirr hEtr hu hEst
+  · exact not_stable_of_not_isUnit hirr hE0 hu hEst
 
 /-- **Irreducibility of `ad⁰ρbar(1)` as a `Γ ℚ`-representation over `k`
-(SORRY LEAF, cut 2026-07-29): a `Γ ℚ`-stable `k`-subspace is `⊥` or
-`⊤`.**
+(cut 2026-07-29; **PROVEN 2026-07-30** over the single leaf
+`not_isUnit_stable_traceZero` above): a `Γ ℚ`-stable `k`-subspace is `⊥`
+or `⊤`.**
 
-# ROUTE
+# WHAT WAS CLOSED HERE, AND WHAT IS LEFT
+
+`(2 : k) ≠ 0` comes from `hpodd` and `CharP k p`, so `dim_k ad⁰ = 3`
+(`finrank_adZero`).  A stable `Q ≠ ⊥, ⊤` therefore has dimension `1` or
+`2`, and the two cases are related by the trace pairing
+`adZeroTwistTraceForm`, which is NONDEGENERATE
+(`adZeroTwistTraceForm_nondegenerate`) and `Γ ℚ`-equivariant up to the
+scalar `χ g ^ 2` — enough for `Qᗮ` to be stable — so a stable `2`-plane
+produces a stable LINE as its orthogonal complement.  Both cases then land
+on `adZeroTwist_no_stable_finrank_one`: no stable line.
+
+That in turn is a dichotomy on `IsUnit E` for `E` the traceless
+endomorphism spanning the line.  The NON-invertible horn is PROVEN from
+`hirr` alone (`not_stable_of_not_isUnit`, whose `ker E` is a nonzero
+proper stable subspace).  The invertible horn is the single remaining leaf
+`not_isUnit_stable_traceZero`, which is the DIHEDRAL exclusion and carries
+the full hypothesis-strength discussion below — including an explicit
+counterexample showing it is FALSE once `hρbar` is dropped, and the two
+horns (`ε = 1`, absolute irreducibility; `ε ≠ 1`, dihedral) that a
+non-circular discharge must close.
+
+Note `hstable` is upgraded to an EQUALITY of submodules (`hmapeq`) inside
+the proof, using `ρ g⁻¹` as the inverse — needed because the orthogonal
+complement argument transports elements of `Q` FORWARD.
+
+# ROUTE (as recorded when the leaf was cut)
 
 This is Wiles, Lemma 1.12 / DDT Theorem 2.49's module-structure input,
 and the standard statement is: for `p ≥ 5` and `ρbar|_{ℚ(ζ_p)}`
@@ -6292,6 +7404,28 @@ nonzero stable subspace exists.  The honest situation is therefore:
   form at the call site — not to attack the dihedral case, which is
   false.
 
+That warning has NOT been discharged; it has been LOCALISED — and then
+HALF-DISCHARGED, later the same day.  It now applies to
+`not_isUnit_stable_traceZero_of_exists_ne` and to nothing else: the `ε = 1`
+(non-absolutely-irreducible) horn is PROVEN, by
+`not_commute_stable_traceZero`, out of the already-proven
+`exists_smul_eq_of_commute_of_isIrreducible`.  In particular this
+statement's own hypothesis set is UNCHANGED — no strengthening was
+smuggled in — so its consumer `exists_mem_kerFix_eval₁_notMem_of_ne_top`
+and everything above it are untouched.
+
+**Two corrections to the paragraph above, which is otherwise accurate.**
+First, "an owner will need absolute irreducibility of `ρbar|_{ℚ(ζ_p)}`" was
+right about the `ε = 1` horn and WRONG about the surviving one: a dihedral
+`ρbar = Ind χ` with `χ ≠ χ^σ` is absolutely irreducible and `ad⁰ (Ind χ)`
+still contains the `δ_F` line, so no amount of absolute irreducibility
+closes the `ε ≠ 1` horn.  Second, and consequently, "strengthen this leaf's
+hypothesis and discharge it at the call site" is NOT the repair that was
+needed: no hypothesis of this theorem or of its consumers changed.  What
+was needed was to split the leaf on `ε` and observe that one horn was
+already a theorem.  See the discussion on
+`not_isUnit_stable_traceZero_of_exists_ne`.
+
 CIRCULARITY GUARD, inherited from the consumer: not to be discharged
 through `not_isIrreducible_of_isHardlyRamified_of_five_le`,
 `IsHardlyRamified.mod_three_reducible`, `Family.lean` or anything
@@ -6306,7 +7440,73 @@ theorem adZeroTwist_eq_top_of_map_rho_le_of_ne_bot.{uK, uW}
     {Q : Submodule k ↥(adZeroTwist p ρbar)}
     (hstable : ∀ g : Field.absoluteGaloisGroup ℚ,
       Submodule.map ((adZeroTwist p ρbar).ρ g).toLinearMap Q ≤ Q)
-    (hQ : Q ≠ ⊥) : Q = ⊤ := sorry
+    (hQ : Q ≠ ⊥) : Q = ⊤ := by
+  classical
+  haveI hchar : CharP k p := charP_of_ringHom_padicInt (algebraMap ℤ_[p] k)
+  have h2 : (2 : k) ≠ 0 := by
+    intro h
+    have hd : p ∣ 2 := by
+      have h' : ((2 : ℕ) : k) = 0 := by exact_mod_cast h
+      exact (CharP.cast_eq_zero_iff k p 2).mp h'
+    have hp2 := (Nat.prime_dvd_prime_iff_eq (Fact.out : p.Prime) Nat.prime_two).mp hd
+    rw [hp2] at hpodd
+    exact (Nat.not_odd_iff_even.mpr (by decide)) hpodd
+  have hfr : Module.finrank k W = 2 := Module.finrank_eq_of_rank_eq hW
+  haveI hfd : FiniteDimensional k ↥(adZeroTwist p ρbar) :=
+    inferInstanceAs (FiniteDimensional k ↥(LinearMap.ker (LinearMap.trace k W)))
+  have hfin3 : Module.finrank k ↥(adZeroTwist p ρbar) = 3 := finrank_adZero h2 hfr
+  by_contra hQtop
+  have hmapeq : ∀ g : Field.absoluteGaloisGroup ℚ,
+      Submodule.map ((adZeroTwist p ρbar).ρ g).toLinearMap Q = Q := by
+    intro g
+    refine le_antisymm (hstable g) fun x hx => ?_
+    exact ⟨(adZeroTwist p ρbar).ρ g⁻¹ x, hstable g⁻¹ ⟨x, hx, rfl⟩, by
+      simpa using ContinuousCohomology.rho_inv_apply (adZeroTwist p ρbar) g⁻¹ x⟩
+  have hQpos : Module.finrank k ↥Q ≠ 0 := fun h => hQ (Submodule.finrank_eq_zero.mp h)
+  have hQlt : Module.finrank k ↥Q < 3 := by
+    rw [← hfin3]; exact Submodule.finrank_lt hQtop
+  have hcases : Module.finrank k ↥Q = 1 ∨ Module.finrank k ↥Q = 2 := by omega
+  rcases hcases with h1 | h2'
+  · exact adZeroTwist_no_stable_finrank_one hpodd hW hρbar hirr h1 hstable
+  · -- the orthogonal complement of a `2`-plane is a stable LINE
+    have hinv1 : ∀ g : Field.absoluteGaloisGroup ℚ, ρbar g⁻¹ * ρbar g = 1 := by
+      intro g; rw [← map_mul, inv_mul_cancel, map_one]
+    have hBequiv : ∀ (g : Field.absoluteGaloisGroup ℚ) (X Y : ↥(adZeroTwist p ρbar)),
+        adZeroTwistTraceForm p ρbar ((adZeroTwist p ρbar).ρ g X)
+            ((adZeroTwist p ρbar).ρ g Y)
+          = ((adZeroCycloChar p k g : k) * (adZeroCycloChar p k g : k)) •
+            adZeroTwistTraceForm p ρbar X Y := by
+      intro g X Y
+      rw [adZeroTwistTraceForm_apply, adZeroTwistTraceForm_apply,
+        adZeroTwistToEnd_rho, adZeroTwistToEnd_rho, smul_mul_smul_comm, map_smul]
+      congr 1
+      set EX := adZeroTwistToEnd p ρbar X with hEX
+      set EY := adZeroTwistToEnd p ρbar Y with hEY
+      have hrw : (ρbar g * EX * ρbar g⁻¹) * (ρbar g * EY * ρbar g⁻¹)
+          = ρbar g * (EX * EY) * ρbar g⁻¹ := by
+        calc (ρbar g * EX * ρbar g⁻¹) * (ρbar g * EY * ρbar g⁻¹)
+            = ρbar g * EX * (ρbar g⁻¹ * ρbar g) * (EY * ρbar g⁻¹) := by
+              simp only [mul_assoc]
+          _ = ρbar g * (EX * EY) * ρbar g⁻¹ := by
+              rw [hinv1, mul_one]; simp only [mul_assoc]
+      rw [hrw, LinearMap.trace_mul_comm, ← mul_assoc, hinv1, one_mul]
+    set L : Submodule k ↥(adZeroTwist p ρbar) :=
+      (adZeroTwistTraceForm p ρbar).orthogonal Q with hLdef
+    have hLfin : Module.finrank k ↥L = 1 := by
+      rw [hLdef, LinearMap.BilinForm.finrank_orthogonal
+        (adZeroTwistTraceForm_nondegenerate p ρbar h2 hfr) Q, hfin3, h2']
+    have hLst : ∀ g : Field.absoluteGaloisGroup ℚ,
+        Submodule.map ((adZeroTwist p ρbar).ρ g).toLinearMap L ≤ L := by
+      intro g
+      rintro _ ⟨X, hX, rfl⟩
+      intro n hn
+      have hn' : n ∈ Submodule.map ((adZeroTwist p ρbar).ρ g).toLinearMap Q := by
+        rw [hmapeq]; exact hn
+      obtain ⟨n0, hn0, rfl⟩ := hn'
+      show adZeroTwistTraceForm p ρbar ((adZeroTwist p ρbar).ρ g n0)
+        ((adZeroTwist p ρbar).ρ g X) = 0
+      rw [hBequiv, hX n0 hn0, smul_zero]
+    exact adZeroTwist_no_stable_finrank_one hpodd hW hρbar hirr hLfin hLst
 
 /-- **The Wiles moving step** (PROVEN 2026-07-29 over the two leaves
 above): the values of `z` on `N = ker ρbar ∩ Fix(μ_{p^n})` are not
@@ -6418,11 +7618,22 @@ returns `σ τ` to the Taylor–Wiles locus and the intersection is nonempty.
 Everything else in DDT 2.48's global half is now PROVEN around this leaf:
 openness is `isOpen_survivingLocus`, the supply of `σ` is
 `nonempty_taylorWilesLocus`, the return to the Taylor–Wiles locus is
-`mem_taylorWilesLocus_mul`, the `n = 0` case is reduced to `n = 1` by
-`taylorWilesLocus_subset_of_le`, and STEP 2 BELOW — that `(ρ σ - 1) · M`
-is a proper subset — is handed in as the hypothesis `hproper`, discharged
-by `range_rho_sub_ne_univ_of_fixes_rootsOfUnity`.  What is left is exactly
-the arithmetic of Steps 1 and 3.
+`mem_taylorWilesLocus_mul`, and the `n = 0` case is reduced to `n = 1` by
+`taylorWilesLocus_subset_of_le`.  What is left is exactly the arithmetic.
+
+MERGE NOTE (2026-07-30): an earlier release carried Step 2 as a
+HYPOTHESIS `hproper` of this theorem, discharged by a pair of lemmas
+`range_rho_sub_ne_univ_of_fixes_rootsOfUnity` /
+`exists_ne_zero_rho_eq_self_of_fixes_rootsOfUnity` stated for any `σ`
+fixing `μ_p`.  Those two were an independent duplicate of
+`range_subRho_ne_top_of_mem_taylorWilesLocus` /
+`exists_ne_zero_adZeroTwist_rho_eq_self_of_mem_taylorWilesLocus` above,
+were consumed by nothing else in the tree, and became unreachable once
+Step 2 moved INSIDE this proof; they were deleted at the merge.  Recover
+them with `git show main:Fermat/FLT/Modularity/Patching.lean` at any
+commit before this one if the more general `σ`-fixes-`μ_p` form is ever
+wanted — the only generality lost is the SCALAR case of `ρbar σ`, which
+the charpoly clause of `taylorWilesLocus` excludes anyway.
 
 # ROUTE
 
@@ -6445,14 +7656,19 @@ by `ker ρbar` rather than by `ker ad⁰ρbar` is harmless: the intermediate
 group acts trivially on `M` and has order prime to `p`, so its `Hom` into
 the `p`-group `M` vanishes and the two `H¹`'s agree.)
 
-*Step 2 — `(ρ σ - 1) · M` is a PROPER subset.*  **PROVEN and supplied as
-`hproper`**; see `range_rho_sub_ne_univ_of_fixes_rootsOfUnity` and
-`exists_ne_zero_rho_eq_self_of_fixes_rootsOfUnity`.  (Since `n ≥ 1`, `σ`
-fixes `μ_p`, so `χ(σ) = 1` and `ρ σ` is plain conjugation by `ρbar σ`,
-which always fixes the traceless part of `ρbar σ` — or everything, when
-`ρbar σ` is scalar.  Note this needs neither the charpoly clause nor
-`α ≠ β`; distinctness pins the fixed space to a LINE, which mere
-properness does not require.)
+*Step 2 — `(ρ σ - 1) · M` is a PROPER subspace.*  **PROVEN**, inside this
+proof, by `range_subRho_ne_top_of_mem_taylorWilesLocus`.  Since `n ≥ 1`,
+`σ` fixes `μ_p`, so `χ(σ) = 1`
+(`adZeroCycloChar_eq_one_of_fixes_rootsOfUnity`) and `ρ σ` is plain
+conjugation by `ρbar σ`.  The charpoly clause of `hσ` gives `ρbar σ` two
+DISTINCT eigenvalues, so `2 · ρbar σ - (tr ρbar σ) · 1` is a NONZERO
+element of `M` commuting with `ρbar σ`
+(`exists_ne_zero_traceZero_commute_of_charpoly_eq`), i.e. a nonzero fixed
+vector of `ρ σ`.  Hence `ρ σ - 1` is not injective on the
+finite-dimensional `M`, hence not surjective.  (No characteristic
+hypothesis enters: writing the traceless part as `2 E - (tr E) · 1`
+rather than `E - (tr E / 2) · 1` avoids the division, so `hpodd` is NOT
+consumed here.)
 
 *Step 3 — move out.*  If `z σ ∉ (ρ σ - 1) · M` take `τ = 1`.  Otherwise
 apply Step 1 inside the `Γ`-stable subgroup `z(N) ⊆ M` and use
@@ -6484,9 +7700,7 @@ theorem exists_mul_mem_survivingLocus_of_mem_taylorWilesLocus.{uK, uW}
     {c : continuousCohomology 1 (adZeroTwist p ρbar)}
     (hzc : ContinuousCohomology.cocycleClass (adZeroTwist p ρbar) 1 z = c)
     (hcunr : c ∈ h1TwistUnramified p ρbar) (hc0 : c ≠ 0)
-    {σ : Field.absoluteGaloisGroup ℚ} (hσ : σ ∈ taylorWilesLocus p ρbar n)
-    (hproper : Set.range (fun m : ↥(adZeroTwist p ρbar) =>
-      (adZeroTwist p ρbar).ρ σ m - m) ≠ Set.univ) :
+    {σ : Field.absoluteGaloisGroup ℚ} (hσ : σ ∈ taylorWilesLocus p ρbar n) :
     ∃ τ : Field.absoluteGaloisGroup ℚ, ρbar τ = 1 ∧
       (∀ ζ : AlgebraicClosure ℚ, ζ ^ p ^ n = 1 → τ ζ = ζ) ∧
       σ * τ ∈ survivingLocus p ρbar z := by
@@ -6615,16 +7829,9 @@ theorem isOpen_survivingLocus_and_meets_taylorWilesLocus.{uK, uW}
       (survivingLocus p ρbar z ∩ taylorWilesLocus p ρbar n).Nonempty := by
   refine ⟨isOpen_survivingLocus p ρbar z, ?_⟩
   obtain ⟨σ, hσ⟩ := nonempty_taylorWilesLocus hpodd hW hρbar hirr (max n 1)
-  -- `σ` fixes `μ_{p^(max n 1)}` and `1 ≤ max n 1`, so it fixes `μ_p`
-  have hσp : ∀ ζ : AlgebraicClosure ℚ, ζ ^ p = 1 → σ ζ = ζ := by
-    intro ζ hζ
-    refine hσ.1 ζ ?_
-    obtain ⟨d, hd⟩ := Nat.exists_eq_add_of_le (le_max_right n 1)
-    rw [hd, pow_add, pow_one, pow_mul, hζ, one_pow]
   obtain ⟨τ, hτ1, hτζ, hmem⟩ :=
     exists_mul_mem_survivingLocus_of_mem_taylorWilesLocus hpodd hW hρbar hirr
       (le_max_right n 1) z hzc hcunr hc0 hσ
-      (range_rho_sub_ne_univ_of_fixes_rootsOfUnity p hpodd hW ρbar hσp)
   exact ⟨σ * τ, hmem,
     taylorWilesLocus_subset_of_le p ρbar (le_max_left n 1)
       (mem_taylorWilesLocus_mul p ρbar (max n 1) hτ1 hτζ hσ)⟩
