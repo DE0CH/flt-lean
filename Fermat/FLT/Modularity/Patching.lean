@@ -4976,8 +4976,9 @@ lemma notMem_hardlyRamifiedPlaces_of_ne {p q : ℕ} (hp : p.Prime) (hq : q.Prime
       rw [h]; exact Ideal.mem_span_singleton_self _
     exact ((natCast_mem_toHeightOneSpectrum_iff hp hq).mp hmem).symm
 
+set_option backward.isDefEq.respectTransparency false in
 /-- **The open normal subgroup acting trivially on `ad⁰ρbar(1)`, containing the
-inertia away from `T`** (SORRY LEAF, cut out 2026-07-28 as the ONE arithmetic
+inertia away from `T`** (PROVEN 2026-07-30; cut out 2026-07-28 as the ONE arithmetic
 input of `exists_mem_inertiaOutsideSubgroups_resSubgroup_eq_zero` below; that
 leaf is PROVEN over it, and everything else in it is cocycle bookkeeping).
 
@@ -5031,7 +5032,48 @@ cohomology in it, and non-vacuous — `N₁ = ⊤` is NOT admissible unless `ρb
 `χ` are both trivial, since the trivial-action clause is quantified over all of
 `N₁`.  The conclusion is an existential over subgroups, so it cannot be
 discharged by refuting a package; no hypothesis on `ρbar` beyond its type and
-`hT` is present. -/
+`hT` is present.
+
+# PROVEN 2026-07-30 — and the two "missing" items above cost nothing
+
+The subgroup taken is **`N₁ = ker ρbar ⊓ Fix(μ_p)`**, NOT the
+`ker ρbar ⊓ ker (adZeroCycloChar p k)` the route above prescribed.  That single
+substitution is what removes both itemised obstructions, because `Fix(μ_p)` is
+open outright and the character is trivial on it — the strictly weaker fact that
+`Deformation.lean`'s section preamble already records as "entirely sufficient":
+
+1. *Continuity of `adZeroCycloChar` is never needed.*  `Fix(μ_p)` is open by
+   `isOpen_setOf_fixes_rootsOfUnity` (it is the fixing subgroup of the FINITE
+   extension `ℚ(μ_p)/ℚ`), and `adZeroCycloChar_eq_one_of_fixes_rootsOfUnity`
+   gives `χ = 1` on it.  Both are PROVEN upstream in
+   `HardlyRamified/Deformation.lean`, and the trivial action is then
+   `adZeroTwist_rho_apply_eq_self` verbatim.
+2. *Inertia-triviality of the character at `q ≠ p` was already in the cone*, as
+   the sharper statement that inertia FIXES `μ_p` pointwise:
+   `MazurTorsion.lean`'s `localInertia_fixes_rootOfUnity` (an `n`-th root of
+   unity with `n` a `v`-adic unit is fixed by `I_v`), whose unit hypothesis is
+   `natCast_notMem_maximalIdeal_integralClosure` at `¬ q ∣ p`.  `hpT` enters
+   exactly here and only here: `q ∉ T` and `p ∈ T` give `q ≠ p`.
+   `Field.absoluteGaloisGroup.lift_map` transports the local fixing statement
+   back to `ℚᵃˡᵍ`.  (`Modularity/Interface.lean`'s
+   `map_fixes_of_pow_eq_one_of_mem_localInertiaGroup` is this same statement but
+   is DOWNSTREAM of this file and therefore unusable here.)
+
+Normality of `Fix(μ_p)` is direct rather than via `ℚ(μ_p)/ℚ` being Galois:
+`g⁻¹ ζ` is again a `p`-th root of unity, so `g n g⁻¹` fixes `ζ` whenever `n`
+does.  Finiteness of the index is openness plus compactness of `Γ ℚ`; the
+`set_option backward.isDefEq.respectTransparency false` is what lets
+`CompactSpace (AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)` be found at all,
+since `Algebra ℚ (AlgebraicClosure ℚ)` otherwise elaborates against
+`DivisionRing.toRatAlgebra` instead of `AlgebraicClosure.instAlgebra` — the same
+instance clash `isOpen_setOf_fixes_rootsOfUnity` carries the option for, and the
+same one the `Subsingleton.elim` on the `ρbar` clause below repairs.
+
+`inertiaToGlobalHom_apply` is inlined as the local `hIG` rather than cited:
+that lemma sits ~5300 lines BELOW this one, so it does not exist yet here.  It
+is `rfl`, and unfolding it in this position — at the head of a goal rather than
+buried inside an application of a representation — succeeds, which is the case
+its own docstring says the named form is not needed for. -/
 theorem exists_openNormal_trivial_adZeroTwist.{uK, uW} (p : ℕ) [Fact p.Prime]
     {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
     [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
@@ -5044,7 +5086,88 @@ theorem exists_openNormal_trivial_adZeroTwist.{uK, uW} (p : ℕ) [Fact p.Prime]
       (∀ g ∈ N₁, ∀ m : ↥(adZeroTwist p ρbar), (adZeroTwist p ρbar).ρ g m = m) ∧
       (∀ (q : ℕ) (hq : q.Prime), q ∉ T →
         ∀ σ : ↥(localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat),
-          inertiaToGlobalHom hq.toHeightOneSpectrumRingOfIntegersRat σ ∈ N₁) := sorry
+          inertiaToGlobalHom hq.toHeightOneSpectrumRingOfIntegersRat σ ∈ N₁) := by
+  classical
+  -- the subgroup of `Γ ℚ` fixing every `p`-th root of unity
+  let F : Subgroup (Field.absoluteGaloisGroup ℚ) :=
+    { carrier := {x | ∀ ζ : AlgebraicClosure ℚ, ζ ^ p = 1 → x ζ = ζ}
+      one_mem' := fun _ _ => rfl
+      mul_mem' := fun {a b} ha hb ζ hζ => by
+        show a (b ζ) = ζ
+        rw [hb ζ hζ, ha ζ hζ]
+      inv_mem' := fun {a} ha ζ hζ => by
+        show a.symm ζ = ζ
+        conv_lhs => rw [← ha ζ hζ]
+        exact a.symm_apply_apply ζ }
+  have hFmem : ∀ x : Field.absoluteGaloisGroup ℚ,
+      x ∈ F ↔ ∀ ζ : AlgebraicClosure ℚ, ζ ^ p = 1 → x ζ = ζ := fun _ => Iff.rfl
+  have hFnormal : F.Normal := by
+    refine ⟨fun n hn g => ?_⟩
+    rw [hFmem] at hn ⊢
+    intro ζ hζ
+    show g (n (g⁻¹ ζ)) = ζ
+    have hinv : (g⁻¹ ζ) ^ p = 1 := by
+      rw [← map_pow, hζ, map_one]
+    rw [hn _ hinv]
+    show g (g.symm ζ) = ζ
+    exact g.apply_symm_apply ζ
+  have hFopen : IsOpen (F : Set (Field.absoluteGaloisGroup ℚ)) :=
+    isOpen_setOf_fixes_rootsOfUnity p (Fact.out : p.Prime).pos
+  -- `inertiaToGlobalHom_apply`, which is declared far below this point
+  have hIG : ∀ (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+      (σ : ↥(localInertiaGroup v)),
+      inertiaToGlobalHom v σ =
+        Field.absoluteGaloisGroup.map
+          (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))
+          (σ : Field.absoluteGaloisGroup
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) :=
+    fun _ _ => rfl
+  refine ⟨ρbar.ker ⊓ F, ?_, ?_, ?_, ?_, ?_⟩
+  · exact Subgroup.normal_inf_normal _ _
+  · exact (isOpen_ker_of_finite_discrete ρbar).inter hFopen
+  · haveI : Algebra.IsSeparable ℚ (AlgebraicClosure ℚ) :=
+      Algebra.IsAlgebraic.isSeparable_of_perfectField
+    haveI : IsGalois ℚ (AlgebraicClosure ℚ) := ⟨⟩
+    haveI : CompactSpace (Field.absoluteGaloisGroup ℚ) :=
+      inferInstanceAs (CompactSpace (AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ))
+    haveI : Finite (Field.absoluteGaloisGroup ℚ ⧸ (ρbar.ker ⊓ F)) :=
+      Subgroup.quotient_finite_of_isOpen _
+        ((isOpen_ker_of_finite_discrete ρbar).inter hFopen)
+    exact Subgroup.finiteIndex_of_finite_quotient
+  · intro g hg m
+    obtain ⟨hg1, hg2⟩ := Subgroup.mem_inf.mp hg
+    exact adZeroTwist_rho_apply_eq_self p ρbar
+      (by rwa [GaloisRep.ker, MonoidHom.mem_ker] at hg1)
+      (adZeroCycloChar_eq_one_of_fixes_rootsOfUnity p ((hFmem g).mp hg2)) m
+  · intro q hq hqT σ
+    have hqp : q ≠ p := fun h => hqT (h ▸ hpT)
+    refine Subgroup.mem_inf.mpr ⟨?_, ?_⟩
+    · have h1 : (ρbar.toLocal hq.toHeightOneSpectrumRingOfIntegersRat) σ.1 = 1 :=
+        (hT q hq hqT).localInertiaGroup_le σ.2
+      rw [GaloisRep.toLocal_apply] at h1
+      show ρbar (inertiaToGlobalHom hq.toHeightOneSpectrumRingOfIntegersRat σ) = 1
+      rw [hIG]
+      convert h1 using 4
+      exact Subsingleton.elim _ _
+    · rw [hFmem, hIG]
+      intro ζ hζ
+      have hnd : ¬ q ∣ p := fun hd =>
+        hqp ((Nat.prime_dvd_prime_iff_eq hq (Fact.out : p.Prime)).mp hd)
+      have hξ : (AlgebraicClosure.map (algebraMap ℚ
+          (HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) ζ) ^ p = 1 := by
+        rw [← map_pow, hζ, map_one]
+      have hfix := localInertia_fixes_rootOfUnity (Knum := ℚ)
+        hq.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime).ne_zero
+        (natCast_notMem_maximalIdeal_integralClosure hq hnd) hξ σ.2
+      have hlift := Field.absoluteGaloisGroup.lift_map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)) σ.1 ζ
+      apply (AlgebraicClosure.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))).injective
+      rw [hlift]
+      exact hfix
 
 /-- **An unramified-outside-`{2, p}` class dies on a small open subgroup**
 (cut out 2026-07-28 as the second of the three inputs of
