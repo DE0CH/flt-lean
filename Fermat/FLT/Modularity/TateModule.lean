@@ -8569,9 +8569,9 @@ theorem exists_preimage_act_of_mult
 
 /-! ### The trace-duality functional of the pin — decomposition (2026-07-29)
 
-`exists_traceDualFunctional_of_adicPin` is PROVEN below, over two open
-statements of pure commutative algebra.  The mathematics is recorded here
-once rather than repeated in each docstring.
+`exists_traceDualFunctional_of_adicPin` is PROVEN below, and since
+2026-07-30 so is everything under it: this whole cluster is SORRY-FREE.  The
+mathematics is recorded here once rather than repeated in each docstring.
 
 Under the pin, `O` is the `I`-adic completion `𝒪_{D,I}`: `hdense` and
 `hker` make `𝒪_D ⟶ O/(jπ)^n` surjective with kernel `I^n`, so
@@ -8618,20 +8618,26 @@ rather than by counting:
   is `hker` plus additivity modulo `q^k`; `ℤ_q`-linearity is automatic
   because `ℤ ↠ ℤ_q/q^k`, which is where `PadicInt.appr` enters; and the
   lift along `ℤ_q ↠ ℤ_q/q^k` is projectivity of `O`.
-* `moduleFinite_moduleFree_padicInt_of_adicPin` (SORRY LEAF) — `O` is
-  finite and free over `ℤ_q`.  This is the only reason the lifting carries
-  a `Module.Free` hypothesis instead of deriving it.  The ENGINE is already
-  in this file and PROVEN: `finite_free_moduleTopology_of_approx`.  What a
-  successor must supply is what
+* `moduleFinite_moduleFree_padicInt_of_adicPin` (PROVEN 2026-07-30) — `O`
+  is finite and free over `ℤ_q`.  This is the only reason the lifting
+  carries a `Module.Free` hypothesis instead of deriving it.  The ENGINE was
+  already in this file and PROVEN: `finite_free_moduleTopology_of_approx`.
+  What it needed was what
   `module_finite_free_moduleTopology_padicIntAlgebra` gets for free from
   the concrete `𝒪_v` — `IsDomain O`, a `(q)`-adic topology on the abstract
   `O` of the pin, and the reconciliation of `(algebraMap ℤ_q O).toAlgebra`
   with the given `Algebra ℤ_[q] O` instance (`Algebra.algebra_ext`).
-  `IsDomain O` is within reach from what is proven here: every nonzero `x`
-  is `Π^a · unit` (take `a` maximal with `x ∈ Π^a`, which exists by
-  `hcplt.toIsHausdorff`, and use maximality of `(jπ)`), and `Π^m ≠ 0`
-  because `j (π^m) = 0` would put `π^m` in every `I^n`, forcing `π = 0`
-  against `hπ2`.
+
+The whole cluster now rests on ONE structural observation, isolated as
+`exists_isUnit_mul_pow_of_adicPin` (PROVEN): every nonzero `x : O` is
+`unit · Π^a` — take `a` maximal with `x ∈ Π^a`, which exists by
+`hcplt.toIsHausdorff`, and use maximality of `(jπ)`; and `Π^m ≠ 0`
+(`pow_map_uniformizer_ne_zero_of_adicPin`) because `j (π^m) = 0` would put
+`π^m` in every `I^n`, forcing `π = 0` against `hπ2`.  `IsDomain O`,
+`IsPrincipalIdealRing O` and "every nonzero `c` divides some `q^m`" are all
+one-paragraph consequences of it, and between them they discharge both
+leaves.  No valuation object and no `IsDiscreteValuationRing` instance is
+ever constructed.
 -/
 
 /-- **`(j π)` is the maximal ideal of `O`** (PROVEN 2026-07-29).
@@ -8784,18 +8790,231 @@ theorem exists_linearMap_of_forall_mem_span_natCast_pow
     simp only [RingHom.id_apply, smul_eq_mul]
     ring
 
-/-- **`O` is a finite free `ℤ_q`-module** (SORRY LEAF).
+/-- **No power of `j π` vanishes in `O`** (PROVEN 2026-07-30).
+
+This is the one place `hπ2` is consumed, and it is what makes `O` a domain
+below.  If `(j π)^m = 0` then `j (π^m) = 0` lies in `(jπ)^n` for EVERY `n`,
+so `hker` puts `π^m` in every `I^n`; Krull's intersection theorem in the
+Noetherian domain `𝒪_D` (`Ideal.iInf_pow_eq_bot_of_isDomain`, available
+because `I` is maximal, hence proper) forces `π^m = 0`, hence `π = 0` when
+`m > 0` — and `0 ∈ I^2`, against `hπ2`.  The case `m = 0` is separate and
+cheaper: it says `1 = 0` in `𝒪_D`. -/
+theorem pow_map_uniformizer_ne_zero_of_adicPin
+    {D : Type u} [Field D] [NumberField D]
+    {I : Ideal (NumberField.RingOfIntegers D)} (hI : I.IsMaximal)
+    {π : NumberField.RingOfIntegers D} (hπ2 : π ∉ I ^ 2)
+    {O : Type u} [CommRing O]
+    {j : NumberField.RingOfIntegers D →+* O}
+    (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
+      j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n) (m : ℕ) :
+    (j π) ^ m ≠ 0 := by
+  intro h
+  have hall : ∀ n : ℕ, π ^ m ∈ I ^ n := by
+    intro n
+    refine (hker n (π ^ m)).mp ?_
+    rw [map_pow, h]
+    exact Submodule.zero_mem _
+  have hbot : (⨅ n : ℕ, I ^ n) = ⊥ := Ideal.iInf_pow_eq_bot_of_isDomain I hI.ne_top
+  have hzero : π ^ m = 0 := by
+    have hmem : π ^ m ∈ (⨅ n : ℕ, I ^ n) := by
+      simp only [Submodule.mem_iInf]
+      exact hall
+    rwa [hbot, Ideal.mem_bot] at hmem
+  rcases Nat.eq_zero_or_pos m with hm | hm
+  · rw [hm, pow_zero] at hzero
+    exact one_ne_zero hzero
+  · have hπ0 : π = 0 := pow_eq_zero_iff hm.ne' |>.mp hzero
+    exact hπ2 (by rw [hπ0]; exact Submodule.zero_mem _)
+
+/-- **Every nonzero element of `O` is a unit times a power of `j π`**
+(PROVEN 2026-07-30) — the `(jπ)`-adic valuation of the pin, in the only
+form the arguments below need.
+
+`hcplt.toIsHausdorff` bounds the set of `n` with `x ∈ (jπ)^n`, so there is a
+largest one, `a`; writing `x = u · (jπ)^a` with `u` outside `(jπ)^1`, and
+using `span_uniformizer_eq_maximalIdeal_of_adicPin` to identify `(jπ)` with
+the maximal ideal, makes `u` a unit.  This single statement gives `O` its
+domain, principal-ideal and divisibility properties below, and it is the
+reason none of them needs a `IsDiscreteValuationRing` instance. -/
+theorem exists_isUnit_mul_pow_of_adicPin
+    {D : Type u} [Field D] [NumberField D]
+    {I : Ideal (NumberField.RingOfIntegers D)} (hI : I.IsMaximal)
+    {π : NumberField.RingOfIntegers D}
+    {O : Type u} [CommRing O] [IsLocalRing O]
+    {j : NumberField.RingOfIntegers D →+* O}
+    (hcplt : IsAdicComplete (Ideal.span {j π}) O)
+    (hdense : ∀ (n : ℕ) (z : O), ∃ a : NumberField.RingOfIntegers D,
+      z - j a ∈ Ideal.span {j π} ^ n)
+    (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
+      j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n)
+    {x : O} (hx : x ≠ 0) :
+    ∃ (a : ℕ) (u : O), IsUnit u ∧ x = u * (j π) ^ a := by
+  classical
+  have hmax := span_uniformizer_eq_maximalIdeal_of_adicPin hI hdense hker
+  have hex : ∃ n : ℕ, x ∉ (Ideal.span {j π} : Ideal O) ^ n := by
+    by_contra hcon
+    refine hx (isHausdorff_iff.mp hcplt.toIsHausdorff x fun n => ?_)
+    have hn : x ∈ (Ideal.span {j π} : Ideal O) ^ n := not_not.mp fun h => hcon ⟨n, h⟩
+    simpa only [SModEq.zero, smul_eq_mul, Ideal.mul_top] using hn
+  have hN0 : 0 < Nat.find hex := by
+    rcases Nat.eq_zero_or_pos (Nat.find hex) with h | h
+    · exact absurd (by rw [h, pow_zero, Ideal.one_eq_top]; exact Submodule.mem_top)
+        (Nat.find_spec hex)
+    · exact h
+  set a := Nat.find hex - 1 with hadef
+  have hxa : x ∈ (Ideal.span {j π} : Ideal O) ^ a := not_not.mp (Nat.find_min hex (by omega))
+  have hxa1 : x ∉ (Ideal.span {j π} : Ideal O) ^ (a + 1) := by
+    rw [show a + 1 = Nat.find hex by omega]
+    exact Nat.find_spec hex
+  rw [Ideal.span_singleton_pow, Ideal.mem_span_singleton'] at hxa
+  obtain ⟨u, hu⟩ := hxa
+  refine ⟨a, u, ?_, hu.symm⟩
+  rw [← IsLocalRing.notMem_maximalIdeal, ← hmax]
+  intro hmem
+  apply hxa1
+  rw [← hu, pow_succ']
+  exact Ideal.mul_mem_mul hmem (by
+    rw [Ideal.span_singleton_pow]
+    exact Ideal.mem_span_singleton_self _)
+
+/-- **`O` is a domain** (PROVEN 2026-07-30), which
+`module_finite_free_moduleTopology_padicIntAlgebra` gets for free from the
+concrete `𝒪_v` and the abstract pin does not.
+
+Two nonzero elements are `u·(jπ)^a` and `w·(jπ)^b`; their product is
+`(uw)·(jπ)^{a+b}`, a unit times something nonzero by
+`pow_map_uniformizer_ne_zero_of_adicPin`. -/
+theorem isDomain_of_adicPin
+    {D : Type u} [Field D] [NumberField D]
+    {I : Ideal (NumberField.RingOfIntegers D)} (hI : I.IsMaximal)
+    {π : NumberField.RingOfIntegers D} (hπ2 : π ∉ I ^ 2)
+    {O : Type u} [CommRing O] [IsLocalRing O]
+    {j : NumberField.RingOfIntegers D →+* O}
+    (hcplt : IsAdicComplete (Ideal.span {j π}) O)
+    (hdense : ∀ (n : ℕ) (z : O), ∃ a : NumberField.RingOfIntegers D,
+      z - j a ∈ Ideal.span {j π} ^ n)
+    (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
+      j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n) :
+    IsDomain O := by
+  haveI : NoZeroDivisors O := by
+    constructor
+    intro x y hxy
+    rcases eq_or_ne x 0 with hx | hx
+    · exact Or.inl hx
+    rcases eq_or_ne y 0 with hy | hy
+    · exact Or.inr hy
+    exfalso
+    obtain ⟨a, u, hu, rfl⟩ := exists_isUnit_mul_pow_of_adicPin hI hcplt hdense hker hx
+    obtain ⟨b, w, hw, rfl⟩ := exists_isUnit_mul_pow_of_adicPin hI hcplt hdense hker hy
+    refine pow_map_uniformizer_ne_zero_of_adicPin hI hπ2 hker (a + b) ?_
+    have h1 : (u * w) * ((j π) ^ (a + b)) = 0 := by rw [← hxy, pow_add]; ring
+    exact (hu.mul hw).mul_right_eq_zero.mp h1
+  exact NoZeroDivisors.to_isDomain O
+
+/-- **`O` is a principal ideal ring** (PROVEN 2026-07-30) — the DVR
+property of the pin, in the form `Module.free_of_finite_type_torsion_free'`
+asks for it, and obtained without ever constructing a valuation.
+
+A nonzero ideal `J` contains `(jπ)^n` for some `n` (clear denominators of
+any nonzero element against its unit factor); take the least such `n`, and
+minimality puts every nonzero element of `J`, written `w·(jπ)^b`, at
+`b ≥ n`, so `J = ((jπ)^n)`.  Note this needs neither `hπ2` nor `IsDomain O`:
+`exists_isUnit_mul_pow_of_adicPin` carries all of the arithmetic. -/
+theorem isPrincipalIdealRing_of_adicPin
+    {D : Type u} [Field D] [NumberField D]
+    {I : Ideal (NumberField.RingOfIntegers D)} (hI : I.IsMaximal)
+    {π : NumberField.RingOfIntegers D}
+    {O : Type u} [CommRing O] [IsLocalRing O]
+    {j : NumberField.RingOfIntegers D →+* O}
+    (hcplt : IsAdicComplete (Ideal.span {j π}) O)
+    (hdense : ∀ (n : ℕ) (z : O), ∃ a : NumberField.RingOfIntegers D,
+      z - j a ∈ Ideal.span {j π} ^ n)
+    (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
+      j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n) :
+    IsPrincipalIdealRing O := by
+  classical
+  constructor
+  intro J
+  rcases eq_or_ne J ⊥ with hJ | hJ
+  · exact ⟨0, by rw [hJ, Submodule.span_zero_singleton]⟩
+  · have hne : ∃ n : ℕ, ((j π) ^ n) ∈ J := by
+      obtain ⟨x, hxJ, hx0⟩ := Submodule.ne_bot_iff J |>.mp hJ
+      obtain ⟨a, u, hu, rfl⟩ := exists_isUnit_mul_pow_of_adicPin hI hcplt hdense hker hx0
+      obtain ⟨v, hv⟩ := hu.exists_left_inv
+      refine ⟨a, ?_⟩
+      have hrw : (j π) ^ a = v * (u * (j π) ^ a) := by rw [← mul_assoc, hv, one_mul]
+      rw [hrw]
+      exact J.mul_mem_left v hxJ
+    refine ⟨(j π) ^ Nat.find hne, le_antisymm ?_ ?_⟩
+    · intro y hy
+      rcases eq_or_ne y 0 with rfl | hy0
+      · exact Submodule.zero_mem _
+      obtain ⟨b, w, hw, rfl⟩ := exists_isUnit_mul_pow_of_adicPin hI hcplt hdense hker hy0
+      have hbn : Nat.find hne ≤ b := by
+        by_contra hcon
+        refine Nat.find_min hne (Nat.lt_of_not_le hcon) ?_
+        obtain ⟨v, hv⟩ := hw.exists_left_inv
+        have hrw : (j π) ^ b = v * (w * (j π) ^ b) := by rw [← mul_assoc, hv, one_mul]
+        rw [hrw]
+        exact J.mul_mem_left v hy
+      rw [Ideal.mem_span_singleton]
+      exact Dvd.dvd.mul_left (pow_dvd_pow _ hbn) w
+    · rw [Ideal.span_le, Set.singleton_subset_iff]
+      exact Nat.find_spec hne
+
+/-- **The `O`-module structure on `ℤ_q`-functionals on `O`**, by
+precomposition with multiplication: `(c • Ψ) z = Ψ (c z)`.
+
+Mathlib's `Module S (M →ₗ[R] N)` instances act on the TARGET, so the
+domain-side action that trace duality needs is not an instance and is
+supplied here.  It is deliberately a `def` rather than an `instance`: it is
+`letI`-ed inside `exists_generatingFunctional_of_adicPin` and nowhere else,
+so no global typeclass search sees it. -/
+@[reducible] noncomputable def dualPrecompModule {q : ℕ} [Fact q.Prime] {O : Type u} [CommRing O]
+    [Algebra ℤ_[q] O] :
+    Module O (O →ₗ[ℤ_[q]] ℤ_[q]) where
+  smul c f := f ∘ₗ LinearMap.mulLeft ℤ_[q] c
+  one_smul f := by ext z; show f (1 * z) = f z; rw [one_mul]
+  mul_smul c d f := by
+    ext z; show f (c * d * z) = f (d * (c * z))
+    congr 1; ring
+  smul_zero c := by ext z; show (0 : O →ₗ[ℤ_[q]] ℤ_[q]) (c * z) = 0; simp
+  smul_add c f g := by ext z; show (f + g) (c * z) = f (c * z) + g (c * z); simp
+  add_smul c d f := by
+    ext z; show f ((c + d) * z) = f (c * z) + f (d * z)
+    rw [add_mul, map_add]
+  zero_smul f := by ext z; show f (0 * z) = 0; rw [zero_mul, map_zero]
+
+/-- **`O` is a finite free `ℤ_q`-module** (PROVEN 2026-07-30).
 
 This is the standard fact that the completion `𝒪_{D,I}` is finite free of
-rank `e · f` over `ℤ_q`, stated for the abstract `O` of the pin.  See the
-section header above for the route: the engine
-`finite_free_moduleTopology_of_approx` is already PROVEN in this file, and
-what remains is to feed it the abstract `O` — `IsDomain O`, the `(q)`-adic
-topology (Hausdorff by `hcplt.toIsHausdorff` transported along
-`exists_pow_span_uniformizer_eq_span_natCast_of_adicPin`), the
-approximation family (a `ℤ`-basis of `𝒪_D` pushed along `j`, using
-`hdense` at precision `e · n`), and an `Algebra.algebra_ext` reconciliation
-of the two `ℤ_q`-algebra structures.
+rank `e · f` over `ℤ_q`, stated for the abstract `O` of the pin.  The route
+is exactly the one the section header prescribes: the engine
+`finite_free_moduleTopology_of_approx` was already PROVEN in this file, and
+what is supplied here is what
+`module_finite_free_moduleTopology_padicIntAlgebra` gets for free from the
+concrete `𝒪_v`.
+
+* `IsDomain O` — `isDomain_of_adicPin` above, over the unit-times-power
+  decomposition.
+* The `(q)`-adic TOPOLOGY.  `O` carries none, so one is installed:
+  `WithIdeal O := ⟨(q)⟩`, whose `TopologicalSpace` instance IS `(q).adicTopology`,
+  so `IsAdic (q)` holds by `rfl` and `IsTopologicalRing O` comes from the
+  `NonarchimedeanRing` instance.
+* `T2Space O` — `IsAdic.isHausdorff_iff` applied to `hcplt.toIsHausdorff`
+  transported along `exists_pow_span_uniformizer_eq_span_natCast_of_adicPin`:
+  `(q)^n = (jπ)^{en} ⊆ (jπ)^n` because `e ≥ 1`, so `q`-adic separatedness
+  follows from `(jπ)`-adic separatedness.  Note the transport goes in this
+  direction only — the two filtrations are cofinal, which is the whole point
+  of that lemma.
+* The approximation family — a `ℤ`-basis of `𝒪_D` pushed along `j`, with
+  `hdense` read at precision `e · n`, exactly as in
+  `module_finite_free_moduleTopology_padicIntAlgebra`.
+* `Algebra.algebra_ext` reconciles `(algebraMap ℤ_[q] O).toAlgebra`, which is
+  what the engine's conclusion is stated over, with the AMBIENT
+  `Algebra ℤ_[q] O` instance.  The two have the same `algebraMap` by `rfl`
+  but need not have the same `smul` definitionally, which is why the
+  rewrite is needed rather than nothing at all.
 
 `hπ2` is carried because it is what makes `π ≠ 0`, hence `(j π)^m ≠ 0`,
 hence `O` a domain; `hcplt` is carried for the Hausdorff half. -/
@@ -8812,24 +9031,94 @@ theorem moduleFinite_moduleFree_padicInt_of_adicPin
       z - j a ∈ Ideal.span {j π} ^ n)
     (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
       j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n) :
-    Module.Finite ℤ_[q] O ∧ Module.Free ℤ_[q] O :=
-  sorry
+    Module.Finite ℤ_[q] O ∧ Module.Free ℤ_[q] O := by
+  classical
+  obtain ⟨e, he0, hqe⟩ :=
+    exists_pow_span_uniformizer_eq_span_natCast_of_adicPin hI hqI hdense hker
+  haveI : IsDomain O := isDomain_of_adicPin hI hπ2 hcplt hdense hker
+  have hq0 : (q : O) ≠ 0 := by
+    intro h
+    refine pow_map_uniformizer_ne_zero_of_adicPin hI hπ2 hker e ?_
+    have hb : (Ideal.span {j π} : Ideal O) ^ e = ⊥ := by
+      rw [hqe, h, Ideal.span_singleton_eq_bot]
+    rw [Ideal.span_singleton_pow] at hb
+    exact Ideal.span_singleton_eq_bot.mp hb
+  letI : WithIdeal O := ⟨Ideal.span {(q : O)}⟩
+  have hadic : IsAdic (Ideal.span {(q : O)}) := rfl
+  have hHaus : IsHausdorff (Ideal.span {(q : O)}) O := by
+    rw [isHausdorff_iff]
+    intro x hx
+    refine isHausdorff_iff.mp hcplt.toIsHausdorff x fun n => ?_
+    have h1 := hx n
+    simp only [SModEq.zero, smul_eq_mul, Ideal.mul_top] at h1 ⊢
+    rw [← hqe, ← pow_mul] at h1
+    exact Ideal.pow_le_pow_right (Nat.le_mul_of_pos_left n he0) h1
+  haveI : T2Space O := hadic.isHausdorff_iff.mp hHaus
+  set bD := Module.Free.chooseBasis ℤ (NumberField.RingOfIntegers D) with hbD
+  have happrox : ∀ (z : O) (n : ℕ),
+      ∃ c : Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers D) → ℤ,
+        z - ∑ i, (c i : O) * j (bD i) ∈ Ideal.span {(q : O)} ^ n := by
+    intro z n
+    obtain ⟨a, ha⟩ := hdense (e * n) z
+    refine ⟨fun i => bD.repr a i, ?_⟩
+    have hsum : ∑ i, ((bD.repr a i : ℤ) : O) * j (bD i) = j a := by
+      conv_rhs => rw [← bD.sum_repr a]
+      rw [map_sum]
+      exact Finset.sum_congr rfl fun i _ => by rw [map_zsmul, zsmul_eq_mul]
+    rw [hsum, ← hqe, ← pow_mul]
+    exact ha
+  obtain ⟨hfin, hfree, _⟩ := finite_free_moduleTopology_of_approx
+    (algebraMap ℤ_[q] O) hadic hq0 (fun i => j (bD i)) happrox
+  have hAlg : (algebraMap ℤ_[q] O).toAlgebra = ‹Algebra ℤ_[q] O› :=
+    Algebra.algebra_ext _ _ (fun _ => rfl)
+  rw [hAlg] at hfin hfree
+  exact ⟨hfin, hfree⟩
 
 /-- **The inverse different of the pin is principal**, in the form actually
-used: `Hom_{ℤ_q}(O, ℤ_q)` is free of rank one over `O` (SORRY LEAF).
+used: `Hom_{ℤ_q}(O, ℤ_q)` is free of rank one over `O`
+(**PROVEN 2026-07-30**).
 
 `θ` is a generator, and the `∃!` says precisely that `c ↦ θ(c · )` is a
 BIJECTION `O ⟶ Hom_{ℤ_q}(O, ℤ_q)` — surjectivity is generation, injectivity
 is torsion-freeness.  The classical witness is `θ = Tr_{D_I/ℚ_q}(δ · )` for
-`δ` a generator of `𝔡_I⁻¹`; the route that avoids the trace entirely is in
-the section header above (finitely generated torsion-free of rank one over
-a DVR is free of rank one).
+`δ` a generator of `𝔡_I⁻¹`; the route taken avoids the trace entirely, as
+the section header above prescribes (finitely generated torsion-free of
+rank one over a DVR is free of rank one).
 
 WHY THE `∃!` AND NOT A WEAKER CLAUSE.  Uniqueness of `c` is what discharges
 the fourth clause of `IsTraceDualFunctional`; without it a `θ` killing a
 nonzero ideal would satisfy the surjectivity half and make the consumer
 false.  Existence for EVERY `Ψ`, not just for those arising at some level,
 is what lets the third clause be proven by lifting rather than by counting.
+
+HOW IT IS PROVEN, and where each hypothesis goes.  Write `H` for
+`O →ₗ[ℤ_[q]] ℤ_[q]`, carrying the `O`-action `(c • Ψ) z = Ψ (c z)`
+(`dualPrecompModule` above — mathlib's `Module S (M →ₗ[R] N)` instances act
+on the TARGET, so this one has to be written).  The `∃!` is then exactly
+"`θ` is a one-element basis of `H` over `O`", and the four inputs are:
+
+* `IsDomain O` and `IsPrincipalIdealRing O` — `isDomain_of_adicPin` and
+  `isPrincipalIdealRing_of_adicPin` above;
+* `Module.Finite O H` — `H` is finite over `ℤ_q` (dual of a finite free
+  module, `moduleFinite_moduleFree_padicInt_of_adicPin`), and
+  `IsScalarTower ℤ_[q] O H` transfers that up to `O`;
+* `Module.IsTorsionFree O H` — for `c ≠ 0` the decomposition
+  `exists_isUnit_mul_pow_of_adicPin` and `(q) = (jπ)^e` make `c` divide some
+  `q^m`, so `c • Ψ = c • Ψ'` forces `q^m · Ψ z = q^m · Ψ' z` and `ℤ_q` is a
+  domain.  This is the ONLY place the two filtrations' cofinality is used
+  here, and it is what replaces the classical "the different is nonzero".
+
+Freeness is then `Module.free_of_finite_type_torsion_free'`, and the RANK is
+one by the tower law: `finrank ℤ_q O · finrank O H = finrank ℤ_q H`, while
+`finrank ℤ_q H = finrank ℤ_q O` because `H` is the `ℤ_q`-dual of `O`
+(`Module.finrank_linearMap_self`), and `finrank ℤ_q O > 0` because `O` is
+nontrivial.  No cardinality count and no trace form appears anywhere.
+
+`hπ` is NOT USED — the argument never needs `π` to lie in `I`, only `hker`
+(which pins `(jπ)^n` against `I^n` at every level) and `hπ2` (which makes
+`(jπ)^m` nonzero).  It is underscored to make that mechanically visible, and
+the binder is retained so that the call site in
+`exists_traceDualFunctional_of_adicPin` does not have to change.
 
 This leaf is the entire mathematical content of
 `exists_traceDualFunctional_of_adicPin`. -/
@@ -8838,7 +9127,7 @@ theorem exists_generatingFunctional_of_adicPin
     {q : ℕ} [Fact q.Prime]
     {I : Ideal (NumberField.RingOfIntegers D)} (hI : I.IsMaximal)
     (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
-    {π : NumberField.RingOfIntegers D} (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    {π : NumberField.RingOfIntegers D} (_hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
     (O : Type u) [CommRing O] [IsLocalRing O] [Algebra ℤ_[q] O]
     (j : NumberField.RingOfIntegers D →+* O)
     (hcplt : IsAdicComplete (Ideal.span {j π}) O)
@@ -8846,8 +9135,84 @@ theorem exists_generatingFunctional_of_adicPin
       z - j a ∈ Ideal.span {j π} ^ n)
     (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
       j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n) :
-    ∃ θ : O →ₗ[ℤ_[q]] ℤ_[q], ∀ Ψ : O →ₗ[ℤ_[q]] ℤ_[q], ∃! c : O, ∀ z : O, Ψ z = θ (c * z) :=
-  sorry
+    ∃ θ : O →ₗ[ℤ_[q]] ℤ_[q], ∀ Ψ : O →ₗ[ℤ_[q]] ℤ_[q], ∃! c : O, ∀ z : O, Ψ z = θ (c * z) := by
+  classical
+  haveI : IsDomain O := isDomain_of_adicPin hI hπ2 hcplt hdense hker
+  haveI : IsPrincipalIdealRing O := isPrincipalIdealRing_of_adicPin hI hcplt hdense hker
+  obtain ⟨hfin, hfree⟩ :=
+    moduleFinite_moduleFree_padicInt_of_adicPin hI hqI hπ2 O j hcplt hdense hker
+  obtain ⟨e, he0, hqe⟩ :=
+    exists_pow_span_uniformizer_eq_span_natCast_of_adicPin hI hqI hdense hker
+  -- every nonzero `c` divides a power of `q`, because `(q) = (jπ)^e` with `e ≥ 1`
+  have hqdvd : ∀ c : O, c ≠ 0 → ∃ (m : ℕ) (d : O), ((q : O)) ^ m = c * d := by
+    intro c hc
+    obtain ⟨a, u, hu, rfl⟩ := exists_isUnit_mul_pow_of_adicPin hI hcplt hdense hker hc
+    have h1 : ((q : O)) ^ a ∈ (Ideal.span {j π} : Ideal O) ^ a := by
+      have h2 : ((q : O)) ^ a ∈ (Ideal.span {(q : O)} : Ideal O) ^ a := by
+        rw [Ideal.span_singleton_pow]
+        exact Ideal.mem_span_singleton_self _
+      rw [← hqe, ← pow_mul] at h2
+      exact Ideal.pow_le_pow_right (Nat.le_mul_of_pos_left a he0) h2
+    rw [Ideal.span_singleton_pow, Ideal.mem_span_singleton'] at h1
+    obtain ⟨d, hd⟩ := h1
+    obtain ⟨v, hv⟩ := hu.exists_left_inv
+    refine ⟨a, v * d, ?_⟩
+    rw [show u * (j π) ^ a * (v * d) = v * u * ((j π) ^ a * d) from by ring, hv, one_mul,
+      mul_comm ((j π) ^ a) d]
+    exact hd.symm
+  letI : Module O (O →ₗ[ℤ_[q]] ℤ_[q]) := dualPrecompModule
+  haveI : IsScalarTower ℤ_[q] O (O →ₗ[ℤ_[q]] ℤ_[q]) := by
+    constructor
+    intro r c f
+    ext z
+    show f ((r • c) * z) = r • (f (c * z))
+    rw [smul_mul_assoc, map_smul]
+  haveI : Module.Finite O (O →ₗ[ℤ_[q]] ℤ_[q]) :=
+    Module.Finite.of_restrictScalars_finite ℤ_[q] O (O →ₗ[ℤ_[q]] ℤ_[q])
+  haveI : Module.IsTorsionFree O (O →ₗ[ℤ_[q]] ℤ_[q]) := by
+    constructor
+    intro r hr
+    rw [isRegular_iff_ne_zero] at hr
+    obtain ⟨m, d, hmd⟩ := hqdvd r hr
+    intro f g hfg
+    ext z
+    have hh : f (r * (d * z)) = g (r * (d * z)) := DFunLike.congr_fun hfg (d * z)
+    rw [show r * (d * z) = ((q : O)) ^ m * z from by rw [← mul_assoc, ← hmd],
+      show ((q : O)) ^ m * z = ((q : ℤ_[q]) ^ m) • z from by
+        rw [Algebra.smul_def, map_pow, map_natCast],
+      map_smul, map_smul, smul_eq_mul, smul_eq_mul] at hh
+    exact mul_left_cancel₀
+      (pow_ne_zero m (Nat.cast_ne_zero.mpr (Fact.out : q.Prime).ne_zero)) hh
+  haveI : Module.Free O (O →ₗ[ℤ_[q]] ℤ_[q]) := inferInstance
+  have hrk : Module.finrank O (O →ₗ[ℤ_[q]] ℤ_[q]) = 1 := by
+    have htower := Module.finrank_mul_finrank ℤ_[q] O (O →ₗ[ℤ_[q]] ℤ_[q])
+    have hHrank : Module.finrank ℤ_[q] (O →ₗ[ℤ_[q]] ℤ_[q]) = Module.finrank ℤ_[q] O :=
+      Module.finrank_linearMap_self ℤ_[q] ℤ_[q] O
+    have hpos : 0 < Module.finrank ℤ_[q] O :=
+      (Module.finrank_pos_iff_of_free ℤ_[q] O).mpr inferInstance
+    refine Nat.eq_of_mul_eq_mul_left hpos ?_
+    rw [mul_one, htower, hHrank]
+  obtain ⟨b⟩ : Nonempty (Module.Basis (Module.Free.ChooseBasisIndex O (O →ₗ[ℤ_[q]] ℤ_[q])) O
+      (O →ₗ[ℤ_[q]] ℤ_[q])) := ⟨Module.Free.chooseBasis O (O →ₗ[ℤ_[q]] ℤ_[q])⟩
+  have hcard : Fintype.card (Module.Free.ChooseBasisIndex O (O →ₗ[ℤ_[q]] ℤ_[q])) = 1 := by
+    rw [← Module.finrank_eq_card_chooseBasisIndex]
+    exact hrk
+  obtain ⟨i₀, hi₀⟩ := Fintype.card_eq_one_iff.mp hcard
+  have huniv : (Finset.univ : Finset (Module.Free.ChooseBasisIndex O (O →ₗ[ℤ_[q]] ℤ_[q])))
+      = {i₀} := by
+    ext i; simp [hi₀ i]
+  refine ⟨b i₀, fun Ψ => ⟨b.repr Ψ i₀, ?_, ?_⟩⟩
+  · have hsum : ∑ i, b.repr Ψ i • b i = Ψ := b.sum_repr Ψ
+    rw [huniv, Finset.sum_singleton] at hsum
+    intro z
+    conv_lhs => rw [← hsum]
+    rfl
+  · intro c hc
+    have hΨc : Ψ = c • b i₀ := by
+      ext z
+      exact hc z
+    rw [hΨc, map_smul, Finsupp.smul_apply, b.repr_self, Finsupp.single_eq_same, smul_eq_mul,
+      mul_one]
 
 /-- **A level-`k` functional on `𝒪_D` is the reduction of a `ℤ_q`-linear
 functional on `O`** (PROVEN 2026-07-29).
