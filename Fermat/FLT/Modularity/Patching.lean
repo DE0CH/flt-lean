@@ -10360,6 +10360,32 @@ CONTINUOUS (the maximal ideal is open in the `𝔪`-adic topology and is
 `ker πuniv`), which is what lets `ρuniv` be base-changed along `πuniv` at all.
 `hirr` is what the Chebotarev–Brauer–Nesbitt step consumes.
 
+# CARRIER NAMED 2026-07-30 — THE STRENGTHENING TWO DOCSTRINGS BELOW ASKED FOR
+
+The conclusion used to be `Nonempty (AuxDeformationDatum hpodd Q ρbar)`, which
+threw the carrier away.  It now also returns `ι : 𝒟.R ≃+* Runiv` together with
+the three compatibilities (`ℤ_[p]`-structure, residual reduction, and
+`charFrob` linear coefficients at EVERY place).  **This costs nothing**: the
+witness below has `R := Runiv`, `ρ := ρuniv`, `π := πuniv` literally, so
+`ι := RingEquiv.refl` discharges all three, two by `ext x; rfl` and one by
+`rfl`.
+
+It is not decoration.  `exists_auxDeformationDiamondControl` far below needs a
+classifying map `𝒟Q.R →+* Runiv`, and the only route to one is
+`h𝒟Q : 𝒟Q.IsWeaklyUniversal` applied to a level-`Q` datum whose carrier is
+KNOWN to be `Runiv`.  Its own docstring diagnosed the `Nonempty` form as a
+witness-forgetting existential and wrote out this exact repair twice, noting
+that "its proof already knows its carrier"; that was correct and this is it.
+The three clauses are chosen to be precisely what composing with
+`AuxDeformationDatum.IsWeaklyUniversal`'s output `f` needs in order to give a
+`𝒟Q.R →+* Runiv` that is compatible with `algebraMap`, with `πuniv` and with
+Frobenius traces — the last being what `IsTraceGeneratedDeformation` is stated
+about, hence what any surjectivity argument must consume.
+
+The `Nonempty` form is recovered by `⟨𝒟⟩`, which is what the assembly
+`exists_taylorWilesAuxLevelPresentedDatum` does (it discards the
+identification with `-` patterns); no consumer was weakened.
+
 CIRCULARITY GUARD: inherited from the assembly —
 `not_isIrreducible_of_isHardlyRamified_of_five_le`,
 `IsHardlyRamified.mod_three_reducible` and
@@ -10393,7 +10419,11 @@ theorem exists_auxDeformationDatum.{uK, uW, uR}
         (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
     (n : ℕ) (hn : 1 ≤ n) (Q : Finset ℕ)
     (hQ : IsTaylorWilesPrimeSet p ρbar n Q) :
-    Nonempty (AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar) := by
+    ∃ (𝒟 : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar) (ι : 𝒟.R ≃+* Runiv),
+      ι.toRingHom.comp (algebraMap ℤ_[p] 𝒟.R) = algebraMap ℤ_[p] Runiv ∧
+      πuniv.comp ι.toRingHom = 𝒟.π ∧
+      ∀ v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ),
+        ι ((𝒟.ρ.charFrob v).coeff 1) = (ρuniv.charFrob v).coeff 1 := by
   classical
   haveI : IsAdicComplete (IsLocalRing.maximalIdeal Runiv) Runiv := hcomplete
   -- `πuniv` is continuous: its kernel is the maximal ideal, which is open in
@@ -10500,22 +10530,30 @@ theorem exists_auxDeformationDatum.{uK, uW, uR}
     exact exists_isSplitTorusAt_of_isUnramifiedAt
       hq.toHeightOneSpectrumRingOfIntegersRat πuniv hπuniv ρuniv
       (hρuniv.isUnramified q hq ⟨hq2, hqp⟩) α β hαβ ((hall _).trans hpoly)
-  exact ⟨{ R := Runiv
-           isAdic := hadic
-           isAdicComplete := hcomplete
-           ρ := ρuniv
-           rank_eq := hranku
-           isRaisedLevelHardlyRamified :=
-             { det := hρuniv.det
-               isUnramified := fun q hq _ h2 hp =>
-                 hρuniv.isUnramified q hq ⟨h2, hp⟩
-               isFlat := hρuniv.isFlat
-               isTameAtTwo := hρuniv.isTameAtTwo
-               isSplitTorusAt := hsplit }
-           π := πuniv
-           π_surjective := hπuniv
-           S := Suniv
-           charFrob_compat := hunivred }⟩
+  -- The carrier IS `Runiv`, so the three compatibility clauses hold for the
+  -- IDENTITY identification.  Naming the carrier is what
+  -- `exists_auxDeformationDiamondControl` far below needs in order to turn
+  -- `h𝒟Q` into a classifying map `𝒟Q.R →+* Runiv` at all; see the CARRIER
+  -- NAMED note in this leaf's docstring.
+  refine ⟨{ R := Runiv
+            isAdic := hadic
+            isAdicComplete := hcomplete
+            ρ := ρuniv
+            rank_eq := hranku
+            isRaisedLevelHardlyRamified :=
+              { det := hρuniv.det
+                isUnramified := fun q hq _ h2 hp =>
+                  hρuniv.isUnramified q hq ⟨h2, hp⟩
+                isFlat := hρuniv.isFlat
+                isTameAtTwo := hρuniv.isTameAtTwo
+                isSplitTorusAt := hsplit }
+            π := πuniv
+            π_surjective := hπuniv
+            S := Suniv
+            charFrob_compat := hunivred }, RingEquiv.refl Runiv, ?_, ?_,
+    fun _ => rfl⟩
+  · ext x; rfl
+  · ext x; rfl
 
 /-! #### The RAISED-LEVEL deformation-condition clauses, and the machine
 
@@ -17431,8 +17469,13 @@ theorem exists_taylorWilesAuxLevelPresentedDatum.{s, t, uK, uW, uR}
   -- A level-`(n+1)` set is a level-`n` set a fortiori, so nothing is lost.
   obtain ⟨Q, hQcard, hQ⟩ := hTWq q (n + 1) hq0
   -- LEAF A2′-1: the raised-level deformation category at `Q` is nonempty …
-  obtain ⟨𝒟₀⟩ := exists_auxDeformationDatum.{uK, uW, uR} hpodd hW hres hirr hadic
-    hcomplete hranku hρuniv hπuniv hunivred (n + 1) (by omega) Q hQ
+  -- … with its carrier NAMED as `Runiv` since 2026-07-30.  The assembly does
+  -- not need the identification (it only feeds `𝒟₀` to the weak-universality
+  -- leaf); `exists_auxDeformationDiamondControl` is what consumes it, and it
+  -- calls this leaf again for itself.
+  obtain ⟨𝒟₀, -, -, -, -⟩ :=
+    exists_auxDeformationDatum.{uK, uW, uR} hpodd hW hres hirr hadic
+      hcomplete hranku hρuniv hπuniv hunivred (n + 1) (by omega) Q hQ
   -- LEAF A2′-2: … and has a weakly universal object `R_Q`
   obtain ⟨𝒟Q, h𝒟Q⟩ := exists_isWeaklyUniversal_auxDeformationDatum.{uK, uW, uR}
     hpodd hp5 hW hirr (n + 1) Q hQ 𝒟₀
