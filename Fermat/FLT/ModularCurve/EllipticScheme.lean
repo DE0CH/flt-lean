@@ -11320,8 +11320,8 @@ theorem relPointPost_zero {A B S : Scheme.{u}} {fA : A ⟶ S} {fB : B ⟶ S}
   apply Subtype.ext
   rw [relPointPost_val, abA.zero_val_eq, abB.zero_val_eq, Category.assoc, hzero]
 
-/-- **RIGIDITY: a morphism of abelian schemes over `Spec ℚ` carrying zero
-to zero is a homomorphism** (PROVEN 2026-07-27 over the project's EXISTING
+/-- **RIGIDITY: a morphism of abelian schemes carrying zero to zero is a
+homomorphism** (PROVEN 2026-07-27 over the project's EXISTING
 rigidity lemma, `AlgebraicGeometry.eq_comp_of_rigidity_axes` in
 `Fermat/FLT/Mathlib/AlgebraicGeometry/ProperPushforward.lean` — NO new leaf
 was introduced).
@@ -11388,15 +11388,27 @@ lemma) and `hasUniversallyTrivialPushforward_of_isProper_of_flat` — and
 nothing else.
 
 NOT VACUOUS: dropping `hzero` makes the statement FALSE — translation by a
-nonzero rational point of `A` is an isomorphism over `Spec ℚ` and is not
+nonzero rational point of `A` is an isomorphism over the base and is not
 additive — and it is exactly `hzero` that the range chase in the consumer
-works to establish. -/
-theorem relPointPost_add {A B : Scheme.{0}} {fA : A ⟶ Spec (CommRingCat.of ℚ)}
-    {fB : B ⟶ Spec (CommRingCat.of ℚ)} (abA : AbelianSchemeStruct fA)
+works to establish.
+
+## GENERALISED 2026-07-30: the base is an ARBITRARY SCHEME `S`
+
+It was stated over `Spec ℚ` until then, and **not one line of the proof used
+that**: `eq_comp_of_rigidity_axes` and
+`hasUniversallyTrivialPushforward_of_isProper_of_smooth` are both stated over
+an arbitrary base (the old docstring said so and then declined the
+generality), and every other step is `AbelianSchemeStruct` naturality.  The
+only edit was to the signature.  The `ℚ` call site
+(`exists_geomFibreAddEquiv_of_weierstrassModel`) is unchanged, `S` being
+inferred; the new consumers are `nonempty_addEquiv_relPoint_of_isIso` below
+and, through it, the `k`-rational Weierstrass bridge over an arbitrary
+field. -/
+theorem relPointPost_add {S A B : Scheme.{u}} {fA : A ⟶ S}
+    {fB : B ⟶ S} (abA : AbelianSchemeStruct fA)
     (abB : AbelianSchemeStruct fB) (u : A ⟶ B) (hu : u ≫ fB = fA)
-    (hzero : (abA.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1 ≫ u
-      = (abB.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1)
-    {T : Scheme.{0}} {g : T ⟶ Spec (CommRingCat.of ℚ)} (x y : RelPoint fA g) :
+    (hzero : (abA.zero (𝟙 S)).1 ≫ u = (abB.zero (𝟙 S)).1)
+    {T : Scheme.{u}} {g : T ⟶ S} (x y : RelPoint fA g) :
     relPointPost u hu (abA.add x y)
       = abB.add (relPointPost u hu x) (relPointPost u hu y) := by
   have hq2 : Limits.pullback.snd fA fA ≫ fA = Limits.pullback.fst fA fA ≫ fA :=
@@ -11406,22 +11418,21 @@ theorem relPointPost_add {A B : Scheme.{0}} {fA : A ⟶ Spec (CommRingCat.of ℚ
   set q : RelPoint fA (Limits.pullback.fst fA fA ≫ fA) :=
     ⟨Limits.pullback.snd fA fA, hq2⟩
   -- pointwise group facts, in the two abelian schemes
-  have haddzeroA : ∀ {T' : Scheme.{0}} {g' : T' ⟶ Spec (CommRingCat.of ℚ)}
+  have haddzeroA : ∀ {T' : Scheme.{u}} {g' : T' ⟶ S}
       (z : RelPoint fA g'), abA.add z (abA.zero g') = z := by
     intro T' g' z; rw [abA.add_comm, abA.zero_add]
-  have haddzeroB : ∀ {T' : Scheme.{0}} {g' : T' ⟶ Spec (CommRingCat.of ℚ)}
+  have haddzeroB : ∀ {T' : Scheme.{u}} {g' : T' ⟶ S}
       (z : RelPoint fB g'), abB.add z (abB.zero g') = z := by
     intro T' g' z; rw [abB.add_comm, abB.zero_add]
-  have haddnegB : ∀ {T' : Scheme.{0}} {g' : T' ⟶ Spec (CommRingCat.of ℚ)}
+  have haddnegB : ∀ {T' : Scheme.{u}} {g' : T' ⟶ S}
       (z : RelPoint fB g'), abB.add z (abB.neg z) = abB.zero g' := by
     intro T' g' z; rw [abB.add_comm, abB.neg_add]
   -- HALF 2: the universal instance, at the two projections of `A ×_ℚ A`
   have key : relPointPost u hu (abA.add p q)
       = abB.add (relPointPost u hu p) (relPointPost u hu q) := by
-    have heA : (abA.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1 ≫ fA = 𝟙 _ :=
-      (abA.zero (𝟙 (Spec (CommRingCat.of ℚ)))).2
-    set eA := (abA.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1
-    set eB := (abB.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1
+    have heA : (abA.zero (𝟙 S)).1 ≫ fA = 𝟙 _ := (abA.zero (𝟙 S)).2
+    set eA := (abA.zero (𝟙 S)).1
+    set eB := (abB.zero (𝟙 S)).1
     set D : RelPoint fB (Limits.pullback.fst fA fA ≫ fA) :=
       abB.add (relPointPost u hu (abA.add p q))
         (abB.neg (abB.add (relPointPost u hu p) (relPointPost u hu q))) with hDdef
@@ -11568,14 +11579,18 @@ theorem dense_compl_singleton_of_isOpen {X : Type*} [TopologicalSpace X] [Connec
   · have hz : z ∈ ({z}ᶜ : Set X) := Set.eq_univ_iff_forall.mp h z
     simp at hz
 
-/-- **The range of a `ℚ`-point of a scheme is a single point** (PROVEN):
-`Spec ℚ` is a one-point space, so the range of any `Spec ℚ ⟶ X` is the
+/-- **The range of a `k`-point of a scheme is a single point** (PROVEN;
+stated over `ℚ` as `range_hom_specRat_eq_singleton` until 2026-07-30, when
+it was renamed and generalised — the proof never used more than
+`Subsingleton (Spec k)`, which holds for every field):
+`Spec k` is a one-point space, so the range of any `Spec k ⟶ X` is the
 singleton on the image of the closed point.  This is what turns the
 `ᶜ`-shaped range hypotheses — stated against the range of a SECTION —
 into complements of an honest point. -/
-theorem range_hom_specRat_eq_singleton {X : Scheme.{0}} (s : Spec (CommRingCat.of ℚ) ⟶ X) :
+theorem range_hom_specField_eq_singleton {k : Type} [Field k] {X : Scheme.{0}}
+    (s : Spec (CommRingCat.of k) ⟶ X) :
     ∃ z : X, Set.range s.base = {z} := by
-  refine ⟨s.base (IsLocalRing.closedPoint ℚ), ?_⟩
+  refine ⟨s.base (IsLocalRing.closedPoint k), ?_⟩
   ext y
   simp only [Set.mem_range, Set.mem_singleton_iff]
   constructor
@@ -11584,17 +11599,20 @@ theorem range_hom_specRat_eq_singleton {X : Scheme.{0}} (s : Spec (CommRingCat.o
   · rintro rfl
     exact ⟨_, rfl⟩
 
-/-- **A chart whose range is the complement of a `ℚ`-point of a connected
-scheme is dominant** (PROVEN, from the two lemmas above).
+/-- **A chart whose range is the complement of a `k`-point of a connected
+scheme is dominant** (PROVEN, from the two lemmas above; generalised from
+`ℚ` to an arbitrary field 2026-07-30 along with the lemma it consumes).
 
 This is what supplies the `[IsDominant]` instances that
 `isIso_of_isDominant_of_inverse` — and through it mathlib's
 `ext_of_isDominant_of_isSeparated` — consumes, and it is applied twice in
-`exists_isIso_of_affineChart`, once to each chart. -/
-theorem isDominant_of_range_eq_compl {X C : Scheme.{0}} [ConnectedSpace X] [Nonempty C]
-    (j : C ⟶ X) [IsOpenImmersion j] (s : Spec (CommRingCat.of ℚ) ⟶ X)
+`exists_isIso_of_affineChart` and twice in
+`exists_isIso_of_affineCharts_field`, once to each chart. -/
+theorem isDominant_of_range_eq_compl {k : Type} [Field k] {X C : Scheme.{0}}
+    [ConnectedSpace X] [Nonempty C]
+    (j : C ⟶ X) [IsOpenImmersion j] (s : Spec (CommRingCat.of k) ⟶ X)
     (hj : Set.range j.base = (Set.range s.base)ᶜ) : IsDominant j := by
-  obtain ⟨z, hz⟩ := range_hom_specRat_eq_singleton s
+  obtain ⟨z, hz⟩ := range_hom_specField_eq_singleton s
   rw [hz] at hj
   have hopen : IsOpen (Set.range j.base) := by
     rw [← Scheme.Hom.coe_opensRange]; exact j.opensRange.2
@@ -11665,7 +11683,7 @@ are supplied by declarations PROVEN above:
 * `smoothOfRelativeDimension_projToSpec`;
 * `geometricallyConnected_projToSpec`;
 
-plus finiteness of the complement, which is `range_hom_specRat_eq_singleton`
+plus finiteness of the complement, which is `range_hom_specField_eq_singleton`
 applied to `hrange₀` — the removed locus is the range of a SECTION, hence a
 single point.
 
@@ -11692,7 +11710,7 @@ theorem exists_hom_of_affineChart (E : WeierstrassCurve ℚ) [E.IsElliptic]
   haveI := smoothOfRelativeDimension_projToSpec E
   haveI := ab.proper
   have hfin : (Set.range ι₀.base)ᶜ.Finite := by
-    obtain ⟨z, hz⟩ := range_hom_specRat_eq_singleton
+    obtain ⟨z, hz⟩ := range_hom_specField_eq_singleton
       ((projGroupLaw E).toAbelianSchemeStruct.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1
     rw [hrange₀, compl_compl, hz]
     exact Set.finite_singleton z
@@ -11848,7 +11866,7 @@ theorem exists_hom_symm_of_affineChart (E : WeierstrassCurve ℚ) [E.IsElliptic]
   haveI := smoothOfRelativeDimension_one_of_affineChart E ab ι h₁ hstr hrange
   have hfin : (Set.range ι.base)ᶜ.Finite := by
     obtain ⟨z, hz⟩ :=
-      range_hom_specRat_eq_singleton (ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1
+      range_hom_specField_eq_singleton (ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1
     rw [hrange, compl_compl, hz]
     exact Set.finite_singleton z
   obtain ⟨v, ⟨h1, h2⟩, -⟩ :=
@@ -11965,6 +11983,297 @@ theorem exists_isIso_of_affineChart (E : WeierstrassCurve ℚ) [E.IsElliptic]
   obtain ⟨v, hvf, hvι⟩ :=
     exists_hom_symm_of_affineChart E ab ι₀ ι h₀ h₁ hstr₀ hstr hrange₀ hrange
   exact ⟨u, isIso_of_isDominant_of_inverse u v huf hvf huι hvι, huf, huι⟩
+
+/-! #### The `k`-RATIONAL bridge, over an arbitrary field
+
+Opened 2026-07-30, to close `X0.lean`'s `exists_addEquiv_of_weierstrassModel_field`.
+
+That leaf is a SIBLING of `exists_geomFibreAddEquiv_of_weierstrassModel`
+above, not a generalisation of it — it concludes about the `k`-RATIONAL
+points `RelPoint f (𝟙 (Spec k))` of an abelian scheme over an arbitrary
+field, with no Galois clause, where the `ℚ` statement concludes about
+geometric points and carries one.  Neither follows from the other by
+formality.  What DOES transfer is the ROUTE, and this subsection is that
+route rebuilt over `k`, with the one ingredient it cannot supply cut out as
+a single leaf.
+
+**What the route costs over `k`, and where the cut falls.**  The `ℚ` proof
+has three inputs: gluing the two charts to an isomorphism
+(`exists_isIso_of_affineChart`), matching the two ZERO SECTIONS
+(`hom_specRat_eq_of_range_eq`), and rigidity (`relPointPost_add`).  Over `k`:
+
+* rigidity is FREE — `relPointPost_add` was already stated over an arbitrary
+  base in everything but its signature, and has been generalised in place;
+* the zero-section step is **not needed at all**, and that is the one real
+  simplification here.  `hom_specRat_eq_of_range_eq` is a statement about
+  `ℚ`-points (`Subsingleton (k →+* ℚ)`) and its analogue over a general field
+  is genuinely harder — a `k`-point of a `k`-scheme is pinned by its image
+  only because the residue field there is forced to be `k` itself.  It is
+  avoided by TRANSLATING instead of matching: `exists_translation_toZero`
+  turns any isomorphism over the base into one carrying zero to zero, and
+  rigidity asks for nothing else.  See `nonempty_addEquiv_relPoint_of_isIso`;
+* gluing needs the OTHER model to be a smooth proper curve, which over `ℚ` is
+  supplied by `proj E` and its five `projToSpec` lemmas.  Over `k` that whole
+  development does not exist, so it is replaced by a SECOND ABELIAN SCHEME —
+  which is strictly more general, since every field the statement is about
+  gets its curve inputs from `AbelianSchemeStruct` fields rather than from
+  `Proj`.  See `exists_isIso_of_affineCharts_field`.
+
+What is left over is `exists_ellipticScheme_weierstrassChart_addEquiv_field`:
+that `E` itself has such a model over `k`.  That is the `k`-analogue of
+`exists_ellipticScheme_isWeierstrassModel_of_projModel` above, and it is the
+single citation of this subsection. -/
+
+/-- **An isomorphism of abelian schemes over the base induces an `AddEquiv`
+of relative points, at EVERY base point** (PROVEN 2026-07-30).
+
+No compatibility between `u` and the two zero sections is hypothesised, and
+none is needed: if `u` does not preserve the zero section, translate.
+`δ := e_A ≫ u` is a section of `f_B`, `exists_translation_toZero` produces an
+automorphism `τ` of `B` over the base carrying `δ` to `e_B`, and `u ≫ τ` is
+then an isomorphism over the base that does preserve zero — which is exactly
+`relPointPost_add`'s hypothesis.
+
+**This is what replaces `hom_specRat_eq_of_range_eq` over a general field**,
+and it is a strictly better tool even over `ℚ`: that lemma had to prove the
+two zero sections EQUAL, which is a statement about residue fields, whereas
+translation only needs them to be sections.
+
+NOT VACUOUS, and the `AddEquiv` is not canonical: it is the transport along
+`u` corrected by a translation, so it depends on `u`.  What is canonical is
+its existence, which is all any consumer here asks for. -/
+theorem nonempty_addEquiv_relPoint_of_isIso {S A B : Scheme.{u}} {fA : A ⟶ S} {fB : B ⟶ S}
+    (abA : AbelianSchemeStruct fA) (abB : AbelianSchemeStruct fB)
+    (u : A ⟶ B) [IsIso u] (hu : u ≫ fB = fA) {T : Scheme.{u}} (g : T ⟶ S) :
+    letI := abA.addCommGroup g
+    letI := abB.addCommGroup g
+    Nonempty (RelPoint fA g ≃+ RelPoint fB g) := by
+  letI := abA.addCommGroup g
+  letI := abB.addCommGroup g
+  have hδ : ((abA.zero (𝟙 S)).1 ≫ u) ≫ fB = 𝟙 S := by
+    rw [Category.assoc, hu]; exact (abA.zero (𝟙 S)).2
+  obtain ⟨τ, hτiso, hτf, hτz⟩ := exists_translation_toZero abB _ hδ
+  haveI := hτiso
+  have hu' : (u ≫ τ) ≫ fB = fA := by rw [Category.assoc, hτf, hu]
+  have hzero : (abA.zero (𝟙 S)).1 ≫ (u ≫ τ) = (abB.zero (𝟙 S)).1 := by
+    rw [← Category.assoc]; exact hτz
+  exact ⟨{ relPointPostEquiv (u ≫ τ) hu' with
+      map_add' := fun x y => relPointPost_add abA abB (u ≫ τ) hu' hzero x y }⟩
+
+/-- **Two abelian schemes over a field sharing an affine chart with
+complementary zero section are isomorphic over the base** (PROVEN
+2026-07-30) — `exists_isIso_of_affineChart` with `proj E` replaced by a
+second abelian scheme, and over an arbitrary field rather than `ℚ`.
+
+The proof is the same two-step argument and cites the same two theorems —
+`exists_unique_extension_of_isSmoothProperCurve` twice for EXISTENCE of the
+two extensions, `isIso_of_isDominant_of_inverse` once for UNIQUENESS of the
+round trips — but every curve input that the `ℚ` version read off `proj E`
+is here read off `abB` instead:
+
+| needed of the second model | `proj E` version         | here          |
+|----------------------------|--------------------------|---------------|
+| proper                     | `isProper_projToSpec`    | `abB.proper`  |
+| geometrically connected    | `geometricallyConnected_projToSpec` | `abB.connected` |
+| connected space            | `preconnectedSpace_proj` + `nonempty_proj` | `abB.connected` |
+| reduced                    | `geometricallyReduced_projToSpec` | `abB.smooth` |
+| relative dimension one     | `smoothOfRelativeDimension_projToSpec` | `hdimB` |
+
+`hdimB` is the ONE thing an `AbelianSchemeStruct` does not carry (its
+`smooth` field is a bare `Smooth`), so it is a hypothesis; `A`'s relative
+dimension is then DERIVED rather than assumed, exactly as in
+`smoothOfRelativeDimension_one_of_affineChart` — the shared chart `strC` is
+smooth of relative dimension `0 + 1` because `iB` is an open immersion into
+the curve `B`, and `smoothOfRelativeDimension_of_isDominant` transports that
+to `fA` along the dominant `iA`.  So the statement is NOT symmetric in `A`
+and `B`, even though its conclusion nearly is.
+
+## Faithfulness
+
+Both range hypotheses are load-bearing, for the two reasons the `ℚ` version
+gives: they are what make each removed locus a single point (hence the
+extension problem one at a DVR, and the complement finite), and what makes
+each chart DOMINANT, which the uniqueness half consumes.
+
+`[Nonempty C]` is load-bearing and is NOT free: with `C` empty, `hrangeA`
+would read `∅ = (range e_A)ᶜ`, i.e. `A` is the single point `e_A`, and the
+conclusion would assert `A ≅ B` for an arbitrary `B`.  In the application `C`
+is `Spec k[E]`, nonempty because the coordinate ring of an elliptic curve
+over a field is a domain.
+
+NOT VACUOUS: the conclusion pins `u` to restrict to the given identification
+of charts (`iA ≫ u = iB`), so it cannot be discharged by an unrelated
+automorphism. -/
+theorem exists_isIso_of_affineCharts_field {k : Type} [Field k] {C A B : Scheme.{0}}
+    {fA : A ⟶ Spec (CommRingCat.of k)} {fB : B ⟶ Spec (CommRingCat.of k)}
+    (abA : AbelianSchemeStruct fA) (abB : AbelianSchemeStruct fB)
+    (hdimB : SmoothOfRelativeDimension 1 fB) [Nonempty C]
+    {strC : C ⟶ Spec (CommRingCat.of k)}
+    (iA : C ⟶ A) (iB : C ⟶ B) (hA : IsOpenImmersion iA) (hB : IsOpenImmersion iB)
+    (hstrA : iA ≫ fA = strC) (hstrB : iB ≫ fB = strC)
+    (hrangeA : Set.range iA.base
+      = (Set.range (abA.zero (𝟙 (Spec (CommRingCat.of k)))).1.base)ᶜ)
+    (hrangeB : Set.range iB.base
+      = (Set.range (abB.zero (𝟙 (Spec (CommRingCat.of k)))).1.base)ᶜ) :
+    ∃ u : A ⟶ B, IsIso u ∧ u ≫ fB = fA ∧ iA ≫ u = iB := by
+  haveI := hA
+  haveI := hB
+  haveI := abA.proper
+  haveI := abA.smooth
+  haveI := abA.connected
+  haveI := abB.proper
+  haveI := abB.smooth
+  haveI := abB.connected
+  haveI := hdimB
+  -- the shared chart is itself a smooth curve over `k`, because it is an open
+  -- subscheme of the curve `B`
+  have hdimC : SmoothOfRelativeDimension 1 strC := by
+    have h : SmoothOfRelativeDimension (0 + 1) (iB ≫ fB) := inferInstance
+    rw [zero_add, hstrB] at h
+    exact h
+  haveI : ConnectedSpace A := GeometricallyConnected.connectedSpace_of_subsingleton (f := fA)
+  haveI : ConnectedSpace B := GeometricallyConnected.connectedSpace_of_subsingleton (f := fB)
+  haveI : IsDominant iA := isDominant_of_range_eq_compl iA _ hrangeA
+  haveI : IsDominant iB := isDominant_of_range_eq_compl iB _ hrangeB
+  haveI : SmoothOfRelativeDimension 1 fA :=
+    _root_.AlgebraicGeometry.smoothOfRelativeDimension_of_isDominant hstrA abA.smooth hdimC
+  -- both models are reduced, by descent from smoothness over the reduced base
+  haveI : GeometricallyReduced fA := _root_.AlgebraicGeometry.GeometricallyReduced.of_smooth fA
+  haveI : IsLocallyNoetherian A := LocallyOfFiniteType.isLocallyNoetherian fA
+  haveI : IsReduced A := GeometricallyReduced.isReduced_of_flat_of_isLocallyNoetherian fA
+  haveI : GeometricallyReduced fB := _root_.AlgebraicGeometry.GeometricallyReduced.of_smooth fB
+  haveI : IsLocallyNoetherian B := LocallyOfFiniteType.isLocallyNoetherian fB
+  haveI : IsReduced B := GeometricallyReduced.isReduced_of_flat_of_isLocallyNoetherian fB
+  -- each removed locus is the range of a `k`-point, hence a single point
+  have hfinA : (Set.range iA.base)ᶜ.Finite := by
+    obtain ⟨z, hz⟩ :=
+      range_hom_specField_eq_singleton (abA.zero (𝟙 (Spec (CommRingCat.of k)))).1
+    rw [hrangeA, compl_compl, hz]
+    exact Set.finite_singleton z
+  have hfinB : (Set.range iB.base)ᶜ.Finite := by
+    obtain ⟨z, hz⟩ :=
+      range_hom_specField_eq_singleton (abB.zero (𝟙 (Spec (CommRingCat.of k)))).1
+    rw [hrangeB, compl_compl, hz]
+    exact Set.finite_singleton z
+  obtain ⟨u, ⟨h1, h2⟩, -⟩ :=
+    _root_.AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve
+      (strX := fA) (j := iA) (strZ := fB) abA.connected hfinA hstrA iB hstrB
+  obtain ⟨v, ⟨h3, h4⟩, -⟩ :=
+    _root_.AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve
+      (strX := fB) (j := iB) (strZ := fA) abB.connected hfinB hstrB iA hstrA
+  exact ⟨u, isIso_of_isDominant_of_inverse u v h1 h3 h2 h4, h1, h2⟩
+
+/-- **Every elliptic curve over a field has a Weierstrass model as an
+abelian scheme, with its `k`-points** (sorry leaf, opened 2026-07-30) — the
+single citation of the `k`-rational bridge, and the `k`-analogue of
+`exists_ellipticScheme_isWeierstrassModel_of_projModel` above.
+
+## What the prover of this node owes
+
+The classical construction, over an arbitrary field `k` rather than over `ℚ`:
+`proj E`, the `Proj` of the homogeneous Weierstrass coordinate ring — which
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveModel.lean`
+already builds over an ARBITRARY commutative ring — is, for `E` elliptic,
+smooth proper geometrically connected of relative dimension one over `k`, its
+chord–tangent law makes it an abelian scheme with zero section `[0 : 1 : 0]`,
+its standard chart `D₊(Z)` is `Spec k[E]` with complement exactly that zero
+section, and its `k`-points are `(E⁄k).Point` as a group.
+
+**The route is to GENERALISE the `ℚ` chain, not to reprove it.**  Every step
+above exists over `ℚ` in this module and is proven there:
+`smoothOfRelativeDimension_projToSpec`, `isProper_projToSpec`,
+`geometricallyConnected_projToSpec`, `exists_projMul`,
+`nonempty_projGroupLaw`, `projGroupLaw`, `exists_affineChart_projModel`,
+`exists_ellipticScheme_isWeierstrassModel_of_projModel`.  A prover should
+expect the arithmetic to be characteristic-free and the friction to be in the
+places the `ℚ` chain spends `hom_ext_spec_rat` / `subsingleton_hom_specRat`
+— i.e. where it uses that `ℚ` is initial in `CommRing` to make a morphism to
+the base free.  Over a general `k` those steps become genuine content, which
+is the same warning
+`exists_weierstrassModel_of_ellipticScheme_field`'s docstring in `X0.lean`
+records for the sibling leaf.
+
+## What it does NOT owe
+
+Anything about a SECOND model.  Comparison with an arbitrary abelian scheme
+carrying a Weierstrass chart for the same `E` is `exists_isIso_of_affineCharts_field`
+plus `nonempty_addEquiv_relPoint_of_isIso` above, both PROVEN, and
+`nonempty_addEquiv_of_weierstrassModel_field` below is their assembly.  Nor
+anything Galois-equivariant, and nor anything about geometric points: the
+conclusion is about `k`-RATIONAL points, `RelPoint f (𝟙 (Spec k))`.
+
+## Faithfulness
+
+`[E.IsElliptic]` is load-bearing and is the whole hypothesis: it says `Δ` is
+a unit, and at `Δ = 0` the projective Weierstrass cubic is singular, so it is
+not smooth, carries no group law, and no abelian scheme with this chart
+exists.  `[DecidableEq k]` is Lean bookkeeping — it is what mathlib's
+chord–tangent addition on `WeierstrassCurve.Affine.Point` requires.
+
+NOT VACUOUS over `ℚ`: `exists_ellipticScheme_isWeierstrassModel_of_projModel`
+supplies everything but the last conjunct there (it publishes the GEOMETRIC
+`ℚ̄`-points rather than the rational ones), so at `k = ℚ` this leaf is that
+theorem plus one rational-vs-geometric transport.
+
+*The check that would refute it*: exhibit an elliptic `E / k` for which the
+complement of `Spec k[E]` inside any proper smooth model is not the range of a
+single `k`-rational section — equivalently, a Weierstrass curve whose point at
+infinity is not `k`-rational.  There is none: `[0 : 1 : 0]` has coordinates in
+the prime field. -/
+theorem exists_ellipticScheme_weierstrassChart_addEquiv_field {k : Type} [Field k]
+    [DecidableEq k] (E : WeierstrassCurve k) [E.IsElliptic] :
+    ∃ (A : Scheme.{0}) (f : A ⟶ Spec (CommRingCat.of k)) (ab : AbelianSchemeStruct f),
+      SmoothOfRelativeDimension 1 f ∧
+      (∃ i : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶ A,
+        IsOpenImmersion i ∧
+          i ≫ f = Spec.map (CommRingCat.ofHom (algebraMap k E.toAffine.CoordinateRing)) ∧
+          Set.range i.base
+            = (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of k)))).1.base)ᶜ) ∧
+      (letI := ab.addCommGroup (𝟙 (Spec (CommRingCat.of k)))
+       Nonempty (RelPoint f (𝟙 (Spec (CommRingCat.of k))) ≃+ (E⁄k).Point)) :=
+  sorry
+
+/-- **The `k`-points of an elliptic scheme are the `k`-points of its
+Weierstrass model, as GROUPS** (PROVEN 2026-07-30 from the leaf above and the
+two transport theorems beside it) — this is `X0.lean`'s
+`exists_addEquiv_of_weierstrassModel_field`, which is now a one-line
+specialisation of it.
+
+Given the model `A` produced by the leaf and the model `A'` the hypothesis
+`hmodel` describes, `exists_isIso_of_affineCharts_field` glues the two shared
+charts to an isomorphism over `Spec k`, and
+`nonempty_addEquiv_relPoint_of_isIso` transports the group of `k`-points
+across it — translating first, so that no comparison of the two zero sections
+is required.
+
+It is stated here rather than in `X0.lean` because both of its inputs are
+here, and `X0.lean`'s import of this module is NON-public: the statement
+mentions neither `proj` nor `projToSpec`, so it is consumable there by
+`exact`, exactly as `exists_weierstrassModel_of_ellipticScheme` is. -/
+theorem nonempty_addEquiv_of_weierstrassModel_field {k : Type} [Field k] [DecidableEq k]
+    (E : WeierstrassCurve k) [E.IsElliptic]
+    {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of k)} (ab : AbelianSchemeStruct f)
+    (hmodel : ∃ i : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶ A,
+      IsOpenImmersion i ∧
+        i ≫ f = Spec.map (CommRingCat.ofHom (algebraMap k E.toAffine.CoordinateRing)) ∧
+        Set.range i.base
+          = (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of k)))).1.base)ᶜ) :
+    letI := ab.addCommGroup (𝟙 (Spec (CommRingCat.of k)))
+    Nonempty (RelPoint f (𝟙 (Spec (CommRingCat.of k))) ≃+ (E⁄k).Point) := by
+  letI := ab.addCommGroup (𝟙 (Spec (CommRingCat.of k)))
+  obtain ⟨i, hopen, hstr, hrange⟩ := hmodel
+  obtain ⟨A₀, f₀, ab₀, hdim₀, ⟨i₀, hopen₀, hstr₀, hrange₀⟩, he₀⟩ :=
+    exists_ellipticScheme_weierstrassChart_addEquiv_field (k := k) E
+  haveI : IsDomain E.toAffine.CoordinateRing := inferInstance
+  haveI : Nonempty (Spec (CommRingCat.of E.toAffine.CoordinateRing)) := inferInstance
+  obtain ⟨u, huiso, huf, -⟩ :=
+    exists_isIso_of_affineCharts_field ab ab₀ hdim₀ i i₀ hopen hopen₀ hstr hstr₀ hrange hrange₀
+  haveI := huiso
+  letI := ab₀.addCommGroup (𝟙 (Spec (CommRingCat.of k)))
+  obtain ⟨e₀⟩ := he₀
+  obtain ⟨e⟩ := nonempty_addEquiv_relPoint_of_isIso ab ab₀ u huf
+    (𝟙 (Spec (CommRingCat.of k)))
+  exact ⟨e.trans e₀⟩
 
 end Transport
 
