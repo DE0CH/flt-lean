@@ -3948,10 +3948,318 @@ theorem exists_le_idealTensorComparison_eq_zero_of_isNoetherianFlatDescentSystem
           (IsLocalRing.maximalIdeal (C i)) t = 0 :=
   sorry
 
+/-! #### THE LOCALIZATION IS SEPARATED OFF HALF B — cut 2026-07-31
+
+Half B's own docstring below lists its route in four bullets, of which the LAST — "`D_j` is
+flat over `N`, so `T_j = W⁻¹ T^N_j`" — is elementary and has nothing to do with `Tor`.  The
+block below performs exactly that step, unconditionally, and leaves the first three bullets
+as ONE named leaf `ker_multIdeal_le_span_idealTensorComparison` over the ring
+`N = C_j ⊗_{C_i} D_i` itself, where no localization occurs.
+
+The cut is worth taking because the two parts share nothing but the statement: the
+localization half is a common-denominator argument (`IsLocalization.surj` plus
+`IsLocalization.map_eq_zero_iff`), while the `N`-half is the dimension shift
+`Tor_1(M, C/I) ≅ ker(K/IK → F/IF)` that Half B's docstring identifies as "the real cost of
+this leaf".  Neither has to carry the other's hypotheses, and in particular the remaining
+leaf mentions no `Submonoid`, no `IsLocalization` and no `D_j`.
+
+Everything here is stated for the multiplication map `multIdeal I P : ↥I ⊗[R] P → P`,
+`y ⊗ₜ p ↦ y • p`, which is `LinearMap.rTensor P I.subtype` composed with the left unitor;
+`injective_rTensor_iff_injective_multIdeal` is the (trivial) translation, and it is there
+because the surrounding development states everything in the `rTensor` form while the
+localization argument is much easier to read in the `multIdeal` form. -/
+
+/-- The multiplication map `↥I ⊗[R] P → P`, `y ⊗ₜ p ↦ y • p`.  It is
+`LinearMap.rTensor P I.subtype` followed by the left unitor, so it is injective exactly
+when that `rTensor` is — see `injective_rTensor_iff_injective_multIdeal`. -/
+noncomputable def multIdeal {R : Type u} [CommRing R] (I : Ideal R) (P : Type u)
+    [AddCommGroup P] [Module R P] : ↥I ⊗[R] P →ₗ[R] P :=
+  (TensorProduct.lid R P).comp (LinearMap.rTensor P I.subtype)
+
+@[simp] lemma multIdeal_tmul {R : Type u} [CommRing R] (I : Ideal R) (P : Type u)
+    [AddCommGroup P] [Module R P] (y : ↥I) (p : P) :
+    multIdeal I P (y ⊗ₜ[R] p) = (y : R) • p := rfl
+
+/-- `LinearMap.rTensor P I.subtype` and `multIdeal I P` differ by the left unitor, hence
+are injective together. -/
+lemma injective_rTensor_iff_injective_multIdeal {R : Type u} [CommRing R] (I : Ideal R)
+    (P : Type u) [AddCommGroup P] [Module R P] :
+    Function.Injective (LinearMap.rTensor P I.subtype) ↔
+      Function.Injective (multIdeal I P) := by
+  constructor
+  · intro h
+    exact (TensorProduct.lid R P).injective.comp h
+  · intro h x y hxy
+    apply h
+    simp only [multIdeal, LinearMap.comp_apply, hxy]
+
+/-- `multIdeal` is natural in the second variable. -/
+lemma multIdeal_lTensor {R : Type u} [CommRing R] (I : Ideal R) {P Q : Type u}
+    [AddCommGroup P] [Module R P] [AddCommGroup Q] [Module R Q] (f : P →ₗ[R] Q)
+    (x : ↥I ⊗[R] P) :
+    multIdeal I Q (LinearMap.lTensor (↥I) f x) = f (multIdeal I P x) := by
+  induction x with
+  | zero => simp
+  | tmul y p => simp
+  | add x₁ x₂ h₁ h₂ => simp [h₁, h₂]
+
+/-- The structure map `N → A` of a tower `R' → N → A`, read as an `R'`-linear map. -/
+noncomputable def algebraMapLinearOfTower (R' : Type u) [CommRing R'] (N : Type u)
+    [CommRing N] (A : Type u) [CommRing A] [Algebra R' N] [Algebra R' A] [Algebra N A]
+    [IsScalarTower R' N A] : N →ₗ[R'] A :=
+  (IsScalarTower.toAlgHom R' N A).toLinearMap
+
+@[simp] lemma algebraMapLinearOfTower_apply {R' N A : Type u} [CommRing R'] [CommRing N]
+    [CommRing A] [Algebra R' N] [Algebra R' A] [Algebra N A] [IsScalarTower R' N A] (n : N) :
+    algebraMapLinearOfTower R' N A n = algebraMap N A n := rfl
+
+lemma lTensor_mulLeft_algebraMap_mul {R' N A : Type u} [CommRing R'] [CommRing N]
+    [CommRing A] [Algebra R' A] [Algebra N A] (I' : Ideal R') (w₁ w₂ : N)
+    (x : ↥I' ⊗[R'] A) :
+    LinearMap.lTensor (↥I') (LinearMap.mulLeft R' (algebraMap N A (w₁ * w₂))) x
+      = LinearMap.lTensor (↥I') (LinearMap.mulLeft R' (algebraMap N A w₁))
+          (LinearMap.lTensor (↥I') (LinearMap.mulLeft R' (algebraMap N A w₂)) x) := by
+  induction x with
+  | zero => simp
+  | tmul y a => simp [map_mul]
+  | add x₁ x₂ k₁ k₂ => simp only [map_add, k₁, k₂]
+
+lemma lTensor_algebraMapLinearOfTower_mulLeft {R' N A : Type u} [CommRing R'] [CommRing N]
+    [CommRing A] [Algebra R' N] [Algebra R' A] [Algebra N A] [IsScalarTower R' N A]
+    (I' : Ideal R') (w : N) (x : ↥I' ⊗[R'] N) :
+    LinearMap.lTensor (↥I') (algebraMapLinearOfTower R' N A)
+        (LinearMap.lTensor (↥I') (LinearMap.mulLeft R' w) x)
+      = LinearMap.lTensor (↥I') (LinearMap.mulLeft R' (algebraMap N A w))
+          (LinearMap.lTensor (↥I') (algebraMapLinearOfTower R' N A) x) := by
+  induction x with
+  | zero => simp
+  | tmul y n => simp
+  | add x₁ x₂ k₁ k₂ => simp [k₁, k₂]
+
+/-- Every element of `↥I' ⊗[R'] A`, for `A` a localization of `N` at `W`, becomes the image
+of an element of `↥I' ⊗[R'] N` after multiplication by a single `u ∈ W`. -/
+theorem exists_common_denominator_lTensor {R' N A : Type u} [CommRing R'] [CommRing N]
+    [CommRing A] [Algebra R' N] [Algebra R' A] [Algebra N A] [IsScalarTower R' N A]
+    (W : Submonoid N) [IsLocalization W A] (I' : Ideal R') (ξ : ↥I' ⊗[R'] A) :
+    ∃ u : W, ∃ z : ↥I' ⊗[R'] N,
+      LinearMap.lTensor (↥I') (LinearMap.mulLeft R' (algebraMap N A (u : N))) ξ
+        = LinearMap.lTensor (↥I') (algebraMapLinearOfTower R' N A) z := by
+  induction ξ with
+  | zero => exact ⟨1, 0, by simp⟩
+  | tmul y a =>
+      obtain ⟨⟨n, u⟩, hnu⟩ := IsLocalization.surj (M := W) a
+      refine ⟨u, y ⊗ₜ[R'] n, ?_⟩
+      simp only [LinearMap.lTensor_tmul, LinearMap.mulLeft_apply,
+        algebraMapLinearOfTower_apply]
+      rw [← hnu, mul_comm]
+  | add ξ₁ ξ₂ ih₁ ih₂ =>
+      obtain ⟨u₁, z₁, h₁⟩ := ih₁
+      obtain ⟨u₂, z₂, h₂⟩ := ih₂
+      refine ⟨u₁ * u₂,
+        LinearMap.lTensor (↥I') (LinearMap.mulLeft R' ((u₂ : N))) z₁
+          + LinearMap.lTensor (↥I') (LinearMap.mulLeft R' ((u₁ : N))) z₂, ?_⟩
+      have hcoe : ((u₁ * u₂ : W) : N) = (u₁ : N) * (u₂ : N) := rfl
+      have t1 : LinearMap.lTensor (↥I')
+            (LinearMap.mulLeft R' (algebraMap N A ((u₁ : N) * (u₂ : N)))) ξ₁
+          = LinearMap.lTensor (↥I') (LinearMap.mulLeft R' (algebraMap N A (u₂ : N)))
+              (LinearMap.lTensor (↥I')
+                (LinearMap.mulLeft R' (algebraMap N A (u₁ : N))) ξ₁) := by
+        rw [mul_comm, lTensor_mulLeft_algebraMap_mul]
+      have t2 : LinearMap.lTensor (↥I')
+            (LinearMap.mulLeft R' (algebraMap N A ((u₁ : N) * (u₂ : N)))) ξ₂
+          = LinearMap.lTensor (↥I') (LinearMap.mulLeft R' (algebraMap N A (u₁ : N)))
+              (LinearMap.lTensor (↥I')
+                (LinearMap.mulLeft R' (algebraMap N A (u₂ : N))) ξ₂) :=
+        lTensor_mulLeft_algebraMap_mul _ _ _ _
+      rw [hcoe, map_add, t1, t2, h₁, h₂, map_add, lTensor_algebraMapLinearOfTower_mulLeft,
+        lTensor_algebraMapLinearOfTower_mulLeft]
+
+/-- **THE LOCALIZATION STEP OF HALF B**, in its own right and with no descent system in
+sight: if the kernel of `↥I' ⊗[R'] N → N` is contained in the `R'`-span of a set `S` that
+the structure map `N → A` kills after tensoring, then `↥I' ⊗[R'] A → A` is injective, for
+`A` any localization of `N`.
+
+This is Half B's fourth bullet — "`D_j` is flat over `N`, so `T_j = W⁻¹T^N_j`" — done by
+hand rather than through flatness: a common denominator (`exists_common_denominator_lTensor`)
+moves any `ξ` into the image of `↥I' ⊗[R'] N`, `IsLocalization.map_eq_zero_iff` produces the
+`w ∈ W` that annihilates its image in `N`, the span hypothesis kills `w • z`, and
+`IsLocalization.map_units` divides the accumulated denominator back out. -/
+theorem injective_multIdeal_of_ker_le_span {R' N A : Type u} [CommRing R'] [CommRing N]
+    [CommRing A] [Algebra R' N] [Algebra R' A] [Algebra N A] [IsScalarTower R' N A]
+    (W : Submonoid N) [IsLocalization W A] (I' : Ideal R') (S : Set (↥I' ⊗[R'] N))
+    (hker : LinearMap.ker (multIdeal I' N) ≤ Submodule.span R' S)
+    (hS : ∀ s ∈ S, LinearMap.lTensor (↥I') (algebraMapLinearOfTower R' N A) s = 0) :
+    Function.Injective (multIdeal I' A) := by
+  rw [injective_iff_map_eq_zero]
+  intro ξ hξ
+  obtain ⟨u, z, huz⟩ := exists_common_denominator_lTensor (A := A) W I' ξ
+  -- `z` maps to zero in `A`
+  have h1 : algebraMap N A (multIdeal I' N z) = 0 := by
+    have := multIdeal_lTensor I' (algebraMapLinearOfTower R' N A) z
+    rw [← huz, multIdeal_lTensor, hξ] at this
+    simpa using this.symm
+  obtain ⟨w, hw⟩ := (IsLocalization.map_eq_zero_iff W A (multIdeal I' N z)).mp h1
+  -- `w • z` lies in the kernel, hence in the span of `S`, hence is killed by the structure map
+  have h3 : LinearMap.lTensor (↥I') (LinearMap.mulLeft R' (w : N)) z
+      ∈ LinearMap.ker (multIdeal I' N) := by
+    simp only [LinearMap.mem_ker, multIdeal_lTensor, LinearMap.mulLeft_apply]
+    exact hw
+  have h5 : LinearMap.lTensor (↥I') (algebraMapLinearOfTower R' N A)
+      (LinearMap.lTensor (↥I') (LinearMap.mulLeft R' (w : N)) z) = 0 := by
+    refine Submodule.span_induction (p := fun x _ =>
+      LinearMap.lTensor (↥I') (algebraMapLinearOfTower R' N A) x = 0)
+      (fun x hx => hS x hx) (map_zero _) (fun x y _ _ hx hy => by rw [map_add, hx, hy, add_zero])
+      (fun c x _ hx => by rw [map_smul, hx, smul_zero]) (hker h3)
+  -- so `w * u` kills `ξ`, and `w * u` is a unit in `A`
+  rw [lTensor_algebraMapLinearOfTower_mulLeft, ← huz, ← lTensor_mulLeft_algebraMap_mul] at h5
+  have hunit : IsUnit (algebraMap N A ((w : N) * (u : N))) := by
+    have := IsLocalization.map_units (M := W) A (w * u)
+    simpa using this
+  obtain ⟨v, hv⟩ := hunit
+  have hcomp : (LinearMap.mulLeft R' ((v⁻¹ : Aˣ) : A)).comp
+      (LinearMap.mulLeft R' (algebraMap N A ((w : N) * (u : N)))) = LinearMap.id := by
+    ext a
+    simp [← hv, ← mul_assoc]
+  calc ξ = LinearMap.lTensor (↥I') (LinearMap.id) ξ := by simp
+    _ = LinearMap.lTensor (↥I') ((LinearMap.mulLeft R' ((v⁻¹ : Aˣ) : A)).comp
+          (LinearMap.mulLeft R' (algebraMap N A ((w : N) * (u : N))))) ξ := by rw [hcomp]
+    _ = LinearMap.lTensor (↥I') (LinearMap.mulLeft R' ((v⁻¹ : Aˣ) : A))
+          (LinearMap.lTensor (↥I')
+            (LinearMap.mulLeft R' (algebraMap N A ((w : N) * (u : N)))) ξ) := by
+        rw [LinearMap.lTensor_comp]; rfl
+    _ = 0 := by rw [h5, map_zero]
+
+/-- **THE `Tor`-THEORETIC CORE OF HALF B, WITH THE LOCALIZATION REMOVED** (sorry leaf, cut
+2026-07-31 out of
+`rTensor_map_maximalIdeal_injective_of_idealTensorComparison_eq_zero_of_isNoetherianFlatDescentSystem`
+below — read the section note just above, and the "THE PROOF" paragraph of that leaf's
+docstring, which is this leaf's specification).
+
+*For `𝔪` MAXIMAL in `C_i` and `N := C_j ⊗_{C_i} D_i`, the kernel of
+`↥(𝔪 C_j) ⊗_{C_j} N → N` lies in the `C_j`-span of the image, under
+`idealTensorComparison 𝔪`, of the kernel of `↥𝔪 ⊗_{C_i} D_i → D_i`.*
+
+This is [Stacks 10.99.13] + [Stacks 10.99.12] in the shape 00MO's step 4 uses them, i.e.
+the surjectivity of `Tor_1^{C_i}(D_i, C_i/𝔪) ⊗_{C_i} C_j → Tor_1^{C_j}(N, C_j/𝔪C_j)`,
+written with no derived functors: both `Tor_1`s are kernels of explicit multiplication maps
+(Remark 10.75.9).
+
+**THE PROOF, and it is the one place in 10.128.3 where `𝔪` being MAXIMAL is used.**  Fix a
+free presentation `0 → K → F → D_i → 0` over `C_i` and write `k := C_i/𝔪` (a FIELD),
+`C̄ := C_j/𝔪C_j`.
+
+* *The dimension shift.*  For any ideal `I` of a ring `C`, any `C`-module `D` and any
+  presentation `0 → K → F → D → 0` with `F` FLAT, `ker(↥I ⊗_C D → D) ≅ (K ∩ IF)/IK`.  The
+  isomorphism is elementary and needs nothing but flatness of `F`: `↥I ⊗ F → F` is
+  INJECTIVE with image `IF`, so an element of `↥I ⊗ D` lifts uniquely to `↥I ⊗ F` modulo
+  the image of `↥I ⊗ K`, and its image in `F` lands in `K ∩ IF` exactly when it dies in
+  `D`.  No `Tor` formalism and no snake lemma is required — this is worth stating as its
+  own lemma first, because it is applied TWICE, once over `C_i` and once over `C_j`.
+* *Base change of the presentation.*  `F_j := F ⊗_{C_i} C_j` is free over `C_j` and
+  `N = F_j/K'` with `K' := im(K ⊗_{C_i} C_j → F_j)`, by right exactness.  Hence
+  `K ⊗_{C_i} C̄ ↠ K' ⊗_{C_j} C̄`, while `F ⊗_{C_i} C̄ ≅ F_j ⊗_{C_j} C̄`.
+* *The field step, [Stacks 10.99.12], and the ONLY use of maximality.*  `𝔪` annihilates
+  `C̄`, so `K ⊗_{C_i} C̄ = (K/𝔪K) ⊗_k C̄` and `F ⊗_{C_i} C̄ = (F/𝔪F) ⊗_k C̄`, and the map
+  between them is `u ⊗_k id` for `u : K/𝔪K → F/𝔪F`.  `C̄` is a vector space over the FIELD
+  `k`, hence FLAT, so `ker(u ⊗_k id) = ker(u) ⊗_k C̄` — and `ker u` is `T_i` by the
+  dimension shift.  A `C̄`-span is a `C_j`-span, which is the conclusion.
+
+**WHY THE LOCALIZATION IS GONE.**  Half B's own FALSITY AUDIT (below) refutes the
+`C_j`-span statement for `D_j` with an explicit witness, `t/(1+u+v)`; the defect it exhibits
+is created by the localization `D_j = W⁻¹N` and is INVISIBLE here, where the ring is `N`
+itself.  Concretely, in that counterexample `N` is the image of `C_1 ⊗_{C_0} D_0` in `D_1`
+and `T^N_1 = t·N` IS the span — the audit says so in as many words ("`T^N_j` **is** the
+`C_j`-span of `φ_N(T_i)` — TRUE").  So this leaf is the audit's clause (a), stated
+verbatim, and no new falsity audit is owed for it beyond that one.
+
+**NOT VACUOUS, AND NOT FREE.**  At `C_j = C_i` it says `T_i ≤ span(T_i)`, true and empty;
+the content is at a genuine base change, where `𝔪 C_j` need not be `𝔪 ⊗ C_j`.  The
+hypothesis `𝔪.IsMaximal` is load-bearing: with `𝔪` merely prime, `C̄` is a module over the
+non-field `C_i/𝔪` and need not be flat, and the third bullet fails. -/
+theorem ker_multIdeal_le_span_idealTensorComparison
+    {Ci Cj Di : Type u} [CommRing Ci] [CommRing Cj] [CommRing Di]
+    [Algebra Ci Cj] [Algebra Ci Di] (𝔪 : Ideal Ci) [𝔪.IsMaximal] :
+    letI : Algebra Di (Cj ⊗[Ci] Di) := Algebra.TensorProduct.rightAlgebra
+    haveI : IsScalarTower Ci Di (Cj ⊗[Ci] Di) := Algebra.TensorProduct.right_isScalarTower
+    LinearMap.ker (multIdeal (𝔪.map (algebraMap Ci Cj)) (Cj ⊗[Ci] Di))
+      ≤ Submodule.span Cj (Set.image
+          (idealTensorComparison (Cj := Cj) (Dj := Cj ⊗[Ci] Di) 𝔪)
+          ((LinearMap.ker (multIdeal 𝔪 Di) :
+            Submodule Ci (↥𝔪 ⊗[Ci] Di)) : Set (↥𝔪 ⊗[Ci] Di))) :=
+  sorry
+
+/-- **HALF B, IN THE GENERALITY IT IS ACTUALLY ABOUT** (PROVEN 2026-07-31 over
+`ker_multIdeal_le_span_idealTensorComparison` and `injective_multIdeal_of_ker_le_span`) —
+a single square `C_i → C_j`, `D_i → D_j` with `D_j` a localization of `C_j ⊗_{C_i} D_i`
+and `𝔪` maximal.  No descent system, no colimit, no Noetherian hypothesis: exactly as for
+the fibre half (see "THE RING-LEVEL INPUTS OF 00MO's STEP 2" above), none of those is used.
+
+`halg` pins the `C_j ⊗_{C_i} D_i`-algebra structure on `D_j` to the one a descent system
+supplies through `isLocalizationDT`, namely `Algebra.TensorProduct.lift` of the two
+structure maps; it is what makes the comparison map factor through `↥(𝔪 C_j) ⊗ N`. -/
+theorem rTensor_map_injective_of_idealTensorComparison_eq_zero
+    {Ci Cj Di Dj : Type u} [CommRing Ci] [CommRing Cj] [CommRing Di] [CommRing Dj]
+    [Algebra Ci Cj] [Algebra Ci Di] [Algebra Ci Dj] [Algebra Cj Dj] [Algebra Di Dj]
+    [IsScalarTower Ci Cj Dj] [IsScalarTower Ci Di Dj]
+    [Algebra (Cj ⊗[Ci] Di) Dj]
+    (halg : ∀ (c : Cj) (d : Di), algebraMap (Cj ⊗[Ci] Di) Dj (c ⊗ₜ[Ci] d)
+      = algebraMap Cj Dj c * algebraMap Di Dj d)
+    (W : Submonoid (Cj ⊗[Ci] Di)) [IsLocalization W Dj]
+    (𝔪 : Ideal Ci) [𝔪.IsMaximal]
+    (hzero : ∀ t ∈ LinearMap.ker (LinearMap.rTensor Di 𝔪.subtype),
+      idealTensorComparison (Cj := Cj) (Dj := Dj) 𝔪 t = 0) :
+    Function.Injective
+      (LinearMap.rTensor Dj (𝔪.map (algebraMap Ci Cj)).subtype) := by
+  letI : Algebra Di (Cj ⊗[Ci] Di) := Algebra.TensorProduct.rightAlgebra
+  haveI : IsScalarTower Ci Di (Cj ⊗[Ci] Di) := Algebra.TensorProduct.right_isScalarTower
+  haveI : IsScalarTower Cj (Cj ⊗[Ci] Di) Dj := by
+    refine IsScalarTower.of_algebraMap_eq (fun c => ?_)
+    rw [show (algebraMap Cj (Cj ⊗[Ci] Di)) c = c ⊗ₜ[Ci] (1 : Di) from rfl, halg]
+    simp
+  rw [injective_rTensor_iff_injective_multIdeal]
+  refine injective_multIdeal_of_ker_le_span (N := Cj ⊗[Ci] Di) W _
+    (Set.image (idealTensorComparison (Cj := Cj) (Dj := Cj ⊗[Ci] Di) 𝔪)
+      ((LinearMap.ker (multIdeal 𝔪 Di) :
+        Submodule Ci (↥𝔪 ⊗[Ci] Di)) : Set (↥𝔪 ⊗[Ci] Di)))
+    ?_ ?_
+  · exact ker_multIdeal_le_span_idealTensorComparison 𝔪
+  · rintro s ⟨t, ht, rfl⟩
+    have key : ∀ t : ↥𝔪 ⊗[Ci] Di,
+        LinearMap.lTensor (↥(𝔪.map (algebraMap Ci Cj)))
+            (algebraMapLinearOfTower Cj (Cj ⊗[Ci] Di) Dj)
+            (idealTensorComparison (Cj := Cj) (Dj := Cj ⊗[Ci] Di) 𝔪 t)
+          = idealTensorComparison (Cj := Cj) (Dj := Dj) 𝔪 t := by
+      intro t
+      induction t with
+      | zero => simp
+      | tmul x m =>
+          simp only [idealTensorComparison, LinearMap.comp_apply, TensorProduct.map_tmul,
+            TensorProduct.mapOfCompatibleSMul_tmul, LinearMap.lTensor_tmul,
+            algebraMapLinearOfTower_apply]
+          congr 1
+          show algebraMap (Cj ⊗[Ci] Di) Dj ((1 : Cj) ⊗ₜ[Ci] (algebraMap Di Di m)) = _
+          rw [halg]
+          simp
+      | add t₁ t₂ h₁ h₂ => simp only [map_add, h₁, h₂]
+    rw [key t]
+    refine hzero t ?_
+    simpa [multIdeal, LinearMap.mem_ker] using ht
+
 /-- **HALF B OF [Stacks 00R6]'s COLIMIT LEAF — the surjectivity, and it is the ONLY
-genuinely homological statement left in 10.128.3** (sorry leaf, cut 2026-07-30 out of
+genuinely homological statement left in 10.128.3** (**PROVEN 2026-07-31** over
+`rTensor_map_injective_of_idealTensorComparison_eq_zero` immediately above, whose only
+remaining input is `ker_multIdeal_le_span_idealTensorComparison`; cut 2026-07-30 out of
 `exists_le_rTensor_map_maximalIdeal_injective_of_isNoetherianFlatDescentSystem` below;
 REFUTED AND RESTATED the same day — read the FALSITY AUDIT before anything else).
+
+**WHAT 2026-07-31 CHANGED.**  The body below is now `exact` over the general form above,
+which knows nothing about descent systems: this leaf's whole descent-system content is the
+`letI` block plus `hsys.isLocalizationDT h`, and the mathematics is the single square
+`C_i → C_j`, `D_i → D_j`.  Of the four bullets of "THE PROOF" below, the LAST — the
+localization — is now discharged (`injective_multIdeal_of_ker_le_span`), and the first
+three are the named leaf `ker_multIdeal_le_span_idealTensorComparison`.  The FALSITY AUDIT
+below is UNAFFECTED and still governs: it is exactly the audit's clause (b) that the new
+localization lemma supplies, and its clause (a) that the remaining leaf asserts.
 
 *In a `IsNoetherianFlatDescentSystem`, for every `i ≤ j`: if `idealTensorComparison 𝔪_i`
 kills `T_i = ker(𝔪_i ⊗_{C_i} D_i → D_i)`, then `T_j = ker(𝔪_i C_j ⊗_{C_j} D_j → D_j)` is
@@ -4077,8 +4385,28 @@ theorem rTensor_map_maximalIdeal_injective_of_idealTensorComparison_eq_zero_of_i
     letI := hsys.isLocalRingC i
     letI : Algebra (C j) (D j) := (cd j).toAlgebra
     Function.Injective (LinearMap.rTensor (D j)
-      ((IsLocalRing.maximalIdeal (C i)).map (cT h)).subtype) :=
-  sorry
+      ((IsLocalRing.maximalIdeal (C i)).map (cT h)).subtype) := by
+  letI := hsys.isLocalRingC i
+  letI : Algebra (C i) (D i) := (cd i).toAlgebra
+  letI : Algebra (C i) (C j) := (cT h).toAlgebra
+  letI : Algebra (C j) (D j) := (cd j).toAlgebra
+  letI : Algebra (C i) (D j) := ((cd j).comp (cT h)).toAlgebra
+  letI : Algebra (D i) (D j) := (dT h).toAlgebra
+  haveI : IsScalarTower (C i) (C j) (D j) := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI : IsScalarTower (C i) (D i) (D j) :=
+    IsScalarTower.of_algebraMap_eq fun x => DFunLike.congr_fun (hsys.comm_T h) x
+  letI : Algebra (C j ⊗[C i] D i) (D j) :=
+    (Algebra.TensorProduct.lift (IsScalarTower.toAlgHom (C i) (C j) (D j))
+      (IsScalarTower.toAlgHom (C i) (D i) (D j))
+      fun _ _ => Commute.all _ _).toRingHom.toAlgebra
+  obtain ⟨W, hW⟩ := hsys.isLocalizationDT h
+  haveI := hW
+  exact rTensor_map_injective_of_idealTensorComparison_eq_zero
+    (fun c d => by
+      show (Algebra.TensorProduct.lift _ _ _) (c ⊗ₜ[C i] d) = _
+      rw [Algebra.TensorProduct.lift_tmul]
+      rfl)
+    W (IsLocalRing.maximalIdeal (C i)) hzero
 
 /-- **THE `Tor_1` VANISHING AT A LARGE STAGE — the colimit half of [Stacks 00R6]**
 (**PROVEN 2026-07-30** over the two halves immediately above, which are its FURTHER CUT —
