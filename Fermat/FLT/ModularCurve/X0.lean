@@ -27082,6 +27082,134 @@ theorem geometricallyIntegral_of_gamma0CurveAtlasOver {N : ℕ} {k : Type} [Fiel
     geometricallyIrreducible_of_smooth_of_geometricallyConnected A.str
   exact GeometricallyIntegral.of_geometricallyReduced_of_geometricallyIrreducible A.str
 
+/-- **The coarse moduli space base-changes along ANY FLAT extension of scalars**
+(sorry leaf — Katz–Mazur **Proposition (8.1.6)(2)**, stated in exactly the
+generality Katz–Mazur state it).
+
+This is the ONE statement of which the three `BcUniversal` obligations in this
+file are instances.  It was cut on 2026-07-29 after the observation that every
+subring of `ℚ` is a localization of `ℤ`, hence flat over it, which made the
+three visibly the same theorem:
+
+| consumer | the flat map | the one-line instantiation |
+|---|---|---|
+| `bcUniversal_of_field` (just below) | `k →+* K`, `k` a field | `bcUniversal_of_flat f (RingHom.Flat.of_isField (Field.toIsField k) f) A` |
+| `bcUniversal_specLocGeneric` (~20 000 lines below) | `R.subtype : R →+* ℚ`, `R : Subring ℚ` | `bcUniversal_of_flat _ (flat_subtype_rat R) A` |
+| `nonempty_gamma0AtlasOver_specLoc` | `algebraMap ℤ R`, `R : Subring ℚ` | `bcUniversal_of_flat _ (flat_intCast_subring_rat R) A` |
+
+All three are checked to elaborate; the second and third are taken below, and
+the first is written here rather than applied because `bcUniversal_of_field` has
+another owner (`flt-lean-94`, live at the time of writing, and already carrying
+a proof of it over a GIT-model leaf of its own).  **Nothing here edits it.**
+
+## VERIFIED AGAINST THE PRIMARY SOURCE, not against this file's own prose
+
+Re-OCR'd from `~/sources/katzmazur1985ameq.pdf` (book p. 226–227) on 2026-07-29,
+because everything below rests on it:
+
+> PROPOSITION 8.1.6.  For any extension of scalars `R → R'`, we have a canonical
+> morphism of `R'`-schemes `M(𝒫) ⊗_R R' → M(𝒫_{R'})`.  This morphism is an
+> isomorphism if any of the following conditions holds: (1) `𝒫` is
+> representable.  (2) `R → R'` is flat.  (3) the integer `6 = 2 × 3` is
+> invertible in `R`.  (4) `𝒫` is the quotient of a representable problem `𝒫'` by
+> a finite group `G` whose order is invertible in `R'`.
+
+Three things this settles that the file previously only asserted.
+
+* **The hypothesis is flatness and NOTHING ELSE** — no noetherian, no finite
+  type, no local hypothesis on `R` or `R'`.  So the statement below is faithful
+  at the stated generality and is not a strengthening of the citation.
+* **The citation is about an EXTENSION OF SCALARS, i.e. a RING map.**  That is
+  why this leaf is stated over an affine base and not for an arbitrary morphism
+  of schemes; see the axis note below.
+* **Condition (3) is unconditional in `R'`** and this file has never used it.
+  It does not rescue `ℤ[1/N] → 𝔽_p` (the section comment above
+  `Gamma0AtlasOver` is right that `6` is invertible in `ℤ[1/N]` only when
+  `6 ∣ N`), but a successor looking for a second route should know it exists.
+
+## THE ARBITRARY-SCHEME AXIS, SEARCHED AND ANSWERED: it is NOT false, it is
+## unstatable-here
+
+The question left open when this unification was proposed was whether replacing
+the affine base by an arbitrary scheme `S` with a flat `q : S' ⟶ S` makes the
+statement FALSE.  **It does not.  I looked for a counterexample and there is
+none**, and here is why, from Katz–Mazur's own proof:
+
+> If `R → R'` is flat, then Zariski locally on `R` we may apply (A7.1.3, (1)),
+> by inverting an odd prime `ℓ` and viewing `𝒫` as the quotient of `(𝒫, [Γ(ℓ)])`
+> by the group `GL₂(ℤ/ℓ)`.
+
+The proof is **already local on the base** — it has to be, because no single
+`n ≥ 3` need be invertible in `R` (`R = ℤ` is the extreme case; two distinct odd
+primes generate the unit ideal, so `D(3) ∪ D(5) = Spec R` for every ring `R`).
+An argument that is Zariski-local on `Spec R` glues over a scheme base without
+any new input, and the conclusion — initiality among cocones — is itself
+Zariski-local: uniqueness of the descended `u` may be checked on an affine cover
+of `S'`, and existence glues because the local solutions agree on overlaps by
+that uniqueness.  So the arbitrary-scheme form is TRUE.
+
+What blocks *stating* it here is not falsity but expressibility: the gluing
+argument needs `A` RESTRICTED to an affine open `U ⊆ S` to be a
+`Gamma0AtlasOver N U`, and **this file has no restriction operation for
+`Gamma0AtlasOver`** — `Y`, `M`, `dM`, `cover` and `quotient` would all have to be
+cut down to `str⁻¹ U`, and the last of those is "a categorical quotient is local
+on the base", a lemma nobody has written.  Stating a leaf whose only known proof
+needs machinery the file cannot express is worse than stating the affine form
+that Katz–Mazur actually prove, so the affine form is what is stated.
+
+*The check that would refute the "TRUE at arbitrary base" verdict*: exhibit a
+flat `q : S' ⟶ S` of schemes, an atlas `A` over `S`, and either a cocone over
+`S'` that does not factor through `A.bcY q`, or two factorisations.  Note that
+degenerate `q` do NOT give one: `S' = ∅` is flat and makes every clause a
+statement about morphisms out of an initial object.
+
+## VACUITY AUDIT, both directions
+
+*Not vacuous.*  For `N > 0` and `q` an isomorphism the statement specialises to
+`A.toIsCoarseModuliY0.universal`, which is genuine content carried by the atlas;
+for `q` a general flat map it is strictly more.
+
+*Not over-constrained.*  No hypothesis can make the conclusion empty: `BcUniversal`
+is a `∀ … ∃!`, and its degenerate case is TRUE rather than absurd — at `N = 0`
+`isEmpty_of_gamma0Datum_zero` makes every `T` carrying a datum initial and
+`isEmpty_of_isCoarseModuliY0_zero_base` makes `A.bcY q` empty, so all three
+clauses are equalities of morphisms out of an initial object.  That is why no
+`0 < N` hypothesis appears, and why one must not be added: it would be dead
+weight and would block the `N = 0` instantiations that
+`exists_unique_genericFibre_universal` needs.
+
+*No under-pinned existential.*  There is none: `f` and `A` are universally
+quantified and the conclusion is a `Prop` about them.
+
+## What a prover owes, and what it does NOT owe
+
+The route is the one recorded at length on `bcUniversal_of_field` below and on
+`bcUniversal_specLocGeneric`, and the machinery survey there was re-checked
+against this pin on 2026-07-28; none of it is repeated here.  Two deltas that
+the extra generality introduces, both in the direction of *more work*, neither in
+the direction of *less truth*:
+
+* over a general `R` there is no single global affine GIT model, because no
+  single `n ≥ 3` is invertible.  Katz–Mazur's proviso "to define `M(𝒫)` as an
+  `R`-scheme it suffices to do so locally on `R`" is what covers this, and the
+  cover to use is the one their (8.1.6) proof names: invert an odd prime.  The
+  invariants computation is then run chart by chart and glued.
+* the flatness is consumed ONLY in the invariants step — `(A^G) ⊗_R R' =
+  (A ⊗_R R')^G`, because invariants are the kernel of a finite diagram
+  (`G = GL₂(ℤ/ℓ)` finite) and flat base change is exact.  `Module.Flat.lTensor_exact`
+  is the mathlib entry point; `RingHom.Flat` unfolds to `Module.Flat R R'`
+  through `RingHom.flat_algebraMap_iff`.
+
+**Do NOT weaken the flatness hypothesis.**  At a non-flat extension the statement
+is FALSE, and Katz–Mazur Remark (8.1.7) gives the explicit counterexamples (the
+problems `[ω]` and `[Δ = 1]` at `p = 2, 3`, book pp. 227–228).  That is the same
+warning already carried by both leaves below; it applies here verbatim and is the
+reason this leaf is `bcUniversal_of_flat` and not `bcUniversal_of_anything`. -/
+theorem bcUniversal_of_flat {N : ℕ} {R R' : Type} [CommRing R] [CommRing R']
+    (f : R →+* R') (_hf : f.Flat) (A : Gamma0AtlasOver N (Spec (CommRingCat.of R))) :
+    A.BcUniversal (Spec.map (CommRingCat.ofHom f)) :=
+  sorry
+
 /-- **The COARSE MODULI SPACE base-changes along a FIELD EXTENSION** (sorry leaf
 — Katz–Mazur (8.1.6)(2)).  This is all that remains of `bcQuotient_of_field`
 after the fpqc-descent reduction of 2026-07-28, and it is the whole
@@ -47004,6 +47132,17 @@ So the two residues are:
   atlas fields base-change formally (`Gamma0AtlasOver.baseChange`, PROVEN); the
   categorical quotient is the one that does not.
 
+**BOTH RESIDUES ARE NOW THEOREMS** (2026-07-29) and the two names above are the
+names of PROVEN declarations, not of leaves — do not dispatch at them.  The
+cluster's whole content sits in exactly two leaves now:
+
+* `nonempty_gamma0AtlasOver_int` — (8.1.1) over `ℤ`.  The `specLoc` statement is
+  a theorem over it, because `ℤ → R` is flat for every `R : Subring ℚ`.
+* `bcUniversal_of_flat` (~20 000 lines above) — (8.1.6)(2) at an arbitrary flat
+  extension of scalars.  `bcQuotient_specLocGeneric` reaches it through
+  `bcUniversal_specLocGeneric` and `bcQuotient_of_bcUniversal`, and
+  `bcUniversal_of_field` is its third instance.
+
 **Why the second cut is a reduction and not a repackaging.**
 `exists_unique_genericFibre_universal` asks for initiality of `𝒴 ×_{ℤ_(ℓ)} ℚ`
 over `ℚ` given only an ABSTRACT `IsCoarseModuliY0` over `ℤ_(ℓ)`.  Its own
@@ -47124,8 +47263,18 @@ theorem isEmpty_of_isCoarseModuliY0_zero_base {Y S : Scheme.{0}} {strY : Y ⟶ S
       (by intro _ _ _ _ _ _ d' _ _; exact Subtype.ext ((hinit d').hom_ext _ _))
   exact Function.isEmpty u.base
 
-/-- **The Katz–Mazur atlas exists over `ℤ_(ℓ)`** (sorry leaf — (8.1.1) over the
-RING `ℤ_(ℓ)`; Katz–Mazur ch. 8, Deligne–Rapoport for the integral models).
+/-! #### The Katz–Mazur atlas over a subring of `ℚ` — the cut, and its history
+
+**HISTORICAL — this block was the docstring of the leaf
+`nonempty_gamma0AtlasOver_specLoc`, which is now a THEOREM** (2026-07-29, over
+`nonempty_gamma0AtlasOver_int` and `bcUniversal_of_flat`).  It is kept in full
+because it is the citation survey and the faithfulness audit for the leaf that
+replaced it, and because it is the record of the axis whose search produced the
+replacement.  Everything below is about the CONTENT, which did not change; only
+the base did, from "every `R : Subring ℚ`" to `ℤ`.
+
+**The Katz–Mazur atlas exists over `ℤ_(ℓ)`** — (8.1.1) over the RING `ℤ_(ℓ)`;
+Katz–Mazur ch. 8, Deligne–Rapoport for the integral models.
 
 This is the base-`ℤ_(ℓ)` form of `exists_gamma0Atlas`, and the exact analogue
 over a discrete valuation ring of what `exists_gamma0AtlasOver_isAffine_zmod`
@@ -47188,13 +47337,12 @@ obstructions, and neither implies this one — base change out of `SpecLoc R`
 goes the wrong way, and base change INTO it from `ℤ[1/N]` is exactly the
 (8.1.6)-conditioned step this file keeps isolating.
 
-**AXIS NOT YET SEARCHED WHEN THE ABOVE WAS WRITTEN, AND IT IS THE ONE A
-SUCCESSOR SHOULD TRY FIRST: base change from `Spec ℤ`, where the (8.1.6)
-condition is SATISFIED** (recorded 2026-07-29; not implemented here — this is a
-route note, not a proof).
+**THE AXIS ABOVE HAS NOW BEEN TAKEN, AND THIS IS NO LONGER A LEAF**
+(2026-07-29).  Everything from here down is history of the cut; the theorem
+below is PROVEN over `nonempty_gamma0AtlasOver_int` and `bcUniversal_of_flat`.
 
 The paragraph above is right that base change into `SpecLoc R` is the
-(8.1.6)-conditioned step, and it stops one step short of asking whether the
+(8.1.6)-conditioned step, and it stopped one step short of asking whether the
 condition holds.  For the base `ℤ` it does, unconditionally and for every
 `R : Subring ℚ`:
 
@@ -47208,28 +47356,120 @@ condition holds.  For the base `ℤ` it does, unconditionally and for every
   `Gamma0AtlasOver.baseChange` together with
   `Gamma0AtlasOver.bcQuotient_of_bcUniversal`, both PROVEN.
 
-That would replace this leaf by `Nonempty (Gamma0AtlasOver N (Spec ℤ))` —
-Katz–Mazur (8.1.1) over `ℤ`, the single canonical instance of the citation —
-plus a flat-base-change obligation of the shape this file already isolates.
 **Note the contrast with `ℤ[1/N] → 𝔽_p`, which is NOT flat and is why the
 characteristic-`p` model is built directly**: the objection recorded on
 `exists_gamma0AtlasOver_isAffine_zmod` is specific to that base change and does
 not apply to `ℤ → R` for `R ⊆ ℚ`.
 
-**The unification this suggests, since three leaves now share one shape.**
-`bcUniversal_of_field` (a field extension is flat), `bcUniversal_specLocGeneric`
-(`R ⊆ ℚ` is a localization) and the `ℤ → R` obligation above are three
-instances of ONE statement — `A.BcUniversal q` whenever `q` is flat, which is
-(8.1.6)(2) as Katz–Mazur actually state it.  Collapsing them into a single leaf
-`bcUniversal_of_flat` would take the cluster from four leaves to two.  It is
-NOT done here because `bcUniversal_of_field` and
-`exists_gamma0AtlasOver_isAffine_zmod` have other owners and a duplicate cut is
-worse than a missing one; and because the honest form of the general statement
-needs its base to be affine (Katz–Mazur run (8.1.1) over a RING), so the axis to
-check before stating it is whether an arbitrary-scheme `S` makes it false. -/
-theorem nonempty_gamma0AtlasOver_specLoc (N : ℕ) (R : Subring ℚ) (_hN : 0 < N) :
-    Nonempty (Gamma0AtlasOver N (SpecLoc R)) :=
+**What actually happened to the flatness argument, and it is cheaper than the
+paragraph above predicted.**  The Bézout computation is not needed at all:
+`Module.Flat ℤ ↥R` is an INSTANCE at this pin for every `R : Subring ℚ`
+(`inferInstance` discharges it, `flat_intCast_subring_rat` below), so the
+`ℤ → R` half of the (8.1.6) condition costs one line.  The generic-fibre half
+`R → ℚ` is one localization step (`flat_subtype_rat` below).  The recorded
+"`R = ℤ[1/p : 1/p ∈ R]`" presentation is therefore a true statement that nothing
+consumes; it is left here because it is the reason the instance holds.
+
+**The unification this file predicted has been done**, as `bcUniversal_of_flat`
+(~20 000 lines above): `bcUniversal_of_field` (a field extension is flat),
+`bcUniversal_specLocGeneric` (`ℚ` is a localization of `R`) and the `ℤ → R`
+obligation here are three instances of it, which is (8.1.6)(2) as Katz–Mazur
+actually state it.  The axis this docstring flagged as unsearched — whether an
+arbitrary-scheme base makes the general statement false — was searched and
+answered NO; see the audit on `bcUniversal_of_flat`. -/
+
+/-- **`R → ℚ` is FLAT for every subring `R` of `ℚ`** (PROVEN).
+
+`ℚ` is the fraction field of `R`: every rational is `num/den` with both in `R`,
+because a subring of `ℚ` contains every integer (`intCast_mem`, `natCast_mem`).
+`IsFractionRing.of_field` turns that into `IsLocalization (nonZeroDivisors R) ℚ`
+and `IsLocalization.flat` into `Module.Flat R ℚ`.
+
+This is the (8.1.6)(2) condition for `bcUniversal_specLocGeneric` below, and it
+is the whole of what that leaf's docstring calls "`ℚ` is a LOCALIZATION of `R`,
+hence flat over it".  Stated on the bare `R.subtype` rather than on
+`algebraMap ↥R ℚ` because `SpecLoc.generic` is `Spec.map (ofHom R.subtype)`; the
+two are definitionally equal and `RingHom.flat_algebraMap_iff` crosses between
+them. -/
+theorem flat_subtype_rat (R : Subring ℚ) : (R.subtype : ↥R →+* ℚ).Flat := by
+  haveI : IsFractionRing ↥R ℚ :=
+    IsFractionRing.of_field ↥R ℚ fun z =>
+      ⟨⟨(z.num : ℚ), intCast_mem R z.num⟩, ⟨(z.den : ℚ), natCast_mem R z.den⟩,
+        (Rat.num_div_den z).symm⟩
+  exact RingHom.flat_algebraMap_iff.mpr (IsLocalization.flat ℚ (nonZeroDivisors ↥R))
+
+/-- **`ℤ → R` is FLAT for every subring `R` of `ℚ`** (PROVEN, one line).
+
+This is the `ℤ` half of the (8.1.6)(2) condition for
+`nonempty_gamma0AtlasOver_specLoc` below.  It needs no Bézout argument and no
+localization presentation of `R`: `Module.Flat ℤ ↥R` is discharged by instance
+search at this pin.  The instance that fires is
+`Mathlib/RingTheory/Flat/TorsionFree.lean`'s
+`[IsDedekindDomain R] [Module.IsTorsionFree R M] : Module.Flat R M` — `ℤ` is a
+Dedekind domain and `↥R ⊆ ℚ` is torsion-free — so a scratch file must import
+`Mathlib.RingTheory.Flat.TorsionFree` for the `inferInstance` to succeed
+(checked 2026-07-30: with only `Mathlib.RingTheory.Flat.Localization` imported it
+fails with `failed to synthesize Module.Flat ℤ ↥R`, which is a missing import and
+not a missing theorem).  Recorded because the neighbouring docstring predicted
+this would cost the explicit presentation `R = ℤ[1/p : 1/p ∈ R]`, and it does
+not. -/
+theorem flat_intCast_subring_rat (R : Subring ℚ) : (algebraMap ℤ ↥R).Flat :=
+  RingHom.flat_algebraMap_iff.mpr inferInstance
+
+/-- **The Katz–Mazur atlas exists over `ℤ`** (sorry leaf — (8.1.1) over the ring
+`ℤ`, the single canonical instance of that citation).
+
+This replaces `nonempty_gamma0AtlasOver_specLoc` as the leaf of this cluster:
+that statement quantified over every `R : Subring ℚ` and is now a THEOREM over
+this one plus flat base change, since `ℤ → R` is flat for every such `R`
+(`flat_intCast_subring_rat` above) and `bcUniversal_of_flat` is (8.1.6)(2).
+
+Everything the previous docstring said about the CONTENT is unchanged and is not
+repeated: it asks for the rigidified moduli scheme, its universal family, the
+fppf cover and the categorical-quotient property, and for nothing geometric — no
+smoothness, no compactification, no cusps.  Read it above for the citation
+survey, for why the atlas rather than the bare coarse space is asked for, and
+for the `n ≥ 3` patching, which is where the whole cost of a non-local base
+sits: `ℤ` is the extreme case, no `n ≥ 3` is invertible, and the construction is
+the two-chart one over `D(3)` and `D(5)` (any two distinct odd primes generate
+the unit ideal), glued.
+
+**Why this is a strictly better leaf than the one it replaces**, and not a
+relocation with extra steps: `R = ⊥` is `ℤ`, so the old leaf CONTAINED this one
+as an instance, and the old leaf's remaining content — every other subring — is
+exactly what flat base change now supplies.  A citation instantiated once is
+also what Katz–Mazur (8.1.1) is: a construction over a ring, not a family of
+constructions.
+
+IRREDUCIBLE at this pin ALONG THE MODULI AXIS for the reason the old docstring
+records and which was re-checked on 2026-07-27: `ModularCurve` is absent from
+mathlib entirely, and there is no `DeligneRapoport` or integral model of a
+modular curve in mathlib, `~/cs/FLT` or this project.  *The check that refutes
+that*: produce the `Γ₀(N)`-atlas over `ℤ`.  Note that producing it over
+`ℤ[1/N]` does NOT suffice, and the flat base change above does not rescue it:
+descending from `ℤ[1/N]` to `ℤ` would need a ring map `ℤ[1/N] → ℤ`, and there is
+none.  `ℤ → ℤ[1/N]` is flat, but it points the other way — it takes an atlas
+over `ℤ` to one over `ℤ[1/N]`, which is the direction already available.  So:
+over `ℤ` directly. -/
+theorem nonempty_gamma0AtlasOver_int (N : ℕ) (_hN : 0 < N) :
+    Nonempty (Gamma0AtlasOver N (Spec (CommRingCat.of ℤ))) :=
   sorry
+
+/-- **The Katz–Mazur atlas exists over every subring of `ℚ`** (PROVEN
+2026-07-29 over `nonempty_gamma0AtlasOver_int` and `bcUniversal_of_flat`;
+formerly the sorry leaf whose docstring is above).
+
+`ℤ → R` is flat (`flat_intCast_subring_rat`), so `bcUniversal_of_flat` gives
+`BcUniversal`, `Gamma0AtlasOver.bcQuotient_of_bcUniversal` turns that into
+`BcQuotient`, and `Gamma0AtlasOver.baseChange` builds the other seven fields
+formally.  The statement and the argument order of the binders are unchanged, so
+both call sites below are untouched. -/
+theorem nonempty_gamma0AtlasOver_specLoc (N : ℕ) (R : Subring ℚ) (hN : 0 < N) :
+    Nonempty (Gamma0AtlasOver N (SpecLoc R)) := by
+  obtain ⟨A⟩ := nonempty_gamma0AtlasOver_int N hN
+  exact ⟨A.baseChange (Spec.map (CommRingCat.ofHom (algebraMap ℤ ↥R)))
+    (A.bcQuotient_of_bcUniversal _
+      (bcUniversal_of_flat _ (flat_intCast_subring_rat R) A))⟩
 
 /-! #### `BcUniversal` is a property of the BASE, not of the atlas (2026-07-29)
 
@@ -47411,10 +47651,19 @@ is not surjective".  That is true of descent along `q`, and it is not the
 descent that was needed — `bcQuotient_of_bcUniversal` descends along the
 RIGIDIFYING COVER of a scheme over the new base, which is fppf by
 `Gamma0AtlasOver.bcCover` for every `q`.  So the reduction that note ruled out
-as unavailable is in fact available and is now taken. -/
+as unavailable is in fact available and is now taken.
+
+**CLOSED 2026-07-29.**  The block above was this leaf's docstring while it was
+a leaf; it is retained because it is the faithfulness audit and the machinery
+survey for `bcUniversal_of_flat`, which is where the content moved.  The proof is
+one line: `ℚ` is flat over `R` (`flat_subtype_rat`), and `bcUniversal_of_flat` is
+Katz–Mazur (8.1.6)(2) for an arbitrary flat extension of scalars.  Note what
+this does NOT do: it does not weaken the leaf to an arbitrary base morphism out
+of `SpecLoc R` — the special fibre `SpecLoc.special toF` is not flat and the
+block above is right that the statement is FALSE there. -/
 theorem bcUniversal_specLocGeneric {N : ℕ} {R : Subring ℚ}
     (A : Gamma0AtlasOver N (SpecLoc R)) : A.BcUniversal (SpecLoc.generic R) :=
-  sorry
+  bcUniversal_of_flat _ (flat_subtype_rat R) A
 
 /-- **The categorical quotient descends along the FLAT base change
 `ℤ_(ℓ) → ℚ`** (PROVEN 2026-07-29 over `bcUniversal_specLocGeneric`, by the
