@@ -20692,7 +20692,41 @@ the cocycle being a coboundary.
 No local Tate duality is needed, in keeping with the deviation note on
 `IsHilbertTaylorWilesPrimeSet`.
 
-Both-ways audit and CIRCULARITY GUARD: as for the global half above. -/
+Both-ways audit and CIRCULARITY GUARD: as for the global half above.
+
+# PROVEN 2026-07-30 (flt-lean-195), AND THE ROUTE ABOVE IS THREE HYPOTHESES
+# LONGER THAN THE PROOF NEEDS
+
+The route as written goes through the procyclic quotient `G_w / I_w`, and that
+detour is what makes `hcunr`, `hwℓ` and `hw2` look necessary: they are exactly
+what identifies `loc_w c` as INFLATED from `⟨Frob_w⟩^`, so that the `↔` of the
+display can be run. But only the `⟹` direction is asserted, and that direction
+never needs the inflation at all:
+
+    c ∈ ker (loc_w)  ⟹  the cocycle `z ∘ ι_w` is a coboundary ON THE WHOLE
+                          DECOMPOSITION GROUP `G_w`
+                     ⟹  its value at ANY element of `G_w` — in particular at the
+                          local arithmetic Frobenius `Frobᵥ ∈ Γ F_w`, whose image
+                          under `hilbertDecompHom F w` is `globalFrob w` BY
+                          DEFINITION — lies in `(ρ · − 1) · M`
+                     ⟹  `globalFrob w ∉ hilbertSurvivingLocus`.
+
+So the whole proof is the contrapositive of
+`ContinuousCohomology.eval₁_mem_range_sub_of_map_cocycleClass_eq_zero` (the
+vendored `ContCohomology/LowDegreeOne.lean`) applied at
+`φ = hilbertDecompHom F w`, `f = 𝟙`, `σ = Field.AbsoluteGaloisGroup.adicArithFrob w`,
+and the three hypotheses above are consumed by NOTHING. They are kept in the
+signature — underscore-prefixed, so the emptiness is mechanically visible rather
+than merely asserted — because the consumer
+`exists_hilbertSeparatingOpen_locResDecomp` already holds them and passes them
+positionally, and because they are what makes `w` a place at which the GLOBAL
+half is allowed to hand over a Frobenius. Removing them would be a strictly
+stronger statement and equally true; that is an interface decision, not this
+leaf's.
+
+Nothing about the surviving locus is used beyond its definition, and no local
+Tate duality and no procyclic-cohomology computation is needed — the `↔` the
+route describes remains unproven and remains unnecessary. -/
 theorem notMem_ker_hilbertLocResDecompTwist1_of_mem_hilbertSurvivingLocus
     (ℓ : ℕ) [Fact ℓ.Prime] (F : Type u) [Field F] [NumberField F]
     {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
@@ -20701,12 +20735,23 @@ theorem notMem_ker_hilbertLocResDecompTwist1_of_mem_hilbertSurvivingLocus
     (z : ContinuousCohomology.cocycles₁ (hilbertAdZeroTwist F ρbar))
     {c : continuousCohomology 1 (hilbertAdZeroTwist F ρbar)}
     (hzc : ContinuousCohomology.cocycleClass (hilbertAdZeroTwist F ρbar) 1 z = c)
-    (hcunr : c ∈ hilbertH1TwistUnramified ℓ F ρbar)
+    (_hcunr : c ∈ hilbertH1TwistUnramified ℓ F ρbar)
     (w : HeightOneSpectrum (𝓞 F))
-    (hwℓ : ((ℓ : ℕ) : 𝓞 F) ∉ w.asIdeal) (hw2 : ((2 : ℕ) : 𝓞 F) ∉ w.asIdeal)
+    (_hwℓ : ((ℓ : ℕ) : 𝓞 F) ∉ w.asIdeal) (_hw2 : ((2 : ℕ) : 𝓞 F) ∉ w.asIdeal)
     (hmem : globalFrob w ∈ hilbertSurvivingLocus F ρbar z) :
     c ∉ LinearMap.ker
-      (hilbertLocResDecompTwist1 F ρbar w).hom.toLinearMap := sorry
+      (hilbertLocResDecompTwist1 F ρbar w).hom.toLinearMap := by
+  intro hker
+  refine hmem ?_
+  have hz : ContinuousCohomology.map (hilbertDecompHom F w)
+      (CategoryTheory.CategoryStruct.id (hilbertAdZeroTwistDecomp F ρbar w)) 1
+      (ContinuousCohomology.cocycleClass (hilbertAdZeroTwist F ρbar) 1 z) = 0 := by
+    rw [hzc]
+    exact hker
+  exact ContinuousCohomology.eval₁_mem_range_sub_of_map_cocycleClass_eq_zero
+    (hilbertDecompHom F w)
+    (CategoryTheory.CategoryStruct.id (hilbertAdZeroTwistDecomp F ρbar w)) z hz
+    (Field.AbsoluteGaloisGroup.adicArithFrob w)
 
 /-- **The separating locus of a nonzero dual-Selmer class over `F` — the
 arithmetic core of DDT Lemma 2.48** (cut out 2026-07-28 by the decomposition of
@@ -25908,7 +25953,33 @@ level raising. Only this direction holds, and it is the one the control map
 needs.
 
 References: Wiles, Ann. of Math. 141 (1995), ch. 3; Darmon–Diamond–Taylor
-§5.3 (the local condition at a Taylor–Wiles prime); Fujiwara §3. -/
+§5.3 (the local condition at a Taylor–Wiles prime); Fujiwara §3.
+
+# PROVEN 2026-07-30 (flt-lean-195)
+
+Nothing had to be built: the Hensel/eigenbasis half of the argument the paragraph
+above describes is ALREADY in this module, in the section `HilbertAuxSplitTorus`,
+as `exists_isSplitTorusAt_of_isUnramifiedAt` (itself proven over
+`exists_frobEigenBasis_of_charFrob_map_eq` and `exists_splitTorus_of_frobDiagonal`),
+and its hypotheses are exactly what `hQ` and `𝒟` hand over:
+
+* `𝒟.ρ.IsUnramifiedAt w` — `hQ`'s first conjunct puts `w` off `2` and off `ℓ`,
+  so `𝒟.isHilbertHardlyRamified.isUnramified` applies. This is where the
+  raised-level clause gets its content: at the base level `ρ|_{G_{F_w}}` really
+  IS unramified, hence determined by `ρ(Frob_w)`;
+* `α ≠ β` and the residual splitting of `charFrob w` — `hQ`'s fourth conjunct,
+  transported to `𝒟.R` by `𝒟.resid (globalFrob w)`, which is the charpoly
+  identity at the single group element `globalFrob w`
+  (`GaloisRep.charFrob_eq_charpoly_globalFrob` makes `charFrob w` and
+  `(ρ (globalFrob w)).charpoly` the same term);
+* `IsAdicComplete (maximalIdeal 𝒟.R) 𝒟.R` — the datum's own field, which has to
+  be promoted to an instance by hand (`haveI := 𝒟.isAdicComplete`) since it is
+  carried as a structure field rather than as an instance-implicit.
+
+The other four clauses are the base-level fields verbatim, `isUnramified` with
+its extra `w ∉ Q` hypothesis discarded. So the whole leaf is four projections and
+one citation, and the `Q ≠ ∅` price the docstring above quotes is paid entirely
+inside `HilbertAuxSplitTorus`. -/
 theorem isHilbertRaisedLevelHardlyRamified_of_isHilbertTaylorWilesPrimeSet
     (ℓ : ℕ) [Fact ℓ.Prime]
     (F : Type u) [Field F] [NumberField F]
@@ -25919,8 +25990,23 @@ theorem isHilbertRaisedLevelHardlyRamified_of_isHilbertTaylorWilesPrimeSet
     (n : ℕ) (Q : Finset (HeightOneSpectrum (𝓞 F)))
     (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q)
     (𝒟 : HilbertDeformationDatum ℓ F ρbar) :
-    IsHilbertRaisedLevelHardlyRamified ℓ F Q (rank_finTwoPi 𝒟.R) 𝒟.ρ :=
-  sorry
+    IsHilbertRaisedLevelHardlyRamified ℓ F Q (rank_finTwoPi 𝒟.R) 𝒟.ρ := by
+  haveI := 𝒟.isAdicComplete
+  refine { det := 𝒟.isHilbertHardlyRamified.det
+           isUnramified := fun w _ h2 hl =>
+             𝒟.isHilbertHardlyRamified.isUnramified w h2 hl
+           isFlat := 𝒟.isHilbertHardlyRamified.isFlat
+           isTameAtTwo := 𝒟.isHilbertHardlyRamified.isTameAtTwo
+           isSplitTorusAt := ?_ }
+  intro w hw
+  obtain ⟨hwl, hw2, -, α, β, hαβ, hchar⟩ := hQ.1 w hw
+  have hur : 𝒟.ρ.IsUnramifiedAt w :=
+    𝒟.isHilbertHardlyRamified.isUnramified w hw2 hwl
+  have hchar' : (𝒟.ρ.charFrob w).map 𝒟.π = (X - C α) * (X - C β) := by
+    rw [← hchar]
+    exact 𝒟.resid (globalFrob w)
+  exact exists_isSplitTorusAt_of_isUnramifiedAt w 𝒟.π 𝒟.π_surjective 𝒟.ρ hur α β
+    hαβ hchar'
 
 /-- **A base-level datum IS a raised-level datum at `Q`** (PROVEN — the general
 form of `HilbertDeformationDatum.toAuxEmpty` above, which is the case `Q = ∅`).
