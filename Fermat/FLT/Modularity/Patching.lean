@@ -6329,9 +6329,152 @@ lemma adZeroTwistTraceForm_nondegenerate.{uK, uW} (p : ℕ) [Fact p.Prime]
     rw [LinearMap.trace_mul_comm]
     exact hY X
 
-/-- **The DIHEDRAL exclusion (SORRY LEAF, cut 2026-07-30 out of
-`adZeroTwist_eq_top_of_map_rho_le_of_ne_bot` below): an INVERTIBLE traceless
-`E ∈ End k W` cannot be normalised by `ρbar` up to scalars.**
+/-- **The `ε = 1` horn of the dihedral dichotomy, PROVEN 2026-07-30 — and it was
+an ASSEMBLY, not the sub-task the note below priced it as.**  A nonzero traceless
+`E` cannot be CENTRALISED by the whole image of an irreducible hardly ramified
+`ρbar`.
+
+The docstring of `not_isUnit_stable_traceZero` below described this horn as "a
+self-contained sub-task with all its inputs present", the inputs being complex
+conjugation and the value of the cyclotomic character on it, from which one
+upgrades `k`-irreducibility to ABSOLUTE irreducibility and then applies Schur.
+**That entire chain is already ONE PROVEN THEOREM in this tree**, and not a
+distant one: `GaloisRepresentation.exists_smul_eq_of_commute_of_isIrreducible`
+(`GaloisRepresentation/HardlyRamified/Deformation.lean`, proven 2026-07-26,
+`public import`ed DIRECTLY by this module) says exactly *an endomorphism
+commuting with the whole image of an irreducible hardly ramified `ρbar` is a
+scalar*.  Its proof is verbatim the argument the note sketched — `J := ρbar
+complexConj` is an involution with `det J = −1`, so `J ≠ ±1`, so it has a
+one-dimensional `+1`-eigenspace, and Schur finishes — and it consumes `hρbar`
+ONLY through the `det` field.  So nothing had to be built here: what was left
+was `Commute` plumbing plus `tr (c • 1) = 2 c`.
+
+Recorded because it cost a search: the note found `ComplexConjugation.lean` by
+grepping for the CONCLUSION shape after the name `complexConjugation` failed,
+and stopped there — one step short of the theorem that already consumed it.
+Searching for the *statement* rather than the *vocabulary* would have found this
+lemma directly.
+
+`hEunit` is deliberately NOT a hypothesis: `E ≠ 0` suffices, since a traceless
+scalar is zero when `(2 : k) ≠ 0`.  After this, the `ε ≠ 1` horn is the SOLE
+remainder — `not_isUnit_stable_traceZero_of_exists_ne` below. -/
+theorem not_commute_stable_traceZero.{uK, uW}
+    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hpodd hW ρbar) (hirr : ρbar.IsIrreducible)
+    {E : Module.End k W} (hEtr : LinearMap.trace k W E = 0) (hE0 : E ≠ 0)
+    (hEcomm : ∀ g : Field.absoluteGaloisGroup ℚ, ρbar g * E * ρbar g⁻¹ = E) :
+    False := by
+  classical
+  haveI hchar : CharP k p := charP_of_ringHom_padicInt (algebraMap ℤ_[p] k)
+  have h2 : (2 : k) ≠ 0 := by
+    intro h
+    have hd : p ∣ 2 := by
+      have h' : ((2 : ℕ) : k) = 0 := by exact_mod_cast h
+      exact (CharP.cast_eq_zero_iff k p 2).mp h'
+    have hp2 := (Nat.prime_dvd_prime_iff_eq (Fact.out : p.Prime) Nat.prime_two).mp hd
+    rw [hp2] at hpodd
+    exact (Nat.not_odd_iff_even.mpr (by decide)) hpodd
+  have hfr : Module.finrank k W = 2 := Module.finrank_eq_of_rank_eq hW
+  -- `hEcomm` says exactly that `E` centralises the image
+  have hcomm : ∀ g : Field.absoluteGaloisGroup ℚ, Commute E (ρbar g) := by
+    intro g
+    have hinv1 : ρbar g⁻¹ * ρbar g = 1 := by rw [← map_mul, inv_mul_cancel, map_one]
+    have h1 : ρbar g * E * ρbar g⁻¹ * ρbar g = E * ρbar g := by rw [hEcomm g]
+    have h2' : ρbar g * E * ρbar g⁻¹ * ρbar g = ρbar g * E := by
+      calc ρbar g * E * ρbar g⁻¹ * ρbar g = ρbar g * E * (ρbar g⁻¹ * ρbar g) := by
+            simp only [mul_assoc]
+        _ = ρbar g * E := by rw [hinv1, mul_one]
+    exact h1.symm.trans h2'
+  -- Schur plus oddness — ALREADY PROVEN, `Deformation.lean`
+  obtain ⟨c, hc⟩ :=
+    exists_smul_eq_of_commute_of_isIrreducible hpodd hW hρbar hirr E hcomm
+  -- a traceless scalar is `0`, because `tr 1 = 2 ≠ 0`
+  have htr1 : LinearMap.trace k W (1 : Module.End k W) = (2 : k) := by
+    rw [show (1 : Module.End k W) = LinearMap.id from rfl, LinearMap.trace_id, hfr]
+    norm_num
+  rw [hc, map_smul, htr1, smul_eq_mul] at hEtr
+  have hc0 : c = 0 := by
+    rcases mul_eq_zero.mp hEtr with h | h
+    · exact h
+    · exact absurd h h2
+  rw [hc, hc0, zero_smul] at hE0
+  exact hE0 rfl
+
+/-- **The `ε ≠ 1` horn: the genuinely DIHEDRAL configuration (SORRY LEAF, cut
+2026-07-30 out of `not_isUnit_stable_traceZero` below, whose `ε = 1` horn is
+`not_commute_stable_traceZero` above).**
+
+This is now the WHOLE of what is open under `adZeroTwist_eq_top_of_map_rho_le_of_ne_bot`:
+an invertible traceless `E`, normalised by `ρbar` up to scalars, whose scaling
+character is NONTRIVIAL — witnessed by `hne`, a single `g₀` scaling `E` by some
+`ε₀ ≠ 1`.
+
+# WHY `hne` IS THE RIGHT EXTRA HYPOTHESIS, AND WHY IT IS NOT `ε₀ = -1`
+
+`ε₀ ≠ 1` is all the consumer can hand over and all this proof needs to be the
+dihedral case.  One *could* state it as `ε₀ = -1`: `E ^ 2 = -det E • 1` is a
+nonzero scalar (Cayley–Hamilton, `E` invertible), conjugation fixes scalars, so
+`ε₀ ^ 2 = 1`, and `ε₀ ≠ 1` with `(2 : k) ≠ 0` gives `ε₀ = -1`.  That derivation
+is deliberately NOT made a hypothesis here: it belongs to whoever proves this
+leaf, it costs the consumer an extra obligation, and `ε₀ ≠ 1` is the form the
+`by_cases` in the consumer produces for free.
+
+# THE CONFIGURATION THIS DESCRIBES, EXACTLY
+
+`ker ε` is an index-two subgroup, cutting out a quadratic field `F`; `ρbar|_{Γ F}`
+centralises `E`, and any `g ∉ Γ F` anti-commutes with it.  In `E`'s eigenbasis
+(eigenvalues `± a`, `a ≠ 0`, distinct because `(2 : k) ≠ 0`) `Γ F` is diagonal
+and the other coset is anti-diagonal: `ρbar = Ind_{Γ F}^{Γ ℚ} χ`, DIHEDRAL, and
+`k · E` is the `δ_F`-line of `ad⁰ ρbar = δ_F ⊕ Ind (χ / χ^σ)`.
+
+**So this leaf is FALSE without `hρbar`**, by the induced witness the consumer's
+docstring gives; and it is TRUE here only because `hρbar ∧ hirr` is classically
+unsatisfiable, which is not a route available non-circularly.  Both-ways audit:
+not vacuous as a statement of linear algebra (the configuration is realisable
+over any `k`), vacuous only through the arithmetic of `hρbar`.
+
+# A CORRECTION TO WHAT WOULD DISCHARGE IT
+
+The consumer's docstring says absolute irreducibility of `ρbar|_{ℚ(ζ_p)}` is
+what an owner will need.  **That is not sufficient, and it is worth saying so
+before someone spends a cycle extracting it**: a dihedral `ρbar = Ind χ` with
+`χ ≠ χ^σ` IS absolutely irreducible, and its `ad⁰` still contains the `δ_F`
+line.  Absolute irreducibility is exactly what kills the `ε = 1` horn (and
+`not_commute_stable_traceZero` above now does so, through
+`exists_smul_eq_of_commute_of_isIrreducible`); it says nothing about this one.
+
+What this horn actually needs is ARITHMETIC bounding `F`: `hρbar.isUnramified`
+confines `F` to primes `{2, p}`, and `hρbar.isFlat` at `p` with
+`hρbar.isTameAtTwo` must then exclude every surviving `F`.  None of that is
+formalised in this tree.
+
+CIRCULARITY GUARD, inherited from the consumer: not to be discharged through
+`not_isIrreducible_of_isHardlyRamified_of_five_le`,
+`IsHardlyRamified.mod_three_reducible`, `Family.lean` or anything downstream of
+them — a proof ending in `exfalso` on `hirr` is the circular discharge and is
+BANNED. -/
+theorem not_isUnit_stable_traceZero_of_exists_ne.{uK, uW}
+    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hpodd hW ρbar) (hirr : ρbar.IsIrreducible)
+    {E : Module.End k W} (hEtr : LinearMap.trace k W E = 0) (hEunit : IsUnit E)
+    (hEst : ∀ g : Field.absoluteGaloisGroup ℚ, ∃ ε : k, ρbar g * E * ρbar g⁻¹ = ε • E)
+    (hne : ∃ (g₀ : Field.absoluteGaloisGroup ℚ) (ε₀ : k), ε₀ ≠ 1 ∧
+      ρbar g₀ * E * ρbar g₀⁻¹ = ε₀ • E) :
+    False := sorry
+
+/-- **The DIHEDRAL exclusion (cut 2026-07-30 out of
+`adZeroTwist_eq_top_of_map_rho_le_of_ne_bot` below; **PROVEN the same day** over
+its `ε ≠ 1` horn alone, `not_isUnit_stable_traceZero_of_exists_ne` above): an
+INVERTIBLE traceless `E ∈ End k W` cannot be normalised by `ρbar` up to
+scalars.**
 
 This is ALL that is left of the `ad⁰ρbar(1)`-irreducibility leaf.  Everything
 else in that leaf — that `dim ad⁰ = 3`, that a stable subspace has dimension
@@ -6339,7 +6482,12 @@ else in that leaf — that `dim ad⁰ = 3`, that a stable subspace has dimension
 orthogonal complement of a stable `2`-plane is a stable LINE, that a stable
 line gives a `ρbar`-normalised traceless `E`, and that a NON-invertible such
 `E` is already excluded by `hirr` alone (`not_stable_of_not_isUnit`) — is
-proven below.  So the whole classical content now sits here.
+proven below.
+
+The `by_cases` in the proof is on whether the scaling character is trivial, and
+the two horns are now VERY differently placed: the `ε = 1` horn is PROVEN
+(`not_commute_stable_traceZero`), and the `ε ≠ 1` horn is the single remaining
+`sorry` of this cluster.
 
 # WHAT THE STATEMENT REALLY SAYS
 
@@ -6374,37 +6522,53 @@ is not refutable HERE for exactly the parent's reason: the hypothesis set
 `ρbar` does not exist), so the statement is true, but vacuously, and that horn
 is not available non-circularly.
 
-# WHAT WOULD DISCHARGE IT, AND WHAT IS MISSING FROM THE TREE
+# WHAT DISCHARGED THE `ε = 1` HORN — AND THE SEARCH THAT NEARLY MISSED IT TWICE
 
-The `ε = 1` horn is CLOSABLE with material that exists:
-`Slop.OddRep.isIrreducible_iff_isAbsolutelyIrreducible_slop`
-(`Fermat/FLT/Slop/RepresentationTheory/OddAbsIrredSlop.lean`, sorry-free)
-upgrades `k`-irreducibility to ABSOLUTE irreducibility as soon as some `g` has
-a one-dimensional `1`-eigenspace, and complex conjugation `c` is such a `g`:
-`c ^ 2 = 1` and `hρbar.det` makes `det (ρbar c) = χ_p c = -1`, so with
-`(2 : k) ≠ 0` the eigenvalues of `ρbar c` are `1` and `-1`.
+**This section previously ended "the `ε = 1` horn is a self-contained sub-task
+with all its inputs present".  It was not a sub-task: it was already a THEOREM,
+and the horn is now closed by `not_commute_stable_traceZero` above.**  Recorded
+in full because the near-miss happened twice in a row, at two different levels:
 
-**And the input datum EXISTS — this was very nearly recorded here as missing.**
-A first pass grepped `Fermat/` for `complexConjugation` (one word, camel-cased
-that way), got only prose in `MoretBailly.lean` and `KhareWintenberger.lean`,
-and concluded that no `c : Γ ℚ` with `c ^ 2 = 1` and
-`cyclotomicCharacter c = -1` was available.  That is FALSE.  The spelling is
-`complexConj`, and `Fermat/FLT/GaloisRepresentation/ComplexConjugation.lean`
-is sorry-free and supplies exactly the three facts needed:
-`complexConj : Γ ℚ`, `complexConj_mul_self : complexConj * complexConj = 1`,
-and `cyclotomicCharacter_complexConj (p) (hp : Odd p) :
-cyclotomicCharacter (ℚᵃˡᵍ) p complexConj.toRingEquiv = -1`.  It was found by
-searching for the CONCLUSION shape (`cyclotomicCharacter … = -1`) instead of
-for the name.  So the `ε = 1` horn is a self-contained sub-task with all its
-inputs present, and closing it would leave the `ε ≠ 1` horn as the sole
-remainder.
+1. A first pass grepped `Fermat/` for `complexConjugation` (one word, camel-cased
+   that way), got only prose in `MoretBailly.lean` and `KhareWintenberger.lean`,
+   and was about to record that no `c : Γ ℚ` with `c ^ 2 = 1` and
+   `cyclotomicCharacter c = -1` existed in the tree.  FALSE: the spelling is
+   `complexConj`, in the sorry-free
+   `GaloisRepresentation/ComplexConjugation.lean`, which supplies `complexConj`,
+   `complexConj_mul_self` and `cyclotomicCharacter_complexConj`.  Found by
+   searching for the CONCLUSION shape (`cyclotomicCharacter … = -1`) rather than
+   for a name.
+2. Having found the *vocabulary*, the note then planned to rebuild the
+   *argument* (upgrade `k`-irreducibility to ABSOLUTE irreducibility via a `g`
+   with a one-dimensional `1`-eigenspace, then Schur).  That argument is ALSO
+   already proven, as one theorem, in a module this file `public import`s
+   DIRECTLY: `GaloisRepresentation.exists_smul_eq_of_commute_of_isIrreducible`
+   (`HardlyRamified/Deformation.lean`, 2026-07-26) — *an endomorphism commuting
+   with the whole image of an irreducible hardly ramified `ρbar` is a scalar*,
+   proved by exactly that route and consuming `hρbar` only through `det`.
 
-The `ε ≠ 1` horn is the DIHEDRAL case and must NOT be attacked as stated — it
-is false in that generality.  Closing it needs an arithmetic input from
-`hρbar`: `ρbar` is unramified outside `{2, p}`, so `F ⊆ ℚ(ζ_8, ζ_p)`, and
-`hρbar.isFlat` at `p` together with `hρbar.isTameAtTwo` bounds the possible
-`F`; that is the shape of the classical argument and none of it is formalised
+The moral, since the same shape has now cost two searches: after locating the
+vocabulary a route needs, grep for the ROUTE'S CONCLUSION before building it —
+in this tree an argument assembled from available inputs has often already been
+assembled.
+
+# WHAT IS LEFT, AND A CORRECTION ABOUT WHAT WOULD DISCHARGE IT
+
+The `ε ≠ 1` horn is the DIHEDRAL case, is `not_isUnit_stable_traceZero_of_exists_ne`
+above, and must NOT be attacked as stated — it is false in that generality.
+Closing it needs an arithmetic input from `hρbar`: `ρbar` is unramified outside
+`{2, p}`, so `F ⊆ ℚ(ζ_8, ζ_p)`, and `hρbar.isFlat` at `p` together with
+`hρbar.isTameAtTwo` must exclude every surviving `F`; none of that is formalised
 here.
+
+**CORRECTION to `adZeroTwist_eq_top_of_map_rho_le_of_ne_bot`'s docstring below,
+and to the task note that repeated it.**  Both say an owner will need ABSOLUTE
+irreducibility of `ρbar|_{ℚ(ζ_p)}`.  That is what kills the `ε = 1` horn, and it
+is now spent; it does **not** touch this one.  A dihedral `ρbar = Ind χ` with
+`χ ≠ χ^σ` IS absolutely irreducible — over `k̄`, `Ind χ` is irreducible exactly
+when `χ ≠ χ^σ` — while `ad⁰ (Ind χ) = δ_F ⊕ Ind (χ / χ^σ)` still contains the
+`δ_F` LINE.  So absolute irreducibility, however obtained, cannot discharge the
+remaining horn, and an owner who extracts it will find nothing has moved.
 
 CIRCULARITY GUARD, inherited from the consumer: it must not be discharged
 through `not_isIrreducible_of_isHardlyRamified_of_five_le`,
@@ -6420,7 +6584,28 @@ theorem not_isUnit_stable_traceZero.{uK, uW}
     (hρbar : IsHardlyRamified hpodd hW ρbar) (hirr : ρbar.IsIrreducible)
     {E : Module.End k W} (hEtr : LinearMap.trace k W E = 0) (hEunit : IsUnit E)
     (hEst : ∀ g : Field.absoluteGaloisGroup ℚ, ∃ ε : k, ρbar g * E * ρbar g⁻¹ = ε • E) :
-    False := sorry
+    False := by
+  classical
+  have hE0 : E ≠ 0 := by
+    intro h
+    rw [h] at hEunit
+    haveI hnt : Nontrivial W := by
+      have hfr : Module.finrank k W = 2 := Module.finrank_eq_of_rank_eq hW
+      exact Module.nontrivial_of_finrank_pos (R := k) (by rw [hfr]; norm_num)
+    exact (not_isUnit_zero (M₀ := Module.End k W)) hEunit
+  by_cases hall : ∀ g : Field.absoluteGaloisGroup ℚ, ρbar g * E * ρbar g⁻¹ = E
+  · -- `ε = 1`: `E` centralises the image, so Schur plus oddness makes it a
+    -- traceless scalar, i.e. `0`
+    exact not_commute_stable_traceZero hpodd hW hρbar hirr hEtr hE0 hall
+  · -- `ε ≠ 1`: the genuinely dihedral horn
+    push Not at hall
+    obtain ⟨g₀, hg₀⟩ := hall
+    obtain ⟨ε₀, hε₀⟩ := hEst g₀
+    refine not_isUnit_stable_traceZero_of_exists_ne hpodd hW hρbar hirr hEtr hEunit hEst
+      ⟨g₀, ε₀, ?_, hε₀⟩
+    intro h1
+    rw [h1, one_smul] at hε₀
+    exact hg₀ hε₀
 
 /-- **The NON-invertible horn of the same dichotomy, PROVEN 2026-07-30 from
 `hirr` ALONE.**  If `E ≠ 0` is normalised by `ρbar` up to scalars and is not
@@ -6593,13 +6778,27 @@ nonzero stable subspace exists.  The honest situation is therefore:
   form at the call site — not to attack the dihedral case, which is
   false.
 
-That warning has NOT been discharged; it has been LOCALISED.  It now
-applies verbatim, and only, to `not_isUnit_stable_traceZero`, which is the
-`ε ≠ 1` (dihedral) horn together with the `ε = 1` (non-absolutely-
-irreducible) horn, and nothing else here depends on it.  In particular
-this statement's own hypothesis set is UNCHANGED — no strengthening was
+That warning has NOT been discharged; it has been LOCALISED — and then
+HALF-DISCHARGED, later the same day.  It now applies to
+`not_isUnit_stable_traceZero_of_exists_ne` and to nothing else: the `ε = 1`
+(non-absolutely-irreducible) horn is PROVEN, by
+`not_commute_stable_traceZero`, out of the already-proven
+`exists_smul_eq_of_commute_of_isIrreducible`.  In particular this
+statement's own hypothesis set is UNCHANGED — no strengthening was
 smuggled in — so its consumer `exists_mem_kerFix_eval₁_notMem_of_ne_top`
 and everything above it are untouched.
+
+**Two corrections to the paragraph above, which is otherwise accurate.**
+First, "an owner will need absolute irreducibility of `ρbar|_{ℚ(ζ_p)}`" was
+right about the `ε = 1` horn and WRONG about the surviving one: a dihedral
+`ρbar = Ind χ` with `χ ≠ χ^σ` is absolutely irreducible and `ad⁰ (Ind χ)`
+still contains the `δ_F` line, so no amount of absolute irreducibility
+closes the `ε ≠ 1` horn.  Second, and consequently, "strengthen this leaf's
+hypothesis and discharge it at the call site" is NOT the repair that was
+needed: no hypothesis of this theorem or of its consumers changed.  What
+was needed was to split the leaf on `ε` and observe that one horn was
+already a theorem.  See the discussion on
+`not_isUnit_stable_traceZero_of_exists_ne`.
 
 CIRCULARITY GUARD, inherited from the consumer: not to be discharged
 through `not_isIrreducible_of_isHardlyRamified_of_five_le`,
