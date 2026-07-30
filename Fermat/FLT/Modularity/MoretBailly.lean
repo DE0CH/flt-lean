@@ -10216,9 +10216,15 @@ theorem exists_irreducible_hypersurface_fractionRing_ringEquiv_rat
         FractionRing (MvPolynomial (Fin k) ℚ ⧸ Ideal.span {g})) :=
   sorry
 
+section GeometricIntegralityFractionRing
+
+-- `Algebra.TensorProduct.rightAlgebra` is a LOCAL instance in mathlib (diamond avoidance);
+-- `IsLocalization.tensorRight` below needs it, so it is switched on for this one section.
+attribute [local instance] Algebra.TensorProduct.rightAlgebra
+
 open _root_.TensorProduct in
-/-- **GEOMETRIC INTEGRALITY PASSES FROM A DOMAIN TO ITS FRACTION FIELD** (SORRY
-LEAF, cut 2026-07-28 out of
+/-- **GEOMETRIC INTEGRALITY PASSES FROM A DOMAIN TO ITS FRACTION FIELD**
+(**PROVEN 2026-07-30**; it was a sorry leaf, cut 2026-07-28 out of
 `isDomain_algebraicClosure_tensorProduct_of_fractionRing_ringEquiv` immediately
 below, which is PROVEN over it).
 
@@ -10251,8 +10257,40 @@ carries `Nontrivial` and `NoZeroDivisors`, and the latter genuinely fails for
 theorem isDomain_algebraicClosure_tensorProduct_fractionRing
     {A : Type*} [CommRing A] [IsDomain A] [Algebra ℚ A]
     (h : IsDomain (AlgebraicClosure ℚ ⊗[ℚ] A)) :
-    IsDomain (AlgebraicClosure ℚ ⊗[ℚ] FractionRing A) :=
-  sorry
+    IsDomain (AlgebraicClosure ℚ ⊗[ℚ] FractionRing A) := by
+  classical
+  haveI := h
+  -- Move the base change to the LEFT factor, where the `Algebra A (A ⊗[ℚ] ℚ̄)` that
+  -- `IsLocalization.tensorRight` consumes is available.
+  haveI hdom : IsDomain (A ⊗[ℚ] AlgebraicClosure ℚ) :=
+    (Algebra.TensorProduct.comm ℚ A (AlgebraicClosure ℚ)).toRingEquiv.toMulEquiv.isDomain _
+  -- `Frac A ⊗[A] (A ⊗[ℚ] ℚ̄)` is a localisation of `A ⊗[ℚ] ℚ̄` at the image of `A ∖ {0}`.
+  haveI hloc : IsLocalization
+      (Algebra.algebraMapSubmonoid (A ⊗[ℚ] AlgebraicClosure ℚ) (nonZeroDivisors A))
+      (FractionRing A ⊗[A] (A ⊗[ℚ] AlgebraicClosure ℚ)) :=
+    IsLocalization.tensorRight (S := A ⊗[ℚ] AlgebraicClosure ℚ) (FractionRing A)
+      (nonZeroDivisors A)
+  -- That image consists of non-zerodivisors: `A ⊗[ℚ] ℚ̄` is a domain and `a ↦ a ⊗ₜ 1`
+  -- is injective, `ℚ → ℚ̄` being injective.
+  have hle : Algebra.algebraMapSubmonoid (A ⊗[ℚ] AlgebraicClosure ℚ) (nonZeroDivisors A) ≤
+      nonZeroDivisors (A ⊗[ℚ] AlgebraicClosure ℚ) := by
+    rintro x ⟨a, ha, rfl⟩
+    have ha' : a ≠ 0 := mem_nonZeroDivisors_iff_ne_zero.mp ha
+    rw [mem_nonZeroDivisors_iff_ne_zero]
+    have hinj : Function.Injective
+        (Algebra.TensorProduct.includeLeft :
+          A →ₐ[ℚ] A ⊗[ℚ] AlgebraicClosure ℚ) :=
+      Algebra.TensorProduct.includeLeft_injective (S := ℚ)
+        (algebraMap ℚ (AlgebraicClosure ℚ)).injective
+    intro h0
+    exact ha' (hinj (by simpa using h0))
+  haveI : IsDomain (FractionRing A ⊗[A] (A ⊗[ℚ] AlgebraicClosure ℚ)) :=
+    IsLocalization.isDomain_of_le_nonZeroDivisors
+      (FractionRing A ⊗[A] (A ⊗[ℚ] AlgebraicClosure ℚ)) hle
+  -- Cancel the base change and commute back.
+  exact ((Algebra.TensorProduct.comm ℚ (AlgebraicClosure ℚ) (FractionRing A)).toRingEquiv.trans
+    (Algebra.TensorProduct.cancelBaseChange ℚ A A (FractionRing A)
+      (AlgebraicClosure ℚ)).symm.toRingEquiv).toMulEquiv.isDomain _
 
 open _root_.TensorProduct in
 /-- **GEOMETRIC INTEGRALITY IS A BIRATIONAL INVARIANT** (**PROVEN 2026-07-28** over
@@ -10286,6 +10324,8 @@ theorem isDomain_algebraicClosure_tensorProduct_of_fractionRing_ringEquiv
       (IsScalarTower.toAlgHom ℚ B (FractionRing B)))
     (Module.Flat.lTensor_preserves_injective_linearMap _
       (IsFractionRing.injective B (FractionRing B)))
+
+end GeometricIntegralityFractionRing
 
 open _root_.TensorProduct in
 /-- **ABSOLUTE IRREDUCIBILITY OF A HYPERSURFACE EQUATION FROM GEOMETRIC INTEGRALITY
@@ -11534,8 +11574,46 @@ theorem exists_pow_eq_zero_of_ker_of_retraction_localizationAway
   rw [hs] at hpow
   simpa using hpow
 
+/-- **DIVISIBILITY OF POLYNOMIALS OVER `K` DESCENDS FROM ANY FIELD EXTENSION `L/K`**
+(PROVEN glue, 2026-07-30). This is the "faithful flatness" step of
+`exists_pos_forall_prime_not_dvd_notMem_span_singleton_map` below, in the only form
+that leaf needs and with no flatness in the proof: `L` is a `K`-vector space, so
+`algebraMap K L` has a `K`-LINEAR retraction `π`
+(`LinearMap.exists_leftInverse_of_injective`), and applying `π` coefficientwise to
+an `L`-cofactor of `B = G · h` produces a `K`-cofactor, because the coefficients of
+`G` already lie in `K` and `π` is `K`-linear. -/
+theorem dvd_of_dvd_map_algebraMap {σ : Type*} {K L : Type*} [Field K] [Field L] [Algebra K L]
+    {G B : MvPolynomial σ K}
+    (hdvd : MvPolynomial.map (algebraMap K L) G ∣ MvPolynomial.map (algebraMap K L) B) :
+    G ∣ B := by
+  classical
+  obtain ⟨h, hh⟩ := hdvd
+  -- A `K`-linear retraction of `algebraMap K L`, which exists because `L` is a `K`-vector space.
+  obtain ⟨π, hπ⟩ : ∃ π : L →ₗ[K] K, π.comp (Algebra.linearMap K L) = LinearMap.id :=
+    (Algebra.linearMap K L).exists_leftInverse_of_injective
+      (LinearMap.ker_eq_bot.mpr (algebraMap K L).injective)
+  have hπ1 : ∀ x : K, π (algebraMap K L x) = x := fun x => LinearMap.congr_fun hπ x
+  -- Apply `π` coefficientwise to the cofactor.
+  set h' : MvPolynomial σ K := ∑ m ∈ h.support, MvPolynomial.monomial m (π (h.coeff m)) with hh'def
+  have hcoeff' : ∀ m, h'.coeff m = π (h.coeff m) := by
+    intro m
+    simp only [hh'def, MvPolynomial.coeff_sum, MvPolynomial.coeff_monomial]
+    rw [Finset.sum_ite_eq' h.support m (fun m₀ => π (h.coeff m₀))]
+    split_ifs with hm
+    · rfl
+    · rw [MvPolynomial.notMem_support_iff.mp hm, map_zero]
+  refine ⟨h', ?_⟩
+  ext m
+  have hm := congrArg (MvPolynomial.coeff m) hh
+  rw [MvPolynomial.coeff_map, MvPolynomial.coeff_mul] at hm
+  have hm' := congrArg π hm
+  rw [hπ1, _root_.map_sum] at hm'
+  rw [hm', MvPolynomial.coeff_mul]
+  refine Finset.sum_congr rfl fun x _ => ?_
+  rw [MvPolynomial.coeff_map, hcoeff', ← Algebra.smul_def, map_smul, smul_eq_mul]
+
 /-- **NON-MEMBERSHIP IN A PRINCIPAL IDEAL OF A POLYNOMIAL RING SPREADS OUT**
-(SORRY LEAF, cut 2026-07-28 out of
+(**PROVEN 2026-07-30**; cut 2026-07-28 out of
 `exists_inverted_nilpotentKer_ringHom_localizationAway_integralSystemModel`
 below): if the integral polynomial `b` is NOT divisible by `g` over `ℚ`, then it
 is not divisible by `g` over `𝔽̄_p` either, for every `p` outside one explicit
@@ -11580,6 +11658,26 @@ step 3 is new).
    into "no `𝔽̄_p`-solution for `p ∤ N`", and step 2 converts that back into
    non-membership.
 
+WHAT THE PROOF BELOW ACTUALLY DOES (2026-07-30), which is the route above with
+step 2 simplified away. Only ONE degree bound is ever needed, and it is
+`D := b.totalDegree` — no bound on `g` and no case split on `g = 0` or `g` a unit:
+
+* over ANY field `K` with `b_K ≠ 0`, `b_K ∈ (g_K)` gives a cofactor `c` with
+  `deg c + deg g_K = deg b_K ≤ D` by `totalDegree_mul_of_isDomain`, hence
+  `c.degreeOf i ≤ D` for every `i`, hence `c = coeffPoly k D (its coefficients)`;
+* so membership is EXACTLY solvability of the integral system `U.coeff m = 0`,
+  `m ∈ U.support`, where `U := coeffPoly k D X • g − b` over
+  `MvPolynomial (Fin k → Fin (D+1)) ℤ` — the same `boundedExpo`/`coeffPoly` device
+  `exists_reducibilityCertificates` uses, and the bridge is proven once for all `K`;
+* there is no `ℚ̄`-solution, because one would give `g_ℚ̄ ∣ b_ℚ̄`, hence `g_ℚ ∣ b_ℚ`
+  by `dvd_of_dvd_map_algebraMap` above (this is the "faithful flatness" of step 3),
+  contradicting `hb`;
+* `exists_pos_forall_prime_not_dvd_exists_eval_ne_zero` converts that into `N₁`, and
+  `N := N₁ · |b.coeff m₀|` for one nonzero coefficient `m₀` of `b` — the second
+  factor being exactly what keeps `b_p ≠ 0`, which is the counterexample of the
+  paragraph above (`g = y`, `b = y + q` at `p = q`) and the only place `N` is
+  enlarged beyond the certificate.
+
 CIRCULARITY GUARD: pure commutative algebra about `MvPolynomial (Fin k)`; no
 Galois representation, no route through `Family.lean`, `Lift.lean` or
 `Modularity/Interface.lean`. -/
@@ -11589,8 +11687,107 @@ theorem exists_pos_forall_prime_not_dvd_notMem_span_singleton_map
       Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) :
     ∃ N : ℕ, 0 < N ∧ ∀ (p : ℕ) [Fact p.Prime], ¬ (p ∣ N) →
       MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) b ∉
-        Ideal.span {MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) g} :=
-  sorry
+        Ideal.span {MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) g} := by
+  classical
+  set D := b.totalDegree with hDdef
+  -- `b ≠ 0`, since `0` lies in every ideal.
+  have hb0 : b ≠ 0 := by
+    rintro rfl
+    exact hb (by rw [_root_.map_zero]; exact Submodule.zero_mem _)
+  obtain ⟨m₀, hm₀⟩ : ∃ m, b.coeff m ≠ 0 := by
+    by_contra hcon
+    push Not at hcon
+    exact hb0 (by ext m; simpa using hcon m)
+  -- THE UNIVERSAL COFACTOR and the resulting integral equations.
+  set U : MvPolynomial (Fin k) (MvPolynomial (Fin k → Fin (D + 1)) ℤ) :=
+    coeffPoly k D (fun e => MvPolynomial.X e) *
+        MvPolynomial.map (Int.castRingHom (MvPolynomial (Fin k → Fin (D + 1)) ℤ)) g -
+      MvPolynomial.map (Int.castRingHom (MvPolynomial (Fin k → Fin (D + 1)) ℤ)) b with hU
+  set r : {m : Fin k →₀ ℕ // m ∈ U.support} → MvPolynomial (Fin k → Fin (D + 1)) ℤ :=
+    fun i => U.coeff i.1 with hr
+  -- THE BRIDGE: a solution of the system is exactly a coordinatewise-bounded cofactor.
+  have hbridge : ∀ (K : Type) [Field K] (x : (Fin k → Fin (D + 1)) → K),
+      (∀ i, MvPolynomial.eval₂ (Int.castRingHom K) x (r i) = 0) ↔
+        coeffPoly k D x * MvPolynomial.map (Int.castRingHom K) g
+          = MvPolynomial.map (Int.castRingHom K) b := by
+    intro K _ x
+    have hcomp : (MvPolynomial.eval₂Hom (Int.castRingHom K) x).comp
+        (Int.castRingHom (MvPolynomial (Fin k → Fin (D + 1)) ℤ)) = Int.castRingHom K :=
+      Subsingleton.elim _ _
+    have hmapU : MvPolynomial.map (MvPolynomial.eval₂Hom (Int.castRingHom K) x) U =
+        coeffPoly k D x * MvPolynomial.map (Int.castRingHom K) g -
+          MvPolynomial.map (Int.castRingHom K) b := by
+      rw [hU, _root_.map_sub, _root_.map_mul, map_coeffPoly, MvPolynomial.map_map,
+        MvPolynomial.map_map, hcomp]
+      simp
+    constructor
+    · intro hzero
+      have hz : MvPolynomial.map (MvPolynomial.eval₂Hom (Int.castRingHom K) x) U = 0 := by
+        ext m
+        rw [MvPolynomial.coeff_map, MvPolynomial.coeff_zero]
+        by_cases hm : m ∈ U.support
+        · simpa [hr] using hzero ⟨m, hm⟩
+        · rw [MvPolynomial.notMem_support_iff.mp hm, _root_.map_zero]
+      rw [hmapU] at hz
+      exact sub_eq_zero.mp hz
+    · intro hprod i
+      have hz : MvPolynomial.map (MvPolynomial.eval₂Hom (Int.castRingHom K) x) U = 0 := by
+        rw [hmapU, hprod, sub_self]
+      have hzz := congrArg (MvPolynomial.coeff i.1) hz
+      rw [MvPolynomial.coeff_map, MvPolynomial.coeff_zero] at hzz
+      simpa [hr] using hzz
+  -- STEP 1: the system has NO solution over `ℚ̄`, by descent of divisibility along `ℚ ⊆ ℚ̄`.
+  have hnoQbar : ∀ x : (Fin k → Fin (D + 1)) → AlgebraicClosure ℚ, ∃ i,
+      MvPolynomial.eval₂ (Int.castRingHom (AlgebraicClosure ℚ)) x (r i) ≠ 0 := by
+    intro x
+    by_contra hcon
+    push Not at hcon
+    have hprod := (hbridge (AlgebraicClosure ℚ) x).mp hcon
+    have hcast : ∀ c : MvPolynomial (Fin k) ℤ,
+        MvPolynomial.map (algebraMap ℚ (AlgebraicClosure ℚ))
+            (MvPolynomial.map (Int.castRingHom ℚ) c)
+          = MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) c := by
+      intro c
+      rw [MvPolynomial.map_map]
+      congr 1
+    have hdvd : MvPolynomial.map (algebraMap ℚ (AlgebraicClosure ℚ))
+          (MvPolynomial.map (Int.castRingHom ℚ) g) ∣
+        MvPolynomial.map (algebraMap ℚ (AlgebraicClosure ℚ))
+          (MvPolynomial.map (Int.castRingHom ℚ) b) := by
+      rw [hcast, hcast]
+      exact ⟨coeffPoly k D x, by rw [← hprod, mul_comm]⟩
+    exact hb (Ideal.mem_span_singleton.mpr (dvd_of_dvd_map_algebraMap hdvd))
+  obtain ⟨N₁, hN₁pos, hN₁⟩ := exists_pos_forall_prime_not_dvd_exists_eval_ne_zero r hnoQbar
+  refine ⟨N₁ * (b.coeff m₀).natAbs, Nat.mul_pos hN₁pos (Int.natAbs_pos.mpr hm₀), ?_⟩
+  intro p hp hpN hmem
+  haveI : CharP (AlgebraicClosure (ZMod p)) p :=
+    charP_of_injective_algebraMap
+      (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))).injective p
+  -- `b` survives mod `p`, because `p` misses the chosen coefficient.
+  have hbp0 : MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) b ≠ 0 := by
+    intro h0
+    have hc := congrArg (MvPolynomial.coeff m₀) h0
+    rw [MvPolynomial.coeff_map, MvPolynomial.coeff_zero] at hc
+    have hdvd : (p : ℤ) ∣ b.coeff m₀ :=
+      (CharP.intCast_eq_zero_iff (AlgebraicClosure (ZMod p)) p (b.coeff m₀)).mp (by simpa using hc)
+    exact hpN (Dvd.dvd.mul_left (by simpa using Int.natAbs_dvd_natAbs.mpr hdvd) N₁)
+  -- STEP 2: membership mod `p` produces a cofactor of coordinatewise degree at most `D`.
+  obtain ⟨c, hc⟩ := Ideal.mem_span_singleton.mp hmem
+  have hc0 : c ≠ 0 := by rintro rfl; rw [mul_zero] at hc; exact hbp0 hc
+  have hg0 : MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) g ≠ 0 := by
+    rintro h0; rw [h0, zero_mul] at hc; exact hbp0 hc
+  have hdegsum := MvPolynomial.totalDegree_mul_of_isDomain hg0 hc0
+  rw [← hc] at hdegsum
+  have hbD :
+      (MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) b).totalDegree ≤ D := by
+    rw [hDdef]; exact totalDegree_map_le' _ _
+  have hcD : ∀ i, c.degreeOf i ≤ D := fun i =>
+    le_trans (MvPolynomial.degreeOf_le_totalDegree _ _) (by omega)
+  -- which is exactly a solution of the system, contradicting `hN₁`.
+  have hpN1 : ¬ p ∣ N₁ := fun hd => hpN (hd.mul_right _)
+  obtain ⟨i, hi⟩ := hN₁ p hpN1 (fun e => c.coeff (boundedExpo k D e))
+  exact hi (((hbridge (AlgebraicClosure (ZMod p)) _).mpr
+    (by rw [coeffPoly_coeff_self k D hcD, hc]; ring)) i)
 
 /-- **THE SPREADING-OUT OF THE BIRATIONAL DIAGRAM: THE MAP AND ITS RETRACTION
 MODULO NILPOTENTS** (SORRY LEAF, cut 2026-07-28 out of
@@ -14013,6 +14210,50 @@ def stepanovUnknownCount (d p K : ℕ) : ℕ :=
   ∑ i ∈ Finset.range d, ∑ k ∈ Finset.range d, ∑ j ∈ Finset.range (K + 1 - k),
     (p / d + 1 - (d + i + j + k))
 
+/-- **THE INDEX TYPE FOR THE UNKNOWNS `A`** (2026-07-30): a quadruple
+`(i, k, j, v)` with `i < d`, `k < d`, `j + k ≤ K` (encoded as `j < K + 1 - k`)
+and `deg + d + i + j + k ≤ p/d` (encoded as `v < p/d + 1 - (d + i + j + k)`),
+i.e. one index per COEFFICIENT allowed by Schmidt's sharp constraint. The nesting
+order `i, k, j, v` matches the triple sum of `stepanovUnknownCount`, whose inner
+ranges depend on the outer indices, which is why this is an iterated `Sigma`
+rather than a product. -/
+abbrev StepanovIdx (d p K : ℕ) : Type :=
+  (i : Fin d) × (k : Fin d) × (j : Fin (K + 1 - (k : ℕ))) ×
+    Fin (p / d + 1 - (d + (i : ℕ) + (j : ℕ) + (k : ℕ)))
+
+/-- `StepanovIdx d p K` has exactly `stepanovUnknownCount d p K` elements:
+`Fintype.card_sigma` turns the iterated `Sigma` into the iterated sum, and
+`Fin.sum_univ_eq_sum_range` turns each `Fin`-indexed sum into the
+`Finset.range`-indexed one appearing in the definition. -/
+theorem card_stepanovIdx (d p K : ℕ) :
+    Fintype.card (StepanovIdx d p K) = stepanovUnknownCount d p K := by
+  simp only [StepanovIdx, Fintype.card_sigma, Fintype.card_fin, stepanovUnknownCount]
+  rw [Fin.sum_univ_eq_sum_range
+    (fun i => ∑ k : Fin d, ∑ j : Fin (K + 1 - (k : ℕ)),
+      (p / d + 1 - (d + i + (j : ℕ) + (k : ℕ)))) d]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [Fin.sum_univ_eq_sum_range
+    (fun k => ∑ j : Fin (K + 1 - k), (p / d + 1 - (d + i + (j : ℕ) + k))) d]
+  refine Finset.sum_congr rfl fun k _ => ?_
+  exact Fin.sum_univ_eq_sum_range (fun j => p / d + 1 - (d + i + j + k)) (K + 1 - k)
+
+/-- An element of `StepanovIdx d p K` is determined by the four natural numbers
+underlying its components — the extensionality lemma the injectivity half of
+`exists_stepanovCoefficientParametrisation` needs, since the parametrisation only
+ever sees those four numbers. -/
+theorem stepanovIdx_ext {d p K : ℕ} {q q' : StepanovIdx d p K}
+    (h1 : (q.1 : ℕ) = (q'.1 : ℕ)) (h2 : (q.2.1 : ℕ) = (q'.2.1 : ℕ))
+    (h3 : (q.2.2.1 : ℕ) = (q'.2.2.1 : ℕ)) (h4 : (q.2.2.2 : ℕ) = (q'.2.2.2 : ℕ)) :
+    q = q' := by
+  obtain ⟨i, k, j, v⟩ := q
+  obtain ⟨i', k', j', v'⟩ := q'
+  simp only at h1 h2 h3 h4
+  obtain rfl : i = i' := Fin.val_injective h1
+  obtain rfl : k = k' := Fin.val_injective h2
+  obtain rfl : j = j' := Fin.val_injective h3
+  obtain rfl : v = v' := Fin.val_injective h4
+  rfl
+
 /-- **THE REDUCTION TO A LINEAR SYSTEM** (SORRY LEAF, cut 2026-07-27 out of
 `exists_stepanovJetSolution`) — Schmidt Chapter III §4, pp. 110–112. This is the
 part of the dimension count that does MATHEMATICS; the two siblings only count.
@@ -14080,8 +14321,8 @@ theorem exists_stepanovJetLinearForms (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p
             (stepanovJet F M ℓ (stepanovAnsatz d p K A)) x y = 0 :=
   sorry
 
-/-- **THE UNKNOWNS ARE `stepanovUnknownCount d p K` MANY** (SORRY LEAF, cut
-2026-07-27 out of `exists_stepanovJetSolution`) — Schmidt Chapter III §4, p. 112,
+/-- **THE UNKNOWNS ARE `stepanovUnknownCount d p K` MANY** (**PROVEN 2026-07-30**;
+cut 2026-07-27 out of `exists_stepanovJetSolution`) — Schmidt Chapter III §4, p. 112,
 the trivial half of the dimension count, but the half that has to be BUILT in
 Lean because the parent needs an honest injective parametrisation, not a
 cardinality.
@@ -14114,8 +14355,102 @@ theorem exists_stepanovCoefficientParametrisation (d : ℕ) (hd : 2 ≤ d) (p : 
         (ℕ → ℕ → ℕ → Polynomial (ZMod p)),
       Function.Injective ι ∧
       (∀ c i j k, ι c i j k = 0 ∨ (ι c i j k).natDegree + d + i + j + k ≤ p / d) ∧
-      (∀ c i j k, d ≤ i ∨ d ≤ k ∨ K < j + k → ι c i j k = 0) :=
-  sorry
+      (∀ c i j k, d ≤ i ∨ d ≤ k ∨ K < j + k → ι c i j k = 0) := by
+  classical
+  let e : StepanovIdx d p K ≃ Fin (stepanovUnknownCount d p K) :=
+    Fintype.equivFinOfCardEq (card_stepanovIdx d p K)
+  -- The `q`-th basis vector: `X ^ v` in slot `(i, j, k)`, zero elsewhere.
+  let E : StepanovIdx d p K → (ℕ → ℕ → ℕ → Polynomial (ZMod p)) := fun q i j k =>
+    if ((q.1 : ℕ) = i ∧ (q.2.2.1 : ℕ) = j ∧ (q.2.1 : ℕ) = k) then Polynomial.X ^ (q.2.2.2 : ℕ)
+    else 0
+  let L : (Fin (stepanovUnknownCount d p K) → ZMod p) →ₗ[ZMod p]
+      (ℕ → ℕ → ℕ → Polynomial (ZMod p)) :=
+    ∑ q : StepanovIdx d p K, LinearMap.smulRight (LinearMap.proj (e q)) (E q)
+  -- The value of the parametrisation at a slot.
+  have hval : ∀ (c : Fin (stepanovUnknownCount d p K) → ZMod p) (i j k : ℕ),
+      L c i j k = ∑ q : StepanovIdx d p K, c (e q) • E q i j k := by
+    intro c i j k
+    show (∑ q : StepanovIdx d p K, LinearMap.smulRight (LinearMap.proj (e q)) (E q)) c i j k = _
+    rw [LinearMap.sum_apply]
+    simp only [LinearMap.smulRight_apply, LinearMap.proj_apply, Finset.sum_apply, Pi.smul_apply]
+  refine ⟨L, ?_, ?_, ?_⟩
+  · -- injectivity: read off the coefficient of `X ^ v` in slot `(i, j, k)`
+    intro c c' hcc
+    funext n
+    obtain ⟨q₀, hq₀⟩ : ∃ q₀, e q₀ = n := ⟨e.symm n, e.apply_symm_apply n⟩
+    have key : ∀ b : Fin (stepanovUnknownCount d p K) → ZMod p,
+        (L b (q₀.1 : ℕ) (q₀.2.2.1 : ℕ) (q₀.2.1 : ℕ)).coeff (q₀.2.2.2 : ℕ) = b n := by
+      intro b
+      rw [hval]
+      rw [Polynomial.finsetSum_coeff]
+      have hterm : ∀ q : StepanovIdx d p K,
+          (b (e q) • E q (q₀.1 : ℕ) (q₀.2.2.1 : ℕ) (q₀.2.1 : ℕ)).coeff (q₀.2.2.2 : ℕ)
+            = if q = q₀ then b n else 0 := by
+        intro q
+        by_cases hq : q = q₀
+        · subst hq
+          have hE : E q (q.1 : ℕ) (q.2.2.1 : ℕ) (q.2.1 : ℕ) = Polynomial.X ^ (q.2.2.2 : ℕ) := by
+            simp only [E]
+            rw [if_pos]
+            all_goals simp
+          rw [hE, if_pos rfl]
+          simp [hq₀]
+        · rw [if_neg hq]
+          simp only [E, Polynomial.coeff_smul, smul_eq_mul]
+          by_cases hcond : ((q.1 : ℕ) = (q₀.1 : ℕ) ∧ (q.2.2.1 : ℕ) = (q₀.2.2.1 : ℕ) ∧
+              (q.2.1 : ℕ) = (q₀.2.1 : ℕ))
+          · rw [if_pos hcond, Polynomial.coeff_X_pow]
+            have hne : (q₀.2.2.2 : ℕ) ≠ (q.2.2.2 : ℕ) := fun h4 =>
+              hq (stepanovIdx_ext hcond.1 hcond.2.2 hcond.2.1 h4.symm)
+            rw [if_neg hne, mul_zero]
+          · rw [if_neg hcond, Polynomial.coeff_zero, mul_zero]
+      rw [Finset.sum_congr rfl (fun q _ => hterm q), Finset.sum_ite_eq' Finset.univ q₀
+        (fun _ => b n)]
+      simp
+    have := key c
+    rw [hcc] at this
+    rw [← this, key c']
+  · -- the sharp degree constraint
+    intro c i j k
+    by_cases hb : d + i + j + k ≤ p / d
+    · refine Or.inr ?_
+      have hdeg : (L c i j k).natDegree ≤ p / d - (d + i + j + k) := by
+        rw [hval]
+        refine Polynomial.natDegree_sum_le_of_forall_le _ _ fun q _ => ?_
+        refine (Polynomial.natDegree_smul_le _ _).trans ?_
+        simp only [E]
+        split
+        · rename_i hcond
+          obtain ⟨h1, h3, h2⟩ := hcond
+          have hlt := q.2.2.2.isLt
+          rw [Polynomial.natDegree_X_pow]
+          omega
+        · simp
+      omega
+    · -- outside the box the constraint forces `0`, and the sum is empty
+      refine Or.inl ?_
+      rw [hval]
+      refine Finset.sum_eq_zero fun q _ => ?_
+      simp only [E]
+      split
+      · rename_i hcond
+        obtain ⟨h1, h3, h2⟩ := hcond
+        have hlt := q.2.2.2.isLt
+        exact absurd hlt (by omega)
+      · simp
+  · -- the support clause
+    intro c i j k hijk
+    rw [hval]
+    refine Finset.sum_eq_zero fun q _ => ?_
+    simp only [E]
+    split
+    · rename_i hcond
+      obtain ⟨h1, h3, h2⟩ := hcond
+      have hi := q.1.isLt
+      have hk := q.2.1.isLt
+      have hj := q.2.2.1.isLt
+      exact absurd hj (by omega)
+    · simp
 
 /-- Gauss's sum in the truncated-subtraction form the count needs: `∑_{j<m} (c − j)`,
 doubled to stay inside `ℕ`. Proven by induction, discharging the subtractions with
