@@ -35,7 +35,15 @@ import re
 import sys
 from pathlib import Path
 
-ROOT = Path("/home/chend/flt-lean")
+# The tree this run is about: the checkout the script itself lives in, NOT a
+# hardcoded `/home/chend/flt-lean`.  Every worker runs from its own worktree, and
+# a hardcoded main-repo root makes a RELATIVE argument silently scan main instead
+# — the script then reports main's frontier while claiming to report yours.
+# Observed 2026-07-30 from `flt-lean-362`: `flt-hidden-sorries.py
+# Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean` reported 8 sorries against the
+# 6 the compiler had just warned about in that worktree, because it had read
+# main's copy of the file.
+ROOT = Path(__file__).resolve().parent
 
 HDR = re.compile(
     r"^(?:@\[[^\]]*\]\s*)?"
