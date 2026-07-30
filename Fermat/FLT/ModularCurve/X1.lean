@@ -443,8 +443,8 @@ open in them has been split along the theories it needed:
 | `exists_rationalCuspPointsX1_field` | `φ(N)/2` rational cusps of `X_1(N)` (Deligne-Rapoport VI.5).  Base field FREED 2026-07-28: this single leaf now carries the former `exists_rationalCuspPointsX1` (over `ℚ`, PROVEN over it) and the `≥` half of the former `card_cuspLocusPoints_x1_finiteField` (over `𝔽_3`) — one sentence of Deligne-Rapoport that used to be two open leaves at two bases. | any `K` with `N` invertible |
 | `exists_isFineGamma1Moduli` | Katz–Mazur 4.7.1: `[Γ₁(N)]` is REPRESENTABLE at `N ≥ 4`, `ℓ` prime, `ℓ ∤ N` — a universal family `dM` over `M`, classified uniquely.  (`exists_fineGamma1Atlas` is PROVEN over it, 2026-07-28, through the formal `Gamma1Atlas.ofFineModuli`; that node was itself `nonempty_relPoint_atlas_of_relPoint`, REFUTED and restated the same day — see its FALSITY AUDIT.) | `𝔽_ℓ` |
 | `nonempty_gamma1Datum_baseChange` | base change of a `Γ₁(N)`-datum — formal, no arithmetic | any |
-| `exists_weierstrassModel_of_abelianSchemeStruct_finiteField` | **Riemann-Roch on a genus-one curve** — a Weierstrass model of an abelian scheme of relative dimension one over `Spec 𝔽_ℓ`; NO modular curves and no level structure.  Cut 2026-07-28 as the geometry half of `exists_weierstrassEquiv_of_gamma1Datum` (now PROVEN over it).  The ℚ-side chain in `EllipticScheme.lean` is hardcoded to `Spec ℚ` and its own three leaves are open, so there is nothing to instantiate. | `𝔽_ℓ` |
-| `exists_relPointAddEquiv_of_weierstrassModel_finiteField` | the transport half of the same cut: given the model, the `𝔽_ℓ`-SECTIONS are `W(𝔽_ℓ)`.  The content is that the abelian scheme's group law agrees with the chord-and-tangent law (rigidity); strictly easier than the ℚ-side `exists_geomFibreAddEquiv_of_weierstrassModel`, which needs a `Γ_ℚ`-equivariant equivalence on geometric fibres. | `𝔽_ℓ` |
+| ~~`exists_weierstrassModel_of_abelianSchemeStruct_finiteField`~~ | PROVEN 2026-07-30; no longer a leaf.  The row used to say "the ℚ-side chain in `EllipticScheme.lean` is hardcoded to `Spec ℚ` … so there is nothing to instantiate", and named the condition under which the row would die: that the chain be made base-generic.  It was — `exists_weierstrassModel_of_ellipticScheme_field` (`X0.lean`) holds over any PERFECT field, and a finite field is perfect — so this is now `exact`. | — |
+| ~~`exists_relPointAddEquiv_of_weierstrassModel_finiteField`~~ | PROVEN 2026-07-30 the same way, from `exists_addEquiv_of_weierstrassModel_field` (`X0.lean`) at `k = ZMod ℓ`; `(W⁄ZMod ℓ) = W.toAffine` is `rfl`, so no transport was needed.  Its rigidity content lives on in `EllipticScheme.lean`'s `nonempty_addEquiv_relPoint_of_isIso` and `exists_isIso_of_affineCharts_field`, and what is left open under BOTH former leaves is the single shared citation `exists_ellipticScheme_weierstrassChart_addEquiv_field`. | — |
 | `exists_cuspSymbolEmbedding_x1_finiteField` | the hard direction of Ogg's description, DECOMPOSED 2026-07-28 into geometry and arithmetic: the `𝔽_ℓ`-rational cusp points inject into the Frobenius-fixed cusp symbols `Γ_1(N)∖ℙ¹(ℚ)`.  Carries NO counting — that is `card_fixedCuspSymbolX1` (`ModularCurve/CuspSymbolX1.lean`), PROVEN, and `card_cuspLocusPoints_x1_finiteField_le` is PROVEN over the two.  The lower bound is the `exists_rationalCuspPointsX1_field` row above. | `𝔽_ℓ`, `ℓ ∤ N`, `N ≥ 5` |
 | `exists_x1CurveReductionModel` | Deligne-Rapoport VI.6.9: the smooth proper model over `ℤ_(ℓ)`.  NO moduli in the conclusion — the modular input is the hypothesis `hX` | `ℚ → 𝔽_ℓ` |
 | `exists_isX1Compactification_specialFibre` | Igusa / Katz-Mazur 5.1.1: the special fibre of that model IS `X_1(N)` over `𝔽_ℓ`.  (`exists_x1CurveModel_of_base` is PROVEN over this row and the one above, 2026-07-28, splitting the two classical theorems it had cited jointly; `exists_x1ReductionAt` is PROVEN over that plus the moduli-free `NeronReduction.lean`.) | `ℚ → 𝔽_ℓ` |
@@ -7506,43 +7506,87 @@ Weierstrass equation, `|3·[O]|` embeds the curve in `ℙ²` with
 `Spec W.toAffine.CoordinateRing` — which is the middle and last
 conjuncts.
 
-**THE ℚ-SIDE CHAIN CANNOT BE REUSED, and this was checked rather than
-assumed.**  `EllipticScheme.lean` has the same statement over `ℚ`
-(`exists_weierstrassModel_of_ellipticScheme`, line 9395), assembled from
-`exists_affineComplement_zeroSection`,
-`exists_weierstrassRingEquiv_of_affineComplement` and
-`isElliptic_of_isOpenImmersion_coordinateRing`.  **All three are
-themselves `sorry`, and all four are hardcoded to
-`Spec (CommRingCat.of ℚ)`** — not stated over a field variable — so there
-is nothing to instantiate at `ZMod ℓ`.  Generalising that chain in place
-is NOT the cheap move it looks like: its `≃+` half
-(`exists_geomFibreAddEquiv_of_weierstrassModel`) is genuinely PROVEN over
-`ℚ` and its proof runs through `hom_ext_spec_rat`, `projGroupLaw` and
-`exists_affineChart_projModel`, so widening the base would put a proven
-theorem back into the open set.  Hence the deliberate 𝔽_ℓ-local restatement
-here.  If that chain is ever made base-generic, THIS leaf and its sibling
-are exactly the two declarations that should be deleted in favour of it.
+## PROVEN 2026-07-30: THE ℚ-SIDE CHAIN *WAS* MADE BASE-GENERIC
 
-`_hdim` is LOAD-BEARING for truth even though a `sorry` body cannot
-consume it: without relative dimension one an abelian scheme is an
-abelian variety of higher dimension and has no plane-cubic model at all.
-It is underscore-prefixed only to keep the tree warning-clean, matching
-the convention of the three ℚ-side leaves named above. -/
+The paragraph this replaces said "THE ℚ-SIDE CHAIN CANNOT BE REUSED, and this
+was checked rather than assumed", listed the three `ℚ`-hardcoded leaves under
+`exists_weierstrassModel_of_ellipticScheme`, and closed with:
+
+> If that chain is ever made base-generic, THIS leaf and its sibling are
+> exactly the two declarations that should be deleted in favour of it.
+
+That is what happened, and this declaration is now
+`exact exists_weierstrassModel_of_ellipticScheme_field ab hdim` — `SpecF ℓ`
+being a reducible abbrev for `Spec (CommRingCat.of (ZMod ℓ))`, and
+`PerfectField (ZMod ℓ)` holding because a finite field is perfect.  Its
+sibling `exists_relPointAddEquiv_of_weierstrassModel_finiteField` below closed
+the same day and the same way.  They are kept rather than deleted only
+because the consumer names them; each is now one line.
+
+**The one thing the old paragraph got wrong is worth recording**, because the
+reasoning was sound and the conclusion still did not hold.  It argued that
+widening the base "would put a proven theorem back into the open set", since
+`exists_geomFibreAddEquiv_of_weierstrassModel` is PROVEN over `ℚ` through
+`hom_ext_spec_rat`, `projGroupLaw` and `exists_affineChart_projModel`.  True —
+and irrelevant, because the `ℚ` theorem was never widened.  A SIBLING was
+stated over a field variable instead, and the `ℚ` statement stands untouched
+with its proof intact.  *Generalising a statement* and *stating its
+generalisation beside it* have different costs, and only the first has the
+consequence the paragraph feared.
+
+`hdim` is LOAD-BEARING for truth and is now genuinely consumed: without
+relative dimension one an abelian scheme is an abelian variety of higher
+dimension and has no plane-cubic model at all.  It is no longer
+underscore-prefixed. -/
 theorem exists_weierstrassModel_of_abelianSchemeStruct_finiteField {ℓ : ℕ} [Fact ℓ.Prime]
     {A : Scheme.{0}} {f : A ⟶ SpecF ℓ} (ab : AbelianSchemeStruct f)
-    (_hdim : SmoothOfRelativeDimension 1 f) :
+    (hdim : SmoothOfRelativeDimension 1 f) :
     ∃ (W : WeierstrassCurve (ZMod ℓ)) (_ : W.IsElliptic),
       ∃ ι : Spec (CommRingCat.of W.toAffine.CoordinateRing) ⟶ A,
         IsOpenImmersion ι ∧
           ι ≫ f = Spec.map (CommRingCat.ofHom
             (algebraMap (ZMod ℓ) W.toAffine.CoordinateRing)) ∧
           Set.range ι.base = (Set.range (ab.zero (𝟙 (SpecF ℓ))).1.base)ᶜ :=
-  sorry
+  exists_weierstrassModel_of_ellipticScheme_field ab hdim
 
 /-- **A Weierstrass model of an abelian scheme over `Spec 𝔽_ℓ` computes
-its `𝔽_ℓ`-SECTIONS** (sorry leaf, introduced 2026-07-28 as the TRANSPORT
-half of `exists_weierstrassEquiv_of_gamma1Datum` below).  No Riemann–Roch
-here: the model is handed over as `_hmodel`.
+its `𝔽_ℓ`-SECTIONS** (introduced 2026-07-28 as the TRANSPORT half of
+`exists_weierstrassEquiv_of_gamma1Datum` below; **PROVEN 2026-07-30**).
+No Riemann–Roch here: the model is handed over as `hmodel`.
+
+## PROVEN, and it introduced NO leaf: it is `X0.lean`'s `k`-rational bridge
+
+`Fermat.exists_addEquiv_of_weierstrassModel_field` in `X0.lean` is this
+statement over an arbitrary field, hypothesis for hypothesis and conjunct for
+conjunct, and it was closed on 2026-07-30.  This declaration is that theorem
+at `k = ZMod ℓ`, and the specialisation is literally `exact`:
+
+* `SpecF ℓ` is a `noncomputable abbrev` for `Spec (CommRingCat.of (ZMod ℓ))`,
+  hence reducible;
+* `(W⁄ZMod ℓ) = W.toAffine` is `rfl` — `baseChange` is `map (algebraMap R R)`,
+  `algebraMap R R` is `RingHom.id R` by `rfl`, and `WeierstrassCurve.map_id`
+  is `rfl` — so the two conclusions are the same type, group structure
+  included.  No transport lemma is needed and none was written.
+
+So the paragraph below headed "*The additivity*" is now discharged, and the
+route it named is the one that was taken: rigidity, through
+`relPointPost_add` — which was generalised in place from `Spec ℚ` to an
+arbitrary base for exactly this family of statements.  Its ℚ-specific
+partner `hom_specRat_eq_of_range_eq` turned out NOT to be needed at all over
+a general field, translation (`nonempty_addEquiv_relPoint_of_isIso`) doing
+its work; and `exists_isIso_of_affineChart`'s reliance on `proj E` was
+removed by restating the gluing between two abelian schemes
+(`exists_isIso_of_affineCharts_field`).  All three live in
+`Fermat/FLT/ModularCurve/EllipticScheme.lean`.
+
+**The residue is one leaf and it is NOT in this file**:
+`exists_ellipticScheme_weierstrassChart_addEquiv_field`, that an elliptic
+curve over a field has a Weierstrass model as an abelian scheme with its
+`k`-points.  It is shared with the `X0.lean` statement, so closing it closes
+both — which is the whole point of routing this through the field-level
+bridge rather than proving `𝔽_ℓ` separately.
+
+## The paragraph below is retained as the ROUTE, and is now history
 
 TRUE, and it is two separate facts glued by the model hypothesis.
 
@@ -7575,21 +7619,22 @@ equivalence would only have to be pushed back down again.
 
 `Nonempty` rather than a chosen equivalence because the consumer uses only
 `AddEquiv.addOrderOf_eq`, which any additive equivalence supplies; nothing
-downstream inspects which one.  `_hmodel` is load-bearing and NOT
+downstream inspects which one.  `hmodel` is load-bearing and NOT
 droppable: without it `W` is an arbitrary elliptic curve over `𝔽_ℓ` and the
 conclusion is plainly false (take `f` with `#RelPoint = 1` and `W` with
-`#W(𝔽_ℓ) = 5`). -/
+`#W(𝔽_ℓ) = 5`).  It is no longer underscore-prefixed: the proof consumes it,
+by handing it straight to the field-level bridge. -/
 theorem exists_relPointAddEquiv_of_weierstrassModel_finiteField {ℓ : ℕ} [Fact ℓ.Prime]
     (W : WeierstrassCurve (ZMod ℓ)) [W.IsElliptic]
     {A : Scheme.{0}} {f : A ⟶ SpecF ℓ} (ab : AbelianSchemeStruct f)
-    (_hmodel : ∃ ι : Spec (CommRingCat.of W.toAffine.CoordinateRing) ⟶ A,
+    (hmodel : ∃ ι : Spec (CommRingCat.of W.toAffine.CoordinateRing) ⟶ A,
       IsOpenImmersion ι ∧
         ι ≫ f = Spec.map (CommRingCat.ofHom
           (algebraMap (ZMod ℓ) W.toAffine.CoordinateRing)) ∧
         Set.range ι.base = (Set.range (ab.zero (𝟙 (SpecF ℓ))).1.base)ᶜ) :
     letI := ab.addCommGroup (𝟙 (SpecF ℓ))
     Nonempty (RelPoint f (𝟙 (SpecF ℓ)) ≃+ W.toAffine.Point) :=
-  sorry
+  exists_addEquiv_of_weierstrassModel_field W ab hmodel
 
 /-- **A `Γ₁(N)`-datum over `𝔽_ℓ` gives a plane cubic over `𝔽_ℓ` carrying
 a rational point of exact order `N`** (PROVEN 2026-07-28 over the two
@@ -7619,8 +7664,9 @@ the conclusion.
 `exists_ellipticScheme_of_weierstrass`, which goes from a plane cubic to
 an abelian scheme; the direction needed here is the CONVERSE — a
 Weierstrass presentation of a given abelian scheme.  That converse is now
-split into the two leaves immediately above, along the seam the ℚ-side
-chain already uses:
+split into the two declarations immediately above — **both PROVEN
+2026-07-30**, each by one `exact` against its field-level counterpart in
+`X0.lean` — along the seam the ℚ-side chain already uses:
 
 1. `exists_weierstrassModel_of_abelianSchemeStruct_finiteField` — **the
    Riemann–Roch half**, producing the cubic `W` together with the open
@@ -7629,6 +7675,12 @@ chain already uses:
    transport half**, reading the `𝔽_ℓ`-sections off that model, whose real
    content is that the abstract group law agrees with the chord-and-tangent
    one (rigidity).
+
+Neither is a leaf any more.  What is open under both, and it is ONE
+declaration rather than two, is
+`exists_ellipticScheme_weierstrassChart_addEquiv_field` in
+`EllipticScheme.lean`: that an elliptic curve over a field has a Weierstrass
+model as an abelian scheme carrying its `k`-points.
 
 The assembly below carries nothing of its own, which is the point of the
 split: neither `N` nor the level structure `d.pt` appears in either leaf,
