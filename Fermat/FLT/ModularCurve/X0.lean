@@ -61246,9 +61246,15 @@ which is `add_assoc`/`neg_add`/`zero_add` and nothing else.
 
 `shear_pairSquareMap` is where `IsAdditiveOn` is consumed, and it is the only
 place: `u ×_S u` intertwines the two shears, `Σ_B ∘ (u ×_S u) = (u ×_S u) ∘ Σ_A`.
-That converts the smoothness question into the two leaves below — one purely
+That converts the smoothness question into the two statements below — one purely
 about how `smoothLocus` behaves for a fibre square of morphisms, one purely
-topological, with no group law and no smoothness in it at all. -/
+topological, with no group law and no smoothness in it at all.
+
+**As of 2026-07-30 only the FIRST is still a leaf.**  The topological one,
+`eq_top_of_shearHom_invariant`, is PROVEN, over the fibrewise translation
+machinery (`translFib`, `isIso_translFib`, `fibToPair`) introduced just above
+it; so `smoothLocus_pairSquareMap` is the single remaining obstruction between
+`shear_pairSquareMap` and `smooth_of_surjective_of_isAdditiveOn`. -/
 
 /-- **The first projection of `A ×_S A`, as a relative point over `fst ≫ af`.** -/
 noncomputable def pairFst {A S : Scheme.{0}} (af : A ⟶ S) :
@@ -61479,10 +61485,171 @@ theorem smoothLocus_pairSquareMap {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B �
         ⊓ Limits.pullback.snd af af ⁻¹ᵁ u.smoothLocus :=
   sorry
 
+/-! #### Translation by a CONSTANT point, inside a fibre `A ×_S Z`
+
+**PROVEN 2026-07-30**, and written only to serve
+`eq_top_of_shearHom_invariant` immediately below.
+
+The shear `Σ` above translates by the UNIVERSAL point of `A ×_S A`; what the
+topological argument needs instead is translation by ONE point `a` of `A`,
+performed inside the fibre `A ×_S Spec κ(a)` where `a` becomes a section.  So
+`e : Z ⟶ A` over `S` plays the role of "the constant `a`", `translFib` is
+`z ↦ z + e` on `A ×_S Z`, and it is an AUTOMORPHISM over `Z` — which is the
+only property used, and the only reason the argument needs no rational point
+of `A` and no algebraic closure.
+
+Nothing here mentions `SpecQ`: the base `S` is arbitrary. -/
+
+/-- **The universal point of `A ×_S Z`**, read as a relative point of `af`
+over the base point `fst ≫ af`. -/
+noncomputable def fibUniv {A S Z : Scheme.{0}} (af : A ⟶ S) (k : Z ⟶ S) :
+    RelPoint af (Limits.pullback.fst af k ≫ af) :=
+  ⟨Limits.pullback.fst af k, rfl⟩
+
+/-- **The constant point of `A ×_S Z` cut out by `e : Z ⟶ A`**, read over the
+same base point `fst ≫ af` as `fibUniv`, so that the two are summable. -/
+noncomputable def fibConst {A S Z : Scheme.{0}} (af : A ⟶ S) {k : Z ⟶ S} (e : Z ⟶ A)
+    (he : e ≫ af = k) : RelPoint af (Limits.pullback.fst af k ≫ af) :=
+  ⟨Limits.pullback.snd af k ≫ e, by
+    rw [Category.assoc, he]; exact Limits.pullback.condition.symm⟩
+
+/-- **Translation of `A ×_S Z` by the constant `e`**, `z ↦ z + e`. -/
+noncomputable def translFib {A S Z : Scheme.{0}} {af : A ⟶ S}
+    (abA : AbelianSchemeStruct af) {k : Z ⟶ S} (e : Z ⟶ A) (he : e ≫ af = k) :
+    Limits.pullback af k ⟶ Limits.pullback af k :=
+  Limits.pullback.lift (abA.add (fibUniv af k) (fibConst af e he)).1
+    (Limits.pullback.snd af k)
+    (by rw [(abA.add (fibUniv af k) (fibConst af e he)).2]; exact Limits.pullback.condition)
+
+/-- **Translation of `A ×_S Z` by `-e`**, the inverse of `translFib`. -/
+noncomputable def untranslFib {A S Z : Scheme.{0}} {af : A ⟶ S}
+    (abA : AbelianSchemeStruct af) {k : Z ⟶ S} (e : Z ⟶ A) (he : e ≫ af = k) :
+    Limits.pullback af k ⟶ Limits.pullback af k :=
+  Limits.pullback.lift (abA.add (fibUniv af k) (abA.neg (fibConst af e he))).1
+    (Limits.pullback.snd af k)
+    (by
+      rw [(abA.add (fibUniv af k) (abA.neg (fibConst af e he))).2]
+      exact Limits.pullback.condition)
+
+theorem translFib_fst {A S Z : Scheme.{0}} {af : A ⟶ S} (abA : AbelianSchemeStruct af)
+    {k : Z ⟶ S} (e : Z ⟶ A) (he : e ≫ af = k) :
+    translFib abA e he ≫ Limits.pullback.fst af k
+      = (abA.add (fibUniv af k) (fibConst af e he)).1 := by
+  rw [translFib, Limits.pullback.lift_fst]
+
+theorem translFib_snd {A S Z : Scheme.{0}} {af : A ⟶ S} (abA : AbelianSchemeStruct af)
+    {k : Z ⟶ S} (e : Z ⟶ A) (he : e ≫ af = k) :
+    translFib abA e he ≫ Limits.pullback.snd af k = Limits.pullback.snd af k := by
+  rw [translFib, Limits.pullback.lift_snd]
+
+theorem untranslFib_fst {A S Z : Scheme.{0}} {af : A ⟶ S} (abA : AbelianSchemeStruct af)
+    {k : Z ⟶ S} (e : Z ⟶ A) (he : e ≫ af = k) :
+    untranslFib abA e he ≫ Limits.pullback.fst af k
+      = (abA.add (fibUniv af k) (abA.neg (fibConst af e he))).1 := by
+  rw [untranslFib, Limits.pullback.lift_fst]
+
+theorem untranslFib_snd {A S Z : Scheme.{0}} {af : A ⟶ S} (abA : AbelianSchemeStruct af)
+    {k : Z ⟶ S} (e : Z ⟶ A) (he : e ≫ af = k) :
+    untranslFib abA e he ≫ Limits.pullback.snd af k = Limits.pullback.snd af k := by
+  rw [untranslFib, Limits.pullback.lift_snd]
+
+/-- **What a morphism of `A ×_S Z` OVER `Z` does to the two named points**:
+it sends the universal point to its own first component and FIXES the
+constant.  Both round trips of `translFib`/`untranslFib` are this lemma plus
+one group identity, which is why it is stated once. -/
+theorem pre_of_fibOverZ {A S Z : Scheme.{0}} {af : A ⟶ S} {k : Z ⟶ S} (e : Z ⟶ A)
+    (he : e ≫ af = k) (t : Limits.pullback af k ⟶ Limits.pullback af k)
+    (hsnd : t ≫ Limits.pullback.snd af k = Limits.pullback.snd af k)
+    (d : RelPoint af (Limits.pullback.fst af k ≫ af))
+    (hfst : t ≫ Limits.pullback.fst af k = d.1) :
+    ∃ hg : t ≫ (Limits.pullback.fst af k ≫ af) = Limits.pullback.fst af k ≫ af,
+      RelPoint.pre t hg (fibUniv af k) = d ∧
+        RelPoint.pre t hg (fibConst af e he) = fibConst af e he := by
+  have hg : t ≫ (Limits.pullback.fst af k ≫ af) = Limits.pullback.fst af k ≫ af := by
+    rw [← Category.assoc, hfst, d.2]
+  refine ⟨hg, Subtype.ext hfst, Subtype.ext ?_⟩
+  show t ≫ (Limits.pullback.snd af k ≫ e) = Limits.pullback.snd af k ≫ e
+  rw [← Category.assoc, hsnd]
+
+theorem translFib_untranslFib {A S Z : Scheme.{0}} {af : A ⟶ S}
+    (abA : AbelianSchemeStruct af) {k : Z ⟶ S} (e : Z ⟶ A) (he : e ≫ af = k) :
+    translFib abA e he ≫ untranslFib abA e he = 𝟙 _ := by
+  obtain ⟨hg, h1, h2⟩ := pre_of_fibOverZ e he (translFib abA e he) (translFib_snd abA e he)
+    _ (translFib_fst abA e he)
+  apply Limits.pullback.hom_ext
+  · rw [Category.assoc, untranslFib_fst, Category.id_comp]
+    have key := abA.pre_add (translFib abA e he) hg (fibUniv af k)
+      (abA.neg (fibConst af e he))
+    rw [abA.pre_neg, h1, h2] at key
+    have hcancel : abA.add (abA.add (fibUniv af k) (fibConst af e he))
+        (abA.neg (fibConst af e he)) = fibUniv af k := by
+      rw [abA.add_assoc, abA.add_comm (fibConst af e he) (abA.neg (fibConst af e he)),
+        abA.neg_add, abA.add_comm, abA.zero_add]
+    rw [hcancel] at key
+    exact congrArg Subtype.val key
+  · rw [Category.assoc, untranslFib_snd, translFib_snd, Category.id_comp]
+
+theorem untranslFib_translFib {A S Z : Scheme.{0}} {af : A ⟶ S}
+    (abA : AbelianSchemeStruct af) {k : Z ⟶ S} (e : Z ⟶ A) (he : e ≫ af = k) :
+    untranslFib abA e he ≫ translFib abA e he = 𝟙 _ := by
+  obtain ⟨hg, h1, h2⟩ := pre_of_fibOverZ e he (untranslFib abA e he)
+    (untranslFib_snd abA e he) _ (untranslFib_fst abA e he)
+  apply Limits.pullback.hom_ext
+  · rw [Category.assoc, translFib_fst, Category.id_comp]
+    have key := abA.pre_add (untranslFib abA e he) hg (fibUniv af k) (fibConst af e he)
+    rw [h1, h2] at key
+    have hcancel : abA.add (abA.add (fibUniv af k) (abA.neg (fibConst af e he)))
+        (fibConst af e he) = fibUniv af k := by
+      rw [abA.add_assoc, abA.neg_add, abA.add_comm, abA.zero_add]
+    rw [hcancel] at key
+    exact congrArg Subtype.val key
+  · rw [Category.assoc, translFib_snd, untranslFib_snd, Category.id_comp]
+
+/-- **TRANSLATION BY A CONSTANT IS AN AUTOMORPHISM OF THE FIBRE** (PROVEN
+2026-07-30) — the only property of `translFib` the argument below uses. -/
+theorem isIso_translFib {A S Z : Scheme.{0}} {af : A ⟶ S} (abA : AbelianSchemeStruct af)
+    {k : Z ⟶ S} (e : Z ⟶ A) (he : e ≫ af = k) : IsIso (translFib abA e he) :=
+  ⟨⟨untranslFib abA e he, translFib_untranslFib abA e he, untranslFib_translFib abA e he⟩⟩
+
+/-- **The graph of the constant, `A ×_S Z ⟶ A ×_S A`, `z ↦ (z, e)`** — the map
+along which the shear-invariance identity is read inside one fibre. -/
+noncomputable def fibToPair {A S Z : Scheme.{0}} (af : A ⟶ S) {k : Z ⟶ S} (e : Z ⟶ A)
+    (he : e ≫ af = k) : Limits.pullback af k ⟶ Limits.pullback af af :=
+  Limits.pullback.lift (Limits.pullback.fst af k) (Limits.pullback.snd af k ≫ e)
+    (by rw [Category.assoc, he]; exact Limits.pullback.condition)
+
+theorem fibToPair_fst {A S Z : Scheme.{0}} (af : A ⟶ S) {k : Z ⟶ S} (e : Z ⟶ A)
+    (he : e ≫ af = k) :
+    fibToPair af e he ≫ Limits.pullback.fst af af = Limits.pullback.fst af k := by
+  rw [fibToPair, Limits.pullback.lift_fst]
+
+theorem fibToPair_snd {A S Z : Scheme.{0}} (af : A ⟶ S) {k : Z ⟶ S} (e : Z ⟶ A)
+    (he : e ≫ af = k) :
+    fibToPair af e he ≫ Limits.pullback.snd af af = Limits.pullback.snd af k ≫ e := by
+  rw [fibToPair, Limits.pullback.lift_snd]
+
+/-- **`(z, e) ↦ z + e` IS translation by `e`** — the one equation that couples
+the universal addition of `A ×_S A` to the fibrewise translation. -/
+theorem fibToPair_addPairHom {A S Z : Scheme.{0}} {af : A ⟶ S}
+    (abA : AbelianSchemeStruct af) {k : Z ⟶ S} (e : Z ⟶ A) (he : e ≫ af = k) :
+    fibToPair af e he ≫ addPairHom abA
+      = translFib abA e he ≫ Limits.pullback.fst af k := by
+  have hg : fibToPair af e he ≫ (Limits.pullback.fst af af ≫ af)
+      = Limits.pullback.fst af k ≫ af := by
+    rw [← Category.assoc, fibToPair_fst]
+  have h1 : RelPoint.pre (fibToPair af e he) hg (pairFst af) = fibUniv af k :=
+    Subtype.ext (fibToPair_fst af e he)
+  have h2 : RelPoint.pre (fibToPair af e he) hg (pairSnd af) = fibConst af e he :=
+    Subtype.ext (fibToPair_snd af e he)
+  have key := abA.pre_add (fibToPair af e he) hg (pairFst af) (pairSnd af)
+  rw [h1, h2] at key
+  rw [translFib_fst]
+  exact congrArg Subtype.val key
+
 /-- **A NONEMPTY SHEAR-INVARIANT OPEN OF AN ABELIAN SCHEME OVER `ℚ` IS
-EVERYTHING** (sorry leaf, new 2026-07-29) — the second half.  It is PURELY
-TOPOLOGICAL: no smoothness occurs in the statement, and the group law enters
-only through `shearHom`.
+EVERYTHING** (**PROVEN 2026-07-30**; a sorry leaf from 2026-07-29) — the second
+half.  It is PURELY TOPOLOGICAL: no smoothness occurs in the statement, and the
+group law enters only through `shearHom`.
 
 The argument.  Write `p, q` for the projections of `A ×_ℚ A` and `W` for
 `p ⁻¹ᵁ V ⊓ q ⁻¹ᵁ V`.  Invariance under `Σ` says, on points, that
@@ -61505,14 +61672,96 @@ connected geometric FIBRES, not a connected base.
 Irreducibility of `A ×_ℚ Spec κ(a)` is available in this tree — it is
 `GaloisRepresentation.Modularity.geometricallyIrreducible_of_smooth_of_geometricallyConnected`
 applied to `af`, whose hypotheses are `abA.smooth` and `abA.connected` — so the
-prover's work is the fibre bookkeeping, not the geometry. -/
+prover's work is the fibre bookkeeping, not the geometry.
+
+**THE ROUTE ACTUALLY TAKEN (2026-07-30) IS THE PLAIN SHEAR, NOT ITS INVERSE**,
+and it is a little shorter than the sketch above because it never needs the
+difference map.  Read the invariance forwards: since `Σ ≫ p = p` and
+`Σ ≫ q = addPairHom`, the hypothesis says exactly
+
+    p ⁻¹ᵁ V ⊓ addPairHom ⁻¹ᵁ V = p ⁻¹ᵁ V ⊓ q ⁻¹ᵁ V.
+
+Fix `a : A`, put `Z := Spec κ(a)`, `e := A.fromSpecResidueField a` and
+`P := A ×_ℚ Z`, and pull that identity back along the GRAPH
+`fibToPair : P ⟶ A ×_ℚ A`, `z ↦ (z, a)`.  The three legs are computed by
+`fibToPair_fst`, `fibToPair_addPairHom` and `fibToPair_snd`:
+
+* `fibToPair ≫ p` is the projection `π : P ⟶ A`, SURJECTIVE because `π` is
+  the base change of `Z ⟶ Spec ℚ`, which is surjective for the cheap reason
+  that `Spec ℚ` is a one-point space;
+* `fibToPair ≫ addPairHom` is `translFib ≫ π`, i.e. `π` precomposed with
+  translation by `a`, and `isIso_translFib` makes that an AUTOMORPHISM of `P`,
+  so this leg is surjective too;
+* `fibToPair ≫ q` is the CONSTANT `a`.
+
+So if `a ∉ V` the right-hand side pulls back to `∅`, while the left-hand side
+is the intersection of two nonempty opens of `P`; and `P` is irreducible
+(`GeometricallyIrreducible af` transported to `pullback.snd af k`, whose base
+`Z` is a nonempty one-point scheme).  Contradiction, so `a ∈ V`.
+
+**No rational point of `A` is used anywhere** — the translation happens over
+`κ(a)`, where `a` is a section by construction — which is the whole point of
+the shear route recorded on the consumer below. -/
 theorem eq_top_of_shearHom_invariant {A : Scheme.{0}} {af : A ⟶ SpecQ}
     (abA : AbelianSchemeStruct af) (V : A.Opens) (hV : (V : Set A).Nonempty)
     (hinv : shearHom abA ⁻¹ᵁ (Limits.pullback.fst af af ⁻¹ᵁ V
         ⊓ Limits.pullback.snd af af ⁻¹ᵁ V)
       = Limits.pullback.fst af af ⁻¹ᵁ V ⊓ Limits.pullback.snd af af ⁻¹ᵁ V) :
-    V = ⊤ :=
-  sorry
+    V = ⊤ := by
+  haveI := abA.smooth
+  haveI := abA.connected
+  haveI : GeometricallyIrreducible af :=
+    geometricallyIrreducible_of_smooth_of_geometricallyConnected af
+  haveI : Subsingleton ↥SpecQ := inferInstance
+  -- the invariance, read with the universal addition in place of the shear
+  have key : Limits.pullback.fst af af ⁻¹ᵁ V ⊓ addPairHom abA ⁻¹ᵁ V
+      = Limits.pullback.fst af af ⁻¹ᵁ V ⊓ Limits.pullback.snd af af ⁻¹ᵁ V := by
+    refine Eq.trans ?_ hinv
+    rw [Scheme.Hom.preimage_inf, ← Scheme.Hom.comp_preimage, ← Scheme.Hom.comp_preimage,
+      shearHom_fst, shearHom_snd]
+  refine le_antisymm le_top ?_
+  intro a _
+  by_contra ha
+  -- work inside the fibre `P = A ×_ℚ Spec κ(a)`, where `a` is a section
+  set Z : Scheme.{0} := Spec (A.residueField a) with hZ
+  set e : Z ⟶ A := A.fromSpecResidueField a with hedef
+  set k : Z ⟶ SpecQ := e ≫ af with hkdef
+  have he : e ≫ af = k := hkdef.symm
+  haveI : Subsingleton ↥Z := inferInstance
+  haveI : Nonempty ↥Z := inferInstance
+  haveI : AlgebraicGeometry.Surjective (Limits.pullback.fst af k) := inferInstance
+  haveI : IrreducibleSpace ↥(Limits.pullback af k) :=
+    GeometricallyIrreducible.irreducibleSpace_of_subsingleton (Limits.pullback.snd af k)
+  haveI := isIso_translFib abA e he
+  -- two nonempty opens of the irreducible `P`
+  obtain ⟨v, hv⟩ := hV
+  obtain ⟨p1, hp1⟩ := (Limits.pullback.fst af k).surjective v
+  obtain ⟨p2, hp2⟩ := (translFib abA e he ≫ Limits.pullback.fst af k).surjective v
+  have hne1 : ((Limits.pullback.fst af k ⁻¹ᵁ V : (Limits.pullback af k).Opens) : Set _).Nonempty :=
+    ⟨p1, show (Limits.pullback.fst af k) p1 ∈ V from hp1 ▸ hv⟩
+  have hne2 : (((translFib abA e he ≫ Limits.pullback.fst af k) ⁻¹ᵁ V :
+      (Limits.pullback af k).Opens) : Set _).Nonempty :=
+    ⟨p2, show (translFib abA e he ≫ Limits.pullback.fst af k) p2 ∈ V from hp2 ▸ hv⟩
+  obtain ⟨z, hz1, hz2⟩ := nonempty_preirreducible_inter
+    (Limits.pullback.fst af k ⁻¹ᵁ V).isOpen
+    ((translFib abA e he ≫ Limits.pullback.fst af k) ⁻¹ᵁ V).isOpen hne1 hne2
+  -- its image under the graph of `a` lies in the left-hand side of `key`
+  have hmem : fibToPair af e he z
+      ∈ Limits.pullback.fst af af ⁻¹ᵁ V ⊓ addPairHom abA ⁻¹ᵁ V := by
+    refine ⟨?_, ?_⟩
+    · show Limits.pullback.fst af af (fibToPair af e he z) ∈ V
+      rw [← Scheme.Hom.comp_apply, fibToPair_fst]
+      exact hz1
+    · show addPairHom abA (fibToPair af e he z) ∈ V
+      rw [← Scheme.Hom.comp_apply, fibToPair_addPairHom abA e he]
+      exact hz2
+  rw [key] at hmem
+  -- but its second coordinate IS `a`
+  refine ha ?_
+  have hlast : Limits.pullback.snd af af (fibToPair af e he z) = a := by
+    rw [← Scheme.Hom.comp_apply, fibToPair_snd, Scheme.Hom.comp_apply, hedef]
+    exact Scheme.fromSpecResidueField_apply a _
+  exact hlast ▸ hmem.2
 
 /-- **HOMOGENEITY: A NONEMPTY SMOOTH LOCUS OF AN ADDITIVE MORPHISM OF
 ABELIAN SCHEMES IS EVERYTHING** (**PROVEN 2026-07-29** over
