@@ -11891,6 +11891,411 @@ def IsAuxWeaklyUniversalOnFrames.{a, vK, vW} {p : ℕ} (hpodd : Odd p)
 `exists_universalFrame_auxDeformation_of_clauses` is one block, cut as a unit;
 it touches no declaration belonging to another owner.) -/
 
+/-! #### The four bridges the machine needs, and the two leaves that remain
+
+(2026-07-30, `flt-lean-166`.)  `exists_universalFrame_profinite_of_levelIdealSystem`
+(`HardlyRamified/Deformation.lean`, PROVEN) was made predicate-generic and
+universe-generic on 2026-07-29, and the route audit above concluded that the
+raised-level construction was therefore reduced to "step 2 only", i.e. to the
+level-ideal system.  **That is not the case**, and the four declarations below
+are the difference.  Each is now PROVEN; two further leaves remain, and they are
+stated after them.
+
+1. `isRaisedLevelHardlyRamified_baseChange` — the machine's `hbase` is
+   functoriality along an ARBITRARY continuous `ℤ_p`-algebra map into a finite
+   local ring.  `IsAuxFunctorialityClause` deliberately does NOT supply it: it is
+   the QUOTIENT clause, and its docstring, together with the section preamble at
+   `**2. The functoriality clause is the QUOTIENT one.**`, records that the
+   general-coefficient transfer was avoided because
+   `isHardlyRamified_baseChange` "rests on the OPEN Raynaud leaf
+   `hasFlatProlongationAt_of_pi_surjection`".  **That claim is STALE.**  Checked
+   against the compiler on 2026-07-30: `HardlyRamified/Deformation.lean` emits
+   exactly four `declaration uses 'sorry'` warnings, at lines 17639, 19753, 20357
+   and 21631 (`exists_obstructionCocycle_smallExtension_deformation`,
+   `exists_poitouTatePairing_sha2_sha1Twist`,
+   `exists_injective_sha2_dual_sha1Twist_of_selfDual`,
+   `card_sha1Twist_le_card_dualNumberPoints`).  Neither
+   `hasFlatProlongationAt_of_pi_surjection` (line 2398) nor `isFlatAt_baseChange`
+   (2479) nor `isHardlyRamified_baseChange` (2580) is among them — all three are
+   PROVEN.  The same stale claim appears at three further places in this file
+   (the survey note near `Runiv₀ ↪ Runiv₀[[y]]`, and the preamble), and an
+   inline comment in `Deformation.lean` still calls `isFlatAt_baseChange` "the
+   sorried transfer leaf".  With the Raynaud leaf closed, the raised-level
+   general transfer is the quotient proof with `isFlatAt_baseChange_quotient`
+   replaced by `isFlatAt_baseChange`; `isTameAtTwo_baseChange` and
+   `isSplitTorusAt_baseChange` were ALREADY stated at an arbitrary
+   `[Algebra R B] [ContinuousSMul R B]`, so nothing else moves.
+2. `isRaisedLevelHardlyRamified_pushforwardFrame` — 1 composed with
+   `isRaisedLevelHardlyRamified_conj`, exactly as
+   `isHardlyRamified_pushforwardFrame` is composed at the base level.  THIS is
+   the machine's `hbase`.
+3. `charFrob_map_of_isResidualIdentifiedFrame` — the machine delivers
+   `IsResidualIdentifiedFrame`, a STRICT identification; the target's conclusion
+   asks for linear `charFrob` coefficients matching away from a finite `Suniv`.
+   The strict identification gives the FULL characteristic polynomial at EVERY
+   prime, so `Suniv := ∅` discharges that clause.
+4. `isRaisedLevelHardlyRamified_baseChange_of_pushforwardFrame` — the machine's
+   levelwise clause is in `pushforwardFrame` shape; the target's `hquotBC` is in
+   `baseChange` shape at an open ideal.  **The recorded obstruction here is also
+   false.**  `raisedLevelFramedTameAtTwo_of_forall_isOpen_quotient`'s docstring
+   states that the `piScalarRight` route "is blocked by an INSTANCE mismatch",
+   the two `Algebra R (R ⧸ I)` structures being "equal, but not by `rfl`".  They
+   ARE equal by `rfl` — `example (R) [CommRing R] (I : Ideal R) :
+   (Ideal.Quotient.mk I).toAlgebra = Ideal.Quotient.algebra R := rfl` compiles —
+   and the conversion is five lines of `LevelLimit.conj_trans` /
+   `LinearEquiv.self_trans_symm` / `LevelLimit.conj_refl`, below.  (That
+   docstring's own route, the `pushforwardFrame_apply` dictionary, is of course
+   still correct; it is simply not forced.)
+
+What genuinely remains is TWO leaves, not one: the level-ideal system
+`exists_levelIdealSystem_aux_of_clauses`, and the weak/strict universality
+bridge `isAuxWeaklyUniversalOnFrames_of_isStrictlyUniversalOnFramesFor`. -/
+
+set_option linter.checkUnivs false in
+open scoped TensorProduct in
+/-- **The RAISED-LEVEL condition transfers along an ARBITRARY base change to a
+finite local ring** (PROVEN 2026-07-30, `flt-lean-166`): the general-coefficient
+twin of `isRaisedLevelHardlyRamified_baseChange_quotient` above, and the exact
+raised-level analogue of `isHardlyRamified_baseChange`
+(`HardlyRamified/Deformation.lean`, PROVEN).
+
+Same five clauses as the quotient version, with `isFlatAt_baseChange` in place of
+`isFlatAt_baseChange_quotient`; the tame and split-torus transfers
+(`isTameAtTwo_baseChange`, `isSplitTorusAt_baseChange`) are already stated at an
+arbitrary `[Algebra R B] [ContinuousSMul R B]` and are reused verbatim.
+
+See the section note above for why this was previously believed to depend on an
+open Raynaud leaf, and why that is no longer so. -/
+lemma isRaisedLevelHardlyRamified_baseChange {p : ℕ} [Fact p.Prime]
+    {hpodd : Odd p} (Q : Finset ℕ)
+    {R : Type*} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[p] R]
+    {V : Type*} [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V] {hdimV : Module.rank R V = 2}
+    (B : Type*) [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    [IsLocalRing B] [Finite B] [Algebra ℤ_[p] B] [Algebra R B]
+    [ContinuousSMul R B] [IsScalarTower ℤ_[p] R B]
+    (hdimB : Module.rank B (B ⊗[R] V) = 2)
+    {ρ : GaloisRep ℚ R V} (h : IsRaisedLevelHardlyRamified hpodd Q hdimV ρ) :
+    IsRaisedLevelHardlyRamified hpodd Q hdimB (ρ.baseChange B) := by
+  constructor
+  · -- the determinant maps along the structure morphism
+    intro g
+    have hdet : (ρ.baseChange B).det g = algebraMap R B (ρ.det g) := by
+      show LinearMap.det ((ρ.baseChange B) g) = _
+      rw [show ((ρ.baseChange B) g : Module.End B (B ⊗[R] V)) =
+        LinearMap.baseChange B (ρ g) from rfl, LinearMap.det_baseChange]
+      rfl
+    rw [hdet, h.det g, ← IsScalarTower.algebraMap_apply]
+  · -- unramifiedness away from `Q` passes to the base change
+    intro q hq hqQ hq2 hqp
+    letI : ρ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat :=
+      h.isUnramified q hq hqQ hq2 hqp
+    infer_instance
+  · -- flatness at `p`, now via the PROVEN general transfer
+    exact isFlatAt_baseChange B h.isFlat
+  · -- tameness at `2`
+    exact isTameAtTwo_baseChange B h.isTameAtTwo
+  · -- the split torus at every `q ∈ Q`
+    intro q hqQ hq
+    exact isSplitTorusAt_baseChange B hq (h.isSplitTorusAt q hqQ hq)
+
+set_option linter.checkUnivs false in
+open scoped TensorProduct in
+/-- **The RAISED-LEVEL condition transfers along `pushforwardFrame`** (PROVEN
+2026-07-30, `flt-lean-166`): the raised-level twin of
+`isHardlyRamified_pushforwardFrame`, and THE HYPOTHESIS `hbase` of
+`exists_universalFrame_profinite_of_levelIdealSystem`.
+
+`isRaisedLevelHardlyRamified_baseChange` supplies the base change and
+`isRaisedLevelHardlyRamified_conj` absorbs the framing identification
+`TensorProduct.piScalarRight`, exactly as at the base level.  Note this is NOT
+derivable from `IsAuxFunctorialityClause`, whose first conjunct is the QUOTIENT
+transfer only — see the section note above. -/
+lemma isRaisedLevelHardlyRamified_pushforwardFrame {p : ℕ} [Fact p.Prime]
+    {hpodd : Odd p} (Q : Finset ℕ)
+    {B : Type*} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    [IsLocalRing B] [Algebra ℤ_[p] B]
+    {A : Type*} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    [IsLocalRing A] [Finite A] [Algebra ℤ_[p] A]
+    (ψ : B →+* A) (hψ : Continuous ψ)
+    (halg : ψ.comp (algebraMap ℤ_[p] B) = algebraMap ℤ_[p] A)
+    {ρ : GaloisRep ℚ B (Fin 2 → B)}
+    (hρ : IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun B) ρ) :
+    IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun A)
+      (pushforwardFrame ψ hψ ρ) := by
+  letI : Algebra B A := ψ.toAlgebra
+  letI : ContinuousSMul B A := continuousSMul_of_algebraMap B A
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
+  letI : IsScalarTower ℤ_[p] B A := IsScalarTower.of_algebraMap_eq' (by
+    rw [RingHom.algebraMap_toAlgebra]
+    exact halg.symm)
+  have hrank : Module.rank A (A ⊗[B] (Fin 2 → B)) = 2 := by
+    rw [Module.rank_baseChange, rank_finTwoFun]
+    simp
+  exact isRaisedLevelHardlyRamified_conj Q (rank_finTwoFun A)
+    (isRaisedLevelHardlyRamified_baseChange Q A hrank hρ)
+    (TensorProduct.piScalarRight B A A (Fin 2))
+
+set_option linter.checkUnivs false in
+open scoped TensorProduct in
+/-- **A strict residual identification computes `charFrob` at EVERY prime**
+(PROVEN 2026-07-30, `flt-lean-166`): if `ρuniv` is residually identified with
+`ρbar` along `πuniv`, then `πuniv` carries the characteristic polynomial of
+Frobenius of `ρuniv` to that of `ρbar` — the WHOLE polynomial, at every `v`, with
+no exceptional set.
+
+`charFrob` is conjugation-invariant (`charFrob_conj`) and base change maps its
+coefficients along the structure morphism (`charFrob_baseChange`), which for
+`πuniv.toAlgebra` IS `πuniv`.
+
+This is what lets the assembly below take `Suniv := ∅`: the machine delivers a
+STRICT identification, which is strictly stronger than the linear-coefficient
+compatibility away from a finite set that `AuxDeformationDatum.charFrob_compat`
+and the target's conclusion are phrased with.  (The finite exceptional set is
+needed on the `ℚ` side wherever the datum arrives across a seam carrying only
+trace data; it is not needed where a construction hands over the identification
+itself.) -/
+lemma charFrob_map_of_isResidualIdentifiedFrame {p : ℕ} [Fact p.Prime]
+    {k : Type*} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] {ρbar : GaloisRep ℚ k W}
+    {R : Type*} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[p] R]
+    (ρuniv : GaloisRep ℚ R (Fin 2 → R)) (πuniv : R →+* k)
+    (hπcont : Continuous πuniv)
+    (hres : IsResidualIdentifiedFrame (ℓ := p) ρbar ρuniv πuniv hπcont)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    (ρuniv.charFrob v).map πuniv = ρbar.charFrob v := by
+  letI : Algebra R k := πuniv.toAlgebra
+  letI : ContinuousSMul R k := continuousSMul_of_algebraMap R k
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hπcont)
+  obtain ⟨e, he⟩ := hres
+  rw [← he, charFrob_conj, charFrob_baseChange, RingHom.algebraMap_toAlgebra]
+
+set_option linter.checkUnivs false in
+open scoped TensorProduct in
+/-- **From the `pushforwardFrame` clause at an open ideal to the `baseChange`
+clause** (PROVEN 2026-07-30, `flt-lean-166`).
+
+`pushforwardFrame ψ hψ ρ` is BY DEFINITION `(ρ.baseChange A).conj
+(TensorProduct.piScalarRight ..)`, so conjugating back by the inverse recovers
+the base change and `isRaisedLevelHardlyRamified_conj` transports the condition.
+
+**The recorded obstruction to this route does not exist.**
+`raisedLevelFramedTameAtTwo_of_forall_isOpen_quotient` records that the
+`piScalarRight` route is "blocked by an INSTANCE mismatch", `pushforwardFrame`
+base-changing along `letI : Algebra B A := ψ.toAlgebra` while the `baseChange`
+form uses the canonical `Ideal.Quotient.algebra`, "the two — equal, but not by
+`rfl`".  At `ψ = Ideal.Quotient.mk I` they are equal BY `rfl`, verified
+2026-07-30, so the `show` below goes through at default transparency and the two
+tensor products are the same type to the elaborator.  (The instance-independent
+`pushforwardFrame_apply` dictionary that docstring reaches for instead remains a
+correct route; it is simply not needed.)
+
+Note the rank witnesses `hdimI` and `rank_finTwoFun (R ⧸ I)` are proofs of
+DIFFERENT propositions, which costs nothing: no field of
+`IsRaisedLevelHardlyRamified` mentions its `hdim` argument. -/
+lemma isRaisedLevelHardlyRamified_baseChange_of_pushforwardFrame {p : ℕ}
+    [Fact p.Prime] {hpodd : Odd p} (Q : Finset ℕ)
+    {R : Type*} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[p] R]
+    {ρ : GaloisRep ℚ R (Fin 2 → R)}
+    (I : Ideal R) [IsLocalRing (R ⧸ I)] [Finite (R ⧸ I)]
+    [DiscreteTopology (R ⧸ I)]
+    (hmk : Continuous (Ideal.Quotient.mk I))
+    (hdimI : Module.rank (R ⧸ I) ((R ⧸ I) ⊗[R] (Fin 2 → R)) = 2)
+    (h : IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun (R ⧸ I))
+      (pushforwardFrame (Ideal.Quotient.mk I) hmk ρ)) :
+    IsRaisedLevelHardlyRamified hpodd Q hdimI (ρ.baseChange (R ⧸ I)) := by
+  have hcancel : (pushforwardFrame (Ideal.Quotient.mk I) hmk ρ).conj
+      (TensorProduct.piScalarRight R (R ⧸ I) (R ⧸ I) (Fin 2)).symm
+      = ρ.baseChange (R ⧸ I) := by
+    show ((ρ.baseChange (R ⧸ I)).conj
+      (TensorProduct.piScalarRight R (R ⧸ I) (R ⧸ I) (Fin 2))).conj _ = _
+    rw [LevelLimit.conj_trans, LinearEquiv.self_trans_symm, LevelLimit.conj_refl]
+  rw [← hcancel]
+  exact isRaisedLevelHardlyRamified_conj Q hdimI h _
+
+set_option linter.checkUnivs false in
+open scoped TensorProduct in
+/-- **The RAISED-LEVEL level-ideal system** (sorry node, LEAF A2′-2d′-i-1 — new
+2026-07-30, `flt-lean-166`; the arithmetic half of the raised-level Schlessinger
+machine, and the exact raised-level twin of
+`exists_levelIdealSystem_of_deformationCondition`
+(`HardlyRamified/Deformation.lean`, PROVEN)).
+
+This is the ONE place `hglue`, `hfin` and `𝒟₀` are spent.  The conclusion is
+`exists_levelIdealSystem_of_deformationCondition`'s verbatim, with
+`IsRaisedLevelHardlyRamified hpodd Q` in place of `IsHardlyRamified hℓOdd` in the
+`hrep` and `hclass` clauses, and with the residual field `k : Type uK` and the
+frame ring `P : Type uR` in INDEPENDENT universes (the base-level chain bound
+both to one section universe; `flt-lean-39` freed the coefficient axis of the
+downstream construction on 2026-07-29, which is what makes the raised-level
+instantiation expressible at all).
+
+**WHAT THE PROVER MUST BUILD**, following the base-level proof one for one: the
+frame ring `frameRing`, its evaluation `frameEv`, the universal matrix
+`frameMat`, and the set `frameLevels` of level ideals, together with
+`frameLevels_nonempty` (H1 through `𝒟₀`: the raised-level category is NONEMPTY,
+which is exactly what `𝒟₀` is for and without which the statement is FALSE),
+`frameLevels_directed` (H1/H2, through `hglue`), `frameMat_map_frameEv`,
+`frameLevels_classification` (H3, through `hfin`, and Schur/H4 through `hirr`),
+and `frameRing_rigid`.  Six of those eight are arithmetic-free and transcribe
+verbatim; the two that consume the deformation condition are the directedness
+and the classification.
+
+**WHAT IT MAY NOT DO.**  The base-level chain bottoms out in
+`exists_framedStrictlyUniversal_hardlyRamified_finiteTests`, discharged by
+`exfalso` from the odd-prime dichotomy against an irreducible hardly ramified
+`ρbar`.  That route is BANNED here for the reason recorded on the consumer: this
+statement deliberately does not carry `IsHardlyRamified hpodd hW ρbar`, and
+deriving it from `𝒟₀` by reduction descent is banned by the circularity guard.
+A proof ending in `exfalso` must be rejected.
+
+Note `hfunc` is NOT among the hypotheses.  Its quotient conjunct is not used by
+the base-level construction, and the general-coefficient transfer the
+construction does need is now PROVEN outright as
+`isRaisedLevelHardlyRamified_pushforwardFrame` above — so carrying `hfunc` here
+would leave it unconsumed.  It is still consumed by the assembly's caller.
+
+CIRCULARITY GUARD: as for `exists_auxDeformationDatum` above.
+
+References: Schlessinger, *Functors of Artin rings*, Thm. 2.11; Mazur,
+*Deforming Galois representations*, §1.2; de Smit–Lenstra, Prop. 2.3. -/
+theorem exists_levelIdealSystem_aux_of_clauses.{uK, uW, uR}
+    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hirr : ρbar.IsIrreducible)
+    (Q : Finset ℕ)
+    (𝒟₀ : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar)
+    (hglue : IsAuxFibreProductClause.{uR, uK, uW} hpodd Q ρbar)
+    (hfin : IsAuxFiniteFramesClause.{uR} hpodd Q) :
+    ∃ (e0 : W ≃ₗ[k] (Fin 2 → k)) (P : Type uR) (_ : CommRing P)
+      (_ : Algebra ℤ_[p] P) (evbar : P →+* k) (_ : Function.Surjective evbar)
+      (_ : evbar.comp (algebraMap ℤ_[p] P) = algebraMap ℤ_[p] k)
+      (M : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) P)
+      (𝒥 : Set (Ideal P)),
+      𝒥.Nonempty ∧
+      (∀ J₁ ∈ 𝒥, ∀ J₂ ∈ 𝒥, ∃ J ∈ 𝒥, J ≤ J₁ ⊓ J₂) ∧
+      (∀ J ∈ 𝒥, J ≤ RingHom.ker evbar) ∧
+      (∀ J ∈ 𝒥, Finite (P ⧸ J) ∧ IsLocalRing (P ⧸ J)) ∧
+      (∀ g : Field.absoluteGaloisGroup ℚ,
+        (M g).map ⇑evbar = LinearMap.toMatrix' ((ρbar.conj e0) g)) ∧
+      (∀ J : Ideal P, J ∈ 𝒥 → ∀ [Finite (P ⧸ J)] [IsLocalRing (P ⧸ J)]
+        [TopologicalSpace (P ⧸ J)] [DiscreteTopology (P ⧸ J)]
+        [IsTopologicalRing (P ⧸ J)],
+        ∃ ρJ : GaloisRep ℚ (P ⧸ J) (Fin 2 → (P ⧸ J)),
+          (∀ g : Field.absoluteGaloisGroup ℚ, LinearMap.toMatrix' (ρJ g) =
+            (M g).map ⇑(Ideal.Quotient.mk J)) ∧
+          IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun (P ⧸ J)) ρJ) ∧
+      (∀ (A : Type uR) [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+        [IsLocalRing A] [Algebra ℤ_[p] A] [Finite A] [DiscreteTopology A]
+        (πA : A →+* k) (hπA : Continuous πA), Function.Surjective πA →
+        ∀ (ρA : GaloisRep ℚ A (Fin 2 → A)),
+        IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun A) ρA →
+        πA.comp (algebraMap ℤ_[p] A) = algebraMap ℤ_[p] k →
+        pushforwardFrame πA hπA ρA = ρbar.conj e0 →
+        ∃ f : P →+* A, f.comp (algebraMap ℤ_[p] P) = algebraMap ℤ_[p] A ∧
+          πA.comp f = evbar ∧
+          (∀ g : Field.absoluteGaloisGroup ℚ,
+            (M g).map ⇑f = LinearMap.toMatrix' (ρA g)) ∧
+          ∃ J ∈ 𝒥, J ≤ RingHom.ker f) ∧
+      (∀ (A : Type uR) [CommRing A] [IsLocalRing A] [Finite A]
+        (πA : A →+* k) (f₁ f₂ : P →+* A),
+        πA.comp f₁ = evbar → πA.comp f₂ = evbar →
+        (∀ g : Field.absoluteGaloisGroup ℚ, (M g).map ⇑f₁ = (M g).map ⇑f₂) →
+        f₁ = f₂) :=
+  sorry
+
+set_option linter.checkUnivs false in
+open scoped TensorProduct in
+/-- **From STRICT universality on frames to the WEAK raised-level universality**
+(sorry node, LEAF A2′-2d′-i-2 — new 2026-07-30, `flt-lean-166`).
+
+`exists_universalFrame_profinite_of_levelIdealSystem` concludes with
+`IsStrictlyUniversalOnFramesFor`, whose test objects arrive carrying a STRICT
+residual identification `∃ e : (k ⊗[A] (Fin 2 → A)) ≃ₗ[k] W,
+(ρA.baseChange k).conj e = ρbar`.  `IsAuxWeaklyUniversalOnFrames` — the shape the
+consumer `exists_isWeaklyUniversal_auxDeformationDatum_of_clauses` needs — asks
+its test objects only for the LINEAR `charFrob` COEFFICIENTS to match those of
+`ρbar` away from a finite `SA`.  That is strictly weaker, so this is a genuine
+obligation and not plumbing.
+
+**THE ROUTE, AND WHY EVERY INPUT IS PRESENT.**
+
+* *Continuity of `πA`* is free: `A` is finite DISCRETE, so
+  `continuous_of_discreteTopology`.
+* *Trace ⟹ conjugacy* is `exists_conj_of_charFrob_eq_away` above (PROVEN), which
+  upgrades "`charFrob` agrees away from a finite set, `ρbar` irreducible" to an
+  actual `e` with `(ρA.baseChange k).conj e = ρbar`.  It wants the FULL
+  characteristic polynomial, and the hypothesis supplies only `coeff 1`.  The
+  missing coefficient is supplied by monic-quadratic reconstruction —
+  `charFrob_monic`, `charFrob_natDegree`, `monic_natDegree_two_ext` and
+  `coeff_zero_charFrob_eq_of_det_eq`, all PROVEN above — which needs the
+  DETERMINANT of both representations pinned to the cyclotomic character.
+* For `ρA` the determinant is `IsRaisedLevelHardlyRamified.det`, which the test
+  object carries.
+* **For `ρbar` the determinant is NOT a hypothesis of the consumer, and this is
+  the one point a prover should check before starting.**  It is nevertheless
+  available, by pushing `ρuniv` forward along `πuniv` itself: `k` is a finite
+  discrete local `ℤ_p`-algebra and `πuniv` is a surjective continuous
+  `ℤ_p`-algebra map, so the machine's own levelwise pushforward clause applies at
+  `A := k`, and `hres` identifies the result with `ρbar` up to
+  `TensorProduct.piScalarRight` and `e`; `isRaisedLevelHardlyRamified_conj` then
+  gives `ρbar` the raised-level condition, hence its `det`.  That is why `hres`
+  and the pushforward clause `hquotPF` are both hypotheses here rather than only
+  `hstrict`.  (The one thing that route needs and the machine's conclusion does
+  NOT state is `πuniv.comp (algebraMap ℤ_[p] R) = algebraMap ℤ_[p] k`; it is
+  therefore carried explicitly as `hπalg`, and the assembly below cannot supply
+  it — see the STATUS note on the consumer.  A prover who closes this leaf should
+  say whether `hπalg` was genuinely needed, since if not it should be dropped,
+  and if so `exists_universalFrame_profinite_of_levelIdealSystem`'s conclusion
+  should be strengthened to state it, which is a one-line change there —
+  `hevalg` is already one of its hypotheses.)
+* *The conclusion side is free*: `(ρuniv.baseChange A).conj e = ρA` gives
+  `ρA.charFrob = (ρuniv.charFrob).map ψ` at EVERY prime by `charFrob_conj` and
+  `charFrob_baseChange`, so `Suniv := ∅` and the `∉ SA` hypothesis is unused in
+  that direction.
+
+**Check that would refute it**: a finite discrete raised-level `(A, ρA, πA, SA)`
+whose linear `charFrob` coefficients match `ρbar`'s away from `SA` but which is
+NOT residually identified with `ρbar` — i.e. a failure of Brauer–Nesbitt at rank
+2 with the determinant pinned, which `hirr` is there to exclude. -/
+theorem isAuxWeaklyUniversalOnFrames_of_isStrictlyUniversalOnFramesFor.{uK, uW, uR}
+    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hirr : ρbar.IsIrreducible)
+    (Q : Finset ℕ)
+    {R : Type uR} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[p] R]
+    (ρuniv : GaloisRep ℚ R (Fin 2 → R)) (πuniv : R →+* k)
+    (hπcont : Continuous πuniv)
+    (hπalg : πuniv.comp (algebraMap ℤ_[p] R) = algebraMap ℤ_[p] k)
+    (hres : IsResidualIdentifiedFrame (ℓ := p) ρbar ρuniv πuniv hπcont)
+    (hquotPF : ∀ (A : Type uR) [CommRing A] [TopologicalSpace A]
+      [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[p] A] [Finite A]
+      [DiscreteTopology A] (φ : R →+* A) (hφ : Continuous φ),
+      φ.comp (algebraMap ℤ_[p] R) = algebraMap ℤ_[p] A →
+      IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun A)
+        (pushforwardFrame φ hφ ρuniv))
+    (hstrict : IsStrictlyUniversalOnFramesFor (ℓ := p)
+      (fun A iCR iTS iTR iLR iAlg ρA =>
+        letI := iCR; letI := iTS; letI := iTR; letI := iLR; letI := iAlg
+        IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun A) ρA)
+      ρbar ρuniv πuniv) :
+    IsAuxWeaklyUniversalOnFrames.{uR, uK, uW} hpodd Q ρbar ρuniv πuniv ∅ :=
+  sorry
+
 set_option linter.checkUnivs false in
 open scoped TensorProduct in
 /-- **Pro-representability of the RAISED-LEVEL problem over `ℚ`, PROFINITE
@@ -11964,22 +12369,69 @@ by `exfalso` from the odd-prime dichotomy against an irreducible hardly ramified
 is banned by the circularity guard.  A proof ending in `exfalso` must be
 rejected.
 
-The recommended discharge is unchanged: make the base-level chain
+The recommended discharge was: make the base-level chain
 (`exists_levelIdealSystem_of_deformationCondition` and
 `exists_universalFrame_profinite_of_levelIdealSystem`, both PROVEN in
 `HardlyRamified/Deformation.lean`) PREDICATE-GENERIC in the local condition and
-instantiate it twice.  **Checked 2026-07-28 and recorded because a task prompt
-asserted the contrary:** the Hilbert twin
+instantiate it twice.  `flt-lean-39` DID that on 2026-07-29:
+`exists_universalFrame_profinite_of_levelIdealSystem` now takes the condition as
+a parameter `Cond` with conjugation-invariance `hCondConj`, and its coefficient
+universe is independent of the residual field's.
+
+**STATUS 2026-07-30 (`flt-lean-166`): the remaining obligation is TWO leaves,
+not one, and it is NOT "step 2 only".**  Instantiating the now-generic machine
+takes four bridges beyond the level-ideal system.  All four are PROVEN above —
+see the section note `#### The four bridges the machine needs` for the detail,
+including the three STALE claims (two in this file, one in `Deformation.lean`)
+that they refute.  In brief: the machine's `hbase` is functoriality along an
+ARBITRARY coefficient map, which `IsAuxFunctorialityClause` deliberately does not
+supply and which is now `isRaisedLevelHardlyRamified_pushforwardFrame`; the
+machine's `IsResidualIdentifiedFrame` is converted to this statement's
+`Suniv`-clause by `charFrob_map_of_isResidualIdentifiedFrame`, at `Suniv = ∅`;
+and the machine's levelwise `pushforwardFrame` clause is converted to this
+statement's `baseChange` clause by
+`isRaisedLevelHardlyRamified_baseChange_of_pushforwardFrame`.
+
+What remains, and what the assembly here is waiting on:
+
+* `exists_levelIdealSystem_aux_of_clauses` (the arithmetic; `hglue`, `hfin` and
+  `𝒟₀` are spent there and nowhere else), and
+* `isAuxWeaklyUniversalOnFrames_of_isStrictlyUniversalOnFramesFor` (the machine
+  concludes with STRICT universality, whose test objects arrive residually
+  identified; this statement's conclusion asks only for matching linear
+  `charFrob` coefficients away from a finite set, which is strictly weaker, so
+  the bridge is Brauer–Nesbitt at rank 2 and is a genuine obligation).
+
+**THE ONE BLOCKER TO WRITING THE ASSEMBLY NOW, recorded so it is not
+rediscovered.**  The universality bridge needs the determinant of `ρbar` pinned
+to the cyclotomic character, and this statement does not hypothesise it.  It IS
+recoverable — push `ρuniv` forward along `πuniv` itself, `k` being a finite
+discrete local `ℤ_p`-algebra, and transport along `hres` — but that application
+needs `πuniv.comp (algebraMap ℤ_[p] R) = algebraMap ℤ_[p] k`, which
+`exists_universalFrame_profinite_of_levelIdealSystem` establishes internally (as
+a `have`, from its own hypothesis `hevalg`) and does NOT state in its conclusion.
+So the bridge carries it as the explicit hypothesis `hπalg`, and the assembly
+cannot discharge it from the machine's conclusion as that conclusion currently
+stands.
+
+The fix is one line upstream — add that equation to
+`exists_universalFrame_profinite_of_levelIdealSystem`'s conclusion and to its
+final `refine`, where `hπalg` is already in scope.  It was NOT done here because
+adding a conjunct changes the destructuring for all three of its proven
+consumers in `Deformation.lean`, a file with other active owners; that edit
+belongs to whoever owns that chain, and it is the cheapest way to unblock this
+assembly.  A prover who closes the universality bridge should also report whether
+`hπalg` was genuinely needed — if another route to `ρbar`'s determinant exists,
+the hypothesis should simply be dropped and no upstream change is required.
+
+Superseded note, kept because it was the recorded reason for this node's shape
+and is no longer true: "the base-level chain is NOT predicate-generic" and "binds
+`k` and the constructed ring in the same universe, so a raised-level
+instantiation needs a `ULift` transport".  Both were fixed by `flt-lean-39`; no
+`ULift` is needed anywhere.  Still true: the Hilbert twin
 `exists_universalFrame_profinite_hilbertAux_of_clauses`
-(`HilbertModularity.lean`) is itself still a `sorry`, so there is no built
-Hilbert model of this refactor to transcribe; and the base-level chain is NOT
-predicate-generic — `IsHardlyRamified hℓOdd …` occurs literally in the binders
-of `hfin`, `hbase`, `hglue` and in the conclusion.  The refactor is therefore
-real work on declarations belonging to other owners, which is why it is not
-attempted at this cut.  Its one genuine extra obstacle is that the base-level
-chain binds `k : Type u` and the constructed ring `P : Type u` in the same
-universe, so a raised-level instantiation at independent universes needs a
-`ULift` transport of the residual data as well as the predicate abstraction.
+(`HilbertModularity.lean`) is itself a `sorry`, so there is no built Hilbert
+model of this to transcribe.
 
 CIRCULARITY GUARD: as for `exists_auxDeformationDatum` above.
 
