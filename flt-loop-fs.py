@@ -168,6 +168,109 @@ def merge_branches(branches):
 # insufficient because pids recycle, and matching on a pattern is how you kill
 # somebody else's process that happens to share a substring -- so the token
 # goes in argv[0] and is checked before the pid is believed or signalled.
+# --------------------------------------------------------------------------
+# prompts: an invariant half we author, and a variable half from the queue
+# --------------------------------------------------------------------------
+# Splitting these is not cosmetic. The invariant half is the CONTRACT -- what
+# the job will find, what it must return, how it must behave -- and it has to
+# be identical across every dispatch, because the loop's rows are written
+# against it: the ADOPT guard demands the merger left a snapshot and an audit,
+# and the panic row demands every job returns the binary field. If that text
+# were retyped per task it would drift, and a row would start failing against
+# jobs that were never told what they owed.
+#
+# The variable half is one line from the queue. Keeping it to that also keeps
+# the queue editable by hand, which is the point of it being a text file.
+#
+# Composed at SPAWN and written to jobs/<n>.prompt, so the state repo records
+# exactly what each job was told -- the medic's first question after a panic
+# is usually "what did you actually ask it to do".
+AGENT_DOCTRINE = """\
+You are a prover agent in the flt-lean fleet.
+
+WHAT YOU WILL FIND
+  * Your worktree is at $WORKTREE on host $HOST, already fast-forwarded to
+    main and checked out on the branch $WORKTREE.
+  * A clean build of main is at $SNAPSHOT. COPY it into your worktree's .lake
+    before building anything. Do not build mathlib from source.
+  * Artifacts are machine-local: run lake ON $HOST, nowhere else.
+
+HOW TO WORK
+  * Develop against a throwaway scratch module importing only what you need,
+    and do ONE final verify against the real file. Elaboration is
+    single-threaded per file; this is the difference between a one-minute and
+    a thirty-minute round trip.
+  * A leaf may be FALSE AS STATED. Refuting one with an explicit
+    counterexample and restating it correctly is a FULLY successful outcome.
+  * Commit to your branch. Do not merge, do not touch another worktree.
+
+HOW TO REPORT BACK
+  * The leaves you closed, and the ones you opened, by name.
+  * PANIC: true or false. This is NOT a verdict on the mathematics. A proof
+    that did not go through, a leaf that turned out false, a target already
+    proven elsewhere -- all of those are PANIC: false, they are results.
+    PANIC: true means you could not operate at all: no .lake at the snapshot
+    path, the worktree on a branch nobody claimed, a torn or missing tree.
+    If you set it true, say in one sentence what was not where it should be.
+"""
+
+MERGER_DOCTRINE = """\
+You are the merge worker. You produce EVERY derived fact about main, and the
+loop will refuse your release if any of them is missing.
+
+DO ALL FOUR, IN THIS ORDER
+  1. Merge each branch in .inflight into main. After each merge run
+     `git diff --stat HEAD^1 HEAD` -- a merge can report success and carry
+     nothing, and a dropped payload builds perfectly. Empty for a branch that
+     changed files means re-do it.
+  2. Build main clean and leave the artifacts at $SNAPSHOT. Agents copy their
+     .lake from there; a torn or stale one poisons every worker dispatched
+     after you.
+  3. Rewrite the queue: remaining queue1 first, then queue2, then empty
+     queue2. Drop tasks whose leaf is no longer open. Add open leaves nobody
+     holds -- but a leaf a LIVE agent is proving is NOT unowned, and queueing
+     it hands the same target to a second worker.
+  4. Stamp queue1 as audited at the main you produced.
+
+REPORT
+  * The branches that landed, and any you declined and why.
+  * PANIC: true or false, same rule as the agents -- environment, never
+    mathematics. Declining a branch is a result. A missing staging tree is a
+    panic.
+"""
+
+MEDIC_DOCTRINE = """\
+The loop has stopped and handed you the state. It is a git repo: `git log`
+is the transition trace and every tick is a commit, so you can diff your way
+back to the one that broke things.
+
+The reason the loop could not continue is below. Repair the state on disk if
+it is repairable.
+
+RETURN
+  * An explanation, for a human, of what went wrong and what you changed.
+  * GO or NO-GO: whether the loop may resume. Both are emailed; NO-GO is the
+    right answer when resuming would destroy evidence or repeat the fault.
+"""
+
+
+def compose_prompt(kind, j, name):
+    body = {"agent": AGENT_DOCTRINE, "merger": MERGER_DOCTRINE,
+            "medic": MEDIC_DOCTRINE}.get(kind, "")
+    body = (body.replace("$WORKTREE", str(j.get("worktree")))
+                .replace("$HOST", str(j.get("host")))
+                .replace("$SNAPSHOT", str(DIR / "snapshot")))
+    if kind == "agent":
+        task = "\nYOUR TASK\n  Close this leaf: %s\n" % j["payload"]
+    elif kind == "merger":
+        task = ("\nYOUR BATCH\n  %s\n"
+                % (", ".join(j["payload"]) if j["payload"]
+                   else "(empty -- refresh the snapshot and audit only)"))
+    else:
+        task = "\nWHY THE LOOP STOPPED\n  %s\n" % j["payload"]
+    return body + task
+
+
 def _tag(token):
     return "flt-job-" + token
 
@@ -217,6 +320,7 @@ def kill_job(pid, token):
 
 
 def do_spawn(s, name, j):
+    wr(DIR / "jobs" / (name + ".prompt"), compose_prompt(j["kind"], j, name))
     pid = spawn_detached(j["token"], name)
     return (j["host"], pid,
             # stands in for the Claude transcript id -- what row 6 resumes from

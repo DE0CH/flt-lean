@@ -64,7 +64,8 @@ def idle_guard(s):
         # ...unless we are waiting on host capacity, which IS a legitimate
         # wait even with nothing running (a zero-capacity or fully drained
         # fleet). Without this it would read as an illegal state and panic.
-        if any(unspawned(j) for j in s["jobs"].values()) and pick_host(s) is None:
+        if (any(unspawned(j) for j in s["jobs"].values())
+                and not any(spawnable(s, j) for j in s["jobs"].values())):
             return (True, "")
         return (False, "nothing is alive, so nothing will change")
     bad = unjustified(s)
@@ -130,6 +131,34 @@ def pick_host(s):
     return min(room)[1] if room else None
 
 
+# Kinds that occupy a worktree and build Lean, and so are subject to the
+# distributor. The medic is NOT one: it edits state files on the loop's own
+# host and needs no build slot.
+#
+# Exempting it is not a convenience. A panic happens when things are wedged,
+# which is exactly when the fleet is most likely to be full -- and SAFE MODE
+# suspends every row below the medic, so no agent will ever finish and free a
+# slot. Subjecting the medic to capacity is therefore a guaranteed permanent
+# deadlock: the one job that can unstick the loop queues behind the jobs that
+# cannot proceed until it does.
+NEEDS_HOST = ("agent", "merger")
+
+# The medic runs here, always, whatever the fleet is doing.
+MEDIC_HOST = "mystique"
+
+
+def spawnable(s, j):
+    if not unspawned(j):
+        return False
+    # SAFE MODE, enforced at the spawner rather than by row order. SPAWN has
+    # to sit ABOVE the SAFE MODE row -- otherwise the row that engages safe
+    # mode blocks the only thing that can start the medic -- and this is what
+    # stops that from also letting ordinary work start during a panic.
+    if "medic" in s["jobs"] and j["kind"] != "medic":
+        return False
+    return j["kind"] not in NEEDS_HOST or pick_host(s) is not None
+
+
 def unspawned(j):
     return (not j["started"]) and (not j["alive"])
 
@@ -187,18 +216,29 @@ def rmedic_done_action(s):
 
 
 def rmedic_wait_guard(s):
-    return ("medic" in s["jobs"],
-            "no medic in flight (normal operation)")
+    """SAFE MODE engages once the medic is RUNNING, not when it is recorded.
+
+    Engaging on the record would suspend the spawner that has to start it --
+    this row sits above SPAWN -- and the medic would sit unspawned forever
+    while every operational row stayed frozen. The earlier version dodged that
+    by spawning the medic itself, which put a second spawner in a design whose
+    whole point is that there is exactly one: it set `started` by hand and so
+    skipped the host assignment, the pid, the session id and the prompt, and
+    the record it left claimed to be running with nothing behind it.
+    """
+    # Engages on the RECORD, so nothing operational runs in the gap between a
+    # panic being reported and the medic actually starting. That gap was real:
+    # the panicking agent was integrated by the row below on the very next
+    # tick, which is exactly what checking panic above the consumers was
+    # supposed to prevent. SPAWN sits above this row and spawnable() refuses
+    # every non-medic kind while a medic exists, so the medic can still start.
+    if "medic" not in s["jobs"]:
+        return (False, "no medic in flight (normal operation)")
+    return (True, "")
 
 
 def rmedic_wait_action(s):
-    j = s["jobs"]["medic"]
-    if unspawned(j):
-        j["started"] = True
-        j["alive"] = True
-        note(s, "3  SAFE MODE: medic spawned; all normal rows suspended")
-    else:
-        note(s, "3  SAFE MODE: waiting on medic")
+    note(s, "3  SAFE MODE: waiting on medic; all normal rows suspended")
 
 
 def r2_guard(s):
@@ -247,15 +287,23 @@ def r4_action(s):
 
 
 def r5_guard(s):
-    if any(unspawned(j) for j in s["jobs"].values()) and pick_host(s) is None:
+    if any(spawnable(s, j) for j in s["jobs"].values()):
+        return (True, "")
+    if any(unspawned(j) for j in s["jobs"].values()):
         return (False, "every host is at capacity -- nowhere to spawn")
-    hits = [n for n, j in s["jobs"].items() if unspawned(j)]
-    return (bool(hits), "every job record already has a live process or a .started marker")
+    return (False, "every job record already has a live process or a .started marker")
 
 
 def r5_action(s):
+    # A pending medic is spawned ALONE. Everything else is operational work,
+    # and a panic is the one moment where starting more of it is wrong: the
+    # state is already unexplained.
+    pending_medic = [n for n, j in s["jobs"].items()
+                     if j["kind"] == "medic" and unspawned(j)]
     for n, j in s["jobs"].items():
-        if unspawned(j):
+        if pending_medic and n not in pending_medic:
+            continue
+        if spawnable(s, j):
             j["started"] = True
             j["alive"] = True
             # Identity is recorded BY the spawn, not by the record that
@@ -264,7 +312,8 @@ def r5_action(s):
             # what row 6 resumes from: a died agent is continued from its
             # transcript, never restarted from nothing, so losing this field
             # would silently convert every resume into a redo.
-            j["host"] = j.get("host") or pick_host(s)
+            j["host"] = j.get("host") or (pick_host(s) if j["kind"] in NEEDS_HOST
+                                          else MEDIC_HOST)
             host, pid, sess = SPAWN(s, n, j)
             j["host"], j["pid"], j["session"] = host, pid, sess
             # Name what was spawned: row 7 is the ONE spawner for every kind,
@@ -418,7 +467,13 @@ def panic(s, reason="no row matched"):
     commit(s, "PANIC: " + reason)
     s["email"].append("PANIC: " + reason)
     s["jobs"]["medic"] = {
-        "kind": "medic", "worktree": "flt-loop-state", "payload": "diagnose",
+        # The reason IS the payload. A medic told only "something is wrong"
+        # has to re-derive the diagnosis from the git history, and the one
+        # thing the loop knows and it does not is which guard failed and on
+        # what -- that is the whole content of the panic. Emailing the reason
+        # while handing the repair agent a bare "diagnose" would put the
+        # useful half in the place nobody acts on.
+        "kind": "medic", "worktree": "flt-loop-state", "payload": reason,
         "token": tok(), "retries": 0, "started": False, "alive": False,
         "sentinel": None,
     }
@@ -445,6 +500,14 @@ def reported_panic_guard(s):
     Checked ABOVE the rows that consume sentinels, so a panicking job is never
     quietly integrated first.
     """
+    # Self-disabling: once a medic exists the panic is being handled, and the
+    # report must stop matching. Without this the row fires every tick and
+    # rebuilds the medic record from scratch each time -- so the medic is
+    # perpetually one tick old, never survives long enough for SPAWN (which
+    # sits below this row) to start it, and the loop reports the same panic
+    # forever while doing nothing about it.
+    if "medic" in s["jobs"]:
+        return (False, "a medic is already handling a panic")
     hits = [(n, j) for n, j in s["jobs"].items()
             if finished(j) and j["sentinel"].get("panic")]
     if not hits:
@@ -461,21 +524,42 @@ def reported_panic_action(s):
     panic(s, "%s (%s) reported PANIC: %s" % (n, j["kind"], why))
 
 
+def inferred_panic(s):
+    """The catch-all. Say what could not be explained, not merely that it was.
+
+    The idle guard already computed the answer: it is the list of jobs it
+    refused to justify. Passing that through means the medic gets "merger
+    stopped and no row consumed it" rather than "no row matched", which is the
+    difference between a diagnosis and a notification.
+    """
+    bad = unjustified(s)
+    if bad:
+        why = "unjustified jobs -- " + "; ".join(f"{n}: {w}" for n, w in bad)
+    elif not any(j["alive"] for j in s["jobs"].values()):
+        why = ("nothing is running and no row matched: queue1=%d queue2=%d "
+               "batch=%d jobs=%d" % (len(s["queue1"]["tasks"]), len(s["queue2"]),
+                                     len(s["batch"]), len(s["jobs"])))
+    else:
+        why = "no row matched"
+    panic(s, why)
+
+
 ROWS = [
     (1, "STOP exists", r1_guard, r1_action),
     (2, "medic finished -> apply GO / NO-GO verdict", rmedic_done_guard, rmedic_done_action),
-    (3, "medic in flight -> SAFE MODE (all rows below suspended)", rmedic_wait_guard, rmedic_wait_action),
-    (4, "a job REPORTED panic -> email + medic", reported_panic_guard, reported_panic_action),
-    (5, "agent finished -> integrate, awaiting_merge", r2_guard, r2_action),
-    (6, "awaiting_merge ∧ ancestor(main) -> free", r3_guard, r3_action),
-    (7, "agent died -> resume from transcript", r4_guard, r4_action),
-    (8, "record ∧ ¬started ∧ no process -> SPAWN", r5_guard, r5_action),
+    (3, "record ∧ ¬started ∧ no process -> SPAWN", r5_guard, r5_action),
+    (4, "medic in flight -> SAFE MODE (all rows below suspended)",
+     rmedic_wait_guard, rmedic_wait_action),
+    (5, "a job REPORTED panic -> email + medic", reported_panic_guard, reported_panic_action),
+    (6, "agent finished -> integrate, awaiting_merge", r2_guard, r2_action),
+    (7, "awaiting_merge ∧ ancestor(main) -> free", r3_guard, r3_action),
+    (8, "agent died -> resume from transcript", r4_guard, r4_action),
     (9, "merger died without releasing -> restore .inflight", r6_guard, r6_action),
     (10, "merger delivered main+snapshot+audit -> ADOPT", r7_guard, r7_action),
     (11, "batch ∨ derived-from-main is stale -> create merger record", r11_guard, r11_action),
     (12, "dispatch: pop queue1 -> agent records", r15_guard, r15_action),
     (13, "idle -- every live job is justified", idle_guard, lambda s: None),
-    (14, "ILLEGAL STATE -> email + medic", lambda s: (True, ""), panic),
+    (14, "ILLEGAL STATE -> email + medic", lambda s: (True, ""), inferred_panic),
 ]
 
 
