@@ -35737,9 +35737,182 @@ theorem integrableOn_qSeriesAt {M : ℕ} (hM : M ≠ 0) {g : CuspForm (Gamma0GL 
       (by simpa using integrableOn_axisRestrict M hM g)
   exact hcomp.congr_fun (fun y hy => (qSeriesAt_eq_axisRestrict hM hb hy).symm) measurableSet_Ioi
 
+/-- **A real number of absolute value at most `2√p` is the trace of a
+conjugate pair of modulus exactly `√p`** (PROVEN 2026-07-30) — the algebra
+half of the Satake packaging below, and the reason that packaging is no
+longer part of a leaf.
+
+Given `r : ℝ` with `|r| ≤ 2√p`, the quadratic `X² − r X + p` has non-positive
+discriminant `r² − 4p`, so its roots are the complex-conjugate pair
+`α, ᾱ = r/2 ± i√(p − r²/4)`, and `‖α‖² = r²/4 + (p − r²/4) = p` exactly.
+`α * ᾱ = normSq α` is `Complex.mul_conj`, so the product clause needs no
+separate computation.
+
+**`|r| ≤ 2√p` is what makes the discriminant non-positive**, and it is not
+cosmetic: for a real `r` with `|r| > 2√p` the roots are real and distinct with
+PRODUCT `p`, so one of them has modulus `> √p`.  This is the mechanised form
+of the remark on the consumer below that `‖a p‖ ≤ 2√p` alone does not give
+`‖α‖, ‖β‖ ≤ √p` — it does exactly when `a p` is REAL, which is why the leaf
+below asserts reality rather than only a bound. -/
+theorem exists_conjugatePair_of_abs_le_two_mul_sqrt (p : ℕ) (r : ℝ)
+    (hr : |r| ≤ 2 * Real.sqrt p) :
+    ∃ α β : ℂ, α + β = (r : ℂ) ∧ α * β = (p : ℂ) ∧
+      ‖α‖ ≤ Real.sqrt p ∧ ‖β‖ ≤ Real.sqrt p := by
+  have hp0 : (0 : ℝ) ≤ (p : ℝ) := Nat.cast_nonneg p
+  have hsq : r ^ 2 ≤ 4 * (p : ℝ) := by
+    nlinarith [abs_nonneg r, sq_abs r, Real.sqrt_nonneg (p : ℝ),
+      Real.mul_self_sqrt hp0]
+  have hnn : (0 : ℝ) ≤ (p : ℝ) - r ^ 2 / 4 := by linarith
+  set s : ℝ := Real.sqrt ((p : ℝ) - r ^ 2 / 4) with hs
+  have hss : s * s = (p : ℝ) - r ^ 2 / 4 := Real.mul_self_sqrt hnn
+  set α : ℂ := ⟨r / 2, s⟩ with hα
+  have hnormSq : Complex.normSq α = (p : ℝ) := by
+    rw [Complex.normSq_apply, hα]
+    simp only []
+    rw [hss]
+    ring
+  have hnorm : ‖α‖ = Real.sqrt p := by rw [Complex.norm_def, hnormSq]
+  refine ⟨α, (starRingEnd ℂ) α, ?_, ?_, le_of_eq hnorm, ?_⟩
+  · apply Complex.ext <;> simp [hα]
+  · rw [Complex.mul_conj, hnormSq]
+    norm_cast
+  · rw [Complex.norm_conj, hnorm]
+
+/-- **DELIGNE AND ATKIN–LEHNER, READ AT THE COEFFICIENT `a_p` ITSELF** (sorry
+leaf, cut 2026-07-30 out of `exists_satakeParams_of_isWeightTwoEigenform`
+below) — the SINGLE archimedean input behind both coefficient bounds further
+down, at both classes of prime.
+
+Two clauses, one per class of prime, and they are the statements the
+literature actually proves:
+
+* **`p ∤ M`**: `a_p` is REAL, of absolute value at most `2√p`;
+* **`p ∣ M`**: `‖a_p‖ ≤ √p`.
+
+**Why this and not the Satake parameters.**  The consumer below asks for the
+inverse roots `α, β` of the local Euler factor with `‖α‖, ‖β‖ ≤ √p`.  Solving
+that quadratic is ALGEBRA once `a_p` is known to be real and small — it is
+`exists_conjugatePair_of_abs_le_two_mul_sqrt` immediately above — so it does
+not belong in a leaf.  What is irreducibly classical is the pair of clauses
+here, and the reality clause in particular: the consumer's own docstring
+records that `‖a_p‖ ≤ 2√p` alone is *insufficient*, with the counterexample
+`α = t√p·i`, `β = −(√p/t)·i`.  Naming reality is what removes that gap.
+
+**This does NOT duplicate the Deligne citation, which is what the previous
+docstring's "Why ONE leaf and not two" paragraph was protecting against.**
+That paragraph objected to splitting the two CONSUMER bounds
+(`norm_coeff_le_two_mul_sqrt_of_not_dvd` and `norm_coeff_le_sqrt_of_dvd`) into
+two leaves, each of which would then owe Deligne separately.  Both remain
+theorems over the single Satake statement, which is now itself a theorem over
+this single leaf.  The frontier here is still exactly ONE declaration.
+
+### Why it is TRUE, at each class of prime
+
+* **`p ∤ M`.**  `T_p` is self-adjoint for the Petersson inner product on the
+  whole of `S₂(Γ₀(M))` when `p ∤ M`, so its eigenvalues are REAL — that is the
+  first clause, and it is the half that is *not* Deligne.  The bound is
+  Eichler–Shimura (`a_p = p + 1 − #A(𝔽_p)` for the abelian variety attached to
+  the form) plus the Weil conjectures for curves
+  (`|p + 1 − #C(𝔽_p)| ≤ 2g√p`).  The eigenvalue is that of the underlying
+  newform of some level `M₀ ∣ M`, with `p ∤ M₀` too, so the newform bound
+  transfers verbatim.
+* **`p ∣ M`.**  Atkin–Lehner together with Deligne.  A normalized common
+  eigenform of `S₂(Γ₀(M))` comes from a newform `h` of level `M₀ ∣ M`, and the
+  `U_p`-eigenvalue is pinned by a two-case computation on the old space
+  `⟨h(dτ) : d ∣ M/M₀⟩`:
+  * `p ∣ M₀`: `U_p` is upper triangular in the basis ordered by the `p`-part
+    of `d`, with diagonal `(a_p(h), 0, …, 0)`, so its eigenvalues are `a_p(h)`
+    and `0`; and `|a_p(h)| = 1` if `p ∥ M₀`, `= 0` if `p² ∣ M₀`, both `≤ √p`
+    since `p ≥ 2`.
+  * `p ∤ M₀`: `U_p v_0 = a_p(h) v_0 − p v_1` and `U_p v_j = v_{j−1}`, whose
+    nonzero eigenvalues are the roots of `X² − a_p(h) X + p`; those have
+    product `p` and are complex conjugate because `|a_p(h)| ≤ 2√p`, hence each
+    has absolute value exactly `√p`.
+
+Note the `p ∣ M` clause does NOT assert reality, and must not be strengthened
+to do so gratuitously: at `p ∣ M₀` with `p ∥ M₀` the `U_p`-eigenvalue is the
+pseudo-eigenvalue of the Atkin–Lehner involution times a root of unity, and
+`|a_p| = 1 ≤ √p` is all that is claimed.  Nothing below needs more.
+
+**`hM` IS LOAD-BEARING — the statement is FALSE at `M = 0`.**  See the
+FALSITY AUDIT on `integrableOn_qSeriesAt` above for why
+`CuspForm (Gamma0GL 0) 2` is a near-empty condition (`Γ₀(0) = ⟨T, −I⟩` has `∞`
+as its only cusp).  Concretely `a n = n`, carried by
+`∑_{n ≥ 1} n q^n = q/(1 − q)²`, satisfies every field of
+`IsWeightTwoEigenform 0 g a` — `hecke` vacuously, `atkin` because `a` is
+completely multiplicative — and at `M = 0` every `p` divides `M`, so the first
+clause would demand `‖a p‖ = p ≤ √p`.  (The second clause is VACUOUS at
+`M = 0` for the same reason, which is why it needs no hypothesis of its own.)
+
+### Reconnaissance (PARI/GP, 2026-07-28 — untrusted searcher)
+
+For every level `M ≤ 60` with `S₂(Γ₀(M)) ≠ 0` and every prime `q ≤ 40`, the
+matrix of `T_q` (resp. `U_q` when `q ∣ M`) on the FULL cuspidal space was
+formed and its characteristic polynomial's complex roots examined: at `q ∤ M`
+all roots are REAL with `|a_q| ≤ 2√q`; at `q ∣ M` all roots have
+`|a_q| ≤ √q`.  **540 matrices, zero violations.**  Note this checks the *full*
+space, not only newforms, which is the generality this leaf is stated in — and
+note that the reality observed at `q ∤ M` is the first clause here, which the
+previous packaging left implicit inside the existential.
+
+### The check that would refute "this machinery is missing"
+
+`grep -rn "Ramanujan\|Petersson\|EichlerShimura\|eichler" Fermat/
+.lake/packages/mathlib/ ~/cs/FLT/` (run 2026-07-28: mathlib has `petersson`,
+the *inner product*, and nothing about the bound).  The Eichler–Shimura side
+of this file has an interface but no content —
+`exists_isotypicQuotient_of_isWeightTwoEigenform` below is an assembly over
+two sorry leaves (`isIntegral_coeff_of_isWeightTwoEigenform` and
+`exists_isotypicQuotient_of_isIntegral`, split 2026-07-30), so there is still
+no `A_f` here, and there is no reduction of an abelian scheme mod `p`, no
+Frobenius, and no purity anywhere in the tree — so this leaf cannot currently
+be routed through it.
+
+### Axes searched, and why each dies
+
+* **The recursions alone.**  `hecke`/`atkin` constrain only the RELATIONS
+  among the `a_n`, never their size.  The level-`0` counterexample recorded on
+  `stabilizationRoot_ne_natCast` below is built entirely inside those
+  recursions, so no proof using only them can exist.
+* **Radius of convergence.**  `qExpansionSummable` gives
+  `limsup ‖a_n‖^{1/n} ≤ 1`, but along the sparse sequence `n = p^k` that is
+  vacuous: `‖a_p‖^{k/p^k} → 1` whatever `‖a_p‖` is.
+* **Hecke's trivial bound.**  Boundedness of `y ↦ y‖f(τ)‖` on `ℍ` gives
+  `‖a_n‖ = O(n)`, hence `‖a_p‖ ≤ p + 1` at `p ∤ M` and `‖a_p‖ ≤ p` at `p ∣ M`
+  — and that is **exactly one epsilon short of what the consumer needs**,
+  which is `‖b_p‖ ≠ p + 1` and `‖b_p‖ ≠ p` (see
+  `stabilizationRoot_ne_natCast`).  The trivial bound is attained by the
+  weight-two Eisenstein series, so the strictness the consumer wants is
+  precisely the cuspidality, quantitatively — i.e. genuinely Deligne (or at
+  least Rankin's `o(n)` refinement).  A cheap non-strict bound does **not**
+  close this cluster; do not build one expecting it to.  It does not help the
+  REALITY clause either, which is orthogonal to every size estimate. -/
+theorem realCoeff_norm_le_of_isWeightTwoEigenform {M : ℕ} (_hM : M ≠ 0)
+    {g : CuspForm (Gamma0GL M) 2} {a : ℕ → ℂ} (_ha : IsWeightTwoEigenform M g a)
+    {p : ℕ} (_hp : p.Prime) :
+    (p ∣ M → ‖a p‖ ≤ Real.sqrt p) ∧
+      (¬ p ∣ M → ∃ r : ℝ, a p = (r : ℂ) ∧ |r| ≤ 2 * Real.sqrt p) :=
+  sorry
+
 /-- **RAMANUJAN–PETERSSON IN WEIGHT TWO: THE SATAKE PARAMETERS ARE
-BOUNDED BY `√p`** (sorry leaf, new 2026-07-28) — the SINGLE archimedean
-input behind both coefficient bounds below, at both classes of prime.
+BOUNDED BY `√p`** (**PROVEN 2026-07-30**, over the two declarations
+immediately above; a sorry leaf from 2026-07-28 until then) — the SINGLE
+archimedean input behind both coefficient bounds below, at both classes of
+prime, now packaged rather than asserted.
+
+**WHAT THE CUT SHED.**  This statement is an existential over `ℂ` carrying
+three conditions, and solving for `α, β` is the quadratic formula.  All of
+that is now `exists_conjugatePair_of_abs_le_two_mul_sqrt`, PROVEN; what is
+left in the frontier is `realCoeff_norm_le_of_isWeightTwoEigenform`, which
+speaks only of `a_p` and says exactly what Deligne, Eichler–Shimura and
+Atkin–Lehner say.  The classical argument, the PARI/GP reconnaissance and the
+survey of axes that do not work have all moved onto that leaf, where a prover
+dispatched at the frontier will read them.  **The frontier is unchanged at one
+declaration** — this is a repackaging, not a split, and in particular the
+Deligne citation is still made in exactly one place.
+
+The reality clause is what makes the packaging possible at all; see the
+"strictly stronger than the pair below" paragraph retained below.
 
 `α, β` are the inverse roots of the local Euler factor at `p`, which in
 weight two is
@@ -35754,42 +35927,29 @@ Ramanujan–Petersson conjecture for weight two, a theorem of Deligne.
 
 ### Why it is TRUE, at each class of prime
 
-* **`p ∤ M`.**  Eichler–Shimura (`a_p = p + 1 - #A(𝔽_p)` for the abelian
-  variety attached to the form) plus the Weil conjectures for curves
-  (`|p + 1 - #C(𝔽_p)| ≤ 2g√p`).  The eigenvalue is that of the underlying
-  newform of some level `M₀ ∣ M`, with `p ∤ M₀` too, so the newform bound
-  transfers verbatim; `T_p` is Petersson-self-adjoint there, so `a_p` is
-  real and the two roots are complex conjugates of modulus exactly `√p`.
-* **`p ∣ M`.**  Atkin–Lehner together with Deligne.  A normalized common
-  eigenform of `S₂(Γ₀(M))` comes from a newform `h` of level `M₀ ∣ M`,
-  and the `U_p`-eigenvalue is pinned by a two-case computation on the old
-  space `⟨h(dτ) : d ∣ M/M₀⟩`:
-  * `p ∣ M₀`: `U_p` is upper triangular in the basis ordered by the
-    `p`-part of `d`, with diagonal `(a_p(h), 0, …, 0)`, so its eigenvalues
-    are `a_p(h)` and `0`; and `|a_p(h)| = 1` if `p ∥ M₀`, `= 0` if
-    `p² ∣ M₀`, both `≤ √p` since `p ≥ 2`.
-  * `p ∤ M₀`: `U_p v_0 = a_p(h) v_0 - p v_1` and `U_p v_j = v_{j-1}`, whose
-    nonzero eigenvalues are the roots of `X² - a_p(h) X + p`; those have
-    product `p` and are complex conjugate because `|a_p(h)| ≤ 2√p`, hence
-    each has absolute value exactly `√p`.
+Moved, verbatim and in full, onto `realCoeff_norm_le_of_isWeightTwoEigenform`
+above, together with the PARI/GP reconnaissance, the missing-machinery check
+and the survey of axes that do not work.  **Read them there**: that
+declaration is the leaf, and this one is an assembly over it.
 
 ### Why ONE leaf and not two
 
 The two bounds below are the same theorem at the two classes of prime and
 their proofs share their only hard input — Deligne for the underlying
 newform.  Cutting them apart would duplicate that input and let the two
-halves drift.  Both bounds are now PROVEN from this leaf by two-line
+halves drift.  Both bounds are PROVEN from this statement by two-line
 assemblies (triangle inequality at `p ∤ M`; `α * β = 0` at `p ∣ M`), so
-the whole archimedean debt of this subsection is exactly this one
-statement.
+the whole archimedean debt of this subsection is exactly one leaf — the
+2026-07-30 repackaging did not change that count, it only moved the
+quadratic formula out of the leaf and named the reality hypothesis.
 
 **It is strictly stronger than the pair below, and deliberately so.**
 `‖a p‖ ≤ 2√p` alone does NOT imply `‖α‖, ‖β‖ ≤ √p` when `a_p` is allowed
 to be non-real: taking `α = t√p·i`, `β = p/α = -(√p/t)·i` with
 `1 < t ≤ √(√6 + …)` gives `|α + β| = √p·|t - t⁻¹| ≤ 2√p` while `|α| > √p`.
-What rules that out is the reality of `a_p` at `p ∤ M`, which is part of
-what this leaf asserts and is the reason the two classes can share one
-input at all.
+What rules that out is the reality of `a_p` at `p ∤ M`, which is now the
+FIRST NAMED CLAUSE of the leaf above rather than something buried inside this
+existential, and it is the reason the two classes can share one input at all.
 
 **`hM` IS LOAD-BEARING — the statement is FALSE at `M = 0`.**  See the
 FALSITY AUDIT on `integrableOn_qSeriesAt` above for why
@@ -35797,61 +35957,28 @@ FALSITY AUDIT on `integrableOn_qSeriesAt` above for why
 has `∞` as its only cusp).  Concretely `a n = n`, carried by
 `∑_{n ≥ 1} n q^n = q/(1 - q)²`, satisfies every field of
 `IsWeightTwoEigenform 0 g a` — `hecke` vacuously, `atkin` because `a` is
-completely multiplicative — and at `M = 0` every `p` divides `M`, so the
-leaf would demand `‖a p‖ = p ≤ √p`.  The same witness refutes
+completely multiplicative — and at `M = 0` every `p` divides `M`, so this
+would demand `‖a p‖ = p ≤ √p`.  The same witness refutes
 `stabilizationRoot_ne_natCast` below without ITS `hM0`; see there.
 (The `p ∤ M` half needs no such hypothesis of its own: `p ∣ 0` makes
 `¬ p ∣ M` contradictory at level `0`, which is why
 `norm_coeff_le_two_mul_sqrt_of_not_dvd` below derives `M ≠ 0` rather than
-taking it.)
-
-### Reconnaissance (PARI/GP, 2026-07-28 — untrusted searcher)
-
-For every level `M ≤ 60` with `S₂(Γ₀(M)) ≠ 0` and every prime `q ≤ 40`,
-the matrix of `T_q` (resp. `U_q` when `q ∣ M`) on the FULL cuspidal space
-was formed and its characteristic polynomial's complex roots examined:
-at `q ∤ M` all roots are real with `|a_q| ≤ 2√q`; at `q ∣ M` all roots
-have `|a_q| ≤ √q`.  **540 matrices, zero violations.**  Note this checks
-the *full* space, not only newforms, which is the generality the leaf is
-stated in.
-
-### The check that would refute "this machinery is missing"
-
-`grep -rn "Ramanujan\|Petersson\|EichlerShimura\|eichler" Fermat/
-.lake/packages/mathlib/ ~/cs/FLT/` (run 2026-07-28: mathlib has
-`petersson`, the *inner product*, and nothing about the bound).  The
-Eichler–Shimura side of this file has an interface but no content —
-`exists_isotypicQuotient_of_isWeightTwoEigenform` below is an assembly over
-two sorry leaves (`isIntegral_coeff_of_isWeightTwoEigenform` and
-`exists_isotypicQuotient_of_isIntegral`, split 2026-07-30), so there is
-still no `A_f` here, and there is no reduction of an abelian scheme mod `p`, no
-Frobenius, and no purity anywhere in the tree — so this leaf cannot
-currently be routed through it.
-
-### Axes searched, and why each dies
-
-* **The recursions alone.**  `hecke`/`atkin` constrain only the RELATIONS
-  among the `a_n`, never their size.  The level-`0` counterexample
-  recorded on `stabilizationRoot_ne_natCast` below is built entirely
-  inside those recursions, so no proof using only them can exist.
-* **Radius of convergence.**  `qExpansionSummable` gives
-  `limsup ‖a_n‖^{1/n} ≤ 1`, but along the sparse sequence `n = p^k` that
-  is vacuous: `‖a_p‖^{k/p^k} → 1` whatever `‖a_p‖` is.
-* **Hecke's trivial bound.**  Boundedness of `y ↦ y‖f(τ)‖` on `ℍ` gives
-  `‖a_n‖ = O(n)`, hence `‖a_p‖ ≤ p + 1` at `p ∤ M` and `‖a_p‖ ≤ p` at
-  `p ∣ M` — and that is **exactly one epsilon short of what the consumer
-  needs**, which is `‖b_p‖ ≠ p + 1` and `‖b_p‖ ≠ p` (see
-  `stabilizationRoot_ne_natCast`).  The trivial bound is attained by the
-  weight-two Eisenstein series, so the strictness the consumer wants is
-  precisely the cuspidality, quantitatively — i.e. genuinely Deligne (or
-  at least Rankin's `o(n)` refinement).  A cheap non-strict bound does
-  **not** close this cluster; do not build one expecting it to. -/
-theorem exists_satakeParams_of_isWeightTwoEigenform {M : ℕ} (_hM : M ≠ 0)
-    {g : CuspForm (Gamma0GL M) 2} {a : ℕ → ℂ} (_ha : IsWeightTwoEigenform M g a)
-    {p : ℕ} (_hp : p.Prime) :
+taking it.)  `hM` is consumed here by being handed to the leaf. -/
+theorem exists_satakeParams_of_isWeightTwoEigenform {M : ℕ} (hM : M ≠ 0)
+    {g : CuspForm (Gamma0GL M) 2} {a : ℕ → ℂ} (ha : IsWeightTwoEigenform M g a)
+    {p : ℕ} (hp : p.Prime) :
     ∃ α β : ℂ, α + β = a p ∧ α * β = (if p ∣ M then 0 else (p : ℂ)) ∧
-      ‖α‖ ≤ Real.sqrt p ∧ ‖β‖ ≤ Real.sqrt p :=
-  sorry
+      ‖α‖ ≤ Real.sqrt p ∧ ‖β‖ ≤ Real.sqrt p := by
+  obtain ⟨hdvd, hndvd⟩ := realCoeff_norm_le_of_isWeightTwoEigenform hM ha hp
+  by_cases hpM : p ∣ M
+  · -- the Euler factor is linear: one parameter is `0`, the other is `a_p`
+    refine ⟨a p, 0, add_zero _, ?_, hdvd hpM, ?_⟩
+    · rw [if_pos hpM, mul_zero]
+    · simp
+  · -- the Euler factor is the quadratic `1 - a_p X + p X²`, with `a_p` REAL
+    obtain ⟨r, hr, hle⟩ := hndvd hpM
+    obtain ⟨α, β, hsum, hprod, hα, hβ⟩ := exists_conjugatePair_of_abs_le_two_mul_sqrt p r hle
+    exact ⟨α, β, by rw [hsum, hr], by rw [if_neg hpM]; exact hprod, hα, hβ⟩
 
 /-- **RAMANUJAN–PETERSSON IN WEIGHT TWO, AWAY FROM THE LEVEL** (**PROVEN
 2026-07-28**, over `exists_satakeParams_of_isWeightTwoEigenform` above; a
