@@ -10534,9 +10534,24 @@ Consequence worth stating, because it is the price of the missing pin:
 this leaf is strictly harder than `exists_isotypicQuotient_of_isWeightTwoEigenform`
 alone, and closing it would be most of the way to closing that one too.
 
-**DO NOT "HARMONISE" THIS LEAF WITH ITS `Γ₀` COUNTERPART — THAT COUNTERPART
-IS FALSE** (recorded 2026-07-28, from a refutation found on the `Γ₀` side
-after this cut was taken).  An earlier version of this paragraph proposed,
+**THE `Γ₀` COUNTERPART WAS FALSE AND HAS BEEN REPAIRED — 2026-07-30, at
+integration.**  This paragraph read "DO NOT 'HARMONISE' THIS LEAF WITH ITS
+`Γ₀` COUNTERPART — THAT COUNTERPART IS FALSE", and that is no longer the
+state of the tree: `IsModularHeckeAction` (`X0.lean`:38059) now carries
+`T 1 = 𝟙 J`, coprime multiplicativity, and the prime-power recursion at
+`ℓ ∤ N` as clauses (1)–(3), which pin `T` on exactly the arities the
+conclusion inspects — clause (3) at `ℓ = 2`, `k = 0` pins `T 4`, the witness
+arity of the refutation below.  So the arity gap is closed and the two `Γ₀`
+leaves are no longer refuted.
+
+The refutation is kept in full below because it is the reason the pin has
+the shape it has, and because the reasoning generalises: an INPUT `T` whose
+pin is narrower than the conclusion's range is false by construction,
+whatever the range happens to be today.  What is now stale is only the
+instruction: harmonising is no longer forbidden, it is merely unnecessary,
+since this leaf's existential `T` needs no pin at all.
+
+An earlier version of this paragraph proposed,
 as the repair that would make the two cuts identical, giving
 `IsHeckeIsotypicDecompositionGamma1` a `heckeModuli` field over a `Γ₁`
 analogue of `IsGamma0Isogeny`, and then taking `T` as a hypothesis here the
@@ -10550,9 +10565,11 @@ coprime to `N`**.  Composite `n` coprime to `N` — `n = 4` at `N = 37`, say —
 are therefore constrained by the conclusion and left entirely free by the
 pin, so a caller may hand over a `T` that is genuine at primes and junk at
 composite arities.  Both `exists_isotypicQuotient_of_isWeightTwoEigenform`
-and `exists_heckeIsotypicDecomposition_of_modularHeckeAction` are FALSE for
+and `exists_heckeIsotypicDecomposition_of_modularHeckeAction` WERE FALSE for
 that reason, refuted at `N = 37` with a family that
-`exists_modularHeckeAction` itself constructs.
+`exists_modularHeckeAction` itself constructs; `a 4 = 1` is forced by the pin
+while `37a` has `a₄ = a₂² − 2 = 2`.  As of 2026-07-30 the pin covers `n = 4`
+and both are open rather than false — see the paragraph above.
 
 **THIS LEAF IS IMMUNE, AND THE IMMUNITY IS STRUCTURAL RATHER THAN LUCKY.**
 `T` is quantified EXISTENTIALLY here and in the sibling below, and the `∃ T`
