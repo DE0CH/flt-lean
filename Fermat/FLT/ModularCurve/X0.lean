@@ -2853,7 +2853,23 @@ this commit, `EllipticScheme.lean` has exactly TWO open leaves left:
 
 Do not trust either list.  Both were read off the compiler's
 `declaration uses 'sorry'` warning set for that file, which is the only
-authority, and both go stale at the next release. -/
+authority, and both go stale at the next release.
+
+**And they did, both of them, by 2026-07-30.**  Re-read that day off a green
+`lake build` and cross-checked against a comment-stripped source scan (157 = 157
+against the warning set), `EllipticScheme.lean` has exactly **ONE** open leaf,
+and it is neither of the two named above — both are PROVEN.  It is
+
+* `exists_weierstrassGenerators_of_affineComplement` — RIEMANN–ROCH IN
+  ELEMENTS: a structure map `c : ℚ →+* R`, two elements `x y : R`, one
+  Weierstrass identity, and `Subring.closure (Set.range c ∪ {x, y}) = ⊤`.
+  It was cut out of `exists_surjective_coordinateRingHom_of_affineComplement`
+  on 2026-07-28, which is why that name no longer appears in the warning set:
+  the coordinate-ring packaging around it got proven and the arithmetic atom
+  moved down one level.
+
+So the third round of this paragraph makes the same point the second one did,
+about different names.  Regenerate; do not read. -/
 
 /-- **An abelian scheme of relative dimension one over a FIELD has a
 Weierstrass model** (sorry leaf, opened 2026-07-28) — Silverman *AEC*
@@ -2873,6 +2889,46 @@ is very nearly closed, and generalising it costs one open leaf rather than
 a development.  See the subsection docstring for the one conjunct that
 stops being free once `ℚ` is replaced by `k`, and for why that list of open
 leaves must be re-read off the compiler rather than believed.
+
+## AMENDMENT 2026-07-30: "one open leaf rather than a development" is WRONG, and the reason is the CHARACTERISTIC
+
+Scoped against a green build, and the previous paragraph understates the cost by
+a whole development.  The chain over `ℚ` is short and its links are short — the
+four proof bodies total about eighty lines — but **two of those links are proved
+by char-`0` witnesses, and `k` is an ARBITRARY field, so characteristics `2` and
+`3` are inside the statement.**
+
+* `isElliptic_of_isOpenImmersion_coordinateRing` rests on
+  `exists_singular_of_Δ_eq_zero` (`EllipticScheme.lean`), whose own docstring
+  calls itself "the char-`0` half".  Its witness is
+  `x₀ = (X − b₂)/12`, `y₀ = −(a₃ + a₁x₀)/2` with `X = −c₆/c₄`, and the two
+  vanishing identities are certificates with denominators `48`, `576`, `864`
+  against `1728·Δ = c₄³ − c₆²`.  In char `2` the `y₀` above does not exist and
+  in char `3` the `x₀` does not; the STATEMENT stays true (a singular
+  Weierstrass cubic has a rational singular point in every characteristic —
+  uniqueness of the singular point plus Galois stability) but every line of the
+  proof has to be replaced, and in char `2`/`3` the singular point is found from
+  the partials directly rather than from `c₄`, `c₆`.
+* the same node's other input, `not_smooth_specMap_coordinateRing_of_singular`,
+  is proved through the square-zero test ring `ℚ[t]/(t³)` — an explicitly
+  `ℚ`-shaped Jacobian criterion.
+
+So the honest shape of the work under this leaf is: generalise
+`exists_affineComplement_zeroSection`,
+`exists_weierstrassRingEquiv_of_affineComplement` and
+`exists_surjective_coordinateRingHom_of_affineComplement` (these three are
+genuinely `ℚ`-agnostic apart from the structure-morphism conjunct the subsection
+docstring already warns about), **and then treat the ellipticity step as a
+separate node with its own char-`2`/`3` sub-leaves.**  A prover who reads the
+paragraph above as licence to do a rename-and-build pass will get through three
+links and stop dead at the fourth.
+
+One thing that does NOT get harder: the structure-morphism conjunct.  Once
+`exists_affineComplement_zeroSection` is asked to return the structure map
+`c : k →+* R` alongside `ι` — which it can, `ι ≫ f : Spec R ⟶ Spec k` being a
+morphism of affine schemes and `Spec` fully faithful on those — the conjunct is
+carried rather than recovered, and `hom_ext_spec_rat`'s two uses disappear
+instead of needing replacements.
 
 ## Faithfulness
 
@@ -2913,6 +2969,30 @@ built over `ℚ`, from `exists_isIso_of_affineChart`,
 `hom_specRat_eq_of_range_eq` and `relPointPost_add` — all three of which
 carry no `sorry` of their own at this commit, the residue on that side of
 the file being `projFibreEndFun_add_sub_zero`.
+
+**STALE, corrected 2026-07-30**: `projFibreEndFun_add_sub_zero` is PROVEN, and
+`EllipticScheme.lean` now has exactly ONE open leaf in total,
+`exists_weierstrassGenerators_of_affineComplement`, which is on the
+Riemann–Roch side and not on this one.  So the group-law route this node wants
+to reuse is sorry-free — *over `ℚ`*.  What it is not is `k`-agnostic:
+`hom_specRat_eq_of_range_eq` is proved from `subsingleton_ringHom_rat` (there
+is exactly one ring hom `ℚ →+* ℚ`), which is the one thing that has no analogue
+over a general `k`.  Its role here — forcing the two zero sections to agree —
+must instead be discharged from the structure-morphism conjunct of `hmodel`,
+which is exactly why that conjunct is load-bearing over `k` and free over `ℚ`
+(see the Faithfulness paragraph below).
+
+`exists_isIso_of_affineChart`'s own inputs split three ways, and only the third
+is work: `projToSpec` is ALREADY defined over an arbitrary ring
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveModel.lean`);
+properness ALREADY has a general-field twin,
+`isProper_projToSpecOverField (F) [Field F] (E : WeierstrassCurve F)` in
+`Fermat/FLT/Modularity/MoretBailly.lean` — which is not imported here, so it
+would have to be hoisted rather than cited, and that is a placement question
+rather than a mathematical one; but `geometricallyReduced_projToSpec` and
+`projGroupLaw` are stated for `WeierstrassCurve ℚ` and generalising
+`projGroupLaw` — the group law ON THE PROJECTIVE MODEL — over an arbitrary field
+is the substantial item on this side.
 
 ## This is a SIBLING of the `ℚ` declaration, not a generalisation of it
 
