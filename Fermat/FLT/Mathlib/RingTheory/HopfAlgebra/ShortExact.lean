@@ -115,6 +115,11 @@ the antipode, so this is the same thing as a homomorphism of group schemes.
   (`Module.finrank_eq_finrank_mul_of_rankAtStalk_eq`); **both of those closed on 2026-07-30**, on
   two different branches, so `exists_spanning_cartierDual` (through
   `exists_lift_ker_le_span_cartierDual`) is the only sorry left in this file.
+  **As of 2026-07-31 this theorem and the four statements between it and that sorry carry
+  `[IsLocalRing R]`, because without it `exists_lift_ker_le_span_cartierDual` is FALSE** — an
+  explicit counterexample over `ℤ[√-5]` is written out in its docstring, and the two earlier
+  falsity audits are marked there as computations in a degenerate sub-family. The rest of the
+  file, including `etale_of_isShortExact`, is untouched and still holds over an arbitrary base.
 * `HopfAlgebra.IsShortExact.apply_comp` — `π ∘ i` is `ε` followed by the unit. **PROVEN.**
 * `AlgHom.flat_quotient_range_of_faithfullyFlat` — the cokernel of a faithfully flat algebra map
   is a flat `R`-module. **PROVEN** (2026-07-28) by the diagram chase in the `FaithfullyFlatSplit`
@@ -1387,7 +1392,7 @@ which are proven. The split is by *where the mathematics is*:
 | `surjective_cartierDual_map` | **PROVEN** from the above | functionals extend along `i` |
 | `le_ker_cartierDual` | **PROVEN** | the easy half of the dual kernel condition |
 | `span_sup_ker_cartierDual_map_eq_top` | **PROVEN** | a lift of an `R`-basis spans modulo `ker (map i)` |
-| `exists_lift_ker_le_span_cartierDual` | **OPEN** | that lift can be chosen to swallow `ker (map i)` |
+| `exists_lift_ker_le_span_cartierDual` | **OPEN**, and only under `[IsLocalRing R]` — FALSE without it | that lift can be chosen to swallow `ker (map i)` |
 | `exists_spanning_cartierDual` | **PROVEN** from the two above | `D(A)` is *generated* over `D(A')` by `rk_R A''` elements |
 | `nonempty_linearEquiv_cartierDual` | **PROVEN** from the two below | the rank count `rk_R A = rk_R A'' · rk_R A'` |
 | `finrank_eq_mul` | **PROVEN** from the two below | that same rank count, before packaging |
@@ -1414,6 +1419,12 @@ at release 24 — the tower formula directly, at the root namespace just above `
 HopfAlgebra`, and the torsor identity in `namespace Torsor` — so
 `exists_lift_ker_le_span_cartierDual` is now the ONLY sorry left in this file, and the whole rank
 count below it is unconditional.
+
+**Since 2026-07-31 that sorry, and the four rows below it that depend on it, carry
+`[IsLocalRing R]`.** The unrestricted statement was REFUTED — see the counterexample over
+`ℤ[√-5]` in the leaf's own docstring. Rows above it in the table, and `finrank_eq_mul` /
+`nonempty_linearEquiv_*` / `nonempty_linearEquiv_baseChange` /
+`Module.finrank_eq_finrank_mul_of_rankAtStalk_eq`, are unaffected and remain unconditional.
 
 (An older version of this list also named `Module.Flat.quotient_range_of_rTensor_injective` as
 what the surjectivity field rests on. **That is stale**: no such declaration is in this file, or
@@ -1595,6 +1606,15 @@ OPEN, and it is the *whole* remaining content of `IsShortExact.exists_spanning_c
 which is proven from it below together with the formal
 `span_sup_ker_cartierDual_map_eq_top`.
 
+**`[IsLocalRing R]` IS LOAD-BEARING AND WAS ADDED ON 2026-07-31, BECAUSE THE STATEMENT WITHOUT IT
+IS FALSE.** The counterexample is written out in the REFUTATION section below; it lives over
+`ℤ[√-5]`, i.e. over a *Dedekind* base, which the two falsity audits that preceded it had ruled
+out. Everything downstream of this leaf as far as
+`HopfAlgebra.isMultiplicativeType_of_isShortExact` carries the same hypothesis; at the time of
+the change nothing outside this file consumed any of those declarations at term level, and the
+intended consumer (`Family.lean`, over `𝒪ᵖᵥ`) has a local base, so the restriction costs the
+development nothing.
+
 ## ATOMICITY AUDIT (2026-07-28) — this is a REFORMULATION, not a reduction, and deliberately so
 
 Modulo the proven glue this statement is **equivalent** to
@@ -1649,7 +1669,90 @@ next, is the fppf-local decomposition of the audit's own fallback: prove
 `Module.Projective (CartierDual R A') (CartierDual R A)` of rank `rk_R A''` separately (this is
 fppf-local, hence within reach) and isolate the global triviality as a distinct, smaller leaf.
 
-## FALSITY AUDIT (2026-07-28) — searched, NOT refuted, and the search narrows the audit below
+## REFUTATION (2026-07-31) — the statement WITHOUT `[IsLocalRing R]` IS FALSE, over `ℤ[√-5]`
+
+The two audits below searched, honestly and correctly, and found no counterexample; both of them
+searched only sequences in which **`G'` and `G''` have the same order**, and that is exactly the
+degenerate case. Widening the quotient by one factor of the exponent breaks them at once, and
+the witness needs nothing more exotic than a class number `2`.
+
+Set `R = ℤ[√-5]`, `Pic R = ℤ/2 = ⟨[L]⟩` with `L = (2, 1+√-5)`, so `L ⊗ L ≅ R` and `L ≇ R`.
+
+*The primal witness.* `H¹_fppf(R, μ₂) ↠ Pic(R)[2]` (Kummer), so pick `ξ` with class `[L]`. From
+`0 → ℤ →⁴ ℤ → ℤ/4 → 0` and `4 · H¹(R, μ₂) = 0` one gets
+`Ext¹_fppf(ℤ/4, μ₂) ↠ H¹_fppf(R, μ₂)`, so there is a commutative extension of finite flat group
+schemes
+
+    1 → μ₂ → K → ℤ/4 → 1
+
+whose fibre over `1 ∈ ℤ/4` is the `μ₂`-torsor `ξ`. `K` is commutative, `K → ℤ/4` is a
+homomorphism, so the fibre over `k` is the contracted power `k·ξ`; and `H¹(R, μ₂)` is killed by
+`2`, so the four fibres are `ξ`-classes `0, ξ, 0, ξ`. Hence, as `R`-modules,
+
+    O(K) ≅ (R ⊕ R) ⊕ (R ⊕ L) ⊕ (R ⊕ R) ⊕ (R ⊕ L) ≅ R⁶ ⊕ L ⊕ L .
+
+Over a Dedekind domain a projective of rank `n` is `R^{n-1} ⊕ det`, and
+`det (R⁶ ⊕ L ⊕ L) = L ⊗ L ≅ R`, so **`O(K) ≅ R⁸` is `R`-FREE** — while `O(K)` is *not* free over
+`O(ℤ/4) = R⁴`, because that is a product decomposition and its second factor is `R ⊕ L`, whose
+determinant `L` is non-trivial.
+
+*Transporting it to this leaf.* Feed the leaf the **dual** sequence
+`1 → μ₄ → K^D → ℤ/2 → 1` (Cartier duality is an exact anti-equivalence on finite locally free
+commutative group schemes — Cartier's theorem, independent of this file), i.e.
+`A' = O(μ₄)`, `A = O(K^D)`, `A'' = O(ℤ/2) = R²`. All three hypotheses hold: `O(μ₄)` and `R²` are
+free, and `O(K^D) = Hom_R(O(K), R)` is free because `O(K)` is. Now
+`D(A') = O((μ₄)^D) = O(ℤ/4) = R⁴`, `D(A) = O(K)`, and `rk_R A'' = 2`, so this leaf — through the
+PROVEN `exists_spanning_cartierDual` and `exists_basis_cartierDual` — asserts that `O(K)` is
+`R⁴`-free of rank `2`. It is not. ∎
+
+*Why the two audits below missed it, stated as a rule rather than as an accident.* Take
+`G' = μ_p`, `G'' = ℤ/m` with `p ∣ m`, class `ξ ↦ L ∈ Pic(R)[p]`, and write `x = [L] - 1 ∈ K̃₀(R)`.
+The fibres repeat with period `p`, so `O(G) ≅ R^{m/p·p} ⊕ P^{⊕(m/p)(p-1)}`-shaped: each non-trivial
+fibre class occurs `m/p` times, whereas the *conclusion* is about ONE fibre. So
+
+* the **conclusion** is `[P] - p = 0`, i.e. (on a Dedekind base, where `K̃₀ = Pic`) `x = 0`;
+* the **hypothesis** `Module.Free R A` is `(m/p) · ([P] - p) = 0`.
+
+With `m = p` the two coincide up to the relation `p·x = 0` — that is the "hypothesis and
+conclusion move together" both audits observed, and it is a `K₀` identity, not evidence. With
+`m = p²` (here `p = 2`, `m = 4`) the multiplicity is `p`, `p·x = 0` holds for free, and the
+hypothesis becomes VACUOUS while the conclusion does not. The same computation over a
+`2`-dimensional base with `p = 3`, `m = 9` gives `[P] - 3 = x²` and multiplicity `6`, so
+`6x² = 0` automatically: the same break, one dimension up.
+
+**So the correct reading of both audits below is: they are computations in the sub-family
+`ord G'' = ord G'`, they are right, and that sub-family proves nothing.** Keep them — they are
+the reason the corrected form is believable — but do not read either as evidence for the leaf.
+
+## WHY `[IsLocalRing R]` IS THE RIGHT REPAIR, AND WHAT IS LEFT TO PROVE
+
+The obstruction above is a `Pic`/`K₀` obstruction on `D(A')`, *not* on `R`: a base with trivial
+`Pic` is not enough (`Pic (D(A'))` can be non-trivial for `R` a UFD). What kills it is:
+
+* `R` local and `D(A')` finite over `R` ⟹ `D(A')` is **semilocal** (it is integral over `R`, so
+  every maximal ideal lies over `𝔪`, and `D(A')/𝔪 D(A')` is artinian, so there are finitely
+  many);
+* over a semilocal commutative ring a finitely generated projective module of constant rank is
+  **free**;
+* and `D(A)` *is* a finitely generated projective `D(A')`-module of constant rank `rk_R A''`,
+  because `Spec D(A) → Spec D(A')` is a torsor under the finite locally free `Spec D(A'')`
+  (Kreimer–Takeuchi; classically, a quotient map of a finite flat group scheme by a finite flat
+  subgroup is finite locally free). **This is the one genuinely missing input**, and it is
+  fppf-local, which is precisely the "axis NOT searched" the atomicity audit below recommends.
+
+Given freeness, this leaf follows with no further Hopf input, and the derivation is worth
+recording because it is short: let `d` be a `D(A')`-basis of `D(A)` indexed by
+`ChooseBasisIndex R A''`. `le_ker_cartierDual` (PROVEN) gives
+`aug (D(A')) · D(A) ≤ ker (map i)`, so `map i` factors through
+`D(A) ⊗_{D(A')} R ≅ R^{rk_R A''}`; `surjective_cartierDual_map` (PROVEN) makes that factorisation
+a surjection onto `D(A'')`, which is `R`-free of the same rank, hence an isomorphism (a surjective
+endomorphism of a finitely generated module is injective). So the images `b j := map i (d j)` are
+an `R`-basis of `D(A'')`, `c := d` lifts `b`, and `span_{D(A')} (range c) = D(A) ⊇ ker (map i)`.
+`ker_cartierDual_le` falls out of the same isomorphism, which is why it is NOT circular to prove
+it separately below — it is proven from `exists_basis_cartierDual`, i.e. from the freeness, not
+from this leaf.
+
+## FALSITY AUDIT (2026-07-28) — REFUTED ABOVE; a correct computation in a degenerate sub-family
 
 The audit on `exists_basis_cartierDual` says a counterexample must use a non-local base with
 nontrivial `Pic`. That can be sharpened. Take `R` Dedekind containing `ζ_p`, with
@@ -1669,7 +1772,11 @@ in these families: it must exploit a base on which stably free modules need not 
 Krull dimension at least 2), which is a strictly stronger requirement than "non-local with
 nontrivial `Pic`". None was constructed.
 
-## FALSITY AUDIT, SECOND FAMILY (2026-07-30) — the ÉTALE case, over an ARBITRARY base
+**(2026-07-31: the emphasised sentence is true and its "hence" is false. "In these families" is
+`G'' = ℤ/p`, of the same order as `G' = μ_p`; the refutation above stays inside the Dedekind
+base `ℤ[√-5]` and only replaces `ℤ/2` by `ℤ/4`. Krull dimension ≥ 2 was never needed.)**
+
+## FALSITY AUDIT, SECOND FAMILY (2026-07-30) — REFUTED ABOVE; the ÉTALE case, arbitrary base
 
 The audit above leaves "Krull dimension ≥ 2" as the hunting ground. The simplest family living
 there was searched and is **also not a counterexample** — and the reason is instructive: the
@@ -1695,6 +1802,11 @@ The two conditions coincide, so `Module.Free R A` is exactly load-bearing here a
 Read together with the Dedekind computation above, the pattern is that the hypothesis keeps
 turning out to be equivalent to the conclusion rather than merely implying it, which is weak
 evidence *for* the leaf and is why no counterexample has been produced.
+
+**(2026-07-31: that pattern is now explained rather than suggestive — see the REFUTATION section.
+This family too has `ord G'' = ord G' = 2`, so the non-trivial fibre occurs exactly once and the
+hypothesis is forced to say the same thing as the conclusion. It is a property of the sub-family,
+not of the leaf.)**
 
 ## LITERATURE CHECK (2026-07-30) — the "Tate's argument" attribution is UNVERIFIED
 
@@ -1730,8 +1842,11 @@ generation plus the rank count.
 It is not vacuous: over a field it asserts `dim D(A) = dim A'' · dim A'` together with a choice
 of `rk_R A''` generators realising it, false for any smaller family. It is not over-constrained
 either — a dual normal basis satisfies both clauses, so the pair `(b, c)` is inhabited exactly
-when the parent cut holds. -/
-theorem IsShortExact.exists_lift_ker_le_span_cartierDual (h : IsShortExact i π) :
+when the parent cut holds.
+
+The `[IsLocalRing R]` hypothesis is not part of the faithfulness picture above — it is what makes
+the statement true at all; see the REFUTATION section. -/
+theorem IsShortExact.exists_lift_ker_le_span_cartierDual [IsLocalRing R] (h : IsShortExact i π) :
     letI : Algebra (CartierDual R A') (CartierDual R A) :=
       ((CartierDual.map π).toAlgHom.toRingHom :
         CartierDual R A' →+* CartierDual R A).toAlgebra
@@ -1807,7 +1922,7 @@ search that narrows the audit below: no counterexample can live over a *Dedekind
 standard `μ_p`-by-`ℤ/p` families, so one would have to exploit a base on which stably free
 modules need not be free. The documented fallback (weaken to local freeness of rank `rk_R A''`
 and localise the two consumers' derivations, weakening neither consumer) applies unchanged. -/
-theorem IsShortExact.exists_spanning_cartierDual (h : IsShortExact i π) :
+theorem IsShortExact.exists_spanning_cartierDual [IsLocalRing R] (h : IsShortExact i π) :
     letI : Algebra (CartierDual R A') (CartierDual R A) :=
       ((CartierDual.map π).toAlgHom.toRingHom :
         CartierDual R A' →+* CartierDual R A).toAlgebra
@@ -2092,6 +2207,17 @@ give. The reasons to believe the strong form here, and the shape a refutation wo
   use a non-local base with nontrivial `Pic`** — and by the previous point must decouple the
   freeness of `A` over `R` from the freeness of `D(A)` over `D(A')`.
 
+**IT WAS REFUTED, on 2026-07-31, and the repair taken was NOT the fallback below.** The three
+bullets above are correct as far as they go and all three are about the sub-family
+`ord G'' = ord G'`, where the multiplicity of the non-trivial fibre is `1` and the hypothesis is
+forced to coincide with the conclusion; taking `G' = μ₂`, `G'' = ℤ/4` over `ℤ[√-5]` decouples them
+(see the REFUTATION section on `IsShortExact.exists_lift_ker_le_span_cartierDual`). The repair is
+`[IsLocalRing R]`, which this statement now carries: it makes `CartierDual R A'` **semilocal**,
+where a finite flat module of constant fibre rank is free (mathlib's
+`Module.free_of_flat_of_finrank_eq`, under `[Finite (MaximalSpectrum _)]`). So the remaining
+mathematics is flatness plus the fibre-rank count, not global triviality. The fppf-local fallback
+below was not needed and is left only as a record of the alternative.
+
 **If the strong form is ever refuted, the fallback is known and both consumers survive it**, at
 the cost of a localisation argument in each: `ker_cartierDual_le` uses only that
 `CartierDual R A ⊗_{CartierDual R A'} R` is `R`-free of rank `rk A''`, and
@@ -2105,7 +2231,7 @@ two proofs below — *not* to weaken either consumer.
 * Takeuchi, *A correspondence between Hopf ideals and sub-Hopf algebras* (the Hopf–Galois input on
   the `A`-side, whose linear dual this is).
 * Waterhouse, *Introduction to Affine Group Schemes*, ch. 14–16. -/
-theorem IsShortExact.exists_basis_cartierDual (h : IsShortExact i π) :
+theorem IsShortExact.exists_basis_cartierDual [IsLocalRing R] (h : IsShortExact i π) :
     letI : Algebra (CartierDual R A') (CartierDual R A) :=
       ((CartierDual.map π).toAlgHom.toRingHom :
         CartierDual R A' →+* CartierDual R A).toAlgebra
@@ -2189,7 +2315,7 @@ Refuting check: the reverse inclusion `IsShortExact.le_ker_cartierDual` is prove
 counterexample would be a `φ : A →ₗ[R] R` killing `i(A'')` that is not a convolution combination
 of pullbacks along `π`; over a field the rank count `rk A = rk A'' * rk A'` makes both sides free
 of rank `rk A - rk A''`, so any counterexample must use a non-local base. -/
-theorem IsShortExact.ker_cartierDual_le (h : IsShortExact i π) :
+theorem IsShortExact.ker_cartierDual_le [IsLocalRing R] (h : IsShortExact i π) :
     RingHom.ker ((CartierDual.map i).toAlgHom.toRingHom :
         CartierDual R A →+* CartierDual R A'')
       ≤ Ideal.map ((CartierDual.map π).toAlgHom.toRingHom :
@@ -2329,7 +2455,7 @@ Refuting check: `RingHom.FaithfullyFlat` unfolds to `Module.FaithfullyFlat` alon
 `(CartierDual.map π).toAlgebra`, so a refutation would be a maximal ideal `m` of
 `CartierDual R A'` with `m • CartierDual R A = ⊤`; over a base field this is impossible because
 the module is free of rank `rk A''`, so any counterexample must use a non-local base. -/
-theorem IsShortExact.faithfullyFlat_cartierDual (h : IsShortExact i π) :
+theorem IsShortExact.faithfullyFlat_cartierDual [IsLocalRing R] (h : IsShortExact i π) :
     RingHom.FaithfullyFlat ((CartierDual.map π).toAlgHom.toRingHom :
       CartierDual R A' →+* CartierDual R A) := by
   letI : Algebra (CartierDual R A') (CartierDual R A) :=
@@ -2367,7 +2493,7 @@ exactly one of them. The kernel condition is fully proven (`le_ker_cartierDual` 
 `IsShortExact.exists_basis_cartierDual`; the surjectivity field is reduced to a pure module
 statement about `A` (`IsShortExact.exists_linearRetraction`) with no Hopf structure left in it,
 and that is PROVEN outright from `AlgHom.exists_linearRetraction_of_faithfullyFlat`. -/
-theorem IsShortExact.cartierDual (h : IsShortExact i π) :
+theorem IsShortExact.cartierDual [IsLocalRing R] (h : IsShortExact i π) :
     IsShortExact (CartierDual.map π) (CartierDual.map i) :=
   ⟨h.faithfullyFlat_cartierDual, h.surjective_cartierDual_map,
     le_antisymm h.ker_cartierDual_le h.le_ker_cartierDual⟩
@@ -2635,8 +2761,15 @@ the roles of `A''` and `A'`, and apply the étale half to the dual sequence.
 
 PROVEN, modulo its two inputs. That this proof is three symbols long is the evidence that the
 definition of `IsShortExact` above really is pinned by its consumer: any other placement of the
-faithful-flatness and kernel conditions would leave a mismatch here. -/
-theorem isMultiplicativeType_of_isShortExact
+faithful-flatness and kernel conditions would leave a mismatch here.
+
+**`[IsLocalRing R]` since 2026-07-31**, inherited from `IsShortExact.cartierDual` and ultimately
+from `exists_lift_ker_le_span_cartierDual`, whose unrestricted form was refuted. The étale half
+`etale_of_isShortExact` is unaffected and still holds over an arbitrary base. The intended
+consumer, `exists_unramified_grouplike_family_generating_corner` in
+`GaloisRepresentation/HardlyRamified/Family.lean`, works over `𝒪ᵖᵥ`, so it supplies the instance;
+at the time of the change no declaration outside this file used `(R3)` at term level. -/
+theorem isMultiplicativeType_of_isShortExact [IsLocalRing R]
     [IsCocomm R A''] [IsCocomm R A] [IsCocomm R A']
     [Module.Finite R A''] [Module.Free R A''] [Module.Finite R A] [Module.Free R A]
     [Module.Finite R A'] [Module.Free R A']
