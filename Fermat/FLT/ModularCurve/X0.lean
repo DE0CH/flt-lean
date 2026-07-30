@@ -35799,6 +35799,24 @@ def AbelianSchemeStruct.listSum {A S : Scheme.{0}} {fs : A ⟶ S}
     (l : List (RelPoint fs g)) :
     ab.listSum (x :: l) = ab.add x (ab.listSum l) := rfl
 
+/-- **A list sum is natural in the test object** (PROVEN, one induction over the
+two naturality fields `pre_zero` and `pre_add` of `AbelianSchemeStruct`).
+
+The `RelPoint.pre` counterpart of `IsAdditiveOn.post_listSum` just below: that one
+moves a list sum past a homomorphism in the TARGET, this one past a change of TEST
+scheme.  Both are needed by `IsRelPicZeroOf.exists_albaneseFactorisation`, whose
+whole proof is the statement that the locally-defined sum `Σ c(yᵢ)` descends — and
+descent is exactly a compatibility with base change of the test object. -/
+theorem AbelianSchemeStruct.pre_listSum {A S : Scheme.{0}} {fs : A ⟶ S}
+    (ab : AbelianSchemeStruct fs) {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ S}
+    {g' : T' ⟶ S} (hg : h ≫ g = g') (l : List (RelPoint fs g)) :
+    RelPoint.pre h hg (ab.listSum l) = ab.listSum (l.map (RelPoint.pre h hg)) := by
+  induction l with
+  | nil => simpa using ab.pre_zero h hg
+  | cons x l ih =>
+    rw [AbelianSchemeStruct.listSum_cons, ab.pre_add h hg, ih, List.map_cons,
+      AbelianSchemeStruct.listSum_cons]
+
 /-- **A homomorphism of abelian schemes distributes over a list sum** (PROVEN,
 one induction over `postZero` and the binary additivity that IS
 `IsAdditiveOn`).
@@ -36205,11 +36223,21 @@ classical theorem with its own literature:
 |---|---|---|
 | `exists_relPicFull` | FGA 232, BLR 8.2/1 (`Pic` is representable) | `RelativePicard.lean` |
 | `exists_relPicZero_of_isRelPicOf` | BLR 9.4/4 (`Pic⁰ ⊆ Pic` is abelian) | `RelativePicard.lean` |
-| `IsRelPicZeroOf.exists_albaneseFactorisation` | autoduality + biduality | below |
-| `IsRelPicZeroOf.eq_of_aj_eq` | `Sym^g C ↠ Pic⁰` (Riemann–Roch) | below |
+| `IsRelPicZeroOf.exists_flatSurj_ajListSum` | `Sym^d C ↠ Pic^d` (Riemann–Roch) | below |
+| `IsRelPicZeroOf.listSum_map_eq_of_listSum_aj_eq` | Abel's theorem / the cube | below |
 
 with `IsRelPicZeroOf.isAlbaneseOf` and `exists_albaneseOfCurve` PROVEN
 between them.
+
+**UPDATED 2026-07-30 — the last two rows are NOT what this table said.**  It
+listed `IsRelPicZeroOf.exists_albaneseFactorisation` (*"autoduality + biduality"*)
+and `IsRelPicZeroOf.eq_of_aj_eq` (*"`Sym^g C ↠ Pic⁰`"*).  **Both of those are now
+PROVEN**, over the two leaves shown, and BOTH old descriptions were wrong about
+what was missing: `eq_of_aj_eq` needed no descent theory (`Flat`
+`.epi_of_flat_of_surjective` was already in the pin) and
+`exists_albaneseFactorisation` needed no dual abelian scheme and no biduality at
+all — the `Sym^d` route reaches it from Abel's theorem plus fppf descent.  See the
+two docstrings below for the corrections in full.
 
 **`exists_relPicZero` DELIBERATELY SUBSUMES `exists_relPicZeroOf`** (the
 `S = SpecQ` node ~4700 lines above, whose three hypotheses are the
@@ -36241,46 +36269,10 @@ degree); `E` is a connected abelian scheme, so that forces `E = 0`.  It
 is exactly `inj` — not `aj` — that rules the junk witness out, which is
 why the cut keeps the group law in the interface. -/
 
-/-- **AUTODUALITY: a representing object for `Pic⁰` has the Albanese
-EXISTENCE property** (sorry node) — the first of the two halves of
-"`IsRelPicZeroOf` ⟹ `IsAlbaneseOf`", stated over an ARBITRARY base.
-
-TRUE, and this is the classical autoduality-of-the-Jacobian step
-(Mumford, *Abelian Varieties* §§11–13; BLR *Néron Models* 8.4 and 9.4;
-FGA 236 for the dual abelian scheme).  A pointed natural
-`c : X(−) ⟶ A(−)` into an abelian scheme pulls line bundles back, giving
-`A^∨ = Pic⁰_{A/S} ⟶ Pic⁰_{X/S} = J^∨`; biduality (`A^∨∨ ≅ A`,
-`J^∨∨ ≅ J`) turns that into the wanted `u : J ⟶ A`, and `u ≫ astr = jf`
-and `c = u ∘ aj` hold by construction.  `hpt` is what makes the induced
-map a morphism of abelian schemes rather than a torsor map; `hnat` is
-what makes `c` a natural transformation, i.e. an actual morphism of
-functors, so that Yoneda applies at all.
-
-**WHAT THIS LEAF STILL NEEDS**, none of which exists at this pin: the
-DUAL abelian scheme `A^∨ = Pic⁰_{A/S}` (whose absence
-`Modularity/AbelianScheme.lean`'s own docstring already records),
-biduality, and the identification of `Pic⁰_{A/S}` for `A` abelian with
-the `Pic⁰` of this module.  Note that the first of those is itself an
-instance of `exists_relPicZero` only in *shape*, not in fact: `A` is not
-a curve, so this leaf is NOT circular on the representability leaf.
-
-`_hf` is recorded because the classical proof uses it (the curve is where
-the pullback map on line bundles is computed), and is not consumed by the
-statement; `P` alone already pins `J` as `Pic⁰` up to the group-functor
-embedding, which is what carries the content. -/
-theorem IsRelPicZeroOf.exists_albaneseFactorisation {C J S : Scheme.{0}} {f : C ⟶ S}
-    {jf : J ⟶ S} {ab : AbelianSchemeStruct jf} {o : RelPoint f (𝟙 S)}
-    (_hf : IsSmoothProperCurve f) (P : IsRelPicZeroOf f ab o)
-    {A : Scheme.{0}} {astr : A ⟶ S} (ab' : AbelianSchemeStruct astr)
-    (c : ∀ {T : Scheme.{0}} (g : T ⟶ S), RelPoint f g → RelPoint astr g)
-    (_hnat : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
-      (hg : h ≫ g = g') (x : RelPoint f g),
-      c g' (RelPoint.pre h hg x) = RelPoint.pre h hg (c g x))
-    (_hpt : c (𝟙 S) o = ab'.zero (𝟙 S)) :
-    ∃ u : J ⟶ A, u ≫ astr = jf ∧
-      ∀ {T : Scheme.{0}} (g : T ⟶ S) (x : RelPoint f g),
-        (c g x).1 = (P.aj x).1 ≫ u :=
-  sorry
+/-! **`IsRelPicZeroOf.exists_albaneseFactorisation` MOVED DOWN, 2026-07-30**, to
+below `exists_flatSurj_ajListSum` and the descent block, because it is now PROVEN
+over them.  Nothing else about it changed except its docstring; see its new site
+a few hundred lines below. -/
 
 /-- **FPPF-LOCAL SURJECTIVITY OF ABEL–JACOBI** (sorry leaf, 2026-07-30) — the
 one geometric input of `IsRelPicZeroOf.eq_of_aj_eq` below, which is PROVEN over
@@ -36328,24 +36320,420 @@ consumer's affine cover of an empty `J` uses).  `P` is load-bearing: without it
 `ab` is an arbitrary abelian scheme with no relation to `C`, and no `aj` exists
 to sum.
 
-**WHY THE `EffectiveEpi` STRENGTHENING IS NOT TAKEN.**  `Flat`
-`.epi_of_flat_of_surjective` needs no finiteness, so `Epi h` — all this leaf's
-consumer uses — is available from `Flat h` and `Surjective h` alone.
-`Mathlib/AlgebraicGeometry/Sites/Fpqc.lean` gives `EffectiveEpi h` under the
-extra `QuasiCompact h` or `LocallyOfFinitePresentation h`, and the construction
-sketched above delivers both; they are omitted because adding an unconsumed
-hypothesis to a leaf makes it strictly harder to prove for no gain.  A future
-consumer that needs to DESCEND a morphism (rather than an equation) — the
-Albanese half — should add `QuasiCompact h` here rather than restate the
-leaf. -/
+**THE `EffectiveEpi` STRENGTHENING HAS NOW BEEN TAKEN (2026-07-30), exactly as the
+paragraph this replaces prescribed.**  What stood here said: `Flat`
+`.epi_of_flat_of_surjective` needs no finiteness, so `Epi h` — all this leaf's then
+only consumer used — is available from `Flat h` and `Surjective h` alone; the
+`QuasiCompact h` needed for `EffectiveEpi h`
+(`Mathlib/AlgebraicGeometry/Sites/Fpqc.lean`) was omitted as an unconsumed
+hypothesis, with the note that *"a future consumer that needs to DESCEND a
+morphism (rather than an equation) — the Albanese half — should add
+`QuasiCompact h` here rather than restate the leaf"*.  That consumer arrived:
+`IsRelPicZeroOf.exists_albaneseFactorisation` below is PROVEN by descending the
+morphism `Σ c(yᵢ)` along this cover, which needs `EffectiveEpi h` and hence
+`QuasiCompact h`, so `QuasiCompact h` is now part of the conclusion.
+
+**This does NOT make the leaf harder in substance**, and the check is the
+construction sketched above: `ℙ(π_*L(d·o)) ⟶ T` is a projective bundle, hence
+proper, hence quasi-compact; and the étale cover that splits the relative divisor
+into `d` sections is finite over the base, hence quasi-compact.  A composite of
+quasi-compact morphisms is quasi-compact.  So the same construction delivers it,
+and a prover who builds `h` at all gets `QuasiCompact h` from the same objects.
+`LocallyOfFinitePresentation h` would serve equally
+(`Fpqc.lean` gives `EffectiveEpi` under either) and is deliberately NOT also
+demanded — one is enough, and demanding both would be the mistake the paragraph
+this replaces was warning against.
+
+`eq_of_aj_eq`, the other consumer, still uses only `Epi h` and is unaffected: the
+extra conjunct is in the CONCLUSION, so it is free data for a consumer that
+ignores it. -/
 theorem IsRelPicZeroOf.exists_flatSurj_ajListSum {C J S : Scheme.{0}} {f : C ⟶ S}
     {jf : J ⟶ S} {ab : AbelianSchemeStruct jf} {o : RelPoint f (𝟙 S)}
     (P : IsRelPicZeroOf f ab o) (_hf : IsSmoothProperCurve f)
     {T : Scheme.{0}} [CompactSpace T] {g : T ⟶ S} (p : RelPoint jf g) :
-    ∃ (T' : Scheme.{0}) (h : T' ⟶ T), Flat h ∧ Surjective h ∧
+    ∃ (T' : Scheme.{0}) (h : T' ⟶ T), Flat h ∧ Surjective h ∧ QuasiCompact h ∧
       ∃ l : List (RelPoint f (h ≫ g)),
         RelPoint.pre h rfl p = ab.listSum (l.map (fun y => P.aj y)) :=
   sorry
+
+/-! #### The descent block behind `exists_albaneseFactorisation` (new 2026-07-30)
+
+Everything from here to `exists_albaneseFactorisation` below is PROVEN, and its
+purpose is to discharge — once and for all — the *formal* half of the Albanese
+existence property: that a rule defined on points, fppf-locally on the base, is a
+MORPHISM `J ⟶ A`.  After it the whole remaining content of that node is the single
+new leaf `IsRelPicZeroOf.listSum_map_eq_of_listSum_aj_eq`, which is Abel's theorem
+and mentions no cover, no gluing and no morphism out of `J` at all.
+
+`CategoryTheory.Limits` is opened over the block because the descent argument names
+fibre products directly (`pullback.fst`, `pullback.condition`).  It is opened inside
+a `section` rather than at top level so that nothing below changes resolution — the
+same discipline as `section Gamma0AtlasOverBaseChange` ~9000 lines above. -/
+
+section AlbaneseDescent
+
+open _root_.CategoryTheory.Limits
+
+/-- **The Abel–Jacobi map commutes with a change of test object, listwise**
+(PROVEN, `aj_pre` under a `List.map`). -/
+theorem IsRelPicZeroOf.listSum_map_aj_pre {C J S : Scheme.{0}} {f : C ⟶ S}
+    {jf : J ⟶ S} {ab : AbelianSchemeStruct jf} {o : RelPoint f (𝟙 S)}
+    (P : IsRelPicZeroOf f ab o) {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ S}
+    {g' : T' ⟶ S} (hg : h ≫ g = g') (l : List (RelPoint f g)) :
+    ab.listSum ((l.map (RelPoint.pre h hg)).map P.aj)
+      = RelPoint.pre h hg (ab.listSum (l.map P.aj)) := by
+  rw [AbelianSchemeStruct.pre_listSum, List.map_map, List.map_map]
+  refine congrArg ab.listSum (List.map_congr_left fun y _ => ?_)
+  simpa using P.aj_pre h hg y
+
+/-- **A NATURAL family of points commutes with a change of test object, listwise**
+(PROVEN) — the same statement for `c` in place of `P.aj`, with naturality supplied
+as the hypothesis `hnat` rather than by a structure field.
+
+This is the only place `hnat` is used formally, and it is used four times: once in
+each of the four steps that move a list sum across a base change. -/
+theorem AbelianSchemeStruct.listSum_map_pre_of_natural {C A S : Scheme.{0}} {f : C ⟶ S}
+    {astr : A ⟶ S} (ab' : AbelianSchemeStruct astr)
+    (c : ∀ {T : Scheme.{0}} (g : T ⟶ S), RelPoint f g → RelPoint astr g)
+    (hnat : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+      (hg : h ≫ g = g') (x : RelPoint f g),
+      c g' (RelPoint.pre h hg x) = RelPoint.pre h hg (c g x))
+    {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S} (hg : h ≫ g = g')
+    (l : List (RelPoint f g)) :
+    ab'.listSum ((l.map (RelPoint.pre h hg)).map (c g'))
+      = RelPoint.pre h hg (ab'.listSum (l.map (c g))) := by
+  rw [AbelianSchemeStruct.pre_listSum, List.map_map, List.map_map]
+  refine congrArg ab'.listSum (List.map_congr_left fun y _ => ?_)
+  simpa using hnat h hg y
+
+/-- **ABEL'S THEOREM in the form the Albanese needs: `Σ c(yᵢ)` depends only on the
+CLASS `Σ aj(yᵢ)`** (sorry leaf, 2026-07-30) — the single remaining mathematical
+input of `IsRelPicZeroOf.exists_albaneseFactorisation` below, which is PROVEN over
+it and over `exists_flatSurj_ajListSum` and nothing else.
+
+TRUE and classical.  Two lists `l`, `l'` of sections with `Σ([yᵢ] − [o]) =
+Σ([y'ⱼ] − [o])` in `Pic⁰` differ by a principal divisor, and the assertion is that
+the divisor map `Div(C_T) ⟶ A(T)`, `Σ nᵢ yᵢ ↦ Σ nᵢ c(yᵢ)`, kills principal
+divisors — equivalently that `Sym^d C ⟶ A` factors through `Pic^d`.  Classically
+this is Abel's theorem for a map to an abelian variety, proved by the theorem of
+the cube / the seesaw theorem (Mumford, *Abelian Varieties* §§6 and 11; Milne,
+*Jacobian Varieties* §§2–6; BLR *Néron Models* 8.4).  Note `hpt` is what removes
+the `d·[o]` terms: `c(o) = 0`, so lists of DIFFERENT lengths may be compared.
+
+**WHY THIS IS A GENUINE CUT AND NOT A RELOCATION OF THE NODE ABOVE.**  It is
+strictly WEAKER than `exists_albaneseFactorisation`:
+
+* it *follows* from it — given `u`, relative rigidity (`isAdditiveOn_of_post_zero`,
+  applicable because `aj o = 0` and `hpt` give `u(0) = 0`) makes `u` additive, so
+  `Σ c(yᵢ) = u(Σ aj(yᵢ))` depends only on the sum.  So it cannot be FALSE unless
+  the node above is;
+* it does **not** imply it.  Nothing here says the classes `Σ aj(yᵢ)` exhaust `J`,
+  so on its own it is compatible with a `J` far larger than the subgroup generated
+  by `aj(C)`, over which no `u` exists.  Surjectivity is the separate leaf
+  `exists_flatSurj_ajListSum`, and the two together are what is now enough.
+
+The gain is that all of the fppf descent and all of the Zariski gluing — i.e. the
+passage from a rule on points to an actual morphism `J ⟶ A` — is now PROVEN
+below, so a prover dispatched here faces one classical theorem about POINTS and no
+scheme-theoretic bookkeeping at all.
+
+**FAITHFULNESS: `hnat` and `hpt` are BOTH load-bearing, each with a witness.**
+
+* Without `hnat`: for any `g : T ⟶ S` put `o_T := RelPoint.pre g (Category.comp_id g) o`,
+  so `P.aj o_T = ab.zero g` by `aj_base` and `aj_pre`.  Then `l = [o_T]` and
+  `l' = []` have equal `aj`-sums, and the conclusion forces `c g o_T = ab'.zero g`.
+  A non-natural `c` that is `0` at `(𝟙 S, o)` — as `hpt` demands — and nonzero at
+  some other test object violates exactly that.
+* Without `hpt`: let `τ : RelPoint astr (𝟙 S)` be a nonzero section of a nontrivial
+  `A` and let `c g x := RelPoint.pre g (Category.comp_id g) τ`, a constant family.
+  It is natural, so `hnat` holds.  The same `l = [o_T]`, `l' = []` have equal
+  `aj`-sums while the `c`-sums are `τ_T ≠ 0` and `0`.
+
+`P` is load-bearing because without it there is no `aj` to state the hypothesis
+with; `_hf` is recorded for the same reason as on `exists_flatSurj_ajListSum` — the
+classical proof is a statement about curves — and is not consumed by the statement.
+
+**NOT VACUOUS and NOT SELF-DISCHARGING.**  The hypothesis is satisfiable
+non-trivially (`l = l'` makes it an identity, and the conclusion is then true but
+empty of content); it is `l ≠ l'` with equal classes that carries the content, and
+such pairs exist as soon as the curve has genus `≥ 1`, because then `Sym^d C ⟶
+Pic^d` has positive-dimensional fibres for `d ≥ 2g`. -/
+theorem IsRelPicZeroOf.listSum_map_eq_of_listSum_aj_eq {C J S : Scheme.{0}} {f : C ⟶ S}
+    {jf : J ⟶ S} {ab : AbelianSchemeStruct jf} {o : RelPoint f (𝟙 S)}
+    (P : IsRelPicZeroOf f ab o) (_hf : IsSmoothProperCurve f)
+    {A : Scheme.{0}} {astr : A ⟶ S} (ab' : AbelianSchemeStruct astr)
+    (c : ∀ {T : Scheme.{0}} (g : T ⟶ S), RelPoint f g → RelPoint astr g)
+    (_hnat : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+      (hg : h ≫ g = g') (x : RelPoint f g),
+      c g' (RelPoint.pre h hg x) = RelPoint.pre h hg (c g x))
+    (_hpt : c (𝟙 S) o = ab'.zero (𝟙 S))
+    {T : Scheme.{0}} {g : T ⟶ S} (l l' : List (RelPoint f g))
+    (_hl : ab.listSum (l.map P.aj) = ab.listSum (l'.map P.aj)) :
+    ab'.listSum (l.map (c g)) = ab'.listSum (l'.map (c g)) :=
+  sorry
+
+/-- **`w : Z ⟶ A` IS the value of the Albanese map at `q : Z ⟶ J`, witnessed by an
+fppf cover** (PROVEN as a definition) — the local datum that the descent below
+turns into a global morphism.
+
+The test object is parametrised by the RAW morphism `q : Z ⟶ J` rather than by a
+`RelPoint jf g`, and the base point is always `q ≫ jf`.  That is deliberate and it
+is what makes the whole block free of dependent transport: `RelPoint jf g` is a
+subtype indexed by `g`, so a `g` that is only PROPOSITIONALLY equal to `q ≫ jf`
+would force a transport at every step.  Writing the base as `h ≫ q ≫ jf` makes
+every occurrence of `RelPoint.pre h rfl` land in the intended type by `rfl`. -/
+def IsRelPicZeroOf.AlbaneseWitness {C J S : Scheme.{0}} {f : C ⟶ S}
+    {jf : J ⟶ S} {ab : AbelianSchemeStruct jf} {o : RelPoint f (𝟙 S)}
+    (P : IsRelPicZeroOf f ab o)
+    {A : Scheme.{0}} {astr : A ⟶ S} (ab' : AbelianSchemeStruct astr)
+    (c : ∀ {T : Scheme.{0}} (g : T ⟶ S), RelPoint f g → RelPoint astr g)
+    {Z : Scheme.{0}} (q : Z ⟶ J) (w : Z ⟶ A) : Prop :=
+  ∃ (Z' : Scheme.{0}) (h : Z' ⟶ Z), Flat h ∧ Surjective h ∧
+    ∃ l : List (RelPoint f (h ≫ q ≫ jf)),
+      (⟨h ≫ q, Category.assoc h q jf⟩ : RelPoint jf (h ≫ q ≫ jf))
+          = ab.listSum (l.map P.aj) ∧
+      h ≫ w = (ab'.listSum (l.map (c (h ≫ q ≫ jf)))).1
+
+/-- **A witnessed morphism is a morphism over `S`** (PROVEN) — the structure
+morphism can be read off after the cover, and the cover is an epimorphism. -/
+theorem IsRelPicZeroOf.AlbaneseWitness.comp_astr {C J S : Scheme.{0}} {f : C ⟶ S}
+    {jf : J ⟶ S} {ab : AbelianSchemeStruct jf} {o : RelPoint f (𝟙 S)}
+    {P : IsRelPicZeroOf f ab o} {A : Scheme.{0}} {astr : A ⟶ S}
+    {ab' : AbelianSchemeStruct astr}
+    {c : ∀ {T : Scheme.{0}} (g : T ⟶ S), RelPoint f g → RelPoint astr g}
+    {Z : Scheme.{0}} {q : Z ⟶ J} {w : Z ⟶ A}
+    (hw : P.AlbaneseWitness ab' c q w) : w ≫ astr = q ≫ jf := by
+  obtain ⟨Z', h, hfl, hsu, l, _, e⟩ := hw
+  haveI := hfl; haveI := hsu
+  haveI : Epi h := Flat.epi_of_flat_of_surjective h
+  refine (cancel_epi h).1 ?_
+  rw [← Category.assoc, e, (ab'.listSum (l.map (c (h ≫ q ≫ jf)))).2]
+
+/-- **Witnesses are stable under ARBITRARY precomposition** (PROVEN), by base change
+of the cover: `Flat` and `Surjective` are stable under base change, and the list is
+transported by `RelPoint.pre` along the second projection.
+
+Note there is no compactness hypothesis: only the EXISTENCE of a witness needs a
+quasi-compact test object (through `exists_flatSurj_ajListSum`); transporting one
+that already exists does not.  That asymmetry is what makes the gluing below work
+over intersections `J_i ∩ J_j` that need not be quasi-compact. -/
+theorem IsRelPicZeroOf.AlbaneseWitness.pre {C J S : Scheme.{0}} {f : C ⟶ S}
+    {jf : J ⟶ S} {ab : AbelianSchemeStruct jf} {o : RelPoint f (𝟙 S)}
+    {P : IsRelPicZeroOf f ab o} {A : Scheme.{0}} {astr : A ⟶ S}
+    {ab' : AbelianSchemeStruct astr}
+    {c : ∀ {T : Scheme.{0}} (g : T ⟶ S), RelPoint f g → RelPoint astr g}
+    (hnat : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+      (hg : h ≫ g = g') (x : RelPoint f g),
+      c g' (RelPoint.pre h hg x) = RelPoint.pre h hg (c g x))
+    {Z : Scheme.{0}} {q : Z ⟶ J} {w : Z ⟶ A} (hw : P.AlbaneseWitness ab' c q w)
+    {Z₂ : Scheme.{0}} (k : Z₂ ⟶ Z) : P.AlbaneseWitness ab' c (k ≫ q) (k ≫ w) := by
+  obtain ⟨Z', h, hfl, hsu, l, e, e'⟩ := hw
+  haveI := hfl; haveI := hsu
+  refine ⟨pullback k h, pullback.fst k h, inferInstance, inferInstance, ?_⟩
+  have hcond : pullback.fst k h ≫ k = pullback.snd k h ≫ h := pullback.condition
+  have hb : pullback.snd k h ≫ h ≫ q ≫ jf = pullback.fst k h ≫ (k ≫ q) ≫ jf := by
+    rw [← Category.assoc, ← hcond]
+    simp
+  refine ⟨l.map (RelPoint.pre (pullback.snd k h) hb), ?_, ?_⟩
+  · rw [P.listSum_map_aj_pre, ← e]
+    apply Subtype.ext
+    show pullback.fst k h ≫ k ≫ q = pullback.snd k h ≫ h ≫ q
+    rw [← Category.assoc, ← Category.assoc, hcond]
+  · rw [AbelianSchemeStruct.listSum_map_pre_of_natural ab' c hnat]
+    show pullback.fst k h ≫ k ≫ w = pullback.snd k h ≫ (ab'.listSum (l.map (c _))).1
+    rw [← e', ← Category.assoc, ← Category.assoc, hcond]
+
+/-- **A point has at most one witnessed value** (PROVEN over the Abel leaf) — this
+is where `listSum_map_eq_of_listSum_aj_eq` does its work, on the FIBRE PRODUCT of
+the two witnessing covers, which is again flat and surjective and hence an
+epimorphism. -/
+theorem IsRelPicZeroOf.AlbaneseWitness.unique {C J S : Scheme.{0}} {f : C ⟶ S}
+    {jf : J ⟶ S} {ab : AbelianSchemeStruct jf} {o : RelPoint f (𝟙 S)}
+    {P : IsRelPicZeroOf f ab o} (hf : IsSmoothProperCurve f)
+    {A : Scheme.{0}} {astr : A ⟶ S} {ab' : AbelianSchemeStruct astr}
+    {c : ∀ {T : Scheme.{0}} (g : T ⟶ S), RelPoint f g → RelPoint astr g}
+    (hnat : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+      (hg : h ≫ g = g') (x : RelPoint f g),
+      c g' (RelPoint.pre h hg x) = RelPoint.pre h hg (c g x))
+    (hpt : c (𝟙 S) o = ab'.zero (𝟙 S))
+    {Z : Scheme.{0}} {q : Z ⟶ J} {w w' : Z ⟶ A}
+    (hw : P.AlbaneseWitness ab' c q w) (hw' : P.AlbaneseWitness ab' c q w') : w = w' := by
+  obtain ⟨Z₁, h₁, hfl₁, hsu₁, l₁, e₁, e₁'⟩ := hw
+  obtain ⟨Z₂, h₂, hfl₂, hsu₂, l₂, e₂, e₂'⟩ := hw'
+  haveI := hfl₁; haveI := hsu₁; haveI := hfl₂; haveI := hsu₂
+  have hcond : pullback.fst h₁ h₂ ≫ h₁ = pullback.snd h₁ h₂ ≫ h₂ := pullback.condition
+  haveI : Epi (pullback.snd h₁ h₂ ≫ h₂) :=
+    Flat.epi_of_flat_of_surjective (pullback.snd h₁ h₂ ≫ h₂)
+  have hA : pullback.fst h₁ h₂ ≫ h₁ ≫ q ≫ jf = (pullback.fst h₁ h₂ ≫ h₁) ≫ q ≫ jf := by
+    simp
+  have hB : pullback.snd h₁ h₂ ≫ h₂ ≫ q ≫ jf = (pullback.fst h₁ h₂ ≫ h₁) ≫ q ≫ jf := by
+    rw [← Category.assoc, ← hcond]
+  have key : ab.listSum ((l₁.map (RelPoint.pre (pullback.fst h₁ h₂) hA)).map P.aj)
+      = ab.listSum ((l₂.map (RelPoint.pre (pullback.snd h₁ h₂) hB)).map P.aj) := by
+    rw [P.listSum_map_aj_pre, P.listSum_map_aj_pre, ← e₁, ← e₂]
+    apply Subtype.ext
+    show pullback.fst h₁ h₂ ≫ h₁ ≫ q = pullback.snd h₁ h₂ ≫ h₂ ≫ q
+    rw [← Category.assoc, ← Category.assoc, hcond]
+  have hc := P.listSum_map_eq_of_listSum_aj_eq hf ab' c hnat hpt _ _ key
+  rw [AbelianSchemeStruct.listSum_map_pre_of_natural ab' c hnat,
+    AbelianSchemeStruct.listSum_map_pre_of_natural ab' c hnat] at hc
+  have hc1 := congrArg Subtype.val hc
+  simp only [RelPoint.pre] at hc1
+  rw [← e₁', ← e₂', ← Category.assoc, ← Category.assoc, hcond] at hc1
+  exact (cancel_epi (pullback.snd h₁ h₂ ≫ h₂)).1 hc1
+
+/-- **Over a QUASI-COMPACT test object a witnessed value EXISTS** (PROVEN) — this
+is the fppf descent step, and the only place `EffectiveEpi` is used.
+
+`exists_flatSurj_ajListSum` writes the universal point of `Z` as a sum of
+`aj`-classes after a flat surjective quasi-compact cover `h`; `Σ c(yᵢ)` is then a
+morphism out of the cover, and the Abel leaf says it coequalises the kernel pair
+of `h`.  `Mathlib/AlgebraicGeometry/Sites/Fpqc.lean` makes `h` an `EffectiveEpi`,
+which descends it. -/
+theorem IsRelPicZeroOf.exists_albaneseWitness {C J S : Scheme.{0}} {f : C ⟶ S}
+    {jf : J ⟶ S} {ab : AbelianSchemeStruct jf} {o : RelPoint f (𝟙 S)}
+    (P : IsRelPicZeroOf f ab o) (hf : IsSmoothProperCurve f)
+    {A : Scheme.{0}} {astr : A ⟶ S} {ab' : AbelianSchemeStruct astr}
+    {c : ∀ {T : Scheme.{0}} (g : T ⟶ S), RelPoint f g → RelPoint astr g}
+    (hnat : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+      (hg : h ≫ g = g') (x : RelPoint f g),
+      c g' (RelPoint.pre h hg x) = RelPoint.pre h hg (c g x))
+    (hpt : c (𝟙 S) o = ab'.zero (𝟙 S))
+    {Z : Scheme.{0}} [CompactSpace Z] (q : Z ⟶ J) :
+    ∃ w : Z ⟶ A, P.AlbaneseWitness ab' c q w := by
+  obtain ⟨Z', h, hfl, hsu, hqc, l, e⟩ :=
+    P.exists_flatSurj_ajListSum hf (T := Z) (g := q ≫ jf) ⟨q, rfl⟩
+  haveI := hfl; haveI := hsu; haveI := hqc
+  haveI : EffectiveEpi h := inferInstance
+  have hcoeq : ∀ {W : Scheme.{0}} (k₁ k₂ : W ⟶ Z'), k₁ ≫ h = k₂ ≫ h →
+      k₁ ≫ (ab'.listSum (l.map (c (h ≫ q ≫ jf)))).1
+        = k₂ ≫ (ab'.listSum (l.map (c (h ≫ q ≫ jf)))).1 := by
+    intro W k₁ k₂ hk
+    have h1 : k₁ ≫ h ≫ q ≫ jf = (k₁ ≫ h) ≫ q ≫ jf := by simp
+    have h2 : k₂ ≫ h ≫ q ≫ jf = (k₁ ≫ h) ≫ q ≫ jf := by rw [← Category.assoc, ← hk]
+    have key : ab.listSum ((l.map (RelPoint.pre k₁ h1)).map P.aj)
+        = ab.listSum ((l.map (RelPoint.pre k₂ h2)).map P.aj) := by
+      rw [P.listSum_map_aj_pre, P.listSum_map_aj_pre, ← e]
+      apply Subtype.ext
+      show k₁ ≫ h ≫ q = k₂ ≫ h ≫ q
+      rw [← Category.assoc, ← Category.assoc, hk]
+    have hc := P.listSum_map_eq_of_listSum_aj_eq hf ab' c hnat hpt _ _ key
+    rw [AbelianSchemeStruct.listSum_map_pre_of_natural ab' c hnat,
+      AbelianSchemeStruct.listSum_map_pre_of_natural ab' c hnat] at hc
+    exact congrArg Subtype.val hc
+  refine ⟨EffectiveEpi.desc h (ab'.listSum (l.map (c (h ≫ q ≫ jf)))).1 hcoeq,
+    Z', h, hfl, hsu, l, e, EffectiveEpi.fac _ _ _⟩
+
+/-- **AUTODUALITY: a representing object for `Pic⁰` has the Albanese
+EXISTENCE property** (**PROVEN 2026-07-30**, over `exists_flatSurj_ajListSum` and
+the single new leaf `listSum_map_eq_of_listSum_aj_eq`; formerly a sorry node) —
+the first of the two halves of "`IsRelPicZeroOf` ⟹ `IsAlbaneseOf`", stated over an
+ARBITRARY base.  **MOVED here from ~350 lines above**, unchanged in statement,
+because it now consumes `exists_flatSurj_ajListSum`, which sits above it.
+
+TRUE, and this is the classical autoduality-of-the-Jacobian step
+(Mumford, *Abelian Varieties* §§11–13; BLR *Néron Models* 8.4 and 9.4;
+FGA 236 for the dual abelian scheme).  `hpt` is what makes the induced
+map a morphism of abelian schemes rather than a torsor map; `hnat` is
+what makes `c` a natural transformation, i.e. an actual morphism of
+functors, so that Yoneda applies at all.
+
+**THE ROUTE TAKEN IS NOT THE DUAL-ABELIAN-SCHEME ONE, and that CORRECTS the two
+claims the old docstring made.**  It said the proof pulls line bundles back to get
+`A^∨ ⟶ J^∨` and then applies biduality, and therefore that the node "still needs"
+the dual abelian scheme `A^∨ = Pic⁰_{A/S}`, biduality, and the identification of
+`Pic⁰_{A/S}` with the `Pic⁰` of this module — *"none of which exists at this pin"*.
+That pricing was correct about the route it named and WRONG about the node: the
+`Sym^d` route needs none of the three.  Define `u` fppf-locally by
+`Σ aj(yᵢ) ↦ Σ c(yᵢ)`; well-definedness is Abel's theorem
+(`listSum_map_eq_of_listSum_aj_eq`), surjectivity of `Sym^d C ↠ Pic⁰` is
+`exists_flatSurj_ajListSum`, and the passage from a local rule to a morphism is
+descent, which IS at this pin (`Sites/Fpqc.lean`).  So no dual abelian scheme is
+needed anywhere, and the leaf table above is corrected accordingly.
+
+**AND `_hf` IS CONSUMED AFTER ALL.**  The old docstring recorded it as *"not
+consumed by the statement"*, which was true of the statement and is no longer true
+of the proof: it is passed to both leaves.  It stays an explicit hypothesis in the
+same position, so every call site is unchanged.
+
+**HOW THE PROOF IS ORGANISED**, since it is the longest formal argument in this
+block.  `AlbaneseWitness q w` says "`w` is the value at `q`, as certified by one
+fppf cover".  Then: witnessed values are unique (`AlbaneseWitness.unique`, over the
+Abel leaf), exist over a quasi-compact test object (`exists_albaneseWitness`, by
+`EffectiveEpi` descent), and are stable under arbitrary precomposition
+(`AlbaneseWitness.pre`, by base change of the cover).  Uniqueness and stability
+carry NO compactness hypothesis, which is what lets the pieces be glued over
+intersections of affine opens of `J` — those need not be quasi-compact, since `S`
+is arbitrary and nothing here makes `J` separated over `Spec ℤ`.  So: build `u` on
+each affine piece of `J.affineCover` (each is quasi-compact), glue by uniqueness on
+the overlaps, and verify the two conclusions after pulling the affine cover back
+along `aj x`. -/
+theorem IsRelPicZeroOf.exists_albaneseFactorisation {C J S : Scheme.{0}} {f : C ⟶ S}
+    {jf : J ⟶ S} {ab : AbelianSchemeStruct jf} {o : RelPoint f (𝟙 S)}
+    (hf : IsSmoothProperCurve f) (P : IsRelPicZeroOf f ab o)
+    {A : Scheme.{0}} {astr : A ⟶ S} (ab' : AbelianSchemeStruct astr)
+    (c : ∀ {T : Scheme.{0}} (g : T ⟶ S), RelPoint f g → RelPoint astr g)
+    (hnat : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+      (hg : h ≫ g = g') (x : RelPoint f g),
+      c g' (RelPoint.pre h hg x) = RelPoint.pre h hg (c g x))
+    (hpt : c (𝟙 S) o = ab'.zero (𝟙 S)) :
+    ∃ u : J ⟶ A, u ≫ astr = jf ∧
+      ∀ {T : Scheme.{0}} (g : T ⟶ S) (x : RelPoint f g),
+        (c g x).1 = (P.aj x).1 ≫ u := by
+  classical
+  -- Build the map on each affine piece of `J`; an affine scheme is quasi-compact.
+  have hex : ∀ i : J.affineCover.I₀, ∃ w : J.affineCover.X i ⟶ A,
+      P.AlbaneseWitness ab' c (J.affineCover.f i) w :=
+    fun i => P.exists_albaneseWitness hf hnat hpt _
+  choose u hu using hex
+  -- Glue: on an overlap both restrictions witness the same point of `J`.
+  have hcompat : ∀ i j, pullback.fst (J.affineCover.f i) (J.affineCover.f j) ≫ u i
+      = pullback.snd (J.affineCover.f i) (J.affineCover.f j) ≫ u j := by
+    intro i j
+    refine IsRelPicZeroOf.AlbaneseWitness.unique hf hnat hpt ((hu i).pre hnat _) ?_
+    have := (hu j).pre hnat (pullback.snd (J.affineCover.f i) (J.affineCover.f j))
+    rwa [← pullback.condition] at this
+  refine ⟨J.affineCover.glueMorphisms u hcompat, ?_, ?_⟩
+  · refine Scheme.Cover.hom_ext J.affineCover _ _ fun i => ?_
+    rw [← Category.assoc, Scheme.Cover.ι_glueMorphisms]
+    exact (hu i).comp_astr
+  · -- The universal property, checked after pulling the affine cover back to `T`.
+    intro T g x
+    have hq : (P.aj x).1 ≫ jf = g := (P.aj x).2
+    -- the left-hand side is itself witnessed, by the trivial cover `𝟙 T`
+    have hlhs : P.AlbaneseWitness ab' c (P.aj x).1 (c g x).1 := by
+      have hg : 𝟙 T ≫ g = 𝟙 T ≫ (P.aj x).1 ≫ jf := by rw [hq]
+      refine ⟨T, 𝟙 T, inferInstance, inferInstance, [RelPoint.pre (𝟙 T) hg x], ?_, ?_⟩
+      · letI := ab.addCommGroup (𝟙 T ≫ (P.aj x).1 ≫ jf)
+        rw [List.map_cons, List.map_nil, AbelianSchemeStruct.listSum_cons,
+          AbelianSchemeStruct.listSum_nil, P.aj_pre (𝟙 T) hg x]
+        show _ = ab.add _ (ab.zero _)
+        rw [ab.add_comm, ab.zero_add]
+        rfl
+      · -- `rw` cannot see through the eta-expansion of the strict-implicit `c`
+        -- inside `AlbaneseWitness`; state the identity separately and close by
+        -- `exact`, which runs at default transparency.
+        have hEq : ab'.listSum
+              (List.map (c (𝟙 T ≫ (P.aj x).1 ≫ jf)) [RelPoint.pre (𝟙 T) hg x])
+            = RelPoint.pre (𝟙 T) hg (c g x) := by
+          rw [List.map_cons, List.map_nil, AbelianSchemeStruct.listSum_cons,
+            AbelianSchemeStruct.listSum_nil, hnat (𝟙 T) hg x, ab'.add_comm, ab'.zero_add]
+        exact (congrArg Subtype.val hEq).symm
+    -- and so is the right-hand side, after pulling back the affine cover of `J`
+    refine Scheme.Cover.hom_ext (J.affineCover.pullback₁ (P.aj x).1) _ _ fun i => ?_
+    refine IsRelPicZeroOf.AlbaneseWitness.unique hf hnat hpt (hlhs.pre hnat _) ?_
+    have hpb : (J.affineCover.pullback₁ (P.aj x).1).f i ≫ (P.aj x).1
+        = J.affineCover.pullbackHom (P.aj x).1 i ≫ J.affineCover.f i :=
+      (Scheme.Cover.pullbackHom_map J.affineCover (P.aj x).1 i).symm
+    have := (hu i).pre hnat (J.affineCover.pullbackHom (P.aj x).1 i)
+    rw [← hpb] at this
+    have heq : J.affineCover.pullbackHom (P.aj x).1 i ≫ u i
+        = (J.affineCover.pullback₁ (P.aj x).1).f i ≫ (P.aj x).1 ≫
+          J.affineCover.glueMorphisms u hcompat := by
+      rw [← Category.assoc, hpb, Category.assoc, Scheme.Cover.ι_glueMorphisms]
+    rwa [heq] at this
+
+end AlbaneseDescent
 
 /-- **GENERATION: the image of the Abel–Jacobi map generates `Pic⁰`**
 (sorry node), in the form actually consumed — two HOMOMORPHISMS of
@@ -36422,7 +36810,9 @@ theorem IsRelPicZeroOf.eq_of_aj_eq {C J S : Scheme.{0}} {f : C ⟶ S}
   -- FAITHFULNESS section of `exists_flatSurj_ajListSum` for why that hypothesis
   -- may not be dropped.
   refine Scheme.Cover.hom_ext J.affineCover u v fun i => ?_
-  obtain ⟨T', h, hflat, hsurj, l, hl⟩ :=
+  -- (the `QuasiCompact h` conjunct, added 2026-07-30 for the Albanese half, is
+  -- discarded here: this proof needs only `Epi h`.)
+  obtain ⟨T', h, hflat, hsurj, -, l, hl⟩ :=
     P.exists_flatSurj_ajListSum hf (T := J.affineCover.X i)
       (g := J.affineCover.f i ≫ jf) ⟨J.affineCover.f i, rfl⟩
   haveI := hflat
@@ -41409,8 +41799,8 @@ line `⟨(P.isAlbaneseOf ⟨…⟩).isJacobianOf⟩`.  Do not dispatch anyone at
 |---|---|---|
 | `exists_relPicFull` (in `RelativePicard.lean`) | representability of `Pic` | no |
 | `exists_relPicZero_of_isRelPicOf` (in `RelativePicard.lean`) | `Pic ↝ Pic⁰` | no |
-| `IsRelPicZeroOf.exists_albaneseFactorisation` | autoduality / biduality | no |
-| `IsRelPicZeroOf.eq_of_aj_eq` | `Sym^g C ↠ Pic⁰` (Riemann–Roch) | no |
+| `IsRelPicZeroOf.exists_flatSurj_ajListSum` | `Sym^d C ↠ Pic^d` (Riemann–Roch) | no |
+| `IsRelPicZeroOf.listSum_map_eq_of_listSum_aj_eq` | Abel's theorem / the cube | no |
 | `exists_isAmpleSheaf_symmetric_cube` (in `AbelianSchemeIsogeny.lean`) | symmetric ample sheaf + theorem of the cube | no |
 | `nonempty_cubeModel_of_isAmpleSheaf_cube` | very ampleness + the coordinate dictionary | no |
 | `finite_quotient_nsmul_of_abelianScheme` | weak Mordell–Weil | no |
@@ -49606,6 +49996,12 @@ remaining leaves are those three and — since 2026-07-29, when
 `universal_jacobianBaseChangeAj` and both of its halves were proven over
 it — `isIso_jacobianBaseChangeComparison`.
 
+**AMENDED 2026-07-30**: `exists_albaneseFactorisation` and `eq_of_aj_eq` are BOTH
+PROVEN now, so neither is a leaf.  The two that replaced them, both in the
+relative-Picard block above, are `IsRelPicZeroOf.exists_flatSurj_ajListSum`
+(`Sym^d C ↠ Pic^d`) and `IsRelPicZeroOf.listSum_map_eq_of_listSum_aj_eq` (Abel's
+theorem).  Do not dispatch anyone at the two named in the paragraph above.
+
 None of them mentions `X_0(N)`, `ℚ` or `ℤ_(ℓ)`.  That is the point:
 the Jacobian half of a Néron datum is a statement about smooth proper
 curves over an arbitrary base, and everything specific to this file
@@ -50671,11 +51067,13 @@ which are now themselves PROVEN as of 2026-07-27, and so is
 exactly `exists_relPicFull` and `exists_relPicZero_of_isRelPicOf` (both
 in `ModularCurve/RelativePicard.lean`, and both new on 2026-07-28, when
 `exists_relPicZero` was proven over them),
-`IsRelPicZeroOf.exists_albaneseFactorisation`,
-`IsRelPicZeroOf.eq_of_aj_eq` and — since 2026-07-29, replacing
+`IsRelPicZeroOf.exists_flatSurj_ajListSum`,
+`IsRelPicZeroOf.listSum_map_eq_of_listSum_aj_eq` and — since 2026-07-29, replacing
 `universal_jacobianBaseChangeAj` and both of its halves, which are now
 PROVEN over it — `isIso_jacobianBaseChangeComparison`;
-`isAdditiveOn_of_post_zero` is PROVEN).
+`isAdditiveOn_of_post_zero` is PROVEN.  **Amended 2026-07-30**: the two entries
+just listed replace `IsRelPicZeroOf.exists_albaneseFactorisation` and
+`IsRelPicZeroOf.eq_of_aj_eq`, which are now both PROVEN over them).
 
 The ten fields of `IsX0JacobianModel` come from exactly three inputs,
 none of which mentions a modular curve:
