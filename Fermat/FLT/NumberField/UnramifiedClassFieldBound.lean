@@ -483,7 +483,7 @@ theorem exists_isArithFrobOver_of_aut [IsGalois K L] (σ : L ≃ₐ[K] L) :
     ∃ P : (Ideal (𝓞 K))⁰, (P : Ideal (𝓞 K)).IsPrime ∧ IsArithFrobOver K L P σ := by
   classical
   -- Deuring: pass to the fixed field of `⟨σ⟩`, over which `L` is CYCLIC
-  set F : IntermediateField K L := IntermediateField.fixedField (Subgroup.zpowers σ) with hFdef
+  set F : IntermediateField K L := IntermediateField.fixedField (Subgroup.zpowers σ)
   haveI : NumberField F := NumberField.of_module_finite K F
   haveI : IsGalois F L := IsGalois.tower_top_of_isGalois K F L
   have hσmem : σ ∈ F.fixingSubgroup :=
@@ -642,7 +642,7 @@ theorem pow_inertiaDeg_eq_one [IsGalois K L]
   haveI : Q.IsMaximal := hQp.isMaximal hQ0
   haveI : (Q.under (𝓞 K)).IsMaximal := inferInstance
   haveI : Algebra.IsUnramifiedAt (𝓞 K) Q := hunr Q hQp hQ0
-  set f := Q.inertiaDeg (𝓞 K) with hf
+  set f := Q.inertiaDeg (𝓞 K)
   -- `σ ^ f` acts trivially on the residue field at `Q`
   have hfix : ∀ x : 𝓞 L, (σ ^ f) • x - x ∈ Q := by
     intro x
