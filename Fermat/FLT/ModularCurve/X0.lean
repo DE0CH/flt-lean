@@ -40477,7 +40477,31 @@ relocated (as `exists_section_of_denseOpen_affineLine_toAbelianScheme`
 already was, for the same reason); and the restatement would leave
 `exists_const_of_affineLine_to_abelianScheme` with no consumer, i.e.
 free-floating, so it would have to be deleted in the same change.  Doing
-half of this is worse than doing none of it. -/
+half of this is worse than doing none of it.
+
+**A THIRD COST, AND IT IS MATHEMATICAL — FOUND 2026-07-30, and it is exactly the
+"two individually-correct repairs can be fatal together" shape, so it belongs
+here rather than in whoever's head does the refactor.**  Weakening the conclusion
+to `BirationalOver` VOIDS the `hproper` counterexample recorded above.  `𝔾ₘ,ℚ`
+refutes the OPEN-IMMERSION conclusion (it contains no open `𝔸¹`) and does NOT
+refute the birational one: `𝔾ₘ,ℚ = 𝔸¹_ℚ ∖ {0}` is a dense open of `𝔸¹_ℚ`, hence
+birational over `ℚ` to it.  This is the identical correction that was already
+forced on `birationalOver_affineLine_of_relPicEquiv_sectionIdeal` below when the
+same weakening was made there (see its docstring: the `𝔾ₘ` witness was replaced
+by the affine `C = E ∖ {O, P}` over `𝔽₅` with `Pic C = 0`), **and that
+replacement does not transport here, because this leaf's base is `Spec ℚ` and the
+`𝔽₅` witness is not a `ℚ`-scheme.**
+
+So the restatement carries an obligation nobody has discharged: exhibit a
+NON-PROPER smooth geometrically connected `ℚ`-curve of relative dimension `1`
+with an `IsJacobianOf` structure, a non-injective `aj` on `ℚ`-points, and no
+birational map to `𝔸¹_ℚ` — or else establish that `hproper` is no longer
+load-bearing and DROP it from the statement.  The obvious candidates do not
+work: `X = E ∖ {O}` for `E/ℚ` of positive rank has `aj` injective (it is the
+inclusion into its own Albanese `E`), and `ℙ¹_ℚ ∖ {0}` is birational to `𝔸¹_ℚ`.
+Either outcome is fine and both are cheap to state; carrying an unaudited
+`hproper` is not, since the whole point of a load-bearing note is that a proof
+which fails to consume it is wrong. -/
 theorem exists_affineLine_of_not_injective_aj {X J : Scheme.{0}} {strX : X ⟶ SpecQ}
     (hproper : IsProper strX) (hcurve : SmoothOfRelativeDimension 1 strX)
     (hconn : GeometricallyConnected strX) {jstr : J ⟶ SpecQ}
