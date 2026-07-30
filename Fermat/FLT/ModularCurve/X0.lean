@@ -30693,6 +30693,115 @@ theorem nonempty_gamma0GITPresentationOver_of_rigidification {N : ℕ} {S : Sche
     rw [Category.id_comp, Category.id_comp] at h1
     exact h1
 
+/-- **A rigidification over a base with unique structure morphisms presents
+`Spec (A^G)` as a COARSE MODULI SPACE, with the quotient map as the classifying
+map of the universal family** (PROVEN 2026-07-30).
+
+This is `nonempty_gamma0GITPresentationOver_of_rigidification` immediately above
+composed with `Gamma0GITPresentationOver.toGamma0AtlasOver` and
+`Gamma0AtlasOver.toIsCoarseModuliY0`, but it RETAINS two things that
+`Nonempty (Gamma0GITPresentationOver N S)` discards and that every consumer
+comparing the quotient with something else needs:
+
+* the coarse space is `Spec (A^G)` for the GIVEN `P.A` and `P.G` — a `Nonempty`
+  of the presentation gives an opaque `Q` with no relation between `Q.A` and
+  `P.A`, so no statement mentioning `specInvariantsQuotient P.G P.A` can be
+  compared with it;
+* `(h.classify P.strM P.dM).1 = specInvariantsQuotient P.G P.A`, i.e.
+  Katz–Mazur's `classify_dM` — which is what identifies the coarse space as the
+  QUOTIENT of the rigidified moduli scheme rather than an unrelated scheme
+  receiving a map from it.
+
+The structure morphism `str` is existentially quantified because it is produced
+by `specInvariants_universal` and is not canonical from the data; over a base
+with `hS` it is in any case the unique morphism, so nothing is lost.
+
+Its consumer is `isIso_specialFibreInvariantsQuotient` far below, where it is
+the `𝔽_ℓ`-side coarse structure of the two-sided-initiality argument.  That
+consumer is exactly the one whose docstring recorded this packaging as "right
+mathematically but not immediately writable in Lean at this pin"; the obstacle
+named there — that `Gamma0AtlasData` takes the classifying map as a parameter
+and the `𝔽_ℓ` classifying map has to be produced by fpqc descent — is
+`exists_descendClassifyOver` above, which is stated over an ARBITRARY base and
+therefore needs no restating.  The note that `exists_descendClassify` (the
+`SpecQ` form) would have to be generalised is stale: its general form already
+exists. -/
+theorem exists_isCoarseModuliY0_specInvariants {N : ℕ} {S : Scheme.{0}}
+    (hS : ∀ Z : Scheme.{0}, Subsingleton (Z ⟶ S)) (P : Gamma0RigidificationData N S) :
+    letI := P.commRing_A
+    letI := P.group_G
+    letI := P.finite_G
+    letI := P.action_GA
+    ∃ (str : Spec (CommRingCat.of ↥(FixedPoints.subring P.A P.G)) ⟶ S)
+      (h : IsCoarseModuliY0 N str),
+      (h.classify P.strM P.dM).1 = specInvariantsQuotient P.G P.A := by
+  classical
+  letI := P.commRing_A
+  letI := P.group_G
+  letI := P.finite_G
+  letI := P.action_GA
+  haveI : ∀ Z : Scheme.{0}, Subsingleton (Z ⟶ S) := hS
+  letI : Algebra ↥(FixedPoints.subring P.A P.G) P.A :=
+    RingHom.toAlgebra (Subring.subtype _)
+  haveI : Algebra.IsInvariant ↥(FixedPoints.subring P.A P.G) P.A P.G :=
+    ⟨fun x hx => ⟨⟨x, hx⟩, rfl⟩⟩
+  haveI : SMulCommClass P.G ↥(FixedPoints.subring P.A P.G) P.A :=
+    ⟨fun σ b a => by
+      show σ • ((b : P.A) * a) = (b : P.A) * (σ • a)
+      rw [smul_mul', b.2 σ]⟩
+  have hinj : Function.Injective (algebraMap ↥(FixedPoints.subring P.A P.G) P.A) :=
+    Subtype.val_injective
+  have hstrMinv : ∀ σ : P.G,
+      Spec.map (CommRingCat.ofHom (MulSemiringAction.toRingHom P.G P.A σ)) ≫ P.strM
+        = P.strM := fun _ => Subsingleton.elim _ _
+  obtain ⟨str, hstr, -⟩ := specInvariants_universal P.G hinj P.strM hstrMinv
+  have hstr' : specInvariantsQuotient P.G P.A ≫ str = P.strM := hstr
+  have hcov : ∀ {T : Scheme.{0}} (g : T ⟶ S) (d : Gamma0Datum N T),
+      ∃ (T' : Scheme.{0}) (p : T' ⟶ T) (d' : Gamma0Datum N T')
+        (m : T' ⟶ Spec (CommRingCat.of P.A)),
+        AlgebraicGeometry.Flat p ∧ AlgebraicGeometry.Surjective p ∧ QuasiCompact p ∧
+        p ≫ g = m ≫ P.strM ∧
+        Nonempty (IsBaseChangeOf p d' d) ∧ Nonempty (IsBaseChangeOf m d' P.dM) := by
+    intro T g d
+    obtain ⟨T', p, d', m, hf, hs, hq, hbp, hbm⟩ := P.cover g d
+    exact ⟨T', p, d', m, hf, hs, hq, Subsingleton.elim _ _, hbp, hbm⟩
+  choose c hc1 hc2 using fun (T : Scheme.{0}) (g : T ⟶ S) (d : Gamma0Datum N T) =>
+    exists_descendClassifyOver N P.G P.strM str hstr' P.dM
+      (fun {_T} g₀ d₀ => hcov g₀ d₀)
+      (fun {_Z} a b d₁ h₁ h₂ => P.coequalises a b d₁ h₁ h₂) T g d
+  have hdM : c _ P.strM P.dM = specInvariantsQuotient P.G P.A := by
+    have h1 := hc2 _ P.strM P.dM _ (𝟙 _) P.dM (IsBaseChangeOf.refl P.dM) (𝟙 _)
+      (IsBaseChangeOf.refl P.dM)
+    rw [Category.id_comp, Category.id_comp] at h1
+    exact h1
+  refine ⟨str, ({ A := P.A
+                  B := ↥(FixedPoints.subring P.A P.G)
+                  G := P.G
+                  action_GA := P.action_GA
+                  injective_algebraMap := hinj
+                  str := str
+                  strM := P.strM
+                  classify := fun {T} g d => ⟨c T g d, hc1 T g d⟩
+                  classify_natural := ?_
+                  dM := P.dM
+                  classify_dM := ?_
+                  cover := fun {_T} g d => hcov g d
+                  dM_equivariant := P.dM_equivariant } :
+                Gamma0GITPresentationOver N S).toGamma0AtlasOver.toIsCoarseModuliY0, ?_⟩
+  · -- naturality of the descended classifying map, exactly as in
+    -- `nonempty_gamma0GITPresentationOver_of_rigidification` above
+    intro T' T h g g' hg d' d bch
+    refine Subtype.ext ?_
+    show c T' g' d' = h ≫ c T g d
+    obtain ⟨Z, p, dZ, m, hf, hs, hq, -, ⟨bp⟩, ⟨bm⟩⟩ := hcov g' d'
+    haveI := hf; haveI := hs; haveI := hq
+    have h1 := hc2 T' g' d' Z p dZ bp m bm
+    have h2 := hc2 T g d Z (p ≫ h) dZ (bp.comp bch) m bm
+    refine (cancel_epi p).mp ?_
+    rw [h1, ← Category.assoc, h2]
+  · exact hdM
+  · exact hdM
+
 /-- **The Katz–Mazur GIT data of `Y_0(N)` over `𝔽_p`, for `p ∤ N`** (**PROVEN
 2026-07-28**, from `exists_gamma0Rigidification_specF` and
 `nonempty_gamma0GITPresentationOver_of_rigidification` above; opened as a sorry
@@ -54476,13 +54585,127 @@ coequalising clause, which is `deckAction_coequalisesOver`. -/
 -- from them.  The tables and audits above still describe them; only their
 -- position changed.
 
+/-- **GOOD REDUCTION: THE FORMATION OF THE COARSE MODULI SPACE COMMUTES WITH
+`ℤ_(ℓ) → 𝔽_ℓ`** (sorry leaf, opened 2026-07-30 — Katz–Mazur (8.1.6),
+Deligne–Rapoport; this is the whole arithmetic content of
+`isIso_specialFibreInvariantsQuotient` below, which is now PROVEN over it).
+
+## What it says
+
+`Y ×_{ℤ_(ℓ)} 𝔽_ℓ`, with `IsCoarseModuliY0.classifyPullback` as its classifying
+map, is INITIAL among `𝔽_ℓ`-schemes receiving a natural transformation from the
+`Γ₀(N)`-moduli problem — i.e. it is itself a coarse moduli space for
+`Γ₀(N)/𝔽_ℓ`.  That is exactly the shape of `Gamma0AtlasOver.BcUniversal`
+(~26 000 lines above, which is Katz–Mazur (8.1.6)(2) at a base change of
+atlases), stated on a bare `IsCoarseModuliY0` instead of on an atlas because
+the consumer has only the former; the other two fields of `IsCoarseModuliY0`
+are FREE here (`classifyPullback` and `classifyPullback_natural`, both PROVEN
+above with no hypothesis on the base change whatever), which is why this leaf
+is the `universal` clause alone.
+
+## Why it is NOT reachable from the flat criterion
+
+`bcUniversal_of_flat` (~25 000 lines above) is (8.1.6)(2) at a FLAT base change,
+and it is what closes `bcUniversal_of_field`, `bcUniversal_specLocGeneric` and
+`nonempty_gamma0AtlasOver_specLoc`.  It does not reach here: `ℤ_(ℓ) → 𝔽_ℓ` is
+not flat, and `ℓ` need not be invertible in the order of the deck group
+(`#GL₂(ℤ/3) = 48`, so `ℓ = 2` divides it at the auxiliary level
+`exists_gamma0Rigidification_specF` chooses), so "invariants commute with base
+change" fails for formal reasons and the statement has to come from the
+geometry of the moduli problem.  Stated the other way: `hcoarse` is initiality
+quantified over `ℤ_(ℓ)`-schemes, and a cocone defined on `𝔽_ℓ`-schemes cannot
+be fed to it.  Katz–Mazur Remark (8.1.7)'s counterexamples at `p = 2, 3` are
+about precisely this base change.
+
+## Faithfulness
+
+`_hℓN` is load-bearing for TRUTH: at `ℓ ∣ N` the special fibre of
+`Y_0(N)_{ℤ_(ℓ)}` is the Deligne–Rapoport crossing of two Igusa components and
+is not the coarse space of `Γ₀(N)/𝔽_ℓ` at all, so initiality fails.  `_hbase`
+is what makes `SpecLoc.special toF` the honest closed point.  `_hℓ` is carried
+for the same reason it is carried by every neighbour in this cluster.
+
+NOT VACUOUS in either direction: the hypotheses are satisfiable
+(`exists_isCoarseModuliY0_loc` inhabits `hcoarse` at every good prime), and the
+conclusion is a genuine `∃!` about an EXHIBITED classifying map rather than an
+existentially chosen one — an adversary has no datum to choose, since `c` and
+`str'` are universally quantified and the comparison is pinned to
+`classifyPullback`.
+
+At the degenerate level `N = 0` it is true for the cheap reason: `YZ` is empty
+(`isEmpty_of_isCoarseModuliY0_zero_base`), hence so is the fibre product, hence
+it is initial and the `∃!` holds for every cocone.  So no `0 < N` is needed. -/
+theorem universal_classifyPullback_special {N ℓ : ℕ} (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
+    {R : Subring ℚ} {toF : ↥R →+* ZMod ℓ} (_hbase : IsReductionBase ℓ R toF)
+    {YZ : Scheme.{0}} {ystr : YZ ⟶ SpecLoc R} (hcoarse : IsCoarseModuliY0 N ystr)
+    {Y' : Scheme.{0}} (str' : Y' ⟶ SpecF ℓ)
+    (c : ∀ {T : Scheme.{0}} (g : T ⟶ SpecF ℓ), Gamma0Datum N T → RelPoint str' g)
+    (_hc : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecF ℓ} {g' : T' ⟶ SpecF ℓ}
+      (hg : h ≫ g = g') {d' : Gamma0Datum N T'} {d : Gamma0Datum N T},
+      IsBaseChangeOf h d' d → c g' d' = RelPoint.pre h hg (c g d)) :
+    ∃! u : pullback ystr (SpecLoc.special toF) ⟶ Y',
+      u ≫ str' = pullback.snd ystr (SpecLoc.special toF) ∧
+      ∀ {T : Scheme.{0}} (g : T ⟶ SpecF ℓ) (d : Gamma0Datum N T),
+        (c g d).1 = (hcoarse.classifyPullback (SpecLoc.special toF) g d).1 ≫ u :=
+  sorry
+
+/-- **The special fibre IS a coarse moduli space over `𝔽_ℓ`** (PROVEN
+2026-07-30 over the single leaf above): its two formal fields are
+`IsCoarseModuliY0.classifyPullback` and `IsCoarseModuliY0.classifyPullback_natural`,
+neither of which uses any property of the base change, and its `universal`
+field is the leaf.
+
+This is the object the two-sided-initiality argument of
+`isIso_specialFibreInvariantsQuotient` compares against
+`exists_isCoarseModuliY0_specInvariants`. -/
+noncomputable def isCoarseModuliY0_specialFibre {N ℓ : ℕ} (hℓ : ℓ.Prime) (hℓN : ¬ ℓ ∣ N)
+    {R : Subring ℚ} {toF : ↥R →+* ZMod ℓ} (hbase : IsReductionBase ℓ R toF)
+    {YZ : Scheme.{0}} {ystr : YZ ⟶ SpecLoc R} (hcoarse : IsCoarseModuliY0 N ystr) :
+    IsCoarseModuliY0 N (pullback.snd ystr (SpecLoc.special toF)) where
+  classify := hcoarse.classifyPullback (SpecLoc.special toF)
+  classify_natural := fun {_T' _T} p {_g _g'} hg {_d' _d} hb =>
+    hcoarse.classifyPullback_natural _ p hg hb
+  universal := fun str' c hc =>
+    universal_classifyPullback_special hℓ hℓN hbase hcoarse str' c hc
+
 /-- **GOOD REDUCTION: the canonical comparison map from the Katz–Mazur
-quotient to the special fibre is an ISOMORPHISM** (sorry leaf, opened
-2026-07-28 by splitting `exists_specialFibreInvariantsIso` below into its
-formal and its arithmetic half, exactly as that leaf's own docstring
-prescribed) — the ONLY place where `hcoarse`, `_hbase` and the
-good-reduction content of `¬ ℓ ∣ N` are consumed, and the one leaf in
-this cluster with no `ℚ`-side analogue at all.
+quotient to the special fibre is an ISOMORPHISM** (**PROVEN 2026-07-30**
+over the single leaf `universal_classifyPullback_special` above; a sorry
+leaf from 2026-07-28 until then) — the ONLY place where `hcoarse`,
+`_hbase` and the good-reduction content of `¬ ℓ ∣ N` are consumed, and
+the one node in this cluster with no `ℚ`-side analogue at all.
+
+## What the 2026-07-30 decomposition did, and what it did NOT do
+
+It did not remove the Katz–Mazur citation — that is
+`universal_classifyPullback_special`, stated above in the standard
+(8.1.6)(2) shape and mentioning no rigidification data, no invariant
+ring and no comparison morphism.  What it removed is everything ELSE
+this node was carrying, which its own docstring below called
+"bookkeeping, not mathematics, but it is not zero and it is invisible
+from the statement":
+
+* the `Spec (A^G)`-side coarse moduli property, which the docstring
+  correctly identified as needing the fpqc descent of the classifying
+  map over `𝔽_ℓ`.  That descent is `exists_descendClassifyOver`, which
+  is stated over an ARBITRARY base and so needed no restating — the note
+  below asking for `exists_descendClassify` to be generalised is stale.
+  It is packaged as `exists_isCoarseModuliY0_specInvariants`;
+* the comparison of the two initialities, which is
+  `exists_iso_classify_of_isCoarseModuliY0` plus the uniqueness clause of
+  the `𝔽_ℓ`-side `universal`;
+* the identification of `u` with that canonical isomorphism, which is
+  the only step needing the rigidifying cover: `u` and the canonical `e`
+  both satisfy `(c₂ g d).1 = (c₁ g d).1 ≫ ·` — for `u` because a datum
+  is fppf-locally a base change of `dM`, where both sides become
+  `m ≫ π ≫ u`, and the cover is an epimorphism.
+
+So the leaf count of this block is unchanged at ONE, and the surviving
+leaf is the geometry alone.  Everything below this line is the original
+2026-07-28 audit, retained because its faithfulness analysis and its
+`∀ u` / `∀ P` junk-quantifier arguments are unchanged by the cut.
+
+## What was ALREADY DONE and is NOT owed here
 
 ## What is ALREADY DONE and is NOT owed here
 
@@ -54585,7 +54808,17 @@ its STATEMENT is not).  So a prover taking the two-sided-initiality route
 needs `exists_descendClassify` restated over `SpecF ℓ`, or its base
 generalised to any `S` with `∀ Z, Subsingleton (Z ⟶ S)`.  That is
 bookkeeping, not mathematics, but it is not zero and it is invisible from
-the statement. -/
+the statement.
+
+**THAT LAST SENTENCE IS STALE, AND THE WORK IT PRICES WAS ALREADY DONE**
+(2026-07-30).  A base-general form of the descent has existed since
+2026-07-28 as `exists_descendClassifyOver` (~24 000 lines above), stated
+over an ARBITRARY `S : Scheme.{0}` with the base clause `p ≫ g = m ≫ strM`
+carried by `hcov` rather than obtained from a subsingleton — so nothing
+had to be restated, and the two-sided-initiality route cost only the
+packaging, which is `exists_isCoarseModuliY0_specInvariants`.  The audit
+above is otherwise unchanged and is the reason the surviving leaf is the
+(8.1.6) base-change statement and nothing else. -/
 theorem isIso_specialFibreInvariantsQuotient {N ℓ : ℕ} (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
     {R : Subring ℚ} {toF : R →+* ZMod ℓ} (_hbase : IsReductionBase ℓ R toF)
     {YZ : Scheme.{0}} {ystr : YZ ⟶ SpecLoc R} (hcoarse : IsCoarseModuliY0 N ystr)
@@ -54598,8 +54831,57 @@ theorem isIso_specialFibreInvariantsQuotient {N ℓ : ℕ} (_hℓ : ℓ.Prime) (
         pullback ystr (SpecLoc.special toF),
       specInvariantsQuotient P.G P.A ≫ u
           = (hcoarse.classifyPullback (SpecLoc.special toF) P.strM P.dM).1 →
-      IsIso u :=
-  sorry
+      IsIso u := by
+  letI := P.commRing_A
+  letI := P.group_G
+  letI := P.finite_G
+  letI := P.action_GA
+  haveI : ∀ Z : Scheme.{0}, Subsingleton (Z ⟶ SpecF ℓ) := subsingleton_hom_specF ℓ
+  intro u hu
+  -- the two coarse moduli spaces over `𝔽_ℓ`: the Katz–Mazur quotient …
+  obtain ⟨str₁, h₁, hcl₁⟩ :=
+    exists_isCoarseModuliY0_specInvariants (subsingleton_hom_specF ℓ) P
+  -- … and the special fibre, which is where the leaf is consumed.
+  set h₂ := isCoarseModuliY0_specialFibre _hℓ _hℓN _hbase hcoarse with _hh₂
+  -- `u` intertwines the two classifying maps.  At the universal family this is
+  -- `hu` together with `hcl₁`; at an arbitrary datum it follows because the
+  -- datum is fppf-locally a base change of `dM`, and the cover is an epi.
+  have key : ∀ {T : Scheme.{0}} (g : T ⟶ SpecF ℓ) (d : Gamma0Datum N T),
+      (h₂.classify g d).1 = (h₁.classify g d).1 ≫ u := by
+    intro T g d
+    obtain ⟨T', p, d', m, hf, hs, hq, ⟨bp⟩, ⟨bm⟩⟩ := P.cover g d
+    haveI := hf; haveI := hs; haveI := hq
+    have e1 : (h₁.classify (p ≫ g) d').1 = p ≫ (h₁.classify g d).1 :=
+      congrArg Subtype.val (h₁.classify_natural p rfl bp)
+    have e2 : (h₁.classify (m ≫ P.strM) d').1 = m ≫ (h₁.classify P.strM P.dM).1 :=
+      congrArg Subtype.val (h₁.classify_natural m rfl bm)
+    have e3 : (h₂.classify (p ≫ g) d').1 = p ≫ (h₂.classify g d).1 :=
+      congrArg Subtype.val (h₂.classify_natural p rfl bp)
+    have e4 : (h₂.classify (m ≫ P.strM) d').1 = m ≫ (h₂.classify P.strM P.dM).1 :=
+      congrArg Subtype.val (h₂.classify_natural m rfl bm)
+    have hst : (p ≫ g) = (m ≫ P.strM) := Subsingleton.elim _ _
+    have hφ : (h₂.classify P.strM P.dM).1
+        = (hcoarse.classifyPullback (SpecLoc.special toF) P.strM P.dM).1 := rfl
+    refine (cancel_epi p).mp ?_
+    calc p ≫ (h₂.classify g d).1
+        = (h₂.classify (p ≫ g) d').1 := e3.symm
+      _ = (h₂.classify (m ≫ P.strM) d').1 := by rw [hst]
+      _ = m ≫ (h₂.classify P.strM P.dM).1 := e4
+      _ = m ≫ (specInvariantsQuotient P.G P.A ≫ u) := by rw [hφ, hu]
+      _ = (m ≫ (h₁.classify P.strM P.dM).1) ≫ u := by rw [hcl₁, Category.assoc]
+      _ = (h₁.classify (m ≫ P.strM) d').1 ≫ u := by rw [e2]
+      _ = (h₁.classify (p ≫ g) d').1 ≫ u := by rw [hst]
+      _ = p ≫ ((h₁.classify g d).1 ≫ u) := by rw [e1, Category.assoc]
+  -- so `u` IS the canonical isomorphism of the two coarse spaces, by the
+  -- uniqueness clause of the `Spec (A^G)`-side initiality.
+  obtain ⟨e, hestr, hecl⟩ := exists_iso_classify_of_isCoarseModuliY0 h₁ h₂
+  obtain ⟨w, -, huniq⟩ :=
+    h₁.universal (pullback.snd ystr (SpecLoc.special toF)) h₂.classify h₂.classify_natural
+  have hue : u = e.hom := by
+    rw [huniq u ⟨Subsingleton.elim _ _, fun g d => key g d⟩,
+      huniq e.hom ⟨hestr, fun g d => hecl g d⟩]
+  rw [hue]
+  infer_instance
 
 /-- **GOOD REDUCTION: the special fibre of the given coarse space IS
 `Spec` of the invariants** (**PROVEN 2026-07-28** over the single leaf
