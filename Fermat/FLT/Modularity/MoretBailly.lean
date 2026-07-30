@@ -85,6 +85,12 @@ public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
 -- because it is pure group theory, shares nothing with this module, and this
 -- module is already 38k lines (the file is the unit of elaboration).
 public import Fermat.FLT.Modularity.DivisibleTorsionParam
+-- The classification of an involution of a divisible group whose `n`-torsion is
+-- `(ℤ/n)²`, i.e. the whole content of what used to be the sorry leaf
+-- `exists_adaptedFrame_level` below.  Split out for the same reason as the
+-- module above: it is pure abelian group theory, and the file is the unit of
+-- elaboration.
+public import Fermat.FLT.Modularity.InvolutionFrame
 -- The VENDORED quaternionic automorphic-forms development (weight-2 forms on a
 -- totally definite quaternion algebra over a totally real field, with their
 -- Hecke algebras).  It is imported HERE, and only here, because
@@ -41593,47 +41599,54 @@ theorem finite_ratQuotSq_torsion {n : ℕ} (hn : n ≠ 0) :
 
 end DivisibleTorsion
 
-/-- **THE FINITE-LEVEL CLASSIFICATION OF THE INVOLUTION** (sorry leaf, cut
-2026-07-28 out of `exists_conjFrame_realConjAdd` below): the involution `c` of
-`(ℚ/ℤ)²` admits an ADAPTED FRAME AT EVERY FINITE LEVEL `n ≠ 0` — a `ℤ/n`-basis
-`(p, q)` of `A[n]` with `c p = p` and `c q = [ε]·p − q`.
+/-- **THE FINITE-LEVEL CLASSIFICATION OF THE INVOLUTION** (**PROVEN 2026-07-30**,
+sorry-free; it was a bare `sorry` leaf cut 2026-07-28 out of
+`exists_conjFrame_realConjAdd` below): the involution `c` of `(ℚ/ℤ)²` admits an
+ADAPTED FRAME AT EVERY FINITE LEVEL `n ≠ 0` — a `ℤ/n`-basis `(p, q)` of `A[n]`
+with `c p = p` and `c q = [ε]·p − q`.
 
-THIS IS THE WHOLE REMAINING MATHEMATICS OF THE NODE.  Everything else in the
-cluster — the inverse limit, the passage to `ℚ/ℤ`, the bijectivity, the
-reassembly of the automorphism — is now real code.
+The proof is `InvolutionFrame.exists_frame_ratQuotSq`
+(`Modularity/InvolutionFrame.lean`, new); this declaration is that theorem plus
+one constructor, `IsFrame` being `IsAdaptedFrame` written as a conjunction so
+that the upstream module does not have to import this one.  With it the whole
+archimedean-conjugation cluster from `exists_realWeierstrassCurveWithConjTorsion`
+down is `sorry`-free.
 
-WHAT HAS TO BE PROVEN, and it is exactly the classification the parent docstring
-describes, read at a FINITE level.  `A[n] ≅ (ℤ/n)²` and `c|A[n]` is an involution
-of it; split `n` by CRT and argue prime by prime.
+WHAT THE PROOF IS *NOT*, and this is the finding of the task that closed it.  The
+plan recorded here — "`A[n] ≅ (ℤ/n)²`, split `n` by CRT and argue prime by prime,
+Diederichsen–Reiner at `2^k`" — cannot work as stated, because **the level-`n`
+statement is FALSE for an abstract involution of `(ℤ/n)²` satisfying the level-`n`
+hypotheses.**  Counterexample: over `ℤ/8`, `c = diag(1, 3)` is an involution
+(`3² = 9 = 1`), is `≠ ±1` mod `4` (it is `diag(1,−1)` there), and fixes all four
+points of `A[2]` (`c ≡ 1` mod `2`), so it satisfies every hypothesis read at
+levels dividing `8`; but its `(−1)`-eigenspace is `{x : 2x = 0} × {y : 4y = 0}`,
+whose elements all have order at most `4`, so there is NO adapted frame at level
+`8`.  What excludes it here is that `diag(1, 3)` is not the reduction of any
+involution of `(ℚ/ℤ)²`: `u² = 1` in `ℤ₂` forces `u = ±1`, and `±1 mod 8 ∈ {1, 7}`.
 
-* At an ODD prime power `p^k`: `2` is invertible in `ℤ/p^k`, so `e = (1+c)/2` is
-  an idempotent and `(ℤ/p^k)² = im e ⊕ ker e` with the two summands free of ranks
-  `a + b = 2`.  The multiplicities are visible mod `p`, and `hne_id`/`hne_neg`
-  read at `n = p` (legal, since `p ≥ 3`) say `c|A[p] ≠ ±1`, forcing `a = b = 1`,
-  i.e. `c ~ diag(1, −1)`.  Finally `diag(1, −1)` is `[[1, 1], [0, −1]]`-conjugate
-  over `ℤ/p^k`, because the `−1`-eigenvector `(1, −2)` is a unit vector there.
-* At `2^k`: the indecomposable `ℤ₂[C₂]`-lattices are `triv`, `sign` and the
-  regular module (Diederichsen–Reiner), so a rank-two module is one of
-  `c = 1`, `diag(1, −1)`, `c = −1`, or the SWAP.  `hne_id`/`hne_neg` read at
-  `n = 4` (legal, `4 ≥ 3`) kill `c = ±1`, and the two survivors are separated by
-  `hfix2`: on `A[2]` negation is the identity, so `diag(1, −1)` fixes all `4`
-  elements while the swap fixes only the `2` diagonal ones.  The swap IS
-  `[[1, 1], [0, −1]]` in the basis `(0, 1), (1, −1)` (determinant `−1`, a unit).
+So a proof MUST use levels beyond `n` — equivalently, the global group.  The one
+given uses DIVISIBILITY of `(ℚ/ℤ)²` throughout, and never mentions `M₂(Ẑ)`,
+lattices, or the Diederichsen–Reiner classification:
 
-WHY THE HYPOTHESES SUFFICE, checked level by level, because this is exactly where
-a cut of this shape goes wrong.  `hne_id`/`hne_neg` are quantified over ALL
-`n ≥ 3`, so they may be read at each odd prime `p ∣ n` AND at `4`; that is what
-pins every primary component separately, which "`c|A[n] ≠ ±1`" alone would not
-do.  `hfix2` is needed only for the `2`-part and only to separate the last two
-cases.  At `n = 1` the statement is trivial (`p = q = 0`), at `n = 2` it is
-`hfix2` alone (`ε = false` forces `c|A[2] = id`, so any basis is adapted;
-`ε = true` makes `c|A[2]` a transvection).
+* `ε = false` (`c` fixes `A[2]`): then `1 − c` kills `A[2]`, so by divisibility it
+  is `2f` for an endomorphism `f`, and `f` is idempotent because `End` of a
+  divisible group is torsion-free.  `A = ker f ⊕ im f` with `c = ±1` on the
+  summands, both summands divisible, and a divisible subgroup whose `p`-torsion
+  has `p` points for every prime has CYCLIC `n`-torsion of order `n` at every
+  level; the two generators are the frame.  `hne_id`/`hne_neg` are read at `p²`
+  (never at `p`), which is what rules out a summand's being everything.
+* `ε = true`: no such `f` exists, and `ker(c−1)`, `ker(c+1)` meet in a group of
+  order `2` at every even level, so they never split `A[n]`.  Instead both kernels
+  are shown DIVISIBLE — the `2`-divisibility step is exactly where `hfix2` is
+  used — which gives cyclic `n`-torsion of order `n` again; at odd levels the two
+  generators give the frame after a `½` shear, at levels `2^k` the frame is
+  `(v + cv, v)` for any lift `v` of an unfixed `w ∈ A[2]`, and frames at coprime
+  levels add.
 
-THE CHECK THAT WOULD REFUTE THIS CUT: an `n ≠ 0` and an involution satisfying all
-four hypotheses with no adapted frame at level `n`.  There is none — the argument
-above is uniform in `n` — and note the leaf is strictly WEAKER than its parent:
-the parent's conclusion restricts to an adapted frame at every level, so any
-counterexample here is a counterexample there. -/
+WHY THE HYPOTHESES SUFFICE is therefore not the level-by-level check that was
+recorded here (that check is unsound, as above): it is that `hne_id`/`hne_neg` at
+`p²` for every prime `p` pin the two eigen-subgroups' `p`-torsion to `p` points
+each, and `hfix2` decides which of the two global shapes `c` has. -/
 theorem exists_adaptedFrame_level (ε : Bool)
     (c : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) →+ (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))))
     (hc : ∀ x, c (c x) = x)
@@ -41643,13 +41656,16 @@ theorem exists_adaptedFrame_level (ε : Bool)
       (2 : ℤ) • x = 0 ∧ c x = x} = if ε then 2 else 4)
     (n : ℕ) (hn : n ≠ 0) :
     ∃ pq : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) × (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))),
-      DivisibleTorsion.IsAdaptedFrame ε c n pq :=
-  sorry
+      DivisibleTorsion.IsAdaptedFrame ε c n pq := by
+  obtain ⟨pq, hbasis, hfix, htwist⟩ :=
+    InvolutionFrame.exists_frame_ratQuotSq ε hc hne_id hne_neg hfix2 n hn
+  exact ⟨pq, ⟨hbasis, hfix, htwist⟩⟩
 
 end AdaptedFrame
 
-/-- **THE ADAPTED FRAME OF THE INVOLUTION** (**PROVEN 2026-07-28** over the single
-leaf `exists_adaptedFrame_level` above; formerly a bare `sorry`, cut 2026-07-27
+/-- **THE ADAPTED FRAME OF THE INVOLUTION** (**PROVEN 2026-07-28** over
+`exists_adaptedFrame_level` above, which is itself PROVEN as of 2026-07-30, so this
+node is now `sorry`-free; formerly a bare `sorry`, cut 2026-07-27
 out of
 `exists_conj_realConjAdd`, itself cut the same day out of
 `exists_realWeierstrassCurveWithConjTorsion`): an involution `c` of `(ℚ/ℤ)²`
@@ -41746,9 +41762,14 @@ and, from `c ∘ u = u` and `c ∘ w = [ε]·u − w`, exactly the same value fo
 `c (α v)`.  So the whole mathematical content is now in the frame leaf, and the
 `≃+` bookkeeping is discharged.
 
-WHAT REMAINS OPEN (updated 2026-07-28): the frame leaf is now PROVEN too, and
-what is left is only its FINITE-LEVEL shadow `exists_adaptedFrame_level`, i.e.
-the `ℤ₂`-lattice classification read at one level `n`.
+NOTHING REMAINS OPEN (updated 2026-07-30): the frame leaf and its FINITE-LEVEL
+shadow `exists_adaptedFrame_level` are both PROVEN, so this whole cluster is
+`sorry`-free.  Note the finite-level leaf was NOT proven along the `ℤ₂`-lattice
+route sketched below: that route is unsound as an argument about `A[n]` alone —
+`diag(1, 3)` over `ℤ/8` satisfies every level-`≤ 8` hypothesis with no adapted
+frame at level `8` — and the proof that works uses divisibility of `(ℚ/ℤ)²`
+instead.  See `exists_adaptedFrame_level`'s docstring and
+`Modularity/InvolutionFrame.lean`.
 
 CORRECTION to the second route below, which was STALE when written and is the
 reason this note is being rewritten rather than deleted: it says the inverse-limit
@@ -41763,9 +41784,12 @@ cost one extra field on the frame predicate plus a two-line restriction lemma
 (`c` is additive, so it commutes with `d • −`, and both intertwining equations
 survive verbatim).
 
-The two routes, kept because the FIRST one is still exactly what the remaining
-finite-level leaf needs (read at level `n` rather than over `Ẑ`), and the SECOND
-is now DONE:
+The two routes, kept as a record of what was TRIED.  The SECOND is done and is
+what the code does.  The FIRST is the classical statement, and it is NOT what
+closed the finite-level leaf — read at a single level `n` it is not even true (see
+that leaf's docstring for the `ℤ/8` counterexample); over `Ẑ` it is true, but the
+divisibility argument in `Modularity/InvolutionFrame.lean` gets the same
+conclusion without `M₂(Ẑ)` or the lattice classification:
 
 * *Ẑ-lattices*: `End((ℚ/ℤ)²) = M₂(Ẑ)` and the problem splits over the primes; at
   odd `p` the idempotent `(1+c)/2` splits the `ℤ_p`-lattice and `c|A[p] ≠ ±1`
