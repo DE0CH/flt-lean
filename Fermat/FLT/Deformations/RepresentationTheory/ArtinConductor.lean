@@ -12,6 +12,10 @@ public import Fermat.FLT.Deformations.RepresentationTheory.GaloisRep
 -- and of `exists_pow_eq_pow_mul_isUnit_of_isIntegral` (the value-group leaf).
 public import Fermat.FLT.Deformations.RepresentationTheory.LocalInertiaFixedField
 public import Mathlib.GroupTheory.Index
+-- `ProfiniteGrp.exist_openNormalSubgroup_sub_open_nhds_of_one`: an open subgroup of a
+-- profinite group contains an open NORMAL one. Used by `exists_level_smul_unif_eq_mul`
+-- to replace the arbitrary open `N` by a finite Galois level.
+public import Mathlib.Topology.Algebra.ClopenNhdofOne
 -- `IsConjRoot` / `IsConjRoot.exists_algEquiv`: two roots of the same irreducible
 -- polynomial in an algebraic closure are related by a `Kᵥ`-automorphism. Used by
 -- `exists_smul_root_eq_mul_of_pow_eq_one` (the orbit half of the tame-surjectivity leaf).
@@ -5317,8 +5321,10 @@ naming where:
           → `exists_lowerRamificationData_phi_one_le` (PROVEN 2026-07-30: the
             same arithmetic input as the density leaf, and the only one it
             needs)
-              → `exists_level_smul_unif_eq_mul` (LEAF: a tamely ramified level
-                whose uniformizer is an inertia eigenvector)
+              → `exists_level_smul_unif_eq_mul` (PROVEN: the selection of the
+                open normal level and of the prime modulus)
+                  → `exists_level_smul_unif_eq_mul_of_prime` (LEAF: a tamely
+                    ramified level whose uniformizer is an inertia eigenvector)
           → `LowerRamificationData.exists_gp_eq_lvl` (PROVEN: the truncation
             point).
 
@@ -5761,49 +5767,56 @@ theorem exists_breaks_of_hasFiniteWildMonodromyAt (ρ : GaloisRep K A M)
 /-- **A TAMELY RAMIFIED LEVEL WHOSE UNIFORMIZER IS AN INERTIA EIGENVECTOR**
 (SORRY LEAF, cut 2026-07-30 out of `exists_lowerRamificationData_phi_one_le`
 below — the recut replaces the leaf that used to stand here, which asserted
-`φ(1) ≤ ε` directly and is now a THEOREM over this one).
+`φ(1) ≤ ε` directly and is now a THEOREM over this one; recut a second time the
+same day to take `U₀` and the prime `M` as HYPOTHESES, the selection of both
+being proven in `exists_level_smul_unif_eq_mul` below).
 
-For every open `N` and every bound `c`: there is a finite level `U ≤ N`, a
-uniformizer `ϖ` of it (the four `LowerRamificationData` conditions on `unif`,
-spelled out so that this leaf is purely arithmetic and owes no structure
-plumbing), an `n ≥ c` prime to the residue characteristic, a primitive `n`-th
-root of unity `ζ`, and an element `σ` of the LOCAL INERTIA with
+Given an open NORMAL `U₀` and a prime `M` past `U₀.index` and prime to the
+residue characteristic: there is a finite level `U ≤ U₀`, a uniformizer `ϖ` of
+it (the four `LowerRamificationData` conditions on `unif`, spelled out so that
+this leaf is purely arithmetic and owes no structure plumbing), a primitive
+`M`-th root of unity `ζ`, and an element `σ` of the LOCAL INERTIA with
 
   `σ • ϖ = ζ · ϖ`   — an EXACT equation in `Oᵥ`, not a congruence mod `𝔪`.
 
 WHAT THIS LEAF IS AND IS NOT. It is the surjectivity of the tame character at
-SOME level above `N`, in the only form the elementwise groups of
+SOME level above `U₀`, in the only form the elementwise groups of
 `LowerRamificationData.mem_gp` can consume. Everything downstream of it — that
-the `n` cosets `σ^j·G₁` are distinct, hence `n ≤ [G₀ : G₁]`, hence
+the `M` cosets `σ^j·G₁` are distinct, hence `M ≤ [G₀ : G₁]`, hence
 `φ(1) = 1/[G₀ : G₁] ≤ ε` — is PROVEN, in
 `le_relIndex_gp_one_of_smul_unif_eq_mul` and
-`exists_lowerRamificationData_phi_one_le` below. So this is the ONLY arithmetic
-still owed on this branch.
+`exists_lowerRamificationData_phi_one_le` below; and so is everything upstream
+of it, in `exists_level_smul_unif_eq_mul`. So this is the ONLY arithmetic still
+owed on this branch.
 
-**`n` IS EXISTENTIAL, DELIBERATELY, AND MUST NOT BE STRENGTHENED TO A UNIVERSAL
-`∀ n` PRIME TO `ℓ` WITHOUT A SEPARATE ARGUMENT.** The construction below needs
-`gcd(n, e(L₀/Kᵥ)) = 1` for the level `L₀` cut out by `N`, and delivers that by
-choosing `n` PRIME and larger than `[L₀ : Kᵥ]`. A caller only ever wants `n`
-large — `exists_lowerRamificationData_phi_one_le` asks for `n ≥ 1/ε` — so the
-existential form costs nothing and the universal form would be an unverified
-claim. (It is not obviously false: `Kᵥ = ℚ₃`, `N` cutting out `ℚ₃(√3)`, `n = 2`
-satisfies it at `L = L₀`, `ϖ = √3`. It is simply not what is proved here.)
+**THE HYPOTHESES ON `M` ARE EXACTLY WHAT THE CONSTRUCTION NEEDS, AND THEY MUST
+NOT BE DROPPED.** `M` prime and `M > U₀.index` is what supplies
+`gcd(M, e(L₀/Kᵥ)) = 1` and `gcd(M, [L₀(ζ_M) : Kᵥ]) = 1`, both load-bearing
+below (steps 2 and 8). A caller only ever wants `M` large —
+`exists_lowerRamificationData_phi_one_le` asks for `M ≥ 1/ε` — so these cost
+nothing. A version quantified over ALL `M` prime to `ℓ` would be a strictly
+stronger and UNVERIFIED claim, not a tidier one; it is not obviously false
+(`Kᵥ = ℚ₃`, `U₀` cutting out `ℚ₃(√3)`, `M = 2` satisfies it at `L = L₀`,
+`ϖ = √3`), it is simply not what is proved here.
 
 WHY IT IS TRUE, and it is a statement about `Kᵥ` alone. `Kᵥ` is a local field
 with finite residue field of characteristic `ℓ`, so for every `M` prime to `ℓ`
 the Kummer extension `Kᵥⁿʳ(π^{1/M})/Kᵥⁿʳ` is TOTALLY (tamely) ramified of degree
 `M` — which this file already proves, as
 `exists_localInertia_smul_eq_mul_of_pow_eq_one` (surjectivity of the tame
-character onto `μ_M`) over `irreducible_X_pow_sub_C_uniformizer`. There are
-infinitely many such `M` (`Nat.exists_infinite_primes`).
+character onto `μ_M`) over `irreducible_X_pow_sub_C_uniformizer`.
 
 **THE CONSTRUCTION, IN FULL** (2026-07-30; this REPLACES the route the previous
 docstring recorded, and see the correction below for why that one could not be
-completed). Write `L₀` for the fixed field of an open NORMAL `U₀ ≤ N`, and
-`n₀ := [L₀ : Kᵥ] = U₀.index`.
+completed). Write `L₀` for the fixed field of `U₀`, and
+`n₀ := [L₀ : Kᵥ] = U₀.index`, so `M` is prime with `M > n₀`, hence
+`gcd(M, n₀) = 1`.
 
-1. Choose `M` PRIME with `M > max(c, n₀, ℓ)`. Then `M` is prime to `ℓ` and
-   `gcd(M, n₀) = 1`.
+1. A primitive `M`-th root of unity `ζ_M` exists in `Oᵥ`: `Kᵥᵃˡᵍ` is
+   algebraically closed of characteristic `0`, so
+   `HasEnoughRootsOfUnity.exists_primitiveRoot` applies, and `ζ_M` is integral
+   (a root of `X^M − 1`), so `IsPrimitiveRoot.of_map_of_injective` moves it into
+   `Oᵥ`. **CHECKED 2026-07-30: this compiles verbatim in this file's context.**
 2. Put `L₀' := L₀(ζ_M)`, again finite Galois over `Kᵥ`, of degree
    `n₀' := n₀·d` with `d = [L₀' : L₀]` a divisor of `[Kᵥ(ζ_M) : Kᵥ] ∣ φ(M) =
    M − 1`. Hence `gcd(M, n₀') = 1`, and therefore `gcd(M, e₀') = 1` for
@@ -5830,7 +5843,7 @@ completed). Write `L₀` for the fixed field of an open NORMAL `U₀ ≤ N`, and
 8. `σ • z = ζ_M^{n₀'}·z` (inertia fixes `ζ_M`, `M` prime to `ℓ`), and
    `ξ := ζ_M^{n₀'}` is again a PRIMITIVE `M`-th root because `gcd(M, n₀') = 1`.
    Hence `σ • ϖ = ξ^a·ϖ` exactly, and `ζ := ξ^a` is primitive since
-   `gcd(a, M) = 1`. Take `n := M`, `U :=` the fixing subgroup of `L`.
+   `gcd(a, M) = 1`. Take `U :=` the fixing subgroup of `L`.
 
 **STEP 7 IS THE WHOLE REPAIR, AND IT RETIRES THE "RELATIVE EISENSTEIN" COST
 THE PREVIOUS DOCSTRING NAMED.** That docstring ended by naming, as "the real
@@ -5886,6 +5899,65 @@ exact equation only modulo `𝔪` should NOT weaken this statement: replace it b
 "`ϖ² ∤ σ^j • ϖ − ϖ` for `0 < j < n`", which is all
 `le_relIndex_gp_one_of_smul_unif_eq_mul` actually consumes, and adjust that
 theorem's first three `have`s. -/
+theorem exists_level_smul_unif_eq_mul_of_prime
+    (v : HeightOneSpectrum (𝓞 K))
+    (U₀ : Subgroup (Field.absoluteGaloisGroup (v.adicCompletion K)))
+    (hU₀n : U₀.Normal)
+    (hU₀o : IsOpen (U₀ : Set (Field.absoluteGaloisGroup (v.adicCompletion K))))
+    {p : ℕ} (hpp : p.Prime) (hpidx : U₀.index < p) (hpres : (p : 𝓞 K) ∉ v.asIdeal) :
+    ∃ (U : Subgroup (Field.absoluteGaloisGroup (v.adicCompletion K)))
+      (ϖ ζ : IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+        (AlgebraicClosure (v.adicCompletion K)))
+      (σ : Field.absoluteGaloisGroup (v.adicCompletion K)),
+      U.Normal ∧
+      IsOpen (U : Set (Field.absoluteGaloisGroup (v.adicCompletion K))) ∧ U ≤ U₀ ∧
+      (∀ τ ∈ U, τ • ϖ = ϖ) ∧ ϖ ≠ 0 ∧ ¬ IsUnit ϖ ∧
+      (∀ x : IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+          (AlgebraicClosure (v.adicCompletion K)),
+        (∀ τ ∈ U, τ • x = x) → ¬ IsUnit x → ϖ ∣ x) ∧
+      IsPrimitiveRoot ζ p ∧
+      σ ∈ localInertiaGroup v ∧ σ • ϖ = ζ * ϖ := sorry
+
+omit [NumberField K] in
+/-- **ARBITRARILY LARGE PRIMES ARE PRIME TO THE RESIDUE CHARACTERISTIC**
+(PROVEN 2026-07-30): at most one rational prime lies in `v.asIdeal`, since two
+distinct ones are coprime and a Bézout combination would put `1` there. So the
+primes past any bound that are still prime to `ℓ` are cofinal, which is the
+selection `exists_level_smul_unif_eq_mul` makes. -/
+theorem exists_prime_ge_notMem_asIdeal (v : HeightOneSpectrum (𝓞 K)) (b : ℕ) :
+    ∃ p : ℕ, p.Prime ∧ b ≤ p ∧ ((p : 𝓞 K) ∉ v.asIdeal) := by
+  obtain ⟨p, hpb, hp⟩ := Nat.exists_infinite_primes b
+  by_cases hgood : ((p : 𝓞 K) ∉ v.asIdeal)
+  · exact ⟨p, hp, hpb, hgood⟩
+  · obtain ⟨q, hqb, hq⟩ := Nat.exists_infinite_primes (p + 1)
+    refine ⟨q, hq, le_trans hpb (by omega), fun hqmem => ?_⟩
+    rw [not_not] at hgood
+    have hpq : p ≠ q := by omega
+    have hcopN : Nat.Coprime p q := (Nat.coprime_primes hp hq).mpr hpq
+    have hcop : IsCoprime (p : ℤ) (q : ℤ) :=
+      Int.isCoprime_iff_gcd_eq_one.mpr (by simpa using hcopN)
+    obtain ⟨a, y, hay⟩ := hcop
+    have hone : (1 : 𝓞 K) ∈ v.asIdeal := by
+      have h1 : ((a : 𝓞 K) * (p : 𝓞 K) + (y : 𝓞 K) * (q : 𝓞 K)) ∈ v.asIdeal :=
+        Ideal.add_mem _ (Ideal.mul_mem_left _ _ hgood) (Ideal.mul_mem_left _ _ hqmem)
+      have h2 : ((a : 𝓞 K) * (p : 𝓞 K) + (y : 𝓞 K) * (q : 𝓞 K)) = 1 := by
+        have := congrArg (fun t : ℤ => ((t : ℤ) : 𝓞 K)) hay
+        push_cast at this ⊢
+        exact this
+      rwa [h2] at h1
+    exact v.isPrime.ne_top ((Ideal.eq_top_iff_one _).mpr hone)
+
+/-- **THE SELECTION STEP** (PROVEN 2026-07-30): steps 0–1 of the construction
+recorded on `exists_level_smul_unif_eq_mul_of_prime` above, discharged.
+
+An open `N` contains an open NORMAL subgroup — `Γᵥ` is profinite, so
+`ProfiniteGrp.exist_openNormalSubgroup_sub_open_nhds_of_one` applies at the
+neighbourhood `N` of `1` — and a prime past both `⌈c⌉` and that subgroup's index
+and still prime to `ℓ` exists by `exists_prime_ge_notMem_asIdeal`. Feeding both
+to the leaf gives the form `exists_lowerRamificationData_phi_one_le` consumes,
+in which the modulus is existential and bounded below by `c`. -/
 theorem exists_level_smul_unif_eq_mul
     (v : HeightOneSpectrum (𝓞 K))
     (N : Subgroup (Field.absoluteGaloisGroup (v.adicCompletion K)))
@@ -5904,7 +5976,20 @@ theorem exists_level_smul_unif_eq_mul
           (AlgebraicClosure (v.adicCompletion K)),
         (∀ τ ∈ U, τ • x = x) → ¬ IsUnit x → ϖ ∣ x) ∧
       c ≤ (n : ℚ) ∧ ((n : 𝓞 K) ∉ v.asIdeal) ∧ IsPrimitiveRoot ζ n ∧
-      σ ∈ localInertiaGroup v ∧ σ • ϖ = ζ * ϖ := sorry
+      σ ∈ localInertiaGroup v ∧ σ • ϖ = ζ * ϖ := by
+  obtain ⟨H, hH⟩ := ProfiniteGrp.exist_openNormalSubgroup_sub_open_nhds_of_one hN N.one_mem
+  obtain ⟨p, hpp, hpge, hpres⟩ :=
+    exists_prime_ge_notMem_asIdeal v (max ⌈c⌉₊ (H.toSubgroup.index + 1))
+  obtain ⟨U, ϖ, ζ, σ, hUn, hUo, hUle, hfix, h0, hnu, hspec, hζ, hσ, hmul⟩ :=
+    exists_level_smul_unif_eq_mul_of_prime v H.toSubgroup H.isNormal' H.isOpen' hpp
+      (by omega) hpres
+  refine ⟨U, ϖ, ζ, σ, p, hUn, hUo, le_trans hUle hH, hfix, h0, hnu, hspec, ?_, hpres, hζ,
+    hσ, hmul⟩
+  have h1 : c ≤ (⌈c⌉₊ : ℚ) := Nat.le_ceil c
+  have h2 : (⌈c⌉₊ : ℚ) ≤ (p : ℚ) := by
+    have : ⌈c⌉₊ ≤ p := le_trans (le_max_left _ _) hpge
+    exact_mod_cast this
+  linarith
 
 /-- **AN INERTIA EIGENVECTOR ON THE UNIFORMIZER BOUNDS THE TAME INDEX FROM
 BELOW**: if some `σ ∈ I_v` satisfies `σ • unif = ζ · unif` with `ζ` a primitive
@@ -6432,7 +6517,7 @@ so there is no Herbrand value in `(w, u]` when `u ≤ 0`.
 
 **RECUT 2026-07-30 — this leaf is now PROVEN over a single, much smaller one,
 `exists_lowerRamificationData_phi_one_le` above (itself since recut onto the
-arithmetic leaf `exists_level_smul_unif_eq_mul`).** Two of the three
+arithmetic leaf `exists_level_smul_unif_eq_mul_of_prime`).** Two of the three
 things this docstring said had to be built are done and are no longer part of
 it:
 
@@ -6737,12 +6822,12 @@ remain, all named and all individually dispatchable:
   `LowerRamificationData.wildInertiaGroup_le_gp_one`,
   `LowerRamificationData.gp_le_upperRamificationFiltration_sup_lvl`,
   `exists_breaks_of_hasFiniteWildMonodromyAt`,
-  `exists_level_smul_unif_eq_mul`,
+  `exists_level_smul_unif_eq_mul_of_prime`,
   `exists_nat_eq_sum_lowerSwan`.
 
 (`exists_lowerRamificationData_phi_one_le` stood in this list until 2026-07-30
-and is now PROVEN; `exists_level_smul_unif_eq_mul` is the arithmetic leaf it was
-recut onto, and it replaces it here one-for-one.)
+and is now PROVEN; `exists_level_smul_unif_eq_mul_of_prime` is the arithmetic
+leaf it was recut onto, and it replaces it here one-for-one.)
 
 The residual FALSITY risk is concentrated in
 `exists_breaks_of_hasFiniteWildMonodromyAt`, for the reason its own docstring
