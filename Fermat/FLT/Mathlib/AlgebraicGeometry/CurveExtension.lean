@@ -34,6 +34,15 @@ public import Mathlib.RingTheory.Etale.Basic
 public import Mathlib.RingTheory.Unramified.LocalRing
 public import Mathlib.RingTheory.RingHom.StandardSmooth
 public import Mathlib.RingTheory.Localization.AtPrime.Basic
+-- for the DOMAIN-base twins of the density half (added 2026-07-30): the generic fibre
+-- `Frac R ⊗_R B` is at once a base change (`Smooth.Flat`, `Flat.Basic`) and a localisation
+-- (`Localization.BaseChange`, `FractionRing`), and `Spectrum.Prime.Topology` is what makes
+-- its spectrum inject into `Spec B`.
+public import Mathlib.RingTheory.Localization.BaseChange
+public import Mathlib.RingTheory.Localization.FractionRing
+public import Mathlib.RingTheory.Flat.Basic
+public import Mathlib.RingTheory.Smooth.Flat
+public import Mathlib.RingTheory.Spectrum.Prime.Topology
 public import Mathlib.RingTheory.Smooth.StandardSmoothCotangent
 public import Mathlib.RingTheory.Etale.Kaehler
 public import Mathlib.LinearAlgebra.Dimension.Localization
@@ -1160,6 +1169,161 @@ theorem isDominant_of_finite_compl
     exact (Set.infinite_univ (α := X)) hfin
   have hopen : IsOpen (Set.range j.base) := j.isOpenEmbedding.isOpen_range
   exact ⟨hopen.dense hne⟩
+
+/-! ### The same two statements over a DOMAIN base, not a field
+
+`Fermat/FLT/FreyCurve/MazurTorsion.lean`'s `eq_of_comp_open_x0JNeronModel` is the
+`Spec R`-base twin of `X0.lean`'s `eq_of_comp_open_x0Compactification`, `R : Subring ℚ`,
+and its docstring names the obstruction precisely: the density half of this file —
+`isDominant_of_finite_compl` and the infinitude it rests on — is stated over a FIELD, and
+a prover who generalises it to a one-dimensional base closes BOTH.  That is done here.
+
+**THIS IS NOT THE GENERALISATION THE EXTENSION LEAF FORBIDS.**  The heading below
+(`exists_unique_extension_of_isSmoothProperCurve`) records that its base must NOT be moved
+off a field, because its proof applies the valuative criterion at `Spec 𝒪_{X,x}` and that
+local ring is a two-dimensional regular local ring — not a valuation ring — at a closed
+point of the special fibre.  Nothing in this subsection extends a morphism.  Infinitude and
+density are insensitive to the dimension of the base, and the proof below never mentions a
+valuation ring.  Do not import that warning into these three statements.
+
+**THE MECHANISM, and why the field proof does not simply relativise.**  Over a field, a
+smooth algebra is reduced and a smooth curve is infinite because the *local models* are
+finite-type algebras over a field, hence Jacobson.  Over a domain `R` neither reason
+survives verbatim.  What replaces both is the GENERIC FIBRE together with flatness:
+
+* `B` is flat over `R` (smooth ⟹ flat) and `R` is a domain, so `B ↪ Frac R ⊗_R B`;
+* `Frac R ⊗_R B` is smooth — indeed standard smooth of the same relative dimension — over
+  the FIELD `Frac R`, by base change, so the field statements apply to it;
+* `B → Frac R ⊗_R B` is a LOCALISATION (at the image of `R ∖ {0}`), so
+  `Spec (Frac R ⊗_R B) → Spec B` is INJECTIVE.
+
+Reducedness then descends along the injection `B ↪ Frac R ⊗_R B`, and infinitude ascends
+along the injection of spectra.  Both steps are one mathlib lemma each
+(`Algebra.TensorProduct.includeRight_injective`, `PrimeSpectrum.localization_comap_injective`)
+and neither needs regular local rings, Cohen, or dimension theory over `ℤ`.
+
+**WHY NO PROPERNESS AND NO CONNECTEDNESS.**  `isDominant_of_finite_compl` above needs
+`IsIntegral X` — irreducibility — because it argues globally: `X` is infinite, so the range
+is nonempty, and a nonempty open of an irreducible space is dense.  Over a domain base `X`
+need not be irreducible for the conclusion to hold, and the `interior`-of-the-complement
+argument used below does not ask it to: it shows every nonempty OPEN is infinite, which is
+strictly what density needs.  That is also why properness is absent — an open subscheme of
+a proper scheme is not proper, and the proof passes to one. -/
+
+open scoped TensorProduct in
+/-- **A nontrivial standard-smooth algebra of relative dimension one over a DOMAIN has
+infinitely many primes** (PROVEN) — the domain-base twin of
+`Algebra.not_module_finite_of_isStandardSmoothOfRelativeDimension_one` above, which it
+consumes over `Frac R`.
+
+THE PROOF.  Suppose `Spec B` is finite.  `Frac R ⊗_R B` is standard smooth of relative
+dimension one over the field `Frac R` (`IsStandardSmoothOfRelativeDimension.baseChange`),
+and it is nontrivial because `B ↪ Frac R ⊗_R B` — `B` is flat over `R`, `R` a domain
+(`Algebra.TensorProduct.includeRight_injective`).  It is also a localisation of `B`, at the
+image of `R⁰` (`IsLocalization.tensorRight`), so `PrimeSpectrum.localization_comap_injective`
+makes its spectrum inject into the finite `Spec B`, hence finite.  A finitely presented
+algebra over a field with finite spectrum is quasi-finite, hence module-finite — which is
+exactly what the field lemma above forbids. -/
+theorem PrimeSpectrum.infinite_of_isStandardSmoothOfRelativeDimension_one_of_isDomain
+    (R B : Type u) [CommRing R] [IsDomain R] [CommRing B] [Nontrivial B] [Algebra R B]
+    [Algebra.IsStandardSmoothOfRelativeDimension 1 R B] :
+    Infinite (PrimeSpectrum B) := by
+  rw [← not_finite_iff_infinite]
+  intro hfin
+  haveI : Algebra.IsStandardSmooth R B :=
+    Algebra.IsStandardSmoothOfRelativeDimension.isStandardSmooth 1
+  haveI : Module.Flat R B := inferInstance
+  have hinj : Function.Injective
+      (Algebra.TensorProduct.includeRight (R := R) (A := FractionRing R) (B := B)) :=
+    Algebra.TensorProduct.includeRight_injective
+      (IsFractionRing.injective R (FractionRing R))
+  haveI : Nontrivial (FractionRing R ⊗[R] B) := by
+    obtain ⟨a, b, hab⟩ := (inferInstance : Nontrivial B)
+    exact ⟨_, _, fun h => hab (hinj h)⟩
+  haveI : Algebra.IsStandardSmooth (FractionRing R) (FractionRing R ⊗[R] B) :=
+    Algebra.IsStandardSmoothOfRelativeDimension.isStandardSmooth 1
+  haveI : Algebra.FinitePresentation (FractionRing R) (FractionRing R ⊗[R] B) :=
+    Algebra.IsStandardSmooth.finitePresentation
+  letI : Algebra B (FractionRing R ⊗[R] B) := Algebra.TensorProduct.rightAlgebra
+  haveI : IsLocalization (Algebra.algebraMapSubmonoid B (nonZeroDivisors R))
+      (FractionRing R ⊗[R] B) :=
+    IsLocalization.tensorRight (R := R) (S := B) (A := FractionRing R) (nonZeroDivisors R)
+  haveI : Finite (PrimeSpectrum (FractionRing R ⊗[R] B)) :=
+    Finite.of_injective _
+      (PrimeSpectrum.localization_comap_injective (FractionRing R ⊗[R] B)
+        (Algebra.algebraMapSubmonoid B (nonZeroDivisors R)))
+  haveI : Algebra.QuasiFinite (FractionRing R) (FractionRing R ⊗[R] B) :=
+    Algebra.QuasiFinite.iff_finite_comap_preimage_singleton.mpr fun _ => Set.toFinite _
+  exact Algebra.not_module_finite_of_isStandardSmoothOfRelativeDimension_one (FractionRing R)
+    (FractionRing R ⊗[R] B) Module.Finite.of_quasiFinite
+
+/-- **A nonempty scheme smooth of relative dimension one over the spectrum of a DOMAIN has
+infinitely many points** (PROVEN) — the domain-base twin of
+`infinite_of_smoothOfRelativeDimension_one` above, and proven by the same bookkeeping over
+the algebra lemma immediately above.
+
+The ONE difference from the field proof, and it is the only place the base being
+non-subsingleton is felt: over a field the affine open `U ⊆ Spec K` produced by
+`SmoothOfRelativeDimension.exists_isStandardSmoothOfRelativeDimension` is forced to be `⊤`,
+so the base ring is `K` up to `ΓSpecIso`.  Over `Spec R` it is an arbitrary nonempty affine
+open, and what is needed of `Γ(Spec R, U)` is only that it is a DOMAIN — which it is,
+because `Spec R` is an integral scheme and `U` is nonempty (it contains the image of `x`).
+No `ΓSpecIso` transport is needed at all, which makes this proof shorter than the field one.
+
+Like its field twin this is a POINT COUNT and must stay one: `Spec` of a discrete valuation
+ring has dimension one and exactly two points, so no dimension statement replaces it. -/
+theorem infinite_of_smoothOfRelativeDimension_one_over_domain
+    {R : Type u} [CommRing R] [IsDomain R] {X : Scheme.{u}}
+    (strX : X ⟶ Spec (CommRingCat.of R)) [SmoothOfRelativeDimension 1 strX] [Nonempty X] :
+    Infinite X := by
+  rw [← not_finite_iff_infinite]
+  intro hfin
+  obtain ⟨x⟩ := ‹Nonempty X›
+  obtain ⟨U, hU, V, hV, hxV, hle, hstd⟩ :=
+    SmoothOfRelativeDimension.exists_isStandardSmoothOfRelativeDimension (n := 1) (f := strX) x
+  haveI : IsIntegral (Spec (CommRingCat.of R)) := inferInstance
+  haveI : IsDomain Γ(Spec (CommRingCat.of R), U) :=
+    @IsIntegral.component_integral _ _ U ⟨⟨strX.base x, hle hxV⟩⟩
+  letI : Algebra Γ(Spec (CommRingCat.of R), U) Γ(X, V) := (strX.appLE U V hle).hom.toAlgebra
+  haveI : Algebra.IsStandardSmoothOfRelativeDimension 1
+      Γ(Spec (CommRingCat.of R), U) Γ(X, V) := hstd
+  let hom : ↥V ≃ₜ ↥(Spec Γ(X, V)) := Scheme.homeoOfIso hV.isoSpec
+  haveI : Finite ↥V := Subtype.finite
+  haveI : Finite (PrimeSpectrum Γ(X, V)) := Finite.of_equiv _ hom.toEquiv
+  haveI : Nontrivial Γ(X, V) := PrimeSpectrum.nontrivial (hom ⟨x, hxV⟩)
+  haveI := PrimeSpectrum.infinite_of_isStandardSmoothOfRelativeDimension_one_of_isDomain
+    Γ(Spec (CommRingCat.of R), U) Γ(X, V)
+  exact not_finite (PrimeSpectrum Γ(X, V))
+
+/-- **An open subscheme with finite complement of a smooth relative curve over a DOMAIN is
+dense** (PROVEN over the leaf above) — the domain-base twin of `isDominant_of_finite_compl`.
+
+It asks for NEITHER properness NOR integrality, where the field version asks for both, and
+that is not an oversight: the argument is local.  If the complement of the range had
+nonempty interior `U`, then `U` would be a nonempty open that is FINITE (being inside the
+finite complement) while `U.ι ≫ strX` is again smooth of relative dimension `0 + 1` — which
+the leaf above forbids.  So the complement has empty interior, i.e. the range is dense.
+
+**The check that refutes it**: a domain `R`, a scheme smooth of relative dimension one over
+`Spec R`, and an open immersion into it whose range has finite, nonempty complement-interior
+— equivalently a nonempty FINITE open subscheme of a smooth relative curve. -/
+theorem isDominant_of_finite_compl_over_domain {R : Type u} [CommRing R] [IsDomain R]
+    {X Y : Scheme.{u}} (strX : X ⟶ Spec (CommRingCat.of R))
+    [SmoothOfRelativeDimension 1 strX] {j : Y ⟶ X} [IsOpenImmersion j]
+    (hfin : (Set.range j.base)ᶜ.Finite) : IsDominant j := by
+  have hint : interior ((Set.range j.base)ᶜ) = ∅ := by
+    by_contra hne
+    obtain ⟨x, hx⟩ := Set.nonempty_iff_ne_empty.mpr hne
+    let U : X.Opens := ⟨interior ((Set.range j.base)ᶜ), isOpen_interior⟩
+    have hUfin : (U : Set X).Finite := hfin.subset interior_subset
+    haveI : Finite U.toScheme := hUfin.to_subtype
+    haveI : Nonempty U.toScheme := ⟨⟨x, hx⟩⟩
+    haveI : SmoothOfRelativeDimension 1 (U.ι ≫ strX) :=
+      inferInstanceAs (SmoothOfRelativeDimension (0 + 1) (U.ι ≫ strX))
+    haveI := infinite_of_smoothOfRelativeDimension_one_over_domain (U.ι ≫ strX)
+    exact not_finite U.toScheme
+  refine ⟨?_⟩
+  rw [DenseRange, dense_iff_closure_eq, ← Set.compl_empty_iff, ← interior_compl, hint]
 
 /-! ### The packaged statement, for a compactification -/
 
