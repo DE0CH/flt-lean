@@ -3238,6 +3238,47 @@ lemma rat_of_quadratic_jInvariant_heegnerPoint (p : ℕ) (hp : 0 < p)
     exact_mod_cast hv'
   exact ⟨u, by rw [huv, hv]; simp⟩
 
+/-! #### ROUTE SEARCHED AND CLOSED (2026-07-30): `deg α ≤ 3` does NOT reach `γ₂(τ₀) ∈ ℚ`
+
+Recorded because it is the first thing a successor will try — it would close BOTH leaves below
+at once, out of a leaf this file ALREADY has (`natDegree_minpoly_weberAlpha_le`), and it dies on
+a fact stated 2000 lines above that nobody would think to connect to it.
+
+THE ROUTE. `γ₂(τ₀) ∈ ℚ(α)`, since `γ₂ = (α¹² − 16)/α⁴` by `weberAlpha_pow_four_cubic`; and
+`γ₂(τ₀)` is REAL by `exists_real_gammaTwo_heegnerPoint`. So `γ₂(τ₀) ∈ ℚ(α) ∩ ℝ`. Now suppose
+`α ∉ ℝ`. Then `ℚ(α) ∩ ℝ` is a PROPER subfield of `ℚ(α)`, and `natDegree_minpoly_weberAlpha_le`
+bounds `[ℚ(α) : ℚ] ≤ 3` — a bound by a PRIME — so every intermediate field is `ℚ` or `ℚ(α)`,
+forcing `ℚ(α) ∩ ℝ = ℚ` and hence `γ₂(τ₀) ∈ ℚ`. That gives `exists_ratCube_jInvariant_heegnerPoint`
+and, through `γ₂³ = j`, `exists_rat_jInvariant_heegnerPoint` as well, with no CM at all. (The
+degrees `1` and `2` are not special cases: at `[ℚ(α):ℚ] ≤ 2` a non-real `α` makes `ℚ(α)`
+imaginary quadratic, whose real subfield is again `ℚ`.)
+
+WHY IT FAILS: `α IS REAL`, so the one hypothesis the route needs is false. This is not a
+near miss — the twist by `ζ₈⁻¹` in `weberAlpha` exists PRECISELY to make `α` real, and
+`weberAlpha`'s own docstring says so. Re-verified here independently (`PARI/GP`, 60 digits,
+`η` as `eta(·,1)`), `α = ζ₈⁻¹f₂(τ₀)²` at the five admissible `p`:
+
+  `p = 11 : α = 0.839286755214161132551852564653…`,  `p = 19 : 0.638896919471352622365353437840…`,
+  `p = 43 : 0.359304085971776420730660392800…`,  `p = 67 : 0.234623503103268353537227950207…`,
+  `p = 163 : 0.070701842044990387037027204897…`,
+
+each with `|Im α| < 10⁻⁷⁷`, and each POSITIVE — consistent with `α⁴ = −f₂(τ₀)⁸ > 0` (the same
+computation gives `f₂(τ₀)⁸ = −0.4961825403…` at `p = 11`), which by itself only confines `α` to
+`{±ρ, ±iρ}`; the sign check is what picks the real pair.
+
+AND THERE IS NO ELEMENTARY REPAIR. `ℚ(α)` is a REAL cubic field containing `γ₂(τ₀)`, so
+`[ℚ(γ₂(τ₀)) : ℚ] ∈ {1, 3}` and NOTHING in the available data separates the two: the true
+configuration at every admissible `p` is `γ₂(τ₀) ∈ ℚ` (`−32, −96, −960, −5280, −640320`) with
+`α` of degree exactly `3` (at `p = 11`, `α⁴` is a root of the irreducible `x³ + 32x − 16`), and
+the rival configuration `[ℚ(γ₂(τ₀)) : ℚ] = 3 = [ℚ(α):ℚ]`, i.e. `ℚ(γ₂(τ₀)) = ℚ(α)`, is
+self-consistent as pure field theory. The implication `deg α ≤ 3 ⟹ γ₂(τ₀) ∈ ℚ` is TRUE, but only
+because `deg α = 3·h(−p)` — which IS the complex multiplication that the leaf below is about.
+
+Nor does the non-real generator rescue it: `β = f₂(τ₀)² = ζ₈α` is not real, but `ℚ(β) ∋ β⁴ = −α⁴`
+hence `⊇ ℚ(α⁴) = ℚ(α)` hence `∋ β/α = ζ₈`, so `ℚ(β) = ℚ(α, ζ₈)` has degree `12`. The prime-degree
+step — the whole engine of the route — is gone, and `ℚ(β) ∩ ℝ` is then a real sextic field, not
+`ℚ`. -/
+
 /-- **LEAF 4b′ — `j(τ₀) ∈ ℚ`. THE FIRST MAIN THEOREM OF COMPLEX MULTIPLICATION.**
 
 This replaces the `K`-valued `LEAF 4b` (see the section note: the two are equivalent, because
