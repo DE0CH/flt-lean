@@ -13114,6 +13114,75 @@ theorem exists_heckeCorrespondenceFamilyGamma1 (N ℓ : ℕ) (_hℓ : ℓ.Prime)
                 (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) (dq k))) :=
   sorry
 
+/-- **THE `Γ₁` MODULI RECIPE FOR ONE ALBANESE ENDOMORPHISM**, factored out of
+`exists_modularHeckeAction_gamma1`'s `key` so that
+`exists_commutingHeckeAlbaneseFamilyGamma1` can state it twice without repeating
+eighteen lines.  This is the `Γ₁` transport of `X0.lean`'s
+`IsHeckeAlbaneseRecipe`, and it is DEFINITIONALLY the clause the consumer already
+produces, so no conversion is needed at either end.
+
+Note the absence of the per-`ℓ` base-point constant `e` that the `Γ₀` recipe
+carries: `IsModularHeckeActionGamma1` has not had the 2026-07-29 falsity repair
+applied to it, and adding it here would be a pin change in a file whose consumer
+chain this merge is not touching.  Recorded rather than done — the audit on
+`X0.lean`'s `IsModularHeckeAction` clause 4 applies verbatim to `Γ₁`, and this is
+the natural place for a successor to start. -/
+def IsHeckeAlbaneseRecipeGamma1 (N : ℕ)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (H : IsX1Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (ℓ : ℕ) (u : J ⟶ J)
+    (hu : u ≫ jstr = jstr) : Prop :=
+  ∀ (d : Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) (m : ℕ)
+    (dq : Fin m → Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+    (iso : ∀ k, IsGamma1Isogeny N ℓ d (dq k)),
+    (∀ k k' : Fin m,
+      (∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+        RelPoint.LiesIn (iso k).ker.ι x ↔ RelPoint.LiesIn (iso k').ker.ι x) → k = k') →
+    (∀ D : CyclicSubgroupOfOrder d.ab ℓ, ∃ k : Fin m,
+      ∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+        RelPoint.LiesIn D.ι x ↔ RelPoint.LiesIn (iso k).ker.ι x) →
+    letI := ab.addCommGroup (specAlgClos ℚ)
+    RelPoint.post u hu
+        (jac.aj (specAlgClos ℚ)
+          (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) d)))
+      = ∑ k : Fin m, jac.aj (specAlgClos ℚ)
+          (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) (dq k)))
+
+/-- **THE `Γ₁` HECKE CORRESPONDENCES COMMUTE** (sorry leaf, new 2026-07-30 at the
+release-25 merge) — the `Γ₁` transport of `X0.lean`'s
+`exists_commutingHeckeAlbaneseFamily`, and needed for exactly the same reason.
+
+`exists_anemicHeckeExtension` (`X0.lean`, level-structure-free, so it is the SAME
+theorem that serves both curves) gained the hypothesis `u_comm` on 2026-07-30.
+Its FALSITY AUDIT there shows the statement was false without it: coprime
+multiplicativity read at `6 = 2*3` and at `6 = 3*2` entails
+`u 2 ≫ u 3 = u 3 ≫ u 2`, which nothing in `u_comp`/`u_add` supplies.  The pinned
+family that `exists_modularHeckeAction_gamma1` builds out of
+`exists_heckeCorrespondenceFamilyGamma1` is not known to commute, so it cannot be
+fed to the extension directly.
+
+TRUE, and it is the same classical fact as in the `Γ₀` case — the Hecke
+correspondences commute (Diamond–Shurman Prop. 5.2.4), here on `J_1(N)`.  Witness:
+take `u n` to be the genuine `T_n` at the primes `ℓ ∤ N`, where the recipe pins it,
+and `𝟙 J` at every other arity, where nothing does; `𝟙` commutes with everything,
+so pairwise commutation reduces to the pinned arities. -/
+theorem exists_commutingHeckeAlbaneseFamilyGamma1 (N : ℕ)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (H : IsX1Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o)
+    (v : ℕ → (J ⟶ J)) (v_comp : ∀ n, v n ≫ jstr = jstr)
+    (_v_add : ∀ n, IsAdditiveOn ab ab (v n) (v_comp n))
+    (_v_pin : ∀ ℓ : ℕ, ℓ.Prime → ¬ ℓ ∣ N →
+      IsHeckeAlbaneseRecipeGamma1 N H jac ℓ (v ℓ) (v_comp ℓ)) :
+    ∃ (u : ℕ → (J ⟶ J)) (u_comp : ∀ n, u n ≫ jstr = jstr),
+      (∀ n, IsAdditiveOn ab ab (u n) (u_comp n)) ∧
+        (∀ m n : ℕ, u m ≫ u n = u n ≫ u m) ∧
+        (∀ ℓ : ℕ, ℓ.Prime → ¬ ℓ ∣ N →
+          IsHeckeAlbaneseRecipeGamma1 N H jac ℓ (u ℓ) (u_comp ℓ)) :=
+  sorry
+
 /-- **THE HECKE CORRESPONDENCE ACTS ON `J_1(N)`** (**PROVEN 2026-07-28**,
 over the single leaf `exists_heckeCorrespondenceFamilyGamma1` above) — the
 `Γ₁` transport of `X0.lean`'s PROVEN `exists_modularHeckeAction`, and the
@@ -13191,20 +13260,26 @@ theorem exists_modularHeckeAction_gamma1 (N : ℕ)
         simp only [RelPoint.post, Category.comp_id, Subtype.coe_eta],
         fun hp hd => absurd ⟨hp, hd⟩ hn⟩
   choose v v_comp v_add v_pin using key
-  -- the multiplicative extension: it agrees with `v` at the primes `ℓ ∤ N`, so it
+  -- COMMUTATION, added at the release-25 merge: `exists_anemicHeckeExtension`
+  -- REQUIRES `u_comm` (see its FALSITY AUDIT in `X0.lean` -- the conclusion read at
+  -- `6 = 2*3 = 3*2` ENTAILS it), and the pinned family `v` is not known to commute.
+  obtain ⟨V, V_comp, V_add, V_comm, V_pin⟩ :=
+    exists_commutingHeckeAlbaneseFamilyGamma1 N H jac v v_comp v_add
+      (fun ℓ hℓ hℓN => v_pin ℓ hℓ hℓN)
+  -- the multiplicative extension: it agrees with `V` at the primes `ℓ ∤ N`, so it
   -- inherits the moduli recipe, and it satisfies the three anemic relations.
   -- `exists_anemicHeckeExtension` (`X0.lean`) mentions no level structure, so the
   -- `Γ₀` repair of 2026-07-28 transports here verbatim.
   obtain ⟨T, T_comp, T_add, hTv, hT1, hTmul, hTrec⟩ :=
-    exists_anemicHeckeExtension N ab v v_comp v_add
+    exists_anemicHeckeExtension N ab V V_comp V_add V_comm
   refine ⟨T, T_comp, T_add, hT1, hTmul, hTrec, ?_⟩
   intro ℓ hℓ hℓN d m dq iso hinj hsurj
   have hpostℓ : ∀ {T' : Scheme.{0}} {g : T' ⟶ SpecQ} (y : RelPoint jstr g),
-      RelPoint.post (T ℓ) (T_comp ℓ) y = RelPoint.post (v ℓ) (v_comp ℓ) y := by
+      RelPoint.post (T ℓ) (T_comp ℓ) y = RelPoint.post (V ℓ) (V_comp ℓ) y := by
     intro T' g y
-    exact Subtype.ext (by show y.1 ≫ T ℓ = y.1 ≫ v ℓ; rw [hTv ℓ hℓ hℓN])
+    exact Subtype.ext (by show y.1 ≫ T ℓ = y.1 ≫ V ℓ; rw [hTv ℓ hℓ hℓN])
   rw [hpostℓ]
-  exact v_pin ℓ hℓ hℓN d m dq iso hinj hsurj
+  exact V_pin ℓ hℓ hℓN d m dq iso hinj hsurj
 
 /-- **SHIMURA'S `A_f` FOR `Γ₁(N)`: EVERY WEIGHT-TWO EIGENFORM OF LEVEL `N`
 AND ANY NEBENTYPUS CUTS OUT AN ISOTYPIC QUOTIENT OF `J_1(N)`** (sorry leaf,
