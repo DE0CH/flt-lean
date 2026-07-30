@@ -11953,6 +11953,42 @@ each step names the proven tool it uses).
    lemmas of exactly this shape, and `exists_reducibilityCertificates` uses the
    device in the same way one screen above.
 
+API LOCATED 2026-07-30, so the next prover does not have to find it. Every step
+of the route above has a named `Mathlib` tool, and all four were checked against
+the pin in this worktree:
+
+* BUILDING A MAP OUT OF `A_R[1/α]` WITHOUT NAMING A FRACTION —
+  `IsLocalization.Away.lift x hg : S →+* P` (`Mathlib/RingTheory/Localization/
+  Away/Basic.lean:147`), fed by `Ideal.Quotient.lift` of `MvPolynomial.eval₂`.
+  So `ψ` is exactly a tuple `u : Fin n → B_p[1/β]` with `f_j(u) = 0` and
+  `a(u)` a unit, and `Away.lift_eq` / `Away.lift_comp` read the values back off
+  it. Dually for `lam`, with `Fin k → (A_p[1/α])_red`.
+* WRITING AN ELEMENT AS A FRACTION — `IsLocalization.surj`
+  (`.../Localization/Defs.lean:133`): every `z` satisfies
+  `z * algebraMap m = algebraMap r` for some `(r, m)`, `m` a power of the
+  denominator. This is what turns the abstract `Ψ (mk (X i))` into a NUMERATOR,
+  which is the only form denominator clearing can act on. Do NOT try to produce
+  the fraction by hand.
+* PUSHING AN EQUATION DOWN TO THE NUMERATOR — `IsLocalization.map_eq_zero_iff`
+  (`.../Localization/Defs.lean:246`): `algebraMap r = 0 ↔ ∃ m, m * r = 0`. This
+  is what converts `f_j(u) = 0`, an identity in the LOCALIZATION, into
+  `β^t · f_j(P) ∈ span {g}`, an identity between POLYNOMIALS — step 2 of the
+  route. `IsLocalization.eq_zero_of_fst_eq_zero` is the converse half — a zero
+  numerator forces the fraction to vanish — stated in exactly the shape `surj`
+  hands you, so the two together move an equation both ways across the fraction
+  bar without ever mentioning `mk'`.
+* THE UNIT CONDITIONS COST NO NEW IDEA. `a(u)` is a unit over `ℚ` because it is
+  `Ψ` of the unit `α`; write its INVERSE as a fraction `Q/β^s` by `surj`, clear
+  denominators in `a(u) · Q = β^s`, transfer that single identity, and the
+  mod-`p` unit-ness falls out of the transferred identity because `β` is a unit
+  in `B_p[1/β]` by `IsLocalization.Away.algebraMap_isUnit`. The same device
+  handles `b(w)`.
+
+The one thing with no `Mathlib` name is step 3, the transfer itself, and it is
+three lines of Bézout: a certificate over `ℚ` has finitely many coefficients,
+`exists_intPoly_map_eq_intCast_mul` (PROVEN, ~2500 lines above) makes them
+integral at the cost of one `N`, and `N` is invertible mod every `p ∤ N`.
+
 WHY THE `ℚ` SIDE IS FREE. `Λ ∘ Ψ = mk` is imposed as a hypothesis rather than
 derived, so a prover here never has to produce the birational isomorphism; the
 consumer manufactures the pair from `θ` and `θ.symm`, where the identity holds by
