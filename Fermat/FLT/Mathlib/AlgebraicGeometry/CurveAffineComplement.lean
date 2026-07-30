@@ -941,9 +941,66 @@ theorem valuativeCriterionExistence_of_locallyQuasiFinite_toAffineLine_compl_sin
     simpa using h4
   rw [← Spec.map_preimage (IsOpenImmersion.lift _ l hrange ≫ g), hpre, Spec.map_preimage]
 
+/-- **THE POLE AT `z`, AS THE EXISTENCE HALF OF THE VALUATIVE CRITERION** (sorry leaf, cut
+2026-07-30 out of `isProper_of_locallyQuasiFinite_toAffineLine_compl_singleton` below, which
+is now PROVEN over this and nothing else).
+
+Concretely: given a valuation ring `R` with fraction field `L`, a `Spec L`-point of
+`U = X ∖ {z}` and a `Spec R`-point of `𝔸¹_K` agreeing over `Spec L` through `g`, the square
+has a lift `Spec R ⟶ U`.
+
+TRUE, and it is exactly step 2 of the route recorded on the consumer below — with step 1 as
+its input.  Nothing else remains: `QuasiCompact`, `QuasiSeparated`, `LocallyOfFiniteType` and
+the UNIQUENESS half of the criterion are all discharged in the consumer's proof, so this leaf
+carries the whole geometric content and none of the bookkeeping.
+
+## THE INTENDED PROOF, in the two steps it splits into
+
+1. **Lift against `X`, not against `U`.**  Composing with `U.ι` and with
+   `affineLineOver K` turns the square into a valuative square over `strX`, which is proper,
+   so `IsProper.eq_valuativeCriterion` (or `ValuativeCriterion.existence` of `strX`) supplies
+   `h : Spec R ⟶ X`.  This step is mechanical and needs no curve theory.
+2. **`h` avoids `z`, so it factors through the open `U`.**  This is where the pole lives.
+   `f`, the function `g` classifies, has NEGATIVE valuation at `z`: otherwise it extends to a
+   `K`-morphism `X ⟶ 𝔸¹_K`, which would be proper (`IsProper.of_comp` against the separated
+   `𝔸¹_K ⟶ Spec K`) and still quasi-finite, hence FINITE by
+   `IsFinite.of_isProper_of_locallyQuasiFinite`, forcing `𝔸¹_K ⟶ Spec K` to be universally
+   closed — which it is not.  If `h` sent the closed point of `Spec R` to `z`, the stalk map
+   `𝒪_{X,z} ⟶ R` would be LOCAL, so a uniformiser `π` at `z` would have positive valuation in
+   `R`, and `f = u·π^{-n}` with `n > 0` would land outside `R` — contradicting that the
+   `Spec R`-point of `𝔸¹_K` is defined, i.e. that `f` pulls back into `R`.
+   Then `IsOpenImmersion`'s universal property factors `h` through `U`, and the lower triangle
+   `lift ≫ g = i₂` follows from `IsSeparated.valuativeCriterion` for `affineLineOver K` — two
+   `Spec R`-points of `𝔸¹_K` agreeing over `Spec L` coincide.
+
+`exists_unique_extension_of_valuationRing_stalk` and
+`isDiscreteValuationRing_stalk_of_smoothOfRelativeDimension_one` in `CurveExtension.lean` are
+both PROVEN with no sorry and supply the DVR-stalk machinery step 2 needs.
+
+## WHAT IS LOAD-BEARING, unchanged from the consumer
+
+`hqf` is required and the statement is FALSE without it (the constant morphism at `0` is a
+`K`-morphism whose square has no lift once `R` is a DVR dominating a point of `𝔸¹` other than
+`0`); `hover` is required both for the finite-type bookkeeping and to make the square over
+`strX` in step 1 commute at all; `IsProper strX` is what step 1 consumes and
+`SmoothOfRelativeDimension 1 strX` is what makes the stalk at `z` a DVR in step 2. -/
+theorem existence_valuativeCriterion_toAffineLine_compl_singleton
+    {K : Type u} [Field K] {X : Scheme.{u}} (strX : X ⟶ Spec (CommRingCat.of K))
+    [IsProper strX] [SmoothOfRelativeDimension 1 strX]
+    (hconn : GeometricallyConnected strX)
+    {z : X} (hz : IsClosed ({z} : Set X))
+    (g : Scheme.Opens.toScheme (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) ⟶
+        Spec (CommRingCat.of (Polynomial K)))
+    (hqf : LocallyQuasiFinite g)
+    (hover : g ≫ affineLineOver K =
+      Scheme.Opens.ι (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) ≫ strX) :
+    ValuativeCriterion.Existence g :=
+  sorry
+
 /-- **The compactification step: a quasi-finite `K`-morphism `X ∖ {z} ⟶ 𝔸¹_K` is proper**
-(sorry leaf, cut 2026-07-28 out of
-`isAffineOpen_compl_singleton_of_isSmoothProperCurve`).
+(cut 2026-07-28 out of `isAffineOpen_compl_singleton_of_isSmoothProperCurve`; was a bare
+`sorry`, **DECOMPOSED 2026-07-30** — now PROVEN over the single leaf
+`existence_valuativeCriterion_toAffineLine_compl_singleton` above).
 
 TRUE.  Write `U = X ∖ {z}` and let `f ∈ Γ(X, U)` be the function `g` classifies.  The
 intended proof is the valuative criterion, in two steps:
