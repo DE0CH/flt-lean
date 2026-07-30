@@ -19972,6 +19972,7 @@ section DualNumberPointsCount
 
 variable {R : Type w} [CommRing R] [IsLocalRing R]
 
+omit [TopologicalSpace k] [DiscreteTopology k] in
 /-- `char k = ℓ`. -/
 lemma charP_coeff_field : CharP k ℓ := by
   have hp : (ringChar k).Prime :=
@@ -19983,18 +19984,21 @@ lemma charP_coeff_field : CharP k ℓ := by
     (Nat.prime_dvd_prime_iff_eq hp (Fact.out : ℓ.Prime)).mp hdvd
   exact heq ▸ ringChar.charP k
 
+omit [TopologicalSpace k] [DiscreteTopology k] in
 lemma exists_card_coeff_eq_pow : ∃ n : ℕ, 0 < n ∧ Nat.card k = ℓ ^ n := by
   haveI : Fintype k := Fintype.ofFinite k
   haveI := charP_coeff_field (k := k) (ℓ := ℓ)
   obtain ⟨n, -, hcard⟩ := FiniteField.card k ℓ
   exact ⟨(n : ℕ), n.2, by rw [Nat.card_eq_fintype_card, hcard]⟩
 
+omit [TopologicalSpace k] [DiscreteTopology k] in
 lemma ell_le_card_coeff : ℓ ≤ Nat.card k := by
   obtain ⟨n, hn, hcard⟩ := exists_card_coeff_eq_pow (k := k) (ℓ := ℓ)
   rw [hcard]
   calc ℓ = ℓ ^ 1 := (pow_one ℓ).symm
     _ ≤ ℓ ^ n := Nat.pow_le_pow_right (Fact.out : ℓ.Prime).pos hn
 
+omit [TopologicalSpace k] [DiscreteTopology k] in
 lemma ell_dvd_card_coeff : ℓ ∣ Nat.card k := by
   obtain ⟨n, hn, hcard⟩ := exists_card_coeff_eq_pow (k := k) (ℓ := ℓ)
   rw [hcard]
@@ -20002,30 +20006,33 @@ lemma ell_dvd_card_coeff : ℓ ∣ Nat.card k := by
 
 /-! ### The ideal `𝔪² + (ℓ)` -/
 
+omit [TopologicalSpace k] [DiscreteTopology k] in
 variable (R) in
 /-- `𝔪² + (ℓ)`, the ideal whose trace on `𝔪` is `cotSub`. -/
 def cotIdeal (ℓ : ℕ) : Ideal R :=
   IsLocalRing.maximalIdeal R ^ 2 ⊔ Ideal.span {(ℓ : R)}
 
-omit [Fact ℓ.Prime] in
+omit [Fact ℓ.Prime] [TopologicalSpace k] [DiscreteTopology k] in
 lemma mkCotangentModL_eq_iff {t t' : ↥(IsLocalRing.maximalIdeal R)} :
     (Submodule.Quotient.mk t : CotangentModL R ℓ) = Submodule.Quotient.mk t'
       ↔ (t : R) - (t' : R) ∈ cotIdeal R ℓ := by
   rw [Submodule.Quotient.eq]
   exact Iff.rfl
 
-omit [Fact ℓ.Prime] in
+omit [Fact ℓ.Prime] [TopologicalSpace k] [DiscreteTopology k] in
 lemma mkCotangentModL_eq_zero_iff {t : ↥(IsLocalRing.maximalIdeal R)} :
     (Submodule.Quotient.mk t : CotangentModL R ℓ) = 0 ↔ (t : R) ∈ cotIdeal R ℓ := by
   rw [Submodule.Quotient.mk_eq_zero]
   exact Iff.rfl
 
+omit [TopologicalSpace k] [DiscreteTopology k] in
 lemma cotIdeal_le_maximalIdeal (π : R →+* k) (hπ : Function.Surjective π) :
     cotIdeal R ℓ ≤ IsLocalRing.maximalIdeal R := by
   refine sup_le (Ideal.pow_le_self two_ne_zero) ?_
   rw [Ideal.span_le, Set.singleton_subset_iff]
   exact natCast_mem_maximalIdeal π hπ
 
+omit [TopologicalSpace k] [DiscreteTopology k] in
 /-- The residue map descended to `R ⧸ (𝔪² + (ℓ))`. -/
 noncomputable def cotIdealResidue (π : R →+* k) (hπ : Function.Surjective π) :
     R ⧸ cotIdeal R ℓ →+* k :=
@@ -20033,11 +20040,12 @@ noncomputable def cotIdealResidue (π : R →+* k) (hπ : Function.Surjective π
     rw [← RingHom.mem_ker, IsLocalRing.ker_eq_maximalIdeal π hπ]
     exact cotIdeal_le_maximalIdeal π hπ ha)
 
-omit [Fact ℓ.Prime] in
+omit [Fact ℓ.Prime] [TopologicalSpace k] [DiscreteTopology k] in
 lemma natCast_ell_cotIdealQuot : ((ℓ : ℕ) : R ⧸ cotIdeal R ℓ) = 0 := by
   rw [← map_natCast (Ideal.Quotient.mk (cotIdeal R ℓ)) ℓ, Ideal.Quotient.eq_zero_iff_mem]
   exact Ideal.mem_sup_right (Ideal.mem_span_singleton_self _)
 
+omit [TopologicalSpace k] [DiscreteTopology k] in
 lemma charP_cotIdealQuot (π : R →+* k) (hπ : Function.Surjective π) :
     CharP (R ⧸ cotIdeal R ℓ) ℓ := by
   haveI := charP_coeff_field (k := k) (ℓ := ℓ)
@@ -20050,6 +20058,7 @@ lemma charP_cotIdealQuot (π : R →+* k) (hπ : Function.Surjective π) :
 
 /-! ### The universal `π`-derivation -/
 
+omit [TopologicalSpace k] [DiscreteTopology k] in
 /-- `x - x^{#k}` lies in the maximal ideal: the residue field is finite. -/
 lemma sub_pow_card_mem_maximalIdeal (π : R →+* k) (hπ : Function.Surjective π) (x : R) :
     x - x ^ Nat.card k ∈ IsLocalRing.maximalIdeal R := by
@@ -20057,12 +20066,14 @@ lemma sub_pow_card_mem_maximalIdeal (π : R →+* k) (hπ : Function.Surjective 
   rw [← IsLocalRing.ker_eq_maximalIdeal π hπ, RingHom.mem_ker, map_sub, map_pow,
     Nat.card_eq_fintype_card, FiniteField.pow_card, sub_self]
 
+omit [TopologicalSpace k] [DiscreteTopology k] in
 variable (ℓ) in
 /-- The universal `π`-derivation `x ↦ [x - x^{#k}]` into the mod-`ℓ` cotangent space. -/
 noncomputable def cotFrob (π : R →+* k) (hπ : Function.Surjective π) (x : R) :
     CotangentModL R ℓ :=
   Submodule.Quotient.mk ⟨x - x ^ Nat.card k, sub_pow_card_mem_maximalIdeal π hπ x⟩
 
+omit [TopologicalSpace k] [DiscreteTopology k] in
 variable (ℓ) in
 lemma cotFrob_add (π : R →+* k) (hπ : Function.Surjective π) (x y : R) :
     cotFrob ℓ π hπ (x + y) = cotFrob ℓ π hπ x + cotFrob ℓ π hπ y := by
@@ -20080,7 +20091,7 @@ lemma cotFrob_add (π : R →+* k) (hπ : Function.Surjective π) (x y : R) :
   simpa using key
 
 variable (ℓ) in
-omit [Fact ℓ.Prime] [Algebra ℤ_[ℓ] k] in
+omit [Fact ℓ.Prime] [Algebra ℤ_[ℓ] k] [TopologicalSpace k] [DiscreteTopology k] in
 lemma cotFrob_mul (π : R →+* k) (hπ : Function.Surjective π) (x y : R) :
     cotFrob ℓ π hπ (x * y) = x • cotFrob ℓ π hπ y + y • cotFrob ℓ π hπ x := by
   have hm : (x - x ^ Nat.card k) * (y - y ^ Nat.card k)
@@ -20100,7 +20111,7 @@ lemma cotFrob_mul (π : R →+* k) (hπ : Function.Surjective π) (x y : R) :
   simpa [smul_eq_mul] using key
 
 variable (ℓ) in
-omit [Fact ℓ.Prime] [Algebra ℤ_[ℓ] k] in
+omit [Fact ℓ.Prime] [Algebra ℤ_[ℓ] k] [TopologicalSpace k] [DiscreteTopology k] in
 lemma cotFrob_one (π : R →+* k) (hπ : Function.Surjective π) :
     cotFrob ℓ π hπ 1 = 0 := by
   rw [cotFrob, mkCotangentModL_eq_zero_iff]
@@ -20108,6 +20119,7 @@ lemma cotFrob_one (π : R →+* k) (hπ : Function.Surjective π) :
   rw [one_pow, sub_self]
   exact Submodule.zero_mem _
 
+omit [TopologicalSpace k] [DiscreteTopology k] in
 variable (ℓ) in
 lemma cotFrob_zero (π : R →+* k) (hπ : Function.Surjective π) :
     cotFrob ℓ π hπ 0 = 0 := by
@@ -20116,6 +20128,7 @@ lemma cotFrob_zero (π : R →+* k) (hπ : Function.Surjective π) :
   rw [zero_pow (by have := ((Fact.out : ℓ.Prime).two_le.trans (ell_le_card_coeff (k := k) (ℓ := ℓ))); omega), sub_zero]
   exact Submodule.zero_mem _
 
+omit [TopologicalSpace k] [DiscreteTopology k] in
 variable (ℓ) in
 /-- On `𝔪` the universal derivation is the quotient map: `t^{#k} ∈ 𝔪²`. -/
 lemma cotFrob_coe (π : R →+* k) (hπ : Function.Surjective π)
@@ -20132,6 +20145,7 @@ lemma cotFrob_coe (π : R →+* k) (hπ : Function.Surjective π)
 
 /-! ### `ℤ_ℓ` lands in the prime field -/
 
+omit [TopologicalSpace k] [DiscreteTopology k] in
 lemma padicInt_ringHom_ext {S : Type*} [CommRing S] (f g : ℤ_[ℓ] →+* S)
     (hf : f ((ℓ : ℕ) : ℤ_[ℓ]) = 0) (hg : g ((ℓ : ℕ) : ℤ_[ℓ]) = 0) : f = g := by
   haveI : NeZero ℓ := ⟨(Fact.out : ℓ.Prime).pos.ne'⟩
@@ -20146,7 +20160,7 @@ lemma padicInt_ringHom_ext {S : Type*} [CommRing S] (f g : ℤ_[ℓ] →+* S)
   rw [ha, map_add, map_add, map_mul, map_mul, hf, hg, zero_mul, zero_mul,
     map_natCast, map_natCast]
 
-omit [IsLocalRing R] in
+omit [IsLocalRing R] [TopologicalSpace k] [DiscreteTopology k] in
 lemma comp_algebraMap_eq_of_ringHom [Algebra ℤ_[ℓ] R] (π : R →+* k) (a : ℤ_[ℓ]) :
     π (algebraMap ℤ_[ℓ] R a) = algebraMap ℤ_[ℓ] k a := by
   have hcomp : π.comp (algebraMap ℤ_[ℓ] R) = (algebraMap ℤ_[ℓ] k : ℤ_[ℓ] →+* k) := by
@@ -20158,6 +20172,7 @@ lemma comp_algebraMap_eq_of_ringHom [Algebra ℤ_[ℓ] R] (π : R →+* k) (a : 
       exact natCast_self_eq_zero
   exact congrFun (congrArg (fun F : ℤ_[ℓ] →+* k => (F : ℤ_[ℓ] → k)) hcomp) a
 
+omit [TopologicalSpace k] [DiscreteTopology k] in
 variable (ℓ) in
 lemma cotFrob_algebraMap [Algebra ℤ_[ℓ] R] (π : R →+* k) (hπ : Function.Surjective π)
     (a : ℤ_[ℓ]) : cotFrob ℓ π hπ (algebraMap ℤ_[ℓ] R a) = 0 := by
@@ -20187,12 +20202,14 @@ lemma cotFrob_algebraMap [Algebra ℤ_[ℓ] R] (π : R →+* k) (hπ : Function.
 
 /-! ### The residue field identification -/
 
+omit [TopologicalSpace k] [DiscreteTopology k] in
 /-- `R ⧸ 𝔪 →+* k` induced by a surjective `π`. -/
 noncomputable def residueHom (π : R →+* k) (hπ : Function.Surjective π) :
     (R ⧸ IsLocalRing.maximalIdeal R) →+* k :=
   Ideal.Quotient.lift _ π (fun a ha => by
     rwa [← RingHom.mem_ker, IsLocalRing.ker_eq_maximalIdeal π hπ])
 
+omit [TopologicalSpace k] [DiscreteTopology k] in
 /-- The residue field of `R` IS `k`, via `π`. -/
 noncomputable def residueEquiv (π : R →+* k) (hπ : Function.Surjective π) :
     (R ⧸ IsLocalRing.maximalIdeal R) ≃+* k :=
@@ -20205,20 +20222,21 @@ noncomputable def residueEquiv (π : R →+* k) (hπ : Function.Surjective π) :
       exact Ideal.Quotient.eq.mpr hab,
     fun a => by obtain ⟨x, hx⟩ := hπ a; exact ⟨Ideal.Quotient.mk _ x, hx⟩⟩
 
-omit [Finite k] in
+omit [Finite k] [TopologicalSpace k] [DiscreteTopology k] in
 @[simp] lemma residueEquiv_mk (π : R →+* k) (hπ : Function.Surjective π) (x : R) :
     residueEquiv π hπ (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) x) = π x := rfl
 
-omit [Finite k] in
+omit [Finite k] [TopologicalSpace k] [DiscreteTopology k] in
 lemma residueEquiv_symm_pi (π : R →+* k) (hπ : Function.Surjective π) (a : R) :
     (residueEquiv π hπ).symm (π a) = Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) a := by
   rw [← residueEquiv_mk π hπ a, RingEquiv.symm_apply_apply]
 
+omit [TopologicalSpace k] [DiscreteTopology k] in
 lemma smul_residue_eq_mul (a : R) (c : R ⧸ IsLocalRing.maximalIdeal R) :
     a • c = Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) a * c := by
   rw [Algebra.smul_def, Ideal.Quotient.algebraMap_eq]
 
-omit [Finite k] in
+omit [Finite k] [TopologicalSpace k] [DiscreteTopology k] in
 lemma pi_eq_zero_of_mem_maximalIdeal (π : R →+* k) (hπ : Function.Surjective π) {p : R}
     (hp : p ∈ IsLocalRing.maximalIdeal R) : π p = 0 := by
   rw [← RingHom.mem_ker, IsLocalRing.ker_eq_maximalIdeal π hπ]
@@ -20226,6 +20244,7 @@ lemma pi_eq_zero_of_mem_maximalIdeal (π : R →+* k) (hπ : Function.Surjective
 
 /-! ### The tangent set -/
 
+omit [TopologicalSpace k] [DiscreteTopology k] in
 variable (ℓ) in
 /-- The `π`-semilinear dual of the mod-`ℓ` cotangent space. -/
 def cotDual (π : R →+* k) : Type _ :=
@@ -20234,6 +20253,7 @@ def cotDual (π : R →+* k) : Type _ :=
 
 /-! ### From a `k[ε]`-point to a semilinear functional -/
 
+omit [TopologicalSpace k] [DiscreteTopology k] in
 lemma snd_eq_zero_of_mem_cotIdeal (π : R →+* k) (hπ : Function.Surjective π)
     (fr : R →+* DualNumber k) (hfst : ∀ x, (fr x).fst = π x) {z : R}
     (hz : z ∈ cotIdeal R ℓ) : (fr z).snd = 0 := by
@@ -20255,6 +20275,7 @@ lemma snd_eq_zero_of_mem_cotIdeal (π : R →+* k) (hπ : Function.Surjective π
     simp
   rw [map_add, TrivSqZeroExt.snd_add, hu0, hv0, add_zero]
 
+omit [TopologicalSpace k] [DiscreteTopology k] in
 /-- The `𝔪`-restriction of a `k[ε]`-point, as an `R`-linear map to the residue field. -/
 noncomputable def pointDeriv (π : R →+* k) (hπ : Function.Surjective π)
     (fr : R →+* DualNumber k) (hfst : ∀ x, (fr x).fst = π x) :
@@ -20270,12 +20291,13 @@ noncomputable def pointDeriv (π : R →+* k) (hπ : Function.Surjective π)
     simp only [smul_eq_mul, MulOpposite.op_zero, zero_smul, add_zero, RingHom.id_apply]
     rw [map_mul, smul_residue_eq_mul, residueEquiv_symm_pi]
 
-omit [Finite k] in
+omit [Finite k] [TopologicalSpace k] [DiscreteTopology k] in
 lemma pointDeriv_apply (π : R →+* k) (hπ : Function.Surjective π)
     (fr : R →+* DualNumber k) (hfst : ∀ x, (fr x).fst = π x)
     (t : ↥(IsLocalRing.maximalIdeal R)) :
     pointDeriv π hπ fr hfst t = (residueEquiv π hπ).symm ((fr (t : R)).snd) := rfl
 
+omit [TopologicalSpace k] [DiscreteTopology k] in
 lemma cotSub_le_ker_pointDeriv (π : R →+* k) (hπ : Function.Surjective π)
     (fr : R →+* DualNumber k) (hfst : ∀ x, (fr x).fst = π x) :
     cotSub R ℓ ≤ LinearMap.ker (pointDeriv π hπ fr hfst) := by
@@ -20285,6 +20307,7 @@ lemma cotSub_le_ker_pointDeriv (π : R →+* k) (hπ : Function.Surjective π)
   refine LinearMap.mem_ker.mpr ?_
   rw [pointDeriv_apply, h0, map_zero]
 
+omit [TopologicalSpace k] [DiscreteTopology k] in
 variable (ℓ) in
 /-- A `k[ε]`-point of `R` gives a `π`-semilinear functional on the cotangent space. -/
 noncomputable def cotDualOfDualNumberPoint [Algebra ℤ_[ℓ] R] (π : R →+* k) (hπ : Function.Surjective π)
@@ -20300,6 +20323,7 @@ noncomputable def cotDualOfDualNumberPoint [Algebra ℤ_[ℓ] R] (π : R →+* k
           (cotSub_le_ker_pointDeriv π hπ f.1 f.2.2) v)
       rw [map_smul, smul_residue_eq_mul, map_mul, residueEquiv_mk]⟩
 
+omit [TopologicalSpace k] [DiscreteTopology k] in
 lemma cotDualOfDualNumberPoint_mk [Algebra ℤ_[ℓ] R] (π : R →+* k) (hπ : Function.Surjective π)
     (f : dualNumberPoints (ℓ := ℓ) R π) (t : ↥(IsLocalRing.maximalIdeal R)) :
     (cotDualOfDualNumberPoint ℓ π hπ f).1 (Submodule.Quotient.mk t) = (f.1 (t : R)).snd := by
@@ -20308,11 +20332,12 @@ lemma cotDualOfDualNumberPoint_mk [Algebra ℤ_[ℓ] R] (π : R →+* k) (hπ : 
 
 /-! ### From a semilinear functional to a `k[ε]`-point -/
 
-omit [Finite k] in
+omit [Finite k] [TopologicalSpace k] [DiscreteTopology k] in
 lemma snd_pow_card_eq_zero (hz : ((Nat.card k : ℕ) : k) = 0) (u : DualNumber k) :
     (u ^ Nat.card k).snd = 0 := by
   rw [TrivSqZeroExt.snd_pow, nsmul_eq_mul, hz, zero_mul]
 
+omit [TopologicalSpace k] [DiscreteTopology k] in
 variable (ℓ) in
 /-- A `π`-semilinear functional on the cotangent space gives a `k[ε]`-point of `R`. -/
 noncomputable def dualNumberPointOfCotDual [Algebra ℤ_[ℓ] R] (π : R →+* k) (hπ : Function.Surjective π)
@@ -20344,12 +20369,14 @@ noncomputable def dualNumberPointOfCotDual [Algebra ℤ_[ℓ] R] (π : R →+* k
       · simpa using congrArg D.1 (cotFrob_algebraMap ℓ π hπ a),
     fun _ => rfl⟩
 
+omit [TopologicalSpace k] [DiscreteTopology k] in
 lemma dualNumberPointOfCotDual_snd [Algebra ℤ_[ℓ] R] (π : R →+* k) (hπ : Function.Surjective π)
     (D : cotDual ℓ π) (x : R) :
     ((dualNumberPointOfCotDual ℓ π hπ D).1 x).snd = D.1 (cotFrob ℓ π hπ x) := rfl
 
 /-! ### The bijection -/
 
+omit [TopologicalSpace k] [DiscreteTopology k] in
 variable (ℓ) in
 /-- **The `k[ε]`-points of `R` above `π` ARE the `π`-semilinear functionals on the
 mod-`ℓ` cotangent space.** -/
@@ -20378,7 +20405,7 @@ noncomputable def dualNumberPointsEquivCotDual [Algebra ℤ_[ℓ] R] (π : R →
 
 /-! ### Counting -/
 
-omit [Fact ℓ.Prime] [Algebra ℤ_[ℓ] k] in
+omit [Fact ℓ.Prime] [Algebra ℤ_[ℓ] k] [TopologicalSpace k] [DiscreteTopology k] in
 theorem card_cotDual [IsNoetherianRing R] (π : R →+* k) (hπ : Function.Surjective π) :
     Nat.card (cotDual ℓ π) = Nat.card k ^ cotangentFinrankModL R ℓ := by
   classical
@@ -20443,6 +20470,7 @@ theorem card_cotDual [IsNoetherianRing R] (π : R →+* k) (hπ : Function.Surje
 
 end DualNumberPointsCount
 
+omit [TopologicalSpace k] [DiscreteTopology k] in
 /-- **The tangent-space count: `#R(k[ε]) = #k ^ dim_k 𝔪/(𝔪²+(ℓ))`** (**PROVEN
 2026-07-29**, over the section `DualNumberPointsCount` immediately above; cut out
 2026-07-28 as the COMMUTATIVE-ALGEBRA half of
