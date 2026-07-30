@@ -82,11 +82,13 @@ field extension `K/ℚ`.  The pieces live here:
   `Frac B` as soon as it is algebraically closed in the normal domain `B` (PROVEN)
 * `minpoly_map_eq_of_algebraicClosure_eq_bot` — minimal polynomials over `k`
   stay irreducible over `L` (PROVEN); the heart of the regularity argument
-* `linearDisjoint_of_finiteDimensional_of_algebraicClosure_eq_bot`,
-  `linearDisjoint_of_isAlgebraic_of_algebraicClosure_eq_bot` — linear
-  disjointness of an algebraic intermediate field from `L` (PROVEN)
-* `isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_eq_bot` — the
-  algebraic half of regularity (PROVEN)
+* `linearDisjoint_of_finiteDimensional_of_isSeparable`,
+  `linearDisjoint_of_isAlgebraic_of_isSeparable` — linear
+  disjointness of an algebraic separable intermediate field from `L` (PROVEN)
+* `isDomain_tensorProduct_of_isAlgebraic_of_isSeparable` — the
+  algebraic half of regularity, with NO hypothesis on `k` (PROVEN), and
+  `isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_eq_bot`, its
+  specialisation to a perfect base (PROVEN)
 * `isDomain_tensorProduct_of_forall_adjoin_finset` — reduction to finitely
   generated subextensions of `K` (PROVEN)
 * `isDomain_tensorProduct_adjoin_finset_of_not_isAlgebraic_of_algebraicClosure_eq_bot`
@@ -120,6 +122,9 @@ public import Mathlib.FieldTheory.LinearDisjoint
 public import Mathlib.FieldTheory.PrimitiveElement
 public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 public import Mathlib.FieldTheory.Perfect
+-- `IntermediateField.isSeparable_adjoin_iff_isSeparable`, used to descend separability to
+-- the finite subextension in `linearDisjoint_of_isAlgebraic_of_isSeparable`.
+public import Mathlib.FieldTheory.SeparableClosure
 public import Mathlib.RingTheory.TensorProduct.Nontrivial
 public import Mathlib.Algebra.MvPolynomial.Funext
 public import Mathlib.LinearAlgebra.Dual.Lemmas
@@ -394,18 +399,31 @@ theorem minpoly_map_eq_of_algebraicClosure_eq_bot
       (associated_of_dvd_dvd hdvd3 hdvd2)
   rw [← hq1, heq]
 
-/-- **A finite-dimensional intermediate field is linearly disjoint from `L`**
-(PROVEN).
+/-- **A finite-dimensional SEPARABLE intermediate field is linearly disjoint from `L`**
+(PROVEN; generalized from `[PerfectField k]` to `[Algebra.IsSeparable k A]` on 2026-07-30).
 
-`k` is perfect, so `A/k` is separable and has a primitive element `α`, and
-`A` has the `k`-basis `1, α, …, α^{d-1}` with `d = deg (minpoly k α)`.  By
+`A/k` is finite separable, so it has a primitive element `α`, and `A` has the `k`-basis
+`1, α, …, α^{d-1}` with `d = deg (minpoly k α)`.  By
 `minpoly_map_eq_of_algebraicClosure_eq_bot` the minimal polynomial of `α` over
 `L` still has degree `d`, so those powers stay `L`-linearly independent inside
-`M`; that is `IntermediateField.LinearDisjoint.of_basis_left`. -/
-theorem linearDisjoint_of_finiteDimensional_of_algebraicClosure_eq_bot
-    {k L M : Type*} [Field k] [PerfectField k] [Field L] [Field M] [Algebra k L] [Algebra k M]
+`M`; that is `IntermediateField.LinearDisjoint.of_basis_left`.
+
+WHY THE HYPOTHESIS MOVED FROM `k` TO `A`, and why it matters downstream.  `PerfectField k`
+entered this proof at exactly ONE point — `Field.powerBasisOfFiniteOfSeparable k A`, whose
+real requirement is `Algebra.IsSeparable k A` — and perfection of `k` is a strictly stronger
+way to get it (`PerfectField k` + `A/k` algebraic ⟹ `Algebra.IsSeparable k A`, an instance).
+The stronger form is unavailable exactly where the transcendental half needs it: the
+rational function field `k(ι)` is IMPERFECT in characteristic `p`, so
+`isDomain_tensorProduct_of_isTranscendenceBasis` — which applies the algebraic half over
+`Fk = k(ι)` — could not be run in characteristic `p` at all.  With the hypothesis on `A` it
+can, provided `K/Fk` is separable, i.e. provided `ι` is a SEPARATING transcendence basis.
+See the merge note on
+`isDomain_tensorProduct_adjoin_finset_of_not_isAlgebraic_of_algebraicClosure_eq_bot`. -/
+theorem linearDisjoint_of_finiteDimensional_of_isSeparable
+    {k L M : Type*} [Field k] [Field L] [Field M] [Algebra k L] [Algebra k M]
     [Algebra L M] [IsScalarTower k L M] (hbot : algebraicClosure k L = ⊥)
-    (A : IntermediateField k M) [FiniteDimensional k A] : A.LinearDisjoint L := by
+    (A : IntermediateField k M) [FiniteDimensional k A] [Algebra.IsSeparable k A] :
+    A.LinearDisjoint L := by
   let pb : PowerBasis k A := Field.powerBasisOfFiniteOfSeparable k A
   set β : M := (pb.gen : M) with hβ
   have hint : IsIntegral k β := (Algebra.IsIntegral.isIntegral (R := k) pb.gen).map A.val
@@ -425,19 +443,26 @@ theorem linearDisjoint_of_finiteDimensional_of_algebraicClosure_eq_bot
   rw [hval]
   exact hLI
 
-/-- **An algebraic intermediate field is linearly disjoint from `L`** (PROVEN).
+/-- **An algebraic SEPARABLE intermediate field is linearly disjoint from `L`** (PROVEN;
+generalized from `[PerfectField k]` to `[Algebra.IsSeparable k A]` on 2026-07-30).
 
 Linear independence is a statement about finite subfamilies, and every finite
 subfamily of a `k`-basis of `A` lies in the finite-dimensional intermediate
 field it generates; apply
-`linearDisjoint_of_finiteDimensional_of_algebraicClosure_eq_bot` there.  This is
+`linearDisjoint_of_finiteDimensional_of_isSeparable` there.  This is
 the colimit step of the classical argument, done at the level of linear
 independence rather than of tensor products, which avoids having to build the
-directed colimit of the `L ⊗[k] A₀`. -/
-theorem linearDisjoint_of_isAlgebraic_of_algebraicClosure_eq_bot
-    {k L M : Type*} [Field k] [PerfectField k] [Field L] [Field M] [Algebra k L] [Algebra k M]
+directed colimit of the `L ⊗[k] A₀`.
+
+Separability descends to the finite subextension for free: `A₀` is generated by finitely
+many elements of `A`, each separable over `k`, and
+`IntermediateField.isSeparable_adjoin_iff_isSeparable` turns that into
+`Algebra.IsSeparable k A₀`. -/
+theorem linearDisjoint_of_isAlgebraic_of_isSeparable
+    {k L M : Type*} [Field k] [Field L] [Field M] [Algebra k L] [Algebra k M]
     [Algebra L M] [IsScalarTower k L M] (hbot : algebraicClosure k L = ⊥)
-    (A : IntermediateField k M) [Algebra.IsAlgebraic k A] : A.LinearDisjoint L := by
+    (A : IntermediateField k M) [Algebra.IsAlgebraic k A] [Algebra.IsSeparable k A] :
+    A.LinearDisjoint L := by
   classical
   let a := Module.Free.chooseBasis k A
   refine IntermediateField.LinearDisjoint.of_basis_left a ?_
@@ -448,10 +473,17 @@ theorem linearDisjoint_of_isAlgebraic_of_algebraicClosure_eq_bot
   have hTint : ∀ x ∈ T, IsIntegral k x := by
     rintro _ ⟨j, -, rfl⟩
     exact (Algebra.IsIntegral.isIntegral (R := k) (a j)).map A.val
+  have hTsep : ∀ x ∈ T, IsSeparable k x := by
+    rintro _ ⟨j, -, rfl⟩
+    show Polynomial.Separable (minpoly k ((a j : A) : M))
+    rw [← IntermediateField.minpoly_eq]
+    exact Algebra.IsSeparable.isSeparable k (a j)
   set A₀ : IntermediateField k M := IntermediateField.adjoin k T with hA₀
   haveI : FiniteDimensional k A₀ := IntermediateField.finiteDimensional_adjoin hTint
+  haveI : Algebra.IsSeparable k A₀ :=
+    (IntermediateField.isSeparable_adjoin_iff_isSeparable k M).mpr hTsep
   have hld0 : A₀.LinearDisjoint L :=
-    linearDisjoint_of_finiteDimensional_of_algebraicClosure_eq_bot hbot A₀
+    linearDisjoint_of_finiteDimensional_of_isSeparable hbot A₀
   have hmem : ∀ j ∈ s, ((a j : A) : M) ∈ A₀ := fun j hj =>
     IntermediateField.subset_adjoin k T ⟨j, hj, rfl⟩
   let b : {j // j ∈ s} → A₀ := fun j => ⟨((a j.1 : A) : M), hmem j.1 j.2⟩
@@ -467,29 +499,50 @@ theorem linearDisjoint_of_isAlgebraic_of_algebraicClosure_eq_bot
     exact hsum
   exact Fintype.linearIndependent_iff.mp hbL' (fun j => g j.1) hsum' ⟨i, hi⟩
 
-/-- **The algebraic half of regularity** (PROVEN).
+/-- **The algebraic half of regularity, in the form that has no hypothesis on `k`**
+(PROVEN 2026-07-30).
 
-If `k` is algebraically closed in `L` (characteristic zero) and `K/k` is
-algebraic, then `L ⊗[k] K` is a domain.  Embed `K` into an algebraic closure `M`
-of `L` (possible because `K/k` is algebraic), apply
-`linearDisjoint_of_isAlgebraic_of_algebraicClosure_eq_bot` to the image, and
-conclude with `IntermediateField.LinearDisjoint.isDomain'`. -/
-theorem isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_eq_bot
-    (k L : Type*) [Field k] [PerfectField k] [Field L] [Algebra k L]
+If `k` is algebraically closed in `L` and `K/k` is algebraic and SEPARABLE, then `L ⊗[k] K`
+is a domain.  Embed `K` into an algebraic closure `M` of `L` (possible because `K/k` is
+algebraic), apply `linearDisjoint_of_isAlgebraic_of_isSeparable` to the image, and conclude
+with `IntermediateField.LinearDisjoint.isDomain'`.
+
+This is the form the characteristic-`p` route needs, where the base is the imperfect
+rational function field `k(ι)` and separability comes from `ι` being a SEPARATING
+transcendence basis rather than from the base being perfect.  Over a perfect `k` the
+separability hypothesis is automatic, which is
+`isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_eq_bot` just below. -/
+theorem isDomain_tensorProduct_of_isAlgebraic_of_isSeparable
+    (k L : Type*) [Field k] [Field L] [Algebra k L]
     (hbot : algebraicClosure k L = ⊥)
-    (K : Type*) [Field K] [Algebra k K] [Algebra.IsAlgebraic k K] :
+    (K : Type*) [Field K] [Algebra k K] [Algebra.IsAlgebraic k K] [Algebra.IsSeparable k K] :
     IsDomain (L ⊗[k] K) := by
   set M := AlgebraicClosure L with hM
   let fa : K →ₐ[k] M := IsAlgClosed.lift
   haveI : Algebra.IsAlgebraic k fa.fieldRange := (AlgEquiv.ofInjectiveField fa).isAlgebraic
+  haveI : Algebra.IsSeparable k fa.fieldRange :=
+    AlgEquiv.Algebra.isSeparable (AlgEquiv.ofInjectiveField fa)
   have hld : (fa.fieldRange).LinearDisjoint L :=
-    linearDisjoint_of_isAlgebraic_of_algebraicClosure_eq_bot hbot _
+    linearDisjoint_of_isAlgebraic_of_isSeparable hbot _
   have hld2 : (fa.fieldRange).LinearDisjoint ((IsScalarTower.toAlgHom k L M).fieldRange) := by
     rw [IntermediateField.linearDisjoint_iff', AlgHom.fieldRange_toSubalgebra]
     rw [IntermediateField.linearDisjoint_iff] at hld
     exact hld
   haveI : IsDomain (K ⊗[k] L) := IntermediateField.LinearDisjoint.isDomain' hld2
   exact (Algebra.TensorProduct.comm k L K).toMulEquiv.isDomain
+
+/-- **The algebraic half of regularity** (PROVEN).
+
+If `k` is PERFECT and algebraically closed in `L`, and `K/k` is algebraic, then `L ⊗[k] K`
+is a domain.  Over a perfect base every algebraic extension is separable
+(`Algebra.IsSeparable` is an instance there), so this is
+`isDomain_tensorProduct_of_isAlgebraic_of_isSeparable` with its hypothesis discharged. -/
+theorem isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_eq_bot
+    (k L : Type*) [Field k] [PerfectField k] [Field L] [Algebra k L]
+    (hbot : algebraicClosure k L = ⊥)
+    (K : Type*) [Field K] [Algebra k K] [Algebra.IsAlgebraic k K] :
+    IsDomain (L ⊗[k] K) :=
+  isDomain_tensorProduct_of_isAlgebraic_of_isSeparable k L hbot K
 
 set_option maxSynthPendingDepth 2 in
 /-- **Being a domain after `⊗[k] K` is detected on the finitely generated
@@ -1099,7 +1152,7 @@ for `k = 𝔽_p(u,v)` and `L` the function field of `y^p = u x^p + v`, the field
 (the curve becomes `w^p = v` after adjoining `u^{1/p}`), so `L/k` is not
 separable and `L ⊗[k] K` is not a domain for `K = k^{1/p}`.  Perfection is used
 here to supply the primitive element in
-`linearDisjoint_of_finiteDimensional_of_algebraicClosure_eq_bot`, through
+`linearDisjoint_of_finiteDimensional_of_isSeparable`, through
 mathlib's instance `Algebra.IsSeparable K L` for `[PerfectField K]` with
 `L/K` algebraic (`Mathlib/FieldTheory/Perfect.lean`).
 
@@ -1119,7 +1172,46 @@ characteristic**.  The statement itself is believed true in both (over a
 perfect base, "algebraically closed in" is exactly regularity); only the route
 is char-0.  The char-`p` case is what a prover should attack — a separability
 / linear-disjointness argument over `k(ι)^{1/p^∞}`, not the specialisation
-argument. -/
+argument.
+
+**UPDATE 2026-07-30: THE SECOND OBSTRUCTION ABOVE IS GONE, AND THE FIRST IS THE ONLY
+ONE LEFT.**  The merge note lists two independent blockers; only one of them was real.
+
+* *The `PerfectField Fk` blocker is not a blocker.*  Perfection of the base was never
+  used for anything but feeding `Field.powerBasisOfFiniteOfSeparable`, i.e. to supply
+  `Algebra.IsSeparable`.  The three lemmas of the algebraic half now carry that
+  hypothesis directly — `linearDisjoint_of_finiteDimensional_of_isSeparable`,
+  `linearDisjoint_of_isAlgebraic_of_isSeparable`,
+  `isDomain_tensorProduct_of_isAlgebraic_of_isSeparable`, all PROVEN, with the old
+  `PerfectField` statements kept as one-line specialisations — so the algebraic half
+  runs over the imperfect `Fk = k(ι)` the moment `K/Fk` is separable.
+* *And `K/Fk` IS separable here, by a theorem already in the pin.*  `K` is
+  `IntermediateField.adjoin k (S : Set K)` for a **`Finset` `S`**, hence
+  `Algebra.EssFiniteType k K` (`IntermediateField.fg_iff_essFiniteType` /
+  `Adjoin/Algebra.lean`), and mathlib's
+  `exists_isTranscendenceBasis_and_isSeparable_of_perfectField`
+  (`Mathlib/FieldTheory/SeparablyGenerated.lean`, stacks 030W) produces `s : Finset K`
+  that is a transcendence basis with `Algebra.IsSeparable ↥(adjoin k s) K`.  That is
+  exactly the SEPARATING transcendence basis the original plan asked for and the
+  char-0 route was able to drop; in characteristic `p` it is available and it is what
+  makes the algebraic half applicable.  So do NOT hunt for an argument over
+  `k(ι)^{1/p^∞}` — the perfect closure never has to be mentioned.
+
+  Two pieces of plumbing stand between that and a proof, neither mathematical:
+  `isDomain_tensorProduct_of_isTranscendenceBasis` builds its base as
+  `Fk = FractionRing (MvPolynomial ι k)`, so the separability hypothesis has to be
+  transported from `↥(adjoin k s)` to `Fk` along the isomorphism identifying `Fk` with
+  the subfield `adjoin k (Set.range x) ⊆ K` (`Algebra.IsSeparable.of_equiv_equiv`,
+  `Mathlib/FieldTheory/Separable.lean`, with `e₂ = RingEquiv.refl K`).
+
+* *What is genuinely left is `Infinite k`*, the first bullet, and it is not plumbing:
+  `RegularExtension.algebraicClosure_eq_bot_of_mvPolynomial` — "`k(ι)` is algebraically
+  closed in `L(ι)`" — is proved by evaluating at `k`-points, and the char-`p` consumers
+  in `ModularCurve/X0.lean` are over `k = ZMod p`, which is FINITE.  So the sharp
+  remaining statement is that crux **without** `[Infinite k]`.  It is true (it is the
+  standard "regularity is preserved by purely transcendental base change"), and it is
+  where a prover's effort belongs; the specialisation proof is the thing that must be
+  replaced, not the surrounding route. -/
 theorem isDomain_tensorProduct_adjoin_finset_of_not_isAlgebraic_of_algebraicClosure_eq_bot
     (k L : Type*) [Field k] [PerfectField k] [Field L] [Algebra k L]
     (hbot : algebraicClosure k L = ⊥)
