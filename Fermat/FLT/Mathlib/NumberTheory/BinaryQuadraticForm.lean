@@ -82,10 +82,14 @@ two class-field leaves below.)
   independent CM input and is now PROVEN: `α⁴` is a root of `x³ − γ₂(τ₀)x − 16` by the
   definition of `γ₂`, so `γ₂(τ₀) ∈ ℤ` (i.e. `Heegner.exists_int_gammaTwo`, which the main
   argument needs anyway) already forces `α⁴`, hence `α`, to be integral;
-* `Heegner.exists_modularPolynomial` — the MODULAR POLYNOMIAL `Φ_N ∈ ℤ[X, Y]`: it kills
-  `(j(A z), j(z))` for every primitive integral `A` of determinant `N`, and for non-square `N`
-  its diagonal `Φ_N(X, X)` has leading coefficient `±1` (Kronecker). No class field theory and
-  no class-number hypothesis. This REPLACES the former leaf
+* `Heegner.exists_modularPolynomial_prod` — the MODULAR POLYNOMIAL `Φ_N ∈ ℤ[X, Y]`:
+  specialising `Y = j(z)` turns it into `∏_{(a,b,d)} (X − j((a z + b)/d))` over the `ψ(N)`
+  triangular representatives, and for non-square `N` its diagonal `Φ_N(X, X)` has leading
+  coefficient `±1` (Kronecker). No class field theory and no class-number hypothesis.
+  **NARROWED 2026-07-30** from `Heegner.exists_modularPolynomial` ("kills `(j(A z), j(z))`
+  for every primitive integral `A` of determinant `N`"), which is now PROVEN from it via
+  `exists_hermite_of_primitive`, `jInvariant_smul` and `exists_modularPolynomial_triangular`;
+  the surviving leaf carries no group theory at all. It REPLACES the former leaf
   `Heegner.isIntegral_gammaTwo_heegnerPoint`, which is now PROVEN from it through three
   intermediate steps, ALL proved here: `isIntegral_of_eval_diag` (a `(x,x)`-root of a
   diagonal-unit bivariate polynomial is an algebraic integer),
@@ -124,7 +128,7 @@ PROVEN, over three new analytic leaves:
   `q`-expansion split) and `Heegner.abs_tsum_shift_le` (a geometric-majorant tail bound).
 
 So this file has FOUR open leaves: `Heegner.natDegree_minpoly_weberAlpha`,
-`Heegner.exists_modularPolynomial`, and the two class-field leaves
+`Heegner.exists_modularPolynomial_prod`, and the two class-field leaves
 `Heegner.exists_quadratic_jInvariant_heegnerPoint` and
 `Heegner.exists_quadratic_gammaTwo_of_jInvariant`.
 
@@ -143,7 +147,8 @@ analytic leaf remains in this file.
 Six names moved between release 19 and here, in three independent directions:
 
 * `isIntegral_gammaTwo_heegnerPoint` is PROVEN (flt-lean-108) — from the new and strictly
-  weaker leaf `exists_modularPolynomial`, which needs no class field theory and no
+  weaker leaf `exists_modularPolynomial` — itself PROVEN on 2026-07-30 from the narrower
+  `exists_modularPolynomial_prod` — which needs no class field theory and no
   class-number hypothesis, together with three intermediate steps proved there;
 * `exists_intCubic_weberAlpha` and `intCast_indep_weberAlpha_pow_four` are PROVEN
   (flt-lean-237) from the new leaf `natDegree_minpoly_weberAlpha`, and their former
@@ -3447,18 +3452,22 @@ free from integral closedness alone (`IsIntegral.of_pow`), with no modular theor
 `γ₂(τ₀)` to lie in the same *field* as `j(τ₀)` — i.e. for the class-field leaves,
 rationality — not for integrality.
 
-WHAT IS LEFT OPEN HERE IS EXACTLY ONE STATEMENT, `exists_modularPolynomial`, and the chain
-down to it is fully written and compiling:
+WHAT IS LEFT OPEN HERE IS EXACTLY ONE STATEMENT, `exists_modularPolynomial_prod` (as of
+2026-07-30 — it used to be `exists_modularPolynomial`, whose quantifier over primitive
+matrices is now discharged), and the chain down to it is fully written and compiling:
 
-  `exists_modularPolynomial`  (LEAF: `Φ_N ∈ ℤ[X,Y]` kills `(j(A z), j(z))`; Kronecker's `±1`)
+  `exists_modularPolynomial_prod`  (LEAF: `Φ_N` specialises to `∏(X − j((az+b)/d))`; Kronecker)
+    → `exists_modularPolynomial_triangular`   (normalise `b` mod `d`; PROVEN)
+    → `exists_modularPolynomial`              (Hermite + `Γ`-invariance of `j`; PROVEN)
     → `isIntegral_jInvariant_of_fixedPoint`   (put `w = z`; PROVEN, via `isIntegral_of_eval_diag`)
     → `isIntegral_jInvariant_of_quadratic`    (build the fixing matrix; PROVEN)
     → `isIntegral_jInvariant_heegnerPoint`    (specialise to `τ₀`; PROVEN)
     → `isIntegral_gammaTwo_heegnerPoint`      (cube root; PROVEN)
 
-Everything except the first line is elementary — integer arithmetic, one complex-analytic
-observation (`z ∈ ℍ` is not real, hence the discriminant is negative) and polynomial
-plumbing. -/
+Everything except the first line is elementary — integer arithmetic, Bézout, one
+complex-analytic observation (`z ∈ ℍ` is not real, hence the discriminant is negative) and
+polynomial plumbing. What survives in the leaf is purely analytic: the elementary symmetric
+functions of `j` over the `ψ(N)` triangular points are integral polynomials in `j`. -/
 
 /-- **The pointwise arithmetic criterion — PROVEN.** `m² − b m + k` is positive and NOT a
 perfect square as soon as `2m − b ≥ 4k − b² > 0`.
@@ -3585,77 +3594,352 @@ theorem isIntegral_of_eval_diag {x : ℂ} {Φ : Polynomial (Polynomial ℤ)}
       by rw [Polynomial.Monic, Polynomial.leadingCoeff_neg, h2, neg_neg],
       by rw [Polynomial.eval₂_neg, hfD, neg_zero]⟩
 
+section ModularPolynomial
+
+open UpperHalfPlane MatrixGroups Matrix.SpecialLinearGroup
+
+/-! ### The reduction of LEAF 3a to its triangular core (2026-07-30)
+
+The former LEAF 3a was the single statement `exists_modularPolynomial`, quantified over ALL
+primitive integral matrices of determinant `N`. Everything in that quantifier except the
+finitely many TRIANGULAR representatives is now proved away here, so the surviving leaf is
+`exists_modularPolynomial_prod`: the existence of one `Φ ∈ ℤ[Y][X]` whose specialisation at
+`Y = j(z)` is the explicit monic product `∏ (X − j((az+b)/d))` over `triangularReps N`.
+
+The chain, all of it below and all of it compiling:
+
+  `exists_modularPolynomial_prod`      (LEAF: `Φ` specialises to the product; Kronecker's `±1`)
+    → `exists_modularPolynomial_triangular`  (PROVEN; one factor of the product vanishes)
+    → `exists_modularPolynomial`             (PROVEN; Hermite normal form + `Γ`-invariance)
+
+Two things are bought by this. First, the leaf no longer quantifies over matrices at all —
+its content is now exactly "the elementary symmetric functions of `j` over the `ψ(N)`
+triangular points are integral polynomials in `j`", which is the actual mathematics (the
+`q`-expansion argument), with none of the group theory attached. Second, `Φ` is PINNED DOWN:
+the old statement left it existentially free, so a prover had to rediscover what it must be. -/
+
+/-- **`j` is invariant under the full modular group — PROVEN.**
+
+`E₄` and `Δ` both satisfy the slash equation, with weights `4` and `12`; since `j = E₄³/Δ`
+the automorphy factor appears as `denom^12` upstairs and `denom^12` downstairs and cancels.
+`Δ` is nowhere zero on `ℍ` (`ModularForm.discriminant_ne_zero`), so the division is legal at
+both `z` and `γ • z`. -/
+theorem jInvariant_smul (γ : SL(2, ℤ)) (z : UpperHalfPlane) :
+    jInvariant (γ • z) = jInvariant z := by
+  have hmem : (mapGL ℝ γ) ∈ 𝒮ℒ := ⟨γ, rfl⟩
+  have hs : (mapGL ℝ γ) • z = γ • z := rfl
+  have hE := SlashInvariantForm.slash_action_eqn'' ModularForm.E₄ hmem z
+  have hD := SlashInvariantForm.slash_action_eqn'' CuspForm.discriminant hmem z
+  rw [hs] at hE hD
+  have hdc : ⇑CuspForm.discriminant = ModularForm.discriminant := CuspForm.coe_discriminant
+  rw [hdc] at hD
+  have hden : denom (mapGL ℝ γ) z ≠ 0 := denom_ne_zero _ z
+  have hD0 : ModularForm.discriminant z ≠ 0 := ModularForm.discriminant_ne_zero z
+  have hDg : ModularForm.discriminant (γ • z) ≠ 0 := ModularForm.discriminant_ne_zero _
+  rw [jInvariant, jInvariant, hE, hD]
+  rw [show ((12 : ℤ)) = 3 * 4 by norm_num, zpow_mul]
+  field_simp
+
+/-- **`j(z + k) = j(z)` for an integer `k` — PROVEN**, the `T^k` case of `jInvariant_smul`.
+Stated with the translate as a hypothesis rather than as a term so that the caller need not
+produce the membership proof for `z + k ∈ ℍ` in any particular form. -/
+theorem jInvariant_of_eq_add_int {v w : UpperHalfPlane} (k : ℤ)
+    (hw : (w : ℂ) = (v : ℂ) + (k : ℂ)) : jInvariant w = jInvariant v := by
+  let γ : SL(2, ℤ) := ⟨!![1, k; 0, 1], by simp [Matrix.det_fin_two_of]⟩
+  have hγ00 : γ 0 0 = 1 := rfl
+  have hγ01 : γ 0 1 = k := rfl
+  have hγ10 : γ 1 0 = 0 := rfl
+  have hγ11 : γ 1 1 = 1 := rfl
+  have hsm : γ • v = w := by
+    rw [← UpperHalfPlane.coe_inj, coe_specialLinearGroup_apply, hγ00, hγ01, hγ10, hγ11]
+    simp only [algebraMap_int_eq, eq_intCast, Complex.ofReal_intCast]
+    rw [hw]; push_cast; ring
+  rw [← hsm, jInvariant_smul]
+
+/-- **HERMITE NORMAL FORM for a primitive integral matrix of positive determinant — PROVEN.**
+
+Every primitive `A = [[p, q], [r, s]]` with `det A = N > 0` factors as `A = γ · B` with
+`γ = [[α, β], [δ, ε]] ∈ SL₂(ℤ)` and `B = [[a, b], [0, d]]` upper triangular, `a, d > 0`,
+`ad = N`, and `B` again primitive. This is what turns the leaf's quantifier over all
+primitive `A` into a quantifier over triangular data.
+
+THE CONSTRUCTION is Bézout on the FIRST COLUMN, and it needs no case split. Put
+`g = gcd(p, r) > 0` (nonzero because `p = r = 0` would force `N = 0`), `p = p'g`, `r = r'g`
+with `gcd(p', r') = 1`, and take `u, v` with `u p' + v r' = 1`. Then `γ = [[p', −v], [r', u]]`
+has determinant `1` and `γ⁻¹ A = [[g, b], [0, d]]` with `b = uq + vs`, `d = p's − r'q`; the
+determinant identity gives `g·d = N`, hence `d > 0`.
+
+Primitivity of `(a, b, d) = (g, b, d)` transfers backwards rather than forwards: a common
+divisor of `g, b, d` divides `p = p'g`, `q = p'b − vd`, `r = r'g` and `s = r'b + ud`, so it is
+a unit by the primitivity of `A`. (Note this direction needs only the four expressions for
+`p, q, r, s` in terms of `a, b, d`, which is exactly what the conclusion returns.) -/
+theorem exists_hermite_of_primitive {p q r s N : ℤ} (hN : 0 < N) (hdet : p * s - q * r = N)
+    (hprim : ∀ e : ℤ, e ∣ p → e ∣ q → e ∣ r → e ∣ s → IsUnit e) :
+    ∃ α β δ ε a b d : ℤ, α * ε - β * δ = 1 ∧ 0 < a ∧ 0 < d ∧ a * d = N ∧
+      (∀ e : ℤ, e ∣ a → e ∣ b → e ∣ d → IsUnit e) ∧
+      p = α * a ∧ q = α * b + β * d ∧ r = δ * a ∧ s = δ * b + ε * d := by
+  -- `p` and `r` are not both zero, else the determinant vanishes.
+  have hpr : ¬ (p = 0 ∧ r = 0) := by
+    rintro ⟨hp, hr⟩
+    rw [hp, hr] at hdet
+    simp at hdet
+    omega
+  set g : ℤ := (Int.gcd p r : ℤ) with hg
+  have hg0 : g ≠ 0 := by
+    simp only [hg, ne_eq, Int.natCast_eq_zero, Int.gcd_eq_zero_iff]
+    tauto
+  have hgpos : 0 < g := lt_of_le_of_ne (Int.natCast_nonneg _) (Ne.symm hg0)
+  have hgp : g ∣ p := Int.gcd_dvd_left _ _
+  have hgr : g ∣ r := Int.gcd_dvd_right _ _
+  set p' : ℤ := p / g with hp'
+  set r' : ℤ := r / g with hr'
+  have hpe : p = p' * g := (Int.ediv_mul_cancel hgp).symm
+  have hre : r = r' * g := (Int.ediv_mul_cancel hgr).symm
+  have hcop : IsCoprime p' r' := by
+    rw [Int.isCoprime_iff_gcd_eq_one]
+    exact Int.gcd_div_gcd_div_gcd (Nat.pos_of_ne_zero (Int.natCast_ne_zero.mp hg0))
+  obtain ⟨u, v, huv⟩ := hcop
+  -- `u p' + v r' = 1`;  the Hermite data is `γ = [[p', -v], [r', u]]`, `B = γ⁻¹ A`.
+  set b : ℤ := u * q + v * s with hb
+  set d : ℤ := -(r' * q) + p' * s with hd
+  have hqe : q = p' * b + (-v) * d := by rw [hb, hd]; linear_combination -q * huv
+  have hse : s = r' * b + u * d := by rw [hb, hd]; linear_combination -s * huv
+  have hadN : g * d = N := by rw [hd]; linear_combination hdet + q * hre - s * hpe
+  have hdpos : 0 < d := by nlinarith [hadN, hgpos, hN]
+  refine ⟨p', -v, r', u, g, b, d, by linear_combination huv, hgpos, hdpos, by
+    linear_combination hadN, ?_, by linear_combination hpe, hqe, by linear_combination hre, hse⟩
+  intro e hea heb hed
+  refine hprim e ?_ ?_ ?_ ?_
+  · exact hpe ▸ Dvd.dvd.mul_left hea p'
+  · exact hqe ▸ Dvd.dvd.add (Dvd.dvd.mul_left heb p') (Dvd.dvd.mul_left hed (-v))
+  · exact hre ▸ Dvd.dvd.mul_left hea r'
+  · exact hse ▸ Dvd.dvd.add (Dvd.dvd.mul_left heb r') (Dvd.dvd.mul_left hed u)
+
+/-- **`(a z + b)/d` lies in `ℍ` when `a, d > 0` — PROVEN.** Dividing by the REAL number `d`
+scales the imaginary part by `1/d`, and `Im(a z + b) = a · Im z`. -/
+theorem im_pos_tri (z : UpperHalfPlane) {a b d : ℤ} (ha : 0 < a) (hd : 0 < d) :
+    0 < (((a : ℂ) * (z : ℂ) + (b : ℂ)) / (d : ℂ)).im := by
+  have h1 : ((d : ℤ) : ℂ) = ((d : ℝ) : ℂ) := by push_cast; ring
+  rw [h1, Complex.div_ofReal_im]
+  have hz := z.im_pos
+  simp only [Complex.add_im, Complex.mul_im, Complex.intCast_re, Complex.intCast_im]
+  have ha' : (0 : ℝ) < (a : ℝ) := by exact_mod_cast ha
+  have hd' : (0 : ℝ) < (d : ℝ) := by exact_mod_cast hd
+  exact div_pos (by simpa using mul_pos ha' hz) hd'
+
+open Classical in
+/-- The point `(a z + b)/d ∈ ℍ` attached to the triangular datum `t = (a, b, d)`.
+
+TOTAL BY DESIGN, with `z` itself as the junk value off the intended domain, so that it can be
+used as the index function of a `Finset.prod` without carrying `0 < a`, `0 < d` proofs inside
+the product. `coe_triPoint` is the only interface: on the intended domain it says the
+underlying complex number is what it should be, and nothing else about `triPoint` is ever
+used. -/
+noncomputable def triPoint (z : UpperHalfPlane) (t : ℤ × ℤ × ℤ) : UpperHalfPlane :=
+  if h : 0 < (((t.1 : ℂ) * (z : ℂ) + (t.2.1 : ℂ)) / (t.2.2 : ℂ)).im then
+    ⟨((t.1 : ℂ) * (z : ℂ) + (t.2.1 : ℂ)) / (t.2.2 : ℂ), h⟩
+  else z
+
+theorem coe_triPoint (z : UpperHalfPlane) {a b d : ℤ} (ha : 0 < a) (hd : 0 < d) :
+    ((triPoint z (a, b, d) : UpperHalfPlane) : ℂ)
+      = ((a : ℂ) * (z : ℂ) + (b : ℂ)) / (d : ℂ) := by
+  rw [triPoint, dif_pos (im_pos_tri z ha hd)]
+
+/-- **The canonical triangular representatives of determinant `N`**: triples `(a, b, d)` with
+`a, d > 0`, `a d = N`, `0 ≤ b < d` and `gcd(a, b, d) = 1`.
+
+These index the left-`Γ`-classes of primitive integral matrices of determinant `N`, so
+`#(triangularReps N) = ψ(N) = N ∏_{ℓ ∣ N} (1 + 1/ℓ)`. Spot-checked against that formula:
+`ψ(1) = 1`, `ψ(2) = 3`, `ψ(4) = 6`, `ψ(6) = 12`, `ψ(9) = 12`, and the `Finset` has exactly
+that many elements in each case.
+
+The ambient box `[1, N] × [0, N) × [1, N]` is not tight (it is `N³` rather than `ψ(N)`
+entries before filtering) and is not meant to be: it exists only to make the set a `Finset`,
+and `a ≤ N`, `d ≤ N`, `b < d ≤ N` all follow from `ad = N` with `a, d ≥ 1`. Nothing anywhere
+evaluates this definition, which is why the `noncomputable` costs nothing. -/
+noncomputable def triangularReps (N : ℤ) : Finset (ℤ × ℤ × ℤ) :=
+  ((Finset.Icc (1 : ℤ) N) ×ˢ (Finset.Ico (0 : ℤ) N) ×ˢ (Finset.Icc (1 : ℤ) N)).filter
+    (fun t => t.1 * t.2.2 = N ∧ t.2.1 < t.2.2 ∧
+      Int.gcd t.1 ((Int.gcd t.2.1 t.2.2 : ℕ) : ℤ) = 1)
+
+/-- **Membership in `triangularReps` — PROVEN.** The primitivity hypothesis is stated in the
+"every common divisor is a unit" form the rest of this file uses; it is converted to
+`gcd(a, gcd(b, d)) = 1` by applying it to that gcd, which is a nonnegative integer and hence
+`1` rather than `−1`. -/
+theorem mem_triangularReps {N a b d : ℤ} (ha : 0 < a) (hd : 0 < d) (had : a * d = N)
+    (hb0 : 0 ≤ b) (hbd : b < d)
+    (hprim : ∀ e : ℤ, e ∣ a → e ∣ b → e ∣ d → IsUnit e) :
+    (a, b, d) ∈ triangularReps N := by
+  have hdN : d ≤ N := by nlinarith
+  have haN : a ≤ N := by nlinarith
+  have hgcd : Int.gcd a ((Int.gcd b d : ℕ) : ℤ) = 1 := by
+    set g : ℕ := Int.gcd a ((Int.gcd b d : ℕ) : ℤ) with hgdef
+    have h1 : (g : ℤ) ∣ a := Int.gcd_dvd_left _ _
+    have h2 : (g : ℤ) ∣ ((Int.gcd b d : ℕ) : ℤ) := Int.gcd_dvd_right _ _
+    have h3 : (g : ℤ) ∣ b := h2.trans (Int.gcd_dvd_left _ _)
+    have h4 : (g : ℤ) ∣ d := h2.trans (Int.gcd_dvd_right _ _)
+    rcases Int.isUnit_iff.mp (hprim _ h1 h3 h4) with h | h
+    · exact_mod_cast h
+    · omega
+  simp only [triangularReps, Finset.mem_filter, Finset.mem_product, Finset.mem_Icc,
+    Finset.mem_Ico]
+  exact ⟨⟨⟨by omega, haN⟩, ⟨hb0, by omega⟩, ⟨by omega, hdN⟩⟩, had, hbd, hgcd⟩
+
 /-- **LEAF 3a — THE MODULAR POLYNOMIAL `Φ_N`, WITH KRONECKER'S LEADING COEFFICIENT.**
 
 For every `N > 0` there is a `Φ_N ∈ ℤ[Y][X]` such that
 
-* `Φ_N(j(A z), j(z)) = 0` for every `z ∈ ℍ` and every PRIMITIVE integral matrix
-  `A = [[p, q], [r, s]]` of determinant `N`, and
+* for every `z ∈ ℍ`, specialising the outer variable at `Y = j(z)` turns `Φ_N` into the monic
+  product `∏_{(a,b,d) ∈ triangularReps N} (X − j((a z + b)/d))`, and
 * if `N` is not a perfect square, the diagonal `Φ_N(Y, Y) ∈ ℤ[Y]` has leading coefficient a
   unit, i.e. `±1` (**Kronecker**).
 
-This is the arithmetic heart of the class equation, and it is now the ONLY unproven step of
-the old LEAF 3: Cox, *Primes of the form x²+ny²*, §11 (Theorem 11.18 for `Φ_m ∈ ℤ[X, Y]`,
-Theorem 11.2 / Lemma 11.23 for the leading coefficient); Booher, *Modular curves and the
-class number one problem*, §2; Serre, *Cours d'arithmétique*, VII.
+This is the arithmetic heart of the class equation: Cox, *Primes of the form x²+ny²*, §11
+(Theorem 11.18 for `Φ_m ∈ ℤ[X, Y]`, Theorem 11.2 / Lemma 11.23 for the leading coefficient);
+Booher, *Modular curves and the class number one problem*, §2; Serre, *Cours d'arithmétique*,
+VII.
 
-THE CONSTRUCTION, for whoever proves it. Let `C(N)` be a set of representatives for the
-finitely many left-`Γ`-classes of primitive integral matrices of determinant `N` (`Γ = SL₂ℤ`,
-`#C(N) = ψ(N) = N∏(1 + 1/ℓ)`; Hermite normal form gives the standard representatives
-`[[a, b], [0, d]]` with `ad = N`, `0 ≤ b < d`, `gcd(a,b,d) = 1`). Put
+RESTATED 2026-07-30, AND THE EARLIER AUDIT IS THEREFORE VOID (see the note at the end). The
+leaf used to be `exists_modularPolynomial` itself, quantified over ALL primitive integral
+matrices of determinant `N`. That quantifier is now discharged below — `Γ`-invariance of `j`
+plus Hermite normal form plus translation of `b` into `[0, d)` — so the surviving content is
+just the product formula. Nothing was weakened: `exists_modularPolynomial` is proved from
+this in full generality, with the same statement it had.
 
-  `Φ_N(X, j(z)) = ∏_{A' ∈ C(N)} (X − j(A' z))`,
+WHY THIS IS THE RIGHT CUT. The old statement left `Φ` existentially free, so a prover had to
+rediscover what it must be before proving anything about it; here `Φ` is pinned down by the
+first clause. And the group theory that the old statement mixed in — which matrices, modulo
+what — is now separated from the analysis, which is all that is left: the coefficients of the
+product are holomorphic `Γ`-invariant functions on `ℍ`, meromorphic at the cusp, hence
+POLYNOMIALS IN `j`; and integrality of those polynomials' coefficients is the `q`-expansion
+argument (they lie in `ℤ[ζ_N]` and are `Gal(ℚ(ζ_N)/ℚ)`-stable, hence in `ℤ`).
 
-monic of degree `ψ(N)` in `X`. Its coefficients are holomorphic `Γ`-invariant functions on
-`ℍ` that are meromorphic at the cusp, hence POLYNOMIALS IN `j`; integrality of those
-polynomials' coefficients is the `q`-expansion argument (they lie in `ℤ[ζ_N]` and are
-`Gal(ℚ(ζ_N)/ℚ)`-stable, hence in `ℤ`). The vanishing clause then holds for EVERY primitive
-`A` of determinant `N`, not just for the representatives, because `A = γ A'` with `γ ∈ Γ` and
-`j` is `Γ`-invariant, so `j(A z) = j(A' z)`.
+**FALSITY AUDIT — the previous docstring's account of the square case was WRONG, and it is
+retracted here.** It said: "for `N = d²` the representative `d·I` contributes the factor
+`j(z) − j(z) = 0` and `Φ_N(X, X)` is identically `0`", and the primitivity paragraph repeated
+it at `N = 4`. That is the count for ALL integral matrices; under the PRIMITIVE convention
+this leaf uses, `d·I` has content `d`, so for `d > 1` it is not primitive and is not a
+representative at all. `Φ_4(Y, Y)` is NOT identically zero.
 
-Kronecker's half is the `q`-expansion computation on the diagonal: writing `q = e^{2πiz}`,
-each factor `j(z) − j(A' z)` of `Φ_N(j(z), j(z))` has a leading `q`-power with coefficient a
-root of unity, and for `N` a NON-square no factor vanishes identically — whereas for `N = d²`
-the representative `d·I` contributes the factor `j(z) − j(z) = 0` and `Φ_N(X, X)` is
-identically `0`.
+The real reason `¬ IsSquare N` is needed — and the reason it is exactly right rather than
+merely sufficient. Write `q = e^{2πiz}` and `j = q^{-1} + 744 + ⋯`. The factor of
+`Φ_N(j(z), j(z))` at `(a, b, d)` is `j(z) − j((a z + b)/d)`, whose leading `q`-power is
 
-WHY PRIMITIVITY IS IN THE HYPOTHESIS AND MUST STAY. Without it the clause is FALSE, not
-merely unprovable: `A = d·A'` induces the same Möbius transformation as `A'`, so
-`j(A z) = j(A' z)`, which is a root of `Φ_{N/d²}(·, j(z))` and in general NOT of
-`Φ_N(·, j(z))`. Concretely at `N = 4`, `A = 2·I` gives `j(A z) = j(z)`, and `Φ_4(X, X)` is
-identically zero while `Φ_4(j(z), j(z)) = 0` would be needed. The consumer supplies
-primitivity for free by choosing `m` coprime to `a` — see
-`exists_coprime_not_isSquare_quadratic`.
+* `q^{-1}`, coefficient `1`, when `a < d` (the `σ`-term has the smaller pole, order `a/d < 1`);
+* `q^{-a/d}`, coefficient `−ζ_d^{−b}`, a root of unity, when `a > d`;
+* `q^{-1}`, coefficient `1 − ζ_a^{−b}`, when `a = d` — and `a = d` is possible **exactly when
+  `N = a²` is a square**.
+
+So for non-square `N` every factor's leading coefficient is a root of unity, the product's is
+a root of unity, and a root of unity in `ℤ` is `±1`: that is Kronecker. For a square
+`N = a² > 1` the factors with `a = d` (and then `gcd(a, b) = 1`) contribute
+`∏_{gcd(b,a)=1} (1 − ζ_a^{−b})`, the `a`-th cyclotomic polynomial at `1`, which is `ℓ` when
+`a = ℓ^k` is a prime power — not a unit.
+
+CHECKED NUMERICALLY with `gp` (`ellj`, `Im z = 3 … 6`, watching `∏ / j^D` converge):
+`Φ_2(Y,Y)` has degree `4` and leading coefficient `−1`, `Φ_3` degree `6` and `−1`, `Φ_5`
+degree `10` and `−1` — all three agreeing with PARI's own `polmodular`, which only handles
+prime levels. On the square side, where `polmodular` cannot be asked: `Φ_4(Y,Y)` has degree
+`9` and leading coefficient `−2`, and `Φ_9(Y,Y)` degree `20` and leading coefficient `−3`,
+matching the cyclotomic count (`Φ_2(1) = 2`, `Φ_3(1) = 3`) and refuting "identically zero".
+The degrees match `∑ max(1, a/d)` over the representatives in every case.
 
 WHY THE NON-SQUARE HYPOTHESIS IS ON THE SECOND CLAUSE ONLY. `Φ_N` exists for every `N > 0`;
 it is only Kronecker's leading coefficient that needs `N` non-square, and dropping that
-hypothesis makes the clause FALSE with an explicit witness: for `N = 1` the only class is
-`I`, so `Φ_1(X, Y) = X − Y` and `Φ_1(Y, Y) = 0`, whose leading coefficient is `0`, not a
-unit. (This is exactly why the consumer below must produce a non-square determinant: with a
-square one it could conclude that `j` is an algebraic integer at EVERY point of `ℍ`, whereas
-`j` is transcendental off a countable set.)
+hypothesis makes the clause FALSE with an explicit witness — the sharpest being `N = 1`,
+where the only class is `I`, so `Φ_1(X, Y) = X − Y` and `Φ_1(Y, Y) = 0`, whose leading
+coefficient is `0`, not a unit. (This is exactly why the consumer must produce a non-square
+determinant: with a square one it could conclude that `j` is an algebraic integer at EVERY
+point of `ℍ`, whereas `j` is transcendental off a countable set.)
 
-THE STATEMENT IS DELIBERATELY MORE GENERAL THAN THE CONSUMER NEEDS — it is quantified over
-all `z` and all target points `w = A z`, whereas the consumer only uses `w = z`. That is the
-same choice `gammaTwo_pow_three_eq_jInvariant` makes and for the same reason: it is an
-identity of modular functions, nothing is gained by specialising, and the general form is
-what any further consumer (Weber's level-`3` descent, Hecke correspondences) will want.
+WHY PRIMITIVITY MUST STAY, in the derived statements below. `A = e·A'` induces the same
+Möbius transformation as `A'`, so `j(A z) = j(A' z)`, which is a root of `Φ_{N/e²}(·, j(z))`
+and in general NOT of `Φ_N(·, j(z))`. The consumer supplies primitivity for free by choosing
+`m` coprime to `a` — see `exists_coprime_not_isSquare_quadratic`. (Here it is also what makes
+`triangularReps` the correct index set: without the `gcd = 1` filter the product would run
+over the imprimitive triples too.)
 
-THE MÖBIUS CONDITION IS WRITTEN MULTIPLICATIVELY (`p z + q = w (r z + s)`) to avoid a
-division: `r z + s ≠ 0` is automatic once the determinant is nonzero (if `r ≠ 0` then
-`Im(r z + s) = r·Im z ≠ 0`; if `r = 0` then `s ≠ 0`), so no such hypothesis is needed.
-
-ABSENCE RE-VERIFIED, NOT INHERITED (2026-07-28, and again 2026-07-30 after the merge):
-`grep -rn 'jInvariant\|modularPolynomial\|classEquation\|ComplexMultiplication' Fermat/
-.lake/packages/mathlib/ ~/cs/FLT/` finds the `j`-invariant nowhere outside this file —
-`Mathlib/NumberTheory/ModularForms/` has `DedekindEta`, `Discriminant`, `LevelOne/GradedRing`
-and `QExpansion` and no `j` at all, and `~/cs/FLT` has zero hits. Refute this note by
-exhibiting any of those names; the leaf would then reduce to specialising them.
+ABSENCE RE-VERIFIED, NOT INHERITED (2026-07-28, again 2026-07-30 after the merge, and again
+with this restatement): `grep -rn 'jInvariant\|modularPolynomial\|classEquation\|
+ComplexMultiplication' Fermat/ .lake/packages/mathlib/ ~/cs/FLT/` finds the `j`-invariant
+nowhere outside this file — `Mathlib/NumberTheory/ModularForms/` has `DedekindEta`,
+`Discriminant`, `LevelOne/GradedRing` and `QExpansion` and no `j` at all, and `~/cs/FLT` has
+zero hits. Refute this note by exhibiting any of those names; the leaf would then reduce to
+specialising them.
 
 WHAT THIS LEAF IS *NOT*. It needs no complex multiplication, no class field theory and no
 class-number hypothesis — integrality of `j` at CM points is prior to all of that, and holds
 at every imaginary quadratic point regardless of the class number. That is exactly why the
 CM content of this cluster sits in the class-field leaves and not here. -/
+theorem exists_modularPolynomial_prod {N : ℤ} (hN : 0 < N) :
+    ∃ Φ : Polynomial (Polynomial ℤ),
+      (¬ IsSquare N → IsUnit (Φ.eval Polynomial.X).leadingCoeff) ∧
+      ∀ z : UpperHalfPlane,
+        Φ.map (Polynomial.eval₂RingHom (Int.castRingHom ℂ) (jInvariant z))
+          = ∏ t ∈ triangularReps N,
+              (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))) :=
+  sorry
+
+/-- **The TRIANGULAR modular equation — PROVEN** over `exists_modularPolynomial_prod`.
+
+`Φ_N` kills `(j(w), j(z))` whenever `w = (a z + b)/d` with `a, d > 0`, `ad = N` and
+`(a, b, d)` primitive. No constraint on `b`: it is normalised into `[0, d)` here, by
+`b = d⌊b/d⌋ + (b mod d)` and `j(v + k) = j(v)`, which also transports primitivity (a common
+divisor of `a`, `b mod d` and `d` divides `b`).
+
+Given that, `(a, b mod d, d) ∈ triangularReps N`, the product of the first clause has a
+factor `X − j((a z + (b mod d))/d) = X − j(w)`, and evaluating at `X = j(w)` kills it. -/
+theorem exists_modularPolynomial_triangular {N : ℤ} (hN : 0 < N) :
+    ∃ Φ : Polynomial (Polynomial ℤ),
+      (¬ IsSquare N → IsUnit (Φ.eval Polynomial.X).leadingCoeff) ∧
+      ∀ (z w : UpperHalfPlane) (a b d : ℤ), 0 < a → 0 < d → a * d = N →
+        (∀ e : ℤ, e ∣ a → e ∣ b → e ∣ d → IsUnit e) →
+        (a : ℂ) * (z : ℂ) + (b : ℂ) = (w : ℂ) * (d : ℂ) →
+        Polynomial.eval₂ (Polynomial.eval₂RingHom (Int.castRingHom ℂ) (jInvariant z))
+          (jInvariant w) Φ = 0 := by
+  obtain ⟨Φ, hkron, hprod⟩ := exists_modularPolynomial_prod hN
+  refine ⟨Φ, hkron, ?_⟩
+  intro z w a b d ha hd had hprim hmob
+  have hdC : (d : ℂ) ≠ 0 := Int.cast_ne_zero.mpr hd.ne'
+  set k : ℤ := b / d with hk
+  set b₀ : ℤ := b % d with hb₀
+  have hbk : d * k + b₀ = b := Int.mul_ediv_add_emod b d
+  have hb0 : 0 ≤ b₀ := Int.emod_nonneg b hd.ne'
+  have hbd : b₀ < d := Int.emod_lt_of_pos b hd
+  have hprim₀ : ∀ e : ℤ, e ∣ a → e ∣ b₀ → e ∣ d → IsUnit e := by
+    intro e h1 h2 h3
+    refine hprim e h1 ?_ h3
+    have : e ∣ d * k + b₀ := (h3.mul_right k).add h2
+    rwa [hbk] at this
+  have hmem := mem_triangularReps ha hd had hb0 hbd hprim₀
+  have hbC : (d : ℂ) * (k : ℂ) + (b₀ : ℂ) = (b : ℂ) := by exact_mod_cast hbk
+  have hjw : jInvariant w = jInvariant (triPoint z (a, b₀, d)) := by
+    refine jInvariant_of_eq_add_int k ?_
+    rw [coe_triPoint z ha hd]
+    field_simp
+    linear_combination -hmob - hbC
+  rw [Polynomial.eval₂_eq_eval_map, hprod z, Polynomial.eval_prod]
+  refine Finset.prod_eq_zero hmem ?_
+  simp [hjw]
+
+/-- **THE MODULAR EQUATION for an arbitrary primitive integral matrix — PROVEN** over
+`exists_modularPolynomial_triangular` and `exists_hermite_of_primitive`.
+
+`Φ_N(j(A z), j(z)) = 0` for every `z ∈ ℍ` and every PRIMITIVE integral `A = [[p, q], [r, s]]`
+of determinant `N`. Write `A = γ B` with `γ ∈ SL₂(ℤ)` and `B = [[a, b], [0, d]]` triangular
+and primitive (Hermite); then `A z = γ (B z)`, so `j(A z) = j(B z)` by `jInvariant_smul`, and
+the triangular case applies at `B z`.
+
+THE MÖBIUS CONDITION IS WRITTEN MULTIPLICATIVELY (`p z + q = w (r z + s)`) to avoid a
+division: `r z + s ≠ 0` is automatic once the determinant is nonzero (if `r ≠ 0` then
+`Im(r z + s) = r·Im z ≠ 0`; if `r = 0` then `s ≠ 0`), so no such hypothesis is needed — and
+the proof below derives exactly that.
+
+THE STATEMENT IS DELIBERATELY MORE GENERAL THAN THE CONSUMER NEEDS — it is quantified over
+all `z` and all target points `w = A z`, whereas the consumer only uses `w = z`. That is the
+same choice `gammaTwo_pow_three_eq_jInvariant` makes and for the same reason: it is an
+identity of modular functions, nothing is gained by specialising, and the general form is
+what any further consumer (Weber's level-`3` descent, Hecke correspondences) will want. -/
 theorem exists_modularPolynomial {N : ℤ} (hN : 0 < N) :
     ∃ Φ : Polynomial (Polynomial ℤ),
       (¬ IsSquare N → IsUnit (Φ.eval Polynomial.X).leadingCoeff) ∧
@@ -3663,8 +3947,55 @@ theorem exists_modularPolynomial {N : ℤ} (hN : 0 < N) :
         (∀ d : ℤ, d ∣ p → d ∣ q → d ∣ r → d ∣ s → IsUnit d) →
         (p : ℂ) * (z : ℂ) + (q : ℂ) = (w : ℂ) * ((r : ℂ) * (z : ℂ) + (s : ℂ)) →
         Polynomial.eval₂ (Polynomial.eval₂RingHom (Int.castRingHom ℂ) (jInvariant z))
-          (jInvariant w) Φ = 0 :=
-  sorry
+          (jInvariant w) Φ = 0 := by
+  obtain ⟨Φ, hkron, htri⟩ := exists_modularPolynomial_triangular hN
+  refine ⟨Φ, hkron, ?_⟩
+  intro z w p q r s hdet hprim hmob
+  obtain ⟨α, β, δ, ε, a, b, d, hγdet, hapos, hdpos, hadN, hprim', hp, hq, hr, hs⟩ :=
+    exists_hermite_of_primitive hN hdet hprim
+  have hdC : ((d : ℤ) : ℂ) ≠ 0 := Int.cast_ne_zero.mpr hdpos.ne'
+  -- `r z + s ≠ 0`
+  have hrs : (r : ℂ) * (z : ℂ) + (s : ℂ) ≠ 0 := by
+    rcases eq_or_ne r 0 with hr0 | hr0
+    · have hs0 : s ≠ 0 := by
+        rintro rfl; rw [hr0] at hdet; simp at hdet; omega
+      simp only [hr0, Int.cast_zero, zero_mul, zero_add]
+      exact_mod_cast hs0
+    · intro h
+      have him := congrArg Complex.im h
+      simp only [Complex.add_im, Complex.mul_im, Complex.intCast_re, Complex.intCast_im,
+        Complex.zero_im, zero_mul, add_zero] at him
+      have hrR : (r : ℝ) ≠ 0 := Int.cast_ne_zero.mpr hr0
+      exact absurd him (mul_ne_zero hrR (ne_of_gt z.im_pos))
+  -- the triangular point `w' = (a z + b)/d`, and `w = γ • w'`
+  set w' : UpperHalfPlane := triPoint z (a, b, d) with hw'def
+  have hw'c : (w' : ℂ) = ((a : ℂ) * (z : ℂ) + (b : ℂ)) / ((d : ℤ) : ℂ) :=
+    coe_triPoint z hapos hdpos
+  let γ : SL(2, ℤ) := ⟨!![α, β; δ, ε], by simp [Matrix.det_fin_two_of]; linarith⟩
+  have hγ00 : γ 0 0 = α := rfl
+  have hγ01 : γ 0 1 = β := rfl
+  have hγ10 : γ 1 0 = δ := rfl
+  have hγ11 : γ 1 1 = ε := rfl
+  have hsmul : γ • w' = w := by
+    rw [← UpperHalfPlane.coe_inj, coe_specialLinearGroup_apply, hγ00, hγ01, hγ10, hγ11]
+    simp only [algebraMap_int_eq, eq_intCast, Complex.ofReal_intCast]
+    rw [hw'c]
+    have hnum : (α : ℂ) * (((a : ℂ) * (z : ℂ) + (b : ℂ)) / ((d : ℤ) : ℂ)) + (β : ℂ)
+        = ((p : ℂ) * (z : ℂ) + (q : ℂ)) / ((d : ℤ) : ℂ) := by
+      field_simp
+      rw [hp, hq]; push_cast; ring
+    have hden : (δ : ℂ) * (((a : ℂ) * (z : ℂ) + (b : ℂ)) / ((d : ℤ) : ℂ)) + (ε : ℂ)
+        = ((r : ℂ) * (z : ℂ) + (s : ℂ)) / ((d : ℤ) : ℂ) := by
+      field_simp
+      rw [hr, hs]; push_cast; ring
+    rw [hnum, hden, div_div_div_cancel_right₀, div_eq_iff hrs, hmob]
+    exact hdC
+  rw [← hsmul, jInvariant_smul]
+  refine htri z w' a b d hapos hdpos hadN hprim' ?_
+  rw [hw'c]
+  field_simp
+
+end ModularPolynomial
 
 /-- **`j(z)` is an algebraic integer at a FIXED POINT of a primitive integral matrix of
 non-square determinant — PROVEN** over LEAF 3a and `isIntegral_of_eval_diag`.
@@ -4092,10 +4423,17 @@ DEFINED there over mathlib's `ModularForm.eta`, `ModularForm.discriminant` and
   of the degree. Its former companion `Heegner.isIntegral_weberAlpha` is PROVEN too, from
   `Heegner.exists_int_gammaTwo`: `α⁴` is a root of `x³ − γ₂(τ₀)x − 16` by the definition of
   `γ₂`, so an integral `γ₂(τ₀)` already forces an integral `α`;
-* `Heegner.exists_modularPolynomial` — the modular polynomial `Φ_N` with Kronecker's leading
-  coefficient (integrality of the class equation; `Heegner.isIntegral_jInvariant_of_fixedPoint`,
-  `Heegner.isIntegral_jInvariant_of_quadratic` and hence
-  `Heegner.isIntegral_gammaTwo_heegnerPoint` are now all PROVEN from it);
+* `Heegner.exists_modularPolynomial_prod` — the modular polynomial `Φ_N` with Kronecker's
+  leading coefficient (integrality of the class equation). **NARROWED 2026-07-30** from
+  `Heegner.exists_modularPolynomial`, which is now PROVEN from it, as are
+  `Heegner.exists_modularPolynomial_triangular`,
+  `Heegner.isIntegral_jInvariant_of_fixedPoint`,
+  `Heegner.isIntegral_jInvariant_of_quadratic` and
+  `Heegner.isIntegral_gammaTwo_heegnerPoint`. What went away was the quantifier over all
+  primitive integral matrices of determinant `N` (Hermite normal form, `Γ`-invariance of `j`,
+  and translation of `b` mod `d`); what remains is the analytic core alone — that the
+  elementary symmetric functions of `j` over the `ψ(N)` triangular points `(az+b)/d` are
+  integral polynomials in `j`;
 * `Heegner.exists_quadratic_jInvariant_heegnerPoint` — `j(τ₀) ∈ K = ℚ(√−p)` (**the main
   theorem of CM**);
 * `Heegner.exists_quadratic_gammaTwo_of_jInvariant` — `γ₂(τ₀) ∈ K` once `j(τ₀) ∈ K` (Weber's
@@ -4122,7 +4460,7 @@ cuts `K` down to `ℚ`).
 
 Of the four that remain, only `exists_quadratic_jInvariant_heegnerPoint` needs class field
 theory; `exists_quadratic_gammaTwo_of_jInvariant` needs Weber's level-`3` modular theory but
-no class field theory; and `exists_modularPolynomial` is the integrality of the class
+no class field theory; and `exists_modularPolynomial_prod` is the integrality of the class
 equation, which needs neither — it is the cheap target. (This list is referred to BY NAME
 rather than by position — its ordinals went stale twice, and at one point "the seventh" had
 no referent at all.) -/
