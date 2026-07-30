@@ -417,9 +417,10 @@ open in them has been split along the theories it needed:
 
 | open leaf | theory | base |
 |---|---|---|
-| `exists_gamma1RigidifiedModuli` | Katz-Mazur 4.7.2 + 5.1.1 + 6.6.2 and the affineness parenthesis of 8.1.1: the AFFINE FINE moduli scheme of `[Γ₁(N)], [Γ(n)]`.  The one citation half of the former `exists_gamma1Rigidification`, which is PROVEN over this row and the two below it (2026-07-28), as are `exists_gamma1GITPresentation`, `nonempty_gamma1GITPresentation_of_rigidification`, `isDomain_of_`, `smoothOfRelativeDimension_of_` and `geometricallyConnected_of_gamma1GITPresentation`. | any `K`, `char K ∤ N`, `char K ∤ n` |
+| `exists_gamma1RigidifiedModuliScheme` | Katz-Mazur 4.7.1/4.7.2 + 5.1.1 + 6.6.2: the rigidified moduli problem of `[Γ₁(N)], [Γ(n)]` is REPRESENTABLE, affineness not mentioned.  Split off `exists_gamma1RigidifiedModuli` on 2026-07-30 — that node is now PROVEN over this row and the next, and it is still what `exists_gamma1Rigidification`, `exists_gamma1GITPresentation`, `nonempty_gamma1GITPresentation_of_rigidification`, `isDomain_of_`, `smoothOfRelativeDimension_of_` and `geometricallyConnected_of_gamma1GITPresentation` are PROVEN over. | any `K`, `char K ∤ N`, `char K ∤ n` |
+| `isAffine_of_gamma1RigidifiedModuliScheme` | Katz-Mazur, the affineness parenthesis of 8.1.1 and nothing else: `𝔐([Γ₁(N)], [Γ(n)])` is AFFINE.  The second half of the same 2026-07-30 split.  Legitimate as a `∀` because `universal` is a FINE moduli property; see its docstring. | any `K`, `char K ∤ N`, `char K ∤ n` |
 | `exists_torsionBasisCover_field` | Katz-Mazur 2.3.1 / 5.1.1, Silverman *AEC* III.6.4: after a flat surjective quasi-compact cover the `n`-torsion of an abelian scheme of relative dimension one acquires a basis.  Stated for a BARE abelian scheme — no `Gamma1Datum`, no moduli scheme — and it is all that is left under `exists_gamma1FullLevelStructure_cover`, which is PROVEN over it (2026-07-28).  It is the general-base form of `X0.lean`'s `exists_torsionBasis_geomPoint` + `exists_torsionBasis_cover_of_geomPoint`, both of which are stated only over `SpecQ`. | any `K`, `char K ∤ n` |
-| `exists_openCover_twist_of_abelianFullLevelStructure` | NO citation — two full level-`n` structures on ONE `Γ₁(N)`-datum differ Zariski-locally by a CONSTANT matrix.  The `Γ₁`, arbitrary-base analogue of `X0.lean`'s `exists_openCover_twist_of_fullLevelStructure`, which is PROVEN; the route transcribes and only its step 2 (the loci are OPEN) is geometry.  This replaced `exists_gamma1DeckAction` in this table on 2026-07-29, when that node was REFUTED, restated with its over-`S` clause and then PROVEN over this leaf. | any base scheme, no characteristic hypothesis — see its FALSITY AUDIT for why `L₁` already pins `n` invertible |
+| `isOpenImmersion_equalizer_of_abelianFullLevelStructure` | NO citation beyond Katz–Mazur 2.3.1 — the equalizer of two `n`-torsion sections of an elliptic scheme over an ARBITRARY base carrying a full level-`n` structure is OPEN.  Step 2, and after the 2026-07-30 cut the ONLY step, of `exists_openCover_twist_of_abelianFullLevelStructure`, which is now PROVEN over it and over `exists_openCover_comb_of_abelianFullLevelStructure`; that node in turn is what `exists_gamma1DeckAction` (REFUTED 2026-07-29, restated with its over-`S` clause, then PROVEN) rests on.  Identical to `X0.lean`'s `isOpenImmersion_equalizer_of_nsmul_eq_zero` except that `L` replaces `g : Z ⟶ SpecQ` as the source of invertibility of `n`. | any base scheme, no characteristic hypothesis — see its FALSITY AUDIT for why `L` already pins `n` invertible |
 | `smoothCurve_A_of_gamma1GITPresentation` | Katz-Mazur 8.2.1, stated ONCE and on the rigidified ring where 8.2.1 is proved: `Spec A` is a smooth affine curve over `K` (`Algebra.Smooth K A` and `ringKrullDim A = 1`).  Replaced `isReduced_A_of_gamma1GITPresentation` and the dimension conjunct of `smooth_coarseRing_of_gamma1GITPresentation` on 2026-07-28; BOTH of those are now PROVEN over it. | any `K`, `char K ∤ N` |
 | `formallySmoothInvariants_of_gamma1GITPresentation` | Deligne-Rapoport III.1, Katz-Mazur 8.2.1: `B = A^G` is FORMALLY smooth over `K`.  Cut 2026-07-30 out of `smoothInvariants_of_gamma1GITPresentation` (now PROVEN over it) by unfolding `Algebra.Smooth` and paying for the second conjunct: `finitePresentation_invariants_of_gamma1GITPresentation` is Noether's theorem on invariants, PROVEN over `smoothCurve_A_of_gamma1GITPresentation` and the new `Gamma1GITPresentation.isScalarTower`.  What is left still needs Stacks `02VL` plus freeness of the `G`-action, neither of which the structure supplies. | any `K`, `char K ∤ N` |
 | `exists_weierstrassCurve_pointOfExactOrder` | Silverman *AEC* III.6.4: over an algebraically closed field of characteristic prime to `N`, some elliptic curve carries a point of exact order `N`.  PURE elliptic-curve arithmetic — no schemes, no moduli.  Cut out of `exists_gamma1Datum_fieldExtension` 2026-07-28. | alg. closed `L`, `char L ∤ N` |
@@ -547,7 +548,7 @@ along the GIT axis its own docstring named as NOT SEARCHED.  This is the
 | `exists_gamma0GITPresentation_of_rigidified` (PROVEN) | `nonempty_gamma1GITPresentation_of_rigidification` (PROVEN) |
 | `RigidifiedModuli` | `Gamma1RigidifiedModuli` |
 | `FullLevelStructure` | `AbelianFullLevelStructure` (a DUPLICATE — see the coordination note at the cut below) |
-| `exists_rigidifiedModuli` (leaf) | `exists_gamma1RigidifiedModuli` (leaf) |
+| `exists_rigidifiedModuli` (PROVEN over `exists_rigidifiedModuliScheme` + `isAffine_of_rigidifiedModuliScheme`, both leaves) | `exists_gamma1RigidifiedModuli` (PROVEN 2026-07-30 over `exists_gamma1RigidifiedModuliScheme` + `isAffine_of_gamma1RigidifiedModuliScheme`, both leaves — the same three-way split, made here for the same reason) |
 | `exists_fullLevelStructure_cover` (PROVEN, over `exists_torsionBasis_geomPoint` + `exists_torsionBasis_cover_of_geomPoint`, both `SpecQ`-only leaves) | `exists_gamma1FullLevelStructure_cover` (PROVEN 2026-07-28, over the single general-base leaf `exists_torsionBasisCover_field`, plus the PROVEN `nonempty_abelianFullLevelStructure_of_geomBasis` and the `IsBaseChangeOfGamma1.toRelPoint` API) |
 | `exists_deckAction` (PROVEN over `exists_openCover_twist_of_fullLevelStructure`) | `exists_gamma1DeckAction` (REFUTED, restated with `a ≫ strM = b ≫ strM` and PROVEN 2026-07-29, over the single leaf `exists_openCover_twist_of_abelianFullLevelStructure`) |
 | `FullLevelStructure.twist` API + `exists_fullLevelStructure_baseChange` + `twist_baseChange` (PROVEN) | `AbelianFullLevelStructure.twist` API + `exists_abelianFullLevelStructure_baseChange` + `twist_baseChange` (PROVEN 2026-07-29 — a TRANSCRIPTION, deletable once `X0.lean`'s `FullLevelStructure` is generalised to `AbelianSchemeStruct`) |
@@ -1568,10 +1569,11 @@ torsor clause from the fine moduli property rather than assuming them.
 
 | what | where | status |
 |---|---|---|
-| the fine moduli scheme `𝔐([Γ₁(N)], [Γ(n)])`, AFFINE | `Gamma1RigidifiedModuli` / `exists_gamma1RigidifiedModuli` | **LEAF** (4.7.2 + 5.1.1 + 6.6.2, and the affineness parenthesis of 8.1.1) |
+| the fine moduli scheme `𝔐([Γ₁(N)], [Γ(n)])`, AFFINE | `Gamma1RigidifiedModuli` / `exists_gamma1RigidifiedModuli` | **PROVEN** 2026-07-30, over the two citation leaves `exists_gamma1RigidifiedModuliScheme` (4.7.2 + 5.1.1 + 6.6.2) and `isAffine_of_gamma1RigidifiedModuliScheme` (the affineness parenthesis of 8.1.1) |
 | the level-`n` torsor: every datum acquires a full level structure fpqc-locally | `exists_gamma1FullLevelStructure_cover` | **LEAF** (2.3.1 / 8.1.1) |
 | the deck action `GL₂(ℤ/n) ↷ A`, its invariance over `S`, `dM_equivariant` and `coequalises` | `exists_gamma1DeckAction` | **PROVEN** 2026-07-29 (after being REFUTED and restated — see its FALSITY AUDIT) |
-| two level structures on ONE datum differ Zariski-locally by a constant matrix | `exists_openCover_twist_of_abelianFullLevelStructure` | **LEAF** (no citation; the `Γ₁`, arbitrary-base analogue of a PROVEN `Γ₀` theorem) |
+| two level structures on ONE datum differ Zariski-locally by a constant matrix | `exists_openCover_twist_of_abelianFullLevelStructure` | **PROVEN** 2026-07-30 over the single geometric leaf `isOpenImmersion_equalizer_of_abelianFullLevelStructure` (the `Γ₁`, arbitrary-base analogue of a PROVEN `Γ₀` theorem, cut the same way its `Γ₀` original was) |
+| the equalizer of two `n`-torsion sections is OPEN | `isOpenImmersion_equalizer_of_abelianFullLevelStructure` | **LEAF** (Katz–Mazur 2.3.1: `n` invertible makes `E[n] ⟶ Z` étale) |
 | the assembly | `nonempty_gamma1Rigidification_of_rigidifiedModuli` | **PROVEN** |
 
 **Why this is not the junk-witness trap.**  The section comment before
@@ -2833,10 +2835,259 @@ theorem twist_baseChange {N n : ℕ} (hn : 3 ≤ n) {T' T : Scheme.{u}} {p : T' 
 
 end AbelianFullLevelStructure
 
+/-! ### The comparison locus of two full level structures
+
+**Transcription of `X0.lean`'s `combPiece` block (2026-07-30), with
+`Gamma0Datum` replaced by a BARE `AbelianSchemeStruct`** — which is
+strictly more general than the original, since `AbelianFullLevelStructure`
+is already stated over an `AbelianSchemeStruct` rather than over a datum,
+and would serve the `Γ₀` side unchanged once `X0.lean`'s
+`FullLevelStructure` is generalised the same way.
+
+It exists to cut `exists_openCover_twist_of_abelianFullLevelStructure`
+below along exactly the line its own docstring drew: *"Only step 2 is
+geometry."*  Steps 1, 3, 4 and 5 are now written and green here, and step
+2 is the single named leaf
+`isOpenImmersion_equalizer_of_abelianFullLevelStructure`.
+
+**THE ACCOUNTING, STATED HONESTLY: this is 1 → 1 OPEN LEAF, not 1 → 0.**
+What it buys is that the residue is now a single self-contained assertion
+about one abelian scheme — *the equalizer of two `n`-torsion sections is
+open* — with all the moduli-theoretic and matrix bookkeeping discharged,
+and that it is the SAME assertion `X0.lean` already carries as
+`isOpenImmersion_equalizer_of_nsmul_eq_zero`, modulo the hypothesis that
+supplies invertibility of `n`.  The `Γ₀` side took this identical trade on
+2026-07-28.
+-/
+
+section CombPiece
+
+variable {n : ℕ} {Z E : Scheme.{0}} {f : E ⟶ Z} {abs : AbelianSchemeStruct f}
+
+/-- The locus in `Z` where BOTH `L₂.P = M₀ · L₁` and `L₂.Q = M₁ · L₁`
+hold: the fibre product over `Z` of the two equalizers.  Transcription of
+`X0.lean`'s `combPiece`. -/
+noncomputable def abelianCombPiece (L₁ L₂ : AbelianFullLevelStructure n abs)
+    (M : Matrix (Fin 2) (Fin 2) (ZMod n)) : Scheme.{0} :=
+  Limits.pullback
+    (Limits.pullback.fst L₂.P.1 (RelPoint.comb abs (M 0 0) (M 0 1) L₁.P L₁.Q).1)
+    (Limits.pullback.fst L₂.Q.1 (RelPoint.comb abs (M 1 0) (M 1 1) L₁.P L₁.Q).1)
+
+/-- The inclusion of the piece into `Z`. -/
+noncomputable def abelianCombPieceι (L₁ L₂ : AbelianFullLevelStructure n abs)
+    (M : Matrix (Fin 2) (Fin 2) (ZMod n)) : abelianCombPiece L₁ L₂ M ⟶ Z :=
+  Limits.pullback.fst
+      (Limits.pullback.fst L₂.P.1 (RelPoint.comb abs (M 0 0) (M 0 1) L₁.P L₁.Q).1)
+      (Limits.pullback.fst L₂.Q.1 (RelPoint.comb abs (M 1 0) (M 1 1) L₁.P L₁.Q).1) ≫
+    Limits.pullback.fst L₂.P.1 (RelPoint.comb abs (M 0 0) (M 0 1) L₁.P L₁.Q).1
+
+/-- On the piece, `L₂.P` IS the first row of `M` applied to `L₁` (PROVEN):
+the piece factors through the first equalizer by `pullback.fst`. -/
+theorem abelianCombPieceι_comp_P (L₁ L₂ : AbelianFullLevelStructure n abs)
+    (M : Matrix (Fin 2) (Fin 2) (ZMod n)) :
+    abelianCombPieceι L₁ L₂ M ≫ L₂.P.1
+      = abelianCombPieceι L₁ L₂ M ≫ (RelPoint.comb abs (M 0 0) (M 0 1) L₁.P L₁.Q).1 :=
+  comp_eq_of_factors_equalizer _ _
+    (Limits.pullback.fst
+      (Limits.pullback.fst L₂.P.1 (RelPoint.comb abs (M 0 0) (M 0 1) L₁.P L₁.Q).1)
+      (Limits.pullback.fst L₂.Q.1 (RelPoint.comb abs (M 1 0) (M 1 1) L₁.P L₁.Q).1)) rfl
+
+/-- On the piece, `L₂.Q` IS the second row of `M` applied to `L₁` (PROVEN):
+the piece factors through the second equalizer by `pullback.snd`, which is
+`Limits.pullback.condition`. -/
+theorem abelianCombPieceι_comp_Q (L₁ L₂ : AbelianFullLevelStructure n abs)
+    (M : Matrix (Fin 2) (Fin 2) (ZMod n)) :
+    abelianCombPieceι L₁ L₂ M ≫ L₂.Q.1
+      = abelianCombPieceι L₁ L₂ M ≫ (RelPoint.comb abs (M 1 0) (M 1 1) L₁.P L₁.Q).1 :=
+  comp_eq_of_factors_equalizer _ _
+    (Limits.pullback.snd
+      (Limits.pullback.fst L₂.P.1 (RelPoint.comb abs (M 0 0) (M 0 1) L₁.P L₁.Q).1)
+      (Limits.pullback.fst L₂.Q.1 (RelPoint.comb abs (M 1 0) (M 1 1) L₁.P L₁.Q).1))
+    Limits.pullback.condition.symm
+
+end CombPiece
+
+/-- **THE ONE OPEN LEAF under
+`exists_openCover_twist_of_abelianFullLevelStructure`** (sorry leaf, cut
+2026-07-30): *the equalizer of two `n`-torsion sections of an elliptic
+scheme over an ARBITRARY base carrying a full level-`n` structure is OPEN
+in the base.*
+
+This is `X0.lean`'s `isOpenImmersion_equalizer_of_nsmul_eq_zero` with its
+`g : Z ⟶ SpecQ` replaced by `L`, and it is the ONLY thing that changes
+between the two.  Everything that leaf's docstring records as owed — the
+five-step route through `E[n] := pullback (ab.mulByNat n) ab.zeroSection`,
+`liesIn_torsionι_iff` as the model for the functor-of-points step,
+`FormallyUnramified.isOpenImmersion_diagonal` for the diagonal, and
+`section_eq_of_formallyUnramified` as the worked precedent in this
+development — applies here verbatim and is not repeated.  Read it there.
+
+## Why `L` in place of `g : Z ⟶ SpecQ`, and why the leaf is still TRUE
+
+The `ℚ`-structure is consumed at exactly one point of that route: step 3,
+where `n` invertible on `Z` makes `[n] : E ⟶ E` étale and hence `E[n] ⟶ Z`
+unramified.  This leaf's consumer runs over an arbitrary base `S` — `Z` is
+an arbitrary `Spec R.A`-scheme — so it cannot have a `g`, and it does not
+need one: **`L` already pins `n` invertible on `Z`.**  The count, which is
+the FALSITY AUDIT of the parent theorem below in full:
+
+* let `z : Z` be any point and `t : Spec (κ(z)^alg) ⟶ Z` the geometric
+  point over it.  `L.nsmul_P` and `L.nsmul_Q` make
+  `(a, b) ↦ a·P + b·Q : Fin n × Fin n → RelPoint f t` land in the
+  `n`-torsion, and `L.geom_basis` says every `n`-torsion point has EXACTLY
+  ONE preimage.  So `#E_z[n](κ(z)^alg) = n²`.
+* `hdim` makes that fibre an elliptic curve.  Over an algebraically closed
+  field of characteristic `p`, writing `n = p^a·m` with `p ∤ m`, one has
+  `E[n] ≅ E[p^a] × E[m]` with `E[m] ≅ (ℤ/m)²` and `E[p^a]` either `ℤ/p^a`
+  or `0`.  So `#E[n] ∈ {m²·p^a, m²}`, and both are `< n² = m²·p^{2a}` as
+  soon as `a ≥ 1`.
+* Hence no point of `Z` has residue characteristic dividing `n`, i.e. `n`
+  is a unit in every local ring of `Z`, i.e. `n ∈ Γ(Z, ⊤)ˣ` — which is
+  exactly what `g` was supplying, and strictly weaker than it.
+
+So `hdim` is **load-bearing for TRUTH here** in a way it is not in the
+`Γ₀` leaf (where its own docstring correctly records it as optional,
+because `g` supplies invertibility outright): without it the fibres need
+not be elliptic curves and the count that recovers invertibility of `n`
+collapses.  `L` is load-bearing for the same reason.
+
+`hn` is load-bearing at `n = 0`, where the hypotheses `0 • x = 0` and
+`0 • y = 0` are vacuous, `x` and `y` are arbitrary sections, and the
+equalizer of two sections of an elliptic surface over `𝔸¹` is a point —
+closed and not open.  Only `n ≠ 0` is used; `3 ≤ n` is inherited from the
+parent.
+
+**A prover may equally well close this by proving `n ∈ Γ(Z, ⊤)ˣ` from `L`
+and `hdim` as a separate step and then running the `Γ₀` route** — that is
+the intended decomposition if the count above is wanted as a named lemma.
+It is deliberately NOT cut that way here, because doing so would make this
+node 1 → 2 open leaves rather than 1 → 1. -/
+theorem isOpenImmersion_equalizer_of_abelianFullLevelStructure (n : ℕ) (_hn : 3 ≤ n)
+    {Z E : Scheme.{0}} {f : E ⟶ Z} (abs : AbelianSchemeStruct f)
+    (_hdim : SmoothOfRelativeDimension 1 f) (_L : AbelianFullLevelStructure n abs)
+    (x y : RelPoint f (𝟙 Z))
+    (_hx : letI := abs.addCommGroup (𝟙 Z); n • x = 0)
+    (_hy : letI := abs.addCommGroup (𝟙 Z); n • y = 0) :
+    IsOpenImmersion (Limits.pullback.fst x.1 y.1) :=
+  sorry
+
+/-- **The piece is an OPEN subscheme of `Z`** (PROVEN from the leaf): each
+of the two equalizers is open by
+`isOpenImmersion_equalizer_of_abelianFullLevelStructure`, open immersions
+are stable under base change, and they compose. -/
+theorem isOpenImmersion_abelianCombPieceι {n : ℕ} (hn : 3 ≤ n) {Z E : Scheme.{0}} {f : E ⟶ Z}
+    {abs : AbelianSchemeStruct f} (hdim : SmoothOfRelativeDimension 1 f)
+    (L₁ L₂ : AbelianFullLevelStructure n abs) (M : Matrix (Fin 2) (Fin 2) (ZMod n)) :
+    IsOpenImmersion (abelianCombPieceι L₁ L₂ M) := by
+  haveI := isOpenImmersion_equalizer_of_abelianFullLevelStructure n hn abs hdim L₁
+    L₂.P (RelPoint.comb abs (M 0 0) (M 0 1) L₁.P L₁.Q) L₂.nsmul_P
+    (nsmul_comb_eq_zero abs _ _ L₁.nsmul_P L₁.nsmul_Q)
+  haveI := isOpenImmersion_equalizer_of_abelianFullLevelStructure n hn abs hdim L₁
+    L₂.Q (RelPoint.comb abs (M 1 0) (M 1 1) L₁.P L₁.Q) L₂.nsmul_Q
+    (nsmul_comb_eq_zero abs _ _ L₁.nsmul_P L₁.nsmul_Q)
+  show IsOpenImmersion (Limits.pullback.fst _ _ ≫
+    Limits.pullback.fst L₂.P.1 (RelPoint.comb abs (M 0 0) (M 0 1) L₁.P L₁.Q).1)
+  infer_instance
+
+/-- **Two full level structures on one abelian scheme differ Zariski-locally
+by a constant MATRIX** (PROVEN 2026-07-30 over the leaf above) — the parent
+statement with `GL₂(ℤ/n)` weakened to `M₂(ℤ/n)`, which is precisely the part
+that does not need `L₂.geom_basis`.  Transcription of `X0.lean`'s
+`exists_openCover_comb_of_fullLevelStructure`.
+
+The cover is indexed by the `n⁴` matrices themselves, with the piece for
+`M` the locus `abelianCombPiece L₁ L₂ M`.  Each piece is open
+(`isOpenImmersion_abelianCombPieceι`, over the one leaf), and they COVER:
+at a point `z` of `Z`, take the geometric point `Spec (κ(z)^alg) ⟶ Z`,
+read `L₂.P` and `L₂.Q` in the basis `L₁` there (`L₁.geom_basis`, a field of
+`AbelianFullLevelStructure`), and the resulting `Fin n`-coordinates
+assemble into a matrix whose piece contains `z` — the lift being
+`pullback.lift` applied twice, once for each equalizer.
+
+Note where invertibility is NOT available: a piece may be EMPTY, and on an
+empty piece the matrix is unconstrained.  That is why the `GL₂` form of the
+statement is proven separately, by discharging the empty pieces through
+initiality rather than by strengthening this one. -/
+theorem exists_openCover_comb_of_abelianFullLevelStructure (n : ℕ) (hn : 3 ≤ n)
+    {Z E : Scheme.{0}} {f : E ⟶ Z} (abs : AbelianSchemeStruct f)
+    (hdim : SmoothOfRelativeDimension 1 f) (L₁ L₂ : AbelianFullLevelStructure n abs) :
+    ∃ 𝒰 : Scheme.OpenCover.{0} Z, ∀ i : 𝒰.I₀,
+      ∃ M : Matrix (Fin 2) (Fin 2) (ZMod n),
+        𝒰.f i ≫ L₂.P.1 = 𝒰.f i ≫ (RelPoint.comb abs (M 0 0) (M 0 1) L₁.P L₁.Q).1 ∧
+        𝒰.f i ≫ L₂.Q.1 = 𝒰.f i ≫ (RelPoint.comb abs (M 1 0) (M 1 1) L₁.P L₁.Q).1 := by
+  classical
+  refine ⟨Scheme.Cover.mkOfCovers (Matrix (Fin 2) (Fin 2) (ZMod n))
+    (fun M => abelianCombPiece L₁ L₂ M) (fun M => abelianCombPieceι L₁ L₂ M) ?_
+    (fun M => isOpenImmersion_abelianCombPieceι hn hdim L₁ L₂ M),
+    fun i => ⟨i, abelianCombPieceι_comp_P L₁ L₂ i, abelianCombPieceι_comp_Q L₁ L₂ i⟩⟩
+  intro z
+  letI := abs.addCommGroup (𝟙 Z)
+  let Kz := AlgebraicClosure (Z.residueField z)
+  let t : Spec (CommRingCat.of Kz) ⟶ Z :=
+    Spec.map (CommRingCat.ofHom (algebraMap (Z.residueField z) Kz)) ≫
+      Z.fromSpecResidueField z
+  letI := abs.addCommGroup t
+  have htP : n • RelPoint.pre t (Category.comp_id t) L₂.P = 0 :=
+    RelPoint.nsmul_pre_eq_zero abs t (Category.comp_id t) L₂.nsmul_P
+  have htQ : n • RelPoint.pre t (Category.comp_id t) L₂.Q = 0 :=
+    RelPoint.nsmul_pre_eq_zero abs t (Category.comp_id t) L₂.nsmul_Q
+  obtain ⟨a, ha, -⟩ := (L₁.geom_basis Kz t _).mp htP
+  obtain ⟨b, hb, -⟩ := (L₁.geom_basis Kz t _).mp htQ
+  refine ⟨![![((a.1 : ℕ) : ZMod n), ((a.2 : ℕ) : ZMod n)],
+      ![((b.1 : ℕ) : ZMod n), ((b.2 : ℕ) : ZMod n)]], ?_⟩
+  set M : Matrix (Fin 2) (Fin 2) (ZMod n) :=
+    ![![((a.1 : ℕ) : ZMod n), ((a.2 : ℕ) : ZMod n)],
+      ![((b.1 : ℕ) : ZMod n), ((b.2 : ℕ) : ZMod n)]] with hM
+  have hM00 : (M 0 0).val = (a.1 : ℕ) := ZMod.val_cast_of_lt a.1.isLt
+  have hM01 : (M 0 1).val = (a.2 : ℕ) := ZMod.val_cast_of_lt a.2.isLt
+  have hM10 : (M 1 0).val = (b.1 : ℕ) := ZMod.val_cast_of_lt b.1.isLt
+  have hM11 : (M 1 1).val = (b.2 : ℕ) := ZMod.val_cast_of_lt b.2.isLt
+  have keyP : t ≫ L₂.P.1 = t ≫ (RelPoint.comb abs (M 0 0) (M 0 1) L₁.P L₁.Q).1 := by
+    refine congrArg Subtype.val (?_ : RelPoint.pre t (Category.comp_id t) L₂.P
+      = RelPoint.pre t (Category.comp_id t) (RelPoint.comb abs (M 0 0) (M 0 1) L₁.P L₁.Q))
+    rw [RelPoint.pre_comb abs t (Category.comp_id t) (M 0 0) (M 0 1) L₁.P L₁.Q]
+    show _ = (M 0 0).val • _ + (M 0 1).val • _
+    rw [hM00, hM01]
+    exact ha
+  have keyQ : t ≫ L₂.Q.1 = t ≫ (RelPoint.comb abs (M 1 0) (M 1 1) L₁.P L₁.Q).1 := by
+    refine congrArg Subtype.val (?_ : RelPoint.pre t (Category.comp_id t) L₂.Q
+      = RelPoint.pre t (Category.comp_id t) (RelPoint.comb abs (M 1 0) (M 1 1) L₁.P L₁.Q))
+    rw [RelPoint.pre_comb abs t (Category.comp_id t) (M 1 0) (M 1 1) L₁.P L₁.Q]
+    show _ = (M 1 0).val • _ + (M 1 1).val • _
+    rw [hM10, hM11]
+    exact hb
+  have hup : Limits.pullback.lift t t keyP ≫
+      Limits.pullback.fst L₂.P.1 (RelPoint.comb abs (M 0 0) (M 0 1) L₁.P L₁.Q).1 = t :=
+    Limits.pullback.lift_fst _ _ _
+  have huq : Limits.pullback.lift t t keyQ ≫
+      Limits.pullback.fst L₂.Q.1 (RelPoint.comb abs (M 1 0) (M 1 1) L₁.P L₁.Q).1 = t :=
+    Limits.pullback.lift_fst _ _ _
+  have hcond : Limits.pullback.lift t t keyP ≫
+      Limits.pullback.fst L₂.P.1 (RelPoint.comb abs (M 0 0) (M 0 1) L₁.P L₁.Q).1
+      = Limits.pullback.lift t t keyQ ≫
+        Limits.pullback.fst L₂.Q.1 (RelPoint.comb abs (M 1 0) (M 1 1) L₁.P L₁.Q).1 := by
+    rw [hup, huq]
+  have hucomp : Limits.pullback.lift (Limits.pullback.lift t t keyP)
+      (Limits.pullback.lift t t keyQ) hcond ≫ abelianCombPieceι L₁ L₂ M = t := by
+    show Limits.pullback.lift (Limits.pullback.lift t t keyP)
+        (Limits.pullback.lift t t keyQ) hcond ≫ Limits.pullback.fst _ _ ≫
+      Limits.pullback.fst L₂.P.1 (RelPoint.comb abs (M 0 0) (M 0 1) L₁.P L₁.Q).1 = t
+    rw [← Category.assoc, Limits.pullback.lift_fst, hup]
+  refine ⟨Limits.pullback.lift (Limits.pullback.lift t t keyP)
+    (Limits.pullback.lift t t keyQ) hcond (IsLocalRing.closedPoint Kz), ?_⟩
+  have h2 : (Limits.pullback.lift (Limits.pullback.lift t t keyP)
+        (Limits.pullback.lift t t keyQ) hcond ≫ abelianCombPieceι L₁ L₂ M)
+        (IsLocalRing.closedPoint Kz)
+      = t (IsLocalRing.closedPoint Kz) := by rw [hucomp]
+  simp only [Scheme.Hom.comp_base, TopCat.coe_comp, Function.comp_apply] at h2
+  exact h2.trans (Scheme.fromSpecResidueField_apply z _)
+
 /-- **Two full level-`n` structures on ONE `Γ₁(N)`-datum differ
-Zariski-locally by a CONSTANT matrix** (sorry leaf, opened 2026-07-29) —
-the whole geometric content under `exists_gamma1DeckAction`, and the only
-thing that node still owes.
+Zariski-locally by a CONSTANT matrix** (**PROVEN 2026-07-30** over
+`exists_openCover_comb_of_abelianFullLevelStructure` and the single
+geometric leaf `isOpenImmersion_equalizer_of_abelianFullLevelStructure`;
+opened as a bare sorry leaf 2026-07-29) — the whole geometric content
+under `exists_gamma1DeckAction`, and the only thing that node still owes.
 
 This is the `Γ₁`, arbitrary-base analogue of `X0.lean`'s
 `exists_openCover_twist_of_fullLevelStructure`, which is **PROVEN**.  The
@@ -2849,6 +3100,14 @@ basis `L₁` at a geometric point, which is free from `L₁.geom_basis`), on a
 NONEMPTY piece the matrix is invertible because `L₂.geom_basis` says two
 bases of `(ℤ/n)²` differ by a unit, and an EMPTY piece is initial so
 `σ = 1` serves.  Only step 2 is geometry.
+
+**All of that is now written** (2026-07-30), in the `CombPiece` section and
+the two theorems above; step 2 alone survives, as
+`isOpenImmersion_equalizer_of_abelianFullLevelStructure`.  The count in the
+FALSITY AUDIT below is what that leaf carries `L` for instead of a
+`ℚ`-structure, so it is reproduced in that leaf's docstring as well — it
+justifies both statements and is deliberately written out twice rather
+than cross-referenced, since either could be read alone.
 
 ## FAITHFULNESS: why there is NO `g : Z ⟶ SpecQ`, and why that is still TRUE
 
@@ -2905,8 +3164,54 @@ theorem exists_openCover_twist_of_abelianFullLevelStructure (N n : ℕ) (hn : 3 
     (L₁ L₂ : AbelianFullLevelStructure n d.ab) :
     ∃ 𝒰 : Scheme.OpenCover.{0} Z, ∀ i : 𝒰.I₀, ∃ σ : gamma0DeckGroup n,
       𝒰.f i ≫ L₂.P.1 = 𝒰.f i ≫ (AbelianFullLevelStructure.twist hn L₁ σ).P.1 ∧
-      𝒰.f i ≫ L₂.Q.1 = 𝒰.f i ≫ (AbelianFullLevelStructure.twist hn L₁ σ).Q.1 :=
-  sorry
+      𝒰.f i ≫ L₂.Q.1 = 𝒰.f i ≫ (AbelianFullLevelStructure.twist hn L₁ σ).Q.1 := by
+  obtain ⟨𝒰, h𝒰⟩ := exists_openCover_comb_of_abelianFullLevelStructure n hn d.ab
+    d.relativeDimensionOne L₁ L₂
+  refine ⟨𝒰, fun i => ?_⟩
+  obtain ⟨M, hMP, hMQ⟩ := h𝒰 i
+  rcases isEmpty_or_nonempty ↥(𝒰.X i) with hemp | hne
+  · haveI := hemp
+    exact ⟨1, (isInitialOfIsEmpty (X := 𝒰.X i)).hom_ext _ _,
+      (isInitialOfIsEmpty (X := 𝒰.X i)).hom_ext _ _⟩
+  · obtain ⟨pt⟩ := hne
+    let Kw := AlgebraicClosure ((𝒰.X i).residueField pt)
+    let t : Spec (CommRingCat.of Kw) ⟶ Z :=
+      (Spec.map (CommRingCat.ofHom (algebraMap ((𝒰.X i).residueField pt) Kw)) ≫
+        (𝒰.X i).fromSpecResidueField pt) ≫ 𝒰.f i
+    letI := d.ab.addCommGroup t
+    have hfac : ∀ {x y : RelPoint d.f (𝟙 Z)}, 𝒰.f i ≫ x.1 = 𝒰.f i ≫ y.1 →
+        RelPoint.pre t (Category.comp_id t) x = RelPoint.pre t (Category.comp_id t) y := by
+      intro x y h
+      refine Subtype.ext ?_
+      show t ≫ x.1 = t ≫ y.1
+      show ((Spec.map (CommRingCat.ofHom (algebraMap ((𝒰.X i).residueField pt) Kw)) ≫
+        (𝒰.X i).fromSpecResidueField pt) ≫ 𝒰.f i) ≫ x.1 = _
+      rw [Category.assoc, h, ← Category.assoc]
+    have hP' : RelPoint.pre t (Category.comp_id t) L₂.P
+        = (M 0 0).val • RelPoint.pre t (Category.comp_id t) L₁.P
+          + (M 0 1).val • RelPoint.pre t (Category.comp_id t) L₁.Q := by
+      rw [hfac hMP, RelPoint.pre_comb d.ab t (Category.comp_id t) (M 0 0) (M 0 1) L₁.P L₁.Q]
+      rfl
+    have hQ' : RelPoint.pre t (Category.comp_id t) L₂.Q
+        = (M 1 0).val • RelPoint.pre t (Category.comp_id t) L₁.P
+          + (M 1 1).val • RelPoint.pre t (Category.comp_id t) L₁.Q := by
+      rw [hfac hMQ, RelPoint.pre_comb d.ab t (Category.comp_id t) (M 1 0) (M 1 1) L₁.P L₁.Q]
+      rfl
+    have hM : IsUnit M :=
+      isUnit_of_geomBasis_comb hn
+        (RelPoint.nsmul_pre_eq_zero d.ab t (Category.comp_id t) L₁.nsmul_P)
+        (RelPoint.nsmul_pre_eq_zero d.ab t (Category.comp_id t) L₁.nsmul_Q)
+        (L₁.geom_basis Kw t) (L₂.geom_basis Kw t) M hP' hQ'
+    have hval : (hM.unit : Matrix (Fin 2) (Fin 2) (ZMod n)) = M := hM.unit_spec
+    refine ⟨hM.unit, ?_, ?_⟩
+    · show 𝒰.f i ≫ L₂.P.1 = 𝒰.f i ≫ (RelPoint.comb d.ab
+        ((hM.unit : Matrix (Fin 2) (Fin 2) (ZMod n)) 0 0)
+        ((hM.unit : Matrix (Fin 2) (Fin 2) (ZMod n)) 0 1) L₁.P L₁.Q).1
+      rw [hval]; exact hMP
+    · show 𝒰.f i ≫ L₂.Q.1 = 𝒰.f i ≫ (RelPoint.comb d.ab
+        ((hM.unit : Matrix (Fin 2) (Fin 2) (ZMod n)) 1 0)
+        ((hM.unit : Matrix (Fin 2) (Fin 2) (ZMod n)) 1 1) L₁.P L₁.Q).1
+      rw [hval]; exact hMQ
 
 /-- **Two rigidifications of one datum OVER `S` differ Zariski-locally by
 a deck transformation** (PROVEN 2026-07-29) — the `Γ₁` transcription of
@@ -5142,10 +5447,12 @@ one statement asserting a curve with five properties exists — and (release
 14, 2026-07-28) each of the three has itself been cut once more, so the
 LIVE leaves are:
 
-* representability — `exists_gamma1RigidifiedModuli`,
-  `exists_gamma1FullLevelStructure_cover`, `exists_gamma1DeckAction`
-  (`exists_gamma1Rigidification` and `exists_gamma1GITPresentation` are
-  PROVEN over them);
+* representability — `exists_gamma1RigidifiedModuliScheme` and
+  `isAffine_of_gamma1RigidifiedModuliScheme` (the two citation halves of
+  `exists_gamma1RigidifiedModuli`, which has been PROVEN over them since
+  2026-07-30), `exists_gamma1FullLevelStructure_cover`,
+  `exists_gamma1DeckAction` (`exists_gamma1Rigidification` and
+  `exists_gamma1GITPresentation` are PROVEN over them);
 * the domain property — `exists_gamma1Datum_fieldExtension`,
   `transitiveMinimalPrimes_of_gamma1GITPresentation`
   (`geometricComponents_of_gamma1GITPresentation` and
