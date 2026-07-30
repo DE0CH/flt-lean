@@ -19732,6 +19732,31 @@ an ASSUMPTION; `Assumptions/Odlyzko.lean` cites Poitou's discriminant paper).
 **So local class field theory must be built, and it, not the cup product, is
 the dominant cost of this leaf.**
 
+**WHAT THIS LEAF NOW CARRIES, AND WHAT IT SHARES ITS GATE WITH (2026-07-30).**
+Two things arrived here on that date, neither of them new mathematics:
+
+* `exists_injective_sha2_dual_sha1Twist_of_selfDual` below is **PROVEN over this
+  leaf** — the LEFT nondegeneracy clause plus `injective_of_forall_apply_eq_zero`
+  above.  The STRENGTH AUDIT above had already established `PT ⟹ M` as a fact,
+  but the arrow to that intermediate leaf was never written, so the compiler
+  carried two `sorry`s for one obligation.  Discharging this leaf therefore now
+  discharges FOUR declarations, not two: `finiteDimensional_sha2`,
+  `finrank_sha2_le_finrank_sha1Twist`, that leaf, and `M` through it.
+* **The shared-gate note, MOVED here from that leaf, because this is where the
+  work is.**  This leaf and `card_sha1Twist_le_card_dualNumberPoints` below are
+  blocked on ONE object — the local Tate pairing
+  `H^i(ℚ_v, M) × H^{2−i}(ℚ_v, M*) → k`.  This leaf needs it for the global
+  duality; that leaf needs it because the dual Selmer group `H¹_{L^⊥}` cannot be
+  STATED without it.  They are ONE cost, not two, and should go to ONE owner, in
+  the order: (a) vendor the cup product from `~/cs/FLT`
+  (`ContCohomology/CupProduct.lean`, 582 lines, sorry-free) with its
+  `linHom`/`iHom` shims; (b) build the local invariant map; (c) then both leaves.
+  Before building anything, read the DODGE PRECEDENT recorded on that leaf —
+  `Modularity/Patching.lean` runs the same Greenberg–Wiles argument with no
+  pairing at all, by describing the dual Selmer source as an explicit
+  unramified-outside-`S` condition instead of as an orthogonal complement.  It
+  does not transplant by copying, and it is the cheapest lead in this subtree.
+
 **HOW TO DECOMPOSE IT FURTHER — and why that was NOT done here.**  The next
 level down is genuine but is a construction, not a restatement: the nine-term
 sequence needs `P^i_S(M) = ⊕_{v ∈ S} H^i(ℚ_v, M)` (a two-term product here,
@@ -20183,12 +20208,72 @@ lemma adZeroTraceForm_nondegenerate {x : AdZero k V} (hx : x ≠ 0) :
   exact htr
 
 /-- **Poitou–Tate duality: `Ш²_S(ad⁰)` embeds `k`-linearly into the DUAL of
-`Ш¹_S(ad⁰(1))`, GIVEN the self-duality of the coefficients** (sorry leaf; cut
-out 2026-07-27 as the DUALITY half of `rank_sha2_le_rank_sha1_twist` below, and
-RECUT 2026-07-28 to receive the trace pairing rather than manufacture it — see
-STATUS immediately below).
+`Ш¹_S(ad⁰(1))`, GIVEN the self-duality of the coefficients** (**PROVEN
+2026-07-30** over `exists_poitouTatePairing_sha2_sha1Twist` above — NOT a sorry
+node any more, see STATUS 2026-07-30 immediately below; cut out 2026-07-27 as the
+DUALITY half of `rank_sha2_le_rank_sha1_twist` below, and RECUT 2026-07-28 to
+receive the trace pairing rather than manufacture it).
 
-**STATUS 2026-07-28 — WHAT THIS RECUT DID AND DID NOT DO.** The statement
+**STATUS 2026-07-30: THIS NODE IS NO LONGER A LEAF, AND THE FILE ALREADY SAID SO
+IN PROSE.** It is the two-line assembly
+
+  take the pairing `B : Ш²_S(ad⁰) × Ш¹_S(ad⁰(1)) → k` from
+  `exists_poitouTatePairing_sha2_sha1Twist` above, discard its RIGHT
+  nondegeneracy clause, and feed the LEFT one to
+  `injective_of_forall_apply_eq_zero` above — which is exactly the statement that
+  left-nondegeneracy IS injectivity into the dual, since `Module.Dual k U` is by
+  definition `U →ₗ[k] k`.
+
+**Why this was not done at the 2026-07-29 cut, and why it is not a circular
+re-cut.**  The STRENGTH AUDIT on the pairing leaf above records `PT ⟹ {S₂, P}`
+and `{S₂, P} ⟺ M`, where `M` is `exists_injective_sha2_dual_sha1Twist` below and
+`{S₂, P}` are `finiteDimensional_sha2`/`finrank_sha2_le_finrank_sha1Twist` above.
+Since `M` is proven over THIS declaration, `PT ⟹ M` was already established as a
+mathematical fact in that audit — but the arrow `PT ⟹` *this leaf* was never
+written down, so the compiler still carried two independent `sorry`s for one
+obligation.  It is written now.  This is NOT the circular re-cut that audit warns
+against: that warning is about WEAKENING the pairing leaf by dropping its right
+nondegeneracy clause, which would make it equivalent to `M`.  Nothing is weakened
+here; the strictly stronger leaf discharges the weaker one, which is the ordinary
+direction.  Frontier `2 → 1` in this subsection.
+
+The same audit's shared-gate note — **this statement and
+`card_sha1Twist_le_card_dualNumberPoints` below are ONE cost, the local Tate
+pairing, not two** — is therefore now a note about the PAIRING LEAF above and
+that leaf; it has been copied there, which is where the work still is.
+
+**WHAT THIS DOES NOT BUY, stated plainly so nobody reads the count as
+progress on the arithmetic.**  The Poitou–Tate content is untouched: it sits, in
+full and undivided, on `exists_poitouTatePairing_sha2_sha1Twist` above, still
+gated on the local invariant map `H²(ℚ_v, μ) ≅ ℚ/ℤ`.  What this buys is that a
+future owner of that leaf discharges this one for free instead of proving global
+duality twice, and that the tree no longer claims two independent obligations
+where the file's own prose had identified one.
+
+**THE THREE COEFFICIENT-SELF-DUALITY HYPOTHESES ARE NOT CONSUMED BY THIS PROOF,
+AND ARE DELIBERATELY RETAINED** (renamed `_hBrep`, `_hBnd` — and `hirr` to
+`_hirr` — following this file's established convention for a binder kept for its
+consumer's hypothesis surface, exactly as the pairing leaf above records for its
+own `_hirr`; `B` keeps its name because the other two binders' TYPES mention it.
+The renaming was forced by the compiler: while the body was `sorry` the
+unusedVariables linter was suppressed, and a real proof term makes it fire.)
+**Do not "clean them up" any further.**  Two reasons, and the second is a project
+rule:
+
+* The signature of this declaration and the proof of `M` below are UNCHANGED by
+  this commit, so nothing downstream moved.
+* `adZeroTraceForm`, `adZeroTraceForm_apply`, `adZeroTraceForm_rep` and
+  `adZeroTraceForm_nondegenerate` above have **exactly one consumer in the whole
+  tree** — `M`'s application of this declaration to them.  Dropping these three
+  binders would make that whole (proven, ~120-line) trace-form development
+  FREE-FLOATING, which the project forbids.  And the development is not
+  scaffolding to be deleted: it is genuinely needed material, because the
+  `ad⁰* ≅ ad⁰(1)` identification that the pairing leaf above must perform is
+  precisely nondegeneracy-of-the-trace-form (see that leaf's own paragraph on why
+  it is cheap only for odd `ℓ`).  So these binders keep it in the root cone until
+  the pairing leaf is proven and consumes it directly, at which point they may go.
+
+**STATUS 2026-07-28 — WHAT THAT EARLIER RECUT DID AND DID NOT DO.** The statement
 `exists_injective_sha2_dual_sha1Twist` below is UNCHANGED, still has the same
 consumer (`rank_sha2_le_rank_sha1_twist`), and is now PROVEN: it is this leaf
 applied to `adZeroTraceForm` above. What moved is one of the two identifications
@@ -20357,15 +20442,16 @@ References: Neukirch–Schmidt–Wingberg, *Cohomology of Number Fields*, VIII.6
 theorem exists_injective_sha2_dual_sha1Twist_of_selfDual
     (hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
-    (hirr : ρbar.IsIrreducible)
+    (_hirr : ρbar.IsIrreducible)
     (B : AdZero k V →ₗ[k] AdZero k V →ₗ[k] k)
-    (hBrep : ∀ (σ : Field.absoluteGaloisGroup ℚ) (x y : AdZero k V),
+    (_hBrep : ∀ (σ : Field.absoluteGaloisGroup ℚ) (x y : AdZero k V),
       B (AdZero.rep ρbar σ x) (AdZero.rep ρbar σ y) = B x y)
-    (hBnd : ∀ x : AdZero k V, x ≠ 0 → ∃ y : AdZero k V, B x y ≠ 0) :
+    (_hBnd : ∀ x : AdZero k V, x ≠ 0 → ∃ y : AdZero k V, B x y ≠ 0) :
     ∃ f : ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) →ₗ[k]
         Module.Dual k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)),
-      Function.Injective f :=
-  sorry
+      Function.Injective f := by
+  obtain ⟨PT, hleft, -⟩ := exists_poitouTatePairing_sha2_sha1Twist hℓOdd hdim hℓ5 h
+  exact ⟨PT, injective_of_forall_apply_eq_zero PT hleft⟩
 
 /-- **Poitou–Tate duality: `Ш²_S(ad⁰)` embeds `k`-linearly into the DUAL of
 `Ш¹_S(ad⁰(1))`** (**PROVEN 2026-07-28** over the leaf
