@@ -75,8 +75,19 @@ two class-field leaves below.)
 * `Heegner.exists_intCubic_weberAlpha`, `Heegner.intCast_indep_weberAlpha_pow_four`
   — `α` is an algebraic integer generating a cubic field (Weber's theory of the
   ring class field of the order of discriminant `−4p`, whose class number is `3`);
-* `Heegner.isIntegral_gammaTwo_heegnerPoint` — `γ₂(τ₀)` is an algebraic integer
-  (`q`-expansion combinatorics, no class field theory);
+* `Heegner.exists_modularPolynomial` — the MODULAR POLYNOMIAL `Φ_N ∈ ℤ[X, Y]`: it kills
+  `(j(A z), j(z))` for every primitive integral `A` of determinant `N`, and for non-square `N`
+  its diagonal `Φ_N(X, X)` has leading coefficient `±1` (Kronecker). No class field theory and
+  no class-number hypothesis. This REPLACES the former leaf
+  `Heegner.isIntegral_gammaTwo_heegnerPoint`, which is now PROVEN from it through three
+  intermediate steps, ALL proved here: `isIntegral_of_eval_diag` (a `(x,x)`-root of a
+  diagonal-unit bivariate polynomial is an algebraic integer),
+  `isIntegral_jInvariant_of_fixedPoint` (put `w = z`), and
+  `isIntegral_jInvariant_of_quadratic` (`j` is an algebraic integer at every imaginary
+  quadratic `z` — the fixing matrix is `[[m−b, −c], [a, m]]`, and
+  `exists_coprime_not_isSquare_quadratic` produces an `m` making it primitive with non-square
+  determinant); a cube root of an algebraic integer is then an algebraic integer, so Weber's
+  `3 ∤ p` and level-`3` theory — which the old docstring claimed were needed here — are not;
 * `Heegner.exists_quadratic_jInvariant_heegnerPoint` — `j(τ₀) ∈ K = ℚ(√−p)`; **this is the
   main theorem of complex multiplication and is the only leaf here that needs it**, and the
   only one that consumes `hcl`;
@@ -103,18 +114,25 @@ PROVEN, over three new analytic leaves:
   `Heegner.cexp_heegnerPoint` (`q = −Q` at `τ₀`), `Heegner.E_second_order` (the shared
   `q`-expansion split) and `Heegner.abs_tsum_shift_le` (a geometric-majorant tail bound).
 
-So this file has SIX open leaves (checked against the compiler's `declaration uses 'sorry'`
-warning set; the `sorry` token count with comments stripped agrees, so there are no anonymous
-inner sorries): `exists_intCubic_weberAlpha`, `intCast_indep_weberAlpha_pow_four`,
-`isIntegral_gammaTwo_heegnerPoint`, the two class-field leaves
-`exists_quadratic_jInvariant_heegnerPoint` and `exists_quadratic_gammaTwo_of_jInvariant` that
-replaced `exists_rat_gammaTwo_heegnerPoint` at release 19, and the single `η`-product identity
-`Heegner.eta_two_torsion_key`.
+So this file has SIX open leaves. The list below was REGENERATED from the merged source at
+this merge, not inherited from either side, because the two sides disagreed about it and
+**both were right about their own base**: `exists_intCubic_weberAlpha`,
+`intCast_indep_weberAlpha_pow_four`, `exists_modularPolynomial`, the two class-field leaves
+`exists_quadratic_jInvariant_heegnerPoint` and `exists_quadratic_gammaTwo_of_jInvariant`, and
+the single `η`-product identity `Heegner.eta_two_torsion_key`.
 
-TWO STALE CLAIMS CORRECTED (2026-07-29). This paragraph used to list the Diophantine
-`eq_of_two_mul_mul_cube_add_one_eq_sq` as open: it was PROVEN in `1b07f83f` and the header was
-never updated. It also listed `Heegner.eta_pow_24_add_eta_two_pow_24`, which is now proven; the
-leaf that replaces it is `eta_two_torsion_key`, so the count is unchanged. -/
+The count is unchanged at six, but FOUR names moved, which is why neither side's list survives:
+
+* `isIntegral_gammaTwo_heegnerPoint` is PROVEN (flt-lean-108), replaced as a leaf by
+  `exists_modularPolynomial`;
+* `Heegner.eta_pow_24_add_eta_two_pow_24` is PROVEN (flt-lean-41, release 19), replaced as a
+  leaf by `Heegner.eta_two_torsion_key`;
+* `exists_rat_gammaTwo_heegnerPoint` and the Diophantine
+  `eq_of_two_mul_mul_cube_add_one_eq_sq` are PROVEN and are not leaves at all.
+
+Each side's header listed the OTHER side's two closures as still open, so a reader of either
+would have been sent at a proven target. Do not trust this paragraph either — it is stamped to
+one commit; regenerate it from the compiler's `declaration uses 'sorry'` warning set. -/
 module
 
 public import Mathlib.Tactic
@@ -1255,22 +1273,9 @@ theorem intCast_indep_weberAlpha_pow_four {p : ℕ} (hp : p.Prime) (hp8 : p % 8 
       + (w : ℂ) = 0 → u = 0 ∧ v = 0 ∧ w = 0 :=
   sorry
 
-/-- **LEAF 3 — `γ₂(τ₀)` is an ALGEBRAIC INTEGER.**
-
-Half of "`γ₂(τ₀) ∈ ℤ`", and deliberately the half that costs no class field theory: `j(τ₀)`
-is an algebraic integer for any imaginary quadratic `τ₀` (the classical integrality of the
-class equation, provable by `q`-expansions and the modular equation `Φ_N`, Booher §2), and
-since `3 ∤ p` the cube root `γ₂` is again an algebraic integer (Booher §3.1: `γ₂` is a
-modular function for the group `H` of level `3`, and its `q`-expansion has integral
-coefficients).
-
-NOTE THIS LEAF DOES NOT NEED `hcl`, and its hypotheses are correspondingly weaker than the
-other CM leaf's. That asymmetry is the reason for splitting the CM input in two: this half is
-Weber/`q`-expansion combinatorics, the other half (LEAF 4) is the main theorem of complex
-multiplication. They are independently attackable and belong to different theories. -/
-theorem isIntegral_gammaTwo_heegnerPoint {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3) (h3 : 3 < p) :
-    IsIntegral ℤ (gammaTwo (heegnerPoint p hp.pos)) :=
-  sorry
+/- **LEAF 3 (`isIntegral_gammaTwo_heegnerPoint`) HAS MOVED** — it is now PROVEN, and lives
+just below `gammaTwo_pow_three_eq_jInvariant` (LEAF 5), which its proof consumes. Lean's
+declaration order is the only reason for the move; nothing about the statement changed. -/
 
 /-! #### `LEAF 4` DECOMPOSED — the real-analytic half is PROVEN here (2026-07-28)
 
@@ -2484,6 +2489,352 @@ theorem gammaTwo_pow_three_eq_jInvariant (z : UpperHalfPlane) : gammaTwo z ^ 3 =
   rw [gammaTwo_eq_E₄_div_eta_pow_eight, jInvariant, div_pow, ModularForm.discriminant,
     show (24 : ℕ) = 8 * 3 from rfl, pow_mul]
 
+/-! ### LEAF 3 — `γ₂(τ₀)` is an algebraic integer
+
+This block replaces the former LEAF 3 (which sat above, between LEAF 2 and LEAF 4). It is
+here rather than there only because its proof consumes `gammaTwo_pow_three_eq_jInvariant`,
+which Lean requires to be declared first.
+
+**The old LEAF 3 docstring's route was more expensive than necessary, and one of its claims
+is retracted below**: it asserted that `3 ∤ p` and Weber's level-`3` group `H` are needed to
+pass from "`j(τ₀)` is an algebraic integer" to "`γ₂(τ₀)` is an algebraic integer". They are
+not. `γ₂` is a root of the MONIC polynomial `X³ − j(τ₀)`, so integrality of the cube root is
+free from integral closedness alone (`IsIntegral.of_pow`), with no modular theory, no
+`q`-expansion combinatorics and no hypothesis on `p mod 3`. Weber's `3 ∤ p` is needed for
+`γ₂(τ₀)` to lie in the same *field* as `j(τ₀)` — i.e. for the class-field leaves,
+rationality — not for integrality.
+
+WHAT IS LEFT OPEN HERE IS EXACTLY ONE STATEMENT, `exists_modularPolynomial`, and the chain
+down to it is fully written and compiling:
+
+  `exists_modularPolynomial`  (LEAF: `Φ_N ∈ ℤ[X,Y]` kills `(j(A z), j(z))`; Kronecker's `±1`)
+    → `isIntegral_jInvariant_of_fixedPoint`   (put `w = z`; PROVEN, via `isIntegral_of_eval_diag`)
+    → `isIntegral_jInvariant_of_quadratic`    (build the fixing matrix; PROVEN)
+    → `isIntegral_jInvariant_heegnerPoint`    (specialise to `τ₀`; PROVEN)
+    → `isIntegral_gammaTwo_heegnerPoint`      (cube root; PROVEN)
+
+Everything except the first line is elementary — integer arithmetic, one complex-analytic
+observation (`z ∈ ℍ` is not real, hence the discriminant is negative) and polynomial
+plumbing. -/
+
+/-- **The pointwise arithmetic criterion — PROVEN.** `m² − b m + k` is positive and NOT a
+perfect square as soon as `2m − b ≥ 4k − b² > 0`.
+
+This is the elementary step that produces the non-square determinant `N` the modular
+polynomial needs; it is pure integer arithmetic, with no modular theory and no `z`.
+
+THE ARGUMENT, which is much cheaper than the one an earlier draft of this file recorded.
+That draft invoked "a quadratic taking perfect-square values at every integer must be the
+square of a linear polynomial, hence have discriminant `0`" — true, but a real theorem. It
+is not needed. Complete the square instead: with `E = 4k − b² > 0` and `u = 2m − b`,
+
+  `4(m² − b m + k) = u² + E`,
+
+so as soon as `u ≥ E` one has `u² < u² + E ≤ u² + u < (u + 1)²`. A perfect square
+`m² − bm + k = s²` would make `u² + E = (2s)²` a perfect square strictly between the
+consecutive squares `u²` and `(u+1)²` — impossible. Positivity is the same identity:
+`4(m² − bm + k) = u² + E > 0`.
+
+It is stated POINTWISE rather than as an existence claim because the consumer needs to pick
+`m` in a prescribed residue class (coprime to `a`, to make the matrix primitive), not merely
+to know that some `m` works. -/
+theorem not_isSquare_quadratic_of_le {b k m : ℤ} (hE : 0 < 4 * k - b ^ 2)
+    (hm : 4 * k - b ^ 2 ≤ 2 * m - b) :
+    0 < m ^ 2 - b * m + k ∧ ¬ IsSquare (m ^ 2 - b * m + k) := by
+  have hu0 : 0 ≤ 2 * m - b := le_trans hE.le hm
+  refine ⟨by nlinarith [sq_nonneg (2 * m - b)], ?_⟩
+  rintro ⟨s, hs⟩
+  have key : (2 * s) ^ 2 = (2 * m - b) ^ 2 + (4 * k - b ^ 2) := by nlinarith [hs]
+  have ht0 : (0 : ℤ) ≤ |2 * s| := abs_nonneg _
+  have ht : |2 * s| ^ 2 = (2 * m - b) ^ 2 + (4 * k - b ^ 2) := by rw [sq_abs]; exact key
+  by_cases hle : |2 * s| ≤ 2 * m - b
+  · nlinarith
+  · have h1 : 2 * m - b + 1 ≤ |2 * s| := by omega
+    nlinarith
+
+/-- **The arithmetic input to LEAF 3a — PROVEN.** A quadratic `m² − b m + k` of negative
+discriminant takes a positive non-square value at some `m` COPRIME to any prescribed nonzero
+`a`.
+
+The coprimality is what makes the matrix `[[m − b, −c], [a, m]]` built from it PRIMITIVE,
+which the modular polynomial genuinely needs (see `exists_modularPolynomial`). Witness:
+`m = 1 + |a|·T` with `T = (4k − b²) + |b| + 1`, so that `m ≡ 1 mod a` and `2m − b ≥ 4k − b²`
+simultaneously. -/
+theorem exists_coprime_not_isSquare_quadratic {b k : ℤ} (h : b ^ 2 - 4 * k < 0) {a : ℤ}
+    (ha : a ≠ 0) :
+    ∃ m : ℤ, IsCoprime m a ∧ 0 < m ^ 2 - b * m + k ∧ ¬ IsSquare (m ^ 2 - b * m + k) := by
+  have hE : 0 < 4 * k - b ^ 2 := by linarith
+  set T : ℤ := (4 * k - b ^ 2) + |b| + 1 with hT
+  have hTpos : 0 < T := by
+    have : (0 : ℤ) ≤ |b| := abs_nonneg b
+    simp only [hT]; linarith
+  have ha1 : 1 ≤ |a| := Int.one_le_abs (by omega)
+  refine ⟨1 + |a| * T, ?_, ?_⟩
+  · rcases abs_cases a with ⟨hac, _⟩ | ⟨hac, _⟩
+    · exact ⟨1, -T, by rw [hac]; ring⟩
+    · exact ⟨1, T, by rw [hac]; ring⟩
+  · refine not_isSquare_quadratic_of_le hE ?_
+    have h1 : b ≤ |b| := le_abs_self b
+    nlinarith
+
+/-- **An integral quadratic relation at a point of `ℍ` has negative discriminant — PROVEN.**
+
+`z ∈ ℍ` is not real, so `a z² + b z + c = 0` with `a ≠ 0` forces `b² − 4ac < 0`; no sign
+condition need be assumed anywhere. Formally: `w = 2a z + b` satisfies `w² = b² − 4ac`, a
+REAL number, while `Im w = 2a·Im z ≠ 0`; so `Im(w²) = 2·Re w·Im w = 0` gives `Re w = 0`, and
+then `b² − 4ac = Re(w²) = −(Im w)² < 0`. -/
+theorem neg_discr_of_quadratic (z : UpperHalfPlane) {a b c : ℤ} (ha : a ≠ 0)
+    (h : (a : ℂ) * (z : ℂ) ^ 2 + (b : ℂ) * (z : ℂ) + (c : ℂ) = 0) :
+    b ^ 2 - 4 * a * c < 0 := by
+  set w : ℂ := ((2 * a : ℤ) : ℂ) * (z : ℂ) + ((b : ℤ) : ℂ) with hwdef
+  have hw2 : w ^ 2 = ((b ^ 2 - 4 * a * c : ℤ) : ℂ) := by
+    simp only [hwdef]; push_cast; linear_combination (4 * (a : ℂ)) * h
+  have hwim : w.im = 2 * (a : ℝ) * (z : ℂ).im := by
+    simp only [hwdef, Complex.add_im, Complex.mul_im, Complex.intCast_re, Complex.intCast_im]
+    push_cast
+    ring
+  have hzim : 0 < (z : ℂ).im := z.im_pos
+  have haR : (a : ℝ) ≠ 0 := Int.cast_ne_zero.mpr ha
+  have hwim0 : w.im ≠ 0 := by
+    rw [hwim]
+    exact mul_ne_zero (mul_ne_zero two_ne_zero haR) (ne_of_gt hzim)
+  have hre : w.re = 0 := by
+    have h1 : (w ^ 2).im = 0 := by rw [hw2]; exact Complex.intCast_im _
+    rw [pow_two, Complex.mul_im] at h1
+    have h2 : w.re * w.im = 0 := by linarith
+    rcases mul_eq_zero.mp h2 with h3 | h3
+    · exact h3
+    · exact absurd h3 hwim0
+  have hD : ((b ^ 2 - 4 * a * c : ℤ) : ℝ) = -(w.im ^ 2) := by
+    have h1 := congrArg Complex.re hw2
+    rw [pow_two, Complex.mul_re, hre] at h1
+    rw [Complex.intCast_re] at h1
+    nlinarith [h1]
+  have hlt : ((b ^ 2 - 4 * a * c : ℤ) : ℝ) < 0 := by
+    rw [hD]
+    have : 0 < w.im ^ 2 := by positivity
+    linarith
+  exact_mod_cast hlt
+
+/-- **Plumbing — PROVEN.** If a bivariate integral polynomial `Φ ∈ ℤ[Y][X]` vanishes at
+`(x, x)` and its DIAGONAL `Φ(Y, Y)` has unit leading coefficient, then `x` is an algebraic
+integer.
+
+`Φ(Y, Y)` is `Φ.eval Polynomial.X`: substituting the outer variable by the inner one. The
+proof is `Polynomial.hom_eval₂` (substitution commutes with a ring hom) plus the observation
+that a `±1` leading coefficient makes `Φ(Y,Y)` or its negative monic. Note no nonvanishing
+hypothesis on `Φ(Y,Y)` is needed: `IsUnit` of its leading coefficient already excludes `0`. -/
+theorem isIntegral_of_eval_diag {x : ℂ} {Φ : Polynomial (Polynomial ℤ)}
+    (hunit : IsUnit (Φ.eval Polynomial.X).leadingCoeff)
+    (hvan : Polynomial.eval₂ (Polynomial.eval₂RingHom (Int.castRingHom ℂ) x) x Φ = 0) :
+    IsIntegral ℤ x := by
+  have h1 := Polynomial.hom_eval₂ Φ (RingHom.id (Polynomial ℤ))
+      (Polynomial.eval₂RingHom (Int.castRingHom ℂ) x) Polynomial.X
+  rw [Polynomial.eval₂_id, RingHom.comp_id] at h1
+  rw [show (Polynomial.eval₂RingHom (Int.castRingHom ℂ) x) Polynomial.X = x from
+      Polynomial.eval₂_X _ _] at h1
+  rw [hvan] at h1
+  have hfD : Polynomial.eval₂ (algebraMap ℤ ℂ) x (Φ.eval Polynomial.X) = 0 := by
+    rw [algebraMap_int_eq]; exact h1
+  rcases Int.isUnit_iff.mp hunit with h2 | h2
+  · exact ⟨Φ.eval Polynomial.X, h2, hfD⟩
+  · exact ⟨-(Φ.eval Polynomial.X),
+      by rw [Polynomial.Monic, Polynomial.leadingCoeff_neg, h2, neg_neg],
+      by rw [Polynomial.eval₂_neg, hfD, neg_zero]⟩
+
+/-- **LEAF 3a — THE MODULAR POLYNOMIAL `Φ_N`, WITH KRONECKER'S LEADING COEFFICIENT.**
+
+For every `N > 0` there is a `Φ_N ∈ ℤ[Y][X]` such that
+
+* `Φ_N(j(A z), j(z)) = 0` for every `z ∈ ℍ` and every PRIMITIVE integral matrix
+  `A = [[p, q], [r, s]]` of determinant `N`, and
+* if `N` is not a perfect square, the diagonal `Φ_N(Y, Y) ∈ ℤ[Y]` has leading coefficient a
+  unit, i.e. `±1` (**Kronecker**).
+
+This is the arithmetic heart of the class equation, and it is now the ONLY unproven step of
+the old LEAF 3: Cox, *Primes of the form x²+ny²*, §11 (Theorem 11.18 for `Φ_m ∈ ℤ[X, Y]`,
+Theorem 11.2 / Lemma 11.23 for the leading coefficient); Booher, *Modular curves and the
+class number one problem*, §2; Serre, *Cours d'arithmétique*, VII.
+
+THE CONSTRUCTION, for whoever proves it. Let `C(N)` be a set of representatives for the
+finitely many left-`Γ`-classes of primitive integral matrices of determinant `N` (`Γ = SL₂ℤ`,
+`#C(N) = ψ(N) = N∏(1 + 1/ℓ)`; Hermite normal form gives the standard representatives
+`[[a, b], [0, d]]` with `ad = N`, `0 ≤ b < d`, `gcd(a,b,d) = 1`). Put
+
+  `Φ_N(X, j(z)) = ∏_{A' ∈ C(N)} (X − j(A' z))`,
+
+monic of degree `ψ(N)` in `X`. Its coefficients are holomorphic `Γ`-invariant functions on
+`ℍ` that are meromorphic at the cusp, hence POLYNOMIALS IN `j`; integrality of those
+polynomials' coefficients is the `q`-expansion argument (they lie in `ℤ[ζ_N]` and are
+`Gal(ℚ(ζ_N)/ℚ)`-stable, hence in `ℤ`). The vanishing clause then holds for EVERY primitive
+`A` of determinant `N`, not just for the representatives, because `A = γ A'` with `γ ∈ Γ` and
+`j` is `Γ`-invariant, so `j(A z) = j(A' z)`.
+
+Kronecker's half is the `q`-expansion computation on the diagonal: writing `q = e^{2πiz}`,
+each factor `j(z) − j(A' z)` of `Φ_N(j(z), j(z))` has a leading `q`-power with coefficient a
+root of unity, and for `N` a NON-square no factor vanishes identically — whereas for `N = d²`
+the representative `d·I` contributes the factor `j(z) − j(z) = 0` and `Φ_N(X, X)` is
+identically `0`.
+
+WHY PRIMITIVITY IS IN THE HYPOTHESIS AND MUST STAY. Without it the clause is FALSE, not
+merely unprovable: `A = d·A'` induces the same Möbius transformation as `A'`, so
+`j(A z) = j(A' z)`, which is a root of `Φ_{N/d²}(·, j(z))` and in general NOT of
+`Φ_N(·, j(z))`. Concretely at `N = 4`, `A = 2·I` gives `j(A z) = j(z)`, and `Φ_4(X, X)` is
+identically zero while `Φ_4(j(z), j(z)) = 0` would be needed. The consumer supplies
+primitivity for free by choosing `m` coprime to `a` — see
+`exists_coprime_not_isSquare_quadratic`.
+
+WHY THE NON-SQUARE HYPOTHESIS IS ON THE SECOND CLAUSE ONLY. `Φ_N` exists for every `N > 0`;
+it is only Kronecker's leading coefficient that needs `N` non-square, and dropping that
+hypothesis makes the clause FALSE with an explicit witness: for `N = 1` the only class is
+`I`, so `Φ_1(X, Y) = X − Y` and `Φ_1(Y, Y) = 0`, whose leading coefficient is `0`, not a
+unit. (This is exactly why the consumer below must produce a non-square determinant: with a
+square one it could conclude that `j` is an algebraic integer at EVERY point of `ℍ`, whereas
+`j` is transcendental off a countable set.)
+
+THE STATEMENT IS DELIBERATELY MORE GENERAL THAN THE CONSUMER NEEDS — it is quantified over
+all `z` and all target points `w = A z`, whereas the consumer only uses `w = z`. That is the
+same choice `gammaTwo_pow_three_eq_jInvariant` makes and for the same reason: it is an
+identity of modular functions, nothing is gained by specialising, and the general form is
+what any further consumer (Weber's level-`3` descent, Hecke correspondences) will want.
+
+THE MÖBIUS CONDITION IS WRITTEN MULTIPLICATIVELY (`p z + q = w (r z + s)`) to avoid a
+division: `r z + s ≠ 0` is automatic once the determinant is nonzero (if `r ≠ 0` then
+`Im(r z + s) = r·Im z ≠ 0`; if `r = 0` then `s ≠ 0`), so no such hypothesis is needed.
+
+ABSENCE RE-VERIFIED, NOT INHERITED (2026-07-28, and again 2026-07-30 after the merge):
+`grep -rn 'jInvariant\|modularPolynomial\|classEquation\|ComplexMultiplication' Fermat/
+.lake/packages/mathlib/ ~/cs/FLT/` finds the `j`-invariant nowhere outside this file —
+`Mathlib/NumberTheory/ModularForms/` has `DedekindEta`, `Discriminant`, `LevelOne/GradedRing`
+and `QExpansion` and no `j` at all, and `~/cs/FLT` has zero hits. Refute this note by
+exhibiting any of those names; the leaf would then reduce to specialising them.
+
+WHAT THIS LEAF IS *NOT*. It needs no complex multiplication, no class field theory and no
+class-number hypothesis — integrality of `j` at CM points is prior to all of that, and holds
+at every imaginary quadratic point regardless of the class number. That is exactly why the
+CM content of this cluster sits in the class-field leaves and not here. -/
+theorem exists_modularPolynomial {N : ℤ} (hN : 0 < N) :
+    ∃ Φ : Polynomial (Polynomial ℤ),
+      (¬ IsSquare N → IsUnit (Φ.eval Polynomial.X).leadingCoeff) ∧
+      ∀ (z w : UpperHalfPlane) (p q r s : ℤ), p * s - q * r = N →
+        (∀ d : ℤ, d ∣ p → d ∣ q → d ∣ r → d ∣ s → IsUnit d) →
+        (p : ℂ) * (z : ℂ) + (q : ℂ) = (w : ℂ) * ((r : ℂ) * (z : ℂ) + (s : ℂ)) →
+        Polynomial.eval₂ (Polynomial.eval₂RingHom (Int.castRingHom ℂ) (jInvariant z))
+          (jInvariant w) Φ = 0 :=
+  sorry
+
+/-- **`j(z)` is an algebraic integer at a FIXED POINT of a primitive integral matrix of
+non-square determinant — PROVEN** over LEAF 3a and `isIntegral_of_eval_diag`.
+
+This is Kronecker's theorem in the form the class equation uses: put `w = z` in the modular
+equation, so that `Φ_N(j(z), j(z)) = 0`, and read off a monic integral polynomial from
+Kronecker's leading coefficient.
+
+`hpos : 0 < p*s − q*r` IS DERIVABLE from `hfix` and so does not strengthen the hypothesis
+list in any essential way: a matrix of determinant `D` scales imaginary parts by
+`D/|r z + s|²`, so a fixed point in `ℍ` forces `D > 0`. It is taken as an argument because
+every classical source states the theorem for `det = N > 0`, and because both consumers have
+it in hand already. -/
+theorem isIntegral_jInvariant_of_fixedPoint (z : UpperHalfPlane) {p q r s : ℤ}
+    (hpos : 0 < p * s - q * r) (hns : ¬ IsSquare (p * s - q * r))
+    (hprim : ∀ d : ℤ, d ∣ p → d ∣ q → d ∣ r → d ∣ s → IsUnit d)
+    (hfix : (p : ℂ) * (z : ℂ) + (q : ℂ) = (z : ℂ) * ((r : ℂ) * (z : ℂ) + (s : ℂ))) :
+    IsIntegral ℤ (jInvariant z) := by
+  obtain ⟨Φ, hkron, hvan⟩ := exists_modularPolynomial hpos
+  exact isIntegral_of_eval_diag (hkron hns) (hvan z z p q r s rfl hprim hfix)
+
+/-- **Integrality of the `j`-invariant at an imaginary quadratic point — PROVEN** over
+`isIntegral_jInvariant_of_fixedPoint` plus the two arithmetic lemmas above.
+
+If `z ∈ ℍ` satisfies a nontrivial integral quadratic relation `a z² + b z + c = 0` with
+`a ≠ 0`, then `j(z)` is an algebraic integer.
+
+THE MATRIX, and where the arithmetic goes. Multiplication by `β = m + a z` on the lattice
+`[1, z]` is integral and fixes `z`; concretely `z·(a z + m) = (m − b) z − c` by the relation,
+so `A = [[m − b, −c], [a, m]]` satisfies `A z = z` with
+
+  `det A = (m − b)·m + a c = m² − b m + a c = N(β)`.
+
+The choice `m = 0` gives `A = [[−b, −c], [a, 0]]` of determinant `a c`, which may well be a
+square — and one may NOT repair that by rescaling `(a, b, c) ↦ (t a, t b, t c)`, which
+multiplies the determinant by `t²` and so preserves square-ness (an error in an earlier draft
+of this note). Vary `m` instead: `neg_discr_of_quadratic` gives `b² − 4 a c < 0`, and
+`exists_coprime_not_isSquare_quadratic` then produces an `m` with `m² − b m + a c` positive
+and not a square, and with `gcd(m, a) = 1`. Both of those are PROVEN above, so this
+specialisation is pure bookkeeping.
+
+THE COPRIMALITY IS WHAT MAKES `A` PRIMITIVE, which LEAF 3a genuinely needs: a common divisor
+`d` of the four entries divides both `m` and `a`, hence divides `1`. (Note primitivity of `A`
+does NOT require primitivity of the triple `(a, b, c)` — choosing `m` coprime to `a` is
+enough, and is cheaper than dividing the relation through by `gcd(a, b, c)`.)
+
+`ha : a ≠ 0` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT IT. Take `a = b = c = 0`:
+the hypothesis reads `0 = 0` and holds for EVERY `z : ℍ`, while `j` is transcendental at
+almost every point. Note `a ≠ 0` alone suffices — no primitivity of `(a, b, c)`, no
+`gcd(a,b,c) = 1`, and no sign condition on the discriminant. -/
+theorem isIntegral_jInvariant_of_quadratic (z : UpperHalfPlane) {a b c : ℤ} (ha : a ≠ 0)
+    (h : (a : ℂ) * (z : ℂ) ^ 2 + (b : ℂ) * (z : ℂ) + (c : ℂ) = 0) :
+    IsIntegral ℤ (jInvariant z) := by
+  have hD : b ^ 2 - 4 * (a * c) < 0 := by
+    have h0 := neg_discr_of_quadratic z ha h
+    rw [mul_assoc] at h0
+    exact h0
+  obtain ⟨m, hcop, hpos, hns⟩ := exists_coprime_not_isSquare_quadratic hD ha
+  have hdet : (m - b) * m - (-c) * a = m ^ 2 - b * m + a * c := by ring
+  refine isIntegral_jInvariant_of_fixedPoint z (p := m - b) (q := -c) (r := a) (s := m)
+    (by rw [hdet]; exact hpos) (by rw [hdet]; exact hns)
+    (fun d _ _ hda hdm => hcop.isUnit_of_dvd' hdm hda) ?_
+  push_cast
+  linear_combination -h
+
+/-- **`j(τ₀)` is an algebraic integer** — LEAF 3a specialised to the Heegner point, PROVEN.
+
+`τ₀ = (3 + √−p)/2` satisfies `x² − 3x + (9+p)/4 = 0`, and `(9+p)/4` is an INTEGER exactly
+because `p ≡ 3 mod 4`: writing `p = 4k + 3` it equals `k + 3`. So the integral quadratic
+relation demanded by LEAF 3a is `⟨a, b, c⟩ = ⟨1, −3, k+3⟩`, with `a = 1 ≠ 0`.
+
+This is where the `3` in `τ₀ = (3+√−p)/2` and the congruence `p ≡ 3 mod 4` are spent; the
+stronger `p ≡ 3 mod 8` and the primality of `p` are NOT needed for integrality. -/
+theorem isIntegral_jInvariant_heegnerPoint {p : ℕ} (hp : 0 < p) (hp4 : p % 4 = 3) :
+    IsIntegral ℤ (jInvariant (heegnerPoint p hp)) := by
+  obtain ⟨k, hk⟩ : ∃ k : ℕ, p = 4 * k + 3 := ⟨p / 4, by omega⟩
+  refine isIntegral_jInvariant_of_quadratic _ (a := 1) (b := -3) (c := (k : ℤ) + 3)
+    one_ne_zero ?_
+  have hcoe : ((heegnerPoint p hp : UpperHalfPlane) : ℂ)
+      = (3 + Complex.I * (Real.sqrt p : ℂ)) / 2 := UpperHalfPlane.coe_mk _ _
+  have hs : ((Real.sqrt p : ℂ)) ^ 2 = (p : ℂ) := by
+    rw [← Complex.ofReal_pow, Real.sq_sqrt (by positivity)]
+    norm_num
+  have hI : (Complex.I) ^ 2 = -1 := Complex.I_sq
+  have hp' : (p : ℂ) = 4 * (k : ℂ) + 3 := by exact_mod_cast congrArg (fun n : ℕ => (n : ℂ)) hk
+  rw [hcoe]
+  push_cast
+  linear_combination (((Real.sqrt p : ℂ)) ^ 2 / 4) * hI - (1 / 4) * hs - (1 / 4) * hp'
+
+/-- **LEAF 3 — `γ₂(τ₀)` is an ALGEBRAIC INTEGER. Now PROVEN**, over LEAF 3a
+(`isIntegral_jInvariant_of_quadratic`) and LEAF 5 (`gammaTwo_pow_three_eq_jInvariant`).
+
+Half of "`γ₂(τ₀) ∈ ℤ`", and deliberately the half that costs no class field theory. The proof
+is two steps: `γ₂(τ₀)³ = j(τ₀)` is an algebraic integer by LEAF 3a, and a cube root of an
+algebraic integer is an algebraic integer, because `X³ − j(τ₀)` is MONIC over `ℤ[j(τ₀)]` and
+integrality is transitive (`IsIntegral.of_pow`).
+
+THE HYPOTHESES ARE STRONGER THAN THE PROOF NEEDS, and the signature is left unchanged only
+because `exists_int_gammaTwo` and the released statement call it positionally. What is
+actually consumed is `0 < p` (already forced by the statement, which mentions
+`heegnerPoint p hp.pos`) and `p ≡ 3 mod 4` — derived here from `hp8`. `_h3` is unused and
+underscored to make that mechanically visible; primality is used only for `hp.pos`.
+
+NOTE THIS LEAF DOES NOT NEED `hcl`, and its hypotheses are correspondingly weaker than the
+other CM leaf's. That asymmetry is the reason for splitting the CM input in two: this half
+is integrality of the class equation, the other half (LEAF 4) is the main theorem of complex
+multiplication. They are independently attackable and belong to different theories. -/
+theorem isIntegral_gammaTwo_heegnerPoint {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3) (_h3 : 3 < p) :
+    IsIntegral ℤ (gammaTwo (heegnerPoint p hp.pos)) := by
+  refine IsIntegral.of_pow (n := 3) (by norm_num) ?_
+  rw [gammaTwo_pow_three_eq_jInvariant]
+  exact isIntegral_jInvariant_heegnerPoint hp.pos (by omega)
+
 /-- **LEAF 6 — the `q`-expansion bound.** If `j(τ₀)` is the integer `n`, then
 `exp(π√p) ≤ 745 − n`.
 
@@ -2710,13 +3061,17 @@ DEFINED there over mathlib's `ModularForm.eta`, `ModularForm.discriminant` and
 
 * `Heegner.exists_intCubic_weberAlpha` — `α` satisfies a monic integral cubic;
 * `Heegner.intCast_indep_weberAlpha_pow_four` — `1, α⁴, α⁸` are independent;
-* `Heegner.isIntegral_gammaTwo_heegnerPoint` — `γ₂(τ₀)` is an algebraic integer;
+* `Heegner.exists_modularPolynomial` — the modular polynomial `Φ_N` with Kronecker's leading
+  coefficient (integrality of the class equation; `Heegner.isIntegral_jInvariant_of_fixedPoint`,
+  `Heegner.isIntegral_jInvariant_of_quadratic` and hence
+  `Heegner.isIntegral_gammaTwo_heegnerPoint` are now all PROVEN from it);
 * `Heegner.exists_quadratic_jInvariant_heegnerPoint` — `j(τ₀) ∈ K = ℚ(√−p)` (**the main
   theorem of CM**);
 * `Heegner.exists_quadratic_gammaTwo_of_jInvariant` — `γ₂(τ₀) ∈ K` once `j(τ₀) ∈ K` (Weber's
   level-`3` descent);
-* `Heegner.gammaTwo_pow_three_eq_jInvariant` — Weber's `γ₂³ = j`;
-* `Heegner.exp_pi_sqrt_le_of_jInvariant_eq` — the `q`-expansion bound.
+* `Heegner.eta_pow_24_add_eta_two_pow_24` — the modular-form identity behind Weber's `γ₂³ = j`
+  (`Heegner.gammaTwo_pow_three_eq_jInvariant` and
+  `Heegner.exp_pi_sqrt_le_of_jInvariant_eq` are both PROVEN over it and the two `E`-approximations).
 
 `Heegner.exists_rat_gammaTwo_heegnerPoint` is no longer among them: it was decomposed and
 PROVEN on 2026-07-28 over the fourth and fifth items together with
