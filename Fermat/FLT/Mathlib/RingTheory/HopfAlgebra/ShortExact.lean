@@ -108,7 +108,9 @@ the antipode, so this is the same thing as a homomorphism of group schemes.
   *generation* half of the dual normal basis, `exists_spanning_cartierDual`. Its sibling, the
   rank count, was closed the same day over two new leaves — one Hopf-theoretic
   (`IsShortExact.nonempty_linearEquiv_baseChange`) and one not
-  (`Module.finrank_eq_finrank_mul_of_rankAtStalk_eq`).
+  (`Module.finrank_eq_finrank_mul_of_rankAtStalk_eq`); **both of those closed on 2026-07-30**, so
+  `exists_spanning_cartierDual` (through `exists_lift_ker_le_span_cartierDual`) is the only sorry
+  left in this file.
 * `HopfAlgebra.IsShortExact.apply_comp` — `π ∘ i` is `ε` followed by the unit. **PROVEN.**
 * `AlgHom.flat_quotient_range_of_faithfullyFlat` — the cokernel of a faithfully flat algebra map
   is a flat `R`-module. **PROVEN** (2026-07-28) by the diagram chase in the `FaithfullyFlatSplit`
@@ -151,8 +153,17 @@ the antipode, so this is the same thing as a homomorphism of group schemes.
   `HopfAlgebra.IsShortExact.finrank_eq_mul` — the rank count. **PROVEN** (2026-07-28) from the
   two leaves below, which share nothing with each other.
 * `HopfAlgebra.IsShortExact.nonempty_linearEquiv_baseChange` — the torsor identity
-  `A ⊗_{A''} A ≅ A ⊗_R A'`. OPEN. Pure Hopf algebra; needs no flatness over `A''` and no descent.
-* `Module.finrank_eq_finrank_mul_of_rankAtStalk_eq` — the degree of a tower. OPEN, and stated at
+  `A ⊗_{A''} A ≅ A ⊗_R A'`. **PROVEN** (2026-07-30) in `section Torsor`, which builds the
+  translation automorphism `Θ` of `A ⊗[R] A` from scratch (there is no Hopf–Galois map in the
+  pin). Pure Hopf algebra: it needs no flatness over `A''` and no descent, and — beyond what the
+  docstring predicted — no cocommutativity, finiteness or freeness either. Those section
+  instances are deliberately NOT `omit`ted from the theorem: doing so makes the linter demand the
+  same of `finrank_eq_mul`, then of `nonempty_linearEquiv_cartierDual`, and the cascade widens the
+  diff for no mathematical gain. Everything in `section Torsor` is stated at the honest
+  generality; only the leaf's own signature is left as the consumers expect it. This is why the
+  theorem carries an `unusedSectionVars` warning.
+* `Module.finrank_eq_finrank_mul_of_rankAtStalk_eq` — the degree of a tower. **PROVEN**
+  (2026-07-30), and stated at
   the root namespace because it mentions no Hopf algebra and belongs in mathlib, which has
   `rankAtStalk` and `finrank_mul_finrank` but no multiplicativity of the degree along a
   composite of finite *locally* free maps.
@@ -1128,6 +1139,439 @@ theorem IsShortExact.rTensor_injective (h : IsShortExact i π)
 
 end Def
 
+/-! ### The torsor trivialisation `A ⊗[A''] A ≅ A ⊗[R] A'`
+
+This section proves `IsShortExact.nonempty_linearEquiv_baseChange` (stated far below, in
+`section Dual`, where its consumer lives). It is placed here because it needs NONE of that
+section's cocommutativity, finiteness or freeness hypotheses — only `ker_eq`, surjectivity of
+`π`, and the Hopf structure. In particular it needs no flatness and no fppf descent: see the
+target's docstring.
+
+The route is the classical one. `Θ : a ⊗ b ↦ (a ⊗ 1) · Δb` is the translation automorphism of
+`A ⊗[R] A`, with inverse `a ⊗ b ↦ (a ⊗ 1) · (S ⊗ id)(Δb)`. Both `A ⊗[A''] A` and `A ⊗[R] A'`
+are quotients of `A ⊗[R] A`, and `Θ` matches the two kernels. There is no Hopf–Galois map in the
+mathlib pin (`Mathlib/RingTheory/HopfAlgebra/` has only `Basic`, `Convolution`, `GroupLike`,
+`MonoidAlgebra`, `Quotient`, `TensorProduct`), so `Θ` is built here from `Coalgebra.comul`,
+`HopfAlgebra.antipode` and the `Coalgebra.Repr` API.
+
+Two things about the argument are worth recording, because both make it shorter than the target's
+docstring anticipated.
+
+* **It never needs `i ∘ S = S ∘ i`.** Every step that touches `i` goes through `pushRepr`, which
+  says only that a coalgebra map pushes a representation of `Δc` to one of `Δ(i c)`; the antipode
+  axiom is then applied to the PUSHED representation. Compatibility of `i` with the antipode is
+  never invoked.
+* **Only ONE of the two kernel containments has to be proven.** `torsorMap` is *defined* on
+  `A ⊗[A''] A` (via `Algebra.TensorProduct.lift` over the base `A''`), so `Θ K₁ ⊆ K₂` holds by
+  construction. What is left is `K₂ ⊆ Θ K₁`, i.e. `ker_psiMap_le`, and bijectivity follows from
+  it formally: `torsorMap ∘ proj = Ψ ∘ Θ` transports surjectivity from `Ψ` and injectivity from
+  the containment. -/
+
+namespace Torsor
+
+variable {R : Type u} {A'' : Type v} {A : Type w} {A' : Type x}
+variable [CommRing R] [CommRing A''] [CommRing A] [CommRing A']
+variable [HopfAlgebra R A''] [HopfAlgebra R A] [HopfAlgebra R A']
+
+/-! #### Two small additions to the `Coalgebra.Repr` API -/
+
+/-- The mirror of `Coalgebra.sum_counit_smul`: contracting a representation of `Δ a` with the
+counit in the RIGHT slot also returns `a`. Mathlib has only the left-slot version. -/
+lemma sum_smul_counit {a : A} {ι : Type*} (r : Coalgebra.Repr R a ι) :
+    ∑ x ∈ r.index, Coalgebra.counit (R := R) (r.right x) • r.left x = a := by
+  simpa only [map_sum, TensorProduct.rid_tmul, one_smul] using
+    congrArg (TensorProduct.rid R A) (Coalgebra.sum_tmul_counit_eq r)
+
+/-- The pushforward of a representation of `Δ c` along a coalgebra map. This is the ONLY property
+of `i` used below beyond `IsShortExact`; in particular compatibility of `i` with the antipode is
+never needed. -/
+noncomputable def pushRepr (f : A'' →ₐc[R] A) {c : A''} {ι : Type*} (r : Coalgebra.Repr R c ι) :
+    Coalgebra.Repr R (f c) ι where
+  index := r.index
+  left := fun j => f (r.left j)
+  right := fun j => f (r.right j)
+  eq := by
+    rw [← CoalgHomClass.map_comp_comul_apply f c, ← r.eq, map_sum]
+    simp
+
+/-! #### The Galois (translation) automorphism of `A ⊗[R] A` -/
+
+section Galois
+
+variable (R A)
+
+/-- The Galois map `Θ : a ⊗ b ↦ (a ⊗ 1) * Δ b`. -/
+noncomputable def galois : A ⊗[R] A →ₐ[R] A ⊗[R] A :=
+  Algebra.TensorProduct.lift Algebra.TensorProduct.includeLeft
+    (Bialgebra.comulAlgHom R A) (fun _ _ => Commute.all _ _)
+
+/-- The inverse Galois map `Θ⁻¹ : a ⊗ b ↦ (a ⊗ 1) * (S ⊗ id) (Δ b)`. -/
+noncomputable def galoisInv : A ⊗[R] A →ₐ[R] A ⊗[R] A :=
+  Algebra.TensorProduct.lift Algebra.TensorProduct.includeLeft
+    ((Algebra.TensorProduct.map (HopfAlgebra.antipodeAlgHom R A) (AlgHom.id R A)).comp
+      (Bialgebra.comulAlgHom R A)) (fun _ _ => Commute.all _ _)
+
+variable {R A}
+
+lemma galois_tmul (a b : A) :
+    galois R A (a ⊗ₜ[R] b) = (a ⊗ₜ[R] (1 : A)) * Coalgebra.comul (R := R) b := by
+  simp [galois, Algebra.TensorProduct.lift_tmul]
+
+lemma galoisInv_tmul (a b : A) :
+    galoisInv R A (a ⊗ₜ[R] b) = (a ⊗ₜ[R] (1 : A)) *
+      (TensorProduct.map (HopfAlgebra.antipode R) LinearMap.id) (Coalgebra.comul (R := R) b) := by
+  simp [galoisInv, Algebra.TensorProduct.lift_tmul]
+  rfl
+
+@[simp] lemma galois_includeLeft (a : A) :
+    galois R A (a ⊗ₜ[R] (1 : A)) = a ⊗ₜ[R] (1 : A) := by
+  rw [galois_tmul, Bialgebra.comul_one]
+  exact mul_one _
+
+@[simp] lemma galoisInv_includeLeft (a : A) :
+    galoisInv R A (a ⊗ₜ[R] (1 : A)) = a ⊗ₜ[R] (1 : A) := by
+  rw [galoisInv_tmul, Bialgebra.comul_one,
+    show (1 : A ⊗[R] A) = (1 : A) ⊗ₜ[R] (1 : A) from rfl]
+  simp
+
+variable (R A) in
+/-- `u ⊗ (v ⊗ w) ↦ (S u * v) ⊗ w`. -/
+noncomputable def contractLeft : A ⊗[R] (A ⊗[R] A) →ₗ[R] A ⊗[R] A :=
+  LinearMap.rTensor A
+      (LinearMap.mul' R A ∘ₗ TensorProduct.map (HopfAlgebra.antipode R) LinearMap.id) ∘ₗ
+    (TensorProduct.assoc R A A A).symm.toLinearMap
+
+variable (R A) in
+/-- `u ⊗ (v ⊗ w) ↦ (u * S v) ⊗ w`. -/
+noncomputable def contractRight : A ⊗[R] (A ⊗[R] A) →ₗ[R] A ⊗[R] A :=
+  LinearMap.rTensor A
+      (LinearMap.mul' R A ∘ₗ TensorProduct.map LinearMap.id (HopfAlgebra.antipode R)) ∘ₗ
+    (TensorProduct.assoc R A A A).symm.toLinearMap
+
+@[simp] lemma contractLeft_apply (u v w : A) :
+    contractLeft R A (u ⊗ₜ[R] (v ⊗ₜ[R] w)) = (HopfAlgebra.antipode R u * v) ⊗ₜ[R] w := by
+  simp [contractLeft]
+
+@[simp] lemma contractRight_apply (u v w : A) :
+    contractRight R A (u ⊗ₜ[R] (v ⊗ₜ[R] w)) = (u * HopfAlgebra.antipode R v) ⊗ₜ[R] w := by
+  simp [contractRight]
+
+/-- `Θ ∘ Θ⁻¹ = id` on `1 ⊗ b`.
+
+The two composites are the SAME coassociativity identity (`Coalgebra.sum_tmul_tmul_eq`)
+contracted in the two available ways: this one through `contractLeft` and the antipode axiom
+`∑ S(a₍₁₎)·a₍₂₎ = ε(a)`, its partner below through `contractRight` and
+`∑ a₍₁₎·S(a₍₂₎) = ε(a)`. That is why both contractions are defined above. -/
+lemma galois_galoisInv_includeRight (b : A) :
+    galois R A (galoisInv R A ((1 : A) ⊗ₜ[R] b)) = (1 : A) ⊗ₜ[R] b := by
+  classical
+  set r := ℛ R b with hr
+  have hco := Coalgebra.sum_tmul_tmul_eq r (fun i => ℛ R (r.left i)) (fun i => ℛ R (r.right i))
+  have hL := congrArg (contractLeft R A) hco
+  simp only [map_sum, contractLeft_apply] at hL
+  have hgal : galois R A (galoisInv R A ((1 : A) ⊗ₜ[R] b))
+      = ∑ n ∈ r.index, ∑ j ∈ (ℛ R (r.right n)).index,
+        (HopfAlgebra.antipode R (r.left n) * (ℛ R (r.right n)).left j) ⊗ₜ[R]
+          (ℛ R (r.right n)).right j := by
+    rw [galoisInv_tmul]
+    conv_lhs => rw [show Coalgebra.comul (R := R) b
+      = ∑ n ∈ r.index, r.left n ⊗ₜ[R] r.right n from r.eq.symm]
+    simp only [map_sum, TensorProduct.map_tmul, LinearMap.id_coe, id_eq, Finset.mul_sum]
+    refine Finset.sum_congr rfl fun n _ => ?_
+    rw [Algebra.TensorProduct.tmul_mul_tmul, one_mul, one_mul, galois_tmul]
+    conv_lhs => rw [show Coalgebra.comul (R := R) (r.right n)
+      = ∑ j ∈ (ℛ R (r.right n)).index, (ℛ R (r.right n)).left j ⊗ₜ[R] (ℛ R (r.right n)).right j
+      from (ℛ R (r.right n)).eq.symm]
+    rw [Finset.mul_sum]
+    exact Finset.sum_congr rfl fun j _ => by
+      rw [Algebra.TensorProduct.tmul_mul_tmul, one_mul]
+  rw [hgal, ← hL]
+  have hstep : ∀ n ∈ r.index, (∑ j ∈ (ℛ R (r.left n)).index,
+      (HopfAlgebra.antipode R ((ℛ R (r.left n)).left j) * (ℛ R (r.left n)).right j) ⊗ₜ[R]
+        r.right n) = (1 : A) ⊗ₜ[R] (Coalgebra.counit (R := R) (r.left n) • r.right n) := by
+    intro n _
+    rw [← TensorProduct.sum_tmul, HopfAlgebra.sum_antipode_mul_eq_algebraMap_counit,
+      Algebra.algebraMap_eq_smul_one, TensorProduct.smul_tmul]
+  rw [Finset.sum_congr rfl hstep, ← TensorProduct.tmul_sum, Coalgebra.sum_counit_smul r]
+
+/-- `Θ⁻¹ ∘ Θ = id` on `1 ⊗ b`; the `contractRight` contraction of the same coassociativity
+identity used by `galois_galoisInv_includeRight`. -/
+lemma galoisInv_galois_includeRight (b : A) :
+    galoisInv R A (galois R A ((1 : A) ⊗ₜ[R] b)) = (1 : A) ⊗ₜ[R] b := by
+  classical
+  set r := ℛ R b with hr
+  have hco := Coalgebra.sum_tmul_tmul_eq r (fun i => ℛ R (r.left i)) (fun i => ℛ R (r.right i))
+  have hR := congrArg (contractRight R A) hco
+  simp only [map_sum, contractRight_apply] at hR
+  have hgal : galoisInv R A (galois R A ((1 : A) ⊗ₜ[R] b))
+      = ∑ n ∈ r.index, ∑ j ∈ (ℛ R (r.right n)).index,
+        (r.left n * HopfAlgebra.antipode R ((ℛ R (r.right n)).left j)) ⊗ₜ[R]
+          (ℛ R (r.right n)).right j := by
+    rw [galois_tmul]
+    conv_lhs => rw [show Coalgebra.comul (R := R) b
+      = ∑ n ∈ r.index, r.left n ⊗ₜ[R] r.right n from r.eq.symm]
+    simp only [Finset.mul_sum, map_sum]
+    refine Finset.sum_congr rfl fun n _ => ?_
+    rw [Algebra.TensorProduct.tmul_mul_tmul, one_mul, one_mul, galoisInv_tmul]
+    conv_lhs => rw [show Coalgebra.comul (R := R) (r.right n)
+      = ∑ j ∈ (ℛ R (r.right n)).index, (ℛ R (r.right n)).left j ⊗ₜ[R] (ℛ R (r.right n)).right j
+      from (ℛ R (r.right n)).eq.symm]
+    simp only [map_sum, TensorProduct.map_tmul, LinearMap.id_coe, id_eq, Finset.mul_sum]
+    exact Finset.sum_congr rfl fun j _ => by
+      rw [Algebra.TensorProduct.tmul_mul_tmul, one_mul]
+  rw [hgal, ← hR]
+  have hstep : ∀ n ∈ r.index, (∑ j ∈ (ℛ R (r.left n)).index,
+      ((ℛ R (r.left n)).left j * HopfAlgebra.antipode R ((ℛ R (r.left n)).right j)) ⊗ₜ[R]
+        r.right n) = (1 : A) ⊗ₜ[R] (Coalgebra.counit (R := R) (r.left n) • r.right n) := by
+    intro n _
+    rw [← TensorProduct.sum_tmul, HopfAlgebra.sum_mul_antipode_eq_algebraMap_counit,
+      Algebra.algebraMap_eq_smul_one, TensorProduct.smul_tmul]
+  rw [Finset.sum_congr rfl hstep, ← TensorProduct.tmul_sum, Coalgebra.sum_counit_smul r]
+
+/-- `Θ` and `Θ⁻¹` are mutually inverse. The `1 ⊗ b` case extends to all of `A ⊗[R] A` because
+both are algebra maps fixing `a ⊗ 1`, and `a ⊗ b = (a ⊗ 1) · (1 ⊗ b)`. -/
+lemma galois_galoisInv_apply (z : A ⊗[R] A) : galois R A (galoisInv R A z) = z := by
+  induction z with
+  | zero => simp
+  | tmul a b =>
+      rw [show a ⊗ₜ[R] b = (a ⊗ₜ[R] (1 : A)) * ((1 : A) ⊗ₜ[R] b) from by
+        rw [Algebra.TensorProduct.tmul_mul_tmul, mul_one, one_mul], map_mul, map_mul,
+        galoisInv_includeLeft, galois_includeLeft, galois_galoisInv_includeRight]
+  | add x y hx hy => rw [map_add, map_add, hx, hy]
+
+lemma galoisInv_galois_apply (z : A ⊗[R] A) : galoisInv R A (galois R A z) = z := by
+  induction z with
+  | zero => simp
+  | tmul a b =>
+      rw [show a ⊗ₜ[R] b = (a ⊗ₜ[R] (1 : A)) * ((1 : A) ⊗ₜ[R] b) from by
+        rw [Algebra.TensorProduct.tmul_mul_tmul, mul_one, one_mul], map_mul, map_mul,
+        galois_includeLeft, galoisInv_includeLeft, galoisInv_galois_includeRight]
+  | add x y hx hy => rw [map_add, map_add, hx, hy]
+
+end Galois
+
+/-! #### The two presentations of `A ⊗[R] A` -/
+
+section BaseChange
+
+variable [Algebra A'' A] [IsScalarTower R A'' A]
+variable {i : A'' →ₐc[R] A} {π : A →ₐc[R] A'}
+
+/-- `Ψ = id ⊗ π : A ⊗[R] A → A ⊗[R] A'`. -/
+noncomputable def psiMap (π : A →ₐc[R] A') : A ⊗[R] A →ₐ[R] A ⊗[R] A' :=
+  Algebra.TensorProduct.map (AlgHom.id R A) π.toAlgHom
+
+@[simp] lemma psiMap_tmul (a b : A) : psiMap π (a ⊗ₜ[R] b) = a ⊗ₜ[R] π b := rfl
+
+lemma psiMap_surjective (h : Function.Surjective π) :
+    Function.Surjective (psiMap (R := R) π) :=
+  Algebra.TensorProduct.map_surjective _ _ Function.surjective_id h
+
+/-- The canonical surjection `A ⊗[R] A → A ⊗[A''] A`. -/
+noncomputable def proj : A ⊗[R] A →ₐ[R] A ⊗[A''] A :=
+  Algebra.TensorProduct.lift Algebra.TensorProduct.includeLeft
+    (Algebra.TensorProduct.includeRight.restrictScalars R) (fun _ _ => Commute.all _ _)
+
+@[simp] lemma proj_tmul (a b : A) :
+    proj (A'' := A'') (a ⊗ₜ[R] b) = a ⊗ₜ[A''] b := by
+  rw [proj, Algebra.TensorProduct.lift_tmul]
+  show (a ⊗ₜ[A''] (1 : A)) * ((1 : A) ⊗ₜ[A''] b) = _
+  rw [Algebra.TensorProduct.tmul_mul_tmul, mul_one, one_mul]
+
+lemma proj_surjective :
+    Function.Surjective (proj (R := R) (A'' := A'') (A := A)) := by
+  intro z
+  induction z with
+  | zero => exact ⟨0, map_zero _⟩
+  | tmul a b => exact ⟨a ⊗ₜ[R] b, proj_tmul a b⟩
+  | add x y hx hy =>
+      obtain ⟨u, hu⟩ := hx
+      obtain ⟨v, hv⟩ := hy
+      exact ⟨u + v, by rw [map_add, hu, hv]⟩
+
+/-- Moving a scalar from `i(A'')` across the tensor in `A ⊗[A''] A` — this, and nothing else, is
+the `A''`-balancedness that the base change contributes. -/
+lemma tmul_algebraMap_right (x : A) (c : A'') :
+    x ⊗ₜ[A''] (algebraMap A'' A c) = (x * algebraMap A'' A c) ⊗ₜ[A''] (1 : A) := by
+  conv_lhs => rw [Algebra.algebraMap_eq_smul_one, TensorProduct.tmul_smul,
+    TensorProduct.smul_tmul', Algebra.smul_def]
+  exact congrArg (fun u : A => u ⊗ₜ[A''] (1 : A)) (mul_comm _ _)
+
+/-! #### The two contractions of `Δ (i c)`
+
+Both go through `pushRepr i`, so neither needs `i ∘ S = S ∘ i`. -/
+
+omit [Algebra A'' A] [IsScalarTower R A'' A] in
+/-- `(id ⊗ π) (Δ (i c)) = i c ⊗ 1`: the second leg contracts along the counit because `π ∘ i` is
+`ε` followed by the unit (`IsShortExact.apply_comp`). This is the `A''`-linearity of `betaHat`,
+hence the containment `Θ K₁ ⊆ K₂` in the form the construction consumes it. -/
+lemma psiMap_comul_i (h : IsShortExact i π) (c : A'') :
+    psiMap π (Coalgebra.comul (R := R) (i c)) = (i c) ⊗ₜ[R] (1 : A') := by
+  classical
+  set r := ℛ R c with hr
+  rw [show Coalgebra.comul (R := R) (i c)
+    = ∑ j ∈ r.index, i (r.left j) ⊗ₜ[R] i (r.right j) from (pushRepr i r).eq.symm, map_sum]
+  have hterm : ∀ j ∈ r.index, psiMap π (i (r.left j) ⊗ₜ[R] i (r.right j))
+      = i (Coalgebra.counit (R := R) (r.right j) • r.left j) ⊗ₜ[R] (1 : A') := fun j _ => by
+    rw [psiMap_tmul, h.apply_comp, TensorProduct.tmul_smul, TensorProduct.smul_tmul', map_smul]
+  rw [Finset.sum_congr rfl hterm, ← TensorProduct.sum_tmul, ← map_sum, sum_smul_counit r]
+
+/-- `Θ⁻¹(1 ⊗ i c)` dies in `A ⊗[A''] A` when `c` is in the augmentation ideal: pushing every
+`i c₍₂₎` across the tensor turns the second leg into `∑ S(i c₍₁₎) · i(c₍₂₎) = ε(c) · 1 = 0`.
+
+Note this needs no `IsShortExact` hypothesis at all — only that `i` is a coalgebra map and that
+`A''` acts on `A` through it. -/
+lemma proj_galoisInv_i (hi : ∀ c : A'', algebraMap A'' A c = i c) {c : A''}
+    (hc : c ∈ Bialgebra.augmentationIdeal R A'') :
+    proj (A'' := A'') (galoisInv R A ((1 : A) ⊗ₜ[R] i c)) = 0 := by
+  classical
+  set r := ℛ R c with hr
+  have hval : galoisInv R A ((1 : A) ⊗ₜ[R] i c)
+      = ∑ j ∈ r.index, HopfAlgebra.antipode R (i (r.left j)) ⊗ₜ[R] i (r.right j) := by
+    rw [galoisInv_tmul, show Coalgebra.comul (R := R) (i c)
+      = ∑ j ∈ r.index, i (r.left j) ⊗ₜ[R] i (r.right j) from (pushRepr i r).eq.symm, map_sum,
+      Finset.mul_sum]
+    refine Finset.sum_congr rfl fun j _ => ?_
+    rw [TensorProduct.map_tmul, Algebra.TensorProduct.tmul_mul_tmul, one_mul, one_mul]
+    rfl
+  have hanti : ∑ j ∈ r.index, HopfAlgebra.antipode R (i (r.left j)) * i (r.right j)
+      = algebraMap R A (Coalgebra.counit (R := R) (i c)) :=
+    HopfAlgebra.sum_antipode_mul_eq_algebraMap_counit (pushRepr i r)
+  have hterm : ∀ j ∈ r.index,
+      proj (A'' := A'') (HopfAlgebra.antipode R (i (r.left j)) ⊗ₜ[R] i (r.right j))
+      = (HopfAlgebra.antipode R (i (r.left j)) * i (r.right j)) ⊗ₜ[A''] (1 : A) := fun j _ => by
+    rw [proj_tmul, ← hi (r.right j), tmul_algebraMap_right]
+  rw [hval, map_sum, Finset.sum_congr rfl hterm, ← TensorProduct.sum_tmul, hanti,
+    CoalgHomClass.counit_comp_apply,
+    (Bialgebra.mem_augmentationIdeal_iff (R := R)).mp hc, map_zero,
+    TensorProduct.zero_tmul]
+
+/-- **`Θ⁻¹` carries `ker Ψ` into `ker proj`** — the containment `K₂ ⊆ Θ K₁` of the target's
+docstring, and the only one that has to be proven.
+
+`Algebra.TensorProduct.lTensor_ker` (right exactness; no flatness) reduces it to the generators
+`1 ⊗ z` with `z ∈ ker π`, `ker_eq` rewrites those as `i` of the augmentation ideal, and
+`proj_galoisInv_i` kills them. -/
+lemma ker_psiMap_le (h : IsShortExact i π)
+    (hi : ∀ c : A'', algebraMap A'' A c = i c) :
+    RingHom.ker (psiMap (R := R) π) ≤
+      RingHom.ker ((proj (A'' := A'')).comp (galoisInv R A)) := by
+  rw [show RingHom.ker (psiMap (R := R) π)
+      = (RingHom.ker π.toAlgHom).map
+          (Algebra.TensorProduct.includeRight : A →ₐ[R] A ⊗[R] A) from
+    Algebra.TensorProduct.lTensor_ker (A := A) π.toAlgHom h.surjective]
+  rw [Ideal.map_le_iff_le_comap]
+  intro z hz
+  rw [Ideal.mem_comap, RingHom.mem_ker]
+  have hz' : z ∈ Ideal.span
+      ((i.toAlgHom.toRingHom : A'' →+* A) '' (Bialgebra.augmentationIdeal R A'')) := by
+    rw [← Ideal.map, ← h.ker_eq]
+    exact hz
+  clear hz
+  refine Submodule.span_induction (p := fun z _ =>
+      ((proj (A'' := A'')).comp (galoisInv R A))
+        (Algebra.TensorProduct.includeRight (R := R) (A := A) z) = 0)
+    ?_ ?_ ?_ ?_ hz'
+  · rintro w ⟨c, hc, rfl⟩
+    exact proj_galoisInv_i hi hc
+  · simp
+  · intro x y _ _ hx hy
+    rw [map_add, map_add, hx, hy, add_zero]
+  · intro a x _ hx
+    rw [show Algebra.TensorProduct.includeRight (R := R) (A := A) (a • x)
+        = (Algebra.TensorProduct.includeRight (R := R) (A := A) a)
+          * Algebra.TensorProduct.includeRight (R := R) (A := A) x from by
+      rw [Algebra.smul_def]; exact map_mul _ _ _, map_mul, hx, mul_zero]
+
+/-! #### The induced map, and that it is an isomorphism -/
+
+/-- `b ↦ (id ⊗ π)(Δ b)`, as an `A''`-algebra map. Its `A''`-linearity is exactly
+`psiMap_comul_i`, and that is what lets `torsorMap` be defined on the base change. -/
+noncomputable def betaHat (h : IsShortExact i π)
+    (hi : ∀ c : A'', algebraMap A'' A c = i c) : A →ₐ[A''] (A ⊗[R] A') where
+  toFun := fun b => psiMap π (Coalgebra.comul (R := R) b)
+  map_one' := by rw [Bialgebra.comul_one, map_one]
+  map_mul' := fun a b => by rw [Bialgebra.comul_mul, map_mul]
+  map_zero' := by rw [map_zero, map_zero]
+  map_add' := fun a b => by rw [map_add, map_add]
+  commutes' := fun c => by
+    show psiMap π (Coalgebra.comul (R := R) (algebraMap A'' A c)) = _
+    rw [hi c, psiMap_comul_i h c, IsScalarTower.algebraMap_apply A'' A (A ⊗[R] A'), hi c]
+    rfl
+
+/-- **The trivialisation** `A ⊗[A''] A → A ⊗[R] A'`, `a ⊗ b ↦ (a ⊗ 1) · (id ⊗ π)(Δ b)`.
+
+Geometrically this is `G ×_{G''} G → G × G'`, `(x, y) ↦ (x, x⁻¹y)`. -/
+noncomputable def torsorMap (h : IsShortExact i π)
+    (hi : ∀ c : A'', algebraMap A'' A c = i c) : (A ⊗[A''] A) →ₐ[A''] (A ⊗[R] A') :=
+  Algebra.TensorProduct.lift Algebra.TensorProduct.includeLeft (betaHat h hi)
+    (fun _ _ => Commute.all _ _)
+
+lemma torsorMap_tmul (h : IsShortExact i π)
+    (hi : ∀ c : A'', algebraMap A'' A c = i c) (a b : A) :
+    torsorMap h hi (a ⊗ₜ[A''] b)
+      = (a ⊗ₜ[R] (1 : A')) * psiMap π (Coalgebra.comul (R := R) b) := by
+  rw [torsorMap, Algebra.TensorProduct.lift_tmul]
+  rfl
+
+@[simp] lemma torsorMap_includeLeft (h : IsShortExact i π)
+    (hi : ∀ c : A'', algebraMap A'' A c = i c) (a : A) :
+    torsorMap h hi (a ⊗ₜ[A''] (1 : A)) = a ⊗ₜ[R] (1 : A') := by
+  rw [torsorMap_tmul, Bialgebra.comul_one, map_one, mul_one]
+
+/-- `torsorMap ∘ proj = Ψ ∘ Θ`. This one identity transports both surjectivity and injectivity
+from the two presentations to the induced map. -/
+lemma torsorMap_proj (h : IsShortExact i π)
+    (hi : ∀ c : A'', algebraMap A'' A c = i c) (z : A ⊗[R] A) :
+    torsorMap h hi (proj (A'' := A'') z) = psiMap π (galois R A z) := by
+  induction z with
+  | zero => simp
+  | tmul a b =>
+      rw [proj_tmul, torsorMap_tmul, galois_tmul, map_mul, psiMap_tmul, map_one]
+  | add x y hx hy => rw [map_add, map_add, hx, hy, map_add, map_add]
+
+lemma torsorMap_surjective (h : IsShortExact i π)
+    (hi : ∀ c : A'', algebraMap A'' A c = i c) :
+    Function.Surjective (torsorMap h hi) := by
+  intro z
+  obtain ⟨w, hw⟩ := psiMap_surjective (R := R) h.surjective z
+  refine ⟨proj (A'' := A'') (galoisInv R A w), ?_⟩
+  rw [torsorMap_proj h hi, galois_galoisInv_apply, hw]
+
+lemma torsorMap_injective (h : IsShortExact i π)
+    (hi : ∀ c : A'', algebraMap A'' A c = i c) :
+    Function.Injective (torsorMap h hi) := by
+  rw [injective_iff_map_eq_zero]
+  intro z hz
+  obtain ⟨w, rfl⟩ := proj_surjective (R := R) (A'' := A'') z
+  have hw : psiMap (R := R) π (galois R A w) = 0 := by rw [← torsorMap_proj h hi]; exact hz
+  have hmem := ker_psiMap_le h hi (RingHom.mem_ker.mpr hw)
+  rw [RingHom.mem_ker, AlgHom.comp_apply, galoisInv_galois_apply] at hmem
+  exact hmem
+
+/-- `torsorMap` is `A`-linear: `A` acts on both sides by multiplication by `includeLeft`, which
+`torsorMap` preserves. -/
+lemma torsorMap_smul (h : IsShortExact i π)
+    (hi : ∀ c : A'', algebraMap A'' A c = i c) (a : A) (z : A ⊗[A''] A) :
+    torsorMap h hi (a • z) = a • torsorMap h hi z := by
+  rw [show a • z = (a ⊗ₜ[A''] (1 : A)) * z from by rw [Algebra.smul_def]; rfl,
+    map_mul, torsorMap_includeLeft,
+    show a • torsorMap h hi z = (a ⊗ₜ[R] (1 : A')) * torsorMap h hi z from by
+      rw [Algebra.smul_def]; rfl]
+
+/-- **The torsor identity**, as the `A`-linear equivalence the rank count wants. -/
+noncomputable def torsorLinearEquiv (h : IsShortExact i π)
+    (hi : ∀ c : A'', algebraMap A'' A c = i c) : (A ⊗[A''] A) ≃ₗ[A] (A ⊗[R] A') :=
+  LinearEquiv.ofBijective
+    ({ toFun := torsorMap h hi
+       map_add' := map_add _
+       map_smul' := torsorMap_smul h hi } : (A ⊗[A''] A) →ₗ[A] (A ⊗[R] A'))
+    ⟨torsorMap_injective h hi, torsorMap_surjective h hi⟩
+
+end BaseChange
+
+end Torsor
+
 /-! ### Exactness of Cartier duality -/
 
 section Dual
@@ -1156,7 +1600,7 @@ which are proven. The split is by *where the mathematics is*:
 | `exists_spanning_cartierDual` | **PROVEN** from the two above | `D(A)` is *generated* over `D(A')` by `rk_R A''` elements |
 | `nonempty_linearEquiv_cartierDual` | **PROVEN** from the two below | the rank count `rk_R A = rk_R A'' · rk_R A'` |
 | `finrank_eq_mul` | **PROVEN** from the two below | that same rank count, before packaging |
-| `nonempty_linearEquiv_baseChange` | **OPEN** | the torsor identity `A ⊗_{A''} A ≅ A ⊗_R A'` |
+| `nonempty_linearEquiv_baseChange` | **PROVEN** (2026-07-30) | the torsor identity `A ⊗_{A''} A ≅ A ⊗_R A'` |
 | `Module.finrank_eq_finrank_mul_of_rankAtStalk_eq` | **OPEN** | the degree of a tower (root namespace, no Hopf content) |
 | `exists_basis_cartierDual` | **PROVEN** from those two | `D(A)` is `D(A')`-free of rank `rk_R A''` |
 | `ker_cartierDual_le` | **PROVEN** from the cut | the hard half: a character trivial on `Spec A'` descends |
@@ -1171,6 +1615,11 @@ torsor identity) and `Module.finrank_eq_finrank_mul_of_rankAtStalk_eq` (the degr
 root namespace, no Hopf content).  The rank half of the normal basis,
 `nonempty_linearEquiv_cartierDual`, was PROVEN on 2026-07-28 over the last two of those; the
 generation half was reduced to the first on the same day.
+
+**Both of those two were then closed on 2026-07-30** — the tower formula in
+`section FiberBaseChange`, the torsor identity in `section Torsor` — so
+`exists_lift_ker_le_span_cartierDual` is now the ONLY sorry left in this file, and the whole rank
+count below it is unconditional.
 
 (An older version of this list also named `Module.Flat.quotient_range_of_rTensor_injective` as
 what the surjectivity field rests on. **That is stale**: no such declaration is in this file, or
@@ -1299,8 +1748,9 @@ what is left open in this half of the file is those two rather than the freeness
   `rk_R A = rk_R A'' · rk_R A'`, packaged as an `R`-linear equivalence so that it is also true
   (vacuously) over the zero ring. **This one is PROVEN since 2026-07-28**, over two further
   leaves — the torsor identity `IsShortExact.nonempty_linearEquiv_baseChange` and the tower
-  formula `Module.finrank_eq_finrank_mul_of_rankAtStalk_eq` — so the generation half above is
-  now the only thing this half of the file still owes.
+  formula `Module.finrank_eq_finrank_mul_of_rankAtStalk_eq` — **both of which were themselves
+  closed on 2026-07-30**, so this half of the file is now unconditional and the generation half
+  above is the only thing the file still owes.
 
 The step that makes this a genuine reduction rather than a restatement is **Orzech's property**,
 which every commutative ring has (`Mathlib/RingTheory/FiniteType.lean`): a surjective linear map
@@ -1658,7 +2108,13 @@ which fails for `A = R[ℤ/2]`. With `ker_eq` in force that configuration is exc
 `ker ε_A` is the augmentation ideal of `A` while `Ideal.map i (augmentationIdeal R R)` is `0`. -/
 theorem IsShortExact.nonempty_linearEquiv_baseChange (h : IsShortExact i π) :
     letI : Algebra A'' A := (i.toAlgHom.toRingHom : A'' →+* A).toAlgebra
-    Nonempty ((A ⊗[A''] A) ≃ₗ[A] (A ⊗[R] A')) := sorry
+    Nonempty ((A ⊗[A''] A) ≃ₗ[A] (A ⊗[R] A')) := by
+  letI : Algebra A'' A := (i.toAlgHom.toRingHom : A'' →+* A).toAlgebra
+  haveI : IsScalarTower R A'' A := by
+    refine IsScalarTower.of_algebraMap_eq fun r => ?_
+    show algebraMap R A r = i (algebraMap R A'' r)
+    exact (i.toAlgHom.commutes r).symm
+  exact ⟨Torsor.torsorLinearEquiv h fun _ => rfl⟩
 
 /-- **Multiplicativity of the rank in a short exact sequence**: `rk_R A = rk_R A'' · rk_R A'`.
 
