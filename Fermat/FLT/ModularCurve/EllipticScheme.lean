@@ -9886,11 +9886,49 @@ isomorphism of leaf 2 is `Scheme.Hom.opensRange_comp_of_isIso`.  That is
 why leaf 1 does not have to carry a `ℚ`-algebra structure on its ring and
 leaf 2 produces a bare `≃+*` rather than a `≃ₐ[ℚ]`: over `ℚ` the two
 notions coincide, because `ℚ` is initial in `CommRing`.
+
+## RETIRED 2026-07-30 — THE PARAGRAPH ABOVE IS `ℚ`-ONLY, AND THE BASE IS NOW `K`
+
+The whole chain of this subsection was RE-PROVEN over an arbitrary field `K`
+(with `[CharZero K]` at item 3 and at the assembly), so that
+`X0.lean`'s `exists_weierstrassAlgClos_of_abelianSchemeStruct` and
+`exists_weierstrassModel_gamma0Datum_algClos` are one-line citations at
+`K = AlgebraicClosure ℚ`.  Read the retired paragraph as history:
+
+* the range-transport half is unchanged and still free;
+* the structure-morphism half is NOT free over a general `K` — `hom_ext_spec_rat`
+  needs `ℚ`'s initiality in `CommRing` and no other field is initial.  It is now
+  CARRIED: leaf 1's ring comes with an `Algebra K R` and the clause
+  `ι ≫ f = Spec.map (ofHom (algebraMap K R))`, leaf 2's isomorphism is upgraded
+  to a `K`-ALGEBRA isomorphism `R ≃ₐ[K] E.toAffine.CoordinateRing` so that
+  `AlgEquiv.commutes` transports the clause, and leaf 3 TAKES the clause as a
+  hypothesis and is FALSE without it.
+
+None of that costs the leaves anything: the assembly installs both for free, from
+`Spec.preimage` and `Spec.map_preimage` (`Spec` is fully faithful, so the chart's
+structure morphism IS `Spec` of a unique ring map — which is what `ℚ`'s initiality
+was standing in for).
+
+What DOES cost something is `[CharZero K]`, and it enters at exactly one place:
+`exists_singular_of_Δ_eq_zero`, item 3's rationality-of-the-singular-point
+ingredient, which is FALSE over a non-perfect field (see its docstring for the
+`𝔽₂(t)` counterexample).  The Riemann–Roch leaf itself needs no such hypothesis.
 -/
 
 /-- **The complement of the zero section of an elliptic scheme over
-`Spec ℚ` is affine** (sorry leaf, introduced 2026-07-27 as leaf 1 of
-`exists_weierstrassModel_of_ellipticScheme`).
+`Spec K` is affine** (sorry leaf, introduced 2026-07-27 as leaf 1 of
+`exists_weierstrassModel_of_ellipticScheme`; PROVEN 2026-07-28; base
+generalised from `ℚ` to an arbitrary field `K` on 2026-07-30).
+
+**BASE GENERALISATION 2026-07-30**: the statement below reads `K` where it read
+`ℚ`, and the PROOF is unchanged — the mathlib-facing lemma it cites,
+`exists_isOpenImmersion_range_eq_compl_of_section` in
+`CurveAffineComplement.lean`, was already stated over an arbitrary base field.
+This leaf deliberately does NOT acquire the `K`-algebra structure or the
+structure-morphism compatibility that leaves 2 and 3 now carry: the assembly
+manufactures both from `Spec.preimage (ι ≫ f)` in two lines, `Spec` being fully
+faithful, so making leaf 1 produce them would have been pure statement bloat.
+The prose below is written at `ℚ` and is true verbatim over `K`.
 
 TRUE and classical.  `ab.proper` makes `f` separated, so the section
 `ab.zero (𝟙 (Spec ℚ))` is a *closed* immersion and its range — a single
@@ -9958,13 +9996,13 @@ connected curve over a field is affine" — which carries the ampleness and
 nothing else, and which is stated over a general base field rather than
 over `ℚ`, so it serves any other pointed-curve chart this development
 needs.  `_hdim` is no longer underscore-prefixed: it is consumed. -/
-theorem exists_affineComplement_zeroSection {A : Scheme.{0}}
-    {f : A ⟶ Spec (CommRingCat.of ℚ)} (ab : AbelianSchemeStruct f)
+theorem exists_affineComplement_zeroSection {K : Type} [Field K] {A : Scheme.{0}}
+    {f : A ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct f)
     (hdim : SmoothOfRelativeDimension 1 f) :
     ∃ (R : Type) (_ : CommRing R) (ι : Spec (CommRingCat.of R) ⟶ A),
       IsOpenImmersion ι ∧
         Set.range ι.base =
-          (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ := by
+          (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of K)))).1.base)ᶜ := by
   haveI : IsProper f := ab.proper
   haveI : SmoothOfRelativeDimension 1 f := hdim
   exact _root_.AlgebraicGeometry.exists_isOpenImmersion_range_eq_compl_of_section
@@ -10003,11 +10041,32 @@ where it enters: a smooth proper geometrically connected curve carrying a
 group law has trivial canonical bundle.  There is no genus in the pin to
 state it with, and none is needed.
 
-**`c` NEEDS NO COMPATIBILITY CLAUSE** with `ι ≫ f`, and that is not an
-oversight: a ring homomorphism out of `ℚ` is unique when it exists, so `c`
-is forced to BE the structure map and an adversary has no freedom here.
-(Contrast `hover` in `CurveAffineComplement.lean`'s sub-leaves, where the
-base field is arbitrary and the analogous clause IS load-bearing.)
+## BASE GENERALISATION 2026-07-30: `ℚ` ⇝ an arbitrary field `K`
+
+The old statement produced a bare structure map `c : ℚ →+* R` with NO
+compatibility clause relating it to `ι ≫ f`, and that was sound only because a
+ring homomorphism out of `ℚ` is unique when it exists, so `c` was forced to BE
+the structure map.  Over a general `K` that argument evaporates — `K` may have
+automorphisms, and a chart twisted by one satisfies every other clause — so the
+compatibility is now CARRIED: the caller supplies `Algebra K R` together with
+`hcomp : ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap K R))`, and the leaf
+produces `x`, `y` against that fixed `algebraMap K R`.
+
+**`hcomp` IS LOAD-BEARING AND FREE.**  Load-bearing because without it the
+`K`-algebra structure on `R` is unrelated to the geometry, so the `K`-linear
+systems `L(n[O])` the proof uses would be taken over the wrong copy of `K`.
+Free for the caller, because the structure morphism `ι ≫ f : Spec R ⟶ Spec K`
+IS `Spec` of a unique ring map (`Spec.preimage`, `Spec` being fully faithful),
+and that ring map is precisely the `Algebra K R` the caller installs — see the
+assembly in `exists_weierstrassModel_of_ellipticScheme` below, where both are
+produced in two lines and nothing has to be proven.
+
+Nothing else about the proof changes: `A` is a smooth proper geometrically
+connected curve over `K` with the `K`-rational point `ab.zero (𝟙 (Spec K))`, and
+Riemann–Roch over `K` is what it was over `ℚ`.  In particular the genus-one
+input still comes from `ab` and no characteristic hypothesis is needed HERE (it
+is `isElliptic_of_isOpenImmersion_coordinateRing` below, not this leaf, that
+wants `CharZero K`).
 
 **`hopen` and `hrange` ARE LOAD-BEARING.**  The obvious candidate
 counterexample does NOT work, and the reason is instructive: `R = ℚ` with
@@ -10040,17 +10099,19 @@ absent from all three;
     grep -rn 'RiemannRoch\|arithmeticGenus' .lake/packages/mathlib/Mathlib/ --include=*.lean
 
 returns nothing, and `Mathlib/AlgebraicGeometry/` contains no `genus`. -/
-theorem exists_weierstrassGenerators_of_affineComplement {A : Scheme.{0}}
-    {f : A ⟶ Spec (CommRingCat.of ℚ)} (ab : AbelianSchemeStruct f)
+theorem exists_weierstrassGenerators_of_affineComplement {K : Type} [Field K] {A : Scheme.{0}}
+    {f : A ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct f)
     (hdim : SmoothOfRelativeDimension 1 f)
-    (R : Type) [CommRing R] (ι : Spec (CommRingCat.of R) ⟶ A)
+    (R : Type) [CommRing R] [Algebra K R] (ι : Spec (CommRingCat.of R) ⟶ A)
     (hopen : IsOpenImmersion ι)
     (hrange : Set.range ι.base =
-      (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ) :
-    ∃ (E : WeierstrassCurve ℚ) (c : ℚ →+* R) (x y : R),
-      y ^ 2 + (c E.a₁ * x + c E.a₃) * y
-          = x ^ 3 + c E.a₂ * x ^ 2 + c E.a₄ * x + c E.a₆ ∧
-        Subring.closure (Set.range c ∪ {x, y}) = ⊤ :=
+      (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of K)))).1.base)ᶜ)
+    (hcomp : ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap K R))) :
+    ∃ (E : WeierstrassCurve K) (x y : R),
+      y ^ 2 + (algebraMap K R E.a₁ * x + algebraMap K R E.a₃) * y
+          = x ^ 3 + algebraMap K R E.a₂ * x ^ 2 + algebraMap K R E.a₄ * x
+              + algebraMap K R E.a₆ ∧
+        Subring.closure (Set.range (algebraMap K R) ∪ {x, y}) = ⊤ :=
   sorry
 
 /-- **RIEMANN–ROCH: the affine complement of the zero section is
@@ -10135,19 +10196,21 @@ surjectivity bookkeeping are discharged once and for all by
 `exists_surjective_coordinateRingHom_of_generators` in
 `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveAffineComplement.lean` (PROVEN, no sorry).  So
 this declaration is now pure assembly. -/
-theorem exists_surjective_coordinateRingHom_of_affineComplement {A : Scheme.{0}}
-    {f : A ⟶ Spec (CommRingCat.of ℚ)} (ab : AbelianSchemeStruct f)
+theorem exists_surjective_coordinateRingHom_of_affineComplement {K : Type} [Field K]
+    {A : Scheme.{0}}
+    {f : A ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct f)
     (hdim : SmoothOfRelativeDimension 1 f)
-    (R : Type) [CommRing R] (ι : Spec (CommRingCat.of R) ⟶ A)
+    (R : Type) [CommRing R] [Algebra K R] (ι : Spec (CommRingCat.of R) ⟶ A)
     (hopen : IsOpenImmersion ι)
     (hrange : Set.range ι.base =
-      (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ) :
-    ∃ (E : WeierstrassCurve ℚ) (φ : E.toAffine.CoordinateRing →+* R),
+      (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of K)))).1.base)ᶜ)
+    (hcomp : ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap K R))) :
+    ∃ (E : WeierstrassCurve K) (φ : E.toAffine.CoordinateRing →ₐ[K] R),
       Function.Surjective φ := by
-  obtain ⟨E, c, x, y, hrel, hgen⟩ :=
-    exists_weierstrassGenerators_of_affineComplement ab hdim R ι hopen hrange
+  obtain ⟨E, x, y, hrel, hgen⟩ :=
+    exists_weierstrassGenerators_of_affineComplement ab hdim R ι hopen hrange hcomp
   obtain ⟨φ, hφ⟩ :=
-    _root_.exists_surjective_coordinateRingHom_of_generators E c x y hrel hgen
+    _root_.exists_surjective_coordinateRingHom_of_generators E x y hrel hgen
   exact ⟨E, φ, hφ⟩
 
 /-- **The affine complement of the zero section is a Weierstrass
@@ -10240,24 +10303,44 @@ of a point in the infinite `A`, by
 `infinite_of_smoothOfRelativeDimension_one`, so it is not a one-point
 space).  `_hopen` and `_hrange` lose their underscores: both are consumed
 by those two derivations, which is a sharper account of why they are
-load-bearing than the counterexample recorded above. -/
-theorem exists_weierstrassRingEquiv_of_affineComplement {A : Scheme.{0}}
-    {f : A ⟶ Spec (CommRingCat.of ℚ)} (ab : AbelianSchemeStruct f)
+load-bearing than the counterexample recorded above.
+
+## BASE GENERALISATION 2026-07-30: `ℚ` ⇝ an arbitrary field `K`
+
+Two changes, both forced by the loss of `ℚ`'s initiality in `CommRing`, and
+both free for the prover (the residue leaf is unchanged in difficulty):
+
+* the caller supplies `Algebra K R` and
+  `hcomp : ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap K R))`, which is
+  passed straight through to
+  `exists_weierstrassGenerators_of_affineComplement`;
+* the conclusion is a `K`-ALGEBRA isomorphism `R ≃ₐ[K] E.toAffine.CoordinateRing`
+  rather than a bare `≃+*`.  Over `ℚ` the two notions coincide, which is why the
+  old statement could get away with `≃+*`; over a general `K` the algebra clause
+  is what lets `AlgEquiv.commutes` transport `hcomp` into the structure-morphism
+  conjunct of `exists_weierstrassModel_of_ellipticScheme`.
+
+Nothing in the proof below sees the change: `injective_of_surjective_coordinateRing`
+was already stated over an arbitrary field `k`, and the domain/not-a-field
+derivations are base-independent. -/
+theorem exists_weierstrassRingEquiv_of_affineComplement {K : Type} [Field K] {A : Scheme.{0}}
+    {f : A ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct f)
     (hdim : SmoothOfRelativeDimension 1 f)
-    (R : Type) [CommRing R] (ι : Spec (CommRingCat.of R) ⟶ A)
+    (R : Type) [CommRing R] [Algebra K R] (ι : Spec (CommRingCat.of R) ⟶ A)
     (hopen : IsOpenImmersion ι)
     (hrange : Set.range ι.base =
-      (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ) :
-    ∃ E : WeierstrassCurve ℚ, Nonempty (R ≃+* E.toAffine.CoordinateRing) := by
+      (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of K)))).1.base)ᶜ)
+    (hcomp : ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap K R))) :
+    ∃ E : WeierstrassCurve K, Nonempty (R ≃ₐ[K] E.toAffine.CoordinateRing) := by
   classical
   haveI : IsProper f := ab.proper
   haveI : SmoothOfRelativeDimension 1 f := hdim
   haveI : IsIntegral A :=
     isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected (n := 1) f ab.connected
   haveI : Nonempty A :=
-    ⟨(ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1.base (IsLocalRing.closedPoint ℚ)⟩
+    ⟨(ab.zero (𝟙 (Spec (CommRingCat.of K)))).1.base (IsLocalRing.closedPoint K)⟩
   haveI : Infinite A := infinite_of_smoothOfRelativeDimension_one f
-  obtain ⟨z, hz⟩ := range_eq_singleton_of_spec_field (ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1
+  obtain ⟨z, hz⟩ := range_eq_singleton_of_spec_field (ab.zero (𝟙 (Spec (CommRingCat.of K)))).1
   have hrange' : Set.range ι.base = ({z}ᶜ : Set A) := by rw [hrange, hz]
   have hinf : (Set.range ι.base).Infinite := by
     rw [hrange']
@@ -10273,9 +10356,9 @@ theorem exists_weierstrassRingEquiv_of_affineComplement {A : Scheme.{0}}
       inferInstanceAs (Subsingleton (PrimeSpectrum R))
     exact hinf (Set.subsingleton_range ι.base).finite
   obtain ⟨E, φ, hφ⟩ :=
-    exists_surjective_coordinateRingHom_of_affineComplement ab hdim R ι hopen hrange
-  exact ⟨E, ⟨(RingEquiv.ofBijective φ
-    ⟨_root_.injective_of_surjective_coordinateRing E hnf φ hφ, hφ⟩).symm⟩⟩
+    exists_surjective_coordinateRingHom_of_affineComplement ab hdim R ι hopen hrange hcomp
+  exact ⟨E, ⟨(AlgEquiv.ofBijective φ
+    ⟨_root_.injective_of_surjective_coordinateRing E hnf φ.toRingHom hφ, hφ⟩).symm⟩⟩
 
 /-- **A Weierstrass curve over `ℚ` with `Δ = 0` has a RATIONAL singular
 point** (**PROVEN 2026-07-28** — the char-`0` half of leaf 3 of
@@ -10309,17 +10392,42 @@ so both vanish given only `X ^ 2 = c₄` and `X ^ 3 = -c₆`, which is all that
 `c₆ = -(b₂ + 12 x₀) ^ 3`, i.e. `X ^ 3 = -c₆`, which together with
 `X ^ 2 = c₄` pins `X = -c₆ / c₄`.  Choosing `+c₆ / c₄` instead gives the
 OTHER critical point of the cubic, which satisfies both derivative equations
-and is NOT on the curve. -/
-theorem exists_singular_of_Δ_eq_zero (E : WeierstrassCurve ℚ) (hΔ : E.Δ = 0) :
-    ∃ x y : ℚ, E.toAffine.Equation x y ∧ ¬ E.toAffine.Nonsingular x y := by
+and is NOT on the curve.
+
+## BASE GENERALISATION 2026-07-30: `ℚ` ⇝ any field of CHARACTERISTIC ZERO
+
+The proof above never uses anything about `ℚ` except that `2`, `12`, `48`, `576`,
+`864` and `1728` are invertible, so it goes through verbatim over any field `K`
+with `[CharZero K]` — `linarith` is the one step that has to be rewritten
+(`linear_combination`, there being no order on `K`).
+
+**`CharZero K` IS LOAD-BEARING, and the statement is FALSE without it** — this
+is not a proof artefact, so a successor must not try to drop it.  Over a
+NON-PERFECT field of characteristic `2`, take `K = 𝔽₂(t)` and
+`E = ⟨0, 0, 0, t, 0⟩`, i.e. `y² = x³ + t x`.  Then `a₁ = a₃ = 0` forces
+`b₂ = b₄ = b₆ = 0` and `b₈ = -a₄² `, so `Δ = -b₂² b₈ - 8 b₄³ - 27 b₆² + 9 b₂ b₄ b₆ = 0`;
+but `W_Y = 2y + a₁x + a₃ = 0` identically and `W_X = -(3x² + a₄) = x² + t`, so a
+singular point needs `x² = t`, which has no solution in `𝔽₂(t)`.  The curve is
+singular only over `K^{1/2}`.  Characteristic `3` degenerates the same way once
+`b₂ = a₁² + 4a₂` vanishes.
+
+So the honest scope of the leaf is `PerfectField K` (whence `CharZero K` a
+fortiori); `CharZero` is what is stated because it is what the two bases this
+development instantiates at — `ℚ` and `AlgebraicClosure ℚ` — supply, and because
+the explicit `c₄`/`c₆` witness above needs no characteristic casework under it.
+The perfect-field statement would need three separate arguments (char `≠ 2, 3`,
+char `2`, char `3`) and buys nothing here. -/
+theorem exists_singular_of_Δ_eq_zero {K : Type} [Field K] [CharZero K]
+    (E : WeierstrassCurve K) (hΔ : E.Δ = 0) :
+    ∃ x y : K, E.toAffine.Equation x y ∧ ¬ E.toAffine.Nonsingular x y := by
   have hc : E.c₄ ^ 3 = E.c₆ ^ 2 := by
     have h := E.c_relation
     rw [hΔ, mul_zero] at h
-    linarith
+    linear_combination -h
   have hc6 : E.c₄ = 0 → E.c₆ = 0 := fun h => by
     have h2 : E.c₆ ^ 2 = 0 := by rw [← hc, h]; ring
     exact sq_eq_zero_iff.mp h2
-  set X : ℚ := -E.c₆ / E.c₄ with hXdef
+  set X : K := -E.c₆ / E.c₄ with hXdef
   have hmul : E.c₄ * X = -E.c₆ := by
     rcases eq_or_ne E.c₄ 0 with h | h
     · rw [hXdef, h, hc6 h]; ring
@@ -10334,18 +10442,18 @@ theorem exists_singular_of_Δ_eq_zero (E : WeierstrassCurve ℚ) (hΔ : E.Δ = 0
   have hX3 : X ^ 3 = -E.c₆ := by
     have h : X ^ 3 = X ^ 2 * X := by ring
     rw [h, hX2, hmul]
-  set x₀ : ℚ := (X - E.b₂) / 12 with hx₀
-  set y₀ : ℚ := -(E.a₃ + E.a₁ * x₀) / 2 with hy₀
+  set x₀ : K := (X - E.b₂) / 12 with hx₀
+  set y₀ : K := -(E.a₃ + E.a₁ * x₀) / 2 with hy₀
   have hY : 2 * y₀ + E.a₁ * x₀ + E.a₃ = 0 := by rw [hy₀]; ring
   have hXpart : E.a₁ * y₀ - (3 * x₀ ^ 2 + 2 * E.a₂ * x₀ + E.a₄) = 0 := by
     rw [hy₀, hx₀]
     simp only [WeierstrassCurve.b₂, WeierstrassCurve.c₄, WeierstrassCurve.b₄] at hX2 ⊢
-    linear_combination (-1/48 : ℚ) * hX2
+    linear_combination (-1/48 : K) * hX2
   have heq : E.toAffine.Equation x₀ y₀ := by
     rw [WeierstrassCurve.Affine.equation_iff', hy₀, hx₀]
     simp only [WeierstrassCurve.b₂, WeierstrassCurve.c₄, WeierstrassCurve.b₄,
       WeierstrassCurve.c₆, WeierstrassCurve.b₆] at hX2 hX3 ⊢
-    linear_combination (-X/576 : ℚ) * hX2 + (1/864 : ℚ) * hX3
+    linear_combination (-X/576 : K) * hX2 + (1/864 : K) * hX3
   refine ⟨x₀, y₀, heq, ?_⟩
   rw [WeierstrassCurve.Affine.nonsingular_iff']
   rintro ⟨-, h | h⟩
@@ -10354,34 +10462,40 @@ theorem exists_singular_of_Δ_eq_zero (E : WeierstrassCurve ℚ) (hΔ : E.Δ = 0
 
 section JacobianCriterion
 
-/-! ### Points of the affine coordinate ring, and the square-zero test ring `ℚ[t]/(t³)`
+/-! ### Points of the affine coordinate ring, and the square-zero test ring `K[t]/(t³)`
 
 Everything in this section exists to serve
 `not_smooth_specMap_coordinateRing_of_singular` immediately below it, and nothing
 else in the tree uses it.  Two ingredients:
 
-* the *functor of points* of `E.toAffine.CoordinateRing` — a `ℚ`-algebra map
-  `E.toAffine.CoordinateRing →ₐ[ℚ] C` is the same thing as a solution of the
+* the *functor of points* of `E.toAffine.CoordinateRing` — a `K`-algebra map
+  `E.toAffine.CoordinateRing →ₐ[K] C` is the same thing as a solution of the
   Weierstrass equation in `C` (`OnAffineWeierstrass`).  Mathlib gives
   `CoordinateRing = AdjoinRoot E.polynomial` and nothing else here, so both
   directions are built by hand out of `AdjoinRoot.lift` / `AdjoinRoot.eval₂_root`;
-* the ring `ℚ[t]/(t³)` together with its square-zero ideal `(t²)`, which is the
-  square-zero extension against which formal smoothness is tested. -/
+* the ring `K[t]/(t³)` together with its square-zero ideal `(t²)`, which is the
+  square-zero extension against which formal smoothness is tested.
 
-variable {C : Type} [CommRing C] [Algebra ℚ C]
+**BASE GENERALISATION 2026-07-30**: this whole section read over `ℚ` and now reads
+over an arbitrary field `K`.  Nothing here is characteristic-sensitive — the test
+ring `K[t]/(t³)` and the functor of points make sense over any base — so no
+`CharZero` hypothesis appears until `exists_singular_of_Δ_eq_zero` above, which is
+the one genuinely char-`0` ingredient of leaf 3. -/
 
-/-- **The affine Weierstrass equation of `E`, read in an arbitrary `ℚ`-algebra `C`.**
+variable {K : Type} [Field K] {C : Type} [CommRing C] [Algebra K C]
+
+/-- **The affine Weierstrass equation of `E`, read in an arbitrary `K`-algebra `C`.**
 `OnAffineWeierstrass E X₀ Y₀` says that `(X₀, Y₀)` is a `C`-point of the affine
-chart; for `C = ℚ` it is `E.toAffine.Equation` (up to the arrangement of terms). -/
-def OnAffineWeierstrass (E : WeierstrassCurve ℚ) (X₀ Y₀ : C) : Prop :=
-  Y₀ ^ 2 + (algebraMap ℚ C E.toAffine.a₁ * X₀ + algebraMap ℚ C E.toAffine.a₃) * Y₀
-    - (X₀ ^ 3 + algebraMap ℚ C E.toAffine.a₂ * X₀ ^ 2 + algebraMap ℚ C E.toAffine.a₄ * X₀
-        + algebraMap ℚ C E.toAffine.a₆) = 0
+chart; for `C = K` it is `E.toAffine.Equation` (up to the arrangement of terms). -/
+def OnAffineWeierstrass (E : WeierstrassCurve K) (X₀ Y₀ : C) : Prop :=
+  Y₀ ^ 2 + (algebraMap K C E.toAffine.a₁ * X₀ + algebraMap K C E.toAffine.a₃) * Y₀
+    - (X₀ ^ 3 + algebraMap K C E.toAffine.a₂ * X₀ ^ 2 + algebraMap K C E.toAffine.a₄ * X₀
+        + algebraMap K C E.toAffine.a₆) = 0
 
 /-- `eval₂` of the Weierstrass polynomial through an arbitrary ring hom on the
-coefficient ring `ℚ[X]`.  (PROVEN, by unfolding `WeierstrassCurve.Affine.polynomial`.) -/
-lemma eval₂_affinePolynomial {D : Type*} [CommRing D] (E : WeierstrassCurve ℚ)
-    (i : Polynomial ℚ →+* D) (Y₀ : D) :
+coefficient ring `K[X]`.  (PROVEN, by unfolding `WeierstrassCurve.Affine.polynomial`.) -/
+lemma eval₂_affinePolynomial {D : Type*} [CommRing D] (E : WeierstrassCurve K)
+    (i : Polynomial K →+* D) (Y₀ : D) :
     Polynomial.eval₂ i Y₀ E.toAffine.polynomial
       = Y₀ ^ 2 + (i (Polynomial.C E.toAffine.a₁) * i Polynomial.X
             + i (Polynomial.C E.toAffine.a₃)) * Y₀
@@ -10392,18 +10506,18 @@ lemma eval₂_affinePolynomial {D : Type*} [CommRing D] (E : WeierstrassCurve �
   simp only [Polynomial.eval₂_add, Polynomial.eval₂_sub, Polynomial.eval₂_mul,
     Polynomial.eval₂_pow, Polynomial.eval₂_C, Polynomial.eval₂_X, map_add, map_mul, map_pow]
 
-/-- `AdjoinRoot.of` on constants of `ℚ[X]` is the `ℚ`-algebra structure map of the
-coordinate ring (PROVEN, the scalar tower `ℚ → ℚ[X] → CoordinateRing`). -/
-lemma adjoinRootOf_C_eq_algebraMap (E : WeierstrassCurve ℚ) (a : ℚ) :
+/-- `AdjoinRoot.of` on constants of `K[X]` is the `K`-algebra structure map of the
+coordinate ring (PROVEN, the scalar tower `K → K[X] → CoordinateRing`). -/
+lemma adjoinRootOf_C_eq_algebraMap (E : WeierstrassCurve K) (a : K) :
     AdjoinRoot.of E.toAffine.polynomial (Polynomial.C a)
-      = algebraMap ℚ E.toAffine.CoordinateRing a := by
-  rw [IsScalarTower.algebraMap_apply ℚ (Polynomial ℚ) E.toAffine.CoordinateRing,
+      = algebraMap K E.toAffine.CoordinateRing a := by
+  rw [IsScalarTower.algebraMap_apply K (Polynomial K) E.toAffine.CoordinateRing,
     AdjoinRoot.algebraMap_eq]
   simp
 
 /-- **The tautological point**: the two generators of the coordinate ring satisfy the
 Weierstrass equation there (PROVEN, `AdjoinRoot.eval₂_root`). -/
-lemma onAffineWeierstrass_gens (E : WeierstrassCurve ℚ) :
+lemma onAffineWeierstrass_gens (E : WeierstrassCurve K) :
     OnAffineWeierstrass E (AdjoinRoot.of E.toAffine.polynomial Polynomial.X)
       (AdjoinRoot.root E.toAffine.polynomial) := by
   have h := AdjoinRoot.eval₂_root E.toAffine.polynomial
@@ -10412,10 +10526,10 @@ lemma onAffineWeierstrass_gens (E : WeierstrassCurve ℚ) :
   rw [OnAffineWeierstrass]
   linear_combination h
 
-/-- **A `ℚ`-algebra map out of the coordinate ring is a point**: the images of the two
+/-- **A `K`-algebra map out of the coordinate ring is a point**: the images of the two
 generators satisfy the Weierstrass equation in the target (PROVEN). -/
-lemma onAffineWeierstrass_of_algHom (E : WeierstrassCurve ℚ)
-    (g : E.toAffine.CoordinateRing →ₐ[ℚ] C) :
+lemma onAffineWeierstrass_of_algHom (E : WeierstrassCurve K)
+    (g : E.toAffine.CoordinateRing →ₐ[K] C) :
     OnAffineWeierstrass E (g (AdjoinRoot.of E.toAffine.polynomial Polynomial.X))
       (g (AdjoinRoot.root E.toAffine.polynomial)) := by
   have h := congrArg g (onAffineWeierstrass_gens E)
@@ -10425,82 +10539,83 @@ lemma onAffineWeierstrass_of_algHom (E : WeierstrassCurve ℚ)
 
 /-- The proof obligation consumed by `AdjoinRoot.lift` in `coordinateRingEvalHom`,
 named so that the computation rules below can mention it (PROVEN). -/
-lemma eval₂_affinePolynomial_eq_zero (E : WeierstrassCurve ℚ) (X₀ Y₀ : C)
+lemma eval₂_affinePolynomial_eq_zero (E : WeierstrassCurve K) (X₀ Y₀ : C)
     (h : OnAffineWeierstrass E X₀ Y₀) :
-    Polynomial.eval₂ (Polynomial.aeval X₀ : Polynomial ℚ →ₐ[ℚ] C).toRingHom Y₀
+    Polynomial.eval₂ (Polynomial.aeval X₀ : Polynomial K →ₐ[K] C).toRingHom Y₀
       E.toAffine.polynomial = 0 := by
   rw [eval₂_affinePolynomial]
   rw [OnAffineWeierstrass] at h
   simpa using h
 
-/-- **A point gives a `ℚ`-algebra map out of the coordinate ring** — the converse of
+/-- **A point gives a `K`-algebra map out of the coordinate ring** — the converse of
 `onAffineWeierstrass_of_algHom`, i.e. evaluation at `(X₀, Y₀)`. -/
-noncomputable def coordinateRingEvalHom (E : WeierstrassCurve ℚ) (X₀ Y₀ : C)
-    (h : OnAffineWeierstrass E X₀ Y₀) : E.toAffine.CoordinateRing →ₐ[ℚ] C :=
-  { AdjoinRoot.lift (Polynomial.aeval X₀ : Polynomial ℚ →ₐ[ℚ] C).toRingHom Y₀
+noncomputable def coordinateRingEvalHom (E : WeierstrassCurve K) (X₀ Y₀ : C)
+    (h : OnAffineWeierstrass E X₀ Y₀) : E.toAffine.CoordinateRing →ₐ[K] C :=
+  { AdjoinRoot.lift (Polynomial.aeval X₀ : Polynomial K →ₐ[K] C).toRingHom Y₀
       (eval₂_affinePolynomial_eq_zero E X₀ Y₀ h) with
     commutes' := by
       intro c
       show AdjoinRoot.lift _ _ (eval₂_affinePolynomial_eq_zero E X₀ Y₀ h)
-        (algebraMap ℚ E.toAffine.CoordinateRing c) = _
-      rw [IsScalarTower.algebraMap_apply ℚ (Polynomial ℚ) E.toAffine.CoordinateRing,
+        (algebraMap K E.toAffine.CoordinateRing c) = _
+      rw [IsScalarTower.algebraMap_apply K (Polynomial K) E.toAffine.CoordinateRing,
         AdjoinRoot.algebraMap_eq, AdjoinRoot.lift_of]
       simp }
 
-lemma coordinateRingEvalHom_of_X (E : WeierstrassCurve ℚ) (X₀ Y₀ : C)
+lemma coordinateRingEvalHom_of_X (E : WeierstrassCurve K) (X₀ Y₀ : C)
     (h : OnAffineWeierstrass E X₀ Y₀) :
     coordinateRingEvalHom E X₀ Y₀ h (AdjoinRoot.of E.toAffine.polynomial Polynomial.X) = X₀ := by
   show AdjoinRoot.lift _ _ (eval₂_affinePolynomial_eq_zero E X₀ Y₀ h)
     (AdjoinRoot.of E.toAffine.polynomial Polynomial.X) = _
   rw [AdjoinRoot.lift_of]; simp
 
-lemma coordinateRingEvalHom_root (E : WeierstrassCurve ℚ) (X₀ Y₀ : C)
+lemma coordinateRingEvalHom_root (E : WeierstrassCurve K) (X₀ Y₀ : C)
     (h : OnAffineWeierstrass E X₀ Y₀) :
     coordinateRingEvalHom E X₀ Y₀ h (AdjoinRoot.root E.toAffine.polynomial) = Y₀ := by
   show AdjoinRoot.lift _ _ (eval₂_affinePolynomial_eq_zero E X₀ Y₀ h)
     (AdjoinRoot.root E.toAffine.polynomial) = _
   rw [AdjoinRoot.lift_root]
 
-/-- **`ℚ[t]/(t³)`**, the second-order thickening of a point of the line: the test object
+/-- **`K[t]/(t³)`**, the second-order thickening of a point of the line: the test object
 for the lifting criterion below. -/
-abbrev CubicTruncRing : Type := AdjoinRoot ((Polynomial.X : Polynomial ℚ) ^ 3)
+abbrev CubicTruncRing (K : Type) [Field K] : Type := AdjoinRoot ((Polynomial.X : Polynomial K) ^ 3)
 
-/-- The image of `t` in `ℚ[t]/(t³)`. -/
-noncomputable def cubicTruncT : CubicTruncRing := AdjoinRoot.root _
+/-- The image of `t` in `K[t]/(t³)`. -/
+noncomputable def cubicTruncT (K : Type) [Field K] : CubicTruncRing K := AdjoinRoot.root _
 
-lemma cubicTruncT_cube : cubicTruncT ^ 3 = 0 := by
+lemma cubicTruncT_cube : cubicTruncT K ^ 3 = 0 := by
   rw [cubicTruncT, ← AdjoinRoot.mk_X, ← map_pow]
   exact AdjoinRoot.mk_self
 
-/-- **`t² ≠ 0` in `ℚ[t]/(t³)`** — this is the whole obstruction, and it is where the
+/-- **`t² ≠ 0` in `K[t]/(t³)`** — this is the whole obstruction, and it is where the
 Weierstrass equation's `Y²` coefficient `1` enters. -/
-lemma cubicTruncT_sq_ne_zero : cubicTruncT ^ 2 ≠ 0 := by
+lemma cubicTruncT_sq_ne_zero : cubicTruncT K ^ 2 ≠ 0 := by
   rw [cubicTruncT, ← AdjoinRoot.mk_X, ← map_pow, Ne, AdjoinRoot.mk_eq_zero]
   intro hd
-  have hne : ((Polynomial.X : Polynomial ℚ) ^ 2) ≠ 0 := pow_ne_zero _ Polynomial.X_ne_zero
+  have hne : ((Polynomial.X : Polynomial K) ^ 2) ≠ 0 := pow_ne_zero _ Polynomial.X_ne_zero
   have hle := Polynomial.degree_le_of_dvd hd hne
   rw [Polynomial.degree_X_pow, Polynomial.degree_X_pow] at hle
   norm_num at hle
 
-/-- The square-zero ideal `(t²) ⊆ ℚ[t]/(t³)`. -/
-noncomputable def cubicTruncIdeal : Ideal CubicTruncRing := Ideal.span {cubicTruncT ^ 2}
+/-- The square-zero ideal `(t²) ⊆ K[t]/(t³)`. -/
+noncomputable def cubicTruncIdeal (K : Type) [Field K] : Ideal (CubicTruncRing K) :=
+  Ideal.span {cubicTruncT K ^ 2}
 
-lemma cubicTruncIdeal_sq : cubicTruncIdeal ^ 2 = ⊥ := by
+lemma cubicTruncIdeal_sq : cubicTruncIdeal K ^ 2 = ⊥ := by
   rw [cubicTruncIdeal, Ideal.span_singleton_pow]
-  have h : (cubicTruncT ^ 2) ^ 2 = cubicTruncT * cubicTruncT ^ 3 := by ring
+  have h : (cubicTruncT K ^ 2) ^ 2 = cubicTruncT K * cubicTruncT K ^ 3 := by ring
   rw [h, cubicTruncT_cube, mul_zero]
   exact Ideal.span_singleton_eq_bot.mpr rfl
 
-lemma cubicTruncT_sq_mem : cubicTruncT ^ 2 ∈ cubicTruncIdeal := Ideal.subset_span rfl
+lemma cubicTruncT_sq_mem : cubicTruncT K ^ 2 ∈ cubicTruncIdeal K := Ideal.subset_span rfl
 
-lemma mem_cubicTruncIdeal {a : CubicTruncRing} :
-    a ∈ cubicTruncIdeal ↔ ∃ c, c * cubicTruncT ^ 2 = a :=
+lemma mem_cubicTruncIdeal {a : CubicTruncRing K} :
+    a ∈ cubicTruncIdeal K ↔ ∃ c, c * cubicTruncT K ^ 2 = a :=
   Ideal.mem_span_singleton'
 
-lemma mk_algebraMap_cubicTrunc (a : ℚ) :
-    Ideal.Quotient.mk cubicTruncIdeal (algebraMap ℚ CubicTruncRing a)
-      = algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) a :=
-  (Ideal.Quotient.mkₐ ℚ cubicTruncIdeal).commutes a
+lemma mk_algebraMap_cubicTrunc (a : K) :
+    Ideal.Quotient.mk (cubicTruncIdeal K) (algebraMap K (CubicTruncRing K) a)
+      = algebraMap K (CubicTruncRing K ⧸ cubicTruncIdeal K) a :=
+  (Ideal.Quotient.mkₐ K (cubicTruncIdeal K)).commutes a
 
 end JacobianCriterion
 
@@ -10568,9 +10683,10 @@ right about a *named-point regularity* statement, but it was read as "no usable
 smoothness obstruction exists", which is wrong — `Algebra.FormallySmooth`'s own
 defining lifting property (`Algebra.FormallySmooth.comp_surjective`) is exactly such
 an obstruction and is what closed this leaf. -/
-theorem not_smooth_specMap_coordinateRing_of_singular (E : WeierstrassCurve ℚ) {x y : ℚ}
+theorem not_smooth_specMap_coordinateRing_of_singular {K : Type} [Field K]
+    (E : WeierstrassCurve K) {x y : K}
     (heq : E.toAffine.Equation x y) (hns : ¬ E.toAffine.Nonsingular x y) :
-    ¬ Smooth (Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing))) := by
+    ¬ Smooth (Spec.map (CommRingCat.ofHom (algebraMap K E.toAffine.CoordinateRing))) := by
   intro hsm
   -- the two partial derivatives vanish at `(x, y)`
   have hXp : E.toAffine.a₁ * y - (3 * x ^ 2 + 2 * E.toAffine.a₂ * x + E.toAffine.a₄) = 0 := by
@@ -10592,50 +10708,54 @@ theorem not_smooth_specMap_coordinateRing_of_singular (E : WeierstrassCurve ℚ)
   -- smoothness of the `Spec` map is formal smoothness of the coordinate ring
   rw [HasRingHomProperty.Spec_iff (P := @Smooth), CommRingCat.hom_ofHom,
     RingHom.smooth_algebraMap] at hsm
-  haveI : Algebra.FormallySmooth ℚ E.toAffine.CoordinateRing := hsm.formallySmooth
-  -- the first-order point `(x, y + t)` over `ℚ[t]/(t²)`
-  have hs2 : (Ideal.Quotient.mk cubicTruncIdeal cubicTruncT) ^ 2 = 0 := by
+  haveI : Algebra.FormallySmooth K E.toAffine.CoordinateRing := hsm.formallySmooth
+  -- the first-order point `(x, y + t)` over `K[t]/(t²)`
+  have hs2 : (Ideal.Quotient.mk (cubicTruncIdeal K) (cubicTruncT K)) ^ 2 = 0 := by
     rw [← map_pow]
     exact Ideal.Quotient.eq_zero_iff_mem.mpr cubicTruncT_sq_mem
-  have hpt : OnAffineWeierstrass E (algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) x)
-      (algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) y
-        + Ideal.Quotient.mk cubicTruncIdeal cubicTruncT) := by
+  have hpt : OnAffineWeierstrass E
+      (algebraMap K (CubicTruncRing K ⧸ cubicTruncIdeal K) x)
+      (algebraMap K (CubicTruncRing K ⧸ cubicTruncIdeal K) y
+        + Ideal.Quotient.mk (cubicTruncIdeal K) (cubicTruncT K)) := by
     rw [OnAffineWeierstrass]
-    have h0 : (algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) y) ^ 2
-        + algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) E.toAffine.a₁
-            * algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) x
-            * algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) y
-        + algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) E.toAffine.a₃
-            * algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) y
-        - ((algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) x) ^ 3
-            + algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) E.toAffine.a₂
-              * (algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) x) ^ 2
-            + algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) E.toAffine.a₄
-              * algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) x
-            + algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) E.toAffine.a₆) = 0 := by
-      simpa using congrArg (algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal)) heq'
-    have h1 : algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) y
-        + algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) y
-        + algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) E.toAffine.a₁
-          * algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) x
-        + algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) E.toAffine.a₃ = 0 := by
-      simpa using congrArg (algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal)) hYp'
-    linear_combination h0 + (Ideal.Quotient.mk cubicTruncIdeal cubicTruncT) * h1 + hs2
-  -- formal smoothness lifts it to `ℚ[t]/(t³)`
-  obtain ⟨ψ, hψ⟩ := Algebra.FormallySmooth.comp_surjective ℚ E.toAffine.CoordinateRing
-    cubicTruncIdeal cubicTruncIdeal_sq (coordinateRingEvalHom E _ _ hpt)
+    have h0 : (algebraMap K (CubicTruncRing K ⧸ cubicTruncIdeal K) y) ^ 2
+        + algebraMap K (CubicTruncRing K ⧸ cubicTruncIdeal K) E.toAffine.a₁
+            * algebraMap K (CubicTruncRing K ⧸ cubicTruncIdeal K) x
+            * algebraMap K (CubicTruncRing K ⧸ cubicTruncIdeal K) y
+        + algebraMap K (CubicTruncRing K ⧸ cubicTruncIdeal K) E.toAffine.a₃
+            * algebraMap K (CubicTruncRing K ⧸ cubicTruncIdeal K) y
+        - ((algebraMap K (CubicTruncRing K ⧸ cubicTruncIdeal K) x) ^ 3
+            + algebraMap K (CubicTruncRing K ⧸ cubicTruncIdeal K) E.toAffine.a₂
+              * (algebraMap K (CubicTruncRing K ⧸ cubicTruncIdeal K) x) ^ 2
+            + algebraMap K (CubicTruncRing K ⧸ cubicTruncIdeal K) E.toAffine.a₄
+              * algebraMap K (CubicTruncRing K ⧸ cubicTruncIdeal K) x
+            + algebraMap K (CubicTruncRing K ⧸ cubicTruncIdeal K) E.toAffine.a₆) = 0 := by
+      simpa using congrArg (algebraMap K (CubicTruncRing K ⧸ cubicTruncIdeal K)) heq'
+    have h1 : algebraMap K (CubicTruncRing K ⧸ cubicTruncIdeal K) y
+        + algebraMap K (CubicTruncRing K ⧸ cubicTruncIdeal K) y
+        + algebraMap K (CubicTruncRing K ⧸ cubicTruncIdeal K) E.toAffine.a₁
+          * algebraMap K (CubicTruncRing K ⧸ cubicTruncIdeal K) x
+        + algebraMap K (CubicTruncRing K ⧸ cubicTruncIdeal K) E.toAffine.a₃ = 0 := by
+      simpa using congrArg (algebraMap K (CubicTruncRing K ⧸ cubicTruncIdeal K)) hYp'
+    linear_combination h0
+      + (Ideal.Quotient.mk (cubicTruncIdeal K) (cubicTruncT K)) * h1 + hs2
+  -- formal smoothness lifts it to `K[t]/(t³)`
+  obtain ⟨ψ, hψ⟩ := Algebra.FormallySmooth.comp_surjective K E.toAffine.CoordinateRing
+    (cubicTruncIdeal K) cubicTruncIdeal_sq (coordinateRingEvalHom E _ _ hpt)
   have hrel := onAffineWeierstrass_of_algHom E ψ
   rw [OnAffineWeierstrass] at hrel
   -- the lift agrees with `(x, y + t)` modulo `(t²)`
-  have hmodX : Ideal.Quotient.mk cubicTruncIdeal
+  have hmodX : Ideal.Quotient.mk (cubicTruncIdeal K)
         (ψ (AdjoinRoot.of E.toAffine.polynomial Polynomial.X))
-      = Ideal.Quotient.mk cubicTruncIdeal (algebraMap ℚ CubicTruncRing x) := by
+      = Ideal.Quotient.mk (cubicTruncIdeal K) (algebraMap K (CubicTruncRing K) x) := by
     have h := AlgHom.congr_fun hψ (AdjoinRoot.of E.toAffine.polynomial Polynomial.X)
     rw [coordinateRingEvalHom_of_X] at h
     rw [mk_algebraMap_cubicTrunc]
     simpa only [AlgHom.coe_comp, Function.comp_apply, Ideal.Quotient.mkₐ_eq_mk] using h
-  have hmodY : Ideal.Quotient.mk cubicTruncIdeal (ψ (AdjoinRoot.root E.toAffine.polynomial))
-      = Ideal.Quotient.mk cubicTruncIdeal (algebraMap ℚ CubicTruncRing y + cubicTruncT) := by
+  have hmodY : Ideal.Quotient.mk (cubicTruncIdeal K)
+        (ψ (AdjoinRoot.root E.toAffine.polynomial))
+      = Ideal.Quotient.mk (cubicTruncIdeal K)
+        (algebraMap K (CubicTruncRing K) y + cubicTruncT K) := by
     have h := AlgHom.congr_fun hψ (AdjoinRoot.root E.toAffine.polynomial)
     rw [coordinateRingEvalHom_root] at h
     rw [map_add, mk_algebraMap_cubicTrunc]
@@ -10643,57 +10763,60 @@ theorem not_smooth_specMap_coordinateRing_of_singular (E : WeierstrassCurve ℚ)
   obtain ⟨c, hc⟩ := mem_cubicTruncIdeal.mp (Ideal.Quotient.eq.mp hmodX)
   obtain ⟨d, hd⟩ := mem_cubicTruncIdeal.mp (Ideal.Quotient.eq.mp hmodY)
   -- every product of two corrections, and every correction times `t`, dies against `t³ = 0`
-  refine cubicTruncT_sq_ne_zero ?_
+  refine cubicTruncT_sq_ne_zero (K := K) ?_
   have hut : (ψ (AdjoinRoot.of E.toAffine.polynomial Polynomial.X)
-      - algebraMap ℚ CubicTruncRing x) * cubicTruncT = 0 := by
-    rw [← hc]; linear_combination c * cubicTruncT_cube
+      - algebraMap K (CubicTruncRing K) x) * cubicTruncT K = 0 := by
+    rw [← hc]; linear_combination c * cubicTruncT_cube (K := K)
   have huu : (ψ (AdjoinRoot.of E.toAffine.polynomial Polynomial.X)
-      - algebraMap ℚ CubicTruncRing x) * (ψ (AdjoinRoot.of E.toAffine.polynomial Polynomial.X)
-      - algebraMap ℚ CubicTruncRing x) = 0 := by
-    rw [← hc]; linear_combination c ^ 2 * cubicTruncT * cubicTruncT_cube
+      - algebraMap K (CubicTruncRing K) x)
+      * (ψ (AdjoinRoot.of E.toAffine.polynomial Polynomial.X)
+      - algebraMap K (CubicTruncRing K) x) = 0 := by
+    rw [← hc]; linear_combination c ^ 2 * cubicTruncT K * cubicTruncT_cube (K := K)
   have huw : (ψ (AdjoinRoot.of E.toAffine.polynomial Polynomial.X)
-        - algebraMap ℚ CubicTruncRing x)
+        - algebraMap K (CubicTruncRing K) x)
       * (ψ (AdjoinRoot.root E.toAffine.polynomial)
-        - (algebraMap ℚ CubicTruncRing y + cubicTruncT)) = 0 := by
-    rw [← hc, ← hd]; linear_combination c * d * cubicTruncT * cubicTruncT_cube
+        - (algebraMap K (CubicTruncRing K) y + cubicTruncT K)) = 0 := by
+    rw [← hc, ← hd]; linear_combination c * d * cubicTruncT K * cubicTruncT_cube (K := K)
   have hww : (ψ (AdjoinRoot.root E.toAffine.polynomial)
-        - (algebraMap ℚ CubicTruncRing y + cubicTruncT))
+        - (algebraMap K (CubicTruncRing K) y + cubicTruncT K))
       * (ψ (AdjoinRoot.root E.toAffine.polynomial)
-        - (algebraMap ℚ CubicTruncRing y + cubicTruncT)) = 0 := by
-    rw [← hd]; linear_combination d ^ 2 * cubicTruncT * cubicTruncT_cube
+        - (algebraMap K (CubicTruncRing K) y + cubicTruncT K)) = 0 := by
+    rw [← hd]; linear_combination d ^ 2 * cubicTruncT K * cubicTruncT_cube (K := K)
   have hwt : (ψ (AdjoinRoot.root E.toAffine.polynomial)
-      - (algebraMap ℚ CubicTruncRing y + cubicTruncT)) * cubicTruncT = 0 := by
-    rw [← hd]; linear_combination d * cubicTruncT_cube
-  have h0 : (algebraMap ℚ CubicTruncRing y) ^ 2
-      + algebraMap ℚ CubicTruncRing E.toAffine.a₁ * algebraMap ℚ CubicTruncRing x
-        * algebraMap ℚ CubicTruncRing y
-      + algebraMap ℚ CubicTruncRing E.toAffine.a₃ * algebraMap ℚ CubicTruncRing y
-      - ((algebraMap ℚ CubicTruncRing x) ^ 3
-          + algebraMap ℚ CubicTruncRing E.toAffine.a₂ * (algebraMap ℚ CubicTruncRing x) ^ 2
-          + algebraMap ℚ CubicTruncRing E.toAffine.a₄ * algebraMap ℚ CubicTruncRing x
-          + algebraMap ℚ CubicTruncRing E.toAffine.a₆) = 0 := by
-    simpa using congrArg (algebraMap ℚ CubicTruncRing) heq'
-  have h1 : algebraMap ℚ CubicTruncRing y + algebraMap ℚ CubicTruncRing y
-      + algebraMap ℚ CubicTruncRing E.toAffine.a₁ * algebraMap ℚ CubicTruncRing x
-      + algebraMap ℚ CubicTruncRing E.toAffine.a₃ = 0 := by
-    simpa using congrArg (algebraMap ℚ CubicTruncRing) hYp'
-  have h2 : algebraMap ℚ CubicTruncRing E.toAffine.a₁ * algebraMap ℚ CubicTruncRing y
-      - ((algebraMap ℚ CubicTruncRing x) ^ 2 + (algebraMap ℚ CubicTruncRing x) ^ 2
-          + (algebraMap ℚ CubicTruncRing x) ^ 2
-          + (algebraMap ℚ CubicTruncRing E.toAffine.a₂ * algebraMap ℚ CubicTruncRing x
-              + algebraMap ℚ CubicTruncRing E.toAffine.a₂ * algebraMap ℚ CubicTruncRing x)
-          + algebraMap ℚ CubicTruncRing E.toAffine.a₄) = 0 := by
-    simpa using congrArg (algebraMap ℚ CubicTruncRing) hXp'
+      - (algebraMap K (CubicTruncRing K) y + cubicTruncT K)) * cubicTruncT K = 0 := by
+    rw [← hd]; linear_combination d * cubicTruncT_cube (K := K)
+  have h0 : (algebraMap K (CubicTruncRing K) y) ^ 2
+      + algebraMap K (CubicTruncRing K) E.toAffine.a₁ * algebraMap K (CubicTruncRing K) x
+        * algebraMap K (CubicTruncRing K) y
+      + algebraMap K (CubicTruncRing K) E.toAffine.a₃ * algebraMap K (CubicTruncRing K) y
+      - ((algebraMap K (CubicTruncRing K) x) ^ 3
+          + algebraMap K (CubicTruncRing K) E.toAffine.a₂
+            * (algebraMap K (CubicTruncRing K) x) ^ 2
+          + algebraMap K (CubicTruncRing K) E.toAffine.a₄ * algebraMap K (CubicTruncRing K) x
+          + algebraMap K (CubicTruncRing K) E.toAffine.a₆) = 0 := by
+    simpa using congrArg (algebraMap K (CubicTruncRing K)) heq'
+  have h1 : algebraMap K (CubicTruncRing K) y + algebraMap K (CubicTruncRing K) y
+      + algebraMap K (CubicTruncRing K) E.toAffine.a₁ * algebraMap K (CubicTruncRing K) x
+      + algebraMap K (CubicTruncRing K) E.toAffine.a₃ = 0 := by
+    simpa using congrArg (algebraMap K (CubicTruncRing K)) hYp'
+  have h2 : algebraMap K (CubicTruncRing K) E.toAffine.a₁ * algebraMap K (CubicTruncRing K) y
+      - ((algebraMap K (CubicTruncRing K) x) ^ 2 + (algebraMap K (CubicTruncRing K) x) ^ 2
+          + (algebraMap K (CubicTruncRing K) x) ^ 2
+          + (algebraMap K (CubicTruncRing K) E.toAffine.a₂ * algebraMap K (CubicTruncRing K) x
+              + algebraMap K (CubicTruncRing K) E.toAffine.a₂
+                * algebraMap K (CubicTruncRing K) x)
+          + algebraMap K (CubicTruncRing K) E.toAffine.a₄) = 0 := by
+    simpa using congrArg (algebraMap K (CubicTruncRing K)) hXp'
   linear_combination hrel - h0
-    - (ψ (AdjoinRoot.root E.toAffine.polynomial) - algebraMap ℚ CubicTruncRing y) * h1
+    - (ψ (AdjoinRoot.root E.toAffine.polynomial) - algebraMap K (CubicTruncRing K) y) * h1
     - (ψ (AdjoinRoot.of E.toAffine.polynomial Polynomial.X)
-        - algebraMap ℚ CubicTruncRing x) * h2
-    - hww - 2 * hwt - algebraMap ℚ CubicTruncRing E.toAffine.a₁ * hut
-    - algebraMap ℚ CubicTruncRing E.toAffine.a₁ * huw
-    + (3 * algebraMap ℚ CubicTruncRing x
+        - algebraMap K (CubicTruncRing K) x) * h2
+    - hww - 2 * hwt - algebraMap K (CubicTruncRing K) E.toAffine.a₁ * hut
+    - algebraMap K (CubicTruncRing K) E.toAffine.a₁ * huw
+    + (3 * algebraMap K (CubicTruncRing K) x
         + (ψ (AdjoinRoot.of E.toAffine.polynomial Polynomial.X)
-            - algebraMap ℚ CubicTruncRing x)
-        + algebraMap ℚ CubicTruncRing E.toAffine.a₂) * huu
+            - algebraMap K (CubicTruncRing K) x)
+        + algebraMap K (CubicTruncRing K) E.toAffine.a₂) * huu
 
 /-- **A Weierstrass curve whose affine chart is an open subscheme of a
 smooth relative curve is elliptic** (**PROVEN 2026-07-28** from the two
@@ -10748,12 +10871,37 @@ singular point) and `not_smooth_specMap_coordinateRing_of_singular` (the
 Jacobian criterion, **also PROVEN, later the same day**, so this whole subtree
 is closed and nothing under it is a leaf any more).  The scheme-theoretic
 plumbing — that `ι ≫ f` is smooth and IS `Spec` of the structure map — costs
-two lines and carries no content. -/
-theorem isElliptic_of_isOpenImmersion_coordinateRing {A : Scheme.{0}}
-    {f : A ⟶ Spec (CommRingCat.of ℚ)} (hdim : SmoothOfRelativeDimension 1 f)
-    (E : WeierstrassCurve ℚ)
+two lines and carries no content.
+
+## BASE GENERALISATION 2026-07-30: `ℚ` ⇝ a field of characteristic zero
+
+Two changes, and both are consequential enough that an auditor should not skim
+them:
+
+* **`hcomm` is a NEW HYPOTHESIS and this statement is FALSE without it.**  Over
+  `ℚ` the identification `ι ≫ f = Spec.map (ofHom (algebraMap ℚ E[..]))` was a
+  theorem (`hom_ext_spec_rat`, `ℚ` initial in `CommRing`) and the proof simply
+  rewrote by it.  Over a general `K` it is content: without it `ι` may be the
+  chart composed with `Spec` of a nontrivial automorphism of `K`, and then
+  `ι ≫ f` says nothing about the smoothness of the standard structure map, so
+  no constraint on `Δ` follows.  The assembly supplies it for free.
+* **`[CharZero K]` is LOAD-BEARING**, and it is inherited entirely from
+  `exists_singular_of_Δ_eq_zero`: over a non-perfect field of characteristic `2`
+  a `Δ = 0` Weierstrass curve need have no singular point rational over the base
+  (`y² = x³ + tx` over `𝔽₂(t)`), and the whole argument here is "produce the
+  rational singular point, then fail the Jacobian criterion at it".  The Jacobian
+  half, `not_smooth_specMap_coordinateRing_of_singular`, needs only `Field K`.
+  A successor wanting an arbitrary field must replace the rationality step, not
+  this declaration; see `X0.lean`'s
+  `exists_weierstrassModel_of_ellipticScheme_field` for the two routes. -/
+theorem isElliptic_of_isOpenImmersion_coordinateRing {K : Type} [Field K] [CharZero K]
+    {A : Scheme.{0}}
+    {f : A ⟶ Spec (CommRingCat.of K)} (hdim : SmoothOfRelativeDimension 1 f)
+    (E : WeierstrassCurve K)
     (ι : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶ A)
-    (hopen : IsOpenImmersion ι) :
+    (hopen : IsOpenImmersion ι)
+    (hcomm : ι ≫ f
+      = Spec.map (CommRingCat.ofHom (algebraMap K E.toAffine.CoordinateRing))) :
     E.IsElliptic := by
   by_contra hE
   have hΔ : E.Δ = 0 := by
@@ -10764,8 +10912,7 @@ theorem isElliptic_of_isOpenImmersion_coordinateRing {A : Scheme.{0}}
   haveI := hdim
   haveI := hopen
   have h2 : Smooth (ι ≫ f) := SmoothOfRelativeDimension.smooth (n := 0 + 1) (f := ι ≫ f)
-  rwa [hom_ext_spec_rat (ι ≫ f)
-    (Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing)))] at h2
+  rwa [hcomm] at h2
 
 /-- **An elliptic scheme over `Spec ℚ` has a Weierstrass model** (PROVEN
 2026-07-27 from the three leaves above; a single `sorry` node before
@@ -10809,26 +10956,67 @@ complement of the zero section; leaf 2 replaces `R` by
 isomorphism of schemes, so composing it with `ι` keeps the range
 (`Scheme.Hom.opensRange_comp_of_isIso`) and keeps the open immersion.
 Leaf 3 is then applied to the *composite*, which is exactly the chart whose
-smoothness forces `Δ ≠ 0`.  The structure-morphism conjunct is free by
-`hom_ext_spec_rat`: any two morphisms to `Spec ℚ` agree, which is why no
-leaf has to carry a `ℚ`-algebra structure. -/
-theorem exists_weierstrassModel_of_ellipticScheme {A : Scheme.{0}}
-    {f : A ⟶ Spec (CommRingCat.of ℚ)} (ab : AbelianSchemeStruct f)
+smoothness forces `Δ ≠ 0`.
+
+## BASE GENERALISATION 2026-07-30: `ℚ` ⇝ a field `K` of characteristic zero
+
+The sentence that used to close the paragraph above — "the structure-morphism
+conjunct is free by `hom_ext_spec_rat`: any two morphisms to `Spec ℚ` agree,
+which is why no leaf has to carry a `ℚ`-algebra structure" — is `ℚ`-only and is
+RETIRED.  Its replacement is three lines of this proof and costs no leaf:
+
+* `Spec` is fully faithful, so `ι ≫ f : Spec R ⟶ Spec K` is `Spec.map` of a
+  unique ring map `Spec.preimage (ι ≫ f) : K ⟶ R`.  Installing THAT as the
+  `Algebra K R` instance makes the compatibility `Spec.map_preimage`, i.e. an
+  identity rather than an obligation;
+* leaf 2 then returns a `K`-ALGEBRA isomorphism `R ≃ₐ[K] E.toAffine.CoordinateRing`,
+  and `AlgEquiv.commutes` turns the compatibility for `R` into the one for the
+  coordinate ring — this is the only genuinely new step in the assembly;
+* leaf 3 consumes it as its `hcomm` hypothesis.
+
+So over a general `K` the conjunct is carried rather than free, exactly as
+`X0.lean`'s `exists_weierstrassModel_of_ellipticScheme_field` predicted, and
+nothing about the Riemann–Roch leaf changed.
+
+`[CharZero K]` is inherited from leaf 3 alone (through
+`exists_singular_of_Δ_eq_zero`) and is what stops this from closing the
+arbitrary-field sibling in `X0.lean`; both bases this development instantiates
+at, `ℚ` and `AlgebraicClosure ℚ`, have it. -/
+theorem exists_weierstrassModel_of_ellipticScheme {K : Type} [Field K] [CharZero K]
+    {A : Scheme.{0}}
+    {f : A ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct f)
     (hdim : SmoothOfRelativeDimension 1 f) :
-    ∃ (E : WeierstrassCurve ℚ) (_ : E.IsElliptic),
+    ∃ (E : WeierstrassCurve K) (_ : E.IsElliptic),
       ∃ ι : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶ A,
         IsOpenImmersion ι ∧
-          ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing)) ∧
+          ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap K E.toAffine.CoordinateRing)) ∧
           Set.range ι.base =
-            (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ := by
+            (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of K)))).1.base)ᶜ := by
   classical
   obtain ⟨R, _, ι, hopen, hrange⟩ := exists_affineComplement_zeroSection ab hdim
-  obtain ⟨E, ⟨e⟩⟩ := exists_weierstrassRingEquiv_of_affineComplement ab hdim R ι hopen hrange
+  -- The chart's structure morphism `Spec R ⟶ Spec K` IS `Spec` of a unique ring map
+  -- (`Spec` is fully faithful), so the `K`-algebra structure that leaf 2 needs, and the
+  -- compatibility clause that goes with it, cost nothing: install the one and the other
+  -- is `Spec.map_preimage`.  Over `ℚ` this step was invisible, being `hom_ext_spec_rat`.
+  letI : Algebra K R := ((Spec.preimage (ι ≫ f)).hom : K →+* R).toAlgebra
+  have hcomp : ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap K R)) := by
+    have h : CommRingCat.ofHom (algebraMap K R) = Spec.preimage (ι ≫ f) :=
+      CommRingCat.ofHom_hom (Spec.preimage (ι ≫ f))
+    rw [h, Spec.map_preimage]
+  obtain ⟨E, ⟨e⟩⟩ :=
+    exists_weierstrassRingEquiv_of_affineComplement ab hdim R ι hopen hrange hcomp
+  -- `e` is a `K`-ALGEBRA isomorphism, so it carries the structure map across
+  have hmap : CommRingCat.ofHom (algebraMap K R) ≫ e.toRingEquiv.toCommRingCatIso.hom
+      = CommRingCat.ofHom (algebraMap K E.toAffine.CoordinateRing) := by
+    ext k
+    exact e.commutes k
+  have hcomm : (Spec.map e.toRingEquiv.toCommRingCatIso.hom ≫ ι) ≫ f
+      = Spec.map (CommRingCat.ofHom (algebraMap K E.toAffine.CoordinateRing)) := by
+    rw [Category.assoc, hcomp, ← Spec.map_comp, hmap]
   have hE : E.IsElliptic :=
     isElliptic_of_isOpenImmersion_coordinateRing hdim E
-      (Spec.map e.toCommRingCatIso.hom ≫ ι) inferInstance
-  refine ⟨E, hE, Spec.map e.toCommRingCatIso.hom ≫ ι, inferInstance,
-    hom_ext_spec_rat _ _, ?_⟩
+      (Spec.map e.toRingEquiv.toCommRingCatIso.hom ≫ ι) inferInstance hcomm
+  refine ⟨E, hE, Spec.map e.toRingEquiv.toCommRingCatIso.hom ≫ ι, inferInstance, hcomm, ?_⟩
   rw [← Scheme.Hom.coe_opensRange, Scheme.Hom.opensRange_comp_of_isIso,
     Scheme.Hom.coe_opensRange]
   exact hrange

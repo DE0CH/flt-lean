@@ -2853,7 +2853,44 @@ this commit, `EllipticScheme.lean` has exactly TWO open leaves left:
 
 Do not trust either list.  Both were read off the compiler's
 `declaration uses 'sorry'` warning set for that file, which is the only
-authority, and both go stale at the next release. -/
+authority, and both go stale at the next release.  (Indeed the first entry
+went stale on 2026-07-30: it is now
+`exists_weierstrassGenerators_of_affineComplement`, one cut further down, and
+it is `EllipticScheme.lean`'s ONLY remaining direct sorry.)
+
+## THE GENERALISATION WAS DONE ON 2026-07-30, AND IT DOES NOT CLOSE THE LEAF BELOW
+
+Everything this subsection prescribes has been carried out in
+`EllipticScheme.lean`: `exists_weierstrassModel_of_ellipticScheme` and its three
+leaves now read over an arbitrary field, the structure-morphism conjunct is
+carried exactly as predicted above, and `exists_weierstrassAlgClos_of_abelianSchemeStruct`
+and `exists_weierstrassModel_gamma0Datum_algClos` are one-line citations of it.
+
+**But the generalised chain carries `[CharZero K]`, and
+`exists_weierstrassModel_of_ellipticScheme_field` below does NOT** — so that leaf
+is still open, and a successor must not read the sentence "generalise that
+declaration" as still describing free work.  What remains is a genuinely
+characteristic-sensitive statement, in ONE place:
+`exists_singular_of_Δ_eq_zero`, the rationality of the singular point of a
+`Δ = 0` Weierstrass cubic.  It is FALSE over a non-perfect field —
+`y² = x³ + t x` over `𝔽₂(t)` has `Δ = 0` (because `a₁ = a₃ = 0` kills `b₂`, `b₄`,
+`b₆`) and its singular point needs `x² = t`, which has no solution in the base.
+
+So there are exactly two honest ways to close the leaf below, and both are real
+work rather than a base substitution:
+
+1. add `[CharZero k]` (or `[PerfectField k]`) to it — which means adding it to
+   `exists_weierstrassModel_geomFibreAddEquiv_of_geomPoint`, its only consumer,
+   and to *that* theorem's consumers in turn.  Note the consumer supplies
+   `[IsAlgClosed k]`, which gives `PerfectField k` for free, so the perfect-field
+   route needs no change at the call site at all — only a char-`2`/`3`-aware
+   proof of `exists_singular_of_Δ_eq_zero`;
+2. or replace the rational-singular-point argument in
+   `isElliptic_of_isOpenImmersion_coordinateRing` by a base change to `k̄`:
+   formal smoothness is stable under base change, the singular point exists over
+   `k̄`, and properness of the Jacobian ideal descends.  That needs a
+   coordinate-ring base-change isomorphism `k[E] ⊗_k k̄ ≃ k̄[E ⊗ k̄]`, which the
+   pin does not have for `AdjoinRoot` of a bivariate polynomial. -/
 
 /-- **An abelian scheme of relative dimension one over a FIELD has a
 Weierstrass model** (sorry leaf, opened 2026-07-28) — Silverman *AEC*
@@ -2863,16 +2900,25 @@ III.3.1, i.e. Riemann–Roch, and the first half of the geometry that
 This is `EllipticScheme.lean`'s `exists_weierstrassModel_of_ellipticScheme`
 with the base `Spec ℚ` replaced by `Spec k` for an arbitrary field `k`,
 conjunct for conjunct.  **Close it by generalising that declaration rather
-than by reproving it**: as of this commit its whole chain over `ℚ` —
-`exists_affineComplement_zeroSection`,
-`exists_weierstrassRingEquiv_of_affineComplement` and
-`isElliptic_of_isOpenImmersion_coordinateRing` — is proven, and the single
-leaf left underneath it is
-`exists_surjective_coordinateRingHom_of_affineComplement`.  So the `ℚ` case
-is very nearly closed, and generalising it costs one open leaf rather than
-a development.  See the subsection docstring for the one conjunct that
-stops being free once `ℚ` is replaced by `k`, and for why that list of open
-leaves must be re-read off the compiler rather than believed.
+than by reproving it** — and as of 2026-07-30 that generalisation HAS BEEN
+DONE, so read the next paragraph before starting.
+
+## THE BASE GENERALISATION IS DONE; WHAT SEPARATES THIS LEAF FROM IT IS `CharZero`
+
+`exists_weierstrassModel_of_ellipticScheme` now reads over an arbitrary field
+`K` — but with `[CharZero K]`, which this statement does not carry.  That
+hypothesis is not slack: it is consumed by `exists_singular_of_Δ_eq_zero`, and
+that ingredient is FALSE over a non-perfect field (`y² = x³ + tx` over `𝔽₂(t)`
+has `Δ = 0` and no singular point rational over the base — see the subsection
+docstring above for the two honest routes to remove it, one of which is free at
+this leaf's only call site because that call site supplies `[IsAlgClosed k]`).
+
+So the residue of this leaf is EXACTLY a perfect-field (or base-change) proof of
+`exists_singular_of_Δ_eq_zero`; the rest of the chain — affineness, Riemann–Roch,
+the Jacobian criterion, the structure-morphism compatibility — is already stated
+and proven over an arbitrary field, and the sole remaining Riemann–Roch leaf
+`exists_weierstrassGenerators_of_affineComplement` has no characteristic
+hypothesis at all.  Do not re-do the base substitution.
 
 ## Faithfulness
 
@@ -14543,15 +14589,38 @@ the genuine `j`-invariant of an elliptic scheme agrees with `W.j` on a
 Weierstrass model over ANY base ring, `ℚ̄` included.
 
 **How to prove it, and it is a one-line change to work that already exists.**
-`exists_jSection` builds its witness from `exists_jSectionOnAffine` (a leaf) by
-Zariski descent; `IsJSectionOnAffine.jt_model` is likewise stated only at
-`R = ℚ`.  Generalise THAT field to a variable base ring —
+`exists_jSection` builds its witness from `exists_jSectionOnAffine` by Zariski
+descent; `IsJSectionOnAffine.jt_model` is likewise stated only at `R = ℚ`.
+Generalise THAT field to a variable base ring —
 `∀ {R : Type} [CommRing R] (W : WeierstrassCurve R) [W.IsElliptic]
 (d : Gamma0Datum 1 (Spec (CommRingCat.of R))) (g : Spec (CommRingCat.of R) ⟶ SpecQ),
 IsWeierstrassModel d.ab W → jLineCoord (jt g d) = W.j` — and the present
-statement falls out at `R = ℚ̄`, `g = specAlgClos ℚ`.  The leaf that has to
-absorb the strengthening is `exists_jSectionOnAffine`, which is open anyway.
+statement falls out at `R = ℚ̄`, `g = specAlgClos ℚ`.
 **Do NOT build a second `j`-theory over `ℚ̄`.**
+
+## TWO STALE CLAIMS IN THE PARAGRAPH ABOVE, CORRECTED (`flt-lean-195`, re-checked 2026-07-30)
+
+(i) It said the route needs `IsJSectionOnAffine.jt_model` generalised to a
+variable base ring.  **UNNECESSARY**: the first clause of `IsJValueOnAffine` is
+ALREADY quantified over `{R : Type} [CommRing R]`, and `exists_jSectionOnAffine`
+builds its witness from that `∃!`, not from `jt_model`.  Pinning at `ℚ̄` is the
+same one line that gives `jt_model` at `R = ℚ`, with `R := ℚ̄`.
+
+(ii) It called `exists_jSectionOnAffine` "a leaf, open anyway".  **It is PROVEN**,
+with a full proof body, and absent from this file's `declaration uses 'sorry'`
+set — so a successor must not plan on folding the strengthening into an
+already-open leaf.
+
+## THE REAL OBSTRUCTION IS DECLARATION ORDER, and it is not repairable here
+
+Re-verified 2026-07-30 against the current file: `IsJSection` is declared just
+above this leaf, but NOTHING above this point constructs one.  `exists_jSection`
+and `exists_jSectionOnAffine` sit roughly TEN THOUSAND lines below, and the only
+other mention above is a consumer.  So no proof can exist at this position
+whatever the mathematics is, and the two repairs both cross owner boundaries:
+hoisting the `j` machinery moves ~42 declarations (including the separately-owned
+`exists_weierstrassModel_away_of_prime`), moving the consumers instead moves ~15.
+Recorded rather than done.
 
 `W.IsElliptic` is an instance binder here for the same reason as in
 `jt_model`: `WeierstrassCurve.j` is only defined for an elliptic curve. -/
@@ -14563,8 +14632,39 @@ theorem exists_jSection_algClosModel :
   sorry
 
 /-- **THE REVERSE WEIERSTRASS BRIDGE OVER `ℚ̄`** (sorry leaf, opened
-2026-07-27): an abelian scheme of relative dimension one over `Spec ℚ̄` has a
-Weierstrass model.
+2026-07-27; **PROVEN 2026-07-30**): an abelian scheme of relative dimension one
+over `Spec ℚ̄` has a Weierstrass model.
+
+## PROVEN 2026-07-30, exactly along the route this docstring prescribed
+
+`EllipticScheme.lean`'s `exists_weierstrassModel_of_ellipticScheme` and its whole
+chain — `exists_affineComplement_zeroSection`,
+`exists_weierstrassRingEquiv_of_affineComplement`,
+`isElliptic_of_isOpenImmersion_coordinateRing`, together with the residue leaf
+`exists_weierstrassGenerators_of_affineComplement` and the `WeierstrassCurve`-level
+`exists_singular_of_Δ_eq_zero` / `not_smooth_specMap_coordinateRing_of_singular` —
+were RE-PROVEN over an arbitrary field, so this is a one-line citation at
+`K = AlgebraicClosure ℚ` and NO leaf was added anywhere.  `IsWeierstrassModel ab Ē`
+is definitionally the three-conjunct existential that theorem produces
+(`weierstrassAffine` / `weierstrassAffineStr` unfold to `Spec` of the coordinate
+ring and `Spec.map` of its structure map).
+
+Two things about that generalisation a reader of this leaf should know:
+
+* the `ℚ`-specific step the paragraph below predicts really was the only one, and
+  it was paid exactly as predicted — the compatibility `ι ≫ f = weierstrassAffineStr E`
+  is now CARRIED (leaf 1's ring is a `K`-algebra, leaf 2's isomorphism is a
+  `K`-algebra isomorphism, leaf 3 takes the compatibility as a hypothesis).  It
+  costs the assembly two lines: `Spec` is fully faithful, so `Spec.preimage (ι ≫ f)`
+  IS the `K`-algebra structure and `Spec.map_preimage` IS the compatibility;
+* the generalised chain carries `[CharZero K]`, which `AlgebraicClosure ℚ` has.
+  It is needed only by `exists_singular_of_Δ_eq_zero` (the rationality of the
+  singular point of a `Δ = 0` Weierstrass cubic) and it is NOT removable: over
+  `𝔽₂(t)`, `y² = x³ + tx` has `Δ = 0` and no singular point rational over the base.
+  `PerfectField K` is the honest scope; `CharZero` is what is stated because it is
+  what this development instantiates at and because it needs no char-`2`/`3`
+  casework.  So the sibling `exists_weierstrassModel_of_ellipticScheme_field`
+  above, which is stated over an ARBITRARY field, is **not** closed by this work.
 
 **This is `exists_weierstrassCurve_of_abelianSchemeStruct` with its base
 generalised from `ℚ` to `ℚ̄`, and it MUST be proven by generalising that one —
@@ -14603,7 +14703,7 @@ theorem exists_weierstrassAlgClos_of_abelianSchemeStruct {A : Scheme.{0}}
     (ab : AbelianSchemeStruct f) (hdim : SmoothOfRelativeDimension 1 f) :
     ∃ (Ē : WeierstrassCurve (AlgebraicClosure ℚ)) (_ : Ē.IsElliptic),
       IsWeierstrassModel ab Ē :=
-  sorry
+  exists_weierstrassModel_of_ellipticScheme ab hdim
 
 /-- **THE TRANSPORT: a `ℚ̄`-model with rational `j` descends the level
 structure to a curve over `ℚ`, up to an automorphism** (sorry leaf, opened
@@ -25624,12 +25724,22 @@ defined and hence what makes the two leaves below faithful.
 
 `N` is unconstrained: at `N = 0` the hypothesis `d` is already contradictory
 (`isEmpty_of_gamma0Datum_zero` empties `Spec ℚ̄`, which is nonempty), so the
-statement is vacuously true there and no `hN` is carried. -/
+statement is vacuously true there and no `hN` is carried.
+
+## PROVEN 2026-07-30 — a citation, the level structure being inert
+
+`EllipticScheme.lean`'s `exists_weierstrassModel_of_ellipticScheme` was re-proven
+over an arbitrary field of characteristic zero (see
+`exists_weierstrassAlgClos_of_abelianSchemeStruct` above for what that cost and
+what it did NOT buy), so this is that theorem at `K = AlgebraicClosure ℚ` applied
+to `d.ab` and `d.relativeDimensionOne`.  `d.cyc` is not used and does not need to
+be: a Weierstrass model is a statement about the underlying elliptic scheme, and
+the `Γ₀(N)`-structure rides along untouched. -/
 theorem exists_weierstrassModel_gamma0Datum_algClos {N : ℕ}
     (d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) :
     ∃ (W : WeierstrassCurve (AlgebraicClosure ℚ)) (_ : W.IsElliptic),
       IsWeierstrassModel d.ab W :=
-  sorry
+  exists_weierstrassModel_of_ellipticScheme d.ab d.relativeDimensionOne
 
 /-- **The moduli-to-Weierstrass dictionary, WITH the `j`-invariant carried
 across** (sorry leaf, opened 2026-07-28 as the geometric half of the cut of
