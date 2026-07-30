@@ -27,6 +27,8 @@ import shutil
 import subprocess
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
+import flt_loop_rows
+
 DIR = pathlib.Path("/tmp/flt-loop-sim")
 
 
@@ -66,6 +68,167 @@ def git(*args):
 
 
 # --------------------------------------------------------------------------
+# the CODE repo -- a real git repository standing in for flt-lean itself
+# --------------------------------------------------------------------------
+# Everything above this line is loop STATE. This is the thing the loop exists
+# to change, and it is a genuine repo rather than a set of flags, because the
+# predicates the loop turns on are git predicates. `ancestor` used to be a
+# hand-edited file; a worker is freed exactly when its branch has landed on
+# main, and asserting that with a flag tests nothing. Now it is a real
+# `merge-base --is-ancestor`, agents really commit, and the merger really
+# merges -- so a merge that silently carries nothing, or a branch that is an
+# ancestor while its content is gone, is expressible here rather than being
+# defined out of existence.
+#
+# It lives INSIDE the state dir but is git-ignored by it: two repos, one for
+# what the loop knows and one for what it is working on.
+def repo():
+    return DIR / "repo"
+
+
+def grepo(*args):
+    return subprocess.run(
+        ["git", "-C", str(repo()), "-c", "user.email=agent@flt",
+         "-c", "user.name=flt-agent",
+         # leaf names carry non-ASCII (the "·" successors), which git octal-
+         # escapes in ls-tree output by default and would corrupt every name
+         # read back out of the repo.
+         "-c", "core.quotePath=false"] + list(args), capture_output=True, text=True)
+
+
+def head_sha(ref="main"):
+    return grepo("rev-parse", "--short", ref).stdout.strip()
+
+
+def branch_exists(b):
+    return grepo("rev-parse", "--verify", "-q", b + "^{commit}").returncode == 0
+
+
+def is_ancestor(b):
+    """The real predicate row 5 turns on."""
+    return branch_exists(b) and grepo(
+        "merge-base", "--is-ancestor", b, "main").returncode == 0
+
+
+def leaf_path(name):
+    return repo() / "leaves" / (name.replace("/", "_") + ".lean")
+
+
+def seed_repo(tasks):
+    repo().mkdir(parents=True)
+    grepo("init", "-q")
+    grepo("symbolic-ref", "HEAD", "refs/heads/main")
+    (repo() / "leaves").mkdir()
+    for t in tasks:
+        wr(leaf_path(t), "theorem %s : True := by\n  sorry\n" % t)
+    grepo("add", "-A")
+    grepo("commit", "-q", "-m", "seed: %d open leaves" % len(tasks))
+
+
+def agent_commit(branch, task, successors):
+    """What a prover actually does: close its leaf, open the ones it cut."""
+    grepo("checkout", "-q", branch)
+    rm(leaf_path(task))
+    for sc in successors:
+        wr(leaf_path(sc), "theorem %s : True := by\n  sorry\n" % sc)
+    grepo("add", "-A")
+    grepo("commit", "-q", "-m",
+          "%s: closed %s, opened %s" % (branch, task, ", ".join(successors)))
+    grepo("checkout", "-q", "main")
+
+
+def merge_branches(branches):
+    """What the merge worker does. Returns the branches that actually landed."""
+    grepo("checkout", "-q", "main")
+    landed = []
+    for b in branches:
+        if not branch_exists(b):
+            continue
+        r = grepo("merge", "--no-ff", "-m", "merge %s" % b, b)
+        if r.returncode == 0:
+            landed.append(b)
+        else:
+            grepo("merge", "--abort")
+    return landed
+
+
+# --------------------------------------------------------------------------
+# spawning: detached, adopted by record, never a child of the loop
+# --------------------------------------------------------------------------
+# These are REAL processes. The simulator could have kept `alive` as a flag,
+# but the flag is what needs testing: the loop must be killable at any instant
+# without disturbing a single job, and must re-adopt everything on restart
+# from the records alone. Both are only true if the loop was never the parent.
+#
+# So a job is double-forked away (`setsid --fork`) and is reparented to init
+# before it runs. It is therefore never reaped by us, never a zombie, and
+# indifferent to our death.
+#
+# Identity is (pid, token), never a command pattern. A pid alone is
+# insufficient because pids recycle, and matching on a pattern is how you kill
+# somebody else's process that happens to share a substring -- so the token
+# goes in argv[0] and is checked before the pid is believed or signalled.
+def _tag(token):
+    return "flt-job-" + token
+
+
+def spawn_detached(token, label):
+    logdir = DIR / "joblogs"
+    logdir.mkdir(parents=True, exist_ok=True)
+    log = open(logdir / (token + ".log"), "a")
+    subprocess.run(
+        ["setsid", "--fork", "bash", "-c",
+         'exec -a "%s" sleep 1000000' % _tag(token)],
+        stdin=subprocess.DEVNULL, stdout=log, stderr=log)
+    return find_pid(token)
+
+
+def find_pid(token):
+    """Adoption: locate a job by its token, owning nothing."""
+    tag = _tag(token).encode()
+    for d in pathlib.Path("/proc").iterdir():
+        if not d.name.isdigit():
+            continue
+        try:
+            if (d / "cmdline").read_bytes().split(b"\0")[0] == tag:
+                return int(d.name)
+        except (OSError, ValueError):
+            continue
+    return None
+
+
+def proc_alive(pid, token):
+    if not pid:
+        return False
+    try:
+        cmd = pathlib.Path("/proc/%d/cmdline" % pid).read_bytes()
+    except OSError:
+        return False
+    return cmd.split(b"\0")[0] == _tag(token).encode()
+
+
+def kill_job(pid, token):
+    """Signal only after the token confirms the pid is still ours."""
+    if proc_alive(pid, token):
+        try:
+            os.kill(pid, 15)
+        except OSError:
+            pass
+
+
+def do_spawn(s, name, j):
+    pid = spawn_detached(j["token"], name)
+    return (j["host"], pid,
+            # stands in for the Claude transcript id -- what row 6 resumes from
+            j["token"] + "-0000-4000-8000-" + j["token"] * 3)
+
+
+def open_leaves():
+    out = grepo("ls-tree", "--name-only", "main", "leaves/").stdout
+    return sorted(pathlib.Path(x).stem for x in out.splitlines() if x.strip())
+
+
+# --------------------------------------------------------------------------
 # on-disk layout  <-> in-memory dict
 # --------------------------------------------------------------------------
 #   main              current release sha (stands in for `git rev-parse main`)
@@ -84,18 +247,38 @@ def git(*args):
 
 def seed():
     if DIR.exists():
+        # Kill what we are about to forget. Wiping the records first would
+        # orphan those processes PERMANENTLY -- adoption works by token, and
+        # after the wipe no token survives to adopt them with. Every spawn
+        # needs an owner, and the last owner has to release it.
+        for f in sorted((DIR / "jobs").glob("*.json")) if (DIR / "jobs").exists() else []:
+            try:
+                rec = json.loads(f.read_text())
+                kill_job(rec.get("pid"), rec["token"])
+            except (OSError, ValueError, KeyError):
+                pass
         shutil.rmtree(DIR)
     DIR.mkdir(parents=True)
     git("init", "-q")
-    wr(DIR / "main", "r19")
-    wr(DIR / "rebaselined", "r19")
-    wr(DIR / "queue1", "AUDITED: r19\nexists_diffCharScalar\nexists_nat_eq_sum_breaks\n")
+    wr(DIR / ".gitignore", "repo/\n")
+    tasks = ["exists_diffCharScalar", "exists_nat_eq_sum_breaks", "exists_isDiffChar"]
+    seed_repo(tasks)
+    sha = head_sha()
+    # `main` is NOT a state file any more -- it is read from the repo, because
+    # that is where it actually lives. `rebaselined` stays a file: it is the
+    # loop's own memory of which sha it has already reacted to, which no repo
+    # can answer.
+    wr(DIR / "rebaselined", sha)
+    wr(DIR / "queue1", "AUDITED: %s\n%s" % (sha, "".join(t + "\n" for t in tasks)))
     wr(DIR / "queue2", "")
-    wr(DIR / "batch", "flt-lean-7\n")
-    wr(DIR / "snapshot.json", json.dumps({"sha": "r19"}))
+    wr(DIR / "batch", "")
+    wr(DIR / "snapshot.json", json.dumps({"sha": sha}))
     wr(DIR / "workers", "")
     wr(DIR / "healthy", "flt-lean-1 1\nflt-lean-2 1\nflt-lean-3 1\n")
-    wr(DIR / "ancestor", "flt-lean-1 1\nflt-lean-2 1\nflt-lean-3 1\n")
+    # The load distributor's input: which machines exist and how many jobs
+    # each will carry. Capacity is per-host because a worktree's .lake is
+    # machine-local -- a job can only run where its artifacts are.
+    wr(DIR / "hosts", "nightcrawler 2\nrogue 1\n")
     wr(DIR / "email.log", "")
     (DIR / "jobs").mkdir()
     git("add", "-A")
@@ -137,13 +320,17 @@ def load():
                     j["sentinel"] = d
             except json.JSONDecodeError:
                 j["sentinel"] = None          # truncated sentinel = not finished
-        j["alive"] = (DIR / "jobs" / (n + ".alive")).exists()
+        # Observed from the process table, not read from a marker we wrote.
+        # A marker only records what we believed at the last tick; a job that
+        # died in between would keep claiming to be alive, and the whole
+        # died-vs-finished split rests on this being an observation.
+        j["alive"] = proc_alive(j.get("pid"), j["token"])
         j.setdefault("retries", 0)
         jobs[n] = j
     snap = rd(DIR / "snapshot.json")
     return {
         "stop": (DIR / "STOP").exists(),
-        "main": (rd(DIR / "main", "") or "").strip(),
+        "main": head_sha(),
         "rebaselined": (rd(DIR / "rebaselined", "") or "").strip(),
         "snapshot": json.loads(snap) if snap else None,
         "queue1": {"audited": aud, "tasks": [t for t in q1 if t.strip()]},
@@ -155,13 +342,18 @@ def load():
         "workers": {w: (_pairs("workers").get(w) or None)
                     for w in _pairs("healthy")},
         "healthy": {k: v == "1" for k, v in _pairs("healthy").items()},
-        "ancestor": {k: v == "1" for k, v in _pairs("ancestor").items()},
+        "hosts": {k: int(v) for k, v in _pairs("hosts").items()},
+        # Asked of git, not of a file. A worker is freed when its branch has
+        # really landed on main -- nothing else is evidence of that.
+        "ancestor": {w: is_ancestor(w) for w in _pairs("healthy")},
         "log": [], "git": [], "email": [],
     }
 
 
 def save(s):
-    wr(DIR / "main", s["main"])
+    # `main` and `ancestor` are deliberately NOT written: both are answers the
+    # repo gives, and writing them back would let the loop's opinion drift
+    # away from the thing it describes.
     wr(DIR / "rebaselined", s["rebaselined"])
     wr(DIR / "queue1", "AUDITED: %s\n%s" % (s["queue1"]["audited"] or "none",
                                             "".join(t + "\n" for t in s["queue1"]["tasks"])))
@@ -183,13 +375,16 @@ def save(s):
     for n, j in s["jobs"].items():
         live |= {n}
         rec = {k: j[k] for k in ("kind", "worktree", "payload", "token", "retries")}
+        # Identity of the running thing. Null until row 7 spawns it -- that is
+        # the whole point of recording before spawning, and it is what makes
+        # an orphan diagnosable: a record with no pid was never started, a
+        # record whose pid is gone died, and `session` is how a died agent is
+        # resumed from its transcript rather than restarted from nothing.
+        for k in ("host", "pid", "session"):
+            rec[k] = j.get(k)
         wr(DIR / "jobs" / (n + ".json"), json.dumps(rec, indent=1))
         if j["started"]:
             wr(DIR / "jobs" / (n + ".started"), j["token"])
-        if j["alive"]:
-            wr(DIR / "jobs" / (n + ".alive"), j["token"])
-        else:
-            rm(DIR / "jobs" / (n + ".alive"))
         if j["sentinel"] is not None:
             d = dict(j["sentinel"]); d["token"] = j["token"]
             wr(DIR / "jobs" / (n + ".sentinel"), json.dumps(d))
@@ -214,12 +409,17 @@ def gitlog(n=60):
 # --------------------------------------------------------------------------
 from flt_loop_rows import *          # noqa: F401,F403  -- the single source of truth
 import flt_loop_rows as _R
+
+# The rules describe spawning; the runtime performs it. Installing the hook
+# here is what keeps flt_loop_rows.py free of I/O and therefore testable.
+flt_loop_rows.SPAWN = do_spawn
 evaluate, ROWS, mutate = _R.evaluate, _R.ROWS, _R.mutate
 
 
 def tick():
     """load -> evaluate -> act -> save -> commit. Nothing persists in memory."""
     s = load()
+    before = set(s["jobs"])
     rows, firing = evaluate(s)
     label = ""
     for rid, lbl, _, action in ROWS:
@@ -227,6 +427,13 @@ def tick():
             label = lbl
             action(s)
             break
+    # A newly dispatched agent gets a real branch, cut from main at dispatch
+    # -- the fleet's ff-only repoint. Forced, because the worktree may still
+    # carry a branch from a previous task that has long since landed.
+    for n in set(s["jobs"]) - before:
+        j = s["jobs"][n]
+        if j["kind"] == "agent":
+            grepo("branch", "-f", j["worktree"], "main")
     for e in s["email"]:
         with open(DIR / "email.log", "a") as fh:
             fh.write(e + "\n")
@@ -243,7 +450,36 @@ def tick():
 
 def mutate_fs(job, what):
     s = load()
-    mutate(s, job, what)
+    # Injections that correspond to real work land in the REPO first, and the
+    # state is then read back from it -- rather than the state being asserted
+    # and the repo left as decoration.
+    if what == "release" or (what == "finish" and job == "merger"):
+        landed = merge_branches(list(s["inflight"] or []))
+        m = s["jobs"].get("merger")
+        if m:
+            kill_job(m.get("pid"), m["token"])
+            m["alive"] = False
+            m["sentinel"] = {"released": head_sha(), "merged": landed}
+        s["inflight"] = None
+        s["main"] = head_sha()
+        s["log"].append("~  merger merged %s -> main %s" % (landed or "nothing", s["main"]))
+        s["git"].append("inject: merger released %s (landed %s)"
+                        % (s["main"], ", ".join(landed) or "nothing"))
+    elif what == "finish" and job in s["jobs"] and s["jobs"][job]["kind"] == "agent":
+        j = s["jobs"][job]
+        succ = [j["payload"] + "·a", j["payload"] + "·b"]
+        agent_commit(j["worktree"], j["payload"], succ)
+        kill_job(j.get("pid"), j["token"])
+        j["alive"] = False
+        j["sentinel"] = {"opened": succ}
+        s["log"].append("~  %s committed on its branch: closed %s" % (job, j["payload"]))
+    else:
+        before = {n: j["alive"] for n, j in s["jobs"].items()}
+        mutate(s, job, what)
+        # any injection that stops a job stops the REAL one
+        for n, j in s["jobs"].items():
+            if before.get(n) and not j["alive"]:
+                kill_job(j.get("pid"), j["token"])
     save(s)
     if s["git"]:
         commit_fs(s["git"][0])
@@ -370,6 +606,36 @@ api('/api/state').then(render);
 </script></body></html>"""
 
 
+def take_lock():
+    """One writer per state directory.
+
+    Two loops on one directory interleave transitions: each loads, decides
+    against a state the other is halfway through changing, and writes back --
+    so a row fires twice, or fires against a state that never existed. Nothing
+    else in this design defends against it, because every other guarantee is
+    about a SINGLE writer crashing, not about two writers racing. It is easy to
+    do by accident: leaving a server running and then starting a headless run
+    against the same dir is enough, and the symptom looks like the machine
+    spontaneously injecting events.
+
+    A stale lock is stolen, not respected -- the loop is expected to be killed
+    abruptly, so refusing to start after a crash would be worse than the race.
+    """
+    lock = DIR / "loop.lock"
+    prev = rd(lock)
+    if prev and prev.strip().isdigit():
+        pid = int(prev.strip())
+        try:
+            cmd = pathlib.Path("/proc/%d/cmdline" % pid).read_bytes()
+        except OSError:
+            cmd = b""
+        if b"flt-loop-fs.py" in cmd and pid != os.getpid():
+            raise SystemExit(
+                "refusing to start: loop pid %d already owns %s\n"
+                "(stop it first, or use a different --dir)" % (pid, DIR))
+    wr(lock, str(os.getpid()) + "\n")
+
+
 def listing():
     out = []
     for f in sorted(DIR.rglob("*")):
@@ -438,10 +704,15 @@ def main():
     # Seed ONLY if there is nothing there. A restart must resume from the
     # directory, not erase it -- the whole claim being tested is that the
     # state lives on disk, and a server that wipes on boot would refute it.
-    if a.reseed or not (DIR / "main").exists():
+    # Keyed on `rebaselined`, NOT on `main`: main stopped being a state file
+    # when it moved into the repo, so this guard was testing a path that can
+    # no longer exist and silently reseeded on EVERY start -- wiping the state,
+    # wiping the repo, and orphaning every job it had spawned.
+    if a.reseed or not (DIR / "rebaselined").exists():
         seed()
     else:
         print("resuming existing state in", DIR)
+    take_lock()
     if a.ticks:
         for _ in range(a.ticks):
             f, _ = tick()
@@ -451,4 +722,5 @@ def main():
     HTTPServer(("127.0.0.1", a.port), H).serve_forever()
 
 
-main()
+if __name__ == "__main__":
+    main()

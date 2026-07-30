@@ -67,6 +67,11 @@ def unjustified(s):
 def idle_guard(s):
     live = [n for n, j in s["jobs"].items() if j["alive"]]
     if not live:
+        # ...unless we are waiting on host capacity, which IS a legitimate
+        # wait even with nothing running (a zero-capacity or fully drained
+        # fleet). Without this it would read as an illegal state and panic.
+        if any(unspawned(j) for j in s["jobs"].values()) and pick_host(s) is None:
+            return (True, "")
         return (False, "nothing is alive, so nothing will change")
     bad = unjustified(s)
     if bad:
@@ -102,6 +107,35 @@ def died(j):
     return j["started"] and not j["alive"] and j["sentinel"] is None
 
 
+# Installed by the runtime. Must launch the job DETACHED -- its own session,
+# reparented away, never a child of the loop -- and return (host, pid,
+# session). The loop must be killable at any instant without touching what it
+# started, which is only true if it was never the parent.
+SPAWN = None
+
+
+def host_load(s):
+    """Live jobs per host -- the distributor's view of the fleet."""
+    load = {h: 0 for h in s.get("hosts", {})}
+    for j in s["jobs"].values():
+        if j["alive"] and j.get("host") in load:
+            load[j["host"]] += 1
+    return load
+
+
+def pick_host(s):
+    """Least-loaded host with room, ties broken by name so it is deterministic.
+
+    Balancing on the RATIO rather than the count is what keeps a small machine
+    from being handed the same absolute load as a large one; comparing raw
+    counts silently overcommits the smallest host in the pool first.
+    """
+    load = host_load(s)
+    room = [(load[h] / max(cap, 1), h)
+            for h, cap in sorted(s.get("hosts", {}).items()) if load[h] < cap]
+    return min(room)[1] if room else None
+
+
 def unspawned(j):
     return (not j["started"]) and (not j["alive"])
 
@@ -122,7 +156,13 @@ def r1_guard(s):
 
 
 def r1_action(s):
-    note(s, "1  STOP -> exit")
+    # Halts the LOOP and nothing else -- deliberately no killing, no draining,
+    # no cleanup. Every job is spawned detached and is owned by its record
+    # rather than by process lineage, so the loop is free to stop at any tick
+    # and the fleet carries on. A stop that tore down its jobs would make
+    # stopping a destructive act, and then it could never be used casually --
+    # which is the only way it is any use at all.
+    note(s, "1  STOP -> loop exits; running jobs are left alone")
     s["halted"] = True
 
 
@@ -213,6 +253,8 @@ def r4_action(s):
 
 
 def r5_guard(s):
+    if any(unspawned(j) for j in s["jobs"].values()) and pick_host(s) is None:
+        return (False, "every host is at capacity -- nowhere to spawn")
     hits = [n for n, j in s["jobs"].items() if unspawned(j)]
     return (bool(hits), "every job record already has a live process or a .started marker")
 
@@ -222,6 +264,15 @@ def r5_action(s):
         if unspawned(j):
             j["started"] = True
             j["alive"] = True
+            # Identity is recorded BY the spawn, not by the record that
+            # preceded it -- the record exists precisely while there is no
+            # process yet. `session` is the Claude transcript id, which is
+            # what row 6 resumes from: a died agent is continued from its
+            # transcript, never restarted from nothing, so losing this field
+            # would silently convert every resume into a redo.
+            j["host"] = j.get("host") or pick_host(s)
+            host, pid, sess = SPAWN(s, n, j)
+            j["host"], j["pid"], j["session"] = host, pid, sess
             # Name what was spawned: row 7 is the ONE spawner for every kind,
             # so a bare "SPAWN" in the transition log is unreadable -- two
             # consecutive firings look like a double-spawn when they are a
@@ -525,12 +576,23 @@ def mutate(s, job, what):
     if what == "release":
         n = "r%d" % (int(s["main"][1:]) + 1)
         s["main"] = n
+        # Releasing is WHAT MAKES those branches ancestors of main -- so read
+        # .inflight, the merger's own record of what it claimed, and mark
+        # exactly those. Leaving `ancestor` a hand-flipped knob made the one
+        # causal link the loop depends on invisible: row 5 frees a worker only
+        # when its branch has landed, and nothing was ever landing it, so
+        # every awaiting_merge worker sat there across releases that had in
+        # fact merged it. Branches NOT in .inflight stay awaiting_merge,
+        # which is correct -- this merger did not carry them.
+        merged = [w for w in (s["inflight"] or []) if w in s["ancestor"]]
+        for w in merged:
+            s["ancestor"][w] = True
         m = s["jobs"].get("merger")
         if m:
             m["alive"] = False
-            m["sentinel"] = {"released": n}
+            m["sentinel"] = {"released": n, "merged": merged}
         s["inflight"] = None
-        note(s, f"~  merger released {n}; main moved")
+        note(s, f"~  merger released {n}; main moved; landed {merged or 'nothing'}")
     elif what == "merger_noop":
         # ILLEGAL by construction: a merge worker exists to move main, so
         # reporting success without moving it is not an outcome the table
