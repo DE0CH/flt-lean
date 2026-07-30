@@ -57,6 +57,10 @@ coarser than it needed to be.
 * `NumberField.mem_of_relNorm_of_forall_isMaximal` — PROVEN. To check that a
   subgroup of `Cl(𝓞 K)` contains the class of `N_{L/K} I` for EVERY nonzero ideal
   `I` of `𝓞 L`, it is enough to check the maximal ones.
+* `NumberField.frobAt_eq_one_iff_inertiaDeg_eq_one` — PROVEN. At an unramified
+  `Q`, the Frobenius is trivial exactly when `Q` has inertia degree `1`, i.e.
+  exactly when the prime below splits completely. The dictionary Chebotarev runs
+  on.
 * `NumberField.artinMap` — PROVEN CONSTRUCTION. The Artin map on the group of
   INVERTIBLE FRACTIONAL IDEALS of `𝓞 K`, `I ↦ ∏_v Frob_v ^ v(I)`, together with its
   multiplicativity and its value `Frob_v` at a prime.
@@ -364,6 +368,84 @@ theorem frobAt_pow_inertiaDeg (Q : Ideal (𝓞 L)) [Q.IsMaximal]
   have hy := hsmul (σ⁻¹ • y)
   rwa [mul_smul, smul_inv_smul] at hy
 
+/-- **A PRIME SPLITS COMPLETELY IFF ITS FROBENIUS IS TRIVIAL: at an unramified
+maximal `Q` of `𝓞 L`, `frobAt K L Q = 1 ↔ f(Q | 𝓞 K) = 1`** (PROVEN 2026-07-30).
+
+This is the dictionary that the classical proof of `closure_frobAt_eq_top` below
+runs on — "the primes unramified in `L` split completely in `L^H`" is exactly
+"their Frobenius elements lie in `H`" — and it is the whole of that proof which
+does not require a density input. Recorded here so that whoever attacks
+Chebotarev does not have to re-derive it.
+
+**Chain.** `←` is `frobAt_pow_inertiaDeg` with `pow_one`. For `→`: `σ = 1` turns
+the defining congruence `σ x ≡ x ^ q (mod Q)` into `z ^ q = z` for EVERY `z` in
+the residue field `𝓞 L ⧸ Q` (`Ideal.Quotient.mk` is surjective). That field is
+cyclic of order `q ^ f` (`Ideal.cardQuot_pow_inertiaDeg`), so its unit group has
+exponent dividing `q - 1` (`IsCyclic.exponent_eq_card`), giving
+`q ^ f - 1 ∣ q - 1`; with `q ≥ 2` that forces `f = 1`.
+
+**Unramifiedness is used only in `←`** (through `frobAt_pow_inertiaDeg`); the `→`
+direction holds at a ramified `Q` too, since `arithFrobAt`'s arbitrary choice is
+still an arithmetic Frobenius. It is kept as a hypothesis on both sides because
+the statement is only *meaningful* about `L/K` at an unramified prime. -/
+theorem frobAt_eq_one_iff_inertiaDeg_eq_one (Q : Ideal (𝓞 L)) [Q.IsMaximal]
+    [Algebra.IsUnramifiedAt (𝓞 K) Q] :
+    frobAt K L Q = 1 ↔ Q.inertiaDeg (𝓞 K) = 1 := by
+  classical
+  letI := Ideal.Quotient.field Q
+  letI : Fintype (𝓞 L ⧸ Q) := Fintype.ofFinite _
+  set σ : L ≃ₐ[K] L := frobAt K L Q with hσ
+  set q : ℕ := Nat.card (𝓞 K ⧸ Q.under (𝓞 K)) with hq
+  set f : ℕ := Q.inertiaDeg (𝓞 K) with hf
+  have H : IsArithFrobAt (𝓞 K) σ Q := isArithFrobAt_frobAt K L Q
+  have hmk : ∀ y : 𝓞 L,
+      Ideal.Quotient.mk Q (σ • y) = (Ideal.Quotient.mk Q y) ^ q := fun y ↦ H.mk_apply y
+  have hcard : Nat.card (𝓞 L ⧸ Q) = q ^ f := by
+    rw [hq, hf, ← Submodule.cardQuot_apply, ← Submodule.cardQuot_apply]
+    exact (Ideal.cardQuot_pow_inertiaDeg (Q.under (𝓞 K)) Q).symm
+  have hcard2 : 2 ≤ q ^ f := by
+    rw [← hcard, Nat.card_eq_fintype_card]
+    exact Fintype.one_lt_card
+  have hq2 : 2 ≤ q := by
+    rcases Nat.lt_or_ge q 2 with hcon | hcon
+    · have : q ^ f ≤ 1 ^ f := Nat.pow_le_pow_left (by omega) f
+      simp only [one_pow] at this
+      omega
+    · exact hcon
+  constructor
+  · intro h1
+    -- every element of the residue field is a root of `X ^ q - X`
+    have hz : ∀ z : 𝓞 L ⧸ Q, z ^ q = z := by
+      intro z
+      obtain ⟨y, rfl⟩ := Ideal.Quotient.mk_surjective z
+      rw [← hmk y, h1, one_smul]
+    -- so the (cyclic) unit group has exponent dividing `q - 1`
+    have hu : ∀ u : (𝓞 L ⧸ Q)ˣ, u ^ (q - 1) = 1 := by
+      intro u
+      refine Units.ext ?_
+      have hne : (u : 𝓞 L ⧸ Q) ≠ 0 := u.ne_zero
+      have hmul : (u : 𝓞 L ⧸ Q) ^ (q - 1) * (u : 𝓞 L ⧸ Q) = 1 * (u : 𝓞 L ⧸ Q) := by
+        rw [one_mul, ← pow_succ, Nat.sub_add_cancel (by omega), hz]
+      simpa using mul_right_cancel₀ hne hmul
+    have hdvd : Nat.card (𝓞 L ⧸ Q)ˣ ∣ q - 1 := by
+      rw [← IsCyclic.exponent_eq_card]
+      exact Monoid.exponent_dvd_of_forall_pow_eq_one hu
+    rw [Nat.card_eq_fintype_card, Fintype.card_units, ← Nat.card_eq_fintype_card, hcard] at hdvd
+    -- `q ^ f - 1 ∣ q - 1` with `q ≥ 2` forces `f = 1`
+    by_contra hne
+    have hf0 : f ≠ 0 := by
+      rintro h0
+      rw [h0, pow_zero] at hcard2
+      omega
+    have hf2 : 2 ≤ f := by omega
+    have hpow : q ^ 2 ≤ q ^ f := Nat.pow_le_pow_right (by omega) hf2
+    have hsq : q < q ^ 2 := by nlinarith [sq_nonneg q]
+    have hle : q ^ f - 1 ≤ q - 1 := Nat.le_of_dvd (by omega) hdvd
+    omega
+  · intro h1
+    have hpow := frobAt_pow_inertiaDeg K L Q
+    rwa [← hσ, ← hf, h1, pow_one] at hpow
+
 section ArtinMap
 
 open IsDedekindDomain
@@ -584,6 +666,36 @@ from the pin, along with ray class groups, the Artin map, and any Dirichlet
 density material. So this must be built, not cited. Note this leaf needs NO
 abelian hypothesis and NO archimedean hypothesis, which is the sense in which it
 is the smaller of the two.
+
+**STATUS 2026-07-30 — audited, faithful, and deliberately NOT decomposed.** The
+statement was re-checked against the mathlib notion of
+`Algebra.IsUnramifiedAt` (at a maximal `Q` of `𝓞 L` over a number field it is
+`e(Q | 𝔭) = 1`, the residue extension being automatically separable), including
+the degenerate case `L = K`, where `Gal(L/K)` is trivial and the conclusion holds
+vacuously. It is TRUE, and it is deep.
+
+It also does not usefully split, which is worth recording so the next agent does
+not spend the cycle finding that out. The obvious cut — "for every proper
+subgroup `H` there is an unramified `Q` with `frobAt K L Q ∉ H`" — is the
+contrapositive and trades one leaf for an equivalent one; that is noise, not
+decomposition. The cut that WOULD be progress is the fixed-field reduction, and
+it needs three things this file does not have:
+
+1. `Algebra.IsUnramifiedAt` transported along the `𝓞 K`-automorphism `τ` of `𝓞 L`
+   (to see that the generating set is conjugation-stable, hence `H` normal and
+   `L^H / K` Galois). No mathlib lemma at this pin does this; it means an algebra
+   iso between `Localization.AtPrime Q` and `Localization.AtPrime (τ • Q)`.
+2. Functoriality of `arithFrobAt` down a tower: for `M` intermediate and Galois
+   over `K`, `frobAt K M (Q.under (𝓞 M)) = (frobAt K L Q).restrict M`. The
+   `IsArithFrobAt` half of this is easy from the definition — the exponent `q` is
+   the same because `Ideal.under` is transitive — but it needs `𝓞 M` for an
+   `IntermediateField`, and multiplicativity of `e` in towers to know
+   `Q.under (𝓞 M)` is unramified.
+3. The density input itself.
+
+What HAS been done for it is the dictionary lemma
+`frobAt_eq_one_iff_inertiaDeg_eq_one` above (splits completely ⟺ Frobenius
+trivial), which is the part of step 2 that needs no tower.
 
 **Non-vacuity.** For `L/K` nontrivial the conclusion is a genuine assertion: the
 right-hand side `⊤` is not the closure of the empty set, and it fails for the
