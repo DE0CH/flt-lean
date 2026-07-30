@@ -49,9 +49,13 @@ back.
   mathematics now is.
 * `NumberField.exists_isArithFrobOver_of_aut` — OPEN. Chebotarev: every element
   of `Gal(L/K)` is a Frobenius at some prime.
-* `NumberField.apply_classGroupMk0_relNorm_eq_one` — OPEN, and NOT class field
-  theory: the classes of relative norms are killed by any Frobenius-compatible
-  homomorphism. Pure ideal arithmetic (`Frob^f = 1`, `N 𝔔 = 𝔭^f`).
+* `NumberField.pow_inertiaDeg_eq_one` — **PROVEN 2026-07-30**. A Frobenius at an
+  unramified prime satisfies `σ ^ f(𝔔/𝔭) = 1`. The only consumer of `hunr` in
+  the norm clause; four small lemmas above it do the residue-field arithmetic.
+* `NumberField.apply_classGroupMk0_relNorm_eq_one` — **PROVEN 2026-07-30**, and
+  NOT class field theory: the classes of relative norms are killed by any
+  Frobenius-compatible homomorphism. Pure ideal arithmetic (`Frob^f = 1`,
+  `N 𝔔 = 𝔭^f`, and induction on the prime factorisation).
 * `NumberField.finrank_le_index_relNormClassSubgroup` — PROVEN from the leaf
   above by pure group theory (index is antitone; `Subgroup.index_ker`).
   The second inequality at modulus `1`.
@@ -375,9 +379,243 @@ theorem exists_isArithFrobOver_of_aut [IsGalois K L] (σ : L ≃ₐ[K] L) :
     ∃ P : (Ideal (𝓞 K))⁰, (P : Ideal (𝓞 K)).IsPrime ∧ IsArithFrobOver K L P σ :=
   sorry
 
+/-! ### Machinery for `apply_classGroupMk0_relNorm_eq_one`
+
+The five declarations below are the "two-line computation" `Frob^f = 1` written
+out; they are consumed only by `apply_classGroupMk0_relNorm_eq_one` at the end of
+this section and by nothing else. -/
+
+omit [NumberField K] in
+/-- **AN AUTOMORPHISM OF `L/K` IS DETERMINED BY ITS ACTION ON `𝓞 L`** (PROVEN
+2026-07-30). `L` is the fraction field of `𝓞 L`, so an equality of the two
+restrictions extends over quotients. Needed because mathlib's Frobenius
+uniqueness lemma `AlgHom.IsArithFrobAt.eq_of_isUnramifiedAt` concludes an
+equality of `𝓞 L →ₐ[𝓞 K] 𝓞 L`, while everything here is stated about
+`L ≃ₐ[K] L`. -/
+theorem algEquiv_eq_of_smul_ringOfIntegers_eq {σ τ : L ≃ₐ[K] L}
+    (h : ∀ x : 𝓞 L, σ • x = τ • x) : σ = τ := by
+  ext y
+  obtain ⟨a, b, hb, rfl⟩ := IsFractionRing.div_surjective (A := 𝓞 L) y
+  have ha : σ (algebraMap (𝓞 L) L a) = τ (algebraMap (𝓞 L) L a) :=
+    congrArg (algebraMap (𝓞 L) L) (h a)
+  have hb' : σ (algebraMap (𝓞 L) L b) = τ (algebraMap (𝓞 L) L b) :=
+    congrArg (algebraMap (𝓞 L) L) (h b)
+  rw [map_div₀, map_div₀, ha, hb']
+
+/-- **`#(𝓞 K / 𝔭) ^ f = #(𝓞 L / 𝔔)`** (PROVEN 2026-07-30): mathlib's
+`Ideal.cardQuot_pow_inertiaDeg` restated with `Nat.card` in place of
+`Submodule.cardQuot`, which is the shape `IsArithFrobAt` uses. -/
+theorem card_quotient_under_pow_inertiaDeg (Q : Ideal (𝓞 L)) [Q.IsMaximal]
+    [(Q.under (𝓞 K)).IsMaximal] [Q.LiesOver (Q.under (𝓞 K))] :
+    Nat.card (𝓞 K ⧸ Q.under (𝓞 K)) ^ Q.inertiaDeg (𝓞 K) = Nat.card (𝓞 L ⧸ Q) := by
+  rw [← Submodule.cardQuot_apply, ← Submodule.cardQuot_apply]
+  exact Ideal.cardQuot_pow_inertiaDeg _ _
+
+set_option maxHeartbeats 2000000 in
+/-- **FERMAT'S LITTLE THEOREM IN THE RESIDUE FIELD AT `𝔔`** (PROVEN 2026-07-30):
+`x ^ #(𝓞 L / 𝔔) ≡ x (mod 𝔔)`.
+
+**⚠ A DEFEQ TRAP THAT COSTS AN HOUR IF YOU MEET IT COLD.** The `Field (𝓞 L ⧸ Q)`
+instance MUST be built as `(Finite.isField_of_domain _).toField`, NOT as
+mathlib's `Ideal.Quotient.field Q`. With the latter, `FiniteField.pow_card` is
+stated with `Field.toSemifield.toDivisionSemiring.toGroupWithZero.toMonoid` while
+the `^` produced by `map_pow` through `Ideal.Quotient.mk` carries
+`(Ideal.Quotient.semiring Q).toMonoid`, and the two are **not** defeq: `exact`
+fails at 2 000 000 heartbeats, and `convert … using n` peels
+`instHPow → NPow.toPow → …` forever until `whnf` times out. `IsField.toField`
+reuses the existing ring structure and the mismatch disappears. -/
+theorem pow_card_quotient_sub_mem (Q : Ideal (𝓞 L)) [Q.IsMaximal] (hQ : Q ≠ ⊥)
+    (x : 𝓞 L) : x ^ (Nat.card (𝓞 L ⧸ Q)) - x ∈ Q := by
+  haveI : Finite (𝓞 L ⧸ Q) := Ring.HasFiniteQuotients.finiteQuotient hQ
+  haveI : IsDomain (𝓞 L ⧸ Q) := Ideal.Quotient.isDomain Q
+  letI : Field (𝓞 L ⧸ Q) := (Finite.isField_of_domain (𝓞 L ⧸ Q)).toField
+  cases nonempty_fintype (𝓞 L ⧸ Q)
+  rw [← Ideal.Quotient.eq_zero_iff_mem, map_sub, map_pow, sub_eq_zero, Nat.card_eq_fintype_card]
+  exact FiniteField.pow_card (Ideal.Quotient.mk Q x)
+
+omit [NumberField K] [NumberField L] in
+open scoped Pointwise in
+/-- **ITERATING A FROBENIUS: `σ ^ n • x ≡ x ^ (q ^ n) (mod 𝔔)`** (PROVEN
+2026-07-30), where `q = #(𝓞 K / 𝔔 ∩ 𝓞 K)`.
+
+The induction needs `σ • 𝔔 = 𝔔` (`IsArithFrobAt.mem_stabilizer`) to push the
+inductive hypothesis through `σ`, and `sub_dvd_pow_sub_pow` to raise
+`σ • x - x ^ q ∈ 𝔔` to the `q ^ n`-th power. -/
+theorem pow_smul_sub_pow_card_mem [IsGalois K L] (Q : Ideal (𝓞 L)) [Q.IsPrime]
+    (σ : L ≃ₐ[K] L) (hσ : IsArithFrobAt (𝓞 K) σ Q) (n : ℕ) (x : 𝓞 L) :
+    (σ ^ n) • x - x ^ (Nat.card (𝓞 K ⧸ Q.under (𝓞 K)) ^ n) ∈ Q := by
+  have hstab : σ • Q = Q := hσ.mem_stabilizer
+  have hmem : ∀ y ∈ Q, σ • y ∈ Q := by
+    intro y hy
+    rw [← hstab]
+    exact Ideal.smul_mem_pointwise_smul _ _ _ hy
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    have h2 : σ • ((σ ^ n) • x) - (σ • x) ^ (Nat.card (𝓞 K ⧸ Q.under (𝓞 K)) ^ n) ∈ Q := by
+      have := hmem _ ih
+      rwa [smul_sub, smul_pow'] at this
+    have h3 : (σ • x) ^ (Nat.card (𝓞 K ⧸ Q.under (𝓞 K)) ^ n) -
+        (x ^ Nat.card (𝓞 K ⧸ Q.under (𝓞 K))) ^ (Nat.card (𝓞 K ⧸ Q.under (𝓞 K)) ^ n) ∈ Q :=
+      Ideal.mem_of_dvd _ (sub_dvd_pow_sub_pow _ _ _) (hσ x)
+    have := Q.add_mem h2 h3
+    rw [pow_succ', mul_smul]
+    rw [← pow_mul, ← pow_succ'] at this
+    simpa using this
+
+open scoped Pointwise in
+/-- **A FROBENIUS AT AN UNRAMIFIED PRIME HAS ORDER DIVIDING THE INERTIA DEGREE:
+`σ ^ f(𝔔/𝔭) = 1`** (PROVEN 2026-07-30). This is step 3 of the norm-clause
+computation, and the ONLY place where `hunr` is used.
+
+**Chain.** `pow_smul_sub_pow_card_mem` at `n = f`, plus
+`card_quotient_under_pow_inertiaDeg` and `pow_card_quotient_sub_mem`, give
+`σ ^ f • x ≡ x (mod 𝔔)` for every `x`. Hence `σ ^ (f + 1)` is ALSO an
+`IsArithFrobAt` witness at `𝔔` (using `σ • 𝔔 = 𝔔` to move the congruence through
+`σ`), so mathlib's uniqueness lemma
+`AlgHom.IsArithFrobAt.eq_of_isUnramifiedAt` — which is exactly where
+`Algebra.IsUnramifiedAt (𝓞 K) 𝔔` enters — identifies the two, and
+`algEquiv_eq_of_smul_ringOfIntegers_eq` turns that into `σ ^ (f + 1) = σ`.
+
+**The argument provably fails without `hunr`**: at a ramified prime a Frobenius
+at `𝔔` is only determined modulo the inertia group, `IsArithFrobAt` is satisfied
+by `σ · i` for every `i` in inertia, and `(σ · i) ^ f` lands in inertia rather
+than at `1`. -/
+theorem pow_inertiaDeg_eq_one [IsGalois K L]
+    (hunr : ∀ (Q : Ideal (𝓞 L)) (_ : Q.IsPrime), Q ≠ ⊥ →
+      Algebra.IsUnramifiedAt (𝓞 K) Q)
+    (Q : Ideal (𝓞 L)) (hQp : Q.IsPrime) (hQ0 : Q ≠ ⊥) (σ : L ≃ₐ[K] L)
+    (hσ : IsArithFrobAt (𝓞 K) σ Q) :
+    σ ^ (Q.inertiaDeg (𝓞 K)) = 1 := by
+  haveI := hQp
+  haveI : Q.IsMaximal := hQp.isMaximal hQ0
+  haveI : (Q.under (𝓞 K)).IsMaximal := inferInstance
+  haveI : Algebra.IsUnramifiedAt (𝓞 K) Q := hunr Q hQp hQ0
+  set f := Q.inertiaDeg (𝓞 K) with hf
+  -- `σ ^ f` acts trivially on the residue field at `Q`
+  have hfix : ∀ x : 𝓞 L, (σ ^ f) • x - x ∈ Q := by
+    intro x
+    have h1 := pow_smul_sub_pow_card_mem K L Q σ hσ f x
+    rw [card_quotient_under_pow_inertiaDeg K L Q] at h1
+    have h3 := pow_card_quotient_sub_mem L Q hQ0 x
+    have := Q.add_mem h1 h3
+    simpa using this
+  -- hence `σ ^ (f + 1)` is also an arithmetic Frobenius at `Q`
+  have hstab : σ • Q = Q := hσ.mem_stabilizer
+  have hfrob' : IsArithFrobAt (𝓞 K) (σ ^ (f + 1)) Q := by
+    intro x
+    have hA : σ • ((σ ^ f) • x - x) ∈ Q := by
+      rw [← hstab]
+      exact Ideal.smul_mem_pointwise_smul _ _ _ (hfix x)
+    have hB := hσ x
+    have := Q.add_mem hA hB
+    rw [smul_sub] at this
+    have hpow : (σ ^ (f + 1)) • x = σ • ((σ ^ f) • x) := by
+      rw [pow_succ', mul_smul]
+    simpa [hpow] using this
+  -- uniqueness of the Frobenius at an unramified prime
+  have heq := hfrob'.eq_of_isUnramifiedAt hσ (Ideal.primeCompl_le_nonZeroDivisors Q)
+  have hsmul : ∀ x : 𝓞 L, (σ ^ (f + 1)) • x = σ • x := fun x =>
+    DFunLike.congr_fun heq x
+  have hσeq : σ ^ (f + 1) = σ := algEquiv_eq_of_smul_ringOfIntegers_eq K L hsmul
+  rw [pow_succ] at hσeq
+  simpa using mul_right_cancel (b := σ) (by simpa using hσeq)
+
+/-- **THE NORM CLASS OF A PRIME IS KILLED: `φ [N_{L/K} 𝔔] = 1`** (PROVEN
+2026-07-30). The prime case of `apply_classGroupMk0_relNorm_eq_one` below.
+
+**Chain.** `Ideal.relNorm_eq_pow_of_isMaximal` (mathlib; usable here because
+`FractionRing (𝓞 K)` has characteristic zero, hence is a `PerfectField`, so the
+Galois hypothesis of the sibling `relNorm_eq_pow_of_isPrime_isGalois` is not
+needed) gives `N_{L/K} 𝔔 = 𝔭 ^ f` with `𝔭 = 𝔔 ∩ 𝓞 K` and `f = f(𝔔/𝔭)`. The
+hypothesis `hφ` makes `φ [𝔭]` a Frobenius at SOME prime `𝔔'` above `𝔭` — not
+necessarily at `𝔔` — but `Ideal.inertiaDeg_eq_of_isGaloisGroup` says all primes
+above `𝔭` have the same inertia degree, so `pow_inertiaDeg_eq_one` at `𝔔'` still
+gives `(φ [𝔭]) ^ f = 1`. -/
+theorem apply_classGroupMk0_relNorm_prime_eq_one [IsGalois K L]
+    (hunr : ∀ (Q : Ideal (𝓞 L)) (_ : Q.IsPrime), Q ≠ ⊥ →
+      Algebra.IsUnramifiedAt (𝓞 K) Q)
+    (φ : ClassGroup (𝓞 K) →* (L ≃ₐ[K] L))
+    (hφ : ∀ P : (Ideal (𝓞 K))⁰, (P : Ideal (𝓞 K)).IsPrime →
+      IsArithFrobOver K L P (φ (ClassGroup.mk0 P)))
+    (Q : Ideal (𝓞 L)) (hQp : Q.IsPrime) (hQ0 : Q ≠ ⊥)
+    (J : (Ideal (𝓞 K))⁰) (hJ : (J : Ideal (𝓞 K)) = Ideal.relNorm (𝓞 K) Q) :
+    φ (ClassGroup.mk0 J) = 1 := by
+  haveI := hQp
+  haveI : Q.IsMaximal := hQp.isMaximal hQ0
+  haveI : (Q.under (𝓞 K)).IsMaximal := inferInstance
+  have hp0 : Q.under (𝓞 K) ≠ ⊥ :=
+    (Ideal.bot_lt_of_maximal _ (NumberField.RingOfIntegers.not_isField _)).ne'
+  set p : (Ideal (𝓞 K))⁰ :=
+    ⟨Q.under (𝓞 K), mem_nonZeroDivisors_of_ne_zero (by simpa using hp0)⟩ with hpdef
+  have hpprime : (p : Ideal (𝓞 K)).IsPrime := inferInstance
+  obtain ⟨Q', hQ'p, hQ'under, hQ'frob⟩ := hφ p hpprime
+  haveI := hQ'p
+  haveI : Q'.LiesOver (Q.under (𝓞 K)) := ⟨hQ'under.symm⟩
+  have hQ'0 : Q' ≠ ⊥ := by
+    rintro rfl
+    exact hp0 (hQ'under.symm.trans (Ideal.under_bot (𝓞 K) (𝓞 L)))
+  have hfeq : Q'.inertiaDeg (𝓞 K) = Q.inertiaDeg (𝓞 K) :=
+    Ideal.inertiaDeg_eq_of_isGaloisGroup (Q.under (𝓞 K)) Q' Q (L ≃ₐ[K] L)
+  have hone : (φ (ClassGroup.mk0 p)) ^ (Q.inertiaDeg (𝓞 K)) = 1 := by
+    rw [← hfeq]
+    exact pow_inertiaDeg_eq_one K L hunr Q' hQ'p hQ'0 _ hQ'frob
+  have hJp : J = p ^ (Q.inertiaDeg (𝓞 K)) := by
+    apply Subtype.ext
+    rw [hJ, SubmonoidClass.coe_pow, hpdef]
+    exact Ideal.relNorm_eq_pow_of_isMaximal Q (Q.under (𝓞 K))
+  rw [hJp, map_pow, map_pow, hone]
+
+/-- **THE NORM CLAUSE, BY INDUCTION ON THE PRIME FACTORISATION** (PROVEN
+2026-07-30). `Ideal (𝓞 L)` is a `UniqueFactorizationMonoid` and
+`Ideal.relNorm` is a monoid hom, so
+`UniqueFactorizationMonoid.induction_on_prime` reduces the general nonzero `I`
+to the prime case above; the unit case is `I = ⊤`, whose norm class is the
+class of `⊤`, i.e. `1`.
+
+Stated with the `I ≠ ⊥` hypothesis to the RIGHT of `I` so that the induction
+motive `fun I => I ≠ ⊥ → …` is closed in `I` and can be supplied explicitly to
+`induction_on_prime`. -/
+theorem apply_classGroupMk0_relNorm_eq_one_aux [IsGalois K L]
+    (hunr : ∀ (Q : Ideal (𝓞 L)) (_ : Q.IsPrime), Q ≠ ⊥ →
+      Algebra.IsUnramifiedAt (𝓞 K) Q)
+    (φ : ClassGroup (𝓞 K) →* (L ≃ₐ[K] L))
+    (hφ : ∀ P : (Ideal (𝓞 K))⁰, (P : Ideal (𝓞 K)).IsPrime →
+      IsArithFrobOver K L P (φ (ClassGroup.mk0 P)))
+    (I : Ideal (𝓞 L)) :
+    I ≠ ⊥ → ∀ J : (Ideal (𝓞 K))⁰, (J : Ideal (𝓞 K)) = Ideal.relNorm (𝓞 K) I →
+      φ (ClassGroup.mk0 J) = 1 := by
+  refine UniqueFactorizationMonoid.induction_on_prime
+    (P := fun I : Ideal (𝓞 L) => I ≠ ⊥ → ∀ J : (Ideal (𝓞 K))⁰,
+      (J : Ideal (𝓞 K)) = Ideal.relNorm (𝓞 K) I → φ (ClassGroup.mk0 J) = 1) I ?_ ?_ ?_
+  · exact fun h => absurd Ideal.zero_eq_bot h
+  · intro x hx _ J hJ
+    have hx' : x = ⊤ := Ideal.isUnit_iff.mp hx
+    have hJ1 : J = 1 := by
+      apply Subtype.ext
+      rw [hJ, hx', Ideal.relNorm_top, Submonoid.coe_one, Ideal.one_eq_top]
+    rw [hJ1, map_one, map_one]
+  · intro a q ha hq ih _ J hJ
+    have hq0 : q ≠ ⊥ := hq.ne_zero
+    have hqp : q.IsPrime := (Ideal.prime_iff_isPrime hq0).mp hq
+    have hNq : Ideal.relNorm (𝓞 K) q ≠ ⊥ := fun h => hq0 (Ideal.relNorm_eq_bot_iff.mp h)
+    have hNa : Ideal.relNorm (𝓞 K) a ≠ ⊥ := fun h => ha (Ideal.relNorm_eq_bot_iff.mp h)
+    set J₁ : (Ideal (𝓞 K))⁰ :=
+      ⟨Ideal.relNorm (𝓞 K) q, mem_nonZeroDivisors_of_ne_zero (by simpa using hNq)⟩ with hJ₁
+    set J₂ : (Ideal (𝓞 K))⁰ :=
+      ⟨Ideal.relNorm (𝓞 K) a, mem_nonZeroDivisors_of_ne_zero (by simpa using hNa)⟩ with hJ₂
+    have hsplit : J = J₁ * J₂ := by
+      apply Subtype.ext
+      rw [hJ, Submonoid.coe_mul, hJ₁, hJ₂, map_mul]
+    rw [hsplit, map_mul, map_mul,
+      apply_classGroupMk0_relNorm_prime_eq_one K L hunr φ hφ q hqp hq0 J₁ rfl,
+      ih ha J₂ rfl, one_mul]
+
 /-- **THE NORM CLASSES ARE KILLED BY ANY FROBENIUS-COMPATIBLE HOMOMORPHISM**
-(SORRY LEAF, cut 2026-07-29 out of
-`exists_surjective_classGroupHom_aut_of_unramified_abelian` below).
+(cut 2026-07-29 out of
+`exists_surjective_classGroupHom_aut_of_unramified_abelian` below; **PROVEN
+2026-07-30**, over the five declarations in the block above and mathlib, with no
+new axioms and no class field theory).
 
 **THIS LEAF IS NOT CLASS FIELD THEORY.** It is the "two-line computation" that
 the parent's docstring promised: given ANY homomorphism `φ : Cl(𝓞 K) → Gal(L/K)`
@@ -414,79 +652,31 @@ in fact pins `φ` completely. Nothing weaker is needed here.
 homomorphism `φ` satisfying `hφ`, and a nonzero `I ⊆ 𝓞 L` with
 `φ [N_{L/K} I] ≠ 1`.
 
-**SCAFFOLD FOR STEP 3, WRITTEN AND COMPILER-VERIFIED 2026-07-29 against this
-module's import cone, then NOT committed** — it has no consumer while this leaf
-is open, and free-floating code is not allowed here. Paste it back in as part of
-the proof. Each of the four compiles as written (whole file, 10 s):
+**THE PROOF, 2026-07-30.** The 2026-07-29 scaffold that used to be quoted here
+has been committed as the five declarations immediately above this docstring, so
+it is no longer reproduced:
 
-```
-theorem aut_eq_of_smul_eq {σ τ : L ≃ₐ[K] L} (h : ∀ x : 𝓞 L, σ • x = τ • x) : σ = τ := by
-  ext y
-  obtain ⟨a, b, hb, rfl⟩ := IsFractionRing.div_surjective (A := 𝓞 L) y
-  have ha : σ (algebraMap (𝓞 L) L a) = τ (algebraMap (𝓞 L) L a) :=
-    congrArg (algebraMap (𝓞 L) L) (h a)
-  have hb' : σ (algebraMap (𝓞 L) L b) = τ (algebraMap (𝓞 L) L b) :=
-    congrArg (algebraMap (𝓞 L) L) (h b)
-  rw [map_div₀, map_div₀, ha, hb']
+* `algEquiv_eq_of_smul_ringOfIntegers_eq` — an automorphism is determined by its
+  restriction to `𝓞 L`;
+* `card_quotient_under_pow_inertiaDeg` — `#(𝓞 K/𝔭) ^ f = #(𝓞 L/𝔔)`;
+* `pow_card_quotient_sub_mem` — Fermat's little theorem in `𝓞 L/𝔔` (carries the
+  `IsField.toField` defeq warning);
+* `pow_smul_sub_pow_card_mem` — `σ ^ n • x ≡ x ^ (q ^ n) (mod 𝔔)`;
+* `pow_inertiaDeg_eq_one` — step 3 above, `σ ^ f = 1`, and the ONLY place `hunr`
+  enters;
 
-theorem cardQuot_pow (Q : Ideal (𝓞 L)) [Q.IsMaximal] [(Q.under (𝓞 K)).IsMaximal]
-    [Q.LiesOver (Q.under (𝓞 K))] :
-    Nat.card (𝓞 K ⧸ Q.under (𝓞 K)) ^ Q.inertiaDeg (𝓞 K) = Nat.card (𝓞 L ⧸ Q) := by
-  rw [← Submodule.cardQuot_apply, ← Submodule.cardQuot_apply]
-  exact Ideal.cardQuot_pow_inertiaDeg _ _
+and then `apply_classGroupMk0_relNorm_prime_eq_one` (steps 2 and 4 at a prime,
+via mathlib's `Ideal.relNorm_eq_pow_of_isMaximal` and
+`Ideal.inertiaDeg_eq_of_isGaloisGroup`) and
+`apply_classGroupMk0_relNorm_eq_one_aux` (step 1, by
+`UniqueFactorizationMonoid.induction_on_prime`).
 
-set_option maxHeartbeats 2000000 in
-theorem pow_card_sub_mem (Q : Ideal (𝓞 L)) [Q.IsMaximal] (hQ : Q ≠ ⊥) (x : 𝓞 L) :
-    x ^ (Nat.card (𝓞 L ⧸ Q)) - x ∈ Q := by
-  haveI : Finite (𝓞 L ⧸ Q) := Ring.HasFiniteQuotients.finiteQuotient hQ
-  haveI : IsDomain (𝓞 L ⧸ Q) := Ideal.Quotient.isDomain Q
-  letI : Field (𝓞 L ⧸ Q) := (Finite.isField_of_domain (𝓞 L ⧸ Q)).toField
-  cases nonempty_fintype (𝓞 L ⧸ Q)
-  rw [← Ideal.Quotient.eq_zero_iff_mem, map_sub, map_pow, sub_eq_zero, Nat.card_eq_fintype_card]
-  exact FiniteField.pow_card (Ideal.Quotient.mk Q x)
-
-theorem iterate_frob [IsGalois K L] (Q : Ideal (𝓞 L)) [Q.IsPrime] (σ : L ≃ₐ[K] L)
-    (hσ : IsArithFrobAt (𝓞 K) σ Q) (n : ℕ) (x : 𝓞 L) :
-    (σ ^ n) • x - x ^ (Nat.card (𝓞 K ⧸ Q.under (𝓞 K)) ^ n) ∈ Q := by
-  have hstab : σ • Q = Q := hσ.mem_stabilizer
-  have hmem : ∀ y ∈ Q, σ • y ∈ Q := by
-    intro y hy
-    rw [← hstab]
-    exact Ideal.smul_mem_pointwise_smul _ _ _ hy
-  induction n with
-  | zero => simp
-  | succ n ih =>
-    have h2 : σ • ((σ ^ n) • x) - (σ • x) ^ (Nat.card (𝓞 K ⧸ Q.under (𝓞 K)) ^ n) ∈ Q := by
-      have := hmem _ ih
-      rwa [smul_sub, smul_pow'] at this
-    have h3 : (σ • x) ^ (Nat.card (𝓞 K ⧸ Q.under (𝓞 K)) ^ n) -
-        (x ^ Nat.card (𝓞 K ⧸ Q.under (𝓞 K))) ^ (Nat.card (𝓞 K ⧸ Q.under (𝓞 K)) ^ n) ∈ Q :=
-      Ideal.mem_of_dvd _ (sub_dvd_pow_sub_pow _ _ _) (hσ x)
-    have := Q.add_mem h2 h3
-    rw [pow_succ', mul_smul]
-    rw [← pow_mul, ← pow_succ'] at this
-    simpa using this
-```
-
-`iterate_frob` at `n = f` plus `cardQuot_pow` plus `pow_card_sub_mem` gives
-`σ ^ f • x - x ∈ Q` for every `x`; hence `σ ^ (f+1)` is ALSO an
-`IsArithFrobAt` witness at `Q`, so `AlgHom.IsArithFrobAt.eq_of_isUnramifiedAt`
-(mathlib, and the ONLY place `hunr` enters) gives
-`MulSemiringAction.toAlgHom _ _ (σ ^ (f+1)) = MulSemiringAction.toAlgHom _ _ σ`,
-and `aut_eq_of_smul_eq` turns that into `σ ^ (f+1) = σ`, i.e. `σ ^ f = 1`.
-Requires `open scoped Pointwise` for `σ • Q`.
-
-**⚠ A DEFEQ TRAP THAT COSTS AN HOUR IF YOU MEET IT COLD.** In
-`pow_card_sub_mem` the `Field (𝓞 L ⧸ Q)` instance MUST be built as
-`(Finite.isField_of_domain _).toField`, NOT as mathlib's
-`Ideal.Quotient.field Q`. With the latter, `FiniteField.pow_card` is stated
-with `Field.toSemifield.toDivisionSemiring.toGroupWithZero.toMonoid` while the
-`^` produced by `map_pow` through `Ideal.Quotient.mk` carries
-`(Ideal.Quotient.semiring Q).toMonoid`, and the two are **not** defeq: `exact`
-fails at 2 000 000 heartbeats, and `convert … using n` peels
-`instHPow → NPow.toPow → …` forever until `whnf` times out.
-`IsField.toField` reuses the existing ring structure and the mismatch
-disappears. -/
+Two things worth knowing before touching any of them. `Ideal.relNorm` is a
+`MonoidWithZeroHom`, which is what makes step 1 a three-case induction rather
+than a factorisation argument. And `hφ` gives a Frobenius above `𝔭` at SOME
+prime `𝔔'`, not at the `𝔔` you started with; `Ideal.inertiaDeg_eq_of_isGaloisGroup`
+is what closes that gap, and it is why `IsGalois K L` is a hypothesis of the
+prime case even though nothing else in it needs Galois. -/
 theorem apply_classGroupMk0_relNorm_eq_one [IsGalois K L]
     (hunr : ∀ (Q : Ideal (𝓞 L)) (_ : Q.IsPrime), Q ≠ ⊥ →
       Algebra.IsUnramifiedAt (𝓞 K) Q)
@@ -496,7 +686,7 @@ theorem apply_classGroupMk0_relNorm_eq_one [IsGalois K L]
     (I : Ideal (𝓞 L)) (hI : I ≠ ⊥) (J : (Ideal (𝓞 K))⁰)
     (hJ : (J : Ideal (𝓞 K)) = Ideal.relNorm (𝓞 K) I) :
     φ (ClassGroup.mk0 J) = 1 :=
-  sorry
+  apply_classGroupMk0_relNorm_eq_one_aux K L hunr φ hφ I hI J hJ
 
 /-- **THE ARTIN MAP AT MODULUS `1`, AS AN EXISTENTIAL: for `L/K` finite
 abelian, unramified at every finite prime and at every infinite place, there
