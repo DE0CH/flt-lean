@@ -638,6 +638,16 @@ public import Mathlib.RingTheory.Localization.AtPrime.Basic
 -- `Nat.prime_iff_prime_int`, and `Prime.coprime_iff_not_dvd` transitively: the
 -- Bézout witness making `s ∉ (ℓ)` a unit mod `ℓ`.
 public import Mathlib.RingTheory.Int.Basic
+-- `Rat.isCoprime_num_den`: the Bézout identity between a rational's numerator and
+-- denominator, which is the whole content of `isUnit_den_of_mem_subringRat`.
+public import Mathlib.RingTheory.Coprime.Lemmas
+-- `IsPrincipalIdealRing` and `IsPrincipalIdealRing.principal` — used on `ℤ` (via the
+-- Euclidean-domain instance) to pull an ideal of a subring of `ℚ` back to a principal
+-- one; see `isPrincipalIdealRing_subringRat`.
+public import Mathlib.RingTheory.PrincipalIdealDomain
+-- `IsDedekindDomain`, the hypothesis BLR 1.4/3 is stated over and the one
+-- `exists_isNeronModelAtBase_of_isDedekindDomain` takes.
+public import Mathlib.RingTheory.DedekindDomain.Basic
 -- The fpqc topology is subcanonical, and a faithfully flat quasi-compact
 -- morphism is an `EffectiveEpi` — hence an `Epi`.  This is what lets
 -- `Gamma0Atlas.toIsCoarseModuliY0` cancel the rigidifying cover and so
@@ -66222,7 +66232,8 @@ theorem card_relPoint_liesIn_le_of_finite_toAffineLine {X S U : Scheme.{0}} {str
   sorry
 
 /-- **THE COMPLEMENT OF `U` CONTRIBUTES AT MOST `2` `K`-POINTS** (sorry
-leaf, 2026-07-28) — the second half of
+leaf, 2026-07-28; **REFUTED AS ORIGINALLY STATED AND RESTATED 2026-07-30**
+— see the FALSITY AUDIT below) — the second half of
 `card_relPoint_le_of_hasDoubleCoverOfAffineLine`, and **the ONLY place in
 that node where `ℙ¹` is needed**.
 
@@ -66234,7 +66245,86 @@ unique extension `X_K ⟶ ℙ¹_K`
 `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean` and already in
 this file's cone), and open there too; the preimage is an open subscheme
 of the irreducible `X_K`, hence connected, so `U_K` IS the whole preimage
-of `𝔸¹` and `X_K ∖ U_K` is the fibre over `∞` — at most `d ≤ 2` points.
+of `𝔸¹` and `X_K ∖ U_K` is the fibre over `∞` — at most `d` points, where
+`d = deg φ`; and `d ≤ 2` because of `_hthree`.
+
+## FALSITY AUDIT (2026-07-30) — the `2` IS THE DEGREE BOUND, AND THE FIRST
+## VERSION OF THIS LEAF DID NOT CARRY IT
+
+**The statement as cut on 2026-07-28 was FALSE**, and the sibling leaf's own
+docstring says why in capitals — "`_hthree` IS THE DEGREE BOUND AND THE LEAF
+IS FALSE WITHOUT IT" — about itself.  The `U`/`X ∖ U` cut handed `_hthree` to
+the `U` half and **dropped it from this half**, which is the one place it is
+even more obviously needed: the `2` in the conclusion is literally `d`, and
+without a degree bound `d` is arbitrary.
+
+**WITNESS.**  Let `K = 𝔽₅`, `S = Spec 𝔽₅`, `k = 𝟙`, `X = ℙ¹_{𝔽₅}` and
+
+    ψ : ℙ¹ ⟶ ℙ¹,   t ↦ s = 1 / (t (t − 1) (t − 2)),
+
+a morphism of degree `3` with `ψ⁻¹(∞) = {0, 1, 2}` (three distinct
+`𝔽₅`-rational points, each a simple pole) and `ψ(∞) = 0`.  Put
+`U := ψ⁻¹(𝔸¹_s) = ℙ¹ ∖ {0, 1, 2}` and `φ := ψ|_U : U ⟶ 𝔸¹`.  Then EVERY
+hypothesis of the original statement holds:
+
+* `_hproper`, `_hcurve`, `_hconn`: `ℙ¹_{𝔽₅} ⟶ Spec 𝔽₅` is proper, smooth of
+  relative dimension `1`, and geometrically connected;
+* `_hι`, `_hdom`: `U` is a nonempty open of the irreducible `ℙ¹`;
+* `_hφ`: `φ` is finite — `ψ` is a finite morphism of proper curves and `φ` is
+  its base change along the open immersion `𝔸¹ ↪ ℙ¹`.  Equivalently
+  `𝒪(U)` is the integral closure of `𝔽₅[s]` in `𝔽₅(t)`, of rank `3`; the
+  monic witness is `x³ − 2s x² + 3s x − s = 0` for `x = 1/t`;
+* `_hcomm`: both sides are the structure morphism `U ⟶ Spec 𝔽₅`.
+
+And the conclusion FAILS: `RelPoint strX k = ℙ¹(𝔽₅)` has `6` elements, of
+which exactly `{0, 1, 2}` do not lie in `U`, so the left-hand side is `3`,
+not `≤ 2`.  Replacing `t (t − 1) (t − 2)` by `∏_{i<n} (t − i)` over a large
+enough finite field breaks the bound by any margin — the true bound is
+`deg φ`, which is exactly what `_hthree` pins to `≤ 2`.
+
+**THE REPAIR COST NOTHING AT THE CALL SITE**, which is the usual shape:
+`card_relPoint_le_of_hasDoubleCoverOfAffineLine` destructures
+`HasDoubleCoverOfAffineLine` and already had `hthree` in hand for the sibling
+leaf — it was simply not being passed here.  The consumer's statement is
+unchanged.
+
+**Why `_hthree` really does give the bound here, even though it speaks only
+about fibres over `𝔸¹` and the complement is the fibre over `∞`.**  A finite
+morphism from a curve to `𝔸¹` is either non-dominant (then `U` is `0`-dimensional
+or empty, so `_hdom` forces `X` empty and the bound is trivial) or dominant of
+some degree `d`; taking `K` an algebraic closure of the residue field of the
+generic point of `𝔸¹`, the generic geometric fibre has exactly `d_sep` points,
+`d = d_sep · d_insep` being the separable/inseparable factorisation of the degree.
+So what `_hthree` bounds is `d_sep ≤ 2`, and what the conclusion needs is also
+`d_sep`: the number of POINTS in any fibre of a finite morphism of curves is at
+most `d_sep`, because a purely inseparable morphism is universally injective.
+The degree and its separable part are constant, so the fibre over `∞` of the
+extension `X_K ⟶ ℙ¹_K` has at most `d_sep ≤ 2` points as well.
+
+**THE PRECEDING PARAGRAPH IS A CORRECTION, 2026-07-30, and the version it
+replaces was char-`0`-only.**  It read "the generic fibre has exactly `d`
+`K`-points in characteristic `0`", concluding `d ≤ 2`.  That reason does not hold
+where this leaf is actually USED: the only consumer,
+`not_hasDoubleCoverOfAffineLine_x0OneSixtyNine`, applies it over `𝔽₉`, i.e. in
+characteristic `3`, and in characteristic `p` an inseparable morphism has ONE
+point in every fibre at any degree — the `p`-power Frobenius `𝔸¹ ⟶ 𝔸¹` satisfies
+`_hthree` with `d = p` arbitrarily large.  So `_hthree` does NOT bound `d`, and an
+argument that needs `d ≤ 2` is unavailable to a prover here.  The CONCLUSION is
+unaffected and the leaf stays TRUE in every characteristic, because both sides of
+the argument are governed by `d_sep` rather than by `d`; only the stated reason
+was wrong, and a prover who inherited it would have gone looking for a degree
+bound that does not exist.
+
+**A SECOND, INDEPENDENT WITNESS, in a different characteristic** (2026-07-30) —
+recorded because the refutation above is char-`5` and the correction just above
+turns on characteristic, so it is worth knowing the falsity is not a
+characteristic artefact.  Over `𝔽₂` take `X = ℙ¹`, `f = (t³ + t² + 1)/(t(t + 1))`
+and `U = f⁻¹(𝔸¹) = ℙ¹ ∖ {0, 1, ∞}`.  The numerator is `1` at both `t = 0` and
+`t = 1` (checked in PARI/GP), and `deg num − deg den = 1`, so the polar divisor of
+`f` is exactly `{0} + {1} + {∞}` with three simple poles and `deg f = 3`.  Then
+`ℙ¹(𝔽₂) = {0, 1, ∞}` has `3` elements and `U(𝔽₂) = ∅`, so ALL `3` relative points
+fail `LiesIn` and the original conclusion `≤ 2` fails by the widest possible
+margin — the entire point set is in the complement.
 
 **All three curve hypotheses are load-bearing HERE and nowhere else in the
 node**: `_hproper` is what makes the extension to `ℙ¹` exist, `_hcurve` is
@@ -66246,15 +66336,20 @@ sibling.
 **`_hdom` is what forbids `U = ∅`**, which would make the complement all of
 `X_K` and the bound false for any curve with `≥ 3` points.
 
-**The check that would refute this verdict**: a `ℙ¹`-free proof of the
+**The check that would refute the RESTATED verdict**: a `ℙ¹`-free proof of the
 complement bound — the affine phrasing is exactly where `ℙ¹` could have
-been avoided and, as far as this audit found, cannot be. -/
+been avoided and, as far as this audit found, cannot be; or a smooth proper
+geometrically connected curve with a dense open carrying a finite map to `𝔸¹`
+satisfying the three-point clause whose complement has `3` rational points. -/
 theorem card_relPoint_not_liesIn_le_of_finite_toAffineLine {X S U : Scheme.{0}} {strX : X ⟶ S}
     (_hproper : IsProper strX) (_hcurve : SmoothOfRelativeDimension 1 strX)
     (_hconn : GeometricallyConnected strX)
     (ι : U ⟶ X) (φ : U ⟶ 𝔸(Unit; S))
     (_hι : IsOpenImmersion ι) (_hdom : IsDominant ι) (_hφ : IsFinite φ)
     (_hcomm : φ ≫ (𝔸(Unit; S) ↘ S) = ι ≫ strX)
+    (_hthree : ∀ (K : Type) [Field K] (k : Spec (CommRingCat.of K) ⟶ 𝔸(Unit; S))
+      (u₁ u₂ u₃ : Spec (CommRingCat.of K) ⟶ U),
+      u₁ ≫ φ = k → u₂ ≫ φ = k → u₃ ≫ φ = k → u₁ = u₂ ∨ u₁ = u₃ ∨ u₂ = u₃)
     (K : Type) [Field K] [Finite K] (k : Spec (CommRingCat.of K) ⟶ S) :
     Nat.card {x : RelPoint strX k // ¬ RelPoint.LiesIn ι x} ≤ 2 :=
   sorry
@@ -66291,7 +66386,7 @@ theorem card_relPoint_le_of_hasDoubleCoverOfAffineLine {X S : Scheme.{0}} {strX 
       exact Nat.card_congr (Equiv.sumCompl _).symm
     have hA := card_relPoint_liesIn_le_of_finite_toAffineLine ι φ hι hφ hcomm hthree K k
     have hB := card_relPoint_not_liesIn_le_of_finite_toAffineLine hproper hcurve hconn
-      ι φ hι hdom hφ hcomm K k
+      ι φ hι hdom hφ hcomm hthree K k
     omega
   · simp [Nat.card_eq_zero_of_infinite]
 
@@ -66610,6 +66705,16 @@ computation of `Tr(T_3² ∣ S₂(Γ₀(169)))` disagreeing with `20`, or of
 `dim S₂(Γ₀(169))` disagreeing with `8`.  Both were run again on
 2026-07-28 with PARI/GP and both agree; `Tr(T_9) = −4` agrees with them
 through `T_3² = T_9 + 3·⟨3⟩` (`20 − 3·8 = −4`), which is a third check.
+
+**THE FOURTH COMPUTATION WAS RUN, 2026-07-30, AND DOES NOT REFUTE.**  The check
+this paragraph prescribes is recorded as PERFORMED rather than merely prescribed,
+so the next reader does not redo it: `mf = mfinit([169,2],1)` gives
+`mfdim(mf) = 8`, `trace(mfheckemat(mf,3)) = 0`,
+`trace(t*t) = 20` for `t = mfheckemat(mf,3)`, and `trace(mfheckemat(mf,9)) = −4`.
+The matrix identity was checked as an identity and not through traces:
+`t*t - mfheckemat(mf,9) == 3*matid(8)` evaluates to TRUE, which pins the
+`T_3² = T_9 + 3·⟨3⟩` recursion itself rather than one of its shadows.  So all
+three banked numbers survive a fourth independent run.
 
 **DECOMPOSED 2026-07-28** over the three leaves below. -/
 theorem sumSq_isWeilEigenvalues_x0 (N ℓ : ℕ) (_hN : 0 < N) (_hℓ : ℓ.Prime)
@@ -68015,21 +68120,119 @@ structure IsNeronModelAtBase (R : Subring ℚ) {B : Scheme.{0}} (bstr : B ⟶ Sp
       ∃! uZ : Z ⟶ BZ, uZ ≫ bstrZ = zstr ∧
         u ≫ gen.universalPoint.1 = genZ.universalPoint.1 ≫ uZ
 
-/-- **NÉRON MODELS EXIST: every abelian variety over `ℚ` has one over any
-subring `R ⊆ ℚ`** (sorry leaf, new 2026-07-28) —
-Bosch–Lütkebohmert–Raynaud, *Néron Models*, 1.4/3.
+/-- **The DENOMINATOR of a rational lying in a subring `R ⊆ ℚ` is a UNIT
+of `R`** (PROVEN 2026-07-30) — pure ring theory, no geometry, and the
+whole reason `isPrincipalIdealRing_subringRat` below is three lines.
+
+If `q = a / b` in lowest terms lies in `R`, then `gcd(a, b) = 1` gives
+`x, y : ℤ` with `a x + b y = 1`, whence `1 / b = q x + y ∈ R` — the point
+being that `x` and `y` are INTEGERS and `ℤ ⊆ R` for every subring of `ℚ`.
+No hypothesis on `R` beyond being a subring is used or available.
+
+This belongs upstream in mathlib (there is nothing about subrings of `ℚ`
+there at this pin — `grep -rn "Subring ℚ" .lake/packages/mathlib/Mathlib/`
+returns a single unrelated hit in `PadicIntegers.lean`); it is here
+because `exists_isNeronModelAtBase` below is its only consumer and a
+one-declaration shim module for it would be its own kind of debt. -/
+theorem isUnit_den_of_mem_subringRat {R : Subring ℚ} {q : ℚ} (hq : q ∈ R) :
+    IsUnit ((q.den : ℤ) : ↥R) := by
+  obtain ⟨x, y, hxy⟩ := Rat.isCoprime_num_den q
+  have hden : (q.den : ℚ) ≠ 0 := Nat.cast_ne_zero.2 q.den_nz
+  have hq' : q * (q.den : ℚ) = (q.num : ℚ) := Rat.mul_den_eq_num q
+  have hone : (x : ℚ) * (q.num : ℚ) + (y : ℚ) * (q.den : ℚ) = 1 := by
+    exact_mod_cast congrArg (fun z : ℤ => (z : ℚ)) hxy
+  -- `1 / q.den = q * x + y`, and the right-hand side visibly lies in `R`
+  have hkey : (q.den : ℚ)⁻¹ = q * (x : ℚ) + (y : ℚ) := by
+    rw [inv_eq_one_div, div_eq_iff hden]
+    linear_combination -hone - (x : ℚ) * hq'
+  have hmem : (q.den : ℚ)⁻¹ ∈ R := by
+    rw [hkey]
+    exact R.add_mem (R.mul_mem hq (intCast_mem R x)) (intCast_mem R y)
+  refine ⟨⟨((q.den : ℤ) : ↥R), ⟨(q.den : ℚ)⁻¹, hmem⟩, ?_, ?_⟩, rfl⟩
+  · ext; push_cast; field_simp
+  · ext; push_cast; field_simp
+
+/-- **EVERY SUBRING OF `ℚ` IS A PRINCIPAL IDEAL RING** (PROVEN 2026-07-30)
+— the arithmetic step that `exists_isNeronModelAtBase`'s audit named as
+"a small, self-contained first step and not part of the geometry", closed
+here so that the remaining leaf is geometry only.
+
+The proof is the direct one and does NOT go through `IsLocalization`,
+which the audit suggested: an ideal `I ⊆ R` meets `ℤ` in an ideal `(n)`,
+and `I = n R`, because every `x ∈ I` has `x · den(x) = num(x) ∈ I ∩ ℤ` with
+`den(x)` a UNIT of `R` (`isUnit_den_of_mem_subringRat`).  That is one
+`comap` and one Bézout identity, against exhibiting `R` as `ℤ[1/S]` and
+importing "a localization of a PID is a PID" — which this pin does not
+carry in that form either.
+
+Note `ℚ` itself is included: a field is trivially a principal ideal
+ring, and the argument above degenerates correctly there
+(`I ∩ ℤ` is `(0)` or `(1)`). -/
+theorem isPrincipalIdealRing_subringRat (R : Subring ℚ) : IsPrincipalIdealRing ↥R := by
+  constructor
+  intro I
+  obtain ⟨n, hn⟩ := IsPrincipalIdealRing.principal (I.comap (Int.castRingHom ↥R))
+  refine ⟨(n : ↥R), le_antisymm ?_ ?_⟩
+  · intro x hx
+    obtain ⟨u, hu⟩ := isUnit_den_of_mem_subringRat x.2
+    have hxnum : x * (((x : ℚ).den : ℤ) : ↥R) = (((x : ℚ).num : ℤ) : ↥R) := by
+      ext; push_cast; exact Rat.mul_den_eq_num (x : ℚ)
+    have hnumI : (((x : ℚ).num : ℤ) : ↥R) ∈ I := hxnum ▸ I.mul_mem_right _ hx
+    have hcomap : (x : ℚ).num ∈ I.comap (Int.castRingHom ↥R) := hnumI
+    rw [hn, Ideal.mem_span_singleton] at hcomap
+    obtain ⟨c, hc⟩ := hcomap
+    rw [Ideal.mem_span_singleton]
+    refine ⟨(c : ↥R) * ↑u⁻¹, ?_⟩
+    calc x = x * ((u : ↥R) * ↑u⁻¹) := by rw [u.mul_inv, mul_one]
+      _ = (x * (u : ↥R)) * ↑u⁻¹ := by ring
+      _ = (((x : ℚ).num : ℤ) : ↥R) * ↑u⁻¹ := by rw [hu, hxnum]
+      _ = ((n * c : ℤ) : ↥R) * ↑u⁻¹ := by rw [← hc]
+      _ = (n : ↥R) * ((c : ↥R) * ↑u⁻¹) := by push_cast; ring
+  · rw [Ideal.span_le, Set.singleton_subset_iff]
+    have hmem : n ∈ I.comap (Int.castRingHom ↥R) := by
+      rw [hn, Ideal.mem_span_singleton]
+    exact hmem
+
+/-- **EVERY SUBRING OF `ℚ` IS A DEDEKIND DOMAIN** (PROVEN 2026-07-30) —
+`isPrincipalIdealRing_subringRat` plus mathlib's own instance chain, which
+already takes `IsDomain` + `IsPrincipalIdealRing` to `IsDedekindDomain`
+(checked, not assumed: `inferInstance` closes it).
+
+This is the exact hypothesis BLR 1.4/3 is stated over, and it is what
+`exists_isNeronModelAtBase` hands to
+`exists_isNeronModelAtBase_of_isDedekindDomain` below. -/
+theorem isDedekindDomain_subringRat (R : Subring ℚ) : IsDedekindDomain ↥R :=
+  letI := isPrincipalIdealRing_subringRat R
+  inferInstance
+
+/-- **NÉRON MODELS EXIST OVER A DEDEKIND BASE** (sorry leaf, new
+2026-07-30, carrying all of the geometry of the former
+`exists_isNeronModelAtBase`) — Bosch–Lütkebohmert–Raynaud, *Néron
+Models*, 1.4/3, stated over the hypothesis BLR actually use.
 
 TRUE, and this is the classical statement, not a weakening of it: BLR
 1.4/3 gives a Néron model for every abelian variety over the fraction
-field of a DEDEKIND domain, and `↥R` is one — every subring of `ℚ` is
-`ℤ[1/S]` for `S` the set of primes it inverts, hence a localization of
-`ℤ`, hence a PID (or `ℚ` itself, where the statement is trivial with
-`BZ := B` and `gen := IsFibreIdent` of the identity).  **A prover will
-have to say that**: nothing in this file currently records
-`IsDedekindDomain ↥R` or `IsPrincipalIdealRing ↥R` for a general
-`R : Subring ℚ` — `IsReductionBase` supplies `ValuationRing ↥R`, which is
-the LOCAL case only.  Establishing it from `IsLocalization` of `ℤ` is a
-small, self-contained first step and is not part of the geometry.
+field of a DEDEKIND domain.  `↥R` is one — that is
+`isDedekindDomain_subringRat` above, and it is the ONLY thing that was
+removed from this leaf when it was cut on 2026-07-30.
+
+**WHY THE CUT.**  The predecessor's own audit named the arithmetic as "a
+small, self-contained first step and not part of the geometry" and
+recorded that nothing in the tree supplied `IsDedekindDomain ↥R` for a
+general `R : Subring ℚ` (`IsReductionBase` gives `ValuationRing ↥R`, the
+LOCAL case only).  That step is now closed and consumed, so this leaf is
+geometry and nothing else.  The open-leaf count is unchanged at one; what
+changed is that the one leaf no longer hides a second, unrelated
+obligation, and a prover of it may take the Dedekind property for granted.
+
+**`R` IS STILL A SUBRING OF `ℚ`, deliberately.**  Generalising the base to
+an arbitrary Dedekind domain would be the natural mathlib-facing shape, but
+`IsNeronModelAtBase` is stated against `SpecLoc R` and `SpecQ` — the
+generic fibre is pinned to `ℚ` throughout this development — so widening
+the base would require widening that structure too, which is a separate
+piece of work with no consumer here.  A prover who wants the general
+statement should prove it and specialise; nothing in this cut obstructs
+that.
 
 **WHERE THE HYPOTHESIS ENTERS.**  `abB` is what makes `B` an abelian
 VARIETY — proper, smooth, geometrically connected over `ℚ`, with a group
@@ -68051,12 +68254,31 @@ good reduction": a Néron model is smooth and separated but in general
 NEITHER proper NOR with connected fibres, and that gap is exactly the
 content of `exists_abelianSchemeStruct_of_neronModelSpread` below.
 
+The `R = ℚ` case is trivial and a prover should dispatch it first:
+`BZ := B`, `bstrZ := bstr` transported along `SpecLoc ℚ ≅ SpecQ`, and
+`gen := IsFibreIdent` of the identity.
+
 **The check that refutes it**: an abelian variety `B/ℚ` and a subring
 `R ⊆ ℚ` admitting no smooth separated `R`-model with the unique-extension
 property — which would contradict BLR 1.4/3. -/
-theorem exists_isNeronModelAtBase (R : Subring ℚ) {B : Scheme.{0}} {bstr : B ⟶ SpecQ}
+theorem exists_isNeronModelAtBase_of_isDedekindDomain (R : Subring ℚ)
+    [IsDedekindDomain ↥R] {B : Scheme.{0}} {bstr : B ⟶ SpecQ}
     (abB : AbelianSchemeStruct bstr) : Nonempty (IsNeronModelAtBase R bstr) :=
   sorry
+
+/-- **NÉRON MODELS EXIST: every abelian variety over `ℚ` has one over any
+subring `R ⊆ ℚ`** (**PROVEN 2026-07-30** by decomposition over
+`isDedekindDomain_subringRat` and
+`exists_isNeronModelAtBase_of_isDedekindDomain` above; a sorry leaf from
+2026-07-28) — Bosch–Lütkebohmert–Raynaud, *Néron Models*, 1.4/3.
+
+The full audit is on the leaf above.  This declaration is only the
+supply of the Dedekind instance, which is what the predecessor's audit
+asked a prover to do first. -/
+theorem exists_isNeronModelAtBase (R : Subring ℚ) {B : Scheme.{0}} {bstr : B ⟶ SpecQ}
+    (abB : AbelianSchemeStruct bstr) : Nonempty (IsNeronModelAtBase R bstr) :=
+  letI := isDedekindDomain_subringRat R
+  exists_isNeronModelAtBase_of_isDedekindDomain R abB
 
 /-- **A NÉRON MODEL DOMINATED BY AN ABELIAN SCHEME IS AN ABELIAN SCHEME**
 (sorry leaf, new 2026-07-28) — Bosch–Lütkebohmert–Raynaud, *Néron
