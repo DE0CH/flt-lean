@@ -3679,6 +3679,27 @@ downstream.  A FIFTH independent Magma run on 2026-07-28 reproduced every line o
 table above exactly — `genus 2`, `f` irreducible, `disc = 2²³·3⁴`, `TorsionSubgroup = ℤ/21`,
 `#TwoSelmerGroup = 1`, `RankBounds = [0, 0]`.
 
+RE-VERIFIED INDEPENDENTLY IN PARI, 2026-07-30 (a sixth run, and a different CAS): `f` is
+irreducible (`polisirreducible = 1`); `poldisc f = −2¹⁵·3⁴`, matching `separable_sextPoly`'s
+Bézout certificate above and differing from Magma's `Discriminant(C) = 2²³·3⁴` by exactly
+the model factor `2⁸` — the same `2⁸` appears at level `13` (`poldisc f₁₃ = −2¹²·13²`
+against Magma's `2²⁰·13²`), so the two normalisations are consistent and neither figure is
+wrong; and `hyperellcharpoly(f mod 5) = T⁴ − 5T² + 25`, whose `T³` coefficient `0` gives
+`#C(𝔽₅) = 5 + 1 + 0 = 6` (matching `card_X18_F5`) and whose value at `1` gives
+`#J(𝔽₅) = 1 − 5 + 25 = 21`.  `rank J(ℚ) = 0` remains the one input no such check reaches.
+
+## DECISION 2026-07-30: NOT DECOMPOSED, AND THE RE-CUT ARGUMENT RE-DERIVED
+
+Dispatched at as an unowned leaf and deliberately left atomic again.  The recorded rejection
+of the obvious re-cut — "`Pic` is torsion" plus "`J(ℚ)[2] = 0`" in place of `Pic = 2·Pic` —
+was re-derived rather than taken on trust, and it is correct: those two together are
+STRICTLY stronger.  They imply this leaf (no element of order `2` forces every order odd, so
+`z = 2 • ((n+1)/2 • z)` for `n` the odd order of `z`), while the converse fails — `ℚ` is
+`2`-divisible with `ℚ[2] = 0` and is not torsion.  So that re-cut trades one leaf for two
+strictly harder ones, and the `2`-divisible phrasing in force is the right one.  The one
+defect this pass found is in the DESCENT-axis bullet below: its target group was the
+odd-degree one.  Corrected there.
+
 ## ATOMICITY AUDIT (2026-07-28) — which AXES were searched, and what would refute each
 
 This leaf has now been left atomic by successive dispatches.  Per the standing rule that an
@@ -3687,8 +3708,20 @@ so the next reader can re-check a claim instead of redoing the survey.
 
 * **DESCENT axis (`2`-Selmer) — live, but blocked on MISSING STRUCTURE, not on difficulty.**
   The cut this leaf wants is `J(ℚ)/2J(ℚ) ↪ Sel₂ = 0`, over a descent map
-  `δ : Pic → L*/L*²` with `L = ℚ[x]/(f)` (a degree-`6` field, `f` being irreducible),
-  PINNED to be the genuine `∏ (x(Pᵢ) − θ)`.  The cheap way to pin a map — constrain its
+  `δ : Pic → L*/(L*² · ℚ*)` with `L = ℚ[x]/(f)` (a degree-`6` field, `f` being
+  irreducible), PINNED to be the genuine `∏ (x(Pᵢ) − θ)`.  **TARGET GROUP CORRECTED
+  2026-07-30: this said `L*/L*²`, which is the ODD-degree formula and would make the
+  leaf FALSE here.**  The model is the EVEN-degree one (`deg f = 6`), and `f` is
+  irreducible over `ℚ`, so `f` has no rational root and the curve has no rational
+  Weierstrass point — the hypothesis under which `x − θ` descends to `L*/L*²`.  Without
+  one, changing the divisor representing a class multiplies `∏ (x(Pᵢ) − θ)` by an
+  element of `ℚ*`, so `L*/L*²` is not a group the map lands in at all and only the
+  further quotient by `ℚ*` is well defined (Cassels, *The Mordell–Weil group of curves
+  of genus 2*, 1983; Schaefer, *2-descent on the Jacobians of hyperelliptic curves*,
+  J. Number Theory 51 (1995), which is the reference for the general even-degree case).
+  Note the axis verdict below is UNCHANGED by this: it turns on the genuine `δ` being
+  identically zero on `J(ℚ)`, which is a statement about `δ`'s values and not about its
+  target.  The cheap way to pin a map — constrain its
   VALUES on rational points — is **provably powerless here**, and that is the sharp
   obstruction: `#Sel₂ = 1` says the genuine `δ` is IDENTICALLY ZERO on `J(ℚ)`, so the junk
   model `δ = 0` satisfies every constraint that naming rational points can impose (and
@@ -4158,16 +4191,36 @@ independent Magma run on 2026-07-28 reproduced the table exactly — `genus 2`, 
 irreducible, `disc = 2²⁰·13²`, `TorsionSubgroup = ℤ/19`, `#TwoSelmerGroup = 1`,
 `RankBounds = [0, 0]`.
 
+RE-VERIFIED INDEPENDENTLY IN PARI, 2026-07-30: `f` irreducible (`polisirreducible = 1`);
+`poldisc f = −2¹²·13²`, i.e. Magma's `Discriminant(C) = 2²⁰·13²` divided by the model factor
+`2⁸` — the SAME factor that relates the two normalisations at level `18`, which is why
+neither figure is an error; and `hyperellcharpoly(f mod 3) = T⁴ + 2T³ + T² + 6T + 9`,
+reproducing the quoted numerator exactly, hence `#C(𝔽₃) = 3 + 1 + 2 = 6` and
+`#J(𝔽₃) = 1 + 2 + 1 + 6 + 9 = 19`.
+
+## DECISION 2026-07-30: NOT DECOMPOSED
+
+Left atomic for the reasons recorded at `X18.two_divisible_pic`, whose re-cut rejection was
+re-derived this cycle and holds verbatim here ("`Pic` torsion" + "`J(ℚ)[2] = 0`" is strictly
+stronger than `Pic = 2·Pic`, `ℚ` being the separating example).  The descent-axis target
+group is corrected below, as at level `18`.
+
 ## ATOMICITY AUDIT (2026-07-28)
 
 The axes searched, and the refuting check for each, are written out in full on
 `X18.two_divisible_pic`; every one of them applies verbatim here, the two leaves differing
 only in the sextic and the good prime.  The load-bearing item is the first: a `2`-descent
-cut needs the map `δ : Pic → L*/L*²`, `L = ℚ[x]/(f)`, pinned by a CONSTRUCTION, and pinning
-it by its values on rational points is powerless because `#Sel₂ = 1` makes the genuine `δ`
-identically zero on `J(ℚ)` — so the junk model `δ = 0` meets every such constraint and
-reduces the cut to this leaf's own conclusion.  Pinning needs residue fields `κ(v)` and
-their norms, which `PlaceData` deliberately does not carry.
+cut needs the map `δ : Pic → L*/(L*² · ℚ*)`, `L = ℚ[x]/(f)`, pinned by a CONSTRUCTION, and
+pinning it by its values on rational points is powerless because `#Sel₂ = 1` makes the
+genuine `δ` identically zero on `J(ℚ)` — so the junk model `δ = 0` meets every such
+constraint and reduces the cut to this leaf's own conclusion.  Pinning needs residue fields
+`κ(v)` and their norms, which `PlaceData` deliberately does not carry.
+
+**TARGET GROUP CORRECTED 2026-07-30, same correction as at level `18` and for the same
+reason**: this said `L*/L*²`, the ODD-degree formula.  `deg f = 6` and `f` is irreducible
+over `ℚ` (PARI, `polisirreducible`, this cycle), so there is no rational root and hence no
+rational Weierstrass point to move to infinity; the quotient by `ℚ*` is not optional and a
+sub-leaf stated over `L*/L*²` would be false.  The axis verdict is unaffected.
 
 The level-`13` specifics that strengthen the same verdict: `IsSimple(JOne(13)) = true`
 (Magma `ModAbVar`, 2026-07-28) confirms by a second, independent method the `ℚ`-simplicity

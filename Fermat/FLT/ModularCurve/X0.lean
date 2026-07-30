@@ -24428,7 +24428,57 @@ can be satisfied by any `redX` that is onto the cusps, and
 points with cuspidal reduction.  So `formalImmersion` is not implied by the
 core together with `cusp_lift`, in either direction: the two field-wise
 groupings are each false, which is why the leaf is undivided rather than
-merely awkward. -/
+merely awkward.
+
+## QUANTIFICATION AUDIT 2026-07-30 — THE `∀`-PART IS EXACTLY A PROVEN THEOREM'S
+
+First, a correction to the record, because the dispatch that produced this audit
+was told "no audit exists yet" for this leaf: **three do** — the two of
+2026-07-27 and the third of 2026-07-28, all above, and all three re-ran a
+one-grep refuting check that did not fire.  A successor should read them before
+attempting anything; they close the field-wise splits in both groupings and the
+relocation route.
+
+What none of them addressed is whether the leaf quantifies over something it
+should not, so that is what this pass checked.  It does not, and the check is
+mechanical rather than a judgement:
+
+* The `∀`-part is `{Y X : Scheme.{0}} {strY strX} {hc : IsCoarseModuliY0 p strY}
+  (hX : IsCompactificationY0 strY strX) (hj : IsJMapOn p hc)` — the `ℚ`-side
+  model of `X_0(p)` and its `j`-map, taken as given.  That is **character for
+  character** the `∀`-part of `exists_x0JReductionAt` at the end of this file,
+  which is PROVEN.  So no `ℚ`-side witness admitted by this quantification can
+  fail to carry a reduction datum: the datum half of the conclusion is a proven
+  theorem over the same binders.
+* The two hypotheses `exists_x0JReductionAt` adds are both DERIVABLE here rather
+  than missing: its `hN : N ≠ 0` from `_hp : p.Prime`, and its `hqN : ¬ q ∣ N`
+  from `_hq : q.Prime` with `_hqp : q ≠ p` (a prime dividing a prime equals it).
+  This is the mechanical form of the docstring's claim above that the leaf is
+  "strictly STRONGER than `exists_x0JReductionAt` at the same `q`", and it is
+  confirmed: the leaf's hypotheses imply that theorem's, and its conclusion
+  implies that theorem's conclusion.  So the only content beyond an already
+  proven theorem is `Nonempty (IsEisensteinFormalImmersionAt hjr)`.
+* Everything the earlier audits identify as needing to be PINNED rather than
+  quantified — `redX`, which `IsX0JReductionAt` does not determine and for which
+  the FORMAL-CONTENT AUDIT exhibits a junk witness — is already inside the
+  existential, bundled with `hjr`.  Nothing that must be produced is
+  universally quantified, and nothing that is universally quantified needs to be
+  produced.
+* `_hmem : p ∉ mazurIsogenyPrimes` really does deliver `p ≥ 23`, as claimed
+  above: `mazurIsogenyPrimes = {2, 3, 5, 7, 11, 13, 17, 19, 37, 43, 67, 163}`
+  contains every prime `≤ 19`, so a prime outside it exceeds `19`.  Checked
+  against the definition, not the prose.
+
+Two remarks on faithfulness, since a quantification audit is not one.  The
+conclusion asks for a formal immersion at EVERY cusp of the special fibre, and
+Mazur proves it at `∞`; what carries it to the other cusp is `w_p` swapping the
+two cusps of `X_0(p)` for `p` prime, which is why the field may be stated
+cusp-uniformly and why `p` prime is load-bearing for the field and not only for
+the reduction.  And `formalImmersion` is stated with `ajE x = ajE z` as a
+hypothesis, which `IsEisensteinFormalImmersionAt.ajE_eq_of_redX_eq` shows is FREE
+given the other fields — so the field is not over-constrained, and the structure
+is not empty of witnesses on that account.  No falsity was found; the leaf stands
+as TRUE and undivided, and this pass adds no new cut. -/
 theorem exists_eisensteinFormalImmersionAt {p q : ℕ} (_hp : p.Prime)
     (_hmem : p ∉ mazurIsogenyPrimes) (_hq : q.Prime) (_hq2 : q ≠ 2) (_hqp : q ≠ p)
     {Y X : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
