@@ -433,7 +433,9 @@ open in them has been split along the theories it needed:
 | `isAffine_of_gamma1RigidifiedModuliScheme` | Katz-Mazur, the affineness parenthesis of 8.1.1 and nothing else: `𝔐([Γ₁(N)], [Γ(n)])` is AFFINE.  The second half of the same 2026-07-30 split.  Legitimate as a `∀` because `universal` is a FINE moduli property; see its docstring. | any `K`, `char K ∤ N`, `char K ∤ n` |
 | `exists_torsionBasisCover_field` | Katz-Mazur 2.3.1 / 5.1.1, Silverman *AEC* III.6.4: after a flat surjective quasi-compact cover the `n`-torsion of an abelian scheme of relative dimension one acquires a basis.  Stated for a BARE abelian scheme — no `Gamma1Datum`, no moduli scheme — and it is all that is left under `exists_gamma1FullLevelStructure_cover`, which is PROVEN over it (2026-07-28).  It is the general-base form of `X0.lean`'s `exists_torsionBasis_geomPoint` + `exists_torsionBasis_cover_of_geomPoint`, both of which are stated only over `SpecQ`. | any `K`, `char K ∤ n` |
 | `isOpenImmersion_equalizer_of_abelianFullLevelStructure` | NO citation beyond Katz–Mazur 2.3.1 — the equalizer of two `n`-torsion sections of an elliptic scheme over an ARBITRARY base carrying a full level-`n` structure is OPEN.  Step 2, and after the 2026-07-30 cut the ONLY step, of `exists_openCover_twist_of_abelianFullLevelStructure`, which is now PROVEN over it and over `exists_openCover_comb_of_abelianFullLevelStructure`; that node in turn is what `exists_gamma1DeckAction` (REFUTED 2026-07-29, restated with its over-`S` clause, then PROVEN) rests on.  Identical to `X0.lean`'s `isOpenImmersion_equalizer_of_nsmul_eq_zero` except that `L` replaces `g : Z ⟶ SpecQ` as the source of invertibility of `n`. | any base scheme, no characteristic hypothesis — see its FALSITY AUDIT for why `L` already pins `n` invertible |
-| `smoothCurve_A_of_gamma1GITPresentation` | **REFUTED 2026-07-30 — do not dispatch a prover at it, dispatch the repair.**  Katz-Mazur 8.2.1, stated on the rigidified ring (`Algebra.Smooth K A` and `ringKrullDim A = 1`); the cited theorem is true but the statement quantifies over an ARBITRARY presentation, and `Gamma1GITPresentation`'s axioms pin `B` and NOT `A`.  Counterexample in its docstring: pinch `A₀` along a `G₀`-stable ideal, `A := A₀ ×_{A₀⧸I} A₀` with `G := G₀ × ℤ⧸2`, every field discharged by pullback along `Δ : a ↦ (a,a)`; `A` is nodal.  `ringKrullDim A = 1` and `IsReduced A` survive it, `Algebra.Smooth K A` does not.  Repair, also in the docstring: state the citation on `Gamma1RigidifiedModuli` (whose `universal` field pins `A`) and carry it down as a structure field through the two assembly steps. | any `K`, `char K ∤ N` |
+| ~~`smoothCurve_A_of_gamma1GITPresentation`~~ | REFUTED and REPAIRED 2026-07-30, in that order; no longer a leaf.  It asserted Katz-Mazur 8.2.1 (`Algebra.Smooth K A` and `ringKrullDim A = 1`) for an ARBITRARY presentation, and `Gamma1GITPresentation`'s axioms pin `B` and NOT `A` — pinch `A₀` along a `G₀`-stable ideal, `A := A₀ ×_{A₀⧸I} A₀` with `G := G₀ × ℤ⧸2`, every field discharged by pullback along `Δ : a ↦ (a,a)`, and `A` is nodal.  The counterexample and the repair are both written out on the declaration, which is now PROVEN over the new `smoothM` field of `Gamma1GITPresentation` and the two rows below. | — |
+| `smoothOfRelativeDimension_of_gamma1RigidifiedModuli` | Katz-Mazur 8.2.1 where it is legitimately universally quantified: `SmoothOfRelativeDimension 1 R.strM` for a `Gamma1RigidifiedModuli`, whose `universal` field is FINE moduli WITH uniqueness and therefore pins `Spec A` up to unique isomorphism.  Supplied as a hypothesis to `nonempty_gamma1Rigidification_of_rigidifiedModuli` exactly as `hcov` is, and carried down as a structure field through both assembly steps. | any `K`, `char K ∤ N`, `char K ∤ n` |
+| `ringKrullDim_eq_of_smoothOfRelativeDimension` | NOT MODULAR and not in this file — `Fermat/FLT/Mathlib/AlgebraicGeometry/SmoothConnectedCriteria.lean`.  A nontrivial algebra smooth of relative dimension `n` over a field has Krull dimension `n`.  The dimension half of the converse of that module's `smoothOfRelativeDimension_specMap_algebraMap_of_smooth`; the smoothness half, `algebraSmooth_of_smoothOfRelativeDimension`, is PROVEN there in three rewrites.  What is missing is pure dimension theory: this pin computes `ringKrullDim` of a polynomial ring and of nothing else. | any field |
 | `formallySmoothInvariants_of_gamma1GITPresentation` | Deligne-Rapoport III.1, Katz-Mazur 8.2.1: `B = A^G` is FORMALLY smooth over `K`.  Cut 2026-07-30 out of `smoothInvariants_of_gamma1GITPresentation` (now PROVEN over it) by unfolding `Algebra.Smooth` and paying for the second conjunct: `finitePresentation_invariants_of_gamma1GITPresentation` is Noether's theorem on invariants, PROVEN over `smoothCurve_A_of_gamma1GITPresentation` and the new `Gamma1GITPresentation.isScalarTower`.  What is left still needs Stacks `02VL` plus freeness of the `G`-action, neither of which the structure supplies. | any `K`, `char K ∤ N` |
 | ~~`exists_weierstrassCurve_pointOfExactOrder`~~ | PROVEN 2026-07-30: Silverman *AEC* III.6.4 was already in cone as `WeierstrassCurve.n_torsion_dimension` (`EllipticCurve/Torsion.lean`), so the leaf was that theorem at `WeierstrassCurve.ofJ (0 : L)` plus additive-order bookkeeping; no longer a leaf | — |
 | ~~`nonempty_gamma1Datum_of_weierstrassPoint`~~ | PROVEN 2026-07-30 over the row below; no longer a leaf.  The descent and the order transport it owed are now base-free — the `ℚ`-side's Galois descent and its `ℚ`-initiality detour through `exists_injective_pre_geomBase` both turned out to be artefacts of the `ℚ` proof rather than steps of the mathematics (see `epi_of_hom_spec_field`). | — |
@@ -817,6 +819,28 @@ structure Gamma1GITPresentation (N : ℕ) (S : Scheme.{0}) where
     Nonempty (IsBaseChangeOfGamma1 (𝟙 (Spec (CommRingCat.of A))) d₁ dM) ∧
     Nonempty (IsBaseChangeOfGamma1
       (Spec.map (CommRingCat.ofHom (MulSemiringAction.toRingHom G A σ))) d₁ dM)
+  /-- **Katz–Mazur 8.2.1**: the rigidified moduli scheme is SMOOTH of relative
+  dimension one over the base.
+
+  **Added 2026-07-30, and it is a repair rather than an enrichment.**  This was
+  a theorem, `smoothCurve_A_of_gamma1GITPresentation`, asserting
+  `Algebra.Smooth K A` for an arbitrary inhabitant over a field base; it was
+  REFUTED that day, and the counterexample is written out in full on that
+  declaration, which is now proven over this field.  The short version: the
+  other fields pin `B` — `classify_dM` says `Spec A ⟶ Spec B` IS the
+  classifying map of the universal family, which pins the TARGET — and they do
+  not pin `A`, so pinching `A₀` along a `G₀`-stable ideal satisfies every one
+  of them with a nodal `A`.
+
+  Stated over `S` rather than at a field base because the structure is written
+  over an arbitrary base scheme and because that is the form Katz–Mazur 8.2.1
+  is actually proved in (smooth of relative dimension one over `ℤ[1/Nn]`, hence
+  over every base where `N` and `n` are invertible).  The ring-level conjuncts
+  the field-base consumers want are read back off it by
+  `algebraSmooth_of_smoothOfRelativeDimension` and
+  `ringKrullDim_eq_of_smoothOfRelativeDimension`; note `ringKrullDim A = 1`
+  could NOT have been a field here, being false over `Spec ℤ[1/N]`. -/
+  smoothM : AlgebraicGeometry.SmoothOfRelativeDimension 1 strM
 
 /-- **A GIT presentation IS an atlas** (PROVEN 2026-07-27): the
 `quotient` field of `Gamma1Atlas` derived from the affine presentation
@@ -1355,6 +1379,13 @@ structure Gamma1Rigidification (N : ℕ) (S : Scheme.{0}) where
     IsBaseChangeOfGamma1 a d₁ dM →
     IsBaseChangeOfGamma1 b d₁ dM →
     a ≫ specInvariantsQuotient G A = b ≫ specInvariantsQuotient G A
+  /-- **Katz–Mazur 8.2.1**: the rigidified moduli scheme is SMOOTH of relative
+  dimension one over the base.  Carried verbatim into
+  `Gamma1GITPresentation.smoothM`, whose docstring records why it has to be a
+  field and not a theorem; supplied at the one construction site
+  (`nonempty_gamma1Rigidification_of_rigidifiedModuli`) as a hypothesis, in
+  exactly the way `hcov` is. -/
+  smoothM : AlgebraicGeometry.SmoothOfRelativeDimension 1 strM
 
 /-- **fpqc descent of the classifying map, over an ARBITRARY base**
 (PROVEN 2026-07-27) — Katz–Mazur (8.1.3), and the half of
@@ -1548,7 +1579,8 @@ theorem nonempty_gamma1GITPresentation_of_rigidification {N : ℕ} {S : Scheme.{
             classify_dM := ?_
             cover := fun {_T} g d => R.cover g d
             strM_invariant := R.strM_invariant
-            dM_equivariant := R.dM_equivariant }⟩
+            dM_equivariant := R.dM_equivariant
+            smoothM := R.smoothM }⟩
   · -- naturality: both sides agree after the rigidifying cover of `d'`, and
     -- that cover is an epimorphism.
     intro T' T h g g' hg d' d bch
@@ -3936,14 +3968,24 @@ not mention it — but it is **load-bearing for the truth of the supplier**
 `exists_gamma1FullLevelStructure_cover`, since it is what makes `T` an
 `S`-scheme and hence forces the residue characteristics of `T` to be
 those of `S`.  Weakening `hcov` by dropping it would make it false at a
-base of characteristic dividing `n`; it is used here at `p ≫ g`. -/
+base of characteristic dividing `n`; it is used here at `p ≫ g`.
+
+**`hsm` was added 2026-07-30** along with the `smoothM` field it supplies —
+Katz–Mazur 8.2.1, and the repair of the refuted
+`smoothCurve_A_of_gamma1GITPresentation`.  It is a HYPOTHESIS rather than a
+field of `Gamma1RigidifiedModuli` for the same reason `hcov` is: this theorem
+is the assembly and owes no citation, and 8.2.1 is false over a base whose
+residue characteristics divide `Nn` — the hypotheses that exclude that live at
+the one call site, `exists_gamma1Rigidification`, where they are `_hchar` and
+`hcn`.  Neither `hN` nor a characteristic hypothesis is therefore needed here. -/
 theorem nonempty_gamma1Rigidification_of_rigidifiedModuli (N n : ℕ) (hn : 3 ≤ n)
     {S : Scheme.{0}} (R : Gamma1RigidifiedModuli N n S)
     (hcov : ∀ {T : Scheme.{0}} (_g : T ⟶ S) (d : Gamma1Datum N T),
       ∃ (T' : Scheme.{0}) (p : T' ⟶ T) (d' : Gamma1Datum N T'),
         AlgebraicGeometry.Flat p ∧ AlgebraicGeometry.Surjective p ∧ QuasiCompact p ∧
         Nonempty (IsBaseChangeOfGamma1 p d' d) ∧
-        Nonempty (AbelianFullLevelStructure n d'.ab)) :
+        Nonempty (AbelianFullLevelStructure n d'.ab))
+    (hsm : AlgebraicGeometry.SmoothOfRelativeDimension 1 R.strM) :
     Nonempty (Gamma1Rigidification N S) := by
   classical
   letI := R.commRing_A
@@ -3958,11 +4000,66 @@ theorem nonempty_gamma1Rigidification_of_rigidifiedModuli (N n : ℕ) (hn : 3 �
             cover := ?_
             strM_invariant := hstrinv
             dM_equivariant := hequiv
-            coequalises := fun {Z} a b d₁ hab ha hb => hcoeq a b d₁ hab ha hb }⟩
+            coequalises := fun {Z} a b d₁ hab ha hb => hcoeq a b d₁ hab ha hb
+            smoothM := hsm }⟩
   intro T g d
   obtain ⟨T', p, d', hf, hs, hq, ⟨bp⟩, ⟨L⟩⟩ := hcov g d
   obtain ⟨m, ⟨hmg, bcm, -⟩, -⟩ := R.universal (p ≫ g) d' L
   exact ⟨T', p, d', m, hf, hs, hq, hmg.symm, ⟨bp⟩, ⟨bcm⟩⟩
+
+/-- **The rigidified moduli scheme is smooth of relative dimension one over a
+field in which `N` and `n` are invertible** (sorry leaf, opened 2026-07-30) —
+Katz–Mazur 8.2.1, Deligne–Rapoport III.1.
+
+TRUE and classical, and this is the form 8.2.1 is actually proved in:
+`𝔐([Γ₁(N)], [Γ(n)])` is smooth of relative dimension one over `ℤ[1/Nn]`, hence
+over every base in which `Nn` is invertible, and `SmoothOfRelativeDimension` is
+stable under base change (`smoothOfRelativeDimension_isStableUnderBaseChange`,
+mathlib).
+
+## WHY THIS IS A LEGITIMATE `∀`, AND WHERE IT CAME FROM
+
+It is the repair of a leaf that was NOT.  Until 2026-07-30 this citation lived
+downstream as `smoothCurve_A_of_gamma1GITPresentation`, quantified over an
+arbitrary `Gamma1GITPresentation`; it was refuted that day, because the nine
+fields of that structure pin the ring of INVARIANTS `B` and do not pin `A`
+(`classify_dM` says `Spec A ⟶ Spec B` is the classifying map of the universal
+family, which pins the target and leaves the source free to be pinched).  The
+full counterexample is on that declaration.
+
+`Gamma1RigidifiedModuli` is where the same citation IS legitimately universally
+quantified, and the reason is one field: `universal` is FINE moduli WITH a
+uniqueness clause.  Given two inhabitants `R`, `R'`, `R'.universal` applied to
+`(R.dM, R.lvlM)` over `R.strM` produces a unique `S`-morphism
+`m : Spec R.A ⟶ Spec R'.A` transporting the datum and the level structure, and
+symmetrically an `m'`; both `m ≫ m'` and `𝟙` classify `(R.dM, R.lvlM)`, so
+uniqueness forces them equal, and likewise the other way.  So `Spec R.A` is
+pinned up to unique isomorphism over `S`, and a property of it that is stable
+under isomorphism — which `SmoothOfRelativeDimension 1` is, being a
+`MorphismProperty` respecting isos — is a property of the honest
+`𝔐([Γ₁(N)], [Γ(n)])`.  That is exactly the argument the refuted leaf could not
+make, and the difference is `universal` versus `cover` + `classify_dM`.
+
+*The check that would refute this audit*: two inhabitants of
+`Gamma1RigidifiedModuli N n S` whose `Spec A` are not isomorphic over `S`.
+
+## THE HYPOTHESES
+
+`_hchar` and `_hcn` are LOAD-BEARING for truth, not decoration.  At
+`char K ∣ N` a point of exact order `N` acquires an infinitesimal part and the
+moduli problem is not smooth; at `char K ∣ n` the `n`-torsion is not étale and
+the level-`n` cover degenerates.  `_hN` and `_hn` are the rigidity hypotheses
+that make the problem representable at all — they are strictly speaking
+redundant here, since `R.universal` ASSERTS representability, and they are
+carried only because the sole call site
+(`exists_gamma1Rigidification`) holds them and because dropping a hypothesis
+from a citation is how a leaf becomes false. -/
+theorem smoothOfRelativeDimension_of_gamma1RigidifiedModuli (N n : ℕ) (_hN : 4 ≤ N)
+    (_hn : 3 ≤ n) (K : Type) [Field K] (_hchar : ¬ ringChar K ∣ N)
+    (_hcn : ¬ ringChar K ∣ n)
+    (R : Gamma1RigidifiedModuli N n (Spec (CommRingCat.of K))) :
+    AlgebraicGeometry.SmoothOfRelativeDimension 1 R.strM :=
+  sorry
 
 /-- **The Katz–Mazur rigidified moduli scheme of `[Γ₁(N)]` over a field in
 which `N` is invertible exists** (PROVEN 2026-07-28 from the three leaves
@@ -4008,6 +4105,7 @@ theorem exists_gamma1Rigidification (N : ℕ) (hN : 4 ≤ N) (K : Type) [Field K
   obtain ⟨R⟩ := exists_gamma1RigidifiedModuli N hN n hn K hchar hcn
   exact nonempty_gamma1Rigidification_of_rigidifiedModuli N n hn R
     (fun {_T} g d => exists_gamma1FullLevelStructure_cover n hn K hcn g d)
+    (smoothOfRelativeDimension_of_gamma1RigidifiedModuli N n hN hn K hchar hcn R)
 
 /-- **The Katz–Mazur GIT presentation of `Y_1(N)` over a field in which
 `N` is invertible exists** (PROVEN 2026-07-27 from the two halves it was
@@ -4991,13 +5089,63 @@ refutation.
 is `classify_dM`, and it is discharged by one application of
 `classify_natural` at `h := Spec Δ` — or show that no `G₀`-stable ideal
 `0 ≠ I ⊊ A₀` exists, which would make `Spec A₀` a single `G₀`-orbit of
-closed points and contradict `ringKrullDim A₀ = 1`. -/
-theorem smoothCurve_A_of_gamma1GITPresentation {N : ℕ} (_hN : 4 ≤ N)
-    {K : Type} [Field K] (_hchar : ¬ ringChar K ∣ N)
+closed points and contradict `ringKrullDim A₀ = 1`.
+
+## THE REPAIR WAS PERFORMED, 2026-07-30 — THIS IS NOW A THEOREM
+
+Exactly as prescribed above, and in one commit with every call site.  What
+changed:
+
+1. `Gamma1Rigidification` and `Gamma1GITPresentation` each gained a field
+   `smoothM : SmoothOfRelativeDimension 1 strM`.  Scheme-level, over the
+   structures' general base `S`, because that is the form Katz–Mazur 8.2.1 is
+   proved in and because `ringKrullDim A = 1` is FALSE over a base such as
+   `Spec ℤ[1/N]` and so could not have been a field.
+2. `nonempty_gamma1GITPresentation_of_rigidification` carries it verbatim, as
+   it carries `cover`, `strM_invariant` and `dM_equivariant`.
+3. `nonempty_gamma1Rigidification_of_rigidifiedModuli` takes it as a
+   HYPOTHESIS `hsm`, in exactly the way it already takes `hcov`, and
+   `exists_gamma1Rigidification` discharges it with the new leaf
+   `smoothOfRelativeDimension_of_gamma1RigidifiedModuli` — which IS a
+   legitimate `∀`, because `Gamma1RigidifiedModuli.universal` is fine moduli
+   WITH a uniqueness clause and therefore pins `Spec A` up to unique
+   isomorphism.  That declaration's docstring writes the pinning argument out.
+4. Both conjuncts are read back off the field by the two converses added to
+   `Fermat/FLT/Mathlib/AlgebraicGeometry/SmoothConnectedCriteria.lean`:
+   `algebraSmooth_of_smoothOfRelativeDimension` (PROVEN there — three
+   rewrites) and `ringKrullDim_eq_of_smoothOfRelativeDimension` (a LEAF there,
+   and a purely general one: the dimension theory of smooth algebras is absent
+   from this pin).  `Nontrivial P.A` is what the second needs and is
+   `nontrivial_A_of_gamma1GITPresentation`, which is why `hN` and `hchar` are
+   no longer underscored.
+
+**Leaf accounting, honestly.**  One FALSE leaf was removed and two TRUE ones
+opened, so the count rises by one.  That is the price of the move and it was
+worth paying: a false leaf can never be closed and everything above it is
+worthless, whereas both new leaves are ordinary citations — one modular
+(8.2.1, at the place where the object it talks about is pinned) and one not
+modular at all (Krull dimension of a smooth algebra over a field).  Every
+consumer below is untouched: no statement in this cluster changed, and one
+instance argument changed provenance.
+
+The three consumer NOTES added by the refutation commit are left in place
+deliberately.  Each records which conjunct that consumer reads and whether it
+survives the pinched counterexample; that is still the right thing to know if
+this field is ever weakened, and re-deriving it would cost the same audit
+again. -/
+theorem smoothCurve_A_of_gamma1GITPresentation {N : ℕ} (hN : 4 ≤ N)
+    {K : Type} [Field K] (hchar : ¬ ringChar K ∣ N)
     (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
     letI := P.commRing_A; letI := P.algebraA;
-    Algebra.Smooth K P.A ∧ ringKrullDim P.A = (1 : ℕ) :=
-  sorry
+    Algebra.Smooth K P.A ∧ ringKrullDim P.A = (1 : ℕ) := by
+  letI := P.commRing_A
+  letI := P.algebraA
+  haveI : Nontrivial P.A := nontrivial_A_of_gamma1GITPresentation hN hchar P
+  have hsm : AlgebraicGeometry.SmoothOfRelativeDimension 1
+      (Spec.map (CommRingCat.ofHom (algebraMap K P.A))) := by
+    rw [P.specMap_algebraMap_A]; exact P.smoothM
+  exact ⟨AlgebraicGeometry.algebraSmooth_of_smoothOfRelativeDimension K P.A 1 hsm,
+    AlgebraicGeometry.ringKrullDim_eq_of_smoothOfRelativeDimension K P.A 1 hsm⟩
 
 /-- **The rigidified moduli scheme is reduced** (**PROVEN 2026-07-28** over
 `smoothCurve_A_of_gamma1GITPresentation`; opened as a sorry leaf earlier the
