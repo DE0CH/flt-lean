@@ -10674,15 +10674,18 @@ theorem exists_heckeAction_isotypicQuotients_gamma1 (N : ℕ) (hN : N ≠ 0)
     (jac : IsJacobianOf strX ab o) :
     ∃ (T : ℕ → (J ⟶ J)) (T_comp : ∀ n, T n ≫ jstr = jstr),
       (∀ n, IsAdditiveOn ab ab (T n) (T_comp n)) ∧
+        IsModularHeckeActionGamma1 N h.some jac T T_comp ∧
         ∀ (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ),
           IsWeightTwoEigenformOn (Gamma1GL N) N χ f a →
             Nonempty (IsIsotypicQuotient ab T N a) := by
-  -- `h` is `Nonempty (IsX1Compactification …)` and the goal is a `Prop`, so the
-  -- classifying DATUM the pin needs is recovered by `Nonempty` elimination.
-  obtain ⟨H⟩ := h
-  obtain ⟨T, T_comp, T_add, hmod⟩ := exists_modularHeckeAction_gamma1 N H jac
-  exact ⟨T, T_comp, T_add, fun χ f a hf =>
-    exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1 N hN H jac T T_comp T_add hmod
+  -- `h` is `Nonempty (IsX1Compactification …)`; the classifying DATUM the pin
+  -- needs is `h.some`, which is the SAME choice the decomposition structure's
+  -- `heckeModuli` field names — so the pin exported here is the one the
+  -- consumer can actually use.  (It used to be recovered by an anonymous
+  -- `obtain ⟨H⟩ := h`, which is a different term and would not match.)
+  obtain ⟨T, T_comp, T_add, hmod⟩ := exists_modularHeckeAction_gamma1 N h.some jac
+  exact ⟨T, T_comp, T_add, hmod, fun χ f a hf =>
+    exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1 N hN h.some jac T T_comp T_add hmod
       χ f a hf⟩
 
 /-! ### The level-`0` degeneracy of `Γ₁` Eichler–Shimura
@@ -11386,6 +11389,39 @@ rather than a split of the field groups.  Every such split dies to the
 witness `A i := SpecQ`, `astr i := 𝟙 SpecQ`, `u i := jstr`, which
 `finite_ker` kills globally and no per-field split does.
 
+**THE CUT HAD LEAKED, AND `hquot` NOW CARRIES THE MODULI PIN** (repaired
+2026-07-30).  Two individually-correct edits made this cut deliver
+nothing, which is a failure shape this development has hit before and
+which no falsity check sees, because the leaf stayed TRUE throughout:
+
+* 2026-07-28, the cut: `hquot` exports `∃ T` with `IsAdditiveOn` and the
+  isotypic quotients — and nothing else about `T`.
+* 2026-07-29, the structure: `IsHeckeIsotypicDecompositionGamma1` gained
+  `heckeModuli : IsModularHeckeActionGamma1 N h.some jac T T_comp`, the
+  field that excludes the `N = 37` eigen-system swap.
+
+After the second edit the conclusion demands a `T` that IS the genuine
+Hecke correspondence, while `hquot` hands over an existentially quantified
+`T` with no pin at all.  So a prover could not use `hquot`'s `T` for
+`heckeModuli`, and the only way forward was to DISCARD `hquot`, call
+`exists_modularHeckeAction_gamma1` and
+`exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` directly, and
+rebuild the hypothesis — i.e. this leaf was exactly as hard as the parent
+`exists_heckeIsotypicDecomposition_gamma1` and the decomposition bought
+nothing.  A stale docstring made it worse: the paragraph above says
+`hquot` "is consumed three times", which was true when written.
+
+The repair costs nothing and is on the SUPPLIER side.
+`exists_heckeAction_isotypicQuotients_gamma1` already HELD the pin — it
+obtains `hmod` from `exists_modularHeckeAction_gamma1` and feeds it to
+`exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` — and merely
+dropped it on the way out.  It is now exported, at `h.some`, which is the
+same choice `heckeModuli` names, so the two match.  (Its proof previously
+recovered the datum by an anonymous `obtain ⟨H⟩ := h`; that is a different
+term from `h.some` and would not have matched the field, so the fix is a
+statement change AND a proof change, not just a widening.)  That theorem
+is PROVEN and stays proven; only this leaf's hypothesis got stronger.
+
 **AXIS NOT SEARCHED**, inherited from the `Γ₀` node: the complex-analytic
 route through `Γ₁(N)\ℍ*`, which is how the classical proof identifies the
 factors in the first place.  Everything above is the algebraic-moduli
@@ -11397,6 +11433,7 @@ theorem exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1 (N : ℕ) 
     (jac : IsJacobianOf strX ab o)
     (hquot : ∃ (T : ℕ → (J ⟶ J)) (T_comp : ∀ n, T n ≫ jstr = jstr),
       (∀ n, IsAdditiveOn ab ab (T n) (T_comp n)) ∧
+        IsModularHeckeActionGamma1 N h.some jac T T_comp ∧
         ∀ (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ),
           IsWeightTwoEigenformOn (Gamma1GL N) N χ f a →
             Nonempty (IsIsotypicQuotient ab T N a)) :
