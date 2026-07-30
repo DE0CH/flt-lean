@@ -56475,7 +56475,116 @@ algebraic closures, the induced embedding `jE`, and the clause
 and `exists_relNormDivisorHom_ray_class` takes them as hypotheses. Do not
 re-open that caveat; the check that would re-open it is a consumer of `ι`
 whose statement is invariant under precomposing `ι` with an automorphism of
-`Γ E`, and there is none left. -/
+`Γ E`, and there is none left.
+
+**FALSITY AUDIT OF THE REMAINING STEP (2026-07-30, flt-lean-39, with an
+explicit counterexample): `hbase` — the one sorried `have` in the body below —
+is FALSE AS STATED. The THEOREM is unaffected and remains true; what is refuted
+is the TWO-AUXILIARY-FIELD CUT.**
+
+`hbase` asks for a single divisor `β` of `F` that is simultaneously a norm from
+`E₁` and a norm from `E₂` and has Artin symbol `χ (globalFrob v₀)`. Take
+
+    F = ℚ,  χ = the quadratic character of K = ℚ(√65)  (so ℓ = 2, k = 1,
+    values ±1, which are distinct in `Dickson.K 3 = AlgebraicClosure (ZMod 3)`),
+    mm = (65),  V = ker χ,
+    E₁ = ℚ(√13) with m₁ = 5,   E₂ = ℚ(√5) with m₂ = 13,
+    v = (3),                   v₀ = (11).
+
+Every clause the proof below can use holds for this tuple — and that is the
+point: the tuple need not be the one Childress's construction produces, only a
+witness of the clauses `exists_artinAuxiliaryNumberField_ray_class` EXPORTS.
+
+* `hi₁`/`hi₂` (`ker χ · Hᵢ = Γ ℚ`): `K ∩ E₁ = K ∩ E₂ = ℚ`, since `√65`, `√13`,
+  `√5` generate three distinct quadratic fields.
+* `hcyc₁` (`H₁ ∩ Γ_{ℚ(ζ₅)} ≤ ker χ`): `√5 ∈ ℚ(ζ₅)`, so anything fixing
+  `ℚ(√13)` and `μ₅` fixes `√65`. `hcyc₂` symmetrically, with `√13 ∈ ℚ(ζ₁₃)`.
+* clause (iii) at both indices: `√65 ∉ ℚ(ζ₅)` and `√65 ∉ ℚ(ζ₁₃)`, whose
+  quadratic subfields are `ℚ(√5)` and `ℚ(√13)`.
+* `hm₂cop`: `gcd(5, 13) = 1`. `hm₁v`: `5 ∉ (3)`. `hm₂v`: `13 ∉ (11)`.
+* `hfrobv₁` (`globalFrob v ∈ H₁`): `(13 | 3) = +1`, so `3` splits in `ℚ(√13)`.
+  `hfrobv₂`: `(5 | 11) = +1`, so `11` splits in `ℚ(√5)`.
+* `hmmram`: `χ` ramifies only at `5` and `13`, both dividing `mm = (65)`.
+* `hidx₁`/`hidx₂`: `A.relIndex Im = |im χ| = 2 ≠ 0`, and `P ⊔ N ≤ A` gives
+  `2 ≤ (P ⊔ N).relIndex Im`. The context is CONSISTENT, so the refutation is
+  not vacuous.
+
+Now compute. `hbasis₁` pins `𝔑₁` on the whole basis of the divisor group of
+`E₁`, so `Subgroup.map 𝔑₁ Im₁` is exactly the group of divisors of `ℚ` whose
+exponent at `w` is EVEN whenever `w` is inert in `E₁` (the ramified `13` and the
+excluded `5` are outside `Im₁`, since both divide `mmE₁ = (5) · (65) 𝓞_{E₁}`).
+Likewise for `𝔑₂`. So a divisor in BOTH images has odd exponent only at primes
+that split in `E₁` and in `E₂` — hence in `E₁E₂ = ℚ(√5, √13) ⊇ K`, hence with
+`χ (globalFrob w) = 1`; and at the even exponents `χ (globalFrob w) ^ even = 1`
+because `χ` has order 2. Therefore
+
+    φ (Subgroup.map 𝔑₁ Im₁ ⊓ Subgroup.map 𝔑₂ Im₂) = {1},
+
+while `hbase` demands the value `χ (globalFrob v₀) = χ₆₅(11) = -1 ≠ 1`.
+(Checked numerically with PARI/GP: `χ₆₅(3) = χ₆₅(11) = -1`, `χ₁₃(3) = +1`,
+`χ₅(11) = +1`, and over the first 2000 primes every prime split in both `E₁`
+and `E₂` is split in `K`.)
+
+**THE OBSTRUCTION, STATED ONCE: `K ⊆ E₁E₂` IS COMPATIBLE WITH EVERYTHING THE
+ARTIN LEMMA EXPORTS.** `K ∩ E₁ = K ∩ E₂ = F` does not give `K ∩ E₁E₂ = F` —
+three distinct quadratic subfields of one biquadratic field are the standard
+counterexample, and the coprimality `gcd(m₁, m₂) = 1` does not exclude it
+(`K = ℚ(√65) ⊆ ℚ(ζ₆₅)`). When `K ⊆ E₁E₂` the two norm groups intersect inside
+`ker φ` and NO common base of nontrivial symbol exists. Note this kills the
+step for every rescue of the same shape: replacing `χ (globalFrob v₀)` by
+`χ (globalFrob v₀) ^ t` needs `t` invertible modulo `orderOf χ (globalFrob v₀)`,
+and here the attainable `t` is `0`.
+
+**THIS IS THE SAME TRAP AS THE "DO NOT HOIST `hbase`'s ARGUMENT LIST" NOTE
+ABOVE, ONE LEVEL DEEPER.** That note found the seven-hypothesis interface
+insufficient and concluded the ENCLOSING context supplies the rest. It does
+not: the missing information is a property of `H₁` and `H₂` jointly that
+`exists_artinAuxiliaryNumberField_ray_class` never states. Two clauses are
+missing, and its own proof establishes BOTH (see the route in
+`exists_artinAuxiliaryField_ray_class`, where `H = q⁻¹ ⟨q w, q f⟩` inside a
+COMMUTATIVE quotient `Gal(K/F) × Gal(F(ζ_m)/F)`), so exporting them is
+bookkeeping rather than mathematics:
+
+1. **`H` is NORMAL** — equivalently `E/F` is abelian, which that lemma's own
+   docstring asserts in clause (iv)'s justification ("`E/F` is abelian … so no
+   conjugation quantifier is needed") and then does not export. Without it,
+   Chebotarev is unusable here: `exists_frobenius_conj_mem_coset` and
+   `dense_conjClasses_globalFrob` (`Chebotarev.lean`) deliver a CONJUGATE
+   `g · globalFrob w · g⁻¹` in the target set, and only normality turns that
+   into `globalFrob w ∈ H`. (`χ` itself is conjugation-invariant for free, its
+   target being commutative.)
+2. **JOINT INDEPENDENCE**: applied at `v₀` with `H₁` already in hand, the lemma
+   must also deliver `ker χ · (H₁ ⊓ H₂) = Γ F`, i.e. `K ∩ E₁E₂ = F`. This is a
+   condition on `m₂` — the map `Γ F → Γ F/ker χ × Γ F/C_{m₁} × Γ F/C_{m₂}` must
+   be surjective, which for the graph-shaped `H₂` of that construction is the
+   linear disjointness of `K`, `F(ζ_{m₁})`, `F(ζ_{m₂})` — and it must be ADDED
+   to the `hartin` hypothesis of this theorem, since the current `hartin`
+   quantifies over one prime with no reference to a previously chosen subgroup.
+
+WITH those two clauses `hbase` becomes provable, and cheaply: independence
+gives a `ρ ∈ H₁ ⊓ H₂` with `χ ρ = χ (globalFrob v₀)`; Chebotarev at the fixed
+field of `H₁ ⊓ H₂` gives a prime `w` outside `mm · m₁ · m₂` with a conjugate of
+`globalFrob w` in `ρ · (H₁ ⊓ H₂)`; normality removes the conjugate;
+`exists_heightOneSpectrum_inertiaDeg_eq_one_ray_class` above then produces
+`Wᵢ` over `w` with `f(Wᵢ/w) = 1` in each `Eᵢ`, and `hbasis₁`/`hbasis₂` give
+`β := single w 1 = 𝔑ᵢ (single Wᵢ 1) ∈ Subgroup.map 𝔑ᵢ Imᵢ` with
+`φ (ofAdd β) = χ (globalFrob w) = χ (globalFrob v₀)`. Everything in that
+sentence except the two missing clauses is already in this file.
+
+**WHY THE `sorry` IS LEFT IN PLACE ANYWAY, against the standing rule that one
+must never `sorry` an unvouchable statement.** Removing it means either
+deleting ~250 lines of CORRECT and verified construction (Steps 1, 3 and 4, all
+green) or replacing `hbase` by the only true statement that finishes the
+assembly from the material at hand, namely
+`(Subgroup.map 𝔑₁ Im₁ ⊔ Subgroup.map 𝔑₂ Im₂) ⊓ φ.ker ≤ P ⊔ N` with
+`β := single v₀ 1` — which IS true (it follows from `A ≤ P ⊔ N`) but is
+degenerate: it hands the consumer its entire conclusion and makes the auxiliary
+fields decorative. Neither is an improvement over a precisely documented
+defect. **Do not dispatch an agent at `hbase` as it stands** — it cannot be
+proved. The next owner's task is the two exports listed above, at
+`exists_artinAuxiliaryNumberField_ray_class` / `exists_artinAuxiliaryField_ray_class`
+and in this theorem's `hartin` binder; that is a signature change and its call
+sites belong in the same commit. -/
 theorem exists_artinNormSubgroups_ramified_ray_class
     (F : Type u) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -56729,6 +56838,17 @@ theorem exists_artinNormSubgroups_ramified_ray_class
   -- `hbasis₁`/`hbasis₂` are passed in and are LOAD-BEARING: the argument is
   -- `N_{E/F} = 𝔑_i ∘ N_{E/E_i}` for `E = E₁E₂`, which is a statement about the
   -- relative NORM, not about an arbitrary map satisfying consistency.
+  --
+  -- ****  REFUTED 2026-07-30 — DO NOT DISPATCH AN AGENT AT THIS `sorry`.  ****
+  -- As stated, `hbase` is FALSE: with `F = ℚ`, `χ` the character of `ℚ(√65)`,
+  -- `E₁ = ℚ(√13)` (`m₁ = 5`), `E₂ = ℚ(√5)` (`m₂ = 13`), `v = (3)`, `v₀ = (11)`,
+  -- `mm = (65)`, every clause in scope holds while `K ⊆ E₁E₂` forces
+  -- `φ (map 𝔑₁ Im₁ ⊓ map 𝔑₂ Im₂) = {1}` and the demanded value is `-1`.
+  -- The two clauses that must be added to `hartin` and to
+  -- `exists_artinAuxiliaryNumberField_ray_class` — normality of `H`, and joint
+  -- independence `ker χ · (H₁ ⊓ H₂) = Γ F` — are in this theorem's docstring,
+  -- under FALSITY AUDIT OF THE REMAINING STEP, together with the four-line
+  -- proof of `hbase` that they unlock.
   have hbase : (∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧ ρ ∈ H₁ ∧ σ = τ * ρ) →
       (∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧ ρ ∈ H₂ ∧ σ = τ * ρ) →
       IsOpen (H₁ : Set (Γ F)) → IsOpen (H₂ : Set (Γ F)) →
