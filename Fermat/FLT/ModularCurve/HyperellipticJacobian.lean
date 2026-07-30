@@ -2165,6 +2165,208 @@ theorem two_ne_zero (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) : (2 : K) �
 
 end PlaceData
 
+section Presentation
+
+variable {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+
+/-- `sextPoly` evaluated through a ring hom on the coefficients: the coefficients are
+integers, so they are preserved. -/
+lemma eval₂_sextPoly (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) {K A : Type*} [CommRing K] [CommRing A]
+    (ψ : K →+* A) (x : A) :
+    eval₂ ψ x (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) = sext c₀ c₁ c₂ c₃ c₄ c₅ x := by
+  have h : ∀ n : ℤ, eval₂ ψ x (n : K[X]) = (n : A) := by
+    intro n
+    exact map_intCast (Polynomial.eval₂RingHom ψ x) n
+  simp [sextPoly, sext, h]
+
+/-- The defining polynomial `Y² − f(x)` of the function field over `K(x)`. -/
+noncomputable def sextAdjoinPoly (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) (K : Type) [Field K] :
+    (RatFunc K)[X] :=
+  X ^ 2 - C (algebraMap K[X] (RatFunc K) (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K))
+
+lemma irreducible_sextAdjoinPoly (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) :
+    Irreducible (sextAdjoinPoly c₀ c₁ c₂ c₃ c₄ c₅ K) := by
+  have hsqf : Squarefree (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) := hsep.squarefree
+  have hnu : ¬ IsUnit (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) := by
+    intro h
+    have h1 := Polynomial.natDegree_eq_zero_of_isUnit h
+    rw [natDegree_sextPoly] at h1
+    exact absurd h1 (by norm_num)
+  exact X_pow_sub_C_irreducible_of_prime Nat.prime_two (not_isSquare_sextPoly hsqf hnu)
+
+/-- The hom `K(x) → A` sending `x` to a transcendental element `X'`. -/
+noncomputable def ratFuncLift {A : Type} [Field A] (ψ : K →+* A) (X' : A)
+    (htr : ∀ q : K[X], q ≠ 0 → eval₂ ψ X' q ≠ 0) : RatFunc K →+* A :=
+  IsFractionRing.lift (g := Polynomial.eval₂RingHom ψ X') (by
+    rw [injective_iff_map_eq_zero]
+    intro p hp
+    by_contra hpne
+    exact htr p hpne hp)
+
+@[simp] lemma ratFuncLift_algebraMap {A : Type} [Field A] (ψ : K →+* A) (X' : A)
+    (htr : ∀ q : K[X], q ≠ 0 → eval₂ ψ X' q ≠ 0) (p : K[X]) :
+    ratFuncLift ψ X' htr (algebraMap K[X] (RatFunc K) p) = eval₂ ψ X' p :=
+  IsFractionRing.lift_algebraMap _ _
+
+/-- **A ring hom out of the function field is determined by the constants and by `xx`, `yy`**
+(PROVEN from `gen` alone). -/
+theorem ringHom_ext_of_gen {F A : Type} [Field F] [Algebra K F] [Field A] {xx yy : F}
+    (gen : ∀ z : F, ∃ a b d : K[X], aeval xx d ≠ 0 ∧
+      z * aeval xx d = aeval xx a + aeval xx b * yy)
+    {φ φ' : F →+* A} (hc : ∀ a : K, φ (algebraMap K F a) = φ' (algebraMap K F a))
+    (hx : φ xx = φ' xx) (hy : φ yy = φ' yy) : φ = φ' := by
+  have hcomp : φ.comp (algebraMap K F) = φ'.comp (algebraMap K F) := RingHom.ext hc
+  have hpoly : ∀ p : K[X], φ (aeval xx p) = φ' (aeval xx p) := by
+    intro p
+    rw [Polynomial.aeval_def, Polynomial.hom_eval₂, Polynomial.hom_eval₂, hx, hcomp]
+  refine RingHom.ext fun z => ?_
+  obtain ⟨a, b, d, hd, hz⟩ := gen z
+  have hφd : φ (aeval xx d) ≠ 0 := (map_ne_zero_iff φ φ.injective).mpr hd
+  have h1 : φ z * φ (aeval xx d) = φ' z * φ (aeval xx d) := by
+    rw [← map_mul, hz, map_add, map_mul, hpoly a, hpoly b, hy, hpoly d, ← map_mul, ← map_add,
+      ← hz, map_mul]
+  exact mul_right_cancel₀ hφd h1
+
+/-- **The function field is presented by `xx`, `yy` and the relation `yy² = f(xx)`**: a ring
+hom out of it exists for every choice of images of the constants, of `xx` and of `yy`
+satisfying the same relation, with `xx`'s image transcendental (PROVEN).
+
+The two lemmas together say `F = K(xx)[yy]/(yy² − f(xx))` in the only sense the rest of the
+layer needs, and they are what makes the constant field extension constructible. -/
+theorem exists_ringHom_of_gen {F : Type} [Field F] [Algebra K F] {xx yy : F}
+    (eqn : yy ^ 2 = sext c₀ c₁ c₂ c₃ c₄ c₅ xx) (htrx : Transcendental K xx)
+    (gen : ∀ z : F, ∃ a b d : K[X], aeval xx d ≠ 0 ∧
+      z * aeval xx d = aeval xx a + aeval xx b * yy)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable)
+    {A : Type} [Field A] (ψ : K →+* A) (X' Y' : A)
+    (heqn' : Y' ^ 2 = sext c₀ c₁ c₂ c₃ c₄ c₅ X')
+    (htr' : ∀ q : K[X], q ≠ 0 → eval₂ ψ X' q ≠ 0) :
+    ∃ φ : F →+* A, (∀ a : K, φ (algebraMap K F a) = ψ a) ∧ φ xx = X' ∧ φ yy = Y' := by
+  classical
+  have htrx' : ∀ q : K[X], q ≠ 0 → eval₂ (algebraMap K F) xx q ≠ 0 := fun q hq h =>
+    htrx ⟨q, hq, by rwa [Polynomial.aeval_def]⟩
+  haveI hfact : Fact (Irreducible (sextAdjoinPoly c₀ c₁ c₂ c₃ c₄ c₅ K)) :=
+    ⟨irreducible_sextAdjoinPoly hsep⟩
+  set g : (RatFunc K)[X] := sextAdjoinPoly c₀ c₁ c₂ c₃ c₄ c₅ K with hgdef
+  set ι : RatFunc K →+* F := ratFuncLift (algebraMap K F) xx htrx' with hιdef
+  set ι' : RatFunc K →+* A := ratFuncLift ψ X' htr' with hι'def
+  have hιpoly : ∀ p : K[X], ι (algebraMap K[X] (RatFunc K) p) = aeval xx p := by
+    intro p; rw [hιdef, ratFuncLift_algebraMap, Polynomial.aeval_def]
+  have hι'poly : ∀ p : K[X], ι' (algebraMap K[X] (RatFunc K) p) = eval₂ ψ X' p := by
+    intro p; rw [hι'def, ratFuncLift_algebraMap]
+  have hroot : eval₂ ι yy g = 0 := by
+    rw [hgdef, sextAdjoinPoly, eval₂_sub, eval₂_X_pow, eval₂_C, hιpoly, aeval_sextPoly, eqn,
+      sub_self]
+  have hroot' : eval₂ ι' Y' g = 0 := by
+    rw [hgdef, sextAdjoinPoly, eval₂_sub, eval₂_X_pow, eval₂_C, hι'poly, eval₂_sextPoly, heqn',
+      sub_self]
+  set Θ : AdjoinRoot g →+* F := AdjoinRoot.lift ι yy hroot with hΘdef
+  set Θ' : AdjoinRoot g →+* A := AdjoinRoot.lift ι' Y' hroot' with hΘ'def
+  -- the two maps on the generators
+  have hΘof : ∀ r : RatFunc K, Θ (algebraMap (RatFunc K) (AdjoinRoot g) r) = ι r := by
+    intro r; rw [AdjoinRoot.algebraMap_eq, hΘdef]; exact AdjoinRoot.lift_of _
+  have hΘ'of : ∀ r : RatFunc K, Θ' (algebraMap (RatFunc K) (AdjoinRoot g) r) = ι' r := by
+    intro r; rw [AdjoinRoot.algebraMap_eq, hΘ'def]; exact AdjoinRoot.lift_of _
+  have hΘroot : Θ (AdjoinRoot.root g) = yy := by rw [hΘdef]; exact AdjoinRoot.lift_root _
+  have hΘ'root : Θ' (AdjoinRoot.root g) = Y' := by rw [hΘ'def]; exact AdjoinRoot.lift_root _
+  -- `Θ` is an isomorphism
+  have hΘinj : Function.Injective Θ := Θ.injective
+  have hΘsurj : Function.Surjective Θ := by
+    intro z
+    obtain ⟨a, b, d, hd, hz⟩ := gen z
+    refine ⟨(algebraMap (RatFunc K) (AdjoinRoot g) (algebraMap K[X] (RatFunc K) a)
+      + algebraMap (RatFunc K) (AdjoinRoot g) (algebraMap K[X] (RatFunc K) b)
+        * AdjoinRoot.root g)
+      / algebraMap (RatFunc K) (AdjoinRoot g) (algebraMap K[X] (RatFunc K) d), ?_⟩
+    rw [map_div₀, map_add, map_mul, hΘof, hΘof, hΘof, hΘroot, hιpoly, hιpoly, hιpoly,
+      ← hz, mul_div_assoc, div_self hd, mul_one]
+  set e : AdjoinRoot g ≃+* F := RingEquiv.ofBijective Θ ⟨hΘinj, hΘsurj⟩ with hedef
+  have hecoe : ∀ u : AdjoinRoot g, e u = Θ u := fun u => rfl
+  refine ⟨Θ'.comp (e.symm : F →+* AdjoinRoot g), ?_, ?_, ?_⟩
+  · intro a
+    have hkey : e.symm (algebraMap K F a)
+        = algebraMap (RatFunc K) (AdjoinRoot g) (algebraMap K[X] (RatFunc K) (C a)) := by
+      refine e.symm_apply_eq.mpr ?_
+      rw [hecoe, hΘof, hιpoly, Polynomial.aeval_C]
+    simp only [RingHom.coe_comp, Function.comp_apply, RingEquiv.coe_toRingHom, hkey, hΘ'of,
+      hι'poly, eval₂_C]
+  · have hkey : e.symm xx = algebraMap (RatFunc K) (AdjoinRoot g) RatFunc.X := by
+      refine e.symm_apply_eq.mpr ?_
+      rw [hecoe, hΘof, ← RatFunc.algebraMap_X, hιpoly, Polynomial.aeval_X]
+    simp only [RingHom.coe_comp, Function.comp_apply, RingEquiv.coe_toRingHom, hkey, hΘ'of,
+      ← RatFunc.algebraMap_X, hι'poly, eval₂_X]
+  · have hkey : e.symm yy = AdjoinRoot.root g := e.symm_apply_eq.mpr (by rw [hecoe, hΘroot])
+    simp only [RingHom.coe_comp, Function.comp_apply, RingEquiv.coe_toRingHom, hkey, hΘ'root]
+
+/-! ### The places above `x = ∞` -/
+
+/-- `PlaceData` contains a `FunctionFieldData` (PROVEN — the first block of its fields). -/
+def PlaceData.toFunctionFieldData {K : Type} [Field K] (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) :
+    FunctionFieldData c₀ c₁ c₂ c₃ c₄ c₅ K where
+  F := D.F
+  xx := D.xx
+  yy := D.yy
+  eqn := D.eqn
+  transcendental_xx := D.transcendental_xx
+  gen := D.gen
+
+/-- `PlaceData` contains a `PlaceSystem` (PROVEN — the second block of its fields). -/
+def PlaceData.toPlaceSystem {K : Type} [Field K] (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) :
+    PlaceSystem K D.toFunctionFieldData.F where
+  Places := D.Places
+  ord := D.ord
+  ord_zero := D.ord_zero
+  ord_mul := D.ord_mul
+  ord_add := D.ord_add
+  ord_algebraMap := D.ord_algebraMap
+  ord_surjective := D.ord_surjective
+  ord_injective := D.ord_injective
+  ord_complete := D.ord_complete
+  ord_finite := D.ord_finite
+
+/-- **LEAF: the only poles of the abscissa are the two points at infinity.**
+
+`ord_v x < 0` forces `v ∈ {∞₊, ∞₋}`.  This is the fundamental inequality
+`Σ_{v | ∞} e(v) f(v) ≤ [F : K(x)] = 2` ([Stichtenoth, *Algebraic Function Fields and Codes*,
+III.1.11]) read at the infinite place of `K(x)`, and nothing more: the two rational points at
+infinity are already exhibited by `PlaceData` (`ord_pt_infinite` gives `ord x = -1`, so
+`e = 1`, and `finrank_residue_pt_eq_one` gives `f = 1`), they are distinct by `pt_injective`,
+so they saturate the bound and there is no room for a third pole of `x`.
+
+**Strictly weaker than the fundamental identity**
+`degOf_poleDivisor_eq_finrank_of_transcendental`: it is one inequality, at one place, for the
+one function `x` — no weak approximation and no dimension count.  Anyone proving that leaf
+gets this one for free (`deg (div_∞ x) = [F : K(x)] = 2` with two degree-`1` poles already
+present leaves no third), so it should be DELETED rather than proven separately if the
+fundamental identity lands first.
+
+**What would refute it**: a place with `ord_v x = -2` (`x = ∞` inert with `e = 2`) or one with
+`f = 2`, in addition to `∞±`.  Neither can occur, because `∞±` alone already contribute
+`1·1 + 1·1 = 2 = [F : K(x)]`; the *existence* of both is where the monic sextic and `2 ≠ 0`
+are used, and both are `PlaceData` fields rather than things to prove. -/
+theorem pt_infinite_of_ord_xx_neg {K : Type} [Field K] (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (v : D.Places) (hv : D.ord v D.xx < 0) : ∃ s : Bool, v = D.pt (Sum.inr s) := sorry
+
+/-- **PROVEN from `pt_infinite_of_ord_xx_neg`: a place with a simple pole of `x` lying on the
+`s` branch at infinity IS `∞_s`.**  The branch separation is `isPlaceOfPt_injective`, whose
+`2 ≠ 0` comes from `PlaceData.two_ne_zero`. -/
+theorem pt_inr_eq_of_ord_xx {K : Type} [Field K] (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (s : Bool) (v : D.Places) (h1 : D.ord v D.xx = -1)
+    (h2 : -3 < D.ord v (D.yy - (if s then (1 : D.F) else -1) * D.xx ^ 3)) :
+    v = D.pt (Sum.inr s) := by
+  obtain ⟨s', rfl⟩ := pt_infinite_of_ord_xx_neg D v (by omega)
+  have hbr : ∀ (t : Bool) (w : D.Places), D.ord w D.xx = -1 →
+      -3 < D.ord w (D.yy - (if t then (1 : D.F) else -1) * D.xx ^ 3) →
+      IsPlaceOfPt D.toFunctionFieldData D.toPlaceSystem (Sum.inr t) w :=
+    fun _ _ ha hb => ⟨ha, hb⟩
+  have hkey := isPlaceOfPt_injective D.toFunctionFieldData D.toPlaceSystem D.two_ne_zero
+    (hbr s _ h1 h2)
+    (hbr s' _ (D.ord_pt_infinite s').1 (D.ord_pt_infinite s').2)
+  rw [Sum.inr.injEq] at hkey
+  rw [hkey]
+
+end Presentation
+
 section Genus
 
 variable {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
@@ -4497,30 +4699,402 @@ lemma act_bc (σ : QbarGal) (a : D.Pic) : gp.act σ (gp.bc a) = gp.bc a := by
 
 end GeomPic
 
-/-- **LEAF (weak Mordell–Weil, 1 of 4): the geometric divisor theory exists**, for every
-separable monic sextic.
+section ConstFieldExtension
 
-This is base change of the whole layer to `ℚ̄`, together with the Galois action.  What has
-to be built:
+variable {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
 
-* `Dbar` — immediate from `exists_placeData` over `ℚ̄`, whose two hypotheses both survive:
-  `2 ≠ 0` in `ℚ̄`, and separability of `sextPoly … ℚ̄`, which follows from `hsep` because
-  `IsCoprime` is preserved by base change along `ℚ → ℚ̄`;
-* `emb`, `below` — the constant field extension `F̄ = F ⊗_ℚ ℚ̄`.  It is a field because the
-  curve is geometrically irreducible (`ℚ` is algebraically closed in `F`), and it is
-  unramified at every place with `e = f = 1` after base change, which is `ord_emb`;
-  `below_finite` is "a place of degree `d` splits into `d`";
-* `below_infPlus` — `∞₊` is a `ℚ`-rational point, hence of degree `1`, hence has a single
-  geometric place over it;
-* `fieldAct`, `placeAct` — `σ` acts on `F̄ = F ⊗_ℚ ℚ̄` through the right factor, fixing `F`;
-  the induced permutation of places is `ord_placeAct`.
+/-! ### The constant field extension -/
 
-**Not vacuous, and not the conclusion in disguise.**  Every field is either data pinned by
-an axiom or a property of the honest base change; nothing here mentions finiteness, and the
-structure exists for a Jacobian of any rank. -/
-theorem exists_geomPic {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ)
+/-- **The constant field extension `F ↪ F̄ = F·ℚ̄`, together with the Galois action on `F̄`.**
+
+This is exactly the part of `GeomPic` that is pure field theory — no valuations, no places —
+and it is PROVEN to exist by `exists_constFieldExt` below.  What `GeomPic` adds to it is
+`below`, `ord_emb`, `below_finite` and `below_infPlus`, i.e. the valuation-theoretic content
+of the extension. -/
+structure ConstFieldExt (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ) where
+  /-- the same curve over an algebraic closure of `ℚ` -/
+  Dbar : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ (AlgebraicClosure ℚ)
+  /-- the inclusion of function fields -/
+  emb : D.F →+* Dbar.F
+  /-- it is a `ℚ`-algebra map -/
+  emb_algebraMap : ∀ a : ℚ, emb (algebraMap ℚ D.F a)
+      = algebraMap (AlgebraicClosure ℚ) Dbar.F (algebraMap ℚ (AlgebraicClosure ℚ) a)
+  /-- and sends the abscissa to the abscissa -/
+  emb_xx : emb D.xx = Dbar.xx
+  /-- and the ordinate to the ordinate -/
+  emb_yy : emb D.yy = Dbar.yy
+  /-- the semilinear action of `σ` on the geometric function field -/
+  fieldAct : QbarGal → Dbar.F ≃+* Dbar.F
+  /-- semilinearity over `σ` on the constants -/
+  fieldAct_algebraMap : ∀ (σ : QbarGal) (a : AlgebraicClosure ℚ),
+      fieldAct σ (algebraMap (AlgebraicClosure ℚ) Dbar.F a)
+        = algebraMap (AlgebraicClosure ℚ) Dbar.F (σ a)
+  /-- and triviality on the rational function field -/
+  fieldAct_emb : ∀ (σ : QbarGal) (g : D.F), fieldAct σ (emb g) = emb g
+
+/-- Separability of the sextic survives the passage to `ℚ̄`. -/
+lemma separable_sextPoly_algebraicClosure
     (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℚ).Separable) :
-    Nonempty (GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) := sorry
+    (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ (AlgebraicClosure ℚ)).Separable := by
+  have h := hsep.map (f := algebraMap ℚ (AlgebraicClosure ℚ))
+  rwa [map_sextPoly] at h
+
+open Polynomial in
+/-- Transcendence of `Dbar.xx` over the small field, in the `eval₂` form
+`exists_ringHom_of_gen` consumes.
+
+Note the `open Polynomial in`: this section is outside the `open Polynomial` of `Picard`,
+and without it `K[X]` parses as `GetElem` indexing rather than as `Polynomial K`. -/
+lemma eval₂_ne_zero_of_transcendental {K L A : Type} [Field K] [Field L] [Field A]
+    [Algebra K L] [Algebra L A] {x : A} (htr : Transcendental L x) (τ : K →+* L)
+    (hτ : Function.Injective τ) (q : K[X]) (hq : q ≠ 0) :
+    eval₂ ((algebraMap L A).comp τ) x q ≠ 0 := by
+  rw [← Polynomial.eval₂_map]
+  intro h
+  exact htr ⟨q.map τ, (Polynomial.map_ne_zero_iff hτ).mpr hq, by rwa [Polynomial.aeval_def]⟩
+
+/-- **PROVEN: the constant field extension exists.**
+
+`Dbar` is any `PlaceData` over `ℚ̄` — one exists by `exists_placeData`, whose two hypotheses
+survive base change — and `emb`, `fieldAct` are then produced by the presentation lemma
+`exists_ringHom_of_gen`, their defining properties by its uniqueness counterpart
+`ringHom_ext_of_gen`.  In particular `fieldAct σ` is bijective because `fieldAct σ⁻¹` is a
+two-sided inverse *by uniqueness*, so the arbitrary choices made here are harmless. -/
+theorem exists_constFieldExt (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℚ).Separable) :
+    Nonempty (ConstFieldExt c₀ c₁ c₂ c₃ c₄ c₅ D) := by
+  classical
+  have hsepbar := separable_sextPoly_algebraicClosure (c₀ := c₀) (c₁ := c₁) (c₂ := c₂)
+    (c₃ := c₃) (c₄ := c₄) (c₅ := c₅) hsep
+  obtain ⟨Dbar⟩ := exists_placeData c₀ c₁ c₂ c₃ c₄ c₅ (AlgebraicClosure ℚ) hsepbar
+    (by norm_num)
+  -- the embedding
+  obtain ⟨emb, hembc, hembx, hemby⟩ := exists_ringHom_of_gen D.eqn D.transcendental_xx D.gen
+    hsep ((algebraMap (AlgebraicClosure ℚ) Dbar.F).comp (algebraMap ℚ (AlgebraicClosure ℚ)))
+    Dbar.xx Dbar.yy Dbar.eqn
+    (eval₂_ne_zero_of_transcendental Dbar.transcendental_xx _
+      (algebraMap ℚ (AlgebraicClosure ℚ)).injective)
+  -- the action of a single `σ`
+  have hact : ∀ σ : QbarGal, ∃ φ : Dbar.F →+* Dbar.F,
+      (∀ a : AlgebraicClosure ℚ, φ (algebraMap (AlgebraicClosure ℚ) Dbar.F a)
+        = algebraMap (AlgebraicClosure ℚ) Dbar.F (σ a)) ∧ φ Dbar.xx = Dbar.xx ∧
+      φ Dbar.yy = Dbar.yy := by
+    intro σ
+    obtain ⟨φ, h1, h2, h3⟩ := exists_ringHom_of_gen Dbar.eqn Dbar.transcendental_xx Dbar.gen
+      hsepbar ((algebraMap (AlgebraicClosure ℚ) Dbar.F).comp (σ : AlgebraicClosure ℚ →+* _))
+      Dbar.xx Dbar.yy Dbar.eqn
+      (eval₂_ne_zero_of_transcendental (L := AlgebraicClosure ℚ) Dbar.transcendental_xx _
+        σ.injective)
+    exact ⟨φ, h1, h2, h3⟩
+  choose φ hφc hφx hφy using hact
+  -- the composite of `σ` and `τ` is the composite of the two maps, by uniqueness
+  have hcomp : ∀ σ τ : QbarGal, (φ σ).comp (φ τ) = φ (σ * τ) := by
+    intro σ τ
+    refine ringHom_ext_of_gen Dbar.gen (fun a => ?_) (by simp [hφx]) (by simp [hφy])
+    simp only [RingHom.coe_comp, Function.comp_apply, hφc]
+    rfl
+  have hone : φ 1 = RingHom.id Dbar.F := by
+    refine ringHom_ext_of_gen Dbar.gen (fun a => ?_) (by simp [hφx]) (by simp [hφy])
+    simpa using hφc 1 a
+  refine ⟨{ Dbar := Dbar
+            emb := emb
+            emb_algebraMap := hembc
+            emb_xx := hembx
+            emb_yy := hemby
+            fieldAct := fun σ => RingEquiv.ofRingHom (φ σ) (φ σ⁻¹) ?_ ?_
+            fieldAct_algebraMap := hφc
+            fieldAct_emb := ?_ }⟩
+  · show (φ σ).comp (φ σ⁻¹) = RingHom.id _
+    rw [hcomp, mul_inv_cancel, hone]
+  · show (φ σ⁻¹).comp (φ σ) = RingHom.id _
+    rw [hcomp, inv_mul_cancel, hone]
+  · intro σ g
+    show ((φ σ).comp emb) g = emb g
+    have : (φ σ).comp emb = emb := by
+      refine ringHom_ext_of_gen D.gen (fun a => ?_) ?_ ?_
+      · simp only [RingHom.coe_comp, Function.comp_apply, hembc, hφc]
+        rw [AlgEquiv.commutes]
+      · simp only [RingHom.coe_comp, Function.comp_apply, hembx, hφx]
+      · simp only [RingHom.coe_comp, Function.comp_apply, hemby, hφy]
+    rw [this]
+
+namespace ConstFieldExt
+
+variable {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} (cf : ConstFieldExt c₀ c₁ c₂ c₃ c₄ c₅ D)
+
+lemma emb_injective : Function.Injective cf.emb := cf.emb.injective
+
+lemma emb_ne_zero {g : D.F} (hg : g ≠ 0) : cf.emb g ≠ 0 :=
+  (map_ne_zero_iff cf.emb cf.emb_injective).mpr hg
+
+/-- **Galois fixes the abscissa** (PROVEN): it is in the image of `emb`. -/
+lemma fieldAct_xx (σ : QbarGal) : cf.fieldAct σ cf.Dbar.xx = cf.Dbar.xx := by
+  rw [← cf.emb_xx, cf.fieldAct_emb]
+
+/-- **Galois fixes the ordinate** (PROVEN). -/
+lemma fieldAct_yy (σ : QbarGal) : cf.fieldAct σ cf.Dbar.yy = cf.Dbar.yy := by
+  rw [← cf.emb_yy, cf.fieldAct_emb]
+
+/-- **`fieldAct` is automatically an action** (PROVEN): the composite is a ring hom with the
+same effect on the constants, on `xx` and on `yy`, and `ringHom_ext_of_gen` says there is only
+one such.  This is why `ConstFieldExt` need not carry the action axioms. -/
+lemma fieldAct_mul (σ τ : QbarGal) :
+    ((cf.fieldAct σ : cf.Dbar.F →+* cf.Dbar.F).comp (cf.fieldAct τ : cf.Dbar.F →+* cf.Dbar.F))
+      = (cf.fieldAct (σ * τ) : cf.Dbar.F →+* cf.Dbar.F) := by
+  refine ringHom_ext_of_gen cf.Dbar.gen (fun a => ?_) ?_ ?_
+  · show cf.fieldAct σ (cf.fieldAct τ (algebraMap (AlgebraicClosure ℚ) cf.Dbar.F a))
+      = cf.fieldAct (σ * τ) (algebraMap (AlgebraicClosure ℚ) cf.Dbar.F a)
+    rw [cf.fieldAct_algebraMap, cf.fieldAct_algebraMap, cf.fieldAct_algebraMap]
+    rfl
+  · show cf.fieldAct σ (cf.fieldAct τ cf.Dbar.xx) = cf.fieldAct (σ * τ) cf.Dbar.xx
+    rw [cf.fieldAct_xx, cf.fieldAct_xx, cf.fieldAct_xx]
+  · show cf.fieldAct σ (cf.fieldAct τ cf.Dbar.yy) = cf.fieldAct (σ * τ) cf.Dbar.yy
+    rw [cf.fieldAct_yy, cf.fieldAct_yy, cf.fieldAct_yy]
+
+lemma fieldAct_one : (cf.fieldAct 1 : cf.Dbar.F →+* cf.Dbar.F) = RingHom.id cf.Dbar.F := by
+  refine ringHom_ext_of_gen cf.Dbar.gen (fun a => ?_) ?_ ?_
+  · simpa using cf.fieldAct_algebraMap 1 a
+  · simpa using cf.fieldAct_xx 1
+  · simpa using cf.fieldAct_yy 1
+
+lemma fieldAct_fieldAct (σ τ : QbarGal) (h : cf.Dbar.F) :
+    cf.fieldAct σ (cf.fieldAct τ h) = cf.fieldAct (σ * τ) h :=
+  congrFun (congrArg (fun φ : cf.Dbar.F →+* cf.Dbar.F => (φ : cf.Dbar.F → cf.Dbar.F))
+    (cf.fieldAct_mul σ τ)) h
+
+lemma fieldAct_inv_fieldAct (σ : QbarGal) (h : cf.Dbar.F) :
+    cf.fieldAct σ⁻¹ (cf.fieldAct σ h) = h := by
+  rw [cf.fieldAct_fieldAct, inv_mul_cancel]
+  simpa using congrFun (congrArg (fun φ : cf.Dbar.F →+* cf.Dbar.F =>
+    (φ : cf.Dbar.F → cf.Dbar.F)) cf.fieldAct_one) h
+
+lemma fieldAct_algebraMap_inv (σ : QbarGal) (a : AlgebraicClosure ℚ) :
+    cf.fieldAct σ⁻¹ (algebraMap (AlgebraicClosure ℚ) cf.Dbar.F a)
+      = algebraMap (AlgebraicClosure ℚ) cf.Dbar.F (σ⁻¹ a) := cf.fieldAct_algebraMap σ⁻¹ a
+
+end ConstFieldExt
+
+/-- **LEAF (weak Mordell–Weil, 1a of 4): the constant field extension is UNRAMIFIED.**
+
+`ord_w ∘ emb` is again a NORMALISED valuation of `F`: its value group is all of `ℤ`, i.e.
+`e(w | w ∩ F) = 1`.  This is [Stichtenoth, *Algebraic Function Fields and Codes*, III.6.3(b)]
+— a constant field extension `F·K'/F` is unramified at every place — and it is the only thing
+standing between `ConstFieldExt` (PROVEN to exist above) and `below` together with `ord_emb`:
+given it, `D.ord_complete` produces the place below and its defining property, and both are
+Lean definitions rather than fields (see `ConstFieldExt.below` and `ConstFieldExt.ord_below`).
+
+Route.  Reduce to a finite subextension: `emb t` for `t ∈ F` involves only finitely many
+algebraic numbers, so `w` restricted to `F·K'` for a finite `K'/ℚ` suffices, and
+`[F·K' : F] = [K' : ℚ]` because `ℚ` is algebraically closed in `F` (the curve is
+geometrically irreducible: `Y² − f` stays irreducible over `ℚ̄(x)`, which is
+`not_isSquare_sextPoly` over `ℚ̄`).  Then `Σ_{w' | v} e(w') f(w') ≤ [F·K' : F] = [K' : ℚ]`
+while `f(w') ≥ [K'·κ(v) : κ(v)]`, and equality in the constant-field case forces `e = 1`.
+
+**Not vacuous, and `hsep` is not needed**: the data of `ConstFieldExt` already pins `Dbar.F`
+as `ℚ̄(xx, yy)` and `emb (D.F)` as `ℚ(xx, yy)` inside it, by `ringHom_ext_of_gen`, so this is
+a statement about the honest constant field extension and about nothing else.
+
+**What would refute it**: a `w` for which `ord_w (emb t)` is even for every `t ∈ F` — i.e. a
+ramified geometric place.  That cannot happen for a CONSTANT field extension, but it does
+happen for the geometric extension `ℚ̄(x) ⊆ ℚ̄(x)(√x)`, which is why the proof must use that
+`Dbar.F` is generated over `emb (D.F)` by CONSTANTS. -/
+theorem constFieldExt_exists_uniformizer {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
+    (cf : ConstFieldExt c₀ c₁ c₂ c₃ c₄ c₅ D) (w : cf.Dbar.Places) :
+    ∃ t : D.F, cf.Dbar.ord w (cf.emb t) = 1 := sorry
+
+namespace ConstFieldExt
+
+variable {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} (cf : ConstFieldExt c₀ c₁ c₂ c₃ c₄ c₅ D)
+
+/-- **The place of `F` below a geometric place exists** (PROVEN from
+`constFieldExt_exists_uniformizer` and `D.ord_complete`). -/
+lemma exists_below (w : cf.Dbar.Places) :
+    ∃ v : D.Places, ∀ g : D.F, D.ord v g = cf.Dbar.ord w (cf.emb g) := by
+  obtain ⟨v, hv⟩ := D.ord_complete (fun g => cf.Dbar.ord w (cf.emb g))
+    (by simp only [map_zero, cf.Dbar.ord_zero])
+    (fun a b ha hb => by
+      simp only [map_mul]
+      exact cf.Dbar.ord_mul _ _ _ (cf.emb_ne_zero ha) (cf.emb_ne_zero hb))
+    (fun a b ha hb hab => by
+      simp only [map_add]
+      exact cf.Dbar.ord_add _ _ _ (cf.emb_ne_zero ha) (cf.emb_ne_zero hb)
+        (by rw [← map_add]; exact cf.emb_ne_zero hab))
+    (fun a ha => by
+      rw [cf.emb_algebraMap]
+      refine cf.Dbar.ord_algebraMap _ _ ?_
+      simpa using ha)
+    (constFieldExt_exists_uniformizer cf w)
+  exact ⟨v, fun g => by rw [hv]⟩
+
+/-- **The place of `F` below a geometric place** (PROVEN well defined). -/
+noncomputable def below (w : cf.Dbar.Places) : D.Places := (cf.exists_below w).choose
+
+/-- **`ord_emb`: the constant field extension does not move orders** (PROVEN). -/
+lemma ord_below (w : cf.Dbar.Places) (g : D.F) :
+    D.ord (cf.below w) g = cf.Dbar.ord w (cf.emb g) := (cf.exists_below w).choose_spec g
+
+/-- **The Galois translate of a geometric place exists** (PROVEN from `Dbar.ord_complete`):
+`ord_{σ·w} = ord_w ∘ (fieldAct σ)⁻¹`. -/
+lemma exists_placeAct (σ : QbarGal) (w : cf.Dbar.Places) :
+    ∃ v : cf.Dbar.Places, ∀ h : cf.Dbar.F,
+      cf.Dbar.ord v h = cf.Dbar.ord w (cf.fieldAct σ⁻¹ h) := by
+  obtain ⟨u, hu⟩ := cf.Dbar.ord_surjective w
+  obtain ⟨v, hv⟩ := cf.Dbar.ord_complete (fun h => cf.Dbar.ord w (cf.fieldAct σ⁻¹ h))
+    (by simp only [map_zero, cf.Dbar.ord_zero])
+    (fun a b ha hb => by
+      simp only [map_mul]
+      exact cf.Dbar.ord_mul _ _ _
+        ((map_ne_zero_iff _ (cf.fieldAct σ⁻¹).injective).mpr ha)
+        ((map_ne_zero_iff _ (cf.fieldAct σ⁻¹).injective).mpr hb))
+    (fun a b ha hb hab => by
+      simp only [map_add]
+      exact cf.Dbar.ord_add _ _ _
+        ((map_ne_zero_iff _ (cf.fieldAct σ⁻¹).injective).mpr ha)
+        ((map_ne_zero_iff _ (cf.fieldAct σ⁻¹).injective).mpr hb)
+        (by rw [← map_add]; exact (map_ne_zero_iff _ (cf.fieldAct σ⁻¹).injective).mpr hab))
+    (fun a ha => by
+      rw [cf.fieldAct_algebraMap_inv]
+      refine cf.Dbar.ord_algebraMap _ _ ?_
+      simpa using ha)
+    ⟨cf.fieldAct σ u, by rw [cf.fieldAct_inv_fieldAct]; exact hu⟩
+  exact ⟨v, fun h => by rw [hv]⟩
+
+/-- The Galois translate of a geometric place, as a function. -/
+noncomputable def placeActFun (σ : QbarGal) (w : cf.Dbar.Places) : cf.Dbar.Places :=
+  (cf.exists_placeAct σ w).choose
+
+lemma ord_placeActFun (σ : QbarGal) (w : cf.Dbar.Places) (h : cf.Dbar.F) :
+    cf.Dbar.ord (cf.placeActFun σ w) h = cf.Dbar.ord w (cf.fieldAct σ⁻¹ h) :=
+  (cf.exists_placeAct σ w).choose_spec h
+
+lemma placeActFun_mul (σ τ : QbarGal) (w : cf.Dbar.Places) :
+    cf.placeActFun σ (cf.placeActFun τ w) = cf.placeActFun (σ * τ) w := by
+  refine cf.Dbar.ord_injective (funext fun h => ?_)
+  rw [cf.ord_placeActFun, cf.ord_placeActFun, cf.ord_placeActFun, cf.fieldAct_fieldAct,
+    mul_inv_rev]
+
+lemma placeActFun_one (w : cf.Dbar.Places) : cf.placeActFun 1 w = w := by
+  refine cf.Dbar.ord_injective (funext fun h => ?_)
+  rw [cf.ord_placeActFun, inv_one]
+  exact congrArg (cf.Dbar.ord w) (congrFun (congrArg
+    (fun φ : cf.Dbar.F →+* cf.Dbar.F => (φ : cf.Dbar.F → cf.Dbar.F)) cf.fieldAct_one) h)
+
+/-- **The induced permutation of geometric places** (PROVEN to be a permutation). -/
+noncomputable def placeAct (σ : QbarGal) : cf.Dbar.Places ≃ cf.Dbar.Places where
+  toFun := cf.placeActFun σ
+  invFun := cf.placeActFun σ⁻¹
+  left_inv w := by rw [cf.placeActFun_mul, inv_mul_cancel, cf.placeActFun_one]
+  right_inv w := by rw [cf.placeActFun_mul, mul_inv_cancel, cf.placeActFun_one]
+
+/-- **`ord_placeAct`** (PROVEN). -/
+lemma ord_placeAct (σ : QbarGal) (v : cf.Dbar.Places) (g : cf.Dbar.F) :
+    cf.Dbar.ord (cf.placeAct σ v) (cf.fieldAct σ g) = cf.Dbar.ord v g := by
+  show cf.Dbar.ord (cf.placeActFun σ v) (cf.fieldAct σ g) = cf.Dbar.ord v g
+  rw [cf.ord_placeActFun, cf.fieldAct_inv_fieldAct]
+
+end ConstFieldExt
+
+/-- **PROVEN: a place of `F` has finitely many geometric places above it** — the
+`below_finite` field of `GeomPic`.
+
+The sharp statement is that the fibre has exactly `deg v = [κ(v) : ℚ]` elements
+([Stichtenoth, *Algebraic Function Fields and Codes*, III.6.3(c)]), and that is what the
+`GeomPic` docstring quotes; but only FINITENESS is used, and finiteness needs no residue
+theory at all.  A uniformiser `t` at `v` — `D.ord_surjective` — has `ord_w (emb t) = 1 ≠ 0`
+at every `w` above `v` by `ord_below`, so the whole fibre sits inside the zero-and-pole set
+of the single function `emb t`, which is finite by `Dbar.ord_finite`.
+
+Note this uses `ord_below` and hence the unramifiedness leaf, but only through the *existence*
+of some function of nonzero order — so it would survive any `e ≥ 1`. -/
+theorem constFieldExt_below_finite {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
+    (cf : ConstFieldExt c₀ c₁ c₂ c₃ c₄ c₅ D) (v : D.Places) :
+    {w : cf.Dbar.Places | cf.below w = v}.Finite := by
+  obtain ⟨t, ht⟩ := D.ord_surjective v
+  have htne : t ≠ 0 := by
+    intro h
+    rw [h, D.ord_zero] at ht
+    omega
+  refine Set.Finite.subset (cf.Dbar.ord_finite (cf.emb t) (cf.emb_ne_zero htne)) ?_
+  intro w hw
+  have hw' : cf.below w = v := hw
+  simp only [Set.mem_setOf_eq, ← cf.ord_below, hw', ht]
+  omega
+
+/-- **PROVEN from `pt_infinite_of_ord_xx_neg`: the rational base point has exactly ONE
+geometric place above it** — which is the `below_infPlus` field of `GeomPic`.
+
+`∞₊` is a `ℚ`-rational point, hence a place of degree `1`, hence — by the sharp form of
+`constFieldExt_below_finite` — has a single geometric place over it, which is then forced to
+be `Dbar.pt ∞₊` since that one does lie over it.  This is the field of `GeomPic` that makes
+`bcDiv` respect `picRel` and the Galois action fix the base point.
+
+Both directions are the SAME statement `pt_inr_eq_of_ord_xx` applied once downstairs and once
+upstairs, because `ord_below` transports the two branch conditions in both directions
+verbatim: `emb` fixes `xx` and `yy`, so `ord_w (emb (yy − xx³)) = ord_{below w} (yy − xx³)`
+is an identity between the very expressions the conditions are about.  Nothing about degrees
+or fibre counts is needed after all, which is why this is no longer a leaf. -/
+theorem constFieldExt_below_infPlus {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
+    (cf : ConstFieldExt c₀ c₁ c₂ c₃ c₄ c₅ D) (w : cf.Dbar.Places) :
+    cf.below w = D.pt PlaceData.infPlus ↔ w = cf.Dbar.pt PlaceData.infPlus := by
+  have hemb3 : cf.emb (D.yy - (if true then (1 : D.F) else -1) * D.xx ^ 3)
+      = cf.Dbar.yy - (if true then (1 : cf.Dbar.F) else -1) * cf.Dbar.xx ^ 3 := by
+    simp only [if_true, one_mul, map_sub, map_pow, cf.emb_xx, cf.emb_yy]
+  constructor
+  · intro h
+    refine pt_inr_eq_of_ord_xx cf.Dbar true w ?_ ?_
+    · rw [← cf.emb_xx, ← cf.ord_below, h]
+      exact (D.ord_pt_infinite true).1
+    · rw [← hemb3, ← cf.ord_below, h]
+      exact (D.ord_pt_infinite true).2
+  · intro h
+    subst h
+    refine pt_inr_eq_of_ord_xx D true _ ?_ ?_
+    · rw [cf.ord_below, cf.emb_xx]
+      exact (cf.Dbar.ord_pt_infinite true).1
+    · rw [cf.ord_below, hemb3]
+      exact (cf.Dbar.ord_pt_infinite true).2
+
+/-- **PROVEN 2026-07-30: the geometric divisor theory exists.**
+
+This used to be the leaf "base change of the whole layer to `ℚ̄`, together with the Galois
+action".  It is now assembled from `exists_constFieldExt` — which supplies every field of
+`GeomPic` that is pure FIELD theory, and is proven above over the presentation lemmas
+`exists_ringHom_of_gen` / `ringHom_ext_of_gen` — together with `ConstFieldExt.below`,
+`ConstFieldExt.ord_below`, `constFieldExt_below_finite`, `constFieldExt_below_infPlus`,
+`ConstFieldExt.placeAct` and `ConstFieldExt.ord_placeAct`, all proven above.
+
+**What is left, and the honest accounting.**  Two leaves replace this one:
+
+* `constFieldExt_exists_uniformizer` — the constant field extension is UNRAMIFIED
+  (Stichtenoth III.6.3(b)).  It is what makes `below` and `ord_emb` definable at all.
+* `pt_infinite_of_ord_xx_neg` — the only poles of `x` are the two points at infinity, i.e.
+  the fundamental inequality `Σ_{v | ∞} e f ≤ [F : K(x)] = 2` at one place for one function.
+
+So the count went `1 → 2`, and what was bought is that the 14 fields of `GeomPic` are no
+longer an existence claim: `emb` and `fieldAct` are CONSTRUCTED (not chosen), `below` is a
+definition rather than data, and `below_finite`, `below_infPlus`, `ord_emb`, `ord_placeAct`
+are theorems.  Both new leaves are single valuation-theoretic facts with textbook references,
+where the old one was a whole base-change theory. -/
+theorem exists_geomPic (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℚ).Separable) :
+    Nonempty (GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) := by
+  obtain ⟨cf⟩ := exists_constFieldExt D hsep
+  exact ⟨{ Dbar := cf.Dbar
+           emb := cf.emb
+           emb_algebraMap := cf.emb_algebraMap
+           emb_xx := cf.emb_xx
+           emb_yy := cf.emb_yy
+           below := cf.below
+           ord_emb := fun w g _ => (cf.ord_below w g).symm
+           below_finite := constFieldExt_below_finite cf
+           below_infPlus := constFieldExt_below_infPlus cf
+           fieldAct := cf.fieldAct
+           fieldAct_algebraMap := cf.fieldAct_algebraMap
+           fieldAct_emb := cf.fieldAct_emb
+           placeAct := cf.placeAct
+           ord_placeAct := cf.ord_placeAct }⟩
+
+end ConstFieldExtension
 
 /-- **LEAF (weak Mordell–Weil, 2 of 4): `Pic⁰(X_ℚ) → Pic⁰(X_ℚ̄)` is injective.**
 
