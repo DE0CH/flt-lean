@@ -1578,7 +1578,124 @@ noncomputable def dualRestrictIso : (modDual L).restrict U.ι ≅ modUnit (U : S
     rw [ConcreteCategory.comp_apply, ConcreteCategory.comp_apply]
     exact dualFwd_map_restrict φ (leOfHom f.unop) ψ
 
+/-! ##### The evaluation pairing on a trivializing open
+
+The same bridge, run once more: on `A ≤ U` the pairing
+`Γ(L,A) ⊗_{Γ(Z,A)} L^∨(A) ⟶ Γ(Z,A)` is BIJECTIVE, with explicit inverse
+`r ↦ g_A ⊗ (x ↦ tr(x)·r)`.  This is the whole local input of
+`isIso_modDualEv`; everything after it is the sites machinery. -/
+
+/-- The evaluation pairing at a single open, read as an honest `Γ(Z,A)`-linear
+map out of the honest tensor product.  Stating it this way is what makes `rw`
+usable: the `ModuleCat`-side instances are replaced by the ones a reader would
+write. -/
+noncomputable def evLin (L : Z.Modules) (A : Z.Opens) :
+    TensorProduct Γ(Z, A) Γ(L, A) (DualSec L A) →ₗ[Γ(Z, A)] Γ(Z, A) :=
+  ModuleCat.Hom.hom ((modDualEvPre L).app (op A))
+
+@[simp] lemma evLin_tmul (A : Z.Opens) (x : Γ(L, A)) (ψ : DualSec L A) :
+    evLin L A (x ⊗ₜ[Γ(Z, A)] ψ) = ψ.φ ⟨A, le_rfl⟩ x := rfl
+
+lemma dualBwd_zero {A : Z.Opens} (hA : A ≤ U) : dualBwd φ hA 0 = 0 := by
+  refine DualSec.ext (fun V => LinearMap.ext (fun x => ?_))
+  rw [dualBwd_φ, map_zero, mul_zero]
+  rfl
+
+lemma dualBwd_add {A : Z.Opens} (hA : A ≤ U) (r s : Γ(Z, A)) :
+    dualBwd φ hA (r + s) = dualBwd φ hA r + dualBwd φ hA s := by
+  refine DualSec.ext (fun V => LinearMap.ext (fun x => ?_))
+  rw [dualBwd_φ, map_add, mul_add, DualSec.add_φ, LinearMap.add_apply, dualBwd_φ, dualBwd_φ]
+
+lemma dualBwd_mul {A : Z.Opens} (hA : A ≤ U) (r s : Γ(Z, A)) :
+    dualBwd φ hA (r * s) = r • dualBwd φ hA s := by
+  refine DualSec.ext (fun V => LinearMap.ext (fun x => ?_))
+  rw [dualBwd_φ, DualSec.smul_φ, LinearMap.smul_apply, dualBwd_φ, map_mul, smul_eq_mul]
+  ring
+
+/-- **THE BACKWARD MAP OF THE EVALUATION PAIRING** on a trivializing open:
+`r ↦ g_A ⊗ (x ↦ tr(x)·r)`. -/
+noncomputable def evBwd {A : Z.Opens} (hA : A ≤ U) (r : Γ(Z, A)) :
+    TensorProduct Γ(Z, A) Γ(L, A) (DualSec L A) :=
+  gen φ hA ⊗ₜ[Γ(Z, A)] dualBwd φ hA r
+
+lemma evLin_evBwd {A : Z.Opens} (hA : A ≤ U) (r : Γ(Z, A)) :
+    evLin L A (evBwd φ hA r) = r := by
+  rw [evBwd, evLin_tmul]
+  exact dualFwd_dualBwd φ hA r
+
+lemma evBwd_evLin {A : Z.Opens} (hA : A ≤ U)
+    (t : TensorProduct Γ(Z, A) Γ(L, A) (DualSec L A)) :
+    evBwd φ hA (evLin L A t) = t := by
+  induction t with
+  | zero => rw [map_zero, evBwd, dualBwd_zero, TensorProduct.tmul_zero]
+  | tmul x ψ =>
+      have hx : ψ.φ ⟨A, le_rfl⟩ x = tr φ hA x * dualFwd φ hA ψ := by
+        conv_lhs => rw [eq_smul_gen φ hA x]
+        rw [LinearMap.map_smul, smul_eq_mul, dualFwd]
+      rw [evLin_tmul, hx, evBwd, dualBwd_mul, dualBwd_dualFwd, ← TensorProduct.smul_tmul,
+        ← eq_smul_gen]
+  | add a b ha hb =>
+      rw [map_add, evBwd, dualBwd_add, TensorProduct.tmul_add, ← evBwd, ← evBwd, ha, hb]
+
+/-- **THE EVALUATION PAIRING IS BIJECTIVE ON A TRIVIALIZING OPEN.**  `φ` is
+explicit because the statement does not mention it. -/
+lemma evLin_bijective (φ : L.restrict U.ι ≅ modUnit (U : Scheme.{u}))
+    {A : Z.Opens} (hA : A ≤ U) : Function.Bijective (evLin L A) :=
+  Function.bijective_iff_has_inverse.2
+    ⟨evBwd φ hA, evBwd_evLin φ hA, evLin_evBwd φ hA⟩
+
 end
+
+/-! ##### Local bijectivity of the evaluation pairing
+
+A sieve on `Opens Z` is covering exactly when it contains a neighbourhood of
+each point (`TopologicalSpace.Opens.mem_grothendieckTopology`), so "for each `z`
+a trivializing `U`, intersected with the ambient open" IS the covering
+condition, and both clauses fall straight out of `evLin_bijective`. -/
+
+section LocalBijectivity
+
+variable {Z : Scheme.{u}} (L : Z.Modules)
+
+/-- Naturality of the evaluation pairing, read through `evLin`. -/
+lemma evLin_nat {A B : Z.Opens} (h : B ≤ A)
+    (t : TensorProduct Γ(Z, A) Γ(L, A) (DualSec L A)) :
+    evLin L B
+        ((PresheafOfModules.Monoidal.tensorObj (R := Z.presheaf) L.val
+          (modDualPre L)).map (homOfLE h).op t) =
+      Z.presheaf.map (homOfLE h).op (evLin L A t) :=
+  PresheafOfModules.naturality_apply (modDualEvPre L) (homOfLE h).op t
+
+lemma isLocallyInjective_modDualEvPre (hL : IsInvertibleSheaf L) :
+    Presheaf.IsLocallyInjective (Opens.grothendieckTopology Z)
+      ((PresheafOfModules.toPresheaf _).map (modDualEvPre L)) where
+  equalizerSieve_mem {X} x y h := by
+    intro z hz
+    obtain ⟨U, hzU, ⟨φ⟩⟩ := hL z
+    refine ⟨X.unop ⊓ U, homOfLE inf_le_left, ?_, hz, hzU⟩
+    have key : ∀ t s : TensorProduct Γ(Z, X.unop) Γ(L, X.unop) (DualSec L X.unop),
+        evLin L X.unop t = evLin L X.unop s →
+        (PresheafOfModules.Monoidal.tensorObj (R := Z.presheaf) L.val (modDualPre L)).map
+            (homOfLE (inf_le_left : X.unop ⊓ U ≤ X.unop)).op t =
+          (PresheafOfModules.Monoidal.tensorObj (R := Z.presheaf) L.val (modDualPre L)).map
+            (homOfLE (inf_le_left : X.unop ⊓ U ≤ X.unop)).op s := by
+      intro t s hts
+      refine (evLin_bijective φ (inf_le_right : X.unop ⊓ U ≤ U)).injective ?_
+      rw [evLin_nat, evLin_nat, hts]
+    exact key x y h
+
+lemma isLocallySurjective_modDualEvPre (hL : IsInvertibleSheaf L) :
+    Presheaf.IsLocallySurjective (Opens.grothendieckTopology Z)
+      ((PresheafOfModules.toPresheaf _).map (modDualEvPre L)) where
+  imageSieve_mem {A} s := by
+    intro z hz
+    obtain ⟨U, hzU, ⟨φ⟩⟩ := hL z
+    refine ⟨A ⊓ U, homOfLE inf_le_left, ?_, hz, hzU⟩
+    exact ⟨evBwd φ (inf_le_right : A ⊓ U ≤ U)
+        (Z.presheaf.map (homOfLE (inf_le_left : A ⊓ U ≤ A)).op s),
+      evLin_evBwd φ _ _⟩
+
+end LocalBijectivity
 
 end Bridge
 
@@ -1631,8 +1748,10 @@ theorem isInvertibleSheaf_modDual {Z : Scheme.{u}} {L : Z.Modules}
   let ⟨U, hzU, ⟨φ⟩⟩ := hL z
   ⟨U, hzU, ⟨ModDual.dualRestrictIso φ⟩⟩
 
-/-- **THE EVALUATION PAIRING IS AN ISOMORPHISM** (sorry leaf, cut 2026-07-30 out
-of `exists_modDual`) — the second local half.
+/-- **THE EVALUATION PAIRING IS AN ISOMORPHISM** (PROVEN 2026-07-30; cut the
+same day out of `exists_modDual`, and the audit below is the docstring written
+while it was a sorry leaf — the route it records is the route taken) — the
+second local half.
 
 Note this is the GLOBAL statement, deliberately stronger than the local clause
 `exists_modDual` asks for; `exists_modDual`'s own docstring already records that
@@ -1663,10 +1782,47 @@ A covering sieve on `Opens Z` is checked pointwise —
 trivializing neighbourhood" is literally the covering condition.
 
 The one input both bullets need is the same rank-one bridge that
-`isInvertibleSheaf_modDual` needs; see its docstring. -/
-theorem isIso_modDualEv {Z : Scheme.{u}} {L : Z.Modules} (_hL : IsInvertibleSheaf L) :
-    IsIso (modDualEv L) :=
-  sorry
+`isInvertibleSheaf_modDual` needs; see its docstring.
+
+**WHAT THE PROOF ACTUALLY DOES, and the two places it can go wrong.**  The
+route above is right, with one simplification: `modLocW Z` is ALREADY defined in
+this file as "becomes an isomorphism after sheafification", and
+`modLocW_whiskerLeft` above already contains the rewrite
+`PresheafOfModules.inverseImage_W_toPresheaf_eq_inverseImage_isomorphisms` that
+turns it into `J.W` on underlying `Ab`-presheaves.  So the whole global half is
+that rewrite plus `GrothendieckTopology.W_iff_isLocallyBijective`, and the local
+half is `ModDual.isLocallyInjective_modDualEvPre` /
+`ModDual.isLocallySurjective_modDualEvPre`, both one screen long over
+`ModDual.evLin_bijective`.
+
+*First trap — instance arguments do not match reducibly.*
+`GrothendieckTopology.W_of_isLocallyBijective` takes its two hypotheses as
+INSTANCES, and a `haveI` of them is not found: the lemmas above elaborate
+`PresheafOfModules.toPresheaf _` to `Z.presheaf ⋙ forget₂ CommRingCat RingCat`
+while the goal carries `Z.ringCatSheaf.obj`, which is the same thing at default
+but not at reducible transparency.  Use the `_iff_` form and `exact` the two
+lemmas as ordinary propositions.
+
+*Second trap, the same disease one level up.*  `Z.Modules` is a `def` for
+`SheafOfModules Z.ringCatSheaf` carrying its OWN `Category` instance, and
+`modDualEv`'s two factors are typed in `Z.Modules` while the sheafification
+functor's `map` is typed in `SheafOfModules _`.  So after `rw [modDualEv]`,
+`infer_instance` and `exact IsIso.comp_isIso` both fail even with the first
+factor's `IsIso` in context.  `IsIso.comp_isIso'` takes both as EXPLICIT
+arguments, so the defeq check happens at `exact` rather than in instance
+search, and it goes through. -/
+theorem isIso_modDualEv {Z : Scheme.{u}} {L : Z.Modules} (hL : IsInvertibleSheaf L) :
+    IsIso (modDualEv L) := by
+  have key : modLocW Z = _ :=
+    (PresheafOfModules.inverseImage_W_toPresheaf_eq_inverseImage_isomorphisms
+      (𝟙 Z.ringCatSheaf.obj)).symm
+  have hW : modLocW Z (ModDual.modDualEvPre L) := by
+    rw [key]
+    exact (GrothendieckTopology.W_iff_isLocallyBijective _ _).2
+      ⟨ModDual.isLocallyInjective_modDualEvPre L hL,
+        ModDual.isLocallySurjective_modDualEvPre L hL⟩
+  rw [modDualEv]
+  exact IsIso.comp_isIso' hW inferInstance
 
 /-- **THE DUAL SHEAF AND ITS EVALUATION PAIRING** (PROVEN 2026-07-30 over
 `modDual`, `modDualEv`, `isInvertibleSheaf_modDual` and `isIso_modDualEv`;
