@@ -18632,8 +18632,851 @@ theorem paramAlgClosureHom_injective (K : Type*) [Field K] (m : ℕ) :
     (IsFractionRing.injective (MvPolynomial (Fin m) K)
       (FractionRing (MvPolynomial (Fin m) K)))
 
-/-- **SCHMIDT'S THEOREM 3D: A PLANE DIRECTION IN GENERAL POSITION (SORRY LEAF,
-cut 2026-07-28)** -- the GEOMETRIC half of
+/-! ### Around Schmidt's Theorem 3D: step 1 PROVEN, and the plane-wise normalisation
+
+This block (2026-07-28) reduces `exists_directions_irreducible_familyPlaneSection`
+below to ONE smaller leaf, `exists_directionPlane_irreducible_familyPlaneSection`.
+Two things its docstring listed as open are discharged here.
+
+**Step 1 of its ROUTE -- "Gauss for `MvPolynomial`" -- is PROVEN**, as
+`irreducible_map_paramFractionHom_translateFamily`: for every direction pair
+`(u₁, u₂)` whose family of parallel sections is nonconstant in `(s, t)`, the
+all-translates family is irreducible over `K(x)`. It is handed to the remaining
+leaf as a HYPOTHESIS, so that leaf is exactly step 2 -- geometric integrality --
+with step 1 already in hand.
+
+The route to it is NOT the content/primitive-part argument that docstring
+anticipated, and needs no theory of contents at all. With `Φ` the standard basis
+the family is literally `h(x + s·u₁ + t·u₂)`, i.e. the image of `C h` under an
+explicit SHEAR AUTOMORPHISM of `K[x][s, t]` (`familyShearEquiv`, whose inverse is
+the shear along `(-u₁, -u₂)`). So the family is PRIME there
+(`prime_familyPlaneSection_std`, from `MvPolynomial.prime_C_iff` and the fact that
+`K[x]` is a UFD), and a prime survives a localization it misses
+(`prime_algebraMap_of_prime`, from `IsLocalization.isPrime_of_isPrime_disjoint`
+and `MvPolynomial.isLocalization`). The only place the nondegeneracy hypothesis is
+used is in checking that the family divides no nonzero element of `K[x]`.
+
+**The leading-form normalisation is a condition on the PLANE, not on `u₁`.**
+`familyPlaneSection_directionComb` says that replacing `(u₁, u₂)` by another basis
+`(a·u₁ + b·u₂, c·u₁ + e·u₂)` changes the family by the plane substitution of `𝔸²`
+with matrix `[[a, c], [b, e]]` -- the base-point family `Φ` is untouched -- so by
+`irreducible_planeSection_of_det_ne_zero` over the generic geometric fibre,
+absolute irreducibility depends only on `span(u₁, u₂)`.
+
+**CORRECTION to the leaf's docstring, with a witness (2026-07-28).** Its closing
+sentence "Clause (i) is then free: ... one re-chooses the basis of the plane" is
+correct only when `h_d` does not vanish IDENTICALLY on the plane, and that
+restriction is real rather than a formality. Witness, inside the leaf's own
+running example: `h = X 1 ^ 2 - X 0` in `Fin 3` variables, `d = 2`, so
+`homogeneousComponent 2 h = X 1 ^ 2`. On the plane
+`W = span (Pi.single 0 1) (Pi.single 2 1)` the form `h_2` vanishes identically,
+because every `u ∈ W` has `u 1 = 0`. Yet `W` is GOOD for irreducibility: the
+all-translates family there is `X 1 ^ 2 - X 0 - s` read in `K[x][s, t]`, of degree
+one in `s`, hence irreducible over any extension of `K(x)`. So a plane can satisfy
+clause (ii) while NO basis of it satisfies clause (i); the two clauses have to be
+arranged by one choice of PLANE. What re-choosing the basis does, and all it does,
+is convert "`h_d` is nonzero somewhere on the plane" into "`h_d(u₁) ≠ 0`" -- which
+is exactly the gap between the leaf below and the one it is proven over.
+-/
+
+/-- The all-translates base-point family: `Φ j = e j`, the standard basis, so that
+`familyPlaneSection h (translateFamily K N) u₁ u₂` is `h(x + s·u₁ + t·u₂)` with the
+base point running over ALL of `𝔸^N`. Admissible for
+`exists_directions_irreducible_familyPlaneSection`, which quantifies `m` and `Φ`
+existentially, and the one choice of family for which the substitution is an
+automorphism -- which is what makes step 1 elementary. -/
+noncomputable def translateFamily (K : Type*) [CommRing K] (N : ℕ) : Fin N → (Fin N → K) :=
+  fun j => Pi.single j (1 : K)
+
+/-- The inclusion of the family-parameter ring into its fraction field: the first
+half of `paramAlgClosureHom`. Irreducibility HERE is step 1 of Schmidt's Theorem
+3D (Gauss); irreducibility after the further map to the algebraic closure is
+step 2 (geometric integrality), and only that one is still open. -/
+noncomputable def paramFractionHom (K : Type*) [Field K] (m : ℕ) :
+    MvPolynomial (Fin m) K →+* FractionRing (MvPolynomial (Fin m) K) :=
+  algebraMap _ _
+
+/-- **PROVEN**: changing the basis of the direction pair changes the family of
+parallel sections by the plane substitution of `𝔸²` with matrix `[[a, c], [b, e]]`,
+leaving the base-point family `Φ` alone. This is `planeSection_comp` at `v' = 0`;
+the base point is unmoved precisely because the new directions are combinations of
+the old ones with no constant term. -/
+theorem familyPlaneSection_directionComb {K : Type*} [CommRing K] {N m : ℕ}
+    (h : MvPolynomial (Fin N) K) (Φ : Fin m → (Fin N → K)) (u₁ u₂ : Fin N → K) (a b c e : K) :
+    familyPlaneSection h Φ (fun i => a * u₁ i + b * u₂ i) (fun i => c * u₁ i + e * u₂ i)
+      = planeSection (familyPlaneSection h Φ u₁ u₂) 0
+          ![MvPolynomial.C a, MvPolynomial.C b] ![MvPolynomial.C c, MvPolynomial.C e] := by
+  rw [familyPlaneSection, familyPlaneSection, planeSection_comp]
+  congr 1
+  · funext i; simp
+  · funext i
+    simp only [Matrix.cons_val_zero, Matrix.cons_val_one]
+    rw [← map_mul, ← map_mul, ← map_add]
+    congr 1
+    ring
+  · funext i
+    simp only [Matrix.cons_val_zero, Matrix.cons_val_one]
+    rw [← map_mul, ← map_mul, ← map_add]
+    congr 1
+    ring
+
+/-- **PROVEN**: absolute irreducibility of the generic member is a property of the
+PLANE `span(u₁, u₂)`, not of the chosen basis of it. Combines
+`familyPlaneSection_directionComb` with `planeSection_map` and
+`irreducible_planeSection_of_det_ne_zero` over the generic geometric fibre, whose
+`𝔸²` the substitution is an automorphism of because
+`paramAlgClosureHom ∘ C` is injective. -/
+theorem irreducible_map_paramAlgClosureHom_directionComb {K : Type*} [Field K] {N m : ℕ}
+    (h : MvPolynomial (Fin N) K) (Φ : Fin m → (Fin N → K)) (u₁ u₂ : Fin N → K) (a b c e : K)
+    (hdet : a * e - c * b ≠ 0)
+    (hirr : Irreducible (MvPolynomial.map (paramAlgClosureHom K m)
+      (familyPlaneSection h Φ u₁ u₂))) :
+    Irreducible (MvPolynomial.map (paramAlgClosureHom K m)
+      (familyPlaneSection h Φ (fun i => a * u₁ i + b * u₂ i)
+        (fun i => c * u₁ i + e * u₂ i))) := by
+  rw [familyPlaneSection_directionComb, planeSection_map]
+  refine irreducible_planeSection_of_det_ne_zero _ _ _ _ ?_ hirr
+  have hinj : Function.Injective
+      ((paramAlgClosureHom K m).comp (MvPolynomial.C : K →+* MvPolynomial (Fin m) K)) :=
+    (paramAlgClosureHom_injective K m).comp (MvPolynomial.C_injective (Fin m) K)
+  intro hc
+  refine hdet ?_
+  have h2 : (paramAlgClosureHom K m) (MvPolynomial.C (a * e - c * b)) = 0 := by
+    rw [map_sub, map_mul, map_mul]
+    simpa using hc
+  have h3 : ((paramAlgClosureHom K m).comp (MvPolynomial.C : K →+* MvPolynomial (Fin m) K))
+      (a * e - c * b)
+      = ((paramAlgClosureHom K m).comp (MvPolynomial.C : K →+* MvPolynomial (Fin m) K)) 0 := by
+    simpa using h2
+  exact hinj h3
+
+/-- The substitution `X i ↦ x i + u₁ i · s + u₂ i · t`, as a ring map
+`K[X] → K[x][s, t]`. Applying it to `h` is exactly the all-translates family. -/
+noncomputable def familyShearHom {K : Type*} [CommRing K] {N : ℕ} (u₁ u₂ : Fin N → K) :
+    MvPolynomial (Fin N) K →+* MvPolynomial (Fin 2) (MvPolynomial (Fin N) K) :=
+  MvPolynomial.eval₂Hom
+    (RingHom.comp
+      (MvPolynomial.C :
+        MvPolynomial (Fin N) K →+* MvPolynomial (Fin 2) (MvPolynomial (Fin N) K))
+      (MvPolynomial.C : K →+* MvPolynomial (Fin N) K))
+    (fun i => MvPolynomial.C (MvPolynomial.X i)
+      + MvPolynomial.C (MvPolynomial.C (u₁ i)) * MvPolynomial.X 0
+      + MvPolynomial.C (MvPolynomial.C (u₂ i)) * MvPolynomial.X 1)
+
+/-- The SHEAR of `K[x][s, t]` fixing `s` and `t` and sending `x i` to
+`x i + u₁ i · s + u₂ i · t`. It is an automorphism, with inverse the shear along
+`(-u₁, -u₂)` -- see `familyShearRingHom_comp`. -/
+noncomputable def familyShearRingHom {K : Type*} [CommRing K] {N : ℕ} (u₁ u₂ : Fin N → K) :
+    MvPolynomial (Fin 2) (MvPolynomial (Fin N) K) →+*
+      MvPolynomial (Fin 2) (MvPolynomial (Fin N) K) :=
+  MvPolynomial.eval₂Hom (familyShearHom u₁ u₂) MvPolynomial.X
+
+/-- **PROVEN**: the shears along `(u₁, u₂)` and `(-u₁, -u₂)` are mutually inverse.
+Two applications of `MvPolynomial.ringHom_ext`: once in the `(s, t)` variables and
+once in the coefficient ring. -/
+theorem familyShearRingHom_comp {K : Type*} [CommRing K] {N : ℕ} (u₁ u₂ : Fin N → K) :
+    (familyShearRingHom u₁ u₂).comp (familyShearRingHom (-u₁) (-u₂)) = RingHom.id _ := by
+  refine MvPolynomial.ringHom_ext ?_ ?_
+  · intro r
+    have key : (familyShearRingHom u₁ u₂).comp (familyShearHom (-u₁) (-u₂))
+        = (MvPolynomial.C :
+            MvPolynomial (Fin N) K →+* MvPolynomial (Fin 2) (MvPolynomial (Fin N) K)) := by
+      refine MvPolynomial.ringHom_ext ?_ ?_
+      · intro a
+        simp [familyShearRingHom, familyShearHom]
+      · intro i
+        simp [familyShearRingHom, familyShearHom]
+        ring
+    simpa [familyShearRingHom] using
+      congrArg (fun f : MvPolynomial (Fin N) K →+* _ => f r) key
+  · intro i
+    simp [familyShearRingHom]
+
+/-- The shear as a ring EQUIVALENCE, which is what transports primality. -/
+noncomputable def familyShearEquiv {K : Type*} [CommRing K] {N : ℕ} (u₁ u₂ : Fin N → K) :
+    MvPolynomial (Fin 2) (MvPolynomial (Fin N) K) ≃+*
+      MvPolynomial (Fin 2) (MvPolynomial (Fin N) K) :=
+  RingEquiv.ofRingHom (familyShearRingHom u₁ u₂) (familyShearRingHom (-u₁) (-u₂))
+    (familyShearRingHom_comp u₁ u₂)
+    (by
+      have hc := familyShearRingHom_comp (-u₁) (-u₂)
+      rwa [neg_neg, neg_neg] at hc)
+
+/-- **PROVEN**: for the all-translates family the base-point substitution is the
+identity, `∑ⱼ δᵢⱼ xⱼ = xᵢ`. -/
+theorem familyPlaneSection_std {K : Type*} [CommRing K] {N : ℕ}
+    (h : MvPolynomial (Fin N) K) (u₁ u₂ : Fin N → K) :
+    familyPlaneSection h (translateFamily K N) u₁ u₂
+      = planeSection (MvPolynomial.map MvPolynomial.C h)
+          (fun i => MvPolynomial.X i) (fun i => MvPolynomial.C (u₁ i))
+          (fun i => MvPolynomial.C (u₂ i)) := by
+  have hts : ∀ j i : Fin N, translateFamily K N j i = if i = j then (1 : K) else 0 := by
+    intro j i
+    simp [translateFamily, Pi.single_apply]
+  rw [familyPlaneSection]
+  congr 1
+  funext i
+  simp only [hts]
+  rw [Finset.sum_eq_single i]
+  · simp
+  · intro j _ hj
+    simp [Ne.symm hj]
+  · intro hi
+    exact absurd (Finset.mem_univ i) hi
+
+/-- **PROVEN**: the all-translates family is the image of `C h` under the shear.
+This is the identity that makes step 1 elementary. -/
+theorem familyPlaneSection_std_eq_shear {K : Type*} [CommRing K] {N : ℕ}
+    (h : MvPolynomial (Fin N) K) (u₁ u₂ : Fin N → K) :
+    familyPlaneSection h (translateFamily K N) u₁ u₂
+      = familyShearRingHom u₁ u₂ (MvPolynomial.C h) := by
+  have key : ((MvPolynomial.bind₁
+        (fun i : Fin N => MvPolynomial.C (MvPolynomial.X i)
+          + MvPolynomial.C (MvPolynomial.C (u₁ i)) * MvPolynomial.X 0
+          + MvPolynomial.C (MvPolynomial.C (u₂ i)) * MvPolynomial.X 1)).toRingHom.comp
+        (MvPolynomial.map (MvPolynomial.C : K →+* MvPolynomial (Fin N) K)))
+      = familyShearHom u₁ u₂ := by
+    refine MvPolynomial.ringHom_ext ?_ ?_
+    · intro a; simp [familyShearHom]
+    · intro i; simp [familyShearHom]
+  rw [familyPlaneSection_std, planeSection, familyShearRingHom]
+  simp only [MvPolynomial.eval₂Hom_C]
+  simpa using congrArg (fun f : MvPolynomial (Fin N) K →+* _ => f h) key
+
+/-- **PROVEN**: for an irreducible `h` the all-translates family is PRIME in
+`K[x][s, t]`, for EVERY direction pair -- including the degenerate ones, where it
+is `C h` itself. `K[x]` is a UFD so `h` is prime there, `MvPolynomial.prime_C_iff`
+carries that to `C h`, and the shear is an automorphism. -/
+theorem prime_familyPlaneSection_std {K : Type*} [Field K] {N : ℕ}
+    (h : MvPolynomial (Fin N) K) (hirr : Irreducible h) (u₁ u₂ : Fin N → K) :
+    Prime (familyPlaneSection h (translateFamily K N) u₁ u₂) := by
+  have hp : Prime h := UniqueFactorizationMonoid.irreducible_iff_prime.mp hirr
+  have hCp : Prime (MvPolynomial.C h : MvPolynomial (Fin 2) (MvPolynomial (Fin N) K)) :=
+    (MvPolynomial.prime_C_iff (Fin 2)).mpr hp
+  rw [familyPlaneSection_std_eq_shear]
+  exact (MulEquiv.prime_iff (familyShearEquiv u₁ u₂).toMulEquiv).mpr hCp
+
+/-- **PROVEN**: a prime element whose multiples miss the multiplicative set stays
+prime in the localization. Prime ideals of `S⁻¹A` are the prime ideals of `A`
+disjoint from `S`; the singleton-span translation is
+`Ideal.span_singleton_prime`. -/
+theorem prime_algebraMap_of_prime {A B : Type*} [CommRing A] [CommRing B] [Algebra A B]
+    (M : Submonoid A) [IsLocalization M B] {x : A} (hx : Prime x)
+    (hM : ∀ m ∈ M, ¬ x ∣ m) (hne : algebraMap A B x ≠ 0) : Prime (algebraMap A B x) := by
+  have h1 : (Ideal.span ({x} : Set A)).IsPrime :=
+    (Ideal.span_singleton_prime hx.ne_zero).mpr hx
+  have h2 : Disjoint (M : Set A) (Ideal.span ({x} : Set A) : Set A) := by
+    rw [Set.disjoint_left]
+    intro m hm hmem
+    exact hM m hm (Ideal.mem_span_singleton.mp hmem)
+  have h3 := IsLocalization.isPrime_of_isPrime_disjoint M B _ h1 h2
+  rw [Ideal.map_span, Set.image_singleton] at h3
+  exact (Ideal.span_singleton_prime hne).mp h3
+
+/-! ### The BASIS normalisation, and why it is the better one (2026-07-30)
+
+The all-translates family above is the most convenient family to make PRIME,
+because its substitution is an automorphism of `K[x][s, t]` (the shear). It is
+NOT the best family to hand to step 2, and the reason is a field-theoretic one
+that the shear hides.
+
+Write `Ω_m := AlgebraicClosure (FractionRing (MvPolynomial (Fin m) K))` for the
+generic geometric fibre with `m` parameters, and let `(u₁, u₂, Φ)` be a BASIS of
+`K^{n+3}` -- the columns of an invertible matrix `A`, with `u₁ = A·e₀`,
+`u₂ = A·e₁` and `Φ j = A·e_{j+2}`. Then, with `m = n + 1`:
+
+* the family `familyPlaneSection h Φ u₁ u₂` is, under the splitting
+  `K[X₀ … X_{n+2}] ≃ₐ K[y₀ … yₙ][s, t]`, *literally* `h ∘ A`
+  (`familyPlaneSection_basis`) -- no shear, no translation;
+* so `L := K(y₀ … yₙ)` is the fraction field of the parameter ring and
+  `Ω_{n+1} = L̄` EXACTLY: the generic geometric fibre is the algebraic closure of
+  the field the parameters generate, and nothing more.
+
+With the all-translates family (`m = n + 3`) the parameters include the two
+coordinates ALONG the plane, which the translation absorbs; the generic member is
+the same polynomial, but read over `Ω_{n+3} = \overline{L(η₁, η₂)}`, a field with
+two further transcendentals. Irreducibility there is therefore strictly stronger
+than irreducibility over `L̄`, and the passage between them is "irreducible over
+an algebraically closed field stays irreducible over any extension" -- i.e. that
+a tensor product of domains over an algebraically closed field is a domain, which
+is NOT in the pin. Schmidt's own normalisation `m = n + 1` is what avoids needing
+it, so it is the normalisation the remaining leaf is stated in.
+
+Everything in this block is PROVEN; it ends with step 1 in the basis
+normalisation (`irreducible_map_paramFractionHom_basisFamily`). -/
+
+/-- The `K`-algebra endomorphism of `K[X₀ … X_{N-1}]` substituting
+`Xᵢ ↦ ∑ₖ A i k * X k` -- the `N`-variable analogue of the substitution behind
+`irreducible_planeSection_of_det_ne_zero`. -/
+noncomputable def linSubst {K : Type*} [CommRing K] {N : ℕ}
+    (A : Matrix (Fin N) (Fin N) K) :
+    MvPolynomial (Fin N) K →ₐ[K] MvPolynomial (Fin N) K :=
+  MvPolynomial.aeval (fun i => ∑ k, MvPolynomial.C (A i k) * MvPolynomial.X k)
+
+/-- **PROVEN**: `linSubst` sends a variable to the corresponding row form. -/
+theorem linSubst_X {K : Type*} [CommRing K] {N : ℕ}
+    (A : Matrix (Fin N) (Fin N) K) (i : Fin N) :
+    linSubst A (MvPolynomial.X i) = ∑ k, MvPolynomial.C (A i k) * MvPolynomial.X k := by
+  simp [linSubst]
+
+/-- **PROVEN**: `linSubst` fixes the constants. -/
+theorem linSubst_C {K : Type*} [CommRing K] {N : ℕ}
+    (A : Matrix (Fin N) (Fin N) K) (a : K) :
+    linSubst A (MvPolynomial.C a) = MvPolynomial.C a := by
+  simp [linSubst]
+
+/-- **PROVEN**: composing two linear substitutions multiplies the matrices. Note
+the order: `linSubst` is a substitution, hence contravariant. -/
+theorem linSubst_comp {K : Type*} [CommRing K] {N : ℕ}
+    (A B : Matrix (Fin N) (Fin N) K) :
+    (linSubst B).comp (linSubst A) = linSubst (A * B) := by
+  refine MvPolynomial.algHom_ext ?_
+  intro i
+  have hterm : ∀ k : Fin N, linSubst B (MvPolynomial.C (A i k) * MvPolynomial.X k)
+      = ∑ l, MvPolynomial.C (A i k * B k l) * MvPolynomial.X l := by
+    intro k
+    rw [map_mul, linSubst_C, linSubst_X, Finset.mul_sum]
+    exact Finset.sum_congr rfl fun l _ => by rw [← mul_assoc, ← map_mul]
+  calc (linSubst B) ((linSubst A) (MvPolynomial.X i))
+      = ∑ k, linSubst B (MvPolynomial.C (A i k) * MvPolynomial.X k) := by
+        rw [linSubst_X, map_sum]
+    _ = ∑ k, ∑ l, MvPolynomial.C (A i k * B k l) * MvPolynomial.X l :=
+        Finset.sum_congr rfl fun k _ => hterm k
+    _ = ∑ l, MvPolynomial.C ((A * B) i l) * MvPolynomial.X l := by
+        rw [Finset.sum_comm]
+        refine Finset.sum_congr rfl fun l _ => ?_
+        rw [Matrix.mul_apply, map_sum, Finset.sum_mul]
+    _ = linSubst (A * B) (MvPolynomial.X i) := (linSubst_X _ _).symm
+
+/-- **PROVEN**: the identity matrix substitutes trivially. -/
+theorem linSubst_one {K : Type*} [CommRing K] {N : ℕ} :
+    linSubst (1 : Matrix (Fin N) (Fin N) K) = AlgHom.id K (MvPolynomial (Fin N) K) := by
+  refine MvPolynomial.algHom_ext ?_
+  intro i
+  rw [linSubst_X, AlgHom.id_apply, Finset.sum_eq_single i]
+  · simp
+  · intro j _ hj
+    simp [Ne.symm hj]
+  · intro hi
+    exact absurd (Finset.mem_univ i) hi
+
+/-- A linear substitution by an invertible matrix is an algebra AUTOMORPHISM,
+which is what transports primality between coordinate systems. -/
+noncomputable def linSubstEquiv {K : Type*} [CommRing K] {N : ℕ}
+    (A B : Matrix (Fin N) (Fin N) K) (hAB : A * B = 1) (hBA : B * A = 1) :
+    MvPolynomial (Fin N) K ≃ₐ[K] MvPolynomial (Fin N) K :=
+  AlgEquiv.ofAlgHom (linSubst A) (linSubst B)
+    (by rw [linSubst_comp, hBA, linSubst_one]) (by rw [linSubst_comp, hAB, linSubst_one])
+
+/-- **PROVEN**: `linSubstEquiv` really is `linSubst`. -/
+theorem linSubstEquiv_apply {K : Type*} [CommRing K] {N : ℕ}
+    (A B : Matrix (Fin N) (Fin N) K) (hAB : A * B = 1) (hBA : B * A = 1)
+    (h : MvPolynomial (Fin N) K) : linSubstEquiv A B hAB hBA h = linSubst A h := rfl
+
+/-- **PROVEN**: an invertible linear change of the `N` coordinates preserves
+primality. -/
+theorem prime_linSubst {K : Type*} [Field K] {N : ℕ}
+    (A B : Matrix (Fin N) (Fin N) K) (hAB : A * B = 1) (hBA : B * A = 1)
+    {h : MvPolynomial (Fin N) K} (hp : Prime h) : Prime (linSubst A h) := by
+  have := (MulEquiv.prime_iff
+    (linSubstEquiv A B hAB hBA).toRingEquiv.toMulEquiv (p := h)).mpr hp
+  simpa [linSubstEquiv_apply] using this
+
+/-- `Fin (n+3) ≃ Fin 2 ⊕ Fin (n+1)`: the first two coordinates are the plane
+directions, the remaining `n+1` index the transversal parameter family. Written
+entirely in terms of `Fin.cases`/`Fin.succ` so that every value is a `rfl`. -/
+def splitFin (n : ℕ) : Fin (n + 3) ≃ Fin 2 ⊕ Fin (n + 1) where
+  toFun := Fin.cases (Sum.inl 0) (Fin.cases (Sum.inl 1) Sum.inr)
+  invFun := Sum.elim (Fin.cases (0 : Fin (n + 3)) (fun _ => (0 : Fin (n + 2)).succ))
+    (fun j => j.succ.succ)
+  left_inv i := by
+    induction i using Fin.cases with
+    | zero => rfl
+    | succ k =>
+      induction k using Fin.cases with
+      | zero => rfl
+      | succ j => rfl
+  right_inv x := by
+    match x with
+    | Sum.inl a => fin_cases a <;> rfl
+    | Sum.inr j => rfl
+
+/-- **PROVEN**. -/
+theorem splitFin_zero (n : ℕ) : splitFin n 0 = Sum.inl 0 := rfl
+
+/-- **PROVEN**. -/
+theorem splitFin_succ_zero (n : ℕ) :
+    splitFin n (0 : Fin (n + 2)).succ = Sum.inl 1 := rfl
+
+/-- **PROVEN**. -/
+theorem splitFin_succ_succ (n : ℕ) (j : Fin (n + 1)) :
+    splitFin n j.succ.succ = Sum.inr j := rfl
+
+/-- `K[X₀ … X_{n+2}] ≃ₐ K[y₀ … yₙ][s, t]` — the identification under which a
+family of parallel plane sections along a BASIS is the polynomial itself. -/
+noncomputable def splitAlgEquiv (K : Type*) [CommRing K] (n : ℕ) :
+    MvPolynomial (Fin (n + 3)) K ≃ₐ[K]
+      MvPolynomial (Fin 2) (MvPolynomial (Fin (n + 1)) K) :=
+  (MvPolynomial.renameEquiv K (splitFin n)).trans
+    (MvPolynomial.sumAlgEquiv K (Fin 2) (Fin (n + 1)))
+
+/-- **PROVEN**. -/
+theorem splitAlgEquiv_C {K : Type*} [CommRing K] (n : ℕ) (a : K) :
+    splitAlgEquiv K n (MvPolynomial.C a) = MvPolynomial.C (MvPolynomial.C a) := by
+  simp [splitAlgEquiv, MvPolynomial.sumAlgEquiv_C_inl]
+
+/-- **PROVEN**: the first two variables become the plane coordinates `(s, t)`, the
+rest become the parameters, sitting in the coefficient ring. -/
+theorem splitAlgEquiv_X {K : Type*} [CommRing K] (n : ℕ) (i : Fin (n + 3)) :
+    splitAlgEquiv K n (MvPolynomial.X i)
+      = Sum.elim (fun a => MvPolynomial.X a)
+          (fun j => MvPolynomial.C (MvPolynomial.X j)) (splitFin n i) := by
+  have h1 : splitAlgEquiv K n (MvPolynomial.X i)
+      = MvPolynomial.sumAlgEquiv K (Fin 2) (Fin (n + 1))
+          (MvPolynomial.X (splitFin n i)) := by
+    simp [splitAlgEquiv]
+  rw [h1]
+  cases splitFin n i with
+  | inl a => simp
+  | inr j => simp
+
+/-- **PROVEN**. -/
+theorem splitAlgEquiv_X_zero {K : Type*} [CommRing K] (n : ℕ) :
+    splitAlgEquiv K n (MvPolynomial.X 0) = MvPolynomial.X 0 := by
+  rw [splitAlgEquiv_X, splitFin_zero]; rfl
+
+/-- **PROVEN**. -/
+theorem splitAlgEquiv_X_one {K : Type*} [CommRing K] (n : ℕ) :
+    splitAlgEquiv K n (MvPolynomial.X (0 : Fin (n + 2)).succ) = MvPolynomial.X 1 := by
+  rw [splitAlgEquiv_X, splitFin_succ_zero]; rfl
+
+/-- **PROVEN**. -/
+theorem splitAlgEquiv_X_succ_succ {K : Type*} [CommRing K] (n : ℕ) (j : Fin (n + 1)) :
+    splitAlgEquiv K n (MvPolynomial.X j.succ.succ)
+      = MvPolynomial.C (MvPolynomial.X j) := by
+  rw [splitAlgEquiv_X, splitFin_succ_succ]; rfl
+
+/-- **PROVEN**: the key computation. The image of the `i`-th row form of `A` under
+the splitting is the affine form in `(s, t)` whose linear part is
+`(u₁ᵢ, u₂ᵢ) = (A i 0, A i 1)` and whose constant term is the `i`-th coordinate of
+the transversal base-point family. This one identity is the whole basis
+normalisation. -/
+theorem splitAlgEquiv_linSubst_X {K : Type*} [CommRing K] {n : ℕ}
+    (A : Matrix (Fin (n + 3)) (Fin (n + 3)) K) (i : Fin (n + 3)) :
+    splitAlgEquiv K n (linSubst A (MvPolynomial.X i))
+      = MvPolynomial.C (∑ j, MvPolynomial.C (A i j.succ.succ) * MvPolynomial.X j)
+        + MvPolynomial.C (MvPolynomial.C (A i 0)) * MvPolynomial.X 0
+        + MvPolynomial.C (MvPolynomial.C (A i 1)) * MvPolynomial.X 1 := by
+  have hterm : ∀ k : Fin (n + 3),
+      splitAlgEquiv K n (MvPolynomial.C (A i k) * MvPolynomial.X k)
+        = MvPolynomial.C (MvPolynomial.C (A i k)) * splitAlgEquiv K n (MvPolynomial.X k) := by
+    intro k
+    rw [map_mul, splitAlgEquiv_C]
+  have hC : (∑ j : Fin (n + 1), MvPolynomial.C (MvPolynomial.C (A i j.succ.succ))
+        * MvPolynomial.C (MvPolynomial.X j)
+      : MvPolynomial (Fin 2) (MvPolynomial (Fin (n + 1)) K))
+      = MvPolynomial.C (∑ j, MvPolynomial.C (A i j.succ.succ) * MvPolynomial.X j) := by
+    rw [map_sum]
+    exact Finset.sum_congr rfl fun j _ => (map_mul _ _ _).symm
+  rw [linSubst_X, map_sum]
+  simp only [hterm]
+  rw [Fin.sum_univ_succ, Fin.sum_univ_succ]
+  rw [splitAlgEquiv_X_zero, splitAlgEquiv_X_one]
+  simp only [splitAlgEquiv_X_succ_succ, Fin.succ_zero_eq_one]
+  rw [hC]
+  ring
+
+/-- **PROVEN -- THE BASIS NORMALISATION.** With `(u₁, u₂, Φ)` the columns of `A`,
+the family of parallel plane sections of `h` is the image of the
+linearly-substituted `h` under the splitting `K[X] ≃ K[y][s, t]`. There is no
+shear and no translation: with a basis, the family of parallel sections IS the
+polynomial, read in the new coordinates. -/
+theorem familyPlaneSection_basis {K : Type*} [CommRing K] {n : ℕ}
+    (A : Matrix (Fin (n + 3)) (Fin (n + 3)) K) (h : MvPolynomial (Fin (n + 3)) K) :
+    familyPlaneSection h (fun j i => A i j.succ.succ) (fun i => A i 0) (fun i => A i 1)
+      = splitAlgEquiv K n (linSubst A h) := by
+  have hring : ((MvPolynomial.bind₁ (fun i : Fin (n + 3) =>
+        MvPolynomial.C (∑ j, MvPolynomial.C (A i j.succ.succ) * MvPolynomial.X j)
+          + MvPolynomial.C (MvPolynomial.C (A i 0)) * MvPolynomial.X 0
+          + MvPolynomial.C (MvPolynomial.C (A i 1)) * MvPolynomial.X 1)).toRingHom.comp
+        (MvPolynomial.map (MvPolynomial.C : K →+* MvPolynomial (Fin (n + 1)) K))
+      : MvPolynomial (Fin (n + 3)) K →+* MvPolynomial (Fin 2) (MvPolynomial (Fin (n + 1)) K))
+      = ((splitAlgEquiv K n).toAlgHom.comp (linSubst A)).toRingHom := by
+    refine MvPolynomial.ringHom_ext ?_ ?_
+    · intro a
+      simp
+    · intro i
+      simp only [RingHom.comp_apply, MvPolynomial.map_X, AlgHom.toRingHom_eq_coe,
+        RingHom.coe_coe, MvPolynomial.bind₁_X_right, AlgHom.comp_apply]
+      exact (splitAlgEquiv_linSubst_X A i).symm
+  have h2 := congrArg (fun φ : MvPolynomial (Fin (n + 3)) K →+*
+      MvPolynomial (Fin 2) (MvPolynomial (Fin (n + 1)) K) => φ h) hring
+  simp only [RingHom.comp_apply, AlgHom.toRingHom_eq_coe, RingHom.coe_coe,
+    AlgHom.comp_apply] at h2
+  exact h2
+
+/-- **PROVEN**: for an irreducible `h` and a BASIS `(u₁, u₂, Φ)` — the columns of
+an invertible `A` — the family of parallel plane sections is PRIME in
+`K[y₀ … yₙ][s, t]`. Compare `prime_familyPlaneSection_std`: there the shear was
+needed because all-translates has more parameters than coordinates; here the
+family is `h ∘ A` outright, so primality is just invariance of primality under an
+invertible linear change of coordinates. -/
+theorem prime_familyPlaneSection_basis {K : Type*} [Field K] {n : ℕ}
+    (h : MvPolynomial (Fin (n + 3)) K) (hirr : Irreducible h)
+    (A B : Matrix (Fin (n + 3)) (Fin (n + 3)) K) (hAB : A * B = 1) (hBA : B * A = 1) :
+    Prime (familyPlaneSection h (fun j i => A i j.succ.succ) (fun i => A i 0)
+      (fun i => A i 1)) := by
+  have hp : Prime h := UniqueFactorizationMonoid.irreducible_iff_prime.mp hirr
+  have hLp : Prime (linSubst A h) := prime_linSubst A B hAB hBA hp
+  rw [familyPlaneSection_basis]
+  exact (MulEquiv.prime_iff (splitAlgEquiv K n).toRingEquiv.toMulEquiv
+    (p := linSubst A h)).mpr hLp
+
+section GaussLocalization
+
+attribute [local instance] MvPolynomial.algebraMvPolynomial
+
+/-- **PROVEN -- GAUSS FOR `MvPolynomial`, THE FORM BOTH NORMALISATIONS SHARE.** A
+PRIME two-variable polynomial over `K[y]` that is nonconstant in `(s, t)` stays
+irreducible over the fraction field `K(y)`.
+
+There is no content and no primitive part: a prime survives a localization it
+misses (`prime_algebraMap_of_prime`), and `MvPolynomial (Fin 2) K(y)` IS that
+localization of `MvPolynomial (Fin 2) K[y]` by `MvPolynomial.isLocalization`. The
+nonconstancy hypothesis is exactly what makes the element divide no nonzero
+element of `K[y]`, which is the disjointness the localization step needs, and it
+is necessary: a family constant in `(s, t)` maps to a unit of `K(y)`. -/
+theorem irreducible_map_paramFractionHom_of_prime {K : Type*} [Field K] {m : ℕ}
+    (G : MvPolynomial (Fin 2) (MvPolynomial (Fin m) K)) (hGp : Prime G)
+    (hdeg : G.totalDegree ≠ 0) :
+    Irreducible (MvPolynomial.map (paramFractionHom K m) G) := by
+  have hmap : (algebraMap (MvPolynomial (Fin 2) (MvPolynomial (Fin m) K))
+        (MvPolynomial (Fin 2) (FractionRing (MvPolynomial (Fin m) K))))
+      = MvPolynomial.map (paramFractionHom K m) := by
+    rw [MvPolynomial.algebraMap_def]; rfl
+  have hinj : Function.Injective (MvPolynomial.map (σ := Fin 2) (paramFractionHom K m)) :=
+    MvPolynomial.map_injective _
+      (IsFractionRing.injective (MvPolynomial (Fin m) K) (FractionRing (MvPolynomial (Fin m) K)))
+  have hne : algebraMap (MvPolynomial (Fin 2) (MvPolynomial (Fin m) K))
+      (MvPolynomial (Fin 2) (FractionRing (MvPolynomial (Fin m) K))) G ≠ 0 := by
+    rw [hmap]
+    intro hc
+    exact hGp.ne_zero (hinj (by simpa using hc))
+  have hM : ∀ z ∈ Submonoid.map (MvPolynomial.C (σ := Fin 2))
+      (nonZeroDivisors (MvPolynomial (Fin m) K)), ¬ G ∣ z := by
+    rintro _ ⟨r, hr, rfl⟩ ⟨Q, hQ⟩
+    have hr0 : r ≠ 0 := mem_nonZeroDivisors_iff_ne_zero.mp hr
+    have hCr : (MvPolynomial.C r : MvPolynomial (Fin 2) (MvPolynomial (Fin m) K)) ≠ 0 := by
+      simpa using hr0
+    have hQ0 : Q ≠ 0 := by
+      rintro rfl
+      rw [mul_zero] at hQ
+      exact hCr hQ
+    have hdd := congrArg MvPolynomial.totalDegree hQ
+    rw [MvPolynomial.totalDegree_mul_of_isDomain hGp.ne_zero hQ0] at hdd
+    simp only [MvPolynomial.totalDegree_C] at hdd
+    exact hdeg (by omega)
+  have hprime := prime_algebraMap_of_prime
+    (Submonoid.map (MvPolynomial.C (σ := Fin 2)) (nonZeroDivisors (MvPolynomial (Fin m) K)))
+    (B := MvPolynomial (Fin 2) (FractionRing (MvPolynomial (Fin m) K))) hGp hM hne
+  rw [hmap] at hprime
+  exact hprime.irreducible
+
+/-- **STEP 1 OF SCHMIDT'S THEOREM 3D IN THE BASIS NORMALISATION, PROVEN
+(2026-07-30).** For a basis `(u₁, u₂, Φ)` — the columns of an invertible `A` — the
+family of parallel plane sections is irreducible over `L = K(y₀ … yₙ)`, and
+`Ω_{n+1} = L̄` exactly. This is the form step 2 should be attacked in: see the
+block header above for why the two extra transcendentals of the all-translates
+normalisation cost a theorem that is not in the pin. -/
+theorem irreducible_map_paramFractionHom_basisFamily {K : Type*} [Field K] {n : ℕ}
+    (h : MvPolynomial (Fin (n + 3)) K) (hirr : Irreducible h)
+    (A B : Matrix (Fin (n + 3)) (Fin (n + 3)) K) (hAB : A * B = 1) (hBA : B * A = 1)
+    (hdeg : (familyPlaneSection h (fun j i => A i j.succ.succ) (fun i => A i 0)
+      (fun i => A i 1)).totalDegree ≠ 0) :
+    Irreducible (MvPolynomial.map (paramFractionHom K (n + 1))
+      (familyPlaneSection h (fun j i => A i j.succ.succ) (fun i => A i 0)
+        (fun i => A i 1))) :=
+  irreducible_map_paramFractionHom_of_prime _
+    (prime_familyPlaneSection_basis h hirr A B hAB hBA) hdeg
+
+/-- **STEP 1 OF SCHMIDT'S THEOREM 3D, PROVEN (2026-07-28) -- GAUSS FOR
+`MvPolynomial`.** For an irreducible `h` and ANY direction pair whose family of
+parallel sections is nonconstant in `(s, t)`, the all-translates family is
+irreducible over the function field `K(x)` of the parameters.
+
+This is the "Gauss for `MvPolynomial`" that both this file's Bertini docstrings
+recorded as genuinely missing from the pin. It is NOT proven the way they
+anticipated -- there is no content, no primitive part, and no reduction to the
+univariate `Polynomial.IsPrimitive.irreducible_iff_irreducible_map_fraction_map`.
+The family is `Prime` in `K[x][s, t]` outright
+(`prime_familyPlaneSection_std`, via the shear automorphism), and a prime survives
+a localization it misses (`prime_algebraMap_of_prime`). `MvPolynomial (Fin 2) F`
+IS that localization of `MvPolynomial (Fin 2) K[x]`, by
+`MvPolynomial.isLocalization`.
+
+THE HYPOTHESIS IS NECESSARY, not bookkeeping: if the family is constant in
+`(s, t)` -- e.g. `u₁ = u₂ = 0`, or any plane along which `h` does not vary -- then
+its image in `F[s, t]` is a nonzero element of the FIELD `F`, hence a unit, hence
+not irreducible. It is exactly what makes the family divide no nonzero element of
+`K[x]`, which is the disjointness needed for the localization step.
+
+Note this holds for every direction pair satisfying it, with no genericity: the
+choice of direction is entirely step 2's business. -/
+theorem irreducible_map_paramFractionHom_translateFamily {K : Type*} [Field K] {N : ℕ}
+    (h : MvPolynomial (Fin N) K) (hirr : Irreducible h) (u₁ u₂ : Fin N → K)
+    (hdeg : (familyPlaneSection h (translateFamily K N) u₁ u₂).totalDegree ≠ 0) :
+    Irreducible (MvPolynomial.map (paramFractionHom K N)
+      (familyPlaneSection h (translateFamily K N) u₁ u₂)) :=
+  irreducible_map_paramFractionHom_of_prime _
+    (prime_familyPlaneSection_std h hirr u₁ u₂) hdeg
+
+end GaussLocalization
+
+/-! ### `d = 1`: the case with no general position in it (2026-07-30)
+
+`d = 0` is impossible (`totalDegree_ne_zero_of_irreducible`), and `d = 1` needs no
+Bertini content at all: `h` is then an affine form, so for any direction `u₁` off
+the zero locus of its linear part the section already has total degree one and is
+irreducible over EVERY field. The parameter family can even be empty (`m = 0`).
+Proving it here is what lets the remaining leaf assume `2 ≤ d`, which is the
+hypothesis every classical treatment of Theorem 3D carries. -/
+
+/-- `homogeneousComponent` at the total degree is nonzero. (Relocated upward
+2026-07-30 from the `BadLocusAssembly` section, where it was first proven, so that
+the `d = 1` case below can use it; its original consumers are unaffected.) -/
+lemma homogeneousComponent_totalDegree_ne_zero {σ : Type*} {k : Type*} [CommRing k]
+    (f : MvPolynomial σ k) (hf : f ≠ 0) :
+    MvPolynomial.homogeneousComponent f.totalDegree f ≠ 0 := by
+  classical
+  obtain ⟨m, hm, hmeq⟩ := Finset.exists_mem_eq_sup f.support
+    (MvPolynomial.support_nonempty.mpr hf) (fun s => s.sum fun _ e => e)
+  intro hzero
+  have h1 : MvPolynomial.coeff m (MvPolynomial.homogeneousComponent f.totalDegree f)
+      = MvPolynomial.coeff m f := by
+    rw [MvPolynomial.coeff_homogeneousComponent, if_pos]
+    show Finsupp.degree m = f.totalDegree
+    rw [MvPolynomial.totalDegree, hmeq]
+    rfl
+  rw [hzero, MvPolynomial.coeff_zero] at h1
+  exact (MvPolynomial.mem_support_iff.mp hm) h1.symm
+
+/-- **PROVEN**: a nonzero polynomial over an infinite integral domain does not
+vanish identically -- the contrapositive of `MvPolynomial.funext`. This is what
+supplies a direction with `h_d(u₁) ≠ 0`, `K` being infinite because it is
+algebraically closed. -/
+theorem exists_eval_ne_zero_of_ne_zero {K : Type*} [CommRing K] [IsDomain K] [Infinite K]
+    {N : ℕ} (f : MvPolynomial (Fin N) K) (hf : f ≠ 0) :
+    ∃ u : Fin N → K, MvPolynomial.eval u f ≠ 0 := by
+  by_contra hcon
+  refine hf (MvPolynomial.funext (fun x => ?_))
+  rw [map_zero]
+  by_contra hx
+  exact hcon ⟨x, hx⟩
+
+/-- **PROVEN**: an irreducible multivariate polynomial over a field is nonconstant.
+Over a field a constant is either `0` or a unit, and an irreducible is neither. -/
+theorem totalDegree_ne_zero_of_irreducible {K : Type*} [Field K] {σ : Type*}
+    {h : MvPolynomial σ K} (hirr : Irreducible h) : h.totalDegree ≠ 0 := by
+  intro hd
+  rcases eq_or_ne (h.coeff 0) 0 with hc | hc
+  · exact hirr.ne_zero (by rw [MvPolynomial.totalDegree_eq_zero_iff_eq_C.mp hd, hc, map_zero])
+  · exact hirr.not_isUnit (by
+      rw [MvPolynomial.totalDegree_eq_zero_iff_eq_C.mp hd]
+      exact IsUnit.map (MvPolynomial.C : K →+* MvPolynomial σ K) hc.isUnit)
+
+/-- **PROVEN**: the `d = 1` case of
+`exists_directionPlane_irreducible_familyPlaneSection`, with no general position
+and no Bertini content. Take `m = 0` (so the family is the single plane through
+the origin) and `u₁` with `h_1(u₁) ≠ 0`, which exists because `h_1 ≠ 0` and `K` is
+infinite. Then the family is `MvPolynomial.C` applied to the honest plane section
+`planeSection h 0 u₁ 0`, whose total degree is exactly `1`
+(`totalDegree_planeSection_of_eval_homogeneousComponent_ne_zero`); total degree is
+preserved by both maps because both are injective, and a polynomial of total
+degree `1` over a field is irreducible. -/
+theorem exists_directionPlane_irreducible_familyPlaneSection_degree_one
+    {K : Type*} [Field K] [IsAlgClosed K] (n : ℕ) (h : MvPolynomial (Fin (n + 3)) K)
+    (hdeg : h.totalDegree = 1) (hirr : Irreducible h) :
+    ∃ (m : ℕ) (Φ : Fin m → (Fin (n + 3) → K)) (u₁ u₂ : Fin (n + 3) → K),
+      (∃ a b : K, MvPolynomial.eval (fun i => a * u₁ i + b * u₂ i)
+        (MvPolynomial.homogeneousComponent 1 h) ≠ 0) ∧
+      Irreducible (MvPolynomial.map (paramAlgClosureHom K m)
+        (familyPlaneSection h Φ u₁ u₂)) := by
+  obtain ⟨u₁, hu₁⟩ := exists_eval_ne_zero_of_ne_zero
+    (MvPolynomial.homogeneousComponent 1 h)
+    (by rw [← hdeg]; exact homogeneousComponent_totalDegree_ne_zero h hirr.ne_zero)
+  refine ⟨0, fun _ => 0, u₁, 0, ⟨1, 0, by simpa using hu₁⟩, ?_⟩
+  have hG : (planeSection h 0 u₁ 0).totalDegree = 1 :=
+    totalDegree_planeSection_of_eval_homogeneousComponent_ne_zero h hdeg 0 u₁ 0 hu₁
+  have hfam : familyPlaneSection h (fun _ : Fin 0 => (0 : Fin (n + 3) → K)) u₁ 0
+      = MvPolynomial.map (MvPolynomial.C : K →+* MvPolynomial (Fin 0) K)
+          (planeSection h 0 u₁ 0) := by
+    rw [planeSection_map, familyPlaneSection]
+    congr 1
+    funext i
+    simp
+  have hinj : Function.Injective ((paramAlgClosureHom K 0).comp
+      (MvPolynomial.C : K →+* MvPolynomial (Fin 0) K)) :=
+    (paramAlgClosureHom_injective K 0).comp (MvPolynomial.C_injective (Fin 0) K)
+  rw [hfam, MvPolynomial.map_map]
+  refine irreducible_of_totalDegree_eq_one_field ?_
+  rw [totalDegree_map_eq_of_injective _ hinj, hG]
+
+/-- **SCHMIDT'S THEOREM 3D, STEP 2 IN THE BASIS NORMALISATION (SORRY LEAF, cut
+2026-07-30)** -- geometric integrality of the generic plane section, over the
+SMALLEST field it can be asked over.
+
+WHAT IS BEING ASKED. `K = K̄`, `h` irreducible in `n + 3 ≥ 3` variables of total
+degree `d`. Produce an invertible matrix `A` (given by a two-sided inverse `B`,
+which is all that is used) such that, with
+
+  `u₁ = A·e₀`,  `u₂ = A·e₁`,  `Φ j = A·e_{j+2}`  (`j : Fin (n+1)`),
+
+(i) `h_d(u₁) ≠ 0`, and (ii) the generic member of the family of plane sections
+parallel to `span(u₁, u₂)`, based at the generic point `∑ⱼ yⱼ · Φ j` of the
+transversal, is ABSOLUTELY irreducible.
+
+WHY THIS IS THE RIGHT FORM, AND HOW IT DIFFERS FROM THE PARENT. The parent
+quantifies `m` and `Φ` existentially; here they are pinned to Schmidt's own
+normalisation `m = n + 1` with `(Φ, u₁, u₂)` a basis, so that the family is the
+set of ALL planes parallel to `span(u₁, u₂)`, each occurring once. That pinning is
+not a restriction on the prover -- it is the choice a prover would make -- and it
+buys a strictly smaller field:
+
+* by `familyPlaneSection_basis` the family IS `h ∘ A` read through
+  `K[X₀ … X_{n+2}] ≃ₐ K[y₀ … yₙ][s, t]`, with no shear and no translation;
+* so the parameter ring is `K[y₀ … yₙ]`, its fraction field is `L = K(y₀ … yₙ)`,
+  and `paramAlgClosureHom K (n+1)` lands in `L̄` -- the generic geometric fibre is
+  the algebraic closure of the field the parameters generate, and NOTHING MORE.
+
+Concretely, (ii) says: `h ∘ A`, viewed as a polynomial in its first two variables
+over `L = K(y₀ … yₙ)`, is irreducible over `L̄`. That is exactly the classical
+statement of Schmidt Chapter V Theorem 3D / Fried–Jarden Prop. 10.4.2 ("for a
+general plane direction, `L` is relatively algebraically closed in the function
+field"), with no formalisation-specific slack around it.
+
+Contrast the all-translates normalisation `m = n + 3`, which the parent's
+`hstep1` is stated for: there the parameters include the two coordinates ALONG
+the plane, absorbed by a translation, and the generic member is read over
+`\overline{L(η₁, η₂)}`. Irreducibility there is strictly stronger, and the passage
+from `L̄` to it is "irreducible over an algebraically closed field stays
+irreducible over any field extension" -- i.e. that a tensor product of domains
+over an algebraically closed field is a domain, which is NOT in the pin. A prover
+who works in THIS normalisation never needs that theorem.
+
+WHAT IS HANDED IN. Both proven forms of step 1 (Gauss):
+
+* `hstep1` -- the all-translates form, `irreducible_map_paramFractionHom_translateFamily`;
+* `hstep1basis` -- the basis form, `irreducible_map_paramFractionHom_basisFamily`,
+  which is the one matching this leaf's own family. Its `totalDegree ≠ 0`
+  hypothesis follows from clause (i) once the prover has it, since `h_d(u₁) ≠ 0`
+  forces the section to have degree exactly `d ≥ 1`
+  (`totalDegree_planeSection_of_eval_homogeneousComponent_ne_zero`).
+
+So what remains is step 2 ALONE: the upgrade from irreducible over `L` to
+irreducible over `L̄`, which is where the direction has to be chosen and where
+`K = K̄` is used.
+
+THE COUNTEREXAMPLE THAT PINS DOWN WHAT MUST BE PROVEN, in the running example of
+the parent's docstring: `h = X 1 ^ 2 - X 0` in `Fin 3` variables. Choosing
+`u₁ = e₁`, `u₂ = e₂` (so `Φ 0 = e₀`) gives generic member `(s + y₀ … )` -- more
+precisely `s ^ 2 - y₀` after the identification -- which factors over `L̄` as
+`(s - √y₀)(s + √y₀)`: clause (i) holds (`h_2 = X 1 ^ 2`, `h_2(e₁) = 1`) and clause
+(ii) FAILS. Choosing instead `u₁ = e₁`, `u₂ = e₀`, `Φ 0 = e₂` gives `s ^ 2 - t`,
+absolutely irreducible. So clause (ii) is a genuine general-position condition on
+`A`, not a consequence of clause (i), and any proof must choose `A`.
+
+`2 ≤ d` IS HANDED IN, not to be worried about. `d = 0` is impossible
+(`totalDegree_ne_zero_of_irreducible`) and `d = 1` is PROVEN separately, in
+`exists_directionPlane_irreducible_familyPlaneSection_degree_one`, where `h` is an
+affine form and clause (ii) really is free. So this leaf may assume the degree
+hypothesis every classical treatment of Theorem 3D carries. -/
+theorem exists_basisPlane_irreducible_familyPlaneSection {K : Type*} [Field K]
+    [IsAlgClosed K] (n d : ℕ) (h : MvPolynomial (Fin (n + 3)) K)
+    (hdeg : h.totalDegree = d) (hirr : Irreducible h) (hd : 2 ≤ d)
+    (hstep1 : ∀ u₁ u₂ : Fin (n + 3) → K,
+      (familyPlaneSection h (translateFamily K (n + 3)) u₁ u₂).totalDegree ≠ 0 →
+      Irreducible (MvPolynomial.map (paramFractionHom K (n + 3))
+        (familyPlaneSection h (translateFamily K (n + 3)) u₁ u₂)))
+    (hstep1basis : ∀ A B : Matrix (Fin (n + 3)) (Fin (n + 3)) K, A * B = 1 → B * A = 1 →
+      (familyPlaneSection h (fun j i => A i j.succ.succ) (fun i => A i 0)
+        (fun i => A i 1)).totalDegree ≠ 0 →
+      Irreducible (MvPolynomial.map (paramFractionHom K (n + 1))
+        (familyPlaneSection h (fun j i => A i j.succ.succ) (fun i => A i 0)
+          (fun i => A i 1)))) :
+    ∃ A B : Matrix (Fin (n + 3)) (Fin (n + 3)) K, A * B = 1 ∧ B * A = 1 ∧
+      MvPolynomial.eval (fun i => A i 0) (MvPolynomial.homogeneousComponent d h) ≠ 0 ∧
+      Irreducible (MvPolynomial.map (paramAlgClosureHom K (n + 1))
+        (familyPlaneSection h (fun j i => A i j.succ.succ) (fun i => A i 0)
+          (fun i => A i 1))) :=
+  sorry
+
+/-- **SCHMIDT'S THEOREM 3D, STEP 2 ALONE: GEOMETRIC INTEGRALITY OF THE GENERIC
+PLANE SECTION (PROVEN 2026-07-30 over one smaller leaf; cut as a leaf
+2026-07-28)** -- what is left of
+`exists_directions_irreducible_familyPlaneSection` once step 1 is proven and the
+leading-form normalisation is read on the PLANE rather than on `u₁`.
+
+TWO DIFFERENCES FROM THE PARENT, both of them reductions.
+
+1. `hstep1` is HANDED IN, and it is not an assumption anybody has to discharge:
+   the parent discharges it with `irreducible_map_paramFractionHom_translateFamily`,
+   proven just above. So the prover here may assume the family is already
+   irreducible over `K(x)` -- Gauss, step 1 of the parent's ROUTE -- and has to
+   supply only step 2, the upgrade to the ALGEBRAIC CLOSURE of `K(x)`, which is
+   where the direction must be chosen and where `K = K‾` is used. Note `hstep1` is
+   stated for the ALL-TRANSLATES family only, since that is the family for which
+   the substitution is an automorphism; a prover who prefers Schmidt's smaller
+   family `m = n + 1` is free to ignore it and redo step 1 there.
+
+2. Clause (i) asks only that `h_d` be nonzero SOMEWHERE on the plane
+   `span(u₁, u₂)`, not at `u₁` itself. The parent recovers `h_d(u₁) ≠ 0` from this
+   by re-choosing the basis of the plane, which
+   `irreducible_map_paramAlgClosureHom_directionComb` shows costs nothing. This is
+   the honest form of the "the normalisation costs nothing" paragraph: see the
+   CORRECTION in the section header above, which gives an explicit plane on which
+   `h_d` vanishes identically and which is nevertheless good for irreducibility --
+   so the plane-wise condition is genuinely weaker than the parent's, and is a
+   genuine constraint rather than a formality.
+
+Everything else -- the freedom in `m` and `Φ`, the route, the counterexample
+showing that clause (ii) does not follow from clause (i) -- is unchanged; see
+`exists_directions_irreducible_familyPlaneSection` below, whose docstring is the
+specification for this leaf.
+
+**STATUS (2026-07-30): PROVEN over ONE smaller leaf**, namely
+`exists_basisPlane_irreducible_familyPlaneSection`, which fixes the family to
+Schmidt's own normalisation `m = n + 1` along a BASIS. That is the whole content
+of this statement -- the existential over `m` and `Φ` is discharged by taking the
+transversal family of an invertible matrix -- and it buys the prover a strictly
+smaller field to work over; see that leaf's docstring. The degenerate degrees are
+peeled off here: `d = 0` is impossible and `d = 1` is
+`exists_directionPlane_irreducible_familyPlaneSection_degree_one`, so the leaf is
+reached only with `2 ≤ d`. -/
+theorem exists_directionPlane_irreducible_familyPlaneSection {K : Type*} [Field K]
+    [IsAlgClosed K] (n d : ℕ) (h : MvPolynomial (Fin (n + 3)) K)
+    (hdeg : h.totalDegree = d) (hirr : Irreducible h)
+    (hstep1 : ∀ u₁ u₂ : Fin (n + 3) → K,
+      (familyPlaneSection h (translateFamily K (n + 3)) u₁ u₂).totalDegree ≠ 0 →
+      Irreducible (MvPolynomial.map (paramFractionHom K (n + 3))
+        (familyPlaneSection h (translateFamily K (n + 3)) u₁ u₂))) :
+    ∃ (m : ℕ) (Φ : Fin m → (Fin (n + 3) → K)) (u₁ u₂ : Fin (n + 3) → K),
+      (∃ a b : K, MvPolynomial.eval (fun i => a * u₁ i + b * u₂ i)
+        (MvPolynomial.homogeneousComponent d h) ≠ 0) ∧
+      Irreducible (MvPolynomial.map (paramAlgClosureHom K m)
+        (familyPlaneSection h Φ u₁ u₂)) := by
+  have hd0 : d ≠ 0 := fun hc => totalDegree_ne_zero_of_irreducible hirr (hdeg.trans hc)
+  rcases eq_or_lt_of_le (Nat.one_le_iff_ne_zero.mpr hd0) with hd1 | hd2
+  · subst hd1
+    exact exists_directionPlane_irreducible_familyPlaneSection_degree_one n h hdeg hirr
+  · obtain ⟨A, B, hAB, hBA, hlead, hgen⟩ :=
+      exists_basisPlane_irreducible_familyPlaneSection n d h hdeg hirr hd2 hstep1
+        (fun A B hAB hBA hne =>
+          irreducible_map_paramFractionHom_basisFamily h hirr A B hAB hBA hne)
+    exact ⟨n + 1, _, _, _, ⟨1, 0, by simpa using hlead⟩, hgen⟩
+
+/-- **SCHMIDT'S THEOREM 3D: A PLANE DIRECTION IN GENERAL POSITION (PROVEN
+2026-07-28 over one smaller leaf; cut as a leaf 2026-07-28)** -- the GEOMETRIC
+half of
 `exists_irreducible_planeSection_leadingForm_ne_zero`, and the only part of it
 that is about the hypersurface rather than about specialisation.
 
@@ -18692,6 +19535,43 @@ re-chooses the basis of the plane by
 `irreducible_planeSection_of_det_ne_zero` -- see the "the normalisation costs
 nothing" paragraph in the parent's docstring.
 
+**CORRECTION (2026-07-28) to the paragraph immediately above.** Re-choosing the
+basis of the plane converts "`h_d` is nonzero SOMEWHERE on `span(u₁, u₂)`" into
+"`h_d(u₁) ≠ 0`", and that is ALL it does; it does not make clause (i) free. A
+plane on which `h_d` vanishes identically can still be good for clause (ii), so
+the two clauses have to be arranged by one choice of PLANE rather than
+sequentially. Explicit witness, in this docstring's own running example:
+`h = X 1 ^ 2 - X 0`, `d = 2`, `h_2 = X 1 ^ 2`, and
+`W = span (Pi.single 0 1) (Pi.single 2 1)`. Every `u ∈ W` has `u 1 = 0`, so
+`h_2|_W ≡ 0`; but the all-translates family along `W` is `X 1 ^ 2 - X 0 - s`,
+of degree one in `s`, hence absolutely irreducible. The exact strength that the
+basis change does buy is isolated as clause (i) of
+`exists_directionPlane_irreducible_familyPlaneSection`, and the transport is
+`irreducible_map_paramAlgClosureHom_directionComb`.
+
+**STATUS (2026-07-28): PROVEN over ONE smaller leaf.** Step 1 of THE ROUTE above
+-- Gauss for `MvPolynomial` -- is no longer open: it is
+`irreducible_map_paramFractionHom_translateFamily`, proven in the block above for
+every direction pair whose family is nonconstant in `(s, t)`, by the shear
+automorphism plus survival of a prime under a localization it misses. So the
+"genuinely missing from the pin" verdict on step 1 is now RETIRED (and the route
+it predicted -- contents and primitive parts -- turned out not to be needed).
+What remains is step 2, geometric integrality, as
+`exists_directionPlane_irreducible_familyPlaneSection`, which is handed step 1 as
+a hypothesis and asks only the plane-wise form of clause (i).
+
+**UPDATE (2026-07-30).** That leaf is itself now PROVEN, over
+`exists_basisPlane_irreducible_familyPlaneSection`, which pins the family to
+Schmidt's own normalisation `m = n + 1` along a BASIS. Two things changed with it.
+Step 1 is now available in the basis normalisation too
+(`irreducible_map_paramFractionHom_basisFamily`, via `familyPlaneSection_basis`:
+along a basis the family IS `h ∘ A` read through
+`K[X₀ … X_{n+2}] ≃ₐ K[y₀ … yₙ][s, t]`, with no shear). And in that normalisation
+the generic geometric fibre is `L̄` for `L = K(y₀ … yₙ)` EXACTLY, whereas the
+all-translates normalisation reads it over `\overline{L(η₁, η₂)}` — so working in
+the basis normalisation avoids needing "irreducible over an algebraically closed
+field stays irreducible over any extension", which is not in the pin.
+
 WHAT THIS LEAF DOES NOT NEED: no degree bound, no uniformity in the
 characteristic, and only ONE algebraically closed base field. All the
 `p`-uniformity of the surrounding cluster lives in
@@ -18702,8 +19582,35 @@ theorem exists_directions_irreducible_familyPlaneSection {K : Type*} [Field K]
     ∃ (m : ℕ) (Φ : Fin m → (Fin (n + 3) → K)) (u₁ u₂ : Fin (n + 3) → K),
       MvPolynomial.eval u₁ (MvPolynomial.homogeneousComponent d h) ≠ 0 ∧
       Irreducible (MvPolynomial.map (paramAlgClosureHom K m)
-        (familyPlaneSection h Φ u₁ u₂)) :=
-  sorry
+        (familyPlaneSection h Φ u₁ u₂)) := by
+  obtain ⟨m, Φ, u₁, u₂, ⟨a, b, hab⟩, hgen⟩ :=
+    exists_directionPlane_irreducible_familyPlaneSection n d h hdeg hirr
+      (fun v₁ v₂ hv => irreducible_map_paramFractionHom_translateFamily h hirr v₁ v₂ hv)
+  have hd0 : d ≠ 0 := by
+    rintro rfl
+    rcases eq_or_ne (h.coeff 0) 0 with hc | hc
+    · exact hirr.ne_zero (by
+        rw [MvPolynomial.totalDegree_eq_zero_iff_eq_C.mp hdeg, hc, map_zero])
+    · exact hirr.not_isUnit (by
+        rw [MvPolynomial.totalDegree_eq_zero_iff_eq_C.mp hdeg]
+        exact IsUnit.map (MvPolynomial.C : K →+* MvPolynomial (Fin (n + 3)) K) hc.isUnit)
+  have hab0 : a ≠ 0 ∨ b ≠ 0 := by
+    by_contra hcon
+    rw [not_or, not_not, not_not] at hcon
+    obtain ⟨ha, hb⟩ := hcon
+    refine hab ?_
+    have hz : (fun i => a * u₁ i + b * u₂ i) = (0 : Fin (n + 3) → K) := by
+      funext i; simp [ha, hb]
+    rw [hz]
+    simp only [MvPolynomial.eval_zero, MvPolynomial.constantCoeff_eq,
+      MvPolynomial.coeff_homogeneousComponent]
+    simp [Ne.symm hd0]
+  obtain ⟨c, e, hdet⟩ : ∃ c e : K, a * e - c * b ≠ 0 := by
+    rcases hab0 with ha | hb
+    · exact ⟨0, 1, by simpa using ha⟩
+    · exact ⟨1, 0, by simpa using hb⟩
+  exact ⟨m, Φ, _, _, hab,
+    irreducible_map_paramAlgClosureHom_directionComb h Φ u₁ u₂ a b c e hdet hgen⟩
 
 /-! ### Noether's forms: the elimination-theoretic cut (2026-07-28)
 
@@ -23332,23 +24239,6 @@ lemma exists_eval_ne_zero_of_totalDegree_lt {p : ℕ} [Fact p.Prime] {M : ℕ}
       ≤ p ^ (Fintype.card (Fin M)) * F.totalDegree) hpos
     exact this
   omega
-
-/-- `homogeneousComponent` at the total degree is nonzero. -/
-lemma homogeneousComponent_totalDegree_ne_zero {σ : Type*} {k : Type*} [CommRing k]
-    (f : MvPolynomial σ k) (hf : f ≠ 0) :
-    MvPolynomial.homogeneousComponent f.totalDegree f ≠ 0 := by
-  classical
-  obtain ⟨m, hm, hmeq⟩ := Finset.exists_mem_eq_sup f.support
-    (MvPolynomial.support_nonempty.mpr hf) (fun s => s.sum fun _ e => e)
-  intro hzero
-  have h1 : MvPolynomial.coeff m (MvPolynomial.homogeneousComponent f.totalDegree f)
-      = MvPolynomial.coeff m f := by
-    rw [MvPolynomial.coeff_homogeneousComponent, if_pos]
-    show Finsupp.degree m = f.totalDegree
-    rw [MvPolynomial.totalDegree, hmeq]
-    rfl
-  rw [hzero, MvPolynomial.coeff_zero] at h1
-  exact (MvPolynomial.mem_support_iff.mp hm) h1.symm
 
 /-- Total-degree bound for the resultant of two polynomials with `MvPolynomial` coefficients. -/
 lemma totalDegree_resultant_le {σ : Type*} {k : Type*} [Field k]
