@@ -9273,10 +9273,10 @@ theorem galois_apply_pow_eq_pow_of_cyclotomicCharacter_pow
           hspec, hpp]
     _ = ζ ^ n := by rw [map_pow, hFz]
 
-/-- **A compatible system of primitive `q^k`-th roots of unity** (PROVEN):
-in an algebraically closed field of characteristic zero there is a sequence
-`ζ k` with `ζ k` primitive of order `q^k` and `ζ (k+1) ^ q = ζ k` — i.e. a
-`ℤ_q`-BASIS of the Tate module `T_q μ`.
+/-- **A compatible system of primitive `q^k`-th roots of unity, over any
+algebraically closed field in which `q` is invertible** (PROVEN 2026-07-30):
+there is a sequence `ζ k` with `ζ k` primitive of order `q^k` and
+`ζ (k+1) ^ q = ζ k` — i.e. a `ℤ_q`-BASIS of the Tate module `T_q μ`.
 
 This is the choice that makes `exists_cyclotomicLog` an EXISTENCE statement:
 `L k` is `log` to the base `ζ k`, and the tower clause of that leaf is
@@ -9293,14 +9293,25 @@ this construction wrong.
 
 The sequence itself is assembled by `Nat.rec` valued in the SUBTYPE
 `{z // IsPrimitiveRoot z (q ^ k)}`, so that the step always receives the
-primitivity of its predecessor. -/
-theorem exists_compatible_primitiveRootSystem (K : Type u) [Field K] [IsAlgClosed K]
-    [CharZero K] (q : ℕ) [Fact q.Prime] :
+primitivity of its predecessor.
+
+**WHY THE HYPOTHESIS IS `NeZero ((q : ℕ) : K)` AND NOT `CharZero K`.**  This
+declaration stood with `[CharZero K]` until 2026-07-30, and that hypothesis
+was used in exactly one place: to produce `NeZero ((q : ℕ) : K)`, which is
+what `HasEnoughRootsOfUnity` and `IsAlgClosed.exists_pow_nat_eq` actually
+need.  The argument itself never mentions the characteristic.  Taking the
+instance as the hypothesis makes the statement available over
+`AlgebraicClosure k` for a FINITE field `k` of residue characteristic `≠ q`,
+which is what the finite-base half of this development needs and what
+`CharZero` locked it out of.  The `CharZero` form is retained below as a
+two-line corollary, so there is one proof and not two. -/
+theorem exists_compatible_primitiveRootSystem_of_neZero
+    (K : Type u) [Field K] [IsAlgClosed K]
+    (q : ℕ) [Fact q.Prime] [NeZero ((q : ℕ) : K)] :
     ∃ ζ : ℕ → K, (∀ k, IsPrimitiveRoot (ζ k) (q ^ k)) ∧ ∀ k, ζ (k + 1) ^ q = ζ k := by
   classical
   have hq := (Fact.out : q.Prime)
   haveI : NeZero q := ⟨hq.ne_zero⟩
-  haveI : NeZero ((q : ℕ) : K) := ⟨by exact_mod_cast hq.ne_zero⟩
   have step : ∀ (k : ℕ) (μ : K), IsPrimitiveRoot μ (q ^ k) →
       ∃ z : K, z ^ q = μ ∧ IsPrimitiveRoot z (q ^ (k + 1)) := by
     intro k μ hμ
@@ -9337,6 +9348,19 @@ theorem exists_compatible_primitiveRootSystem (K : Type u) [Field K] [IsAlgClose
     Nat.rec (motive := fun k => {z : K // IsPrimitiveRoot z (q ^ k)})
       ⟨1, h0⟩ (fun n ih => ⟨g n ih.1 ih.2, hg2 n ih.1 ih.2⟩) k
   exact ⟨fun k => (f k).1, fun k => (f k).2, fun k => hg1 k (f k).1 (f k).2⟩
+
+/-- **A compatible system of primitive `q^k`-th roots of unity in
+characteristic zero** (PROVEN) — the released `CharZero` form of
+`exists_compatible_primitiveRootSystem_of_neZero`, kept because it is what
+`exists_cyclotomicLog` and its consumers call.
+
+In characteristic zero `(q : K) ≠ 0` for a prime `q`, so the instance the
+general form asks for is derivable and there is nothing else to do. -/
+theorem exists_compatible_primitiveRootSystem (K : Type u) [Field K] [IsAlgClosed K]
+    [CharZero K] (q : ℕ) [Fact q.Prime] :
+    ∃ ζ : ℕ → K, (∀ k, IsPrimitiveRoot (ζ k) (q ^ k)) ∧ ∀ k, ζ (k + 1) ^ q = ζ k := by
+  haveI : NeZero ((q : ℕ) : K) := ⟨by exact_mod_cast (Fact.out : q.Prime).ne_zero⟩
+  exact exists_compatible_primitiveRootSystem_of_neZero K q
 
 /-- **A compatible system of discrete logarithms on the `q`-power roots of
 unity of `F̄`, intertwining the Galois action with the cyclotomic
@@ -9532,6 +9556,257 @@ theorem exists_cyclotomicLog (F : Type u) [Field F] [NumberField F]
       have h2 : ((dl k (uz ^ n) : ℕ) : ZMod (q ^ k)) = ((n : ℕ) : ZMod (q ^ k)) :=
         (ZMod.natCast_eq_natCast_iff _ _ _).mpr hmod
       rw [h2, hndef, ZMod.natCast_val, ZMod.cast_id]
+
+/-- **The `q`-power discrete logarithm over ANY algebraically closed field in
+which `q` is invertible, with the cyclotomic-character clause replaced by a
+bare POWER clause** (PROVEN 2026-07-30 — `exists_cyclotomicLog` with its one
+number-theoretic clause removed and generalised).
+
+`exists_cyclotomicLog` is stated over a NUMBER field, and `[NumberField F]`
+is spent in exactly one of its five clauses: the `Γ_F`-equivariance clause,
+whose multiplier is `χ_cyc(σ)` transported along
+`Field.absoluteGaloisGroup.map (algebraMap ℚ F)`.  The other four clauses —
+additivity, the tower, injectivity and surjectivity, all modulo `q^k` — are
+statements about `T_q μ` alone and need nothing but a compatible system of
+primitive `q^k`-th roots of unity.
+
+So this declaration carries those four verbatim, over an arbitrary
+algebraically closed `K` with `q` invertible, and replaces the equivariance
+clause by
+
+  `L k (ζ ^ n) ≡ n · L k ζ  (mod q^k)`,
+
+which is the *reason* the equivariance clause is true rather than an
+extra assumption: over a number field one gets it by writing
+`σ ζ = ζ^{χ_cyc(σ)}`, and over a finite field by writing `σ ζ = ζ^N`.  Both
+consumers therefore factor through this one lemma, and the power clause is
+new even in characteristic zero.
+
+WHY THIS IS NOT A WEAKENING.  The power clause IMPLIES the cyclotomic one in
+the presence of `cyclotomicCharacter.spec`; it is strictly more elementary,
+because it mentions no Galois group at all.  The whole proof is the one
+`exists_cyclotomicLog` already runs — the discrete logarithm `dl k u` to the
+base `ζ k`, pinned modulo `q^k` by `IsOfFinOrder.pow_eq_pow_iff_modEq` — and
+the power clause is that argument at `ζ k ^ (dl k u * n) = u ^ n`, which is
+the equivariance computation with `χ_cyc(σ)` replaced by `n` and the
+approximation step `hn` deleted (there is nothing to approximate: `n` is
+already a natural number).
+
+`exists_cyclotomicLog` is NOT re-derived from this, deliberately: it is
+released, its own proof is self-contained, and re-routing it would change a
+proven declaration for no gain. -/
+theorem exists_qPowerLog (K : Type u) [Field K] [IsAlgClosed K]
+    (q : ℕ) [Fact q.Prime] [NeZero ((q : ℕ) : K)] :
+    ∃ L : ℕ → Kˣ → ℤ_[q],
+      (∀ (k : ℕ) (ζ ξ : Kˣ), ζ ^ q ^ k = 1 → ξ ^ q ^ k = 1 →
+        L k (ζ * ξ) - (L k ζ + L k ξ) ∈ Ideal.span {(q : ℤ_[q])} ^ k) ∧
+      (∀ (k n : ℕ) (ζ : Kˣ), ζ ^ q ^ k = 1 →
+        L k (ζ ^ n) - (n : ℤ_[q]) * L k ζ ∈ Ideal.span {(q : ℤ_[q])} ^ k) ∧
+      (∀ (k : ℕ) (ζ : Kˣ), ζ ^ q ^ (k + 1) = 1 →
+        L (k + 1) ζ - L k (ζ ^ q) ∈ Ideal.span {(q : ℤ_[q])} ^ k) ∧
+      (∀ (k : ℕ) (ζ : Kˣ), ζ ^ q ^ k = 1 →
+        (L k ζ ∈ Ideal.span {(q : ℤ_[q])} ^ k ↔ ζ = 1)) ∧
+      (∀ (k : ℕ) (r : ℤ_[q]), ∃ ζ : Kˣ,
+        ζ ^ q ^ k = 1 ∧ L k ζ - r ∈ Ideal.span {(q : ℤ_[q])} ^ k) := by
+  classical
+  have hq := (Fact.out : q.Prime)
+  haveI : NeZero q := ⟨hq.ne_zero⟩
+  have hqpos : ∀ k : ℕ, 0 < q ^ k := fun k => pow_pos hq.pos k
+  haveI hnz : ∀ k : ℕ, NeZero (q ^ k) := fun k => ⟨(hqpos k).ne'⟩
+  obtain ⟨ζ, hprim, hcomp⟩ := exists_compatible_primitiveRootSystem_of_neZero K q
+  -- the level-`k` discrete logarithm to the base `ζ k`
+  have hdl : ∀ (k : ℕ) (u : Kˣ), ∃ i : ℕ, i < q ^ k ∧
+      ((u : K) ^ q ^ k = 1 → ζ k ^ i = (u : K)) := by
+    intro k u
+    by_cases h : (u : K) ^ q ^ k = 1
+    · obtain ⟨i, hi, hie⟩ := (hprim k).eq_pow_of_pow_eq_one h
+      exact ⟨i, hi, fun _ => hie⟩
+    · exact ⟨0, hqpos k, fun hc => absurd hc h⟩
+  choose dl hdl_lt hdl_eq using hdl
+  have hval : ∀ (k : ℕ) (u : Kˣ), u ^ q ^ k = 1 → (u : K) ^ q ^ k = 1 := by
+    intro k u hu
+    rw [← Units.val_pow_eq_pow_val, hu, Units.val_one]
+  -- the bridge: the discrete logarithm is pinned modulo `q ^ k`
+  have hkey : ∀ (k m : ℕ) (u : Kˣ),
+      (u : K) ^ q ^ k = 1 → ζ k ^ m = (u : K) → dl k u ≡ m [MOD q ^ k] := by
+    intro k m u hu hm
+    have h1 : ζ k ^ dl k u = ζ k ^ m := by rw [hdl_eq k u hu, hm]
+    have h2 := (hprim k).eq_orderOf
+    have hfin : IsOfFinOrder (ζ k) :=
+      isOfFinOrder_iff_pow_eq_one.mpr ⟨q ^ k, hqpos k, (hprim k).pow_eq_one⟩
+    rw [hfin.pow_eq_pow_iff_modEq] at h1
+    rwa [← h2] at h1
+  refine ⟨fun k u => ((dl k u : ℕ) : ℤ_[q]), ?_, ?_, ?_, ?_, ?_⟩
+  · -- additivity
+    intro k a b ha hb
+    have ha' := hval k a ha
+    have hb' := hval k b hb
+    have hab' : ((a * b : Kˣ) : K) ^ q ^ k = 1 := by
+      rw [Units.val_mul, mul_pow, ha', hb', one_mul]
+    have h1 : ζ k ^ (dl k a + dl k b) = ((a * b : Kˣ) : K) := by
+      rw [pow_add, hdl_eq k a ha', hdl_eq k b hb', Units.val_mul]
+    have hmod := hkey k (dl k a + dl k b) (a * b) hab' h1
+    have hres := sub_natCast_mem_span_of_modEq q k _ _ hmod
+    simpa using hres
+  · -- the POWER clause
+    intro k n u hu
+    have hu' := hval k u hu
+    have hvval : ((u ^ n : Kˣ) : K) = (u : K) ^ n := by
+      rw [Units.val_pow_eq_pow_val]
+    have hv' : ((u ^ n : Kˣ) : K) ^ q ^ k = 1 := by
+      rw [hvval, ← pow_mul, mul_comm, pow_mul, hu', one_pow]
+    have h1 : ζ k ^ (dl k u * n) = ((u ^ n : Kˣ) : K) := by
+      rw [pow_mul, hdl_eq k u hu', hvval]
+    have hmod := hkey k (dl k u * n) (u ^ n) hv' h1
+    have e1 : ((dl k (u ^ n) : ℕ) : ℤ_[q]) - ((dl k u * n : ℕ) : ℤ_[q]) ∈
+        Ideal.span {(q : ℤ_[q])} ^ k := sub_natCast_mem_span_of_modEq q k _ _ hmod
+    convert e1 using 1
+    push_cast
+    ring
+  · -- tower compatibility
+    intro k u hu
+    have hu' := hval (k + 1) u hu
+    have h1 : ζ k ^ dl (k + 1) u = ((u ^ q : Kˣ) : K) := by
+      rw [Units.val_pow_eq_pow_val, ← hdl_eq (k + 1) u hu', ← hcomp k, ← pow_mul, ← pow_mul,
+        mul_comm]
+    have huq : ((u ^ q : Kˣ) : K) ^ q ^ k = 1 := by
+      rw [Units.val_pow_eq_pow_val, ← pow_mul, mul_comm q (q ^ k), ← pow_succ]
+      exact hu'
+    have hmod := hkey k (dl (k + 1) u) (u ^ q) huq h1
+    exact sub_natCast_mem_span_of_modEq q k _ _ hmod.symm
+  · -- injectivity modulo `q ^ k`
+    intro k u hu
+    have hu' := hval k u hu
+    constructor
+    · intro h
+      rw [mem_span_natCast_pow_iff, map_natCast] at h
+      have hdvd : q ^ k ∣ dl k u := by
+        have hz : ((dl k u : ℕ) : ZMod (q ^ k)) = ((0 : ℕ) : ZMod (q ^ k)) := by simpa using h
+        exact (Nat.modEq_zero_iff_dvd).mp ((ZMod.natCast_eq_natCast_iff _ _ _).mp hz)
+      have h0 : dl k u = 0 := Nat.eq_zero_of_dvd_of_lt hdvd (hdl_lt k u)
+      have hone := hdl_eq k u hu'
+      rw [h0, pow_zero] at hone
+      exact Units.ext hone.symm
+    · rintro rfl
+      have hone : ζ k ^ dl k 1 = 1 := by
+        rw [hdl_eq k 1 hu']; rfl
+      have hdvd := ((hprim k).pow_eq_one_iff_dvd _).mp hone
+      have h0 : dl k 1 = 0 := Nat.eq_zero_of_dvd_of_lt hdvd (hdl_lt k 1)
+      show ((dl k 1 : ℕ) : ℤ_[q]) ∈ Ideal.span {(q : ℤ_[q])} ^ k
+      rw [h0]
+      simp
+  · -- surjectivity modulo `q ^ k`
+    intro k r
+    set n : ℕ := (PadicInt.toZModPow k r).val with hndef
+    obtain ⟨uz, huz⟩ := (hprim k).isUnit (hqpos k).ne'
+    refine ⟨uz ^ n, ?_, ?_⟩
+    · refine Units.ext ?_
+      rw [Units.val_pow_eq_pow_val, Units.val_pow_eq_pow_val, huz, ← pow_mul, mul_comm, pow_mul,
+        (hprim k).pow_eq_one, one_pow, Units.val_one]
+    · have hval' : ((uz ^ n : Kˣ) : K) ^ q ^ k = 1 := by
+        rw [Units.val_pow_eq_pow_val, huz, ← pow_mul, mul_comm, pow_mul,
+          (hprim k).pow_eq_one, one_pow]
+      have h1 : ζ k ^ n = ((uz ^ n : Kˣ) : K) := by
+        rw [Units.val_pow_eq_pow_val, huz]
+      have hmod := hkey k n (uz ^ n) hval' h1
+      rw [mem_span_natCast_pow_iff, map_sub, map_natCast, sub_eq_zero]
+      have h2 : ((dl k (uz ^ n) : ℕ) : ZMod (q ^ k)) = ((n : ℕ) : ZMod (q ^ k)) :=
+        (ZMod.natCast_eq_natCast_iff _ _ _).mpr hmod
+      rw [h2, hndef, ZMod.natCast_val, ZMod.cast_id]
+
+/-- **`q` is invertible in the algebraic closure of a finite field of order
+prime to `q`** (PROVEN 2026-07-30) — the instance that unlocks
+`exists_qPowerLog` at a finite base.
+
+This is the only arithmetic content in the passage from a number field to a
+finite field: `¬ q ∣ N` is the hypothesis every finite-base leaf of this
+development already carries, and `N = #k` is a power of `ringChar k`
+(`FiniteField.card`), so `¬ q ∣ N` says exactly `ringChar k ≠ q` — and the
+characteristic is inherited by `AlgebraicClosure k` because the structure map
+of a field extension is injective (`charP_of_injective_algebraMap`).
+
+The exponent in `FiniteField.card` is a `ℕ+`, and that positivity is
+load-bearing: at `N = 1` the conclusion would be false and `¬ q ∣ 1` cannot
+hold for a prime `q`, but the step `ringChar k ∣ ringChar k ^ e` needs
+`e ≠ 0` explicitly. -/
+theorem neZero_natCast_algebraicClosure_of_finite
+    {k : Type u} [Field k] (hfin : Finite k)
+    (N : ℕ) (hN : Nat.card k = N) (q : ℕ) (hq : q.Prime) (hqN : ¬ q ∣ N) :
+    NeZero ((q : ℕ) : AlgebraicClosure k) := by
+  haveI := Fintype.ofFinite k
+  haveI : CharP k (ringChar k) := ringChar.charP k
+  obtain ⟨e, hpp, hcard⟩ := FiniteField.card k (ringChar k)
+  haveI : CharP (AlgebraicClosure k) (ringChar k) :=
+    charP_of_injective_algebraMap (algebraMap k (AlgebraicClosure k)).injective (ringChar k)
+  refine ⟨fun h => ?_⟩
+  have hdvd : ringChar k ∣ q := (CharP.cast_eq_zero_iff (AlgebraicClosure k) (ringChar k) q).mp h
+  have hpq : ringChar k = q := (Nat.prime_dvd_prime_iff_eq hpp hq).mp hdvd
+  apply hqN
+  rw [← hN, Nat.card_eq_fintype_card, hcard, ← hpq]
+  exact dvd_pow_self _ e.2.ne'
+
+/-- **A compatible system of discrete logarithms on the `q`-power roots of
+unity of `k̄`, intertwining the Galois action with the CONSTANT `N`**
+(PROVEN 2026-07-30 — the finite-base counterpart of `exists_cyclotomicLog`).
+
+Five clauses, in the same order and with the same shapes as
+`exists_cyclotomicLog`, and only the second differs: where that leaf's
+multiplier is `χ_cyc(σ)`, this one's is the rational integer `N = #k`.  The
+equivariance clause is stated for any `τ` satisfying the Frobenius
+identity `τ z = z ^ N` on `k̄`, which is how every finite-base consumer in
+this file already carries its `σ` (see `hσ` on
+`exists_levelWeilPairing_of_qAdicPolarizedSystem_finiteBase`), rather than
+for a distinguished element — there is no `NumberField k` to hang
+`cyclotomicCharacter` on and none is needed.
+
+WHY THERE IS NO NEW CONTENT HERE, which is the point of the cut.  Over a
+number field the equivariance clause is genuinely arithmetic: it needs
+`cyclotomicCharacter.spec` to turn `σ` into a power, and it needs the
+transport of `χ_cyc` along `ℚ̄ ↪ F̄`.  Over a finite field the hypothesis
+`τ z = z ^ N` IS the statement that `τ` acts as a power, handed in, so the
+clause reduces to `L M (ζ ^ N) ≡ N · L M ζ` — the POWER clause of
+`exists_qPowerLog`.  The only thing to check is that
+`Units.map τ ζ = ζ ^ N` as UNITS, which is `Units.ext` against the
+identity on values.
+
+The remaining four clauses are `exists_qPowerLog`'s verbatim; the instance
+that lets it apply at all is `neZero_natCast_algebraicClosure_of_finite`,
+and that is where `hfin`, `hN` and `hqN` are spent.  `hqN` is load-bearing
+and the statement is FALSE without it: at `q = ringChar k` the group
+`μ_{q^M}(k̄)` is TRIVIAL for every `M`, so `L M` is constantly `0` on it and
+the injectivity clause fails at `M = 1` — `0 ∈ (q)` while `ζ = 1` is forced,
+which is fine, but the SURJECTIVITY clause then demands a `ζ` with
+`L 1 ζ ≡ r` for every `r`, and there is none for `r = 1`. -/
+theorem exists_frobeniusLog_finiteBase {k : Type u} [Field k] (hfin : Finite k)
+    (N : ℕ) (hN : Nat.card k = N) (q : ℕ) [Fact q.Prime] (hqN : ¬ q ∣ N) :
+    ∃ L : ℕ → (AlgebraicClosure k)ˣ → ℤ_[q],
+      (∀ (M : ℕ) (ζ ξ : (AlgebraicClosure k)ˣ), ζ ^ q ^ M = 1 → ξ ^ q ^ M = 1 →
+        L M (ζ * ξ) - (L M ζ + L M ξ) ∈ Ideal.span {(q : ℤ_[q])} ^ M) ∧
+      (∀ (M : ℕ) (τ : Field.absoluteGaloisGroup k),
+        (∀ z : AlgebraicClosure k,
+          (τ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k) z = z ^ N) →
+        ∀ ζ : (AlgebraicClosure k)ˣ, ζ ^ q ^ M = 1 →
+        L M (Units.map
+              ((τ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k).toAlgHom.toRingHom.toMonoidHom) ζ)
+          - (N : ℤ_[q]) * L M ζ ∈ Ideal.span {(q : ℤ_[q])} ^ M) ∧
+      (∀ (M : ℕ) (ζ : (AlgebraicClosure k)ˣ), ζ ^ q ^ (M + 1) = 1 →
+        L (M + 1) ζ - L M (ζ ^ q) ∈ Ideal.span {(q : ℤ_[q])} ^ M) ∧
+      (∀ (M : ℕ) (ζ : (AlgebraicClosure k)ˣ), ζ ^ q ^ M = 1 →
+        (L M ζ ∈ Ideal.span {(q : ℤ_[q])} ^ M ↔ ζ = 1)) ∧
+      (∀ (M : ℕ) (r : ℤ_[q]), ∃ ζ : (AlgebraicClosure k)ˣ,
+        ζ ^ q ^ M = 1 ∧ L M ζ - r ∈ Ideal.span {(q : ℤ_[q])} ^ M) := by
+  haveI := neZero_natCast_algebraicClosure_of_finite hfin N hN q (Fact.out) hqN
+  obtain ⟨L, hadd, hpow, htow, hinj, hsurj⟩ := exists_qPowerLog (AlgebraicClosure k) q
+  refine ⟨L, hadd, ?_, htow, hinj, hsurj⟩
+  intro M τ hτ ζ hζ
+  have hmap : Units.map
+      ((τ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k).toAlgHom.toRingHom.toMonoidHom) ζ
+      = ζ ^ N := by
+    refine Units.ext ?_
+    rw [Units.val_pow_eq_pow_val]
+    exact hτ (ζ : AlgebraicClosure k)
+  rw [hmap]
+  exact hpow M N ζ hζ
 
 /-! ### The Tate-module cut of the trace-duality refinement
 
@@ -16765,9 +17040,115 @@ theorem exists_qAdicPolarizedSystem_finiteBase
   sorry
 
 open _root_.NumberField in
+/-- **THE LIMIT AND THE SCALING: THE `𝒪_D/Iⁿ`-VALUED LEVEL PAIRING, GIVEN
+THE PIN, THE DIFFERENT AND THE LOGARITHM** (SORRY LEAF — cut 2026-07-30 out
+of `exists_levelWeilPairing_of_qAdicPolarizedSystem_finiteBase`, which is now
+PROVEN over it).
+
+That leaf's docstring lists FOUR things left in it once the geometry is gone:
+"the different, the discrete logarithm on `μ_{q^M}(k̄)`, the limit along the
+`I`-adic tower, and one scaling".  The first two are now DISCHARGED and are
+handed in here as binders:
+
+* the DIFFERENT is `θ` with `hθ : IsTraceDualFunctional q I π j θ`, produced
+  by `exists_traceDualFunctional_of_adicPin` — pure algebraic number theory,
+  already proven, and it mentions no base field, exactly as that docstring
+  says ("REUSABLE VERBATIM");
+* the PIN `(O, j, π)` it needs is produced by `exists_adicCoefficientRing`
+  (`O = 𝒪_{D,I}`), also already proven and also base-field-free — the
+  characteristic-zero assembly `exists_tateWeilSystem_of_mult` receives this
+  from its caller, and the finite-base one now builds it, which is the step
+  the parent docstring flagged as "this leaf must build for itself";
+* the LOGARITHM is `L`, produced by `exists_frobeniusLog_finiteBase`
+  (PROVEN 2026-07-30, above).  This is the one that genuinely needed new
+  work: `exists_cyclotomicLog` is stated over a NUMBER field because its
+  multiplier is `χ_cyc`, and over a finite field the multiplier is the
+  CONSTANT `N`.  Its `hLgal` binder below is stated in exactly the form that
+  leaf produces — quantified over any `τ` acting as `z ↦ z ^ N` — so `hσ`
+  feeds it directly.
+
+WHAT IS LEFT, AND IT IS THE WHOLE MATHEMATICAL CONTENT.  Assemble the
+`ℤ_q`-bilinear form on `T_q A'` from `L M (w M · ·)` along the levels (the
+TOWER clause of `IsQAdicPolarizedSystem` is what makes that Cauchy), refine
+it by `θ` to an `𝒪_{D,I}`-bilinear `E` on `T_I A'`, divide by the largest
+power `π^t` of the uniformizer dividing every value (`t ≤ b · e(I/q)`, finite
+because the bounded-radical clause makes `E` not identically zero), and
+reduce modulo `Iⁿ` along lifts `T_I A' ↠ A'[Iⁿ]`.  `hne` and `b` are spent in
+the primitivization, which is what replaces perfectness; see the parent
+docstring for why a levelwise refinement CANNOT work (at an `I` ramified over
+`q` the `q`-power Weil pairing vanishes identically on `A'[I^k]`).
+
+**THIS IS NOT A REDUCTION IN LEAF COUNT — one `sorry` replaces one `sorry`,
+and it is said plainly here so nobody reads the diff as a closure.**  What it
+buys is that the residual statement's hypotheses are all CONSTRUCTED rather
+than assumed, so the next owner reads a statement whose content is only the
+limit and the scaling, and does not have to rediscover that the different and
+the pin are already in the tree.
+
+**FAITHFULNESS.**  This statement is `exists_levelWeilPairing_of_qAdic\
+PolarizedSystem_finiteBase` with strictly MORE hypotheses and the SAME
+conclusion, so it is implied by that leaf and cannot be false unless that one
+is; and the assembly below supplies witnesses for every added binder, so it
+is not vacuous in the other direction either.  The two are therefore
+equivalent, and the audit on the parent — `hσ`, `hne`, `hqN` and
+`IsTotallyReal` each load-bearing, with the counterexamples recorded there —
+transfers unchanged and is NOT restated here.  No binder was weakened or
+strengthened in the cut. -/
+theorem exists_levelWeilPairing_of_traceDualFrobeniusLog_finiteBase
+    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    (σ : Field.absoluteGaloisGroup k)
+    (hσ : ∀ z : AlgebraicClosure k,
+      (σ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k) z = z ^ N)
+    (q : ℕ) [Fact q.Prime] (hqN : ¬ q ∣ N)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I) (n : ℕ)
+    (hne : ∃ y ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).1,
+      y ≠ ab'.zero (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k))))
+    (b : ℕ) (w : ℕ → GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))) →
+        GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))) → (AlgebraicClosure k)ˣ)
+    (hw : IsQAdicPolarizedSystem m' (𝟙 (Spec (CommRingCat.of k))) q b w)
+    (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (O : Type u) [CommRing O] [IsLocalRing O] [Algebra ℤ_[q] O]
+    (j : NumberField.RingOfIntegers D →+* O)
+    (hcplt : IsAdicComplete (Ideal.span {j π}) O)
+    (hdense : ∀ (i : ℕ) (z : O), ∃ a : NumberField.RingOfIntegers D,
+      z - j a ∈ Ideal.span {j π} ^ i)
+    (hker : ∀ (i : ℕ) (a : NumberField.RingOfIntegers D),
+      j a ∈ Ideal.span {j π} ^ i ↔ a ∈ I ^ i)
+    (θ : O → ℤ_[q]) (hθ : IsTraceDualFunctional q I π j θ)
+    (L : ℕ → (AlgebraicClosure k)ˣ → ℤ_[q])
+    (hLadd : ∀ (M : ℕ) (ζ ξ : (AlgebraicClosure k)ˣ), ζ ^ q ^ M = 1 → ξ ^ q ^ M = 1 →
+      L M (ζ * ξ) - (L M ζ + L M ξ) ∈ Ideal.span {(q : ℤ_[q])} ^ M)
+    (hLgal : ∀ (M : ℕ) (τ : Field.absoluteGaloisGroup k),
+      (∀ z : AlgebraicClosure k,
+        (τ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k) z = z ^ N) →
+      ∀ ζ : (AlgebraicClosure k)ˣ, ζ ^ q ^ M = 1 →
+      L M (Units.map
+            ((τ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k).toAlgHom.toRingHom.toMonoidHom) ζ)
+        - (N : ℤ_[q]) * L M ζ ∈ Ideal.span {(q : ℤ_[q])} ^ M)
+    (hLtower : ∀ (M : ℕ) (ζ : (AlgebraicClosure k)ˣ), ζ ^ q ^ (M + 1) = 1 →
+      L (M + 1) ζ - L M (ζ ^ q) ∈ Ideal.span {(q : ℤ_[q])} ^ M)
+    (hLinj : ∀ (M : ℕ) (ζ : (AlgebraicClosure k)ˣ), ζ ^ q ^ M = 1 →
+      (L M ζ ∈ Ideal.span {(q : ℤ_[q])} ^ M ↔ ζ = 1))
+    (hLsurj : ∀ (M : ℕ) (r : ℤ_[q]), ∃ ζ : (AlgebraicClosure k)ˣ,
+      ζ ^ q ^ M = 1 ∧ L M ζ - r ∈ Ideal.span {(q : ℤ_[q])} ^ M) :
+    ∃ e : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))) →
+        GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))) →
+        NumberField.RingOfIntegers D ⧸ I ^ n,
+      IsLevelWeilPairing m' (𝟙 (Spec (CommRingCat.of k))) (I ^ n) σ
+        (Ideal.Quotient.mk (I ^ n) (N : NumberField.RingOfIntegers D)) e :=
+  sorry
+
+open _root_.NumberField in
 /-- **THE ARITHMETIC HALF: TRACE DUALITY REFINES THE `μ`-VALUED SYSTEM TO
-THE `𝒪_D/Iⁿ`-VALUED LEVEL PAIRING, WITH FROBENIUS MULTIPLIER `N`** (SORRY
-LEAF — the finite-base counterpart of
+THE `𝒪_D/Iⁿ`-VALUED LEVEL PAIRING, WITH FROBENIUS MULTIPLIER `N`**
+(**PROVEN 2026-07-30** over
+`exists_levelWeilPairing_of_traceDualFrobeniusLog_finiteBase`, which is the
+residual sorry leaf — the finite-base counterpart of
 `exists_tateWeilSystem_of_qAdicWeilSystem`, with the passage to the limit
 and the primitivization folded in and the cyclotomic character replaced
 by the constant `N`).
@@ -16775,6 +17156,21 @@ by the constant `N`).
 No geometry occurs here: the fibre enters only through the system `w`
 handed in.  What is left is the different, the discrete logarithm on
 `μ_{q^M}(k̄)`, the limit along the `I`-adic tower, and one scaling.
+
+**TWO OF THOSE FOUR ARE NOW DISCHARGED, AND THIS IS WHAT THE PROOF BELOW
+DOES** (2026-07-30).  The DIFFERENT and the PIN come from
+`exists_traceDualFunctional_of_adicPin` and `exists_adicCoefficientRing`,
+both already proven and both base-field-free.  The LOGARITHM is
+`exists_frobeniusLog_finiteBase`, PROVEN the same day: the obstruction
+recorded below — that `exists_cyclotomicLog` is stated over a NUMBER field
+because its multiplier is `χ_cyc`, and that over a finite field there is no
+such transport — is real, and the resolution is that `hσ` says `σ` acts as a
+POWER, so the clause reduces to `L M (ζ^N) ≡ N · L M ζ`, which is the power
+clause of `exists_qPowerLog` over ANY algebraically closed field where `q` is
+invertible.  What remains — the limit along the `I`-adic tower and the
+scaling — is the residual leaf, which receives all three as binders.  **The
+leaf count is unchanged by that cut; only the content of the open statement
+is smaller.**
 
 **THE ROUTE, AND THE TWO PLACES IT DIFFERS FROM CHARACTERISTIC ZERO.**
 
@@ -16866,8 +17262,28 @@ theorem exists_levelWeilPairing_of_qAdicPolarizedSystem_finiteBase
         GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))) →
         NumberField.RingOfIntegers D ⧸ I ^ n,
       IsLevelWeilPairing m' (𝟙 (Spec (CommRingCat.of k))) (I ^ n) σ
-        (Ideal.Quotient.mk (I ^ n) (N : NumberField.RingOfIntegers D)) e :=
-  sorry
+        (Ideal.Quotient.mk (I ^ n) (N : NumberField.RingOfIntegers D)) e := by
+  haveI : Fact q.Prime := ⟨hq⟩
+  -- `I` is nonzero: it contains the rational prime `q`.
+  have hI0 : I ≠ ⊥ := by
+    intro h
+    rw [h, Ideal.mem_bot, Nat.cast_eq_zero] at hqI
+    exact hq.ne_zero hqI
+  -- the pin `(O, j, π)` — this is the `𝒪_{D,I}` the docstring says the leaf
+  -- must build for itself, and it is base-field-free
+  obtain ⟨π, hπ, hπ2⟩ := exists_mem_notMem_sq_of_isMaximal hI hI0
+  obtain ⟨O, iCR, iTS, iTR, iAlg, iLoc, iFin, iFree, iMT, j, hcplt, hdense, hker⟩ :=
+    exists_adicCoefficientRing q I hI hqI π hπ hπ2
+  letI := iCR; letI := iTS; letI := iTR; letI := iAlg
+  letI := iLoc; letI := iFin; letI := iFree; letI := iMT
+  -- the different: trace duality is pure algebraic number theory and reusable verbatim
+  obtain ⟨θ, hθ⟩ :=
+    exists_traceDualFunctional_of_adicPin q I hI hqI π hπ hπ2 O j hcplt hdense hker
+  -- the discrete logarithm on `μ_{q^M}(k̄)`, with the multiplier the CONSTANT `N`
+  obtain ⟨L, hLadd, hLgal, hLtower, hLinj, hLsurj⟩ :=
+    exists_frobeniusLog_finiteBase hfin N hN q hqN
+  exact exists_levelWeilPairing_of_traceDualFrobeniusLog_finiteBase hfin N hN ab' m' σ hσ q hqN
+    I hI hqI n hne b w hw π hπ hπ2 O j hcplt hdense hker θ hθ L hLadd hLgal hLtower hLinj hLsurj
 
 open _root_.NumberField in
 /-- **THE `𝒪_D`-WEIL PAIRING ON `A'[Iⁿ]` OVER A FINITE FIELD, STATED WITH
