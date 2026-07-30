@@ -19484,13 +19484,355 @@ theorem charpoly_natDegree_eq_two_of_hilbertDeformationDatum {ℓ : ℕ}
   rw [← Module.finrank_eq_rank] at h
   exact_mod_cast h
 
-/-- ### ⚠ THIS LEAF IS **FALSE AS STATED**. DO NOT DISPATCH A PROVER AT IT.
+/-! #### The rank-two trace/determinant dictionary, and the commutator identity
 
-**(Banner added 2026-07-27 by flt-lean-182, which was dispatched to prove it,
-re-ran the FALSITY AUDIT's load-bearing computation, and confirmed it
-MACHINE-CHECKED. The audit itself sits ~200 lines below, under
-"FALSITY AUDIT (2026-07-27)"; the banner is here because a dispatcher reads
-the head of a docstring and this one is 180 lines long.)**
+The seven lemmas below are the mechanical half of the cut made at
+`exists_hilbertFixing_rootsOfUnity_discrim_isSquare` on 2026-07-30 (late). They
+turn that leaf's Galois-cohomological statement into the purely group-theoretic
+`exists_trace_discrim_isSquare_of_hilbertDeformationDatum`, along the route the
+repair paragraph on that leaf already prescribed.
+
+The one identity worth stating in words, because it is what makes the cut sharp:
+for `J` an involution of determinant `−1` and `Y` invertible on a rank-two space,
+
+    disc (charpoly (J Y J Y⁻¹)) · (det Y)² = (s² − u²) · (s² − u² − 4 det Y),
+    where s = tr Y  and  u = tr (J Y).
+
+In a basis diagonalising `J = diag(1, −1)` and with `Y = [[a, b], [c, d]]` this
+reads `s² − u² = 4ad` and `s² − u² − 4 det Y = 4bc`, so the right-hand side is
+`16 abcd` — i.e. **the commutator `[J, Y]` splits with distinct roots exactly
+when the product of the four entries of `Y` is a nonzero square**. That is the
+form in which the remaining obligation is stated. -/
+
+/-- **`coeff 1` of a rank-two characteristic polynomial is minus the trace**
+(PROVEN): `Matrix.trace_eq_neg_charpoly_coeff` transported along a basis with
+`LinearMap.charpoly_toMatrix` and `LinearMap.trace_eq_matrix_trace`. -/
+theorem charpoly_coeff_one_eq_neg_trace_of_finrank_eq_two {k : Type*} [Field k]
+    {V : Type*} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (hV : Module.finrank k V = 2) (f : Module.End k V) :
+    f.charpoly.coeff 1 = -LinearMap.trace k V f := by
+  classical
+  haveI : FiniteDimensional k V := Module.Finite.of_basis (Module.Free.chooseBasis k V)
+  let b : Module.Basis (Fin 2) k V := Module.finBasisOfFinrankEq k V hV
+  have h1 : LinearMap.trace k V f = Matrix.trace (LinearMap.toMatrix b b f) :=
+    LinearMap.trace_eq_matrix_trace k b f
+  have h2 : Matrix.trace (LinearMap.toMatrix b b f) =
+      -(LinearMap.toMatrix b b f).charpoly.coeff (Fintype.card (Fin 2) - 1) :=
+    Matrix.trace_eq_neg_charpoly_coeff _
+  rw [h1, h2, LinearMap.charpoly_toMatrix]
+  simp
+
+/-- **`coeff 0` of a rank-two characteristic polynomial is the determinant**
+(PROVEN): `LinearMap.det_eq_sign_charpoly_coeff` with `(−1)² = 1`. -/
+theorem charpoly_coeff_zero_eq_det_of_finrank_eq_two {k : Type*} [Field k]
+    {V : Type*} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (hV : Module.finrank k V = 2) (f : Module.End k V) :
+    f.charpoly.coeff 0 = LinearMap.det f := by
+  rw [LinearMap.det_eq_sign_charpoly_coeff, hV]
+  ring
+
+/-- **The rank-two characteristic polynomial in closed form** (PROVEN):
+`X² − (tr f) X + det f`, from `monic_natDegree_two_normalForm` above and the two
+coefficient lemmas. -/
+theorem charpoly_eq_of_finrank_eq_two {k : Type*} [Field k] {V : Type*}
+    [AddCommGroup V] [Module k V] [Module.Finite k V] [Module.Free k V]
+    (hV : Module.finrank k V = 2) (f : Module.End k V) :
+    f.charpoly = Polynomial.X ^ 2
+      - Polynomial.C (LinearMap.trace k V f) * Polynomial.X
+      + Polynomial.C (LinearMap.det f) := by
+  have hd : f.charpoly.natDegree = 2 := by rw [LinearMap.charpoly_natDegree, hV]
+  have h := monic_natDegree_two_normalForm f.charpoly (LinearMap.charpoly_monic f) hd
+  rw [charpoly_coeff_one_eq_neg_trace_of_finrank_eq_two hV,
+    charpoly_coeff_zero_eq_det_of_finrank_eq_two hV] at h
+  rw [h, map_neg]
+  ring
+
+/-- **Cayley–Hamilton in rank two** (PROVEN): `f² = (tr f) • f − (det f) • 1`,
+i.e. `LinearMap.aeval_self_charpoly` read through the closed form above. -/
+theorem mul_self_eq_of_finrank_eq_two {k : Type*} [Field k] {V : Type*}
+    [AddCommGroup V] [Module k V] [Module.Finite k V] [Module.Free k V]
+    (hV : Module.finrank k V = 2) (f : Module.End k V) :
+    f * f = (LinearMap.trace k V f) • f - (LinearMap.det f) • 1 := by
+  have h := LinearMap.aeval_self_charpoly f
+  rw [charpoly_eq_of_finrank_eq_two hV] at h
+  simp only [map_add, map_sub, map_mul, map_pow, Polynomial.aeval_X, Polynomial.aeval_C] at h
+  rw [Algebra.algebraMap_eq_smul_one, Algebra.algebraMap_eq_smul_one,
+    smul_mul_assoc, one_mul, sq] at h
+  linear_combination (norm := module) h
+
+/-- **The trace of a rank-two square** (PROVEN): `tr (f²) = (tr f)² − 2 det f`,
+by taking traces in Cayley–Hamilton and using `tr 1 = finrank = 2`. -/
+theorem trace_mul_self_of_finrank_eq_two {k : Type*} [Field k] {V : Type*}
+    [AddCommGroup V] [Module k V] [Module.Finite k V] [Module.Free k V]
+    (hV : Module.finrank k V = 2) (f : Module.End k V) :
+    LinearMap.trace k V (f * f) = LinearMap.trace k V f ^ 2 - 2 * LinearMap.det f := by
+  rw [mul_self_eq_of_finrank_eq_two hV f, map_sub, map_smul, map_smul]
+  have h1 : LinearMap.trace k V (1 : Module.End k V) = (2 : k) := by
+    rw [show (1 : Module.End k V) = LinearMap.id from rfl, LinearMap.trace_id, hV]
+    norm_num
+  rw [h1]
+  simp only [smul_eq_mul]
+  ring
+
+/-- **The determinant of a commutator with an involution is `1`** (PROVEN):
+`det (J Y J Y⁻¹) = (det J)² (det Y)(det Y⁻¹) = 1`, needing only `J² = 1` and
+`Y Y⁻¹ = 1` — no rank hypothesis. -/
+theorem det_commutator_of_involution {k : Type*} [Field k] {V : Type*}
+    [AddCommGroup V] [Module k V] [Module.Finite k V] [Module.Free k V]
+    (J Y Y' : Module.End k V) (hJ : J * J = 1) (hYY' : Y * Y' = 1) :
+    LinearMap.det (J * Y * J * Y') = 1 := by
+  have hdm : ∀ f g : Module.End k V,
+      LinearMap.det (f * g) = LinearMap.det f * LinearMap.det g := fun f g =>
+    LinearMap.det_comp f g
+  have hd1 : LinearMap.det (1 : Module.End k V) = 1 := LinearMap.det_id
+  have hJd : LinearMap.det J * LinearMap.det J = 1 := by
+    rw [← hdm, hJ, hd1]
+  have hYd : LinearMap.det Y * LinearMap.det Y' = 1 := by
+    rw [← hdm, hYY', hd1]
+  rw [hdm, hdm, hdm]
+  calc LinearMap.det J * LinearMap.det Y * LinearMap.det J * LinearMap.det Y'
+      = (LinearMap.det J * LinearMap.det J) * (LinearMap.det Y * LinearMap.det Y') := by ring
+    _ = 1 := by rw [hJd, hYd, one_mul]
+
+/-- **The trace of a commutator with an involution of determinant `−1`**
+(PROVEN): `(det Y) · tr (J Y J Y⁻¹) = (tr Y)² − (tr (J Y))² − 2 det Y`.
+
+Route, and it is the whole computational content of the cut: Cayley–Hamilton
+gives `(det Y) • Y⁻¹ = (tr Y) • 1 − Y`, so multiplying the commutator through by
+`det Y` removes the inverse and leaves
+`(tr Y) • (J Y J) − (J Y)²`. Then `tr (J Y J) = tr Y` (cyclicity of the trace
+plus `J² = 1`) and `tr ((J Y)²) = (tr (J Y))² − 2 det J det Y`, and `det J = −1`
+turns the last term into `+2 det Y`. -/
+theorem trace_commutator_of_involution {k : Type*} [Field k] {V : Type*}
+    [AddCommGroup V] [Module k V] [Module.Finite k V] [Module.Free k V]
+    (hV : Module.finrank k V = 2) (J Y Y' : Module.End k V)
+    (hJ : J * J = 1) (hdJ : LinearMap.det J = -1) (hYY' : Y * Y' = 1) :
+    LinearMap.det Y * LinearMap.trace k V (J * Y * J * Y')
+      = LinearMap.trace k V Y ^ 2 - LinearMap.trace k V (J * Y) ^ 2
+        - 2 * LinearMap.det Y := by
+  have hCH : (LinearMap.det Y) • Y' = (LinearMap.trace k V Y) • 1 - Y := by
+    have h := congrArg (fun A : Module.End k V => A * Y')
+      (mul_self_eq_of_finrank_eq_two hV Y)
+    simp only [smul_mul_assoc, one_mul, sub_mul, mul_assoc, hYY', mul_one] at h
+    linear_combination (norm := module) h
+  have hmul : (LinearMap.det Y) • (J * Y * J * Y')
+      = (LinearMap.trace k V Y) • (J * Y * J) - (J * Y) * (J * Y) := by
+    have h1 : (LinearMap.det Y) • (J * Y * J * Y') = (J * Y * J) * ((LinearMap.det Y) • Y') := by
+      rw [mul_smul_comm, mul_assoc]
+    rw [h1, hCH, mul_sub, mul_smul_comm, mul_one]
+    have hfold : J * Y * J * Y = (J * Y) * (J * Y) := by simp only [mul_assoc]
+    rw [hfold]
+  have htr := congrArg (LinearMap.trace k V) hmul
+  simp only [map_sub, map_smul, smul_eq_mul] at htr
+  have h2 : LinearMap.trace k V (J * Y * J) = LinearMap.trace k V Y := by
+    rw [LinearMap.trace_mul_comm, ← mul_assoc, hJ, one_mul]
+  have h3 : LinearMap.trace k V ((J * Y) * (J * Y))
+      = LinearMap.trace k V (J * Y) ^ 2 - 2 * (LinearMap.det J * LinearMap.det Y) := by
+    have hdJY : LinearMap.det (J * Y) = LinearMap.det J * LinearMap.det Y :=
+      LinearMap.det_comp J Y
+    rw [trace_mul_self_of_finrank_eq_two hV, hdJY]
+  rw [h2, h3, hdJ] at htr
+  rw [htr]
+  ring
+
+/-- **The discriminant of a commutator with an involution of determinant `−1`**
+(PROVEN): the identity advertised in the section note,
+
+    (det Y)² · disc (charpoly (J Y J Y⁻¹)) = (s² − u²)(s² − u² − 4 det Y),
+
+with `s = tr Y`, `u = tr (J Y)`, `disc p = (p.coeff 1)² − 4 p.coeff 0`. Combines
+the two coefficient lemmas with `det_commutator_of_involution` (the commutator
+has determinant `1`, so `disc = (tr)² − 4`) and
+`trace_commutator_of_involution`. -/
+theorem discrim_commutator_of_involution {k : Type*} [Field k] {V : Type*}
+    [AddCommGroup V] [Module k V] [Module.Finite k V] [Module.Free k V]
+    (hV : Module.finrank k V = 2) (J Y Y' : Module.End k V)
+    (hJ : J * J = 1) (hdJ : LinearMap.det J = -1) (hYY' : Y * Y' = 1) :
+    LinearMap.det Y ^ 2 *
+        ((J * Y * J * Y').charpoly.coeff 1 ^ 2 - 4 * (J * Y * J * Y').charpoly.coeff 0)
+      = (LinearMap.trace k V Y ^ 2 - LinearMap.trace k V (J * Y) ^ 2) *
+        (LinearMap.trace k V Y ^ 2 - LinearMap.trace k V (J * Y) ^ 2
+          - 4 * LinearMap.det Y) := by
+  have hc1 := charpoly_coeff_one_eq_neg_trace_of_finrank_eq_two hV (J * Y * J * Y')
+  have hc0 := charpoly_coeff_zero_eq_det_of_finrank_eq_two hV (J * Y * J * Y')
+  have hd := det_commutator_of_involution J Y Y' hJ hYY'
+  have ht := trace_commutator_of_involution hV J Y Y' hJ hdJ hYY'
+  rw [hc1, hc0, hd]
+  linear_combination (LinearMap.det Y * LinearMap.trace k V (J * Y * J * Y')
+    + LinearMap.trace k V Y ^ 2 - LinearMap.trace k V (J * Y) ^ 2 - 2 * LinearMap.det Y) * ht
+
+/-- **The `ℓ`-adic cyclotomic character kills commutators** (PROVEN): it is a
+monoid homomorphism `(ℚᵃˡᵍ ≃+* ℚᵃˡᵍ) →* ℤ_[ℓ]ˣ` and `ℤ_[ℓ]ˣ` is commutative, so
+`χ_ℓ(x y x⁻¹ y⁻¹) = 1`. Passing from `Γ ℚ` to `ℚᵃˡᵍ ≃+* ℚᵃˡᵍ` is `rfl` on
+products and on the identity, which is why no bundled homomorphism is
+introduced. -/
+theorem cyclotomicCharacter_commutator_eq_one (ℓ : ℕ) [Fact ℓ.Prime] (x y : Γ ℚ) :
+    cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ (x * y * x⁻¹ * y⁻¹).toRingEquiv = 1 := by
+  have hmul : ∀ a b : Γ ℚ, cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ (a * b).toRingEquiv
+      = cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ a.toRingEquiv
+        * cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ b.toRingEquiv := by
+    intro a b
+    rw [show (a * b).toRingEquiv = a.toRingEquiv * b.toRingEquiv from rfl, map_mul]
+  have hone : cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ (1 : Γ ℚ).toRingEquiv = 1 := by
+    rw [show (1 : Γ ℚ).toRingEquiv = 1 from rfl, map_one]
+  have hinv : ∀ a : Γ ℚ, cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ (a⁻¹).toRingEquiv
+      = (cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ a.toRingEquiv)⁻¹ := by
+    intro a
+    have h := hmul a a⁻¹
+    rw [mul_inv_cancel, hone] at h
+    exact eq_inv_of_mul_eq_one_right h.symm
+  have hcomm : ∀ a b : ℤ_[ℓ]ˣ, a * b * a⁻¹ * b⁻¹ = 1 := by
+    intro a b
+    rw [mul_comm a b]
+    group
+  rw [hmul, hmul, hmul, hinv, hinv, hcomm]
+
+/-- **An element in the kernel of the `ℓ`-adic cyclotomic character fixes every
+`ℓⁿ`-th root of unity, at every `n` at once** (PROVEN): `cyclotomicCharacter.spec`
+evaluates `σ ζ` as `ζ ^ (χ_ℓ(σ) mod ℓⁿ).val`, and at `χ_ℓ(σ) = 1` that exponent
+is `1` (for `n ≥ 1`, by `ZMod.val_one`, `ℓⁿ > 1`) or the statement is trivial
+(for `n = 0`, where `ζ ^ ℓ⁰ = 1` already forces `ζ = 1`). -/
+theorem apply_eq_self_of_cyclotomicCharacter_eq_one (ℓ : ℕ) [Fact ℓ.Prime]
+    (σ : Γ ℚ) (hσ : cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ σ.toRingEquiv = 1)
+    (n : ℕ) (ζ : ℚ ᵃˡᵍ) (hζ : ζ ^ ℓ ^ n = 1) : σ ζ = ζ := by
+  have hspec := cyclotomicCharacter.spec (L := ℚ ᵃˡᵍ) ℓ σ.toRingEquiv ζ hζ
+  rw [hσ] at hspec
+  rcases Nat.eq_zero_or_pos n with hn | hn
+  · subst hn
+    have hζ1 : ζ = 1 := by simpa using hζ
+    rw [hζ1]
+    simp
+  · haveI : Fact (1 < ℓ ^ n) := ⟨by
+      have h2 : 2 ≤ ℓ := (Fact.out : ℓ.Prime).two_le
+      calc 1 < 2 ^ n := Nat.one_lt_two_pow (by omega)
+        _ ≤ ℓ ^ n := Nat.pow_le_pow_left h2 n⟩
+    simp only [Units.val_one, map_one] at hspec
+    rw [ZMod.val_one] at hspec
+    simpa using hspec
+
+/-- **(★) — WHAT IS LEFT OF THE TAYLOR–WILES GALOIS ELEMENT OVER `F`, ONCE `F`
+IS TOTALLY REAL** (SORRY LEAF, cut 2026-07-30 (late) out of
+`exists_hilbertFixing_rootsOfUnity_discrim_isSquare` below, which is PROVEN over
+it and carries the full history).
+
+In the notation of the section note, writing `J = ρbar(complexConj)` — an
+involution of determinant `−1` sitting inside `ρbar(Γ F)` because `F` is totally
+real — there is `g : Γ F` with, for `Y = ρbar|_{G_F}(g)`,
+
+    (s² − u²) · (s² − u² − 4 det Y)   a NONZERO SQUARE in `k`,
+    s = tr Y,   u = tr (J Y).
+
+**In a basis diagonalising `J = diag(1, −1)` and with `Y = [[a, b], [c, d]]` this
+says exactly that `16 abcd` is a nonzero square**, i.e. that the commutator
+`[complexConj, g]` has residual characteristic polynomial splitting with two
+distinct roots in `k`.
+
+# WHY THIS IS THE RIGHT REMAINING OBLIGATION
+
+This is `(★)` of the repair paragraph on the consumer below, transcribed. That
+paragraph established, and this file now proves, that everything else in the leaf
+is free once `F` is totally real:
+
+* the involution `J` exists in the image, by `exists_map_eq_complexConj` together
+  with the determinant clause of the datum (`cyclotomicCharacter_complexConj`);
+* the `μ_{ℓⁿ}`-fixing clause costs NOTHING at any `n`, because the commutator
+  `c g c⁻¹ g⁻¹` lies in the kernel of the `ℓ`-adic cyclotomic character
+  (`cyclotomicCharacter_commutator_eq_one`,
+  `apply_eq_self_of_cyclotomicCharacter_eq_one`) — the `n` of the consumer has
+  disappeared here, and that is the main gain of the cut;
+* the discriminant bookkeeping is the closed identity
+  `discrim_commutator_of_involution`.
+
+# THE OBSTRUCTION, RESTATED IN THESE TERMS — AND IT IS NOT FREE
+
+`(★)` FAILS for `G = ρbar(Γ F)` contained in the normalizer of a Cartan
+subgroup, and BOTH Cartans obstruct it, which is worth recording because only
+the nonsplit one appears in the audits below:
+
+* `G ⊆ N(T_split)` with `T_split` the torus of `J`: every element is diagonal or
+  antidiagonal, so `abcd = 0` identically. Such a `G` is irreducible (dihedral),
+  so `hirrF` does not exclude it.
+* `G ⊆ N(T_ns)`: at `k = 𝔽₇` the discriminant set of `N(T_ns) ∩ SL₂` is
+  `{0, 3, 5}` against squares `{1, 2, 4}` (enumerated; see the FALSITY AUDIT
+  below), and every commutator `[J, Y]` lands in `G ∩ SL₂`.
+
+So a proof MUST use an arithmetic hypothesis that excludes residually dihedral
+image, and the only candidate left in the package is `isTameAtTwo` — see
+"SO WHERE MUST THE PROOF COME FROM? `isTameAtTwo`" on the consumer, which the
+2026-07-30 repair paragraph explicitly reinstates. **This leaf is therefore an
+ARITHMETIC leaf wearing group-theoretic clothes; a purely group-theoretic proof
+is impossible and anyone who finds one has made an error.**
+
+# STRENGTH AUDIT — THIS LEAF IS FORMALLY STRONGER THAN ITS CONSUMER, AND THE
+DIFFERENCE IS RECORDED HERE RATHER THAN HIDDEN
+
+The consumer asks, for each `n` separately, for SOME `σ ∈ Γ F` fixing `μ_{ℓⁿ}`.
+This leaf produces one `σ` — a commutator with complex conjugation — that works
+for EVERY `n` at once. Two strengthenings are therefore in play:
+
+1. uniformity in `n`;
+2. the restriction of the search from all of `Γ F(μ_{ℓⁿ})` to the commutators
+   `[c, g]`.
+
+Neither is a weakening of the mathematics and neither is idle: (1) is what
+removes `n` from the statement, and (2) is the route the consumer's own repair
+paragraph prescribes ("what is left of this leaf, once `F` is totally real, is
+purely group-theoretic: (★)"). The known counterexample analysis is untouched by
+both — in the residually dihedral shape the consumer already fails at `n = 1`,
+because `ρbar(Γ F(μ_ℓ)) = G ∩ SL₂` has no split element at all. **But a closer
+should know that a proof of the consumer that does NOT go through a commutator
+would not close this leaf**, and in that event the honest move is to prove the
+consumer directly and delete this declaration rather than to weaken it.
+
+`hirrF` and `hℓ5` are carried because the intended route needs them (`hℓ5`
+through `two_ne_zero_of_hilbertDeformationDatum`, which is what makes the
+eigenvalues `±1` of `J` distinct; `hirrF` to exclude the reducible images, where
+`G` fixes a line and `(★)` is false for the trivial reason that all commutators
+are unipotent). `𝒟₀` is load-bearing: it is what pins `det ρbar|_{G_F}` to the
+cyclotomic character, hence `det J = −1`.
+
+CIRCULARITY GUARD (inherited): nothing from `Family.lean`, `Lift.lean`,
+`Modularity/*` or `Deformation.lean`; in particular the `ℚ`-level `exfalso`
+through `not_isIrreducible_of_isHardlyRamified_of_five_le` is FORBIDDEN. -/
+theorem exists_trace_discrim_isSquare_of_hilbertDeformationDatum
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (F : Type u) [Field F] [NumberField F] [NumberField.IsTotallyReal F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟₀ : HilbertDeformationDatum ℓ F ρbar) :
+    ∃ g : Γ F, ∃ t : k, t ≠ 0 ∧
+      t ^ 2 =
+        (LinearMap.trace k V ((ρbar.map (algebraMap ℚ F)) g) ^ 2
+            - LinearMap.trace k V (ρbar complexConj * (ρbar.map (algebraMap ℚ F)) g) ^ 2) *
+          (LinearMap.trace k V ((ρbar.map (algebraMap ℚ F)) g) ^ 2
+            - LinearMap.trace k V (ρbar complexConj * (ρbar.map (algebraMap ℚ F)) g) ^ 2
+            - 4 * LinearMap.det ((ρbar.map (algebraMap ℚ F)) g)) :=
+  sorry
+
+/-- ### THIS DECLARATION IS **PROVEN** (2026-07-30, late), over the single new
+leaf `exists_trace_discrim_isSquare_of_hilbertDeformationDatum` above. DO NOT
+DISPATCH A PROVER AT IT.
+
+**THE "FALSE AS STATED" BANNER THAT STOOD HERE FROM 2026-07-27 IS RETIRED, AND
+THE AUDIT IT POINTED AT IS HISTORY, NOT A LIVE WARNING.** It described the
+statement *before* `[NumberField.IsTotallyReal F]` was threaded through this
+cluster (2026-07-30, earlier the same day). The audit's arithmetic is correct and
+is kept verbatim below because it is what forces the repair; its counterexample
+field is totally imaginary and necessarily so, so it does not touch the statement
+as it now stands. See "REPAIRED 2026-07-30 BY ONE HYPOTHESIS" below, which is the
+paragraph that supersedes it.
+
+**WHAT REMAINS OPEN IS THE NEW LEAF, NOT THIS DECLARATION.** The route recorded
+in the repair paragraph — complex conjugation `c ∈ Γ F` from total realness, and
+the commutator `σ = c g c⁻¹ g⁻¹`, which fixes every `ℓ`-power root of unity at
+every `n` at once because the cyclotomic character is a homomorphism into an
+abelian group — is now WRITTEN, and everything in it except the group-theoretic
+assertion `(★)` is proven. `(★)` is
+`exists_trace_discrim_isSquare_of_hilbertDeformationDatum`, whose docstring
+carries the analysis of what is left.
 
 The counterexample is `E = 54b1` at `ℓ = 7`, over a field `F` cut out so that
 `ρ̄_{E,7}(Γ F) = H := N(T_ns) ∩ SL₂(𝔽₇)`. Re-verified by exhaustive enumeration
@@ -19609,7 +19951,106 @@ this leaf is FALSE and the honest repair is to thread the quadratic enlargement
 of `k` through `IsTaylorWilesPrimeSet`, as the `ℚ`-level SHAPE AUDIT already
 recommends.
 
-**FALSITY AUDIT (2026-07-27) — THIS LEAF IS FALSE AS STATED, AND `isTameAtTwo`
+**REPAIRED 2026-07-30 BY ONE HYPOTHESIS, `[NumberField.IsTotallyReal F]`. THE
+FALSITY AUDIT BELOW IS ARITHMETICALLY CORRECT — every figure in it was re-checked
+independently and agrees — BUT ITS COUNTEREXAMPLE FIELD IS TOTALLY IMAGINARY, AND
+NECESSARILY SO, so it does not touch the statement as it now stands. Read this
+section before the audit; the audit is kept verbatim because its analysis of the
+`ℚ(μ_ℓ)`-free case is what forces the repair to be the one taken.**
+
+WHY THE COUNTEREXAMPLE FIELD CANNOT BE TOTALLY REAL — and this is FORCED, not an
+artefact of the choice of curve. The audit takes `F ⊇ F₀`, the fixed field of
+`ρ̄⁻¹(H)` for `H = N(T_ns) ∩ SL₂(𝔽₇)`. The `det` clause of
+`IsHilbertHardlyRamified`, transported to the residual level by `𝒟₀.resid`, gives
+`det ρbar|_{Γ F} = χ̄_ℓ|_{Γ F}`. Since `H ⊆ SL₂`, that character is TRIVIAL on
+`Γ F₀`, i.e. `Γ F₀ ⊆ ker χ̄_ℓ = Γ ℚ(μ_ℓ)`, i.e. `ℚ(μ_ℓ) ⊆ F₀ ⊆ F`. For `ℓ ≥ 5`
+odd, `ℚ(μ_ℓ)` is a CM field, so `F` has NO real place at all. **The same one-line
+argument kills EVERY counterexample whose residual image over `F` lies in `SL₂`
+— which is the shape of all of them**: the `Q₈` obstruction, the binary-dihedral
+`H` of the audit, and the whole SHARPENED FALSITY AUDIT above are statements
+about subgroups of `SL₂(k)`, and total realness makes that containment
+impossible.
+
+WHAT TOTAL REALNESS BUYS, POSITIVELY. `exists_map_eq_complexConj` above (PROVEN,
+and it is exactly this hypothesis that it consumes) puts a complex conjugation
+`c : Γ F` inside `Γ F`. Then `ρbar(c)² = 1` and `det ρbar(c) = χ̄_ℓ(c) = −1`, so
+`ρbar(c)` has eigenvalues `1` and `−1` — DISTINCT and `k`-rational — with
+`tr² − 4 det = 0 + 4 = 2²`, nonzero because `2 ≠ 0` in `k`
+(`two_ne_zero_of_hilbertDeformationDatum`). **At `n = 0` the roots-of-unity
+clause is vacuous and `σ = c`, `δ = 2` proves the leaf outright.**
+
+AND THE `μ_{ℓⁿ}`-FIXING CLAUSE COSTS NOTHING AT ANY `n`. For every `g : Γ F` the
+COMMUTATOR `σ_g = c g c⁻¹ g⁻¹` lies in `Γ F` and fixes every `ℓⁿ`-th root of
+unity, for EVERY `n` at once: the action of `Γ ℚ` on `μ_{ℓⁿ}` factors through the
+ABELIAN group `Gal(ℚ(μ_{ℓⁿ})/ℚ)`, so the whole commutator subgroup is in the
+kernel. So what is left of this leaf, once `F` is totally real, is purely
+group-theoretic:
+
+  (★) `k` a field with `2 ≠ 0`, `G ≤ GL₂(k)` irreducible, `X ∈ G` with `X² = 1`
+      and `det X = −1`. Then some commutator `[X, Y]`, `Y ∈ G`, has two DISTINCT
+      `k`-rational eigenvalues.
+
+(★) IS NOT FREE, AND ITS FAILURE MODE NAMES THE REMAINING OBLIGATION. It fails
+for `G ⊆ N(T_ns)`: every commutator lies in `G ∩ SL₂ ⊆ H`, whose discriminant set
+is `{0, 3, 5}` at `k = 𝔽₇` (enumerated). Such an `X` does exist in `N(T_ns)` —
+the `GL₂(𝔽₇)`-class of `diag(1, −1)` has `56` elements and meets `N(T_ns)` in
+`8`. So the ONLY surviving counterexample shape is the residually DIHEDRAL/CM
+one: `ρbar` of nonsplit-torus-normalizer type with FULL determinant.
+
+**AND THAT SHAPE IS EXACTLY WHAT THE SUPERSEDED PARAGRAPH ABOVE ("SO WHERE MUST
+THE PROOF COME FROM? `isTameAtTwo`") ALREADY EXCLUDED — SO THAT PARAGRAPH IS
+REINSTATED.** Its natural realisation is the `ℓ`-adic Tate module of a CM
+elliptic curve at an `ℓ` inert in the CM field (`y² = x³ − x`, conductor `32`,
+`ℓ = 7` inert in `ℚ(i)`), and it fails `isTameAtTwo` precisely because CM forces
+potentially good reduction, whence the eigenvalues of `ρ(Frob_w)` are Weil
+numbers of absolute value `√(N w)` and can never be the `±1` that the
+square-trivial unramified quotient character demands. The 2026-07-27 audit
+overturned that paragraph with a NON-CM curve (`54b1`) — correctly, but only over
+a totally imaginary `F`, so it never touched the totally real case.
+
+MACHINE CONFIRMATION OF THE AUDIT'S ARITHMETIC (re-run independently 2026-07-30,
+PARI/GP plus direct enumeration; every figure below agrees with the audit).
+`54b1 = [1, −1, 1, 1, −1]`: conductor `54`, `j = 9261/8`, `v₂(j) = −3`,
+`v₃(j) = 3`, `v₇(j) = 3`; Kodaira `I₃` with `f = 1` and `a₂ = +1` at `2`, i.e.
+SPLIT multiplicative; type `II` with `f = 3` at `3`; `I₀` with `f = 0` at `7`,
+i.e. good; isogeny-matrix degrees `{1, 3, 9}` only, so NO rational `7`-isogeny;
+and `a_q²/q mod 7` attains ALL of `𝔽₇` over `q < 400`, so the mod-`7` image is
+surjective. Group side: `|T_ns| = 48`, `|N(T_ns)| = 96`, `|H| = 16`, the
+discriminant set of `H` is exactly `{0, 3, 5}` against squares `{1, 2, 4}`, `H`
+has NO common eigenvector in `P¹(𝔽₇)`, EVERY subgroup of `H` of order `≥ 4` is
+irreducible, and `det N(T_ns) = 𝔽₇ˣ` in full. Nothing in the audit is wrong; what
+it missed is that its `F` contains `ℚ(μ₇)`.
+
+WHY THE HYPOTHESIS COSTS NOTHING DOWNSTREAM — it is DISCHARGED, not deferred.
+`[NumberField.IsTotallyReal F]` was threaded in the SAME commit through this leaf,
+`exists_hilbertFixing_rootsOfUnity_charpoly_split`, `exists_hilbertTaylorWilesPrime`,
+`IsHilbertTaylorWilesPrimeSet.exists_insert`/`.exists_card_eq` and
+`exists_hilbertTaylorWilesPrimeSet` (and, for the same reason, through the
+surviving-locus chain — see
+`exists_mem_hilbertSurvivingLocus_inter_hilbertTaylorWilesLocus` below). The first
+consumer beyond that chain, `injective_classifyingMap_hilbertHeckeDatum`, ALREADY
+carried `htr : NumberField.IsTotallyReal F` as an explicit hypothesis, and the
+terminal consumer `exists_finiteIndex_isIntegral_charpolyCoeff_of_isHardlyRamified`
+ALREADY opens with `haveI : NumberField.IsTotallyReal P.F := P.totallyReal`. So
+no new obligation reaches any consumer, and the module's own semantics — Hilbert
+modular forms over a TOTALLY REAL base — were assuming this all along; the
+hypothesis was simply missing from the statement.
+
+**THIS SUPERSEDES THE RECOMMENDATION PROPAGATED INTO
+`Modularity/KhareWintenberger.lean`** (three places: its warnings on the
+injectivity half) that a closer of this cluster should expect an ENLARGED
+residual field `k`. No enlargement of `k` is needed, and
+`HilbertHeckeAlgebra.πT`'s target is untouched.
+
+CHECKS THAT WOULD REFUTE THIS REPAIR, in increasing cost: exhibit a subgroup
+`G ≤ GL₂(k)` that is irreducible, contains `X` with `X² = 1` and `det X = −1`,
+and all of whose commutators `[X, Y]` have non-split characteristic polynomial,
+AND that arises as `ρbar(Γ F)` for a hardly ramified `F`-level datum over a
+totally real `F`; or refute the `isTameAtTwo` argument against residually CM
+`ρbar`; or exhibit a totally real `F` containing `ℚ(μ_ℓ)` for some `ℓ ≥ 5`.
+
+**FALSITY AUDIT (2026-07-27) — FALSE AS STATED *BEFORE* THE 2026-07-30 REPAIR
+ABOVE, WHICH ITS COUNTEREXAMPLE DOES NOT SURVIVE. `isTameAtTwo`
 DOES NOT SAVE IT.** This CORRECTS the paragraph immediately above, which
 concluded that `isTameAtTwo` is the load-bearing hypothesis and told a prover to
 attack it there. It is not, and the reason is that the nearest-miss curve chosen
@@ -19695,7 +20136,7 @@ CIRCULARITY GUARD (inherited): nothing from `Family.lean`, `Lift.lean`,
 through `not_isIrreducible_of_isHardlyRamified_of_five_le` is FORBIDDEN. -/
 theorem exists_hilbertFixing_rootsOfUnity_discrim_isSquare
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    (F : Type u) [Field F] [NumberField F]
+    (F : Type u) [Field F] [NumberField F] [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [TopologicalSpace k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -19707,8 +20148,76 @@ theorem exists_hilbertFixing_rootsOfUnity_discrim_isSquare
         (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) ζ = ζ) ∧
       ∃ δ : k, δ ≠ 0 ∧
         δ ^ 2 = ((ρbar.map (algebraMap ℚ F)) σ).charpoly.coeff 1 ^ 2
-          - 4 * ((ρbar.map (algebraMap ℚ F)) σ).charpoly.coeff 0 :=
-  sorry
+          - 4 * ((ρbar.map (algebraMap ℚ F)) σ).charpoly.coeff 0 := by
+  classical
+  have hℓOdd : Odd ℓ := (Fact.out : ℓ.Prime).odd_of_ne_two (by omega)
+  have hfr : Module.finrank k V = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast rank_eq_two_of_hilbertDeformationDatum 𝒟₀)
+  -- **A complex conjugation inside `Γ F`** — the one place total realness enters.
+  obtain ⟨c, hc⟩ := exists_map_eq_complexConj F
+  set J : Module.End k V := ρbar complexConj with hJdef
+  have hJc : (ρbar.map (algebraMap ℚ F)) c = J := by rw [GaloisRep.map_apply, hc]
+  have hJJ : J * J = 1 := by
+    rw [hJdef, ← map_mul ρbar]
+    convert map_one ρbar using 2
+    exact complexConj_mul_self
+  -- **Oddness**, through `𝒟₀`: the determinant clause gives `det (𝒟₀.ρ c) = −1`,
+  -- and `𝒟₀.resid` carries it to `J` through the constant charpoly coefficient.
+  have hdet𝒟 : LinearMap.det (𝒟₀.ρ c) = -1 := by
+    have hd := 𝒟₀.isHilbertHardlyRamified.det c
+    rw [GaloisRep.det_apply, hc, cyclotomicCharacter_complexConj ℓ hℓOdd] at hd
+    rw [hd]
+    simp
+  have hdetJ : LinearMap.det J = -1 := by
+    have h1 : LinearMap.det J = J.charpoly.coeff 0 := by
+      rw [LinearMap.det_eq_sign_charpoly_coeff, hfr]
+      ring
+    have h2 : LinearMap.det (𝒟₀.ρ c) = (𝒟₀.ρ c).charpoly.coeff 0 := by
+      rw [LinearMap.det_eq_sign_charpoly_coeff,
+        show Module.finrank 𝒟₀.R (Fin 2 → 𝒟₀.R) = 2 by simp]
+      ring
+    have h3 : J.charpoly = ((𝒟₀.ρ c).charpoly).map 𝒟₀.π := by
+      rw [← hJc]; exact (𝒟₀.resid c).symm
+    rw [h1, h3, Polynomial.coeff_map, ← h2, hdet𝒟, map_neg, map_one]
+  -- **The group-theoretic input `(★)`**, the one remaining leaf.
+  obtain ⟨g, t, ht0, hteq⟩ :=
+    exists_trace_discrim_isSquare_of_hilbertDeformationDatum ℓ hℓ5 F hirrF 𝒟₀
+  set Y : Module.End k V := (ρbar.map (algebraMap ℚ F)) g with hYdef
+  set Y' : Module.End k V := (ρbar.map (algebraMap ℚ F)) g⁻¹ with hY'def
+  have hYY' : Y * Y' = 1 := by
+    rw [hYdef, hY'def, ← map_mul, mul_inv_cancel, map_one]
+  have hΔ : LinearMap.det Y ≠ 0 := by
+    intro h0
+    have hdm : LinearMap.det (Y * Y') = LinearMap.det Y * LinearMap.det Y' :=
+      LinearMap.det_comp Y Y'
+    have hd1 : LinearMap.det (1 : Module.End k V) = 1 := LinearMap.det_id
+    rw [hYY', h0, zero_mul, hd1] at hdm
+    exact one_ne_zero hdm
+  -- **The commutator with the complex conjugation** is the required `σ`.
+  refine ⟨c * g * c⁻¹ * g⁻¹, ?_, t / LinearMap.det Y, div_ne_zero ht0 hΔ, ?_⟩
+  · -- it fixes every `ℓⁿ`-th root of unity, at every `n` at once
+    intro ζ hζ
+    refine apply_eq_self_of_cyclotomicCharacter_eq_one ℓ _ ?_ n ζ hζ
+    have hsplit : Field.absoluteGaloisGroup.map (algebraMap ℚ F) (c * g * c⁻¹ * g⁻¹)
+        = Field.absoluteGaloisGroup.map (algebraMap ℚ F) c *
+            Field.absoluteGaloisGroup.map (algebraMap ℚ F) g *
+            (Field.absoluteGaloisGroup.map (algebraMap ℚ F) c)⁻¹ *
+            (Field.absoluteGaloisGroup.map (algebraMap ℚ F) g)⁻¹ := by
+      simp only [map_mul, map_inv]
+    rw [hsplit]
+    exact cyclotomicCharacter_commutator_eq_one ℓ _ _
+  · -- and its discriminant is the nonzero square supplied by `(★)`
+    have hWeq : (ρbar.map (algebraMap ℚ F)) (c * g * c⁻¹ * g⁻¹) = J * Y * J * Y' := by
+      rw [map_mul, map_mul, map_mul, hJc, ← hYdef, ← hY'def]
+      congr 1
+      rw [show (ρbar.map (algebraMap ℚ F)) c⁻¹ = J from ?_]
+      · rw [GaloisRep.map_apply, map_inv, hc,
+          show complexConj⁻¹ = complexConj from inv_eq_of_mul_eq_one_right complexConj_mul_self]
+    have hkey := discrim_commutator_of_involution hfr J Y Y' hJJ hdetJ hYY'
+    rw [hWeq]
+    rw [← hteq] at hkey
+    rw [div_pow, div_eq_iff (pow_ne_zero 2 hΔ)]
+    linear_combination -hkey
 
 /-- **The Taylor–Wiles Galois element over `F`** (PROVEN 2026-07-27 over
 `exists_hilbertFixing_rootsOfUnity_discrim_isSquare` above; the
@@ -19799,7 +20308,7 @@ discharging the twin by `exfalso` through the odd-prime dichotomy
 dichotomy being proven over pillar α, which is proven over this cluster. -/
 theorem exists_hilbertFixing_rootsOfUnity_charpoly_split
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    (F : Type u) [Field F] [NumberField F]
+    (F : Type u) [Field F] [NumberField F] [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [TopologicalSpace k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -19868,7 +20377,7 @@ irreducibly. It is kept in the signature because the consumer supplies it and
 the leaf needs it. -/
 theorem exists_hilbertTaylorWilesPrime
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    (F : Type u) [Field F] [NumberField F]
+    (F : Type u) [Field F] [NumberField F] [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [TopologicalSpace k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -20039,7 +20548,7 @@ that *is* sound, as against the shrinking the deleted
 `exists_card_eq_isHilbertTaylorWilesPrimeSet` performed. -/
 theorem IsHilbertTaylorWilesPrimeSet.exists_insert
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    (F : Type u) [Field F] [NumberField F]
+    (F : Type u) [Field F] [NumberField F] [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -20076,7 +20585,7 @@ Taylor–Wiles number — which is all a dimension count can deliver, since a si
 place may cut more than one dimension. -/
 theorem IsHilbertTaylorWilesPrimeSet.exists_card_eq
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    (F : Type u) [Field F] [NumberField F]
+    (F : Type u) [Field F] [NumberField F] [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -20293,7 +20802,94 @@ theorem exists_finset_isUnramifiedAt_hilbert_of_notMem
     ∃ S : Finset (HeightOneSpectrum (𝓞 F)), ∀ w : HeightOneSpectrum (𝓞 F),
       w ∉ S → (ρbar.map (algebraMap ℚ F)).IsUnramifiedAt w := sorry
 
+/-- **THE COCYCLE FORM OF THE SMALL-SUBGROUP STATEMENT** (SORRY LEAF, cut
+2026-07-30 (late) out of
+`exists_mem_hilbertInertiaOutsideSubgroups_resSubgroup_eq_zero` below, which is
+PROVEN over it and carries the full route, the `[Finite k]` discussion and the
+uniform-`n` correction).
+
+There is a bound `n` such that EVERY continuous `1`-cocycle whose class is
+unramified outside `hilbertHardlyRamifiedPlaces ℓ F` VANISHES IDENTICALLY on some
+`N ∈ hilbertInertiaOutsideSubgroups F S n`.
+
+# WHY THIS IS THE RIGHT CUT
+
+The consumer's statement is cohomological — a class in the kernel of
+`hilbertResSubgroupTwist1` — and its route is entirely about a COCYCLE: build
+`N₁ = ker(Γ F → Aut_k M)`, cut it down to `N = {g ∈ N₁ | z g = 0}`, bound the
+index. Only the very last line of that route is cohomological, and it is the one
+line that needs the degree-one continuous-cochain dictionary of
+`Mathlib/RepresentationTheory/Homological/ContCohomology/LowDegreeOne.lean`.
+
+That line is now DISCHARGED in the consumer, from this leaf, by
+`ContinuousCohomology.map_cocycleClass_cocyclesMapKer` followed by
+`ContinuousCohomology.cocycleClass_eq_zero_of_eval₁_eq_sub` at `m = 0` — the
+restricted cocycle is literally the zero function, so its class is zero for the
+cheapest possible reason. **A prover of this leaf therefore never has to touch
+the cochain model, `ContinuousCohomology.map`, or `cocycleClass` at all**: the
+obligation is the elementary-looking `∀ g ∈ N, eval₁ z g = 0`, which is how the
+route already phrased it ("`res^{Γ F}_N c = 0` because `z` restricts to the zero
+cocycle on `N`").
+
+# WHAT IS STILL HARD, AND IT IS NOT THE BOOKKEEPING
+
+The quantifier order `∃ n, ∀ z` is the whole difficulty, and the consumer's
+2026-07-30 note analyses it: the natural bound `#(Γ F / N₁) · #(image z)` depends
+on `z`, and this module deliberately drops `[Finite k]`, so `M` is infinite as a
+set and the `ℚ`-level twin's uniform bound `#(image z) ≤ #M` is unavailable. In
+characteristic zero `image z` is a finite subgroup of a torsion-free module hence
+trivial, and `N = N₁` works; in characteristic `p` the uniform bound exists but
+needs finiteness of the maximal abelian exponent-`p` extension of a number field
+unramified outside a finite set — Hermite–Minkowski again, and NOT supplied by
+`finite_hilbertInertiaOutsideSubgroups`, which bounds a different thing. That
+split, and not the cohomology, is what a prover should plan for.
+
+# STRENGTH AUDIT
+
+This leaf quantifies over COCYCLES where the consumer quantifies over CLASSES.
+That is a strengthening only in appearance: the consumer obtains its cocycle from
+`ContinuousCohomology.exists_cocycleClass_eq`, which is surjective, so every
+class in play is the class of some `z` covered here; and conversely a `z` whose
+class is not unramified is not constrained. The genuine strengthening is that the
+conclusion is VANISHING of `z` on `N` rather than vanishing of its class, which
+is what the route proves anyway and is strictly more usable.
+
+Both-ways audit inherited from the consumer: `hSram` and `hSunr` are both
+load-bearing and are passed through unchanged; the statement is not vacuous
+(`z = 0` is covered, and `⊤ ∈ hilbertInertiaOutsideSubgroups F S n` for `n ≥ 1`),
+and no hypothesis on `ρbar` beyond its type is available, so no circular discharge
+exists. -/
+theorem exists_forall_mem_hilbertInertiaOutsideSubgroups_eval₁_eq_zero
+    (ℓ : ℕ) [Fact ℓ.Prime] (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V)
+    (S : Finset (HeightOneSpectrum (𝓞 F)))
+    (hSram : hilbertHardlyRamifiedPlaces ℓ F ⊆ (S : Set (HeightOneSpectrum (𝓞 F))))
+    (hSunr : ∀ w : HeightOneSpectrum (𝓞 F), w ∉ S →
+      (ρbar.map (algebraMap ℚ F)).IsUnramifiedAt w) :
+    ∃ n : ℕ, ∀ z : ContinuousCohomology.cocycles₁ (hilbertAdZeroTwist F ρbar),
+      ContinuousCohomology.cocycleClass (hilbertAdZeroTwist F ρbar) 1 z
+          ∈ hilbertH1TwistUnramified ℓ F ρbar →
+      ∃ N ∈ hilbertInertiaOutsideSubgroups F S n,
+        ∀ g : Γ F, g ∈ N →
+          ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1 g = 0 :=
+  sorry
+
 /-- **An unramified-outside-`hilbertHardlyRamifiedPlaces` class dies on a small
+open subgroup** (a SORRY LEAF from its cut on 2026-07-28 until 2026-07-30 (late);
+**PROVEN** that day over the single leaf
+`exists_forall_mem_hilbertInertiaOutsideSubgroups_eval₁_eq_zero` immediately
+above, which is the same statement about the COCYCLE. The statement here is
+unchanged and no consumer changed; the sentence below calling this "the only one
+of the four that touches the cochain model" is now the reason the cut was made,
+since the cochain model is entirely on THIS side of it and a prover of the leaf
+never meets it. Everything else below remains accurate — in particular the
+uniform-`n` correction, which is where the remaining difficulty lives.)
+
+Original header follows.
+
+**An unramified-outside-`hilbertHardlyRamifiedPlaces` class dies on a small
 open subgroup** (SORRY LEAF, cut out 2026-07-28 as the third of the four inputs
 of `finite_hilbertH1TwistUnramified` below — this is the cocycle bookkeeping,
 and the only one of the four that touches the cochain model; the `F`-level twin
@@ -20427,8 +21023,34 @@ theorem exists_mem_hilbertInertiaOutsideSubgroups_resSubgroup_eq_zero
       (ρbar.map (algebraMap ℚ F)).IsUnramifiedAt w) :
     ∃ n : ℕ, ∀ c ∈ hilbertH1TwistUnramified ℓ F ρbar,
       ∃ N ∈ hilbertInertiaOutsideSubgroups F S n,
-        c ∈ LinearMap.ker (hilbertResSubgroupTwist1 F ρbar N).hom.toLinearMap :=
-  sorry
+        c ∈ LinearMap.ker (hilbertResSubgroupTwist1 F ρbar N).hom.toLinearMap := by
+  classical
+  obtain ⟨n, hn⟩ :=
+    exists_forall_mem_hilbertInertiaOutsideSubgroups_eval₁_eq_zero ℓ F ρbar S hSram hSunr
+  refine ⟨n, fun c hc => ?_⟩
+  -- every class is the class of a cocycle
+  obtain ⟨z, hz⟩ :=
+    ContinuousCohomology.exists_cocycleClass_eq (X := hilbertAdZeroTwist F ρbar) 1 c
+  obtain ⟨N, hN, hzero⟩ := hn z (by rw [hz]; exact hc)
+  refine ⟨N, hN, ?_⟩
+  -- the restricted cocycle is literally zero, so its class is the zero class
+  rw [LinearMap.mem_ker, ← hz]
+  show ContinuousCohomology.map (hilbertSubgroupToGlobalHom F N)
+      (CategoryTheory.CategoryStruct.id (hilbertAdZeroTwistSubgroup F ρbar N)) 1
+      (ContinuousCohomology.cocycleClass (hilbertAdZeroTwist F ρbar) 1 z) = 0
+  rw [ContinuousCohomology.map_cocycleClass_cocyclesMapKer]
+  refine ContinuousCohomology.cocycleClass_eq_zero_of_eval₁_eq_sub _ 0 ?_ ?_
+  · simpa using continuous_const
+  · intro g
+    rw [ContinuousCohomology.eval₁_cocyclesMapKer]
+    simp only [map_zero, sub_zero]
+    show (CategoryTheory.CategoryStruct.id
+        (hilbertAdZeroTwistSubgroup F ρbar N)).hom
+        (ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1
+          (hilbertSubgroupToGlobalHom F N g)) = 0
+    have hg : hilbertSubgroupToGlobalHom F N g = (g : Γ F) := rfl
+    rw [hg, hzero _ g.2]
+    rfl
 
 /-- **Inflation–restriction: the kernel of restriction to an open normal
 subgroup is FINITE-DIMENSIONAL over `k`** (SORRY LEAF, cut out 2026-07-28 as the
@@ -21076,7 +21698,100 @@ theorem isOpen_hilbertSurvivingLocus
       ((isOpen_discrete {(ρbar.map (algebraMap ℚ F)) x₀}).preimage hcont)).inter
       ((isOpen_discrete {(ρbar.map (algebraMap ℚ F)) x₀⁻¹}).preimage hconti)
 
-/-- **The NONEMPTINESS half of DDT Lemma 2.48 over `F`** (SORRY LEAF; cut out
+/-- **THE SEPARATION STEP OF DDT §2, WITH THE LOCUS BOOKKEEPING REMOVED**
+(SORRY LEAF, cut 2026-07-30 (late) out of
+`exists_mem_hilbertSurvivingLocus_inter_hilbertTaylorWilesLocus` below, which is
+PROVEN over it and carries the full history and the falsity audit).
+
+Given `σ` in the Taylor–Wiles locus, there is `τ : Γ F` which
+
+* acts TRIVIALLY on `ad⁰ρbar(1)` (so `σ τ` has the same twisted action as `σ`,
+  and in particular the same `(ρ σ − 1)`-image);
+* keeps `σ τ` inside the Taylor–Wiles locus; and
+* has `z τ` OUTSIDE the proper subspace `(ρ σ − 1) · ad⁰ρbar(1)`.
+
+# WHAT THE CUT REMOVES, AND WHY THAT IS WORTH A LEAF
+
+Everything else in the consumer's ROUTE is now glue and is proven there:
+
+* the Taylor–Wiles locus is nonempty, by
+  `exists_hilbertFixing_rootsOfUnity_charpoly_split` above — this is the input
+  that total realness buys, and the consumer spends it directly;
+* if the `σ` that supplies survives already, there is nothing to do;
+* otherwise `z σ = ρ σ m₀ − m₀`, and the crossed-homomorphism identity
+  `ContinuousCohomology.cocycles₁_eval₁_mul` gives
+  `z (σ τ) = z σ + ρ σ (z τ)`, so `z (σ τ) = ρ σ m − m` would force
+  `ρ σ (z τ) = ρ σ (m − m₀) − (m − m₀)`, i.e. `z τ = ρ σ w − w` for
+  `w = ρ σ⁻¹ (m − m₀)` — which is exactly what this leaf forbids. The
+  subspace `(ρ σ − 1) M` is `ρ σ`-stable, and `ρ σ` is injective
+  (`ContinuousCohomology.rho_injective`), which is what makes that step an
+  equivalence rather than an implication.
+
+So the remaining content is the DDT §2 separation itself and nothing else:
+**`z` restricted to the subgroup acting trivially on `ad⁰ρbar(1)` and on
+`μ_{ℓⁿ}` is not merely nonzero — it escapes the proper subspace cut out by any
+regular semisimple `σ` of the locus.** Classically that is two facts:
+`H¹(Gal(L/F), ad⁰ρbar(1)) = 0` for `L = F(ad⁰ρbar, μ_{ℓⁿ})`, which is where
+absolute irreducibility of `ρbar|_{G_{F(ζ_ℓ)}}` and `ℓ ≥ 5` enter and which makes
+`z|_{Γ L} ≠ 0` (this consumes `hc0`, and `hcunr` is what makes the restriction
+well defined on classes unramified outside `hilbertHardlyRamifiedPlaces ℓ F`);
+and properness of `(ρ σ − 1) M`, which holds because `ρbar|_{G_F} σ` has two
+DISTINCT `k`-rational eigenvalues, so `ad⁰` of it fixes the corresponding
+diagonal line.
+
+# STRENGTH AUDIT
+
+The leaf quantifies over EVERY `σ` in the Taylor–Wiles locus, where the consumer
+needs only the one `σ` it happens to produce. That is deliberate and classically
+free: the argument above is uniform in `σ`, using only that `σ` is regular
+semisimple — which is precisely membership in the locus — and the field `L` from
+which `τ` is drawn does not depend on `σ` at all. Stating it for one unnamed `σ`
+would have forced the leaf to re-assert the nonemptiness of the locus, which is
+already PROVEN, and that would have been a strictly worse cut.
+
+`𝒟₀` is carried because the consumer spends it on
+`exists_hilbertFixing_rootsOfUnity_charpoly_split`; a prover of this leaf does
+not obviously need it, and if a proof goes through without it the binder should
+be dropped here rather than kept for symmetry.
+
+CIRCULARITY GUARD (inherited): nothing from `Family.lean`, `Lift.lean`,
+`Modularity/*` or `Deformation.lean`; in particular a proof ending in `exfalso`
+on `hirrF` through `not_isIrreducible_of_isHardlyRamified_of_five_le` is
+FORBIDDEN. -/
+theorem exists_hilbertAdZeroTrivializing_notMem_range_sub
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (F : Type u) [Field F] [NumberField F] [NumberField.IsTotallyReal F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟₀ : HilbertDeformationDatum ℓ F ρbar) (n : ℕ)
+    (z : ContinuousCohomology.cocycles₁ (hilbertAdZeroTwist F ρbar))
+    {c : continuousCohomology 1 (hilbertAdZeroTwist F ρbar)}
+    (hzc : ContinuousCohomology.cocycleClass (hilbertAdZeroTwist F ρbar) 1 z = c)
+    (hcunr : c ∈ hilbertH1TwistUnramified ℓ F ρbar) (hc0 : c ≠ 0)
+    (σ : Γ F) (hσ : σ ∈ hilbertTaylorWilesLocus ℓ F ρbar n) :
+    ∃ τ : Γ F, σ * τ ∈ hilbertTaylorWilesLocus ℓ F ρbar n ∧
+      (hilbertAdZeroTwist F ρbar).ρ τ = (hilbertAdZeroTwist F ρbar).ρ 1 ∧
+      ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1 τ ∉
+        Set.range fun m : ↥(hilbertAdZeroTwist F ρbar) =>
+          (hilbertAdZeroTwist F ρbar).ρ σ m - m :=
+  sorry
+
+/-- **The NONEMPTINESS half of DDT Lemma 2.48 over `F`** (a SORRY LEAF from its
+cut on 2026-07-28 until 2026-07-30 (late); **PROVEN** that day over the single
+leaf `exists_hilbertAdZeroTrivializing_notMem_range_sub` immediately above, which
+is the DDT §2 separation step with all locus and cocycle bookkeeping stripped
+off. The statement is unchanged and no consumer changed. Everything below this
+paragraph is the leaf's original documentation and remains accurate as the
+description of the ROUTE and of the FALSITY AUDIT that produced the
+`[NumberField.IsTotallyReal F]` hypothesis; only the "SORRY LEAF" label is
+superseded.)
+
+Original header follows.
+
+**The NONEMPTINESS half of DDT Lemma 2.48 over `F`** (SORRY LEAF; cut out
 2026-07-28 as one leaf carrying openness as well, SPLIT 2026-07-30 once the
 openness half was proven): for a cocycle `z` representing a nonzero class `c`
 unramified outside `hilbertHardlyRamifiedPlaces ℓ F`, the surviving locus of `z`
@@ -21113,6 +21828,45 @@ from `hirrF` — so `z|_{Γ L} ≠ 0`. Now `ρ σ` has two DISTINCT eigenvalues,
 (`ContinuousCohomology.cocycles₁_eval₁_mul`) to move out. Either `σ` or `σ τ`
 then lies in the intersection.
 
+# FALSITY AUDIT 2026-07-30 — THIS LEAF WAS FALSE AS STATED, FOR THE SAME REASON
+AS `exists_hilbertFixing_rootsOfUnity_discrim_isSquare`, AND IS REPAIRED THE SAME
+WAY: `[NumberField.IsTotallyReal F]`, ADDED THIS DAY.
+
+THE REDUCTION, which is why this leaf could never have been attacked
+independently of that one. A point of the intersection lies in
+`hilbertTaylorWilesLocus ℓ F ρbar n`, i.e. it IS a `σ` fixing `μ_{ℓⁿ}` whose
+residual charpoly splits with distinct roots. **So this leaf IMPLIES the
+conclusion of `exists_hilbertFixing_rootsOfUnity_discrim_isSquare` whenever its
+own hypotheses are satisfiable** — and the only hypothesis of this leaf that the
+other one does not have is `hc0 : c ≠ 0`, i.e. that
+`hilbertH1TwistUnramified ℓ F ρbar ≠ ⊥`.
+
+SO THE 54b1 COUNTEREXAMPLE REFUTES THIS LEAF TOO, and the Selmer group is not a
+loophole but the opposite. There `k = 𝔽₇` (discrete, as this leaf requires),
+`ρbar(Γ F) = H = N(T_ns) ∩ SL₂(𝔽₇)`, and NO element of `H` has distinct
+`𝔽₇`-rational eigenvalues, so `hilbertTaylorWilesLocus` is EMPTY and the
+intersection is empty at every `n`. Meanwhile `hilbertH1TwistUnramified` imposes
+NO local condition at the places over `2` and `ℓ` — it is the full
+`H¹(G_{F,S}, ad⁰ρbar(1))` for `S = hilbertHardlyRamifiedPlaces ℓ F` — and that
+group is enormous there: `F ⊇ ℚ(μ₇)` (see the audit on the sibling leaf) is
+totally IMAGINARY, so the Greenberg–Wiles formula gives
+`dim_{𝔽₇} H¹_S(F, M) ≥ 3[F : ℚ] − (3/2)[F : ℚ] − 3 = (3/2)[F : ℚ] − 3 ≥ 186`
+(the `v ∣ ℓ` local terms contribute `[F_v : ℚ_ℓ]·dim M` each, summing to
+`3[F : ℚ]`; the `[F : ℚ]/2` complex places subtract `dim M = 3` each; and
+`dim H⁰(F, M*) ≤ 3`). Far from being the vacuity escape the "Both-ways audit"
+below hoped for, the totally imaginary case is exactly where the Selmer group is
+LARGE. That is the classical reason the Taylor–Wiles method needs a totally real
+base, and it is what the missing hypothesis encodes.
+
+WHAT THE REPAIR CHANGES FOR THE ROUTE. Nothing above is invalidated; total
+realness is an ADDITION to the route, entering at its one arithmetic input.
+`exists_hilbertFixing_rootsOfUnity_charpoly_split` now carries the same
+hypothesis, so the `σ` the route asks for is still supplied by it; and with `F`
+totally real, `exists_map_eq_complexConj` also puts a complex conjugation inside
+`Γ F`, which is what makes that `σ` exist at all (see the sibling leaf's audit
+for the `n = 0` case, which is now outright provable, and for the commutator
+construction that discharges the `μ_{ℓⁿ}`-fixing clause at every `n`).
+
 **THE DATUM `𝒟₀` IS LOAD-BEARING AND MAY NOT BE DROPPED.** It is what supplies
 the Galois element of the nonemptiness half, through
 `exists_hilbertFixing_rootsOfUnity_charpoly_split`; and deviation (1) of
@@ -21132,7 +21886,7 @@ FORBIDDEN, that dichotomy being proven over pillar α, which is proven over this
 cluster. -/
 theorem exists_mem_hilbertSurvivingLocus_inter_hilbertTaylorWilesLocus
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    (F : Type u) [Field F] [NumberField F]
+    (F : Type u) [Field F] [NumberField F] [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -21144,7 +21898,58 @@ theorem exists_mem_hilbertSurvivingLocus_inter_hilbertTaylorWilesLocus
     (hzc : ContinuousCohomology.cocycleClass (hilbertAdZeroTwist F ρbar) 1 z = c)
     (hcunr : c ∈ hilbertH1TwistUnramified ℓ F ρbar) (hc0 : c ≠ 0) :
     (hilbertSurvivingLocus F ρbar z ∩
-      hilbertTaylorWilesLocus ℓ F ρbar n).Nonempty := sorry
+      hilbertTaylorWilesLocus ℓ F ρbar n).Nonempty := by
+  classical
+  -- The Taylor–Wiles locus is nonempty: this is what total realness buys.
+  obtain ⟨σ, hσfix, α, β, hαβ, hσpoly⟩ :=
+    exists_hilbertFixing_rootsOfUnity_charpoly_split ℓ hℓ5 F hirrF 𝒟₀ n
+  have hσTW : σ ∈ hilbertTaylorWilesLocus ℓ F ρbar n := ⟨hσfix, α, β, hαβ, hσpoly⟩
+  by_cases hin : σ ∈ hilbertSurvivingLocus F ρbar z
+  · exact ⟨σ, hin, hσTW⟩
+  · -- `z σ` is a coboundary at `σ`; move out along a trivializing `τ`
+    obtain ⟨τ, hστTW, hρτ, hτnot⟩ :=
+      exists_hilbertAdZeroTrivializing_notMem_range_sub ℓ hℓ5 F hirrF 𝒟₀ n z hzc
+        hcunr hc0 σ hσTW
+    have hρτa : ∀ a : ↥(hilbertAdZeroTwist F ρbar),
+        (hilbertAdZeroTwist F ρbar).ρ τ a = a := by
+      intro a
+      rw [hρτ]
+      simp
+    have hρστ : ∀ a : ↥(hilbertAdZeroTwist F ρbar),
+        (hilbertAdZeroTwist F ρbar).ρ (σ * τ) a = (hilbertAdZeroTwist F ρbar).ρ σ a := by
+      intro a
+      rw [ContinuousCohomology.rho_mul_apply, hρτa]
+    refine ⟨σ * τ, ?_, hστTW⟩
+    intro hbad
+    obtain ⟨m, hm⟩ := hbad
+    simp only [hρστ] at hm
+    obtain ⟨m₀, hm₀raw⟩ := not_not.mp hin
+    have hm₀ : (hilbertAdZeroTwist F ρbar).ρ σ m₀ - m₀
+        = ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1 σ := hm₀raw
+    have hsum : ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1 (σ * τ)
+        = ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1 σ
+          + (hilbertAdZeroTwist F ρbar).ρ σ
+            (ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1 τ) :=
+      ContinuousCohomology.cocycles₁_eval₁_mul z σ τ
+    have hshift : (hilbertAdZeroTwist F ρbar).ρ σ
+          (ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1 τ)
+        = (hilbertAdZeroTwist F ρbar).ρ σ (m - m₀) - (m - m₀) := by
+      have hstep : (hilbertAdZeroTwist F ρbar).ρ σ
+            (ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1 τ)
+          = ((hilbertAdZeroTwist F ρbar).ρ σ m - m)
+            - ((hilbertAdZeroTwist F ρbar).ρ σ m₀ - m₀) := by
+        rw [hm, hm₀, hsum]
+        abel
+      rw [hstep, map_sub]
+      abel
+    apply hτnot
+    refine ⟨(hilbertAdZeroTwist F ρbar).ρ σ⁻¹ (m - m₀), ?_⟩
+    have hcalc : (hilbertAdZeroTwist F ρbar).ρ σ
+        ((hilbertAdZeroTwist F ρbar).ρ σ⁻¹ (m - m₀)) = m - m₀ :=
+      ContinuousCohomology.rho_apply_inv (hilbertAdZeroTwist F ρbar) σ (m - m₀)
+    apply ContinuousCohomology.rho_injective (X := hilbertAdZeroTwist F ρbar) σ
+    simp only
+    rw [hshift, map_sub, hcalc]
 
 /-- **The GLOBAL half of DDT Lemma 2.48 over `F`** (PROVEN 2026-07-30 over
 `isOpen_hilbertSurvivingLocus` and
@@ -21157,7 +21962,7 @@ below calls it exactly as before. All that happened is that the openness clause
 stopped being a citation. -/
 theorem isOpen_hilbertSurvivingLocus_and_meets_hilbertTaylorWilesLocus
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    (F : Type u) [Field F] [NumberField F]
+    (F : Type u) [Field F] [NumberField F] [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -21253,7 +22058,7 @@ below independent of the cochain model: the consumer never mentions `cocycles₁
 Both-ways audit and CIRCULARITY GUARD: inherited from the two halves. -/
 theorem exists_hilbertSeparatingOpen_locResDecomp
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    (F : Type u) [Field F] [NumberField F]
+    (F : Type u) [Field F] [NumberField F] [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -21377,7 +22182,7 @@ discharging by `exfalso` through the odd-prime dichotomy
 dichotomy being proven over pillar α, which is proven over this cluster. -/
 theorem exists_hilbertTaylorWilesPrime_locResDecomp_ne_zero
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    (F : Type u) [Field F] [NumberField F]
+    (F : Type u) [Field F] [NumberField F] [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -21489,7 +22294,7 @@ come out SMALLER than `dim_k U`. That is why
 the only place the two differ. -/
 theorem exists_hilbertTaylorWilesPrimeSet_core
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    (F : Type u) [Field F] [NumberField F]
+    (F : Type u) [Field F] [NumberField F] [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -21663,7 +22468,7 @@ References: Wiles, Ann. of Math. 141 (1995), ch. 3; Diamond–Darmon–Taylor
 algebras in the totally real case*, §3; Skinner–Wiles, Duke 107 (2001), §2. -/
 theorem exists_hilbertTaylorWilesPrimeSet
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    (F : Type u) [Field F] [NumberField F]
+    (F : Type u) [Field F] [NumberField F] [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -32816,6 +33621,11 @@ theorem injective_classifyingMap_hilbertHeckeDatum
     (hψπ : 𝒟T.π.comp ψ = 𝒟.π)
     (hψρ : ∀ g : Γ F, ((𝒟.ρ g).charpoly).map ψ = (𝒟T.ρ g).charpoly) :
     Function.Injective ψ :=
+  -- Total realness is now a BINDER of the Taylor–Wiles-prime cluster as well
+  -- (see the FALSITY AUDIT on `exists_hilbertFixing_rootsOfUnity_discrim_isSquare`:
+  -- without it that leaf is refuted, the refuting `F` being forced to contain
+  -- `ℚ(μ_ℓ)` and hence to be totally IMAGINARY).  `htr` already supplies it.
+  haveI : NumberField.IsTotallyReal F := htr
   (exists_hilbertTaylorWilesPrimeSet ℓ hℓ5 F hirrF 𝒟).elim fun q0 hTW =>
     (exists_hilbertPatchedModule ℓ hℓ5 F hw2 htr hgal hirrF 𝒟 𝒟T T e h𝒟w h𝒟t ψ
         hψalg hψπ hψρ q0 hTW).elim
