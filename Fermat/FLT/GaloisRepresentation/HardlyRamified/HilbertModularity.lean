@@ -20588,27 +20588,136 @@ lemma hilbertSurvivingLocus_conj
     g * x * g⁻¹ ∈ hilbertSurvivingLocus F ρbar z :=
   fun hmem => hx (ContinuousCohomology.cocycles₁_eval₁_mem_range_sub_conj z g x hmem)
 
-/-- **The GLOBAL half of DDT Lemma 2.48 over `F`** (SORRY LEAF, cut out
-2026-07-28): for a cocycle `z` representing a nonzero class `c` unramified
-outside `hilbertHardlyRamifiedPlaces ℓ F`, the surviving locus of `z` is OPEN and
+/-- **The twisted adjoint action, read through `toEnd`** (PROVEN 2026-07-30):
+`ad⁰ρbar(1)` acts by `m ↦ det(ρbar σ) · ρbar σ ∘ m ∘ ρbar σ⁻¹`, so its value at
+`σ` is a function of the two endomorphisms `ρbar|_{G_F} σ` and
+`ρbar|_{G_F} σ⁻¹` and of nothing else. That is the whole input to
+`hilbertAdZeroTwist_rho_eq_of_apply_eq` below, hence to
+`isOpen_hilbertSurvivingLocus`. -/
+lemma hilbertAdZeroTwist_toEnd_rho_apply
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V) (x : Γ F)
+    (m : ↥(hilbertAdZeroTwist F ρbar)) :
+    HilbertAdZero.toEnd k V ((hilbertAdZeroTwist F ρbar).ρ x m) =
+      LinearMap.det ((ρbar.map (algebraMap ℚ F)) x) •
+        ((ρbar.map (algebraMap ℚ F)) x * HilbertAdZero.toEnd k V m *
+          (ρbar.map (algebraMap ℚ F)) x⁻¹) := by
+  show HilbertAdZero.toEnd k V
+      (((((ρbar.map (algebraMap ℚ F)).det x) •
+        (HilbertAdZero.rep (ρbar.map (algebraMap ℚ F)) x) :
+          HilbertAdZero k V →L[k] HilbertAdZero k V)) m) = _
+  rw [smul_apply, map_smul, GaloisRep.det_apply]
+  congr 1
+
+/-- **`ad⁰ρbar(1)` is locally constant along `ρbar`** (PROVEN 2026-07-30): two
+elements of `Γ F` whose images under `ρbar|_{G_F}` agree, together with those of
+their inverses, act identically on `ad⁰ρbar(1)`.
+
+The inverse clause is asked for rather than derived: `ρbar|_{G_F} x` is of course
+invertible in `Module.End k V`, so `ρbar|_{G_F} x⁻¹` is determined by
+`ρbar|_{G_F} x`, but deriving that costs a two-sided-inverse uniqueness argument
+where the consumer gets the clause for free — inversion is continuous on `Γ F`,
+so `{x | ρbar|_{G_F} x⁻¹ = c}` is open exactly as `{x | ρbar|_{G_F} x = c}` is. -/
+lemma hilbertAdZeroTwist_rho_eq_of_apply_eq
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V) {x y : Γ F}
+    (h : (ρbar.map (algebraMap ℚ F)) x = (ρbar.map (algebraMap ℚ F)) y)
+    (h' : (ρbar.map (algebraMap ℚ F)) x⁻¹ = (ρbar.map (algebraMap ℚ F)) y⁻¹) :
+    (hilbertAdZeroTwist F ρbar).ρ x = (hilbertAdZeroTwist F ρbar).ρ y := by
+  refine ContinuousLinearMap.ext fun m => HilbertAdZero.ext ?_
+  rw [hilbertAdZeroTwist_toEnd_rho_apply, hilbertAdZeroTwist_toEnd_rho_apply, h, h']
+
+/-- **The surviving locus is OPEN** (PROVEN 2026-07-30; the topological half of
+what was, until this day, the single leaf
+`isOpen_hilbertSurvivingLocus_and_meets_hilbertTaylorWilesLocus` below).
+
+# WHAT IT COSTS, AND WHY IT NEEDS NEITHER `𝒟₀` NOR IRREDUCIBILITY
+
+Membership of `x` in the locus depends on `x` through exactly two things: the
+value `z x` and the endomorphism `ρ x` whose `(ρ x − 1)`-image is being tested.
+Both are LOCALLY CONSTANT here:
+
+* `z x` is `ContinuousCohomology.eval₁`, continuous by `continuous_eval₁`, into
+  `HilbertAdZero k V`, which carries the DISCRETE topology by construction (that
+  is the whole reason `HilbertAdZero` is a type of its own — see its docstring);
+* `ρ x` is a function of `ρbar|_{G_F} x` and `ρbar|_{G_F} x⁻¹`
+  (`hilbertAdZeroTwist_rho_eq_of_apply_eq` above), and `ρbar` is continuous into
+  `Module.End k V` with the module topology, which is discrete because `k` is
+  discrete and `V` is finite (`discreteTopology_moduleTopology`, from
+  `Chebotarev.lean` — publicly imported).
+
+So each point of the locus has an explicit open neighbourhood, the intersection
+of three preimages of singletons, on which the defining condition is CONSTANT.
+
+Note the contrast with `isOpen_setOf_charpoly_eq_of_hilbertDeformationDatum`
+above, which has to route its openness through the deformation datum: that
+statement carries no `[DiscreteTopology k]`, and this one does. Where `k` is
+discrete no datum is needed, and none is taken — which is why the remaining leaf
+below is purely the NONEMPTINESS assertion. -/
+theorem isOpen_hilbertSurvivingLocus
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V)
+    (z : ContinuousCohomology.cocycles₁ (hilbertAdZeroTwist F ρbar)) :
+    IsOpen (hilbertSurvivingLocus F ρbar z) := by
+  classical
+  letI := moduleTopology k (Module.End k V)
+  haveI : DiscreteTopology (Module.End k V) := discreteTopology_moduleTopology _ _
+  haveI : DiscreteTopology ↥(hilbertAdZeroTwist F ρbar) :=
+    inferInstanceAs (DiscreteTopology (HilbertAdZero k V))
+  have hcont : Continuous fun g : Γ F => (ρbar.map (algebraMap ℚ F)) g :=
+    ContinuousMonoidHom.continuous_toFun (ρbar.map (algebraMap ℚ F))
+  have hconti : Continuous fun g : Γ F => (ρbar.map (algebraMap ℚ F)) g⁻¹ :=
+    hcont.comp continuous_inv
+  have hz : Continuous (ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1) :=
+    ContinuousCohomology.continuous_eval₁ _ _
+  rw [isOpen_iff_forall_mem_open]
+  intro x₀ hx₀
+  refine ⟨({x : Γ F | ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1 x =
+        ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1 x₀} ∩
+      {x : Γ F | (ρbar.map (algebraMap ℚ F)) x = (ρbar.map (algebraMap ℚ F)) x₀}) ∩
+      {x : Γ F | (ρbar.map (algebraMap ℚ F)) x⁻¹ = (ρbar.map (algebraMap ℚ F)) x₀⁻¹},
+    ?_, ?_, ⟨⟨rfl, rfl⟩, rfl⟩⟩
+  · rintro x ⟨⟨hx1, hx2⟩, hx3⟩
+    intro hbad
+    apply hx₀
+    rw [hilbertAdZeroTwist_rho_eq_of_apply_eq F ρbar hx2 hx3, hx1] at hbad
+    exact hbad
+  · exact (((isOpen_discrete
+      {ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1 x₀}).preimage hz).inter
+      ((isOpen_discrete {(ρbar.map (algebraMap ℚ F)) x₀}).preimage hcont)).inter
+      ((isOpen_discrete {(ρbar.map (algebraMap ℚ F)) x₀⁻¹}).preimage hconti)
+
+/-- **The NONEMPTINESS half of DDT Lemma 2.48 over `F`** (SORRY LEAF; cut out
+2026-07-28 as one leaf carrying openness as well, SPLIT 2026-07-30 once the
+openness half was proven): for a cocycle `z` representing a nonzero class `c`
+unramified outside `hilbertHardlyRamifiedPlaces ℓ F`, the surviving locus of `z`
 MEETS the Taylor–Wiles locus of `F` at level `n`. (The representative itself is
 supplied by `ContinuousCohomology.exists_cocycleClass_eq`, in the consumer.)
 
 This is the deep half — the "nonemptiness step" of DDT §2 — and it is where
 absolute irreducibility of `ρbar|_{G_F}` is used classically.
 
+# WHAT WAS SPLIT OFF, AND WHY THE SPLIT IS THE RIGHT CUT
+
+The openness clause of the old statement is now
+`isOpen_hilbertSurvivingLocus` above, PROVEN, and it turned out to need neither
+`𝒟₀`, nor `hirrF`, nor `hℓ5`, nor `hcunr`, nor `hc0` — only that `k` is discrete,
+which makes both `z` and `ρ` locally constant. Keeping it inside this leaf was
+therefore bundling a free topological fact with a citation-level arithmetic one;
+`isOpen_hilbertSurvivingLocus_and_meets_hilbertTaylorWilesLocus` below is now the
+one-line conjunction of the two, so no consumer changed.
+
 # ROUTE
 
 Let `M = ad⁰ρbar(1)` and `L = F(M, μ_{ℓⁿ})`, a finite Galois extension of `F`.
 
-*Openness.* `z` is continuous (`ContinuousCohomology.continuous_eval₁`) and `M`
-is discrete (`k` discrete, `V` finite free), and `x ↦ ρ x` is continuous into the
-discrete `End_k M` because `ρbar` is. So `x ↦ (z x, ρ x)` is continuous into a
-discrete space and the surviving locus is the preimage of a subset of it.
-Concretely the locus is a union of cosets of the open normal subgroup `Γ_{L_z}`,
-where `L_z/L` is the extension cut out by `z|_{Γ L}`.
-
-*Nonemptiness.* `Γ L` acts trivially on `M`, so `z|_{Γ L}` is a HOMOMORPHISM
+`Γ L` acts trivially on `M`, so `z|_{Γ L}` is a HOMOMORPHISM
 `Γ L → M`, and `Γ L` is normal, so `hilbertTaylorWilesLocus` contains the whole
 coset `σ · Γ L` of any `σ` in it — and
 `exists_hilbertFixing_rootsOfUnity_charpoly_split` above supplies one.
@@ -20638,6 +20747,31 @@ CIRCULARITY GUARD (inherited): nothing from `Family.lean`, `Lift.lean`,
 on `hirrF` through `not_isIrreducible_of_isHardlyRamified_of_five_le` is
 FORBIDDEN, that dichotomy being proven over pillar α, which is proven over this
 cluster. -/
+theorem exists_mem_hilbertSurvivingLocus_inter_hilbertTaylorWilesLocus
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟₀ : HilbertDeformationDatum ℓ F ρbar) (n : ℕ)
+    (z : ContinuousCohomology.cocycles₁ (hilbertAdZeroTwist F ρbar))
+    {c : continuousCohomology 1 (hilbertAdZeroTwist F ρbar)}
+    (hzc : ContinuousCohomology.cocycleClass (hilbertAdZeroTwist F ρbar) 1 z = c)
+    (hcunr : c ∈ hilbertH1TwistUnramified ℓ F ρbar) (hc0 : c ≠ 0) :
+    (hilbertSurvivingLocus F ρbar z ∩
+      hilbertTaylorWilesLocus ℓ F ρbar n).Nonempty := sorry
+
+/-- **The GLOBAL half of DDT Lemma 2.48 over `F`** (PROVEN 2026-07-30 over
+`isOpen_hilbertSurvivingLocus` and
+`exists_mem_hilbertSurvivingLocus_inter_hilbertTaylorWilesLocus`; a single leaf
+from its cut on 2026-07-28 until then, and this declaration now carries no direct
+`sorry` of its own).
+
+The statement is unchanged, deliberately: `exists_hilbertSeparatingOpen_locResDecomp`
+below calls it exactly as before. All that happened is that the openness clause
+stopped being a citation. -/
 theorem isOpen_hilbertSurvivingLocus_and_meets_hilbertTaylorWilesLocus
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     (F : Type u) [Field F] [NumberField F]
@@ -20653,60 +20787,73 @@ theorem isOpen_hilbertSurvivingLocus_and_meets_hilbertTaylorWilesLocus
     (hcunr : c ∈ hilbertH1TwistUnramified ℓ F ρbar) (hc0 : c ≠ 0) :
     IsOpen (hilbertSurvivingLocus F ρbar z) ∧
       (hilbertSurvivingLocus F ρbar z ∩
-        hilbertTaylorWilesLocus ℓ F ρbar n).Nonempty := sorry
+        hilbertTaylorWilesLocus ℓ F ρbar n).Nonempty :=
+  ⟨isOpen_hilbertSurvivingLocus F ρbar z,
+    exists_mem_hilbertSurvivingLocus_inter_hilbertTaylorWilesLocus ℓ hℓ5 F hirrF 𝒟₀
+      n z hzc hcunr hc0⟩
 
-/-- **The LOCAL half of DDT Lemma 2.48 over `F`** (SORRY LEAF, cut out
-2026-07-28): at a place `w ∤ 2ℓ` where the class `c` is unramified, membership of
-`Frob_w` in the surviving locus of a cocycle representative implies that `c` does
-not die under the FULL local restriction at `w`.
+/-- **The LOCAL half of DDT Lemma 2.48 over `F`** (a SORRY LEAF from its cut on
+2026-07-28; **PROVEN 2026-07-30**): membership of `Frob_w` in the surviving locus
+of a cocycle representative implies that `c` does not die under the FULL local
+restriction at `w`.
 
-# ROUTE
+# THE HYPOTHESES `hcunr`, `hwℓ`, `hw2` ARE GONE, AND THEIR ABSENCE IS THE POINT
 
-`hcunr` says `c` dies under restriction to the inertia group at every place off
-`hilbertHardlyRamifiedPlaces ℓ F`, and `w` is such a place (that is exactly what
-`hwℓ` and `hw2` say, unfolding the definition of `hilbertHardlyRamifiedPlaces` —
-note this is CHEAPER than its `ℚ`-level twin, which has to route the same step
-through the injectivity of `Nat.Prime.toHeightOneSpectrumRingOfIntegersRat`).
+The leaf as cut asked for `w ∤ 2ℓ` and for `c` to be unramified outside
+`hilbertHardlyRamifiedPlaces ℓ F`, because its ROUTE went through the procyclic
+quotient `G_w / I_w`: only if `c` is unramified at `w` is its local restriction
+inflated from `⟨Frob_w⟩^`, and only there is evaluation at `Frob_w` an
+isomorphism `H¹ ≅ M / (ρ Frob_w − 1) M`. That route needs the HARD half of that
+isomorphism (surjectivity of the inflation), and the hypotheses that make it
+available.
 
-So the restriction of `c` to the decomposition group `G_w` is INFLATED from the
-procyclic quotient `G_w / I_w`, topologically generated by `Frob_w`. For a
-procyclic group `⟨F⟩^` acting on a discrete module `M`, evaluation at `F` is an
-isomorphism `H¹(⟨F⟩^, M) ≅ M / (ρ F − 1) M`: a cocycle is determined by its value
-at `F` by the crossed-homomorphism identity
-(`ContinuousCohomology.cocycles₁_eval₁_mul`), and it is a coboundary exactly when
-that value lies in `(ρ F − 1) M`. Hence
+None of it is needed, and the statement is true with no hypothesis on `w` or on
+`c` at all. `loc_w c = 0` says the class of `z` dies on the whole decomposition
+group `G_w`, so — `ContinuousCohomology.exists_eval₁_eq_sub_of_cocycleClass_eq_zero`,
+the UNCONDITIONAL half of the coboundary criterion, applied to the transported
+cocycle — there is a single `m ∈ M` with `z σ = (ρ σ − 1) m` for EVERY
+`σ ∈ G_w`. Specialise at `σ = Frob_w`: `z (Frob_w) ∈ (ρ Frob_w − 1) M`, which is
+exactly the negation of `hmem`. Nothing about inertia, ramification or the
+residue characteristic enters, and `ℓ` does not appear in the statement any more.
 
-    loc_w c = 0  ↔  z (Frob_w) ∈ (ρ Frob_w − 1) · M  ↔  Frob_w ∉ survivingLocus,
+Mechanically this is one application of
+`ContinuousCohomology.eval₁_mem_range_sub_of_map_cocycleClass_eq_zero` (the
+`Set.range`-packaged form of the above, in the vendored
+`ContCohomology/LowDegreeOne.lean`) at `φ = hilbertDecompHom F w`, `f = 𝟙`, and
+`σ = Field.AbsoluteGaloisGroup.adicArithFrob w` — whose `φ`-image is `globalFrob w`
+by the DEFINITION of `globalFrob` in `Chebotarev.lean`, which is what makes the
+specialisation land on the nose.
 
-and `hmem` is the right-hand negation.
-
-The `↔` in the last display is stronger than needed: only the direction
-"`Frob_w ∈ survivingLocus ⟹ loc_w c ≠ 0`" is asserted here, and it needs only the
-EASY half — that a class dying locally has a representative whose value at
-`Frob_w` is a `(ρ Frob_w − 1)`-boundary, obtained by inflating a coboundary
-witness back along `G_w ↠ ⟨Frob_w⟩^`.
-`ContinuousCohomology.cocycleClass_eq_zero_iff` in the vendored
-`ContCohomology/Basic.lean` is the handle that turns the vanishing of a class into
-the cocycle being a coboundary.
+The consumer `exists_hilbertSeparatingOpen_locResDecomp` below still holds `hwℓ`
+and `hw2` (its own conclusion quantifies over them) and simply discards them.
 
 No local Tate duality is needed, in keeping with the deviation note on
 `IsHilbertTaylorWilesPrimeSet`.
 
-Both-ways audit and CIRCULARITY GUARD: as for the global half above. -/
+CIRCULARITY GUARD: satisfied trivially — the proof uses only the degree-`1`
+cochain dictionary and the definition of `globalFrob`. -/
 theorem notMem_ker_hilbertLocResDecompTwist1_of_mem_hilbertSurvivingLocus
-    (ℓ : ℕ) [Fact ℓ.Prime] (F : Type u) [Field F] [NumberField F]
+    (F : Type u) [Field F] [NumberField F]
     {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V] (ρbar : GaloisRep ℚ k V)
     (z : ContinuousCohomology.cocycles₁ (hilbertAdZeroTwist F ρbar))
     {c : continuousCohomology 1 (hilbertAdZeroTwist F ρbar)}
     (hzc : ContinuousCohomology.cocycleClass (hilbertAdZeroTwist F ρbar) 1 z = c)
-    (hcunr : c ∈ hilbertH1TwistUnramified ℓ F ρbar)
     (w : HeightOneSpectrum (𝓞 F))
-    (hwℓ : ((ℓ : ℕ) : 𝓞 F) ∉ w.asIdeal) (hw2 : ((2 : ℕ) : 𝓞 F) ∉ w.asIdeal)
     (hmem : globalFrob w ∈ hilbertSurvivingLocus F ρbar z) :
     c ∉ LinearMap.ker
-      (hilbertLocResDecompTwist1 F ρbar w).hom.toLinearMap := sorry
+      (hilbertLocResDecompTwist1 F ρbar w).hom.toLinearMap := by
+  intro hker
+  have hzero : ContinuousCohomology.map (hilbertDecompHom F w)
+      (CategoryTheory.CategoryStruct.id (hilbertAdZeroTwistDecomp F ρbar w)) 1
+      (ContinuousCohomology.cocycleClass (hilbertAdZeroTwist F ρbar) 1 z) = 0 := by
+    rw [hzc]
+    exact hker
+  exact hmem (ContinuousCohomology.eval₁_mem_range_sub_of_map_cocycleClass_eq_zero
+    (hilbertDecompHom F w)
+    (CategoryTheory.CategoryStruct.id (hilbertAdZeroTwistDecomp F ρbar w)) z hzero
+    (Field.AbsoluteGaloisGroup.adicArithFrob w))
 
 /-- **The separating locus of a nonzero dual-Selmer class over `F` — the
 arithmetic core of DDT Lemma 2.48** (cut out 2026-07-28 by the decomposition of
@@ -20747,9 +20894,9 @@ theorem exists_hilbertSeparatingOpen_locResDecomp
       n z hzc hcunr hc0
   exact ⟨hilbertSurvivingLocus F ρbar z, hzopen,
     fun g x hx => hilbertSurvivingLocus_conj F ρbar z g x hx, hzmeet,
-    fun w hwℓ hw2 hmem =>
-      notMem_ker_hilbertLocResDecompTwist1_of_mem_hilbertSurvivingLocus ℓ F ρbar z
-        hzc hcunr w hwℓ hw2 hmem⟩
+    fun w _ _ hmem =>
+      notMem_ker_hilbertLocResDecompTwist1_of_mem_hilbertSurvivingLocus F ρbar z
+        hzc w hmem⟩
 
 /-- **Chebotarev separation of a single dual-Selmer class by a Taylor–Wiles place
 of `F` — DDT Lemma 2.48** (cut out 2026-07-28 as the second of the
