@@ -2890,8 +2890,207 @@ def NoetherianLocalExtSystem.restrict {R B : Type u} [CommRing R] [CommRing B]
     exact ⟨⟨j, bs.le_trans' i.2 h⟩, h, hj⟩
   isLocalizationMidT := fun h => e.isLocalizationMidT h
 
+section EssFinitePresentationCancellation
+
+open scoped TensorProduct
+
+attribute [local instance] Algebra.TensorProduct.rightAlgebra
+
+/-- If `r ∣ m` then `r` becomes a unit in any localization of `TA` away from `m`.
+
+Used twice inside `essFinitePresentation_of_essFinitePresentation_comp` below: once to
+see that the denominators of the images of the variables are invertible, once to see that
+the elements killing the relations are. -/
+theorem isUnit_algebraMap_of_dvd_away {TA S : Type u} [CommRing TA] [CommRing S] [Algebra TA S]
+    (m : TA) [IsLocalization.Away m S] {r : TA} (h : r ∣ m) :
+    IsUnit (algebraMap TA S r) := by
+  obtain ⟨c, rfl⟩ := h
+  have hu : IsUnit (algebraMap TA S (r * c)) :=
+    IsLocalization.map_units (M := Submonoid.powers (r * c)) S
+      ⟨r * c, Submonoid.mem_powers _⟩
+  rw [map_mul] at hu
+  exact isUnit_of_mul_isUnit_left hu
+
+/-- Every element of `Submonoid.powers r`, for `r ∣ m`, is a unit in `TA[1/m]`.  This is the
+shape `IsLocalization.lift` wants, and it is what produces the comparison map
+`TA[1/m₀] → TA[1/m₀m₂]` in the proof below. -/
+theorem isUnit_algebraMap_powers_of_dvd_away {TA S : Type u} [CommRing TA] [CommRing S]
+    [Algebra TA S] (m : TA) [IsLocalization.Away m S] {r : TA} (h : r ∣ m)
+    (y : Submonoid.powers r) : IsUnit (algebraMap TA S (y : TA)) := by
+  obtain ⟨i, hi⟩ := y.2
+  rw [← hi, map_pow]
+  exact (isUnit_algebraMap_of_dvd_away m h).pow i
+
+/-- **STEP 1 OF [Stacks 00F4] IN THE ESSENTIAL SETTING: a map out of a finitely presented
+algebra into a localization already lands in a localization at ONE element.**
+
+*Let `A = MA⁻¹TA`, let `R → TB` be of finite presentation, and let `ψ : TB → A` be a map of
+`R`-algebras.  Then there is `m ∈ MA` and a factorisation of `ψ` through `TA[1/m]`.*
+
+This is the only place where finite PRESENTATION of `TB` over `R` (rather than finite type)
+is used, and it is used exactly as [Stacks 00F4]'s proof uses it: the images of the finitely
+many variables supply finitely many denominators, whose product is `m₀`; the finitely many
+relations then die in `A`, hence are killed by finitely many elements of `MA`, whose product
+is `m₂`; and `m = m₀ * m₂` works.  Concretely this is the statement that
+`Hom_R(TB, −)` commutes with the filtered colimit `A = colim_{m ∈ MA} TA[1/m]`, written out
+for the one colimit it is needed for rather than in general.
+
+The conclusion carries THREE equations, not two: the third,
+`θ.comp gB = (algebraMap TA (Localization.Away m)).comp gA`, says that `θ` is a map of
+`R`-algebras.  It is not implied by the other two — `u` need not be injective — and it is
+exactly what lets `RingHom.FinitePresentation.of_comp_finiteType` be applied to `θ`
+downstream, so it is proven here where the construction of `θ` is in hand. -/
+theorem exists_away_lift_of_finitePresentation
+    {R TA TB A : Type u} [CommRing R] [CommRing TA] [CommRing TB] [CommRing A]
+    (gA : R →+* TA) (vA : TA →+* A) (MA : Submonoid TA)
+    (hloc : @IsLocalization TA _ MA A _ vA.toAlgebra)
+    (gB : R →+* TB) (hfpB : gB.FinitePresentation)
+    (ψ : TB →+* A) (hcomm : ψ.comp gB = vA.comp gA) :
+    ∃ m ∈ MA, ∃ (u : Localization.Away m →+* A) (θ : TB →+* Localization.Away m),
+      u.comp (algebraMap TA (Localization.Away m)) = vA ∧
+      u.comp θ = ψ ∧
+      θ.comp gB = (algebraMap TA (Localization.Away m)).comp gA := by
+  letI : Algebra TA A := vA.toAlgebra
+  haveI := hloc
+  letI : Algebra R TB := gB.toAlgebra
+  haveI : Algebra.FinitePresentation R TB := hfpB
+  obtain ⟨n, f, hfs, hfg⟩ := Algebra.FinitePresentation.out (R := R) (A := TB)
+  have hfC : ∀ r : R, f (MvPolynomial.C r) = gB r := by
+    intro r
+    have hCa : (MvPolynomial.C r : MvPolynomial (Fin n) R) = algebraMap R _ r := rfl
+    rw [hCa, AlgHom.commutes]
+    rfl
+  -- the denominators of the images of the variables
+  have hsurj : ∀ k : Fin n, ∃ p : TA × MA,
+      ψ (f (MvPolynomial.X k)) * algebraMap TA A (p.2 : TA) = algebraMap TA A p.1 :=
+    fun k => IsLocalization.surj MA _
+  choose p hp using hsurj
+  set num : Fin n → TA := fun k => (p k).1 with hnum
+  set den : Fin n → TA := fun k => ((p k).2 : TA) with hden
+  have hp' : ∀ k, ψ (f (MvPolynomial.X k)) * vA (den k) = vA (num k) := fun k => hp k
+  have hdenMA : ∀ k, den k ∈ MA := fun k => (p k).2.2
+  set m₀ : TA := ∏ k, den k with hm₀
+  have hm₀MA : m₀ ∈ MA := Submonoid.prod_mem _ fun k _ => hdenMA k
+  set e : Fin n → TA := fun k => ∏ l ∈ Finset.univ.erase k, den l with he
+  have hde : ∀ k, den k * e k = m₀ := fun k =>
+    Finset.mul_prod_erase Finset.univ den (Finset.mem_univ k)
+  -- STAGE ONE: the localization away from `m₀`, where the variables acquire values
+  set T₁ := Localization.Away m₀ with hT₁
+  set u₁ : T₁ →+* A := IsLocalization.lift (M := Submonoid.powers m₀) (g := vA)
+    (fun y => by
+      obtain ⟨i, hi⟩ := y.2
+      exact IsLocalization.map_units (M := MA) A ⟨(y : TA), hi ▸ pow_mem hm₀MA i⟩) with hu₁
+  set α : MvPolynomial (Fin n) R →+* T₁ :=
+    MvPolynomial.eval₂Hom ((algebraMap TA T₁).comp gA)
+      (fun k => IsLocalization.mk' T₁ (num k * e k)
+        (⟨m₀, Submonoid.mem_powers m₀⟩ : Submonoid.powers m₀)) with hα
+  have hαC : ∀ r : R, α (MvPolynomial.C r) = algebraMap TA T₁ (gA r) := by
+    intro r; simp [hα]
+  have hαX : ∀ k, α (MvPolynomial.X k) =
+      IsLocalization.mk' T₁ (num k * e k)
+        (⟨m₀, Submonoid.mem_powers m₀⟩ : Submonoid.powers m₀) := by
+    intro k; simp [hα]
+  have hu₁α : u₁.comp α = ψ.comp f.toRingHom := by
+    apply MvPolynomial.ringHom_ext
+    · intro r
+      simp only [RingHom.comp_apply, hαC, hu₁]
+      rw [IsLocalization.lift_eq]
+      have hr := congrArg (fun t : R →+* A => t r) hcomm
+      simpa [hfC r] using hr.symm
+    · intro k
+      simp only [RingHom.comp_apply, hαX, hu₁]
+      rw [IsLocalization.lift_mk'_spec]
+      have key : vA (num k * e k) = vA m₀ * ψ (f (MvPolynomial.X k)) := by
+        rw [map_mul, ← hp' k, ← hde k, map_mul]; ring
+      exact key
+  have hu₁a : ∀ x : TA, u₁ (algebraMap TA T₁ x) = vA x := fun x => IsLocalization.lift_eq _ x
+  -- STAGE TWO: the finitely many relations, and the elements of `MA` that kill them
+  obtain ⟨G, hG⟩ := hfg
+  have hkill : ∀ q ∈ G, ∃ s ∈ MA, algebraMap TA T₁ s * α q = 0 := by
+    intro q hq
+    letI : Algebra T₁ A := u₁.toAlgebra
+    haveI htow : IsScalarTower TA T₁ A :=
+      IsScalarTower.of_algebraMap_eq' (by ext x; exact (hu₁a x).symm)
+    haveI : IsLocalization (MA.map (algebraMap TA T₁)) A :=
+      IsLocalization.isLocalization_of_submonoid_le (S := T₁) (T := A)
+        (Submonoid.powers m₀) MA (Submonoid.powers_le.mpr hm₀MA)
+    have hfq : f.toRingHom q = 0 := by
+      have hmem : q ∈ RingHom.ker f.toRingHom := by
+        rw [← hG]; exact Ideal.subset_span (by exact_mod_cast hq)
+      exact hmem
+    have h0 : algebraMap T₁ A (α q) = 0 := by
+      show u₁ (α q) = 0
+      have hq' := congrArg (fun t : MvPolynomial (Fin n) R →+* A => t q) hu₁α
+      simp only [RingHom.comp_apply] at hq'
+      rw [hq', hfq, map_zero]
+    obtain ⟨c, hc⟩ :=
+      (IsLocalization.map_eq_zero_iff (S := A) (MA.map (algebraMap TA T₁)) (α q)).mp h0
+    obtain ⟨s, hsMA, hsc⟩ := c.2
+    exact ⟨s, hsMA, by rw [hsc]; exact hc⟩
+  choose! sq hsqMA hsq using hkill
+  set m₂ : TA := ∏ q ∈ G, sq q with hm₂
+  have hm₂MA : m₂ ∈ MA := Submonoid.prod_mem _ fun q hq => hsqMA q hq
+  set m : TA := m₀ * m₂ with hm
+  have hmMA : m ∈ MA := mul_mem hm₀MA hm₂MA
+  set T := Localization.Away m with hT
+  have hm₀dvd : m₀ ∣ m := Dvd.intro _ rfl
+  have hm₂dvd : m₂ ∣ m := Dvd.intro_left _ rfl
+  set κ : T₁ →+* T := IsLocalization.lift (M := Submonoid.powers m₀) (g := algebraMap TA T)
+    (isUnit_algebraMap_powers_of_dvd_away m hm₀dvd) with hκ
+  have hκa : ∀ x : TA, κ (algebraMap TA T₁ x) = algebraMap TA T x :=
+    fun x => IsLocalization.lift_eq _ x
+  set u : T →+* A := IsLocalization.lift (M := Submonoid.powers m) (g := vA)
+    (fun y => by
+      obtain ⟨i, hi⟩ := y.2
+      rw [← hi, map_pow]
+      exact (IsLocalization.map_units (M := MA) A ⟨m, hmMA⟩).pow i) with hu
+  have hua : ∀ x : TA, u (algebraMap TA T x) = vA x := fun x => IsLocalization.lift_eq _ x
+  set α₂ : MvPolynomial (Fin n) R →+* T := κ.comp α with hα₂
+  have hα₂G : ∀ q ∈ G, α₂ q = 0 := by
+    intro q hq
+    have h1 : algebraMap TA T (sq q) * α₂ q = 0 := by
+      have h2 := congrArg κ (hsq q hq)
+      rw [map_mul, hκa, map_zero] at h2
+      exact h2
+    have h3 : IsUnit (algebraMap TA T (sq q)) :=
+      isUnit_algebraMap_of_dvd_away m ((Finset.dvd_prod_of_mem sq hq).trans hm₂dvd)
+    exact h3.mul_right_eq_zero.mp h1
+  have hkerle : RingHom.ker f.toRingHom ≤ RingHom.ker α₂ := by
+    rw [← hG, Ideal.span_le]
+    intro q hq
+    exact hα₂G q (by exact_mod_cast hq)
+  obtain ⟨θ, hθ⟩ : ∃ θ : TB →+* T, θ.comp f.toRingHom = α₂ := by
+    refine ⟨(Ideal.Quotient.lift (RingHom.ker f.toRingHom) α₂ (fun a ha => hkerle ha)).comp
+        (RingHom.quotientKerEquivOfSurjective (f := f.toRingHom) hfs).symm.toRingHom, ?_⟩
+    refine RingHom.ext fun x => ?_
+    simp only [RingHom.comp_apply, RingEquiv.toRingHom_eq_coe, RingHom.coe_coe,
+      RingHom.quotientKerEquivOfSurjective_symm_apply, Ideal.Quotient.lift_mk]
+  have huκ : u.comp κ = u₁ :=
+    IsLocalization.ringHom_ext (Submonoid.powers m₀) (by
+      ext x
+      show u (κ (algebraMap TA T₁ x)) = u₁ (algebraMap TA T₁ x)
+      rw [hκa x, hua x, hu₁a x])
+  refine ⟨m, hmMA, u, θ, ?_, ?_, ?_⟩
+  · ext x; exact hua x
+  · apply RingHom.ext
+    intro b
+    obtain ⟨x, rfl⟩ := hfs b
+    have hθx : θ (f x) = κ (α x) := congrArg (fun t : MvPolynomial (Fin n) R →+* T => t x) hθ
+    have hux : u₁ (α x) = ψ (f x) :=
+      congrArg (fun t : MvPolynomial (Fin n) R →+* A => t x) hu₁α
+    show u (θ (f x)) = ψ (f x)
+    rw [hθx, ← hux]
+    exact congrArg (fun t : T₁ →+* A => t (α x)) huκ
+  · ext r
+    show θ (gB r) = algebraMap TA T (gA r)
+    rw [← hfC r]
+    have hθx : θ (f (MvPolynomial.C r)) = κ (α (MvPolynomial.C r)) :=
+      congrArg (fun t : MvPolynomial (Fin n) R →+* T => t (MvPolynomial.C r)) hθ
+    rw [hθx, hαC r, hκa]
+
 /-- **CANCELLATION FOR `EssFinitePresentation`: the essential analogue of
-[Stacks 00F4]** (SORRY LEAF; cut 2026-07-28 out of
+[Stacks 00F4]** (PROVEN 2026-07-31 over `exists_away_lift_of_finitePresentation`
+above; cut 2026-07-28 out of
 `nonempty_noetherianApproxSystem_of_baseSystem`).
 
 *If `R → A` is essentially of finite presentation and so is `R → B`, then
@@ -2939,7 +3138,7 @@ is hiding in them: `A = 0` is witnessed by `T = B` with `M = B` itself (`0 ∈ M
 `B` is Noetherian the statement collapses to `EssFiniteType.of_comp` plus
 `RingHom.FinitePresentation.of_finiteType`, both in the pin.
 
-**`_hB` IS LOAD-BEARING** — the statement is FALSE without it, and the witness is
+**`hB` IS LOAD-BEARING** — the statement is FALSE without it, and the witness is
 worth recording because it is the first thing a prover will try to drop.  Take
 `R = ℤ`, `B = ℚ[x₁, x₂, x₃, …]` on countably many variables, `A = ℚ`, with
 `g : ℤ → B` the structure map and `v : B → ℚ` sending every `xᵢ` to `0`.  Then
@@ -2947,15 +3146,98 @@ worth recording because it is the first thing a prover will try to drop.  Take
 of `ℤ` at `ℤ ∖ {0}`, so take `T = ℤ`), while `ℚ = B ⧸ (x₁, x₂, …)` is a quotient of
 `B` by an ideal that is not finitely generated and is a filtered colimit of the
 finitely presented `B ⧸ (x₁, …, xₙ)` rather than a localization of any one of them.
-`_hB` fails here exactly as it must: `B` is not even of finite type over `ℤ`.
+`hB` fails here exactly as it must: `B` is not even of finite type over `ℤ`.
 *(This counterexample is asserted, not machine-checked; a prover who needs it
 should verify the middle clause before relying on it.  The POSITIVE direction — the
-four-step route above — is what this leaf actually asks for.)* -/
+four-step route above — is what this leaf actually asks for.)*
+
+**HOW IT WAS PROVEN (2026-07-31).**  Exactly the four-step route above, with step 1
+isolated as `exists_away_lift_of_finitePresentation` (which is where the finite
+PRESENTATION of `R → T_B`, as opposed to finite type, is spent) and steps 2–4 assembled
+here.  Everything in steps 2–4 is a named lemma of the pin:
+`RingHom.FinitePresentation.of_comp_finiteType` for step 2,
+`Algebra.FinitePresentation.baseChange` and `IsLocalization.tensorRight` for step 3, and
+two applications of `IsLocalization.isLocalization_of_submonoid_le` for step 4 — the
+second of which needs `IsLocalization (N_A ⊔ S_B) A`, i.e. exactly the docstring's
+observation that inverting `M_B` before `M_A` changes nothing, obtained from
+`IsLocalization.of_le`. -/
 theorem essFinitePresentation_of_essFinitePresentation_comp {R B A : Type u}
     [CommRing R] [CommRing B] [CommRing A] {g : R →+* B} {v : B →+* A}
-    (_hA : EssFinitePresentation (v.comp g)) (_hB : EssFinitePresentation g) :
-    EssFinitePresentation v :=
-  sorry
+    (hA : EssFinitePresentation (v.comp g)) (hB : EssFinitePresentation g) :
+    EssFinitePresentation v := by
+  obtain ⟨TA, iTA, gA, vA, MA, hgAfp, hgAcomm, hAloc⟩ := hA
+  obtain ⟨TB, iTB, gB, vB, MB, hgBfp, hgBcomm, hBloc⟩ := hB
+  letI := iTA
+  letI := iTB
+  have hcomm : (v.comp vB).comp gB = vA.comp gA := by
+    rw [RingHom.comp_assoc, hgBcomm, hgAcomm]
+  obtain ⟨m, hmMA, u, θ, hu, huθ, hθg⟩ :=
+    exists_away_lift_of_finitePresentation gA vA MA hAloc gB hgBfp (v.comp vB) hcomm
+  set T := Localization.Away m with hT
+  letI : Algebra TA A := vA.toAlgebra
+  haveI := hAloc
+  letI : Algebra TB B := vB.toAlgebra
+  haveI := hBloc
+  letI : Algebra TB T := θ.toAlgebra
+  letI : Algebra T A := u.toAlgebra
+  letI : Algebra TB A := (v.comp vB).toAlgebra
+  -- STEP 2: `R → T` is of finite presentation, hence so is `θ : T_B → T`
+  have hTfp : ((algebraMap TA T).comp gA).FinitePresentation :=
+    RingHom.FinitePresentation.comp
+      (RingHom.finitePresentation_algebraMap.mpr (IsLocalization.Away.finitePresentation m))
+      hgAfp
+  have hθfp : θ.FinitePresentation :=
+    RingHom.FinitePresentation.of_comp_finiteType gB (by rw [hθg]; exact hTfp)
+      (RingHom.FiniteType.of_finitePresentation hgBfp)
+  haveI : Algebra.FinitePresentation TB T := hθfp
+  -- STEP 3: the base change `D = B ⊗_{T_B} T`
+  set D := B ⊗[TB] T with hD
+  letI : Algebra T D := Algebra.TensorProduct.rightAlgebra
+  haveI hDloc : IsLocalization (Algebra.algebraMapSubmonoid T MB) D :=
+    IsLocalization.tensorRight (R := TB) (S := T) B MB
+  set Λ : D →ₐ[TB] A :=
+    Algebra.TensorProduct.lift (S := TB) { v with commutes' := fun _ => rfl }
+      { u with commutes' := fun r => congrArg (fun t : TB →+* A => t r) huθ }
+      (fun _ _ => Commute.all _ _) with hΛ
+  letI : Algebra D A := Λ.toRingHom.toAlgebra
+  -- STEP 4: `A` is a localization of `T`, hence of `D`
+  haveI htowTA : IsScalarTower TA T A := IsScalarTower.of_algebraMap_eq' hu.symm
+  haveI hAT : IsLocalization (MA.map (algebraMap TA T)) A :=
+    IsLocalization.isLocalization_of_submonoid_le (S := T) (T := A)
+      (Submonoid.powers m) MA (Submonoid.powers_le.mpr hmMA)
+  set NA := MA.map (algebraMap TA T) with hNA
+  set SB := Algebra.algebraMapSubmonoid T MB with hSB
+  have hSBunit : ∀ z ∈ SB, IsUnit (algebraMap T A z) := by
+    rintro _ ⟨s, hs, rfl⟩
+    have h1 : algebraMap T A (algebraMap TB T s) = v (algebraMap TB B s) := by
+      show u (θ s) = v (vB s)
+      exact congrArg (fun t : TB →+* A => t s) huθ
+    rw [h1]
+    exact (IsLocalization.map_units (M := MB) B ⟨s, hs⟩).map v
+  haveI hAsup : IsLocalization (NA ⊔ SB) A := by
+    refine IsLocalization.of_le (M := NA) _ le_sup_left ?_
+    intro r hr
+    obtain ⟨y, hy, z, hz, rfl⟩ := Submonoid.mem_sup.mp hr
+    rw [map_mul]
+    exact (IsLocalization.map_units (M := NA) A ⟨y, hy⟩).mul (hSBunit z hz)
+  haveI htowTD : IsScalarTower T D A :=
+    IsScalarTower.of_algebraMap_eq' (by
+      refine RingHom.ext fun t => ?_
+      show u t = Λ (algebraMap T D t)
+      show u t = Λ ((1 : B) ⊗ₜ[TB] t)
+      rw [hΛ, Algebra.TensorProduct.lift_tmul]
+      simp)
+  refine ⟨D, inferInstance, algebraMap B D, Λ.toRingHom, (NA ⊔ SB).map (algebraMap T D),
+    ?_, ?_, ?_⟩
+  · exact RingHom.finitePresentation_algebraMap.mpr inferInstance
+  · refine RingHom.ext fun b => ?_
+    show Λ (algebraMap B D b) = v b
+    show Λ (b ⊗ₜ[TB] (1 : T)) = v b
+    rw [hΛ, Algebra.TensorProduct.lift_tmul]
+    simp
+  · exact IsLocalization.isLocalization_of_submonoid_le (S := D) (T := A) SB (NA ⊔ SB) le_sup_right
+
+end EssFinitePresentationCancellation
 
 section IsLocalizationTensorComp
 
