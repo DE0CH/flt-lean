@@ -51,12 +51,17 @@ the *affine chart* of a pointed curve exist — and it is the scheme-theoretic h
   next item; the uniqueness half and all three shape hypotheses
   `IsProper.of_valuativeCriterion` asks for (`QuasiCompact`, `QuasiSeparated`,
   `LocallyOfFiniteType`) are proven at its consumer.
-* `notMem_range_of_valuativeLift_toAffineLine_compl_singleton` — **sorry leaf** (cut
-  2026-07-30): a lift of a valuative square into `X` cannot hit `z`.  This is the POLE at `z`
-  in valuative form, and after two rounds of cutting it is the ONLY mathematics left under
-  properness — the square construction, the lift, the factorisation through the open and both
-  triangles are all proven.  Its docstring carries the pole argument and a counterexample
-  showing its `hcomm` hypothesis is load-bearing.
+* `notMem_range_of_valuativeLift_toAffineLine_compl_singleton` — **PROVEN 2026-07-30**, over
+  five new lemmas in the section just above it (`base_closedPoint_eq_of_mem_range`,
+  `not_exists_extension_toAffineLine_of_locallyQuasiFinite`,
+  `exists_extension_toAffineLine_of_coordinate_extends`,
+  `exists_nonunit_mul_eq_one_of_not_extends`, `false_of_valuativeLift_of_nonunit`) plus the
+  restriction/gluing bookkeeping `presheaf_map_comp_eq`, `presheaf_map_comp_self`,
+  `exists_glue_of_agree` and `appTop_Spec_map`.  This was the POLE at `z` in valuative form,
+  and the whole of properness rested on it.  Its docstring carries the pole argument, the
+  counterexample showing its `hcomm` hypothesis is load-bearing, and a correction of the two
+  earlier prose routes recorded there — both of which cancelled `IsProper` on the wrong side
+  and neither of which was ever compiled.
 * `isAffineOpen_compl_singleton_of_isSmoothProperCurve` — **PROVEN 2026-07-28** over those
   two, by Zariski's main theorem.  It does NOT go through ampleness; see the next section.
 * `exists_isOpenImmersion_range_eq_compl_of_section` — the packaged existential a consumer
@@ -82,7 +87,9 @@ proven here over exactly two named sub-leaves, along the Zariski's-main-theorem 
   step**: any such morphism is proper.  Itself decomposed on 2026-07-30, so the file's second
   leaf is now
   `valuativeCriterionExistence_of_locallyQuasiFinite_toAffineLine_compl_singleton` rather
-  than this.  The two leaves are still independent, and the RIEMANN–ROCH one is untouched.
+  than this — and on 2026-07-30 that one was proven too, so this whole branch is CLOSED.
+  **`exists_locallyQuasiFinite_toAffineLine_compl_singleton` (RIEMANN–ROCH) is now the file's
+  only remaining `sorry`**, and it was always independent of this branch.
 
 and the glue between them, which is what this file newly PROVES:
 `IsFinite.of_isProper_of_locallyQuasiFinite` (Zariski's main theorem, stacks `02LS`) turns
@@ -114,11 +121,11 @@ projective model and `exists_unique_extension_of_valuationRing_stalk`.  It does 
 the pin carries `Mathlib/AlgebraicGeometry/ValuativeCriterion.lean` with
 `IsProper.of_valuativeCriterion` (stacks `0BX5`), and no `ℙ¹` and no extension theorem is
 needed to *set up* the proof — only to supply the lift.  So the properness statement is now
-proven outright over the valuative-existence leaf, and what a prover owes is that leaf alone.
-The half of the old note that survives is the half that matters: the step that has to be paid
-is that a `K`-morphism `X ⟶ 𝔸¹_K` out of a proper `X` cannot be quasi-finite, so `g` genuinely
-fails to extend and `z` is a pole.  That is B2 in the new leaf's docstring, and it is worth
-splitting off as a leaf of its own.
+proven outright over the valuative-existence leaf — and as of 2026-07-30 that leaf is proven
+too, so NOTHING is owed under properness any more.  The half of the old note that mattered was
+right: the step that had to be paid is that a `K`-morphism `X ⟶ 𝔸¹_K` out of a proper `X`
+cannot be quasi-finite, so `g` genuinely fails to extend and `z` is a pole.  That is B2, and
+it is `not_exists_extension_toAffineLine_of_locallyQuasiFinite` below.
 -/
 
 @[expose] public section
@@ -224,7 +231,35 @@ infinity, `x` (the first Weierstrass coordinate) is such a function.
 
 WHAT WOULD REFUTE THE "MISSING FROM THE PIN" DIAGNOSIS: a Riemann–Roch theorem, a genus, or
 a theory of linear systems, anywhere in `Fermat/`, `.lake/packages/mathlib` or `~/cs/FLT`.
-Re-searched 2026-07-28: absent from all three. -/
+Re-searched 2026-07-28: absent from all three.
+
+**RE-SEARCHED AND RE-SCOPED 2026-07-30, when this became the file's only remaining `sorry`.**
+`grep -rln 'RiemannRoch\|riemannRoch' .lake/packages/mathlib/Mathlib/` and the same over
+`~/cs/FLT` still return nothing.  What HAS appeared since is `Fermat/FLT/Modularity/AmpleSheaf.lean`
+(2563 lines, `IsAmpleSheaf` and the tensor/pushforward plumbing around it) — but it defines
+ampleness, it does not prove that a point on a curve is ample, and it carries no genus and no
+cohomology, so it does not shorten this leaf.  Several SIBLINGS of this leaf carry the same
+gap and are stated independently in `Fermat/FLT/ModularCurve/EllipticScheme.lean`
+(`exists_weierstrassGenerators_of_affineComplement`,
+`exists_weierstrassModel_of_ellipticScheme`, and the leaves around line 10100 there).
+**Whoever attacks Riemann–Roch should cut it ONCE, for all of them, rather than here** — a
+cut made privately in this file would be a rival cut against those.
+
+**The minimal statement this leaf needs, and it is strictly weaker than Riemann–Roch:** a
+NONCONSTANT `f ∈ Γ(X, X ∖ {z})`, i.e. `Γ(X, X ∖ {z}) ≠ K`.  Everything else is already paid
+for.  The quasi-finiteness packaging is `LocallyQuasiFinite.of_finite_preimage_singleton`
+against `LocallyOfFiniteType`, and the morphism itself is built from the section exactly as
+`exists_extension_toAffineLine_of_coordinate_extends` below builds one — same adjunction,
+same `Polynomial.ringHom_ext`.
+
+**Why no cheaper route exists, checked 2026-07-30.**  The obvious dodges all fail on the same
+point.  A nonconstant rational function exists cheaply (`Γ(W)` is standard smooth of relative
+dimension one over `K` for any affine open `W`, hence not algebraic over `K`), and it extends
+to a finite `π : X ⟶ ℙ¹` — but its polar set is `π⁻¹(∞)`, a finite set that need not be
+`{z}`, and killing the unwanted poles is prescribing zeros, which is Riemann–Roch again.
+Nor does it help that `X ∖ π⁻¹(∞)` is affine: that is a SUBSET of `X ∖ {z}`, and affineness
+does not pass to opens that are larger.  The content is Riemann's inequality
+`dim_K L(n·z) ≥ n + 1 − g`, and nothing less. -/
 theorem exists_locallyQuasiFinite_toAffineLine_compl_singleton
     {K : Type u} [Field K] {X : Scheme.{u}} (strX : X ⟶ Spec (CommRingCat.of K))
     [IsProper strX] [SmoothOfRelativeDimension 1 strX]
@@ -253,8 +288,396 @@ theorem locallyOfFiniteType_affineLineOver (K : Type u) [Field K] :
   exact RingHom.finiteType_algebraMap.mpr
     ⟨⟨{Polynomial.X}, by simp [Polynomial.adjoin_X (R := K)]⟩⟩
 
+/-! ### The pole at `z`: the machinery the leaf below is proven over
+
+Everything in this section was written on 2026-07-30 to close
+`notMem_range_of_valuativeLift_toAffineLine_compl_singleton`.  Four of the six items are
+pure bookkeeping (restriction maps, sheaf gluing, `Spec.map` on global sections); the
+mathematics is in `not_exists_extension_toAffineLine_of_locallyQuasiFinite` (B2, the pole
+itself) and `exists_nonunit_mul_eq_one_of_not_extends` (the discrete-valuation dichotomy). -/
+
+/-- **Restriction bookkeeping**: any two restriction routes between the same pair of opens
+agree, because `(Opens X)ᵒᵖ` is a poset and has subsingleton hom-sets. -/
+theorem presheaf_map_comp_eq {X : Scheme.{u}} {A B C : X.Opens}
+    (m : Opposite.op B ⟶ Opposite.op A) (n : Opposite.op C ⟶ Opposite.op B)
+    (p : Opposite.op C ⟶ Opposite.op A) (t : Γ(X, C)) :
+    (X.presheaf.map m) ((X.presheaf.map n) t) = (X.presheaf.map p) t := by
+  rw [← ConcreteCategory.comp_apply, ← CategoryTheory.Functor.map_comp,
+    Subsingleton.elim (n ≫ m) p]
+
+/-- **Restriction bookkeeping**, the round-trip case. -/
+theorem presheaf_map_comp_self {X : Scheme.{u}} {A B : X.Opens}
+    (m : Opposite.op A ⟶ Opposite.op B) (n : Opposite.op B ⟶ Opposite.op A) (t : Γ(X, A)) :
+    (X.presheaf.map n) ((X.presheaf.map m) t) = t := by
+  rw [← ConcreteCategory.comp_apply, ← CategoryTheory.Functor.map_comp,
+    Subsingleton.elim (m ≫ n) (𝟙 _), CategoryTheory.Functor.map_id]
+  rfl
+
+/-- **Gluing two sections that agree on the overlap** (PROVEN), from the two-open form of the
+sheaf condition, `TopCat.Sheaf.objSupIsoProdEqLocus`. -/
+theorem exists_glue_of_agree {X : Scheme.{u}} {V W : X.Opens} (a : Γ(X, V)) (b : Γ(X, W))
+    (h : X.presheaf.map (homOfLE (inf_le_left : V ⊓ W ≤ V)).op a =
+      X.presheaf.map (homOfLE (inf_le_right : V ⊓ W ≤ W)).op b) :
+    ∃ c : Γ(X, V ⊔ W), X.presheaf.map (homOfLE (le_sup_left : V ≤ V ⊔ W)).op c = a ∧
+      X.presheaf.map (homOfLE (le_sup_right : W ≤ V ⊔ W)).op c = b := by
+  refine ⟨(X.sheaf.objSupIsoProdEqLocus V W).inv ⟨(a, b), ?_⟩, ?_, ?_⟩
+  · exact h
+  · exact X.sheaf.objSupIsoProdEqLocus_inv_fst V W _
+  · exact X.sheaf.objSupIsoProdEqLocus_inv_snd V W _
+
+/-- **`(Spec.map φ).appTop`, transported across the two `ΓSpecIso`s** (PROVEN).  This is the
+form in which `Scheme.ΓSpecIso_naturality` is actually used below. -/
+theorem appTop_Spec_map {R S : CommRingCat.{u}} (φ : R ⟶ S) :
+    (Spec.map φ).appTop = ((Scheme.ΓSpecIso R).hom ≫ φ) ≫ (Scheme.ΓSpecIso S).inv :=
+  (Iso.eq_comp_inv _).mpr (Scheme.ΓSpecIso_naturality _)
+
+/-- **B1: only the closed point of a local scheme can hit a closed point** (PROVEN).
+
+In `Spec R` for `R` local every prime is contained in the maximal ideal, so every point
+specializes to the closed point; `l.base` is continuous and `{z}` is closed, so `z` is in the
+range of `l` exactly when it is the image of the closed point. -/
+theorem base_closedPoint_eq_of_mem_range {X : Scheme.{u}} {R : Type u} [CommRing R]
+    [IsLocalRing R] (l : Spec (CommRingCat.of R) ⟶ X) {z : X}
+    (hz : IsClosed ({z} : Set X)) (h : z ∈ Set.range l.base) :
+    l.base (IsLocalRing.closedPoint R) = z := by
+  obtain ⟨p, hp⟩ := h
+  have hsp : p ⤳ IsLocalRing.closedPoint R := IsLocalRing.specializes_closedPoint p
+  have h1 := hsp.map l.continuous
+  rw [hp] at h1
+  have h2 := specializes_iff_mem_closure.mp h1
+  rwa [hz.closure_eq, Set.mem_singleton_iff] at h2
+
+/-- **B2, THE POLE: a quasi-finite `K`-morphism `X ∖ {z} ⟶ 𝔸¹_K` does not extend across `z`**
+(PROVEN 2026-07-30).  This is the whole mathematical content of properness, and the only
+place `hqf` is consumed.
+
+The argument needs no case split and no ampleness.  Suppose `ĝ : X ⟶ 𝔸¹_K` restricts to `g`
+and is a `K`-morphism.  Then:
+
+* `ĝ` is LOCALLY OF FINITE TYPE, by right-cancelling `locallyOfFiniteType_affineLineOver`
+  against `LocallyOfFiniteType strX` (which `IsProper strX` supplies);
+* every fibre of `ĝ` is a fibre of `g` together with at most the single point `z`, hence
+  FINITE — `g`'s fibres are finite by `Scheme.Hom.finite_preimage_singleton`, whose
+  `QuasiCompact g` hypothesis comes from `X` being a noetherian scheme.  With finite type
+  that is `LocallyQuasiFinite ĝ` (`LocallyQuasiFinite.of_finite_preimage_singleton`);
+* `ĝ` is PROPER, by `IsProper.of_comp` against the separated `affineLineOver K`;
+* so `ĝ` is FINITE by Zariski's main theorem, hence affine, hence `X` is an AFFINE scheme;
+* an affine scheme proper over a field is finite over it
+  (`IsFinite.iff_isProper_and_isAffineHom`), so `X` has finitely many points — and
+  `infinite_of_smoothOfRelativeDimension_one` says it has infinitely many.
+
+**This replaces the route the old docstring recorded**, which cancelled properness on the
+wrong side (`𝔸¹_K` proper would need descent along a surjective proper morphism, which the
+pin does not have).  Going through `IsAffine X` avoids descent entirely; the price is one
+extra step and no new theory. -/
+theorem not_exists_extension_toAffineLine_of_locallyQuasiFinite
+    {K : Type u} [Field K] {X : Scheme.{u}} (strX : X ⟶ Spec (CommRingCat.of K))
+    [IsProper strX] [SmoothOfRelativeDimension 1 strX]
+    {z : X} (hz : IsClosed ({z} : Set X))
+    (g : Scheme.Opens.toScheme (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) ⟶
+        Spec (CommRingCat.of (Polynomial K)))
+    (hqf : LocallyQuasiFinite g) :
+    ¬ ∃ G : X ⟶ Spec (CommRingCat.of (Polynomial K)),
+      Scheme.Opens.ι (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) ≫ G = g ∧
+        G ≫ affineLineOver K = strX := by
+  rintro ⟨G, hres, hbase⟩
+  haveI := hqf
+  -- `X` is noetherian, so `U` has a noetherian space and `g` is quasi-compact
+  haveI : CompactSpace X := QuasiCompact.compactSpace_of_compactSpace strX
+  haveI : IsLocallyNoetherian X := LocallyOfFiniteType.isLocallyNoetherian strX
+  haveI : IsNoetherian X := ⟨⟩
+  haveI : NoetherianSpace
+      (Scheme.Opens.toScheme (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens)) := by
+    show NoetherianSpace (({z}ᶜ : Set X))
+    infer_instance
+  haveI : QuasiCompact g := inferInstance
+  -- `G` is locally of finite type, being a `K`-morphism out of a finite-type `X`
+  haveI : LocallyOfFiniteType (G ≫ affineLineOver K) := by rw [hbase]; infer_instance
+  haveI : LocallyOfFiniteType G := locallyOfFiniteType_of_comp G (affineLineOver K)
+  -- every fibre of `G` is a fibre of `g` plus at most `z`, hence finite
+  haveI : LocallyQuasiFinite G := by
+    refine LocallyQuasiFinite.of_finite_preimage_singleton G fun y => ?_
+    have h1 : (g.base ⁻¹' {y}).Finite := g.finite_preimage_singleton y
+    refine Set.Finite.subset
+      ((h1.image (Scheme.Opens.ι (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens)).base).union
+        (Set.finite_singleton z)) ?_
+    intro x hx
+    by_cases hxz : x = z
+    · exact Or.inr hxz
+    · left
+      have hxU : x ∈ (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) := hxz
+      refine ⟨⟨x, hxU⟩, ?_, rfl⟩
+      show g.base ⟨x, hxU⟩ ∈ ({y} : Set _)
+      rw [← hres]
+      exact hx
+  -- proper, hence finite by Zariski's main theorem, hence `X` is affine
+  haveI : IsProper (G ≫ affineLineOver K) := by rw [hbase]; infer_instance
+  haveI : IsProper G := IsProper.of_comp G (affineLineOver K)
+  haveI : IsFinite G := IsFinite.of_isProper_of_locallyQuasiFinite G
+  haveI : IsAffine X := isAffine_of_isAffineHom G
+  -- an affine proper scheme over a field is finite, but a smooth curve is infinite
+  haveI : IsFinite strX := IsFinite.iff_isProper_and_isAffineHom.mpr ⟨inferInstance, inferInstance⟩
+  haveI : Nonempty X := ⟨z⟩
+  haveI : Infinite X := infinite_of_smoothOfRelativeDimension_one strX
+  have hfin := strX.finite_preimage_singleton (strX.base z)
+  have huniv : (strX.base ⁻¹' {strX.base z}) = Set.univ := by
+    haveI : Subsingleton (Spec (CommRingCat.of K)) :=
+      inferInstanceAs (Subsingleton (PrimeSpectrum K))
+    ext x
+    simp [Subsingleton.elim (strX.base x) (strX.base z)]
+  rw [huniv] at hfin
+  exact (Set.infinite_univ (α := X)) hfin
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The converse packaging: if `g`'s coordinate extends to a neighbourhood of `z`, then `g`
+itself extends** (PROVEN 2026-07-30).
+
+`Spec K[T]` is affine, so a morphism into it is a ring map out of `K[T]`
+(`ΓSpec.adjunction.homEquiv`), and two such morphisms agree as soon as their `appTop`s do
+(`ext_of_isAffine`).  So the only real step is the SHEAF GLUING: the coordinate `g^*(T)` on
+`U` and the given section `s` on `V` agree on `V ⊓ U`, and `V ⊔ U = ⊤` because `V ∋ z` and
+`U = {z}ᶜ`, so they glue to a global section `F`.  The extension is then the `K`-algebra map
+`K[T] ⟶ Γ(X, ⊤)` sending `T` to `F`, and both triangles are `Polynomial.ringHom_ext` — one
+generator and the constants.
+
+`hover` is what makes the constants come out right: it says exactly that `g`'s ring map is a
+`K`-algebra map for the structure `strX` induces on `Γ(X, ⊤)`. -/
+theorem exists_extension_toAffineLine_of_coordinate_extends {K : Type u} [Field K]
+    {X : Scheme.{u}} (strX : X ⟶ Spec (CommRingCat.of K)) {U : X.Opens} {z : X}
+    (hUz : ∀ x : X, x ≠ z → x ∈ U)
+    (g : U.toScheme ⟶ Spec (CommRingCat.of (Polynomial K)))
+    (hover : g ≫ affineLineOver K = U.ι ≫ strX)
+    (V : X.Opens) (hzV : z ∈ V) (s : Γ(X, V))
+    (hagree : X.presheaf.map (homOfLE (inf_le_left : V ⊓ U ≤ V)).op s =
+      X.presheaf.map (homOfLE (inf_le_right : V ⊓ U ≤ U)).op
+        (U.topIso.hom
+          (g.appTop ((Scheme.ΓSpecIso (CommRingCat.of (Polynomial K))).inv Polynomial.X)))) :
+    ∃ G : X ⟶ Spec (CommRingCat.of (Polynomial K)),
+      U.ι ≫ G = g ∧ G ≫ affineLineOver K = strX := by
+  -- `ψ`: `g` as a ring map `K[T] ⟶ Γ(U, ⊤)`
+  set ψ : CommRingCat.of (Polynomial K) ⟶ Γ(U.toScheme, ⊤) :=
+    (Scheme.ΓSpecIso (CommRingCat.of (Polynomial K))).inv ≫ g.appTop with hψ
+  -- `α`: the `K`-algebra structure of `Γ(X, ⊤)`
+  set α : CommRingCat.of K ⟶ Γ(X, ⊤) :=
+    (Scheme.ΓSpecIso (CommRingCat.of K)).inv ≫ strX.appTop with hα
+  -- `hover`, as a statement about ring maps: `ψ` is a `K`-algebra map
+  have hoverR : CommRingCat.ofHom (algebraMap K (Polynomial K)) ≫ ψ = α ≫ U.ι.appTop := by
+    have h := congrArg Scheme.Hom.appTop hover
+    rw [Scheme.Hom.comp_appTop, Scheme.Hom.comp_appTop, affineLineOver, appTop_Spec_map] at h
+    rw [hψ, hα]
+    simp only [Category.assoc] at h ⊢
+    exact (Iso.eq_inv_comp _).mpr h
+  -- glue `s` and `g`'s coordinate into a global section
+  have hVU : V ⊔ U = ⊤ := by
+    refine le_antisymm le_top fun x _ => ?_
+    by_cases hxz : x = z
+    · exact Or.inl (hxz ▸ hzV)
+    · exact Or.inr (hUz x hxz)
+  set fU : Γ(U.toScheme, ⊤) :=
+    g.appTop ((Scheme.ΓSpecIso (CommRingCat.of (Polynomial K))).inv Polynomial.X) with hfU
+  obtain ⟨F', -, hF'U⟩ := exists_glue_of_agree s (U.topIso.hom fU) hagree
+  set F : Γ(X, ⊤) := X.presheaf.map (eqToHom hVU.symm).op F' with hF
+  have hFU : X.presheaf.map (homOfLE (le_top : U ≤ ⊤)).op F = U.topIso.hom fU :=
+    (presheaf_map_comp_eq _ _ (homOfLE (le_sup_right : U ≤ V ⊔ U)).op F').trans hF'U
+  have hFf : U.ι.appTop F = fU := by
+    have h1 : U.topIso.hom (U.ι.appTop F) = U.topIso.hom fU := by
+      simp only [Scheme.Opens.ι_appTop, Scheme.Opens.topIso_hom]
+      exact (presheaf_map_comp_eq _ _ (homOfLE (le_top : U ≤ ⊤)).op F).trans hFU
+    calc U.ι.appTop F
+        = U.topIso.inv (U.topIso.hom (U.ι.appTop F)) := (Iso.hom_inv_id_apply _ _).symm
+      _ = U.topIso.inv (U.topIso.hom fU) := by rw [h1]
+      _ = fU := Iso.hom_inv_id_apply _ _
+  -- the ring map `K[T] ⟶ Γ(X, ⊤)` sending `T` to the glued section
+  set φ : CommRingCat.of (Polynomial K) ⟶ Γ(X, ⊤) :=
+    CommRingCat.ofHom (Polynomial.eval₂RingHom α.hom F) with hφ
+  have hφC : CommRingCat.ofHom (algebraMap K (Polynomial K)) ≫ φ = α := by
+    refine CommRingCat.hom_ext (RingHom.ext fun a => ?_)
+    show (Polynomial.eval₂RingHom α.hom F) (algebraMap K (Polynomial K) a) = α.hom a
+    rw [Polynomial.algebraMap_eq]
+    simp
+  have hφres : φ ≫ U.ι.appTop = ψ := by
+    refine CommRingCat.hom_ext (Polynomial.ringHom_ext (fun a => ?_) ?_)
+    · show U.ι.appTop.hom ((Polynomial.eval₂RingHom α.hom F) (Polynomial.C a)) = ψ.hom _
+      have h2 := congrArg (fun (m : CommRingCat.of K ⟶ Γ(U.toScheme, ⊤)) => m.hom a) hoverR
+      simp only [CommRingCat.hom_comp, RingHom.coe_comp, Function.comp_apply,
+        CommRingCat.hom_ofHom, Polynomial.algebraMap_eq] at h2
+      simpa using h2.symm
+    · show U.ι.appTop.hom ((Polynomial.eval₂RingHom α.hom F) Polynomial.X) = ψ.hom _
+      rw [hψ]
+      simpa [hfU] using hFf
+  have hgapp := ΓSpec_adjunction_homEquiv_eq φ
+  refine ⟨(ΓSpec.adjunction.homEquiv X (Opposite.op (CommRingCat.of (Polynomial K)))) φ.op, ?_, ?_⟩
+  · refine ext_of_isAffine (((Scheme.Hom.comp_appTop _ _).trans
+      (congrArg (fun m => m ≫ U.ι.appTop) hgapp)).trans ?_)
+    simp only [Category.assoc, hφres, hψ, Iso.hom_inv_id_assoc]
+  · refine ext_of_isAffine (((Scheme.Hom.comp_appTop _ _).trans
+      (congrArg (fun m => (affineLineOver K).appTop ≫ m) hgapp)).trans ?_)
+    rw [affineLineOver, appTop_Spec_map]
+    simp only [Category.assoc, Iso.inv_hom_id_assoc, hφC, hα, Iso.hom_inv_id_assoc]
+
+/-- **The valuation-ring dichotomy at `z`** (PROVEN 2026-07-30): if a section `f` on `U` does
+not extend to any neighbourhood of `z`, then some section `u` near `z` with NON-UNIT germ
+satisfies `u · f = 1` on the overlap.
+
+`X` is integral, so `Γ(X, V)` and `𝒪_{X,z}` both embed in `X.functionField`
+(`germ_injective_of_isIntegral`), and `𝒪_{X,z}` is a VALUATION RING
+(`valuationRing_stalk_of_smoothOfRelativeDimension_one`).  Non-extension says the germ `φ` of
+`f` at the generic point is not an integer of that valuation ring, so `φ⁻¹` is
+(`ValuationRing.isInteger_or_isInteger`), and `φ⁻¹` is a non-unit — otherwise `φ` would be an
+integer after all.  Realising `φ⁻¹` as the germ of a section on some `V ∋ z` gives `u`. -/
+theorem exists_nonunit_mul_eq_one_of_not_extends {X : Scheme.{u}} [IsIntegral X]
+    {U : X.Opens} [Nonempty ↥U] {z : X}
+    (hval : ValuationRing (X.presheaf.stalk z)) (f : Γ(X, U))
+    (hno : ¬ ∃ (V : X.Opens) (_ : z ∈ V) (t : Γ(X, V)),
+        X.presheaf.map (homOfLE (inf_le_left : V ⊓ U ≤ V)).op t =
+        X.presheaf.map (homOfLE (inf_le_right : V ⊓ U ≤ U)).op f) :
+    ∃ (V : X.Opens) (hzV : z ∈ V) (u : Γ(X, V)),
+      ¬ IsUnit (X.presheaf.germ V z hzV u) ∧
+      X.presheaf.map (homOfLE (inf_le_left : V ⊓ U ≤ V)).op u *
+        X.presheaf.map (homOfLE (inf_le_right : V ⊓ U ≤ U)).op f = 1 := by
+  classical
+  haveI := hval
+  have hgenmem : ∀ V : X.Opens, (V : Set X).Nonempty → genericPoint X ∈ V := fun V hV =>
+    ((genericPoint_spec X).mem_open_set_iff V.isOpen).mpr (by simpa using hV)
+  have hUgen : genericPoint X ∈ U := hgenmem U (Set.nonempty_coe_sort.mp inferInstance)
+  have hWgen : ∀ V : X.Opens, z ∈ V → genericPoint X ∈ V ⊓ U := fun V hzV =>
+    ⟨hgenmem V ⟨z, hzV⟩, hUgen⟩
+  -- the germ of `f` at the generic point is not regular at `z`
+  have hnot : ∀ w : X.presheaf.stalk z,
+      algebraMap (X.presheaf.stalk z) X.functionField w ≠
+        X.presheaf.germ U (genericPoint X) hUgen f := by
+    intro w hw
+    obtain ⟨V, hzV, t, rfl⟩ := X.presheaf.exists_germ_eq w
+    haveI hnV : Nonempty ↥(V : Set X) := ⟨⟨z, hzV⟩⟩
+    rw [@Scheme.algebraMap_germ_eq_germToFunctionField X _ V hnV z hzV t] at hw
+    refine hno ⟨V, hzV, t, ?_⟩
+    refine germ_injective_of_isIntegral X (genericPoint X) (hWgen V hzV) ?_
+    rw [X.presheaf.germ_res_apply (homOfLE (inf_le_left : V ⊓ U ≤ V)) _ _ t,
+      X.presheaf.germ_res_apply (homOfLE (inf_le_right : V ⊓ U ≤ U)) _ _ f]
+    exact hw
+  set φ : X.functionField := X.presheaf.germ U (genericPoint X) hUgen f with hφ
+  have hφ0 : φ ≠ 0 := fun h => hnot 0 (by rw [map_zero, ← h])
+  -- the valuation-ring dichotomy: `φ⁻¹` IS an integer
+  obtain ⟨w, hw⟩ : IsLocalization.IsInteger (X.presheaf.stalk z) φ⁻¹ := by
+    rcases ValuationRing.isInteger_or_isInteger (K := X.functionField)
+      (X.presheaf.stalk z) φ with h | h
+    · exact absurd h (by rintro ⟨w, hw⟩; exact hnot w hw)
+    · exact h
+  -- and `w` is a non-unit, else `φ` would be an integer after all
+  have hwn : ¬ IsUnit w := by
+    rintro ⟨v, rfl⟩
+    refine hnot (↑v⁻¹) ?_
+    have h1 : algebraMap (X.presheaf.stalk z) X.functionField (v : X.presheaf.stalk z) = φ⁻¹ := hw
+    have h2 : algebraMap (X.presheaf.stalk z) X.functionField ((v⁻¹ : (X.presheaf.stalk z)ˣ)) *
+        φ⁻¹ = 1 := by
+      rw [← h1, ← map_mul]
+      simp
+    field_simp at h2
+    simpa using h2
+  -- realise `w` as the germ of a section on a neighbourhood `V` of `z`
+  obtain ⟨V, hzV, u, hu⟩ := X.presheaf.exists_germ_eq w
+  haveI hnV : Nonempty ↥(V : Set X) := ⟨⟨z, hzV⟩⟩
+  refine ⟨V, hzV, u, by rw [hu]; exact hwn, ?_⟩
+  refine germ_injective_of_isIntegral X (genericPoint X) (hWgen V hzV) ?_
+  rw [map_mul, map_one,
+    X.presheaf.germ_res_apply (homOfLE (inf_le_left : V ⊓ U ≤ V)) _ _ u,
+    X.presheaf.germ_res_apply (homOfLE (inf_le_right : V ⊓ U ≤ U)) _ _ f]
+  have hgu : X.presheaf.germ V (genericPoint X) (hWgen V hzV).1 u = φ⁻¹ := by
+    rw [← hw, ← hu, @Scheme.algebraMap_germ_eq_germToFunctionField X _ V hnV z hzV u]
+  rw [hgu]
+  show φ⁻¹ * φ = 1
+  field_simp
+
+/-- **The endgame: a pole is incompatible with the lift's value lying in `R`** (PROVEN
+2026-07-30).
+
+`l` sends the closed point of `Spec R` to `z`, so `Scheme.stalkClosedPointTo l` is a LOCAL
+homomorphism `𝒪_{X,z} ⟶ R` and the value `a` of the non-unit `u` at `z` is a non-unit of `R`.
+`hcomm` says the value of `f` at the generic point of `Spec R` is `b`, the image of the given
+`t ∈ Γ(Spec R, ⊤)`.  Pulling `u · f = 1` back along `Spec L ⟶ V ⊓ U` gives `a · b = 1` in
+`L`, and `R ↪ L`, so `a` is a unit after all. -/
+theorem false_of_valuativeLift_of_nonunit {X : Scheme.{u}} {U : X.Opens} {z : X}
+    {R : Type u} [CommRing R] [IsDomain R] [IsLocalRing R]
+    {L : Type u} [Field L] [Algebra R L] [IsFractionRing R L]
+    (l : Spec (CommRingCat.of R) ⟶ X)
+    (hm : l.base (IsLocalRing.closedPoint R) = z)
+    (i₁ : Spec (CommRingCat.of L) ⟶ U.toScheme)
+    (hl₁ : Spec.map (CommRingCat.ofHom (algebraMap R L)) ≫ l = i₁ ≫ U.ι)
+    (t : Γ(Spec (CommRingCat.of R), ⊤))
+    (f₀ : Γ(U.toScheme, ⊤))
+    (hcomm : i₁.appTop f₀ =
+      (Spec.map (CommRingCat.ofHom (algebraMap R L))).appTop t)
+    (V : X.Opens) (hzV : z ∈ V) (u : Γ(X, V))
+    (hnu : ¬ IsUnit (X.presheaf.germ V z hzV u))
+    (hid : X.presheaf.map (homOfLE (inf_le_left : V ⊓ U ≤ V)).op u *
+        X.presheaf.map (homOfLE (inf_le_right : V ⊓ U ≤ U)).op (U.topIso.hom f₀) = 1) :
+    False := by
+  subst hm
+  set j : Spec (CommRingCat.of L) ⟶ Spec (CommRingCat.of R) :=
+    Spec.map (CommRingCat.ofHom (algebraMap R L)) with hj
+  have hVtop : l ⁻¹ᵁ V = ⊤ := Scheme.preimage_eq_top_of_closedPoint_mem l hzV
+  -- `a`, the value of `u` at the closed point, is a non-unit of `R`
+  set a : R := (Scheme.ΓSpecIso (CommRingCat.of R)).hom (l.appLE V ⊤ hVtop.ge u) with ha
+  have hna : ¬ IsUnit a := by
+    intro h
+    apply hnu
+    refine isUnit_of_map_unit (Scheme.stalkClosedPointTo l).hom _ ?_
+    have h2 : (Scheme.stalkClosedPointTo l) (X.presheaf.germ V _ hzV u) = a := by
+      rw [← ConcreteCategory.comp_apply, Scheme.germ_stalkClosedPointTo l V hzV]
+      simp only [ha, Scheme.Hom.appLE, ConcreteCategory.comp_apply, Iso.trans_hom,
+        Functor.mapIso_hom, Iso.op_hom, eqToIso.hom, eqToHom_op]
+      rfl
+    rw [h2]; exact h
+  -- `b`, the value of `t` at the closed point
+  set b : R := (Scheme.ΓSpecIso (CommRingCat.of R)).hom t with hb
+  -- the two are inverse to each other in `L`
+  have hkV : (i₁ ≫ U.ι) ⁻¹ᵁ V = ⊤ := by rw [← hl₁]; simp [hVtop]
+  have hkU : (i₁ ≫ U.ι) ⁻¹ᵁ U = ⊤ := by simp
+  have hpre : (i₁ ≫ U.ι) ⁻¹ᵁ (V ⊓ U) = (i₁ ≫ U.ι) ⁻¹ᵁ V ⊓ (i₁ ≫ U.ι) ⁻¹ᵁ U := rfl
+  have he : (⊤ : (Spec (CommRingCat.of L)).Opens) ≤ (i₁ ≫ U.ι) ⁻¹ᵁ (V ⊓ U) := by
+    rw [hpre, hkV, hkU]; simp
+  -- factor 1: the value of `u`
+  have hf1 : (i₁ ≫ U.ι).appLE (V ⊓ U) ⊤ he
+      (X.presheaf.map (homOfLE (inf_le_left : V ⊓ U ≤ V)).op u) =
+      j.appTop (l.appLE V ⊤ hVtop.ge u) := by
+    rw [← ConcreteCategory.comp_apply, Scheme.Hom.map_appLE]
+    suffices h : ∀ (k : Spec (CommRingCat.of L) ⟶ X), k = j ≫ l →
+        ∀ e : (⊤ : (Spec (CommRingCat.of L)).Opens) ≤ k ⁻¹ᵁ V,
+        k.appLE V ⊤ e u = j.appTop (l.appLE V ⊤ hVtop.ge u) from h _ hl₁.symm _
+    rintro k rfl e
+    rw [← Scheme.Hom.appLE_comp_appLE j l V ⊤ ⊤ hVtop.ge le_top, ConcreteCategory.comp_apply]
+    simp [Scheme.Hom.appLE]
+  -- factor 2: the value of the coordinate
+  have hf2 : (i₁ ≫ U.ι).appLE (V ⊓ U) ⊤ he
+      (X.presheaf.map (homOfLE (inf_le_right : V ⊓ U ≤ U)).op (U.topIso.hom f₀)) =
+      j.appTop t := by
+    have htop : (U.ι.appLE U ⊤ U.ι_preimage_self.ge) (U.topIso.hom f₀) = f₀ := by
+      simp only [Scheme.Opens.ι_appLE, Scheme.Opens.topIso_hom]
+      exact presheaf_map_comp_self _ _ _
+    rw [← ConcreteCategory.comp_apply, Scheme.Hom.map_appLE,
+      ← Scheme.Hom.appLE_comp_appLE i₁ U.ι U ⊤ ⊤ U.ι_preimage_self.ge le_top,
+      ConcreteCategory.comp_apply, htop,
+      show Scheme.Hom.appLE i₁ ⊤ ⊤ le_top = i₁.appTop from by simp [Scheme.Hom.appLE], hcomm]
+  have hab : algebraMap R L (a * b) = 1 := by
+    have hmain := congrArg ((i₁ ≫ U.ι).appLE (V ⊓ U) ⊤ he) hid
+    rw [map_mul, map_one, hf1, hf2] at hmain
+    have hnat : ∀ w, (Scheme.ΓSpecIso (CommRingCat.of L)).hom (j.appTop w) =
+        algebraMap R L ((Scheme.ΓSpecIso (CommRingCat.of R)).hom w) := by
+      intro w
+      rw [hj, ← ConcreteCategory.comp_apply, Scheme.ΓSpecIso_naturality]
+      rfl
+    have hstep : (Scheme.ΓSpecIso (CommRingCat.of L)).hom
+        (j.appTop (l.appLE V ⊤ hVtop.ge u) * j.appTop t) = 1 := by
+      rw [hmain, map_one]
+    rw [map_mul] at hstep ⊢
+    rw [hnat, hnat, ← ha, ← hb] at hstep
+    exact hstep
+  rw [map_mul] at hab
+  exact hna (IsUnit.of_mul_eq_one b
+    (IsFractionRing.injective R L (by rw [map_mul, hab, map_one])))
+
 /-- **THE POLE AT `z`, in valuative form: a lift of a valuative square into `X` cannot hit `z`**
-(sorry leaf, cut 2026-07-30; the ONLY residue of
+(**PROVEN 2026-07-30**; was the ONLY residue of
 `isProper_of_locallyQuasiFinite_toAffineLine_compl_singleton`, which is now proven over the
 existence lemma below, which is in turn proven over this).
 
@@ -263,11 +686,15 @@ Given a valuation ring `R` with fraction field `L`, a point `i₁ : Spec L ⟶ X
 it is not optional), and a lift `l : Spec R ⟶ X` of the resulting square over `strX`, the
 range of `l` misses `z`.
 
-This is where ALL the mathematics of properness now sits.  Everything categorical around it —
+This was where ALL the mathematics of properness sat.  Everything categorical around it —
 building the square, extracting `l`, factoring through the open, and both triangles — is proven
 in `valuativeCriterionExistence_of_locallyQuasiFinite_toAffineLine_compl_singleton` below.
 
-TRUE, in two substeps.
+TRUE, in two substeps, and BOTH ARE NOW PROVEN, over the five lemmas in the section above:
+`base_closedPoint_eq_of_mem_range` (B1), `not_exists_extension_toAffineLine_of_locallyQuasiFinite`
+(B2's heart), `exists_extension_toAffineLine_of_coordinate_extends` (the gluing that turns
+"the coordinate extends" into "`g` extends"), `exists_nonunit_mul_eq_one_of_not_extends` (the
+valuation-ring dichotomy) and `false_of_valuativeLift_of_nonunit` (the endgame).
 
 **B1 — only the closed point can be the problem.**  In `Spec R` every prime is contained in
 the maximal ideal, so every point specializes to the closed point `m`; `l.base` is continuous
@@ -286,25 +713,33 @@ is a DISCRETE VALUATION RING
 valuation in `R` — while `hcomm` says that image is `i₂`'s pull-back of `T`, which lies in `R`.
 Contradiction.
 
-**What B2 rests on, and it is worth a leaf of its own: `f ∉ 𝒪_{X,z}`, i.e. `g` DOES NOT EXTEND
-ACROSS `z`.**  That statement mentions `X` and `g` only — no valuation ring — and it is the
-only place `hqf` is consumed.  Its proof is a dichotomy on a hypothetical extension
-`ĝ : X ⟶ 𝔸¹_K` with `Scheme.Opens.ι U ≫ ĝ = g`:
+**What B2 rests on: `f ∉ 𝒪_{X,z}`, i.e. `g` DOES NOT EXTEND ACROSS `z`.**  That statement
+mentions `X` and `g` only — no valuation ring — and it is the only place `hqf` is consumed.
+It is `not_exists_extension_toAffineLine_of_locallyQuasiFinite` above, and its proof turned
+out to need NO case split at all: a hypothetical extension `G : X ⟶ 𝔸¹_K` is locally of
+finite type with finite fibres (each fibre of `G` is a fibre of `g` plus at most `z`), hence
+quasi-finite; it is proper by right-cancelling the separated `affineLineOver K`; so it is
+FINITE by Zariski's main theorem, which makes `X` AFFINE; and an affine scheme proper over a
+field is finite over it, so `X` has finitely many points, against
+`infinite_of_smoothOfRelativeDimension_one`.
 
-* `ĝ ≫ affineLineOver K = strX`, because the two agree on `U`, which is DENSE
-  (`isDominant_of_finite_compl`, `CurveExtension.lean`) — so `ĝ` is a `K`-morphism, hence
-  proper by `IsProper.of_comp` cancelling against the separated `affineLineOver K`;
-* if some fibre of `ĝ` is infinite it is all of the irreducible curve `X`, so `g` is constant
-  on the infinite `U` (`infinite_of_smoothOfRelativeDimension_one`), contradicting `hqf`;
-* otherwise `ĝ` is quasi-finite, hence FINITE by
-  `IsFinite.of_isProper_of_locallyQuasiFinite`, so `affineLineOver K` is proper AND affine,
-  hence finite, i.e. `K[T]` is a finite `K`-module — false, `Polynomial.basisMonomials`
-  being a basis indexed by `ℕ`.
+**Two earlier notes here were WRONG about the route, and are corrected rather than deleted,
+because the error is instructive.**
 
-**That last contradiction is cleaner than the one this file used to record.**  The old note
-said a finite surjection from a universally closed `X` would make `affineLineOver K`
-universally closed, "which it is not" — leaving a prover to prove that `𝔸¹` is not universally
-closed over `K`, which is real work.  Going through `Module.Finite K K[T]` avoids it entirely.
+* The version before this one proposed the dichotomy "`G` has an infinite fibre, or `G` is
+  quasi-finite, hence finite, so `affineLineOver K` is proper AND affine, hence finite".  The
+  last step does not follow: `IsProper` cancels on the RIGHT (`IsProper.of_comp`), giving
+  properness of `G` from properness of `strX`, not properness of `affineLineOver K` from it.
+  Getting that would need descent along a surjective proper morphism, which the pin does not
+  have.  Routing the contradiction through `IsAffine X` avoids descent entirely, and is why
+  the case split disappears: the "infinite fibre" branch was only ever there to feed the
+  quasi-finiteness that the finite-fibre count now supplies directly.
+* The version before THAT said the same thing through "a finite surjection from a universally
+  closed `X` would make `affineLineOver K` universally closed, which it is not".  Same gap,
+  plus a genuine unproved side condition (`𝔸¹` is not universally closed over `K`).
+
+Neither wrong route was ever compiled, which is exactly why they survived two rewrites of this
+docstring: a prose route is not checked by anything until someone tries to walk it.
 
 ## FAITHFULNESS AUDIT
 
@@ -321,6 +756,18 @@ of `T`, hence lies in `R` — that excludes this.
 
 `hqf` is load-bearing for the same reason it is in the consumer: `g` constant at `0` satisfies
 everything else, and its lift may perfectly well hit `z`.
+
+**`hl₂` IS NOT CONSUMED** (observed when the proof went through, 2026-07-30; it is spelled
+`_hl₂` in the signature for that reason, and is still passed positionally).  The audit above
+already said as much — `hl₂` "only ties `l` to `i₂` through the BASE `Spec K`", and that is
+worth nothing once `hcomm` is present — but it was left in the signature deliberately: it is
+what the consumer's valuative criterion hands over (`hfr`), it costs the consumer nothing, and
+dropping it would be a signature change with no benefit.  Do not read its absence from the
+proof as evidence that the statement is stronger than it looks; read it as evidence that
+`hcomm` does all the work, which is the point of the FAITHFULNESS note above.
+
+`hconn` is consumed exactly once, to get `IsIntegral X`, which is what puts `Γ(U)` and
+`𝒪_{X,z}` inside one function field.
 
 NOT VACUOUS: `ValuativeCommSq g` is inhabited — `U`'s local rings are valuation rings
 (`valuationRing_stalk_of_smoothOfRelativeDimension_one`) — and the consumer below instantiates
@@ -344,9 +791,46 @@ theorem notMem_range_of_valuativeLift_toAffineLine_compl_singleton
     (l : Spec (CommRingCat.of R) ⟶ X)
     (hl₁ : Spec.map (CommRingCat.ofHom (algebraMap R L)) ≫ l =
       i₁ ≫ Scheme.Opens.ι (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens))
-    (hl₂ : l ≫ strX = i₂ ≫ affineLineOver K) :
-    z ∉ Set.range l.base :=
-  sorry
+    (_hl₂ : l ≫ strX = i₂ ≫ affineLineOver K) :
+    z ∉ Set.range l.base := by
+  intro hmem
+  haveI := hqf
+  haveI : IsIntegral X :=
+    isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected (n := 1) strX hconn
+  haveI : Nonempty X := ⟨z⟩
+  haveI : Infinite X := infinite_of_smoothOfRelativeDimension_one strX
+  obtain ⟨x₀, hx₀⟩ := exists_ne z
+  haveI : Nonempty ↥(⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) := ⟨⟨x₀, hx₀⟩⟩
+  -- the coordinate of `g`, as a section of `U`
+  set fU : Γ(Scheme.Opens.toScheme (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens), ⊤) :=
+    g.appTop ((Scheme.ΓSpecIso (CommRingCat.of (Polynomial K))).inv Polynomial.X) with hfU
+  -- B1: only the closed point of `Spec R` can hit `z`
+  have hm : l.base (IsLocalRing.closedPoint R) = z :=
+    base_closedPoint_eq_of_mem_range l hz hmem
+  -- B2: the coordinate does not extend across `z`
+  have hno : ¬ ∃ (V : X.Opens) (_ : z ∈ V) (t : Γ(X, V)),
+      X.presheaf.map (homOfLE (inf_le_left :
+        V ⊓ (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) ≤ V)).op t =
+      X.presheaf.map (homOfLE (inf_le_right :
+        V ⊓ (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) ≤
+          (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens))).op
+        (Scheme.Opens.topIso (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) |>.hom fU) := by
+    rintro ⟨V, hzV, t, hagree⟩
+    exact not_exists_extension_toAffineLine_of_locallyQuasiFinite strX hz g hqf
+      (exists_extension_toAffineLine_of_coordinate_extends strX
+        (U := (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens)) (z := z)
+        (fun x hx => hx) g hover V hzV t hagree)
+  -- the valuation-ring dichotomy, then the endgame
+  obtain ⟨V, hzV, u, hnu, hid⟩ :=
+    exists_nonunit_mul_eq_one_of_not_extends
+      (valuationRing_stalk_of_smoothOfRelativeDimension_one strX z)
+      (Scheme.Opens.topIso (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) |>.hom fU) hno
+  refine false_of_valuativeLift_of_nonunit l hm i₁ hl₁
+    (i₂.appTop ((Scheme.ΓSpecIso (CommRingCat.of (Polynomial K))).inv Polynomial.X)) fU ?_
+    V hzV u hnu hid
+  exact congrArg
+    (fun m => m.hom ((Scheme.ΓSpecIso (CommRingCat.of (Polynomial K))).inv Polynomial.X))
+    (congrArg Scheme.Hom.appTop hcomm)
 
 /-- **The valuative lift: a valuation ring mapping to `𝔸¹_K` whose generic point lands in
 `X ∖ {z}` lands there entirely** (**PROVEN 2026-07-30** over the leaf immediately above, which
