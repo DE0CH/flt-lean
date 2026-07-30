@@ -14642,7 +14642,19 @@ rebuild them, exactly as with the leaf above.
 
 `hN : N ≠ 0` is consumed through `d.cyc.geom_cyclic`, whose generator has
 `addOrderOf = N`; at `N = 0` the hypothesis `d` is already contradictory by
-`isEmpty_of_gamma0Datum_zero`. -/
+`isEmpty_of_gamma0Datum_zero`.
+
+**THE CONJUNCT `E.j = j₀` WAS ADDED 2026-07-30, AND IT IS FREE.**  It is the repair
+prescribed on `exists_stableCyclic_j_of_gamma0Datum_algClos` below, which observes that
+every dictionary in this bridge silently drops the `j`-invariant while the CM leaf under it
+cannot be stated without it.  Nothing is over-asked here: the route above *constructs*
+`E := WeierstrassCurve.ofJ j₀`, and `WeierstrassCurve.ofJ_j` gives `(ofJ j₀).j = j₀` in
+characteristic zero outright — so a prover who follows the route already has this conjunct
+in hand before it does any of the work.  Adding it here rather than downstream is what makes
+the `j` survive the twist: the twist chain (`exists_stableCyclic_twist_of_autStable` and
+everything under it, down to `quarticModel`/`sexticModel` in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/{Quartic,Sextic}Twist.lean`) now records
+`E'.j = E.j`, twists being `j`-preserving by construction. -/
 theorem exists_weierstrassQ_autStable_of_weierstrassAlgClos {N : ℕ} (hN : N ≠ 0)
     (d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
     (hinv : ∀ (σ : Field.absoluteGaloisGroup ℚ)
@@ -14653,7 +14665,7 @@ theorem exists_weierstrassQ_autStable_of_weierstrassAlgClos {N : ℕ} (hN : N �
     (hmodel : IsWeierstrassModel d.ab Ē)
     (j₀ : ℚ) (hj : Ē.j = algebraMap ℚ (AlgebraicClosure ℚ) j₀) :
     ∃ (E : WeierstrassCurve ℚ) (_ : E.IsElliptic) (g : (E⁄(AlgebraicClosure ℚ)).Point),
-      addOrderOf g = N ∧
+      E.j = j₀ ∧ addOrderOf g = N ∧
       ∀ σ : Field.absoluteGaloisGroup ℚ,
         ∃ (C : WeierstrassCurve.VariableChange (AlgebraicClosure ℚ))
           (h : C • (E⁄(AlgebraicClosure ℚ)) = (E⁄(AlgebraicClosure ℚ))),
@@ -14762,9 +14774,10 @@ theorem exists_weierstrassQ_autStable_of_galoisInvariant {N : ℕ} (hN : N ≠ 0
   obtain ⟨Ē, hĒ, hmodel⟩ :=
     exists_weierstrassAlgClos_of_abelianSchemeStruct d.ab d.relativeDimensionOne
   haveI := hĒ
-  refine exists_weierstrassQ_autStable_of_weierstrassAlgClos hN d hinv Ē hĒ hmodel j₀ ?_
-  rw [← hj₀]
-  exact (hja Ē (d.ofDvd hN (one_dvd N)) hmodel).symm
+  obtain ⟨E, hE, g, -, hg, haut⟩ :=
+    exists_weierstrassQ_autStable_of_weierstrassAlgClos hN d hinv Ē hĒ hmodel j₀
+      (by rw [← hj₀]; exact (hja Ē (d.ofDvd hN (one_dvd N)) hmodel).symm)
+  exact ⟨E, hE, g, hg, haut⟩
 
 /-- **The identity change of variables acts on points as the identity** (PROVEN
 2026-07-27, no leaf).
@@ -14936,7 +14949,7 @@ theorem exists_stableCyclic_twist_of_autStable_of_j_eq_1728 {N : ℕ} (hN : N �
     (hmove : ∃ x ∈ AddSubgroup.zmultiples g, autPoint hι x ∉ AddSubgroup.zmultiples g)
     (hu : (ι.u : AlgebraicClosure ℚ) ^ 2 = -1) :
     ∃ (E' : WeierstrassCurve ℚ) (_ : E'.IsElliptic) (g' : (E'⁄(AlgebraicClosure ℚ)).Point),
-      addOrderOf g' = N ∧
+      E'.j = 1728 ∧ addOrderOf g' = N ∧
       ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g',
         WeierstrassCurve.Affine.Point.map
             (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
@@ -15171,7 +15184,7 @@ theorem exists_stableCyclic_of_muThree_coboundary_of_j_eq_zero {N : ℕ} (hN : N
       (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) γ = c σ * γ)
     (d : ℚ) (hd : γ ^ 3 = algebraMap ℚ (AlgebraicClosure ℚ) d) :
     ∃ (E' : WeierstrassCurve ℚ) (_ : E'.IsElliptic) (g' : (E'⁄(AlgebraicClosure ℚ)).Point),
-      addOrderOf g' = N ∧
+      E'.j = 0 ∧ addOrderOf g' = N ∧
       ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g',
         WeierstrassCurve.Affine.Point.map
             (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
@@ -15268,7 +15281,7 @@ theorem exists_stableCyclic_twist_of_autStable_of_j_eq_zero {N : ℕ} (hN : N �
     (hu6 : (ι.u : AlgebraicClosure ℚ) ^ 6 = 1)
     (hu2 : (ι.u : AlgebraicClosure ℚ) ^ 2 ≠ 1) :
     ∃ (E' : WeierstrassCurve ℚ) (_ : E'.IsElliptic) (g' : (E'⁄(AlgebraicClosure ℚ)).Point),
-      addOrderOf g' = N ∧
+      E'.j = 0 ∧ addOrderOf g' = N ∧
       ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g',
         WeierstrassCurve.Affine.Point.map
             (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
@@ -15402,7 +15415,7 @@ theorem exists_stableCyclic_twist_of_autStable_of_j_special {N : ℕ} (hN : N �
               (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x) ∈
             AddSubgroup.zmultiples g) :
     ∃ (E' : WeierstrassCurve ℚ) (_ : E'.IsElliptic) (g' : (E'⁄(AlgebraicClosure ℚ)).Point),
-      addOrderOf g' = N ∧
+      E'.j = E.j ∧ addOrderOf g' = N ∧
       ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g',
         WeierstrassCurve.Affine.Point.map
             (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
@@ -15411,7 +15424,7 @@ theorem exists_stableCyclic_twist_of_autStable_of_j_special {N : ℕ} (hN : N �
       (h : C • (E⁄(AlgebraicClosure ℚ)) = (E⁄(AlgebraicClosure ℚ))),
       ∀ x ∈ AddSubgroup.zmultiples g, autPoint h x ∈ AddSubgroup.zmultiples g
   · -- **The rigid case**: no automorphism moves `⟨g⟩`, so `⟨g⟩` is already stable.
-    refine ⟨E, inferInstance, g, hg, fun σ x hx => ?_⟩
+    refine ⟨E, inferInstance, g, rfl, hg, fun σ x hx => ?_⟩
     obtain ⟨C, h, hC⟩ := haut σ
     haveI : Finite (AddSubgroup.zmultiples g) := by
       refine Nat.finite_of_card_ne_zero ?_
@@ -15464,10 +15477,12 @@ theorem exists_stableCyclic_twist_of_autStable_of_j_special {N : ℕ} (hN : N �
       have hjb : (E⁄(AlgebraicClosure ℚ)).j = 0 := by
         rw [show (E⁄(AlgebraicClosure ℚ)).j = algebraMap ℚ (AlgebraicClosure ℚ) E.j from
           WeierstrassCurve.map_j E _, hj0, map_zero]
-      exact exists_stableCyclic_twist_of_autStable_of_j_eq_zero hN E hj0 g hg haut ι hι
-        ⟨x₀, hx₀, hx₀'⟩
-        (WeierstrassCurve.u_pow_six_eq_one_of_smul_eq_of_j_eq_zero
-          (E⁄(AlgebraicClosure ℚ)) h1728 hjb hι) husq
+      obtain ⟨E', hE', g', hE'j, hg', hstab⟩ :=
+        exists_stableCyclic_twist_of_autStable_of_j_eq_zero hN E hj0 g hg haut ι hι
+          ⟨x₀, hx₀, hx₀'⟩
+          (WeierstrassCurve.u_pow_six_eq_one_of_smul_eq_of_j_eq_zero
+            (E⁄(AlgebraicClosure ℚ)) h1728 hjb hι) husq
+      exact ⟨E', hE', g', by rw [hE'j, hj0], hg', hstab⟩
     · -- `j = 1728`: `u⁴ = 1` and `u² ≠ 1`, so `u² = -1`.
       have hjb : (E⁄(AlgebraicClosure ℚ)).j = 1728 := by
         rw [show (E⁄(AlgebraicClosure ℚ)).j = algebraMap ℚ (AlgebraicClosure ℚ) E.j from
@@ -15482,8 +15497,10 @@ theorem exists_stableCyclic_twist_of_autStable_of_j_special {N : ℕ} (hN : N �
             linear_combination hu4) with h' | h'
         · exact absurd (by linear_combination h') husq
         · linear_combination h'
-      exact exists_stableCyclic_twist_of_autStable_of_j_eq_1728 hN E hj1728 g hg haut ι hι
-        ⟨x₀, hx₀, hx₀'⟩ hu2
+      obtain ⟨E', hE', g', hE'j, hg', hstab⟩ :=
+        exists_stableCyclic_twist_of_autStable_of_j_eq_1728 hN E hj1728 g hg haut ι hι
+          ⟨x₀, hx₀, hx₀'⟩ hu2
+      exact ⟨E', hE', g', by rw [hE'j, hj1728], hg', hstab⟩
 
 /-- **The descent obstruction is killed by a twist** (PROVEN 2026-07-27 at
 `j ∉ {0, 1728}`, over `exists_stableCyclic_twist_of_autStable_of_j_special` at
@@ -15510,7 +15527,7 @@ theorem exists_stableCyclic_twist_of_autStable {N : ℕ} (hN : N ≠ 0)
               (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x) ∈
             AddSubgroup.zmultiples g) :
     ∃ (E' : WeierstrassCurve ℚ) (_ : E'.IsElliptic) (g' : (E'⁄(AlgebraicClosure ℚ)).Point),
-      addOrderOf g' = N ∧
+      E'.j = E.j ∧ addOrderOf g' = N ∧
       ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g',
         WeierstrassCurve.Affine.Point.map
             (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
@@ -15528,7 +15545,7 @@ theorem exists_stableCyclic_twist_of_autStable {N : ℕ} (hN : N ≠ 0)
       WeierstrassCurve.map_j E _]
     intro hcon
     exact hj₁ ((algebraMap ℚ (AlgebraicClosure ℚ)).injective (by rw [hcon]; norm_num))
-  refine ⟨E, inferInstance, g, hg, fun σ x hx => ?_⟩
+  refine ⟨E, inferInstance, g, rfl, hg, fun σ x hx => ?_⟩
   obtain ⟨C, h, hC⟩ := haut σ
   have hmem := hC x hx
   rcases autPoint_eq_self_or_neg hjb₀ hjb₁ h
@@ -15644,7 +15661,8 @@ theorem exists_stableCyclic_of_gamma0Datum_algClos {N : ℕ} (hN : N ≠ 0)
           AddSubgroup.zmultiples g := by
   obtain ⟨E, hE, g, hg, haut⟩ := exists_weierstrassQ_autStable_of_galoisInvariant hN d hinv
   haveI := hE
-  exact exists_stableCyclic_twist_of_autStable hN E g hg haut
+  obtain ⟨E', hE', g', -, hg', hstab⟩ := exists_stableCyclic_twist_of_autStable hN E g hg haut
+  exact ⟨E', hE', g', hg', hstab⟩
 
 end FieldOfModuli
 
@@ -25633,41 +25651,54 @@ theorem exists_weierstrassModel_gamma0Datum_algClos {N : ℕ}
 
 /-- **The moduli-to-Weierstrass dictionary, WITH the `j`-invariant carried
 across** (sorry leaf, opened 2026-07-28 as the geometric half of the cut of
-`not_isSpecialJ_of_gamma0Datum_fieldOfModuli` below).
+`not_isSpecialJ_of_gamma0Datum_fieldOfModuli` below; **PROVEN 2026-07-30** by
+carrying out the honest repair described below).
 
 This is `exists_stableCyclic_of_gamma0Datum_algClos` (**PROVEN**, above) with one
 conjunct added — `E.j = j₀` — and it exists because **every dictionary in this
 bridge drops `j`**, while the CM leaf below cannot even be stated without it.
 
-## WHY THE CONJUNCT IS MISSING, AND WHY IT IS FREE
+## WHY THE CONJUNCT WAS MISSING, AND WHY IT IS FREE
 
 RUN 2026-07-28, by name, over the whole chain that produces the `ℚ`-curve:
 
 * `exists_weierstrassQ_autStable_of_weierstrassAlgClos` (leaf) — takes `j₀` as an
   *input* and its own docstring says it builds `E := WeierstrassCurve.ofJ j₀`,
-  yet its conclusion does not record `E.j`;
+  yet its conclusion did not record `E.j`;
 * `exists_weierstrassQ_autStable_of_galoisInvariant` (PROVEN over it) — same;
 * `exists_stableCyclic_twist_of_autStable` and
   `exists_stableCyclic_twist_of_autStable_of_j_special` (both PROVEN) — return a
-  TWIST `E'` of `E`, and a twist has the same `j`
-  (`WeierstrassCurve.variableChange_j`), yet neither records it;
+  TWIST `E'` of `E`, and a twist has the same `j`, yet neither recorded it;
 * `exists_stableCyclic_of_gamma0Datum_algClos` (PROVEN) — the composite, same.
 
-So `j` is preserved at every single step and recorded at none, which is why this
-is a BOOKKEEPING leaf and not a new theory: a prover proves it by re-running
-`exists_stableCyclic_of_gamma0Datum_algClos`'s three-line proof with the conjunct
-threaded through, using `WeierstrassCurve.ofJ_j` at the source, `map_j` across
-the base change and `variableChange_j` at the twist.
+So `j` is preserved at every single step and was recorded at none, which is why
+this is a BOOKKEEPING leaf and not a new theory.
 
-**The honest repair is not this leaf.**  The five declarations above should each
-carry `E.j` in their conclusions; the moment they do, this one is a two-line
-consequence and should be DELETED rather than proved.  It is stated separately
-only because all five have live owners and adding a conjunct to a PROVEN theorem
-falls due at every call site simultaneously.
+**THE HONEST REPAIR WAS DONE (2026-07-30), which is why this is now two lines.**
+The 2026-07-28 note said the repair was unavailable because "all five have live
+owners and adding a conjunct to a PROVEN theorem falls due at every call site
+simultaneously".  Both halves turned out to be cheap:
 
-**The check that would refute "open"**: any statement in the field-of-moduli
-bridge whose conclusion mentions the `j`-invariant of the curve it produces.
-RUN 2026-07-28 — none of the five does.
+* the call graph is CLOSED — `exists_stableCyclic_twist_of_autStable` and its
+  three descendants are called only from inside this file, and
+  `exists_stableCyclic_quarticTwist` / `exists_stableCyclic_sexticTwist` only from
+  their two wrappers here, so "every call site" is five `exact`s;
+* the `j`-value at the bottom of the twist chain is READ OFF THE NORMAL FORM: the
+  twist produced there IS `quarticModel (a₄ d)` resp. `sexticModel (a₆ d)` by
+  construction, and the new `WeierstrassCurve.j_quarticModel` / `j_sexticModel` in
+  `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/{Quartic,Sextic}Twist.lean`
+  give `j = 1728` resp. `j = 0` from `c₆ = 0` resp. `c₄ = 0` in three lines each.
+
+So `exists_stableCyclic_twist_of_autStable` and both its special-`j` branches now
+carry `E'.j = E.j`, and the one remaining leaf of the chain,
+`exists_weierstrassQ_autStable_of_weierstrassAlgClos`, carries `E.j = j₀` — free
+there, since its own route constructs `E := WeierstrassCurve.ofJ j₀`.  What is
+left here is the composition, and the two hypotheses `hW`, `hj` are exactly the
+inputs that leaf wants, so no `j`-rationality step is re-derived.
+
+`exists_stableCyclic_of_gamma0Datum_algClos` deliberately did NOT acquire the
+conjunct: it has no `j₀` in scope and its consumers do not want one, so its proof
+simply discards the new component.
 
 **NOT VACUOUS**, and the `j`-conjunct is exactly what carries the content:
 without it the statement is literally the proven sibling.  `hW` and `hj` are the
@@ -25692,8 +25723,17 @@ theorem exists_stableCyclic_j_of_gamma0Datum_algClos {N : ℕ} (hN : N ≠ 0)
       ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
         WeierstrassCurve.Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
-          AddSubgroup.zmultiples g :=
-  sorry
+          AddSubgroup.zmultiples g := by
+  -- The transport out of the moduli language, WITH the `j`-invariant now carried across.
+  -- `hW` and `hj` are exactly the two inputs of the geometric leaf, so the intermediate
+  -- steps of `exists_weierstrassQ_autStable_of_galoisInvariant` — the Weierstrass model
+  -- over `ℚ̄` and the rationality of `j` — are handed in rather than re-derived here.
+  obtain ⟨E, hE, g, hEj, hg, haut⟩ :=
+    exists_weierstrassQ_autStable_of_weierstrassAlgClos hN d hinv W inferInstance hW j₀ hj
+  haveI := hE
+  -- The twist that removes the residual automorphism preserves `j`, so `E.j = j₀` survives.
+  obtain ⟨E', hE', g', hE'j, hg', hstab⟩ := exists_stableCyclic_twist_of_autStable hN E g hg haut
+  exact ⟨E', hE', g', hE'j.trans hEj, hg', hstab⟩
 
 /-- **THE CM/RAMIFICATION CORE: an elliptic curve over `ℚ` with `j ∈ {0, 1728}`
 carrying a Galois-stable cyclic subgroup of PRIME order `p` forces
