@@ -2822,7 +2822,216 @@ theorem finrank_residue_pt_eq_one {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Typ
   · exact PlaceData.finrank_residue_eq_one_of_forall_exists_const D _
       fun z hz => exists_const_sub_vanishesAt_infinite D hsep s hz
 
-/-- **LEAF: the fundamental identity of function-field theory,**
+/-! ### `F` is FINITE over `K⟮g⟯` for every transcendental `g` (PROVEN)
+
+The first of the three pieces of [Stichtenoth, Thm. 1.4.11], and the one that is not an
+inequality: without it the right-hand side of the fundamental identity is `Module.finrank`'s
+junk value `0` and the identity is FALSE (`div_∞ g ≠ 0` for `g` transcendental), so this is
+not bookkeeping — it is the statement that both sides are talking about the same thing.
+
+The proof is the classical two-variable argument, and the only input beyond `gen` is that
+`g` is transcendental:
+
+* `gen` applied to `g` gives `a, b, d ∈ K[T]` with `d(x) ≠ 0` and `g·d(x) = a(x) + b(x)·y`.
+  Squaring and using `eqn` kills `y`:
+  `(g·d(x) − a(x))² = b(x)²·f(x)`, i.e. `x` is a root of
+  `p = g²·d² − 2g·(a·d) + (a² − b²·f) ∈ K⟮g⟯[T]`;
+* `p ≠ 0` **because `g` is transcendental**: its coefficient at `N = deg (d²)` is
+  `g²·(d²)_N − 2g·(a·d)_N + (a² − b²f)_N` with `(d²)_N = lc(d)² ≠ 0`, so a vanishing
+  coefficient exhibits `g` as a root of an honest quadratic over `K`.  This is the only step
+  that uses `hg`, and it is where the statement would fail for `g ∈ K`: there `p` really is
+  `0` (take `a = g·d`, `b = 0`) and `x` is not pinned at all;
+* so `x` is integral over `K⟮g⟯`, hence so is `f(x) = y²` (it lies in `K⟮g⟯[x]`) and hence so
+  is `y` (`IsIntegral.of_pow`).  `gen` says `K⟮g⟯⟮x, y⟯ = ⊤`, and adjoining two integral
+  elements to a field is finite.
+
+Note what is NOT used: no place, no valuation, no separability.  This is a statement about
+the field `F` alone. -/
+
+/-- Coefficientwise expansion of the quadratic combination `C (u²)·P̄ − C (2u)·Q̄ + R̄`
+(PROVEN) — the shape the two-variable relation below takes over `K⟮g⟯`. -/
+theorem coeff_quadCombination {K E : Type*} [CommRing K] [CommRing E] (φ : K →+* E) (u : E)
+    (P Q R : K[X]) (N : ℕ) :
+    (C (u ^ 2) * P.map φ - C (u * 2) * Q.map φ + R.map φ).coeff N
+      = u ^ 2 * φ (P.coeff N) - u * 2 * φ (Q.coeff N) + φ (R.coeff N) := by
+  simp only [coeff_add, coeff_sub, coeff_C_mul, coeff_map]
+
+/-- **The abscissa is integral over `K⟮g⟯` for every transcendental `g`** (PROVEN); see the
+section note above for the argument. -/
+theorem isIntegral_xx_adjoin_of_transcendental {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {g : D.F} (hg : Transcendental K g) :
+    IsIntegral (IntermediateField.adjoin K {g}) D.xx := by
+  set E := IntermediateField.adjoin K {g} with hEdef
+  obtain ⟨a, b, d, hd, heq⟩ := D.gen g
+  have hd0 : d ≠ 0 := by rintro rfl; simp at hd
+  set gE : E := ⟨g, IntermediateField.mem_adjoin_simple_self K g⟩ with hgE
+  have hgEF : algebraMap E D.F gE = g := rfl
+  set fp : K[X] := sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K with hfp
+  set P : K[X] := d ^ 2 with hP
+  set Q : K[X] := a * d with hQ
+  set R : K[X] := a ^ 2 - b ^ 2 * fp with hR
+  set p : E[X] := C (gE ^ 2) * P.map (algebraMap K E) - C (gE * 2) * Q.map (algebraMap K E)
+    + R.map (algebraMap K E) with hp
+  -- `xx` is a root of `p`
+  have hroot : (aeval D.xx) p = 0 := by
+    have hsx : (aeval D.xx) fp = sext c₀ c₁ c₂ c₃ c₄ c₅ D.xx :=
+      aeval_sextPoly c₀ c₁ c₂ c₃ c₄ c₅ D.xx
+    have hyy : D.yy ^ 2 = sext c₀ c₁ c₂ c₃ c₄ c₅ D.xx := D.eqn
+    rw [hp, hP, hQ, hR]
+    simp only [map_add, map_sub, map_mul, map_pow, aeval_C, hgEF, map_ofNat,
+      aeval_map_algebraMap, hsx]
+    linear_combination
+      (g * (aeval D.xx) d - (aeval D.xx) a + (aeval D.xx) b * D.yy) * heq +
+        ((aeval D.xx) b) ^ 2 * hyy
+  -- `p ≠ 0`, because `g` is transcendental
+  have hp0 : p ≠ 0 := by
+    intro hzero
+    set N : ℕ := P.natDegree with hN
+    have hlc : P.coeff N ≠ 0 := by
+      rw [hN, ← leadingCoeff]
+      exact leadingCoeff_ne_zero.mpr (by rw [hP]; exact pow_ne_zero 2 hd0)
+    have hcoeff : gE ^ 2 * (algebraMap K E) (P.coeff N) - gE * 2 * (algebraMap K E) (Q.coeff N)
+        + (algebraMap K E) (R.coeff N) = 0 := by
+      rw [← coeff_quadCombination (algebraMap K E) gE P Q R N, ← hp, hzero, coeff_zero]
+    set q : K[X] :=
+      C (P.coeff N) * X ^ 2 - C (2 * Q.coeff N) * X + C (R.coeff N) with hq
+    refine hg ⟨q, ?_, ?_⟩
+    · intro hq0
+      apply hlc
+      have hc := congrArg (fun r : K[X] => r.coeff 2) hq0
+      simpa [hq] using hc
+    · have hF := congrArg (algebraMap E D.F) hcoeff
+      have hAlg : ∀ k : K, algebraMap E D.F (algebraMap K E k) = algebraMap K D.F k := fun k =>
+        (IsScalarTower.algebraMap_apply K E D.F k).symm
+      simp only [map_add, map_sub, map_mul, map_pow, map_ofNat, map_zero, hgEF, hAlg] at hF
+      simp only [hq, map_add, map_sub, map_mul, map_pow, aeval_C, aeval_X, map_ofNat]
+      linear_combination hF
+  exact IsAlgebraic.isIntegral ⟨p, hp0, hroot⟩
+
+/-- **`[F : K⟮g⟯] < ∞` for every transcendental `g`** (PROVEN): `x` is integral over `K⟮g⟯`,
+`y² = f(x)` makes `y` integral too, and `gen` says the two of them generate `F`. -/
+theorem finiteDimensional_adjoin_of_transcendental {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {g : D.F} (hg : Transcendental K g) :
+    FiniteDimensional (IntermediateField.adjoin K {g}) D.F := by
+  set E := IntermediateField.adjoin K {g} with hEdef
+  have hx : IsIntegral E D.xx := isIntegral_xx_adjoin_of_transcendental D hg
+  have hsext : IsIntegral E (sext c₀ c₁ c₂ c₃ c₄ c₅ D.xx) := by
+    have hmem : sext c₀ c₁ c₂ c₃ c₄ c₅ D.xx ∈ Algebra.adjoin E ({D.xx} : Set D.F) := by
+      have h := Polynomial.aeval_mem_adjoin_singleton (↥E) D.xx
+        (p := sextPoly c₀ c₁ c₂ c₃ c₄ c₅ (↥E))
+      rwa [aeval_sextPoly] at h
+    exact adjoin_le_integralClosure hx hmem
+  have hy : IsIntegral E D.yy :=
+    IsIntegral.of_pow (n := 2) (by norm_num) (by rw [D.eqn]; exact hsext)
+  haveI : Finite ({D.xx, D.yy} : Set D.F) :=
+    ((Set.finite_singleton D.yy).insert D.xx).to_subtype
+  have htop : IntermediateField.adjoin E ({D.xx, D.yy} : Set D.F) = ⊤ := by
+    set A := IntermediateField.adjoin E ({D.xx, D.yy} : Set D.F) with hA
+    have hxA : D.xx ∈ A := IntermediateField.subset_adjoin _ _ (by simp)
+    have hyA : D.yy ∈ A := IntermediateField.subset_adjoin _ _ (by simp)
+    have hpoly : ∀ r : K[X], (aeval D.xx) r ∈ A := by
+      intro r
+      have hle : Algebra.adjoin (↥E) ({D.xx} : Set D.F) ≤ A.toSubalgebra :=
+        Algebra.adjoin_le (by simpa using hxA)
+      have h := hle (Polynomial.aeval_mem_adjoin_singleton (↥E) D.xx
+        (p := r.map (algebraMap K (↥E))))
+      rwa [aeval_map_algebraMap] at h
+    refine eq_top_iff.mpr fun z _ => ?_
+    obtain ⟨a, b, d, hd, heq⟩ := D.gen z
+    have hz : z = ((aeval D.xx) a + (aeval D.xx) b * D.yy) / (aeval D.xx) d := by
+      field_simp
+      linear_combination heq
+    rw [hz]
+    exact div_mem (add_mem (hpoly a) (mul_mem (hpoly b) hyA)) (hpoly d)
+  have hfd : FiniteDimensional E (IntermediateField.adjoin E ({D.xx, D.yy} : Set D.F)) :=
+    IntermediateField.finiteDimensional_adjoin (fun w hw => by
+      rcases hw with h | h
+      · exact h ▸ hx
+      · simp only [Set.mem_singleton_iff] at h
+        exact h ▸ hy)
+  rw [htop] at hfd
+  exact (IntermediateField.topEquiv (F := ↥E) (E := D.F)).toLinearEquiv.finiteDimensional
+
+/-- **LEAF (fundamental identity, first inequality): `deg (div_∞ g) ≤ [F : K⟮g⟯]`.**
+
+[Stichtenoth, *Algebraic Function Fields and Codes*, Thm. 1.4.11, part (a)]:
+`Σ_{v} e_v f_v ≤ n` over the poles `v` of `g`, where `e_v = −ord_v g`, `f_v = [κ(v) : K]`
+and `n = [F : K⟮g⟯]` — which is FINITE by
+`finiteDimensional_adjoin_of_transcendental` above, so `n` here is a real number and not
+`Module.finrank`'s junk `0`.
+
+The classical proof exhibits `Σ e_v f_v` elements of `F` linearly independent over `K⟮g⟯`:
+for each pole `v` a uniformiser `t_v` and elements `s_{v,1}, …, s_{v,f_v} ∈ O_v` whose
+residues are a `K`-basis of `κ(v)`, and then the family `s_{v,i}·t_v^k`, `0 ≤ k < e_v`.
+
+**Where the cost actually is, measured against the axioms rather than assumed** (2026-07-30).
+The SINGLE-place case `e_v·f_v ≤ n` needs NO approximation theorem and is provable directly
+from this file's interface, as follows — recorded because it is the half a prover should do
+first, and because it already yields `f_v < ∞`, which the statement above needs to be
+non-junk:
+
+* a relation `Σ_{i,k} λ_{ik}·s_{v,i}·t_v^k = 0` with `λ_{ik} ∈ K⟮g⟯` may be cleared of
+  denominators to `λ_{ik} ∈ K[g]`;
+* `ord_v (p(g)) = −e_v·deg p` for `p ∈ K[X]` is exactly `ord_aeval_of_ord_neg`, ALREADY
+  PROVEN in the `Genus` section above.  So every `ord_v λ_{ik}` is a multiple of `e_v`;
+* hence `z_k := Σ_i λ_{ik} s_{v,i}` has `ord_v z_k = −e_v·d_k` (`d_k` the largest degree
+  occurring), because `g^{−d_k}·z_k` lies in `O_v` with residue `Σ_i c_i·s̄_{v,i} ≠ 0` by the
+  `K`-independence of the residues;
+* so the `ord_v (z_k·t_v^k) = −e_v d_k + k` are pairwise DISTINCT mod `e_v` for
+  `0 ≤ k < e_v`, and the strict ultrametric equality forbids the sum from vanishing.
+
+What that argument cannot do is run at several places at once: it needs `t_v` and `s_{v,i}`
+to be units at the OTHER poles, which is the approximation theorem
+([Stichtenoth, Thm. 1.3.1]) and is the genuinely missing input.  A prover should expect to
+have to prove approximation from `ord_injective` + `ord_complete` first, or to find a
+route that sums the single-place bounds without it.
+
+**What would refute it**: nothing about the sextic — this is general function-field theory,
+so `hsep` is deliberately absent.  A counterexample would have to be a `PlaceData` with a
+pole `v` of `g` where `e_v·f_v` alone exceeds `[F : K⟮g⟯]`, and the single-place argument
+above rules that out. -/
+theorem degOf_poleDivisor_le_finrank_of_transcendental {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type}
+    [Field K] (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (g : D.F) (hg : Transcendental K g) :
+    degHom D D.degOf (D.poleDivisor g)
+      ≤ (Module.finrank (IntermediateField.adjoin K {g}) D.F : ℤ) := sorry
+
+/-- **LEAF (fundamental identity, second inequality): `[F : K⟮g⟯] ≤ deg (div_∞ g)`.**
+
+[Stichtenoth, *Algebraic Function Fields and Codes*, Thm. 1.4.11, part (b)], the
+dimension-count half.  With `A = div_∞ g` and `n = [F : K⟮g⟯]` (finite, by
+`finiteDimensional_adjoin_of_transcendental`), the classical proof is:
+
+1. take a `K⟮g⟯`-basis `u_1, …, u_n` of `F` and a divisor `B ≥ 0` with `div u_j + B ≥ 0` for
+   every `j` — possible because each `u_j` has finitely many poles (`ord_finite`);
+2. for every `m ≥ 0` the `n(m+1)` elements `g^k·u_j`, `0 ≤ k ≤ m`, lie in the Riemann space
+   `L(mA + B)` and are `K`-linearly independent: a vanishing `K`-combination groups as
+   `Σ_j (Σ_k c_{kj} g^k)·u_j = 0`, so each `Σ_k c_{kj} g^k = 0` in `K⟮g⟯`, so each
+   `c_{kj} = 0` **because `g` is transcendental** — this is where `hg` is used;
+3. `ℓ(C) ≤ deg C + 1` for `C ≥ 0`, and `ℓ(C + v) ≤ ℓ(C) + deg v`, both from the one
+   structural fact `dim_K L(C + v)/L(C) ≤ [κ(v) : K]` (multiply by a power of a uniformiser
+   and read the residue);
+4. combining, `m·deg A + deg B + 1 ≥ n(m+1)` for every `m`, and letting `m → ∞` gives
+   `deg A ≥ n`.
+
+So the missing infrastructure is the Riemann space `L(C) = {z | div z + C ≥ 0}` as a
+`K`-submodule of `F` together with step 3; approximation is NOT needed for this half, which
+is why it is stated separately from the first inequality rather than bundled with it.
+
+**Not vacuous, and the direction that carries the residue-degree finiteness.**  `degOf` is
+`Module.finrank K (D.residue v)`, which is the junk `0` at a place of infinite residue
+degree; an underestimate makes the FIRST inequality easier and this one harder, so it is
+this leaf that has to know residue degrees are finite.  Step 3 supplies exactly that.
+
+**What would refute it**: a `PlaceData` and a transcendental `g` whose pole divisor has
+degree strictly smaller than `[F : K⟮g⟯]`.  Since `deg` is computed with the junk-tolerant
+`degOf`, the cheapest place to look for such a thing is a place with an infinite-dimensional
+residue field — which is why step 3 above is not optional bookkeeping. -/
+theorem finrank_le_degOf_poleDivisor_of_transcendental {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type}
+    [Field K] (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (g : D.F) (hg : Transcendental K g) :
+    (Module.finrank (IntermediateField.adjoin K {g}) D.F : ℤ)
+      ≤ degHom D D.degOf (D.poleDivisor g) := sorry
+
+/-- **The fundamental identity of function-field theory,**
 `[F : K(g)] = deg (div_∞ g)`
 ([Stichtenoth, *Algebraic Function Fields and Codes*, Thm. 1.4.11] proper, proven there from
 the weak approximation theorem plus a dimension count).
@@ -2849,11 +3058,37 @@ is `Module.finrank`'s junk value `0`") was prose; it is now
 `poleDivisor_eq_zero_of_isAlgebraic` and `finrank_adjoin_eq_zero_of_isAlgebraic`,
 both proven from `ord_aeval_of_ord_neg` in the `Genus` section above.  So the side condition
 `Transcendental K g` here is free at every call site, and the transcendental case is the
-whole of Stichtenoth I.4.11: weak approximation plus a dimension count. -/
+whole of Stichtenoth I.4.11: weak approximation plus a dimension count.
+
+## DECOMPOSED AGAIN 2026-07-30 — the three pieces of Stichtenoth I.4.11, one of them PROVEN
+
+The transcendental case is not one argument but three, and they were bundled here only
+because nobody had separated them.  They now sit immediately above, in the section
+"`F` is FINITE over `K⟮g⟯`":
+
+* `finiteDimensional_adjoin_of_transcendental` — **PROVEN**.  That `[F : K⟮g⟯]` is finite at
+  all, so that the right-hand side of this identity is a number rather than
+  `Module.finrank`'s junk `0`.  This is not part of either inequality; it is what makes both
+  of them mean anything, and it is pure field theory (no place, no valuation, no `hsep`).
+* `degOf_poleDivisor_le_finrank_of_transcendental` — Stichtenoth I.4.11(a).  The half that
+  needs the APPROXIMATION theorem; its docstring records, with the proof, that the
+  single-place case `e_v·f_v ≤ n` needs no approximation at all and is available from
+  `ord_aeval_of_ord_neg` in the `Genus` section, so approximation is the only genuinely
+  missing input.
+* `finrank_le_degOf_poleDivisor_of_transcendental` — Stichtenoth I.4.11(b).  The half that
+  needs the RIEMANN SPACES `L(C)` and the bound `ℓ(C) ≤ deg C + 1`; it needs no
+  approximation.  It is also the half that carries finiteness of the residue degrees, since
+  the junk value of `degOf` biases the inequality against it.
+
+The two halves are therefore INDEPENDENT pieces of infrastructure — approximation on one
+side, Riemann spaces on the other — which is the reason for cutting here rather than leaving
+one leaf that needs both. -/
 theorem degOf_poleDivisor_eq_finrank_of_transcendental {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type}
     [Field K] (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (g : D.F) (hg : Transcendental K g) :
     degHom D D.degOf (D.poleDivisor g)
-      = (Module.finrank (IntermediateField.adjoin K {g}) D.F : ℤ) := sorry
+      = (Module.finrank (IntermediateField.adjoin K {g}) D.F : ℤ) :=
+  le_antisymm (degOf_poleDivisor_le_finrank_of_transcendental D g hg)
+    (finrank_le_degOf_poleDivisor_of_transcendental D g hg)
 
 /-- **The fundamental identity with no side condition, PROVEN 2026-07-30** from
 `degOf_poleDivisor_eq_finrank_of_transcendental` together with the algebraic case; see the
