@@ -18438,8 +18438,9 @@ PROVEN, over the single sub-leaf `exists_eliminationFormsInt` (the main theorem 
 elimination theory over `ℤ`), by the Segre encoding in namespace
 `ProductLocusForms`. **Since 2026-07-30 `exists_eliminationFormsInt` is itself PROVEN**,
 over the single spreading-out sub-leaf
-`exists_mem_eliminationIdeal_of_forall_isHomogeneous_mem_span`, so THAT is now the one
-open input of this whole block. Multiplication-closedness is step 3 of the four-step route
+`exists_mem_eliminationIdeal_of_forall_isHomogeneous_mem_span` — and THAT was closed the
+same day, so this whole block has NO open input left.
+Multiplication-closedness is step 3 of the four-step route
 recorded on `exists_absolutelyIrreducibleForms_two`, and the only step that is
 genuine elimination theory. Steps 1, 2 and 4 are the proven material in this
 block:
@@ -19040,8 +19041,9 @@ is what makes the reduction short:
 * `exists_forall_isHomogeneous_mem_span_of_no_nonzero_common_zero` — the projective
   Nullstellensatz in coefficient language. **PROVEN here** from mathlib's
   `MvPolynomial.vanishingIdeal_zeroLocus_eq_radical`.
-* `exists_mem_eliminationIdeal_of_forall_isHomogeneous_mem_span` — SORRY LEAF, the whole
-  remaining content: the SPREADING-OUT step (Cramer over `R`).
+* `exists_mem_eliminationIdeal_of_forall_isHomogeneous_mem_span` — the SPREADING-OUT step
+  (Cramer over `R`). **PROVEN 2026-07-30**, over the toolkit in namespace
+  `EliminationSpreadOut`; nothing under this theorem is open.
 
 The easy half of the biconditional — a nonzero solution forces every element of the
 elimination ideal to vanish — is proven directly, and needs neither Noetherianity nor
@@ -19170,8 +19172,379 @@ theorem exists_forall_isHomogeneous_mem_span_of_no_nonzero_common_zero
   rw [hfac]
   exact Ideal.mul_mem_right _ _ (hXN j)
 
-/-- **SPREADING OUT — SORRY LEAF (cut 2026-07-30), and the only remaining content of
-elimination theory over `ℤ`.**
+/-! ### The spreading-out toolkit
+
+Everything in `EliminationSpreadOut` is scaffolding for the single theorem
+`exists_mem_eliminationIdeal_of_forall_isHomogeneous_mem_span` immediately below; nothing
+here is used anywhere else, and nothing here mentions the Frey curve, `ℤ`, or algebraic
+closure. It is Mumford's proof of the fundamental theorem of elimination theory in three
+pieces: homogeneous representation, the graded-piece matrix, and Cramer. -/
+
+namespace EliminationSpreadOut
+
+open MvPolynomial Finset
+
+/-- **Multiplication by a homogeneous polynomial shifts homogeneous components.** If `g` is
+homogeneous of degree `e`, the degree-`D` component of `c * g` is the degree-`(D - e)`
+component of `c` times `g`, and vanishes when `D < e`.
+
+DUPLICATION NOTE (2026-07-30). This statement — verbatim, up to variable names — is already
+proven as `CompleteLocalNoetherian.homogeneousComponent_mul_isHomogeneous` in
+`Fermat/FLT/GaloisRepresentation/HardlyRamified/CompleteLocalNoetherian.lean:174`, whose own
+imports are mathlib-only, so importing it here would create no cycle. It is NOT imported:
+that module is not in this file's cone, and adding an import to this file's 129-line import
+block perturbs instance resolution across 45 k lines for a thirty-line lemma. The right
+repair is to hoist ONE copy to a shared upstream module; whoever does that should delete
+this one. The proofs differ (this one computes coefficients directly; that one goes through
+`sum_homogeneousComponent`), which is why neither is a rewrite of the other. -/
+theorem homogeneousComponent_mul_isHomogeneous {σ R : Type*} [CommRing R]
+    {g : MvPolynomial σ R} {e : ℕ} (hg : g.IsHomogeneous e) (c : MvPolynomial σ R) (D : ℕ) :
+    MvPolynomial.homogeneousComponent D (c * g)
+      = (if e ≤ D then MvPolynomial.homogeneousComponent (D - e) c else 0) * g := by
+  classical
+  ext n
+  have key : ∀ p ∈ Finset.antidiagonal n,
+      Finsupp.degree p.1 + Finsupp.degree p.2 = Finsupp.degree n := by
+    rintro ⟨a, b⟩ hab
+    rw [Finset.mem_antidiagonal] at hab
+    rw [← hab]
+    exact (map_add Finsupp.degree a b).symm ▸ rfl
+  rw [MvPolynomial.coeff_homogeneousComponent]
+  by_cases hle : e ≤ D
+  · rw [if_pos hle]
+    simp only [MvPolynomial.coeff_mul]
+    by_cases hn : Finsupp.degree n = D
+    · rw [if_pos hn]
+      refine Finset.sum_congr rfl fun p hp => ?_
+      rw [MvPolynomial.coeff_homogeneousComponent]
+      by_cases hb : Finsupp.degree p.2 = e
+      · have hk := key p hp
+        rw [if_pos (by omega)]
+      · rw [hg.coeff_eq_zero hb, mul_zero, mul_zero]
+    · rw [if_neg hn]
+      refine (Finset.sum_eq_zero fun p hp => ?_).symm
+      rw [MvPolynomial.coeff_homogeneousComponent]
+      by_cases hb : Finsupp.degree p.2 = e
+      · have hk := key p hp
+        rw [if_neg (by omega), zero_mul]
+      · rw [hg.coeff_eq_zero hb, mul_zero]
+  · rw [if_neg hle, zero_mul, MvPolynomial.coeff_zero]
+    by_cases hn : Finsupp.degree n = D
+    · rw [if_pos hn, MvPolynomial.coeff_mul]
+      refine Finset.sum_eq_zero fun p hp => ?_
+      by_cases hb : Finsupp.degree p.2 = e
+      · have hk := key p hp
+        exact absurd hk (by omega)
+      · rw [hg.coeff_eq_zero hb, mul_zero]
+    · rw [if_neg hn]
+
+/-- **STEP 1 of Mumford's route: HOMOGENEOUS REPRESENTATION.** A homogeneous element of an
+ideal generated by homogeneous elements has a representation whose coefficients are
+themselves homogeneous, of the complementary degrees — and vanish outright for the
+generators of degree above the target. This is what makes the ideal membership a statement
+about finitely many graded pieces, hence about a matrix. -/
+theorem exists_isHomogeneous_representation {R : Type*} [CommRing R] {σ ρ : Type*} [Fintype ρ]
+    {e : ρ → ℕ} (g : ρ → MvPolynomial σ R) (hg : ∀ i, (g i).IsHomogeneous (e i))
+    {D : ℕ} {u : MvPolynomial σ R} (hu : u.IsHomogeneous D)
+    (hmem : u ∈ Ideal.span (Set.range g)) :
+    ∃ h : ρ → MvPolynomial σ R, (∀ i, (h i).IsHomogeneous (D - e i)) ∧
+      (∀ i, ¬ e i ≤ D → h i = 0) ∧ u = ∑ i, h i * g i := by
+  classical
+  obtain ⟨c, hc⟩ := (Submodule.mem_span_range_iff_exists_fun (MvPolynomial σ R)).1 hmem
+  simp only [smul_eq_mul] at hc
+  refine ⟨fun i => if e i ≤ D then MvPolynomial.homogeneousComponent (D - e i) (c i) else 0, ?_, ?_, ?_⟩
+  · intro i
+    by_cases hle : e i ≤ D
+    · simpa [hle] using MvPolynomial.homogeneousComponent_isHomogeneous (D - e i) (c i)
+    · simpa [hle] using MvPolynomial.isHomogeneous_zero σ R (D - e i)
+  · intro i hi; simp [hi]
+  · have h1 : u = MvPolynomial.homogeneousComponent D (∑ i, c i * g i) := by
+      rw [hc, MvPolynomial.homogeneousComponent_eq_self hu]
+    rw [h1, map_sum]
+    exact Finset.sum_congr rfl fun i _ => homogeneousComponent_mul_isHomogeneous (hg i) (c i) D
+
+end EliminationSpreadOut
+
+namespace EliminationSpreadOut
+
+open Matrix Finset
+
+/-- **STEPS 2 AND 3: THE GRADED-PIECE MATRIX AND CRAMER.** If `A` is a matrix over `R` whose
+specialisation along `φ : R →+* K` (`K` a field) has surjective `mulVec`, then a single
+`r : R` with `φ r ≠ 0` has `r • b` in the `R`-range of `A` for EVERY `b` simultaneously.
+
+`r` is the determinant of a square submatrix, so this is exactly where the `R`-rationality —
+i.e. the `ℤ`-rationality of the elimination forms — is manufactured.
+
+WHERE THE PROOF DEVIATES FROM THE DOCSTRING ON THE PARENT LEAF. That docstring says "a
+surjective matrix over a field has a square submatrix of full row rank". Mathlib does NOT
+have the rank-equals-largest-nonvanishing-minor theorem, so the submatrix is produced
+instead by extracting a basis from the COLUMNS: `Matrix.range_mulVecLin` turns surjectivity
+into "the columns span `Kⁿ`", `exists_linearIndependent'` extracts an injectively-indexed
+linearly independent spanning subfamily, and a cardinality count against
+`Module.finrank_pi` reindexes it by the row type. Nonvanishing of the determinant is then
+`Matrix.exists_mulVec_eq_zero_iff` against `Fintype.linearIndependent_iff`. Same theorem,
+different tool; no rank theory is needed.
+
+DEGENERATE CASES. If the row type is empty the statement is trivially true with `r = 1`
+(the empty determinant), and `φ 1 = 1 ≠ 0` because `K` is a field, hence nontrivial. If the
+column type is empty, surjectivity forces the row type to be empty too. -/
+theorem exists_forall_mulVec_eq_smul {R K : Type*} [CommRing R] [Field K]
+    {n m : Type*} [Fintype n] [DecidableEq n] [Fintype m] (φ : R →+* K) (A : Matrix n m R)
+    (hA : Function.Surjective (A.map φ).mulVec) :
+    ∃ r : R, φ r ≠ 0 ∧ ∀ b : n → R, ∃ x : m → R, A *ᵥ x = r • b := by
+  classical
+  have mvA : ∀ (v : m → R) (i : n), (A *ᵥ v) i = ∑ j, A i j * v j := fun _ _ => rfl
+  have mvB : ∀ (M : Matrix n n R) (v : n → R) (i : n), (M *ᵥ v) i = ∑ j, M i j * v j :=
+    fun _ _ _ => rfl
+  have mvK : ∀ (M : Matrix n n K) (v : n → K) (i : n), (M *ᵥ v) i = ∑ j, M i j * v j :=
+    fun _ _ _ => rfl
+  -- the columns of the specialised matrix span `K^n`
+  have hspan : Submodule.span K (Set.range (A.map φ).col) = ⊤ := by
+    rw [← Matrix.range_mulVecLin]
+    refine LinearMap.range_eq_top.2 fun z => ?_
+    obtain ⟨x, hx⟩ := hA z
+    exact ⟨x, by rw [Matrix.mulVecLin_apply]; exact hx⟩
+  obtain ⟨ι, a, hainj, hspan', hli⟩ := exists_linearIndependent' K ((A.map φ).col)
+  rw [hspan] at hspan'
+  let bas : Module.Basis ι K (n → K) := Module.Basis.mk hli hspan'.ge
+  haveI : Finite ι := Module.Finite.finite_basis bas
+  haveI : Fintype ι := Fintype.ofFinite ι
+  have hcard : Fintype.card n = Fintype.card ι := by
+    have h1 := Module.finrank_eq_card_basis bas
+    rw [Module.finrank_pi K] at h1
+    exact h1
+  let ee : n ≃ ι := Fintype.equivOfCardEq hcard
+  set σ : n → m := a ∘ ee with hσ
+  have hσinj : Function.Injective σ := hainj.comp ee.injective
+  -- the corresponding square submatrix is nonsingular over `K`
+  have hcols : LinearIndependent K (((A.map φ).submatrix id σ).col) := by
+    have hcoleq : ((A.map φ).submatrix id σ).col = ((A.map φ).col ∘ a) ∘ ee := rfl
+    rw [hcoleq]
+    exact hli.comp ee ee.injective
+  have hdet : ((A.map φ).submatrix id σ).det ≠ 0 := by
+    intro h0
+    obtain ⟨v, hv, hvz⟩ := Matrix.exists_mulVec_eq_zero_iff.2 h0
+    have hsum : ∑ j, v j • (((A.map φ).submatrix id σ).col j) = 0 := by
+      funext i
+      have hi := congrFun hvz i
+      rw [mvK] at hi
+      simp only [Pi.zero_apply] at hi
+      simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul, Pi.zero_apply,
+        Matrix.col_apply]
+      rw [← hi]
+      exact Finset.sum_congr rfl fun j _ => mul_comm _ _
+    exact hv (funext fun j => Fintype.linearIndependent_iff.1 hcols v hsum j)
+  -- Cramer over `R`
+  refine ⟨(A.submatrix id σ).det, ?_, ?_⟩
+  · rw [RingHom.map_det, RingHom.mapMatrix_apply, ← Matrix.submatrix_map]
+    exact hdet
+  · intro b
+    set B : Matrix n n R := A.submatrix id σ with hB
+    set y : n → R := B.adjugate *ᵥ b with hy
+    have hBy : B *ᵥ y = B.det • b := by
+      rw [hy, Matrix.mulVec_mulVec, Matrix.mul_adjugate]
+      ext i
+      rw [mvB]
+      simp [Matrix.one_apply]
+    refine ⟨Function.extend σ y 0, ?_⟩
+    funext i
+    have himg : ∑ c ∈ Finset.univ.image σ, A i c * Function.extend σ y 0 c
+        = ∑ c, A i c * Function.extend σ y 0 c := by
+      refine Finset.sum_subset (Finset.subset_univ _) ?_
+      intro c _ hc
+      have hnc : ¬ ∃ j, σ j = c := by
+        simpa [Finset.mem_image] using hc
+      rw [Function.extend_apply' _ _ _ hnc]
+      simp
+    have himg2 : ∑ c ∈ Finset.univ.image σ, A i c * Function.extend σ y 0 c
+        = ∑ j, B i j * y j := by
+      rw [Finset.sum_image (fun x _ z _ h => hσinj h)]
+      exact Finset.sum_congr rfl fun j _ => by
+        rw [hσinj.extend_apply y 0 j]; rfl
+    have hBi := congrFun hBy i
+    rw [mvB] at hBi
+    rw [Pi.smul_apply, smul_eq_mul] at hBi
+    rw [mvA, Pi.smul_apply, smul_eq_mul, ← himg, himg2, hBi]
+
+end EliminationSpreadOut
+
+namespace EliminationSpreadOut
+
+open MvPolynomial Finset
+
+/-- A homogeneous polynomial is the sum of its monomials taken over ANY finite set of
+exponents containing all those of its own degree — the extra terms have coefficient `0`.
+This is what lets the coefficients of a graded piece be read off a fixed finite index set
+rather than off the polynomial's own support. -/
+theorem sum_monomial_coeff_eq_self_of_isHomogeneous {S : Type*} [CommRing S] {κ : Type*}
+    {p : MvPolynomial κ S} {d : ℕ} (hp : p.IsHomogeneous d) (s : Finset (κ →₀ ℕ))
+    (hs : ∀ v : κ →₀ ℕ, Finsupp.degree v = d → v ∈ s) :
+    ∑ v ∈ s, MvPolynomial.monomial v (MvPolynomial.coeff v p) = p := by
+  classical
+  have hsub : p.support ⊆ s := by
+    intro v hv
+    by_contra hns
+    exact (MvPolynomial.mem_support_iff.1 hv) (hp.coeff_eq_zero fun hd => hns (hs v hd))
+  refine (Finset.sum_subset hsub ?_).symm.trans (MvPolynomial.support_sum_monomial_coeff p)
+  intro v _ hv
+  have : MvPolynomial.coeff v p = 0 := by by_contra hc; exact hv (MvPolynomial.mem_support_iff.2 hc)
+  rw [this, map_zero]
+
+variable {S : Type*} [CommRing S] {κ ρ : Type*} [Fintype ρ] {e : ρ → ℕ} {D : ℕ}
+
+/-- The column index of the graded-piece matrix is `Σ i, {m' // deg m' + e i = D}`: one
+column per generator `f i` and monomial `m'` of the complementary degree. Writing the
+condition as `deg m' + e i = D` rather than `deg m' = D - e i` is deliberate — it encodes
+`e i ≤ D` at the same time, so the generators of too-large degree contribute no columns and
+need no separate case. This is the polynomial attached to a coefficient vector on it. -/
+theorem colSum_isHomogeneous [∀ i, Fintype {m' : κ →₀ ℕ // Finsupp.degree m' + e i = D}]
+    (g : ρ → MvPolynomial κ S) (hg : ∀ i, (g i).IsHomogeneous (e i))
+    (x : (Σ i : ρ, {m' : κ →₀ ℕ // Finsupp.degree m' + e i = D}) → S) :
+    (∑ c, MvPolynomial.C (x c) * (MvPolynomial.monomial c.2.1 (1 : S) * g c.1)).IsHomogeneous D := by
+  rw [← MvPolynomial.mem_homogeneousSubmodule]
+  refine Submodule.sum_mem _ fun c _ => ?_
+  rw [MvPolynomial.mem_homogeneousSubmodule]
+  have h1 : ((MvPolynomial.monomial c.2.1 (1 : S)) * g c.1).IsHomogeneous (Finsupp.degree c.2.1 + e c.1) :=
+    (MvPolynomial.isHomogeneous_monomial 1 rfl).mul (hg c.1)
+  rw [c.2.2] at h1
+  simpa using (MvPolynomial.isHomogeneous_C κ (x c)).mul h1
+
+/-- …and it lies in the ideal generated by `g`, for every coefficient vector. This is the
+half of the argument that needs neither Noetherianity nor a field. -/
+theorem colSum_mem_span [∀ i, Fintype {m' : κ →₀ ℕ // Finsupp.degree m' + e i = D}]
+    (g : ρ → MvPolynomial κ S)
+    (x : (Σ i : ρ, {m' : κ →₀ ℕ // Finsupp.degree m' + e i = D}) → S) :
+    (∑ c, MvPolynomial.C (x c) * (MvPolynomial.monomial c.2.1 (1 : S) * g c.1)) ∈ Ideal.span (Set.range g) :=
+  Ideal.sum_mem _ fun c _ =>
+    Ideal.mul_mem_left _ _ (Ideal.mul_mem_left _ _ (Ideal.subset_span ⟨c.1, rfl⟩))
+
+/-- A homogeneous representation IS a coefficient vector on the column index: reading off
+the coefficients of the `h i` recovers `∑ i, h i * g i`. The generators with `e i > D`
+cost nothing — their fibre of the column index is empty and `h i = 0`. -/
+theorem colSum_eq_of_isHomogeneous_representation
+    [∀ i, Fintype {m' : κ →₀ ℕ // Finsupp.degree m' + e i = D}]
+    (sfin : ρ → Finset (κ →₀ ℕ))
+    (hsfin : ∀ i (v : κ →₀ ℕ), v ∈ sfin i ↔ Finsupp.degree v + e i = D)
+    (g h : ρ → MvPolynomial κ S)
+    (hh : ∀ i, (h i).IsHomogeneous (D - e i)) (hh0 : ∀ i, ¬ e i ≤ D → h i = 0) :
+    ∑ c : (Σ i : ρ, {m' : κ →₀ ℕ // Finsupp.degree m' + e i = D}),
+        MvPolynomial.C (MvPolynomial.coeff c.2.1 (h c.1)) * (MvPolynomial.monomial c.2.1 (1 : S) * g c.1) = ∑ i, h i * g i := by
+  classical
+  rw [Fintype.sum_sigma]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  have hrw : ∀ m' : {m' : κ →₀ ℕ // Finsupp.degree m' + e i = D},
+      MvPolynomial.C (MvPolynomial.coeff m'.1 (h i)) * (MvPolynomial.monomial m'.1 (1 : S) * g i)
+        = MvPolynomial.monomial m'.1 (MvPolynomial.coeff m'.1 (h i)) * g i := by
+    intro m'; rw [← mul_assoc, MvPolynomial.C_mul_monomial, mul_one]
+  simp only [hrw]
+  rw [← Finset.sum_mul]
+  congr 1
+  rw [← Finset.sum_subtype (sfin i) (fun v => hsfin i v) (fun v => MvPolynomial.monomial v (MvPolynomial.coeff v (h i)))]
+  by_cases hle : e i ≤ D
+  · refine sum_monomial_coeff_eq_self_of_isHomogeneous (hh i) _ fun v hv => ?_
+    rw [hsfin i v]
+    omega
+  · rw [hh0 i hle]
+    exact Finset.sum_eq_zero fun v _ => by rw [MvPolynomial.coeff_zero, map_zero]
+
+end EliminationSpreadOut
+
+namespace EliminationSpreadOut
+
+open MvPolynomial Finset Matrix
+
+/-- **THE SPREADING-OUT STATEMENT AT DEGREE EXACTLY `D`.** The whole content of
+`exists_mem_eliminationIdeal_of_forall_isHomogeneous_mem_span`; the parent adds only the
+passage from degree `= D` to degree `≥ D`, which is `Finsupp.exists_le_degree_eq`. -/
+theorem exists_mem_eliminationIdeal_degree_eq
+    {R K : Type*} [CommRing R] [Field K] {κ ρ : Type*} [Finite κ] [Fintype ρ]
+    (φ : R →+* K) {e : ρ → ℕ} (f : ρ → MvPolynomial κ R)
+    (hf : ∀ i, (f i).IsHomogeneous (e i)) {D : ℕ}
+    (hD : ∀ u : MvPolynomial κ K, u.IsHomogeneous D →
+      u ∈ Ideal.span (Set.range fun i => MvPolynomial.map φ (f i))) :
+    ∃ r : R, φ r ≠ 0 ∧ ∀ m : κ →₀ ℕ, Finsupp.degree m = D →
+      MvPolynomial.C r * MvPolynomial.monomial m (1 : R) ∈ Ideal.span (Set.range f) := by
+  classical
+  haveI : Fintype {m : κ →₀ ℕ // Finsupp.degree m = D} :=
+    Set.Finite.fintype (Finsupp.finite_of_degree_eq D)
+  have hcolfin : ∀ i : ρ, {m' : κ →₀ ℕ | Finsupp.degree m' + e i = D}.Finite := fun i =>
+    Set.Finite.subset (Finsupp.finite_of_degree_le (σ := κ) D)
+      (fun m' hm' => by simp only [Set.mem_setOf_eq] at hm' ⊢; omega)
+  letI : ∀ i : ρ, Fintype {m' : κ →₀ ℕ // Finsupp.degree m' + e i = D} := fun i =>
+    Set.Finite.fintype (hcolfin i)
+  have hsfin : ∀ (i : ρ) (v : κ →₀ ℕ), v ∈ (hcolfin i).toFinset ↔ Finsupp.degree v + e i = D :=
+    fun i v => Set.Finite.mem_toFinset _
+  let A : Matrix {m : κ →₀ ℕ // Finsupp.degree m = D}
+      (Σ i : ρ, {m' : κ →₀ ℕ // Finsupp.degree m' + e i = D}) R :=
+    fun mm c => MvPolynomial.coeff mm.1 (MvPolynomial.monomial c.2.1 (1 : R) * f c.1)
+  have hAapp : ∀ mm c, A mm c = MvPolynomial.coeff mm.1 (MvPolynomial.monomial c.2.1 (1 : R) * f c.1) := fun _ _ => rfl
+  have hAmap : ∀ mm c, (A.map φ) mm c
+      = MvPolynomial.coeff mm.1 (MvPolynomial.monomial c.2.1 (1 : K) * MvPolynomial.map φ (f c.1)) := by
+    intro mm c
+    rw [Matrix.map_apply, hAapp, ← MvPolynomial.coeff_map, map_mul, MvPolynomial.map_monomial, map_one]
+  have hgK : ∀ i, (MvPolynomial.map φ (f i)).IsHomogeneous (e i) := fun i d hd =>
+    hf i (fun hc => hd (by rw [MvPolynomial.coeff_map, hc, map_zero]))
+  have hsurj : Function.Surjective (A.map φ).mulVec := by
+    intro b
+    have huhom :
+        (∑ mm : {m : κ →₀ ℕ // Finsupp.degree m = D}, MvPolynomial.monomial mm.1 (b mm)).IsHomogeneous D := by
+      rw [← MvPolynomial.mem_homogeneousSubmodule]
+      exact Submodule.sum_mem _ fun mm _ =>
+        (MvPolynomial.mem_homogeneousSubmodule _ _).2 (MvPolynomial.isHomogeneous_monomial _ mm.2)
+    obtain ⟨h, hh, hh0, hrep⟩ := exists_isHomogeneous_representation
+      (fun i => MvPolynomial.map φ (f i)) hgK huhom (hD _ huhom)
+    refine ⟨fun c => MvPolynomial.coeff c.2.1 (h c.1), ?_⟩
+    funext mm
+    have h1 : ((A.map φ) *ᵥ (fun c => MvPolynomial.coeff c.2.1 (h c.1))) mm
+        = ∑ c, (A.map φ) mm c * MvPolynomial.coeff c.2.1 (h c.1) := rfl
+    have h2 : ∑ c, (A.map φ) mm c * MvPolynomial.coeff c.2.1 (h c.1)
+        = MvPolynomial.coeff mm.1 (∑ c : (Σ i : ρ, {m' : κ →₀ ℕ // Finsupp.degree m' + e i = D}),
+            MvPolynomial.C (MvPolynomial.coeff c.2.1 (h c.1))
+            * (MvPolynomial.monomial c.2.1 (1 : K) * MvPolynomial.map φ (f c.1))) := by
+      rw [MvPolynomial.coeff_sum]
+      exact Finset.sum_congr rfl fun c _ => by rw [MvPolynomial.coeff_C_mul, hAmap, mul_comm]
+    rw [h1, h2, colSum_eq_of_isHomogeneous_representation
+        (fun i => (hcolfin i).toFinset) hsfin (fun i => MvPolynomial.map φ (f i)) h hh hh0,
+      ← hrep, MvPolynomial.coeff_sum,
+      Finset.sum_eq_single mm]
+    · rw [MvPolynomial.coeff_monomial, if_pos rfl]
+    · intro nn _ hne
+      rw [MvPolynomial.coeff_monomial, if_neg (fun hc => hne (Subtype.ext hc))]
+    · intro hmm; exact absurd (Finset.mem_univ mm) hmm
+  obtain ⟨r, hr, hrx⟩ := exists_forall_mulVec_eq_smul φ A hsurj
+  refine ⟨r, hr, ?_⟩
+  intro m hm
+  obtain ⟨x, hx⟩ := hrx (Pi.single ⟨m, hm⟩ 1)
+  have hPhom := colSum_isHomogeneous f hf x
+  have hPmem := colSum_mem_span f x
+  have hPeq : (∑ c : (Σ i : ρ, {m' : κ →₀ ℕ // Finsupp.degree m' + e i = D}),
+      MvPolynomial.C (x c) * (MvPolynomial.monomial c.2.1 (1 : R) * f c.1)) = MvPolynomial.C r * MvPolynomial.monomial m (1 : R) := by
+    ext n
+    rw [MvPolynomial.C_mul_monomial, mul_one, MvPolynomial.coeff_monomial]
+    by_cases hn : Finsupp.degree n = D
+    · have h1 : MvPolynomial.coeff n (∑ c : (Σ i : ρ, {m' : κ →₀ ℕ // Finsupp.degree m' + e i = D}),
+            MvPolynomial.C (x c) * (MvPolynomial.monomial c.2.1 (1 : R) * f c.1))
+          = ∑ c, A ⟨n, hn⟩ c * x c := by
+        rw [MvPolynomial.coeff_sum]
+        exact Finset.sum_congr rfl fun c _ => by rw [MvPolynomial.coeff_C_mul, hAapp, mul_comm]
+      have h2 : ∑ c, A ⟨n, hn⟩ c * x c = (A *ᵥ x) ⟨n, hn⟩ := rfl
+      rw [h1, h2, hx, Pi.smul_apply, smul_eq_mul, Pi.single_apply]
+      by_cases hnm : n = m
+      · subst hnm; simp
+      · rw [if_neg (fun hc => hnm (congrArg Subtype.val hc)),
+          if_neg (fun hc => hnm hc.symm), mul_zero]
+    · rw [hPhom.coeff_eq_zero hn, if_neg]
+      intro hmn
+      exact hn (hmn ▸ hm)
+  rw [← hPeq]
+  exact hPmem
+
+end EliminationSpreadOut
+
+/-- **SPREADING OUT — PROVEN 2026-07-30 (cut 2026-07-30, closed the same day), and with it
+elimination theory over `ℤ`, and with THAT the whole Noether/Bertini
+irreducibility-forms cluster: nothing in it is open any more.**
 
 WHAT IT SAYS. `f` is a family of forms with coefficients in a commutative ring `R`,
 `φ : R →+* K` a specialisation to a field. If over `K` the specialised family generates
@@ -19183,20 +19556,34 @@ about `R`. Producing the second from the first is the "spreading out" that makes
 `ℤ`-rational, i.e. independent of `K` and of its characteristic. Everything else in
 `exists_eliminationFormsInt` is proven.
 
-THE INTENDED ROUTE (Mumford, *Red Book* I §8; Eisenbud Thm 14.1), in three steps, none of
-which needs `K` algebraically closed:
+THE ROUTE, AS PRESCRIBED IN 2026-07-28 AND AS ACTUALLY TAKEN (Mumford, *Red Book* I §8;
+Eisenbud Thm 14.1), in three steps, none of which needs `K` algebraically closed. The
+prescription below was followed as written except at ONE point, flagged in step 3; each
+step is now a named theorem in namespace `EliminationSpreadOut` immediately above:
 
 1. HOMOGENEOUS REPRESENTATION. `u` of degree `D` in the ideal generated by forms `g i` of
    degrees `e i` can be written `u = ∑ h i * g i` with each `h i` of degree `D - e i` (and
    `h i = 0` when `e i > D`). Take degree-`D` homogeneous components of any representation;
    mathlib's `MvPolynomial.homogeneousComponent` and the local `gradedAlgebra` instance are
    the tools.
+   REALISED as `EliminationSpreadOut.exists_isHomogeneous_representation`, over
+   `EliminationSpreadOut.homogeneousComponent_mul_isHomogeneous`. CORRECTION to the
+   prescription: no `gradedAlgebra` instance is used or needed — the component-shifting
+   lemma is a direct computation with `MvPolynomial.coeff_mul` and
+   `MvPolynomial.coeff_homogeneousComponent`, and `Submodule.mem_span_range_iff_exists_fun`
+   supplies the initial representation because `ρ` is a `Fintype`.
 2. So the `R`-linear map `M_D : ⨁_{e i ≤ D} S_{D − e i} → S_D`, `(h i) ↦ ∑ h i · f i`,
    written in the monomial bases as a matrix `A` over `R` (rows: monomials of degree `D`,
    finite by `Finsupp.finite_of_degree_eq`; columns: pairs `(i, m')` with
    `m'.degree = D − e i`), has `A.map φ` with SURJECTIVE `mulVec`: hypothesis `hD` supplies a
    preimage for each standard basis vector, and `MvPolynomial.coeff_map` turns the polynomial
    identity into the matrix one.
+   REALISED inside `EliminationSpreadOut.exists_mem_eliminationIdeal_degree_eq`, with the
+   column type spelled `Σ i, {m' // m'.degree + e i = D}` rather than
+   `{(i, m') // m'.degree = D - e i, e i ≤ D}`: the additive form encodes `e i ≤ D` itself,
+   so the too-large generators contribute an EMPTY fibre and need no case split anywhere.
+   The dictionary between coefficient vectors on that type and polynomials is
+   `colSum_isHomogeneous` / `colSum_mem_span` / `colSum_eq_of_isHomogeneous_representation`.
 3. CRAMER. A surjective matrix over a field has a square submatrix of full row rank, i.e.
    there is an injective `σ` with `(A.map φ).submatrix id σ` invertible; take
    `r := ((A.submatrix id σ)).det`, so `φ r ≠ 0`. Then `B * adjugate B = det B • 1`
@@ -19206,6 +19593,21 @@ which needs `K` algebraically closed:
    degree `D` and has the same coefficients as `C r * monomial m 1` — so they are equal, and
    `r` satisfies the defining condition of `eliminationIdeal f` with witness `D`. Degrees
    above `D` follow by `Finsupp.exists_le_degree_eq`.
+   REALISED as `EliminationSpreadOut.exists_forall_mulVec_eq_smul`. **THE ONE PLACE THE
+   PRESCRIPTION COULD NOT BE FOLLOWED AS WRITTEN**, and worth recording because the next
+   reader will look for the same thing: mathlib has NO "rank equals the size of the largest
+   nonvanishing minor" theorem, so "a surjective matrix has a square submatrix of full row
+   rank" is not a one-liner from any rank API. What replaces it costs about twenty lines and
+   uses no rank theory at all: `Matrix.range_mulVecLin` turns surjectivity into "the columns
+   span `Kⁿ`"; `exists_linearIndependent'` (the INDEXED form — it hands back an injective
+   index map, which is exactly the `σ` wanted, where the `Set`-valued `exists_linearIndependent`
+   would not) extracts a linearly independent spanning subfamily; `Module.Basis.mk`,
+   `Module.Finite.finite_basis` and `Module.finrank_pi` show its index type has the
+   cardinality of the row type, giving the reindexing `σ`; and
+   `Matrix.exists_mulVec_eq_zero_iff` against `Fintype.linearIndependent_iff` turns the
+   linear independence of those columns into `det ≠ 0`. The Cramer half is then exactly as
+   prescribed (`Matrix.mul_adjugate`), with the solution vector extended off the image of
+   `σ` by `Function.extend _ _ 0`.
 
 FAITHFULNESS. Checked in all four degenerate directions.
 * `D = 0`: `hD` says every constant is in the specialised ideal, in particular `1`; the
@@ -19225,8 +19627,16 @@ theorem exists_mem_eliminationIdeal_of_forall_isHomogeneous_mem_span
     (hf : ∀ i, (f i).IsHomogeneous (e i)) {D : ℕ}
     (hD : ∀ u : MvPolynomial κ K, u.IsHomogeneous D →
       u ∈ Ideal.span (Set.range fun i => MvPolynomial.map φ (f i))) :
-    ∃ r : R, φ r ≠ 0 ∧ r ∈ eliminationIdeal f :=
-  sorry
+    ∃ r : R, φ r ≠ 0 ∧ r ∈ eliminationIdeal f := by
+  obtain ⟨r, hr, hrD⟩ :=
+    EliminationSpreadOut.exists_mem_eliminationIdeal_degree_eq φ f hf hD
+  refine ⟨r, hr, D, fun m hm => ?_⟩
+  obtain ⟨g, hgle, hgdeg⟩ := Finsupp.exists_le_degree_eq m D hm
+  have hsplit : (MvPolynomial.monomial m (1 : R))
+      = MvPolynomial.monomial g (1 : R) * MvPolynomial.monomial (m - g) (1 : R) := by
+    rw [MvPolynomial.monomial_mul, mul_one, add_tsub_cancel_of_le hgle]
+  rw [hsplit, ← mul_assoc]
+  exact Ideal.mul_mem_right _ _ (hrD g hgdeg)
 
 /-- **THE MAIN THEOREM OF ELIMINATION THEORY, OVER `ℤ` (PROVEN 2026-07-30 over one named
 sub-leaf; cut 2026-07-28)**
@@ -19380,8 +19790,8 @@ The whole of this leaf is now reduced, by the Segre encoding written out in
 `ProductLocusForms` above and PROVEN there (`ProductLocusForms.segre_iff`), to the
 single sub-leaf `exists_eliminationFormsInt` — the main theorem of elimination
 theory over `ℤ`, itself PROVEN as of 2026-07-30 over the spreading-out leaf
-`exists_mem_eliminationIdeal_of_forall_isHomogeneous_mem_span`. Nothing else in the Noether
-half of `exists_bertiniNoetherWitness_of_three_le` is open.
+`exists_mem_eliminationIdeal_of_forall_isHomogeneous_mem_span`, which was PROVEN the same
+day. Nothing in the Noether half of `exists_bertiniNoetherWitness_of_three_le` is open.
 
 WHAT IT SAYS. For each pair `(d₁, d₂)` there are finitely many forms with INTEGER
 coefficients such that, over EVERY algebraically closed field `K`, a plane
@@ -19623,8 +20033,9 @@ already characteristic-free and defined over `ℤ`; performing it over `Spec ℤ
 where the projective-image argument is a proper morphism and so survives base
 change to any field, is what produces the ℤ-rational forms directly.
 
-WHAT IS OPEN AFTER THE 2026-07-30 CUT:
-`exists_mem_eliminationIdeal_of_forall_isHomogeneous_mem_span` alone —
+WHAT IS OPEN AFTER THE 2026-07-30 CUT: **NOTHING.**
+`exists_mem_eliminationIdeal_of_forall_isHomogeneous_mem_span`, the leaf that cut produced,
+was itself PROVEN the same day over namespace `EliminationSpreadOut`;
 `exists_eliminationFormsInt`, named here as the open leaf by the 2026-07-28 cut, is PROVEN
 over it (with the projective Nullstellensatz half proven outright). Step 3,
 `exists_productLocusFormsInt` -- the closedness of the image of multiplication,
@@ -20298,10 +20709,10 @@ theorem exists_planeSectionCoeffPolys {N : ℕ} {R S : Type*} [CommRing R] [Comm
 
 /-- **E. NOETHER'S IRREDUCIBILITY FORMS IN COEFFICIENT SPACE (PROVEN 2026-07-28
 over one named sub-leaf)** — the whole `p`-uniformity content of
-`exists_noetherBadLocusForms`, and after this cut the ONLY thing still open in the
-Noether half is `exists_mem_eliminationIdeal_of_forall_isHomogeneous_mem_span` (reached
+`exists_noetherBadLocusForms`, and after this cut NOTHING is open in the Noether half: its
+last leaf `exists_mem_eliminationIdeal_of_forall_isHomogeneous_mem_span` (reached
 through `exists_productLocusFormsInt`, proven over `exists_eliminationFormsInt`, which since
-2026-07-30 is proven over that spreading-out leaf).
+2026-07-30 is proven over that spreading-out leaf) was PROVEN on 2026-07-30.
 
 WHAT IT SAYS. For each `d` there is a degree bound `E` depending only on `d` such
 that, for every prime `p`, the locus of plane polynomials `g` of total degree
@@ -20332,8 +20743,8 @@ theory, not scheme theory. THE CUT WAS MADE ON 2026-07-28 ALONG EXACTLY THE FOUR
 STEPS BELOW; all four steps are now PROVEN; step 3 (`exists_productLocusFormsInt`) rests on the
 single further sub-leaf `exists_eliminationFormsInt`, which is PROVEN as of 2026-07-30 over
 the spreading-out leaf `exists_mem_eliminationIdeal_of_forall_isHomogeneous_mem_span` — and
-THAT is now the only thing open in this cluster. The four steps, with the declarations that
-realise them:
+THAT was proven the same day, so nothing in this cluster is open. The four steps, with the
+declarations that realise them:
 
 1. **The algebraic characterisation** (`not_irreducible_iff_exists_badPiece`,
    PROVEN). For `d ≥ 1` and `g.totalDegree ≤ d`,
