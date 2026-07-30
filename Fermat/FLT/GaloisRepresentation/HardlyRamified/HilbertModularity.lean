@@ -20199,6 +20199,45 @@ finite quotient, and let `z` be a continuous `1`-cocycle representing `c`.
   because `I_w` acts trivially. Hence `I_w ⊆ N`.
 * `res^{Γ F}_N c = 0` because `z` restricts to the zero cocycle on `N`.
 
+# **THE ROUTE ABOVE DOES NOT PRODUCE A UNIFORM `n` IN POSITIVE CHARACTERISTIC**
+(found 2026-07-30 while proving the two sibling leaves; NOT a falsity — the leaf
+is true, and the correction is about what it costs.)
+
+The quantifier order is `∃ n, ∀ c`, so `n` may not depend on the class. The
+second bullet's bound `#(Γ F / N₁) · #(image of z)` DOES depend on it: the first
+factor is a constant, but `#(image of z)` is a property of `z`. The `ℚ`-level
+twin `exists_mem_inertiaOutsideSubgroups_resSubgroup_eq_zero` gets away with the
+same sentence only because it carries `[Finite k]`, which bounds
+`#(image of z) ≤ #M` once and for all. **This module's leaves deliberately drop
+`[Finite k]`** (see `finite_hilbertH1TwistUnramified`'s docstring), so `M` is
+infinite as a SET and that bound is unavailable. This is the one place where the
+deviation makes a leaf strictly HARDER rather than merely differently stated, and
+the section note does not record it.
+
+What is true, and what closing the leaf therefore costs:
+
+* **char `k` = 0.** `M` is torsion-free, and `image z` is a finite subgroup of it
+  (`Γ F` compact, `z` continuous, `M` discrete), hence TRIVIAL. So `z` already
+  vanishes on `N₁` and `N = N₁`, of index at most `#(Γ F / N₁)` — uniform, and
+  the route as written is complete.
+* **char `k` = `p`.** `M` is an `𝔽_p`-space, so `z|_{Γ L}` (`L` the fixed field of
+  `N₁`) is a continuous homomorphism `Γ L → M` killed by `p`, and — since `c` is
+  unramified outside `S` and `Γ L` acts trivially on `M`, so the local coboundary
+  witnesses vanish — unramified outside `S`. It therefore factors through
+  `Gal(L_S^{ab,p}/L)`, and the uniform bound is `n = #(Γ F / N₁) · #Gal(L_S^{ab,p}/L)`
+  once THAT group is known to be finite. Finiteness of the maximal abelian
+  exponent-`p` extension of a number field unramified outside a finite set is
+  Hermite–Minkowski again, and it is **not** among the four leaves this section
+  cut: `finite_hilbertInertiaOutsideSubgroups` bounds the number of subgroups of
+  bounded index, which is a different statement and does not supply it.
+
+So this leaf and `finite_hilbertInertiaOutsideSubgroups` above are the two
+Hermite–Minkowski-over-`F` leaves of the section and are best given to ONE owner
+— the pairing recorded below with
+`exists_finset_isUnramifiedAt_hilbert_of_notMem` is about the shared
+unramified⟹inertia-trivial converse and is still right, but it is not the whole
+of what is shared here.
+
 # WHAT IT COSTS — **AND A STALE-CLAIM CORRECTION, 2026-07-28 (flt-lean-58)**
 
 The bullets above need the degree-`1` INHOMOGENEOUS cochain dictionary, without
