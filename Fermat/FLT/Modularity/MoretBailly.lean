@@ -24610,10 +24610,383 @@ theorem exists_prime_associated_map_rat_of_irreducible_map_algClosureRat {k : �
   · refine ⟨(isUnit_map_rat_of_isUnit_map_algClosureRat c hcu).unit, ?_⟩
     rw [IsUnit.unit_spec, hc, map_mul]
 
-/-- **LEAF (B″): THE DENOMINATOR BOOKKEEPING ALONE** (SORRY LEAF, cut 2026-07-30
+/-! #### The localised-hypersurface coordinate ring, and what membership in it means
+(PROVEN 2026-07-30)
+
+The three conclusion clauses of `exists_ratMembershipData_of_birationalNormalForm`
+below all have the shape `q = A·S₀ + B·(g₀·T − 1)`, i.e. `q` lies in the ideal
+
+  `J := (rename castSucc S₀, rename castSucc g₀ · T − 1) ⊆ ℚ[Y₀ … Y_e, T]`
+
+cutting out `V(S₀) ∖ V(g₀)`. Everything in this block is about turning that
+polynomial-ideal bookkeeping into a single RING-THEORETIC vanishing statement, so
+that a prover of the residual leaf never has to produce `A` and `B` by hand:
+
+* `hypEval θ t` is the evaluation `ℚ[Y, T] → S` extending `θ` on `ℚ[Y]` by `T ↦ t`;
+* `mem_span_pair_of_hypEval_eq_zero` is the CONVERSE inclusion `ker ⊆ J`, which is
+  the only nontrivial half. It runs over the two lemmas before it: first clear the
+  inverted variable (`g₀^N·q ≡ Q(Y)` mod `g₀T − 1`, by induction on `q`), then use
+  that `S₀ ∣ g₀^M·Q` and that `(g₀T)^{N+M} ≡ 1` to put `q` itself into `J`.
+* `dvd_of_map_dvd_map` is the descent that clause (i) needs: `S₀ ∤ g₀` over `ℚ`
+  already forces `S₀ ∤ g₀` over `ℚ̄`. Apply a `ℚ`-linear retraction `ℚ̄ → ℚ`
+  (`LinearMap.exists_leftInverse_of_injective`) to every coefficient of the
+  cofactor; the resulting `coeffProj` is not a ring map, but it IS `ℚ[Y]`-linear,
+  which is exactly what a single division needs. Note this is a statement about
+  MvPolynomial over a field extension and has nothing to do with this file's
+  geometry; `exists_bound_not_dvd_map_algClosureZMod` far above is the sibling
+  going the other way, from `ℚ̄` to `𝔽̄_p`. -/
+
+section LocalisedHypersurfaceMembership
+
+open MvPolynomial
+
+/-- The evaluation `R[Y₀ … Y_e, T] → S` extending a hom `θ` on `R[Y₀ … Y_e]` by
+`T ↦ t`. -/
+noncomputable def hypEval {e : ℕ} {R S : Type*} [CommRing R] [CommRing S]
+    (θ : MvPolynomial (Fin (e + 1)) R →+* S) (t : S) :
+    MvPolynomial (Fin (e + 2)) R →+* S :=
+  MvPolynomial.eval₂Hom (θ.comp MvPolynomial.C)
+    (Fin.lastCases t fun l => θ (MvPolynomial.X l))
+
+@[simp] theorem hypEval_X_castSucc {e : ℕ} {R S : Type*} [CommRing R] [CommRing S]
+    (θ : MvPolynomial (Fin (e + 1)) R →+* S) (t : S) (l : Fin (e + 1)) :
+    hypEval θ t (MvPolynomial.X l.castSucc) = θ (MvPolynomial.X l) := by
+  simp [hypEval]
+
+@[simp] theorem hypEval_X_last {e : ℕ} {R S : Type*} [CommRing R] [CommRing S]
+    (θ : MvPolynomial (Fin (e + 1)) R →+* S) (t : S) :
+    hypEval θ t (MvPolynomial.X (Fin.last (e + 1))) = t := by
+  simp [hypEval]
+
+@[simp] theorem hypEval_rename {e : ℕ} {R S : Type*} [CommRing R] [CommRing S]
+    (θ : MvPolynomial (Fin (e + 1)) R →+* S) (t : S)
+    (q : MvPolynomial (Fin (e + 1)) R) :
+    hypEval θ t (MvPolynomial.rename Fin.castSucc q) = θ q := by
+  induction q using MvPolynomial.induction_on with
+  | C a => simp [hypEval]
+  | add p q hp hq => simp [hp, hq]
+  | mul_X p i hp => simp [hp]
+
+/-- **CLEARING THE INVERTED VARIABLE** (PROVEN). Modulo `g₀·T − 1` every
+`q ∈ ℚ[Y₀ … Y_e, T]` becomes, after multiplication by a power of `g₀`, a polynomial
+in `Y₀ … Y_e` alone. Induction on `q`; the only interesting step is `q ↦ q·T`, which
+is paid for by one more factor of `g₀` and one use of the generator. -/
+theorem exists_pow_mul_sub_rename_mem_span_gen {e : ℕ}
+    (g₀ : MvPolynomial (Fin (e + 1)) ℚ) (q : MvPolynomial (Fin (e + 2)) ℚ) :
+    ∃ (N : ℕ) (Q : MvPolynomial (Fin (e + 1)) ℚ),
+      MvPolynomial.rename Fin.castSucc g₀ ^ N * q - MvPolynomial.rename Fin.castSucc Q
+        ∈ Ideal.span {MvPolynomial.rename Fin.castSucc g₀ *
+            MvPolynomial.X (Fin.last (e + 1)) - 1} := by
+  classical
+  set G : MvPolynomial (Fin (e + 2)) ℚ := MvPolynomial.rename Fin.castSucc g₀ with hG
+  set T : MvPolynomial (Fin (e + 2)) ℚ := MvPolynomial.X (Fin.last (e + 1)) with hT
+  set I : Ideal (MvPolynomial (Fin (e + 2)) ℚ) := Ideal.span {G * T - 1} with hI
+  have hgen : G * T - 1 ∈ I := Ideal.subset_span rfl
+  induction q using MvPolynomial.induction_on with
+  | C a => exact ⟨0, MvPolynomial.C a, by simp⟩
+  | add p r hp hr =>
+      obtain ⟨N₁, Q₁, h₁⟩ := hp
+      obtain ⟨N₂, Q₂, h₂⟩ := hr
+      refine ⟨N₁ + N₂, g₀ ^ N₂ * Q₁ + g₀ ^ N₁ * Q₂, ?_⟩
+      have e₁ : G ^ (N₁ + N₂) * (p + r)
+          - MvPolynomial.rename Fin.castSucc (g₀ ^ N₂ * Q₁ + g₀ ^ N₁ * Q₂)
+          = G ^ N₂ * (G ^ N₁ * p - MvPolynomial.rename Fin.castSucc Q₁)
+            + G ^ N₁ * (G ^ N₂ * r - MvPolynomial.rename Fin.castSucc Q₂) := by
+        simp only [map_add, map_mul, map_pow, hG]
+        ring
+      rw [e₁]
+      exact Ideal.add_mem _ (Ideal.mul_mem_left _ _ h₁) (Ideal.mul_mem_left _ _ h₂)
+  | mul_X p i hp =>
+      obtain ⟨N, Q, h⟩ := hp
+      rcases Fin.eq_castSucc_or_eq_last i with ⟨j, rfl⟩ | rfl
+      · refine ⟨N, Q * MvPolynomial.X j, ?_⟩
+        have e₁ : G ^ N * (p * MvPolynomial.X (Fin.castSucc j))
+            - MvPolynomial.rename Fin.castSucc (Q * MvPolynomial.X j)
+            = (G ^ N * p - MvPolynomial.rename Fin.castSucc Q)
+              * MvPolynomial.X (Fin.castSucc j) := by
+          simp only [map_mul, MvPolynomial.rename_X]
+          ring
+        rw [e₁]
+        exact Ideal.mul_mem_right _ _ h
+      · refine ⟨N + 1, Q, ?_⟩
+        have e₁ : G ^ (N + 1) * (p * T) - MvPolynomial.rename Fin.castSucc Q
+            = (G ^ N * p - MvPolynomial.rename Fin.castSucc Q)
+              + (G * T - 1) * (G ^ N * p) := by ring
+        rw [e₁]
+        exact Ideal.add_mem _ h (Ideal.mul_mem_right _ _ hgen)
+
+/-- **THE MEMBERSHIP CRITERION, DIVISIBILITY FORM** (PROVEN). If `g₀^N·q` reduces to
+`Q` modulo `g₀·T − 1` and `S₀ ∣ g₀^M·Q`, then `q` lies in `(S₀, g₀·T − 1)`. The last
+step is that `(g₀T)^{N+M} ≡ 1` modulo the second generator, so multiplying by
+`g₀^{N+M}` is invertible modulo the ideal. -/
+theorem mem_span_pair_of_dvd {e : ℕ}
+    (S₀ g₀ : MvPolynomial (Fin (e + 1)) ℚ) (q : MvPolynomial (Fin (e + 2)) ℚ)
+    (N M : ℕ) (Q : MvPolynomial (Fin (e + 1)) ℚ)
+    (hQ : MvPolynomial.rename Fin.castSucc g₀ ^ N * q - MvPolynomial.rename Fin.castSucc Q
+      ∈ Ideal.span {MvPolynomial.rename Fin.castSucc g₀ *
+          MvPolynomial.X (Fin.last (e + 1)) - 1})
+    (hdvd : S₀ ∣ g₀ ^ M * Q) :
+    q ∈ Ideal.span {MvPolynomial.rename Fin.castSucc S₀,
+      MvPolynomial.rename Fin.castSucc g₀ * MvPolynomial.X (Fin.last (e + 1)) - 1} := by
+  classical
+  set G : MvPolynomial (Fin (e + 2)) ℚ := MvPolynomial.rename Fin.castSucc g₀ with hG
+  set T : MvPolynomial (Fin (e + 2)) ℚ := MvPolynomial.X (Fin.last (e + 1)) with hT
+  set I : Ideal (MvPolynomial (Fin (e + 2)) ℚ) :=
+    Ideal.span {MvPolynomial.rename Fin.castSucc S₀, G * T - 1} with hI
+  have hS : MvPolynomial.rename Fin.castSucc S₀ ∈ I := Ideal.subset_span (by simp)
+  have hgen : G * T - 1 ∈ I := Ideal.subset_span (by simp)
+  have hQI : G ^ N * q - MvPolynomial.rename Fin.castSucc Q ∈ I := by
+    refine Ideal.span_mono ?_ hQ
+    intro x hx
+    simp only [Set.mem_singleton_iff] at hx
+    simp [hx]
+  have hMQ : G ^ M * MvPolynomial.rename Fin.castSucc Q ∈ I := by
+    obtain ⟨c, hc⟩ := hdvd
+    have hrw : G ^ M * MvPolynomial.rename Fin.castSucc Q
+        = MvPolynomial.rename Fin.castSucc S₀ * MvPolynomial.rename Fin.castSucc c := by
+      have := congrArg (MvPolynomial.rename (R := ℚ) Fin.castSucc) hc
+      simp only [map_mul, map_pow] at this
+      rw [← hG] at this
+      rw [this]
+    rw [hrw]
+    exact Ideal.mul_mem_right _ _ hS
+  have hkey : G ^ (N + M) * q ∈ I := by
+    have e₁ : G ^ (N + M) * q
+        = G ^ M * (G ^ N * q - MvPolynomial.rename Fin.castSucc Q)
+          + G ^ M * MvPolynomial.rename Fin.castSucc Q := by ring
+    rw [e₁]
+    exact Ideal.add_mem _ (Ideal.mul_mem_left _ _ hQI) hMQ
+  have hunit : (1 : MvPolynomial (Fin (e + 2)) ℚ) - (G * T) ^ (N + M) ∈ I := by
+    have hgs := geom_sum_mul (G * T) (N + M)
+    have e₁ : (1 : MvPolynomial (Fin (e + 2)) ℚ) - (G * T) ^ (N + M)
+        = (-∑ i ∈ Finset.range (N + M), (G * T) ^ i) * (G * T - 1) := by
+      rw [neg_mul, hgs]
+      ring
+    rw [e₁]
+    exact Ideal.mul_mem_left _ _ hgen
+  have e₂ : q = (1 - (G * T) ^ (N + M)) * q + T ^ (N + M) * (G ^ (N + M) * q) := by
+    rw [mul_pow]
+    ring
+  rw [e₂]
+  exact Ideal.add_mem _ (Ideal.mul_mem_right _ _ hunit) (Ideal.mul_mem_left _ _ hkey)
+
+/-- **THE MEMBERSHIP CRITERION** (PROVEN): whatever `hypEval θ t` kills already lies in
+`(S₀, g₀·T − 1)`. `ht` says `t` inverts `θ g₀`; `hkr` is the only thing tying `θ` to
+`S₀`, and it is what a localisation supplies. -/
+theorem mem_span_pair_of_hypEval_eq_zero {e : ℕ} {S : Type*} [CommRing S]
+    (θ : MvPolynomial (Fin (e + 1)) ℚ →+* S) (t : S)
+    (S₀ g₀ : MvPolynomial (Fin (e + 1)) ℚ)
+    (ht : θ g₀ * t = 1)
+    (hkr : ∀ Q : MvPolynomial (Fin (e + 1)) ℚ, θ Q = 0 → ∃ M, S₀ ∣ g₀ ^ M * Q)
+    (q : MvPolynomial (Fin (e + 2)) ℚ) (hq : hypEval θ t q = 0) :
+    q ∈ Ideal.span {MvPolynomial.rename Fin.castSucc S₀,
+      MvPolynomial.rename Fin.castSucc g₀ * MvPolynomial.X (Fin.last (e + 1)) - 1} := by
+  obtain ⟨N, Q, hNQ⟩ := exists_pow_mul_sub_rename_mem_span_gen g₀ q
+  have hθQ : θ Q = 0 := by
+    obtain ⟨cc, hcc⟩ := Ideal.mem_span_singleton'.mp hNQ
+    have hev := congrArg (hypEval θ t) hcc
+    simp only [map_mul, map_sub, map_pow, map_one, hypEval_rename, hypEval_X_last, hq,
+      mul_zero] at hev
+    rw [ht] at hev
+    simpa using hev.symm
+  obtain ⟨M, hdvd⟩ := hkr Q hθQ
+  exact mem_span_pair_of_dvd S₀ g₀ q N M Q hNQ hdvd
+
+/-- A `ℚ`-linear projection applied to every coefficient. Not a ring map — but it is
+`MvPolynomial σ ℚ`-linear, which is all a single division needs. -/
+noncomputable def coeffProj {σ : Type*} {K : Type*} [Field K] [Algebra ℚ K]
+    (ρ : K →ₗ[ℚ] ℚ) (u : MvPolynomial σ K) : MvPolynomial σ ℚ :=
+  ∑ m ∈ u.support, MvPolynomial.monomial m (ρ (u.coeff m))
+
+theorem coeff_coeffProj {σ : Type*} {K : Type*} [Field K] [Algebra ℚ K]
+    (ρ : K →ₗ[ℚ] ℚ) (u : MvPolynomial σ K) (m : σ →₀ ℕ) :
+    (coeffProj ρ u).coeff m = ρ (u.coeff m) := by
+  classical
+  rw [coeffProj, MvPolynomial.coeff_sum]
+  simp only [MvPolynomial.coeff_monomial]
+  rw [Finset.sum_ite_eq' u.support m fun m => ρ (u.coeff m)]
+  by_cases h : m ∈ u.support
+  · simp [h]
+  · simp [h, MvPolynomial.notMem_support_iff.mp h]
+
+/-- **DIVISIBILITY DESCENDS ALONG A FIELD EXTENSION** (PROVEN). If `S ∣ H` over
+`K ⊇ ℚ` and both are defined over `ℚ`, then `S ∣ H` already over `ℚ`.
+
+Take a `ℚ`-linear retraction `ρ : K → ℚ` of `algebraMap ℚ K` — it exists because a
+linear injection of vector spaces splits — and apply it to every coefficient of the
+cofactor `u`. Comparing `coeff m` on both sides of `H = S·u` through
+`MvPolynomial.coeff_mul`, every term is `algebraMap (S.coeff x.1) * u.coeff x.2`, on
+which `ρ` acts as multiplication by `S.coeff x.1`; so `ρ`-ing the whole identity
+produces `H = S · coeffProj ρ u` over `ℚ`. -/
+theorem dvd_of_map_dvd_map {σ : Type*} {K : Type*} [Field K] [Algebra ℚ K]
+    (S H : MvPolynomial σ ℚ)
+    (hdvd : MvPolynomial.map (algebraMap ℚ K) S ∣ MvPolynomial.map (algebraMap ℚ K) H) :
+    S ∣ H := by
+  classical
+  obtain ⟨ρ, hρ⟩ := (Algebra.linearMap ℚ K).exists_leftInverse_of_injective
+    (LinearMap.ker_eq_bot.mpr (algebraMap ℚ K).injective)
+  have hρ1 : ∀ a : ℚ, ρ (algebraMap ℚ K a) = a := fun a => by
+    simpa using LinearMap.congr_fun hρ a
+  have hρmul : ∀ (a : ℚ) (c : K), ρ (algebraMap ℚ K a * c) = a * ρ c := by
+    intro a c
+    rw [← Algebra.smul_def, map_smul, smul_eq_mul]
+  obtain ⟨u, hu⟩ := hdvd
+  refine ⟨coeffProj ρ u, ?_⟩
+  ext m
+  have hm := congrArg (MvPolynomial.coeff m) hu
+  rw [MvPolynomial.coeff_map, MvPolynomial.coeff_mul] at hm
+  have hρm := congrArg ρ hm
+  rw [hρ1, map_sum] at hρm
+  rw [hρm, MvPolynomial.coeff_mul]
+  refine Finset.sum_congr rfl fun x _ => ?_
+  rw [MvPolynomial.coeff_map, hρmul, coeff_coeffProj]
+
+/-- The canonical evaluation `ℚ[Y₀ … Y_e] → (ℚ[Y]/(g))[1/b]` — quotient, then
+localise. `hypEval (hypQuotAway g b) t` is the map whose kernel
+`mem_span_pair_of_hypEval_eq_zero` identifies. -/
+noncomputable def hypQuotAway {e : ℕ} (g : MvPolynomial (Fin (e + 1)) ℤ)
+    (b : MvPolynomial (Fin (e + 1)) ℚ ⧸
+      Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) :
+    MvPolynomial (Fin (e + 1)) ℚ →+* Localization.Away b :=
+  (algebraMap (MvPolynomial (Fin (e + 1)) ℚ ⧸
+      Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (Localization.Away b)).comp
+    (Ideal.Quotient.mk (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}))
+
+theorem hypQuotAway_apply {e : ℕ} (g : MvPolynomial (Fin (e + 1)) ℤ)
+    (b : MvPolynomial (Fin (e + 1)) ℚ ⧸
+      Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g})
+    (q : MvPolynomial (Fin (e + 1)) ℚ) :
+    hypQuotAway g b q = algebraMap _ (Localization.Away b)
+      (Ideal.Quotient.mk (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) q) := rfl
+
+end LocalisedHypersurfaceMembership
+
+/-- **LEAF (B‴): THE COORDINATES THEMSELVES, WITH NO IDEAL BOOKKEEPING** (SORRY LEAF,
+cut 2026-07-30 out of `exists_ratMembershipData_of_birationalNormalForm` below, which
+is PROVEN over it).
+
+WHAT WAS TAKEN OFF THE PARENT, so nobody redoes it. Everything about the ideal
+`J = (S₀, g₀·T − 1)` and everything about `ℚ̄`:
+
+* the three `∃ A B, … = A·S₀ + B·(g₀T − 1)` clauses are replaced by the single
+  vanishing `hypEval (hypQuotAway g b) t (…) = 0` in the ring `(ℚ[Y]/(g))[1/b]`
+  itself. The passage back is `mem_span_pair_of_hypEval_eq_zero` above — the
+  membership criterion — fed by the kernel condition, which the parent derives from
+  the clause `b ∣ mk g₀` handed out here;
+* clause (i) is asked over `ℚ` rather than over `ℚ̄`: the upgrade is
+  `dvd_of_map_dvd_map` above. So the prover never touches `AlgebraicClosure ℚ`, and
+  `hS₀irr` is correspondingly unused in the residue (it is kept in the signature
+  because the intended proof of the DENSITY step wants it — see the parent).
+
+WHAT IS LEFT, and it is exactly Schmidt Ch. VI §7 eq. (7.3): read the coordinates off
+the two directions of `eqv` and clear denominators. Write
+`A := IntegralSystemModel f ℚ`, `Cq := ℚ[Y]/(map ℚ g)`, `L := Localization.Away b`, and
+
+  `Ψ := eqv ∘ (quotient by the nilradical) ∘ (algebraMap A (Localization.Away a))
+      : A →+* L`,
+  `θ := hypQuotAway g b : ℚ[Y] →+* L`.
+
+THE ROUTE, worked out 2026-07-30; every step is elementary once it is in this order.
+
+1. **`h` and `t₀`.** Lift `b` to `b̃ ∈ ℚ[Y]` and clear denominators to `h ∈ ℤ[Y]`, so
+   that the class of `map ℚ h` in `Cq` is a nonzero rational multiple of `b`. Then
+   `θ (map ℚ h)` is a unit in `L` (`IsLocalization.Away.algebraMap_isUnit`, times a
+   nonzero rational); call its inverse `t₀`.
+2. **`w` and the exponent `K`.** For each `l`, `θ (X l) = Ψ(α_l)·Ψ(a)^{-k_l}` by
+   `IsLocalization.surj` applied in `Localization.Away a` and transported through
+   `eqv` (both `eqv` and the nilradical quotient are surjective). Take one
+   `K ≥ max(1, max_l k_l)` and replace `α_l` by `α_l·a^{K − k_l}`, so a SINGLE power
+   `Ψ(a)^{-K}` serves every `l`. Lift each `α_l` to `ℚ[x₀ … x_{n−1}]`, let `E` clear
+   all their denominators at once, let `D₀` clear those of one lift of `a`, and put
+   `w := E·D₀·(that lift) ∈ ℤ[x]`. Then `Ψ(w̄) = E·D₀·Ψ(a)`, still a unit, and
+
+     `R_l := C(E^{K−1}·D₀^K) · A_l · X_n^K ∈ ℤ[x₀ … x_n]`,
+
+   which is INTEGRAL precisely because `K ≥ 1`: `(E D₀)^K / E = E^{K−1} D₀^K`. This
+   is the one place where the exponent has to be made uniform, and it is why step 2
+   comes before step 3.
+3. **The rational representatives.** `hypEval θ t₀` is surjective (its image contains
+   every `θ (X l)` and the inverse of `θ (map ℚ h)`, which generate `L` over `ℚ`), so
+   pick `ρ_j ∈ ℚ[Y, T]` with `hypEval θ t₀ ρ_j = Ψ(x̄_j)` for `j < n`, and `ρ_n` with
+   `hypEval θ t₀ ρ_n = Ψ(w̄)⁻¹`.
+4. **`c`, and integrality.** Let `c ∈ ℤ` clear the denominators of all the `ρ_j`, and
+   set `g₀ := c · h ∈ ℤ[Y]`, `t := c⁻¹ · t₀` — so `θ (map ℚ g₀) · t = 1`. Substituting
+   `T ↦ c·T` in `ρ_j` gives a representative for `t` rather than `t₀`; and the
+   remaining rational scalars are absorbed by the ONE-LINE identity
+
+     `ρ − (rename castSucc (map ℚ h))·T·(c·ρ) = −(map ℚ g₀·T − 1)·ρ ∈ J`,
+
+   i.e. `1/c = h·T` holds in `ℚ[Y, T]/J` because `g₀ = c·h`. Since `c·ρ_j` is
+   integral by the choice of `c`, `P_j := h·X_last·(c·ρ_j)` is an INTEGRAL
+   representative of the same element. **This is the whole "enlarge `g₀` to absorb
+   every denominator" paragraph of the parent, and it is not circular**: the `ρ_j`
+   are chosen against `t₀`, which does not mention `c`.
+5. **The three clauses.** `f_i(P₀ … P_{n−1}) ↦ Ψ(f_i(x̄)) = Ψ(0) = 0` because `f i`
+   lies in `integralSystemIdeal f ℚ`; `R_l(P) ↦ θ (X l)` by step 2; and
+   `w(P)·P_n ↦ Ψ(w̄)·Ψ(w̄)⁻¹ = 1`.
+6. **Clause (i) over `ℚ`.** `map ℚ S₀ ∤ map ℚ g₀`: the class of `map ℚ h` in `Cq` is
+   `≠ 0` since `b ≠ 0`, so `map ℚ g ∤ map ℚ h`, and `hassoc` transports that to `S₀`;
+   the integer `c` is a unit and changes nothing.
+7. **`b ∣ mk (map ℚ g₀)`** is immediate from step 1, since `mk (map ℚ h)` is a nonzero
+   rational multiple of `b`.
+
+MISSING AT THIS PIN: nothing exotic. `IsLocalization.surj`,
+`IsLocalization.Away.algebraMap_isUnit`, `IsLocalization.map_eq_zero_iff`, and this
+file's own denominator-clearing lemma (`exists_ne_zero_smul_mem_range_map` region,
+~16 000 lines above) cover every step.
+
+CIRCULARITY GUARD: inherited from the parent. -/
+theorem exists_hypEvalData_of_birationalNormalForm
+    {n m e : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (g S₀ : MvPolynomial (Fin (e + 1)) ℤ)
+    (hS₀ : Prime S₀)
+    (hS₀irr : Irreducible
+      (MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) S₀))
+    (hassoc : Associated (MvPolynomial.map (Int.castRingHom ℚ) S₀)
+      (MvPolynomial.map (Int.castRingHom ℚ) g))
+    (a : IntegralSystemModel f ℚ)
+    (b : MvPolynomial (Fin (e + 1)) ℚ ⧸
+          Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g})
+    (hb : b ≠ 0)
+    (hker : RingHom.ker (algebraMap (IntegralSystemModel f ℚ) (Localization.Away a)) ≤
+      nilradical (IntegralSystemModel f ℚ))
+    (eqv : (Localization.Away a ⧸ nilradical (Localization.Away a)) ≃+*
+      Localization.Away b) :
+    ∃ (g₀ : MvPolynomial (Fin (e + 1)) ℤ)
+      (P : Fin (n + 1) → MvPolynomial (Fin (e + 2)) ℤ)
+      (R : Fin (e + 1) → MvPolynomial (Fin (n + 1)) ℤ)
+      (w : MvPolynomial (Fin n) ℤ)
+      (t : Localization.Away b),
+      hypQuotAway g b (MvPolynomial.map (Int.castRingHom ℚ) g₀) * t = 1 ∧
+      b ∣ Ideal.Quotient.mk _ (MvPolynomial.map (Int.castRingHom ℚ) g₀) ∧
+      ¬ MvPolynomial.map (Int.castRingHom ℚ) S₀ ∣
+          MvPolynomial.map (Int.castRingHom ℚ) g₀ ∧
+      (∀ i : Fin m, hypEval (hypQuotAway g b) t
+          (MvPolynomial.map (Int.castRingHom ℚ)
+            (MvPolynomial.eval₂ MvPolynomial.C (fun j => P j.castSucc) (f i))) = 0) ∧
+      (∀ l : Fin (e + 1), hypEval (hypQuotAway g b) t
+          (MvPolynomial.map (Int.castRingHom ℚ)
+            (MvPolynomial.eval₂ MvPolynomial.C P (R l) - MvPolynomial.X l.castSucc)) = 0) ∧
+      hypEval (hypQuotAway g b) t
+          (MvPolynomial.map (Int.castRingHom ℚ)
+            (MvPolynomial.eval₂ MvPolynomial.C (fun j => P j.castSucc) w
+              * P (Fin.last n) - 1)) = 0 :=
+  sorry
+
+/-- **LEAF (B″): THE DENOMINATOR BOOKKEEPING ALONE** (cut 2026-07-30
 out of `exists_ratMembershipHypersurfaceCertificate` immediately below, which is
 now PROVEN over this leaf plus the three lemmas above plus the PROVEN packaged
 entry point `exists_birationalNormalForm_integralSystemModel_rat`).
+
+**STATUS (2026-07-30): NO LONGER A LEAF — PROVEN over
+`exists_hypEvalData_of_birationalNormalForm` immediately above.** What this
+declaration now contributes is the two things that leaf is spared: the passage from
+"`hypEval` kills it" to the explicit cofactors `A`, `B`
+(`mem_span_pair_of_hypEval_eq_zero`, over the two lemmas before it), and the passage
+from non-divisibility over `ℚ` to non-divisibility over `ℚ̄`
+(`dvd_of_map_dvd_map`). Both are in the block above and neither is geometry.
+The residue — reading `P`, `R`, `w` off `eqv` and clearing denominators — is the new
+leaf, whose docstring carries the full worked route.
 
 WHAT WAS TAKEN OFF THE PARENT, so nobody redoes it. Three of the parent's eight
 conclusion clauses, and the arity:
@@ -24739,8 +25112,61 @@ theorem exists_ratMembershipData_of_birationalNormalForm
                 (MvPolynomial.rename Fin.castSucc S₀)
               + B * (MvPolynomial.map (Int.castRingHom ℚ)
                   (MvPolynomial.rename Fin.castSucc g₀)
-                  * MvPolynomial.X (Fin.last (e + 1)) - 1)) :=
-  sorry
+                  * MvPolynomial.X (Fin.last (e + 1)) - 1)) := by
+  classical
+  obtain ⟨g₀, P, R, w, t, ht, hbdvd, hnd, h1, h2, h3⟩ :=
+    exists_hypEvalData_of_birationalNormalForm f g S₀ hS₀ hS₀irr hassoc a b hb hker eqv
+  set θ := hypQuotAway g b with hθ
+  set S₀q := MvPolynomial.map (Int.castRingHom ℚ) S₀ with hS₀q
+  set g₀q := MvPolynomial.map (Int.castRingHom ℚ) g₀ with hg₀q
+  -- the kernel condition, out of `b ∣ mk g₀` and the localisation
+  have hkr : ∀ Q : MvPolynomial (Fin (e + 1)) ℚ, θ Q = 0 → ∃ M, S₀q ∣ g₀q ^ M * Q := by
+    intro Q hQ
+    rw [hθ, hypQuotAway_apply] at hQ
+    obtain ⟨⟨s, hs⟩, hsQ⟩ :=
+      (IsLocalization.map_eq_zero_iff (Submonoid.powers b) (Localization.Away b)
+        (Ideal.Quotient.mk _ Q)).mp hQ
+    obtain ⟨M, rfl⟩ := hs
+    obtain ⟨v, hv⟩ := hbdvd
+    have hsQ' : b ^ M * Ideal.Quotient.mk
+        (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) Q = 0 := by
+      simpa using hsQ
+    refine ⟨M, ?_⟩
+    have hzero : Ideal.Quotient.mk (Ideal.span
+        {MvPolynomial.map (Int.castRingHom ℚ) g}) (g₀q ^ M * Q) = 0 := by
+      rw [map_mul, map_pow, hv, mul_pow]
+      calc b ^ M * v ^ M * Ideal.Quotient.mk
+              (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) Q
+          = v ^ M * (b ^ M * Ideal.Quotient.mk
+              (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) Q) := by ring
+        _ = 0 := by rw [hsQ', mul_zero]
+    have hmem : g₀q ^ M * Q ∈ Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g} :=
+      Ideal.Quotient.eq_zero_iff_mem.mp hzero
+    exact (Associated.dvd_iff_dvd_left hassoc).mpr (Ideal.mem_span_singleton.mp hmem)
+  -- clause (i): the descent from `ℚ` to `ℚ̄`
+  have hnd' : ¬ MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) S₀ ∣
+      MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) g₀ := by
+    intro hcon
+    refine hnd ?_
+    have hmap : ∀ q : MvPolynomial (Fin (e + 1)) ℤ,
+        MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) q
+          = MvPolynomial.map (algebraMap ℚ (AlgebraicClosure ℚ))
+              (MvPolynomial.map (Int.castRingHom ℚ) q) := by
+      intro q
+      rw [MvPolynomial.map_map]
+      congr 1
+    rw [hmap S₀, hmap g₀] at hcon
+    exact dvd_of_map_dvd_map (K := AlgebraicClosure ℚ) _ _ hcon
+  refine ⟨g₀, P, R, w, hnd', fun i => ?_, fun l => ?_, ?_⟩
+  · obtain ⟨A, B, hAB⟩ := Ideal.mem_span_pair.mp
+      (mem_span_pair_of_hypEval_eq_zero θ t S₀q g₀q ht hkr _ (h1 i))
+    exact ⟨A, B, by simpa [MvPolynomial.map_rename] using hAB.symm⟩
+  · obtain ⟨A, B, hAB⟩ := Ideal.mem_span_pair.mp
+      (mem_span_pair_of_hypEval_eq_zero θ t S₀q g₀q ht hkr _ (h2 l))
+    exact ⟨A, B, by simpa [MvPolynomial.map_rename] using hAB.symm⟩
+  · obtain ⟨A, B, hAB⟩ := Ideal.mem_span_pair.mp
+      (mem_span_pair_of_hypEval_eq_zero θ t S₀q g₀q ht hkr _ h3)
+    exact ⟨A, B, by simpa [MvPolynomial.map_rename] using hAB.symm⟩
 
 /-- **LEAF (B′): SCHMIDT'S THEOREM 4D OVER `ℚ`, WITH THE IDENTITIES STILL OVER
 `ℚ`** (cut 2026-07-29 out of `exists_rationalHypersurfaceCertificate` below, which
@@ -24757,8 +25183,10 @@ entry points. The proof is now four lines of glue over
 * `exists_prime_associated_map_rat_of_irreducible_map_algClosureRat` — PROVEN,
   Gauss, which is what supplies the extra `Prime S₀` clause this statement demands
   and which `Irreducible (map ℚ̄ g)` does NOT give on its own;
-* `exists_ratMembershipData_of_birationalNormalForm` — the ONE remaining sorry,
-  immediately above, which is now the denominator bookkeeping and nothing else.
+* `exists_ratMembershipData_of_birationalNormalForm` — immediately above, which was
+  the denominator bookkeeping and nothing else, and which is itself PROVEN
+  (2026-07-30) over the smaller `exists_hypEvalData_of_birationalNormalForm`. The
+  one remaining sorry on this chain is that leaf.
 
 So the frontier here is unchanged in COUNT (one leaf became one leaf) but the
 remaining leaf is strictly smaller: `e` and `S₀` are inputs rather than
