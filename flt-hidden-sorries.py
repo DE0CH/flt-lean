@@ -35,7 +35,16 @@ import re
 import sys
 from pathlib import Path
 
-ROOT = Path("/home/chend/flt-lean")
+# Relative arguments resolve against the CWD, i.e. against the worktree you are
+# standing in.  This used to be a hardcoded `Path("/home/chend/flt-lean")`, so a
+# worker running `flt-hidden-sorries.py Fermat/FLT/.../X.lean` from its own
+# worktree silently got the MAIN REPO's copy of that file — with no indication
+# in the output that a different file had been read.  On 2026-07-30 that made a
+# freshly-closed pair of leaves read as still open (14/14 against a true 12/12),
+# which is exactly CLAUDE.md's "release window" phantom in tool form: main's
+# frontier reported as if it were yours.  The default `Fermat` still means the
+# CWD's `Fermat/`, which is what every caller already meant.
+ROOT = Path.cwd()
 
 HDR = re.compile(
     r"^(?:@\[[^\]]*\]\s*)?"
