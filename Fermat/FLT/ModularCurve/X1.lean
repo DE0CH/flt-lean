@@ -457,7 +457,9 @@ open in them has been split along the theories it needed:
 | `not_birationalOver_affineLine_of_one_le_x1Genus_algClosed` | the genus formula and nothing else — Diamond–Shurman Thm 3.1.1: a fibre of `X_1(N)` with `genus ≥ 1` is not birational to `𝔸¹` over an ALGEBRAICALLY CLOSED field.  The only declaration in the `Γ₁` genus formula that still mentions `N`.  (Cut 2026-07-30 out of `exists_nonconstant_toAbelianScheme_of_one_le_x1Genus`, which is PROVEN over it and the row below.)  **RESTATED 2026-07-30 with `hchar : (N : K) ≠ 0`**: without it the leaf and its three proven consumers are FALSE, refuted by the Igusa curve `Ig(11)` in characteristic `11` — the falsity audit and the genus computation are on the declaration, and the hypothesis is discharged at the `SpecQ` base of `hasNonconstantAbelianMap_of_one_le_x1Genus`.  **NO LONGER A LEAF — PROVEN 2026-07-30** over the two rows below, which split its moduli half from its genus half; the signature is unchanged and all three consumers are untouched. | alg. closed `K`, `char K ∤ N` |
 | `exists_isX1Compactification_baseChange` | the MODULI half of the row above: the fibre `X ×_S Spec K` of an `X_1(N)`-compactification is an `X_1(N)`-compactification over `K`.  No genus, no `x1Genus`.  Coarse moduli spaces are not stable under base change in general, and `IsCoarseModuliY1` deliberately carries no fineness field, so this does not follow from initiality; the route is Katz–Mazur 4.7.0 (rigid `⟹` representable), and **rigidity of `[Γ₁(N)]` for `N ≥ 5` is proven outright in the declaration's docstring, in every characteristic, from `deg(α − 1) = 2 − Tr α ≤ 4`**. | any `K`, `char K ∤ N` |
 | `not_birationalOver_affineLine_of_one_le_x1Genus_field` | the GENUS half: the same statement with `S := Spec K`, hence strictly weaker, with the base change removed.  Diamond–Shurman Thm 3.1.1 alone.  Still blocked on a genus of a scheme / `h¹(𝒪_X)` / Riemann–Hurwitz, none of which exists at this pin; the declaration records the further `Pic⁰` split a successor should take and why it was not bundled with this cut. | alg. closed `K`, `char K ∤ N` |
-| `exists_nonconstant_toAbelianScheme_of_notGeometricallyRational` | `Pic⁰` and the degree-`n` Abel–Jacobi map: a GEOMETRICALLY non-rational fibre receives a nonconstant map to an abelian variety.  LEVEL-FREE — no `N` in it, and the `Γ₀` sibling leaf would close over it verbatim; see its RELOCATION NOTE.  The same statement with the hypothesis taken over `K` rather than over `K̄` is FALSE (pointless conic over `ℝ`); the falsity audit is on the declaration. | any |
+| `exists_nonconstant_toAbelianScheme_of_notGeometricallyRational` | `Pic⁰` and the degree-`n` Abel–Jacobi map: a GEOMETRICALLY non-rational fibre receives a nonconstant map to an abelian variety.  LEVEL-FREE — no `N` in it, and the `Γ₀` sibling leaf would close over it verbatim; see its RELOCATION NOTE.  The same statement with the hypothesis taken over `K` rather than over `K̄` is FALSE (pointless conic over `ℝ`); the falsity audit is on the declaration.  **NO LONGER A LEAF — PROVEN 2026-07-30** over the two rows below; its "blocked on Riemann–Roch" audit was WITHDRAWN the same day, `mono_ajHom_of_hasNoFibreAffineLine` having supplied that content since 2026-07-27. | any |
+| `hasNoFibreAffineLine_of_notGeometricallyRational` | non-rationality of the ALGEBRAICALLY CLOSED fibres upgrades to `HasNoFibreAffineLine` over EVERY field.  Pure birational geometry — no `Pic⁰`, no abelian variety, no genus, no `N`.  The one missing ingredient is a base-change lemma for `Scheme.BirationalOver`, which `Mathlib` does not have. | any |
+| `exists_nonconstant_toAbelianScheme_of_baseChange_relPoint` | the SECTION, isolated: a nonconstant map to an abelian variety descends from a finite extension over which the curve acquires a rational point.  Residue is Weil restriction along a finite separable extension, and nothing else.  LEVEL-FREE. | any |
 
 (Table regenerated at the release-10 integration, 2026-07-28, from the
 compiler's `declaration uses 'sorry'` set rather than from any branch's prose;
@@ -14248,9 +14250,245 @@ theorem not_birationalOver_affineLine_of_one_le_x1Genus_algClosed {N : ℕ} (hN 
     exists_isX1Compactification_baseChange hN hmodel K k hchar
   exact not_birationalOver_affineLine_of_one_le_x1Genus_field hN hg K hchar hmodel'
 
+/-- **ABEL–JACOBI IS NONCONSTANT ONCE NO FIBRE IS RATIONAL — the SECTIONED
+case, over an ARBITRARY base** (**PROVEN 2026-07-30**, entirely from material
+already in tree).
+
+This is the half of
+`exists_nonconstant_toAbelianScheme_of_notGeometricallyRational` below that
+that leaf's own audit declared **absent at this pin**, and the audit was
+STALE; see the correction recorded there.  Nothing here is new mathematics —
+it is the composition of five proven theorems, and the point of writing it
+down is that the composition was not written down:
+
+* `RelativePicard.lean`'s `exists_relPicZero` (PROVEN) builds `Pic⁰` as an
+  abelian scheme with the Abel–Jacobi family, from `hproper`, `hsmooth`,
+  `hconn` and the section `o`;
+* `X0.lean`'s `IsRelPicZeroOf.isAlbaneseOf` and `IsAlbaneseOf.isJacobianOf`
+  (both PROVEN, both stated over an ARBITRARY base — the `SpecQ` in
+  `isJacobianOf_of_isRelPicZeroOf` is a restriction of that wrapper, not of
+  the mathematics) upgrade it to an `IsJacobianOf`;
+* `X0.lean`'s `mono_ajHom_of_hasNoFibreAffineLine` (PROVEN over an arbitrary
+  base, over `universallyInjective_ajHom_of_hasNoFibreAffineLine` and
+  `formallyUnramified_ajHom_of_hasNoFibreAffineLine`, both PROVEN) makes
+  `ajHom` a monomorphism — **this is the Riemann–Roch input, and it is
+  already paid for**;
+* `IsJacobianOf.injective_aj_of_mono` turns that into injectivity on
+  relative points;
+* `not_isIso_of_smoothOfRelativeDimension_one` (PROVEN, in
+  `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`)
+  separates the tautological point `𝟙 X` from the constant point `strX ≫ o`.
+
+The proof is the same three lines as `X0.lean`'s
+`hasNonconstantAbelianMap_of_one_le_x0Genus`, with `HasNoFibreAffineLine`
+taken as a hypothesis instead of being derived from a genus.
+
+**FALSITY AUDIT.**  `hne : Nonempty X` is LOAD-BEARING and the statement is
+FALSE without it: take `S = X = ∅`.  Then `strX` is the identity of the
+initial object, `hproper`, `hsmooth` and `hconn` hold (`GeometricallyConnected`
+quantifies over field points of the base, of which there are none), `hnr`
+holds, `o` exists and is unique — and the conclusion FAILS, because
+`c = strX ≫ s` for the unique `s`, `A` being forced to receive the unique
+morphism out of `∅`.  This is exactly the exposure `X0.lean` records on
+`not_isIso_of_smoothOfRelativeDimension_one`, which was itself FALSE as first
+stated with `GeometricallyConnected` in place of `Nonempty X`.  Every consumer
+supplies `hne` from the section together with a point of the base.
+
+`hnr` is load-bearing too: without it `ℙ¹_K` refutes the statement, every
+morphism from it to an abelian scheme being constant.  `hproper`, `hsmooth`
+and `hconn` are the standing curve conditions `exists_relPicZero` needs.
+
+**RELOCATION NOTE.**  Nothing here is `Γ₁`-specific, or even modular; it is
+stated in `X1.lean` only because that is where its consumer lives.  `X0.lean`'s
+still-open `exists_nonconstant_toAbelianScheme_of_one_le_x0Genus` is the same
+shape and would consume it verbatim, so a `Γ₀` owner should move this down
+rather than restate it. -/
+theorem exists_nonconstant_toAbelianScheme_of_hasNoFibreAffineLine
+    {X S : Scheme.{0}} {strX : X ⟶ S} (hproper : IsProper strX)
+    (hsmooth : SmoothOfRelativeDimension 1 strX) (hconn : GeometricallyConnected strX)
+    (hnr : HasNoFibreAffineLine strX) (o : RelPoint strX (𝟙 S)) (hne : Nonempty X) :
+    ∃ (A : Scheme.{0}) (astr : A ⟶ S) (_ : AbelianSchemeStruct astr) (c : X ⟶ A),
+      c ≫ astr = strX ∧ ∀ s : S ⟶ A, c ≠ strX ≫ s := by
+  obtain ⟨J, jstr, ab, ⟨P⟩⟩ := exists_relPicZero strX hproper hsmooth hconn o
+  have jac : IsJacobianOf strX ab o :=
+    (P.isAlbaneseOf ⟨hproper, hsmooth, hconn⟩).isJacobianOf
+  have hmono : Mono jac.ajHom :=
+    mono_ajHom_of_hasNoFibreAffineLine hproper hsmooth hconn jac hnr
+  refine ⟨J, jstr, ab, jac.ajHom, (jac.aj strX ⟨𝟙 X, Category.id_comp strX⟩).2, ?_⟩
+  intro s hs
+  have hy : (strX ≫ o.1) ≫ strX = strX := by
+    rw [Category.assoc, o.2, Category.comp_id]
+  have hxy : jac.aj strX (⟨𝟙 X, Category.id_comp strX⟩ : RelPoint strX strX)
+      = jac.aj strX ⟨strX ≫ o.1, hy⟩ := by
+    refine Subtype.ext ?_
+    rw [jac.aj_val, jac.aj_val, hs]
+    simp only [Category.id_comp, Category.assoc]
+    rw [← Category.assoc o.1 strX s, o.2, Category.id_comp]
+  have hid : 𝟙 X = strX ≫ o.1 :=
+    congrArg Subtype.val (jac.injective_aj_of_mono hmono strX hxy)
+  exact not_isIso_of_smoothOfRelativeDimension_one hsmooth hne ⟨o.1, hid.symm, o.2⟩
+
+/-- **`HasNoFibreAffineLine` IS STABLE UNDER BASE CHANGE** (PROVEN
+2026-07-30) — formal, and true for the reason the predicate was designed to
+make it true: it is a condition on the FIBRES over field points, and a field
+point of `T` is a field point of `S` once composed with `g`.
+
+The one step that is not pure diagram-chasing is the cancellation of
+`𝔸(Unit; Spec K) ↘ Spec K`, which is legitimate because that projection is a
+SPLIT epimorphism — `AffineSpace.homOfVector (𝟙 _) 0` is a section of it
+(`AffineSpace.homOfVector_over`).  Without a section the cancellation would be
+an epimorphism claim about schemes, which is a much more delicate thing.
+
+No hypothesis on `strX` or on `g` is needed, and none is true by accident:
+the predicate quantifies over ALL fields, so the base change has nothing to
+prove that the original did not. -/
+theorem hasNoFibreAffineLine_baseChange {X S T : Scheme.{0}} {strX : X ⟶ S}
+    (hnr : HasNoFibreAffineLine strX) (g : T ⟶ S) :
+    HasNoFibreAffineLine (curveBaseChangeProj strX g) := by
+  intro K _ k u hu
+  have hu' : (u ≫ Limits.pullback.fst strX g) ≫ strX
+      = (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) ≫ (k ≫ g) := by
+    rw [Category.assoc, Limits.pullback.condition, ← Category.assoc, hu, Category.assoc]
+  obtain ⟨s, hs⟩ := hnr K (k ≫ g) (u ≫ Limits.pullback.fst strX g) hu'
+  have hsplit : (AffineSpace.homOfVector (𝟙 (Spec (CommRingCat.of K)))
+        (fun _ => (0 : Γ(Spec (CommRingCat.of K), ⊤))))
+      ≫ (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) = 𝟙 _ :=
+    AffineSpace.homOfVector_over _ _
+  have h : s ≫ strX = k ≫ g := by
+    have h1 : (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) ≫ (s ≫ strX)
+        = (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) ≫ (k ≫ g) := by
+      rw [← Category.assoc, ← hs, hu']
+    calc s ≫ strX
+        = 𝟙 _ ≫ (s ≫ strX) := (Category.id_comp _).symm
+      _ = _ := by rw [← hsplit, Category.assoc, h1, ← Category.assoc, hsplit, Category.id_comp]
+  refine ⟨Limits.pullback.lift s k h, ?_⟩
+  apply Limits.pullback.hom_ext
+  · rw [Category.assoc, Limits.pullback.lift_fst]; exact hs
+  · rw [Category.assoc, Limits.pullback.lift_snd]; exact hu
+
+/-- **RATIONALITY OF THE GEOMETRIC FIBRE CONTROLS RATIONAL CURVES OVER EVERY
+FIELD** (sorry leaf, NEW 2026-07-30) — the first of the two residues of
+`exists_nonconstant_toAbelianScheme_of_notGeometricallyRational` below, and
+the one that is pure birational geometry: no Picard scheme, no abelian
+variety, no genus, no `N`.
+
+TRUE.  Suppose some field `K'`, some `k' : Spec K' ⟶ Spec K` and some
+`u : 𝔸¹_{K'} ⟶ X_K` over `k'` fails to factor through a `K'`-point.  Base
+changing to `K'` makes `u` a nonconstant `K'`-morphism `𝔸¹_{K'} ⟶ X_{K'}`, so
+`X0.lean`'s PROVEN `birationalOver_affineLine_of_not_exists_section` makes
+`X_{K'}` birational to `𝔸¹_{K'}` over `K'`; and birationality of geometrically
+integral schemes ASCENDS along a field extension (a dense open stays dense
+under flat base change, and the partial isomorphism base changes), so `X_L` is
+birational to `𝔸¹_L` over `L := K'^alg`.  That contradicts `hgeom L`, `L` being
+an algebraically closed field over `K`.
+
+**THE ONE MISSING INGREDIENT, NAMED, so a prover knows what is being asked**:
+`Mathlib`'s `Scheme.BirationalOver` has `refl`, `symm`, `trans`,
+`isRationalOver` and `Opens.birationalOver_of_dense`, and **no base-change
+lemma at all** (checked 2026-07-30 by grepping
+`Mathlib/AlgebraicGeometry/Birational/`).  So the ascent step above has to be
+written; everything else in the paragraph is already in tree.  `hsmooth` and
+`hconn` are exactly what
+`birationalOver_affineLine_of_not_exists_section` consumes, and are the reason
+they are hypotheses here rather than only on the consumer.
+
+**WHY `hgeom` MAY BE QUANTIFIED OVER ALGEBRAICALLY CLOSED `L` ONLY, while the
+conclusion ranges over EVERY field.**  That asymmetry is the whole content:
+`HasNoFibreAffineLine` is a statement about rational curves, which is a
+geometric property, so it is detected on the geometric fibre.  Over a
+NON-closed field the two are genuinely different — the pointless conic
+`x² + y² + z² = 0` over `ℝ` carries no nonconstant `𝔸¹_ℝ` and is not
+birational to `𝔸¹_ℝ`, yet becomes `ℙ¹` over `ℂ` — but that difference goes the
+SAFE way here: it can only make the hypothesis stronger, never the conclusion.
+The conic is not a counterexample to this leaf, because it FAILS `hgeom` at
+`L = ℂ`.
+
+**NOT VACUOUS.**  `hgeom` is satisfiable — any genus-`≥ 1` curve satisfies it —
+and `HasNoFibreAffineLine` is a real constraint, refuted by `ℙ¹`. -/
+theorem hasNoFibreAffineLine_of_notGeometricallyRational
+    {X S : Scheme.{0}} {strX : X ⟶ S}
+    (hsmooth : SmoothOfRelativeDimension 1 strX) (hconn : GeometricallyConnected strX)
+    (K : Type) [Field K] (k : Spec (CommRingCat.of K) ⟶ S)
+    (hgeom : ∀ (L : Type) [Field L] [Algebra K L] [IsAlgClosed L],
+      ¬ Scheme.BirationalOver
+          (curveBaseChangeProj strX (Spec.map (CommRingCat.ofHom (algebraMap K L)) ≫ k))
+          (𝔸(Unit; Spec (CommRingCat.of L)) ↘ Spec (CommRingCat.of L))) :
+    HasNoFibreAffineLine (curveBaseChangeProj strX k) :=
+  sorry
+
+/-- **THE BASE-POINT-FREE REDUCTION: a nonconstant map to an abelian variety
+DESCENDS from an extension over which the curve acquires a rational point**
+(sorry leaf, NEW 2026-07-30) — the second residue of
+`exists_nonconstant_toAbelianScheme_of_notGeometricallyRational` below, and
+the ONLY place where the missing section is still owed.
+
+It is the exact statement of the gap that leaf's audit names first: Abel–Jacobi
+`x ↦ [x] − [o]` needs a `K`-rational base point, and a smooth proper
+geometrically connected curve over `K` need not have one — a genus-`1` curve
+with `C(K) = ∅` is the standard witness.
+
+TRUE, by the classical repair.  `hconn` makes `C` nonempty, and `C` is of
+finite type over `K` by `hproper`, so it has a closed point; `C` is smooth over
+`K`, so it has a closed point whose residue field `L` is a FINITE SEPARABLE
+extension of `K` (the `K^sep`-points of a smooth `K`-scheme are dense).  The
+graph of that point is an `L`-rational point of `C_L`, so `hsec L` applies and
+gives an abelian variety `A/L` with a nonconstant `c : C_L ⟶ A`.  Weil
+restriction `Res_{L/K} A` along the finite étale `L/K` is then an abelian
+variety over `K`, the unit `C ⟶ Res_{L/K}(C_L)` is a `K`-morphism, and the
+composite `C ⟶ Res_{L/K}(C_L) ⟶ Res_{L/K}(A)` is the required map.  It is
+nonconstant because base changing it to `L` and composing with the counit
+`(Res_{L/K} A)_L ⟶ A` recovers `c`, and a constant map stays constant under
+both operations.
+
+**WHAT A PROVER MUST BUILD**: Weil restriction along a finite locally free
+morphism, and the fact that it preserves `AbelianSchemeStruct`.  That is the
+whole residue, and it does not exist at this pin — checked 2026-07-30 with
+`grep -rniE "weil.?restriction" Fermat/ .lake/packages/mathlib/Mathlib/AlgebraicGeometry/`,
+which returns NOTHING.  (Do not run the check as
+`grep restrictScalars` instead: that returns two dozen hits in
+`Modularity/HeckeFrameForm.lean`, all of them `Submodule.restrictScalars`,
+which is module theory and has nothing to do with the scheme-level
+construction.)  Separability of `L/K` is what makes
+`Res_{L/K} A` SMOOTH, which is why the paragraph above insists on a closed
+point with separable residue field rather than an arbitrary one.
+
+**FALSITY AUDIT — `hsec` IS NOT VACUOUS AND IS NOT THE CONCLUSION.**  The
+tempting reading is that `hsec` at `L = K`, `ℓ = 𝟙`, already IS the
+conclusion, making this leaf trivial.  It is not: `hsec` is only usable at an
+`L` for which `C_L` HAS an `L`-rational point, and the whole difficulty is
+that `L = K` need not be such an `L`.  Conversely `hsec` is not vacuous —
+its consumer discharges it, for every `L` at once, from
+`exists_nonconstant_toAbelianScheme_of_hasNoFibreAffineLine` above.
+
+**`hproper`, `hsmooth`, `hconn` ARE ALL LOAD-BEARING**, and each for a
+different step: `hconn` for nonemptiness, `hproper` for finite type (hence a
+closed point with finite residue extension), `hsmooth` for separability of that
+extension.  Dropping `hsmooth` does not obviously refute the statement, but it
+removes the only reason `Res_{L/K} A` is smooth, so it is not decoration.
+
+**RELOCATION NOTE**, as for the two theorems above: nothing here is `Γ₁`- or
+even modular-specific, and `X0.lean`'s open
+`exists_nonconstant_toAbelianScheme_of_one_le_x0Genus` would consume it
+verbatim. -/
+theorem exists_nonconstant_toAbelianScheme_of_baseChange_relPoint
+    {C : Scheme.{0}} {K : Type} [Field K] {cstr : C ⟶ Spec (CommRingCat.of K)}
+    (hproper : IsProper cstr) (hsmooth : SmoothOfRelativeDimension 1 cstr)
+    (hconn : GeometricallyConnected cstr)
+    (hsec : ∀ (L : Type) [Field L] (ℓ : Spec (CommRingCat.of L) ⟶ Spec (CommRingCat.of K)),
+      RelPoint (curveBaseChangeProj cstr ℓ) (𝟙 (Spec (CommRingCat.of L))) →
+      ∃ (A : Scheme.{0}) (astr : A ⟶ Spec (CommRingCat.of L)) (_ : AbelianSchemeStruct astr)
+        (c : curveBaseChange cstr ℓ ⟶ A),
+        c ≫ astr = curveBaseChangeProj cstr ℓ ∧
+          ∀ s : Spec (CommRingCat.of L) ⟶ A, c ≠ curveBaseChangeProj cstr ℓ ≫ s) :
+    ∃ (A : Scheme.{0}) (astr : A ⟶ Spec (CommRingCat.of K)) (_ : AbelianSchemeStruct astr)
+      (c : C ⟶ A), c ≫ astr = cstr ∧
+        ∀ s : Spec (CommRingCat.of K) ⟶ A, c ≠ cstr ≫ s :=
+  sorry
+
 /-- **`Pic⁰` AND THE DEGREE-`n` ABEL–JACOBI MAP: a GEOMETRICALLY
 non-rational fibre receives a nonconstant map to an abelian variety**
-(sorry leaf, cut 2026-07-30) — the geometric half of
+(**PROVEN 2026-07-30 by decomposition**; a sorry leaf cut earlier the same
+day) — the geometric half of
 `exists_nonconstant_toAbelianScheme_of_one_le_x1Genus` below.
 
 **LEVEL-FREE: no `N`, no `Gamma1Datum`, no modular curve.**  It is stated
@@ -14314,44 +14552,73 @@ hypothesis.)  That gap IS the degree-`n` trick, and closing this leaf means
 either extending that development to the base-point-free case or producing
 the section some other way.
 
-**THERE IS A SECOND GAP, AND IT IS NOT THE SECTION** (2026-07-30).  The
-paragraph above names the missing base point and stops, which reads as
-"one extension of `RelativePicard.lean` and this closes".  It does not:
-the nonconstancy clause needs `Pic⁰` to have POSITIVE DIMENSION, and the
-only thing offered for that is `hgeom`.  Getting from `hgeom` to it is the
-implication
+**THE "SECOND GAP" THIS DOCSTRING RECORDED WAS NOT REAL, AND THE AUDIT THAT
+RECORDED IT IS HEREBY WITHDRAWN** (2026-07-30, by proving the thing it said
+was absent).  The withdrawn text read: *"the nonconstancy clause needs `Pic⁰`
+to have POSITIVE DIMENSION, and the only thing offered for that is `hgeom`.
+Getting from `hgeom` to it is the implication — over an algebraically closed
+field, a smooth proper connected curve with `Pic⁰ = 0` is birational to `𝔸¹`
+— which is Riemann–Roch content and is absent at this pin … So this leaf is
+blocked on TWO theories, not one, and a cut that only splits off the
+base-point-free `Pic⁰` is a RESTATEMENT."*  A companion paragraph added that
+the Riemann–Roch implication "is the shared blocker of both leaves", and that
+the two leaves needed OPPOSITE directions of it.
 
-> over an algebraically closed field, a smooth proper connected curve with
-> `Pic⁰ = 0` is birational to `𝔸¹`,
+**Every clause of that is wrong, and the error is a search along the wrong
+axis.**  The audit searched for a statement about `Pic⁰` being ZERO, and there
+is indeed no such statement at this pin.  What the nonconstancy clause actually
+needs is that Abel–Jacobi is a MONOMORPHISM, and that is
+`X0.lean`'s `mono_ajHom_of_hasNoFibreAffineLine` — PROVEN 2026-07-27 over an
+ARBITRARY base, level-free, over two directly-proven sub-theorems
+(`universallyInjective_ajHom_of_hasNoFibreAffineLine` and
+`formallyUnramified_ajHom_of_hasNoFibreAffineLine`), sitting in the file this
+one imports.  Its hypothesis is `HasNoFibreAffineLine`, which is precisely a
+"no rational fibre" condition of the same shape as `hgeom`.
 
-which is Riemann–Roch content and is absent at this pin by exactly the
-audit that `exists_nonconstant_toAbelianScheme_of_one_le_x1Genus` below
-records under "THE AXIS THIS DECOMPOSITION IS NOT" — "a genus of a scheme,
-`h¹(𝒪_X)`, Riemann–Hurwitz — none of those exists at this pin".  That
-verdict was made about the ARITHMETIC half and applies here verbatim.  So
-this leaf is blocked on TWO theories, not one,
-and a cut that only splits off the base-point-free `Pic⁰` is a
-RESTATEMENT: the residue would be this same implication with a `Pic⁰` in
-front of it.  Note the phrasing above is deliberately `Pic⁰`-only — no
-genus NUMBER is needed, which is why the two halves are separable in
-principle even though neither is available.
+**BE PRECISE ABOUT WHAT THAT DOES AND DOES NOT SETTLE** (checked against the
+release build's warning set, 2026-07-30, so this paragraph is not a prose
+claim).  The Riemann–Roch content is not CLOSED — it is STATED, REDUCED and
+OWNED, which is a different thing from "absent at this pin" and is what makes
+the difference here.  Underneath those two theorems sit exactly two open
+`X0.lean` leaves, `birationalOver_affineLine_of_relPicEquiv_sectionIdeal` and
+`exists_birationalOver_affineLine_of_relPicEquiv_sectionIdeal_of_sqZero`
+(Abel's theorem: `[x] = [y]` with `x ≠ y` makes some function have a single
+simple pole, hence a degree-`1` map to `ℙ¹`).  They are `X0.lean`'s leaves,
+with `X0.lean` owners; this leaf owes them nothing and merely consumes them,
+exactly as its already-proven neighbours in this file do.  What the withdrawn
+audit got wrong is not "is Riemann–Roch finished" but "does a statement of it
+exist here to consume" — and one has existed since 2026-07-27, three days
+before the audit was written.
 
-**EXACTLY ONE OF THE TWO GAPS IS AN ARTEFACT OF `K` BEING ARBITRARY**
-(2026-07-30, and it is the discriminator between this leaf and its
-arithmetic sibling).  The first gap — the missing section — is entirely
-about the arithmetic of `K`: over an ALGEBRAICALLY CLOSED field a nonempty
-finite-type scheme has a rational point, so
-`not_birationalOver_affineLine_of_one_le_x1Genus_field` above can apply
-`RelativePicard.lean`'s `exists_relPicZero` VERBATIM and owes no
-base-point-free `Pic⁰` at all.  The second gap does NOT close that way:
-"a smooth proper connected curve with `Pic⁰ = 0` is birational to `𝔸¹`" is
-Riemann–Roch whatever the field, and it is the shared blocker of both
-leaves.  So a successor deciding where to spend a cycle should know that
-extending `RelativePicard.lean` to the base-point-free case buys THIS leaf
-and nothing else, whereas the Riemann–Roch implication buys both — and that
-the two leaves need OPPOSITE directions of it (this one needs
-`Pic⁰ = 0 ⟹ birational`, the arithmetic one needs
-`birational ⟹ Pic⁰ = 0`), so neither subsumes the other.
+The three lines that turn `Mono ajHom` into the nonconstancy clause were
+already written too, in `X0.lean`'s `hasNonconstantAbelianMap_of_one_le_x0Genus`
+(`injective_aj_of_mono` plus `not_isIso_of_smoothOfRelativeDimension_one`).
+They are now hoisted into `exists_nonconstant_toAbelianScheme_of_hasNoFibreAffineLine`
+above, in the base-general sectioned form, and this leaf is PROVEN over that
+plus the two residues named below.
+
+**GENERAL LESSON, since this is the second audit in this cluster to fail the
+same way**: an "absent at this pin" verdict is only as good as the shape it
+searched for.  Search for the INVARIANT the proof needs (here: injectivity of
+Abel–Jacobi), not for the classical statement one would quote in prose (here:
+`dim Pic⁰ ≥ 1`).
+
+**WHAT THE DECOMPOSITION LEAVES**, both stated and audited above:
+
+* `hasNoFibreAffineLine_of_notGeometricallyRational` — `hgeom` on the
+  ALGEBRAICALLY CLOSED fibres upgrades to `HasNoFibreAffineLine` over EVERY
+  field.  Pure birational geometry; its one missing ingredient is a
+  base-change lemma for `Scheme.BirationalOver`, which `Mathlib` does not
+  have.
+* `exists_nonconstant_toAbelianScheme_of_baseChange_relPoint` — the section.
+  This is the FIRST gap above, unchanged and still real, now isolated with
+  nothing else attached to it: its residue is Weil restriction along a finite
+  separable extension, and nothing about genus, `Pic⁰` or Riemann–Roch.
+
+The frontier goes from one leaf to two, which is what decomposition costs.
+The withdrawn audit's practical advice inverts accordingly: extending
+`RelativePicard.lean` to the base-point-free case is NOT what this leaf needs —
+Weil restriction is, and it is cheaper.
 
 **THE DEGENERATE REFUTATION DOES NOT RUN, so do not spend a cycle on it**
 (checked 2026-07-30 by reading
@@ -14386,8 +14653,24 @@ theorem exists_nonconstant_toAbelianScheme_of_notGeometricallyRational
     ∃ (A : Scheme.{0}) (astr : A ⟶ Spec (CommRingCat.of K))
       (_ : AbelianSchemeStruct astr) (c : curveBaseChange strX k ⟶ A),
       c ≫ astr = curveBaseChangeProj strX k ∧
-        ∀ s : Spec (CommRingCat.of K) ⟶ A, c ≠ curveBaseChangeProj strX k ≫ s :=
-  sorry
+        ∀ s : Spec (CommRingCat.of K) ⟶ A, c ≠ curveBaseChangeProj strX k ≫ s := by
+  haveI := hproper
+  haveI := hsmooth
+  haveI := hconn
+  haveI hs' : SmoothOfRelativeDimension 1 (curveBaseChangeProj strX k) := by
+    haveI := smoothOfRelativeDimension_isStableUnderBaseChange (n := 1)
+    exact MorphismProperty.pullback_snd _ _ ‹SmoothOfRelativeDimension 1 strX›
+  have hnr : HasNoFibreAffineLine (curveBaseChangeProj strX k) :=
+    hasNoFibreAffineLine_of_notGeometricallyRational hsmooth hconn K k hgeom
+  refine exists_nonconstant_toAbelianScheme_of_baseChange_relPoint
+    inferInstance hs' inferInstance ?_
+  intro L _ ℓ o
+  haveI : SmoothOfRelativeDimension 1 (curveBaseChangeProj (curveBaseChangeProj strX k) ℓ) := by
+    haveI := smoothOfRelativeDimension_isStableUnderBaseChange (n := 1)
+    exact MorphismProperty.pullback_snd _ _ hs'
+  exact exists_nonconstant_toAbelianScheme_of_hasNoFibreAffineLine
+    inferInstance inferInstance inferInstance (hasNoFibreAffineLine_baseChange hnr ℓ) o
+    ⟨o.1.base (Nonempty.some inferInstance)⟩
 
 /-- **EICHLER–SHIMURA, FIBREWISE, AT `Γ₁`: `genus X_1(N) ≥ 1` gives EVERY
 fibre of `X_1(N)` a nonconstant map to an abelian variety** (**PROVEN
@@ -14553,9 +14836,11 @@ It is NO LONGER "the ONLY place where the computed number `x1Genus N` meets
 the scheme `X`": after the cuts above that role belongs to
 `not_birationalOver_affineLine_of_one_le_x1Genus_algClosed`, which is
 since 2026-07-30 the single ARITHMETIC leaf of the whole `Γ₁` genus
-formula — the one other residual leaf,
-`exists_nonconstant_toAbelianScheme_of_notGeometricallyRational`, is
-level-free and mentions no `N`.
+formula — the other residual leaves,
+`hasNoFibreAffineLine_of_notGeometricallyRational` and
+`exists_nonconstant_toAbelianScheme_of_baseChange_relPoint` (the two residues
+of `exists_nonconstant_toAbelianScheme_of_notGeometricallyRational`, which is
+PROVEN over them since 2026-07-30), are level-free and mention no `N`.
 
 `HasNoFibreAffineLine` itself is `X0.lean`'s, REUSED VERBATIM — it is
 level-free, and the whole point of the seam is that only the arithmetic
@@ -14951,7 +15236,9 @@ disappearing:
 | `not_birationalOver_affineLine_of_one_le_x1Genus_algClosed` | genus formula, over `K̄`, in characteristic prime to `N` | **yes** | here, NEW 2026-07-30, RESTATED the same day (`hchar`; the unguarded form is FALSE — `Ig(11)`), then **PROVEN 2026-07-30** over the two rows below |
 | `exists_isX1Compactification_baseChange` | the fibre of an `X_1(N)`-compactification is one over its own base field; Katz–Mazur representability, NO genus | no | here, NEW 2026-07-30 (rigidity of `[Γ₁(N)]` for `N ≥ 5` is proven outright on the declaration, in every characteristic) |
 | `not_birationalOver_affineLine_of_one_le_x1Genus_field` | genus formula over a SINGLE algebraically closed field, NO base change — the row above minus its moduli half | **yes** | here, NEW 2026-07-30 |
-| `exists_nonconstant_toAbelianScheme_of_notGeometricallyRational` | `Pic⁰` + degree-`n` Abel–Jacobi | no | here, NEW 2026-07-30, LEVEL-FREE |
+| `exists_nonconstant_toAbelianScheme_of_notGeometricallyRational` | `Pic⁰` + degree-`n` Abel–Jacobi | no | here, NEW 2026-07-30, LEVEL-FREE, **PROVEN 2026-07-30** over the two rows below |
+| `hasNoFibreAffineLine_of_notGeometricallyRational` | rational curves in fibres over EVERY field, from the geometric fibre | no | here, NEW 2026-07-30, LEVEL-FREE |
+| `exists_nonconstant_toAbelianScheme_of_baseChange_relPoint` | the missing SECTION, isolated: Weil restriction | no | here, NEW 2026-07-30, LEVEL-FREE |
 | `not_isIso_of_smoothOfRelativeDimension_one` | rel. dimension of a standard smooth presentation | no | `CurveCompactification.lean`, REUSED, **PROVEN 2026-07-28** |
 
 **Only TWO of the open rows are level-specific**, and neither of them
