@@ -8,12 +8,21 @@ module
 public import Fermat.FLT.Mathlib.NumberTheory.NumberField.FiniteAdeleRing
 public import Fermat.FLT.QuaternionAlgebra.NumberField
 public import Fermat.FLT.DivisionAlgebra.Finiteness
+-- Both of the next two are ALREADY in this module's transitive cone (through
+-- `DivisionAlgebra.Finiteness` and `QuaternionAlgebra.NumberField` respectively), but only
+-- via BARE `import`s there, which are not re-exported. `finite_setOf_tmul_mem_of_isCompact`
+-- below needs `inter_Discrete` and the `IsModuleTopology R (Matrix m n R)` instance in a
+-- proof body, so they must arrive `public`. Cone growth: zero.
+public import Fermat.FLT.Mathlib.Topology.HomToDiscrete
+public import Fermat.FLT.Mathlib.Topology.Instances.Matrix
 public import Fermat.FLT.AutomorphicForm.GroupTheoryStuff
 public import Fermat.FLT.AutomorphicForm.Stuff
 public import Fermat.FLT.Mathlib.GroupTheory.DoubleCoset
 public import Mathlib.GroupTheory.DoubleCoset
 public import Mathlib.NumberTheory.NumberField.InfinitePlace.TotallyRealComplex
 public import Mathlib.LinearAlgebra.TensorProduct.Pi
+public import Mathlib.GroupTheory.FiniteAbelian.Basic
+public import Mathlib.NumberTheory.NumberField.Units.DirichletTheorem
 
 /-!
 
@@ -75,8 +84,31 @@ carries both.**
   finite) and `relIndex_normImage_ne_zero` (Dirichlet units mod fourth powers;
   no definiteness).
 
-So the closure's ONLY unproven statements are now the two
-`finite_normOne_units_inf_comap` and `relIndex_normImage_ne_zero`.
+**Both of those were then PROVEN in turn (2026-07-28), from three smaller leaves.**
+The closure's only unproven statements are now (`comap_le_range_units_integers_of_isCompact`,
+the third leaf of that decomposition, was PROVEN the same day, and Dirichlet's unit
+theorem was never a leaf — mathlib's `Monoid.FG (𝓞 K)ˣ` supplies it via
+`subgroup_fg_of_le_fg`):
+
+* `isCompact_normOne_infiniteAdele` — `{x ∈ D ⊗ 𝔸^∞ : Nm(x) = 1}` is compact. Now
+  PROVEN (2026-07-28), decomposed over the infinite places into three new leaves, of
+  which the definiteness-carrying one is now itself PROVEN (2026-07-28):
+  `exists_ringEquiv_quaternion_of_isTotallyDefinite` (`D ⊗ F_v ≃+* ℍ` topologically —
+  the ONLY consumer of `IsQuaternionAlgebra.IsTotallyDefinite` in the file) is CLOSED,
+  leaving `norm_infiniteAdele_apply` (the norm is componentwise) and
+  `continuous_infiniteAdeleTensorPiEquiv_symm` (the decomposition is a homeomorphism).
+  Those two are definiteness-free and were both PROVEN 2026-07-28
+  (`flt-lean-293`), so ALL THREE of the leaves under
+  `isCompact_normOne_infiniteAdele` are now closed and no sorried leaf in this
+  file carries total definiteness — indeed this file is now SORRY-FREE. The
+  place-local half
+  `isCompact_normOne_completion` is PROVEN, on the way proving
+  `norm_quaternion_eq_normSq_sq` (`Nm_{ℍ/ℝ} = normSq²`, absent from the pin) and
+  `isCompact_normOne_quaternion`.
+* `finite_setOf_tmul_mem_of_isCompact` — `D` is discrete and closed in `D ⊗ 𝔸_F`,
+  so `D ∩ (compact × compact)` is finite. Uses neither definiteness nor total
+  reality; it is the `[Ring D]` form of `Aux.T_finite` in
+  `Fermat/FLT/DivisionAlgebra/Finiteness.lean`.
 
 **This subtree is currently FREE-FLOATING.** Nothing in the transitive cone of
 `fermat_last_theorem` consumes it yet. It was vendored to close the "the pin has
@@ -769,8 +801,1019 @@ theorem relIndex_ray_ne_zero (ℒ : LevelStruct F R) :
     (ℒ.isOpen_U.preimage hcont)
     (Nat.eq_zero_of_zero_dvd (h0 ▸ Subgroup.index_dvd_of_le hle))
 
+/-! ### General group theory and topology used by Voight 17.7.13
+
+Two lemmas with no arithmetic content, kept dot-free so that they do not create
+nested `Subgroup`/`Group` namespaces inside `TotallyDefiniteQuaternionAlgebra`. -/
+
+/-- A subgroup of a finitely generated subgroup of a COMMUTATIVE group is finitely
+generated. (`ℤ` is Noetherian, so a f.g. `ℤ`-module has f.g. submodules.) -/
+theorem subgroup_fg_of_le_fg {A : Type*} [CommGroup A] {H K : Subgroup A}
+    (hK : K.FG) (hHK : H ≤ K) : H.FG := by
+  haveI hKfg : Group.FG K := (Group.fg_iff_subgroup_fg K).mpr hK
+  haveI hfin : Module.Finite ℤ (Additive K) := Module.Finite.iff_addGroup_fg.mpr inferInstance
+  have h1 : (AddSubgroup.toIntSubmodule (Subgroup.toAddSubgroup (H.subgroupOf K))).FG :=
+    IsNoetherian.noetherian _
+  rw [Submodule.fg_iff_addSubgroup_fg, AddSubgroup.toIntSubmodule_toAddSubgroup,
+    ← Subgroup.fg_iff_add_fg] at h1
+  haveI : Group.FG (H.subgroupOf K) := (Group.fg_iff_subgroup_fg _).mpr h1
+  haveI : Group.FG H := Group.fg_of_surjective
+    (f := (Subgroup.subgroupOfEquivOfLe hHK).toMonoidHom)
+    (Subgroup.subgroupOfEquivOfLe hHK).surjective
+  exact (Group.fg_iff_subgroup_fg H).mp inferInstance
+
+/-- An OPEN subgroup meets a COMPACT subgroup in finite relative index: `U ⊓ C` is open
+in the compact group `C`, so `C/(U ⊓ C)` is discrete and compact, hence finite. -/
+theorem relIndex_ne_zero_of_isCompact_of_isOpen {G : Type*} [Group G] [TopologicalSpace G]
+    [IsTopologicalGroup G] (C U : Subgroup G) (hC : IsCompact (C : Set G))
+    (hU : IsOpen (U : Set G)) : (C ⊓ U).relIndex C ≠ 0 := by
+  haveI : CompactSpace C := isCompact_iff_compactSpace.mp hC
+  have hopen : IsOpen ((U.subgroupOf C : Subgroup C) : Set C) :=
+    hU.preimage continuous_subtype_val
+  haveI : Finite (C ⧸ U.subgroupOf C) := Subgroup.quotient_finite_of_isOpen _ hopen
+  rw [Subgroup.relIndex, Subgroup.inf_subgroupOf_left]
+  exact Subgroup.index_ne_zero_of_finite
+
+/-! ### The three homomorphisms out of `Fˣ` and `GL₂(𝔸ᶠ)` used below -/
+
+variable (F) in
+/-- `Fˣ →* 𝔸ᶠˣ`. -/
+abbrev unitsAlgebraMapAdele : Fˣ →* 𝔸ᶠ[F]ˣ :=
+  Units.map (RingHom.toMonoidHom (algebraMap F 𝔸ᶠ[F]))
+
+variable (F) in
+/-- `Fˣ →* GL₂(𝔸ᶠ)`, the scalar matrices. -/
+abbrev unitsAlgebraMapMatrix : Fˣ →* GL₂(𝔸ᶠ[F]) :=
+  Units.map (RingHom.toMonoidHom (algebraMap F M₂(𝔸ᶠ[F])))
+
+variable (F) in
+/-- `GL₂(𝔸ᶠ) →* 𝔸ᶠˣ`, the `𝔸ᶠ`-algebra norm of `M₂(𝔸ᶠ)` restricted to units.
+On `M₂` it is `m ↦ det(m)²`, so on the image of `Dˣ` it computes `Nm_{D/F}` — see
+`unitsNormMatrix_unitsIncl`. -/
+abbrev unitsNormMatrix : GL₂(𝔸ᶠ[F]) →* 𝔸ᶠ[F]ˣ :=
+  Units.map (Algebra.norm 𝔸ᶠ[F] (S := M₂(𝔸ᶠ[F])))
+
+omit [WithRigidification F D] in
+lemma continuous_unitsNormMatrix : Continuous (unitsNormMatrix F) := by
+  refine Units.continuous_map ?_
+  have h : ⇑(Algebra.norm 𝔸ᶠ[F] (S := M₂(𝔸ᶠ[F]))) = fun m : M₂(𝔸ᶠ[F]) => m.det ^ 2 := by
+    ext m; simp
+  rw [h]
+  fun_prop
+
+omit [WithRigidification F D] in
+lemma unitsAlgebraMapMatrix_eq : unitsAlgebraMapMatrix F =
+    (Units.map (RingHom.toMonoidHom (algebraMap 𝔸ᶠ[F] M₂(𝔸ᶠ[F])))).comp
+      (unitsAlgebraMapAdele F) := by
+  ext x
+  simp [← IsScalarTower.algebraMap_apply, RingHom.toMonoidHom_eq_coe]
+
+/-- `Nm_{M₂(𝔸ᶠ)/𝔸ᶠ} ∘ ι = Nm_{D/F}` on `Dˣ`. This is `WithRigidification.det_incl_sq`
+packaged as an identity of maps into `𝔸ᶠˣ`. -/
+lemma unitsNormMatrix_unitsIncl [IsQuaternionAlgebra F D] (d : Dˣ) :
+    unitsNormMatrix F (WithRigidification.unitsIncl F D d) =
+      unitsAlgebraMapAdele F (Units.map (Algebra.norm F (S := D)) d) := by
+  ext1
+  simpa using WithRigidification.det_incl_sq F (d : D)
+
+omit [WithRigidification F D] in
+/-- `Nm(λ · 1) = λ⁴` for a scalar matrix, since `finrank 𝔸ᶠ M₂(𝔸ᶠ) = 4`. -/
+lemma unitsNormMatrix_unitsAlgebraMapMatrix (x : Fˣ) :
+    unitsNormMatrix F (unitsAlgebraMapMatrix F x) = (unitsAlgebraMapAdele F x) ^ 4 := by
+  ext1
+  have h4 : Module.finrank 𝔸ᶠ[F] M₂(𝔸ᶠ[F]) = 4 := by
+    simp [Module.finrank_matrix]
+  simp only [Units.coe_map, MonoidHom.coe_coe, RingHom.toMonoidHom_eq_coe, Units.val_pow_eq_pow_val]
+  rw [show ((algebraMap F M₂(𝔸ᶠ[F])) (x : F)) = algebraMap 𝔸ᶠ[F] M₂(𝔸ᶠ[F])
+      (algebraMap F 𝔸ᶠ[F] (x : F)) from (IsScalarTower.algebraMap_apply _ _ _ _)]
+  rw [Algebra.norm_algebraMap, h4]
+
+omit [NumberField F] [WithRigidification F D] in
+/-- `Nm_{D/F}(λ · 1) = λ⁴`, since `finrank F D = 4`. -/
+lemma norm_units_algebraMap_eq_pow [IsQuaternionAlgebra F D] (x : Fˣ) :
+    Units.map (Algebra.norm F (S := D)) (x.map (algebraMap F D).toMonoidHom) = x ^ 4 := by
+  ext1
+  simp [IsQuaternionAlgebra.finrank_eq_four F D]
+
+omit [WithRigidification F D] in
+/-- `𝒪̂ = ∏ᵥ 𝒪ᵥ` is OPEN in `𝔸ᶠ[F]`: it is `{f | ∀ v, f v ∈ 𝒪ᵥ}` inside the restricted
+product, and each `𝒪ᵥ` is open in `Fᵥ`. -/
+lemma isOpen_integralAdeles :
+    IsOpen ((IsDedekindDomain.FiniteAdeleRing.integralAdeles (𝓞 F) F : Subring 𝔸ᶠ[F]) :
+      Set 𝔸ᶠ[F]) := by
+  have h : ((IsDedekindDomain.FiniteAdeleRing.integralAdeles (𝓞 F) F : Subring 𝔸ᶠ[F]) :
+      Set 𝔸ᶠ[F]) =
+      {f : 𝔸ᶠ[F] | ∀ v, f.1 v ∈ IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers F v} := by
+    simp only [IsDedekindDomain.FiniteAdeleRing.integralAdeles, RingHom.coe_range]
+    exact RestrictedProduct.range_structureMap ..
+  rw [h]
+  exact RestrictedProduct.isOpen_forall_mem (NumberField.isOpenAdicCompletionIntegers F)
+
+omit [WithRigidification F D] in
+/-- A global element of `F` whose adelic image is everywhere integral lies in `𝓞 F`. -/
+lemma mem_range_algebraMap_of_algebraMap_mem_integralAdeles (y : F)
+    (hy : algebraMap F 𝔸ᶠ[F] y ∈ IsDedekindDomain.FiniteAdeleRing.integralAdeles (𝓞 F) F) :
+    y ∈ (algebraMap (𝓞 F) F).range := by
+  refine IsDedekindDomain.HeightOneSpectrum.mem_integers_of_valuation_le_one F y fun v => ?_
+  obtain ⟨z, hz⟩ := hy
+  have heval : ((algebraMap F 𝔸ᶠ[F] y : 𝔸ᶠ[F]) v) = algebraMap F (v.adicCompletion F) y := rfl
+  have hle : Valued.v ((algebraMap F 𝔸ᶠ[F] y : 𝔸ᶠ[F]) v) ≤ 1 := by
+    rw [← hz]; exact (z v).2
+  rw [heval] at hle
+  rwa [show algebraMap F (v.adicCompletion F) y = (y : v.adicCompletion F) from rfl,
+    IsDedekindDomain.HeightOneSpectrum.valuedAdicCompletion_eq_valuation'] at hle
+
+omit [WithRigidification F D] in
 /--
-**(sorry leaf — the definite archimedean input of Voight 17.7.13.)**
+**PROVEN: a COMPACT subgroup of `𝔸ᶠ[F]ˣ` meets `Fˣ` inside `(𝓞 F)ˣ`.**
+
+**The proof.** `𝒪̂ˣ` is an OPEN subgroup of `𝔸ᶠ[F]ˣ` (`isOpen_integralAdeles` plus
+`Submonoid.isOpen_units`), so it has finite index in the compact `C`
+(`relIndex_ne_zero_of_isCompact_of_isOpen`). Hence for `x ∈ Fˣ` with `j(x) ∈ C` there is
+`n > 0` with `j(xⁿ) = j(x)ⁿ ∈ 𝒪̂ˣ`, i.e. both `xⁿ` and `x⁻ⁿ` are everywhere-integral
+global elements, hence lie in `𝓞 F`
+(`mem_range_algebraMap_of_algebraMap_mem_integralAdeles`, which is
+`IsDedekindDomain.HeightOneSpectrum.mem_integers_of_valuation_le_one`). Then `x` and
+`x⁻¹` are integral over `𝓞 F` by `IsIntegral.of_pow`, and `𝓞 F` is integrally closed in
+`F`, so both lie in `𝓞 F` — i.e. `x` is a unit of `𝓞 F`.
+
+The passage to a power is what removes the need for any "compact ⟹ bounded valuations"
+argument: an open subgroup of finite index already forces `ord_v(xⁿ) = 0`, and `ℤ` is
+torsion-free — here realised as "`xⁿ` integral ⟹ `x` integral".
+
+**COMPACTNESS is load-bearing**: for `C = ⊤` the conclusion is false, since
+`Fˣ ⊄ (𝓞 F)ˣ`.
+
+Note this statement mentions neither `D` nor definiteness: it is about `F` alone. -/
+theorem comap_le_range_units_integers_of_isCompact (C : Subgroup 𝔸ᶠ[F]ˣ)
+    (hC : IsCompact (C : Set 𝔸ᶠ[F]ˣ)) :
+    C.comap (unitsAlgebraMapAdele F) ≤
+      MonoidHom.range (Units.map (algebraMap (𝓞 F) F).toMonoidHom) := by
+  set j : Fˣ →* 𝔸ᶠ[F]ˣ := unitsAlgebraMapAdele F with hj
+  set U : Subgroup 𝔸ᶠ[F]ˣ :=
+    (IsDedekindDomain.FiniteAdeleRing.integralAdeles (𝓞 F) F).toSubmonoid.units with hU
+  have hUopen : IsOpen (U : Set 𝔸ᶠ[F]ˣ) :=
+    Submonoid.isOpen_units isOpen_integralAdeles
+  have hidx : (C ⊓ U).relIndex C ≠ 0 :=
+    relIndex_ne_zero_of_isCompact_of_isOpen C U hC hUopen
+  intro x hx
+  obtain ⟨n, hn0, -, hmem⟩ :=
+    Subgroup.exists_pow_mem_of_relIndex_ne_zero hidx (Subgroup.mem_comap.mp hx)
+  have hmemU : j x ^ n ∈ U := ((Subgroup.mem_inf.mp hmem).1 : _ ∈ C ⊓ U).2
+  have hval : ((j x ^ n : 𝔸ᶠ[F]ˣ) : 𝔸ᶠ[F]) = algebraMap F 𝔸ᶠ[F] ((x : F) ^ n) := by
+    simp [hj, ← map_pow]
+  have hvalinv : (((j x ^ n)⁻¹ : 𝔸ᶠ[F]ˣ) : 𝔸ᶠ[F]) =
+      algebraMap F 𝔸ᶠ[F] (((x⁻¹ : Fˣ) : F) ^ n) := by
+    simp [hj, ← map_pow]
+  have h1 : ((j x ^ n : 𝔸ᶠ[F]ˣ) : 𝔸ᶠ[F]) ∈
+      IsDedekindDomain.FiniteAdeleRing.integralAdeles (𝓞 F) F := hmemU.1
+  have h2 : (((j x ^ n)⁻¹ : 𝔸ᶠ[F]ˣ) : 𝔸ᶠ[F]) ∈
+      IsDedekindDomain.FiniteAdeleRing.integralAdeles (𝓞 F) F := hmemU.2
+  rw [hval] at h1
+  rw [hvalinv] at h2
+  have hposn : ((x : F) ^ n) ∈ (algebraMap (𝓞 F) F).range :=
+    mem_range_algebraMap_of_algebraMap_mem_integralAdeles _ h1
+  have hnegn : (((x⁻¹ : Fˣ) : F) ^ n) ∈ (algebraMap (𝓞 F) F).range :=
+    mem_range_algebraMap_of_algebraMap_mem_integralAdeles _ h2
+  obtain ⟨a, ha⟩ := IsIntegrallyClosed.isIntegral_iff.mp
+    (IsIntegral.of_pow (R := 𝓞 F) hn0
+      (by obtain ⟨c, hc⟩ := hposn; exact hc ▸ isIntegral_algebraMap))
+  obtain ⟨b, hb⟩ := IsIntegrallyClosed.isIntegral_iff.mp
+    (IsIntegral.of_pow (R := 𝓞 F) hn0
+      (by obtain ⟨c, hc⟩ := hnegn; exact hc ▸ isIntegral_algebraMap))
+  have hinj : Function.Injective (algebraMap (𝓞 F) F) := IsFractionRing.injective (𝓞 F) F
+  have hab : a * b = 1 := hinj (by rw [map_mul, ha, hb, map_one]; exact x.mul_inv)
+  have hba : b * a = 1 := hinj (by rw [map_mul, hb, ha, map_one]; exact x.inv_mul)
+  exact ⟨⟨a, b, hab, hba⟩, Units.ext ha⟩
+
+omit [WithRigidification F D] in
+/-- If `C ≤ 𝔸ᶠ[F]ˣ` is COMPACT then `Fˣ ∩ C` is finitely generated: by
+`comap_le_range_units_integers_of_isCompact` it is a subgroup of the image of `(𝓞 F)ˣ`,
+which is finitely generated by Dirichlet's unit theorem (`Monoid.FG (𝓞 K)ˣ`). -/
+theorem fg_comap_unitsAlgebraMapAdele_of_isCompact (C : Subgroup 𝔸ᶠ[F]ˣ)
+    (hC : IsCompact (C : Set 𝔸ᶠ[F]ˣ)) : (C.comap (unitsAlgebraMapAdele F)).FG := by
+  haveI : Group.FG (𝓞 F)ˣ := Group.fg_iff_monoid_fg.mpr inferInstance
+  refine subgroup_fg_of_le_fg ?_ (comap_le_range_units_integers_of_isCompact C hC)
+  exact (Group.fg_iff_subgroup_fg _).mp
+    (Group.fg_range (Units.map (algebraMap (𝓞 F) F).toMonoidHom))
+
+/-! ### The two halves of Voight 17.7.13 -/
+
+section Archimedean
+
+open scoped TensorProduct.RightActions
+
+/-! #### Decomposition of `isCompact_normOne_infiniteAdele` over the infinite places
+
+`isCompact_normOne_infiniteAdele` is PROVEN below from the three leaves in this
+subsection. The three are mutually independent and can be owned separately; only
+the FIRST carries any definiteness (see the audit on it).
+
+The route is the obvious one: `𝔸_F^∞ = ∏_v F_v` *definitionally* (mathlib's
+`NumberField.InfiniteAdeleRing K` is the `def` `(v : InfinitePlace K) → v.Completion`),
+so `D ⊗_F 𝔸_F^∞ ≃ ∏_v (D ⊗_F F_v)` by `tensorPiEquivPiTensor`, the algebra norm is
+computed componentwise along that decomposition, and a product of compacts is compact
+(`isCompact_univ_pi`, Tychonoff — no finiteness of the place set is needed).
+
+**Why not `DinfTensorPiEquivPiTensor`.** The docstring this replaced pointed at
+`NumberField.AdeleRing.DivisionAlgebra.Aux.InfiniteAdeleRing.DinfTensorPiEquivPiTensor`
+in `Fermat/FLT/DivisionAlgebra/Finiteness.lean`, which is exactly this decomposition
+and is even already a `≃L[ℝ]`. It is NOT usable here as it stands: the whole of
+`Finiteness.lean` sits under `variable (D) [DivisionRing D]`, and so do the `Algebra ℝ`,
+`Module.Finite ℝ` and `IsModuleTopology ℝ` instances on `D ⊗[K] v.Completion` that its
+continuity proof runs on — while here `D` is only a `[Ring D]`. (Verified by probe: with
+`[Ring D] [IsQuaternionAlgebra F D]` the `v.Completion`- and `𝔸^∞`-module topologies on
+`D ⊗[F] v.Completion` and `D ⊗[F] 𝔸^∞` DO resolve, but every `ℝ`-structure on them fails
+to synthesize.) This is the same `[DivisionRing D]`-vs-`[Ring D]` obstruction that
+`finite_setOf_tmul_mem_of_isCompact` records below.
+
+**RESOLVED 2026-07-28 (`flt-lean-293`) by a THIRD way out that this paragraph missed, and
+that is cheaper than either it names.** The two routes recorded here were: relax
+`Finiteness.lean` to `[Ring D]`, or derive `DivisionRing D` from total definiteness via
+`IsQuaternionAlgebra.nomepty_algEquiv_matrix_or_forall_isUnit`. Neither was needed. The whole
+`ℝ`-scaffolding of `Finiteness.lean` exists only because `DinfTensorPiEquivPiTensor` is stated
+as a `≃L[ℝ]`; but nothing here has to go through `ℝ`.
+`Fermat/FLT/Hacks/RightActionInstances.lean` already provides, under
+`[AddCommMonoid M] [Module R M] [Module.Finite R M]` and nothing else, BOTH
+`TensorProduct.RightActions.Algebra.TensorProduct.basis` (an `A`-basis of `M ⊗[R] A`) AND the
+scoped instance `IsModuleTopology A (M ⊗[R] A)`. Working over `𝔸_F^∞` and `F_v` as the base
+rings rather than `ℝ`, both leaves go through at `[Ring D]` with no relaxation and no
+instance-diamond check. See the helper block below. (The probe result quoted just above is
+CORRECT and is exactly what makes the third route work: it is the `ℝ`-structures that fail and
+the `v.Completion`/`𝔸^∞` ones that resolve.) -/
+
+variable (F D) in
+/-- The decomposition `D ⊗_F 𝔸_F^∞ ≃ ∏_v (D ⊗_F F_v)` over the infinite places, as an
+`F`-linear equivalence. This is just `tensorPiEquivPiTensor` (`D` is finite free over the
+field `F`), ascribed at the source type `D ⊗[F] 𝔸_F^∞` rather than at the unfolded
+`D ⊗[F] ((v : InfinitePlace F) → v.Completion)`: the two are definitionally equal, but
+instance search is keyed on the head symbol, so `Algebra (𝔸_F^∞) (D ⊗[F] 𝔸_F^∞)` is not
+found at the unfolded form and `Algebra.norm (𝔸_F^∞) (e.symm y)` fails to elaborate
+without this ascription. -/
+def infiniteAdeleTensorPiEquiv [IsQuaternionAlgebra F D] :
+    (D ⊗[F] (NumberField.InfiniteAdeleRing F)) ≃ₗ[F]
+      Π v : NumberField.InfinitePlace F, D ⊗[F] v.Completion :=
+  tensorPiEquivPiTensor F D NumberField.InfinitePlace.Completion
+
+/-! #### Helpers for `norm_infiniteAdele_apply` and `continuous_infiniteAdeleTensorPiEquiv_symm`
+
+**NEW BLOCK (2026-07-28, `flt-lean-293`).** Everything between here and
+`norm_infiniteAdele_apply` is new and is deliberately kept contiguous and separate from the
+surrounding material so that concurrent edits to this file merge cleanly.
+
+Nothing here uses total definiteness or total reality, and nothing uses `IsQuaternionAlgebra`
+beyond the `Module.Finite F D` instance it supplies: these are statements about an arbitrary
+finite free `F`-algebra base-changed along `𝔸_F^∞ = ∏_v F_v`.
+
+**The `[DivisionRing D]` obstruction recorded in the subsection docstring above is real but
+AVOIDABLE.** `Fermat/FLT/DivisionAlgebra/Finiteness.lean` is indeed still under
+`variable (D) [DivisionRing D]` as of this commit (checked, not assumed), so
+`DinfTensorPiEquivPiTensor` and `tensorPi_equiv_piTensor_map_mul` are genuinely inapplicable
+here. But the route below never mentions `ℝ` at all, and so needs neither that relaxation nor
+a `DivisionRing D` instance manufactured from definiteness.
+`Fermat/FLT/Hacks/RightActionInstances.lean` already provides — at
+`[AddCommMonoid M] [Module R M] [Module.Finite R M]` and nothing more — both the right-handed
+basis `TensorProduct.RightActions.Algebra.TensorProduct.basis` giving an `A`-basis of
+`M ⊗[R] A`, and the scoped instance `IsModuleTopology A (M ⊗[R] A)`. Those are exactly the
+two inputs the whole argument runs on. -/
+
+section InfiniteAdeleDecompositionHelpers
+
+variable {ι : Type*} [Fintype ι] [DecidableEq ι]
+
+variable (F D) in
+/-- The `𝔸_F^∞`-basis `(b i) ⊗ₜ 1` of `D ⊗_F 𝔸_F^∞` attached to an `F`-basis `b` of `D`. -/
+noncomputable def infiniteAdeleBasis [IsQuaternionAlgebra F D] (b : Module.Basis ι F D) :
+    Module.Basis ι (NumberField.InfiniteAdeleRing F)
+      (D ⊗[F] (NumberField.InfiniteAdeleRing F)) :=
+  TensorProduct.RightActions.Algebra.TensorProduct.basis _ b
+
+variable (F D) in
+/-- The `F_v`-basis `(b i) ⊗ₜ 1` of `D ⊗_F F_v` attached to an `F`-basis `b` of `D`. -/
+noncomputable def completionBasis [IsQuaternionAlgebra F D] (b : Module.Basis ι F D)
+    (v : NumberField.InfinitePlace F) :
+    Module.Basis ι v.Completion (D ⊗[F] v.Completion) :=
+  TensorProduct.RightActions.Algebra.TensorProduct.basis _ b
+
+omit [NumberField F] [WithRigidification F D] [Fintype ι] [DecidableEq ι] in
+@[simp] lemma infiniteAdeleBasis_apply [IsQuaternionAlgebra F D]
+    (b : Module.Basis ι F D) (i : ι) :
+    infiniteAdeleBasis F D b i = b i ⊗ₜ 1 := by
+  simp [infiniteAdeleBasis, TensorProduct.RightActions.Algebra.TensorProduct.basis]
+
+omit [NumberField F] [WithRigidification F D] [Fintype ι] [DecidableEq ι] in
+@[simp] lemma completionBasis_apply [IsQuaternionAlgebra F D]
+    (b : Module.Basis ι F D) (v : NumberField.InfinitePlace F) (i : ι) :
+    completionBasis F D b v i = b i ⊗ₜ 1 := by
+  simp [completionBasis, TensorProduct.RightActions.Algebra.TensorProduct.basis]
+
+omit [NumberField F] [WithRigidification F D] [Fintype ι] [DecidableEq ι] in
+lemma infiniteAdeleBasis_repr_tmul [IsQuaternionAlgebra F D] (b : Module.Basis ι F D)
+    (d : D) (a : NumberField.InfiniteAdeleRing F) (i : ι) :
+    (infiniteAdeleBasis F D b).repr (d ⊗ₜ a) i
+      = a * algebraMap F (NumberField.InfiniteAdeleRing F) (b.repr d i) := by
+  simp [infiniteAdeleBasis, TensorProduct.RightActions.Algebra.TensorProduct.basis]
+
+omit [NumberField F] [WithRigidification F D] [Fintype ι] [DecidableEq ι] in
+lemma completionBasis_repr_tmul [IsQuaternionAlgebra F D] (b : Module.Basis ι F D)
+    (v : NumberField.InfinitePlace F) (d : D) (a : v.Completion) (i : ι) :
+    (completionBasis F D b v).repr (d ⊗ₜ a) i = a * algebraMap F v.Completion (b.repr d i) := by
+  simp [completionBasis, TensorProduct.RightActions.Algebra.TensorProduct.basis]
+
+set_option backward.isDefEq.respectTransparency false in
+omit [NumberField F] [WithRigidification F D] in
+/-- `infiniteAdeleTensorPiEquiv` is multiplicative. This is
+`tensorPi_equiv_piTensor_map_mul` of `Fermat/FLT/DivisionAlgebra/Finiteness.lean`, which is
+stated there under `variable (D) [DivisionRing D]` and hence unusable at `[Ring D]`; the proof
+uses nothing about `D` beyond its ring structure, so it is simply restated here. -/
+lemma infiniteAdeleTensorPiEquiv_map_mul [IsQuaternionAlgebra F D]
+    (x y : D ⊗[F] (NumberField.InfiniteAdeleRing F)) :
+    infiniteAdeleTensorPiEquiv F D (x * y)
+      = infiniteAdeleTensorPiEquiv F D x * infiniteAdeleTensorPiEquiv F D y := by
+  refine TensorProduct.induction_on x
+    (by simp only [LinearEquiv.map_zero, zero_mul])
+    (fun x₁ x₂ ↦ ?_) (fun x₁ x₂ hx₁ hx₂ ↦ by
+      simp_all only [LinearEquiv.map_add, add_mul])
+  refine TensorProduct.induction_on y
+    (by simp only [LinearEquiv.map_zero, mul_zero])
+    (fun y₁ y₂ ↦ ?_) (fun y₁ y₂ hy₁ hy₂ ↦ by
+      simp_all only [LinearEquiv.map_add, mul_add])
+  funext vi
+  simp [infiniteAdeleTensorPiEquiv, NumberField.InfiniteAdeleRing,
+    tensorPi_equiv_piTensor_apply]
+
+set_option backward.isDefEq.respectTransparency false in
+omit [NumberField F] [WithRigidification F D] [Fintype ι] [DecidableEq ι] in
+/-- The adelic coordinates of `z` are, placewise, the local coordinates of its components:
+this is the whole content of "the decomposition respects the basis `b ⊗ₜ 1`". -/
+lemma repr_infiniteAdeleTensorPiEquiv [IsQuaternionAlgebra F D] (b : Module.Basis ι F D)
+    (z : D ⊗[F] (NumberField.InfiniteAdeleRing F)) (i : ι)
+    (v : NumberField.InfinitePlace F) :
+    (infiniteAdeleBasis F D b).repr z i v
+      = (completionBasis F D b v).repr (infiniteAdeleTensorPiEquiv F D z v) i := by
+  induction z using TensorProduct.induction_on with
+  | zero => simp; rfl
+  | tmul d a =>
+      rw [infiniteAdeleBasis_repr_tmul]
+      show _ = (completionBasis F D b v).repr
+        (tensorPiEquivPiTensor F D NumberField.InfinitePlace.Completion (d ⊗ₜ a) v) i
+      rw [tensorPi_equiv_piTensor_apply]
+      rw [completionBasis_repr_tmul]
+      rfl
+  | add p q hp hq =>
+      simp only [map_add, Finsupp.add_apply, Pi.add_apply]
+      rw [show ((infiniteAdeleBasis F D b).repr p i + (infiniteAdeleBasis F D b).repr q i) v
+            = ((infiniteAdeleBasis F D b).repr p) i v
+              + ((infiniteAdeleBasis F D b).repr q) i v from rfl, hp, hq]
+
+variable (F D) in
+/-- Evaluation at `v`, as a ring homomorphism `𝔸_F^∞ →+* F_v`. This is `Pi.evalRingHom`; it
+needs a name only because `NumberField.InfiniteAdeleRing F` is a `def` for the `Pi` type, so
+the `Pi` lemmas do not fire against it syntactically. -/
+noncomputable def infiniteAdeleEvalHom (v : NumberField.InfinitePlace F) :
+    NumberField.InfiniteAdeleRing F →+* v.Completion :=
+  Pi.evalRingHom _ v
+
+omit [NumberField F] [WithRigidification F D] [Fintype ι] [DecidableEq ι] in
+lemma infiniteAdeleTensorPiEquiv_basis [IsQuaternionAlgebra F D] (b : Module.Basis ι F D)
+    (j : ι) (v : NumberField.InfinitePlace F) :
+    infiniteAdeleTensorPiEquiv F D (infiniteAdeleBasis F D b j) v = completionBasis F D b v j := by
+  rw [infiniteAdeleBasis_apply, completionBasis_apply]
+  show tensorPiEquivPiTensor F D NumberField.InfinitePlace.Completion (b j ⊗ₜ 1) v = _
+  rw [tensorPi_equiv_piTensor_apply]
+  rfl
+
+set_option backward.isDefEq.respectTransparency false in
+omit [NumberField F] [WithRigidification F D] in
+/-- `norm_infiniteAdele_apply`, relative to an arbitrary `F`-basis of `D`. -/
+theorem norm_infiniteAdele_apply_of_basis [IsQuaternionAlgebra F D] (b : Module.Basis ι F D)
+    (x : D ⊗[F] (NumberField.InfiniteAdeleRing F)) (v : NumberField.InfinitePlace F) :
+    Algebra.norm (NumberField.InfiniteAdeleRing F) x v =
+      Algebra.norm v.Completion (infiniteAdeleTensorPiEquiv F D x v) := by
+  rw [Algebra.norm_eq_matrix_det (infiniteAdeleBasis F D b),
+    Algebra.norm_eq_matrix_det (completionBasis F D b v)]
+  have hdet : (Algebra.leftMulMatrix (infiniteAdeleBasis F D b) x).det v
+      = ((Algebra.leftMulMatrix (infiniteAdeleBasis F D b) x).map
+          (infiniteAdeleEvalHom F v)).det :=
+    RingHom.map_det (infiniteAdeleEvalHom F v) _
+  rw [hdet]
+  congr 1
+  -- NOTE: `ext i j` overshoots here — it keeps going past the matrix entries and applies an
+  -- `ext` lemma inside `v.Completion`, leaving a `.toCompletion = .toCompletion` goal that
+  -- the rewrite below cannot see through. `Matrix.ext` stops at the entries.
+  refine Matrix.ext fun i j => ?_
+  simp only [Matrix.map_apply, Algebra.leftMulMatrix_eq_repr_mul]
+  have hre : infiniteAdeleEvalHom F v
+        ((infiniteAdeleBasis F D b).repr (x * infiniteAdeleBasis F D b j) i)
+      = (completionBasis F D b v).repr
+          (infiniteAdeleTensorPiEquiv F D (x * infiniteAdeleBasis F D b j) v) i :=
+    repr_infiniteAdeleTensorPiEquiv b _ i v
+  rw [hre, infiniteAdeleTensorPiEquiv_map_mul]
+  show (completionBasis F D b v).repr (infiniteAdeleTensorPiEquiv F D x v
+    * infiniteAdeleTensorPiEquiv F D (infiniteAdeleBasis F D b j) v) i = _
+  rw [infiniteAdeleTensorPiEquiv_basis]
+
+omit [NumberField F] [WithRigidification F D] [Fintype ι] [DecidableEq ι] in
+lemma smul_infiniteAdeleBasis [IsQuaternionAlgebra F D] (b : Module.Basis ι F D)
+    (a : NumberField.InfiniteAdeleRing F) (i : ι) :
+    a • infiniteAdeleBasis F D b i = b i ⊗ₜ a := by
+  rw [infiniteAdeleBasis_apply]
+  simp [TensorProduct.RightActions.smul_def, TensorProduct.smul_tmul']
+
+omit [NumberField F] [WithRigidification F D] [Fintype ι] [DecidableEq ι] in
+lemma smul_completionBasis [IsQuaternionAlgebra F D] (b : Module.Basis ι F D)
+    (v : NumberField.InfinitePlace F) (a : v.Completion) (i : ι) :
+    a • completionBasis F D b v i = b i ⊗ₜ a := by
+  rw [completionBasis_apply]
+  simp [TensorProduct.RightActions.smul_def, TensorProduct.smul_tmul']
+
+variable (F D) in
+/-- The `i`-th adelic coordinate of a place-indexed family, packaged AT THE TYPE
+`NumberField.InfiniteAdeleRing F`. The ascription is load-bearing: written as a bare lambda
+its type is the unfolded `(v : InfinitePlace F) → v.Completion`, and the scoped right-action
+`SMul (𝔸_F^∞) (D ⊗[F] 𝔸_F^∞)` instance is then not found. -/
+noncomputable def infiniteAdeleCoord [IsQuaternionAlgebra F D] (b : Module.Basis ι F D) (i : ι)
+    (y : Π v : NumberField.InfinitePlace F, D ⊗[F] v.Completion) :
+    NumberField.InfiniteAdeleRing F :=
+  fun v => (completionBasis F D b v).repr (y v) i
+
+set_option backward.isDefEq.respectTransparency false in
+omit [NumberField F] [WithRigidification F D] [DecidableEq ι] in
+/-- The inverse decomposition, written out in coordinates against `b ⊗ₜ 1`. -/
+lemma infiniteAdeleTensorPiEquiv_symm_eq [IsQuaternionAlgebra F D] (b : Module.Basis ι F D)
+    (y : Π v : NumberField.InfinitePlace F, D ⊗[F] v.Completion) :
+    (infiniteAdeleTensorPiEquiv F D).symm y
+      = ∑ i : ι, infiniteAdeleCoord F D b i y • infiniteAdeleBasis F D b i := by
+  refine (infiniteAdeleTensorPiEquiv F D).injective ?_
+  rw [LinearEquiv.apply_symm_apply, map_sum]
+  funext v
+  rw [Finset.sum_apply]
+  have hterm : ∀ i : ι, infiniteAdeleTensorPiEquiv F D
+      (infiniteAdeleCoord F D b i y • infiniteAdeleBasis F D b i) v
+      = (completionBasis F D b v).repr (y v) i • completionBasis F D b v i := by
+    intro i
+    rw [smul_infiniteAdeleBasis]
+    show tensorPiEquivPiTensor F D NumberField.InfinitePlace.Completion
+      (b i ⊗ₜ infiniteAdeleCoord F D b i y) v = _
+    rw [tensorPi_equiv_piTensor_apply]
+    show b i ⊗ₜ ((completionBasis F D b v).repr (y v) i) = _
+    rw [smul_completionBasis]
+  simp only [hterm]
+  exact ((completionBasis F D b v).sum_repr (y v)).symm
+
+omit [NumberField F] [WithRigidification F D] [Fintype ι] [DecidableEq ι] in
+/-- Each adelic coordinate function is continuous. This is where the module topology enters:
+`D ⊗[F] F_v` carries the `F_v`-module topology (the scoped instance of
+`Fermat/FLT/Hacks/RightActionInstances.lean`, which needs only `Module.Finite F D`), so every
+`F_v`-linear map out of it — in particular `Module.Basis.coord` — is continuous. -/
+lemma continuous_infiniteAdeleCoord [IsQuaternionAlgebra F D] (b : Module.Basis ι F D) (i : ι) :
+    Continuous (infiniteAdeleCoord F D b i) := by
+  show Continuous (fun (y : Π v : NumberField.InfinitePlace F, D ⊗[F] v.Completion) =>
+      (fun v => (completionBasis F D b v).repr (y v) i) :
+        _ → NumberField.InfiniteAdeleRing F)
+  refine continuous_pi fun v => ?_
+  exact (IsModuleTopology.continuous_of_linearMap ((completionBasis F D b v).coord i)).comp
+    (continuous_apply v)
+
+omit [NumberField F] [WithRigidification F D] [Fintype ι] [DecidableEq ι] in
+lemma continuous_smul_infiniteAdeleBasis [IsQuaternionAlgebra F D] (b : Module.Basis ι F D)
+    (i : ι) :
+    Continuous (fun a : NumberField.InfiniteAdeleRing F => a • infiniteAdeleBasis F D b i) :=
+  IsModuleTopology.continuous_of_linearMap
+    (LinearMap.toSpanSingleton (NumberField.InfiniteAdeleRing F) _ (infiniteAdeleBasis F D b i))
+
+omit [NumberField F] [WithRigidification F D] [DecidableEq ι] in
+/-- `continuous_infiniteAdeleTensorPiEquiv_symm`, relative to an arbitrary `F`-basis of `D`. -/
+theorem continuous_infiniteAdeleTensorPiEquiv_symm_of_basis [IsQuaternionAlgebra F D]
+    (b : Module.Basis ι F D) : Continuous (infiniteAdeleTensorPiEquiv F D).symm := by
+  have h : ⇑(infiniteAdeleTensorPiEquiv F D).symm
+      = fun y => ∑ i : ι, infiniteAdeleCoord F D b i y • infiniteAdeleBasis F D b i := by
+    funext y; exact infiniteAdeleTensorPiEquiv_symm_eq b y
+  rw [h]
+  exact continuous_finsetSum _ fun i _ =>
+    (continuous_smul_infiniteAdeleBasis b i).comp (continuous_infiniteAdeleCoord b i)
+
+end InfiniteAdeleDecompositionHelpers
+
+variable (F D) in
+/--
+`Quaternion ℝ ≃ₗ[ℝ] (Fin 4 → ℝ)`, at the type `Quaternion ℝ` ITSELF.
+
+`Quaternion R` is a `def` for `ℍ[R,-1,0,-1]`, and mathlib's `QuaternionAlgebra.basisOneIJK`
+is stated at the latter. The two are definitionally equal but their `Algebra ℝ _` instance
+terms are not syntactically equal, so `rw [Algebra.norm_eq_matrix_det basisOneIJK]` does NOT
+fire against a goal stated at `Quaternion ℝ` (checked: "did not find an occurrence of the
+pattern"). Hence this basis, rebuilt at `Quaternion ℝ`. -/
+def linEquivTupleQuaternion : Quaternion ℝ ≃ₗ[ℝ] (Fin 4 → ℝ) where
+  __ := Quaternion.equivTuple ℝ
+  map_add' _ _ := by funext i; fin_cases i <;> rfl
+  map_smul' _ _ := by funext i; fin_cases i <;> rfl
+
+/-- The `1, i, j, k` basis of `Quaternion ℝ` over `ℝ`. -/
+def basisQuaternion : Module.Basis (Fin 4) ℝ (Quaternion ℝ) := .ofEquivFun linEquivTupleQuaternion
+
+lemma basisQuaternion_repr (z : Quaternion ℝ) (i : Fin 4) :
+    basisQuaternion.repr z i = ![z.re, z.imI, z.imJ, z.imK] i := rfl
+
+lemma basisQuaternion_apply (i : Fin 4) :
+    basisQuaternion i = ![(1 : Quaternion ℝ), ⟨0, 1, 0, 0⟩, ⟨0, 0, 1, 0⟩, ⟨0, 0, 0, 1⟩] i := by
+  refine basisQuaternion.ext_elem fun j => ?_
+  rw [Module.Basis.repr_self]
+  -- NOTE the trailing `rfl`: in a bare scratch module `simp` closes every branch here, but
+  -- inside this file's simp scope it leaves the four `(1 : Quaternion ℝ).re = 1`-shaped
+  -- component goals of the `i = 0` case open. They are all `rfl`.
+  fin_cases i <;> fin_cases j <;> simp [basisQuaternion_repr] <;> rfl
+
+set_option maxHeartbeats 4000000 in
+/--
+**PROVEN.** The `ℝ`-algebra norm of the Hamilton quaternions is the SQUARE of the reduced
+norm: `Nm_{ℍ/ℝ}(q) = normSq(q)² = ‖q‖⁴`.
+
+Absent from the pin — `grep Algebra.norm` over `Mathlib/Algebra/Quaternion.lean` and
+`Mathlib/Analysis/Quaternion.lean` finds nothing — and mathlib-shaped, so it should go
+upstream eventually.
+
+Proved by exhibiting the left-multiplication matrix in the `1, i, j, k` basis explicitly
+and expanding its determinant. Two traps, both cost a cycle here: `Matrix.det_fin_four`
+does NOT exist (only `det_fin_three`), so the expansion is by `Matrix.det_succ_row_zero`
+plus `Fin.sum_univ_succ`; and that expansion leaves `Fin.succAbove` index terms which
+`simp` cannot reduce unless `Fin.succAbove` is itself in the simp set — while adding
+`Fin.lt_def` instead makes `simp` loop (via `Fin.val_fin_lt`) and blow the recursion
+depth. Establishing the matrix as an explicit `!![…]` FIRST, so every index is a numeral,
+is what makes the whole thing go. -/
+theorem norm_quaternion_eq_normSq_sq (q : Quaternion ℝ) :
+    Algebra.norm ℝ q = (Quaternion.normSq q) ^ 2 := by
+  have hM : Algebra.leftMulMatrix basisQuaternion q =
+      !![q.re, -q.imI, -q.imJ, -q.imK;
+         q.imI, q.re, -q.imK, q.imJ;
+         q.imJ, q.imK, q.re, -q.imI;
+         q.imK, -q.imJ, q.imI, q.re] := by
+    ext i j
+    fin_cases i <;> fin_cases j <;>
+      simp [Algebra.leftMulMatrix_apply, Algebra.coe_lmul_eq_mul, LinearMap.toMatrix_apply,
+        basisQuaternion_repr, basisQuaternion_apply]
+  rw [Algebra.norm_eq_matrix_det basisQuaternion, hM]
+  simp [Matrix.det_succ_row_zero, Fin.sum_univ_succ, Fin.succAbove, Quaternion.normSq_def']
+  ring
+
+/--
+**PROVEN.** `{q ∈ ℍ : Nm_{ℍ/ℝ}(q) = 1}` is the UNIT SPHERE, hence compact.
+
+`Nm(q) = normSq(q)² = (‖q‖‖q‖)²` by `norm_quaternion_eq_normSq_sq` and
+`Quaternion.normSq_eq_norm_mul_self`, so `Nm(q) = 1 ↔ ‖q‖ = 1` (both directions by
+`nlinarith` off `norm_nonneg`), and `ℍ` is a `ProperSpace`, so `isCompact_sphere` applies.
+
+**This is where definiteness cashes out.** The corresponding set for the SPLIT algebra
+`M₂(ℝ)` is `{det = ±1} = SL₂^±(ℝ)`, which is closed and UNBOUNDED — `diag(t, t⁻¹)` for
+`t → ∞` — hence not compact. The whole content of `IsTotallyDefinite` in this file is
+that the archimedean completions are `ℍ` and not `M₂(ℝ)`. -/
+theorem isCompact_normOne_quaternion :
+    IsCompact {q : Quaternion ℝ | Algebra.norm ℝ q = 1} := by
+  have hs : {q : Quaternion ℝ | Algebra.norm ℝ q = 1} = Metric.sphere (0 : Quaternion ℝ) 1 := by
+    ext q
+    simp only [Set.mem_setOf_eq, norm_quaternion_eq_normSq_sq, Metric.mem_sphere, dist_zero_right,
+      Quaternion.normSq_eq_norm_mul_self]
+    constructor
+    · intro h
+      have h0 : (0 : ℝ) ≤ ‖q‖ := norm_nonneg q
+      have h1 : ‖q‖ * ‖q‖ = 1 := by nlinarith [mul_nonneg h0 h0]
+      nlinarith
+    · intro h; rw [h]; norm_num
+  rw [hs]
+  exact isCompact_sphere _ _
+
+variable (F D) in
+omit [NumberField F] [WithRigidification F D] in
+/--
+**PROVEN.** (This is the ONLY carrier of `IsTotallyDefinite` left in this file.)
+
+At an infinite place `v` of the totally real `F`, with `D` totally definite, the completion
+`D ⊗_F F_v` is RING-ISOMORPHIC to `ℍ` by a HOMEOMORPHISM compatible with `F_v ≃+* ℝ`.
+
+**Why it is true.** `F` totally real makes `v` real, so
+`NumberField.InfinitePlace.Completion.ringEquivRealOfIsReal` gives `F_v ≃+* ℝ` and
+`IsQuaternionAlgebra.IsTotallyDefinite.cond v hv` gives `ℝ ⊗[F,v] D ≃ₐ[ℝ] ℍ`, where the
+`Algebra F ℝ` is the one induced by `embedding_of_isReal hv`. Composing
+`D ⊗[F] F_v ≃ D ⊗[F] ℝ ≃ ℝ ⊗[F] D ≃ ℍ` gives the ring equivalence; the middle step is the
+`Algebra.TensorProduct.comm` already packaged here as `tensorCommRight`. It is a
+homeomorphism because it is `ℝ`-linear between two finite-dimensional spaces carrying
+module topologies (`IsModuleTopology F_v (D ⊗[F] v.Completion)` DOES resolve at `[Ring D]`;
+`ℍ` is a finite-dimensional normed space), so
+`IsModuleTopology.continuous_of_linearMap` applies in both directions.
+
+**The statement is PINNED, not merely existential.** The compatibility clause forces the
+`ℝ`-algebra structure: any `e` satisfying it makes
+`Algebra.norm_eq_of_equiv_equiv (ringEquivRealOfIsReal _) e` applicable, which is all the
+consumer uses, so no adversarial witness (a post-composed automorphism of `ℍ`, say) can
+satisfy the clauses while breaking `isCompact_normOne_completion` — every automorphism of
+`ℍ` is norm-preserving precisely because the norm is defined from the algebra structure.
+
+**CORRECTION (2026-07-28).** The previous docstring said the compatibility of
+`ringEquivRealOfIsReal` with `algebraMap F v.Completion` and `embedding_of_isReal hv` was
+"the one input that has not been located in the pin". That is FALSE: the pin has
+`NumberField.InfinitePlace.Completion.extensionEmbeddingOfIsReal_coe`, and with it the
+compatibility `hφ` below is a one-line `simp`. There was no missing input.
+
+**The proof.** `φ := ringEquivRealOfIsReal hv : F_v ≃+* ℝ` is an `F`-algebra equivalence
+for the `Algebra F ℝ` that `IsTotallyDefinite` uses (`AlgEquiv.ofRingEquiv hφ`), so
+`Algebra.TensorProduct.congr .refl φₐ` gives `D ⊗[F] F_v ≃ₐ[F] D ⊗[F] ℝ`; then
+`Algebra.TensorProduct.comm` and `IsTotallyDefinite.cond v hv` land in `ℍ`. Note this uses
+`Algebra.TensorProduct.comm` DIRECTLY rather than the `tensorCommRight` wrapper the old
+docstring pointed at: that wrapper is declared BELOW this leaf in the file, and only its
+`F`-algebra (not `ℝ`-algebra) content is needed here, so inlining avoids a hoist.
+
+**Continuity is `IsModuleTopology.continuous_of_linearMapₛₗ` in both directions**, which is
+what makes the `[Ring D]`-vs-`[DivisionRing D]` obstruction recorded above irrelevant here:
+no `ℝ`-structure on `D ⊗[F] F_v` is ever needed. Forwards, `e` is `φ`-SEMIlinear out of
+`D ⊗[F] F_v`, which carries the `F_v`-module topology; backwards, `e.symm` is
+`φ.symm`-semilinear out of `ℍ`, which carries the `ℝ`-module topology by
+`isModuleTopologyOfFiniteDimensional`. Both `φ` and `φ.symm` are continuous because
+`ringEquivRealOfIsReal` is an isometry (`isometry_extensionEmbeddingOfIsReal`,
+`isometryEquivRealOfIsReal`). Semilinearity in each direction is exactly the pinning clause
+`hcomp` plus `Algebra.smul_def`, so the clause is not decoration — the proof consumes it.
+
+**Both hypotheses are load-bearing**, and this leaf is where they are consumed. Drop
+definiteness and take `D = M₂(F)` split at `v`: `D ⊗ F_v ≃ M₂(ℝ)`, which is not isomorphic
+to `ℍ` (it has zero divisors). Drop total reality and let `v` be complex: `D ⊗ ℂ ≃ M₂(ℂ)`
+always — a quaternion algebra is split by `ℂ`, definite or not. So a proof of this leaf
+that does not use `IsTotallyDefinite` is proving something else. -/
+theorem exists_ringEquiv_quaternion_of_isTotallyDefinite [NumberField.IsTotallyReal F]
+    [IsQuaternionAlgebra F D] [IsQuaternionAlgebra.IsTotallyDefinite F D]
+    (v : NumberField.InfinitePlace F) :
+    ∃ e : (D ⊗[F] v.Completion) ≃+* Quaternion ℝ, Continuous e ∧ Continuous e.symm ∧
+      (algebraMap ℝ (Quaternion ℝ)).comp
+          (NumberField.InfinitePlace.Completion.ringEquivRealOfIsReal
+            (NumberField.IsTotallyReal.isReal v) : v.Completion →+* ℝ)
+        = (e : (D ⊗[F] v.Completion) →+* Quaternion ℝ).comp
+            (algebraMap v.Completion (D ⊗[F] v.Completion)) := by
+  have hv : v.IsReal := NumberField.IsTotallyReal.isReal v
+  set φ : v.Completion ≃+* ℝ :=
+    NumberField.InfinitePlace.Completion.ringEquivRealOfIsReal hv with hφdef
+  letI : Algebra F ℝ := (NumberField.InfinitePlace.embedding_of_isReal hv).toAlgebra
+  -- the compatibility the old docstring called a missing input: it is `simp` from
+  -- `extensionEmbeddingOfIsReal_coe`, which the pin has.
+  have hφ : ∀ x : F, φ (algebraMap F v.Completion x) = algebraMap F ℝ x := by
+    intro x
+    simp [hφdef, NumberField.InfinitePlace.Completion.ringEquivRealOfIsReal]
+    rfl
+  let φₐ : v.Completion ≃ₐ[F] ℝ := AlgEquiv.ofRingEquiv hφ
+  let e₁ : D ⊗[F] v.Completion ≃ₐ[F] D ⊗[F] ℝ :=
+    Algebra.TensorProduct.congr AlgEquiv.refl φₐ
+  let e₂ : D ⊗[F] ℝ ≃ₐ[F] ℝ ⊗[F] D := Algebra.TensorProduct.comm F D ℝ
+  let e₃ : ℝ ⊗[F] D ≃ₐ[ℝ] Quaternion ℝ := (IsQuaternionAlgebra.IsTotallyDefinite.cond v hv).some
+  set e : (D ⊗[F] v.Completion) ≃+* Quaternion ℝ :=
+    e₁.toRingEquiv.trans (e₂.toRingEquiv.trans e₃.toRingEquiv) with hedef
+  -- The pinning clause, proven FIRST because both continuity proofs consume it: it is
+  -- exactly the semilinearity of `e` over `φ`.
+  have hcomp : ∀ y : v.Completion,
+      e (algebraMap v.Completion (D ⊗[F] v.Completion) y)
+        = algebraMap ℝ (Quaternion ℝ) (φ y) := by
+    intro y
+    have h1 : algebraMap v.Completion (D ⊗[F] v.Completion) y = (1 : D) ⊗ₜ[F] y := rfl
+    have h2 : e ((1 : D) ⊗ₜ[F] y) = e₃ (algebraMap ℝ (ℝ ⊗[F] D) (φ y)) := rfl
+    rw [h1, h2, AlgEquiv.commutes]
+  refine ⟨e, ?_, ?_, RingHom.ext fun y => (hcomp y).symm⟩
+  · -- `e` is `φ`-semilinear out of `D ⊗[F] F_v`, which has the `F_v`-module topology.
+    have hσ : Continuous (φ : v.Completion →+* ℝ) :=
+      (NumberField.InfinitePlace.Completion.isometry_extensionEmbeddingOfIsReal hv).continuous
+    exact IsModuleTopology.continuous_of_linearMapₛₗ (B' := Quaternion ℝ) hσ
+      { toFun := e
+        map_add' := map_add e
+        map_smul' := fun c x => by
+          simp only [Algebra.smul_def, map_mul, hcomp, RingHom.coe_coe] }
+  · -- `e.symm` is `φ.symm`-semilinear out of `ℍ`, which has the `ℝ`-module topology.
+    haveI : IsModuleTopology ℝ (Quaternion ℝ) := isModuleTopologyOfFiniteDimensional
+    have hσ : Continuous ((φ.symm : ℝ →+* v.Completion)) :=
+      (NumberField.InfinitePlace.Completion.isometryEquivRealOfIsReal hv).symm.continuous
+    have hsymm : ∀ r : ℝ, e.symm (algebraMap ℝ (Quaternion ℝ) r)
+        = algebraMap v.Completion (D ⊗[F] v.Completion) (φ.symm r) := by
+      intro r
+      apply e.injective
+      rw [RingEquiv.apply_symm_apply, hcomp, RingEquiv.apply_symm_apply]
+    exact IsModuleTopology.continuous_of_linearMapₛₗ (B' := D ⊗[F] v.Completion) hσ
+      { toFun := e.symm
+        map_add' := map_add e.symm
+        map_smul' := fun r q => by
+          simp only [Algebra.smul_def, map_mul, hsymm, RingHom.coe_coe] }
+
+variable (F D) in
+omit [NumberField F] [WithRigidification F D] in
+/--
+**PROVEN** (assembly) from `exists_ringEquiv_quaternion_of_isTotallyDefinite` and
+`isCompact_normOne_quaternion`.
+
+At an infinite place `v`, `{z ∈ D ⊗_F F_v : Nm_{(D ⊗ F_v)/F_v}(z) = 1}` is COMPACT.
+
+**BOTH hypotheses are load-bearing**, and they are consumed entirely inside
+`exists_ringEquiv_quaternion_of_isTotallyDefinite`; see the counterexamples there
+(`SL₂^±(ℝ)` at a split real place, `SL₂^±(ℂ)` at a complex one).
+
+**The assembly proven here.** `Algebra.norm_eq_of_equiv_equiv` — exactly the lemma for a
+simultaneous change of BASE RING and ALGEBRA — turns `Nm_{F_v}(z)` into
+`e₁.symm (Nm_ℝ (e z))`, so the set is `e.symm '' {q : ℍ | Nm_ℝ q = 1}`; `e₁.symm` is a ring
+equivalence, hence injective and unital, which is what converts `e₁.symm (·) = 1` into
+`(·) = 1`. The image of the compact `{Nm_ℝ = 1}` under the continuous `e.symm` is
+compact. -/
+theorem isCompact_normOne_completion [NumberField.IsTotallyReal F] [IsQuaternionAlgebra F D]
+    [IsQuaternionAlgebra.IsTotallyDefinite F D] (v : NumberField.InfinitePlace F) :
+    IsCompact {z : D ⊗[F] v.Completion | Algebra.norm v.Completion z = 1} := by
+  obtain ⟨e, _he, hes, hcomp⟩ := exists_ringEquiv_quaternion_of_isTotallyDefinite F D v
+  have hs : {z : D ⊗[F] v.Completion | Algebra.norm v.Completion z = 1}
+      = ⇑e.symm '' {q : Quaternion ℝ | Algebra.norm ℝ q = 1} := by
+    ext z
+    simp only [Set.mem_setOf_eq, Set.mem_image]
+    rw [Algebra.norm_eq_of_equiv_equiv _ e hcomp z]
+    constructor
+    · intro hz
+      exact ⟨e z, by
+        have := (NumberField.InfinitePlace.Completion.ringEquivRealOfIsReal
+          (NumberField.IsTotallyReal.isReal v)).symm.injective
+            (a₁ := Algebra.norm ℝ (e z)) (a₂ := 1) (by simpa using hz)
+        simpa using this, by simp⟩
+    · rintro ⟨q, hq, rfl⟩
+      simp [hq]
+  rw [hs]
+  exact isCompact_normOne_quaternion.image hes
+
+variable (F D) in
+-- DELIBERATELY `set_option`, NOT `omit`. Now that this leaf has a real proof (it delegates,
+-- so it mentions neither variable) the linter correctly reports `[NumberField F]` and
+-- `[WithRigidification F D]` as unused and suggests `omit`. Taking that suggestion would
+-- CHANGE THIS DECLARATION'S SIGNATURE — source-compatible, since both are instance-implicit,
+-- but NOT olean-compatible: every worktree holding a `.olean` built against the old arity
+-- would start reporting kernel/type errors in downstream files that are nothing to do with
+-- their sources. That exact failure mode is documented in `CLAUDE.md` (the
+-- `Field.absoluteGaloisGroup.map` incident, which cost several agents a cycle each).
+-- Silencing the linter keeps the type fixed, which is the cheaper of the two trades.
+set_option linter.unusedSectionVars false in
+/--
+**PROVEN** (2026-07-28, `flt-lean-293`) from `norm_infiniteAdele_apply_of_basis` in the helper
+block above, at the basis `Module.finBasis F D`. The algebra norm is computed componentwise
+along the decomposition.
+
+**Why it is true.** Pick an `F`-basis `b` of `D`. Then `b ⊗ₜ 1` is an `𝔸^∞`-basis of
+`D ⊗_F 𝔸^∞` and simultaneously a `F_v`-basis of `D ⊗_F F_v` for every `v`, and
+`infiniteAdeleTensorPiEquiv` carries the one to the other (`tensorPi_equiv_piTensor_apply`
+sends `d ⊗ₜ a` to `fun v ↦ d ⊗ₜ a v`, so it fixes `b i ⊗ₜ 1` placewise) and is a RING map.
+Hence `Algebra.leftMulMatrix` of `x` in the first basis, evaluated at `v`, is
+`Algebra.leftMulMatrix` of the `v`-component in the second. Now `Algebra.norm` is the
+determinant of that matrix (`Algebra.norm_eq_matrix_det`) and evaluation at `v` is the
+RING HOM `Pi.evalRingHom _ v : 𝔸^∞ →+* F_v`, so it commutes with `det` by
+`RingHom.map_det`. No definiteness and no total reality: this is pure base-change
+bookkeeping, true for any finite free `D`.
+
+**One input had to be re-proven here, and this prediction was exactly right.**
+`tensorPiEquivPiTensor` is multiplicative on `Dinf` — that is
+`tensorPi_equiv_piTensor_map_mul` in `Fermat/FLT/DivisionAlgebra/Finiteness.lean` — but that
+lemma is stated under `variable (D) [DivisionRing D]`, so it is not applicable at `[Ring D]`.
+Its proof uses nothing about `D` beyond its ring structure, and it is restated above as
+`infiniteAdeleTensorPiEquiv_map_mul`, verbatim apart from the names.
+
+**As proved.** `Algebra.norm_eq_matrix_det` against `infiniteAdeleBasis`/`completionBasis`
+(the right-handed base-changed basis of `Fermat/FLT/Hacks/RightActionInstances.lean`), then
+`RingHom.map_det` along `Pi.evalRingHom` at `v`; the entrywise identity is
+`repr_infiniteAdeleTensorPiEquiv` together with multiplicativity. -/
+theorem norm_infiniteAdele_apply [IsQuaternionAlgebra F D]
+    (x : D ⊗[F] (NumberField.InfiniteAdeleRing F)) (v : NumberField.InfinitePlace F) :
+    Algebra.norm (NumberField.InfiniteAdeleRing F) x v =
+      Algebra.norm v.Completion (infiniteAdeleTensorPiEquiv F D x v) :=
+  norm_infiniteAdele_apply_of_basis (Module.finBasis F D) x v
+
+variable (F D) in
+-- `set_option`, not `omit` — same reasoning as on `norm_infiniteAdele_apply` above: taking the
+-- linter's `omit` suggestion would change this declaration's arity and break every stale olean
+-- in the fleet.
+set_option linter.unusedSectionVars false in
+/--
+**PROVEN** (2026-07-28, `flt-lean-293`) from
+`continuous_infiniteAdeleTensorPiEquiv_symm_of_basis` in the helper block above, at the basis
+`Module.finBasis F D`.
+
+**Neither `[NumberField.IsTotallyReal F]` nor `[IsQuaternionAlgebra.IsTotallyDefinite F D]` is
+used by the proof** — the helper is stated at `[IsQuaternionAlgebra F D]` alone, and in fact
+needs only `Module.Finite F D` and `Module.Free F D`. The two hypotheses are retained on this
+declaration purely so the statement its consumer `isCompact_normOne_infiniteAdele` was written
+against does not change; they are harmless but inert. Anyone needing the more general
+statement should call the `_of_basis` form directly rather than weakening this one.
+
+`(infiniteAdeleTensorPiEquiv F D).symm` is CONTINUOUS. (Only this direction is used;
+the forward direction is not needed, because the target set is exhibited as an IMAGE.)
+
+**Why it is true.** Fix an `F`-basis `b = (b i)` of `D`, finite since `finrank F D = 4`.
+For `y : ∏_v (D ⊗_F F_v)` one has
+`(infiniteAdeleTensorPiEquiv F D).symm y = ∑ i, b i ⊗ₜ (fun v ↦ c_i (y v))`,
+where `c_i : D ⊗_F F_v →ₗ[F_v] F_v` is the `i`-th coordinate against the `F_v`-basis
+`b ⊗ₜ 1`. Each `c_i` is continuous because `D ⊗_F F_v` carries the `F_v`-MODULE topology
+(`IsModuleTopology F_v (D ⊗[F] v.Completion)` — this instance DOES resolve at `[Ring D]`,
+unlike its `ℝ` counterpart) and `IsModuleTopology.continuous_of_linearMap` makes every
+linear map out of a module-topology module continuous. So `y ↦ (fun v ↦ c_i (y v))` is
+continuous into `𝔸^∞` by `continuous_pi` composed with the projections, and
+`a ↦ b i ⊗ₜ a : 𝔸^∞ → D ⊗_F 𝔸^∞` is continuous for the same reason applied to
+`IsModuleTopology.self`. A finite sum of continuous maps is continuous.
+
+**The `DivisionRing D` alternative was NOT needed, and neither was relaxing
+`Finiteness.lean`.** The route sketched above is what was carried out, and it is the one that
+avoids `ℝ` entirely. The previous docstring proposed instead reusing
+`DinfTensorPiEquivPiTensor`'s `continuous_invFun` field by manufacturing a `DivisionRing D`
+instance from total definiteness (via
+`IsQuaternionAlgebra.nomepty_algEquiv_matrix_or_forall_isUnit`), at the cost of an unchecked
+defeq between the `letI`-derived `TopologicalSpace (D ⊗[F] v.Completion)` and the ambient one.
+That gamble is unnecessary: `Fermat/FLT/Hacks/RightActionInstances.lean` already supplies
+`IsModuleTopology A (M ⊗[R] A)` as a scoped instance requiring only `[Module.Finite R M]`, so
+the `F_v`-module topology is available at `[Ring D]` directly and
+`IsModuleTopology.continuous_of_linearMap` applies with no diamond to check. The `ℝ`-structures
+of `Finiteness.lean` are simply never mentioned. -/
+theorem continuous_infiniteAdeleTensorPiEquiv_symm [NumberField.IsTotallyReal F]
+    [IsQuaternionAlgebra F D] [IsQuaternionAlgebra.IsTotallyDefinite F D] :
+    Continuous (infiniteAdeleTensorPiEquiv F D).symm :=
+  continuous_infiniteAdeleTensorPiEquiv_symm_of_basis (Module.finBasis F D)
+
+/--
+**PROVEN** (assembly) from `isCompact_normOne_completion`, `norm_infiniteAdele_apply` and
+`continuous_infiniteAdeleTensorPiEquiv_symm`, the three leaves immediately above.
+
+`{x ∈ D ⊗_F 𝔸_F^∞ : Nm_{(D ⊗ 𝔸^∞)/𝔸^∞}(x) = 1}` is COMPACT.
+
+**Why it is true.** `F` is totally real, so every infinite place `v` is real and
+`𝔸_F^∞ = ∏_v ℝ`; hence `D ⊗_F 𝔸_F^∞ = ∏_v (D ⊗_{F,v} ℝ)`. Total definiteness says
+each factor is `ℍ`, where the algebra norm over `ℝ` is `Nm(x) = nrd(x)² = |x|⁴`.
+So the set is the product over `v` of the unit spheres of `ℍ`, hence compact.
+
+**BOTH hypotheses are load-bearing.** At a real place where `D` splits, or at a
+complex place, `Nm = det²` and `{det = ±1}` is `SL₂^±(ℝ)`, which is not compact;
+the statement then fails for `D = M₂(F)`. They are consumed entirely inside
+`isCompact_normOne_completion`; the assembly here is formal.
+
+**The assembly proven here.** The set is the image under
+`(infiniteAdeleTensorPiEquiv F D).symm` of `Set.univ.pi (fun v ↦ {z | Nm_{F_v} z = 1})`:
+membership transfers by `norm_infiniteAdele_apply` together with the fact that `1` and
+equality in `𝔸^∞ = ∏_v F_v` are componentwise (both hold by `rfl`, `𝔸^∞` being a `def`
+for the `Pi` type). That product is compact by `isCompact_univ_pi` — Tychonoff, so the
+place set does not need to be finite — and the image of a compact under a continuous map
+is compact. -/
+theorem isCompact_normOne_infiniteAdele [NumberField.IsTotallyReal F] [IsQuaternionAlgebra F D]
+    [IsQuaternionAlgebra.IsTotallyDefinite F D] :
+    IsCompact {x : D ⊗[F] (NumberField.InfiniteAdeleRing F) |
+      Algebra.norm (NumberField.InfiniteAdeleRing F) x = 1} := by
+  classical
+  have hTc : IsCompact (Set.univ.pi fun v : NumberField.InfinitePlace F =>
+      {z : D ⊗[F] v.Completion | Algebra.norm v.Completion z = 1}) :=
+    isCompact_univ_pi fun v => isCompact_normOne_completion F D v
+  have hset : {x : D ⊗[F] (NumberField.InfiniteAdeleRing F) |
+        Algebra.norm (NumberField.InfiniteAdeleRing F) x = 1}
+      = ⇑(infiniteAdeleTensorPiEquiv F D).symm '' (Set.univ.pi
+          fun v : NumberField.InfinitePlace F =>
+            {z : D ⊗[F] v.Completion | Algebra.norm v.Completion z = 1}) := by
+    ext x
+    constructor
+    · intro hx
+      refine ⟨infiniteAdeleTensorPiEquiv F D x, fun v _ => ?_, by simp⟩
+      show Algebra.norm v.Completion (infiniteAdeleTensorPiEquiv F D x v) = 1
+      rw [← norm_infiniteAdele_apply F D x v]
+      rw [show Algebra.norm (NumberField.InfiniteAdeleRing F) x = 1 from hx]
+      rfl
+    · rintro ⟨y, hy, rfl⟩
+      show Algebra.norm (NumberField.InfiniteAdeleRing F)
+        ((infiniteAdeleTensorPiEquiv F D).symm y) = 1
+      funext v
+      rw [norm_infiniteAdele_apply F D, LinearEquiv.apply_symm_apply]
+      exact hy v (Set.mem_univ v)
+  rw [hset]
+  exact hTc.image (continuous_infiniteAdeleTensorPiEquiv_symm F D)
+
+omit [WithRigidification F D] in
+/-- `d ↦ d ⊗ₜ 1 : D → D ⊗[F] 𝔸_F` is INJECTIVE.
+
+Immediate from `Aux.D_discrete`, which supplies for each `x : D` an open `U` with
+`includeLeft ⁻¹' U = {x}`: two elements with the same image lie in the same singleton.
+Only `Module.Finite F D` is used, so this holds for a SPLIT `D` as well. -/
+theorem includeLeft_injective [IsQuaternionAlgebra F D] :
+    Function.Injective (Algebra.TensorProduct.includeLeft :
+      D →ₐ[F] D ⊗[F] NumberField.AdeleRing (𝓞 F) F) := by
+  intro a b hab
+  obtain ⟨U, -, hUeq⟩ := NumberField.AdeleRing.DivisionAlgebra.Aux.D_discrete F D a
+  have ha : a ∈ (Algebra.TensorProduct.includeLeft :
+      D →ₐ[F] D ⊗[F] NumberField.AdeleRing (𝓞 F) F) ⁻¹' U := by
+    rw [hUeq]; exact Set.mem_singleton a
+  have hb : b ∈ (Algebra.TensorProduct.includeLeft :
+      D →ₐ[F] D ⊗[F] NumberField.AdeleRing (𝓞 F) F) ⁻¹' U := by
+    simp only [Set.mem_preimage] at ha ⊢
+    rwa [← hab]
+  rw [hUeq] at hb
+  exact hb.symm
+
+/--
+**PROVEN 2026-07-28.**
+
+An element of `D` confined to a COMPACT set in the archimedean direction and to a
+COMPACT set in the finite direction ranges over a FINITE set.
+
+**Proof.** `D ⊗_F 𝔸_F ≃ (D ⊗ 𝔸^∞) × (D ⊗ 𝔸ᶠ)` topologically (`Aux.D𝔸ProdRight''`), and
+the rigidification identifies `D ⊗ 𝔸ᶠ` with `M₂(𝔸ᶠ)` (`WithRigidification.algEquiv` is an
+`𝔸ᶠ`-ALGEBRA equivalence, hence continuous both ways for the module topologies — an
+`F`-linear one would not suffice, cf. the note on `tensorLid`). The set in question is
+therefore the preimage under `d ↦ d ⊗ₜ 1` of `Z ∩ D`, where `Z` is the compact set
+`Zi ×ˢ algEquiv⁻¹(Zf)` pulled back to `D ⊗ 𝔸_F`. `D` is discrete and closed there
+(`Aux.discrete_includeLeft_subgroup` and `AddSubgroup.isClosed_of_discrete`), so `Z ∩ D`
+is compact and discrete, hence finite (`inter_Discrete`), and `includeLeft_injective`
+carries that finiteness back to `D`.
+
+(Mathlib's `Algebra.TensorProduct.includeLeft_injective` would also serve, but it wants
+`Nontrivial (𝔸_F)`, which is not currently an inferrable instance here — hence the local
+`includeLeft_injective` below, which reads the injectivity off `Aux.D_discrete` instead.)
+
+This is the PATTERN of `Aux.T_finite_extracted1` / `Aux.T_finite`, but NOT an instance of
+them: `T_finite` is about `Dˣ` sitting inside `D_𝔸ˣ`, and about the single fixed compact
+set `Y = (E−E)(E−E)` of Fujisaki's argument, whereas this leaf quantifies over ARBITRARY
+compacts and splits its condition across the two factors. It is a sibling, not a corollary.
+
+Neither definiteness nor total reality is used — this is pure discreteness. `D` is NOT
+assumed to be a division ring, and must not be: a quaternion algebra may be split. That is
+exactly why `Fermat/FLT/DivisionAlgebra/Finiteness.lean` carries this material under
+`[Ring D]`. -/
+theorem finite_setOf_tmul_mem_of_isCompact [IsQuaternionAlgebra F D]
+    (Zi : Set (D ⊗[F] (NumberField.InfiniteAdeleRing F))) (hZi : IsCompact Zi)
+    (Zf : Set M₂(𝔸ᶠ[F])) (hZf : IsCompact Zf) :
+    {d : D | (d ⊗ₜ[F] (1 : NumberField.InfiniteAdeleRing F)) ∈ Zi ∧
+      WithRigidification.incl (F := F) d ∈ Zf}.Finite := by
+  classical
+  set ι : D →ₐ[F] D ⊗[F] NumberField.AdeleRing (𝓞 F) F :=
+    Algebra.TensorProduct.includeLeft with hι
+  -- `Zf` pulled back to `D ⊗ 𝔸ᶠ` along the rigidification, still compact
+  set Zf' : Set (D ⊗[F] 𝔸ᶠ[F]) := (WithRigidification.algEquiv F D) ⁻¹' Zf with hZf'def
+  have hZf'eq : Zf' = (WithRigidification.algEquiv F D).symm '' Zf := by
+    rw [hZf'def, Set.image_eq_preimage_of_inverse]
+    · intro x; simp
+    · intro x; simp
+  have hZf'c : IsCompact Zf' := by
+    rw [hZf'eq]
+    exact hZf.image (IsModuleTopology.continuous_of_linearMap
+      (WithRigidification.algEquiv F D).symm.toLinearMap)
+  -- the compact set in `D ⊗ 𝔸_F`
+  set Z : Set (D ⊗[F] NumberField.AdeleRing (𝓞 F) F) :=
+    (NumberField.AdeleRing.DivisionAlgebra.Aux.D𝔸ProdRight'' F D).toHomeomorph ⁻¹'
+      (Zi ×ˢ Zf') with hZdef
+  have hZc : IsCompact Z :=
+    (NumberField.AdeleRing.DivisionAlgebra.Aux.D𝔸ProdRight''
+      F D).toHomeomorph.isCompact_preimage.mpr (hZi.prod hZf'c)
+  -- `D` is discrete and closed in `D ⊗ 𝔸_F`
+  have hrange : (Set.range ι : Set (D ⊗[F] NumberField.AdeleRing (𝓞 F) F))
+      = (NumberField.AdeleRing.DivisionAlgebra.Aux.includeLeftSubgroup F D :
+          Set (D ⊗[F] NumberField.AdeleRing (𝓞 F) F)) := by
+    ext x
+    simp [NumberField.AdeleRing.DivisionAlgebra.Aux.includeLeftSubgroup, hι]
+  haveI hdisc : DiscreteTopology
+      ((Set.range ι : Set (D ⊗[F] NumberField.AdeleRing (𝓞 F) F))) := by
+    rw [hrange]
+    exact NumberField.AdeleRing.DivisionAlgebra.Aux.discrete_includeLeft_subgroup F D
+  have hclosed : IsClosed (Set.range ι) := by
+    haveI : DiscreteTopology
+        (NumberField.AdeleRing.DivisionAlgebra.Aux.includeLeftSubgroup F D).carrier :=
+      NumberField.AdeleRing.DivisionAlgebra.Aux.discrete_includeLeft_subgroup F D
+    rw [hrange]
+    exact AddSubgroup.isClosed_of_discrete
+      (H := NumberField.AdeleRing.DivisionAlgebra.Aux.includeLeftSubgroup F D)
+  -- compact ∩ closed, and discrete, hence finite
+  have hfin : (Z ∩ Set.range ι).Finite :=
+    (hZc.inter_right hclosed).finite ⟨inter_Discrete (Set.range ι) Z⟩
+  refine Set.Finite.of_finite_image (f := ι) (hfin.subset ?_)
+    (includeLeft_injective (F := F) (D := D)).injOn
+  rintro _ ⟨d, hd, rfl⟩
+  have hprod : (NumberField.AdeleRing.DivisionAlgebra.Aux.D𝔸ProdRight'' F D) (ι d)
+      = (d ⊗ₜ[F] (1 : NumberField.InfiniteAdeleRing F), d ⊗ₜ[F] (1 : 𝔸ᶠ[F])) := by
+    simp only [hι, NumberField.AdeleRing.DivisionAlgebra.Aux.D𝔸ProdRight'',
+      NumberField.AdeleRing.DivisionAlgebra.Aux.D𝔸ProdRight]
+    rfl
+  refine ⟨?_, ⟨d, rfl⟩⟩
+  simp only [hZdef, Set.mem_preimage, Set.mem_prod]
+  rw [show ((NumberField.AdeleRing.DivisionAlgebra.Aux.D𝔸ProdRight''
+    F D).toHomeomorph (ι d)) = _ from hprod]
+  exact ⟨hd.1, by simp only [hZf'def, Set.mem_preimage,
+    WithRigidification.algEquiv_tmul, one_smul]; exact hd.2⟩
+
+/-- `B ⊗[R] A ≃ₐ[A] A ⊗[R] B`: the right-action version of `Algebra.TensorProduct.comm`,
+built exactly as the first factor of `WithRigidification.algEquiv`. -/
+def tensorCommRight (R B A : Type*) [CommRing R] [CommRing A] [Ring B]
+    [Algebra R A] [Algebra R B] : B ⊗[R] A ≃ₐ[A] A ⊗[R] B :=
+  { __ := Algebra.TensorProduct.comm R B A, commutes' _ := rfl }
+
+@[simp] lemma tensorCommRight_tmul (R B A : Type*) [CommRing R] [CommRing A] [Ring B]
+    [Algebra R A] [Algebra R B] (b : B) (a : A) :
+    tensorCommRight R B A (b ⊗ₜ[R] a) = a ⊗ₜ[R] b := rfl
+
+omit [NumberField F] [WithRigidification F D] in
+/-- The `𝔸_F^∞`-algebra norm of `d ⊗ₜ 1` is the image of the `F`-algebra norm of `d`;
+this is `Algebra.norm_one_tmul` transported along `tensorCommRight`. -/
+lemma norm_tmul_one_infiniteAdele [IsQuaternionAlgebra F D] (d : D) :
+    Algebra.norm (NumberField.InfiniteAdeleRing F)
+      (d ⊗ₜ[F] (1 : NumberField.InfiniteAdeleRing F)) =
+      algebraMap F (NumberField.InfiniteAdeleRing F) (Algebra.norm F d) := by
+  rw [← Algebra.norm_one_tmul F (NumberField.InfiniteAdeleRing F) (B := D) d,
+    ← Algebra.norm_eq_of_algEquiv (tensorCommRight F D (NumberField.InfiniteAdeleRing F))
+      (d ⊗ₜ[F] (1 : NumberField.InfiniteAdeleRing F)), tensorCommRight_tmul]
+
+/--
+**PROVEN** from `isCompact_normOne_infiniteAdele` and `finite_setOf_tmul_mem_of_isCompact`.
 
 For `V` a COMPACT subgroup of `GL₂(𝔸ᶠ)`, the group of `d ∈ Dˣ` with `ι(d) ∈ V` and
 `Nm_{D/F}(d) = 1` is FINITE. Here `ι = WithRigidification.unitsIncl F D`, and
@@ -790,38 +1833,74 @@ complex place, `nrd = det` and `det(d) = ±1` bounds nothing (`SL₂(ℝ)` is no
 compact); the conclusion then fails for `D = M₂(F)`, whose corresponding group is
 commensurable with `SL₂(𝒪_F)`.
 
-**Available input.** `NumberField.AdeleRing.DivisionAlgebra.Aux.discrete_principalSubgroup`
-and `T_finite` in `Fermat/FLT/DivisionAlgebra/Finiteness.lean` are exactly the
-"discrete ∩ compact is finite" pattern, for `D_𝔸 = D ⊗ 𝔸_F`; the archimedean
-bound (compactness of `{nrd = 1}` in `D ⊗ ℝ = ∏ ℍ`) is what
-`IsQuaternionAlgebra.IsTotallyDefinite` has to supply and is the missing piece. -/
+**The assembly proven here.** The map `d ↦ (d : D)` is injective on the subgroup, and
+sends it into the set of `d : D` with `d ⊗ₜ 1` in the compact `{Nm = 1}` (by
+`norm_tmul_one_infiniteAdele`, since `Nm_{D/F}(d) = 1`) and with
+`WithRigidification.incl d ∈ Units.val '' V` (compact, since `V` is). Total
+definiteness enters ONLY through `isCompact_normOne_infiniteAdele`. -/
 theorem finite_normOne_units_inf_comap [NumberField.IsTotallyReal F] [IsQuaternionAlgebra F D]
     [IsQuaternionAlgebra.IsTotallyDefinite F D] (V : Subgroup GL₂(𝔸ᶠ[F]))
     (hV : IsCompact (X := GL₂(𝔸ᶠ[F])) (V : Set GL₂(𝔸ᶠ[F]))) :
     Finite ((Units.map (Algebra.norm F (S := D))).ker ⊓
-      V.comap (WithRigidification.unitsIncl F D) : Subgroup Dˣ) :=
-  sorry
+      V.comap (WithRigidification.unitsIncl F D) : Subgroup Dˣ) := by
+  set Zi : Set (D ⊗[F] (NumberField.InfiniteAdeleRing F)) :=
+    {x | Algebra.norm (NumberField.InfiniteAdeleRing F) x = 1} with hZidef
+  set Zf : Set M₂(𝔸ᶠ[F]) := Units.val '' V with hZfdef
+  set T : Set D := {d : D | (d ⊗ₜ[F] (1 : NumberField.InfiniteAdeleRing F)) ∈ Zi ∧
+      WithRigidification.incl (F := F) d ∈ Zf} with hTdef
+  have hTfin : T.Finite := finite_setOf_tmul_mem_of_isCompact (D := D) Zi
+    (isCompact_normOne_infiniteAdele (D := D)) Zf (hV.image Units.continuous_val)
+  haveI : Finite T := hTfin
+  refine Finite.of_injective (β := T) (fun x => ⟨(x.1 : D), ?_, ?_⟩) ?_
+  · have hker : Algebra.norm F ((x.1 : D)) = 1 := by
+      have h : (x.1 : Dˣ) ∈ (Units.map (Algebra.norm F (S := D))).ker := x.2.1
+      rw [MonoidHom.mem_ker] at h
+      simpa [Units.ext_iff] using h
+    simp only [hZidef, Set.mem_setOf_eq, norm_tmul_one_infiniteAdele (D := D), hker, map_one]
+  · have hVmem : WithRigidification.unitsIncl F D x.1 ∈ V := x.2.2
+    exact ⟨_, hVmem, rfl⟩
+  · intro a b hab
+    exact Subtype.ext (Units.ext (congrArg Subtype.val hab))
+
+end Archimedean
 
 /--
-**(sorry leaf — the Dirichlet-units input of Voight 17.7.13. NO definiteness.)**
+**PROVEN**, and with `comap_le_range_units_integers_of_isCompact` now proven too,
+sorry-free. NO definiteness.
 
 Writing `A := {d ∈ Dˣ : ι(d) ∈ V}` and `P := Fˣ ⊆ Dˣ`, the norm image `Nm(A ⊓ P)`
 has finite index in `Nm(A)`, for `V` a compact OPEN subgroup of `GL₂(𝔸ᶠ)`.
 
-**Why it is true.**
-* `Nm(A) ≤ 𝒪_Fˣ`. Indeed `nrd(d)² = Nm(d)` and `det V` is a compact subgroup of
-  `𝔸ᶠˣ`; every compact subgroup of `𝔸ᶠˣ` lies in `𝒪̂ˣ` (all its powers are
-  bounded, so `|y|_v = 1` at every `v`), and `Fˣ ∩ 𝒪̂ˣ = 𝒪_Fˣ`.
-* `𝒪_Fˣ` is FINITELY GENERATED (Dirichlet's unit theorem — mathlib has
-  `NumberField.Units.dirichletUnitTheorem`).
-* `A ⊓ P = {λ ∈ Fˣ : λ·1 ∈ V}` and `Nm(λ·1) = λ⁴` (because `finrank F D = 4`), so
-  `Nm(A ⊓ P) = W⁴` where `W := Fˣ ∩ V₀` and `V₀ ≤ 𝔸ᶠˣ` is the compact OPEN
-  subgroup of scalars lying in `V`. Openness of `V₀` inside the compact `𝒪̂ˣ`
-  makes `[𝒪_Fˣ : W]` finite; and a finitely generated abelian group has finite
-  index over its subgroup of fourth powers, so `[𝒪_Fˣ : W⁴]` is finite too.
+**The proof run here**, with `j : Fˣ →* 𝔸ᶠˣ` (`unitsAlgebraMapAdele`),
+`sc : Fˣ →* GL₂(𝔸ᶠ)` the scalars (`unitsAlgebraMapMatrix`) and
+`NM : GL₂(𝔸ᶠ) →* 𝔸ᶠˣ` the `𝔸ᶠ`-algebra norm of `M₂` (`unitsNormMatrix`,
+so `NM(m) = det(m)²`). Put
 
-**`IsCompact` and `IsOpen` are BOTH load-bearing here** — compactness puts `Nm(A)`
-inside `𝒪_Fˣ`, openness makes `W` of finite index. Total definiteness is NOT used:
+* `C := NM(V) ≤ 𝔸ᶠˣ`, COMPACT (continuous image of a compact set), and `Q := j⁻¹(C)`;
+* `V₀ ≤ 𝔸ᶠˣ` the scalars lying in `V`, OPEN (preimage of `V` under a continuous map),
+  and `W := j⁻¹(V₀) = sc⁻¹(V)`;
+* `Y := Q ⊓ W = j⁻¹(C ⊓ V₀)`.
+
+Then, in order:
+
+1. `Nm(A) ≤ Q`, because `j(Nm d) = NM(ι d)` (`unitsNormMatrix_unitsIncl`, i.e.
+   `WithRigidification.det_incl_sq`) and `ι d ∈ V`;
+2. `Nm(A ⊓ P) = W⁴` exactly, because `ι(λ·1) = sc λ`
+   (`WithRigidification.unitsIncl_algebraMap`) and `Nm(λ·1) = λ⁴`
+   (`norm_units_algebraMap_eq_pow`, since `finrank F D = 4`);
+3. `W⁴ ≤ Y`, because `j(λ⁴) = NM(sc λ) ∈ C` (`unitsNormMatrix_unitsAlgebraMapMatrix`);
+4. `[Q : Y] ≠ 0` from `relIndex_ne_zero_of_isCompact_of_isOpen` at `C ⊓ V₀ ≤ C`,
+   pulled back along `j` by `Subgroup.relIndex_comap_ne_zero`;
+5. `[Y : Y⁴] ≠ 0` by mathlib's `Subgroup.isFiniteRelIndex_map_powMonoidHom_of_fg`,
+   `Y` being finitely generated by `fg_comap_unitsAlgebraMapAdele_of_isCompact` and
+   `subgroup_fg_of_le_fg`; since `Y⁴ ≤ W⁴ ≤ Y` this gives `[Y : W⁴] ≠ 0`, and with
+   (4), `[Q : W⁴] ≠ 0`;
+6. finally `Nm(A ⊓ P) = W⁴ ≤ Nm(A) ≤ Q`, so `[Nm(A) : Nm(A ⊓ P)]` divides
+   `[Q : W⁴]` by `Subgroup.relIndex_mul_relIndex`.
+
+**`IsCompact` and `IsOpen` are BOTH load-bearing here** — compactness of `V` makes
+`C` compact, which is what forces `Q ≤ 𝒪_Fˣ` (step 5's finite generation);
+openness makes `V₀` open, which is step 4. Total definiteness is NOT used:
 this half is a statement about `F` and the level, not about the archimedean places
 of `D`, which is why the hypothesis is deliberately absent. -/
 theorem relIndex_normImage_ne_zero [IsQuaternionAlgebra F D] (V : Subgroup GL₂(𝔸ᶠ[F]))
@@ -832,12 +1911,91 @@ theorem relIndex_normImage_ne_zero [IsQuaternionAlgebra F D] (V : Subgroup GL₂
         (V.comap (WithRigidification.unitsIncl F D) ⊓
           MonoidHom.range (Units.map (algebraMap F D).toMonoidHom)))
       (Subgroup.map (Units.map (Algebra.norm F (S := D)))
-        (V.comap (WithRigidification.unitsIncl F D))) ≠ 0 :=
-  sorry
+        (V.comap (WithRigidification.unitsIncl F D))) ≠ 0 := by
+  set N : Dˣ →* Fˣ := Units.map (Algebra.norm F (S := D)) with hN
+  set A : Subgroup Dˣ := V.comap (WithRigidification.unitsIncl F D) with hA
+  set P : Subgroup Dˣ := MonoidHom.range (Units.map (algebraMap F D).toMonoidHom) with hP
+  set C : Subgroup 𝔸ᶠ[F]ˣ := V.map (unitsNormMatrix F) with hC
+  set Q : Subgroup Fˣ := C.comap (unitsAlgebraMapAdele F) with hQ
+  set V₀ : Subgroup 𝔸ᶠ[F]ˣ :=
+    V.comap (Units.map (RingHom.toMonoidHom (algebraMap 𝔸ᶠ[F] M₂(𝔸ᶠ[F])))) with hV₀
+  set W : Subgroup Fˣ := V₀.comap (unitsAlgebraMapAdele F) with hW
+  set Y : Subgroup Fˣ := Q ⊓ W with hY
+  have hCcomp : IsCompact ((C : Set 𝔸ᶠ[F]ˣ)) := hVc.image continuous_unitsNormMatrix
+  -- membership in `W` is membership of the scalar matrix in `V`
+  have hmemW : ∀ x : Fˣ, x ∈ W ↔ unitsAlgebraMapMatrix F x ∈ V := by
+    intro x
+    rw [hW, Subgroup.mem_comap, hV₀, Subgroup.mem_comap, unitsAlgebraMapMatrix_eq (F := F)]
+    rfl
+  -- (1) the norm image of `A` lands in `Q`
+  have hS1 : Subgroup.map N A ≤ Q := by
+    intro y hy
+    obtain ⟨d, hd, rfl⟩ := Subgroup.mem_map.mp hy
+    exact Subgroup.mem_comap.mpr
+      (Subgroup.mem_map.mpr ⟨_, hd, unitsNormMatrix_unitsIncl (D := D) d⟩)
+  -- (2) the norm image of `A ⊓ P` is the group of fourth powers of `W`
+  have hS2 : Subgroup.map N (A ⊓ P) = W.map (powMonoidHom 4) := by
+    apply le_antisymm
+    · intro y hy
+      obtain ⟨d, hd, rfl⟩ := Subgroup.mem_map.mp hy
+      obtain ⟨hdA, hdP⟩ := Subgroup.mem_inf.mp hd
+      obtain ⟨x, rfl⟩ := hdP
+      refine Subgroup.mem_map.mpr ⟨x, ?_, ?_⟩
+      · rw [hmemW]
+        have hx : WithRigidification.unitsIncl F D (x.map (algebraMap F D).toMonoidHom) ∈ V := hdA
+        rwa [WithRigidification.unitsIncl_algebraMap] at hx
+      · simpa [powMonoidHom] using (norm_units_algebraMap_eq_pow (D := D) x).symm
+    · intro y hy
+      obtain ⟨x, hx, rfl⟩ := Subgroup.mem_map.mp hy
+      refine Subgroup.mem_map.mpr ⟨x.map (algebraMap F D).toMonoidHom,
+        Subgroup.mem_inf.mpr ⟨?_, ⟨x, rfl⟩⟩, ?_⟩
+      · show WithRigidification.unitsIncl F D _ ∈ V
+        rw [WithRigidification.unitsIncl_algebraMap]
+        exact (hmemW x).mp hx
+      · simpa [powMonoidHom] using norm_units_algebraMap_eq_pow (D := D) x
+  -- (3) fourth powers of `W` lie in `Y`
+  have hWQ : W.map (powMonoidHom 4) ≤ Q := by
+    intro y hy
+    obtain ⟨x, hx, rfl⟩ := Subgroup.mem_map.mp hy
+    refine Subgroup.mem_comap.mpr
+      (Subgroup.mem_map.mpr ⟨unitsAlgebraMapMatrix F x, (hmemW x).mp hx, ?_⟩)
+    rw [unitsNormMatrix_unitsAlgebraMapMatrix]
+    simp [powMonoidHom]
+  have hS3 : W.map (powMonoidHom 4) ≤ Y := by
+    refine le_inf hWQ ?_
+    intro y hy
+    obtain ⟨x, hx, rfl⟩ := Subgroup.mem_map.mp hy
+    exact W.pow_mem hx 4
+  -- (4) `Y` has finite index in `Q`
+  have hS4 : Y.relIndex Q ≠ 0 := by
+    have hscal : Continuous (fun x : 𝔸ᶠ[F] => (algebraMap 𝔸ᶠ[F] M₂(𝔸ᶠ[F])) x) := by
+      refine continuous_matrix fun i j => ?_
+      simp only [Matrix.algebraMap_matrix_apply]
+      split <;> fun_prop
+    have hopen : IsOpen ((V₀ : Set 𝔸ᶠ[F]ˣ)) := hVo.preimage (Units.continuous_map hscal)
+    have hkey := relIndex_ne_zero_of_isCompact_of_isOpen C V₀ hCcomp hopen
+    have h2 := Subgroup.relIndex_comap_ne_zero (unitsAlgebraMapAdele F) hkey
+    rwa [Subgroup.comap_inf] at h2
+  -- (5) `Y` is finitely generated, so its fourth powers have finite index in it
+  have hYfg : Y.FG :=
+    subgroup_fg_of_le_fg (fg_comap_unitsAlgebraMapAdele_of_isCompact C hCcomp) inf_le_left
+  have hS5 : (Y.map (powMonoidHom 4)).relIndex Y ≠ 0 :=
+    Subgroup.isFiniteRelIndex_iff_relIndex_ne_zero.mp
+      (Subgroup.isFiniteRelIndex_map_powMonoidHom_of_fg hYfg (by norm_num))
+  have hS6 : (W.map (powMonoidHom 4)).relIndex Y ≠ 0 := fun h0 =>
+    hS5 (Subgroup.relIndex_eq_zero_of_le_left (Subgroup.map_mono inf_le_right) h0)
+  have hS7 : (W.map (powMonoidHom 4)).relIndex Q ≠ 0 := Subgroup.relIndex_ne_zero_trans hS6 hS4
+  -- (6) conclude
+  have hle1 : Subgroup.map N (A ⊓ P) ≤ Subgroup.map N A := Subgroup.map_mono inf_le_left
+  have hmul := Subgroup.relIndex_mul_relIndex _ _ _ hle1 hS1
+  intro h0
+  rw [h0, zero_mul] at hmul
+  rw [hS2] at hmul
+  exact hS7 hmul.symm
 
 /--
 **Voight, Lemma 17.7.13, in its textbook form**: for `V ≤ GL₂(𝔸ᶠ)` compact open,
-`Fˣ` has finite index in `{d ∈ Dˣ : ι(d) ∈ V}`. PROVEN here from the two leaves
+`Fˣ` has finite index in `{d ∈ Dˣ : ι(d) ∈ V}`. PROVEN here from the two theorems
 above; no level structure, no double-coset representative `g`.
 
 The proof is the classical two-step argument, run inside the group `A` itself.
@@ -884,8 +2042,10 @@ theorem relIndex_range_algebraMap_units_ne_zero [NumberField.IsTotallyReal F]
 /--
 **Voight, Lemma 17.7.13: the unit group of an order in a totally definite
 quaternion algebra is finite modulo the centre.** PROVEN 2026-07-27 from
-`relIndex_range_algebraMap_units_ne_zero`; two sorried leaves remain beneath it,
-`finite_normOne_units_inf_comap` and `relIndex_normImage_ne_zero`.
+`relIndex_range_algebraMap_units_ne_zero`. `finite_normOne_units_inf_comap` and
+`relIndex_normImage_ne_zero` beneath it were PROVEN 2026-07-28; the two leaves
+that remain beneath THEM are `isCompact_normOne_infiniteAdele` and
+`finite_setOf_tmul_mem_of_isCompact`.
 
 `Fˣ` has finite index in `U ∩ g⁻¹ Dˣ g`.
 
@@ -974,15 +2134,22 @@ The group theory (`relIndex_sup_ne_zero_of_le_center`,
 `relIndex_sup_inf_ne_zero_of_le_center`, `relIndex_sup_ne_zero_of_normal`), the
 transport `relIndex_ray_ne_zero`, `index_ray_ne_zero`, and (2026-07-27, second
 pass) the whole of `relIndex_unitsOrder_ne_zero` and
-`relIndex_range_algebraMap_units_ne_zero` are proven. Exactly TWO sorried leaves
-remain, and they are the two halves of Voight 17.7.13:
+`relIndex_range_algebraMap_units_ne_zero` are proven. The two halves of Voight
+17.7.13, `finite_normOne_units_inf_comap` (the archimedean half — the only
+consumer of `IsQuaternionAlgebra.IsTotallyDefinite` in this file) and
+`relIndex_normImage_ne_zero` (the Dirichlet-units half, no definiteness), were
+then PROVEN 2026-07-28. TWO sorried leaves remain beneath them:
 
-* `finite_normOne_units_inf_comap` — the archimedean half:
-  `{d ∈ Dˣ : ι(d) ∈ V, Nm(d) = 1}` is finite for compact `V`. This is the ONLY
-  consumer of `IsQuaternionAlgebra.IsTotallyDefinite` in this file.
-* `relIndex_normImage_ne_zero` — the Dirichlet-units half:
-  `[Nm(A) : Nm(A ⊓ Fˣ)] < ∞`. Uses no definiteness; it is a statement about
-  `𝒪_Fˣ` and the level.
+* `isCompact_normOne_infiniteAdele` — `{Nm = 1}` is compact in `D ⊗ 𝔸^∞`. PROVEN
+  2026-07-28 by decomposition over the infinite places, as is its place-local half
+  `isCompact_normOne_completion`. Of the three leaves beneath them,
+  `exists_ringEquiv_quaternion_of_isTotallyDefinite` (`D ⊗ F_v ≃+* ℍ` topologically —
+  where total definiteness was consumed, there and nowhere else),
+  `norm_infiniteAdele_apply` and `continuous_infiniteAdeleTensorPiEquiv_symm` (both
+  definiteness-free) are ALL THREE PROVEN as of 2026-07-28 — the first by
+  `flt-lean-298`'s lineage, the other two by `flt-lean-293`. This module has no
+  sorried declaration left.
+* `finite_setOf_tmul_mem_of_isCompact` — `D` is discrete and closed in `D ⊗ 𝔸_F`.
 
 `index_ray_ne_zero` — finiteness of a ray class group of `F`, which does not
 mention `D` — was the third leaf on this list and is now PROVEN from the
