@@ -2696,16 +2696,20 @@ RESTRICTED system" step that the leaf's docstring already prescribed.
 `NoetherianLocalExtSystem.restrict` (PROVEN) carries the FIRST rung down to the
 index set the SECOND one lives on, which is the only reindexing the assembly needs.
 
-**THE THIRD LEAF, AND WHY IT IS NOT AVOIDABLE HERE.**  The second rung is built
-for `v : B →+* A` over the first rung's tower, so it needs `EssFinitePresentation v`
-— and the hypotheses of 00R7 give `EssFinitePresentation (v.comp g)` and
-`EssFinitePresentation g` instead.  Deducing the first from the other two is
-`essFinitePresentation_of_essFinitePresentation_comp`, the essential analogue of
-[Stacks 00F4] = mathlib's `RingHom.FinitePresentation.of_comp_finiteType`.  It is a
-statement about ring maps alone, with no towers in it, and a full proof route is in
-its docstring.  Rebuilding the second rung from scratch against the composite
+**THE THIRD LEAF, AND WHY IT IS NOT AVOIDABLE HERE** (**that leaf is now PROVEN**,
+2026-07-30).  The second rung is built for `v : B →+* A` over the first rung's
+tower, so it needs `EssFinitePresentation v` — and the hypotheses of 00R7 give
+`EssFinitePresentation (v.comp g)` and `EssFinitePresentation g` instead.  Deducing
+the first from the other two is `essFinitePresentation_of_essFinitePresentation_comp`,
+the essential analogue of [Stacks 00F4].  It is a statement about ring maps alone,
+with no towers in it.  Rebuilding the second rung from scratch against the composite
 hypothesis — the alternative — would duplicate the whole of 10.127.11 and is
 strictly more work.
+
+Worth recording, because the cut's own route audit got this wrong: the proof does
+**not** go through mathlib's `RingHom.FinitePresentation.of_comp_finiteType`, and
+needs only the finite GENERATING set of `T_B`, never its relations.  See that
+lemma's docstring for the route that replaced the planned one.
 
 **AXIS SEARCHED.**  Ways to cut the leaf so that the 10.127.11 construction is
 written ONCE.  NOT searched: whether the construction itself decomposes further
@@ -2890,8 +2894,116 @@ def NoetherianLocalExtSystem.restrict {R B : Type u} [CommRing R] [CommRing B]
     exact ⟨⟨j, bs.le_trans' i.2 h⟩, h, hj⟩
   isLocalizationMidT := fun h => e.isLocalizationMidT h
 
+/-! #### THE TWO PRESENTATION-BOOKKEEPING LEMMAS, HOISTED HERE 2026-07-30
+
+Both were written on 2026-07-27 for 05UV's finite-generation half and stood ~3000
+lines below.  `essFinitePresentation_of_essFinitePresentation_comp` (immediately
+below) turned out to be provable over exactly these two, so they are hoisted to
+here — VERBATIM, same names, same signatures, same proofs — and notes are left at
+both old sites.  Nothing else moved and no call site changed. -/
+
+/-- **A finitely presented ring map followed by a localization is essentially
+of finite presentation.**  This is `EssFinitePresentation` read off its own
+definition, with the one piece of friction the definition creates handled
+once and for all: the definition demands
+`@IsLocalization T _ M S _ v.toAlgebra`, i.e. the localization statement for
+the algebra structure *built from* `v`, whereas at a use site the ambient
+`Algebra T S` instance is the one in scope.  The two are equal by
+`Algebra.algebra_ext` (their `algebraMap`s are literally the same function),
+and every construction of an `EssFinitePresentation` below goes through this
+lemma rather than repeating that transport. -/
+theorem essFinitePresentation_of_isLocalization {R T S : Type u} [CommRing R] [CommRing T]
+    [CommRing S] [Algebra T S] (M : Submonoid T) [IsLocalization M S]
+    {g : R →+* T} (hg : g.FinitePresentation) :
+    EssFinitePresentation ((algebraMap T S).comp g) := by
+  refine ⟨T, ‹_›, g, algebraMap T S, M, hg, rfl, ?_⟩
+  have h : (algebraMap T S).toAlgebra = ‹Algebra T S› :=
+    Algebra.algebra_ext _ _ (fun _ => rfl)
+  rw [h]
+  infer_instance
+
+/-- **A quotient of an essentially-of-finite-presentation map by a FINITELY
+GENERATED kernel is again essentially of finite presentation** (PROVEN
+2026-07-27).  This is the second half of 05UV's presentation bookkeeping: it
+is what converts "`J` is finitely generated" into the conclusion "`S` is
+essentially of finite presentation over `R`".
+
+**The proof, and the one step that needs care.**  Write the hypothesis as
+`P = M⁻¹T` with `R → T` finitely presented.  A finite generating set of
+`ker w` lives in the LOCALIZATION, so its members must have their denominators
+cleared: `IsLocalization.surj` writes each generator as `vT a / vT m`, and
+because `vT m` is a unit the ideal `J ⊆ T` spanned by the numerators satisfies
+`J·P = ker w` exactly.  Then `T ⧸ J` is finitely presented over `R`
+(`RingHom.FinitePresentation.comp_surjective`) and `B` is its localization at
+the image of `M` — which is precisely mathlib's
+`IsLocalization.of_surjective`, applied to the square
+`T → P`, `T ⧸ J → B`.
+
+Note this is NOT an instance of a general "`EssFinitePresentation` is stable
+under composition" lemma, which is the one closure property this development
+deliberately does not prove (see `essFinitePresentation_stalkMap`): the
+surjection here is by a finitely generated ideal, which is exactly the
+hypothesis that makes the denominators clearable. -/
+theorem essFinitePresentation_comp_of_fg_ker {R P B : Type u}
+    [CommRing R] [CommRing P] [CommRing B]
+    {gP : R →+* P} {w : P →+* B} (hfpP : EssFinitePresentation gP)
+    (hw : Function.Surjective w) (hker : (RingHom.ker w).FG) :
+    EssFinitePresentation (w.comp gP) := by
+  obtain ⟨T, _, gT, vT, M, hgT, hvT, hloc⟩ := hfpP
+  letI : Algebra T P := vT.toAlgebra
+  haveI : IsLocalization M P := hloc
+  have halg : ∀ t : T, algebraMap T P t = vT t := fun _ => rfl
+  obtain ⟨s, hs⟩ := hker
+  -- clear denominators in the chosen generators of `ker w`
+  set num : P → T := fun x => (IsLocalization.surj M x).choose.1 with hnum
+  set den : P → M := fun x => (IsLocalization.surj M x).choose.2 with hden
+  have hspec : ∀ x : P, x * algebraMap T P (den x) = algebraMap T P (num x) :=
+    fun x => (IsLocalization.surj M x).choose_spec
+  classical
+  set J : Ideal T := Ideal.span (s.image num : Finset T) with hJ
+  have hJmap : J.map vT = RingHom.ker w := by
+    apply le_antisymm
+    · rw [hJ, Ideal.map_span, Ideal.span_le]
+      rintro _ ⟨_, ht, rfl⟩
+      simp only [Finset.coe_image, Set.mem_image, Finset.mem_coe] at ht
+      obtain ⟨x, hx, rfl⟩ := ht
+      have hxk : x ∈ RingHom.ker w := by rw [← hs]; exact Ideal.subset_span hx
+      rw [SetLike.mem_coe, ← halg, ← hspec x]
+      exact Ideal.mul_mem_right _ _ hxk
+    · rw [← hs, Ideal.span_le]
+      intro x hx
+      have hu : IsUnit (algebraMap T P (den x)) := IsLocalization.map_units P (den x)
+      obtain ⟨u, hu'⟩ := hu
+      have : x = vT (num x) * (↑u⁻¹ : P) := by
+        rw [← halg, ← hspec x, ← hu', mul_assoc]
+        simp
+      rw [SetLike.mem_coe, this]
+      refine Ideal.mul_mem_right _ _ ?_
+      exact Ideal.mem_map_of_mem _ (Ideal.subset_span (by
+        simp only [Finset.coe_image, Set.mem_image, Finset.mem_coe]
+        exact ⟨x, hx, rfl⟩))
+  -- the quotient presentation
+  have hJle : J ≤ RingHom.ker (w.comp vT) := by
+    intro t ht
+    have : vT t ∈ RingHom.ker w := by rw [← hJmap]; exact Ideal.mem_map_of_mem _ ht
+    simpa [RingHom.mem_ker] using this
+  set v' : (T ⧸ J) →+* B := Ideal.Quotient.lift J (w.comp vT) (fun a ha => hJle ha) with hv'
+  have hv'mk : v'.comp (Ideal.Quotient.mk J) = w.comp vT := by
+    ext t; simp [hv']
+  letI : Algebra (T ⧸ J) B := v'.toAlgebra
+  have halg' : ∀ t : T ⧸ J, algebraMap (T ⧸ J) B t = v' t := fun _ => rfl
+  refine ⟨T ⧸ J, inferInstance, (Ideal.Quotient.mk J).comp gT, v',
+    M.map (Ideal.Quotient.mk J), ?_, ?_, ?_⟩
+  · exact hgT.comp_surjective Ideal.Quotient.mk_surjective ⟨s.image num, by rw [← hJ]; simp [hJ]⟩
+  · rw [← RingHom.comp_assoc, hv'mk, RingHom.comp_assoc, hvT]
+  · refine IsLocalization.of_surjective M P (Ideal.Quotient.mk J) Ideal.Quotient.mk_surjective
+      w hw ?_ ?_
+    · ext t; simp [halg, halg', hv']
+    · rw [Ideal.mk_ker, ← hJmap]
+      exact le_of_eq rfl
+
 /-- **CANCELLATION FOR `EssFinitePresentation`: the essential analogue of
-[Stacks 00F4]** (SORRY LEAF; cut 2026-07-28 out of
+[Stacks 00F4]** (**PROVEN 2026-07-30**; cut 2026-07-28 out of
 `nonempty_noetherianApproxSystem_of_baseSystem`).
 
 *If `R → A` is essentially of finite presentation and so is `R → B`, then
@@ -2909,29 +3021,61 @@ exactly [Stacks 00F4]: `(g.comp f).FinitePresentation → f.FiniteType →
 g.FinitePresentation`.  What this leaf adds is the passage through the two
 localizations.
 
-**A FULL ROUTE, worked out at the cut and believed complete.**  Unfold both
-hypotheses: `A = M_A⁻¹T_A` with `R →+* T_A` of finite presentation, and
-`B = M_B⁻¹T_B` with `R →+* T_B` of finite presentation.
+**THE ROUTE ACTUALLY TAKEN (2026-07-30), which is NOT the one the cut planned.**
+Unfold both hypotheses: `A = M_A⁻¹T_A` with `R →+* T_A` of finite presentation,
+and `B = M_B⁻¹T_B` with `R →+* T_B` of finite presentation.  Then put
 
-1. *Lift `T_B → A` to a localization of `T_A`.*  `T_B` is finitely generated over
-   `R`, say by `y_1, …, y_n`; each image of `y_k` in `A` is a fraction
-   `t_k / m_k` with `t_k ∈ T_A`, `m_k ∈ M_A`.  `T_B` is finitely PRESENTED, so it
-   has finitely many relations `f_1, …, f_r`; each `f_l` evaluated at the chosen
-   fractions dies in `A`, hence is killed by some `m'_l ∈ M_A`.  Put
-   `m = (∏ m_k)(∏ m'_l)` and `T := (T_A)_m`.  Then there is an honest `R`-algebra
-   map `θ : T_B → T` whose composite with `T → A` is `T_B → B → A`, since two
-   `R`-algebra maps out of `T_B` agreeing on the `y_k` agree.  `T` is again of
-   finite presentation over `R` (a localization at one element) and `A = M⁻¹T` for
-   `M` the image of `M_A`.
-2. *`T` is of finite presentation over `T_B`.*  Apply
-   `RingHom.FinitePresentation.of_comp_finiteType` to `R → T_B → T`: `R → T` is of
-   finite presentation and `R → T_B` is of finite type.  **This is the only step
-   that is not formal, and it is the pin's lemma applied verbatim.**
-3. *Base change to `B`.*  `D := B ⊗_{T_B} T` is of finite presentation over `B`,
-   and `D` is the localization of `T` at the image of `M_B`.
-4. *`A` is a localization of `D`.*  The image of `M_B` in `A` consists of units
-   (elements of `M_B` become units in `B`, and ring maps preserve units), so
-   inverting `M_B` before `M` changes nothing: `A = M⁻¹T = (image of M)⁻¹D`.
+  `P := B ⊗_R T_A`,   `L := W⁻¹P` for `W` the image of `M_A` in `P`,
+
+and everything is bookkeeping over the two presentation lemmas already in this
+file.  `B → P` is of finite presentation by base change
+(`Algebra.FinitePresentation.baseChange`), so `B → L` is essentially of finite
+presentation by `essFinitePresentation_of_isLocalization` — note that `L` is
+introduced as `Localization W`, so *no* "localization commutes with base change"
+lemma is needed and `L ≅ B ⊗_R A` is never proved.  Then `L ↠ A` with a
+FINITELY GENERATED kernel, and `essFinitePresentation_comp_of_fg_ker` finishes.
+
+The two maps that make the kernel computable are the ones the naive
+`B ⊗_R T_A → A` does not have:
+
+* `μ : L →+* A`, from `Algebra.TensorProduct.lift` of `v` and `T_A → A`, then
+  `IsLocalization.lift` (the image of `M_A` is already invertible in `A`);
+* `τ : A →+* L`, from `IsLocalization.lift` applied to `T_A → P → L` (the image
+  of `M_A` is invertible in `L` by construction of `W`).  `τ` is a SECTION of
+  `μ`, which is what makes `μ` surjective and drives the kernel computation.
+
+*The kernel.*  With `α b := ι(b ⊗ 1)` and `β b := τ(v b)` — both ring maps
+`B → L` — the kernel of `μ` is generated by `{α b - β b : b ∈ B}`, and that set
+is generated by the finitely many `b = vB y_k` for `y_1, …, y_n` a finite
+`R`-algebra generating set of `T_B`.  Two observations do it:
+
+1. `{b | α b = β b in L/K}` is an `R`-subalgebra of `B` (both `α` and `β` are
+   ring maps, and they AGREE on the image of `R` because `g r ⊗ 1` and
+   `1 ⊗ gA r` are both `algebraMap R P r`).  It contains `vB(T_B)` by
+   `Algebra.adjoin_induction`, and then all of `B`: every `b` satisfies
+   `b · vB m = vB t`, and `α (vB m)` is a UNIT, so `α b = β b` by cancellation.
+   **This is where `hB` is spent, and it is the only place.**
+2. `x ↦ q x` and `x ↦ q (τ (μ x))` are two ring maps `L → L/K`, so
+   `IsLocalization.ringHom_ext` reduces their equality to `P`, and
+   `Algebra.TensorProduct.ringHom_ext` reduces THAT to the two factors — `B`,
+   where it is (1), and `T_A`, where `τ (μ (ι (iR t))) = ι (iR t)` holds on the
+   nose.  So `q = q ∘ τ ∘ μ`, and `x ∈ ker μ` gives `q x = q (τ 0) = 0`.
+
+**WHAT THIS AVOIDS, recorded because the cut believed it unavoidable.**  The
+route planned at the cut ran through *lifting* `T_B → A` to a localization
+`(T_A)_m` — clear the denominators of the images of `y_1, …, y_n`, then kill the
+finitely many relations of `T_B` by a further element of `M_A` — and only then
+applied `RingHom.FinitePresentation.of_comp_finiteType` (= the non-essential
+[Stacks 00F4], in `Mathlib/RingTheory/FinitePresentation.lean`, verified present
+2026-07-28) to `R → T_B → (T_A)_m`, followed by base change to `B` and one more
+localization.  **That lifting step is the expensive one — it needs the relations
+of a finite presentation, not just the generators — and the route above does not
+use it, nor `of_comp_finiteType`, at all.**  What replaces both is the pair
+`(μ, τ)` above: the section `τ` is what turns "`A` is a quotient of something
+finitely presented over `B`" into a statement about an ideal one can generate by
+hand.  Only the finite GENERATING set of `T_B` is used, never its relations —
+which is why `Algebra.FiniteType` (`RingHom.FiniteType.of_finitePresentation`)
+is all that is extracted from `hB`.
 
 **FAITHFULNESS.**  The degenerate corners are TRUE rather than vacuous, so nothing
 is hiding in them: `A = 0` is witnessed by `T = B` with `M = B` itself (`0 ∈ M`, and
@@ -2939,7 +3083,7 @@ is hiding in them: `A = 0` is witnessed by `T = B` with `M = B` itself (`0 ∈ M
 `B` is Noetherian the statement collapses to `EssFiniteType.of_comp` plus
 `RingHom.FinitePresentation.of_finiteType`, both in the pin.
 
-**`_hB` IS LOAD-BEARING** — the statement is FALSE without it, and the witness is
+**`hB` IS LOAD-BEARING** — the statement is FALSE without it, and the witness is
 worth recording because it is the first thing a prover will try to drop.  Take
 `R = ℤ`, `B = ℚ[x₁, x₂, x₃, …]` on countably many variables, `A = ℚ`, with
 `g : ℤ → B` the structure map and `v : B → ℚ` sending every `xᵢ` to `0`.  Then
@@ -2953,9 +3097,167 @@ should verify the middle clause before relying on it.  The POSITIVE direction �
 four-step route above — is what this leaf actually asks for.)* -/
 theorem essFinitePresentation_of_essFinitePresentation_comp {R B A : Type u}
     [CommRing R] [CommRing B] [CommRing A] {g : R →+* B} {v : B →+* A}
-    (_hA : EssFinitePresentation (v.comp g)) (_hB : EssFinitePresentation g) :
-    EssFinitePresentation v :=
-  sorry
+    (hA : EssFinitePresentation (v.comp g)) (hB : EssFinitePresentation g) :
+    EssFinitePresentation v := by
+  classical
+  obtain ⟨TA, iTA, gA, vA, MA, hgA, hvA, hlocA⟩ := hA
+  obtain ⟨TB, iTB, gB, vB, MB, hgB, hvB, hlocB⟩ := hB
+  letI := iTA
+  letI := iTB
+  letI : Algebra R B := g.toAlgebra
+  letI : Algebra R TA := gA.toAlgebra
+  letI : Algebra R TB := gB.toAlgebra
+  letI : Algebra TA A := vA.toAlgebra
+  letI : Algebra TB B := vB.toAlgebra
+  haveI : IsLocalization MA A := hlocA
+  haveI : IsLocalization MB B := hlocB
+  letI : Algebra R A := (v.comp g).toAlgebra
+  have hAR : ∀ r : R, algebraMap R A r = v (g r) := fun _ => rfl
+  have hBR : ∀ r : R, algebraMap R B r = g r := fun _ => rfl
+  have hTBR : ∀ r : R, algebraMap R TB r = gB r := fun _ => rfl
+  have hBTB : ∀ t : TB, algebraMap TB B t = vB t := fun _ => rfl
+  haveI htowA : IsScalarTower R TA A :=
+    IsScalarTower.of_algebraMap_eq fun r => (DFunLike.congr_fun hvA r).symm
+  -- ## `P = B ⊗_R T_A`, of finite presentation over `B`
+  set iL : B →+* B ⊗[R] TA := Algebra.TensorProduct.includeLeftRingHom with hiL
+  set iR : TA →+* B ⊗[R] TA :=
+    (Algebra.TensorProduct.includeRight : TA →ₐ[R] B ⊗[R] TA).toRingHom with hiR
+  have hiLapp : ∀ b : B, iL b = b ⊗ₜ[R] (1 : TA) := fun _ => rfl
+  have hiRapp : ∀ t : TA, iR t = (1 : B) ⊗ₜ[R] t := fun _ => rfl
+  haveI : Algebra.FinitePresentation R TA := hgA
+  have hfpiL : iL.FinitePresentation := by
+    have h : iL.toAlgebra = inferInstanceAs (Algebra B (B ⊗[R] TA)) :=
+      Algebra.algebra_ext _ _ (fun _ => rfl)
+    show @Algebra.FinitePresentation B (B ⊗[R] TA) _ _ iL.toAlgebra
+    rw [h]; infer_instance
+  -- ## `L = W⁻¹P`, `W` the image of `M_A`; `B → L` is essentially of finite presentation
+  set W : Submonoid (B ⊗[R] TA) := MA.map iR with hW
+  set ι : (B ⊗[R] TA) →+* Localization W := algebraMap (B ⊗[R] TA) (Localization W) with hι
+  letI : Algebra R (Localization W) := (ι.comp (algebraMap R (B ⊗[R] TA))).toAlgebra
+  -- ## `τ : A →+* L`, the section
+  have hτunit : ∀ y : MA, IsUnit ((ι.comp iR) y) := by
+    intro y
+    exact IsLocalization.map_units (M := W) (Localization W) ⟨iR y.1, ⟨y.1, y.2, rfl⟩⟩
+  set τ : A →+* Localization W := IsLocalization.lift (M := MA) hτunit with hτ
+  have hτeq : ∀ t : TA, τ (algebraMap TA A t) = ι (iR t) :=
+    fun t => IsLocalization.lift_eq (M := MA) hτunit t
+  -- ## `hh : P →+* A` and `μ : L →+* A`
+  set vAlg : B →ₐ[R] A := { v with commutes' := fun _ => rfl } with hvAlg
+  set hh : (B ⊗[R] TA) →+* A :=
+    (Algebra.TensorProduct.lift vAlg (IsScalarTower.toAlgHom R TA A)
+      (fun _ _ => Commute.all _ _)).toRingHom with hhh
+  have hhtmul : ∀ (b : B) (t : TA), hh (b ⊗ₜ[R] t) = v b * algebraMap TA A t := by
+    intro b t; rfl
+  have hhiL : ∀ b : B, hh (iL b) = v b := by
+    intro b; rw [hiLapp, hhtmul]; simp
+  have hhiR : ∀ t : TA, hh (iR t) = algebraMap TA A t := by
+    intro t; rw [hiRapp, hhtmul]; simp
+  have hμunit : ∀ y : W, IsUnit (hh y) := by
+    rintro ⟨y, m, hm, rfl⟩
+    rw [hhiR]
+    exact IsLocalization.map_units (M := MA) A ⟨m, hm⟩
+  set μ : Localization W →+* A := IsLocalization.lift (M := W) hμunit with hμ
+  have hμι : ∀ p : B ⊗[R] TA, μ (ι p) = hh p :=
+    fun p => IsLocalization.lift_eq (M := W) hμunit p
+  have hμτ : ∀ a : A, μ (τ a) = a := by
+    have hcomp : (μ.comp τ) = RingHom.id A := by
+      apply IsLocalization.ringHom_ext MA
+      ext t
+      simp only [RingHom.comp_apply, RingHom.id_apply]
+      rw [hτeq, hμι, hhiR]
+    intro a; exact DFunLike.congr_fun hcomp a
+  have hμsurj : Function.Surjective μ := fun a => ⟨τ a, hμτ a⟩
+  -- ## `K`, generated by `α - β` on a finite `R`-algebra generating set of `T_B`
+  haveI : Algebra.FiniteType R TB := RingHom.FiniteType.of_finitePresentation hgB
+  obtain ⟨s, hs⟩ := (‹Algebra.FiniteType R TB›).out
+  set K : Ideal (Localization W) :=
+    Ideal.span ((fun t : TB => ι (iL (vB t)) - τ (v (vB t))) '' (s : Set TB)) with hK
+  have hKfg : K.FG := Submodule.fg_span (Set.Finite.image _ s.finite_toSet)
+  set q : Localization W →+* Localization W ⧸ K := Ideal.Quotient.mk K with hq
+  set α : B →+* (Localization W) ⧸ K := q.comp (ι.comp iL) with hα
+  set β : B →+* (Localization W) ⧸ K := q.comp (τ.comp v) with hβ
+  have hαapp : ∀ b : B, α b = q (ι (iL b)) := fun _ => rfl
+  have hβapp : ∀ b : B, β b = q (τ (v b)) := fun _ => rfl
+  -- `α` and `β` agree on the image of `R`: `g r ⊗ 1` and `1 ⊗ gA r` are both `algebraMap R P r`
+  have hRagree : ∀ r : R, α (g r) = β (g r) := by
+    intro r
+    have h1 : iL (g r) = algebraMap R (B ⊗[R] TA) r := by
+      rw [hiLapp, ← hBR r, Algebra.TensorProduct.algebraMap_apply]
+    have h2 : τ (v (g r)) = ι (algebraMap R (B ⊗[R] TA) r) := by
+      rw [← hAR r, IsScalarTower.algebraMap_apply R TA A, hτeq, hiRapp,
+        Algebra.TensorProduct.algebraMap_apply']
+    rw [hαapp, hβapp, h1, h2]
+  -- ## `α = β` on `vB (T_B)`, by `adjoin` induction, hence on all of `B`, by unit cancellation
+  have hgen : ∀ t : TB, α (vB t) = β (vB t) := by
+    intro t
+    have ht : t ∈ Algebra.adjoin R (s : Set TB) := hs ▸ Algebra.mem_top
+    induction ht using Algebra.adjoin_induction with
+    | mem x hx =>
+        have hmem : ι (iL (vB x)) - τ (v (vB x)) ∈ K := Ideal.subset_span ⟨x, hx, rfl⟩
+        rw [hαapp, hβapp, ← sub_eq_zero, ← map_sub]
+        exact (Ideal.Quotient.eq_zero_iff_mem).2 hmem
+    | algebraMap r =>
+        have h : vB (algebraMap R TB r) = g r := by
+          rw [hTBR]; exact DFunLike.congr_fun hvB r
+        rw [h]; exact hRagree r
+    | add x y _ _ ihx ihy => simp only [map_add, ihx, ihy]
+    | mul x y _ _ ihx ihy => simp only [map_mul, ihx, ihy]
+  have hall : ∀ b : B, α b = β b := by
+    intro b
+    obtain ⟨⟨t, m⟩, hbm⟩ := IsLocalization.surj (M := MB) b
+    have hbm' : b * vB m.1 = vB t := by rw [← hBTB, ← hBTB]; exact hbm
+    have hu : IsUnit (α (vB m.1)) := by
+      have hvu : IsUnit (vB m.1) := by
+        rw [← hBTB]; exact IsLocalization.map_units (M := MB) B m
+      exact hvu.map α
+    have h1 : α b * α (vB m.1) = α (vB t) := by rw [← map_mul, hbm']
+    have h2 : β b * α (vB m.1) = α (vB t) := by
+      rw [hgen m.1, ← map_mul, hbm', hgen t]
+    obtain ⟨w, hw⟩ := hu
+    have key : α b * (w : (Localization W) ⧸ K) = β b * (w : (Localization W) ⧸ K) := by
+      rw [hw]; exact h1.trans h2.symm
+    calc α b = α b * (w : (Localization W) ⧸ K) * ((w⁻¹ : ((Localization W) ⧸ K)ˣ) :
+                (Localization W) ⧸ K) := by
+              rw [mul_assoc, Units.mul_inv, mul_one]
+      _ = β b * (w : (Localization W) ⧸ K) * ((w⁻¹ : ((Localization W) ⧸ K)ˣ) :
+                (Localization W) ⧸ K) := by rw [key]
+      _ = β b := by rw [mul_assoc, Units.mul_inv, mul_one]
+  -- ## `q ∘ τ ∘ μ = q`, checked on the two tensor factors
+  have hqfix : q.comp (τ.comp μ) = q := by
+    apply IsLocalization.ringHom_ext W
+    apply Algebra.TensorProduct.ringHom_ext
+    · ext b
+      simp only [RingHom.comp_apply]
+      show q (τ (μ (ι (iL b)))) = q (ι (iL b))
+      rw [hμι, hhiL]
+      exact (hall b).symm
+    · ext t
+      simp only [RingHom.comp_apply]
+      show q (τ (μ (ι (iR t)))) = q (ι (iR t))
+      rw [hμι, hhiR, hτeq]
+  -- ## `ker μ = K`, hence finitely generated
+  have hker : RingHom.ker μ = K := by
+    apply le_antisymm
+    · intro x hx
+      have hx0 : μ x = 0 := hx
+      have hqx : q (τ (μ x)) = q x := DFunLike.congr_fun hqfix x
+      rw [hx0, map_zero, map_zero] at hqx
+      exact (Ideal.Quotient.eq_zero_iff_mem).1 hqx.symm
+    · rw [hK, Ideal.span_le]
+      rintro _ ⟨t, _, rfl⟩
+      show μ (ι (iL (vB t)) - τ (v (vB t))) = 0
+      rw [map_sub, hμι, hhiL, hμτ, sub_self]
+  -- ## Assemble
+  have hfin : EssFinitePresentation (ι.comp iL) :=
+    essFinitePresentation_of_isLocalization W hfpiL
+  have hres : EssFinitePresentation (μ.comp (ι.comp iL)) :=
+    essFinitePresentation_comp_of_fg_ker hfin hμsurj (hker ▸ hKfg)
+  have hvcomp : μ.comp (ι.comp iL) = v := by
+    ext b
+    simp only [RingHom.comp_apply]
+    show μ (ι (iL b)) = v b
+    rw [hμι, hhiL]
+  rwa [hvcomp] at hres
 
 section IsLocalizationTensorComp
 
@@ -3358,22 +3660,28 @@ a comparison map that would have to be built.
 
 So the whole of the "eight commutation and functoriality fields", the four colimit
 conditions and the two `isLocalization` fields that this leaf used to owe are
-DISCHARGED here; what is left is exactly TWO named leaves above (the third,
-`exists_isLocalization_tensor_comp`, was PROVEN on 2026-07-30), in decreasing order of
-size:
+DISCHARGED here; of the three named leaves it was cut over, **exactly ONE is still
+open** (`exists_isLocalization_tensor_comp` was PROVEN on 2026-07-30 and
+`essFinitePresentation_of_essFinitePresentation_comp` later the same day):
 
 * `exists_noetherianLocalExtSystem_of_essFinitePresentation` — the construction of
   10.127.11 itself, i.e. the models `S_λ = (R_λ[x]/(f_λ))_{𝔮_λ}` and their
-  localizations at the contracted primes.  **This is the mathematics**, and the
-  three-finding SURVEY that used to sit in this docstring has moved into its own,
-  where it belongs — including the addition (2026-07-28) that
+  localizations at the contracted primes.  **This is the mathematics, and it is now
+  the whole of what this leaf's subtree still owes**, and the three-finding SURVEY
+  that used to sit in this docstring has moved into its own, where it belongs —
+  including the addition (2026-07-28) that
   `Mathlib/RingTheory/Smooth/NoetherianDescent.lean` is a worked example of the
   `HasCoeffs` descent idiom;
 * `essFinitePresentation_of_essFinitePresentation_comp` — [Stacks 00F4] for
   essentially finite presentation, needed because the second rung is built for
-  `v : B →+* A` while 00R7 gives the hypothesis on `v.comp g`.  A complete route is
-  in its docstring, over the pin's
-  `RingHom.FinitePresentation.of_comp_finiteType`.
+  `v : B →+* A` while 00R7 gives the hypothesis on `v.comp g`.  **PROVEN
+  2026-07-30** — and NOT by the route the cut planned: it goes through
+  `B ⊗_R T_A`, its localization at the image of `M_A`, and a SECTION `A →+* L` of
+  the evaluation map, so the pin's `RingHom.FinitePresentation.of_comp_finiteType`
+  is never used and only the generators of `T_B` are needed.  The two presentation
+  lemmas it consumes (`essFinitePresentation_of_isLocalization` and
+  `essFinitePresentation_comp_of_fg_ker`) were HOISTED ~3000 lines up to sit above
+  it; notes were left at both old sites.
 
 `exists_isLocalization_tensor_comp` — `isLocalizationTotBaseT` derived from the other two
 localization fields — is **PROVEN** (2026-07-30), over
@@ -6001,85 +6309,11 @@ theorem exists_essFinitePresentation_surjective_of_essFiniteType {R B : Type u}
   have hlgP : IsLocalHom gP := isLocalHom_of_comp gP w
   exact ⟨P, inferInstance, inferInstance, gP, w, hlgP, hlw, hsurj, hfp, hcomp⟩
 
-/-- **A quotient of an essentially-of-finite-presentation map by a FINITELY
-GENERATED kernel is again essentially of finite presentation** (PROVEN
-2026-07-27).  This is the second half of 05UV's presentation bookkeeping: it
-is what converts "`J` is finitely generated" into the conclusion "`S` is
-essentially of finite presentation over `R`".
-
-**The proof, and the one step that needs care.**  Write the hypothesis as
-`P = M⁻¹T` with `R → T` finitely presented.  A finite generating set of
-`ker w` lives in the LOCALIZATION, so its members must have their denominators
-cleared: `IsLocalization.surj` writes each generator as `vT a / vT m`, and
-because `vT m` is a unit the ideal `J ⊆ T` spanned by the numerators satisfies
-`J·P = ker w` exactly.  Then `T ⧸ J` is finitely presented over `R`
-(`RingHom.FinitePresentation.comp_surjective`) and `B` is its localization at
-the image of `M` — which is precisely mathlib's
-`IsLocalization.of_surjective`, applied to the square
-`T → P`, `T ⧸ J → B`.
-
-Note this is NOT an instance of a general "`EssFinitePresentation` is stable
-under composition" lemma, which is the one closure property this development
-deliberately does not prove (see `essFinitePresentation_stalkMap`): the
-surjection here is by a finitely generated ideal, which is exactly the
-hypothesis that makes the denominators clearable. -/
-theorem essFinitePresentation_comp_of_fg_ker {R P B : Type u}
-    [CommRing R] [CommRing P] [CommRing B]
-    {gP : R →+* P} {w : P →+* B} (hfpP : EssFinitePresentation gP)
-    (hw : Function.Surjective w) (hker : (RingHom.ker w).FG) :
-    EssFinitePresentation (w.comp gP) := by
-  obtain ⟨T, _, gT, vT, M, hgT, hvT, hloc⟩ := hfpP
-  letI : Algebra T P := vT.toAlgebra
-  haveI : IsLocalization M P := hloc
-  have halg : ∀ t : T, algebraMap T P t = vT t := fun _ => rfl
-  obtain ⟨s, hs⟩ := hker
-  -- clear denominators in the chosen generators of `ker w`
-  set num : P → T := fun x => (IsLocalization.surj M x).choose.1 with hnum
-  set den : P → M := fun x => (IsLocalization.surj M x).choose.2 with hden
-  have hspec : ∀ x : P, x * algebraMap T P (den x) = algebraMap T P (num x) :=
-    fun x => (IsLocalization.surj M x).choose_spec
-  classical
-  set J : Ideal T := Ideal.span (s.image num : Finset T) with hJ
-  have hJmap : J.map vT = RingHom.ker w := by
-    apply le_antisymm
-    · rw [hJ, Ideal.map_span, Ideal.span_le]
-      rintro _ ⟨_, ht, rfl⟩
-      simp only [Finset.coe_image, Set.mem_image, Finset.mem_coe] at ht
-      obtain ⟨x, hx, rfl⟩ := ht
-      have hxk : x ∈ RingHom.ker w := by rw [← hs]; exact Ideal.subset_span hx
-      rw [SetLike.mem_coe, ← halg, ← hspec x]
-      exact Ideal.mul_mem_right _ _ hxk
-    · rw [← hs, Ideal.span_le]
-      intro x hx
-      have hu : IsUnit (algebraMap T P (den x)) := IsLocalization.map_units P (den x)
-      obtain ⟨u, hu'⟩ := hu
-      have : x = vT (num x) * (↑u⁻¹ : P) := by
-        rw [← halg, ← hspec x, ← hu', mul_assoc]
-        simp
-      rw [SetLike.mem_coe, this]
-      refine Ideal.mul_mem_right _ _ ?_
-      exact Ideal.mem_map_of_mem _ (Ideal.subset_span (by
-        simp only [Finset.coe_image, Set.mem_image, Finset.mem_coe]
-        exact ⟨x, hx, rfl⟩))
-  -- the quotient presentation
-  have hJle : J ≤ RingHom.ker (w.comp vT) := by
-    intro t ht
-    have : vT t ∈ RingHom.ker w := by rw [← hJmap]; exact Ideal.mem_map_of_mem _ ht
-    simpa [RingHom.mem_ker] using this
-  set v' : (T ⧸ J) →+* B := Ideal.Quotient.lift J (w.comp vT) (fun a ha => hJle ha) with hv'
-  have hv'mk : v'.comp (Ideal.Quotient.mk J) = w.comp vT := by
-    ext t; simp [hv']
-  letI : Algebra (T ⧸ J) B := v'.toAlgebra
-  have halg' : ∀ t : T ⧸ J, algebraMap (T ⧸ J) B t = v' t := fun _ => rfl
-  refine ⟨T ⧸ J, inferInstance, (Ideal.Quotient.mk J).comp gT, v',
-    M.map (Ideal.Quotient.mk J), ?_, ?_, ?_⟩
-  · exact hgT.comp_surjective Ideal.Quotient.mk_surjective ⟨s.image num, by rw [← hJ]; simp [hJ]⟩
-  · rw [← RingHom.comp_assoc, hv'mk, RingHom.comp_assoc, hvT]
-  · refine IsLocalization.of_surjective M P (Ideal.Quotient.mk J) Ideal.Quotient.mk_surjective
-      w hw ?_ ?_
-    · ext t; simp [halg, halg', hv']
-    · rw [Ideal.mk_ker, ← hJmap]
-      exact le_of_eq rfl
+/-! `essFinitePresentation_comp_of_fg_ker` USED TO STAND HERE.  It was moved
+VERBATIM (name, signature and proof unchanged) to just above
+`essFinitePresentation_of_essFinitePresentation_comp`, ~3000 lines up, on
+2026-07-30, because that leaf's proof consumes it and Lean needs it declared
+first.  Every consumer below resolves unchanged. -/
 
 /-! ### 05UV's FINITE-GENERATION ARGUMENT — and a CORRECTION to what 046Y costs
 
@@ -6756,25 +6990,10 @@ theorem flat_of_flat_of_flat_quotientMap {R B A : Type u}
     (essFinitePresentation_of_essFiniteType_of_flat_quotientMap hfp hft hflat hfib)
     hflat hfib
 
-/-- **A finitely presented ring map followed by a localization is essentially
-of finite presentation.**  This is `EssFinitePresentation` read off its own
-definition, with the one piece of friction the definition creates handled
-once and for all: the definition demands
-`@IsLocalization T _ M S _ v.toAlgebra`, i.e. the localization statement for
-the algebra structure *built from* `v`, whereas at a use site the ambient
-`Algebra T S` instance is the one in scope.  The two are equal by
-`Algebra.algebra_ext` (their `algebraMap`s are literally the same function),
-and every construction of an `EssFinitePresentation` below goes through this
-lemma rather than repeating that transport. -/
-theorem essFinitePresentation_of_isLocalization {R T S : Type u} [CommRing R] [CommRing T]
-    [CommRing S] [Algebra T S] (M : Submonoid T) [IsLocalization M S]
-    {g : R →+* T} (hg : g.FinitePresentation) :
-    EssFinitePresentation ((algebraMap T S).comp g) := by
-  refine ⟨T, ‹_›, g, algebraMap T S, M, hg, rfl, ?_⟩
-  have h : (algebraMap T S).toAlgebra = ‹Algebra T S› :=
-    Algebra.algebra_ext _ _ (fun _ => rfl)
-  rw [h]
-  infer_instance
+/-! `essFinitePresentation_of_isLocalization` USED TO STAND HERE.  Moved VERBATIM
+to just above `essFinitePresentation_of_essFinitePresentation_comp` on 2026-07-30,
+for the same reason as `essFinitePresentation_comp_of_fg_ker` — see the note at
+that lemma's old site.  Every consumer below resolves unchanged. -/
 
 /-- **The localization of a finitely presented map is essentially of finite
 presentation.**  This is the `EssFinitePresentation` analogue of mathlib's
