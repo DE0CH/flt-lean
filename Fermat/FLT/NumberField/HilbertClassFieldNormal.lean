@@ -28,10 +28,21 @@ two:
   INERTIA GROUP trivial, i.e. an automorphism acting trivially modulo `Q` is
   the identity. `Ideal.card_inertia_eq_ramificationIdxIn` plus
   `Ideal.ramificationIdx_eq_one`.
-* `NumberField.exists_hilbertClassField_normal_over_rat` — **SORRY LEAF.**
-  The residue: the class field can be chosen NORMAL OVER `ℚ`. This is the one
-  place where `K/ℚ` being Galois is used, and it is the whole mathematical
-  content that the existence theorem does not already carry.
+* `NumberField.exists_hilbertClassField_normal_over_rat` — **PROVEN
+  2026-07-31**, over the three leaves below. The residue: the class field can be
+  chosen NORMAL OVER `ℚ`. This is the one place where `K/ℚ` being Galois is
+  used, and it is the whole mathematical content that the existence theorem does
+  not already carry.
+* `NumberField.exists_hilbertClassField_intermediateField_isUnramifiedAtInfinitePlaces`,
+  `NumberField.conj_unramifiedAbelian`, `NumberField.sup_unramifiedAbelian` —
+  **SORRY LEAVES**, the decomposition of that node (2026-07-31). The first is
+  the class field inside `ℚ̄` carrying the infinite-place clause as well (which
+  the transport above drops, and which the upper bound of
+  `UnramifiedClassFieldBound.lean` cannot do without); the second says a
+  `ℚ`-conjugate of an everywhere-unramified abelian extension of `K` is one
+  again; the third — the deepest, and the "next piece of plumbing" named in
+  `exists_hilbertClassField_artinIso`'s docstring — says the compositum of two
+  is one. None of the three needs class field theory or analysis.
 * `NumberField.corestrictFieldRange` / `NumberField.galFieldRangeEquiv` — the
   bookkeeping that lets `Interface.lean` state its conclusions through
   `{σ : M ≃ₐ[ℚ] M // σ fixes ι(CF) pointwise}` instead of through
@@ -119,8 +130,159 @@ theorem exists_hilbertClassField_intermediateField
       H hab hunrH
   exact ⟨H'', hfd'', hgal'', hab'', hunr'', hrank''.trans hrank⟩
 
+/-- **THE HILBERT CLASS FIELD OF `K ⊆ ℚ̄` LIVES INSIDE `ℚ̄`, AND IS UNRAMIFIED
+AT THE INFINITE PLACES TOO** (SORRY LEAF, cut 2026-07-31 out of
+`exists_hilbertClassField_normal_over_rat` below).
+
+`exists_hilbertClassField_intermediateField` above is this statement WITHOUT the
+`IsUnramifiedAtInfinitePlaces` clause, and that clause is the only thing missing:
+`exists_classField_of_subgroup K ⊥` already produces it on the
+`AlgebraicClosure K` side (it is what makes the companion file's upper bound
+applicable, see `exists_classField_finrank_eq_index`'s docstring), and
+`exists_unramifiedAbelian_of_algebraicClosureEquiv` simply DROPS it while
+carrying the other four properties across `IsAlgClosure.equiv`.
+
+**⚠ WHY THE CLAUSE CANNOT BE DROPPED HERE, even though the consumer does not ask
+for it.** The proof of `exists_hilbertClassField_normal_over_rat` needs
+`finrank_le_card_classGroup_of_unramified_abelian_of_isUnramifiedAtInfinitePlaces`
+— maximality of the class field — and that bound is FALSE without unramifiedness
+at the infinite places (`ℚ(√3)`: `h = 1` but the narrow class number is `2`, so
+there is a quadratic extension unramified at every FINITE prime). A field of
+degree `h_K` unramified only at the finite primes need not be the Hilbert class
+field, hence need not be canonical, hence need not be normal over `ℚ`. That is
+also why the hypotheses on `N` in the theorem below are not used: the witness
+must be a genuine Hilbert class field, and `N` is not known to be one.
+
+**Route.** Redo `exists_hilbertClassField_intermediateField`'s two steps with the
+extra clause: take `exists_classField_of_subgroup K ⊥`, whose output carries
+`IsUnramifiedAtInfinitePlaces K H` and `relNormClassSubgroup K H = ⊥`, pin the
+degree with the two inequalities exactly as `exists_classField_finrank_eq_index`
+does, and then transport along `IsAlgClosure.equiv` — which needs one new lemma,
+`IsUnramifiedAtInfinitePlaces` transported along a `K`-algebra isomorphism
+`H ≃ₐ[K] H''`. That last is `NumberField.InfinitePlace.comap` bookkeeping:
+`InfinitePlace H'' → InfinitePlace H` along the equivalence commutes with
+`comap` to `InfinitePlace K` and preserves `mult`, so `IsUnramified` (defined as
+`mult (w.comap (algebraMap K H)) = mult w`) crosses verbatim. -/
+theorem exists_hilbertClassField_intermediateField_isUnramifiedAtInfinitePlaces
+    (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K] :
+    ∃ (N : IntermediateField (K : Type _) (AlgebraicClosure ℚ))
+      (_ : FiniteDimensional (K : Type _) N) (_ : IsGalois (K : Type _) N)
+      (_ : IsUnramifiedAtInfinitePlaces (K : Type _) N),
+      (∀ a b : N ≃ₐ[(K : Type _)] N, a * b = b * a) ∧
+      (∀ (Q : Ideal (𝓞 N)) (_ : Q.IsPrime), Q ≠ ⊥ →
+        Algebra.IsUnramifiedAt (𝓞 (K : Type _)) Q) ∧
+      Module.finrank (K : Type _) N = Nat.card (ClassGroup (𝓞 (K : Type _))) :=
+  sorry
+
+/-- **A `ℚ`-CONJUGATE OF AN EVERYWHERE-UNRAMIFIED ABELIAN EXTENSION OF `K` IS
+ONE AGAIN** (SORRY LEAF, cut 2026-07-31 out of
+`exists_hilbertClassField_normal_over_rat` below).
+
+`σ : ℚ̄ ≃ₐ[ℚ] ℚ̄` maps `K` onto `K` because `K/ℚ` is Galois, so it carries an
+intermediate field `N` of `ℚ̄/K` to another one, `N'`. All five properties cross.
+
+**⚠ THE ISOMORPHISM `N ≃ N'` IS ONLY `ℚ`-LINEAR, NOT `K`-LINEAR** — it is
+`τ`-semilinear for `τ := σ|_K ∈ Gal(K/ℚ)` — so this is NOT an instance of
+`exists_unramifiedAbelian_of_algebraicClosureEquiv`, which needs a `K`-algebra
+equivalence. That is the entire difficulty of this leaf and the reason it is
+stated separately.
+
+**Route.** `e : N ≃ₐ[ℚ] N'` is `IntermediateField.intermediateFieldMap σ`
+restricted; it satisfies `e (k • x) = τ k • e x`. Then:
+
+* *degree*: `[N' : K] = [N : K]` because `[N' : ℚ] = [N : ℚ]` (a `ℚ`-linear
+  equivalence) and `[K : ℚ]` is the same on both sides — `Module.finrank_mul_finrank`.
+* *Galois, abelian*: `AlgEquiv.autCongr e` is a group isomorphism
+  `(N ≃ₐ[ℚ] N) ≃* (N' ≃ₐ[ℚ] N')` carrying the subgroup fixing `K` pointwise
+  onto the subgroup fixing `K` pointwise (because `e` maps `K` ONTO `K`), and
+  `galFieldRangeEquiv` below is the dictionary between that subgroup and
+  `≃ₐ[K]`.
+* *unramified at the finite primes*: `𝓞 N ≃+* 𝓞 N'` induced by `e`, which is
+  `𝓞 K`-semilinear along `τ`. Since `τ` restricts to a ring automorphism of
+  `𝓞 K`, `Algebra.FormallyUnramified (𝓞 K) (Localization.AtPrime q)` transports:
+  the Kähler differentials are literally the same module, only the `𝓞 K`-action
+  is precomposed with an automorphism. `isUnramifiedAt_of_algEquiv` of
+  `CyclotomicModelTransport.lean` is the `K`-linear special case and wants
+  generalising to this semilinear one.
+* *unramified at the infinite places*: `InfinitePlace.comap` along `e` is a
+  bijection `InfinitePlace N' ≃ InfinitePlace N` commuting with restriction to
+  `K` up to the bijection `InfinitePlace K ≃ InfinitePlace K` induced by `τ`,
+  and `mult` is preserved. -/
+theorem conj_unramifiedAbelian
+    (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K] [IsGalois ℚ K]
+    (N : IntermediateField (K : Type _) (AlgebraicClosure ℚ))
+    [FiniteDimensional (K : Type _) N] [IsGalois (K : Type _) N]
+    [IsUnramifiedAtInfinitePlaces (K : Type _) N]
+    (hab : ∀ a b : N ≃ₐ[(K : Type _)] N, a * b = b * a)
+    (hunr : ∀ (Q : Ideal (𝓞 N)) (_ : Q.IsPrime), Q ≠ ⊥ →
+      Algebra.IsUnramifiedAt (𝓞 (K : Type _)) Q)
+    (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)
+    (N' : IntermediateField (K : Type _) (AlgebraicClosure ℚ))
+    (hN' : N'.restrictScalars ℚ =
+      (N.restrictScalars ℚ).map (σ : AlgebraicClosure ℚ →ₐ[ℚ] AlgebraicClosure ℚ)) :
+    ∃ (_ : FiniteDimensional (K : Type _) N') (_ : IsGalois (K : Type _) N')
+      (_ : IsUnramifiedAtInfinitePlaces (K : Type _) N'),
+      (∀ a b : N' ≃ₐ[(K : Type _)] N', a * b = b * a) ∧
+      (∀ (Q : Ideal (𝓞 N')) (_ : Q.IsPrime), Q ≠ ⊥ →
+        Algebra.IsUnramifiedAt (𝓞 (K : Type _)) Q) ∧
+      Module.finrank (K : Type _) N' = Module.finrank (K : Type _) N :=
+  sorry
+
+/-- **THE COMPOSITUM OF TWO EVERYWHERE-UNRAMIFIED ABELIAN EXTENSIONS OF `K` IS
+EVERYWHERE-UNRAMIFIED AND ABELIAN** (SORRY LEAF, cut 2026-07-31 out of
+`exists_hilbertClassField_normal_over_rat` below).
+
+This is the "next piece of plumbing" that
+`exists_hilbertClassField_artinIso`'s docstring names — the MAXIMALITY of the
+Hilbert class field, in the only form that does not presuppose it. With it, the
+upper bound `[N₁N₂ : K] ≤ h_K` follows from the companion file, and a class
+field of degree exactly `h_K` absorbs every conjugate of itself.
+
+**One injection proves all three clauses.** `N₁, N₂` are Galois over `K` inside
+`ℚ̄`, so restriction is a group homomorphism
+`Gal(N₁N₂/K) → Gal(N₁/K) × Gal(N₂/K)`, and it is INJECTIVE: an automorphism
+fixing `N₁` and `N₂` pointwise fixes `N₁ ⊔ N₂ = adjoin K (N₁ ∪ N₂)` pointwise.
+Then:
+
+* *abelian* — a subgroup of a product of abelian groups;
+* *unramified at a finite prime `Q`* — the inertia subgroup `Q.inertia Gal(M/K)`
+  maps into `(Q ⊓ 𝓞 N₁).inertia × (Q ⊓ 𝓞 N₂).inertia`, both trivial by
+  `eq_one_of_mem_inertia_of_unramifiedAt` above, so the inertia group at `Q` is
+  trivial, so `e(Q) = 1` (`Ideal.card_inertia_eq_ramificationIdxIn`), so `Q` is
+  unramified (`Ideal.ramificationIdx_eq_one_iff`, whose `PerfectField` side
+  condition is free — residue fields of `𝓞 K` are finite);
+* *unramified at an infinite place `w`* — mathlib's
+  `NumberField.InfinitePlace.isUnramified_iff_stabilizer_eq_bot` says
+  `IsUnramified K w ↔ MulAction.stabilizer Gal(M/K) w = ⊥`, and the stabiliser
+  maps into the product of the stabilisers of the restricted places, both
+  trivial. This is the SAME argument as the finite-prime one with "inertia"
+  replaced by "decomposition at an archimedean place", which is why the three
+  clauses are stated together rather than in three leaves.
+
+No class field theory is used, and no analysis. -/
+theorem sup_unramifiedAbelian
+    (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K]
+    (N₁ N₂ : IntermediateField (K : Type _) (AlgebraicClosure ℚ))
+    [FiniteDimensional (K : Type _) N₁] [IsGalois (K : Type _) N₁]
+    [IsUnramifiedAtInfinitePlaces (K : Type _) N₁]
+    [FiniteDimensional (K : Type _) N₂] [IsGalois (K : Type _) N₂]
+    [IsUnramifiedAtInfinitePlaces (K : Type _) N₂]
+    (hab₁ : ∀ a b : N₁ ≃ₐ[(K : Type _)] N₁, a * b = b * a)
+    (hab₂ : ∀ a b : N₂ ≃ₐ[(K : Type _)] N₂, a * b = b * a)
+    (hunr₁ : ∀ (Q : Ideal (𝓞 N₁)) (_ : Q.IsPrime), Q ≠ ⊥ →
+      Algebra.IsUnramifiedAt (𝓞 (K : Type _)) Q)
+    (hunr₂ : ∀ (Q : Ideal (𝓞 N₂)) (_ : Q.IsPrime), Q ≠ ⊥ →
+      Algebra.IsUnramifiedAt (𝓞 (K : Type _)) Q) :
+    (∀ a b : (↥(N₁ ⊔ N₂) ≃ₐ[(K : Type _)] ↥(N₁ ⊔ N₂)), a * b = b * a) ∧
+      (∀ (Q : Ideal (𝓞 ↥(N₁ ⊔ N₂))) (_ : Q.IsPrime), Q ≠ ⊥ →
+        Algebra.IsUnramifiedAt (𝓞 (K : Type _)) Q) ∧
+      IsUnramifiedAtInfinitePlaces (K : Type _) ↥(N₁ ⊔ N₂) :=
+  sorry
+
+-- `hab`, `hunr` and `hrank` are deliberately unused; see the docstring.
+set_option linter.unusedVariables false in
 /-- **THE HILBERT CLASS FIELD OF A GALOIS `K` CAN BE CHOSEN NORMAL OVER `ℚ`**
-(SORRY LEAF, cut 2026-07-30 out of
+(PROVEN 2026-07-31 over the three leaves above; cut 2026-07-30 out of
 `Fermat/FLT/Modularity/Interface.lean`'s `exists_unramifiedAbelian_normal_over_rat`,
 which is now PROVEN over this together with
 `exists_hilbertClassField_intermediateField` above. This is the ENTIRE residue
@@ -166,16 +328,31 @@ every everywhere-unramified abelian extension of degree `h_K` fails to be
 normal over `ℚ` — which would contradict canonicity of the Hilbert class
 field.
 
-**Route.** Neukirch VI (6.9) and the uniqueness half of the class field
-correspondence at modulus `1`; Childress ch. 4–5; Lang *ANT* ch. X. The
-formal route that avoids uniqueness altogether: take `N'` to be the
-compositum of the conjugates `σ N` (normal by construction), note each `σ N`
-is again abelian and everywhere-unramified over `K`, and use
-`finrank_le_card_classGroup_of_unramified_abelian` of
-`UnramifiedClassFieldBound.lean` to force `[N' : K] ≤ h_K = [N : K]`, hence
-`N' = N`. That route needs one lemma this project does not yet have — a
-compositum of abelian everywhere-unramified extensions is abelian and
-everywhere-unramified — and no analysis at all. -/
+**PROVEN 2026-07-31** over the three leaves above and
+`finrank_le_card_classGroup_of_unramified_abelian_of_isUnramifiedAtInfinitePlaces`
+of `UnramifiedClassFieldBound.lean`. The route is the one this docstring used to
+propose, corrected on one point (see the warning below): pick a Hilbert class
+field `N₀` inside `ℚ̄` — unramified at the infinite places TOO — and show
+`σ N₀ ≤ N₀` for every `σ ∈ Gal(ℚ̄/ℚ)` by applying the upper bound to the
+compositum `N₀ ⊔ σN₀`, which is abelian and everywhere-unramified and therefore
+of degree at most `h_K = [N₀ : K]`. `IntermediateField.normal_iff_forall_map_le'`
+turns "stable under every `σ`" into `Normal ℚ`.
+
+**⚠ THE GIVEN `N` IS NOT USED, AND CANNOT BE — the witness must be built.**
+`hab`, `hunr` and `hrank` are inert: the conclusion is an EXISTENCE statement,
+and the field it asks for is a genuine Hilbert class field, which `N` is not
+known to be. The reason is the correction just mentioned. The upper bound
+`[L : K] ≤ h_K` needs `L/K` unramified at the INFINITE places as well
+(`UnramifiedClassFieldBound.lean` records the counterexample without it:
+`ℚ(√3)` has `h = 1` and narrow class number `2`), and `N`'s hypotheses say
+nothing about infinity. A degree-`h_K` extension unramified only at the finite
+primes can be a subfield of the NARROW class field instead — a different field,
+not canonical, and with no reason to be normal over `ℚ`. So the old route's
+"note each `σN` is again abelian and everywhere-unramified over `K`, and force
+`[N' : K] ≤ h_K = [N : K]`, hence `N' = N`" is a genuine gap **for the given
+`N`**, and it closes only by discarding `N` and constructing the class field
+afresh. Keeping the hypotheses costs nothing and keeps the consumer in
+`Interface.lean` unchanged. -/
 theorem exists_hilbertClassField_normal_over_rat
     (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K] [IsGalois ℚ K]
     (N : IntermediateField (K : Type _) (AlgebraicClosure ℚ))
@@ -190,8 +367,58 @@ theorem exists_hilbertClassField_normal_over_rat
       (∀ a b : N' ≃ₐ[(K : Type _)] N', a * b = b * a) ∧
       (∀ (Q : Ideal (𝓞 N')) (_ : Q.IsPrime), Q ≠ ⊥ →
         Algebra.IsUnramifiedAt (𝓞 (K : Type _)) Q) ∧
-      Module.finrank (K : Type _) N' = Nat.card (ClassGroup (𝓞 (K : Type _))) :=
-  sorry
+      Module.finrank (K : Type _) N' = Nat.card (ClassGroup (𝓞 (K : Type _))) := by
+  classical
+  clear! N
+  haveI : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) := AlgebraicClosure.isAlgebraic ℚ
+  haveI : IsAlgClosure ℚ (AlgebraicClosure ℚ) := ⟨inferInstance, inferInstance⟩
+  haveI : Normal ℚ (AlgebraicClosure ℚ) :=
+    (IsAlgClosure.isGalois ℚ (AlgebraicClosure ℚ)).to_normal
+  obtain ⟨N₀, hfd0, hgal0, hinf0, hab0, hunr0, hrank0⟩ :=
+    exists_hilbertClassField_intermediateField_isUnramifiedAtInfinitePlaces K
+  haveI := hfd0; haveI := hgal0; haveI := hinf0
+  have hKN : K ≤ N₀.restrictScalars ℚ := by
+    intro x hx
+    simpa using N₀.algebraMap_mem ⟨x, hx⟩
+  have key : ∀ σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ,
+      (N₀.restrictScalars ℚ).map (σ : AlgebraicClosure ℚ →ₐ[ℚ] AlgebraicClosure ℚ) ≤
+        N₀.restrictScalars ℚ := by
+    intro σ
+    have hKnormal : Normal ℚ (K : Type _) := IsGalois.to_normal
+    have hKmap : K.map (σ : AlgebraicClosure ℚ →ₐ[ℚ] AlgebraicClosure ℚ) = K :=
+      IntermediateField.normal_iff_forall_map_eq'.mp hKnormal σ
+    have hKE :
+        K ≤ (N₀.restrictScalars ℚ).map (σ : AlgebraicClosure ℚ →ₐ[ℚ] AlgebraicClosure ℚ) := by
+      have hmono := IntermediateField.map_mono
+        (σ : AlgebraicClosure ℚ →ₐ[ℚ] AlgebraicClosure ℚ) hKN
+      rwa [hKmap] at hmono
+    set N₁ : IntermediateField (K : Type _) (AlgebraicClosure ℚ) :=
+      IntermediateField.extendScalars hKE with hN₁def
+    have hN₁ : N₁.restrictScalars ℚ =
+        (N₀.restrictScalars ℚ).map (σ : AlgebraicClosure ℚ →ₐ[ℚ] AlgebraicClosure ℚ) :=
+      IntermediateField.extendScalars_restrictScalars hKE
+    obtain ⟨hfd1, hgal1, hinf1, hab1, hunr1, hrank1⟩ :=
+      conj_unramifiedAbelian K N₀ hab0 hunr0 σ N₁ hN₁
+    haveI := hfd1; haveI := hgal1; haveI := hinf1
+    obtain ⟨habM, hunrM, hinfM⟩ := sup_unramifiedAbelian K N₀ N₁ hab0 hab1 hunr0 hunr1
+    haveI := hinfM
+    haveI : FiniteDimensional ℚ ↥(N₀ ⊔ N₁ : IntermediateField (K : Type _) (AlgebraicClosure ℚ)) :=
+      FiniteDimensional.trans ℚ (K : Type _) _
+    haveI : NumberField ↥(N₀ ⊔ N₁ : IntermediateField (K : Type _) (AlgebraicClosure ℚ)) := ⟨⟩
+    have hbound :
+        Module.finrank (K : Type _)
+          ↥(N₀ ⊔ N₁ : IntermediateField (K : Type _) (AlgebraicClosure ℚ)) ≤
+          Nat.card (ClassGroup (𝓞 (K : Type _))) :=
+      NumberField.finrank_le_card_classGroup_of_unramified_abelian_of_isUnramifiedAtInfinitePlaces
+        (K : Type _) _ habM hunrM
+    have heq : N₀ = N₀ ⊔ N₁ :=
+      IntermediateField.eq_of_le_of_finrank_le le_sup_left (by rw [hrank0]; exact hbound)
+    have hle : N₁ ≤ N₀ := by rw [heq]; exact le_sup_right
+    intro x hx
+    rw [← hN₁] at hx
+    exact hle hx
+  exact ⟨N₀, hfd0, hgal0, IntermediateField.normal_iff_forall_map_le'.mpr key,
+    hab0, hunr0, hrank0⟩
 
 section Corestriction
 
