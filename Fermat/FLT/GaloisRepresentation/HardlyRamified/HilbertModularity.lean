@@ -19925,62 +19925,291 @@ def hilbertInertiaOutsideSubgroups (F : Type u) [Field F] [NumberField F]
     ∀ w : HeightOneSpectrum (𝓞 F), w ∉ S →
       ∀ σ : ↥(localInertiaGroup w), hilbertInertiaToGlobalHom F w σ ∈ N}
 
-/-- **Hermite–Minkowski over `F`** (SORRY LEAF, cut out 2026-07-28 as the first
-of the four inputs of `finite_hilbertH1TwistUnramified` below):
+/-- **A rational prime lying in a place `w` of `F` divides the absolute norm of
+`w`** (PROVEN 2026-07-30; the one small arithmetic step that lets the
+Hermite–Minkowski block above be run against an ARBITRARY finite exclusion set
+of places rather than against the places over `2ℓ`).
+
+`q ∈ w` gives `(q) ≤ w`, so `N(w) ∣ N((q)) = q ^ [F : ℚ]`
+(`Ideal.absNorm_dvd_absNorm_of_le`, `Ideal.absNorm_span_natCast`); hence `N(w)`
+is a power of `q`, and it is not `q ^ 0 = 1` because `w` is prime, so `q ∣ N(w)`.
+
+This is what turns "the exclusion set is a finite set of PLACES" into "the bad
+rational primes divide the single integer `∏_{w ∈ S} N(w) · |d_F|`", which is the
+form Hermite's theorem `NumberField.finite_of_discr_bdd` consumes. -/
+theorem natCast_dvd_absNorm_of_natCast_mem (F : Type u) [Field F] [NumberField F]
+    {q : ℕ} (hq : q.Prime) (w : HeightOneSpectrum (𝓞 F))
+    (hqw : ((q : ℕ) : 𝓞 F) ∈ w.asIdeal) :
+    q ∣ Ideal.absNorm w.asIdeal := by
+  have hle : (Ideal.span {((q : ℕ) : 𝓞 F)} : Ideal (𝓞 F)) ≤ w.asIdeal := by
+    rwa [Ideal.span_le, Set.singleton_subset_iff]
+  have hdvd : Ideal.absNorm w.asIdeal ∣ Ideal.absNorm (Ideal.span {((q : ℕ) : 𝓞 F)}) :=
+    Ideal.absNorm_dvd_absNorm_of_le hle
+  rw [Ideal.absNorm_span_natCast] at hdvd
+  obtain ⟨j, hj, hje⟩ := (Nat.dvd_prime_pow hq).mp hdvd
+  have hne1 : Ideal.absNorm w.asIdeal ≠ 1 := fun h =>
+    w.isPrime.ne_top (Ideal.absNorm_eq_one_iff.mp h)
+  rcases Nat.eq_zero_or_pos j with rfl | hjpos
+  · rw [pow_zero] at hje; exact absurd hje hne1
+  · rw [hje]; exact dvd_pow_self q hjpos.ne'
+
+/-- **Unramified-outside-`S` fields have discriminant supported in `S` and `d_F`**
+(PROVEN 2026-07-30; the ARBITRARY-`S` form of
+`not_dvd_discr_of_hilbertInertiaTrivialAt` above).
+
+Its proof is that one's, with the two clauses `q ≠ 2`, `q ≠ ℓ` — whose only role
+there was to place the place `w` of `F` below `P` outside `{w ∣ 2ℓ}` — replaced by
+the single hypothesis `hqS`, which places it outside `S` directly. That step gets
+SHORTER, not longer: `hqw0` already exhibits `q ∈ w`, so `hqS` applies with no
+prime-divisibility bookkeeping at all, and the `hnat` helper of the `2ℓ` version
+disappears. Everything after it — the local-global inertia transport
+`isUnramifiedAt_of_hilbertInertiaTrivialAt` and the tower step
+`isUnramifiedAt_int_of_isUnramifiedAt_of_not_dvd_discr` — is used verbatim.
+
+BOTH-WAYS AUDIT. `hqF` is load-bearing for the same reason as in the `2ℓ` form:
+`d_K` is divisible by `d_F ^ [K : F]`, so a prime dividing `d_F` divides `d_K`
+however unramified `K/F` is. `hqS` is load-bearing because a place in `S` carries
+no inertia hypothesis at all. Not vacuous: `K = ⊥` satisfies every hypothesis,
+and for `S = ∅` the statement is the (true, non-trivial) assertion that an
+everywhere-unramified `K/F` contributes nothing to `d_K` beyond `d_F`. -/
+theorem not_dvd_discr_of_hilbertInertiaTrivialAt_outside
+    (F : Type u) [Field F] [NumberField F]
+    (K : IntermediateField F (AlgebraicClosure F))
+    (hfd : FiniteDimensional F K) (hgal : IsGalois F K)
+    (S : Finset (HeightOneSpectrum (𝓞 F)))
+    (hinert : ∀ w : HeightOneSpectrum (𝓞 F), w ∉ S →
+      HilbertInertiaTrivialAt w K.fixingSubgroup)
+    {q : ℕ} (hq : q.Prime)
+    (hqS : ∀ w ∈ S, ((q : ℕ) : 𝓞 F) ∉ w.asIdeal)
+    (hqF : ¬ ((q : ℤ) ∣ NumberField.discr F))
+    (hfdQ : FiniteDimensional ℚ (K.restrictScalars ℚ)) :
+    haveI : NumberField (K.restrictScalars ℚ) := @NumberField.mk _ _ inferInstance hfdQ
+    ¬ ((q : ℤ) ∣ NumberField.discr (K.restrictScalars ℚ)) := by
+  haveI := hfd
+  haveI := hgal
+  haveI : NumberField (K.restrictScalars ℚ) := @NumberField.mk _ _ inferInstance hfdQ
+  haveI hnfK : NumberField ↥K := inferInstanceAs (NumberField ↥(K.restrictScalars ℚ))
+  have hqZ : Prime ((q : ℤ)) := Nat.prime_iff_prime_int.mp hq
+  show ¬ ((q : ℤ) ∣ NumberField.discr ↥K)
+  rw [NumberField.not_dvd_discr_iff_forall_mem (↥K) (𝓞 ↥K) hqZ]
+  intro P hP hmem
+  haveI := hP
+  have hmem' : (q : 𝓞 ↥K) ∈ P := by exact_mod_cast hmem
+  haveI hw0p : (P.under (𝓞 F)).IsPrime := Ideal.IsPrime.under (𝓞 F) P
+  have hqw0 : (q : 𝓞 F) ∈ P.under (𝓞 F) := by
+    rw [Ideal.mem_under]
+    exact_mod_cast hmem'
+  have hw0bot : P.under (𝓞 F) ≠ ⊥ := by
+    intro h
+    rw [h, Ideal.mem_bot] at hqw0
+    exact hq.ne_zero (by exact_mod_cast hqw0)
+  set w : HeightOneSpectrum (𝓞 F) := ⟨P.under (𝓞 F), hw0p, hw0bot⟩ with hwdef
+  have hqw : ((q : ℕ) : 𝓞 F) ∈ w.asIdeal := hqw0
+  have hwS : w ∉ S := fun hmem => hqS w hmem hqw
+  haveI hlies : P.LiesOver w.asIdeal := ⟨rfl⟩
+  exact isUnramifiedAt_int_of_isUnramifiedAt_of_not_dvd_discr F K hq hqF P hmem'
+    (isUnramifiedAt_of_hilbertInertiaTrivialAt F K w (hinert w hwS) P)
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Hermite–Minkowski over `F`, for an ARBITRARY finite set of places**
+(PROVEN 2026-07-30; the `S`-form of
+`finite_setOf_intermediateField_hilbertInertiaAt_le` above): for a fixed degree
+bound `n` there are finitely many finite Galois subextensions `K` of `Fᵃˡᵍ/F`
+with `[K : F] ≤ n` on which the local inertia at every place `w ∉ S` acts
+trivially.
+
+The proof is that theorem's, with exactly one substitution: its bad modulus
+`M = 2·ℓ·|d_F|` becomes `M = (∏_{w ∈ S} N(w))·|d_F|`, and the support step
+`q ∣ |d_K| → q ∣ M` is discharged by `natCast_dvd_absNorm_of_natCast_mem` above
+(if some `w ∈ S` contained `q` then `q ∣ N(w) ∣ ∏ ∣ M`) instead of by the two
+clauses `q ≠ 2`, `q ≠ ℓ`. The exponent bound
+`discr_factorization_le_of_finrank_le` and Hermite's theorem
+`NumberField.finite_of_discr_bdd` are used unchanged; `M ≠ 0` because each `N(w)`
+is nonzero (`Ideal.absNorm_eq_zero_iff`, `w.ne_bot`) and `d_F ≠ 0`.
+
+This SUBSUMES the `2ℓ` form, which is `S = {w ∣ 2} ∪ {w ∣ ℓ}`; that one is kept
+because it is what the Schlessinger-facing consumers upstream already cite. -/
+theorem finite_setOf_intermediateField_hilbertInertiaAt_le_outside
+    (F : Type u) [Field F] [NumberField F]
+    (S : Finset (HeightOneSpectrum (𝓞 F))) (n : ℕ) :
+    {K : IntermediateField F (AlgebraicClosure F) |
+      ∃ _ : FiniteDimensional F K,
+        IsGalois F K ∧ Module.finrank F K ≤ n ∧
+        ∀ w : HeightOneSpectrum (𝓞 F), w ∉ S →
+          HilbertInertiaTrivialAt w K.fixingSubgroup}.Finite := by
+  classical
+  set N : ℕ := Module.finrank ℚ F * n with hNdef
+  set c : ℕ := (N + 1) * N with hcdef
+  set M : ℕ := (∏ w ∈ S, Ideal.absNorm w.asIdeal) * (NumberField.discr F).natAbs with hMdef
+  have hdF0 : (NumberField.discr F).natAbs ≠ 0 :=
+    Int.natAbs_ne_zero.mpr (NumberField.discr_ne_zero F)
+  have hprod0 : (∏ w ∈ S, Ideal.absNorm w.asIdeal) ≠ 0 := by
+    refine Finset.prod_ne_zero_iff.mpr fun w _ => ?_
+    exact fun h => w.ne_bot (Ideal.absNorm_eq_zero_iff.mp h)
+  have hM0 : M ≠ 0 := by
+    rw [hMdef]; exact Nat.mul_ne_zero hprod0 hdF0
+  refine Set.Finite.of_finite_image
+    (f := fun K : IntermediateField F (AlgebraicClosure F) => K.restrictScalars ℚ)
+    ?_ (Set.injOn_of_injective (IntermediateField.restrictScalars_injective ℚ))
+  refine Set.Finite.subset
+    ((NumberField.finite_of_discr_bdd (AlgebraicClosure F) (M ^ c)).image Subtype.val) ?_
+  rintro _ ⟨K, ⟨hfd, hgal, hrank, hinert⟩, rfl⟩
+  haveI := hfd
+  have hfdQ : FiniteDimensional ℚ (K.restrictScalars ℚ) := FiniteDimensional.trans ℚ F K
+  refine ⟨⟨K.restrictScalars ℚ, hfdQ⟩, ?_, rfl⟩
+  haveI hNF : NumberField (K.restrictScalars ℚ) := @NumberField.mk _ _ inferInstance hfdQ
+  show |NumberField.discr (K.restrictScalars ℚ)| ≤ ((M ^ c : ℕ) : ℤ)
+  set a : ℕ := (NumberField.discr (K.restrictScalars ℚ)).natAbs with hadef
+  have ha0 : a ≠ 0 := Int.natAbs_ne_zero.mpr (NumberField.discr_ne_zero _)
+  have hrankQ : Module.finrank ℚ (K.restrictScalars ℚ) ≤ N := by
+    calc Module.finrank ℚ (K.restrictScalars ℚ)
+        = Module.finrank ℚ F * Module.finrank F K := (Module.finrank_mul_finrank ℚ F K).symm
+      _ ≤ Module.finrank ℚ F * n := Nat.mul_le_mul_left _ hrank
+      _ = N := hNdef.symm
+  have hexp : ∀ q : ℕ, a.factorization q ≤ c := fun q => by
+    rw [hcdef, hadef]
+    exact discr_factorization_le_of_finrank_le N (K.restrictScalars ℚ) hrankQ q
+  have hsupp : ∀ q : ℕ, q.Prime → q ∣ a → q ∣ M := by
+    intro q hq hqa
+    by_contra hqM
+    have hdF : ¬ ((q : ℤ) ∣ NumberField.discr F) := by
+      intro hdvd
+      have hnat : q ∣ (NumberField.discr F).natAbs := by
+        simpa using Int.natAbs_dvd_natAbs.mpr hdvd
+      exact hqM (by rw [hMdef]; exact hnat.mul_left _)
+    have hqS : ∀ w ∈ S, ((q : ℕ) : 𝓞 F) ∉ w.asIdeal := by
+      intro w hwS hqw
+      refine hqM ?_
+      rw [hMdef]
+      exact Dvd.dvd.mul_right
+        ((natCast_dvd_absNorm_of_natCast_mem F hq w hqw).trans
+          (Finset.dvd_prod_of_mem (fun w : HeightOneSpectrum (𝓞 F) =>
+            Ideal.absNorm w.asIdeal) hwS)) _
+    have hZ : ((q : ℤ)) ∣ NumberField.discr (K.restrictScalars ℚ) := by
+      have h1 : ((a : ℤ)) ∣ NumberField.discr (K.restrictScalars ℚ) := by
+        rw [hadef, Int.natCast_natAbs]
+        exact (abs_dvd _ _).mpr dvd_rfl
+      exact dvd_trans (Int.natCast_dvd_natCast.mpr hqa) h1
+    exact not_dvd_discr_of_hilbertInertiaTrivialAt_outside F K hfd hgal S hinert hq hqS
+      hdF hfdQ hZ
+  have hdvdM : a ∣ M ^ c := by
+    rw [← Nat.factorization_le_iff_dvd ha0 (pow_ne_zero _ hM0)]
+    refine Finsupp.le_def.mpr fun q => ?_
+    simp only [Nat.factorization_pow, Finsupp.smul_apply, smul_eq_mul]
+    by_cases hq0 : a.factorization q = 0
+    · simp [hq0]
+    · have hmem : q ∈ a.primeFactors := by
+        rw [← Nat.support_factorization]
+        exact Finsupp.mem_support_iff.mpr hq0
+      have h1 : 1 ≤ M.factorization q :=
+        Nat.Prime.factorization_pos_of_dvd (Nat.prime_of_mem_primeFactors hmem) hM0
+          (hsupp q (Nat.prime_of_mem_primeFactors hmem) (Nat.dvd_of_mem_primeFactors hmem))
+      calc a.factorization q ≤ c := hexp q
+        _ = c * 1 := (mul_one c).symm
+        _ ≤ c * M.factorization q := Nat.mul_le_mul_left _ h1
+  have hle : a ≤ M ^ c := Nat.le_of_dvd (Nat.pos_of_ne_zero (pow_ne_zero _ hM0)) hdvdM
+  calc |NumberField.discr (K.restrictScalars ℚ)| = (a : ℤ) := by
+        rw [hadef, Int.natCast_natAbs]
+    _ ≤ ((M ^ c : ℕ) : ℤ) := by exact_mod_cast hle
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Finiteness of open normal subgroups of `Γ F` of bounded index unramified
+outside `S`** (PROVEN 2026-07-30; the `S`-form of
+`finite_setOf_subgroup_hilbertInertiaAt_le` above, and its proof verbatim with
+the `2ℓ` inertia clause replaced by the `S` one).
+
+The Galois-correspondence step: such an `N` is closed, hence the fixing subgroup
+of its fixed field `K = (Fᵃˡᵍ)^N`, which is finite-dimensional over `F`, Galois,
+of degree `[K : F] = N.index ≤ n`, and inertia-trivial outside `S`; so the set
+injects into the finite field set above via `fixingSubgroup`. -/
+theorem finite_setOf_subgroup_hilbertInertiaAt_le_outside
+    (F : Type u) [Field F] [NumberField F]
+    (S : Finset (HeightOneSpectrum (𝓞 F))) (n : ℕ) :
+    {N : Subgroup (Γ F) |
+      N.Normal ∧ IsOpen (N : Set (Γ F)) ∧ N.FiniteIndex ∧ N.index ≤ n ∧
+      ∀ w : HeightOneSpectrum (𝓞 F), w ∉ S → HilbertInertiaTrivialAt w N}.Finite := by
+  classical
+  haveI halgF : Algebra.IsAlgebraic F (AlgebraicClosure F) := AlgebraicClosure.isAlgebraic F
+  haveI hacF : IsAlgClosure F (AlgebraicClosure F) := ⟨inferInstance, halgF⟩
+  haveI hnormF : Normal F (AlgebraicClosure F) :=
+    IsAlgClosure.normal F (AlgebraicClosure F)
+  haveI hsepF : Algebra.IsSeparable F (AlgebraicClosure F) :=
+    Algebra.IsAlgebraic.isSeparable_of_perfectField
+  haveI hgalF : IsGalois F (AlgebraicClosure F) := ⟨⟩
+  refine Set.Finite.subset
+    ((finite_setOf_intermediateField_hilbertInertiaAt_le_outside F S n).image
+      fun K => K.fixingSubgroup) ?_
+  rintro N ⟨hnorm, hopen, hFI, hidx, hinert⟩
+  have hclosed : IsClosed (N : Set (Γ F)) := Subgroup.isClosed_of_isOpen N hopen
+  have hfix : (IntermediateField.fixedField (E := AlgebraicClosure F) N).fixingSubgroup = N :=
+    InfiniteGalois.fixingSubgroup_fixedField ⟨N, hclosed⟩
+  haveI hfd : FiniteDimensional F (IntermediateField.fixedField (E := AlgebraicClosure F) N) :=
+    (InfiniteGalois.isOpen_iff_finite _).mp (by rw [hfix]; exact hopen)
+  haveI hgalK : IsGalois F (IntermediateField.fixedField (E := AlgebraicClosure F) N) :=
+    (InfiniteGalois.normal_iff_isGalois _).mp (by rw [hfix]; exact hnorm)
+  haveI hnorm' := hnorm
+  have hcard : Module.finrank F (IntermediateField.fixedField (E := AlgebraicClosure F) N) =
+      Nat.card (Γ F ⧸ N) := by
+    rw [← IsGalois.card_aut_eq_finrank]
+    exact (Nat.card_congr (InfiniteGalois.normalAutEquivQuotient
+      (⟨N, hclosed⟩ : ClosedSubgroup (Γ F))).toEquiv).symm
+  have hrank : Module.finrank F
+      (IntermediateField.fixedField (E := AlgebraicClosure F) N) ≤ n := by
+    rw [hcard, ← Subgroup.index_eq_card N]
+    exact hidx
+  refine ⟨_, ⟨hfd, hgalK, hrank, ?_⟩, hfix⟩
+  intro w hwS
+  rw [hfix]
+  exact hinert w hwS
+
+/-- **Hermite–Minkowski over `F`** (PROVEN 2026-07-30, over the three
+declarations immediately above; it was a bare `sorry` from 2026-07-28):
 `hilbertInertiaOutsideSubgroups F S n` is finite.
 
-This is `HermiteMinkowski.lean`'s `finite_setOf_subgroup_inertiaAt_le` with the
-base field `ℚ` replaced by an arbitrary number field `F` and the hard-wired
-rational prime set `{2, p}` replaced by an arbitrary finite set `S` of PLACES of
-`F`. It is the ONE genuinely new piece of arithmetic in this decomposition, and
-the reason it cannot simply be transcribed is recorded next.
+Unfolding the definition, membership is exactly the five clauses of
+`finite_setOf_subgroup_hilbertInertiaAt_le_outside` above — the only difference
+being that `hilbertInertiaOutsideSubgroups` spells the inertia clause with
+`hilbertInertiaToGlobalHom F w` applied to a SUBTYPE element, while
+`HilbertInertiaTrivialAt w N` spells it as a bounded quantifier over
+`localInertiaGroup w`; the two are the same statement (`hilbertInertiaToGlobalHom`
+is `hilbertDecompHom` composed with `Subgroup.subtype`), so the proof is
+`Set.Finite.subset` applied to that theorem.
 
-# ROUTE, AND WHAT IS NEW RELATIVE TO THE `ℚ`-LEVEL PROOF
+# WHAT THE ROUTE ACTUALLY COST — A CORRECTION TO THIS DOCSTRING'S OWN PREDICTION
 
-The SUBGROUP half transcribes verbatim, with `AlgebraicClosure ℚ` replaced by
-`AlgebraicClosure F` throughout: such an `N` is closed (`IsOpen ⟹ IsClosed` for
-a subgroup of a profinite group), hence the fixing subgroup of its fixed field
-`K = Fᵃˡᵍ^N` (`InfiniteGalois.fixingSubgroup_fixedField`), which is
-finite-dimensional over `F` (`InfiniteGalois.isOpen_iff_finite`), Galois
-(`InfiniteGalois.normal_iff_isGalois`) and of degree
-`[K : F] = #(Γ F ⧸ N) = N.index ≤ n`. So the set injects along `fixingSubgroup`
-into the set of finite Galois `K/F` of degree `≤ n` unramified outside `S`.
+The version of this docstring written when the leaf was cut (2026-07-28) called it
+"the ONE genuinely new piece of arithmetic in this decomposition" and priced it at
+**two dictionary lemmas**: the conductor–discriminant tower formula
+`d_K = N_{F/ℚ}(𝔡_{K/F}) · d_F ^ [K : F]`, and the converse of
+`isUnramifiedAt_of_inertia_le_fixingSubgroup` (unramified ⟹ inertia-trivial). It
+also recorded a "cheaper sufficient route" through pulling `N` back to `Γ ℚ`.
 
-The FIELD half is where the work is. `NumberField.finite_of_discr_bdd` applies
-to `AlgebraicClosure F` exactly as it does to `AlgebraicClosure ℚ` (it wants a
-characteristic-zero algebraically closed field, which `Fᵃˡᵍ` is), and it bounds
-the number of subfields by their ABSOLUTE discriminant. What is needed is
-therefore a bound on `|d_K|` from the relative data, i.e. the conductor–
-discriminant tower formula
+**None of the three was needed, and the leaf cost neither dictionary lemma.** What
+the prediction missed is that this file ALREADY carried the whole `F`-level
+Hermite–Minkowski block, proven on 2026-07-26 for the exclusion set `{w ∣ 2ℓ}`:
+`not_dvd_discr_of_hilbertInertiaTrivialAt` (which is the `F`-level inertia
+dictionary, in the direction actually used — inertia-trivial ⟹ unramified ⟹ does
+not divide the discriminant, so the expensive converse never arises),
+`finite_setOf_intermediateField_hilbertInertiaAt_le`, and
+`finite_setOf_subgroup_hilbertInertiaAt_le`. The tower formula is likewise not
+needed: `discr_factorization_le_of_finrank_le` bounds the exponent of a rational
+prime in `|d_K|` from `[K : ℚ]` ALONE, so only the SUPPORT of `d_K` has to be
+controlled, and for that the relative different is irrelevant.
 
-    d_K = N_{F/ℚ}(𝔡_{K/F}) · d_F ^ [K : F] ,
+So the entire distance from what existed to this leaf was the generalisation of
+the exclusion set from `{w ∣ 2ℓ}` to an arbitrary finite `S` of places, which is
+the three declarations above. The only genuinely new step in them is
+`natCast_dvd_absNorm_of_natCast_mem` — twelve lines — which converts "the
+exclusion set is a set of PLACES" into "the bad rational primes divide
+`∏_{w ∈ S} N(w) · |d_F|`", the form Hermite's theorem consumes. Every other line
+is one of the `2ℓ` proofs with that substitution made.
 
-together with: `[K : ℚ] = [K : F] · [F : ℚ] ≤ n · [F : ℚ]`, so the exponent of a
-rational prime `q` in `|d_K|` is bounded by
-`exists_discr_factorization_le_of_finrank_le q (n * [F : ℚ])` — already stated
-in `HermiteMinkowski.lean` for an arbitrary prime `q` — and the SUPPORT of `d_K`
-is contained in the finite set of rational primes lying under `S` together with
-the primes dividing `d_F`, because at any other `q` every place `w ∣ q` of `F`
-is outside `S`, so `K/F` is unramified at `w` (that is `hinert`, through the
-converse of `MinkowskiUnramified.lean`'s `isUnramifiedAt_of_inertia_le_fixingSubgroup`)
-and `F/ℚ` is unramified at `q`.
-
-**So this leaf costs exactly two dictionary lemmas**: the tower formula for
-discriminants in the shape "support and exponents of `d_K` are controlled by
-`𝔡_{K/F}` and `d_F`", and the same unramified⟹inertia-trivial converse that the
-`ℚ`-level `exists_finset_isUnramifiedAt_of_notMem` costs. Neither is in the pin
-(`grep -rn "discr.*tower\|discr_mul\|finrank.*discr" .lake/packages/mathlib`
-finds nothing of this shape) nor in `~/cs/FLT`.
-
-**A CHEAPER SUFFICIENT ROUTE, recorded because it may be the right one.** The
-consumer below never needs `S` to be arbitrary — it needs it to contain the
-places over `2` and `ℓ` and the ramification of `ρbar|_{G_F}`. Nothing is lost by
-proving the statement for `N` of index `≤ n` in the ABSOLUTE Galois group by
-pulling back to `Γ ℚ`: the fixed field of `N` is a number field of degree
-`≤ n · [F : ℚ]` over `ℚ`, and the finiteness of `{K ⊆ ℚᵃˡᵍ : [K : ℚ] ≤ m}`
-unramified outside a finite RATIONAL set is `finite_inertiaOutsideSubgroups`'s
-argument. That route replaces the tower formula by a base-change of the
-inertia condition, which may well be cheaper.
+**MORAL, worth keeping because it recurs in this file: a leaf whose docstring
+prices it in missing THEORIES may in fact be a change of one PARAMETER in a proof
+that is already present.** The `2ℓ` block and this leaf were written four hours
+apart on the same day by different owners, and neither docstring mentions the
+other. Before costing a leaf, grep this file for the same statement at a
+neighbouring parameter.
 
 Both-ways audit: a plain classical finiteness statement, no
 representation-theoretic hypothesis, hence not vacuous and not dischargeable by
@@ -19988,7 +20217,10 @@ refuting any package — `⊤` is a member for every `S` and every `n ≥ 1`, so
 set is nonempty and the content is genuinely an upper bound. -/
 theorem finite_hilbertInertiaOutsideSubgroups (F : Type u) [Field F] [NumberField F]
     (S : Finset (HeightOneSpectrum (𝓞 F))) (n : ℕ) :
-    (hilbertInertiaOutsideSubgroups F S n).Finite := sorry
+    (hilbertInertiaOutsideSubgroups F S n).Finite := by
+  refine (finite_setOf_subgroup_hilbertInertiaAt_le_outside F S n).subset ?_
+  rintro N ⟨hnorm, hopen, hFI, hidx, hinert⟩
+  exact ⟨hnorm, hopen, hFI, hidx, fun w hwS σ hσ => hinert w hwS ⟨σ, hσ⟩⟩
 
 /-- **A continuous representation of `Γ F` over a discrete coefficient field is
 unramified outside finitely many places** (SORRY LEAF, cut out 2026-07-28 as the
