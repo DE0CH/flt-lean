@@ -950,9 +950,24 @@ structure DualStruct {A S : Scheme.{u}} {f : A ⟶ S} (ab : AbelianSchemeStruct 
       y ∈ (m.torsion x I).1 → z ∈ (dualMult.torsion x I).1 →
       weil x I n hn (m.act a y) z = weil x I n hn y (dualMult.act a z)
   /-- nondegeneracy in the first variable — the axiom that carries the
-  content, and without which `weil ≡ 1` would satisfy all the others -/
+  content, and without which `weil ≡ 1` would satisfy all the others.
+
+  **GATED ON `(n : F) ≠ 0` (2026-07-30).**  Ungated, this field made
+  `DualStruct` UNINHABITED over any base with a fibre of positive residue
+  characteristic `p` and positive `p`-rank: `rootsOfUnity p (AlgebraicClosure F)`
+  is TRIVIAL in characteristic `p` (`z ^ p = 1 ↔ (z - 1) ^ p = 0 ↔ z = 1`), so at
+  `I = (p)`, `n = p` — legal, since `(p : R) ∈ (p)` — the pairing is constantly
+  `1`, the hypothesis holds for every `p`-torsion point, and the axiom concluded
+  `A[p](F̄) = 0`.  An ORDINARY elliptic curve refutes that; the witness written
+  out on `exists_dualPolarization_of_mult` (`Modularity/TateModule.lean`) is
+  `X₀(11)` over `Spec ℤ[1/11]` read at the fibre `𝔽_5`.
+
+  The gate is FREE in characteristic zero for every `n ≠ 0`, so no consumer over
+  a number field changes, and it removes exactly the levels at which the axiom is
+  contradictory.  `weil` itself needs no change — a pairing landing in a trivial
+  group is harmless; it is only the nondegeneracy CLAIM about it that was false. -/
   weil_nondegenerate : ∀ {F : Type u} [Field F] (x : Spec (CommRingCat.of F) ⟶ S)
-      (I : Ideal R) (n : ℕ) (hn : (n : R) ∈ I) (y : GeomFibrePt f x),
+      (I : Ideal R) (n : ℕ) (hn : (n : R) ∈ I) (_hnF : (n : F) ≠ 0) (y : GeomFibrePt f x),
       y ∈ (m.torsion x I).1 →
       (∀ z : GeomFibrePt dualMap x, z ∈ (dualMult.torsion x I).1 →
         weil x I n hn y z = 1) →
@@ -1987,10 +2002,10 @@ noncomputable def baseChangeOfIsPullback (d : DualStruct ab m) (hp : IsPullback 
       ((Mult.mem_torsion_baseChange_iff m hp x I y).mp hy)
       ((Mult.mem_torsion_baseChange_iff d.dualMult hpd x I z).mp hz)
   weil_nondegenerate := by
-    intro F _ x I n hn y hy hz
+    intro F _ x I n hn hnF y hy hz
     apply RelPoint.ofBaseChangeGeom_injective hp x
     rw [AbelianSchemeStruct.ofBaseChangeGeom_zero]
-    refine d.weil_nondegenerate (x ≫ q) I n hn _
+    refine d.weil_nondegenerate (x ≫ q) I n hn hnF _
       ((Mult.mem_torsion_baseChange_iff m hp x I y).mp hy) ?_
     intro z hzt
     have hzt' : RelPoint.toBaseChangeGeom hpd x z ∈
