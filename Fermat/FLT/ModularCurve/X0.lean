@@ -23816,6 +23816,36 @@ of theory to build, and it is the whole cost of this leaf.  Note that the
 statement needs only `n = 2` and `n = 3`, so a bespoke construction of
 `Γ(A, I⁻²)` and `Γ(A, I⁻³)` may be cheaper than general Riemann–Roch.
 
+**THAT SURVEY IS ABOUT MATHLIB AND IS ACCURATE ABOUT MATHLIB.  IT IS MISLEADING
+ABOUT WHAT THIS FILE CAN CITE** (checked 2026-07-30, and recorded because "the
+third bullet is a genuine piece of theory to build" reads as *all of it* is).
+`Fermat/FLT/ModularCurve/RelativePicard.lean` is a `public import` of this module
+and already supplies most of the first two bullets, by name:
+
+* `Fermat.sectionIdeal σ` — **`𝒪(−σ)` for a section `σ`**, defined as
+  `ker (𝒪_Z ⟶ σ_* 𝒪_T)` precisely because no divisor theory exists here; with
+  `Fermat.relSection`, which turns a relative point into that section.  So `I`
+  above does not have to be invented, and "no `𝒪(D)` twist by a divisor" is wrong
+  in the only case this leaf needs: `𝒪(nx)` is a `modTensor` power of
+  `modDual (sectionIdeal (relSection x))`.
+* `Fermat.IsInvertibleSheaf`, `Fermat.modTensor`, `Fermat.modDual`,
+  `Fermat.modPullback`, with a PROVEN calculus — `isInvertibleSheaf_modTensorPic`,
+  `isInvertibleSheaf_modPullback`, `isInvertibleSheaf_modDual`, `isIso_modDualEv`,
+  `exists_modTensor_inv`, `nonempty_modTensor_assoc`,
+  `nonempty_modTensor_middleFourPic`, `nonempty_iso_of_modTensorPic_left`.
+
+**Two things are still genuinely owed, and they are what to plan around.**  First,
+`Fermat.isInvertibleSheaf_sectionIdeal` in that module — "the ideal sheaf of a
+section of a smooth curve is invertible" — is itself a SORRY LEAF there, so
+invertibility of `I` is available as a citation but not yet as a theorem.  Second,
+and this is what the survey above gets right, `RelativePicard.lean` has **no
+pushforward to the base and no global-sections functor at all**: nothing there
+says `π_* I⁻ⁿ` is locally free of rank `n`, or that it is compatible with base
+change.  That — cohomology and base change for a genus-one curve, in degrees `2`
+and `3` only — is the residue and the whole third bullet.  Building it ON TOP OF
+the sheaf calculus above is a much smaller job than building the sheaf calculus
+as well, which is what the survey as written would lead a successor to do.
+
 **A SECOND, POSSIBLY CHEAPER AXIS, unsearched.**  `ω = dx / (2y + a₁x + a₃)`
 generates `Ω¹_{R[W]/R}` as a free rank-1 module and `R[W]ˣ = Rˣ`, so
 `Φ_* ω = u ω'` produces the unit `u` directly and might pin the shapes without
