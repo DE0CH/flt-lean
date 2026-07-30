@@ -21932,6 +21932,39 @@ looks safe.
   addition, i.e. it needs the inverse direction of the degree-`1` dictionary
   (see the corrected machinery note above), so it does not dodge the
   infrastructure, it renames it.
+
+  **AMENDED 2026-07-30 — THIS AXIS IS REOPENED, because the ground on which it
+  was rejected was removed by the THIRD RE-CUT later the same day, and nobody
+  noticed the interaction.**  The objection is precisely that the middle object
+  needs a `Module k` structure, hence cocycle addition, hence the unbuilt inverse
+  direction of the degree-`1` dictionary.  That is a valid objection to the
+  `finrank` phrasing this verdict was written against — dimensions require a
+  vector space.  It does **not** apply to the statement as it now reads: with
+  `Nat.card` on BOTH sides, the middle object is only ever COUNTED, so the seam
+  can be a bijection of bare sets and no module structure on it is wanted.  This
+  is the same reason the third re-cut let the commutative-algebra half leave
+  through `card_dualNumberPoints_eq_pow_cotangentFinrankModL`, applied one step
+  further left; note it is an instance of the shape CLAUDE.md records as
+  TWO INDIVIDUALLY-CORRECT EDITS composing badly, except that here the
+  composition is benign and what went stale is a REJECTION rather than a proof.
+
+  What the reopened axis buys, and what it does not.  It peels off the
+  pro-representability bookkeeping as a GATE-FREE half — `#{hardly ramified
+  deformations to k[ε]}/∼ = #(dualNumberPoints D.R D.π)`, which is `hu` unwound
+  against `D' .R = DualNumber k`, `D'.π = TrivSqZeroExt.fst` (exactly the
+  specialisation `dualNumberPoints`' own docstring says it was shaped for), with
+  no cup product, no local invariant map and no Selmer group.  It does NOT
+  shorten the arithmetic half, which still contains the tangent identification
+  `#H¹_L(ad⁰) = #{deformations to k[ε]}/∼` and Greenberg–Wiles, and therefore
+  still sits behind THE GATE below.  So this is a peel, not a dodge — but it is a
+  gate-free peel, which is more than the other two axes offer, and a successor
+  should price it before assuming this leaf is atomic.  Two costs to budget
+  honestly: the quotient by strict equivalence has to be DEFINED, and the
+  push-forward of `D.ρ` along a point `f : D.R → k[ε]` has to be shown hardly
+  ramified for the correspondence to be onto — which is the clause CLAUDE.md
+  warns is FALSE in its naive "a lift of a hardly ramified representation is
+  hardly ramified" form, so it must be proved for push-forwards specifically and
+  not quoted.
 * *Insert the Selmer group.* Rejected already, one section above
   `adZeroTwistRep`, and for a reason that still stands: quantifying over
   arbitrary local conditions `L` makes the middle statement FALSE (take
