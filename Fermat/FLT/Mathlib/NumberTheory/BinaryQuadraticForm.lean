@@ -124,17 +124,28 @@ PROVEN, over three new analytic leaves:
   `Heegner.cexp_heegnerPoint` (`q = −Q` at `τ₀`), `Heegner.E_second_order` (the shared
   `q`-expansion split) and `Heegner.abs_tsum_shift_le` (a geometric-majorant tail bound).
 
-So this file has SIX open leaves as of 2026-07-30: `Heegner.natDegree_minpoly_weberAlpha`,
-`Heegner.exists_modularPolynomial`, the two class-field leaves
-`Heegner.exists_quadratic_jInvariant_heegnerPoint` and
-`Heegner.exists_quadratic_gammaTwo_of_jInvariant`, and the two Weber relations
-`Heegner.eta_weber_prod` and `Heegner.eta_weber_sum`.
+So this file has FOUR open leaves as of 2026-07-30 (verified against the compiler's warning set
+at that commit — four warnings, four `sorry` tokens with comments stripped, so no anonymous
+inner sorries):
 
-It had FIVE at the release before this one; the count rose by one because
-`Heegner.eta_two_torsion_key` was CLOSED and re-cut into those two Weber relations, one closed
-against two opened. That is disclosure of the two independent analytic facts that were always
-inside the single one — and it is what converted an identity with no proof route at this pin
-into two that have the same one. Read the delta with what closed, not alone.
+* `Heegner.natDegree_minpoly_weberAlpha_le_three` — `deg α ≤ 3`, equivalently `α ∈ ℚ(α⁴)`. This
+  is what is LEFT of the old `natDegree_minpoly_weberAlpha`, which is now proven: the `≥ 3`
+  direction turned out to need no class field theory at all (see LEAF 1b's docstring), so the
+  class number FORMULA is gone from the file and only Weber's `f₂(τ₀)² ∈` ring class field
+  remains;
+* `Heegner.exists_quadratic_jInvariant_heegnerPoint` — `j(τ₀) ∈ K`, the first main theorem of
+  CM, and the only leaf that consumes `hcl`;
+* `Heegner.exists_rat_gammaTwo_of_rat_jInvariant` — LEAF 4c′, the residue of the old
+  `exists_quadratic_gammaTwo_of_jInvariant` (which is now proven over it);
+* `Heegner.exists_modularPolynomial` — `Φ_N ∈ ℤ[X,Y]` with Kronecker's leading coefficient.
+
+THE `η`-CLUSTER IS NOW SORRY-FREE. `Heegner.eta_two_torsion_key` is proven over the two Weber
+relations `Heegner.eta_weber_prod` and `Heegner.eta_weber_sum`, and BOTH of those are proven
+(2026-07-30) — the first by `q`-product bookkeeping with no modularity whatever
+(`etaProd_key`), the second by the single application of level-one rigidity in this file
+(`wOctCubeForm`). The re-cut that briefly took the count from five to six therefore paid for
+itself the same day; see the section prose above `eta_weber_prod` for the retrospective on WHY
+splitting worked, which is not the reason it was argued for.
 
 Six names moved between release 19 and here, in three independent directions:
 
@@ -2051,6 +2062,23 @@ lemma norm_cexp_pi_I_lt_one (z : ℍ) :
   simp only [UpperHalfPlane.im] at hz
   nlinarith
 
+/-! The next four were MOVED here from the `etaWeightFour` subsection below (2026-07-30):
+`eta_weber_sum`'s proof needs them, and it precedes that subsection.  Unchanged. -/
+
+lemma mem_upperHalfPlaneSet_two_mul (z : ℍ) : 2 * (z : ℂ) ∈ upperHalfPlaneSet := by
+  show 0 < (2 * (z : ℂ)).im
+  simpa using z.im_pos
+
+lemma mem_upperHalfPlaneSet_div_two (z : ℍ) : (z : ℂ) / 2 ∈ upperHalfPlaneSet := by
+  show 0 < ((z : ℂ) / 2).im
+  simpa using z.im_pos
+
+lemma eta_ne_zero_two_mul (z : ℍ) : ModularForm.eta (2 * (z : ℂ)) ≠ 0 :=
+  ModularForm.eta_ne_zero (mem_upperHalfPlaneSet_two_mul z)
+
+lemma eta_ne_zero_div_two (z : ℍ) : ModularForm.eta ((z : ℂ) / 2) ≠ 0 :=
+  ModularForm.eta_ne_zero (mem_upperHalfPlaneSet_div_two z)
+
 /-! ### SUB-LEAF 5a-i, RE-CUT (2026-07-30) into the two Weber relations
 
 `eta_two_torsion_key` is now PROVEN, from the two leaves immediately below.  This REVERSES the
@@ -2104,11 +2132,25 @@ splitting on a stronger ground than the one argued above: the split separated a 
 statement from an analytic one, which is a better reason than "each half is separately
 `SL₂(ℤ)`-invariant".
 
-The `ζ₃`-cocycle analysis is still exactly right for `eta_weber_sum`, which is now the ONLY
-open leaf here and the only place level-one rigidity is consumed.  And the product relation
-turns out to SUPPLY the `S`-invariance of `a` to that route, removing the `η` multiplier system
-from it — see `eta_weber_sum`'s docstring, where the whole remaining route is written out.  Net
-across the day: one closed, two opened, one of those two closed again. -/
+The `ζ₃`-cocycle analysis is still exactly right for `eta_weber_sum`, and it is the only place
+level-one rigidity is consumed.  And the product relation turns out to SUPPLY the `S`-invariance
+of `a` to that route, removing the `η` multiplier system from it.
+
+**FINAL UPDATE, same day: `eta_weber_sum` IS ALSO PROVEN, and the re-cut is closed out with
+this section carrying no open leaf at all.**  Net across the day: one closed, two opened, BOTH
+of those two closed again — so `eta_two_torsion_key` is now proven through two proven relations
+rather than being a leaf, and the whole `η`-cluster (through
+`eta_pow_24_add_eta_two_pow_24` and `gammaTwo_pow_three_eq_jInvariant`) is sorry-free.
+
+The retrospective on the re-cut, now that both halves are in: splitting was right, and for the
+reason argued second rather than first.  The gain was NOT that each half is separately
+`SL₂(ℤ)`-invariant (true, but the combination's `Γ_θ`-invariance was never the real obstacle) —
+it was that the two halves have COMPLETELY DIFFERENT PROOFS.  One is `q`-product bookkeeping
+with no analysis at all; the other is the single genuine application of level-one rigidity in
+this file.  Held together as `bc(b+c) = 16` neither route is available, because multiplying by
+`bc` mixes them.  That is a general lesson about cuts worth recording: a combination that is
+CLEANER TO STATE can be strictly harder to prove than its parts, and the diagnostic is not
+invariance but whether the parts would be proved by the same kind of argument. -/
 
 /-- **SUB-LEAF 5a-i-α — WEBER'S PRODUCT RELATION `f·f₁·f₂ = √2`, CLEARED OF DENOMINATORS.
 PROVEN (2026-07-30), AND WITH NO MODULARITY AT ALL.**
@@ -2243,9 +2285,468 @@ theorem eta_weber_prod (z : ℍ) :
     _ = Complex.exp ((Real.pi : ℂ) * Complex.I * Z / 12) ^ 24 * etaProd (q ^ 2) ^ 24 := by
         rw [hexp, hPP]
 
-/-- **SUB-LEAF 5a-i-β — WEBER'S SUM RELATION `f⁸ = f₁⁸ + f₂⁸`, I.E. JACOBI'S `θ₂⁴+θ₄⁴ = θ₃⁴`.**
+/-! ### The three Weber eighth powers, normalised to weight zero
+
+This block is the machinery for `eta_weber_sum` below, and it is the ONLY place in this
+development where level-one rigidity (`ModularForm.levelOne_weight_zero_const`) is consumed.
+`etaWeightFour` further down builds a `ModularForm 𝒮ℒ 4` by the same recipe; the two are
+independent, and everything here is deliberately parallel to it so the two can be read
+together. -/
+
+/-- `a = f⁸ = e^{−πi/3}η((z+1)/2)⁸/η(z)⁸`. -/
+noncomputable def wOctA (z : ℍ) : ℂ :=
+  Complex.exp (-((Real.pi : ℂ) * Complex.I / 3)) * ModularForm.eta (((z : ℂ) + 1) / 2) ^ 8
+    / ModularForm.eta (z : ℂ) ^ 8
+
+/-- `b = f₁⁸ = η(z/2)⁸/η(z)⁸`. -/
+noncomputable def wOctB (z : ℍ) : ℂ :=
+  ModularForm.eta ((z : ℂ) / 2) ^ 8 / ModularForm.eta (z : ℂ) ^ 8
+
+/-- `c = f₂⁸ = 16η(2z)⁸/η(z)⁸`. -/
+noncomputable def wOctC (z : ℍ) : ℂ :=
+  16 * ModularForm.eta (2 * (z : ℂ)) ^ 8 / ModularForm.eta (z : ℂ) ^ 8
+
+/-- `e₁(a, −b, −c)³ = (a − b − c)³`.  `a − b − c` itself is only `SL₂(ℤ)`-invariant up to `ζ₃`
+(the `T`-cocycle of the section prose); the CUBE is invariant outright. -/
+noncomputable def wOctCube (z : ℍ) : ℂ := (wOctA z - wOctB z - wOctC z) ^ 3
+
+lemma wOctB_ne_zero (z : ℍ) : wOctB z ≠ 0 :=
+  div_ne_zero (pow_ne_zero _ (eta_ne_zero_div_two z)) (pow_ne_zero _ (eta_ne_zero' z))
+
+lemma wOctC_ne_zero (z : ℍ) : wOctC z ≠ 0 :=
+  div_ne_zero (mul_ne_zero (by norm_num) (pow_ne_zero _ (eta_ne_zero_two_mul z)))
+    (pow_ne_zero _ (eta_ne_zero' z))
+
+lemma wOct_prod_algebra (κ E E1 E2 E3 : ℂ) (hE : E ≠ 0)
+    (key : κ * E1 ^ 8 * (E2 ^ 8 * E3 ^ 8) = E ^ 24) :
+    κ * E1 ^ 8 / E ^ 8 * (E2 ^ 8 / E ^ 8) * (16 * E3 ^ 8 / E ^ 8) = 16 := by
+  field_simp
+  linear_combination key
+
+/-- `abc = 16`: this is `eta_weber_prod` divided by `η(z)²⁴`. -/
+lemma wOct_prod (z : ℍ) : wOctA z * wOctB z * wOctC z = 16 :=
+  wOct_prod_algebra _ _ _ _ _ (eta_ne_zero' z) (eta_weber_prod z)
+
+/-! #### The `T`-transformation: `a − b − c` picks up `ζ₂₄⁸ = ζ₃`
+
+`T` acts on the triple `(a, −b, −c)` by the transposition `(1 2)` scaled by `ζ₃`
+(`a(z+1) = ζ₃(−b(z))`, `−b(z+1) = ζ₃a(z)`, `−c(z+1) = ζ₃(−c(z))`), so `e₁ = a − b − c` scales
+by `ζ₃` and `e₁³` is fixed.  All four `η`-values move by `eta_add_one` alone; writing
+`ζ = ζ₂₄ = e^{πi/12}` throughout keeps every step polynomial in `ζ`, with `ζ¹² = −1` and
+`κζ⁴ = 1` (`κ = e^{−πi/3}`) the only two facts used. -/
+
+lemma wOct_T_num (κ ζ E1 E2 E3 : ℂ) (hk : κ * ζ ^ 4 = 1) (h12 : ζ ^ 12 = -1) :
+    κ * (ζ * E2) ^ 8 - E1 ^ 8 - 16 * (ζ ^ 2 * E3) ^ 8
+      = ζ ^ 16 * (κ * E1 ^ 8 - E2 ^ 8 - 16 * E3 ^ 8) := by
+  linear_combination (E2 ^ 8 * ζ ^ 4 - E1 ^ 8 * ζ ^ 12) * hk + (E2 ^ 8 * ζ ^ 4 - E1 ^ 8) * h12
+
+lemma wOct_T_algebra (κ ζ E E1 E2 E3 : ℂ) (hE : E ≠ 0) (hζ : ζ ≠ 0)
+    (hk : κ * ζ ^ 4 = 1) (h12 : ζ ^ 12 = -1) :
+    κ * (ζ * E2) ^ 8 / (ζ * E) ^ 8 - E1 ^ 8 / (ζ * E) ^ 8 - 16 * (ζ ^ 2 * E3) ^ 8 / (ζ * E) ^ 8
+      = ζ ^ 8 * (κ * E1 ^ 8 / E ^ 8 - E2 ^ 8 / E ^ 8 - 16 * E3 ^ 8 / E ^ 8) := by
+  have e : κ * (ζ * E2) ^ 8 / (ζ * E) ^ 8 - E1 ^ 8 / (ζ * E) ^ 8
+        - 16 * (ζ ^ 2 * E3) ^ 8 / (ζ * E) ^ 8
+      = (κ * (ζ * E2) ^ 8 - E1 ^ 8 - 16 * (ζ ^ 2 * E3) ^ 8) / (ζ * E) ^ 8 := by
+    ring
+  rw [e, wOct_T_num κ ζ E1 E2 E3 hk h12]
+  field_simp
+
+lemma zeta24_pow_twelve : Complex.exp ((Real.pi : ℂ) * Complex.I / 12) ^ 12 = -1 := by
+  rw [← Complex.exp_nat_mul,
+    show ((12 : ℕ) : ℂ) * ((Real.pi : ℂ) * Complex.I / 12) = (Real.pi : ℂ) * Complex.I by
+      push_cast; ring]
+  exact Complex.exp_pi_mul_I
+
+lemma kappa_mul_zeta24_pow_four :
+    Complex.exp (-((Real.pi : ℂ) * Complex.I / 3)) *
+        Complex.exp ((Real.pi : ℂ) * Complex.I / 12) ^ 4 = 1 := by
+  rw [← Complex.exp_nat_mul, ← Complex.exp_add,
+    show -((Real.pi : ℂ) * Complex.I / 3) + ((4 : ℕ) : ℂ) * ((Real.pi : ℂ) * Complex.I / 12)
+      = 0 by push_cast; ring]
+  exact Complex.exp_zero
+
+/-- `(a − b − c)(z + 1) = ζ₃ · (a − b − c)(z)`, with `ζ₃ = ζ₂₄⁸`. -/
+lemma wOct_diff_add_one {z w : ℍ} (hw : (w : ℂ) = (z : ℂ) + 1) :
+    wOctA w - wOctB w - wOctC w
+      = Complex.exp ((Real.pi : ℂ) * Complex.I / 12) ^ 8 *
+          (wOctA z - wOctB z - wOctC z) := by
+  set ζ : ℂ := Complex.exp ((Real.pi : ℂ) * Complex.I / 12) with hζdef
+  have hζ : ζ ≠ 0 := Complex.exp_ne_zero _
+  have h1 : ModularForm.eta (((w : ℂ) + 1) / 2) = ζ * ModularForm.eta ((z : ℂ) / 2) := by
+    rw [hw, show ((z : ℂ) + 1 + 1) / 2 = (z : ℂ) / 2 + 1 by ring]
+    exact eta_add_one _
+  have h2 : ModularForm.eta ((w : ℂ) / 2) = ModularForm.eta (((z : ℂ) + 1) / 2) := by
+    rw [hw]
+  have h3 : ModularForm.eta (2 * (w : ℂ)) = ζ ^ 2 * ModularForm.eta (2 * (z : ℂ)) := by
+    rw [hw, show 2 * ((z : ℂ) + 1) = (2 * (z : ℂ) + 1) + 1 by ring, eta_add_one, eta_add_one]
+    ring
+  have h4 : ModularForm.eta (w : ℂ) = ζ * ModularForm.eta (z : ℂ) := by
+    rw [hw]; exact eta_add_one _
+  rw [wOctA, wOctB, wOctC, wOctA, wOctB, wOctC, h1, h2, h3, h4]
+  exact wOct_T_algebra _ ζ _ _ _ _ (eta_ne_zero' z) hζ kappa_mul_zeta24_pow_four
+    zeta24_pow_twelve
+
+/-! #### The `S`-transformation: `b ↔ c` from mathlib, and `a` FIXED BY THE PRODUCT RELATION
+
+`b` and `c` swap under `S` by `ModularForm.eta_comp_eq_csqrt_I_inv` alone, with the `(√I)⁻¹`
+cancelling because its eighth power is `1`.  `a` would need the `η` MULTIPLIER SYSTEM
+(`η((z−1)/(2z))` against `η((z+1)/2)`, i.e. the transformation under `[[1,−1],[2,−1]]`, whose
+root of unity is a Dedekind sum) — absent from mathlib at this pin.  It is not needed:
+`abc = 16` at `−1/z` reads `a(−1/z)·c(z)·b(z) = 16`, and at `z` it reads `a(z)b(z)c(z) = 16`,
+so cancelling `bc ≠ 0` gives `a(−1/z) = a(z)`.  That is what `eta_weber_prod` buys here. -/
+
+lemma wOct_S_swap_algebra (s W Z E E' : ℂ) (hs : s ^ 8 = 1) (hZ : Z ≠ 0) (hE : E ≠ 0)
+    (hsq : Complex.sqrt W ^ 8 = W ^ 4) (hsqZ : Complex.sqrt Z ^ 8 = Z ^ 4) :
+    (s * (Complex.sqrt W * E')) ^ 8 / (s * (Complex.sqrt Z * E)) ^ 8
+      = W ^ 4 * E' ^ 8 / (Z ^ 4 * E ^ 8) := by
+  rw [mul_pow, mul_pow, mul_pow, mul_pow, hsq, hsqZ, hs]
+  field_simp
+
+/-- `b(−1/z) = c(z)`: `√(2z)⁸/√z⁸ = (2z)⁴/z⁴ = 16`, which is exactly the `16` in `c`. -/
+lemma wOctB_neg_inv {z w : ℍ} (hw : (w : ℂ) = -(z : ℂ)⁻¹) : wOctB w = wOctC z := by
+  have hz0 : (z : ℂ) ≠ 0 := UpperHalfPlane.ne_zero z
+  have hS8 : ((Complex.sqrt Complex.I)⁻¹) ^ 8 = 1 := by
+    rw [inv_pow, csqrtI_pow_eight, inv_one]
+  have he : ModularForm.eta (w : ℂ)
+      = (Complex.sqrt Complex.I)⁻¹ * (Complex.sqrt (z : ℂ) * ModularForm.eta (z : ℂ)) := by
+    rw [hw]
+    simpa [neg_div] using ModularForm.eta_comp_eq_csqrt_I_inv z.2
+  have he2 : ModularForm.eta ((w : ℂ) / 2)
+      = (Complex.sqrt Complex.I)⁻¹ *
+        (Complex.sqrt (2 * (z : ℂ)) * ModularForm.eta (2 * (z : ℂ))) := by
+    have h := ModularForm.eta_comp_eq_csqrt_I_inv (mem_upperHalfPlaneSet_two_mul z)
+    rw [hw, show -(z : ℂ)⁻¹ / 2 = -1 / (2 * (z : ℂ)) by field_simp]
+    simpa using h
+  rw [wOctB, wOctC, he, he2,
+    wOct_S_swap_algebra _ _ _ _ _ hS8 hz0 (eta_ne_zero' z)
+      (csqrt_pow_eight (mul_ne_zero two_ne_zero hz0)) (csqrt_pow_eight hz0)]
+  field_simp
+  ring
+
+/-- `c(−1/z) = b(z)`: here `√(z/2)⁸/√z⁸ = 1/16` cancels the `16` instead. -/
+lemma wOctC_neg_inv {z w : ℍ} (hw : (w : ℂ) = -(z : ℂ)⁻¹) : wOctC w = wOctB z := by
+  have hz0 : (z : ℂ) ≠ 0 := UpperHalfPlane.ne_zero z
+  have hh0 : (z : ℂ) / 2 ≠ 0 := div_ne_zero hz0 two_ne_zero
+  have hS8 : ((Complex.sqrt Complex.I)⁻¹) ^ 8 = 1 := by
+    rw [inv_pow, csqrtI_pow_eight, inv_one]
+  have he : ModularForm.eta (w : ℂ)
+      = (Complex.sqrt Complex.I)⁻¹ * (Complex.sqrt (z : ℂ) * ModularForm.eta (z : ℂ)) := by
+    rw [hw]
+    simpa [neg_div] using ModularForm.eta_comp_eq_csqrt_I_inv z.2
+  have he3 : ModularForm.eta (2 * (w : ℂ))
+      = (Complex.sqrt Complex.I)⁻¹ *
+        (Complex.sqrt (2⁻¹ * (z : ℂ)) * ModularForm.eta ((z : ℂ) / 2)) := by
+    have h := ModularForm.eta_comp_eq_csqrt_I_inv (mem_upperHalfPlaneSet_div_two z)
+    rw [hw, show 2 * -(z : ℂ)⁻¹ = -1 / ((z : ℂ) / 2) by field_simp]
+    rw [show (2 : ℂ)⁻¹ * (z : ℂ) = (z : ℂ) / 2 by ring]
+    simpa using h
+  rw [wOctC, wOctB, he, he3, mul_div_assoc,
+    wOct_S_swap_algebra _ _ _ _ _ hS8 hz0 (eta_ne_zero' z)
+      (csqrt_pow_eight (mul_ne_zero (by norm_num : (2 : ℂ)⁻¹ ≠ 0) hz0)) (csqrt_pow_eight hz0)]
+  field_simp
+  ring
+
+/-- `a(−1/z) = a(z)` — proved from `wOct_prod` (i.e. from `eta_weber_prod`) and the swap of
+`b` and `c`, NOT from the `η` multiplier system. -/
+lemma wOctA_neg_inv {z w : ℍ} (hw : (w : ℂ) = -(z : ℂ)⁻¹) : wOctA w = wOctA z := by
+  have hpw := wOct_prod w
+  rw [wOctB_neg_inv hw, wOctC_neg_inv hw] at hpw
+  have hpz := wOct_prod z
+  have hBC : wOctB z * wOctC z ≠ 0 := mul_ne_zero (wOctB_ne_zero z) (wOctC_ne_zero z)
+  refine mul_right_cancel₀ hBC ?_
+  calc wOctA w * (wOctB z * wOctC z) = wOctA w * wOctC z * wOctB z := by ring
+    _ = 16 := hpw
+    _ = wOctA z * wOctB z * wOctC z := hpz.symm
+    _ = wOctA z * (wOctB z * wOctC z) := by ring
+
+/-- `(a − b − c)(−1/z) = (a − b − c)(z)`. -/
+lemma wOct_diff_neg_inv {z w : ℍ} (hw : (w : ℂ) = -(z : ℂ)⁻¹) :
+    wOctA w - wOctB w - wOctC w = wOctA z - wOctB z - wOctC z := by
+  rw [wOctA_neg_inv hw, wOctB_neg_inv hw, wOctC_neg_inv hw]
+  ring
+
+/-! #### Slash invariance at weight zero -/
+
+lemma wOctCube_of_eq_add_one {z w : ℍ} (hw : (w : ℂ) = (z : ℂ) + 1) :
+    wOctCube w = wOctCube z := by
+  rw [wOctCube, wOctCube, wOct_diff_add_one hw, mul_pow, ← pow_mul,
+    show 8 * 3 = 24 from rfl, zeta24_pow_24, one_mul]
+
+lemma wOctCube_of_eq_neg_inv {z w : ℍ} (hw : (w : ℂ) = -(z : ℂ)⁻¹) :
+    wOctCube w = wOctCube z := by
+  rw [wOctCube, wOctCube, wOct_diff_neg_inv hw]
+
+lemma wOctCube_T_invariant :
+    (wOctCube ∣[(0 : ℤ)] ModularGroup.T) = wOctCube := by
+  ext z
+  rw [SL_slash_apply, UpperHalfPlane.modular_T_smul,
+    wOctCube_of_eq_add_one (z := z) (w := (1 : ℝ) +ᵥ z)
+      (by rw [UpperHalfPlane.coe_vadd]; push_cast; ring)]
+  simp [denom, ModularGroup.T]
+
+lemma wOctCube_S_invariant :
+    (wOctCube ∣[(0 : ℤ)] ModularGroup.S) = wOctCube := by
+  ext z
+  rw [SlashInvariantForm.slash_S_apply,
+    wOctCube_of_eq_neg_inv (z := z) (w := .mk _ z.im_inv_neg_coe_pos) (by simp)]
+  simp
+
+lemma wOctCube_slash (γ : SL(2, ℤ)) : (wOctCube ∣[(0 : ℤ)] γ) = wOctCube :=
+  SlashInvariantForm.slash_action_generators_SL2Z wOctCube_S_invariant wOctCube_T_invariant γ
+
+/-! #### Holomorphy -/
+
+lemma differentiableAt_wOctQuot {x : ℂ} (hx : x ∈ upperHalfPlaneSet) :
+    DifferentiableAt ℂ (fun x : ℂ ↦
+      (Complex.exp (-((Real.pi : ℂ) * Complex.I / 3)) * ModularForm.eta ((x + 1) / 2) ^ 8
+          / ModularForm.eta x ^ 8
+        - ModularForm.eta (x / 2) ^ 8 / ModularForm.eta x ^ 8
+        - 16 * ModularForm.eta (2 * x) ^ 8 / ModularForm.eta x ^ 8) ^ 3) x := by
+  have him : 0 < x.im := hx
+  have hA : ((x + 1) / 2) ∈ upperHalfPlaneSet := by
+    show 0 < ((x + 1) / 2).im
+    simpa using him
+  have hB : (x / 2) ∈ upperHalfPlaneSet := by
+    show 0 < (x / 2).im
+    simpa using him
+  have hC : (2 : ℂ) * x ∈ upperHalfPlaneSet := by
+    show 0 < (2 * x).im
+    simpa using him
+  have d0 : DifferentiableAt ℂ ModularForm.eta x :=
+    ModularForm.differentiableAt_eta_of_mem_upperHalfPlaneSet hx
+  have dA : DifferentiableAt ℂ (fun x : ℂ ↦ ModularForm.eta ((x + 1) / 2)) x :=
+    DifferentiableAt.comp x (g := ModularForm.eta) (f := fun x : ℂ ↦ (x + 1) / 2)
+      (ModularForm.differentiableAt_eta_of_mem_upperHalfPlaneSet hA) (by fun_prop)
+  have dB : DifferentiableAt ℂ (fun x : ℂ ↦ ModularForm.eta (x / 2)) x :=
+    DifferentiableAt.comp x (g := ModularForm.eta) (f := fun x : ℂ ↦ x / 2)
+      (ModularForm.differentiableAt_eta_of_mem_upperHalfPlaneSet hB) (by fun_prop)
+  have dC : DifferentiableAt ℂ (fun x : ℂ ↦ ModularForm.eta (2 * x)) x :=
+    DifferentiableAt.comp x (g := ModularForm.eta) (f := fun x : ℂ ↦ 2 * x)
+      (ModularForm.differentiableAt_eta_of_mem_upperHalfPlaneSet hC) (by fun_prop)
+  have hne : ModularForm.eta x ^ 8 ≠ 0 := pow_ne_zero _ (ModularForm.eta_ne_zero hx)
+  exact ((((dA.pow 8).const_mul _).div (d0.pow 8) hne).sub
+    ((dB.pow 8).div (d0.pow 8) hne) |>.sub
+    (((dC.pow 8).const_mul _).div (d0.pow 8) hne)).pow 3
+
+lemma wOctCube_mdifferentiable : MDiff wOctCube := by
+  rw [UpperHalfPlane.mdifferentiable_iff]
+  refine .congr (fun z hz ↦ (differentiableAt_wOctQuot hz).differentiableWithinAt) fun z hz ↦ ?_
+  simp [wOctCube, wOctA, wOctB, wOctC, UpperHalfPlane.ofComplex_apply_of_im_pos hz]
+
+/-! #### Behaviour at the cusp — the ONLY estimate in the whole route
+
+In `x = 𝕢 2 z = e^{πiz}` the three functions are `a = x^{−1/3}G(−x)⁸/G(x²)⁸`,
+`b = x^{−1/3}G(x)⁸/G(x²)⁸` and `c = 16x^{2/3}G(x⁴)⁸/G(x²)⁸`, so
+
+  `(a − b − c)³ = bracket(x)³ / (x · G(x²)²⁴)`,  `bracket = G(−x)⁸ − G(x)⁸ − 16x·G(x⁴)⁸`.
+
+`a` and `b` each BLOW UP like `x^{−1/3}`; only the difference is bounded, and that is the one
+place the identity is not formal.  What makes it cheap is that only the ORDER of vanishing of
+`bracket` at `0` is needed, never any coefficient: `bracket 0 = 0` holds because `−0 = 0` makes
+the first two terms cancel identically and the third carries an explicit factor `x`, and
+`bracket` is differentiable at `0` by mathlib's `differentiableOn_tprod_one_sub_pow`.  Then
+`bracket x / x` has a limit and `bracket³/x = (bracket/x)³ · x² → 0`. -/
+
+/-- `bracket x = G(−x)⁸ − G(x)⁸ − 16x·G(x⁴)⁸`.  The whole content of `eta_weber_sum` is that
+this vanishes IDENTICALLY; the cusp analysis needs only that it vanishes AT `0`. -/
+noncomputable def sumBracket (x : ℂ) : ℂ :=
+  etaProd (-x) ^ 8 - etaProd x ^ 8 - 16 * x * etaProd (x ^ 4) ^ 8
+
+/-- `bracket 0 = 0`, with no value of `G(0)` needed. -/
+lemma sumBracket_zero : sumBracket 0 = 0 := by
+  simp [sumBracket]
+
+lemma differentiableAt_etaProd {x : ℂ} (hx : ‖x‖ < 1) : DifferentiableAt ℂ etaProd x :=
+  ModularForm.differentiableOn_tprod_one_sub_pow.differentiableAt
+    (Metric.isOpen_ball.mem_nhds (by simpa [mem_ball_zero_iff] using hx))
+
+lemma differentiableAt_sumBracket : DifferentiableAt ℂ sumBracket 0 := by
+  have h0 : DifferentiableAt ℂ etaProd 0 := differentiableAt_etaProd (by simp)
+  have hm : DifferentiableAt ℂ (fun x : ℂ ↦ etaProd (-x)) 0 :=
+    DifferentiableAt.comp (0 : ℂ) (g := etaProd) (f := fun x : ℂ ↦ -x)
+      (by simpa using h0) (by fun_prop)
+  have h4 : DifferentiableAt ℂ (fun x : ℂ ↦ etaProd (x ^ 4)) 0 :=
+    DifferentiableAt.comp (0 : ℂ) (g := etaProd) (f := fun x : ℂ ↦ x ^ 4)
+      (by simpa using h0) (by fun_prop)
+  unfold sumBracket
+  exact ((hm.pow 8).sub (h0.pow 8)).sub
+    (((differentiableAt_const (16 : ℂ)).mul differentiableAt_id).mul (h4.pow 8))
+
+/-- `(a − b − c)³` as a function of `x = 𝕢 2 z = e^{πiz}`. -/
+noncomputable def sumCuspExpr (x : ℂ) : ℂ := sumBracket x ^ 3 / (x * etaProd (x ^ 2) ^ 24)
+
+lemma wOct_cusp_algebra (κ ξ u x G Gm Gx G4 : ℂ) (hu : u ≠ 0) (hG : G ≠ 0)
+    (hkξ : κ * ξ ^ 8 = 1) (hx : x = u ^ 24) :
+    (κ * (ξ * u * Gm) ^ 8 / (u ^ 2 * G) ^ 8 - (u * Gx) ^ 8 / (u ^ 2 * G) ^ 8
+        - 16 * (u ^ 4 * G4) ^ 8 / (u ^ 2 * G) ^ 8) ^ 3
+      = (Gm ^ 8 - Gx ^ 8 - 16 * x * G4 ^ 8) ^ 3 / (x * G ^ 24) := by
+  have h1 : κ * (ξ * u * Gm) ^ 8 = u ^ 8 * Gm ^ 8 := by
+    calc κ * (ξ * u * Gm) ^ 8 = (κ * ξ ^ 8) * (u ^ 8 * Gm ^ 8) := by ring
+      _ = u ^ 8 * Gm ^ 8 := by rw [hkξ]; ring
+  subst hx
+  rw [h1]
+  field_simp
+
+lemma kappa_mul_zeta48_pow_eight :
+    Complex.exp (-((Real.pi : ℂ) * Complex.I / 3)) *
+        Complex.exp ((Real.pi : ℂ) * Complex.I / 24) ^ 8 = 1 := by
+  rw [← Complex.exp_nat_mul, ← Complex.exp_add,
+    show -((Real.pi : ℂ) * Complex.I / 3) + ((8 : ℕ) : ℂ) * ((Real.pi : ℂ) * Complex.I / 24)
+      = 0 by push_cast; ring]
+  exact Complex.exp_zero
+
+lemma wOctCube_eq_sumCuspExpr (z : ℍ) :
+    wOctCube z = sumCuspExpr (Periodic.qParam 2 (z : ℂ)) := by
+  set u : ℂ := Periodic.qParam 48 (z : ℂ) with hudef
+  set x : ℂ := Periodic.qParam 2 (z : ℂ) with hxdef
+  have hu0 : u ≠ 0 := by simp only [hudef, Periodic.qParam]; exact Complex.exp_ne_zero _
+  have hx24 : x = u ^ 24 := by
+    simp only [hxdef, hudef, Periodic.qParam, ← Complex.exp_nat_mul]
+    congr 1
+    push_cast
+    ring
+  have q24z : Periodic.qParam 24 (z : ℂ) = u ^ 2 := by
+    simp only [hudef, Periodic.qParam, ← Complex.exp_nat_mul]
+    congr 1
+    push_cast
+    ring
+  have q1z : Periodic.qParam 1 (z : ℂ) = x ^ 2 := by
+    simp only [hxdef, Periodic.qParam, ← Complex.exp_nat_mul]
+    congr 1
+    push_cast
+    ring
+  have q24half : Periodic.qParam 24 ((z : ℂ) / 2) = u := by
+    simp only [hudef, Periodic.qParam]
+    congr 1
+    push_cast
+    ring
+  have q1half : Periodic.qParam 1 ((z : ℂ) / 2) = x := by
+    simp only [hxdef, Periodic.qParam]
+    congr 1
+    push_cast
+    ring
+  have q24two : Periodic.qParam 24 (2 * (z : ℂ)) = u ^ 4 := by
+    simp only [hudef, Periodic.qParam, ← Complex.exp_nat_mul]
+    congr 1
+    push_cast
+    ring
+  have q1two : Periodic.qParam 1 (2 * (z : ℂ)) = x ^ 4 := by
+    simp only [hxdef, Periodic.qParam, ← Complex.exp_nat_mul]
+    congr 1
+    push_cast
+    ring
+  have q24shift : Periodic.qParam 24 (((z : ℂ) + 1) / 2)
+      = Complex.exp ((Real.pi : ℂ) * Complex.I / 24) * u := by
+    simp only [hudef, Periodic.qParam, ← Complex.exp_add]
+    congr 1
+    push_cast
+    ring
+  have q1shift : Periodic.qParam 1 (((z : ℂ) + 1) / 2) = -x := by
+    simp only [hxdef, Periodic.qParam]
+    rw [show 2 * ((Real.pi : ℝ) : ℂ) * Complex.I * (((z : ℂ) + 1) / 2) / ((1 : ℝ) : ℂ)
+        = 2 * ((Real.pi : ℝ) : ℂ) * Complex.I * (z : ℂ) / ((2 : ℝ) : ℂ)
+          + ((Real.pi : ℝ) : ℂ) * Complex.I by push_cast; ring,
+      Complex.exp_add, Complex.exp_pi_mul_I]
+    ring
+  have hEA : ModularForm.eta (((z : ℂ) + 1) / 2)
+      = Complex.exp ((Real.pi : ℂ) * Complex.I / 24) * u * etaProd (-x) := by
+    rw [eta_eq_qParam_mul_etaProd (((z : ℂ) + 1) / 2), q24shift, q1shift]
+  have hEB : ModularForm.eta ((z : ℂ) / 2) = u * etaProd x := by
+    rw [eta_eq_qParam_mul_etaProd ((z : ℂ) / 2), q24half, q1half]
+  have hEC : ModularForm.eta (2 * (z : ℂ)) = u ^ 4 * etaProd (x ^ 4) := by
+    rw [eta_eq_qParam_mul_etaProd (2 * (z : ℂ)), q24two, q1two]
+  have hE : ModularForm.eta (z : ℂ) = u ^ 2 * etaProd (x ^ 2) := by
+    rw [eta_eq_qParam_mul_etaProd (z : ℂ), q24z, q1z]
+  have hG : etaProd (x ^ 2) ≠ 0 := by
+    intro h
+    exact eta_ne_zero' z (by rw [hE, h, mul_zero])
+  rw [wOctCube, wOctA, wOctB, wOctC, hEA, hEB, hEC, hE, sumCuspExpr, sumBracket,
+    wOct_cusp_algebra _ _ _ _ _ _ _ _ hu0 hG kappa_mul_zeta48_pow_eight hx24]
+
+lemma tendsto_sumCuspExpr : Filter.Tendsto sumCuspExpr (𝓝[≠] (0 : ℂ)) (𝓝 0) := by
+  obtain ⟨D, hD⟩ : ∃ D, HasDerivAt sumBracket D 0 :=
+    ⟨_, differentiableAt_sumBracket.hasDerivAt⟩
+  have hslope : Filter.Tendsto (fun x : ℂ ↦ sumBracket x / x) (𝓝[≠] (0 : ℂ)) (𝓝 D) := by
+    refine (hasDerivAt_iff_tendsto_slope.mp hD).congr fun x ↦ ?_
+    rw [slope_def_field, sumBracket_zero, sub_zero, sub_zero]
+  have h2 : Filter.Tendsto (fun x : ℂ ↦ x ^ 2) (𝓝[≠] (0 : ℂ)) (𝓝 0) := by
+    refine Filter.Tendsto.mono_left ?_ nhdsWithin_le_nhds
+    simpa using (continuous_pow (M := ℂ) 2).tendsto 0
+  have hnum : Filter.Tendsto (fun x : ℂ ↦ (sumBracket x / x) ^ 3 * x ^ 2)
+      (𝓝[≠] (0 : ℂ)) (𝓝 0) := by
+    simpa using (hslope.pow 3).mul h2
+  have hden : Filter.Tendsto (fun x : ℂ ↦ etaProd (x ^ 2) ^ 24) (𝓝[≠] (0 : ℂ)) (𝓝 1) := by
+    refine Filter.Tendsto.mono_left ?_ nhdsWithin_le_nhds
+    have hc : Filter.Tendsto (fun x : ℂ ↦ etaProd (x ^ 2)) (𝓝 (0 : ℂ)) (𝓝 1) := by
+      refine tendsto_etaProd.comp ?_
+      simpa using (continuous_pow (M := ℂ) 2).tendsto 0
+    simpa using hc.pow 24
+  have h := hnum.div hden one_ne_zero
+  rw [zero_div] at h
+  refine Filter.Tendsto.congr' ?_ h
+  filter_upwards [self_mem_nhdsWithin] with x hx
+  have hx0 : x ≠ 0 := hx
+  show (sumBracket x / x) ^ 3 * x ^ 2 / etaProd (x ^ 2) ^ 24 = sumCuspExpr x
+  rw [show (sumBracket x / x) ^ 3 * x ^ 2 = sumBracket x ^ 3 / x by field_simp,
+    div_div, sumCuspExpr]
+
+lemma wOctCube_tendsto_zero :
+    Filter.Tendsto wOctCube UpperHalfPlane.atImInfty (𝓝 0) := by
+  have hq : Filter.Tendsto (fun z : ℍ ↦ Periodic.qParam 2 (z : ℂ))
+      UpperHalfPlane.atImInfty (𝓝[≠] (0 : ℂ)) := by
+    refine tendsto_nhdsWithin_of_tendsto_nhds_of_eventually_within _
+      (UpperHalfPlane.qParam_tendsto_atImInfty two_pos) ?_
+    filter_upwards with z
+    simp only [Set.mem_compl_iff, Set.mem_singleton_iff, Periodic.qParam]
+    exact Complex.exp_ne_zero _
+  exact (tendsto_sumCuspExpr.comp hq).congr fun z ↦ (wOctCube_eq_sumCuspExpr z).symm
+
+lemma wOctCube_isBoundedAtImInfty : UpperHalfPlane.IsBoundedAtImInfty wOctCube :=
+  wOctCube_tendsto_zero.isBigO_one ℝ
+
+/-- `(a − b − c)³` as an honest `ModularForm 𝒮ℒ 0`. -/
+noncomputable def wOctCubeForm : ModularForm 𝒮ℒ 0 where
+  toFun := wOctCube
+  slash_action_eq' A hA := by
+    obtain ⟨A, rfl⟩ := hA
+    exact wOctCube_slash A
+  holo' := wOctCube_mdifferentiable
+  bdd_at_cusps' hc := by
+    rw [Subgroup.IsArithmetic.isCusp_iff_isCusp_SL2Z] at hc
+    rw [OnePoint.isBoundedAt_iff_forall_SL2Z hc]
+    intro γ _
+    rw [wOctCube_slash]
+    exact wOctCube_isBoundedAtImInfty
+
+/-- **SUB-LEAF 5a-i-β — WEBER'S SUM RELATION `f⁸ = f₁⁸ + f₂⁸`, I.E. JACOBI'S `θ₂⁴+θ₄⁴ = θ₃⁴`.
+PROVEN (2026-07-30), by exactly the route mapped below.**
 
   `e^{−πi/3} · η((z+1)/2)⁸ = η(z/2)⁸ + 16 η(2z)⁸`.
+
+WHAT THE PROOF IS, in one paragraph, since the route notes below were written while it was open
+and are kept for the reasoning rather than as instructions.  `(a − b − c)³` is packaged as
+`wOctCubeForm : ModularForm 𝒮ℒ 0` — `T`-invariance from `eta_add_one` through the `ζ₂₄`
+bookkeeping (`wOct_diff_add_one`), `S`-invariance from `ModularForm.eta_comp_eq_csqrt_I_inv` for
+`b ↔ c` plus `eta_weber_prod` for `a` (`wOct_diff_neg_inv`), holomorphy from
+`differentiableAt_eta_of_mem_upperHalfPlaneSet` (`differentiableAt_wOctQuot`), boundedness at
+the cusp from `bracket 0 = 0` and one slope limit (`tendsto_sumCuspExpr`).
+`ModularFormClass.levelOne_weight_zero_const` then makes it constant, and
+`wOctCube_tendsto_zero` makes that constant `0`.
+
+TWO THINGS WORTH KEEPING FROM THE ATTEMPT, both of which shrank the job by more than the
+mathematics suggested:
+
+1. **The `η` multiplier system is never needed** — `eta_weber_prod` supplies `a(−1/z) = a(z)`.
+   See the note further down, which was written as a plan and is now a description.
+2. **Only the ORDER of vanishing of `bracket` at `x = 0` is needed, and it costs nothing.**
+   `bracket 0 = 0` is true because `−0 = 0` makes `G(−x)⁸ − G(x)⁸` cancel identically and the
+   third term carries an explicit factor `x` — no value of `G(0)` enters, and no coefficient of
+   the `q`-expansion is ever computed.  The estimate the route notes call "the one estimate with
+   content" (`a − b` is `O(q^{1/6})`, `c` is `O(q^{2/3})`) is real but does NOT have to be done
+   term by term: `bracket` is differentiable at `0` by mathlib's
+   `ModularForm.differentiableOn_tprod_one_sub_pow`, so `hasDerivAt_iff_tendsto_slope` gives a
+   limit for `bracket x / x` and `bracket³/x = (bracket/x)³·x² → 0` follows.  The `16` in the
+   statement is never used in the analysis — it is forced only by the algebra.
 
 In the variables of the section prose this is `a = b + c`.  It is Jacobi's identity in disguise
 (`θ₂θ₃θ₄ = 2η³` converts one into the other), and it is the genuinely analytic half of the old
@@ -2311,8 +2812,24 @@ MACHINE-CHECKED FAITHFULNESS: relative residual `< 5·10⁻⁷⁶` at all nine p
 under `eta_two_torsion_key`, `PARI/GP` at 77 significant digits, 2026-07-30. -/
 theorem eta_weber_sum (z : ℍ) :
     Complex.exp (-((Real.pi : ℂ) * Complex.I / 3)) * ModularForm.eta (((z : ℂ) + 1) / 2) ^ 8
-      = ModularForm.eta ((z : ℂ) / 2) ^ 8 + 16 * ModularForm.eta (2 * (z : ℂ)) ^ 8 :=
-  sorry
+      = ModularForm.eta ((z : ℂ) / 2) ^ 8 + 16 * ModularForm.eta (2 * (z : ℂ)) ^ 8 := by
+  obtain ⟨c, hc⟩ := ModularFormClass.levelOne_weight_zero_const wOctCubeForm
+  have hcoe : wOctCube = Function.const ℍ c := hc
+  -- the constant is `0` because `(a − b − c)³ → 0` at `i∞`
+  have hc0 : c = 0 := by
+    have h := wOctCube_tendsto_zero
+    rw [hcoe] at h
+    exact tendsto_const_nhds_iff.mp h
+  have hz : wOctA z - wOctB z - wOctC z = 0 := by
+    have h : wOctCube z = 0 := by rw [hcoe, hc0]; rfl
+    rw [wOctCube] at h
+    exact pow_eq_zero_iff (n := 3) (by norm_num) |>.mp h
+  rw [wOctA, wOctB, wOctC] at hz
+  have hE : ModularForm.eta (z : ℂ) ≠ 0 := eta_ne_zero' z
+  rw [div_sub_div_same, div_sub_div_same, div_eq_zero_iff] at hz
+  rcases hz with h | h
+  · linear_combination h
+  · exact absurd h (pow_ne_zero _ hE)
 
 /-- **SUB-LEAF 5a-i — THE ANALYTIC INPUT TO `eta_pow_24_add_eta_two_pow_24`. NOW PROVEN.**
 
@@ -2384,20 +2901,6 @@ theorem eta_two_torsion_key (z : ℍ) :
 noncomputable def etaWeightFour (z : ℍ) : ℂ :=
   (ModularForm.eta (z : ℂ) ^ 24 + 256 * ModularForm.eta (2 * (z : ℂ)) ^ 24) /
     (ModularForm.eta (z : ℂ) * ModularForm.eta (2 * (z : ℂ))) ^ 8
-
-lemma mem_upperHalfPlaneSet_two_mul (z : ℍ) : 2 * (z : ℂ) ∈ upperHalfPlaneSet := by
-  show 0 < (2 * (z : ℂ)).im
-  simpa using z.im_pos
-
-lemma mem_upperHalfPlaneSet_div_two (z : ℍ) : (z : ℂ) / 2 ∈ upperHalfPlaneSet := by
-  show 0 < ((z : ℂ) / 2).im
-  simpa using z.im_pos
-
-lemma eta_ne_zero_two_mul (z : ℍ) : ModularForm.eta (2 * (z : ℂ)) ≠ 0 :=
-  ModularForm.eta_ne_zero (mem_upperHalfPlaneSet_two_mul z)
-
-lemma eta_ne_zero_div_two (z : ℍ) : ModularForm.eta ((z : ℂ) / 2) ≠ 0 :=
-  ModularForm.eta_ne_zero (mem_upperHalfPlaneSet_div_two z)
 
 /-- The pure field algebra behind the `S`-transformation. -/
 lemma etaWeightFour_S_algebra (Z e h f : ℂ) (hZ : Z ≠ 0) (he : e ≠ 0) (hh : h ≠ 0) (hf : f ≠ 0)
