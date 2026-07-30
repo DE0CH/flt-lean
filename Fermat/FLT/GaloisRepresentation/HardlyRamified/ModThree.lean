@@ -53713,7 +53713,54 @@ analytic piece consumes it.
 
 Note the class sum on the right is over ALL primes in the class, not
 only the degree-one ones: that makes the right side larger and the
-statement WEAKER, which is all the consumer needs. -/
+statement WEAKER, which is all the consumer needs.
+
+**NEGATIVE INVENTORY (measured 2026-07-30, flt-lean-39). This is a
+THEORY-BUILDING project, not a leaf, and the positive inventory above
+hides that because it lists only what exists.** Every name it records
+was re-checked and every one is where it says (`IsNarrowRayEquiv`
+`:3033`, `exists_finset_forall_isNarrowRayEquiv` `:3207`,
+`exists_ideal_forall_pos_span_singleton_eq_mul` `:3134`,
+`exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow` `:5981`,
+`exists_pow_isNarrowRayEquiv_top` `:6507`,
+`finite_quotient_narrowRaySetoid` `:6587`,
+`tprod_one_sub_dirichletCharacter_mul_cpow_neg_inv_eq_tsum` `:2295`,
+`exists_forall_le_norm_LSeries_and_norm_deriv_LSeries_le` `:10554`,
+`exists_forall_norm_tsum_dirichletCharacter_mul_rpow_neg_le` `:10701`).
+What does NOT exist anywhere is the vocabulary the orthogonality
+assembly is written in:
+
+* **There is no ray class GROUP.** `Chebotarev.lean:6577`'s
+  `narrowRaySetoid` is a `Setoid` and nothing more — no group structure
+  on the quotient, hence no characters of it — and it is written for the
+  modulus `Ideal.span {(ℓ : 𝓞 F)}`, not for a general `mm`.
+  `IsNarrowRayEquivMod`, the general-modulus relation this leaf is
+  stated in, occurs ONLY in this file and has no quotient at all.
+* **There is no ray class CHARACTER and no Hecke/Weber `L`-series**, here
+  or in mathlib. `grep` over the pin finds no `rayClassGroup`; mathlib's
+  `NumberTheory/LSeries/` is entirely `DirichletCharacter ℂ N`, i.e.
+  characters of `ZMod N`.
+* **The non-vanishing cannot be repointed.** Mathlib's
+  `LSeries/Nonvanishing.lean` proves `LFunction_apply_one_ne_zero` for
+  `DirichletCharacter`s only, and it goes through the analytically
+  continued `LFunction`; there is no Landau theorem (Dirichlet series
+  with non-negative coefficients converge up to their first singularity)
+  in the pin, which is the one abstract statement that would make the
+  ray class case cheap.
+* `~/cs/FLT` has nothing in this direction either — no `RayClass`, no
+  `HeckeCharacter`.
+
+So the honest size of this node is four separate developments — the
+narrow ray class group mod `mm` with its finiteness, its character group
+with orthogonality, the `L`-series of those characters with their Euler
+products, and `L(1, ψ) ≠ 0` for `ψ ≠ 1` — of which only the finiteness
+half has any existing material to generalise. **Do not dispatch a single
+prover at this leaf**; it needs to be cut into those four first, and the
+cut should be made in a new module rather than here, since none of it is
+`ModThree`-specific. The standing warning above still applies to the
+first piece: the finiteness generalisation has no consumer while this
+leaf is sorried, so it must land in the same commit as whichever
+analytic piece consumes it. -/
 theorem tsum_rpow_neg_natCard_quotient_prime_le_mul_tsum_isNarrowRayEquivMod_add_ray_class
     (F : Type*) [Field F] [NumberField F]
     (mm : Ideal (NumberField.RingOfIntegers F)) (hmm : mm ≠ ⊥)
