@@ -9957,7 +9957,19 @@ The residue is exactly `isAffineOpen_compl_singleton_of_isSmoothProperCurve`
 connected curve over a field is affine" — which carries the ampleness and
 nothing else, and which is stated over a general base field rather than
 over `ℚ`, so it serves any other pointed-curve chart this development
-needs.  `_hdim` is no longer underscore-prefixed: it is consumed. -/
+needs.  `_hdim` is no longer underscore-prefixed: it is consumed.
+
+## BASE GENERALISED TO AN ARBITRARY FIELD `K`, AND THE STRUCTURE MAP ADDED (2026-07-30)
+
+The proof did not change — `exists_isOpenImmersion_range_eq_compl_of_section` was
+already stated over a general base field, which is exactly the reusability its own
+note above promised.  What changed is the conclusion: `R` now carries an
+`Algebra K R` and the compatibility `ι ≫ f = Spec (algebraMap K R)` is a CONJUNCT.
+Over `ℚ` that conjunct was free (`hom_ext_spec_rat`, `ℚ` initial in `CommRing`) and
+the assembly read it off for nothing; no other field is initial, so it has to be
+carried.  It costs nothing: `Scheme.Spec` is fully faithful, so `ι ≫ f` IS `Spec.map`
+of a unique ring map `K → R`, and that map is DECLARED to be the algebra structure —
+so an adversary has no freedom in it either. -/
 theorem exists_affineComplement_zeroSection {K : Type} [Field K] {A : Scheme.{0}}
     {f : A ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct f)
     (hdim : SmoothOfRelativeDimension 1 f) :
@@ -10040,7 +10052,35 @@ absent from all three;
 
     grep -rn 'RiemannRoch\|arithmeticGenus' .lake/packages/mathlib/Mathlib/ --include=*.lean
 
-returns nothing, and `Mathlib/AlgebraicGeometry/` contains no `genus`. -/
+returns nothing, and `Mathlib/AlgebraicGeometry/` contains no `genus`.
+
+## BASE GENERALISED FROM `ℚ` TO AN ARBITRARY FIELD `K` (2026-07-30) — READ THIS
+
+The statement above used to be written over `ℚ`; it is now over `K`, and the whole
+`exists_weierstrassModel_of_ellipticScheme` chain with it, because `X0.lean` needs
+the conclusion at `K = ℚ̄` as well (`exists_weierstrassAlgClos_of_abelianSchemeStruct`
+and `exists_weierstrassModel_gamma0Datum_algClos`, both CLOSED by that
+generalisation).  **This leaf is still the only `sorry` in this file, and the
+generalisation added none**: the same Riemann–Roch content now serves every base at
+once instead of only `ℚ`.
+
+Two clauses changed, and neither is decoration:
+
+* the structure map is no longer an unpinned `c : ℚ →+* R` but `algebraMap K R`,
+  with `R` arriving as a `K`-ALGEBRA.  The old paragraph justifying the freedom
+  read: *"`c` NEEDS NO COMPATIBILITY CLAUSE … a ring homomorphism out of `ℚ` is
+  unique when it exists, so `c` is forced to BE the structure map and an adversary
+  has no freedom here."*  That is a fact about `ℚ` and about no other base, so the
+  pinning has to be explicit now — and it costs a prover nothing, since `x` and `y`
+  are produced inside `K`-vector spaces `L(n[O])` and the surjection
+  `K[X, Y] ↠ R` is a `K`-algebra map by construction;
+* `hstr : ι ≫ f = Spec (algebraMap K R)` is a NEW hypothesis, i.e. strictly more
+  input.  Over `ℚ` it was a theorem (`hom_ext_spec_rat`); over a general `K` it is
+  supplied by `exists_affineComplement_zeroSection`, which now returns it.
+
+A prover who wants the char-`0` route may add `[CharZero K]` without breaking any
+consumer — the only instantiations are `ℚ` and `ℚ̄` — but nothing in the argument
+above needs it. -/
 theorem exists_weierstrassGenerators_of_affineComplement {K : Type} [Field K] {A : Scheme.{0}}
     {f : A ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct f)
     (hdim : SmoothOfRelativeDimension 1 f)
@@ -10245,7 +10285,15 @@ of a point in the infinite `A`, by
 `infinite_of_smoothOfRelativeDimension_one`, so it is not a one-point
 space).  `_hopen` and `_hrange` lose their underscores: both are consumed
 by those two derivations, which is a sharper account of why they are
-load-bearing than the counterexample recorded above. -/
+load-bearing than the counterexample recorded above.
+
+**BASE GENERALISED TO AN ARBITRARY FIELD `K` (2026-07-30), and the equivalence is now
+`≃ₐ[K]` rather than `≃+*`.**  Every step above is a statement about linear systems over
+the base field and is insensitive to which field that is.  The `K`-linearity is not
+decoration: without it a bare ring isomorphism would not force the transported `ι` to be
+a morphism *over* `Spec K`, and the assembly's structure-morphism conjunct would be lost.
+It is free, and it comes from `exists_surjective_coordinateRingHom_of_generators`, which
+now returns the linearity of the surjection it builds out of `AdjoinRoot.lift`. -/
 theorem exists_weierstrassRingEquiv_of_affineComplement {K : Type} [Field K] {A : Scheme.{0}}
     {f : A ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct f)
     (hdim : SmoothOfRelativeDimension 1 f)
@@ -10825,9 +10873,18 @@ complement of the zero section; leaf 2 replaces `R` by
 isomorphism of schemes, so composing it with `ι` keeps the range
 (`Scheme.Hom.opensRange_comp_of_isIso`) and keeps the open immersion.
 Leaf 3 is then applied to the *composite*, which is exactly the chart whose
-smoothness forces `Δ ≠ 0`.  The structure-morphism conjunct is free by
-`hom_ext_spec_rat`: any two morphisms to `Spec ℚ` agree, which is why no
-leaf has to carry a `ℚ`-algebra structure. -/
+smoothness forces `Δ ≠ 0`.
+
+**BASE GENERALISED TO AN ARBITRARY CHARACTERISTIC-ZERO FIELD `K` (2026-07-30),
+which is what closed `X0.lean`'s `exists_weierstrassAlgClos_of_abelianSchemeStruct`
+and `exists_weierstrassModel_gamma0Datum_algClos`.**  The paragraph this replaces
+ended: *"The structure-morphism conjunct is free by `hom_ext_spec_rat`: any two
+morphisms to `Spec ℚ` agree, which is why no leaf has to carry a `ℚ`-algebra
+structure."*  That is the ONE step of the assembly that does not generalise, and it
+is now paid explicitly: leaf 1 hands back the compatibility, leaf 2's isomorphism is
+`K`-linear, and the two are combined by `hring`/`hstr'` below — three lines, no new
+leaf.  `CharZero K` is consumed only inside leaf 3, through
+`exists_singular_of_Δ_eq_zero`; the only instantiations are `ℚ` and `ℚ̄`. -/
 theorem exists_weierstrassModel_of_ellipticScheme {K : Type} [Field K] [CharZero K]
     {A : Scheme.{0}}
     {f : A ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct f)

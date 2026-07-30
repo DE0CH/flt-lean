@@ -14302,15 +14302,67 @@ the genuine `j`-invariant of an elliptic scheme agrees with `W.j` on a
 Weierstrass model over ANY base ring, `ℚ̄` included.
 
 **How to prove it, and it is a one-line change to work that already exists.**
-`exists_jSection` builds its witness from `exists_jSectionOnAffine` (a leaf) by
+`exists_jSection` builds its witness from `exists_jSectionOnAffine` by
 Zariski descent; `IsJSectionOnAffine.jt_model` is likewise stated only at
 `R = ℚ`.  Generalise THAT field to a variable base ring —
 `∀ {R : Type} [CommRing R] (W : WeierstrassCurve R) [W.IsElliptic]
 (d : Gamma0Datum 1 (Spec (CommRingCat.of R))) (g : Spec (CommRingCat.of R) ⟶ SpecQ),
 IsWeierstrassModel d.ab W → jLineCoord (jt g d) = W.j` — and the present
-statement falls out at `R = ℚ̄`, `g = specAlgClos ℚ`.  The leaf that has to
-absorb the strengthening is `exists_jSectionOnAffine`, which is open anyway.
+statement falls out at `R = ℚ̄`, `g = specAlgClos ℚ`.
 **Do NOT build a second `j`-theory over `ℚ̄`.**
+
+## AUDIT 2026-07-30: the route above is RIGHT and CHEAPER than it says, and it is blocked by DECLARATION ORDER — not by any missing mathematics
+
+Two corrections, one in each direction.
+
+**(a) Stale, and it inverts the cost.**  The paragraph above ended *"The leaf that
+has to absorb the strengthening is `exists_jSectionOnAffine`, which is open
+anyway."*  `exists_jSectionOnAffine` is **PROVEN** (2026-07-27, over the
+three-leaf cut of its own subsection) and has been since before this leaf was cut.
+So there is no open leaf standing ready to absorb anything — but that turns out not
+to matter, because **the strengthening needs no absorbing at all.**  Read
+`exists_jSectionOnAffine`'s proof: its `H` is
+`∀ {R} [CommRing R] (g) (d), ∃! x, IsJValueOnAffine d x` at an ARBITRARY `R`, and
+the FIRST clause of `IsJValueOnAffine` is literally
+`∀ (W : WeierstrassCurve R) [W.IsElliptic], IsWeierstrassModel d.ab W →
+jLineCoord x = W.j`.  The proof then throws that generality away in its last line
+by instantiating at `R = ℚ`:
+
+    · intro W _ d hd
+      exact (H (R := ℚ) (𝟙 SpecQ) d).choose_spec.1.1 W hd
+
+So the general-base pinning is ALREADY PROVEN and merely discarded.  Strengthening
+`exists_jSectionOnAffine`'s conclusion to
+`∃ ja : IsJSectionOnAffine, ∀ {R} [CommRing R] (g) (W) [W.IsElliptic] (d),
+IsWeierstrassModel d.ab W → jLineCoord (ja.jt g d) = W.j` costs ONE extra bullet
+whose proof is `intro R _ g W _ d hd; exact (H g d).choose_spec.1.1 W hd`, and the
+structure `IsJSectionOnAffine` itself need not change, so no consumer of
+`jt_model` is disturbed.  Then this leaf is
+`hagree (R := AlgebraicClosure ℚ) (specAlgClos ℚ) d` followed by that clause, with
+`jLineValAlgClos = jLineCoord` at `g = specAlgClos ℚ` — the same `rfl` as
+`jLineVal_eq_jLineCoord`, both sides being `(Spec.preimage x.1).hom X`.
+
+**(b) The actual blocker, and it is why this leaf is still open.**  Every
+ingredient of that proof is declared THOUSANDS OF LINES BELOW this point:
+`jLineCoord`, `IsJValueOnAffine`, `exists_jTransformation_of_affine`,
+`exists_jSectionOnAffine`, `exists_jSection`.  This leaf sits above them because its
+consumer `exists_weierstrassQ_autStable_of_galoisInvariant` does, and THAT is
+consumed by `exists_stableCyclic_of_gamma0Datum_algClos`, also above them — so the
+cluster cannot simply be relocated below `exists_jSection`, and the reverse hoist
+(moving the whole `j`-theory subsection up) is thousands of lines.  Note too that
+`exists_x0GenusZeroJMapHauptmodul`'s "DECLARATION ORDER, and the mechanical repair"
+paragraph explicitly depends on this leaf being declared ABOVE it, so moving it down
+breaks a second documented route.
+
+**So the work owed here is a FILE RESTRUCTURING, not a proof.**  A successor should
+either (i) hoist the minimal closure of `jLineCoord` / `IsJValueOnAffine` /
+`exists_jValueOnAffine_of_localModels` / `exists_jTransformation_of_affine` /
+`exists_jSectionOnAffine` / `exists_jSection` above this subsection, or (ii) SPLIT
+the `j`-theory out of `X0.lean` into its own module and `public import` it — which is
+independently worth doing, since `X0.lean` is 68 000 lines and elaborates
+single-threaded on one core.  Do NOT reach for a second `j`-theory over `ℚ̄`, and do
+not conclude from "the mathematics is already proven" that the leaf is a phantom: as
+stated at this position it genuinely cannot be discharged.
 
 `W.IsElliptic` is an instance binder here for the same reason as in
 `jt_model`: `WeierstrassCurve.j` is only defined for an elliptic curve. -/
@@ -14428,7 +14480,22 @@ rebuild them, exactly as with the leaf above.
 
 `hN : N ≠ 0` is consumed through `d.cyc.geom_cyclic`, whose generator has
 `addOrderOf = N`; at `N = 0` the hypothesis `d` is already contradictory by
-`isEmpty_of_gamma0Datum_zero`. -/
+`isEmpty_of_gamma0Datum_zero`.
+
+**STATUS 2026-07-30, and one pointer above is now half-paid.**  "A successor should
+generalise those two rather than rebuild them" is still the right instruction, and the
+COORDINATE half of that programme is done:
+`EllipticScheme.lean`'s `exists_weierstrassModel_of_ellipticScheme` and everything
+under it now read over an arbitrary characteristic-zero field, which is what CLOSED
+the sibling `exists_weierstrassAlgClos_of_abelianSchemeStruct` (step 1 of this leaf's
+route).  What is NOT done is the POINTS half, `exists_geomFibreAddEquiv_of_weierstrassModel`,
+which is still stated over `ℚ` — and note that its base generalisation is a different
+shape of work from the coordinate one, because its conclusion is about
+`GeomFibrePt f (𝟙 SpecQ)` and `Field.absoluteGaloisGroup ℚ`: at base `ℚ̄` the
+algebraic closure is `ℚ̄` itself and the Galois group is trivial, so the ℚ̄-instance is
+*weaker* and the generalisation has to carry `exists_affineChart_projModel` and
+`exists_isIso_of_affineChart` along with it.  Nothing in the coordinate generalisation
+blocks it; it simply has not been done. -/
 theorem exists_weierstrassQ_autStable_of_weierstrassAlgClos {N : ℕ} (hN : N ≠ 0)
     (d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
     (hinv : ∀ (σ : Field.absoluteGaloisGroup ℚ)
