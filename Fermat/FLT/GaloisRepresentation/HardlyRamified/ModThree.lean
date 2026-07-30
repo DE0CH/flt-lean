@@ -50130,6 +50130,385 @@ theorem isUnit_intCast_adicCompletionIntegers_of_not_dvd
     exact Ideal.mem_span_singleton_self _
   exact (IsLocalRing.maximalIdeal.isMaximal _).ne_top
     (Ideal.eq_top_of_isUnit_mem _ hqmem hqu)
+section HenselInertia
+
+open NumberField
+
+variable {K : Type*} [Field K] [NumberField K]
+variable (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
+
+/-- The Galois action of `Γ Kᵥ` on the integral closure
+`Oᵥ = IntegralClosure 𝒪ᵥ Kᵥᵃˡᵍ`, packaged as a ring homomorphism.
+(Created 2026-07-30 for `exists_badPrimes_inertia_le_fixingSubgroup_ray_class`
+below.) -/
+noncomputable def integralClosureSmulHom
+    (σ : Field.absoluteGaloisGroup (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) :
+    IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) →+*
+      IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) :=
+  MulSemiringAction.toRingHom _ _ σ
+
+@[simp] theorem integralClosureSmulHom_apply
+    (σ : Field.absoluteGaloisGroup (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+    (x : IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))) :
+    integralClosureSmulHom v σ x = σ • x := rfl
+
+/-- **`σ` COMMUTES WITH EVALUATION OF AN INTEGER POLYNOMIAL** (PROVEN
+2026-07-30): it acts by a ring homomorphism, and a ring homomorphism out
+of `ℤ` is unique.  Stated through `Int.castRingHom` rather than `aeval`
+because the `Algebra ℤ`-instance on an algebraic closure is a DIAMOND
+(`Ring.toIntAlgebra` against the tower through `Kᵥ`), so `aeval`-shaped
+statements do not transport between the two spellings. -/
+theorem smul_eval₂_intCastRingHom
+    (σ : Field.absoluteGaloisGroup (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+    (f : Polynomial ℤ)
+    (y : IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))) :
+    σ • (f.eval₂ (Int.castRingHom (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))) y)
+      = f.eval₂ (Int.castRingHom (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))) (σ • y) := by
+  have h := Polynomial.hom_eval₂ f (Int.castRingHom (IntegralClosure
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+    (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))))
+    (integralClosureSmulHom v σ) y
+  rw [show (integralClosureSmulHom v σ).comp (Int.castRingHom (IntegralClosure
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+    (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))))
+      = Int.castRingHom _ from RingHom.ext_int _ _] at h
+  exact h
+
+/-- **INERTIA FIXES A SIMPLE ROOT OF AN INTEGER POLYNOMIAL** (PROVEN
+2026-07-30).  If `σ` is inertial at `v`, `y ∈ Oᵥ` is a root of
+`f ∈ ℤ[X]`, and `f'(y)` is a UNIT of `Oᵥ`, then `σ • y = y`.
+
+THE ARGUMENT IS HENSEL'S, RUN BACKWARDS, and it is the whole content of
+the converse inertia dictionary used below.  `z := σ • y` is another
+root of `f` (the coefficients are integers, which `σ` fixes) and
+`z − y ∈ 𝔪` because `σ` is inertial; the binomial expansion
+`0 = f(z) = f(y) + f'(y)(z−y) + k(z−y)²` therefore factors as
+`(z−y)·(f'(y) + k(z−y)) = 0`.  The second factor is a unit — `f'(y)` is
+one, `k(z−y) ∈ 𝔪`, and `Oᵥ` is LOCAL — so `z = y`.
+
+This is the same shape as `ArtinConductor.lean`'s
+`smul_eq_self_of_pow_eq_one_integralClosure` (inertia fixes `n`-th roots
+of unity for `n` prime to the residue characteristic), of which it is
+the general form: that statement is this one with `f = Xⁿ − 1`. -/
+theorem inertia_smul_eq_self_of_eval₂_eq_zero
+    {σ : Field.absoluteGaloisGroup (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)}
+    (hσ : σ ∈ localInertiaGroup v) (f : Polynomial ℤ)
+    {y : IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))}
+    (hy : f.eval₂ (Int.castRingHom (IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))) y = 0)
+    (hd : IsUnit ((Polynomial.derivative f).eval₂ (Int.castRingHom (IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))) y)) :
+    σ • y = y := by
+  classical
+  set F : Polynomial (IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))) :=
+    f.map (Int.castRingHom _) with hFdef
+  have hev : ∀ z, F.eval z = f.eval₂ (Int.castRingHom _) z := by
+    intro z; rw [hFdef, Polynomial.eval_map]
+  have hderiv : ∀ z, F.derivative.eval z
+      = (Polynomial.derivative f).eval₂ (Int.castRingHom _) z := by
+    intro z; rw [hFdef, Polynomial.derivative_map, Polynomial.eval_map]
+  set z := σ • y with hz
+  have hFy : F.eval y = 0 := by rw [hev]; exact hy
+  have hFz : F.eval z = 0 := by
+    rw [hev, hz, ← smul_eval₂_intCastRingHom v σ f y, hy, smul_zero]
+  obtain ⟨k, hk⟩ := Polynomial.binomExpansion F y (z - y)
+  rw [add_sub_cancel, hFz, hFy, zero_add] at hk
+  have hfac : (z - y) * (F.derivative.eval y + k * (z - y)) = 0 := by
+    have hsq : k * (z - y) ^ 2 = (z - y) * (k * (z - y)) := by ring
+    rw [mul_add, mul_comm (z - y) (F.derivative.eval y), ← hsq]
+    linear_combination -hk
+  have hmem : z - y ∈ IsLocalRing.maximalIdeal (IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))) := hσ y
+  have hunit : IsUnit (F.derivative.eval y + k * (z - y)) := by
+    rw [← IsLocalRing.notMem_maximalIdeal]
+    intro hcon
+    have h1 : F.derivative.eval y ∈ IsLocalRing.maximalIdeal (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))) := by
+      have h2 : k * (z - y) ∈ IsLocalRing.maximalIdeal (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+          (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))) :=
+        Ideal.mul_mem_left _ _ hmem
+      simpa using Ideal.sub_mem _ hcon h2
+    rw [hderiv] at h1
+    exact (IsLocalRing.notMem_maximalIdeal.mpr hd) h1
+  have hzy : z - y = 0 := by
+    rcases mul_eq_zero.mp hfac with h | h
+    · exact h
+    · exact absurd h hunit.ne_zero
+  linear_combination hzy
+
+/-- The same statement inside `Kᵥᵃˡᵍ` (PROVEN 2026-07-30): `y` is
+integral over `𝒪ᵥ`, kills `f ∈ ℤ[X]`, and `f'(y)` divides the integer
+`D` with an INTEGRAL cofactor `w`, `D` being a unit of `Oᵥ`. -/
+theorem inertia_smul_eq_self_of_isIntegral_of_mul_eq_intCast
+    {σ : Field.absoluteGaloisGroup (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)}
+    (hσ : σ ∈ localInertiaGroup v) (f : Polynomial ℤ)
+    {y w : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)} {D : ℤ}
+    (hyint : IsIntegral (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) y)
+    (hwint : IsIntegral (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) w)
+    (hDunit : IsUnit ((D : ℤ) : IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))))
+    (hy : f.eval₂ (Int.castRingHom (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))) y = 0)
+    (hw : (Polynomial.derivative f).eval₂ (Int.castRingHom (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))) y * w
+      = ((D : ℤ) : AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))) :
+    σ • y = y := by
+  classical
+  set Y : IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+    (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) :=
+    ⟨y, hyint⟩ with hY
+  set W : IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+    (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) :=
+    ⟨w, hwint⟩ with hW
+  set ρ : IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) →+*
+      AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) :=
+    algebraMap _ _ with hρ
+  have hinj : Function.Injective ρ := fun a b h => Subtype.ext h
+  have hev : ∀ (g : Polynomial ℤ) (x : IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))),
+      ρ (g.eval₂ (Int.castRingHom _) x) = g.eval₂ (Int.castRingHom _) (ρ x) := by
+    intro g x
+    have h := Polynomial.hom_eval₂ g (Int.castRingHom _) ρ x
+    rwa [show ρ.comp (Int.castRingHom _) = Int.castRingHom _ from RingHom.ext_int _ _] at h
+  have hYval : ρ Y = y := rfl
+  have hWval : ρ W = w := rfl
+  have hY0 : f.eval₂ (Int.castRingHom _) Y = 0 := by
+    apply hinj
+    rw [hev, map_zero, hYval]
+    exact hy
+  have hunit : IsUnit ((Polynomial.derivative f).eval₂ (Int.castRingHom _) Y) := by
+    refine isUnit_of_mul_isUnit_left (y := W) ?_
+    have hmulD : (Polynomial.derivative f).eval₂ (Int.castRingHom _) Y * W
+        = ((D : ℤ) : IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+          (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))) := by
+      apply hinj
+      rw [map_mul, hev, map_intCast, hYval, hWval]
+      exact hw
+    rw [hmulD]
+    exact hDunit
+  have hfix := inertia_smul_eq_self_of_eval₂_eq_zero v hσ f hY0 hunit
+  have h2 := congrArg (fun x : IntegralClosure
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+    (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) => x.1) hfix
+  simpa [IntegralClosure.coe_smul, hY] using h2
+
+/-- **An integer prime to the residue characteristic is a UNIT of `𝒪ᵥ`**
+(the same statement as `ArtinConductor.lean`'s
+`isUnit_natCast_adicCompletionIntegers_of_notMem_asIdeal`, reproved here
+because that module is deliberately NOT on this file's critical path). -/
+theorem isUnit_natCast_adicCompletionIntegers_of_notMem {n : ℕ} (hn : (n : 𝓞 K) ∉ v.asIdeal) :
+    IsUnit ((n : ℕ) : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) := by
+  rw [IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers.isUnit_iff_valued_eq_one]
+  have h1 : (((n : ℕ) : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) :
+      IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+      = algebraMap (𝓞 K) (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) (n : 𝓞 K) := by
+    push_cast
+    rfl
+  rw [h1]
+  have h2 : Valued.v (algebraMap (𝓞 K)
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) (n : 𝓞 K)) =
+      v.valuation K (algebraMap (𝓞 K) K (n : 𝓞 K)) :=
+    IsDedekindDomain.HeightOneSpectrum.valuedAdicCompletion_eq_valuation v _
+  rw [h2]
+  exact (IsDedekindDomain.HeightOneSpectrum.valuation_eq_one_iff_notMem v).mpr hn
+
+/-- An element of `Kᵥᵃˡᵍ` killed by a MONIC INTEGER polynomial is
+integral over `𝒪ᵥ`.  Stated through `Int.castRingHom` rather than
+`IsIntegral ℤ` for the diamond reason recorded on
+`smul_eval₂_intCastRingHom` above. -/
+theorem isIntegral_adicCompletionIntegers_of_monic_eval₂
+    {y : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)}
+    {p : Polynomial ℤ} (hpm : p.Monic)
+    (hp : p.eval₂ (Int.castRingHom (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))) y = 0) :
+    IsIntegral (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) y := by
+  refine ⟨p.map (Int.castRingHom _), hpm.map _, ?_⟩
+  rw [Polynomial.eval₂_map,
+    show ((algebraMap (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))).comp
+        (Int.castRingHom _)) = Int.castRingHom _ from RingHom.ext_int _ _]
+  exact hp
+
+/-- `IsIntegral ℤ y`, restated through `Int.castRingHom` so that it is
+independent of which `Algebra ℤ`-instance is in scope. -/
+theorem exists_monic_eval₂_int_eq_zero {A : Type*} [CommRing A] [Algebra ℤ A] {y : A}
+    (h : IsIntegral ℤ y) :
+    ∃ p : Polynomial ℤ, p.Monic ∧ p.eval₂ (Int.castRingHom A) y = 0 := by
+  obtain ⟨p, hpm, hp⟩ := h
+  exact ⟨p, hpm, by rwa [show (Int.castRingHom A) = algebraMap ℤ A from RingHom.ext_int _ _]⟩
+
+/-- **An integer prime to `q` is a unit of the integral closure `Oᵥ` at
+the `q`-adic place of `ℚ`.** -/
+theorem isUnit_intCast_integralClosure_of_not_dvd {q : ℕ} (hq : q.Prime) {D : ℤ}
+    (hD : ¬ (q : ℤ) ∣ D) :
+    IsUnit ((D : ℤ) : IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))) := by
+  have hnat : ((D.natAbs : ℕ) : 𝓞 ℚ) ∉ hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal := by
+    rw [hq.mem_toHeightOneSpectrumRingOfIntegersRat_asIdeal, map_natCast]
+    intro hcon
+    exact hD (Int.dvd_natAbs.mp (by exact_mod_cast hcon))
+  have h0 := isUnit_natCast_adicCompletionIntegers_of_notMem
+    hq.toHeightOneSpectrumRingOfIntegersRat hnat
+  have h1 := h0.map (algebraMap (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)
+    (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))))
+  rw [map_natCast] at h1
+  rcases Int.natAbs_eq D with h | h
+  · rw [h, Int.cast_natCast]; exact h1
+  · rw [h, Int.cast_neg, Int.cast_natCast]; exact h1.neg
+
+/-- **FOR EVERY ALGEBRAIC NUMBER THERE IS A NONZERO INTEGER `D` SUCH THAT
+THE LOCAL INERTIA AT EVERY PRIME `q ∤ D` FIXES ITS IMAGE IN `ℚ_qᵃˡᵍ`**
+(PROVEN 2026-07-30).
+
+THE ROUTE is Hensel's criterion applied to the minimal polynomial, and it
+deliberately does NOT pass through the ideal-theoretic notion of
+ramification: after scaling `x` by a nonzero integer `a` we may assume it
+is an algebraic INTEGER `y`, whose minimal polynomial `G` over `ℤ` is
+separable in characteristic zero, so `G'(y) ≠ 0`; choosing a nonzero
+integer `D` with `D / G'(y)` an algebraic integer makes `G'(ι y)` a unit
+of `Oᵥ` at every `q ∤ D`, and
+`inertia_smul_eq_self_of_isIntegral_of_mul_eq_intCast` applies.  Fixing
+`ι y = a · ι x` is the same as fixing `ι x`.
+
+This is the local-global step that the docstrings of the two Minkowski
+sub-leaves called "the converse inertia dictionary" and expected to cost
+a passage from `Algebra.IsUnramifiedAt` back to the local inertia group.
+It does not: `q ∤ disc` is exactly Hensel's simple-root condition, and
+the simple-root condition is what inertia sees. -/
+theorem exists_ne_zero_forall_inertia_smul_map_eq_self (x : AlgebraicClosure ℚ) :
+    ∃ D : ℤ, D ≠ 0 ∧ ∀ (q : ℕ) (hq : q.Prime), ¬ (q : ℤ) ∣ D →
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        σ • (AlgebraicClosure.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat)) x)
+          = AlgebraicClosure.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat)) x := by
+  classical
+  -- the `Algebra ℚ (AlgebraicClosure ℚ)` instance found here is `DivisionRing.toRatAlgebra`,
+  -- so `AlgebraicClosure.isAlgebraic` is not found by instance search and is supplied by hand
+  haveI hQalg : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) := AlgebraicClosure.isAlgebraic ℚ
+  -- `x` is algebraic over `ℤ`, so some nonzero multiple `y = a • x` is an algebraic INTEGER
+  have hxalgZ : IsAlgebraic ℤ x :=
+    (IsFractionRing.isAlgebraic_iff ℤ ℚ (AlgebraicClosure ℚ)).mpr (hQalg.isAlgebraic x)
+  obtain ⟨a, ha0, hyint⟩ := hxalgZ.exists_integral_multiple
+  set y : AlgebraicClosure ℚ := a • x with hydef
+  set G : Polynomial ℤ := minpoly ℤ y with hG
+  have hyintQ : IsIntegral ℚ y := hyint.tower_top
+  have hGmapQ : (minpoly ℚ y) = G.map (algebraMap ℤ ℚ) :=
+    minpoly.isIntegrallyClosed_eq_field_fractions' ℚ hyint
+  -- `d := G'(y) ≠ 0`, by separability of the minimal polynomial in characteristic zero
+  set d : AlgebraicClosure ℚ :=
+    (Polynomial.derivative G).eval₂ (Int.castRingHom (AlgebraicClosure ℚ)) y with hd
+  have hdeq : Polynomial.aeval y (Polynomial.derivative (minpoly ℚ y)) = d := by
+    rw [hGmapQ, Polynomial.derivative_map, Polynomial.aeval_def, Polynomial.eval₂_map,
+      show ((algebraMap ℚ (AlgebraicClosure ℚ)).comp (algebraMap ℤ ℚ))
+        = Int.castRingHom (AlgebraicClosure ℚ) from RingHom.ext_int _ _]
+  have hd0 : d ≠ 0 := by
+    rw [← hdeq]
+    exact ((minpoly.irreducible hyintQ).separable).aeval_derivative_ne_zero (minpoly.aeval ℚ y)
+  -- a nonzero integer `D` with `D / d` an algebraic integer
+  obtain ⟨D, hD0, hwint⟩ :=
+    ((IsFractionRing.isAlgebraic_iff ℤ ℚ (AlgebraicClosure ℚ)).mpr
+      (hQalg.isAlgebraic d⁻¹)).exists_integral_multiple
+  set w : AlgebraicClosure ℚ := D • d⁻¹ with hw
+  have hdw : d * w = (D : AlgebraicClosure ℚ) := by
+    rw [hw, zsmul_eq_mul, ← mul_assoc, mul_comm d (D : AlgebraicClosure ℚ), mul_assoc,
+      mul_inv_cancel₀ hd0, mul_one]
+  have hGy : G.eval₂ (Int.castRingHom (AlgebraicClosure ℚ)) y = 0 := by
+    have := minpoly.aeval ℤ y
+    rwa [Polynomial.aeval_def,
+      show (algebraMap ℤ (AlgebraicClosure ℚ)) = Int.castRingHom (AlgebraicClosure ℚ) from
+        RingHom.ext_int _ _] at this
+  refine ⟨D, hD0, ?_⟩
+  intro q hq hqD
+  set v : IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ) :=
+    hq.toHeightOneSpectrumRingOfIntegersRat with hv
+  intro σ hσ
+  set ι : AlgebraicClosure ℚ →+*
+      AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) :=
+    AlgebraicClosure.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) with hι
+  -- transport the data along `ι`
+  have htrans : ∀ (p : Polynomial ℤ) (z : AlgebraicClosure ℚ),
+      ι (p.eval₂ (Int.castRingHom (AlgebraicClosure ℚ)) z)
+        = p.eval₂ (Int.castRingHom (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) (ι z) := by
+    intro p z
+    have h2 := Polynomial.hom_eval₂ p (Int.castRingHom (AlgebraicClosure ℚ)) ι z
+    rwa [show ι.comp (Int.castRingHom (AlgebraicClosure ℚ))
+      = Int.castRingHom (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) from RingHom.ext_int _ _] at h2
+  obtain ⟨py, hpym, hpy⟩ := exists_monic_eval₂_int_eq_zero hyint
+  obtain ⟨pw, hpwm, hpw⟩ := exists_monic_eval₂_int_eq_zero hwint
+  have hyintι : IsIntegral (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v) (ι y) :=
+    isIntegral_adicCompletionIntegers_of_monic_eval₂ v hpym (by rw [← htrans, hpy, map_zero])
+  have hwintι : IsIntegral (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v) (ι w) :=
+    isIntegral_adicCompletionIntegers_of_monic_eval₂ v hpwm (by rw [← htrans, hpw, map_zero])
+  have hGyι : G.eval₂ (Int.castRingHom (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) (ι y) = 0 := by
+    rw [← htrans, hGy, map_zero]
+  have hdwι : (Polynomial.derivative G).eval₂ (Int.castRingHom (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) (ι y) * ι w
+      = ((D : ℤ) : AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) := by
+    rw [← htrans, ← map_mul, ← hd, hdw, map_intCast]
+  have hfixy : σ • ι y = ι y :=
+    inertia_smul_eq_self_of_isIntegral_of_mul_eq_intCast (σ := σ) v hσ G hyintι hwintι
+      (isUnit_intCast_integralClosure_of_not_dvd hq hqD) hGyι hdwι
+  -- descend from `y = a • x` to `x`
+  have hιy : ι y = (a : AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) * ι x := by
+    rw [hydef, zsmul_eq_mul, map_mul, map_intCast]
+  have hsmul : σ • ((a : AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) * ι x)
+      = (a : AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) * (σ • ι x) := by
+    rw [MulSemiringAction.smul_mul]
+    congr 1
+    exact map_intCast (MulSemiringAction.toRingHom _ _ σ) a
+  have hane : (a : AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) ≠ 0 :=
+    Int.cast_ne_zero.mpr ha0
+  have hfin := hfixy
+  rw [hιy, hsmul] at hfin
+  exact mul_left_cancel₀ hane hfin
+
+end HenselInertia
+
+/-- **`ℚ(ζ_m)/ℚ` IS UNRAMIFIED OUTSIDE `m`, IN INERTIA-SUBGROUP FORM**
+(**PROVEN 2026-07-30**; created 2026-07-29 as sub-leaf (a) of the shared
+Minkowski cut `exists_badPrimes_mul_muFixer_eq_top_ray_class` below,
+whose earlier docstring named exactly this statement as one of its two
+missing inputs).
 
 
 `Fᵃˡᵍ` is algebraic over `ℚ` hence over `ℚᵃˡᵍ`, and an algebraic extension of an
@@ -59067,6 +59446,113 @@ is lost by not naming it, whereas a wrong hoist would manufacture exactly the
 "honest audit, false statement" failure this cluster has already produced once
 (see the SECOND FALSITY AUDIT on `exists_artinDivisorNormIndex_le_ray_class`).
 
+**⚠ ROUTE-GAP AUDIT ON `hbase` (2026-07-30, flt-lean-215) — THE PARAGRAPH
+ABOVE PROVES ATTAINABILITY IN EACH NORM GROUP SEPARATELY, AND `hbase` NEEDS IT
+IN THE INTERSECTION. THE EXPORTED `hartin` CLAUSES DO NOT SUPPLY THAT, AND
+THERE IS AN EXPLICIT ARITHMETIC WITNESS.** This is a defect in the ROUTE, not a
+claim that this theorem is false: `hartin` is `∀`-quantified over `(p, S)`, so
+a prover may call it again with data the two calls below do not use.
+
+*What `hbase` actually needs.* Its conclusion puts `ofAdd β` in
+`Subgroup.map 𝔑₁ Im₁` **and** in `Subgroup.map 𝔑₂ Im₂` while pinning
+`φ (ofAdd β) = χ (globalFrob v₀)`. Compute the reachable values. `Hᵢ` is
+normal (it contains `ker χ ⊓ Γ_{F(ζ_{mᵢ})}` by construction, whose quotient is
+abelian), and for `u` unramified the residue degree of any prime of `Eᵢ` over
+`u` is the order of `globalFrob u` in `Γ F / Hᵢ`; `hbasisᵢ` therefore makes
+`Subgroup.map 𝔑ᵢ Imᵢ` the divisors `x` with `x u ∈ gᵢ(u) ℤ`, `gᵢ(u)` that
+order. Intersecting, `x u ∈ lcm (g₁ u) (g₂ u) ℤ`, and `lcm (g₁ u) (g₂ u)` is
+the order of `globalFrob u` in `Γ F / (H₁ ⊓ H₂)`. Since
+`φ (ofAdd (single u n)) = χ (globalFrob u) ^ n` and Chebotarev makes every
+`σ` a `globalFrob u`,
+
+    φ (Subgroup.map 𝔑₁ Im₁ ⊓ Subgroup.map 𝔑₂ Im₂) = χ (H₁ ⊓ H₂)   exactly.
+
+So `hbase` holds **iff** `χ (globalFrob v₀) ∈ χ (H₁ ⊓ H₂)`, and since
+`globalFrob v₀` ranges over a generator that is
+`Γ F = ker χ · (H₁ ⊓ H₂)` — Childress's `K ∩ E₁E₂ = F`, which is why his proof
+needs the COMPOSITUM and not two separate fields.
+
+*It does not follow from what is in hand.* The clauses available at the `have`
+are, at each `i`: (i) `ker χ · Hᵢ = Γ F`, (ii) `Hᵢ ⊓ Γ_{F(ζ_{mᵢ})} ≤ ker χ`,
+(iii) `ker χ · Γ_{F(ζ_{mᵢ})} = Γ F`, (iv) `globalFrob · ∈ Hᵢ`, plus
+`hm₂cop`; and, true by construction though not exported,
+(v) `ker χ ⊓ Γ_{F(ζ_{mᵢ})} ≤ Hᵢ`. **All six hold in the following
+configuration and the conclusion fails.**
+
+    F = ℚ,  ℓ = 2,  k = 1,  χ the quadratic character cutting out K = ℚ(√-5)
+    m₁ = 4,   H₁ = Γ_{ℚ(√5)}   (so E₁ = ℚ(√5)),   v  = 11
+    m₂ = 5,   H₂ = Γ_{ℚ(i)}    (so E₂ = ℚ(i)),    v₀ = 13
+
+Checks (PARI/GP, 2026-07-30, as an untrusted searcher; each is a Kronecker
+symbol): `kronecker(-20,13) = -1`, so `χ (globalFrob v₀) ≠ 1`;
+`kronecker(-4,13) = 1`, so `v₀` splits in `ℚ(i) = E₂` — clause (iv) at `v₀`;
+`kronecker(5,11) = 1`, so `v` splits in `ℚ(√5) = E₁` — clause (iv) at `v`;
+`gcd(4,5) = 1` is `hm₂cop`; `4 ∉ (11)` and `5 ∉ (13)`. The rest are field
+intersections inside the biquadratic `ℚ(i,√5)`, whose three quadratic
+subfields are `ℚ(i)`, `ℚ(√5)`, `ℚ(√-5)`: (i) `K ∩ Eᵢ = ℚ`; (ii)
+`H₁ ⊓ Γ_{ℚ(ζ₄)} = Γ_{ℚ(i,√5)} ≤ Γ_{ℚ(√-5)} = ker χ` and
+`H₂ ⊓ Γ_{ℚ(ζ₅)} = Γ_{ℚ(ζ₂₀)} ≤ ker χ`; (iii) `K ∩ ℚ(ζ₄) = K ∩ ℚ(ζ₅) = ℚ`;
+(v) `ker χ ⊓ Γ_{ℚ(ζ₄)} = Γ_{ℚ(i,√5)} ≤ H₁` and
+`ker χ ⊓ Γ_{ℚ(ζ₅)} = Γ_{ℚ(ζ₂₀)} ≤ H₂`. But
+`H₁ ⊓ H₂ = Γ_{ℚ(i,√5)} ≤ ker χ`, so `χ (H₁ ⊓ H₂) = 1` while
+`χ (globalFrob v₀) = -1 ≠ 1` in characteristic `3`. **`hbase` is false for
+these data.** Note this also refutes, as a route, the "roughly forty-five
+binders" list above: it contains every clause just used.
+
+*The exact missing input, and it is ONE clause.* Adding
+
+    (vi)  ker χ · (Γ_{F(ζ_{m₁})} ⊓ Γ_{F(ζ_{m₂})}) = Γ F
+
+— clause (iii) at the PRODUCT modulus `m₁ m₂`, i.e. `K ∩ F(ζ_{m₁m₂}) = F` —
+makes the group theory go through, and (v) is then also needed. Proof: (vi)
+plus `Γ_{F(ζ_{m₁})} · Γ_{F(ζ_{m₂})} = Γ F` (coprimality) make
+`Γ F → Γ F/ker χ × Γ F/Γ_{F(ζ_{m₁})} × Γ F/Γ_{F(ζ_{m₂})}` surjective; (v)
+makes the image of `Hᵢ` there a full product in the `j ≠ i` cyclotomic factor,
+so the image of `H₁ ⊓ H₂` is `{(a, x₁, x₂) : (a,x₁) ∈ H̄₁, (a,x₂) ∈ H̄₂}`,
+whose projection to `Γ F/ker χ` is the intersection of two projections, each
+full by (i). That is exactly Childress's `Gal (L/F) ≅ G × G₁ × G₂` argument
+(p. 121) written without the diagram. The `ℚ(i,√5)` witness fails only (vi):
+`K = ℚ(√-5) ⊆ ℚ(ζ₂₀)`.
+
+*Where (vi) has to come from, and the concrete defect in the block below.*
+Childress obtains it from a requirement the Lean assembly currently drops:
+his `mᵢ` are "prime to all the primes that ramify in `K/ℚ`" (p. 121). The two
+calls below pass `S = ∅` and `S = m₁.primeFactors` — **neither excludes the
+primes at which `χ` ramifies**, which is precisely how `m₁ = 4`, `m₂ = 5`
+against `cond K = 20` becomes admissible. `hmmram` puts every ramified prime
+under `mm`, so the fix is available *here*, and the witnessing `Finset ℕ`
+needs no factorisation API at all:
+
+    S₀ : Finset ℕ := (Ideal.absNorm mm).primeFactors
+
+is finite and nonempty-of-the-right-primes because `absNorm mm ≠ 0`
+(`Ideal.absNorm_eq_zero_iff`, using `hmm`), and every `w ∣ mm` has residue
+characteristic dividing `Ideal.absNorm w ∣ Ideal.absNorm mm`.
+
+**THIS REPAIR IS APPLIED (2026-07-30, flt-lean-215).** The first call now passes
+`S₀` and the second `S₀ ∪ m₁.primeFactors`; the clause both used to drop as `-`
+at index 11 is bound as `hm₁cop`/`hm₂cop` and threaded into `hbase`, which gained
+the two hypotheses in place of its old single `∀ q ∈ m₁.primeFactors` one. The
+`ℚ(i,√5)` witness above is thereby dead — its `m₁ = 4`, `m₂ = 5` are inadmissible
+against `cond K = 20` — and `hbase`'s remaining `sorry` is no longer known-false.
+It is also not yet known-TRUE; the next paragraph is what stands between.
+
+*What is still open after that fix, stated honestly.* With `mᵢ` prime to the
+ramified set, `K ∩ F(ζ_{m₁m₂})/F` is unramified at every FINITE prime; over
+`F = ℚ` Minkowski closes it, but over a general base "unramified ⟹ trivial" is
+FALSE (that is the narrow Hilbert class field, and this cluster's own
+`exists_artinDivisorNormIndex_le_ray_class` audit exhibits `F = ℚ(√-5)` with
+`h⁺ = 2` for exactly this reason). So (vi) over a general `F` is a genuine
+sub-leaf, not bookkeeping. Two remarks for whoever states it: `K/F` here is
+CYCLIC of `ℓ`-power degree (`hord`), so it has a unique subextension of degree
+`ℓ` and (vi) reduces to that one field; and (v) is FREE — it is the second
+clause of `exists_subgroup_of_independent_ray_class`
+(`∀ x, cA x = 1 → cB x = 1 → x ∈ H`), already PROVEN and already in hand inside
+`exists_artinAuxiliaryField_ray_class`, which merely fails to export it. Export
+(v) and (vi) together in one interface change, not two: adding a conjunct to
+these existentials breaks every positional `obtain`, which is CLAUDE.md's
+seventh invisibility class, and the change is worth paying for exactly once.
+
 **AND THE CUT-LEVEL DEFECT RECORDED AGAINST STEP 3 IS REPAIRED.** The caveat
 below used to read that `exists_artinAuxiliaryNumberField_ray_class` pins `ι`
 only as *some* injective map onto `H`, so that the consistency property
@@ -59302,15 +59788,30 @@ theorem exists_artinNormSubgroups_ramified_ray_class
   -- STEP 1 (Childress p. 121): Artin's Lemma at `v` and at `v₀`, with the
   -- auxiliary fields realised as number fields in `Type u`.  The second call
   -- avoids the primes of `m₁`, which is Childress's coprimality of the two moduli.
-  obtain ⟨m₁, H₁, E₁, fE₁, nE₁, aE₁, ι₁, jE₁, j₁, hm₁pos, -, hm₁v, hH₁open, hfin₁, hinj₁,
+  --
+  -- **THE AVOIDANCE SETS CARRY `(absNorm mm).primeFactors` (2026-07-30,
+  -- flt-lean-215).** They used to be `∅` and `m₁.primeFactors`, i.e. NEITHER
+  -- excluded the primes at which `χ` ramifies, and Childress (p. 121) requires
+  -- each `mᵢ` prime to every prime ramifying in `K`. That omission is the first
+  -- of the two defects the ROUTE-GAP AUDIT in the docstring records against
+  -- `hbase` below; it is repaired here, and the resulting clauses are BOUND
+  -- (`hm₁cop`, `hm₂cop`) and threaded into `hbase` rather than dropped as `-`.
+  -- `hmmram` puts every ramified prime under `mm`, and every `w ∣ mm` has
+  -- residue characteristic dividing `absNorm w ∣ absNorm mm`, so this finite set
+  -- of rational primes contains every ramified residue characteristic — with no
+  -- factorisation API beyond `Nat.primeFactors`. It does NOT on its own make
+  -- `hbase` true; see the audit's closing paragraph.
+  obtain ⟨m₁, H₁, E₁, fE₁, nE₁, aE₁, ι₁, jE₁, j₁, hm₁pos, hm₁cop, hm₁v, hH₁open, hfin₁, hinj₁,
       -, hsurH₁, hi₁, hcyc₁, -, hfrobv₁, hjE₁, hιapp₁⟩ :=
-    exists_artinAuxiliaryNumberField_ray_class F χ hmul V hVopen hVker v ∅
+    exists_artinAuxiliaryNumberField_ray_class F χ hmul V hVopen hVker v
+      (Ideal.absNorm mm).primeFactors
   letI := fE₁
   letI := nE₁
   letI := aE₁
   obtain ⟨m₂, H₂, E₂, fE₂, nE₂, aE₂, ι₂, jE₂, j₂, hm₂pos, hm₂cop, hm₂v, hH₂open, hfin₂,
       hinj₂, -, hsurH₂, hi₂, hcyc₂, -, hfrobv₂, hjE₂, hιapp₂⟩ :=
-    exists_artinAuxiliaryNumberField_ray_class F χ hmul V hVopen hVker v₀ m₁.primeFactors
+    exists_artinAuxiliaryNumberField_ray_class F χ hmul V hVopen hVker v₀
+      ((Ideal.absNorm mm).primeFactors ∪ m₁.primeFactors)
   letI := fE₂
   letI := nE₂
   letI := aE₂
@@ -59451,10 +59952,34 @@ theorem exists_artinNormSubgroups_ramified_ray_class
   -- independence `ker χ · (H₁ ⊓ H₂) = Γ F` — are in this theorem's docstring,
   -- under FALSITY AUDIT OF THE REMAINING STEP, together with the four-line
   -- proof of `hbase` that they unlock.
+  --
+  -- ⚠ READ THE ROUTE-GAP AUDIT IN THE DOCSTRING BEFORE ATTEMPTING THIS SORRY
+  -- (2026-07-30). `hbase` is equivalent to `χ (globalFrob v₀) ∈ χ (H₁ ⊓ H₂)`,
+  -- and that does NOT follow from the clauses obtained above: the witness
+  -- `F = ℚ`, `K = ℚ(√-5)`, `m₁ = 4`, `E₁ = ℚ(√5)`, `v = 11`, `m₂ = 5`,
+  -- `E₂ = ℚ(i)`, `v₀ = 13` satisfies every one of them — including `hm₂cop`
+  -- and the unexported `ker χ ⊓ Γ_{F(ζ_{mᵢ})} ≤ Hᵢ` — with `H₁ ⊓ H₂ ≤ ker χ`
+  -- and `χ (globalFrob v₀) = -1`. The missing clause is `K ∩ F(ζ_{m₁m₂}) = F`.
+  --
+  -- The FIRST of the two repairs the audit prescribes — Childress's requirement
+  -- (p. 121) that each `mᵢ` be prime to every prime ramifying in `K` — IS DONE
+  -- (2026-07-30): the two calls above now avoid `(absNorm mm).primeFactors`, and
+  -- the resulting clauses reach this `have` as its fifth and sixth hypotheses.
+  -- That kills the `ℚ(i,√5)` witness, whose `m₁ = 4`, `m₂ = 5` are no longer
+  -- admissible against `cond K = 20`, but it does NOT make `hbase` true: with
+  -- `mᵢ` prime to the ramified set, `K ∩ F(ζ_{m₁m₂})/F` is unramified at every
+  -- FINITE prime, and over a general base "unramified ⟹ trivial" is FALSE — that
+  -- is the narrow Hilbert class field, and this cluster's own
+  -- `exists_artinDivisorNormIndex_le_ray_class` audit exhibits `F = ℚ(√−5)` with
+  -- `h⁺ = 2` for exactly this reason. So a genuine sub-leaf remains, and the
+  -- audit's closing paragraph says what it is and what it costs (clause (v) is
+  -- FREE — it is already proven inside `exists_artinAuxiliaryField_ray_class`,
+  -- which merely fails to export it).
   have hbase : (∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧ ρ ∈ H₁ ∧ σ = τ * ρ) →
       (∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧ ρ ∈ H₂ ∧ σ = τ * ρ) →
       IsOpen (H₁ : Set (Γ F)) → IsOpen (H₂ : Set (Γ F)) →
-      (∀ q ∈ m₁.primeFactors, q.Prime → ¬ q ∣ m₂) →
+      (∀ q ∈ (Ideal.absNorm mm).primeFactors, q.Prime → ¬ q ∣ m₁) →
+      (∀ q ∈ (Ideal.absNorm mm).primeFactors ∪ m₁.primeFactors, q.Prime → ¬ q ∣ m₂) →
       (∀ (W : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E₁))
         (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F)),
         W.asIdeal.under (NumberField.RingOfIntegers F) = w.asIdeal →
@@ -59471,10 +59996,10 @@ theorem exists_artinNormSubgroups_ramified_ray_class
         ((φ (Multiplicative.ofAdd β) : Dickson.K 3)) = χ (globalFrob v₀) ∧
         Multiplicative.ofAdd β ∈ Subgroup.map 𝔑₁ Im₁ ∧
         Multiplicative.ofAdd β ∈ Subgroup.map 𝔑₂ Im₂ := by
-    intro _ _ _ _ _ _ _
+    intro _ _ _ _ _ _ _ _
     sorry
   obtain ⟨β, hβsym, hβ₁, hβ₂⟩ :=
-    hbase hi₁ hi₂ hH₁open hH₂open hm₂cop hbasis₁ hbasis₂
+    hbase hi₁ hi₂ hH₁open hH₂open hm₁cop hm₂cop hbasis₁ hbasis₂
   exact ⟨β, Subgroup.map 𝔑₁ Im₁, Subgroup.map 𝔑₂ Im₂, hβsym, hv𝔑₁, hβ₁, hv𝔑₂, hβ₂,
     map_inf_ker_le_sup_of_normCompatible_ray_class 𝔑₁ φ φ₁ Im₁ P₁ N₁ P N hcons₁
       hP𝔑₁ hN𝔑₁ hker₁,
