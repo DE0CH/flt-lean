@@ -55753,6 +55753,28 @@ reduced and hence not unramified, for every `p ≥ 2`.
 étale.  This is the audit's own `(ℤ/p)_T × ker F²` witness moved out of the
 `p ∣ N` regime that `_hqN` excludes.
 
+**THAT SCALED WITNESS DOES NOT REACH THE ONLY USE, and the sharpening (2026-07-30).**
+`A = E ×_k E'` is an abelian SURFACE.  It refutes this statement, which asks only
+for an `AbelianSchemeStruct`; it does NOT refute the `het` hypothesis of
+`jm_eq_jLineZCoord_of_degeneracy` — the form in which the sole consumer uses this
+leaf — because that quantifies over `Gamma0Datum N T`, which carries
+`relativeDimensionOne`.  Kept inside an ELLIPTIC curve the witness still works at
+every such `N`: over `K = 𝔽̄_p` take `C := ker F + ⟨P⟩ ⊆ E` with `P ∈ E(K)` of
+order `N`, finite flat of rank `pN` with exactly `N` geometric points, so
+`geom_cyclic` holds with `y = P`, `E ⟶ Spec K` has relative dimension `1`, and `C`
+is not reduced.  The `N = 1` witness above is already relative-dimension-`1` and
+needs no repair.
+
+**COUPLING, and it is a hazard rather than a remark.**  With the sharpened witness
+the `het` of `jm_eq_jLineZCoord_of_degeneracy` is INCONSISTENT, which is the only
+reason that leaf is not false — it is vacuously true.  So **repairing this leaf
+turns that one FALSE**, and the two must be repaired together: the `finrank` field
+prescribed above removes the inconsistency, and the same commit must give that leaf
+its missing `hgi` (the compatibility of `hc` with `hcZ` along `gi`).  Its own
+vacuity audit carries the compiler-checked evidence, the true form
+`jm_eq_jLineZCoord_of_degeneracy_of_classifyCompat` proven with no new leaf, and
+the six-theorem thread that installs `hgi` at zero frontier cost.
+
 **WHY THE REPAIR IS NOT LOCAL, and where it belongs.**  The obligation cannot be
 pushed anywhere.  The sole consumer is `exists_x0IntegralJLine` below, whose
 `het` would become a hypothesis; threading it up gives
@@ -55813,30 +55835,104 @@ and `hu2` is its computation rule: it agrees with `jtZ ∘ ofDvd` at every
 classifying point.  The conclusion is that its coordinate at the generic fibre
 of an integral point is the `j`-map the consumers already hold.
 
-**WHAT THE OBSTRUCTION ACTUALLY IS, and it is NOT the integral model.**  `hu2`
-pins `u` on the image of `hcZ.classify`, and `jtZ_model` pins `jtZ` on
-`ℚ`-points, so the conclusion holds at every `y` that is a classifying point of
-a `ℚ`-rational `Γ₀(N)`-datum.  What is missing is that EVERY `y` is: that
-`hc.classify (𝟙 SpecQ)` is SURJECTIVE onto `RelPoint strY (𝟙 SpecQ)`.  That is
-the classical twisting fact — a non-cuspidal `ℚ`-point of `Y_0(N)` is
-represented by a pair `(E, C)` defined over `ℚ`, obtained by choosing the right
-quadratic twist — and it is exactly the statement this file relies on informally
-whenever it reads a rational point of `Y_0(N)` as an elliptic curve over `ℚ`
-with a rational cyclic `N`-isogeny.  It is NOT available here: the file proves
-surjectivity of `classify` only on `ℚ̄`-points
-(`exists_gamma0Datum_classify_eq`-style results around `Gamma0GITPresentation`),
-and the descent from `ℚ̄` to `ℚ` is the twisting argument.
+**VACUITY AUDIT, 2026-07-30 — READ THIS BEFORE ATTEMPTING THE LEAF.  The route
+the rest of this docstring prescribes CANNOT WORK, and the statement is
+currently true only VACUOUSLY.**  Three findings, the first two of them
+compiler-checked in the block immediately below.
 
-So a prover of this leaf should expect to prove that surjectivity first, or to
-sharpen `IsJMapOn` upstream — which is what the cut of 2026-07-27 already
-predicted in prose: "`IsJMapOn.jm` is pinned only by `classify_jm`, which is
-existential, so `gen_eq` inherits whatever under-determination `jm` has …
-Sharpening `IsJMapOn` is a separate, upstream repair."  This leaf is where that
-prediction has become a named obligation.
+*(1) The leaf implies that `hj.jm` is invariant under EVERY `ℚ`-automorphism of
+`Y`, and that is false of the genuine `j`-map.*  This is
+`jm_invariant_postAut_of_degeneracy` below, PROVEN from this leaf and nothing
+else.  The mechanism: none of the leaf's hypotheses mentions `hc` except
+`hj : IsJMapOn N hc`, and the CONCLUSION's right-hand side mentions neither —
+it is built from `gi`, `u` and `y` alone.  So for any `w : Y ≅ Y` over
+`Spec ℚ` the twisted pair `(hc.postAut w hw, hj.postAut w hw)` — constructed and
+PROVEN to be a coarse structure and a `j`-map below — satisfies every hypothesis
+with the same `hcZ, jz, het, gi, u, hu, hu2`, while its `jm` is
+`hj.jm ∘ RelPoint.post w.inv`.  Two instantiations, one right-hand side.
+
+That conclusion is false of the real `j`: at `N = 5` the Fricke involution `w_5`
+carries the moduli point of `(11a1, C)` — `C` the kernel of the rational
+`5`-isogeny — to that of `11a2`, and
+`j(11a1) = -122023936/161051 ≠ -52893159101157376/11 = j(11a2)`
+(PARI/GP, recomputed 2026-07-30; `11a3` gives a second witness at `-4096/11`).
+
+*(2) So SURJECTIVITY OF `classify` CANNOT BE WHAT IS MISSING* — which is what
+this docstring said until today, and it is the reason to state (1) first.
+`RelPoint.post w.hom` is a bijection, so `(hc.postAut w hw).classify (𝟙 SpecQ)`
+is surjective exactly when `hc.classify (𝟙 SpecQ)` is; the twist of (1) survives
+the addition of surjectivity verbatim.  A prover who proved the twisting fact
+and came back would still have nothing.
+
+**What is really missing is the COMPATIBILITY of `hc` with `hcZ` along `gi`** —
+the hypothesis `hgi` of `jm_eq_jLineZCoord_of_degeneracy_of_classifyCompat`
+below, which is exactly what the twist destroys and exactly what no hypothesis
+here supplies (`gi` is an identification of underlying SCHEMES; nothing asks it
+to respect moduli).  With `hgi` and surjectivity the statement is PROVEN below,
+in eight lines, so the mathematics of the leaf is finished and only its
+INTERFACE is wrong.
+
+*(3) The leaf is nevertheless NOT FALSE, because `het` is INCONSISTENT.*  `het`
+is `CyclicSubgroupOfOrder.etale_of_specLocBase` specialised to `Γ₀(N)`-data, and
+that leaf was refuted earlier the same day; so this statement is vacuously true
+and any proof of it must route through that inconsistency rather than through
+its geometry.  **The refutation does reach `het`, but the scaled witness in that
+leaf's audit does NOT and has been sharpened here.**  `het` quantifies over
+`Gamma0Datum N T`, which carries `relativeDimensionOne`, whereas that audit's
+`N ≥ 2` witness is `A = E × E'` — an abelian SURFACE, so it refutes
+`etale_of_specLocBase` without touching `het`.  Kept inside an elliptic curve
+the witness still works, at every `N` with `q ∤ N`: over `K = 𝔽̄_q` take
+`C := ker F + ⟨P⟩ ⊆ E` with `P ∈ E(K)` of order `N`, a finite flat subgroup
+scheme of rank `qN` with exactly `N` geometric points, so `geom_cyclic` holds
+with `y = P` and `addOrderOf P = N`, `¬ q ∣ N` holds, `E ⟶ Spec K` has relative
+dimension `1`, and `C` is not reduced hence `c.ι ≫ f` is not étale.  That leaf's
+own `N = 1` witness (`C = ker F`) is already relative-dimension-`1` and needs no
+repair.
+
+**CONSEQUENCE, and it is the reason this audit is here rather than in a report:
+THE TWO LEAVES ARE COUPLED.**  Repairing `etale_of_specLocBase` — by the
+`finrank` field on `CyclicSubgroupOfOrder` that its audit prescribes — removes
+the inconsistency, and AT THAT MOMENT this leaf turns from vacuously true to
+FALSE.  Neither repair is wrong on its own; done in sequence without this note
+the second one silently manufactures a false leaf with a live consumer.  Compare
+`exists_artinDivisorNormIndex_le_ray_class`, where two individually-correct
+restatements composed into a false statement.
+
+**THE REPAIR, which is the one this subsection has already performed once.**
+`hgi` must be threaded down, and the chain is the one `etale_of_specLocBase`'s
+audit already traced for `het`: `exists_x0IntegralJLine` →
+`exists_x0GenericJIntegral` → `exists_x0SpecialJ` →
+`exists_x0IntegralJ_of_curveModel` → `exists_x0JGenericOpen_of_curveModel` →
+`exists_x0JOpenModel_of_curveModel` → `exists_x0JNeronDatum`.  Unlike `het` it
+does NOT die at the top: `exists_x0JNeronDatum` chooses its model through
+`exists_x0CurveModel_of_base`, so `hgi` belongs in the OUTPUT of that theorem,
+beside the `(ι, hι)` it already returns — and thence in
+`exists_x0CompactificationModel`, which is a sorry leaf, so the frontier cost of
+the whole repair is ZERO.  This is verbatim the shape of the 2026-07-27 repair
+of `exists_genericOpenIso_of_curveModel` recorded on
+`exists_x0JGenericOpen_of_curveModel`: that leaf was false for the same reason —
+an automorphism twist of `X` that the hypotheses could not see — and the fix was
+to return the missing relation from the theorem that CHOOSES the model, because
+that is the only place it can be produced.
 
 **`hu2` is load-bearing, not decoration.**  Drop it and the statement is FALSE:
 `u` may be post-composed with any automorphism of `𝔸¹_{ℤ_(q)}` over the base —
-`X ↦ X + 1` will do — leaving `hu` intact and changing every coordinate. -/
+`X ↦ X + 1` will do — leaving `hu` intact and changing every coordinate.
+
+**What surjectivity is, since it IS one of the two things needed.**  `hu2` pins
+`u` on the image of `hcZ.classify`, and `jtZ_model` pins `jtZ` on `ℚ`-points, so
+the conclusion holds at every `y` that is a classifying point of a `ℚ`-rational
+`Γ₀(N)`-datum.  That `EVERY y` is one is the classical twisting fact — a
+non-cuspidal `ℚ`-point of `Y_0(N)` is represented by a pair `(E, C)` defined
+over `ℚ`, obtained by choosing the right quadratic twist — and it is what this
+file relies on informally whenever it reads a rational point of `Y_0(N)` as an
+elliptic curve over `ℚ` with a rational cyclic `N`-isogeny.  It is NOT available
+here: the file proves surjectivity of `classify` only on `ℚ̄`-points
+(`exists_gamma0Datum_classify_eq`-style results around `Gamma0GITPresentation`),
+and the descent from `ℚ̄` to `ℚ` is the twisting argument.  It is carried below
+as the HYPOTHESIS `hsurj` rather than cut as a leaf of its own, because on the
+evidence of (1) and (2) it is not by itself an obligation of this node — it
+becomes one only once `hgi` is in place. -/
 theorem jm_eq_jLineZCoord_of_degeneracy (N q : ℕ) (hN : N ≠ 0) (_hq : q.Prime)
     (_hqN : ¬ q ∣ N) {R : Subring ℚ} {toF : R →+* ZMod q}
     (_hbase : IsReductionBase q R toF)
@@ -55854,6 +55950,190 @@ theorem jm_eq_jLineZCoord_of_degeneracy (N q : ℕ) (hN : N ≠ 0) (_hq : q.Prim
     hj.jm y = jLineZCoord (RelPoint.post u hu
       (gi.toEquiv (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _) y)) :=
   sorry
+
+/-! ##### The AUTOMORPHISM TWIST, and the true form of the leaf above
+
+Everything in this block is PROVEN.  It is the compiler-checked half of the
+vacuity audit on `jm_eq_jLineZCoord_of_degeneracy`: the twist
+`(hc, hj) ↦ (hc.postAut w hw, hj.postAut w hw)` preserves every hypothesis of
+that leaf while moving its left-hand side and fixing its right-hand side, and
+the leaf with the missing compatibility restored is proven outright.
+
+The twist is worth having independently of the audit: it says a coarse moduli
+structure and a `j`-map may be transported along ANY automorphism of the coarse
+space over the base, which is the precise sense in which neither structure pins
+the space — the same observation that killed `exists_genericOpenIso_of_curveModel`
+on 2026-07-27, there for `X` and here for `Y`. -/
+
+/-- **`w.inv` lies over the base when `w.hom` does** (PROVEN). -/
+theorem inv_comp_eq_of_hom_comp_eq {Y S : Scheme.{0}} {str : Y ⟶ S} (w : Y ≅ Y)
+    (hw : w.hom ≫ str = str) : w.inv ≫ str = str := by
+  rw [Iso.inv_comp_eq]
+  exact hw.symm
+
+/-- **The universal property of a coarse structure twisted by an automorphism**
+(PROVEN) — the classifying morphism for the twisted structure is `w.inv ≫ u`,
+and uniqueness transports because `w` is an isomorphism. -/
+theorem IsCoarseModuliY0.universal_postAut {N : ℕ} {Y S : Scheme.{0}} {str : Y ⟶ S}
+    (hc : IsCoarseModuliY0 N str) (w : Y ≅ Y) (hw : w.hom ≫ str = str)
+    {Y' : Scheme.{0}} (str' : Y' ⟶ S)
+    (c : ∀ {T : Scheme.{0}} (g : T ⟶ S), Gamma0Datum N T → RelPoint str' g)
+    (hcnat : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+      (hg : h ≫ g = g') {d' : Gamma0Datum N T'} {d : Gamma0Datum N T},
+      IsBaseChangeOf h d' d → c g' d' = RelPoint.pre h hg (c g d)) :
+    ∃! u : Y ⟶ Y', u ≫ str' = str ∧
+      ∀ {T : Scheme.{0}} (g : T ⟶ S) (d : Gamma0Datum N T),
+        (c g d).1 = (RelPoint.post w.hom hw (hc.classify g d)).1 ≫ u := by
+  have hwinv : w.inv ≫ str = str := inv_comp_eq_of_hom_comp_eq w hw
+  obtain ⟨u, ⟨hus, huc⟩, huniq⟩ := hc.universal str' c hcnat
+  refine ⟨w.inv ≫ u, ⟨?_, fun g d => ?_⟩, fun u₁ hu₁ => ?_⟩
+  · rw [Category.assoc, hus]
+    exact hwinv
+  · show (c g d).1 = ((hc.classify g d).1 ≫ w.hom) ≫ w.inv ≫ u
+    rw [Category.assoc, ← Category.assoc w.hom, w.hom_inv_id, Category.id_comp]
+    exact huc g d
+  · have h2 : w.hom ≫ u₁ = u := by
+      refine huniq (w.hom ≫ u₁) ⟨by rw [Category.assoc, hu₁.1, hw], fun g d => ?_⟩
+      rw [← Category.assoc]
+      exact hu₁.2 g d
+    rw [← h2, ← Category.assoc, w.inv_hom_id, Category.id_comp]
+
+/-- **A coarse structure twisted by an automorphism of the coarse space over the
+base is again a coarse structure** (PROVEN) — `classify` postcomposed with
+`w.hom`.  This is the first half of the witness that
+`jm_eq_jLineZCoord_of_degeneracy` cannot be proven as stated. -/
+def IsCoarseModuliY0.postAut {N : ℕ} {Y S : Scheme.{0}} {str : Y ⟶ S}
+    (hc : IsCoarseModuliY0 N str) (w : Y ≅ Y) (hw : w.hom ≫ str = str) :
+    IsCoarseModuliY0 N str where
+  classify g d := RelPoint.post w.hom hw (hc.classify g d)
+  classify_natural := by
+    intro T' T h g g' hg d' d hbc
+    rw [hc.classify_natural h hg hbc]
+    exact Subtype.ext (Category.assoc _ _ _)
+  universal str' c hcnat := hc.universal_postAut w hw str' c hcnat
+
+/-- **`post w.inv` undoes `post w.hom`** (PROVEN). -/
+theorem post_inv_post_hom {Y S : Scheme.{0}} {str : Y ⟶ S} (w : Y ≅ Y)
+    (hw : w.hom ≫ str = str) {T : Scheme.{0}} {g : T ⟶ S} (x : RelPoint str g) :
+    RelPoint.post w.inv (inv_comp_eq_of_hom_comp_eq w hw) (RelPoint.post w.hom hw x) = x :=
+  Subtype.ext (by
+    show (x.1 ≫ w.hom) ≫ w.inv = x.1
+    rw [Category.assoc, w.hom_inv_id, Category.comp_id])
+
+/-- **The `j`-map transported along the twist** (PROVEN) — `jm` precomposed with
+`post w.inv`, which is exactly what makes both `IsJMapOn` fields go through:
+`(hc.postAut w hw).classify` is `post w.hom` of `hc.classify`, and the two
+cancel at every classifying point, so `classify_jm` and `jm_classify` are the
+original fields verbatim.  Note what this does NOT do: it changes `jm` at every
+point that is not a classifying point, and off the image the two `j`-maps are
+unrelated.  That is the whole content of the audit above. -/
+noncomputable def IsJMapOn.postAut {N : ℕ} {Y : Scheme.{0}} {strY : Y ⟶ SpecQ}
+    {hc : IsCoarseModuliY0 N strY} (hj : IsJMapOn N hc) (w : Y ≅ Y)
+    (hw : w.hom ≫ strY = strY) : IsJMapOn N (hc.postAut w hw) where
+  jm y := hj.jm (RelPoint.post w.inv (inv_comp_eq_of_hom_comp_eq w hw) y)
+  classify_jm := by
+    intro E _ g hg hstable
+    obtain ⟨d, hd⟩ := hj.classify_jm E g hg hstable
+    exact ⟨d, by rw [show (hc.postAut w hw).classify (𝟙 SpecQ) d
+      = RelPoint.post w.hom hw (hc.classify (𝟙 SpecQ) d) from rfl,
+      post_inv_post_hom w hw]; exact hd⟩
+  jm_classify := by
+    intro E _ d hmod
+    rw [show (hc.postAut w hw).classify (𝟙 SpecQ) d
+      = RelPoint.post w.hom hw (hc.classify (𝟙 SpecQ) d) from rfl,
+      post_inv_post_hom w hw]
+    exact hj.jm_classify E d hmod
+
+/-- **THE CONSEQUENCE: `jm_eq_jLineZCoord_of_degeneracy` forces `hj.jm` to be
+invariant under EVERY `ℚ`-automorphism of `Y`** (PROVEN, from that leaf and
+nothing else — no auxiliary `sorry` enters here).
+
+Apply the leaf twice, to `hj` and to `hj.postAut w hw`, with the SAME
+`hcZ, jz, het, gi, u, hu, hu2`.  The right-hand side is literally the same term
+both times — it mentions neither `hc` nor `hj` — so the two left-hand sides are
+equal, and they are `hj.jm y` and `hj.jm (post w.inv y)`.
+
+**This conclusion is false of the genuine `j`-map**, which is why it is stated:
+at `N = 5` the Fricke involution carries `(11a1, C)` to `11a2` and
+`j(11a1) = -122023936/161051 ≠ -52893159101157376/11 = j(11a2)`.  See the
+vacuity audit above for what follows — in particular that surjectivity of
+`classify`, which this docstring used to name as the missing input, is preserved
+by the twist and therefore cannot be it. -/
+theorem jm_invariant_postAut_of_degeneracy (N q : ℕ) (hN : N ≠ 0)
+    (hq : q.Prime) (hqN : ¬ q ∣ N) {R : Subring ℚ} {toF : R →+* ZMod q}
+    (hbase : IsReductionBase q R toF)
+    {Y YZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {ystr : YZ ⟶ SpecLoc R}
+    {hc : IsCoarseModuliY0 N strY} (hj : IsJMapOn N hc)
+    (hcZ : IsCoarseModuliY0 N ystr) (jz : IsJLineZ R)
+    (het : ∀ {T : Scheme.{0}} (_g : T ⟶ SpecLoc R) (d : Gamma0Datum N T),
+      AlgebraicGeometry.Etale (d.cyc.ι ≫ d.f))
+    (gi : IsFibreIdent (SpecLoc.generic R) ystr strY)
+    (u : YZ ⟶ jLineZ R) (hu : u ≫ jLineZStr R = ystr)
+    (hu2 : ∀ {T : Scheme.{0}} (g : T ⟶ SpecLoc R) (d : Gamma0Datum N T),
+      haveI := het g d
+      (jz.jtZ g (d.ofDvd hN (one_dvd N))).1 = (hcZ.classify g d).1 ≫ u)
+    (w : Y ≅ Y) (hw : w.hom ≫ strY = strY) (y : RelPoint strY (𝟙 SpecQ)) :
+    hj.jm (RelPoint.post w.inv (inv_comp_eq_of_hom_comp_eq w hw) y) = hj.jm y :=
+  (jm_eq_jLineZCoord_of_degeneracy N q hN hq hqN hbase (hj.postAut w hw) hcZ jz het gi
+      u hu hu2 y).trans
+    (jm_eq_jLineZCoord_of_degeneracy N q hN hq hqN hbase hj hcZ jz het gi u hu hu2 y).symm
+
+/-- **THE TRUE FORM of `jm_eq_jLineZCoord_of_degeneracy`** (PROVEN 2026-07-30,
+with NO new leaf) — the leaf above with the two inputs its audit identifies
+supplied explicitly.
+
+* `hgi` is the compatibility the twist destroys: the generic-fibre
+  identification carries the RATIONAL classifying point of a `ℚ`-datum to the
+  INTEGRAL one.  Nothing in the leaf's hypotheses implies it — `gi` identifies
+  underlying schemes and is blind to moduli — and by
+  `jm_invariant_postAut_of_degeneracy` nothing can.
+* `hsurj` is the twisting fact, that every rational point of `Y_0(N)` is a
+  classifying point.  It is a hypothesis rather than a leaf: on the evidence of
+  the twist it is not an obligation of this node in isolation.
+
+The proof is then the computation the leaf's docstring always described, and it
+is eight lines: pull `y` back to a datum `d`, take a Weierstrass model of
+`d.ab`, read `hj.jm` there with `jm_classify`, cross to the integral side with
+`hgi`, identify the postcomposed point with `jtZ` by `hu2`, and finish with
+`jtZ_model`.  `het` is consumed as the instance `d.ofDvd` needs, exactly as in
+`exists_x0IntegralJLine`.
+
+So the mathematics of the leaf is COMPLETE and only its interface is wrong; see
+the audit above for the six-theorem thread that installs `hgi`, and for why that
+thread costs no frontier. -/
+theorem jm_eq_jLineZCoord_of_degeneracy_of_classifyCompat (N q : ℕ) (hN : N ≠ 0)
+    (_hq : q.Prime) (_hqN : ¬ q ∣ N) {R : Subring ℚ} {toF : R →+* ZMod q}
+    (_hbase : IsReductionBase q R toF)
+    {Y YZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {ystr : YZ ⟶ SpecLoc R}
+    {hc : IsCoarseModuliY0 N strY} (hj : IsJMapOn N hc)
+    (hcZ : IsCoarseModuliY0 N ystr) (jz : IsJLineZ R)
+    (het : ∀ {T : Scheme.{0}} (_g : T ⟶ SpecLoc R) (d : Gamma0Datum N T),
+      AlgebraicGeometry.Etale (d.cyc.ι ≫ d.f))
+    (gi : IsFibreIdent (SpecLoc.generic R) ystr strY)
+    (u : YZ ⟶ jLineZ R) (hu : u ≫ jLineZStr R = ystr)
+    (hu2 : ∀ {T : Scheme.{0}} (g : T ⟶ SpecLoc R) (d : Gamma0Datum N T),
+      haveI := het g d
+      (jz.jtZ g (d.ofDvd hN (one_dvd N))).1 = (hcZ.classify g d).1 ≫ u)
+    (hgi : ∀ d : Gamma0Datum N SpecQ,
+      gi.toEquiv (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _)
+          (hc.classify (𝟙 SpecQ) d)
+        = hcZ.classify (SpecLoc.generic R) d)
+    (hsurj : ∀ y : RelPoint strY (𝟙 SpecQ),
+      ∃ d : Gamma0Datum N SpecQ, hc.classify (𝟙 SpecQ) d = y)
+    (y : RelPoint strY (𝟙 SpecQ)) :
+    hj.jm y = jLineZCoord (RelPoint.post u hu
+      (gi.toEquiv (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _) y)) := by
+  obtain ⟨d, rfl⟩ := hsurj y
+  obtain ⟨E, hE, hmodel⟩ :=
+    exists_weierstrassModel_of_ellipticScheme d.ab d.relativeDimensionOne
+  haveI := hE
+  haveI := het (SpecLoc.generic R) d
+  rw [hj.jm_classify E d hmodel, hgi d]
+  have hpost : RelPoint.post u hu (hcZ.classify (SpecLoc.generic R) d)
+      = jz.jtZ (SpecLoc.generic R) (d.ofDvd hN (one_dvd N)) :=
+    Subtype.ext (hu2 (SpecLoc.generic R) d).symm
+  rw [hpost]
+  exact (jz.jtZ_model E (d.ofDvd hN (one_dvd N)) hmodel).symm
 
 /-- **The integral model of `Y_0(N)` carries an integral `j`-line**
 (PROVEN 2026-07-29 over the three leaves of the block above; was a sorry
