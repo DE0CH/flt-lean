@@ -46404,11 +46404,15 @@ and the per-range breakdown below is scaled accordingly and its line numbers no
 longer resolve).  The lemma it names is
 FALSE over a general base field, so each of those 99 is a step whose
 justification disappears entirely rather than one that needs rewriting.  They are
-spread across the whole module — 26 below `4419` (`ProjCoords` and the coordinate
-interface), 32 in `4419`–`7100`, 28 in `7100`–`8130` (`exists_projAdd` and the
-group law), 2 in `8130`–`9000` (connectedness), 11 above `9000`.  So the three
-ports are very unequal: the connectedness one crosses this obstruction twice, the
-group-law one dozens of times.  What replaces the shortcut is carrying an explicit
+spread across the whole module (11916 lines at that commit) — 25 below `4419`
+(`ProjCoords`, which now begins at `617`, and the coordinate interface), 25 in
+`4419`–`7100`, 13 in `7100`–`8130` (`exists_projAdd` at `7132` and the group
+law), 6 in `8130`–`9000` (connectedness, `geometricallyConnected_projToSpec` at
+`8234`), 6 above `9000` (`exists_projGroupLaw_geomFibreAddEquiv` at `9028`,
+`exists_projGeomFibreAddEquiv` at `9073`).  So the three ports are unequal but
+none is free: the connectedness one crosses this obstruction six times, the
+group-law one thirteen plus whatever of the coordinate interface it drags in.
+What replaces the shortcut is carrying an explicit
 `X ⟶ Spec F` structure morphism as DATA — which is what `ProjCoords` would have
 to gain, since over `Spec ℚ` its `base` field is a `Subsingleton` and
 `ProjCoords.base_eq` is `Subsingleton.elim`.
@@ -46470,12 +46474,22 @@ arbitrary field, together with the equivariant identification of its geometric
 fibre with `E(F̄)`** (sorry leaf, cut 2026-07-29 out of
 `exists_ellipticSchemeOverField`).
 
-This is `Fermat.exists_projGroupLaw_geomFibreAddEquiv` (`EllipticScheme.lean:9937`)
+This is `Fermat.exists_projGroupLaw_geomFibreAddEquiv` (`EllipticScheme.lean:9028`
+— RE-LOCATED 2026-07-30 at `85ee56a7`; this docstring said `9937`, and every other
+citation in it was stale by the same seven-to-nine hundred lines, so locate by NAME)
 with `ℚ` made variable, and it is the whole non-geometric content of the node.  The
-ℚ version is PROVEN — as is `nonempty_projGroupLaw` (`7933`), which the leaf's own
+ℚ version is PROVEN — as is `nonempty_projGroupLaw` (`7167`), which the leaf's own
 earlier docstring listed as open — so this too is a PORT, and the largest of the
-three: the `ProjCoords` development it rests on starts at `EllipticScheme.lean:553`
-and `exists_projAdd` (`7900`) sits above it.
+three: the `ProjCoords` development it rests on starts at `EllipticScheme.lean:617`
+and `exists_projAdd` (`7132`) sits above it.
+
+SORRY STATUS OF THE SOURCE MODULE, re-measured the same day by a comment-stripped
+token scan: `EllipticScheme.lean` carries exactly ONE direct `sorry`,
+`exists_weierstrassGenerators_of_affineComplement` (`10084`).  The pair named in
+`exists_ellipticSchemeOverField`'s docstring below — `projFibreEndFun_add_sub_zero`
+and `exists_surjective_coordinateRingHom_of_affineComplement` — is a release-17
+reading and no longer holds.  Neither the old pair nor the new one is in this
+chain, so the conclusion that nobody has to wait for another owner still stands.
 
 **THE GROUP LAW IS BOUND EXISTENTIALLY, AND THAT IS LOAD-BEARING — do not
 "strengthen" it to a `∀ gl`.**  This is the FALSITY-OF-CUT audit recorded on the ℚ
@@ -48001,6 +48015,76 @@ theorem exists_weilPairing_mu_nondeg_of_natCast_ne_zero {k : Type u} [Field k]
           = Units.map σ.toAlgHom.toRingHom.toMonoidHom (e x y)) :=
   sorry
 
+/-- **THE MOD-`n` GALOIS DETERMINANT IS THE CYCLOTOMIC CHARACTER, OVER AN
+ARBITRARY CHARACTERISTIC-ZERO FIELD** (sorry leaf, cut 2026-07-30 out of
+`exists_weilPairing_mu_charZero` below, which is now PROVEN over it).  This is the
+ONE genuinely missing piece of mathematics in the whole archimedean cluster.
+
+WHAT IT SAYS.  `τ` acts on the `n`-th roots of unity of `F̄` by a single exponent
+`c` — the hypothesis `hc`, which is not a restriction on `τ` but a naming of its
+cyclotomic exponent, since `μ_n(F̄)` is cyclic of order `n` (`CharZero` gives
+`(n : F̄) ≠ 0`) and every field automorphism restricts to an automorphism of it.
+Then `τ` acts on `E[n] ≅ (ZMod n)²` with DETERMINANT `c`.  This is Silverman *AEC*
+III.8.1(e) written as a determinant rather than as a pairing.
+
+**WHY THE LEAF WAS RESTATED FROM THE PAIRING FORM (2026-07-30), and this is the
+whole point of the cut.**  The previous leaf asked for the `μ_n`-valued Weil
+pairing itself, and its docstring claimed the finite-field construction
+`WeilPairing.exists_weilPairing_mu` ports across because it "never uses finiteness
+of the base or the existence of a Frobenius".  **That claim is FALSE of the
+formalized proof**, and it was checked at the source on 2026-07-30:
+
+* `exists_weilPairing_mu`'s own body invokes `frobPeriod`,
+  `frobFixed_finite` and `exists_finite_subfield_containing`
+  (`WeilPairing.lean:9887`–`9898`), and so do its three extracted stages —
+  `exists_weilValueSetup_avoiding` (`4732`, `4813`),
+  `translationChar_setup_value` (`5334`) and
+  `weilValueProp_translationChar_witness` (`5614`).
+* Those are not decoration.  The avoidance device throughout is "close a finite
+  set into a FINITE SUBFIELD `F`, then choose a point whose abscissa avoids `F`
+  and avoids the finitely many choices dragged back into `F`" — the bad set is
+  finite precisely because `F` is.  `frobPeriod x` is the degree of `x` over
+  `𝔽_q` and `frobFixed n` is `𝔽_{q^n}`; **neither has a characteristic-zero
+  analogue**, and the cardinality argument does not survive either: over `ℚ̄`
+  every finitely generated subfield is an infinite number field and `ℚ̄` itself
+  is countable, so "avoid a finite subfield" has no substitute.
+
+So the port is NOT a base substitution — it is a re-proof of the whole
+avoidance/descent stage.  Stating the leaf as a DETERMINANT instead exposes a
+route that the pairing form hides:
+
+**ROUTE.  Over `ℚ` at PRIME level this statement is already PROVEN in this tree,
+and its proof does not use a characteristic-zero pairing at all.**
+`WeilPairing.det_galoisRep_eq_cyclotomic` (`WeilPairing.lean:14881`) proves
+`det ρ̄ = χ̄` for `E : WeierstrassCurve ℚ` and odd prime `p` by
+`exists_weilPairing_frobenius` → `det_frobeniusTorsionEnd` →
+`det_galoisRep_globalFrob` (i.e. the FINITE-FIELD pairing, where the construction
+above really does apply) plus Chebotarev density.  A successor has two honest
+options: generalise that reduction-and-density argument, or generalise the
+divisor construction with a new avoidance device.  Only the second is available
+for a base with no reduction theory.
+
+FAITHFULNESS.  `hn : 1 ≤ n` is load-bearing: at `n = 0` the `0`-torsion is all of
+`E(F̄)`, which is not free of rank two, and `LinearMap.det` falls back on its junk
+value.  `hc` pins `c` only modulo `n` (a primitive `ζ` has order exactly `n`),
+which is exactly the precision of the conclusion, so the statement is neither
+vacuous nor over-determined; asking `hc` only for one primitive `ζ` would give an
+equivalent statement, and the `∀ ζ` form is the one the consumer can supply. -/
+theorem det_nTorsion_eq_cyclotomicExponent {F : Type u} [Field F] [CharZero F]
+    (E : WeierstrassCurve F) [E.IsElliptic] (n : ℕ) (hn : 1 ≤ n)
+    (τ : Field.absoluteGaloisGroup F) (c : ℕ)
+    (hc : ∀ ζ : AlgebraicClosure F, ζ ^ n = 1 →
+      (τ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F) ζ = ζ ^ c) :
+    letI : DecidableEq (AlgebraicClosure F) := Classical.typeDecidableEq _
+    LinearMap.det
+        (AddMonoidHom.toZModLinearMap n
+          (TorsionCounting.endRestrict (WeierstrassCurve.Affine.Point.map (W' := E)
+            (τ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom) (n : ℤ))
+          : ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n) →ₗ[ZMod n]
+            ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n))
+      = (c : ZMod n) :=
+  sorry
+
 /-- **THE `μ_n`-VALUED WEIL PAIRING OVER THE ALGEBRAIC CLOSURE OF A
 CHARACTERISTIC-ZERO FIELD** (**PROVEN 2026-07-30** over the single leaf
 `exists_weilPairing_mu_nondeg_of_natCast_ne_zero` above; formerly a bare `sorry`,
@@ -48114,8 +48198,15 @@ trace of the real place is the hypothesis `hinv`, which
 `realConj_mul_eq_one_of_pow_eq_one` above DISCHARGES over `ULift ℝ`.
 
 This is `det(τ | E[n]) = χ_n(τ)` (Silverman *AEC* III.8.1(e) plus
-III.8.1(a)–(d)) specialized to `χ_n(τ) = −1`, and it is the ONLY genuinely
-missing mathematics in the whole archimedean cluster.
+III.8.1(a)–(d)) specialized to `χ_n(τ) = −1`.  The cluster's one remaining piece
+of missing mathematics is now `det_nTorsion_eq_cyclotomicExponent` above — the
+same identity at a general exponent, which since 2026-07-30 is where the whole
+archimedean chain bottoms out.  NOTE for a successor: this theorem is derivable
+from that leaf in a few lines (take `c = n − 1`, so `(c : ZMod n) = −1`), and the
+discrete-logarithm route below would then be dead code.  It has deliberately NOT
+been rewritten that way, because the route below is what keeps
+`exists_weilPairing_mu_charZero` — a genuinely reusable statement — inside the
+cone of the root theorem rather than free-floating.
 
 THE PROOF, which is now real code (2026-07-28 — this is the "NATURAL FURTHER
 CUT" the previous version of this docstring described and declined).  The
