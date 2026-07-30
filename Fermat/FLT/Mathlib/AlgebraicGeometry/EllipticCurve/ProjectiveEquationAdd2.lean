@@ -490,16 +490,34 @@ localisation of a polynomial ring hence a UFD, and
     HH := Qz³ · gen₁' − Pz³ · gen₂'   (the `a₆` eliminated between the two relations).
 
 `HH` is IRREDUCIBLE in `A` by the same primitivity argument that `prime_gen₂` uses above,
-one variable over: it is of degree `1` in `a₄`, with coefficient `Pz²Qz²(QzPx − PzQx)`,
-which is `Qz²(QzPx − PzQx)` up to a unit of `A`.  Neither prime factor divides the
-`a₄`-free part `HH₀`:
+one variable over.  Concretely, in `Poly` itself,
 
-* `Qz ∤ HH₀`, because `HH₀ mod Qz = −Pz³Qx³ ≠ 0`;
-* `(QzPx − PzQx) ∤ HH₀`, because substituting `Px = PzQx/Qz` leaves
-  `−Qz³Py²Pz − a₁Qz²Pz²QxPy − a₃Qz³PyPz² + Pz³Qy²Qz + a₁Pz³QxQyQz + a₃Pz³QyQz² ≠ 0`
-  (the monomials `Pz³Qy²Qz` and `−Qz³Py²Pz` are distinct and survive).
+    hh := Qz³ * gen₁ − Pz³ * gen₂ = (X 10)³ * gen₁ − (X 7)³ * gen₂,
 
-So `A ⧸ (HH)` is a domain, which is the leaf.
+which is `a₆`-free and manifestly a member of `idl`.  Its degree in `a₄` is `1`, with
+
+    coefficient of a₄  =  Qz³·(−PxPz²) − Pz³·(−QxQz²)  =  Pz²Qz²·(QxPz − PxQz)
+
+(the sign of the last factor is a unit and does not matter), so its prime factors are `Pz`,
+`Qz` and `L := QxPz − PxQz`.  **`L` needs its own primality**, and it is the same one-line
+argument a third time: `L` has degree `1` in `Qx` with coefficient `Pz`, `Qx`-free part
+`−PxQz`, and `Pz ∤ PxQz`.
+
+**And all three non-divisibility checks against the `a₄`-free part `hh₀` collapse to a
+SINGLE INTEGER EVALUATION each** — no polynomial reduction, no substitution of `Px = PzQx/Qz`
+(which is not even polynomial).  For a prime `q` and a `ℤ`-point `v` with `q(v) = 0`,
+`q ∣ hh₀` forces `hh₀(v) = 0`; so one exhibits `v` with `q(v) = 0` and `hh₀(v) ≠ 0`.  All
+three witnesses set every indeterminate not named to `0`, so in particular `a₄ = 0` and
+`hh₀(v) = hh(v)`; each value below is hand-checked:
+
+* `Pz ∤ hh₀`: take `Px = Qz = 1` (so `Pz = 0`).  Then `gen₁ = −1`, `gen₂ = 0`, `hh = −1`.
+* `Qz ∤ hh₀`: take `Qx = Pz = 1` (so `Qz = 0`).  Then `gen₁ = 0`, `gen₂ = −1`, `hh = 1`.
+* `L ∤ hh₀`:  take `Py = Pz = Qz = 1` (so `L = 0·1 − 0·1 = 0`).  Then `gen₁ = 1`,
+  `gen₂ = 0`, `hh = 1`.
+
+So `A ⧸ (HH)` is a domain, which is the leaf.  Note `Pz ∤ HH` as well (`A₁ mod Pz = −Px³`
+gives `HH mod Pz = Qz³Px³ ≠ 0`), which is what makes the `Pz`-powers in the statement
+harmless: `HH` prime and `HH ∣ Pz^m·u` forces `HH ∣ u`, since otherwise `HH ∣ Pz`.
 
 ## The shape a formalisation should take
 
