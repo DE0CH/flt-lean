@@ -37894,54 +37894,114 @@ theorem exists_affineLine_of_not_injective_aj {X J : Scheme.{0}} {strX : X ⟶ S
       u ≫ strX = 𝔸(Unit; SpecQ) ↘ SpecQ :=
   sorry
 
-/-- **THE LOCAL RINGS OF `𝔸¹_K` ARE VALUATION RINGS** (sorry leaf, 2026-07-28)
-— the first of the two leaves that
+/-- **A LOCALIZATION OF A PRINCIPAL IDEAL RING IS A PRINCIPAL IDEAL RING**
+(PROVEN 2026-07-30) — a `Mathlib`-shaped lemma with no analogue at this pin, and
+the one input `valuationRing_stalk_affineLine` below was missing.
+
+`Mathlib` has `IsPrincipalIdealRing.of_surjective`, but `algebraMap R S` into a
+localization is *not* surjective, so that does not apply.  What does apply is
+`IsLocalization.map_under`: every ideal `J` of `S` is the extension of its own
+contraction, `J = (J.under R).map (algebraMap R S)`, and the extension of a
+principal ideal is principal (`Submodule.IsPrincipal.map_ringHom`).  Two lines,
+and no domain, local or noetherian hypothesis anywhere.
+
+**Belongs in `Mathlib/RingTheory/Localization/Ideal.lean`**, next to
+`map_under`; it sits here only because that is where its consumer is, and it is
+stated in `_root_.` with `Mathlib`'s own naming so that hoisting it is a move
+rather than a rename. -/
+theorem _root_.IsPrincipalIdealRing.of_isLocalization {R S : Type*} [CommRing R]
+    [CommRing S] [Algebra R S] (M : Submonoid R) [IsLocalization M S]
+    [IsPrincipalIdealRing R] : IsPrincipalIdealRing S :=
+  ⟨fun J => by
+    rw [← IsLocalization.map_under M S J]
+    exact (IsPrincipalIdealRing.principal (J.under R)).map_ringHom (algebraMap R S)⟩
+
+/-- **THE LOCAL RINGS OF `𝔸¹_K` ARE VALUATION RINGS** (PROVEN 2026-07-30; a sorry
+leaf from 2026-07-28) — the first of the two leaves that
 `exists_section_of_denseOpen_affineLine_toAbelianScheme` below decomposes into,
 and the one that carries NO abelian-variety content.  It mentions neither `N`,
 nor `x0Genus`, nor `IsX0Compactification`, nor an abelian scheme; it is a
 `Mathlib`-shaped statement about affine space over a field.
 
-TRUE and elementary.  `𝔸(Unit; Spec K) ≅ Spec (K[X])` by
-`AlgebraicGeometry.AffineSpace.SpecIso`, the stalk of `Spec R` at a prime is
-`Localization.AtPrime R p`, and `K[X]` is a PID — so every stalk is a
-localisation of a PID at a prime, i.e. a field or a DVR, and in either case a
-valuation ring.
+**PROVEN ALONG ROUTE (ii), AND NEITHER SMOOTHNESS NOR A CASE SPLIT WAS NEEDED.**
+The docstring this replaces priced two routes and guessed wrong about the shape
+of the cheap one, so the record is worth keeping straight:
 
-THIS IS THE COMPILER-CHECKED GAP the previous version of the docstring below
-named, and its claims were RE-CHECKED on 2026-07-28 and are ACCURATE:
+* Route (i) — prove `SmoothOfRelativeDimension 1 (𝔸(Unit; Spec K) ↘ Spec K)` and
+  quote `valuationRing_stalk_of_smoothOfRelativeDimension_one`
+  (`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`) — was **not**
+  taken, and its cost estimate stands: through `HasRingHomProperty` it reduces to
+  `Algebra.IsStandardSmoothOfRelativeDimension 1 K (MvPolynomial Unit K)`, for
+  which the pin has no instance (`Mathlib/RingTheory/Smooth/StandardSmooth.lean`
+  registers only `id`, `baseChange`, `Subsingleton` and the localization-away
+  case), so a `SubmersivePresentation` of the polynomial algebra would have had
+  to be written.  Nothing below needs it, so it was not written.
+* Route (ii) was taken, but **not** in the form recorded — the old docstring said
+  the residue was "`Localization.AtPrime (MvPolynomial Unit K) p` is Bezout",
+  reached "transporting along `SpecIso` and the `Spec` stalk iso".  In fact no
+  `Spec` stalk iso and no `Bezout`-specific argument appear: the stalk is
+  presented as a localization **directly**, by `IsAffineOpen.isLocalization_stalk`
+  at `U = ⊤`, and what is transported along `SpecIso` is only the RING
+  `Γ(𝔸¹_K, ⊤)`, not any stalk.  And it is proven PRINCIPAL rather than merely
+  Bezout, which is strictly cheaper here because
+  `IsPrincipalIdealRing.of_isLocalization` above is two lines while a direct
+  Bezout transport is not.
 
-* `IsIntegral (𝔸(Unit; Spec (CommRingCat.of K)))` — **available** by
-  `infer_instance` (through `AffineSpace`'s `[IsIntegral S] : IsIntegral 𝔸(n; S)`);
-* `SmoothOfRelativeDimension 1 (𝔸(Unit; Spec K) ↘ Spec K)` — **NOT an
-  instance**, `infer_instance` fails;
-* `GeometricallyConnected (𝔸(Unit; Spec K) ↘ Spec K)` — **NOT an instance**
-  either (`GeometricallyIrreducible` and `GeometricallyIntegral` ARE instances
-  on affine space, but neither is registered as giving connectedness);
-* and, additionally, plain `Smooth (𝔸(Unit; Spec K) ↘ Spec K)` is **NOT an
-  instance** — so the smoothness route needs the affine line's smoothness
-  proved from scratch, not merely its relative dimension pinned.
+THE FOUR STEPS, each an instance handed to the next:
 
-TWO ROUTES, and a successor should price both.  (i) Prove
-`SmoothOfRelativeDimension 1 (𝔸(Unit; Spec K) ↘ Spec K)` and quote
-`valuationRing_stalk_of_smoothOfRelativeDimension_one`
-(`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`, PROVEN,
-`public import`ed above).  Through `HasRingHomProperty` this reduces to
-`Algebra.IsStandardSmoothOfRelativeDimension 1 K (MvPolynomial Unit K)`, for
-which the pin has **no** instance — `Mathlib/RingTheory/Smooth/StandardSmooth.lean`
-registers only `id`, `baseChange`, `Subsingleton` and the localization-away
-case, so a `SubmersivePresentation` of the polynomial algebra has to be
-written.  Note this route would generalise: `SmoothOfRelativeDimension` is
-stable under base change and `𝔸(n; S) ↘ S` is a base change of
-`𝔸(n; Spec ℤ) ↘ Spec ℤ`, so the `ℤ` case implies every base.  (ii) Give the
-stalks directly, transporting along `SpecIso` and the `Spec` stalk iso; the
-final algebra step is available as
-`instance [IsLocalRing R] [IsBezout R] : ValuationRing R`
-(`Mathlib/RingTheory/Valuation/ValuationRing.lean`), so what has to be supplied
-is that `Localization.AtPrime (MvPolynomial Unit K) p` is Bezout. -/
+1. `MvPolynomial Unit K` is a PID — `MvPolynomial.uniqueAlgEquiv K Unit` carries
+   it to `Polynomial K`, a `EuclideanDomain`, and `IsPrincipalIdealRing` moves
+   back along a surjection (`IsPrincipalIdealRing.of_surjective`).
+2. So is `Γ(𝔸(Unit; Spec K), ⊤)` — the composite iso
+   `Scheme.ΓSpecIso.symm ≪≫ Scheme.Γ.mapIso (AffineSpace.SpecIso …).op`
+   identifies it with `MvPolynomial Unit K`, and the same transport applies.
+   Note this is where `SpecIso` is used, and it is used on GLOBAL SECTIONS only.
+3. `⊤` is an affine open of `𝔸¹_K` (`isAffineOpen_top`, through
+   `AffineSpace`'s `[IsAffine S] : IsAffine 𝔸(n; S)`), so
+   `IsAffineOpen.isLocalization_stalk` presents `𝒪_{𝔸¹,x}` as the localization of
+   `Γ(𝔸¹_K, ⊤)` at `hU.primeIdealOf ⟨x, trivial⟩`.  Hence it is a PID by step 1
+   of the lemma above.
+4. `ValuationRing` follows by `infer_instance`: `IsPrincipalIdealRing → IsBezout`,
+   `IsLocalRing` holds of every stalk, and `IsDomain` comes from `IsIntegral`,
+   which — as the old docstring correctly recorded — **is** an instance on affine
+   space.  That was the one claim in the audit it replaces that survived.
+
+**NO CASE SPLIT ON THE GENERIC POINT.**  `valuationRing_stalk_of_smoothOfRelativeDimension_one`
+splits on `IsField 𝒪_{X,x}` because its non-field branch produces a
+`IsDiscreteValuationRing`, which is false at the generic point.  Nothing here
+needs that: `IsPrincipalIdealRing` is true of the function field too (a field is
+a PID), so the generic point is not a special case, and `p = ⊥` never has to be
+excluded.
+
+The `Algebra Γ(𝔸¹_K, ⊤) 𝒪_{𝔸¹,x}` instance has to be supplied by hand
+(`TopCat.Presheaf.algebra_section_stalk _ (U := ⊤) ⟨x, trivial⟩`): it is an
+instance, but its `U` cannot be inferred from a goal mentioning only
+`presheaf.stalk x`, so instance search does not find it. -/
 theorem valuationRing_stalk_affineLine (K : Type) [Field K]
     (x : 𝔸(Unit; Spec (CommRingCat.of K))) :
-    ValuationRing ((𝔸(Unit; Spec (CommRingCat.of K))).presheaf.stalk x) :=
-  sorry
+    ValuationRing ((𝔸(Unit; Spec (CommRingCat.of K))).presheaf.stalk x) := by
+  -- `K[X]` is a PID, hence so is `MvPolynomial Unit K` …
+  haveI : IsPrincipalIdealRing (MvPolynomial Unit K) :=
+    IsPrincipalIdealRing.of_surjective
+      (MvPolynomial.uniqueAlgEquiv K Unit).symm.toRingEquiv (EquivLike.surjective _)
+  -- … and hence so is `Γ(𝔸¹_K, ⊤)`, which `AffineSpace.SpecIso` identifies with it.
+  haveI : IsPrincipalIdealRing Γ(𝔸(Unit; Spec (CommRingCat.of K)), ⊤) :=
+    IsPrincipalIdealRing.of_surjective
+      (((Scheme.ΓSpecIso (CommRingCat.of (MvPolynomial Unit K))).symm ≪≫
+        Scheme.Γ.mapIso
+          (AffineSpace.SpecIso Unit (CommRingCat.of K)).op).commRingCatIsoToRingEquiv)
+      (EquivLike.surjective _)
+  -- The stalk is a localization of `Γ(𝔸¹_K, ⊤)`, so it is a PID too.
+  have hU : IsAffineOpen (⊤ : (𝔸(Unit; Spec (CommRingCat.of K))).Opens) :=
+    isAffineOpen_top _
+  haveI : IsPrincipalIdealRing ((𝔸(Unit; Spec (CommRingCat.of K))).presheaf.stalk x) :=
+    @IsPrincipalIdealRing.of_isLocalization Γ(𝔸(Unit; Spec (CommRingCat.of K)), ⊤)
+      ((𝔸(Unit; Spec (CommRingCat.of K))).presheaf.stalk x) _ _
+      (TopCat.Presheaf.algebra_section_stalk _ (U := ⊤) ⟨x, trivial⟩)
+      (hU.primeIdealOf ⟨x, trivial⟩).asIdeal.primeCompl
+      (hU.isLocalization_stalk ⟨x, trivial⟩) _
+  -- A local Bezout domain is a valuation ring.
+  infer_instance
 
 /-- **NO RATIONAL CURVES ON AN ABELIAN VARIETY, from the WHOLE affine line: a
 `K`-morphism `𝔸¹_K ⟶ A` into an abelian scheme is CONSTANT** (sorry leaf,
