@@ -34204,8 +34204,49 @@ theorem galSMul_of_mem_fixingSubgroup_geomPtField {J : Scheme.{0}} {jstr : J ⟶
   exact (mem_geomPtStabilizer_iff ab y σ).mp hmem
 
 /-- **The Kummer degree bound: `[ℚ(y) : ℚ]` is bounded independently of `P`
-and of `y`** (sorry leaf, cut 2026-07-28) — the SECOND bullet of the
-discriminant-bound leaf below, and one of its two remaining halves.
+and of `y`** (**PROVEN 2026-07-30**; a sorry leaf, cut 2026-07-28, until then) —
+the SECOND bullet of the discriminant-bound leaf below.
+
+## THE PROOF IS ORBIT–STABILIZER, AND IT NEEDS NEITHER `K₀` NOR THE KUMMER MAP
+
+The route recorded below — the Kummer homomorphism `Gal(ℚᵃˡᵍ/K₀) → A[p]` — is
+the classical one and it is what bounds `[K₀(y) : K₀]`.  This leaf does not ask
+for that.  `geomPtField ab y` is the FIELD OF DEFINITION of the single point `y`
+(the fixed field of `Stab(y)`), which its own docstring already flags as "a
+subfield of the classical `K₀(y)` of Silverman *AEC* VIII.1.6, not equal to it
+… strictly easier to bound".  For that field three lines suffice, with a
+strictly BETTER constant (`#A[p]`, not `[K₀ : ℚ] · #A[p]`):
+
+* the whole `Γ_ℚ`-orbit of `y` lies in the fibre `[p]^{-1}(ratToGeom P)`, since
+  `p • (σ · y) = σ · (p • y) = σ · ratToGeom P = ratToGeom P` — the last step is
+  `galSMul_ratToGeom`, and the first is that `galSMul` is a `DistribMulAction`
+  (`AbelianSchemeStruct.geomFibreAction`), hence additive;
+* that fibre injects into `A[p]` by `z ↦ z − y`, so the orbit is finite of
+  cardinality at most `#A[p]` — FINITE by the sibling
+  `finite_torsion_geomPt_of_abelianScheme`;
+* `#orbit = [Γ_ℚ : Stab(y)]` (`MulAction.orbitEquivQuotientStabilizer`) and
+  `[Γ_ℚ : Stab(y)] = [ℚ(y) : ℚ]` by the infinite Galois correspondence —
+  `IntermediateField.finrank_eq_fixingSubgroup_index` together with
+  `InfiniteGalois.fixingSubgroup_fixedField`, the latter needing `Stab(y)` to be
+  CLOSED, which is `exists_fixingSubgroup_le_stabilizer_geomFibrePt` plus
+  `Subgroup.isOpen_mono` / `Subgroup.isClosed_of_isOpen` exactly as in
+  `galSMul_of_mem_fixingSubgroup_geomPtField` above.
+
+**So the old note "`htors` IS LOAD-BEARING AND CANNOT BE DROPPED" is REFUTED for
+this statement**, and `hK₀` with it.  Both are retained in the signature —
+underscored — because the consumer holds them and because removing them would
+change the call site for no gain; nothing in the proof reads either.  The note
+was not wrong about the mathematics it described, it was attached to the wrong
+statement: without `htors` the map `σ ↦ σ y − y` is indeed not a homomorphism,
+but this leaf never needs it to be one.  The fibres of that map are the left
+cosets of `Stab(y)` whether or not it is additive, which is the whole trick.
+
+The general lesson, and it is the second time this file has paid it: **a leaf
+stated about a NAMED field of definition is not the classical statement about
+the compositum, and the classical proof is not the cheapest one.**  Check the
+orbit before building the cocycle.
+
+## The classical route, retained for the sibling and for the record
 
 TRUE and classical (Silverman, *AEC* VIII.1.6(a)).  With `K₀ = ℚ(A[p])`
 the field supplied by `exists_torsionField_of_abelianScheme`, and `y` any
@@ -34227,12 +34268,17 @@ Letting `n` depend on `P` would be true and useless: the consumer needs one
 Hermite bound covering the infinitely many rational points at once, which is
 exactly what makes the descent finish.
 
-**`htors` IS LOAD-BEARING AND CANNOT BE DROPPED.**  Without a field over
-which the whole of `A[p]` is rational, `σ ↦ σ y − y` is not a homomorphism
-and there is no injection into `A[p]` at all — only a cocycle, whose target
-is `H¹` and is not finite for a fixed group.  This is the one place in the
-chain where `ℚ(A[p])` is used, and it is why `exists_torsionField_of_abelianScheme`
-is a hypothesis here rather than an unused sibling.
+**`htors` WAS CLAIMED LOAD-BEARING.  IT IS NOT — see the proof note at the
+top.**  The retracted claim read: "Without a field over which the whole of
+`A[p]` is rational, `σ ↦ σ y − y` is not a homomorphism and there is no
+injection into `A[p]` at all — only a cocycle, whose target is `H¹` and is not
+finite for a fixed group."  Every clause of that is true ABOUT THE MAP and none
+of it is needed HERE: the fibres of `σ ↦ σ y − y` are the left cosets of
+`Stab(y)` regardless, so counting the ORBIT bounds `[ℚ(y) : ℚ]` with no group
+structure on the target at all.  `exists_torsionField_of_abelianScheme` remains
+a genuine sibling of this leaf — its output `K₀` is still threaded through the
+consumer `exists_discrBound_divisionField_of_abelianScheme` — it is simply not
+consumed by this proof.
 
 **FAITHFULNESS.**  *Not vacuous*: `FiniteDimensional ℚ (ℚ(y))` is part of
 the conclusion and is itself a real assertion — `y` is an arbitrary
@@ -34243,25 +34289,84 @@ abelian variety need not be defined over a number field of bounded degree
 is an `𝔽_p`-vector space; the statement is true for every `n ≥ 1` with the
 same proof.
 
-**MISSING MACHINERY**: nothing deep — the Kummer homomorphism above and
+**THE OLD "MISSING MACHINERY" NOTE, AND WHY IT ALSO POINTED AT THE WRONG
+LEMMA.**  It read: "nothing deep — the Kummer homomorphism above and
 `[K : ℚ] = ` the index of `Gal(ℚᵃˡᵍ/K)` for the finite subextensions of
 `ℚᵃˡᵍ/ℚ` (`InfiniteGalois.isOpen_iff_finite`,
-`InfiniteGalois.normalAutEquivQuotient`, `IsGalois.card_aut_eq_finrank` —
-the same three lemmas `finite_setOf_subgroup_inertiaAt_le` in
-`HardlyRamified/HermiteMinkowski.lean` uses for exactly this passage).  The
-check that would refute this note is to grep that file for
-`InfiniteGalois.normalAutEquivQuotient`. -/
+`InfiniteGalois.normalAutEquivQuotient`, `IsGalois.card_aut_eq_finrank` — the
+same three lemmas `finite_setOf_subgroup_inertiaAt_le` in
+`HardlyRamified/HermiteMinkowski.lean` uses)."  That three-lemma route computes
+the degree of the fixed field of a NORMAL subgroup, and `Stab(y)` is not normal;
+the pin has the general statement outright, for any intermediate field of a
+Galois extension, as **`IntermediateField.finrank_eq_fixingSubgroup_index`**
+(`Mathlib/FieldTheory/KrullTopology.lean`) — `Module.finrank k L =
+L.fixingSubgroup.index`, unconditionally, with both sides `0` in the infinite
+case.  The check that refutes the old note is to grep the pin for that name.
+
+`hp` is consumed, once, as `hp.ne_zero` for
+`finite_torsion_geomPt_of_abelianScheme`; the statement holds for every `n ≥ 1`
+with the same proof.  `_hK₀` is consumed nowhere — see above. -/
 theorem exists_degreeBound_geomPtField {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
     (ab : AbelianSchemeStruct jstr) (p : ℕ) (hp : p.Prime)
-    (K₀ : IntermediateField ℚ (AlgebraicClosure ℚ)) (hK₀ : FiniteDimensional ℚ K₀) :
+    (K₀ : IntermediateField ℚ (AlgebraicClosure ℚ)) (_hK₀ : FiniteDimensional ℚ K₀) :
     letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
     (∀ t : GeomFibrePt jstr (𝟙 SpecQ), p • t = 0 →
         ∀ σ ∈ K₀.fixingSubgroup, ab.galSMul (𝟙 SpecQ) σ t = t) →
     ∃ n : ℕ, ∀ (P : RelPoint jstr (𝟙 SpecQ)) (y : GeomFibrePt jstr (𝟙 SpecQ)),
       p • y = ratToGeom jstr P →
       ∃ _ : FiniteDimensional ℚ (geomPtField ab y),
-        Module.finrank ℚ (geomPtField ab y) ≤ n :=
-  sorry
+        Module.finrank ℚ (geomPtField ab y) ≤ n := by
+  classical
+  haveI hgalQ : IsGalois ℚ (AlgebraicClosure ℚ) :=
+    Field.isGalois_of_isAlgClosed (AlgebraicClosure.isAlgebraic ℚ)
+  letI : AddCommGroup (GeomFibrePt jstr (𝟙 SpecQ)) :=
+    ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  letI : DistribMulAction (Field.absoluteGaloisGroup ℚ) (GeomFibrePt jstr (𝟙 SpecQ)) :=
+    ab.geomFibreAction (𝟙 SpecQ)
+  intro _htors
+  haveI hTfin : Finite {t : GeomFibrePt jstr (𝟙 SpecQ) // p • t = 0} :=
+    finite_torsion_geomPt_of_abelianScheme ab p hp.ne_zero
+  refine ⟨Nat.card {t : GeomFibrePt jstr (𝟙 SpecQ) // p • t = 0}, ?_⟩
+  intro P y hy
+  -- `Stab(y)` is OPEN, hence closed: it contains `Gal(ℚᵃˡᵍ/E)` for a finite `E/ℚ`.
+  obtain ⟨E, hEfd, hE⟩ := exists_fixingSubgroup_le_stabilizer_geomFibrePt ab (𝟙 SpecQ) y
+  haveI := hEfd
+  have hle : E.fixingSubgroup ≤ geomPtStabilizer ab y := fun g hg =>
+    (mem_geomPtStabilizer_iff ab y g).mpr (hE g hg)
+  have hopen : IsOpen ((geomPtStabilizer ab y : Subgroup (Field.absoluteGaloisGroup ℚ)) :
+      Set (Field.absoluteGaloisGroup ℚ)) :=
+    Subgroup.isOpen_mono hle E.fixingSubgroup_isOpen
+  have hclosed : IsClosed ((geomPtStabilizer ab y : Subgroup (Field.absoluteGaloisGroup ℚ)) :
+      Set (Field.absoluteGaloisGroup ℚ)) := Subgroup.isClosed_of_isOpen _ hopen
+  have hfix : (geomPtField ab y).fixingSubgroup = geomPtStabilizer ab y :=
+    InfiniteGalois.fixingSubgroup_fixedField
+      (⟨geomPtStabilizer ab y, hclosed⟩ : ClosedSubgroup (Field.absoluteGaloisGroup ℚ))
+  haveI hfd : FiniteDimensional ℚ (geomPtField ab y) :=
+    (InfiniteGalois.isOpen_iff_finite _).mp (by rw [hfix]; exact hopen)
+  refine ⟨hfd, ?_⟩
+  -- `[ℚ(y) : ℚ] = [Γ_ℚ : Stab(y)] = #(Γ_ℚ · y)`
+  rw [IntermediateField.finrank_eq_fixingSubgroup_index, hfix]
+  have horb : (geomPtStabilizer ab y).index
+      = Nat.card (MulAction.orbit (Field.absoluteGaloisGroup ℚ) y) := by
+    rw [Subgroup.index_eq_card]
+    exact (Nat.card_congr (MulAction.orbitEquivQuotientStabilizer
+      (Field.absoluteGaloisGroup ℚ) y)).symm
+  refine le_trans (le_of_eq horb) ?_
+  -- the orbit lies in the fibre of `[p]` over `ratToGeom P`, a torsor under `A[p]`
+  have hmem : ∀ z : MulAction.orbit (Field.absoluteGaloisGroup ℚ) y,
+      p • ((z : GeomFibrePt jstr (𝟙 SpecQ)) - y) = 0 := by
+    rintro ⟨z, σ, rfl⟩
+    have h1 : p • (σ • y) = σ • (p • y) :=
+      (map_nsmul (DistribSMul.toAddMonoidHom (GeomFibrePt jstr (𝟙 SpecQ)) σ) p y).symm
+    have h2 : σ • ratToGeom jstr P = ratToGeom jstr P := galSMul_ratToGeom ab σ P
+    show p • ((σ • y : GeomFibrePt jstr (𝟙 SpecQ)) - y) = 0
+    rw [smul_sub, h1, hy, h2, sub_self]
+  refine Nat.card_le_card_of_injective
+    (fun z => (⟨(z : GeomFibrePt jstr (𝟙 SpecQ)) - y, hmem z⟩ :
+      {t : GeomFibrePt jstr (𝟙 SpecQ) // p • t = 0})) ?_
+  intro a b hab
+  simp only [Subtype.mk.injEq, sub_left_inj] at hab
+  exact Subtype.ext hab
 
 /-- **Néron–Ogg–Shafarevich for the division fields: `ℚ(y)` is unramified
 outside a FIXED finite set of primes** (sorry leaf, cut 2026-07-28) — the
