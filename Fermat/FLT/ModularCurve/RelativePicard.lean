@@ -880,8 +880,430 @@ theorem isIso_of_locally_isIso {Z : Scheme.{u}} {A B : Z.Modules} (f : A ⟶ B)
     (TopCat.Sheaf.forget Ab.{u} Z.toPresheafedSpace).map_isIso g
   exact isIso_of_reflects_iso f (Scheme.Modules.toPresheaf Z)
 
-/-- **THE DUAL SHEAF AND ITS EVALUATION PAIRING** (sorry leaf, cut 2026-07-28
-out of `exists_modTensor_inv`) — an invertible `L` admits an invertible `M`
+/-! #### `L^∨` AS A SHEAF OF COMPATIBLE FAMILIES, AND ITS EVALUATION PAIRING
+
+**Built 2026-07-30, and this is the route `exists_modDual`'s own docstring below
+prescribed** ("the dual as a presheaf of COMPATIBLE FAMILIES … What then remains:
+the sheaf condition for `L^∨`, its local triviality, and `ev` out of
+`PresheafOfModules.Monoidal.tensorObj` through the sheafification adjunction").
+
+Two of those three are DONE here, unconditionally and for an arbitrary
+`L : Z.Modules` — no invertibility hypothesis is used anywhere in this
+subsection:
+
+* `ModDual.modDualPre_isSheaf` — `L^∨` really is a sheaf.  This is the deep half:
+  a compatible family over `U` is glued from compatible families over a cover by
+  gluing its VALUES in `𝒪_Z`, one open `V ≤ U` at a time, and `𝒪_Z`'s own
+  `TopCat.Sheaf.existsUnique_gluing'` supplies each value.  Additivity,
+  linearity, naturality and the uniqueness of the glued family are then all
+  instances of `𝒪_Z`-separatedness (`TopCat.Sheaf.eq_of_locally_eq'`, wrapped as
+  `ModDual.sec_ext`).
+* `modDualEv` — the evaluation `L ⊗ L^∨ ⟶ 𝒪_Z`.  Because `L^∨` is a sheaf and
+  not a sheafification, this is direct: a bilinear pairing at each open,
+  `ModDual.modDualEvPre`, then `PresheafOfModules.sheafification` applied to it
+  and `modSheafifyValIso` on the target.
+
+What remains is exactly the LOCAL half, isolated as the two leaves
+`isInvertibleSheaf_modDual` and `isIso_modDualEv` below.
+
+**WHY THE INDEXING IS `{V : Z.Opens // V ≤ U}` AND NOT `U.Opens`, recorded
+because it is the whole reason this construction is possible at all.**  The
+naive dual `U ↦ (L.restrict U.ι ⟶ modUnit U)` is not a presheaf: restriction of
+`𝒪`-modules is only pseudo-functorial.  Indexing by AMBIENT opens below `U` and
+restricting by FORGETTING makes `L^∨` strictly functorial — `map_id` and
+`map_comp` are discharged by `cat_disch` with nothing to say — and keeps every
+section a map between `Z`-modules, so `Γ(Z,·)`-linearity is available
+throughout.
+
+**AND THE PRICE, measured 2026-07-30 — read this before touching
+`Scheme.Modules.restrict`.**  `Γ(L.restrict U.ι, V₁)` and `Γ(L, U.ι ''ᵁ V₁)` are
+the same TYPE (`Scheme.Modules.restrict_obj` is `rfl`) carrying two different
+`Module` instances, defeq only at DEFAULT transparency: `restrictFunctor` is
+`SheafOfModules.pushforward` along `(U.ι.appIso _).inv`, and `Iso.inv` is not
+`@[expose]`d, so unfolding it is not available downstream of mathlib.
+Consequences, all observed:
+
+* `rw`/`simp` cannot cross the boundary — instance arguments differ
+  syntactically and unification runs at `instances` transparency.  The
+  diagnostic is Lean's own "The target expression is not type-correct under the
+  `instances` transparency level".
+* `exact` cannot cross it either, and says so: "the following definitions were
+  not unfolded because their definition is not exposed: `inv`".
+  `set_option backward.isDefEq.respectTransparency false` does NOT help — this
+  is an exposure barrier, not a transparency one.
+* What DOES work is mathlib's own lemmas about the boundary
+  (`Scheme.Modules.Hom.app_smul`, `Scheme.Modules.smul_restrictAppIso_hom`,
+  `Scheme.Opens.ι_appIso : U.ι.appIso V = Iso.refl _`,
+  `Scheme.Opens.toScheme_presheaf_obj`), used as rewrites rather than relied on
+  for defeq.  A `rfl`-proved bridge lemma stated inside this module does NOT
+  work: instance search silently picks the AMBIENT instance on both sides, so
+  the bridge is vacuous and proves nothing.
+
+That is why `isInvertibleSheaf_modDual` below is a separate leaf rather than
+three lines: every step of it crosses this boundary. -/
+
+namespace ModDual
+
+/-- Restriction of a section of the structure sheaf, twice, is restriction once. -/
+lemma res_res {Z : Scheme.{u}} {V W U : Z.Opens} (h1 : W ≤ V) (h2 : V ≤ U) (r : Γ(Z, U)) :
+    Z.presheaf.map (homOfLE h1).op (Z.presheaf.map (homOfLE h2).op r) =
+      Z.presheaf.map (homOfLE (h1.trans h2)).op r := by
+  rw [← CommRingCat.comp_apply, ← Z.presheaf.map_comp]
+  congr 1
+
+/-- Restriction of a section of `L`, twice, is restriction once. -/
+lemma resL_resL {Z : Scheme.{u}} (L : Z.Modules) {V W U : Z.Opens} (h1 : W ≤ V) (h2 : V ≤ U)
+    (x : Γ(L, U)) :
+    L.presheaf.map (homOfLE h1).op (L.presheaf.map (homOfLE h2).op x) =
+      L.presheaf.map (homOfLE (h1.trans h2)).op x := by
+  rw [← ConcreteCategory.comp_apply, ← L.presheaf.map_comp]
+  congr 1
+
+/-- Restricting along `V ≤ V` does nothing: `Z.Opens` is a poset, so the hom is
+the identity by `Subsingleton.elim`. -/
+lemma res_self {Z : Scheme.{u}} {V : Z.Opens} (h : V ≤ V) (r : Γ(Z, V)) :
+    Z.presheaf.map (homOfLE h).op r = r := by
+  rw [Subsingleton.elim (homOfLE h).op (𝟙 _), CategoryTheory.Functor.map_id,
+    CommRingCat.id_apply]
+
+/-- The ambient type of a dual section over `U`: a functional on `Γ(L, V)` for
+every ambient open `V ≤ U`. -/
+abbrev DualPi {Z : Scheme.{u}} (L : Z.Modules) (U : Z.Opens) : Type u :=
+  ∀ (V : {V : Z.Opens // V ≤ U}), (Γ(L, V.1) →ₗ[Γ(Z, V.1)] Γ(Z, V.1))
+
+/-- The compatible families: the subgroup of `DualPi` cut out by naturality. -/
+def dualSub {Z : Scheme.{u}} (L : Z.Modules) (U : Z.Opens) : AddSubgroup (DualPi L U) where
+  carrier := {φ | ∀ (V W : {V : Z.Opens // V ≤ U}) (hWV : W.1 ≤ V.1) (x : Γ(L, V.1)),
+    φ W (L.presheaf.map (homOfLE hWV).op x) =
+      Z.presheaf.map (homOfLE hWV).op (φ V x)}
+  zero_mem' := by intro V W hWV x; simp
+  add_mem' := by
+    intro a b ha hb V W hWV x
+    simp only [Pi.add_apply, LinearMap.add_apply, ha V W hWV x, hb V W hWV x, map_add]
+  neg_mem' := by
+    intro a ha V W hWV x
+    simp only [Pi.neg_apply, LinearMap.neg_apply, ha V W hWV x, map_neg]
+
+/-- **Sections of the dual sheaf over `U`.** -/
+def DualSec {Z : Scheme.{u}} (L : Z.Modules) (U : Z.Opens) : Type u := dualSub L U
+
+noncomputable instance {Z : Scheme.{u}} (L : Z.Modules) (U : Z.Opens) :
+    AddCommGroup (DualSec L U) :=
+  inferInstanceAs (AddCommGroup (dualSub L U))
+
+namespace DualSec
+
+variable {Z : Scheme.{u}} {L : Z.Modules} {U : Z.Opens}
+
+/-- The underlying family of functionals. -/
+def φ (a : DualSec L U) : DualPi L U := a.1
+
+@[ext] lemma ext {a b : DualSec L U} (h : ∀ V, a.φ V = b.φ V) : a = b :=
+  Subtype.ext (funext h)
+
+@[simp] lemma add_φ (a b : DualSec L U) (V) : (a + b).φ V = a.φ V + b.φ V := rfl
+@[simp] lemma zero_φ (V) : (0 : DualSec L U).φ V = 0 := rfl
+
+lemma compat (a : DualSec L U) (V W : {V : Z.Opens // V ≤ U}) (hWV : W.1 ≤ V.1) (x : Γ(L, V.1)) :
+    a.φ W (L.presheaf.map (homOfLE hWV).op x) =
+      Z.presheaf.map (homOfLE hWV).op (a.φ V x) := a.2 V W hWV x
+
+/-- Scalar multiplication: restrict the scalar to each `V` and scale there. -/
+noncomputable instance : SMul Γ(Z, U) (DualSec L U) where
+  smul r a := ⟨fun V => (Z.presheaf.map (homOfLE V.2).op r) • a.φ V, by
+    intro V W hWV x
+    simp only [LinearMap.smul_apply, a.compat V W hWV x, smul_eq_mul, map_mul,
+      res_res hWV V.2 r]⟩
+
+@[simp] lemma smul_φ (r : Γ(Z, U)) (a : DualSec L U) (V : {V : Z.Opens // V ≤ U}) :
+    (r • a).φ V = (Z.presheaf.map (homOfLE V.2).op r) • a.φ V := rfl
+
+noncomputable instance : Module Γ(Z, U) (DualSec L U) where
+  one_smul a := by ext V; simp
+  mul_smul r s a := by ext V; simp [mul_smul]
+  smul_zero r := by ext V; simp
+  smul_add r a b := by ext V; simp
+  add_smul r s a := by ext V; simp [add_smul]
+  zero_smul a := by ext V; simp
+
+/-- Restriction of a compatible family along `U' ≤ U`: FORGET the opens that are
+not below `U'`.  This is what makes `L^∨` strictly functorial. -/
+noncomputable def res {U' : Z.Opens} (h : U' ≤ U) (a : DualSec L U) : DualSec L U' :=
+  ⟨fun V => a.φ ⟨V.1, V.2.trans h⟩,
+    fun V W hWV x => a.compat ⟨V.1, V.2.trans h⟩ ⟨W.1, W.2.trans h⟩ hWV x⟩
+
+@[simp] lemma res_φ {U' : Z.Opens} (h : U' ≤ U) (a : DualSec L U)
+    (V : {V : Z.Opens // V ≤ U'}) : (res h a).φ V = a.φ ⟨V.1, V.2.trans h⟩ := rfl
+
+lemma res_smul {U' : Z.Opens} (h : U' ≤ U) (r : Γ(Z, U)) (a : DualSec L U) :
+    res h (r • a) = (Z.presheaf.map (homOfLE h).op r) • res h a := by
+  refine DualSec.ext (fun V => ?_)
+  simp only [res_φ, smul_φ, res_res V.2 h r]
+
+end DualSec
+
+/-- The `RingCat`-keyed module structure the presheaf-of-modules API asks for. -/
+noncomputable instance dualSecModule' {Z : Scheme.{u}} (L : Z.Modules) (U : (Opens Z)ᵒᵖ) :
+    Module ↑(Z.ringCatSheaf.obj.obj U) (DualSec L U.unop) :=
+  inferInstanceAs (Module Γ(Z, U.unop) (DualSec L U.unop))
+
+/-- **The dual PRESHEAF of modules `L^∨`.** -/
+noncomputable def modDualPre {Z : Scheme.{u}} (L : Z.Modules) : Z.PresheafOfModules where
+  obj U := ModuleCat.of _ (DualSec L U.unop)
+  map {U U'} f := ModuleCat.ofHom
+      (Y := (ModuleCat.restrictScalars (Z.ringCatSheaf.obj.map f).hom).obj
+        (ModuleCat.of _ (DualSec L U'.unop)))
+    { toFun := DualSec.res (leOfHom f.unop)
+      map_add' := fun a b => rfl
+      map_smul' := fun r a => DualSec.res_smul (leOfHom f.unop) r a }
+
+@[simp] lemma modDualPre_presheaf_map_apply {Z : Scheme.{u}} (L : Z.Modules)
+    {U U' : (Opens Z)ᵒᵖ} (f : U ⟶ U') (a : DualSec L U.unop) :
+    (modDualPre L).presheaf.map f a = DualSec.res (leOfHom f.unop) a := rfl
+
+/-! ##### The sheaf condition for `L^∨` -/
+
+section SheafCondition
+
+variable {Z : Scheme.{u}} {L : Z.Modules} {ι : Type u} {U : ι → Z.Opens}
+  {sf : ∀ i, DualSec L (U i)}
+
+/-- The compatibility hypothesis of the gluing axiom, unpacked to sections: on an
+open below both `U i` and `U j`, the two families are the SAME functional. -/
+lemma dual_compat (h : TopCat.Presheaf.IsCompatible (modDualPre L).presheaf U sf)
+    (i j : ι) {W : Z.Opens} (hi : W ≤ U i) (hj : W ≤ U j) (x : Γ(L, W)) :
+    (sf i).φ ⟨W, hi⟩ x = (sf j).φ ⟨W, hj⟩ x :=
+  congrArg (fun f => f x)
+    (congrArg (fun a => DualSec.φ a ⟨W, le_inf hi hj⟩) (h i j))
+
+variable (U) in
+/-- `V ⊓ U i` covers `V`, for `V` below the sup.  Frame distributivity. -/
+lemma le_iSup_inf {V : Z.Opens} (hV : V ≤ iSup U) : V ≤ ⨆ i, V ⊓ U i := by
+  rw [← inf_iSup_eq]
+  exact le_inf le_rfl hV
+
+/-- Restriction of a section of `L`. -/
+noncomputable abbrev resX {V : Z.Opens} (x : Γ(L, V)) (W : Z.Opens) (h : W ≤ V) : Γ(L, W) :=
+  L.presheaf.map (homOfLE h).op x
+
+/-- The local values that will be glued to define the glued functional at `x`. -/
+noncomputable def glueFam (sf : ∀ i, DualSec L (U i)) {V : Z.Opens} (x : Γ(L, V)) (i : ι) :
+    Γ(Z, V ⊓ U i) :=
+  (sf i).φ ⟨V ⊓ U i, inf_le_right⟩ (resX x _ (inf_le_left : V ⊓ U i ≤ V))
+
+/-- The local values agree on overlaps: naturality of each `sf i` moves both to
+`(V ⊓ U i) ⊓ (V ⊓ U j)`, where `dual_compat` identifies them. -/
+lemma glueFam_compat (h : TopCat.Presheaf.IsCompatible (modDualPre L).presheaf U sf)
+    {V : Z.Opens} (x : Γ(L, V)) (i j : ι) :
+    Z.presheaf.map (homOfLE (inf_le_left : (V ⊓ U i) ⊓ (V ⊓ U j) ≤ V ⊓ U i)).op
+        (glueFam sf x i) =
+      Z.presheaf.map (homOfLE (inf_le_right : (V ⊓ U i) ⊓ (V ⊓ U j) ≤ V ⊓ U j)).op
+        (glueFam sf x j) := by
+  rw [glueFam, glueFam,
+    ← (sf i).compat ⟨V ⊓ U i, inf_le_right⟩
+      ⟨(V ⊓ U i) ⊓ (V ⊓ U j), le_trans inf_le_left inf_le_right⟩ inf_le_left _,
+    ← (sf j).compat ⟨V ⊓ U j, inf_le_right⟩
+      ⟨(V ⊓ U i) ⊓ (V ⊓ U j), le_trans inf_le_right inf_le_right⟩ inf_le_right _,
+    resX, resX, resL_resL, resL_resL]
+  exact dual_compat h i j _ _ _
+
+/-- The value of the glued functional at `x`, from `𝒪_Z`'s own gluing. -/
+noncomputable def glueVal (h : TopCat.Presheaf.IsCompatible (modDualPre L).presheaf U sf)
+    {V : Z.Opens} (hV : V ≤ iSup U) (x : Γ(L, V)) : Γ(Z, V) :=
+  (Z.sheaf.existsUnique_gluing' (fun i => V ⊓ U i) V (fun _ => homOfLE inf_le_left)
+    (le_iSup_inf U hV) (glueFam sf x) (glueFam_compat h x)).choose
+
+lemma glueVal_res (h : TopCat.Presheaf.IsCompatible (modDualPre L).presheaf U sf)
+    {V : Z.Opens} (hV : V ≤ iSup U) (x : Γ(L, V)) (i : ι) :
+    Z.presheaf.map (homOfLE (inf_le_left : V ⊓ U i ≤ V)).op (glueVal h hV x) =
+      glueFam sf x i :=
+  (Z.sheaf.existsUnique_gluing' (fun i => V ⊓ U i) V (fun _ => homOfLE inf_le_left)
+    (le_iSup_inf U hV) (glueFam sf x) (glueFam_compat h x)).choose_spec.1 i
+
+/-- Two sections of `𝒪_Z` over `V` agreeing on every `V ⊓ U i` are equal.  This
+single separatedness statement discharges every remaining obligation below. -/
+lemma sec_ext {V : Z.Opens} (hV : V ≤ iSup U) (r s : Γ(Z, V))
+    (hrs : ∀ i, Z.presheaf.map (homOfLE (inf_le_left : V ⊓ U i ≤ V)).op r =
+      Z.presheaf.map (homOfLE (inf_le_left : V ⊓ U i ≤ V)).op s) : r = s :=
+  Z.sheaf.eq_of_locally_eq' (fun i => V ⊓ U i) V (fun _ => homOfLE inf_le_left)
+    (le_iSup_inf U hV) r s hrs
+
+lemma glueVal_add (h : TopCat.Presheaf.IsCompatible (modDualPre L).presheaf U sf)
+    {V : Z.Opens} (hV : V ≤ iSup U) (x y : Γ(L, V)) :
+    glueVal h hV (x + y) = glueVal h hV x + glueVal h hV y := by
+  refine sec_ext hV _ _ (fun i => ?_)
+  rw [map_add, glueVal_res, glueVal_res, glueVal_res, glueFam, glueFam, glueFam, resX, resX, resX,
+    map_add, map_add]
+
+lemma glueVal_smul (h : TopCat.Presheaf.IsCompatible (modDualPre L).presheaf U sf)
+    {V : Z.Opens} (hV : V ≤ iSup U) (r : Γ(Z, V)) (x : Γ(L, V)) :
+    glueVal h hV (r • x) = r • glueVal h hV x := by
+  refine sec_ext hV _ _ (fun i => ?_)
+  rw [glueVal_res, glueFam, resX, Scheme.Modules.map_smul, LinearMap.map_smul]
+  simp only [smul_eq_mul]
+  rw [map_mul, glueVal_res, glueFam, resX]
+
+/-- Naturality of the glued family in the open. -/
+lemma glueVal_nat (h : TopCat.Presheaf.IsCompatible (modDualPre L).presheaf U sf)
+    {V W : Z.Opens} (hV : V ≤ iSup U) (hWV : W ≤ V) (x : Γ(L, V)) :
+    glueVal h (hWV.trans hV) (resX x W hWV) =
+      Z.presheaf.map (homOfLE hWV).op (glueVal h hV x) := by
+  refine sec_ext (hWV.trans hV) _ _ (fun i => ?_)
+  rw [glueVal_res, glueFam, resX, resX, resL_resL, res_res,
+    ← res_res (inf_le_inf_right (U i) hWV) (inf_le_left : V ⊓ U i ≤ V),
+    glueVal_res, glueFam, resX, ← (sf i).compat ⟨V ⊓ U i, inf_le_right⟩
+      ⟨W ⊓ U i, inf_le_right⟩ (inf_le_inf_right (U i) hWV) _, resL_resL]
+
+/-- The glued compatible family. -/
+noncomputable def glueSec (h : TopCat.Presheaf.IsCompatible (modDualPre L).presheaf U sf) :
+    DualSec L (iSup U) :=
+  ⟨fun V =>
+    { toFun := fun x => glueVal h V.2 x
+      map_add' := glueVal_add h V.2
+      map_smul' := glueVal_smul h V.2 },
+   fun V _ hWV x => glueVal_nat h V.2 hWV x⟩
+
+@[simp] lemma glueSec_φ (h : TopCat.Presheaf.IsCompatible (modDualPre L).presheaf U sf)
+    (V : {V : Z.Opens // V ≤ iSup U}) (x : Γ(L, V.1)) :
+    (glueSec h).φ V x = glueVal h V.2 x := rfl
+
+lemma glueSec_isGluing (h : TopCat.Presheaf.IsCompatible (modDualPre L).presheaf U sf) :
+    TopCat.Presheaf.IsGluing (modDualPre L).presheaf U sf (glueSec h) := by
+  intro i
+  refine DualSec.ext (fun V => LinearMap.ext (fun x => ?_))
+  refine sec_ext (V.2.trans (le_iSup U i)) _ _ (fun j => ?_)
+  rw [modDualPre_presheaf_map_apply, DualSec.res_φ, glueSec_φ, glueVal_res, glueFam, resX,
+    ← (sf i).compat V ⟨V.1 ⊓ U j, le_trans inf_le_left V.2⟩ inf_le_left x]
+  exact dual_compat h j i _ _ _
+
+lemma glueSec_unique (h : TopCat.Presheaf.IsCompatible (modDualPre L).presheaf U sf)
+    (s : DualSec L (iSup U))
+    (hs : TopCat.Presheaf.IsGluing (modDualPre L).presheaf U sf s) : s = glueSec h := by
+  refine DualSec.ext (fun V => LinearMap.ext (fun x => ?_))
+  refine sec_ext V.2 _ _ (fun i => ?_)
+  rw [glueSec_φ, glueVal_res, glueFam, resX,
+    ← s.compat V ⟨V.1 ⊓ U i, le_trans inf_le_left V.2⟩ inf_le_left x]
+  exact congrArg (fun f => f (resX x (V.1 ⊓ U i) inf_le_left))
+    (congrArg (fun a => DualSec.φ a ⟨V.1 ⊓ U i, inf_le_right⟩) (hs i))
+
+end SheafCondition
+
+/-- **`L^∨` IS A SHEAF** (PROVEN 2026-07-30, for an arbitrary `L`). -/
+theorem modDualPre_isSheaf {Z : Scheme.{u}} (L : Z.Modules) :
+    TopCat.Presheaf.IsSheaf (X := Z.toPresheafedSpace.carrier) (modDualPre L).presheaf := by
+  rw [TopCat.Presheaf.isSheaf_iff_isSheafUniqueGluing]
+  intro ι U sf h
+  exact ⟨glueSec h, glueSec_isGluing h, fun s hs => glueSec_unique h s hs⟩
+
+/-- Evaluating a scaled dual section against a section, over the SAME open. -/
+lemma dualSec_smul_apply_self {Z : Scheme.{u}} {L : Z.Modules} (V : Z.Opens) (r : Γ(Z, V))
+    (ψ : DualSec L V) (x : Γ(L, V)) :
+    (r • ψ).φ ⟨V, le_rfl⟩ x = r * ψ.φ ⟨V, le_rfl⟩ x := by
+  rw [DualSec.smul_φ, LinearMap.smul_apply, res_self, smul_eq_mul]
+
+/-- **THE EVALUATION PAIRING, at the level of presheaves**: `L ⊗ L^∨ ⟶ 𝒪_Z`,
+`x ⊗ ψ ↦ ψ_V(x)`.  Naturality is exactly the compatibility clause of `ψ`. -/
+noncomputable def modDualEvPre {Z : Scheme.{u}} (L : Z.Modules) :
+    PresheafOfModules.Monoidal.tensorObj (R := Z.presheaf) L.val (modDualPre L) ⟶
+      (modUnit Z).val where
+  app V := ModuleCat.MonoidalCategory.tensorLift
+    (fun x ψ => DualSec.φ ψ ⟨V.unop, le_rfl⟩ x)
+    (fun x y ψ => map_add (DualSec.φ ψ ⟨V.unop, le_rfl⟩) x y)
+    (fun r x ψ => (DualSec.φ ψ ⟨V.unop, le_rfl⟩).map_smul r x)
+    (fun _ _ _ => rfl)
+    (fun r x ψ => dualSec_smul_apply_self V.unop r ψ x)
+  naturality {V V'} f := ModuleCat.MonoidalCategory.tensor_ext (fun x ψ =>
+    ψ.compat ⟨V.unop, le_rfl⟩ ⟨V'.unop, leOfHom f.unop⟩ (leOfHom f.unop) x)
+
+end ModDual
+
+/-- **THE DUAL SHEAF `L^∨ = Hom_{𝒪_Z}(L, 𝒪_Z)`** (PROVEN 2026-07-30) — the
+presheaf of compatible families `ModDual.modDualPre`, together with
+`ModDual.modDualPre_isSheaf`. -/
+noncomputable def modDual {Z : Scheme.{u}} (L : Z.Modules) : Z.Modules :=
+  ⟨ModDual.modDualPre L, ModDual.modDualPre_isSheaf L⟩
+
+/-- **THE EVALUATION PAIRING** `ev : L ⊗ L^∨ ⟶ 𝒪_Z` (PROVEN 2026-07-30) —
+sheafify `ModDual.modDualEvPre` and use that `𝒪_Z` is already a sheaf. -/
+noncomputable def modDualEv {Z : Scheme.{u}} (L : Z.Modules) :
+    modTensor L (modDual L) ⟶ modUnit Z :=
+  (PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)).map (ModDual.modDualEvPre L) ≫
+    (modSheafifyValIso (modUnit Z)).hom
+
+/-- **`L^∨` IS INVERTIBLE WHEN `L` IS** (sorry leaf, cut 2026-07-30 out of
+`exists_modDual`) — the first of the two local halves that remain.
+
+**The mathematics is one line** and needs no geometry: if `φ : L|_U ≅ 𝒪_U` then
+`Γ(L, V)` is free of rank one on `g_V := φ⁻¹(1)|_V` for every `V ≤ U`, so a
+compatible family `ψ ∈ L^∨(V)` is determined by the single section
+`ψ_V(g_V) ∈ Γ(Z, V)`, and `ψ ↦ ψ_V(g_V)` is an isomorphism `L^∨(V) ≅ Γ(Z, V)`
+commuting with restriction — i.e. `(modDual L).restrict U.ι ≅ modUnit U`.  Note
+`(modDual L).restrict U.ι` has sections `DualSec L (U.ι ''ᵁ V₁)` BY RFL, because
+`modDual L` is an honest presheaf and `Scheme.Modules.restrict_obj` is `rfl`;
+there is no sheafification to move past.
+
+**The COST is entirely the `restrict` boundary described in the subsection
+docstring above**, and it is a real barrier rather than a nuisance: extracting
+`g_V` from `φ` means reading `φ.hom.val.app (op (U.ι ⁻¹ᵁ V))` as a map of
+AMBIENT sections, and `U.ι ''ᵁ (U.ι ⁻¹ᵁ V) = V` for `V ≤ U`
+(`Scheme.Hom.image_preimage_eq_opensRange_inf` with
+`Scheme.Opens.opensRange_ι`) has to be transported through it.  The additive
+half of that transport goes through (`map_add` on `φ.hom.val.app _` is accepted
+verbatim); the `Γ(Z,·)`-LINEAR half is what hits the unexposed `Iso.inv`, and
+`Scheme.Modules.Hom.app_smul` is the lemma to route it through.  A worked
+precedent for this exact dance, 60 lines of it, is
+`Fermat.trivializedSection_trivializationOfLE` in `Modularity/AmpleSheaf.lean`;
+read it before starting.
+
+Both leaves in this pair need the SAME bridge, so build it once as a
+free-standing "`L` is free of rank one on `U`, in ambient sections" statement
+and prove both from it. -/
+theorem isInvertibleSheaf_modDual {Z : Scheme.{u}} {L : Z.Modules}
+    (_hL : IsInvertibleSheaf L) : IsInvertibleSheaf (modDual L) :=
+  sorry
+
+/-- **THE EVALUATION PAIRING IS AN ISOMORPHISM** (sorry leaf, cut 2026-07-30 out
+of `exists_modDual`) — the second local half.
+
+Note this is the GLOBAL statement, deliberately stronger than the local clause
+`exists_modDual` asks for; `exists_modDual`'s own docstring already records that
+the two are equivalent, and the global form is what makes the local clause free
+(take `U = ⊤` and let the restriction functor preserve the isomorphism).
+
+**Route, and it avoids `isIso_of_locally_isIso` entirely.**  A morphism of
+sheaves of modules is an isomorphism as soon as the underlying map of
+`Ab`-presheaves is LOCALLY BIJECTIVE — mathlib's
+`CategoryTheory.GrothendieckTopology.W_of_isLocallyBijective` together with
+`Sheaf.isLocallyBijective_iff_isIso`, and
+`SheafOfModules.toSheaf`/`PresheafOfModules.toPresheaf` both reflect
+isomorphisms.  Since `modDualEv` is `sheafification.map (modDualEvPre L)`
+composed with an isomorphism, and `CategoryTheory.toSheafify` is itself locally
+bijective, it suffices to prove that the PRESHEAF map `ModDual.modDualEvPre L`
+is locally injective and locally surjective — and both are computations on
+honest sections of `L`, `L^∨` and `𝒪_Z`, with no sheafified object anywhere:
+
+* *locally surjective*: given `r ∈ Γ(Z, W)` and `z ∈ W`, restrict to
+  `V := W ⊓ U` for a trivializing `U ∋ z` and write
+  `r|_V = evPre(g_V ⊗ (r|_V · g^∨))`;
+* *locally injective*: on such a `V` the trivialization identifies
+  `Γ(L,V) ⊗_{Γ(Z,V)} L^∨(V)` with `Γ(Z,V) ⊗ Γ(Z,V) ≅ Γ(Z,V)` and `evPre`
+  with the multiplication, which is injective.
+
+A covering sieve on `Opens Z` is checked pointwise —
+`TopologicalSpace.Opens.mem_grothendieckTopology` — so "for each `z` a
+trivializing neighbourhood" is literally the covering condition.
+
+The one input both bullets need is the same rank-one bridge that
+`isInvertibleSheaf_modDual` needs; see its docstring. -/
+theorem isIso_modDualEv {Z : Scheme.{u}} {L : Z.Modules} (_hL : IsInvertibleSheaf L) :
+    IsIso (modDualEv L) :=
+  sorry
+
+/-- **THE DUAL SHEAF AND ITS EVALUATION PAIRING** (PROVEN 2026-07-30 over
+`modDual`, `modDualEv`, `isInvertibleSheaf_modDual` and `isIso_modDualEv`;
+formerly a bare sorry leaf, and the docstring below is the audit written while
+it was one — every word of it still applies, now to the two leaves it was
+decomposed into) — an invertible `L` admits an invertible `M`
 together with a GLOBAL morphism `ev : L ⊗ M ⟶ 𝒪_Z` that is an isomorphism
 LOCALLY.
 
@@ -972,12 +1394,20 @@ the counterexample has to name a point.)  A skyscraper `k` at a closed point
 of `Spec k[u]` is a second, non-degenerate witness: it is finitely generated
 and nonzero, and `k ⊗ M` is again supported at that point, never all of `𝒪`.
 So this is not a formal fact about a monoidal category — it is exactly the
-statement that local triviality globalises to an inverse. -/
-theorem exists_modDual {Z : Scheme.{u}} {L : Z.Modules} (_hL : IsInvertibleSheaf L) :
+statement that local triviality globalises to an inverse.
+
+**WHAT THE 2026-07-30 CONSTRUCTION SETTLED, and what it did not.**  `M` is
+`modDual L` and `ev` is `modDualEv L`; the dual sheaf, its SHEAF CONDITION and
+the pairing are all proven above with no hypothesis on `L` at all.  The
+invertibility hypothesis enters only in the two leaves this now stands on, and
+the survey and route notes above should be read as belonging to THEM. -/
+theorem exists_modDual {Z : Scheme.{u}} {L : Z.Modules} (hL : IsInvertibleSheaf L) :
     ∃ (M : Z.Modules) (ev : modTensor L M ⟶ modUnit Z), IsInvertibleSheaf M ∧
       ∀ z : Z, ∃ U : Z.Opens, z ∈ U ∧
-        IsIso ((Scheme.Modules.restrictFunctor U.ι).map ev) :=
-  sorry
+        IsIso ((Scheme.Modules.restrictFunctor U.ι).map ev) := by
+  refine ⟨modDual L, modDualEv L, isInvertibleSheaf_modDual hL, fun _ => ⟨⊤, trivial, ?_⟩⟩
+  haveI : IsIso (modDualEv L) := isIso_modDualEv hL
+  infer_instance
 
 /-- **AN INVERTIBLE SHEAF HAS AN INVERSE** (PROVEN 2026-07-29 over
 `exists_modDual` and `isIso_of_locally_isIso`) — i.e. the invertible sheaves
