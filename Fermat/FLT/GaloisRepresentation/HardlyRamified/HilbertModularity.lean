@@ -29013,9 +29013,550 @@ theorem surjective_mvPowerSeries_ringHom_of_span_maximalIdeal {R : Type*}
       show φ (MvPowerSeries.C a) = ι a from RingHom.congr_fun hφC a]
     exact ha⟩
 
-/-- **The coefficient structure on `R_Q`** (LEAF — new 2026-07-30, piece 1 of
-the three-piece route recorded on `exists_hilbertAuxDeformationRingGenerators`
-below; pieces 3a and 3b are the two PROVEN theorems above, and piece 2 is
+/-! ### Cohen structure theory for the coefficient ring
+
+Everything from here to `exists_hilbertAuxCoeffRingHom` is elementary
+commutative algebra, written to prove that leaf and used nowhere else. The
+mathematical content is one theorem — `exists_ringHom_comp_eq`, Cohen's
+lifting theorem for an ABSOLUTELY UNRAMIFIED complete local ring with finite
+residue field — plus the two bookkeeping facts (precompleteness from
+compactness, and that a surjection from a power-series ring onto a field
+restricts to a surjection from the coefficient ring) that turn it into the
+statement the assembly asks for. -/
+
+/-- Evaluating the image of an INTEGER polynomial in `R` is `aeval` over `ℤ`. -/
+theorem eval_map_int {R : Type*} [CommRing R] (x : R) (P : Polynomial ℤ) :
+    (P.map (Int.castRingHom R)).eval x = Polynomial.aeval x P := by
+  rw [Polynomial.eval_map, Polynomial.aeval_def, algebraMap_int_eq]
+
+/-- Ring homomorphisms commute with evaluation of INTEGER polynomials. `ℤ` is
+initial, so no compatibility hypothesis is needed. -/
+theorem map_aeval_int {R S : Type*} [CommRing R] [CommRing S] (ρ : R →+* S) (x : R)
+    (P : Polynomial ℤ) : ρ (Polynomial.aeval x P) = Polynomial.aeval (ρ x) P := by
+  rw [Polynomial.aeval_def, Polynomial.aeval_def, Polynomial.hom_eval₂]
+  congr 1
+  apply RingHom.ext_int
+
+/-- Evaluating an integer polynomial in a `ZMod ℓ`-algebra factors through
+`ZMod ℓ`. -/
+theorem aeval_int_eq_aeval_map_zmod {k : Type*} [CommRing k] (ℓ : ℕ) [Algebra (ZMod ℓ) k]
+    (x : k) (P : Polynomial ℤ) :
+    Polynomial.aeval x (P.map (Int.castRingHom (ZMod ℓ))) = Polynomial.aeval x P := by
+  rw [Polynomial.aeval_def, Polynomial.aeval_def, Polynomial.eval₂_map]
+  congr 1
+  apply RingHom.ext_int
+
+/-- **Hensel's lemma with a prescribed residue.** A complete local ring lifts a
+SIMPLE root of a monic integral polynomial from the residue field, and the lift
+has the prescribed residue.
+
+`IsAdicComplete (𝔪) R` gives `HenselianRing R 𝔪` in mathlib, and the derivative
+condition transports across `ρ` because `ker ρ = 𝔪` for a surjection onto a
+field. -/
+theorem exists_root_of_residue
+    {R : Type*} [CommRing R] [IsLocalRing R]
+    [IsAdicComplete (IsLocalRing.maximalIdeal R) R]
+    {k : Type*} [Field k] (ρ : R →+* k) (hρ : Function.Surjective ρ)
+    (g : k) (h : Polynomial ℤ) (hmon : h.Monic)
+    (hroot : (h.map (Int.castRingHom k)).eval g = 0)
+    (hderiv : (Polynomial.derivative (h.map (Int.castRingHom k))).eval g ≠ 0) :
+    ∃ z : R, Polynomial.aeval z h = 0 ∧ ρ z = g := by
+  classical
+  haveI : HenselianLocalRing R := by
+    constructor
+    intro f hf a₀ h₁ h₂
+    exact HenselianRing.is_henselian (I := IsLocalRing.maximalIdeal R) f hf a₀ h₁
+      (h₂.map (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R)))
+  have hker : RingHom.ker ρ = IsLocalRing.maximalIdeal R :=
+    IsLocalRing.ker_eq_maximalIdeal ρ hρ
+  obtain ⟨a₀, ha₀⟩ := hρ g
+  set H : Polynomial R := h.map (Int.castRingHom R) with hH
+  have hHmon : H.Monic := hmon.map _
+  have hρcomp : ρ.comp (Int.castRingHom R) = Int.castRingHom k := by apply RingHom.ext_int
+  have hHmapρ : H.map ρ = h.map (Int.castRingHom k) := by
+    rw [hH, Polynomial.map_map, hρcomp]
+  have h₁ : H.eval a₀ ∈ IsLocalRing.maximalIdeal R := by
+    rw [← hker, RingHom.mem_ker, ← Polynomial.eval₂_hom, ← Polynomial.eval_map, hHmapρ, ha₀]
+    exact hroot
+  have h₂ : IsUnit ((Polynomial.derivative H).eval a₀) := by
+    refine IsLocalRing.notMem_maximalIdeal.mp ?_
+    rw [← hker, RingHom.mem_ker, ← Polynomial.eval₂_hom, ← Polynomial.eval_map,
+      ← Polynomial.derivative_map, hHmapρ, ha₀]
+    exact hderiv
+  obtain ⟨z, hz1, hz2⟩ := HenselianLocalRing.is_henselian H hHmon a₀ h₁ h₂
+  refine ⟨z, ?_, ?_⟩
+  · have hz : H.eval z = 0 := hz1
+    rw [hH, eval_map_int] at hz
+    exact hz
+  · have hd : ρ (z - a₀) = 0 := by rw [← RingHom.mem_ker, hker]; exact hz2
+    rw [map_sub, sub_eq_zero] at hd
+    rw [hd, ha₀]
+
+/-- Separatedness, in the form the limit construction below uses it: two
+elements congruent modulo every power of `𝔪` are equal. -/
+theorem eq_of_sub_mem_pow_maximalIdeal {A : Type*} [CommRing A] [IsLocalRing A]
+    [IsAdicComplete (IsLocalRing.maximalIdeal A) A] {x y : A}
+    (h : ∀ n : ℕ, x - y ∈ (IsLocalRing.maximalIdeal A) ^ n) : x = y := by
+  have hz := IsHausdorff.haus (I := IsLocalRing.maximalIdeal A) (M := A) inferInstance (x - y) ?_
+  · exact sub_eq_zero.mp hz
+  · intro n
+    rw [SModEq.sub_mem, sub_zero, smul_eq_mul, Ideal.mul_top]
+    exact h n
+
+/-- **COHEN LIFTING for an absolutely unramified complete local ring with finite
+residue field.** If `𝒪` is complete local with `𝔪_𝒪 = (ℓ)` and `ℓ` a NONZERODIVISOR
+— i.e. `𝒪 = W(k)` — then `𝒪` maps to every complete local `A` with the same
+residue field `k`, compatibly with the residue maps. This is the one theorem
+`exists_hilbertAuxCoeffRingHom` is really about; everything else there is
+bookkeeping.
+
+**The proof, in four movements, none of which needs Witt vectors.**
+
+1. *Teichmüller by Hensel.* `k` is finite, so `kˣ` is cyclic; pick a generator
+   `g`, and every element of `k` is `aeval g P` for an integer polynomial `P`.
+   The minimal polynomial `m` of `g` over `𝔽_ℓ` divides `X^{#k} − X`, which is
+   separable, so `m'(g) ≠ 0`; lift `m` to a monic `h ∈ ℤ[X]` and Hensel gives
+   roots `ζ ∈ 𝒪` and `ξ ∈ A` reducing to `g`.
+
+2. *The key comparison.* `aeval ζ P ∈ (ℓ^n)` implies `aeval ξ P ∈ (ℓ^n)`, by
+   induction on `n`. At the inductive step `aeval g (P mod ℓ) = 0`, so `m ∣ P mod ℓ`,
+   so `P = h·S + ℓ·T` in `ℤ[X]`; then `aeval ζ P = ℓ · aeval ζ T` and REGULARITY
+   of `ℓ` in `𝒪` divides the membership down to `aeval ζ T ∈ (ℓ^{n−1})`. The same
+   identity in `A` reassembles it. Note the asymmetry: regularity is needed only
+   on the `𝒪` side, which is why `A` may be any complete local ring.
+
+3. *Density.* `ℤ[ζ]` is dense in `𝒪` for the `ℓ`-adic topology: given
+   `a ≡ aeval ζ P mod ℓ^n`, write `a − aeval ζ P = ℓ^n·y`, approximate the
+   RESIDUE of `y` by `aeval g P'`, and `P + ℓ^n·P'` improves the approximation
+   to `ℓ^{n+1}`.
+
+4. *The limit.* For `a ∈ 𝒪` the sequence `aeval ξ (P_n)` is `𝔪_A`-adically
+   Cauchy by 2 and 3, so it converges; the limit is independent of the choice of
+   approximants, again by 2. That defines `c a`, and the ring axioms follow from
+   separatedness because each of `c(a+b) − c a − c b` and `c(ab) − c a · c b`
+   lies in every `𝔪_A^n`.
+
+References: Cohen, *On the structure and ideal theory of complete local rings*,
+Trans. AMS 59 (1946), Thm. 9; Serre, *Local Fields* II §5. -/
+theorem exists_ringHom_comp_eq (ℓ : ℕ) [Fact ℓ.Prime]
+    {O : Type*} [CommRing O] [IsLocalRing O]
+    [IsAdicComplete (IsLocalRing.maximalIdeal O) O]
+    (hOu : IsLocalRing.maximalIdeal O = Ideal.span {(ℓ : O)})
+    (hOreg : ∀ x : O, (ℓ : O) * x = 0 → x = 0)
+    {k : Type*} [Field k] [Finite k]
+    (κ : O →+* k) (hκ : Function.Surjective κ)
+    {A : Type*} [CommRing A] [IsLocalRing A]
+    [IsAdicComplete (IsLocalRing.maximalIdeal A) A]
+    (πA : A →+* k) (hπA : Function.Surjective πA) :
+    ∃ c : O →+* A, πA.comp c = κ := by
+  classical
+  haveI : Fintype k := Fintype.ofFinite k
+  -- ## characteristic bookkeeping
+  have hkerκ : RingHom.ker κ = IsLocalRing.maximalIdeal O :=
+    IsLocalRing.ker_eq_maximalIdeal κ hκ
+  have hkerπ : RingHom.ker πA = IsLocalRing.maximalIdeal A :=
+    IsLocalRing.ker_eq_maximalIdeal πA hπA
+  have hlO : (ℓ : O) ∈ IsLocalRing.maximalIdeal O := by
+    rw [hOu]; exact Ideal.mem_span_singleton_self _
+  have hlk : ((ℓ : ℕ) : k) = 0 := by
+    rw [← map_natCast κ ℓ, ← RingHom.mem_ker, hkerκ]; exact hlO
+  have hlA : (ℓ : A) ∈ IsLocalRing.maximalIdeal A := by
+    rw [← hkerπ, RingHom.mem_ker, map_natCast]; exact hlk
+  haveI hchar : CharP k ℓ := by
+    have hdvd : ringChar k ∣ ℓ := (CharP.cast_eq_zero_iff k (ringChar k) ℓ).mp hlk
+    have hne1 : ringChar k ≠ 1 := by
+      intro h1
+      have h0 : ((ringChar k : ℕ) : k) = 0 := CharP.cast_eq_zero k (ringChar k)
+      rw [h1] at h0
+      simp at h0
+    have heq : ringChar k = ℓ :=
+      ((Fact.out : ℓ.Prime).eq_one_or_self_of_dvd _ hdvd).resolve_left hne1
+    exact heq ▸ ringChar.charP k
+  letI : Algebra (ZMod ℓ) k := ZMod.algebra k ℓ
+  -- ## a multiplicative generator of `k`, and integral polynomials for its powers
+  obtain ⟨g, hsurjZ⟩ : ∃ g : k, ∀ y : k, ∃ P : Polynomial ℤ, Polynomial.aeval g P = y := by
+    obtain ⟨gu, hgu⟩ := IsCyclic.exists_generator (α := kˣ)
+    refine ⟨(gu : k), fun y => ?_⟩
+    rcases eq_or_ne y 0 with rfl | hy
+    · exact ⟨0, by simp⟩
+    · have hmem : (Units.mk0 y hy) ∈ Subgroup.zpowers gu := hgu _
+      rw [← mem_powers_iff_mem_zpowers] at hmem
+      obtain ⟨n, hn⟩ := hmem
+      refine ⟨Polynomial.X ^ n, ?_⟩
+      have hn' : gu ^ n = Units.mk0 y hy := hn
+      have hval : ((gu ^ n : kˣ) : k) = y := by rw [hn']; rfl
+      simpa using hval
+  -- ## the minimal polynomial of `g` over the prime field is SEPARABLE at `g`
+  have hgint : IsIntegral (ZMod ℓ) g := IsIntegral.of_finite _ _
+  set m : Polynomial (ZMod ℓ) := minpoly (ZMod ℓ) g with hmdef
+  have hmmon : m.Monic := minpoly.monic hgint
+  have hmroot : Polynomial.aeval g m = 0 := minpoly.aeval _ _
+  have hQ0 : ((Fintype.card k : ℕ) : ZMod ℓ) = 0 := by
+    obtain ⟨n, -, hcard⟩ := FiniteField.card k ℓ
+    rw [hcard, Nat.cast_pow, ZMod.natCast_self]
+    exact zero_pow n.ne_zero
+  obtain ⟨u, hu⟩ : m ∣ (Polynomial.X ^ (Fintype.card k) - Polynomial.X) := by
+    refine minpoly.dvd _ _ ?_
+    simp [FiniteField.pow_card]
+  have hderivm : Polynomial.aeval g (Polynomial.derivative m) ≠ 0 := by
+    intro hz
+    have hd := congrArg Polynomial.derivative hu
+    rw [Polynomial.derivative_sub, Polynomial.derivative_X_pow, Polynomial.derivative_X,
+      Polynomial.derivative_mul, hQ0, Polynomial.C_0] at hd
+    have h2 := congrArg (Polynomial.aeval g) hd
+    simp [hz, hmroot] at h2
+  -- ## a monic INTEGRAL lift of `m`
+  obtain ⟨h, hmap, -, hmonic⟩ :=
+    Polynomial.lifts_and_natDegree_eq_and_monic
+      (f := (Int.castRingHom (ZMod ℓ))) (p := m)
+      ((Polynomial.lifts_iff_coeff_lifts m).mpr
+        (fun n => ZMod.intCast_surjective (m.coeff n))) hmmon
+  have hrootk : (h.map (Int.castRingHom k)).eval g = 0 := by
+    rw [eval_map_int, ← aeval_int_eq_aeval_map_zmod ℓ g h, hmap]
+    exact hmroot
+  have hderivk : (Polynomial.derivative (h.map (Int.castRingHom k))).eval g ≠ 0 := by
+    rw [Polynomial.derivative_map, eval_map_int,
+      ← aeval_int_eq_aeval_map_zmod ℓ g (Polynomial.derivative h), ← Polynomial.derivative_map,
+      hmap]
+    exact hderivm
+  -- ## the Teichmüller-style roots, in `O` and in `A`
+  obtain ⟨ζ, hζroot, hζres⟩ := exists_root_of_residue κ hκ g h hmonic hrootk hderivk
+  obtain ⟨ξ, hξroot, hξres⟩ := exists_root_of_residue πA hπA g h hmonic hrootk hderivk
+  -- ## MOVEMENT 2: the key comparison, by induction on `n`
+  have key : ∀ (n : ℕ) (P : Polynomial ℤ),
+      Polynomial.aeval ζ P ∈ Ideal.span {(ℓ : O) ^ n} →
+        Polynomial.aeval ξ P ∈ Ideal.span {(ℓ : A) ^ n} := by
+    intro n
+    induction n with
+    | zero => intro P _; simp
+    | succ n ih =>
+      intro P hP
+      have hPm : Polynomial.aeval ζ P ∈ IsLocalRing.maximalIdeal O := by
+        rw [hOu]
+        exact Ideal.span_singleton_le_span_singleton.mpr
+          (dvd_pow_self _ (Nat.succ_ne_zero n)) hP
+      have hres : Polynomial.aeval g (P.map (Int.castRingHom (ZMod ℓ))) = 0 := by
+        rw [aeval_int_eq_aeval_map_zmod, ← hζres, ← map_aeval_int κ ζ P, ← RingHom.mem_ker,
+          hkerκ]
+        exact hPm
+      obtain ⟨S0, hS0⟩ : m ∣ P.map (Int.castRingHom (ZMod ℓ)) := minpoly.dvd _ _ hres
+      obtain ⟨S, hS⟩ : ∃ S : Polynomial ℤ, S.map (Int.castRingHom (ZMod ℓ)) = S0 :=
+        (Polynomial.lifts_iff_coeff_lifts S0).mpr
+          (fun i => ZMod.intCast_surjective (S0.coeff i))
+      have hzero : (P - h * S).map (Int.castRingHom (ZMod ℓ)) = 0 := by
+        rw [Polynomial.map_sub, Polynomial.map_mul, hmap, hS, ← hS0, sub_self]
+      obtain ⟨T, hT⟩ : (Polynomial.C (ℓ : ℤ)) ∣ (P - h * S) := by
+        rw [Polynomial.C_dvd_iff_dvd_coeff]
+        intro i
+        have hci := congrArg (fun q : Polynomial (ZMod ℓ) => q.coeff i) hzero
+        simp only [Polynomial.coeff_map, Polynomial.coeff_zero] at hci
+        exact (ZMod.intCast_zmod_eq_zero_iff_dvd _ _).mp hci
+      have hPT : P = h * S + Polynomial.C (ℓ : ℤ) * T := by
+        rw [← hT]; ring
+      have hOeval : Polynomial.aeval ζ P = (ℓ : O) * Polynomial.aeval ζ T := by
+        rw [hPT]; simp [hζroot]
+      have hTn : Polynomial.aeval ζ T ∈ Ideal.span {(ℓ : O) ^ n} := by
+        rw [hOeval] at hP
+        obtain ⟨y, hy⟩ := Ideal.mem_span_singleton'.mp hP
+        have hzz : (ℓ : O) * (y * (ℓ : O) ^ n - Polynomial.aeval ζ T) = 0 := by
+          rw [mul_sub, ← hy]; ring
+        have heq := sub_eq_zero.mp (hOreg _ hzz)
+        exact Ideal.mem_span_singleton'.mpr ⟨y, heq⟩
+      have hTA := ih T hTn
+      have hAeval : Polynomial.aeval ξ P = (ℓ : A) * Polynomial.aeval ξ T := by
+        rw [hPT]; simp [hξroot]
+      rw [hAeval]
+      obtain ⟨w, hw⟩ := Ideal.mem_span_singleton'.mp hTA
+      exact Ideal.mem_span_singleton'.mpr ⟨w, by rw [← hw]; ring⟩
+  -- ## MOVEMENT 3: `ℤ[ζ]` is `ℓ`-adically dense in `O`
+  have dens : ∀ (n : ℕ) (a : O),
+      ∃ P : Polynomial ℤ, a - Polynomial.aeval ζ P ∈ Ideal.span {(ℓ : O) ^ n} := by
+    intro n
+    induction n with
+    | zero => intro a; exact ⟨0, by simp⟩
+    | succ n ih =>
+      intro a
+      obtain ⟨P, hP⟩ := ih a
+      obtain ⟨y, hy⟩ := Ideal.mem_span_singleton'.mp hP
+      obtain ⟨P', hP'⟩ := hsurjZ (κ y)
+      have hdiff : y - Polynomial.aeval ζ P' ∈ IsLocalRing.maximalIdeal O := by
+        rw [← hkerκ, RingHom.mem_ker, map_sub, map_aeval_int, hζres, hP', sub_self]
+      rw [hOu] at hdiff
+      obtain ⟨w, hw⟩ := Ideal.mem_span_singleton'.mp hdiff
+      refine ⟨P + Polynomial.C ((ℓ : ℤ) ^ n) * P', ?_⟩
+      refine Ideal.mem_span_singleton'.mpr ⟨w, ?_⟩
+      have hae : Polynomial.aeval ζ (P + Polynomial.C ((ℓ : ℤ) ^ n) * P')
+          = Polynomial.aeval ζ P + (ℓ : O) ^ n * Polynomial.aeval ζ P' := by
+        simp
+      rw [hae]
+      have h1 : a - Polynomial.aeval ζ P = y * (ℓ : O) ^ n := hy.symm
+      have h2 : y - Polynomial.aeval ζ P' = w * (ℓ : O) := hw.symm
+      have h0 : a - (Polynomial.aeval ζ P + (ℓ : O) ^ n * Polynomial.aeval ζ P')
+          = (a - Polynomial.aeval ζ P) - (ℓ : O) ^ n * Polynomial.aeval ζ P' := by ring
+      rw [h0, h1]
+      have h3 : Polynomial.aeval ζ P' = y - w * (ℓ : O) := by rw [← h2]; ring
+      rw [h3]
+      ring
+  -- ## MOVEMENT 4: the limit
+  have hspanle : ∀ n : ℕ, Ideal.span {(ℓ : A) ^ n} ≤ (IsLocalRing.maximalIdeal A) ^ n := by
+    intro n
+    rw [Ideal.span_le, Set.singleton_subset_iff]
+    exact Ideal.pow_mem_pow hlA n
+  have hlimit : ∀ a : O, ∃ y : A, ∀ (n : ℕ) (P : Polynomial ℤ),
+      a - Polynomial.aeval ζ P ∈ Ideal.span {(ℓ : O) ^ n} →
+        y - Polynomial.aeval ξ P ∈ (IsLocalRing.maximalIdeal A) ^ n := by
+    intro a
+    choose Pa hPa using fun n => dens n a
+    have hdrop : ∀ (n : ℕ) (P : Polynomial ℤ),
+        a - Polynomial.aeval ζ P ∈ Ideal.span {(ℓ : O) ^ n} →
+          Polynomial.aeval ξ (Pa n) - Polynomial.aeval ξ P
+            ∈ (IsLocalRing.maximalIdeal A) ^ n := by
+      intro n P hPn
+      have hd : Polynomial.aeval ζ (Pa n - P) ∈ Ideal.span {(ℓ : O) ^ n} := by
+        have hsub := Ideal.sub_mem _ hPn (hPa n)
+        rw [show (a - Polynomial.aeval ζ P) - (a - Polynomial.aeval ζ (Pa n))
+            = Polynomial.aeval ζ (Pa n) - Polynomial.aeval ζ P by ring] at hsub
+        rw [map_sub]
+        exact hsub
+      have hk := hspanle n (key n _ hd)
+      rw [map_sub] at hk
+      exact hk
+    have hcau : ∀ {p q : ℕ}, p ≤ q →
+        (fun i => Polynomial.aeval ξ (Pa i)) p ≡ (fun i => Polynomial.aeval ξ (Pa i)) q
+          [SMOD ((IsLocalRing.maximalIdeal A) ^ p • (⊤ : Submodule A A))] := by
+      intro p q hpq
+      rw [smul_eq_mul, Ideal.mul_top, SModEq.sub_mem]
+      refine hdrop p (Pa q) ?_
+      exact Ideal.span_singleton_le_span_singleton.mpr (pow_dvd_pow _ hpq) (hPa q)
+    obtain ⟨L, hL⟩ := IsPrecomplete.prec' (I := IsLocalRing.maximalIdeal A) (M := A) _ hcau
+    refine ⟨L, fun n P hPn => ?_⟩
+    have hLn : L - Polynomial.aeval ξ (Pa n) ∈ (IsLocalRing.maximalIdeal A) ^ n := by
+      have hh := hL n
+      rw [smul_eq_mul, Ideal.mul_top, SModEq.sub_mem] at hh
+      have hneg := neg_mem hh
+      rw [neg_sub] at hneg
+      exact hneg
+    have hsum := Ideal.add_mem _ hLn (hdrop n P hPn)
+    rw [show (L - Polynomial.aeval ξ (Pa n))
+        + (Polynomial.aeval ξ (Pa n) - Polynomial.aeval ξ P) = L - Polynomial.aeval ξ P by
+      ring] at hsum
+    exact hsum
+  choose c hc using hlimit
+  -- ## `c` is a ring homomorphism, by separatedness
+  have hc0 : c 0 = 0 := by
+    refine eq_of_sub_mem_pow_maximalIdeal fun n => ?_
+    have hh := hc 0 n 0 (by simp)
+    simpa using hh
+  have hc1 : c 1 = 1 := by
+    refine eq_of_sub_mem_pow_maximalIdeal fun n => ?_
+    have hh := hc 1 n 1 (by simp)
+    simpa using hh
+  have hcadd : ∀ a b : O, c (a + b) = c a + c b := by
+    intro a b
+    refine eq_of_sub_mem_pow_maximalIdeal fun n => ?_
+    obtain ⟨P, hP⟩ := dens n a
+    obtain ⟨P', hP'⟩ := dens n b
+    have hsum : a + b - Polynomial.aeval ζ (P + P') ∈ Ideal.span {(ℓ : O) ^ n} := by
+      have hh := Ideal.add_mem _ hP hP'
+      rw [show (a - Polynomial.aeval ζ P) + (b - Polynomial.aeval ζ P')
+          = a + b - (Polynomial.aeval ζ P + Polynomial.aeval ζ P') by ring] at hh
+      rw [map_add]
+      exact hh
+    have h1 := hc (a + b) n (P + P') hsum
+    have h2 := hc a n P hP
+    have h3 := hc b n P' hP'
+    rw [map_add] at h1
+    have h4 := Ideal.sub_mem _ h1 (Ideal.add_mem _ h2 h3)
+    rw [show c (a + b) - (Polynomial.aeval ξ P + Polynomial.aeval ξ P')
+        - ((c a - Polynomial.aeval ξ P) + (c b - Polynomial.aeval ξ P'))
+        = c (a + b) - (c a + c b) by ring] at h4
+    exact h4
+  have hcmul : ∀ a b : O, c (a * b) = c a * c b := by
+    intro a b
+    refine eq_of_sub_mem_pow_maximalIdeal fun n => ?_
+    obtain ⟨P, hP⟩ := dens n a
+    obtain ⟨P', hP'⟩ := dens n b
+    have hprod : a * b - Polynomial.aeval ζ (P * P') ∈ Ideal.span {(ℓ : O) ^ n} := by
+      have hh := Ideal.add_mem _ (Ideal.mul_mem_left _ b hP)
+        (Ideal.mul_mem_left _ (Polynomial.aeval ζ P) hP')
+      rw [show b * (a - Polynomial.aeval ζ P)
+          + Polynomial.aeval ζ P * (b - Polynomial.aeval ζ P')
+          = a * b - Polynomial.aeval ζ P * Polynomial.aeval ζ P' by ring] at hh
+      rw [map_mul]
+      exact hh
+    have h1 := hc (a * b) n (P * P') hprod
+    have h2 := hc a n P hP
+    have h3 := hc b n P' hP'
+    rw [map_mul] at h1
+    have h4 := Ideal.add_mem _ (Ideal.mul_mem_left _ (c b) h2)
+      (Ideal.mul_mem_left _ (Polynomial.aeval ξ P) h3)
+    have h5 := Ideal.sub_mem _ h1 h4
+    rw [show c (a * b) - Polynomial.aeval ξ P * Polynomial.aeval ξ P'
+        - (c b * (c a - Polynomial.aeval ξ P)
+          + Polynomial.aeval ξ P * (c b - Polynomial.aeval ξ P'))
+        = c (a * b) - c a * c b by ring] at h5
+    exact h5
+  refine ⟨{ toFun := c
+            map_one' := hc1
+            map_mul' := hcmul
+            map_zero' := hc0
+            map_add' := hcadd }, ?_⟩
+  ext a
+  show πA (c a) = κ a
+  obtain ⟨P, hP⟩ := dens 1 a
+  have h1 : c a - Polynomial.aeval ξ P ∈ IsLocalRing.maximalIdeal A := by
+    have hh := hc a 1 P hP
+    rwa [pow_one] at hh
+  have h2 : a - Polynomial.aeval ζ P ∈ IsLocalRing.maximalIdeal O := by
+    rw [hOu]; rwa [pow_one] at hP
+  have e1 : πA (c a) = Polynomial.aeval g P := by
+    have hh : πA (c a - Polynomial.aeval ξ P) = 0 := by
+      rw [← RingHom.mem_ker, hkerπ]; exact h1
+    rw [map_sub, sub_eq_zero, map_aeval_int, hξres] at hh
+    exact hh
+  have e2 : κ a = Polynomial.aeval g P := by
+    have hh : κ (a - Polynomial.aeval ζ P) = 0 := by
+      rw [← RingHom.mem_ker, hkerκ]; exact h2
+    rw [map_sub, sub_eq_zero, map_aeval_int, hζres] at hh
+    exact hh
+  rw [e1, e2]
+
+/-- **A power of a PRINCIPAL ideal in a compact Hausdorff topological ring is
+CLOSED**: `(π)^n = π^n · 𝒪` is the image of the compact `𝒪` under multiplication
+by `π^n`, hence compact, hence closed. -/
+theorem isClosed_pow_span_singleton
+    {O : Type*} [CommRing O] [TopologicalSpace O] [IsTopologicalRing O]
+    [CompactSpace O] [T2Space O] (π : O) (n : ℕ) :
+    IsClosed (((Ideal.span {π} ^ n : Ideal O)) : Set O) := by
+  have hset : (((Ideal.span {π} ^ n : Ideal O)) : Set O)
+      = Set.range (fun x : O => x * π ^ n) := by
+    ext y
+    rw [Ideal.span_singleton_pow, SetLike.mem_coe, Ideal.mem_span_singleton']
+    simp [eq_comm]
+  rw [hset]
+  exact (isCompact_range (by fun_prop)).isClosed
+
+/-- **`IsPrecomplete` from compactness**, clause 1 of
+`exists_hilbertAuxCoeffRingHom`. A COMPACT Hausdorff topological ring whose ideal
+`I` is principal is `I`-adically precomplete: an `I`-adically Cauchy sequence has
+a cluster point `L` for the compact topology, and for each `n` the tail of the
+sequence lies in the CLOSED set `f n + I^n`, so `L` does too.
+
+No comparison of the two topologies is needed — the point of routing through a
+cluster point rather than a limit is exactly that it avoids having to prove the
+`𝔪`-adic topology is the given one. -/
+theorem isPrecomplete_of_compact_of_span_singleton
+    {O : Type*} [CommRing O] [TopologicalSpace O] [IsTopologicalRing O]
+    [CompactSpace O] [T2Space O] {I : Ideal O} {π : O} (hI : I = Ideal.span {π}) :
+    IsPrecomplete I O := by
+  subst hI
+  constructor
+  intro f hf
+  obtain ⟨L, hL⟩ := exists_clusterPt_of_compactSpace (Filter.map f Filter.atTop)
+  refine ⟨L, fun n => ?_⟩
+  rw [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top]
+  have hclosed : IsClosed {x : O | x - f n ∈ (Ideal.span {π} ^ n : Ideal O)} := by
+    have hpre : {x : O | x - f n ∈ (Ideal.span {π} ^ n : Ideal O)}
+        = (fun x : O => x - f n) ⁻¹' (((Ideal.span {π} ^ n : Ideal O)) : Set O) := rfl
+    rw [hpre]
+    exact (isClosed_pow_span_singleton π n).preimage (by fun_prop)
+  have hmemtail : {x : O | x - f n ∈ (Ideal.span {π} ^ n : Ideal O)}
+      ∈ Filter.map f Filter.atTop := by
+    rw [Filter.mem_map]
+    filter_upwards [Filter.eventually_ge_atTop n] with q hq
+    have hnq := hf hq
+    rw [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top] at hnq
+    have hneg := neg_mem hnq
+    rw [neg_sub] at hneg
+    exact hneg
+  have hcl := hL.mem_closure_of_mem _ hmemtail
+  rw [hclosed.closure_eq] at hcl
+  have h2 : L - f n ∈ (Ideal.span {π} ^ n : Ideal O) := hcl
+  have h3 := neg_mem h2
+  rw [neg_sub] at h3
+  exact h3
+
+/-- **A surjection from a power-series ring over a LOCAL ring onto a FIELD
+already restricts to a surjection from the coefficient ring**: `f − C(f₀)` has
+zero constant coefficient, hence is a nonunit of `𝒪⟦x⟧`, hence lies in the
+maximal ideal, which is the kernel.
+
+This is what turns `hcoeff`'s surjection `𝒪⟦x_1, …, x_q⟧ ↠ 𝒟.R` into a residue
+surjection `𝒪 ↠ k`, i.e. into `κ`. -/
+theorem surjective_comp_C_of_surjective
+    {σ : Type*} {O : Type*} [CommRing O] [IsLocalRing O]
+    {k : Type*} [Field k] (ψ : MvPowerSeries σ O →+* k) (hψ : Function.Surjective ψ) :
+    Function.Surjective (ψ.comp (MvPowerSeries.C (σ := σ) (R := O))) := by
+  intro y
+  obtain ⟨f, hf⟩ := hψ y
+  refine ⟨MvPowerSeries.constantCoeff f, ?_⟩
+  have hker : RingHom.ker ψ = IsLocalRing.maximalIdeal (MvPowerSeries σ O) :=
+    IsLocalRing.ker_eq_maximalIdeal ψ hψ
+  have hcc : MvPowerSeries.constantCoeff
+      (f - MvPowerSeries.C (MvPowerSeries.constantCoeff (σ := σ) (R := O) f)) = 0 := by
+    simp
+  have hmem : f - MvPowerSeries.C (MvPowerSeries.constantCoeff (σ := σ) (R := O) f)
+      ∈ RingHom.ker ψ := by
+    rw [hker, IsLocalRing.mem_maximalIdeal, mem_nonunits_iff]
+    intro hu
+    rw [MvPowerSeries.isUnit_iff_constantCoeff, hcc] at hu
+    exact not_isUnit_zero hu
+  rw [RingHom.mem_ker, map_sub, sub_eq_zero] at hmem
+  rw [RingHom.comp_apply, ← hmem, hf]
+
+/-- Two generators of the same principal ideal differ by a unit, so regularity
+transfers between them. -/
+theorem regular_of_span_singleton_eq
+    {O : Type*} [CommRing O] {t x : O}
+    (hreg : ∀ y : O, t * y = 0 → y = 0)
+    (hspan : Ideal.span {t} = Ideal.span ({x} : Set O)) :
+    ∀ y : O, x * y = 0 → y = 0 := by
+  have hxmem : x ∈ Ideal.span ({t} : Set O) := by
+    rw [hspan]; exact Ideal.mem_span_singleton_self x
+  obtain ⟨b, hb⟩ := Ideal.mem_span_singleton'.mp hxmem
+  have htmem : t ∈ Ideal.span ({x} : Set O) := by
+    rw [← hspan]; exact Ideal.mem_span_singleton_self t
+  obtain ⟨a, ha⟩ := Ideal.mem_span_singleton'.mp htmem
+  have hab : a * b = 1 := by
+    have h0 : t * (1 - a * b) = 0 := by
+      have h1 : a * (b * t) = t := by rw [hb, ha]
+      have h2 : (a * b) * t = t := by rw [mul_assoc]; exact h1
+      rw [mul_sub, mul_one, mul_comm t (a * b), h2, sub_self]
+    exact (sub_eq_zero.mp (hreg _ h0)).symm
+  intro y hy
+  have hby : b * y = 0 := by
+    refine hreg _ ?_
+    have hh : t * (b * y) = x * y := by rw [← hb]; ring
+    rw [hh, hy]
+  calc y = (a * b) * y := by rw [hab, one_mul]
+    _ = a * (b * y) := by ring
+    _ = 0 := by rw [hby, mul_zero]
+
+/-- **`ℓ` is a NONZERODIVISOR in an absolutely unramified `TaylorWilesCoefficients`.**
+`exists_isRegular_maximalIdeal` gives a regular GENERATOR `t` of `𝔪_𝒪`; `hunram`
+says `(ℓ)` is the same ideal, so `ℓ` and `t` differ by a unit. This is the
+`hOreg` hypothesis of `exists_ringHom_comp_eq`, and it is where the DVR clause of
+`TaylorWilesCoefficients` is consumed. -/
+theorem coeff_ell_regular (ℓ : ℕ) (coeff : Modularity.TaylorWilesCoefficients)
+    (hunram : IsLocalRing.maximalIdeal coeff.carrier
+      = Ideal.span {(ℓ : coeff.carrier)}) :
+    ∀ x : coeff.carrier, (ℓ : coeff.carrier) * x = 0 → x = 0 := by
+  obtain ⟨ts, hlen, hreg, hofList⟩ := coeff.exists_isRegular_maximalIdeal
+  obtain ⟨t, rfl⟩ : ∃ t, ts = [t] := List.length_eq_one_iff.mp (by simpa using hlen)
+  have hsm : IsSMulRegular coeff.carrier t :=
+    (RingTheory.Sequence.isWeaklyRegular_singleton_iff _ t).mp hreg.toIsWeaklyRegular
+  have hregt : ∀ y : coeff.carrier, t * y = 0 → y = 0 := by
+    intro y hy
+    have hzz : t • y = t • (0 : coeff.carrier) := by
+      simpa [smul_eq_mul] using hy
+    exact hsm hzz
+  refine regular_of_span_singleton_eq hregt ?_
+  rw [← Ideal.ofList_singleton t, hofList, hunram]
+
+/-- **The coefficient structure on `R_Q`** (PROVEN 2026-07-30; formerly a LEAF —
+new the same day, piece 1 of the three-piece route recorded on
+`exists_hilbertAuxDeformationRingGenerators` below; pieces 3a and 3b are the two
+PROVEN theorems above, and piece 2 is
 `exists_hilbertAuxCotangentSpanningFamily` immediately below).
 
 Two conclusions, both about the coefficient ring alone — nothing here mentions
@@ -29105,8 +29646,30 @@ theorem exists_hilbertAuxCoeffRingHom
     (Q : Finset (HeightOneSpectrum (𝓞 F)))
     (𝒟Q : HilbertAuxDeformationDatum ℓ F Q ρbar) :
     IsPrecomplete (IsLocalRing.maximalIdeal coeff.carrier) coeff.carrier ∧
-      ∃ c : coeff.carrier →+* 𝒟Q.R, Function.Surjective (𝒟Q.π.comp c) :=
-  sorry
+      ∃ c : coeff.carrier →+* 𝒟Q.R, Function.Surjective (𝒟Q.π.comp c) := by
+  classical
+  haveI hprec : IsPrecomplete (IsLocalRing.maximalIdeal coeff.carrier) coeff.carrier :=
+    isPrecomplete_of_compact_of_span_singleton hunram
+  refine ⟨hprec, ?_⟩
+  haveI : IsAdicComplete (IsLocalRing.maximalIdeal coeff.carrier) coeff.carrier := ⟨⟩
+  haveI := 𝒟Q.isAdicComplete
+  -- the residue-field surjection `κ : 𝒪 →+* k`
+  obtain ⟨cs, hcs⟩ := hcoeff
+  have hψ : Function.Surjective (𝒟.π.comp cs) := 𝒟.π_surjective.comp hcs
+  have hκ : Function.Surjective
+      ((𝒟.π.comp cs).comp (MvPowerSeries.C (σ := Fin q) (R := coeff.carrier))) :=
+    surjective_comp_C_of_surjective _ hψ
+  set κ := (𝒟.π.comp cs).comp (MvPowerSeries.C (σ := Fin q) (R := coeff.carrier)) with hκdef
+  have hkerκ : RingHom.ker κ = IsLocalRing.maximalIdeal coeff.carrier :=
+    IsLocalRing.ker_eq_maximalIdeal κ hκ
+  haveI : Finite (coeff.carrier ⧸ RingHom.ker κ) := by
+    rw [hkerκ]; exact coeff.finite_residueField
+  haveI : Finite k :=
+    Finite.of_equiv _ (RingHom.quotientKerEquivOfSurjective hκ).toEquiv
+  obtain ⟨c, hc⟩ :=
+    exists_ringHom_comp_eq ℓ hunram (coeff_ell_regular ℓ coeff hunram) κ hκ
+      𝒟Q.π 𝒟Q.π_surjective
+  exact ⟨c, by rw [hc]; exact hκ⟩
 
 /-- **The cotangent bound: `q` elements span `𝔪_{R_Q}` modulo `𝔪² + c(𝔪_𝒪)`**
 (LEAF — new 2026-07-30, piece 2 of the route recorded on
