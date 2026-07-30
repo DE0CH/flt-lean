@@ -418,6 +418,17 @@ public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Deformation
 -- equal); its universe-polymorphic `pushforwardFrame` port is
 -- `forall_map_eq_one_of_isSplitTorusAt_of_mul_eq_one` below.
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.HilbertModularity
+-- ADDED 2026-07-30 by the proof of `exists_levelIdealSystem_aux_of_clauses`
+-- below.  PROOF-ONLY.  That statement keeps the residual field `k : Type uK`
+-- and the frame ring `P : Type uR` in INDEPENDENT universes, while the
+-- tautological frame ring of `HardlyRamified/Deformation.lean` is built over
+-- the residual field and so lands in `uK`.  `k` is FINITE, hence
+-- `Small.{uR} k`, so `Shrink.{uR} k` is a `Type uR` copy of it carrying the
+-- transported `Field` and `ℤ_p`-`Algebra` structures together with an
+-- `AlgEquiv` back to `k` — which is exactly what lets the base-level frame
+-- ring be REUSED rather than re-derived over a hand-built index type.
+import Mathlib.Algebra.Field.Shrink
+import Mathlib.Algebra.Algebra.Shrink
 -- ADDED 2026-07-28 by the decomposition of
 -- `exists_taylorWilesPrime_locResDecomp_ne_zero` (DDT Lemma 2.48): the
 -- INHOMOGENEOUS description of degree-one continuous cohomology, without
@@ -14731,13 +14742,1043 @@ lemma isRaisedLevelHardlyRamified_baseChange_of_pushforwardFrame {p : ℕ}
   rw [← hcancel]
   exact isRaisedLevelHardlyRamified_conj Q hdimI h _
 
-set_option linter.checkUnivs false in
+/-! ### The RAISED-LEVEL Schlessinger frame machine over `ℚ` (2026-07-30, `flt-lean-38`)
+
+The `ℚ`-side twin of `HardlyRamified/HilbertModularity.lean`'s
+`hilbertAuxFrameLevels` block, which is PROVEN there over the single leaf
+`isHilbertSplitTorusAt_of_subring_entries`.  Everything here is the base-level
+`FrameRing` section of `HardlyRamified/Deformation.lean` with
+`IsHardlyRamified hpodd` replaced by `IsRaisedLevelHardlyRamified hpodd Q`; the
+CONDITION-INDEPENDENT half of that section (`framePoly`, `frameRel`,
+`frameRing`, `frameEval`, `frameMat`, `frameEv`, `frameRing_rigid`,
+`exists_teichmuller_section`) is REUSED, not duplicated.
+
+Only two things are genuinely new, and both are recorded on the declarations
+that carry them: the residual pinning that `IsAuxFibreProductClause` demands and
+the base-level `hglue` does not (`auxQuotient_inf_isLevel`), and the descent of
+the split-torus clause to a subring (`isSplitTorusAt_of_subring_entries`, the
+one leaf). -/
+
+section RaisedLevelFrame
+
+universe uSm uFk uFw
+
+variable {p : ℕ} [Fact p.Prime] {hpodd : Odd p}
+
+set_option linter.unusedVariables false in
+/-- **`P ⧸ ker ev` IS A RAISED-LEVEL LEVEL.** -/
+theorem auxQuotient_ker_isLevel (Q : Finset ℕ)
+    {kk : Type uSm} [Field kk] [Finite kk] [Algebra ℤ_[p] kk]
+    [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
+    {P : Type uSm} [CommRing P] [Algebra ℤ_[p] P]
+    (ev : P →+* kk) (hevsurj : Function.Surjective ev)
+    (hevalg : ev.comp (algebraMap ℤ_[p] P) = algebraMap ℤ_[p] kk)
+    (M : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) P)
+    (σ : GaloisRep ℚ kk (Fin 2 → kk))
+    (hσ : IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun kk) σ)
+    (hres : ∀ g, (M g).map ⇑ev = LinearMap.toMatrix' (σ g)) :
+    Finite (P ⧸ RingHom.ker ev) ∧ IsLocalRing (P ⧸ RingHom.ker ev) ∧
+      ∀ [Finite (P ⧸ RingHom.ker ev)] [IsLocalRing (P ⧸ RingHom.ker ev)]
+        [TopologicalSpace (P ⧸ RingHom.ker ev)]
+        [DiscreteTopology (P ⧸ RingHom.ker ev)]
+        [IsTopologicalRing (P ⧸ RingHom.ker ev)],
+        ∃ ρJ : GaloisRep ℚ (P ⧸ RingHom.ker ev) (Fin 2 → (P ⧸ RingHom.ker ev)),
+          (∀ g : Field.absoluteGaloisGroup ℚ, LinearMap.toMatrix' (ρJ g) =
+            (M g).map ⇑(Ideal.Quotient.mk (RingHom.ker ev))) ∧
+          IsRaisedLevelHardlyRamified hpodd Q
+            (rank_finTwoFun (P ⧸ RingHom.ker ev)) ρJ := by
+  classical
+  obtain ⟨π, hπmk⟩ : ∃ π : P ⧸ RingHom.ker ev →+* kk,
+      ∀ x, π (Ideal.Quotient.mk (RingHom.ker ev) x) = ev x :=
+    ⟨Ideal.Quotient.lift _ ev (fun _ ha => RingHom.mem_ker.mp ha),
+      fun x => Ideal.Quotient.lift_mk _ _ _⟩
+  have hπinj : Function.Injective π := by
+    intro z w hzw
+    obtain ⟨x, rfl⟩ := Ideal.Quotient.mk_surjective z
+    obtain ⟨y, rfl⟩ := Ideal.Quotient.mk_surjective w
+    rw [hπmk, hπmk] at hzw
+    rw [Ideal.Quotient.eq, RingHom.mem_ker, map_sub, hzw, sub_self]
+  have hπsurj : Function.Surjective π := by
+    intro y
+    obtain ⟨x, hx⟩ := hevsurj y
+    exact ⟨Ideal.Quotient.mk _ x, by rw [hπmk, hx]⟩
+  obtain ⟨ψ, hψ⟩ : ∃ ψ : kk →+* P ⧸ RingHom.ker ev,
+      ∀ x, ψ (ev x) = Ideal.Quotient.mk (RingHom.ker ev) x := by
+    have hbij : Function.Bijective ⇑π := ⟨hπinj, hπsurj⟩
+    refine ⟨(RingEquiv.ofBijective π hbij).symm, fun x => ?_⟩
+    have h1 : (RingEquiv.ofBijective π hbij)
+        (Ideal.Quotient.mk (RingHom.ker ev) x) = ev x := hπmk x
+    have h2 := (RingEquiv.ofBijective π hbij).symm_apply_apply
+      (Ideal.Quotient.mk (RingHom.ker ev) x)
+    rw [h1] at h2
+    exact h2
+  have hψsurj : Function.Surjective ψ := by
+    intro z
+    obtain ⟨x, rfl⟩ := Ideal.Quotient.mk_surjective z
+    exact ⟨ev x, hψ x⟩
+  haveI hfin : Finite (P ⧸ RingHom.ker ev) := Finite.of_injective π hπinj
+  haveI hnt : Nontrivial (P ⧸ RingHom.ker ev) := by
+    refine Ideal.Quotient.nontrivial_iff.mpr fun htop => ?_
+    have h1 : (1 : P) ∈ RingHom.ker ev := htop ▸ Submodule.mem_top
+    rw [RingHom.mem_ker, map_one] at h1
+    exact one_ne_zero h1
+  haveI hloc : IsLocalRing (P ⧸ RingHom.ker ev) :=
+    IsLocalRing.of_surjective' ψ hψsurj
+  have halg : ψ.comp (algebraMap ℤ_[p] kk) =
+      algebraMap ℤ_[p] (P ⧸ RingHom.ker ev) := by
+    refine RingHom.ext fun r => ?_
+    have h1 : algebraMap ℤ_[p] (P ⧸ RingHom.ker ev) r =
+        Ideal.Quotient.mk (RingHom.ker ev) (algebraMap ℤ_[p] P r) := rfl
+    have h2 : ev (algebraMap ℤ_[p] P r) = algebraMap ℤ_[p] kk r :=
+      congrFun (congrArg (fun F : ℤ_[p] →+* kk => (F : ℤ_[p] → kk)) hevalg) r
+    show ψ (algebraMap ℤ_[p] kk r) = _
+    rw [h1, ← h2, hψ]
+  refine ⟨hfin, hloc, ?_⟩
+  intro _ _ _ _ _
+  refine ⟨pushforwardFrame ψ continuous_of_discreteTopology σ, fun g => ?_, ?_⟩
+  · rw [toMatrix'_pushforwardFrame, ← hres g, Matrix.map_map]
+    exact congrArg (Matrix.map (M g)) (funext hψ)
+  · exact isRaisedLevelHardlyRamified_pushforwardFrame Q ψ
+      continuous_of_discreteTopology halg hσ
+
+set_option linter.unusedVariables false in
+set_option backward.isDefEq.respectTransparency false in
+/-- **`P ⧸ (J₁ ⊓ J₂)` IS A RAISED-LEVEL LEVEL.** -/
+theorem auxQuotient_inf_isLevel (Q : Finset ℕ) (hQp : ∀ q ∈ Q, q ≠ p)
+    {kk : Type uSm} [Field kk] [Finite kk] [Algebra ℤ_[p] kk]
+    [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
+    {k : Type uFk} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uFw} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] {ρbar : GaloisRep ℚ k W}
+    (ι : kk →+* k) (hιsurj : Function.Surjective ι)
+    (e0 : W ≃ₗ[k] (Fin 2 → k))
+    {P : Type uSm} [CommRing P] [Algebra ℤ_[p] P]
+    (ev : P →+* kk) (hevsurj : Function.Surjective ev)
+    (M : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) P)
+    (hM1 : M 1 = 1) (hMmul : ∀ g h, M (g * h) = M g * M h)
+    (hMres : ∀ g : Field.absoluteGaloisGroup ℚ, ((M g).map ⇑ev).map ⇑ι =
+      LinearMap.toMatrix' ((ρbar.conj e0) g))
+    (hglue : IsAuxFibreProductClause.{uSm, uFk, uFw} hpodd Q ρbar)
+    {J₁ J₂ : Ideal P}
+    (h1ker : J₁ ≤ RingHom.ker ev) (h1fin : Finite (P ⧸ J₁))
+    (h1loc : IsLocalRing (P ⧸ J₁))
+    (h1rep : ∀ [Finite (P ⧸ J₁)] [IsLocalRing (P ⧸ J₁)] [TopologicalSpace (P ⧸ J₁)]
+      [DiscreteTopology (P ⧸ J₁)] [IsTopologicalRing (P ⧸ J₁)],
+      ∃ ρJ : GaloisRep ℚ (P ⧸ J₁) (Fin 2 → (P ⧸ J₁)),
+        (∀ g : Field.absoluteGaloisGroup ℚ, LinearMap.toMatrix' (ρJ g) =
+          (M g).map ⇑(Ideal.Quotient.mk J₁)) ∧
+        IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun (P ⧸ J₁)) ρJ)
+    (h2ker : J₂ ≤ RingHom.ker ev) (h2fin : Finite (P ⧸ J₂))
+    (h2loc : IsLocalRing (P ⧸ J₂))
+    (h2rep : ∀ [Finite (P ⧸ J₂)] [IsLocalRing (P ⧸ J₂)] [TopologicalSpace (P ⧸ J₂)]
+      [DiscreteTopology (P ⧸ J₂)] [IsTopologicalRing (P ⧸ J₂)],
+      ∃ ρJ : GaloisRep ℚ (P ⧸ J₂) (Fin 2 → (P ⧸ J₂)),
+        (∀ g : Field.absoluteGaloisGroup ℚ, LinearMap.toMatrix' (ρJ g) =
+          (M g).map ⇑(Ideal.Quotient.mk J₂)) ∧
+        IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun (P ⧸ J₂)) ρJ) :
+    Finite (P ⧸ (J₁ ⊓ J₂)) ∧ IsLocalRing (P ⧸ (J₁ ⊓ J₂)) ∧
+      ∀ [Finite (P ⧸ (J₁ ⊓ J₂))] [IsLocalRing (P ⧸ (J₁ ⊓ J₂))]
+        [TopologicalSpace (P ⧸ (J₁ ⊓ J₂))] [DiscreteTopology (P ⧸ (J₁ ⊓ J₂))]
+        [IsTopologicalRing (P ⧸ (J₁ ⊓ J₂))],
+        ∃ ρJ : GaloisRep ℚ (P ⧸ (J₁ ⊓ J₂)) (Fin 2 → (P ⧸ (J₁ ⊓ J₂))),
+          (∀ g : Field.absoluteGaloisGroup ℚ, LinearMap.toMatrix' (ρJ g) =
+            (M g).map ⇑(Ideal.Quotient.mk (J₁ ⊓ J₂))) ∧
+          IsRaisedLevelHardlyRamified hpodd Q
+            (rank_finTwoFun (P ⧸ (J₁ ⊓ J₂))) ρJ := by
+  classical
+  haveI := h1fin; haveI := h1loc; haveI := h2fin; haveI := h2loc
+  obtain ⟨q₁, hq1mk⟩ : ∃ q₁ : (P ⧸ (J₁ ⊓ J₂)) →+* (P ⧸ J₁),
+      ∀ x, q₁ (Ideal.Quotient.mk (J₁ ⊓ J₂) x) = Ideal.Quotient.mk J₁ x :=
+    ⟨Ideal.Quotient.factor inf_le_left, fun x => Ideal.Quotient.factor_mk _ _⟩
+  obtain ⟨q₂, hq2mk⟩ : ∃ q₂ : (P ⧸ (J₁ ⊓ J₂)) →+* (P ⧸ J₂),
+      ∀ x, q₂ (Ideal.Quotient.mk (J₁ ⊓ J₂) x) = Ideal.Quotient.mk J₂ x :=
+    ⟨Ideal.Quotient.factor inf_le_right, fun x => Ideal.Quotient.factor_mk _ _⟩
+  have hinj : Function.Injective (fun b : P ⧸ (J₁ ⊓ J₂) => (q₁ b, q₂ b)) := by
+    intro a b hab
+    obtain ⟨x, rfl⟩ := Ideal.Quotient.mk_surjective a
+    obtain ⟨y, rfl⟩ := Ideal.Quotient.mk_surjective b
+    simp only [Prod.mk.injEq, hq1mk, hq2mk] at hab
+    rw [Ideal.Quotient.eq]
+    exact ⟨Ideal.Quotient.eq.mp hab.1, Ideal.Quotient.eq.mp hab.2⟩
+  have hkerJ : J₁ ⊓ J₂ ≤ RingHom.ker ev := le_trans inf_le_left h1ker
+  obtain ⟨evJ, hevJmk⟩ : ∃ evJ : (P ⧸ (J₁ ⊓ J₂)) →+* kk,
+      ∀ x, evJ (Ideal.Quotient.mk (J₁ ⊓ J₂) x) = ev x :=
+    ⟨Ideal.Quotient.lift _ ev (fun _ ha => RingHom.mem_ker.mp (hkerJ ha)),
+      fun x => Ideal.Quotient.lift_mk _ _ _⟩
+  obtain ⟨ev₁, hev1mk⟩ : ∃ ev₁ : (P ⧸ J₁) →+* kk,
+      ∀ x, ev₁ (Ideal.Quotient.mk J₁ x) = ev x :=
+    ⟨Ideal.Quotient.lift _ ev (fun _ ha => RingHom.mem_ker.mp (h1ker ha)),
+      fun x => Ideal.Quotient.lift_mk _ _ _⟩
+  obtain ⟨ev₂, hev2mk⟩ : ∃ ev₂ : (P ⧸ J₂) →+* kk,
+      ∀ x, ev₂ (Ideal.Quotient.mk J₂ x) = ev x :=
+    ⟨Ideal.Quotient.lift _ ev (fun _ ha => RingHom.mem_ker.mp (h2ker ha)),
+      fun x => Ideal.Quotient.lift_mk _ _ _⟩
+  have hcomp1 : ∀ z, ev₁ (q₁ z) = evJ z := by
+    intro z
+    obtain ⟨x, rfl⟩ := Ideal.Quotient.mk_surjective z
+    rw [hq1mk, hev1mk, hevJmk]
+  have hcomp2 : ∀ z, ev₂ (q₂ z) = evJ z := by
+    intro z
+    obtain ⟨x, rfl⟩ := Ideal.Quotient.mk_surjective z
+    rw [hq2mk, hev2mk, hevJmk]
+  have hev1surj : Function.Surjective ev₁ := by
+    intro y
+    obtain ⟨x, hx⟩ := hevsurj y
+    exact ⟨Ideal.Quotient.mk J₁ x, by rw [hev1mk, hx]⟩
+  have hev2surj : Function.Surjective ev₂ := by
+    intro y
+    obtain ⟨x, hx⟩ := hevsurj y
+    exact ⟨Ideal.Quotient.mk J₂ x, by rw [hev2mk, hx]⟩
+  have hevJsurj : Function.Surjective evJ := by
+    intro y
+    obtain ⟨x, hx⟩ := hevsurj y
+    exact ⟨Ideal.Quotient.mk (J₁ ⊓ J₂) x, by rw [hevJmk, hx]⟩
+  haveI hfinJ : Finite (P ⧸ (J₁ ⊓ J₂)) := Finite.of_injective _ hinj
+  haveI hntJ : Nontrivial (P ⧸ (J₁ ⊓ J₂)) := by
+    refine Ideal.Quotient.nontrivial_iff.mpr fun htop => ?_
+    have h1 : (1 : P) ∈ J₁ ⊓ J₂ := htop ▸ Submodule.mem_top
+    have h2 := hkerJ h1
+    rw [RingHom.mem_ker, map_one] at h2
+    exact one_ne_zero h2
+  haveI hlocJ : IsLocalRing (P ⧸ (J₁ ⊓ J₂)) := by
+    refine isLocalRing_of_injective_prod q₁ q₂ hinj evJ ev₁ ev₂ hcomp1 hcomp2 ?_ ?_
+    · intro a ha
+      exact isUnit_of_map_ne_zero_of_surjective ev₁ hev1surj ha
+    · intro a ha
+      exact isUnit_of_map_ne_zero_of_surjective ev₂ hev2surj ha
+  refine ⟨hfinJ, hlocJ, ?_⟩
+  intro _ _ _ _ _
+  letI : TopologicalSpace (P ⧸ J₁) := ⊥
+  haveI : DiscreteTopology (P ⧸ J₁) := ⟨rfl⟩
+  letI : TopologicalSpace (P ⧸ J₂) := ⊥
+  haveI : DiscreteTopology (P ⧸ J₂) := ⟨rfl⟩
+  obtain ⟨ρ₁, hρ₁mat, hρ₁HR⟩ := h1rep
+  obtain ⟨ρ₂, hρ₂mat, hρ₂HR⟩ := h2rep
+  set N : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) (P ⧸ (J₁ ⊓ J₂)) :=
+    fun g => (M g).map ⇑(Ideal.Quotient.mk (J₁ ⊓ J₂)) with hNdef
+  have hN1 : N 1 = 1 := by
+    simp only [hNdef, hM1]
+    exact Matrix.map_one _ (map_zero _) (map_one _)
+  have hNmul : ∀ g h, N (g * h) = N g * N h := by
+    intro g h
+    simp only [hNdef, hMmul, Matrix.map_mul]
+  have hNmap1 : ∀ g, (N g).map ⇑q₁ = LinearMap.toMatrix' (ρ₁ g) := by
+    intro g
+    rw [hρ₁mat g]
+    simp only [hNdef, Matrix.map_map]
+    exact congrArg (Matrix.map (M g)) (funext hq1mk)
+  have hNmap2 : ∀ g, (N g).map ⇑q₂ = LinearMap.toMatrix' (ρ₂ g) := by
+    intro g
+    rw [hρ₂mat g]
+    simp only [hNdef, Matrix.map_map]
+    exact congrArg (Matrix.map (M g)) (funext hq2mk)
+  have hmatinj : ∀ X Y : Matrix (Fin 2) (Fin 2) (P ⧸ (J₁ ⊓ J₂)),
+      X.map ⇑q₁ = Y.map ⇑q₁ → X.map ⇑q₂ = Y.map ⇑q₂ → X = Y := by
+    intro X Y ha hb
+    ext i j
+    refine hinj ?_
+    have e1 := congrFun (congrFun ha i) j
+    have e2 := congrFun (congrFun hb i) j
+    simp only [Matrix.map_apply] at e1 e2
+    simp only [Prod.mk.injEq]
+    exact ⟨e1, e2⟩
+  have hopenN : ∀ g₀ : Field.absoluteGaloisGroup ℚ,
+      IsOpen {g : Field.absoluteGaloisGroup ℚ | N g = N g₀} := by
+    intro g₀
+    have hset : {g : Field.absoluteGaloisGroup ℚ | N g = N g₀} =
+        {g : Field.absoluteGaloisGroup ℚ | ρ₁ g = ρ₁ g₀} ∩
+          {g : Field.absoluteGaloisGroup ℚ | ρ₂ g = ρ₂ g₀} := by
+      ext g
+      simp only [Set.mem_setOf_eq, Set.mem_inter_iff]
+      constructor
+      · intro hg
+        refine ⟨LinearMap.toMatrix'.injective ?_, LinearMap.toMatrix'.injective ?_⟩
+        · rw [← hNmap1, ← hNmap1, hg]
+        · rw [← hNmap2, ← hNmap2, hg]
+      · rintro ⟨ha, hb⟩
+        refine hmatinj _ _ ?_ ?_
+        · rw [hNmap1, hNmap1, ha]
+        · rw [hNmap2, hNmap2, hb]
+    rw [hset]
+    exact (isOpen_setOf_framedGaloisRep_eq ρ₁ g₀).inter
+      (isOpen_setOf_framedGaloisRep_eq ρ₂ g₀)
+  set ρ : GaloisRep ℚ (P ⧸ (J₁ ⊓ J₂)) (Fin 2 → (P ⧸ (J₁ ⊓ J₂))) :=
+    framedGaloisRepOfMatrix N hN1 hNmul hopenN with hρdef
+  have hρmat : ∀ g, LinearMap.toMatrix' (ρ g) = N g := by
+    intro g
+    rw [hρdef]
+    exact toMatrix'_framedGaloisRepOfMatrix N hN1 hNmul hopenN g
+  refine ⟨ρ, fun g => ?_, ?_⟩
+  · rw [hρmat g]
+  · -- the two projections carry `ρ` to `ρ₁` and `ρ₂`
+    have heq1 : pushforwardFrame q₁ continuous_of_discreteTopology ρ = ρ₁ := by
+      refine GaloisRep.ext fun g => ?_
+      refine LinearMap.toMatrix'.injective ?_
+      rw [toMatrix'_pushforwardFrame, hρmat, hNmap1]
+    have heq2 : pushforwardFrame q₂ continuous_of_discreteTopology ρ = ρ₂ := by
+      refine GaloisRep.ext fun g => ?_
+      refine LinearMap.toMatrix'.injective ?_
+      rw [toMatrix'_pushforwardFrame, hρmat, hNmap2]
+    -- the fibre-product datum
+    letI : TopologicalSpace (P ⧸ (J₁ ⊔ J₂)) := ⊥
+    haveI : DiscreteTopology (P ⧸ (J₁ ⊔ J₂)) := ⟨rfl⟩
+    obtain ⟨f₁, hf1mk⟩ : ∃ f₁ : (P ⧸ J₁) →+* (P ⧸ (J₁ ⊔ J₂)),
+        ∀ x, f₁ (Ideal.Quotient.mk J₁ x) = Ideal.Quotient.mk (J₁ ⊔ J₂) x :=
+      ⟨Ideal.Quotient.factor le_sup_left, fun x => Ideal.Quotient.factor_mk _ _⟩
+    obtain ⟨f₂, hf2mk⟩ : ∃ f₂ : (P ⧸ J₂) →+* (P ⧸ (J₁ ⊔ J₂)),
+        ∀ x, f₂ (Ideal.Quotient.mk J₂ x) = Ideal.Quotient.mk (J₁ ⊔ J₂) x :=
+      ⟨Ideal.Quotient.factor le_sup_right, fun x => Ideal.Quotient.factor_mk _ _⟩
+    have hf1surj : Function.Surjective f₁ := by
+      intro a
+      obtain ⟨x, rfl⟩ := Ideal.Quotient.mk_surjective a
+      exact ⟨Ideal.Quotient.mk J₁ x, hf1mk x⟩
+    have hf2surj : Function.Surjective f₂ := by
+      intro a
+      obtain ⟨x, rfl⟩ := Ideal.Quotient.mk_surjective a
+      exact ⟨Ideal.Quotient.mk J₂ x, hf2mk x⟩
+    haveI : Finite (P ⧸ (J₁ ⊔ J₂)) := Finite.of_surjective f₁ hf1surj
+    haveI : Nontrivial (P ⧸ (J₁ ⊔ J₂)) := by
+      refine Ideal.Quotient.nontrivial_iff.mpr fun htop => ?_
+      have h1 : (1 : P) ∈ J₁ ⊔ J₂ := htop ▸ Submodule.mem_top
+      have h2 := (sup_le h1ker h2ker) h1
+      rw [RingHom.mem_ker, map_one] at h2
+      exact one_ne_zero h2
+    haveI : IsLocalRing (P ⧸ (J₁ ⊔ J₂)) := IsLocalRing.of_surjective' f₁ hf1surj
+    -- the residual pinning of the fibre product
+    have hπB : Continuous (ι.comp evJ) := continuous_of_discreteTopology
+    have hpushB : pushforwardFrame (ι.comp evJ) hπB ρ = ρbar.conj e0 := by
+      refine framedGaloisRep_ext_toMatrix' fun g => ?_
+      rw [toMatrix'_pushforwardFrame, hρmat, hNdef]
+      simp only [Matrix.map_map]
+      rw [← hMres g]
+      simp only [Matrix.map_map]
+      refine congrArg (Matrix.map (M g)) (funext fun x => ?_)
+      simp only [Function.comp_apply, RingHom.coe_comp, hevJmk]
+    have hresid : IsResidualIdentifiedFrame (ℓ := p) ρbar ρ (ι.comp evJ) hπB := by
+      letI : Algebra (P ⧸ (J₁ ⊓ J₂)) k := (ι.comp evJ).toAlgebra
+      letI : ContinuousSMul (P ⧸ (J₁ ⊓ J₂)) k :=
+        continuousSMul_of_algebraMap _ _
+          (by rw [RingHom.algebraMap_toAlgebra]; exact hπB)
+      refine ⟨(TensorProduct.piScalarRight (P ⧸ (J₁ ⊓ J₂)) k k (Fin 2)).trans
+        e0.symm, ?_⟩
+      have h1 : ((ρ.baseChange k).conj
+          (TensorProduct.piScalarRight (P ⧸ (J₁ ⊓ J₂)) k k (Fin 2))) =
+          ρbar.conj e0 := hpushB
+      rw [← LevelLimit.conj_trans, h1, LevelLimit.conj_trans,
+        LinearEquiv.self_trans_symm, LevelLimit.conj_refl]
+    have hcf : ∀ (q : ℕ) (hq : q.Prime),
+        hq.toHeightOneSpectrumRingOfIntegersRat ∉ (∅ :
+          Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))) →
+        (ι.comp evJ) ((ρ.charFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+          (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 := by
+      intro q hq _
+      have h := charFrob_map_of_isResidualIdentifiedFrame ρ (ι.comp evJ) hπB
+        hresid hq.toHeightOneSpectrumRingOfIntegersRat
+      have := congrArg (fun P : Polynomial k => P.coeff 1) h
+      simpa using this
+    -- the two base-changed conditions
+    letI : Algebra (P ⧸ (J₁ ⊓ J₂)) (P ⧸ J₁) := q₁.toAlgebra
+    letI : ContinuousSMul (P ⧸ (J₁ ⊓ J₂)) (P ⧸ J₁) :=
+      continuousSMul_of_algebraMap _ _
+        (by rw [RingHom.algebraMap_toAlgebra]
+            exact continuous_of_discreteTopology)
+    letI : Algebra (P ⧸ (J₁ ⊓ J₂)) (P ⧸ J₂) := q₂.toAlgebra
+    letI : ContinuousSMul (P ⧸ (J₁ ⊓ J₂)) (P ⧸ J₂) :=
+      continuousSMul_of_algebraMap _ _
+        (by rw [RingHom.algebraMap_toAlgebra]
+            exact continuous_of_discreteTopology)
+    have hbc1 : ∀ hdim₁ : Module.rank (P ⧸ J₁)
+        ((P ⧸ J₁) ⊗[P ⧸ (J₁ ⊓ J₂)] (Fin 2 → (P ⧸ (J₁ ⊓ J₂)))) = 2,
+        IsRaisedLevelHardlyRamified hpodd Q hdim₁ (ρ.baseChange (P ⧸ J₁)) := by
+      intro hdim₁
+      have hcancel : (pushforwardFrame q₁ continuous_of_discreteTopology ρ).conj
+          (TensorProduct.piScalarRight (P ⧸ (J₁ ⊓ J₂)) (P ⧸ J₁) (P ⧸ J₁)
+            (Fin 2)).symm = ρ.baseChange (P ⧸ J₁) := by
+        show ((ρ.baseChange (P ⧸ J₁)).conj
+          (TensorProduct.piScalarRight _ _ _ (Fin 2))).conj _ = _
+        rw [LevelLimit.conj_trans, LinearEquiv.self_trans_symm,
+          LevelLimit.conj_refl]
+      rw [← hcancel]
+      exact isRaisedLevelHardlyRamified_conj Q hdim₁ (heq1 ▸ hρ₁HR) _
+    have hbc2 : ∀ hdim₂ : Module.rank (P ⧸ J₂)
+        ((P ⧸ J₂) ⊗[P ⧸ (J₁ ⊓ J₂)] (Fin 2 → (P ⧸ (J₁ ⊓ J₂)))) = 2,
+        IsRaisedLevelHardlyRamified hpodd Q hdim₂ (ρ.baseChange (P ⧸ J₂)) := by
+      intro hdim₂
+      have hcancel : (pushforwardFrame q₂ continuous_of_discreteTopology ρ).conj
+          (TensorProduct.piScalarRight (P ⧸ (J₁ ⊓ J₂)) (P ⧸ J₂) (P ⧸ J₂)
+            (Fin 2)).symm = ρ.baseChange (P ⧸ J₂) := by
+        show ((ρ.baseChange (P ⧸ J₂)).conj
+          (TensorProduct.piScalarRight _ _ _ (Fin 2))).conj _ = _
+        rw [LevelLimit.conj_trans, LinearEquiv.self_trans_symm,
+          LevelLimit.conj_refl]
+      rw [← hcancel]
+      exact isRaisedLevelHardlyRamified_conj Q hdim₂ (heq2 ▸ hρ₂HR) _
+    refine hglue f₁ f₂ hf2surj q₁ q₂ continuous_of_discreteTopology
+      continuous_of_discreteTopology ?_ ?_ ?_ hinj ?_ (ι.comp evJ) ∅
+      (hιsurj.comp hevJsurj) hQp hcf hbc1 hbc2
+    · refine RingHom.ext fun r => ?_
+      show q₁ (Ideal.Quotient.mk (J₁ ⊓ J₂) (algebraMap ℤ_[p] P r)) =
+        Ideal.Quotient.mk J₁ (algebraMap ℤ_[p] P r)
+      exact hq1mk _
+    · refine RingHom.ext fun r => ?_
+      show q₂ (Ideal.Quotient.mk (J₁ ⊓ J₂) (algebraMap ℤ_[p] P r)) =
+        Ideal.Quotient.mk J₂ (algebraMap ℤ_[p] P r)
+      exact hq2mk _
+    · refine RingHom.ext fun z => ?_
+      obtain ⟨x, rfl⟩ := Ideal.Quotient.mk_surjective z
+      simp only [RingHom.coe_comp, Function.comp_apply, hq1mk, hq2mk, hf1mk,
+        hf2mk]
+    · intro a₁ a₂ hfa
+      obtain ⟨x, rfl⟩ := Ideal.Quotient.mk_surjective a₁
+      obtain ⟨y, rfl⟩ := Ideal.Quotient.mk_surjective a₂
+      rw [hf1mk, hf2mk, Ideal.Quotient.eq] at hfa
+      obtain ⟨u, hu, v, hv, huv⟩ := Submodule.mem_sup.mp hfa
+      refine ⟨Ideal.Quotient.mk (J₁ ⊓ J₂) (x - u), ?_, ?_⟩
+      · rw [hq1mk, Ideal.Quotient.eq]
+        have hxu : x - u - x = -u := by ring
+        rw [hxu]
+        exact neg_mem hu
+      · rw [hq2mk, Ideal.Quotient.eq]
+        have hxy : x - u - y = v := by linear_combination -huv
+        rw [hxy]
+        exact hv
+
+/-- **THE SPLIT-TORUS CLAUSE DESCENDS TO THE IMAGE SUBRING** (SORRY LEAF, new
+2026-07-30, `flt-lean-38`) — the `ℚ`-side twin of
+`isHilbertSplitTorusAt_of_subring_entries` (`HardlyRamified/HilbertModularity.lean`,
+itself still open), and the ONE genuinely new obligation in the whole
+raised-level `ℚ`-side frame-ring construction.
+
+**IT IS NOT A TRANSCRIPTION OF THE BASE LEVEL, and the reason is not
+proof-search difficulty.** The base-level chain `frameLevels_classification →
+frameLevels_repClause_ker → isHardlyRamified_of_subring_entries` descends FOUR
+clauses (`det`, `isUnramified`, `isFlat`, `isTameAtTwo`) along a subring
+`C ⊆ A`, and every one of them descends because it is a statement about the
+KERNEL or the DETERMINANT of `ρ`, both computed entrywise and therefore
+inherited by a subring. `isSplitTorusAt` is not of that shape: it asserts the
+EXISTENCE of a diagonalising basis, and a basis over `A` need not be defined
+over `C`.
+
+**EXPLICIT MATRIX COUNTEREXAMPLE TO THE NAIVE FORM** (i.e. to this statement
+with `hglue`, `πA` and `hπAsurj` deleted) — carried over verbatim from the
+Hilbert twin, where it was checked by hand on 2026-07-30, because it is a
+statement about matrices over a local ring and mentions no field. Take a field
+`κ`, and
+* `A = κ[u,w]/(u², w²)`, a local `κ`-algebra with residue field `κ`;
+* `C = κ ⊕ κ·u ⊕ κ·uw ⊆ A`, a subring (`u² = 0`, `u·uw = 0`), local with the
+  SAME residue field `κ`, and `C ≠ A` (it omits `w`).
+
+Let `M = [[0, uw], [0, u]] ∈ M₂(C)`. Over `A`, `M = P · diag(0, u) · P⁻¹` with
+`P = 1 + w·e₁₂ ∈ GL₂(A)` — indeed `P diag(0,u) P⁻¹ = diag(0,u) +
+w(e₁₂D − De₁₂) = diag(0,u) + uw·e₁₂` — so `M` IS diagonalisable over `A`. It is
+NOT diagonalisable over `C`: its eigenvalues are `0` and `u`, `ker M ∋ e₁`, and
+a complementary free rank-one eigenline for `u` needs `(x, y)` with `y` a unit
+and `−ux + uw·y = 0`; but `u·C = κ·u` while `uw·y ∈ uw·κˣ + 0` lies outside
+`κ·u`, so no such `x` exists.
+
+**WHY THE HYPOTHESES CARRIED HERE REPAIR IT.** Two routes, exactly the Hilbert
+twin's, and the second is the one to write.
+
+1. *Residual distinctness.* If the two residual Frobenius eigenvalues at `q` are
+   DISTINCT in `k` then, `C` and `A` having the same residue field (`πA` is
+   surjective and factors through `C`, which contains the image of the frame
+   ring), the eigenbasis can be produced over `C` directly and the split torus
+   follows from the commutation supplied by the splitting over `A`. This is the
+   mechanism `raisedLevelIsSplitTorusAt_of_forall_isOpen_quotient` uses, and it
+   is why THAT theorem takes an `IsTaylorWilesPrimeSet` hypothesis. This leaf
+   deliberately does not, because its consumer has none — but note `hcfA` plus
+   `exists_distinct_charFrob_map_eq_of_isTaylorWilesPrimeSet` (PROVEN above) is
+   how the distinctness is meant to arrive.
+2. *Schlessinger dévissage against `hglue`, which needs no prime set.* `C ⊆ A`
+   is a subring of a FINITE local ring with the same residue field, so the chain
+   `C = C₀ ⊂ C₁ ⊂ ⋯ ⊂ C_n = A` obtained by adjoining one element of `𝔪_A` at a
+   time realises each `C_i` as a genuine fibre product
+   `C_i = C_{i+1} ×_{C_{i+1}/(t)} (C_i/(t ∩ C_i))` in the category
+   `IsAuxFibreProductClause` is stated over, with the required map SURJECTIVE.
+   The counterexample above is itself of this shape: `C = A ×_{A/(u)} κ`, i.e.
+   exactly one application of `hglue` away from `A` and its residual quotient.
+   `hglue`'s residual pinning `(πB, charFrob coefficient compatibility)` is what
+   makes each step legitimate, and it is precisely the pinning that the
+   base-level `hglue` lacks — which is why the base level never had to reach for
+   this and why `hglue` is unused in the base-level subring descent.
+
+**NON-VACUITY.** The conclusion is the `isSplitTorusAt` field of
+`IsRaisedLevelHardlyRamified` at `ρC`, verbatim; at `Q = ∅` the leaf is vacuous
+by `Finset.notMem_empty` and the raised-level condition collapses to the base one
+by `isRaisedLevelHardlyRamified_empty_iff` — the consistency check that this leaf
+adds nothing at base level.
+
+Every hypothesis is discharged for free at the single call site
+`auxFrameLevels_repClause_ker` below: `hglue` is threaded there (it is unused at
+the base level), `πA`/`hπAsurj` are hypotheses of that theorem, and `hcfA` is its
+residual-identification hypothesis read through `hmat`. -/
+theorem isSplitTorusAt_of_subring_entries (Q : Finset ℕ)
+    {k : Type uFk} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uFw} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] {ρbar : GaloisRep ℚ k W}
+    (hglue : IsAuxFibreProductClause.{uSm, uFk, uFw} hpodd Q ρbar)
+    {A : Type uSm} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    [IsLocalRing A] [Algebra ℤ_[p] A] [Finite A] [DiscreteTopology A]
+    (πA : A →+* k) (hπAsurj : Function.Surjective πA)
+    (C : Subring A) [IsLocalRing C] [Algebra ℤ_[p] C]
+    {ρC : GaloisRep ℚ C (Fin 2 → C)} {ρA : GaloisRep ℚ A (Fin 2 → A)}
+    (hent : ∀ (g : Field.absoluteGaloisGroup ℚ) (i j : Fin 2),
+      ((LinearMap.toMatrix' (ρC g) i j : C) : A) =
+        LinearMap.toMatrix' (ρA g) i j)
+    (hcfA : ∀ (q : ℕ) (hq : q.Prime),
+      πA ((ρA.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+        (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
+    (hHRA : IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun A) ρA)
+    (q : ℕ) (hqQ : q ∈ Q) (hq : q.Prime) :
+    ∃ (e : (Fin 2 → C) ≃ₗ[C] C × C)
+      (χ δ : GaloisRep
+        ((hq.toHeightOneSpectrumRingOfIntegersRat).adicCompletion ℚ) C C),
+      (∀ (g : Field.absoluteGaloisGroup
+          ((hq.toHeightOneSpectrumRingOfIntegersRat).adicCompletion ℚ))
+          (v : Fin 2 → C),
+        e (ρC.toLocal hq.toHeightOneSpectrumRingOfIntegersRat g v) =
+          (χ g (e v).1, δ g (e v).2)) ∧
+      localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat ≤ δ.ker :=
+  sorry
+
+set_option linter.unusedVariables false in
 open scoped TensorProduct in
-/-- **The RAISED-LEVEL level-ideal system** (sorry node, LEAF A2′-2d′-i-1 — new
-2026-07-30, `flt-lean-166`; the arithmetic half of the raised-level Schlessinger
-machine, and the exact raised-level twin of
+/-- **RAISED-LEVEL SUBRING DESCENT** (PROVEN 2026-07-30, `flt-lean-38`, over the
+single new leaf `isSplitTorusAt_of_subring_entries` above) — the `ℚ`-side twin of
+`isHilbertRaisedLevelHardlyRamified_of_subring_entries`.
+
+Four of the five clauses are the base-level `isHardlyRamified_of_subring_entries`
+line for line: `det` and `isFlat` are the same two applications, `isTameAtTwo` is
+the same eigenrow construction (it consumes only `ρA`'s determinant and its tame
+clause, so it does not care which of the two local conditions supplied them), and
+`isUnramified` is the same "an element killed by `ρA` is killed by `ρC`"
+argument, merely restricted to `q ∉ Q`. The fifth clause, `isSplitTorusAt`, is
+the leaf — see its docstring for the counterexample showing it is NOT a
+transcription. -/
+theorem isRaisedLevelHardlyRamified_of_subring_entries (Q : Finset ℕ)
+    {k : Type uFk} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uFw} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] {ρbar : GaloisRep ℚ k W}
+    (hglue : IsAuxFibreProductClause.{uSm, uFk, uFw} hpodd Q ρbar)
+    {A : Type uSm} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    [IsLocalRing A] [Algebra ℤ_[p] A] [Finite A] [DiscreteTopology A]
+    (h2 : IsUnit (2 : A))
+    (πA : A →+* k) (hπAsurj : Function.Surjective πA)
+    (C : Subring A) [IsLocalRing C] [Algebra ℤ_[p] C]
+    {ρC : GaloisRep ℚ C (Fin 2 → C)} {ρA : GaloisRep ℚ A (Fin 2 → A)}
+    (hent : ∀ (g : Field.absoluteGaloisGroup ℚ) (i j : Fin 2),
+      ((LinearMap.toMatrix' (ρC g) i j : C) : A) =
+        LinearMap.toMatrix' (ρA g) i j)
+    (hcfA : ∀ (q : ℕ) (hq : q.Prime),
+      πA ((ρA.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+        (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
+    (hHRA : IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun A) ρA) :
+    IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun C) ρC := by
+  classical
+  haveI : Finite C := Subtype.finite
+  haveI : ContinuousSMul C A := ⟨continuous_of_discreteTopology⟩
+  have hinjC : Function.Injective (fun c : C => (c : A)) := Subtype.val_injective
+  have halgC : ∀ r : ℤ_[p], ((algebraMap ℤ_[p] C r : C) : A) =
+      algebraMap ℤ_[p] A r := by
+    intro r
+    have h := ringHom_padicInt_ext_finite (ℓ := p)
+      ((C.subtype : C →+* A).comp (algebraMap ℤ_[p] C)) (algebraMap ℤ_[p] A)
+    exact RingHom.congr_fun h r
+  have hact : ∀ (g : Field.absoluteGaloisGroup ℚ) (w : Fin 2 → C) (i : Fin 2),
+      ρA g (fun j => ((w j : C) : A)) i = ((ρC g w i : C) : A) := by
+    intro g w i
+    have h1 : ρA g (fun j => ((w j : C) : A)) =
+        Matrix.mulVec (LinearMap.toMatrix' (ρA g)) (fun j => ((w j : C) : A)) :=
+      (LinearMap.toMatrix'_mulVec _ _).symm
+    have h2' : ρC g w = Matrix.mulVec (LinearMap.toMatrix' (ρC g)) w :=
+      (LinearMap.toMatrix'_mulVec _ _).symm
+    rw [h1, h2', Matrix.mulVec_apply_eq_sum, Matrix.mulVec_apply_eq_sum,
+      Fin.sum_univ_two, Fin.sum_univ_two]
+    push_cast
+    rw [← hent g i 0, ← hent g i 1]
+  have hone : ∀ g : Field.absoluteGaloisGroup ℚ, ρA g = 1 → ρC g = 1 := by
+    intro g hg
+    have hm : ∀ i j : Fin 2, LinearMap.toMatrix' (ρC g) i j =
+        LinearMap.toMatrix' (1 : Module.End C (Fin 2 → C)) i j := by
+      intro i j
+      refine hinjC ?_
+      simp only
+      rw [hent g i j, hg]
+      rw [LinearMap.toMatrix'_apply, LinearMap.toMatrix'_apply]
+      simp only [Module.End.one_apply]
+      by_cases hij : i = j <;> simp [hij]
+    exact LinearMap.toMatrix'.injective (Matrix.ext hm)
+  have hdetC : ∀ g : Field.absoluteGaloisGroup ℚ,
+      ρC.det g = algebraMap ℤ_[p] C (cyclotomicCharacter (AlgebraicClosure ℚ) p
+        g.toRingEquiv) := by
+    intro g
+    refine hinjC ?_
+    simp only
+    have hd1 : ((LinearMap.det (ρC g) : C) : A) = LinearMap.det (ρA g) := by
+      rw [← LinearMap.det_toMatrix' (ρC g), ← LinearMap.det_toMatrix' (ρA g)]
+      have hmap : (LinearMap.toMatrix' (ρC g)).map (fun c : C => (c : A)) =
+          LinearMap.toMatrix' (ρA g) := by
+        ext i j
+        exact hent g i j
+      rw [← hmap]
+      exact (RingHom.map_det (C.subtype : C →+* A) (LinearMap.toMatrix' (ρC g))).symm
+    show ((ρC.det g : C) : A) = _
+    rw [GaloisRep.det_apply, hd1, halgC, ← GaloisRep.det_apply]
+    exact hHRA.det g
+  set e := TensorProduct.piScalarRight C A A (Fin 2) with he_def
+  have hframe : ∀ (w : Fin 2 → C),
+      e ((1 : A) ⊗ₜ[C] w) = fun j => ((w j : C) : A) := by
+    intro w
+    funext j
+    rw [he_def, TensorProduct.piScalarRight_apply,
+      TensorProduct.piScalarRightHom_tmul]
+    simp only [Algebra.smul_def, mul_one]
+    rfl
+  have hbc : (ρC.baseChange A).conj e = ρA := by
+    refine GaloisRep.ext fun g => ?_
+    refine LinearMap.toMatrix'.injective (Matrix.ext fun i j => ?_)
+    rw [LinearMap.toMatrix'_apply, LinearMap.toMatrix'_apply]
+    have hsingle : (Pi.single j (1 : A) : Fin 2 → A) =
+        e ((1 : A) ⊗ₜ[C] (Pi.single j (1 : C) : Fin 2 → C)) := by
+      rw [hframe]
+      funext m
+      by_cases hm : m = j <;> simp [hm]
+    have hL : ((ρC.baseChange A).conj e) g (Pi.single j (1 : A)) i =
+        ((ρC g (Pi.single j (1 : C)) i : C) : A) := by
+      conv_lhs => rw [hsingle]
+      rw [GaloisRep.conj_apply, LinearEquiv.conj_apply_apply,
+        LinearEquiv.symm_apply_apply, GaloisRep.baseChange_tmul, hframe]
+    have hR := hent g i j
+    rw [LinearMap.toMatrix'_apply, LinearMap.toMatrix'_apply] at hR
+    rw [hL, hR]
+  refine ⟨hdetC, ?_, ?_, ?_, ?_⟩
+  · -- unramifiedness outside `Q ∪ {2, p}`
+    intro q hq hqQ hq2 hqp
+    have hun := hHRA.isUnramified q hq hqQ hq2 hqp
+    refine ⟨fun σ hσ => ?_⟩
+    have h1 : ρA.toLocal hq.toHeightOneSpectrumRingOfIntegersRat σ = 1 :=
+      hun.localInertiaGroup_le hσ
+    show ρC.toLocal hq.toHeightOneSpectrumRingOfIntegersRat σ = 1
+    rw [GaloisRep.toLocal_apply] at h1 ⊢
+    exact hone _ h1
+  · -- flatness at `p`
+    exact isFlatAt_of_subring_baseChange isAdic_maximalIdeal_of_finite
+      (isFlatAt_of_conj_eq e hbc hHRA.isFlat)
+  · -- tameness at `2`
+    obtain ⟨πA2, hπsurj, δA, hδA⟩ := hHRA.isTameAtTwo
+    set dA : Field.absoluteGaloisGroup ℚ_[2] → A := fun g => δA g 1 with hdAdef
+    have hδAapp : ∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (c : A),
+        δA g c = c * dA g := by
+      intro g c
+      have h := map_smul (δA g) c (1 : A)
+      rw [smul_eq_mul, mul_one, smul_eq_mul] at h
+      exact h
+    have hdAsq : ∀ g, dA g * dA g = 1 := by
+      intro g
+      have h1 : δA g * δA g = 1 := (hδA g 0).2.2 g
+      have h3 := congrArg (fun E : Module.End A A => E 1) h1
+      simpa [Module.End.mul_apply, hδAapp] using h3
+    have hdAunit : ∀ g, IsUnit (dA g) :=
+      fun g => ⟨⟨dA g, dA g, hdAsq g, hdAsq g⟩, rfl⟩
+    have hdApm : ∀ g, dA g = 1 ∨ dA g = -1 := by
+      intro g
+      have hz : (dA g - 1) * (dA g + 1) = 0 := by
+        have h := hdAsq g; linear_combination h
+      have hsum : IsUnit ((dA g - 1) + (dA g + 1)) := by
+        have hrw : (dA g - 1) + (dA g + 1) = 2 * dA g := by ring
+        rw [hrw]
+        exact h2.mul (hdAunit g)
+      rcases IsLocalRing.isUnit_or_isUnit_of_isUnit_add hsum with h | h
+      · exact Or.inr (eq_neg_of_add_eq_zero_left (h.mul_right_eq_zero.mp hz))
+      · exact Or.inl (sub_eq_zero.mp (h.mul_left_eq_zero.mp hz))
+    have hdAmul : ∀ g h, dA (g * h) = dA g * dA h := by
+      intro g h
+      have hh : δA (g * h) 1 = (δA g * δA h) 1 := by rw [map_mul δA g h]
+      rw [Module.End.mul_apply, hδAapp (g * h) 1, hδAapp g (δA h 1),
+        hδAapp h 1] at hh
+      simp only [one_mul] at hh
+      rw [hh]; ring
+    have hdAone : dA 1 = 1 := by
+      have hh : δA (1 : Field.absoluteGaloisGroup ℚ_[2]) 1 =
+          (1 : Module.End A A) 1 := by rw [map_one δA]
+      rw [hδAapp 1 1, one_mul, Module.End.one_apply] at hh
+      exact hh
+    have hdAinertia : ∀ σ ∈ AddSubgroup.inertia
+        ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+        (Field.absoluteGaloisGroup ℚ_[2]), dA σ = 1 := by
+      intro σ hσ
+      have h1 : δA σ = 1 := by
+        have h := (hδA σ 0).2.1 hσ
+        rwa [GaloisRep.ker, MonoidHom.mem_ker] at h
+      have hh := congrArg (fun E : Module.End A A => E 1) h1
+      simpa [hδAapp] using hh
+    set ε : Field.absoluteGaloisGroup ℚ_[2] → C :=
+      fun g => if dA g = 1 then 1 else -1 with hεdef
+    have hεd : ∀ g, ((ε g : C) : A) = dA g := by
+      intro g
+      by_cases hc : dA g = 1
+      · simp [hεdef, hc]
+      · have h1 : dA g = -1 := (hdApm g).resolve_left hc
+        have h3 : ε g = -1 := by simp only [hεdef, if_neg hc]
+        rw [h3, h1]
+        push_cast
+        ring
+    have hεmul : ∀ g h, ε (g * h) = ε g * ε h := by
+      intro g h
+      refine hinjC ?_
+      simp only
+      push_cast
+      rw [hεd, hεd, hεd, hdAmul]
+    have hεone : ε 1 = 1 := by
+      refine hinjC ?_
+      simp only
+      push_cast
+      rw [hεd, hdAone]
+    have hεsq : ∀ g, ε g * ε g = 1 := by
+      intro g
+      refine hinjC ?_
+      simp only
+      push_cast
+      rw [hεd, hdAsq]
+    have hεinertia : ∀ σ ∈ AddSubgroup.inertia
+        ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+        (Field.absoluteGaloisGroup ℚ_[2]), ε σ = 1 := by
+      intro σ hσ
+      refine hinjC ?_
+      simp only
+      push_cast
+      rw [hεd, hdAinertia σ hσ]
+    -- the frame coordinates of `πA2`
+    set a : A := πA2 (Pi.single (0 : Fin 2) (1 : A)) with hadef
+    set b : A := πA2 (Pi.single (1 : Fin 2) (1 : A)) with hbdef
+    have hdecomp : ∀ v : Fin 2 → A,
+        v = v 0 • (Pi.single (0 : Fin 2) (1 : A)) +
+          v 1 • (Pi.single (1 : Fin 2) (1 : A)) := by
+      intro v
+      funext i
+      fin_cases i <;> simp
+    have hπform : ∀ v : Fin 2 → A, πA2 v = v 0 * a + v 1 * b := by
+      intro v
+      conv_lhs => rw [hdecomp v]
+      rw [map_add, map_smul, map_smul, smul_eq_mul, smul_eq_mul, hadef, hbdef]
+    have hab : IsUnit a ∨ IsUnit b := by
+      by_contra hc
+      rw [not_or] at hc
+      have hA : a ∈ IsLocalRing.maximalIdeal A :=
+        (IsLocalRing.mem_maximalIdeal _).mpr hc.1
+      have hB : b ∈ IsLocalRing.maximalIdeal A :=
+        (IsLocalRing.mem_maximalIdeal _).mpr hc.2
+      obtain ⟨z, hz⟩ := hπsurj 1
+      have h1 : (1 : A) ∈ IsLocalRing.maximalIdeal A := by
+        rw [← hz, hπform]
+        exact Ideal.add_mem _ (Ideal.mul_mem_left _ _ hA)
+          (Ideal.mul_mem_left _ _ hB)
+      exact (IsLocalRing.mem_maximalIdeal _).mp h1 isUnit_one
+    have hequi : ∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (w : Fin 2 → C),
+        ((((ρC.map (algebraMap ℚ ℚ_[2])) g w) 0 : C) : A) * a +
+          ((((ρC.map (algebraMap ℚ ℚ_[2])) g w) 1 : C) : A) * b =
+        ((ε g : C) : A) * (((w 0 : C) : A) * a + ((w 1 : C) : A) * b) := by
+      intro g w
+      have hv : ρA.map (algebraMap ℚ ℚ_[2]) g (fun j => ((w j : C) : A)) =
+          fun i => ((((ρC.map (algebraMap ℚ ℚ_[2])) g w) i : C) : A) := by
+        funext i
+        rw [GaloisRep.map_apply, GaloisRep.map_apply]
+        exact hact _ w i
+      have h := (hδA g (fun j => ((w j : C) : A))).1
+      rw [hv, hδAapp] at h
+      rw [hπform, hπform] at h
+      rw [h, hεd]
+      ring
+    -- the arithmetic input: `χ_ℓ` is nontrivial on `Γ ℚ_2`
+    obtain ⟨g₀, hg₀⟩ :=
+      exists_cyclotomicCharacter_padicTwo_sub_one_isUnit (ℓ := p) hpodd
+    set G₀ : Field.absoluteGaloisGroup ℚ :=
+      Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g₀ with hG₀def
+    set T : Module.End C (Fin 2 → C) :=
+      (ρC.map (algebraMap ℚ ℚ_[2])) g₀ with hTdef
+    have hE1 : ((T (Pi.single 0 1) 0 : C) : A) * a +
+        ((T (Pi.single 0 1) 1 : C) : A) * b = ((ε g₀ : C) : A) * a := by
+      have h := hequi g₀ (Pi.single 0 1)
+      simpa using h
+    have hE2 : ((T (Pi.single 1 1) 0 : C) : A) * a +
+        ((T (Pi.single 1 1) 1 : C) : A) * b = ((ε g₀ : C) : A) * b := by
+      have h := hequi g₀ (Pi.single 1 1)
+      simpa using h
+    have hdetT : LinearMap.det T =
+        T (Pi.single 0 1) 0 * T (Pi.single 1 1) 1 -
+          T (Pi.single 1 1) 0 * T (Pi.single 0 1) 1 := by
+      rw [← LinearMap.det_toMatrix', Matrix.det_fin_two, LinearMap.toMatrix'_apply,
+        LinearMap.toMatrix'_apply, LinearMap.toMatrix'_apply,
+        LinearMap.toMatrix'_apply]
+    have hunit1sub : IsUnit (1 - (T (Pi.single 0 1) 0 * T (Pi.single 1 1) 1 -
+        T (Pi.single 1 1) 0 * T (Pi.single 0 1) 1)) := by
+      refine isUnit_of_isUnit_coe_subring C ?_
+      have h1 : ((1 - (T (Pi.single 0 1) 0 * T (Pi.single 1 1) 1 -
+          T (Pi.single 1 1) 0 * T (Pi.single 0 1) 1) : C) : A) =
+          algebraMap ℤ_[p] A
+            (1 - ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+              G₀.toRingEquiv : ℤ_[p]ˣ) : ℤ_[p])) := by
+        rw [← hdetT]
+        have hTG : T = ρC G₀ := rfl
+        rw [hTG, ← GaloisRep.det_apply, hdetC G₀, map_sub, map_one]
+        push_cast
+        rw [halgC]
+      rw [h1]
+      exact hg₀.map (algebraMap ℤ_[p] A)
+    obtain ⟨p, q, hcross, hpq⟩ :=
+      exists_unimodular_eigenrow_of_subring hab (hεsq g₀) hE1 hE2 hunit1sub
+    set π : (Fin 2 → C) →ₗ[C] C :=
+      p • LinearMap.proj 0 + q • LinearMap.proj 1 with hπdef
+    have hπapp : ∀ w, π w = p * w 0 + q * w 1 := by
+      intro w
+      simp [hπdef]
+    have hπsurjC : Function.Surjective π := by
+      rcases hpq with h | h
+      · obtain ⟨w, hw⟩ := h.exists_right_inv
+        intro c
+        refine ⟨Pi.single 0 (w * c), ?_⟩
+        rw [hπapp]
+        have h0 : (Pi.single (0 : Fin 2) (w * c) : Fin 2 → C) 0 = w * c := by simp
+        have h1 : (Pi.single (0 : Fin 2) (w * c) : Fin 2 → C) 1 = 0 := by simp
+        rw [h0, h1, mul_zero, add_zero, ← mul_assoc, hw, one_mul]
+      · obtain ⟨w, hw⟩ := h.exists_right_inv
+        intro c
+        refine ⟨Pi.single 1 (w * c), ?_⟩
+        rw [hπapp]
+        have h0 : (Pi.single (1 : Fin 2) (w * c) : Fin 2 → C) 0 = 0 := by simp
+        have h1 : (Pi.single (1 : Fin 2) (w * c) : Fin 2 → C) 1 = w * c := by simp
+        rw [h0, h1, mul_zero, zero_add, ← mul_assoc, hw, one_mul]
+    have hπequi : ∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (w : Fin 2 → C),
+        π ((ρC.map (algebraMap ℚ ℚ_[2])) g w) = ε g * π w := by
+      intro g w
+      rw [hπapp, hπapp]
+      exact eigenrow_equivariance_of_cross hab hcross
+        (fun w => ((w 0 : C) : A) * a + ((w 1 : C) : A) * b) (fun _ => rfl)
+        (fun w => (ρC.map (algebraMap ℚ ℚ_[2])) g w) rfl (hequi g) w
+    obtain ⟨x₀, hx₀⟩ := hπsurjC 1
+    letI := moduleTopology C (Module.End C (Fin 2 → C))
+    letI := moduleTopology C (Module.End C C)
+    haveI : ContinuousAdd (Module.End C C) := ModuleTopology.continuousAdd _ _
+    haveI : ContinuousSMul C (Module.End C C) := ModuleTopology.continuousSMul _ _
+    have hεcont : Continuous ε := by
+      have h1 : ε = fun g =>
+          (π ∘ₗ (LinearMap.applyₗ x₀ :
+            Module.End C (Fin 2 → C) →ₗ[C] (Fin 2 → C)))
+            ((ρC.map (algebraMap ℚ ℚ_[2])) g) := by
+        funext g
+        have h2 := hπequi g x₀
+        rw [hx₀, mul_one] at h2
+        exact h2.symm
+      rw [h1]
+      exact (IsModuleTopology.continuous_of_linearMap _).comp
+        (ρC.map (algebraMap ℚ ℚ_[2])).continuous_toFun
+    set δ : GaloisRep ℚ_[2] C C :=
+      { toFun := fun g => ε g • (1 : Module.End C C)
+        map_one' := by rw [hεone, one_smul]
+        map_mul' := fun g h => by
+          refine LinearMap.ext fun c => ?_
+          simp only [hεmul, LinearMap.smul_apply, Module.End.one_apply,
+            Module.End.mul_apply, smul_eq_mul]
+          ring
+        continuous_toFun := hεcont.smul continuous_const } with hδdef
+    have hδapp : ∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (c : C),
+        δ g c = ε g * c := by
+      intro g c
+      show (ε g • (1 : Module.End C C)) c = ε g * c
+      rw [LinearMap.smul_apply, Module.End.one_apply, smul_eq_mul]
+    refine ⟨π, hπsurjC, δ, fun g w => ⟨?_, ?_, ?_⟩⟩
+    · rw [hπequi, hδapp]
+    · intro σ hσ
+      show ε σ • (1 : Module.End C C) = 1
+      rw [hεinertia σ hσ, one_smul]
+    · intro g'
+      refine LinearMap.ext fun c => ?_
+      show (δ g') ((δ g') c) = c
+      rw [hδapp, hδapp, ← mul_assoc, hεsq, one_mul]
+  · -- the split torus at each `q ∈ Q`: the leaf
+    intro q hqQ hq
+    exact isSplitTorusAt_of_subring_entries Q hglue πA hπAsurj C hent hcfA hHRA
+      q hqQ hq
+
+set_option linter.unusedVariables false in
+/-- **THE REPRESENTATION CLAUSE FOR `ker f` AT RAISED LEVEL** (PROVEN
+2026-07-30, `flt-lean-38`) — the raised-level twin of
+`frameLevels_repClause_ker`, its four steps unchanged, with
+`isRaisedLevelHardlyRamified_of_subring_entries` in place of the base-level
+subring descent and a `pushforwardFrame` in place of the base-level transport.
+
+**`hglue` IS NO LONGER DEAD HERE, and that is the one substantive difference
+from the base level**, where it is underscored because nothing uses it: at
+raised level it is the input the split-torus descent needs.  Same for `πA`,
+`hπAsurj` and `hcfA`. -/
+theorem auxFrameLevels_repClause_ker (Q : Finset ℕ)
+    {k : Type uFk} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uFw} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] {ρbar : GaloisRep ℚ k W}
+    (hglue : IsAuxFibreProductClause.{uSm, uFk, uFw} hpodd Q ρbar)
+    (A : Type uSm) [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    [IsLocalRing A] [Algebra ℤ_[p] A] [Finite A] [DiscreteTopology A]
+    (πA : A →+* k) (hπAsurj : Function.Surjective πA)
+    (ρA : GaloisRep ℚ A (Fin 2 → A))
+    (hHRA : IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun A) ρA)
+    (hcfA : ∀ (q : ℕ) (hq : q.Prime),
+      πA ((ρA.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+        (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
+    {P : Type uSm} [CommRing P] [Algebra ℤ_[p] P]
+    (Mf : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) P)
+    (f : P →+* A)
+    (hmat : ∀ g : Field.absoluteGaloisGroup ℚ,
+      (Mf g).map ⇑f = LinearMap.toMatrix' (ρA g)) :
+    ∀ [Finite (P ⧸ RingHom.ker f)] [IsLocalRing (P ⧸ RingHom.ker f)]
+      [TopologicalSpace (P ⧸ RingHom.ker f)]
+      [DiscreteTopology (P ⧸ RingHom.ker f)]
+      [IsTopologicalRing (P ⧸ RingHom.ker f)],
+      ∃ ρJ : GaloisRep ℚ (P ⧸ RingHom.ker f) (Fin 2 → (P ⧸ RingHom.ker f)),
+        (∀ g : Field.absoluteGaloisGroup ℚ, LinearMap.toMatrix' (ρJ g) =
+          (Mf g).map ⇑(Ideal.Quotient.mk (RingHom.ker f))) ∧
+        IsRaisedLevelHardlyRamified hpodd Q
+          (rank_finTwoFun (P ⧸ RingHom.ker f)) ρJ := by
+  intro _ _ _ _ _
+  classical
+  set C : Subring A := f.range with hCdef
+  haveI : Finite C := Subtype.finite
+  have hinjC : Function.Injective (fun c : C => (c : A)) := Subtype.val_injective
+  haveI : Nontrivial C := by
+    refine ⟨⟨1, 0, fun h => one_ne_zero (?_ : (1 : A) = 0)⟩⟩
+    exact congrArg (fun c : C => (c : A)) h
+  haveI hlocC : IsLocalRing C :=
+    isLocalRing_of_injective_of_finite (C.subtype) Subtype.val_injective
+  have hfalg : (f.comp (algebraMap ℤ_[p] P)) = algebraMap ℤ_[p] A :=
+    ringHom_padicInt_ext_finite _ _
+  have hmemalg : ∀ r : ℤ_[p], algebraMap ℤ_[p] A r ∈ C := by
+    intro r
+    rw [hCdef]
+    exact ⟨algebraMap ℤ_[p] P r, RingHom.congr_fun hfalg r⟩
+  letI : Algebra ℤ_[p] C :=
+    (((algebraMap ℤ_[p] A).codRestrict C hmemalg) : ℤ_[p] →+* C).toAlgebra
+  -- `2` is a unit of `A`
+  have h2k : (2 : k) ≠ 0 := by
+    intro h20
+    have hd2 : ringChar k ∣ 2 := ringChar.dvd (by exact_mod_cast h20)
+    have hdl : ringChar k ∣ p := ringChar.dvd natCast_self_eq_zero
+    have hpr : (ringChar k).Prime :=
+      (CharP.char_is_prime_or_zero k (ringChar k)).resolve_right
+        (CharP.char_ne_zero_of_finite k (ringChar k))
+    have hchar2 : ringChar k = 2 :=
+      (Nat.prime_dvd_prime_iff_eq hpr Nat.prime_two).mp hd2
+    rw [hchar2] at hdl
+    obtain ⟨m, hm⟩ := hdl
+    obtain ⟨t, ht⟩ := hpodd
+    omega
+  have hkerπ : RingHom.ker πA = IsLocalRing.maximalIdeal A :=
+    IsLocalRing.ker_eq_maximalIdeal πA hπAsurj
+  have h2 : IsUnit (2 : A) := by
+    by_contra hnu
+    have hmem : (2 : A) ∈ IsLocalRing.maximalIdeal A :=
+      (IsLocalRing.mem_maximalIdeal _).mpr hnu
+    rw [← hkerπ, RingHom.mem_ker, map_ofNat] at hmem
+    exact h2k hmem
+  -- the corestriction of `f` to its image, and the descended matrices
+  set fC : P →+* C := f.rangeRestrict with hfCdef
+  have hfC : ∀ x : P, ((fC x : C) : A) = f x := fun _ => rfl
+  have hmatC : ∀ (g : Field.absoluteGaloisGroup ℚ),
+      ((Mf g).map ⇑fC).map ⇑(C.subtype) = LinearMap.toMatrix' (ρA g) := by
+    intro g
+    rw [Matrix.map_map]
+    rw [← hmat g]
+    rfl
+  obtain ⟨ρC, hρCtm⟩ :=
+    exists_framedGaloisRep_of_matrices (C := C) (A := A) (C.subtype)
+      Subtype.val_injective (fun g => (Mf g).map ⇑fC) ρA hmatC
+  have hentC : ∀ (g : Field.absoluteGaloisGroup ℚ) (i j : Fin 2),
+      ((LinearMap.toMatrix' (ρC g) i j : C) : A) =
+        LinearMap.toMatrix' (ρA g) i j := by
+    intro g i j
+    rw [hρCtm g, ← hmatC g]
+    rfl
+  have hHRC : IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun C) ρC :=
+    isRaisedLevelHardlyRamified_of_subring_entries Q hglue h2 πA hπAsurj C
+      hentC hcfA hHRA
+  -- transport along the isomorphism `range f ≃+* P ⧸ ker f`
+  obtain ⟨σr, hσfC⟩ : ∃ σr : C →+* (P ⧸ RingHom.ker f),
+      ∀ x : P, σr (fC x) = Ideal.Quotient.mk (RingHom.ker f) x := by
+    refine ⟨((RingHom.quotientKerEquivRange f).symm : f.range ≃+* _).toRingHom, ?_⟩
+    intro x
+    have h1 : (RingHom.quotientKerEquivRange f) (Ideal.Quotient.mk (RingHom.ker f) x)
+        = fC x := rfl
+    show (RingHom.quotientKerEquivRange f).symm (fC x) = _
+    rw [← h1, RingEquiv.symm_apply_apply]
+  have hσcont : Continuous σr := continuous_of_discreteTopology
+  have halgσ : σr.comp (algebraMap ℤ_[p] C) =
+      algebraMap ℤ_[p] (P ⧸ RingHom.ker f) := ringHom_padicInt_ext_finite _ _
+  refine ⟨pushforwardFrame σr hσcont ρC, fun g => ?_, ?_⟩
+  · rw [toMatrix'_pushforwardFrame, hρCtm g, Matrix.map_map]
+    exact congrArg (Matrix.map (Mf g)) (funext hσfC)
+  · exact isRaisedLevelHardlyRamified_pushforwardFrame Q σr hσcont halgσ hHRC
+
+end RaisedLevelFrame
+
+set_option linter.checkUnivs false in
+set_option linter.unusedVariables false in
+set_option maxHeartbeats 1600000 in
+open scoped TensorProduct in
+/-- **The RAISED-LEVEL level-ideal system** (was LEAF A2′-2d′-i-1; **PROVEN
+2026-07-30, `flt-lean-38`**, over the single new leaf
+`isSplitTorusAt_of_subring_entries` above — the arithmetic half of the
+raised-level Schlessinger machine, and the exact raised-level twin of
 `exists_levelIdealSystem_of_deformationCondition`
 (`HardlyRamified/Deformation.lean`, PROVEN)).
+
+# HOW IT IS PROVEN, AND THE ONE HYPOTHESIS THAT WAS ADDED
+
+**`hQp : ∀ q ∈ Q, q ≠ p` is NEW** (2026-07-30).  It is not a design choice: it is
+one of the arrows of `IsAuxFibreProductClause`, added there earlier the same day
+by the proof of `raisedLevelIsSplitTorusAt_of_fibreProduct`, and `hglue` cannot
+be applied without it.  There were no call sites of this theorem, so nothing else
+changed.
+
+**THE UNIVERSE OBSTRUCTION AND ITS RESOLUTION.**  The base-level `FrameRing`
+section builds `P` as `ℤ_p[X_{g,i,j}, T_x]/(relations)` with the Teichmüller
+generators `T_x` indexed by the residual field, so `frameRing p k : Type uK` —
+while this statement demands `P : Type uR`.  The repair is one line and needs no
+re-derivation: `k` is FINITE, hence `Small.{uR} k`, so `Shrink.{uR} k` is a
+`Type uR` field isomorphic to `k` (mathlib carries the transported `Field` and
+`ℤ_p`-`Algebra` instances and the `AlgEquiv` back, `Mathlib/Algebra/*/Shrink`).
+The whole base-level frame machinery is then instantiated at `Shrink.{uR} k`, the
+residual model being `ρbar.conj e0` pushed forward along the inverse
+isomorphism, and `evbar` is the frame's own `frameEv` composed with the
+isomorphism back to `k`.  So `frameRing`, `frameEv`, `frameMat`,
+`frameEv_surjective`, `frameEv_comp_algebraMap`, `frameMat_map_frameEv`,
+`frameMat_one`, `frameMat_mul`, `frameEval`, `frameRel_le_ker_framePolyEval`,
+`exists_teichmuller_section` and `frameRing_rigid` are REUSED verbatim; only the
+condition-dependent half is new, and it is the block above.
+
+**WHERE EACH HYPOTHESIS IS SPENT.**  `𝒟₀` and `hirr` are spent exactly once, in
+NONEMPTINESS: `𝒟₀.ρ` pushed to `k` is raised-level hardly ramified
+(`isRaisedLevelHardlyRamified_pushforwardFrame`) and its `charFrob` LINEAR
+COEFFICIENTS agree with `ρbar`'s away from `𝒟₀.S`, so
+`exists_conj_of_charFrobCoeffOne_eq_away` (PROVEN above — and note it is the
+TRACE-ONLY bridge that is needed here, since `AuxDeformationDatum` carries only
+`coeff 1`; `exists_conj_of_charFrob_eq_away` does NOT apply, see the audit
+correction on that section) conjugates it onto `ρbar`, which transports the
+condition to `ρbar` itself and hence to the residual model.  `hglue` is spent in
+DIRECTEDNESS (`auxQuotient_inf_isLevel`) and again in the CLASSIFICATION, through
+the subring descent.  **`hfin` is NOT spent** — exactly as at the base level,
+where its own docstring records that `hℓ5`, `hirr`, `hschur` and `hfin` are used
+by nothing in `frameLevels_classification`; it is kept because the consumer
+supplies it and because H3 is where it would be needed if the classification
+were ever re-cut.
+
+**THE `exfalso` ROUTE IS NOT TAKEN.**  See "WHAT IT MAY NOT DO" below: nothing in
+this proof derives `IsHardlyRamified hpodd hW ρbar`, and the only place `hirr` is
+used is the Brauer–Nesbitt/Chebotarev conjugacy above, which is a statement about
+two representations with equal Frobenius traces and is not downstream of the
+odd-prime dichotomy.
 
 This is the ONE place `hglue`, `hfin` and `𝒟₀` are spent.  The conclusion is
 `exists_levelIdealSystem_of_deformationCondition`'s verbatim, with
@@ -14748,7 +15789,9 @@ both to one section universe; `flt-lean-39` freed the coefficient axis of the
 downstream construction on 2026-07-29, which is what makes the raised-level
 instantiation expressible at all).
 
-**WHAT THE PROVER MUST BUILD**, following the base-level proof one for one: the
+**WHAT THE PROVER HAD TO BUILD** (kept as written 2026-07-30 by `flt-lean-166`;
+all of it now exists, in the block above), following the base-level proof one for
+one: the
 frame ring `frameRing`, its evaluation `frameEv`, the universal matrix
 `frameMat`, and the set `frameLevels` of level ideals, together with
 `frameLevels_nonempty` (H1 through `𝒟₀`: the raised-level category is NONEMPTY,
@@ -14785,7 +15828,7 @@ theorem exists_levelIdealSystem_aux_of_clauses.{uK, uW, uR}
     [Module.Free k W]
     (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
     (hirr : ρbar.IsIrreducible)
-    (Q : Finset ℕ)
+    (Q : Finset ℕ) (hQp : ∀ q ∈ Q, q ≠ p)
     (𝒟₀ : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar)
     (hglue : IsAuxFibreProductClause.{uR, uK, uW} hpodd Q ρbar)
     (hfin : IsAuxFiniteFramesClause.{uR} hpodd Q) :
@@ -14823,8 +15866,306 @@ theorem exists_levelIdealSystem_aux_of_clauses.{uK, uW, uR}
         (πA : A →+* k) (f₁ f₂ : P →+* A),
         πA.comp f₁ = evbar → πA.comp f₂ = evbar →
         (∀ g : Field.absoluteGaloisGroup ℚ, (M g).map ⇑f₁ = (M g).map ⇑f₂) →
-        f₁ = f₂) :=
-  sorry
+        f₁ = f₂) := by
+  classical
+  -- ## 0. the `Type uR` copy of the residual field
+  haveI : Small.{uR} k := small_of_injective (Finite.equivFin k).injective
+  letI : TopologicalSpace (Shrink.{uR} k) := ⊥
+  haveI : DiscreteTopology (Shrink.{uR} k) := ⟨rfl⟩
+  haveI : Finite (Shrink.{uR} k) := Finite.of_equiv _ (equivShrink k)
+  set eS : Shrink.{uR} k ≃ₐ[ℤ_[p]] k := Shrink.algEquiv ℤ_[p] k with heSdef
+  set ι : Shrink.{uR} k →+* k :=
+    (eS.toRingEquiv : Shrink.{uR} k ≃+* k).toRingHom with hιdef
+  set ιinv : k →+* Shrink.{uR} k :=
+    (eS.toRingEquiv.symm : k ≃+* Shrink.{uR} k).toRingHom with hιinvdef
+  have hιι : ∀ x : k, ι (ιinv x) = x := fun x => eS.toRingEquiv.apply_symm_apply x
+  have hιinvι : ∀ x : Shrink.{uR} k, ιinv (ι x) = x :=
+    fun x => eS.toRingEquiv.symm_apply_apply x
+  have hιsurj : Function.Surjective ι := eS.toRingEquiv.surjective
+  have hιinj : Function.Injective ι := eS.toRingEquiv.injective
+  have hιinvsurj : Function.Surjective ιinv := eS.toRingEquiv.symm.surjective
+  have hιalg : ι.comp (algebraMap ℤ_[p] (Shrink.{uR} k)) = algebraMap ℤ_[p] k := by
+    refine RingHom.ext fun r => ?_
+    exact eS.commutes r
+  have hιinvalg : ιinv.comp (algebraMap ℤ_[p] k) =
+      algebraMap ℤ_[p] (Shrink.{uR} k) := by
+    refine RingHom.ext fun r => ?_
+    have h := RingHom.congr_fun hιalg r
+    simp only [RingHom.coe_comp, Function.comp_apply] at h ⊢
+    rw [← h, hιinvι]
+  -- ## 1. the framing of `ρbar`
+  have hfr : Module.finrank k W = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast hW)
+  set e0 : W ≃ₗ[k] (Fin 2 → k) :=
+    (Module.finBasisOfFinrankEq k W hfr).equivFun with he0def
+  -- ## 2. the residual model, transported to the small copy
+  set σ : GaloisRep ℚ (Shrink.{uR} k) (Fin 2 → Shrink.{uR} k) :=
+    pushforwardFrame ιinv continuous_of_discreteTopology (ρbar.conj e0) with hσdef
+  have hσmat : ∀ g : Field.absoluteGaloisGroup ℚ, LinearMap.toMatrix' (σ g) =
+      (LinearMap.toMatrix' ((ρbar.conj e0) g)).map ⇑ιinv :=
+    fun g => toMatrix'_pushforwardFrame _ _ _ g
+  have hσmatι : ∀ g : Field.absoluteGaloisGroup ℚ,
+      (LinearMap.toMatrix' (σ g)).map ⇑ι =
+        LinearMap.toMatrix' ((ρbar.conj e0) g) := by
+    intro g
+    rw [hσmat, Matrix.map_map]
+    refine Matrix.ext fun i j => ?_
+    simp only [Matrix.map_apply, Function.comp_apply, hιι]
+  -- ## 3. `σ` satisfies the raised-level condition, via `𝒟₀` and rigidity
+  have h2k : (2 : k) ≠ 0 := by
+    intro h20
+    have hd2 : ringChar k ∣ 2 := ringChar.dvd (by exact_mod_cast h20)
+    have hdl : ringChar k ∣ p := ringChar.dvd natCast_self_eq_zero
+    have hpr : (ringChar k).Prime :=
+      (CharP.char_is_prime_or_zero k (ringChar k)).resolve_right
+        (CharP.char_ne_zero_of_finite k (ringChar k))
+    have hchar2 : ringChar k = 2 :=
+      (Nat.prime_dvd_prime_iff_eq hpr Nat.prime_two).mp hd2
+    rw [hchar2] at hdl
+    obtain ⟨m, hm⟩ := hdl
+    obtain ⟨t, ht⟩ := hpodd
+    omega
+  have hkeropen : IsOpen ((RingHom.ker 𝒟₀.π : Ideal 𝒟₀.R) : Set 𝒟₀.R) := by
+    rw [IsLocalRing.ker_eq_maximalIdeal 𝒟₀.π 𝒟₀.π_surjective]
+    have hop := (isAdic_iff.mp 𝒟₀.isAdic).1 1
+    rwa [pow_one] at hop
+  have hπcont : Continuous 𝒟₀.π :=
+    continuous_of_isOpen_ker_of_discreteTopology 𝒟₀.π hkeropen
+  have halg0 : 𝒟₀.π.comp (algebraMap ℤ_[p] 𝒟₀.R) = algebraMap ℤ_[p] k :=
+    ringHom_padicInt_ext_finite _ _
+  have hτHR : IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun k)
+      (pushforwardFrame 𝒟₀.π hπcont 𝒟₀.ρ) :=
+    isRaisedLevelHardlyRamified_pushforwardFrame Q 𝒟₀.π hπcont halg0
+      𝒟₀.isRaisedLevelHardlyRamified
+  have hτcf : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ 𝒟₀.S →
+      ((pushforwardFrame 𝒟₀.π hπcont 𝒟₀.ρ).charFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 =
+        (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 := by
+    intro q hq hqS
+    have hrid : IsResidualIdentifiedFrame (ℓ := p)
+        (pushforwardFrame 𝒟₀.π hπcont 𝒟₀.ρ) 𝒟₀.ρ 𝒟₀.π hπcont := by
+      letI : Algebra 𝒟₀.R k := 𝒟₀.π.toAlgebra
+      letI : ContinuousSMul 𝒟₀.R k := continuousSMul_of_algebraMap _ _
+        (by rw [RingHom.algebraMap_toAlgebra]; exact hπcont)
+      exact ⟨TensorProduct.piScalarRight 𝒟₀.R k k (Fin 2), rfl⟩
+    have h := charFrob_map_of_isResidualIdentifiedFrame 𝒟₀.ρ 𝒟₀.π hπcont hrid
+      hq.toHeightOneSpectrumRingOfIntegersRat
+    have h' := congrArg (fun R : Polynomial k => R.coeff 1) h
+    simp only [Polynomial.coeff_map] at h'
+    rw [← h']
+    exact 𝒟₀.charFrob_compat q hq hqS
+  obtain ⟨eτ, heτ⟩ := exists_conj_of_charFrobCoeffOne_eq_away h2k hW hirr
+    (rank_finTwoFun k) (pushforwardFrame 𝒟₀.π hπcont 𝒟₀.ρ) 𝒟₀.S hτcf
+  have hρbarHR : IsRaisedLevelHardlyRamified hpodd Q hW ρbar := by
+    rw [← heτ]
+    exact isRaisedLevelHardlyRamified_conj Q hW hτHR eτ
+  have hmodelHR : IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun k)
+      (ρbar.conj e0) :=
+    isRaisedLevelHardlyRamified_conj Q (rank_finTwoFun k) hρbarHR e0
+  have hσHR : IsRaisedLevelHardlyRamified hpodd Q
+      (rank_finTwoFun (Shrink.{uR} k)) σ :=
+    isRaisedLevelHardlyRamified_pushforwardFrame Q ιinv
+      continuous_of_discreteTopology hιinvalg hmodelHR
+  -- ## 4. the tautological frame ring over the small copy
+  set e0' : (Fin 2 → Shrink.{uR} k) ≃ₗ[Shrink.{uR} k]
+      (Fin 2 → Shrink.{uR} k) :=
+    LinearEquiv.refl (Shrink.{uR} k) (Fin 2 → Shrink.{uR} k) with he0'def
+  have hconjrefl : σ.conj e0' = σ := by rw [he0'def, LevelLimit.conj_refl]
+  set ev : frameRing p (Shrink.{uR} k) →+* Shrink.{uR} k :=
+    frameEv p (Shrink.{uR} k) σ e0' with hevdef
+  set MM : Field.absoluteGaloisGroup ℚ →
+      Matrix (Fin 2) (Fin 2) (frameRing p (Shrink.{uR} k)) :=
+    frameMat p (Shrink.{uR} k) with hMMdef
+  have hevsurj : Function.Surjective ev := frameEv_surjective p _ σ e0'
+  have hevalg : ev.comp (algebraMap ℤ_[p] (frameRing p (Shrink.{uR} k))) =
+      algebraMap ℤ_[p] (Shrink.{uR} k) := frameEv_comp_algebraMap p _ σ e0'
+  have hres : ∀ g : Field.absoluteGaloisGroup ℚ,
+      (MM g).map ⇑ev = LinearMap.toMatrix' (σ g) := by
+    intro g
+    rw [hMMdef, hevdef, frameMat_map_frameEv, hconjrefl]
+  have hresι : ∀ g : Field.absoluteGaloisGroup ℚ, ((MM g).map ⇑ev).map ⇑ι =
+      LinearMap.toMatrix' ((ρbar.conj e0) g) := by
+    intro g
+    rw [hres g, hσmatι g]
+  -- ## 5. the level family
+  set 𝒥 : Set (Ideal (frameRing p (Shrink.{uR} k))) :=
+    {J | J ≤ RingHom.ker ev ∧
+      Finite (frameRing p (Shrink.{uR} k) ⧸ J) ∧
+      IsLocalRing (frameRing p (Shrink.{uR} k) ⧸ J) ∧
+      ∀ [Finite (frameRing p (Shrink.{uR} k) ⧸ J)]
+        [IsLocalRing (frameRing p (Shrink.{uR} k) ⧸ J)]
+        [TopologicalSpace (frameRing p (Shrink.{uR} k) ⧸ J)]
+        [DiscreteTopology (frameRing p (Shrink.{uR} k) ⧸ J)]
+        [IsTopologicalRing (frameRing p (Shrink.{uR} k) ⧸ J)],
+        ∃ ρJ : GaloisRep ℚ (frameRing p (Shrink.{uR} k) ⧸ J)
+            (Fin 2 → (frameRing p (Shrink.{uR} k) ⧸ J)),
+          (∀ g : Field.absoluteGaloisGroup ℚ, LinearMap.toMatrix' (ρJ g) =
+            (MM g).map ⇑(Ideal.Quotient.mk J)) ∧
+          IsRaisedLevelHardlyRamified hpodd Q
+            (rank_finTwoFun (frameRing p (Shrink.{uR} k) ⧸ J)) ρJ} with h𝒥def
+  refine ⟨e0, frameRing p (Shrink.{uR} k), inferInstance, inferInstance,
+    ι.comp ev, hιsurj.comp hevsurj, ?_, MM, 𝒥, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · -- `evbar` is a `ℤ_p`-algebra map
+    refine RingHom.ext fun r => ?_
+    have h1 := RingHom.congr_fun hevalg r
+    have h2 := RingHom.congr_fun hιalg r
+    simp only [RingHom.coe_comp, Function.comp_apply] at h1 h2 ⊢
+    rw [h1, h2]
+  · -- NONEMPTY
+    obtain ⟨hf, hl, hr⟩ := auxQuotient_ker_isLevel Q ev hevsurj hevalg MM σ hσHR hres
+    exact ⟨RingHom.ker ev, le_refl _, hf, hl, hr⟩
+  · -- DIRECTED
+    rintro J₁ ⟨h1ker, h1fin, h1loc, h1rep⟩ J₂ ⟨h2ker, h2fin, h2loc, h2rep⟩
+    obtain ⟨hf, hl, hr⟩ := auxQuotient_inf_isLevel Q hQp ι hιsurj e0 ev hevsurj MM
+      (frameMat_one p _) (frameMat_mul p _) hresι hglue h1ker h1fin h1loc h1rep
+      h2ker h2fin h2loc h2rep
+    exact ⟨J₁ ⊓ J₂, ⟨le_trans inf_le_left h1ker, hf, hl, hr⟩, le_refl _⟩
+  · -- every level is below `ker evbar`
+    intro J hJ x hx
+    have h := hJ.1 hx
+    rw [RingHom.mem_ker] at h ⊢
+    simp only [RingHom.coe_comp, Function.comp_apply, h, map_zero]
+  · exact fun J hJ => ⟨hJ.2.1, hJ.2.2.1⟩
+  · -- the residual identification of `M`
+    intro g
+    have hsplit : (MM g).map ⇑(ι.comp ev) = ((MM g).map ⇑ev).map ⇑ι :=
+      Matrix.ext fun i j => rfl
+    rw [hsplit, hresι g]
+  · exact fun J hJ _ _ _ _ _ => hJ.2.2.2
+  · -- CLASSIFICATION
+    intro A _ _ _ _ _ _ _ πA hπA hπsurj ρA hHRA halgA hpush
+    classical
+    have hπkk : Function.Surjective (ιinv.comp πA) := hιinvsurj.comp hπsurj
+    obtain ⟨t, -, htres, htmul, ht0, ht1⟩ :=
+      exists_teichmuller_section (ℓ := p) (k := Shrink.{uR} k) (ιinv.comp πA) hπkk
+    set N : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) A :=
+      fun g => LinearMap.toMatrix' (ρA g) with hNdef
+    have hNmul : ∀ g h, N (g * h) = N g * N h := by
+      intro g h
+      simp only [hNdef, map_mul, LinearMap.toMatrix'_mul]
+    have hN1 : N 1 = 1 := by simp only [hNdef, map_one, LinearMap.toMatrix'_one]
+    have hrel := frameRel_le_ker_framePolyEval p (Shrink.{uR} k) N t hNmul hN1
+      htmul ht0 ht1
+    set f := frameEval p (Shrink.{uR} k) N t hrel with hfdef
+    have hc1 : f.comp (algebraMap ℤ_[p] (frameRing p (Shrink.{uR} k))) =
+        algebraMap ℤ_[p] A := by
+      refine RingHom.ext fun r => ?_
+      show f (algebraMap ℤ_[p] (frameRing p (Shrink.{uR} k)) r) = _
+      rw [IsScalarTower.algebraMap_apply ℤ_[p] (framePoly p (Shrink.{uR} k))
+        (frameRing p (Shrink.{uR} k)) r]
+      show f (Ideal.Quotient.mk (frameRel p (Shrink.{uR} k))
+        (algebraMap ℤ_[p] (framePoly p (Shrink.{uR} k)) r)) = _
+      rw [hfdef, frameEval_mk]
+      exact congrFun (congrArg (fun F : ℤ_[p] →+* A => (F : ℤ_[p] → A))
+        (framePolyEval_comp_algebraMap p (Shrink.{uR} k) N t)) r
+    have hc3 : ∀ g : Field.absoluteGaloisGroup ℚ,
+        (MM g).map ⇑f = LinearMap.toMatrix' (ρA g) := by
+      intro g
+      ext i j
+      simp [hMMdef, frameMat, framePolyMat, hfdef, hNdef]
+    -- the pushforward of `ρA` to the small copy IS `σ`
+    have hpushkk : pushforwardFrame (ιinv.comp πA) continuous_of_discreteTopology
+        ρA = σ := by
+      refine framedGaloisRep_ext_toMatrix' fun g => ?_
+      rw [toMatrix'_pushforwardFrame, hσmat g, ← hpush, toMatrix'_pushforwardFrame,
+        Matrix.map_map]
+      rfl
+    have hc2 : (ιinv.comp πA).comp f = ev := by
+      have hq : ((ιinv.comp πA).comp f).comp
+          (Ideal.Quotient.mk (frameRel p (Shrink.{uR} k))) =
+          ev.comp (Ideal.Quotient.mk (frameRel p (Shrink.{uR} k))) := by
+        refine MvPolynomial.ringHom_ext ?_ ?_
+        · intro r
+          have hmk : (Ideal.Quotient.mk (frameRel p (Shrink.{uR} k)))
+              (MvPolynomial.C r) =
+              algebraMap ℤ_[p] (frameRing p (Shrink.{uR} k)) r := rfl
+          simp only [RingHom.coe_comp, Function.comp_apply, hmk]
+          have h₁ : f (algebraMap ℤ_[p] (frameRing p (Shrink.{uR} k)) r) =
+              algebraMap ℤ_[p] A r := RingHom.congr_fun hc1 r
+          have h₂ : ev (algebraMap ℤ_[p] (frameRing p (Shrink.{uR} k)) r) =
+              algebraMap ℤ_[p] (Shrink.{uR} k) r := RingHom.congr_fun hevalg r
+          rw [h₁, h₂]
+          have h3 : πA (algebraMap ℤ_[p] A r) = algebraMap ℤ_[p] k r :=
+            RingHom.congr_fun halgA r
+          rw [h3]
+          have h4 := RingHom.congr_fun hιinvalg r
+          simp only [RingHom.coe_comp, Function.comp_apply] at h4
+          exact h4
+        · rintro (⟨g, i, j⟩ | x)
+          · have hent := entry_pushforwardFrame (ιinv.comp πA)
+              continuous_of_discreteTopology ρA g i j
+            rw [hpushkk] at hent
+            simp only [RingHom.coe_comp, Function.comp_apply, hfdef, frameEval_mk,
+              framePolyEval_X_inl, hevdef, frameEv_mk_X_inl, hconjrefl]
+            simp only [hNdef]
+            exact hent.symm
+          · simp only [RingHom.coe_comp, Function.comp_apply, hfdef, frameEval_mk,
+              framePolyEval_X_inr, hevdef, frameEv_mk_X_inr]
+            exact htres x
+      refine RingHom.ext fun z => ?_
+      obtain ⟨w, rfl⟩ := Ideal.Quotient.mk_surjective z
+      exact RingHom.congr_fun hq w
+    have hc2' : πA.comp f = ι.comp ev := by
+      refine RingHom.ext fun z => ?_
+      have h := RingHom.congr_fun hc2 z
+      simp only [RingHom.coe_comp, Function.comp_apply] at h ⊢
+      rw [← h, hιι]
+    -- the residual `charFrob` compatibility of `ρA`
+    have hcfA : ∀ (q : ℕ) (hq : q.Prime),
+        πA ((ρA.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+          (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 := by
+      intro q hq
+      have hrid : IsResidualIdentifiedFrame (ℓ := p) ρbar ρA πA hπA := by
+        letI : Algebra A k := πA.toAlgebra
+        letI : ContinuousSMul A k := continuousSMul_of_algebraMap _ _
+          (by rw [RingHom.algebraMap_toAlgebra]; exact hπA)
+        refine ⟨(TensorProduct.piScalarRight A k k (Fin 2)).trans e0.symm, ?_⟩
+        have h1 : ((ρA.baseChange k).conj
+            (TensorProduct.piScalarRight A k k (Fin 2))) = ρbar.conj e0 := hpush
+        rw [← LevelLimit.conj_trans, h1, LevelLimit.conj_trans,
+          LinearEquiv.self_trans_symm, LevelLimit.conj_refl]
+      have h := charFrob_map_of_isResidualIdentifiedFrame ρA πA hπA hrid
+        hq.toHeightOneSpectrumRingOfIntegersRat
+      have h' := congrArg (fun R : Polynomial k => R.coeff 1) h
+      simpa using h'
+    refine ⟨f, hc1, hc2', hc3, RingHom.ker f, ⟨?_, ?_, ?_, ?_⟩, le_refl _⟩
+    · intro z hz
+      rw [RingHom.mem_ker] at hz ⊢
+      rw [← hc2, RingHom.comp_apply, hz, map_zero]
+    · haveI : Finite ↥f.range := Subtype.finite
+      exact Finite.of_equiv _ (RingHom.quotientKerEquivRange f).toEquiv.symm
+    · haveI : Finite ↥f.range := Subtype.finite
+      haveI : Finite (frameRing p (Shrink.{uR} k) ⧸ RingHom.ker f) :=
+        Finite.of_equiv _ (RingHom.quotientKerEquivRange f).toEquiv.symm
+      haveI : Nontrivial (frameRing p (Shrink.{uR} k) ⧸ RingHom.ker f) := by
+        refine ⟨⟨1, 0, fun h => one_ne_zero (?_ : (1 : A) = 0)⟩⟩
+        have h1 : (1 : frameRing p (Shrink.{uR} k)) ∈ RingHom.ker f := by
+          rw [← Ideal.Quotient.eq_zero_iff_mem, map_one]
+          exact h
+        rw [RingHom.mem_ker, map_one] at h1
+        exact h1
+      refine isLocalRing_of_injective_of_finite
+        (C := frameRing p (Shrink.{uR} k) ⧸ RingHom.ker f) (A := A)
+        (Ideal.Quotient.lift (RingHom.ker f) f fun a ha => RingHom.mem_ker.mp ha) ?_
+      intro x y hxy
+      obtain ⟨x, rfl⟩ := Ideal.Quotient.mk_surjective x
+      obtain ⟨y, rfl⟩ := Ideal.Quotient.mk_surjective y
+      rw [Ideal.Quotient.lift_mk, Ideal.Quotient.lift_mk] at hxy
+      rw [Ideal.Quotient.eq, RingHom.mem_ker, map_sub, hxy, sub_self]
+    · intro _ _ _ _ _
+      exact auxFrameLevels_repClause_ker Q hglue A πA hπsurj ρA hHRA hcfA MM f hc3
+  · -- RIGIDITY
+    intro A _ _ _ πA f₁ f₂ h₁ h₂ hM
+    refine frameRing_rigid p (Shrink.{uR} k) σ e0' A (ιinv.comp πA) f₁ f₂ ?_ ?_ hM
+    · refine RingHom.ext fun z => ?_
+      have h := RingHom.congr_fun h₁ z
+      simp only [RingHom.coe_comp, Function.comp_apply] at h ⊢
+      rw [h, hιinvι]
+    · refine RingHom.ext fun z => ?_
+      have h := RingHom.congr_fun h₂ z
+      simp only [RingHom.coe_comp, Function.comp_apply] at h ⊢
+      rw [h, hιinvι]
 
 set_option linter.checkUnivs false in
 open scoped TensorProduct in
