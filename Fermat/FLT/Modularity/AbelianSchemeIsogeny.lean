@@ -13004,41 +13004,33 @@ end AbelianSchemeStruct
 
 /-! ### Sheaf-level bookkeeping for the theorem-of-the-cube cut
 
-Two identifications that the tensor calculus does not yet state and that the
-induction below needs.  Both are PROVEN and neither is new mathematics.
+One identification that the tensor calculus does not yet state and that the
+induction below needs.  It is PROVEN and it is not new mathematics.
 
-**Both belong UPSTREAM, and the second one has a waiting consumer there.**
-`isInvertibleSheaf_modPullback` is exactly the statement
-`Fermat.exists_abelJacobiPoint`'s docstring (`ModularCurve/RelativePicard.lean`)
-names as the piece blocking its `aj_pre` clause ("*that* needs
-**`IsInvertibleSheaf (modPullback h N)`**, which is absent from this module"),
-and it asks for it to be stated in the tensor-calculus section there.  It is
-declared HERE only because the proof runs through
-`exists_trivialization_modPullback`, which lives in `Modularity/AmpleSheaf.lean`
-— DOWNSTREAM of `RelativePicard.lean` — so the requested home needs either a
-different proof or a hoist of the trivialization machinery.  Whoever does that
-hoist should delete these two and re-point their consumers. -/
+**THE SECOND ONE HAS GONE UPSTREAM, WHICH IS WHERE THIS NOTE ASKED FOR IT
+(2026-07-30, at the release-22 merge).**  This block used to declare
+`isInvertibleSheaf_modPullback` here as well, with the note: it is exactly the
+statement `Fermat.exists_abelJacobiPoint`'s docstring
+(`ModularCurve/RelativePicard.lean`) names as the piece blocking its `aj_pre`
+clause ("*that* needs **`IsInvertibleSheaf (modPullback h N)`**, which is absent
+from this module"), it belongs in the tensor-calculus section there, and it sat
+here only because the proof ran through `exists_trivialization_modPullback`
+(`Modularity/AmpleSheaf.lean`), DOWNSTREAM of `RelativePicard.lean` — so the
+requested home needed "either a different proof or a hoist of the trivialization
+machinery".
+
+It got the different proof.  `RelativePicard.lean`:906 now proves it directly
+from `modRestrictPullbackIso` / `modPullbackCompIso` / `modPullbackUnitIso`, with
+no trivialization machinery at all, so the copy here was a duplicate declaration
+at the same root namespace in a module that imports it — which is a hard error,
+and is how it was found.  Deleted; the consumers below resolve to the upstream
+one, whose signature is identical. -/
 
 /-- **`(𝟙_X)^* L ≅ L`** — `Scheme.Modules.pullbackId`, read on an object.  The
 missing companion of `modPullbackCompIso`/`modPullbackCongrIso`. -/
 noncomputable def modPullbackIdIso {X : Scheme.{u}} (L : X.Modules) :
     modPullback (𝟙 X) L ≅ L :=
   (Scheme.Modules.pullbackId X).app L
-
-/-- **THE PULLBACK OF AN INVERTIBLE SHEAF IS INVERTIBLE** (PROVEN 2026-07-30).
-
-One line over `exists_trivialization_modPullback` (`AmpleSheaf.lean`), read at
-the junk section `0`: that theorem is stated for an ARBITRARY morphism and
-produces a trivialization of `f^* A` over `f ⁻¹ᵁ U` from one of `A` over `U`,
-which is literally the datum `IsInvertibleSheaf (modPullback f A)` asks for.
-Only the trivialization is used; the basic-open half of its conclusion is
-discarded, which is why the section it is read at may be arbitrary. -/
-theorem isInvertibleSheaf_modPullback {X Y : Scheme.{u}} (fXY : X ⟶ Y) {Aa : Y.Modules}
-    (hA : IsInvertibleSheaf Aa) : IsInvertibleSheaf (modPullback fXY Aa) := by
-  intro x
-  obtain ⟨U, hU, ⟨φ⟩⟩ := hA (fXY.base x)
-  obtain ⟨ψ, -⟩ := exists_trivialization_modPullback fXY φ (0 : Γ(Aa, ⊤))
-  exact ⟨fXY ⁻¹ᵁ U, hU, ⟨ψ⟩⟩
 
 /-! ### THE THEOREM OF THE CUBE, AT THE SHEAF LEVEL
 
