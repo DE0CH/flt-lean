@@ -17806,6 +17806,137 @@ explicitly.)
    (a) says `Ш²` and not `H²`. State it that way, per local condition, and
    expect one sub-leaf per clause of `IsHardlyRamified`.
 
+6. *The CORRECTION STEP behind conjunct (b) — a SIXTH item, raised 2026-07-30,
+   and it is an OPEN FALSITY SUSPICION rather than a missing lemma.* **Read this
+   before starting on conjunct (b); it may be that the statement, and with it
+   this whole subtree's route, needs changing.** IT IS NOT A REFUTATION: no
+   witness is offered and none was found. What follows is one specific,
+   cheaply-checkable question, and it was not asked by any of the five audits
+   above, all of which are about conjunct (a).
+
+   *The observation.* Conjunct (b) reads: if `oc ψ` is a COBOUNDARY — i.e. the
+   obstruction class vanishes in `H²(G_{ℚ,S}, ad⁰)`, the cohomology of the
+   UNCONDITIONED fixed-determinant problem — then a HARDLY RAMIFIED lift exists
+   over `S ⧸ K`. The classical route to that conclusion has two steps and only
+   the first is controlled by `H²(G_{ℚ,S}, ad⁰)`:
+
+   (i) the class vanishing gives a lift `ρ̃ : G_{ℚ,S} → GL₂(S ⧸ K)` of `D.ρ`
+       with the right determinant, but with NO local conditions;
+   (ii) `ρ̃|_{G_v}` need not be flat at `ℓ` or tame at `2`. Item (5)'s
+        liftability gives, for each `v ∈ S`, a good local lift, hence a class
+        `c_v ∈ H¹(G_v, ad⁰)` measuring the discrepancy modulo `L_v`; to correct
+        `ρ̃` GLOBALLY one needs `(c_v)_v` to come from `H¹(G_{ℚ,S}, ad⁰)`.
+
+   So conjunct (b) silently asserts that the tuple in step (ii) is always in the
+   image of `H¹(G_{ℚ,S}, ad⁰) → ⊕_{v ∈ S} H¹(G_v, ad⁰) / L_v`. Nothing in the
+   leaf's hypotheses makes that map surjective, and its cokernel is the
+   obstruction group of the CONDITIONED functor modulo `Ш²`. (The precise
+   identification of that cokernel with a dual Selmer group was NOT verified
+   here and is deliberately not asserted; the recorded gap is the surjectivity
+   itself, which is what step (ii) needs.)
+
+   *Why this matters beyond this leaf, and the QUANTIFIED version — this part IS
+   verified against the literature.* Conjuncts (a) and (b) together make `oc`
+   INJECTIVE, which is exactly how the consumer chain uses it: `oc ψ = 0` forces
+   a lift, hence a section by weak universality, hence `ker φ ⊆ K_ψ`, hence
+   `ψ = 0`. So this leaf asserts `r ≤ dim_k Ш²_S(ad⁰)` for the minimal
+   presentation. **Mazur's classical bound for the UNRESTRICTED problem — no
+   local conditions at all, so no correction step and no room to argue about
+   `L` — is `r ≤ dim_k H²(G_{ℚ,S}, ad⁰)`, and that group is STRICTLY LARGER
+   than `Ш²_S(ad⁰)` by a computable amount:**
+
+     `dim_k H²(G_{ℚ,S}, ad⁰) = dim_k Ш²_S(ad⁰) + Σ_{v ∈ S} dim_k H⁰(G_v, ad⁰(1))`.
+
+   That identity is the tail of the nine-term Poitou–Tate sequence
+   `H²(G_S, ad⁰) → ⊕_{v ∈ S} H²(G_v, ad⁰) → H⁰(G_S, ad⁰(1))^∨ → 0` combined with
+   local duality `H²(G_v, ad⁰) ≅ H⁰(G_v, ad⁰(1))^∨` and with
+   `h⁰(G_S, ad⁰(1)) = 0`, which `hirr` supplies (the same vanishing
+   `card_sha1Twist_le_card_dualNumberPoints` below calls load-bearing). It is
+   the Greenberg–Wiles formula in the form quoted in the 2026 survey *A
+   Local-Global Study of Obstructed Deformation Problems II*
+   (`arXiv:2606.23918`, §2.1–2.2), which also states the presentation bound as
+   `d₂ = dim_κ H²(G_{ℚ,S}, ad ρ̄)` — the AMBIENT `H²`, not `Ш²`.
+
+   The gap term is not a corner case. At `v = ℓ` the flat/ordinary
+   `ρbar|_{G_ℓ}` routinely has `H⁰(G_ℓ, ad⁰(1)) ≠ 0`, so bounding `r` by `Ш²`
+   rather than by `H²` is a strictly stronger claim by a positive amount.
+   Imposing the hardly ramified local conditions is exactly what is supposed to
+   cut `H²` down towards `Ш²` — and that cutting-down IS step (ii). So the two
+   halves of this item are the same gap seen twice: the leaf cannot be reached
+   by the unrestricted route (`H²` is too big), and the restricted route owes
+   the correction step.
+
+   *And the CONDITIONED bound in the literature is the DUAL SELMER dimension,
+   which is also `≥ dim Ш²`, strictly.* For a deformation problem with local
+   conditions `L = (L_v)_{v ∈ S}` the standard presentation has `g = dim H¹_L`
+   generators and `r ≤ dim_k H¹_{L^⊥}(ad⁰(1))` relations. Now `Ш¹_S(ad⁰(1))` is
+   `H¹_{L^⊥}(ad⁰(1))` with `L_v^⊥` replaced by `0` at every `v ∈ S`, so
+
+     `Ш¹_S(ad⁰(1)) ⊆ H¹_{L^⊥}(ad⁰(1))`, with EQUALITY iff `L_v^⊥ = 0` for all
+     `v ∈ S`, i.e. iff `L_v = H¹(G_v, ad⁰)` — no condition at all at `v`.
+
+   The hardly ramified problem imposes a PROPER condition at `v = ℓ` (flatness),
+   so `L_ℓ^⊥ ≠ 0` and the containment has no reason to be an equality. Combined
+   with `Ш²_S(ad⁰) ≅ Ш¹_S(ad⁰(1))^∨` (the pairing leaf below), the leaf's
+   `r ≤ dim Ш²_S(ad⁰)` is therefore strictly stronger than BOTH standard bounds,
+   and it is stronger in the direction the local conditions are supposed to make
+   ROOM in, not remove it. **That is the closest thing to a witness offered here,
+   and it is why this is filed as a suspicion and not as a note.**
+
+   *The discriminating question, and it is a literature question, not a Lean
+   one.* Does Böckle's local-global principle (*Presentations of universal
+   deformation rings*, LMS Lecture Notes 2007; *A local-global principle for
+   deformations of Galois representations*) give `r ≤ dim Ш²` for a deformation
+   condition of this kind, under hypotheses `ρbar` here satisfies — or only a
+   bound by the dual Selmer group? Secondary sources describe his conditions as
+   "involving the vanishing of a second Shafarevich–Tate group and auxiliary
+   primes", which is consistent with `Ш²` being the right home only under extra
+   hypotheses. Neither Böckle paper is in `sources/`; both should be downloaded,
+   and that is the single cheapest next action on this leaf. If the answer is the
+   former, this item retires with a citation and nothing in the tree changes. If
+   the latter, conjunct (b) is FALSE AS STATED and must be weakened — and the
+   leaf must then say WHICH group, because the consumer chain reads the answer
+   off it.
+
+   *What was searched, 2026-07-30, so it is not repeated.* Wiles 1995 was
+   obtained and text-extracted in full: its Chapter 1 develops the Selmer groups
+   `H¹_D` and their duals but does NOT state a generators-and-relations
+   presentation, so it does not settle the question directly. The relation bound
+   as `dim` dual Selmer is stated in secondary literature on Böckle's method;
+   the unrestricted bound as `dim H²(G_{ℚ,S}, ad ρbar)` is stated in
+   `arXiv:2606.23918` §2.2. Kisin's deformation notes as served online are
+   Lecture 1 only and do not reach the presentation. The Anna's Archive MCP is
+   NOT registered in this session, so Böckle could not be fetched from here.
+
+   *The repair, if it is needed, is known in shape and is CHEAPER than the
+   current route — which is the other reason to settle this before proving
+   anything.* Replace `Ш²_S(ad⁰)` by `H¹_{L^⊥}(ad⁰(1))^∨` throughout the chain.
+   Then `exists_poitouTatePairing_sha2_sha1Twist` below — the file's single most
+   expensive leaf, gated on local class field theory and the local invariant map,
+   neither of which exists in this tree — is NO LONGER NEEDED: the chain becomes
+   `r ≤ dim H¹_{L^⊥}(ad⁰(1)) = dim H¹_L = g` by Greenberg–Wiles alone. The cost
+   is STATING `H¹_{L^⊥}`, which the section header above `adZeroCycloChar`
+   correctly says needs the local Tate pairing *if* written as an orthogonal
+   complement — but `Modularity/Patching.lean` describes the same dual Selmer
+   group directly, as an explicit unramified-outside-`S` condition
+   (`h1TwistUnramified`, `h1TwistLocalKer`, the `DualSelmerVocabulary` section),
+   and pays no pairing at all. That module is DOWNSTREAM of this one, so nothing
+   there is consumable here and the vocabulary would have to be hoisted; see the
+   same discussion on `card_sha1Twist_le_card_dualNumberPoints` below, which
+   reaches the identical conclusion from the other end of the chain.
+
+   *What was checked, so the next reader does not repeat it.* `Sha2` and
+   `Sha1Twist` above impose the ZERO local condition at each `v ∈ S`, so
+   `Ш²_S(ad⁰) ≅ Ш¹_S(ad⁰(1))^∨` (the pairing leaf) is the correct reading of
+   Poitou–Tate for THOSE groups and is not in question here — the question is
+   only whether `Ш²` is the right home for the obstruction. The OCR text of
+   Cornell–Silverman–Stevens in `sources/css1997mfflt.txt` was searched
+   (`obstruct`, `Selmer`, `relations`, `presentation`); Mazur's article there
+   discusses unobstructed deformation theory and de Smit–Lenstra's gives the
+   presentation, but neither states the relation bound in a form this OCR
+   renders legibly, so the question stands open. Böckle's papers are NOT in
+   `sources/` and should be downloaded.
+
 References: Böckle, *Presentations of universal deformation rings*; Mazur,
 *Deforming Galois representations*, §1.6–1.7; Darmon–Diamond–Taylor,
 *Fermat's Last Theorem*, §2.6–2.7; Neukirch–Schmidt–Wingberg, ch. VIII;
@@ -19929,6 +20060,27 @@ theorem injective_of_forall_apply_eq_zero {K : Type*} [Field K] {A B : Type*}
 arithmetic input behind the two theorems immediately below, both of which are
 PROVEN over it).
 
+**READ FIRST, 2026-07-30 — THIS LEAF MAY BE UNNECESSARY, AND SETTLING THAT IS
+CHEAPER THAN PROVING IT.** Item (6) of the machinery audit on
+`exists_obstructionCocycle_smallExtension_lift` above raises an OPEN FALSITY
+SUSPICION against that leaf's conjunct (b): it asserts the relation bound
+`r ≤ dim_k Ш²_S(ad⁰)`, whereas Mazur's classical bound is by the AMBIENT
+`dim_k H²(G_{ℚ,S}, ad⁰)`, and
+
+  `dim_k H²(G_{ℚ,S}, ad⁰) = dim_k Ш²_S(ad⁰) + Σ_{v ∈ S} dim_k H⁰(G_v, ad⁰(1))`
+
+with the correction term generically NONZERO at `v = ℓ`. Wiles's bound for the
+CONDITIONED problem is `dim_k H¹_{L^⊥}(ad⁰(1))`, and that too is `≥ dim Ш²`,
+since `Ш¹_S(ad⁰(1)) ⊆ H¹_{L^⊥}(ad⁰(1))` and this leaf identifies
+`Ш²_S(ad⁰) ≅ Ш¹_S(ad⁰(1))^∨`. If the suspicion is confirmed, the repair routes
+the chain through the dual Selmer group instead of through `Ш²`, and **THIS LEAF
+DROPS OUT**: `r ≤ dim H¹_{L^⊥}(ad⁰(1)) = dim H¹_L = g` is Greenberg–Wiles alone,
+with no Poitou–Tate and no local class field theory. So whoever is about to spend
+the ~1160 lines of cup-product vendoring plus a local invariant map catalogued
+below should answer item (6)'s literature question FIRST. Nothing below is
+retracted — the statement here is a correct reading of Poitou–Tate and would
+still be true; the question is only whether the tree needs it.
+
 This is Neukirch–Schmidt–Wingberg VIII.6.7 (the nine-term Poitou–Tate sequence,
 whence the perfect pairing `Ш¹_S(M*) × Ш²_S(M) → ℚ/ℤ`) specialised to
 `M = ad⁰ ρbar`, `M* ≅ ad⁰(1)`, and read on `k`-dimensions.  See
@@ -22051,6 +22203,20 @@ hypothesis to lean on, and adding one would be restating the target to make it
 provable. The transplantable part is the DESCRIPTION of the dual Selmer group,
 not the hypothesis. Note also that `Patching.lean` is DOWNSTREAM of this module,
 so nothing there is consumable here; a shared version would have to be hoisted.
+
+**AND THAT HOIST HAS ACQUIRED A SECOND, INDEPENDENT REASON, 2026-07-30.** Item
+(6) of the machinery audit on `exists_obstructionCocycle_smallExtension_lift`
+above arrives at the same hoist from the OTHER end of the chain: the obstruction
+leaf asserts `r ≤ dim Ш²_S(ad⁰)` where the literature gives
+`r ≤ dim H¹_{L^⊥}(ad⁰(1))`, and the repair — if the suspicion recorded there is
+confirmed — is to state the dual Selmer group directly, exactly as
+`Patching.lean` does. That version of the chain does not pass through `Ш¹` or
+`Ш²` at all, so it needs NEITHER `exists_poitouTatePairing_sha2_sha1Twist` above
+NOR this leaf as currently stated; what it needs is the Greenberg–Wiles formula
+against `H¹_{L^⊥}` directly. Since the containment `Ш¹_S(ad⁰(1)) ⊆
+H¹_{L^⊥}(ad⁰(1))` is the FIRST step of this leaf's own proof sketch, the two
+statements are one theorem with one extra `le_trans`, and the hoisted vocabulary
+serves both. Whoever owns either should read item (6) before choosing a route.
 
 **CIRCULARITY GUARD — INHERITED VERBATIM, and it binds this leaf** exactly as
 it binds `rank_sha2_le_rank_sha1_twist` above; see there for the BANNED INPUTS
