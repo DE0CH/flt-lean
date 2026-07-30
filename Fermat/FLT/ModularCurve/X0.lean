@@ -23383,11 +23383,20 @@ theorem nonempty_coordinateRingAlgEquiv_of_isWeierstrassModel {R : Type} [CommRi
 
 /-! #### From a LINEAR algebra map of coordinate rings to a `VariableChange`
 
-Everything in this subsection is PROVEN (2026-07-29, flt-lean-135) EXCEPT the
-single named leaf `exists_linearAlgHom_of_isWeierstrassModel` at its end.  It
-is the formalisation of the "verified plumbing" and the "what remains after
-that plumbing" paragraphs of `exists_variableChange_of_isWeierstrassModel`'s
-docstring, and it discharges the *bookkeeping* half of that leaf outright:
+Everything in this subsection is PROVEN (2026-07-29, flt-lean-135; extended
+2026-07-30, flt-lean-186) EXCEPT the single named leaf
+`exists_linearShape_of_isWeierstrassModel` near its end — **which is NOT the
+leaf that stood here on 2026-07-29**.  That one,
+`exists_linearAlgHom_of_isWeierstrassModel`, is now proven; what is left is the
+same statement with `IsUnit a ∧ IsUnit b` deleted, with the redundant `e`
+deleted, and with the comparison map pinned to the restriction of `𝟙 A`.  See
+the sub-subsection "The two halves of the geometric step" below for what moved
+and why.
+
+The subsection is the formalisation of the "verified plumbing" and the "what
+remains after that plumbing" paragraphs of
+`exists_variableChange_of_isWeierstrassModel`'s docstring, and it discharges the
+*bookkeeping* half of that leaf outright:
 
   `exists_variableChange_of_linearAlgHom` — an `R`-ALGEBRA MAP (not even an
   isomorphism) `R[W] → R[W']` sending `x ↦ a x' + r` and
@@ -23696,14 +23705,390 @@ theorem exists_variableChange_of_linearAlgHom {R : Type} [CommRing R]
               + ((u : R) * ((u⁻¹ : Rˣ) : R)) ^ 3 + ((u : R) * ((u⁻¹ : Rˣ) : R)) ^ 2
               + (u : R) * ((u⁻¹ : Rˣ) : R) + 1)))) * hv
 
+/-! #### The two halves of the geometric step, and the plumbing between them
+
+(2026-07-30, flt-lean-186.)  `exists_linearAlgHom_of_isWeierstrassModel` below is
+no longer a leaf: it is PROVEN over the single geometric leaf
+`exists_linearShape_of_isWeierstrassModel`, which is the same statement with
+`IsUnit a ∧ IsUnit b` DELETED and with the comparison map pinned to be the one
+induced by the identity of `A`.  Two things make that reduction work, and both
+are proven here.
+
+* `exists_coordinateRingAlgEquiv_compat_of_isWeierstrassModel` upgrades
+  `nonempty_coordinateRingAlgEquiv_of_isWeierstrassModel` from `Nonempty` to an
+  `∃` that also RECORDS what the equivalence is: `Spec Ψ ≫ ι = ι'` and
+  `Spec Ψ⁻¹ ≫ ι' = ι`.  That record is exactly the "`Φ` is the restriction of
+  the identity of `A`" fact which the old lemma threw away and which the
+  `ℚ[ε]/(ε²)` counterexample shows is indispensable.  It costs nothing extra:
+  the proof of the old lemma already built `e := isoOfRangeEq ι ι'` and its two
+  factorisations, and then discarded them.
+
+* `isUnit_of_linear_roundtrip` derives BOTH unit conditions from the linear
+  shapes of `Ψ` and of `Ψ⁻¹` — no geometry, no `Nontrivial R`, no domain.
+  `Ψ⁻¹(Ψ x) = x` and `Ψ⁻¹(Ψ y) = y` give `a a' = 1` and `b b' = 1` after
+  mathlib's `R[X]`-basis `{1, y}` of `R[W]`
+  (`CoordinateRing.smul_basis_eq_zero`) reads the coefficients off, exactly as
+  in `weierstrassCoeff_relations_of_algHom` above.
+
+So the units are NOT part of the geometry: the pole-order argument has to
+deliver the SHAPES, and the shapes then deliver the units by themselves, because
+the geometric leaf applies equally to `Ψ` and to `Ψ⁻¹` (the two hypotheses are
+symmetric in `W`, `W'`).  This is what removes the "triangular matrix over `R` is
+invertible" bullet from the route recorded on that leaf. -/
+
+open Polynomial in
+open scoped Polynomial.Bivariate in
+open WeierstrassCurve.Affine.CoordinateRing (mk) in
+/-- `mk W (C (C v))` IS `algebraMap R R[W] v`, definitionally. -/
+lemma mk_C_C_eq_algebraMap {R : Type} [CommRing R] (W : WeierstrassCurve R) (v : R) :
+    mk W.toAffine (C (C v)) = algebraMap R W.toAffine.CoordinateRing v := rfl
+
+open Polynomial in
+open scoped Polynomial.Bivariate in
+open WeierstrassCurve.Affine.CoordinateRing (mk) in
+/-- **`mk W (C (C a * X + C r)) = a·x + r`** — the `x`-shape of a linear
+comparison map, written in the `R`-module language the round-trip argument
+needs. -/
+lemma mk_linear_X {R : Type} [CommRing R] (W : WeierstrassCurve R) (a r : R) :
+    mk W.toAffine (C (C a * X + C r))
+      = algebraMap R W.toAffine.CoordinateRing a * mk W.toAffine (C X)
+        + algebraMap R W.toAffine.CoordinateRing r := by
+  have h : (C (C a * X + C r) : R[X][Y]) = C (C a) * C X + C (C r) := by
+    rw [map_add, map_mul]
+  rw [h, map_add, map_mul, mk_C_C_eq_algebraMap, mk_C_C_eq_algebraMap]
+
+open Polynomial in
+open scoped Polynomial.Bivariate in
+open WeierstrassCurve.Affine.CoordinateRing (mk) in
+/-- **`mk W (C (C b) * Y + C (C c * X + C t)) = b·y + (c·x + t)`** — the
+`y`-shape of a linear comparison map. -/
+lemma mk_linear_Y {R : Type} [CommRing R] (W : WeierstrassCurve R) (b c t : R) :
+    mk W.toAffine (C (C b) * Y + C (C c * X + C t))
+      = algebraMap R W.toAffine.CoordinateRing b * mk W.toAffine Y
+        + (algebraMap R W.toAffine.CoordinateRing c * mk W.toAffine (C X)
+          + algebraMap R W.toAffine.CoordinateRing t) := by
+  have h : (C (C b) * Y + C (C c * X + C t) : R[X][Y])
+      = C (C b) * Y + (C (C c) * C X + C (C t)) := by
+    rw [map_add, map_mul]
+  rw [h, map_add, map_mul, map_add, map_mul, mk_C_C_eq_algebraMap, mk_C_C_eq_algebraMap,
+    mk_C_C_eq_algebraMap]
+
+open Polynomial in
+open scoped Polynomial.Bivariate in
+open WeierstrassCurve.Affine.CoordinateRing (mk) in
+/-- **AN `R`-ALGEBRA EQUIVALENCE THAT IS LINEAR IN BOTH DIRECTIONS HAS UNIT
+LEADING COEFFICIENTS** (PROVEN 2026-07-30, flt-lean-186; no leaf).
+
+If `Ψ : R[W] ≃ₐ[R] R[W']` sends `x ↦ a x' + r`, `y ↦ b y' + c x' + t` and its
+INVERSE sends `x' ↦ a' x + r'`, `y' ↦ b' y + c' x + t'`, then `a a' = 1` and
+`b b' = 1`, so `a` and `b` are units.
+
+THE ARGUMENT is one round trip in each of the two coordinates.  `Ψ⁻¹(Ψ x) = x`
+expands to `(a a') x + (a r' + r) = x`, and `Ψ⁻¹(Ψ y) = y` expands to
+`(b b') y + (b c' + c a') x + (b t' + c r' + t) = y`; mathlib's `R[X]`-basis
+`{1, y}` of `R[W]` (`CoordinateRing.smul_basis_eq_zero`) then kills the two
+coefficients of each, and `eq_zero_of_linear_polynomial_eq_zero` above reads
+`a a' - 1` off the `X`-coefficient of the first while `Polynomial.C` injectivity
+reads `b b' - 1` off the second.
+
+**No `Nontrivial R`, no domain, no field** — the same regime as
+`exists_variableChange_of_linearAlgHom`, and for the same reason: the basis
+`{1, y}` needs none of them.  Over the zero ring the statement is trivially
+true, which is correct rather than a gap.
+
+WHY THE INVERSE'S SHAPE IS THE RIGHT HYPOTHESIS.  It is not an extra assumption
+in the intended application: `exists_linearShape_of_isWeierstrassModel` is
+symmetric in `(W, ι)` and `(W', ι')`, so applying it to `Ψ⁻¹` — which
+`exists_coordinateRingAlgEquiv_compat_of_isWeierstrassModel` certifies is
+induced by the identity of `A` in the other direction — supplies exactly these
+four data.  Asking the geometric leaf for the units directly would have made it
+carry an argument (invertibility of a triangular matrix) that is already
+subsumed by this round trip. -/
+theorem isUnit_of_linear_roundtrip {R : Type} [CommRing R] {W W' : WeierstrassCurve R}
+    (Ψ : W.toAffine.CoordinateRing ≃ₐ[R] W'.toAffine.CoordinateRing)
+    {a r b c t a' r' b' c' t' : R}
+    (hx : Ψ (mk W.toAffine (C X)) = mk W'.toAffine (C (C a * X + C r)))
+    (hy : Ψ (mk W.toAffine Y) = mk W'.toAffine (C (C b) * Y + C (C c * X + C t)))
+    (hx' : Ψ.symm (mk W'.toAffine (C X)) = mk W.toAffine (C (C a' * X + C r')))
+    (hy' : Ψ.symm (mk W'.toAffine Y) = mk W.toAffine (C (C b') * Y + C (C c' * X + C t'))) :
+    IsUnit a ∧ IsUnit b := by
+  have rx : mk W.toAffine (C X)
+      = algebraMap R W.toAffine.CoordinateRing (a * a') * mk W.toAffine (C X)
+        + algebraMap R W.toAffine.CoordinateRing (a * r' + r) := by
+    conv_lhs => rw [← Ψ.symm_apply_apply (mk W.toAffine (C X))]
+    rw [hx, mk_linear_X]
+    simp only [map_add, map_mul, AlgEquiv.commutes]
+    rw [hx', mk_linear_X]
+    ring
+  have ry : mk W.toAffine Y
+      = algebraMap R W.toAffine.CoordinateRing (b * b') * mk W.toAffine Y
+        + (algebraMap R W.toAffine.CoordinateRing (b * c' + c * a') * mk W.toAffine (C X)
+          + algebraMap R W.toAffine.CoordinateRing (b * t' + c * r' + t)) := by
+    conv_lhs => rw [← Ψ.symm_apply_apply (mk W.toAffine Y)]
+    rw [hy, mk_linear_Y]
+    simp only [map_add, map_mul, AlgEquiv.commutes]
+    rw [hy', mk_linear_Y, hx', mk_linear_X]
+    ring
+  have hp : (C (a * a' - 1) * X + C (a * r' + r) : R[X]) • (1 : W.toAffine.CoordinateRing)
+      + (0 : R[X]) • mk W.toAffine Y = 0 := by
+    rw [zero_smul, add_zero, WeierstrassCurve.Affine.CoordinateRing.smul, mul_one, mk_linear_X]
+    simp only [map_sub, map_one]
+    linear_combination -rx
+  have hq : (C (b * c' + c * a') * X + C (b * t' + c * r' + t) : R[X])
+        • (1 : W.toAffine.CoordinateRing)
+      + (C (b * b' - 1) : R[X]) • mk W.toAffine Y = 0 := by
+    rw [WeierstrassCurve.Affine.CoordinateRing.smul,
+      WeierstrassCurve.Affine.CoordinateRing.smul, mul_one, mk_linear_X, mk_C_C_eq_algebraMap]
+    simp only [map_sub, map_one]
+    linear_combination -ry
+  obtain ⟨hp0, -⟩ := WeierstrassCurve.Affine.CoordinateRing.smul_basis_eq_zero hp
+  obtain ⟨-, hq0⟩ := WeierstrassCurve.Affine.CoordinateRing.smul_basis_eq_zero hq
+  obtain ⟨h1, -⟩ := eq_zero_of_linear_polynomial_eq_zero hp0
+  have h2 : b * b' - 1 = 0 := by simpa using congrArg (fun p : R[X] => p.coeff 0) hq0
+  exact ⟨⟨⟨a, a', by linear_combination h1, by linear_combination h1⟩, rfl⟩,
+    ⟨⟨b, b', by linear_combination h2, by linear_combination h2⟩, rfl⟩⟩
+
+/-- **THE COMPARISON EQUIVALENCE, TOGETHER WITH THE FACT THAT IT IS THE IDENTITY
+OF `A`** (PROVEN 2026-07-30, flt-lean-186; no leaf).
+
+This is `nonempty_coordinateRingAlgEquiv_of_isWeierstrassModel` with its
+`Nonempty` opened up and its construction RECORDED.  The point is the two extra
+clauses: the equivalence `Ψ` it produces satisfies
+
+    `Spec Ψ ≫ ι = ι'`   and   `Spec Ψ⁻¹ ≫ ι' = ι`,
+
+i.e. under the two open immersions `Ψ` and `Ψ⁻¹` are literally the identity of
+`A` restricted to `U = A ∖ O`.  The older lemma proved exactly this and then
+forgot it, which is why its `e` is useless downstream: the `ℚ[ε]/(ε²)`
+counterexample recorded on `exists_variableChange_of_isWeierstrassModel` is a
+pair of Weierstrass curves whose coordinate rings ARE `R`-algebra isomorphic and
+which are NOT related by a `VariableChange`, so an unrecorded `≃ₐ[R]` cannot
+possibly suffice.  Everything the geometric leaf below spends is spent on these
+two clauses.
+
+The proof is the old one verbatim — `IsOpenImmersion.isoOfRangeEq ι ι' hr` and
+its two factorisation lemmas, `Spec.preimage` to descend to rings, `Spec` fully
+faithful to invert — with `isoOfRangeEq_hom_fac` and `isoOfRangeEq_inv_fac`
+carried through instead of discarded.
+
+Note the range hypothesis is the raw `Set.range ι.base = Set.range ι'.base`, not
+`IsWeierstrassModel`: nothing here needs the ranges to be the complement of the
+zero section, only that they AGREE.  Consumers extract that from the two
+`IsWeierstrassModel`s. -/
+theorem exists_coordinateRingAlgEquiv_compat_of_isWeierstrassModel {R : Type} [CommRing R]
+    {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of R)} {W W' : WeierstrassCurve R}
+    {ι : weierstrassAffine W ⟶ A} {ι' : weierstrassAffine W' ⟶ A}
+    (hιoi : IsOpenImmersion ι) (hι'oi : IsOpenImmersion ι')
+    (hιf : ι ≫ f = weierstrassAffineStr W) (hι'f : ι' ≫ f = weierstrassAffineStr W')
+    (hr : Set.range ι.base = Set.range ι'.base) :
+    ∃ Ψ : W.toAffine.CoordinateRing ≃ₐ[R] W'.toAffine.CoordinateRing,
+      Spec.map (CommRingCat.ofHom Ψ.toAlgHom.toRingHom) ≫ ι = ι' ∧
+      Spec.map (CommRingCat.ofHom Ψ.symm.toAlgHom.toRingHom) ≫ ι' = ι := by
+  let e : weierstrassAffine W ≅ weierstrassAffine W' :=
+    IsOpenImmersion.isoOfRangeEq ι ι' hr
+  have hfac : e.hom ≫ ι' = ι := IsOpenImmersion.isoOfRangeEq_hom_fac ι ι' hr
+  have hfac' : e.inv ≫ ι = ι' := IsOpenImmersion.isoOfRangeEq_inv_fac ι ι' hr
+  have hover' : e.inv ≫ weierstrassAffineStr W = weierstrassAffineStr W' := by
+    rw [← hιf, ← Category.assoc, hfac', hι'f]
+  set φ : CommRingCat.of W'.toAffine.CoordinateRing ⟶ CommRingCat.of W.toAffine.CoordinateRing :=
+    Spec.preimage e.hom with hφ
+  set ψ : CommRingCat.of W.toAffine.CoordinateRing ⟶ CommRingCat.of W'.toAffine.CoordinateRing :=
+    Spec.preimage e.inv with hψ
+  have hmφ : Spec.map φ = e.hom := by rw [hφ, Spec.map_preimage]
+  have hmψ : Spec.map ψ = e.inv := by rw [hψ, Spec.map_preimage]
+  have h1 : φ ≫ ψ = 𝟙 _ := by
+    apply Spec.map_injective
+    rw [Spec.map_comp, hmφ, hmψ, Spec.map_id]
+    exact e.inv_hom_id
+  have h2 : ψ ≫ φ = 𝟙 _ := by
+    apply Spec.map_injective
+    rw [Spec.map_comp, hmφ, hmψ, Spec.map_id]
+    exact e.hom_inv_id
+  have halg : CommRingCat.ofHom (algebraMap R W.toAffine.CoordinateRing) ≫ ψ
+      = CommRingCat.ofHom (algebraMap R W'.toAffine.CoordinateRing) := by
+    apply Spec.map_injective
+    rw [Spec.map_comp, hmψ]
+    exact hover'
+  have h1' : ∀ y, ψ.hom (φ.hom y) = y := by
+    intro y
+    have := congrArg (fun u : CommRingCat.of W'.toAffine.CoordinateRing ⟶
+      CommRingCat.of W'.toAffine.CoordinateRing => u.hom y) h1
+    simpa using this
+  have h2' : ∀ x, φ.hom (ψ.hom x) = x := by
+    intro x
+    have := congrArg (fun u : CommRingCat.of W.toAffine.CoordinateRing ⟶
+      CommRingCat.of W.toAffine.CoordinateRing => u.hom x) h2
+    simpa using this
+  have halg' : ∀ r : R, ψ.hom (algebraMap R W.toAffine.CoordinateRing r)
+      = algebraMap R W'.toAffine.CoordinateRing r := by
+    intro r
+    have := congrArg (fun u : CommRingCat.of R ⟶
+      CommRingCat.of W'.toAffine.CoordinateRing => u.hom r) halg
+    simpa using this
+  let ρ : W.toAffine.CoordinateRing ≃+* W'.toAffine.CoordinateRing :=
+    { toFun := ψ.hom
+      invFun := φ.hom
+      left_inv := h2'
+      right_inv := h1'
+      map_add' := ψ.hom.map_add
+      map_mul' := ψ.hom.map_mul }
+  refine ⟨AlgEquiv.ofRingEquiv (f := ρ) halg', ?_, ?_⟩
+  · have hco : CommRingCat.ofHom
+        (AlgEquiv.ofRingEquiv (f := ρ) halg').toAlgHom.toRingHom = ψ := by
+      rw [show (AlgEquiv.ofRingEquiv (f := ρ) halg').toAlgHom.toRingHom = ψ.hom from rfl,
+        CommRingCat.ofHom_hom]
+    rw [hco, hmψ]
+    exact hfac'
+  · have hco : CommRingCat.ofHom
+        (AlgEquiv.ofRingEquiv (f := ρ) halg').symm.toAlgHom.toRingHom = φ := by
+      rw [show (AlgEquiv.ofRingEquiv (f := ρ) halg').symm.toAlgHom.toRingHom = φ.hom from rfl,
+        CommRingCat.ofHom_hom]
+    rw [hco, hmφ]
+    exact hfac
+
+open Polynomial in
+open scoped Polynomial.Bivariate in
+open WeierstrassCurve.Affine.CoordinateRing (mk) in
+/-- **THE POLE-ORDER LEAF: the identity of `A` carries `x` into `R ⊕ R x'` and
+`y` into `R ⊕ R x' ⊕ R y'`** (sorry leaf, cut 2026-07-30, flt-lean-186, as the
+residue of `exists_linearAlgHom_of_isWeierstrassModel` after
+`isUnit_of_linear_roundtrip` and
+`exists_coordinateRingAlgEquiv_compat_of_isWeierstrassModel` — both PROVEN —
+have taken everything else).
+
+**WHAT CHANGED AGAINST THE OLD LEAF, AND WHY IT IS A REAL REDUCTION.**  The old
+statement asked, from two `IsWeierstrassModel`s and a redundant abstract `e`, for
+an algebra map `Φ` of linear shape WITH `IsUnit a` and `IsUnit b`.  Three of
+those four obligations are now discharged:
+
+* producing `Φ` at all, and knowing it is the restriction of `𝟙 A`, is
+  `exists_coordinateRingAlgEquiv_compat_of_isWeierstrassModel`;
+* `IsUnit a` and `IsUnit b` are `isUnit_of_linear_roundtrip`, applied to the
+  shapes of `Φ` and of `Φ⁻¹` — which is why this leaf must be stated for a
+  GIVEN compatible `Φ` rather than existentially, and why it is stated
+  symmetrically in `(W, ι)` and `(W', ι')` so it can be applied to both;
+* the redundant `e` is gone.
+
+What is left is exactly the pole-order statement and nothing else, so the
+"triangular matrix over `R` is invertible" bullet of the old route is no longer
+part of this leaf.
+
+**THE ROUTE.**  Write `U ⊆ A` for the complement of the zero section, which
+`hιr` and `hι'r` present as `Spec R[W]` and as `Spec R[W']`, and `O` for the
+zero section `ab.zero (𝟙 _)`.
+
+* `O` is a section of the smooth proper curve `A / Spec R`, so
+  `I := sectionIdeal O` (`ModularCurve/RelativePicard.lean`) is an invertible
+  sheaf — that is `isInvertibleSheaf_sectionIdeal` there, itself a leaf, and it
+  is the same `𝒪(−O)` this route needs.  Its inverse is `exists_modTensor_inv`
+  applied to that, and `Fₙ := Γ(A, I⁻ⁿ)` is the group of sections with pole
+  order `≤ n` along `O`.
+* `Fₙ ⊆ Γ(U, 𝒪_U)` is defined from `(A, O)` ALONE, so `Φ`, being the identity of
+  `A` restricted to `U` (this is the force of `hΦ`), carries `Fₙ` to `F'ₙ`.
+* Relative Riemann–Roch — equivalently cohomology and base change for a genus-1
+  curve, `H¹ = 0` in degree `≥ 1` — makes `π_* I⁻ⁿ` locally free of rank `n`,
+  compatibly with base change.  For `n = 2, 3` it contains `1, x` resp.
+  `1, x, y`, which are a basis fibrewise, so Nakayama gives `F₂ = R ⊕ R·x` and
+  `F₃ = R ⊕ R·x ⊕ R·y`.
+* Hence `Φ x ∈ F'₂` and `Φ y ∈ F'₃`, which IS the conclusion.
+
+**ABSENT FROM THE PIN — RE-CHECKED 2026-07-30 by grep, not inherited.**  Mathlib
+at this pin still has no `RiemannRoch`, no `EffectiveCartierDivisor` or
+`CartierDivisor`, no `𝒪(D)` and no `arithmeticGenus`/`geometricGenus`.  What is
+NEW since the previous audit is that the substrate is no longer missing: this
+file `public import`s `ModularCurve/RelativePicard.lean`, which supplies
+`Z.Modules`, `modTensor`, `modPullback`, `IsInvertibleSheaf`, `sectionIdeal`,
+`exists_modDual` and `exists_modTensor_inv`.  So `I⁻ⁿ` is WRITABLE here today;
+what is not yet writable is `Γ(A, −)` as a functor to `R`-modules together with
+its rank.  That, and only that, is the cost of this leaf.  Since only `n = 2`
+and `n = 3` are needed, a bespoke construction may still be cheaper than general
+Riemann–Roch.
+
+**A SECOND, POSSIBLY CHEAPER AXIS, still unsearched.**
+`ω = dx / (2y + a₁x + a₃)` generates `Ω¹_{R[W]/R}` freely of rank 1 and
+`R[W]ˣ = Rˣ`, so `Φ_* ω = u ω'` might pin the shapes with no cohomology at all.
+Note that this axis now has strictly less to prove than when it was first
+recorded, because it no longer has to produce the units.
+
+The axis that is CLOSED is the third one: pure commutative algebra on the
+coordinate rings.  It is refuted by the `ℚ[ε]/(ε²)` witness on
+`exists_variableChange_of_isWeierstrassModel`, whose explicit isomorphism sends
+`x ↦ x' + ε(6x'² − 9x' + 4)/31` — quadratic in `x'`, hence of pole order 4, so
+NOT of the shape below.  That witness is a machine-checked proof that `hΦ`
+cannot be dropped.
+
+**FAITHFULNESS.**
+
+*`hΦ` is load-bearing* — dropping it is precisely the `ℚ[ε]/(ε²)` refutation
+above.
+
+*Both range clauses are load-bearing.*  With `hιr` alone, `hΦ` would only say
+`ι'` factors through `ι`, i.e. `Spec R[W']` is an open subscheme of `U` rather
+than all of it — and then `x` need not have pole order `2` measured in `R[W']`.
+Concretely, over any nonzero `R` a proper open of `U` supports functions of the
+form `x/g`, and there is no reason for `Φ x` to lie in `R ⊕ R x'`.  With both
+clauses the two ranges agree, `Spec Φ` is forced to be an isomorphism, and the
+filtration argument applies.
+
+*`ab` is load-bearing through `proper` and `smooth` only.*  The route uses
+properness (to get `Γ(A, 𝒪) = R`, hence `F₀ = R`) and smoothness of relative
+dimension 1 (to get `I` invertible); the group law is not used, and is present
+only because `IsWeierstrassModel` is phrased against the zero section, which is
+where `O` comes from.
+
+**NOT VACUOUS**, in both directions.  Satisfiable: `W' = W`, `ι' = ι`,
+`Φ = AlgHom.id` — `hΦ` then reads `Spec (𝟙) ≫ ι = ι` — with `a = b = 1` and
+`r = c = t = 0`.  And not junk-satisfiable: the conclusion is an equation in
+`R[W']`, whose two sides are distinct for `W' = W`, `Φ = id` unless
+`(a, r, b, c, t) = (1, 0, 1, 0, 0)`, since `{1, x', y', …}` is an `R`-basis.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: a `CommRing R`, an
+`AbelianSchemeStruct` over `Spec R`, two Weierstrass models of it with
+compatible immersions, and an element of `R[W]` of the form `Φ x` requiring `x'²`
+— equivalently, a `Φ x` of pole order `> 2` along the zero section.  The
+`ℚ[ε]/(ε²)` pair is NOT such a witness: it has no common `A` at all, which is
+exactly why it refutes the coordinate-ring-only statement and not this one. -/
+theorem exists_linearShape_of_isWeierstrassModel {R : Type} [CommRing R]
+    {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of R)} (ab : AbelianSchemeStruct f)
+    (W W' : WeierstrassCurve R)
+    {ι : weierstrassAffine W ⟶ A} (hιoi : IsOpenImmersion ι)
+    (hιf : ι ≫ f = weierstrassAffineStr W)
+    (hιr : Set.range ι.base = (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of R)))).1.base)ᶜ)
+    {ι' : weierstrassAffine W' ⟶ A} (hι'oi : IsOpenImmersion ι')
+    (hι'f : ι' ≫ f = weierstrassAffineStr W')
+    (hι'r : Set.range ι'.base = (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of R)))).1.base)ᶜ)
+    (Φ : W.toAffine.CoordinateRing →ₐ[R] W'.toAffine.CoordinateRing)
+    (hΦ : Spec.map (CommRingCat.ofHom Φ.toRingHom) ≫ ι = ι') :
+    ∃ a r b c t : R,
+      Φ (mk W.toAffine (C X)) = mk W'.toAffine (C (C a * X + C r)) ∧
+      Φ (mk W.toAffine Y) = mk W'.toAffine (C (C b) * Y + C (C c * X + C t)) :=
+  sorry
+
 open Polynomial in
 open scoped Polynomial.Bivariate in
 open WeierstrassCurve.Affine.CoordinateRing (mk) in
 /-- **The GEOMETRIC half: two Weierstrass models of one elliptic scheme admit a
-LINEAR comparison map of coordinate rings** (sorry leaf, opened 2026-07-29,
+LINEAR comparison map of coordinate rings** (opened as a leaf 2026-07-29,
 flt-lean-135, as the residue of `exists_variableChange_of_isWeierstrassModel`
 after `exists_variableChange_of_linearAlgHom` — which is PROVEN — has taken the
-bookkeeping).
+bookkeeping; **PROVEN 2026-07-30, flt-lean-186, and no longer a leaf**, over the
+single pole-order leaf `exists_linearShape_of_isWeierstrassModel` above).
+
+**WHAT THE 2026-07-30 CUT REMOVED FROM THIS NODE.**  Three of the four
+obligations below are now discharged here rather than deferred:
+`exists_coordinateRingAlgEquiv_compat_of_isWeierstrassModel` produces `Φ`
+*together with* the record that it is the identity of `A` restricted to `U`
+(`Spec Φ ≫ ι = ι'`), which is what the fourth route bullet needed and what the
+old `e` could not supply; and `isUnit_of_linear_roundtrip` derives `IsUnit a`
+and `IsUnit b` from the linear shapes of `Φ` and `Φ⁻¹` by a round trip in the
+`R[X]`-basis `{1, y}`, which retires the "triangular matrix over `R` is
+invertible" clause of the fourth bullet entirely.  So the residual leaf is
+exactly the SECOND and THIRD bullets — the pole filtration and its rank — and
+`_e` is now genuinely unused (its former job, keeping
+`nonempty_coordinateRingAlgEquiv_of_isWeierstrassModel` in the cone, is done by
+the consumer `weierstrassModel_j_unique`, which still calls that lemma to build
+the argument).  **The route below is retained verbatim as the specification of
+the residual leaf; read it there, where it has been updated.**
 
 **WHAT IS LEFT HERE IS EXACTLY THE COMPACTIFICATION, AND NOTHING ELSE.**  Its
 sibling above is proven, so the two together give the leaf; and the `ℚ[ε]/(ε²)`
@@ -23773,12 +24158,24 @@ theorem exists_linearAlgHom_of_isWeierstrassModel {R : Type} [CommRing R]
     {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of R)} {ab : AbelianSchemeStruct f}
     (W W' : WeierstrassCurve R)
     (hW : IsWeierstrassModel ab W) (hW' : IsWeierstrassModel ab W')
-    (e : W.toAffine.CoordinateRing ≃ₐ[R] W'.toAffine.CoordinateRing) :
+    (_e : W.toAffine.CoordinateRing ≃ₐ[R] W'.toAffine.CoordinateRing) :
     ∃ (Φ : W.toAffine.CoordinateRing →ₐ[R] W'.toAffine.CoordinateRing) (a r b c t : R),
       IsUnit a ∧ IsUnit b ∧
       Φ (mk W.toAffine (C X)) = mk W'.toAffine (C (C a * X + C r)) ∧
-      Φ (mk W.toAffine Y) = mk W'.toAffine (C (C b) * Y + C (C c * X + C t)) :=
-  sorry
+      Φ (mk W.toAffine Y) = mk W'.toAffine (C (C b) * Y + C (C c * X + C t)) := by
+  obtain ⟨ι, hιoi, hιf, hιr⟩ := hW
+  obtain ⟨ι', hι'oi, hι'f, hι'r⟩ := hW'
+  have hrange : Set.range ι.base = Set.range ι'.base := by rw [hιr, hι'r]
+  obtain ⟨Ψ, hfwd, hbwd⟩ :=
+    exists_coordinateRingAlgEquiv_compat_of_isWeierstrassModel hιoi hι'oi hιf hι'f hrange
+  obtain ⟨a, r, b, c, t, hx, hy⟩ :=
+    exists_linearShape_of_isWeierstrassModel ab W W' hιoi hιf hιr hι'oi hι'f hι'r
+      Ψ.toAlgHom hfwd
+  obtain ⟨a', r', b', c', t', hx', hy'⟩ :=
+    exists_linearShape_of_isWeierstrassModel ab W' W hι'oi hι'f hι'r hιoi hιf hιr
+      Ψ.symm.toAlgHom hbwd
+  obtain ⟨ha, hb⟩ := isUnit_of_linear_roundtrip Ψ hx hy hx' hy'
+  exact ⟨Ψ.toAlgHom, a, r, b, c, t, ha, hb, hx, hy⟩
 
 /-- **Two Weierstrass models of ONE elliptic scheme are related by a
 `VariableChange`** (REFUTED-AND-RESTATED 2026-07-28, flt-lean-68; DECOMPOSED and
@@ -26260,7 +26657,11 @@ the uniqueness of the smooth compactification of a smooth affine curve — the z
 section is the one missing point on each side, which is exactly the `Set.range`
 clause of `IsWeierstrassModel` — together with the rigidity of the group law (an
 `AbelianSchemeStruct` is determined by its zero section).  The arithmetic leaf
-needs `weierstrassModel_j_unique` (a LEAF in this file) and the conjugate model
+needs `weierstrassModel_j_unique` (PROVEN in this file since 2026-07-27 — the
+"a LEAF in this file" label that stood here until 2026-07-30 was stale; it is
+proven over `exists_variableChange_of_isWeierstrassModel`, whose own residue is
+now the single pole-order leaf `exists_linearShape_of_isWeierstrassModel`) and
+the conjugate model
 `W^σ`, i.e. `isWeierstrassModel_map_of_isBaseChangeOf` applied to `specGal σ`,
 plus `Affine.Point.mapVariableChange` and `autPoint` (both present) for the
 transport along `Cv`.  **A successor should cut it further** along the axis this
