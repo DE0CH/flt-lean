@@ -9014,7 +9014,25 @@ swapping the factors and glue.
 
 The pinning is discharged for free at every use site: the machine applies this
 clause only to objects of the raised-level deformation category, each of which
-carries `π`, `S` and `charFrob_compat` by definition. -/
+carries `π`, `S` and `charFrob_compat` by definition.
+
+**THE FOUR RINGS ARE `[DiscreteTopology]` (2026-07-29, flt-lean-7 — the repair
+the ROUTE AUDIT of `isAuxFibreProductClause` below prescribes; see items (2) and
+(3) there).**  Without it the clause is degenerate rather than merely awkward:
+`IsTopologicalRing` carries no separation axiom, so the INDISCRETE topology
+satisfies every other instance demanded of `A₀`, `A₁`, `A₂`, and under it the
+only ideal open as a SET is `⊤`, which collapses `GaloisRep.IsFlatAt.cond` to
+the zero module and trivialises the continuity obligation inside the `δ`, `χ` of
+`isTameAtTwo` and `isSplitTorusAt`.  On `B` the same hypothesis is what makes
+`πB` continuous (`ker πB = 𝔪_B` by
+`ker_eq_maximalIdeal_of_ringHom_finiteField`, so continuity is exactly "`𝔪_B` is
+open"), without which `ρ.baseChange k` cannot even be formed and the pinning is
+unusable.  The sibling clauses `IsAuxFiniteFramesClause` and
+`IsAuxWeaklyUniversalOnFrames` already bind their coefficient rings this way;
+with all four discrete, `Function.Injective` upgrades to
+`Topology.IsEmbedding` for free, which is what the base-level leaves
+(`isFlatAt_of_fibreProduct`, `isTameAtTwo_of_fibreProduct`) ask for and what the
+Hilbert twin instead carries by hand. -/
 def IsAuxFibreProductClause.{a, uK, uW} {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
     (Q : Finset ℕ)
     {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
@@ -9022,13 +9040,13 @@ def IsAuxFibreProductClause.{a, uK, uW} {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
     {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
     [Module.Free k W] (ρbar : GaloisRep ℚ k W) : Prop :=
   ∀ {A₀ : Type a} [CommRing A₀] [TopologicalSpace A₀] [IsTopologicalRing A₀]
-    [IsLocalRing A₀] [Algebra ℤ_[p] A₀] [Finite A₀]
+    [IsLocalRing A₀] [Algebra ℤ_[p] A₀] [Finite A₀] [DiscreteTopology A₀]
     {A₁ : Type a} [CommRing A₁] [TopologicalSpace A₁] [IsTopologicalRing A₁]
-    [IsLocalRing A₁] [Algebra ℤ_[p] A₁] [Finite A₁]
+    [IsLocalRing A₁] [Algebra ℤ_[p] A₁] [Finite A₁] [DiscreteTopology A₁]
     {A₂ : Type a} [CommRing A₂] [TopologicalSpace A₂] [IsTopologicalRing A₂]
-    [IsLocalRing A₂] [Algebra ℤ_[p] A₂] [Finite A₂]
+    [IsLocalRing A₂] [Algebra ℤ_[p] A₂] [Finite A₂] [DiscreteTopology A₂]
     {B : Type a} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
-    [IsLocalRing B] [Algebra ℤ_[p] B] [Finite B]
+    [IsLocalRing B] [Algebra ℤ_[p] B] [Finite B] [DiscreteTopology B]
     (f₁ : A₁ →+* A₀) (f₂ : A₂ →+* A₀), Function.Surjective f₂ →
     ∀ (p₁ : B →+* A₁) (p₂ : B →+* A₂) (hp₁ : Continuous p₁)
       (hp₂ : Continuous p₂),
@@ -9147,6 +9165,31 @@ two factors; swap `e₂` if necessary and glue the two idempotents into one over
 # THE TAME CLAUSE, AND THE STATEMENT IS PROBABLY TOO STRONG.  Both are checkable
 # in one grep each; do not start proving until they are resolved.
 
+**ALL THREE OBSTRUCTIONS ARE NOW REPAIRED IN THE STATEMENT (2026-07-29,
+flt-lean-7).**  The audit below is kept verbatim because it is the record of
+*why* the statement has the shape it has; what changed is:
+
+* item (1) → this theorem now carries `hp5 : 5 ≤ p`, threaded up the six-theorem
+  chain `isAuxFibreProductClause` → `exists_isWeaklyUniversal_auxDeformationDatum`
+  → `exists_taylorWilesAuxLevelPresentedDatum` → `exists_taylorWilesAuxLevelData`
+  → `exists_taylorWilesLevelRaw` → `exists_taylorWilesTower` →
+  `exists_taylorWilesSystem`, exactly as the Hilbert twin threads `hℓ5` and as
+  `HardlyRamified/Deformation.lean` threads it at the base level.  Route (b) —
+  proving the `p = 3` tame gluing from the pinning — is NOT taken and remains
+  open mathematics; see the paragraph "WHAT `hℓ5` ACTUALLY BUYS" below for why
+  it is a genuinely new question and not a formality;
+* items (2) and (3) → `IsAuxFibreProductClause` now binds all four of
+  `A₀`, `A₁`, `A₂`, `B` as `[DiscreteTopology]`.  One hypothesis closes both,
+  which is why it beats the `Topology.IsEmbedding` alternative the Hilbert twin
+  uses; see the definition's docstring.
+
+**WHAT IS AND IS NOT SETTLED.**  The leaf was never REFUTED — at `p = 3` it is
+open, not false, because the `ℓ = 3` counterexample of item (1) has a REDUCIBLE
+residual representation and therefore fails `hπB`.  `5 ≤ p` is a strengthening
+that makes the known route available, not a repair of a false statement.  A
+successor who finds route (b) may delete `hp5` again, and the six threaded
+binders with it.
+
 **(1) "The four base-level clauses glue exactly as at the base level" is FALSE
 at `p = 3`.**  The base-level `ℚ` gluing is
 `HardlyRamified/Deformation.lean`'s `isHardlyRamified_of_fibreProduct`, and it
@@ -9240,9 +9283,23 @@ coefficient rings `[Finite A] [DiscreteTopology A]`; only this clause and the
 Hilbert twin do not, and the Hilbert twin compensates with
 `Topology.IsEmbedding`.  Either repair closes the gap: with all four rings
 discrete, `Function.Injective` gives `Topology.IsEmbedding` for free, so the
-base-level leaves apply verbatim.  Still a cut-level change to
-`exists_isWeaklyUniversal_auxDeformationDatum_of_clauses`, hence still not to be
-made unilaterally.
+base-level leaves apply verbatim.  **APPLIED 2026-07-29 (flt-lean-7)**: the
+definition above now binds `[DiscreteTopology A₀]`, `[DiscreteTopology A₁]`,
+`[DiscreteTopology A₂]`, `[DiscreteTopology B]`.  The change is confined to the
+DEFINITION, so no consumer signature moved — `hglue` is a hypothesis of
+`exists_universalFrame_profinite_auxDeformation_of_clauses`,
+`exists_universalFrame_auxDeformation_of_clauses` and
+`exists_isWeaklyUniversal_auxDeformationDatum_of_clauses`, and a hypothesis that
+became WEAKER costs those three nothing to state.  **What it does cost is a
+proof obligation at the one place the clause is applied**, the still-sorried
+`exists_universalFrame_profinite_auxDeformation_of_clauses`: that construction
+must now supply discreteness for the four rings it feeds in.  It can — the
+frames it glues are the FINITE DISCRETE coefficient rings of
+`IsAuxFiniteFramesClause`, which already binds `[Finite A] [DiscreteTopology A]`
+for exactly this reason, and `B` is built there as a literal fibre product
+carrying the subspace topology of a product of discrete rings, which is
+discrete.  A successor who cannot supply it should report that rather than
+weaken this clause back.
 
 **(3) NEW OBSTRUCTION, AND IT BLOCKS THE ROUTE EVEN AFTER THE 2026-07-28 TRACE
 REPAIR: `πB` NEED NOT BE CONTINUOUS, SO THERE IS NO RESIDUAL REPRESENTATION.**
@@ -9263,6 +9320,13 @@ hπB)`, which both the split-torus clause and route (b) of item (1) spend, is
 unusable as stated.  **The `[DiscreteTopology]` repair of item (2) fixes this
 too**, and it is the only one of the three repairs that fixes two obstructions
 at once — which is the argument for preferring it to `Topology.IsEmbedding`.
+**APPLIED 2026-07-29 (flt-lean-7)**: with `[DiscreteTopology B]` every map out
+of `B` is continuous, so `Continuous πB` is `continuous_of_discreteTopology` and
+`exists_distinct_charFrob_map_eq_of_isTaylorWilesPrimeSet` — whose `hπcont` is
+an explicit hypothesis precisely for this — is now consumable verbatim.  Note
+that `Topology.IsEmbedding` alone would NOT have fixed this one: an embedding
+`B ↪ A₁ × A₂` says nothing about `𝔪_B` being open when `A₁`, `A₂` are
+indiscrete.
 
 **WHAT IS ALREADY WAITING FOR THE REPAIR.**
 `exists_distinct_charFrob_map_eq_of_isTaylorWilesPrimeSet` (PROVEN below) is the
@@ -9278,7 +9342,7 @@ rejected.
 References: Wiles, Ann. of Math. 141 (1995), ch. 3; Darmon–Diamond–Taylor
 §5.3; Mazur, *Deforming Galois representations*, §§18–23. -/
 theorem isAuxFibreProductClause.{a, uK, uW} {p : ℕ} (hpodd : Odd p)
-    [Fact p.Prime]
+    (hp5 : 5 ≤ p) [Fact p.Prime]
     {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
     [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
     {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
@@ -12267,7 +12331,7 @@ References: Mazur, in *Galois Groups over ℚ* (1989); Ramakrishna, Compositio
 
 CIRCULARITY GUARD: as for `exists_auxDeformationDatum` above. -/
 theorem exists_isWeaklyUniversal_auxDeformationDatum.{uK, uW, uR}
-    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {p : ℕ} (hpodd : Odd p) (hp5 : 5 ≤ p) [Fact p.Prime]
     {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
     [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
     {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
@@ -12281,7 +12345,7 @@ theorem exists_isWeaklyUniversal_auxDeformationDatum.{uK, uW, uR}
   exists_isWeaklyUniversal_auxDeformationDatum_of_clauses.{uK, uW, uR}
     hpodd hW hirr Q 𝒟₀
     (isAuxFunctorialityClause.{uR} hpodd Q)
-    (isAuxFibreProductClause.{uR, uK, uW} hpodd hW hirr n Q hQ)
+    (isAuxFibreProductClause.{uR, uK, uW} hpodd hp5 hW hirr n Q hQ)
     (isAuxFiniteFramesClause.{uR} hpodd Q)
     (isAuxProLimitClause.{uR, uK, uW} hpodd hW hirr n Q hQ)
 
@@ -13914,7 +13978,7 @@ reduction-descent lemma producing `IsHardlyRamified hpodd hW ρbar` from
 BANNED as inputs.  A proof ending in `exfalso` is the circular discharge
 again and must be rejected. -/
 theorem exists_taylorWilesAuxLevelPresentedDatum.{s, t, uK, uW, uR}
-    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {p : ℕ} (hpodd : Odd p) (hp5 : 5 ≤ p) [Fact p.Prime]
     {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
     [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
     {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
@@ -13998,7 +14062,7 @@ theorem exists_taylorWilesAuxLevelPresentedDatum.{s, t, uK, uW, uR}
     hcomplete hranku hρuniv hπuniv hunivred (n + 1) (by omega) Q hQ
   -- LEAF A2′-2: … and has a weakly universal object `R_Q`
   obtain ⟨𝒟Q, h𝒟Q⟩ := exists_isWeaklyUniversal_auxDeformationDatum.{uK, uW, uR}
-    hpodd hW hirr (n + 1) Q hQ 𝒟₀
+    hpodd hp5 hW hirr (n + 1) Q hQ 𝒟₀
   -- The coefficient ring is the right one: `hbot` already presents `Runiv` over
   -- `Λ_coeff`, which is what pins `coeff`'s residue field to `k` (see the
   -- FAITHFULNESS REPAIR section of `exists_auxDeformationRingPresentation`).
@@ -14120,7 +14184,7 @@ level-`0` raw datum, including `T`, `T³` and modules with an unrelated
 `𝔫`-quotient `M0` exists.  See §4 of the VACUITY AUDIT on
 `exists_taylorWilesBottomHeckeModule`. -/
 theorem exists_taylorWilesAuxLevelData.{s, t, uK, uW, uR}
-    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {p : ℕ} (hpodd : Odd p) (hp5 : 5 ≤ p) [Fact p.Prime]
     {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
     [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
     {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
@@ -14199,7 +14263,7 @@ theorem exists_taylorWilesAuxLevelData.{s, t, uK, uW, uR}
   -- model `(Λ/𝔟_n)^d` itself.
   obtain ⟨I, diamond, toRuniv, actR, projM, htoR, hker, hlam, hsurj, hint,
       hctrl⟩ :=
-    exists_taylorWilesAuxLevelPresentedDatum.{s, t, uK, uW, uR} hpodd hW hres
+    exists_taylorWilesAuxLevelPresentedDatum.{s, t, uK, uW, uR} hpodd hp5 hW hres
       hirr hadic hcomplete hranku hρuniv hπuniv hunivred hfact hrankT hρT hπ
       hred ψ hψalg hψπ hψ q0 hTWq q d hq0 coeff M0 hM0 hbot hM0T n
   -- The exponent vector is the constant one; `pres` is the quotient map and
@@ -14882,7 +14946,7 @@ docstring of `exists_taylorWilesAuxLevelData`.
 The remaining arithmetic — ingredients 2, 3, 4 and the level-`n` half of
 ingredient 5 — is **`exists_taylorWilesAuxLevelData`**. -/
 theorem exists_taylorWilesLevelRaw.{s, t, uK, uW, uR}
-    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {p : ℕ} (hpodd : Odd p) (hp5 : 5 ≤ p) [Fact p.Prime]
     {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
     [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
     {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
@@ -14949,7 +15013,7 @@ theorem exists_taylorWilesLevelRaw.{s, t, uK, uW, uR}
   obtain ⟨e, he, R, instR, pres, diamond, toRuniv, M, instMadd, instMR, instML,
     projM, hpres, htoRuniv, hker, hdsmul, ⟨coord⟩, hprojsurj, hprojsmul,
     hprojzero⟩ :=
-    exists_taylorWilesAuxLevelData.{s, t, uK, uW, uR} hpodd hW hres hirr hadic
+    exists_taylorWilesAuxLevelData.{s, t, uK, uW, uR} hpodd hp5 hW hres hirr hadic
       hcomplete hranku hρuniv hπuniv hunivred hfact hrankT hρT hπ hred ψ hψalg
       hψπ hψ q0 hTWq q d hq0 coeff M0 hM0 hbot hM0T n
   -- The two level-ideal bounds are discharged off the arithmetic leaf,
@@ -15100,7 +15164,7 @@ through `Family.lean` or anything downstream of it, and — added
 would reintroduce at this node exactly the circularity just removed
 from its leaves. -/
 theorem exists_taylorWilesTower.{s, t, uK, uW, uR}
-    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {p : ℕ} (hpodd : Odd p) (hp5 : 5 ≤ p) [Fact p.Prime]
     {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
     [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
     {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
@@ -15168,7 +15232,7 @@ theorem exists_taylorWilesTower.{s, t, uK, uW, uR}
            nontrivialM0 := iNt
            level := fun n =>
              (nonempty_taylorWilesLevel_of_raw iNt
-               (exists_taylorWilesLevelRaw.{s, t, uK, uW, uR} hpodd hW hres
+               (exists_taylorWilesLevelRaw.{s, t, uK, uW, uR} hpodd hp5 hW hres
                  hirr hadic hcomplete hranku hρuniv hπuniv hunivred hfact
                  hrankT hρT hπ hred ψ hψalg hψπ hψ q0 hTWq q d hq0 coeff M0
                  iNt hbot hM0T n).some).some }⟩
@@ -15236,7 +15300,7 @@ unsatisfiable irreducible hardly ramified `ρbar` (section audit of
 outright.  CIRCULARITY GUARD (inherited from pillar 3b): must not be
 proven through `Family.lean` or anything downstream of it. -/
 theorem exists_taylorWilesSystem.{s, t, uK, uW, uR}
-    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {p : ℕ} (hpodd : Odd p) (hp5 : 5 ≤ p) [Fact p.Prime]
     {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
     [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
     {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
@@ -15286,7 +15350,7 @@ theorem exists_taylorWilesSystem.{s, t, uK, uW, uR}
     Nonempty (TaylorWilesSystem.{0, 0, 0, s, uR} p ψ) := by
   classical
   obtain ⟨q0, hTWq⟩ := exists_taylorWilesPrimeSet_card_eq p ρbar hTW
-  obtain ⟨tw⟩ := exists_taylorWilesTower.{s, t, uK, uW, uR} hpodd hW hρbar hirr
+  obtain ⟨tw⟩ := exists_taylorWilesTower.{s, t, uK, uW, uR} hpodd hp5 hW hρbar hirr
     hadic hcomplete hranku hρuniv hπuniv hunivred hfact hrankT hρT hπ hred
     ψ hψalg hψπ hψ q0 hTWq
   letI := tw.addCommGroupM0
@@ -15416,7 +15480,7 @@ unsatisfiable irreducible hardly ramified `ρbar` (section audit of
 CIRCULARITY GUARD (inherited from pillar 3b): must not be proven
 through `Family.lean` or anything downstream of it. -/
 theorem exists_patchedModule.{v, w, s, t, uK, uW, uR}
-    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {p : ℕ} (hpodd : Odd p) (hp5 : 5 ≤ p) [Fact p.Prime]
     {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
     [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
     {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
@@ -15471,7 +15535,7 @@ theorem exists_patchedModule.{v, w, s, t, uK, uW, uR}
     rw [← hker]
     exact Finite.of_equiv k
       (RingHom.quotientKerEquivOfSurjective hπuniv).symm.toEquiv
-  obtain ⟨S⟩ := exists_taylorWilesSystem hpodd hW hρbar hirr hadic
+  obtain ⟨S⟩ := exists_taylorWilesSystem hpodd hp5 hW hρbar hirr hadic
     hcomplete hranku hρuniv hπuniv hunivred hfact hrankT hρT hπ hred ψ
     hψalg hψπ hψ hTW
   exact S.exists_patchedModule hcomplete hres
@@ -15523,7 +15587,7 @@ hypothesis set contains the classically unsatisfiable irreducible
 hardly ramified `ρbar`).  CIRCULARITY GUARD: must not be proven
 through `Family.lean` or anything downstream of it. -/
 theorem injective_ringHom_of_isWeaklyUniversal.{s, t, uK, uW, uR}
-    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {p : ℕ} (hpodd : Odd p) (hp5 : 5 ≤ p) [Fact p.Prime]
     {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
     [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
     {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
@@ -15570,7 +15634,7 @@ theorem injective_ringHom_of_isWeaklyUniversal.{s, t, uK, uW, uR}
         (ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) :
     Function.Injective ψ := by
   obtain ⟨P⟩ :=
-    exists_patchedModule.{uR, s, s, t, uK, uW, uR} hpodd hW hρbar hirr hadic
+    exists_patchedModule.{uR, s, s, t, uK, uW, uR} hpodd hp5 hW hρbar hirr hadic
       hcomplete hranku hρuniv hπuniv hunivred hfact hrankT hρT hπ hred ψ hψalg
       hψπ hψ (exists_taylorWilesPrimeSet hpodd hW hρbar hirr)
   exact P.injective
