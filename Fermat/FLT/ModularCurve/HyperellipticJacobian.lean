@@ -2995,30 +2995,256 @@ theorem isCoprime_homogSext_homogSextDeriv
   · intro z hz hzN hzH
     exact not_dvd_homogSextDeriv_of_dvd_homogSext hsep hAB hz hzN hzH
 
-/-- **LEAF: the homogenised sextic has degree at least `10`.**
+/-! ### A homogenisation operator, and the top coefficient of a binary form -/
 
-`N = B⁶f(A/B)` with `A`, `B` coprime and `max (deg A) (deg B) = 2`.  Three cases, by which of
-`A`, `B` attains the maximum and — when both do — by whether the ratio of leading
-coefficients is a root of `f`:
+/-- `H_n(h)(A, B) = Bⁿ·h(A/B)` for `deg h ≤ n`, as a polynomial. -/
+noncomputable def homogOf (A B : K[X]) (n : ℕ) (h : K[X]) : K[X] :=
+  ∑ i ∈ Finset.range (n + 1), C (h.coeff i) * A ^ i * B ^ (n - i)
 
-* `deg A = 2 > deg B`: the term `A⁶` has degree `12` and every other term `cᵢAⁱB⁶⁻ⁱ` has
-  degree `≤ 2i + (6−i) = i + 6 ≤ 11`, so `deg N = 12`.
-* `deg B = 2 > deg A`: the term `c₀B⁶` has degree `12` and the others degree `≤ 12 − i`.  If
-  `c₀ ≠ 0` then `deg N = 12`.  If `c₀ = 0` then **separability forces `c₁ ≠ 0`** (else `X²`
-  divides `f`), and `deg (c₁AB⁵) = deg A + 10` strictly dominates the terms with `i ≥ 2`, so
-  `deg N = deg A + 10 ≥ 10`.
-* `deg A = deg B = 2`, with leading coefficients `α`, `β` and `ρ = α/β`.  The coefficient of
-  `X¹²` in `N` is `β⁶f(ρ)`.  If `f(ρ) ≠ 0` then `deg N = 12`.  Otherwise write `f = (Y−ρ)·g`
-  with `g(ρ) ≠ 0` (separability again); then `N = (A − ρB)·H₅(g)`, the second factor has
-  degree exactly `10` because its `X¹⁰`-coefficient is `β⁵g(ρ) ≠ 0`, and `A − ρB ≠ 0` because
-  `A = ρB` would make `B` a unit.  So `deg N ≥ 10`.
+/-- The coefficient of a product at the sum of two degree bounds. -/
+lemma coeff_mul_of_natDegree_le {p q : K[X]} {m n : ℕ} (hp : p.natDegree ≤ m)
+    (hq : q.natDegree ≤ n) : (p * q).coeff (m + n) = p.coeff m * q.coeff n := by
+  rw [Polynomial.coeff_mul]
+  refine Finset.sum_eq_single (m, n) (fun x hx hne => ?_) (fun h => ?_)
+  · have hsum : x.1 + x.2 = m + n := Finset.mem_antidiagonal.mp hx
+    rcases lt_or_ge m x.1 with h | h
+    · rw [Polynomial.coeff_eq_zero_of_natDegree_lt (lt_of_le_of_lt hp h), zero_mul]
+    · have hx1 : x.1 < m := by
+        by_contra hc
+        exact hne (Prod.ext (by omega : x.1 = (m, n).1) (by omega : x.2 = (m, n).2))
+      rw [Polynomial.coeff_eq_zero_of_natDegree_lt (lt_of_le_of_lt hq (by omega)), mul_zero]
+  · simp [Finset.mem_antidiagonal] at h
 
-The bound `10` is what the pencil count needs; the true value is `12` unless the point at
-infinity of the `t`-line maps to a root of `f`, in which case it can drop to `10`. -/
+lemma coeff_pow_of_natDegree_le {p : K[X]} {m : ℕ} (hp : p.natDegree ≤ m) (i : ℕ) :
+    (p ^ i).coeff (m * i) = p.coeff m ^ i := by
+  induction i with
+  | zero => simp
+  | succ j ih =>
+      have h1 : (p ^ j).natDegree ≤ m * j := by
+        rw [mul_comm]; exact Polynomial.natDegree_pow_le_of_le j hp
+      have h2 : m * (j + 1) = m * j + m := by ring
+      rw [h2, pow_succ, coeff_mul_of_natDegree_le h1 hp, ih, pow_succ]
+
+lemma coeff_term_of_natDegree_le {A B : K[X]} (hA : A.natDegree ≤ 2) (hB : B.natDegree ≤ 2)
+    (a : K) (i j : ℕ) :
+    (C a * A ^ i * B ^ j).coeff (2 * i + 2 * j) = a * A.coeff 2 ^ i * B.coeff 2 ^ j := by
+  have hAi : (A ^ i).natDegree ≤ 2 * i := by
+    rw [mul_comm]; exact Polynomial.natDegree_pow_le_of_le i hA
+  have hBj : (B ^ j).natDegree ≤ 2 * j := by
+    rw [mul_comm]; exact Polynomial.natDegree_pow_le_of_le j hB
+  rw [mul_assoc, Polynomial.coeff_C_mul, coeff_mul_of_natDegree_le hAi hBj,
+    coeff_pow_of_natDegree_le hA, coeff_pow_of_natDegree_le hB, mul_assoc]
+
+/-- **The top coefficient of a binary form of degree `n` in a pair of quadratics.** -/
+lemma coeff_homogOf_top {A B : K[X]} (hA : A.natDegree ≤ 2) (hB : B.natDegree ≤ 2)
+    (n : ℕ) (h : K[X]) :
+    (homogOf A B n h).coeff (2 * n)
+      = ∑ i ∈ Finset.range (n + 1), h.coeff i * A.coeff 2 ^ i * B.coeff 2 ^ (n - i) := by
+  rw [homogOf, Polynomial.finsetSum_coeff]
+  refine Finset.sum_congr rfl fun i hi => ?_
+  have hi' : i ≤ n := Nat.lt_succ_iff.mp (Finset.mem_range.mp hi)
+  have hsplit : 2 * n = 2 * i + 2 * (n - i) := by omega
+  rw [hsplit, coeff_term_of_natDegree_le hA hB]
+
+/-- The homogeneous evaluation `Σ hᵢαⁱβⁿ⁻ⁱ = βⁿ·h(α/β)`. -/
+lemma sum_homog_eq_pow_mul_eval {α β : K} (hβ : β ≠ 0) {h : K[X]} {n : ℕ}
+    (hh : h.natDegree ≤ n) :
+    ∑ i ∈ Finset.range (n + 1), h.coeff i * α ^ i * β ^ (n - i) = β ^ n * h.eval (α / β) := by
+  rw [Polynomial.eval_eq_sum_range' (Nat.lt_succ_of_le hh), Finset.mul_sum]
+  refine Finset.sum_congr rfl fun i hi => ?_
+  have hi' : i ≤ n := Nat.lt_succ_iff.mp (Finset.mem_range.mp hi)
+  have hβi : β ^ i ≠ 0 := pow_ne_zero i hβ
+  have hpow : β ^ n = β ^ (n - i) * β ^ i := by
+    rw [← pow_add]; congr 1; omega
+  rw [hpow, div_pow]
+  field_simp
+
+/-! ### `homogOf` is multiplicative, through `K(x)` -/
+
+lemma algebraMap_homogOf {A B : K[X]} (hB : B ≠ 0) {h : K[X]} {n : ℕ} (hh : h.natDegree ≤ n) :
+    algebraMap K[X] (RatFunc K) (homogOf A B n h)
+      = algebraMap K[X] (RatFunc K) B ^ n *
+        Polynomial.aeval (algebraMap K[X] (RatFunc K) A / algebraMap K[X] (RatFunc K) B) h := by
+  have hBne : algebraMap K[X] (RatFunc K) B ≠ 0 := RatFunc.algebraMap_ne_zero hB
+  have hC : ∀ a : K, algebraMap K[X] (RatFunc K) (C a) = algebraMap K (RatFunc K) a := by
+    intro a
+    simp
+  rw [homogOf, map_sum, Polynomial.aeval_eq_sum_range' (Nat.lt_succ_of_le hh), Finset.mul_sum]
+  refine Finset.sum_congr rfl fun i hi => ?_
+  have hi' : i ≤ n := Nat.lt_succ_iff.mp (Finset.mem_range.mp hi)
+  have hbi : algebraMap K[X] (RatFunc K) B ^ i ≠ 0 := pow_ne_zero i hBne
+  have hpow : algebraMap K[X] (RatFunc K) B ^ n
+      = algebraMap K[X] (RatFunc K) B ^ (n - i) * algebraMap K[X] (RatFunc K) B ^ i := by
+    rw [← pow_add]; congr 1; omega
+  rw [map_mul, map_mul, map_pow, map_pow, hC, hpow, Algebra.smul_def, div_pow]
+  field_simp
+
+lemma homogOf_mul {A B : K[X]} (hB : B ≠ 0) {g h : K[X]} {m n : ℕ} (hg : g.natDegree ≤ m)
+    (hh : h.natDegree ≤ n) :
+    homogOf A B (m + n) (g * h) = homogOf A B m g * homogOf A B n h := by
+  refine IsFractionRing.injective K[X] (RatFunc K) ?_
+  rw [map_mul, algebraMap_homogOf hB hg, algebraMap_homogOf hB hh,
+    algebraMap_homogOf hB (le_trans Polynomial.natDegree_mul_le (by omega) :
+      (g * h).natDegree ≤ m + n), map_mul, pow_add]
+  ring
+
+/-! ### `homogSext` is `homogOf … 6 f` -/
+
+lemma sextPoly_eq_C (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) (R : Type*) [CommRing R] :
+    sextPoly c₀ c₁ c₂ c₃ c₄ c₅ R
+      = X ^ 6 + C ((c₅ : R)) * X ^ 5 + C ((c₄ : R)) * X ^ 4 + C ((c₃ : R)) * X ^ 3
+        + C ((c₂ : R)) * X ^ 2 + C ((c₁ : R)) * X + C ((c₀ : R)) := by
+  simp [sextPoly]
+
+lemma coeff_sextPoly (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) (K : Type) [Field K] :
+    (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).coeff 0 = (c₀ : K) ∧
+    (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).coeff 1 = (c₁ : K) ∧
+    (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).coeff 2 = (c₂ : K) ∧
+    (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).coeff 3 = (c₃ : K) ∧
+    (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).coeff 4 = (c₄ : K) ∧
+    (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).coeff 5 = (c₅ : K) ∧
+    (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).coeff 6 = 1 := by
+  rw [sextPoly_eq_C]
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
+    simp only [Polynomial.coeff_add, Polynomial.coeff_X_pow, Polynomial.coeff_C_mul,
+      Polynomial.coeff_C, Polynomial.coeff_X] <;> norm_num
+
+lemma homogSext_eq_homogOf (A B : K[X]) :
+    homogSext c₀ c₁ c₂ c₃ c₄ c₅ A B = homogOf A B 6 (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) := by
+  obtain ⟨h0, h1, h2, h3, h4, h5, h6⟩ := coeff_sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K
+  rw [homogOf]
+  simp only [Finset.sum_range_succ, Finset.sum_range_zero, h0, h1, h2, h3, h4, h5, h6,
+    homogSext, Polynomial.C_eq_intCast, map_one]
+  norm_num
+  ring_nf
+
+lemma homogOf_one_X_sub_C (A B : K[X]) (ρ : K) :
+    homogOf A B 1 (X - C ρ) = A - C ρ * B := by
+  rw [homogOf]
+  simp [Finset.sum_range_succ, Polynomial.coeff_sub, Polynomial.coeff_X, Polynomial.coeff_C]
+  ring
+
+/-! ### The degree bound -/
+
+lemma monic_sextPoly (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) (K : Type) [Field K] :
+    (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Monic := by
+  rw [Polynomial.Monic, Polynomial.leadingCoeff, natDegree_sextPoly]
+  exact (coeff_sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).2.2.2.2.2.2
+
+/-- **PROVEN: the homogenised sextic has degree at least `10`.**
+
+`N = B⁶f(A/B)` with `A`, `B` coprime and `max (deg A) (deg B) = 2`.  The three cases the route
+note predicted, run through `coeff_homogOf_top` and `sum_homog_eq_pow_mul_eval`, which together
+say that the top coefficient of a binary form of degree `n` in a pair of quadratics is
+`βⁿ·h(α/β)` for `α`, `β` the two `X²`-coefficients:
+
+* `β = 0` (so `deg B < 2`, hence `α ≠ 0`): the sum collapses to its `i = 6` term, `α⁶ ≠ 0`, so
+  `deg N = 12`.
+* `β ≠ 0` and `f(α/β) ≠ 0`: the coefficient of `X¹²` is `β⁶f(α/β) ≠ 0`, so `deg N = 12`.
+* `β ≠ 0` and `f(ρ) = 0` for `ρ = α/β`: write `f = (X − ρ)·g`.  Multiplicativity of the
+  homogenisation (`homogOf_mul`, proven through `K(x)` by clearing denominators) gives
+  `N = (A − ρB)·H₅(g)`, whose second factor has `X¹⁰`-coefficient `β⁵g(ρ) ≠ 0` — **this is
+  where separability is used**, as `g(ρ) = 0` would make `(X − ρ)²` divide `f` — and whose
+  first factor is nonzero because `A = ρB` would make `B` a unit and so `β = 0`.  Hence
+  `deg N = deg (A − ρB) + deg H₅(g) ≥ 10`.
+
+The `12` of the first two cases drops to `10` in the third exactly when the point at infinity
+of the `t`-line maps to a root of `f`; `10` is the bound the pencil count needs. -/
 theorem ten_le_natDegree_homogSext
     (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) {A B : K[X]} (hAB : IsCoprime A B)
     (hdeg : max A.natDegree B.natDegree = 2) :
-    10 ≤ (homogSext c₀ c₁ c₂ c₃ c₄ c₅ A B).natDegree := sorry
+    10 ≤ (homogSext c₀ c₁ c₂ c₃ c₄ c₅ A B).natDegree := by
+  have hA2 : A.natDegree ≤ 2 := hdeg ▸ le_max_left _ _
+  have hB2 : B.natDegree ≤ 2 := hdeg ▸ le_max_right _ _
+  have hfdeg : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).natDegree ≤ 6 :=
+    le_of_eq (natDegree_sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K)
+  -- the two leading coefficients are not both zero
+  have hnz : ¬(A.coeff 2 = 0 ∧ B.coeff 2 = 0) := by
+    rintro ⟨ha, hb⟩
+    have hA1 : A.natDegree ≤ 1 := by
+      refine Polynomial.natDegree_le_iff_coeff_eq_zero.mpr fun m hm => ?_
+      rcases eq_or_lt_of_le (Nat.succ_le_of_lt hm) with h | h
+      · rw [← h]; exact ha
+      · exact Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)
+    have hB1 : B.natDegree ≤ 1 := by
+      refine Polynomial.natDegree_le_iff_coeff_eq_zero.mpr fun m hm => ?_
+      rcases eq_or_lt_of_le (Nat.succ_le_of_lt hm) with h | h
+      · rw [← h]; exact hb
+      · exact Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)
+    rw [max_eq_iff] at hdeg
+    omega
+  have htop : (homogSext c₀ c₁ c₂ c₃ c₄ c₅ A B).coeff 12
+      = ∑ i ∈ Finset.range 7,
+          (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).coeff i * A.coeff 2 ^ i * B.coeff 2 ^ (6 - i) := by
+    rw [homogSext_eq_homogOf]
+    exact coeff_homogOf_top hA2 hB2 6 _
+  rcases eq_or_ne (B.coeff 2) 0 with hb0 | hb0
+  · -- `B` has degree `< 2`, so `A⁶` dominates
+    have ha0 : A.coeff 2 ≠ 0 := fun h => hnz ⟨h, hb0⟩
+    have h12 : (homogSext c₀ c₁ c₂ c₃ c₄ c₅ A B).coeff 12 = A.coeff 2 ^ 6 := by
+      rw [htop, hb0]
+      simp [Finset.sum_range_succ, (coeff_sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).2.2.2.2.2.2]
+    refine le_trans (by norm_num) (Polynomial.le_natDegree_of_ne_zero (n := 12) ?_)
+    rw [h12]
+    exact pow_ne_zero 6 ha0
+  · -- `ρ = α/β` is defined
+    have hβ6 : B.coeff 2 ^ 6 ≠ 0 := pow_ne_zero 6 hb0
+    have htop' : (homogSext c₀ c₁ c₂ c₃ c₄ c₅ A B).coeff 12
+        = B.coeff 2 ^ 6 * (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).eval (A.coeff 2 / B.coeff 2) := by
+      rw [htop]
+      exact sum_homog_eq_pow_mul_eval hb0 hfdeg
+    rcases eq_or_ne ((sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).eval (A.coeff 2 / B.coeff 2)) 0 with hf | hf
+    · -- `ρ` is a root: factor out `X − ρ`
+      set ρ : K := A.coeff 2 / B.coeff 2 with hρ
+      have hBne : B ≠ 0 := fun h => hb0 (by rw [h]; simp)
+      obtain ⟨g, hg⟩ : (X - C ρ) ∣ sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K :=
+        Polynomial.dvd_iff_isRoot.mpr hf
+      have hfne : sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K ≠ 0 := (monic_sextPoly _ _ _ _ _ _ K).ne_zero
+      have hgne : g ≠ 0 := by
+        intro h
+        rw [h, mul_zero] at hg
+        exact hfne hg
+      have hXne : (X - C ρ : K[X]) ≠ 0 := Polynomial.X_sub_C_ne_zero ρ
+      have hgdeg : g.natDegree = 5 := by
+        have h := Polynomial.natDegree_mul hXne hgne
+        rw [← hg, natDegree_sextPoly, Polynomial.natDegree_X_sub_C] at h
+        omega
+      -- `g(ρ) ≠ 0` by separability
+      have hgρ : g.eval ρ ≠ 0 := by
+        intro h
+        obtain ⟨k, hk⟩ : (X - C ρ) ∣ g := Polynomial.dvd_iff_isRoot.mpr h
+        have hsq : (X - C ρ) * (X - C ρ) ∣ sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K := by
+          rw [hg, hk]; exact ⟨k, by ring⟩
+        have := hsep.squarefree _ hsq
+        rw [Polynomial.isUnit_iff_degree_eq_zero, Polynomial.degree_X_sub_C] at this
+        exact absurd this (by norm_num)
+      -- the factorisation of `N`
+      have hN : homogSext c₀ c₁ c₂ c₃ c₄ c₅ A B
+          = (A - C ρ * B) * homogOf A B 5 g := by
+        rw [homogSext_eq_homogOf, hg,
+          homogOf_mul hBne (le_of_eq (Polynomial.natDegree_X_sub_C ρ)) (le_of_eq hgdeg),
+          homogOf_one_X_sub_C]
+      have hGtop : (homogOf A B 5 g).coeff 10 = B.coeff 2 ^ 5 * g.eval ρ := by
+        rw [show (10 : ℕ) = 2 * 5 from rfl, coeff_homogOf_top hA2 hB2 5 g]
+        exact sum_homog_eq_pow_mul_eval hb0 (le_of_eq hgdeg)
+      have hGne : (homogOf A B 5 g).coeff 10 ≠ 0 := by
+        rw [hGtop]
+        exact mul_ne_zero (pow_ne_zero 5 hb0) hgρ
+      have hGdeg : 10 ≤ (homogOf A B 5 g).natDegree :=
+        Polynomial.le_natDegree_of_ne_zero hGne
+      have hlin : A - C ρ * B ≠ 0 := by
+        intro h
+        have hAeq : A = C ρ * B := by linear_combination h
+        have hdvd : B ∣ A := ⟨C ρ, by rw [hAeq]; ring⟩
+        have hu : IsUnit B := hAB.isUnit_of_dvd' hdvd dvd_rfl
+        have hb2 : B.natDegree = 0 := Polynomial.natDegree_eq_zero_of_isUnit hu
+        have : B.coeff 2 = 0 := Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)
+        exact hb0 this
+      rw [hN, Polynomial.natDegree_mul hlin (fun h => hGne (by rw [h]; simp))]
+      omega
+    · refine le_trans (by norm_num) (Polynomial.le_natDegree_of_ne_zero (n := 12) ?_)
+      rw [htop']
+      exact mul_ne_zero hβ6 hf
 
 /-- **The homogenised sextic of a separable monic sextic is never a square**, for a coprime
 pair of degree `max = 2` in characteristic `≠ 2` (PROVEN from the two leaves above).
@@ -3141,8 +3367,7 @@ the pencil" becomes "at most `deg W` multiple roots of `N`".
 
 Assembled from `PlaceData.two_ne_zero`, `FunctionFieldData.exists_homogSext_eq_sq` (the
 transport, which is where `[F : K(x)] = 2` is spent) and `not_isSquare_homogSext` (the pencil
-count).  Two purely polynomial leaves remain under the last of these:
-`isCoprime_homogSext_homogSextDeriv` and `ten_le_natDegree_homogSext`. -/
+count).  No leaves remain under any of them. -/
 theorem not_isRationalGenerator {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
     (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
     (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (t : D.F) :
