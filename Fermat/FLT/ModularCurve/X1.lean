@@ -163,6 +163,13 @@ public import Mathlib.Analysis.Complex.UpperHalfPlane.Manifold
 public import Mathlib.Analysis.SpecificLimits.Normed
 public import Mathlib.Analysis.Real.Pi.Bounds
 public import Mathlib.NumberTheory.ModularForms.BoundedAtCusp
+-- `exists_isOpenImmersion_range_eq_compl_of_section`: the complement of the image of a
+-- `K`-point of a smooth proper geometrically connected curve is an affine open.  Used ONLY
+-- inside the proof body of `exists_weierstrassModel_of_abelianSchemeStruct_finiteField`
+-- below, so the import is deliberately NON-public: nothing in this file's signatures
+-- mentions it, and `X0.lean` reaches the same file only through its private
+-- `EllipticScheme` import, which this module does not inherit.
+import Fermat.FLT.Mathlib.AlgebraicGeometry.CurveAffineComplement
 
 @[expose] public section
 
@@ -450,7 +457,7 @@ open in them has been split along the theories it needed:
 | `exists_rationalCuspPointsX1_field` | `φ(N)/2` rational cusps of `X_1(N)` (Deligne-Rapoport VI.5).  Base field FREED 2026-07-28: this single leaf now carries the former `exists_rationalCuspPointsX1` (over `ℚ`, PROVEN over it) and the `≥` half of the former `card_cuspLocusPoints_x1_finiteField` (over `𝔽_3`) — one sentence of Deligne-Rapoport that used to be two open leaves at two bases. | any `K` with `N` invertible |
 | `exists_isFineGamma1Moduli` | Katz–Mazur 4.7.1: `[Γ₁(N)]` is REPRESENTABLE at `N ≥ 4`, `ℓ` prime, `ℓ ∤ N` — a universal family `dM` over `M`, classified uniquely.  (`exists_fineGamma1Atlas` is PROVEN over it, 2026-07-28, through the formal `Gamma1Atlas.ofFineModuli`; that node was itself `nonempty_relPoint_atlas_of_relPoint`, REFUTED and restated the same day — see its FALSITY AUDIT.) | `𝔽_ℓ` |
 | `nonempty_gamma1Datum_baseChange` | base change of a `Γ₁(N)`-datum — formal, no arithmetic | any |
-| `exists_weierstrassModel_of_abelianSchemeStruct_finiteField` | **Riemann-Roch on a genus-one curve** — a Weierstrass model of an abelian scheme of relative dimension one over `Spec 𝔽_ℓ`; NO modular curves and no level structure.  Cut 2026-07-28 as the geometry half of `exists_weierstrassEquiv_of_gamma1Datum` (now PROVEN over it).  The ℚ-side chain in `EllipticScheme.lean` is hardcoded to `Spec ℚ` and its own three leaves are open, so there is nothing to instantiate. | `𝔽_ℓ` |
+| `exists_weierstrassRingEquiv_of_abelianSchemeChart` | **Riemann-Roch on a genus-one curve** — the affine chart of an abelian scheme of relative dimension one over `Spec 𝔽_ℓ` IS a Weierstrass coordinate ring; NO modular curves and no level structure.  NEW 2026-07-31, as the sole leaf under `exists_weierstrassModel_of_abelianSchemeStruct_finiteField`, which is now PROVEN over it.  The claim in the row this replaces — that "there is nothing to instantiate", the ℚ-side chain being hardcoded to `Spec ℚ` — was true of that chain and FALSE of the piece it is built over: `exists_isOpenImmersion_range_eq_compl_of_section` (`CurveAffineComplement.lean`) was generalised to an arbitrary base field on 2026-07-30 and supplies the whole scheme-theoretic half at `K = ZMod ℓ`. | `𝔽_ℓ` |
 | `exists_relPointAddEquiv_of_weierstrassModel_finiteField` | the transport half of the same cut: given the model, the `𝔽_ℓ`-SECTIONS are `W(𝔽_ℓ)`.  The content is that the abelian scheme's group law agrees with the chord-and-tangent law (rigidity); strictly easier than the ℚ-side `exists_geomFibreAddEquiv_of_weierstrassModel`, which needs a `Γ_ℚ`-equivariant equivalence on geometric fibres. | `𝔽_ℓ` |
 | `exists_cuspSymbolEmbedding_x1_finiteField` | the hard direction of Ogg's description, DECOMPOSED 2026-07-28 into geometry and arithmetic: the `𝔽_ℓ`-rational cusp points inject into the Frobenius-fixed cusp symbols `Γ_1(N)∖ℙ¹(ℚ)`.  Carries NO counting — that is `card_fixedCuspSymbolX1` (`ModularCurve/CuspSymbolX1.lean`), PROVEN, and `card_cuspLocusPoints_x1_finiteField_le` is PROVEN over the two.  The lower bound is the `exists_rationalCuspPointsX1_field` row above. | `𝔽_ℓ`, `ℓ ∤ N`, `N ≥ 5` |
 | `exists_x1SmoothProperCurveModel` | Deligne-Rapoport VI.6.9: the smooth proper model over `ℤ_(ℓ)` together with the identification of its GENERIC fibre.  NO moduli in the conclusion — the modular input is the hypothesis `hX`.  (Replaces `exists_x1CurveReductionModel`, which is **PROVEN** over this row alone since 2026-07-30: the special fibre is the pullback along the closed point, so `spX`/`spX_nat` are `fibreIdentPullback`, and `properX` is `bijective_pre_generic_of_isProper` — the three obligations that need no modular geometry, discharged as `X0.lean` had already done on the `Γ₀` side.) | `ℚ → 𝔽_ℓ` |
@@ -8982,10 +8989,90 @@ theorem natCard_weierstrassPoint_le {F : Type*} [Field F] [Fintype F] [Decidable
   rw [Nat.card_eq_fintype_card]
   omega
 
+/-- **RIEMANN–ROCH: the affine chart of an abelian scheme curve over `𝔽_ℓ` IS a
+Weierstrass coordinate ring** (sorry leaf, NEW 2026-07-31 — the whole
+mathematical content of
+`exists_weierstrassModel_of_abelianSchemeStruct_finiteField` below, with the
+scheme-theoretic bookkeeping removed).
+
+TRUE — Silverman *AEC* III.3.1.  `ab.proper`, `ab.smooth` and `ab.connected`
+make `f` a proper smooth geometrically connected curve over `𝔽_ℓ` (`_hdim`
+supplies the relative dimension), and `ab.zero (𝟙 (SpecF ℓ))` is an
+`𝔽_ℓ`-RATIONAL point `O` on it.  A group scheme has trivial relative tangent
+bundle, hence arithmetic genus one, so Riemann–Roch gives `dim L(n[O]) = n` for
+`n ≥ 1`; picking `x ∈ L(2[O]) ∖ L([O])` and `y ∈ L(3[O]) ∖ L(2[O])`, the seven
+monomials `1, x, y, x², xy, y², x³` lie in the six-dimensional `L(6[O])` and so
+satisfy a linear relation in which `y²` and `x³` occur with nonzero coefficients
+(they alone have pole order exactly six).  Scaling gives a Weierstrass equation,
+and `x`, `y` generate the ring of functions regular away from `O` — which is
+exactly `R`, by `_hrange`.
+
+**WHY THE HYPOTHESES PIN `R`, i.e. why this is not vacuously satisfiable by any
+`R` at all.**  `_hopen`, `_hover` and `_hrange` together say that
+`Spec R` IS the open subscheme `A ∖ {O}` *as an `𝔽_ℓ`-scheme*: `_hrange` fixes
+the underlying open, `_hopen` fixes it as an open immersion, and `_hover`
+fixes the `𝔽_ℓ`-algebra structure of `R` as the one induced by `f` (without it
+an adversary could retwist `Algebra (ZMod ℓ) R` along a Frobenius and the
+`𝔽_ℓ`-linearity conjunct `he` would be unprovable).  Dropping any one of the
+three makes the statement FALSE, since `R` would then be an arbitrary ring.
+
+**THE ROUTE, and it is shorter than it looks — a prover owes only `x`, `y` and
+the relation.**  `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveAffineComplement.lean`
+carries the two halves of "a surjection out of a Weierstrass coordinate ring is
+an isomorphism", both PROVEN and neither Riemann–Roch:
+
+* `exists_surjective_coordinateRingHom_of_generators` — two elements `x y : R`
+  plus the Weierstrass relation plus
+  `Subring.closure (Set.range (algebraMap (ZMod ℓ) R) ∪ {x, y}) = ⊤` assemble
+  into a SURJECTION `W.toAffine.CoordinateRing →+* R` which is automatically
+  `𝔽_ℓ`-linear (that is its second conjunct, and it is what `he` here becomes);
+* `injective_of_surjective_coordinateRing` — any such surjection onto a DOMAIN
+  that is NOT A FIELD is injective, by Krull dimension in elementary form.
+
+So the two obligations a successor has beyond the linear algebra are
+`IsDomain R` and `¬ IsField R`, and both are geometry rather than
+Riemann–Roch: `A` is integral (smooth over a field, hence reduced; connected
+and locally irreducible, hence irreducible), which gives `IsDomain Γ(A, U)` for
+nonempty `U` through mathlib's `AlgebraicGeometry.IsIntegral`; and `R` is not a
+field because `Spec R` is `A` minus one point, which is infinite — a field would
+make `A` a two-point space.  They are deliberately NOT split off as leaves of
+their own, because a prover who has `x` and `y` in hand has `R` presented and
+both become cheap.
+
+**Statement form: a `RingEquiv` rather than the generators.**  The generators
+form would be the tighter cut, and it is what `CurveAffineComplement.lean`'s
+own docstrings prescribe; it is not used here because it would force the
+`IsDomain`/`¬ IsField` obligations into the ASSEMBLY, where `R` is opaque and
+they are not cheap.  Handing back the equivalence keeps every obligation on the
+side of the prover who has constructed the presentation.  A successor who
+proves the generators form should feel free to restate this leaf that way and
+move the two facts down with it.
+
+`_hdim` is LOAD-BEARING for truth (an abelian scheme of relative dimension `> 1`
+has no plane-cubic model at all), and so is `ab` — a proper smooth connected
+curve with a rational point need not have genus one, and it is the GROUP
+structure, through the trivial tangent bundle, that forces genus `1`.  Both are
+underscore-free here only where the assembly passes them on; a `sorry` body
+consumes nothing. -/
+theorem exists_weierstrassRingEquiv_of_abelianSchemeChart {ℓ : ℕ} [Fact ℓ.Prime]
+    {A : Scheme.{0}} {f : A ⟶ SpecF ℓ} (_ab : AbelianSchemeStruct f)
+    (_hdim : SmoothOfRelativeDimension 1 f)
+    (R : Type) [CommRing R] [Algebra (ZMod ℓ) R]
+    (ι : Spec (CommRingCat.of R) ⟶ A) (_hopen : IsOpenImmersion ι)
+    (_hover : ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap (ZMod ℓ) R)))
+    (_hrange : Set.range ι.base = (Set.range (_ab.zero (𝟙 (SpecF ℓ))).1.base)ᶜ) :
+    ∃ (W : WeierstrassCurve (ZMod ℓ)) (_ : W.IsElliptic)
+      (e : W.toAffine.CoordinateRing ≃+* R),
+      ∀ a : ZMod ℓ, e (algebraMap (ZMod ℓ) W.toAffine.CoordinateRing a)
+        = algebraMap (ZMod ℓ) R a :=
+  sorry
+
 /-- **An abelian scheme of relative dimension one over `Spec 𝔽_ℓ` has a
-Weierstrass model** (sorry leaf, introduced 2026-07-28 as the GEOMETRY
-half of `exists_weierstrassEquiv_of_gamma1Datum` below).  **This leaf IS
-Riemann–Roch**; the sibling leaf carries none of it.
+Weierstrass model** (**PROVEN 2026-07-31** over the single leaf
+`exists_weierstrassRingEquiv_of_abelianSchemeChart` immediately above; a bare
+`sorry` from 2026-07-28 until then, cut as the GEOMETRY half of
+`exists_weierstrassEquiv_of_gamma1Datum` below).  **Riemann–Roch is now in that
+leaf and nowhere else**; the sibling transport leaf carries none of it either.
 
 TRUE — Silverman *AEC* III.3.1.  `ab.proper`, `ab.smooth` and
 `ab.connected` make `f` a proper smooth geometrically connected curve
@@ -9023,17 +9110,68 @@ are exactly the two declarations that should be deleted in favour of it.
 consume it: without relative dimension one an abelian scheme is an
 abelian variety of higher dimension and has no plane-cubic model at all.
 It is underscore-prefixed only to keep the tree warning-clean, matching
-the convention of the three ℚ-side leaves named above. -/
+the convention of the three ℚ-side leaves named above.
+
+## THE SCHEME-THEORETIC HALF IS NO LONGER OWED HERE (2026-07-31)
+
+The paragraph above is the state of the leaf as cut on 2026-07-28, and one of
+its premises was wrong: it is not true that "there is nothing to instantiate".
+The `ℚ`-side chain in `EllipticScheme.lean` is indeed hardcoded to `Spec ℚ` and
+is indeed still open — but the piece it is *itself* assembled over,
+`AlgebraicGeometry.exists_isOpenImmersion_range_eq_compl_of_section` in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveAffineComplement.lean`, was
+generalised to an arbitrary base field `K` on 2026-07-30 (that is the commit
+that added its `Algebra K R` and structure-morphism conjuncts, precisely so it
+would be usable over a field that is not `ℚ`).  It applies verbatim at
+`K = ZMod ℓ` and hands over the affine chart `A ∖ {O}` together with its
+`𝔽_ℓ`-algebra structure and the range clause.
+
+So *this* declaration is now an ASSEMBLY, and what is left is exactly
+Riemann–Roch, isolated in `exists_weierstrassRingEquiv_of_abelianSchemeChart`
+immediately above.  The three conjuncts of the conclusion are discharged as
+follows, none of them mathematics:
+
+* `IsOpenImmersion` — `Spec.map` of a ring ISO is an iso, hence an open
+  immersion, and open immersions compose;
+* the structure-morphism clause — `Spec.map_comp` against the `𝔽_ℓ`-linearity
+  conjunct `he` of the leaf, which is exactly why that conjunct is stated;
+* the range clause — the base map of an iso is a homeomorphism, so composing
+  with it does not move the range.
+
+The import that makes this possible is deliberately NON-public (see the import
+block): nothing in this file's signatures mentions `CurveAffineComplement`. -/
 theorem exists_weierstrassModel_of_abelianSchemeStruct_finiteField {ℓ : ℕ} [Fact ℓ.Prime]
     {A : Scheme.{0}} {f : A ⟶ SpecF ℓ} (ab : AbelianSchemeStruct f)
-    (_hdim : SmoothOfRelativeDimension 1 f) :
+    (hdim : SmoothOfRelativeDimension 1 f) :
     ∃ (W : WeierstrassCurve (ZMod ℓ)) (_ : W.IsElliptic),
       ∃ ι : Spec (CommRingCat.of W.toAffine.CoordinateRing) ⟶ A,
         IsOpenImmersion ι ∧
           ι ≫ f = Spec.map (CommRingCat.ofHom
             (algebraMap (ZMod ℓ) W.toAffine.CoordinateRing)) ∧
-          Set.range ι.base = (Set.range (ab.zero (𝟙 (SpecF ℓ))).1.base)ᶜ :=
-  sorry
+          Set.range ι.base = (Set.range (ab.zero (𝟙 (SpecF ℓ))).1.base)ᶜ := by
+  haveI := ab.proper
+  haveI := hdim
+  obtain ⟨R, _, _, ι, hopen, hover, hrange⟩ :=
+    AlgebraicGeometry.exists_isOpenImmersion_range_eq_compl_of_section
+      (K := ZMod ℓ) (X := A) f ab.connected
+      (ab.zero (𝟙 (SpecF ℓ))).1 (ab.zero (𝟙 (SpecF ℓ))).2
+  obtain ⟨W, hW, e, he⟩ :=
+    exists_weierstrassRingEquiv_of_abelianSchemeChart ab hdim R ι hopen hover hrange
+  haveI := hW
+  haveI : IsIso (e.symm.toCommRingCatIso).hom := inferInstance
+  refine ⟨W, hW, Spec.map (e.symm.toCommRingCatIso).hom ≫ ι, inferInstance, ?_, ?_⟩
+  · rw [Category.assoc, hover, ← Spec.map_comp]
+    congr 1
+    ext a
+    exact e.symm_apply_eq.mpr (he a).symm
+  · rw [← hrange]
+    apply Set.Subset.antisymm
+    · rintro _ ⟨p, rfl⟩
+      exact ⟨_, rfl⟩
+    · rintro _ ⟨p, rfl⟩
+      obtain ⟨q, hq⟩ :=
+        (Scheme.homeoOfIso (asIso (Spec.map (e.symm.toCommRingCatIso).hom))).surjective p
+      exact ⟨q, congrArg (⇑ι.base) hq⟩
 
 /-- **A Weierstrass model of an abelian scheme over `Spec 𝔽_ℓ` computes
 its `𝔽_ℓ`-SECTIONS** (sorry leaf, introduced 2026-07-28 as the TRANSPORT
@@ -9120,7 +9258,10 @@ chain already uses:
 
 1. `exists_weierstrassModel_of_abelianSchemeStruct_finiteField` — **the
    Riemann–Roch half**, producing the cubic `W` together with the open
-   immersion of its affine chart onto the complement of the zero section;
+   immersion of its affine chart onto the complement of the zero section.
+   PROVEN 2026-07-31 over `exists_weierstrassRingEquiv_of_abelianSchemeChart`,
+   which is where the Riemann–Roch now lives and is the only open leaf on this
+   side; everything scheme-theoretic came from `CurveAffineComplement.lean`;
 2. `exists_relPointAddEquiv_of_weierstrassModel_finiteField` — **the
    transport half**, reading the `𝔽_ℓ`-sections off that model, whose real
    content is that the abstract group law agrees with the chord-and-tangent
