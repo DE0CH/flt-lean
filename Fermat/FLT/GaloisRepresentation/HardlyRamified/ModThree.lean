@@ -48840,52 +48840,6 @@ theorem map_pow_muAction_iff_ray_class (F : Type u) [Field F] [NumberField F]
   have hkk : (k : ZMod m) = (k' : ZMod m) := he1.symm.trans he2
   rw [hspec ζ hζ, pow_eq_pow_val_ray_class hζ k', pow_eq_pow_val_ray_class hζ k, hkk]
 
-/-- **`ℚ(ζ_m)/ℚ` IS UNRAMIFIED OUTSIDE `m`, IN INERTIA-SUBGROUP FORM**
-(sorry leaf, created 2026-07-29 as sub-leaf (a) of the shared Minkowski
-cut `exists_badPrimes_mul_muFixer_eq_top_ray_class` below, whose earlier
-docstring named exactly this statement as one of its two missing inputs).
-
-For a rational prime `q` NOT dividing `m`, the image in `Γ ℚ` of the
-local inertia group at `q` fixes every `m`-th root of unity, i.e. lands
-in `muFixerRayClass ℚ m = Γ_{ℚ(ζ_m)}`.
-
-**THIS IS THE CONVERSE INERTIA DICTIONARY**, specialised to cyclotomic
-extensions. `MinkowskiUnramified` proves only the forward direction
-(`isUnramifiedAt_of_inertia_le_fixingSubgroup`: *inertia trivial ⟹
-unramified*); the converse *unramified ⟹ inertia trivial* is nowhere in
-`Fermat/`, in mathlib, or in `~/cs/FLT` (re-checked 2026-07-29 by grep,
-confirming the 2026-07-28 finding).
-
-ROUTE FOR A SUCCESSOR. The arithmetic half — `q ∤ m ⟹ q` is unramified
-in `ℚ(ζ_m)/ℚ` — is classical and available ideal-theoretically through
-mathlib's cyclotomic-discriminant material. The missing half is the
-passage from `Algebra.IsUnramifiedAt` back to the LOCAL inertia group,
-i.e. running the chain
-`exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup →
-inertia_eq_bot_of_le_fixingSubgroup → isUnramifiedAt_of_inertia_le_fixingSubgroup`
-BACKWARDS. Note `Ideal.card_inertia_eq_ramificationIdxIn` (mathlib,
-`RamificationInertia/Galois.lean`) is an EQUALITY, so the ideal-level
-converse `e = 1 ⟹ inertia = ⊥` is free; what genuinely has to be built is
-the local-global step, `e(Q|q) = 1 ⟹ e(M_w/ℚ_q) = 1 ⟹` the local inertia
-acts trivially on `M`, for which `LocalInertiaFixedField.lean`'s
-`restrictNormalHom_inertia_surjective` and `card_inertia_intermediate`
-are the intended tools.
-
-FAITHFULNESS. `_hm : 0 < m` is **NOT USED** and is underscore-prefixed so
-that this is mechanically visible; it is carried only so the statement
-has the same shape as its sibling (b) and can be applied uniformly by the
-glue below. At `m = 0` the hypothesis `¬ q ∣ 0` is already false, so the
-statement is vacuous there rather than wrong; at `m = 1` the conclusion
-is `⊤` and it is trivially true. -/
-theorem inertia_le_muFixer_of_not_dvd_ray_class {q : ℕ} (hq : q.Prime) (m : ℕ) (_hm : 0 < m)
-    (_hqm : ¬ q ∣ m) :
-    Subgroup.map (Field.absoluteGaloisGroup.map (algebraMap ℚ
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-          hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
-        (localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat)
-      ≤ muFixerRayClass ℚ m := by
-  sorry
-
 section HenselInertia
 
 open NumberField
@@ -49260,6 +49214,109 @@ theorem exists_ne_zero_forall_inertia_smul_map_eq_self (x : AlgebraicClosure ℚ
 
 end HenselInertia
 
+/-- **`ℚ(ζ_m)/ℚ` IS UNRAMIFIED OUTSIDE `m`, IN INERTIA-SUBGROUP FORM**
+(**PROVEN 2026-07-30**; created 2026-07-29 as sub-leaf (a) of the shared
+Minkowski cut `exists_badPrimes_mul_muFixer_eq_top_ray_class` below,
+whose earlier docstring named exactly this statement as one of its two
+missing inputs).
+
+For a rational prime `q` NOT dividing `m`, the image in `Γ ℚ` of the
+local inertia group at `q` fixes every `m`-th root of unity, i.e. lands
+in `muFixerRayClass ℚ m = Γ_{ℚ(ζ_m)}`.
+
+**THE ROUTE THE OLD DOCSTRING PRESCRIBED WAS NOT THE ONE TAKEN, AND THE
+DIFFERENCE IS THE WHOLE COST OF THE LEAF** — the same correction as on
+its sibling (b) `exists_badPrimes_inertia_le_fixingSubgroup_ray_class`
+just below, and for the same reason. That docstring called this "THE
+CONVERSE INERTIA DICTIONARY" and asked for the local-global step
+`e(Q|q) = 1 ⟹ e(M_w/ℚ_q) = 1 ⟹` inertia acts trivially, to be run
+through `Algebra.IsUnramifiedAt`, `Ideal.card_inertia_eq_ramificationIdxIn`
+and `LocalInertiaFixedField.lean`. **None of that is needed, and no
+cyclotomic-discriminant material is used either.**
+
+THE PROOF IS HENSEL'S SIMPLE-ROOT CRITERION, applied to
+`f = Xᵐ − 1 ∈ ℤ[X]` at the root `y = ι ζ`, and it is four lines of data:
+`y` is integral over `𝒪ᵥ` because `f` is MONIC (this is where `hm` is
+consumed — at `m = 0` the polynomial is `0`); `f'(y) · y = m yᵐ = m`, so
+the derivative divides the integer `m` with the INTEGRAL cofactor `y`
+itself; and `m` is a unit of `Oᵥ` precisely because `q ∤ m`. That is the
+hypothesis list of `inertia_smul_eq_self_of_isIntegral_of_mul_eq_intCast`
+in the `HenselInertia` section just above, so the whole leaf is one
+application of it, transported across the `F/ℚ` seam by
+`Field.absoluteGaloisGroup.lift_map` and injectivity of `ι`.
+
+The general form of the same computation, for an arbitrary algebraic
+number in place of a root of unity, is
+`exists_ne_zero_forall_inertia_smul_map_eq_self` above; this leaf is not
+an instance of it, because that statement produces a `D` depending on the
+element whereas here the single `D = m` must serve every `ζ ∈ μ_m` at
+once — which is exactly what taking `f = Xᵐ − 1` rather than the minimal
+polynomial buys.
+
+FAITHFULNESS: TRUE as stated. `hqm : ¬ q ∣ m` is the essential
+hypothesis, consumed at the unit-ness of `m` in `Oᵥ`; without it the
+statement is FALSE — `q ∣ m` is the ramified case, e.g. `m = q`, where
+inertia at `q` acts on `μ_q ⊆ ℚ̄` through the full `(ℤ/q)ˣ`. At `m = 1`
+the conclusion is `⊤` and holds trivially.
+
+`hm : 0 < m` is consumed by the proof below (twice: at the monicity of
+`Xᵐ − 1` and at `y^(m−1) · y = yᵐ`), so the binder is no longer
+underscore-prefixed as the earlier docstring had it — a rename only, and
+a no-op for callers since the type is untouched. **But it is NOT an
+essential hypothesis: it is DERIVABLE from `hqm`**, since every `q`
+divides `0`, so `¬ q ∣ m` already forces `m ≠ 0` (`fun h => hqm (h ▸
+dvd_zero q)`). It is kept because sub-leaf (b) below has the same shape
+and the glue applies the two uniformly. Credit for the observation: it
+was made independently, on a concurrent branch, by the rival cut recorded
+in this leaf's commit message. -/
+theorem inertia_le_muFixer_of_not_dvd_ray_class {q : ℕ} (hq : q.Prime) (m : ℕ) (hm : 0 < m)
+    (hqm : ¬ q ∣ m) :
+    Subgroup.map (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
+        (localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat)
+      ≤ muFixerRayClass ℚ m := by
+  classical
+  set v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ) :=
+    hq.toHeightOneSpectrumRingOfIntegersRat with hv
+  set ι : AlgebraicClosure ℚ →+*
+      AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) :=
+    AlgebraicClosure.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) with hι
+  rintro τ ⟨σ, hσ, rfl⟩
+  intro ζ hζ
+  apply ι.injective
+  refine (Field.absoluteGaloisGroup.lift_map _ σ ζ).trans ?_
+  -- the goal is now `σ (ι ζ) = ι ζ`, i.e. the Hensel statement at `y = ι ζ`
+  set y : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) :=
+    ι ζ with hy
+  have hym : y ^ m = 1 := by rw [hy, ← map_pow, hζ, map_one]
+  set f : Polynomial ℤ := Polynomial.X ^ m - 1 with hf
+  have hfmonic : f.Monic := by
+    rw [hf, show (1 : Polynomial ℤ) = Polynomial.C 1 from Polynomial.C_1.symm]
+    exact Polynomial.monic_X_pow_sub_C (1 : ℤ) hm.ne'
+  have hfeval : f.eval₂ (Int.castRingHom (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) y = 0 := by
+    rw [hf]; simp [hym]
+  have hyint : IsIntegral (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v) y :=
+    isIntegral_adicCompletionIntegers_of_monic_eval₂ v hfmonic hfeval
+  have hDunit : IsUnit (((m : ℤ) : ℤ) : IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) :=
+    isUnit_intCast_integralClosure_of_not_dvd hq (by exact_mod_cast hqm)
+  -- `f'(y) · y = m yᵐ = m`: the derivative divides `m` with integral cofactor `y`
+  have hw : (Polynomial.derivative f).eval₂ (Int.castRingHom (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) y * y
+      = (((m : ℤ)) : AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) := by
+    rw [hf]
+    simp only [Polynomial.derivative_sub, Polynomial.derivative_X_pow, Polynomial.derivative_one,
+      sub_zero, Polynomial.eval₂_mul, Polynomial.eval₂_C, Polynomial.eval₂_X_pow]
+    rw [mul_assoc, ← pow_succ, Nat.sub_add_cancel hm, hym, mul_one]
+    simp
+  exact inertia_smul_eq_self_of_isIntegral_of_mul_eq_intCast v hσ f hyint hyint hDunit
+    hfeval hw
+
 attribute [local instance 100000] AlgebraicClosure.instAlgebra in
 /-- **FINITE RAMIFICATION, IN INERTIA-SUBGROUP FORM** (**PROVEN
 2026-07-30**; created 2026-07-29 as sub-leaf (b) of the shared Minkowski
@@ -49283,8 +49340,10 @@ just above; `q ∤ disc` IS the simple-root condition, and the simple-root
 condition is precisely what inertia can see.
 
 The same machinery proves sub-leaf (a),
-`inertia_le_muFixer_of_not_dvd_ray_class` above, with `G = Xᵐ − 1` and
-`D = m`; that leaf is left to its own owner.
+`inertia_le_muFixer_of_not_dvd_ray_class` just above, with `G = Xᵐ − 1`
+and `D = m` — that prediction was made when this leaf was closed and was
+CARRIED OUT on 2026-07-30, which is why (a) now sits below the
+`HenselInertia` section rather than above it.
 
 Old docstring follows.
 
@@ -56219,6 +56278,113 @@ is lost by not naming it, whereas a wrong hoist would manufacture exactly the
 "honest audit, false statement" failure this cluster has already produced once
 (see the SECOND FALSITY AUDIT on `exists_artinDivisorNormIndex_le_ray_class`).
 
+**⚠ ROUTE-GAP AUDIT ON `hbase` (2026-07-30, flt-lean-215) — THE PARAGRAPH
+ABOVE PROVES ATTAINABILITY IN EACH NORM GROUP SEPARATELY, AND `hbase` NEEDS IT
+IN THE INTERSECTION. THE EXPORTED `hartin` CLAUSES DO NOT SUPPLY THAT, AND
+THERE IS AN EXPLICIT ARITHMETIC WITNESS.** This is a defect in the ROUTE, not a
+claim that this theorem is false: `hartin` is `∀`-quantified over `(p, S)`, so
+a prover may call it again with data the two calls below do not use.
+
+*What `hbase` actually needs.* Its conclusion puts `ofAdd β` in
+`Subgroup.map 𝔑₁ Im₁` **and** in `Subgroup.map 𝔑₂ Im₂` while pinning
+`φ (ofAdd β) = χ (globalFrob v₀)`. Compute the reachable values. `Hᵢ` is
+normal (it contains `ker χ ⊓ Γ_{F(ζ_{mᵢ})}` by construction, whose quotient is
+abelian), and for `u` unramified the residue degree of any prime of `Eᵢ` over
+`u` is the order of `globalFrob u` in `Γ F / Hᵢ`; `hbasisᵢ` therefore makes
+`Subgroup.map 𝔑ᵢ Imᵢ` the divisors `x` with `x u ∈ gᵢ(u) ℤ`, `gᵢ(u)` that
+order. Intersecting, `x u ∈ lcm (g₁ u) (g₂ u) ℤ`, and `lcm (g₁ u) (g₂ u)` is
+the order of `globalFrob u` in `Γ F / (H₁ ⊓ H₂)`. Since
+`φ (ofAdd (single u n)) = χ (globalFrob u) ^ n` and Chebotarev makes every
+`σ` a `globalFrob u`,
+
+    φ (Subgroup.map 𝔑₁ Im₁ ⊓ Subgroup.map 𝔑₂ Im₂) = χ (H₁ ⊓ H₂)   exactly.
+
+So `hbase` holds **iff** `χ (globalFrob v₀) ∈ χ (H₁ ⊓ H₂)`, and since
+`globalFrob v₀` ranges over a generator that is
+`Γ F = ker χ · (H₁ ⊓ H₂)` — Childress's `K ∩ E₁E₂ = F`, which is why his proof
+needs the COMPOSITUM and not two separate fields.
+
+*It does not follow from what is in hand.* The clauses available at the `have`
+are, at each `i`: (i) `ker χ · Hᵢ = Γ F`, (ii) `Hᵢ ⊓ Γ_{F(ζ_{mᵢ})} ≤ ker χ`,
+(iii) `ker χ · Γ_{F(ζ_{mᵢ})} = Γ F`, (iv) `globalFrob · ∈ Hᵢ`, plus
+`hm₂cop`; and, true by construction though not exported,
+(v) `ker χ ⊓ Γ_{F(ζ_{mᵢ})} ≤ Hᵢ`. **All six hold in the following
+configuration and the conclusion fails.**
+
+    F = ℚ,  ℓ = 2,  k = 1,  χ the quadratic character cutting out K = ℚ(√-5)
+    m₁ = 4,   H₁ = Γ_{ℚ(√5)}   (so E₁ = ℚ(√5)),   v  = 11
+    m₂ = 5,   H₂ = Γ_{ℚ(i)}    (so E₂ = ℚ(i)),    v₀ = 13
+
+Checks (PARI/GP, 2026-07-30, as an untrusted searcher; each is a Kronecker
+symbol): `kronecker(-20,13) = -1`, so `χ (globalFrob v₀) ≠ 1`;
+`kronecker(-4,13) = 1`, so `v₀` splits in `ℚ(i) = E₂` — clause (iv) at `v₀`;
+`kronecker(5,11) = 1`, so `v` splits in `ℚ(√5) = E₁` — clause (iv) at `v`;
+`gcd(4,5) = 1` is `hm₂cop`; `4 ∉ (11)` and `5 ∉ (13)`. The rest are field
+intersections inside the biquadratic `ℚ(i,√5)`, whose three quadratic
+subfields are `ℚ(i)`, `ℚ(√5)`, `ℚ(√-5)`: (i) `K ∩ Eᵢ = ℚ`; (ii)
+`H₁ ⊓ Γ_{ℚ(ζ₄)} = Γ_{ℚ(i,√5)} ≤ Γ_{ℚ(√-5)} = ker χ` and
+`H₂ ⊓ Γ_{ℚ(ζ₅)} = Γ_{ℚ(ζ₂₀)} ≤ ker χ`; (iii) `K ∩ ℚ(ζ₄) = K ∩ ℚ(ζ₅) = ℚ`;
+(v) `ker χ ⊓ Γ_{ℚ(ζ₄)} = Γ_{ℚ(i,√5)} ≤ H₁` and
+`ker χ ⊓ Γ_{ℚ(ζ₅)} = Γ_{ℚ(ζ₂₀)} ≤ H₂`. But
+`H₁ ⊓ H₂ = Γ_{ℚ(i,√5)} ≤ ker χ`, so `χ (H₁ ⊓ H₂) = 1` while
+`χ (globalFrob v₀) = -1 ≠ 1` in characteristic `3`. **`hbase` is false for
+these data.** Note this also refutes, as a route, the "roughly forty-five
+binders" list above: it contains every clause just used.
+
+*The exact missing input, and it is ONE clause.* Adding
+
+    (vi)  ker χ · (Γ_{F(ζ_{m₁})} ⊓ Γ_{F(ζ_{m₂})}) = Γ F
+
+— clause (iii) at the PRODUCT modulus `m₁ m₂`, i.e. `K ∩ F(ζ_{m₁m₂}) = F` —
+makes the group theory go through, and (v) is then also needed. Proof: (vi)
+plus `Γ_{F(ζ_{m₁})} · Γ_{F(ζ_{m₂})} = Γ F` (coprimality) make
+`Γ F → Γ F/ker χ × Γ F/Γ_{F(ζ_{m₁})} × Γ F/Γ_{F(ζ_{m₂})}` surjective; (v)
+makes the image of `Hᵢ` there a full product in the `j ≠ i` cyclotomic factor,
+so the image of `H₁ ⊓ H₂` is `{(a, x₁, x₂) : (a,x₁) ∈ H̄₁, (a,x₂) ∈ H̄₂}`,
+whose projection to `Γ F/ker χ` is the intersection of two projections, each
+full by (i). That is exactly Childress's `Gal (L/F) ≅ G × G₁ × G₂` argument
+(p. 121) written without the diagram. The `ℚ(i,√5)` witness fails only (vi):
+`K = ℚ(√-5) ⊆ ℚ(ζ₂₀)`.
+
+*Where (vi) has to come from, and the concrete defect in the block below.*
+Childress obtains it from a requirement the Lean assembly currently drops:
+his `mᵢ` are "prime to all the primes that ramify in `K/ℚ`" (p. 121). The two
+calls below pass `S = ∅` and `S = m₁.primeFactors` — **neither excludes the
+primes at which `χ` ramifies**, which is precisely how `m₁ = 4`, `m₂ = 5`
+against `cond K = 20` becomes admissible. `hmmram` puts every ramified prime
+under `mm`, so the fix is available *here*, and the witnessing `Finset ℕ`
+needs no factorisation API at all:
+
+    S₀ : Finset ℕ := (Ideal.absNorm mm).primeFactors
+
+is finite and nonempty-of-the-right-primes because `absNorm mm ≠ 0`
+(`Ideal.absNorm_eq_zero_iff`, using `hmm`), and every `w ∣ mm` has residue
+characteristic dividing `Ideal.absNorm w ∣ Ideal.absNorm mm`.
+
+**THIS REPAIR IS APPLIED (2026-07-30, flt-lean-215).** The first call now passes
+`S₀` and the second `S₀ ∪ m₁.primeFactors`; the clause both used to drop as `-`
+at index 11 is bound as `hm₁cop`/`hm₂cop` and threaded into `hbase`, which gained
+the two hypotheses in place of its old single `∀ q ∈ m₁.primeFactors` one. The
+`ℚ(i,√5)` witness above is thereby dead — its `m₁ = 4`, `m₂ = 5` are inadmissible
+against `cond K = 20` — and `hbase`'s remaining `sorry` is no longer known-false.
+It is also not yet known-TRUE; the next paragraph is what stands between.
+
+*What is still open after that fix, stated honestly.* With `mᵢ` prime to the
+ramified set, `K ∩ F(ζ_{m₁m₂})/F` is unramified at every FINITE prime; over
+`F = ℚ` Minkowski closes it, but over a general base "unramified ⟹ trivial" is
+FALSE (that is the narrow Hilbert class field, and this cluster's own
+`exists_artinDivisorNormIndex_le_ray_class` audit exhibits `F = ℚ(√-5)` with
+`h⁺ = 2` for exactly this reason). So (vi) over a general `F` is a genuine
+sub-leaf, not bookkeeping. Two remarks for whoever states it: `K/F` here is
+CYCLIC of `ℓ`-power degree (`hord`), so it has a unique subextension of degree
+`ℓ` and (vi) reduces to that one field; and (v) is FREE — it is the second
+clause of `exists_subgroup_of_independent_ray_class`
+(`∀ x, cA x = 1 → cB x = 1 → x ∈ H`), already PROVEN and already in hand inside
+`exists_artinAuxiliaryField_ray_class`, which merely fails to export it. Export
+(v) and (vi) together in one interface change, not two: adding a conjunct to
+these existentials breaks every positional `obtain`, which is CLAUDE.md's
+seventh invisibility class, and the change is worth paying for exactly once.
+
 **AND THE CUT-LEVEL DEFECT RECORDED AGAINST STEP 3 IS REPAIRED.** The caveat
 below used to read that `exists_artinAuxiliaryNumberField_ray_class` pins `ι`
 only as *some* injective map onto `H`, so that the consistency property
@@ -56345,15 +56511,30 @@ theorem exists_artinNormSubgroups_ramified_ray_class
   -- STEP 1 (Childress p. 121): Artin's Lemma at `v` and at `v₀`, with the
   -- auxiliary fields realised as number fields in `Type u`.  The second call
   -- avoids the primes of `m₁`, which is Childress's coprimality of the two moduli.
-  obtain ⟨m₁, H₁, E₁, fE₁, nE₁, aE₁, ι₁, jE₁, j₁, hm₁pos, -, hm₁v, hH₁open, hfin₁, hinj₁,
+  --
+  -- **THE AVOIDANCE SETS CARRY `(absNorm mm).primeFactors` (2026-07-30,
+  -- flt-lean-215).** They used to be `∅` and `m₁.primeFactors`, i.e. NEITHER
+  -- excluded the primes at which `χ` ramifies, and Childress (p. 121) requires
+  -- each `mᵢ` prime to every prime ramifying in `K`. That omission is the first
+  -- of the two defects the ROUTE-GAP AUDIT in the docstring records against
+  -- `hbase` below; it is repaired here, and the resulting clauses are BOUND
+  -- (`hm₁cop`, `hm₂cop`) and threaded into `hbase` rather than dropped as `-`.
+  -- `hmmram` puts every ramified prime under `mm`, and every `w ∣ mm` has
+  -- residue characteristic dividing `absNorm w ∣ absNorm mm`, so this finite set
+  -- of rational primes contains every ramified residue characteristic — with no
+  -- factorisation API beyond `Nat.primeFactors`. It does NOT on its own make
+  -- `hbase` true; see the audit's closing paragraph.
+  obtain ⟨m₁, H₁, E₁, fE₁, nE₁, aE₁, ι₁, jE₁, j₁, hm₁pos, hm₁cop, hm₁v, hH₁open, hfin₁, hinj₁,
       -, hsurH₁, hi₁, hcyc₁, -, hfrobv₁, hjE₁, hιapp₁⟩ :=
-    exists_artinAuxiliaryNumberField_ray_class F χ hmul V hVopen hVker v ∅
+    exists_artinAuxiliaryNumberField_ray_class F χ hmul V hVopen hVker v
+      (Ideal.absNorm mm).primeFactors
   letI := fE₁
   letI := nE₁
   letI := aE₁
   obtain ⟨m₂, H₂, E₂, fE₂, nE₂, aE₂, ι₂, jE₂, j₂, hm₂pos, hm₂cop, hm₂v, hH₂open, hfin₂,
       hinj₂, -, hsurH₂, hi₂, hcyc₂, -, hfrobv₂, hjE₂, hιapp₂⟩ :=
-    exists_artinAuxiliaryNumberField_ray_class F χ hmul V hVopen hVker v₀ m₁.primeFactors
+    exists_artinAuxiliaryNumberField_ray_class F χ hmul V hVopen hVker v₀
+      ((Ideal.absNorm mm).primeFactors ∪ m₁.primeFactors)
   letI := fE₂
   letI := nE₂
   letI := aE₂
@@ -56483,10 +56664,34 @@ theorem exists_artinNormSubgroups_ramified_ray_class
   -- `hbasis₁`/`hbasis₂` are passed in and are LOAD-BEARING: the argument is
   -- `N_{E/F} = 𝔑_i ∘ N_{E/E_i}` for `E = E₁E₂`, which is a statement about the
   -- relative NORM, not about an arbitrary map satisfying consistency.
+  --
+  -- ⚠ READ THE ROUTE-GAP AUDIT IN THE DOCSTRING BEFORE ATTEMPTING THIS SORRY
+  -- (2026-07-30). `hbase` is equivalent to `χ (globalFrob v₀) ∈ χ (H₁ ⊓ H₂)`,
+  -- and that does NOT follow from the clauses obtained above: the witness
+  -- `F = ℚ`, `K = ℚ(√-5)`, `m₁ = 4`, `E₁ = ℚ(√5)`, `v = 11`, `m₂ = 5`,
+  -- `E₂ = ℚ(i)`, `v₀ = 13` satisfies every one of them — including `hm₂cop`
+  -- and the unexported `ker χ ⊓ Γ_{F(ζ_{mᵢ})} ≤ Hᵢ` — with `H₁ ⊓ H₂ ≤ ker χ`
+  -- and `χ (globalFrob v₀) = -1`. The missing clause is `K ∩ F(ζ_{m₁m₂}) = F`.
+  --
+  -- The FIRST of the two repairs the audit prescribes — Childress's requirement
+  -- (p. 121) that each `mᵢ` be prime to every prime ramifying in `K` — IS DONE
+  -- (2026-07-30): the two calls above now avoid `(absNorm mm).primeFactors`, and
+  -- the resulting clauses reach this `have` as its fifth and sixth hypotheses.
+  -- That kills the `ℚ(i,√5)` witness, whose `m₁ = 4`, `m₂ = 5` are no longer
+  -- admissible against `cond K = 20`, but it does NOT make `hbase` true: with
+  -- `mᵢ` prime to the ramified set, `K ∩ F(ζ_{m₁m₂})/F` is unramified at every
+  -- FINITE prime, and over a general base "unramified ⟹ trivial" is FALSE — that
+  -- is the narrow Hilbert class field, and this cluster's own
+  -- `exists_artinDivisorNormIndex_le_ray_class` audit exhibits `F = ℚ(√−5)` with
+  -- `h⁺ = 2` for exactly this reason. So a genuine sub-leaf remains, and the
+  -- audit's closing paragraph says what it is and what it costs (clause (v) is
+  -- FREE — it is already proven inside `exists_artinAuxiliaryField_ray_class`,
+  -- which merely fails to export it).
   have hbase : (∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧ ρ ∈ H₁ ∧ σ = τ * ρ) →
       (∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧ ρ ∈ H₂ ∧ σ = τ * ρ) →
       IsOpen (H₁ : Set (Γ F)) → IsOpen (H₂ : Set (Γ F)) →
-      (∀ q ∈ m₁.primeFactors, q.Prime → ¬ q ∣ m₂) →
+      (∀ q ∈ (Ideal.absNorm mm).primeFactors, q.Prime → ¬ q ∣ m₁) →
+      (∀ q ∈ (Ideal.absNorm mm).primeFactors ∪ m₁.primeFactors, q.Prime → ¬ q ∣ m₂) →
       (∀ (W : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E₁))
         (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F)),
         W.asIdeal.under (NumberField.RingOfIntegers F) = w.asIdeal →
@@ -56503,10 +56708,10 @@ theorem exists_artinNormSubgroups_ramified_ray_class
         ((φ (Multiplicative.ofAdd β) : Dickson.K 3)) = χ (globalFrob v₀) ∧
         Multiplicative.ofAdd β ∈ Subgroup.map 𝔑₁ Im₁ ∧
         Multiplicative.ofAdd β ∈ Subgroup.map 𝔑₂ Im₂ := by
-    intro _ _ _ _ _ _ _
+    intro _ _ _ _ _ _ _ _
     sorry
   obtain ⟨β, hβsym, hβ₁, hβ₂⟩ :=
-    hbase hi₁ hi₂ hH₁open hH₂open hm₂cop hbasis₁ hbasis₂
+    hbase hi₁ hi₂ hH₁open hH₂open hm₁cop hm₂cop hbasis₁ hbasis₂
   exact ⟨β, Subgroup.map 𝔑₁ Im₁, Subgroup.map 𝔑₂ Im₂, hβsym, hv𝔑₁, hβ₁, hv𝔑₂, hβ₂,
     map_inf_ker_le_sup_of_normCompatible_ray_class 𝔑₁ φ φ₁ Im₁ P₁ N₁ P N hcons₁
       hP𝔑₁ hN𝔑₁ hker₁,
