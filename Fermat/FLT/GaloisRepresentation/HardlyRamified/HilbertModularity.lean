@@ -12725,6 +12725,67 @@ affine open chosen around the REAL point, so leaf (A) is not a restatement but a
 repair BELOW that shrink. That is cut-level work in
 `Modularity/MoretBailly.lean` and is deliberately not attempted from here.
 
+# THE BREAK-E REPAIR IS SMALLER THAN RECORDED IN ONE PLACE AND LARGER IN ANOTHER
+# (measured 2026-07-30, flt-lean-251; binders read, witness machine-checked)
+
+The paragraph above sizes the Break-E repair as "thread `S₀` through the affine
+shrink". The shrink IS the only missing piece of the FIRST half, and that half is
+already built — but the repair as prescribed would still not deliver this leaf's
+conclusion, because the LAST step of the same chain destroys the conjunct being
+threaded. Both halves were measured rather than inferred.
+
+**SMALLER — the affine half is built, and it over-delivers.**
+
+* `exists_totallyReal_point_of_affine_geometricallyIrreducible`
+  (`Modularity/MoretBailly.lean`) ALREADY binds `(S₀ : Finset ℕ)` together with
+  `hS₀prime` and `hS₀pt : ∀ p ∈ S₀, HasRationalPoint fX (ULift ℚ_[p])`, and
+  ALREADY returns `∀ p ∈ S₀, ∀ w ∣ p, Nat.card (𝓞 F ⧸ w.asIdeal) = p`.
+* Its own sub-theorem `exists_normalRealPoint_of_affine_curve` returns MORE than
+  the wrapper keeps: a conjunct `∀ p ∈ S₀, IsTotallySplitAt F p`, which the
+  wrapper DISCARDS with a `-` in its `obtain` pattern. So the `ℚ_[2]`-embedding
+  form — not merely the residue-degree form — is already produced one level down
+  and need only be forwarded.
+* Both adapters exist and are PROVEN, so no arithmetic is owed on this side:
+  `nonempty_ringHom_padic_of_isTotallySplitAt` and, in the other direction,
+  `natCard_residue_eq_of_nonempty_ringHom_padic`.
+
+**LARGER — BREAK E′, a second blocker nobody has named, and it is fatal to the
+prescribed repair on its own.** `exists_totallyReal_point_of_geometricallyIrreducible`
+ends with a DEGREE-PARITY step, `exists_evenDegree_totallyReal_of_sup_eq_top`,
+which (when `[F : ℚ]` is odd) replaces `F` by `F' = F(√d)` for a `d` supplied by
+`exists_padicSquare_nat_of_finset_primes` at the CHEBOTAREV primes. Complete
+splitting at `2` does not survive an arbitrary quadratic enlargement, so `S₀`
+threaded through the shrink would be silently undone at the step that produces
+`Even (Module.finrank ℚ F)` — and this leaf's conclusion carries BOTH.
+
+  WITNESS (PARI/GP, 2026-07-30). `F = ℚ(√17)` has `2` totally split, `[e, f] =
+  [1, 1]` at both primes above `2`. `d = 5` is not a square in `ℚ_2` (`5 ≢ 1 mod
+  8`), and in `F' = ℚ(√17, √5)` — totally real, Galois, degree `4` — the prime
+  `2` factors with `[e, f] = [1, 2]` at both primes above it. So `N(w) = 4`:
+  `F' →+* ℚ_[2]` fails, and so does even the weaker `residueCardTwo`. With
+  `d = 33 ≡ 1 mod 8` instead, `2` has four primes above it in `F'`, all with
+  `[e, f] = [1, 1]`, and both conjuncts survive.
+
+  THE BLOCKER IS STRUCTURAL, NOT AN OMISSION: `exists_padicSquare_nat_of_finset_primes`
+  binds `hS : ∀ p ∈ S, p.Prime ∧ 2 < p`, so `2` CANNOT be passed to it as it
+  stands. Its witness is `d = (Q + 1) ^ 2 + Q` for `Q = ∏ p ∈ S, p`, and the
+  square-root extraction is Hensel at an ODD `p`.
+
+  THE FIX, and it is small and self-contained — the same construction run at
+  `Q' = 8 · ∏ p ∈ S, p` instead of `Q`, i.e. `d = (Q' + 1) ^ 2 + Q'`:
+  `d = Q'^2 + 3Q' + 1 ≡ 1 mod 8`, hence a square in `ℤ_2ˣ`; `d ≡ (Q' + 1) ^ 2 mod
+  p` with `Q' + 1` a unit for every odd `p ∣ Q'`, so the existing Hensel step is
+  unchanged there; and `(Q' + 1) ^ 2 < d < (Q' + 2) ^ 2`, so `d` is still not a
+  perfect square. `S = {3}` gives `d = 649 = 11 · 59`, `649 ≡ 1 mod 8`.
+
+So the Break-E work item is: (i) strengthen `exists_isAffineOpen_hasRationalPoint`
+to carry finitely many prescribed points, (ii) stop discarding `IsTotallySplitAt`
+in the affine wrapper, (iii) repair the parity step as above. Item (ii) is free,
+(iii) is the sketch above, and only (i) is genuine geometry. All three are in
+`Modularity/MoretBailly.lean` and remain that file's owner's work; recorded here
+because this leaf is what the repair is FOR, and because (iii) would otherwise be
+discovered only after (i) had been done.
+
 CIRCULARITY GUARD, inherited: this leaf may only ever be discharged by the
 independent Moret–Bailly/Taylor construction — never through `Family.lean`,
 `Lift.lean`, `Modularity/Interface.lean`, or the odd-prime dichotomy
@@ -13195,6 +13256,38 @@ That leaf's hypotheses were all Galois-theoretic while its conclusion demanded
 an automorphic form, so it was asking for Serre's conjecture plus a modularity
 lifting theorem over `F` rather than for the transfer; here the same clause is
 the transfer and nothing more.
+
+**FAITHFULNESS OF THE `∀ D` QUANTIFIER — CHECKED 2026-07-30 (flt-lean-251), AND
+IT TURNS ON A BINDER THE PARAGRAPH ABOVE DOES NOT MENTION.** The obvious way for
+this leaf to be FALSE AS STATED is the one CLAUDE.md warns about: a quantifier
+widened past what the citation supports. `IsQuaternionicEigensystem` quantifies
+over EVERY `D`, and Jacquet–Langlands transfers a cuspidal `π` to `Dˣ` only when
+`π` is discrete series at every place where `D` RAMIFIES. A Hilbert newform `g`
+of level `𝔫` is an unramified principal series at every `w ∤ 𝔫`, so if the
+quantifier reached a `D` ramified at two such `w` there would be no transfer and
+no eigenform — and the clause would be false for every `g`, hence unprovable
+from the citation this leaf names.
+
+It does not reach one. The quantifier binds
+`[IsQuaternionAlgebra.NumberField.WithRigidification F D]`, and a rigidification
+is by definition a splitting `D ⊗_F 𝔸_F^∞ ≃ M₂(𝔸_F^∞)`
+(`Fermat/FLT/QuaternionAlgebra/NumberField.lean`), i.e. `D` is SPLIT AT EVERY
+FINITE PLACE. With `IsTotallyDefinite` on top, `D` ramifies at exactly the
+`[F : ℚ]` real places and nowhere else, so the only local condition JL imposes is
+discrete series at the ARCHIMEDEAN places — which parallel weight `2` supplies
+unconditionally. The clause is therefore exactly the transfer, as claimed.
+
+Two corollaries worth having in writing. (a) Such a `D` exists only when
+`[F : ℚ]` is EVEN (a quaternion algebra ramifies at an even number of places), so
+for odd-degree `F` the clause is VACUOUS rather than false — this leaf does not
+bind `Even (Module.finrank ℚ F)` and does not need to, since the parity arrives
+with `F` from `PotentialHeckeDatum` and is never spent here. (b) The
+"DEFINITENESS IS LOAD-BEARING" note on `IsQuaternionicEigensystem` is about `D`
+being non-split at ∞; the finite-place half of the same question is answered by
+`WithRigidification`, and neither note points at the other.
+  THE CHECK THAT WOULD REFUTE THIS: exhibit a `WithRigidification F D` for a `D`
+  ramified at some finite place. It cannot exist — `cond` asserts the splitting
+  is bijective after base change to `𝔸_F^∞`, hence at every finite place.
 
 CIRCULARITY GUARD, inherited: as for the sibling leaf above. -/
 theorem nonempty_hilbertHeckeAlgebra_of_moretBaillySeed
@@ -15143,6 +15236,36 @@ all five interior applications were left byte-identical.
 The check that would refute the mathematical need for the binder: close this
 leaf, or exhibit the absolute irreducibility, over an arbitrary number
 field `F`.
+
+## ATOMICITY RE-VERIFIED 2026-07-30 (flt-lean-251) — THE CYCLE IS REAL AND IT IS
+## ALSO BLOCKED BY DECLARATION ORDER, WHICH IS A SEPARATE FACT
+
+A successor arriving here will notice that
+`exists_framedGaloisRep_hilbertTraceSubring` has LITERALLY this conclusion and is
+PROVEN, and will want to close this leaf by supplying it with a retraction. Both
+reasons that fails were re-checked against the tree rather than read off the
+prose above, and they are independent:
+
+1. *The cycle.* `exists_ringHom_retraction_hilbertTraceSubring` obtains its
+   trace-generated weakly universal `𝒟u` from
+   `exists_isWeaklyUniversal_isTraceGenerated_hilbert_of_isWeaklyUniversal`, whose
+   FIRST step is this leaf. So retraction → consumer → this leaf, and the appeal
+   is circular in the proof graph, not merely in the documentation.
+2. *Declaration order, which would block it even if the cycle were broken.* This
+   leaf and its consumer sit ABOVE the entire descent cluster
+   (`exists_framedGaloisRep_baseChange_hilbertTraceSubring`,
+   `isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring`,
+   `exists_framedGaloisRep_hilbertTraceSubring`), and they cannot be moved below
+   it: the retraction consumes the consumer, so relocating the pair below the
+   cluster puts the retraction below its own input. The ordering constraint is
+   the cycle again, in Lean's vocabulary.
+
+So a route that closes this leaf must produce the tame-at-`2` eigenrow descent
+from `h𝒟` DIRECTLY, without a retraction — which is exactly the refuting check
+already stated above ("a version of
+`isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring` whose hypotheses replace
+`f`/`hf` by `𝒟.IsWeaklyUniversal`"). Nothing in axes 1–6 has gone stale; the leaf
+is still the cluster's single atom.
 
 References: Carayol, Contemp. Math. 165, Théorème 1; Nyssen,
 *Pseudo-représentations*, Math. Ann. 306; Rouquier, *Caractérisation des
