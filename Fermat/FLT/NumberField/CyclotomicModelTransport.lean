@@ -58,8 +58,11 @@ over the companion bound. There is no cycle: this file is imported BY
   degree over any other model `K` of `ℚ(μ_p)`, inside `AlgebraicClosure K`.
   The `p = 2` and `p` odd cases are genuinely disjoint and are discharged
   separately; see the proof.
-* `NumberField.isUnramifiedAt_of_algEquiv` — PROVEN, and of independent use:
-  `Algebra.IsUnramifiedAt` is carried by an isomorphism of `A`-algebras.
+* `NumberField.isUnramifiedAt_of_algEquiv` — PROVEN here 2026-07-30 and HOISTED the
+  same day into `Fermat/FLT/NumberField/UnramifiedClassFieldExistence.lean`, which this
+  file imports, because `exists_surjective_aut_classGroupQuotient` there needs the same
+  statement and two copies in one namespace do not compile together. It is used below
+  under the same name; see its docstring for the argument.
 * `NumberField.exists_unramifiedAbelian_of_algebraicClosureEquiv` — PROVEN.
   The package (finite, Galois, abelian, everywhere-unramified, of a given
   degree) moves along an isomorphism of AMBIENT algebraic closures. This is
@@ -73,34 +76,6 @@ over the companion bound. There is no cycle: this file is imported BY
 open NumberField
 
 namespace NumberField
-
-/-- **`Algebra.IsUnramifiedAt` IS CARRIED BY AN ISOMORPHISM OVER THE BASE**
-(PROVEN 2026-07-30).
-
-If `h : R ≃ₐ[A] P` and the prime `Q` of `P` pulls back to the prime `q` of
-`R`, then `A`-unramifiedness at `q` gives `A`-unramifiedness at `Q`. The proof
-is the only thing it can be: `h` carries `q.primeCompl` onto `Q.primeCompl`,
-so `IsLocalization.algEquivOfAlgEquiv` gives an `A`-algebra isomorphism of the
-two localisations, and `Algebra.FormallyUnramified.of_equiv` transports the
-definition (`IsUnramifiedAt A q` is by definition
-`FormallyUnramified A (Localization.AtPrime q)`). -/
-theorem isUnramifiedAt_of_algEquiv {A R P : Type*} [CommRing A] [CommRing R] [CommRing P]
-    [Algebra A R] [Algebra A P] (h : R ≃ₐ[A] P) (q : Ideal R) [q.IsPrime]
-    (Q : Ideal P) [Q.IsPrime] (hQ : Ideal.comap (h : R →+* P) Q = q)
-    (hu : Algebra.IsUnramifiedAt A q) : Algebra.IsUnramifiedAt A Q := by
-  have hiff : ∀ x : R, x ∈ q ↔ h x ∈ Q := by
-    intro x; rw [← hQ]; rfl
-  have hmap : Submonoid.map (h : R →* P) q.primeCompl = Q.primeCompl := by
-    ext y
-    simp only [Submonoid.mem_map, Ideal.primeCompl, Submonoid.mem_mk, Subsemigroup.mem_mk,
-      Set.mem_compl_iff, SetLike.mem_coe]
-    constructor
-    · rintro ⟨x, hx, rfl⟩
-      exact fun hmem => hx ((hiff x).mpr hmem)
-    · intro hy
-      exact ⟨h.symm y, fun hmem => hy (by simpa using (hiff _).mp hmem), by simp⟩
-  exact Algebra.FormallyUnramified.of_equiv
-    (IsLocalization.algEquivOfAlgEquiv (Localization.AtPrime q) (Localization.AtPrime Q) h hmap)
 
 variable (p : ℕ) [hp : Fact p.Prime]
 
@@ -192,7 +167,8 @@ properties and the same degree. Everything is transport along the induced
 `H ≃ₐ[E] H''`: `Module.Finite.equiv` and `LinearEquiv.finrank_eq` for
 finiteness and degree, `IsGalois.of_algEquiv` for Galoisness,
 `AlgEquiv.autCongr` for commutativity, and `RingOfIntegers.mapAlgEquiv`
-followed by `isUnramifiedAt_of_algEquiv` above for unramifiedness.
+followed by `isUnramifiedAt_of_algEquiv` (in `UnramifiedClassFieldExistence.lean`)
+for unramifiedness.
 
 `ee` is taken as a HYPOTHESIS rather than built inside from `IsAlgClosure.equiv`
 on purpose: with it opaque, no defeq check can try to unfold `IsAlgClosed.lift`,
