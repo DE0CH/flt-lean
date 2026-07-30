@@ -3836,22 +3836,29 @@ reason it gave: the two halves share nothing but the map, and they want separate
   (00R6's own body: `T_i` is f.g., `w` is flat, tensor commutes with filtered colimits, so
   ONE `j ≥ i` kills every generator).  This is the ONLY consumer of `_hflat`,
   `c_surj`/`c_sep`/`d_surj`/`d_sep` and `directed` anywhere in 10.128.3.
-* `ker_rTensor_le_span_image_idealTensorComparison_of_isNoetherianFlatDescentSystem` is
-  **HALF B** (00MO's steps 4–6: Stacks 10.99.13 + 10.99.12, then localized along
+* `rTensor_map_maximalIdeal_injective_of_idealTensorComparison_eq_zero_of_isNoetherianFlatDescentSystem`
+  is **HALF B** (00MO's steps 4–6: Stacks 10.99.13 + 10.99.12, then localized along
   `isLocalizationDT h`, which is its only consumer).  It is the one genuinely homological
   statement left in 10.128.3.
-* The parent is then PROVEN over the two: `T_j` is spanned by the image of `T_i` (Half B)
-  and that image is `0` (Half A), so `T_j = ⊥`, which is `LinearMap.ker_eq_bot`.
+* The parent is then PROVEN over the two: Half A produces a `j` at which `φ` kills `T_i`,
+  and Half B turns that into `T_j = ⊥`.
 
 **NOTE THE ASYMMETRY, because it is what makes the cut sound.** Half A is an `∃ j`; Half B
 is `∀ i ≤ j`.  So Half B may be applied at whatever `j` Half A produces, and neither half
 has to know the other's index.  Had Half B also been an `∃`, the two indices would not
 have been reconcilable without a third directedness step.
 
-**Half B does NOT need `φ` to carry `T_i` into `T_j`** — it says `T_j` lies in the `C_j`-span
-of `φ(T_i)`, and the assembly needs nothing more, so no compatibility lemma is stated. (It
-is true and easy — the square over `D_i → D_j` commutes — but an unconsumed lemma would be
-free-floating, so its prover should state it locally.) -/
+**HALF B WAS REFUTED AND RESTATED ON 2026-07-30.**  Its first form asserted `T_j ≤
+Submodule.span (C j) (φ '' T_i)`.  That is FALSE — the honest conclusion of 00MO's steps
+4–6 is the `D_j`-span, and the localization along `isLocalizationDT` is exactly what
+separates the two.  The counterexample is on the leaf itself; the restated form takes
+Half A's conclusion as a HYPOTHESIS and returns the parent's injectivity directly, which
+is all the assembly ever consumed.  The asymmetry paragraph above survives verbatim.
+
+**Half B does NOT need `φ` to carry `T_i` into `T_j`** — it consumes `φ '' T_i = {0}` and
+concludes about `T_j`, and the assembly needs nothing more, so no compatibility lemma is
+stated. (It is true and easy — the square over `D_i → D_j` commutes — but an unconsumed
+lemma would be free-floating, so its prover should state it locally.) -/
 
 /-- The `C_i`-linear inclusion `↥𝔪 → ↥(𝔪 C_j)`, `x ↦ (algebraMap C_i C_j) x`, used only to
 build `idealTensorComparison` below. -/
@@ -3944,40 +3951,107 @@ theorem exists_le_idealTensorComparison_eq_zero_of_isNoetherianFlatDescentSystem
 /-- **HALF B OF [Stacks 00R6]'s COLIMIT LEAF — the surjectivity, and it is the ONLY
 genuinely homological statement left in 10.128.3** (sorry leaf, cut 2026-07-30 out of
 `exists_le_rTensor_map_maximalIdeal_injective_of_isNoetherianFlatDescentSystem` below;
-read that docstring's "Half B" paragraph, which is this leaf's specification).
+REFUTED AND RESTATED the same day — read the FALSITY AUDIT before anything else).
 
-*In a `IsNoetherianFlatDescentSystem`, for every `i ≤ j`, `T_j` lies in the `C_j`-span of
-the image of `T_i` under `idealTensorComparison 𝔪_i`.*
+*In a `IsNoetherianFlatDescentSystem`, for every `i ≤ j`: if `idealTensorComparison 𝔪_i`
+kills `T_i = ker(𝔪_i ⊗_{C_i} D_i → D_i)`, then `T_j = ker(𝔪_i C_j ⊗_{C_j} D_j → D_j)` is
+zero — i.e. `LinearMap.rTensor (D j) (𝔪_i C_j).subtype` is injective.*
 
-**THE PROOF.**  This is the surjectivity of `T_i ⊗_{C_i} C_j → T_j`, i.e. of
-`Tor_1^{C_i}(D_i, C_i/𝔪_i) ⊗_{C_i} C_j → Tor_1^{C_j}(D_j, C_j/𝔪_i C_j)`: Stacks 10.99.13
-(`Tor_1^R(M, R'/I') ↠ Tor_1^{R'}(M ⊗_R R', R'/I')`) composed with 10.99.12 applied to
-`C_i → C_i/𝔪_i → C_j/𝔪_i C_j`, then LOCALIZED along `isLocalizationDT h` — which is what
-turns `D_i ⊗_{C_i} C_j` into `D_j`, and is this leaf's only use of that field.  Every
-object is the kernel of an explicit `TensorProduct.lift` (Remark 10.75.9), so no derived
-functor and no six-term sequence occurs; the content is two surjectivity statements about
-explicit maps.
+**FALSITY AUDIT — THE FIRST FORM OF THIS LEAF IS FALSE, WITH AN EXPLICIT WITNESS.**
 
-**WHY A SPAN AND NOT A SURJECTION.**  `Submodule.span (C j) (φ '' T_i)` is the image of
-`T_i ⊗_{C_i} C_j → T_j` written without constructing that map, so this leaf needs no new
-definition and its prover may build the base-changed map however is convenient.  `≤` rather
-than `=` because that is all the assembly consumes, and the reverse inclusion is trivial.
+It read `T_j ≤ Submodule.span (C j) (φ '' T_i)`: `T_j` is spanned by `φ(T_i)` **over
+`C_j`**.  That is a genuine over-claim, and the gap is exactly the localization that the
+route's own last step performs.  Write `N := C_j ⊗_{C_i} D_i`, so `isLocalizationDT h`
+makes `D_j = W⁻¹N`.  The route delivers two things:
 
-**FAITHFULNESS.**  `∀ i ≤ j`, deliberately NOT `∃ j` — see the "NOTE THE ASYMMETRY"
-paragraph in the section note above: Half A chooses the index, Half B must hold at it.
-The statement is NOT vacuous and is not implied by Half A: at `j = i` it says `T_i` is
-spanned by its own image under a map that is then essentially the identity, which is true
-and harmless; the content is at `j > i`, where `𝔪_i C_j` may be a proper extension.
+  (a) `T^N_j := ker(𝔪_i C_j ⊗_{C_j} N → N)` **is** the `C_j`-span of `φ_N(T_i)` — TRUE, and
+      it is 10.99.13 + 10.99.12; and
+  (b) `T_j = W⁻¹ T^N_j`, because `D_j` is flat over `N`.
 
-**THE ONE RISK IN THIS CUT, stated so its prover checks it FIRST.**  The `∀ i ≤ j` is a
-reading of the parent docstring's Half B sentence, which carries no quantifier: 10.99.13
-and 10.99.12 are statements about an arbitrary base change `C_i → C_j` and do not choose
-`j`, so every `j ≥ i` should work.  If a prover finds that the surjectivity genuinely needs
-`j` ENLARGED (beyond what Half A already gives), then this leaf is FALSE AS STATED and the
-correct repair is to merge the two halves' indices — make this leaf `∃ j' ≥ j` too and have
-the parent take the `directed` join — NOT to add hypotheses to it.  Refuting it that way is
-a successful outcome; say so in the report. -/
-theorem ker_rTensor_le_span_image_idealTensorComparison_of_isNoetherianFlatDescentSystem
+Step (b) buys generation over `D_j`, **not** over `C_j`.  The `C_j`-span of `φ(T_i)` is
+already an `N`-submodule (an element of `N` is `Σ cₖ ⊗ dₖ` and `φ` is `D_i`-semilinear), so
+`C_j` and `N` give the same span — but it is not `W`-divisible, and nothing makes
+`T^N_j → W⁻¹T^N_j` surjective.
+
+*The counterexample*, over `k = ℚ`, with `Λ = {0 ≤ 1}` — a two-object system, so
+`Cbot := C 1`, `Dbot := D 1`, all four colimit fields hold trivially and `directed` is
+witnessed by `1`:
+
+  `C 0 = k[t]_(t)`,             `C 1 = k[t,v]_(t,v)`,
+  `D 0 = (k[t,u]/(t²))_(t,u)`,  `D 1 = (k[t,u,v]/(t²))_(t,u,v)`.
+
+Every field of `IsNoetherianFlatDescentSystem` holds: all four rings are Noetherian local,
+every map in sight is local, and `D 1` is the localization of `C 1 ⊗_{C 0} D 0` — itself a
+localization of `k[t,u,v]/(t²)` — at the prime `(t,u,v)`, which is `isLocalizationDT` at
+`(0,1)`; at `(0,0)` and `(1,1)` take `W = ⊥`, where the structure map is an isomorphism.
+Note `hflat` is not among the hypotheses of this leaf, so the colimit `w = cd 1` is
+unconstrained and no flatness has to be arranged.
+
+Now `𝔪_0 = (t)` is FREE of rank one over the DVR `C 0`, and `𝔪_0 C_1 = (t)` is free of rank
+one over `C 1` (`t` is a nonzerodivisor there), so both kernels are annihilators:
+
+  `T_0 ≅ Ann_{D 0}(t) = (t)`,    `T_1 ≅ Ann_{D 1}(t) = (t)`
+
+(both computed in Singular: `quotient(0, t) = (t)` in `k[t,u]/(t²)` and in `k[t,u,v]/(t²)`).
+Under `t ⊗ d ↦ d` the map `φ` is just `dT : D 0 → D 1`, so, with `N` for the image of
+`C 1 ⊗_{C 0} D 0` in `D 1`,
+
+  `span_{C 1}(φ '' T_0) = t·N`,   while   `T_1 = t·D 1`.
+
+Since `Ann(t) = (t)` we have `t·x = t·y ↔ x − y ∈ (t)`, so `T_1 ≤ span` would force
+`D 1 = N + (t)`, i.e. `D 1/(t) = k[u,v]_(u,v)` to equal the image of `N`, which is `k[u,v]`
+localized only at products `f(u)g(v)` with `f(0)g(0) ≠ 0`.  It does not: `1/(1 + u + v)`
+lies in `k[u,v]_(u,v)` and not in that subring, because `1 + u + v` is irreducible in
+`k[u,v]` (checked with `factorize`) and an irreducible involving both variables cannot
+divide any `f(u)g(v)`.  So
+
+  **`t/(1 + u + v) ∈ T_1 ∖ span_{C 1}(φ '' T_0)`**,
+
+and the first form is false at `i = 0`, `j = 1`.  The failure is invisible at `j = i`, where
+the localization is trivial — which is why the old docstring's own non-vacuity check, run
+only at `j = i`, did not catch it.  It is also invisible to the "ONE RISK" paragraph that
+docstring flagged: the defect is not that `j` needs ENLARGING (no larger `j` helps; the
+system above is finite and `j = 1` is terminal), it is that the ring the span is taken over
+is wrong.
+
+**WHAT THE RESTATEMENT IS, AND WHY IT IS THIS ONE.**  The strongest true form of the
+route's conclusion is `T_j ≤ (the D_j-submodule generated by φ '' T_i)`.  mathlib gives a
+`TensorProduct` a module structure from the LEFT factor only (`TensorProduct.leftModule`),
+so `↥(𝔪_i C_j) ⊗[C_j] D_j` carries no `Module (D j)` instance and that form cannot be
+written without building one.  It is in any case more than the assembly ever used: the
+parent applied the span bound only against `φ '' T_i = {0}`.  So this leaf now TAKES that
+vanishing as a hypothesis — `hzero` is Half A's conclusion verbatim — and returns the
+parent's injectivity.  The `Submodule.span_le` / `LinearMap.ker_eq_bot` bookkeeping that
+used to live in the parent moves inside.
+
+**THE PROOF (unchanged in substance).**  Under `hzero` the `D_j`-submodule generated by
+`φ(T_i)` is `⊥`, so it is enough to put `T_j` inside it.  That is the surjectivity of
+`T_i ⊗_{C_i} C_j → T^N_j`, i.e. of `Tor_1^{C_i}(D_i, C_i/𝔪_i) ⊗_{C_i} C_j →
+Tor_1^{C_j}(N, C_j/𝔪_i C_j)`, followed by `− ⊗_N D_j`:
+
+* take a free presentation `0 → K → F → D_i → 0` over `C_i`.  Base change is right exact,
+  so `K' := ker(F ⊗ C_j → N)` is the IMAGE of `K ⊗_{C_i} C_j`; hence `K ⊗_{C_i} C̄ ↠
+  K' ⊗_{C_j} C̄` for `C̄ := C_j/𝔪_i C_j`, while `F ⊗_{C_i} C̄ ≅ (F ⊗ C_j) ⊗_{C_j} C̄`;
+* `C̄` is a vector space over the FIELD `k := C_i/𝔪_i`, hence FREE, so
+  `ker(u ⊗ id_C̄) = ker(u) ⊗_k C̄` for `u : K/𝔪_i K → F/𝔪_i F`.  This is the only step that
+  uses anything about `𝔪_i`, and it is what makes (a) a `C̄`-span — it is 10.99.12;
+* a lift of `τ ∈ T^N_j` therefore lands in `ker(u) ⊗_k C̄ = T_i ⊗_k C̄`, and pushes down;
+  that is 10.99.13, and no spectral sequence is needed for it in degree one;
+* finally `D_j` is flat over `N` (`IsLocalization.flat`), so `T_j = W⁻¹T^N_j`, the `D_j`-span
+  of `φ(T_i)` — and `⊥` under `hzero`.
+
+Every object is the kernel of an explicit `TensorProduct.lift` (Remark 10.75.9), so no
+derived functor and no six-term sequence occurs.  What IS needed and mathlib does not
+supply is the dimension shift `Tor_1(M, C/I) ≅ ker(K/IK → F/IF)`; that is the real cost of
+this leaf, and a prover should expect to state and prove it first.
+
+**FAITHFULNESS OF THE RESTATED FORM.**  `∀ i ≤ j`, deliberately NOT `∃ j` — see the "NOTE
+THE ASYMMETRY" paragraph in the section note above: Half A chooses the index, Half B must
+hold at it, and taking `hzero` as a hypothesis preserves that exactly.  Not vacuous: at
+`j = i` it says `T_i` is killed by a map that is then essentially the identity, hence zero
+— true and harmless; the content is at `j > i`, where `𝔪_i C_j` may be a proper extension.
+And `hzero` is satisfiable, because Half A produces it. -/
+theorem rTensor_map_maximalIdeal_injective_of_idealTensorComparison_eq_zero_of_isNoetherianFlatDescentSystem
     {Λ : Type u} {le : Λ → Λ → Prop} {C D : Λ → Type u}
     [∀ i, CommRing (C i)] [∀ i, CommRing (D i)]
     {cd : ∀ i, C i →+* D i}
@@ -3985,23 +4059,25 @@ theorem ker_rTensor_le_span_image_idealTensorComparison_of_isNoetherianFlatDesce
     {Cbot Dbot : Type u} [CommRing Cbot] [CommRing Dbot] {w : Cbot →+* Dbot}
     {cToC : ∀ i, C i →+* Cbot} {dToD : ∀ i, D i →+* Dbot}
     (hsys : IsNoetherianFlatDescentSystem le C D cd cT dT w cToC dToD)
-    {i j : Λ} (h : le i j) :
+    {i j : Λ} (h : le i j)
+    (hzero :
+      letI := hsys.isLocalRingC i
+      letI : Algebra (C i) (D i) := (cd i).toAlgebra
+      letI : Algebra (C i) (C j) := (cT h).toAlgebra
+      letI : Algebra (C j) (D j) := (cd j).toAlgebra
+      letI : Algebra (C i) (D j) := ((cd j).comp (cT h)).toAlgebra
+      letI : Algebra (D i) (D j) := (dT h).toAlgebra
+      haveI : IsScalarTower (C i) (C j) (D j) := IsScalarTower.of_algebraMap_eq fun _ => rfl
+      haveI : IsScalarTower (C i) (D i) (D j) :=
+        IsScalarTower.of_algebraMap_eq fun x => DFunLike.congr_fun (hsys.comm_T h) x
+      ∀ t ∈ LinearMap.ker
+          (LinearMap.rTensor (D i) (IsLocalRing.maximalIdeal (C i)).subtype),
+        idealTensorComparison (Cj := C j) (Dj := D j)
+          (IsLocalRing.maximalIdeal (C i)) t = 0) :
     letI := hsys.isLocalRingC i
-    letI : Algebra (C i) (D i) := (cd i).toAlgebra
-    letI : Algebra (C i) (C j) := (cT h).toAlgebra
     letI : Algebra (C j) (D j) := (cd j).toAlgebra
-    letI : Algebra (C i) (D j) := ((cd j).comp (cT h)).toAlgebra
-    letI : Algebra (D i) (D j) := (dT h).toAlgebra
-    haveI : IsScalarTower (C i) (C j) (D j) := IsScalarTower.of_algebraMap_eq fun _ => rfl
-    haveI : IsScalarTower (C i) (D i) (D j) :=
-      IsScalarTower.of_algebraMap_eq fun x => DFunLike.congr_fun (hsys.comm_T h) x
-    LinearMap.ker (LinearMap.rTensor (D j)
-        ((IsLocalRing.maximalIdeal (C i)).map (algebraMap (C i) (C j))).subtype)
-      ≤ Submodule.span (C j)
-          (idealTensorComparison (Cj := C j) (Dj := D j) (IsLocalRing.maximalIdeal (C i)) ''
-            (LinearMap.ker (LinearMap.rTensor (D i)
-              (IsLocalRing.maximalIdeal (C i)).subtype) :
-              Set (↥(IsLocalRing.maximalIdeal (C i)) ⊗[C i] D i))) :=
+    Function.Injective (LinearMap.rTensor (D j)
+      ((IsLocalRing.maximalIdeal (C i)).map (cT h)).subtype) :=
   sorry
 
 /-- **THE `Tor_1` VANISHING AT A LARGE STAGE — the colimit half of [Stacks 00R6]**
@@ -4051,9 +4127,17 @@ about explicit maps — not a six-term sequence.
 The comparison map is `idealTensorComparison` just above (NOT corestricted to the kernels —
 that turned out to be unnecessary, see the section note), Half A is
 `exists_le_idealTensorComparison_eq_zero_of_isNoetherianFlatDescentSystem` and Half B is
-`ker_rTensor_le_span_image_idealTensorComparison_of_isNoetherianFlatDescentSystem`.  Those
-two are the open leaves now; this docstring's Half A / Half B paragraphs above are their
-specifications and are repeated on them.  Do not dispatch anyone at THIS declaration.
+`rTensor_map_maximalIdeal_injective_of_idealTensorComparison_eq_zero_of_isNoetherianFlatDescentSystem`.
+Those two are the open leaves now; this docstring's Half A / Half B paragraphs above are
+their specifications and are repeated on them.  Do not dispatch anyone at THIS declaration.
+
+**CORRECTION, same day.**  Half B's first form — `T_j ≤ Submodule.span (C j) (φ '' T_i)` —
+was REFUTED; the "Half B" paragraph above should be read as ending in a `D_j`-span, not a
+`C_j`-span, and the localization along `isLocalizationDT` is exactly what makes the
+difference.  The counterexample and the restatement are on the leaf.  Half B now consumes
+Half A's conclusion as a hypothesis and returns this theorem's injectivity outright, so the
+assembly below is two lines rather than the old span/`ker_eq_bot` chase; the mathematics of
+"`T_j` is spanned by the image of `T_i`, and that image is `0`" is unchanged.
 
 **FAITHFULNESS.**  The ideal is `𝔪_i C_j`, the EXTENSION of the stage-`i` maximal ideal
 along `cT h` — NOT `𝔪_j`.  That is what 00MO's `I' = IR'` says, and what Half B's
@@ -4084,33 +4168,9 @@ theorem exists_le_rTensor_map_maximalIdeal_injective_of_isNoetherianFlatDescentS
         ((IsLocalRing.maximalIdeal (C i)).map (cT h)).subtype) := by
   obtain ⟨j, h, hA⟩ :=
     exists_le_idealTensorComparison_eq_zero_of_isNoetherianFlatDescentSystem hsys hflat i
-  refine ⟨j, h, ?_⟩
-  letI := hsys.isLocalRingC i
-  letI : Algebra (C i) (D i) := (cd i).toAlgebra
-  letI : Algebra (C i) (C j) := (cT h).toAlgebra
-  letI : Algebra (C j) (D j) := (cd j).toAlgebra
-  letI : Algebra (C i) (D j) := ((cd j).comp (cT h)).toAlgebra
-  letI : Algebra (D i) (D j) := (dT h).toAlgebra
-  haveI : IsScalarTower (C i) (C j) (D j) := IsScalarTower.of_algebraMap_eq fun _ => rfl
-  haveI : IsScalarTower (C i) (D i) (D j) :=
-    IsScalarTower.of_algebraMap_eq fun x => DFunLike.congr_fun (hsys.comm_T h) x
-  have hB : LinearMap.ker (LinearMap.rTensor (D j)
-      ((IsLocalRing.maximalIdeal (C i)).map (algebraMap (C i) (C j))).subtype)
-      ≤ Submodule.span (C j)
-        (idealTensorComparison (Cj := C j) (Dj := D j) (IsLocalRing.maximalIdeal (C i)) ''
-          (LinearMap.ker (LinearMap.rTensor (D i)
-            (IsLocalRing.maximalIdeal (C i)).subtype) :
-            Set (↥(IsLocalRing.maximalIdeal (C i)) ⊗[C i] D i))) :=
-    ker_rTensor_le_span_image_idealTensorComparison_of_isNoetherianFlatDescentSystem hsys h
-  have hspan : Submodule.span (C j)
-      (idealTensorComparison (Cj := C j) (Dj := D j) (IsLocalRing.maximalIdeal (C i)) ''
-        (LinearMap.ker (LinearMap.rTensor (D i)
-          (IsLocalRing.maximalIdeal (C i)).subtype) :
-          Set (↥(IsLocalRing.maximalIdeal (C i)) ⊗[C i] D i))) ≤ ⊥ := by
-    rw [Submodule.span_le]
-    rintro _ ⟨t, ht, rfl⟩
-    simp [hA t ht]
-  exact LinearMap.ker_eq_bot.mp (le_antisymm (hB.trans hspan) bot_le)
+  exact ⟨j, h,
+    rTensor_map_maximalIdeal_injective_of_idealTensorComparison_eq_zero_of_isNoetherianFlatDescentSystem
+      hsys h hA⟩
 
 /-- **THE FIBRE IS FLAT AT EVERY STAGE — 00MO's step 2, and it involves NO `Tor`**
 (**PROVEN 2026-07-29**; cut 2026-07-28 out of
