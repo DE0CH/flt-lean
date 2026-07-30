@@ -4323,7 +4323,47 @@ in the two steps that irreducibility of the generic fibre does NOT give:
 A cut into (i) and (ii) is therefore available and is the honest decomposition, but it
 replaces one hard leaf by two hard leaves and has NOT been taken here for that reason.
 Recorded so the next prover starts from the real obstruction rather than from the
-projective closure, which enters the classical proof of (i) but is not itself the gap. -/
+projective closure, which enters the classical proof of (i) but is not itself the gap.
+
+STEP (i) HAS A SCHEMELESS FORM, 2026-07-30 — a translation, checked on paper, NOT
+formalised.  The route correction above leaves (i) stated in terms of the generic
+fibre, which still drags in `GeometricallyIrreducible`, the incidence variety and a
+generic point.  All three disappear.  `A` is a DOMAIN (smooth over a field, hence
+reduced; `hirr` makes the nilradical prime), so write `M := Frac A` and adjoin `n`
+indeterminates `t 0, …, t (n-1)` — the hyperplane COEFFICIENTS; the constant term is
+not an independent parameter, since the relation solves for it.  Put
+
+    N := M(t 0, …, t (n-1)),    L := K(t 0, …, t (n-1), ∑ i, t i * y i) ⊆ N.
+
+Then (i) says exactly
+
+    (★)  `L` is ALGEBRAICALLY CLOSED in `N`.
+
+WHY (★) IS (i).  The incidence variety is `Spec A × 𝔸ⁿ`, as recorded above, hence
+integral with function field `N`, and it dominates `𝔸ⁿ⁺¹`, whose function field is
+`L`; so the generic fibre is an integral `L`-scheme with function field `N`.  For an
+integral scheme of finite type over a field, geometric integrality is equivalent to
+"the base field is algebraically closed in the function field, and that extension is
+separable" (Stacks `054Q`, EGA IV 4.5.9), and separability is free in characteristic
+zero — which is the one place `CharZero K` would be used, and only to discharge a
+hypothesis that is vacuous here.
+
+WHAT IT COSTS, stated so the trade is visible.  That equivalence is itself absent
+from `Mathlib` at this pin: `Mathlib/AlgebraicGeometry/Geometrically/Integral.lean`
+carries the definition, the base-change API and the fibre criterion
+`GeometricallyIntegral.iff_geometricallyIntegral_fiber`, and nothing relating
+geometric integrality to the function field; there is no `IsAlgClosedIn` predicate
+at all (`grep -rn "IsAlgClosedIn" .lake/packages/mathlib/Mathlib` returns nothing).
+So (★) buys a target with no schemes in it at the price of owing the bridge.
+
+It is recorded anyway, for two reasons.  (★) is what every classical proof of
+Bertini irreducibility actually establishes, so a formalisation following the
+literature will produce it and then need the bridge regardless of which way the
+leaf is cut.  And `hgen` becomes VISIBLE in it — `hgen` is exactly what makes the
+`y i` generate `M` over `K`, which is what makes the linear system separate points
+— whereas in the scheme-level statement its role is invisible.  That is consistent
+with the FALSITY AUDIT above, which found `hgen` load-bearing and `Algebra.Smooth`
+not. -/
 theorem exists_bertiniConnectedLocus_isAlgClosed {K : Type u} [Field K] [IsAlgClosed K]
     [CharZero K] {A : Type u} [CommRing A] [Algebra K A] [Algebra.Smooth K A]
     (hirr : IrreducibleSpace (PrimeSpectrum A))
@@ -11910,8 +11950,135 @@ theorem exists_pow_eq_zero_of_ker_of_retraction_localizationAway
   rw [hs] at hpow
   simpa using hpow
 
+open _root_.TensorProduct in
+/-- **`L[y]` IS FAITHFULLY FLAT OVER `K[y]` FOR A FIELD EXTENSION `L/K`** (PROVEN
+2026-07-30).  Freeness of `L` over `K` transports to the polynomial rings through
+`MvPolynomial.algebraTensorAlgEquiv`, and the comparison map is an algebra
+equivalence over `K[y]` — not merely over `L` — because `q ⊗ₜ 1 ↦ MvPolynomial.map q`.
+
+The `Algebra (MvPolynomial σ K) (MvPolynomial σ L)` is NOT a global instance at this
+pin (checked: `grep -rn "instance.*Algebra (MvPolynomial" .lake/packages/mathlib`
+returns only the `MvPowerSeries` one), so it is introduced here by `RingHom.toAlgebra`
+on `MvPolynomial.map (algebraMap K L)` and returned inside the statement by `letI`. -/
+theorem faithfullyFlat_mvPolynomial_map {σ : Type} {K L : Type} [Field K] [Field L]
+    [Algebra K L] :
+    letI : Algebra (MvPolynomial σ K) (MvPolynomial σ L) :=
+      (MvPolynomial.map (algebraMap K L) : MvPolynomial σ K →+* MvPolynomial σ L).toAlgebra
+    Module.FaithfullyFlat (MvPolynomial σ K) (MvPolynomial σ L) := by
+  letI : Algebra (MvPolynomial σ K) (MvPolynomial σ L) :=
+    (MvPolynomial.map (algebraMap K L) : MvPolynomial σ K →+* MvPolynomial σ L).toAlgebra
+  haveI : Module.Free (MvPolynomial σ K) (MvPolynomial σ K ⊗[K] L) :=
+    Module.Free.of_basis
+      (Algebra.TensorProduct.basis (MvPolynomial σ K) (Module.Free.chooseBasis K L))
+  haveI : Module.FaithfullyFlat (MvPolynomial σ K) (MvPolynomial σ K ⊗[K] L) := inferInstance
+  let ψ : (MvPolynomial σ K ⊗[K] L) ≃ₐ[K] MvPolynomial σ L :=
+    (Algebra.TensorProduct.comm K (MvPolynomial σ K) L).trans
+      ((MvPolynomial.algebraTensorAlgEquiv K L).restrictScalars K)
+  have hcomm : ∀ q : MvPolynomial σ K,
+      ψ (algebraMap (MvPolynomial σ K) (MvPolynomial σ K ⊗[K] L) q) =
+        algebraMap (MvPolynomial σ K) (MvPolynomial σ L) q := by
+    intro q
+    show ψ (q ⊗ₜ[K] 1) = _
+    simp [ψ, MvPolynomial.algebraTensorAlgEquiv_tmul, RingHom.algebraMap_toAlgebra]
+  let e : (MvPolynomial σ K ⊗[K] L) ≃ₐ[MvPolynomial σ K] MvPolynomial σ L :=
+    AlgEquiv.ofRingEquiv (f := ψ.toRingEquiv) hcomm
+  exact Module.FaithfullyFlat.of_linearEquiv _ _ e.symm.toLinearEquiv
+
+/-- **NON-DIVISIBILITY IN A POLYNOMIAL RING DESCENDS ALONG A FIELD EXTENSION** (PROVEN
+2026-07-30): if `g ∤ b` over `K` then `g ∤ b` over any extension field `L`.
+
+This is the step the leaf below's ROUTE paragraph called "THE ONLY NEW INGREDIENT",
+where it is described as a rank criterion on a linear system.  The rank criterion is
+not needed: `Ideal.comap_map_eq_self_of_faithfullyFlat` says the contraction of the
+extension of ANY ideal along a faithfully flat algebra is that ideal, and
+`faithfullyFlat_mvPolynomial_map` above supplies the hypothesis, so the statement is
+two rewrites once the extension of `span {g}` is identified with `span {map g}`.
+
+Not restricted to principal ideals in substance — only in shape, because that is what
+the consumer needs. -/
+theorem notMem_span_singleton_map_of_notMem {σ : Type} {K L : Type} [Field K] [Field L]
+    [Algebra K L] {g b : MvPolynomial σ K} (hb : b ∉ Ideal.span {g}) :
+    MvPolynomial.map (algebraMap K L) b ∉
+      Ideal.span {MvPolynomial.map (algebraMap K L) g} := by
+  letI : Algebra (MvPolynomial σ K) (MvPolynomial σ L) :=
+    (MvPolynomial.map (algebraMap K L) : MvPolynomial σ K →+* MvPolynomial σ L).toAlgebra
+  haveI : Module.FaithfullyFlat (MvPolynomial σ K) (MvPolynomial σ L) :=
+    faithfullyFlat_mvPolynomial_map
+  intro hmem
+  refine hb ?_
+  have hmapspan : Ideal.map (algebraMap (MvPolynomial σ K) (MvPolynomial σ L))
+      (Ideal.span {g}) = Ideal.span {MvPolynomial.map (algebraMap K L) g} := by
+    rw [Ideal.map_span, Set.image_singleton]
+    rfl
+  rw [← hmapspan] at hmem
+  rw [← Ideal.comap_map_eq_self_of_faithfullyFlat
+    (A := MvPolynomial σ K) (B := MvPolynomial σ L) (Ideal.span {g})]
+  exact hmem
+
+/-- `coeffPoly` of the zero coefficient vector is `0`. -/
+theorem coeffPoly_zero (k D : ℕ) {R : Type*} [CommSemiring R] :
+    coeffPoly k D (fun _ => (0 : R)) = 0 := by
+  simp [coeffPoly]
+
+/-- **DIVISIBILITY BY A FIXED POLYNOMIAL IS A CLOSED CONDITION ON BOUNDED
+COEFFICIENTS** (PROVEN 2026-07-30).  Over ANY field, membership of `b` in the
+principal ideal `(g)` is equivalent to solvability of the finite coefficient system
+`coeffPoly k D a * g = b`, as soon as `D` bounds the total degree of `b`.
+
+NO CASE SPLIT ON `g` IS NEEDED, and this is what makes the leaf below cheap.  The
+equivalence holds verbatim when `g = 0` (both sides then say `b = 0`, taking `a = 0`)
+and when `b = 0` (take `a = 0`).  In the remaining case `h * g = b` with `b ≠ 0`
+forces `h ≠ 0 ≠ g`, and `MvPolynomial.totalDegree_mul_of_isDomain` gives
+`h.totalDegree ≤ b.totalDegree ≤ D`, hence `h.degreeOf i ≤ D` for every `i`, hence
+`h = coeffPoly k D _` by `coeffPoly_coeff_self`. -/
+theorem mem_span_singleton_iff_exists_coeffPoly {k D : ℕ} {K : Type*} [Field K]
+    {g b : MvPolynomial (Fin k) K} (hD : b.totalDegree ≤ D) :
+    b ∈ Ideal.span {g} ↔
+      ∃ a : (Fin k → Fin (D + 1)) → K, coeffPoly k D a * g = b := by
+  classical
+  constructor
+  · intro hmem
+    obtain ⟨h, hh⟩ := Ideal.mem_span_singleton'.mp hmem
+    by_cases hb0 : b = 0
+    · exact ⟨fun _ => 0, by simp [coeffPoly_zero, hb0]⟩
+    · have hh0 : h ≠ 0 := by rintro rfl; exact hb0 (by simpa using hh.symm)
+      have hg0 : g ≠ 0 := by rintro rfl; exact hb0 (by simpa using hh.symm)
+      have hdeg : h.totalDegree ≤ D := by
+        have := MvPolynomial.totalDegree_mul_of_isDomain hh0 hg0
+        rw [hh] at this
+        omega
+      refine ⟨fun e => h.coeff (boundedExpo k D e), ?_⟩
+      rw [coeffPoly_coeff_self k D
+        (fun i => le_trans (MvPolynomial.degreeOf_le_totalDegree h i) hdeg)]
+      exact hh
+  · rintro ⟨a, ha⟩
+    exact Ideal.mem_span_singleton'.mpr ⟨_, ha⟩
+
+/-- The UNIVERSAL coefficient system for `g ∣ b` with coefficient bound `D`: a single
+polynomial over `ℤ[unknowns]`, whose coefficients are the equations of the system. -/
+noncomputable def divisibilityUniv (k D : ℕ) (g b : MvPolynomial (Fin k) ℤ) :
+    MvPolynomial (Fin k) (MvPolynomial (Fin k → Fin (D + 1)) ℤ) :=
+  coeffPoly k D (fun e => MvPolynomial.X e) *
+      MvPolynomial.map (Int.castRingHom (MvPolynomial (Fin k → Fin (D + 1)) ℤ)) g -
+    MvPolynomial.map (Int.castRingHom (MvPolynomial (Fin k → Fin (D + 1)) ℤ)) b
+
+/-- Specialising the unknowns of `divisibilityUniv` at `x` over a commutative ring `K`
+returns the concrete difference `coeffPoly k D x * g - b` over `K`. -/
+theorem map_divisibilityUniv {k D : ℕ} (g b : MvPolynomial (Fin k) ℤ) {K : Type*}
+    [CommRing K] (x : (Fin k → Fin (D + 1)) → K) :
+    MvPolynomial.map (MvPolynomial.eval₂Hom (Int.castRingHom K) x) (divisibilityUniv k D g b) =
+      coeffPoly k D x * MvPolynomial.map (Int.castRingHom K) g -
+        MvPolynomial.map (Int.castRingHom K) b := by
+  rw [divisibilityUniv, map_sub, _root_.map_mul, map_coeffPoly,
+    MvPolynomial.map_map, MvPolynomial.map_map]
+  have hcast : (MvPolynomial.eval₂Hom (Int.castRingHom K) x).comp
+      (Int.castRingHom (MvPolynomial (Fin k → Fin (D + 1)) ℤ)) = Int.castRingHom K :=
+    Subsingleton.elim _ _
+  rw [hcast]
+  simp
+
 /-- **NON-MEMBERSHIP IN A PRINCIPAL IDEAL OF A POLYNOMIAL RING SPREADS OUT**
-(SORRY LEAF, cut 2026-07-28 out of
+(**PROVEN 2026-07-30**; cut 2026-07-28 out of
 `exists_inverted_nilpotentKer_ringHom_localizationAway_integralSystemModel`
 below): if the integral polynomial `b` is NOT divisible by `g` over `ℚ`, then it
 is not divisible by `g` over `𝔽̄_p` either, for every `p` outside one explicit
@@ -11958,15 +12125,93 @@ step 3 is new).
 
 CIRCULARITY GUARD: pure commutative algebra about `MvPolynomial (Fin k)`; no
 Galois representation, no route through `Family.lean`, `Lift.lean` or
-`Modularity/Interface.lean`. -/
+`Modularity/Interface.lean`.
+
+**ROUTE CORRECTION, 2026-07-30, MADE WHILE CLOSING IT — STEPS 1 AND 2 ARE
+UNNECESSARY, AND STEP 3 IS NOT A RANK CRITERION.**  The route above is sound but
+does about twice the work the proof below does.  Two of its four steps drop out:
+
+* *Step 1 (`g = 0` case split) and the non-unit analysis of step 2 are not needed.*
+  `mem_span_singleton_iff_exists_coeffPoly` above holds for EVERY `g`, including
+  `g = 0`: both sides then assert `b = 0`.  So the proof never distinguishes cases.
+* *Step 2's enlargement of `N` "so that both total degrees are unchanged in
+  characteristic `p`" is not needed either.*  Take the coefficient bound to be
+  `D := b.totalDegree` computed once and for all **over `ℤ`**.  Total degree can only
+  DROP under `MvPolynomial.map` (`totalDegree_map_le'`, PROVEN above), and the
+  criterion only ever needs `D` as an UPPER bound, so the same `D` serves over `ℚ̄`
+  and over every `𝔽̄_p` with no arithmetic condition at all.  Degree-preservation
+  conditions would have been the only reason to put coefficients of `g` into `N`;
+  as it stands `N` comes from `exists_pos_forall_prime_not_dvd_exists_eval_ne_zero`
+  and from nothing else.
+* *Step 3 is one mathlib lemma, not a rank argument.*  Solvability descent along
+  `ℚ ⊆ ℚ̄` is `Ideal.comap_map_eq_self_of_faithfullyFlat` applied to the faithfully
+  flat algebra `ℚ̄[y] / ℚ[y]`; see `notMem_span_singleton_map_of_notMem` above.  The
+  linear-system structure of the certificate is never used — which is fortunate,
+  since the rank criterion would have needed a theory of ranks over a pair of fields
+  that this file does not have.
+
+Step 4 is used exactly as described.  The certificate system is `divisibilityUniv`
+above, indexed by its own support; `map_divisibilityUniv` is what turns "every
+equation vanishes at `x`" into "`coeffPoly k D x * g = b`" over any base. -/
 theorem exists_pos_forall_prime_not_dvd_notMem_span_singleton_map
     {k : ℕ} (g b : MvPolynomial (Fin k) ℤ)
     (hb : MvPolynomial.map (Int.castRingHom ℚ) b ∉
       Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) :
     ∃ N : ℕ, 0 < N ∧ ∀ (p : ℕ) [Fact p.Prime], ¬ (p ∣ N) →
       MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) b ∉
-        Ideal.span {MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) g} :=
-  sorry
+        Ideal.span {MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) g} := by
+  classical
+  -- The coefficient bound is computed ONCE, over `ℤ`; total degree only drops on reduction.
+  set D := b.totalDegree with hDdef
+  set U := divisibilityUniv k D g b with hU
+  -- The criterion, uniformly in the base field: the equations of `U` vanish at `x`
+  -- exactly when `x` is a coefficient vector exhibiting `g ∣ b`.
+  have hcrit : ∀ (K : Type) [Field K] (x : (Fin k → Fin (D + 1)) → K),
+      (∀ m : Fin k →₀ ℕ, m ∈ U.support →
+          MvPolynomial.eval₂ (Int.castRingHom K) x (U.coeff m) = 0) ↔
+        coeffPoly k D x * MvPolynomial.map (Int.castRingHom K) g =
+          MvPolynomial.map (Int.castRingHom K) b := by
+    intro K _ x
+    rw [← sub_eq_zero, ← map_divisibilityUniv g b x, ← hU]
+    constructor
+    · intro hall
+      ext m
+      rw [MvPolynomial.coeff_map, MvPolynomial.coeff_zero]
+      by_cases hm : m ∈ U.support
+      · exact hall m hm
+      · rw [MvPolynomial.notMem_support_iff.mp hm]; simp
+    · intro h0 m _
+      have := congrArg (fun q => MvPolynomial.coeff m q) h0
+      simpa [MvPolynomial.coeff_map] using this
+  have hbridge : ∀ c : MvPolynomial (Fin k) ℤ,
+      MvPolynomial.map (algebraMap ℚ (AlgebraicClosure ℚ))
+          (MvPolynomial.map (Int.castRingHom ℚ) c) =
+        MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) c := by
+    intro c
+    rw [MvPolynomial.map_map]
+    congr 1
+  -- NO `ℚ̄`-SOLUTION: one would put `b` into `(g)` over `ℚ̄`, which descends to `ℚ`.
+  have hnosol : ∀ x : (Fin k → Fin (D + 1)) → AlgebraicClosure ℚ,
+      ∃ i : {m : Fin k →₀ ℕ // m ∈ U.support},
+        MvPolynomial.eval₂ (Int.castRingHom (AlgebraicClosure ℚ)) x (U.coeff i.1) ≠ 0 := by
+    intro x
+    by_contra hcon
+    push Not at hcon
+    have hsol := (hcrit (AlgebraicClosure ℚ) x).mp (fun m hm => hcon ⟨m, hm⟩)
+    have hdesc := notMem_span_singleton_map_of_notMem (L := AlgebraicClosure ℚ) hb
+    rw [hbridge b, hbridge g] at hdesc
+    exact hdesc (Ideal.mem_span_singleton'.mpr ⟨_, hsol⟩)
+  -- STEP 4: the arithmetic half of Noether–Ostrowski produces the single `N`.
+  obtain ⟨N, hN, hmain⟩ := exists_pos_forall_prime_not_dvd_exists_eval_ne_zero
+    (σ := (Fin k → Fin (D + 1))) (ι := {m : Fin k →₀ ℕ // m ∈ U.support})
+    (fun m => U.coeff m.1) hnosol
+  refine ⟨N, hN, ?_⟩
+  intro p _ hp hmem
+  have hdeg : (MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) b).totalDegree
+      ≤ D := totalDegree_map_le' _ b
+  obtain ⟨a, ha⟩ := (mem_span_singleton_iff_exists_coeffPoly hdeg).mp hmem
+  obtain ⟨i, hi⟩ := hmain p hp a
+  exact hi (((hcrit _ a).mpr ha) i.1 i.2)
 
 /-- **THE PURE DESCENT: A `ℚ`-DIAGRAM WITH AN INTEGRAL DENOMINATOR SPREADS OUT TO
 ALMOST EVERY FIBRE** (SORRY LEAF, cut 2026-07-30 out of
