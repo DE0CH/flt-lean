@@ -79,8 +79,12 @@ covering collection.  Each namespace now reads top-down:
                                   finite level of a divisor, Hilbert 90 for F̄/F
       → geomPic_descent           PROVEN: the invariants are rational — the Brauer
                                   obstruction killed by the rational point ∞₊
-    geomPic_divisible             LEAF: Pic⁰(X_ℚ̄) is divisible
-    finite_kummerCochains_pic     LEAF: finitely many Kummer cochains — the arithmetic
+    geomPic_divisible             LEAF: Pic⁰(X_ℚ̄) is divisible — [n] is surjective
+    geomPic_finite_torsion        LEAF: J[n](ℚ̄) is finite — [n] has a finite kernel
+    geomPic_exists_finiteCover_kummer
+                                  LEAF: one finite cover of Γ inflates every Kummer
+                                  cochain — Hermite–Minkowski, ALL the arithmetic
+      → finite_kummerCochains_pic PROVEN: finitely many Kummer cochains
       → finite_quotient_psmul_pic PROVEN: weak Mordell–Weil, Pic⁰/p·Pic⁰ is finite
       → fg_pic                    PROVEN: Mordell–Weil, by the descent theorem
     X18.two_divisible_pic / X13.two_divisible_pic
@@ -140,7 +144,7 @@ amended this paragraph on the same day, one saying "eight" and one saying "TEN",
 and the merged file has neither number.  Regenerate it with `lake build`; the
 list below is stamped to the commit that decomposed `geomPic_descent`
 (2026-07-30), at which the `declaration uses 'sorry'` set of this module is
-these TWENTY-ONE:
+these TWENTY-TWO:
 
     finite_isPlaceFun, exists_isPlaceFun_of_affPt, exists_isPlaceFun_of_infPt,
     exists_localDenom_affine, exists_localDenom_infinite,
@@ -150,11 +154,13 @@ these TWENTY-ONE:
     geomPic_exists_finiteLevel, geomPic_exists_emb_of_fieldAct_fixed,
     geomPic_exists_const_of_ord_nonneg, geomPic_exists_bcDiv_of_divAct_fixed,
     geomPic_exists_finiteLevel_divisor, geomPic_hilbert90,
-    geomPic_divisible, finite_kummerCochains_pic,
+    geomPic_divisible, geomPic_finite_torsion,
+    geomPic_exists_finiteCover_kummer,
     and `two_divisible_pic` at BOTH levels.
 
-The eight `geomPic_*` entries are the sub-leaves of `geomPic_bc_injective` (four,
-cut 2026-07-30) and of `geomPic_descent` (four, cut the same day); **both of those
+The ten `geomPic_*` entries other than `exists_geomPic` and `geomPic_divisible` are
+sub-leaves cut on 2026-07-30: four of `geomPic_bc_injective`, four of
+`geomPic_descent`, two of `finite_kummerCochains_pic`.  **All three of those
 theorems are now PROVEN** and any text calling them open is stale.  So are
 `finrank_residue_pt_eq_one`, `degOf_divisor_eq_zero`,
 `isRationalGenerator_of_divisor_eq_sub_single` and `not_isRationalGenerator`,
@@ -5419,10 +5425,90 @@ an algebraically closed field).
 **FAITHFULNESS.**  `hn` is load-bearing: at `n = 0` the statement reads `∃ z, 0 = y`, which
 is false for every `y ≠ 0`, and `Pic⁰(X_ℚ̄)` is never trivial for a genus-`2` curve.  Note
 this is stated for `Dbar` alone — it does not mention `bc` — so it carries none of the
-arithmetic; the arithmetic is entirely in the cochain leaf. -/
+arithmetic; the arithmetic is entirely in `geomPic_exists_finiteCover_kummer`.
+
+**Look at `geomPic_finite_torsion` before starting.**  That leaf, cut out of the cochain
+node on 2026-07-30, is the OTHER half of the same statement: `[n] : J → J` is a finite flat
+isogeny of degree `n^{2g}`, of which this leaf asks surjectivity and that one asks finiteness
+of the kernel.  Whatever supplies one should supply both, and a decomposition that produces
+the isogeny is the natural cut for the pair rather than for either alone. -/
 theorem geomPic_divisible {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
     (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) (n : ℕ) (hn : n ≠ 0) (y : gp.Dbar.Pic) :
     ∃ z : gp.Dbar.Pic, n • z = y := sorry
+
+/-! ### The two sub-leaves of `finite_kummerCochains_pic` (cut 2026-07-30)
+
+The cut separates the two things the classical proof (Silverman *AEC* VIII.1.1) actually uses,
+which are of completely different natures:
+
+* `geomPic_finite_torsion` — `J[n](ℚ̄)` is finite.  GEOMETRY, and the same kind of statement
+  as `geomPic_divisible` beside it: both say `[n] : J → J` is a finite flat isogeny, one
+  asking for surjectivity and one for the size of the kernel.  Nothing arithmetic in it.
+* `geomPic_exists_finiteCover_kummer` — every Kummer cochain is constant on the blocks of ONE
+  finite cover of `Γ`.  ARITHMETIC, and all of it: this is where Hermite–Minkowski (or the
+  class group and the unit theorem) enters, and it is the only place.
+
+What is Lean between them is that the cochains take their values in `J[p]` — which is
+`act_bc` applied to `p·Q = bc P` — and the bookkeeping that a function determined on a finite
+cover, with values in a finite set, ranges over a finite set. -/
+
+/-- **LEAF (weak Mordell–Weil, arithmetic 1 of 2, geometric): `J[n](ℚ̄)` is finite.**
+
+For an abelian variety of dimension `g` over an algebraically closed field of characteristic
+`0`, `J[n] ≅ (ℤ/n)^{2g}`; here `g = 2`, so `#J[n] = n⁴`.  Only FINITENESS is asked for — the
+order is never used, and neither is the group structure of the kernel.
+
+The sibling of `geomPic_divisible`: that leaf is the surjectivity of `[n]` and this one is the
+finiteness of its kernel, both instances of "`[n]` is a finite flat isogeny of degree
+`n^{2g}`".  A prover closing one should look at the other.
+
+**FAITHFULNESS.**  `hn` is load-bearing and is the whole of it: at `n = 0` the set is all of
+`Pic⁰(X_ℚ̄)`, which is NOT finite — it is a `2`-dimensional abelian variety over an
+algebraically closed field, so it is not even countable.  Stated at every `n ≠ 0` rather than
+at a prime because the proof does not care and the consumer only needs one value. -/
+theorem geomPic_finite_torsion {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
+    (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) (n : ℕ) (hn : n ≠ 0) :
+    {y : gp.Dbar.Pic | n • y = 0}.Finite := sorry
+
+/-- **LEAF (weak Mordell–Weil, arithmetic 2 of 2): every Kummer cochain is constant on the
+blocks of ONE finite cover of `Γ`.**
+
+This is the arithmetic of weak Mordell–Weil and nothing else.  In the classical language: all
+the Kummer cochains attached to `p·Q = bc P` are inflated from a SINGLE finite Galois
+extension `M/ℚ` — the maximal exponent-`p` extension of `L = ℚ(J[p])` unramified outside the
+finite set of places over `p·disc(f)` — so each is constant on the cosets of `Gal(ℚ̄/M)`, and
+those cosets are a finite cover of `Γ`.  The statement is phrased as a finite COVER rather
+than as a subgroup or a quotient so that no Galois theory, no profinite topology and no
+`IntermediateField` appears in it: the consumer needs exactly "finitely many blocks, and each
+cochain is constant on each block", and `AlgEquiv.restrictNormalHom` brings with it the
+`Algebra ℚ ↥L` instance diamond that `AbsoluteHilbert90` documents.
+
+Two routes to it, and the second is the one `X0.lean` found cheaper:
+
+* the classical one — the cochains are unramified outside `S` and are therefore cut out by the
+  `p`-Selmer group of `L`, finite by finiteness of `Cl(L)` and Dirichlet's unit theorem;
+* **Hermite–Minkowski**, which `X0.lean` uses at
+  `exists_finiteIndex_divisible_of_abelianScheme` after recording that the class group and the
+  unit theorem are *not* what is needed: the assembly meets one division field `ℚ(J[p], Q)` at
+  a time, each of degree at most `#J[p]` over `ℚ(J[p])`, and there are only finitely many
+  number fields of bounded degree and bounded discriminant.
+
+**FAITHFULNESS — the trivial cover does NOT discharge it.**  `S = {univ}` is a finite cover,
+and with it the conclusion reads "`σ ↦ act σ Q − Q` is constant on all of `Γ`", hence (at
+`σ = 1`, where `act 1 = id` follows from `fieldAct_one`) identically `0` — i.e. every Kummer
+cochain vanishes, i.e. `Pic⁰(X_ℚ)/p·Pic⁰(X_ℚ) = 0` for EVERY separable monic sextic.  That is
+false: the family contains positive-rank Jacobians (`y² = x⁶ + x² + 1` has rank `1`).  So the
+number of blocks is genuinely bounded below by the arithmetic, and a prover cannot cheat by
+making the cover coarse.
+
+`hp` is inherited from the consumer and is used only through `p ≠ 0`; the intended proofs both
+want `J[p]` to be an `𝔽_p`-vector space, which is why it is kept rather than weakened. -/
+theorem geomPic_exists_finiteCover_kummer {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
+    {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D)
+    (p : ℕ) (hp : p.Prime) :
+    ∃ S : Set (Set QbarGal), S.Finite ∧ (∀ σ : QbarGal, ∃ s ∈ S, σ ∈ s) ∧
+      ∀ (P : D.Pic) (Q : gp.Dbar.Pic), p • Q = gp.bc P →
+        ∀ s ∈ S, ∀ σ ∈ s, ∀ τ ∈ s, gp.act σ Q - Q = gp.act τ Q - Q := sorry
 
 /-- **LEAF (weak Mordell–Weil, the arithmetic): only finitely many Kummer cochains occur.**
 
@@ -5430,30 +5516,61 @@ This is the whole arithmetic content of weak Mordell–Weil, isolated by
 `Fermat.finite_quotient_nsmul_of_kummerCochains`, and it is the only one of the five leaves
 in this cluster that needs a finiteness theorem of algebraic number theory.
 
-Two routes, and the second is the one `X0.lean` found cheaper:
-
-* the classical one — the cochains land in `J[p](ℚ̄) ≅ (ℤ/p)⁴` and are unramified outside
-  the finite set `S` of places over `p·disc(f)`, so they are cut out by the `p`-Selmer group
-  of `L = ℚ(J[p])`, finite by finiteness of `Cl(L)` and Dirichlet's unit theorem;
-* **Hermite–Minkowski**, which `X0.lean` uses at
-  `exists_finiteIndex_divisible_of_abelianScheme` after recording that the class group and
-  the unit theorem are *not* what is needed: the assembly meets one division field
-  `ℚ(J[p], y)` at a time, each of degree at most `#J[p]` over `ℚ(J[p])`, and there are only
-  finitely many number fields of bounded degree and bounded discriminant.  A cochain is then
-  determined by its restriction to a finite quotient of `Γ` and takes values in a finite
-  group, so finitely many occur.
-
 **FAITHFULNESS.**  `hp` is load-bearing at least through `p ≠ 0`: at `p = 0` the condition
 `0 • Q = bc P` forces `bc P = 0`, hence `P = 0` by `geomPic_bc_injective`, but leaves `Q`
 completely free, so the cochains `σ ↦ act σ Q − Q` range over an infinite set whenever
 `Pic⁰(X_ℚ̄)` has a point with nontrivial Galois orbit — which it does.  Primality is not
 needed for TRUTH, but it is what makes the intended proof available (`J[p]` is an
 `𝔽_p`-vector space, and the sibling reduction `Fermat.finite_quotient_nsmul_of_prime`
-supplies every other `n`), so it is kept rather than weakened to `p ≠ 0`. -/
+supplies every other `n`), so it is kept rather than weakened to `p ≠ 0`.
+
+## DECOMPOSED 2026-07-30 — now PROVEN over two named sub-leaves
+
+The two routes that used to be recorded here are now recorded on
+`geomPic_exists_finiteCover_kummer`, which is where the arithmetic went; see the section
+docstring above for why the cut runs between geometry and arithmetic rather than along the
+two routes.  What the assembly does:
+
+1. **The values are `p`-torsion.**  `p·(act σ Q − Q) = act σ (p·Q) − p·Q = act σ (bc P) − bc P`,
+   which is `0` by `act_bc` (PROVEN) — so every cochain maps into the finite set
+   `J[p]` (leaf 1).  This step is the only place the hypothesis `p·Q = bc P` is used, and it
+   is why the leaf may be stated about `Dbar` alone.
+2. **A cochain is determined by one point of each block** of the finite cover (leaf 2), so
+   `c ↦ (block ↦ c (a chosen point of it))` is injective on the set of cochains and lands in
+   the functions from a finite type into a finite set.
+
+Note what does NOT appear, here or in either leaf: no `H¹`, no cocycle condition, no
+profinite topology, no `IntermediateField`.  The cover formulation is what buys that. -/
 theorem finite_kummerCochains_pic {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
     (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) (p : ℕ) (hp : p.Prime) :
     {c : QbarGal → gp.Dbar.Pic | ∃ (P : D.Pic) (Q : gp.Dbar.Pic),
-      p • Q = gp.bc P ∧ c = fun σ => gp.act σ Q - Q}.Finite := sorry
+      p • Q = gp.bc P ∧ c = fun σ => gp.act σ Q - Q}.Finite := by
+  classical
+  obtain ⟨S, hSfin, hScov, hSconst⟩ := geomPic_exists_finiteCover_kummer gp p hp
+  haveI := hSfin.to_subtype
+  choose blk hblkS hblkmem using hScov
+  refine Set.Finite.of_injOn (f := fun c : QbarGal → gp.Dbar.Pic => fun s : ↥S =>
+      if h : ∃ σ : QbarGal, σ ∈ (s : Set QbarGal) then c h.choose else 0)
+    (t := {f : ↥S → gp.Dbar.Pic | ∀ s, f s ∈ {y : gp.Dbar.Pic | p • y = 0}})
+    ?_ ?_ (Set.Finite.pi' (fun _ => geomPic_finite_torsion gp p hp.ne_zero))
+  · -- STEP 1: the values of a Kummer cochain are `p`-torsion, and so is the junk value `0`
+    rintro c ⟨P, Q, hQ, rfl⟩ s
+    show p • (if h : ∃ σ : QbarGal, σ ∈ (s : Set QbarGal)
+      then gp.act h.choose Q - Q else 0) = 0
+    split
+    · rw [smul_sub, ← map_nsmul, hQ, gp.act_bc, sub_self]
+    · rw [smul_zero]
+  · -- STEP 2: a Kummer cochain is determined by one point of each block
+    rintro c ⟨P, Q, hQ, rfl⟩ c' ⟨P', Q', hQ', rfl⟩ heq
+    funext σ
+    have hex : ∃ σ' : QbarGal, σ' ∈ blk σ := ⟨σ, hblkmem σ⟩
+    have hval := congrFun heq ⟨blk σ, hblkS σ⟩
+    dsimp only at hval
+    rw [dif_pos hex, dif_pos hex] at hval
+    show gp.act σ Q - Q = gp.act σ Q' - Q'
+    rw [hSconst P Q hQ (blk σ) (hblkS σ) σ (hblkmem σ) hex.choose hex.choose_spec,
+      hSconst P' Q' hQ' (blk σ) (hblkS σ) σ (hblkmem σ) hex.choose hex.choose_spec]
+    exact hval
 
 /-- **LEAF (Mordell–Weil, arithmetic half): weak Mordell–Weil at a prime —
 `Pic⁰(X_ℚ) / p·Pic⁰(X_ℚ)` is finite**, for every separable monic sextic and every prime `p`.
