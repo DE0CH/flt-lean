@@ -6847,7 +6847,10 @@ is injective up to scaling and `[−1]`-symmetric, and its height `6 log|n| + O(
 quadraticity. Any faithful further cut must be made at the level of the invertible sheaf
 and its global sections, not in coordinates.
 
-**Not vacuous.**  `CubeModel` on a FINITE group is cheap (`dim = 1`, `coords = 1`), so this
+**Not vacuous.**  `CubeModel` on a FINITE group is cheap — but NOT by the witness this note
+used to quote (`dim = 1`, `coords = 1`), which is refuted; see the corrected construction on
+`CubeModel` in `Fermat/FLT/Mathlib/NumberTheory/ProjectiveHeight.lean`, where `dim` is
+`Nat.card A` and `coords` is the indicator basis.  So this
 leaf carries no content when `Pic⁰(X_ℚ)` is finite — which is correct rather than a defect,
 since a finite group is finitely generated and the consumer's conclusion holds anyway.  It
 is the infinite (positive-rank) case that the leaf is for, and there `injective_of_smul`
