@@ -635,6 +635,26 @@ that reasons from ancestry — subsumption claims, "X carries Y's commit", the m
 the three-part ownership rule — inherits this hole. Ancestry is a claim about the commit graph;
 content is a claim about trees. Verify the tree when it matters.
 
+**And the honest, non-buggy version of this bites just as hard (2026-07-29).** A merge that
+resolves *against* a branch — `-s ours`, or "taking merger's side wholesale" — is CORRECT
+behaviour and still leaves the branch a full ancestor while its declarations are gone.
+`git merge-base --is-ancestor <branch> merger` returns SAFE; the leaf does not exist. An agent
+was dispatched at `projective_localizedModule_quotient_range_of_lTensor_injective`, whose
+defining commit `ace07c06` **is** an ancestor of `main`, and found the declaration nowhere in the
+tree: merge `8ce9528e` had declined that whole route in favour of a rival cut that ends at two
+leaves instead of three.
+
+**The detection trick, because the obvious command hides it: `git log -S <name>` shows only the
+commit that ADDED the name and nothing else, so the history reads as "added, never removed".
+Removal inside a merge is only visible with `-m`:**
+
+    git log -m -S '<declName>' --oneline -- <path>     # -m is what shows merge-side removals
+
+So a leaf can be absent for three different reasons that all look alike from `main`: never cut;
+cut on an unmerged branch (the release window); or **cut, merged, and deliberately declined**.
+Only the third is permanent, and only `-m` distinguishes it. Before reporting a phantom name,
+run that command — the merge's own subject line usually says which rival cut won and why.
+
 ## A `sorry` is a PROMISE that the statement is provable
 
 (2026-07-29, orchestrator error, caught only because an agent quoted the file's
