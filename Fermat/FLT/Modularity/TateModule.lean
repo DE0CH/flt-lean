@@ -163,6 +163,13 @@ public import Mathlib.AlgebraicGeometry.Morphisms.FlatRank
 -- closed field is a finite product of copies of it.  This is what counts the
 -- `K`-points of `ker [a]` in `card_fibrePt_eq_of_finrank_eq`.
 public import Mathlib.RingTheory.Etale.Field
+-- `KaehlerDifferential.D`: the universal `k`-derivation of a `k`-algebra.  This is
+-- what states the two halves of `exists_pow_eq_stalkMap_mulByNat_prime`
+-- (`kaehler_stalkMap_mulByNat_prime_eq_zero` and
+-- `exists_pow_eq_of_kaehler_stalk_eq_zero`).  Almost certainly already in the cone
+-- through `Etale.Field` above; imported explicitly because those two statements
+-- name it.
+public import Mathlib.RingTheory.Kaehler.Basic
 public import Mathlib.RingTheory.Artinian.Ring
 public import Fermat.FLT.Deformations.RepresentationTheory.GaloisRep
 -- `GaloisRepresentation.globalFrob` and `dense_conjClasses_globalFrob`: the
@@ -8496,8 +8503,21 @@ REFUTING CHECK for that claim: look for `PolarizationStruct`, `lam`, `𝔞` or
 `posElt` in the statement below.  There are none, and `hom` is a bare
 function whose every clause quantifies over `GeomFibrePt f x`.
 
-**FALSITY AUDIT (2026-07-30) — THIS LEAF IS FALSE AS STATED, AND THE
-DEFECT IS IN `DualStruct`, NOT IN THE POLARIZATION.**  The audit of
+**FALSITY AUDIT (2026-07-30) — THE DEFECT BELOW HAS BEEN REPAIRED
+(2026-07-30, later the same day); THE AUDIT IS KEPT BECAUSE IT IS WHAT THE
+REPAIR IS FOR.**  `DualStruct.weil_nondegenerate` is now GATED on
+`(n : F) ≠ 0`, exactly as THE MINIMAL REPAIR paragraph below prescribes, so
+the `I = (p)`, `n = p` instance that made `DualStruct` uninhabited in
+characteristic `p` is no longer assertable and this leaf is OPEN rather than
+FALSE.  The gate was free: `DualStruct` has exactly one term-level consumer
+of that field in the tree (`DualStruct.baseChangeOfIsPullback`, which
+delegates to it and now threads the hypothesis through unchanged), and in
+characteristic zero the hypothesis holds for every `n ≠ 0`.  Read the rest
+of this audit as the JUSTIFICATION of the gate, not as a live obstruction —
+and do not re-derive it: the composite statement has NOT been restated, only
+one of its hypotheses' hypotheses weakened, so this audit stands.
+
+The audit, as written when the leaf was false.  The audit of
 2026-07-29 above found ONE way `weil_nondegenerate` can be read into
 contradiction (`R = ℤ`, `I = (2)`, `n = 4`) and repaired it by fixing the
 READING of `weil`.  There is a second way, and no reading repairs it: it is
@@ -8549,12 +8569,15 @@ pairing landing in a trivial group is harmless, it is only the
 nondegeneracy claim about it that is false.
 
 CONSEQUENCE FOR THE FINITE-BASE SIBLING, which is why the audit was run
-here.  `exists_qAdicPolarizedSystem_finiteBase` must NOT be cut along this
-seam: its base IS a finite field, so `DualStruct ab' m'` is uninhabited for
-every fibre of positive `p`-rank (an ordinary elliptic curve over `𝔽_p`
-suffices) and a leaf of the shape `∃ d : DualStruct ab' m', …` would be
-false for a reason having nothing to do with polarizations.  That note is
-repeated on that leaf. -/
+here — **AND WHICH THE GATE REVERSES.**  As written, the note said:
+`exists_qAdicPolarizedSystem_finiteBase` must NOT be cut along this seam,
+because its base IS a finite field and `DualStruct ab' m'` was uninhabited
+for every fibre of positive `p`-rank.  With `weil_nondegenerate` gated on
+`(n : F) ≠ 0` that objection is gone: over a finite field of characteristic
+`p` the axiom is now asserted only at levels prime to `p`, which is exactly
+where the classical Weil pairing is perfect, and `q ≠ p` there by `hqN`.
+The cut through `DualStruct` is therefore AVAILABLE for the finite-base
+sibling, and it is the route taken; see the note on that leaf. -/
 theorem exists_dualPolarization_of_mult
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
@@ -17323,11 +17346,168 @@ theorem exists_pow_eq_app_of_forall_stalk {X Y : Scheme.{u}} [AlgebraicGeometry.
   intro x hx
   exact TopologicalSpace.Opens.mem_iSup.mpr ⟨⟨x, hx⟩, hxW x hx⟩
 
-/-- **THE STALK MAPS OF `[p]` LAND IN `p`-th POWERS** (sorry leaf, CUT
-2026-07-30 out of `exists_pow_eq_app_mulByNat_prime` immediately below, which is
-PROVEN over it; that statement was itself cut 2026-07-28 out of
+/-! #### The stalk statement, split into a DIFFERENTIAL and a POWER half
+
+**CUT 2026-07-30.**  `exists_pow_eq_stalkMap_mulByNat_prime` below is now PROVEN
+over the two leaves in this subsection.  They are `d ∘ [p]^{\#} = 0` and
+"`d b = 0 ⟹ b` is a `p`-th power", and the composite is exactly the old leaf.
+
+**THE ACCOUNTING IS HONEST: this trades ONE leaf for TWO.**  What buys the extra
+leaf is that the two halves need DISJOINT theories and disjoint hypotheses, and
+the split is sharp enough to be checked rather than asserted:
+
+* the ABELIAN VARIETY enters only in the first half, and PERFECTNESS of `k` only
+  in the second.  `kaehler_stalkMap_mulByNat_prime_eq_zero` is true over EVERY
+  field of characteristic `p`, imperfect ones included, and takes no `hfin`;
+  `exists_pow_eq_of_kaehler_stalk_eq_zero` knows nothing of group laws and is
+  refuted over `𝔽_p(u)` by the witness that used to sit on the composite
+  statement.  So the imperfection counterexample recorded below has MOVED to the
+  second leaf, where it now refutes that leaf alone;
+* neither half needs the Verschiebung.  The classical route to the old leaf goes
+  through quotients by infinitesimal group schemes and fppf descent (`ker Fr` is
+  killed by `p`, and `Fr` exhibits `A'` as the quotient by it), none of which
+  exists at this pin.  The first half needs only `Ω` of the group scheme and the
+  additivity of `f ↦ f^*` on invariant differentials; the second is Cartier's
+  criterion, standard commutative algebra with a `p`-basis.
+
+Refuting check for the claim that the split is sharp, one grep each: the first
+leaf's statement contains no `Finite k` and no `PerfectField`, the second
+contains no `AbelianSchemeStruct`. -/
+
+/-- **THE `k`-ALGEBRA STRUCTURE ON A STALK OF A `k`-SCHEME** (PROVEN
+2026-07-30), namely the composite `k ⟶ Γ(Spec k, ⊤) ⟶ Γ(X, ⊤) ⟶ 𝒪_{X, x}` read
+as an algebra map.  This is the same composite that
+`natCast_sections_eq_zero_of_over` (`Modularity/SchemeFrobenius.lean`) uses to
+push `(p : k) = 0` down to sections, one step further along the germ map.
+
+It cannot be an `instance`: it depends on the structure morphism `aX`, which is
+not recoverable from `X` and `x`.  Both leaves below therefore introduce it with
+the same `letI`, which is what makes them composable — an algebra structure
+introduced two different ways would give two different `Ω[𝒪_{X,x}⁄k]`. -/
+@[reducible] noncomputable def stalkAlgebraOver {k : Type u} [CommRing k] {X : Scheme.{u}}
+    (aX : X ⟶ Spec (CommRingCat.of k)) (x : X) : Algebra k (X.presheaf.stalk x) :=
+  (((Scheme.ΓSpecIso (CommRingCat.of k)).inv ≫ aX.appTop ≫
+      X.presheaf.germ ⊤ x trivial).hom).toAlgebra
+
+/-- **`[p]^{\#}` KILLS KÄHLER DIFFERENTIALS ON EVERY STALK** (sorry leaf, cut
+2026-07-30 out of `exists_pow_eq_stalkMap_mulByNat_prime` below — Mumford
+*Abelian Varieties* §11 and §13, Milne *Abelian Varieties* §I.2).  This is the
+ABELIAN-VARIETY half of that leaf, and it carries all of its group theory.
+
+Since `d` is natural — `d (φ b)` is the image of `d b` under the map
+`Ω[𝒪_{A', [p]x}⁄k] ⟶ Ω[𝒪_{A', x}⁄k]` induced by `φ = ([p])^{\#}_x` — the
+statement says precisely that **that induced map is ZERO**, i.e. that
+`[p]^* = 0` on differentials.
+
+**THE CLASSICAL PROOF, in two steps neither of which leaves the group scheme.**
+
+* `Ω_{A'/k}` is a FREE `𝒪_{A'}`-module on the INVARIANT differentials, i.e.
+  `Ω_{A'/k} ≅ 𝒪_{A'} ⊗_k e^* Ω_{A'/k}` for `e` the zero section.  This holds for
+  every smooth group scheme over a field and is proved by translating: the
+  translation `T_y` is an isomorphism, so an invariant differential is determined
+  by its value at `e` and every value at `e` extends.
+* `f ↦ f^*` is ADDITIVE on invariant differentials: for `ω` invariant,
+  `m^* ω = pr₁^* ω + pr₂^* ω` on `A' × A'` (this IS invariance, read on the
+  multiplication), so `(f + g)^* ω = f^* ω + g^* ω`.  Applied to
+  `[p] = id + ⋯ + id` this gives `[p]^* ω = p · ω`, which is `0` because
+  `p = 0` on sections (`hchar`).
+
+Then `d b = Σ f_i ω_i` with `ω_i` invariant, and its image is
+`Σ φ(f_i) · [p]^* ω_i = 0`.
+
+**WHAT IS LOAD-BEARING, AND WHAT IS DELIBERATELY ABSENT.**  `ab'` is essential —
+without a group law `[p]` is not even defined, and the additivity step is the
+whole argument.  `hchar` is essential: in characteristic `0`, `[p]^* = p ≠ 0`.
+But `k` is NOT assumed finite and NOT assumed perfect, and neither may be added
+by a well-meaning successor "for symmetry with the consumer": this leaf is TRUE
+over every field of characteristic `p`, including `𝔽_p(u)`, and that is exactly
+what localises the imperfection obstruction in the SECOND leaf rather than here.
+Refuting check, one grep: `Finite` and `PerfectField` do not occur in the
+statement below.
+
+**`hp` IS NOT CONSUMED**, and the sketch above says why: `[p]^* ω = p · ω` and
+`hchar` are the whole argument, and neither cares whether `p` is prime — the
+statement is true for every natural number `p` killing the sections.  It is
+retained for the same reason `exists_pow_eq_app_mulByNat` retains `hN`: the
+consumer holds it, and dropping it would change that consumer for no gain.  A
+successor proving this leaf should NOT go looking for the step that uses
+primality; there is none.  (Primality is genuinely used in the SECOND leaf, where
+the `p`-basis expansion needs it.)
+
+WHERE THIS BELONGS: beside the sheaf of differentials of an abelian scheme, once
+this development has one; it is stated here to keep the cut inside one region. -/
+theorem kaehler_stalkMap_mulByNat_prime_eq_zero
+    {k : Type u} [Field k] (p : ℕ) (hp : p.Prime)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    (hchar : ∀ U : A'.Opens, (p : Γ(A', U)) = 0)
+    (x : A') (y : A'.presheaf.stalk ((ab'.mulByNat p).base x)) :
+    letI : Algebra k (A'.presheaf.stalk x) := stalkAlgebraOver f' x
+    (KaehlerDifferential.D k (A'.presheaf.stalk x))
+      (((ab'.mulByNat p).stalkMap x).hom y) = 0 :=
+  sorry
+
+/-- **CARTIER'S CRITERION: A GERM KILLED BY `d` IS A `p`-th POWER** (sorry leaf,
+cut 2026-07-30 out of `exists_pow_eq_stalkMap_mulByNat_prime` below — Matsumura
+*Commutative Ring Theory* §26 and §30, Bourbaki *Algèbre* V §13 (`p`-bases)).
+This is the COMMUTATIVE-ALGEBRA half of that leaf, and it carries all of its use
+of perfectness.  There is no group law and no abelian variety in it.
+
+**THE CLASSICAL PROOF, in three steps.**
+
+* `𝒪_{X,x}` is a regular local ring (`isRegularLocalRing_stalk_of_smooth`, proven
+  in `Modularity/AbelianSchemeIsogeny.lean`) hence a normal domain
+  (`isDomain_of_isRegularLocalRing`, used the same way by
+  `isReduced_of_smooth_over_field_stalkwise` above).  Write `K` for its fraction
+  field.
+* `ker (d : K ⟶ Ω[K⁄k]) = K^p`.  `K` is finitely generated over the PERFECT
+  field `k`, hence separably generated, so it has a `p`-basis `x₁, …, xₙ`: the
+  monomials `x^α` with `0 ≤ αᵢ < p` are a `K^p`-basis of `K`, and `d x₁, …, d xₙ`
+  are a `K`-basis of `Ω[K⁄k]`.  Expanding `b = Σ_α c_α^p x^α` and differentiating
+  gives `Σ_α αᵢ c_α^p x^{α - eᵢ} = 0` for each `i`; those monomials are
+  `K^p`-independent, so `c_α = 0` unless every `αᵢ ≡ 0 (mod p)`, i.e. unless
+  `α = 0`.  Hence `b = c_0^p`.
+* The root descends: `c ∈ K` satisfies `c^p - b = 0` with `b ∈ 𝒪_{X,x}`, so `c`
+  is integral over `𝒪_{X,x}`, which is integrally closed; hence `c ∈ 𝒪_{X,x}`.
+
+**FALSITY AUDIT — `PerfectField k` IS NECESSARY, with an explicit witness.**
+This is the SAME witness that stood on `exists_pow_eq_stalkMap_mulByNat_prime`
+before the cut, and the cut has moved it here because here is where it bites.
+Let `k = 𝔽_p(u)`, `X = 𝔸¹_k = Spec k[t]` — smooth over `k`, so every other
+hypothesis holds — and `b = u`, the image of `u ∈ k` in any stalk.  Then
+`d b = 0` because `d` is `k`-LINEAR and kills `k`; but `u` is not a `p`-th power
+in `k[t]` nor in any of its localisations, since `k[t]^p ⊆ k^p[t^p]` and
+`u ∉ k^p`.  So the conclusion fails.  One grep to check the seam is still sound:
+`grep -n 'PerfectField' Fermat/FLT/Modularity/TateModule.lean`.
+
+**WHAT IS NOT NEEDED.**  No group structure, no properness, no finiteness of `k`
+(the statement is true over `𝔽̄_p`, which is infinite and perfect — as the
+docstring of the consumer already recorded, imperfection and not infinitude is
+the obstruction), and no relation between `p` and any cardinality.  `hchar` is
+used only to know `p = 0` in the stalk; a successor may replace it by
+`(p : k) = 0`, which follows from it because `k ⟶ 𝒪_{X,x}` is a ring map out of
+a field into a nonzero ring, hence injective.
+
+WHERE THIS BELONGS: `Fermat/FLT/Mathlib/RingTheory/Kaehler/`, as a statement
+about a localisation of a smooth algebra over a perfect field; it is stated in
+scheme form here because that is the form the consumer needs and because the
+regular-local input is already available in that form. -/
+theorem exists_pow_eq_of_kaehler_stalk_eq_zero
+    {k : Type u} [Field k] [PerfectField k] (p : ℕ) (hp : p.Prime)
+    {X : Scheme.{u}} (aX : X ⟶ Spec (CommRingCat.of k)) [Smooth aX]
+    (hchar : ∀ U : X.Opens, (p : Γ(X, U)) = 0)
+    (x : X) (b : X.presheaf.stalk x)
+    (hb : letI : Algebra k (X.presheaf.stalk x) := stalkAlgebraOver aX x
+      (KaehlerDifferential.D k (X.presheaf.stalk x)) b = 0) :
+    ∃ c : X.presheaf.stalk x, c ^ p = b :=
+  sorry
+
+/-- **THE STALK MAPS OF `[p]` LAND IN `p`-th POWERS** (**PROVEN 2026-07-30** over
+the two leaves immediately above; it was a sorry leaf from earlier the same day,
+when it was itself CUT out of `exists_pow_eq_app_mulByNat_prime` immediately
+below, which is PROVEN over it; that statement was in turn cut 2026-07-28 out of
 `exists_pow_eq_app_mulByNat` — Mumford *AV* §15, Milne *AV* §I.5).  This is all
-that is left of the Verschiebung, and it is now a statement about LOCAL RINGS
+that is left of the Verschiebung, and it is a statement about LOCAL RINGS
 alone: for every point `x` of `A'`, the image of the stalk map
 `𝒪_{A', [p] x} ⟶ 𝒪_{A', x}` lies inside the `p`-th powers.
 
@@ -17359,30 +17539,48 @@ counting it as progress.  What it buys is METHOD, and concretely:
   scheme-level interface written first.  Against the stalk statement it needs
   only `Ω[𝒪_{A',x} ⁄ k]`, which exists.  That is the one concrete thing this cut
   changes about the route, and it is why the cut was made in this direction.
+  **It was acted on the same day**: the two leaves above are exactly the two
+  halves named in that sentence, and `stalkAlgebraOver` is the whole of the
+  interface they needed.
 
 **WHAT IS LOAD-BEARING.**  The statement needs exactly that `k` is **PERFECT**.
 It needs neither finiteness, nor `p ^ a = #k`, nor any tie between an exponent
 and the size of `k`.  `hfin` is kept because it is what the caller holds and
 `PerfectField.ofFinite` is an INSTANCE, so a prover gets `PerfectField k` by
 synthesis alone; a successor may weaken `hfin` to `[PerfectField k]` together
-with `(p : k) = 0` without touching any consumer.
+with `(p : k) = 0` without touching any consumer.  The proof below is where that
+weakening would have to be made: `hfin` is consumed by `haveI` and by nothing
+else, feeding `PerfectField.ofFinite` into the second leaf.
 
-**PERFECTNESS IS ALSO NECESSARY, with an explicit witness.**  Let `k` be
-IMPERFECT of characteristic `p` — say `k = 𝔽_p(u)`.  `[p]` is a `k`-morphism, so
-`([p])^{\#}` is a `k`-algebra map and fixes `u`, and so is every one of its stalk
-maps.  Were `u` a `p`-th power in a stalk `𝒪_{A', x}`, it would be a `p`-th power
-in the function field `k(A')`; but `A'` is geometrically integral, so `k(A')/k`
-is separable and `k` is algebraically closed in it, whence `u^{1/p} ∉ k(A')`.
-So the leaf is FALSE over every imperfect base — and TRUE over `𝔽̄_p`, which is
-infinite.  Imperfection, not infinitude, is the obstruction. -/
+**PERFECTNESS IS ALSO NECESSARY, and the witness now lives ONE LEVEL DOWN.**
+Let `k` be IMPERFECT of characteristic `p` — say `k = 𝔽_p(u)`.  `[p]` is a
+`k`-morphism, so `([p])^{\#}` is a `k`-algebra map and fixes `u`, and so is every
+one of its stalk maps.  Were `u` a `p`-th power in a stalk `𝒪_{A', x}`, it would
+be a `p`-th power in the function field `k(A')`; but `A'` is geometrically
+integral, so `k(A')/k` is separable and `k` is algebraically closed in it, whence
+`u^{1/p} ∉ k(A')`.  So this statement is FALSE over every imperfect base — and
+TRUE over `𝔽̄_p`, which is infinite.  Imperfection, not infinitude, is the
+obstruction.  Since the cut of 2026-07-30, the SAME witness refutes
+`exists_pow_eq_of_kaehler_stalk_eq_zero` above and does not touch
+`kaehler_stalkMap_mulByNat_prime_eq_zero`, which is true over `𝔽_p(u)`; that is
+the check that the cut separated the two hypotheses correctly rather than
+merely plausibly.
+
+**THE PROOF** is the composition of the two leaves and nothing else:
+`d (([p])^{\#} y) = 0` by the first, so `([p])^{\#} y` is a `p`-th power by the
+second.  `ab'` enters the second leaf only through `ab'.smooth`, which is what
+makes the stalks regular local. -/
 theorem exists_pow_eq_stalkMap_mulByNat_prime
     {k : Type u} [Field k] (hfin : Finite k) (p : ℕ) (hp : p.Prime)
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
     (ab' : AbelianSchemeStruct f')
     (hchar : ∀ U : A'.Opens, (p : Γ(A', U)) = 0)
     (x : A') (y : A'.presheaf.stalk ((ab'.mulByNat p).base x)) :
-    ∃ τ : A'.presheaf.stalk x, τ ^ p = ((ab'.mulByNat p).stalkMap x).hom y :=
-  sorry
+    ∃ τ : A'.presheaf.stalk x, τ ^ p = ((ab'.mulByNat p).stalkMap x).hom y := by
+  haveI := hfin
+  haveI := ab'.smooth
+  exact exists_pow_eq_of_kaehler_stalk_eq_zero p hp f' hchar x _
+    (kaehler_stalkMap_mulByNat_prime_eq_zero p hp ab' hchar x y)
 
 /-- **`[p]^{\#}` LANDS IN `p`-th POWERS** (**PROVEN 2026-07-30** over the stalk
 leaf `exists_pow_eq_stalkMap_mulByNat_prime` immediately above; it was a sorry
@@ -18911,9 +19109,253 @@ def IsQAdicPolarizedSystem {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeS
         w M y z = 1) →
       y ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ b})).1)
 
+/-- **AN `𝒪_D`-LINEAR POLARIZATION OF THE GEOMETRIC FIBRE WHOSE RADICAL ON
+`q`-POWER TORSION IS BOUNDED BY `q^b`** — the finite-base counterpart of
+`IsQAdicPolarizationHom`, differing from it in the LAST CLAUSE ONLY.
+
+The first five clauses are verbatim those of `IsQAdicPolarizationHom`:
+additivity, `𝒪_D`-linearity, preservation of `q^M`-torsion, `Γ_F`-EQUIVARIANCE
+(`λ` is defined over `F`, not merely over `F̄`), and `𝒪_D`-ALTERNATING in the
+strong form.  Only the sixth changes: `IsQAdicPolarizationHom` demands
+PERFECTNESS on `A[q^M]` — the radical is zero — and that is affordable there
+only because `hdim` bounds the polarization module and lets `λ` be chosen of
+degree prime to `q`.  Over a finite base there is no `hdim`, nothing bounds
+`NS(A')`, and a perfectness clause would be FALSE (a Néron–Severi group
+generated by one polarization of degree divisible by `q` makes every radical
+nonzero).  What survives, and what the classical geometry actually gives, is
+that the radical is contained in `A'[q^b]` for `b` the exponent of the
+`q`-primary part of the finite group scheme `ker λ`.
+
+**THE TWO PREDICATES AGREE AT `b = 0`**, so this is a genuine generalisation
+and not a rival: `Ideal.span {(q : 𝒪_D) ^ 0} = ⊤` and `Mult.torsion x ⊤ = 0`
+(`tors_top`), so the last clause at `b = 0` reads `y = 0`, which is the last
+clause of `IsQAdicPolarizationHom`.
+
+NON-VACUITY, IN BOTH DIRECTIONS — the same standing test as
+`IsQAdicPolarizationHom`, re-run against the bound.  The constant zero map
+`hom ≡ 0` satisfies the first five clauses over every fibre
+(`DualStruct.weil_zero_right` discharges the fifth), and satisfies the sixth
+exactly when `A'[q^M] ⊆ A'[q^b]` for every `M` — true for the degenerate fibre
+`A' = Spec k`, FALSE for every abelian variety of positive dimension with
+`q ≠ char k`, whose `q`-torsion is unbounded.  So the last clause is what
+carries the content here too, and `b` cannot absorb it. -/
+def IsQAdicBoundedPolarizationHom {A S : Scheme.{u}} {f : A ⟶ S}
+    {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    {m : Mult ab (NumberField.RingOfIntegers D)}
+    (d : DualStruct ab m)
+    {F : Type u} [Field F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (q b : ℕ)
+    (hom : GeomFibrePt f x → GeomFibrePt d.dualMap x) : Prop :=
+  (∀ y z : GeomFibrePt f x, hom (ab.add y z) = d.dualAb.add (hom y) (hom z)) ∧
+  (∀ (a : NumberField.RingOfIntegers D) (y : GeomFibrePt f x),
+      hom (m.act a y) = d.dualMult.act a (hom y)) ∧
+  (∀ (M : ℕ) (y : GeomFibrePt f x),
+      y ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M})).1 →
+      hom y ∈ (d.dualMult.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M})).1) ∧
+  (∀ (σ : Field.absoluteGaloisGroup F) (y : GeomFibrePt f x),
+      hom (ab.galSMul x σ y) = d.dualAb.galSMul x σ (hom y)) ∧
+  (∀ (M : ℕ) (a : NumberField.RingOfIntegers D) (y : GeomFibrePt f x),
+      y ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M})).1 →
+      d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M}) (q ^ M)
+        (natCast_pow_mem_span_pow D q M) (m.act a y) (hom y) = 1) ∧
+  (∀ (M : ℕ) (y : GeomFibrePt f x),
+      y ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M})).1 →
+      (∀ z : GeomFibrePt f x,
+          z ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M})).1 →
+          d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M}) (q ^ M)
+            (natCast_pow_mem_span_pow D q M) y (hom z) = 1) →
+      y ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ b})).1)
+
+open _root_.NumberField in
+/-- **THE DUAL ABELIAN VARIETY AND AN `𝒪_D`-LINEAR POLARIZATION OF BOUNDED
+`q`-RADICAL, OVER A FINITE FIELD** (SORRY LEAF, cut 2026-07-30 out of
+`exists_qAdicPolarizedSystem_finiteBase` immediately below, which is PROVEN
+over it — Grothendieck representability of `Pic⁰`, Mumford *Abelian
+Varieties* §13, §16, §23, Milne *AV* §I.13, Silverman *AEC* III.8.1).
+
+This is the exact finite-base counterpart of `exists_dualPolarization_of_mult`,
+and the cut is the same cut: everything that the axioms of `DualStruct` plus
+the linearity of `λ` can manufacture is discharged in the assembly below, and
+what is left here is the geometry — the dual abelian variety, an `𝒪_D`-linear
+polarization `λ` defined over `k`, the Weil pairing it induces, the level
+compatibility along the integer tower, and the bound `b` on the `q`-primary
+radical.
+
+**WHY THIS CUT IS AVAILABLE NOW AND WAS NOT BEFORE (2026-07-30).**  The
+FALSITY AUDIT on `exists_dualPolarization_of_mult` recorded that a leaf of the
+shape `∃ d : DualStruct ab' m', …` was FALSE over a finite base, for a reason
+with no mathematical content: `DualStruct.weil_nondegenerate` was asserted at
+EVERY `(I, n)` with `(n : R) ∈ I`, and at `I = (p)`, `n = p` in characteristic
+`p` the target `rootsOfUnity p (AlgebraicClosure F')` is TRIVIAL, so the axiom
+concluded `A'[p](k̄) = 0` — refuted by any ordinary elliptic curve over `𝔽_p`.
+That audit's own MINIMAL REPAIR has since been applied: `weil_nondegenerate` is
+GATED on `(n : F) ≠ 0` in `Modularity/AbelianScheme.lean`.  Over `S = Spec k`
+every geometric fibre field is a `k`-algebra, hence of characteristic
+`p = char k`, so the gate leaves exactly the levels prime to `p` — where the
+classical Weil pairing really is perfect — and `q ≠ p` there by `hqN`.  So
+`DualStruct ab' m'` is inhabited and the seam is sound.
+
+REFUTING CHECK for that claim, one grep:
+`grep -n 'hnF' Fermat/FLT/Modularity/AbelianScheme.lean`.  If the gate is not
+there, this leaf is false again and must be withdrawn, not `sorry`d.
+
+**WHERE THE HYPOTHESES GO.**
+
+* `[NumberField.IsTotallyReal D]` buys `weil_act` (Rosati trivial on `𝒪_D`)
+  and, with it, the strong `𝒪_D`-ALTERNATING clause `e(a y, λ y) = 1`.  Without
+  it the induced form is hermitian, the weak form gives only
+  `e(a y, λ y)^2 = 1`, and `q = 2` is lost — see `IsQAdicPolarizationHom`.
+* `hq`/`hqN` are what make `q ≠ char k`, hence `μ_{q^M}(k̄)` nontrivial and the
+  pairing nondegenerate at every level of the tower; `hfin`/`hN` occur only to
+  give `hqN` its meaning.  At `q = p` the leaf is FALSE for the reason recorded
+  on `exists_qAdicPolarizedSystem_finiteBase`: `w` is forced to `1`, so the
+  radical is everything and no `b` bounds it against a fibre of positive
+  `p`-rank.
+* `hfin` also does real work of its own: over a FINITE field an abelian variety
+  is projective and carries an ample line bundle DEFINED OVER `k`, so averaging
+  `λ = Σ_i â_i ∘ λ₀ ∘ a_i` over a `ℤ`-basis of `𝒪_D` gives an `𝒪_D`-linear
+  polarization over `k`, which is the `Γ_k`-equivariance clause.
+
+**`hdim'` IS DELIBERATELY ABSENT, AND THAT IS WHY THE RADICAL IS BOUNDED
+RATHER THAN ZERO.**  Its characteristic-zero counterpart carries `hdim` and
+spends it exactly on choosing `λ` of degree prime to `q`, i.e. on PERFECTNESS.
+Here nothing bounds `NS(A')`, so the honest conclusion is
+`IsQAdicBoundedPolarizationHom` with `b` the exponent of the `q`-primary part
+of `ker λ`; see that predicate's docstring for why a perfectness clause here
+would be FALSE, and `exists_qAdicPolarizedSystem_finiteBase` for why adding
+`hdim'` would collapse the whole level-pairing statement into
+`det_frobLevelMatrix_eq_natCast_finiteBase`.
+
+`σ` and `hσ` do not occur: this statement is about the pairing and not about
+the Frobenius, and the multiplier `N` is produced downstream in
+`exists_levelWeilPairing_of_qAdicPolarizedSystem_finiteBase`, where `hσ` is in
+scope. -/
+theorem exists_dualPolarization_finiteBase
+    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    (q : ℕ) (hq : q.Prime) (hqN : ¬ q ∣ N) :
+    ∃ (b : ℕ) (d : DualStruct ab' m')
+      (hom : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))) →
+        GeomFibrePt d.dualMap (𝟙 (Spec (CommRingCat.of k)))),
+      IsQAdicWeilTower d (𝟙 (Spec (CommRingCat.of k))) q ∧
+      IsQAdicBoundedPolarizationHom d (𝟙 (Spec (CommRingCat.of k))) q b hom :=
+  sorry
+
+open _root_.NumberField in
+/-- **THE FORMAL GLUE: A BOUNDED-RADICAL `𝒪_D`-LINEAR POLARIZATION TURNS THE
+CANONICAL `A × A^∨` WEIL PAIRING INTO A `q`-ADIC POLARIZED SYSTEM ON `A`**
+(PROVEN 2026-07-30).  This is the finite-base counterpart of the assembly
+inside `exists_qAdicWeilSystem_of_mult`, isolated as a standalone lemma
+because — unlike that one — it uses NOTHING about the base: no finiteness, no
+`hqN`, no `IsTotallyReal`, and `x` is an arbitrary `F`-point of an arbitrary
+`S`.  Everything characteristic-specific has been pushed into the hypotheses
+`htower` and `hpol`, which is exactly what makes the same seven-clause
+discharge available in characteristic `p`.
+
+`w M y z := e_{q^M}(y, λ z)`, and seven of the eight clauses of
+`IsQAdicPolarizedSystem` come out of the `DualStruct` axioms and the linearity
+of `λ` with no geometry at all: values in `μ_{q^M}` from the target of
+`DualStruct.weil`; bi-multiplicativity from `weil_add_left`/`weil_add_right`;
+`𝒪_D`-adjointness from `weil_act`; `Γ_F`-equivariance from `weil_gal`; the
+bounded radical from the last clause of `IsQAdicBoundedPolarizationHom`.  The
+two that CANNOT be manufactured formally are the strong `𝒪_D`-ALTERNATING
+clause (from adjointness and bi-multiplicativity one gets only
+`w M (a y) y ^ 2 = 1`, which settles odd `q` and leaves `q = 2` open) and the
+TOWER clause (`DualStruct` has no cross-level axiom at all); both are
+hypotheses here, as `IsQAdicBoundedPolarizationHom`'s fifth clause and
+`IsQAdicWeilTower`.
+
+`b` is passed straight through from the polarization to the system: this lemma
+never inspects it, so it cannot smuggle in a bound the geometry did not
+supply. -/
+theorem isQAdicPolarizedSystem_of_dualPolarization
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    {m : Mult ab (NumberField.RingOfIntegers D)}
+    {F : Type u} [Field F] (x : Spec (CommRingCat.of F) ⟶ S)
+    (q b : ℕ) (d : DualStruct ab m)
+    (hom : GeomFibrePt f x → GeomFibrePt d.dualMap x)
+    (htower : IsQAdicWeilTower d x q)
+    (hpol : IsQAdicBoundedPolarizationHom d x q b hom) :
+    IsQAdicPolarizedSystem m x q b
+      (fun M y z =>
+        ((d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M}) (q ^ M)
+          (natCast_pow_mem_span_pow D q M) y (hom z) : (AlgebraicClosure F)ˣ))) := by
+  obtain ⟨hadd, hact, htors, hgal, halt, hbd⟩ := hpol
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · -- values are `q^M`-th roots of unity: the target of `DualStruct.weil` says so
+    intro M y z
+    exact (mem_rootsOfUnity _ _).mp
+      (d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M}) (q ^ M)
+        (natCast_pow_mem_span_pow D q M) y (hom z)).2
+  · -- additivity in the first variable: `DualStruct.weil_add_left`
+    intro M y y' z hy hy' hz
+    have h := d.weil_add_left x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M}) (q ^ M)
+      (natCast_pow_mem_span_pow D q M) y y' (hom z) hy hy' (htors M z hz)
+    exact congrArg (fun t : rootsOfUnity (q ^ M) (AlgebraicClosure F) =>
+      (t : (AlgebraicClosure F)ˣ)) h
+  · -- additivity in the second variable: additivity of `hom`, then `weil_add_right`
+    intro M y z z' hy hz hz'
+    have h : d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M}) (q ^ M)
+          (natCast_pow_mem_span_pow D q M) y (hom (ab.add z z'))
+        = d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M}) (q ^ M)
+            (natCast_pow_mem_span_pow D q M) y (hom z)
+          * d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M}) (q ^ M)
+            (natCast_pow_mem_span_pow D q M) y (hom z') := by
+      rw [hadd z z']
+      exact d.weil_add_right x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M}) (q ^ M)
+        (natCast_pow_mem_span_pow D q M) y (hom z) (hom z') hy (htors M z hz) (htors M z' hz')
+    exact congrArg (fun t : rootsOfUnity (q ^ M) (AlgebraicClosure F) =>
+      (t : (AlgebraicClosure F)ˣ)) h
+  · -- `𝒪_D`-alternating: the strong clause of `IsQAdicBoundedPolarizationHom`, and
+    -- the one place where no formal argument would do (see its docstring for `q = 2`)
+    intro M a y hy
+    exact congrArg (fun t : rootsOfUnity (q ^ M) (AlgebraicClosure F) =>
+      (t : (AlgebraicClosure F)ˣ)) (halt M a y hy)
+  · -- `𝒪_D`-adjointness: `𝒪_D`-linearity of `hom`, then `DualStruct.weil_act`
+    intro M a y z hy hz
+    have h : d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M}) (q ^ M)
+          (natCast_pow_mem_span_pow D q M) (m.act a y) (hom z)
+        = d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M}) (q ^ M)
+            (natCast_pow_mem_span_pow D q M) y (hom (m.act a z)) := by
+      rw [hact a z]
+      exact d.weil_act x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M}) (q ^ M)
+        (natCast_pow_mem_span_pow D q M) a y (hom z) hy (htors M z hz)
+    exact congrArg (fun t : rootsOfUnity (q ^ M) (AlgebraicClosure F) =>
+      (t : (AlgebraicClosure F)ˣ)) h
+  · -- `Γ_F`-equivariance: `hom` is defined over `F`, then `DualStruct.weil_gal`;
+    -- `galRoot σ` IS `Units.map σ` on the underlying unit, by definition
+    intro M σ y z hy hz
+    have h : d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M}) (q ^ M)
+          (natCast_pow_mem_span_pow D q M) (ab.galSMul x σ y) (hom (ab.galSMul x σ z))
+        = galRoot σ (d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M}) (q ^ M)
+            (natCast_pow_mem_span_pow D q M) y (hom z)) := by
+      rw [hgal σ z]
+      exact d.weil_gal x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M}) (q ^ M)
+        (natCast_pow_mem_span_pow D q M) σ y (hom z) hy (htors M z hz)
+    exact congrArg (fun t : rootsOfUnity (q ^ M) (AlgebraicClosure F) =>
+      (t : (AlgebraicClosure F)ˣ)) h
+  · -- level compatibility along the integer tower: `IsQAdicWeilTower`, with
+    -- `𝒪_D`-linearity of `hom` moving `q` across it
+    intro M y z hy hz
+    have h := htower M y (hom z) hy (htors (M + 1) z hz)
+    rw [← hact (q : NumberField.RingOfIntegers D) z] at h
+    exact h
+  · -- the bounded radical: the last clause of `IsQAdicBoundedPolarizationHom`
+    intro M y hy hrad
+    exact hbd M y hy (fun z hz => Subtype.ext (hrad z hz))
+
 open _root_.NumberField in
 /-- **THE GEOMETRIC HALF: A FINITE FIBRE CARRIES THE `μ_{q^M}`-VALUED WEIL
-SYSTEM OF AN `𝒪_D`-LINEAR POLARIZATION** (SORRY LEAF — Mumford *Abelian
+SYSTEM OF AN `𝒪_D`-LINEAR POLARIZATION** (**PROVEN 2026-07-30** over the
+single geometric leaf `exists_dualPolarization_finiteBase` above, through the
+formal glue `isQAdicPolarizedSystem_of_dualPolarization` immediately above;
+it was a sorry leaf until then — Mumford *Abelian
 Varieties* §13, §16, §23, Milne *Abelian Varieties* §I.13, Silverman
 *AEC* III.8.1; the finite-base counterpart of
 `exists_qAdicWeilSystem_of_mult`, which is the same statement over a
@@ -18925,6 +19367,11 @@ nothing about `I`, `π`, the different or the Frobenius is: the datum is
 the classical `q`-power Weil pairing of a polarization, level by level,
 with the compatibility that makes the levels the reductions of one form
 on `T_q A'`.
+
+READ THE NEXT THREE PARAGRAPHS AS A DESCRIPTION OF THE CHAIN, NOT OF THIS
+DECLARATION.  Since the cut of 2026-07-30 the geometry they describe lives in
+`exists_dualPolarization_finiteBase`, and every hypothesis discussed below is
+spent there rather than here; this declaration only assembles.
 
 **THE ROUTE.**  `A'_{k̄}` is an abelian variety, so it carries an ample
 line bundle and hence a polarization `λ₀ : A' ⟶ Â'`.  Averaging over a
@@ -18968,35 +19415,37 @@ not about the Frobenius, and the multiplier `N` is produced in
 `exists_levelWeilPairing_of_qAdicPolarizedSystem_finiteBase`, where `hσ`
 is in scope.
 
-**DO NOT CUT THIS THROUGH `DualStruct` — THE RESULTING LEAF WOULD BE
-FALSE** (audit 2026-07-30; the witness is written out on
-`exists_dualPolarization_of_mult`).  The obvious move is to mirror the
-characteristic-zero half: there `exists_qAdicWeilSystem_of_mult` is PROVEN
-over `exists_dualPolarization_of_mult`, which discharges six of that
-predicate's eight clauses from the axioms of `DualStruct` alone, and the
-same glue would discharge seven of the eight here (only the bounded-radical
-clause differs).  It does not work, and the obstruction is not about
-polarizations at all.
+**THE CUT THROUGH `DualStruct`, AND THE AUDIT IT HAD TO WAIT FOR** (this
+paragraph REPLACES a "DO NOT CUT THIS THROUGH `DualStruct`" note of
+2026-07-30 that was correct when written and is now spent).  That note
+observed that the obvious move — mirror the characteristic-zero half, where
+`exists_qAdicWeilSystem_of_mult` is PROVEN over
+`exists_dualPolarization_of_mult` and the axioms of `DualStruct` discharge six
+of eight clauses — produced a FALSE leaf here, because
+`DualStruct.weil_nondegenerate` was asserted at every `(F', x', I, n)` with
+`(n : R) ∈ I`, and at `I = (p)`, `n = p` in characteristic `p` the target
+`rootsOfUnity p (AlgebraicClosure F')` is TRIVIAL, so the axiom concluded
+`A'[p](k̄) = 0` — refuted by any ordinary elliptic curve over `𝔽_p`.  The note
+also prescribed the repair, and the repair has been made:
+`weil_nondegenerate` is now GATED on `(n : F) ≠ 0` in
+`Modularity/AbelianScheme.lean`, which is free in characteristic zero (one
+term-level consumer in the whole tree, and it merely threads the hypothesis
+through).  Over `S = Spec k` every geometric fibre field is a `k`-algebra,
+hence of characteristic `p`, so the gate keeps exactly the prime-to-`p`
+levels — where the classical Weil pairing is perfect — and `q ≠ p` by `hqN`.
 
-`DualStruct.weil_nondegenerate` is asserted at every `(F', x', I, n)` with
-`(n : R) ∈ I`, and `weil` lands in `rootsOfUnity n (AlgebraicClosure F')`.
-Over a base of characteristic `p` take `I = (p)`, `n = p`: the target group
-is TRIVIAL, so the pairing is constantly `1`, the nondegeneracy hypothesis
-holds vacuously for every `p`-torsion point, and the axiom concludes
-`A'[p](k̄) = 0`.  An ORDINARY elliptic curve over `𝔽_p` has
-`A'[p](k̄) ≅ ℤ/p ≠ 0`, so `DualStruct ab' m'` is UNINHABITED for it — while
-that curve satisfies every hypothesis of this leaf (`D = ℚ` is totally
-real, `q` is any prime `≠ p`).  A leaf of the shape
-`∃ d : DualStruct ab' m', …` is therefore false here for a reason with no
-mathematical content, and proving it is impossible rather than hard.
+So this statement is now PROVEN over the single geometric leaf
+`exists_dualPolarization_finiteBase` immediately above, by the same glue as
+its characteristic-zero counterpart: seven of the eight clauses of
+`IsQAdicPolarizedSystem` come out of the `DualStruct` axioms and the linearity
+of `λ` with no geometry, and the eighth — the bounded radical — is the last
+clause of `IsQAdicBoundedPolarizationHom`, which is where the `b` comes from.
+The two clauses that could NOT be manufactured formally are, as in
+characteristic zero, the strong `𝒪_D`-ALTERNATING clause and the TOWER clause,
+and both are therefore part of the geometric leaf's conclusion.
 
-So a cut of this leaf must either repair `DualStruct` first (gate
-`weil_nondegenerate` on `(n : F) ≠ 0`, which is free in characteristic zero
-— see the audit cited above) or introduce a FIBRE-LOCAL dual-pairing datum
-carrying the pairing only at the prime-to-`p` levels `q^M` that this
-statement actually mentions.  Until one of those exists, this statement is
-already the minimal fibre-local form of "the polarized `q`-adic Weil system
-exists", and there is nothing to strip off it. -/
+REFUTING CHECK that the gate is really there, one grep:
+`grep -n 'hnF' Fermat/FLT/Modularity/AbelianScheme.lean`. -/
 theorem exists_qAdicPolarizedSystem_finiteBase
     {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
@@ -19006,8 +19455,10 @@ theorem exists_qAdicPolarizedSystem_finiteBase
     (q : ℕ) (hq : q.Prime) (hqN : ¬ q ∣ N) :
     ∃ (b : ℕ) (w : ℕ → GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))) →
         GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))) → (AlgebraicClosure k)ˣ),
-      IsQAdicPolarizedSystem m' (𝟙 (Spec (CommRingCat.of k))) q b w :=
-  sorry
+      IsQAdicPolarizedSystem m' (𝟙 (Spec (CommRingCat.of k))) q b w := by
+  obtain ⟨b, d, hom, htower, hpol⟩ :=
+    exists_dualPolarization_finiteBase hfin N hN ab' m' q hq hqN
+  exact ⟨b, _, isQAdicPolarizedSystem_of_dualPolarization _ q b d hom htower hpol⟩
 
 open _root_.NumberField in
 /-- **THE LIMIT AND THE SCALING: THE `𝒪_D/Iⁿ`-VALUED LEVEL PAIRING, GIVEN
@@ -20032,6 +20483,41 @@ sequence `0 → T_I B → T_I A' → T_I C → 0` — exact precisely because
 `q ≠ char k` — forces `T_I C = 0` and hence `V_I C = 0`.  Contradiction;
 so `C = 0` and `ι` is surjective.
 
+**ROUTE AUDIT (2026-07-30) — ONE WORD OF THAT SKETCH HIDES THE DEEP
+INPUT, and a prover who follows it will stop there.**  The word is
+"Hence", in "the action … is FAITHFUL … Hence `D ⊗ ℚ_q` acts faithfully
+on `V_q C`".  That implication is NOT formal, and the paragraph as
+written reads as though it were:
+
+* what IS formal, and needs only that `D` is a field, is that `D` acts
+  faithfully on the abelian variety `C` itself (the kernel is a proper
+  ideal of a field, hence `0`);
+* what is NOT formal is passing from there to `V_q C`.  `V_q C` is a
+  module over `D ⊗ ℚ_q = ∏_{J ∣ q} D_J`, and faithfulness of `D` alone
+  does not force any single factor to act nontrivially: the kernel of
+  `D ⊗ ℚ_q ⟶ End (V_q C)` is a sub-product `∏_{J ∈ S} D_J`, and
+  `D ∩ ∏_{J ∈ S} D_J = 0` holds automatically for every `S` not
+  containing all of the factors, because `D` is a field and each
+  projection `D ⟶ D_J` is injective.  So "`D` is faithful on `C`" is
+  consistent, formally, with `V_I C = 0`.
+
+The statement that closes the gap is **Mumford *AV* §19 Thm 3**:
+`End (C) ⊗ ℤ_q ⟶ End (T_q C)` is INJECTIVE.  Given it, the rest of the
+sketch is immediate and is worth writing in the form a prover will use:
+the idempotent `e_I ∈ D ⊗ ℚ_q` cutting out the `I`-factor is nonzero, it
+lies in `End⁰(C) ⊗ ℚ_q`, and `V_I C = 0` makes it act as `0` on `V_q C`
+— so injectivity gives `e_I = 0`, which is false.
+
+Nothing here changes the statement, which remains true; what changes is
+the estimate of what it costs.  The chain to build is: the quotient
+abelian variety `C = A'/B`; exactness of `0 → T_I B → T_I A' → T_I C → 0`
+away from the residue characteristic; and Mumford §19 Thm 3.  A cut of
+this leaf that does not name all three is understating it, and none of
+the three can be STATED in this development yet, because the quotient of
+an abelian scheme by a closed abelian subscheme has no name here.  That
+absence, and not the difficulty of any one step, is why this leaf was not
+cut on 2026-07-30.
+
 **`hqN` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT IT.**  At the
 residue characteristic the displayed sequence of Tate modules is not
 exact and `A'[pⁿ](k̄)` is too small to see `C`: in the supersingular case
@@ -20124,7 +20610,10 @@ variety on which `D` acts, and the action is FAITHFUL because `D` is a
 field and `1 ↦ 1 ≠ 0`; hence `D ⊗ ℚ_q = ∏_{J ∣ q} D_J` acts faithfully on
 `V_q C`, so every factor acts nontrivially and in particular
 `V_I C ≠ 0`.  But `T_I B = T_I A'` by construction, so `V_I C = 0` — a
-contradiction.  Therefore `B = A'_{k̄}`, and density descends to `|A'|`
+contradiction.  (That "hence" is not formal — see the ROUTE AUDIT of
+2026-07-30 in `range_eq_univ_of_abelianSubscheme_torsion_finiteBase`
+above, which names the theorem it needs.  The sketch is repeated here
+only for readability; the audit is the maintained copy.)  Therefore `B = A'_{k̄}`, and density descends to `|A'|`
 because `|A'_{k̄}| → |A'|` is surjective: the preimage of the closure of
 the image of `T` is closed and contains `T`, hence is everything.
 
