@@ -81,11 +81,14 @@ form "the pullback ratio is constant"); the `y`-witnesses, the zero map and the
 crossing of the finite kernel by Zariski density are all discharged there.
 `psi_ne_zero_of_two_nsmul_ne_zero` is proven with it.
 
-Still open, and this is the whole remaining mathematics of the file:
+Still open (STATUS 2026-07-30), and this is the whole remaining mathematics of the
+file — note `isDiffChar_comp` and `isDiffChar_add` are ASSEMBLIES and are NOT open:
 
 * `exists_diffCharScalar` — the pullback ratio `φ*ω'/ω` is CONSTANT;
-* `isDiffChar_add` — `λ` is additive;
-* `isDiffChar_comp` — `λ` is multiplicative on composites.
+* `isDiffCharCert_add_of_ne` — the chord branch of additivity.
+
+The doubling branch `isDiffChar_mulByHom_two` (`λ([2]) = 2`) was closed on
+2026-07-30; see its section notes below.
 
 **Do not attack them from the raw definition.** The section "What the certificate
 really says" below is PROVEN infrastructure written for exactly this purpose:
@@ -109,7 +112,7 @@ identities are the actual remaining content.
 `IsRationalMap.add` is cut, into a doubling branch and a chord branch:
 
 * `isDiffChar_mulByHom_two` — `λ([2]) = 2`, which carries the case `φ = ψ`
-  through `isDiffChar_comp` and `φ + φ = φ ∘ [2]`;
+  through `isDiffChar_comp` and `φ + φ = φ ∘ [2]`. **PROVEN 2026-07-30**;
 * `isDiffCharCert_add_of_ne` — the certificate of a sum at a point where the
   chord formula applies (both maps nonzero at `P`, distinct image
   `x`-coordinates, denominators nonvanishing).
@@ -1185,7 +1188,12 @@ statement is not vacuous; note that `IsIsogeny.add` is FALSE (see the falsity
 audit there) — which is exactly why `IsDiffChar` is built over `IsRationalMap`
 rather than over `IsIsogeny`. -/
 
-/-- **LEAF (doubling branch of additivity): `λ([2]) = 2`.**
+/-! #### The doubling branch of additivity: `λ([2]) = 2` — PROVEN 2026-07-30
+
+**Was a LEAF; closed by the three declarations below** (`mulByHom_two_ne_zero`,
+`diffChar_two_core`, `isDiffChar_mulByHom_two`). The notes that follow are the ones
+written when it was cut, kept because they record what the statement means and what
+would refute it.
 
 `[2] : W → W` is rational (`isRationalMap_mulByHom_two`, PROVEN in
 `Isogeny.lean`, with the `x`-witness `Φ₂/ΨSq₂` and the `y`-witness supplied by
@@ -1206,9 +1214,167 @@ every denominator may be inverted.
 pullback of `ω` along `[2]` is not `2·ω`. In characteristic `2` this is still
 true — `λ([2]) = 2 = 0` there, and `[2]` is then inseparable, which is exactly
 the `λ = 0` case the module docstring flags. -/
+/-- **`[2]` is not the zero map** — needed only to discharge the guard clause of
+`IsDiffChar` for `isDiffChar_mulByHom_two`, and true in EVERY characteristic,
+including `2`.
+
+The `2`-torsion is finite (`finite_nsmulKer`) while `veluPointX` is surjective onto
+the (infinite) algebraically closed `F` (`exists_point_veluPointX_eq`), so
+`W.Point` cannot consist of `2`-torsion. Note this makes the guard clause vacuous
+rather than forcing `(2 : F) = 0`: in characteristic `2` the scalar `2` IS `0`, but
+that is not how the clause is discharged. -/
+theorem mulByHom_two_ne_zero [IsAlgClosed F] [W.IsElliptic] : mulByHom W 2 ≠ 0 := by
+  intro h0
+  have hfin : {P : W.Point | (2 : ℕ) • P = 0}.Finite := finite_nsmulKer (W := W) two_ne_zero
+  have hu : (Set.univ : Set F).Finite := by
+    refine Set.Finite.subset (hfin.image veluPointX) ?_
+    intro t _
+    obtain ⟨P, -, hPx⟩ := exists_point_veluPointX_eq (W := W) t
+    refine ⟨P, ?_, hPx⟩
+    have := DFunLike.congr_fun h0 P
+    simpa using this
+  exact absurd hu Set.infinite_univ
+
+omit [DecidableEq F] in
+/-- **The ring identity behind `λ([2]) = 2`**, isolated from the curve so that it is
+a statement about a field and nothing else — the same shape as `addY_two_core` in
+`Isogeny.lean`, and for the same reason.
+
+`L` is the tangent slope, constrained only by `hLd : L·ψ₂ = 3x² + 2a₂x + a₄ − a₁y`.
+The left-hand side is `2·ψ₂⁴·(2·addY + a₁·addX + a₃)` — i.e. `2·ψ₂⁴·ψ₂(2P)` — written
+out through `addX`/`negAddY`/`negY`, and the right-hand side is the Wronskian
+`Φ₂′·ΨSq₂ − Φ₂·ΨSq₂′` times `ψ₂`, with `ΨSq₂` in its already-evaluated form `ψ₂²`
+(which is how the caller's certificate presents it, `Ψ₂Sq(x) = ψ₂(P)²`).
+
+**`c = 2` is pinned by this identity and by nothing else**; it was checked
+numerically before being proven — on `y² = x³ + 1` at `P = (2,3)`, `2P = (0,1)`,
+`ψ₂(P) = 6`, `ψ₂(2P) = 2` and the Wronskian at `x = 2` is `864 = 2·6³·2` — and then
+on 10135 random points over `𝔽₁₀₀₀₀₀₃` with all five `aᵢ` random, together with
+`x(2P)·ΨSq₂ = Φ₂` and `ΨSq₂ = ψ₂²`.
+
+Three steps. `hAX` and `hnAY` eliminate `L` against `hLd`, leaving a polynomial
+identity in `x, y, a₁, …, a₆` that holds modulo the Weierstrass equation; the
+cofactor of `hEq` in the last `linear_combination` is a Gröbner-style certificate,
+found by dividing the difference by the curve polynomial in `y` (remainder `0`) and
+verified here by the kernel. -/
+theorem diffChar_two_core (a₁ a₂ a₃ a₄ a₆ x y L : F)
+    (hEq : y ^ 2 + a₁ * x * y + a₃ * y = x ^ 3 + a₂ * x ^ 2 + a₄ * x + a₆)
+    (hLd : L * (2 * y + a₁ * x + a₃) = 3 * x ^ 2 + 2 * a₂ * x + a₄ - a₁ * y) :
+    2 * (2 * y + a₁ * x + a₃) ^ 4
+        * (2 * (-(L * ((L ^ 2 + a₁ * L - a₂ - x - x) - x) + y)
+              - a₁ * (L ^ 2 + a₁ * L - a₂ - x - x) - a₃)
+            + a₁ * (L ^ 2 + a₁ * L - a₂ - x - x) + a₃)
+      = ((4 * x ^ 3 - 2 * (2 * a₄ + a₁ * a₃) * x - 2 * (a₃ ^ 2 + 4 * a₆))
+            * (2 * y + a₁ * x + a₃) ^ 2
+          - (x ^ 4 - (2 * a₄ + a₁ * a₃) * x ^ 2 - 2 * (a₃ ^ 2 + 4 * a₆) * x
+              - (a₁ ^ 2 * a₆ + 4 * a₂ * a₆ - a₁ * a₃ * a₄ + a₂ * a₃ ^ 2 - a₄ ^ 2))
+            * (12 * x ^ 2 + 2 * (a₁ ^ 2 + 4 * a₂) * x + 2 * (2 * a₄ + a₁ * a₃)))
+        * (2 * y + a₁ * x + a₃) := by
+  have hAX : (L ^ 2 + a₁ * L - a₂ - x - x) * (2 * y + a₁ * x + a₃) ^ 2
+      = (3 * x ^ 2 + 2 * a₂ * x + a₄ - a₁ * y) ^ 2
+        + a₁ * (3 * x ^ 2 + 2 * a₂ * x + a₄ - a₁ * y) * (2 * y + a₁ * x + a₃)
+        - (a₂ + 2 * x) * (2 * y + a₁ * x + a₃) ^ 2 := by
+    linear_combination (L * (2 * y + a₁ * x + a₃) + (3 * x ^ 2 + 2 * a₂ * x + a₄ - a₁ * y)
+      + a₁ * (2 * y + a₁ * x + a₃)) * hLd
+  have hnAY : (L * ((L ^ 2 + a₁ * L - a₂ - x - x) - x) + y) * (2 * y + a₁ * x + a₃) ^ 3
+      = (3 * x ^ 2 + 2 * a₂ * x + a₄ - a₁ * y)
+          * ((3 * x ^ 2 + 2 * a₂ * x + a₄ - a₁ * y) ^ 2
+            + a₁ * (3 * x ^ 2 + 2 * a₂ * x + a₄ - a₁ * y) * (2 * y + a₁ * x + a₃)
+            - (a₂ + 3 * x) * (2 * y + a₁ * x + a₃) ^ 2)
+        + y * (2 * y + a₁ * x + a₃) ^ 3 := by
+    linear_combination
+      (((L ^ 2 + a₁ * L - a₂ - x - x) - x) * (2 * y + a₁ * x + a₃) ^ 2) * hLd
+      + (3 * x ^ 2 + 2 * a₂ * x + a₄ - a₁ * y) * hAX
+  linear_combination (-4 * (2 * y + a₁ * x + a₃)) * hnAY
+    + (-2 * a₁ * (2 * y + a₁ * x + a₃) ^ 2) * hAX
+    + (2*a₁^5*x^2 + 4*a₁^4*a₃*x + 4*a₁^4*x*y + 16*a₁^3*a₂*x^2 + 2*a₁^3*a₃^2 + 4*a₁^3*a₃*y
+      + 4*a₁^3*a₄*x + 20*a₁^3*x^3 + 24*a₁^2*a₂*a₃*x + 32*a₁^2*a₂*x*y + 4*a₁^2*a₃*a₄
+      + 20*a₁^2*a₃*x^2 + 8*a₁^2*a₄*y + 8*a₁^2*x^2*y + 32*a₁*a₂^2*x^2 + 8*a₁*a₂*a₃^2
+      + 16*a₁*a₂*a₃*y + 16*a₁*a₂*a₄*x + 112*a₁*a₂*x^3 - 8*a₁*a₃^2*x - 64*a₁*a₃*x*y
+      + 32*a₁*a₄*x^2 + 96*a₁*x^4 - 96*a₁*x*y^2 + 32*a₂^2*a₃*x + 64*a₂^2*x*y + 16*a₂*a₃*a₄
+      + 112*a₂*a₃*x^2 + 32*a₂*a₄*y + 224*a₂*x^2*y - 8*a₃^3 - 48*a₃^2*y + 32*a₃*a₄*x
+      + 96*a₃*x^3 - 96*a₃*y^2 + 64*a₄*x*y + 192*x^3*y - 64*y^3) * hEq
+
+set_option maxRecDepth 40000 in
+/-- **`λ([2]) = 2` — PROVEN 2026-07-30.** See the section notes above for what the
+statement says and what would refute it.
+
+The assembly: `isDiffCharCert_of_cofinite` reduces the certificate to the points off
+the (finite) `2`-torsion, where `2 • Q = Q + Q` is the tangent-line formula and every
+denominator is invertible; `isDiffCharCert_of_reduced` collapses the certificate to
+`2·ΨSq₂(x)²·E(x)·ψ₂(2Q) = (Φ₂′ΨSq₂ − Φ₂ΨSq₂′)(x)·E(x)·ψ₂(Q)`, where `E(x)` is a
+common factor and drops out; and what is left is `diffChar_two_core`. The
+`y`-witnesses `Cw, Dw, Ew` of `exists_y_witness_two` are used only to *state* the
+rational-map relations — the scalar is a function of the `x`-map alone, exactly as
+`exists_diffCharScalar`'s docstring says, which is why their explicit shape is never
+needed. -/
 theorem isDiffChar_mulByHom_two [IsAlgClosed F] [W.IsElliptic] :
-    IsDiffChar (mulByHom W 2) (2 : F) :=
-  sorry
+    IsDiffChar (mulByHom W 2) (2 : F) := by
+  classical
+  obtain ⟨Cw, Dw, Ew, hEw, hyw⟩ := exists_y_witness_two (W := W)
+  have hBne : W.ΨSq ((2 : ℕ) : ℤ) ≠ 0 := ΨSq_ne_zero' W (by norm_num)
+  have hrat : ∀ P : W.Point, mulByHom W 2 P ≠ 0 →
+      veluPointX (mulByHom W 2 P) * (W.ΨSq ((2 : ℕ) : ℤ)).eval (veluPointX P)
+          = (W.Φ ((2 : ℕ) : ℤ)).eval (veluPointX P) ∧
+        veluPointY (mulByHom W 2 P) * Ew.eval (veluPointX P)
+          = Cw.eval (veluPointX P) * veluPointY P + Dw.eval (veluPointX P) :=
+    fun P hP => ⟨veluPointX_nsmul (by norm_num) P hP, hyw P hP⟩
+  refine ⟨fun h0 => absurd h0 mulByHom_two_ne_zero,
+    W.Φ ((2 : ℕ) : ℤ), W.ΨSq ((2 : ℕ) : ℤ), Cw, Dw, Ew, hBne, hEw, hrat, fun P _ => ?_⟩
+  refine isDiffCharCert_of_cofinite
+    (S := veluPointX '' {R : W.Point | (2 : ℕ) • R = 0})
+    ((finite_nsmulKer (W := W) two_ne_zero).image _) ?_ P
+  intro Q hQ0 hQS
+  have hQ2 : (2 : ℕ) • Q ≠ 0 := fun hc => hQS ⟨Q, hc, rfl⟩
+  have hφQ : mulByHom W 2 Q ≠ 0 := hQ2
+  obtain ⟨hx, hyy⟩ := hrat Q hφQ
+  refine isDiffCharCert_of_reduced hx hyy ?_
+  -- The `E`-free core of the reduced certificate; multiplying by `E(x)` restores it.
+  have hkey : (2 : F) * (W.ΨSq ((2 : ℕ) : ℤ)).eval (veluPointX Q) ^ 2
+        * (2 * veluPointY (mulByHom W 2 Q) + W.a₁ * veluPointX (mulByHom W 2 Q) + W.a₃)
+      = ((derivative (W.Φ ((2 : ℕ) : ℤ))).eval (veluPointX Q)
+            * (W.ΨSq ((2 : ℕ) : ℤ)).eval (veluPointX Q)
+          - (W.Φ ((2 : ℕ) : ℤ)).eval (veluPointX Q)
+            * (derivative (W.ΨSq ((2 : ℕ) : ℤ))).eval (veluPointX Q))
+        * (2 * veluPointY Q + W.a₁ * veluPointX Q + W.a₃) := by
+    haveI : (W⁄F).IsElliptic := inferInstanceAs W.IsElliptic
+    cases Q with
+    | zero => exact absurd rfl hQ0
+    | some x y h =>
+      have hEq : y ^ 2 + W.a₁ * x * y + W.a₃ * y
+          = x ^ 3 + W.a₂ * x ^ 2 + W.a₄ * x + W.a₆ := (Affine.equation_iff ..).1 h.1
+      have hy2 : ¬ (y = -y - W.a₁ * x - W.a₃) := by
+        intro hc
+        refine hQ2 ?_
+        rw [two_nsmul]
+        exact Affine.Point.add_self_of_Y_eq (by simpa [Affine.negY] using hc)
+      have hy2' : y ≠ W.negY x y := by simpa [Affine.negY] using hy2
+      have hd : (2 * y + W.a₁ * x + W.a₃) ≠ 0 := fun hc => hy2 (by linear_combination hc)
+      have hLd : W.slope x x y y * (2 * y + W.a₁ * x + W.a₃)
+          = 3 * x ^ 2 + 2 * W.a₂ * x + W.a₄ - W.a₁ * y := by
+        rw [Affine.slope_of_Y_ne' hy2,
+          show y - (-y - W.a₁ * x - W.a₃) = 2 * y + W.a₁ * x + W.a₃ from by ring]
+        exact div_mul_cancel₀ _ hd
+      have hQev : (W.ΨSq ((2 : ℕ) : ℤ)).eval x = (2 * y + W.a₁ * x + W.a₃) ^ 2 := by
+        rw [show ((2 : ℕ) : ℤ) = 2 from rfl, ΨSq_two,
+          show (2 * y + W.a₁ * x + W.a₃) = (2 * y + (W.a₁ * x + W.a₃)) from by ring]
+        exact TorsionCard.eval_Ψ₂Sq_eq_sq W h.1
+      have hstep : (mulByHom W 2 : W.Point →+ W.Point) (Affine.Point.some x y h)
+          = Affine.Point.some x y h + Affine.Point.some x y h := by
+        rw [mulByHom_apply, two_nsmul]
+      rw [hstep, Affine.Point.add_self_of_Y_ne hy2']
+      simp only [veluPointX_some, veluPointY_some, Affine.addY, Affine.negAddY, Affine.addX,
+        Affine.negY, hQev]
+      rw [show ((2 : ℕ) : ℤ) = 2 from rfl, Φ_two, ΨSq_two, Ψ₂Sq]
+      simp only [derivative_sub, derivative_add, derivative_mul, derivative_C, derivative_X,
+        derivative_X_pow, Polynomial.eval_sub, Polynomial.eval_add, Polynomial.eval_mul,
+        Polynomial.eval_pow, Polynomial.eval_C, Polynomial.eval_X, Nat.reduceSub,
+        Nat.cast_ofNat, zero_mul, add_zero, zero_add, mul_one, sub_zero]
+      simp only [WeierstrassCurve.b₂, WeierstrassCurve.b₄, WeierstrassCurve.b₆,
+        WeierstrassCurve.b₈]
+      linear_combination diffChar_two_core W.a₁ W.a₂ W.a₃ W.a₄ W.a₆ x y
+        (W.slope x x y y) hEq hLd
+  linear_combination Ew.eval (veluPointX Q) * hkey
 
 /-- **LEAF (chord branch of additivity): the differential certificate of a sum,
 at a generic point.**
