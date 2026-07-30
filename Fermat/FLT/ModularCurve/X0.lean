@@ -26969,6 +26969,44 @@ about their proofs.  The proofs were checked directly:
   file-surgery cost in a 35k-line concurrently-edited module, not a
   mathematical one.
 
+**RE-MEASURED 2026-07-30 at `5d18bd2a`: the LEGALITY claim above survives
+verbatim; the COST is about three times what it says, in a file twice the size
+it says.**  Both numbers matter, because an orchestrator costing this hoist off
+the paragraph above will under-budget it by roughly 3×.
+
+* *Legality — CONFIRMED, and by the same test.*  Comment-stripped (nested
+  `/- -/` and `--`, newlines preserved — a stripper that collapses newlines
+  reports garbage line numbers, which is how this scan first went wrong)
+  and grepped for `IsJMapOn`, `IsCoarseModuliY0`, `Gamma0Datum`,
+  `IsCompactificationY0`, `IsX0`, `RelPoint`, `SpecQ`, `mazurIsogenyPrimes`,
+  `Gamma0Atlas`, `cuspidal_x0` and the three `Fermat.exists_…` names:
+  **lines 5385–19010 give ZERO HITS**, and so do **773–1095**.  The Cor. 4.4
+  block hits exactly the three names the paragraph above predicts
+  (`exists_coarseModuliY0`, `exists_compactificationY0`,
+  `exists_cuspidalReduction_of_padicValRat_neg`, all inside
+  `potentiallyGoodReduction_of_isogenyCharacter` at 5351).
+* *Cost — STALE.*  `MazurTorsion.lean` is **77 321 lines**, not 35 000.  The
+  hoistable material is **773–1095** (`exists_isogenyCharacter`,
+  `stable_zmultiples_of_isogenyCharacter` — the `hstable ↔ hlam` bridge) and
+  **5385–19010** (`exists_isogenySignature` at 15530,
+  `not_isogenyCharacter_of_isogenySignature_ne_six` at 18027,
+  `mem_classNumberOnePrimes_of_isogenySignature_six` at 18943, with their
+  helpers): about **13 700 lines**, not the ~4 500 the ranges "~2229–6700 plus
+  ~600–780" describe.  Those old ranges are not merely shifted — 1096–5350 is
+  now the Eisenstein / Néron / Atkin–Lehner machinery of the Cor. 4.4 half,
+  which is X0-DEPENDENT and must stay.
+* *Concurrency — the real reason it is still not done.*  At this commit
+  **five worktrees hold uncommitted edits to `MazurTorsion.lean`**
+  (`flt-lean-28`, `-33`, `-184`, `-193`, `-368`) and six hold uncommitted edits
+  to this file.  Moving 13 700 lines out from under them is the merge hazard
+  CLAUDE.md calls the seventh invisibility class — a clean merge that does not
+  compile — at its worst scale.  **Schedule this hoist for a quiet batch, not
+  as a leaf dispatch**, and prefer `git checkout HEAD -- <file>` over
+  conflict-by-conflict resolution if it has to be declined.
+
+Line numbers drift; the DECLARATION NAMES above are the durable anchors, and
+they are what a future measurement should re-derive the ranges from.
+
 So this remains a cross-module refactor with two owners, deliberately not
 done here; but it is now a *mechanical* one with the legality check
 discharged, rather than a conjecture.
