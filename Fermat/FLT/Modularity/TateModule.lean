@@ -14647,15 +14647,107 @@ theorem exists_pow_eq_app_comp {X Y Z : Scheme.{u}} (g : X ⟶ Y) (h : Y ⟶ Z) 
     _ = (g.app (h ⁻¹ᵁ W)).hom ((h.app W).hom s) := by rw [hu]
     _ = ((g ≫ h).app W).hom s := rfl
 
-/-- **`[p]^{\#}` LANDS IN `p`-th POWERS** (sorry leaf, CUT 2026-07-28 out of
-`exists_pow_eq_app_mulByNat` below, which is PROVEN over it — Mumford *AV* §15,
-Milne *AV* §I.5).  This is all that is left of the Verschiebung, at the SINGLE
-prime `p` rather than at `p ^ a`.
+/-! #### Landing in `p ^ a`-th powers is LOCAL, and may be checked on STALKS
 
-For `A'` an abelian variety over a field `k` of characteristic `p`, every
-section in the image of `([p])^{\#}` is a `p`-th power — equivalently, by
-`exists_absFrobScheme_comp_eq_of_forall_exists_pow` above, `[p]` factors
-through the absolute `p`-Frobenius.
+**PROVEN 2026-07-30.**  The two lemmas here move the Verschiebung leaf off the
+sheaf and onto the LOCAL RINGS.  Both are about an arbitrary morphism of schemes
+out of a reduced scheme in characteristic `p` and contain no abelian-variety
+input; the single mechanism behind both is that a `p ^ a`-th root of a section
+of a REDUCED scheme is UNIQUE when it exists (`pow_left_injective_sections`), so
+locally-chosen roots need no coherence argument — they agree on overlaps
+automatically and glue. -/
+
+/-- **A SECTION THAT IS LOCALLY A `p ^ a`-th POWER IS A `p ^ a`-th POWER**
+(PROVEN 2026-07-30), on a reduced scheme in which `p` vanishes.
+
+Given a cover `V ≤ ⨆ i, W i` and a root of `σ|_{W i}` over each `W i`, the roots
+agree on `W i ⊓ W j` — both have `σ|_{W i ⊓ W j}` as their `p ^ a`-th power and
+the power map is injective — so the sheaf condition glues them
+(`existsUnique_gluing'`), and the glued section is a root of `σ` because it is
+one locally (`eq_of_locally_eq'`).
+
+The two hom-set arguments `W i ⊓ W j ⟶ W i ⟶ V` and `W i ⊓ W j ⟶ W j ⟶ V` are
+EQUAL rather than merely parallel — `X.Opens` is a poset category, so its
+hom-types are proof-carrying subsingletons — which is why the compatibility
+check closes by `rfl` after both sides are pushed through `X.presheaf.map_comp`. -/
+theorem exists_pow_eq_of_cover {X : Scheme.{u}} [AlgebraicGeometry.IsReduced X]
+    (p a : ℕ) (hp : p.Prime) (hchar : ∀ U : X.Opens, (p : Γ(X, U)) = 0)
+    {ι : Type*} (V : X.Opens) (W : ι → X.Opens) (hWV : ∀ i, W i ≤ V)
+    (hcover : V ≤ iSup W) (σ : Γ(X, V))
+    (H : ∀ i, ∃ t : Γ(X, W i), t ^ p ^ a = (X.presheaf.map (homOfLE (hWV i)).op).hom σ) :
+    ∃ t : Γ(X, V), t ^ p ^ a = σ := by
+  choose t ht using H
+  have hcompat : TopCat.Presheaf.IsCompatible X.presheaf W t := by
+    intro i j
+    refine pow_left_injective_sections p a hp hchar (W i ⊓ W j) ?_
+    rw [← map_pow, ← map_pow, ht, ht]
+    rw [← CategoryTheory.ConcreteCategory.comp_apply,
+      ← CategoryTheory.ConcreteCategory.comp_apply, ← X.presheaf.map_comp, ← X.presheaf.map_comp]
+    rfl
+  obtain ⟨u, hu, -⟩ :=
+    X.sheaf.existsUnique_gluing' W V (fun i => homOfLE (hWV i)) hcover t hcompat
+  have hu' : ∀ i, (X.presheaf.map (homOfLE (hWV i)).op).hom u = t i := hu
+  refine ⟨u, ?_⟩
+  refine X.sheaf.eq_of_locally_eq' W V (fun i => homOfLE (hWV i)) hcover _ _ ?_
+  intro i
+  have e : ((X.presheaf.map (homOfLE (hWV i)).op).hom u) ^ p ^ a
+      = (X.presheaf.map (homOfLE (hWV i)).op).hom σ := by rw [hu' i]; exact ht i
+  exact (map_pow (X.presheaf.map (homOfLE (hWV i)).op).hom u (p ^ a)).trans e
+
+/-- **A STALKWISE CRITERION FOR A SHEAF MAP TO LAND IN `p ^ a`-th POWERS**
+(PROVEN 2026-07-30).  If every STALK MAP of `g` has its image inside the
+`p ^ a`-th powers of the target stalk, then so does every `g^{\#}_U`, on a
+reduced `X` in which `p` vanishes.
+
+This is what takes the Verschiebung leaf below off the sheaf.  A germ-level root
+`τ` of the germ of `g^{\#}_U s` is represented by an honest section `t₀` on some
+neighbourhood; `t₀ ^ p ^ a` and `g^{\#}_U s` then have the SAME GERM at that
+point, hence agree on a smaller neighbourhood (`TopCat.Presheaf.germ_eq`); so
+each point of `g ⁻¹ᵁ U` has a neighbourhood carrying a root, and
+`exists_pow_eq_of_cover` glues them.
+
+**THE CONVERSE IS TRIVIAL**, so the two formulations are EQUIVALENT and nothing
+is gained or lost in strength by passing between them: if `g^{\#}_U s = t ^ p ^ a`
+then applying the germ map — a ring homomorphism — at any `x` exhibits the germ
+of `t` as a `p ^ a`-th root of the stalk image, and every stalk element is a germ
+(`exists_germ_eq`).  What the passage buys is METHOD, not strength: after it the
+remaining work happens inside LOCAL RINGS, where localisation, completion and
+formal-group arguments are available and no sheaf bookkeeping survives. -/
+theorem exists_pow_eq_app_of_forall_stalk {X Y : Scheme.{u}} [AlgebraicGeometry.IsReduced X]
+    (p a : ℕ) (hp : p.Prime) (hchar : ∀ U : X.Opens, (p : Γ(X, U)) = 0) (g : X ⟶ Y)
+    (H : ∀ (x : X) (y : Y.presheaf.stalk (g.base x)),
+      ∃ τ : X.presheaf.stalk x, τ ^ p ^ a = (g.stalkMap x).hom y)
+    (U : Y.Opens) (s : Γ(Y, U)) :
+    ∃ t : Γ(X, g ⁻¹ᵁ U), t ^ p ^ a = (g.app U).hom s := by
+  have key : ∀ x : X, ∀ hx : x ∈ g ⁻¹ᵁ U, ∃ (W : X.Opens) (_ : x ∈ W) (hWV : W ≤ g ⁻¹ᵁ U),
+      ∃ t : Γ(X, W),
+        t ^ p ^ a = (X.presheaf.map (homOfLE hWV).op).hom ((g.app U).hom s) := by
+    intro x hx
+    obtain ⟨τ, hτ⟩ := H x ((Y.presheaf.germ U (g.base x) hx).hom s)
+    obtain ⟨W₀, hxW₀, t₀, rfl⟩ := X.presheaf.exists_germ_eq τ
+    have hgerm : (X.presheaf.germ W₀ x hxW₀).hom (t₀ ^ p ^ a)
+        = (X.presheaf.germ (g ⁻¹ᵁ U) x hx).hom ((g.app U).hom s) := by
+      rw [map_pow]
+      refine hτ.trans ?_
+      exact g.germ_stalkMap_apply U x hx s
+    obtain ⟨W, hxW, iU, iV, hWeq⟩ :=
+      X.presheaf.germ_eq x hxW₀ hx (t₀ ^ p ^ a) ((g.app U).hom s) hgerm
+    refine ⟨W, hxW, iV.le, (X.presheaf.map iU.op).hom t₀, ?_⟩
+    rw [← map_pow]
+    exact hWeq
+  choose W hxW hWV t ht using key
+  refine exists_pow_eq_of_cover p a hp hchar (g ⁻¹ᵁ U)
+    (fun i : ↥(g ⁻¹ᵁ U) => W i.1 i.2) (fun i => hWV i.1 i.2) ?_ _ (fun i => ⟨t i.1 i.2, ht i.1 i.2⟩)
+  intro x hx
+  exact TopologicalSpace.Opens.mem_iSup.mpr ⟨⟨x, hx⟩, hxW x hx⟩
+
+/-- **THE STALK MAPS OF `[p]` LAND IN `p`-th POWERS** (sorry leaf, CUT
+2026-07-30 out of `exists_pow_eq_app_mulByNat_prime` immediately below, which is
+PROVEN over it; that statement was itself cut 2026-07-28 out of
+`exists_pow_eq_app_mulByNat` — Mumford *AV* §15, Milne *AV* §I.5).  This is all
+that is left of the Verschiebung, and it is now a statement about LOCAL RINGS
+alone: for every point `x` of `A'`, the image of the stalk map
+`𝒪_{A', [p] x} ⟶ 𝒪_{A', x}` lies inside the `p`-th powers.
 
 **THE CLASSICAL PROOF, and where perfectness enters.**  `[p] = V ∘ F` with
 `F = F_{A'/k} : A' → A'^{(p)}` the RELATIVE Frobenius and `V` Cartier's
@@ -14663,44 +14755,83 @@ Verschiebung.  The ABSOLUTE Frobenius is `Fr = W ∘ F`, where
 `W : A'^{(p)} = A' ×_{k, φ} k ⟶ A'` is the projection and `φ` is the `p`-power
 map of `k`.  `W` is the base change of `Spec φ` along `A' ⟶ Spec k`, so **`W`
 is an isomorphism exactly when `φ` is, i.e. exactly when `k` is PERFECT** —
-and then `[p] = (V ∘ W⁻¹) ∘ Fr`, which is this statement.
+and then `[p] = (V ∘ W⁻¹) ∘ Fr`, and `Fr` is `s ↦ s ^ p` on sections and the
+identity on the space, so it is `s ↦ s ^ p` on every stalk as well.
 
-**WHAT IS LOAD-BEARING — and this CORRECTS the note the leaf was cut from**
-(see the correction recorded on `exists_pow_eq_app_mulByNat` below).  The
-statement needs exactly that `k` is **PERFECT**.  It needs neither finiteness,
-nor `p ^ a = #k`, nor any tie between an exponent and the size of `k`.  `hfin`
-is kept here only because it is what the caller holds and `PerfectField.ofFinite`
-is an INSTANCE, so a prover gets `PerfectField k` by synthesis alone; a successor
-may weaken `hfin` to `[PerfectField k]` together with `(p : k) = 0` without
-touching any consumer.
+**WHAT THIS CUT IS, AND WHAT IT IS NOT.**  It is an EQUIVALENCE, not a
+weakening: `exists_pow_eq_app_of_forall_stalk` above derives the section
+statement from this one, and the converse is the one-line germ argument recorded
+in that lemma's docstring.  So NO mathematical depth was removed here, and this
+should not be read as a reduction of the problem — say so plainly rather than
+counting it as progress.  What it buys is METHOD, and concretely:
+
+* the remaining work is now inside LOCAL RINGS, so localisation, completion and
+  formal-group arguments are all available, and a prover never has to construct
+  a scheme morphism, glue sections, or reason about `𝒪`-module sheaves;
+* in particular Kähler differentials become usable.  Mathlib at this pin has
+  them at the RING level (`Mathlib/RingTheory/Kaehler/`) and **not at the scheme
+  level** (re-verified 2026-07-30, as on 2026-07-28: `Mathlib/AlgebraicGeometry/`
+  contains no `Cotangent`/`Kaehler`/`Omega` module).  The differential criterion
+  — `d[p] = p · id = 0` on invariant differentials, and `{b : d b = 0} = B^p`
+  for `B` smooth over a perfect `k` — was therefore recorded as needing a
+  scheme-level interface written first.  Against the stalk statement it needs
+  only `Ω[𝒪_{A',x} ⁄ k]`, which exists.  That is the one concrete thing this cut
+  changes about the route, and it is why the cut was made in this direction.
+
+**WHAT IS LOAD-BEARING.**  The statement needs exactly that `k` is **PERFECT**.
+It needs neither finiteness, nor `p ^ a = #k`, nor any tie between an exponent
+and the size of `k`.  `hfin` is kept because it is what the caller holds and
+`PerfectField.ofFinite` is an INSTANCE, so a prover gets `PerfectField k` by
+synthesis alone; a successor may weaken `hfin` to `[PerfectField k]` together
+with `(p : k) = 0` without touching any consumer.
 
 **PERFECTNESS IS ALSO NECESSARY, with an explicit witness.**  Let `k` be
-IMPERFECT of characteristic `p` — say `k = 𝔽_p(u)` — and let `U` be nonempty.
-`[p]` is a `k`-morphism, so `([p])^{\#}` is a `k`-algebra map and fixes `u`.
-Were `u` a `p`-th power in `Γ(A', [p] ⁻¹ᵁ U)`, it would be a `p`-th power in the
-function field `k(A')`; but `A'` is geometrically integral, so `k(A')/k` is
-separable and `k` is algebraically closed in it, whence `u^{1/p} ∉ k(A')`.  So
-the leaf is FALSE over every imperfect base — and TRUE over `𝔽̄_p`, which is
-infinite.  Imperfection, not infinitude, is the obstruction.
+IMPERFECT of characteristic `p` — say `k = 𝔽_p(u)`.  `[p]` is a `k`-morphism, so
+`([p])^{\#}` is a `k`-algebra map and fixes `u`, and so is every one of its stalk
+maps.  Were `u` a `p`-th power in a stalk `𝒪_{A', x}`, it would be a `p`-th power
+in the function field `k(A')`; but `A'` is geometrically integral, so `k(A')/k`
+is separable and `k` is algebraically closed in it, whence `u^{1/p} ∉ k(A')`.
+So the leaf is FALSE over every imperfect base — and TRUE over `𝔽̄_p`, which is
+infinite.  Imperfection, not infinitude, is the obstruction. -/
+theorem exists_pow_eq_stalkMap_mulByNat_prime
+    {k : Type u} [Field k] (hfin : Finite k) (p : ℕ) (hp : p.Prime)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    (hchar : ∀ U : A'.Opens, (p : Γ(A', U)) = 0)
+    (x : A') (y : A'.presheaf.stalk ((ab'.mulByNat p).base x)) :
+    ∃ τ : A'.presheaf.stalk x, τ ^ p = ((ab'.mulByNat p).stalkMap x).hom y :=
+  sorry
 
-**THE NEXT CUT, and the check that decides whether it is available.**  The route
-that avoids constructing `V` is the differential criterion: `d[p] = p · id = 0`
-on invariant differentials, and for `B` smooth over a PERFECT field `k` one has
-`{b : d b = 0 in Ω_{B/k}} = B^p`, so a morphism whose differential vanishes has
-`p`-th powers in the image of its sheaf map.  That needs Kähler differentials at
-the SCHEME level, and **they are absent from this pin** (re-verified 2026-07-28:
-`Mathlib/AlgebraicGeometry/` contains no `Cotangent`/`Kaehler`/`Omega` module,
-and `Morphisms/FormallyUnramified.lean` is the only file there that so much as
-mentions them).  So that cut requires writing the interface first; do not record
-it as available without re-running that check. -/
+/-- **`[p]^{\#}` LANDS IN `p`-th POWERS** (**PROVEN 2026-07-30** over the stalk
+leaf `exists_pow_eq_stalkMap_mulByNat_prime` immediately above; it was a sorry
+leaf from 2026-07-28 until then — Mumford *AV* §15, Milne *AV* §I.5).  This is
+all that is left of the Verschiebung at the level of SECTIONS, at the SINGLE
+prime `p` rather than at `p ^ a`.
+
+For `A'` an abelian variety over a field `k` of characteristic `p`, every
+section in the image of `([p])^{\#}` is a `p`-th power — equivalently, by
+`exists_absFrobScheme_comp_eq_of_forall_exists_pow` above, `[p]` factors
+through the absolute `p`-Frobenius.
+
+The proof is `exists_pow_eq_app_of_forall_stalk` with `a = 1`, together with
+`isReduced_of_smooth_over_field_stalkwise` for the reducedness of `A'` (which is
+what makes a `p`-th root of a section unique, hence local, hence checkable on
+stalks).  `ab'` enters twice: through `mulByNat` itself, and through
+`ab'.smooth`, which is what supplies that reducedness. -/
 theorem exists_pow_eq_app_mulByNat_prime
     {k : Type u} [Field k] (hfin : Finite k) (p : ℕ) (hp : p.Prime)
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
     (ab' : AbelianSchemeStruct f')
     (hchar : ∀ U : A'.Opens, (p : Γ(A', U)) = 0)
     (U : A'.Opens) (s : Γ(A', U)) :
-    ∃ t : Γ(A', ab'.mulByNat p ⁻¹ᵁ U), t ^ p = ((ab'.mulByNat p).app U).hom s :=
-  sorry
+    ∃ t : Γ(A', ab'.mulByNat p ⁻¹ᵁ U), t ^ p = ((ab'.mulByNat p).app U).hom s := by
+  haveI := ab'.smooth
+  haveI : AlgebraicGeometry.IsReduced A' := isReduced_of_smooth_over_field_stalkwise f'
+  have h := exists_pow_eq_app_of_forall_stalk p 1 hp hchar (ab'.mulByNat p)
+    (fun x y => by
+      simpa only [pow_one] using
+        exists_pow_eq_stalkMap_mulByNat_prime hfin p hp ab' hchar x y) U s
+  simpa only [pow_one] using h
 
 /-- **FROM THE PRIME TO THE PRIME POWER** (PROVEN 2026-07-28): if `[p]^{\#}`
 lands in `p`-th powers then `[p ^ a]^{\#}` lands in `p ^ a`-th powers, for every
@@ -14733,8 +14864,10 @@ theorem exists_pow_eq_app_mulByNat_primePow
       exact hres
 
 /-- **`[N]^{\#}` LANDS IN `p ^ a`-th POWERS** (**PROVEN 2026-07-28** over the
-single leaf `exists_pow_eq_app_mulByNat_prime` above; it was a sorry leaf from
-2026-07-28 until then —
+single statement `exists_pow_eq_app_mulByNat_prime` above, which since
+2026-07-30 is itself PROVEN over the stalk leaf
+`exists_pow_eq_stalkMap_mulByNat_prime`, where the one remaining `sorry` of this
+cluster now lives; it was a sorry leaf from 2026-07-28 until then —
 Mumford *AV* §15, Milne *AV* §I.5).  This is the DEEP HALF of the Verschiebung,
 and after `exists_absFrobScheme_comp_eq_of_forall_exists_pow` above it is all
 that is left of it: an affine-local statement about the sheaf map of `[N]`,
@@ -14778,7 +14911,7 @@ they are why this theorem now reduces to a leaf carrying none of that:
   of characteristic `p` — the statement is TRUE, because the projection
   `A'^{(p)} ⟶ A'` is an isomorphism over any perfect base.  What genuinely fails
   is the imperfect case, with the witness recorded on
-  `exists_pow_eq_app_mulByNat_prime` above (`u ∈ 𝔽_p(u)` is fixed by the
+  `exists_pow_eq_stalkMap_mulByNat_prime` above (`u ∈ 𝔽_p(u)` is fixed by the
   `k`-algebra map `([p])^{\#}` and is not a `p`-th power in `k(A')`, which is
   separable over `k`).
 * **`hN` is not consumed at all.**  Nothing here needs `N` to be the size of `k`;
