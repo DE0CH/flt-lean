@@ -177,7 +177,31 @@ the rest).  Put `θ³ + 2θ² + 4θ + 2 = 0`.  Then:
 **These bullets are a derivation, not a theorem.**  Only the identities are
 mechanical (`ring` will check the squaring rule, the norm form and the
 `(2, 2, 1)` witness); that `β` is a square times a unit at all is the descent
-itself, and it is what this leaf asks for. -/
+itself, and it is what this leaf asks for.
+
+**THE NAME IS NOT A PLACEHOLDER — AUDITED 2026-07-30, DO NOT RE-LITIGATE IT.**  A
+dispatch of that date flagged `integral_leaf` as "a name that generic in a file this
+small usually means a placeholder that was never restated", and asked whether the
+statement is the one the consumers need.  It is, and there is nothing to rename:
+
+* the name is deliberate and SHARED with the level-`11` analogue
+  `MazurLevel11.integral_leaf` in `MordellWeil.lean` (identical shape,
+  `n² = p³ − 4p²e² + 16e⁶` there against `n² = p³ + 4p²e² + 16pe⁴ + 16e⁶` here), and
+  that one is fully PROVEN, so the naming is a convention with a working precedent
+  rather than a stub;
+* every consumer in this file is proven OVER this exact statement — `U_eq_zero` feeds
+  it `WeierstrassCurve.RationalPointDescent.exists_int_model`'s output verbatim
+  (`he : 0 < e`, `hcop : IsCoprime p e`, and the equation by `linear_combination`), so
+  the three hypotheses and the conclusion `p = 0 ∧ e = 1` are exactly what is
+  consumed, with no slack;
+* it is TRUE as stated, not merely plausible: the exhaustive search recorded above
+  (`|p| ≤ 4000`, `1 ≤ e ≤ 300`, coprime) finds `(0, 1)` and nothing else, and the
+  `(a, b, c) = (2, 2, 1)` consistency check reproduces it from the descent equations;
+* and it is neither vacuous nor over-strong — `(0, 1)` IS a solution, and dropping
+  `hcop` admits `(0, k)` for every `k`.
+
+So the work here is the DESCENT, following `MazurLevel11.integral_leaf`'s chain, and a
+successor should not spend a cycle re-auditing the name. -/
 theorem integral_leaf {p e n : ℤ} (he : 0 < e) (hcop : IsCoprime p e)
     (h : n ^ 2 = p ^ 3 + 4 * p ^ 2 * e ^ 2 + 16 * p * e ^ 4 + 16 * e ^ 6) :
     p = 0 ∧ e = 1 := sorry
