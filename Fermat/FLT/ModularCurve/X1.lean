@@ -2034,7 +2034,7 @@ it is spent in exactly TWO places, both of them for the single fact
 | `etale_nTorsion_of_specQBase` | only via the two above | `etale_nTorsion_of_fieldBase`, PROVEN |
 | `exists_zmodBasis_torsion_geomPoint` | `CharZero K'`, hence `(n : K') ≠ 0` | `exists_zmodBasis_torsion_geomPoint_field`, PROVEN |
 | `exists_torsionBasis_geomPoint` | only via the above | `exists_torsionBasis_geomPoint_field`, PROVEN |
-| `exists_isomTorsor_of_etale_nTorsion` | **nothing** — the `Isom`-sheaf | `exists_isomTorsor_of_etale_nTorsion_noBase`, **LEAF** |
+| `exists_isomTorsor_of_etale_nTorsion` | **nothing** — the `Isom`-sheaf | `exists_isomTorsor_of_etale_nTorsion_noBase`, ~~LEAF~~ **PROVEN 2026-07-30**: `g` was deleted from the `X0.lean` original instead, so this row's restatement IS that theorem |
 | `exists_torsionBasis_cover_of_geomPoint` | only via the above | `exists_torsionBasisCover_field`, PROVEN |
 
 `natCast_ne_zero_geomPoint_of_fieldBase` is the replacement for the
@@ -2822,6 +2822,24 @@ end IsomTorsorCoverX1
 (**PROVEN 2026-07-30**, the day after it was opened; formerly a sorry leaf)
 — `X0.lean`'s `exists_isomTorsor_of_etale_nTorsion` **with its
 `g : T ⟶ SpecQ` deleted**.
+
+## STATUS 2026-07-30: **NO LONGER A LEAF — `g` was deleted UPSTREAM instead**
+
+This node was opened because `X0.lean`'s version carried a `g : T ⟶ SpecQ` that
+its own audit conceded was unused ("it is not used by the route above beyond
+`hetale`"), and `X1.lean` cannot edit `X0.lean`'s signature from downstream — so
+the statement was restated here.  It has since been deleted THERE, which is the
+right place: `hetale` already forces `n` invertible on `T` (étale `E[n] ⟶ T` has
+reduced geometric fibres, and in residue characteristic `p ∣ n` it does not), so
+`g` was implied by another hypothesis.
+
+So this declaration is now a one-line specialisation and the `Isom`-sheaf is owed
+ONCE, in `X0.lean`, for `Γ₀` over `ℚ`, `Γ₀` over `𝔽_ℓ` and `Γ₁` over an arbitrary
+field alike.  The three `_noBase` / `_field` theorems above are likewise now
+duplicates of proven `X0.lean` declarations rather than of unproven ones
+(`isFinite_flat_nTorsion` and `etale_nTorsion_of_natCast_ne_zero` there have had
+their base hypotheses removed the same day); they are harmless but redundant, and
+this file's owner may want to collapse them.
 
 That hypothesis is inert there: the node's own docstring says it "owes
 nothing about characteristic, ranks, flatness or finiteness: `hetale` is
