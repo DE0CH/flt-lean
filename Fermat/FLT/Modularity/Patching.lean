@@ -14196,63 +14196,20 @@ theorem isTraceGeneratedDeformation_exchange (p : ℕ) [Fact p.Prime]
   rw [hgen] at h1
   exact top_unique h1
 
-/-- **A maximal-adic ring that is adically SEPARATED is Hausdorff as a space**
-(PROVEN 2026-07-30): `{0} = ⋂ n, J^n` by `IsHausdorff`, each `J^n` is an OPEN
-additive subgroup by `IsAdic` hence closed, so `{0}` is closed, and a
-topological additive group with closed `{0}` is `T2`.
-
-Wanted by `surjective_of_isTraceGeneratedDeformation` below, where the target of
-the control map must be Hausdorff for a compact image to be closed.  Stated for
-an arbitrary ideal `J` rather than the maximal one, since nothing here is
-local. -/
-theorem t2Space_of_isAdic_of_isHausdorff {A : Type*} [CommRing A]
-    [TopologicalSpace A] [IsTopologicalRing A] {J : Ideal A}
-    (hadic : IsAdic J) (hhaus : IsHausdorff J A) : T2Space A := by
-  have hset : ({0} : Set A) = ⋂ n : ℕ, ((J ^ n : Ideal A) : Set A) := by
-    ext x
-    simp only [Set.mem_singleton_iff, Set.mem_iInter, SetLike.mem_coe]
-    refine ⟨fun hx n => hx ▸ Submodule.zero_mem _, fun hx => ?_⟩
-    refine hhaus.haus x fun n => ?_
-    have hmem : x - 0 ∈ (J ^ n • ⊤ : Submodule A A) := by
-      simpa using hx n
-    exact SModEq.sub_mem.mpr hmem
-  have h0 : IsClosed ({0} : Set A) := by
-    rw [hset]
-    refine isClosed_iInter fun n => ?_
-    exact (J ^ n).toAddSubgroup.isClosed_of_isOpen ((isAdic_iff.mp hadic).1 n)
-  haveI := IsTopologicalAddGroup.t1Space A h0
-  infer_instance
-
-/-- **A ring hom carrying one adic ideal into another is CONTINUOUS** (PROVEN
-2026-07-30): `f (JA^n) ⊆ JB^n` by `Ideal.map_pow`, so the preimage of any
-neighbourhood of `0` contains the open `JA^n` for some `n`; an additive-group
-hom continuous at `0` is continuous.
-
-The consumer applies it to a LOCAL homomorphism: `πuniv ∘ f = πA` forces
-`f (𝔪_A) ⊆ 𝔪_B` through `IsLocalRing.ker_eq_maximalIdeal`, and both topologies
-are the maximal-adic one, which is what `AuxDeformationDatum.isAdic` carries and
-what `hadic` says on the `Runiv` side.  Continuity is NOT part of
-`AuxDeformationDatum.IsWeaklyUniversal`, so it has to be derived, and this is
-the derivation. -/
-theorem continuous_of_isAdic_of_map_le {A B : Type*} [CommRing A]
-    [TopologicalSpace A] [IsTopologicalRing A] [CommRing B] [TopologicalSpace B]
-    [IsTopologicalRing B] {JA : Ideal A} {JB : Ideal B}
-    (hA : IsAdic JA) (hB : IsAdic JB) (f : A →+* B) (hf : JA.map f ≤ JB) :
-    Continuous f := by
-  have hpow : ∀ n : ℕ, ∀ x ∈ (JA ^ n : Ideal A), f x ∈ (JB ^ n : Ideal B) := by
-    intro n x hx
-    have h1 : (JA ^ n).map f ≤ JB ^ n := by
-      rw [Ideal.map_pow]
-      exact Ideal.pow_right_mono hf n
-    exact h1 (Ideal.mem_map_of_mem f hx)
-  apply continuous_of_continuousAt_zero (f : A →+ B)
-  intro s hs
-  rw [map_zero] at hs
-  obtain ⟨n, hn⟩ := (isAdic_iff.mp hB).2 s hs
-  refine Filter.mem_map.mpr (Filter.mem_of_superset
-    (((isAdic_iff.mp hA).1 n).mem_nhds (JA ^ n).zero_mem) ?_)
-  intro x hx
-  exact hn (hpow n x hx)
+/-! The two elementary adic-topology facts the surjectivity argument needs —
+*adically separated implies Hausdorff*, and *a local homomorphism of adic local
+rings is continuous* — are NOT restated here.  They are already PROVEN in
+`HardlyRamified/Deformation.lean`, which this module `public import`s, as
+`GaloisRepresentation.t2Space_of_isAdic` and
+`GaloisRepresentation.continuous_of_map_maximalIdeal_le`, where they were
+extracted for the uniqueness half of universality — the same Carayol argument in
+its Hilbert-side incarnation.  Both were briefly re-proven here on 2026-07-30 and
+deleted the same day once the originals were found; `HilbertModularity.lean`
+already carries its own "local copy" of each, and a third copy is worse than
+none.  Note the continuity lemma is stated for MAXIMAL ideals with
+`[IsLocalRing]` on both sides, which is exactly the use below: `πuniv ∘ f = πA`
+forces `f (𝔪_A) ⊆ 𝔪_B` through `IsLocalRing.ker_eq_maximalIdeal`, and continuity
+is not part of `AuxDeformationDatum.IsWeaklyUniversal`, so it must be derived. -/
 
 set_option linter.checkUnivs false in
 /-- **A complete Noetherian local ring with FINITE residue field is COMPACT**
@@ -14286,8 +14243,9 @@ Step 4 is what makes this cheap, and it was worth looking for: `IsAdicComplete`
 is a purely algebraic condition (`IsHausdorff` + `IsPrecomplete`) and the bridge
 to `CompleteSpace` is exactly the content of that mathlib file.  Without it this
 would be a substantial leaf; with it the whole proof is twenty lines.
-`t2Space_of_isAdic_of_isHausdorff` above proves step 4's second half by hand
-because its consumer has no uniformity in scope and needs only `T2Space`.
+Step 4's `T2Space` half is also available without any uniformity as
+`GaloisRepresentation.t2Space_of_isAdic` (`Deformation.lean`), which is what the
+surjectivity glue below uses; here the uniformity is in scope anyway.
 
 WHY IT IS DERIVED RATHER THAN CARRIED: `TaylorWilesCoefficients` carries
 `CompactSpace` as a field, but `AuxDeformationDatum` does not, and adding it
@@ -14351,11 +14309,11 @@ This is clause 1 of `exists_auxDeformationDiamondControl` below, discharged.
 The four steps:
 
 1. `f` is LOCAL (`πuniv ∘ f = πA` plus `IsLocalRing.ker_eq_maximalIdeal` on both
-   sides), hence CONTINUOUS by `continuous_of_isAdic_of_map_le`.  Continuity is
-   not hypothesised anywhere in the deformation interface and has to come from
-   here;
+   sides), hence CONTINUOUS by `continuous_of_map_maximalIdeal_le`
+   (`Deformation.lean`).  Continuity is not hypothesised anywhere in the
+   deformation interface and has to come from here;
 2. `A` is COMPACT (the leaf above), so `Set.range f` is compact;
-3. `Runiv` is HAUSDORFF (`t2Space_of_isAdic_of_isHausdorff`), so that range is
+3. `Runiv` is HAUSDORFF (`t2Space_of_isAdic`, `Deformation.lean`), so that range is
    CLOSED — this is the step that replaces the Hecke side's
    finitely-generated-submodule argument, which is unavailable because `Runiv`
    is not module-finite over `ℤ_[p]`;
@@ -14413,13 +14371,13 @@ theorem surjective_of_isTraceGeneratedDeformation.{a, uK', uR'} {p : ℕ}
       exact RingHom.mem_ker.mp (hkA ▸ hx)
     exact hkU ▸ RingHom.mem_ker.mpr hzero
   have hcont : Continuous f :=
-    continuous_of_isAdic_of_map_le hAadic hadic f hlocal
+    continuous_of_map_maximalIdeal_le hAadic hadic f hlocal
   -- **STEPS 2 AND 3** — compact source, Hausdorff target, closed range.
   haveI : CompactSpace A :=
     compactSpace_of_isAdicComplete_of_finite_residueField.{a, uK'} hAadic
       hAcomplete hπA
-  haveI : T2Space Runiv :=
-    t2Space_of_isAdic_of_isHausdorff hadic hcomplete.toIsHausdorff
+  haveI : IsHausdorff (IsLocalRing.maximalIdeal Runiv) Runiv := hcomplete.toIsHausdorff
+  haveI : T2Space Runiv := t2Space_of_isAdic hadic
   have hclosed : IsClosed (fa.range : Set Runiv) := by
     have hrange : (fa.range : Set Runiv) = Set.range f := by
       ext x; simp [fa]
