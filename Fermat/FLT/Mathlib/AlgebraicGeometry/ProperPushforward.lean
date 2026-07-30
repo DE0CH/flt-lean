@@ -17,6 +17,13 @@ public import Mathlib.AlgebraicGeometry.Gluing
 public import Mathlib.AlgebraicGeometry.Morphisms.UnderlyingMap
 public import Mathlib.AlgebraicGeometry.Morphisms.Flat
 public import Mathlib.RingTheory.Flat.FaithfullyFlat.Algebra
+public import Mathlib.RingTheory.LocalRing.Module
+public import Mathlib.RingTheory.Nakayama
+public import Mathlib.RingTheory.LocalProperties.Projective
+public import Mathlib.Algebra.Module.LocalizedModule.Exact
+public import Mathlib.RingTheory.Localization.AtPrime.Basic
+public import Mathlib.LinearAlgebra.Basis.VectorSpace
+public import Mathlib.LinearAlgebra.TensorProduct.Basis
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.Morphisms.SmoothReduced
 
 /-!
@@ -110,15 +117,29 @@ run is for `pushoutSection`, not for `directImage`.
     obstruction analysis — why no point-set, localization, completion or Stein-factorization
     argument closes it — and a 2026-07-28 pin re-check run in **mathlib's** vocabulary
     rather than this project's.
-  * `exists_finiteFree_ker_linearEquiv_appTop_of_isIso_appTop_fiber` — **LEAF**
-    (2026-07-28), the only geometry left in the cluster: Grothendieck's complex in degree
-    `0`.  There are finite free `R`-modules with `Γ(X, ⊤) ≃ₗ ker d` such that the same `d`
-    computes `H⁰` of every fibre after reduction mod `𝔪`, that `H⁰` being the line spanned
-    by the image of `1`.  In degree `0` the identification needs only the sheaf axiom for a
-    finite affine cover and flatness of `f` — **no cohomology theory at all**; what does use
-    Grothendieck coherence is replacing the Čech complex by a FINITE FREE one, and that
-    finiteness is load-bearing for the next leaf.
-  * `inf_smul_top_le_smul_ker_of_forall_isMaximal_comap_le` — **LEAF** (2026-07-28), pure
+  * `eq_span_one_sup_smul_top_appTop_of_isIso_appTop_fiber` — **LEAF** (CUT 2026-07-29), the
+    only geometry left in the cluster and now a single EQUATION rather than an existential:
+    `Γ(X, ⊤) = R·1 + 𝔪·Γ(X, ⊤)` at every maximal `𝔪`, i.e. Nakayama's input.  Its docstring
+    carries an **elementary route** — localise, dévissage of `Γ(X, J𝒪_X)` along a
+    composition series, and an induction on `dim R` using a nonzerodivisor (with the
+    `𝔪`-power torsion handled separately in the depth-zero case).  That route uses **no
+    higher cohomology, no Grothendieck complex and no theorem on formal functions**; it does
+    need a NOETHERIAN base, which is the same gap already recorded for
+    `finiteType_appTop_of_isProper`, so one limit-theory build unlocks both remaining leaves.
+  * `exists_flatRange_ker_linearEquiv_appTop_of_isIso_appTop_fiber` — **PROVEN**
+    (2026-07-29) over the leaf above, by the witness `C₀ = C₁ = Γ(X, ⊤)`, `d = 0` that its
+    own non-vacuity paragraph had already identified.  It used to be the leaf, in the shape
+    "there are `R`-modules and a `d : C₀ ⟶ C₁` with `range d` FLAT, `Γ(X, ⊤) ≃ₗ ker d`, and
+    the same `d` computing `H⁰` of every fibre after reduction mod `𝔪`".  The complex, the
+    flatness clause and the `LinearEquiv` were bookkeeping around the equation above.
+  * `exists_finiteFree_ker_linearEquiv_appTop_of_isIso_appTop_fiber` — **PROVEN**
+    (2026-07-28) over the leaf above.  It used to BE the leaf, demanding Grothendieck's
+    finite free complex; that shape turned out to be strictly more than the consumer needs.
+    Finite freeness is a vehicle for one conclusion, `ker d ∩ 𝔪C₀ ≤ 𝔪·ker d`, and that
+    follows from flatness of `range d` alone with no finiteness whatever
+    (`inf_smul_top_le_smul_ker_of_flat_range`).  Once the leaf is known, `A ≅ R` and the
+    complex may be taken to be `R^1 ⟶ R^0`.
+  * `inf_smul_top_le_smul_ker_of_forall_isMaximal_comap_le` — **PROVEN** (2026-07-28), pure
     commutative algebra with no geometry in it at all: for `d : R^{n₀} ⟶ R^{n₁}` between
     finite free modules, if `K/𝔪K ⟶ ker(d mod 𝔪)` is surjective at every maximal ideal then
     it is injective.  Tor-theoretically: the hypothesis is `Tor₁(R^{n₁}/range d, R/𝔪) = 0`,
@@ -1221,7 +1242,105 @@ has `Γ = R[x]`, which *is* of finite type — so the counterexample to the fini
 statement is not one to this one.  The right witness that properness is doing work here is
 the non-quasi-compact / non-separated side: `Γ` of an infinite disjoint union of copies of
 `S` is `R^ℕ`, not a finite-type `R`-algebra, and quasi-compactness (a consequence of
-universal closedness) is what excludes it. -/
+universal closedness) is what excludes it.
+
+---
+
+**AUDIT BLOCK (2026-07-29).**  Three findings, kept separate from the paragraphs above so
+that the concurrent rewrite of them merges cleanly.  Nothing here is proven in Lean; all of
+it is evidence about *where* the leaf stands.
+
+**(A) FAITHFULNESS CONCERN, UNRESOLVED: this leaf is not known to be TRUE over a
+NON-NOETHERIAN base, and the standard references do not assert it there.**  This is the
+first thing a prover should settle, because if it is false the leaf must be restated before
+any theory is built against it.
+
+The classical finiteness theorem (EGA III 3.2.1, Stacks 02O5) is stated for a **locally
+noetherian** base.  The non-noetherian statement that *is* in the literature is Stacks 0B91:
+for `f` proper, flat and of finite presentation and `F` finitely presented and `S`-flat,
+`Rf_*F` is a **perfect** object of `D(𝒪_S)` whose formation commutes with base change.
+Perfect means locally a bounded complex of finite free modules — it does **not** say the
+individual cohomology modules are finite, and in general they are not: `H⁰` of a two-term
+complex `[Rᵃ ⟶ Rᵇ]` is a kernel, and a kernel of a matrix over a non-noetherian ring need
+not be finitely generated.
+
+The obstruction is locatable exactly.  Write `S = Spec R` with `R` an `R₀`-algebra, `R₀`
+noetherian, and let `K` be a bounded complex of finite free `R₀`-modules computing
+`Rf₀_*𝒪_{X₀}` for a model `X₀ ⟶ Spec R₀` (this is the standard "Mumford complex", EGA III
+6.10.5).  Base change plus universal coefficients give
+
+  `0 ⟶ H⁰(X₀, 𝒪) ⊗_{R₀} R ⟶ Γ(X, 𝒪_X) ⟶ Tor₁^{R₀}(H¹(X₀, 𝒪), R) ⟶ 0`.
+
+So `Γ(X, 𝒪_X)` is a finite `R`-module **iff** `Tor₁^{R₀}(H¹(X₀, 𝒪), R)` is, and that group
+is `ann_R(a)` when `H¹(X₀, 𝒪)` has a torsion class killed by `a ∈ R₀`.  Taking
+`R = R₀[x₁, x₂, …]/(a·x₁, a·x₂, …)` makes `ann_R(a) ⊇ (x₁, x₂, …)` **not finitely
+generated**, and `R` is a perfectly good base: base change preserves `IsProper`, `Flat` and
+`LocallyOfFinitePresentation`, so the hypotheses of this leaf survive intact.
+
+**What is missing to turn this into a refutation** — and it is a single, self-contained
+question: exhibit a proper flat finitely-presented `X₀ ⟶ Spec R₀` over a *noetherian* `R₀`
+with a **torsion class in `H¹(X₀, 𝒪_{X₀})`**.  Torsion there is equivalent to `h⁰(𝒪)`
+jumping on a special fibre, which is why the usual families do not supply it: for a flat
+family of curves `χ(𝒪)` is constant and `h⁰` is forced to `1` as soon as the fibres stay
+connected and reduced (Zariski connectedness via the Stein factorization), and for families
+of plane curves or of conics degenerating to line pairs `h⁰ ≡ 1`, so `R¹f_*𝒪` is locally
+free and there is no torsion.  Candidates that are *believed* to work but were **not**
+verified here: an elliptic fibration with a **wild** multiple fibre (torsion in `R¹f_*𝒪`
+exists exactly at wild fibres, so char `p`; in char `0` all multiple fibres are tame and
+`R¹f_*𝒪` is locally free — the char-`0` Dolgachev-surface version of this example does
+**not** work, which is the trap), and non-reduced degenerations with an extra global
+function.  Do not repeat the char-`0` elliptic-surface attempt; it was checked and fails.
+
+**The repair, if the concern is confirmed, is cheap and needs no new theory.**  Both
+consumers of `module_finite_appTop_of_isProper` — `module_flat_appTop_of_isIso_appTop_fiber`
+and `isIso_appTop_of_isIso_appTop_fiber` — already carry the fibrewise hypothesis
+`h : ∀ s, IsIso (f.fiberToSpecResidueField s).appTop`, and neither passes it here.  With `h`
+the statement becomes the **constant-`h⁰`** case of cohomology and base change (III.12.11 /
+Grauert), which is true over an arbitrary base and is what the consumers actually need.
+Note this is *not* a circular cut: `h` plus `A/𝔪A ≅ R/𝔪` yields `A = R` only through
+Nakayama, which needs the finiteness this leaf supplies, so a finiteness proof from `h` must
+still run a genuine base-change argument.  Adding `h` to this leaf is therefore the
+conservative move, and it costs the two call sites one extra argument each.
+
+**(B) CORRECTION — "limits / approximation of schemes are absent from the pin" is FALSE.**
+Re-checked at pin `a3364faec4` on 2026-07-29.  `Mathlib/AlgebraicGeometry/
+AffineTransitionLimit.lean` is a **1371-line development of EGA IV 8 / Stacks 01YT**:
+inverse limits of schemes with affine transition maps, `Scheme.nonempty_of_isLimit`,
+`Scheme.compactSpace_of_isLimit`, `Scheme.exists_isAffine_of_isLimit`,
+`Scheme.exists_isOpenCover_and_isAffine`, `nonempty_isColimit_Γ_mapCocone` (`Γ` of a limit
+is the colimit of the `Γ`s), and `Scheme.preservesColimit_yoneda`
+(`Hom_S(lim Dᵢ, X) = colim Hom_S(Dᵢ, X)` for `X` locally of finite presentation over `S` —
+EGA IV 8.14.2).  The claim that `SpreadingOut.lean` "spreads out stalk morphisms only" is
+true of `SpreadingOut.lean` but was used to conclude that scheme-level approximation is
+absent, and that conclusion is wrong.
+
+What is genuinely absent is narrower and should be named as such: **object descent**, i.e.
+EGA IV 8.8.2 / Stacks 01ZM — given `X` locally of finite presentation over `S = lim Sᵢ`,
+produce an index `i` and `Xᵢ ⟶ Sᵢ` with `X ≅ Xᵢ ×_{Sᵢ} S` — together with **descent of the
+properties** `IsProper` and `Flat` to a finite stage (EGA IV 8.10.5, 11.2.6).  Mathlib has
+the morphism half and not the object half.  So the noetherian reduction is a much smaller
+build than the earlier note implies, and it sits on top of substantial existing machinery.
+
+**(C) NEGATIVE RESULT — the "flat base change to the generic fibre" shortcut cannot prove
+the consumer, and should not be attempted as stated.**  The proposal was: over a normal
+noetherian domain base, `A ⊗_R Frac R ≅ Γ(X_η) = Frac R` by flat base change and `h` at the
+generic point; `A` is `R`-torsion-free because it embeds by the sheaf axiom in `∏ᵢ Γ(X, Uᵢ)`
+and each factor is `R`-flat; `A` is integral over `R`; hence `A ↪ Frac R` with image integral
+over the normal `R`, so `A = R` — bypassing *both* open leaves in this file.  The
+mathematics of that argument is correct as far as it goes.
+
+It nevertheless does not discharge what this file must prove, because
+`hasUniversallyTrivialPushforward_of_isProper_of_flat` establishes
+`hasTrivialPushforwardProperty.universally f`, which quantifies over **every** pullback
+square — the base `S'` of the base-changed morphism is an arbitrary scheme, not one inherited
+from the top-level call site.  So even though the outermost consumers instantiate the base at
+`Spec ℚ` (`Fermat/FLT/ModularCurve/EllipticScheme.lean` around line 9756 and
+`Fermat/FLT/ModularCurve/X0.lean` around line 28036), normality of `R` is not available where
+the work happens.  Making the shortcut usable would mean weakening
+`HasUniversallyTrivialPushforward` to quantify only over base changes along morphisms from
+normal (or smooth-over-`ℚ`) schemes and re-checking every use in the rigidity lemma — an
+architectural change with a real chance of success, since the base changes the rigidity proof
+performs are to products of smooth `ℚ`-schemes, but not one to make from inside this leaf. -/
 theorem finiteType_appTop_of_isProper (f : X ⟶ S) [IsAffine S]
     [IsProper f] [Flat f] [LocallyOfFinitePresentation f] :
     f.appTop.hom.FiniteType :=
@@ -1419,6 +1538,14 @@ residue field `κ(s)`.  So `A/𝔪A = κ(s) ⊕ 𝔫` with `𝔫` nilpotent and 
 `𝔫 = 0`.  Nilpotents are invisible to the topology and the fibre may itself be non-reduced
 (a ribbon on `ℙ¹` has `H⁰ = k`), so `𝔫 = 0` follows from no point-set argument.  Nor does
 any of the following work, each of which was tried and is recorded so it is not tried again:
+**THE VERDICT OF THE NEXT THREE BULLETS IS SUPERSEDED (2026-07-29).**  They are correct
+about the three routes they describe and were read — including by this docstring's own
+summary — as saying that no elementary argument exists.  That reading is FALSE: localising
+WITHOUT completing, and inducting on `dim R`, closes the leaf over a noetherian base with no
+higher cohomology, no Grothendieck complex and no theorem on formal functions.  The route is
+written out on `eq_span_one_sup_smul_top_appTop_of_isIso_appTop_fiber` below.  In particular
+the first bullet's "what is missing is … the THEOREM ON FORMAL FUNCTIONS" is a fact about
+the completion route only; the induction below never forms `lim_n Γ(X_n, 𝒪)`.
 * *Localize and complete.*  `R ⟶ R_𝔪` and `R ⟶ \hat R_𝔪` are FLAT, so
   `isIso_pushoutSection_of_isQuasiSeparated_of_flat_right` transports `A` along them and one
   may assume `R` complete local noetherian.  Over such an `R` one gets, by induction on `n`
@@ -1436,14 +1563,35 @@ any of the following work, each of which was tried and is recorded so it is not 
   and `Spec(A ⊗ κ(s))` is a single point either way, so it gives no new information.
 
 **PIN RE-CHECK, 2026-07-28, in MATHLIB's vocabulary rather than this project's.**  The
-absence claim above is not inherited; it was re-run against `Mathlib/` and `~/cs/FLT/`:
-* `QuasiCoherent` has **zero** occurrences anywhere under `Mathlib/AlgebraicGeometry/`.  So
-  there are no quasi-coherent sheaves, hence no coherent cohomology and no `Rⁱf_*`.
+absence claim above is not inherited; it was re-run against `Mathlib/` and `~/cs/FLT/`.
+**TWO CLAUSES OF THE 2026-07-28 RE-CHECK WERE FALSE ABSENCES and are corrected here
+(2026-07-28, second pass); both were greps that missed by SPELLING or by DIRECTORY, which is
+the standard failure mode.  The operative conclusion — no coherence, no `Rⁱf_*`, no base
+change — nevertheless STANDS, and was re-verified.**
+* ~~`QuasiCoherent` has zero occurrences anywhere under `Mathlib/AlgebraicGeometry/`, so
+  there are no quasi-coherent sheaves.~~  **FALSE.**  The capital-`C` grep is what returns
+  zero: `Mathlib` spells it **`Quasicoherent`**, and quasi-coherent sheaves DO exist —
+  `SheafOfModules.IsQuasicoherent` in
+  `Mathlib/Algebra/Category/ModuleCat/Sheaf/Quasicoherent.lean` (51 occurrences), used in
+  `Mathlib/AlgebraicGeometry/Modules/Tilde.lean` (30 occurrences), which builds `tilde M`,
+  the adjunction `tilde ⊣ Γ` on an affine, `instance : (tilde M).IsQuasicoherent`, and
+  stability of quasi-coherence under pushforward along an affine map and under restriction to
+  an open.  What is genuinely absent is everything DERIVED: no `Rⁱf_*`, no coherence, no
+  finiteness, no base change.  `higherDirectImage` and `directImage` still have zero hits
+  anywhere in `Mathlib/`, and `IsCoherent` occurs only in topology and in
+  `CategoryTheory/Sites/Coherent` (a Grothendieck topology, unrelated).
 * Sheaf cohomology exists only ABSTRACTLY and only on sites:
   `Mathlib/CategoryTheory/Sites/SheafCohomology/Basic.lean` defines `H F n` as an `Ext` in
   the category of `AddCommGrpCat`-valued sheaves, with `H.equiv₀ : H F 0 ≃+ F(T)`.  There is
-  no Čech comparison, no finiteness, no base change, and it is not connected to
+  no finiteness and no base change, and it is not connected to
   `AlgebraicGeometry.Scheme.Modules`.
+* ~~There is no Čech complex.~~  **FALSE.**
+  `Mathlib/CategoryTheory/Sites/SheafCohomology/Cech.lean` (with a
+  `MayerVietoris.lean` beside it) defines `CategoryTheory.cechComplexFunctor`, the Čech
+  cochain complex of a presheaf for a family `U : ι → C` in a category with finite products.
+  It is three definitions and no theorems: there is still **no Čech-to-derived comparison**,
+  so it computes nothing on its own — but a prover building the degree-`0` Čech complex below
+  should start from it rather than roll their own.
 * `Scheme.Modules` DOES exist now (`Mathlib/AlgebraicGeometry/Modules/Sheaf.lean`) with
   `pushforward`, `pullback` and their adjunction — degree zero only, nothing derived.  This
   is new since the paragraph at the head of this file was written and is the right place to
@@ -1500,7 +1648,223 @@ proven bridge `rank_quotient_le_one_of_fibre_span` between them.  The two paragr
 describing that cut are what got carried out; read them as the plan and the declarations
 below as its realisation. -/
 
-/-- **LEAF 3a-CA — THE COMMUTATIVE ALGEBRA OF DEGREE-ZERO BASE CHANGE** (LEAF, 2026-07-28).
+/-- Over a field, a linear map out of a finite-dimensional space admits a finite family of
+vectors whose images form a basis of its range.  This is the only place linear algebra over
+the residue field is used in `free_of_isLocalRing_of_comap_smul_le`, and it is stated
+separately because keeping the field abstract is what stops `whnf` from unfolding
+`IsLocalRing.ResidueField R = R ⧸ maximalIdeal R` during instance search. -/
+theorem exists_linearIndependent_image_of_field
+    {k V W : Type*} [Field k] [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [AddCommGroup W] [Module k W] (T : V →ₗ[k] W) :
+    ∃ (m : ℕ) (v : Fin m → V), LinearIndependent k (fun i => T (v i)) ∧
+      LinearMap.range T ≤ Submodule.span k (Set.range fun i => T (v i)) := by
+  classical
+  haveI : Module.Free k (LinearMap.range T) := Module.Free.of_divisionRing k (LinearMap.range T)
+  set m := Module.finrank k (LinearMap.range T) with hm
+  set bb : Module.Basis (Fin m) k (LinearMap.range T) :=
+    Module.finBasis k (LinearMap.range T) with hbb
+  choose v hv using fun i : Fin m => (bb i).2
+  have hcomp : (fun i => T (v i)) = (LinearMap.range T).subtype ∘ (bb : Fin m → _) := by
+    funext i; rw [hv i]; rfl
+  refine ⟨m, v, ?_, ?_⟩
+  · rw [hcomp]
+    exact bb.linearIndependent.map' _ (Submodule.ker_subtype _)
+  · rw [hcomp, Set.range_comp, ← Submodule.map_span, bb.span_eq, Submodule.map_top,
+      Submodule.range_subtype]
+
+open TensorProduct in
+/-- The base change of `Finsupp.linearCombination R w` along `R ⟶ A` is injective as soon as the
+base-changed family `1 ⊗ w i` is `A`-linearly independent. -/
+theorem injective_lTensor_linearCombination
+    {R : Type*} [CommRing R] {A : Type*} [CommRing A] [Algebra R A]
+    {N : Type*} [AddCommGroup N] [Module R N] {m : ℕ} (w : Fin m → N)
+    (hw : LinearIndependent A (fun i => (1 : A) ⊗ₜ[R] w i)) :
+    Function.Injective ((Finsupp.linearCombination R w).lTensor A) := by
+  classical
+  set bb : Module.Basis (Fin m) A (A ⊗[R] (Fin m →₀ R)) :=
+    (Finsupp.basisSingleOne).baseChange A with hbb
+  have key : ((Finsupp.linearCombination R w).baseChange A) =
+      (Finsupp.linearCombination A (fun i => (1 : A) ⊗ₜ[R] w i)) ∘ₗ bb.repr.toLinearMap := by
+    refine bb.ext fun i => ?_
+    have h1 : bb i = (1 : A) ⊗ₜ[R] (Finsupp.single i (1 : R)) := by
+      rw [hbb, Module.Basis.baseChange_apply]
+      simp
+    have h2 : bb.repr (bb i) = Finsupp.single i (1 : A) := Module.Basis.repr_self bb i
+    simp only [LinearMap.comp_apply, LinearEquiv.coe_coe, h2, Finsupp.linearCombination_single,
+      one_smul]
+    rw [h1, LinearMap.baseChange_tmul]
+    simp
+  have hinj : Function.Injective ((Finsupp.linearCombination R w).baseChange A) := by
+    rw [key]
+    exact hw.finsuppLinearCombination_injective.comp bb.repr.injective
+  rwa [LinearMap.baseChange_eq_ltensor] at hinj
+
+set_option maxHeartbeats 1000000 in
+open IsLocalRing TensorProduct in
+/-- **THE LOCAL HALF of `inf_smul_top_le_smul_ker_of_forall_isMaximal_comap_le`** (PROVEN,
+2026-07-28).  Over a LOCAL ring `(R, 𝔪, k)`, if `F₀ ⟶ F₁ ⟶ P ⟶ 0` is exact with `F₀` finite
+and `F₁` finite free, and if `d⁻¹(𝔪F₁) ≤ K + 𝔪F₀` for some `K ≤ ker d`, then `P` is FREE.
+
+**The proof, and why it needs no Tor.**  Choose `e i : F₀` whose images `d(e i)` reduce to a
+`k`-basis of `range (d ⊗ k)`.  The hypothesis says exactly that `ker (d ⊗ k)` is hit by
+`K ⊗ k`, so `F₀ = span{e i} + K + 𝔪F₀`, and Nakayama (`F₀` finite, `𝔪 ≤ jacobson ⊥`) upgrades
+this to `F₀ = span{e i} + ker d`.  Hence `range d = span{d (e i)}` is the range of
+`φ : Rⁿ ⟶ F₁`, `φ` has `k ⊗ φ` injective by construction, and mathlib's
+`Module.free_of_lTensor_residueField_injective` applied to `Rⁿ ⟶ F₁ ⟶ P ⟶ 0` gives `P` free.
+
+`K` is a parameter rather than `ker d` itself because the caller feeds in the LOCALIZATION of
+a kernel, which is contained in — and in fact equal to, though that is not needed — the kernel
+of the localized map. -/
+theorem free_of_isLocalRing_of_comap_smul_le
+    {R F₀ F₁ P : Type*} [CommRing R] [IsLocalRing R]
+    [AddCommGroup F₀] [Module R F₀] [Module.Finite R F₀]
+    [AddCommGroup F₁] [Module R F₁] [Module.Finite R F₁] [Module.Free R F₁]
+    [AddCommGroup P] [Module R P]
+    (d : F₀ →ₗ[R] F₁) (g : F₁ →ₗ[R] P) (hg : Function.Surjective g)
+    (hex : Function.Exact d g)
+    (K : Submodule R F₀) (hK : K ≤ LinearMap.ker d)
+    (h : Submodule.comap d (maximalIdeal R • (⊤ : Submodule R F₁)) ≤
+      K ⊔ maximalIdeal R • (⊤ : Submodule R F₀)) :
+    Module.Free R P := by
+  classical
+  obtain ⟨m, v, hvli, hvsp⟩ :=
+    exists_linearIndependent_image_of_field (d.baseChange (ResidueField R))
+  choose e he using fun i : Fin m => TensorProduct.mk_surjective R F₀ (ResidueField R)
+    Ideal.Quotient.mk_surjective (v i)
+  simp only [TensorProduct.mk_apply] at he
+  have hDe : ∀ i : Fin m, (d.baseChange (ResidueField R)) (v i)
+      = (1 : ResidueField R) ⊗ₜ[R] d (e i) := by
+    intro i; rw [← he i, LinearMap.baseChange_tmul]
+  set φ : (Fin m →₀ R) →ₗ[R] F₁ := Finsupp.linearCombination R (fun i => d (e i)) with hφ
+  have hsm : ∀ (r : R) (z : F₀), (1 : ResidueField R) ⊗ₜ[R] (r • z) =
+      (IsLocalRing.residue R r) • ((1 : ResidueField R) ⊗ₜ[R] z) := by
+    intro r z
+    rw [← TensorProduct.smul_tmul, TensorProduct.smul_tmul']
+    congr 1
+  -- (1) `k ⊗ φ` is injective.
+  have hφinj : Function.Injective (φ.lTensor (ResidueField R)) := by
+    refine injective_lTensor_linearCombination (fun i => d (e i)) ?_
+    have : (fun i => (1 : ResidueField R) ⊗ₜ[R] d (e i))
+        = fun i => (d.baseChange (ResidueField R)) (v i) := by
+      funext i; rw [hDe i]
+    rw [this]
+    exact hvli
+  -- (2) Nakayama: `F₀ = span {e i} + ker d`.
+  have hjac : maximalIdeal R ≤ Ideal.jacobson (⊥ : Ideal R) := by
+    rw [IsLocalRing.jacobson_eq_maximalIdeal (⊥ : Ideal R) bot_ne_top]
+  have hspan : (⊤ : Submodule R F₀) ≤
+      Submodule.span R (Set.range e) ⊔ LinearMap.ker d := by
+    refine Submodule.le_of_le_smul_of_le_jacobson_bot Module.Finite.fg_top hjac ?_
+    intro x _
+    have hxW : (d.baseChange (ResidueField R)) ((1 : ResidueField R) ⊗ₜ[R] x)
+        ∈ Submodule.span (ResidueField R)
+          (Set.range fun i => (d.baseChange (ResidueField R)) (v i)) :=
+      hvsp (LinearMap.mem_range_self _ _)
+    rw [Submodule.mem_span_range_iff_exists_fun] at hxW
+    obtain ⟨c, hc⟩ := hxW
+    choose a ha using fun i : Fin m => IsLocalRing.residue_surjective (c i)
+    have hsum : (d.baseChange (ResidueField R))
+        ((1 : ResidueField R) ⊗ₜ[R] (∑ i, a i • e i))
+        = (d.baseChange (ResidueField R)) ((1 : ResidueField R) ⊗ₜ[R] x) := by
+      rw [TensorProduct.tmul_sum]
+      simp only [map_sum]
+      rw [Finset.sum_congr rfl (fun i _ =>
+        show (d.baseChange (ResidueField R)) ((1 : ResidueField R) ⊗ₜ[R] (a i • e i))
+            = c i • (d.baseChange (ResidueField R)) (v i) by
+          rw [hsm, map_smul, ha i, ← he i])]
+      exact hc
+    have hdy : (1 : ResidueField R) ⊗ₜ[R] (d (x - ∑ i, a i • e i)) = 0 := by
+      have hz : (d.baseChange (ResidueField R))
+          ((1 : ResidueField R) ⊗ₜ[R] (x - ∑ i, a i • e i)) = 0 := by
+        rw [TensorProduct.tmul_sub, map_sub, hsum, sub_self]
+      rwa [LinearMap.baseChange_tmul] at hz
+    have hmem : (x - ∑ i, a i • e i) ∈ Submodule.comap d
+        (maximalIdeal R • (⊤ : Submodule R F₁)) := by
+      rw [Submodule.mem_comap, ← LinearMap.ker_tensorProductMk (R := R) (Q := F₁)
+        (I := maximalIdeal R)]
+      exact hdy
+    have hmem2 := h hmem
+    have hxe : (∑ i, a i • e i) ∈ Submodule.span R (Set.range e) :=
+      Submodule.sum_mem _ fun i _ => Submodule.smul_mem _ _
+        (Submodule.subset_span ⟨i, rfl⟩)
+    have hfin : x = (∑ i, a i • e i) + (x - ∑ i, a i • e i) := by abel
+    rw [hfin]
+    refine Submodule.add_mem _ ?_ ?_
+    · exact Submodule.mem_sup_left (Submodule.mem_sup_left hxe)
+    · rcases Submodule.mem_sup.mp hmem2 with ⟨u, hu, y, hy, huy⟩
+      rw [← huy]
+      exact Submodule.add_mem _ (Submodule.mem_sup_left (Submodule.mem_sup_right (hK hu)))
+        (Submodule.mem_sup_right hy)
+  -- (3) `range φ = range d`.
+  have hrange : LinearMap.range φ = LinearMap.range d := by
+    have h1 : LinearMap.range φ = Submodule.map d (Submodule.span R (Set.range e)) := by
+      rw [hφ, Finsupp.range_linearCombination, Submodule.map_span, ← Set.range_comp]
+      rfl
+    have h2 : Submodule.map d (LinearMap.ker d) = ⊥ := by
+      rw [eq_bot_iff]
+      rintro _ ⟨z, hz, rfl⟩
+      simpa using hz
+    rw [h1]
+    refine le_antisymm LinearMap.map_le_range ?_
+    calc LinearMap.range d = Submodule.map d ⊤ := (Submodule.map_top d).symm
+      _ ≤ Submodule.map d (Submodule.span R (Set.range e) ⊔ LinearMap.ker d) :=
+          Submodule.map_mono hspan
+      _ = Submodule.map d (Submodule.span R (Set.range e)) ⊔ Submodule.map d (LinearMap.ker d) :=
+          Submodule.map_sup _ _ _
+      _ = Submodule.map d (Submodule.span R (Set.range e)) := by rw [h2, sup_bot_eq]
+  have hexφ : Function.Exact φ g := by
+    rw [LinearMap.exact_iff] at hex ⊢
+    rw [hrange]; exact hex
+  exact Module.free_of_lTensor_residueField_injective φ g hg hexφ hφinj
+
+/-- If `mk' f y s` lies in the localization of a submodule `N`, then some `t` in the localizing
+submonoid pushes `y` itself into `N`. -/
+theorem exists_smul_mem_of_mk'_mem_localized' {R : Type*} [CommRing R] (S : Submonoid R)
+    {M M' : Type*} [AddCommGroup M] [Module R M] [AddCommGroup M'] [Module R M']
+    (A : Type*) [CommRing A] [Algebra R A] [IsLocalization S A] [Module A M']
+    [IsScalarTower R A M']
+    (f : M →ₗ[R] M') [IsLocalizedModule S f] (N : Submodule R M) (y : M) (s : S)
+    (hy : IsLocalizedModule.mk' f y s ∈ N.localized' A S f) :
+    ∃ t : S, (t : R) • y ∈ N := by
+  obtain ⟨n, hn, u, hu⟩ := hy
+  rw [IsLocalizedModule.mk'_eq_mk'_iff] at hu
+  obtain ⟨w, hw⟩ := hu
+  refine ⟨w * u, ?_⟩
+  have hcalc : ((w * u : S) : R) • y = ((w * s : S) : R) • n := by
+    simp only [Submonoid.coe_mul, mul_smul]
+    exact hw
+  rw [hcalc]
+  exact N.smul_mem _ hn
+
+/-- The localization at a maximal ideal `I` carries `I • ⊤` to `𝔪 • ⊤`. -/
+theorem localized'_smul_top_eq {R : Type*} [CommRing R] (I : Ideal R) [hI : I.IsMaximal]
+    {M : Type*} [AddCommGroup M] [Module R M] :
+    (I • (⊤ : Submodule R M)).localized' (Localization.AtPrime I) I.primeCompl
+        (LocalizedModule.mkLinearMap I.primeCompl M)
+      = IsLocalRing.maximalIdeal (Localization.AtPrime I) •
+        (⊤ : Submodule (Localization.AtPrime I) (LocalizedModule I.primeCompl M)) := by
+  apply le_antisymm
+  · rw [Submodule.localized'_eq_span, Submodule.span_le]
+    rintro _ ⟨y, hy, rfl⟩
+    refine Submodule.smul_induction_on hy (fun r hr z _ => ?_) (fun z z' hz hz' => ?_)
+    · rw [map_smul, ← IsScalarTower.algebraMap_smul (Localization.AtPrime I) r]
+      refine Submodule.smul_mem_smul ?_ Submodule.mem_top
+      rw [← Localization.AtPrime.map_eq_maximalIdeal]
+      exact Ideal.mem_map_of_mem _ hr
+    · rw [map_add]; exact Submodule.add_mem _ hz hz'
+  · rw [Submodule.smul_le]
+    intro a ha z _
+    obtain ⟨⟨c, s⟩, rfl⟩ := IsLocalization.mk'_surjective I.primeCompl a
+    obtain ⟨⟨y, t⟩, rfl⟩ := IsLocalizedModule.mk'_surjective I.primeCompl
+      (LocalizedModule.mkLinearMap I.primeCompl M) z
+    simp only [Function.uncurry_apply_pair] at ha ⊢
+    rw [IsLocalization.AtPrime.mk'_mem_maximal_iff (Localization.AtPrime I) I] at ha
+    rw [IsLocalizedModule.mk'_smul_mk']
+    exact ⟨c • y, Submodule.smul_mem_smul ha Submodule.mem_top, s * t, rfl⟩
+
+set_option maxHeartbeats 1000000 in
+/-- **LEAF 3a-CA — THE COMMUTATIVE ALGEBRA OF DEGREE-ZERO BASE CHANGE** — **PROVEN**
+(2026-07-28).
 Self-contained, no geometry, and stated entirely in `RingTheory` vocabulary: it could be
 hoisted to a shim file or upstreamed unchanged.
 
@@ -1530,16 +1894,142 @@ reader is likely to try to weaken: the conclusion is false for a general flat `F
 forces flatness.  That is exactly why the geometric leaf below must produce Grothendieck's
 finite free complex rather than the Čech complex it starts from.  Quantifying the hypothesis
 over ALL maximal ideals while concluding at ONE is also not an oversight: flatness of `M` is
-a global statement and the local criterion consumes every maximal ideal. -/
+a global statement and the local criterion consumes every maximal ideal.
+
+**THE PROOF ACTUALLY CARRIED OUT (2026-07-28), and it is Tor-free.**  `Tor` is never named;
+every Tor-vanishing statement above is replaced by a SPLITTING, which is what makes the
+argument fit `Mathlib` at this pin (there is no `Tor` of modules here, only the abstract
+monoidal one).
+
+1. `M = Rⁿ¹ / range d` is finitely presented, `Module.finitePresentation_of_free_of_surjective`.
+2. `M` is PROJECTIVE, by `Module.projective_of_localization_maximal` — projectivity of a
+   finitely presented module may be checked on stalks.  At a maximal `I` the local statement
+   is `free_of_isLocalRing_of_comap_smul_le` above, applied to the localized presentation
+   `(Rⁿ⁰)_I ⟶ (Rⁿ¹)_I ⟶ M_I ⟶ 0` (exact because localization is exact) with
+   `K = (ker d)_I`.  Transporting the hypothesis at `I` is `localized'_smul_top_eq` plus
+   `exists_smul_mem_of_mk'_mem_localized'`: clear denominators, apply `hsurj I`, put the
+   denominator back.
+3. `0 ⟶ range d ⟶ Rⁿ¹ ⟶ M ⟶ 0` therefore splits, so `range d` is projective;
+4. hence `0 ⟶ ker d ⟶ Rⁿ⁰ ⟶ range d ⟶ 0` splits, giving a retraction `p : Rⁿ⁰ ⟶ ker d`;
+5. and then `x ∈ ker d ⊓ 𝔪Rⁿ⁰` gives `x = p x ∈ p(𝔪Rⁿ⁰) = 𝔪·p(Rⁿ⁰) ≤ 𝔪·ker d`.
+
+**TWO OBSERVATIONS ON THE STATEMENT, recorded rather than acted on.**  (a) `hm` is not used:
+step 5 works for an ARBITRARY ideal `m` once `ker d` is a direct summand, so maximality of
+the *conclusion's* ideal is redundant (maximality of the *hypothesis's* ideals is not — step 2
+consumes `hsurj` at every maximal ideal).  (b) The faithfulness note above is right that the
+proof given consumes every maximal ideal, but the hypothesis at `m` ALONE would in fact
+suffice: `ker d ⊓ 𝔪Rⁿ⁰ ≤ 𝔪·ker d` is a local condition at `m` (at any other maximal `𝔫` the
+ideal `m` becomes the unit ideal and the inclusion is vacuous), and only `M_m` needs to be
+free.  Both are hypothesis-strengthenings, harmless for the consumer, and the statement is
+left exactly as the consumer
+`rank_quotient_appTop_le_one_of_isIso_appTop_fiber` supplies it. -/
 theorem inf_smul_top_le_smul_ker_of_forall_isMaximal_comap_le
     {R : Type*} [CommRing R] {n₀ n₁ : ℕ}
     (d : (Fin n₀ → R) →ₗ[R] (Fin n₁ → R))
     (hsurj : ∀ mm : Ideal R, mm.IsMaximal →
       Submodule.comap d (mm • (⊤ : Submodule R (Fin n₁ → R))) ≤
         LinearMap.ker d ⊔ mm • (⊤ : Submodule R (Fin n₀ → R)))
-    (m : Ideal R) (hm : m.IsMaximal) :
-    LinearMap.ker d ⊓ (m • (⊤ : Submodule R (Fin n₀ → R))) ≤ m • LinearMap.ker d :=
-  sorry
+    (m : Ideal R) (_hm : m.IsMaximal) :
+    LinearMap.ker d ⊓ (m • (⊤ : Submodule R (Fin n₀ → R))) ≤ m • LinearMap.ker d := by
+  classical
+  -- `M := coker d` is finitely presented *by construction*.
+  have hfg : (LinearMap.range d).FG := by
+    rw [← Submodule.map_top]
+    exact Module.Finite.fg_top.map d
+  haveI : Module.FinitePresentation R ((Fin n₁ → R) ⧸ LinearMap.range d) :=
+    Module.finitePresentation_of_free_of_surjective (LinearMap.range d).mkQ
+      (Submodule.mkQ_surjective _) (by rw [Submodule.ker_mkQ]; exact hfg)
+  -- `M` is projective, checked on stalks.
+  haveI : Module.Projective R ((Fin n₁ → R) ⧸ LinearMap.range d) := by
+    apply Module.projective_of_localization_maximal
+    intro I hI
+    haveI : Module.Free (Localization.AtPrime I)
+        (LocalizedModule I.primeCompl (Fin n₁ → R)) :=
+      Module.free_of_isLocalizedModule (Rₛ := Localization.AtPrime I) I.primeCompl
+        (LocalizedModule.mkLinearMap I.primeCompl (Fin n₁ → R))
+    haveI : Module.Free (Localization.AtPrime I)
+        (LocalizedModule I.primeCompl ((Fin n₁ → R) ⧸ LinearMap.range d)) := by
+      refine free_of_isLocalRing_of_comap_smul_le
+        (LocalizedModule.map I.primeCompl d)
+        (LocalizedModule.map I.primeCompl (LinearMap.range d).mkQ)
+        (LocalizedModule.map_surjective _ _ (Submodule.mkQ_surjective _))
+        ?_
+        ((LinearMap.ker d).localized' (Localization.AtPrime I) I.primeCompl
+          (LocalizedModule.mkLinearMap I.primeCompl (Fin n₀ → R)))
+        ?_ ?_
+      · -- localization is exact, so the presentation localizes
+        exact LocalizedModule.map_exact I.primeCompl d (LinearMap.range d).mkQ
+          (LinearMap.exact_map_mkQ_range d)
+      · -- the localized kernel sits inside the kernel of the localized map
+        rintro _ ⟨y, hy, s, rfl⟩
+        simp only [LinearMap.mem_ker, ← IsLocalizedModule.mk_eq_mk', LocalizedModule.map_mk,
+          LinearMap.mem_ker.mp hy, LocalizedModule.zero_mk]
+      · -- the hypothesis at `I`, transported to `R_I`
+        rw [← localized'_smul_top_eq I (M := Fin n₁ → R),
+          ← localized'_smul_top_eq I (M := Fin n₀ → R)]
+        intro z hz
+        obtain ⟨⟨x, s⟩, rfl⟩ := IsLocalizedModule.mk'_surjective I.primeCompl
+          (LocalizedModule.mkLinearMap I.primeCompl (Fin n₀ → R)) z
+        simp only [Function.uncurry_apply_pair] at hz ⊢
+        rw [Submodule.mem_comap] at hz
+        have hdz : IsLocalizedModule.mk' (LocalizedModule.mkLinearMap I.primeCompl (Fin n₁ → R))
+            (d x) s ∈ (I • (⊤ : Submodule R (Fin n₁ → R))).localized'
+              (Localization.AtPrime I) I.primeCompl
+              (LocalizedModule.mkLinearMap I.primeCompl (Fin n₁ → R)) := by
+          rw [← IsLocalizedModule.mk_eq_mk'] at hz ⊢
+          rwa [LocalizedModule.map_mk] at hz
+        obtain ⟨t, ht⟩ := exists_smul_mem_of_mk'_mem_localized' I.primeCompl
+          (Localization.AtPrime I) _ _ _ _ hdz
+        have hx : ((t : R) • x) ∈ LinearMap.ker d ⊔ I • (⊤ : Submodule R (Fin n₀ → R)) := by
+          refine hsurj I hI ?_
+          rw [Submodule.mem_comap, map_smul]
+          exact ht
+        obtain ⟨u, hu, w, hw, huw⟩ := Submodule.mem_sup.mp hx
+        have hsplit : IsLocalizedModule.mk'
+            (LocalizedModule.mkLinearMap I.primeCompl (Fin n₀ → R)) x s
+            = IsLocalizedModule.mk'
+                (LocalizedModule.mkLinearMap I.primeCompl (Fin n₀ → R)) u (t * s)
+              + IsLocalizedModule.mk'
+                (LocalizedModule.mkLinearMap I.primeCompl (Fin n₀ → R)) w (t * s) := by
+          rw [← IsLocalizedModule.mk'_add, huw, ← Submonoid.smul_def,
+            IsLocalizedModule.mk'_cancel_left]
+        rw [hsplit]
+        refine Submodule.add_mem _ (Submodule.mem_sup_left ?_) (Submodule.mem_sup_right ?_)
+        · exact (Submodule.mem_localized' _ _ _ _ _).mpr ⟨u, hu, t * s, rfl⟩
+        · exact (Submodule.mem_localized' _ _ _ _ _).mpr ⟨w, hw, t * s, rfl⟩
+    infer_instance
+  -- `0 ⟶ range d ⟶ Rⁿ¹ ⟶ M ⟶ 0` splits, so `range d` is projective.
+  haveI : Module.Projective R (LinearMap.range d) := by
+    have hsplit := (Function.Exact.split_tfae (LinearMap.exact_subtype_mkQ (LinearMap.range d))
+      Subtype.val_injective (Submodule.mkQ_surjective _)).out 0 1
+    obtain ⟨l', hl'⟩ := hsplit.mp
+      (Module.projective_lifting_property _ _ (Submodule.mkQ_surjective _))
+    exact Module.Projective.of_split _ _ hl'
+  -- hence `0 ⟶ ker d ⟶ Rⁿ⁰ ⟶ range d ⟶ 0` splits too: `ker d` is a direct summand.
+  obtain ⟨p, hp⟩ : ∃ p : (Fin n₀ → R) →ₗ[R] LinearMap.ker d,
+      p ∘ₗ (LinearMap.ker d).subtype = LinearMap.id := by
+    have hexact : Function.Exact (LinearMap.ker d).subtype
+        (d.codRestrict (LinearMap.range d) (LinearMap.mem_range_self d)) := by
+      rw [LinearMap.exact_iff, LinearMap.ker_rangeRestrict, Submodule.range_subtype]
+    have hsplit := (Function.Exact.split_tfae hexact Subtype.val_injective
+      (fun ⟨_, y, e⟩ => ⟨y, Subtype.ext e⟩)).out 0 1
+    exact hsplit.mp (Module.projective_lifting_property _ _ (fun ⟨_, y, e⟩ => ⟨y, Subtype.ext e⟩))
+  -- a retraction `p` onto `ker d` sends `𝔪·Rⁿ⁰` into `𝔪·ker d` and fixes `ker d`.
+  intro x hx
+  have hx1 : x ∈ LinearMap.ker d := hx.1
+  have hx2 : x ∈ m • (⊤ : Submodule R (Fin n₀ → R)) := hx.2
+  have hpx : p x ∈ m • (⊤ : Submodule R (LinearMap.ker d)) := by
+    have h0 : p x ∈ Submodule.map p (m • (⊤ : Submodule R (Fin n₀ → R))) := ⟨x, hx2, rfl⟩
+    rw [Submodule.map_smul''] at h0
+    exact (Submodule.smul_mono (le_refl m) le_top) h0
+  have hpxeq : p x = ⟨x, hx1⟩ := by
+    have hid := LinearMap.congr_fun hp ⟨x, hx1⟩
+    simpa using hid
+  have hfinal : ((LinearMap.ker d).subtype) (p x) ∈
+      Submodule.map (LinearMap.ker d).subtype (m • (⊤ : Submodule R (LinearMap.ker d))) :=
+    ⟨p x, hpx, rfl⟩
+  rw [Submodule.map_smul'', Submodule.map_top, Submodule.range_subtype, hpxeq] at hfinal
+  exact hfinal
 
 /-- **THE BRIDGE** (PROVEN): the fibre statement plus the commutative-algebra leaf give the
 rank bound.
@@ -1621,48 +2111,374 @@ theorem rank_quotient_le_one_of_fibre_span
   have h3 := (Ideal.neg_mem_iff _).mpr h2
   rwa [neg_sub] at h3
 
-/-- **LEAF 3a-G — GROTHENDIECK'S COMPLEX IN DEGREE `0`, WITH THE FIBRE COMPUTED** (LEAF,
-2026-07-28).  This is the geometric half of Hartshorne III.12.11(a) in degree `0`, and it is
-now the only geometry left in the cluster.
+/-- **PURITY OF `ker d` WHEN `range d` IS FLAT** (PROVEN, 2026-07-28) — pure commutative
+algebra, no finiteness of any kind, no noetherian hypothesis, and in particular **no
+freeness**: for `d : M ⟶ N` with `range d` a FLAT `R`-module and any ideal `I`,
 
-**What it says.**  With `R = Γ(S, ⊤)` and `A = Γ(X, ⊤)` there are finite free `R`-modules
-`R^{n₀}`, `R^{n₁}` and an `R`-linear `d` between them with
+  `ker d ∩ I·M ≤ I·(ker d)`,
 
-* `A ≃ₗ[R] ker d` — the global sections of `𝒪_X` are the equalizer of a two-term complex of
-  *finite free* modules, and
-* for every maximal ideal `𝔪`, `d⁻¹(𝔪·R^{n₁}) = R·(e 1) + 𝔪·R^{n₀}` — i.e. the SAME complex
-  computes `H⁰` of the fibre after reduction mod `𝔪`, and that `H⁰` is the line spanned by
-  the image of `1 ∈ A`.  This second clause is exactly `H⁰(X_s, 𝒪) = κ(s)`, which is the
-  hypothesis `h s` read through the complex.
+i.e. `ker d ⊗ R/I ⟶ M ⊗ R/I` is injective.  Immediate from
+`LinearMap.lTensor_injective_of_exact_of_flat` applied to `0 ⟶ ker d ⟶ M ⟶ range d ⟶ 0`
+(whose right-hand term is flat by hypothesis) with `A := R ⧸ I`, transported across
+`TensorProduct.quotTensorEquivQuotSMul`.
 
-**Where it comes from.**  Take a finite affine cover `𝔘 = {U_i}` of `X`: `f` proper makes `X`
-quasi-compact and separated over the affine `S`, so every `U_{i₀…i_p}` is affine.  Let `C^•`
-be the Čech complex of `𝒪_X` for `𝔘`.  Its terms are FLAT `R`-modules because `f` is flat,
-and it commutes with base change term by term because `Γ(U ×_S Spec R') = Γ(U) ⊗_R R'` for
-affine `U`.  In degree `0` the sheaf axiom alone — no cohomology theory whatsoever — gives
-`Γ(X_{R'}, 𝒪) = ker(C⁰ ⊗ R' ⟶ C¹ ⊗ R')`, which is the second clause with `R' = R/𝔪`.  The
-work is replacing `C^•` by a bounded complex of FINITE FREE modules (Grothendieck's complex,
-Hartshorne III.12.2 / Mumford *AV* §5), and that step does use finiteness of `Hⁱ(X, 𝒪)` in
-all degrees, i.e. Grothendieck's coherence theorem — which is why this is a theory build and
-not a missing-lemma hunt.  See the pin re-check on
-`rank_quotient_appTop_le_one_of_isIso_appTop_fiber` below.
+**This is the lemma that makes the finite-free shape of the geometric leaf unnecessary**, and
+it is why the leaf below asks for a flat IMAGE rather than for Grothendieck's finite free
+complex; see that leaf's docstring.  It is *not* a strengthening of
+`inf_smul_top_le_smul_ker_of_forall_isMaximal_comap_le` above and does not replace it: that
+leaf derives flatness of `range d` from finite freeness plus a Tor-vanishing hypothesis,
+whereas this one takes flatness of `range d` as given. -/
+theorem inf_smul_top_le_smul_ker_of_flat_range {R M N : Type*} [CommRing R]
+    [AddCommGroup M] [Module R M] [AddCommGroup N] [Module R N]
+    (d : M →ₗ[R] N) [Module.Flat R ↥(LinearMap.range d)] (I : Ideal R) :
+    LinearMap.ker d ⊓ (I • (⊤ : Submodule R M)) ≤ I • LinearMap.ker d := by
+  have hex : Function.Exact (LinearMap.ker d).subtype d.rangeRestrict := by
+    intro y
+    constructor
+    · intro hy
+      exact ⟨⟨y, by simpa [Subtype.ext_iff] using hy⟩, rfl⟩
+    · rintro ⟨⟨z, hz⟩, rfl⟩
+      exact Subtype.ext (by simpa using hz)
+  have hinj : Function.Injective
+      (LinearMap.lTensor (R ⧸ I) (LinearMap.ker d).subtype) :=
+    LinearMap.lTensor_injective_of_exact_of_flat d.rangeRestrict
+      (LinearMap.surjective_rangeRestrict d) _ (LinearMap.ker d).subtype_injective hex (R ⧸ I)
+  intro x hx
+  set k : ↥(LinearMap.ker d) := ⟨x, hx.1⟩ with hk
+  have hsq : (TensorProduct.quotTensorEquivQuotSMul M I)
+      (LinearMap.lTensor (R ⧸ I) (LinearMap.ker d).subtype
+        ((TensorProduct.quotTensorEquivQuotSMul (↥(LinearMap.ker d)) I).symm
+          (Submodule.Quotient.mk k)))
+      = Submodule.Quotient.mk (k : M) := by
+    have h1 : (TensorProduct.quotTensorEquivQuotSMul (↥(LinearMap.ker d)) I).symm
+        (Submodule.Quotient.mk k) = (1 : R ⧸ I) ⊗ₜ k := by
+      rw [LinearEquiv.symm_apply_eq, TensorProduct.quotTensorEquivQuotSMul_mk_one_tmul]
+    rw [h1, LinearMap.lTensor_tmul, TensorProduct.quotTensorEquivQuotSMul_mk_one_tmul]
+    rfl
+  have hzero : Submodule.Quotient.mk (k : M) = (0 : M ⧸ I • (⊤ : Submodule R M)) := by
+    rw [Submodule.Quotient.mk_eq_zero]
+    exact hx.2
+  rw [hzero] at hsq
+  have h2 : LinearMap.lTensor (R ⧸ I) (LinearMap.ker d).subtype
+      ((TensorProduct.quotTensorEquivQuotSMul (↥(LinearMap.ker d)) I).symm
+        (Submodule.Quotient.mk k)) = 0 :=
+    (TensorProduct.quotTensorEquivQuotSMul M I).injective (by rw [hsq]; simp)
+  have h3 : (TensorProduct.quotTensorEquivQuotSMul (↥(LinearMap.ker d)) I).symm
+      (Submodule.Quotient.mk k) = 0 := hinj (by rw [h2]; simp)
+  have h4 : (Submodule.Quotient.mk k : ↥(LinearMap.ker d) ⧸ I • ⊤) = 0 :=
+    (TensorProduct.quotTensorEquivQuotSMul (↥(LinearMap.ker d)) I).symm.injective
+      (by rw [h3]; simp)
+  rw [Submodule.Quotient.mk_eq_zero] at h4
+  have h5 : Submodule.map (LinearMap.ker d).subtype (I • (⊤ : Submodule R ↥(LinearMap.ker d)))
+      = I • LinearMap.ker d := by
+    rw [Submodule.map_smul'', Submodule.map_top, Submodule.range_subtype]
+  rw [← h5]
+  exact ⟨k, h4, rfl⟩
 
-**Why finite FREE and not merely flat.**  The commutative-algebra leaf above needs
-`R^{n₁}/range d` to be finitely PRESENTED, so that vanishing of `Tor₁(−, R/𝔪)` at every
-maximal ideal forces flatness by the local criterion.  A Čech term is flat but enormous, and
-the statement is false for it; this is the one place the reduction to a finite free complex
-is load-bearing, and it is why the leaf is stated with `Fin n → R` rather than with abstract
-flat modules.  Note that no noetherian hypothesis is needed anywhere: `R^{n₁}/range d` is
-finitely presented by construction.
+/-- **THE BRIDGE, IN RING FORM** (PROVEN, 2026-07-28): the fibre clause plus purity of
+`ker d` give `a ≡ r` modulo `𝔪A`.
 
-**FAITHFULNESS.**  Both clauses need their hypotheses.  Without `[Flat f]` the Čech terms are
-not flat and the complex does not compute the fibres after base change.  Without `h` the
-second clause is FALSE exactly where `h⁰` jumps — that is the whole content of
-semicontinuity.  Properness enters twice: through quasi-compactness (a finite cover exists at
-all) and through Grothendieck coherence (the complex can be taken finite free).  `e 1` rather
-than an arbitrary generator is deliberate: the fibre `H⁰` is not merely one-dimensional, it
-is generated by the image of `1`, and it is that pinning which makes the bridge give
-surjectivity of `R/𝔪 ⟶ A/𝔪A` rather than only a dimension count. -/
+This is the `key` step of `rank_quotient_le_one_of_fibre_span` above, stated on its own and
+in the form `surjective_algebraMap_of_finite_of_forall_isMaximal` consumes.  The two are
+deliberately *not* merged: that theorem is proven and its proof is not touched here.  The
+argument is the same three lines — `e a` lies in `d⁻¹(𝔪F₁) = R·(e 1) + 𝔪F₀`, so
+`e a - r·(e 1) = e (a - r·1)` lies in `ker d ∩ 𝔪F₀`, which `hCA` puts inside `𝔪·ker d`, and
+`e.symm` carries that to `𝔪A`.
+
+Nothing here is geometric and nothing needs the modules to be free or finite. -/
+theorem exists_sub_algebraMap_mem_of_fibre_span {R A F₀ F₁ : Type*} [CommRing R] [CommRing A]
+    [Algebra R A] [AddCommGroup F₀] [Module R F₀] [AddCommGroup F₁] [Module R F₁]
+    {d : F₀ →ₗ[R] F₁} (e : A ≃ₗ[R] LinearMap.ker d) (m : Ideal R)
+    (hfib : Submodule.comap d (m • (⊤ : Submodule R F₁)) =
+      Submodule.span R {((e 1 : LinearMap.ker d) : F₀)} ⊔ m • (⊤ : Submodule R F₀))
+    (hCA : LinearMap.ker d ⊓ (m • (⊤ : Submodule R F₀)) ≤ m • LinearMap.ker d)
+    (a : A) : ∃ r : R, a - algebraMap R A r ∈ m.map (algebraMap R A) := by
+  have hsm : m • (LinearMap.ker d) = Submodule.map (LinearMap.ker d).subtype (m • ⊤) := by
+    rw [Submodule.map_smul'', Submodule.map_top, Submodule.range_subtype]
+  have hmap' : Submodule.map (e.symm : LinearMap.ker d →ₗ[R] A) (m • ⊤) =
+      m • (⊤ : Submodule R A) := by
+    rw [Submodule.map_smul'', Submodule.map_top, LinearEquiv.range]
+  have h1 : ((e a : LinearMap.ker d) : F₀) ∈
+      Submodule.comap d (m • (⊤ : Submodule R F₁)) := by
+    simp [Submodule.mem_comap]
+  rw [hfib] at h1
+  obtain ⟨u, hu, y, hy, huy⟩ := Submodule.mem_sup.mp h1
+  obtain ⟨r, rfl⟩ := Submodule.mem_span_singleton.mp hu
+  refine ⟨r, ?_⟩
+  have hzy : ((e (a - r • (1 : A)) : LinearMap.ker d) : F₀) = y := by
+    have h2 : e (a - r • (1 : A)) = e a - r • e 1 := by rw [map_sub, map_smul]
+    rw [h2]
+    have h3 : ((e a - r • e 1 : LinearMap.ker d) : F₀) = (e a : F₀) - r • ((e 1 : F₀)) := by
+      simp
+    rw [h3, ← huy]
+    abel
+  have hz1 : ((e (a - r • (1 : A)) : LinearMap.ker d) : F₀) ∈
+      LinearMap.ker d ⊓ (m • (⊤ : Submodule R F₀)) :=
+    ⟨(e (a - r • (1 : A))).2, hzy ▸ hy⟩
+  obtain ⟨w, hw, hwz⟩ := hsm ▸ hCA hz1
+  have hwz' : w = e (a - r • (1 : A)) := Subtype.ext hwz
+  have hfin : a - r • (1 : A) = e.symm w := by rw [hwz']; simp
+  have hmem : a - r • (1 : A) ∈ m • (⊤ : Submodule R A) := by
+    rw [hfin, ← hmap']
+    exact ⟨w, hw, rfl⟩
+  have hres : a - r • (1 : A) ∈ (m.map (algebraMap R A)).restrictScalars R := by
+    rw [← Ideal.smul_top_eq_map]; exact hmem
+  simpa [Algebra.smul_def] using hres
+
+/-- **LEAF 3a-N — NAKAYAMA'S INPUT: `A = R·1 + 𝔪A` AT EVERY MAXIMAL IDEAL** (LEAF, CUT
+2026-07-29 out of `exists_flatRange_ker_linearEquiv_appTop_of_isIso_appTop_fiber`, which is
+PROVEN over it immediately below).  This is all the geometry left in the cluster.
+
+**What it says.**  With `R = Γ(S, ⊤)`, `A = Γ(X, ⊤)` and `𝔪 ⊆ R` maximal, the `R`-module `A`
+is generated by `1` together with `𝔪A`.  Equivalently `dim_{R/𝔪} A/𝔪A ≤ 1`, equivalently the
+degree-zero comparison map `A ⊗_R κ(s) ⟶ H⁰(X_s, 𝒪)` is INJECTIVE (it is surjective for free
+from `h s`); equivalently, given `module_finite_appTop_of_isProper`, it is the exact
+hypothesis of `surjective_algebraMap_of_finite_of_forall_isMaximal`.
+
+**WHY THIS SHAPE, AND WHAT WAS DISCHARGED** (2026-07-29).  The previous cut asked for a
+two-term complex `d : C₀ ⟶ C₁` of `R`-modules with `range d` flat, `A ≃ₗ ker d` and a fibre
+clause.  Its own docstring already recorded that `C₀ := A`, `C₁ := 0`, `d := 0` satisfies
+every clause of that package exactly when the equation above holds — so the complex, the
+flatness clause and the `LinearEquiv` were *bookkeeping around this equation*, and they are
+now discharged (the theorem below is proven by exhibiting that witness).  Three consequences:
+the frontier no longer carries an existential that has to be pinned; the statement is a
+single equation with no vacuity question; and the localisation step of the route below —
+which is the first thing any prover does — becomes available, because the statement is now
+about a FIXED maximal ideal rather than about one complex serving all of them at once.
+
+**THE OBSTRUCTION ANALYSIS IN THE BLOCK INTRODUCTION ABOVE IS WRONG, AND THIS IS THE MAIN
+CONTENT OF THIS DOCSTRING** (2026-07-29).  That introduction concludes, under *Localize and
+complete*, that "what is missing is the comparison of `Â` with `lim_n Γ(X_n, 𝒪)`, which is
+the THEOREM ON FORMAL FUNCTIONS … and that is not elementary", and the docstring below
+concludes that Grothendieck's bounded complex of finite frees — hence coherence of `Rⁱf_*`
+in ALL degrees — is what makes `range d` flat.  Both are correct accounts of the *routes
+they describe* and **false as accounts of the obstruction**: in degree `0` there is an
+elementary induction that never completes, never forms `lim_n`, never needs
+`{Γ(X, 𝔪ⁿ𝒪_X)}` to be cofinal with `{𝔪ⁿA}`, and never mentions `H^{>0}`.  It is written out
+in full below so that the next owner attacks it rather than re-deriving the impossibility
+verdict.  (It is a hand-verified argument, not a machine-checked one; every step is named so
+each can be refuted separately.)
+
+**THE ELEMENTARY ROUTE.**  Throughout, for an ideal `J ⊆ R` write `X_{R/J} := X ×_S Spec R/J`
+— a CLOSED subscheme of `X`, since `Spec R/J ⟶ Spec R` is a closed immersion — and
+
+  `I_J := ker (A ⟶ Γ(X_{R/J}, ⊤))`.
+
+*Step 0 — localise.*  `A/(R·1 + 𝔪A)` is an `R/𝔪`-module, so it vanishes iff it vanishes
+after localising at `𝔪`.  `R ⟶ R_𝔪` is FLAT, so
+`isIso_pushoutSection_of_isQuasiSeparated_of_flat_right` (`Mathlib/AlgebraicGeometry/
+Morphisms/Flat.lean`, the same lemma that closed the fibrewise half of this file) gives
+`Γ(X ×_S Spec R_𝔪, ⊤) = A ⊗_R R_𝔪`, and proper/flat/finitely-presented and the fibre
+hypothesis all base-change.  So one may assume `R` LOCAL with maximal ideal `𝔪`, and then —
+by `module_finite_appTop_of_isProper` and Nakayama — it suffices to prove `A = R`, i.e. that
+`f.appTop` is bijective.  Injectivity is already available:
+`injective_appTop_of_flat_of_surjective f` with `surjective_of_isIso_appTop_fiber f h`.
+
+*Step 1 — the ONLY sheaf-theoretic input, and it is degree zero.*  Flatness of `𝒪_X` over `R`
+makes `J ⊗_R 𝒪_X ⟶ 𝒪_X` injective, so `J ⊗_R 𝒪_X ≅ J𝒪_X` and `I_J = Γ(X, J𝒪_X)`; in
+particular `J ⊆ J'` implies `I_J ⊆ I_{J'}`, `I_0 = 0` and `I_R = A`.  The obligation is:
+
+  for ideals `J ⊆ J' = J + R·t` with `𝔪t ⊆ J`, the quotient `I_{J'}/I_J` embeds in
+  `Γ(X_{R/𝔪}, ⊤)`, which is `R/𝔪` by `h`; so `length_R (I_{J'}/I_J) ≤ 1`.
+
+Proof: `J'/J` is a quotient of `R/𝔪`, and `0 ⟶ J𝒪_X ⟶ J'𝒪_X ⟶ (J'/J) ⊗_R 𝒪_X ⟶ 0` is exact
+by flatness; apply left exactness of `Γ`.  Nothing here is derived — no `Rⁱf_*`, no
+coherence, no Čech-to-derived comparison, no formal functions.  On a finite affine cover it
+is bare hand-work: `Γ(U, J𝒪_X) = J·Γ(U)` for `U` affine, and gluing is the sheaf axiom.
+
+*Step 2 — artinian base.*  If `R` is artinian local, take a composition series
+`R = J_0 ⊋ J_1 ⊋ ⋯ ⊋ J_ℓ = 0` with `J_i = J_{i+1} + R·t_i` and `𝔪t_i ⊆ J_{i+1}`.  Step 1
+telescopes to `length_R A = length_R I_R ≤ ℓ = length_R R`; with `R ↪ A` this forces `A = R`.
+`h` enters the whole route in exactly TWO places, both of them here: as
+`Γ(X_{R/𝔪}, ⊤) = R/𝔪` inside Step 1, and — through
+`surjective_of_isIso_appTop_fiber` feeding `injective_appTop_of_flat_of_surjective` — as the
+injection `R ↪ A` used in Steps 0, 2, 3 and 4.  It appears nowhere else.
+
+*Step 3 — a nonzerodivisor.*  Let `R` be noetherian local and `t ∈ 𝔪` a nonzerodivisor.  Then
+`(t) ≅ R` as an `R`-module, so `I_{(t)} = Γ(X, t𝒪_X) = tA` — this is the one case where the
+ideal is FREE and Step 1's bound is replaced by an equality.  Hence `A/tA ↪ Γ(X_{R/t}, ⊤)`,
+which is `R/t` by the induction hypothesis (`t` avoids every associated, hence every minimal,
+prime, so `dim R/t = dim R - 1`), and `R/t ⟶ A/tA` splits that injection.  So `A = R·1 + tA`;
+`Module.Finite R A` and Nakayama at `t ∈ 𝔪` give `A = R`.
+
+*Step 4 — depth zero.*  If `dim R ≥ 1` and `𝔪 ∈ Ass R`, let `H = H⁰_𝔪(R) = (0 :_R 𝔪^N)` be
+the `𝔪`-power torsion (finite length, `R` noetherian).  Since `dim R ≥ 1`, `H ≠ R` and `H`
+lies in every prime, so `Spec R/H = Spec R` and `X_{R/H} ⟶ Spec R/H` has the SAME fibres,
+while `depth R/H ≥ 1`.  Step 1 gives `length I_H ≤ length H`, and `H ⊆ I_H`, so `I_H = H`;
+Step 3 applied to `R/H` gives `Γ(X_{R/H}, ⊤) = R/H`; so `A/H ↪ R/H`, split by `R/H`, whence
+`A = R·1 + H = R` because `H ⊆ R`.
+
+*The induction.*  On `dim R` (finite, `R` noetherian local).  `dim R = 0` is Step 2.  For
+`dim R = n ≥ 1`: Step 4 reduces to `depth ≥ 1` at the same dimension, then Step 3 consumes
+only dimension `n - 1`.  No step is applied at its own dimension twice.
+
+**WHAT THE ROUTE STILL COSTS, STATED HONESTLY.**  Two things, and neither is cohomology.
+
+1. *Step 1 in `Lean`.*  Quasi-coherent ideal sheaves `J𝒪_X`, `𝒪_X/J𝒪_X = i_*𝒪_{X_{R/J}}`,
+   and left exactness of `Γ`.  `Mathlib` has `Scheme.Modules`, `tilde`, the `tilde ⊣ Γ`
+   adjunction and `SheafOfModules.IsQuasicoherent` (spelled with a lowercase `c`; the
+   capital-`C` grep that "proved" their absence is corrected in the block introduction), so
+   this is a build against existing API rather than a new theory.
+2. *A NOETHERIAN base.*  Steps 3 and 4 need it and the route does not remove it.  This is
+   NOT a new obligation for this file: it is verbatim item 2 of the gap list in the docstring
+   of `finiteType_appTop_of_isProper` — noetherian approximation for a proper morphism of
+   finite presentation (Stacks 0B91), absent from the pin.  So a single limit-theory build
+   unlocks BOTH remaining leaves of this module, which is a materially better trade than
+   building coherence and base change for one of them.
+
+**FAITHFULNESS.**  `h` cannot be dropped: it is what makes `Γ(X_{R/𝔪}, ⊤) = R/𝔪` in Steps 1
+and 2, and without it `h⁰` jumps and the conclusion is literally FALSE where it does.
+`[Flat f]` cannot be dropped: it is what makes `J ⊗_R 𝒪_X ⟶ 𝒪_X` injective in Step 1 and `t`
+a nonzerodivisor on `𝒪_X` in Step 3.  Maximality of `𝔪` is used through `κ(s) = R/𝔪`.
+Properness enters through `module_finite_appTop_of_isProper` (Nakayama in Step 0 and Step 3)
+and through quasi-compactness/separatedness in Step 1.  The conclusion is `≤ 1` in disguise
+rather than `= 1` because non-vanishing is cheaper and separate (lying over).
+
+**REFUTING CHECK.**  A single equation, no existential, so there is no vacuity question and
+no under-pinning: an adversary has nothing to choose.  The statement is classical
+(Hartshorne III.12.11(a) / EGA III 7.8.6 in degree `0`, Stacks 0E0L), so a refutation would
+have to refute a step of the route above, not the leaf. -/
+theorem eq_span_one_sup_smul_top_appTop_of_isIso_appTop_fiber (f : X ⟶ S) [IsAffine S]
+    [IsProper f] [Flat f] [LocallyOfFinitePresentation f]
+    (h : ∀ s : S, IsIso (f.fiberToSpecResidueField s).appTop)
+    (m : Ideal ↥Γ(S, ⊤)) (hm : m.IsMaximal) :
+    letI : Algebra ↥Γ(S, ⊤) ↥Γ(X, ⊤) := f.appTop.hom.toAlgebra
+    (⊤ : Submodule ↥Γ(S, ⊤) ↥Γ(X, ⊤)) =
+      Submodule.span ↥Γ(S, ⊤) {(1 : ↥Γ(X, ⊤))} ⊔
+        m • (⊤ : Submodule ↥Γ(S, ⊤) ↥Γ(X, ⊤)) :=
+  sorry
+
+/-- **LEAF 3a-G — THE DEGREE-`0` COMPLEX WITH FLAT IMAGE** — **PROVEN** (2026-07-29) over
+`eq_span_one_sup_smul_top_appTop_of_isIso_appTop_fiber` immediately above, by exhibiting the
+witness `C₀ := A`, `C₁ := A`, `d := 0` that this docstring's own non-vacuity paragraph
+already identified as the cheapest candidate.  Everything below is retained because it is
+the record of the Čech/coherence route and of what was tried; the OBSTRUCTION verdict it
+reaches is **superseded** — see the elementary route on the leaf above.  This
+is the geometric half of Hartshorne III.12.11(a) in degree `0`.
+
+**What it says.**  With `R = Γ(S, ⊤)` and `A = Γ(X, ⊤)` there are `R`-modules `C₀`, `C₁` and
+an `R`-linear `d : C₀ ⟶ C₁` with
+
+* `Module.Flat R (range d)` — the image of `d` is a FLAT `R`-module;
+* `A ≃ₗ[R] ker d` — the global sections of `𝒪_X` are the equalizer of the two-term complex;
+* for every maximal ideal `𝔪`, `d⁻¹(𝔪·C₁) = R·(e 1) + 𝔪·C₀` — the SAME complex computes `H⁰`
+  of the fibre after reduction mod `𝔪`, and that `H⁰` is the line spanned by the image of
+  `1 ∈ A`.  This last clause is exactly `H⁰(X_s, 𝒪) = κ(s)`, i.e. `h s` read through the
+  complex.
+
+**THE RE-CUT, AND A CORRECTION TO THE STATEMENT THIS REPLACES** (2026-07-28).  The previous
+form of this leaf, `exists_finiteFree_ker_linearEquiv_appTop_of_isIso_appTop_fiber`, demanded
+Grothendieck's **finite free** complex (`Fin n₀ → R ⟶ Fin n₁ → R`), and its docstring
+justified that at length: *"the commutative-algebra leaf needs `R^{n₁}/range d` to be finitely
+PRESENTED … a Čech term is flat but enormous, and the statement is false for it; this is the
+one place the reduction to a finite free complex is load-bearing."*
+
+That reasoning is correct **about the route through
+`inf_smul_top_le_smul_ker_of_forall_isMaximal_comap_le`**, and wrong as a claim about the
+leaf.  Finite freeness there is a *vehicle* for one conclusion and one only:
+`ker d ∩ 𝔪C₀ ≤ 𝔪·ker d`.  That conclusion follows from flatness of `range d` alone, with no
+finiteness, no finite presentation and no noetherian hypothesis
+(`inf_smul_top_le_smul_ker_of_flat_range` above) — finite freeness enters the CA leaf only
+because it is what lets the local criterion PROVE `range d` flat from Tor-vanishing.  So the
+honest geometric obligation is flatness of the image, and asking for a finite free complex
+was asking for strictly more than the consumer needs.
+
+Concretely the finite free clause is now discharged for free: once the leaf below is known,
+`f.appTop` is bijective, so `A ≅ R` and the complex `R^1 ⟶ R^0` with `d = 0` satisfies the
+old statement.  That is the proof of
+`exists_finiteFree_ker_linearEquiv_appTop_of_isIso_appTop_fiber` immediately below, which is
+kept — unchanged in statement — because `rank_quotient_appTop_le_one_of_isIso_appTop_fiber`
+and the CA leaf consume it.
+
+**Where it comes from, and what is still hard.**  Take a finite affine cover `𝔘 = {U_i}` of
+`X`: `f` proper makes `X` quasi-compact and separated over the affine `S`, so every
+`U_{i₀…i_p}` is affine.  Let `C^•` be the Čech complex of `𝒪_X` for `𝔘`; its terms are FLAT
+`R`-modules because `f` is flat, and it commutes with base change term by term because
+`Γ(U ×_S Spec R') = Γ(U) ⊗_R R'` for affine `U`.  In degree `0` the sheaf axiom alone — **no
+cohomology theory whatsoever** — gives `Γ(X_{R'}, 𝒪) = ker(C⁰ ⊗ R' ⟶ C¹ ⊗ R')`, which is the
+third clause with `R' = R/𝔪`.  Mathlib now has a Čech complex functor to start from
+(`CategoryTheory.cechComplexFunctor`, see the corrected pin re-check above), though no
+comparison theorem.
+
+What is hard is the FIRST clause.  `Tor₁(range d, Q) = ker(H⁰ ⊗ Q ⟶ C⁰ ⊗ Q)`, so flatness of
+`range d⁰` is precisely *degree-zero base change for every `R`-module `Q`* — classically a
+corollary of Grothendieck's coherence theorem via Hartshorne III.12.2 / Mumford *AV* §5 (the
+finite free complex), which is why this remains a theory build and not a missing-lemma hunt.
+Nothing in `Mathlib` computes it: see the corrected pin re-check above.
+
+**NON-VACUITY, checked in both directions.**  The existential is not satisfiable by a
+degenerate choice.  The cheapest candidate is `C₀ := A`, `C₁ := 0`, `d := 0`, for which
+`range d = 0` is flat and `ker d = ⊤`; the third clause then reads
+`⊤ = R·1 + 𝔪·A` for every maximal `𝔪` — which is `surjective_quotientMap_appTop_of_isIso_appTop_fiber`,
+the very statement this leaf is used to prove.  So no witness escapes the work.  Being the
+last input to the theorem, the leaf is of course *equivalent* to what remains of it; that is
+a property of every terminal leaf and not a defect of this cut.
+
+**FAITHFULNESS.**  Without `[Flat f]` the Čech terms are not flat and the complex does not
+compute the fibres after base change.  Without `h` the third clause is FALSE exactly where
+`h⁰` jumps — that is the whole content of semicontinuity.  Properness enters twice: through
+quasi-compactness (a finite cover exists at all) and through coherence (flatness of the
+image).  `e 1` rather than an arbitrary generator is deliberate: the fibre `H⁰` is not merely
+one-dimensional, it is generated by the image of `1`, and it is that pinning which makes the
+bridge give surjectivity of `R/𝔪 ⟶ A/𝔪A` rather than only a dimension count.
+
+**ONE STRENGTHENING DELIBERATELY NOT TAKEN, because it is UNVERIFIED.**  It is tempting to
+split this into (i) "a flat two-term complex with the fibre clause exists" — pure Čech, no
+coherence — and (ii) "for *any* such complex, `range d` is flat".  Clause (ii) was NOT
+adopted: it quantifies over adversarial data, and no counterexample search settled it.  (Over
+a local ring, `C₀ = R²`, `C₁ = R`, `d = (a,b) ↦ ax + by` has `ker d ≅ R` and non-flat image,
+but fails the fibre clause at the closed point — every attempt to repair it either restored
+flatness of the image or broke the clause.)  Splitting on an unverified universally quantified
+clause would risk planting a FALSE leaf, so the two halves are left bundled here and the Čech
+half is recorded as the route rather than as a separate obligation. -/
+theorem exists_flatRange_ker_linearEquiv_appTop_of_isIso_appTop_fiber (f : X ⟶ S) [IsAffine S]
+    [IsProper f] [Flat f] [LocallyOfFinitePresentation f]
+    (h : ∀ s : S, IsIso (f.fiberToSpecResidueField s).appTop) :
+    letI : Algebra ↥Γ(S, ⊤) ↥Γ(X, ⊤) := f.appTop.hom.toAlgebra
+    ∃ (C₀ C₁ : ModuleCat.{u} ↥Γ(S, ⊤)) (d : C₀ ⟶ C₁),
+      Module.Flat ↥Γ(S, ⊤) ↥(LinearMap.range d.hom) ∧
+      ∃ e : ↥Γ(X, ⊤) ≃ₗ[↥Γ(S, ⊤)] LinearMap.ker d.hom,
+        ∀ m : Ideal ↥Γ(S, ⊤), m.IsMaximal →
+          Submodule.comap d.hom (m • (⊤ : Submodule ↥Γ(S, ⊤) C₁)) =
+            Submodule.span ↥Γ(S, ⊤) {((e 1 : LinearMap.ker d.hom) : C₀)} ⊔
+              m • (⊤ : Submodule ↥Γ(S, ⊤) C₀) := by
+  letI : Algebra ↥Γ(S, ⊤) ↥Γ(X, ⊤) := f.appTop.hom.toAlgebra
+  refine ⟨ModuleCat.of _ ↥Γ(X, ⊤), ModuleCat.of _ ↥Γ(X, ⊤), 0, ?_, ?_⟩
+  · have h0 : LinearMap.range (ModuleCat.Hom.hom
+        (0 : ModuleCat.of ↥Γ(S, ⊤) ↥Γ(X, ⊤) ⟶ ModuleCat.of ↥Γ(S, ⊤) ↥Γ(X, ⊤))) = ⊥ := by
+      simp
+    rw [h0]
+    infer_instance
+  · refine ⟨(Submodule.topEquiv (R := ↥Γ(S, ⊤)) (M := ↥Γ(X, ⊤))).symm.trans
+      (LinearEquiv.ofEq _ _ (by simp)), fun m hm => ?_⟩
+    have hc : Submodule.comap (ModuleCat.Hom.hom
+        (0 : ModuleCat.of ↥Γ(S, ⊤) ↥Γ(X, ⊤) ⟶ ModuleCat.of ↥Γ(S, ⊤) ↥Γ(X, ⊤)))
+        (m • (⊤ : Submodule ↥Γ(S, ⊤) (ModuleCat.of ↥Γ(S, ⊤) ↥Γ(X, ⊤)))) = ⊤ := by
+      simp
+    rw [hc]
+    simpa using eq_span_one_sup_smul_top_appTop_of_isIso_appTop_fiber f h m hm
+
+/-- **GROTHENDIECK'S COMPLEX IN DEGREE `0`** — **PROVEN** (2026-07-28) over
+`exists_flatRange_ker_linearEquiv_appTop_of_isIso_appTop_fiber` immediately above, whose
+docstring carries the obstruction analysis, the corrected pin re-check and the continuation
+plan.  The statement is unchanged from when it was a leaf, because
+`rank_quotient_appTop_le_one_of_isIso_appTop_fiber` and the commutative-algebra leaf consume
+it in this exact form.
+
+**How the finite free complex is obtained, and why that is not cheating.**  The flat-image
+leaf plus `inf_smul_top_le_smul_ker_of_flat_range` gives `ker d ∩ 𝔪C₀ ≤ 𝔪·ker d`, hence
+(`exists_sub_algebraMap_mem_of_fibre_span`) `A = R·1 + 𝔪A` at every maximal ideal, hence
+(`surjective_algebraMap_of_finite_of_forall_isMaximal`, using `module_finite_appTop_of_isProper`)
+`R ⟶ A` SURJECTIVE; `surjective_of_isIso_appTop_fiber` and
+`injective_appTop_of_flat_of_surjective` make it injective, so `A ≃ₗ[R] R` and the complex
+`R^1 ⟶ R^0` with `d = 0` has `ker d = ⊤ ≅ A` and `d⁻¹(𝔪·R^0) = ⊤ = R·1 + 𝔪·R^1`.
+
+So the *finite free* form of the leaf, which the previous cut argued was load-bearing, is in
+fact free once flatness of the image is known: the complex may be taken to be `R` itself.
+That is a statement about this cut, not a shortcut — everything hard is upstream, in the leaf.
+The proof does establish more than it states (it bijectivises `f.appTop` outright), which is
+unavoidable for a terminal leaf and harmless: the downstream chain re-derives the same fact
+through the rank bound and is left untouched. -/
 theorem exists_finiteFree_ker_linearEquiv_appTop_of_isIso_appTop_fiber (f : X ⟶ S) [IsAffine S]
     [IsProper f] [Flat f] [LocallyOfFinitePresentation f]
     (h : ∀ s : S, IsIso (f.fiberToSpecResidueField s).appTop) :
@@ -1672,8 +2488,42 @@ theorem exists_finiteFree_ker_linearEquiv_appTop_of_isIso_appTop_fiber (f : X �
       ∀ m : Ideal ↥Γ(S, ⊤), m.IsMaximal →
         Submodule.comap d (m • (⊤ : Submodule ↥Γ(S, ⊤) (Fin n₁ → ↥Γ(S, ⊤)))) =
           Submodule.span ↥Γ(S, ⊤) {((e 1 : LinearMap.ker d) : Fin n₀ → ↥Γ(S, ⊤))} ⊔
-            m • (⊤ : Submodule ↥Γ(S, ⊤) (Fin n₀ → ↥Γ(S, ⊤))) :=
-  sorry
+            m • (⊤ : Submodule ↥Γ(S, ⊤) (Fin n₀ → ↥Γ(S, ⊤))) := by
+  letI : Algebra ↥Γ(S, ⊤) ↥Γ(X, ⊤) := f.appTop.hom.toAlgebra
+  obtain ⟨C₀, C₁, d, hB, e, hfib⟩ :=
+    exists_flatRange_ker_linearEquiv_appTop_of_isIso_appTop_fiber f h
+  haveI : Module.Flat ↥Γ(S, ⊤) ↥(LinearMap.range d.hom) := hB
+  haveI : Module.Finite ↥Γ(S, ⊤) ↥Γ(X, ⊤) := module_finite_appTop_of_isProper f
+  have hsurj : Function.Surjective (algebraMap ↥Γ(S, ⊤) ↥Γ(X, ⊤)) :=
+    surjective_algebraMap_of_finite_of_forall_isMaximal fun m hm a =>
+      exists_sub_algebraMap_mem_of_fibre_span e m (hfib m hm)
+        (inf_smul_top_le_smul_ker_of_flat_range d.hom m) a
+  haveI : Surjective f := surjective_of_isIso_appTop_fiber f h
+  have hinj : Function.Injective (algebraMap ↥Γ(S, ⊤) ↥Γ(X, ⊤)) :=
+    injective_appTop_of_flat_of_surjective f
+  let eRA : ↥Γ(S, ⊤) ≃ₗ[↥Γ(S, ⊤)] ↥Γ(X, ⊤) :=
+    LinearEquiv.ofBijective (Algebra.linearMap ↥Γ(S, ⊤) ↥Γ(X, ⊤)) ⟨hinj, hsurj⟩
+  set R := ↥Γ(S, ⊤)
+  set d₀ : (Fin 1 → R) →ₗ[R] (Fin 0 → R) := 0 with hd₀
+  have hker : (⊤ : Submodule R (Fin 1 → R)) = LinearMap.ker d₀ := LinearMap.ker_zero.symm
+  let e₀ : ↥Γ(X, ⊤) ≃ₗ[R] ↥(LinearMap.ker d₀) :=
+    ((eRA.symm.trans (LinearEquiv.funUnique (Fin 1) R R).symm).trans
+      (Submodule.topEquiv).symm).trans (LinearEquiv.ofEq _ _ hker)
+  have h1 : eRA.symm (1 : ↥Γ(X, ⊤)) = 1 := by
+    rw [LinearEquiv.symm_apply_eq]
+    simp [eRA]
+  have hval : ((e₀ (1 : ↥Γ(X, ⊤)) : ↥(LinearMap.ker d₀)) : Fin 1 → R) = fun _ => 1 := by
+    simp only [e₀, h1, LinearEquiv.trans_apply]
+    funext i
+    rfl
+  refine ⟨1, 0, d₀, e₀, fun m hm => ?_⟩
+  rw [hval]
+  have hspan : Submodule.span R {(fun _ => 1 : Fin 1 → R)} = ⊤ := by
+    refine Submodule.eq_top_iff'.mpr fun v => ?_
+    refine Submodule.mem_span_singleton.mpr ⟨v 0, ?_⟩
+    funext i
+    simp [Subsingleton.elim i 0]
+  rw [hspan, top_sup_eq, hd₀, Submodule.comap_zero]
 
 /-- **LEAF 3a — `A/𝔪A` IS AT MOST A LINE OVER `R/𝔪`** — **PROVEN** (2026-07-28) over the
 geometric leaf `exists_finiteFree_ker_linearEquiv_appTop_of_isIso_appTop_fiber`, the
@@ -2070,9 +2920,19 @@ geometrically connected and geometrically reduced over the field `κ(s)`, so
 `isIso_appTop_of_isIso_appTop_fiber`.
 
 This is the missing classical input behind the whole Jacobian half of this development:
-`isAdditiveOn_of_post_zero` (relative rigidity), `exists_albaneseOfCurve` and
-`universal_jacobianBaseChangeAj` all reduce to it, which is why it is stated here, once,
-in the shim tree rather than inside a modular-curve file.
+`isAdditiveOn_of_post_zero` (relative rigidity) and `exists_albaneseOfCurve` reduce to it,
+which is why it is stated here, once, in the shim tree rather than inside a modular-curve
+file.
+
+**CORRECTION 2026-07-29 — this paragraph used to name
+`universal_jacobianBaseChangeAj` here as well, and that was FALSE.**  `X0.lean`'s own
+"GATE VERDICT" already recorded the refutation: coherent pushforward buys RIGIDITY
+(Mumford *AV* §4), and rigidity is not what the base-change direction needs.  What it
+needs is REPRESENTABILITY of the rigidified relative Picard functor and compatibility of
+`Pic⁰` with base change (FGA 232 / Artin), a strictly larger theory that `f_*𝒪_X = 𝒪_S`
+does not deliver.  `universal_jacobianBaseChangeAj` is in any case PROVEN as of
+2026-07-29, over the single leaf `isIso_jacobianBaseChangeComparison` in `X0.lean` — and
+that leaf is gated on representability, NOT on this file.  Do not dispatch it here.
 
 **The instance plumbing, for the record.**  `f.fiberToSpecResidueField s` is by definition
 `pullback.snd f (S.fromSpecResidueField s)`, and mathlib already carries

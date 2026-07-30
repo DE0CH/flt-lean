@@ -142,28 +142,41 @@ listed below, with the entries that have since been PROVEN kept in place for
 the notes they carry — read the `PROVEN` marks, not a count.  One is an
 original leaf:
 
-* `exists_modPullback_modTensor` — monoidality of `f^*` on objects.  With
-  `modPullbackUnitIso` proven, this is all that
-  `nonempty_modPullback_modTensorPow` needs, and — through
-  `nonempty_restrict_modTensor`, which is derived from it in three lines — it is
-  also the only input the whole trivialization calculus has left.
+* `exists_modPushforwardTensorPre` and `isIso_modPullbackTensorComparison` —
+  monoidality of `f^*` on objects, which used to be the single leaf
+  `exists_modPullback_modTensor`.
 
-  **RESTATED 2026-07-28**: it was `nonempty_modPullback_modTensor`, a bare
+  **PROVEN 2026-07-29** (`flt-lean-346`): the comparison map is now WRITTEN
+  (`modPullbackTensorComparison`, the transpose of `(η ⊗ η) ≫ ν`), its section
+  identity `f^*(a ⊗ b) = f^*a ⊗ f^*b` is a THEOREM about it
+  (`modPullbackTensorComparison_tensorSection`), and
+  `exists_modPullback_modTensor` — statement unchanged, so no consumer moved —
+  is three lines over the two.  Net sorry count is unchanged (1 → 2) but both
+  successors are canonical and fully pinned, and they split PLUMBING from
+  MATHEMATICS:
+  - `exists_modPushforwardTensorPre` is the lax monoidal structure map of `f_*`
+    at presheaf level, pinned on pure tensors over EVERY open (hence unique).
+    It contains no mathematics; it is mathlib's missing
+    `(PresheafOfModules.restrictScalars α).LaxMonoidal`, objectwise.
+  - `isIso_modPullbackTensorComparison` is all of the mathematics.  The
+    open-immersion case — which is what everything below actually consumes — is
+    strictly easier and should be done first; see its docstring.
+
+  Historical note: the leaf was `nonempty_modPullback_modTensor`, a bare
   `Nonempty`, which pins no isomorphism at all — post-composing a witness with
   multiplication by a unit of `Γ(X, ⊤)` satisfies every clause while scaling
-  every trivialized section.  It now carries the section identity
-  `f^*(a ⊗ b) = f^*a ⊗ f^*b`, which is what the trivialization calculus needs
-  and what the old form could not supply.  `nonempty_modPullback_modTensor`
-  survives as a PROVEN corollary, so no consumer changed.  Its docstring also
-  carries a rewritten ROUTE AUDIT naming the four pin declarations that build
-  the canonical comparison map.
+  every trivialized section.  That defect is now structurally impossible: an
+  `IsIso` on a named map has nothing to choose.
 
 The rest came out of the trivialization calculus, each strictly smaller than the
 leaf it came out of:
 
 * `exists_trivialization_of_modTensorPow` — **the mathematical one**: Stacks
   01CV, the semigroup bridge.  It is the only entry in this list that is not
-  bookkeeping.
+  bookkeeping.  **PROVEN 2026-07-29** by reduction (one line, since
+  `modTensorPow A (j+1)` IS `modTensor A (modTensorPow A j)`) to the classical
+  TWO-FACTOR statement `exists_trivialization_of_modTensor_trivial`, which is
+  where the mathematics and the corrected route audit now live.
 * `exists_trivialization_tensorPow` — `s^{⊗k}` read through the `k`-th power of
   a trivialization is the `k`-th power of the trivialized section.  **PROVEN
   2026-07-28**, by induction, over ONE new leaf `exists_trivialization_modTensor`
@@ -171,7 +184,11 @@ leaf it came out of:
   CORRECTION: the route recorded here relied on reading `trivializedSection`
   through the anonymous iso supplied by `nonempty_restrict_modTensor`, which pins
   nothing — see that leaf's docstring for the unit-scaling counterexample.
-* `exists_trivialization_modTensor` — the new leaf just described.
+* `exists_trivialization_modTensor` — the new leaf just described.  **PROVEN
+  2026-07-29**, in the `§ The CANONICAL trivialization of a tensor product`
+  block: the anonymous iso is used there for EXISTENCE only, and the value comes
+  from a canonical morphism built out of the sheafification adjunction, so the
+  unit-scaling ambiguity never arises.
 * `exists_trivialization_modPullback` — the same for `f^*`.  **PROVEN 2026-07-28**
   over a five-lemma calculus for the pullback of a global section through the
   canonical comparison isomorphisms, and a `trivializationOfPullback` that is now
@@ -182,6 +199,20 @@ leaf it came out of:
   `restrictFunctorComp` (both `app`s are `rfl`) closed it.  Two owners found
   exactly this reroute independently and wrote the SAME definition; the proof
   kept here is the one that was already on `main`.
+
+**Update 2026-07-29 (Picard block).**  The Picard-group block at the end of
+this file added one leaf on 2026-07-28 — `exists_modDual`, the dual sheaf `L^∨`
+together with its evaluation pairing `L ⊗ L^∨ ⟶ 𝒪_Z`, asked for only up to
+LOCAL isomorphy of that one global map — and that leaf, its consumer, and
+`isIso_of_locally_isIso` have since been HOISTED to
+`ModularCurve/RelativePicard.lean`, which is UPSTREAM of this module and states
+the same inverse theorem (`exists_modTensor_inv`) for its own calculus.  So this
+module's warning set is back to six.  Read `exists_modDual`'s docstring, now
+upstream, before attacking it: it records that mathlib has
+no internal `Hom` on (pre)sheaves of modules at this pin, that the "just glue
+the inverse cocycle" route is NOT cheap (mathlib's `Sites/Descent/IsStack.lean`
+has no instances, so `Scheme.Modules` is not known to be a stack), and which
+construction does avoid both obstructions.
 
 ## A note on the definition of ampleness
 
@@ -277,69 +308,17 @@ def IsAmpleSheaf {Z : Scheme.{u}} (L : Z.Modules) : Prop :=
   ∀ z : Z, ∃ (n : ℕ) (_ : 0 < n) (s : Γ(modTensorPow L n, ⊤)) (V : Z.Opens),
     z ∈ V ∧ IsAffineOpen V ∧ nonvanishingLocus (modTensorPow L n) s = (V : Set Z)
 
-/-! ### Pseudo-functoriality of `modPullback` (PROVEN — free from the pin) -/
+/-! ### HOISTED to `ModularCurve/RelativePicard.lean` (2026-07-28)
 
-/-- **`f^*(g^* L) ≅ (f ≫ g)^* L`** — `Scheme.Modules.pullbackComp`, read on an
-object. -/
-noncomputable def modPullbackCompIso {X Y Z : Scheme.{u}} (f : X ⟶ Y) (g : Y ⟶ Z) (L : Z.Modules) :
-    modPullback f (modPullback g L) ≅ modPullback (f ≫ g) L :=
-  (Scheme.Modules.pullbackComp f g).app L
-
-/-- **Pullbacks along equal morphisms agree** — `Scheme.Modules.pullbackCongr`,
-read on an object.  Needed because `pullback.condition` is an equality of
-morphisms, not a definitional identity. -/
-noncomputable def modPullbackCongrIso {X Y : Scheme.{u}} {f g : X ⟶ Y} (h : f = g) (L : Y.Modules) :
-    modPullback f L ≅ modPullback g L :=
-  (Scheme.Modules.pullbackCongr h).app L
-
-/-- **`f^*` carries isomorphisms to isomorphisms** — it is a functor. -/
-noncomputable def modPullbackMapIso {X Y : Scheme.{u}} (f : X ⟶ Y) {L M : Y.Modules} (e : L ≅ M) :
-    modPullback f L ≅ modPullback f M :=
-  (Scheme.Modules.pullback f).mapIso e
-
-/-! ### The monoidal structure that `modTensor` inherits from presheaves
-
-`RelativePicard.lean` built only the object part of `⊗` because "building the
-monoidal category would require knowing that sheafification is monoidal".  That
-is true of the ASSOCIATOR and false of everything else: functoriality and both
-unitors come for free from the presheaf-level monoidal category together with
-the fact that the sheafification adjunction has invertible counit. -/
-
-/-- The presheaf-level monoidal structure, re-keyed on `Z.ringCatSheaf.obj`.
-
-`Mathlib`'s instance is stated for `PresheafOfModules (R ⋙ forget₂ CommRingCat
-RingCat)` with `R` a presheaf of *commutative* rings; typeclass search cannot
-invert that composition against `Z.ringCatSheaf.obj`, which is definitionally
-`Z.presheaf ⋙ forget₂ CommRingCat RingCat`.  This instance supplies it. -/
-noncomputable instance presheafOfModulesMonoidal (Z : Scheme.{u}) :
-    MonoidalCategory (PresheafOfModules.{u} Z.ringCatSheaf.obj) :=
-  inferInstanceAs (MonoidalCategory
-    (PresheafOfModules.{u} (Z.presheaf ⋙ forget₂ CommRingCat RingCat)))
-
-/-- **Sheafifying a sheaf changes nothing**: `a(M.val) ≅ M`.
-
-The counit of `PresheafOfModules.sheafificationAdjunction`, which mathlib
-already knows is an isomorphism. -/
-noncomputable def modSheafifyValIso {Z : Scheme.{u}} (M : Z.Modules) :
-    (PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)).obj M.val ≅ M :=
-  (asIso (PresheafOfModules.sheafificationAdjunction (𝟙 Z.ringCatSheaf.obj)).counit).app M
-
-/-- **`modTensor` is functorial** (on isomorphisms, which is all that is used).
-
-The morphism part that `RelativePicard.lean` declined to define: sheafify
-`PresheafOfModules.Monoidal.tensorHom`. -/
-noncomputable def modTensorMapIso {Z : Scheme.{u}} {L L' M M' : Z.Modules}
-    (e : L ≅ L') (e' : M ≅ M') : modTensor L M ≅ modTensor L' M' :=
-  (PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)).mapIso
-    (MonoidalCategory.tensorIso
-      ((SheafOfModules.forget _).mapIso e) ((SheafOfModules.forget _).mapIso e'))
-
-/-- **The LEFT UNITOR**, `𝒪_Z ⊗ M ≅ M`.  Sheafify the presheaf-level unitor,
-then use that `M` is already a sheaf. -/
-noncomputable def modTensorUnitLeftIso {Z : Scheme.{u}} (M : Z.Modules) :
-    modTensor (modUnit Z) M ≅ M :=
-  (PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)).mapIso (λ_ M.val) ≪≫
-    modSheafifyValIso M
+The pseudo-functoriality of `modPullback`, the presheaf monoidal structure,
+`modSheafifyValIso`, `modTensorMapIso`, `modTensorUnitLeftIso`, `opensMapFinal`,
+`modPullbackUnitIso`, `modRestrictPullbackIso`, `modRestrictLEIso`,
+`trivializationOfLE` and `isInvertibleSheaf_modUnit`
+were declared HERE and are now declared in `RelativePicard.lean`, unchanged, and
+inherited by import.  They had to move because `RelativePicard.lean`'s two
+representability leaves consume them and it is UPSTREAM of this module; the
+collision that revealed it was `Fermat.isInvertibleSheaf_modUnit` being declared
+twice.  Nothing about them changed, so every use below still resolves. -/
 
 /-- **Tensor powers transport along an isomorphism**: `L ≅ M` gives
 `L^{⊗n} ≅ M^{⊗n}`. -/
@@ -387,36 +366,6 @@ definitional. -/
 noncomputable def modPullbackSection {X Y : Scheme.{u}} (f : X ⟶ Y) (A : Y.Modules)
     (s : Γ(A, ⊤)) : Γ(modPullback f A, ⊤) :=
   ((Scheme.Modules.pullbackPushforwardAdjunction f).unit.app A).val.app (op ⊤) s
-
-/-- **`Opens.map g` is a FINAL functor**, for every continuous `g : X ⟶ Y`.
-
-This refutes the note recorded against `nonempty_modPullback_modUnit`, which
-said finality of the site functor "is not automatic for `Opens.map f`".  It is:
-`StructuredArrow U (Opens.map g)` has the TERMINAL object `⊤` — every `U` obeys
-`U ≤ g ⁻¹ᵁ ⊤` — and a category with a terminal object is connected. -/
-instance opensMapFinal {X Y : TopCat.{u}} (g : X ⟶ Y) : (Opens.map g).Final := by
-  constructor
-  intro U
-  have hterm : ∀ A : StructuredArrow U (Opens.map g),
-      Nonempty (A ⟶ StructuredArrow.mk (Y := (⊤ : Opens Y)) (homOfLE le_top)) :=
-    fun _ => ⟨StructuredArrow.homMk (homOfLE le_top) (Subsingleton.elim _ _)⟩
-  have : Nonempty (StructuredArrow U (Opens.map g)) :=
-    ⟨StructuredArrow.mk (Y := ⊤) (homOfLE le_top)⟩
-  apply zigzag_isConnected
-  intro j₁ j₂
-  exact Relation.ReflTransGen.head (Or.inl (hterm j₁))
-    (Relation.ReflTransGen.single (Or.inr (hterm j₂)))
-
-/-- **`f^* 𝒪_Y ≅ 𝒪_X`** — mathlib's `SheafOfModules.pullbackObjUnitToUnit`,
-which is an isomorphism because `Opens.map f.base` is final (`opensMapFinal`).
-
-The `IsIso` instance is supplied by name rather than by `inferInstance`: the
-two occurrences of `pullbackObjUnitToUnit` otherwise pick up different (but
-defeq) `IsRightAdjoint` instance arguments and unification stalls. -/
-noncomputable def modPullbackUnitIso {X Y : Scheme.{u}} (f : X ⟶ Y) :
-    modPullback f (modUnit Y) ≅ modUnit X :=
-  @asIso _ _ _ _ (SheafOfModules.pullbackObjUnitToUnit.{u} (Scheme.Hom.toRingCatSheafHom f))
-    (SheafOfModules.instIsIsoPullbackObjUnitToUnitOfFinal _)
 
 /-! ### Transport of the non-vanishing locus along an isomorphism
 
@@ -689,7 +638,276 @@ theorem nonempty_modTensor_assoc {Z : Scheme.{u}} (L M N : Z.Modules) :
       (modTensorLocIso L (modTensor M N)).symm
   exact ⟨{ hom := e.hom, inv := e.inv, hom_inv_id := e.hom_inv_id, inv_hom_id := e.inv_hom_id }⟩
 
-/-- **Monoidality of `f^*` on objects** (sorry leaf):
+/-! ### The CANONICAL comparison map `f^*(L ⊗ M) ⟶ f^*L ⊗ f^*M`
+
+ADDED 2026-07-28/29 (`flt-lean-346`), replacing the single leaf
+`exists_modPullback_modTensor` by a WRITTEN map plus two strictly smaller
+obligations.  `exists_modPullback_modTensor` is now PROVEN; see its docstring.
+
+The construction is the standard adjunction transpose and nothing more:
+
+    f^*(L ⊗ M) ⟶ f^*L ⊗ f^*M   is the transpose of
+    L ⊗ M --(η ⊗ η)--> f_*f^*L ⊗ f_*f^*M --ν--> f_*(f^*L ⊗ f^*M)
+
+where `η` is the unit of `pullbackPushforwardAdjunction` and `ν` is the LAX
+MONOIDAL structure map of `f_*`.  Writing it this way buys three things:
+
+* the map is CANONICAL — the old `Nonempty`/`∃` form quantified over a larger
+  set of isomorphisms (post-compose any witness by a unit of `Γ(X, ⊤)`), which
+  is exactly the defect that forced the leaf to be restated on 2026-07-28.
+  Here there is nothing to post-compose: `modPullbackTensorComparison` is a
+  definition;
+* the SECTION IDENTITY `f^*(a ⊗ b) = f^*a ⊗ f^*b` becomes a THEOREM about it
+  (`modPullbackTensorComparison_tensorSection`) rather than a clause an
+  existential is asked to carry;
+* the two residues separate cleanly into PLUMBING and MATHEMATICS —
+  `exists_modPushforwardTensorPre` and `isIso_modPullbackTensorComparison`.
+
+WHY `ν` IS CUT AS A LEAF RATHER THAN WRITTEN (measured, not assumed).  The
+previous route audit said "exactly ONE missing instance —
+`(PresheafOfModules.restrictScalars α).LaxMonoidal` — stands between here and a
+written comparison map".  That is CORRECT, and an attempt to dodge it by writing
+`ν` by hand was made and FAILED for an instructive reason, recorded here so the
+next owner does not repeat it.
+
+The presheaf tensor IS objectwise (`PresheafOfModules.Monoidal.tensorObj` sends
+`V` to `M₁.obj V ⊗ M₂.obj V`), so `ν` "obviously" ought to be
+`ModuleCat.MonoidalCategory.tensorLift (fun a b ↦ modTensorMk (a ⊗ₜ b))`.  Its
+four bilinearity obligations are where it dies: the elements `a b` are typed at
+`((pushforward f).obj A).val.obj V`, whose module structure is
+`ModuleCat.restrictScalars`-wrapped, while the tensor `a ⊗ₜ b` being fed to
+`modTensorMk` is over `Γ(X, f ⁻¹ᵁ V)`.  Same carriers, DIFFERENT instance terms.
+Consequences actually observed:
+
+* the two ADDITIVITY obligations do go through, after a `show` that retypes the
+  element (`(a : ↑(A.val.obj (op (f ⁻¹ᵁ V.unop)))) + a'`) — `rw` alone cannot,
+  because the `+` it must match sits at the wrapped type;
+* the two SEMILINEARITY obligations do not.  `rw`/`erw [TensorProduct.smul_tmul']`
+  cannot fire: the scalar `c` lives in `Γ(Y, V)` and the pattern wants one in
+  `Γ(X, f ⁻¹ᵁ V)`, and unification may not invert `Module.compHom`.  Supplying
+  the scalar explicitly as `(f.app V.unop).hom c` gets the smul to elaborate but
+  then `SMulCommClass` search fails — `Γ(X, f ⁻¹ᵁ V)` and
+  `(X.presheaf ⋙ forget₂ CommRingCat RingCat).obj (op (f ⁻¹ᵁ V))` are the SAME
+  ring in two spellings and the instance is not found across them.
+  `erw [← map_smul]; rfl` does reduce the goal to a syntactic identity but
+  spawns `SMulCommClass`/`SMul` side goals between the `X`- and `Y`-rings for
+  which no instance exists (and should not).
+
+That plumbing is precisely what the missing `LaxMonoidal` instance packages —
+mathlib's `ModuleCat.restrictScalars` already has it
+(`Mathlib/Algebra/Category/ModuleCat/Monoidal/Adjunction.lean`, with
+`restrictScalars_μ_tmul : μ (restrictScalars f) M₁ M₂ (m₁ ⊗ₜ m₂) = m₁ ⊗ₜ m₂`),
+and lifting it objectwise to `PresheafOfModules.restrictScalars` is the honest
+way in.  Note also that mathlib needs
+`set_option backward.isDefEq.respectTransparency false` throughout
+`Presheaf/Monoidal.lean` for the very same reason; expect to need it.
+
+So: `exists_modPushforwardTensorPre` is bounded, mechanical, and contains NO
+mathematics.  `isIso_modPullbackTensorComparison` contains all of it. -/
+
+/-- **`modTensor` is functorial on arbitrary morphisms.**  The file already had
+`modTensorMapIso` for isomorphisms; this is the same construction without the
+inverse, needed because the comparison map below is transposed from
+`η ⊗ η`, and `η` is not invertible. -/
+noncomputable def modTensorMap {Z : Scheme.{u}} {L L' M M' : Z.Modules}
+    (e : L ⟶ L') (e' : M ⟶ M') : modTensor L M ⟶ modTensor L' M' :=
+  (PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)).map
+    (MonoidalCategory.tensorHom
+      ((SheafOfModules.forget _).map e) ((SheafOfModules.forget _).map e'))
+
+/-- **`modTensorMap` acts on `tensorSection` componentwise.**
+
+This is STEP (iii) of the three-step bridge that `flt-lean-309` compiler-checked
+on 2026-07-28 and recorded in the docstring of `exists_modPullback_modTensor`
+but could not DECLARE, because at that time its only consumer belonged to
+another owner and a declaration with no consumer is free-floating.  It has a
+consumer now — `modPullbackTensorComparison_tensorSection` below — so it is
+declared here, in the morphism (not iso) generality.
+
+The owner of `exists_trivialization_tensorPow` / `exists_trivialization_modTensor`
+should use THIS rather than re-deriving it; specialise `e`, `e'` to `.hom` of an
+iso to recover the form quoted in that docstring. -/
+lemma modTensorMap_tensorSection {Z : Scheme.{u}} {L L' M M' : Z.Modules}
+    (e : L ⟶ L') (e' : M ⟶ M') (a : Γ(L, ⊤)) (b : Γ(M, ⊤)) :
+    (modTensorMap e e').val.app (op ⊤) (tensorSection a b) =
+      tensorSection (e.val.app (op ⊤) a) (e'.val.app (op ⊤) b) := by
+  unfold tensorSection modTensorMk modTensorMap
+  have hn := (PresheafOfModules.sheafificationAdjunction (𝟙 Z.ringCatSheaf.obj)).unit.naturality
+    (MonoidalCategory.tensorHom ((SheafOfModules.forget _).map e)
+      ((SheafOfModules.forget _).map e'))
+  exact congr($(hn).app (op ⊤) (a ⊗ₜ b)).symm
+
+/-- **LEAF (plumbing — contains NO mathematics): the presheaf-level lax monoidal
+structure map of `f_*`.**
+
+`ν₀ : f_*A ⊗ f_*B ⟶ f_*(A ⊗ B)` at the level of presheaves of modules, PINNED
+by its value on every pure tensor over every open — which determines it
+completely, since `PresheafOfModules.Monoidal.tensorObj` is objectwise and each
+`M₁.obj V ⊗ M₂.obj V` is generated by pure tensors.  So, unlike the `Nonempty`
+form this development replaced, there is no room for an adversary here: any two
+witnesses are equal.
+
+Route, and the trap: see the section docstring above.  In one sentence — do NOT
+try to build this with `ModuleCat.MonoidalCategory.tensorLift` directly; supply
+`(PresheafOfModules.restrictScalars α).LaxMonoidal` objectwise from mathlib's
+`(ModuleCat.restrictScalars f).LaxMonoidal` and take `ν₀` to be its `μ`
+composed with `restrictScalars` of `modTensorMk`.  `restrictScalars_μ_tmul` is
+then exactly the pinning clause below.
+
+`PresheafOfModules.pushforward φ` is definitionally
+`pushforward₀ F R ⋙ restrictScalars φ` with `pushforward₀OfCommRingCat` already
+strong `Monoidal`, so that one instance finishes the whole lax structure. -/
+theorem exists_modPushforwardTensorPre {X Y : Scheme.{u}} (f : X ⟶ Y) (A B : X.Modules) :
+    ∃ ν₀ : PresheafOfModules.Monoidal.tensorObj (R := Y.presheaf)
+        ((Scheme.Modules.pushforward f).obj A).val
+        ((Scheme.Modules.pushforward f).obj B).val ⟶
+      ((Scheme.Modules.pushforward f).obj (modTensor A B)).val,
+      ∀ (V : (Opens ↥Y)ᵒᵖ)
+        (a : ↑(((Scheme.Modules.pushforward f).obj A).val.obj V))
+        (b : ↑(((Scheme.Modules.pushforward f).obj B).val.obj V)),
+        ν₀.app V (a ⊗ₜ b) = (modTensorMk A B).app (op (f ⁻¹ᵁ V.unop)) (a ⊗ₜ b) := sorry
+
+/-- The presheaf-level lax comparison map of `f_*`, named. -/
+noncomputable def modPushforwardTensorPre {X Y : Scheme.{u}} (f : X ⟶ Y) (A B : X.Modules) :
+    PresheafOfModules.Monoidal.tensorObj (R := Y.presheaf)
+        ((Scheme.Modules.pushforward f).obj A).val
+        ((Scheme.Modules.pushforward f).obj B).val ⟶
+      ((Scheme.Modules.pushforward f).obj (modTensor A B)).val :=
+  (exists_modPushforwardTensorPre f A B).choose
+
+/-- `modPushforwardTensorPre` on pure tensors. -/
+lemma modPushforwardTensorPre_tmul {X Y : Scheme.{u}} (f : X ⟶ Y) (A B : X.Modules)
+    (V : (Opens ↥Y)ᵒᵖ)
+    (a : ↑(((Scheme.Modules.pushforward f).obj A).val.obj V))
+    (b : ↑(((Scheme.Modules.pushforward f).obj B).val.obj V)) :
+    (modPushforwardTensorPre f A B).app V (a ⊗ₜ b) =
+      (modTensorMk A B).app (op (f ⁻¹ᵁ V.unop)) (a ⊗ₜ b) :=
+  (exists_modPushforwardTensorPre f A B).choose_spec V a b
+
+/-- **The lax monoidal structure map of `f_*` on SHEAVES**, `f_*A ⊗ f_*B ⟶
+f_*(A ⊗ B)`: sheafify `modPushforwardTensorPre` and transpose along the
+sheafification adjunction (`f_*(A ⊗ B)` is already a sheaf). -/
+noncomputable def modPushforwardTensor {X Y : Scheme.{u}} (f : X ⟶ Y) (A B : X.Modules) :
+    modTensor ((Scheme.Modules.pushforward f).obj A) ((Scheme.Modules.pushforward f).obj B) ⟶
+      (Scheme.Modules.pushforward f).obj (modTensor A B) :=
+  ((PresheafOfModules.sheafificationAdjunction (𝟙 Y.ringCatSheaf.obj)).homEquiv _ _).symm
+    (modPushforwardTensorPre f A B)
+
+/-- `f_*` carries `a ⊗ b` to `a ⊗ b`.  Note `Γ(f_*M, ⊤) = Γ(M, f ⁻¹ᵁ ⊤)` and
+`f ⁻¹ᵁ ⊤ = ⊤` are both DEFINITIONAL, which is why no transport appears. -/
+lemma modPushforwardTensor_tensorSection {X Y : Scheme.{u}} (f : X ⟶ Y) (A B : X.Modules)
+    (a : Γ((Scheme.Modules.pushforward f).obj A, ⊤))
+    (b : Γ((Scheme.Modules.pushforward f).obj B, ⊤)) :
+    (modPushforwardTensor f A B).val.app (op ⊤) (tensorSection a b) =
+      tensorSection (Z := X) (L := A) (M := B) a b := by
+  have h : ((PresheafOfModules.sheafificationAdjunction (𝟙 Y.ringCatSheaf.obj)).homEquiv _ _)
+      (modPushforwardTensor f A B) = modPushforwardTensorPre f A B :=
+    Equiv.apply_symm_apply _ _
+  rw [Adjunction.homEquiv_unit] at h
+  exact (congr($(h).app (op ⊤) (a ⊗ₜ b))).trans
+    (modPushforwardTensorPre_tmul f A B (op ⊤) a b)
+
+/-- **THE CANONICAL COMPARISON MAP** `f^*(L ⊗ M) ⟶ f^*L ⊗ f^*M`, as the
+transpose of `(η ⊗ η) ≫ ν`. -/
+noncomputable def modPullbackTensorComparison {X Y : Scheme.{u}} (f : X ⟶ Y) (L M : Y.Modules) :
+    modPullback f (modTensor L M) ⟶ modTensor (modPullback f L) (modPullback f M) :=
+  ((Scheme.Modules.pullbackPushforwardAdjunction f).homEquiv _ _).symm
+    (modTensorMap ((Scheme.Modules.pullbackPushforwardAdjunction f).unit.app L)
+        ((Scheme.Modules.pullbackPushforwardAdjunction f).unit.app M) ≫
+      modPushforwardTensor f (modPullback f L) (modPullback f M))
+
+/-- **THE SECTION IDENTITY, PROVEN**: the canonical comparison map carries
+`f^*(a ⊗ b)` to `f^*a ⊗ f^*b`.
+
+This is the clause that `exists_modPullback_modTensor` states, and it is a
+theorem here rather than a hypothesis: the adjunction triangle turns
+`θ.app ⊤ ∘ modPullbackSection` into "apply the transposed map at `⊤`", and the
+transposed map is `(η ⊗ η) ≫ ν`, whose effect on `tensorSection` is
+`modTensorMap_tensorSection` followed by `modPushforwardTensor_tensorSection`.
+`modPullbackSection f L a` is BY DEFINITION `η.val.app (op ⊤) a`, which is why
+the last step is an `exact` and not a rewrite. -/
+lemma modPullbackTensorComparison_tensorSection {X Y : Scheme.{u}} (f : X ⟶ Y) (L M : Y.Modules)
+    (a : Γ(L, ⊤)) (b : Γ(M, ⊤)) :
+    (modPullbackTensorComparison f L M).val.app (op ⊤)
+        (modPullbackSection f (modTensor L M) (tensorSection a b)) =
+      tensorSection (modPullbackSection f L a) (modPullbackSection f M b) := by
+  have h : ((Scheme.Modules.pullbackPushforwardAdjunction f).homEquiv _ _)
+      (modPullbackTensorComparison f L M) =
+      modTensorMap ((Scheme.Modules.pullbackPushforwardAdjunction f).unit.app L)
+          ((Scheme.Modules.pullbackPushforwardAdjunction f).unit.app M) ≫
+        modPushforwardTensor f (modPullback f L) (modPullback f M) :=
+    Equiv.apply_symm_apply _ _
+  rw [Adjunction.homEquiv_unit] at h
+  have h2 := congr($(h).val.app (op ⊤) (tensorSection a b))
+  have hR : (modTensorMap ((Scheme.Modules.pullbackPushforwardAdjunction f).unit.app L)
+        ((Scheme.Modules.pullbackPushforwardAdjunction f).unit.app M) ≫
+        modPushforwardTensor f (modPullback f L) (modPullback f M)).val.app (op ⊤)
+        (tensorSection a b) =
+      tensorSection (modPullbackSection f L a) (modPullbackSection f M b) := by
+    show (modPushforwardTensor f (modPullback f L) (modPullback f M)).val.app (op ⊤)
+        ((modTensorMap ((Scheme.Modules.pullbackPushforwardAdjunction f).unit.app L)
+          ((Scheme.Modules.pullbackPushforwardAdjunction f).unit.app M)).val.app (op ⊤)
+            (tensorSection a b)) = _
+    rw [modTensorMap_tensorSection]
+    exact modPushforwardTensor_tensorSection f (modPullback f L) (modPullback f M) _ _
+  exact h2.trans hR
+
+/-- **LEAF (this one IS the mathematics): the canonical comparison map is an
+isomorphism.**
+
+Everything else about monoidality of `f^*` in this file is now formal over this
+one statement.  Being an `IsIso` on a NAMED map, it is immune to the
+under-pinning defect that the `Nonempty` and `∃` forms suffered: there is
+nothing to choose.
+
+ROUTES, in increasing order of generality.
+
+* THE OPEN-IMMERSION CASE IS STRICTLY EASIER and is what the trivialization
+  calculus below actually consumes.  For an open immersion, restriction is
+  itself a LEFT adjoint (`Scheme.Modules.restrictAdjunction`, compared to
+  `pullbackPushforwardAdjunction` by `restrictFunctorIsoPullback`), and at
+  presheaf level it is a `pushforward₀`, whose `restrictAppIso` is `Iso.refl`
+  and which is STRONG monoidal (`Presheaf/PushforwardZeroMonoidal.lean`).  So in
+  the open case there is no comparison-is-iso question at presheaf level at all;
+  what remains is that sheafification commutes with restriction to an open
+  subsite, the mate of `restrictFunctorIsoPullback`.  A prover who only needs
+  the consumers in this file should do this case FIRST.
+* IN GENERAL, after `exists_modPushforwardTensorPre` supplies the lax structure,
+  `CategoryTheory.Functor.Monoidal.ofOplaxMonoidal` upgrades the oplax
+  `PresheafOfModules.pullback φ` (via
+  `CategoryTheory.Adjunction.leftAdjointOplaxMonoidal`) to strong given
+  `IsIso (η F)` and `IsIso (δ F X Y)`, and the residue is
+  `modLocW X (δ (PresheafOfModules.pullback φ) P Q)` — the SAME shape as
+  `modLocW_whiskerLeft`, and closable by the same input.  `p^*` on presheaves
+  over a space is the filtered colimit `colim_{V ⊇ f(U)}` (`opensMapFinal`,
+  proven above), which is what makes both statements local.
+
+  **UPDATED 2026-07-29: that input now EXISTS and is proven.**
+  `modLocW_whiskerLeft` was a sorry when this route was first written; it has
+  since been closed over
+  `Fermat/FLT/Mathlib/Algebra/Category/ModuleCat/Presheaf/MonoidalW.lean`
+  (`Fermat.SheafificationMonoidal.W_whiskerLeft`), which proves stability of
+  local isomorphisms under `X ⊗ -` hands-on, via
+  `isLocallySurjective_whiskerLeft` and `isLocallyInjective_whiskerLeft`.
+  A prover of THIS leaf should start there: the same two-halves argument
+  (locally surjective + locally injective ⇒ local iso) applies to `δ` of the
+  presheaf pullback, and `exists_relations` / `key_equalizerSieve` in that file
+  are the reusable pieces.  This is now the recommended route, ahead of the
+  free/colimit one below.
+* The free/colimit route remains available:
+  `SheafOfModules.pullbackObjFreeIso` and `pullbackObjUnitToUnit`
+  (`Sheaf/PullbackFree.lean`, already imported), with `Sheaf/Generators.lean`'s
+  `LocalGeneratorsData` presenting a sheaf of modules locally as a quotient of
+  frees.
+
+DEAD at this pin, re-checked 2026-07-28/29 by `grep`: internal hom
+(`MonoidalClosed` has zero occurrences under mathlib's presheaf/sheaf
+`ModuleCat` directories) and stalks (there is no stalk API for
+`PresheafOfModules`/`SheafOfModules` at all). -/
+instance isIso_modPullbackTensorComparison {X Y : Scheme.{u}} (f : X ⟶ Y) (L M : Y.Modules) :
+    IsIso (modPullbackTensorComparison f L M) := sorry
+
+/-- **Monoidality of `f^*` on objects** (PROVEN 2026-07-29):
 `f^*(L ⊗ M) ≅ f^*L ⊗ f^*M`, **with the isomorphism PINNED by its effect on
 global sections**: it carries `f^*(a ⊗ b)` to `f^*a ⊗ f^*b`.
 
@@ -725,81 +943,34 @@ via `Scheme.Modules.restrictFunctorIsoPullback`).  So this is still the ONLY
 leaf in the module that anything except `exists_trivialization_of_modTensorPow`
 waits on.
 
-ROUTE AUDIT (rewritten 2026-07-28 against the pin; every declaration named below
-was located by `grep` in `.lake/packages/mathlib`, and the check that would
-refute each claim is the same `grep`).
+ROUTE AUDIT — SUPERSEDED 2026-07-29, and the leaf is now PROVEN.
 
-The previous audit said "the ring-CHANGING pushforward is only lax, and the left
-adjoint of a lax monoidal functor is oplax, which is what supplies the canonical
-comparison" — correct, but it left the reader to build both halves.  Both are in
-the pin, and the chain is now completely explicit:
+This leaf used to be the sorry.  It is now a three-line corollary of a WRITTEN
+comparison map: see the section `The CANONICAL comparison map` above, and
+`modPullbackTensorComparison` / `modPullbackTensorComparison_tensorSection` /
+`isIso_modPullbackTensorComparison`.  The pinning clause is
+`modPullbackTensorComparison_tensorSection`, a theorem, proven exactly by the
+adjunction-triangle argument the previous audit predicted.
 
-1. `ModuleCat.restrictScalars f` is **already `LaxMonoidal`** —
-   `Mathlib/Algebra/Category/ModuleCat/Monoidal/Adjunction.lean`, obtained as
-   `(extendRestrictScalarsAdj f).rightAdjointLaxMonoidal`, and its comparison is
-   computed there: `restrictScalars_μ_tmul : μ (restrictScalars f) M₁ M₂
-   (m₁ ⊗ₜ m₂) = m₁ ⊗ₜ m₂`.  (The previous audit did not know this.)
-2. `PresheafOfModules.pushforward φ` is **definitionally**
-   `pushforward₀ F R ⋙ restrictScalars φ` (`Presheaf/Pushforward.lean`), and
-   `pushforward₀OfCommRingCat` is strong `Monoidal`
-   (`Presheaf/PushforwardZeroMonoidal.lean`).  So the ONE instance missing at
-   this pin is `(PresheafOfModules.restrictScalars α).LaxMonoidal`, which is
-   objectwise (1): the presheaf tensor is objectwise, so `μ` is `μ` of
-   `ModuleCat.restrictScalars` at each `X`, and only naturality is to check.
-3. `CategoryTheory.Adjunction.leftAdjointOplaxMonoidal`
-   (`Mathlib/CategoryTheory/Monoidal/Functor.lean`) then makes
-   `PresheafOfModules.pullback φ` **oplax monoidal**, with `δ` the canonical
-   comparison — this is the map to write, not to guess.
-   `CategoryTheory.Functor.Monoidal.ofOplaxMonoidal` (same file) upgrades it to
-   strong given `IsIso (η F)` and `IsIso (δ F X Y)`.
-4. Transport to SHEAVES is free: `SheafOfModules.sheafificationCompPullback`
-   (`Sheaf/PullbackContinuous.lean`) is `a_Y ⋙ f^* ≅ p^* ⋙ a_X`, and
-   `SheafOfModules.pullbackIso` is `f^* ≅ forget ⋙ p^* ⋙ a_X`.
+The 2026-07-28 audit's central claim — that ONE missing instance,
+`(PresheafOfModules.restrictScalars α).LaxMonoidal`, stands between here and a
+written comparison map — was CHECKED and is CORRECT.  An attempt to bypass it by
+writing the lax structure map by hand out of
+`ModuleCat.MonoidalCategory.tensorLift` was made and failed on
+`restrictScalars` instance plumbing; the failure is recorded in detail in the
+section docstring above so that it is not repeated.  What survives of the leaf
+is exactly that instance (`exists_modPushforwardTensorPre`, no mathematics) plus
+`isIso_modPullbackTensorComparison` (all of the mathematics).
 
-So after (1)–(4) the residue of this leaf is a statement of exactly the same
-shape as `modLocW_whiskerLeft`, and it should be cut as such:
-
-    modLocW X (δ (PresheafOfModules.pullback φ) P Q)
-
-"the oplax comparison map of the PRESHEAF pullback is a LOCAL isomorphism".
-Both are instances of "sheafification is monoidal", and a prover who closes
-`modLocW_whiskerLeft` by the stalk route (route 3 there) will find the same
-filtered-colimit input closes this one, because `p^*` on presheaves over a space
-is the filtered colimit `colim_{V ⊇ f(U)}` — the site functor `Opens.map f.base`
-is final (`opensMapFinal`, proven above).
-
-* A prover who wants a smaller first target: the OPEN IMMERSION case is strictly
-  easier and is what everything below actually consumes, and it is easier for a
-  reason the previous audit did not name.  For an open immersion, restriction is
-  itself a LEFT adjoint (`Scheme.Modules.restrictAdjunction`, which is what
-  `restrictFunctorIsoPullback` compares to `pullbackPushforwardAdjunction`), and
-  at presheaf level it is a `pushforward₀` — `restrictAppIso` is `Iso.refl` —
-  which by (2) is **strong** monoidal with `μIso = Iso.refl`.  So in the open
-  case there is NO `δ`-is-an-iso question at presheaf level at all; the only
-  step left is that sheafification commutes with restriction to an open subsite,
-  which is the mate of `restrictFunctorIsoPullback`.  It is not cut as a
-  separate leaf only because it is a three-line corollary of this one.
-PIN CHECK 2026-07-28.  The claim that
+PIN CHECK 2026-07-28, re-run 2026-07-29 and STANDS:
 `Mathlib/Algebra/Category/ModuleCat/Presheaf/PushforwardZeroMonoidal.lean` is
-present at this pin — which is what makes (2) above usable — was re-run and
-STANDS.
+present at this pin, which is what makes `pushforward₀OfCommRingCat` usable as
+the strong-monoidal half of the lax structure of `f_*`.
 
-* The free/colimit route recorded previously is still available and still
-  correct: `SheafOfModules.pullbackObjFreeIso (I : Type u) : (pullback φ).obj
-  (free I) ≅ free I` and `pullbackObjUnitToUnit` (`Sheaf/PullbackFree.lean`,
-  already imported here), with `Sheaf/Generators.lean`'s `LocalGeneratorsData`
-  presenting every sheaf of modules locally as a quotient of frees.  It is
-  listed second now because it needs the comparison map (3) anyway before
-  "is an iso" can even be stated.
-
-HOW A CONSUMER TURNS THIS INTO THE OPEN-IMMERSION FORM IT WANTS.  The
-trivialization calculus below does not consume `modPullbackSection`; it consumes
-the restriction of a global section that is spelled out inside
-`trivializedSection`.  The bridge is three steps, and **all three were
-compiler-checked on 2026-07-28** (in a scratch module; they are not declared here
-because a declaration with no consumer is free-floating, and their consumer —
-`exists_trivialization_tensorPow` / `exists_trivialization_modTensor` — belongs
-to another owner).  Each is stated with the check that reproduces it:
+The bridge (i)-(iii) for the OPEN-IMMERSION consumers is unchanged and still
+compiler-checked; step (iii) is now DECLARED as `modTensorMap_tensorSection`
+(in morphism generality — specialise to `.hom` of an iso to recover the form
+below).  Steps (i) and (ii) still have no declared consumer:
 
     -- (i) `rfl`.  The restriction inside `trivializedSection` IS the unit of
     --     `Scheme.Modules.restrictAdjunction`, read at `⊤`.
@@ -814,25 +985,17 @@ to another owner).  Each is stated with the check that reproduces it:
         (Scheme.Modules.pushforward f).map (modRestrictPullbackIso f A).hom =
       (Scheme.Modules.pullbackPushforwardAdjunction f).unit.app A
 
-    -- (iii) naturality of the sheafification unit, one line:
-    --     `congr($((sheafificationAdjunction _).unit.naturality
-    --        (tensorIso (forget.mapIso e) (forget.mapIso e')).hom).app (op ⊤) (a ⊗ₜ b)).symm`
-    --     after `unfold tensorSection modTensorMk modTensorMapIso`.
-    (modTensorMapIso e e').hom.val.app (op ⊤) (tensorSection a b)
-      = tensorSection (e.hom.val.app (op ⊤) a) (e'.hom.val.app (op ⊤) b)
-
 With (i) and (ii), the pinning clause below transfers verbatim from
-`modPullbackSection` to the restriction of a global section along `U.ι`; (iii)
-then pushes it through `modTensorMapIso φ ψ`, and `modTensorUnitLeftIso` on
-`tensorSection a b` with both factors in `Γ(𝒪_U, ⊤)` is the multiplication
-`a * b` that `exists_trivialization_tensorPow` is after.  So the WHOLE gap
-between this leaf and that one is (i)–(iii) plus the induction; none of it is
-mathematics, and none of it was reachable from the old `Nonempty` form. -/
+`modPullbackSection` to the restriction of a global section along `U.ι`;
+`modTensorMap_tensorSection` then pushes it through, and `modTensorUnitLeftIso`
+on `tensorSection a b` with both factors in `Γ(𝒪_U, ⊤)` is the multiplication
+`a * b` that `exists_trivialization_tensorPow` is after. -/
 theorem exists_modPullback_modTensor {X Y : Scheme.{u}} (f : X ⟶ Y) (L M : Y.Modules) :
     ∃ e : modPullback f (modTensor L M) ≅ modTensor (modPullback f L) (modPullback f M),
       ∀ (a : Γ(L, ⊤)) (b : Γ(M, ⊤)),
         e.hom.val.app (op ⊤) (modPullbackSection f (modTensor L M) (tensorSection a b)) =
-          tensorSection (modPullbackSection f L a) (modPullbackSection f M b) := sorry
+          tensorSection (modPullbackSection f L a) (modPullbackSection f M b) :=
+  ⟨asIso (modPullbackTensorComparison f L M), modPullbackTensorComparison_tensorSection f L M⟩
 
 /-- **Monoidality of `f^*` on objects, forgetting the pinning** (PROVEN
 2026-07-28 over `exists_modPullback_modTensor`).
@@ -954,14 +1117,6 @@ and read `A.presheaf.map (eqToHom _).op`.  So the calculus is now written off
 those two, everything on sections is an honest presheaf map, and the leaf is
 proven. -/
 
-/-- **Restriction along an open immersion IS the pullback** —
-`Scheme.Modules.restrictFunctorIsoPullback`, read on an object.  This is what
-makes the whole calculus below depend on `nonempty_modPullback_modTensor` and on
-nothing else. -/
-noncomputable def modRestrictPullbackIso {X Y : Scheme.{u}} (f : X ⟶ Y) [IsOpenImmersion f]
-    (A : Y.Modules) : A.restrict f ≅ modPullback f A :=
-  (Scheme.Modules.restrictFunctorIsoPullback f).app A
-
 /-- **Restriction commutes with `modTensor`** (PROVEN 2026-07-28 over
 `nonempty_modPullback_modTensor`, in three lines).
 
@@ -975,27 +1130,11 @@ theorem nonempty_restrict_modTensor {X Y : Scheme.{u}} (f : X ⟶ Y) [IsOpenImme
   exact ⟨modRestrictPullbackIso f _ ≪≫ e ≪≫
     modTensorMapIso (modRestrictPullbackIso f L).symm (modRestrictPullbackIso f M).symm⟩
 
-/-- **`A|_W ≅ (A|_U)|_W` for `W ≤ U`** (PROVEN — `Scheme.homOfLE_ι` transported by
-`Scheme.Modules.restrictFunctorCongr`, then `restrictFunctorComp`).
-
-Both factors have `rfl` `_app_app` lemmas reading `A.presheaf.map (eqToHom _).op`,
-which is what makes `trivializedSection_trivializationOfLE` provable. -/
-noncomputable def modRestrictLEIso {Z : Scheme.{u}} (A : Z.Modules) {W U : Z.Opens} (h : W ≤ U) :
-    A.restrict W.ι ≅ (A.restrict U.ι).restrict (Z.homOfLE h) :=
-  (Scheme.Modules.restrictFunctorCongr (Z.homOfLE_ι h).symm).app A ≪≫
-    (Scheme.Modules.restrictFunctorComp (Z.homOfLE h) U.ι).app A
-
-/-- **A trivialization over `U` restricts to one over any `W ≤ U`** (PROVEN). -/
-noncomputable def trivializationOfLE {Z : Scheme.{u}} {A : Z.Modules} {W U : Z.Opens} (h : W ≤ U)
-    (φ : A.restrict U.ι ≅ modUnit (U : Scheme.{u})) :
-    A.restrict W.ι ≅ modUnit (W : Scheme.{u}) :=
-  modRestrictLEIso A h ≪≫ (Scheme.Modules.restrictFunctor (Z.homOfLE h)).mapIso φ ≪≫
-    Scheme.Modules.restrictUnitIso (Z.homOfLE h)
-
 /-- **Restricting a trivialization restricts the trivialized section** (PROVEN
 2026-07-28).  Pure plumbing — no mathematics — but it took three attempts, and
-the thing that unlocked it was changing `modRestrictLEIso` (above) rather than
-changing the proof.
+the thing that unlocked it was changing `modRestrictLEIso` (now HOISTED to
+`RelativePicard.lean`, and hoisted in its NEW `restrictFunctorCongr` form)
+rather than changing the proof.
 
 The skeleton, since the same shape recurs everywhere in this file:
 
@@ -1144,14 +1283,18 @@ This section is the FAITHFULNESS AUDIT that
 `nonvanishingLocus_modPullback_of_isAmpleSheaf` was flagged as needing.  See
 `isInvertibleSheaf_of_isAmpleSheaf` for the verdict and its proof sketch. -/
 
-/-- `𝒪_Z` is invertible.  (Recorded as a one-liner in `RelativePicard.lean`'s
-docstring for `IsInvertibleSheaf`; it has a consumer now, so it is a
-declaration.) -/
-theorem isInvertibleSheaf_modUnit (Z : Scheme.{u}) : IsInvertibleSheaf (modUnit Z) :=
-  fun _ => ⟨⊤, trivial, ⟨Scheme.Modules.restrictUnitIso (⊤ : Z.Opens).ι⟩⟩
-
 /-- **A tensor product of invertible sheaves is invertible** (PROVEN over
-`nonempty_restrict_modTensor`): trivialize both over `U ⊓ V`. -/
+`nonempty_restrict_modTensor`): trivialize both over `U ⊓ V`.
+
+Deliberately NOT hoisted to `RelativePicard.lean` with the rest of the free
+calculus (2026-07-28), and the reason is worth recording: this declaration is
+the ONLY consumer of `nonempty_restrict_modTensor`, which in turn is the only
+consumer of `nonempty_modPullback_modTensor`.  Moving it up would have left
+both of those free-floating and silently orphaned that leaf's owner's work.
+`RelativePicard.lean` therefore carries its own
+`isInvertibleSheaf_modTensorPic`, over its own twin of the pullback leaf; the
+two collapse into one when `nonempty_modPullback_modTensor` is settled and the
+hoist described there is carried out. -/
 theorem isInvertibleSheaf_modTensor {Z : Scheme.{u}} {L M : Z.Modules}
     (hL : IsInvertibleSheaf L) (hM : IsInvertibleSheaf M) : IsInvertibleSheaf (modTensor L M) := by
   intro z
@@ -1167,17 +1310,107 @@ theorem isInvertibleSheaf_modTensorPow {Z : Scheme.{u}} {L : Z.Modules}
   | 0 => isInvertibleSheaf_modUnit Z
   | (n + 1) => isInvertibleSheaf_modTensor hL (isInvertibleSheaf_modTensorPow hL n)
 
-/-- **AN INVERTIBLE SHEAF OF MODULES IS LOCALLY FREE OF RANK ONE** (sorry leaf) —
-Stacks 01CV, Hartshorne II.6.12.  Stated in the form the audit needs: if SOME
-positive tensor power of `A` is trivial on `U`, then `A` itself is trivial on a
-smaller neighbourhood of each point of `U`.
+/-- **AN INVERTIBLE SHEAF OF MODULES IS LOCALLY FREE OF RANK ONE** (sorry leaf,
+cut 2026-07-29 out of `exists_trivialization_of_modTensorPow`) — Stacks 0B8L /
+01CV, Hartshorne II.6.12, in its classical TWO-FACTOR form: if `L ⊗ N` is trivial
+on `U` for SOME `N`, then `L` is trivial near each point of `U`.
 
-**This is the single mathematical leaf of the module** (`nonempty_modTensor_assoc`
-and `nonempty_modPullback_modTensor` aside), and it is the whole content of the
+**This is the single mathematical leaf of the module** (`modLocW_whiskerLeft` and
+`nonempty_modPullback_modTensor` aside), and it is the whole content of the
 numerical-semigroup worry recorded against
 `nonvanishingLocus_modPullback_of_isAmpleSheaf`.
 
-WHY IT IS TRUE, and why it is not formal.  Stalks first: sheafification preserves
+**FAITHFUL, and strictly stronger than the tensor-power form it came from.**
+`modTensorPow A (j+1)` is `modTensor A (modTensorPow A j)` definitionally, so the
+power statement is the special case `N = A^{⊗j}`; the `0 < k` hypothesis of the
+consumer is exactly what produces the `j`.  Nothing else about `N` is used or
+true: `N` is an arbitrary `𝒪_Z`-module, as in Stacks, and the statement holds
+over an arbitrary RINGED SPACE — no quasi-coherence, no scheme hypothesis beyond
+what `Z.Modules` already carries.
+
+WHY IT IS TRUE.  Near a point, `ν⁻¹(1) = Σ_{i≤m} s_i ⊗ t_i` for finitely many
+sections; writing `λ_i(x) := ν(x ⊗ t_i)` one has `Σ_i λ_i(s_i) = ν(ν⁻¹ 1) = 1`,
+so some `λ_i(s_i)` is a unit on a neighbourhood `W` of the given point (a sum of
+sections equal to `1` cannot have every term in the maximal ideal at a point, so
+the basic opens `W_i := basicOpen (λ_i(s_i))` cover).  On that `W`, `s_i`
+generates and `c⁻¹λ_i` is inverse to `r ↦ r·s_i`.
+
+**ROUTE AUDIT 2026-07-29 — this CORRECTS the audit that stood here.**  The old
+note said the blocker is the missing STALK-MODULE structure.  That is true of the
+route it had in mind and it is not the whole story, and naming only stalks sends
+a prover at the wrong subtree.  Re-running the checks:
+
+* **CONFIRMED, and it is the old note's one surviving claim.**
+  `grep -rln stalk Mathlib/Algebra/Category/ModuleCat/{Presheaf,Sheaf}/` is still
+  **EMPTY** at this pin, so `A_y` cannot even be *said* to be invertible over
+  `𝒪_y`.  (`Scheme.Modules.restrictStalkNatIso` exists but is a stalk of the
+  underlying `Ab`-presheaf and carries no `Module` structure.)
+* **NEWLY FOUND, and NOT previously recorded: the LOCAL PRESENTATION half is
+  already available.**  `Mathlib/Algebra/Category/ModuleCat/Presheaf/Sheafify.lean`
+  carries `instance : IsLocallySurjective J (toSheafify α φ)` (line 352 at this
+  pin), and `PresheafOfModules.toPresheaf_map_sheafificationAdjunction_unit_app`
+  identifies `modTensorMk` with `CategoryTheory.toSheafify` on underlying
+  presheaves.  So "`ν⁻¹(1)` is locally a finite sum of pure tensors" needs no new
+  theory — only the unfolding of local surjectivity over the Opens topology into
+  its pointwise form.  Refuting check: the `grep` above on `Sheafify.lean`.
+* **THE OBSTRUCTION IS THE SYMMETRY, NOT THE STALKS.**  The endgame is the
+  generation identity `x = Σ_i λ_i(x)·s_i`, and it is NOT a consequence of
+  `Σ_i λ_i(s_i) = 1` by any amount of bilinearity: the derivation is
+  `x ⊗ 1 = Σ_i x ⊗ s_i ⊗ t_i ↦ Σ_i s_i ⊗ x ⊗ t_i = Σ_i λ_i(x)·s_i ⊗ 1`, which
+  uses the ASSOCIATOR and the BRAIDING of `L ⊗ L ⊗ N`.  (Equivalently: the two
+  maps `L⊗N⊗L⊗N → 𝒪`, `ν₁₄·ν₃₂` and `ν₁₂·ν₃₄`, agree on `ν⁻¹(1) ⊗ x ⊗ u` — a
+  symmetry statement.)  Both structures EXIST here, through
+  `nonempty_modTensor_assoc` and the braiding of `ModLM Z` — but only ABSTRACTLY:
+  `Localization.Monoidal.μ` comes from the localization's universal property, so
+  its effect on `modTensorMk`-image sections does not compute.  This is the same
+  defect, one level up, that forced `exists_trivialization_modTensor` to be cut,
+  and the fix there (build a canonical MORPHISM out of the sheafification instead
+  of reading an abstract iso) does not apply, because here the needed map goes
+  INTO a tensor product.
+* **CONSEQUENCE WORTH ACTING ON: one piece of machinery closes two of this
+  module's four remaining leaves.**  The monoidal stalk functor named as route 3
+  of `modLocW_whiskerLeft` — `colim_{V ∋ y} (X(V) ⊗_{𝒪(V)} Y(V)) ≅ X_y ⊗_{𝒪_y} Y_y`
+  — supplies BOTH: it closes `modLocW_whiskerLeft` (stalkwise `𝟙 ⊗ g_y`), and it
+  reduces this leaf to commutative algebra over the local ring `𝒪_y`, where the
+  symmetry is mathlib's own `TensorProduct.comm` and computes.  A prover sent at
+  the stalk functor is therefore worth two leaves, not one.
+* Unchanged and still useful: `Mathlib/Algebra/Category/ModuleCat/Sheaf/`
+  `LocallyFree.lean` EXISTS, supplying `SheafOfModules.IsLocallyFree`,
+  `LocalGeneratorsData.IsLocallyFreeData` and `GeneratingSections`.  Those are
+  DEFINITIONS, not this theorem — "invertible implies locally free of rank one"
+  is still absent from the pin — but the finite-generation half above is literally
+  a `LocalGeneratorsData`, and `free.generatingSections` gives the rank-one model.
+
+Do NOT weaken this to a hypothesis on the consumers instead: `IsAmpleSheaf` is
+what the consumer `exists_isAmpleSheaf_cube_of_isAlgClosed` produces, and it
+produces `IsInvertibleSheaf` beside it — so the ALTERNATIVE repair (thread
+`IsInvertibleSheaf L` through `nonvanishingLocus_modPullback_of_isAmpleSheaf` and
+`isAmpleSheaf_modPullback`, and stop discarding it at the call site in
+`AbelianSchemeIsogeny.lean`, where it is currently bound to `-`) is available and
+costs nothing mathematically.  It is not taken here because the statement as
+given is TRUE, and weakening a true statement to dodge a proof is exactly what
+the faithfulness rule forbids. -/
+theorem exists_trivialization_of_modTensor_trivial {Z : Scheme.{u}} {L N : Z.Modules}
+    {U : Z.Opens}
+    (hν : Nonempty ((modTensor L N).restrict U.ι ≅ modUnit (U : Scheme.{u})))
+    {z : Z} (hz : z ∈ U) :
+    ∃ W : Z.Opens, W ≤ U ∧ z ∈ W ∧ Nonempty (L.restrict W.ι ≅ modUnit (W : Scheme.{u})) := sorry
+
+/-- **AN INVERTIBLE SHEAF OF MODULES IS LOCALLY FREE OF RANK ONE, in the tensor
+power form the audit needs** (PROVEN 2026-07-29 over
+`exists_trivialization_of_modTensor_trivial`): if SOME positive tensor power of
+`A` is trivial on `U`, then `A` itself is trivial on a smaller neighbourhood of
+each point of `U`.
+
+One line, because `modTensorPow A (j+1)` IS `modTensor A (modTensorPow A j)`
+definitionally; `hk` is used exactly to produce the `j`.  The mathematics, and
+the route audit, are on `exists_trivialization_of_modTensor_trivial` above.
+
+The paragraph below is retained from the previous version of this docstring
+because its analysis of the argument is still exactly right; note only that the
+"stalks are the blocker" reading of it is corrected above.
+
+Stalks first: sheafification preserves
 stalks and `(P ⊗ Q)_y = P_y ⊗_{𝒪_y} Q_y` (filtered colimits commute with `⊗`), so
 `(A^{⊗k})|_U ≅ 𝒪_U` gives `A_y^{⊗k} ≅ 𝒪_y` for every `y ∈ U`, hence `A_y` is an
 invertible module over the LOCAL ring `𝒪_y`, hence free of rank one.  Stalkwise
@@ -1189,41 +1422,19 @@ inverse itself: `A|_U ⊗ (A^{⊗(k-1)})|_U ≅ 𝒪_U` means that near each poi
 `m = Σ_i ⟨t_i, m⟩ s_i` computation then shows `A` is generated by `s_1, …, s_m`
 there.  Finite type plus a free stalk gives local triviality.
 
-Do NOT weaken this to a hypothesis on the consumers instead: `IsAmpleSheaf` is
-what the consumer `exists_isAmpleSheaf_cube_of_isAlgClosed` produces, and it
-produces `IsInvertibleSheaf` beside it — so the ALTERNATIVE repair (thread
-`IsInvertibleSheaf L` through `nonvanishingLocus_modPullback_of_isAmpleSheaf` and
-`isAmpleSheaf_modPullback`, and stop discarding it at the call site in
-`AbelianSchemeIsogeny.lean`, where it is currently bound to `-`) is available and
-costs nothing mathematically.  It is not taken here because the statement as
-given is TRUE, and weakening a true statement to dodge a proof is exactly what
-the faithfulness rule forbids.
-
-PIN CHECK 2026-07-28 — one claim re-run and CONFIRMED, one API added that was
-not recorded here.
-
-* The stalk half of the argument above really is blocked, and the module
-  docstring's note about `NonvanishingAt` is the same gap:
-  `grep -rln stalk Mathlib/Algebra/Category/ModuleCat/{Presheaf,Sheaf}/` is
-  **EMPTY** at this pin.  (`Scheme.Modules.restrictStalkNatIso` does exist, but
-  it is a stalk of the underlying `Ab`-presheaf and carries no `Module`
-  structure, so it cannot express "`A_y` is invertible over `𝒪_y`".)
-* NOT recorded here before, and it is the vocabulary this leaf should be phrased
-  against: `Mathlib/Algebra/Category/ModuleCat/Sheaf/LocallyFree.lean` EXISTS at
-  this pin, supplying `SheafOfModules.IsLocallyFree`,
-  `SheafOfModules.LocalGeneratorsData.IsLocallyFreeData` and
-  `GeneratingSections`, on top of `Sheaf/Generators.lean` and
-  `Sheaf/Quasicoherent.lean`.  That is DEFINITIONS, not this theorem —
-  "invertible implies locally free of rank one" is not in the pin, and a grep
-  for it returns nothing — but the finite-generation half of the argument above
-  ("`A` is generated by `s_1, …, s_m` there") is literally a
-  `LocalGeneratorsData`, and `free.generatingSections` already gives the rank-one
-  model.  So the missing input is the STALK-MODULE structure, not the
-  local-freeness vocabulary. -/
+Two amendments to that paragraph, both 2026-07-29 and both recorded in full on
+`exists_trivialization_of_modTensor_trivial`: the "near each point
+`1 = Σ_i s_i ⊗ t_i`" step is NOT missing from the pin (it is local surjectivity
+of the sheafification unit, `Sheafify.lean`'s
+`instance : IsLocallySurjective J (toSheafify α φ)`), and the
+`m = Σ_i ⟨t_i, m⟩ s_i` step needs the BRAIDING, which is what is actually
+blocked here — not merely the stalks. -/
 theorem exists_trivialization_of_modTensorPow {Z : Scheme.{u}} {A : Z.Modules} {U : Z.Opens}
     {k : ℕ} (hk : 0 < k) (ψ : (modTensorPow A k).restrict U.ι ≅ modUnit (U : Scheme.{u}))
     {z : Z} (hz : z ∈ U) :
-    ∃ W : Z.Opens, W ≤ U ∧ z ∈ W ∧ Nonempty (A.restrict W.ι ≅ modUnit (W : Scheme.{u})) := sorry
+    ∃ W : Z.Opens, W ≤ U ∧ z ∈ W ∧ Nonempty (A.restrict W.ι ≅ modUnit (W : Scheme.{u})) := by
+  obtain ⟨j, rfl⟩ : ∃ j : ℕ, k = j + 1 := ⟨k - 1, (Nat.succ_pred_eq_of_pos hk).symm⟩
+  exact exists_trivialization_of_modTensor_trivial ⟨ψ⟩ hz
 
 /-- **AMPLE IMPLIES INVERTIBLE** (PROVEN 2026-07-28 over
 `exists_trivialization_of_modTensorPow`) — **and this is the FAITHFULNESS VERDICT
@@ -1271,8 +1482,366 @@ noncomputable def tensorPowSection {Z : Scheme.{u}} {A : Z.Modules} (s : Γ(A, �
   | 0 => unitOne Z
   | (k + 1) => tensorSection s (tensorPowSection s k)
 
-/-- **A TRIVIALIZATION OF A TENSOR PRODUCT MULTIPLIES SECTIONS** (sorry leaf, cut
-2026-07-28 out of `exists_trivialization_tensorPow`).
+/-! ### The CANONICAL trivialization of a tensor product
+
+**NEW BLOCK, 2026-07-29.**  Everything from here to
+`exists_trivialization_modTensor` exists to build a trivialization of `L ⊗ M`
+over `U` whose effect on `tensorSection` is KNOWN.  The route recorded on that
+leaf ("strengthen `nonempty_restrict_modTensor` to a named comparison
+`(L ⊗ M)|_U ≅ L|_U ⊗ M|_U`, which wants a canonical
+`nonempty_modPullback_modTensor`") is NOT the route taken, and does not have to
+be: a canonical comparison is more than the leaf needs.
+
+What the leaf needs is a canonical MORPHISM `(L ⊗ M)|_U ⟶ 𝒪_U` with the right
+effect on sections, plus the knowledge — from any `Nonempty` comparison — that
+`(L ⊗ M)|_U` is abstractly trivial.  The morphism direction is free from the
+universal property of sheafification, because it maps OUT of `modTensor`:
+
+* `pushUnitMul` — `(f_*𝒪_X) ⊗ (f_*𝒪_X) ⟶ f_*𝒪_X`, multiplication.  This is the
+  only genuinely new construction, and it is elementary: restriction along
+  `Opens.map f.base` is a ring map, so multiplication is `Γ(Y,V)`-balanced.
+* `pushUnitOfTrivialization` — `φ : L|_U ≅ 𝒪_U` read as `L ⟶ (U.ι)_*𝒪_U`, by
+  the unit of `restrictAdjunction`.
+* `tensorPairing` — `L.val ⊗ M.val ⟶ ((U.ι)_*𝒪_U).val`, `x ⊗ y ↦ φ(x)·χ(y)`,
+  at PRESHEAF level, where the tensor product is objectwise.
+* `tensorPairingSheaf` / `trivializationMulHom` — its transposes across the
+  sheafification adjunction and `restrictAdjunction`.  Both counits COMPUTE
+  (`restrictAdjunction_counit_app_app` is `rfl`; the sheafification counit is
+  `modSheafifyValIso`), which is why the section identity is provable.
+
+That `trivializationMulHom` is an ISO is then a one-line unit argument, and this
+is the step that consumes the anonymous comparison: writing `ν` for any
+isomorphism `(L ⊗ M)|_U ≅ 𝒪_U` (from `nonempty_restrict_modTensor`, `φ`, `χ`),
+`ν⁻¹ ≫ trivializationMulHom φ χ` is an ENDOMORPHISM of `𝒪_U`, hence
+multiplication by its value `c` at `1` (`unitHomApply_eq`).  Evaluating at the
+distinguished section `tensorUnitSection = φ⁻¹(1) ⊗ χ⁻¹(1)`, whose image under
+`trivializationMulHom` is `1` by construction, gives `d · c = 1`.  So `c` is a
+unit, `isIso_of_isUnit_unitHom` applies, and no property of `ν` beyond its
+existence is ever used — which is exactly the right shape, since `ν` is
+anonymous.
+
+So this block waits on `nonempty_modPullback_modTensor` (through
+`nonempty_restrict_modTensor`) for EXISTENCE only, and on nothing else. -/
+
+section PushforwardUnit
+variable {X Y : Scheme.{u}} (f : X ⟶ Y)
+
+/-- `f_*𝒪_X`, as an `𝒪_Y`-module. -/
+noncomputable abbrev pushUnit : Y.Modules := (Scheme.Modules.pushforward f).obj (modUnit X)
+
+/-- `(f_*𝒪_X).val`, retyped over `Y.presheaf ⋙ forget₂ _ _` so that the monoidal
+structure on `ModuleCat` at each open is found by instance search. -/
+noncomputable abbrev pushUnitVal :
+    PresheafOfModules.{u} (Y.presheaf ⋙ forget₂ CommRingCat RingCat) := (pushUnit f).val
+
+/-- `Γ(f_*𝒪_X, V) = Γ(X, f⁻¹V)` is definitional; this names the direction into
+the module, so that `*` and `+` can be written on the other side. -/
+noncomputable def pushUnitEq {V : Y.Opensᵒᵖ} (x : Γ(X, f ⁻¹ᵁ V.unop)) :
+    ((pushUnitVal f).obj V) := x
+
+/-- The inverse retyping of `pushUnitEq`. -/
+noncomputable def pushUnitEq' {V : Y.Opensᵒᵖ} (x : ((pushUnitVal f).obj V)) :
+    Γ(X, f ⁻¹ᵁ V.unop) := x
+
+/-- Multiplication on `f_*𝒪_X` over one open.  Balanced over `Γ(Y, V)` because
+the `Γ(Y,V)`-action is through the ring map `f.app V`. -/
+noncomputable def pushUnitMulApp (V : Y.Opensᵒᵖ) :
+    (pushUnitVal f).obj V ⊗ (pushUnitVal f).obj V ⟶ (pushUnitVal f).obj V :=
+  ModuleCat.MonoidalCategory.tensorLift
+    (fun x y => pushUnitEq f (pushUnitEq' f x * pushUnitEq' f y))
+    (by intro x₁ x₂ y
+        show pushUnitEq f ((pushUnitEq' f x₁ + pushUnitEq' f x₂) * pushUnitEq' f y)
+          = pushUnitEq f (pushUnitEq' f x₁ * pushUnitEq' f y
+              + pushUnitEq' f x₂ * pushUnitEq' f y)
+        rw [add_mul])
+    (by intro a x y
+        show pushUnitEq f ((f.app V.unop a * pushUnitEq' f x) * _) = _
+        show _ = pushUnitEq f (f.app V.unop a * (pushUnitEq' f x * pushUnitEq' f y))
+        rw [mul_assoc])
+    (by intro x y₁ y₂
+        show pushUnitEq f (pushUnitEq' f x * (pushUnitEq' f y₁ + pushUnitEq' f y₂))
+          = pushUnitEq f (pushUnitEq' f x * pushUnitEq' f y₁
+              + pushUnitEq' f x * pushUnitEq' f y₂)
+        rw [mul_add])
+    (by intro a x y
+        show pushUnitEq f (pushUnitEq' f x * (f.app V.unop a * pushUnitEq' f y)) = _
+        show _ = pushUnitEq f (f.app V.unop a * (pushUnitEq' f x * pushUnitEq' f y))
+        rw [mul_left_comm])
+
+/-- **Multiplication `(f_*𝒪_X) ⊗ (f_*𝒪_X) ⟶ f_*𝒪_X`** (PROVEN 2026-07-29).
+Naturality is `map_mul` for the restriction ring map. -/
+noncomputable def pushUnitMul :
+    PresheafOfModules.Monoidal.tensorObj (R := Y.presheaf) (pushUnitVal f) (pushUnitVal f) ⟶
+      pushUnitVal f where
+  app V := pushUnitMulApp f V
+  naturality := by
+    intro V W i
+    refine ModuleCat.MonoidalCategory.tensor_ext (fun x y => ?_)
+    show pushUnitEq f (X.presheaf.map ((Opens.map f.base).map i.unop).op (pushUnitEq' f x)
+          * X.presheaf.map ((Opens.map f.base).map i.unop).op (pushUnitEq' f y))
+      = pushUnitEq f (X.presheaf.map ((Opens.map f.base).map i.unop).op
+          (pushUnitEq' f x * pushUnitEq' f y))
+    rw [map_mul]
+
+end PushforwardUnit
+
+section TensorTrivialization
+variable {Z : Scheme.{u}} {L M : Z.Modules} {U : Z.Opens}
+
+/-- `φ : L|_U ≅ 𝒪_U`, read as a morphism `L ⟶ (U.ι)_* 𝒪_U` on `Z`. -/
+noncomputable def pushUnitOfTrivialization
+    (φ : L.restrict U.ι ≅ modUnit (U : Scheme.{u})) : L ⟶ pushUnit U.ι :=
+  (Scheme.Modules.restrictAdjunction U.ι).unit.app L ≫
+    (Scheme.Modules.pushforward U.ι).map φ.hom
+
+lemma pushUnitOfTrivialization_app (φ : L.restrict U.ι ≅ modUnit (U : Scheme.{u}))
+    (V : Z.Opens) (x : Γ(L, V)) :
+    pushUnitEq' U.ι ((pushUnitOfTrivialization φ).val.app (op V) x)
+      = φ.hom.val.app (op (U.ι ⁻¹ᵁ V))
+          (L.presheaf.map (homOfLE (U.ι.image_preimage_le V)).op x) := rfl
+
+/-- The presheaf-level pairing `L ⊗ M ⟶ (U.ι)_* 𝒪_U`, `x ⊗ y ↦ φ(x)·χ(y)`. -/
+noncomputable def tensorPairing (φ : L.restrict U.ι ≅ modUnit (U : Scheme.{u}))
+    (χ : M.restrict U.ι ≅ modUnit (U : Scheme.{u})) :
+    PresheafOfModules.Monoidal.tensorObj (R := Z.presheaf) L.val M.val ⟶ pushUnitVal U.ι :=
+  PresheafOfModules.Monoidal.tensorHom (pushUnitOfTrivialization φ).val
+      (pushUnitOfTrivialization χ).val ≫ pushUnitMul U.ι
+
+/-- Its transpose across the sheafification adjunction, written with the counit
+(`modSheafifyValIso`) rather than `homEquiv`, so that it computes.  Going through
+`Adjunction.homEquiv` instead makes the evaluation lemma below time out, because
+the `restrictScalars (𝟙 _)` in the right adjoint has to be defeq-unfolded. -/
+noncomputable def tensorPairingSheaf (φ : L.restrict U.ι ≅ modUnit (U : Scheme.{u}))
+    (χ : M.restrict U.ι ≅ modUnit (U : Scheme.{u})) :
+    modTensor L M ⟶ pushUnit U.ι :=
+  (PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)).map (tensorPairing φ χ) ≫
+    (modSheafifyValIso (pushUnit U.ι)).hom
+
+/-- **The canonical trivialization morphism `(L ⊗ M)|_U ⟶ 𝒪_U`.** -/
+noncomputable def trivializationMulHom (φ : L.restrict U.ι ≅ modUnit (U : Scheme.{u}))
+    (χ : M.restrict U.ι ≅ modUnit (U : Scheme.{u})) :
+    (modTensor L M).restrict U.ι ⟶ modUnit (U : Scheme.{u}) :=
+  (Scheme.Modules.restrictFunctor U.ι).map (tensorPairingSheaf φ χ) ≫
+    (Scheme.Modules.restrictAdjunction U.ι).counit.app (modUnit (U : Scheme.{u}))
+
+/-- Applying a presheaf-of-modules morphism equation at one open and one section. -/
+lemma presheafHom_congr_apply {C : Type*} [Category* C] {R : Cᵒᵖ ⥤ RingCat.{u}}
+    {A B : PresheafOfModules.{u} R} {m₁ m₂ : A ⟶ B} (h : m₁ = m₂) (V : Cᵒᵖ) (z : A.obj V) :
+    m₁.app V z = m₂.app V z := by rw [h]
+
+/-- The transpose undoes the sheafification unit: naturality of the unit plus the
+right triangle identity. -/
+lemma tensorPairingSheaf_modTensorMk (φ : L.restrict U.ι ≅ modUnit (U : Scheme.{u}))
+    (χ : M.restrict U.ι ≅ modUnit (U : Scheme.{u})) (V : Z.Opensᵒᵖ)
+    (z : (PresheafOfModules.Monoidal.tensorObj (R := Z.presheaf) L.val M.val).obj V) :
+    (tensorPairingSheaf φ χ).val.app V ((modTensorMk L M).app V z)
+      = (tensorPairing φ χ).app V z := by
+  have hnat := presheafHom_congr_apply
+    ((PresheafOfModules.sheafificationAdjunction (𝟙 Z.ringCatSheaf.obj)).unit.naturality
+      (tensorPairing φ χ)) V z
+  have htri := presheafHom_congr_apply
+    ((PresheafOfModules.sheafificationAdjunction
+      (𝟙 Z.ringCatSheaf.obj)).right_triangle_components (pushUnit U.ι)) V
+      ((tensorPairing φ χ).app V z)
+  have hnat' : ((PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)).map
+        (tensorPairing φ χ)).val.app V ((modTensorMk L M).app V z)
+      = ((PresheafOfModules.sheafificationAdjunction (𝟙 Z.ringCatSheaf.obj)).unit.app
+          (pushUnitVal U.ι)).app V ((tensorPairing φ χ).app V z) := hnat.symm
+  have htri' : ((modSheafifyValIso (pushUnit U.ι)).hom).val.app V
+        (((PresheafOfModules.sheafificationAdjunction (𝟙 Z.ringCatSheaf.obj)).unit.app
+          (pushUnitVal U.ι)).app V ((tensorPairing φ χ).app V z))
+      = (tensorPairing φ χ).app V z := htri
+  show ((modSheafifyValIso (pushUnit U.ι)).hom).val.app V
+      (((PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)).map (tensorPairing φ χ)).val.app V
+        ((modTensorMk L M).app V z)) = _
+  rw [hnat']
+  exact htri'
+
+/-- `trivializedSection` for a bare morphism rather than an isomorphism. -/
+noncomputable def trivializedSectionHom {A : Z.Modules}
+    (θ : A.restrict U.ι ⟶ modUnit (U : Scheme.{u})) (s : Γ(A, ⊤)) : Γ((U : Scheme.{u}), ⊤) :=
+  θ.val.app (op ⊤)
+    ((Scheme.Modules.restrictAppIso (f := U.ι) A ⊤).inv
+      (A.presheaf.map (homOfLE le_top).op s))
+
+lemma restrictAppIso_inv_apply {A : Z.Modules} (W : (U : Scheme.{u}).Opens)
+    (x : Γ(A, U.ι ''ᵁ W)) :
+    (Scheme.Modules.restrictAppIso (f := U.ι) A W).inv x = x := rfl
+
+/-- `Z.Opens` is a thin category, so any endomorphism of an open acts trivially. -/
+lemma presheafMap_self_apply {A : Z.Modules} {V : Z.Opens}
+    (g : op V ⟶ op V) (y : Γ(A, V)) : A.presheaf.map g y = y := by
+  rw [Subsingleton.elim g (𝟙 _), CategoryTheory.Functor.map_id, ConcreteCategory.id_apply]
+
+lemma pushUnitOfTrivialization_top (φ : L.restrict U.ι ≅ modUnit (U : Scheme.{u}))
+    (x : Γ(L, U.ι ''ᵁ (⊤ : (U : Scheme.{u}).Opens))) :
+    (U : Scheme.{u}).presheaf.map (eqToHom (U.ι.preimage_image_eq ⊤).symm).op
+      (pushUnitEq' U.ι ((pushUnitOfTrivialization φ).val.app
+        (op (U.ι ''ᵁ (⊤ : (U : Scheme.{u}).Opens))) x))
+      = φ.hom.val.app (op (⊤ : (U : Scheme.{u}).Opens)) x := by
+  rw [pushUnitOfTrivialization_app]
+  calc (U : Scheme.{u}).presheaf.map (eqToHom (U.ι.preimage_image_eq ⊤).symm).op
+        (φ.hom.val.app (op (U.ι ⁻¹ᵁ (U.ι ''ᵁ (⊤ : (U : Scheme.{u}).Opens))))
+          (L.presheaf.map (homOfLE (U.ι.image_preimage_le _)).op x))
+      = φ.hom.val.app (op (⊤ : (U : Scheme.{u}).Opens))
+          (L.presheaf.map ((Scheme.Hom.opensFunctor U.ι).map
+              (eqToHom (U.ι.preimage_image_eq ⊤).symm)).op
+            (L.presheaf.map (homOfLE (U.ι.image_preimage_le _)).op x)) :=
+        (PresheafOfModules.naturality_apply φ.hom.val
+          (X := op (U.ι ⁻¹ᵁ (U.ι ''ᵁ (⊤ : (U : Scheme.{u}).Opens))))
+          (Y := op (⊤ : (U : Scheme.{u}).Opens))
+          (eqToHom (U.ι.preimage_image_eq ⊤).symm).op _).symm
+    _ = φ.hom.val.app (op (⊤ : (U : Scheme.{u}).Opens)) x := by
+        refine congrArg _ ?_
+        rw [← ConcreteCategory.comp_apply, ← Functor.map_comp, presheafMap_self_apply]
+
+lemma pushUnitOfTrivialization_top_global (φ : L.restrict U.ι ≅ modUnit (U : Scheme.{u}))
+    (a : Γ(L, ⊤)) :
+    (U : Scheme.{u}).presheaf.map (eqToHom (U.ι.preimage_image_eq ⊤).symm).op
+      (pushUnitEq' U.ι ((pushUnitOfTrivialization φ).val.app
+        (op (U.ι ''ᵁ (⊤ : (U : Scheme.{u}).Opens))) (L.presheaf.map (homOfLE le_top).op a)))
+      = trivializedSection φ a := by
+  rw [pushUnitOfTrivialization_top]
+  unfold trivializedSection
+  rw [restrictAppIso_inv_apply]
+
+lemma trivializationMulHom_app_top (φ : L.restrict U.ι ≅ modUnit (U : Scheme.{u}))
+    (χ : M.restrict U.ι ≅ modUnit (U : Scheme.{u}))
+    (w : Γ(modTensor L M, U.ι ''ᵁ (⊤ : (U : Scheme.{u}).Opens))) :
+    (trivializationMulHom φ χ).val.app (op ⊤) w
+      = (U : Scheme.{u}).presheaf.map (eqToHom (U.ι.preimage_image_eq ⊤).symm).op
+          (pushUnitEq' U.ι ((tensorPairingSheaf φ χ).val.app
+            (op (U.ι ''ᵁ (⊤ : (U : Scheme.{u}).Opens))) w)) := rfl
+
+lemma tensorSection_restrict (a : Γ(L, ⊤)) (b : Γ(M, ⊤)) :
+    (modTensor L M).presheaf.map
+        (homOfLE (le_top : U.ι ''ᵁ (⊤ : (U : Scheme.{u}).Opens) ≤ ⊤)).op (tensorSection a b)
+      = (modTensorMk L M).app (op (U.ι ''ᵁ (⊤ : (U : Scheme.{u}).Opens)))
+          (L.presheaf.map (homOfLE le_top).op a ⊗ₜ M.presheaf.map (homOfLE le_top).op b) :=
+  (PresheafOfModules.naturality_apply (modTensorMk L M)
+    (X := op (⊤ : Z.Opens)) (Y := op (U.ι ''ᵁ (⊤ : (U : Scheme.{u}).Opens)))
+    (homOfLE le_top).op (a ⊗ₜ b)).symm
+
+lemma tensorPairing_tmul (φ : L.restrict U.ι ≅ modUnit (U : Scheme.{u}))
+    (χ : M.restrict U.ι ≅ modUnit (U : Scheme.{u})) (V : Z.Opens)
+    (x : Γ(L, V)) (y : Γ(M, V)) :
+    pushUnitEq' U.ι ((tensorPairing φ χ).app (op V) (x ⊗ₜ y))
+      = pushUnitEq' U.ι ((pushUnitOfTrivialization φ).val.app (op V) x)
+        * pushUnitEq' U.ι ((pushUnitOfTrivialization χ).val.app (op V) y) := rfl
+
+/-- **The canonical trivialization morphism multiplies sections** (PROVEN
+2026-07-29).  This is the identity the leaf below asks for; what is left there is
+only that the morphism is invertible. -/
+theorem trivializedSectionHom_trivializationMulHom
+    (φ : L.restrict U.ι ≅ modUnit (U : Scheme.{u}))
+    (χ : M.restrict U.ι ≅ modUnit (U : Scheme.{u})) (a : Γ(L, ⊤)) (b : Γ(M, ⊤)) :
+    trivializedSectionHom (trivializationMulHom φ χ) (tensorSection a b)
+      = trivializedSection φ a * trivializedSection χ b := by
+  unfold trivializedSectionHom
+  rw [restrictAppIso_inv_apply, trivializationMulHom_app_top, tensorSection_restrict,
+    tensorPairingSheaf_modTensorMk, tensorPairing_tmul, map_mul,
+    pushUnitOfTrivialization_top_global, pushUnitOfTrivialization_top_global]
+
+/-! #### Endomorphisms of `𝒪_W`
+
+The general form of the transition-function computation already done at `⊤` in
+`nonvanishingLocus_modUnit`: an endomorphism of `𝒪_W` is multiplication by its
+value at `1`, and it is an isomorphism as soon as that value is a unit. -/
+
+/-- `1 : Γ(W, V)`, read as a section of the unit module over `V`. -/
+def unitOneAt (W : Scheme.{u}) (V : W.Opens) : Γ(modUnit W, V) := (1 : Γ(W, V))
+
+/-- An endomorphism of `𝒪_W` applied to a section over `V`, both sides typed in
+`Γ(W, V)`.  Same role as `unitEndoApply` above, for a bare morphism and over an
+arbitrary open. -/
+noncomputable def unitHomApply {W : Scheme.{u}} (α : modUnit W ⟶ modUnit W) {V : W.Opens}
+    (a : Γ(W, V)) : Γ(W, V) := α.val.app (op V) a
+
+lemma unitHomApply_eq {W : Scheme.{u}} (α : modUnit W ⟶ modUnit W) {V : W.Opens}
+    (a : Γ(W, V)) :
+    unitHomApply α a = a * unitHomApply α (1 : Γ(W, V)) := by
+  have h2 : unitHomApply α (a * 1) = a * unitHomApply α (1 : Γ(W, V)) :=
+    (α.val.app (op V)).hom.map_smul a (unitOneAt W V)
+  simpa using h2
+
+lemma unitHom_app_one {W : Scheme.{u}} (α : modUnit W ⟶ modUnit W) (V : W.Opens) :
+    unitHomApply α (1 : Γ(W, V))
+      = W.presheaf.map (homOfLE le_top).op (unitHomApply α (1 : Γ(W, ⊤))) := by
+  have h1 : ((modUnit W).val.map (homOfLE (le_top : V ≤ ⊤)).op) (unitOneAt W ⊤)
+      = unitOneAt W V :=
+    PresheafOfModules.unit_map_one W.ringCatSheaf.obj (homOfLE le_top).op
+  have hnat := PresheafOfModules.naturality_apply α.val
+    (X := op (⊤ : W.Opens)) (Y := op V) (homOfLE le_top).op (unitOneAt W ⊤)
+  rw [h1] at hnat
+  exact hnat
+
+/-- The compatible family of restrictions of a global section of `𝒪_W`. -/
+noncomputable def unitSectionOf {W : Scheme.{u}} (c : Γ(W, ⊤)) : (modUnit W).sections :=
+  PresheafOfModules.sectionsMk (fun V => W.presheaf.map (homOfLE le_top).op c)
+    (fun V V' g => by
+      show W.presheaf.map g (W.presheaf.map (homOfLE le_top).op c) = _
+      rw [← ConcreteCategory.comp_apply, ← Functor.map_comp]
+      congr 1)
+
+/-- Multiplication by a global section of `𝒪_W`, as an endomorphism of `𝒪_W`.
+Built through `SheafOfModules.unitHomEquiv`, so no naturality proof is needed. -/
+noncomputable def unitMulHom {W : Scheme.{u}} (c : Γ(W, ⊤)) : modUnit W ⟶ modUnit W :=
+  (SheafOfModules.unitHomEquiv (modUnit W)).symm (unitSectionOf c)
+
+lemma unitMulHom_app_one {W : Scheme.{u}} (c : Γ(W, ⊤)) (V : W.Opens) :
+    unitHomApply (unitMulHom c) (1 : Γ(W, V))
+      = W.presheaf.map (homOfLE le_top).op c :=
+  congrArg (fun s : (modUnit W).sections => s.val (op V))
+    ((SheafOfModules.unitHomEquiv (modUnit W)).apply_symm_apply (unitSectionOf c))
+
+/-- **An endomorphism of `𝒪_W` whose value at `1` is a unit is an isomorphism**
+(PROVEN 2026-07-29). -/
+theorem isIso_of_isUnit_unitHom {W : Scheme.{u}} (α : modUnit W ⟶ modUnit W)
+    (h : IsUnit (unitHomApply α (1 : Γ(W, ⊤)))) : IsIso α := by
+  obtain ⟨v, hv⟩ := h
+  refine ⟨unitMulHom ((v⁻¹ : (Γ(W, ⊤))ˣ) : Γ(W, ⊤)), ?_, ?_⟩
+  · refine (SheafOfModules.unitHomEquiv (modUnit W)).injective
+      (PresheafOfModules.sections_ext _ _ (fun V => ?_))
+    show unitHomApply (unitMulHom ((v⁻¹ : (Γ(W, ⊤))ˣ) : Γ(W, ⊤)))
+        (unitHomApply α (1 : Γ(W, V.unop))) = (1 : Γ(W, V.unop))
+    rw [unitHom_app_one, unitHomApply_eq, unitMulHom_app_one, ← map_mul, ← hv,
+      v.mul_inv, map_one]
+  · refine (SheafOfModules.unitHomEquiv (modUnit W)).injective
+      (PresheafOfModules.sections_ext _ _ (fun V => ?_))
+    show unitHomApply α (unitHomApply (unitMulHom ((v⁻¹ : (Γ(W, ⊤))ˣ) : Γ(W, ⊤)))
+        (1 : Γ(W, V.unop))) = (1 : Γ(W, V.unop))
+    rw [unitMulHom_app_one, unitHomApply_eq, unitHom_app_one, ← map_mul, ← hv,
+      v.inv_mul, map_one]
+
+/-- `φ⁻¹(1) ⊗ χ⁻¹(1)`, a section of `L ⊗ M` over `U`.  This is the witness that
+makes `trivializationMulHom` surjective on `𝒪_U`, and it is where `φ` and `χ`
+being ISOMORPHISMS (rather than mere maps) is used. -/
+noncomputable def tensorUnitSection (φ : L.restrict U.ι ≅ modUnit (U : Scheme.{u}))
+    (χ : M.restrict U.ι ≅ modUnit (U : Scheme.{u})) :
+    Γ(modTensor L M, U.ι ''ᵁ (⊤ : (U : Scheme.{u}).Opens)) :=
+  (modTensorMk L M).app (op (U.ι ''ᵁ (⊤ : (U : Scheme.{u}).Opens)))
+    (φ.inv.val.app (op ⊤) (unitOne (U : Scheme.{u})) ⊗ₜ
+      χ.inv.val.app (op ⊤) (unitOne (U : Scheme.{u})))
+
+lemma trivializationMulHom_tensorUnitSection
+    (φ : L.restrict U.ι ≅ modUnit (U : Scheme.{u}))
+    (χ : M.restrict U.ι ≅ modUnit (U : Scheme.{u})) :
+    (trivializationMulHom φ χ).val.app (op ⊤) (tensorUnitSection φ χ)
+      = (1 : Γ((U : Scheme.{u}), ⊤)) := by
+  have hφ : φ.hom.val.app (op (⊤ : (U : Scheme.{u}).Opens))
+      (φ.inv.val.app (op ⊤) (unitOne (U : Scheme.{u}))) = (1 : Γ((U : Scheme.{u}), ⊤)) :=
+    presheafHom_congr_apply (congrArg SheafOfModules.Hom.val φ.inv_hom_id) (op ⊤) _
+  have hχ : χ.hom.val.app (op (⊤ : (U : Scheme.{u}).Opens))
+      (χ.inv.val.app (op ⊤) (unitOne (U : Scheme.{u}))) = (1 : Γ((U : Scheme.{u}), ⊤)) :=
+    presheafHom_congr_apply (congrArg SheafOfModules.Hom.val χ.inv_hom_id) (op ⊤) _
+  rw [tensorUnitSection, trivializationMulHom_app_top, tensorPairingSheaf_modTensorMk,
+    tensorPairing_tmul, map_mul, pushUnitOfTrivialization_top, pushUnitOfTrivialization_top,
+    hφ, hχ, mul_one]
+
+end TensorTrivialization
+
+/-- **A TRIVIALIZATION OF A TENSOR PRODUCT MULTIPLIES SECTIONS** (PROVEN
+2026-07-29; cut 2026-07-28 out of `exists_trivialization_tensorPow`).
 
 Given trivializations of `L` and `M` over one open `U`, there is a trivialization
 of `L ⊗ M` over `U` that carries `a ⊗ b` to the PRODUCT of the two trivialized
@@ -1301,21 +1870,51 @@ OBJECTWISE (`PresheafOfModules.Monoidal.tensorObj` sends `X` to
 canonical comparison composed with `modTensorMapIso φ χ ≪≫ modTensorUnitLeftIso`
 has precisely this effect.
 
-ROUTE: the honest form is to strengthen `nonempty_restrict_modTensor` from
-`Nonempty` to a NAMED comparison isomorphism `(L ⊗ M)|_f ≅ L|_f ⊗ M|_f` carrying
-`(a ⊗ b)|_f` to `a|_f ⊗ b|_f`, which in turn wants a canonical
-`nonempty_modPullback_modTensor` rather than an anonymous one.  Restriction along
-an open immersion is a `SheafOfModules.pushforward` along `opensFunctor`, hence
-objectwise on presheaves where `⊗` is also objectwise, so at presheaf level the
-comparison is the IDENTITY and the whole content is that sheafification commutes
-with restriction to an open subsite. -/
+**THE RECORDED ROUTE WAS NOT NEEDED — corrected 2026-07-29.**  It read:
+
+> the honest form is to strengthen `nonempty_restrict_modTensor` from `Nonempty`
+> to a NAMED comparison isomorphism `(L ⊗ M)|_f ≅ L|_f ⊗ M|_f` carrying
+> `(a ⊗ b)|_f` to `a|_f ⊗ b|_f`, which in turn wants a canonical
+> `nonempty_modPullback_modTensor` rather than an anonymous one … the whole
+> content is that sheafification commutes with restriction to an open subsite.
+
+Every clause of that is TRUE and none of it is required, because a canonical
+comparison ISOMORPHISM is strictly more than this leaf asks for.  The leaf asks
+for a map `(L ⊗ M)|_U ⟶ 𝒪_U` with a known effect on sections, and maps OUT of
+`modTensor` are free: `modTensor` is a sheafification, so its universal property
+supplies them from presheaf-level data, where `⊗` is objectwise.  Nothing has to
+commute with anything.  See the section heading above for the construction; the
+one new ingredient is `pushUnitMul`, multiplication on `(U.ι)_*𝒪_U`.
+
+The `Nonempty` comparison is still used — but only for EXISTENCE of some
+trivialization, never for its value, which is exactly the strength it has.  So
+this leaf did not, after all, need "strictly more than
+`nonempty_modPullback_modTensor` gives"; it needed the same thing used
+differently. -/
 theorem exists_trivialization_modTensor {Z : Scheme.{u}} {L M : Z.Modules} {U : Z.Opens}
     (φ : L.restrict U.ι ≅ modUnit (U : Scheme.{u}))
     (χ : M.restrict U.ι ≅ modUnit (U : Scheme.{u})) :
     ∃ θ : (modTensor L M).restrict U.ι ≅ modUnit (U : Scheme.{u}),
       ∀ (a : Γ(L, ⊤)) (b : Γ(M, ⊤)),
         trivializedSection θ (tensorSection a b)
-          = trivializedSection φ a * trivializedSection χ b := sorry
+          = trivializedSection φ a * trivializedSection χ b := by
+  obtain ⟨e⟩ := nonempty_restrict_modTensor U.ι L M
+  obtain ⟨ν⟩ : Nonempty ((modTensor L M).restrict U.ι ≅ modUnit (U : Scheme.{u})) :=
+    ⟨e ≪≫ modTensorMapIso φ χ ≪≫ modTensorUnitLeftIso _⟩
+  have hfac : trivializationMulHom φ χ = ν.hom ≫ (ν.inv ≫ trivializationMulHom φ χ) := by
+    rw [← Category.assoc, ν.hom_inv_id, Category.id_comp]
+  have hu : IsUnit (unitHomApply (ν.inv ≫ trivializationMulHom φ χ)
+      (1 : Γ((U : Scheme.{u}), ⊤))) := by
+    have h1 : (trivializationMulHom φ χ).val.app (op ⊤) (tensorUnitSection φ χ)
+        = unitHomApply (ν.inv ≫ trivializationMulHom φ χ)
+            (ν.hom.val.app (op ⊤) (tensorUnitSection φ χ)) :=
+      presheafHom_congr_apply (congrArg SheafOfModules.Hom.val hfac) (op ⊤) _
+    rw [trivializationMulHom_tensorUnitSection, unitHomApply_eq, mul_comm] at h1
+    exact IsUnit.of_mul_eq_one _ h1.symm
+  haveI hiso : IsIso (ν.inv ≫ trivializationMulHom φ χ) := isIso_of_isUnit_unitHom _ hu
+  haveI hiso2 : IsIso (trivializationMulHom φ χ) := by rw [hfac]; infer_instance
+  exact ⟨asIso (trivializationMulHom φ χ), fun a b =>
+    trivializedSectionHom_trivializationMulHom φ χ a b⟩
 
 /-- **`s^{⊗k}` read through the `k`-th power of a trivialization is the `k`-th
 power of the trivialized section** (PROVEN 2026-07-28 over
@@ -1808,5 +2407,174 @@ theorem isQuasiAffine_of_isAmpleSheaf_modUnit (Z : Scheme.{u}) [CompactSpace Z]
     refine SetLike.coe_injective ?_
     rw [← nonvanishingLocus_modUnit, nonvanishingLocus_of_iso, hloc]
   exact ⟨(modTensorPowUnitIso n).hom.val.app (op ⊤) s, hb ▸ hV, hb ▸ hzV⟩
+
+/-! ### THE PICARD GROUP: inverses, cancellation, and `RelPicEquiv` as an
+equivalence relation
+
+(New block, 2026-07-28, added for `relPicEquiv_sectionIdeal_of_aj_eq` in
+`ModularCurve/X0.lean`.  Placed here rather than in `RelativePicard.lean` —
+where `modTensor`, `IsInvertibleSheaf` and `RelPicEquiv` are *defined* —
+because everything below consumes the tensor calculus of THIS module, and
+`RelativePicard.lean` is upstream of it.)
+
+**THIS BLOCK REFUTES A CLAIM THAT WAS IN TWO DOCSTRINGS.**  The docstring of
+`relPicEquiv_sectionIdeal_of_aj_eq` asserted, dated 2026-07-28, that
+"`modTensor` has no algebraic API anywhere in this development — no
+associativity, no symmetry, no unit, and in particular no cancellation of an
+invertible factor", and that `grep -rn 'modTensor' Fermat/` returns "**not one
+lemma**".  Every clause of that is false.
+
+*Not one lemma* — this module already held `modTensorMapIso` (functoriality on
+isos), `modTensorUnitLeftIso`, `nonempty_modTensor_assoc`,
+`modPullbackUnitIso`, `modPullbackMapIso`, `nonempty_modPullback_modTensor`,
+`isInvertibleSheaf_modUnit` and `isInvertibleSheaf_modTensor`, all but two of
+them PROVEN (`nonempty_modPullback_modTensor` is a leaf, and
+`nonempty_modTensor_assoc` rests on `modLocW_whiskerLeft`).  It reaches
+`X0.lean`: that file `public import`s `AbelianSchemeIsogeny`, which
+`public import`s this one.
+
+*No associativity* — `nonempty_modTensor_assoc`.
+
+*No unit* — `modTensorUnitLeftIso`, and `modTensorUnitRightIso` below.
+
+*No symmetry* — `modTensorComm` below, one line over mathlib's
+`SymmetricCategory` instance on `PresheafOfModules`.  This is the clause that
+cost the most: believing it, an earlier draft of this very block cut the
+inverse leaf in a two-sided form it does not need.
+
+*No cancellation of an invertible factor* — this was the ONE true clause, and
+it is now `nonempty_iso_of_modTensor_left` / `RelPicEquiv.cancel_left` below,
+PROVEN over the single new leaf.  The claim has been corrected in place at
+`relPicEquiv_sectionIdeal_of_aj_eq`; the same assertion also stands, as of
+2026-07-28, in the docstring of `relPicEquiv_sectionIdeal_of_aj_add_eq`
+(X0.lean, the degree-`2` sibling), which is another owner's declaration and
+has been left alone and reported instead.
+
+What is genuinely missing is exactly ONE statement — that an invertible sheaf
+has a tensor INVERSE (`exists_modTensor_inv`, now UPSTREAM in
+`ModularCurve/RelativePicard.lean`) — from which cancellation, and with it
+symmetry and transitivity of `RelPicEquiv`, are formal.  The corrected
+inventory is recorded on that leaf. -/
+
+/-- **THE BRAIDING**, `L ⊗ M ≅ M ⊗ L` (PROVEN, one line) — `modTensor` is
+SYMMETRIC.
+
+Mathlib gives `PresheafOfModules.{u} (R ⋙ forget₂ _ _)` a
+`SymmetricCategory` instance (`PresheafOfModules.Monoidal.symmetricCategory`,
+`Mathlib/Algebra/Category/ModuleCat/Presheaf/Monoidal.lean:145`) on **exactly
+the same category** as the `monoidalCategory` instance one screen above it —
+so `β_ L.val M.val` is available wherever `λ_ L.val` is, and sheafifying it is
+the whole construction.
+
+**Recorded because it was nearly missed.**  An earlier draft of this block
+asserted that `Z.Modules` has no braiding at this pin, on the strength of a
+grep of `Mathlib/Algebra/Category/ModuleCat/{Presheaf,Sheaf}/` that returned
+nothing — the grep had been run on the ORCHESTRATION host, where
+`.lake/packages` does not exist (it is a symlink into machine-local
+`/scratch` on the worker host, so the path silently resolves to nothing and
+every mathlib grep returns empty).  Run mathlib greps on the host that owns
+`.lake`.  Had the claim stood, `exists_modTensor_inv` (upstream) would have
+been cut twice as strong as it needs to be. -/
+noncomputable def modTensorComm {Z : Scheme.{u}} (L M : Z.Modules) :
+    modTensor L M ≅ modTensor M L :=
+  (PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)).mapIso (β_ L.val M.val)
+
+/-! #### HOISTED to `ModularCurve/RelativePicard.lean` (2026-07-29)
+
+`modTensorUnitRightIso` (the right unitor), `isIso_of_locally_isIso` (isomorphy
+is local on the base), `exists_modDual` (the dual sheaf and its evaluation
+pairing) and `exists_modTensor_inverse` were declared HERE on 2026-07-28 and are
+now declared UPSTREAM, in `RelativePicard.lean`, where the last of them is named
+`exists_modTensor_inv`.
+
+**The hoist was forced, and it removed a duplicated leaf rather than tidying
+one.**  `RelativePicard.lean` is `public import`ed by this module and states the
+same inverse theorem as a leaf of its own, because its relative-Picard calculus
+consumes it — so nothing proved here could ever reach it, and the two copies of
+`exists_modDual` could only both stay open forever.  The right unitor was a
+genuine double declaration (`Fermat.modTensorUnitRightIso has already been
+declared`); the other three were twins under different names.
+
+Everything below still resolves: the hoisted declarations are inherited by
+import, unchanged, and `exists_modTensor_inverse`'s two consumers here —
+`nonempty_iso_of_modTensor_left` and `RelPicEquiv.symm` — now call
+`exists_modTensor_inv`. -/
+
+/-- **CANCELLATION OF AN INVERTIBLE TENSOR FACTOR** (PROVEN over
+`exists_modTensor_inv` and `nonempty_modTensor_assoc`): if `L` is
+invertible then `L ⊗ A ≅ L ⊗ B` forces `A ≅ B`.
+
+Tensor on the left with a left inverse `M` of `L` — obtained from the right
+inverse through `modTensorComm` — and reassociate; `A` and `B` are arbitrary
+`𝒪_Z`-modules, no invertibility of them is used or needed. -/
+theorem nonempty_iso_of_modTensor_left {Z : Scheme.{u}} {L A B : Z.Modules}
+    (hL : IsInvertibleSheaf L) (e : modTensor L A ≅ modTensor L B) : Nonempty (A ≅ B) := by
+  obtain ⟨M, -, ⟨eLM⟩⟩ := exists_modTensor_inv hL
+  have eML : modTensor M L ≅ modUnit Z := modTensorComm M L ≪≫ eLM
+  obtain ⟨aA⟩ := nonempty_modTensor_assoc M L A
+  obtain ⟨aB⟩ := nonempty_modTensor_assoc M L B
+  exact ⟨(modTensorUnitLeftIso A).symm ≪≫ modTensorMapIso eML.symm (Iso.refl A) ≪≫ aA ≪≫
+    modTensorMapIso (Iso.refl M) e ≪≫ aB.symm ≪≫ modTensorMapIso eML (Iso.refl B) ≪≫
+    modTensorUnitLeftIso B⟩
+
+section RelPicGroupoid
+
+variable {X S T : Scheme.{u}} {strX : X ⟶ S} {g : T ⟶ S}
+
+/-- **`RelPicEquiv` is REFLEXIVE** (PROVEN): take `N := 𝒪_T` and use the right
+unitor together with `f^* 𝒪_T ≅ 𝒪_{X_T}`. -/
+theorem RelPicEquiv.refl (L : (curveBaseChange strX g).Modules) : RelPicEquiv strX g L L :=
+  ⟨modUnit T, isInvertibleSheaf_modUnit T,
+    ⟨(modTensorUnitRightIso L).symm ≪≫
+      modTensorMapIso (Iso.refl L) (modPullbackUnitIso _).symm⟩⟩
+
+/-- **`RelPicEquiv` is TRANSITIVE** (PROVEN over `nonempty_modTensor_assoc`
+and `nonempty_modPullback_modTensor`): the twisting sheaves multiply, and
+`M ⊗ N` is invertible by `isInvertibleSheaf_modTensor`. -/
+theorem RelPicEquiv.trans {L L' L'' : (curveBaseChange strX g).Modules}
+    (h : RelPicEquiv strX g L L') (h' : RelPicEquiv strX g L' L'') : RelPicEquiv strX g L L'' := by
+  obtain ⟨N, hN, ⟨e⟩⟩ := h
+  obtain ⟨M, hM, ⟨e'⟩⟩ := h'
+  obtain ⟨a⟩ := nonempty_modTensor_assoc L'' (modPullback (curveBaseChangeProj strX g) M)
+    (modPullback (curveBaseChangeProj strX g) N)
+  obtain ⟨pmn⟩ := nonempty_modPullback_modTensor (curveBaseChangeProj strX g) M N
+  exact ⟨modTensor M N, isInvertibleSheaf_modTensor hM hN,
+    ⟨e ≪≫ modTensorMapIso e' (Iso.refl _) ≪≫ a ≪≫ modTensorMapIso (Iso.refl L'') pmn.symm⟩⟩
+
+/-- **`RelPicEquiv` is SYMMETRIC** (PROVEN over `exists_modTensor_inv`):
+twist back by the inverse of the twisting sheaf.
+
+This is the step that makes `RelPicEquiv` an equivalence relation, and hence
+`Pic(X_T)/Pic(T)` a group rather than a preorder — which is what its consumers
+in `ModularCurve/X0.lean` (`aj_spec` read at two different points) silently
+assume. -/
+theorem RelPicEquiv.symm {L L' : (curveBaseChange strX g).Modules}
+    (h : RelPicEquiv strX g L L') : RelPicEquiv strX g L' L := by
+  obtain ⟨N, hN, ⟨e⟩⟩ := h
+  obtain ⟨M, hM, ⟨eNM⟩⟩ := exists_modTensor_inv hN
+  obtain ⟨a⟩ := nonempty_modTensor_assoc L' (modPullback (curveBaseChangeProj strX g) N)
+    (modPullback (curveBaseChangeProj strX g) M)
+  obtain ⟨pnm⟩ := nonempty_modPullback_modTensor (curveBaseChangeProj strX g) N M
+  exact ⟨M, hM, ⟨(modTensorUnitRightIso L').symm ≪≫
+    modTensorMapIso (Iso.refl L') ((modPullbackUnitIso _).symm ≪≫
+      modPullbackMapIso _ eNM.symm ≪≫ pnm) ≪≫ a.symm ≪≫
+    modTensorMapIso e.symm (Iso.refl _)⟩⟩
+
+/-- **CANCELLATION IN THE RELATIVE PICARD GROUP** (PROVEN over
+`nonempty_iso_of_modTensor_left`): an invertible factor common to both sides
+of a `RelPicEquiv` may be deleted.
+
+`A` and `B` are arbitrary — only the CANCELLED factor `L` has to be
+invertible.  This is what lets `IsRelPicZeroOf.aj_spec`, which is an equation
+about `𝒪(x − o) ⊗ 𝒪(−x)`, be turned into a statement about `𝒪(−x)` alone. -/
+theorem RelPicEquiv.cancel_left {L A B : (curveBaseChange strX g).Modules}
+    (hL : IsInvertibleSheaf L)
+    (h : RelPicEquiv strX g (modTensor L A) (modTensor L B)) : RelPicEquiv strX g A B := by
+  obtain ⟨N, hN, ⟨e⟩⟩ := h
+  obtain ⟨a⟩ := nonempty_modTensor_assoc L B (modPullback (curveBaseChangeProj strX g) N)
+  obtain ⟨f⟩ := nonempty_iso_of_modTensor_left hL (e ≪≫ a)
+  exact ⟨N, hN, ⟨f⟩⟩
+
+end RelPicGroupoid
 
 end Fermat

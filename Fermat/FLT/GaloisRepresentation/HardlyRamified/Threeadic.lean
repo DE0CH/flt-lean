@@ -2794,8 +2794,20 @@ set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
 /-- **RAYNAUD AT `e = 1 < p − 1`, UNIPOTENT-PAIR FORM: LOCAL INERTIA
-CARRIES NO NONTRIVIAL UNIPOTENT ON THE CONNECTED `3`-TORSION** (SORRY
-LEAF, cut 2026-07-28 out of
+CARRIES NO NONTRIVIAL UNIPOTENT ON THE CONNECTED `3`-TORSION**
+
+**⚠ REFUTED 2026-07-29 — THIS STATEMENT IS FALSE AS STATED. DO NOT
+ATTEMPT TO PROVE IT.** See the FALSITY AUDIT at the end of this
+docstring for an explicit witness (a connected finite flat `ℤ₃`-group
+scheme killed by `3`, of order `27`, on which wild inertia acts through
+a nontrivial unipotent) and for the extra hypothesis that makes it true
+AND closable. The repair is CUT-LEVEL and spans the three declarations
+below that are proven over this one; it is deliberately not attempted
+here. Everything between here and that audit is the pre-refutation
+record, kept because its route analysis is still correct for the true
+sub-case.
+
+(SORRY LEAF, cut 2026-07-28 out of
 `smul_eq_of_pow_three_smul_eq_localInertia_connected_threeTorsion`
 immediately below, which is now PROVEN over it and over nothing else —
 the cut is exactly STEP (a) of that leaf's own ROUTE AUDIT, which
@@ -2884,21 +2896,164 @@ widened to `Γ ℚ₃ᵥ`; the conclusion is a VALUE-level identity between
 geometric points, with no element of `G`, no coordinate and no normal
 form demanded. So the statement is on the true side of the
 development's `𝒪ᵥ`-descent rule and is blind to the `p − 1` unramified
-twists `μ₃ ⊗ ψ` that refuted `exists_muType_closure`. Connectedness
-cannot be dropped: without `hprim₀`/`hcomul₀` the constant group scheme
-`ℤ/3 × ℤ/3` over `ℤ₃`, on which inertia can act through a nontrivial
-unipotent in `GL₂(𝔽₃)`, satisfies everything else. The statement is
-also NOT vacuous: `hcomul₀` is what makes `S` a submonoid, so the
-configuration it forbids is expressible, and it does occur for group
-schemes over bases with `e ≥ p − 1`.
+twists `μ₃ ⊗ ψ` that refuted `exists_muType_closure`.
+
+**CORRECTED 2026-07-29 — the witness this paragraph used to offer for
+"connectedness cannot be dropped" was FALSE.** It read: "without
+`hprim₀`/`hcomul₀` the constant group scheme `ℤ/3 × ℤ/3` over `ℤ₃`, on
+which inertia can act through a nontrivial unipotent in `GL₂(𝔽₃)`,
+satisfies everything else." A CONSTANT group scheme has UNRAMIFIED —
+indeed trivial — Galois action on its geometric points, so inertia
+cannot act on it through any nontrivial unipotent; the witness concedes
+the conclusion rather than refuting anything. This is the same bogus
+witness family that the docstring of
+`wildInertia_fixes_connected_threeTorsion_of_hopf_package` below
+already flags (there in the `ℤ/3`, `e₀ = 1` form). The CORRECT reason
+connectedness is load-bearing is the good-ORDINARY computation carried
+in full by `exists_coprime_three_exponent_localInertia_connected_threeTorsion`
+below: `E = 11a1` has good reduction and `a₃ = −1 ≢ 0 (mod 3)`, so
+`E[3]` is finite flat over `ℤ₃` and killed by `3` with `e = 1 < p − 1`,
+yet `ℚ₃(E[3])` has `e = 6`, i.e. WILDLY ramified — re-verified
+2026-07-29 (`nfsplitting(elldivpol(E,3))` has degree `24`, four primes
+above `3`, each `e = 6`, `f = 1`). Its connected part `E[3]⁰` has order
+`3`, which is what removes the configuration there.
+
+`hcomul₀` is what makes `S` a submonoid, so the configuration this leaf
+forbids is at least expressible.
 
 Every hypothesis is underscore-prefixed because the body is `sorry`;
-they are all genuinely needed and a real proof must consume them.
+the pre-refutation record claimed they are all genuinely needed. That
+claim is now moot: the FALSITY AUDIT below shows the hypothesis set is
+not merely incomplete but admits a counterexample.
+
+# FALSITY AUDIT (2026-07-29) — **THIS LEAF IS FALSE AS STATED**
+
+The check that `exists_coprime_three_exponent_localInertia_connected_threeTorsion`
+below records as the one that would refute this whole cluster —
+
+> exhibit a connected finite flat `ℤ₃`-group scheme killed by `3` whose
+> points generate a wildly ramified extension
+
+— **SUCCEEDS.** The witness, with its one computational step verified
+in PARI/GP:
+
+`E = 37a1 = [0,0,1,−1,0]`, conductor `37`, good reduction at `3`,
+`a₃ = −3 ≡ 0 (mod 3)`: SUPERSINGULAR at `3`, `#Ẽ(𝔽₃) = 7`.
+
+1. `𝒢 := E[3]` is finite flat over `ℤ₃`, killed by `3`, of order `9`,
+   and CONNECTED (supersingular ⟹ `Ẽ[3](𝔽̄₃) = 0` ⟹ trivial étale
+   quotient). Its points are TAMELY ramified: the `gp` run recorded
+   below gives `e = 4`, `f = 2` on the `x`-coordinate field.
+2. `e = 1 < p − 1` makes the formal logarithm an isomorphism, so
+   `Ê(3ℤ₃) ≅ ℤ₃`; with `3 ∤ #Ẽ(𝔽₃) = 7` this gives
+   `E(ℚ₃)/3E(ℚ₃) ≅ ℤ/3`. Take `P` with `v₃(x(P)) = −2`, i.e.
+   `v₃(z(P)) = 1`; concretely `x(P) = 1/9` is a `ℚ₃`-point, since
+   `1 + 4(x³ − x) = 409/729` and `409 ≡ 1 (mod 3)` is a square in
+   `ℤ₃`. Then `P ∉ 3E(ℚ₃)`.
+3. `E[3](ℚ₃) = 0` (supersingular ⟹ `ρ̄_{E,3}|_{ℚ₃}` irreducible), so
+   `Ext¹_{fl/ℤ₃}(ℤ/3, 𝒢) ≅ H¹_{fl}(ℤ₃, 𝒢) ≅ E(ℚ₃)/3E(ℚ₃) ≅ ℤ/3`
+   (fppf Kummer sequence; `H¹_{fl}(ℤ₃, ℰ) = 0` by Lang), and the SAME
+   vanishing forces every such extension to be KILLED BY `3` — the
+   obstruction `3·m` is Galois-invariant, hence lies in
+   `𝒢(ℚ₃) = 0`. So `κ(P)` is the class of a finite flat `ℤ₃`-group
+   scheme `M`, killed by `3`, of order `27`, with
+   `0 → E[3] → M → ℤ/3 → 0` and `K(M) = ℚ₃(E[3], Q)` where `3Q = P`.
+4. **`K(M)/ℚ₃` IS WILDLY RAMIFIED.** The `x(Q)` are the roots of the
+   degree-`9` polynomial `φ₃(X) − x(P)·ψ₃(X)²`, and its Newton polygon
+   at `3` is a SINGLE segment of slope `2/9`:
+
+       E = ellinit([0,0,1,-1,0]);
+       p2 = elldivpol(E,2); p3 = elldivpol(E,3); p4 = elldivpol(E,4);
+       phi3 = x*p3^2 - p4;                       \\ deg 9
+       \\ checked against ellmul: phi3/p3^2 at x=0 is -1 = x(3*[0,0])
+       F = phi3 - (1/9)*p3^2;
+       Set(newtonpoly(F/polcoef(F,9),3))         \\ [-2/9]
+
+   So `v₃(x(Q)) = −2/9`, `v₃(z(Q)) = 1/9`, hence `9 ∣ e(ℚ₃(Q)/ℚ₃)`:
+   wild. (Consistency check from the same run: at `v₃(x(P)) = −4`, i.e.
+   `P ∈ 3E(ℚ₃)`, the polygon SPLITS as `[−2, −1/4]` — one rational
+   preimage plus the eight `3`-torsion translates at `v(z) = 1/8`,
+   which is the expected picture and validates the method. Note
+   `Gal(ℚ₃(E[3], Q)/ℚ₃(E[3])) ↪ E[3] ≅ (ℤ/3)²`, so the wild inertia is
+   ELEMENTARY ABELIAN with break `1`, comfortably inside Fontaine's
+   bound `u > e(n + 1/(p−1)) = 3/2`. Nothing here contradicts Fontaine.)
+5. `G := M^∨` (Cartier dual) is `0 → μ₃ → G → E[3]^∨ ≅ E[3] → 0` by the
+   Weil pairing, hence CONNECTED: the maximal étale quotient kills `μ₃`
+   and is then a connected-and-étale quotient of `E[3]`, i.e. trivial.
+   So `𝒪(G)` is a LOCAL ring and `e₀ = 1` satisfies `_he₀`, `_hε₀`,
+   `_hprim₀` (`0` and `1` are the only idempotents) and `_hcomul₀`;
+   `_hcomm` holds because `G` is commutative; the generic fibre is
+   étale (characteristic `0`); and EVERY geometric point is connected
+   (`φ (1 ⊗ 1) = 1` for any algebra map) and killed by `3`.
+6. `K(G) = K(M)`: `μ₃ ⊆ G` gives `ℚ₃(μ₃) ⊆ K(G)`; the Weil pairing
+   gives `ℚ₃(μ₃) ⊆ ℚ₃(E[3]) ⊆ K(M)`; and `G^∨ = M` with biduality then
+   makes each field contain the other. So WILD INERTIA ACTS
+   NONTRIVIALLY ON `G(ℚ̄₃)` — while acting trivially on `μ₃` and on
+   `E[3]`, both tame, i.e. UNIPOTENTLY.
+7. Pick `σ ∈ wildInertiaGroup 𝔭₃` moving a point, `ψ₀` with
+   `(σ − 1) ψ₀ ≠ 0`, and `k ≥ 1` maximal with `(σ − 1)^k ψ₀ ≠ 0`; set
+   `ψ := (σ − 1)^{k−1} ψ₀` and `χ := (σ − 1)^k ψ₀`. Then `σ • χ = χ`,
+   `σ • ψ = ψ ⋆ χ` and `χ ≠ 1`, with every hypothesis of this leaf
+   satisfied. **The conclusion `χ = 1` fails.**
+
+WHERE THE OLD REASONING BREAKS. The paragraph "WHY THE CONNECTED CASE
+IS NEVERTHELESS TAME" on the grandparent argues that the graded pieces
+are tame and that "for an iterated extension of `μ₃`-types the Cartier
+dual is an extension of étale by étale, hence étale". That is correct
+and it is the WHOLE argument — it covers only socles filtered by pieces
+of ORDER `3`. The parent's ROUTE AUDIT §(4) already says as much ("step
+(c) ... does NOT cover the supersingular piece") and then disposes of
+the pure supersingular case by §(2)'s cyclic-orbit argument. Neither
+covers the MIXED case — an extension of a connected SIMPLE of order `9`
+by `μ₃` — and that is exactly where the statement fails. `e < p − 1`
+buys Raynaud's UNIQUENESS OF PROLONGATIONS and the tame classification
+of SIMPLE objects; it does not make extensions of connected simples
+tame.
+
+THE TRUE SUB-CASE, AND IT IS CLOSABLE WITH NO RESIDUE. Add the
+hypothesis that the connected `3`-torsion socle has at most `9`
+elements (`𝔽₃`-dimension `≤ 2`). Then:
+
+* the tame quotient `I₃ / P₃ ≅ ∏_{ℓ ≠ 3} ℤ_ℓ` is pro-prime-to-`3`, so a
+  nontrivial unipotent in the image forces the WILD image `P ≠ 1`;
+* `P` is normal in `I₃` and is a `3`-group acting on an `𝔽₃`-space, so
+  `S^P` is a nonzero PROPER `I₃`-stable subgroup — a line. Hence `S` is
+  NOT `I₃`-irreducible, and the supersingular obstacle cannot arise at
+  dimension `2`;
+* both graded pieces then have order `3` and are connected, hence `μ₃`
+  up to unramified twist (Oort–Tate at `v(a) + v(b) = 1`,
+  `v(a) > 0 ⟹ v(a) = 1`), and `isMultiplicativeType_of_isShortExact`
+  makes `S` of multiplicative type, so its Cartier dual is étale hence
+  unramified and inertia acts by the SCALAR `χ_cyc` — never a
+  nontrivial unipotent.
+
+That is route (b)–(d) of the parent's audit, and at dimension `2` it is
+COMPLETE; the `[IsCocomm]` threading it needs is the separate upstream
+cut already named there. Whether consumers can supply a dimension bound
+is the cut-level question, and it is not answered here.
+
+WHAT ELSE THE WITNESS REFUTES. It contradicts, verbatim, every
+statement in this cluster that quantifies over an ARBITRARY Hopf order
+with an arbitrary connected socle:
+`smul_eq_of_pow_three_smul_eq_localInertia_connected_threeTorsion`
+(take `σ` in the wild image: `σ ^ 3` fixes the socle, `σ` does not),
+`exists_coprime_three_exponent_localInertia_connected_threeTorsion`
+(the image of `I₃` on the socle contains `(ℤ/3)²`, so no exponent prime
+to `3` works), and
+`wildInertia_fixes_connected_threeTorsion_of_hopf_package`. All three
+are PROVEN over this leaf, so the FILE is not inconsistent — but they
+inherit the falsity of their premise. The repair therefore spans them
+and their consumers (lines `3364`, `3635`, `3763`, `3813`, `4086`,
+`5869` at the time of writing) and is a cut-level decision; a partial
+thread would be worse than none, so none is attempted.
 
 Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102
-(1974), 3.3.2–3.3.5 and 3.4.3; Tate, *Finite flat group schemes*, §4,
-in Cornell–Silverman–Stevens; Oort–Tate, *Group schemes of prime
-order*, Ann. Sci. ÉNS 3 (1970). -/
+(1974), 3.3.2–3.3.5 and 3.4.3; Fontaine, *Il n'y a pas de variété
+abélienne sur `ℤ`*, §1 (the ramification bound); Tate, *Finite flat
+group schemes*, §4, in Cornell–Silverman–Stevens; Oort–Tate, *Group
+schemes of prime order*, Ann. Sci. ÉNS 3 (1970); Bloch–Kato,
+*L-functions and Tamagawa numbers*, 4.5 (the finite/flat local
+condition `H¹_f = H¹_{fl}`). -/
 theorem eq_one_of_smul_eq_mul_localInertia_connected_threeTorsion
     (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G] [Module.Flat 𝒪₃ᵥ G]
     [Module.Finite 𝒪₃ᵥ G] [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)]
@@ -2919,8 +3074,19 @@ set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
 /-- **RAYNAUD AT `e = 1 < p − 1`, ELEMENT FORM: NO LOCAL-INERTIA ELEMENT
-ACTS WITH ORDER `3` ON THE CONNECTED `3`-TORSION** (PROVEN 2026-07-28
-over the single leaf
+ACTS WITH ORDER `3` ON THE CONNECTED `3`-TORSION**
+
+**⚠ FALSE AS STATED, 2026-07-29 — see the FALSITY AUDIT of
+`eq_one_of_smul_eq_mul_localInertia_connected_threeTorsion` above.** The
+witness is the Cartier dual of the finite flat model of a nontrivial
+class in `E(ℚ₃)/3E(ℚ₃)` for `E = 37a1` (supersingular at `3`): a
+CONNECTED finite flat `ℤ₃`-group scheme killed by `3`, of order `27`,
+whose wild inertia image is `(ℤ/3)²`. Any `σ` in that image satisfies
+`hcube` and moves the socle. This declaration is PROVEN over the leaf,
+so the file stays consistent; the statement inherits the falsity and
+the repair is CUT-LEVEL.
+
+(PROVEN 2026-07-28 over the single leaf
 `eq_one_of_smul_eq_mul_localInertia_connected_threeTorsion` immediately
 above, into which STEP (a) of the ROUTE AUDIT below was discharged; it
 was itself a SORRY LEAF, cut
@@ -3566,6 +3732,26 @@ The two `gp` runs above are the two nearest misses: `11a1` produces
 wildness but only on the FULL (non-connected) `3`-torsion, and `37a1`
 produces a genuinely connected `E[3]` whose ramification is tame.
 
+**⚠ THAT CHECK SUCCEEDED, 2026-07-29 — THIS STATEMENT IS FALSE AS
+STATED.** The two `gp` runs are near misses only because both stop at
+`E[3]`. COMBINING them produces the witness: over `E = 37a1`
+(supersingular at `3`) take `P ∈ E(ℚ₃)` with `v₃(z(P)) = 1`, a
+generator of `E(ℚ₃)/3E(ℚ₃) ≅ ℤ/3`; its Kummer class lies in
+`H¹_{fl}(ℤ₃, E[3])`, giving a finite flat `ℤ₃`-group scheme `M` killed
+by `3` of order `27` with `0 → E[3] → M → ℤ/3 → 0` — and
+`v₃(x(Q)) = −2/9` for `3Q = P` (PARI Newton polygon, single segment),
+so `K(M)` is WILDLY ramified with wild inertia `(ℤ/3)²`. Its CARTIER
+DUAL `G = M^∨` is `0 → μ₃ → G → E[3] → 0`, hence CONNECTED, with
+`K(G) = K(M)`. So the image of `I₃` on the connected `3`-torsion socle
+of `G` has order divisible by `3`, and no `n` prime to `3` satisfies
+the conclusion. Full audit, with every step and the reproducible `gp`
+snippet, in the FALSITY AUDIT of
+`eq_one_of_smul_eq_mul_localInertia_connected_threeTorsion` above; it
+also records the dimension bound under which this statement becomes
+true and its route closes with no residue. This declaration is PROVEN
+over that leaf, so the file stays consistent — but the statement
+inherits the falsity, and the repair is CUT-LEVEL.
+
 Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102
 (1974), 3.3.2–3.3.5 and 3.4.3; Fontaine, *Il n'y a pas de variété
 abélienne sur `ℤ`*, §1 (the ramification bound); Serre, *Propriétés
@@ -3654,7 +3840,23 @@ set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
 /-- **Raynaud at `e = 1 < p − 1`: the CONNECTED `3`-torsion is TAMELY
-ramified** (PROVEN 2026-07-27 over the single leaf
+ramified**
+
+**⚠ FALSE AS STATED, 2026-07-29.** "`e < p − 1` ⟹ the CONNECTED
+`3`-torsion is tame" is not a theorem: `e < p − 1` gives Raynaud's
+uniqueness of prolongations and the tame classification of SIMPLE
+objects, and neither makes an extension of connected simples tame. The
+explicit witness — a connected finite flat `ℤ₃`-group scheme killed by
+`3`, of order `27`, with wild inertia `(ℤ/3)²`, built as the Cartier
+dual of the finite flat model of a nontrivial class in
+`E(ℚ₃)/3E(ℚ₃)` for `E = 37a1` — is in the FALSITY AUDIT of
+`eq_one_of_smul_eq_mul_localInertia_connected_threeTorsion` above,
+which also records the dimension bound that makes the whole cluster
+true again. This declaration is PROVEN over that leaf, so the file
+stays consistent; the statement inherits the falsity and the repair is
+CUT-LEVEL.
+
+(PROVEN 2026-07-27 over the single leaf
 `exists_coprime_three_exponent_localInertia_connected_threeTorsion` just
 above, into which it was decomposed on that date, together with the
 PROVEN-modulo-its-own-leaf `exists_pow_eq_of_mem_wildInertiaGroup`; it

@@ -134,6 +134,12 @@ public import Fermat.FLT.ModularCurve.X0
 -- because `IsCurveReductionModel` appears in the SIGNATURE of
 -- `exists_x1CurveModel_of_base`, not only in proof bodies.
 public import Fermat.FLT.ModularCurve.NeronReduction
+-- `CuspSymbolX1`, `cuspFrobX1`, `IsPrimitiveCuspSymbolX1`, `FixedCuspSymbolX1` and
+-- `card_fixedCuspSymbolX1`: the `Γ_1(N)∖ℙ¹(ℚ)` cusp combinatorics and the count of the
+-- Frobenius-fixed symbols, which is the arithmetic half of Ogg's description of the cusps.
+-- PUBLIC because `CuspSymbolX1` and `cuspFrobX1` appear in the SIGNATURE of
+-- `exists_cuspSymbolEmbedding_x1_finiteField` below.
+public import Fermat.FLT.ModularCurve.CuspSymbolX1
 public import Mathlib.NumberTheory.DirichletCharacter.Basic
 -- infinite Galois theory: `InfiniteGalois.mem_range_algebraMap_iff_fixed`, the field-theoretic
 -- half of `exists_specSection_of_specGal_invariant` below.  `public` because that theorem's
@@ -341,11 +347,41 @@ claims**, namely `φ(N)/2`.
 
 The cusps of `X_1(N)` are `Γ_1(N)\ℙ¹(ℚ)`; for `N ≥ 5` there are
 `½ Σ_{d ∣ N} φ(d)φ(N/d)` of them (`28` at `N = 25`).  They fall into
-Galois orbits, and the `φ(N)/2` cusps lying over the cusp `∞` of
-`X_0(N)` — indexed by `(ℤ/N)ˣ/±1` — are `ℚ`-RATIONAL, the Galois action
-on them being trivial.  At `N = 25` that is `10`, and the remaining `18`
-are not rational (those over `0` are defined over `ℚ(ζ₂₅)⁺`, of degree
-`10`).
+Galois orbits, and one distinguished orbit of `φ(N)/2` cusps — indexed by
+`(ℤ/N)ˣ/±1` — is `ℚ`-RATIONAL, the Galois action on it being trivial.  At
+`N = 25` that is `10`, and the remaining `18` are not rational (one orbit
+of `10` is defined over `ℚ(ζ₂₅)⁺`, of degree `10`).
+
+**WHICH orbit is the rational one, corrected 2026-07-28.**  This docstring
+used to name it as the orbit lying over the cusp `∞` of `X_0(N)`, and that
+is BACKWARDS for the moduli problem this file actually formalises.
+`Gamma1Datum` is Katz–Mazur `[Γ₁(N)]`, a POINT of exact order `N`
+(`PointOfExactOrder`), not an embedding `μ_N ↪ E`; and in the
+Deligne–Rapoport description the rational cusps are then the pairs (Néron
+`N`-gon, generator of the component group `ℤ/N`), while the pairs (Néron
+`1`-gon, generator of `μ_N`) are defined over `ℚ(ζ_N)⁺`.  The check, over
+`K((q))`: the Tate curve `E_q = 𝔾_m/q^ℤ` has `E_q(K((q))) = K((q))ˣ/q^ℤ`,
+in which `x = q^k u` (`u` a unit of `K[[q]]`) satisfies `x^m ∈ q^ℤ` iff
+`u^m = 1` — so a point of exact order `N` forces `u` to be a primitive
+`N`-th root of unity IN `K`, and the `1`-gon orbit carries no `K`-rational
+level structure unless `ζ_N + ζ_N⁻¹ ∈ K`.  The `N`-gon orbit instead has
+`E_{q^N}` with the level point `q`, defined over `K((q))` for every `K`.
+Concretely at `N = 5` over `ℚ`: the two cusps of `X_1(5)` over `∞` have
+residue field `ℚ(√5) = ℚ(ζ₅)⁺` and are NOT rational, while the two over
+`0` are.  `IsX1Compactification.CuspLocus`'s docstring already recorded
+this correctly and is the authority.  The `∞` labelling survives in
+several other docstrings in this file; read them in the moduli language
+above, since the literature's two conventions for the `(E, P)` model
+disagree about the `0`/`∞` LABELS and only the moduli description is
+convention-free.
+
+**Nothing in this development depends on the answer.**  The COUNT is
+`φ(N)/2` on either convention, and the count is all that is consumed —
+`exists_rationalCuspSectionsX1_field` says "some `φ(N)/2` cusps are
+rational" and never says which.  The correction matters for the ROUTE, not
+for any statement: a prover who takes the `∞`-orbit as the target is trying
+to prove that `(1`-gon, `ζ_N)` is `K`-rational, which is FALSE over `ℚ` for
+every `N` with `φ(N) > 2`, and false over `𝔽_ℓ` whenever `ζ_N ∉ 𝔽_ℓ`.
 
 **This is deliberately a LOWER bound on the rational cusps, not the exact
 count**, which is the same economy `X0.lean`'s
@@ -393,12 +429,15 @@ open in them has been split along the theories it needed:
 | `exists_rationalCuspPointsX1_field` | `φ(N)/2` rational cusps of `X_1(N)` (Deligne-Rapoport VI.5).  Base field FREED 2026-07-28: this single leaf now carries the former `exists_rationalCuspPointsX1` (over `ℚ`, PROVEN over it) and the `≥` half of the former `card_cuspLocusPoints_x1_finiteField` (over `𝔽_3`) — one sentence of Deligne-Rapoport that used to be two open leaves at two bases. | any `K` with `N` invertible |
 | `exists_fineGamma1Atlas` | fineness at `N ≥ 4`, `ℓ` prime, `ℓ ∤ N`: `[Γ₁(N)]` is representable, so some atlas has `M ⟶ Y` an isomorphism.  (Was `nonempty_relPoint_atlas_of_relPoint`, REFUTED and restated 2026-07-28 — see its FALSITY AUDIT; the `∀ atlas` form is false at the Katz–Mazur atlas itself.) | `𝔽_ℓ` |
 | `nonempty_gamma1Datum_baseChange` | base change of a `Γ₁(N)`-datum — formal, no arithmetic | any |
-| `exists_weierstrassEquiv_of_gamma1Datum` | a Weierstrass model of an abelian scheme of relative dimension one (Riemann-Roch on a genus-one curve) — NO modular curves.  Restated 2026-07-28 to ask ONLY for `E(𝔽_ℓ) ≃+ W(𝔽_ℓ)`: the order transport it used to bundle is now `addOrderOf_relPointOfSection_gamma1Datum`, PROVEN, and `exists_weierstrassPointOfOrder_of_gamma1Datum` is PROVEN over the two. | `𝔽_ℓ` |
-| `card_cuspLocusPoints_x1_finiteField_le` | the cusp count on the special fibre, UPPER bound only (2026-07-28) — the hard direction of Ogg's description, that no cusp outside the distinguished orbit is `𝔽_ℓ`-rational.  The lower bound is the row above; `card_cuspLocusPoints_x1_finiteField` is PROVEN over the two. | `𝔽_ℓ` |
+| `exists_weierstrassModel_of_abelianSchemeStruct_finiteField` | **Riemann-Roch on a genus-one curve** — a Weierstrass model of an abelian scheme of relative dimension one over `Spec 𝔽_ℓ`; NO modular curves and no level structure.  Cut 2026-07-28 as the geometry half of `exists_weierstrassEquiv_of_gamma1Datum` (now PROVEN over it).  The ℚ-side chain in `EllipticScheme.lean` is hardcoded to `Spec ℚ` and its own three leaves are open, so there is nothing to instantiate. | `𝔽_ℓ` |
+| `exists_relPointAddEquiv_of_weierstrassModel_finiteField` | the transport half of the same cut: given the model, the `𝔽_ℓ`-SECTIONS are `W(𝔽_ℓ)`.  The content is that the abelian scheme's group law agrees with the chord-and-tangent law (rigidity); strictly easier than the ℚ-side `exists_geomFibreAddEquiv_of_weierstrassModel`, which needs a `Γ_ℚ`-equivariant equivalence on geometric fibres. | `𝔽_ℓ` |
+| `exists_cuspSymbolEmbedding_x1_finiteField` | the hard direction of Ogg's description, DECOMPOSED 2026-07-28 into geometry and arithmetic: the `𝔽_ℓ`-rational cusp points inject into the Frobenius-fixed cusp symbols `Γ_1(N)∖ℙ¹(ℚ)`.  Carries NO counting — that is `card_fixedCuspSymbolX1` (`ModularCurve/CuspSymbolX1.lean`), PROVEN, and `card_cuspLocusPoints_x1_finiteField_le` is PROVEN over the two.  The lower bound is the `exists_rationalCuspPointsX1_field` row above. | `𝔽_ℓ`, `ℓ ∤ N`, `N ≥ 5` |
 | `exists_x1CurveModel_of_base` | the integral model — Deligne-Rapoport / Igusa for `Γ₁(N)`.  The reduction map is no longer part of the leaf: `exists_x1ReductionAt` is PROVEN over this plus the moduli-free `NeronReduction.lean` | `ℚ → 𝔽_ℓ` |
 | `exists_section_of_galoisInvariant` | Galois descent of a rational point to a section | `ℚ` |
-| `exists_heckeAction_isotypicQuotients_gamma1` | Shimura's `A_f` on `Γ₁(N)`, with the Hecke action it acts through — the "build the factors" half of Eichler-Shimura.  (`exists_heckeIsotypicDecomposition_gamma1` is PROVEN over this and the next row, 2026-07-28.  `IsIsotypicQuotient` is reused verbatim from `X0.lean`; it is shape-free.) | `ℚ` |
-| `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` | the "assemble the factors" half: finiteness of the index set, the oldform multiplicities, `finite_ker`, and the `neben` labelling.  Also owns the `N = 0` case, which — unlike its `Γ₀` sibling — is NOT discharged by an emptiness lemma; see its docstring | `ℚ` |
+| `exists_heckeCorrespondenceFamilyGamma1` | the `Γ₁` Hecke correspondence as a natural family on points — the geometric half, and the `Γ₁` twin of `X0.lean`'s `exists_heckeCorrespondenceFamily`.  (`exists_heckeAction_isotypicQuotients_gamma1` was a leaf until 2026-07-28 and is now **PROVEN** over this row and the next, via the `Γ₁` moduli pin `IsModularHeckeActionGamma1`; `exists_modularHeckeAction_gamma1` is PROVEN over this row alone.) | `ℚ` |
+| `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` | Shimura's `A_f` on `Γ₁(N)`, one factor, given the PINNED Hecke action — the "build one factor" half of Eichler-Shimura.  (`IsIsotypicQuotient` is reused verbatim from `X0.lean`; it is shape-free.) | `ℚ` |
+| `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` | the "assemble the factors" half: finiteness of the index set, the oldform multiplicities, `finite_ker`, and the `neben` labelling.  It no longer owns the `N = 0` case: that case was REFUTED on 2026-07-28 (`isEmpty_isHeckeIsotypicDecompositionGamma1_zero`) and the leaf now carries `hN : N ≠ 0`; see its docstring | `ℚ` |
+| `exists_cuspForm_gamma1GL_zero_lacunary` | a weight-two cusp form for `Γ₁(0) = ⟨T⟩` with `q`-expansion `∑ c^k q^(2^k)` — the lone analytic input of that refutation, and pure mathlib plumbing (locally-uniform convergence of a lacunary `q`-series; the only cusp of `⟨T⟩` is `∞`) | — |
 | `isTorsion_factor_of_heckeIsotypic_gamma1` | Kolyvagin-Logachev on an isotypic factor | `ℚ` |
 | `lFunction_apply_one_ne_zero_x1TwentyFive` | `L`-value numerics — the DEEP one | `ℚ` |
 | `hasNoFibreAffineLine_of_one_le_x1Genus` | the genus formula, fibrewise — `genus X_1(N) ≥ 1` puts no rational curve in any fibre.  (`hasNonconstantAbelianMap_of_one_le_x1Genus` is PROVEN over it, 2026-07-28, together with `X0.lean`'s level-free `mono_ajHom_of_hasNoFibreAffineLine` and `not_isIso_of_smoothOfRelativeDimension_one`.) | any |
@@ -433,9 +472,22 @@ each had its own owner.  `residueDegreeOver` writes the residue degree once
 over an arbitrary field (`residueQDegree` and `residueFDegree` are `rfl`-equal
 to it), `exists_rationalCuspPointsX1_field` states the cusp sentence once, and
 `exists_rationalCuspPointsX1` is now PROVEN over it.  Only the direction that
-genuinely differs between the bases survives as a separate leaf:
+genuinely differs between the bases survived as a separate leaf:
 `card_cuspLocusPoints_x1_finiteField_le`, the `≤` half, which needs the count
 EXACTLY and so cannot be shared with a `ℚ` side that is a lower bound.
+
+**Reorganised a fourth time 2026-07-28, along the GEOMETRY-vs-ARITHMETIC
+axis, and that closed the `≤` half.**  `card_cuspLocusPoints_x1_finiteField_le`
+was one leaf doing two unrelated jobs: identifying the cusp locus with
+`Γ_1(N)∖ℙ¹(ℚ)` carrying its Galois action, and computing at `(25, 3)` that
+only `10` of the `28` symbols are Frobenius-fixed.  The second job is finite
+arithmetic and is now PROVEN, uniformly in `(N, t)`, as
+`card_fixedCuspSymbolX1` in `ModularCurve/CuspSymbolX1.lean`; the first is
+`exists_cuspSymbolEmbedding_x1_finiteField`, which mentions no prime, no
+level and no count.  The split also made the failure mode visible: the bound
+`≤ φ(N)/2` is FALSE for `ℓ ≡ ±1 (mod N)`, and what rules that out is the
+hypothesis `IsUnit (ℓ - 1) ∧ IsUnit (ℓ + 1)` in `ZMod N`, which the witness
+row `(25, 3, 10)` discharges by `2` and `4` being units mod `25`.
 
 **Updated again 2026-07-27** for the reduction/descent cluster.
 `exists_inverse_of_smoothCompactification` is now PROVEN outright, over
@@ -449,7 +501,9 @@ node it replaced.
 
 **Reorganised again 2026-07-27, along the RESIDUE-FIELD axis at both bases.**
 `nonempty_cuspLocusX1` and `card_cusp_x1_finiteField` are now THEOREMS; what
-was open in them is `exists_rationalCuspPointsX1_field` and
+was open in them is `exists_rationalCuspPointsX1_field` and (until the fourth
+reorganisation above closed it over
+`exists_cuspSymbolEmbedding_x1_finiteField`)
 `card_cuspLocusPoints_x1_finiteField_le`, which speak about the finite set of
 POINTS `X ∖ Y` and their residue degrees rather than about `Spec`-valued cusp
 data or about sections of `strX`.  The two dictionaries that do it —
@@ -3604,9 +3658,186 @@ against `Field.toCommRing`), which is precisely the diamond
 theorem residueDegreeOver_eq_residueQDegree {X : Scheme.{0}} (strX : X ⟶ SpecQ) (x : X) :
     residueDegreeOver ℚ strX x = residueQDegree strX x := rfl
 
-/-- **`X_1(N)` has `φ(N)/2` cusps rational over ANY field `K` in which `N`
-is invertible** (sorry leaf — Deligne–Rapoport VI.5, and ALL that is left
-of the cusp route on BOTH sides).
+/-! ### `K`-rational points versus residue degree one, over an arbitrary base
+
+The dictionary between the two ways this file describes a rational cusp — as a
+SECTION of `strX` missing `Y`, and as a POINT of `X ∖ Y` with residue field `K`
+— written once over an arbitrary base field.  Over `ℚ` half of it is free and
+`X0.lean` proves it that way (`exists_residueAlgHom_of_isCusp`); over a general
+`K` it is not, and the difference is exactly the step that docstring flags:
+
+> Over a base where `ℚ` is not initial this step would be real, and would be
+> `Spec.map_preimage` plus `x.2`.
+
+It is real because `residueAlgebraOver K strX p` is defined through
+`Spec.preimage`, so "the embedding `κ(p) ⟶ K` is `K`-LINEAR" is the assertion
+that a certain square of affine schemes commutes; at `ℚ` it holds for every ring
+map whatsoever (both `algebraMap`s out of `ℚ` are the rational cast), at `𝔽_ℓ`
+it holds because `x` is a SECTION.  `exists_residueSection_of_ratPoint` below is
+that argument, and it is where the `x.2` of the relative point is consumed.
+
+This subsection is base-agnostic and `Γ₁`-agnostic: nothing in it mentions `N`,
+the moduli problem, or `IsX1Compactification`.  It is stated with `jY` and
+`hcomm` loose so that the `Γ₀` side can consume it unchanged should
+`exists_residueAlgHom_of_isCusp` ever need generalising. -/
+
+/-- **A retraction of the structure map on a residue field, packaged as a
+`K`-algebra map** (PROVEN 2026-07-28).
+
+`hg` says `algebraMap K κ(p)` — which under `residueAlgebraOver` *is*
+`Spec.preimage (X.fromSpecResidueField p ≫ strX)` — is a section of `g`, i.e.
+precisely `AlgHom.commutes'`.  So the `K`-linearity of `g` is not an extra
+hypothesis but a repackaging of `hg`, and that is the whole content of the
+general-base step. -/
+noncomputable def residueSectionAlgHom {K : Type} [Field K] {X : Scheme.{0}}
+    {strX : X ⟶ Spec (CommRingCat.of K)} (p : X)
+    (g : X.residueField p ⟶ CommRingCat.of K)
+    (hg : Spec.preimage (X.fromSpecResidueField p ≫ strX) ≫ g = 𝟙 _) :
+    letI := residueAlgebraOver K strX p
+    X.residueField p →ₐ[K] K :=
+  letI := residueAlgebraOver K strX p
+  ⟨g.hom, fun c => congrArg (fun h : CommRingCat.of K ⟶ CommRingCat.of K => h.hom c) hg⟩
+
+/-- **A point whose residue field retracts onto `K` is `K`-rational** (PROVEN
+2026-07-28), i.e. `residueDegreeOver K strX p = 1`.
+
+`finrank_eq_one_of_algHom_to_base` (`X0.lean`, stated over a VARIABLE base
+field for exactly this reason) applied to `residueSectionAlgHom`. -/
+theorem residueDegreeOver_eq_one_of_residueSection {K : Type} [Field K] {X : Scheme.{0}}
+    {strX : X ⟶ Spec (CommRingCat.of K)} (p : X)
+    (g : X.residueField p ⟶ CommRingCat.of K)
+    (hg : Spec.preimage (X.fromSpecResidueField p ≫ strX) ≫ g = 𝟙 _) :
+    residueDegreeOver K strX p = 1 := by
+  letI := residueAlgebraOver K strX p
+  show Module.finrank K (X.residueField p) = 1
+  exact finrank_eq_one_of_algHom_to_base (residueSectionAlgHom p g hg)
+
+/-- **The retraction is UNIQUE** (PROVEN 2026-07-28) — `algHom_to_base_unique`
+(`X0.lean`) transported back through `CommRingCat.hom_ext`.
+
+This is what makes the cusp-counting map INJECTIVE: two `K`-rational sections of
+`strX` with the same image point factor through the same `κ(p)` by the same map,
+hence are equal.  Without it, `n` distinct sections could a priori collapse onto
+fewer than `n` points and the count would be lost. -/
+theorem residueSection_unique {K : Type} [Field K] {X : Scheme.{0}}
+    {strX : X ⟶ Spec (CommRingCat.of K)} (p : X)
+    (g g' : X.residueField p ⟶ CommRingCat.of K)
+    (hg : Spec.preimage (X.fromSpecResidueField p ≫ strX) ≫ g = 𝟙 _)
+    (hg' : Spec.preimage (X.fromSpecResidueField p ≫ strX) ≫ g' = 𝟙 _) : g = g' := by
+  letI := residueAlgebraOver K strX p
+  apply CommRingCat.hom_ext
+  exact congrArg AlgHom.toRingHom
+    (algHom_to_base_unique (residueSectionAlgHom p g hg) (residueSectionAlgHom p g' hg'))
+
+/-- **A `K`-rational point of `X` that is not a point of `Y` is a point of the
+complement, carrying a retraction of the structure map on its residue field**
+(PROVEN 2026-07-28) — the general-base form of `X0.lean`'s
+`exists_residueAlgHom_of_isCusp`, and it needs no moduli input whatever.
+
+Two independent halves, neither of them modular:
+
+* *The factorisation.*  `Scheme.SpecToEquivOfField` says a morphism
+  `Spec K ⟶ X` is exactly a point `p` together with an embedding `κ(p) ⟶ K`,
+  with no hypothesis.  That the embedding RETRACTS the structure map is
+  `Spec.map_injective` applied to `Spec.map_preimage` together with `x.2` — see
+  the subsection note; this is the step that is vacuous at `ℚ` and real here.
+* *The point lies off `Y`.*  Where `IsOpenImmersion jY` is used: a section of
+  `Spec K` has a ONE-POINT image, so if that point were in the open
+  `Set.range jY.base` then `IsOpenImmersion.lift` would factor `x` through `jY`,
+  exhibiting it as a `sectionAlong` and contradicting the cusp hypothesis. -/
+theorem exists_residueSection_of_ratPoint {K : Type} [Field K] {X Y : Scheme.{0}}
+    {strX : X ⟶ Spec (CommRingCat.of K)} {strY : Y ⟶ Spec (CommRingCat.of K)}
+    {jY : Y ⟶ X} [IsOpenImmersion jY] (hcomm : jY ≫ strX = strY)
+    (x : RelPoint strX (𝟙 (Spec (CommRingCat.of K))))
+    (hx : ¬ ∃ y : RelPoint strY (𝟙 (Spec (CommRingCat.of K))), sectionAlong jY hcomm y = x) :
+    ∃ p : ((Set.range jY.base)ᶜ : Set X),
+      ∃ g : X.residueField p.1 ⟶ CommRingCat.of K,
+        Spec.preimage (X.fromSpecResidueField p.1 ≫ strX) ≫ g = 𝟙 _ ∧
+        Spec.map g ≫ X.fromSpecResidueField p.1 = x.1 := by
+  classical
+  set q := Scheme.SpecToEquivOfField K X x.1 with hq
+  have hfac : Spec.map q.2 ≫ X.fromSpecResidueField q.1 = x.1 :=
+    (Scheme.SpecToEquivOfField K X).symm_apply_apply x.1
+  have hpt : ∀ s, x.1.base s = q.1 := by
+    intro s
+    rw [← hfac]
+    simp
+  have hmem : q.1 ∈ (Set.range jY.base)ᶜ := by
+    intro hcon
+    apply hx
+    have hrange : Set.range x.1.base ⊆ Set.range jY.base := by
+      rintro _ ⟨s, rfl⟩
+      rw [hpt s]
+      exact hcon
+    refine ⟨⟨IsOpenImmersion.lift jY x.1 hrange, ?_⟩, ?_⟩
+    · rw [← hcomm, ← Category.assoc, IsOpenImmersion.lift_fac, x.2]
+    · exact Subtype.ext (IsOpenImmersion.lift_fac _ _ _)
+  refine ⟨⟨q.1, hmem⟩, q.2, ?_, hfac⟩
+  apply Spec.map_injective
+  rw [Spec.map_comp, Spec.map_preimage, Spec.map_id, ← Category.assoc, hfac, x.2]
+
+/-- **`n` distinct `K`-rational cusp SECTIONS give `n` distinct points of
+`X ∖ Y` of residue degree one** (PROVEN 2026-07-28).
+
+The whole scheme-theoretic bookkeeping of the cusp count, discharged once over
+an arbitrary base: `exists_residueSection_of_ratPoint` produces the points,
+`residueDegreeOver_eq_one_of_residueSection` gives the degrees, and
+`residueSection_unique` transports injectivity of `σ` to injectivity of `ε`.
+
+The transport is stated as `key` with the two points as bound VARIABLES so that
+`rintro … rfl` can substitute; the residue field of a point is a dependent type,
+so rewriting `(p i).1 = (p j).1` in place would leave a motive that is not type
+correct. -/
+theorem exists_rationalCuspPoints_of_sections {K : Type} [Field K] {X Y : Scheme.{0}} {n : ℕ}
+    {strX : X ⟶ Spec (CommRingCat.of K)} {strY : Y ⟶ Spec (CommRingCat.of K)}
+    {jY : Y ⟶ X} [IsOpenImmersion jY] (hcomm : jY ≫ strX = strY)
+    (σ : Fin n → RelPoint strX (𝟙 (Spec (CommRingCat.of K))))
+    (hinj : Function.Injective σ)
+    (hcusp : ∀ i, ¬ ∃ y : RelPoint strY (𝟙 (Spec (CommRingCat.of K))),
+      sectionAlong jY hcomm y = σ i) :
+    ∃ ε : Fin n → ((Set.range jY.base)ᶜ : Set X),
+      Function.Injective ε ∧ ∀ i, residueDegreeOver K strX (ε i).1 = 1 := by
+  classical
+  choose p hp using fun i => exists_residueSection_of_ratPoint hcomm (σ i) (hcusp i)
+  choose g hg hfac using hp
+  have key : ∀ (a b : X) (_ : a = b)
+      (ga : X.residueField a ⟶ CommRingCat.of K) (gb : X.residueField b ⟶ CommRingCat.of K),
+      Spec.preimage (X.fromSpecResidueField a ≫ strX) ≫ ga = 𝟙 _ →
+      Spec.preimage (X.fromSpecResidueField b ≫ strX) ≫ gb = 𝟙 _ →
+      Spec.map ga ≫ X.fromSpecResidueField a = Spec.map gb ≫ X.fromSpecResidueField b := by
+    rintro a b rfl ga gb hga hgb
+    rw [residueSection_unique a ga gb hga hgb]
+  refine ⟨p, ?_, ?_⟩
+  · intro i j hij
+    apply hinj
+    apply Subtype.ext
+    rw [← hfac i, ← hfac j]
+    exact key (p i).1 (p j).1 (congrArg Subtype.val hij) (g i) (g j) (hg i) (hg j)
+  · intro i
+    exact residueDegreeOver_eq_one_of_residueSection (p i).1 (g i) (hg i)
+
+/-- **`X_1(N)` has `φ(N)/2` distinct `K`-rational cusp SECTIONS, for any field
+`K` in which `N` is invertible** (sorry leaf — Deligne–Rapoport VI.5, and ALL
+that is left of the cusp route on BOTH sides).
+
+**The form is the one Deligne–Rapoport actually delivers.**  Over `ℤ[1/N]` the
+`φ(N)/2` cusps of the distinguished orbit are SECTIONS of the smooth model, and
+this leaf asks for exactly those, read at a fibre.  The residue-degree form the
+consumers want is `exists_rationalCuspPointsX1_field` below, proved from this
+one by `exists_rationalCuspPoints_of_sections`.  The two are EQUIVALENT — a
+point of `X ∖ Y` with residue field `K` yields a section by
+`exists_specSection_of_finrank_eq_one` (`X0.lean`, at `ℚ`; the same two lines
+over any `K`), and a section yields such a point by the subsection above — so
+the change of form on 2026-07-28 added no strength; only one direction is used.
+
+**What moved, and why this node is now the whole difficulty** (2026-07-28).
+As cut earlier the same day, the leaf carried two things at once: the
+arithmetic (there ARE `φ(N)/2` rational cusps) and the scheme-theoretic
+bookkeeping (a rational cusp is a point of `X ∖ Y` whose residue field is `K`,
+and distinct cusps give distinct points).  The second is not Deligne–Rapoport
+and mentions neither `N`, nor `K`, nor the moduli problem; it is now the
+subsection above, proved over an arbitrary base.  Only the arithmetic is left,
+and it is here.
 
 TRUE and classical (Ogg 1973; Deligne–Rapoport VI.5, Construction 5.3;
 Diamond–Shurman §3.8 for the cusp count and §9.3 for the rationality): the
@@ -3649,8 +3880,9 @@ discharge it for free — over `ℚ` because `numRationalCuspsX1 N ≠ 0` forces
 **This leaf is the `Γ₁` sibling of `X0.lean`'s
 `exists_cuspResidueIndexing`, and it is strictly weaker.**  The `Γ₀` leaf
 asks for a BIJECTION `N.divisors ≃ X ∖ Y` with each residue field
-identified as `ℚ(ζ_{gcd(d, N/d)})`; this one asks only for `φ(N)/2` points
-of `X ∖ Y` with residue field `K`, and says nothing whatever about the
+identified as `ℚ(ζ_{gcd(d, N/d)})`; this one asks only for `φ(N)/2` cusp
+sections — equivalently, `φ(N)/2` points of `X ∖ Y` with residue field `K` —
+and says nothing whatever about the
 other `18` cusps at `N = 25` or about how many cusps there are in total.
 That is deliberate and is the economy `numRationalCuspsX1` records.
 
@@ -3666,14 +3898,39 @@ The axes searched for a further cut are recorded on
 of this leaf and keeps them; they are unchanged by the base-field
 generalisation, since every one of them was about the CUSP description and
 none about `ℚ`. -/
-theorem exists_rationalCuspPointsX1_field (N : ℕ) (K : Type) [Field K]
+theorem exists_rationalCuspSectionsX1_field (N : ℕ) (K : Type) [Field K]
     (_hNK : IsUnit ((N : ℕ) : K))
     {X Y : Scheme.{0}} {strX : X ⟶ Spec (CommRingCat.of K)}
     {strY : Y ⟶ Spec (CommRingCat.of K)} {jY : Y ⟶ X}
-    (_h : IsX1Compactification N strX strY jY) :
-    ∃ ε : Fin (numRationalCuspsX1 N) → ((Set.range jY.base)ᶜ : Set X),
-      Function.Injective ε ∧ ∀ i, residueDegreeOver K strX (ε i).1 = 1 :=
+    (h : IsX1Compactification N strX strY jY) :
+    ∃ σ : Fin (numRationalCuspsX1 N) → RelPoint strX (𝟙 (Spec (CommRingCat.of K))),
+      Function.Injective σ ∧ ∀ i, h.IsCusp (σ i) :=
   sorry
+
+/-- **`X_1(N)` has `φ(N)/2` cusps rational over ANY field `K` in which `N` is
+invertible** (PROVEN 2026-07-28 over `exists_rationalCuspSectionsX1_field`; a
+bare sorry leaf until then — Deligne–Rapoport VI.5).
+
+The residue-degree form of the leaf above, which is what both consumers read:
+`exists_rationalCuspPointsX1` at `K = ℚ` and the `≥` half of
+`card_cuspLocusPoints_x1_finiteField` at `K = 𝔽_ℓ`.  Its whole proof is
+`exists_rationalCuspPoints_of_sections`, i.e. scheme-theoretic bookkeeping over
+an arbitrary base with no moduli input; see the leaf for the mathematics, the
+axes searched, and why `hNK` is load-bearing.
+
+`h.isOpen` is the only field of `IsX1Compactification` this step consumes, and
+it is consumed only to know that a section landing in `Y`'s image would factor
+through `jY`. -/
+theorem exists_rationalCuspPointsX1_field (N : ℕ) (K : Type) [Field K]
+    (hNK : IsUnit ((N : ℕ) : K))
+    {X Y : Scheme.{0}} {strX : X ⟶ Spec (CommRingCat.of K)}
+    {strY : Y ⟶ Spec (CommRingCat.of K)} {jY : Y ⟶ X}
+    (h : IsX1Compactification N strX strY jY) :
+    ∃ ε : Fin (numRationalCuspsX1 N) → ((Set.range jY.base)ᶜ : Set X),
+      Function.Injective ε ∧ ∀ i, residueDegreeOver K strX (ε i).1 = 1 := by
+  haveI := h.isOpen
+  obtain ⟨σ, hinj, hcusp⟩ := exists_rationalCuspSectionsX1_field N K hNK h
+  exact exists_rationalCuspPoints_of_sections h.comm σ hinj hcusp
 
 /-- **`X_1(N)` has `φ(N)/2` distinct `ℚ`-rational points in the cusp locus
 `X ∖ Y`** (PROVEN 2026-07-28 over `exists_rationalCuspPointsX1_field`; a
@@ -4465,10 +4722,115 @@ theorem natCard_weierstrassPoint_le {F : Type*} [Field F] [Fintype F] [Decidable
   rw [Nat.card_eq_fintype_card]
   omega
 
+/-- **An abelian scheme of relative dimension one over `Spec 𝔽_ℓ` has a
+Weierstrass model** (sorry leaf, introduced 2026-07-28 as the GEOMETRY
+half of `exists_weierstrassEquiv_of_gamma1Datum` below).  **This leaf IS
+Riemann–Roch**; the sibling leaf carries none of it.
+
+TRUE — Silverman *AEC* III.3.1.  `ab.proper`, `ab.smooth` and
+`ab.connected` make `f` a proper smooth geometrically connected curve
+over `𝔽_ℓ` (`_hdim` supplies the relative dimension), and
+`ab.zero (𝟙 (SpecF ℓ))` is an `𝔽_ℓ`-RATIONAL point `O` on it.  A group
+scheme has trivial relative tangent bundle, hence arithmetic genus one,
+so Riemann–Roch gives `dim L(n[O]) = n` for `n ≥ 1`; picking
+`x ∈ L(2[O]) ∖ L([O])` and `y ∈ L(3[O]) ∖ L(2[O])`, the seven monomials
+`1, x, y, x², xy, y², x³` lie in the six-dimensional `L(6[O])` and so
+satisfy a linear relation in which `y²` and `x³` occur with nonzero
+coefficients (they alone have pole order exactly six).  Scaling gives a
+Weierstrass equation, `|3·[O]|` embeds the curve in `ℙ²` with
+`O ↦ [0 : 1 : 0]`, and deleting `O` leaves the affine chart
+`Spec W.toAffine.CoordinateRing` — which is the middle and last
+conjuncts.
+
+**THE ℚ-SIDE CHAIN CANNOT BE REUSED, and this was checked rather than
+assumed.**  `EllipticScheme.lean` has the same statement over `ℚ`
+(`exists_weierstrassModel_of_ellipticScheme`, line 9395), assembled from
+`exists_affineComplement_zeroSection`,
+`exists_weierstrassRingEquiv_of_affineComplement` and
+`isElliptic_of_isOpenImmersion_coordinateRing`.  **All three are
+themselves `sorry`, and all four are hardcoded to
+`Spec (CommRingCat.of ℚ)`** — not stated over a field variable — so there
+is nothing to instantiate at `ZMod ℓ`.  Generalising that chain in place
+is NOT the cheap move it looks like: its `≃+` half
+(`exists_geomFibreAddEquiv_of_weierstrassModel`) is genuinely PROVEN over
+`ℚ` and its proof runs through `hom_ext_spec_rat`, `projGroupLaw` and
+`exists_affineChart_projModel`, so widening the base would put a proven
+theorem back into the open set.  Hence the deliberate 𝔽_ℓ-local restatement
+here.  If that chain is ever made base-generic, THIS leaf and its sibling
+are exactly the two declarations that should be deleted in favour of it.
+
+`_hdim` is LOAD-BEARING for truth even though a `sorry` body cannot
+consume it: without relative dimension one an abelian scheme is an
+abelian variety of higher dimension and has no plane-cubic model at all.
+It is underscore-prefixed only to keep the tree warning-clean, matching
+the convention of the three ℚ-side leaves named above. -/
+theorem exists_weierstrassModel_of_abelianSchemeStruct_finiteField {ℓ : ℕ} [Fact ℓ.Prime]
+    {A : Scheme.{0}} {f : A ⟶ SpecF ℓ} (ab : AbelianSchemeStruct f)
+    (_hdim : SmoothOfRelativeDimension 1 f) :
+    ∃ (W : WeierstrassCurve (ZMod ℓ)) (_ : W.IsElliptic),
+      ∃ ι : Spec (CommRingCat.of W.toAffine.CoordinateRing) ⟶ A,
+        IsOpenImmersion ι ∧
+          ι ≫ f = Spec.map (CommRingCat.ofHom
+            (algebraMap (ZMod ℓ) W.toAffine.CoordinateRing)) ∧
+          Set.range ι.base = (Set.range (ab.zero (𝟙 (SpecF ℓ))).1.base)ᶜ :=
+  sorry
+
+/-- **A Weierstrass model of an abelian scheme over `Spec 𝔽_ℓ` computes
+its `𝔽_ℓ`-SECTIONS** (sorry leaf, introduced 2026-07-28 as the TRANSPORT
+half of `exists_weierstrassEquiv_of_gamma1Datum` below).  No Riemann–Roch
+here: the model is handed over as `_hmodel`.
+
+TRUE, and it is two separate facts glued by the model hypothesis.
+
+*The bijection.*  A section `s : Spec 𝔽_ℓ ⟶ A` of `f` has a single point
+in its image, which by the range clause of `_hmodel` lies either in the
+image of the zero section or in `Set.range ι.base` — and an open immersion
+is a monomorphism through which a morphism factors exactly when its
+topological image is contained in the range.  So `s` is either
+`ab.zero (𝟙 _)` or factors uniquely through `ι`, and a factorisation
+through `ι` over `𝔽_ℓ` is an `𝔽_ℓ`-algebra map
+`W.toAffine.CoordinateRing → 𝔽_ℓ`, i.e. a pair `(x, y)` satisfying the
+Weierstrass equation.  That is exactly the `zero`/`some x y h` case split
+of `WeierstrassCurve.Affine.Point`.
+
+*The additivity.*  This is the real content and it is where a successor
+should expect to spend the effort: `ab.add` is the abstract group law of
+the abelian scheme and `W.toAffine.Point`'s is the chord-and-tangent law,
+and they must be shown to agree.  The argument is RIGIDITY — two algebraic
+group structures on the same proper variety sharing an identity coincide —
+which is how the ℚ side does it (`relPointPost_add`, consumed by
+`exists_geomFibreAddEquiv_of_weierstrassModel`).
+
+**This is STRICTLY EASIER than its ℚ-side counterpart, which is why it is
+not stated by base change from it.**  `exists_geomFibreAddEquiv_of_weierstrassModel`
+produces a `Γ_ℚ`-EQUIVARIANT `≃+` on `ℚ̄`-points, because the `Γ₀` route
+descends a subgroup and so must work on the geometric fibre.  Here the
+level structure is already an `𝔽_ℓ`-section, the consumer counts
+`𝔽_ℓ`-points, and there is no Galois clause at all — a geometric-fibre
+equivalence would only have to be pushed back down again.
+
+`Nonempty` rather than a chosen equivalence because the consumer uses only
+`AddEquiv.addOrderOf_eq`, which any additive equivalence supplies; nothing
+downstream inspects which one.  `_hmodel` is load-bearing and NOT
+droppable: without it `W` is an arbitrary elliptic curve over `𝔽_ℓ` and the
+conclusion is plainly false (take `f` with `#RelPoint = 1` and `W` with
+`#W(𝔽_ℓ) = 5`). -/
+theorem exists_relPointAddEquiv_of_weierstrassModel_finiteField {ℓ : ℕ} [Fact ℓ.Prime]
+    (W : WeierstrassCurve (ZMod ℓ)) [W.IsElliptic]
+    {A : Scheme.{0}} {f : A ⟶ SpecF ℓ} (ab : AbelianSchemeStruct f)
+    (_hmodel : ∃ ι : Spec (CommRingCat.of W.toAffine.CoordinateRing) ⟶ A,
+      IsOpenImmersion ι ∧
+        ι ≫ f = Spec.map (CommRingCat.ofHom
+          (algebraMap (ZMod ℓ) W.toAffine.CoordinateRing)) ∧
+        Set.range ι.base = (Set.range (ab.zero (𝟙 (SpecF ℓ))).1.base)ᶜ) :
+    letI := ab.addCommGroup (𝟙 (SpecF ℓ))
+    Nonempty (RelPoint f (𝟙 (SpecF ℓ)) ≃+ W.toAffine.Point) :=
+  sorry
+
 /-- **A `Γ₁(N)`-datum over `𝔽_ℓ` gives a plane cubic over `𝔽_ℓ` carrying
-a rational point of exact order `N`** (sorry leaf — the ONE piece of
-geometry the `𝔽_ℓ` point count needs, and the converse direction of
-`exists_ellipticScheme_of_weierstrass`).
+a rational point of exact order `N`** (PROVEN 2026-07-28 over the two
+leaves immediately above; a single sorry leaf until then, and the
+converse direction of `exists_ellipticScheme_of_weierstrass`).
 
 **Restated 2026-07-28: the ORDER is no longer part of this leaf.**  It
 used to conclude `∃ P : W.toAffine.Point, addOrderOf P = N`, bundling
@@ -4489,17 +4851,67 @@ zero section IS an elliptic curve over `𝔽_ℓ`, hence has a Weierstrass
 model `W` with `W(𝔽_ℓ) ≃+ RelPoint d.f (𝟙 (SpecF ℓ))`, which is literally
 the conclusion.
 
-**WHY THIS IS THE WHOLE REMAINING CONTENT.**  `X0.lean` builds
+**HOW IT IS PROVEN, and where the content went.**  `X0.lean` builds
 `exists_ellipticScheme_of_weierstrass`, which goes from a plane cubic to
 an abelian scheme; the direction needed here is the CONVERSE — a
-Weierstrass presentation of a given abelian scheme.  Classically it is
-Riemann–Roch on the genus-one curve `E`: `ℒ(3·O)` is three-dimensional
-and a basis `1, x, y` embeds `E` as a plane cubic in Weierstrass form.
-The arithmetic that used to be bundled with it is now
-`natCard_weierstrassPoint_le` above and is PROVEN, so a successor here
-faces geometry only.
+Weierstrass presentation of a given abelian scheme.  That converse is now
+split into the two leaves immediately above, along the seam the ℚ-side
+chain already uses:
+
+1. `exists_weierstrassModel_of_abelianSchemeStruct_finiteField` — **the
+   Riemann–Roch half**, producing the cubic `W` together with the open
+   immersion of its affine chart onto the complement of the zero section;
+2. `exists_relPointAddEquiv_of_weierstrassModel_finiteField` — **the
+   transport half**, reading the `𝔽_ℓ`-sections off that model, whose real
+   content is that the abstract group law agrees with the chord-and-tangent
+   one (rigidity).
+
+The assembly below carries nothing of its own, which is the point of the
+split: neither `N` nor the level structure `d.pt` appears in either leaf,
+so both are stated in `AbelianSchemeStruct` vocabulary and are reusable
+for any abelian scheme over `Spec 𝔽_ℓ`.  The arithmetic that used to be
+bundled here is `addOrderOf_relPointOfSection_gamma1Datum` below and is
+PROVEN; the crude point bound is `natCard_weierstrassPoint_le` above and
+is PROVEN.
+
+**Faithfulness check performed at the split** (2026-07-28): the statement
+is TRUE and not vacuous, and properness is what makes it so.
+`AbelianSchemeStruct` carries `proper`, `smooth` and `connected` as
+FIELDS, so `𝔾ₐ` and `𝔾ₘ` over `𝔽_ℓ` — which are smooth of relative
+dimension one and carry group laws — are excluded, as they must be, since
+neither is an elliptic curve.  Had properness been absent the leaf would
+have been false rather than merely open.
+
+Classically the converse is Riemann–Roch on the genus-one curve `E`:
+`ℒ(3·O)` is three-dimensional and a basis `1, x, y` embeds `E` as a plane
+cubic in Weierstrass form.  That is the content of the first of the two
+leaves; the second is the group-law comparison.
 
 ### ROUTE AUDIT CORRECTION (2026-07-28) — "it exists nowhere in this tree" is FALSE
+
+**STATUS UPDATE (2026-07-29): this node is now PROVEN and the audit below is
+retained as the record of WHY the cut was made locally.**  Every factual
+claim in it was re-checked and holds — the ℚ-side chain exists, its base is
+hard-wired, and all three of its leaves are still `sorry`.  What was NOT
+adopted is its recommendation to base-generalize that cut in place, for two
+reasons the audit does not weigh:
+
+* the audit's own **STRUCTURAL BLOCKER** (below) is the decisive one — citing
+  any `EllipticScheme.lean` name from here needs an import change, i.e. a
+  cone-growth decision.  Restating the two leaves locally, in
+  `AbelianSchemeStruct` vocabulary, avoids it entirely: this file's build is
+  green with no import change at all;
+* base-generalizing would also drag in the `≃+` half
+  (`exists_geomFibreAddEquiv_of_weierstrassModel`), which is genuinely PROVEN
+  over `ℚ` through `hom_ext_spec_rat`, `projGroupLaw` and
+  `exists_affineChart_projModel` — widening its base would put a proven
+  theorem back into the open set.
+
+The audit's point 1 is nonetheless the right long-term shape, and the two
+leaves above say so in their own docstrings: **if that chain is ever made
+base-generic, those two leaves are exactly what should be deleted in favour
+of it.**  The `𝔽_ℓ` analogue of `hom_ext_spec_rat` the audit predicts would
+be needed (`ℤ → ZMod ℓ` is surjective) is not needed by the local route.
 
 The sentence removed above said the converse bridge "exists nowhere in
 this tree, in mathlib, or in `~/cs/FLT`".  Two of the three clauses are
@@ -4584,17 +4996,23 @@ Without the datum the statement would read "for every `N` and every prime
 `natCard_weierstrassPoint_le`: at `(N, ℓ) = (25, 3)` any Weierstrass
 curve over `𝔽_3` has at most `2·3 + 1 = 7` points, so it has no point of
 order `25`.  That is the same inequality `isEmpty_gamma1Datum_finiteField`
-below turns into its conclusion — so a successor who dropped `_d` would be
-deriving `False` from the very bound the cluster exists to exploit.  (The
-underscore only silences the unused-variable linter while the body is
-`sorry`; any real proof must consume it, as
-`exists_weierstrassPointOfOrder_of_gamma1Datum` above already does.) -/
+below turns into its conclusion — so a successor who dropped the datum would
+be deriving `False` from the very bound the cluster exists to exploit.
+**That guard is now discharged rather than merely asserted**: the binder is
+`d`, not `_d`, because the proof below consumes it (`d.ab` and
+`d.relativeDimensionOne`).  Note this is NOT in tension with the two leaves
+being stated without `N`: they hand over an *abelian scheme* and claim no
+point of any order, so the false statement above — which needs the level
+structure to be dropped as well — is not among their consequences. -/
 theorem exists_weierstrassEquiv_of_gamma1Datum (N ℓ : ℕ) [Fact ℓ.Prime]
-    (_d : Gamma1Datum N (SpecF ℓ)) :
-    letI := _d.ab.addCommGroup (𝟙 (SpecF ℓ))
+    (d : Gamma1Datum N (SpecF ℓ)) :
+    letI := d.ab.addCommGroup (𝟙 (SpecF ℓ))
     ∃ W : WeierstrassCurve (ZMod ℓ), W.IsElliptic ∧
-      Nonempty (RelPoint _d.f (𝟙 (SpecF ℓ)) ≃+ W.toAffine.Point) :=
-  sorry
+      Nonempty (RelPoint d.f (𝟙 (SpecF ℓ)) ≃+ W.toAffine.Point) := by
+  obtain ⟨W, hW, hmodel⟩ :=
+    exists_weierstrassModel_of_abelianSchemeStruct_finiteField d.ab d.relativeDimensionOne
+  haveI := hW
+  exact ⟨W, hW, exists_relPointAddEquiv_of_weierstrassModel_finiteField W d.ab hmodel⟩
 
 /-- **The `Γ₁(N)`-level section has additive order exactly `N` already as
 an `𝔽_ℓ`-SECTION**, not merely on the geometric fibre (PROVEN 2026-07-28;
@@ -4951,10 +5369,69 @@ theorem residueDegreeOver_eq_residueFDegree {ℓ : ℕ} [Fact (Nat.Prime ℓ)] {
     (strX : X ⟶ SpecF ℓ) (x : X) :
     residueDegreeOver (ZMod ℓ) strX x = residueFDegree strX x := rfl
 
+/-- **The `𝔽_ℓ`-rational points of the cusp locus of `X_1(N)_{𝔽_ℓ}` inject
+into the Frobenius-fixed cusp symbols** (sorry leaf — the hard direction of
+Ogg's description of the cusps, and after the 2026-07-28 decomposition ALL
+that is left of `card_cuspLocusPoints_x1_finiteField`).
+
+TRUE and classical (Ogg 1973; Deligne–Rapoport VI.5; Diamond–Shurman §3.8
+for the cusp set and §9.3 for the Galois action).  The content is one
+identification and one dictionary:
+
+* `X ∖ Y` with its `Gal(𝔽̄_ℓ/𝔽_ℓ)`-action is the cusp locus of the
+  Deligne–Rapoport model of `X_1(N)` over `ℤ[1/N]`, base-changed to `𝔽_ℓ`;
+  its geometric points are `Γ_1(N)∖ℙ¹(ℚ)`, i.e. `CuspSymbolX1 N`, and the
+  Galois action is through the cyclotomic character, i.e. `cuspFrobX1 N ℓ`
+  (see `CuspSymbolX1.lean`'s module docstring for why the character moves
+  the coordinate defined mod `gcd(c, N)` and not the other one).
+* a CLOSED point of an `𝔽_ℓ`-scheme has residue degree `1` exactly when the
+  single geometric point above it is Frobenius-fixed, so
+  `residueFDegree strX c = 1` picks out the fixed symbols.
+
+Both directions of the second bullet are true, so the honest statement is a
+BIJECTION; only the injection is asked for, because only the upper bound is
+consumed and the lower bound is already `exists_rationalCuspPointsX1_field`
+at `K = 𝔽_ℓ`.  A prover who has the bijection has this for free.
+
+**What each hypothesis is doing.**  `hℓN : ¬ ℓ ∣ N` is what makes the
+`Γ₁(N)`-problem étale at `ℓ` and the cusp locus finite étale — at `ℓ ∣ N`
+the reduction is not the Deligne–Rapoport one and no such description is
+claimed.  `hN : 5 ≤ N` is the standing hypothesis of the `Γ_1(N)∖ℙ¹(ℚ)`
+count: at `N ≤ 4` the `±` identification is not free (`-I ∈ Γ_1(N)` acts
+with fixed points on the symbols) and `#cusps ≠ ½ Σ_{d ∣ N} φ(d)φ(N/d)`.
+Both are discharged for free at the single witness row, `(25, 3, 10)`.
+
+**No arithmetic is asked for here** — this is the whole point of the cut.
+The leaf says nothing about `ord_25(3)`, about `φ(25)/2 = 10`, or about how
+many symbols are fixed; that is `card_fixedCuspSymbolX1`, PROVEN.  In
+particular the leaf is stated uniformly in `(N, ℓ)` and is TRUE uniformly,
+whereas the bound it feeds is false for `ℓ ≡ ±1 (mod N)` — the arithmetic
+hypothesis lives entirely on the other factor.
+
+AXES SEARCHED.  The BIJECTION-vs-INJECTION axis is TAKEN (weakened to the
+half that is consumed).  The BASE-FIELD axis is NOT available: the statement
+is about Frobenius, so it is specific to a finite base field; the `ℚ`-side
+analogue is `exists_rationalCuspPointsX1_field`, already separate.  The
+SYMBOL-SET axis — replacing `CuspSymbolX1` by the moduli description (Néron
+`d`-gons with a point of order `N`) — is available and would be a
+REFORMULATION, not a reduction: the two index sets are isomorphic and the
+Galois actions correspond, so nothing is bought. -/
+theorem exists_cuspSymbolEmbedding_x1_finiteField (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hN : 5 ≤ N)
+    (_hℓN : ¬ ℓ ∣ N)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ} {jY : Y ⟶ X}
+    (_h : IsX1Compactification N strX strY jY) :
+    ∃ f : {c : ((Set.range jY.base)ᶜ : Set X) // residueFDegree strX c.1 = 1} →
+        CuspSymbolX1 N,
+      Function.Injective f ∧
+      ∀ x, IsPrimitiveCuspSymbolX1 N (f x) ∧
+        cuspFrobX1 N ((ℓ : ℕ) : ZMod N) (f x) = f x :=
+  sorry
+
 /-- **AT MOST `m` points of the cusp locus of `X_1(N)_{𝔽_ℓ}` have residue
-degree one, at the witness rows** (sorry leaf — the ONE genuinely modular
-half of the `(25, 3, 10)` row, and all that is left of
-`card_cusp_x1_finiteField`).
+degree one, at the witness rows** (PROVEN 2026-07-28 over
+`exists_cuspSymbolEmbedding_x1_finiteField` and `card_fixedCuspSymbolX1`; a
+sorry leaf until then — the ONE genuinely modular half of the `(25, 3, 10)`
+row, and all that is left of `card_cusp_x1_finiteField`).
 
 **Restated 2026-07-28 from `=` to `≤`, and the `≥` half is now CLOSED.**
 That half is `exists_rationalCuspPointsX1_field` at `K = 𝔽_ℓ`: the `ℚ`-side
@@ -5016,16 +5493,52 @@ cannot be merged with the `ℚ`-side leaf, which is a lower bound" — was
 correct about the leaf as it then stood and wrong as a verdict about the
 NODE, which is the mis-pricing this file's doctrine warns about: a lower
 bound and an exact count differ by an upper bound, so the merge was blocked
-only on the half that is still here.  The WITNESS-TABLE axis is refuted by
-`x1WitnessTable` having one row: generalising to all `(N, ℓ)` would demand
-the full `Γ₁` cusp classification and its reduction behaviour, which is
-strictly more than the route needs. -/
+only on the half that is still here.
+
+**The WITNESS-TABLE axis is REFUTED — and refuted more sharply than the
+previous version of this paragraph said** (2026-07-28).  It read
+"generalising to all `(N, ℓ)` would demand the full `Γ₁` cusp classification
+and its reduction behaviour, which is strictly more than the route needs",
+i.e. it priced the general statement as TRUE but expensive.  It is not true.
+For any prime `ℓ ≡ ±1 (mod N)` the Frobenius acts on the cusps through a
+central element and the bound `≤ φ(N)/2` FAILS: at `N = 25` exhaustive
+enumeration over `(ℤ/25)²` gives `28` rational cusps at `ℓ ≡ 1` and `20` at
+`ℓ ≡ -1`, against `φ(25)/2 = 10`.  So the row is not carrying a cost, it is
+carrying the ARITHMETIC HYPOTHESIS `IsUnit (ℓ - 1) ∧ IsUnit (ℓ + 1)` in
+`ZMod N` — which `card_fixedCuspSymbolX1` now states explicitly, and which
+`(25, 3)` satisfies because `2` and `4` are units mod `25`.
+
+**DECOMPOSED 2026-07-28, into geometry and arithmetic.**  What is proven
+below is `le_antisymm`-free: the `𝔽_ℓ`-rational cusp points inject into the
+`σ_ℓ`-fixed primitive cusp symbols (`exists_cuspSymbolEmbedding_x1_finiteField`,
+the remaining leaf), and those number exactly `φ(N)/2`
+(`card_fixedCuspSymbolX1` in `ModularCurve/CuspSymbolX1.lean`, PROVEN).  The
+level-`25` arithmetic quoted above — `ord_25(3) = 20` and `ord_5(3) = 4`,
+hence residue degrees `10` and `4` on the other `18` cusps — is no longer an
+obligation of the remaining leaf; it was verified as the orbit-size multiset
+`{1 × 10, 4 × 2, 10 × 1}` of `cuspFrobX1 25 3` on the `28` symbols, and the
+whole of it is subsumed by the two unit hypotheses. -/
 theorem card_cuspLocusPoints_x1_finiteField_le (N ℓ m : ℕ)
-    (_htable : (N, ℓ, m) ∈ x1WitnessTable)
+    (htable : (N, ℓ, m) ∈ x1WitnessTable)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ} {jY : Y ⟶ X}
-    (_h : IsX1Compactification N strX strY jY) :
-    Nat.card {c : ((Set.range jY.base)ᶜ : Set X) // residueFDegree strX c.1 = 1} ≤ m :=
-  sorry
+    (h : IsX1Compactification N strX strY jY) :
+    Nat.card {c : ((Set.range jY.base)ᶜ : Set X) // residueFDegree strX c.1 = 1} ≤ m := by
+  obtain ⟨-, hℓ, hℓN, -⟩ := x1WitnessTable_spec htable
+  have hN : 5 ≤ N := by fin_cases htable; norm_num
+  haveI : NeZero N := ⟨by omega⟩
+  have ht1 : IsUnit (((ℓ : ℕ) : ZMod N) - 1) := by
+    fin_cases htable; exact IsUnit.of_mul_eq_one 13 (by decide)
+  have ht2 : IsUnit (((ℓ : ℕ) : ZMod N) + 1) := by
+    fin_cases htable; exact IsUnit.of_mul_eq_one 19 (by decide)
+  have hm : N.totient / 2 = m := by fin_cases htable; exact numRationalCuspsX1_twentyFive
+  obtain ⟨f, hinj, hfix⟩ := exists_cuspSymbolEmbedding_x1_finiteField N ℓ hℓ hN hℓN h
+  have hcard : Nat.card {c : ((Set.range jY.base)ᶜ : Set X) // residueFDegree strX c.1 = 1}
+      ≤ Nat.card (FixedCuspSymbolX1 N ((ℓ : ℕ) : ZMod N)) :=
+    Nat.card_le_card_of_injective
+      (fun x : {c : ((Set.range jY.base)ᶜ : Set X) // residueFDegree strX c.1 = 1} =>
+        (⟨f x, hfix x⟩ : FixedCuspSymbolX1 N ((ℓ : ℕ) : ZMod N)))
+      (fun a b hab => hinj (congrArg Subtype.val hab))
+  rwa [card_fixedCuspSymbolX1 N (by omega) _ ht1 ht2, hm] at hcard
 
 /-- **The cusp locus of `X_1(N)_{𝔽_ℓ}` has exactly `m` points of residue
 degree one, at the witness rows** (PROVEN 2026-07-28 over
@@ -5180,14 +5693,16 @@ one still carries modular content:
   an abelian scheme of relative dimension one; 2026-07-28 —
   `exists_weierstrassPointOfOrder_of_gamma1Datum` is PROVEN over it and
   `addOrderOf_relPointOfSection_gamma1Datum`);
-* `card_cuspLocusPoints_x1_finiteField_le` — half 2, the cusp count on the
-  special fibre, and since 2026-07-28 only its UPPER bound.  STILL OPEN, and
-  the only one of the four that is Deligne-Rapoport at this base.
-  (`card_cusp_x1_finiteField` is PROVEN through `cuspEquivResidueDegreeOne`
-  and `card_cuspLocusPoints_x1_finiteField`, which is itself PROVEN over this
-  leaf together with `exists_rationalCuspPointsX1_field` at `K = 𝔽_ℓ`; the
-  open statement is about the POINTS of `X ∖ Y` and their residue degrees,
-  not about sections of `strX`.)
+* `exists_cuspSymbolEmbedding_x1_finiteField` — half 2, the cusp count on the
+  special fibre, and the only one of the four that is Deligne-Rapoport at
+  this base.  The whole chain above it is now PROVEN:
+  `card_cusp_x1_finiteField` through `cuspEquivResidueDegreeOne` and
+  `card_cuspLocusPoints_x1_finiteField`, which is `le_antisymm` of
+  `exists_rationalCuspPointsX1_field` at `K = 𝔽_ℓ` and
+  `card_cuspLocusPoints_x1_finiteField_le`, which is in turn PROVEN
+  (2026-07-28) over this leaf and the arithmetic `card_fixedCuspSymbolX1`.
+  What is STILL OPEN is therefore only the identification of `X ∖ Y` with
+  `Γ_1(N)∖ℙ¹(ℚ)` as a Galois set — no counting, no level, no prime.
 
 Note that no integral model appears in any of them: the special fibre is
 obtained as the coarse space of the problem over `𝔽_ℓ` directly, so the
@@ -7494,6 +8009,188 @@ theorem exists_isLFunctionOf_of_isWeightTwoEigenformOn (S : ModularLevelShape) (
       ((isWeightTwoEigenformOn_gamma0_iff N f a).1 (hχ ▸ hf))
   | gamma1 => exact exists_isLFunctionOf_of_isWeightTwoEigenformOn_gamma1 N hN χ f a hf
 
+/-! #### The moduli pin for the Hecke operators on `Y_1(N)`
+
+The `Γ₁` transposition of `X0.lean`'s subsection of the same name (new
+2026-07-29).  What it produces is a **pin**: a predicate
+`IsModularHeckeActionGamma1` on a candidate family `T` saying that `T ℓ`
+acts on Abel–Jacobi images exactly by the `Γ₁(N)`-correspondence
+`(E, P) ↦ ∑_D (E/D, P + D)`, with `D` running over the cyclic subgroups
+of order `ℓ`.
+
+**WHY IT IS HERE.**  `IsHeckeIsotypicDecompositionGamma1` below used to
+leave `T` an arbitrary family of endomorphisms, and with an unpinned `T`
+the `N = 37` eigen-system swap inhabits the structure — which is exactly
+what forces `isTorsion_factor_of_heckeIsotypic_gamma1` to carry the full
+analytic hypothesis `hL` rather than the single value
+`L(form i, 1) ≠ 0`.  `X0.lean` closed that hole on 2026-07-28 with
+`IsModularHeckeAction`; the `Γ₁` side was left open, and BOTH the `Γ₀`
+crux paragraph and `exists_heckeAction_isotypicQuotients_gamma1` name
+this construction, in these words, as the repair.  This subsection is
+that repair and NOTHING ELSE: the sharpening of the Kolyvagin–Logachev
+leaf it unblocks is deliberately a separate edit, because two
+individually-correct edits to one statement have made a leaf FALSE in
+this development before.
+
+**THE ONE CHANGE FROM THE `Γ₀` PIN, and it makes the `Γ₁` version
+SHARPER.**  A `Γ₀`-structure is a subgroup and `IsGamma0Isogeny.level`
+can only ask that it be carried INTO the quotient's subgroup, recovering
+equality from an `ℓ ∤ N` counting argument written out in that
+docstring.  A `Γ₁`-structure is a SECTION, so `IsGamma1Isogeny.map_sec`
+is a single equation between morphisms `T ⟶ d'.E`,
+`d.pt.sec ≫ map = d'.pt.sec`.  That is the same simplification
+`IsBaseChangeOfGamma1.map_sec` enjoys over `IsBaseChangeOf.liesIn_iff`,
+and for the same reason: a section is transported by one equation where
+a subgroup scheme needs a biconditional at every base.
+
+**WHAT THE PIN DOES NOT SETTLE**, stated so it can be checked, and
+identical to the `Γ₀` list: it constrains `T ℓ` only at primes `ℓ ∤ N`,
+and only on Abel–Jacobi images; that this determines `T ℓ` as a morphism
+needs `J_1(N)(ℚ̄)` to be generated by `aj`-images of geometric points,
+which is true for the Jacobian of a curve and is not proven here.
+Nothing below relies on uniqueness — the pin is used as a hypothesis,
+never as a characterisation.
+
+It also says nothing about the DIAMOND operators `⟨d⟩`, which are
+genuinely `Γ₁`-specific and have no `Γ₀` counterpart.  That costs nothing
+here, and the reason is structural rather than lucky:
+`IsHeckeIsotypicDecompositionGamma1` records the nebentypus in its
+`neben` field rather than through an action, and its `isotypic` field
+speaks only about `T n`.  So the diamonds are not part of the data this
+pin exists to constrain. -/
+
+/-- **An `ℓ`-ISOGENY OF `Γ₁(N)`-DATA** (new 2026-07-28) — a morphism of
+elliptic schemes with cyclic kernel of order `ℓ`, carrying the level
+POINT to the level POINT.  The `Γ₁` analogue of `X0.lean`'s
+`IsGamma0Isogeny`, and `d'` is `d/D = (E/D, φ_D P)`.
+
+**THE ONE FIELD THAT DIFFERS FROM THE `Γ₀` VERSION, AND IT IS SIMPLER.**
+`IsGamma0Isogeny.level` is a biconditional-free *inclusion* clause at
+every base, because a cyclic subgroup scheme has to be compared as a
+subfunctor.  A `Γ₁`-structure is a SECTION, so the whole clause collapses
+to one equation between morphisms, `map_sec : d.pt.sec ≫ map = d'.pt.sec`
+— and it implies the point-level statement at every base by
+precomposition, since `RelPoint.ofSection` is literally `g ↦ g ≫ sec`.
+This is the same simplification `IsBaseChangeOfGamma1.map_sec` records
+against `IsBaseChangeOf.liesIn_iff`, and for the same reason.
+
+**WHY THE QUOTIENT IS QUANTIFIED OVER RATHER THAN CONSTRUCTED**, verbatim
+from the `Γ₀` version: constructing `E/D` as an elliptic SCHEME over an
+arbitrary base needs fppf quotients by finite flat subgroup schemes
+(Raynaud, SGA 3), which is not available at this pin; the `ℚ̄`-fibrewise
+statement is, and the pin below is only ever evaluated over `Spec ℚ̄`.
+
+**WHY `¬ ℓ ∣ N` MATTERS FOR SATISFIABILITY, and it is a `Γ₁`-specific
+remark.**  `d'.pt` is a field of `Gamma1Datum`, so it carries exact order
+`N` by assumption.  That is consistent with `map_sec` precisely because
+`ℓ ∤ N` at every use site: `map` has kernel of order `ℓ`, hence is
+injective on the `N`-torsion, hence `φ_D P` really does have exact order
+`N`.  If `ℓ ∣ N` and `D ⊆ ⟨P⟩`, no `Γ₁`-datum `d'` satisfies `map_sec` at
+all — so the pin below would become VACUOUS at such an `ℓ`, not false.
+The pin quantifies only over primes `ℓ ∤ N`, so the case never arises.
+
+**WHY THIS PINS `d'` UP TO ISOMORPHISM**, which is what the pin needs, and
+the `Γ₀` argument transfers with the level structure carried along: two
+quotients of `d` by the same `D` are related by a unique isomorphism `ψ`
+of elliptic schemes with `ψ ∘ map = map'`, and then `map_sec` for both
+gives `ψ (φ_D P) = φ_D' P`, so `ψ` is an isomorphism of `Γ₁(N)`-DATA over
+the same base, hence an `IsBaseChangeOfGamma1 (𝟙 _)`, hence sent to the
+SAME point of `Y_1(N)` by `IsCoarseModuliY1.classify_natural`.  That is
+what makes the `∀`-over-witnesses form of the pin satisfiable rather than
+contradictory. -/
+structure IsGamma1Isogeny (N ℓ : ℕ) {T : Scheme.{0}} (d d' : Gamma1Datum N T) where
+  /-- the morphism of elliptic schemes -/
+  map : d.E ⟶ d'.E
+  /-- it lies over the base -/
+  comm : map ≫ d'.f = d.f
+  /-- it is a homomorphism -/
+  add : IsAdditiveOn d.ab d'.ab map comm
+  /-- it is surjective -/
+  surj : AlgebraicGeometry.Surjective map
+  /-- its kernel, a cyclic subgroup scheme of order `ℓ` -/
+  ker : CyclicSubgroupOfOrder d.ab ℓ
+  /-- `ker` really is the kernel, at every base point -/
+  ker_eq : ∀ {T' : Scheme.{0}} {g : T' ⟶ T} (x : RelPoint d.f g),
+    RelPoint.post map comm x = d'.ab.zero g ↔ RelPoint.LiesIn ker.ι x
+  /-- **the level point is carried to the level point**: `φ_D P = P'`.
+  One equation of morphisms, which is the whole `Γ₁` level clause -/
+  map_sec : d.pt.sec ≫ map = d'.pt.sec
+
+/-- **THE `Γ₁` MODULI PIN FOR THE HECKE OPERATORS** (new 2026-07-28):
+`T ℓ` acts on Abel–Jacobi images by the `Γ₁(N)`-correspondence.
+
+For a prime `ℓ ∤ N` and a `Γ₁(N)`-datum `d = (E, P)` over `ℚ̄`, let
+`D₁, …, D_{ℓ+1}` be the cyclic subgroups of `E` of order `ℓ` and
+`d/D_k = (E/D_k, φ_{D_k} P)` the quotient data.  Then
+
+    T ℓ (aj [d]) = ∑_k aj [d/D_k]
+
+where `[·]` is `IsCoarseModuliY1.classify` followed by the open immersion
+`Y_1(N) ↪ X_1(N)`.  This is the classical `T_ℓ` on `Div⁰(X_1(N))` read
+through `aj : x ↦ [x] − [o]`.  Diamond–Shurman §5.2–5.3 state the
+correspondence at `Γ₁(N)` directly — `Γ₁` being their default level — so
+this is if anything the better-documented of the two.
+
+**THE `ℓ + 1` SUBGROUPS ARE NOT COUNTED**, exactly as on the `Γ₀` side:
+`m` is an arbitrary arity and the two hypotheses say the kernels are
+pairwise distinct and exhaust the order-`ℓ` cyclic subgroups, which over
+`ℚ̄` forces `m = ℓ + 1` without this file proving it.  Distinctness and
+exhaustion are compared on `ℚ̄`-POINTS, which is faithful because a finite
+subgroup scheme of an elliptic curve over an algebraically closed field of
+characteristic `0` is étale, hence determined by its points.
+
+**WHY `H` IS TAKEN AS DATA AND NOT AS
+`ModularLevelShape.IsCompactification`.**  The latter is
+`Nonempty (IsX1Compactification …)`, a `Prop`, and this pin needs
+`H.coarse.classify`, which is DATA.  Consumers holding only the truncated
+form recover `H` by `Nonempty` elimination, which is legitimate because
+every statement they are proving is a `Prop` — that is exactly what the
+proof of `exists_heckeAction_isotypicQuotients_gamma1` below does, and it
+is why no `∀ H` quantification is needed anywhere.
+
+**FAITHFULNESS, and the honest caveat is the `Γ₀` one.**  The predicate is
+*true* of the genuine Hecke operators (the previous paragraph of
+`IsGamma1Isogeny` is why the `∀`-over-witnesses form does not
+overconstrain them), and it is *false* of `T n := 𝟙 J` and of the `N = 37`
+eigen-system swap, which is the entire reason it exists.  **But its
+non-vacuity AS A LEAN STATEMENT — that `IsGamma1Isogeny` is inhabited at
+the scheme level — is NOT proven here**, exactly as `IsGamma0Isogeny`'s is
+not.  The consequence is recorded on the leaf that consumes it below and
+it is a graceful degradation, not a soundness problem: were the pin
+formally vacuous, `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1`
+would be precisely as hard as the undecomposed node and no harder, and
+nothing false would have been asserted.  **The check that settles it**:
+produce one `IsGamma1Isogeny` over `Spec ℚ̄`.  Note that `X0.lean` records
+that check as RUN and NOT closing from `exists_velu_quotient_isogeny` plus
+`exists_ellipticScheme_of_weierstrass`, because those produce maps of
+POINT GROUPS while `map` is a morphism of SCHEMES; the obstruction is
+level-structure-free, so it transfers here verbatim and should not be
+re-run from those two inputs. -/
+def IsModularHeckeActionGamma1 (N : ℕ)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (H : IsX1Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o)
+    (T : ℕ → (J ⟶ J)) (T_comp : ∀ n, T n ≫ jstr = jstr) : Prop :=
+  ∀ (ℓ : ℕ), ℓ.Prime → ¬ ℓ ∣ N →
+    ∀ (d : Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) (m : ℕ)
+      (dq : Fin m → Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+      (iso : ∀ k, IsGamma1Isogeny N ℓ d (dq k)),
+      -- the kernels are pairwise distinct on `ℚ̄`-points
+      (∀ k k' : Fin m,
+        (∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+          RelPoint.LiesIn (iso k).ker.ι x ↔ RelPoint.LiesIn (iso k').ker.ι x) → k = k') →
+      -- and they exhaust the cyclic subgroups of order `ℓ`
+      (∀ D : CyclicSubgroupOfOrder d.ab ℓ, ∃ k : Fin m,
+        ∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+          RelPoint.LiesIn D.ι x ↔ RelPoint.LiesIn (iso k).ker.ι x) →
+      letI := ab.addCommGroup (specAlgClos ℚ)
+      RelPoint.post (T ℓ) (T_comp ℓ)
+          (jac.aj (specAlgClos ℚ)
+            (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) d)))
+        = ∑ k : Fin m, jac.aj (specAlgClos ℚ)
+            (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) (dq k)))
+
 /-- **EICHLER–SHIMURA for `Γ₁(N)`, as a datum: the Hecke-isotypic
 decomposition of `J_1(N)`** (new 2026-07-28) — the `Γ₁` counterpart of
 `X0.lean`'s `IsHeckeIsotypicDecomposition`, field for field, with the one
@@ -7540,12 +8237,45 @@ differing at some `a_n` with `(n, N) = 1` have coprime minimal
 polynomials, so annihilating both on the same `J` already forces the
 conclusion.
 
-**WHAT IS NOT PINNED, and it is the crux.**  `T` is an ARBITRARY family
-of endomorphisms; nothing here says it is the family of genuine Hecke
-correspondences.  That is why `isTorsion_factor_of_heckeIsotypic_gamma1`
-below keeps the FULL analytic hypothesis rather than the single value
-`L(form i, 1) ≠ 0` — see its docstring for the counterexample, which is
-`X0.lean`'s and transfers unchanged. -/
+**THE CRUX — `T` USED TO BE UNPINNED, AND SINCE 2026-07-29 IT IS NOT.**
+This paragraph previously read "`T` is an ARBITRARY family of
+endomorphisms; nothing here says it is the family of genuine Hecke
+correspondences", and sent the reader to
+`isTorsion_factor_of_heckeIsotypic_gamma1` below for the `N = 37`
+eigen-system counterexample.  The field `heckeModuli` now carries the
+missing pin: `T ℓ` acts on Abel–Jacobi images by
+`(E, P) ↦ ∑_D (E/D, P + D)` at every prime `ℓ ∤ N`.  See the subsection
+heading above `IsGamma1Isogeny`, and `X0.lean`'s
+`IsHeckeIsotypicDecomposition`, whose `heckeModuli` field this mirrors
+field for field.
+
+Three consequences, in decreasing order of how much they matter, and
+they are the `Γ₀` ones transposed:
+
+* the `N = 37` eigen-system swap **no longer inhabits this structure**,
+  so `isTorsion_factor_of_heckeIsotypic_gamma1`'s "why the hypothesis is
+  the whole of `hL`" section is superseded;
+* sharpening that leaf to the single value `L(form i, 1) ≠ 0` is
+  therefore UNBLOCKED on the `Γ₁` side as well — it was the one half of
+  the sharpening still blocked after `X0.lean`'s pin landed on
+  2026-07-28.  It is deliberately NOT done in the edit that lands the
+  pin: two individually-correct edits to one leaf have made a statement
+  FALSE in this development before, and the sharpening is a cut-level
+  repair that deserves its own faithfulness audit;
+* `heckeModuli` makes this structure strictly harder to produce, and
+  that price is paid in the two leaves below that construct it —
+  `exists_heckeAction_isotypicQuotients_gamma1` and
+  `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1`.  Note
+  that the same field also REMOVES the reason those two had to be cut
+  differently from `X0.lean`'s three: the `Γ₁` factor-building leaf was
+  forced to quantify `T` existentially precisely because there was no pin
+  to make a `T`-as-hypothesis form non-vacuous, and there now is one.
+  Re-unifying the two cuts is a further refactor and is not done here.
+
+**What the pin still does not do**: it says nothing about `T n` for `n`
+not prime or `n ∣ N`, nothing about the diamond operators, and it does
+not by itself prove `T` unique — see the last paragraph of the
+subsection heading. -/
 structure IsHeckeIsotypicDecompositionGamma1 (N : ℕ)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (h : ModularLevelShape.IsCompactification .gamma1 N strX strY jY) {jstr : J ⟶ SpecQ}
@@ -7557,6 +8287,16 @@ structure IsHeckeIsotypicDecompositionGamma1 (N : ℕ)
   T_comp : ∀ n, T n ≫ jstr = jstr
   /-- they are homomorphisms -/
   T_add : ∀ n, IsAdditiveOn ab ab (T n) (T_comp n)
+  /-- **they are the genuine Hecke correspondences** — `T ℓ` acts on
+  Abel–Jacobi images by `(E, P) ↦ ∑_D (E/D, P + D)` at every prime
+  `ℓ ∤ N` (added 2026-07-29; this is what excludes the `N = 37`
+  eigen-system swap, and it is the `Γ₁` counterpart of
+  `IsHeckeIsotypicDecomposition.heckeModuli`).  `h.some` is the choice of
+  compactification datum forced by `h` being a `Prop`-truncation here
+  where `X0.lean`'s structure carries the datum; the alternatives, and
+  why a universal quantifier over the datum would risk emptiness, are
+  audited on `IsModularHeckeActionGamma1`. -/
+  heckeModuli : IsModularHeckeActionGamma1 N h.some jac T T_comp
   /-- the index set of the isogeny factors -/
   idx : Type
   /-- there are finitely many factors -/
@@ -7616,8 +8356,282 @@ structure IsHeckeIsotypicDecompositionGamma1 (N : ℕ)
   finite_ker : {x : RelPoint jstr (𝟙 SpecQ) |
       ∀ i, RelPoint.post (u i) (u_comp i) x = (abA i).zero (𝟙 SpecQ)}.Finite
 
+/-! #### The `Γ₁` moduli pin for the Hecke operators — HOISTED ABOVE
+
+**RELEASE-19 MERGE NOTE.**  `IsGamma1Isogeny` and `IsModularHeckeActionGamma1`
+were written TWICE, independently, a day apart and in two different places in
+this file: on 2026-07-28 here, and on 2026-07-29 in the
+`#### The moduli pin for the Hecke operators on `Y_1(N)`` subsection above.  The
+two definitions are the same object — they differ only in the name of the level
+field (`level` vs `map_sec`) and in a binder name — but two declarations of one
+name in one namespace is a `has already been declared` error, and no textual
+merge can see it because the regions do not overlap.
+
+The 2026-07-28 pair (the released one, with the fuller docstrings) is kept and
+now stands ABOVE, at the earlier subsection's position, because
+`IsHeckeIsotypicDecompositionGamma1.heckeModuli` — added on 2026-07-29 — refers
+to `IsModularHeckeActionGamma1` and is declared between the two sites.  Nothing
+is left here.
+
+The paragraph this subsection used to carry, that
+`IsHeckeIsotypicDecompositionGamma1` "does **not** acquire a `heckeModuli` field
+here", was true when written and is now STALE: that field exists. -/
+
+/-- **THE `Γ₁` HECKE CORRESPONDENCE, AS A NATURAL FAMILY ON POINTS**
+(sorry leaf, new 2026-07-28) — the geometric half of
+`exists_modularHeckeAction_gamma1` below, and the `Γ₁` transport of
+`X0.lean`'s `exists_heckeCorrespondenceFamily`.
+
+TRUE, and the witness is `c := RelPoint.post (T_ℓ) _ ∘ jac.aj` for the
+genuine `T_ℓ`: that family is natural because `aj` is and `RelPoint.post`
+commutes with `RelPoint.pre`, it sends `o` to `0` because `aj o = 0` and
+`T_ℓ` is a homomorphism, and the recursion clause is the classical
+description of `T_ℓ` on divisor classes.
+
+**WHY THE STATEMENT IS ON POINTS AND NOT ON A CORRESPONDENCE SCHEME**,
+inherited verbatim from the `Γ₀` leaf: the correspondence `X_1(N, ℓ)` with
+its two degeneracy maps, and the trace of a finite flat correspondence on
+the functor of points, exist neither here, nor in mathlib at this pin, nor
+in `~/cs/FLT`.  The point-level form is writable today and is the exact
+input `IsJacobianOf.universal` consumes — which is what makes
+`exists_modularHeckeAction_gamma1` below a PROOF rather than a second
+leaf.
+
+**WHAT IS `Γ₁`-SPECIFIC HERE, AND IT IS ONLY THE LEVEL STRUCTURE.**  The
+`Γ₀` leaf's own "WHAT REMAINS GENUINELY MISSING" paragraph — the quotient
+datum over a general base — transfers unchanged, because the obstruction
+is the quotient of the CURVE and not of the level structure: once `E/D`
+exists as an elliptic scheme, the `Γ₁`-structure on it is `d.pt.sec ≫ map`,
+which needs nothing further.  So this leaf is, if anything, marginally
+easier than its `Γ₀` sibling, and the two should be taken together by
+whoever builds the correspondence.
+
+**AXIS NOT SEARCHED**, recorded so the next owner does not assume it was:
+the complex-analytic route, where `c` comes from the action of
+`Γ₁(N)`-double cosets on `H₁(Γ₁(N)\ℍ*, ℤ)`.  Everything above is the
+algebraic-moduli axis. -/
+theorem exists_heckeCorrespondenceFamilyGamma1 (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (H : IsX1Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) :
+    ∃ c : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ), RelPoint strX g → RelPoint jstr g,
+      (∀ {T' T : Scheme.{0}} (p : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
+          (hg : p ≫ g = g') (x : RelPoint strX g),
+          c g' (RelPoint.pre p hg x) = RelPoint.pre p hg (c g x)) ∧
+        c (𝟙 SpecQ) o = ab.zero (𝟙 SpecQ) ∧
+        ∀ (d : Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) (m : ℕ)
+          (dq : Fin m → Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+          (iso : ∀ k, IsGamma1Isogeny N ℓ d (dq k)),
+          (∀ k k' : Fin m,
+            (∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+              RelPoint.LiesIn (iso k).ker.ι x ↔ RelPoint.LiesIn (iso k').ker.ι x) → k = k') →
+          (∀ D : CyclicSubgroupOfOrder d.ab ℓ, ∃ k : Fin m,
+            ∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+              RelPoint.LiesIn D.ι x ↔ RelPoint.LiesIn (iso k).ker.ι x) →
+          letI := ab.addCommGroup (specAlgClos ℚ)
+          c (specAlgClos ℚ)
+              (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) d))
+            = ∑ k : Fin m, jac.aj (specAlgClos ℚ)
+                (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) (dq k))) :=
+  sorry
+
+/-- **THE HECKE CORRESPONDENCE ACTS ON `J_1(N)`** (**PROVEN 2026-07-28**,
+over the single leaf `exists_heckeCorrespondenceFamilyGamma1` above) — the
+`Γ₁` transport of `X0.lean`'s PROVEN `exists_modularHeckeAction`, and the
+half of `exists_heckeAction_isotypicQuotients_gamma1` that carries the
+*construction* of `T_ℓ`.
+
+**THE PROOF is the `Γ₀` one line for line, and none of it is geometry** —
+which is the point, and the reason this transport is worth making rather
+than leaving the operator layer inside the leaf below:
+
+* `IsJacobianOf.universal`, applied to the natural family `c` supplied by
+  the leaf, returns `u : J ⟶ J` with `u ≫ jstr = jstr` and the Albanese
+  equation `RelPoint.post u _ ∘ aj = c`;
+* `isAdditiveOn_of_post_zero` — relative RIGIDITY, PROVEN in `X0.lean` —
+  upgrades `u` to a homomorphism from the single equation
+  `RelPoint.post u _ 0 = 0`, which is the leaf's base-point clause read
+  through `aj_base` and the Albanese equation.  This is why the leaf does
+  not have to say anything about additivity;
+* the family `T : ℕ → (J ⟶ J)` is assembled pointwise, taking `u` at the
+  primes `ℓ ∤ N` — the only arity `IsModularHeckeActionGamma1` constrains
+  — and `𝟙 J` at every other `n`.  `𝟙 J` satisfies `T_comp` and `T_add`,
+  and using it at the UNCONSTRAINED arities is legitimate precisely
+  because the pin is a statement about primes `ℓ ∤ N` only.
+
+So on the `Γ₁` side too the whole operator-level layer is now formal, and
+the open geometric work is exactly the correspondence on points. -/
+theorem exists_modularHeckeAction_gamma1 (N : ℕ)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (H : IsX1Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) :
+    ∃ (T : ℕ → (J ⟶ J)) (T_comp : ∀ n, T n ≫ jstr = jstr),
+      (∀ n, IsAdditiveOn ab ab (T n) (T_comp n)) ∧
+        IsModularHeckeActionGamma1 N H jac T T_comp := by
+  classical
+  -- One endomorphism per natural number, with the pin attached at exactly the
+  -- arities `IsModularHeckeActionGamma1` constrains: the Albanese image of the
+  -- correspondence family at a prime `n ∤ N`, and `𝟙 J` at every other `n`.
+  have key : ∀ n : ℕ, ∃ u : J ⟶ J, ∃ hu : u ≫ jstr = jstr,
+      IsAdditiveOn ab ab u hu ∧
+      (n.Prime → ¬ n ∣ N →
+        ∀ (d : Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) (m : ℕ)
+          (dq : Fin m → Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+          (iso : ∀ k, IsGamma1Isogeny N n d (dq k)),
+          (∀ k k' : Fin m,
+            (∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+              RelPoint.LiesIn (iso k).ker.ι x ↔ RelPoint.LiesIn (iso k').ker.ι x) → k = k') →
+          (∀ D : CyclicSubgroupOfOrder d.ab n, ∃ k : Fin m,
+            ∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+              RelPoint.LiesIn D.ι x ↔ RelPoint.LiesIn (iso k).ker.ι x) →
+          letI := ab.addCommGroup (specAlgClos ℚ)
+          RelPoint.post u hu
+              (jac.aj (specAlgClos ℚ)
+                (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) d)))
+            = ∑ k : Fin m, jac.aj (specAlgClos ℚ)
+                (RelPoint.post jY H.comm
+                  (H.coarse.classify (specAlgClos ℚ) (dq k)))) := by
+    intro n
+    by_cases hn : n.Prime ∧ ¬ n ∣ N
+    · obtain ⟨c, hnat, hzero, hrec⟩ :=
+        exists_heckeCorrespondenceFamilyGamma1 N n hn.1 hn.2 H jac
+      obtain ⟨u, ⟨hu, hueq⟩, -⟩ := jac.universal ab c hnat hzero
+      -- the Albanese equation, read as an equation of relative points
+      have hpost : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
+          RelPoint.post u hu (jac.aj g x) = c g x := fun g x =>
+        Subtype.ext (hueq g x).symm
+      refine ⟨u, hu, ?_, ?_⟩
+      · -- relative rigidity: `u` sends `0` to `0`, hence is a homomorphism
+        refine isAdditiveOn_of_post_zero ab ab hu ?_
+        rw [← jac.aj_base, hpost (𝟙 SpecQ) o, hzero, jac.aj_base]
+      · intro _ _ d m dq iso hinj hsurj
+        rw [hpost (specAlgClos ℚ) _]
+        exact hrec d m dq iso hinj hsurj
+    · exact ⟨𝟙 J, Category.id_comp jstr, fun x y => by
+        simp only [RelPoint.post, Category.comp_id, Subtype.coe_eta],
+        fun hp hd => absurd ⟨hp, hd⟩ hn⟩
+  choose T T_comp T_add T_pin using key
+  exact ⟨T, T_comp, T_add, fun ℓ hℓ hℓN => T_pin ℓ hℓ hℓN⟩
+
+/-- **SHIMURA'S `A_f` FOR `Γ₁(N)`: EVERY WEIGHT-TWO EIGENFORM OF LEVEL `N`
+AND ANY NEBENTYPUS CUTS OUT AN ISOTYPIC QUOTIENT OF `J_1(N)`** (sorry leaf,
+new 2026-07-28) — the "BUILD one factor" half of
+`exists_heckeAction_isotypicQuotients_gamma1` below, and the `Γ₁` transport
+of `X0.lean`'s `exists_isotypicQuotient_of_isWeightTwoEigenform`.
+
+TRUE.  For a NEWFORM `g` of level `M ∣ N` and nebentypus `χ` this is
+Shimura §7.5: `I_g := ker(𝕋 → O_g)` is the annihilator ideal of the
+eigen-system and `A_g := J_1(M)/I_g J_1(M)` is an abelian variety over `ℚ`
+of dimension `[K_g : ℚ]` receiving a surjection from `J_1(M)`, on which
+`T_n` acts as multiplication by `a_n(g)`; composing with a degeneracy map
+`J_1(N) ↠ J_1(M)` gives the surjection from `J_1(N)`.  For a general
+eigenform — a stabilization or an oldform — the ANEMIC system equals that
+of its underlying newform, and `isotypic` quantifies only over `n` coprime
+to `N`, so the same `A_g` serves.  Diamond–Shurman §6.6 (stated for
+`X_1(N)` in the source); Cornell–Silverman–Stevens Ch. V.
+
+* `integral` is Shimura's theorem that the `a_n` are algebraic integers,
+  and it is the one field with a purely geometric proof available here:
+  `a_n` is an eigenvalue of an endomorphism of an abelian variety.
+* `nontriv` is `dim A_g = [K_g : ℚ] ≥ 1`.
+
+**`hmod` IS LOAD-BEARING — WITHOUT IT THIS LEAF IS FALSE**, and this is the
+whole reason the pin above had to be built before the cut could be made.
+Take `T n := 𝟙 J`.  Every other hypothesis still holds and the conclusion
+fails: `equivariant` forces `S n = 𝟙 A` on the image of the surjection
+`u`, hence `S n = 𝟙 A`; `isotypic` then demands that `minpoly ℤ (a n)`
+annihilate the IDENTITY on `A`, i.e. `P(1) • x = 0` at every point, which
+for `nontriv`-nontrivial `A` forces `minpoly ℤ (a n) (1) = 0`, i.e.
+`a n = 1` for every `n` coprime to `N` — false already at `N = 11`,
+`a₂ = −2`.  This is exactly the refutation
+`IsHeckeIsotypicDecompositionGamma1`'s docstring records, and it is why
+the leaf below quantifies `T` existentially: this leaf may take `T` as a
+hypothesis ONLY because `hmod` accompanies it.
+
+**`hN : N ≠ 0` IS LOAD-BEARING — WITHOUT IT THIS LEAF IS FALSE**, and the
+witness is `X0.lean`'s, transferred a fortiori.  At level `0` every prime
+divides `N`, so `IsWeightTwoEigenformOn (Gamma1GL 0) 0 χ f a`'s `hecke`
+recursion is VACUOUS and the nebentypus is unconstrained; the
+transcendental system `a (2 ^ k) = π ^ k`, `a n = 0` otherwise, carried by
+`g τ = ∑_{k ≥ 1} π ^ k q ^ (2 ^ k)` (convergent on all of `ℍ` because
+`2 ^ k` outruns `π ^ k`), is an admissible eigen-system, and
+`IsIsotypicQuotient.integral` fails outright for it.  `Gamma1GL 0` is
+smaller than `Gamma0GL 0` — it is `⟨T⟩` without `−I` — so the witness
+transfers a fortiori.
+
+**THE HONEST CAVEAT ON `hmod`, and it is a graceful degradation.**  The
+non-vacuity of `IsModularHeckeActionGamma1` as a Lean statement is not
+proven (see its docstring: `IsGamma1Isogeny` is not yet known to be
+inhabited at the scheme level).  Were it formally vacuous, `hmod` would
+carry no information and this leaf would be exactly as hard as the
+undecomposed node `exists_heckeAction_isotypicQuotients_gamma1` and no
+harder.  So the cut cannot make anything worse, and nothing false is
+asserted either way.
+
+**WHAT REMAINS GENUINELY MISSING**, re-checked 2026-07-28 and identical to
+the `Γ₀` list plus one: no Hecke algebra acting on a Jacobian, no `A_g`,
+no old/new decomposition of `S₂(Γ₁(N))`, and no isogeny theory for
+abelian SCHEMES here (`Modularity/AbelianSchemeIsogeny.lean` supplies
+`[n]` and its flatness, nothing more) — in this project, in mathlib at
+this pin, or in `~/cs/FLT`.  The `Γ₁`-specific extra is only the
+nebentypus decomposition of `S₂(Γ₁(N))` under `(ℤ/N)ˣ`, and this leaf
+receives `χ` rather than having to produce that decomposition.
+
+## ⚠ FALSITY AUDIT — THIS LEAF IS FALSE AS STATED (recorded at the release-18 merge)
+
+The caveat above ("nothing false is asserted either way") is **wrong**, and it is
+wrong for a reason discovered on the `Γ₀` side *after* this cut was written.  The
+`Γ₁` transport inherited the `Γ₀` defect verbatim.
+
+**The defect is an ARITY GAP.**  `IsModularHeckeActionGamma1` is
+`∀ ℓ, ℓ.Prime → ¬ ℓ ∣ N → …` — it constrains `T` at **primes `ℓ ∤ N` only**.
+`IsIsotypicQuotient.isotypic` and `.equivariant` constrain `T n` at **every `n`
+coprime to `N`**.  `T` is an INPUT here, so a caller may hand over a family that
+is genuine where `hmod` can see and junk where it cannot — and
+`exists_modularHeckeAction_gamma1` **constructs exactly such a family**: its own
+proof takes `𝟙 J` at every non-prime arity.
+
+**Witness** (the `Γ₀` one, which transfers because nothing in it mentions the
+level structure).  At `n = 1`: `1` is not prime, so `hmod` says nothing about
+`T 1`; take `T 1 := 0`.  `minpoly ℤ (1 : ℂ) = X − 1`, so `isotypic` at `n = 1`
+forces the quotient map `u` to satisfy `S 1 = id` on its image while
+`equivariant` forces `u = 0`, contradicting `nontriv`.  So `IsIsotypicQuotient`
+is uninhabited at that `T` and the conclusion `Nonempty …` is false.  A
+level-dependent witness is `N = 37`, `n = 4`, using the family
+`exists_modularHeckeAction_gamma1` itself produces.
+
+**Do NOT prove this leaf, and do not build on it.**  The repair is the one
+prescribed for the `Γ₀` cluster and must be made on BOTH sides by ONE owner: add
+to `IsModularHeckeAction` and `IsModularHeckeActionGamma1` the relations that
+determine an anemic system from its primes —
+`T 1 = 𝟙 J`, `Nat.Coprime m n → T (m * n) = T m ≫ T n`, and
+`T (ℓ^(k+2)) = T ℓ ≫ T (ℓ^(k+1)) − ℓ • T (ℓ^k)`.  All the affected statements
+then become true and no consumer's statement changes; the honest cost is that
+`exists_modularHeckeAction` and `exists_modularHeckeAction_gamma1` revert to
+leaves, since `𝟙 J` off the pinned arities no longer satisfies the pin.  The
+cheaper alternative — restricting `IsIsotypicQuotient.isotypic`/`.equivariant`
+to primes `ℓ ∤ N` — is a change to a structure shared with `X0.lean` and must
+likewise be made once, for both sides. -/
+theorem exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1 (N : ℕ) (hN : N ≠ 0)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (H : IsX1Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (T : ℕ → (J ⟶ J))
+    (T_comp : ∀ n, T n ≫ jstr = jstr) (T_add : ∀ n, IsAdditiveOn ab ab (T n) (T_comp n))
+    (hmod : IsModularHeckeActionGamma1 N H jac T T_comp)
+    (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ)
+    (hf : IsWeightTwoEigenformOn (Gamma1GL N) N χ f a) :
+    Nonempty (IsIsotypicQuotient ab T N a) :=
+  sorry
+
 /-- **SHIMURA'S `A_f` FOR `Γ₁(N)`, TOGETHER WITH THE HECKE ACTION IT ACTS
-THROUGH** (sorry leaf, new 2026-07-28) — the "BUILD the factors" half of
+THROUGH** (**PROVEN 2026-07-28**, over the two leaves
+`exists_modularHeckeAction_gamma1` and
+`exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` immediately
+above; a bare sorry leaf from earlier the same day until then) — the
+"BUILD the factors" half of
 the cut of `exists_heckeIsotypicDecomposition_gamma1` below, and the
 `Γ₁` transport of `X0.lean`'s pair
 `exists_modularHeckeAction` / `exists_isotypicQuotient_of_isWeightTwoEigenform`.
@@ -7631,23 +8645,22 @@ is nothing `Γ₀`-specific in it to mirror.  `N` enters only through
 the `Γ₁` structure above uses.  This is why the `Γ₁` side of the cut costs
 one theorem rather than one theorem plus a 15-field structure.
 
-**WHY THE HECKE ACTION IS PRODUCED HERE AND NOT SEPARATELY — the one
-place this cut MUST differ from `X0.lean`'s.**  On the `Γ₀` side the two
-halves are separable because `IsHeckeIsotypicDecomposition.T` is PINNED by
-its `heckeModuli` field (`IsModularHeckeAction`, added 2026-07-28): the
-factor-building leaf may therefore take `T` as a HYPOTHESIS, and that
-hypothesis is not vacuous because `hmod` fails for `T n := 𝟙 J`.
+**WHY THE HECKE ACTION IS PRODUCED IN THIS STATEMENT AND NOT IN A
+SEPARATE ONE — the one place this STATEMENT must differ from
+`X0.lean`'s.**  On the `Γ₀` side the two halves are separable at the level
+of the parent structure because `IsHeckeIsotypicDecomposition.T` is PINNED
+by its `heckeModuli` field (`IsModularHeckeAction`, added 2026-07-28).
 `IsHeckeIsotypicDecompositionGamma1` carries no such field — see its
 docstring, "WHAT IS NOT PINNED, and it is the crux" — so a `Γ₁` leaf
-taking `T` as an input would be **FALSE**, by exactly the refutation
-recorded on the `Γ₀` factor leaf: with `T n := 𝟙 J`, `equivariant` forces
-`S n = 𝟙 A` on the image of the surjection `u`, `isotypic` then demands
-`minpoly ℤ (a n)` to annihilate the identity, and for `nontriv`-nontrivial
-`A` that forces `a n = 1` for every `n` coprime to `N`, which already
-fails at `N = 11`, `a₂ = −2`.  Quantifying `T` existentially — one action
-serving every factor — is what keeps the statement true, and it is the
-whole reason this leaf is the pair of `X0.lean`'s two rather than one of
-them.
+taking a BARE `T` as an input would be **FALSE**, by exactly the
+refutation recorded on the `Γ₀` factor leaf: with `T n := 𝟙 J`,
+`equivariant` forces `S n = 𝟙 A` on the image of the surjection `u`,
+`isotypic` then demands `minpoly ℤ (a n)` to annihilate the identity, and
+for `nontriv`-nontrivial `A` that forces `a n = 1` for every `n` coprime
+to `N`, which already fails at `N = 11`, `a₂ = −2`.  **Quantifying `T`
+existentially is what keeps THIS statement true, and it is why this
+statement is the pair of `X0.lean`'s two rather than one of them.  That
+has not changed and the statement below is untouched.**
 
 Consequence worth stating, because it is the price of the missing pin:
 this leaf is strictly harder than `exists_isotypicQuotient_of_isWeightTwoEigenform`
@@ -7691,6 +8704,46 @@ these statements in the same edit: two individually-correct edits to one
 leaf have made a statement false in this development before, which is
 precisely what happened on the `Γ₀` side here.
 
+**WHAT CHANGED 2026-07-28 (`flt-lean-333`): THE PROOF, VIA A `Γ₁` PIN
+BUILT IN THIS FILE.**  The paragraph that used to stand here concluded
+that the `Γ₁` side could not be cut the way the `Γ₀` side is, and
+prescribed as the repair "a moduli description of `T_ℓ` on `Y_1(N)` in
+terms of `(E, P) ↦ ∑_D (E/D, P + D)`".  That prescription was carried out
+— `IsGamma1Isogeny` and `IsModularHeckeActionGamma1` above — so the cut is
+now the `Γ₀` one: `exists_modularHeckeAction_gamma1` (PROVEN over the
+geometric leaf `exists_heckeCorrespondenceFamilyGamma1`) supplies `T`
+together with the pin, `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1`
+consumes both, and the assembly below is two `obtain`s.  THIS statement's
+own `T` stays existentially quantified and its text is unchanged, so this
+statement remains immune.
+
+**⚠ MERGE-TIME FALSITY WARNING, RELEASE 18 — AND IT APPLIES TO THE NEW
+SUB-LEAF, NOT TO THIS STATEMENT.**  Making the `Γ₁` cut identical to the
+`Γ₀` one also imported the `Γ₀` cut's DEFECT, which was refuted after that
+branch was written.  `IsModularHeckeActionGamma1` constrains `T` only at
+**primes `ℓ ∤ N`** — its body is `∀ ℓ, ℓ.Prime → ¬ ℓ ∣ N → …`, and
+`exists_modularHeckeAction_gamma1`'s proof deliberately takes `𝟙 J` at
+every other arity — while `IsIsotypicQuotient`'s `isotypic` and
+`equivariant` constrain **every `n` coprime to `N`**.  So
+`exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1`, which takes
+`T` and `hmod` as INPUTS, is FALSE for exactly the reason
+`exists_isotypicQuotient_of_isWeightTwoEigenform` is: see that leaf's own
+FALSITY AUDIT and the `N = 37` / `n = 4` witness.  **Repair the two sides
+together, under ONE owner** — add to both pins the relations that
+determine an anemic system from its primes (`T 1 = 𝟙 J`,
+`Nat.Coprime m n → T (m * n) = T m ≫ T n`,
+`T (ℓ^(k+2)) = T ℓ ≫ T (ℓ^(k+1)) − ℓ • T (ℓ^k)`), at the honest cost that
+`exists_modularHeckeAction` / `exists_modularHeckeAction_gamma1` revert to
+leaves.  Do NOT repair one side alone.
+
+**WHAT IS DELIBERATELY STILL NOT DONE:**
+`IsHeckeIsotypicDecompositionGamma1` has **not** gained a `heckeModuli`
+field, and `isTorsion_factor_of_heckeIsotypic_gamma1` is untouched.  That
+sharpening is a cut-level repair of the STRUCTURE, it needs its own
+faithfulness audit, and it is UNBLOCKED rather than done.  The `N = 37`
+eigen-system swap therefore still inhabits
+`IsHeckeIsotypicDecompositionGamma1`.
+
 **`hN : N ≠ 0` IS LOAD-BEARING — WITHOUT IT THIS LEAF IS FALSE**, and the
 witness is `X0.lean`'s, unchanged.  At level `0` every prime divides `N`,
 so `IsWeightTwoEigenformOn (Gamma1GL 0) 0 χ f a`'s `hecke` recursion is
@@ -7726,13 +8779,322 @@ theorem exists_heckeAction_isotypicQuotients_gamma1 (N : ℕ) (hN : N ≠ 0)
       (∀ n, IsAdditiveOn ab ab (T n) (T_comp n)) ∧
         ∀ (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ),
           IsWeightTwoEigenformOn (Gamma1GL N) N χ f a →
-            Nonempty (IsIsotypicQuotient ab T N a) :=
+            Nonempty (IsIsotypicQuotient ab T N a) := by
+  -- `h` is `Nonempty (IsX1Compactification …)` and the goal is a `Prop`, so the
+  -- classifying DATUM the pin needs is recovered by `Nonempty` elimination.
+  obtain ⟨H⟩ := h
+  obtain ⟨T, T_comp, T_add, hmod⟩ := exists_modularHeckeAction_gamma1 N H jac
+  exact ⟨T, T_comp, T_add, fun χ f a hf =>
+    exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1 N hN H jac T T_comp T_add hmod
+      χ f a hf⟩
+
+/-! ### The level-`0` degeneracy of `Γ₁` Eichler–Shimura
+
+**SETTLED 2026-07-28, and the answer is the unwelcome one.**  The leaf
+`exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` below was
+cut carrying the whole `N = 0` obligation, with a heading recording that
+— unlike its `Γ₀` sibling — the obligation is NOT discharged by an
+emptiness lemma, and naming the check that would settle it: *is
+`IsCoarseModuliY1 0 strY` strong enough to contradict `X` being a
+curve?*
+
+The check was run.  **It is not.**  `IsCoarseModuliY1` has exactly three
+fields — `classify`, `classify_natural`, `universal` — and its own
+docstring says so in terms: "bijectivity on geometric points is
+deliberately omitted".  There is no clause that can see that the
+`ℚ̄`-points of `[Γ₁(0)]` are pairs `(E, P)` with `P` of infinite order;
+initiality alone constrains nothing about cardinality.  So the `Γ₀`
+route (`isEmpty_of_isCoarseModuliY0_zero`, which needs `Y_0(0) = ∅`) has
+no `Γ₁` analogue, and none is reachable from this structure.
+
+**What IS provable is the opposite, and it is what forces the repair
+below**: `IsHeckeIsotypicDecompositionGamma1 0 h jac` is EMPTY, for every
+`h` and `jac` — `isEmpty_isHeckeIsotypicDecompositionGamma1_zero`.  So at
+`N = 0` the leaf's conclusion is `Nonempty ∅`, and the leaf is provable
+there ONLY by refuting its geometric hypotheses, which the paragraph
+above says cannot be done inside this vocabulary.  A statement in that
+position is not "open"; it is a statement no prover can honestly close.
+Hence `hN : N ≠ 0` on the leaf, on
+`exists_heckeIsotypicDecomposition_gamma1`, and NOT one step further —
+see below.
+
+**THE REFUTATION, and note it needs no transcendence.**  The obstruction
+is a COUNTING one, which is why it is robust.  `Gamma1 0` is
+`{[[1, b], [0, 1]] : b ∈ ℤ} = ⟨T⟩` (mathlib's `Gamma1_mem` at `N = 0`
+reads the congruences in `ZMod 0 = ℤ`, i.e. as equations — and note it
+does NOT contain `−I`).  For a level-`0` eigen-system:
+
+* `hecke` is VACUOUS, since its hypothesis is `¬ p ∣ 0` and every `p`
+  divides `0`.  The nebentypus is therefore unconstrained too, and `1`
+  serves.
+* `atkin` is NOT vacuous and is the only surviving constraint: `p ∣ 0`
+  holds for every prime, so `atkin` says `a (n * p) = a p * a n` at EVERY
+  prime — i.e. `a` is completely multiplicative, with the values `a p`
+  free.
+
+So `lacunaryTwoCoeff c` below — `c ^ k` at `n = 2 ^ k`, `0` off the
+powers of `2` — is admissible for EVERY `c : ℂ`, and these are pairwise
+distinct (they differ at `n = 2`, where the value is `c`).  `cover`
+demands a factor for each, `fintypeIdx` says there are finitely many
+factors, and `ℂ` is infinite.  That is the whole proof.
+
+**Why the counting argument and not the integrality one.**  The sibling
+`exists_heckeAction_isotypicQuotients_gamma1`'s `hN` is justified by a
+transcendental system breaking `IsIsotypicQuotient.integral`, and that
+argument would work here too against `integral`.  It is not used, for two
+reasons: mathlib at this pin has no transcendence of `π` (checked
+2026-07-28 — `Real.transcendental_pi` does not exist), and the counting
+argument does not care, since it never evaluates a coefficient beyond
+`n = 2`.  Robustness: the refutation survives DELETING the `integral`
+field, and survives replacing `ℂ` by any infinite coefficient ring.
+
+**WHERE THE `N = 0` CASE ACTUALLY GOES, and why the cascade stops.**  It
+is discharged one level up, at
+`isTorsion_jacobian_of_lFunction_ne_zero_gamma1`, whose analytic
+hypothesis `hL` is CONTRADICTORY at `N = 0` —
+`not_lFunctionHypothesis_gamma1GL_zero`.  Take `c = 8`: the Dirichlet
+series `∑ a n n^{-s}` is `∑_k 8^k 2^{-ks}`, whose terms have modulus
+`2^{k(3 − re s)} ≥ 1` throughout the strip `2 < re s < 3`, so it is not
+summable there and `LSeries` takes its junk value `0`.  `IsLFunctionOf`
+then forces the entire `L` to vanish on a nonempty open set, hence
+identically (the same identity-theorem step as
+`isLFunctionOf_apply_eq`), hence `L 1 = 0` against `L 1 ≠ 0`.
+
+That is why `hN` is added to exactly two statements and stops there:
+`isTorsion_jacobian_of_lFunction_ne_zero_gamma1` keeps its signature, and
+so the SHAPE-FREE wrapper
+`isTorsion_jacobian_of_lFunction_ne_zero_of_levelShape` — shared with
+`Γ₀`, and with consumers outside this file — is untouched.
+
+**COROLLARY WORTH RECORDING FOR THE `Γ₀` SIDE.**  Nothing in the counting
+argument is `Γ₁`-specific except which group carries the cusp form.  The
+same `atkin`-at-every-prime degeneracy holds for `Gamma0GL 0`, so
+`IsHeckeIsotypicDecomposition 0 h jac` is presumably empty too; there it
+does no damage only because `isEmpty_of_isCoarseModuliY0_zero`
+independently kills the hypotheses.  A `Γ₀` reader should not read that
+lemma as evidence that the `Γ₀` structure is inhabited at `N = 0`. -/
+
+/-- **The completely multiplicative eigen-system supported on the powers
+of `2`**: `lacunaryTwoCoeff c (2 ^ k) = c ^ k`, and `0` at every `n` that
+is not a power of `2`.
+
+`2 ^ Nat.log 2 n = n` is the power-of-two test (`Nat.log 2 0 = 0` and
+`2 ^ 0 = 1 ≠ 0`, so `n = 0` is correctly sent to `0`), and `Nat.log 2 n`
+is then the exponent.
+
+Used ONLY as the level-`0` witness of the section docstring above: at
+`N = 0` the `hecke` field of `IsWeightTwoEigenformOn` is vacuous and
+`atkin` reduces to complete multiplicativity, which this satisfies for
+every `c`. -/
+noncomputable def lacunaryTwoCoeff (c : ℂ) (n : ℕ) : ℂ :=
+  if 2 ^ Nat.log 2 n = n then c ^ Nat.log 2 n else 0
+
+theorem lacunaryTwoCoeff_zero (c : ℂ) : lacunaryTwoCoeff c 0 = 0 := by
+  simp [lacunaryTwoCoeff]
+
+theorem lacunaryTwoCoeff_one (c : ℂ) : lacunaryTwoCoeff c 1 = 1 := by
+  simp [lacunaryTwoCoeff]
+
+theorem lacunaryTwoCoeff_pow (c : ℂ) (k : ℕ) : lacunaryTwoCoeff c (2 ^ k) = c ^ k := by
+  simp [lacunaryTwoCoeff, Nat.log_pow (b := 2) (by norm_num)]
+
+/-- The value at `n = 2` is `c`; this is what makes the family
+`c ↦ lacunaryTwoCoeff c` injective, and so what the counting refutation
+runs on. -/
+theorem lacunaryTwoCoeff_two (c : ℂ) : lacunaryTwoCoeff c 2 = c := by
+  simpa using lacunaryTwoCoeff_pow c 1
+
+theorem lacunaryTwoCoeff_eq_zero_of_odd_prime_dvd {c : ℂ} {m : ℕ} {p : ℕ}
+    (hp : p.Prime) (hp2 : p ≠ 2) (hdvd : p ∣ m) : lacunaryTwoCoeff c m = 0 := by
+  rw [lacunaryTwoCoeff, if_neg]
+  intro hpow
+  have hd : p ∣ 2 ^ Nat.log 2 m := by rw [hpow]; exact hdvd
+  exact hp2 ((Nat.prime_dvd_prime_iff_eq hp Nat.prime_two).1
+    (Nat.Prime.dvd_of_dvd_pow hp hd))
+
+/-- **Complete multiplicativity at every prime** — which is exactly the
+`atkin` field of `IsWeightTwoEigenformOn` at level `0`, since `p ∣ 0`
+holds for every `p`. -/
+theorem lacunaryTwoCoeff_atkin (c : ℂ) (p : ℕ) (hp : p.Prime) (n : ℕ) (hn : 0 < n) :
+    lacunaryTwoCoeff c (n * p) = lacunaryTwoCoeff c p * lacunaryTwoCoeff c n := by
+  rcases eq_or_ne p 2 with rfl | hp2
+  · have hlog : Nat.log 2 (n * 2) = Nat.log 2 n + 1 :=
+      Nat.log_mul_base (by norm_num) hn.ne'
+    rw [lacunaryTwoCoeff_two]
+    simp only [lacunaryTwoCoeff, hlog]
+    by_cases hcond : 2 ^ Nat.log 2 n = n
+    · rw [if_pos hcond, if_pos (by rw [pow_succ, hcond]), pow_succ]
+      ring
+    · rw [if_neg hcond, if_neg ?_, mul_zero]
+      intro hpow
+      rw [pow_succ] at hpow
+      exact hcond (Nat.eq_of_mul_eq_mul_right (by norm_num) hpow)
+  · rw [lacunaryTwoCoeff_eq_zero_of_odd_prime_dvd hp hp2 ⟨n, mul_comm n p⟩,
+      lacunaryTwoCoeff_eq_zero_of_odd_prime_dvd hp hp2 dvd_rfl, zero_mul]
+
+/-- **A weight-two cusp form for `Γ₁(0) = ⟨T⟩` with the lacunary
+`q`-expansion `∑_{k ≥ 0} c^k q^{2^k}`** (sorry leaf, NEW 2026-07-28) —
+the one analytic input of the level-`0` refutation above, and the ONLY
+new sorry this repair introduces.
+
+TRUE, and the argument is short enough to state completely.  `Gamma1 0`
+is `⟨T⟩` (see the section docstring), so mathlib's
+`CuspForm (Gamma1GL 0) 2` asks for exactly three things.
+
+* **Slash-invariance under `Gamma1GL 0`.**  Every element is
+  `[[1, b], [0, 1]]` with determinant `1`, so `f ∣[2] T^b (τ) = f (τ + b)`,
+  and a `q`-series in `q = exp (2πiτ)` is `1`-periodic.
+* **Holomorphy on `ℍ`.**  `‖c ^ k q ^ (2 ^ k)‖ = |c| ^ k e ^ (−2π 2^k y)`,
+  and `2 ^ k` in the exponent outruns `|c| ^ k` for EVERY `c`, uniformly
+  on `y ≥ y₀ > 0`.  So the series converges locally uniformly and the sum
+  is holomorphic; this also gives the `qExpansionSummable` clause.
+* **Vanishing at the cusps.**  Mathlib's cusp condition is
+  `zero_at_cusps' : ∀ {c}, IsCusp c Γ → c.IsZeroAt f k`, and
+  `IsCusp c 𝒢 := ∃ g ∈ 𝒢, g.IsParabolic ∧ g • c = c` — the fixed points
+  of the PARABOLIC elements of `𝒢`, and of `𝒢` only.  The parabolics of
+  `⟨T⟩` are the `T ^ b` with `b ≠ 0`, acting on `OnePoint ℝ` by
+  `x ↦ x + b`, whose only fixed point is `∞`.  **So `∞` is the one and
+  only cusp of `Gamma1GL 0`**, and the condition there is `f → 0` as
+  `im τ → ∞`, which the leading term `q` gives.
+
+**THE TRAP THIS TURNS ON, and it is why the leaf is TRUE rather than
+false.**  For a congruence subgroup of finite index the cusp set is all
+of `ℙ¹(ℚ)`, and this `f` would then have to vanish at `0` as well — which
+it does NOT: along the imaginary axis `τ → 0` one has `q → 1` and
+`∑ c ^ k q ^ (2 ^ k)` diverges for `|c| ≥ 1` (the series has the real line
+as a natural boundary).  `⟨T⟩` has INFINITE index in `SL(2, ℤ)`, is not a
+congruence subgroup in the finite-index sense, and mathlib's `IsCusp` is
+stated for a general `Subgroup (GL (Fin 2) ℝ)` precisely so that it does
+not quantify over a larger group.  A prover who reaches for
+`∀ A : SL(2, ℤ), IsZeroAtImInfty (f ∣[k] A)` — the shape mathlib's
+`CuspForm` had before it was generalised — will refute this leaf rather
+than prove it, and the refutation will be of the wrong statement.
+
+**WHAT IS MISSING** is only mathlib plumbing: locally-uniform convergence
+of a lacunary `q`-series and the resulting `MDiff`, plus the
+identification of the parabolic elements of `⟨T⟩`.  No theory. -/
+theorem exists_cuspForm_gamma1GL_zero_lacunary (c : ℂ) :
+    ∃ f : CuspForm (Gamma1GL 0) 2,
+      (∀ τ : UpperHalfPlane, f τ = ∑' n : ℕ, lacunaryTwoCoeff c (n + 1) *
+          Complex.exp (2 * Real.pi * Complex.I * (n + 1) * (τ : ℂ))) ∧
+        ∀ τ : UpperHalfPlane, Summable fun n : ℕ => lacunaryTwoCoeff c (n + 1) *
+          Complex.exp (2 * Real.pi * Complex.I * (n + 1) * (τ : ℂ)) :=
   sorry
 
+/-- **Every `c : ℂ` is the second coefficient of a level-`0` eigenform**
+(PROVEN 2026-07-28, over `exists_cuspForm_gamma1GL_zero_lacunary`) — the
+degeneracy of `IsWeightTwoEigenformOn` at `N = 0`, in the form the two
+refutations below consume.
+
+`hecke` is discharged by `absurd (dvd_zero p)`: its hypothesis is
+`¬ p ∣ 0`.  `atkin` is discharged by `lacunaryTwoCoeff_atkin`.  The
+nebentypus is `1`, and any other would serve equally — at `N = 0` no
+field mentions `χ`. -/
+theorem exists_isWeightTwoEigenformOn_gamma1GL_zero (c : ℂ) :
+    ∃ (χ : DirichletCharacter ℂ 0) (f : CuspForm (Gamma1GL 0) 2),
+      IsWeightTwoEigenformOn (Gamma1GL 0) 0 χ f (lacunaryTwoCoeff c) := by
+  obtain ⟨f, hq, hs⟩ := exists_cuspForm_gamma1GL_zero_lacunary c
+  exact ⟨1, f,
+    { qExpansion := hq
+      qExpansionSummable := hs
+      zero := lacunaryTwoCoeff_zero c
+      one := lacunaryTwoCoeff_one c
+      hecke := fun p _ hpd _ _ => absurd (dvd_zero p) hpd
+      atkin := fun p hp _ n hn => lacunaryTwoCoeff_atkin c p hp n hn }⟩
+
+/-- **THE `Γ₁` HECKE-ISOTYPIC DECOMPOSITION IS EMPTY AT LEVEL `0`**
+(PROVEN 2026-07-28) — the settling check the assembly leaf below asked
+for, with the answer that forces its `hN`.
+
+Pure counting, as the section docstring explains: `cover` demands an
+index for each of the pairwise-distinct systems `lacunaryTwoCoeff c`,
+`c : ℂ`, and `fintypeIdx` says the index type is finite.  No field beyond
+`cover`, `coeff` and `fintypeIdx` is touched, so the emptiness is not an
+artefact of `integral`, `isotypic` or `finite_ker`. -/
+theorem isEmpty_isHeckeIsotypicDecompositionGamma1_zero
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (h : ModularLevelShape.IsCompactification .gamma1 0 strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) :
+    IsEmpty (IsHeckeIsotypicDecompositionGamma1 0 h jac) := by
+  constructor
+  intro D
+  letI := D.fintypeIdx
+  have hcov : ∀ c : ℂ, ∃ i : D.idx, D.coeff i 2 = c := by
+    intro c
+    obtain ⟨χ, f, hf⟩ := exists_isWeightTwoEigenformOn_gamma1GL_zero c
+    obtain ⟨i, hi⟩ := D.cover χ f (lacunaryTwoCoeff c) hf
+    exact ⟨i, by rw [hi]; exact lacunaryTwoCoeff_two c⟩
+  choose g hg using hcov
+  exact _root_.not_injective_infinite_finite g
+    (fun c₁ c₂ hc => by rw [← hg c₁, ← hg c₂, hc])
+
+/-- **THE LEVEL-`0` ANALYTIC HYPOTHESIS IS CONTRADICTORY** (PROVEN
+2026-07-28) — what lets `isTorsion_jacobian_of_lFunction_ne_zero_gamma1`
+keep its signature while the two Eichler–Shimura statements below gain
+`hN : N ≠ 0`, so that the shape-free wrapper is untouched.
+
+At `c = 8` the Dirichlet series of `lacunaryTwoCoeff 8` is
+`∑_k 8^k 2^{-ks}`, whose `n = 2^k` terms have modulus
+`8^k / (2^k)^{re s} = 2^{k(3 − re s)} ≥ 1` on the whole strip
+`2 < re s < 3`.  A summable family tends to `0`, so the family is not
+summable and `LSeries` — a `tsum` — takes its junk value `0` there.
+`IsLFunctionOf.eq_lseries` then pins the entire `L` to `0` on a nonempty
+open set, and the identity theorem (the step
+`isLFunctionOf_apply_eq` runs) propagates that to all of `ℂ`. -/
+theorem not_lFunctionHypothesis_gamma1GL_zero
+    (hL : ∀ χ : DirichletCharacter ℂ 0,
+      ∀ (f : CuspForm (Gamma1GL 0) 2) (a : ℕ → ℂ),
+        IsWeightTwoEigenformOn (Gamma1GL 0) 0 χ f a →
+        ∃ L : ℂ → ℂ, IsLFunctionOf a L ∧ L 1 ≠ 0) : False := by
+  have hterm : ∀ (s : ℂ), s.re ≤ 3 → ∀ k : ℕ,
+      (1 : ℝ) ≤ ‖LSeries.term (lacunaryTwoCoeff 8) s (2 ^ k)‖ := by
+    intro s hs k
+    have hne : (2 : ℕ) ^ k ≠ 0 := by positivity
+    rw [LSeries.term_of_ne_zero hne, lacunaryTwoCoeff_pow, norm_div,
+      Complex.norm_natCast_cpow_of_pos (by positivity)]
+    have h8 : ‖(8 : ℂ) ^ k‖ = (8 : ℝ) ^ k := by rw [norm_pow]; norm_num
+    rw [h8, le_div_iff₀ (Real.rpow_pos_of_pos (by positivity) _), one_mul]
+    have hx : (1 : ℝ) ≤ ((2 ^ k : ℕ) : ℝ) := by
+      push_cast; exact one_le_pow₀ (by norm_num)
+    have h3 : ((2 ^ k : ℕ) : ℝ) ^ (3 : ℝ) = (8 : ℝ) ^ k := by
+      rw [show (3 : ℝ) = ((3 : ℕ) : ℝ) by norm_num, Real.rpow_natCast]
+      push_cast
+      rw [← pow_mul, show (8 : ℝ) = 2 ^ 3 by norm_num, ← pow_mul]
+      ring_nf
+    exact (Real.rpow_le_rpow_of_exponent_le hx hs).trans_eq h3
+  have hzero : ∀ s : ℂ, s.re ≤ 3 → LSeries (lacunaryTwoCoeff 8) s = 0 := by
+    intro s hs
+    refine tsum_eq_zero_of_not_summable ?_
+    intro hsum
+    have h0 : Filter.Tendsto (fun n => ‖LSeries.term (lacunaryTwoCoeff 8) s n‖)
+        Filter.atTop (nhds 0) := by simpa using hsum.tendsto_atTop_zero.norm
+    have hev : ∀ᶠ n in Filter.atTop, ‖LSeries.term (lacunaryTwoCoeff 8) s n‖ < 1 :=
+      h0.eventually_lt_const (by norm_num)
+    obtain ⟨M, hM⟩ := Filter.eventually_atTop.1 hev
+    exact absurd (hM (2 ^ M) (Nat.le_of_lt Nat.lt_two_pow_self)) (not_lt.2 (hterm s hs M))
+  obtain ⟨χ, f, hf⟩ := exists_isWeightTwoEigenformOn_gamma1GL_zero 8
+  obtain ⟨L, hLof, hne⟩ := hL χ f (lacunaryTwoCoeff 8) hf
+  refine hne ?_
+  have hopen : IsOpen {z : ℂ | 2 < z.re ∧ z.re < 3} :=
+    (isOpen_lt continuous_const Complex.continuous_re).inter
+      (isOpen_lt Complex.continuous_re continuous_const)
+  have hmem : (((5 / 2 : ℝ) : ℂ)) ∈ {z : ℂ | 2 < z.re ∧ z.re < 3} := by
+    constructor <;> · simp only [Complex.ofReal_re]; norm_num
+  have key : Set.EqOn L (fun _ => (0 : ℂ)) Set.univ := by
+    refine hLof.entire.eqOn_of_preconnected_of_eventuallyEq
+      analyticOnNhd_const isPreconnected_univ (Set.mem_univ (((5 / 2 : ℝ) : ℂ))) ?_
+    filter_upwards [hopen.mem_nhds hmem] with z hz
+    rw [hLof.eq_lseries z hz.1, hzero z (le_of_lt hz.2)]
+  exact key (Set.mem_univ 1)
+
 /-- **THE `Γ₁` ISOTYPIC DECOMPOSITION, GIVEN THE FACTORS** (sorry leaf,
-new 2026-07-28) — the "ASSEMBLE the factors" half of the cut of
-`exists_heckeIsotypicDecomposition_gamma1` below, and the `Γ₁` transport
-of `X0.lean`'s `exists_heckeIsotypicDecomposition_of_isotypicQuotients`.
+new 2026-07-28; **`hN : N ≠ 0` ADDED 2026-07-28 after the level-`0` case
+was REFUTED** — see the section docstring above and
+`isEmpty_isHeckeIsotypicDecompositionGamma1_zero`) — the "ASSEMBLE the
+factors" half of the cut of `exists_heckeIsotypicDecomposition_gamma1`
+below, and the `Γ₁` transport of `X0.lean`'s
+`exists_heckeIsotypicDecomposition_of_isotypicQuotients`.
 
 TRUE, and it is what is left of Eichler–Shimura once Shimura's `A_f` is
 granted.  The three things this leaf owns are exactly the ones a single
@@ -7760,29 +9122,40 @@ factor cannot see, and they are the `Γ₀` list plus one:
   this leaf receives the labels rather than having to produce the
   decomposition — it only has to keep them attached to the right factor.
 
-**THE `N = 0` OBLIGATION IS THIS LEAF'S, AND — UNLIKE ON THE `Γ₀` SIDE —
-IT IS NOT KNOWN TO BE DISCHARGEABLE.  Do not copy `X0.lean`'s argument.**
-There the sibling obligation is discharged by
-`isEmpty_of_isCoarseModuliY0_zero`: a cyclic subgroup of order `0` does
-not exist, so `Y_0(0) = ∅` and the hypotheses are contradictory.  **That
-route is unavailable here and the difference is mathematical, not
-notational**: `PointOfExactOrder ab 0` asks for a section whose geometric
-fibres have `addOrderOf = 0`, i.e. a point of INFINITE order, and those
-exist in abundance over an algebraically closed field of characteristic
-`0`.  So `Gamma1Datum 0` is inhabited, there is no
-`isEmpty_of_isCoarseModuliY1_zero` in this file (checked 2026-07-28), and
-a prover here must either produce a decomposition at `N = 0` or refute
-`IsX1Compactification 0 strX strY jY` by some other route.
+**THE `N = 0` OBLIGATION WAS THIS LEAF'S, IT WAS REFUTED, AND `hN` IS THE
+REPAIR** (2026-07-28).  The heading this replaces said the obligation was
+"not known to be dischargeable" and named the settling check.  Both
+halves are now resolved, and in opposite directions:
 
-**The check that would settle it, and it is worth running first**:
-`IsCoarseModuliY1 0 strY` still demands a coarse space for `[Γ₁(0)]`,
-whose `ℚ̄`-points are pairs `(E, P)` with `P` of infinite order modulo
-isomorphism — a set that is not the `ℚ̄`-points of a finite-type
-`ℚ`-scheme of dimension `1`, since already a single `E` contributes
-uncountably many classes.  If `IsCoarseModuliY1`'s bijection clause is
-strong enough to see that, the hypotheses are contradictory after all and
-the case is `False.elim`; if it only asks for a map, they are not.  Read
-`IsCoarseModuliY1` before assuming either.
+* **The proposed rescue does not exist.**  The check was: is
+  `IsCoarseModuliY1 0 strY` strong enough to contradict `X` being a
+  curve?  It is not.  `IsCoarseModuliY1` has exactly three fields —
+  `classify`, `classify_natural`, `universal` — and its own docstring
+  records that "bijectivity on geometric points is deliberately
+  omitted".  Initiality constrains no cardinality, so nothing in it can
+  see that a single `E` contributes uncountably many pairs `(E, P)`.
+  The `Γ₀` route (`isEmpty_of_isCoarseModuliY0_zero`) has no analogue
+  here, exactly as the old heading warned.
+* **And the conclusion is EMPTY at `N = 0`**, which the old heading did
+  not suspect: `isEmpty_isHeckeIsotypicDecompositionGamma1_zero`, by the
+  counting argument of the section docstring above (`atkin` degenerates
+  to complete multiplicativity at level `0`, so `lacunaryTwoCoeff c` is
+  admissible for every `c : ℂ`; `cover` demands an index for each and
+  `fintypeIdx` says there are finitely many).
+
+Together: at `N = 0` the conclusion is `Nonempty` of an empty type, so
+the leaf was provable there only by refuting its own hypotheses, and the
+first bullet says that cannot be done in this vocabulary.  That is a
+statement no prover can honestly close, which is worse than an open one —
+so `hN : N ≠ 0` is now a hypothesis, and `hquot` is correspondingly
+UNCONDITIONAL rather than guarded by `N ≠ 0`.
+
+The `N = 0` case did not vanish; it moved to where it is genuinely
+dischargeable, `isTorsion_jacobian_of_lFunction_ne_zero_gamma1`, whose
+analytic hypothesis is contradictory at level `0`
+(`not_lFunctionHypothesis_gamma1GL_zero`).  The shape-free wrapper
+`isTorsion_jacobian_of_lFunction_ne_zero_of_levelShape` is therefore
+untouched and the `Γ₀` side is unaffected.
 
 **WHY THIS IS A CUT AND NOT A RESTATEMENT.**  `hquot` is consumed three
 times — one factor per system for `cover`, the factors themselves for
@@ -7799,12 +9172,12 @@ witness `A i := SpecQ`, `astr i := 𝟙 SpecQ`, `u i := jstr`, which
 route through `Γ₁(N)\ℍ*`, which is how the classical proof identifies the
 factors in the first place.  Everything above is the algebraic-moduli
 axis. -/
-theorem exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1 (N : ℕ)
+theorem exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1 (N : ℕ) (hN : N ≠ 0)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (h : ModularLevelShape.IsCompactification .gamma1 N strX strY jY) {jstr : J ⟶ SpecQ}
     {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
     (jac : IsJacobianOf strX ab o)
-    (hquot : N ≠ 0 → ∃ (T : ℕ → (J ⟶ J)) (T_comp : ∀ n, T n ≫ jstr = jstr),
+    (hquot : ∃ (T : ℕ → (J ⟶ J)) (T_comp : ∀ n, T n ≫ jstr = jstr),
       (∀ n, IsAdditiveOn ab ab (T n) (T_comp n)) ∧
         ∀ (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ),
           IsWeightTwoEigenformOn (Gamma1GL N) N χ f a →
@@ -7862,6 +9235,19 @@ must quantify `T` existentially and thereby absorbs
 `IsIsotypicQuotient` is reused verbatim from `X0.lean` — it is
 shape-free — so this transport adds no structure.
 
+**`hN : N ≠ 0` ADDED 2026-07-28, and it is a SOUNDNESS repair, not a
+convenience.**  Without it this statement is FALSE at `N = 0`: the
+conclusion is `Nonempty (IsHeckeIsotypicDecompositionGamma1 0 h jac)` and
+that type is EMPTY (`isEmpty_isHeckeIsotypicDecompositionGamma1_zero`),
+while the hypotheses `h` and `jac` are not refutable at level `0` —
+`IsCoarseModuliY1` carries no bijectivity clause, so the `Γ₀` rescue
+`isEmpty_of_isCoarseModuliY0_zero` has no analogue.  See the section
+docstring "The level-`0` degeneracy of `Γ₁` Eichler–Shimura" above for
+the witness.  The sole consumer,
+`isTorsion_jacobian_of_lFunction_ne_zero_gamma1`, absorbs the `N = 0`
+case through `not_lFunctionHypothesis_gamma1GL_zero` and so keeps its own
+signature; nothing above it changes.
+
 **THE `Γ₀` CHAIN NAMED ABOVE IS A MAP OF THE TERRITORY, NOT A MODEL TO
 COPY** (2026-07-28).  Two of its links —
 `exists_isotypicQuotient_of_isWeightTwoEigenform` and
@@ -7873,14 +9259,14 @@ cut below is unaffected because it quantifies `T` existentially, with the
 `exists_heckeAction_isotypicQuotients_gamma1`.  Anyone tempted to bring
 the two cuts into line should move the `Γ₀` one toward this shape, not
 this one toward the `Γ₀` shape. -/
-theorem exists_heckeIsotypicDecomposition_gamma1 (N : ℕ)
+theorem exists_heckeIsotypicDecomposition_gamma1 (N : ℕ) (hN : N ≠ 0)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (h : ModularLevelShape.IsCompactification .gamma1 N strX strY jY) {jstr : J ⟶ SpecQ}
     {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
     (jac : IsJacobianOf strX ab o) :
     Nonempty (IsHeckeIsotypicDecompositionGamma1 N h jac) :=
-  exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1 N h jac
-    fun hN => exists_heckeAction_isotypicQuotients_gamma1 N hN h jac
+  exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1 N hN h jac
+    (exists_heckeAction_isotypicQuotients_gamma1 N hN h jac)
 
 /-- **KOLYVAGIN–LOGACHEV for `Γ₁(N)`: a Hecke-isotypic factor of `J_1(N)`
 has torsion Mordell–Weil group** (sorry node, new 2026-07-28) — the second
@@ -8078,6 +9464,15 @@ which also gives rank `0` from `L(f, 1) ≠ 0` and applies verbatim to
 `Γ₁`), and Mazur's Eisenstein-ideal argument, which is `Γ₀`-specific and
 so could not have been shared even if it applied.
 
+**THE `N = 0` BRANCH (2026-07-28).**  `exists_heckeIsotypicDecomposition_gamma1`
+gained `hN : N ≠ 0` when its level-`0` case was refuted, so this proof now
+splits.  At `N = 0` the hypothesis `hL` is itself CONTRADICTORY
+(`not_lFunctionHypothesis_gamma1GL_zero`): the level-`0` eigen-system
+`lacunaryTwoCoeff 8` has a Dirichlet series that diverges throughout
+`2 < re s < 3`, so no ENTIRE `L` can agree with it there and be nonzero at
+`1`.  This is what keeps `hN` out of the present signature, and hence out
+of the shape-free wrapper below, which `Γ₀` shares.
+
 **THE ASSEMBLY.**  `hL` supplies an `L`-function it CHOSE and the leaves
 want "*the* `L`-function does not vanish"; `isLFunctionOf_apply_eq`
 (uniqueness, by the identity theorem) is the bridge, exactly as in
@@ -8097,6 +9492,8 @@ theorem isTorsion_jacobian_of_lFunction_ne_zero_gamma1 (N : ℕ)
     letI := ab.addCommGroup (𝟙 SpecQ)
     AddMonoid.IsTorsion (RelPoint jstr (𝟙 SpecQ)) := by
   letI := ab.addCommGroup (𝟙 SpecQ)
+  rcases eq_or_ne N 0 with rfl | hN
+  · exact (not_lFunctionHypothesis_gamma1GL_zero hL).elim
   have hL' : ∀ (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ),
       IsWeightTwoEigenformOn (Gamma1GL N) N χ f a →
       ∀ L : ℂ → ℂ, IsLFunctionOf a L → L 1 ≠ 0 := by
@@ -8104,7 +9501,7 @@ theorem isTorsion_jacobian_of_lFunction_ne_zero_gamma1 (N : ℕ)
     obtain ⟨L₀, hL₀, hne⟩ := hL χ f a hf
     rw [isLFunctionOf_apply_eq hLf hL₀ 1]
     exact hne
-  obtain ⟨D⟩ := exists_heckeIsotypicDecomposition_gamma1 N h jac
+  obtain ⟨D⟩ := exists_heckeIsotypicDecomposition_gamma1 N hN h jac
   letI := D.fintypeIdx
   letI : ∀ i, AddCommGroup (RelPoint (D.astr i) (𝟙 SpecQ)) :=
     fun i => (D.abA i).addCommGroup (𝟙 SpecQ)
@@ -8870,8 +10267,12 @@ disappearing:
 | `isBigO_atTop_coeffOn` | Hecke's coefficient bound | no | here, **PROVEN 2026-07-28** |
 | `isTorsion_jacobian_of_lFunction_ne_zero_gamma1` | Eichler–Shimura + Kolyvagin, `Γ₁` half | no | here, **PROVEN** |
 | `exists_heckeIsotypicDecomposition_gamma1` | Eichler–Shimura | no | here, **PROVEN 2026-07-28** |
-| `exists_heckeAction_isotypicQuotients_gamma1` | Shimura's `A_f` + the Hecke action | no | here |
-| `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` | multiplicities, `finite_ker`, `neben` | no | here |
+| `exists_heckeAction_isotypicQuotients_gamma1` | Shimura's `A_f` + the Hecke action | no | here, **PROVEN 2026-07-28** |
+| `exists_heckeCorrespondenceFamilyGamma1` | the `Γ₁` Hecke correspondence, on points | no | here |
+| `exists_modularHeckeAction_gamma1` | `T_ℓ` as an endomorphism of `J_1(N)` | no | here, **PROVEN 2026-07-28** |
+| `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` | Shimura's `A_f`, one factor | no | here, **FALSE as stated — see its FALSITY AUDIT** |
+| `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` | multiplicities, `finite_ker`, `neben` (now under `hN : N ≠ 0`) | no | here |
+| `exists_cuspForm_gamma1GL_zero_lacunary` | the lacunary level-`0` cusp form; input to the `N = 0` refutation | no | here, NEW 2026-07-28 |
 | `isTorsion_factor_of_heckeIsotypic_gamma1` | Kolyvagin–Logachev | no | here |
 | `lFunction_apply_one_ne_zero_x1TwentyFive` | `L`-value numerics | **yes** | here |
 | `injective_aj_of_not_isIso_jacobian` | Riemann–Roch | no | `X0.lean`, REUSED |
