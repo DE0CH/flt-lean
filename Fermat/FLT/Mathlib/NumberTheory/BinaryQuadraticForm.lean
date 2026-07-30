@@ -1587,6 +1587,7 @@ theorem exists_intCubic_of_natDegree_minpoly {α : ℂ} (hint : IsIntegral ℤ �
   simp only [zsmul_eq_mul, Int.cast_one, one_mul, pow_zero, pow_one, mul_one, zero_add] at hsum
   linear_combination -hsum
 
+open _root_.Polynomial in
 /-- **LEAF 1b — `α` HAS DEGREE EXACTLY `3` OVER `ℚ`.**
 
 `ℤ` is integrally closed with fraction field `ℚ`, so a rational root is an INTEGER `m` with
