@@ -9984,6 +9984,126 @@ theorem geom_cyclic_zmulPts {A : Scheme.{0}} {f : A ⟶ SpecQ}
     rw [hz, hj]
     exact hliesIn j
 
+/-- **The span of the `N` multiples of `y` cuts out exactly `⟨y⟩` on
+`ℚ̄`-points** (PROVEN 2026-07-30 — no new machinery, both directions are
+already in this subsection).
+
+This is `geom_cyclic_zmulPts` read at the ONE geometric point that matters,
+`K = ℚ̄` and `t = specAlgClos ℚ ≫ 𝟙 SpecQ`, with the generator NAMED rather
+than existentially quantified.  The forward direction is
+`mem_zmultiples_of_liesIn_span` at `e = 𝟙` (whose `RelPoint.pre 𝟙 _ y = y`
+is `Subtype.ext (Category.id_comp _)`); the reverse is `exists_fin_zsmul`
+followed by `geomPt_liesIn_spanScheme`, exactly as inside
+`geom_cyclic_zmulPts`.
+
+**WHY IT IS STATED SEPARATELY.**  `CyclicSubgroupOfOrder.geom_cyclic`
+produces its generator existentially, so a consumer who already HOLDS a
+generator — every consumer in this file's descent chain does — cannot
+recover the link between the subgroup scheme it was handed and the point it
+supplied.  That loss is what
+`exists_gamma0Datum_specQ_isBaseChangeOf_liesIn_of_weierstrassQForm` records
+as the reason `exists_weierstrassModel_gamma0Datum` "cannot be cited as it
+stands"; this lemma, and the two theorems below that carry it upward, are the
+repair. -/
+theorem liesIn_spanScheme_iff_mem_zmultiples {A : Scheme.{0}} {f : A ⟶ SpecQ}
+    (ab : AbelianSchemeStruct f) (N : ℕ) (hN : N ≠ 0) (y : GeomFibrePt f (𝟙 SpecQ))
+    (hy : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+          addOrderOf y = N)
+    (hstable : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+          ∀ σ : Field.absoluteGaloisGroup ℚ,
+            ab.galSMul (𝟙 SpecQ) σ y ∈ AddSubgroup.zmultiples y)
+    (x : GeomFibrePt f (𝟙 SpecQ)) :
+    letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+    RelPoint.LiesIn (spanSchemeι (zmulPts ab N y)) x ↔ x ∈ AddSubgroup.zmultiples y := by
+  letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  constructor
+  · intro hx
+    have h := mem_zmultiples_of_liesIn_span ab N hN y hy hstable (AlgebraicClosure ℚ)
+      (specAlgClos ℚ ≫ 𝟙 SpecQ) (𝟙 _) (Category.id_comp _) x hx
+    have hpre : RelPoint.pre (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+        (Category.id_comp (specAlgClos ℚ ≫ 𝟙 SpecQ)) y = y :=
+      Subtype.ext (Category.id_comp _)
+    rwa [hpre] at h
+  · rintro ⟨k, rfl⟩
+    obtain ⟨j, hj⟩ := exists_fin_zsmul hN hy k
+    obtain ⟨w, hw⟩ := geomPt_liesIn_spanScheme (zmulPts ab N y) j
+    show RelPoint.LiesIn (spanSchemeι (zmulPts ab N y)) (k • y)
+    rw [hj]
+    exact ⟨w, hw⟩
+
+/-- **Galois descent, WITH THE LEVEL LOCUS REMEMBERED** (PROVEN 2026-07-30):
+the cyclic subgroup scheme produced below may be taken to be one whose
+`ℚ̄`-points are exactly `⟨y⟩`, for the very `y` the caller supplied.
+
+This carries the whole construction of `exists_cyclicSubgroupOfOrder_of_
+galoisStable`, which is now the `Nonempty`-forgetting corollary of it, so
+nothing is duplicated and nothing floats.
+
+**WHAT IS NEW AND WHY IT WAS MISSING.**  `CyclicSubgroupOfOrder.geom_cyclic`
+quantifies its generator existentially, at every geometric point of every
+base.  A caller who already holds a generator therefore gets back a subgroup
+scheme it cannot relate to that generator — and the relation is precisely what
+a DESCENT consumer needs, because the descended datum has to carry the SAME
+level locus as the one it descends, not merely some cyclic subgroup of the
+same order.  `exists_gamma0Datum_specQ_isBaseChangeOf_liesIn_of_
+weierstrassQForm` names that loss as the reason
+`exists_weierstrassModel_gamma0Datum` "is PROVEN but its conclusion FORGETS
+the link to the generator, which is precisely why it cannot be cited here as
+it stands".  The extra conjunct here is what closes that gap, and it costs
+nothing: the construction already takes `C := spanScheme (zmulPts ab N y)`,
+so the identification is `liesIn_spanScheme_iff_mem_zmultiples` above.
+
+**SCOPE, stated so nobody over-reads it.**  The new conjunct is about
+`ℚ̄`-POINTS — `RelPoint f (specAlgClos ℚ ≫ 𝟙 SpecQ)` — and NOT about
+`T`-points for a general test scheme `T`.  That is all the descent chain's
+`hstable`/`geom_cyclic` layer speaks about, and it is what its consumers
+transport; turning it into an identification of the two closed SUBSCHEMES
+(which is what a subfunctor-level level comparison such as the one in
+`exists_gamma0Datum_specQ_isBaseChangeOf_liesIn_of_weierstrassQForm`'s
+conclusion asks for) needs in addition that a finite subscheme of a
+`ℚ̄`-scheme is determined by its `ℚ̄`-points, i.e. reducedness of `C` — true
+here in characteristic `0` and NOT proven in this file.  A successor citing
+this theorem for a subfunctor statement must supply that step. -/
+theorem exists_cyclicSubgroupOfOrder_liesIn_of_galoisStable {A : Scheme.{0}}
+    {f : A ⟶ SpecQ} (ab : AbelianSchemeStruct f) (N : ℕ) (hN : N ≠ 0)
+    (y : GeomFibrePt f (𝟙 SpecQ))
+    (hy : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+          addOrderOf y = N)
+    (hstable : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+          ∀ σ : Field.absoluteGaloisGroup ℚ,
+            ab.galSMul (𝟙 SpecQ) σ y ∈ AddSubgroup.zmultiples y) :
+    ∃ cyc : CyclicSubgroupOfOrder ab N,
+      letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+      ∀ x : GeomFibrePt f (𝟙 SpecQ),
+        RelPoint.LiesIn cyc.ι x ↔ x ∈ AddSubgroup.zmultiples y := by
+  classical
+  letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  -- The zero of the geometric fibre is the `0`-th multiple of `y`, hence a
+  -- member of the family; `hN` is what makes `⟨0, _⟩ : Fin N` available, and
+  -- this is the one place the repaired hypothesis is consumed.
+  have hzero : zmulPts ab N y ⟨0, Nat.pos_of_ne_zero hN⟩
+      = specAlgClos ℚ ≫ (ab.zero (𝟙 SpecQ)).1 := by
+    have h := ab.pre_zero (specAlgClos ℚ) (g := 𝟙 SpecQ)
+      (g' := specAlgClos ℚ ≫ 𝟙 SpecQ) rfl
+    show ((0 : ℕ) • y : GeomFibrePt f (𝟙 SpecQ)).1 = _
+    rw [zero_smul]
+    exact congrArg Subtype.val h.symm
+  obtain ⟨w₀, hw₀⟩ := ratPoint_liesIn_spanScheme ab (zmulPts ab N y)
+    (ab.zero (𝟙 SpecQ)).1 (ab.zero (𝟙 SpecQ)).2 ⟨_, hzero⟩
+  obtain ⟨μ, hμ⟩ := exists_addHom_factor_zmulPts ab N hN y hy hstable
+  obtain ⟨ν, hν⟩ := exists_negHom_factor_zmulPts ab N hN y hy hstable
+  refine ⟨{ C := spanScheme (zmulPts ab N y)
+            ι := spanSchemeι (zmulPts ab N y)
+            isClosedImmersion := inferInstance
+            isFinite := isFinite_spanSchemeι ab (zmulPts ab N y) (zmulPts_comp ab N y)
+            flat := inferInstance
+            zero_liesIn := fun g => zero_liesIn_of_ratPoint ab _ w₀ hw₀ g
+            add_liesIn := fun hx hz => add_liesIn_of_factor ab _ μ hμ hx hz
+            neg_liesIn := fun hx => neg_liesIn_of_factor ab _ ν hν hx
+            geom_cyclic := fun K _ _ t => geom_cyclic_zmulPts ab N hN y hy hstable K t },
+    fun x => ?_⟩
+  exact liesIn_spanScheme_iff_mem_zmultiples ab N hN y hy hstable x
+
 /-- **Galois descent: a Galois-stable cyclic subgroup of the geometric
 points of an abelian scheme over `ℚ` is cut out by a closed cyclic
 subgroup scheme** (PROVEN 2026-07-26 from the five leaves of the
@@ -10183,32 +10303,16 @@ theorem exists_cyclicSubgroupOfOrder_of_galoisStable {A : Scheme.{0}} {f : A ⟶
     (hstable : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
           ∀ σ : Field.absoluteGaloisGroup ℚ,
             ab.galSMul (𝟙 SpecQ) σ y ∈ AddSubgroup.zmultiples y) :
-    Nonempty (CyclicSubgroupOfOrder ab N) := by
-  classical
-  letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
-  -- The zero of the geometric fibre is the `0`-th multiple of `y`, hence a
-  -- member of the family; `hN` is what makes `⟨0, _⟩ : Fin N` available, and
-  -- this is the one place the repaired hypothesis is consumed.
-  have hzero : zmulPts ab N y ⟨0, Nat.pos_of_ne_zero hN⟩
-      = specAlgClos ℚ ≫ (ab.zero (𝟙 SpecQ)).1 := by
-    have h := ab.pre_zero (specAlgClos ℚ) (g := 𝟙 SpecQ)
-      (g' := specAlgClos ℚ ≫ 𝟙 SpecQ) rfl
-    show ((0 : ℕ) • y : GeomFibrePt f (𝟙 SpecQ)).1 = _
-    rw [zero_smul]
-    exact congrArg Subtype.val h.symm
-  obtain ⟨w₀, hw₀⟩ := ratPoint_liesIn_spanScheme ab (zmulPts ab N y)
-    (ab.zero (𝟙 SpecQ)).1 (ab.zero (𝟙 SpecQ)).2 ⟨_, hzero⟩
-  obtain ⟨μ, hμ⟩ := exists_addHom_factor_zmulPts ab N hN y hy hstable
-  obtain ⟨ν, hν⟩ := exists_negHom_factor_zmulPts ab N hN y hy hstable
-  exact ⟨{ C := spanScheme (zmulPts ab N y)
-           ι := spanSchemeι (zmulPts ab N y)
-           isClosedImmersion := inferInstance
-           isFinite := isFinite_spanSchemeι ab (zmulPts ab N y) (zmulPts_comp ab N y)
-           flat := inferInstance
-           zero_liesIn := fun g => zero_liesIn_of_ratPoint ab _ w₀ hw₀ g
-           add_liesIn := fun hx hz => add_liesIn_of_factor ab _ μ hμ hx hz
-           neg_liesIn := fun hx => neg_liesIn_of_factor ab _ ν hν hx
-           geom_cyclic := fun K _ _ t => geom_cyclic_zmulPts ab N hN y hy hstable K t }⟩
+    Nonempty (CyclicSubgroupOfOrder ab N) :=
+  -- The construction MOVED (2026-07-30) to
+  -- `exists_cyclicSubgroupOfOrder_liesIn_of_galoisStable` immediately above,
+  -- which produces the same subgroup scheme together with the identification
+  -- of its `ℚ̄`-points with `⟨y⟩`.  This statement is that one with the
+  -- identification forgotten; the two are kept in step by construction rather
+  -- than by discipline, and the text of the proof is unchanged — only its
+  -- location.
+  let ⟨cyc, _⟩ := exists_cyclicSubgroupOfOrder_liesIn_of_galoisStable ab N hN y hy hstable
+  ⟨cyc⟩
 
 /-- **Existence of the coarse moduli space `Y_0(N)`** (PROVEN, as the split
 of the level into the cited case `N ≥ 1` and the degenerate case `N = 0`).
@@ -20336,6 +20440,79 @@ theorem not_stable_of_mem_isolatedNonCMJInvariants_genusZeroSmall {p q : ℕ}
     exact MazurGenusZero.no_rat_root_three_of_mem_nonCM hj0 hj1728 hj6 x₀ hx₀
 
 /-- **Existence of a `Γ₀(N)`-datum over `ℚ` with a prescribed Weierstrass
+model AND a prescribed level locus** (PROVEN 2026-07-30): the datum below
+may be taken to carry, in addition, the Galois-equivariant identification
+`e` of `E(ℚ̄)` with its geometric fibre under which the level subscheme cuts
+out exactly `⟨e g⟩`.
+
+`exists_weierstrassModel_gamma0Datum` is this statement with the last two
+conjuncts forgotten, and is now proven from it, so the construction is
+written once.
+
+**THIS IS THE PIECE `exists_gamma0Datum_specQ_isBaseChangeOf_liesIn_of_
+weierstrassQForm` NAMES AS MISSING.**  Its docstring's prescribed cut asks
+for "(b) a `ℚ`-rational level locus on `E` assembles into a
+`Gamma0Datum p SpecQ` carrying its Weierstrass model and that locus — the
+level-aware strengthening of `exists_weierstrassModel_gamma0Datum`, which is
+PROVEN but whose conclusion FORGETS the generator and therefore cannot be
+cited for (b) as it stands."  This is that strengthening.  It costs nothing
+beyond `exists_cyclicSubgroupOfOrder_liesIn_of_galoisStable`, because the
+`≃+` was already produced by
+`exists_ellipticScheme_isWeierstrassModel_of_projModel` and was already being
+discarded here.
+
+**WHAT IT DOES NOT GIVE, and the successor must not assume otherwise.**  The
+level identification is at `ℚ̄`-POINTS only — see the SCOPE paragraph on
+`exists_cyclicSubgroupOfOrder_liesIn_of_galoisStable`.  The conclusion of
+`…_liesIn_of_weierstrassQForm` compares the two level loci as SUBFUNCTORS of
+`weierstrassAffine W`, over an arbitrary test scheme `T`, and deliberately so
+(a points-dictionary phrasing is refuted there by an explicit junk witness).
+Bridging the two needs, in addition, that a finite closed subscheme of a
+`ℚ̄`-scheme is determined by its `ℚ̄`-points — i.e. reducedness of the level
+subscheme, which holds in characteristic `0` (Cartier) and is NOT proven in
+this file.  So (b) is discharged as far as the generator goes, and that
+reducedness step is what is left of it. -/
+theorem exists_weierstrassModel_gamma0Datum_liesIn (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (N : ℕ) (hN : N ≠ 0) (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = N)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g) :
+    ∃ d : Gamma0Datum N SpecQ, IsWeierstrassModel d.ab E ∧
+      (letI := d.ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+       ∃ e : (E⁄(AlgebraicClosure ℚ)).Point ≃+ GeomFibrePt d.f (𝟙 SpecQ),
+         (∀ (σ : Field.absoluteGaloisGroup ℚ) (x : (E⁄(AlgebraicClosure ℚ)).Point),
+             e (WeierstrassCurve.Affine.Point.map
+                 (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x)
+               = d.ab.galSMul (𝟙 SpecQ) σ (e x)) ∧
+           ∀ x : GeomFibrePt d.f (𝟙 SpecQ),
+             RelPoint.LiesIn d.cyc.ι x ↔ x ∈ AddSubgroup.zmultiples (e g)) := by
+  obtain ⟨A, f, ab, hdim, hmodel, e, he⟩ :=
+    exists_ellipticScheme_isWeierstrassModel_of_projModel E
+  -- The `AddCommGroup` structure on the geometric fibre.  As in
+  -- `nonempty_gamma0Datum_of_stable`, this binding is load-bearing: the
+  -- `letI`s inside the two `have`s below scope over those statements only.
+  letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  -- The order of the generator transports along the additive equivalence.
+  have hord : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+      addOrderOf (e g) = N := by
+    rw [AddEquiv.addOrderOf_eq]
+    exact hg
+  -- So does its Galois stability.
+  have hst : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+      ∀ σ : Field.absoluteGaloisGroup ℚ,
+        ab.galSMul (𝟙 SpecQ) σ (e g) ∈ AddSubgroup.zmultiples (e g) := by
+    intro σ
+    obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp
+      (hstable σ g (AddSubgroup.mem_zmultiples g))
+    refine AddSubgroup.mem_zmultiples_iff.mpr ⟨k, ?_⟩
+    rw [← he σ g, ← hk, map_zsmul]
+  obtain ⟨cyc, hcyc⟩ :=
+    exists_cyclicSubgroupOfOrder_liesIn_of_galoisStable ab N hN (e g) hord hst
+  exact ⟨{ E := A, f := f, ab := ab, relativeDimensionOne := hdim, cyc := cyc },
+    hmodel, e, he, hcyc⟩
+
+/-- **Existence of a `Γ₀(N)`-datum over `ℚ` with a prescribed Weierstrass
 model** (PROVEN 2026-07-27; formerly a sorry node.  HOISTED here from below
 `exists_jSection` on 2026-07-28 — statement, proof and docstring unchanged —
 because `exists_x0GenusZeroHauptmodul` immediately below consumes it; see the
@@ -20385,29 +20562,14 @@ theorem exists_weierstrassModel_gamma0Datum (E : WeierstrassCurve ℚ) [E.IsElli
       WeierstrassCurve.Affine.Point.map
         (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
         AddSubgroup.zmultiples g) :
-    ∃ d : Gamma0Datum N SpecQ, IsWeierstrassModel d.ab E := by
-  obtain ⟨A, f, ab, hdim, hmodel, e, he⟩ :=
-    exists_ellipticScheme_isWeierstrassModel_of_projModel E
-  -- The `AddCommGroup` structure on the geometric fibre.  As in
-  -- `nonempty_gamma0Datum_of_stable`, this binding is load-bearing: the
-  -- `letI`s inside the two `have`s below scope over those statements only.
-  letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
-  -- The order of the generator transports along the additive equivalence.
-  have hord : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
-      addOrderOf (e g) = N := by
-    rw [AddEquiv.addOrderOf_eq]
-    exact hg
-  -- So does its Galois stability.
-  have hst : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
-      ∀ σ : Field.absoluteGaloisGroup ℚ,
-        ab.galSMul (𝟙 SpecQ) σ (e g) ∈ AddSubgroup.zmultiples (e g) := by
-    intro σ
-    obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp
-      (hstable σ g (AddSubgroup.mem_zmultiples g))
-    refine AddSubgroup.mem_zmultiples_iff.mpr ⟨k, ?_⟩
-    rw [← he σ g, ← hk, map_zsmul]
-  obtain ⟨cyc⟩ := exists_cyclicSubgroupOfOrder_of_galoisStable ab N hN (e g) hord hst
-  exact ⟨{ E := A, f := f, ab := ab, relativeDimensionOne := hdim, cyc := cyc }, hmodel⟩
+    ∃ d : Gamma0Datum N SpecQ, IsWeierstrassModel d.ab E :=
+  -- The construction MOVED (2026-07-30) to
+  -- `exists_weierstrassModel_gamma0Datum_liesIn` immediately above, which
+  -- produces the same datum together with the equivariant `≃+` and the
+  -- identification of the level locus with `⟨e g⟩`.  This statement is that
+  -- one with both forgotten; the proof text is unchanged, only relocated.
+  let ⟨d, hd, _⟩ := exists_weierstrassModel_gamma0Datum_liesIn E N hN g hg hstable
+  ⟨d, hd⟩
 
 /-! #### The three largest genus-zero levels, through Fricke's hauptmodul
 
@@ -26219,7 +26381,31 @@ live here;  (b) a `ℚ`-rational level locus on `E` assembles into a
 `Gamma0Datum p SpecQ` carrying its Weierstrass model and that locus — the
 level-aware strengthening of `exists_weierstrassModel_gamma0Datum`, which is
 PROVEN but whose conclusion forgets the generator and therefore cannot be cited
-for (b) as it stands. -/
+for (b) as it stands.
+
+**HALF OF (b) IS NOW DONE, 2026-07-30 — the strengthening EXISTS and is PROVEN.**
+`exists_weierstrassModel_gamma0Datum_liesIn` (above, in the same file) produces
+the datum, its Weierstrass model, the Galois-equivariant `≃+` identifying
+`E(ℚ̄)` with the geometric fibre, AND the identification of the level locus:
+`RelPoint.LiesIn d.cyc.ι x ↔ x ∈ AddSubgroup.zmultiples (e g)`.  It cost nothing
+— the `≃+` was already produced by
+`exists_ellipticScheme_isWeierstrassModel_of_projModel` and thrown away, and the
+subgroup scheme is `spanScheme (zmulPts …)` by construction, so the
+identification is `liesIn_spanScheme_iff_mem_zmultiples`.  The old form remains
+under its old name, proven from the new one, so nothing floats and the two
+cannot drift apart.
+
+**WHAT REMAINS OF (b), stated precisely so it is not rediscovered.**  The new
+conjunct is at `ℚ̄`-POINTS; this leaf's conclusion compares the level loci as
+SUBFUNCTORS over an arbitrary test scheme `T`, and that phrasing is
+load-bearing (see the paragraph above: the points-dictionary form is refuted by
+a junk `≃+`).  The bridge between them is the single statement *a finite closed
+subscheme of a `ℚ̄`-scheme is determined by its `ℚ̄`-points* — i.e. reducedness
+of the level subscheme, which is true here in characteristic `0` (Cartier:
+finite flat over a `ℚ`-scheme is étale, and `d.cyc.etale_of_specQBase` is
+already invoked in the consumer's proof) and is NOT proven in this file.  That,
+plus (a), is what is left.  A successor should NOT restate the conclusion in
+points form to make the new theorem apply — that is the refuted phrasing. -/
 theorem exists_gamma0Datum_specQ_isBaseChangeOf_liesIn_of_weierstrassQForm {p : ℕ}
     (hp : p.Prime)
     (d : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
@@ -26341,6 +26527,13 @@ assembles into a `Gamma0Datum p SpecQ` carrying its model, which is the
 level-aware strengthening of `exists_weierstrassModel_gamma0Datum` (PROVEN, but
 its conclusion FORGETS the link to the generator, which is precisely why it
 cannot be cited here as it stands).
+
+**UPDATE 2026-07-30: that strengthening now EXISTS**, as
+`exists_weierstrassModel_gamma0Datum_liesIn`, PROVEN, with the old form derived
+from it.  It supplies the generator link at `ℚ̄`-points; what (b) still owes is
+only the passage from `ℚ̄`-points to closed subschemes (reducedness of the level
+subscheme in characteristic `0`).  See the corresponding paragraph on
+`exists_gamma0Datum_specQ_isBaseChangeOf_liesIn_of_weierstrassQForm` above.
 
 **The check that would refute this leaf**: a `Γ₀(p)`-datum over `ℚ̄` with
 `j ∉ {0, 1728}`, all of whose Galois conjugates are isomorphic to it, that is not
