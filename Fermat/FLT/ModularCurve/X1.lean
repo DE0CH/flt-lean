@@ -1854,9 +1854,265 @@ theorem nonempty_abelianFullLevelStructure_of_geomBasis {N n : ℕ} {T' T : Sche
       rw [bc.toRelPoint_add, bc.toRelPoint_nsmul, bc.toRelPoint_nsmul, hP, hQ]
       exact hc'
 
+/-! #### The cut of `exists_torsionBasisCover_field`, 2026-07-30
+
+The leaf below asked for the `Γ₀` chain `exists_torsionBasis_geomPoint` +
+`exists_torsionBasis_cover_of_geomPoint` with the base changed from `SpecQ`
+to `Spec K`, and its docstring is right that neither applies as stated:
+**both carry `g : T ⟶ SpecQ`**, and so does everything under them.
+
+Following that chain down to where the `ℚ`-base is actually *spent* shows
+it is spent in exactly TWO places, both of them for the single fact
+`(n : K') ≠ 0` at a geometric point:
+
+| `Γ₀` (`X0.lean`) | what it spends `g` on | `Γ₁` analogue here |
+|---|---|---|
+| `isFinite_flat_nTorsion` | **nothing** — its `_g` is unused | `isFinite_flat_nTorsion_noBase`, PROVEN |
+| `isReduced_geomFibre_nTorsion_of_specQBase` | `CharZero K'`, hence `(n : K') ≠ 0` | `isReduced_geomFibre_nTorsion_field`, PROVEN |
+| `etale_nTorsion_of_specQBase` | only via the two above | `etale_nTorsion_of_fieldBase`, PROVEN |
+| `exists_zmodBasis_torsion_geomPoint` | `CharZero K'`, hence `(n : K') ≠ 0` | `exists_zmodBasis_torsion_geomPoint_field`, PROVEN |
+| `exists_torsionBasis_geomPoint` | only via the above | `exists_torsionBasis_geomPoint_field`, PROVEN |
+| `exists_isomTorsor_of_etale_nTorsion` | **nothing** — the `Isom`-sheaf | `exists_isomTorsor_of_etale_nTorsion_noBase`, **LEAF** |
+| `exists_torsionBasis_cover_of_geomPoint` | only via the above | `exists_torsionBasisCover_field`, PROVEN |
+
+`natCast_ne_zero_geomPoint_of_fieldBase` is the replacement for the
+`CharZero` step: `t ≫ g : Spec K' ⟶ Spec K` gives a ring map `K →+* K'`
+on global sections, it is injective because `K` is a field, and
+`¬ ringChar K ∣ n` is `(n : K) ≠ 0` by `ringChar.spec`.  That is a
+STRICTLY weaker input than characteristic zero, which is why the `Γ₀`
+chain's `CharZero` route could not be reused verbatim but its skeleton
+could.
+
+**WHAT IS LEFT IS EXACTLY ONE THING, AND IT IS ALREADY OWED IN `X0.lean`.**
+`exists_isomTorsor_of_etale_nTorsion_noBase` below is
+`X0.lean`'s `exists_isomTorsor_of_etale_nTorsion` **with its `g : T ⟶ SpecQ`
+deleted** — that hypothesis does nothing there either, as that node's own
+docstring says ("it owes nothing about characteristic, ranks, flatness or
+finiteness: `hetale` is `Etale (E[n] ⟶ T)`, and finite + étale is everything
+the construction uses").  So the base-free form is strictly stronger and
+**a proof of it closes the `Γ₀` leaf as a one-liner**; the two should have a
+single owner.  It is restated here rather than generalised in place because
+`X0.lean` has several concurrent owners and this file cannot be imported by
+it.  If that node is ever generalised in `X0.lean`, THIS declaration is the
+one to delete. -/
+
+/-- **A geometric point of a `K`-scheme has `n` invertible in its residue
+field, when `n` is prime to `char K`** (PROVEN 2026-07-30) — the
+replacement, over an arbitrary field base, for the `CharZero` step that
+`X0.lean`'s `ℚ`-side chain uses twice.
+
+`t ≫ g : Spec K' ⟶ Spec K` induces `K →+* K'` on global sections through
+`Scheme.ΓSpecIso`; a ring map out of a field is injective; and
+`¬ ringChar K ∣ n` is `(n : K) ≠ 0` by `ringChar.spec`. -/
+theorem natCast_ne_zero_geomPoint_of_fieldBase {T : Scheme.{0}} (n : ℕ) (K : Type) [Field K]
+    (hchar : ¬ ringChar K ∣ n)
+    (g : T ⟶ Spec (CommRingCat.of K)) (K' : Type) [Field K']
+    (t : Spec (CommRingCat.of K') ⟶ T) : (n : K') ≠ 0 := by
+  obtain ⟨ψ⟩ : Nonempty (K →+* K') :=
+    ⟨((Scheme.ΓSpecIso (CommRingCat.of K)).inv ≫ (t ≫ g).appTop ≫
+      (Scheme.ΓSpecIso (CommRingCat.of K')).hom).hom⟩
+  have hK : (n : K) ≠ 0 := fun h => hchar ((ringChar.spec K n).mp h)
+  intro h
+  exact hK (ψ.injective (by rw [map_natCast, h, map_zero]))
+
+/-- **The `n`-torsion at a geometric point of a `K`-scheme is free of rank
+two over `ℤ/n`** (PROVEN 2026-07-30) — `X0.lean`'s
+`exists_zmodBasis_torsion_geomPoint` with `SpecQ` relaxed to `Spec K`.
+
+Its proof transcribes verbatim except for its first three lines, which
+derive `CharZero K'` from the `ℚ`-base; here
+`natCast_ne_zero_geomPoint_of_fieldBase` supplies the `(n : K') ≠ 0` those
+lines existed to produce.  Everything after that is unchanged:
+`exists_weierstrassModel_geomFibreAddEquiv_of_geomPoint` (a `sorry` leaf in
+`X0.lean`, but one that carries NO base morphism, which is what makes this
+generalisation possible at all) reads the geometric fibre as the points of a
+Weierstrass elliptic curve, `WeierstrassCurve.n_torsion_dimension` is the
+Silverman *AEC* III.6.4 citation, and `exists_zmodBasis_of_torsionEquiv` is
+pure algebra.
+
+`hchar` is load-bearing for TRUTH, exactly as `g` is on the `Γ₀` side: over
+`K' = 𝔽̄_p` with `p ∣ n` the `p`-torsion is `ℤ/p` (ordinary) or trivial
+(supersingular), so no pair `(y, z)` can be both independent and spanning. -/
+theorem exists_zmodBasis_torsion_geomPoint_field (n : ℕ) (hn : 3 ≤ n)
+    (K : Type) [Field K] (hchar : ¬ ringChar K ∣ n)
+    {E T : Scheme.{0}} {f : E ⟶ T} (ab : AbelianSchemeStruct f)
+    (hdim : SmoothOfRelativeDimension 1 f) (g : T ⟶ Spec (CommRingCat.of K))
+    (K' : Type) [Field K'] [IsAlgClosed K'] (t : Spec (CommRingCat.of K') ⟶ T) :
+    letI := ab.addCommGroup t
+    ∃ y z : RelPoint f t, n • y = 0 ∧ n • z = 0 ∧
+      (∀ x : RelPoint f t, n • x = 0 → ∃ a b : ℕ, x = a • y + b • z) ∧
+      (∀ a b : ℕ, a • y + b • z = 0 → n ∣ a ∧ n ∣ b) := by
+  letI := ab.addCommGroup t
+  have hnK' : (n : K') ≠ 0 := natCast_ne_zero_geomPoint_of_fieldBase n K hchar g K' t
+  letI : DecidableEq K' := Classical.typeDecidableEq K'
+  obtain ⟨W, hW, ⟨φ⟩⟩ := exists_weierstrassModel_geomFibreAddEquiv_of_geomPoint ab hdim K' t
+  haveI := hW
+  obtain ⟨χ⟩ := W.n_torsion_dimension (n := n) hnK'
+  exact exists_zmodBasis_of_torsionEquiv (by omega)
+    ((TorsionCounting.torsionByCongr (n : ℤ) φ).trans χ)
+
+/-- **The `n`-torsion at a geometric point of a `K`-scheme has unique
+`Fin n`-coordinates** (PROVEN 2026-07-30) — the leaf above read through
+`nsmul_eq_zero_iff_existsUnique_finPair`, which is pure algebra; the `Γ₁`
+mirror of `exists_torsionBasis_geomPoint`, and like it nothing but the
+citation in the shape `FullLevelStructure.geom_basis` asks for. -/
+theorem exists_torsionBasis_geomPoint_field (n : ℕ) (hn : 3 ≤ n)
+    (K : Type) [Field K] (hchar : ¬ ringChar K ∣ n)
+    {E T : Scheme.{0}} {f : E ⟶ T} (ab : AbelianSchemeStruct f)
+    (hdim : SmoothOfRelativeDimension 1 f) (g : T ⟶ Spec (CommRingCat.of K))
+    (K' : Type) [Field K'] [IsAlgClosed K'] (t : Spec (CommRingCat.of K') ⟶ T) :
+    letI := ab.addCommGroup t
+    ∃ y z : RelPoint f t, ∀ x : RelPoint f t, n • x = 0 ↔
+      ∃! c : Fin n × Fin n, x = (c.1 : ℕ) • y + (c.2 : ℕ) • z := by
+  letI := ab.addCommGroup t
+  obtain ⟨y, z, hy, hz, hspan, hindep⟩ :=
+    exists_zmodBasis_torsion_geomPoint_field n hn K hchar ab hdim g K' t
+  exact ⟨y, z, nsmul_eq_zero_iff_existsUnique_finPair (by omega) hy hz hspan hindep⟩
+
+/-- **`E[n] ⟶ T` is finite and flat, over ANY base** (PROVEN 2026-07-30) —
+`X0.lean`'s `isFinite_flat_nTorsion` with the two hypotheses its own
+docstring records as unused (`_hdim` and `_g : T ⟶ SpecQ`) deleted rather
+than underscored, which is what makes it usable here.  The proof is that
+node's, verbatim: `[n]` is proper, locally of finite type and quasi-finite,
+hence finite, and flat; and `nTorsionStructure_eq_snd` makes the structure
+morphism of `E[n]` a base change of it. -/
+theorem isFinite_flat_nTorsion_noBase (n : ℕ) (hn : 3 ≤ n)
+    {E T : Scheme.{0}} {f : E ⟶ T} (ab : AbelianSchemeStruct f) :
+    IsFinite (Limits.pullback.fst (ab.mulByNat n) ab.zeroSection ≫ f) ∧
+      AlgebraicGeometry.Flat (Limits.pullback.fst (ab.mulByNat n) ab.zeroSection ≫ f) := by
+  have hn0 : n ≠ 0 := by omega
+  haveI : IsProper (ab.mulByNat n) := ab.isProper_mulByNat n
+  haveI : LocallyOfFiniteType (ab.mulByNat n) := ab.locallyOfFiniteType_mulByNat n
+  haveI : LocallyQuasiFinite (ab.mulByNat n) :=
+    LocallyQuasiFinite.of_finite_preimage_singleton _ (finite_preimage_mulByNat ab n hn0)
+  haveI : IsFinite (ab.mulByNat n) := IsFinite.of_isProper_of_locallyQuasiFinite _
+  haveI : AlgebraicGeometry.Flat (ab.mulByNat n) := flat_mulByNat ab n hn0
+  rw [nTorsionStructure_eq_snd n ab]
+  exact ⟨inferInstance, inferInstance⟩
+
+/-- **Every geometric fibre of `E[n]` is REDUCED over a `K`-base with
+`char K ∤ n`** (PROVEN 2026-07-30) — `X0.lean`'s
+`isReduced_geomFibre_nTorsion_of_specQBase` with `SpecQ` relaxed to
+`Spec K`, and the ONLY place in this chain where `hchar` is spent.
+
+The proof is that node's, verbatim, with its `CharZero K'` step replaced by
+`natCast_ne_zero_geomPoint_of_fieldBase`: `[n]` is formally unramified over
+the geometric point because `n` is invertible there, base change preserves
+that, and finite + formally unramified over a field is reduced.
+
+`hchar` is load-bearing for TRUTH: at `char K = p ∣ n` the scheme `E[p]` is
+an infinitesimal group scheme (`μ_p` or `α_p` in the supersingular case),
+finite flat of rank `p²` and NOT reduced. -/
+theorem isReduced_geomFibre_nTorsion_field (n : ℕ) (hn : 3 ≤ n)
+    (K : Type) [Field K] (hchar : ¬ ringChar K ∣ n)
+    {E T : Scheme.{0}} {f : E ⟶ T} (ab : AbelianSchemeStruct f)
+    (g : T ⟶ Spec (CommRingCat.of K)) :
+    ∀ (K' : Type) [Field K'] [IsAlgClosed K'] (t : Spec (CommRingCat.of K') ⟶ T),
+      IsReduced (Limits.pullback
+        (Limits.pullback.fst (ab.mulByNat n) ab.zeroSection ≫ f) t) := by
+  intro K' _ _ t
+  have hnK' : (n : K') ≠ 0 := natCast_ne_zero_geomPoint_of_fieldBase n K hchar g K' t
+  haveI hfin : IsFinite (Limits.pullback.snd (ab.mulByNat n) ab.zeroSection) := by
+    rw [← nTorsionStructure_eq_snd n ab]
+    exact (isFinite_flat_nTorsion_noBase n hn ab).1
+  rw [nTorsionStructure_eq_snd n ab]
+  set abK := ab.baseChange t
+  have hP := ab.isPullback_ker_baseChange t n
+  haveI : IsFinite (Limits.pullback.snd (abK.mulByNat n) abK.zeroSection) :=
+    MorphismProperty.IsStableUnderBaseChange.of_isPullback hP hfin
+  haveI : FormallyUnramified (abK.mulByNat n) := formallyUnramified_mulByNat K' abK n hnK'
+  haveI : FormallyUnramified (Limits.pullback.snd (abK.mulByNat n) abK.zeroSection) :=
+    MorphismProperty.IsStableUnderBaseChange.of_isPullback (IsPullback.of_hasPullback _ _)
+      inferInstance
+  haveI : IsReduced (Limits.pullback (abK.mulByNat n) abK.zeroSection) :=
+    AlgebraicGeometry.isReduced_of_formallyUnramified_over_field
+      (Limits.pullback.snd (abK.mulByNat n) abK.zeroSection)
+  exact isReduced_of_isOpenImmersion hP.isoPullback.inv
+
+/-- **`E[n] ⟶ T` is ÉTALE over a `K`-base with `char K ∤ n`** (PROVEN
+2026-07-30) — the `Γ₁` mirror of `etale_nTorsion_of_specQBase`, and like it
+just `AlgebraicGeometry.etale_of_isReduced_pullback` applied to finite, flat,
+locally of finite presentation and reduced geometric fibres.  Three of the
+four are free; only the reducedness spends `hchar`. -/
+theorem etale_nTorsion_of_fieldBase (n : ℕ) (hn : 3 ≤ n)
+    (K : Type) [Field K] (hchar : ¬ ringChar K ∣ n)
+    {E T : Scheme.{0}} {f : E ⟶ T} (ab : AbelianSchemeStruct f)
+    (g : T ⟶ Spec (CommRingCat.of K)) :
+    AlgebraicGeometry.Etale (Limits.pullback.fst (ab.mulByNat n) ab.zeroSection ≫ f) := by
+  haveI := (isFinite_flat_nTorsion_noBase n hn ab).1
+  haveI := (isFinite_flat_nTorsion_noBase n hn ab).2
+  haveI := locallyOfFinitePresentation_nTorsion n ab
+  exact AlgebraicGeometry.etale_of_isReduced_pullback _
+    (isReduced_geomFibre_nTorsion_field n hn K hchar ab g)
+
+/-- **The `Isom`-scheme of the level-`n` torsor, over an ARBITRARY base**
+(sorry leaf, opened 2026-07-30) — `X0.lean`'s
+`exists_isomTorsor_of_etale_nTorsion` **with its `g : T ⟶ SpecQ` deleted**.
+
+That hypothesis is inert there: the node's own docstring says it "owes
+nothing about characteristic, ranks, flatness or finiteness: `hetale` is
+`Etale (E[n] ⟶ T)`, and finite + étale is everything the construction uses".
+So this statement is strictly stronger, and **anyone who proves it has
+proven the `Γ₀` node as a one-liner** (`fun … g hetale => …`).  They should
+have one owner.  It is restated here rather than generalised in place only
+because `X0.lean` has several concurrent owners and cannot import this file;
+if it is ever generalised there, delete this declaration.
+
+## What the prover owes, and it is unchanged from the `Γ₀` node
+
+The `Isom`-sheaf `Isom_T((ℤ/n)²_T, E[n])`: that it is representable by a
+finite étale `T`-scheme `T'` (Katz–Mazur 8.1.1), that the tautological
+isomorphism over `T'` is a pair of sections `P, Q` of `E[n]` — hence killed
+by `n` ON THE NOSE over `T'`, which is the last conjunct — and that `T'` has
+a point over exactly those geometric points of `T` at which `E[n]` admits a
+basis.
+
+A concrete route that avoids the general representability machinery, and
+which is available because `hetale` is a hypothesis rather than a goal:
+`E[n] ×_T E[n]` is finite étale over `T` (composition and base change of
+finite étale morphisms, both stable), "being a basis" is a locally constant
+condition on a finite étale scheme, so the basis locus is a clopen
+subscheme, and it is the `T'` wanted.
+
+Note the conclusion asks only for `Flat` and `QuasiCompact` on `p`;
+SURJECTIVITY is not asked for, because it is derived by the consumer from
+the third conjunct through `surjective_of_exists_lift_geomPoint`
+(`X0.lean`, PROVEN, a statement about schemes only).
+
+## Faithfulness
+
+`hetale` is load-bearing: without `n` invertible, `E[n]` is an
+infinitesimal group scheme, no basis exists at any geometric point of
+characteristic dividing `n`, and no cover helps.  `hn` is load-bearing at
+`n = 0` (`Fin 0` is empty while `0 • x = 0` always); only `0 < n` is used.
+`hdim` is load-bearing: at relative dimension `d` the `n`-torsion is
+`(ℤ/n)^{2d}` and admits no two-element basis for `d ≥ 2`. -/
+theorem exists_isomTorsor_of_etale_nTorsion_noBase (n : ℕ) (hn : 3 ≤ n)
+    {E T : Scheme.{0}} {f : E ⟶ T} (ab : AbelianSchemeStruct f)
+    (hdim : SmoothOfRelativeDimension 1 f)
+    (hetale : AlgebraicGeometry.Etale
+      (Limits.pullback.fst (ab.mulByNat n) ab.zeroSection ≫ f)) :
+    ∃ (T' : Scheme.{0}) (p : T' ⟶ T),
+      AlgebraicGeometry.Flat p ∧ QuasiCompact p ∧
+      ∃ P Q : RelPoint f p,
+        (∀ (K : Type) [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ T'),
+          letI := ab.addCommGroup (t ≫ p)
+          ∀ x : RelPoint f (t ≫ p), n • x = 0 ↔
+            ∃! c : Fin n × Fin n,
+              x = (c.1 : ℕ) • RelPoint.pre t rfl P + (c.2 : ℕ) • RelPoint.pre t rfl Q) ∧
+        (∀ (K : Type) [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ T),
+          (letI := ab.addCommGroup t
+            ∃ y z : RelPoint f t, ∀ x : RelPoint f t, n • x = 0 ↔
+              ∃! c : Fin n × Fin n, x = (c.1 : ℕ) • y + (c.2 : ℕ) • z) →
+          ∃ t' : Spec (CommRingCat.of K) ⟶ T', t' ≫ p = t) ∧
+        (letI := ab.addCommGroup p; n • P = 0 ∧ n • Q = 0) :=
+  sorry
+
 /-- **The level-`n` torsor over an arbitrary base field: after a flat
 surjective quasi-compact cover the `n`-torsion of an abelian scheme of
-relative dimension one acquires a basis** (sorry leaf, opened 2026-07-28)
+relative dimension one acquires a basis** (**PROVEN 2026-07-30** over the
+cut described in the section comment above; a single sorry leaf from
+2026-07-28)
 — Katz–Mazur 2.3.1 and 5.1.1's last sentence, Silverman *AEC* III.6.4 for
 the geometric fibres.
 
@@ -1914,8 +2170,15 @@ theorem exists_torsionBasisCover_field (n : ℕ) (hn : 3 ≤ n)
           ∀ x : RelPoint f (t ≫ p), n • x = 0 ↔
             ∃! c : Fin n × Fin n,
               x = (c.1 : ℕ) • RelPoint.pre t rfl P + (c.2 : ℕ) • RelPoint.pre t rfl Q) ∧
-        (letI := ab.addCommGroup p; n • P = 0 ∧ n • Q = 0) :=
-  sorry
+        (letI := ab.addCommGroup p; n • P = 0 ∧ n • Q = 0) := by
+  obtain ⟨T', p, hflat, hqc, P, Q, hbasis, hlift, htors⟩ :=
+    exists_isomTorsor_of_etale_nTorsion_noBase n hn ab hdim
+      (etale_nTorsion_of_fieldBase n hn K hchar ab g)
+  exact ⟨T', p, hflat,
+    surjective_of_exists_lift_geomPoint p
+      (fun L _ _ t =>
+        hlift L t (exists_torsionBasis_geomPoint_field n hn K hchar ab hdim g L t)),
+    hqc, P, Q, hbasis, htors⟩
 
 /-- **Every `Γ₁(N)`-datum over a `K`-scheme acquires a full level-`n`
 structure after an fpqc cover** (**PROVEN 2026-07-28**; formerly a single
