@@ -14780,6 +14780,42 @@ dimensions force the surjection to be injective, i.e. `𝔪_R·S = 𝔪_S`, and
 turns that into the conclusion.  So NO appeal to `Ideal.sum_ramification_inertia`
 and no ramification-index API is needed at all.
 
+**THAT APPLICATION IS COMPILER-VERIFIED (2026-07-30), AND HERE ARE THE TWO
+INSTANCES IT NEEDS** — both are one-liners already used elsewhere in this file, but
+neither is found by synthesis, so a successor will otherwise hit two consecutive
+`failed to synthesize` errors and may conclude the lemma does not apply.  This
+elaborates clean (`lake env lean`, EXIT=0) at `U` an arbitrary finite-dimensional
+`IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ`:
+
+    haveI : Module.Finite 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ U) :=
+      IsIntegralClosure.finite 𝒪₃ᵥ ℚ₃ᵥ U (IntegralClosure 𝒪₃ᵥ U)
+    haveI : IsFractionRing (IntegralClosure 𝒪₃ᵥ U) ↥U :=
+      IsIntegralClosure.isFractionRing_of_finite_extension 𝒪₃ᵥ ℚ₃ᵥ ↥U
+        (IntegralClosure 𝒪₃ᵥ U)
+    exact Ideal.finrank_quotient_map (IsLocalRing.maximalIdeal 𝒪₃ᵥ) ℚ₃ᵥ ↥U
+
+for the goal
+`finrank (𝒪₃ᵥ ⧸ 𝔪_{𝒪₃ᵥ}) (𝒪_U ⧸ (𝔪_{𝒪₃ᵥ}).map (algebraMap 𝒪₃ᵥ 𝒪_U)) = finrank ℚ₃ᵥ U`.
+Note `IsLocalRing.ResidueField 𝒪₃ᵥ` is by definition `𝒪₃ᵥ ⧸ 𝔪_{𝒪₃ᵥ}`, so no
+translation is needed on the left.
+
+**AND THERE IS A SECOND, EVEN SHORTER INSTRUMENT THAT WAS NOT KNOWN TO THIS
+DOCSTRING**: `Ideal.ramificationIdx_mul_inertiaDeg_of_isLocalRing`
+(`Mathlib/NumberTheory/RamificationInertia/Basic.lean:639`) is
+`Ideal.sum_ramification_inertia` already specialised to a LOCAL `S`, i.e.
+`e · f = finrank K L` on the nose, with `p ≠ ⊥` as its only hypothesis.  Since
+`IntegralClosure 𝒪₃ᵥ U` is local, that is `e · f = d` directly.  Whether to finish
+through it or through the dimension count above depends on which is cheaper to turn
+into the IDEAL identity: the count gives `𝔪_R·S = 𝔪_S` immediately from injectivity,
+whereas `e = 1` still has to be converted (mathlib's route is
+`ramificationIdx_def → Module.length_eq_one_iff → isSimpleModule_iff_isCoatom →
+Ideal.isMaximal_def → IsLocalRing.isMaximal_iff`, as in
+`Ideal.ramificationIdx_eq_one_iff`, `Mathlib/RingTheory/RamificationInertia/Ramification.lean:105`).
+The count is recommended for that reason.  Do NOT expect
+`span_three_eq_maximalIdeal_pow_card_inertia` to shortcut this: it gives
+`span {3} = 𝔪_U^{#I(U)}`, which is the *inertia* spelling this cut exists to avoid,
+and relating `#I(U)` to `ramificationIdx'` costs the same conversion.
+
 WHAT REMAINS, unchanged from the parent: apply that theorem with `R = 𝒪₃ᵥ`,
 `K = ℚ₃ᵥ`, `k' = GF(3^d)` over `ResidueField 𝒪₃ᵥ`; embed the abstract `L` into the
 algebraically closed `ℚ₃ᵥᵃˡᵍ` and take `U` to be its image; get `IsGalois` from
