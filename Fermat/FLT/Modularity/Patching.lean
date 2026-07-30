@@ -5739,149 +5739,401 @@ lemma mem_taylorWilesLocus_mul.{uK, uW}
   · rw [map_mul, hτ1, mul_one]
     exact hpoly
 
-/-- **`ρ σ` always has a NONZERO FIXED VECTOR on `ad⁰ρbar(1)` when `σ`
-fixes `μ_p`** (PROVEN 2026-07-28) — step 2 of the nonemptiness route,
-discharged here rather than left to the leaf.
+/-! #### The arithmetic core of DDT 2.48, decomposed
 
-Fixing `μ_p` makes the cyclotomic twist trivial
-(`adZeroCycloChar_eq_one_of_fixes_rootsOfUnity`), so `ρ σ` is plain
-conjugation by `A = ρbar σ`, and conjugation by `A` fixes anything
-commuting with `A`.  Writing `c = tr A / 2` — legitimate because `p` is
-odd and `k` has characteristic `p`, so `(2 : k) ≠ 0` — the traceless part
-`E = A - c · 1` has `tr E = tr A - c · 2 = 0` and commutes with `A`.
+Added 2026-07-29 by the decomposition of
+`exists_mul_mem_survivingLocus_of_mem_taylorWilesLocus` below.  Everything
+in this block is PROVEN except the two named leaves
+`exists_mem_kerFix_eval₁_ne_zero` (Step 1 of the route) and
+`adZeroTwist_eq_top_of_map_rho_le_of_ne_bot` (Step 2's irreducibility
+input); Step 2 of the route as written on the target — properness of
+`(ρ σ − 1) · ad⁰ρbar(1)` — is fully proven here, as is the Step-3
+assembly.
 
-The two cases are genuinely different and BOTH are needed:
+The route note on the target proposed getting the traceless part of
+`ρbar σ` as `ρbar σ − (tr ρbar σ / 2) · 1`, which needs `(2 : k) ≠ 0`
+and hence `p` odd.  The division is avoidable: `f = 2 · ρbar σ −
+(tr ρbar σ) · 1` is traceless because `tr 1 = 2`, needs no inverse of
+`2`, and is nonzero because `f = 0` forces `4 · det ρbar σ =
+(tr ρbar σ)²`, i.e. `(α − β)² = 0`.  So `hpodd` is NOT consumed by the
+linear-algebra step and both `exists_ne_zero_traceZero_commute_of_charpoly_eq`
+and `range_subRho_ne_top_of_mem_taylorWilesLocus` are stated without it —
+one hypothesis lighter than the route predicted. -/
 
-* `E ≠ 0`: take `E` itself.
-* `E = 0`, i.e. `A` is the scalar `c`: then conjugation by `A` is the
-  IDENTITY on everything, so any nonzero trace-zero endomorphism will do,
-  and one exists because `LinearMap.trace k W` cannot be injective —
-  `finrank_k (W →ₗ[k] W) = 4 > 1 = finrank_k k`.
+/-- **Trace and determinant of a rank-`2` endomorphism read off its split
+characteristic polynomial** (PROVEN 2026-07-29): if
+`charpoly E = (X − α)(X − β)` then `tr E = α + β` and `det E = αβ`.
 
-Note what is NOT used: the charpoly clause of `taylorWilesLocus`, hence
-`α ≠ β`.  The eigenvalue `1` of the adjoint action is present for EVERY
-`A`; distinctness of the eigenvalues is what pins the fixed space to be
-exactly one-dimensional, and mere properness of `(ρ σ - 1) · M` does not
-need that.  So this lemma is stated with the roots-of-unity hypothesis
-alone, which is also why it can be applied at `max n 1` in the assembly
-before any charpoly information is extracted. -/
-lemma exists_ne_zero_rho_eq_self_of_fixes_rootsOfUnity.{uK, uW}
-    (p : ℕ) [Fact p.Prime] (hpodd : Odd p)
-    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
-    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
-    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W] [Module.Free k W]
-    (hW : Module.rank k W = 2) (ρbar : GaloisRep ℚ k W)
-    {σ : Field.absoluteGaloisGroup ℚ}
-    (hσ : ∀ ζ : AlgebraicClosure ℚ, ζ ^ p = 1 → σ ζ = ζ) :
-    ∃ m : ↥(adZeroTwist p ρbar), m ≠ 0 ∧ (adZeroTwist p ρbar).ρ σ m = m := by
+The trace half goes through a matrix, since our pin has
+`Matrix.trace_eq_neg_charpoly_coeff` but no `LinearMap` analogue; the
+determinant half is `LinearMap.det_eq_sign_charpoly_coeff` directly. -/
+lemma trace_det_of_charpoly_eq_mul.{u1, u2}
+    {k : Type u1} [Field k] {W : Type u2} [AddCommGroup W] [Module k W]
+    [Module.Finite k W] [Module.Free k W] (hW : Module.rank k W = 2)
+    (E : Module.End k W) {α β : k}
+    (hchar : E.charpoly = (Polynomial.X - Polynomial.C α) *
+      (Polynomial.X - Polynomial.C β)) :
+    LinearMap.trace k W E = α + β ∧ LinearMap.det E = α * β := by
   classical
-  haveI : CharP k p := charP_of_ringHom_padicInt (algebraMap ℤ_[p] k)
-  have h2 : (2 : k) ≠ 0 := by
-    intro h
-    have hd : p ∣ 2 := by
-      have h' : ((2 : ℕ) : k) = 0 := by exact_mod_cast h
-      exact (CharP.cast_eq_zero_iff k p 2).mp h'
-    have hp2 := (Nat.prime_dvd_prime_iff_eq (Fact.out : p.Prime) Nat.prime_two).mp hd
-    rw [hp2] at hpodd
-    exact (Nat.not_odd_iff_even.mpr (by decide)) hpodd
-  have hfr : Module.finrank k W = 2 := Module.finrank_eq_of_rank_eq (by exact_mod_cast hW)
-  have htr1 : LinearMap.trace k W (1 : Module.End k W) = (2 : k) := by
-    rw [show (1 : Module.End k W) = LinearMap.id from rfl, LinearMap.trace_id, hfr]
+  have hfr : Module.finrank k W = 2 := Module.finrank_eq_of_rank_eq hW
+  have hexp : (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β)
+      = Polynomial.X ^ 2 - Polynomial.C (α + β) * Polynomial.X +
+        Polynomial.C (α * β) := by
+    simp only [map_add, map_mul]
+    ring
+  have hc1 : ((Polynomial.X - Polynomial.C α) *
+      (Polynomial.X - Polynomial.C β)).coeff 1 = -(α + β) := by
+    rw [hexp]; simp
+  have hc0 : ((Polynomial.X - Polynomial.C α) *
+      (Polynomial.X - Polynomial.C β)).coeff 0 = α * β := by
+    rw [hexp]; simp
+  refine ⟨?_, ?_⟩
+  · let b := Module.finBasisOfFinrankEq k W hfr
+    have h := Matrix.trace_eq_neg_charpoly_coeff (LinearMap.toMatrix b b E)
+    rw [LinearMap.charpoly_toMatrix] at h
+    rw [LinearMap.trace_eq_matrix_trace k b, h, hchar]
+    simp [hc1]
+  · rw [LinearMap.det_eq_sign_charpoly_coeff, hfr, hchar, hc0]
     norm_num
-  have hcomm : ∃ e : Module.End k W, e ≠ 0 ∧ LinearMap.trace k W e = 0 ∧
-      ρbar σ * e = e * ρbar σ := by
-    set c : k := (LinearMap.trace k W (ρbar σ)) / 2 with hc
-    by_cases hE : ρbar σ - c • (1 : Module.End k W) = 0
-    · have hA : ρbar σ = c • (1 : Module.End k W) := by rwa [sub_eq_zero] at hE
-      have hker : LinearMap.ker (LinearMap.trace k W) ≠ ⊥ := by
-        intro hb
-        have hinj : Function.Injective (LinearMap.trace k W) := LinearMap.ker_eq_bot.mp hb
-        have hle := LinearMap.finrank_le_finrank_of_injective hinj
-        rw [Module.finrank_self] at hle
-        have h4 : Module.finrank k (W →ₗ[k] W) = 4 := by
-          rw [Module.finrank_linearMap, hfr]
-        rw [h4] at hle
-        omega
-      obtain ⟨e, he, hene⟩ := (Submodule.ne_bot_iff _).mp hker
-      refine ⟨e, hene, LinearMap.mem_ker.mp he, ?_⟩
-      rw [hA, smul_mul_assoc, one_mul, mul_smul_comm, mul_one]
-    · refine ⟨ρbar σ - c • 1, hE, ?_, ?_⟩
-      · rw [map_sub, map_smul, htr1, smul_eq_mul, hc, div_mul_cancel₀ _ h2, sub_self]
-      · rw [mul_sub, sub_mul, mul_smul_comm, smul_mul_assoc, mul_one, one_mul]
-  obtain ⟨e, hene, hetr, hecomm⟩ := hcomm
-  have hχ : adZeroCycloChar p k σ = 1 := adZeroCycloChar_eq_one_of_fixes_rootsOfUnity p hσ
-  refine ⟨(⟨e, LinearMap.mem_ker.mpr hetr⟩ :
-    ↥(LinearMap.ker (LinearMap.trace k W))), ?_, ?_⟩
-  · intro h0
-    exact hene ((congrArg (AdZero.toEnd k W) h0).trans (map_zero (AdZero.toEnd k W)))
-  · refine AdZero.ext ?_
-    have hval : (adZeroTwist p ρbar).ρ σ
-        (⟨e, LinearMap.mem_ker.mpr hetr⟩ : ↥(LinearMap.ker (LinearMap.trace k W)))
-        = (adZeroCycloChar p k σ : k) • ((AdZero.rep ρbar) σ
-            (⟨e, LinearMap.mem_ker.mpr hetr⟩ :
-              ↥(LinearMap.ker (LinearMap.trace k W)))) := rfl
-    have hrep : (AdZero.rep ρbar) σ
-        (⟨e, LinearMap.mem_ker.mpr hetr⟩ : ↥(LinearMap.ker (LinearMap.trace k W)))
-        = AdZero.conjL (ρbar σ) (ρbar σ⁻¹)
-            (by rw [← map_mul, inv_mul_cancel, map_one])
-            (⟨e, LinearMap.mem_ker.mpr hetr⟩ :
-              ↥(LinearMap.ker (LinearMap.trace k W))) := rfl
-    rw [hval, hχ, Units.val_one, one_smul, hrep, AdZero.toEnd_conjL]
-    show ρbar σ * e * ρbar σ⁻¹ = e
-    have hinv : ρbar σ * ρbar σ⁻¹ = 1 := by rw [← map_mul, mul_inv_cancel, map_one]
-    rw [hecomm, mul_assoc, hinv, mul_one]
 
-/-- **`(ρ σ - 1) · ad⁰ρbar(1)` is a PROPER subset** (PROVEN 2026-07-28) —
-step 2 of the nonemptiness route in the form the surviving locus consumes,
-and the hypothesis `hproper` of the leaf below.
+/-- **A nonzero traceless endomorphism commuting with a rank-`2`
+endomorphism whose characteristic polynomial has two distinct roots**
+(PROVEN 2026-07-29).
 
-`ad⁰ρbar(1)` is finite-dimensional over `k` (a submodule of
-`W →ₗ[k] W`), so on it a `k`-linear endomorphism is injective iff
-surjective.  `ρ σ - 1` kills the nonzero vector produced by
-`exists_ne_zero_rho_eq_self_of_fixes_rootsOfUnity`, hence is not
-injective, hence not surjective; and its range as a `Set` is exactly the
-set `survivingLocus` tests membership against.
+`f = 2 E − (tr E) · 1` is traceless (`tr 1 = 2`), commutes with `E`
+(it is a polynomial in `E`), and is nonzero: `f = 0` gives
+`2 E = (tr E) · 1`, and taking determinants gives `4 · det E = (tr E)²`,
+i.e. `4αβ = (α + β)²`, i.e. `(α − β)² = 0`, against `α ≠ β`.
 
-This is what makes the leaf's remaining task purely the ARITHMETIC one:
-without it, a proof of the leaf would have to redo the linear algebra
-before it could even start. -/
-lemma range_rho_sub_ne_univ_of_fixes_rootsOfUnity.{uK, uW}
-    (p : ℕ) [Fact p.Prime] (hpodd : Odd p)
+**No characteristic hypothesis is needed**, which is why `hpodd` does not
+appear.  In characteristic `2` the element produced is the scalar
+`(tr E) · 1`, which is still traceless and still nonzero there (`α ≠ β`
+forces `α + β ≠ 0` in characteristic `2`) — so the statement does not
+degenerate, it merely stops being the traceless PART. -/
+lemma exists_ne_zero_traceZero_commute_of_charpoly_eq.{u1, u2}
+    {k : Type u1} [Field k] {W : Type u2} [AddCommGroup W] [Module k W]
+    [Module.Finite k W] [Module.Free k W] (hW : Module.rank k W = 2)
+    (E : Module.End k W) {α β : k} (hαβ : α ≠ β)
+    (hchar : E.charpoly = (Polynomial.X - Polynomial.C α) *
+      (Polynomial.X - Polynomial.C β)) :
+    ∃ f : Module.End k W, f ≠ 0 ∧ LinearMap.trace k W f = 0 ∧
+      E * f = f * E := by
+  classical
+  have hfr : Module.finrank k W = 2 := Module.finrank_eq_of_rank_eq hW
+  obtain ⟨htr, hdet⟩ := trace_det_of_charpoly_eq_mul hW E hchar
+  refine ⟨(2 : k) • E - (LinearMap.trace k W E) • (1 : Module.End k W),
+    ?_, ?_, ?_⟩
+  · intro hf0
+    have hEq : (2 : k) • E
+        = (LinearMap.trace k W E) • (1 : Module.End k W) :=
+      sub_eq_zero.mp hf0
+    have hd := congrArg LinearMap.det hEq
+    rw [LinearMap.det_smul, LinearMap.det_smul, hfr, Module.End.one_eq_id,
+      LinearMap.det_id, mul_one, htr, hdet] at hd
+    have hsq : (α - β) ^ 2 = 0 := by linear_combination -hd
+    exact hαβ (sub_eq_zero.mp ((pow_eq_zero_iff (two_ne_zero)).mp hsq))
+  · simp only [map_sub, map_smul, LinearMap.trace_one, hfr, smul_eq_mul]
+    push_cast
+    ring
+  · simp [mul_sub, sub_mul]
+
+/-- **`ρ σ` has a NONZERO FIXED VECTOR on `ad⁰ρbar(1)` at a Taylor–Wiles
+element of level `n ≥ 1`** (PROVEN 2026-07-29).
+
+Both factors of the twisted action are killed: `n ≥ 1` makes `σ` fix
+`μ_p`, so `adZeroCycloChar_eq_one_of_fixes_rootsOfUnity` trivialises the
+cyclotomic twist, and the surviving conjugation by `ρbar σ` fixes any
+endomorphism commuting with `ρbar σ` — which the traceless element
+supplied by `exists_ne_zero_traceZero_commute_of_charpoly_eq` does.
+
+`1 ≤ n` is LOAD-BEARING exactly as on the consumer: at `n = 0` the
+roots-of-unity clause of `taylorWilesLocus` is vacuous, `χ(σ)` is
+unconstrained, and the fixed vector need not exist. -/
+lemma exists_ne_zero_adZeroTwist_rho_eq_self_of_mem_taylorWilesLocus.{uK, uW}
+    {p : ℕ} [Fact p.Prime]
     {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
     [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
-    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W] [Module.Free k W]
-    (hW : Module.rank k W = 2) (ρbar : GaloisRep ℚ k W)
-    {σ : Field.absoluteGaloisGroup ℚ}
-    (hσ : ∀ ζ : AlgebraicClosure ℚ, ζ ^ p = 1 → σ ζ = ζ) :
-    Set.range (fun m : ↥(adZeroTwist p ρbar) =>
-      (adZeroTwist p ρbar).ρ σ m - m) ≠ Set.univ := by
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (hW : Module.rank k W = 2) (ρbar : GaloisRep ℚ k W)
+    {n : ℕ} (hn : 1 ≤ n) {σ : Field.absoluteGaloisGroup ℚ}
+    (hσ : σ ∈ taylorWilesLocus p ρbar n) :
+    ∃ m : ↥(adZeroTwist p ρbar), m ≠ 0 ∧
+      (adZeroTwist p ρbar).ρ σ m = m := by
   classical
-  obtain ⟨m0, hm0ne, hm0fix⟩ :=
-    exists_ne_zero_rho_eq_self_of_fixes_rootsOfUnity p hpodd hW ρbar hσ
-  haveI : FiniteDimensional k ↥(adZeroTwist p ρbar) :=
-    inferInstanceAs (FiniteDimensional k ↥(LinearMap.ker (LinearMap.trace k W)))
-  set f : ↥(adZeroTwist p ρbar) →ₗ[k] ↥(adZeroTwist p ρbar) :=
-    ((adZeroTwist p ρbar).ρ σ).toLinearMap - LinearMap.id with hf
-  have hfm0 : f m0 = 0 := by
-    rw [hf]
-    simp [hm0fix]
-  have hnotinj : ¬ Function.Injective f := by
-    intro hinj
-    exact hm0ne (hinj (by rw [hfm0, map_zero]))
-  have hnotsurj : ¬ Function.Surjective f := fun hs =>
-    hnotinj (LinearMap.injective_iff_surjective.mpr hs)
-  intro hcon
-  refine hnotsurj fun y => ?_
-  have hy : y ∈ Set.range (fun m : ↥(adZeroTwist p ρbar) =>
-      (adZeroTwist p ρbar).ρ σ m - m) := by rw [hcon]; trivial
-  obtain ⟨m, hm⟩ := hy
-  refine ⟨m, ?_⟩
-  rw [hf]
-  simpa using hm
+  obtain ⟨hfix, α, β, hαβ, hpoly⟩ := hσ
+  have hfixp : ∀ ζ : AlgebraicClosure ℚ, ζ ^ p = 1 → σ ζ = ζ := by
+    intro ζ hζ
+    refine hfix ζ ?_
+    obtain ⟨d, rfl⟩ := Nat.exists_eq_add_of_le hn
+    rw [pow_add, pow_one, pow_mul, hζ, one_pow]
+  have hχ : adZeroCycloChar p k σ = 1 :=
+    adZeroCycloChar_eq_one_of_fixes_rootsOfUnity p hfixp
+  obtain ⟨f, hf0, hftr, hfcomm⟩ :=
+    exists_ne_zero_traceZero_commute_of_charpoly_eq hW (ρbar σ) hαβ hpoly
+  have hfmem : f ∈ LinearMap.ker (LinearMap.trace k W) :=
+    LinearMap.mem_ker.mpr hftr
+  refine ⟨(⟨f, hfmem⟩ : AdZero k W), ?_, ?_⟩
+  · intro h
+    exact hf0 (congrArg (AdZero.toEnd k W) h)
+  · refine AdZero.ext ?_
+    have hval : (adZeroTwist p ρbar).ρ σ (⟨f, hfmem⟩ : AdZero k W)
+        = (adZeroCycloChar p k σ : k) •
+            ((AdZero.rep ρbar) σ (⟨f, hfmem⟩ : AdZero k W)) := rfl
+    have hrep : (AdZero.rep ρbar) σ (⟨f, hfmem⟩ : AdZero k W)
+        = AdZero.conjL (ρbar σ) (ρbar σ⁻¹)
+            (by rw [← map_mul, inv_mul_cancel, map_one]) ⟨f, hfmem⟩ := rfl
+    have hinv : ρbar σ * ρbar σ⁻¹ = 1 := by
+      rw [← map_mul, mul_inv_cancel, map_one]
+    rw [hval, hχ, Units.val_one, one_smul, hrep, AdZero.toEnd_conjL]
+    show ρbar σ * f * ρbar σ⁻¹ = f
+    rw [hfcomm, mul_assoc, hinv, mul_one]
+
+/-- **`(ρ σ − 1) · ad⁰ρbar(1)` is a PROPER subspace at a Taylor–Wiles
+element of level `n ≥ 1`** (PROVEN 2026-07-29) — Step 2 of the route on
+the consumer.
+
+Rank–nullity on the finite-dimensional `ad⁰ρbar(1)`: the nonzero fixed
+vector above is a kernel vector of `ρ σ − 1`, so that map is not
+injective, hence not surjective.  `Module.Finite k ↥(adZeroTwist p ρbar)`
+is not an instance on `AdZero` and is supplied here by hand, through the
+underlying `LinearMap.ker (LinearMap.trace k W)`. -/
+lemma range_subRho_ne_top_of_mem_taylorWilesLocus.{uK, uW}
+    {p : ℕ} [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (hW : Module.rank k W = 2) (ρbar : GaloisRep ℚ k W)
+    {n : ℕ} (hn : 1 ≤ n) {σ : Field.absoluteGaloisGroup ℚ}
+    (hσ : σ ∈ taylorWilesLocus p ρbar n) :
+    LinearMap.range (((adZeroTwist p ρbar).ρ σ).toLinearMap -
+      (LinearMap.id : ↥(adZeroTwist p ρbar) →ₗ[k] ↥(adZeroTwist p ρbar)))
+      ≠ ⊤ := by
+  classical
+  haveI hfin1 : Module.Finite k (AdZero k W) :=
+    inferInstanceAs (Module.Finite k ↥(LinearMap.ker (LinearMap.trace k W)))
+  haveI hfin2 : Module.Finite k ↥(adZeroTwist p ρbar) := hfin1
+  obtain ⟨m, hm0, hmfix⟩ :=
+    exists_ne_zero_adZeroTwist_rho_eq_self_of_mem_taylorWilesLocus
+      hW ρbar hn hσ
+  intro htop
+  have hinj := LinearMap.injective_iff_surjective.mpr
+    (LinearMap.range_eq_top.mp htop)
+  have hzero : (((adZeroTwist p ρbar).ρ σ).toLinearMap -
+        (LinearMap.id : ↥(adZeroTwist p ρbar) →ₗ[k] ↥(adZeroTwist p ρbar))) m
+      = (((adZeroTwist p ρbar).ρ σ).toLinearMap -
+        (LinearMap.id : ↥(adZeroTwist p ρbar) →ₗ[k] ↥(adZeroTwist p ρbar))) 0 := by
+    simp [hmfix]
+  exact hm0 (hinj hzero)
+
+/-- **Step 1 of DDT 2.48's arithmetic core (SORRY LEAF, cut 2026-07-29):
+the restriction of `z` to `N = ker ρbar ∩ Fix(μ_{p^n})` is NONZERO.**
+
+# ROUTE
+
+`N` is an OPEN NORMAL subgroup of `Γ ℚ` acting trivially on
+`M = ad⁰ρbar(1)` (`adZeroTwist_rho_apply_eq_self`, using `n ≥ 1` so that
+`Fix(μ_{p^n}) ⊆ Fix(μ_p)`), so `z|_N` is a genuine homomorphism `N → M`
+and the claim is that it is not the zero homomorphism.  Write
+`L = ℚ(M, μ_{p^n})` for the fixed field of `N`.
+
+The classical argument is `H¹(Gal(L/ℚ), M) = 0` — this is DDT Lemma 2.48
+proper, and it is the step that consumes absolute irreducibility of
+`ρbar|_{ℚ(ζ_p)}`, available from `hρbar` together with `hirr` and `p`
+odd — followed by INFLATION–RESTRICTION: the inflation image is exactly
+the kernel of `H¹(Γ ℚ, M) → Hom_Γ(N, M)`, so it vanishing makes the
+restriction injective on classes unramified outside `{2, p}`, and `hc0`
+then supplies `τ ∈ N` with `z τ ≠ 0`.
+
+Taking `N` cut out by `ker ρbar` rather than by `ker ad⁰ρbar` is
+harmless: the intermediate group acts trivially on `M` and has order
+prime to `p`, so its `Hom` into the `p`-group `M` vanishes and the two
+`H¹`s agree.
+
+**Machinery already present**: `adZeroTwistSubgroup` and
+`resSubgroupTwist1` are the restriction to a subgroup, and
+`finite_ker_resSubgroupTwist1` (owned elsewhere at the time of writing)
+is the finiteness of the inflation image.  `hzc` is what connects the
+class `c` — which carries the hypotheses `hcunr` and `hc0` — to the
+cocycle `z` whose values this statement is about; do not drop it.
+
+**FAITHFULNESS.** `hc0` is load-bearing: for `z` a coboundary the
+restriction to `N` is `τ ↦ ρ τ m − m = 0`, so the conclusion is false and
+only `c ≠ 0` excludes it.  `hn` is load-bearing through the trivial
+action of `N` on `M`, without which `z|_N` is not even a homomorphism.
+Abstractly the hypothesis set contains the classically unsatisfiable
+irreducible hardly ramified `ρbar`, so the statement is classically true
+outright and CANNOT be false as stated.
+
+CIRCULARITY GUARD, inherited verbatim from the consumer: it must not be
+discharged through `not_isIrreducible_of_isHardlyRamified_of_five_le`,
+`IsHardlyRamified.mod_three_reducible`, `Family.lean` or anything
+downstream of them — a proof ending in `exfalso` on `hirr` is the
+circular discharge and is BANNED. -/
+theorem exists_mem_kerFix_eval₁_ne_zero.{uK, uW}
+    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hpodd hW ρbar) (hirr : ρbar.IsIrreducible)
+    {n : ℕ} (hn : 1 ≤ n)
+    (z : ContinuousCohomology.cocycles₁ (adZeroTwist p ρbar))
+    {c : continuousCohomology 1 (adZeroTwist p ρbar)}
+    (hzc : ContinuousCohomology.cocycleClass (adZeroTwist p ρbar) 1 z = c)
+    (hcunr : c ∈ h1TwistUnramified p ρbar) (hc0 : c ≠ 0) :
+    ∃ τ : Field.absoluteGaloisGroup ℚ, ρbar τ = 1 ∧
+      (∀ ζ : AlgebraicClosure ℚ, ζ ^ p ^ n = 1 → τ ζ = ζ) ∧
+      ContinuousCohomology.eval₁ (adZeroTwist p ρbar) z.1 τ ≠ 0 := sorry
+
+/-- **Irreducibility of `ad⁰ρbar(1)` as a `Γ ℚ`-representation over `k`
+(SORRY LEAF, cut 2026-07-29): a `Γ ℚ`-stable `k`-subspace is `⊥` or
+`⊤`.**
+
+# ROUTE
+
+This is Wiles, Lemma 1.12 / DDT Theorem 2.49's module-structure input,
+and the standard statement is: for `p ≥ 5` and `ρbar|_{ℚ(ζ_p)}`
+ABSOLUTELY irreducible, `ad⁰ρbar` is an irreducible `Γ ℚ`-module.  The
+cyclotomic twist is invisible to the submodule lattice — twisting by a
+character rescales each `ρ g` by a scalar and so preserves exactly the
+same stable subspaces — so it suffices to treat `ad⁰ρbar` itself.
+
+**HYPOTHESIS-STRENGTH WARNING, recorded rather than papered over.**
+`hirr` here is `GaloisRep.IsIrreducible`, i.e. irreducibility of `ρbar`
+over `k`, NOT absolute irreducibility, and merely irreducible `ρbar` is
+in general NOT enough: for `ρbar` induced from a character of a
+quadratic field (the dihedral case) `ad⁰ρbar` splits as the sum of the
+quadratic character and a two-dimensional induced piece, so a proper
+nonzero stable subspace exists.  The honest situation is therefore:
+
+* the statement is not refutable HERE, because the hypothesis set
+  contains the classically unsatisfiable irreducible hardly ramified
+  `ρbar` (the same both-ways audit the consumer records);
+* but an owner attacking it non-circularly will need absolute
+  irreducibility of `ρbar|_{ℚ(ζ_p)}` extracted from `hρbar` and `hirr`
+  with `p` odd, and if that extraction is not available the RIGHT repair
+  is to strengthen this leaf's hypothesis and discharge the strengthened
+  form at the call site — not to attack the dihedral case, which is
+  false.
+
+CIRCULARITY GUARD, inherited from the consumer: not to be discharged
+through `not_isIrreducible_of_isHardlyRamified_of_five_le`,
+`IsHardlyRamified.mod_three_reducible`, `Family.lean` or anything
+downstream of them. -/
+theorem adZeroTwist_eq_top_of_map_rho_le_of_ne_bot.{uK, uW}
+    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hpodd hW ρbar) (hirr : ρbar.IsIrreducible)
+    {Q : Submodule k ↥(adZeroTwist p ρbar)}
+    (hstable : ∀ g : Field.absoluteGaloisGroup ℚ,
+      Submodule.map ((adZeroTwist p ρbar).ρ g).toLinearMap Q ≤ Q)
+    (hQ : Q ≠ ⊥) : Q = ⊤ := sorry
+
+/-- **The Wiles moving step** (PROVEN 2026-07-29 over the two leaves
+above): the values of `z` on `N = ker ρbar ∩ Fix(μ_{p^n})` are not
+contained in any PROPER `k`-subspace of `ad⁰ρbar(1)`.
+
+The `k`-span `Q` of `z(N)` is `Γ ℚ`-stable — for `g ∈ Γ ℚ` and `τ ∈ N`
+the conjugate `g τ g⁻¹` is again in `N` (both `ker ρbar` and
+`Fix(μ_{p^n})` are normal), and `eval₁_conj`'s correction term
+`z g − ρ (g τ g⁻¹) (z g)` VANISHES precisely because `g τ g⁻¹ ∈ N` acts
+trivially, leaving `z (g τ g⁻¹) = ρ g (z τ)`.  It is nonzero by
+`exists_mem_kerFix_eval₁_ne_zero`, hence `⊤` by
+`adZeroTwist_eq_top_of_map_rho_le_of_ne_bot`; a proper `P` containing
+`z(N)` would contain `Q = ⊤`. -/
+theorem exists_mem_kerFix_eval₁_notMem_of_ne_top.{uK, uW}
+    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hpodd hW ρbar) (hirr : ρbar.IsIrreducible)
+    {n : ℕ} (hn : 1 ≤ n)
+    (z : ContinuousCohomology.cocycles₁ (adZeroTwist p ρbar))
+    {c : continuousCohomology 1 (adZeroTwist p ρbar)}
+    (hzc : ContinuousCohomology.cocycleClass (adZeroTwist p ρbar) 1 z = c)
+    (hcunr : c ∈ h1TwistUnramified p ρbar) (hc0 : c ≠ 0)
+    {P : Submodule k ↥(adZeroTwist p ρbar)} (hP : P ≠ ⊤) :
+    ∃ τ : Field.absoluteGaloisGroup ℚ, ρbar τ = 1 ∧
+      (∀ ζ : AlgebraicClosure ℚ, ζ ^ p ^ n = 1 → τ ζ = ζ) ∧
+      ContinuousCohomology.eval₁ (adZeroTwist p ρbar) z.1 τ ∉ P := by
+  classical
+  by_contra hcontra
+  have hcon : ∀ τ : Field.absoluteGaloisGroup ℚ, ρbar τ = 1 →
+      (∀ ζ : AlgebraicClosure ℚ, ζ ^ p ^ n = 1 → τ ζ = ζ) →
+      ContinuousCohomology.eval₁ (adZeroTwist p ρbar) z.1 τ ∈ P := by
+    intro τ h1 h2
+    by_contra hmem
+    exact hcontra ⟨τ, h1, h2, hmem⟩
+  -- the set of values of `z` on `N = ker ρbar ∩ Fix(μ_{p^n})`
+  set S : Set ↥(adZeroTwist p ρbar) :=
+    {y | ∃ τ : Field.absoluteGaloisGroup ℚ, ρbar τ = 1 ∧
+      (∀ ζ : AlgebraicClosure ℚ, ζ ^ p ^ n = 1 → τ ζ = ζ) ∧
+      ContinuousCohomology.eval₁ (adZeroTwist p ρbar) z.1 τ = y}
+  -- on `N` the twisted action is trivial …
+  have hNtriv : ∀ {τ : Field.absoluteGaloisGroup ℚ}, ρbar τ = 1 →
+      (∀ ζ : AlgebraicClosure ℚ, ζ ^ p ^ n = 1 → τ ζ = ζ) →
+      ∀ m, (adZeroTwist p ρbar).ρ τ m = m := by
+    intro τ hτ1 hτζ
+    refine adZeroTwist_rho_apply_eq_self p ρbar hτ1
+      (adZeroCycloChar_eq_one_of_fixes_rootsOfUnity p ?_)
+    intro ζ hζ
+    refine hτζ ζ ?_
+    obtain ⟨d, rfl⟩ := Nat.exists_eq_add_of_le hn
+    rw [pow_add, pow_one, pow_mul, hζ, one_pow]
+  -- … and `N` is normal
+  have hconj : ∀ (g τ : Field.absoluteGaloisGroup ℚ), ρbar τ = 1 →
+      (∀ ζ : AlgebraicClosure ℚ, ζ ^ p ^ n = 1 → τ ζ = ζ) →
+      ρbar (g * τ * g⁻¹) = 1 ∧
+        (∀ ζ : AlgebraicClosure ℚ, ζ ^ p ^ n = 1 → (g * τ * g⁻¹) ζ = ζ) := by
+    intro g τ hτ1 hτζ
+    have hgg : ∀ x : AlgebraicClosure ℚ, g (g⁻¹ x) = x := by
+      intro x
+      simp
+    refine ⟨?_, ?_⟩
+    · rw [map_mul, map_mul, hτ1, mul_one, ← map_mul, mul_inv_cancel, map_one]
+    · intro ζ hζ
+      have hgζ : (g⁻¹ ζ) ^ p ^ n = 1 := by
+        rw [← map_pow, hζ, map_one]
+      rw [AlgEquiv.mul_apply, AlgEquiv.mul_apply, hτζ _ hgζ, hgg ζ]
+  have hSstable : ∀ g : Field.absoluteGaloisGroup ℚ,
+      (fun m => (adZeroTwist p ρbar).ρ g m) '' S ⊆ S := by
+    rintro g _ ⟨y, ⟨τ, hτ1, hτζ, rfl⟩, rfl⟩
+    obtain ⟨hc1, hcζ⟩ := hconj g τ hτ1 hτζ
+    refine ⟨g * τ * g⁻¹, hc1, hcζ, ?_⟩
+    have hcj := ContinuousCohomology.eval₁_conj
+      (ContinuousCohomology.cocycles₁_d_eq_zero z) g τ
+    rw [hNtriv hc1 hcζ (ContinuousCohomology.eval₁ (adZeroTwist p ρbar) z.1 g)]
+      at hcj
+    rw [hcj]
+    abel
+  set Q : Submodule k ↥(adZeroTwist p ρbar) := Submodule.span k S with hQdef
+  have hQstable : ∀ g : Field.absoluteGaloisGroup ℚ,
+      Submodule.map ((adZeroTwist p ρbar).ρ g).toLinearMap Q ≤ Q := by
+    intro g
+    rw [hQdef, Submodule.map_span]
+    exact Submodule.span_mono (hSstable g)
+  have hQbot : Q ≠ ⊥ := by
+    obtain ⟨τ, hτ1, hτζ, hτ0⟩ :=
+      exists_mem_kerFix_eval₁_ne_zero hpodd hW hρbar hirr hn z hzc hcunr hc0
+    intro hbot
+    exact hτ0 (Submodule.span_eq_bot.mp hbot _ ⟨τ, hτ1, hτζ, rfl⟩)
+  have hQtop : Q = ⊤ :=
+    adZeroTwist_eq_top_of_map_rho_le_of_ne_bot hpodd hW hρbar hirr hQstable hQbot
+  refine hP (top_le_iff.mp ?_)
+  rw [← hQtop, hQdef]
+  refine Submodule.span_le.mpr ?_
+  rintro _ ⟨τ, hτ1, hτζ, rfl⟩
+  exact hcon τ hτ1 hτζ
 
 /-- **The arithmetic core of the nonemptiness half of DDT Lemma 2.48**
-(SORRY LEAF, cut out 2026-07-28 from
-`isOpen_survivingLocus_and_meets_taylorWilesLocus`): given a Taylor–Wiles
+(cut out 2026-07-28 from
+`isOpen_survivingLocus_and_meets_taylorWilesLocus`; **PROVEN 2026-07-29**
+over the two leaves `exists_mem_kerFix_eval₁_ne_zero` and
+`adZeroTwist_eq_top_of_map_rho_le_of_ne_bot` above): given a Taylor–Wiles
 element `σ` at a level `n ≥ 1`, the surviving locus of `z` is met SOMEWHERE
 ON THE COSET `σ · Γ_L`, by an element `σ τ` whose translating factor `τ`
 lies in `ker ρbar ∩ Fix(μ_{p^n})` — so that `mem_taylorWilesLocus_mul`
@@ -5890,11 +6142,22 @@ returns `σ τ` to the Taylor–Wiles locus and the intersection is nonempty.
 Everything else in DDT 2.48's global half is now PROVEN around this leaf:
 openness is `isOpen_survivingLocus`, the supply of `σ` is
 `nonempty_taylorWilesLocus`, the return to the Taylor–Wiles locus is
-`mem_taylorWilesLocus_mul`, the `n = 0` case is reduced to `n = 1` by
-`taylorWilesLocus_subset_of_le`, and STEP 2 BELOW — that `(ρ σ - 1) · M`
-is a proper subset — is handed in as the hypothesis `hproper`, discharged
-by `range_rho_sub_ne_univ_of_fixes_rootsOfUnity`.  What is left is exactly
-the arithmetic of Steps 1 and 3.
+`mem_taylorWilesLocus_mul`, and the `n = 0` case is reduced to `n = 1` by
+`taylorWilesLocus_subset_of_le`.  What is left is exactly the arithmetic.
+
+MERGE NOTE (2026-07-30): an earlier release carried Step 2 as a
+HYPOTHESIS `hproper` of this theorem, discharged by a pair of lemmas
+`range_rho_sub_ne_univ_of_fixes_rootsOfUnity` /
+`exists_ne_zero_rho_eq_self_of_fixes_rootsOfUnity` stated for any `σ`
+fixing `μ_p`.  Those two were an independent duplicate of
+`range_subRho_ne_top_of_mem_taylorWilesLocus` /
+`exists_ne_zero_adZeroTwist_rho_eq_self_of_mem_taylorWilesLocus` above,
+were consumed by nothing else in the tree, and became unreachable once
+Step 2 moved INSIDE this proof; they were deleted at the merge.  Recover
+them with `git show main:Fermat/FLT/Modularity/Patching.lean` at any
+commit before this one if the more general `σ`-fixes-`μ_p` form is ever
+wanted — the only generality lost is the SCALAR case of `ρbar σ`, which
+the charpoly clause of `taylorWilesLocus` excludes anyway.
 
 # ROUTE
 
@@ -5917,14 +6180,19 @@ by `ker ρbar` rather than by `ker ad⁰ρbar` is harmless: the intermediate
 group acts trivially on `M` and has order prime to `p`, so its `Hom` into
 the `p`-group `M` vanishes and the two `H¹`'s agree.)
 
-*Step 2 — `(ρ σ - 1) · M` is a PROPER subset.*  **PROVEN and supplied as
-`hproper`**; see `range_rho_sub_ne_univ_of_fixes_rootsOfUnity` and
-`exists_ne_zero_rho_eq_self_of_fixes_rootsOfUnity`.  (Since `n ≥ 1`, `σ`
-fixes `μ_p`, so `χ(σ) = 1` and `ρ σ` is plain conjugation by `ρbar σ`,
-which always fixes the traceless part of `ρbar σ` — or everything, when
-`ρbar σ` is scalar.  Note this needs neither the charpoly clause nor
-`α ≠ β`; distinctness pins the fixed space to a LINE, which mere
-properness does not require.)
+*Step 2 — `(ρ σ - 1) · M` is a PROPER subspace.*  **PROVEN**, inside this
+proof, by `range_subRho_ne_top_of_mem_taylorWilesLocus`.  Since `n ≥ 1`,
+`σ` fixes `μ_p`, so `χ(σ) = 1`
+(`adZeroCycloChar_eq_one_of_fixes_rootsOfUnity`) and `ρ σ` is plain
+conjugation by `ρbar σ`.  The charpoly clause of `hσ` gives `ρbar σ` two
+DISTINCT eigenvalues, so `2 · ρbar σ - (tr ρbar σ) · 1` is a NONZERO
+element of `M` commuting with `ρbar σ`
+(`exists_ne_zero_traceZero_commute_of_charpoly_eq`), i.e. a nonzero fixed
+vector of `ρ σ`.  Hence `ρ σ - 1` is not injective on the
+finite-dimensional `M`, hence not surjective.  (No characteristic
+hypothesis enters: writing the traceless part as `2 E - (tr E) · 1`
+rather than `E - (tr E / 2) · 1` avoids the division, so `hpodd` is NOT
+consumed here.)
 
 *Step 3 — move out.*  If `z σ ∉ (ρ σ - 1) · M` take `τ = 1`.  Otherwise
 apply Step 1 inside the `Γ`-stable subgroup `z(N) ⊆ M` and use
@@ -5956,12 +6224,78 @@ theorem exists_mul_mem_survivingLocus_of_mem_taylorWilesLocus.{uK, uW}
     {c : continuousCohomology 1 (adZeroTwist p ρbar)}
     (hzc : ContinuousCohomology.cocycleClass (adZeroTwist p ρbar) 1 z = c)
     (hcunr : c ∈ h1TwistUnramified p ρbar) (hc0 : c ≠ 0)
-    {σ : Field.absoluteGaloisGroup ℚ} (hσ : σ ∈ taylorWilesLocus p ρbar n)
-    (hproper : Set.range (fun m : ↥(adZeroTwist p ρbar) =>
-      (adZeroTwist p ρbar).ρ σ m - m) ≠ Set.univ) :
+    {σ : Field.absoluteGaloisGroup ℚ} (hσ : σ ∈ taylorWilesLocus p ρbar n) :
     ∃ τ : Field.absoluteGaloisGroup ℚ, ρbar τ = 1 ∧
       (∀ ζ : AlgebraicClosure ℚ, ζ ^ p ^ n = 1 → τ ζ = ζ) ∧
-      σ * τ ∈ survivingLocus p ρbar z := sorry
+      σ * τ ∈ survivingLocus p ρbar z := by
+  classical
+  by_cases hσsurv : σ ∈ survivingLocus p ρbar z
+  · exact ⟨1, map_one _, fun _ _ => rfl, by simpa using hσsurv⟩
+  · -- `A = ρ σ − 1`, whose range is PROPER by Step 2
+    set A : ↥(adZeroTwist p ρbar) →ₗ[k] ↥(adZeroTwist p ρbar) :=
+      ((adZeroTwist p ρbar).ρ σ).toLinearMap -
+        (LinearMap.id : ↥(adZeroTwist p ρbar) →ₗ[k] ↥(adZeroTwist p ρbar))
+      with hAdef
+    have hAapply : ∀ m, A m = (adZeroTwist p ρbar).ρ σ m - m := by
+      intro m; simp [hAdef]
+    have hiff : ∀ y : ↥(adZeroTwist p ρbar),
+        y ∈ Set.range (fun m : ↥(adZeroTwist p ρbar) =>
+            (adZeroTwist p ρbar).ρ σ m - m) ↔ y ∈ LinearMap.range A := by
+      intro y
+      constructor
+      · rintro ⟨m, rfl⟩; exact ⟨m, hAapply m⟩
+      · rintro ⟨m, rfl⟩; exact ⟨m, (hAapply m).symm⟩
+    have hRne : LinearMap.range A ≠ ⊤ :=
+      range_subRho_ne_top_of_mem_taylorWilesLocus hW ρbar hn hσ
+    -- pull it back along the automorphism `ρ σ`; still proper
+    set P : Submodule k ↥(adZeroTwist p ρbar) :=
+      Submodule.comap ((adZeroTwist p ρbar).ρ σ).toLinearMap
+        (LinearMap.range A)
+    have hPne : P ≠ ⊤ := by
+      intro htop
+      refine hRne (Submodule.eq_top_iff'.mpr fun y => ?_)
+      have hy : (adZeroTwist p ρbar).ρ σ ((adZeroTwist p ρbar).ρ σ⁻¹ y)
+          ∈ LinearMap.range A :=
+        Submodule.eq_top_iff'.mp htop ((adZeroTwist p ρbar).ρ σ⁻¹ y)
+      rwa [ContinuousCohomology.rho_apply_inv (adZeroTwist p ρbar) σ y] at hy
+    -- Step 3: move out of `P` inside `N`
+    obtain ⟨τ, hτ1, hτζ, hτP⟩ :=
+      exists_mem_kerFix_eval₁_notMem_of_ne_top hpodd hW hρbar hirr hn z hzc
+        hcunr hc0 hPne
+    refine ⟨τ, hτ1, hτζ, ?_⟩
+    have hτfixp : ∀ ζ : AlgebraicClosure ℚ, ζ ^ p = 1 → τ ζ = ζ := by
+      intro ζ hζ
+      refine hτζ ζ ?_
+      obtain ⟨d, rfl⟩ := Nat.exists_eq_add_of_le hn
+      rw [pow_add, pow_one, pow_mul, hζ, one_pow]
+    have hτρ : ∀ m, (adZeroTwist p ρbar).ρ τ m = m :=
+      adZeroTwist_rho_apply_eq_self p ρbar hτ1
+        (adZeroCycloChar_eq_one_of_fixes_rootsOfUnity p hτfixp)
+    have hστρ : ∀ m, (adZeroTwist p ρbar).ρ (σ * τ) m
+        = (adZeroTwist p ρbar).ρ σ m := by
+      intro m
+      have h : (adZeroTwist p ρbar).ρ (σ * τ) m
+          = (adZeroTwist p ρbar).ρ σ ((adZeroTwist p ρbar).ρ τ m) := by
+        rw [map_mul]; rfl
+      rw [h, hτρ m]
+    have hzσ : ContinuousCohomology.eval₁ (adZeroTwist p ρbar) z.1 σ
+        ∈ LinearMap.range A := (hiff _).mp (not_not.mp hσsurv)
+    intro hmem
+    obtain ⟨m, hm⟩ := hmem
+    have hm2 : (adZeroTwist p ρbar).ρ σ m - m
+        = ContinuousCohomology.eval₁ (adZeroTwist p ρbar) z.1 (σ * τ) := by
+      rw [← hστρ m]; exact hm
+    have hsplit := ContinuousCohomology.cocycles₁_eval₁_mul z σ τ
+    refine hτP ?_
+    show (adZeroTwist p ρbar).ρ σ
+        (ContinuousCohomology.eval₁ (adZeroTwist p ρbar) z.1 τ)
+        ∈ LinearMap.range A
+    have hval : (adZeroTwist p ρbar).ρ σ
+        (ContinuousCohomology.eval₁ (adZeroTwist p ρbar) z.1 τ)
+        = A m - ContinuousCohomology.eval₁ (adZeroTwist p ρbar) z.1 σ := by
+      rw [hAapply m, hm2, hsplit]; abel
+    rw [hval]
+    exact Submodule.sub_mem _ (LinearMap.mem_range_self A m) hzσ
 
 /-- **The GLOBAL half of DDT Lemma 2.48** (cut out 2026-07-28; **PROVEN the
 same day** over the single leaf
@@ -6019,16 +6353,9 @@ theorem isOpen_survivingLocus_and_meets_taylorWilesLocus.{uK, uW}
       (survivingLocus p ρbar z ∩ taylorWilesLocus p ρbar n).Nonempty := by
   refine ⟨isOpen_survivingLocus p ρbar z, ?_⟩
   obtain ⟨σ, hσ⟩ := nonempty_taylorWilesLocus hpodd hW hρbar hirr (max n 1)
-  -- `σ` fixes `μ_{p^(max n 1)}` and `1 ≤ max n 1`, so it fixes `μ_p`
-  have hσp : ∀ ζ : AlgebraicClosure ℚ, ζ ^ p = 1 → σ ζ = ζ := by
-    intro ζ hζ
-    refine hσ.1 ζ ?_
-    obtain ⟨d, hd⟩ := Nat.exists_eq_add_of_le (le_max_right n 1)
-    rw [hd, pow_add, pow_one, pow_mul, hζ, one_pow]
   obtain ⟨τ, hτ1, hτζ, hmem⟩ :=
     exists_mul_mem_survivingLocus_of_mem_taylorWilesLocus hpodd hW hρbar hirr
       (le_max_right n 1) z hzc hcunr hc0 hσ
-      (range_rho_sub_ne_univ_of_fixes_rootsOfUnity p hpodd hW ρbar hσp)
   exact ⟨σ * τ, hmem,
     taylorWilesLocus_subset_of_le p ρbar (le_max_left n 1)
       (mem_taylorWilesLocus_mul p ρbar (max n 1) hτ1 hτζ hσ)⟩
