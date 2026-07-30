@@ -14748,8 +14748,186 @@ theorem eq_zero_of_red_eq_red_zero (q n : ℕ) (hq : q.Prime)
 
 end IsAbelianReductionDatum
 
-/-- **GOOD REDUCTION OUTSIDE A FINITE SET OF PLACES** (sorry leaf —
-SPREADING OUT; BLR *Néron Models* 1.2/1.4 and 7.4, Mumford *AV* §6).
+/-- **A FROBENIUS-EQUIVARIANT PLACE OF `F̄` ABOVE `w`** (sorry leaf, cut
+2026-07-30 as the ALGEBRAIC half of
+`exists_finset_abelianReductionDatum_of_mult` below; Neukirch *ANT* II.8,
+II.9, Serre *Local Fields* I–II, Bourbaki *Commutative Algebra* VI).
+
+Everything `exists_finset_abelianReductionDatum_of_mult` needs to know about
+the BASE, and nothing about abelian schemes: a valuation ring `O` of `F̄`
+lying over `w`, with residue field `κ(w)ᵃˡᵍ`, PRESERVED by the arithmetic
+Frobenius at `w` and inducing `σ` on residues.
+
+The seven clauses are, in order, the five that pin `(O, ι, π)` — they are
+verbatim the fields `ι_injective`, `π_surjective`, `ker_π`, `valuationRing`
+and `lift_int` of `IsAbelianReductionDatum` — followed by the two that make
+`φ` the arithmetic Frobenius: it acts on `F̄` as the specific element
+`Field.absoluteGaloisGroup.map (algebraMap F F_w) (adicArithFrob w)` that
+the structure's `sp_frob` names, and it acts on residues as `σ`.
+
+**WHY THIS IS THE RIGHT PLACE TO CUT.**  The uncut leaf needs two disjoint
+books at once — BLR chapters 1 and 7 for the model, and the valuation
+theory of `F̄` for the base — and the base half is where the trap recorded
+on the leaf below lives.  Split, each half is ownable alone.
+
+**ROUTE, and where the pieces already are.**  `O` is the pullback along
+`IsAlgClosed.lift : F̄ →ₐ[F] (F_w)ᵃˡᵍ` — the SAME embedding
+`Field.absoluteGaloisGroup.mapAux` is built from, which is what buys the
+sixth clause and is not optional (see the leaf below) — of the valuation
+ring of `(F_w)ᵃˡᵍ`.  Verified 2026-07-30 against that definition, which is
+`AlgHom.restrictNormal'` of `σ ∘ IsAlgClosed.lift`, so `φ` is exactly the
+transported Frobenius and the sixth clause is its defining property.
+The seventh is `Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob`
+together with `hσ`.
+
+A CHEAPER ROUTE EXISTS FOR THE FIRST FIVE CLAUSES ALONE, and it is already
+in this tree: `FLT.exists_ratValuation_of_heightOneSpectrum` in
+`Fermat/FLT/Mathlib/RingTheory/Valuation/AlgebraicExtension.lean` extends
+the `w`-adic valuation to any algebraic extension of `F` as a
+`WithTop ℚ`-valued additive valuation, with the comparison clause
+`z ∈ w^N ↔ N ≤ v z` on `𝒪_F`.  Taking `O := {z : F̄ // 0 ≤ v z}` gives
+`ι_injective` and `valuationRing` immediately (`v z + v z⁻¹ = v 1 = 0`), and
+`lift_int` from the comparison clause plus the observation that `a ∉ w`
+forces `v a = 0` because `v (aⁿ) = n · v a < 1` for every `n` (`w` is
+prime, so `aⁿ ∉ w`).
+
+WHAT THAT ROUTE DOES **NOT** GIVE, and why the pullback construction is
+still the one to build: (a) `π_surjective` needs the residue field of `O`
+to be an ALGEBRAIC CLOSURE of `κ(w)` — algebraically closed because a monic
+polynomial over `O` has all its roots in `O`, algebraic because `F̄/F` is —
+and then `IsAlgClosure.equiv`; mathlib has neither statement (checked
+2026-07-30: no `IsAlgClosed` result anywhere under
+`Mathlib/RingTheory/Valuation/`).  (b) The sixth clause fails outright:
+Chevalley's extension theorem chooses an ARBITRARY valuation subring, the
+places above `w` form a single `Γ_F`-orbit, and nothing makes the arbitrary
+choice the one that `IsAlgClosed.lift` singles out.  So that route reaches
+five of seven clauses and stops; it is recorded because those five are
+real work that need not be redone, not because it finishes.
+
+**FAITHFULNESS AUDIT (2026-07-30).**  The statement is an EXISTENCE claim,
+so it cannot be weakened by junk data, and the only way it could fail is if
+no such `O` existed.  One does: the places of `F̄` above `w` are exactly the
+valuation rings of `F̄` dominating `𝒪_{F,w}`, they are nonempty by
+Chevalley, each has residue field an algebraic closure of `κ(w)`, and the
+one determined by `IsAlgClosed.lift` is preserved by the transported
+Frobenius by construction.  `hσ` is REQUIRED and not decoration: for an
+arbitrary `σ` the seventh clause is false, since the residue action of the
+arithmetic Frobenius is the `N w`-power map and nothing else. -/
+theorem exists_frobEquivariant_placeAbove {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F))
+    (σ : Field.absoluteGaloisGroup w.asIdeal.ResidueField)
+    (hσ : ∀ z : AlgebraicClosure w.asIdeal.ResidueField,
+      (σ : AlgebraicClosure w.asIdeal.ResidueField ≃ₐ[w.asIdeal.ResidueField]
+          AlgebraicClosure w.asIdeal.ResidueField) z = z ^ Ideal.absNorm w.asIdeal) :
+    ∃ (O : CommRingCat.{u}) (ι : O ⟶ CommRingCat.of (AlgebraicClosure F))
+      (π : O ⟶ CommRingCat.of (AlgebraicClosure w.asIdeal.ResidueField)) (φ : O ≅ O),
+      Function.Injective ι.hom ∧
+      Function.Surjective π.hom ∧
+      (∀ z : O, π.hom z = 0 ↔ ¬ IsUnit z) ∧
+      (∀ z : AlgebraicClosure F, z ≠ 0 →
+        (∃ u : O, ι.hom u = z) ∨ (∃ u : O, ι.hom u = z⁻¹)) ∧
+      (∀ a : 𝓞 F, ∃ z : O,
+        ι.hom z = algebraMap F (AlgebraicClosure F) (algebraMap (𝓞 F) F a) ∧
+          (π.hom z = 0 ↔ a ∈ w.asIdeal)) ∧
+      (∀ z : O, ι.hom (φ.hom.hom z)
+        = (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+              (Field.AbsoluteGaloisGroup.adicArithFrob w) :
+            AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F) (ι.hom z)) ∧
+      (∀ z : O, π.hom (φ.hom.hom z)
+        = (σ : AlgebraicClosure w.asIdeal.ResidueField ≃ₐ[w.asIdeal.ResidueField]
+              AlgebraicClosure w.asIdeal.ResidueField) (π.hom z)) :=
+  sorry
+
+/-- **GOOD REDUCTION OUTSIDE A FINITE SET OF PLACES, OVER A GIVEN PLACE OF
+`F̄`** (sorry leaf, cut 2026-07-30 as the GEOMETRIC half of
+`exists_finset_abelianReductionDatum_of_mult` below — SPREADING OUT; BLR
+*Néron Models* 1.2/1.4 and 7.4, Mumford *AV* §6).
+
+This is the leaf below with the base HANDED IN rather than constructed: the
+valuation ring `O` of `F̄` above `w`, its embedding `ι`, its residue map
+`π` and the arithmetic Frobenius `φ` on it come as hypotheses, with exactly
+the seven properties `exists_frobEquivariant_placeAbove` produces.  What is
+left is the model and nothing else — steps 1 and 2 of the route recorded on
+the leaf below.
+
+**FAITHFULNESS AUDIT (2026-07-30), and this is the half where it matters,
+because this leaf quantifies UNIVERSALLY over the base data — the trap
+recorded in `X0.lean`'s `exists_x0Sieve` subsection.  Junk `(O, ι, π, φ)`
+would make it FALSE, not merely weak, so the seven hypotheses were checked
+to pin the base completely.**
+
+* `O` cannot be too big.  Taking `ι(O) = F̄` makes every nonzero element a
+  unit, so `ker_π` forces `π` injective — and an injective ring map from
+  characteristic `0` to `κ(w)ᵃˡᵍ` of characteristic `p` is impossible.
+* `O` cannot be too small.  `valuationRing` together with `ι_injective`
+  says exactly that `ι(O)` is a valuation subring of `F̄` with fraction
+  field `F̄`; `𝒪_{F,w}` itself fails it (neither `√ϖ` nor `1/√ϖ` lies in
+  it).
+* `O` cannot have the wrong residue field: `ker_π` makes the kernel of `π`
+  the maximal ideal and `π_surjective` then makes `O`'s residue field
+  `κ(w)ᵃˡᵍ` on the nose.
+* `O` cannot lie over the wrong place: `lift_int` puts the centre of the
+  valuation on `𝒪_F` at exactly `w`.
+
+So `ι(O)` is precisely a place of `F̄` above `w`, and all of these are a
+single `Γ_F`-orbit; the sixth and seventh hypotheses then say `φ` realises
+the arithmetic Frobenius on it and induces `σ` on residues, which is what
+`sp_frob` needs and the ONLY thing that distinguishes the orbit's members.
+Since `φ` fixes the image of `F` pointwise (it agrees there with an element
+of `Γ_F`), it is `𝒪_F`-linear, so it acts on the base change of a model
+spread out over `𝒪_F[1/N]` — which is why the conclusion is reachable for
+EVERY base satisfying the hypotheses, not merely for the constructed one.
+
+`bad` is chosen before `w` and independently of `O`, as it must be: the
+spreading-out of step 1 happens once, over `𝒪_F[1/N]`, and knows nothing
+about any place. -/
+theorem exists_finset_abelianReductionDatum_of_placeAbove
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (𝓞 D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f) :
+    ∃ bad : Finset (HeightOneSpectrum (𝓞 F)),
+      ∀ w ∉ bad,
+        ∀ σ : Field.absoluteGaloisGroup w.asIdeal.ResidueField,
+          (∀ z : AlgebraicClosure w.asIdeal.ResidueField,
+            (σ : AlgebraicClosure w.asIdeal.ResidueField ≃ₐ[w.asIdeal.ResidueField]
+                AlgebraicClosure w.asIdeal.ResidueField) z = z ^ Ideal.absNorm w.asIdeal) →
+        ∀ (O : CommRingCat.{u}) (ι : O ⟶ CommRingCat.of (AlgebraicClosure F))
+          (π : O ⟶ CommRingCat.of (AlgebraicClosure w.asIdeal.ResidueField)) (φ : O ≅ O),
+          Function.Injective ι.hom →
+          Function.Surjective π.hom →
+          (∀ z : O, π.hom z = 0 ↔ ¬ IsUnit z) →
+          (∀ z : AlgebraicClosure F, z ≠ 0 →
+            (∃ u : O, ι.hom u = z) ∨ (∃ u : O, ι.hom u = z⁻¹)) →
+          (∀ a : 𝓞 F, ∃ z : O,
+            ι.hom z = algebraMap F (AlgebraicClosure F) (algebraMap (𝓞 F) F a) ∧
+              (π.hom z = 0 ↔ a ∈ w.asIdeal)) →
+          (∀ z : O, ι.hom (φ.hom.hom z)
+            = (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+                  (Field.AbsoluteGaloisGroup.adicArithFrob w) :
+                AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F) (ι.hom z)) →
+          (∀ z : O, π.hom (φ.hom.hom z)
+            = (σ : AlgebraicClosure w.asIdeal.ResidueField ≃ₐ[w.asIdeal.ResidueField]
+                  AlgebraicClosure w.asIdeal.ResidueField) (π.hom z)) →
+        ∃ (A' : Scheme.{u}) (f' : A' ⟶ Spec (CommRingCat.of w.asIdeal.ResidueField))
+          (ab' : AbelianSchemeStruct f') (m' : Mult ab' (𝓞 D))
+          (𝒜 : Scheme.{u}) (fO : 𝒜 ⟶ Spec O) (abO : AbelianSchemeStruct fO)
+          (mO : Mult abO (𝓞 D))
+          (_ : IsAbelianReductionDatum ab m x w ab' m' σ O ι π abO mO),
+          SmoothOfRelativeDimension (Module.finrank ℚ D) f' :=
+  sorry
+
+/-- **GOOD REDUCTION OUTSIDE A FINITE SET OF PLACES** (**PROVEN 2026-07-30**
+over the two disjoint leaves immediately above —
+`exists_frobEquivariant_placeAbove` (the base: valuation theory of `F̄` at a
+place over `w`, Frobenius-equivariantly) and
+`exists_finset_abelianReductionDatum_of_placeAbove` (the model: spreading
+out and the Néron property, BLR *Néron Models* 1.2/1.4 and 7.4, Mumford *AV*
+§6).  It was a single sorry leaf from 2026-07-27 until then.  Everything the
+docstring below says about the mathematics is unchanged; it now describes
+the two halves jointly.
 
 Outside a finite set of places `w` of `F` the fibre `A_x` has a
 Néron-pinned reduction datum at `w`: an abelian scheme over the local
@@ -14865,8 +15043,14 @@ theorem exists_finset_abelianReductionDatum_of_mult
           (𝒜 : Scheme.{u}) (fO : 𝒜 ⟶ Spec O) (abO : AbelianSchemeStruct fO)
           (mO : Mult abO (𝓞 D))
           (_ : IsAbelianReductionDatum ab m x w ab' m' σ O ι π abO mO),
-          SmoothOfRelativeDimension (Module.finrank ℚ D) f' :=
-  sorry
+          SmoothOfRelativeDimension (Module.finrank ℚ D) f' := by
+  obtain ⟨bad, hbad⟩ := exists_finset_abelianReductionDatum_of_placeAbove m x hdim
+  refine ⟨bad, fun w hw σ hσ => ?_⟩
+  obtain ⟨O, ι, π, φ, hι, hπ, hker, hval, hlift, hfrobGen, hfrobRes⟩ :=
+    exists_frobEquivariant_placeAbove w σ hσ
+  obtain ⟨A', f', ab', m', 𝒜, fO, abO, mO, d, hsm⟩ :=
+    hbad w hw σ hσ O ι π φ hι hπ hker hval hlift hfrobGen hfrobRes
+  exact ⟨A', f', ab', m', O, ι, π, 𝒜, fO, abO, mO, d, hsm⟩
 
 end AbelianReduction
 
