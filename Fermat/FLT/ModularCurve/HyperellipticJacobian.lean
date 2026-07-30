@@ -1990,6 +1990,308 @@ lemma adjoin_inv_eq {F : Type} [Field F] [Algebra K F] (g : F) :
 
 end PlaceData
 
+section Genus
+
+variable {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+
+/-! ### Orders of polynomials at a pole, and the two consequences (PROVEN)
+
+The one valuation-theoretic input the genus and the fundamental identity both need:
+**at a place where `ord_v t < 0` the order of `p(t)` is `ord_v t · deg p`**
+(`ord_aeval_of_ord_neg`).  It is an induction on the degree over `divX`, the inductive step
+being the strict ultrametric equality `ord_add_of_lt` — the leading term `p.divX(t)·t` has
+strictly smaller order than the constant term, which has order `0`.
+
+Two things come out of it, and they are used in completely different places:
+
+* `ord_eq_zero_of_isAlgebraic`: every element algebraic over `K` is a unit at every place
+  (apply the above to `g` and to `g⁻¹`; a nonzero order of either sign produces a nonzero
+  `aeval g p` from the minimal polynomial).  Hence `poleDivisor` and `K⟮g⟯`-codimension both
+  vanish there, which is the **algebraic half of `degOf_poleDivisor_eq_finrank`** — the half
+  the leaf's own docstring already asserted in prose;
+* `ord_aeval_of_ord_eq_neg_one`, the `ord_v t = −1` case, is what pins a place in
+  characteristic `2` and eliminates that characteristic altogether. -/
+
+private theorem ord_aeval_aux (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places)
+    {t : D.F} {m : ℤ} (hm : m < 0) (ht : D.ord v t = m) :
+    ∀ (n : ℕ) (p : K[X]), p ≠ 0 → p.natDegree ≤ n →
+      aeval t p ≠ 0 ∧ D.ord v (aeval t p) = m * (p.natDegree : ℤ) := by
+  have ht0 : t ≠ 0 := by
+    intro h
+    rw [h, D.ord_zero] at ht
+    omega
+  intro n
+  induction n with
+  | zero =>
+    intro p hp hdeg
+    have hpc : p = C (p.coeff 0) := Polynomial.eq_C_of_natDegree_eq_zero (Nat.le_zero.mp hdeg)
+    have hc0 : p.coeff 0 ≠ 0 := by
+      intro h
+      exact hp (by rw [hpc, h, map_zero])
+    have hval : aeval t p = algebraMap K D.F (p.coeff 0) := by
+      conv_lhs => rw [hpc]
+      simp
+    refine ⟨?_, ?_⟩
+    · rw [hval]
+      exact (map_ne_zero_iff _ (algebraMap K D.F).injective).mpr hc0
+    · rw [hval, D.ord_algebraMap v _ hc0, Nat.le_zero.mp hdeg]
+      simp
+  | succ n ih =>
+    intro p hp hdeg
+    rcases eq_or_ne p.divX 0 with hq | hq
+    · -- `p` is a constant
+      have hpc : p = C (p.coeff 0) := Polynomial.divX_eq_zero_iff.mp hq
+      have hc0 : p.coeff 0 ≠ 0 := by
+        intro h
+        exact hp (by rw [hpc, h, map_zero])
+      have hdeg0 : p.natDegree = 0 := by
+        conv_lhs => rw [hpc]
+        exact Polynomial.natDegree_C _
+      have hval : aeval t p = algebraMap K D.F (p.coeff 0) := by
+        conv_lhs => rw [hpc]
+        simp
+      refine ⟨?_, ?_⟩
+      · rw [hval]
+        exact (map_ne_zero_iff _ (algebraMap K D.F).injective).mpr hc0
+      · rw [hval, D.ord_algebraMap v _ hc0, hdeg0]
+        simp
+    · have hdegpos : p.natDegree ≠ 0 := by
+        intro h
+        exact hq (Polynomial.divX_eq_zero_iff.mpr (Polynomial.eq_C_of_natDegree_eq_zero h))
+      have hqdeg : p.divX.natDegree = p.natDegree - 1 :=
+        Polynomial.natDegree_divX_eq_natDegree_tsub_one
+      have hqle : p.divX.natDegree ≤ n := by omega
+      obtain ⟨hqne, hqord⟩ := ih p.divX hq hqle
+      have hmulne : aeval t p.divX * t ≠ 0 := mul_ne_zero hqne ht0
+      have hmulord : D.ord v (aeval t p.divX * t) = m * (p.natDegree : ℤ) := by
+        rw [D.ord_mul v _ _ hqne ht0, hqord, ht]
+        have : (p.divX.natDegree : ℤ) + 1 = (p.natDegree : ℤ) := by omega
+        nlinarith [this]
+      have hneg : m * (p.natDegree : ℤ) < 0 := by
+        have h1 : (1 : ℤ) ≤ (p.natDegree : ℤ) := by
+          have : 1 ≤ p.natDegree := Nat.one_le_iff_ne_zero.mpr hdegpos
+          exact_mod_cast this
+        nlinarith
+      have hsplit : aeval t p = aeval t p.divX * t + algebraMap K D.F (p.coeff 0) := by
+        conv_lhs => rw [← Polynomial.divX_mul_X_add p]
+        simp
+      rcases eq_or_ne (p.coeff 0) 0 with hc | hc
+      · rw [hsplit, hc, map_zero, add_zero]
+        exact ⟨hmulne, hmulord⟩
+      · have hcne : algebraMap K D.F (p.coeff 0) ≠ 0 :=
+          (map_ne_zero_iff _ (algebraMap K D.F).injective).mpr hc
+        have hlt : D.ord v (aeval t p.divX * t) < D.ord v (algebraMap K D.F (p.coeff 0)) := by
+          rw [hmulord, D.ord_algebraMap v _ hc]
+          exact hneg
+        have hne : aeval t p ≠ 0 := by
+          rw [hsplit]
+          intro h0
+          have hcon := D.ord_add_of_lt v hmulne hcne hlt
+          rw [h0, D.ord_zero, hmulord] at hcon
+          omega
+        refine ⟨hne, ?_⟩
+        rw [hsplit, D.ord_add_of_lt v hmulne hcne hlt, hmulord]
+
+/-- **With `ord_v t < 0`, the order of `p(t)` is `ord_v t` times `deg p`** (PROVEN). -/
+theorem ord_aeval_of_ord_neg (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places)
+    {t : D.F} {m : ℤ} (hm : m < 0) (ht : D.ord v t = m) {p : K[X]} (hp : p ≠ 0) :
+    aeval t p ≠ 0 ∧ D.ord v (aeval t p) = m * (p.natDegree : ℤ) :=
+  ord_aeval_aux D v hm ht p.natDegree p hp le_rfl
+
+/-- The `ord_v t = −1` case of `ord_aeval_of_ord_neg` (PROVEN). -/
+theorem ord_aeval_of_ord_eq_neg_one (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places)
+    {t : D.F} (ht : D.ord v t = -1) {p : K[X]} (hp : p ≠ 0) :
+    aeval t p ≠ 0 ∧ D.ord v (aeval t p) = -(p.natDegree : ℤ) := by
+  obtain ⟨h1, h2⟩ := ord_aeval_of_ord_neg D v (by norm_num) ht hp
+  exact ⟨h1, by rw [h2]; ring⟩
+
+/-- **Every element algebraic over `K` is a unit at every place** (PROVEN): a nonzero order of
+either sign contradicts `ord_aeval_of_ord_neg` applied to the vanishing polynomial, at `g` or
+at `g⁻¹`. -/
+theorem ord_eq_zero_of_isAlgebraic (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places)
+    {g : D.F} (hg : IsAlgebraic K g) : D.ord v g = 0 := by
+  have main : ∀ z : D.F, IsAlgebraic K z → ¬ D.ord v z < 0 := by
+    intro z hz hlt
+    obtain ⟨p, hp0, hp⟩ := hz
+    exact (ord_aeval_of_ord_neg D v hlt rfl hp0).1 hp
+  rcases eq_or_ne g 0 with rfl | hg0
+  · exact D.ord_zero v
+  rcases lt_trichotomy (D.ord v g) 0 with h | h | h
+  · exact absurd h (main g hg)
+  · exact h
+  · have hinv : IsAlgebraic K g⁻¹ := hg.inv
+    have : D.ord v g⁻¹ < 0 := by rw [D.ord_inv v g hg0]; omega
+    exact absurd this (main g⁻¹ hinv)
+
+/-- `div_∞ g = 0` for `g` algebraic over `K` (PROVEN). -/
+theorem poleDivisor_eq_zero_of_isAlgebraic (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    {g : D.F} (hg : IsAlgebraic K g) : D.poleDivisor g = 0 := by
+  ext v
+  rcases eq_or_ne g 0 with rfl | hg0
+  · simp
+  · simp [PlaceData.divisor_apply D hg0 v, ord_eq_zero_of_isAlgebraic D v hg]
+
+/-- `[F : K⟮g⟯] = 0` — `Module.finrank`'s junk value — for `g` algebraic over `K` (PROVEN):
+otherwise `F` would be finite over `K⟮g⟯`, hence over `K`, contradicting
+`transcendental_xx`. -/
+theorem finrank_adjoin_eq_zero_of_isAlgebraic (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    {g : D.F} (hg : IsAlgebraic K g) :
+    Module.finrank (IntermediateField.adjoin K {g}) D.F = 0 := by
+  by_contra hne
+  have hfin1 : Module.Finite (IntermediateField.adjoin K {g}) D.F :=
+    Module.finite_of_finrank_pos (Nat.pos_of_ne_zero hne)
+  have hfin2 : FiniteDimensional K (IntermediateField.adjoin K {g}) :=
+    IntermediateField.adjoin.finiteDimensional hg.isIntegral
+  have : FiniteDimensional K D.F :=
+    FiniteDimensional.trans K (IntermediateField.adjoin K {g}) D.F
+  exact D.transcendental_xx ((Algebra.IsAlgebraic.of_finite K D.F).isAlgebraic D.xx)
+
+/-! ### Characteristic `2` is vacuous (PROVEN)
+
+The argument recorded on `not_isRationalGenerator` — `F/K(xx)` is purely inseparable, so
+there is only one place above each place of `K(xx)`, while `ord_pt_infinite` supplies two
+distinct ones over the infinite place — done by hand rather than through a theory of
+inseparable extensions.  With `2 = 0` the cross term of `(a(xx) + b(xx)·yy)²` vanishes, so
+every `z ∈ F` satisfies
+
+    z² · d(xx)² = N(xx),   N = a² + b²·f,
+
+by `gen` and `eqn`.  Taking `ord_v` of both sides at any place with `ord_v xx = −1` and using
+`ord_aeval_of_ord_eq_neg_one` on `d` and `N` determines `2·ord_v z` from the degrees of `d`
+and `N` alone — so any two such places have the same `ord`, and `ord_injective` collapses the
+two points at infinity, contradicting `pt_injective`. -/
+
+/-- In characteristic `2` a place is pinned by `ord_v xx = −1` (PROVEN). -/
+theorem ord_eq_of_two_eq_zero (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (h2 : (2 : K) = 0)
+    {v w : D.Places} (hv : D.ord v D.xx = -1) (hw : D.ord w D.xx = -1) :
+    D.ord v = D.ord w := by
+  have h2F : (2 : D.F) = 0 := by
+    rw [show (2 : D.F) = algebraMap K D.F 2 from (map_ofNat (algebraMap K D.F) 2).symm, h2,
+      map_zero]
+  funext z
+  rcases eq_or_ne z 0 with rfl | hz
+  · rw [D.ord_zero, D.ord_zero]
+  obtain ⟨a, b, d, hd, hab⟩ := D.gen z
+  set N : K[X] := a ^ 2 + b ^ 2 * sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K with hN
+  have hd0 : d ≠ 0 := by
+    intro h
+    rw [h, map_zero] at hd
+    exact hd rfl
+  have hkey : z ^ 2 * aeval D.xx d ^ 2 = aeval D.xx N := by
+    have hsq : (z * aeval D.xx d) ^ 2
+        = (aeval D.xx a) ^ 2 + (aeval D.xx b) ^ 2 * D.yy ^ 2 := by
+      rw [hab]
+      linear_combination (aeval D.xx a * (aeval D.xx b * D.yy)) * h2F
+    rw [mul_pow] at hsq
+    rw [hsq, D.eqn, hN, map_add, map_mul, map_pow, map_pow,
+      aeval_sextPoly c₀ c₁ c₂ c₃ c₄ c₅ D.xx]
+  have hNne : aeval D.xx N ≠ 0 := by
+    rw [← hkey]
+    exact mul_ne_zero (pow_ne_zero _ hz) (pow_ne_zero _ hd)
+  have hN0 : N ≠ 0 := by
+    intro h
+    rw [h, map_zero] at hNne
+    exact hNne rfl
+  have key : ∀ u : D.Places, D.ord u D.xx = -1 →
+      2 * D.ord u z = -(N.natDegree : ℤ) + 2 * (d.natDegree : ℤ) := by
+    intro u hu
+    have hdo := (ord_aeval_of_ord_eq_neg_one D u hu hd0).2
+    have hNo := (ord_aeval_of_ord_eq_neg_one D u hu hN0).2
+    have hz2 : D.ord u (z ^ 2) = 2 * D.ord u z := by
+      rw [D.ord_pow u z hz 2]; ring
+    have hprod : D.ord u (z ^ 2 * aeval D.xx d ^ 2)
+        = D.ord u (z ^ 2) + D.ord u (aeval D.xx d ^ 2) :=
+      D.ord_mul u _ _ (pow_ne_zero _ hz) (pow_ne_zero _ hd)
+    have hdd : D.ord u (aeval D.xx d ^ 2) = 2 * D.ord u (aeval D.xx d) := by
+      rw [D.ord_pow u _ hd 2]; ring
+    rw [hkey, hNo, hz2, hdd, hdo] at hprod
+    omega
+  have hkv := key v hv
+  have hkw := key w hw
+  omega
+
+/-- **No `PlaceData` exists in characteristic `2`** (PROVEN) — the two points at infinity
+collide.  This is what makes every `2 ≠ 0`-free statement in this layer safe: the
+characteristic-`2` case of `not_isRationalGenerator`, `finrank_residue_pt_eq_one` and
+`exists_localDenom_infinite` is not merely handled, it is empty. -/
+theorem placeData_elim_of_two_eq_zero (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (h2 : (2 : K) = 0) : False := by
+  have hv := (D.ord_pt_infinite true).1
+  have hw := (D.ord_pt_infinite false).1
+  have : D.pt (Sum.inr true) = D.pt (Sum.inr false) :=
+    D.ord_injective (ord_eq_of_two_eq_zero D h2 hv hw)
+  exact Bool.noConfusion (Sum.inr.injEq .. ▸ D.pt_injective this : (true : Bool) = false)
+
+/-! ### Transport of a rational generator to `RatFunc K` (PROVEN)
+
+A rational generator `t` generates (`adjoin_eq_top_of_isRationalGenerator`) and is
+transcendental (`transcendental_of_isRationalGenerator`, since otherwise `F` would be finite
+over `K`), so mathlib's `RatFunc.algEquivOfTranscendental` gives `F ≃ₐ[K] RatFunc K`.  The
+two facts carried across are the curve equation and the transcendence of the abscissa, which
+is exactly the hypothesis pair of `no_sextic_sq_of_ratFunc`. -/
+
+/-- A rational generator generates (PROVEN). -/
+theorem adjoin_eq_top_of_isRationalGenerator (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {t : D.F}
+    (h : D.IsRationalGenerator t) : IntermediateField.adjoin K {t} = ⊤ := by
+  refine eq_top_iff.mpr fun z _ => ?_
+  obtain ⟨a, b, hb, hab⟩ := h z
+  have hz : z = aeval t a / aeval t b := by
+    field_simp
+    exact hab
+  exact hz ▸ (IntermediateField.mem_adjoin_simple_iff K _).mpr ⟨a, b, rfl⟩
+
+/-- A rational generator is transcendental over `K` (PROVEN). -/
+theorem transcendental_of_isRationalGenerator (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {t : D.F}
+    (h : D.IsRationalGenerator t) : Transcendental K t := by
+  rw [Transcendental]
+  intro hal
+  have hint : IsIntegral K t := hal.isIntegral
+  have hfd : FiniteDimensional K (IntermediateField.adjoin K {t}) :=
+    IntermediateField.adjoin.finiteDimensional hint
+  rw [adjoin_eq_top_of_isRationalGenerator D h] at hfd
+  have : FiniteDimensional K D.F :=
+    (IntermediateField.topEquiv (F := K) (E := D.F)).toLinearEquiv.finiteDimensional
+  have halg : Algebra.IsAlgebraic K D.F := Algebra.IsAlgebraic.of_finite K D.F
+  exact D.transcendental_xx (halg.isAlgebraic D.xx)
+
+/-- `sext` commutes with any ring homomorphism (PROVEN). -/
+theorem map_sext {A₁ A₂ : Type*} [CommRing A₁] [CommRing A₂] (f : A₁ →+* A₂) (x : A₁) :
+    f (sext c₀ c₁ c₂ c₃ c₄ c₅ x) = sext c₀ c₁ c₂ c₃ c₄ c₅ (f x) := by
+  simp [sext]
+
+/-- A `PlaceData` with a rational generator is `K`-isomorphic to the rational function
+field (PROVEN). -/
+noncomputable def ratFuncEquivOfIsRationalGenerator (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    {t : D.F} (h : D.IsRationalGenerator t) : D.F ≃ₐ[K] RatFunc K :=
+  (((RatFunc.algEquivOfTranscendental t (transcendental_of_isRationalGenerator D h)).trans
+    ((IntermediateField.equivOfEq (adjoin_eq_top_of_isRationalGenerator D h)).trans
+      IntermediateField.topEquiv))).symm
+
+/-- The curve equation, transported to `RatFunc K` (PROVEN). -/
+theorem ratFuncEquiv_yy_sq (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {t : D.F}
+    (h : D.IsRationalGenerator t) :
+    ((ratFuncEquivOfIsRationalGenerator D h) D.yy) ^ 2
+      = sext c₀ c₁ c₂ c₃ c₄ c₅ ((ratFuncEquivOfIsRationalGenerator D h) D.xx) := by
+  set e := ratFuncEquivOfIsRationalGenerator D h
+  rw [← map_pow, D.eqn]
+  simpa using map_sext (c₀ := c₀) (c₁ := c₁) (c₂ := c₂) (c₃ := c₃) (c₄ := c₄) (c₅ := c₅)
+    (e : D.F →+* RatFunc K) D.xx
+
+/-- Transcendence of the abscissa, transported to `RatFunc K` (PROVEN). -/
+theorem transcendental_ratFuncEquiv_xx (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {t : D.F}
+    (h : D.IsRationalGenerator t) :
+    Transcendental K ((ratFuncEquivOfIsRationalGenerator D h) D.xx) := by
+  set e := ratFuncEquivOfIsRationalGenerator D h
+  intro hal
+  refine D.transcendental_xx ?_
+  obtain ⟨p, hp0, hp⟩ := hal
+  refine ⟨p, hp0, ?_⟩
+  have hstep : e (aeval D.xx p) = 0 :=
+    (Polynomial.aeval_algHom_apply (e : D.F →ₐ[K] RatFunc K) D.xx p).symm.trans hp
+  simpa using hstep
+
+end Genus
+
 /-- **LEAF: `O_v` at an affine rational point is the LOCAL RING of the plane model there.**
 
 Every `z` without a pole at `v = pt (a, b)` is a quotient of two elements of the coordinate
@@ -2161,11 +2463,32 @@ approximation plus a dimension count.
 
 Applying it to `g` and to `g⁻¹` is what gives `deg (div_0 g) = deg (div_∞ g)`, since
 `div_∞ (g⁻¹) = div_0 g` and `K(g⁻¹) = K(g)`; applying it at the single value
-`deg (div_∞ g) = 1` is what gives `F = K(g)`. -/
+`deg (div_∞ g) = 1` is what gives `F = K(g)`.
+
+## DECOMPOSED 2026-07-30 — the algebraic case is now Lean, and only this leaf remains
+
+The paragraph above ("for `g` algebraic over `K` the pole divisor is `0` while `[F : K⟮g⟯]`
+is `Module.finrank`'s junk value `0`") was prose; it is now
+`poleDivisor_eq_zero_of_isAlgebraic` and `finrank_adjoin_eq_zero_of_isAlgebraic`,
+both proven from `ord_aeval_of_ord_neg` in the `Genus` section above.  So the side condition
+`Transcendental K g` here is free at every call site, and the transcendental case is the
+whole of Stichtenoth I.4.11: weak approximation plus a dimension count. -/
+theorem degOf_poleDivisor_eq_finrank_of_transcendental {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type}
+    [Field K] (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (g : D.F) (hg : Transcendental K g) :
+    degHom D D.degOf (D.poleDivisor g)
+      = (Module.finrank (IntermediateField.adjoin K {g}) D.F : ℤ) := sorry
+
+/-- **The fundamental identity with no side condition, PROVEN 2026-07-30** from
+`degOf_poleDivisor_eq_finrank_of_transcendental` together with the algebraic case; see the
+docstring there. -/
 theorem degOf_poleDivisor_eq_finrank {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
     (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (g : D.F) :
     degHom D D.degOf (D.poleDivisor g)
-      = (Module.finrank (IntermediateField.adjoin K {g}) D.F : ℤ) := sorry
+      = (Module.finrank (IntermediateField.adjoin K {g}) D.F : ℤ) := by
+  by_cases hg : IsAlgebraic K g
+  · rw [poleDivisor_eq_zero_of_isAlgebraic D hg, map_zero,
+      finrank_adjoin_eq_zero_of_isAlgebraic D hg, Nat.cast_zero]
+  · exact degOf_poleDivisor_eq_finrank_of_transcendental D g hg
 
 /-- **LEAF (obligation 2a, second half): the degree formula.**
 
@@ -2291,6 +2614,64 @@ theorem isRationalGenerator_of_divisor_eq_sub_single
     simp
   · exact ⟨r, s, h0, by rw [hrs, div_mul_cancel₀ _ h0]⟩
 
+/-- **LEAF: a separable sextic takes no square value on a transcendental rational function.**
+
+`ψ² = f(φ)` is impossible in `K(T)` for `φ` transcendental over `K`, `f` a separable monic
+sextic and `2 ≠ 0`.  This is the whole remaining content of `not_isRationalGenerator` — the
+genus — with the `PlaceData` removed: it is a statement about `K(T)` alone.
+
+**Both hypotheses are load-bearing, with explicit counterexamples.**
+
+* Without `hsep`: `f = (x³ + 1)²`, i.e. `c₀ = c₃ = 1` (over `ℚ`, say) and the rest `0`.  Then
+  `φ = T`, `ψ = T³ + 1` satisfies `ψ² = f(φ)` with `φ` transcendental.  This is the same
+  witness the docstring on `not_isRationalGenerator` records.
+* Without `h2` **the statement is FALSE, and separability does not save it** — this is the
+  characteristic-`2` audit on `not_isRationalGenerator` made concrete.  Take `K = 𝔽₂` and
+  `f = x⁶ + x`, i.e. `c₁ = 1` and the rest `0`.  It is separable: `f' = 6x⁵ + 1 = 1` in
+  characteristic `2`, so `gcd(f, f') = 1`.  And `φ = T²` (transcendental), `ψ = T⁶ + T` give
+  `ψ² = T¹² + T² = φ⁶ + φ = f(φ)`, the cross term `2·T⁶·T` vanishing.  So `h2` cannot be
+  dropped here.  It costs `not_isRationalGenerator` nothing, because no `PlaceData` exists in
+  characteristic `2` (`placeData_elim_of_two_eq_zero`).
+
+**Route (checked 2026-07-30; the derivative count, NOT the pencil count).**  The pencil
+argument recorded on `not_isRationalGenerator` needs `max (deg A) (deg B) = 2`, which in turn
+needs `[F : K(xx)] = 2`; the following is shorter and needs no degree input at all.  Base
+change to `K̄` (`RatFunc K → RatFunc K̄` is injective and `φ` stays transcendental, `K` being
+relatively algebraically closed in `K(T)`), write `φ = A/B` with `A, B ∈ K̄[T]` coprime and
+`n = max (deg A) (deg B) ≥ 1`, and let `r₁, …, r₆` be the roots of `f` — SIX distinct ones,
+by `hsep`.  Then
+
+    (ψ·B³)² = B⁶·f(A/B) = ∏ᵢ (A − rᵢB),
+
+whose left side is a square of a polynomial (a rational function whose square is a polynomial
+is a polynomial), and whose six factors are PAIRWISE COPRIME — a common root would be a
+common root of `(rⱼ − rᵢ)B` and of `A`.  A product of pairwise coprime polynomials is a square
+only if each factor is, and over `K̄` the unit can be absorbed, so
+
+    A − rᵢB = Cᵢ²    for i = 1, …, 6.
+
+Now differentiate: `A' − rᵢB' = 2CᵢCᵢ'`, so `Cᵢ ∣ A' − rᵢB'` — this is where `2 ≠ 0` enters,
+and it is the only place.  Hence `Cᵢ` divides the Wronskian
+
+    W := A'B − AB' = (A' − rᵢB')·B − (A − rᵢB)·B',
+
+both terms being divisible by `Cᵢ`.  The `Cᵢ` are pairwise coprime, so `∏ᵢ Cᵢ ∣ W`.  At most
+one of the six `A − rᵢB` can have degree `< n` (leading coefficients cancel for at most one
+`rᵢ`), so at least five `Cᵢ` have degree exactly `n/2`, giving `deg ∏ Cᵢ ≥ 5n/2`; while
+`deg W ≤ 2n − 2`.  From `5n/2 ≤ 2n − 2` we get `n ≤ −4`: contradiction.
+
+`W ≠ 0` is needed for the divisibility to bound degrees, and in characteristic `p > 2` it can
+fail.  It fails only in the harmless way: `A'B = AB'` with `A, B` coprime forces `A ∣ A'` and
+`B ∣ B'`, hence `A' = B' = 0`, hence `A, B ∈ K̄[T^p]`, hence — `K̄` being perfect — `A = Ã^p`
+and `B = B̃^p`.  Then `A − rᵢB = (Ã − rᵢ^{1/p}B̃)^p`, and a `p`-th power that is a square is
+itself a square for `p` odd, so `(Ã, B̃)` satisfies the same hypotheses with
+`max (deg Ã) (deg B̃) = n/p < n`.  So the argument is a strong induction on `n`, with the
+degree count as the `W ≠ 0` branch and this as the `W = 0` branch. -/
+theorem no_sextic_sq_of_ratFunc {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    (h2 : (2 : K) ≠ 0) (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable)
+    {φ ψ : RatFunc K} (hφ : Transcendental K φ)
+    (heq : ψ ^ 2 = sext c₀ c₁ c₂ c₃ c₄ c₅ φ) : False := sorry
+
 /-- **LEAF: the function field of a separable sextic is NOT rational** — "genus ≥ 1".
 
 `F ≠ K(t)` for every `t ∈ F`.  **This is the only leaf in the whole Picard layer that uses
@@ -2340,11 +2721,26 @@ The same remark applies to `finrank_residue_pt_eq_one`,
 `isRationalGenerator_of_divisor_eq_sub_single` and hence to `sub_single_pt_notMem_princ`
 itself, which has carried this since it was written: none of them says `2 ≠ 0`, and none of
 them needs to.  **Do not "repair" these statements by adding a characteristic hypothesis** —
-that would push a new obligation onto every consumer for a case that is already vacuous. -/
+that would push a new obligation onto every consumer for a case that is already vacuous.
+
+## DECOMPOSED 2026-07-30 — both halves of the split above are now Lean
+
+The characteristic-`2` audit is no longer prose: `placeData_elim_of_two_eq_zero` in the
+`Genus` section PROVES that no `PlaceData` exists there, by exactly the argument recorded
+above.  And the transport half — "`IsRationalGenerator t` into an isomorphism
+`F ≃ₐ[K] RatFunc K`", which the route note called the real work — is
+`ratFuncEquivOfIsRationalGenerator` together with `ratFuncEquiv_yy_sq` and
+`transcendental_ratFuncEquiv_xx`.  What is left is `no_sextic_sq_of_ratFunc` below, a
+statement about `K(T)` with no `PlaceData` in it at all. -/
 theorem not_isRationalGenerator {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
     (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
     (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (t : D.F) :
-    ¬ D.IsRationalGenerator t := sorry
+    ¬ D.IsRationalGenerator t := by
+  intro h
+  rcases eq_or_ne (2 : K) 0 with h2 | h2
+  · exact placeData_elim_of_two_eq_zero D h2
+  · exact no_sextic_sq_of_ratFunc h2 hsep (transcendental_ratFuncEquiv_xx D h)
+      (ratFuncEquiv_yy_sq D h)
 
 /-- **Obligation 2b, now PROVEN** from `isRationalGenerator_of_divisor_eq_sub_single` and
 `not_isRationalGenerator`, over `PlaceData.mem_princ_iff`. -/
