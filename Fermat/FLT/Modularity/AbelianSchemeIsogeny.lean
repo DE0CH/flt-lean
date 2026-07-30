@@ -13437,16 +13437,23 @@ theorem isAmpleSheaf_modTensor {Z W : Scheme.{u}} (g : Z ⟶ W) [IsAffine W] [Is
     IsAmpleSheaf (modTensor L M) :=
   sorry
 
-/-- **`Pic (Spec K) = 0` FOR A FIELD `K`** (sorry leaf, cut 2026-07-30) — every
-invertible sheaf on the spectrum of a field is trivial.
+/-- **`Pic (Spec K) = 0` FOR A FIELD `K`** (**PROVEN 2026-07-30**; cut 2026-07-30) —
+every invertible sheaf on the spectrum of a field is trivial.
 
-ROUTE, and it is short.  `Spec K` has exactly ONE point, so the only open
+ROUTE, and it is short — this is what was written.  `Spec K` has exactly ONE point
+(`Unique (Spec (.of K))`, an instance in the pin for a field), so the only open
 containing that point is `⊤`.  `IsInvertibleSheaf M` therefore hands back `U = ⊤`
 together with `M.restrict (⊤ : Opens).ι ≅ modUnit ((⊤ : Opens) : Scheme)`, and all
-that remains is to transport along the isomorphism `(⊤ : Opens) ≅ Spec K` of
-schemes — `Scheme.Modules.restrictUnitIso` and `Scheme.Opens.topIso` are the
-pin-side names to look at, and `isInvertibleSheaf_modUnit`'s one-line proof in
-`AmpleSheaf.lean` is the template for the `U = ⊤` direction.
+that remains is to transport along the isomorphism `Scheme.topIso : (⊤ : Opens) ≅ Spec K`
+of schemes.
+
+The transport is done through `modPullback` rather than through
+`Scheme.Modules.restrictUnitIso`, which is what the original route suggested:
+`modRestrictPullbackIso` turns `M.restrict ⊤.ι` into `modPullback ⊤.ι M`, and then
+pulling back along `Scheme.topIso.inv` and using `modPullbackCompIso`,
+`Scheme.toIso_inv_ι` and `Scheme.Modules.pullbackId` gives `M` itself; the unit side
+is `modPullbackUnitIso`.  Every one of those five is PROVEN upstream in
+`ModularCurve/RelativePicard.lean`, so this leaf added no machinery.
 
 **This is the ONE leaf of this cut that is not mathlib-scale**, and it is the
 reason both `exists_isAmpleSheaf_symmetric_cube` and its coordinate sibling need
@@ -13454,8 +13461,24 @@ a FIELD base rather than an arbitrary one: over a base with `Pic S ≠ 0` the
 normalization conjunct is simply false for the sheaf the construction produces. -/
 theorem nonempty_iso_modUnit_of_isInvertibleSheaf_of_field (K : Type u) [Field K]
     (M : (Spec (CommRingCat.of K)).Modules) (hM : IsInvertibleSheaf M) :
-    Nonempty (M ≅ modUnit (Spec (CommRingCat.of K))) :=
-  sorry
+    Nonempty (M ≅ modUnit (Spec (CommRingCat.of K))) := by
+  -- `Spec K` has a unique point, so the trivializing open around it is `⊤`.
+  obtain ⟨U, hzU, ⟨α⟩⟩ := hM default
+  have hUtop : U = ⊤ :=
+    le_antisymm le_top fun z _ => by rwa [Subsingleton.elim z default]
+  subst hUtop
+  -- transport along `Spec K ≃ (⊤ : (Spec K).Opens)`, which turns `M|_⊤ ≅ 𝒪_⊤` into `M ≅ 𝒪`.
+  have hid : modPullback (𝟙 (Spec (CommRingCat.of K))) M ≅ M :=
+    (Scheme.Modules.pullbackId (Spec (CommRingCat.of K))).app M
+  have hchain : M ≅ modPullback (Spec (CommRingCat.of K)).topIso.inv
+      (M.restrict (⊤ : (Spec (CommRingCat.of K)).Opens).ι) :=
+    (modPullbackMapIso (Spec (CommRingCat.of K)).topIso.inv
+        (modRestrictPullbackIso (⊤ : (Spec (CommRingCat.of K)).Opens).ι M) ≪≫
+      modPullbackCompIso (Spec (CommRingCat.of K)).topIso.inv
+        (⊤ : (Spec (CommRingCat.of K)).Opens).ι M ≪≫
+      modPullbackCongrIso (Scheme.toIso_inv_ι (Spec (CommRingCat.of K))) M ≪≫ hid).symm
+  exact ⟨hchain ≪≫ modPullbackMapIso (Spec (CommRingCat.of K)).topIso.inv α ≪≫
+    modPullbackUnitIso (Spec (CommRingCat.of K)).topIso.inv⟩
 
 /-- **THE THEOREM OF THE CUBE, FOR A SYMMETRIC NORMALIZED INVERTIBLE SHEAF**
 (sorry leaf, cut 2026-07-30 out of `exists_isAmpleSheaf_symmetric_cube` above):
