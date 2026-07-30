@@ -29902,11 +29902,41 @@ to `ℤ[1/n]` — i.e. a step using `char = 0` for something other than
 invertibility of `n`, or a step using finiteness of `𝔽_ℓ`. -/
 
 /-- **The `n`-torsion at a geometric point of an `𝔽_ℓ`-scheme is
-`(ℤ/n)²`** (sorry leaf, opened 2026-07-28) — the `𝔽_ℓ` counterpart of
+`(ℤ/n)²`** (**PROVEN 2026-07-30**) — the `𝔽_ℓ` counterpart of
 `exists_zmodBasis_torsion_geomPoint`, and the only *fibrewise* citation in
 the level-`n` torsor over `𝔽_ℓ`.
 
-## What the prover of this node owes
+## How it was proved, and why nothing new had to be built
+
+The survey below is kept verbatim as the record of what was owed; the
+proof is five lines, and every one of them was already in the tree.  The
+only step the survey did not spell out is the one that turns the *scheme*
+hypothesis `g : T ⟶ SpecF ℓ` into the *algebraic* hypothesis `CharP K ℓ`,
+which is what Silverman III.6.4(b) actually consumes:
+
+* `t ≫ g : Spec K ⟶ SpecF ℓ = Spec (ZMod ℓ)` gives a ring map
+  `ZMod ℓ →+* K` by `Scheme.ΓSpecIso` on both ends — `Spec` is fully
+  faithful, so nothing is lost;
+* that map is INJECTIVE because `Fact ℓ.Prime` makes `ZMod ℓ` a field,
+  hence `IsSimpleRing`.  **`hℓ` is load-bearing for the Lean proof and not
+  merely for the mathematics** — dropping the `Fact` instance fails
+  synthesis of `IsSimpleRing (ZMod ℓ)` at exactly this line, which is the
+  mechanised form of the `ℓ = 0` counterexample recorded under Faithfulness
+  below;
+* `charP_of_injective_algebraMap` then transports `CharP (ZMod ℓ) ℓ` to `K`.
+
+From there the citation is `WeierstrassCurve.n_torsion_dimension` (already
+in cone), reached through
+`exists_weierstrassModel_geomFibreAddEquiv_of_geomPoint`, which presents
+the geometric fibre of `f` at `t` as the `K`-points of a Weierstrass
+model.  `hℓn` enters as `(n : K) ≠ 0` via `CharP.cast_eq_zero_iff`, which
+is the "prime to the characteristic" hypothesis of III.6.4(b).  The
+`AddEquiv` is carried across by `TorsionCounting.torsionByCongr` and the
+resulting `(ZMod n)²`-basis converted to the "two generators, spanning,
+independent" shape by `exists_zmodBasis_of_torsionEquiv`; `hn` is consumed
+only there, as `0 < n`.
+
+## What the prover of this node owed
 
 Silverman *AEC* III.6.4(b) in characteristic `ℓ`: for an elliptic curve
 `E` over an algebraically closed field `K` and an integer `n` prime to
@@ -29946,8 +29976,22 @@ theorem exists_zmodBasis_torsion_geomPoint_specF (n ℓ : ℕ) (hn : 3 ≤ n) (h
     letI := ab.addCommGroup t
     ∃ y z : RelPoint f t, n • y = 0 ∧ n • z = 0 ∧
       (∀ x : RelPoint f t, n • x = 0 → ∃ a b : ℕ, x = a • y + b • z) ∧
-      (∀ a b : ℕ, a • y + b • z = 0 → n ∣ a ∧ n ∣ b) :=
-  sorry
+      (∀ a b : ℕ, a • y + b • z = 0 → n ∣ a ∧ n ∣ b) := by
+  letI := ab.addCommGroup t
+  haveI : Fact ℓ.Prime := ⟨hℓ⟩
+  haveI : CharP K ℓ := by
+    obtain ⟨ψ⟩ : Nonempty (ZMod ℓ →+* K) :=
+      ⟨((Scheme.ΓSpecIso (CommRingCat.of (ZMod ℓ))).inv ≫ (t ≫ g).appTop ≫
+        (Scheme.ΓSpecIso (CommRingCat.of K)).hom).hom⟩
+    letI : Algebra (ZMod ℓ) K := ψ.toAlgebra
+    exact charP_of_injective_algebraMap ψ.injective ℓ
+  letI : DecidableEq K := Classical.typeDecidableEq K
+  obtain ⟨W, hW, ⟨φ⟩⟩ := exists_weierstrassModel_geomFibreAddEquiv_of_geomPoint ab hdim K t
+  haveI := hW
+  obtain ⟨χ⟩ := W.n_torsion_dimension (n := n)
+    (fun hc => hℓn ((CharP.cast_eq_zero_iff K ℓ n).mp hc))
+  exact exists_zmodBasis_of_torsionEquiv (by omega)
+    ((TorsionCounting.torsionByCongr (n : ℤ) φ).trans χ)
 
 /-- **The `n`-torsion at a geometric point of an `𝔽_ℓ`-scheme has unique
 `Fin n`-coordinates** (PROVEN 2026-07-28) — `exists_torsionBasis_geomPoint`
