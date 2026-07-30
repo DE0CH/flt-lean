@@ -7737,7 +7737,8 @@ to the hypothesis `hX`.  All of the moduli content is in the second.
 -/
 
 /-- **Deligne–Rapoport: `X_1(N)` has GOOD REDUCTION at every `ℓ ∤ N`**
-(sorry leaf, NEW 2026-07-28) — the GEOMETRIC half of the node below.
+(sorry leaf, NEW 2026-07-28; **RESTATED 2026-07-30** to deliver the
+integral model AS A MODULI SPACE) — the GEOMETRIC half of the node below.
 
 TRUE, and classical: Deligne–Rapoport Thm. VI.6.9, or Katz–Mazur Thm. 5.1.1
 plus Cor. 6.7.2.  For `ℓ ∤ N` the level structure is étale over the base,
@@ -7745,21 +7746,52 @@ which is exactly what makes the model SMOOTH rather than merely
 semistable; at `ℓ ∣ N` the special fibre acquires the Deligne–Rapoport
 singularities and no smooth model exists.
 
-**No moduli appears in the conclusion.**  `IsCurveReductionModel` asks only
-for a smooth proper geometrically connected curve over `SpecLoc R`, the two
-fibre identifications as functors of points, their naturality, and the
-valuative criterion.  The modular input enters solely through `_hX`, which
-is what says the generic fibre is `X_1(N)` rather than an arbitrary curve.
-So a successor working here is proving good reduction of a *given* curve,
-and can leave the moduli interpretation of the special fibre entirely to
-`exists_isX1Compactification_specialFibre` below.
+## RESTATED 2026-07-30 — the conclusion now carries `IsX1Compactification` OVER `ℤ_(ℓ)`
+
+The paragraph that stood here said "**No moduli appears in the
+conclusion**", and treated that as the economy of the cut.  It was the
+wrong economy, and it made the *sibling* leaf below unprovable by anything
+short of a uniqueness theory for smooth proper models over a DVR.  What
+this leaf now also produces is `IsX1Compactification N xstr ystrZ jZ` —
+the model, together with its open part, AS A `Γ₁(N)`-MODULI
+COMPACTIFICATION OVER `SpecLoc R`.
+
+**This is not a strengthening of the cited theorem; it is a correction of
+what was cited.**  Deligne–Rapoport VI.6.9 and Katz–Mazur 5.1.1 do not
+produce "a smooth proper curve over `ℤ_(ℓ)` whose generic fibre happens to
+be `X_1(N)`".  They produce the coarse space of the `[Γ₁(N)]`-problem
+*over `ℤ[1/N]`*, and smoothness is a property of that object.  The moduli
+structure over the base is what the theorem is ABOUT; asking for the curve
+without it was asking for a strictly weaker statement that the reference
+does not separately assert, and then paying for the difference downstream.
+
+**What it buys, exactly.**  `exists_isX1Compactification_specialFibre`
+below is now **PROVEN** rather than a leaf, by base-changing this moduli
+structure to `𝔽_ℓ` (`exists_isX1Compactification_pullbackSpecial`) and
+transporting along the Yoneda identification `X' ≅ 𝒳 ×_{ℤ_(ℓ)} 𝔽_ℓ` that
+`cm.spX`/`cm.spX_nat` already contain.  This is exactly the route
+`X0.lean` takes — `exists_isX0Compactification_specialFibre` runs on
+`d.model`, an `IsX0Compactification` over `SpecLoc R`, for precisely this
+reason — and the `Γ₁` side was failing to take it only because this leaf
+was withholding the input.  The frontier cost is one new leaf
+(`nonempty_isCoarseModuliY1_pullbackSpecial`, the `Γ₁` transcription of
+`X0.lean`'s PROVEN `nonempty_isCoarseModuliY0_pullbackSpecial`), so the
+count is flat and what changes is that the DVR-uniqueness argument — the
+whole of the old sibling's FAITHFULNESS AUDIT — is no longer needed by
+anybody.
+
+`ystrZ` and `jZ` are existentially quantified alongside `xstr`, so a
+producer names the open part of its own model rather than receiving one.
 
 **Each hypothesis is load-bearing** (the underscores record only that a
 `sorry` consumes nothing): `_hℓ` makes `ZMod ℓ` a field, without which
 `IsReductionBase` is unsatisfiable; `_hℓN` is good reduction itself,
 refuted at `ℓ ∣ N`; `_hbase` pins `(R, toF)` as `ℤ_(ℓ)` with reduction mod
 `ℓ`, and since the conclusion is existential a junk base would make the
-leaf true and worthless; `_hX` is what makes the statement about `X_1(N)`.
+leaf true and worthless; `_hX` is what makes the statement about `X_1(N)`
+— it is what forces the model's GENERIC fibre to be the given `X`, which
+`genX` then witnesses, and without it the pair (`xstr`, `ystrZ`) could be
+the moduli model at any other level.
 
 **WHAT IS NOT A ROUTE**, inherited from the node below: discharging the
 model with an `IsX0Compactification` at some other level `N'` is dead —
@@ -7770,74 +7802,406 @@ theorem exists_x1CurveReductionModel (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓN :
     (R : Subring ℚ) (toF : R →+* ZMod ℓ) (_hbase : IsReductionBase ℓ R toF)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (_hX : IsX1Compactification N strX strY jY) :
-    ∃ (X' XZ : Scheme.{0}) (strX' : X' ⟶ SpecF ℓ) (xstr : XZ ⟶ SpecLoc R),
-      Nonempty (IsCurveReductionModel ℓ R toF (strX := strX) (strX' := strX') xstr) :=
+    ∃ (X' XZ YZ : Scheme.{0}) (strX' : X' ⟶ SpecF ℓ) (xstr : XZ ⟶ SpecLoc R)
+      (ystrZ : YZ ⟶ SpecLoc R) (jZ : YZ ⟶ XZ),
+      Nonempty (IsCurveReductionModel ℓ R toF (strX := strX) (strX' := strX') xstr) ∧
+        Nonempty (IsX1Compactification N xstr ystrZ jZ) :=
   sorry
 
+/-! #### Base change of the model to the special fibre — the `Γ₀` route, transcribed
+
+The four declarations below are `X0.lean`'s special-fibre machinery with the
+`Γ₀` moduli structure replaced by the `Γ₁` one, and with two of them
+generalised on the way.  Three are PROVEN transcriptions and one is a leaf:
+
+* `IsX1Compactification.ofInverse` — transport along an isomorphism of the
+  compactification over the base.  `IsX1Compactification` is
+  `IsX0Compactification` field for field, so this is
+  `IsX0Compactification.ofInverse` verbatim.
+* `finite_compl_pullbackSpecial_curve` — `X0.lean`'s
+  `finite_compl_pullbackSpecial` with its `IsX0Compactification` hypothesis
+  replaced by the two fields it actually reads (`comm` and `finite_compl`).
+  It is therefore MODULI-FREE and serves either level structure; it is
+  stated here rather than hoisted into `X0.lean` only because that file has
+  many concurrent owners.
+* `exists_inverse_pullbackSpecial_of_curveModel` — `X0.lean`'s
+  `exists_inverse_pullbackSpecial` over an `IsCurveReductionModel` instead
+  of an `IsX0NeronDatum`.  The original consumes only `d.spX` and
+  `d.spX_nat`, both of which `IsCurveReductionModel` carries under the same
+  names, so this is a rename; it is also moduli-free.
+* `nonempty_isCoarseModuliY1_pullbackSpecial` — the one genuinely `Γ₁`
+  statement, and the only NEW LEAF in the block.
+
+The `Γ₀` originals live at `X0.lean:56260`, `:56425`, `:56321` and `:54864`.
+-/
+
+/-- **`IsX1Compactification` transports along an isomorphism of the
+compactification over the base** (PROVEN 2026-07-30) — `X0.lean`'s
+`IsX0Compactification.ofInverse` verbatim, the two structures agreeing
+field for field.
+
+Every field moves for a standard reason and none of them needs a leaf:
+`coarse` does not mention `X` at all; `isOpen` because an isomorphism is an
+open immersion and open immersions compose; `isProper`, `smooth` and
+`connected` because all three properties are `RespectsIso` in `Mathlib`;
+and `finite_compl` because the cusp locus of the target is the PREIMAGE of
+the cusp locus of the source under the inverse, which is injective.
+
+The preimage formulation is the one that works: pushing the complement
+forward as an image would need `w.base` surjective as a separate step,
+whereas `Set.Finite.preimage` needs only injectivity, which the inverse
+pair hands over directly. -/
+def IsX1Compactification.ofInverse {N : ℕ} {X₁ X₂ Y S : Scheme.{0}}
+    {strX₁ : X₁ ⟶ S} {strX₂ : X₂ ⟶ S} {strY : Y ⟶ S} {j : Y ⟶ X₁}
+    (h : IsX1Compactification N strX₁ strY j)
+    {w : X₁ ⟶ X₂} {w' : X₂ ⟶ X₁} (hw : w ≫ strX₂ = strX₁) (hw' : w' ≫ strX₁ = strX₂)
+    (hww' : w ≫ w' = 𝟙 X₁) (hw'w : w' ≫ w = 𝟙 X₂) :
+    IsX1Compactification N strX₂ strY (j ≫ w) := by
+  haveI hiso : IsIso w := ⟨w', hww', hw'w⟩
+  haveI hiso' : IsIso w' := ⟨w, hw'w, hww'⟩
+  haveI := h.isOpen
+  have hbase : ∀ x, w'.base (w.base x) = x := fun x =>
+    congrArg (fun f : X₁ ⟶ X₁ => f.base x) hww'
+  have hbase' : ∀ x, w.base (w'.base x) = x := fun x =>
+    congrArg (fun f : X₂ ⟶ X₂ => f.base x) hw'w
+  have hcomp : ∀ y, (j ≫ w).base y = w.base (j.base y) := fun _ => rfl
+  refine ⟨?_, h.coarse, inferInstance, ?_, ?_, ?_, ?_⟩
+  · rw [Category.assoc, hw, h.comm]
+  · rw [← hw']
+    exact MorphismProperty.RespectsIso.precomp (@IsProper) w' strX₁ h.isProper
+  · rw [← hw']
+    exact MorphismProperty.RespectsIso.precomp (@SmoothOfRelativeDimension 1) w' strX₁ h.smooth
+  · rw [← hw']
+    exact MorphismProperty.RespectsIso.precomp (@GeometricallyConnected) w' strX₁ h.connected
+  · have hset : (Set.range (j ≫ w).base)ᶜ = w'.base ⁻¹' (Set.range j.base)ᶜ := by
+      ext x
+      simp only [Set.mem_compl_iff, Set.mem_preimage, Set.mem_range, not_exists]
+      constructor
+      · intro hx y hy
+        exact hx y (by rw [hcomp, hy, hbase'])
+      · intro hx y hy
+        rw [hcomp] at hy
+        exact hx y (by rw [← hy, hbase])
+    rw [hset]
+    exact Set.Finite.preimage
+      (Set.injOn_of_injective (Function.LeftInverse.injective hbase')) h.finite_compl
+
+open CategoryTheory.Limits in
+/-- **The cusp locus of the special fibre is finite** (PROVEN 2026-07-30) —
+`X0.lean`'s `finite_compl_pullbackSpecial` with its `IsX0Compactification`
+hypothesis replaced by the two fields it reads, hence usable at either level
+structure.
+
+TRUE, and it is the one clause of `IsX1Compactification` that `Mathlib`'s
+base-change instances do not supply, because the underlying space of a fibre
+product of schemes is not the fibre product of the underlying spaces.  Two
+facts do the whole job:
+
+* `jsp` **is** the base change of `jZ` along
+  `pullback.fst xstr (SpecLoc.special toF)` — a pasting of pullback squares,
+  where `hsnd` and `hcomm` identify the outer rectangle with the defining
+  square of `pullback ystr (SpecLoc.special toF)`.  Hence
+  `Set.range jsp = (pullback.fst xstr _) ⁻¹' Set.range jZ` by
+  `AlgebraicGeometry.range_base_of_isPullback`.
+* `SpecLoc.special toF` is a CLOSED IMMERSION, because `toF` is surjective
+  (`hbase.surjective` — the only use `IsReductionBase` gets here), and closed
+  immersions are stable under base change, so
+  `pullback.fst xstr (SpecLoc.special toF)` is one too and in particular
+  INJECTIVE.  `Set.Finite.preimage` then finishes.
+
+So the finite set is never pushed forward — the same reason
+`IsX1Compactification.ofInverse` formulates its cusp clause as a preimage —
+and no properness, finiteness or dimension input is consumed anywhere.
+Primality of `ℓ` plays no part: `ZMod ℓ` need not be a field, only `toF` need
+be surjective.
+
+`jsp` is characterised by its two components rather than taken to be
+`pullback.map` on the nose, so that the statement does not carry a
+`pullback.map` proof obligation inside its own type; `hfst` and `hsnd` pin it
+uniquely by `pullback.hom_ext`. -/
+theorem finite_compl_pullbackSpecial_curve {ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod ℓ}
+    (hbase : IsReductionBase ℓ R toF)
+    {XZ YZ : Scheme.{0}} {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (hcomm : jZ ≫ xstr = ystr) (hfin : (Set.range jZ.base)ᶜ.Finite)
+    (jsp : pullback ystr (SpecLoc.special toF) ⟶ pullback xstr (SpecLoc.special toF))
+    (hfst : jsp ≫ pullback.fst xstr (SpecLoc.special toF)
+      = pullback.fst ystr (SpecLoc.special toF) ≫ jZ)
+    (hsnd : jsp ≫ pullback.snd xstr (SpecLoc.special toF)
+      = pullback.snd ystr (SpecLoc.special toF)) :
+    (Set.range jsp.base)ᶜ.Finite := by
+  haveI hci : IsClosedImmersion (SpecLoc.special toF) :=
+    IsClosedImmersion.spec_of_surjective (CommRingCat.ofHom toF) hbase.surjective
+  haveI hcif : IsClosedImmersion (pullback.fst xstr (SpecLoc.special toF)) :=
+    MorphismProperty.pullback_fst (P := @IsClosedImmersion) _ _ hci
+  have hpb : IsPullback (pullback.fst ystr (SpecLoc.special toF)) jsp jZ
+      (pullback.fst xstr (SpecLoc.special toF)) := by
+    refine IsPullback.of_bot ?_ hfst.symm (IsPullback.of_hasPullback _ _)
+    rw [hsnd, hcomm]
+    exact IsPullback.of_hasPullback _ _
+  have hrange : Set.range jsp.base
+      = (pullback.fst xstr (SpecLoc.special toF)).base ⁻¹' Set.range jZ.base :=
+    _root_.AlgebraicGeometry.range_base_of_isPullback hpb.flip
+  rw [hrange, ← Set.preimage_compl]
+  exact Set.Finite.preimage
+    (Set.injOn_of_injective
+      (Scheme.Hom.isClosedEmbedding (pullback.fst xstr (SpecLoc.special toF))).injective)
+    hfin
+
+open CategoryTheory.Limits in
+/-- **`X'` really IS the special fibre of the integral model** (PROVEN
+2026-07-30 — Yoneda, and this is what `spX_nat` is for) — `X0.lean`'s
+`exists_inverse_pullbackSpecial` restated over an `IsCurveReductionModel`.
+
+The original takes an `IsX0NeronDatum` and consumes exactly two of its
+fields, `spX` and `spX_nat`; `IsCurveReductionModel` carries both under the
+same names, so the proof below is the original with `d` renamed to `cm` and
+nothing else.  In particular the Jacobian identifications and the Néron
+mapping property play no part, which is why this works at either level
+structure and for any curve at all.
+
+`cm.spX` alone is a family of bijections of point sets, one for each base
+point; `cm.spX_nat` makes that family NATURAL, hence a natural isomorphism
+between the functor of points of `strX'` over `Spec 𝔽_ℓ` and the functor
+`T ↦ 𝒳(T → Spec ℤ_(ℓ))` represented by the base change `𝒳 ×_{ℤ_(ℓ)} 𝔽_ℓ`.
+Yoneda then produces an honest isomorphism of schemes over `Spec 𝔽_ℓ`.
+Without naturality `X'` could be any scheme abstractly equinumerous with the
+special fibre, and the theorem below would be false.
+
+The proof is Yoneda evaluated by hand at two tautological points, and it
+uses no property of `Spec ℤ_(ℓ)`, of `ℓ`, or of `N`:
+
+* `w : X' ⟶ 𝒳 ×_{ℤ_(ℓ)} 𝔽_ℓ` is `pullback.lift` of the image of the identity
+  point `𝟙 X' ∈ X'(X')` under `spX`;
+* `w' : 𝒳 ×_{ℤ_(ℓ)} 𝔽_ℓ ⟶ X'` is the `spX`-preimage of the tautological
+  point `pullback.fst`;
+* `w ≫ w' = 𝟙` follows from `spX_nat` along `w` plus injectivity of `spX`;
+  `w' ≫ w = 𝟙` from `spX_nat` along `w'` plus `pullback.hom_ext`. -/
+theorem exists_inverse_pullbackSpecial_of_curveModel {ℓ : ℕ} {R : Subring ℚ}
+    {toF : R →+* ZMod ℓ} {X X' XZ : Scheme.{0}} {strX : X ⟶ SpecQ} {strX' : X' ⟶ SpecF ℓ}
+    {xstr : XZ ⟶ SpecLoc R}
+    (cm : IsCurveReductionModel ℓ R toF (strX := strX) (strX' := strX') xstr) :
+    ∃ (w : X' ⟶ pullback xstr (SpecLoc.special toF))
+      (w' : pullback xstr (SpecLoc.special toF) ⟶ X'),
+      w ≫ pullback.snd xstr (SpecLoc.special toF) = strX' ∧
+      w' ≫ strX' = pullback.snd xstr (SpecLoc.special toF) ∧
+      w ≫ w' = 𝟙 X' ∧
+      w' ≫ w = 𝟙 (pullback xstr (SpecLoc.special toF)) := by
+  obtain ⟨w, hwq, hwf⟩ :
+      ∃ w : X' ⟶ pullback xstr (SpecLoc.special toF),
+        w ≫ pullback.snd xstr (SpecLoc.special toF) = strX' ∧
+        w ≫ pullback.fst xstr (SpecLoc.special toF) =
+          (cm.spX strX' (strX' ≫ SpecLoc.special toF) rfl
+            (⟨𝟙 X', Category.id_comp _⟩ : RelPoint strX' strX')).1 :=
+    ⟨pullback.lift _ strX'
+        (cm.spX strX' (strX' ≫ SpecLoc.special toF) rfl
+          (⟨𝟙 X', Category.id_comp _⟩ : RelPoint strX' strX')).2,
+      pullback.lift_snd _ _ _, pullback.lift_fst _ _ _⟩
+  obtain ⟨wp, hwpsp⟩ :
+      ∃ wp : RelPoint strX' (pullback.snd xstr (SpecLoc.special toF)),
+        cm.spX (pullback.snd xstr (SpecLoc.special toF))
+            (pullback.snd xstr (SpecLoc.special toF) ≫ SpecLoc.special toF) rfl wp =
+          ⟨pullback.fst xstr (SpecLoc.special toF), pullback.condition⟩ :=
+    ⟨_, Equiv.apply_symm_apply _ _⟩
+  refine ⟨w, wp.1, hwq, wp.2, ?_, ?_⟩
+  · have hnat := cm.spX_nat w hwq
+      (rfl : pullback.snd xstr (SpecLoc.special toF) ≫ SpecLoc.special toF = _)
+      (rfl : strX' ≫ SpecLoc.special toF = _) wp
+    rw [hwpsp] at hnat
+    have hkey : RelPoint.pre w hwq wp = (⟨𝟙 X', Category.id_comp _⟩ : RelPoint strX' strX') :=
+      (cm.spX strX' (strX' ≫ SpecLoc.special toF) rfl).injective
+        (by rw [hnat]; exact Subtype.ext hwf)
+    exact congrArg Subtype.val hkey
+  · refine pullback.hom_ext ?_ ?_
+    · have hnat := cm.spX_nat wp.1 wp.2
+        (rfl : strX' ≫ SpecLoc.special toF = _)
+        (rfl : pullback.snd xstr (SpecLoc.special toF) ≫ SpecLoc.special toF = _)
+        (⟨𝟙 X', Category.id_comp _⟩ : RelPoint strX' strX')
+      have hpre : RelPoint.pre wp.1 wp.2
+          (⟨𝟙 X', Category.id_comp _⟩ : RelPoint strX' strX') = wp :=
+        Subtype.ext (Category.comp_id _)
+      rw [hpre, hwpsp] at hnat
+      have hval : pullback.fst xstr (SpecLoc.special toF) =
+          wp.1 ≫ (cm.spX strX' (strX' ≫ SpecLoc.special toF) rfl
+            (⟨𝟙 X', Category.id_comp _⟩ : RelPoint strX' strX')).1 :=
+        congrArg Subtype.val hnat
+      rw [Category.assoc, hwf, ← hval, Category.id_comp]
+    · rw [Category.assoc, hwq, wp.2, Category.id_comp]
+
+open CategoryTheory.Limits in
+/-- **The coarse moduli space of `Γ₁(N)` base-changes to the special fibre**
+(**sorry leaf, NEW 2026-07-30**) — the `Γ₁` transcription of `X0.lean`'s
+`nonempty_isCoarseModuliY0_pullbackSpecial`, and the ONLY new leaf in the
+special-fibre block.
+
+TRUE for `ℓ ∤ N`, and it is the moduli half of good reduction: the
+Deligne–Rapoport model's open part `𝒴` over `ℤ_(ℓ)` has
+`𝒴 ×_{ℤ_(ℓ)} 𝔽_ℓ` the coarse space of the SAME `Γ₁(N)`-problem over `𝔽_ℓ`
+(Deligne–Rapoport III.1 and VI.6.7; Katz–Mazur 8.6.8 — "the moduli problem
+is relatively representable and étale over `ℤ[1/N]`").
+
+**THE ROUTE IS THE `Γ₀` ONE, AND IT IS KNOWN TO WORK**, which is the whole
+reason this is the leaf the block was cut at.  `X0.lean` proves its
+counterpart in three steps and only the middle one has content:
+
+1. the classifying map and its naturality base-change along an ARBITRARY
+   `f : S' ⟶ S` with no arithmetic hypothesis — `IsCoarseModuliY0.classifyPullback`
+   and `classifyPullback_natural`.  The `Γ₁` versions are the same two
+   `pullback.lift` definitions with `Gamma0Datum` replaced by `Gamma1Datum`,
+   and neither has been written here yet;
+2. `exists_gamma0AtlasData_pullbackSpecial` supplies Katz–Mazur's
+   construction data over `𝔽_ℓ`, and it is THERE that `hℓ`, `hℓN` and
+   `hbase` are consumed.  This is the genuinely modular step and the `Γ₁`
+   analogue of it is what a successor has to build;
+3. `isCoarseModuliY0_of_atlasData`, applied with `subsingleton_hom_specF`,
+   turns that data into the INITIALITY clause.
+
+**Do NOT attack initiality directly from `hcoarse.universal`.**  `X0.lean`
+records the negative result and it transfers verbatim: that clause
+quantifies over cocones defined on ALL `ℤ_(ℓ)`-schemes, while a cocone on
+the special fibre lives only on `𝔽_ℓ`-schemes and assigns nothing to a datum
+on the generic fibre.  Initiality has to come from the PRESENTATION axis —
+a rigidifying fppf cover plus a categorical-quotient property, over a base
+with `∀ Z, Subsingleton (Z ⟶ S)`, which `subsingleton_hom_specF` supplies
+for `Spec 𝔽_ℓ`.
+
+**`Γ₁` is if anything the EASIER side**, and it is worth saying because the
+`Γ₀` proof is long: `[Γ₁(N)]` is representable for `N ≥ 4` (Katz–Mazur
+Cor. 4.7.1), so the atlas can be taken to be the fine moduli scheme itself
+with `π = 𝟙` — that is `Gamma1Atlas.ofFineModuli`, already PROVEN in this
+file — whereas `Γ₀(N)` is never fine and `X0.lean` must run the whole GIT
+quotient of a rigidified problem.  A successor should look at
+`exists_isFineGamma1Moduli` before transcribing
+`exists_gamma0GITPresentationData_pullbackSpecial`.
+
+**Each hypothesis is load-bearing** (the underscores record only that a
+`sorry` consumes nothing).  `_hℓN` is good reduction: at `ℓ ∣ N` the naive
+`[Γ₁(N)]`-problem is not étale over the base, the special fibre of `𝒴` is
+not its coarse space, and the statement is FALSE rather than merely open.
+`_hℓ` makes `ZMod ℓ` a field.  `_hbase` pins `(R, toF)`; note the `Γ₀`
+proof consumes it only through `hbase.surjective`, so a successor may find
+it needs less than the full pinning. -/
+theorem nonempty_isCoarseModuliY1_pullbackSpecial {N ℓ : ℕ} (_hℓ : ℓ.Prime)
+    (_hℓN : ¬ ℓ ∣ N) {R : Subring ℚ} {toF : R →+* ZMod ℓ}
+    (_hbase : IsReductionBase ℓ R toF) {YZ : Scheme.{0}} {ystr : YZ ⟶ SpecLoc R}
+    (_hcoarse : IsCoarseModuliY1 N ystr) :
+    Nonempty (IsCoarseModuliY1 N (pullback.snd ystr (SpecLoc.special toF))) :=
+  sorry
+
+open CategoryTheory.Limits in
+/-- **The base change of the smooth model to `𝔽_ℓ` is `X_1(N)` over `𝔽_ℓ`**
+(PROVEN 2026-07-30 over the leaf above) — `X0.lean`'s
+`exists_isX0Compactification_pullbackSpecial` transcribed.
+
+Everything except the coarse-moduli clause and the cusp count is `Mathlib`:
+`IsProper`, `GeometricallyConnected` and `IsOpenImmersion` have base-change
+instances that fire directly, and `SmoothOfRelativeDimension 1` has
+`smoothOfRelativeDimension_isStableUnderBaseChange` — a `lemma` rather than
+an `instance`, which is why it is supplied by hand here.  The cusp count is
+`finite_compl_pullbackSpecial_curve` above.
+
+The open part of the special fibre is `𝒴 ×_{ℤ_(ℓ)} 𝔽_ℓ` and the immersion is
+`pullback.map` of `jZ`; `comm` is `pullback.lift_snd`. -/
+theorem exists_isX1Compactification_pullbackSpecial {N ℓ : ℕ} (hℓ : ℓ.Prime)
+    (hℓN : ¬ ℓ ∣ N) {R : Subring ℚ} {toF : R →+* ZMod ℓ}
+    (hbase : IsReductionBase ℓ R toF)
+    {XZ YZ : Scheme.{0}} {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (hmodel : IsX1Compactification N xstr ystr jZ) :
+    ∃ (Y'' : Scheme.{0}) (strY'' : Y'' ⟶ SpecF ℓ)
+      (j'' : Y'' ⟶ pullback xstr (SpecLoc.special toF)),
+      Nonempty (IsX1Compactification N
+        (pullback.snd xstr (SpecLoc.special toF)) strY'' j'') := by
+  haveI := hmodel.isOpen
+  haveI := hmodel.isProper
+  haveI := hmodel.connected
+  haveI : MorphismProperty.IsStableUnderBaseChange (@SmoothOfRelativeDimension 1) :=
+    smoothOfRelativeDimension_isStableUnderBaseChange 1
+  obtain ⟨hcoarse⟩ :=
+    nonempty_isCoarseModuliY1_pullbackSpecial hℓ hℓN hbase hmodel.coarse
+  refine ⟨_, pullback.snd ystr (SpecLoc.special toF),
+    pullback.map ystr (SpecLoc.special toF) xstr (SpecLoc.special toF) jZ
+      (𝟙 (SpecF ℓ)) (𝟙 (SpecLoc R)) (by rw [Category.comp_id, hmodel.comm])
+      (by rw [Category.comp_id, Category.id_comp]),
+    ⟨?_, hcoarse, inferInstance, inferInstance,
+      MorphismProperty.pullback_snd (P := @SmoothOfRelativeDimension 1) _ _ hmodel.smooth,
+      inferInstance, ?_⟩⟩
+  · rw [pullback.lift_snd, Category.comp_id]
+  · exact finite_compl_pullbackSpecial_curve hbase hmodel.comm hmodel.finite_compl _
+      (by rw [pullback.lift_fst]) (by rw [pullback.lift_snd, Category.comp_id])
+
 /-- **Igusa: the special fibre of a good model of `X_1(N)` IS `X_1(N)` over
-`𝔽_ℓ`** (sorry leaf, NEW 2026-07-28) — the MODULI half of the node below,
-and the `Γ₁` analogue of `X0.lean`'s
-`exists_isX0Compactification_specialFibre`, which is stated the same way:
-the model comes in as a hypothesis.
+`𝔽_ℓ`** (**PROVEN 2026-07-30**; a sorry leaf from 2026-07-28 until then) —
+the MODULI half of the node below, and the `Γ₁` analogue of `X0.lean`'s
+`exists_isX0Compactification_specialFibre`, which is now proven the same
+way as well as stated the same way.
 
 TRUE, and it is Igusa's theorem (Katz–Mazur 5.1.1, 6.7.2): the reduction
 mod `ℓ` of the `Γ₁(N)`-moduli curve is the `Γ₁(N)`-moduli curve mod `ℓ`,
 for `ℓ ∤ N`.
 
-## FAITHFULNESS AUDIT — why the `∀ model` shape is safe here
+## HOW IT BECAME PROVABLE — the missing input was in the SIBLING leaf
 
-This leaf quantifies over an ARBITRARY `IsCurveReductionModel`, not only
-over the one `exists_x1CurveReductionModel` produces.  That is the shape
-that made `nonempty_relPoint_atlas_of_relPoint` false (see the FALSITY
-AUDIT above), so it is checked rather than assumed.  It is safe because a
-smooth proper model over a DVR is DETERMINED by its generic fibre, so
-there is only one model to quantify over:
+Two lines of proof, over three PROVEN transcriptions of `X0.lean` and one
+new leaf, all in the block above:
 
-* `_hbase` pins `R` as `ℤ_(ℓ)`, a discrete valuation ring — this is where
-  that hypothesis is load-bearing, and dropping it breaks the argument
-  rather than merely the packaging;
-* at `genus ≥ 1` two smooth proper models of one curve over a DVR are
-  isomorphic (Lichtenbaum–Shafarevich: the minimal regular model is
-  unique, and a smooth proper model is it);
-* at `genus 0` — which happens for `N ≤ 10` and `N = 12`, so it is not an
-  empty corner — uniqueness still holds, but by a different argument that
-  is worth writing down because it is the one a prover has to supply:
-  `X_1(N)` has a rational cusp, `properX` extends it to an integral point,
-  so the model has a section and is therefore `ℙ¹` over `R`, whence the
-  special fibre is `ℙ¹` over `𝔽_ℓ`.
+* `exists_isX1Compactification_pullbackSpecial hmodel` base-changes the
+  INTEGRAL moduli structure to `𝔽_ℓ`, giving an `IsX1Compactification` on
+  `𝒳 ×_{ℤ_(ℓ)} 𝔽_ℓ`;
+* `exists_inverse_pullbackSpecial_of_curveModel cm` is Yoneda applied to
+  `cm.spX`/`cm.spX_nat`, giving the inverse pair `X' ≅ 𝒳 ×_{ℤ_(ℓ)} 𝔽_ℓ`
+  over `𝔽_ℓ`;
+* `IsX1Compactification.ofInverse` transports along it.
 
-So the special fibre of an arbitrary model is isomorphic over `𝔽_ℓ` to the
-one `exists_x1Compactification_finiteField` builds, and the leaf reduces to
-TRANSPORTING an `IsX1Compactification` along an isomorphism of the ambient
-curve.  That transport is not in this file yet and is part of the leaf;
-`IsCoarseModuliY1` is an initiality property, so it moves along an
-isomorphism with no content, and the remaining fields are geometric.
+**`hmodel` IS THE NEW HYPOTHESIS AND IT IS THE WHOLE DIFFERENCE.**  It is
+`IsX1Compactification N xstr ystr jZ` — the model AS A `Γ₁(N)`-MODULI
+COMPACTIFICATION OVER `SpecLoc R` — and it is supplied by
+`exists_x1CurveReductionModel`, whose conclusion was restated the same day
+to deliver it.  See that leaf's docstring for why this is a correction of
+what Deligne–Rapoport VI.6.9 was cited as saying rather than an extra
+demand on it, and for the frontier accounting (flat: this leaf closes, one
+opens).  `X0.lean` has taken exactly this route all along — its
+`exists_isX0Compactification_specialFibre` runs on `d.model`, an
+`IsX0Compactification` over `SpecLoc R`.
 
-**Refuting check.**  If a successor finds that uniqueness of the smooth
-proper model fails in some range of `N` — the place to look is genus `0`
-without a rational point, which cannot occur here because the cusps are
-rational, so a refutation would have to attack `properX` or the rationality
-of a cusp — then the repair is to UN-SPLIT: have
-`exists_x1CurveReductionModel` produce the identification too, i.e. restore
-the bundled node.  Nothing else downstream would change, the node below
-being the only consumer of either leaf.
+## THE FAITHFULNESS AUDIT THAT STOOD HERE IS RETIRED, NOT REFUTED
 
-**Note this leaf does NOT need `4 ≤ N`.**  It might look as though it
-could cite `exists_x1Compactification_finiteField` and be done; it cannot,
-both because that theorem carries `4 ≤ N` (which the node below does not
-have, and which cannot be threaded in without changing the signatures of
-`exists_x1ReductionAt` and its consumers) and because the compactification
-it produces sits on an unrelated `X''`, whereas `strX'` here is pinned by
-the model.  Supplying the isomorphism is exactly the work. -/
-theorem exists_isX1Compactification_specialFibre {N ℓ : ℕ} (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
-    {R : Subring ℚ} {toF : R →+* ZMod ℓ} (_hbase : IsReductionBase ℓ R toF)
-    {X Y X' XZ : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
-    {strX' : X' ⟶ SpecF ℓ} {xstr : XZ ⟶ SpecLoc R}
-    (_hX : IsX1Compactification N strX strY jY)
-    (_cm : IsCurveReductionModel ℓ R toF (strX := strX) (strX' := strX') xstr) :
+It read: this leaf quantifies over an ARBITRARY `IsCurveReductionModel`,
+which is safe because a smooth proper model over a DVR is determined by its
+generic fibre — Lichtenbaum–Shafarevich at `genus ≥ 1`, and at `genus 0`
+(`N ≤ 10`, `N = 12`) because a rational cusp extends by `properX` to a
+section, making the model `ℙ¹` over `R`.  That argument is CORRECT and it
+is still the reason the `∀ model` shape is faithful.  It is retired because
+nothing has to run it any more: the proof below never compares two models,
+it reads the moduli structure off the one it is given.  The audit's own
+prescribed repair — "have `exists_x1CurveReductionModel` produce the
+identification too" — is close to what was done, except that the sibling
+now produces the moduli structure on the model rather than the
+identification of the special fibre, which keeps the two classical theorems
+split instead of restoring the bundled node.
+
+**`_hX` IS DROPPED.**  It said the generic fibre is `X_1(N)`; `hmodel` says
+the model is, and `cm.genX` identifies the generic fibre with `strX`, so it
+carried nothing this statement needs.  Its only consumer passed it and it
+still holds there.
+
+**Note this theorem does NOT need `4 ≤ N`**, and did not before: it might
+look as though it could cite `exists_x1Compactification_finiteField` and be
+done, but that theorem carries `4 ≤ N` (which the node below does not have,
+and which cannot be threaded in without changing the signatures of
+`exists_x1ReductionAt` and its consumers) and the compactification it
+produces sits on an unrelated `X''`, whereas `strX'` here is pinned by the
+model. -/
+theorem exists_isX1Compactification_specialFibre {N ℓ : ℕ} (hℓ : ℓ.Prime) (hℓN : ¬ ℓ ∣ N)
+    {R : Subring ℚ} {toF : R →+* ZMod ℓ} (hbase : IsReductionBase ℓ R toF)
+    {X X' XZ YZ : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {strX' : X' ⟶ SpecF ℓ} {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (hmodel : IsX1Compactification N xstr ystr jZ)
+    (cm : IsCurveReductionModel ℓ R toF (strX := strX) (strX' := strX') xstr) :
     ∃ (Y' : Scheme.{0}) (strY' : Y' ⟶ SpecF ℓ) (jY' : Y' ⟶ X'),
-      Nonempty (IsX1Compactification N strX' strY' jY') :=
-  sorry
+      Nonempty (IsX1Compactification N strX' strY' jY') := by
+  obtain ⟨Y'', strY'', j'', ⟨hP⟩⟩ :=
+    exists_isX1Compactification_pullbackSpecial hℓ hℓN hbase hmodel
+  obtain ⟨w, w', hw, hw', hww', hw'w⟩ := exists_inverse_pullbackSpecial_of_curveModel cm
+  exact ⟨Y'', strY'', j'' ≫ w', ⟨hP.ofInverse hw' hw hw'w hww'⟩⟩
 
 /-- **Deligne–Rapoport / Igusa for `Γ₁(N)`: `X_1(N)` has good reduction at
 every `ℓ ∤ N`** (**PROVEN 2026-07-28** over the two leaves above, which
@@ -7907,10 +8271,10 @@ theorem exists_x1CurveModel_of_base (N ℓ : ℕ) (hℓ : ℓ.Prime) (hℓN : ¬
       (jY' : Y' ⟶ X') (xstr : XZ ⟶ SpecLoc R),
       Nonempty (IsCurveReductionModel ℓ R toF (strX := strX) (strX' := strX') xstr) ∧
         Nonempty (IsX1Compactification N strX' strY' jY') := by
-  obtain ⟨X', XZ, strX', xstr, ⟨cm⟩⟩ :=
+  obtain ⟨X', XZ, YZ, strX', xstr, ystrZ, jZ, ⟨cm⟩, ⟨hmodel⟩⟩ :=
     exists_x1CurveReductionModel N ℓ hℓ hℓN R toF hbase hX
   obtain ⟨Y', strY', jY', hX'⟩ :=
-    exists_isX1Compactification_specialFibre hℓ hℓN hbase hX cm
+    exists_isX1Compactification_specialFibre hℓ hℓN hbase hmodel cm
   exact ⟨X', Y', XZ, strX', strY', jY', xstr, ⟨cm⟩, hX'⟩
 
 /-- **The Néron reduction datum for `X_1(N)` at a good odd prime**
