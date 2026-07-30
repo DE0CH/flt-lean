@@ -25068,7 +25068,6 @@ theorem hilbertAuxFrameLevels_nonempty {ρbar : GaloisRep ℚ k V}
     (hilbertFrameMat_map_frameEv ℓ F k ρbar e0)
   exact ⟨RingHom.ker (hilbertFrameEv ℓ F k ρbar e0), le_refl _, hfin, hloc, hrep⟩
 
-omit [Finite k] [DiscreteTopology k] [Module.Finite k V] [Module.Free k V] in
 /-- **THE RAISED-LEVEL LEVEL FAMILY IS DOWNWARD DIRECTED** — the raised-level
 twin of `hilbertFrameLevels_directed`. -/
 theorem hilbertAuxFrameLevels_directed {ρbar : GaloisRep ℚ k V}
