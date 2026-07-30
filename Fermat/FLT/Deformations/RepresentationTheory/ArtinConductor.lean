@@ -5070,7 +5070,13 @@ and only the first is available in this file today:
    closedness is the missing ingredient for a different reason. They are
    closed: `ContinuousSMulDiscrete` makes `{σ | σ • x = y}` open, so each
    condition `unif ^ (i+1) ∣ σ • x − x` cuts out a CLOPEN set and `D'.gp i`
-   is an intersection of clopens.
+   is an intersection of clopens. **This is compiler-checked, not asserted**
+   (2026-07-30, in a scratch module; the proof is `mem_gp` to rewrite the
+   carrier as `⋂ x ∈ {level-fixed}, {σ | unif ^ (i+1) ∣ σ • x − x}`, then
+   `isClosed_iInter`, with each factor closed because its complement contains
+   the open `{τ | τ • x = σ • x}` around each of its points — about ten lines).
+   It was NOT committed, because a theorem whose only consumers are still
+   sorried would be free-floating; write it as part of the proof that uses it.
 
 So a prover should expect to build a relative `LowerRamificationData` (or a
 `φ` for a tower of two levels) first. Step 2 is where the cost is; steps 1 and
@@ -6029,7 +6035,10 @@ closed, and that a decreasing family of nonempty compact sets
 genuine filtration IS closed-valued: `upperRamificationFiltration` is built
 from the `D.gp i`, each of which is an intersection of CLOPEN sets, because
 `ContinuousSMulDiscrete` makes `{σ | σ • x = y}` open and the condition
-`unif ^ (i+1) ∣ σ • x − x` is a union of such sets with open complement.
+`unif ^ (i+1) ∣ σ • x − x` is a union of such sets with open complement. That
+last step is compiler-checked (2026-07-30) — see step 4 of the audit on
+`LowerRamificationData.gp_le_upperRamificationFiltration_sup_lvl`, which needs
+the identical fact.
 
 So the recommended move is NOT to hunt a counterexample but to add a
 `gp_isClosed : ∀ u, IsClosed (F.gp u : Set (Γ Kᵥ))` field to
