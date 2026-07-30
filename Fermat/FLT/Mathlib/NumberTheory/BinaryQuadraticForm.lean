@@ -3849,6 +3849,41 @@ ABSENCE RE-VERIFIED, NOT INHERITED (2026-07-28, and again 2026-07-30 after the m
 and `QExpansion` and no `j` at all, and `~/cs/FLT` has zero hits. Refute this note by
 exhibiting any of those names; the leaf would then reduce to specialising them.
 
+**PARTIAL REFUTATION OF THE READING OF THAT NOTE, 2026-07-30 — STEP (iv) IS NOT MISSING.** The
+grep above is accurate about `j`, and it is easy to read it as saying the whole construction is
+unsupported. It is not. The step the sketch above states without saying what proves it —
+"holomorphic `Γ`-invariant functions on `ℍ` that are meromorphic at the cusp, hence POLYNOMIALS
+IN `j`" — does NOT need the graded-ring structure theorem `M_* = ℂ[E₄, E₆]` (which really is
+absent: `Mathlib/NumberTheory/ModularForms/LevelOne/GradedRing.lean` contains ONLY
+`discriminant_eq_E₄_cube_sub_E₆_sq`). It needs nothing this file does not already consume:
+
+* induct on the pole order `n`. At `n = 0` the function is a bounded holomorphic `Γ`-invariant
+  weight-`0` function, hence constant by `ModularForm.levelOne_weight_zero_const` — the SAME
+  lemma `eta_weber_sum` uses through `wOctCubeForm`, so the packaging pattern is already in this
+  file twice (`wOctCubeForm`, `etaWeightFourForm`);
+* at `n > 0`, `j` has a simple pole at `i∞` with `q`-expansion `q⁻¹ + 744 + ⋯`, so subtracting
+  `c · jⁿ` for the right constant `c` drops the pole order to `n − 1`.
+
+So step (iv) is a `q`-expansion bookkeeping induction over a rigidity lemma that is present,
+not a missing structure theorem. What it does additionally require is a notion of POLE ORDER at
+the cusp for a `Γ`-invariant holomorphic function that is not a modular form; mathlib's
+`Function.Periodic.qParam` / `cuspFunction` / `qExpansion` are the tools, and that is real work
+but bounded.
+
+AND A SECOND ROUTE IS ALSO TOOLED, if the first is awkward.
+`Mathlib/NumberTheory/ModularForms/LevelOne/DimensionFormula.lean` — reachable from here
+already, since this file quotes `ModularForm.levelOne_weight_four_rank_one` out of it — supplies
+`CuspForm.discriminantEquiv : CuspForm 𝒮ℒ k ≃ₗ[ℂ] ModularForm 𝒮ℒ (k − 12)` (division by `Δ`),
+`ModularForm.rank_eq_one_add_rank_cuspForm`, the full `ModularForm.dimension_level_one`
+(`rank M_k = ⌊k/12⌋` or `⌊k/12⌋ + 1`), `ModularForm.sturm_bound_levelOne` (order `> k/12` ⟹
+zero) and a `FiniteDimensional` instance at every weight. Those are exactly what an induction
+proving `M_* = ℂ[E₄, E₆]` needs, so the structure theorem is derivable here rather than blocked.
+
+WHAT REMAINS GENUINELY UNTOOLED, so that nobody re-checks the easy half: the representatives
+`C(N)` and `#C(N) = ψ(N)` (Hermite normal form, combinatorial), the INTEGRALITY of the
+coefficients (the `ℤ[ζ_N]` plus `Gal(ℚ(ζ_N)/ℚ)`-stability argument), and Kronecker's leading
+coefficient. Those three are the leaf; step (iv) is not.
+
 WHAT THIS LEAF IS *NOT*. It needs no complex multiplication, no class field theory and no
 class-number hypothesis — integrality of `j` at CM points is prior to all of that, and holds
 at every imaginary quadratic point regardless of the class number. That is exactly why the
