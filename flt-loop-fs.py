@@ -631,7 +631,17 @@ def mutate_fs(job, what):
             m["sentinel"] = {"released": s["main"], "merged": landed,
                              "snapshot": s["main"], "audited": s["main"],
                              "panic": False}
-        s["inflight"] = None
+        # DELIBERATELY NOT `s["inflight"] = None`. A real merge worker does not
+        # touch loop state at all -- it merges, builds, audits, and writes a
+        # sentinel; discharging the claim is row 10's job and nobody else's. By
+        # doing it here the simulator produced a fact the real world has no
+        # producer for, which is fault 1's exact shape ("shared rules are not
+        # enough; the two environments must agree about WHO WRITES WHAT"), and
+        # it is what hid this leak: `merge_branches` already returns a landed
+        # set that can be a strict SUBSET of the claim, so the simulator has
+        # been generating partial deliveries all along and then papering over
+        # the one line that mishandled them. Row 10 now folds the unlanded
+        # remainder back into the batch, and the simulator can see it do so.
         s["log"].append(
             "~  merger: merged %s -> %s; built snapshot; audited queue1 "
             "(kept %d, dropped %d already-closed, adopted %d unowned)"
