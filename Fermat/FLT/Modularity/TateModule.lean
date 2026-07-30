@@ -3292,6 +3292,28 @@ satisfies as an abelian variety of relative dimension `0`, where
 morphism `[0]` factors through the zero section and is not finite, so
 its `finrank` carries no information.
 
+**AUDIT 2026-07-30 — FAITHFUL, AND THE "RATIONAL INPUT" IS ALREADY IN THE
+HYPOTHESES, SO IT IS NOT PART OF WHAT IS MISSING.**  The char-`0` sibling's
+docstring calls `dim_D (H₁ ⊗ ℚ) = 2` "the RATIONAL input that is
+irreducible here", which reads as though it were a further unproved fact.
+It is not: it is FORCED by `hdim` together with `m`.  `H₁(A, ℚ)` has
+`ℚ`-dimension `2 dim A = 2 · Module.finrank ℚ D` by `hdim`; `m` makes it a
+`D`-vector space, and the action is automatically FAITHFUL (`𝒪_D` is a
+domain, `End(A)` is `ℤ`-torsion-free, so the kernel is an ideal of `𝒪_D`
+meeting `ℤ` in `0`, hence `0`); so `dim_D H₁(A, ℚ) = 2` is a division, not
+an input.  The same count gives `T_ℓ A` free of rank `2` over
+`𝒪_D ⊗ ℤ_ℓ` for `ℓ` invertible.
+
+WHAT THAT LEAVES, stated sharply so a successor does not go hunting for the
+wrong thing: the missing ingredient is not the RANK but the FUNCTOR — a
+homology or Tate-module functor on abelian schemes, together with
+`deg φ = det(φ | H₁)` (equivalently `deg φ = det(φ | T_ℓ)` up to the
+inseparable part).  Neither exists anywhere in this tree, and the degenerate
+checks recorded below (`a = n`, `a` a unit) are the only handles the file
+itself provides.  That is why all three axes recorded here are refuted: they
+all try to pin `deg` from inside, and `deg` is only pinned by a
+determinant.
+
 **DO NOT PROVE THIS FROM ANY POINT COUNT IN THIS FILE.**  Everything
 below — `card_torsion_span_singleton_of_isAlgClosed`,
 `card_torsion_isMaximal_of_isAlgClosed`, `exists_bettiFrame`, the whole
@@ -8304,8 +8326,10 @@ REFUTING CHECK for that claim: look for `PolarizationStruct`, `lam`, `𝔞` or
 `posElt` in the statement below.  There are none, and `hom` is a bare
 function whose every clause quantifies over `GeomFibrePt f x`.
 
-**FALSITY AUDIT (2026-07-30) — THIS LEAF IS FALSE AS STATED, AND THE
-DEFECT IS IN `DualStruct`, NOT IN THE POLARIZATION.**  The audit of
+**FALSITY AUDIT (2026-07-30) — THE LEAF WAS FALSE AS STATED, AND THE
+DEFECT WAS IN `DualStruct`, NOT IN THE POLARIZATION.  THE PRESCRIBED
+REPAIR HAS NOW BEEN CARRIED OUT — SEE `REPAIR APPLIED` AT THE END OF THIS
+AUDIT.**  The audit of
 2026-07-29 above found ONE way `weil_nondegenerate` can be read into
 contradiction (`R = ℤ`, `I = (2)`, `n = 4`) and repaired it by fixing the
 READING of `weil`.  There is a second way, and no reading repairs it: it is
@@ -8362,7 +8386,43 @@ seam: its base IS a finite field, so `DualStruct ab' m'` is uninhabited for
 every fibre of positive `p`-rank (an ordinary elliptic curve over `𝔽_p`
 suffices) and a leaf of the shape `∃ d : DualStruct ab' m', …` would be
 false for a reason having nothing to do with polarizations.  That note is
-repeated on that leaf. -/
+repeated on that leaf.
+
+**REPAIR APPLIED (2026-07-30).**  `DualStruct.weil_nondegenerate` in
+`Modularity/AbelianScheme.lean` now carries the extra binder
+`(hnF : (n : F) ≠ 0)`, exactly as the minimal repair above prescribes, and
+its docstring carries the witness.  The single use of the axiom in the tree
+— `DualStruct.baseChangeOfIsPullback` — threads the SAME `F` through the
+base change, so it passes the gate through verbatim and no consumer's
+statement changed.  **THIS LEAF IS THEREFORE NO LONGER FALSE**, and it is
+now an ordinary open geometric leaf: what it asks for is the dual abelian
+scheme with its canonical pairing (Grothendieck representability of `Pic⁰`
+for an abelian scheme over any base) plus the fibre-local polarization.
+
+RE-AUDIT AGAINST THE COMPOSITE STATEMENT, since this leaf's environment has
+now been restated twice (the 2026-07-29 reading fix, then the 2026-07-30
+gate) and CLAUDE.md's rule is that an earlier audit is VOID rather than
+inherited.  Three things were re-checked, and the first is the one a reader
+would most likely get wrong:
+
+1. **THE GATE DOES NOT SUBSUME THE 2026-07-29 READING FIX, AND BOTH ARE
+   STILL REQUIRED.**  That audit's witness — `R = ℤ`, `I = (2)`, `n = 4` —
+   is in CHARACTERISTIC ZERO, where `(4 : F) ≠ 0`, so the gate leaves it
+   asserted.  It is defused only by reading `weil x I n hn` as the
+   canonical PERFECT pairing `A[I] × Â[I] ⟶ μ_e` (`e` the exponent of
+   `A[I]`, which divides `n` because `(n : R) ∈ I`) composed with
+   `μ_e ↪ μ_n`, and NOT as `e_n` restricted to `A[I] × Â[I]`.  A successor
+   building a `DualStruct` must build the second reading; that requirement
+   is now recorded on `DualStruct` itself.
+2. **NO CONTRADICTORY LEVEL SURVIVES THE GATE.**  Any `(I, n)` at which
+   the ungated axiom was contradictory has the residue characteristic
+   dividing `n`, hence `(n : F) = 0`; and when `(n : F) ≠ 0` the group
+   `A[I] ⊆ A[n]` is étale of order prime to the characteristic, where the
+   canonical pairing genuinely is perfect.
+3. **THE LEAF'S OWN LEVELS ARE UNAFFECTED.**  Everything this leaf and
+   `exists_qAdicWeilSystem_of_mult` use is at `I = (q^N)`, `n = q^N` over
+   the NUMBER field `F`, where `(q^N : F) ≠ 0` holds for free.  So the
+   conclusion below did not change and neither did any call site. -/
 theorem exists_dualPolarization_of_mult
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
@@ -14640,7 +14700,51 @@ prover has to build:
 `hσ` is used only in step 3, to say WHICH element of `Γ_{κ(w)}` the
 Frobenius reduces to; it is not an assumption, since
 `exists_absoluteGaloisGroup_pow_natCard_of_finite` produces such a `σ`
-and it is unique. -/
+and it is unique.
+
+**FAITHFULNESS AUDIT (2026-07-30) — THE LEAF IS FAITHFUL, BUT `O` IS NOT
+A FREE CHOICE, AND THE CONSTRAINT IS INVISIBLE IN
+`IsAbelianReductionDatum`.**
+
+Faithful: `A_x` is the fibre of a proper smooth geometrically connected
+group scheme over the field `F`, hence an abelian variety over a NUMBER
+field, of dimension `Module.finrank ℚ D` by `hdim`, with `𝒪_D` acting; such
+a variety has good reduction outside a finite set of places, and the three
+steps enumerated above are the standard construction.  The `𝒪_D`-action is
+automatically faithful (`𝒪_D` is a domain and `End(A)` is `ℤ`-torsion-free,
+so the kernel is an ideal meeting `ℤ` in `0`, hence `0`), so nothing extra
+is needed to carry `m'` down.
+
+The constraint a prover will NOT find by reading the structure, and which
+makes exactly ONE field unsatisfiable if got wrong:
+
+`gen_frob` names a SPECIFIC element of `Γ_F`, namely
+`Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+(Field.AbsoluteGaloisGroup.adicArithFrob w)`.  And
+`Field.absoluteGaloisGroup.map` is built — see its own docstring in
+`Deformations/RepresentationTheory/AbsoluteGaloisGroup.lean`, which says so
+explicitly — out of an ARBITRARILY CHOSEN embedding
+`IsAlgClosed.lift : F̄ →ₐ[F] (F_w)ᵃˡᵍ`.  That embedding singles out ONE
+place `w̄ ∣ w` of `F̄`, namely the pullback along it of the valuation of
+`(F_w)ᵃˡᵍ`, and the transported Frobenius lies in the decomposition group
+of THAT place and no other.  The places above `w` form a single
+`Γ_F`-orbit, so at any other choice `w̄' = τ w̄` the same element lies in
+`τ D_{w̄} τ⁻¹`: it does not preserve the corresponding `O`, no `frobPt`
+inducing it exists, and `gen_frob` cannot be filled — while every other
+field of the structure is satisfiable, which is what makes this a trap
+rather than a visible obstruction.
+
+So the witness is FORCED, and this is the whole content of the warning:
+take `O` to be the pullback along that same `IsAlgClosed.lift` of the
+valuation ring of `(F_w)ᵃˡᵍ`, with `ι` its inclusion into `F̄` and `π` its
+residue map.  Then `ker_π`, `valuationRing` and `lift_int` hold because a
+valuation ring is local with non-units the maximal ideal and the centre on
+`𝒪_F` is `w`; `π_surjective` because the residue field of that ring is
+`κ(w)ᵃˡᵍ`; and `sp_frob` is
+`Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob`, which says
+`adicArithFrob` acts on residues as the `#κ(w) = N w`-power map — exactly
+the `σ` that `hσ` pins.  Steps 1 and 2 of the route above are then the
+only genuinely open mathematics. -/
 theorem exists_finset_abelianReductionDatum_of_mult
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
@@ -17243,9 +17347,11 @@ not about the Frobenius, and the multiplier `N` is produced in
 `exists_levelWeilPairing_of_qAdicPolarizedSystem_finiteBase`, where `hσ`
 is in scope.
 
-**DO NOT CUT THIS THROUGH `DualStruct` — THE RESULTING LEAF WOULD BE
-FALSE** (audit 2026-07-30; the witness is written out on
-`exists_dualPolarization_of_mult`).  The obvious move is to mirror the
+**A CUT THROUGH `DualStruct` WOULD ONCE HAVE BEEN FALSE; THE BLOCKING
+DEFECT WAS REPAIRED ON 2026-07-30 AND THE ROUTE IS NOW OPEN** (audit and
+repair both written out on `exists_dualPolarization_of_mult`; read the
+paragraph below for what the obstruction WAS, then the note at the end for
+what changed).  The obvious move is to mirror the
 characteristic-zero half: there `exists_qAdicWeilSystem_of_mult` is PROVEN
 over `exists_dualPolarization_of_mult`, which discharges six of that
 predicate's eight clauses from the axioms of `DualStruct` alone, and the
@@ -17269,9 +17375,25 @@ So a cut of this leaf must either repair `DualStruct` first (gate
 `weil_nondegenerate` on `(n : F) ≠ 0`, which is free in characteristic zero
 — see the audit cited above) or introduce a FIBRE-LOCAL dual-pairing datum
 carrying the pairing only at the prime-to-`p` levels `q^M` that this
-statement actually mentions.  Until one of those exists, this statement is
-already the minimal fibre-local form of "the polarized `q`-adic Weil system
-exists", and there is nothing to strip off it. -/
+statement actually mentions.
+
+**THE FIRST OPTION WAS TAKEN, 2026-07-30 — SO THE PARAGRAPH ABOVE IS NOW
+HISTORY, NOT A PROHIBITION.**  `DualStruct.weil_nondegenerate` carries
+`(hnF : (n : F) ≠ 0)`.  Over the finite base `k` of this leaf the gate bites
+exactly where the refutation lived: at `I = (p^j)` one has `(n : k) = 0` and
+the axiom is no longer asserted, while at the levels this statement actually
+uses — `I = (q^M)`, `n = q^M`, and `hqN : ¬ q ∣ N` puts `q ≠ p` — one has
+`(q^M : k) ≠ 0` and the axiom is asserted exactly where the classical
+pairing is perfect.  So `DualStruct ab' m'` is now inhabitable over a finite
+field and the mirror cut IS available: a successor may state the geometric
+half as `∃ d : DualStruct ab' m', …` and let the seven formal clauses fall
+out of the axioms, as the characteristic-zero half already does.  The one
+clause that will NOT come for free is the bounded-radical clause, which
+replaces perfectness here for the reason given above.
+
+Until such a cut is made, this statement remains the minimal fibre-local
+form of "the polarized `q`-adic Weil system exists", and there is nothing to
+strip off it. -/
 theorem exists_qAdicPolarizedSystem_finiteBase
     {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}

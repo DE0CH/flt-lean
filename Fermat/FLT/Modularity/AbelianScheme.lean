@@ -798,7 +798,12 @@ axioms, one in each structure, and NEITHER implies the other.
 
 * `DualStruct.weil_nondegenerate` is the content of `DualStruct`:
   without it, `weil ≡ 1` would satisfy every other axiom of that
-  structure.
+  structure.  Since 2026-07-30 it is GATED on `(n : F) ≠ 0` — see the
+  LEVEL GATE paragraph of the `DualStruct` docstring for the witness that
+  made the ungated form UNINHABITABLE in positive characteristic.  The
+  gate does not cost the non-vacuity: at any level invertible in `F` the
+  axiom still rules out `weil ≡ 1`, and every fibre of characteristic
+  zero has such levels at every `I ≠ ⊤`.
 * `PolarizationStruct.weil_hom_nondegenerate` is the content of
   `PolarizationStruct`, and it was MISSING until 2026-07-27. Without it
   the entire structure was satisfied by the CONSTANT ZERO MAP over EVERY
@@ -908,7 +913,69 @@ pairing restricts to the IDENTITY on `R`. For `R = 𝒪_D` with `D` totally
 real that is automatic classically (the Rosati involution is positive, and
 a totally real field admits no nontrivial positive involution), and it is
 what makes the induced pairing `𝒪_D`-bilinear rather than merely
-`ℤ`-bilinear. -/
+`ℤ`-bilinear.
+
+**THE LEVEL GATE ON `weil_nondegenerate`, AND WHY IT IS NOT OPTIONAL**
+(repair carried out 2026-07-30, prescribed by the falsity audit on
+`exists_dualPolarization_of_mult` in `Modularity/TateModule.lean`).
+
+`weil_nondegenerate` now carries `(hnF : (n : F) ≠ 0)`.  Without it the
+structure is UNINHABITED as soon as `S` has a point of positive residue
+characteristic whose fibre has nonzero torsion at that characteristic, so
+every leaf of the shape `∃ d : DualStruct ab m, …` over such a base was
+FALSE — not hard, impossible.  The mechanism has nothing to do with
+duality:
+
+* `weil x' I n hn` lands in `rootsOfUnity n (AlgebraicClosure F')`, and
+  the binders of the axioms range over EVERY field `F'` and EVERY point
+  `x' : Spec F' ⟶ S`, not just the point a consumer cares about;
+* in characteristic `p` the group `rootsOfUnity p (AlgebraicClosure F')`
+  is TRIVIAL (`z ^ p = 1 ↔ (z - 1) ^ p = 0 ↔ z = 1`), so at `I = (p)`,
+  `n = p` — legal, since `(p : R) ∈ (p)` — the pairing is CONSTANTLY `1`;
+* the hypothesis of the ungated axiom therefore held vacuously for every
+  `p`-torsion point, and its conclusion said `A'[p](F̄') = 0`.
+
+WITNESS, verified numerically (PARI/GP, 2026-07-30): `S = Spec ℤ[1/11]`,
+`A` the smooth proper model of `X₀(11)` (conductor `11`, hence good
+reduction at every `p ≠ 11`), `D = ℚ` so `R ≅ ℤ` and the relative
+dimension is `1`.  At the point `(5)` the fibre is `11a1 / 𝔽_5`, with
+`a_5 = 1`, `#E(𝔽_5) = 5` and `5 ∤ a_5`, i.e. ORDINARY, so
+`E[5](𝔽̄_5) ≅ ℤ/5 ≠ 0` — which the ungated axiom forbade.
+
+WHY THE GATE COSTS NOTHING.  Every level with `(n : R) ∈ I` at which the
+axiom was contradictory has `n` divisible by the residue characteristic,
+hence `(n : F) = 0`; conversely when `(n : F) ≠ 0` the group `A[I] ⊆ A[n]`
+is étale of order prime to the characteristic and the canonical pairing on
+it really is perfect.  In characteristic zero the gate is vacuous, so no
+existing consumer over a number field changes — the only use of the axiom
+in the tree, `DualStruct.baseChangeOfIsPullback`, threads the SAME `F` and
+so passes it through verbatim.
+
+`weil` itself is deliberately NOT gated: a pairing landing in a trivial
+group is harmless, it is only the nondegeneracy CLAIM about it that was
+false.
+
+**HOW `weil` MUST BE READ — A SEPARATE CONSTRAINT THAT THE GATE DOES NOT
+SUBSUME** (found 2026-07-29, re-checked against the gate 2026-07-30, and
+BINDING on anyone who constructs a `DualStruct`).
+
+Under the naive reading of `weil x I n hn` as "the `n`-Weil pairing `e_n`
+RESTRICTED to `A[I] × Â[I]`" the structure is uninhabitable even in
+CHARACTERISTIC ZERO, so the level gate does not rescue it.  Witness:
+`R = ℤ`, `I = (2)`, `n = 4` — legal, since `(4 : ℤ) ∈ (2)`, and
+`(4 : F) ≠ 0` in characteristic zero, so the gated axiom is still
+asserted.  Every `y ∈ A[2]` is `2y'` and every `ẑ ∈ Â[2]` is `2ẑ'` with
+`y', ẑ'` of order dividing `4`, so
+`e_4(y, ẑ) = e_4(2y', 2ẑ') = e_4(y', ẑ')^4 = 1`; the restriction is
+identically `1` while `A[2] ≠ 0`.
+
+The reading that DOES work, and the one every construction must build:
+`weil x I n hn` is the CANONICAL PERFECT pairing `A[I] × Â[I] ⟶ μ_e`,
+where `e` is the exponent of `A[I]` (which divides `n`, because
+`(n : R) ∈ I` forces `A[I] ⊆ A[n]`), composed with `μ_e ↪ μ_n`.  At the
+levels the development actually uses — `I = (q^N)`, `n = q^N`, where the
+exponent IS `q^N` — the two readings agree and `weil` is the classical
+`e_{q^N}`, which is why nothing downstream depends on the distinction. -/
 structure DualStruct {A S : Scheme.{u}} {f : A ⟶ S} (ab : AbelianSchemeStruct f)
     {R : Type u} [CommRing R] (m : Mult ab R) where
   /-- the underlying scheme of the dual -/
@@ -950,9 +1017,18 @@ structure DualStruct {A S : Scheme.{u}} {f : A ⟶ S} (ab : AbelianSchemeStruct 
       y ∈ (m.torsion x I).1 → z ∈ (dualMult.torsion x I).1 →
       weil x I n hn (m.act a y) z = weil x I n hn y (dualMult.act a z)
   /-- nondegeneracy in the first variable — the axiom that carries the
-  content, and without which `weil ≡ 1` would satisfy all the others -/
+  content, and without which `weil ≡ 1` would satisfy all the others.
+
+  **GATED ON `(n : F) ≠ 0`** (repair 2026-07-30; see the LEVEL GATE
+  paragraph of the structure docstring above).  Ungated, this axiom made
+  `DualStruct` UNINHABITED over any base with a fibre of positive residue
+  characteristic `p` and nonzero `p`-torsion: at `I = (p)`, `n = p` the
+  target `rootsOfUnity p (AlgebraicClosure F)` is TRIVIAL, so the pairing
+  is constantly `1`, the hypothesis below holds vacuously, and the
+  conclusion forces `A[p](F̄) = 0`.  In characteristic zero the gate is
+  free, so no characteristic-zero consumer is weakened. -/
   weil_nondegenerate : ∀ {F : Type u} [Field F] (x : Spec (CommRingCat.of F) ⟶ S)
-      (I : Ideal R) (n : ℕ) (hn : (n : R) ∈ I) (y : GeomFibrePt f x),
+      (I : Ideal R) (n : ℕ) (hn : (n : R) ∈ I) (_hnF : (n : F) ≠ 0) (y : GeomFibrePt f x),
       y ∈ (m.torsion x I).1 →
       (∀ z : GeomFibrePt dualMap x, z ∈ (dualMult.torsion x I).1 →
         weil x I n hn y z = 1) →
@@ -1987,10 +2063,11 @@ noncomputable def baseChangeOfIsPullback (d : DualStruct ab m) (hp : IsPullback 
       ((Mult.mem_torsion_baseChange_iff m hp x I y).mp hy)
       ((Mult.mem_torsion_baseChange_iff d.dualMult hpd x I z).mp hz)
   weil_nondegenerate := by
-    intro F _ x I n hn y hy hz
+    -- the level gate transports verbatim: the base change does not change `F`
+    intro F _ x I n hn hnF y hy hz
     apply RelPoint.ofBaseChangeGeom_injective hp x
     rw [AbelianSchemeStruct.ofBaseChangeGeom_zero]
-    refine d.weil_nondegenerate (x ≫ q) I n hn _
+    refine d.weil_nondegenerate (x ≫ q) I n hn hnF _
       ((Mult.mem_torsion_baseChange_iff m hp x I y).mp hy) ?_
     intro z hzt
     have hzt' : RelPoint.toBaseChangeGeom hpd x z ∈
