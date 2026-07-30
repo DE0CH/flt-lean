@@ -9064,22 +9064,37 @@ theorem exists_taylorWilesBottomHeckeModule.{s, uK, uW}
     haug, ⟨eT⟩, ⟨coord⟩⟩
 
 /-- **The coordinate model of an auxiliary Taylor–Wiles level module**
-at the CONSTANT exponent vector `e ≡ n`:
+at an ARBITRARY exponent vector `e : Fin q → ℕ`:
 
-    (Λ/𝔟_n)^d ,   Λ = ℤ_p[[S_1, …, S_q]] ,
-    𝔟_n = ((1 + S_i)^{p^n} − 1)_{i} ,
+    (Λ/𝔟_e)^d ,   Λ = ℤ_p[[S_1, …, S_q]] ,
+    𝔟_e = ((1 + S_i)^{p^{e_i}} − 1)_{i} ,
 
-so that `Λ/𝔟_n ≅ ℤ_p[(ℤ/p^n)^q]` — the group ring of the level-`n`
-diamond group in its standard `p^n`-truncated form.
+so that `Λ/𝔟_e ≅ ℤ_p[∏_i ℤ/p^{e_i}] = ℤ_p[Δ_Q]` — the group ring of the
+diamond group at its OWN exponents `e_i = v_p(q_i − 1)`.
+
+**GENERALISED FROM THE CONSTANT VECTOR 2026-07-30.**  Until then this was
+pinned at `e ≡ n`, and that pin is exactly what made
+`exists_auxDeformationDiamondControl` FALSE and
+`exists_auxHeckeCoordModuleData` unsatisfiable — see the 2026-07-30
+FALSITY AUDIT on the former, and FAITHFULNESS AUDIT #2 on the latter,
+which prescribed this generalisation.  `hQ` asks its prime set at level
+`n + 1`, so `e_i ≥ n + 1 > n` and `𝔟_e ⊊ 𝔟_{(n)}`: the constant vector
+truncates a group the construction does not truncate.
 
 This is the type that `TaylorWilesLevelRaw.coordM` identifies the
 auxiliary Hecke module with.  Naming it as a CONCRETE `Type` is what
 lets the arithmetic leaf `exists_taylorWilesAuxLevelPresentedDatum`
 below avoid producing a carrier and a coordinate equivalence at all;
-see the reduction audit recorded there. -/
-abbrev taylorWilesCoordModel (p : ℕ) [Fact p.Prime] (q d n : ℕ) : Type :=
-  Fin d → MvPowerSeries (Fin q) ℤ_[p] ⧸
-    taylorWilesLevelIdeal p (fun _ : Fin q => n)
+see the reduction audit recorded there.
+
+The constant-vector special case `e ≡ n` used to be a second abbrev
+`taylorWilesCoordModel p q d n`; it was deleted on 2026-07-30 along with the
+pin, since every consumer now passes the vector it was handed and an abbrev
+nothing mentions is free-floating.  Where the docstrings below still write
+`(Λ ⧸ 𝔟_{(n)})^d`, read `(Λ ⧸ 𝔟_{(e)})^d`. -/
+abbrev taylorWilesCoordModelAt (p : ℕ) [Fact p.Prime] {q : ℕ} (d : ℕ)
+    (e : Fin q → ℕ) : Type :=
+  Fin d → MvPowerSeries (Fin q) ℤ_[p] ⧸ taylorWilesLevelIdeal p e
 
 /-! ### The RING/HECKE cut of the auxiliary Taylor–Wiles level over `ℚ` -/
 
@@ -14048,12 +14063,13 @@ control identification `R_Q ⧸ 𝔫 ≅ R_univ`.
    `IsRaisedLevelHardlyRamified` gives at each `q_i ∈ Q` a character `χ_i`
    whose restriction to `I_{q_i}` factors through the tame quotient
    `(ℤ/q_i)ˣ`, whose `p`-Sylow is `Δ_{q_i} ≅ ℤ/p^{e_i}` with
-   `e_i = v_p(q_i − 1) ≥ n`.  `taylorWilesLevelIdeal p (fun _ => n) ≤
-   RingHom.ker diamond` says `diamond` factors through `Λ ⧸ 𝔟_{(n)}`, i.e.
-   that the diamonds have the stated orders; that `e_i ≥ n` is precisely the
-   congruence clause of `hQ` (see the EXPONENT AUDIT of the assembly for why
-   the constant exponent vector is the standard formulation and not a
-   weakening).
+   `e_i = v_p(q_i − 1) ≥ n`.  **That vector `e` is RETURNED by this leaf**
+   (since the 2026-07-30 FALSITY AUDIT #2 below; it used to be pinned at the
+   constant `fun _ => n`, which is what made the statement false).  The clause
+   `taylorWilesLevelIdeal p e ≤ RingHom.ker diamond` says `diamond` factors
+   through `Λ ⧸ 𝔟_{(e)} = ℤ_p[Δ_Q]`, i.e. that the diamonds have exactly the
+   orders `Δ_Q` gives them; and `he : ∀ i, n ≤ e i` is precisely the congruence
+   clause of `hQ`.
 2. **`toRuniv`**, the control map: surjective with
    `ker toRuniv = 𝔫 · R_Q` for `𝔫 = taylorWilesAug p q`.  Killing the diamonds
    is killing the level raising, so `R_Q ⧸ 𝔫 ≅ R_∅ = R_univ`.
@@ -14272,15 +14288,25 @@ That is declined here, on two independent grounds, each checkable:
    taylorWilesLevelIdeal p e`, which is what `TaylorWilesLevelRaw.bIdeal` is
    shaped for and what `exists_taylorWilesAuxLevelData` below already produces
    (it currently hard-codes `e ≡ n`).  Making that change means revisiting the
-   constant-exponent choice and the coordinate model `taylorWilesCoordModel p q
-   d n` in the assembly and both Hecke leaves — a cut-level change across
-   owners, flagged here rather than made.  It is also the place to re-examine
-   the EXPONENT AUDIT of `exists_taylorWilesAuxLevelPresentedDatum`, which
-   asserts the constant vector is "the standard formulation and not a
-   weakening": the computation above says the constant vector is only
-   admissible when `e_i = n`, and `IsRaisedLevelHardlyRamified.isSplitTorusAt`
-   puts NO order bound on the inertia character `χ`, so nothing in the
-   deformation problem caps it at `p^n`.
+   constant-exponent choice and the coordinate model in the assembly and both
+   Hecke leaves — a cut-level change across owners, flagged here rather than
+   made.  It is also the place to re-examine the EXPONENT AUDIT of
+   `exists_taylorWilesAuxLevelPresentedDatum`, which asserts the constant vector
+   is "the standard formulation and not a weakening": the computation above says
+   the constant vector is only admissible when `e_i = n`, and
+   `IsRaisedLevelHardlyRamified.isSplitTorusAt` puts NO order bound on the
+   inertia character `χ`, so nothing in the deformation problem caps it at
+   `p^n`.
+
+   **SUPERSEDED 2026-07-30 — THE CHANGE WAS MADE, AND IT WAS NOT OPTIONAL.**
+   This paragraph reads as a nice-to-have because it attributes the
+   unsatisfiability to the EQUALITY.  It does not depend on the equality: the
+   inequality `𝔟_{(n)} ≤ ker diamond` already says `1 + diamond S_i` has order
+   DIVIDING `p^n`, which is all the torsion-unit classification quoted two
+   paragraphs up needs.  See FALSITY AUDIT #2 below, which runs that argument to
+   its conclusion and refutes the statement as it then stood; the exponent
+   vector is now returned by this leaf, and the coordinate model is
+   `taylorWilesCoordModelAt p d e`.
 
 # THE PROVABILITY OBSTRUCTION IS REMOVED (2026-07-30): `exists_auxDeformationDatum`
 
@@ -14329,13 +14355,95 @@ mathematics, not plumbing:**
    above is NOT applicable: it wants compactness, and it wants an ideal.
 2. **`RingHom.ker toRuniv = (taylorWilesAug p q).map diamond`** — the control
    theorem proper, "killing the diamonds is killing the level raising".
-3. **`diamond` itself, with `taylorWilesLevelIdeal p (fun _ => n) ≤ ker diamond`**
-   — local class field theory at the primes of `Q`, per item 1 of the head of
-   this docstring.  Clauses 2 and 3 still may NOT be split from each other; the
-   both-directions vacuity check above is unaffected by any of this.
+3. **`diamond` itself, together with its EXPONENT VECTOR `e` and
+   `taylorWilesLevelIdeal p e ≤ ker diamond`** — local class field theory at
+   the primes of `Q`, per item 1 of the head of this docstring.  (Written
+   `fun _ => n` here until the constant vector was refuted on 2026-07-30; the
+   arithmetic is unchanged — `e_i = v_p(q_i − 1)` is read off `hQ` — but the
+   leaf must now RETURN `e` rather than truncate to it.)  Clauses 2 and 3 still
+   may NOT be split from each other; the both-directions vacuity check above is
+   unaffected by any of this.
 
 The FALSITY REPAIR (`hgen`) and this note are independent: `hgen` fixed a FALSE
 statement, this fixes an UNREACHABLE one, and neither subsumes the other.
+
+# FALSITY AUDIT #2 (2026-07-30): CLAUSES 2 AND 3 WERE **JOINTLY UNSATISFIABLE**.
+
+# THE CONSTANT EXPONENT VECTOR IS REFUTED, AND THE STATEMENT IS NOW REPAIRED
+
+The section "WHAT WAS **NOT** DONE" above declines to strengthen clause 3 to an
+EQUALITY, and its item 2 gives the group-ring computation that shows the
+equality version false.  **That computation refutes the INEQUALITY version too,
+and the section stops one inference short of saying so.**  Its own parenthetical
+is what does the work: *"in `ℤ_p[Δ_{q_i}]`, where the `p^n`-torsion units are the
+group-like `σ_i^{p^{e_i − n}}`"*.  That classification needs only that
+`1 + diamond S_i` has order DIVIDING `p^n` — which is exactly what the
+inequality `𝔟_{(n)} ≤ ker diamond` says, since `𝔟_{(n)}` is generated by
+`(1 + S_i)^{p^n} − 1`.  The equality was never needed.
+
+**The refutation, in the standard model.**  Write `a_i := diamond (S_i)` and
+`τ_i := 1 + a_i`.  Then, verbatim from the two clauses:
+
+* clause 3 `⟺ τ_i^{p^n} = 1` for every `i` (`𝔟_{(n)}`'s generators are the
+  `(1 + S_i)^{p^n} − 1`, and `𝔫`'s are the `S_i`);
+* clause 2 `⟺ RingHom.ker toRuniv = (a_1, …, a_q)`, so `A ⧸ (a_i) ≅ Runiv`
+  where `A := 𝒟Q.R`.
+
+Take the model the construction actually produces at `q = 1`: `A = ℤ_p[Δ]`,
+`Δ = ⟨σ⟩ ≅ ℤ/p^e`, `Runiv = ℤ_p`, `toRuniv` the augmentation, so
+`ker toRuniv = (σ − 1)`.  `hQ` is asked at level `n + 1`, hence `e ≥ n + 1 > n`.
+`A` is `ℤ_p`-torsion-free, so `A ↪ A ⊗ ℚ_p = ∏_{j ≤ e} ℚ_p(ζ_{p^j})`; let
+`c : A → ℤ_p[ζ_{p^e}]` be the top component (the character faithful on `Δ`).
+Any `τ ∈ A` with `τ^{p^n} = 1` has `c(τ) ∈ μ_{p^n}`, so `c(τ)` is a primitive
+`p^m`-th root of unity for some `m ≤ n`, and in `ℤ_p[ζ_{p^e}]` — totally
+ramified of degree `p^{e−1}(p−1)` over `ℚ_p` —
+
+    v(c(τ) − 1) ∈ {∞} ∪ { p^{e−m} : m ≤ n } ,   while   v(σ − 1) = v(ζ_{p^e} − 1) = 1 .
+
+`(τ − 1) = (σ − 1)` as ideals of `A` forces the two valuations equal after
+applying `c`, i.e. `p^{e−m} = 1`, i.e. `m = e`.  But `m ≤ n < e`.  **No `τ`
+exists, so clauses 2 and 3 had no common witness.**
+
+*Numerically confirmed* (PARI/GP, `p = 3`, `e = 2`, `n = 1`): in
+`ℚ_3(ζ_9)/ℚ_3` the ramification index is `6`, and `v(ζ_9 − 1) = 1` against
+`v(ζ_3 − 1) = v(ζ_3^2 − 1) = 3 = p^{e−m}` with `m = 1`.  So the only `3`-torsion
+units of `ℤ_3[ℤ/9]` congruent to `1` mod the augmentation ideal generate `𝔪^3`
+or `0`, never `𝔪 = (σ − 1)`.
+
+**This is the SAME defect that FAITHFULNESS AUDIT #2 of
+`exists_auxHeckeCoordModuleData` below found on the HECKE side**, one level up
+rather than one level down: there the constant vector makes `hbn` a clause no
+witness satisfies, here it makes clause 3 incompatible with clause 2.  The two
+audits agree on the diagnosis (`hQ` forces the `Δ_Q` exponent to be at least
+`p^{n+1}`, and the constant vector truncates a group the construction does not
+truncate) and on the repair.
+
+**THE REPAIR, CARRIED OUT HERE (2026-07-30) — it is the one that audit
+prescribes.**  The exponent vector is UNPINNED: this leaf now RETURNS
+
+    ∃ e : Fin q → ℕ, (∀ i, n ≤ e i) ∧ … ∧ taylorWilesLevelIdeal p e ≤ ker diamond
+
+alongside `diamond`, instead of hard-coding `e ≡ n`.  It knows `e` — classically
+`e_i = v_p(q_i − 1)`, read off the congruence clause of `hQ` — and
+`𝔟_{(e)} ≤ ker diamond` is then the honest statement that the diamond action
+factors through `Δ_Q` itself, which is TRUE of the intended witness and is what
+local class field theory at `Q` actually delivers.  The refuting computation
+above evaporates because `m = e` is now permitted: the group-like `σ_i` is the
+witness, `τ_i = σ_i`, `(τ_i − 1) = (σ_i − 1) = ker toRuniv`, and
+`𝔟_{(e)} ≤ ker diamond` holds on the nose.
+
+`e` is threaded from here through `exists_auxDeformationRingPresentation`,
+`exists_auxHeckeCoordModuleData`, `exists_auxHeckeModuleData` and
+`exists_taylorWilesAuxLevelPresentedDatum`, and lands in
+`exists_taylorWilesAuxLevelData`, whose conclusion **already** read
+`∃ e : Fin q → ℕ, (∀ i, n ≤ e i) ∧ …` and whose proof used to supply the
+constant vector by hand.  So the interface below this leaf was right all along;
+the constant vector was introduced at the presented-datum step and nowhere else.
+
+Note what did NOT change: `hgen`, the both-directions vacuity check, and the
+pairing of clauses 2 and 3 in one leaf.  The junk `diamond` still satisfies
+clause 3 alone (`𝔟_{(e)} ≤ 𝔫 ≤ ker diamond` for it as well, by
+`taylorWilesLevelIdeal_le_aug`), so the two clauses still may not be split.
 
 References: Wiles, Ann. of Math. 141 (1995), ch. 3; Taylor-Wiles, ibid. §2;
 Darmon-Diamond-Taylor §2.49 and §5.3; Fujiwara §3; Kisin, Ann. of Math. 170
@@ -14374,11 +14482,12 @@ theorem exists_auxDeformationDiamondControl.{s, t, uK, uW, uR}
     (hQ : IsTaylorWilesPrimeSet p ρbar (n + 1) Q)
     (𝒟Q : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar)
     (h𝒟Q : 𝒟Q.IsWeaklyUniversal) :
-    ∃ (diamond : MvPowerSeries (Fin q) ℤ_[p] →+* 𝒟Q.R)
+    ∃ (e : Fin q → ℕ) (diamond : MvPowerSeries (Fin q) ℤ_[p] →+* 𝒟Q.R)
       (toRuniv : 𝒟Q.R →+* Runiv),
+      (∀ i, n ≤ e i) ∧
       Function.Surjective toRuniv ∧
       RingHom.ker toRuniv = (taylorWilesAug p q).map diamond ∧
-      taylorWilesLevelIdeal p (fun _ : Fin q => n) ≤ RingHom.ker diamond :=
+      taylorWilesLevelIdeal p e ≤ RingHom.ker diamond :=
   sorry
 
 set_option linter.checkUnivs false in
@@ -14425,13 +14534,13 @@ carrier that happens to satisfy some equations — the three pieces are:
    `IsRaisedLevelHardlyRamified` gives at each `q_i ∈ Q` a character `χ_i`
    whose restriction to `I_{q_i}` factors through the tame quotient
    `(ℤ/q_i)ˣ`, whose `p`-Sylow is `Δ_{q_i} ≅ ℤ/p^{e_i}` with
-   `e_i = v_p(q_i − 1) ≥ n`.  The clause
-   `taylorWilesLevelIdeal p (fun _ => n) ≤ RingHom.ker diamond` says `diamond`
-   factors through `Λ ⧸ 𝔟_{(n)}`, i.e. that the diamonds have the stated
-   orders; that `e_i ≥ n` — hence that the constant exponent vector `n` is
-   admissible — is precisely the congruence clause of `hQ` (see the EXPONENT
-   AUDIT of the assembly for why the constant vector is the standard
-   formulation and not a weakening);
+   `e_i = v_p(q_i − 1) ≥ n`.  That vector is RETURNED alongside `diamond`
+   (2026-07-30), and the clause `taylorWilesLevelIdeal p e ≤ RingHom.ker
+   diamond` says `diamond` factors through `Λ ⧸ 𝔟_{(e)} = ℤ_p[Δ_Q]`, i.e. that
+   the diamonds have exactly the orders `Δ_Q` gives them; `∀ i, n ≤ e i` is
+   precisely the congruence clause of `hQ`.  The constant vector `fun _ => n`
+   stood here until 2026-07-30 and was REFUTED — see FALSITY AUDIT #2 on
+   `exists_auxDeformationDiamondControl` above, which owns this clause;
 3. **`toRuniv`**, the control map: surjective with `ker toRuniv = 𝔫 · R_Q` for
    the augmentation ideal `𝔫 = taylorWilesAug p q`.  Killing the diamonds is
    killing the level raising, so `R_Q ⧸ 𝔫 ≅ R_∅ = R_univ`.
@@ -14527,26 +14636,28 @@ theorem exists_auxDeformationRingPresentation.{s, t, uK, uW, uR}
     (hQ : IsTaylorWilesPrimeSet p ρbar (n + 1) Q)
     (𝒟Q : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar)
     (h𝒟Q : 𝒟Q.IsWeaklyUniversal) :
-    ∃ (I : Ideal (MvPowerSeries (Fin q) coeff.carrier))
+    ∃ (e : Fin q → ℕ) (I : Ideal (MvPowerSeries (Fin q) coeff.carrier))
       (_ : (MvPowerSeries (Fin q) coeff.carrier ⧸ I) ≃+* 𝒟Q.R)
       (diamond : MvPowerSeries (Fin q) ℤ_[p] →+*
         (MvPowerSeries (Fin q) coeff.carrier ⧸ I))
       (toRuniv : (MvPowerSeries (Fin q) coeff.carrier ⧸ I) →+* Runiv),
+      (∀ i, n ≤ e i) ∧
       Function.Surjective toRuniv ∧
       RingHom.ker toRuniv = (taylorWilesAug p q).map diamond ∧
-      taylorWilesLevelIdeal p (fun _ : Fin q => n) ≤ RingHom.ker diamond := by
+      taylorWilesLevelIdeal p e ≤ RingHom.ker diamond := by
   -- LEAF A2′-3a (Greenberg–Wiles): the `q`-generator surjection onto `R_Q` …
   obtain ⟨pres, hpres⟩ :=
     exists_auxDeformationPresSurjection.{uK, uW, uR} hpodd hW hres hirr hπuniv
       q0 q hq0 coeff hcoeff hcohen n Q hQcard hQ 𝒟Q h𝒟Q
-  -- LEAF A2′-3b (local CFT + control): the diamonds and `R_Q ↠ R_univ` …
-  obtain ⟨diamond, toRuniv, htoRuniv, hker, hbn⟩ :=
+  -- LEAF A2′-3b (local CFT + control): the diamonds, their EXPONENT VECTOR and
+  -- `R_Q ↠ R_univ` — `e` is unpinned since the 2026-07-30 FALSITY AUDIT #2 …
+  obtain ⟨e, diamond, toRuniv, he, htoRuniv, hker, hbn⟩ :=
     exists_auxDeformationDiamondControl.{s, t, uK, uW, uR} hpodd hW hres hirr
       hadic hcomplete hranku hρuniv hπuniv hunivred hfact hgen q n Q hQcard hQ 𝒟Q h𝒟Q
   -- … and transport the latter two onto the presented carrier `Λ_𝒪 ⧸ ker pres`.
-  refine ⟨RingHom.ker pres, pres.quotientKerEquivOfSurjective hpres,
+  refine ⟨e, RingHom.ker pres, pres.quotientKerEquivOfSurjective hpres,
     (pres.quotientKerEquivOfSurjective hpres).symm.toRingHom.comp diamond,
-    toRuniv.comp (pres.quotientKerEquivOfSurjective hpres).toRingHom, ?_, ?_,
+    toRuniv.comp (pres.quotientKerEquivOfSurjective hpres).toRingHom, he, ?_, ?_,
     ?_⟩
   · exact htoRuniv.comp (pres.quotientKerEquivOfSurjective hpres).surjective
   · have hbridge : ∀ J : Ideal 𝒟Q.R,
@@ -14615,11 +14726,15 @@ PROOF (2026-07-28), exactly the docstring's five bullets:
    So `(Λ ⧸ a)^d ⧸ 𝔫·⊤ ≃ₗ (Λ ⧸ 𝔫)^d` INDEPENDENTLY of `a`.
 4. Applying it at `a = L.bIdeal` (via `bIdeal_le_aug`, transported along
    `L.coordM` with `Submodule.map_smul''`) and at
-   `a = taylorWilesLevelIdeal p (fun _ => n)` (via `taylorWilesLevelIdeal_le_aug`)
+   `a = taylorWilesLevelIdeal p e` (via `taylorWilesLevelIdeal_le_aug`)
    gives both sides the same `(Λ ⧸ 𝔫)^d`, and composing yields the claim.
 
 Note the two ideals are never compared with each other — only each with `𝔫` —
-which is what makes step 3 the whole content and why the level `n` is free.
+which is what makes step 3 the whole content and why the exponent vector is
+free.  **That is why unpinning it cost nothing** (2026-07-30): this statement
+took a level `n` and used `𝔟_{(n)}` until the constant vector was refuted on the
+ring side, and generalising it to an arbitrary `e : Fin q → ℕ` was the single
+substitution at step 4, `key` having always been stated for every `a ≤ 𝔫`.
 
 Only additive structure is asked for, because that is all the consumer uses:
 the `T`-action on `M₀` is compared with the ring action in the SEMILINEARITY
@@ -14644,11 +14759,11 @@ theorem nonempty_augQuotEquiv_of_taylorWilesBottom.{s, uR}
     {coeff : TaylorWilesCoefficients}
     {M0 : Type} [AddCommGroup M0] [Module T M0] (_hM0 : Nontrivial M0)
     (hbot : Nonempty (TaylorWilesLevelRaw.{0, 0, 0, s, uR} p ψ q d 0 coeff M0))
-    (n : ℕ) :
-    Nonempty ((taylorWilesCoordModel p q d n ⧸
+    (e : Fin q → ℕ) :
+    Nonempty ((taylorWilesCoordModelAt p d e ⧸
         (taylorWilesAug p q • ⊤ :
           Submodule (MvPowerSeries (Fin q) ℤ_[p])
-            (taylorWilesCoordModel p q d n))) ≃+ M0) := by
+            (taylorWilesCoordModelAt p d e))) ≃+ M0) := by
   classical
   obtain ⟨L⟩ := hbot
   letI := L.commRingR
@@ -14739,23 +14854,23 @@ theorem nonempty_augQuotEquiv_of_taylorWilesBottom.{s, uR}
       (LinearMap.quotKerEquivOfSurjective π hπsurj)⟩
   -- **STEP 2** — transport the level-`0` module along Diamond's coordinate
   -- equivalence: `L.M ⧸ 𝔫·⊤ ≅ (Λ ⧸ 𝔫)^d`.
-  obtain ⟨e⟩ := L.coordM
+  obtain ⟨eqM⟩ := L.coordM
   obtain ⟨g0⟩ := key L.bIdeal L.bIdeal_le_aug
   have hmap : (taylorWilesAug p q • ⊤ :
         Submodule (MvPowerSeries (Fin q) ℤ_[p]) L.M).map
-        (e : L.M →ₗ[MvPowerSeries (Fin q) ℤ_[p]]
+        (eqM : L.M →ₗ[MvPowerSeries (Fin q) ℤ_[p]]
           (Fin d → MvPowerSeries (Fin q) ℤ_[p] ⧸ L.bIdeal)) =
       (taylorWilesAug p q • ⊤ :
         Submodule (MvPowerSeries (Fin q) ℤ_[p])
           (Fin d → MvPowerSeries (Fin q) ℤ_[p] ⧸ L.bIdeal)) := by
     rw [Submodule.map_smul'', Submodule.map_top]
     congr 1
-    exact LinearMap.range_eq_top.mpr e.surjective
+    exact LinearMap.range_eq_top.mpr eqM.surjective
   have hbotEquiv : Nonempty ((L.M ⧸ (taylorWilesAug p q • ⊤ :
         Submodule (MvPowerSeries (Fin q) ℤ_[p]) L.M))
       ≃ₗ[MvPowerSeries (Fin q) ℤ_[p]]
         (Fin d → MvPowerSeries (Fin q) ℤ_[p] ⧸ taylorWilesAug p q)) :=
-    ⟨(Submodule.Quotient.equiv _ _ e hmap).trans g0⟩
+    ⟨(Submodule.Quotient.equiv _ _ eqM hmap).trans g0⟩
   -- **STEP 3** — `projM` identifies `L.M ⧸ 𝔫·⊤` with `M₀`, additively.  One
   -- inclusion is `projM_eq_zero`; the reverse is forced by `diamond_smul`,
   -- `projM_smul` and `ker_toRuniv`, which is the second bullet of the docstring.
@@ -14792,7 +14907,7 @@ theorem nonempty_augQuotEquiv_of_taylorWilesBottom.{s, uR}
           (LinearMap.quotKerEquivOfSurjective L.projM.toIntLinearMap
             L.projM_surjective))))⟩
   -- **STEP 4** — assemble: both coordinate models have the same `𝔫`-quotient.
-  obtain ⟨gn⟩ := key (taylorWilesLevelIdeal p fun _ : Fin q => n)
+  obtain ⟨gn⟩ := key (taylorWilesLevelIdeal p e)
     (taylorWilesLevelIdeal_le_aug p _)
   obtain ⟨f⟩ := hbotEquiv
   obtain ⟨θ⟩ := hM0Equiv
@@ -15009,11 +15124,49 @@ RING.
   only be constrained by what already saw it*.  `Q` was repaired that way on
   2026-07-27; `diamond` has the identical defect and wants the identical repair.
 
-The `sorry` below is therefore NOT vouched as provable in its present form.  It
-is left in place rather than deleted because the whole chain above it
-(`exists_auxHeckeModuleData`, `exists_taylorWilesAuxLevelPresentedDatum`) is
-PROVEN GLUE over it and the re-cut touches the RING half, which was under repair
-elsewhere on 2026-07-29.  Diamond 1997 Thm. 2.1 and Ihara are not what blocks it.
+# AUDIT #2's FIRST REPAIR IS DONE (2026-07-30): THE EXPONENT VECTOR IS UNPINNED
+
+# — DEFECT (2) IS GONE AND THE PACKAGE NOW HAS THE INTENDED WITNESS
+
+The "Necessary, and cheap" bullet above has been carried out, and the reason it
+was done now rather than later is that the SAME defect was found to make the
+RING leaf `exists_auxDeformationDiamondControl` outright FALSE, not merely
+unsatisfiable — see its FALSITY AUDIT #2 (2026-07-30), which refutes the
+constant vector with an explicit valuation witness in `ℤ_p[ℤ/p^e]`.  One repair
+answers both, exactly as this audit predicted.
+
+Concretely, in this statement:
+
+* `e : Fin q → ℕ` with `he : ∀ i, n ≤ e i` are now HYPOTHESES, threaded from
+  the ring leaf, which produces them (classically `e_i = v_p(q_i − 1)`);
+* `hbn` reads `taylorWilesLevelIdeal p e ≤ RingHom.ker diamond`;
+* the module lives on `taylorWilesCoordModelAt p d e = (Λ ⧸ 𝔟_{(e)})^d`.
+
+**What this fixes.**  Defect (2) is gone outright: `𝔟_{(e)} ≤ ker diamond` is
+what the `Δ_Q`-action genuinely satisfies, so `hbn` is no longer a clause no
+witness can meet.  And (★) becomes `RingHom.ker diamond = 𝔟_{(e)}` — which is
+TRUE of the intended witness and is precisely Diamond's freeness (`Λ` acts on
+`M_Q` through `diamond`, and a free `Λ/𝔟_{(e)}`-module has annihilator exactly
+`𝔟_{(e)}`).  So the whole package — hypotheses AND conclusion — is now satisfied
+by the object the classical construction produces, which it was not before.  The
+`sorry` below is therefore VOUCHED as true at the intended witness.
+
+The algebraic half cost nothing, as predicted:
+`nonempty_augQuotEquiv_of_taylorWilesBottom` above now takes `e` instead of `n`
+and its proof is unchanged apart from that substitution, because its `key` step
+was already stated for EVERY ideal `a ≤ 𝔫`.
+
+**What this does NOT fix, and it is still the honest reason this leaf is hard.**
+Defect (1) survives in weakened form.  The conclusion still asserts a property
+of a `diamond` this leaf did not make, so a prover who builds the honest `M_Q`
+must still show the handed-in `diamond` is the one its `Λ`-action goes through;
+`hbn` plus the `ker_le` computation pin `ker diamond = 𝔟_{(e)}`, which pins the
+kernel but not the map.  That is what `𝒟Q`, `h𝒟Q` and `φ` are in the hypothesis
+package for, and it is why the "Correct" bullet above — PRODUCE `diamond` where
+the freeness is proven, i.e. state the `ℚ` analogue of `HilbertAuxHeckeAlgebra`
+— remains the right long-term cut.  The difference is that this is now a
+provability obligation with a witness behind it, rather than a package with no
+model at all.
 
 References: Diamond, Invent. Math. 128 (1997), Thm. 2.1; Taylor-Wiles, Ann. of
 Math. 141 (1995), §2; Wiles, ibid. ch. 3; Darmon-Diamond-Taylor §3 (Ihara's
@@ -15069,6 +15222,7 @@ theorem exists_auxHeckeCoordModuleData.{s, t, uK, uW, uR}
     (hQ : IsTaylorWilesPrimeSet p ρbar (n + 1) Q)
     (𝒟Q : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar)
     (h𝒟Q : 𝒟Q.IsWeaklyUniversal)
+    (e : Fin q → ℕ) (he : ∀ i, n ≤ e i)
     (I : Ideal (MvPowerSeries (Fin q) coeff.carrier))
     (φ : (MvPowerSeries (Fin q) coeff.carrier ⧸ I) ≃+* 𝒟Q.R)
     (diamond : MvPowerSeries (Fin q) ℤ_[p] →+*
@@ -15076,21 +15230,21 @@ theorem exists_auxHeckeCoordModuleData.{s, t, uK, uW, uR}
     (toRuniv : (MvPowerSeries (Fin q) coeff.carrier ⧸ I) →+* Runiv)
     (htoRuniv : Function.Surjective toRuniv)
     (hker : RingHom.ker toRuniv = (taylorWilesAug p q).map diamond)
-    (hbn : taylorWilesLevelIdeal p (fun _ : Fin q => n) ≤ RingHom.ker diamond)
-    (hθ : Nonempty ((taylorWilesCoordModel p q d n ⧸
+    (hbn : taylorWilesLevelIdeal p e ≤ RingHom.ker diamond)
+    (hθ : Nonempty ((taylorWilesCoordModelAt p d e ⧸
         (taylorWilesAug p q • ⊤ :
           Submodule (MvPowerSeries (Fin q) ℤ_[p])
-            (taylorWilesCoordModel p q d n))) ≃+ M0)) :
+            (taylorWilesCoordModelAt p d e))) ≃+ M0)) :
     ∃ (_ : Module (MvPowerSeries (Fin q) coeff.carrier ⧸ I)
-        (taylorWilesCoordModel p q d n))
-      (θ : (taylorWilesCoordModel p q d n ⧸
+        (taylorWilesCoordModelAt p d e))
+      (θ : (taylorWilesCoordModelAt p d e ⧸
         (taylorWilesAug p q • ⊤ :
           Submodule (MvPowerSeries (Fin q) ℤ_[p])
-            (taylorWilesCoordModel p q d n))) ≃+ M0),
+            (taylorWilesCoordModelAt p d e))) ≃+ M0),
       (∀ (x : MvPowerSeries (Fin q) ℤ_[p])
-        (m : taylorWilesCoordModel p q d n), x • m = diamond x • m) ∧
+        (m : taylorWilesCoordModelAt p d e), x • m = diamond x • m) ∧
       (∀ (x : MvPowerSeries (Fin q) coeff.carrier ⧸ I)
-        (m : taylorWilesCoordModel p q d n),
+        (m : taylorWilesCoordModelAt p d e),
         θ (Submodule.Quotient.mk (x • m)) =
           ψ (toRuniv x) • θ (Submodule.Quotient.mk m)) :=
   sorry
@@ -15113,14 +15267,23 @@ surjectivity and control clauses are surjectivity and injectivity of that
 composite.  The two forms are equivalent — see the sub-leaf's docstring for the
 converse direction, which uses only the `Λ`-compatibility clause and `hker`.
 
-**BUT THE CUT ITSELF IS DEFECTIVE — read FAITHFULNESS AUDIT #2 on
+**BUT THE CUT ITSELF WAS DEFECTIVE — read FAITHFULNESS AUDIT #2 on
 `exists_auxHeckeCoordModuleData` above before dispatching anyone at that
 sub-leaf** (2026-07-29).  In one line: `diamond` is handed across the RING/HECKE
 seam, and the `Λ`-compatibility clause is a statement ABOUT it — it forces
-`RingHom.ker diamond = taylorWilesLevelIdeal p (fun _ => n)` exactly, which
-`hbn` bounds only from below and which no intended witness satisfies, since `hQ`
-forces the `Δ_Q` exponent to be at least `p^(n+1)`.  The repair is on the RING
-side and is spelled out there.
+`RingHom.ker diamond = taylorWilesLevelIdeal p e` exactly, which `hbn` bounds
+only from below.  With the CONSTANT vector `e ≡ n` that was a clause no intended
+witness satisfied, since `hQ` forces the `Δ_Q` exponent to be at least
+`p^(n+1)`.
+
+**HALF-REPAIRED 2026-07-30:** the exponent vector is unpinned throughout this
+chain — `e` and `he : ∀ i, n ≤ e i` are now threaded from the RING leaf, which
+produces them — so `ker diamond = 𝔟_{(e)}` is TRUE of the intended witness and
+the package has a model.  The same repair fixed an outright FALSITY on the ring
+side (`exists_auxDeformationDiamondControl`'s FALSITY AUDIT #2, with a valuation
+counterexample in `ℤ_p[ℤ/p^e]`).  What survives is the weaker half of defect (1):
+the conclusion is still a statement about a `diamond` the sub-leaf did not make.
+See that sub-leaf's docstring for what is left.
 
 Everything about the RING has already happened: `𝒟Q` is the weakly universal
 raised-level deformation datum, `φ` records that the presented ring `Λ_𝒪 ⧸ I`
@@ -15254,6 +15417,7 @@ theorem exists_auxHeckeModuleData.{s, t, uK, uW, uR}
     (hQ : IsTaylorWilesPrimeSet p ρbar (n + 1) Q)
     (𝒟Q : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar)
     (h𝒟Q : 𝒟Q.IsWeaklyUniversal)
+    (e : Fin q → ℕ) (he : ∀ i, n ≤ e i)
     (I : Ideal (MvPowerSeries (Fin q) coeff.carrier))
     (φ : (MvPowerSeries (Fin q) coeff.carrier ⧸ I) ≃+* 𝒟Q.R)
     (diamond : MvPowerSeries (Fin q) ℤ_[p] →+*
@@ -15261,44 +15425,44 @@ theorem exists_auxHeckeModuleData.{s, t, uK, uW, uR}
     (toRuniv : (MvPowerSeries (Fin q) coeff.carrier ⧸ I) →+* Runiv)
     (htoRuniv : Function.Surjective toRuniv)
     (hker : RingHom.ker toRuniv = (taylorWilesAug p q).map diamond)
-    (hbn : taylorWilesLevelIdeal p (fun _ : Fin q => n) ≤ RingHom.ker diamond) :
+    (hbn : taylorWilesLevelIdeal p e ≤ RingHom.ker diamond) :
     ∃ (_ : Module (MvPowerSeries (Fin q) coeff.carrier ⧸ I)
-        (taylorWilesCoordModel p q d n))
-      (projM : taylorWilesCoordModel p q d n →+ M0),
+        (taylorWilesCoordModelAt p d e))
+      (projM : taylorWilesCoordModelAt p d e →+ M0),
       (∀ (x : MvPowerSeries (Fin q) ℤ_[p])
-        (m : taylorWilesCoordModel p q d n), x • m = diamond x • m) ∧
+        (m : taylorWilesCoordModelAt p d e), x • m = diamond x • m) ∧
       Function.Surjective projM ∧
       (∀ (x : MvPowerSeries (Fin q) coeff.carrier ⧸ I)
-        (m : taylorWilesCoordModel p q d n),
+        (m : taylorWilesCoordModelAt p d e),
         projM (x • m) = ψ (toRuniv x) • projM m) ∧
-      (∀ m : taylorWilesCoordModel p q d n, projM m = 0 →
+      (∀ m : taylorWilesCoordModelAt p d e, projM m = 0 →
         m ∈ (taylorWilesAug p q • ⊤ :
           Submodule (MvPowerSeries (Fin q) ℤ_[p])
-            (taylorWilesCoordModel p q d n))) := by
+            (taylorWilesCoordModelAt p d e))) := by
   -- LEAF A2′-4a: `M₀` IS the augmentation quotient of the coordinate model …
-  obtain ⟨θ0⟩ := nonempty_augQuotEquiv_of_taylorWilesBottom.{s, uR} hM0 hbot n
+  obtain ⟨θ0⟩ := nonempty_augQuotEquiv_of_taylorWilesBottom.{s, uR} hM0 hbot e
   -- LEAF A2′-4b (Diamond freeness + Ihara): the `R_Q`-action and the
   -- semilinear comparison — the automorphic content, and all of it.
   obtain ⟨inst, θ, hlam, hint⟩ :=
     exists_auxHeckeCoordModuleData.{s, t, uK, uW, uR} hpodd hW hres hirr hadic
       hcomplete hranku hρuniv hπuniv hfact hrankT hρT hπ hred ψ hψalg hψπ hψ
-      q0 q d hq0 coeff M0 hM0 hbot hM0T n Q hQcard hQ 𝒟Q h𝒟Q I φ diamond
+      q0 q d hq0 coeff M0 hM0 hbot hM0T n Q hQcard hQ 𝒟Q h𝒟Q e he I φ diamond
       toRuniv htoRuniv hker hbn ⟨θ0⟩
   -- `projM` is `θ` after the augmentation quotient map; the remaining two
   -- clauses are surjectivity and injectivity of that composite.
   refine ⟨inst, θ.toAddMonoidHom.comp
       (Submodule.mkQ (taylorWilesAug p q • ⊤ :
         Submodule (MvPowerSeries (Fin q) ℤ_[p])
-          (taylorWilesCoordModel p q d n))).toAddMonoidHom,
+          (taylorWilesCoordModelAt p d e))).toAddMonoidHom,
     hlam, ?_, ?_, ?_⟩
   · exact θ.surjective.comp (Submodule.mkQ_surjective _)
   · intro x m
     exact hint x m
   · intro m hm
     have h0 : (Submodule.Quotient.mk m :
-        taylorWilesCoordModel p q d n ⧸ (taylorWilesAug p q • ⊤ :
+        taylorWilesCoordModelAt p d e ⧸ (taylorWilesAug p q • ⊤ :
           Submodule (MvPowerSeries (Fin q) ℤ_[p])
-            (taylorWilesCoordModel p q d n))) = 0 := by
+            (taylorWilesCoordModelAt p d e))) = 0 := by
       apply θ.injective
       simpa using hm
     exact (Submodule.Quotient.mk_eq_zero _).mp h0
@@ -15395,6 +15559,21 @@ classical construction proves the constant-exponent form directly.
 
 Consequence for dispatch: **do not send anyone at "compute
 `v_p(q_i − 1)`".**  That computation is not in this leaf and never was.
+
+**AMENDED 2026-07-30 — THE AUDIT IS RIGHT ABOUT THE MODULE AND THE CODE
+NO LONGER TAKES THE CONSTANT VECTOR.**  Everything above survives: a
+free rank-`d` module over `ℤ_p[Δ_Q]` does reduce freely over
+`ℤ_p[(ℤ/p^n)^q]`, so the MODULE pushes down and nothing here was a
+dodge.  What does not push down is the RING, and taking the constant
+vector there made `exists_auxDeformationDiamondControl` FALSE — see its
+FALSITY AUDIT #2 (2026-07-30) for the refuting valuation witness, and
+FAITHFULNESS AUDIT #2 of `exists_auxHeckeCoordModuleData` for the
+mirror-image defect on the Hecke side.  Since the ring leaf must produce
+`e` anyway, this leaf now simply passes it on rather than substituting
+`fun _ => n`; the exponent existential is discharged by the vector the
+RING leaf hands over, and `he : ∀ i, n ≤ e i` comes with it.  The
+audit's dispatch advice is unchanged: `v_p(q_i − 1)` is computed in the
+local class field theory of the ring leaf, not here.
 
 # INTERFACE REPAIR — THE PRIME SET IS NOW CHOSEN HERE, NOT HANDED IN
 # (2026-07-27; supersedes the INTERFACE DEFECT section this replaces)
@@ -15668,25 +15847,26 @@ theorem exists_taylorWilesAuxLevelPresentedDatum.{s, t, uK, uW, uR}
     (hbot : Nonempty (TaylorWilesLevelRaw.{0, 0, 0, s, uR} p ψ q d 0 coeff M0))
     (hM0T : Nonempty (M0 ≃ₗ[T] (Fin 2 → T)))
     (n : ℕ) :
-    ∃ (I : Ideal (MvPowerSeries (Fin q) coeff.carrier))
+    ∃ (e : Fin q → ℕ) (I : Ideal (MvPowerSeries (Fin q) coeff.carrier))
       (diamond : MvPowerSeries (Fin q) ℤ_[p] →+*
         (MvPowerSeries (Fin q) coeff.carrier ⧸ I))
       (toRuniv : (MvPowerSeries (Fin q) coeff.carrier ⧸ I) →+* Runiv)
       (_ : Module (MvPowerSeries (Fin q) coeff.carrier ⧸ I)
-        (taylorWilesCoordModel p q d n))
-      (projM : taylorWilesCoordModel p q d n →+ M0),
+        (taylorWilesCoordModelAt p d e))
+      (projM : taylorWilesCoordModelAt p d e →+ M0),
+      (∀ i, n ≤ e i) ∧
       Function.Surjective toRuniv ∧
       RingHom.ker toRuniv = (taylorWilesAug p q).map diamond ∧
       (∀ (x : MvPowerSeries (Fin q) ℤ_[p])
-        (m : taylorWilesCoordModel p q d n), x • m = diamond x • m) ∧
+        (m : taylorWilesCoordModelAt p d e), x • m = diamond x • m) ∧
       Function.Surjective projM ∧
       (∀ (x : MvPowerSeries (Fin q) coeff.carrier ⧸ I)
-        (m : taylorWilesCoordModel p q d n),
+        (m : taylorWilesCoordModelAt p d e),
         projM (x • m) = ψ (toRuniv x) • projM m) ∧
-      (∀ m : taylorWilesCoordModel p q d n, projM m = 0 →
+      (∀ m : taylorWilesCoordModelAt p d e, projM m = 0 →
         m ∈ (taylorWilesAug p q • ⊤ :
           Submodule (MvPowerSeries (Fin q) ℤ_[p])
-            (taylorWilesCoordModel p q d n))) := by
+            (taylorWilesCoordModelAt p d e))) := by
   -- The Taylor–Wiles prime set, asked at level `n + 1` rather than `n`: the
   -- `ℚ`-level `IsTaylorWilesPrimeSet` does not carry `q ≠ 2` / `q ≠ p`, and at
   -- `n = 0` its congruence is vacuous, so the split-torus clause of
@@ -15708,8 +15888,10 @@ theorem exists_taylorWilesAuxLevelPresentedDatum.{s, t, uK, uW, uR}
     letI := L.commRingR
     exact ⟨L.toRuniv.comp L.pres,
       L.toRuniv_surjective.comp L.pres_surjective⟩
-  -- LEAF A2′-3 (RING): the presentation of `R_Q`, the diamonds, the control map
-  obtain ⟨I, φ, diamond, toRuniv, htoRuniv, hker, hbn⟩ :=
+  -- LEAF A2′-3 (RING): the presentation of `R_Q`, the diamonds with their
+  -- EXPONENT VECTOR `e` (unpinned 2026-07-30 — see that leaf's FALSITY AUDIT
+  -- #2, which refutes the constant vector), and the control map
+  obtain ⟨e, I, φ, diamond, toRuniv, he, htoRuniv, hker, hbn⟩ :=
     exists_auxDeformationRingPresentation.{s, t, uK, uW, uR} hpodd hW hres hirr
       hadic hcomplete hranku hρuniv hπuniv hunivred hfact hgen q0 q hq0 coeff hcoeff hcohen
       n Q hQcard hQ 𝒟Q h𝒟Q
@@ -15717,10 +15899,10 @@ theorem exists_taylorWilesAuxLevelPresentedDatum.{s, t, uK, uW, uR}
   obtain ⟨actR, projM, hlam, hsurj, hint, hctrl⟩ :=
     exists_auxHeckeModuleData.{s, t, uK, uW, uR} hpodd hW hres hirr hadic
       hcomplete hranku hρuniv hπuniv hfact hrankT hρT hπ hred ψ hψalg hψπ hψ
-      q0 q d hq0 coeff M0 hM0 hbot hM0T n Q hQcard hQ 𝒟Q h𝒟Q I φ diamond
+      q0 q d hq0 coeff M0 hM0 hbot hM0T n Q hQcard hQ 𝒟Q h𝒟Q e he I φ diamond
       toRuniv htoRuniv hker hbn
-  exact ⟨I, diamond, toRuniv, actR, projM, htoRuniv, hker, hlam, hsurj, hint,
-    hctrl⟩
+  exact ⟨e, I, diamond, toRuniv, actR, projM, he, htoRuniv, hker, hlam, hsurj,
+    hint, hctrl⟩
 
 set_option linter.checkUnivs false in
 /-- **The auxiliary Taylor–Wiles level at a GIVEN prime set** (sorry
@@ -15788,14 +15970,22 @@ again and must be rejected.
 from `exists_taylorWilesAuxLevelPresentedDatum` above (itself PROVEN GLUE
 since later the same day, over the four sub-leaves of the RING/HECKE cut),
 which carries the same hypothesis package and the same arithmetic while
-having four obligations discharged here instead: the exponent vector
-(taken constant, `e ≡ n` — see that leaf's EXPONENT AUDIT for why this
-is the standard formulation and not a weakening), the universe-`0`
+having three obligations discharged here instead: the universe-`0`
 carrier of the auxiliary deformation ring (an explicit quotient of
 `𝒪[[x_1, …, x_q]]`), `pres` with its surjectivity
 (`Ideal.Quotient.mk_surjective`), and the carrier of the Hecke module
 together with `coordM` (the module is produced ON the coordinate model
-`taylorWilesCoordModel`, so `coordM` is `LinearEquiv.refl`).
+`taylorWilesCoordModelAt`, so `coordM` is `LinearEquiv.refl`).
+
+**Four until 2026-07-30**, when the fourth — the exponent vector, which
+this proof used to discharge by substituting the constant `fun _ => n` —
+moved BACK up the chain.  It is now produced by
+`exists_auxDeformationDiamondControl` and merely relayed here, because
+taking it constant made that leaf FALSE (its FALSITY AUDIT #2 gives the
+refuting valuation witness in `ℤ_p[ℤ/p^e]`).  The exponent existential in
+the conclusion below is unchanged and was always the right shape; only
+its witness changed, from `fun _ => n` to the vector the ring leaf hands
+over.
 
 **Read that leaf's INTERFACE REPAIR section before dispatching anyone at
 it.**  Until 2026-07-27 its prime set arrived FIXED and
@@ -15899,17 +16089,19 @@ theorem exists_taylorWilesAuxLevelData.{s, t, uK, uW, uR}
   -- core, with the auxiliary deformation ring produced as an explicit
   -- quotient `Λ_𝒪/I` and the Hecke module produced on the coordinate
   -- model `(Λ/𝔟_n)^d` itself.
-  obtain ⟨I, diamond, toRuniv, actR, projM, htoR, hker, hlam, hsurj, hint,
-      hctrl⟩ :=
+  obtain ⟨e, I, diamond, toRuniv, actR, projM, he, htoR, hker, hlam, hsurj,
+      hint, hctrl⟩ :=
     exists_taylorWilesAuxLevelPresentedDatum.{s, t, uK, uW, uR} hpodd hp5 hW hres
       hirr hadic hcomplete hranku hρuniv hπuniv hunivred hfact hgen hrankT hρT hπ
       hred ψ hψalg hψπ hψ q0 hTWq q d hq0 coeff hcohen M0 hM0 hbot hM0T n
-  -- The exponent vector is the constant one; `pres` is the quotient map and
-  -- `coordM` is the identity, both free at the presented shape.
-  exact ⟨fun _ => n, fun _ => le_rfl,
+  -- The exponent vector is the one the RING leaf produced (`e i = v_p(q_i − 1)`
+  -- classically) — it is no longer taken constant, see the 2026-07-30 FALSITY
+  -- AUDIT #2 of `exists_auxDeformationDiamondControl`.  `pres` is the quotient
+  -- map and `coordM` is the identity, both free at the presented shape.
+  exact ⟨e, he,
     MvPowerSeries (Fin q) coeff.carrier ⧸ I, inferInstance,
     Ideal.Quotient.mk I, diamond, toRuniv,
-    taylorWilesCoordModel p q d n, inferInstance, actR, inferInstance, projM,
+    taylorWilesCoordModelAt p d e, inferInstance, actR, inferInstance, projM,
     Ideal.Quotient.mk_surjective, htoR, hker, hlam,
     ⟨LinearEquiv.refl _ _⟩, hsurj, hint, hctrl⟩
 
