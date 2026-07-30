@@ -14057,9 +14057,7 @@ theorem exists_auxDeformationPresSurjection.{uK, uW, uR}
 
 Added 2026-07-30 by the decomposition of `exists_auxDeformationDiamondControl`
 below, whose clause 1 (surjectivity of `toRuniv`) it discharges.  Everything in
-this block is either PROVEN or the single clean topology leaf
-`compactSpace_of_isAdicComplete_of_finite_residueField`; nothing here is
-arithmetic.
+this block is PROVEN and none of it is arithmetic: the block adds NO leaf.
 
 The shape mirrors `surjective_ringHom_of_charFrob_eq` far above, which does the
 same job on the HECKE side.  It cannot be reused: that proof gets closedness of
@@ -14258,45 +14256,48 @@ theorem continuous_of_isAdic_of_map_le {A B : Type*} [CommRing A]
 
 set_option linter.checkUnivs false in
 /-- **A complete Noetherian local ring with FINITE residue field is COMPACT**
-(sorry node, one clean commutative-algebra/topology statement; NAMED 2026-07-30
-by the decomposition of `exists_auxDeformationDiamondControl` below).
+(**PROVEN 2026-07-30**; wanted by the decomposition of
+`exists_auxDeformationDiamondControl` below, which needs the range of the control
+map to be closed).
 
-`A` is PROFINITE: `A ⧸ 𝔪^n` is a finite ring for every `n` (Noetherianity makes
-`𝔪^i ⧸ 𝔪^{i+1}` a finitely generated module over the FINITE residue field
-`A ⧸ 𝔪 ≅ k`, so each graded piece is finite and the finite filtration composes),
-and `IsAdicComplete` says `A → lim_n A ⧸ 𝔪^n` is bijective while `IsAdic` says
-the topology is the limit topology.  So `A` is homeomorphic to an inverse limit
-of finite discrete spaces.
+`A` is PROFINITE — homeomorphic to `lim_n A ⧸ 𝔪^n` with each quotient finite
+discrete — and the proof takes the equivalent COMPLETE + TOTALLY BOUNDED route,
+which avoids constructing the limit identification:
 
-ROUTE FOR A PROVER, which avoids building the limit identification: a uniform
-space that is COMPLETE and TOTALLY BOUNDED is compact.
+1. `Finite (A ⧸ 𝔪)`: `RingHom.ker π = 𝔪` by `IsLocalRing.ker_eq_maximalIdeal`, so
+   `A ⧸ 𝔪 ≃+* k`, and `k` is `Finite`;
+2. `Finite (A ⧸ 𝔪 ^ n)` for every `n`: `Ideal.finite_quotient_pow`, whose
+   finite-generation hypothesis is Noetherianity;
+3. the topology is a topological-additive-group topology, so it carries the group
+   uniformity `IsTopologicalAddGroup.rightUniformSpace`, which for a COMMUTATIVE
+   group is a `IsUniformAddGroup` structure (`isUniformAddGroup_of_addCommGroup`)
+   and — this is the point — leaves the topology unchanged;
+4. `CompleteSpace A` and `T2Space A` are then mathlib's own adic/topological
+   bridges applied to the two halves of `IsAdicComplete`:
+   `IsAdic.isPrecomplete_iff` and `IsAdic.isHausdorff_iff`
+   (`Mathlib/RingTheory/AdicCompletion/Topology.lean`);
+5. `TotallyBounded univ`: by `IsAdic.hasBasis_nhds_zero` the entourages are
+   refined by the relations `y - x ∈ 𝔪 ^ n`, and a right inverse of
+   `Ideal.Quotient.mk (𝔪 ^ n)` on the FINITE quotient picks a finite set of coset
+   representatives covering `A`;
+6. `isCompact_iff_totallyBounded_isComplete` closes it.
 
-* total boundedness needs only `Finite (A ⧸ 𝔪^n)` and `IsAdic`: the cosets of
-  `𝔪^n` are finitely many and cover `A`, and by `IsAdic` every neighbourhood of
-  `0` contains some `𝔪^n`, so every entourage is refined by a finite cover;
-* completeness is `IsAdicComplete`'s `IsPrecomplete` half transported to the
-  uniformity of the topological additive group (`IsAdic` gives the powers of `𝔪`
-  as a basis of open subgroups, so a Cauchy filter is exactly an `𝔪`-adic Cauchy
-  sequence up to cofinality), and separatedness is its `IsHausdorff` half — see
-  `t2Space_of_isAdic_of_isHausdorff` above, which already extracts the latter.
+Step 4 is what makes this cheap, and it was worth looking for: `IsAdicComplete`
+is a purely algebraic condition (`IsHausdorff` + `IsPrecomplete`) and the bridge
+to `CompleteSpace` is exactly the content of that mathlib file.  Without it this
+would be a substantial leaf; with it the whole proof is twenty lines.
+`t2Space_of_isAdic_of_isHausdorff` above proves step 4's second half by hand
+because its consumer has no uniformity in scope and needs only `T2Space`.
 
-NOT IN MATHLIB (checked 2026-07-30): `Mathlib/Topology/Algebra/Nonarchimedean/AdicTopology.lean`
-proves no compactness result, and `Mathlib/RingTheory/AdicCompletion/*` is purely
-algebraic — `IsAdicComplete` is `IsHausdorff` + `IsPrecomplete`, with no bridge
-to `CompleteSpace`. Building that bridge is most of the work and is reusable far
-beyond this file.
-
-WHY IT IS NEEDED HERE, and why the hypothesis cannot simply be carried instead:
-`TaylorWilesCoefficients` does carry `CompactSpace` as a field, but
-`AuxDeformationDatum` does not, and adding it there would be an interface change
-across every consumer of the raised-level datum — while the property is
-DERIVABLE from the four fields the structure already has (`isAdic`,
-`isAdicComplete`, `isNoetherianRing`, and `π_surjective` onto the `Finite` `k`).
-Deriving it is therefore the right cut.
+WHY IT IS DERIVED RATHER THAN CARRIED: `TaylorWilesCoefficients` carries
+`CompactSpace` as a field, but `AuxDeformationDatum` does not, and adding it
+there would be an interface change across every consumer of the raised-level
+datum — while the property follows from four fields the structure already has
+(`isAdic`, `isAdicComplete`, `isNoetherianRing`, and `π_surjective` onto the
+`Finite` `k`).
 
 CIRCULARITY GUARD: none applies — no `ρbar`, no deformation functor and no Hecke
-algebra occurs in the statement, so a proof cannot be routed through the
-odd-prime dichotomy. -/
+algebra occurs in the statement. -/
 theorem compactSpace_of_isAdicComplete_of_finite_residueField.{a, b}
     {A : Type a} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
     [IsLocalRing A] [IsNoetherianRing A]
@@ -14304,8 +14305,38 @@ theorem compactSpace_of_isAdicComplete_of_finite_residueField.{a, b}
     (hcomplete : IsAdicComplete (IsLocalRing.maximalIdeal A) A)
     {k : Type b} [Field k] [Finite k] {π : A →+* k}
     (hπ : Function.Surjective π) :
-    CompactSpace A :=
-  sorry
+    CompactSpace A := by
+  classical
+  set J : Ideal A := IsLocalRing.maximalIdeal A
+  -- **STEPS 1 AND 2** — the residue field is `k`, hence finite, hence so is
+  -- every `A ⧸ J ^ n`.
+  haveI hres : Finite (A ⧸ J) := by
+    have hker : RingHom.ker π = J := IsLocalRing.ker_eq_maximalIdeal π hπ
+    exact Finite.of_equiv k
+      ((RingHom.quotientKerEquivOfSurjective hπ).toEquiv.symm.trans
+        (Ideal.quotEquivOfEq hker).toEquiv)
+  haveI hfin : ∀ n : ℕ, Finite (A ⧸ J ^ n) := fun n =>
+    Ideal.finite_quotient_pow (IsNoetherian.noetherian J) n
+  -- **STEP 3** — the group uniformity, which does not change the topology.
+  letI u : UniformSpace A := IsTopologicalAddGroup.rightUniformSpace A
+  haveI : IsUniformAddGroup A := isUniformAddGroup_of_addCommGroup
+  -- **STEP 4** — completeness and separatedness, from mathlib's adic bridges.
+  haveI : CompleteSpace A := hadic.isPrecomplete_iff.mp hcomplete.toIsPrecomplete
+  haveI : T2Space A := hadic.isHausdorff_iff.mp hcomplete.toIsHausdorff
+  -- **STEP 5** — total boundedness: finitely many cosets of `J ^ n` cover `A`.
+  have htb : TotallyBounded (Set.univ : Set A) := by
+    refine (hadic.hasBasis_nhds_zero.uniformity_of_nhds_zero).totallyBounded_iff.mpr ?_
+    intro n _
+    obtain ⟨g, hg⟩ := Function.Surjective.hasRightInverse
+      (Ideal.Quotient.mk_surjective (I := J ^ n))
+    refine ⟨Set.range g, Set.finite_range g, ?_⟩
+    intro x _
+    refine Set.mem_iUnion₂.mpr ⟨g (Ideal.Quotient.mk (J ^ n) x), ⟨_, rfl⟩, ?_⟩
+    have hgx : Ideal.Quotient.mk (J ^ n) (g (Ideal.Quotient.mk (J ^ n) x)) =
+        Ideal.Quotient.mk (J ^ n) x := hg _
+    exact (Submodule.Quotient.eq _).mp hgx
+  -- **STEP 6**
+  exact ⟨isCompact_iff_totallyBounded_isComplete.mpr ⟨htb, complete_univ⟩⟩
 
 set_option linter.checkUnivs false in
 /-- **Carayol surjectivity onto a TRACE-GENERATED deformation ring** (PROVEN
@@ -14427,8 +14458,8 @@ applies here verbatim; only the surjectivity clause has moved out.
   Carayol argument (dense trace-generated range, closed because `𝒟Q.R` is
   profinite).  That was item 1 of the "what remains is exactly three things"
   list of the leaf below, and the docstring there calls it "the honest remaining
-  step and not a formality" — it is now discharged, modulo the single clean
-  topology leaf `compactSpace_of_isAdicComplete_of_finite_residueField` above.
+  step and not a formality" — it is now discharged OUTRIGHT, over no leaf at all
+  (`compactSpace_of_isAdicComplete_of_finite_residueField` above is proven).
 * THREE COMPATIBILITY CLAUSES are added to the conclusion in its place:
   `toRuniv` is a `ℤ_[p]`-algebra map, `πuniv.comp toRuniv = 𝒟Q.π`, and it
   matches linear `charFrob` coefficients away from SOME finite set.  These cost
@@ -14938,9 +14969,11 @@ SURJECTIVE — is now discharged here rather than owed.  What this theorem does:
 
 So what is left of this leaf is items 2 and 3 only — the control kernel identity
 and the diamonds — and they live in
-`exists_auxDeformationDiamondControlCompat`.  The one genuinely new obligation
-this decomposition creates is `compactSpace_of_isAdicComplete_of_finite_residueField`,
-a statement with no arithmetic in it at all.
+`exists_auxDeformationDiamondControlCompat`.  **The decomposition creates NO new
+obligation**: `compactSpace_of_isAdicComplete_of_finite_residueField`, the one
+statement it needed that did not exist, is PROVEN (twenty lines, over mathlib's
+`IsAdic.isPrecomplete_iff` bridge), so the sorry count is unchanged and one whole
+clause of a hard leaf has become glue.
 
 References: Wiles, Ann. of Math. 141 (1995), ch. 3; Taylor-Wiles, ibid. §2;
 Darmon-Diamond-Taylor §2.49 and §5.3; Fujiwara §3; Kisin, Ann. of Math. 170
@@ -15465,8 +15498,8 @@ and all of it).
 This is `exists_auxHeckeModuleData` with the two clauses that are not
 arithmetic removed.  Its conclusion asks for
 
-1. the `Λ_𝒪 ⧸ I = R_Q`-module structure on `taylorWilesCoordModel p q d n =
-   (Λ ⧸ 𝔟_{(n)})^d`, extending the canonical `Λ`-action through `diamond` —
+1. the `Λ_𝒪 ⧸ I = R_Q`-module structure on `taylorWilesCoordModelAt p d e =
+   (Λ ⧸ 𝔟_{(e)})^d`, extending the canonical `Λ`-action through `diamond` —
    **Diamond's freeness theorem** (Invent. Math. 128 (1997), Thm. 2.1) in
    coordinate form.  `hbn` is what makes the `Λ`-action factor through
    `Λ ⧸ 𝔟_{(n)}`, so the clause is not vacuous;
@@ -15562,7 +15595,7 @@ mistaken for an oversight.
 
     theorem ker_le (hd : 0 < d) {A : Type*} [CommRing A]
         (diamond : MvPowerSeries (Fin q) ℤ_[p] →+* A)
-        [Module A (taylorWilesCoordModel p q d n)]
+        [Module A (taylorWilesCoordModelAt p d (fun _ : Fin q => n))]
         (hlam : ∀ x m, x • m = diamond x • m) :
         RingHom.ker diamond ≤ taylorWilesLevelIdeal p (fun _ : Fin q => n) := by
       intro x hx
@@ -15837,8 +15870,8 @@ automorphic side:
 1. **Diamond's freeness theorem** (Invent. Math. 128 (1997), Thm. 2.1) in
    coordinate form.  The auxiliary Hecke module `M_Q` — classically
    `H¹(X_1(N·∏Q), ℤ_p)_𝔪` — is finite free of the LEVEL-INDEPENDENT rank `d`
-   over `ℤ_p[Δ_Q] = Λ ⧸ 𝔟_{(n)}`.  The conclusion asks for the module STRUCTURE
-   on `taylorWilesCoordModel p q d n = (Λ ⧸ 𝔟_{(n)})^d` itself rather than for
+   over `ℤ_p[Δ_Q] = Λ ⧸ 𝔟_{(e)}`.  The conclusion asks for the module STRUCTURE
+   on `taylorWilesCoordModelAt p d e = (Λ ⧸ 𝔟_{(e)})^d` itself rather than for
    a carrier plus a coordinate equivalence, so the freeness certificate is
    discharged by producing the action on the coordinates: the `Λ`-action is the
    canonical one and `hbn` is what makes it factor through `Λ ⧸ 𝔟_{(n)}`, so
@@ -16066,7 +16099,7 @@ discharged in the assembly below rather than asked of a prover:
    be exhibited;
 3. **`pres` and its surjectivity** — `Ideal.Quotient.mk I`, free;
 4. **the carrier of the Hecke module and `coordM`** — the module is
-   produced ON the coordinate model `taylorWilesCoordModel p q d n`
+   produced ON the coordinate model `taylorWilesCoordModelAt p d e`
    itself, so `coordM` is `LinearEquiv.refl` and the `Λ`-module
    structure is the canonical one.
 
