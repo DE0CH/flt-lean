@@ -766,6 +766,33 @@ directly, both fail. `TensorProduct.leftModule` puts extra scalars on the *left*
    `IsBaseChange.equiv`, and the rank hypothesis is exactly
    `Module.rankAtStalk_isBaseChange`, which is stated for precisely this situation.
 
+## STATUS OF THAT ROUTE — step 1 is VERIFIED, step 2 hits an instance-KEY mismatch
+
+Written out in a scratch module and compiled on 2026-07-30, with `A` standing for `κ`:
+
+* `rightAct : S →+* Module.End R (A ⊗[R] M)`, `s ↦ LinearMap.lTensor A (Algebra.lsmul R R M s)`,
+  compiles (`map_mul'` is `by ext x; simp [Module.End.mul_apply]`, the rest are `by ext x; simp`);
+* `Module.compHom _ rightAct` gives `Module S (A ⊗[R] M)` with
+  `s • (a ⊗ₜ m) = a ⊗ₜ (s • m)` **by `rfl`**;
+* `IsScalarTower R S (A ⊗[R] M)`, `IsScalarTower R A (A ⊗[R] M)` and
+  `SMulCommClass A S (A ⊗[R] M)` all compile by `TensorProduct.induction_on`, and all three are
+  found by `inferInstance` afterwards.
+
+Step 2 then FAILS: `TensorProduct.Algebra.module` reports
+`failed to synthesize IsScalarTower R A (A ⊗[R] M)` **even though the very next line's
+`example : IsScalarTower R A (A ⊗[R] M) := inferInstance` succeeds.** With `pp.all` the goal it
+cannot solve carries `Semiring.toAddCommMonoid A` inside the `TensorProduct` — because
+`TensorProduct.Algebra`'s section declares `[Semiring A]`, whereas here `A` is a `CommRing` and
+the ambient elaboration reaches `AddCommMonoid A` by the `Ring.toAddCommGroup` path. The two are
+defeq but not the same instance *key*, so discrimination-tree lookup misses. Everything after
+step 2 then cascades (the `(a ⊗ₜ s) • x = a • s • x` reduction fails only because the module
+instance above it errored).
+
+So the next owner should start at that mismatch, not at the mathematics: either instantiate
+`TensorProduct.Algebra.module` with the instance arguments given explicitly, or restate the three
+auxiliary instances so their `AddCommMonoid A` argument matches `Semiring.toAddCommMonoid`. This
+is a Lean-plumbing defect, not a gap in the argument.
+
 ## FAITHFULNESS
 
 This is implied by the parent (it is the parent base-changed to one fibre) and is strictly
@@ -1297,6 +1324,56 @@ buys the conclusion in this whole family. **So a counterexample cannot live over
 in these families: it must exploit a base on which stably free modules need not be free** (hence
 Krull dimension at least 2), which is a strictly stronger requirement than "non-local with
 nontrivial `Pic`". None was constructed.
+
+## FALSITY AUDIT, SECOND FAMILY (2026-07-30) — the ÉTALE case, over an ARBITRARY base
+
+The audit above leaves "Krull dimension ≥ 2" as the hunting ground. The simplest family living
+there was searched and is **also not a counterexample** — and the reason is instructive: the
+hypothesis and the conclusion turn out to be *literally the same condition*.
+
+Take any connected `R` with `2 ∈ Rˣ`, and `G' = G'' = ℤ/2` (constant), so `G` is étale of order
+`4` and corresponds to a finite `π₁(R)`-module `M` sitting in `0 → M' → M → M'' → 0` with `M'`,
+`M''` trivial `ℤ/2`. Then `π₁` acts on `M` through a single quadratic character `χ`, and for
+`M ≅ ℤ/2 × ℤ/2` with basis `e₁ ∈ M'`, `e₂` lifting `M''`:
+
+* orbits of `M`: `{0}`, `{e₁}`, `{e₂, e₂+e₁}`, so `A = O(G) ≅ R × R × R_χ` with `R_χ` the
+  quadratic étale algebra of `χ`. Hence **`Module.Free R A ⟺ R_χ is R-free of rank 2`**;
+* `M* = Hom(M, μ₂)` with `μ₂ = {±1}` a *trivial* `π₁`-module (2 is invertible), and
+  `γ·e₁* = e₁* + χ(γ) e₂*`, `γ·e₂* = e₂*`. The restriction `M* ↠ (M')*` dual to `M' ↪ M` has
+  fibres `{0, e₂*}` (trivial, size 2) over `0` and the single `χ`-orbit `{e₁*, e₁*+e₂*}` over the
+  other point. So over `D(A') = A(ℤ/2) = R × R` the module `D(A)` splits as
+  `(R × R) × R_χ`, and **`D(A)` is `D(A')`-free of rank 2 ⟺ `R_χ` is `R`-free of rank 2**.
+
+The two conditions coincide, so `Module.Free R A` is exactly load-bearing here and no choice of
+`R` — of any Krull dimension, with any `K₀` — separates them. (`M ≅ ℤ/4` is *not* covered: there
+`M* = Hom(ℤ/4, μ₄)` and the cyclotomic action on `μ₄` enters, so that case is still open ground.)
+
+Read together with the Dedekind computation above, the pattern is that the hypothesis keeps
+turning out to be equivalent to the conclusion rather than merely implying it, which is weak
+evidence *for* the leaf and is why no counterexample has been produced.
+
+## LITERATURE CHECK (2026-07-30) — the "Tate's argument" attribution is UNVERIFIED
+
+The `exists_spanning_cartierDual` docstring attributes the freeness to Tate, *Finite flat group
+schemes*, in Cornell–Silverman–Stevens, **§2**. That citation was checked against the OCR'd text
+in `/home/chend/flt-lean/sources/css1997mfflt.txt` and **could not be confirmed**:
+
+* the article's sections are numbered 3.1–3.8, not §2;
+* quotients are constructed in **§3.5** out of (3.3)/(3.4), i.e. Raynaud's *passage au quotient
+  par une relation plate* and Grothendieck's faithfully flat descent, and what is concluded there
+  is that `G → G/H` is **faithfully flat and finite flat** — that is *locally* free, which is
+  strictly weaker than this leaf;
+* **§3.8**, the Cartier-duality section, sets up the dual Hopf algebra, the group-like elements,
+  and Deligne's proof that a commutative finite flat group scheme is killed by its order. It
+  contains **no normal-basis step** and no claim that `D(A)` is `D(A')`-free.
+
+So the source, as available here, supports *local* freeness only, and the docstring's "Tate's own
+argument … dualise an `R`-basis of `A''` through the normal-basis decomposition `A ≅ A'' ⊗_R A'`"
+should be treated as a reconstruction rather than a citation until someone locates it in a
+cleaner copy. That matters for triage: it removes the main reason to believe the *global*
+statement is classical, and it strengthens the case for the documented fallback (weaken
+`exists_basis_cartierDual` to fppf-local freeness of rank `rk_R A''` and localise the two
+consumers' derivations) if this leaf continues to resist.
 
 ## FAITHFULNESS
 
