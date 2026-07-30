@@ -12662,9 +12662,137 @@ is importable here but is NOT applicable from this leaf's hypotheses, so
 `exists_moretBaillySeed_residueCardTwo_of_five_le` below is a genuine open
 leaf and not a wrapper. -/
 
+/-- **BREAK B ALONE: the Moret–Bailly/Taylor base with a `ℚ_[2]`-point** (LEAF,
+cut 2026-07-30 out of `exists_moretBaillySeed_padicEmbedding_of_five_le` below,
+which is PROVEN over it).
+
+This is `Modularity.exists_hilbertBlumenthalPoint_of_five_le` — PROVEN in
+`Modularity/MoretBailly.lean` — with ONE conjunct added,
+`Nonempty (F →+* ℚ_[2])`. Nothing else differs: the totally real Galois `F`, its
+degree parity, the image-preserving restriction and the Hilbert–Blumenthal point
+are returned verbatim by that theorem. So the AUTOMORPHIC half of the old leaf
+(Carayol's eigensystem, the seed assembly) is no longer part of any citation —
+it is Lean, below.
+
+**WHY THE CUT IS HERE, AND WHY IT IS THE ONLY HONEST PLACE.** The
+`ℚ_[2]`-embedding is a property of the CHOSEN `F`, never one that can be
+demanded of an `F` already produced. `Nonempty (F →+* ℚ_[2])` is FALSE for most
+totally real Galois `F` — `ℚ(√5)` has `2` inert, hence no `ℚ_[2]`-embedding at
+all, while satisfying every other conjunct — so a decomposition that took `F`
+from `exists_moretBailly_seed_of_five_le` and then sorried the embedding for
+THAT `F` would manufacture a leaf that is FALSE AS STATED. That is exactly the
+trap `Modularity/KhareWintenberger.lean`'s chain fell into with `residueCardTwo`
+and that was repaired on 2026-07-29: a local condition at `2` must be arranged
+by the producer that chooses `F`. Hence the cut sits at the point of choice.
+
+**WHAT IT COSTS THE CITATION, AND NOTHING MORE.** Moret–Bailly (*Groupes de
+Picard et problèmes de Skolem II*, Ann. Sci. É.N.S. **22** (1989), Thm 1.3)
+prescribes, for each place `v` of a finite set `S`, a nonempty open
+`Ω_v ⊆ X(ℚ_v)` that the produced totally real field must meet. Taking `v = 2`
+with `Ω_2 ≠ ∅` makes `2` split completely in `F`, hence `F ↪ ℚ_[2]`. So the
+whole cost is a `ℚ_[2]`-POINT of the twisted Hilbert–Blumenthal variety
+surviving the Bertini cut to a curve — BREAK B of the audit in
+`nonempty_potentialHeckeDatum_of_five_le`, and nothing about residue degrees.
+
+**NOT VACUOUS — CHECKED, NOT ASSUMED.** Per CLAUDE.md's "two individually
+correct repairs can be fatal together", a leaf that gains conjuncts must be
+re-audited as a COMPOSITE. The conjuncts here are jointly satisfiable, so this
+is not a false leaf dressed as a citation: `F = ℚ(√17)` is totally real, Galois,
+of EVEN degree `2`, and `17 ≡ 1 mod 8` splits `2`, giving `F →+* ℚ_[2]`. Parity
+and the `ℚ_[2]`-embedding are therefore compatible, and the open content is the
+Hilbert–Blumenthal point — the geometry — which is what a citation should owe.
+
+**WHY NOT CUT FURTHER, with the blocker named.** The next cut down would replay
+`exists_hilbertBlumenthalPoint_of_five_le`'s own body against a Moret–Bailly
+step carrying local conditions, leaving two smaller leaves — (A) a
+`ℚ_[2]`-prescribing form of
+`exists_totallyReal_point_of_geometricallyIrreducible`, and (B)
+`HasRationalPoint fX (ULift ℚ_[2])` for the twisted moduli `X` — and it would
+additionally return the GEOMETRIC half of the chain to the root cone (see the
+cone note on the theorem below). It is blocked exactly where the Break-E bullet
+below says: `exists_totallyReal_point_of_geometricallyIrreducible` passes `∅`
+for `S₀` and discards any prescribed `ℚ_[2]`-point when it shrinks `X` to an
+affine open chosen around the REAL point, so leaf (A) is not a restatement but a
+repair BELOW that shrink. That is cut-level work in
+`Modularity/MoretBailly.lean` and is deliberately not attempted from here.
+
+CIRCULARITY GUARD, inherited: this leaf may only ever be discharged by the
+independent Moret–Bailly/Taylor construction — never through `Family.lean`,
+`Lift.lean`, `Modularity/Interface.lean`, or the odd-prime dichotomy
+`not_isIrreducible_of_isHardlyRamified_of_odd`, under whose hypotheses it is
+vacuously true and which is itself proven over pillar α, which is proven over
+this leaf. -/
+theorem exists_hilbertBlumenthalPoint_padicEmbedding_of_five_le
+    (ℓ : ℕ) [Fact ℓ.Prime] {hℓOdd : Odd ℓ} (hℓ5 : 5 ≤ ℓ)
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
+    [DiscreteTopology k] [Algebra ℤ_[ℓ] k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {hdim : Module.rank k V = 2} {ρbar : GaloisRep ℚ k V}
+    (hbar : IsHardlyRamified hℓOdd hdim ρbar) (hirr : ρbar.IsIrreducible) :
+    ∃ (F : Type u) (_ : Field F) (_ : NumberField F)
+      (_ : NumberField.IsTotallyReal F) (_ : IsGalois ℚ F),
+      Even (Module.finrank ℚ F) ∧
+      (∀ g : Field.absoluteGaloisGroup ℚ,
+        ∃ h : Field.absoluteGaloisGroup F,
+          (ρbar.map (algebraMap ℚ F)) h = ρbar g) ∧
+      Nonempty (F →+* ℚ_[2]) ∧
+      Nonempty (Modularity.HilbertBlumenthalPoint ℓ F
+        (ρbar.map (algebraMap ℚ F))) :=
+  sorry
+
 /-- **Taylor's Theorem B in residual form, with a `ℚ_[2]`-embedding in place of
-the residue-degree conjunct** (LEAF — the geometric/automorphic core of
-`exists_moretBaillySeed_residueCardTwo_of_five_le` below, cut off 2026-07-28).
+the residue-degree conjunct** (PROVEN 2026-07-30 over
+`exists_hilbertBlumenthalPoint_padicEmbedding_of_five_le` above; a LEAF from its
+cut on 2026-07-28 until then).
+
+# STATUS CHANGE 2026-07-30 — THIS IS NO LONGER A LEAF, AND THE GATE BELOW FIRED
+
+The audit below carries a section headed "BOTH GATING CHECKS RE-RUN 2026-07-28 —
+THE LEAF IS GENUINELY OPEN", whose first bullet is a REFUTING CHECK stated by
+this file against itself: read the binders of
+`Modularity.exists_moretBailly_seed_of_five_le` and look for `ρ`/`hρ`/`π`; if
+they are gone, the automorphic half of this leaf is closable. **They are gone.**
+That theorem now binds exactly
+`{ℓ} (hℓodd) [Fact ℓ.Prime] (hℓ5) {k} … {W} … (hW) {ρbar} (hρbar) (hirr)` — no
+`O`, no `hZinj`, no `ρ`, no `hrank`, no `π`, no `hπsurj`, no `hπ` — so the
+Break-D bullet below is STALE and is corrected in place there. The binder
+deletion it called "cut-level work not attempted from here" was carried out in
+`Modularity/MoretBailly.lean` by that file's owner; nothing announced it here.
+
+What was NOT possible, and the reason this is a decomposition rather than a
+deletion: `exists_moretBailly_seed_of_five_le` chooses its own `F`, and no
+`ℚ_[2]`-embedding can be demanded of that `F` after the fact (`ℚ(√5)` witnesses
+the failure — see the sub-leaf's audit above). So the seed producer cannot be
+called here. What IS possible, and is what the proof does, is to take `F`
+together with its `ℚ_[2]`-embedding from the sub-leaf and then replay
+`exists_moretBailly_seed_of_five_le`'s fifteen-line body — image preservation
+gives irreducibility over `F` by `isIrreducible_map_of_range_surjective`, and
+`exists_heckeEigensystem_of_hilbertBlumenthalPoint` supplies the automorphic
+joint — so the SEED conjunct is now Lean and the residue is Break B alone.
+
+# ROOT-CONE NOTE, AND A REGRESSION THIS PARTLY REPAIRS
+
+`Modularity/MoretBailly.lean` was made a `public import` of this module (see the
+import comment at the head of the file) for one stated reason: so that
+`nonempty_potentialHeckeDatum_of_five_le` could consume
+`exists_moretBailly_seed_of_five_le`. On 2026-07-29 the `hres2` threading in
+`Modularity/KhareWintenberger.lean` repointed the only consumer chain at
+`exists_moretBaillySeed_residueCardTwo_of_five_le`, whose route bottoms out in
+this declaration — which was then a `sorry`, and a sorried body contributes no
+dependency edges. The whole Moret–Bailly supply chain therefore left the root
+cone and became free-floating.
+
+Proving this declaration restores the edges into the AUTOMORPHIC half —
+`isIrreducible_map_of_range_surjective`,
+`exists_heckeEigensystem_of_hilbertBlumenthalPoint` and, through it,
+`exists_residualModularity_of_hilbertBlumenthalPoint` and
+`exists_heckeSystem_of_residualModularity`. It does NOT restore the GEOMETRIC
+half: `exists_moretBailly_seed_of_five_le` itself and
+`exists_hilbertBlumenthalPoint_of_five_le` still have no code consumer, because
+the sub-leaf above supersedes rather than calls them. Closing that gap is the
+further cut described under "WHY NOT CUT FURTHER" in the sub-leaf's docstring,
+and it is the honest reason to do it.
 
 This is the SAME citation as the leaf below, stated in the form Moret–Bailly
 actually produces. Moret–Bailly's theorem (*Groupes de Picard et problèmes de
@@ -12698,16 +12826,31 @@ independent Moret–Bailly/Taylor construction — never through `Family.lean`,
 `not_isIrreducible_of_isHardlyRamified_of_odd`.
 
 # BOTH GATING CHECKS RE-RUN 2026-07-28 — THE LEAF IS GENUINELY OPEN
+# (FIRST BULLET REFUTED 2026-07-30; SEE THE STATUS CHANGE ABOVE)
 
 Not read off an audit; the binders were read. Both checks that would turn this
 leaf into a citation still FAIL, and they are INDEPENDENT of each other, so
 closing either one alone does not open this leaf.
 
-* **The `ρ`-package gate (Break D) is live.** `exists_moretBailly_seed_of_five_le`
-  (`Modularity/MoretBailly.lean`) still binds `hZinj`, `{ρ : GaloisRep ℚ O (Fin 2 → O)}`,
-  `hrank`, `hρ : IsHardlyRamified … ρ`, `π`, `hπsurj`, `hπ` — the characteristic-zero
-  lift of `ρbar` OVER `ℚ` that potential modularity exists to route around. So that
-  theorem remains INAPPLICABLE here and this leaf is not a wrapper.
+* **STALE — the `ρ`-package gate (Break D) is DEAD as of 2026-07-30.** The text
+  as written on 2026-07-28 read: "`exists_moretBailly_seed_of_five_le`
+  (`Modularity/MoretBailly.lean`) still binds `hZinj`,
+  `{ρ : GaloisRep ℚ O (Fin 2 → O)}`, `hrank`, `hρ : IsHardlyRamified … ρ`, `π`,
+  `hπsurj`, `hπ` — the characteristic-zero lift of `ρbar` OVER `ℚ` that
+  potential modularity exists to route around. So that theorem remains
+  INAPPLICABLE here and this leaf is not a wrapper." **The binders were re-read
+  on 2026-07-30 and every one of them is gone**; the binder deletion this file
+  had sized as mechanical was carried out in `Modularity/MoretBailly.lean`. The
+  package is therefore no longer an obstruction to anything. Note what this did
+  and did not buy, since the 2026-07-28 text also predicted the consequence: it
+  does NOT make this declaration a wrapper around
+  `exists_moretBailly_seed_of_five_le`, because that theorem chooses its own `F`
+  and the `ℚ_[2]`-embedding cannot be demanded of an `F` after the fact. It
+  makes the AUTOMORPHIC half replayable, which is what the proof below does.
+  Kept rather than deleted because a gate that a file states against itself and
+  that later FIRES is the most useful kind of record — and because it is the
+  standing example of a live-looking gating claim that had silently gone stale
+  under an edit in another module.
 * **Break E is live**, and this is the check the audit of
   `nonempty_potentialHeckeDatum_of_five_le` names. Its binders were read:
   `exists_isAffineOpen_hasRationalPoint` takes exactly ONE prescribed point,
@@ -12720,7 +12863,30 @@ closing either one alone does not open this leaf.
 Both repairs are edits to PROVEN declarations in `Modularity/MoretBailly.lean` —
 a file with concurrent owners — so they are cut-level work for that file's owner
 and are deliberately not attempted from here. What this leaf owes remains exactly
-the Moret–Bailly citation with `Ω_2 ≠ ∅`. -/
+the Moret–Bailly citation with `Ω_2 ≠ ∅`.
+
+# THE DEGREE-PARITY CONJUNCT (added 2026-07-29)
+
+`Even (Module.finrank ℚ F)` was added to the conclusion. It is **not** a new
+burden on the citation: the same Moret–Bailly/Hilbert–Blumenthal construction
+already delivers it one level up, where
+`Modularity.exists_hilbertBlumenthalPoint_of_five_le` returns it and the PROVEN
+`Modularity.exists_moretBailly_seed_of_five_le` forwards it verbatim. `F` is cut
+out of a twisted Hilbert–Blumenthal variety for a real quadratic field, so its
+degree over `ℚ` is even by construction; a discharge of this leaf that does not
+produce the parity is not following the cited construction.
+
+WHY IT HAD TO BE ADDED HERE rather than obtained separately: parity and
+`residueCardTwo` are statements about the SAME `F`, and the only producer that
+can bind them together is the one that CHOOSES `F`. The consumer chain in
+`Modularity/KhareWintenberger.lean`
+(`exists_potentialModularityWitness_of_five_le`) needs both — parity for the
+`3`-adic realization and the Weil-bound citations, `residueCardTwo` for the
+tame-at-`2` gluing condition — so it must call ONE producer that returns both.
+Before this change it called `exists_moretBailly_seed_of_five_le` (parity, no
+residue condition) and the tame-at-`2` obligation was silently dropped, which is
+what left `exists_classifyingHom_of_hilbertDeformationDatum_of_not_splitTwo`
+standing as an unclosable residue in that file. -/
 theorem exists_moretBaillySeed_padicEmbedding_of_five_le
     (ℓ : ℕ) [Fact ℓ.Prime] {hℓOdd : Odd ℓ} (hℓ5 : 5 ≤ ℓ)
     {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
@@ -12731,10 +12897,35 @@ theorem exists_moretBaillySeed_padicEmbedding_of_five_le
     (hbar : IsHardlyRamified hℓOdd hdim ρbar) (hirr : ρbar.IsIrreducible) :
     ∃ (F : Type u) (_ : Field F) (_ : NumberField F)
       (_ : NumberField.IsTotallyReal F) (_ : IsGalois ℚ F)
+      (_ : Even (Module.finrank ℚ F))
       (_ : (ρbar.map (algebraMap ℚ F)).IsIrreducible),
       Nonempty (F →+* ℚ_[2]) ∧
-      Nonempty (Modularity.MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F))) :=
-  sorry
+      Nonempty (Modularity.MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F))) := by
+  classical
+  -- BREAK B, and nothing else: the base `F` with its `ℚ_[2]`-point, chosen
+  -- together so that the local condition at `2` is arranged by the producer
+  -- rather than demanded of an `F` already fixed.
+  obtain ⟨F, hF, hNF, hFtr, hFgal, hev, hrestr, hemb, ⟨pt⟩⟩ :=
+    exists_hilbertBlumenthalPoint_padicEmbedding_of_five_le (hℓOdd := hℓOdd)
+      (hdim := hdim) ℓ hℓ5 hbar hirr
+  -- irreducibility over `F` is PROVEN from image preservation, not assumed
+  have hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible :=
+    Modularity.isIrreducible_map_of_range_surjective _ hrestr hirr
+  -- the automorphic joint: the compatible system of the point is a
+  -- Hilbert-newform Hecke eigensystem (Carayol/Taylor, PROVEN glue upstream)
+  obtain ⟨E₀, hE₀, hNE₀, hecke₀, ψ₀, S, hsys⟩ :=
+    Modularity.exists_heckeEigensystem_of_hilbertBlumenthalPoint hℓOdd hℓ5
+      hdim hbar hirr F hFtr hFgal pt
+  -- glue: unite the bad sets and transport the match along `matchℓ`
+  refine ⟨F, hF, hNF, hFtr, hFgal, hev, hirrF, hemb,
+    ⟨{ E₀ := E₀, bad₀ := pt.bad ∪ S, hecke₀ := hecke₀, O₀ := pt.O₀,
+       σ := pt.σ, ψ₀ := ψ₀, ι₀ := pt.ιO₀, ι₀_injective := pt.ιO₀_injective,
+       π₀ := pt.π₀, modular₀ := ?_, residual₀ := ?_ }⟩⟩
+  · intro w hw
+    exact (pt.matchℓ w fun h => hw (Finset.mem_union_left _ h)).trans
+      (hsys w fun h => hw (Finset.mem_union_right _ h))
+  · intro w hw
+    exact pt.residualℓ w fun h => hw (Finset.mem_union_left _ h)
 
 /-- **Taylor's Theorem B in residual form, with `2` prescribed to split
 completely** (PROVEN GLUE since 2026-07-28 over
@@ -12898,14 +13089,15 @@ theorem exists_moretBaillySeed_residueCardTwo_of_five_le
     (hbar : IsHardlyRamified hℓOdd hdim ρbar) (hirr : ρbar.IsIrreducible) :
     ∃ (F : Type u) (_ : Field F) (_ : NumberField F)
       (_ : NumberField.IsTotallyReal F) (_ : IsGalois ℚ F)
+      (_ : Even (Module.finrank ℚ F))
       (_ : (ρbar.map (algebraMap ℚ F)).IsIrreducible),
       (∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal →
           Nat.card (𝓞 F ⧸ w.asIdeal) = 2) ∧
       Nonempty (Modularity.MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F))) := by
-  obtain ⟨F, hF, hNF, hFtr, hFgal, hirrF, hemb, hseed⟩ :=
+  obtain ⟨F, hF, hNF, hFtr, hFgal, hev, hirrF, hemb, hseed⟩ :=
     exists_moretBaillySeed_padicEmbedding_of_five_le (hℓOdd := hℓOdd)
       (hdim := hdim) ℓ hℓ5 hbar hirr
-  exact ⟨F, hF, hNF, hFtr, hFgal, hirrF,
+  exact ⟨F, hF, hNF, hFtr, hFgal, hev, hirrF,
     fun w hw => natCard_residue_eq_of_nonempty_ringHom_padic F hF hNF
       hFgal.to_normal 2 hemb w hw, hseed⟩
 
@@ -13833,7 +14025,7 @@ theorem nonempty_potentialHeckeDatum_of_five_le
     Nonempty (PotentialHeckeDatum ℓ ρbar) := by
   -- (T): Moret–Bailly/Taylor produce the totally real Galois base `F`, with
   -- `2` split completely and with an automorphic witness over it.
-  obtain ⟨F, hF, hNF, hFtr, hFgal, hirrF, hres2, ⟨seed⟩⟩ :=
+  obtain ⟨F, hF, hNF, hFtr, hFgal, _hev, hirrF, hres2, ⟨seed⟩⟩ :=
     exists_moretBaillySeed_residueCardTwo_of_five_le (hℓOdd := hℓOdd)
       (hdim := hdim) ℓ hℓ5 hbar hirr
   letI := hF
@@ -25812,6 +26004,37 @@ theorem surjective_of_hilbertAux_classifying
     Function.Surjective f :=
   sorry
 
+/-- **The exponent vector of a Taylor–Wiles prime set, PINNED to the places of
+`Q`** (added 2026-07-30 as a FAITHFULNESS REPAIR of the CONTROL/GENERATORS cut;
+the refutation it repairs is the FALSITY AUDIT on
+`exists_hilbertAuxHeckeModuleData` below).
+
+`ex` is the exponent vector for which `Δ_Q = ∏_i Δ_{w_i} ≅ ∏_i ℤ/ℓ^{ex i}`:
+`wOf` enumerates `Q`, and `ex i` is the `ℓ`-valuation of `N (wOf i) − 1`, so
+`ℓ ^ ex i` is exactly the order of the `ℓ`-Sylow `Δ_{wOf i}` of the tame
+quotient `(𝓞_F ⧸ wOf i)ˣ`. This is verbatim what the docstrings of
+`exists_hilbertAuxDiamondQuotient` and `exists_hilbertTaylorWilesAuxLevelData`
+already SAY the prover will produce — "`ex i` is the `ℓ`-valuation of
+`N w_i − 1`" — so the predicate adds no new mathematics to the leaf. It only
+makes the statement say it, which is what the consumer needs.
+
+**WHY A PREDICATE AND NOT A `def ex`.** The enumeration of `Q` by `Fin q` is
+not canonical (`HeightOneSpectrum` carries no order), so `ex` is determined by
+`Q` only up to a permutation of `Fin q`; every clause the cut states about `ex`
+is permutation-stable, so pinning it existentially through `wOf` is exactly the
+right strength. Injectivity together with `∀ i, wOf i ∈ Q` and the cut's
+standing `hQcard : Q.card = q` forces `wOf` to be a bijection onto `Q`, so no
+place of `Q` is missed and none is counted twice.
+
+**WHAT THIS DOES NOT PIN**, deliberately: `diamond`. See §5 of
+`exists_hilbertAuxHeckeModuleData`, which records that hazard as still open and
+why the repair recorded there must NOT be taken at the diamond leaf. -/
+def IsHilbertTaylorWilesExponents (ℓ : ℕ) (F : Type u) [Field F] [NumberField F]
+    {q : ℕ} (Q : Finset (HeightOneSpectrum (𝓞 F))) (ex : Fin q → ℕ) : Prop :=
+  ∃ wOf : Fin q → HeightOneSpectrum (𝓞 F), Function.Injective wOf ∧
+    (∀ i, wOf i ∈ Q) ∧
+    ∀ i, ex i = padicValNat ℓ (Nat.card (𝓞 F ⧸ (wOf i).asIdeal) - 1)
+
 /-- **The diamonds and the control identification, at a GIVEN control map**
 (LEAF — the arithmetic core of `exists_hilbertAuxDiamondControl`).
 
@@ -25844,6 +26067,19 @@ from `𝒟Q.resid` together with the distinct-eigenvalue clause of `hQ`.
 No cohomology is used here, and `coeff` is deliberately absent: the coefficient
 ring belongs to the generator bound, not to the diamonds.
 
+**`IsHilbertTaylorWilesExponents ℓ F Q ex` WAS ADDED TO THE CONCLUSION ON
+2026-07-30**, and it is a repair, not a strengthening of the mathematics: the
+paragraph above already commits the prover to `ex i = v_ℓ(N w_i − 1)`, and the
+predicate is that sentence written in Lean. What made it necessary is that
+without it the leaf may return the genuine `diamond` alongside an INFLATED `ex`
+and still satisfy every clause — `taylorWilesLevelIdeal ℓ ex` SHRINKS as `ex`
+grows, so `hbex` only gets easier — and the HECKE half then receives an `ex`
+its module cannot be free over. The full refutation, with the witness, is the
+FALSITY AUDIT on `exists_hilbertAuxHeckeModuleData` below. `∀ i, n ≤ ex i` is
+kept even though the pin plus the congruence clause of `hQ` implies it: it is
+what the two `bIdeal` bounds are discharged from downstream, and leaving it
+stated costs the prover nothing.
+
 References: Taylor–Wiles, Ann. of Math. 141 (1995), §2; Wiles, ibid. ch. 3;
 Fujiwara §3; Darmon–Diamond–Taylor §5.3. -/
 theorem exists_hilbertAuxDiamondQuotient
@@ -25870,6 +26106,7 @@ theorem exists_hilbertAuxDiamondQuotient
     ∃ (ex : Fin q → ℕ)
       (diamond : MvPowerSeries (Fin q) ℤ_[ℓ] →+* 𝒟Q.R),
       (∀ i, n ≤ ex i) ∧
+      IsHilbertTaylorWilesExponents ℓ F Q ex ∧
       RingHom.ker toRuniv = (Modularity.taylorWilesAug ℓ q).map diamond ∧
       Modularity.taylorWilesLevelIdeal ℓ ex ≤ RingHom.ker diamond :=
   sorry
@@ -25956,6 +26193,7 @@ theorem exists_hilbertAuxDiamondControl
       (diamond : MvPowerSeries (Fin q) ℤ_[ℓ] →+* 𝒟Q.R)
       (toRuniv : 𝒟Q.R →+* 𝒟.R),
       (∀ i, n ≤ ex i) ∧
+      IsHilbertTaylorWilesExponents ℓ F Q ex ∧
       Function.Surjective toRuniv ∧
       RingHom.ker toRuniv = (Modularity.taylorWilesAug ℓ q).map diamond ∧
       Modularity.taylorWilesLevelIdeal ℓ ex ≤ RingHom.ker diamond := by
@@ -25973,10 +26211,10 @@ theorem exists_hilbertAuxDiamondControl
     surjective_of_hilbertAux_classifying ℓ F 𝒟 h𝒟t 𝒟Q toRuniv halg hπ hρ
   -- The diamonds and the control identification, at this now-FIXED `toRuniv`
   -- — which is what excludes the junk `diamond` that refutes the naive cut.
-  obtain ⟨ex, diamond, hex, hker, hbex⟩ :=
+  obtain ⟨ex, diamond, hex, hexpin, hker, hbex⟩ :=
     exists_hilbertAuxDiamondQuotient ℓ hℓ5 F htr hgal hirrF 𝒟 h𝒟w h𝒟t h𝒟e q n Q
       hQcard hQ 𝒟Q h𝒟Q toRuniv halg hπ hρ
-  exact ⟨ex, diamond, toRuniv, hex, hsurj, hker, hbex⟩
+  exact ⟨ex, diamond, toRuniv, hex, hexpin, hsurj, hker, hbex⟩
 
 /-- **The `q`-generator bound for `R_Q`** (LEAF — the GLOBAL half of the
 2026-07-28 CONTROL/GENERATORS cut of
@@ -26309,17 +26547,18 @@ theorem exists_hilbertAuxDeformationRingPresentation
       (diamond : MvPowerSeries (Fin q) ℤ_[ℓ] →+* 𝒟Q.R)
       (toRuniv : 𝒟Q.R →+* 𝒟.R),
       (∀ i, n ≤ ex i) ∧
+      IsHilbertTaylorWilesExponents ℓ F Q ex ∧
       Function.Surjective pres ∧
       Function.Surjective toRuniv ∧
       RingHom.ker toRuniv = (Modularity.taylorWilesAug ℓ q).map diamond ∧
       Modularity.taylorWilesLevelIdeal ℓ ex ≤ RingHom.ker diamond := by
-  obtain ⟨ex, diamond, toRuniv, hex, htoRuniv, hker, hbex⟩ :=
+  obtain ⟨ex, diamond, toRuniv, hex, hexpin, htoRuniv, hker, hbex⟩ :=
     exists_hilbertAuxDiamondControl ℓ hℓ5 F htr hgal hirrF 𝒟 h𝒟w h𝒟t h𝒟e q n Q
       hQcard hQ 𝒟Q h𝒟Q
   obtain ⟨pres, hpres⟩ :=
     exists_hilbertAuxDeformationRingGenerators ℓ hℓ5 F htr hgal hirrF 𝒟 q coeff
       hcoeff n Q hQcard hQ 𝒟Q h𝒟Q
-  exact ⟨ex, pres, diamond, toRuniv, hex, hpres, htoRuniv, hker, hbex⟩
+  exact ⟨ex, pres, diamond, toRuniv, hex, hexpin, hpres, htoRuniv, hker, hbex⟩
 
 /-- **The auxiliary Hecke module at raised level, with its bottom control**
 (LEAF — the HECKE half of the 2026-07-27 RING/HECKE cut of
@@ -26413,6 +26652,61 @@ classifying map into their Hecke algebra — and classically the module produced
 here IS `H.M` for the genuine raised-level `H`. What may not be done is to
 STATE that identification, because `HilbertAuxHeckeAlgebra` does not pin `M`.
 
+# FALSITY AUDIT (2026-07-30) — THE LEAF WAS FALSE AS STATED, AND `hexpin` IS THE REPAIR
+
+This is a SECOND, independent defect of the same hypothesis package, found while
+finishing the residue this worktree's predecessor recorded (see its point 2). It
+is not §5 below: it needs no degenerate `diamond`, and unlike §5 it is a
+refutation rather than an open check.
+
+**The witness: an INFLATED `ex`.** Take any instance of the hypotheses in which
+`ex`, `diamond` are the genuine pair — `ex i = v_ℓ(N w_i − 1)` and
+`ker diamond = 𝔟_ex`, which is the classical configuration the whole subtree is
+about — and then replace `ex` by `ex' := fun i => ex i + 1`, keeping `diamond`.
+Every hypothesis below still holds:
+
+* `hex : ∀ i, n ≤ ex' i` — weaker than before, since `ex ≤ ex'`;
+* `hker` — untouched, it does not mention `ex`;
+* `hbex : 𝔟_{ex'} ≤ ker diamond` — still true, because
+  `taylorWilesLevelIdeal` SHRINKS as the exponents grow:
+  `(1 + S_i)^{ℓ^{ex' i}} − 1 = a^ℓ − 1` for `a = (1 + S_i)^{ℓ^{ex i}}`, which is
+  divisible by `a − 1`, so `𝔟_{ex'} ≤ 𝔟_ex = ker diamond`. **The clause a prover
+  must satisfy gets EASIER as `ex` is inflated, which is the whole defect: `ex`
+  is an OUTPUT of the ring half and nothing bounds it from above.**
+
+The conclusion, however, becomes FALSE. `hdsmul` forces the `Λ`-action on the
+produced `M` through `diamond`, so `ker diamond = 𝔟_ex` annihilates `M`; but
+`hcoord` asks for `M ≃ₗ[Λ] (Λ ⧸ 𝔟_{ex'})^d`, whose annihilator is `𝔟_{ex'}`
+when `d ≥ 1`. So `𝔟_ex ≤ 𝔟_{ex'}`, against `𝔟_{ex'} ⊊ 𝔟_ex` — strict because
+`S_i` has `ℓ`-power order `ℓ^{ex i}` in `Λ ⧸ 𝔟_ex` and order `ℓ^{ex i + 1}` in
+`Λ ⧸ 𝔟_{ex'}`. And `d ≥ 1` is forced, not assumed: `hM0 : Nontrivial M0`
+together with `hbot`'s identification `M₀ ≅ (Λ ⧸ 𝔫)^d ≅ ℤ_ℓ^d` (recorded in
+"**`M0` IS ALREADY PINNED BY `hbot`**" below) excludes `d = 0`.
+
+**Where the fault lies, and why the repair goes at the RING half.** The leaf is
+not asking for anything false about the genuine `ex`; it is quantifying over
+`ex` that its own supplier is entitled to produce and its module cannot match.
+So the repair is to pin `ex` where it is CHOSEN — `exists_hilbertAuxDiamondQuotient`
+— and to receive the pin here. `IsHilbertTaylorWilesExponents ℓ F Q ex` says
+`ex i = v_ℓ(N (wOf i) − 1)` for an enumeration `wOf` of `Q`, which is verbatim
+what that leaf's docstring already promised to produce, so the ring half is not
+made harder. Here it is exactly what is needed: `ex` is now determined by `Q`
+up to a permutation of `Fin q`, so `Λ ⧸ 𝔟_ex` IS `ℤ_ℓ[Δ_Q]` and the module
+Fujiwara's freeness lemma produces is free over it by construction.
+
+**This is the trap CLAUDE.md records as "TWO INDIVIDUALLY-CORRECT REPAIRS CAN BE
+FATAL TOGETHER", in its milder form.** The 2026-07-28 cut correctly moved the
+level ideal from an abstract `bIdeal` to the explicit `taylorWilesLevelIdeal ℓ ex`
+(without which `⊥` was admissible — see `Modularity.taylorWilesLevelIdeal`'s own
+docstring), and the 2026-07-27 RING/HECKE cut correctly made `ex` an output of
+the ring half. Each is right; together they left the one datum both halves must
+agree on determined by neither. Pinning `ex` to `Q` is what makes the agreement
+structural instead of hoped for.
+
+**WHAT THIS AUDIT DOES NOT FIX**: §5. A degenerate `diamond` is still
+admissible with the pinned `ex`, since `𝔫 ≤ ker diamond` implies
+`𝔟_ex ≤ ker diamond` whatever `ex` is. Read §5 next.
+
 ## 5. The residual hazard, INHERITED from the RING/HECKE cut, not introduced here
 
 `diamond` arrives from `exists_hilbertAuxDiamondControl` constrained only by
@@ -26436,6 +26730,32 @@ here. The equality is classically true — `ℤ_ℓ[Δ_Q] ↪ R_Q` because `Δ_Q
 faithfully on the free module `M_Q` — and it is exactly what excludes the
 degenerate `diamond`. It is recorded rather than done because it weakens
 another owner's leaf.
+
+**THAT ONE-LINE REPAIR IS NOW DECLINED, WITH A REASON (2026-07-30), and the
+reason is not ownership.** `RingHom.ker diamond = taylorWilesLevelIdeal ℓ ex` is
+TRUE — the argument the paragraph above gives for it is correct — but it is
+**not provable at `exists_hilbertAuxDiamondQuotient`**, and putting a true
+statement where its proof cannot reach is how a `sorry` stops being a promise.
+The `≤` half is local class field theory at the places of `Q`, which that leaf
+has. The `≥` half is the assertion that `Δ_Q` injects into `R_Q`, i.e. that the
+diamonds have EXACTLY order `ℓ^{ex i}` there, and the only known route to it is
+`ℤ_ℓ[Δ_Q] ↪ T_Q` (`Δ_Q` acting faithfully on the free `M_Q`) pulled back along
+`R_Q ↠ T_Q` — automorphic input. `exists_hilbertAuxDiamondQuotient` has no Hecke
+hypothesis at all: it holds `h𝒟Q` (weak universality), which produces maps OUT
+of `R_Q` and so can bound `ker diamond` from below but never from above.
+Deformation theory alone does not force `R_Q ≇ R_∅`.
+
+**So the correct repair is to pin `diamond` the way `hexpin` pins `ex`**: state
+the local-CFT construction rather than its consequence. `diamond` should be
+required to factor as `Λ ↠ ℤ_ℓ[Δ_Q] → R_Q` for the tame characters the
+split-torus clause supplies — at each `w ∈ Q` a surjection `I_w ↠ Δ_w` onto the
+`ℓ`-Sylow of `(𝓞_F ⧸ w)ˣ` composed with `χ_w`. That is provable where `diamond`
+is chosen, it excludes the degenerate `diamond` for the same structural reason
+`hexpin` excludes the inflated `ex`, and it needs one piece of interface this
+file does not yet have: the tame character `I_w ↠ Δ_w` itself. Until that
+interface exists the hazard stays as recorded here — an open check, not a
+refutation, since nothing in `h𝒟Q` and `hQ` has been shown to permit
+`R_Q ≅ R_∅` at `q ≥ 1` either.
 
 THE CHECK THAT WOULD REFUTE §1: exhibit a field of `HilbertAuxHeckeAlgebra`,
 or a hypothesis below, that fails for `M := H.M × H.M`.
@@ -26509,6 +26829,7 @@ theorem exists_hilbertAuxHeckeModuleData
     (𝒟Q : HilbertAuxDeformationDatum ℓ F Q ρbar) (h𝒟Q : 𝒟Q.IsWeaklyUniversal)
     (H : HilbertAuxHeckeAlgebra ℓ F Q ρbar) (hbad : T.bad ⊆ H.bad)
     (ex : Fin q → ℕ) (hex : ∀ i, n ≤ ex i)
+    (hexpin : IsHilbertTaylorWilesExponents ℓ F Q ex)
     (diamond : MvPowerSeries (Fin q) ℤ_[ℓ] →+* 𝒟Q.R)
     (toRuniv : 𝒟Q.R →+* 𝒟.R) (htoRuniv : Function.Surjective toRuniv)
     (hker : RingHom.ker toRuniv = (Modularity.taylorWilesAug ℓ q).map diamond)
@@ -26568,7 +26889,16 @@ What was stripped off relative to the PARENT leaf
   of `Q`, which is `≥ n` exactly because `N w_i ≡ 1 mod ℓ^n` is the congruence
   clause of `IsHilbertTaylorWilesPrimeSet` — and the ideal itself is
   `Modularity.taylorWilesLevelIdeal ℓ ex`, generated by
-  `(1 + S_i)^{ℓ^{ex i}} − 1`;
+  `(1 + S_i)^{ℓ^{ex i}} − 1`.  **Since 2026-07-30 that "classically" is
+  STATED, and it has to be**: the two halves of the RING/HECKE cut must agree
+  on `ex`, and `IsHilbertTaylorWilesExponents ℓ F Q ex` is what makes them —
+  the ring half proves it, the Hecke half consumes it as `hexpin`, and the
+  `obtain`/`exact` below thread it.  Without it the ring half may hand over an
+  inflated `ex` and the Hecke half is FALSE; the refutation is the 2026-07-30
+  FALSITY AUDIT on `exists_hilbertAuxHeckeModuleData`.  It is deliberately NOT
+  re-exported in this leaf's own conclusion, because every consumer above needs
+  only `∀ i, n ≤ ex i` (that is all the two `bIdeal` bounds are discharged
+  from), so widening the exported interface would buy nothing;
 * the two `bIdeal` bounds, which the assembly discharges from that shape:
   `bIdeal_le` by `Modularity.taylorWilesLevelIdeal_le_maximalIdeal_pow` (from
   `∀ i, n ≤ ex i`, which this leaf still asserts) and `bIdeal_le_aug` by
@@ -26696,7 +27026,7 @@ theorem exists_hilbertTaylorWilesAuxLevelData
     exact ⟨L.toRuniv.comp L.pres,
       L.toRuniv_surjective.comp L.pres_surjective⟩
   -- The RING half.
-  obtain ⟨ex, pres, diamond, toRuniv, hex, hpres, htoRuniv, hker, hbex⟩ :=
+  obtain ⟨ex, pres, diamond, toRuniv, hex, hexpin, hpres, htoRuniv, hker, hbex⟩ :=
     exists_hilbertAuxDeformationRingPresentation ℓ hℓ5 F htr hgal hirrF 𝒟 h𝒟w
       h𝒟t (𝒟.isWeaklyUniversal_toAuxEmpty h𝒟w) q coeff hcoeff n Q hQcard hQ 𝒟Q
       h𝒟Q
@@ -26706,8 +27036,8 @@ theorem exists_hilbertTaylorWilesAuxLevelData
   obtain ⟨M, instMadd, instMR, instLM, projM, hdsmul, hcoord, hprojsurj,
       hprojsmul, hprojzero⟩ :=
     exists_hilbertAuxHeckeModuleData ℓ hℓ5 F htr hgal hirrF 𝒟 𝒟T T e ψ hψalg
-      hψπ hψρ q d coeff M0 hM0 hbot n Q hQcard hQ 𝒟Q h𝒟Q H hbad ex hex diamond
-      toRuniv htoRuniv hker hbex f hfalg hfπ hfρ hfsmul
+      hψπ hψρ q d coeff M0 hM0 hbot n Q hQcard hQ 𝒟Q h𝒟Q H hbad ex hex hexpin
+      diamond toRuniv htoRuniv hker hbex f hfalg hfπ hfρ hfsmul
   exact ⟨ex, hex, 𝒟Q.R, inferInstance, pres, diamond, toRuniv, M,
     instMadd, instMR, instLM, projM, hpres, htoRuniv, hker, hdsmul, hcoord,
     hprojsurj, hprojsmul, hprojzero⟩

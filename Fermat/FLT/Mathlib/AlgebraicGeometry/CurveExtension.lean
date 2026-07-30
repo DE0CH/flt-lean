@@ -1279,9 +1279,10 @@ version of this counterexample, with the same correction, is on
 ONCE** (noticed at the release-7 merge, 2026-07-27).  That module's
 `smoothOfRelativeDimension_specMap_algebraMap_of_isRegularRing` (same directory, different
 owner; **it too is PROVEN as of 2026-07-28**, over the very theorem named below, and its
-own remaining residue is the unrelated
-`smoothOfRelativeDimension_specMap_algebraMap_of_smooth`) says "regular + finite type over
-a perfect field ⟹ smooth of relative
+then-residue, the unrelated
+`smoothOfRelativeDimension_specMap_algebraMap_of_smooth`, is PROVEN as well since
+2026-07-28, leaving `SmoothConnectedCriteria.lean` SORRY-FREE) says "regular + finite type
+over a perfect field ⟹ smooth of relative
 dimension `ringKrullDim`", and its own docstring identifies the residue in exactly these
 words: *"the missing step is therefore smoothness at the CLOSED points, i.e. formal
 smoothness of a regular local ring essentially of finite type over a perfect field"*.  That

@@ -42,11 +42,23 @@ ring so that a consumer can discharge them by commutative algebra.
   previous item once regularity and perfectness have been consumed: for a
   **smooth** finite-type domain over ANY field, the relative dimension is the
   Krull dimension (**PROVEN 2026-07-28**; no perfectness, no regularity).
-* `Algebra.linearIndepOn_pow_of_formallySmooth` — the file's ONLY remaining leaf:
-  a formally smooth field extension is separable in MacLane's sense, Stacks `0323`.
-  It is what the previous item pays for dropping `PerfectField`; mathlib records
-  the same implication as a TODO of its own in
-  `Mathlib/FieldTheory/SeparablyGenerated.lean`.
+* `Algebra.linearIndepOn_pow_of_formallySmooth` — a formally smooth field extension
+  is separable in MacLane's sense, Stacks `0323` (**PROVEN 2026-07-28**).  It is what
+  the previous item pays for dropping `PerfectField`; mathlib records the same
+  implication as a TODO of its own in `Mathlib/FieldTheory/SeparablyGenerated.lean`,
+  so this is plausibly upstreamable as stated.
+* `Algebra.exists_derivation_extension_of_formallySmooth` — the derivation half of
+  that argument: a formally smooth extension extends every derivation of the base,
+  by lifting `id` through the square-zero extension `TrivSqZeroExt L L` twisted into
+  a `K`-algebra by the derivation (**PROVEN 2026-07-28**).
+* `Algebra.exists_derivation_apply_ne_zero_of_forall_pow_ne` — the field-theoretic
+  half: over a field of characteristic `p`, an element that no derivation moves is a
+  `p`-th power (**PROVEN 2026-07-28**).  Its docstring CORRECTS the earlier claim
+  that this needs `p`-basis theory, and also the intermediate claim that it needs
+  Zorn over *partial derivations*: Zorn on **subfields alone** suffices.  A subfield
+  `F ⊇ K ^ p` maximal among those avoiding `c` satisfies `K = F⟮c⟯`, because
+  `[F⟮x⟯ : F] = p` uniformly for every `x ∉ F`; then `d / dc` descends along
+  `F[X] ↠ K` in one step and no extension argument is performed at all.
 * `ringKrullDim_eq_of_isIntegral_of_injective` — an injective integral ring
   extension preserves the Krull dimension, Stacks `00OJ`+`00OK` (**PROVEN
   2026-07-28**, by an `RelSeries.inductionOn'` lift of chains — this is the
@@ -92,6 +104,15 @@ public import Mathlib.FieldTheory.IntermediateField.Adjoin.Algebra
 public import Mathlib.FieldTheory.SeparablyGenerated
 public import Mathlib.RingTheory.Smooth.StandardSmoothCotangent
 public import Mathlib.RingTheory.RingHom.Locally
+public import Mathlib.RingTheory.Derivation.Basic
+public import Mathlib.Algebra.TrivSqZeroExt.Basic
+public import Mathlib.Algebra.CharP.Lemmas
+public import Mathlib.Algebra.CharP.Algebra
+public import Mathlib.FieldTheory.KummerPolynomial
+public import Mathlib.FieldTheory.IntermediateField.Adjoin.Basic
+public import Mathlib.FieldTheory.IntermediateField.Algebraic
+public import Mathlib.RingTheory.Kaehler.Polynomial
+public import Mathlib.Order.Zorn
 
 @[expose] public section
 
@@ -102,18 +123,25 @@ open CategoryTheory Limits TensorProduct CommRingCat
 /-! ### Commutative-algebra input: regularity, smoothness, and the rank of `Ω`
 
 `ringKrullDim_eq_of_isIntegral_of_injective` was PROVEN 2026-07-28, and so was the
-scheme section's `smoothOfRelativeDimension_specMap_algebraMap_of_smooth`.  The ONE
-remaining leaf of the whole file is `Algebra.linearIndepOn_pow_of_formallySmooth`
-below: a formally smooth field extension satisfies MacLane's separability condition
-(Stacks `0323`).  It is a statement purely about fields — no schemes, no dimension
-theory, no differentials — and it is the only place where dropping `PerfectField`
-from the smoothness criterion is paid for.
+scheme section's `smoothOfRelativeDimension_specMap_algebraMap_of_smooth`.
+`Algebra.linearIndepOn_pow_of_formallySmooth` — MacLane's separability condition for
+a formally smooth field extension, Stacks `0323`, and the only place where dropping
+`PerfectField` from the smoothness criterion is paid for — was PROVEN later the same
+day, over two new lemmas below, the second of which
+(`Algebra.exists_derivation_apply_ne_zero_of_forall_pow_ne`) is elementary field
+theory that mathlib does not have: it has no `Derivation` API for fields outside the
+characteristic-zero `Mathlib/FieldTheory/Differential/` pair.
+
+**This section is now sorry-free, and so is the whole module.**
 -/
 
 namespace Algebra
 
 /-! #### **A regular local ring essentially of finite type over a perfect field is
-formally smooth over it** (sorry leaf, opened 2026-07-27).
+formally smooth over it** (opened as a sorry leaf 2026-07-27; **PROVEN 2026-07-28**
+as `Algebra.FormallySmooth.of_isRegularLocalRing_of_perfectField` in
+`Fermat/FLT/Mathlib/RingTheory/Smooth/RegularLocal.lean`, which is itself now
+sorry-free).
 
 This is the local form of Stacks `056S` ("regular is equivalent to smooth over a
 perfect field"), equivalently Matsumura *Commutative Ring Theory* §28, and it is
@@ -138,7 +166,7 @@ form.
 `Mathlib/RingTheory/Smooth/` or `Mathlib/AlgebraicGeometry/` returning anything —
 at this pin it returns nothing in either.
 
-## The intended route
+## The route, and it is the one that was taken
 
 Present `A = P/I` with `P` a localization of a polynomial ring at a prime, so
 that ingredient 2 applies, and prove injectivity of `κ ⊗ I/I² → κ ⊗ Ω[P⁄K]` by
@@ -255,8 +283,256 @@ theorem rank_kaehlerDifferential_eq_trdeg_of_exists_separating
     simpa using hs.lift_cardinalMk_eq_trdeg
   rw [h1, h2, h3, h4, h5]
 
+/-- **A formally smooth extension extends every derivation of the base**
+(PROVEN 2026-07-28; step 1 of MacLane's criterion below).
+
+Given `D : K → L`, the assignment `k ↦ k + (D k) ε` makes the square-zero extension
+`L[ε] = TrivSqZeroExt L L` into a `K`-algebra whose structure map has `fst`
+component `algebraMap K L`, so the projection `fst : L[ε] → L` is a `K`-algebra map,
+surjective, with square-zero — hence nilpotent — kernel.
+`Algebra.FormallySmooth.liftOfSurjective` lifts `id : L →ₐ[K] L` through it to
+`σ : L →ₐ[K] L[ε]` with `(σ x).fst = x`, and `D' x := (σ x).snd` is the derivation
+wanted: `σ` multiplicative gives Leibniz through `TrivSqZeroExt.snd_mul`, and
+`σ.commutes` gives `D' ∘ algebraMap = D`.
+
+Abstractly this is the split injectivity of `Ω[K⁄ℤ] ⊗_K L → Ω[L⁄ℤ]`, i.e. the
+vanishing of `H¹L_{L/K}`; the square-zero extension is that statement made
+elementary, and needs no Jacobi–Zariski machinery.
+
+Stated over `ℤ` rather than over the prime field on purpose: a derivation over `ℤ`
+is just an additive Leibniz map, which is the weakest hypothesis the consumer needs
+and the strongest conclusion this proof gives. -/
+theorem exists_derivation_extension_of_formallySmooth
+    (K L : Type u) [Field K] [Field L] [Algebra K L] [Algebra.FormallySmooth K L]
+    (D : Derivation ℤ K L) :
+    ∃ D' : Derivation ℤ L L, ∀ x : K, D' (algebraMap K L x) = D x := by
+  classical
+  let φ : K →+* TrivSqZeroExt L L :=
+    { toFun := fun k => TrivSqZeroExt.inl (algebraMap K L k) + TrivSqZeroExt.inr (D k)
+      map_one' := by ext <;> simp
+      map_mul' := fun a b => by
+        refine TrivSqZeroExt.ext ?_ ?_ <;> simp [D.leibniz, Algebra.smul_def]; ring
+      map_zero' := by ext <;> simp
+      map_add' := fun a b => by refine TrivSqZeroExt.ext ?_ ?_ <;> simp }
+  letI : Algebra K (TrivSqZeroExt L L) := φ.toAlgebra
+  have hAM : ∀ k : K, algebraMap K (TrivSqZeroExt L L) k
+      = TrivSqZeroExt.inl (algebraMap K L k) + TrivSqZeroExt.inr (D k) := fun k => rfl
+  have hfst : ∀ k : K, (algebraMap K (TrivSqZeroExt L L) k).fst = algebraMap K L k := by
+    intro k; rw [hAM]; simp
+  have hsnd : ∀ k : K, (algebraMap K (TrivSqZeroExt L L) k).snd = D k := by
+    intro k; rw [hAM]; simp
+  let g : TrivSqZeroExt L L →ₐ[K] L :=
+    { toFun := TrivSqZeroExt.fst
+      map_one' := by simp
+      map_mul' := fun a b => by simp
+      map_zero' := by simp
+      map_add' := fun a b => by simp
+      commutes' := hfst }
+  have hgapp : ∀ y : TrivSqZeroExt L L, g y = y.fst := fun _ => rfl
+  have hgsurj : Function.Surjective g := fun x => ⟨TrivSqZeroExt.inl x, by simp [hgapp]⟩
+  have hker : IsNilpotent (RingHom.ker (g : TrivSqZeroExt L L →+* L)) := by
+    have hmul : RingHom.ker (g : TrivSqZeroExt L L →+* L)
+        * RingHom.ker (g : TrivSqZeroExt L L →+* L) = ⊥ := by
+      rw [eq_bot_iff]
+      refine Ideal.mul_le.2 fun r hr t ht => ?_
+      rw [RingHom.mem_ker] at hr ht
+      have hr' : r.fst = 0 := hr
+      have ht' : t.fst = 0 := ht
+      have hrt : r * t = 0 := by
+        refine TrivSqZeroExt.ext ?_ ?_ <;> simp [hr', ht']
+      simp [hrt]
+    refine ⟨2, ?_⟩
+    rw [Ideal.zero_eq_bot, ← hmul]
+    ring
+  let σ : L →ₐ[K] TrivSqZeroExt L L :=
+    Algebra.FormallySmooth.liftOfSurjective (AlgHom.id K L) g hgsurj hker
+  have hσ : ∀ x : L, (σ x).fst = x := fun x =>
+    Algebra.FormallySmooth.liftOfSurjective_apply (AlgHom.id K L) g hgsurj hker x
+  let f : L →+ L :=
+    { toFun := fun x => (σ x).snd
+      map_zero' := by simp
+      map_add' := fun x y => by simp }
+  refine ⟨{ toLinearMap := f.toIntLinearMap
+            map_one_eq_zero' := by simp [f]
+            leibniz' := fun a b => ?_ }, fun x => ?_⟩
+  · show (σ (a * b)).snd = a • (σ b).snd + b • (σ a).snd
+    rw [map_mul, TrivSqZeroExt.snd_mul, hσ, hσ, op_smul_eq_smul]
+  · show (σ (algebraMap K L x)).snd = D x
+    rw [σ.commutes, hsnd]
+
+open _root_.Polynomial in
+/-- **Derivations of a field of characteristic `p` separate it from its `p`-th
+powers** (cut as a sorry leaf 2026-07-28; **PROVEN** the same day).
+
+Pure elementary field theory: no schemes, no smoothness, no differentials, and — see
+below — **no `p`-basis theory**.  This is Matsumura, *Commutative Ring Theory*,
+Thm. 26.5 / the standard "`ker d = K ^ p` in `Ω[K⁄K ^ p]`" statement, in the one
+direction MacLane's criterion needs.
+
+## Why no `p`-basis theory: ZORN ON SUBFIELDS, NOT ON PARTIAL DERIVATIONS
+
+Two earlier write-ups of this node said the missing ingredient is `p`-basis theory —
+"extend `{c}` to a `p`-basis of `K` over `K ^ p`".  **Both were wrong about what the
+argument costs**, and so was an intermediate version of this docstring, which
+proposed Zorn over *partial derivations* `(F, D)` and an extension step across each
+simple purely-inseparable step.  That works, but it is still far more than is needed:
+the whole construction collapses if the Zorn is run on **subfields alone**, with no
+derivation carried along at all.
+
+Write `k := K ^ p`, a subfield of `K` (the range of Frobenius, and `RingHom.fieldRange`
+already knows a ring hom of fields has a subfield range).  Then:
+
+1. *Zorn, on subfields.*  `c ∉ k` by hypothesis, so `{F | k ≤ F ∧ c ∉ F}` is nonempty;
+   a chain's `sSup` has carrier the union (`Subfield.coe_sSup_of_directedOn`), which
+   still avoids `c`.  Take `F` maximal.
+2. *Maximality forces `K = F⟮c⟯` — this is the whole trick.*  Every `x : K` has
+   `x ^ p ∈ k ≤ F`, so every `x ∉ F` has minimal polynomial exactly
+   `X ^ p - C (x ^ p)` over `F`: that polynomial is monic, kills `x`, and is
+   irreducible because `x ^ p` is not a `p`-th power *in `F`*
+   (`X_pow_sub_C_irreducible_iff_of_prime`; if `b ^ p = x ^ p` with `b ∈ F` then
+   `b = x` by injectivity of Frobenius, contradicting `x ∉ F`).  So `[F⟮x⟯ : F] = p`
+   for **every** `x ∉ F`, uniformly.  Now given `y ∉ F`, maximality applied to
+   `F⟮y⟯ ⊋ F` gives `c ∈ F⟮y⟯`, hence `F⟮c⟯ ≤ F⟮y⟯`; both have `F`-dimension `p`, so
+   they are equal and `y ∈ F⟮c⟯`.  Together with the trivial case `y ∈ F`, this is
+   `K = F⟮c⟯`.
+3. *One derivation, built once.*  `Polynomial.aeval c : F[X] → K` is therefore
+   surjective, and `Polynomial.derivative'` descends along it by
+   `Derivation.liftOfSurjective`: the side condition is that `aeval c` kills
+   `derivative q` whenever it kills `q`, and since `minpoly F c = X ^ p - C (c ^ p)`
+   has `derivative = p X ^ (p - 1) = 0` in characteristic `p`, `q = minpoly * g` gives
+   `derivative q = minpoly * derivative g`, which `aeval c` kills.  The resulting
+   `D : Derivation F K K` has `D c = D (aeval c X) = aeval c 1 = 1 ≠ 0`.
+
+**No extension step is ever performed**, so the obstruction that forces a `p`-basis
+in the general theory never has to be discussed.  What replaces it is the uniform
+degree computation in item 2, which is available precisely because `K ^ p ⊆ F`.
+
+## Faithfulness
+
+Both hypotheses are load-bearing.  `CharP K p` is what makes `X ^ p - C a` have zero
+derivative and what makes Frobenius a ring hom, and primality of `p` is what makes
+`X ^ p - C a` irreducible over `F` — at `p = 4`, `K = ℚ`, `c = 2` the conclusion is
+false (`ℚ` has no nonzero derivation at all, while `2` is no fourth power), so the
+statement genuinely is about the characteristic.
+
+*Not vacuous*: at `K = 𝔽_p (t)`, `c = t`, the derivation produced is `d / dt`, with
+`D t = 1 ≠ 0` — the conclusion is a real existence statement, not one discharged by
+`D = 0`.  Conversely for `K` perfect the hypothesis `∀ b, b ^ p ≠ c` is unsatisfiable
+and the statement says nothing, which is exactly why characteristic `0` never
+consumes it. -/
+theorem exists_derivation_apply_ne_zero_of_forall_pow_ne
+    (K : Type u) [Field K] (p : ℕ) [hp : Fact p.Prime] [CharP K p] {c : K}
+    (hc : ∀ b : K, b ^ p ≠ c) :
+    ∃ D : Derivation ℤ K K, D c ≠ 0 := by
+  haveI : ExpChar K p := .prime hp.out
+  -- `x ^ p ∈ F` makes `x` integral over `F`, with minimal polynomial `X ^ p - C (x ^ p)`
+  -- as soon as `x ∉ F`.
+  have hint : ∀ (F : Subfield K) (x : K), x ^ p ∈ F → IsIntegral F x := by
+    intro F x hxp
+    exact ⟨X ^ p - C (⟨x ^ p, hxp⟩ : F), monic_X_pow_sub_C _ hp.out.ne_zero, by
+      show (Polynomial.aeval x) (X ^ p - C (⟨x ^ p, hxp⟩ : F)) = 0
+      simp [show (algebraMap F K) (⟨x ^ p, hxp⟩ : F) = x ^ p from rfl]⟩
+  have hmin : ∀ (F : Subfield K) (x : K), x ∉ F → ∀ hxp : x ^ p ∈ F,
+      minpoly F x = X ^ p - C (⟨x ^ p, hxp⟩ : F) := by
+    intro F x hxF hxp
+    set a : F := ⟨x ^ p, hxp⟩ with hadef
+    have haval : (algebraMap F K) a = x ^ p := rfl
+    have hroot : (Polynomial.aeval x) (X ^ p - C a) = 0 := by simp [haval]
+    have hnp : ∀ b : F, b ^ p ≠ a := by
+      intro b hb
+      apply hxF
+      have h1 : (algebraMap F K) b ^ p = x ^ p := by
+        have := congrArg (algebraMap F K) hb
+        simpa [haval] using this
+      have h2 : (algebraMap F K) b = x := frobenius_inj K p (by simpa [frobenius_def] using h1)
+      rw [← h2]; exact b.2
+    exact (minpoly.eq_of_irreducible_of_monic
+      ((X_pow_sub_C_irreducible_iff_of_prime hp.out).2 hnp) hroot
+      (monic_X_pow_sub_C a hp.out.ne_zero)).symm
+  have hnat : ∀ (F : Subfield K) (x : K), x ∉ F → x ^ p ∈ F → (minpoly F x).natDegree = p := by
+    intro F x hxF hxp
+    rw [hmin F x hxF hxp, natDegree_X_pow_sub_C]
+  -- STEP A (Zorn): a subfield `F ⊇ K ^ p` maximal among those avoiding `c`.
+  set k : Subfield K := (frobenius K p).fieldRange with hkdef
+  have hmemk : ∀ x : K, x ^ p ∈ k :=
+    fun x => RingHom.mem_fieldRange.2 ⟨x, by simp [frobenius_def]⟩
+  have hck : c ∉ k := by
+    intro h
+    obtain ⟨b, hb⟩ := RingHom.mem_fieldRange.1 h
+    exact hc b (by simpa [frobenius_def] using hb)
+  have hzorn : ∀ ch ⊆ {F : Subfield K | k ≤ F ∧ c ∉ F}, IsChain (· ≤ ·) ch →
+      ∃ ub ∈ {F : Subfield K | k ≤ F ∧ c ∉ F}, ∀ z ∈ ch, z ≤ ub := by
+    intro ch hchs hchain
+    rcases ch.eq_empty_or_nonempty with rfl | hne
+    · exact ⟨k, ⟨le_rfl, hck⟩, by simp⟩
+    · refine ⟨sSup ch, ⟨?_, ?_⟩, fun z hz => le_sSup hz⟩
+      · obtain ⟨E, hE⟩ := hne
+        exact le_trans (hchs hE).1 (le_sSup hE)
+      · intro hmem
+        have hmem' : c ∈ (↑(sSup ch) : Set K) := hmem
+        rw [Subfield.coe_sSup_of_directedOn hne hchain.directedOn] at hmem'
+        simp only [Set.mem_iUnion] at hmem'
+        obtain ⟨E, hE, hcE⟩ := hmem'
+        exact (hchs hE).2 hcE
+  obtain ⟨F, ⟨hkF, hcF⟩, hmax⟩ := zorn_le₀ _ hzorn
+  have hpF : ∀ x : K, x ^ p ∈ F := fun x => hkF (hmemk x)
+  have hcint : IsIntegral F c := hint F c (hpF c)
+  -- STEP B: maximality forces `K = F⟮c⟯`, hence `aeval c : F[X] → K` is surjective.
+  have hkey : ∀ y : K, y ∈ IntermediateField.adjoin (F : Type u) {c} := by
+    intro y
+    by_cases hyF : y ∈ F
+    · exact (IntermediateField.adjoin (F : Type u) {c}).algebraMap_mem ⟨y, hyF⟩
+    · have hyint : IsIntegral F y := hint F y (hpF y)
+      set Ey := IntermediateField.adjoin (F : Type u) {y} with hEy
+      have hyEy : y ∈ Ey := IntermediateField.mem_adjoin_simple_self _ _
+      have hFEy : F ≤ Ey.toSubfield := fun z hz => Ey.algebraMap_mem ⟨z, hz⟩
+      have hcEy : c ∈ Ey := by
+        by_contra hcn
+        exact hyF (hmax (⟨le_trans hkF hFEy, hcn⟩ :
+          Ey.toSubfield ∈ {F' : Subfield K | k ≤ F' ∧ c ∉ F'}) hFEy hyEy)
+      have hle : IntermediateField.adjoin (F : Type u) {c} ≤ Ey :=
+        IntermediateField.adjoin_simple_le_iff.2 hcEy
+      haveI : FiniteDimensional F Ey := IntermediateField.adjoin.finiteDimensional hyint
+      have hrk : Module.finrank F (IntermediateField.adjoin (F : Type u) {c})
+          = Module.finrank F Ey := by
+        rw [IntermediateField.adjoin.finrank hcint, IntermediateField.adjoin.finrank hyint,
+          hnat F c hcF (hpF c), hnat F y hyF (hpF y)]
+      exact (IntermediateField.eq_of_le_of_finrank_eq hle hrk) ▸ hyEy
+  have hsurj : Function.Surjective (Polynomial.aeval c : F[X] →ₐ[F] K) := by
+    have hsub : (IntermediateField.adjoin (F : Type u) {c}).toSubalgebra
+        = Algebra.adjoin (F : Type u) {c} :=
+      IntermediateField.adjoin_simple_toSubalgebra_of_isAlgebraic hcint.isAlgebraic
+    rw [← AlgHom.range_eq_top, Algebra.eq_top_iff]
+    intro y
+    have hy := hkey y
+    rwa [← IntermediateField.mem_toSubalgebra, hsub,
+      Algebra.adjoin_singleton_eq_range_aeval] at hy
+  -- STEP C: `d / dc` descends along `F[X] ↠ K`, because `derivative (X ^ p - C a) = 0`.
+  haveI hFp : CharP F p := (F.subtype).charP (F.subtype).injective p
+  have hderivmin : Polynomial.derivative (minpoly F c) = 0 := by
+    rw [hmin F c hcF (hpF c)]
+    simp [Polynomial.derivative_X_pow]
+  have hd : ∀ q : F[X], (Polynomial.aeval c) q = 0 →
+      (Polynomial.aeval c) (Polynomial.derivative' q) = 0 := by
+    intro q hq
+    obtain ⟨g, rfl⟩ := minpoly.dvd F c hq
+    show (Polynomial.aeval c) (Polynomial.derivative _) = 0
+    rw [Polynomial.derivative_mul, hderivmin, zero_mul, zero_add]
+    simp [minpoly.aeval F c]
+  have hcX : (Polynomial.aeval c : F[X] →ₐ[F] K) X = c := by simp
+  have happ := Derivation.liftOfSurjective_apply (f := (Polynomial.aeval c : F[X] →ₐ[F] K))
+    hsurj (d := Polynomial.derivative') hd X
+  rw [hcX] at happ
+  refine ⟨(Derivation.liftOfSurjective (f := (Polynomial.aeval c : F[X] →ₐ[F] K)) hsurj
+    (d := Polynomial.derivative') hd).restrictScalars ℤ, ?_⟩
+  show Derivation.liftOfSurjective (f := (Polynomial.aeval c : F[X] →ₐ[F] K)) hsurj
+    (d := Polynomial.derivative') hd c ≠ 0
+  rw [happ]
+  simp [Polynomial.derivative'_apply]
+
 /-- **`p`-th powers preserve `K`-linear independence in a formally smooth extension**
-(sorry leaf, opened 2026-07-28).
+(**PROVEN 2026-07-28** over `exists_derivation_apply_ne_zero_of_forall_pow_ne`;
+opened as a sorry leaf earlier the same day).
 
 This is Stacks `0323` — *a formally smooth field extension is separable* — in the
 concrete "MacLane condition" form that mathlib's separably-generated file consumes
@@ -266,30 +542,24 @@ of its own, right above that lemma: *"TODO: show that this is an if and only if.
 
 The condition is the linear-independence form of "`L ⊗_K K^{1/p}` is reduced".
 
-## The intended route, in three steps
+## How it is proven
 
-1. *Formal smoothness extends derivations.*  Given a derivation `D : K → K` (over
-   the prime field), the `K`-algebra structure `c ↦ (c, D c)` makes `L[ε] =
-   TrivSqZeroExt L L` a `K`-algebra, `(ε) ² = 0`, and the identity `L → L[ε]/(ε)`
-   is a `K`-algebra map.  `Algebra.FormallySmooth.comp_surjective` lifts it to
-   `σ : L →ₐ[K] L[ε]`, and `σ x = x + D̃ x · ε` defines a derivation `D̃` of `L`
-   restricting to `D` on `K`.  (Abstractly the same statement is that
-   `Ω[K⁄ℤ] ⊗_K L → Ω[L⁄ℤ]` is split injective, i.e. Jacobi–Zariski with
-   `H¹L_{L/K} = 0`.)
-2. *Derivations of `K` separate `K \ K ^ p`.*  If `c ∉ K ^ p` there is a derivation
-   `D` of `K` with `D c ≠ 0` — a `p`-basis argument.  **Neither the `p`-basis theory
-   nor any `Derivation` API for fields is in the pin**: `grep -rn "Derivation"
-   Mathlib/FieldTheory/*.lean` is empty and there is no `pBasis`.  This is the one
-   genuinely missing theory.
-3. *Minimal counterexample.*  Suppose `a₁, …, a_m` are `K`-linearly independent and
-   `∑ cᵢ aᵢ ^ p = 0` with `cᵢ ∈ K` not all zero, with the number of nonzero `cᵢ`
-   minimal; normalise `c₁ = 1`.  For any derivation `D` of `K`, extend it by step 1
-   and apply it: the `aᵢ ^ p` terms differentiate to `p · aᵢ ^ (p - 1) = 0`, leaving
-   `∑ D(cᵢ) aᵢ ^ p = 0`, again with coefficients in `K` and with `D c₁ = D 1 = 0`.
-   Minimality forces every `D cᵢ = 0`, so by step 2 every `cᵢ = dᵢ ^ p`, and then
-   `(∑ dᵢ aᵢ) ^ p = ∑ dᵢ ^ p aᵢ ^ p = 0` contradicts the independence of the `aᵢ`.
+`p = 1` (characteristic zero) is `pow_one`.  For `p` prime, by
+`linearIndepOn_iff'` it suffices to kill every finite relation
+`∑_{y ∈ t} g y • y ^ p = 0` with `t ⊆ s`, and that goes by strong induction on `t`:
 
-*The check that would refute step 2's absence claim*: either grep returning a hit.
+* Normalise at a `y = x` with `g x ≠ 0`, so the coefficients `c y := (g x)⁻¹ * g y`
+  have `c x = 1`.
+* For **any** derivation `D` of `K`, extend it to `L` by
+  `exists_derivation_extension_of_formallySmooth` and apply the extension to the
+  relation.  Each `D' (y ^ p) = p • y ^ (p - 1) • D' y = 0` in characteristic `p`,
+  so Leibniz leaves `∑_{y ∈ t} D (c y) • y ^ p = 0`.  Its coefficient at `x` is
+  `D 1 = 0`, so it is a relation over `t.erase x` and the induction hypothesis kills
+  it: `D (c y) = 0` for every `y ∈ t` and every `D`.
+* Hence every `c y` is a `p`-th power `b y ^ p`, by
+  `exists_derivation_apply_ne_zero_of_forall_pow_ne` (contrapositive).
+* Freshman's dream (`sum_pow_char`) gives `(∑ b y • y) ^ p = ∑ c y • y ^ p = 0`, so
+  `∑ b y • y = 0`, so `hs` forces `b x = 0` — contradicting `b x ^ p = c x = 1`.
 
 ## Faithfulness
 
@@ -301,15 +571,84 @@ pair `{1, t ^ (1 / p)}`, whose `p`-th powers `{1, t}` satisfy the nontrivial rel
 `t · 1 - 1 · t = 0`.  No finiteness hypothesis is needed — Stacks `0323` is stated
 for an arbitrary extension.
 
-`_hs` is load-bearing too and is underscored **only because the proof is `sorry`**,
-not because it is decorative: without it take `s = {a, 2 * a}` in characteristic
-`p ≠ 2`, whose `p`-th powers `{a ^ p, 2 ^ p * a ^ p}` are always dependent.  Restore
-the name when the proof is written. -/
+`hs` is load-bearing too — without it take `s = {a, 2 * a}` in characteristic
+`p ≠ 2`, whose `p`-th powers `{a ^ p, 2 ^ p * a ^ p}` are always dependent — and the
+proof above uses it in its very last step. -/
 theorem linearIndepOn_pow_of_formallySmooth
     (K L : Type u) [Field K] [Field L] [Algebra K L] [Algebra.FormallySmooth K L]
-    (p : ℕ) [ExpChar K p] (s : Finset L) (_hs : LinearIndepOn K _root_.id (s : Set L)) :
-    LinearIndepOn K (· ^ p) (s : Set L) :=
-  sorry
+    (p : ℕ) [hexp : ExpChar K p] (s : Finset L) (hs : LinearIndepOn K _root_.id (s : Set L)) :
+    LinearIndepOn K (· ^ p) (s : Set L) := by
+  classical
+  rcases hexp with _ | ⟨hp⟩
+  · have hs' : LinearIndepOn K (fun x : L => x) (s : Set L) := hs
+    simpa only [pow_one] using hs'
+  · haveI : Fact p.Prime := ⟨hp⟩
+    haveI hLp : CharP L p := charP_of_injective_algebraMap (algebraMap K L).injective p
+    haveI : ExpChar L p := .prime hp
+    rw [linearIndepOn_iff'] at hs ⊢
+    intro t
+    induction t using Finset.strongInduction with
+    | _ t IH =>
+      intro g hts hsum x hx
+      by_contra hgx
+      set c : L → K := fun y => (g x)⁻¹ * g y with hcdef
+      have hcx : c x = 1 := by simp [hcdef, inv_mul_cancel₀ hgx]
+      have hcsum : ∑ y ∈ t, c y • y ^ p = 0 := by
+        have hscale : ∑ y ∈ t, c y • y ^ p = (g x)⁻¹ • ∑ y ∈ t, g y • y ^ p := by
+          rw [Finset.smul_sum]
+          exact Finset.sum_congr rfl fun y _ => by rw [hcdef]; simp [smul_smul]
+        rw [hscale, hsum, smul_zero]
+      -- every derivation of `K` kills every coefficient
+      have hker : ∀ D : Derivation ℤ K K, ∀ y ∈ t, D (c y) = 0 := by
+        intro D
+        obtain ⟨D', hD'⟩ :=
+          exists_derivation_extension_of_formallySmooth K L ((Algebra.linearMap K L).compDer D)
+        have hpow : ∀ z : L, D' (z ^ p) = 0 := by
+          intro z
+          rw [Derivation.leibniz_pow]
+          have hp0 : (p : L) = 0 := by exact_mod_cast CharP.cast_eq_zero L p
+          rw [← Nat.cast_smul_eq_nsmul L, hp0, zero_smul]
+        have hterm : ∀ y : L, D' (c y • y ^ p) = D (c y) • y ^ p := by
+          intro y
+          rw [Algebra.smul_def, D'.leibniz, hpow, smul_zero, zero_add, hD']
+          show y ^ p • (Algebra.linearMap K L) (D (c y)) = _
+          simp [Algebra.linearMap_apply, Algebra.smul_def, mul_comm]
+        have key : ∑ y ∈ t, D (c y) • y ^ p = 0 := by
+          have hD0 := congrArg D' hcsum
+          rw [map_sum, map_zero] at hD0
+          rw [← hD0]
+          exact Finset.sum_congr rfl fun y _ => (hterm y).symm
+        have hDx : D (c x) = 0 := by rw [hcx]; simp
+        have key' : ∑ y ∈ t.erase x, D (c y) • y ^ p = 0 := by
+          rw [← Finset.add_sum_erase t _ hx, hDx, zero_smul, zero_add] at key
+          exact key
+        have hsmall := IH (t.erase x) (Finset.erase_ssubset hx) (fun y => D (c y))
+          (fun y hy => hts (Finset.mem_of_mem_erase hy)) key'
+        intro y hy
+        rcases eq_or_ne y x with rfl | hyx
+        · exact hDx
+        · exact hsmall y (Finset.mem_erase.2 ⟨hyx, hy⟩)
+      -- so every coefficient is a `p`-th power
+      have hpth : ∀ y : L, ∃ bb : K, y ∈ t → bb ^ p = c y := by
+        intro y
+        by_cases hy : y ∈ t
+        · have hex : ∃ bb : K, bb ^ p = c y := by
+            by_contra hb
+            obtain ⟨D, hD⟩ :=
+              exists_derivation_apply_ne_zero_of_forall_pow_ne K p (fun bb hbb => hb ⟨bb, hbb⟩)
+            exact hD (hker D y hy)
+          obtain ⟨bb, hbb⟩ := hex
+          exact ⟨bb, fun _ => hbb⟩
+        · exact ⟨0, fun h => absurd h hy⟩
+      choose b hb using hpth
+      have hzero : (∑ y ∈ t, b y • y) ^ p = 0 := by
+        rw [← hcsum, sum_pow_char]
+        exact Finset.sum_congr rfl fun y hy => by rw [smul_pow, hb y hy]
+      have hsum0 : ∑ y ∈ t, b y • y = 0 := pow_eq_zero_iff (Nat.Prime.ne_zero hp) |>.1 hzero
+      have hbx0 := hs t b hts (by simpa using hsum0) x hx
+      have hbx : b x ^ p = c x := hb x hx
+      rw [hbx0, zero_pow (Nat.Prime.ne_zero hp), hcx] at hbx
+      exact zero_ne_one hbx
 
 /-- **A formally smooth field extension of finite type is separably generated**
 (PROVEN 2026-07-28 over the leaf above).

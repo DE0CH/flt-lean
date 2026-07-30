@@ -14,10 +14,14 @@ public import Fermat.FLT.Mathlib.AlgebraicGeometry.Morphisms.SmoothReduced
 -- section/closed-point lemmas its assembly consumes.
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.CurveAffineComplement
 public import Fermat.FLT.EllipticCurve.Torsion
--- For `WeierstrassCurve.nsmul_surjective` (divisibility of `E(K̄)`), which is what
--- `exists_add_self_affinePoint_of_isAlgClosed` below is.  It is PROVEN there, from the
--- division-polynomial development, and verified axiom-clean
--- (`[propext, Classical.choice, Quot.sound]`); this file must NOT re-derive it.
+-- These two were imported for `WeierstrassCurve.nsmul_surjective` (divisibility of
+-- `E(K̄)`), which was what `exists_add_self_affinePoint_of_isAlgClosed` below wrapped.
+-- **That declaration was DELETED on 2026-07-30** with the rest of the
+-- Silverman-III.4.8 route (see the note on `projMul_assoc_of_isProjMulLaw`), so this
+-- justification is void and nothing in this file consumes divisibility any more.  The
+-- imports are RETAINED deliberately and un-audited: an import can be load-bearing
+-- through an instance or a `simp` lemma that no proof term mentions, so dropping them
+-- is a separate build-verified experiment, not a bookkeeping edit.
 public import Fermat.FLT.EllipticCurve.Isogeny
 public import Mathlib.AlgebraicGeometry.Morphisms.Smooth
 public import Mathlib.AlgebraicGeometry.Morphisms.Proper
@@ -81,24 +85,36 @@ under "Why this is not in `X0.lean`" below.
 step is now fully reduced, and the Jacobian criterion it rests on
 (`jacobianSpan_eq_top`, over an arbitrary commutative ring) is proven here.
 
-`projMul_assoc` is PROVEN too, by the density route: mathlib's
-`ext_of_fromSpecResidueField_eq` reduces it to associativity at residue fields,
-and `exists_projPtAddEquiv_algClosed` — the ALGEBRAIC
-`K`-point dictionary (an abelian-group structure on `K`-points with `projInfty`
-as zero and `projNeg` as negation, 2-divisible, and with every scheme morphism
-acting affinely) — is **PROVEN as of 2026-07-27** over
-`ProjCoords.specPointEquiv`, the dictionary as DATA (see the section "THE
-`Spec K`-POINT DICTIONARY, AS DATA").  What is left of it is its four clauses,
-as four named leaves: `specPointEquiv_comp_projInfty_eq_zero`,
-`specPointEquiv_comp_projNeg`, `exists_add_self_affinePoint_of_isAlgClosed`
-and `exists_addMonoidHom_specPointEquiv_projMulPt`.
-`projMul_assoc_pt_algClosed` was the leaf here until 2026-07-27
-and is now PROVEN from the dictionary together with the pure group-theoretic
-`commLoop_eq_add_of_addHom`; the old Milne I.2.5 / rigidity plan was CIRCULAR
-(it needs the group law on the target as a morphism) and the route taken
-replaces it by Silverman *AEC* III.4.7, which needs only the SET-level group
-`E(K)` that mathlib already has.  `projMul_assoc_pt` — the same statement over
-an arbitrary field — is PROVEN by descent along `Spec K̄ ⟶ Spec K`.
+**Associativity is PROVEN, and as of 2026-07-30 it is the ONLY route in the file.**
+`projMul_assoc_of_isProjMulLaw` gets it for an `m` satisfying the two `ProjCoords`
+chart clauses (`IsProjMulLaw`, `IsProjMulLaw2`), which is exactly what
+`exists_projMul` publishes: mathlib's `ext_of_fromSpecResidueField_eq` reduces the
+identity to residue fields, and there `projMulPt` IS mathlib's addition on
+`(E.map f).toAffine.Point` transported along `ProjCoords.specPointEquiv`
+(`specPointEquiv_symm_add_eq_projMulPt` and its diagonal companion), so
+associativity is `add_assoc` under a bijection.  See "THE `Spec K`-POINT
+DICTIONARY, AS DATA".
+
+*What used to be here, and why reading old prose about it will mislead you.*  Until
+2026-07-29 `hassoc` came from `projMul_assoc`, stated for an ARBITRARY commutative
+unital loop `m`, over a chain `projMul_assoc ← projMul_assoc_residueField ←
+projMul_assoc_pt ← projMul_assoc_pt_algClosed ← exists_projPtAddEquiv_algClosed ←
+projMulPtFun_add_sub_zero ← projFibreEndFun_add_sub_zero`, whose last step was
+Silverman *AEC* III.4.8 and needed a `Pic⁰` divisor theory that exists in neither
+this project, nor mathlib, nor `~/cs/FLT`.  **That entire chain — fifteen
+declarations and their scaffolding — was DELETED on 2026-07-30**, together with the
+only `sorry` in it.  The cut is the one the old `projMul_assoc` docstring explicitly
+licensed: `hassoc` is now available for an `m` carrying the two chart clauses rather
+than for an arbitrary loop, and since `exists_projMul` publishes both, its only
+consumer pays nothing.  So if you find `projMul_assoc`, `projMul_assoc_pt`,
+`projMul_assoc_pt_algClosed`, `exists_projPtAddEquiv_algClosed`,
+`exists_add_self_affinePoint_of_isAlgClosed`,
+`exists_addMonoidHom_specPointEquiv_projMulPt`, `commLoop_eq_add_of_addHom`,
+`specPointEquiv_comp_projInfty_eq_zero` or `specPointEquiv_comp_projNeg` named
+anywhere as a leaf — in a docstring here, in `PROGRESS.md`, in a commit message —
+**it does not exist and there is nothing to prove at it.**  Recover the text with
+`git show 994ea1ce^:Fermat/FLT/ModularCurve/EllipticScheme.lean` if the
+Pic⁰-flavoured audits in it are ever wanted.
 `geometricallyReduced_projToSpec` is PROVEN as well: the general
 `Smooth → GeometricallyReduced` gap it named was a MATHLIB gap and not
 elliptic-curve mathematics, and it has been filled in
@@ -124,13 +140,52 @@ GROUP-LAW-FREE halves of the chart: a commutative-algebra one
 (`ProjChartRing E 2 ≃+* E.toAffine.CoordinateRing`) and a topological one
 (`V₊(Z̄)` is the image of `projInfty`).
 
-The open leaves of this FILE are listed below, and this list was REGENERATED at
-integration (2026-07-27) from the merged source rather than taken from any side
-of the merges — several branches each carried a list that was correct on its own
-branch and wrong once the others landed.  The second-law cut of
-`exists_projMulOfCoords` closed one leaf and opened three; a rising count here is
-DISCLOSURE — the gluing was always this big, it is only now written down as
-separable pieces.
+## THE LEAF STATUS OF THIS MODULE, FROM THE COMPILER (2026-07-30)
+
+**Read this before believing anything below about what is open.**  `lake build
+Fermat.FLT.ModularCurve.EllipticScheme` emits **exactly ONE** `declaration uses
+'sorry'` warning, and it is
+
+* `exists_weierstrassGenerators_of_affineComplement` — the Riemann–Roch-flavoured
+  statement that an affine complement of the zero section is generated in
+  Weierstrass form.  Its docstring records that neither mathlib nor `~/cs/FLT` has
+  Riemann–Roch or an arithmetic genus at this pin.
+
+That is the module's whole DIRECT frontier.  A token scan agrees: with block
+comments (nested) and line comments stripped, the source contains exactly one
+`sorry` token, so there are no anonymous inner `have … := sorry` hiding behind the
+single warning — the warning set counts DECLARATIONS, and one warning can conceal
+several sorries, so the two counts have to be compared rather than either trusted
+alone.  The build is EXIT 0 with no errors, so there is no ERRORED declaration
+either (those are `sorryAx`-tainted while emitting no warning and containing no
+`sorry` token, and are invisible to both checks above).
+
+**Every other declaration of this module named as a leaf in the prose below is
+PROVEN.**  Verified individually as declared here and therefore covered by the
+one-warning count: `jacobianSpan_eq_top`, `ProjCoords.exists_of_specField`,
+`exists_projMulOfCoordsTwo`,
+`ProjCoords.toBasicOpenOfGlobalSections_eq_of_gradedSmul`,
+`isIso_projBaseChangeHom`, `exists_coordinateRingEquiv_projChartRing`,
+`compl_basicOpen_projCoord_two`, `exists_affineComplement_zeroSection`,
+`exists_weierstrassRingEquiv_of_affineComplement`,
+`smoothOfRelativeDimension_one_of_affineChart`,
+`specPointEquiv_symm_add_eq_projMulPt`, `specPointEquiv_symm_map_galois`.
+Of the three leaves the prose sends to sibling modules, `equation_add2XYZ`,
+`add2X_mul_addZ` and `add2Y_mul_addZ` are PROVEN as well; that cluster's one
+surviving leaf is `idl_isPrime` in `ProjectiveEquationAdd2.lean`.
+
+This is a DIRECT-sorry statement, not a transitive one: a declaration here can be
+proven and still consume a sorried leaf in another module, in which case it has
+nothing to prove and dispatching at it wastes a worker.
+
+The narrative below is kept because its FALSITY AUDITS and cut rationales are still
+worth reading, and because each declaration's own docstring says where the classical
+argument lives.  Its leaf LABELS are history.  The list was last regenerated from
+merged source at integration on 2026-07-27 — several branches each carried a list
+that was correct on its own branch and wrong once the others landed — and it has
+been overtaken twice since.  The second-law cut of `exists_projMulOfCoords` closed
+one leaf and opened three; a rising count is DISCLOSURE, the gluing was always this
+big and is only now written down as separable pieces.
 
 **2026-07-28: `exists_projMulOfCoords` and `exists_projMul` now PUBLISH the second
 Bosma–Lenstra chart clause** (`IsProjMulLaw2`, beside `IsProjMulLaw`).  It was already
@@ -191,15 +246,18 @@ in `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveAddition.lean`
   stayed with the constructor because — correcting this file's earlier prose —
   they are NOT chart identities of the standard law, which degenerates exactly
   where each of them is asserted;
-* **`exists_projPtAddEquiv_algClosed` is PROVEN as of 2026-07-27** — the
-  algebraic `K`-point dictionary (`projMul_assoc_pt_algClosed` was this
-  leaf until 2026-07-27 and is now PROVEN from it, `projMul_assoc_pt` was a
-  second one and is PROVEN by descent, and `geometricallyReduced_projToSpec`
-  was a third and is PROVEN outright).  Its four clauses are now four named
-  leaves — `specPointEquiv_comp_projInfty_eq_zero`,
-  `specPointEquiv_comp_projNeg`, `exists_add_self_affinePoint_of_isAlgClosed`,
-  `exists_addMonoidHom_specPointEquiv_projMulPt` — and the bijection itself is
-  the `def` `ProjCoords.specPointEquiv`;
+* **the ABSTRACT `K`-point dictionary and its four clauses are GONE, DELETED
+  2026-07-30** — `exists_projPtAddEquiv_algClosed` and with it
+  `specPointEquiv_comp_projInfty_eq_zero`, `specPointEquiv_comp_projNeg`,
+  `exists_add_self_affinePoint_of_isAlgClosed` and
+  `exists_addMonoidHom_specPointEquiv_projMulPt`.  They existed to feed
+  `projMul_assoc` and nothing else, and `projMul_assoc` is gone too.  **None of
+  these five is a leaf; none of them exists.**  What survives, and is all that was
+  ever needed, is the dictionary as DATA — the `def` `ProjCoords.specPointEquiv`
+  together with `specPointEquiv_symm_add_eq_projMulPt` and
+  `specPointEquiv_symm_add_self_eq_projMulPt`, which say that `projMulPt` IS
+  mathlib's addition on `(E.map f).toAffine.Point`.  `geometricallyReduced_projToSpec`
+  was a leaf of the old cluster as well and is PROVEN outright;
 * **`exists_projMul_geomFibreEquivVal` is PROVEN as of 2026-07-27** — item 8,
   see below; what remains of it is `specPointEquiv_symm_add_eq_projMulPt` (the
   chord–tangent identity, whose residue is the DIAGONAL only — `hlaw` gives the
@@ -217,9 +275,9 @@ in `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveAddition.lean`
   `exists_projMul`, which is PROVEN over `ProjCoords`.  It now TAKES `m` and its
   `ProjCoords` law as hypotheses and asserts only the geometric-fibre
   identification, so there is exactly one construction of `m` in the tree and
-  this leaf carries only the content that is genuinely new.  It and
-  `exists_projPtAddEquiv_algClosed` above shared their whole implementation, and
-  that implementation is now WRITTEN, once, as `ProjCoords.specPointEquiv` —
+  this leaf carries only the content that is genuinely new.  It and the
+  now-deleted `exists_projPtAddEquiv_algClosed` shared their whole implementation,
+  and that implementation is WRITTEN, once, as `ProjCoords.specPointEquiv` —
   `ProjCoords.exists_of_specField` (surjectivity) +
   `ProjCoords.exists_units_smul_of_toHom_eq` (injectivity, NEW: the exact
   converse of `ProjCoords.toHom_smul`, and the one ingredient the earlier plan
@@ -280,8 +338,10 @@ subsumes `exists_projAdd`.
 `exists_projGroupLaw_geomFibreEquivVal` has itself become plumbing: it is
 PROVEN from `exists_projMul` (which CONSTRUCTS `m` and its `ProjCoords` law),
 `exists_projMul_geomFibreEquivVal` (which supplies the chord–tangent clause for
-that same `m`, taking it as a hypothesis) and `projMul_assoc` (which supplies
-`hassoc` for it).  **The reconciliation is DONE (2026-07-27, at integration):**
+that same `m`, taking it as a hypothesis) and `projMul_assoc_of_isProjMulLaw`
+(which supplies `hassoc` for that same `m` — it was `projMul_assoc`, for an
+arbitrary `m`, until 2026-07-30).
+**The reconciliation is DONE (2026-07-27, at integration):**
 as branched, `exists_projMul_geomFibreEquivVal` bound its own `m`, so the tree
 would have asserted the existence of the multiplication TWICE; it now takes `m`
 and `hlaw` as hypotheses and asserts only the identification.  See its own
@@ -313,20 +373,24 @@ three former steps `hbc`/`hne`/`hpre`:
   dehomogenising, base change of a chart is base change of a quotient of a polynomial ring
   (`isPushout_quotientMk`), with no graded base-change theory needed at all.
 
-`nonempty_projGroupLaw` has no `sorry` of its own — but it is **REDUCED, NOT
-CLOSED**: its proof runs through `exists_projAdd` and so through the still-open
-`exists_projMul` and `projMul_assoc`, and it is therefore transitively sorried.
-Do not read it as a finished result.  Two of the three data fields of a
+`nonempty_projGroupLaw` has no `sorry` of its own, and as of 2026-07-30 neither has
+anything it depends on IN THIS MODULE: `exists_projMul` is proven, and `hassoc` comes
+from `projMul_assoc_of_isProjMulLaw` (the old `projMul_assoc`, and the whole
+Silverman-III.4.8 chain under it, was DELETED that day).  Whether it is still
+transitively sorried is a question about OTHER modules — `idl_isPrime` in
+`ProjectiveEquationAdd2.lean` is the nearest open leaf under this cluster — and only
+the census answers it.  Two of the three data fields of a
 `ProjGroupLaw` are constructed outright in `ProjectiveModel.lean`
 (`projNeg`, the Weierstrass involution through `Proj.map`; `projInfty`,
 the point at infinity through `Proj.fromOfGlobalSections`), and all three
 "lies over the base" fields are free over this base
 (`hom_ext_spec_rat`).  `exists_projAdd` — the group law `m` itself
-together with the four group axioms — is in turn PROVEN from two leaves
-that need disjoint machinery and can be owned separately:
+together with the four group axioms — is in turn PROVEN from
 `exists_projMul` (the gluing, plus the three axioms that are chart
-identities in the same polynomial forms) and `projMul_assoc`
-(associativity, the one axiom that is not a chart identity).
+identities in the same polynomial forms) and `projMul_assoc_of_isProjMulLaw`
+(associativity, the one axiom that is not a chart identity — and it now takes the
+two chart clauses `exists_projMul` publishes, rather than quantifying over an
+arbitrary commutative unital loop as the deleted `projMul_assoc` did).
 
 ## Why this is not in `X0.lean`
 
@@ -706,9 +770,11 @@ functoriality of `IsLocalization.map` (`awayLoc_comp`) and the plumbing is
 `toSpecΓ_restrict_naturality`, which is the naturality square of `X ↦ Spec Γ(X, ⊤)`
 restricted to a basic open.
 
-These two discharge `specPointEquiv_comp_projInfty_eq_zero`, `specPointEquiv_comp_projNeg`
-and `specPointEquiv_symm_map_galois` below, through the `ProjCoords`-level corollaries
-`comap_toHom` and `toHom_negC`. -/
+These two discharge `specPointEquiv_symm_map_galois` below, through the
+`ProjCoords`-level corollaries `comap_toHom` and `toHom_negC`.  They also discharged
+`specPointEquiv_comp_projInfty_eq_zero` and `specPointEquiv_comp_projNeg`, which were
+DELETED on 2026-07-30 with the rest of the abstract `K`-point dictionary — do not go
+looking for them. -/
 
 theorem powers_le_comap {R S : Type*} [CommSemiring R] [CommSemiring S] (f : R →+* S) (t : R) :
     Submonoid.powers t ≤ (Submonoid.powers (f t)).comap f := by
@@ -1274,8 +1340,12 @@ section Congruences
 coordinate datum, and `toHom_negC`
 is `fromOfGlobalSections_comp_map` read on the Weierstrass involution.  Together with
 `toHom_inftyC` — which identifies `WeierstrassCurve.Projective.projInfty` as the morphism
-of the datum `![0, 1, 0]` — they are what discharges the clauses
-`specPointEquiv_comp_projInfty_eq_zero` and `specPointEquiv_comp_projNeg` below. -/
+of the datum `![0, 1, 0]` — they are what discharged the clauses
+`specPointEquiv_comp_projInfty_eq_zero` and `specPointEquiv_comp_projNeg`.  **Those two
+were DELETED on 2026-07-30** with the abstract `K`-point dictionary they belonged to; the
+three congruences below stay because the surviving dictionary lemmas
+(`specPointEquiv_symm_add_eq_projMulPt` and its diagonal companion) and
+`specPointEquiv_symm_map_galois` use them. -/
 
 /-- **The Weierstrass involution preserves the projective equation.** -/
 theorem equation_neg {R : Type*} [CommRing R] (W' : WeierstrassCurve R) {P : Fin 3 → R}
@@ -4462,7 +4532,8 @@ theorem isProper_projToSpec (E : WeierstrassCurve ℚ) [E.IsElliptic] :
 A pair of `T`-points `P, Q : T ⟶ proj E` automatically lies over the same
 base point (`hom_ext_spec_rat`, the base being `Spec ℚ`), so it lifts to a
 `T`-point of `A ×_ℚ A` and may be fed to `m`.  This is the operation whose
-associativity is the whole content of `projMul_assoc`, and stating it
+associativity is the whole content of `projMul_assoc_of_isProjMulLaw` (and was, until
+2026-07-30, of the deleted `projMul_assoc`), and stating it
 separately is what lets that content be written as a plain algebraic
 identity rather than as an equation between two composites out of a
 threefold fibre product. -/
@@ -4517,243 +4588,35 @@ theorem comp_triAddRight_proj (E : WeierstrassCurve ℚ)
     comp_lift_proj E s _ _ _ (hom_ext_spec_rat _ _), projMulPt, projMulPt, ← Category.assoc,
     comp_lift_proj E s _ _ _ (hom_ext_spec_rat _ _)]
 
-/-- **`Spec` of a field extension is an epimorphism of schemes** (PROVEN,
-formal).
-
-*Docstring repair, 2026-07-27*: this header previously read "Associativity
-of the operation `m` induces on `K`-points, `K` a field (sorry node …)",
-which belongs to `projMul_assoc_pt` below and had been left attached to
-this lemma by an earlier edit.  It is a stale `(sorry node)` LABEL of
-exactly the kind that generates phantom dispatches — this declaration is
-proven and always was.
-
-If `φ : K ⟶ L` is a homomorphism of FIELDS then `Spec φ` may be cancelled
-on the left: two morphisms `Spec K ⟶ X` that agree after restriction to
-`Spec L` are equal.  This is what lets a statement about `K`-points be
-reduced to the same statement about `K̄`-points, which is how
-`projMul_assoc_pt` reaches `projMul_assoc_pt_algClosed` below.
-
-The proof is `AlgebraicGeometry.Scheme.SpecToEquivOfField`
-(`Mathlib/AlgebraicGeometry/ResidueField.lean`), which identifies
-`Spec K ⟶ X` with a point `x : X` together with an embedding
-`κ(x) ⟶ K`.  Under that identification precomposition with `Spec φ` is
-POSTcomposition with `φ` on the embedding, and `φ` is a monomorphism
-because a ring homomorphism out of a field is injective.  So the whole
-content is `cancel_mono`.
-
-*Implementation note*, and it is the reason this file now imports
-`Mathlib.AlgebraicGeometry.ResidueField` explicitly: `SpecToEquivOfField`
-is stated for a bare `K : Type` carrying `[Field K]`, so the `CommRingCat`
-it produces is `CommRingCat.of K` built from `Field.toCommRing`.  See the
-INSTANCE-COHERENCE note on `projMul_assoc_pt` for why that phrasing is
-forced. -/
-theorem hom_ext_of_specMap_field {X : Scheme.{0}} {K L : Type} [Field K] [Field L]
-    (φ : CommRingCat.of K ⟶ CommRingCat.of L) (f g : Spec (CommRingCat.of K) ⟶ X)
-    (h : Spec.map φ ≫ f = Spec.map φ ≫ g) : f = g := by
-  obtain ⟨⟨x, α⟩, rfl⟩ := (X.SpecToEquivOfField K).symm.surjective f
-  obtain ⟨⟨y, β⟩, rfl⟩ := (X.SpecToEquivOfField K).symm.surjective g
-  simp only [Scheme.SpecToEquivOfField_symm_apply] at h
-  rw [← Category.assoc, ← Category.assoc, ← Spec.map_comp, ← Spec.map_comp] at h
-  have h2 : (⟨x, α ≫ φ⟩ : Σ z : X.carrier, X.residueField z ⟶ CommRingCat.of L)
-      = ⟨y, β ≫ φ⟩ := by
-    apply (X.SpecToEquivOfField L).symm.injective
-    simpa only [Scheme.SpecToEquivOfField_symm_apply] using h
-  obtain ⟨e, he⟩ := Scheme.SpecToEquivOfField_eq_iff.mp h2
-  haveI : Mono φ := ConcreteCategory.mono_of_injective _ φ.hom.injective
-  have hαβ : α = (X.residueFieldCongr e).hom ≫ β := by
-    rw [← cancel_mono φ, Category.assoc]
-    exact he
-  have hfin : (⟨x, α⟩ : Σ z : X.carrier, X.residueField z ⟶ CommRingCat.of K) = ⟨y, β⟩ :=
-    Scheme.SpecToEquivOfField_eq_iff.mpr ⟨e, hαβ⟩
-  exact congrArg (X.SpecToEquivOfField K).symm hfin
-
-/-- **The operation `m` induces on points is natural in the test scheme**
-(PROVEN, formal).
-
-`projMulPt` is `pullback.lift P Q _ ≫ m`, so precomposing with
-`s : T' ⟶ T` is `comp_lift_proj` and nothing else.  This is what makes the
-descent to an algebraic closure in `projMul_assoc_pt` a rewrite rather
-than an argument. -/
-theorem comp_projMulPt (E : WeierstrassCurve ℚ)
-    (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
-    {T T' : Scheme.{0}} (s : T' ⟶ T) (P Q : T ⟶ proj E) :
-    s ≫ projMulPt E m P Q = projMulPt E m (s ≫ P) (s ≫ Q) := by
-  rw [projMulPt, projMulPt, ← Category.assoc,
-    comp_lift_proj E s _ _ _ (hom_ext_spec_rat _ _)]
-
-/-- **`hcomm` read at points: the induced operation is commutative**
-(PROVEN, formal).
-
-`hcomm` says `m` is invariant under the swap of `A ×_ℚ A`; composing
-`pullback.lift P Q` with that swap is `pullback.lift Q P`, which
-`pullback.hom_ext` settles componentwise. -/
-theorem projMulPt_comm (E : WeierstrassCurve ℚ)
-    (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
-    (hcomm : Limits.pullback.lift (Limits.pullback.snd (projToSpec E) (projToSpec E))
-      (Limits.pullback.fst (projToSpec E) (projToSpec E))
-      Limits.pullback.condition.symm ≫ m = m)
-    {T : Scheme.{0}} (P Q : T ⟶ proj E) :
-    projMulPt E m P Q = projMulPt E m Q P := by
-  have key : Limits.pullback.lift P Q (hom_ext_spec_rat _ _) ≫
-      Limits.pullback.lift (Limits.pullback.snd (projToSpec E) (projToSpec E))
-        (Limits.pullback.fst (projToSpec E) (projToSpec E))
-        Limits.pullback.condition.symm
-      = Limits.pullback.lift Q P (hom_ext_spec_rat _ _) := by
-    apply Limits.pullback.hom_ext <;>
-      simp only [Category.assoc, Limits.pullback.lift_fst, Limits.pullback.lift_snd]
-  rw [projMulPt, projMulPt]
-  conv_lhs => rw [← hcomm]
-  rw [← Category.assoc, key]
-
-/-- **`hunit` read at points: the unit is `projInfty E`** (PROVEN, formal).
-
-The unit `T`-point is `P ≫ projToSpec E ≫ projInfty E`; it does not
-actually depend on `P`, because `hom_ext_spec_rat` makes every
-`P ≫ projToSpec E` the same morphism `T ⟶ Spec ℚ`.  Writing it this way
-keeps the statement self-contained — a bare `T ⟶ Spec ℚ` need not exist
-for an arbitrary `T`, but it does as soon as `T` carries one point of
-`proj E`. -/
-theorem projMulPt_unit_left (E : WeierstrassCurve ℚ)
-    (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
-    (hunit : Limits.pullback.lift (projToSpec E ≫ projInfty E) (𝟙 (proj E))
-      (hom_ext_spec_rat _ _) ≫ m = 𝟙 (proj E))
-    {T : Scheme.{0}} (P : T ⟶ proj E) :
-    projMulPt E m (P ≫ projToSpec E ≫ projInfty E) P = P := by
-  have h := congrArg (fun t => P ≫ t) hunit
-  simp only [← Category.assoc, comp_lift_proj E P _ _ _ (hom_ext_spec_rat _ _)] at h
-  rw [projMulPt]
-  simpa using h
-
-/-- **`hinv` read at points: `projNeg E` is a two-sided inverse**
-(PROVEN, formal).  Two-sided because `projMulPt_comm` is available. -/
-theorem projMulPt_neg_left (E : WeierstrassCurve ℚ)
-    (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
-    (hinv : Limits.pullback.lift (projNeg E) (𝟙 (proj E))
-      (hom_ext_spec_rat _ _) ≫ m = projToSpec E ≫ projInfty E)
-    {T : Scheme.{0}} (P : T ⟶ proj E) :
-    projMulPt E m (P ≫ projNeg E) P = P ≫ projToSpec E ≫ projInfty E := by
-  have h := congrArg (fun t => P ≫ t) hinv
-  simp only [← Category.assoc, comp_lift_proj E P _ _ _ (hom_ext_spec_rat _ _)] at h
-  rw [projMulPt]
-  simpa using h
-
-/-- **A commutative loop operation on a 2-divisible abelian group that is
-AFFINE in each variable IS the group addition** (PROVEN — pure group
-theory, no geometry, no `sorry` anywhere in its cone).
-
-This is the combinatorial half of `projMul_assoc_pt_algClosed`, isolated
-here so that the geometric half can be one clean interface
-(`exists_projPtAddEquiv_algClosed` below).  `F` is the operation
-transported to an abelian group `G`; `halg` is the ALGEBRAICITY input —
-for each fixed `y` the map `x ↦ F x y` is a group homomorphism plus a
-constant.  For a morphism of a smooth projective genus-`1` curve to
-itself that is Silverman *AEC* III.4.7 ("every morphism is a translation
-composed with an isogeny"); a CONSTANT morphism is covered too, as the
-zero homomorphism plus a constant, so `halg` needs no non-degeneracy
-hypothesis and the interface below needs no case split.
-
-## Why the three loop identities alone are NOT enough, and what closes the gap
-
-`hsymm`/`hzero`/`hneg` say exactly that `F` is a commutative loop with
-two-sided unit and inverses, and the smallest non-associative commutative
-loop has order `5` — so those three are consistent with
-non-associativity, which is the refutation recorded at
-`projMul_assoc_pt_algClosed`.  `halg` plus `hdiv` is what breaks it, and
-the argument is short enough to record in full:
-
-* write `F x y = α y x + y` with `α y : G →+ G` (the constant is pinned to
-  `y` by `hzero`, evaluating `halg` at `x = 0`);
-* `B x y := α y x - x` is additive in `x` (a difference of two additive
-  maps) and SYMMETRIC — `hsymm` rearranged is exactly
-  `α y x - x = α x y - y` — hence additive in `y` as well: `B` is a
-  symmetric biadditive form;
-* `hneg` gives `α x (-x) + x = 0`, i.e. `α x x = x`, i.e. `B` vanishes on
-  the diagonal;
-* expanding `B (x + y) (x + y) = 0` biadditively therefore leaves
-  `B x y + B y x = 0`, i.e. `2 • B x y = 0`;
-* `hdiv` kills that residue: `B x y = B (z + z) y = 2 • B z y = 0`.
-
-So `α y = id` for every `y`, and `F x y = x + y`.
-
-**`hdiv` is not decorative.** Without it `B` may be a nonzero symmetric
-biadditive form with values in `G[2]`, and `G[2] ≅ (ℤ/2)²` for an
-elliptic curve, so the conclusion genuinely fails for a non-divisible
-`G`.  Divisibility is the ONE place algebraic closedness of the base
-field enters this half of the argument: `E(K̄)` is a divisible group. -/
-theorem commLoop_eq_add_of_addHom {G : Type*} [AddCommGroup G] (F : G → G → G)
-    (hsymm : ∀ x y, F x y = F y x)
-    (hzero : ∀ y, F 0 y = y)
-    (hneg : ∀ x, F (-x) x = 0)
-    (hdiv : ∀ x : G, ∃ z, x = z + z)
-    (halg : ∀ y : G, ∃ (α : G →+ G) (c : G), ∀ x, F x y = α x + c) :
-    ∀ x y, F x y = x + y := by
-  choose α c hαc using halg
-  -- The constant is `y` itself, by `hzero` at `x = 0`.
-  have hc : ∀ y, c y = y := by
-    intro y
-    have h := hαc y 0
-    rw [hzero, map_zero, zero_add] at h
-    exact h.symm
-  have hF : ∀ x y, F x y = α y x + y := by
-    intro x y; rw [hαc y x, hc y]
-  -- `B` is symmetric, biadditive, and vanishes on the diagonal.
-  set B : G → G → G := fun x y => α y x - x with hB
-  have hBsymm : ∀ x y, B x y = B y x := by
-    intro x y
-    have h := hsymm x y
-    rw [hF x y, hF y x] at h
-    simp only [hB]
-    linear_combination (norm := abel) h
-  have hBadd : ∀ x x' y, B (x + x') y = B x y + B x' y := by
-    intro x x' y
-    simp only [hB, map_add]
-    abel
-  have hBself : ∀ x, B x x = 0 := by
-    intro x
-    have h := hneg x
-    rw [hF (-x) x, map_neg] at h
-    simp only [hB]
-    linear_combination (norm := abel) -h
-  -- Expanding `B (x + y) (x + y) = 0` leaves `2 • B x y = 0`.
-  have htwo : ∀ x y, B x y + B x y = 0 := by
-    intro x y
-    have h := hBself (x + y)
-    rw [hBadd x y (x + y), hBsymm x (x + y), hBsymm y (x + y), hBadd x y x, hBadd x y y,
-      hBself x, hBself y] at h
-    rw [hBsymm x y] at h ⊢
-    linear_combination (norm := abel) h
-  -- Divisibility kills it.
-  have hBzero : ∀ x y, B x y = 0 := by
-    intro x y
-    obtain ⟨z, rfl⟩ := hdiv x
-    rw [hBadd z z y]
-    exact htwo z y
-  intro x y
-  have hxy := hBzero x y
-  simp only [hB, sub_eq_zero] at hxy
-  rw [hF x y, hxy]
-
 /-! ## THE `Spec K`-POINT DICTIONARY, AS DATA
 
 (Written 2026-07-27, and it is the shared implementation the "ONE DICTIONARY, THREE
 LEAVES" note at `exists_projMul_geomFibreEquivVal` prescribes.)
 
-Both `exists_projPtAddEquiv_algClosed` (immediately below) and
-`exists_projMul_geomFibreEquivVal` (item 8) assert the existence of a bijection between
-the `K`-points of `proj E` and `E(K)`, each carrying its own extra content.  Neither
-implies the other and their STATEMENTS cannot be merged — each has to *name* the
-bijection to state its extra content, and an existential closes over it; quantifying the
-extra content over every bijection satisfying the shared clauses is outright FALSE.
+*Status note, 2026-07-30.*  This section was written to be shared by TWO consumers:
+`exists_projPtAddEquiv_algClosed`, which used to sit immediately below, and
+`exists_projMul_geomFibreEquivVal` (item 8).  **The first has been DELETED**, with the
+whole `projMul_assoc` / Silverman-III.4.8 route it fed; only item 8 and
+`projMul_assoc_of_isProjMulLaw` consume this data now.  The reasoning below is kept
+because it is still the reason this is a `def` rather than an `∃`, and that decision is
+what made the deletion possible at all — associativity turned out to be reachable
+directly from the data, so the abstract dictionary was never needed.
 
-What they share is the IMPLEMENTATION, and a shared implementation has to be DATA.  This
-section is that data: `ProjCoords.specPointEquiv` is a `def`, not an `∃`, so both leaves
-can name it, and no third `∃ e : … ≃ …` leaf is created.
+Each of those two asserted the existence of a bijection between the `K`-points of
+`proj E` and `E(K)`, carrying its own extra content.  Neither implied the other and
+their STATEMENTS could not be merged — each has to *name* the bijection to state its
+extra content, and an existential closes over it; quantifying the extra content over
+every bijection satisfying the shared clauses is outright FALSE.
+
+What they shared is the IMPLEMENTATION, and a shared implementation has to be DATA.
+This section is that data: `ProjCoords.specPointEquiv` is a `def`, not an `∃`, so a
+consumer can name it, and no third `∃ e : … ≃ …` leaf is created.
 
 The construction is exactly the one the route note prescribes —
-`ProjCoords.exists_of_specField` (surjectivity) + `ProjCoords.toHom_smul` and its new
+`ProjCoords.exists_of_specField` (surjectivity) + `ProjCoords.toHom_smul` and its
 converse `ProjCoords.exists_units_smul_of_toHom_eq` (injectivity) + mathlib's
 `WeierstrassCurve.Projective.Point.toAffineAddEquiv`.  Everything in this section is
-PROVEN; the two `ProjCoords`-level statements it consumes are the leaves named above.
+PROVEN, and so are those three ingredients.
 
 *Import note*: this section is why `Mathlib.AlgebraicGeometry.EllipticCurve.Projective.Point`
 is imported.  `Projective/Basic` (which the file already had, through
@@ -5064,11 +4927,15 @@ theorem affinePoint_add2_self [E.IsElliptic] [DecidableEq K] (f : ℚ →+* K)
 /-- **THE DICTIONARY** (PROVEN): the `K`-points of the projective Weierstrass model ARE
 the affine points of `E` over `K`, for every field `K` admitting a `ℚ`-algebra structure.
 
-This is the shared implementation of `exists_projPtAddEquiv_algClosed` and
-`exists_projMul_geomFibreEquivVal`.  It is a `def` — the dictionary as DATA — precisely so
-that the extra content each of those leaves carries can be stated ABOUT it; an
-existentially bound bijection could not be named, and quantifying over all bijections
-satisfying the shared clauses is false.
+It is a `def` — the dictionary as DATA — precisely so that the extra content a consumer
+carries can be stated ABOUT it; an existentially bound bijection could not be named, and
+quantifying over all bijections satisfying the shared clauses is false.  It was written
+as the shared implementation of `exists_projMul_geomFibreEquivVal` and
+`exists_projPtAddEquiv_algClosed`; the latter was DELETED on 2026-07-30, and the two
+identities `specPointEquiv_symm_add_eq_projMulPt` /
+`specPointEquiv_symm_add_self_eq_projMulPt` stated about this `def` are what replaced it —
+they hand `projMul_assoc_of_isProjMulLaw` associativity directly, so the abstract
+dictionary that route needed is gone.
 
 Surjectivity is `ProjCoords.exists_of_specField` plus `exists_affinePoint_eq`;
 injectivity is `toHom_eq_of_affinePoint_eq`; the `right_inv` field is where
@@ -5077,7 +4944,9 @@ injectivity is `toHom_eq_of_affinePoint_eq`; the `right_inv` field is where
 
 There is no characteristic guard here and none is needed: `f : ℚ →+* K` is a HYPOTHESIS,
 so `char K = p > 0` simply cannot occur.  A consumer that has only `Nonempty (Spec K ⟶ proj E)`
-manufactures `f` from any such point, which is what `exists_projPtAddEquiv_algClosed` does. -/
+manufactures `f` from any such point — which is what the deleted
+`exists_projPtAddEquiv_algClosed` did, and what any future consumer in that position
+should do. -/
 noncomputable def specPointEquiv [E.IsElliptic] (f : ℚ →+* K) :
     (Spec (CommRingCat.of K) ⟶ proj E) ≃ (E.map f).toAffine.Point := by
   classical
@@ -5116,793 +4985,6 @@ theorem specPointEquiv_symm_affinePoint [E.IsElliptic] (f : ℚ →+* K)
   rw [← specPointEquiv_toHom f c, Equiv.symm_apply_apply]
 
 end ProjCoords
-
-/-! ## The four clauses of `exists_projPtAddEquiv_algClosed`, as separate leaves
-
-With the dictionary constructed, what is left of that leaf is exactly its four clauses,
-each stated ABOUT `ProjCoords.specPointEquiv` (which is legitimate because it is a `def`).
-Two of them — the unit section and the negation — are ONE missing piece of mathlib, and it
-is worth naming it so that a successor factors it out rather than proving it twice:
-
-> **Missing congruence.** `AlgebraicGeometry.Proj.fromOfGlobalSections` has NO
-> functoriality lemma at this pin (`ProjectiveSpectrum/Basic.lean` has only
-> `_preimage_basicOpen`, `_morphismRestrict`, `_resLE`, `_toSpecZero`).  What is wanted is
-> `g ≫ Proj.fromOfGlobalSections 𝒜 f hf = Proj.fromOfGlobalSections 𝒜 (Γ(g) ∘ f) _`
-> (naturality in the source scheme) and
-> `Proj.fromOfGlobalSections 𝒜 f hf ≫ Proj.map φ hφ = Proj.fromOfGlobalSections 𝒜 (f ∘ φ) _`
-> (compatibility with `Proj.map`).  Both are cover-wise arguments of exactly the shape of
-> `ProjCoords.fromOfGlobalSections_eq_of_gradedSmul` above, which is already PROVEN modulo
-> its own chart leaf, so the pattern to copy is in this file.
-
-From the first: `projInfty` is `fromOfGlobalSections` at `![0, 1, 0]`, so the unit-section
-clause is `toAffine_zero`; and the Galois clause of `exists_projMul_geomFibreEquivVal` is
-the same lemma at `g = specGal σ`, where `Γ(Spec σ) = σ`.  From the second: `projNeg` is
-`Proj.map` of the graded involution `Y ↦ -Y - a₁X - a₃Z`, which is mathlib's
-`Projective.neg` on coordinates, so the negation clause is `toAffine_neg`.
-
-The other two clauses are genuine mathematics and are unrelated to each other. -/
-
-/-- **The unit section is the zero of `E(K)`** (sorry node, introduced 2026-07-27 as
-clause 1 of `exists_projPtAddEquiv_algClosed`).
-
-`P ≫ projToSpec E` is THE structure morphism `Spec K ⟶ Spec ℚ` (`hom_ext_spec_rat`: there
-is only one), so the left-hand side is the base change of `projInfty E`, the point
-`[0 : 1 : 0]`.  Route: `projInfty` is by definition
-`Proj.fromOfGlobalSections` of the coordinates `![0, 1, 0]`, so by the naturality lemma
-named above it is `ProjCoords.toHom` of the datum with `coordField = ![0, 1, 0]`; then
-`ProjCoords.specPointEquiv_toHom` and mathlib's `toAffine_zero` finish. -/
-theorem specPointEquiv_comp_projInfty_eq_zero {E : WeierstrassCurve ℚ} [E.IsElliptic]
-    {K : Type} [Field K] (f : ℚ →+* K) (_P : Spec (CommRingCat.of K) ⟶ proj E) :
-    ProjCoords.specPointEquiv f (_P ≫ projToSpec E ≫ projInfty E) = 0 := by
-  classical
-  have h1 : _P ≫ projToSpec E ≫ projInfty E =
-      (_P ≫ projToSpec E) ≫ (ProjCoords.inftyC E (Spec (CommRingCat.of ℚ))
-        ((Scheme.ΓSpecIso (CommRingCat.of ℚ)).inv).hom).toHom := by
-    rw [ProjCoords.toHom_inftyC, Category.assoc]
-  rw [h1, ← ProjCoords.comap_toHom, ProjCoords.specPointEquiv_toHom, ProjCoords.affinePoint]
-  have hcf : ProjCoords.coordField
-      ((ProjCoords.inftyC E (Spec (CommRingCat.of ℚ))
-        ((Scheme.ΓSpecIso (CommRingCat.of ℚ)).inv).hom).comap (_P ≫ projToSpec E)) =
-      ![0, 1, 0] := by
-    funext i
-    fin_cases i <;>
-      simp [ProjCoords.coordField, ProjCoords.comap, ProjCoords.inftyC,
-        ProjCoords.gammaSpecEquiv]
-  rw [hcf]
-  exact WeierstrassCurve.Projective.Point.toAffine_zero
-
-/-- **`projNeg` is negation on `E(K)`** (sorry node, introduced 2026-07-27 as clause 2 of
-`exists_projPtAddEquiv_algClosed`).
-
-`projNeg E` is `Proj.map` of the graded involution `Y ↦ -Y - a₁X - a₃Z`, which on
-coordinates is mathlib's `WeierstrassCurve.Projective.neg`.  Route: the `Proj.map`
-congruence named above turns `c.toHom ≫ projNeg E` into `ProjCoords.toHom` of the datum
-with `coordField = neg (coordField c)`, and then mathlib's `toAffine_neg` (which needs
-`Nonsingular`, supplied by `ProjCoords.nonsingular_of_equation_of_ne_zero`) is exactly the
-conclusion. -/
-theorem specPointEquiv_comp_projNeg {E : WeierstrassCurve ℚ} [E.IsElliptic]
-    {K : Type} [Field K] (f : ℚ →+* K) (_P : Spec (CommRingCat.of K) ⟶ proj E) :
-    ProjCoords.specPointEquiv f (_P ≫ projNeg E) = -ProjCoords.specPointEquiv f _P := by
-  classical
-  obtain ⟨c, hc⟩ := ProjCoords.exists_of_specField E (CommRingCat.of K) (Field.toIsField K) _P
-  subst hc
-  rw [ProjCoords.toHom_negC, ProjCoords.specPointEquiv_toHom, ProjCoords.specPointEquiv_toHom,
-    ProjCoords.affinePoint, ProjCoords.affinePoint]
-  have hq : ∀ q : ℚ, (ProjCoords.gammaSpecEquiv K) (c.base q) = (q : K) := fun q =>
-    eq_ratCast ((ProjCoords.gammaSpecEquiv K).toRingHom.comp c.base) q
-  have hcf : ProjCoords.coordField (ProjCoords.negC c) =
-      WeierstrassCurve.Projective.neg (E.map f) (ProjCoords.coordField c) := by
-    funext i
-    fin_cases i <;>
-      simp [ProjCoords.coordField, ProjCoords.negC, WeierstrassCurve.Projective.neg,
-        WeierstrassCurve.Projective.negY, hq]
-  rw [hcf]
-  exact WeierstrassCurve.Projective.Point.toAffine_neg
-    (ProjCoords.nonsingular_of_equation_of_ne_zero f (ProjCoords.equation_coordField f c)
-      (ProjCoords.exists_coordField_ne_zero c))
-
-/-- **`E(K)` is 2-divisible for `K` algebraically closed** (**PROVEN 2026-07-28** from
-`WeierstrassCurve.nsmul_surjective`; it was clause 3 of
-`exists_projPtAddEquiv_algClosed`).
-
-This is the ONE place algebraic closedness enters that leaf, and
-`commLoop_eq_add_of_addHom` shows it cannot be dropped: without it the residue `B` of the
-loop argument may be a nonzero symmetric biadditive form with values in `E[2] ≅ (ℤ/2)²`.
-
-## THE THEORY WAS ALREADY IN THE TREE — do not rebuild it
-
-The route this docstring used to prescribe (halve `x` by finding a root of the degree-4
-`2`-division polynomial, then solve the `Y`-quadratic) is correct and is *already
-formalised*, in full generality and in every characteristic, as
-
-  `WeierstrassCurve.zsmul_surjective_algClosed` / `WeierstrassCurve.nsmul_surjective`
-  (`Fermat/FLT/EllipticCurve/Isogeny.lean`),
-
-built on `TorsionCard.exists_smul_some_eq` and the Bézout identity
-`WeierstrassCurve.isCoprime_Φ_ΨSq` — which is exactly the coprimality of `Φ 2` and `ΨSq 2`
-that makes the denominator `Ψ₂Sq(x₀)` nonzero at the chosen root.  So this leaf is one
-application of an existing theorem, not a division-polynomial development; the only cost
-is the `public import` of `Isogeny.lean` at the head of this file (two modules, no cycle:
-`Isogeny.lean` does not reach `ModularCurve/`).
-
-`#print axioms WeierstrassCurve.nsmul_surjective` returns
-`[propext, Classical.choice, Quot.sound]`, measured rather than assumed — so nothing
-sorried enters here.
-
-Nothing in the statement involves the scheme `proj E`: it is a statement about mathlib's
-`WeierstrassCurve.Affine.Point` alone, which is why it is stated that way, and that is
-precisely what made the existing theorem applicable verbatim. -/
-theorem exists_add_self_affinePoint_of_isAlgClosed {E : WeierstrassCurve ℚ} [E.IsElliptic]
-    {K : Type} [Field K] [IsAlgClosed K] [DecidableEq K] (f : ℚ →+* K)
-    (x : (E.map f).toAffine.Point) : ∃ z : (E.map f).toAffine.Point, x = z + z := by
-  obtain ⟨z, hz⟩ :=
-    WeierstrassCurve.nsmul_surjective (W := (E.map f).toAffine) (n := 2) (by norm_num) x
-  refine ⟨z, ?_⟩
-  have h2 : (2 : ℕ) • z = x := hz
-  rw [← h2, two_nsmul]
-
-/-- **The map `E(K) → E(K)` that a morphism `n : A ×_ℚ A ⟶ A` and a `K`-point `Q` induce**
-(PROVEN, a definition).
-
-`P ↦ n(P, Q)` read through the dictionary in both directions.  It exists so that the
-residue of Silverman *AEC* III.4.7 can be stated as a single EQUATION about a named
-function (`projMulPtFun_add_sub_zero`) rather than as an existential over a group
-homomorphism that a leaf would have to produce.  It is a `def`, not an `abbrev`, for the
-same reason `ProjCoords.specPointEquiv` is: the content is stated ABOUT it. -/
-noncomputable def projMulPtFun (E : WeierstrassCurve ℚ) [E.IsElliptic] {K : Type} [Field K]
-    [DecidableEq K] (f : ℚ →+* K)
-    (n : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
-    (Q : Spec (CommRingCat.of K) ⟶ proj E) (u : (E.map f).toAffine.Point) :
-    (E.map f).toAffine.Point :=
-  ProjCoords.specPointEquiv f (projMulPt E n ((ProjCoords.specPointEquiv f).symm u) Q)
-
-/-! ### The bridge to Silverman *AEC* III.4.8, and III.4.8 itself
-
-`projMulPtFun_add_sub_zero` used to be a single leaf carrying **two independent halves**:
-the BRIDGE from the scheme morphism `n : A ×_ℚ A ⟶ A` together with the `K`-point `Q` to
-a self-map of the curve OVER `K`, and the classical theorem III.4.8 about such a self-map.
-
-**The bridge is PROVEN 2026-07-28, in this section, and it is entirely formal.**  It costs
-two nested `pullback.lift`s: every "lies over the base" side condition that appears is an
-equation between two morphisms into `Spec (CommRingCat.of ℚ)`, hence `hom_ext_spec_rat`.
-No base change of `n` is performed, no `A_K ≅ proj (E.baseChange K)` comparison is used
-(`nonempty_projPullbackIso` is available and is *not* needed to state or prove anything
-here), and the `Isogeny.lean` route is not entered at all.
-
-What is left is III.4.8 alone, as `projFibreEndFun_add_sub_zero`, with `n` and `Q` gone
-and a single `Spec K`-endomorphism `ν` of `A_K` in their place — which is the classical
-theorem's own hypothesis. -/
-
-/-- **The `K`-fibre of the projective Weierstrass model**, `A_K = A ×_ℚ Spec K` (PROVEN,
-an abbreviation).
-
-This is where a `K`-MORPHISM can live.  `n` is only a `ℚ`-morphism, and Silverman *AEC*
-III.4.7/III.4.8 are statements about a self-map of a curve over the field its points are
-taken in, so the fibre has to be named before the classical theorem can be stated.
-
-`nonempty_projPullbackIso` (the `BaseChange` section) identifies `A_K` with
-`proj (E.baseChange K)`, which is what makes it a smooth projective geometrically integral
-genus-`1` curve over `K` with the rational point `projInfty`.  That identification is what
-a PROVER of III.4.8 will need; it is deliberately not used to state anything below. -/
-noncomputable abbrev projFibre (E : WeierstrassCurve ℚ) {K : Type} [Field K] (f : ℚ →+* K) :
-    Scheme.{0} :=
-  Limits.pullback (projToSpec E) (Spec.map (CommRingCat.ofHom f))
-
-/-- **A `K`-point of `A`, read as a section of `A_K ⟶ Spec K`** (PROVEN, a definition).
-
-The universal property of the pullback turns `Hom(Spec K, A)` into
-`Hom_{Spec K}(Spec K, A_K)`, and the pullback condition is `hom_ext_spec_rat` because both
-sides are morphisms into `Spec (CommRingCat.of ℚ)`.  `projFibreSection_fst` recovers the
-point, `projFibreSection_snd` says it really is a section. -/
-noncomputable def projFibreSection (E : WeierstrassCurve ℚ) {K : Type} [Field K] (f : ℚ →+* K)
-    (P : Spec (CommRingCat.of K) ⟶ proj E) : Spec (CommRingCat.of K) ⟶ projFibre E f :=
-  Limits.pullback.lift P (𝟙 _) (hom_ext_spec_rat _ _)
-
-/-- **The section of `A_K` at `P` sits over `P`** (PROVEN, `pullback.lift_fst`). -/
-theorem projFibreSection_fst (E : WeierstrassCurve ℚ) {K : Type} [Field K] (f : ℚ →+* K)
-    (P : Spec (CommRingCat.of K) ⟶ proj E) :
-    projFibreSection E f P ≫ Limits.pullback.fst (projToSpec E)
-      (Spec.map (CommRingCat.ofHom f)) = P :=
-  Limits.pullback.lift_fst _ _ _
-
-/-- **It is a SECTION of the structure morphism of `A_K`** (PROVEN, `pullback.lift_snd`). -/
-theorem projFibreSection_snd (E : WeierstrassCurve ℚ) {K : Type} [Field K] (f : ℚ →+* K)
-    (P : Spec (CommRingCat.of K) ⟶ proj E) :
-    projFibreSection E f P ≫ Limits.pullback.snd (projToSpec E)
-      (Spec.map (CommRingCat.ofHom f)) = 𝟙 _ :=
-  Limits.pullback.lift_snd _ _ _
-
-/-- **The map on `K`-points induced by an endomorphism of the `K`-fibre** (PROVEN, a
-definition).
-
-`u ↦ ν(u)`, read through the dictionary in both directions: turn `u` into a `K`-point of
-`A`, into a section of `A_K`, push it through `ν`, and read the resulting section back as
-a `K`-point.  It is a `def`, not an `abbrev`, for the same reason
-`ProjCoords.specPointEquiv` and `projMulPtFun` are: the content is stated ABOUT it.
-
-*Non-vacuity, checked with the compiler rather than asserted*: for `ν = 𝟙` this is the
-identity (`Category.id_comp`, `projFibreSection_fst`, `Equiv.apply_symm_apply`), so the
-definition really does compute the action of `ν` on `K`-points and not some junk. -/
-noncomputable def projFibreEndFun (E : WeierstrassCurve ℚ) [E.IsElliptic] {K : Type} [Field K]
-    [DecidableEq K] (f : ℚ →+* K) (ν : projFibre E f ⟶ projFibre E f)
-    (u : (E.map f).toAffine.Point) : (E.map f).toAffine.Point :=
-  ProjCoords.specPointEquiv f
-    (projFibreSection E f ((ProjCoords.specPointEquiv f).symm u) ≫ ν ≫
-      Limits.pullback.fst (projToSpec E) (Spec.map (CommRingCat.ofHom f)))
-
-/-- **SILVERMAN *AEC* III.4.8: a self-map of the curve over `K` acts AFFINELY on
-`K`-points** (sorry node — cut 2026-07-28 out of `projMulPtFun_add_sub_zero` below, whose
-other half, the bridge, is proven).
-
-`ν` is an endomorphism of `A_K = proj E ×_ℚ Spec K` over `Spec K` (that is what `hν` says:
-it commutes with the structure morphism).  Under `nonempty_projPullbackIso`,
-`A_K ≅ proj (E.baseChange K)` is a smooth projective geometrically integral genus-`1`
-curve over `K` with the rational point `projInfty`, so this is exactly the classical
-hypothesis, and the conclusion is exactly the classical conclusion in the only form that
-is available here: `ψ := ν(·) − ν(O)` is additive, i.e. `ν = τ_{ν(O)} ∘ ψ`.
-
-## WHY THE CONCLUSION IS SUBTRACTED RATHER THAN STATED AS `ν = τ_c ∘ α`
-
-Because `τ_c` — translation by a `K`-point — is a MORPHISM only once the group law
-`projMul` exists, and `projMul` is what this whole cluster is constructing (`exists_projMul`
-is far below, and `projMul_assoc_pt_algClosed` rests on this leaf).  Stating the conclusion
-as a subtraction of `K`-points keeps the whole statement inside the set-level group
-`(E.map f).toAffine.Point`, which mathlib supplies independently, and that is what breaks
-the circle.  The same consideration rules out the rigidity/Milne route, which needs the
-group law on the TARGET as a morphism (`Mathlib/AlgebraicGeometry/Group/Abelian.lean`
-assumes `[GrpObj G]` throughout).
-
-## WHY IT IS TRUE, AND WHAT A PROVER HAS TO BUILD
-
-The classical proof is Pic⁰ functoriality: `κ : C(K) ≃ Pic⁰(C)`, `P ↦ [(P) − (O)]`, is a
-group isomorphism, and a finite morphism `φ` induces `φ_* : Pic⁰(C) → Pic⁰(C)` — a group
-homomorphism because `φ_*` is additive on divisors and carries principal divisors to
-principal ones — with `φ_*κ(P) = [(φP) − (φO)]`.  Subtracting `(φO)` is the translation.
-A CONSTANT `ν` is `x ↦ 0 + c`, of the same shape, so there is no non-degeneracy case and
-no hypothesis on `ν` beyond `hν`.
-
-**Availability audit, run 2026-07-28 rather than inherited** (grep `Fermat/`,
-`.lake/packages/mathlib`, `~/cs/FLT`):
-
-* `Mathlib/AlgebraicGeometry/AlgebraicCycle/Basic.lean` has `AlgebraicCycle X R` (locally
-  finite `ℤ`-valued functions on the space) and a pushforward `AlgebraicCycle.map` for a
-  quasi-compact morphism.  That is the whole file.
-* `Mathlib/AlgebraicGeometry/OrderOfVanishing.lean` has `ord : X.functionField → X → ℤ`
-  at codimension-one points.
-* `Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point` has
-  `WeierstrassCurve.Affine.Point.toClass : W.Point →+ Additive (ClassGroup W.CoordinateRing)`
-  and its injectivity — mathlib's own proof of the group law, i.e. the `κ` above in its
-  AFFINE form, and it is a genuine head start.
-
-So what is MISSING, and it is a theory build: `div f` as a cycle, `deg` of a principal
-divisor being `0`, "the pushforward of a principal divisor is principal", and the
-compatibility of `toClass` with the codimension-one points of `proj`.  None of it is in
-this project or in `~/cs/FLT` either.
-
-**A legitimate first cut, if the whole thing is too big**: descend to `K̄`.  `E(K) ↪ E(K̄)`
-is a subgroup inclusion compatible with base change, so additivity over an algebraically
-closed field implies it here — and over an algebraically closed field
-`Fermat/FLT/EllipticCurve/Isogeny.lean`'s machinery (`IsRationalMap`, `IsIsogeny`,
-`degree`, `dual`, `endSubring`, and `IsRationalMap.surjective`/`finite_ker`) becomes
-usable.  It is deliberately NOT cut that way here, because the descent leaf is real work
-(base change of `A_K` along `K → K̄` plus compatibility of `ProjCoords.specPointEquiv`
-with the extension) and it does not reduce the mathematical content at all.
-
-*Do not try to close this from `Isogeny.lean` directly.*  `IsRationalMap` is a predicate on
-an `AddMonoidHom`, so it PRESUPPOSES the additivity that is to be proven; using it here
-would be circular.  Read as well that file's FALSITY AUDIT of `IsIsogeny.add` (`𝔽₅`
-counterexample) and of `IsRationalMap.add` (`𝔽̄₂`): the naive statements in this area are
-false, and the hypotheses that repair them are exactly the ones `hν` and the ambient
-`f : ℚ →+* K` supply here.
-
-*Refuting check for anyone tempted to close this from the point dictionary alone*: the
-statement uses `ν` only through its values on `K`-points, and a bare bijection satisfying
-every other clause of `exists_projPtAddEquiv_algClosed` violates this one (the order-`5`
-loop counterexample recorded there).  So any proof that does not USE the fact that `ν` is
-a morphism of schemes is wrong. -/
-theorem projFibreEndFun_add_sub_zero (E : WeierstrassCurve ℚ) [E.IsElliptic] {K : Type}
-    [Field K] [DecidableEq K] (f : ℚ →+* K) (ν : projFibre E f ⟶ projFibre E f)
-    (hν : ν ≫ Limits.pullback.snd (projToSpec E) (Spec.map (CommRingCat.ofHom f)) =
-      Limits.pullback.snd (projToSpec E) (Spec.map (CommRingCat.ofHom f)))
-    (u v : (E.map f).toAffine.Point) :
-    projFibreEndFun E f ν (u + v) - projFibreEndFun E f ν 0 =
-      (projFibreEndFun E f ν u - projFibreEndFun E f ν 0) +
-        (projFibreEndFun E f ν v - projFibreEndFun E f ν 0) :=
-  sorry
-
-/-- **THE BRIDGE: `n` and a `K`-point `Q` induce an endomorphism of the `K`-fibre**
-(**PROVEN 2026-07-28**, a definition).
-
-`ν := ⟨(pr₁, pr₂ ≫ Q) ≫ n, pr₂⟩ : A_K ⟶ A_K`.  Both pullback conditions are equations
-between morphisms into `Spec (CommRingCat.of ℚ)`, so both are `hom_ext_spec_rat` — this is
-the whole reason the bridge is free rather than a base-change construction.  The second
-component being `pr₂` is what makes `ν` a `Spec K`-morphism
-(`projFibreEndOfMul_snd`), which is the hypothesis `hν` of III.4.8. -/
-noncomputable def projFibreEndOfMul (E : WeierstrassCurve ℚ) {K : Type} [Field K] (f : ℚ →+* K)
-    (n : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
-    (Q : Spec (CommRingCat.of K) ⟶ proj E) : projFibre E f ⟶ projFibre E f :=
-  Limits.pullback.lift
-    (Limits.pullback.lift (Limits.pullback.fst (projToSpec E) (Spec.map (CommRingCat.ofHom f)))
-      (Limits.pullback.snd (projToSpec E) (Spec.map (CommRingCat.ofHom f)) ≫ Q)
-      (hom_ext_spec_rat _ _) ≫ n)
-    (Limits.pullback.snd (projToSpec E) (Spec.map (CommRingCat.ofHom f)))
-    (hom_ext_spec_rat _ _)
-
-/-- **The induced endomorphism is a `Spec K`-morphism** (PROVEN, `pullback.lift_snd`) —
-this is the hypothesis `hν` of `projFibreEndFun_add_sub_zero`, discharged by construction. -/
-theorem projFibreEndOfMul_snd (E : WeierstrassCurve ℚ) {K : Type} [Field K] (f : ℚ →+* K)
-    (n : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
-    (Q : Spec (CommRingCat.of K) ⟶ proj E) :
-    projFibreEndOfMul E f n Q ≫ Limits.pullback.snd (projToSpec E)
-        (Spec.map (CommRingCat.ofHom f)) =
-      Limits.pullback.snd (projToSpec E) (Spec.map (CommRingCat.ofHom f)) :=
-  Limits.pullback.lift_snd _ _ _
-
-/-- **The induced endomorphism computes `P ↦ n(P, Q)` on `K`-points** (PROVEN) — the
-computation rule that makes the bridge usable.
-
-`comp_lift_proj` pushes the section inside the inner `lift`, `projFibreSection_fst` turns
-the first component into `P`, and `projFibreSection_snd` collapses the second to `Q`; what
-is left is literally `projMulPt`. -/
-theorem projFibreSection_comp_projFibreEndOfMul (E : WeierstrassCurve ℚ) {K : Type} [Field K]
-    (f : ℚ →+* K) (n : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
-    (Q P : Spec (CommRingCat.of K) ⟶ proj E) :
-    projFibreSection E f P ≫ projFibreEndOfMul E f n Q ≫
-        Limits.pullback.fst (projToSpec E) (Spec.map (CommRingCat.ofHom f)) =
-      projMulPt E n P Q := by
-  rw [projFibreEndOfMul, Limits.pullback.lift_fst, ← Category.assoc,
-    comp_lift_proj E _ _ _ _ (hom_ext_spec_rat _ _), projFibreSection_fst,
-    ← Category.assoc, projFibreSection_snd, Category.id_comp, projMulPt]
-
-/-- **The two point-maps agree** (PROVEN): the action of the induced endomorphism on
-`K`-points IS `projMulPtFun`. -/
-theorem projFibreEndFun_projFibreEndOfMul (E : WeierstrassCurve ℚ) [E.IsElliptic] {K : Type}
-    [Field K] [DecidableEq K] (f : ℚ →+* K)
-    (n : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
-    (Q : Spec (CommRingCat.of K) ⟶ proj E) (u : (E.map f).toAffine.Point) :
-    projFibreEndFun E f (projFibreEndOfMul E f n Q) u = projMulPtFun E f n Q u := by
-  rw [projFibreEndFun, projFibreSection_comp_projFibreEndOfMul, projMulPtFun]
-
-/-- **ALGEBRAICITY, in its residual form: `P ↦ n(P, Q) − n(O, Q)` is ADDITIVE**
-(**PROVEN 2026-07-28** from `projFibreEndFun_add_sub_zero`, which is Silverman *AEC*
-III.4.8 with `n` and `Q` eliminated; the bridge that eliminates them is the section above
-and is entirely formal).
-
-Together with `map_zero'` — which is `sub_self` and carries nothing — this is exactly what
-an `AddMonoidHom` needs, so the existential of the consumer below is discharged BY
-CONSTRUCTION (`α := · − projMulPtFun E f n Q 0`, `c := projMulPtFun E f n Q 0`) and no
-mathematics is left in it.
-
-The one thing this proof does that a set-level argument could not: it produces a genuine
-`Spec K`-ENDOMORPHISM of `A_K` out of `n` and `Q`, so the fact that `n` is a morphism of
-schemes is used, as the refuting check on `projFibreEndFun_add_sub_zero` demands. -/
-theorem projMulPtFun_add_sub_zero (E : WeierstrassCurve ℚ) [E.IsElliptic] {K : Type}
-    [Field K] [DecidableEq K] (f : ℚ →+* K)
-    (n : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
-    (Q : Spec (CommRingCat.of K) ⟶ proj E) (u v : (E.map f).toAffine.Point) :
-    projMulPtFun E f n Q (u + v) - projMulPtFun E f n Q 0 =
-      (projMulPtFun E f n Q u - projMulPtFun E f n Q 0) +
-        (projMulPtFun E f n Q v - projMulPtFun E f n Q 0) := by
-  simpa only [projFibreEndFun_projFibreEndOfMul] using
-    projFibreEndFun_add_sub_zero E f (projFibreEndOfMul E f n Q)
-      (projFibreEndOfMul_snd E f n Q) u v
-
-/-- **ALGEBRAICITY: every scheme morphism acts affinely on `K`-points** (**PROVEN
-2026-07-28** from `projMulPtFun_add_sub_zero`, which is the residue; it was clause 4 of
-`exists_projPtAddEquiv_algClosed`, and it is Silverman *AEC* III.4.7).
-
-This is the clause that distinguishes the dictionary from a bare bijection: the loop
-counterexample of order `5` transported along an arbitrary bijection satisfies every other
-clause and violates this one.  It quantifies over EVERY morphism of schemes
-`n : A ×_ℚ A ⟶ A`, with no hypothesis on `n` at all.
-
-**What is left here is nothing.**  `α` and `c` are produced explicitly from
-`projMulPtFun`, `map_zero'` is `sub_self`, and the conclusion is `sub_add_cancel` plus
-`Equiv.symm_apply_apply`.  All the mathematics sits in `projMulPtFun_add_sub_zero`
-immediately above, where the classical route is recorded.
-
-*Why it is true, and why it needs no non-degeneracy case.* `P ↦ projMulPt E n P Q` is
-induced by an honest `K`-morphism: base-change `n` along `Spec K ⟶ Spec ℚ` and precompose
-with `(id, Q)`, giving `A_K ⟶ A_K` where `A_K = proj E ×_ℚ Spec K` is a smooth projective
-geometrically integral genus-`1` curve over `K` with the rational point `projInfty`.
-Silverman *AEC* III.4.7 says every NON-constant morphism of such a curve to itself is a
-translation composed with an isogeny, i.e. `x ↦ α x + c` with `α` a group homomorphism; a
-CONSTANT morphism is `x ↦ 0 + c`, also of that shape.
-
-*Why the rigidity/Milne route is NOT available here* (and this is recorded so it is not
-re-attempted): forming `h(v,w) - f(v) - g(w)` needs the group law on the TARGET as a
-morphism, i.e. the `GrpObj` this whole cluster is constructing, and everything in
-`Mathlib/AlgebraicGeometry/Group/Abelian.lean` assumes `[GrpObj G]`.  III.4.7 needs only
-the SET-level group `E(K)`, which mathlib already has, so it breaks the circle. -/
-theorem exists_addMonoidHom_specPointEquiv_projMulPt {E : WeierstrassCurve ℚ} [E.IsElliptic]
-    {K : Type} [Field K] [DecidableEq K] (f : ℚ →+* K)
-    (n : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
-    (Q : Spec (CommRingCat.of K) ⟶ proj E) :
-    ∃ (α : (E.map f).toAffine.Point →+ (E.map f).toAffine.Point) (c : (E.map f).toAffine.Point),
-      ∀ P : Spec (CommRingCat.of K) ⟶ proj E,
-        ProjCoords.specPointEquiv f (projMulPt E n P Q) =
-          α (ProjCoords.specPointEquiv f P) + c := by
-  refine ⟨{ toFun := fun u => projMulPtFun E f n Q u - projMulPtFun E f n Q 0
-            map_zero' := sub_self _
-            map_add' := projMulPtFun_add_sub_zero E f n Q },
-    projMulPtFun E f n Q 0, ?_⟩
-  intro P
-  show ProjCoords.specPointEquiv f (projMulPt E n P Q) =
-    (projMulPtFun E f n Q (ProjCoords.specPointEquiv f P) - projMulPtFun E f n Q 0) +
-      projMulPtFun E f n Q 0
-  rw [sub_add_cancel, projMulPtFun, Equiv.symm_apply_apply]
-
-/-- **The `K`-points of the projective Weierstrass model carry an abelian
-group structure with `projInfty` as zero and `projNeg` as negation, which
-is divisible and on which EVERY scheme morphism acts affinely** (**PROVEN
-2026-07-27** over `ProjCoords.specPointEquiv` and the four clause leaves
-immediately above; it was the geometric content that
-`projMul_assoc_pt_algClosed`
-now rests on, and it is the classical half: a point dictionary plus
-Silverman *AEC* III.4.7).
-
-Read clause by clause, for `K` algebraically closed and admitting at
-least one `K`-point of `proj E` (see the CHARACTERISTIC GUARD below):
-
-* `e` is a bijection from `K`-points of the projective Weierstrass model
-  to an abelian group `G` — concretely `G = (E⁄K).Point`, mathlib's
-  `WeierstrassCurve.Affine.Point`, whose `AddCommGroup` instance is
-  proven in mathlib from the ideal class group of the coordinate ring and
-  therefore does **not** depend on anything this cluster is constructing.
-  That is what makes this cut NON-CIRCULAR, and it is the reason the
-  rigidity route recorded below cannot be used instead;
-* `e` sends the unit section `P ≫ projToSpec E ≫ projInfty E` (the point
-  `[0 : 1 : 0]`) to `0`, and postcomposition with `projNeg E` (the
-  substitution `Y ↦ -Y - a₁X - a₃Z`) to negation — both are the standard
-  Weierstrass identifications;
-* `G` is **2-divisible**.  For `K` algebraically closed `[2] : E(K) → E(K)`
-  is surjective, since the `2`-division polynomial has a root in `K`.
-  This is the only clause where `IsAlgClosed K` is genuinely used, and
-  `commLoop_eq_add_of_addHom` shows it cannot be dropped;
-* the last clause is **ALGEBRAICITY**, and it is what distinguishes this
-  interface from the bare dictionary that the audit on
-  `projMul_assoc_pt_algClosed` correctly refutes.  It quantifies over
-  EVERY morphism of schemes `n : A ×_ℚ A ⟶ A`, saying that the induced map
-  `P ↦ n(P, Q)` on `K`-points is a group homomorphism plus a constant.
-  A bijection alone satisfies nothing of the sort — the loop
-  counterexample transported along an arbitrary bijection violates it —
-  so this clause is exactly the "the dictionary has to carry
-  algebraicity" requirement, discharged.
-
-## WHY THE LAST CLAUSE IS TRUE (and why it needs no non-degeneracy case)
-
-`P ↦ projMulPt E n P Q` is induced by an honest `K`-morphism: base-change
-`n` along `Spec K ⟶ Spec ℚ` and precompose with `(id, Q)`, giving
-`A_K ⟶ A_K` where `A_K = proj E ×_ℚ Spec K` is a smooth projective
-geometrically integral genus-`1` curve over `K` with the rational point
-`projInfty`.  Silverman *AEC* III.4.7 says every NON-constant morphism of
-such a curve to itself is a translation composed with an isogeny, i.e.
-`x ↦ α x + c` with `α` a group homomorphism; a CONSTANT morphism is
-`x ↦ 0 + c`, also of that shape.  So the clause holds for every `n`, with
-no hypothesis on `n` at all.
-
-## CHARACTERISTIC GUARD — `hne` is a FAITHFULNESS fix, not a convenience
-
-Without `hne` the statement is **FALSE**.  `proj E` lives over `Spec ℚ`,
-so a morphism `Spec K ⟶ proj E` yields `Spec K ⟶ Spec (CommRingCat.of ℚ)`
-and hence a ring map `ℚ → K`; when `char K = p > 0` there is none, so the
-`K`-point set is EMPTY, while every `AddCommGroup` is inhabited by `0` —
-no equivalence can exist.  `hne` makes the char-`p` instances vacuous and
-costs the consumer nothing: `projMul_assoc_pt_algClosed` is handed three
-`K`-points and supplies `hne` from one of them.
-
-## COORDINATE WITH `exists_projMul_geomFibreEquivVal` — DISCHARGED 2026-07-27
-
-The pairing note that used to sit here is now HISTORY: the shared
-implementation it prescribed exists, as `ProjCoords.specPointEquiv`
-above, and BOTH leaves are proven over it.  The conclusion it reached is
-still the reason the code is shaped this way, so it is worth keeping in
-one sentence: the two statements cannot be merged (each has to *name* the
-bijection to state its own extra content, and quantifying that content
-over every bijection satisfying the shared clauses is FALSE), so the
-sharing has to happen at the level of DATA — a `def`, not an `∃`.
-
-What survives of this leaf are its four clauses, and they are now four
-named leaves immediately above:
-`specPointEquiv_comp_projInfty_eq_zero`, `specPointEquiv_comp_projNeg`,
-`exists_add_self_affinePoint_of_isAlgClosed` and
-`exists_addMonoidHom_specPointEquiv_projMulPt`.  The first two are one
-missing mathlib congruence for `Proj.fromOfGlobalSections` (see the
-section header above, which names it); the last two are the genuinely
-separate obligations — 2-divisibility of `E(K̄)`, and Silverman *AEC*
-III.4.7.
-
-`G` is instantiated at `(E.map f).toAffine.Point`, with `f : ℚ →+* K`
-manufactured from `hne` exactly as the CHARACTERISTIC GUARD note above
-says it can be: a `K`-point yields a coordinate datum, whose `base` is a
-ring map `ℚ → Γ(Spec K, ⊤)`, hence a ring map `ℚ → K`.
-
-## WHAT THIS CUT REPLACES
-
-The previous plan recorded at `projMul_assoc_pt_algClosed` was Milne
-I.2.5 / rigidity, and it is CIRCULAR: forming `h(v,w) - f(v) - g(w)`
-needs the group law on the target as a MORPHISM, which is the `GrpObj`
-this cluster is constructing, and every result in mathlib's
-`AlgebraicGeometry/Group/Abelian.lean` assumes `[GrpObj G]`.  The route
-taken here needs only the group law on `K`-POINTS as a SET-level group,
-which mathlib already has, so it breaks the circle. -/
-theorem exists_projPtAddEquiv_algClosed (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    (K : Type) [Field K] [IsAlgClosed K]
-    (hne : Nonempty (Spec (CommRingCat.of K) ⟶ proj E)) :
-    ∃ (G : Type) (_ : AddCommGroup G)
-      (e : (Spec (CommRingCat.of K) ⟶ proj E) ≃ G),
-      (∀ P : Spec (CommRingCat.of K) ⟶ proj E,
-          e (P ≫ projToSpec E ≫ projInfty E) = 0) ∧
-        (∀ P : Spec (CommRingCat.of K) ⟶ proj E, e (P ≫ projNeg E) = -e P) ∧
-          (∀ x : G, ∃ z : G, x = z + z) ∧
-            ∀ (n : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
-              (Q : Spec (CommRingCat.of K) ⟶ proj E),
-              ∃ (α : G →+ G) (c : G), ∀ P : Spec (CommRingCat.of K) ⟶ proj E,
-                e (projMulPt E n P Q) = α (e P) + c := by
-  letI : DecidableEq K := Classical.decEq K
-  obtain ⟨a⟩ := hne
-  obtain ⟨c₀, -⟩ := ProjCoords.exists_of_specField E (CommRingCat.of K) (Field.toIsField K) a
-  refine ⟨(E.map ((ProjCoords.gammaSpecEquiv K).toRingHom.comp c₀.base)).toAffine.Point,
-    inferInstance,
-    ProjCoords.specPointEquiv ((ProjCoords.gammaSpecEquiv K).toRingHom.comp c₀.base),
-    ?_, ?_, ?_, ?_⟩
-  · exact fun P => specPointEquiv_comp_projInfty_eq_zero _ P
-  · exact fun P => specPointEquiv_comp_projNeg _ P
-  · exact fun x => exists_add_self_affinePoint_of_isAlgClosed (E := E) (K := K) _ x
-  · exact fun n Q => exists_addMonoidHom_specPointEquiv_projMulPt (E := E) (K := K) _ n Q
-
-/-- **Associativity of the operation `m` induces on `K`-points, `K` an
-ALGEBRAICALLY CLOSED field** (PROVEN 2026-07-27 from
-`exists_projPtAddEquiv_algClosed` and `commLoop_eq_add_of_addHom`; it was
-the one leaf `projMul_assoc` rested on, and the residue now sits in the
-DICTIONARY leaf rather than here).
-
-The restriction to `Spec` of a FIELD is essential rather than cosmetic:
-the same statement for an arbitrary test scheme `T` is `projMul_assoc`
-itself (take `T` to be the threefold product and the three projections),
-so nothing would have been gained.  What a field buys is that
-`proj E ×_ℚ Spec K` is a smooth projective genus-`1` curve over `K` with
-the rational point `projInfty E`, i.e. an honest elliptic curve, where
-mathlib's `WeierstrassCurve.Affine.Point` supplies a real `AddCommGroup`.
-Algebraic closedness on top of that is FREE — see `projMul_assoc_pt` —
-and it is what every classical statement of the rigidity argument assumes.
-
-## THE THREE POINT-LEVEL HYPOTHESES ARE NOT A ROUTE ON THEIR OWN
-
-`hcommPt`/`hunitPt`/`hinvPt` are DERIVED from `hcomm`/`hunit`/`hinv` by
-`projMulPt_comm`, `projMulPt_unit_left` and `projMulPt_neg_left` above,
-and are passed in only so that the assembly does not have to redo the
-`pullback.lift` gymnastics.  **They are not sufficient on their own**, and
-that warning stands unchanged: together they say exactly that
-`projMulPt E m` is a commutative LOOP with two-sided unit and inverses on
-the set of `K`-points, and a commutative loop need not be associative —
-the smallest non-associative commutative loop has order `5`, so the
-set-level statement is false already for a five-element carrier.
-*Refuting check for anyone tempted to close this from
-`hcommPt`/`hunitPt`/`hinvPt` alone*: those three mention `m` only through
-`projMulPt E m`, i.e. only through its values on `K`-points, so any proof
-from them alone would prove the false set-level statement.
-
-The proof below therefore does **not** use them alone: it uses them
-together with `exists_projPtAddEquiv_algClosed`, whose last clause
-quantifies over EVERY morphism of schemes and is exactly the algebraicity
-input that a set-level hypothesis cannot supply.
-
-**FORMAL-CONTENT NOTE — `_hcomm`/`_hunit`/`_hinv` are UNUSED**, and are
-underscored so that this is mechanically visible rather than merely
-asserted.  This is *not* vacuity: the algebraicity the proof needs comes
-from the dictionary leaf, which quantifies over all morphisms `n` and so
-covers `m` whatever `m` is, while the three properties of `m` that the
-argument does consume are already supplied in point-level form by
-`hcommPt`/`hunitPt`/`hinvPt`.  Those three are in turn DERIVED from the
-scheme-level ones by `projMulPt_comm`, `projMulPt_unit_left` and
-`projMulPt_neg_left`, so no hypothesis has been silently dropped from the
-node — the caller `projMul_assoc_pt` still has to produce all six.  The
-scheme-level triple is retained in the signature because it is fixed by
-the cut and every caller has it; an owner who wanted a minimal statement
-could delete it, at the cost of touching `projMul_assoc_pt`.
-
-## THE PROOF, IN FIVE LINES OF MATHEMATICS
-
-Transport `projMulPt E m` along the dictionary `e` of
-`exists_projPtAddEquiv_algClosed` to an operation `F` on the abelian
-group `G`.  The three loop identities become `hsymm`, `F 0 y = y` and
-`F (-x) x = 0` (the unit and negation clauses of `e` are what turn
-`hunitPt`/`hinvPt` into those); the algebraicity clause instantiated at
-`n := m` becomes "`x ↦ F x y` is a group homomorphism plus a constant";
-and `G` is 2-divisible.  `commLoop_eq_add_of_addHom` then gives
-`F x y = x + y` outright, so `e (projMulPt E m P Q) = e P + e Q` and
-associativity is `add_assoc` pulled back through the injectivity of `e`.
-
-The combinatorial step is the one that was missing from every earlier
-plan and it is worth stating separately: from `F x y = α y x + y` the
-form `B x y := α y x - x` is symmetric and biadditive with `B x x = 0`,
-hence `2 • B = 0`, hence `B = 0` by divisibility.  See
-`commLoop_eq_add_of_addHom`.
-
-## WHY THE OLD PLAN (MILNE I.2.5 / RIGIDITY) WAS NOT TAKEN — it is CIRCULAR
-
-Recorded because the rigidity machinery really is in the pin and the next
-reader will find it and be tempted.  Milne, *Abelian Varieties* I.2.5
-("every morphism `E × E → E` of complete varieties into an abelian
-variety is `(P, Q) ↦ φ(P) + ψ(Q) + c`") forms the DIFFERENCE
-`h(v, w) − f(v) − g(w)`, so it needs the group law on the TARGET as a
-morphism — i.e. exactly the `GrpObj` this cluster is constructing.
-Mathlib's `WeierstrassCurve.Affine.Point` addition is set-level only, so
-it does not supply it, and every result in
-`Mathlib/AlgebraicGeometry/Group/Abelian.lean` (`@[stacks 0BFD]`, a
-complete worked rigidity argument at this pin, together with
-`subsingleton_image_closure_of_finite_of_isPreirreducible` in
-`Mathlib/Topology/JacobsonSpace.lean`, `ext_of_apply_eq` /
-`ext_of_apply_closedPoint_eq` in
-`Mathlib/AlgebraicGeometry/AlgClosed/Basic.lean`, and
-`exists_finite_imageι_comp_morphismRestrict_of_finite_image_preimage` in
-`Mathlib/AlgebraicGeometry/ZariskisMainTheorem.lean`) ASSUMES `[GrpObj G]`.
-So rigidity can only compare an arbitrary `m` with an ALREADY-ASSOCIATIVE
-reference law; it cannot bootstrap associativity out of unitality.
-
-The route actually taken sidesteps this because it never needs a group
-law on the target as a morphism — only Silverman *AEC* III.4.7, which is
-a statement about morphisms of curves and the SET-level group `E(K)`.
-That is the whole reason the cut is non-circular.
-
-## THE CUT-LEVEL OBSERVATION ABOUT `exists_projMul` STILL STANDS
-
-`projMul_assoc`'s only consumer is `exists_projAdd`, which applies it to
-`exists_projMul`'s witness and to nothing else, so the universal
-quantification over `m` buys the tree nothing; and
-`exists_projGroupLaw_geomFibreAddEquiv`'s docstring asks for the same
-repair — give `exists_projMul` a `hassoc`-free chord–tangent clause
-pinning its witness in coordinates.  That repair is no longer needed
-HERE (this leaf is proven for an arbitrary `m`), but it remains the thing
-that would let `exists_projPtAddEquiv_algClosed` and the `geomFibre`
-dictionary be discharged from explicit polynomials.  Reported, not made.
-
-## A DICTIONARY ALONE IS STILL NOT A SAFE CUT — and this one is not one
-
-"Given a bijection `(Spec K ⟶ proj E) ≃ E(K)` carrying `projInfty` to `0`
-and `projNeg` to negation, `m` corresponds to `+`" is **FALSE** for an
-arbitrary such bijection, by the loop counterexample above transported
-along it.  `exists_projPtAddEquiv_algClosed` is not that statement: it
-adds 2-divisibility and, crucially, a clause quantified over every
-SCHEME MORPHISM `n`, which is where algebraicity — naturality in `K`,
-equivalently being a morphism, by Yoneda — enters.  Dropping either of
-those two clauses makes it satisfiable by junk and the proof below
-unsound. -/
-theorem projMul_assoc_pt_algClosed (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
-    (_hcomm : Limits.pullback.lift (Limits.pullback.snd (projToSpec E) (projToSpec E))
-      (Limits.pullback.fst (projToSpec E) (projToSpec E))
-      Limits.pullback.condition.symm ≫ m = m)
-    (_hunit : Limits.pullback.lift (projToSpec E ≫ projInfty E) (𝟙 (proj E))
-      (hom_ext_spec_rat _ _) ≫ m = 𝟙 (proj E))
-    (_hinv : Limits.pullback.lift (projNeg E) (𝟙 (proj E))
-      (hom_ext_spec_rat _ _) ≫ m = projToSpec E ≫ projInfty E)
-    (K : Type) [Field K] [IsAlgClosed K]
-    (hcommPt : ∀ P Q : Spec (CommRingCat.of K) ⟶ proj E,
-      projMulPt E m P Q = projMulPt E m Q P)
-    (hunitPt : ∀ P : Spec (CommRingCat.of K) ⟶ proj E,
-      projMulPt E m (P ≫ projToSpec E ≫ projInfty E) P = P)
-    (hinvPt : ∀ P : Spec (CommRingCat.of K) ⟶ proj E,
-      projMulPt E m (P ≫ projNeg E) P = P ≫ projToSpec E ≫ projInfty E)
-    (P Q R : Spec (CommRingCat.of K) ⟶ proj E) :
-    projMulPt E m (projMulPt E m P Q) R = projMulPt E m P (projMulPt E m Q R) := by
-  -- The dictionary.  `⟨P⟩` discharges the characteristic guard: we are handed a
-  -- `K`-point, so `K` really is a `ℚ`-algebra and the point set really is nonempty.
-  obtain ⟨G, _, e, hO, hN, hdiv, halg⟩ := exists_projPtAddEquiv_algClosed E K ⟨P⟩
-  -- Transport `projMulPt E m` to `G` and check the four hypotheses of
-  -- `commLoop_eq_add_of_addHom` one by one.
-  have hsymm : ∀ x y : G, e (projMulPt E m (e.symm x) (e.symm y))
-      = e (projMulPt E m (e.symm y) (e.symm x)) := fun x y => by rw [hcommPt]
-  have hzero : ∀ y : G, e (projMulPt E m (e.symm 0) (e.symm y)) = y := by
-    intro y
-    have h0 : e.symm (0 : G) = (e.symm y) ≫ projToSpec E ≫ projInfty E :=
-      e.symm_apply_eq.mpr (hO (e.symm y)).symm
-    rw [h0, hunitPt, Equiv.apply_symm_apply]
-  have hnegPt : ∀ x : G, e (projMulPt E m (e.symm (-x)) (e.symm x)) = 0 := by
-    intro x
-    have h0 : e.symm (-x) = (e.symm x) ≫ projNeg E := by
-      refine e.symm_apply_eq.mpr ?_
-      rw [hN (e.symm x), Equiv.apply_symm_apply]
-    rw [h0, hinvPt, hO]
-  have halg' : ∀ y : G, ∃ (α : G →+ G) (c : G),
-      ∀ x : G, e (projMulPt E m (e.symm x) (e.symm y)) = α x + c := by
-    intro y
-    obtain ⟨α, c, hα⟩ := halg m (e.symm y)
-    exact ⟨α, c, fun x => by rw [hα (e.symm x), Equiv.apply_symm_apply]⟩
-  have key := commLoop_eq_add_of_addHom (fun x y => e (projMulPt E m (e.symm x) (e.symm y)))
-    hsymm hzero hnegPt hdiv halg'
-  -- `m` IS the group law on `K`-points; associativity is `add_assoc`.
-  have key' : ∀ A B : Spec (CommRingCat.of K) ⟶ proj E,
-      e (projMulPt E m A B) = e A + e B := by
-    intro A B
-    simpa only [Equiv.symm_apply_apply] using key (e A) (e B)
-  exact e.injective (by rw [key', key', key', key', add_assoc])
-
-/-- **Associativity of the operation `m` induces on `K`-points, `K` any
-field** (PROVEN from `projMul_assoc_pt_algClosed` — the descent to an
-algebraic closure, which is the half of this leaf that needed no new
-theory).
-
-Given `P Q R : Spec K ⟶ proj E`, base-change them along
-`Spec K̄ ⟶ Spec K`.  `comp_projMulPt` turns each `ι ≫ projMulPt …` into
-`projMulPt` of the base-changed points, so the two bracketings agree after
-restriction to `K̄` by `projMul_assoc_pt_algClosed`; and
-`hom_ext_of_specMap_field` cancels `ι`, because `Spec` of a field
-extension is an epimorphism of schemes.  The three point-level loop
-identities the algebraically-closed leaf asks for are supplied here from
-`projMulPt_comm`, `projMulPt_unit_left` and `projMulPt_neg_left`.
-
-## INSTANCE-COHERENCE REPAIR (2026-07-27): why `K` is a `Type`, not a `CommRingCat`
-
-This statement previously read `(K : CommRingCat.{0}) [Field K]`.  That
-phrasing is **formally defective and makes the field hypothesis
-unusable**, and the defect is invisible until one tries to use it:
-
-* `K.str : CommRing ↥K` is the ring structure `Spec K` is built from,
-  while `[Field ↥K]` is an unrelated instance, and nothing ties
-  `Field.toCommRing` to `K.str`.  For an abstract `K` they are not
-  definitionally equal.
-* Consequently `AlgebraicClosure ↥K`, `algebraMap ↥K _` and
-  `Scheme.SpecToEquivOfField ↥K` all elaborate against
-  `Field.toCommRing`, and none of them typechecks against `Spec K`.  The
-  observed error is the familiar one —
-  `Field.toSemifield.toCommSemiring` versus `CommRing.toCommSemiring` on
-  terms that pretty-print identically.
-* So the old statement quantified over pairs of a ring and an *incoherent*
-  field structure on its carrier.  It was still TRUE (it is implied by
-  `projMul_assoc`, which holds at every test scheme), but strictly harder
-  than intended and impossible to attack by the intended argument.
-
-The repair is mathlib's own idiom, the one `SpecToEquivOfField`,
-`ext_of_apply_eq` and `Group/Abelian.lean` all use: quantify over
-`(K : Type) [Field K]` and write `Spec (CommRingCat.of K)`.  **No
-consumer changes**: `projMul_assoc_residueField` below still discharges it
-with `_`s, because `CommRingCat.of ↥(X.residueField x)` is `rfl`-equal to
-`X.residueField x`. -/
-theorem projMul_assoc_pt (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
-    (hcomm : Limits.pullback.lift (Limits.pullback.snd (projToSpec E) (projToSpec E))
-      (Limits.pullback.fst (projToSpec E) (projToSpec E))
-      Limits.pullback.condition.symm ≫ m = m)
-    (hunit : Limits.pullback.lift (projToSpec E ≫ projInfty E) (𝟙 (proj E))
-      (hom_ext_spec_rat _ _) ≫ m = 𝟙 (proj E))
-    (hinv : Limits.pullback.lift (projNeg E) (𝟙 (proj E))
-      (hom_ext_spec_rat _ _) ≫ m = projToSpec E ≫ projInfty E)
-    (K : Type) [Field K] (P Q R : Spec (CommRingCat.of K) ⟶ proj E) :
-    projMulPt E m (projMulPt E m P Q) R = projMulPt E m P (projMulPt E m Q R) := by
-  refine hom_ext_of_specMap_field (L := AlgebraicClosure K)
-    (CommRingCat.ofHom (algebraMap K (AlgebraicClosure K))) _ _ ?_
-  rw [comp_projMulPt, comp_projMulPt, comp_projMulPt, comp_projMulPt]
-  exact projMul_assoc_pt_algClosed E m hcomm hunit hinv (AlgebraicClosure K)
-    (projMulPt_comm E m hcomm) (projMulPt_unit_left E m hunit)
-    (projMulPt_neg_left E m hinv) _ _ _
-
-/-- **Associativity at the residue field of every point of the threefold
-product** (PROVEN from `projMul_assoc_pt`).
-
-This is the `H` hypothesis of `ext_of_fromSpecResidueField_eq`, read at
-`S = Set.univ`.  The residue field of a point of a `ℚ`-scheme is a field,
-so `projMul_assoc_pt` applies verbatim; the only work is
-`comp_triAddLeft_proj`/`comp_triAddRight_proj`, which say that the two
-composites are the two bracketings of the induced operation on the three
-projections. -/
-theorem projMul_assoc_residueField (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
-    (hcomm : Limits.pullback.lift (Limits.pullback.snd (projToSpec E) (projToSpec E))
-      (Limits.pullback.fst (projToSpec E) (projToSpec E))
-      Limits.pullback.condition.symm ≫ m = m)
-    (hunit : Limits.pullback.lift (projToSpec E ≫ projInfty E) (𝟙 (proj E))
-      (hom_ext_spec_rat _ _) ≫ m = 𝟙 (proj E))
-    (hinv : Limits.pullback.lift (projNeg E) (𝟙 (proj E))
-      (hom_ext_spec_rat _ _) ≫ m = projToSpec E ≫ projInfty E)
-    (x : AbelianSchemeStruct.triProd (projToSpec E)) :
-    (AbelianSchemeStruct.triProd (projToSpec E)).fromSpecResidueField x ≫
-        AbelianSchemeStruct.triAddLeft (projToSpec E) m (hom_ext_spec_rat _ _) =
-      (AbelianSchemeStruct.triProd (projToSpec E)).fromSpecResidueField x ≫
-        AbelianSchemeStruct.triAddRight (projToSpec E) m (hom_ext_spec_rat _ _) := by
-  rw [comp_triAddLeft_proj, comp_triAddRight_proj]
-  exact projMul_assoc_pt E m hcomm hunit hinv _ _ _ _
 
 /-! ### The Jacobian criterion for a Weierstrass equation
 
@@ -7217,9 +6299,10 @@ morphism in this development.
 **Why this declaration sits here, after the smoothness proof, rather than
 next to the rest of the group-law material**: Lean's declaration order.
 Its proof consumes `smoothOfRelativeDimension_projToSpec`, so it — and
-with it `isReduced_triProd_proj`, `projMul_assoc`, `exists_projAdd` and
+with it `isReduced_triProd_proj`, associativity (then `projMul_assoc`, now
+`projMul_assoc_of_isProjMulLaw`), `exists_projAdd` and
 `nonempty_projGroupLaw`, which consume it in turn — had to move below the
-chart/smoothness block.  The text of those five declarations is otherwise
+chart/smoothness block.  The text of those declarations is otherwise
 unchanged.
 
 *The parochial route, NOT taken*, recorded so it is not re-surveyed: show
@@ -7354,42 +6437,50 @@ theorem exists_projMulOfCoords (E : WeierstrassCurve ℚ) [E.IsElliptic] :
 that are chart identities** (**PROVEN as of 2026-07-27** from
 `exists_projMulOfCoords` and the four small leaves of the `ProjCoords`
 section above — the CONSTRUCTION half of the old `exists_projAdd`, which
-is proven from this together with `projMul_assoc`).
+is proven from this together with `projMul_assoc_of_isProjMulLaw`).
 
-## STATUS: this declaration has NO `sorry` of its own any more
+## STATUS (2026-07-30): CLOSED, not merely reduced
 
-It is a REDUCTION, not a result: it is proven from open leaves, of which one
-(`exists_projMulOfCoordsTwo`) still carries the gluing.  Do not read it as
-finished.  They are, with the machinery each needs:
+This declaration has no `sorry` of its own, and — checked against the module's
+`declaration uses 'sorry'` warning set, which now has exactly ONE entry, unrelated to
+this cluster — **neither has anything it consumes in this module**.  The four leaves
+this paragraph used to list are all PROVEN:
 
-| leaf | what it is |
+| former leaf | status |
 |---|---|
-| `ProjCoords.toHom_smul` | the missing MATHLIB congruence for `fromOfGlobalSections` |
-| `ProjCoords.exists_of_specField` | `Pic (Spec K) = 0`, i.e. `K`-points have coordinates |
-| `ProjCoords.toHom_eq_of_addXYZ_not_span` | the exceptional set is the DIAGONAL |
-| `exists_projMulOfCoordsTwo` | the gluing, over the two-law cover |
+| `ProjCoords.toHom_smul` | PROVEN (the `fromOfGlobalSections` congruence) |
+| `ProjCoords.exists_of_specField` | PROVEN (`Pic (Spec K) = 0`, i.e. `K`-points have coordinates) |
+| `ProjCoords.toHom_eq_of_addXYZ_not_span` | PROVEN (the exceptional set is the DIAGONAL) |
+| `exists_projMulOfCoordsTwo` | PROVEN (the gluing, over the two-law cover) |
 
 `projMulCoords_unit` (`m(O, Q) = Q` at a `K`-point, by cases on `Q z`) and
 `projMulCoords_inv` (`m(-P, P) = O` at a `K`-point, by cases on `dblZ P`) were
-two more until 2026-07-27 and are now **PROVEN**.
+two more until 2026-07-27 and are also **PROVEN**.
 
 A further one, `WeierstrassCurve.Projective.equation_addXYZ` (the polynomial
 certificate `W(add…) ∈ (W(P), W(Q))` over an arbitrary commutative ring), was
-also cut out and is now PROVEN, in
+also cut out and is PROVEN, in
 `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveAddition.lean`;
 that module now also DEFINES the second Bosma–Lenstra law `add2XYZ` — the law
 of the line `Y = 0`, computed there and validated against Renes–Costello–
-Batina's published short-Weierstrass form — with `equation_add2XYZ` and the
-two proportionality lemmas `add2X_mul_addZ` / `add2Y_mul_addZ` as its leaves.
+Batina's published short-Weierstrass form.  Its leaves `equation_add2XYZ`,
+`add2X_mul_addZ` and `add2Y_mul_addZ` are PROVEN too; that sibling cluster's one
+remaining leaf is `idl_isPrime` in `ProjectiveEquationAdd2.lean` (primality of the
+universal addition ideal — a non-zerodivisor statement about `addZ` would close it
+just as well, see its docstring).
 
 ## THE STATEMENT NOW PUBLISHES A CHART DESCRIPTION OF `m`
 
 (Cut-level call by the orchestrator, 2026-07-27, and it is the first
 conjunct.)  The old existential said only `∃ m, hcomm ∧ hunit ∧ hinv`,
 which pins NOTHING about the witness — so no consumer could compute with
-it, and in particular `projMul_assoc` could not be specialised to it and
+it, and in particular associativity could not be specialised to it and
 the chart-wise `linear_combination` route to associativity stayed
-unavailable to the whole tree.  The first conjunct fixes that: it says
+unavailable to the whole tree.  (This is the observation that eventually
+retired the abstract route altogether: once the chart clauses are published,
+`projMul_assoc_of_isProjMulLaw` reads associativity off the `K`-point
+dictionary, and the loop-level `projMul_assoc` was deleted on 2026-07-30.)
+The first conjunct fixes that: it says
 that on any test scheme carrying coordinate data for the two arguments,
 `m` is given by the chord–tangent triple wherever that triple is
 non-degenerate.  That is exactly the certificate a chart-wise
@@ -7426,7 +6517,8 @@ diagonal as the exceptional set:
   `exists_projMulOfCoords`, where both laws are in scope.
 
 `hassoc` is not a chart identity at all and is split off into
-`projMul_assoc`.
+`projMul_assoc_of_isProjMulLaw` (which nonetheless takes the two chart clauses as
+hypotheses — that is what made it cheap).
 
 ## The formulas: both laws are now explicit
 
@@ -7656,7 +6748,9 @@ from it (see `nonempty_projGroupLaw`).
 * `hm`, `he`, `hi` are **free over this base** (`hom_ext_spec_rat`): each
   is an equation between morphisms whose target is `Spec ℚ`, and a scheme
   has at most one morphism to `Spec ℚ`.
-* `hassoc` is **no longer here at all** — see `projMul_assoc`. -/
+* `hassoc` is **no longer here at all** — see `projMul_assoc_of_isProjMulLaw`, which
+  takes the two chart clauses THIS theorem publishes and is therefore available to
+  every consumer of it. -/
 theorem exists_projMul (E : WeierstrassCurve ℚ) [E.IsElliptic] :
     ∃ m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E,
       (∀ (X : Scheme.{0}) (c d : ProjCoords E X)
@@ -7739,164 +6833,302 @@ abbrev IsProjMulLaw2 (E : WeierstrassCurve ℚ) [E.IsElliptic]
       (h : Ideal.span (Set.range (add2XYZ (E.map c.base) c.coord d.coord)) = ⊤),
     Limits.pullback.lift c.toHom d.toHom (hom_ext_spec_rat _ _) ≫ m = (c.add2 d h).toHom
 
-/-- **Associativity of any commutative unital multiplication with
-`projNeg`-inverses on the projective Weierstrass model** (PROVEN from
-`geometricallyReduced_projToSpec` and `projMul_assoc_pt`, whose own
-residue is now `exists_projPtAddEquiv_algClosed` — the ABSTRACT half of
-the old `exists_projAdd`).
+open _root_.WeierstrassCurve.Projective (proj projToSpec projInfty projNeg add2XYZ) in
+/-- **THE DIAGONAL: under the dictionary, `m` DOUBLES** (**PROVEN 2026-07-28**; cut the
+same day out of `specPointEquiv_symm_add_eq_projMulPt` below, and it was the whole residue
+of that leaf).
 
-## FAITHFULNESS AUDIT: why this is TRUE for an arbitrary such `m`
+The docstring of the consumer already says why the diagonal is the only residue: off the
+diagonal the conclusion is `hlaw` verbatim, because `Ideal.span (Set.range (addXYZ …)) = ⊤`
+holds exactly when the two coordinate data are inequivalent
+(`ProjCoords.exists_units_smul_of_addXYZ_not_span` one way,
+`ProjCoords.addXYZ_eq_zero_of_equiv` the other), and there mathlib's `toAffine_add`
+finishes.  **On the diagonal `hlaw` says nothing at all**, and this leaf is exactly what it
+does not say.
 
-The hypotheses do not obviously pin `m` down, so the first question is
-whether the statement is false.  It is not, and the reason is Milne,
-*Abelian Varieties* I, Corollary 2.5: for complete varieties `V`, `W`
-with rational points and `A` an abelian variety, every morphism
-`h : V × W → A` with `h(v₀, w₀) = 0` is uniquely `f ∘ p + g ∘ q`.
-Applied to `V = W = A = E` over `ℚ̄` this says every morphism
-`E × E → E` has the form `(P, Q) ↦ φ(P) + ψ(Q) + c`.  The unit law
-`m(O, Q) = Q` forces `ψ = id` and `φ(O) + c = 0`; the unit law in the
-other argument — which follows here from `hcomm` — forces `φ = id` and
-`c = 0`.  So `m` *is* the classical group law on `ℚ̄`-points, hence
-associative.  `E` really is an abelian variety, so the appeal is sound.
+## WHY IT IS TRUE, AND WHAT THE ROUTE ACTUALLY COSTS
 
-**But that argument is not available inside the formalization**, because
-it presupposes the group structure this node is constructing.  It settles
-faithfulness only; it is not a proof route.
+`m` IS pinned on the diagonal, but not pointwise: `proj E ×_ℚ proj E` is integral and
+`proj E` is separated, the non-degeneracy locus of the standard law is the complement of
+the diagonal hence a DENSE open, so any two morphisms satisfying `IsProjMulLaw E` agree —
+`ext_of_fromSpecResidueField_eq` run over that open rather than over `Set.univ` is the
+mechanism, and it is the same tool `exists_projMul` uses for `hcomm`.  So the value
+`m(x, x)` is determined by `hlaw`.
 
-## ROUTE AUDIT (2026-07-27), correcting the previous one
+**But density alone does not COMPUTE it**, and that is the honest statement of the cost:
+it reduces this leaf to the same statement for the CONSTRUCTED `m` of
+`exists_projMulOfCoords`, whose diagonal value is given by the second Bosma–Lenstra
+addition law — the `(0, 1, 0)` law, non-degenerate exactly on the diagonal, whose formulas
+are recorded in full (with their Magma regeneration recipe) in the docstring of
+`exists_projMul` above.  Equivalently, in mathlib's vocabulary, `Projective.add P P` is
+`dblXYZ P` (`add_self`), and `toAffine_add` applies to it verbatim.
 
-The previous audit named "a rigidity / theorem-of-the-cube route
-deriving `hassoc` from the other three axioms plus properness, without
-touching points at all" as the promising unsearched axis.  **That axis was
-searched and it does not close as stated.**  Milne I.2.1 (Rigidity) says:
-if `V` is complete and `f : V × W → U` is constant on `V × {w₀}` and on
-`{v₀} × W`, then `f` is constant.  Every corollary that turns this into a
-statement about a multiplication — I.2.2 (a morphism is a homomorphism up
-to translation), I.2.4 (commutativity), I.2.5 above — forms the
-*difference* of two morphisms and therefore **presupposes the group law
-on the target**.  To prove `hassoc` one would apply rigidity to
-`φ(x, y, z) = m(m(x, y), z) − m(x, m(y, z))`, and that subtraction is
-precisely what is not yet available.  So rigidity does not bootstrap
-associativity out of unitality; something else must pin `m` first.
-*Refuting check*: find a statement of the rigidity lemma, or of the
-theorem of the cube, whose target is a bare proper variety rather than a
-group object — Milne I.2, Mumford *AV* §II.4 and Debarre's notes all
-require the group.
+**DISCHARGED 2026-07-28 — and NOT by density.**  The route above was priced correctly and
+was still the wrong one to take: the cut-level suggestion below was followed instead, and
+it cost nothing.  What is recorded here is the reason.
 
-That leaves two routes, and the next owner should pick one deliberately:
+## THE ROUTE TAKEN: the SECOND chart clause, which was already being thrown away
 
-* **The density route.**  `A ×_ℚ A ×_ℚ A` is reduced and of finite type
-  over `ℚ` (characteristic `0`, and `Δ ≠ 0` makes the fibre a smooth
-  curve), so it suffices to prove the two composites agree on
-  `ℚ̄`-points, where the statement is `add_assoc` in mathlib's
-  `WeierstrassCurve.Affine.Point` — already an `AddCommGroup`.  The
-  missing input is a scheme-morphism ext lemma: *two morphisms from a
-  reduced finite-type `ℚ`-scheme into `proj E` that agree on `ℚ̄`-points
-  are equal*.  *Refuting check*: grep mathlib for a morphism ext lemma
-  over closed points of a Jacobson base.  This route needs the
-  `ℚ̄`-point description of `m`, which is the business of the sibling
-  leaf `exists_projGeomFibreAddEquiv` — so the two are naturally worked
-  together, and a prompt sending an owner here should say so.
-* **Chart-wise associativity.**  Verify the identity directly between the
-  bihomogeneous forms on the triple product cover.  This needs no new
-  theory at all, only a large `linear_combination` certificate modulo
-  `(W(P), W(Q), W(R))` obtainable from `Singular`/`Magma`, and it is
-  independent of the density statement.  It is the brute-force route and
-  it is probably the cheaper one.
+The suggestion below asked the owner of `exists_projMulOfCoords` for a second chart clause
+phrased in mathlib's `dblXYZ`.  It turned out no new clause had to be *proved* at all:
+`exists_projMulOfCoordsTwo` — the gluing, one level up — already produces the FULL second
+Bosma–Lenstra clause for every test scheme, and `exists_projMulOfCoords` was simply
+discarding it with the `⟨m, hlaw, ?_, ?_⟩` of its own proof.  Publishing it is a
+three-character change (`hlaw2` into the tuple), and `exists_projMul` propagates it the
+same way.  That clause is now `IsProjMulLaw2`, and it is this leaf's `hlaw2`.
 
-Note that this leaf is stated for an ARBITRARY `m` satisfying the three
-chart axioms rather than for the witness produced by `exists_projMul`.
-That is deliberate: it keeps the two halves independently dispatchable.
-An owner who finds the abstract form intractable may legitimately propose
-folding this back into `exists_projMul`, where the charts are in scope —
-that is a cut-level change and should be reported, not made silently.
+Phrasing it in `add2XYZ` rather than in `dblXYZ` is what makes it free: `add2XYZ` is what
+the gluing has in hand, `dblXYZ` is what mathlib's `toAffine_add` wants, and the bridge
+between them is the ring identity `projAdd2XYZ_self`,
 
-## ROUTE AUDIT (2026-07-27, second correction): the CHART-WISE route does NOT
-## apply to this leaf, and the audit above is wrong about that
+    add2XYZ W' P P = (-1) • dblXYZ W' P     modulo  W(P) = 0,
 
-The audit above offers "chart-wise associativity … a large
-`linear_combination` certificate modulo `(W(P), W(Q), W(R))`" as the
-cheap brute-force alternative, and calls it "probably the cheaper one".
-**It is not available here at all.**  `m` is universally quantified: it
-is an arbitrary morphism satisfying `hcomm`/`hunit`/`hinv`, and it comes
-with NO charts and NO polynomial forms.  There is nothing for a CAS to
-certify, because there are no polynomials in the hypotheses.  The
-chart-wise route is a route for `exists_projMul`'s specific witness, and
-it becomes available for this statement only under the cut-level change
-that folds the two halves back together.  *Refuting check*: read the
-binders of the statement below and look for any occurrence of `addX` /
-`addY` / `addZ`, or of any hypothesis that constrains `m` on a chart —
-there is none.
+three `linear_combination`s over integral degree-`1` cofactors found with `Singular`.  The
+`-1` is harmless — it is a unit, so `Point.toAffine_smul` absorbs it.
 
-So **exactly one route survives for the leaf as stated: density**, and
-this docstring's job is now to say how far it has been taken.
+## WHY DENSITY WAS NOT NEEDED, AND WHAT IT WOULD HAVE COST
 
-## WHAT IS DONE HERE, AND WHAT IS LEFT (2026-07-27)
+Everything the note above says about density is still TRUE: `m` really is pinned on the
+diagonal by `hlaw` alone, and `ext_of_fromSpecResidueField_eq` run over the complement of
+the diagonal really is the mechanism.  But that route needs integrality of
+`proj E ×_ℚ proj E` and the diagonal to be a PROPER closed subset — neither of which is in
+this file — and, having got the uniqueness, it would STILL have had to compute the value
+for the constructed `m`, i.e. it would still have needed `projAdd2XYZ_self`.  Density was
+therefore strictly extra work on top of the route actually taken, which is exactly what
+the note predicted; it is recorded here because "the leaf is true by density" is the sort
+of correct observation that can send an owner down the expensive path.
 
-The density route is no longer a plan; the assembly below is WRITTEN and
-compiles, and `projMul_assoc` is PROVEN from two named sub-leaves.  The
-ext lemma the previous audit listed as "the missing input" — *two
-morphisms from a reduced finite-type `ℚ`-scheme into `proj E` that agree
-on `ℚ̄`-points are equal* — **is already in mathlib**, as
-`AlgebraicGeometry.ext_of_fromSpecResidueField_eq`
-(`Mathlib/AlgebraicGeometry/Morphisms/Separated.lean`):
+*What the hypothesis change costs the consumers*: nothing.  `hlaw2` is threaded through
+`specPointEquiv_symm_add_eq_projMulPt` and `exists_projMul_geomFibreEquivVal`, and at the
+one place where those are assembled (`exists_projGroupLaw_geomFibreEquivVal`) the witness
+comes from `exists_projMul`, which now publishes it. -/
+theorem specPointEquiv_symm_add_self_eq_projMulPt {E : WeierstrassCurve ℚ} [E.IsElliptic]
+    {K : Type} [Field K] [DecidableEq K] (f : ℚ →+* K)
+    (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E) (_hlaw : IsProjMulLaw E m)
+    (hlaw2 : IsProjMulLaw2 E m)
+    (x : (E.map f).toAffine.Point) :
+    (ProjCoords.specPointEquiv f).symm (x + x) =
+      projMulPt E m ((ProjCoords.specPointEquiv f).symm x)
+        ((ProjCoords.specPointEquiv f).symm x) := by
+  classical
+  obtain ⟨c, rfl⟩ := ProjCoords.exists_affinePoint_eq f x
+  have hR : _root_.IsField Γ(Spec (CommRingCat.of K), ⊤) :=
+    (ProjCoords.gammaSpecEquiv K).toMulEquiv.isField (Field.toIsField K)
+  have hΔ : IsUnit (E.map c.base).Δ := by
+    rw [WeierstrassCurve.map_Δ]; exact E.isUnit_Δ.map c.base
+  have h2 : Ideal.span (Set.range (add2XYZ (E.map c.base) c.coord c.coord)) = ⊤ :=
+    projSpan_add2XYZ_self_eq_top hR (E.map c.base) hΔ c.equation c.span_coord
+  rw [← ProjCoords.affinePoint_add2_self f c h2, ProjCoords.specPointEquiv_symm_affinePoint,
+    ProjCoords.specPointEquiv_symm_affinePoint]
+  exact (hlaw2 _ c c h2).symm
 
-    lemma ext_of_fromSpecResidueField_eq (f g : X ⟶ Y) (i : Y ⟶ Z)
-      [IsSeparated i] [IsReduced X] (S : Set X) (hS' : Dense S)
-      (H : ∀ x ∈ S, X.fromSpecResidueField x ≫ f = X.fromSpecResidueField x ≫ g)
-      (H' : f ≫ i = g ≫ i) : f = g
+open _root_.WeierstrassCurve.Projective (proj projToSpec projInfty projNeg) in
+/-- **ADDITIVITY: under the dictionary, `m` IS the addition of `E(K)`** (**FULLY PROVEN
+2026-07-28**: the off-diagonal half from `hlaw`, the diagonal half from `hlaw2` through
+`specPointEquiv_symm_add_self_eq_projMulPt` immediately above, which is now proven too.
+It was introduced 2026-07-27 as the first clause of `exists_projMul_geomFibreEquivVal`).
 
-That is a strictly better instrument than the one the audit asked for:
-it wants agreement at RESIDUE FIELDS of a dense set of points, which
-subsumes closed points and needs no Jacobson-base argument, and `S` may
-be taken to be `Set.univ`.  Its three side conditions all discharge here:
+This is the whole geometric content of that clause, stated against the DATA
+`ProjCoords.specPointEquiv` rather than against an existentially bound bijection — which
+is exactly what the "ONE DICTIONARY" analysis says is required, and what makes the
+statement true rather than false for a badly chosen bijection.
 
-* `IsSeparated (projToSpec E)` — free, since `IsProper` *extends*
-  `IsSeparated` and `isProper_projToSpec` is PROVEN above;
-* `H'` — free, by `hom_ext_spec_rat`, the target being `Spec ℚ`;
-* `IsReduced` of the threefold product — `isReduced_triProd_proj` below.
+**`hlaw` is load-bearing**: for an arbitrary morphism `m` the conclusion is false.
 
-What is left is therefore exactly ONE thing (2026-07-27, updated the same
-day): `exists_projPtAddEquiv_algClosed`, the ALGEBRAIC `K`-point
-dictionary.  `projMul_assoc_pt` and `projMul_assoc_pt_algClosed` — the
-"genuine Milne content", stated as plain associativity of the operation
-`m` induces on `K`-points — are now both PROVEN from it, the second by
-`commLoop_eq_add_of_addHom` and the first by descent.  The other item
-this list used to name, `geometricallyReduced_projToSpec`, is PROVEN — it
-was a general `Smooth → GeometricallyReduced` gap in mathlib, and it has
-been filled in
-`Fermat/FLT/Mathlib/AlgebraicGeometry/Morphisms/SmoothReduced.lean`. -/
-theorem projMul_assoc (E : WeierstrassCurve ℚ) [E.IsElliptic]
+## Route, and where the residue really is
+
+Read at a pair of coordinate data `c, d` over `Spec K`:
+
+* **off the diagonal** the conclusion is `hlaw` verbatim.  `hlaw` says
+  `pullback.lift c.toHom d.toHom _ ≫ m = (c.add d h).toHom` whenever
+  `addXYZ (E.map c.base) c.coord d.coord` spans the unit ideal, and `c.add d h` has
+  `coordField = addXYZ (coordField c) (coordField d)`, whose affine point is
+  `affinePoint c + affinePoint d` by mathlib's `Projective.Point.toAffine_add`.  So this
+  half is a rewrite, not mathematics;
+* **on the diagonal** `hlaw` says NOTHING.  Over a field the chord–tangent triple
+  degenerates exactly where `d = u • c` (`ProjCoords.exists_units_smul_of_addXYZ_not_span`),
+  i.e. exactly at `x = y`, and there the standard law gives the zero triple.  So the
+  doubling `m(x, x)` is not pinned by `hlaw` pointwise and has to be obtained by DENSITY:
+  `proj E ×_ℚ proj E` is integral (`geometricallyConnected_projToSpec` +
+  `geometricallyReduced_projToSpec` give integrality of `proj E`, and the diagonal is a
+  proper closed subset), `proj E` is separated, so two morphisms agreeing on a dense open
+  agree.  `ext_of_fromSpecResidueField_eq` — the same tool `exists_projMul` uses to get
+  `hcomm` — is the mechanism, run over the complement of the diagonal rather than over
+  `Set.univ`.
+
+**So an owner of this leaf should expect the work to be entirely on the diagonal**, and
+should not re-derive the off-diagonal half.
+
+**DISCHARGED 2026-07-28, exactly as this note prescribes.**  The off-diagonal half is
+proven below out of `ProjCoords.affinePoint_add` (which is `map_addXYZ` +
+`add_of_not_equiv` + `Projective.Point.toAffine_add`, and its non-degeneracy side
+condition is supplied by `ProjCoords.addXYZ_eq_zero_of_equiv`); the diagonal half is
+`specPointEquiv_symm_add_self_eq_projMulPt` immediately above.
+
+**AND THE DIAGONAL HALF IS NOW PROVEN TOO (2026-07-28), which CORRECTS the analysis
+above.**  The paragraph above says the doubling "has to be obtained by DENSITY".  That is
+true of what `hlaw` alone can pin, and it is NOT what happened: the second Bosma–Lenstra
+law is non-degenerate exactly on the diagonal, `exists_projMulOfCoordsTwo` was already
+proving the corresponding chart clause for every test scheme, and `exists_projMulOfCoords`
+was merely discarding it.  Publishing it (now `IsProjMulLaw2`, taken here as `hlaw2`) made
+the diagonal half the SAME three-line rewrite as the off-diagonal one, over
+`ProjCoords.affinePoint_add2_self` and the ring identity `projAdd2XYZ_self`.  No
+integrality of `proj E ×_ℚ proj E`, no closedness of the diagonal, no
+`ext_of_fromSpecResidueField_eq` over a dense open.
+
+So read the density paragraph as a faithfulness argument — it is why the statement is
+TRUE for an arbitrary `hlaw`-morphism — and not as a route. -/
+theorem specPointEquiv_symm_add_eq_projMulPt {E : WeierstrassCurve ℚ} [E.IsElliptic]
+    {K : Type} [Field K] [DecidableEq K] (f : ℚ →+* K)
+    (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E) (hlaw : IsProjMulLaw E m)
+    (hlaw2 : IsProjMulLaw2 E m)
+    (x y : (E.map f).toAffine.Point) :
+    (ProjCoords.specPointEquiv f).symm (x + y) =
+      projMulPt E m ((ProjCoords.specPointEquiv f).symm x)
+        ((ProjCoords.specPointEquiv f).symm y) := by
+  classical
+  obtain ⟨c, rfl⟩ := ProjCoords.exists_affinePoint_eq f x
+  obtain ⟨d, rfl⟩ := ProjCoords.exists_affinePoint_eq f y
+  by_cases h : Ideal.span (Set.range (WeierstrassCurve.Projective.addXYZ
+      (E.map c.base) c.coord d.coord)) = ⊤
+  · rw [← ProjCoords.affinePoint_add f c d h, ProjCoords.specPointEquiv_symm_affinePoint,
+      ProjCoords.specPointEquiv_symm_affinePoint, ProjCoords.specPointEquiv_symm_affinePoint]
+    exact (hlaw _ c d h).symm
+  · have hcd : c.toHom = d.toHom :=
+      ProjCoords.toHom_eq_of_addXYZ_not_span (K := CommRingCat.of K) (Field.toIsField K) c d h
+    have hpt : ProjCoords.affinePoint f c = ProjCoords.affinePoint f d :=
+      ProjCoords.affinePoint_eq_of_toHom_eq f c d hcd
+    rw [← hpt]
+    exact specPointEquiv_symm_add_self_eq_projMulPt f m hlaw hlaw2 (ProjCoords.affinePoint f c)
+
+/-! ### ASSOCIATIVITY FROM THE DICTIONARY, not from Silverman III.4.7/4.8
+
+**(2026-07-29.)  This block replaces the entire `exists_projPtAddEquiv_algClosed` /
+`projMul_assoc_pt_algClosed` / Silverman-III.4.8 route to `hassoc`, and it is the reason
+`projFibreEndFun_add_sub_zero` — a genuine divisor-theory build (`Pic⁰`, pushforward of
+principal divisors, `div f` as a cycle: none of it in mathlib or in `~/cs/FLT`) — has been
+DELETED rather than owned.**
+
+The old architecture was designed on 2026-07-27, when the only thing known about `m` at a
+`K`-point was the loop structure `hcomm`/`hunit`/`hinv`.  From those three alone
+associativity really is Milne/Silverman-hard: one has to prove that every scheme morphism
+`A_K ⟶ A_K` acts affinely on `K`-points (III.4.7/4.8), feed that to
+`commLoop_eq_add_of_addHom`, and only then get `add_assoc`.
+
+**The dictionary, finished 2026-07-28, makes all of that unnecessary.**
+`specPointEquiv_symm_add_eq_projMulPt` immediately above says that for an `m` satisfying
+the two chart clauses, the operation `projMulPt E m` induced on `K`-points is *literally
+transported* mathlib's addition on `(E.map f).toAffine.Point`:
+
+    projMulPt E m A B = e.symm (e A + e B),        e := ProjCoords.specPointEquiv f
+
+and `(E.map f).toAffine.Point` is an `AddCommGroup`.  Associativity is then `add_assoc`
+under a bijection — ten lines, no algebraic geometry at all.  The one thing that had to be
+supplied is `f : ℚ →+* K`, and a `K`-point of `proj E` manufactures it
+(`ProjCoords.exists_of_specField` plus `ProjCoords.gammaSpecEquiv`), exactly as
+`exists_projPtAddEquiv_algClosed` used to do.
+
+*What this costs*: `hassoc` is now available only for an `m` that satisfies the CHART
+clauses, not for an arbitrary loop.  That is precisely the cut-level change the old
+`projMul_assoc` docstring anticipated and licensed ("An owner who finds the abstract form
+intractable may legitimately propose folding this back into `exists_projMul`, where the
+charts are in scope").  It costs the only consumer, `exists_projAdd`, nothing whatsoever:
+its `m` comes from `exists_projMul`, which publishes `hlaw` and `hlaw2` already.
+
+*What is NOT claimed*: the old `projMul_assoc` — associativity of an ARBITRARY commutative
+unital `m` with `projNeg`-inverses — is still TRUE (the Milne argument recorded there is
+sound).  It is not refuted, it is unused, and nothing in the tree needs it. -/
+
+/-- **Associativity of the induced operation on `K`-points, from the DICTIONARY**
+(PROVEN 2026-07-29).
+
+`ProjCoords.specPointEquiv f` transports `projMulPt E m` to mathlib's addition on
+`(E.map f).toAffine.Point` (`specPointEquiv_symm_add_eq_projMulPt`), so this is `add_assoc`
+conjugated by a bijection.
+
+`K` is an arbitrary field and needs no algebraic-closedness, no `2`-divisibility and no
+characteristic guard: the three points are given, and a `K`-point of `proj E` forces the
+ring map `f : ℚ →+* K` that the dictionary needs. -/
+theorem projMul_assoc_pt_of_isProjMulLaw (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
-    (hcomm : Limits.pullback.lift (Limits.pullback.snd (projToSpec E) (projToSpec E))
-      (Limits.pullback.fst (projToSpec E) (projToSpec E))
-      Limits.pullback.condition.symm ≫ m = m)
-    (hunit : Limits.pullback.lift (projToSpec E ≫ projInfty E) (𝟙 (proj E))
-      (hom_ext_spec_rat _ _) ≫ m = 𝟙 (proj E))
-    (hinv : Limits.pullback.lift (projNeg E) (𝟙 (proj E))
-      (hom_ext_spec_rat _ _) ≫ m = projToSpec E ≫ projInfty E) :
+    (hlaw : IsProjMulLaw E m) (hlaw2 : IsProjMulLaw2 E m)
+    (K : Type) [Field K] (P Q R : Spec (CommRingCat.of K) ⟶ proj E) :
+    projMulPt E m (projMulPt E m P Q) R = projMulPt E m P (projMulPt E m Q R) := by
+  classical
+  obtain ⟨c₀, -⟩ := ProjCoords.exists_of_specField E (CommRingCat.of K) (Field.toIsField K) P
+  set f : ℚ →+* K := (ProjCoords.gammaSpecEquiv K).toRingHom.comp c₀.base with hf
+  set e := ProjCoords.specPointEquiv (E := E) f with he
+  have key : ∀ A B : Spec (CommRingCat.of K) ⟶ proj E,
+      projMulPt E m A B = e.symm (e A + e B) := by
+    intro A B
+    have h := specPointEquiv_symm_add_eq_projMulPt (E := E) f m hlaw hlaw2 (e A) (e B)
+    rw [he] at h ⊢
+    rw [Equiv.symm_apply_apply, Equiv.symm_apply_apply] at h
+    exact h.symm
+  rw [key (projMulPt E m P Q) R, key P (projMulPt E m Q R), key P Q, key Q R,
+    Equiv.apply_symm_apply, Equiv.apply_symm_apply, add_assoc]
+
+/-- **Associativity at the residue field of every point of the threefold product**
+(PROVEN 2026-07-29 from `projMul_assoc_pt_of_isProjMulLaw`) — the `H` hypothesis of
+`ext_of_fromSpecResidueField_eq`, read at `S = Set.univ`.
+
+The residue field of a point of a `ℚ`-scheme is a field, so the point-level statement
+applies verbatim; the only work is `comp_triAddLeft_proj`/`comp_triAddRight_proj`, which
+say that the two composites are the two bracketings of the induced operation on the three
+projections. -/
+theorem projMul_assoc_residueField_of_isProjMulLaw (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
+    (hlaw : IsProjMulLaw E m) (hlaw2 : IsProjMulLaw2 E m)
+    (x : AbelianSchemeStruct.triProd (projToSpec E)) :
+    (AbelianSchemeStruct.triProd (projToSpec E)).fromSpecResidueField x ≫
+        AbelianSchemeStruct.triAddLeft (projToSpec E) m (hom_ext_spec_rat _ _) =
+      (AbelianSchemeStruct.triProd (projToSpec E)).fromSpecResidueField x ≫
+        AbelianSchemeStruct.triAddRight (projToSpec E) m (hom_ext_spec_rat _ _) := by
+  rw [comp_triAddLeft_proj, comp_triAddRight_proj]
+  exact projMul_assoc_pt_of_isProjMulLaw E m hlaw hlaw2 _ _ _ _
+
+/-- **ASSOCIATIVITY of the chord–tangent multiplication, as morphisms of schemes**
+(PROVEN 2026-07-29) — the density route, but with the point-level input supplied by the
+dictionary rather than by Silverman *AEC* III.4.7/4.8.
+
+The three side conditions of `AlgebraicGeometry.ext_of_fromSpecResidueField_eq` discharge
+exactly as they did for the old `projMul_assoc`: `IsSeparated (projToSpec E)` from
+`isProper_projToSpec`, `IsReduced` of the threefold product from `isReduced_triProd_proj`,
+and `H'` from `hom_ext_spec_rat` since the base is `Spec ℚ`.  Only the `H` hypothesis
+changed hands. -/
+theorem projMul_assoc_of_isProjMulLaw (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
+    (hlaw : IsProjMulLaw E m) (hlaw2 : IsProjMulLaw2 E m) :
     AbelianSchemeStruct.triAddLeft (projToSpec E) m (hom_ext_spec_rat _ _) =
       AbelianSchemeStruct.triAddRight (projToSpec E) m (hom_ext_spec_rat _ _) := by
   haveI := isProper_projToSpec E
   haveI := isReduced_triProd_proj E
   exact ext_of_fromSpecResidueField_eq _ _ (projToSpec E) Set.univ dense_univ
-    (fun x _ => projMul_assoc_residueField E m hcomm hunit hinv x) (hom_ext_spec_rat _ _)
+    (fun x _ => projMul_assoc_residueField_of_isProjMulLaw E m hlaw hlaw2 x)
+    (hom_ext_spec_rat _ _)
 
 /-- **The chord–tangent addition on the projective Weierstrass model**
-(PROVEN from `exists_projMul` and `projMul_assoc`) — what is left of
-items 5+6 once the inversion `i`, the unit section `e` and the three
+(PROVEN from `exists_projMul` and `projMul_assoc_of_isProjMulLaw`) — what is
+left of items 5+6 once the inversion `i`, the unit section `e` and the three
 structure-morphism compatibilities have been discharged; see
 `nonempty_projGroupLaw` for the assembly.
 
 The cut is between the two halves that need completely different
-machinery, and it is why they are separate leaves: `exists_projMul` is
+machinery, and it is why they were separate leaves: `exists_projMul` is
 scheme-theoretic gluing (an open cover of `A ×_ℚ A`, the two
 Bosma–Lenstra addition laws, and a missing congruence lemma for
-`Proj.fromOfGlobalSections`), while `projMul_assoc` is the one axiom that
-is not a chart identity and needs either a density statement about
-`ℚ̄`-points or a large polynomial certificate.  Nothing is lost or
+`Proj.fromOfGlobalSections`), while associativity is the one axiom that
+is not a chart identity.  Nothing is lost or
 weakened by the split: the conjunction of the two is exactly this
-statement. -/
+statement.
+
+*Both halves are now PROVEN.*  Associativity used to be the expensive one — it was
+priced at "either a density statement about `ℚ̄`-points or a large polynomial
+certificate", and the route actually built for it, `projMul_assoc` over Silverman
+*AEC* III.4.8, needed a `Pic⁰` theory nobody had.  It turned out to cost neither:
+`projMul_assoc_of_isProjMulLaw` takes the two chart clauses `exists_projMul`
+publishes and reads associativity off the `K`-point dictionary as `add_assoc` under a
+bijection.  The whole III.4.8 chain was DELETED on 2026-07-30. -/
 theorem exists_projAdd (E : WeierstrassCurve ℚ) [E.IsElliptic] :
     ∃ m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E,
       AbelianSchemeStruct.triAddLeft (projToSpec E) m (hom_ext_spec_rat _ _) =
@@ -7908,23 +7140,25 @@ theorem exists_projAdd (E : WeierstrassCurve ℚ) [E.IsElliptic] :
               (hom_ext_spec_rat _ _) ≫ m = 𝟙 (proj E) ∧
           Limits.pullback.lift (projNeg E) (𝟙 (proj E))
               (hom_ext_spec_rat _ _) ≫ m = projToSpec E ≫ projInfty E := by
-  obtain ⟨m, -, hcomm, hunit, hinv, -⟩ := exists_projMul E
-  exact ⟨m, projMul_assoc E m hcomm hunit hinv, hcomm, hunit, hinv⟩
+  obtain ⟨m, hlaw, hcomm, hunit, hinv, hlaw2⟩ := exists_projMul E
+  exact ⟨m, projMul_assoc_of_isProjMulLaw E m hlaw hlaw2, hcomm, hunit, hinv⟩
 
 /-- **The chord–tangent law on the projective Weierstrass model, as
-morphisms of schemes** (REDUCED to `exists_projAdd`, not closed) — items 5+6
+morphisms of schemes** (PROVEN from `exists_projAdd`) — items 5+6
 of the routable specification in `exists_ellipticScheme_of_weierstrass`'s
 docstring.
 
-**This declaration carries no `sorry` of its own but is transitively
-sorried**, because `exists_projAdd` is proven from `projMul_assoc` (itself
-now reduced to `exists_projPtAddEquiv_algClosed` alone,
-`geometricallyReduced_projToSpec` and both `projMul_assoc_pt*` leaves
-having been closed) and from the still-open `exists_projMul`.  It is a reduction, not a result; the
-remaining work is on those leaves.
+**Status corrected 2026-07-30.**  This paragraph used to read "carries no `sorry` of
+its own but is transitively sorried, because `exists_projAdd` is proven from
+`projMul_assoc` … and from the still-open `exists_projMul`".  Both named leaves are
+PROVEN, and `projMul_assoc` no longer exists — see the module header, which records the
+module's whole direct frontier as ONE warning, unrelated to this cluster.  Whether this
+declaration is still TRANSITIVELY sorried is a question about other modules (the nearest
+open leaf under it is `idl_isPrime` in `ProjectiveEquationAdd2.lean`) and only the census
+answers it; do not dispatch anyone at the names in this docstring.
 
 The three data fields are supplied as follows.  `m` comes from
-`exists_projAdd`, which is where all the remaining gluing work lives.
+`exists_projAdd`, which is where the gluing lives.
 `e` and `i` are CONSTRUCTED rather than assumed: `projInfty E`, the point
 at infinity `[0 : 1 : 0]` via `Proj.fromOfGlobalSections`, and
 `projNeg E`, `Proj` of the graded automorphism `Y ↦ −Y − a₁X − a₃Z` of
@@ -9135,174 +8369,6 @@ noncomputable def ProjGroupLaw.geomFibreAddEquivOfVal {E : WeierstrassCurve ℚ}
       rw [hadd x y]
       exact (gl.addCommGroup_add_val (eqv x) (eqv y)).symm) }
 
-open _root_.WeierstrassCurve.Projective (proj projToSpec projInfty projNeg add2XYZ) in
-/-- **THE DIAGONAL: under the dictionary, `m` DOUBLES** (**PROVEN 2026-07-28**; cut the
-same day out of `specPointEquiv_symm_add_eq_projMulPt` below, and it was the whole residue
-of that leaf).
-
-The docstring of the consumer already says why the diagonal is the only residue: off the
-diagonal the conclusion is `hlaw` verbatim, because `Ideal.span (Set.range (addXYZ …)) = ⊤`
-holds exactly when the two coordinate data are inequivalent
-(`ProjCoords.exists_units_smul_of_addXYZ_not_span` one way,
-`ProjCoords.addXYZ_eq_zero_of_equiv` the other), and there mathlib's `toAffine_add`
-finishes.  **On the diagonal `hlaw` says nothing at all**, and this leaf is exactly what it
-does not say.
-
-## WHY IT IS TRUE, AND WHAT THE ROUTE ACTUALLY COSTS
-
-`m` IS pinned on the diagonal, but not pointwise: `proj E ×_ℚ proj E` is integral and
-`proj E` is separated, the non-degeneracy locus of the standard law is the complement of
-the diagonal hence a DENSE open, so any two morphisms satisfying `IsProjMulLaw E` agree —
-`ext_of_fromSpecResidueField_eq` run over that open rather than over `Set.univ` is the
-mechanism, and it is the same tool `exists_projMul` uses for `hcomm`.  So the value
-`m(x, x)` is determined by `hlaw`.
-
-**But density alone does not COMPUTE it**, and that is the honest statement of the cost:
-it reduces this leaf to the same statement for the CONSTRUCTED `m` of
-`exists_projMulOfCoords`, whose diagonal value is given by the second Bosma–Lenstra
-addition law — the `(0, 1, 0)` law, non-degenerate exactly on the diagonal, whose formulas
-are recorded in full (with their Magma regeneration recipe) in the docstring of
-`exists_projMul` above.  Equivalently, in mathlib's vocabulary, `Projective.add P P` is
-`dblXYZ P` (`add_self`), and `toAffine_add` applies to it verbatim.
-
-**DISCHARGED 2026-07-28 — and NOT by density.**  The route above was priced correctly and
-was still the wrong one to take: the cut-level suggestion below was followed instead, and
-it cost nothing.  What is recorded here is the reason.
-
-## THE ROUTE TAKEN: the SECOND chart clause, which was already being thrown away
-
-The suggestion below asked the owner of `exists_projMulOfCoords` for a second chart clause
-phrased in mathlib's `dblXYZ`.  It turned out no new clause had to be *proved* at all:
-`exists_projMulOfCoordsTwo` — the gluing, one level up — already produces the FULL second
-Bosma–Lenstra clause for every test scheme, and `exists_projMulOfCoords` was simply
-discarding it with the `⟨m, hlaw, ?_, ?_⟩` of its own proof.  Publishing it is a
-three-character change (`hlaw2` into the tuple), and `exists_projMul` propagates it the
-same way.  That clause is now `IsProjMulLaw2`, and it is this leaf's `hlaw2`.
-
-Phrasing it in `add2XYZ` rather than in `dblXYZ` is what makes it free: `add2XYZ` is what
-the gluing has in hand, `dblXYZ` is what mathlib's `toAffine_add` wants, and the bridge
-between them is the ring identity `projAdd2XYZ_self`,
-
-    add2XYZ W' P P = (-1) • dblXYZ W' P     modulo  W(P) = 0,
-
-three `linear_combination`s over integral degree-`1` cofactors found with `Singular`.  The
-`-1` is harmless — it is a unit, so `Point.toAffine_smul` absorbs it.
-
-## WHY DENSITY WAS NOT NEEDED, AND WHAT IT WOULD HAVE COST
-
-Everything the note above says about density is still TRUE: `m` really is pinned on the
-diagonal by `hlaw` alone, and `ext_of_fromSpecResidueField_eq` run over the complement of
-the diagonal really is the mechanism.  But that route needs integrality of
-`proj E ×_ℚ proj E` and the diagonal to be a PROPER closed subset — neither of which is in
-this file — and, having got the uniqueness, it would STILL have had to compute the value
-for the constructed `m`, i.e. it would still have needed `projAdd2XYZ_self`.  Density was
-therefore strictly extra work on top of the route actually taken, which is exactly what
-the note predicted; it is recorded here because "the leaf is true by density" is the sort
-of correct observation that can send an owner down the expensive path.
-
-*What the hypothesis change costs the consumers*: nothing.  `hlaw2` is threaded through
-`specPointEquiv_symm_add_eq_projMulPt` and `exists_projMul_geomFibreEquivVal`, and at the
-one place where those are assembled (`exists_projGroupLaw_geomFibreEquivVal`) the witness
-comes from `exists_projMul`, which now publishes it. -/
-theorem specPointEquiv_symm_add_self_eq_projMulPt {E : WeierstrassCurve ℚ} [E.IsElliptic]
-    {K : Type} [Field K] [DecidableEq K] (f : ℚ →+* K)
-    (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E) (_hlaw : IsProjMulLaw E m)
-    (hlaw2 : IsProjMulLaw2 E m)
-    (x : (E.map f).toAffine.Point) :
-    (ProjCoords.specPointEquiv f).symm (x + x) =
-      projMulPt E m ((ProjCoords.specPointEquiv f).symm x)
-        ((ProjCoords.specPointEquiv f).symm x) := by
-  classical
-  obtain ⟨c, rfl⟩ := ProjCoords.exists_affinePoint_eq f x
-  have hR : _root_.IsField Γ(Spec (CommRingCat.of K), ⊤) :=
-    (ProjCoords.gammaSpecEquiv K).toMulEquiv.isField (Field.toIsField K)
-  have hΔ : IsUnit (E.map c.base).Δ := by
-    rw [WeierstrassCurve.map_Δ]; exact E.isUnit_Δ.map c.base
-  have h2 : Ideal.span (Set.range (add2XYZ (E.map c.base) c.coord c.coord)) = ⊤ :=
-    projSpan_add2XYZ_self_eq_top hR (E.map c.base) hΔ c.equation c.span_coord
-  rw [← ProjCoords.affinePoint_add2_self f c h2, ProjCoords.specPointEquiv_symm_affinePoint,
-    ProjCoords.specPointEquiv_symm_affinePoint]
-  exact (hlaw2 _ c c h2).symm
-
-open _root_.WeierstrassCurve.Projective (proj projToSpec projInfty projNeg) in
-/-- **ADDITIVITY: under the dictionary, `m` IS the addition of `E(K)`** (**FULLY PROVEN
-2026-07-28**: the off-diagonal half from `hlaw`, the diagonal half from `hlaw2` through
-`specPointEquiv_symm_add_self_eq_projMulPt` immediately above, which is now proven too.
-It was introduced 2026-07-27 as the first clause of `exists_projMul_geomFibreEquivVal`).
-
-This is the whole geometric content of that clause, stated against the DATA
-`ProjCoords.specPointEquiv` rather than against an existentially bound bijection — which
-is exactly what the "ONE DICTIONARY" analysis says is required, and what makes the
-statement true rather than false for a badly chosen bijection.
-
-**`hlaw` is load-bearing**: for an arbitrary morphism `m` the conclusion is false.
-
-## Route, and where the residue really is
-
-Read at a pair of coordinate data `c, d` over `Spec K`:
-
-* **off the diagonal** the conclusion is `hlaw` verbatim.  `hlaw` says
-  `pullback.lift c.toHom d.toHom _ ≫ m = (c.add d h).toHom` whenever
-  `addXYZ (E.map c.base) c.coord d.coord` spans the unit ideal, and `c.add d h` has
-  `coordField = addXYZ (coordField c) (coordField d)`, whose affine point is
-  `affinePoint c + affinePoint d` by mathlib's `Projective.Point.toAffine_add`.  So this
-  half is a rewrite, not mathematics;
-* **on the diagonal** `hlaw` says NOTHING.  Over a field the chord–tangent triple
-  degenerates exactly where `d = u • c` (`ProjCoords.exists_units_smul_of_addXYZ_not_span`),
-  i.e. exactly at `x = y`, and there the standard law gives the zero triple.  So the
-  doubling `m(x, x)` is not pinned by `hlaw` pointwise and has to be obtained by DENSITY:
-  `proj E ×_ℚ proj E` is integral (`geometricallyConnected_projToSpec` +
-  `geometricallyReduced_projToSpec` give integrality of `proj E`, and the diagonal is a
-  proper closed subset), `proj E` is separated, so two morphisms agreeing on a dense open
-  agree.  `ext_of_fromSpecResidueField_eq` — the same tool `exists_projMul` uses to get
-  `hcomm` — is the mechanism, run over the complement of the diagonal rather than over
-  `Set.univ`.
-
-**So an owner of this leaf should expect the work to be entirely on the diagonal**, and
-should not re-derive the off-diagonal half.
-
-**DISCHARGED 2026-07-28, exactly as this note prescribes.**  The off-diagonal half is
-proven below out of `ProjCoords.affinePoint_add` (which is `map_addXYZ` +
-`add_of_not_equiv` + `Projective.Point.toAffine_add`, and its non-degeneracy side
-condition is supplied by `ProjCoords.addXYZ_eq_zero_of_equiv`); the diagonal half is
-`specPointEquiv_symm_add_self_eq_projMulPt` immediately above.
-
-**AND THE DIAGONAL HALF IS NOW PROVEN TOO (2026-07-28), which CORRECTS the analysis
-above.**  The paragraph above says the doubling "has to be obtained by DENSITY".  That is
-true of what `hlaw` alone can pin, and it is NOT what happened: the second Bosma–Lenstra
-law is non-degenerate exactly on the diagonal, `exists_projMulOfCoordsTwo` was already
-proving the corresponding chart clause for every test scheme, and `exists_projMulOfCoords`
-was merely discarding it.  Publishing it (now `IsProjMulLaw2`, taken here as `hlaw2`) made
-the diagonal half the SAME three-line rewrite as the off-diagonal one, over
-`ProjCoords.affinePoint_add2_self` and the ring identity `projAdd2XYZ_self`.  No
-integrality of `proj E ×_ℚ proj E`, no closedness of the diagonal, no
-`ext_of_fromSpecResidueField_eq` over a dense open.
-
-So read the density paragraph as a faithfulness argument — it is why the statement is
-TRUE for an arbitrary `hlaw`-morphism — and not as a route. -/
-theorem specPointEquiv_symm_add_eq_projMulPt {E : WeierstrassCurve ℚ} [E.IsElliptic]
-    {K : Type} [Field K] [DecidableEq K] (f : ℚ →+* K)
-    (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E) (hlaw : IsProjMulLaw E m)
-    (hlaw2 : IsProjMulLaw2 E m)
-    (x y : (E.map f).toAffine.Point) :
-    (ProjCoords.specPointEquiv f).symm (x + y) =
-      projMulPt E m ((ProjCoords.specPointEquiv f).symm x)
-        ((ProjCoords.specPointEquiv f).symm y) := by
-  classical
-  obtain ⟨c, rfl⟩ := ProjCoords.exists_affinePoint_eq f x
-  obtain ⟨d, rfl⟩ := ProjCoords.exists_affinePoint_eq f y
-  by_cases h : Ideal.span (Set.range (WeierstrassCurve.Projective.addXYZ
-      (E.map c.base) c.coord d.coord)) = ⊤
-  · rw [← ProjCoords.affinePoint_add f c d h, ProjCoords.specPointEquiv_symm_affinePoint,
-      ProjCoords.specPointEquiv_symm_affinePoint, ProjCoords.specPointEquiv_symm_affinePoint]
-    exact (hlaw _ c d h).symm
-  · have hcd : c.toHom = d.toHom :=
-      ProjCoords.toHom_eq_of_addXYZ_not_span (K := CommRingCat.of K) (Field.toIsField K) c d h
-    have hpt : ProjCoords.affinePoint f c = ProjCoords.affinePoint f d :=
-      ProjCoords.affinePoint_eq_of_toHom_eq f c d hcd
-    rw [← hpt]
-    exact specPointEquiv_symm_add_self_eq_projMulPt f m hlaw hlaw2 (ProjCoords.affinePoint f c)
-
 /-! ### GALOIS EQUIVARIANCE of the dictionary
 
 (Introduced 2026-07-27 as the second clause of `exists_projMul_geomFibreEquivVal`; this
@@ -9317,10 +8383,11 @@ mention any `AbelianSchemeStruct`), so the statement is exactly: the dictionary 
 *Route.*  Precomposing `c.toHom` with `Spec σ` is the coordinate datum whose coordinates
 are `σ` applied to `c`'s — that is `Γ(Spec σ) = σ` under `Scheme.ΓSpecIso` — and applying
 `σ` to a projective triple is `WeierstrassCurve.Affine.Point.map σ` under
-`Projective.Point.toAffine`.  The only missing ingredient is the SAME `Proj` congruence
-that `specPointEquiv_comp_projInfty_eq_zero` needs, namely naturality of
-`Proj.fromOfGlobalSections` in the source scheme; see the section header before
-`specPointEquiv_comp_projInfty_eq_zero` above, where it is stated.
+`Projective.Point.toAffine`.  The only missing ingredient is a `Proj` congruence, namely
+naturality of `Proj.fromOfGlobalSections` in the source scheme; it is stated in the
+section header "Corollaries of the two `Proj.fromOfGlobalSections` congruences" above.
+(It was shared with `specPointEquiv_comp_projInfty_eq_zero`, which was DELETED on
+2026-07-30 along with the abstract `K`-point dictionary.)
 
 **UPDATE 2026-07-28: that congruence is now PROVEN** (`ProjCoords.fromOfGlobalSections_comp`,
 read on a datum as `ProjCoords.comap_toHom`), and this leaf is discharged over it.  What is
@@ -9471,10 +8538,11 @@ chord–tangent clause, and it is the whole remaining content of item 8).
 
 `exists_projGroupLaw_geomFibreEquivVal` below used to carry this content
 directly, and had to produce a whole `ProjGroupLaw` — associativity
-included — in order to state it.  That was wasteful: `hassoc` is already
-reduced, for an ARBITRARY `m` carrying `hcomm`/`hunit`/`hinv`, by
-`projMul_assoc` (whose own residue is `projMul_assoc_pt`, the Milne
-content).  Splitting the associativity off is therefore free, and it is
+included — in order to state it.  That was wasteful: `hassoc` is available
+separately, and cheaply, from `projMul_assoc_of_isProjMulLaw` (as of 2026-07-30; it
+was `projMul_assoc`, for an ARBITRARY `m` carrying `hcomm`/`hunit`/`hinv`, whose own
+residue was the Milne-flavoured `projMul_assoc_pt` — that chain has been
+DELETED).  Splitting the associativity off is therefore free, and it is
 what the RESOLVING ROUTE recorded in
 `exists_projGroupLaw_geomFibreAddEquiv`'s docstring prescribes: state the
 chord–tangent clause in `hassoc`-free form, alongside the construction of
@@ -9550,9 +8618,11 @@ Three leaves in this file were the coordinate description of `Spec K ⟶ Proj �
 
 * THIS one, at `K = AlgebraicClosure ℚ`, carrying **Galois equivariance** and
   the **chord–tangent identity against the `m` it constructs**;
-* `exists_projPtAddEquiv_algClosed` above, for a general algebraically closed
+* `exists_projPtAddEquiv_algClosed`, for a general algebraically closed
   `K`, carrying **2-divisibility** and **algebraicity** (every scheme morphism
-  acts affinely on `K`-points — Silverman *AEC* III.4.7);
+  acts affinely on `K`-points — Silverman *AEC* III.4.7).  **DELETED 2026-07-30**:
+  its only purpose was to feed `projMul_assoc`, and associativity is now read
+  straight off `ProjCoords.specPointEquiv`, so neither it nor its clauses exist;
 * `ProjCoords.exists_of_specField`, the bare statement that every `Spec K`-point
   of `proj E` HAS homogeneous coordinates, true because `Pic (Spec K) = 0`.
 
@@ -9588,8 +8658,9 @@ content, cut into named leaves.  **Do not build a second dictionary.**
 
 ## CHARACTERISTIC GUARD — why this leaf does not need one
 
-`exists_projPtAddEquiv_algClosed` carries an explicit
-`hne : Nonempty (Spec K ⟶ proj E)` and is FALSE without it: `proj E` lies over
+The deleted `exists_projPtAddEquiv_algClosed` carried an explicit
+`hne : Nonempty (Spec K ⟶ proj E)` and was FALSE without it — the point is recorded
+because it applies to any future statement of that shape: `proj E` lies over
 `Spec ℚ`, so a `K`-point forces a ring map `ℚ → K`, and at `char K = p > 0`
 there is none — the point set is empty while every `AddCommGroup` contains `0`.
 **This leaf is immune**, and it is worth saying why rather than leaving it to
@@ -9636,7 +8707,8 @@ theorem exists_projMul_geomFibreEquivVal (E : WeierstrassCurve ℚ) [E.IsEllipti
 
 /-- **The projective Weierstrass model carries a group law whose geometric
 fibre IS `E(ℚ̄)`, equivariantly — the `hassoc`-FREE form** (PROVEN
-2026-07-27 from `exists_projMul_geomFibreEquivVal` and `projMul_assoc`;
+2026-07-27 from `exists_projMul_geomFibreEquivVal` and associativity — then
+`projMul_assoc`, since 2026-07-30 `projMul_assoc_of_isProjMulLaw`;
 it was the last open leaf of item 8 until then, and the geometric content
 has moved to that leaf).
 
@@ -9659,21 +8731,27 @@ statement over an arbitrary `ProjGroupLaw` needs the rigidity theorem.
 
 `exists_projAdd` was decomposed (branch `flt-lean-141`) into
 `exists_projMul` — which CONSTRUCTS `m` by gluing the chord–tangent forms
-— and `projMul_assoc`, which supplies `hassoc` for an ARBITRARY `m`.  The
+— and `projMul_assoc`, which supplied `hassoc` for an ARBITRARY `m`.  The
 chord–tangent clause needs the concrete glued `m` (only `exists_projMul`
-has it) *and*, in `≃+` form, `hassoc` (only available after
-`projMul_assoc`).  Stated in the `hassoc`-free form above it needs only
+has it) *and*, in `≃+` form, `hassoc` (only available after associativity).
+Stated in the `hassoc`-free form above it needs only
 the first — which is what makes the assembly below possible.
+
+*(Since 2026-07-30 associativity is `projMul_assoc_of_isProjMulLaw`, which takes the
+two chart clauses instead of quantifying over an arbitrary loop; the split above is
+unaffected, because `exists_projMul` publishes both clauses.)*
 
 **The assembly (2026-07-27, RECONCILED AT INTEGRATION).**  `exists_projMul`
 supplies `m` together with its `ProjCoords` law `hlaw` and
 `hcomm`/`hunit`/`hinv`/`hlaw2`; `exists_projMul_geomFibreEquivVal E m hlaw hlaw2` then
 supplies the chord–tangent clause for that same `m`;
-`projMul_assoc E m hcomm hunit hinv` supplies `hassoc`; and
+`projMul_assoc_of_isProjMulLaw E m hlaw hlaw2` supplies `hassoc` (it read
+`projMul_assoc E m hcomm hunit hinv` until 2026-07-30); and
 `projInfty E` / `projNeg E` / `hom_ext_spec_rat` supply the remaining six
 fields of `ProjGroupLaw`.  So this declaration carries no mathematical
-content: the geometry lives one level up, and the associativity lives in
-`projMul_assoc_pt`.
+content: the geometry lives one level up, and the associativity in the two
+dictionary identities `specPointEquiv_symm_add_eq_projMulPt` /
+`specPointEquiv_symm_add_self_eq_projMulPt`.
 
 Note the assembly does NOT go through `nonempty_projGroupLaw`, and could
 not: that produces an ARBITRARY `ProjGroupLaw`, and the chord–tangent
@@ -9687,7 +8765,8 @@ then have asserted the existence of the multiplication twice.
 
 `_gl₀` is the same CONE ANCHOR as on the next declaration and is unused
 for the same reason; see there.  **Re-checked after this assembly landed
-(2026-07-27):** `projMul_assoc` and `exists_projMul` now BOTH reach the
+(2026-07-27):** associativity (then `projMul_assoc`, now
+`projMul_assoc_of_isProjMulLaw`) and `exists_projMul` now BOTH reach the
 root cone through real dependency edges — this proof applies both — so
 neither depends on the anchor any more.  `nonempty_projGroupLaw` and
 `exists_projAdd` still reach it ONLY through `_gl₀`, so deleting the
@@ -9714,7 +8793,7 @@ theorem exists_projGroupLaw_geomFibreEquivVal (E : WeierstrassCurve ℚ) [E.IsEl
            hm := hom_ext_spec_rat _ _
            he := hom_ext_spec_rat _ _
            hi := hom_ext_spec_rat _ _
-           hassoc := projMul_assoc E m hcomm hunit hinv
+           hassoc := projMul_assoc_of_isProjMulLaw E m hlaw hlaw2
            hcomm := hcomm
            hunit := hunit
            hinv := hinv }, eqv, hadd, hgal⟩
@@ -9815,14 +8894,21 @@ The two cuts were merged into one tree on this date and the end state above
 was attempted directly.  **It does not compose as prescribed**, for a
 structural reason that is worth recording because it is not visible from
 either cut alone; the resolution is recorded after it, and the DOWNSTREAM
-half of it has landed — this declaration is now PROVEN, and the open leaf is
-`exists_projGroupLaw_geomFibreEquivVal` above, which is `hassoc`-free.
+half of it has landed — this declaration is now PROVEN, and so, as of 2026-07-30, is
+`exists_projGroupLaw_geomFibreEquivVal` above, which was the `hassoc`-free leaf this
+paragraph pointed at.
+
+*(Read the rest of this section as a record of the 2026-07-27 state.  `projMul_assoc`
+was DELETED on 2026-07-30 and associativity is now `projMul_assoc_of_isProjMulLaw`,
+which takes the two chart clauses; the reasoning below is unaffected, because the
+obstruction it identifies is about the `≃+` needing `hassoc`, not about which
+associativity lemma supplies it.)*
 
 Meanwhile `exists_projAdd` was itself decomposed (branch `flt-lean-141`) into
 `exists_projMul` — the gluing, which CONSTRUCTS `m` from
 `WeierstrassCurve.Projective.addXYZ` and yields `hcomm`/`hunit`/`hinv` — and
-`projMul_assoc`, which supplies `hassoc` for an ARBITRARY `m` carrying those
-three axioms.  `exists_projAdd` is now PROVEN from the two.  So for
+`projMul_assoc`, which supplied `hassoc` for an ARBITRARY `m` carrying those
+three axioms.  `exists_projAdd` is PROVEN from the two.  So for
 `exists_projAdd` to *gain* a chord–tangent clause, one of those two leaves
 must supply it, and neither can:
 
@@ -9832,13 +8918,16 @@ must supply it, and neither can:
   and `ProjGroupLaw.toAbelianSchemeStruct` feeds that field from `gl.hassoc`.
   `exists_projMul` deliberately does not have `hassoc`.  So the clause is not
   even expressible there in `≃+` form.
-* **`projMul_assoc` cannot PROVE the clause.**  It quantifies over an
+* **`projMul_assoc` cannot PROVE the clause.**  It quantified over an
   arbitrary `m`, and an arbitrary `m` is exactly what the FALSITY-OF-CUT
   AUDIT above shows requires the rigidity theorem.  Putting the clause there
-  reintroduces the very trap this leaf was restated to escape.
+  reintroduces the very trap this leaf was restated to escape.  (Its successor
+  `projMul_assoc_of_isProjMulLaw` no longer quantifies over an arbitrary `m` — it
+  takes the chart clauses — but it still cannot state the `≃+`, so the conclusion
+  stands.)
 
 So the clause needs BOTH the concrete glued `m` (only in `exists_projMul`)
-and `hassoc` (only after `projMul_assoc`), and 141's cut runs transverse to
+and `hassoc` (only after associativity), and 141's cut runs transverse to
 exactly that pairing.  The two cuts are individually correct and jointly
 non-composing; that is why this reconciliation is a cut-level decision rather
 than a merge, and it was left to the owners rather than made unilaterally.
@@ -9871,7 +8960,8 @@ of `exists_projMul` rather than on `exists_projMul` itself —
 the paragraph below: `exists_projMul` had a live owner mid-construction and
 appending a conjunct to its existential would have invalidated the witness
 being built.  With `m` and the identification bound by ONE existential,
-`projMul_assoc` supplies `hassoc` for that same `m` and
+associativity supplies `hassoc` for that same `m` (`projMul_assoc` then,
+`projMul_assoc_of_isProjMulLaw` since 2026-07-30) and
 `exists_projGroupLaw_geomFibreEquivVal` became a three-line assembly.  So item
 8's geometric content now sits in `exists_projMul_geomFibreEquivVal`, and both
 statements below it are PROVEN.
@@ -9916,10 +9006,11 @@ the only term-level consumers of `nonempty_projGroupLaw` in the whole tree are
 solely by passing it as this `_gl₀`; and the only consumer of
 `exists_projAdd` is `nonempty_projGroupLaw`.  Deleting the argument today
 therefore detaches `nonempty_projGroupLaw`, `exists_projAdd`, `exists_projMul`
-and `projMul_assoc` from the root cone all at once, making four declarations —
+and the associativity lemma from the root cone all at once, making four declarations —
 two of them live, owned work — free-floating.  **Re-checked twice on
 2026-07-27, after each half landed; still true, with ONE change.**
-`projMul_assoc` now reaches the cone by a REAL edge —
+Associativity (then `projMul_assoc`, now `projMul_assoc_of_isProjMulLaw`)
+reaches the cone by a REAL edge —
 `exists_projGroupLaw_geomFibreEquivVal`'s proof applies it — so the anchor
 carries three declarations rather than four.  `nonempty_projGroupLaw`,
 `exists_projAdd` and `exists_projMul` still reach the cone only through
