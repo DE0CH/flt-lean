@@ -60264,8 +60264,189 @@ theorem exists_quasiSection_heckeIsotypicFactor (N : ℕ) {X Y J : Scheme.{0}}
   exists_quasiSection_of_surjective_isAdditiveOn ab (D.abA i) (D.u i) (D.u_comp i)
     (D.u_add i) (D.u_surj i)
 
+/-- **MULTIPLICITY ONE: A FACTORWISE ATKIN–LEHNER INVOLUTION IS `±1` ON
+EACH FACTOR** (sorry leaf, new 2026-07-29) — the MODULAR half of
+`isOfFinAddOrder_sub_atkinLehnerFactor_of_lFunction_ne_zero` below, which
+is PROVEN over this leaf and the arithmetic one after it.
+
+TRUE.  `_hnew` makes `S₂(Γ₀(N))` entirely new, so each eigen-system
+occurs in `J₀(N)` with multiplicity one.  `D.isotypic` (with `D.T` pinned
+to the genuine Hecke correspondences by `D.heckeModuli`, and strong
+multiplicity one separating distinct newform orbits already in the
+ANEMIC range) makes `A i` isotypic for `D.coeff i`, and `D.u_surj i`
+makes it a quotient of `J₀(N)`; multiplicity one then forces `A i` to be
+`ℚ`-isogenous to `A_g` for the orbit `g` of `D.coeff i`, or trivial.
+`A_g` is `ℚ`-simple with `End⁰(A_g) = K_g` the Hecke FIELD (Shimura), so
+`ι := F.wA i` — which lies in `End⁰(A i)` and by `F.hecke_comm` commutes
+with the anemic Hecke action — is an element of a field with `ι² = 1`
+(`F.wA_invol`), hence `ι = ±1`.
+
+**NOTHING ATKIN–LEHNER IS ASKED FOR.**  `w`, `IsAtkinLehner` and the
+`_hchar` pin are not hypotheses: the conclusion holds for the descent of
+ANY involution `w_J` of `J` to the factors, because the argument uses only
+`F.wA_invol`, `F.hecke_comm` and the isotypy of `A i`.  That is the point
+of this cut — the Atkin–Lehner input is needed only by the arithmetic leaf
+below, where it identifies the label of a `−1` factor as an
+Atkin–Lehner-minus eigenform.
+
+**WHY THIS IS NOT THE FORBIDDEN SPLIT.**  The multiplicity-one step may
+NOT be split off as `¬ Plus i → IsAtkinLehnerMinusForm N (D.form i)`,
+which is FALSE: a trivial junk factor (`A i := SpecQ`, `astr i := 𝟙`,
+`u i := jstr`) satisfies every field of `IsHeckeIsotypicDecomposition`
+carrying an ARBITRARY label, so any leaf concluding something about
+`D.form i` is spoofable.  This leaf concludes an equation about `F.wA i`
+read on points, which the junk factor satisfies rather than spoofs:
+`RelPoint (𝟙 SpecQ) g` is a singleton and `F.wA i = 𝟙`, so the FIRST
+disjunct holds there.  Label-freedom is therefore complete — neither
+hypothesis nor conclusion names `D.form` or `D.coeff`.
+
+**QUANTIFIED OVER EVERY TEST OBJECT, NOT OVER `ℚ`-POINTS**, for the reason
+recorded on `IsAtkinLehnerDescent` above: on `ℚ`-points alone a factor with
+`2 · A i(ℚ) = 0` satisfies both disjuncts at once and the sign is not
+determined.  (The consumer below is indifferent — with both disjuncts
+available it takes the first and gets `x − w_{A i} x = 0` — but a later
+consumer need not be, and the stronger form costs a prover nothing.)
+
+**`_hnew` MAY NOT BE DROPPED, and the witness is `N = 74`** (PARI/GP
+2.17.4, recomputed for this leaf 2026-07-29: `mfdim(mfinit([74,2],1)) = 8`,
+`mfdim(mfinit([74,2],0)) = 4`, so the old part is `4`-dimensional, two
+degeneracy copies of `S₂(Γ₀(37))`).  Take the factors to be the
+`w_74`-ORBITS of the degeneracy copies, which is the witness
+`IsAtkinLehnerFactorwise`'s own docstring records: on the block containing
+the two copies of `A_{37a}`, `w_{A i}` is the SWAP `(P, Q) ↦ (Q, P)`, an
+involution that is neither `+1` nor `−1` — for `P` of infinite order in
+`37a(ℚ)` (`ellrank([0,0,1,-1,0]) = 1`, conductor `37`, recomputed
+2026-07-29) the point `(P, 0)` is fixed by neither.  So without `_hnew`
+BOTH disjuncts fail.
+
+**`_hchar` AND `_hL` ARE ABSENT ON PURPOSE, and dropping them is not a
+weakening**: no involution of a factor can fail to be `±1` once
+multiplicity one holds, whatever `w_J` is and whatever the `L`-values are.
+Adding either would make the leaf harder to consume and no truer.
+
+**What proving it needs**: multiplicity one for newforms of level `N`
+(strong multiplicity one, plus `End⁰(A_g) = K_g`).  Absent from mathlib,
+from `~/cs/FLT` and from this development — `grep -ri "multiplicity one"`
+over all three returns only this file's own prose. -/
+theorem atkinLehnerFactor_eq_pm_one_of_new (N : ℕ) {X Y J : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX0Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (wJ : J ⟶ J) (hwJ : wJ ≫ jstr = jstr)
+    (D : IsHeckeIsotypicDecomposition N hX jac) (F : IsAtkinLehnerFactorwise D wJ hwJ)
+    (_hnew : ∀ (M : ℕ), M ∣ N → M ≠ N → ∀ (g : CuspForm (Gamma0GL M) 2) (b : ℕ → ℂ),
+      ¬ IsWeightTwoEigenform M g b)
+    (i : D.idx) :
+    (∀ (T : Scheme.{0}) (g : T ⟶ SpecQ) (x : RelPoint (D.astr i) g),
+        RelPoint.post (F.wA i) (F.wA_comp i) x = x) ∨
+    (∀ (T : Scheme.{0}) (g : T ⟶ SpecQ) (x : RelPoint (D.astr i) g),
+        RelPoint.post (F.wA i) (F.wA_comp i) x = (D.abA i).neg x) :=
+  sorry
+
+/-- **KOLYVAGIN–LOGACHEV ON A `−1` FACTOR OF AN UNSIGNED ATKIN–LEHNER
+DESCENT** (sorry leaf, new 2026-07-29) — the ARITHMETIC half of
+`isOfFinAddOrder_sub_atkinLehnerFactor_of_lFunction_ne_zero` below, the
+sign now being a HYPOTHESIS supplied by
+`atkinLehnerFactor_eq_pm_one_of_new` above rather than something this leaf
+must derive.
+
+TRUE.  `_hchar` pins `w_J` to be the endomorphism induced by the
+Atkin–Lehner involution `w` (`IsJacobianOf.existsUnique_mapEnd`), so
+`F.descend` makes `F.wA i` the action of `w_N` on `A i`.  `_hnew` makes
+`S₂(Γ₀(N))` entirely new, so by multiplicity one `A i` is `ℚ`-isogenous to
+`A_g` for the orbit `g` of `D.coeff i` (or trivial, when there is nothing
+to prove), and `_hneg` says `w_N = −1` there — i.e. `g ∣[2] W_N = −g`.
+Then `_hL` gives `L(g, 1) ≠ 0` and Kolyvagin–Logachev makes `A_g(ℚ)`
+finite, hence `A i(ℚ)` torsion, hence `x` of finite order.
+
+**IT CONCLUDES TORSION, WHICH IS THE ONLY SAFE SHAPE HERE.**  The junk
+factor `A i := SpecQ`, `u i := jstr` satisfies every field of
+`IsHeckeIsotypicDecomposition` with an ARBITRARY label and satisfies
+`_hneg` vacuously (`RelPoint (𝟙 SpecQ) g` is a singleton), so a leaf
+concluding `IsAtkinLehnerMinusForm N (D.form i)` would be FALSE.  Torsion
+is true on such a factor, so the degeneracy costs nothing.  This is also
+why the label identification is NOT split off from the
+Kolyvagin–Logachev input here: the only faithful way to separate them is
+the disjunction `IsAtkinLehnerMinusForm N (D.form i) ∨ IsTorsion …`, whose
+second disjunct is the whole conclusion, and the caveat recorded on
+`isTorsion_factor_of_heckeIsotypic` above — that "every quotient of
+`J₀(N)` is isogenous to a product of `A_g`" is not expressible without a
+Hasse–Weil `L`-function of an abelian variety — applies verbatim.  Axis
+searched 2026-07-29 and CLOSED.
+
+**`_hneg` IS QUANTIFIED OVER EVERY TEST OBJECT** (matching what
+`atkinLehnerFactor_eq_pm_one_of_new` delivers).  On `ℚ`-points alone it
+would be satisfied by a factor with `2 · A i(ℚ) = 0` and `w_{A i} = +1`,
+where the conclusion is still true but only through Mordell–Weil
+finite generation, which this development does not have.
+
+**`_hnew` MAY NOT BE DROPPED, and the witness is `N = 74`.**  `_hL` HOLDS
+at `74` — all four newforms are Atkin–Lehner-minus
+(`mfatkineigenvalues(mfinit([74,2],0),74) = [[-1,-1],[-1,-1]]`) with
+`L(1) = 1.130…, 1.243…, 0.964…, 0.757…` — and `_hneg` holds on the factor
+spanned by the `w_74`-MINUS eigenvector `g₁ − 2 g₂` of the old space
+`⟨g(τ), g(2τ)⟩`, `g` the rank-one orbit `37a`
+(`mfatkineigenvalues(mfinit([37,2],0),37) = [[-1],[1]]`, and the `+1`
+orbit is the rank-one one; `ellrank([0,0,1,-1,0]) = 1`, conductor `37`,
+recomputed 2026-07-29).  That factor is isogenous to `A_{37a}`, of rank
+`1`, so the conclusion FAILS.  It is invisible to `_hL` because those
+eigenvectors are not `IsWeightTwoEigenform 74` — see the fuller version of
+this computation on `isTorsion_minusFactor_of_lFunction_ne_zero` below —
+while `D.isotypic` constrains only the ANEMIC range and is satisfied by
+them with `D.form i` a stabilization of `37a`.
+
+**`_hL` MAY NOT BE DROPPED, and the witness is `N = 389`**: prime, so
+`_hnew` is vacuous; `389a` (`y² + y = x³ + x² − 2x`, conductor `389`,
+`ellrank = 2`, `ellrootno = +1` hence Atkin–Lehner eigenvalue `−1`,
+confirmed directly by
+`mfatkineigenvalues(mfinit([389,2],0),389) = [[-1], …]`, all recomputed
+2026-07-29) gives a factor with `_hneg` and `A_{389a}(ℚ)` of rank `2`.
+
+**`_hchar` MAY NOT BE DROPPED.**  Without it `w_J` is an arbitrary
+`ℚ`-endomorphism: take `w_J := −1` and `N := 37`.  Then `F` is inhabited
+with `w_{A i} := −1` on every factor (additive, involutive, and commuting
+with every `S i n`), so `_hneg` holds on the `37a` factor; `_hnew` holds
+(`37` is prime) and `_hL` holds (the only Atkin–Lehner-minus orbit at `37`
+is `37b`, of rank `0` — `ellrank([0,1,1,-23,-50]) = 0`, `ellrootno = +1`,
+conductor `37`, recomputed 2026-07-29).  But `37a` has rank `1`, so the
+conclusion fails.
+
+**Not vacuous.**  At `N = 37` the factor `37b` has `w_{A i} = −1` and
+`A_{37b}(ℚ)` finite, so the hypotheses are jointly satisfiable with a
+nontrivial factor.
+
+**What proving it needs**: Kolyvagin–Logachev (`L(g, 1) ≠ 0 ⟹ A_g(ℚ)`
+finite), plus the identification of `A i` with `A_g` that multiplicity one
+supplies.  Absent from mathlib, from `~/cs/FLT` and from this
+development. -/
+theorem isOfFinAddOrder_atkinLehnerFactor_of_neg_of_lFunction_ne_zero (N : ℕ)
+    {X Y J : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX0Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (w : X ⟶ X) (hw : w ≫ strX = strX)
+    (_hw2 : w ≫ w = 𝟙 X) (_hal : IsAtkinLehner N hX w hw)
+    (wJ : J ⟶ J) (hwJ : wJ ≫ jstr = jstr)
+    (_hchar : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
+      RelPoint.post wJ hwJ (jac.aj g x) = jac.ajTwist w hw g x)
+    (D : IsHeckeIsotypicDecomposition N hX jac) (F : IsAtkinLehnerFactorwise D wJ hwJ)
+    (_hnew : ∀ (M : ℕ), M ∣ N → M ≠ N → ∀ (g : CuspForm (Gamma0GL M) 2) (b : ℕ → ℂ),
+      ¬ IsWeightTwoEigenform M g b)
+    (_hL : ∀ (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ), IsWeightTwoEigenform N f a →
+      IsAtkinLehnerMinusForm N f → ∀ L : ℂ → ℂ, IsLFunctionOf a L → L 1 ≠ 0)
+    (i : D.idx)
+    (_hneg : ∀ (T : Scheme.{0}) (g : T ⟶ SpecQ) (x : RelPoint (D.astr i) g),
+      RelPoint.post (F.wA i) (F.wA_comp i) x = (D.abA i).neg x)
+    (x : RelPoint (D.astr i) (𝟙 SpecQ)) :
+    letI := (D.abA i).addCommGroup (𝟙 SpecQ)
+    IsOfFinAddOrder x :=
+  sorry
+
 /-- **KOLYVAGIN–LOGACHEV ON ONE ISOTYPIC FACTOR, UNSIGNED: `x − w_{A i} x`
-IS TORSION** (sorry leaf, new 2026-07-29) — the arithmetic residue of
+IS TORSION** (introduced as a sorry leaf 2026-07-29; **DECOMPOSED the same
+day** over the two leaves immediately above, along the multiplicity-one /
+Kolyvagin–Logachev seam its own "what proving it needs" paragraph named) —
+the arithmetic residue of
 `isOfFinAddOrder_antiInvariantPart_of_lFunction_ne_zero` below once that
 node's Eichler–Shimura ASSEMBLY has been discharged, which it now is.
 
@@ -60362,7 +60543,34 @@ refuted by the junk factor.
 **What proving it needs**: multiplicity one for newforms (`w_N` acts by a
 scalar on each new isotypic piece) and Kolyvagin–Logachev
 (`L(g, 1) ≠ 0 ⟹ A_g(ℚ)` finite).  Both are absent from mathlib, from
-`~/cs/FLT` and from this development. -/
+`~/cs/FLT` and from this development.
+
+**DECOMPOSED 2026-07-29 ALONG EXACTLY THAT SEAM; this was a single `sorry`
+until then.**  The two theories now sit on the two named leaves above:
+
+| node | theory | status |
+|---|---|---|
+| `atkinLehnerFactor_eq_pm_one_of_new` | multiplicity one: `w_{A i} = ±1` | **sorry leaf** |
+| `isOfFinAddOrder_atkinLehnerFactor_of_neg_of_lFunction_ne_zero` | Kolyvagin–Logachev on a `−1` factor | **sorry leaf** |
+
+and the proof is a two-case split with NO arithmetic in it:
+
+* `w_{A i} = +1` gives `x − w_{A i} x = x − x = 0`, of finite order —
+  **this branch is now fully discharged**, and it must not conclude
+  anything about `x` itself: at `N = 37` the `+1` factor is the RANK-ONE
+  `37a` (`ellrank([0,0,1,-1,0]) = 1`, `ellrootno = −1`, Atkin–Lehner
+  eigenvalue `+1`, recomputed 2026-07-29);
+* `w_{A i} = −1` gives `x − w_{A i} x = x + x`, and the arithmetic leaf
+  makes `x` itself of finite order.
+
+Neither sub-leaf is a cycle in disguise.  `atkinLehnerFactor_eq_pm_one_of_new`
+carries no Atkin–Lehner datum at all, so nothing below can supply it; and
+`isOfFinAddOrder_atkinLehnerFactor_of_neg_of_lFunction_ne_zero` takes its
+sign from `F`, the UNSIGNED datum, so `isTorsion_minusFactor_of_lFunction_ne_zero`
+cannot be turned back onto it — that would need an `IsAtkinLehnerDescent`
+for THIS `D`, and `exists_atkinLehnerDescent_of_factorwise` (itself a
+`sorry` leaf since the release-18 merge) produces one only for some OTHER
+decomposition `D'`. -/
 theorem isOfFinAddOrder_sub_atkinLehnerFactor_of_lFunction_ne_zero (N : ℕ)
     {X Y J : Scheme.{0}}
     {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
@@ -60380,8 +60588,25 @@ theorem isOfFinAddOrder_sub_atkinLehnerFactor_of_lFunction_ne_zero (N : ℕ)
       IsAtkinLehnerMinusForm N f → ∀ L : ℂ → ℂ, IsLFunctionOf a L → L 1 ≠ 0)
     (i : D.idx) (x : RelPoint (D.astr i) (𝟙 SpecQ)) :
     letI := (D.abA i).addCommGroup (𝟙 SpecQ)
-    IsOfFinAddOrder (x - RelPoint.post (F.wA i) (F.wA_comp i) x) :=
-  sorry
+    IsOfFinAddOrder (x - RelPoint.post (F.wA i) (F.wA_comp i) x) := by
+  letI := (D.abA i).addCommGroup (𝟙 SpecQ)
+  rcases atkinLehnerFactor_eq_pm_one_of_new N hX jac wJ hwJ D F _hnew i with hp | hm
+  · -- `w_{A i} = +1`: the difference is `0`, and nothing is asserted about `x`
+    have h0 : x - RelPoint.post (F.wA i) (F.wA_comp i) x = 0 := by
+      rw [hp _ _ x, sub_self]
+    refine isOfFinAddOrder_iff_nsmul_eq_zero.mpr ⟨1, Nat.one_pos, ?_⟩
+    rw [h0, smul_zero]
+  · -- `w_{A i} = −1`: the difference is `x + x`, and the arithmetic leaf
+    -- makes `x` itself of finite order
+    have hneg : RelPoint.post (F.wA i) (F.wA_comp i) x = -x := hm _ _ x
+    have h2 : x - RelPoint.post (F.wA i) (F.wA_comp i) x = x + x := by
+      rw [hneg, sub_neg_eq_add]
+    have hx : IsOfFinAddOrder x :=
+      isOfFinAddOrder_atkinLehnerFactor_of_neg_of_lFunction_ne_zero N hX jac w hw _hw2 _hal
+        wJ hwJ _hchar D F _hnew _hL i hm x
+    obtain ⟨n, hn, hnx⟩ := isOfFinAddOrder_iff_nsmul_eq_zero.mp hx
+    refine isOfFinAddOrder_iff_nsmul_eq_zero.mpr ⟨n, hn, ?_⟩
+    rw [h2, smul_add, hnx, add_zero]
 
 /-- **KOLYVAGIN–LOGACHEV ON `J⁻(ℚ)`: `z − w_J z` IS ALWAYS TORSION**
 (introduced as a sorry leaf 2026-07-28; **PROVEN 2026-07-29** over the
@@ -60726,7 +60951,9 @@ one level further down again:
 |---|---|---|
 | `isOfFinAddOrder_image_minusFactor_of_lFunction_ne_zero` | Eichler–Shimura + Kolyvagin–Logachev | PROVEN over the leaf below |
 | `isOfFinAddOrder_antiInvariantPart_of_lFunction_ne_zero` | the same, on `J` alone: `z − w_J z` is torsion | PROVEN 2026-07-29 over the row below |
-| `isOfFinAddOrder_sub_atkinLehnerFactor_of_lFunction_ne_zero` | multiplicity one + Kolyvagin–Logachev, on ONE isotypic factor, UNSIGNED | **sorry leaf** |
+| `isOfFinAddOrder_sub_atkinLehnerFactor_of_lFunction_ne_zero` | multiplicity one + Kolyvagin–Logachev, on ONE isotypic factor, UNSIGNED | PROVEN 2026-07-29 over the two rows below |
+| `atkinLehnerFactor_eq_pm_one_of_new` | multiplicity one alone: `w_{A i} = ±1`, no Atkin–Lehner datum | **sorry leaf** |
+| `isOfFinAddOrder_atkinLehnerFactor_of_neg_of_lFunction_ne_zero` | Kolyvagin–Logachev alone, sign supplied as a hypothesis | **sorry leaf** |
 | `exists_quasiSection_heckeIsotypicFactor` | Poincaré reducibility, quotient half | PROVEN over the generic form |
 | `exists_quasiSection_of_surjective_isAdditiveOn` | the same, level-generic | PROVEN over the two below |
 | `exists_isogenyComplement_of_surjective_isAdditiveOn` | polarisation + orthogonal complement | PROVEN (2026-07-29) over the leaf below |
