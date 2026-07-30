@@ -588,6 +588,17 @@ public import Fermat.FLT.EllipticCurve.TorsionCard
 -- here rather than at the tail of the import block deliberately: the note on the
 -- LAST import of this file records that `IrreducibleNhds` must stay last.
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.ProjectiveModel
+-- The `EllipticScheme.lean` geometry of `projToSpec E` ported to an ARBITRARY base
+-- field `F : Type u` in `Scheme.{u}` (added 2026-07-30): smoothness of relative
+-- dimension `1` and geometric connectedness, which is what
+-- `smoothOfRelativeDimension_projToSpecOverField` and
+-- `geometricallyConnected_projToSpecOverField` below are now applications of.  It has
+-- to be a separate module rather than 2 300 more lines here for two reasons: it is
+-- upstream of this file (so `EllipticScheme.lean`, which is DOWNSTREAM, can later
+-- collapse its own ℚ statements onto it), and elaboration is single-threaded per
+-- file — those 2 300 lines cost 63 s on their own and would be paid on every edit
+-- to this 46 000-line module.
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.ProjectiveModelOverField
 -- The three irreducibility lemmas of the connected ⟹ irreducible upgrade
 -- (`irreducibleSpace_of_isOpen_isIrreducible_nhds`,
 -- `exists_isOpen_isIrreducible_of_isDomain_localization`,
@@ -44606,8 +44617,27 @@ theorem isProper_projToSpecOverField (F : Type u) [Field F] (E : WeierstrassCurv
   infer_instance
 
 /-- **The projective Weierstrass model is smooth of relative dimension `1` over an
-arbitrary base field** (sorry leaf, cut 2026-07-29 out of
+arbitrary base field** (**PROVEN 2026-07-30**; cut 2026-07-29 out of
 `exists_ellipticSchemeOverField`).
+
+The port described below WAS CARRIED OUT, into the new upstream module
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveModelOverField.lean`, and
+this declaration is now a one-line application of
+`WeierstrassCurve.Projective.OverField.smoothOfRelativeDimension_projToSpec` there.  The
+paragraphs below are kept as the record of what had to travel and of the two places
+where the ℚ argument was *unsound* over a general base rather than merely differently
+spelled — both are documented in that module's header:
+
+* `hom_ext_spec_rat` (the ℚ file's 99-fold shortcut "a scheme admits at most one
+  morphism to `Spec ℚ`") is FALSE over a general field.  It is not needed for THIS
+  leaf, but it is what the connectedness proof used to build the base-change
+  comparison morphism; the repair there proves the base-change square CARTESIAN first
+  and reads the isomorphism off `IsPullback.isoPullback`.
+* `not_X_dvd_polynomial` is proved over `ℚ` by evaluating at `F`-points, and that
+  fails in characteristic two: over `𝔽₂` with `a₃ = 1`, `a₆ = 0` the polynomial
+  `W(0, Y, Z) = YZ(Y + Z)` vanishes at every point of `𝔽₂²` while `X ∤ W` remains
+  true.  The repair evaluates in `F[t]` at `(X, Y, Z) = (0, t, 1)` and reads off a
+  coefficient.
 
 TRUE and classical, and this is the ONLY one of the three geometric leaves that
 consumes `[E.IsElliptic]`: on each of the three coordinate charts the two partial
@@ -44639,11 +44669,28 @@ the dehomogenisation dictionary (`dehomogenizeAt`, `homogenizeAt`,
 theorem smoothOfRelativeDimension_projToSpecOverField (F : Type u) [Field F]
     (E : WeierstrassCurve F) [E.IsElliptic] :
     SmoothOfRelativeDimension 1 (projToSpec E) :=
-  sorry
+  _root_.WeierstrassCurve.Projective.OverField.smoothOfRelativeDimension_projToSpec E
 
 /-- **The projective Weierstrass model is geometrically connected over an
-arbitrary base field** (sorry leaf, cut 2026-07-29 out of
+arbitrary base field** (**PROVEN 2026-07-30**; cut 2026-07-29 out of
 `exists_ellipticSchemeOverField`).
+
+The port described below WAS CARRIED OUT, into the new upstream module
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveModelOverField.lean`, and
+this declaration is now a one-line application of
+`WeierstrassCurve.Projective.OverField.geometricallyConnected_projToSpec` there.
+
+The estimate below — "this is the CHEAPEST of the three, and it crosses the
+`hom_ext_spec_rat` obstruction only twice" — was WRONG about the second half, and that
+is the one thing worth carrying forward.  Both crossings sit in the same place, the
+construction of the comparison morphism `proj (E ⊗ K) ⟶ proj E ×_{Spec F} Spec K`, and
+over a general base there is nothing to replace the shortcut with: one cannot lift
+into a pullback without proving the commuting square.  So the base-change half was NOT
+a substitution but a rewrite — the square is proved CARTESIAN directly
+(`isPullback_projBaseChangeMap`, over `isPushout_awayBaseChange` and a dehomogenisation
+dictionary `awayDehomEquiv` that the ℚ file did not need), and the isomorphism is read
+off `IsPullback.isoPullback`.  The first half of the estimate was right: `section
+Leaves` needed no generalisation at all.
 
 TRUE, and it does NOT use smoothness or the discriminant: the Weierstrass cubic is
 irreducible over EVERY field, singular ones included (mathlib's affine
@@ -44677,7 +44724,7 @@ the second half is work (checked 2026-07-29):
 theorem geometricallyConnected_projToSpecOverField (F : Type u) [Field F]
     (E : WeierstrassCurve F) [E.IsElliptic] :
     GeometricallyConnected (projToSpec E) :=
-  sorry
+  _root_.WeierstrassCurve.Projective.OverField.geometricallyConnected_projToSpec F E
 
 /-- **Morphism-level group-law data on the projective Weierstrass model of `E`,
 over an ARBITRARY base field** — exactly the shape
@@ -44702,7 +44749,10 @@ carry the "lies over the base" clauses through the gluing rather than dropping
 them.
 
 **MEASURE THE COST BEFORE COMMITTING TO A PORT: `hom_ext_spec_rat` is invoked
-99 times in `EllipticScheme.lean`** (counted 2026-07-29).  The lemma it names is
+99 times in `EllipticScheme.lean`** (counted 2026-07-29; **RE-COUNTED 2026-07-30
+as 60** — the 99 was a raw `grep` including this module's many docstring mentions,
+and the per-range breakdown below is scaled accordingly and its line numbers no
+longer resolve).  The lemma it names is
 FALSE over a general base field, so each of those 99 is a step whose
 justification disappears entirely rather than one that needs rewriting.  They are
 spread across the whole module — 26 below `4419` (`ProjCoords` and the coordinate
@@ -44809,7 +44859,43 @@ which each is defined, `projInfty` supplies `e` and `projNeg` supplies `i`; the
 `≃+` then comes from reading the morphism-level law on `F̄`-points and comparing
 with mathlib's affine chord–tangent law.  **The three "lies over the base" fields
 are NOT free here** — see the note on `ProjGroupLawOverField` — which is the one
-respect in which the ℚ route does not transfer unchanged. -/
+respect in which the ℚ route does not transfer unchanged.
+
+**RE-MEASURED 2026-07-30 — three of the numbers above had drifted, and one piece
+of the port has since been BUILT.**  All four figures are from a comment-stripped
+scan of the tree at this commit; the line numbers in the paragraphs above are from
+2026-07-29 and no longer resolve, so navigate by NAME.
+
+* The ℚ template is where it was claimed to be, and it is intact: a
+  comment-stripped `sorry`-token scan of `EllipticScheme.lean` (now 11 832 lines)
+  finds exactly ONE sorried declaration in the whole module,
+  `exists_weierstrassGenerators_of_affineComplement`, and it is not in this chain.
+  `exists_projAdd`, `nonempty_projGroupLaw` and
+  `exists_projGroupLaw_geomFibreAddEquiv` are all direct-sorry-free.  (The two
+  names the paragraph above lists as the module's sorried declarations,
+  `projFibreEndFun_add_sub_zero` and
+  `exists_surjective_coordinateRingHom_of_affineComplement`, are stale — both are
+  closed.)
+* `hom_ext_spec_rat` is invoked **60** times, not 99: there are 61 occurrences
+  outside comments and one of them is the declaration itself.  The 99 was a raw
+  `grep` and counted the module's many docstring mentions of it.  The obstruction
+  is real and the estimate's SHAPE is right — 60 vanished justifications, spread
+  over the coordinate interface and the group law — but the count is 40 % lower
+  than advertised.
+* **The dehomogenisation and base-change halves of the port now EXIST over an
+  arbitrary commutative ring** and must not be rebuilt.  Wiring in
+  `smoothOfRelativeDimension_projToSpecOverField` and
+  `geometricallyConnected_projToSpecOverField` (2026-07-30) created
+  `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveModelOverField.lean`,
+  which carries a complete `Away`-localisation dictionary — `awayToDehom`,
+  `dehomToAway`, `awayDehomEquiv`, `dehomMap`, `awayToDehom_comp_awayMap`,
+  `awayι_projToSpec_eq_specMap'`, `isPullback_awayι_map`,
+  `isPushout_awayBaseChange`, `isPullback_projBaseChangeMap` — over `R : Type u`
+  commutative, with no `ℚ` and no `Scheme.{0}`.  `ProjCoords` is a chart interface
+  over exactly those localisations, so this is the layer the port would otherwise
+  have had to write first.  What is NOT there is the `base : X ⟶ Spec R` datum
+  that `ProjCoords` has to gain in place of `hom_ext_spec_rat`, nor anything about
+  the addition formulas. -/
 theorem exists_projGroupLawOverField_geomFibreAddEquiv (F : Type u) [Field F]
     (E : WeierstrassCurve F) [E.IsElliptic] :
     letI : DecidableEq (AlgebraicClosure F) := Classical.typeDecidableEq _
@@ -46062,27 +46148,241 @@ lemma det_eq_of_alternating_scaling_fin_two {R : Type*} [CommRing R] {M : Type*}
     rw [mul_comm _ (LinearMap.det f), mul_comm _ c, ← h1, ← h2]
   exact hunit.mul_left_cancel h3
 
+/-- **A NONDEGENERATE ALTERNATING BIMULTIPLICATIVE PAIRING ON A FREE RANK-TWO
+`ZMod n`-MODULE TAKES A PRIMITIVE `n`-TH ROOT OF UNITY ON A BASIS** (PROVEN
+2026-07-30), over an arbitrary commutative group of values.
+
+This is the bridge between the TWO inequivalent-looking ways a level-`n` Weil
+pairing can be asked to be nondegenerate, and it says they AGREE once the module
+is free of rank two:
+
+* `∀ x ≠ 0, ∃ y, e x y ≠ 1` — Silverman *AEC* III.8.1(d), and the form the
+  divisor-theoretic construction actually produces (it is what
+  `WeilPairing.exists_weilPairing_mu` delivers at `𝔽_q`);
+* `∃ x y, IsPrimitiveRoot (e x y) n` — the form
+  `det_eq_of_alternating_scaling_fin_two` above consumes, because over `ZMod n`
+  with `n` composite only a UNIT value pins the scalar by which an endomorphism
+  scales the form.
+
+The implication is the nontrivial direction and it is where the rank is spent.
+Put `ω := e (b 0) (b 1)` and `d := orderOf ω`.  Expanding both arguments in the
+basis and killing the diagonal terms by alternation shows every value of `e` is a
+power of `ω`; concretely `e (b 0) y = ω ^ (b.repr y 1).val`.  Hence
+`e ((d : ZMod n) • b 0) y = (ω ^ d) ^ (b.repr y 1).val = 1` for EVERY `y`.  If
+`d < n` then `(d : ZMod n) ≠ 0`, so `(d : ZMod n) • b 0 ≠ 0` by linear
+independence of `b`, and nondegeneracy is contradicted.  With `d ∣ n` from
+`e x y ^ n = 1`, that forces `d = n`.
+
+Nothing here is elliptic and nothing divides: no field, no finiteness, and no
+primitive root chosen in advance.
+
+**THIS IS A DUPLICATE CUT, AND IT IS DELIBERATE (2026-07-30).**  The same theorem,
+with the same statement and substantially the same proof, already exists as
+`MazurTorsion.isPrimitiveRoot_pairing_of_nondegenerate_basis_fin_two`
+(`FreyCurve/MazurTorsion.lean:16578`), where it upgrades
+`exists_weilPairing_mu_nondeg_of_coprime` to
+`exists_weilPairing_mu_of_coprime` at `𝔽_q`.  It is not reachable from here:
+`MazurTorsion.lean` and this module do not import each other in either direction,
+so there is no way to consume it and no name clash either.  Re-cutting ~60 lines
+was preferred to editing a 40 000-line module in a run that could not finish the
+port.  **The follow-up is a hoist**: move ONE copy into a module upstream of both
+(the natural home is beside `EllipticCurve/WeilPairing.lean`, which is where the
+construction it serves will have to live anyway) and delete the other.  Until
+that happens the two copies are a silent duplication — invisible to every
+`sorry` scan, since both are proven — rather than a build error. -/
+theorem isPrimitiveRoot_of_nondegenerate_fin_two {n : ℕ} (hn : 1 ≤ n)
+    {M : Type*} [AddCommGroup M] [Module (ZMod n) M]
+    (b : Module.Basis (Fin 2) (ZMod n) M)
+    {G : Type*} [CommGroup G] (e : M → M → G)
+    (hl : ∀ x y z, e (x + y) z = e x z * e y z)
+    (hr : ∀ x y z, e x (y + z) = e x y * e x z)
+    (halt : ∀ x, e x x = 1)
+    (hord : ∀ x y, e x y ^ n = 1)
+    (hnd : ∀ x, x ≠ 0 → ∃ y, e x y ≠ 1) :
+    IsPrimitiveRoot (e (b 0) (b 1)) n := by
+  haveI : NeZero n := ⟨by omega⟩
+  -- zero laws, by cancellation
+  have hzl : ∀ y, e 0 y = 1 := fun y => by
+    have h := hl 0 0 y
+    rw [add_zero] at h
+    have h2 : e 0 y * e 0 y = e 0 y * 1 := by rw [mul_one, ← h]
+    exact mul_left_cancel h2
+  have hzr : ∀ u, e u 0 = 1 := fun u => by
+    have h := hr u 0 0
+    rw [add_zero] at h
+    have h2 : e u 0 * e u 0 = e u 0 * 1 := by rw [mul_one, ← h]
+    exact mul_left_cancel h2
+  -- `ℕ`-power laws in each slot
+  have hnl : ∀ (k : ℕ) (u v : M), e (k • u) v = e u v ^ k := by
+    intro k u v
+    induction k with
+    | zero => rw [zero_nsmul, pow_zero]; exact hzl v
+    | succ k ih => rw [succ_nsmul, hl, ih, pow_succ]
+  have hnr : ∀ (k : ℕ) (u v : M), e u (k • v) = e u v ^ k := by
+    intro k u v
+    induction k with
+    | zero => rw [zero_nsmul, pow_zero]; exact hzr u
+    | succ k ih => rw [succ_nsmul, hr, ih, pow_succ]
+  -- `ZMod n`-scalars act through their `ℕ`-lift
+  have hcast : ∀ (c : ZMod n) (u : M), c • u = c.val • u := by
+    intro c u
+    have h1 : ((c.val : ℕ) : ZMod n) = c := by rw [ZMod.natCast_val, ZMod.cast_id]
+    conv_lhs => rw [← h1]
+    exact Nat.cast_smul_eq_nsmul _ _ _
+  -- every value against `b 0` is a power of the basis value
+  have hb0y : ∀ y, e (b 0) y = e (b 0) (b 1) ^ (b.repr y 1).val := by
+    intro y
+    have hy : y = (b.repr y 0) • b 0 + (b.repr y 1) • b 1 := by
+      have h := b.sum_repr y
+      rw [Fin.sum_univ_two] at h
+      exact h.symm
+    conv_lhs => rw [hy]
+    rw [hr, hcast (b.repr y 0), hcast (b.repr y 1), hnr, hnr, halt, one_pow, one_mul]
+  rw [IsPrimitiveRoot.iff_orderOf]
+  set d := orderOf (e (b 0) (b 1)) with hddef
+  have hd : d ∣ n := orderOf_dvd_of_pow_eq_one (hord _ _)
+  have hdpos : 0 < d := Nat.pos_of_ne_zero fun h0 => by
+    have hn0 : n = 0 := Nat.eq_zero_of_zero_dvd (h0 ▸ hd)
+    omega
+  rcases eq_or_lt_of_le (Nat.le_of_dvd (by omega) hd) with heq | hlt
+  · exact heq
+  · exfalso
+    have hdval : ((d : ZMod n)).val = d := ZMod.val_cast_of_lt hlt
+    have hdne : (d : ZMod n) ≠ 0 := by
+      intro h
+      have hnd' : n ∣ d := (ZMod.natCast_eq_zero_iff d n).mp h
+      have := Nat.le_of_dvd hdpos hnd'
+      omega
+    have hx : ((d : ZMod n) • b 0 : M) ≠ 0 := by
+      intro h
+      apply hdne
+      have h2 := congrArg (fun z => b.repr z 0) h
+      simpa using h2
+    obtain ⟨y, hy⟩ := hnd _ hx
+    apply hy
+    rw [hcast, hdval, hnl, hb0y, ← pow_mul, mul_comm, pow_mul, hddef,
+      pow_orderOf_eq_one, one_pow]
+
+/-- **THE WEIL PAIRING OVER `k̄` IN SILVERMAN'S OWN FORM, OVER AN ARBITRARY BASE
+FIELD WITH `(n : k) ≠ 0`** (sorry leaf, cut 2026-07-30 out of
+`exists_weilPairing_mu_charZero` below).  This is Silverman *AEC* III.8.1(a)–(e)
+verbatim: on `E[n]` over `k̄` there is a bimultiplicative alternating pairing
+into `k̄ˣ`, killed by `n`, NONDEGENERATE, and natural for every `k`-automorphism
+of `k̄`.
+
+`(n : k) ≠ 0` is exactly `char k ∤ n`, and it forces `n ≠ 0`, so no separate
+positivity hypothesis is carried.  It is load-bearing twice over: at `n = 0` the
+`0`-torsion is all of `E(k̄)`, and if `char k ∣ n` then `E[n]` is not `(ℤ/n)²`
+and `μ_n(k̄)` is too small for a nondegenerate pairing to exist at all.
+
+WHY THIS IS THE RIGHT CUT, i.e. why it is stated over an arbitrary `k` and with
+the NONDEGENERACY clause rather than the `IsPrimitiveRoot` one.  In this shape it
+is EXACTLY the statement of the tree's proven finite-field theorem
+`WeilPairing.exists_weilPairing_mu` (`WeilPairing.lean:6057`), instantiated at
+`k = ZMod q`, `n = p` and with the arbitrary `σ` specialised to Frobenius.  So
+the remaining obligation is a base-and-level generalisation of proven code with
+NO change of clause; the clause change is discharged separately and permanently
+by `isPrimitiveRoot_of_nondegenerate_fin_two` above.  A future owner who
+generalises `exists_weilPairing_mu` in place gets both consumers at once.
+
+**THE COST, MEASURED 2026-07-30 — AND IT CORRECTS THE ESTIMATE THAT USED TO SIT
+ON THE LEAF BELOW.**  That docstring said the construction "never uses finiteness
+of the base", so that the port was a substitution `ZMod q ↦ k` plus `p ↦ n`.  That
+is true of Silverman's ARGUMENT and FALSE of the formalisation.  The whole
+8 534-line proof is organised around the top-level predicate
+`WeilPairing.weilValueProp` (`WeilPairing.lean:3081`), and its admissibility
+witness quantifies over a pair of subfields `F ≤ F'` of `k̄` REQUIRED TO BE
+FINITE and to contain a `frobFixed q (…)`, i.e. `𝔽_{q^m}`; the genericity of the
+Miller setup is obtained by taking auxiliary points in `F'` but not in `F`.  In
+characteristic zero every subfield contains `ℚ`, so **no such `F` exists and the
+predicate is unsatisfiable for every pair of nonzero points** — the definition
+cannot be reused by substituting the base.  A port must first replace the
+genericity device (finite subfields exhausting `k̄`) by one that exists over a
+general base, e.g. finitely generated subextensions ordered by transcendence
+degree, and then re-run the 94 top-level steps of the assembly against it.  The
+alternation step (`hswap`) and the Galois-transport step are the two that consume
+the device directly.  Primality of the level, by contrast, really is confined to
+the last ~70 lines (`hleg4`, via `pairing_trivial_of_radical`, which needs
+`ZMod p` to be a field) — and at composite `n` that step is subsumed by the
+bridge lemma above.
+
+**THIS LEAF SUBSUMES A LIVE LEAF IN ANOTHER MODULE, so closing it closes two
+(2026-07-30).**  `MazurTorsion.exists_weilPairing_mu_nondeg_of_coprime`
+(`FreyCurve/MazurTorsion.lean:16696`, opened 2026-07-27) is this statement with
+the base FIXED at `𝔽_q`: same six clauses, `Nat.Coprime N q` in place of
+`(n : k) ≠ 0` — equivalent, since `ZMod q` has characteristic `q` — and the
+arbitrary `σ` specialised to Frobenius.  Neither module imports the other, so the
+implication cannot be written today; it becomes a one-liner as soon as the general
+statement is proven in a module upstream of both, which is where an 8 000-line
+construction belongs in any case.
+
+**AND THE TWO AUDITS SPLIT THE COST CLEANLY — read them together, not separately.**
+That leaf's docstring audits the LEVEL generalisation `p ↦ N` and concludes it is
+mechanical.  Cross-checked here and CONFIRMED in its load-bearing claim:
+`WeilPairing.weilValueProp` really does take a bare `(p : ℕ)` with no
+`[Fact p.Prime]`, so the pairing's definition is level-generic today, and the
+residual primality uses reduce to `(N : 𝔽̄_q) ≠ 0`.  What that audit does not
+cover, because it was not generalising the base, is the paragraph above: the same
+predicate is *base*-specific in a way no substitution repairs.  So the honest
+decomposition of the work is **level: mechanical; base: a rewrite of the
+genericity device** — and the second half is the reason this leaf is still open.
+
+FAITHFULNESS: true and classical for every field with `char k ∤ n`; the
+`k`-automorphism clause is III.8.1(e), which holds for all of `Gal(k̄/k)` and not
+merely for a distinguished element.  The `DecidableEq` `letI` is stated with
+`Classical.typeDecidableEq` and named identically in the consumer, so the two
+`AddCommGroup` structures on `(E⁄k̄).Point` match syntactically. -/
+theorem exists_weilPairing_mu_nondeg_of_natCast_ne_zero {k : Type u} [Field k]
+    (E : WeierstrassCurve k) [E.IsElliptic] (n : ℕ)
+    (hnk : ((n : ℕ) : k) ≠ 0) :
+    letI : DecidableEq (AlgebraicClosure k) := Classical.typeDecidableEq _
+    ∃ e : ((E.map (algebraMap k (AlgebraicClosure k))).nTorsion n) →
+          ((E.map (algebraMap k (AlgebraicClosure k))).nTorsion n) →
+          (AlgebraicClosure k)ˣ,
+      (∀ x y z, e (x + y) z = e x z * e y z) ∧
+      (∀ x y z, e x (y + z) = e x y * e x z) ∧
+      (∀ x, e x x = 1) ∧
+      (∀ x y, (e x y) ^ n = 1) ∧
+      (∀ x, x ≠ 0 → ∃ y, e x y ≠ 1) ∧
+      (∀ (σ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k) x y,
+        e (TorsionCounting.endRestrict (WeierstrassCurve.Affine.Point.map (W' := E)
+              σ.toAlgHom) (n : ℤ) x)
+          (TorsionCounting.endRestrict (WeierstrassCurve.Affine.Point.map (W' := E)
+              σ.toAlgHom) (n : ℤ) y)
+          = Units.map σ.toAlgHom.toRingHom.toMonoidHom (e x y)) :=
+  sorry
+
 /-- **THE `μ_n`-VALUED WEIL PAIRING OVER THE ALGEBRAIC CLOSURE OF A
-CHARACTERISTIC-ZERO FIELD** (sorry leaf, cut 2026-07-28 out of
-`det_nTorsion_eq_neg_one_of_conj_inv` below).  This is the ONE genuinely missing
-piece of mathematics in the whole archimedean cluster; everything between it and
-`exists_weilPairing_real` is now proven.
+CHARACTERISTIC-ZERO FIELD** (**PROVEN 2026-07-30** over the single leaf
+`exists_weilPairing_mu_nondeg_of_natCast_ne_zero` above; formerly a bare `sorry`,
+cut 2026-07-28 out of
+`det_nTorsion_eq_neg_one_of_conj_inv` below).
 
 WHAT IT SAYS.  On `E[n]` over `F̄` (`F` of characteristic zero, `n ≥ 1`) there is
 a multiplicatively bilinear, alternating pairing valued in `F̄ˣ`, killed by `n`,
 taking a PRIMITIVE `n`-th root of unity as a value, and natural for the FULL
 absolute Galois group: `e(τx, τy) = τ(e(x, y))` for every `τ`.
 
-This is Silverman *AEC* III.8.1(a)–(e) verbatim, with the base field of
-`WeilPairing.exists_weilPairing_mu` (namely `𝔽_q`, `p` prime) replaced by an
-arbitrary characteristic-zero `F` and an arbitrary level `n`.  The construction
-is identical — the coordinate ring of `E ⊗ F̄` is Dedekind, `E[n]` sits in its
-class group through `Point.toClass`, the `n`-th power of a point ideal is
-principal with a Miller generator `f_P`, and `e(P, Q) = f_P(D_Q)/f_Q(D_P)` is
-well defined by Weil reciprocity — and it never uses finiteness of the base or
-the existence of a Frobenius.  What it DOES use is `(n : F̄) ≠ 0`, which
-`CharZero` supplies for every `n ≥ 1`; this is the exact analogue of `p ≠ q`
-there.
+THE PROOF, which is now real code (2026-07-30).  It is two moves and neither is
+archimedean or characteristic-zero-specific:
+
+* `exists_weilPairing_mu_nondeg_of_natCast_ne_zero` above supplies the pairing
+  over an arbitrary base with `(n : k) ≠ 0` — here `CharZero F` and `1 ≤ n` — with
+  Silverman's own NONDEGENERACY clause `∀ x ≠ 0, ∃ y, e x y ≠ 1` and with the
+  Galois clause quantified over ALL of `AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F`,
+  so `Field.absoluteGaloisGroup F` is a specialisation and nothing is lost;
+* `isPrimitiveRoot_of_nondegenerate_fin_two` above upgrades nondegeneracy to the
+  primitive value on a basis, the basis coming from
+  `WeierstrassCurve.n_torsion_dimension` at the separably closed `F̄` exactly as
+  in `det_nTorsion_eq_neg_one_of_conj_inv` below (`ZMod.map_smul` makes the
+  additive equivalence `ZMod n`-linear, `Module.Basis.finTwoProd` transports the
+  standard basis back).
+
+So the ONE genuinely missing piece of mathematics in the archimedean cluster is
+now the single leaf above, and it is missing in the honest form: Silverman
+III.8.1 over a base that is not a finite field.  See that leaf for why the
+finite-field proof in `WeilPairing.lean` cannot be ported by substituting the
+base.
 
 WHY THE VALUE CLAUSE IS `IsPrimitiveRoot` AND NOT `∃ y, e x y ≠ 1`.  Over `ZMod n`
 with `n` composite, "nondegenerate" in the weak sense does not pin the scalar by
@@ -46100,7 +46400,8 @@ to a scalar, so the primitive-value clause forces `e` to be the Weil pairing up
 to a unit.  The Galois clause then carries the arithmetic — it is what yields
 `det τ = χ_n(τ)`.
 
-THE CHECK THAT WOULD REFUTE THE "missing" CLAIM: a `μ_n`-valued pairing on
+THE CHECK THAT WOULD REFUTE THE "missing" CLAIM (it still applies verbatim to the
+leaf above, which is where the gap now lives): a `μ_n`-valued pairing on
 `nTorsion n` over a base that is not a finite field, anywhere in `Fermat/`,
 `.lake/packages/mathlib/` or `~/cs/FLT/`.  THE AXIS SEARCHED (2026-07-28): every
 `exists_weilPairing*` in this project (`WeilPairing.lean` — `𝔽_q`, prime level;
@@ -46132,13 +46433,33 @@ theorem exists_weilPairing_mu_charZero {F : Type u} [Field F] [CharZero F]
               (τ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom) (n : ℤ) y)
           = Units.map
               (τ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom.toRingHom.toMonoidHom
-              (e x y)) :=
-  sorry
+              (e x y)) := by
+  letI : DecidableEq (AlgebraicClosure F) := Classical.typeDecidableEq _
+  haveI : NeZero n := ⟨by omega⟩
+  haveI hcharK : CharZero (AlgebraicClosure F) :=
+    charZero_of_injective_algebraMap (algebraMap F (AlgebraicClosure F)).injective
+  have hn0 : ((n : ℕ) : AlgebraicClosure F) ≠ 0 := Nat.cast_ne_zero.mpr (by omega)
+  have hnF : ((n : ℕ) : F) ≠ 0 := Nat.cast_ne_zero.mpr (by omega)
+  obtain ⟨e, hbl, hbr, halt, hord, hnondeg, hgal⟩ :=
+    exists_weilPairing_mu_nondeg_of_natCast_ne_zero E n hnF
+  refine ⟨e, hbl, hbr, halt, hord, ?_, fun τ x y => hgal _ x y⟩
+  -- the rank-two basis of the `n`-torsion at the separably closed `F̄`
+  obtain ⟨φ⟩ := WeierstrassCurve.n_torsion_dimension
+    (E.map (algebraMap F (AlgebraicClosure F))) hn0
+  let ψ : ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n) ≃ₗ[ZMod n]
+      (ZMod n × ZMod n) := { φ with map_smul' := ZMod.map_smul φ.toAddMonoidHom }
+  let b : Module.Basis (Fin 2) (ZMod n)
+      ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n) :=
+    (Module.Basis.finTwoProd (ZMod n)).map ψ.symm
+  exact ⟨b 0, b 1,
+    isPrimitiveRoot_of_nondegenerate_fin_two hn b e hbl hbr halt hord hnondeg⟩
 
 /-- **THE WEIL PAIRING, IN THE ONE FORM THIS NODE NEEDS: `det(τ | E[n]) = −1`
-WHENEVER `τ` INVERTS `μ_n`** (**PROVEN 2026-07-28** over the single leaf
-`exists_weilPairing_mu_charZero` above; formerly a bare `sorry`, cut the same day
-out of `exists_weilPairing_real`).  Nothing archimedean survives the cut: the
+WHENEVER `τ` INVERTS `μ_n`** (**PROVEN 2026-07-28** over
+`exists_weilPairing_mu_charZero` above — itself PROVEN 2026-07-30, so the single
+leaf under this node is now
+`exists_weilPairing_mu_nondeg_of_natCast_ne_zero`; formerly a bare `sorry`, cut
+the same day out of `exists_weilPairing_real`).  Nothing archimedean survives the cut: the
 statement is over an ARBITRARY field `F` of characteristic zero, and the only
 trace of the real place is the hypothesis `hinv`, which
 `realConj_mul_eq_one_of_pow_eq_one` above DISCHARGES over `ULift ℝ`.
@@ -46345,16 +46666,22 @@ CUT 2026-07-27: the leaf is discharged from the single sub-leaf
 ONLY form the node consumes — plus a real assembly.  See that leaf's docstring
 for why the pairing form was chosen over the determinant form.
 
-STATUS 2026-07-28 (updated later the same day): `exists_weilPairing_real` is
-PROVEN over `det_nTorsion_eq_neg_one_of_conj_inv`, and THAT is now PROVEN too,
-over the single leaf `exists_weilPairing_mu_charZero`.  So the whole chain from
-this node down is real code except for one statement: the `μ_n`-valued Weil
-pairing over `F̄` for `F` of characteristic zero.  The archimedean half is closed
+STATUS 2026-07-30 (superseding 2026-07-28): `exists_weilPairing_real` is PROVEN
+over `det_nTorsion_eq_neg_one_of_conj_inv`, THAT is PROVEN over
+`exists_weilPairing_mu_charZero`, and THAT is now PROVEN too, over the single leaf
+`exists_weilPairing_mu_nondeg_of_natCast_ne_zero`.  So the whole chain from this
+node down is real code except for one statement: Silverman *AEC* III.8.1 over a
+base field that is not finite.  The archimedean half is closed
 (`realConj_mul_eq_one_of_pow_eq_one`), the discrete-logarithm and rank-two
 linear-algebra halves are closed
 (`alternating_eq_coordDet_mul_fin_two`, `det_eq_of_alternating_scaling_fin_two`,
-`coordDet_map_eq_det_mul`), and what remains is base-generic and level-generic
-arithmetic.
+`coordDet_map_eq_det_mul`), and the nondegenerate-versus-primitive-value gap
+between what the construction produces and what the determinant identity consumes
+is closed by `isPrimitiveRoot_of_nondegenerate_fin_two`.  What remains is the
+CONSTRUCTION, and the estimate "base-generic and level-generic arithmetic" was too
+cheap: the formalised finite-field proof is organised around finite subfields and
+does not survive substitution of the base — see the leaf's own docstring for the
+measurement.
 
 CORRECTION to the "MISSING MACHINERY" paragraph above, which said the needed
 pairing is "the pairing itself over `ULift ℝ`": `ULift ℝ` is not the right
