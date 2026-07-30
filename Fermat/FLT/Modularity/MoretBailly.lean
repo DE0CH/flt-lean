@@ -10514,8 +10514,8 @@ theorem exists_irreducible_hypersurface_fractionRing_ringEquiv_rat
   exists_irreducible_hypersurface_fractionRing_ringEquiv_perfectField ℚ S
 
 open _root_.TensorProduct in
-/-- **GEOMETRIC INTEGRALITY PASSES FROM A DOMAIN TO ITS FRACTION FIELD** (SORRY
-LEAF, cut 2026-07-28 out of
+/-- **GEOMETRIC INTEGRALITY PASSES FROM A DOMAIN TO ITS FRACTION FIELD**
+(**PROVEN 2026-07-30**; cut 2026-07-28 out of
 `isDomain_algebraicClosure_tensorProduct_of_fractionRing_ringEquiv` immediately
 below, which is PROVEN over it).
 
@@ -10535,6 +10535,34 @@ introduced explicitly — `letI`, or an `attribute [local instance]` scoped to a
 section. That is the whole reason this step is a leaf rather than three more lines
 in the proof below.
 
+**HOW IT WAS ACTUALLY CLOSED, 2026-07-30 — AND THE WARNING ABOVE IS AVOIDABLE.**
+The route above (`IsLocalization.tensor` on `(ℚ̄ ⊗_ℚ A) ⊗_A Frac A`, then
+`cancelBaseChange`) really does need `rightAlgebra`, and a stronger form of the same
+observation as `baseChangeQuotientEquiv`'s docstring: the *cancellation* step is what
+drags the local instance in.  It is not on the critical path.  Mathlib carries the
+statement one wants DIRECTLY on `S ⊗[R] B`, with no cancellation and no `AlgEquiv`
+transport:
+
+    IsLocalization.tensorProduct_tensorProduct_right
+      (R S) (M : Submonoid A) (B) [IsLocalization M B]
+      [Algebra (S ⊗[R] A) (S ⊗[R] B)] [IsScalarTower S (S ⊗[R] A) (S ⊗[R] B)]
+      (H : algebraMap _ _ ∘ includeRight = includeRight ∘ algebraMap A B) :
+      IsLocalization (M.map includeRight) (S ⊗[R] B)
+
+(`Mathlib/RingTheory/Localization/BaseChange.lean`, checked at this pin).  The
+`Algebra (S ⊗[R] A) (S ⊗[R] B)` it asks for is supplied by
+`Algebra.TensorProduct.map (AlgHom.id R S) (IsScalarTower.toAlgHom R A B)` — the
+FUNCTORIAL structure induced by `A → Frac A`, which is a global construction and has
+nothing to do with `rightAlgebra`.  `H` and the scalar tower are both `simp
+[RingHom.algebraMap_toAlgebra]`.  What is left is exactly the mathematical content
+recorded above: the inverted set lies in `nonZeroDivisors (ℚ̄ ⊗ A)` because
+`Algebra.TensorProduct.includeRight_injective` (available since `ℚ̄` is flat over the
+field `ℚ`) and `h`, whence `IsLocalization.isDomain_of_le_nonZeroDivisors`.
+
+Recorded because the same "cancel the base change" reflex appears three more times in
+this file, and in each of them the local-instance cost is paid for a cancellation that
+`tensorProduct_tensorProduct_right` would have made unnecessary.
+
 WHY IT IS A SEPARATE LEAF. It is the ONLY non-formal step of the birational
 invariance lemma below: the other two steps — transporting along a ring
 equivalence of fraction fields, and descending from `Frac B` back to `B` by
@@ -10548,8 +10576,47 @@ carries `Nontrivial` and `NoZeroDivisors`, and the latter genuinely fails for
 theorem isDomain_algebraicClosure_tensorProduct_fractionRing
     {A : Type*} [CommRing A] [IsDomain A] [Algebra ℚ A]
     (h : IsDomain (AlgebraicClosure ℚ ⊗[ℚ] A)) :
-    IsDomain (AlgebraicClosure ℚ ⊗[ℚ] FractionRing A) :=
-  sorry
+    IsDomain (AlgebraicClosure ℚ ⊗[ℚ] FractionRing A) := by
+  classical
+  haveI := h
+  -- The `Algebra (ℚ̄ ⊗ A)`-structure on `ℚ̄ ⊗ Frac A` is the one induced by `A → Frac A`;
+  -- it is NOT `Algebra.TensorProduct.rightAlgebra` and needs no local instance at all.
+  letI : Algebra (AlgebraicClosure ℚ ⊗[ℚ] A) (AlgebraicClosure ℚ ⊗[ℚ] FractionRing A) :=
+    (Algebra.TensorProduct.map (AlgHom.id ℚ (AlgebraicClosure ℚ))
+      (IsScalarTower.toAlgHom ℚ A (FractionRing A))).toAlgebra
+  haveI : IsScalarTower (AlgebraicClosure ℚ) (AlgebraicClosure ℚ ⊗[ℚ] A)
+      (AlgebraicClosure ℚ ⊗[ℚ] FractionRing A) :=
+    .of_algebraMap_eq fun x => by
+      simp [RingHom.algebraMap_toAlgebra, Algebra.TensorProduct.algebraMap_apply]
+  have H : (algebraMap (AlgebraicClosure ℚ ⊗[ℚ] A) (AlgebraicClosure ℚ ⊗[ℚ] FractionRing A)).comp
+      (Algebra.TensorProduct.includeRight (R := ℚ) (A := AlgebraicClosure ℚ)).toRingHom =
+      (Algebra.TensorProduct.includeRight (R := ℚ) (A := AlgebraicClosure ℚ)).toRingHom.comp
+        (algebraMap A (FractionRing A)) := by
+    ext a
+    simp [RingHom.algebraMap_toAlgebra]
+  -- `ℚ̄ ⊗ Frac A` IS the localization of `ℚ̄ ⊗ A` at the image of `A ∖ {0}` — stated
+  -- directly on `ℚ̄ ⊗ Frac A`, so no transport along an `AlgEquiv` is needed.
+  haveI : IsLocalization ((nonZeroDivisors A).map
+      (Algebra.TensorProduct.includeRight (R := ℚ) (A := AlgebraicClosure ℚ)).toRingHom)
+      (AlgebraicClosure ℚ ⊗[ℚ] FractionRing A) :=
+    IsLocalization.tensorProduct_tensorProduct_right ℚ (AlgebraicClosure ℚ)
+      (nonZeroDivisors A) (FractionRing A) H
+  refine IsLocalization.isDomain_of_le_nonZeroDivisors
+    (R := AlgebraicClosure ℚ ⊗[ℚ] A)
+    (M := (nonZeroDivisors A).map
+      (Algebra.TensorProduct.includeRight (R := ℚ) (A := AlgebraicClosure ℚ)).toRingHom)
+    (AlgebraicClosure ℚ ⊗[ℚ] FractionRing A) ?_
+  -- The inverted set consists of non-zerodivisors because `includeRight` is injective
+  -- (`ℚ̄` is flat over `ℚ`) and `ℚ̄ ⊗ A` is a domain by hypothesis.
+  rintro x ⟨a, ha, rfl⟩
+  rw [mem_nonZeroDivisors_iff_ne_zero]
+  have hinj : Function.Injective
+      (Algebra.TensorProduct.includeRight :
+        A →ₐ[ℚ] AlgebraicClosure ℚ ⊗[ℚ] A) :=
+    Algebra.TensorProduct.includeRight_injective (RingHom.injective _)
+  have ha0 : a ≠ 0 := mem_nonZeroDivisors_iff_ne_zero.mp ha
+  intro hx
+  exact ha0 (hinj (by simpa using hx))
 
 open _root_.TensorProduct in
 /-- **GEOMETRIC INTEGRALITY IS A BIRATIONAL INVARIANT** (**PROVEN 2026-07-28** over
