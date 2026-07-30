@@ -8601,17 +8601,17 @@ different `𝔡_I⁻¹` is PRINCIPAL, say `𝔡_I⁻¹ = (δ)`.  `θ` is
 `c ↦ Tr_{D_I/ℚ_q}(δ c)`, and the two substantive clauses say that the
 induced pairing
 
-  `𝒪_D/I^k × O/(j π)^k ⟶ ℤ_q/q^k`,   `(b, c) ↦ θ (j b * c)`
+  `𝒪_D/q^k 𝒪_D · O × O/(j π)^k ⟶ ℤ_q/q^k`,   `(b, c) ↦ θ (j b * c)`
 
-is PERFECT: every level-`k` additive functional on `𝒪_D` that kills `I^k`
-is represented by some `c` (third clause), and the representing `c` is
-unique modulo `(j π)^k` (fourth clause).  That is exactly the definition of
-the different, and it is what converts an `𝒪_D`-ADJOINT `ℤ`-valued pairing
-into an `𝒪_D`-BILINEAR `𝒪_D`-valued one.
+is PERFECT: every level-`k` additive functional on `𝒪_D` that kills the
+elements `a` with `j a ∈ (q)^k` is represented by some `c` (third clause),
+and the representing `c` is unique modulo `(j π)^k` (fourth clause).  That
+is exactly the definition of the different, and it is what converts an
+`𝒪_D`-ADJOINT `ℤ`-valued pairing into an `𝒪_D`-BILINEAR `𝒪_D`-valued one.
 
 The first two clauses are the ambient linearity of a trace: additivity and
 `ℤ_q`-linearity.  Note the functionals `φ` of the third clause are only
-required to be additive MODULO `q^k` and to kill `I^k` MODULO `q^k` —
+required to be additive MODULO `q^k` and to kill the level MODULO `q^k` —
 which is what the applications supply, since they arise as
 `b ↦ L k (w k (b y) z)` and `L` is itself only additive modulo `q^k`.
 
@@ -8619,6 +8619,55 @@ WHY BOTH DIRECTIONS ARE STATED even though the two finite groups have the
 same order: the development never has the cardinality count in hand, and
 `c` is only ever pinned modulo `(j π)^k`, so surjectivity and injectivity
 must be available separately.
+
+**THE ANNIHILATION HYPOTHESIS OF THE THIRD CLAUSE IS `(q)^k`, NOT `I^k`,
+AND THE DIFFERENCE IS THE WHOLE CLAUSE AT A RAMIFIED `I` (repaired
+2026-07-31).**  Until this date the hypothesis read `∀ a ∈ I ^ k`.  That is
+STRICTLY STRONGER than what it now reads — `j a ∈ span {(q : O)} ^ k`,
+which by `hker` and `span {j π} ^ e = span {(q : O)}` is `a ∈ I ^ (e·k)`
+for `e = v_I(q)` — so the clause was strictly WEAKER, and at `e ≥ 2` too
+weak to be usable at all.
+
+WHY, and this is not a matter of convenience.  The functionals the
+development feeds this clause are
+`φ(b) = L N (w N (m.act b (t.1 (e·N))) (s.1 (e·N)))`, which classically is
+`b ↦ Tr(δ · b · u^{2N} E(t,s)) mod q^N` with `u = q/π^e` a unit and
+`E(t,s) ∈ O`.  Such a `φ` kills EXACTLY `{a : v_I(a) ≥ e·N}` — it does not
+kill `I^N`.  Explicitly, at `D = ℚ(√5)`, `q = 5`, `I = (√5)`, `π = √5`,
+`e = 2`, `u = 1`: the local different is `𝔡 = (π)` (tame, `e = 2`, `5` odd)
+so `δ = π⁻¹` up to a unit, and at `N = 1`, `b = π ∈ I`,
+`φ(π) = Tr(π⁻¹ · π · E(t,s)) = Tr(E(t,s))`, which is `2` for a unimodular
+`E` — a UNIT of `ℤ₅`, not an element of `(5)`.  So the old hypothesis was
+unsatisfiable by the intended input whenever `I` ramifies over `q`, and the
+third clause could not be invoked at any positive level.
+
+THE CONSEQUENCE, which is why this was worth chasing: every constant the
+OLD clause could produce lies in `(j π)^{(e-1)k}`, hence is a NON-UNIT for
+`e ≥ 2` and `k ≥ 1`, and the ninth (perfectness) clause of
+`IsTateWeilRawFamily` demands a UNIT.  So
+`exists_tateWeilRawFamily_of_qAdicWeilSystem` — whose whole route is this
+clause — was unattackable at ramified `I` while looking like ordinary work.
+
+AND THE OLD FOUR CLAUSES DID NOT PIN `θ` DOWN.  Write `θ_m = Tr(δ π^m ·)`.
+For every `0 ≤ m ≤ e - 1` all four OLD clauses hold of `θ_m`: the fourth
+because `{c : Tr(δπ^m 𝒪 c) ⊆ q^k} = π^{ek-m}𝒪 ⊆ π^k 𝒪` exactly when
+`m ≤ (e-1)k`, and the third by the same count as below.  The repaired third
+clause holds ONLY for `m = 0`: the functionals killing `I^{ek}` form a group
+of order `q^{efk}`, the map `c ↦ (b ↦ θ_m (j b c))` has kernel `π^{ek-m}𝒪`,
+so its image has order `q^{f(ek-m)}`, and surjectivity forces `m = 0`.  In
+other words the strengthened clause is exactly the statement that `θ`
+GENERATES `Hom_{ℤ_q}(O, ℤ_q)` as an `O`-module, which is what
+`exists_traceDualFunctional_of_adicPin` builds anyway — so the repair costs
+that proof nothing, and it was only the statement that was under-committed.
+
+The strengthened clause is TRUE: `O` is free of rank `ef` over `ℤ_q`, so
+`O/q^k O` and `Hom(O/q^k O, ℤ/q^k)` both have order `q^{efk}`, and
+`c ↦ θ(· c)` has kernel exactly `q^k O`, hence is bijective onto the
+functionals that kill `q^k O`.  No cardinality argument is needed in the
+formal proof, which lifts instead — see
+`exists_linearMap_congr_of_adicPin`, where the approximation depth was
+ALREADY `N = e·k` and the old hypothesis was being weakened on the way in
+by `Ideal.pow_le_pow_right`.
 
 MATHLIB INGREDIENTS: `Submodule.traceDual`, `FractionalIdeal.dual`,
 `differentIdeal`, `Algebra.traceForm_nondegenerate`, together with the
@@ -8634,7 +8683,8 @@ def IsTraceDualFunctional {D : Type u} [Field D] [NumberField D]
   (∀ (k : ℕ) (φ : NumberField.RingOfIntegers D → ℤ_[q]),
       (∀ a b : NumberField.RingOfIntegers D,
         φ (a + b) - (φ a + φ b) ∈ Ideal.span {(q : ℤ_[q])} ^ k) →
-      (∀ a ∈ I ^ k, φ a ∈ Ideal.span {(q : ℤ_[q])} ^ k) →
+      (∀ a : NumberField.RingOfIntegers D, j a ∈ Ideal.span {(q : O)} ^ k →
+        φ a ∈ Ideal.span {(q : ℤ_[q])} ^ k) →
       ∃ c : O, ∀ b : NumberField.RingOfIntegers D,
         φ b - θ (j b * c) ∈ Ideal.span {(q : ℤ_[q])} ^ k) ∧
   (∀ (k : ℕ) (c : O),
@@ -9616,16 +9666,29 @@ functional on `O`** (PROVEN 2026-07-29).
 
 This is the surjectivity half of trace duality done by LIFTING rather than
 by counting, and it is why no cardinality argument appears anywhere in this
-cluster.  `φ` is only additive modulo `q^k` and only kills `I^k` modulo
-`q^k` — which is what the applications supply, since they arise as
+cluster.  `φ` is only additive modulo `q^k` and only kills the level `(q)^k`
+modulo `q^k` — which is what the applications supply, since they arise as
 `b ↦ L k (w k (b y) z)` — and the conclusion is an honest `ℤ_q`-LINEAR map
 agreeing with it modulo `q^k` on `j 𝒪_D`.
+
+**`hann` IS AT `(q)^k`, NOT AT `I^k` (repaired 2026-07-31), and the
+statement is STRICTLY STRONGER for it.**  `j a ∈ span {(q : O)} ^ k` says
+`a ∈ I^{e·k}` by `hker` together with `span {j π} ^ e = span {(q : O)}`, so
+the hypothesis is weaker than the old `a ∈ I ^ k` by a factor of `e` in the
+exponent.  The PROOF is unchanged apart from one line: its approximation
+depth was ALREADY `N = e·k`, and the old hypothesis was being thrown away on
+the way in by `Ideal.pow_le_pow_right` — the `have hNk : k ≤ N` that did the
+throwing away is now gone, along with its only use.  The strengthening is
+what makes the clause usable at a RAMIFIED `I`, where the Weil functionals
+of the application kill `I^{e·k}` and NOT `I^k`; see the audit on
+`IsTraceDualFunctional` for the explicit `ℚ(√5)` witness and for why every
+constant obtainable from the old form was a non-unit.
 
 Three steps, each of which is where one hypothesis is consumed.
 
 1. `z ↦ φ a` for any `a` with `z ≡ j a` modulo `(jπ)^{ek}` is well defined:
-   two such `a` differ by an element of `I^{ek} ⊆ I^k` (`hker`, and `e ≥ 1`),
-   which `φ` kills modulo `q^k`.  This is where
+   two such `a` differ by an element `d` with `j d ∈ (q)^k`, which `φ` kills
+   modulo `q^k`.  This is where
    `exists_pow_span_uniformizer_eq_span_natCast_of_adicPin` is used, to make
    `(jπ)^{ek} = (q)^k`.
 2. The resulting map is automatically `ℤ_q`-LINEAR, not merely additive,
@@ -9653,19 +9716,16 @@ theorem exists_linearMap_congr_of_adicPin
     (k : ℕ) (φ : NumberField.RingOfIntegers D → ℤ_[q])
     (hadd : ∀ a b : NumberField.RingOfIntegers D,
       φ (a + b) - (φ a + φ b) ∈ Ideal.span {(q : ℤ_[q])} ^ k)
-    (hann : ∀ a ∈ I ^ k, φ a ∈ Ideal.span {(q : ℤ_[q])} ^ k) :
+    (hann : ∀ a : NumberField.RingOfIntegers D, j a ∈ Ideal.span {(q : O)} ^ k →
+      φ a ∈ Ideal.span {(q : ℤ_[q])} ^ k) :
     ∃ Ψ : O →ₗ[ℤ_[q]] ℤ_[q], ∀ b : NumberField.RingOfIntegers D,
       Ψ (j b) - φ b ∈ Ideal.span {(q : ℤ_[q])} ^ k := by
   classical
   haveI := hfree
-  obtain ⟨e, he0, hespan⟩ :=
+  obtain ⟨e, _he0, hespan⟩ :=
     exists_pow_span_uniformizer_eq_span_natCast_of_adicPin hI hqI hdense hker
   set Q : Ideal ℤ_[q] := Ideal.span {(q : ℤ_[q])} ^ k with hQdef
   set N : ℕ := e * k with hNdef
-  have hNk : k ≤ N := by
-    rw [hNdef]
-    calc k = 1 * k := (one_mul k).symm
-      _ ≤ e * k := Nat.mul_le_mul_right k he0
   have hspanN : Ideal.span {j π} ^ N = Ideal.span {(q : O)} ^ k := by
     rw [hNdef, pow_mul, hespan]
   have hφadd' : ∀ a b : NumberField.RingOfIntegers D, φ (a + b) - φ a - φ b ∈ Q := by
@@ -9695,13 +9755,13 @@ theorem exists_linearMap_congr_of_adicPin
   have hwd : ∀ (z : O) (b : NumberField.RingOfIntegers D), z - j b ∈ Ideal.span {j π} ^ N →
       (Submodule.Quotient.mk (p := Q) (φ b)) = Submodule.Quotient.mk (p := Q) (φ (apx z)) := by
     intro z b hb
-    have hsub : b - apx z ∈ I ^ N := by
-      refine (hker N _).mp ?_
+    have hsub : j (b - apx z) ∈ Ideal.span {(q : O)} ^ k := by
+      rw [← hspanN]
       have h1 : j (b - apx z) = (z - j (apx z)) - (z - j b) := by
         rw [map_sub]; ring
       rw [h1]
       exact sub_mem (hapx z) hb
-    have hval : φ (b - apx z) ∈ Q := hann _ (Ideal.pow_le_pow_right hNk hsub)
+    have hval : φ (b - apx z) ∈ Q := hann _ hsub
     have h2 := hφadd' (apx z) (b - apx z)
     rw [add_sub_cancel] at h2
     have h3 : φ b - φ (apx z) = (φ b - φ (apx z) - φ (b - apx z)) + φ (b - apx z) := by ring
