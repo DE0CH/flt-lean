@@ -188,7 +188,18 @@ leaves it moved to are, in dependency order:
     and show it is proper, smooth and geometrically connected.  This is
     what BLR 9.4/4 is usually cited FOR, and it is the leaf with real
     content: the identity component of a group scheme does not exist at
-    this pin in any form.
+    this pin in any form.  Its FIRST classical step was cut out
+    2026-07-30 as `smooth_isSeparated_of_isRelPicOf` and is received back
+    as the hypotheses `_hPsmooth`/`_hPsep`; the parent
+    `exists_relPicZeroOf_of_relPicGroupLaw` discharges them by that leaf,
+    so nothing downstream changed.
+
+So the direct-sorry set of this module is 9 (verified against the
+compiler's `declaration uses 'sorry'` warnings, and against a
+comment-stripped token count — 9 = 9, so there are no anonymous inner
+sorries hiding behind a warning), and the four that belong to BLR 9.4/4
+are `isInvertibleSheaf_sectionIdeal`, `nonempty_modPullback_sectionIdeal`,
+`smooth_isSeparated_of_isRelPicOf` and `exists_relPicZeroSubgroup`.
 
 Also PROVEN here and worth knowing about before re-deriving them:
 `modTensorMapIso`, `modTensorUnitLeftIso`, `modTensorUnitRightIso`,
@@ -2162,9 +2173,11 @@ three classical steps:
 
 * `Pic ⟶ S` is **smooth and separated** — this is where `_hpush`
   (`f_*𝒪 = 𝒪` universally) and the vanishing of `H²` on a relative curve
-  are spent.  **CUT OUT 2026-07-29** as `smooth_isSeparated_of_isRelPicOf`
-  above, and received here as the two hypotheses `_hPsmooth` and `_hPsep`;
-  the parent discharges them by that leaf, so nothing downstream changed;
+  are spent.  **CUT OUT** as `smooth_isSeparated_of_isRelPicOf` above
+  (stated 2026-07-29, wired up 2026-07-30), and received here as the two
+  hypotheses `_hPsmooth` and `_hPsep`; the parent
+  `exists_relPicZeroOf_of_relPicGroupLaw` discharges them by that leaf, so
+  nothing downstream changed;
 * the **identity component** `Pic⁰ ⊆ Pic` exists as an open subgroup
   scheme.  Genuinely absent from the pin: there is no identity-component
   construction for group schemes at `a3364fa`;
@@ -2210,6 +2223,7 @@ theorem exists_relPicZeroSubgroup {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : 
     (_hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S))
     (hP : IsRelPicOf strX pstr)
     (_hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX)
+    (_hPsmooth : Smooth pstr) (_hPsep : IsSeparated pstr)
     (_hequiv : ∀ {T : Scheme.{u}} (g : T ⟶ S), Equivalence (RelPicEquiv strX g))
     (aj : ∀ (T : Scheme.{u}) (g : T ⟶ S), RelPoint strX g → RelPoint pstr g)
     (_haj : ∀ (T : Scheme.{u}) (g : T ⟶ S) (x : RelPoint strX g),
@@ -2264,8 +2278,11 @@ theorem exists_relPicZeroOf_of_relPicGroupLaw {X P S : Scheme.{u}} {strX : X ⟶
       Nonempty (IsRelPicZeroOf strX ab o) := by
   obtain ⟨aj, hajSpec, hajPre, hajBase⟩ :=
     exists_abelJacobiPoint _hproper _hsmooth o hP
+  obtain ⟨hPsmooth, hPsep⟩ :=
+    smooth_isSeparated_of_isRelPicOf _hproper _hsmooth _hconn hP _hpush
   obtain ⟨J, jstr, ab, incl, hinj, hzero, hadd, hpre, himg⟩ :=
-    exists_relPicZeroSubgroup _hproper _hsmooth _hconn o hP _hpush _hequiv aj hajSpec
+    exists_relPicZeroSubgroup _hproper _hsmooth _hconn o hP _hpush hPsmooth hPsep
+      _hequiv aj hajSpec
   choose aj' haj' using himg
   refine ⟨J, jstr, ab, ⟨?_⟩⟩
   exact
