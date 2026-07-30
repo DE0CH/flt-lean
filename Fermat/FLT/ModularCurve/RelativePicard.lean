@@ -212,9 +212,21 @@ leaves it moved to are, in dependency order:
   lemma `relPicEquiv_modPullback` (stability of `RelPicEquiv` under change
   of test object) — and proven with the hypothesis-free signature the cut
   predicted, so the "unconditional" claim there is compiler-checked now
-  rather than asserted.  The two remaining dispatch targets of this cut
-  are `exists_isRelPicOverAffines_of_forall_isAffineOpen` (the geometry)
-  and `surj_of_isRelPicOverAffines` (BLR 8.1/4);
+  rather than asserted.
+
+  **Amended a third time, 2026-07-30 (later the same day): the third of
+  the three, `surj_of_isRelPicOverAffines`, is now PROVEN too**, over the
+  single new leaf `relPicEquiv_of_forall_restrict` — the statement that
+  `T ↦ Pic(X_T)/Pic(T)` is a ZARISKI SHEAF, with no `pstr` and no
+  representing scheme anywhere in it.  What that discharged is everything
+  scheme-theoretic in BLR 8.1/4: the local classifying points, their
+  agreement on overlaps (via the affine-local `inj` and the two new
+  functoriality lemmas `curveBaseChangeMap_comp` /
+  `curveBaseChangeMap_congr`), and their gluing to a global `T ⟶ P`.
+  `_o` and `_hpush` are still consumed exactly once, but now inside the
+  leaf, whose docstring carries the refutation of dropping either.  The
+  ONE remaining dispatch target of this cut is
+  `exists_isRelPicOverAffines_of_forall_isAffineOpen` (the geometry);
 * `exists_relPicZeroOf_of_relPicGroupLaw` — BLR 9.4/4 with `f_*𝒪 = 𝒪`,
   the equivalence relation and the group law on `Pic`'s points supplied.
   **Amended 2026-07-29: this one is now PROVEN**, over a two-leaf cut of
@@ -237,19 +249,34 @@ leaves it moved to are, in dependency order:
     `exists_relPicZeroOf_of_relPicGroupLaw` discharges them by that leaf,
     so nothing downstream changed.
 
-So the direct-sorry set of this module is 9 (verified against the
-compiler's `declaration uses 'sorry'` warnings, and against a
-comment-stripped token count — 9 = 9, so there are no anonymous inner
-sorries hiding behind a warning), and the four that belong to BLR 9.4/4
-are `isInvertibleSheaf_sectionIdeal`, `nonempty_modPullback_sectionIdeal`,
-`smooth_isSeparated_of_isRelPicOf` and `exists_relPicZeroSubgroup`.
+So the direct-sorry set of this module is **10**, and the four that belong
+to BLR 9.4/4 are `isInvertibleSheaf_sectionIdeal`,
+`nonempty_modPullback_sectionIdeal`, `smooth_isSeparated_of_isRelPicOf` and
+`exists_relPicZeroSubgroup`.
 
-**Amended 2026-07-30: still 9, but not the same 9.**
-`nonempty_modPullback_modTensorPic` left the set and
-`nonempty_presheafPullback_tensor` entered it (a leaf-for-leaf cut, with the
-sheaf theory discharged and only a `PresheafOfModules` statement left).  Do
-not read the unchanged COUNT as an unchanged FRONTIER — regenerate the list
-with `flt-frontier.py` rather than trusting any of the names above.
+**This paragraph said 9 until 2026-07-30, and the 9 was WRONG — not stale,
+wrong.**  Re-measured three ways at once, all agreeing on 10: the
+compiler's `declaration uses 'sorry'` warning set, a comment-stripped
+`sorry`-token count, and an attribution of each token to its enclosing
+declaration header.  The last two matter beyond the headline number,
+because 10 tokens over 10 distinct declarations is what rules out
+ANONYMOUS INNER SORRIES — several elsewhere in this development hide
+behind a single warning, and no frontier scan can see them.  The same
+check was re-run against the previous commit's file and returned 10 there
+too, so the error predates the cuts recorded below and neither of them
+caused it.
+
+**Amended 2026-07-30: 10, but not the same 10 — TWICE in one day.**
+First `nonempty_modPullback_modTensorPic` left the set and
+`nonempty_presheafPullback_tensor` entered it (the sheaf theory
+discharged, only a `PresheafOfModules` statement left).  Then
+`surj_of_isRelPicOverAffines` left and `relPicEquiv_of_forall_restrict`
+entered (all of the scheme-theoretic gluing of BLR 8.1/4 discharged, only
+the Zariski-sheaf property of `Pic(X_-)/Pic(-)` left).  Two leaf-for-leaf
+cuts have now held the count fixed while replacing two of its members, so
+a reader comparing "10" against "10" across this file's history learns
+nothing whatever about what moved.  Regenerate the list with
+`flt-frontier.py`; do not trust any of the names above.
 
 Also PROVEN here and worth knowing about before re-deriving them:
 `modTensorMapIso`, `modTensorUnitLeftIso`, `modTensorUnitRightIso`,
@@ -2162,6 +2189,48 @@ theorem curveBaseChangeMap_proj {X S T T' : Scheme.{u}} (strX : X ⟶ S) {g : T 
       = curveBaseChangeProj strX g' ≫ h :=
   pullback.lift_snd _ _ _
 
+/-- **`curveBaseChangeMap` IS FUNCTORIAL** (PROVEN): the base changes of the
+curve along `T'' ⟶ T' ⟶ T` compose.  Both sides are maps into a pullback, so
+`pullback.hom_ext` reduces this to the two projections, each a `lift` identity.
+
+Note the direction: `curveBaseChangeMap` is CONTRAVARIANT, so the composite
+`X_{T''} ⟶ X_{T'} ⟶ X_T` is written `map k ≫ map h` and equals `map (k ≫ h)`. -/
+theorem curveBaseChangeMap_comp {X S T T' T'' : Scheme.{u}} (strX : X ⟶ S) {g : T ⟶ S}
+    {g' : T' ⟶ S} {g'' : T'' ⟶ S} (h : T' ⟶ T) (hg : h ≫ g = g')
+    (k : T'' ⟶ T') (hk : k ≫ g' = g'') :
+    curveBaseChangeMap strX k hk ≫ curveBaseChangeMap strX h hg
+      = curveBaseChangeMap strX (k ≫ h) (by rw [Category.assoc, hg, hk]) := by
+  apply pullback.hom_ext <;>
+    simp [curveBaseChangeMap, pullback.lift_fst, pullback.lift_snd,
+      pullback.lift_snd_assoc, Category.assoc]
+
+/-- **`curveBaseChangeMap` depends only on the morphism, not on the proof**
+(PROVEN) — `subst` plus proof irrelevance.
+
+Needed because the factorisation hypothesis `h ≫ g = g'` is an argument: two
+`curveBaseChangeMap`s built from EQUAL morphisms over DIFFERENT proofs are
+propositionally but not syntactically equal, and `modPullbackCongrIso` wants
+the equality by name. -/
+theorem curveBaseChangeMap_congr {X S T T' : Scheme.{u}} (strX : X ⟶ S) {g : T ⟶ S}
+    {g' : T' ⟶ S} {h h' : T' ⟶ T} (e : h = h') (hg : h ≫ g = g') (hg' : h' ≫ g = g') :
+    curveBaseChangeMap strX h hg = curveBaseChangeMap strX h' hg' := by
+  subst e; rfl
+
+/-- **`k^*(h^* L) ≅ (k ≫ h)^* L` at the level of base-changed curves** (PROVEN)
+— `modPullbackCompIso` transported along `curveBaseChangeMap_comp`.
+
+This is the workhorse of `surj_of_isRelPicOverAffines` below: the compatibility
+of two local classifying points on an overlap is stated over the overlap's own
+structure morphism, and getting there from each point's own open requires
+exactly this identification. -/
+noncomputable def modPullbackCurveBaseChangeCompIso {X S T T' T'' : Scheme.{u}} (strX : X ⟶ S)
+    {g : T ⟶ S} {g' : T' ⟶ S} {g'' : T'' ⟶ S} (h : T' ⟶ T) (hg : h ≫ g = g')
+    (k : T'' ⟶ T') (hk : k ≫ g' = g'') (L : (curveBaseChange strX g).Modules) :
+    modPullback (curveBaseChangeMap strX k hk) (modPullback (curveBaseChangeMap strX h hg) L)
+      ≅ modPullback (curveBaseChangeMap strX (k ≫ h)
+          (by rw [Category.assoc, hg, hk])) L :=
+  modPullbackCompIso _ _ L ≪≫ modPullbackCongrIso (curveBaseChangeMap_comp strX h hg k hk) L
+
 /-- **PULLBACK PRESERVES `RelPicEquiv`** (PROVEN over
 `nonempty_modPullback_modTensorPic` and `isInvertibleSheaf_modPullback`).
 
@@ -2499,8 +2568,17 @@ The three leaves are then:
   the affine-local `inj` gives `p|ᵢ = q|ᵢ`, and an open cover is jointly
   epimorphic, so `p = q`.  Nothing in that consumes a hypothesis;
 * `surj_of_isRelPicOverAffines` — BLR 8.1/4, and the ONLY place `_o` and
-  `_hpush` are consumed.  Local classifying points `pᵢ` glue by the
-  previous leaf applied over the overlaps, but concluding
+  `_hpush` are consumed.  **PROVEN 2026-07-30 over the single new leaf
+  `relPicEquiv_of_forall_restrict`**, so of the three cut here only the
+  first is still open, and the two hypotheses are now spent inside that
+  leaf rather than here.  Two corrections to the sketch below, both found
+  by writing it: the overlap agreement uses `hP.inj` DIRECTLY (an overlap
+  of two opens each lying over an affine open still lies over the first
+  one, so the affine-local field applies and the "previous leaf" is not
+  needed), and the gluing needs the two functoriality lemmas
+  `curveBaseChangeMap_comp` / `curveBaseChangeMap_congr` that no version
+  of this note anticipated.  What remains true of the sketch, and is now
+  the whole of the leaf, is the last step: concluding
   `RelPicEquiv strX g (sheaf p) L` from its restrictions is precisely the
   Zariski-sheaf property of `T ↦ Pic(X_T)/Pic(T)`: separatedness needs
   `f_*𝒪 = 𝒪`, and the local twists `Nᵢ` glue into a global `N` only
@@ -2651,42 +2729,189 @@ theorem inj_of_isRelPicOverAffines {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr :
   refine relPicEquiv_trans _ _ (relPicEquiv_modPullback strX (g ⁻¹ᵁ V).ι rfl h) ?_
   exact relPicEquiv_symm _ _ (hP.sheaf_pre (g ⁻¹ᵁ V).ι rfl q)
 
-/-- **SURJECTIVITY IS ZARISKI-LOCAL ON THE BASE — BLR 8.1/4** (sorry
-leaf).  This is the one place `_o` and `_hpush` are consumed, and the
-statement is FALSE without them.
+/-- **`Pic(X_-)/Pic(-)` IS A ZARISKI SHEAF — BLR 8.1/4** (sorry leaf).
 
-Given `L` invertible on `X_T`, the affine-local `surj` gives classifying
-points `pᵢ` over the cover `g ⁻¹ᵁ Vᵢ` of `T`; on overlaps
-`sheaf (pᵢ|) ≡ L| ≡ sheaf (pⱼ|)`, so `inj_of_isRelPicOverAffines` — or
-directly `hP.inj`, since an overlap still lies over `Vᵢ` — makes them
-agree, and they glue to `p : T ⟶ P`.  What is left is the genuine
-content: `sheaf p` and `L` are `RelPicEquiv` locally on `T` and must be
-shown `RelPicEquiv` globally, i.e. `T ↦ Pic(X_T)/Pic(T)` is a Zariski
-sheaf.
+The genuine content of `surj_of_isRelPicOverAffines` below, cut out of it
+2026-07-30 so that the scheme-theoretic gluing (which is bookkeeping) and
+the descent (which is not) have separate owners.  Nothing in this
+statement mentions `pstr`, `IsRelPicOverAffines` or a representing
+scheme: it is a statement about two invertible sheaves on `X_T`, and it
+is reusable wherever the relative Picard relation has to be globalised.
 
-Both halves of that are hypothesis-consuming:
+**Route.**  Write `A ≅ B ⊗ π^*Nᵢ` over each `Uᵢ` of the cover.  Put
+`M := A ⊗ B^{-1}`, so `M|_{X_{Uᵢ}} ≅ π^*Nᵢ`, and let `σ : T ⟶ X_T` be the
+base-changed section `relBasePoint _o g`.  Then `N := σ^*M` is the global
+candidate — `σ^*π^*Nᵢ ≅ Nᵢ` because `π ≫ σ = 𝟙`, so `N|_{Uᵢ} ≅ Nᵢ` — and
+what has to be shown is `M ≅ π^*σ^*M`.  Locally both sides are `π^*Nᵢ`;
+the local isomorphisms `φᵢ` differ on overlaps by an automorphism of an
+invertible sheaf, i.e. by a unit in `Γ(X_{Uᵢⱼ}, 𝒪ˣ)`, and `_hpush`
+(`f_*𝒪 = 𝒪` universally) identifies that group with `Γ(Uᵢⱼ, 𝒪ˣ)`.
+RIGIDIFY: normalise each `φᵢ` so that `σ^*φᵢ = id`.  A unit pulled back
+from `Uᵢⱼ` and restricted along the section is itself, so the normalised
+cocycle is trivial and the `φᵢ` glue.  Both hypotheses are spent exactly
+once: `_hpush` to know the automorphisms come from downstairs, `_o` to
+have anything to rigidify along.
 
-* *separated* — a local isomorphism `sheaf p| ≅ L| ⊗ pr* Nᵢ` is unique up
-  to `Γ(X_{Tᵢ}, 𝒪ˣ)`, and it is `_hpush` (`f_*𝒪_{X_T} = 𝒪_T`
-  universally) that identifies that group with `Γ(Tᵢ, 𝒪ˣ)`, so the
-  comparison isomorphisms differ by a cocycle downstairs and can be
-  adjusted;
-* *glueing* — the twists `Nᵢ` then glue to a global invertible `N` on `T`
-  exactly when the resulting class in `Br T` vanishes, and `_o` kills it:
-  pull back along the section to normalise.
+**FALSITY AUDIT (2026-07-30).**  This is not a first restatement of an
+audited parent — the parent's audit was about `surj`'s consumption of the
+same two hypotheses — so it is run here from scratch against THIS
+statement.
 
-For `X = S ⊔ S` — no section, and `f_*𝒪 = 𝒪 × 𝒪` — the sequence
-`0 ⟶ Pic T ⟶ Pic X_T ⟶ P(T) ⟶ Br T` breaks and a class can be locally but
-not globally in the image, so this is a refutation and not merely a gap in
-the argument. -/
-theorem surj_of_isRelPicOverAffines {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
+*Dropping `_hpush` (equivalently `_hconn`) makes it FALSE, with an
+explicit witness.*  Take `X = C ⊔ C` for `C ⟶ S` a smooth proper curve
+with a section `o` — the disjoint union still has the section into the
+first copy, so `_o` survives, and it is still proper and smooth of
+relative dimension 1, so `_hproper` and `_hsmooth` survive; only
+connectedness fails, and with it `f_*𝒪 = 𝒪` (it becomes `𝒪 × 𝒪`).  Pick
+`T` with `Pic T ≠ 0` and `N` a nontrivial invertible sheaf on `T`.  Then
+`X_T = C_T ⊔ C_T`; put `B := 𝒪` and `A := (π^*N, 𝒪)`, invertible.  Over
+any open `U ⊆ T` trivialising `N` we get `A| ≅ B| ⊗ π^*𝒪`, so the
+covering hypothesis holds.  Globally `A ≅ B ⊗ π^*N'` would read
+`(π^*N, 𝒪) ≅ (π^*N', π^*N')`, forcing `N' ≅ 𝒪` on the second copy and
+`N' ≅ N` on the first — each copy has a section, so `π^*` is faithful on
+isomorphism classes — hence `N ≅ 𝒪`, contrary to choice.  Concretely
+`S = Spec ℤ`, `C = E` an elliptic curve, `T = ℙ¹`, `N = 𝒪(1)`.
+
+*Dropping `_o` makes it FALSE too, but the witness is not elementary.*
+Without a section the rigidification is unavailable and the obstruction
+to gluing the `φᵢ` is a class in `Br T`; the sequence
+`0 ⟶ Pic T ⟶ Pic X_T ⟶ P(T) ⟶ Br T` is exact and its last map is nonzero
+in general (a conic bundle over `T` with nontrivial Brauer class is the
+standard source).  So `_o` is load-bearing and not decoration, but the
+counterexample is cited rather than exhibited, and that is the honest
+state of this clause.
+
+*`_hA`/`_hB` are load-bearing.*  `B^{-1}` has to exist for `M` to be
+formed; with `B` arbitrary the local isomorphisms cannot be compared.
+*`_hproper`, `_hsmooth`, `_hconn` are carried but not directly used* —
+they are what a prover will consume in producing `_hpush` and in knowing
+`π` has the section, and they cost nothing here. -/
+theorem relPicEquiv_of_forall_restrict {X S : Scheme.{u}} (strX : X ⟶ S)
     (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
     (_hconn : GeometricallyConnected strX) (_o : RelPoint strX (𝟙 S))
     (_hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX)
-    (hP : IsRelPicOverAffines strX pstr) {T : Scheme.{u}} {g : T ⟶ S}
-    (L : (curveBaseChange strX g).Modules) (_hL : IsInvertibleSheaf L) :
-    ∃ p : RelPoint pstr g, RelPicEquiv strX g (hP.sheaf p) L :=
+    {T : Scheme.{u}} {g : T ⟶ S} (A B : (curveBaseChange strX g).Modules)
+    (_hA : IsInvertibleSheaf A) (_hB : IsInvertibleSheaf B)
+    (_hcov : ∀ x : T, ∃ U : T.Opens, x ∈ U ∧
+      RelPicEquiv strX (U.ι ≫ g)
+        (modPullback (curveBaseChangeMap strX U.ι rfl) A)
+        (modPullback (curveBaseChangeMap strX U.ι rfl) B)) :
+    RelPicEquiv strX g A B :=
   sorry
+
+/-- **SURJECTIVITY IS ZARISKI-LOCAL ON THE BASE — BLR 8.1/4**
+(**PROVEN 2026-07-30** over `relPicEquiv_of_forall_restrict`; formerly a
+bare sorry leaf).  This is the one place `_o` and `_hpush` are consumed,
+and the statement is FALSE without them — but they are now consumed
+*through* that leaf rather than here, and this proof passes them straight
+along without touching them.
+
+The route the old docstring recorded is what went through, verbatim, so
+it is kept below with the one correction that the last step is now a
+named leaf rather than an aspiration.
+
+Given `L` invertible on `X_T`, the affine-local `surj` gives classifying
+points `pᵢ` over the cover `g ⁻¹ᵁ Vᵢ` of `T`; on overlaps
+`sheaf (pᵢ|) ≡ L| ≡ sheaf (pⱼ|)`, so `hP.inj` — an overlap still lies
+over `Vᵢ`, so the affine-local field applies directly, and
+`inj_of_isRelPicOverAffines` is not needed — makes them agree, and they
+glue to `p : T ⟶ P` via `Scheme.Cover.glueMorphisms`.  What is left is
+the genuine content: `sheaf p` and `L` are `RelPicEquiv` locally on `T`
+and must be shown `RelPicEquiv` globally, i.e. `T ↦ Pic(X_T)/Pic(T)` is a
+Zariski sheaf.  That last sentence IS `relPicEquiv_of_forall_restrict`,
+and its own docstring carries the two hypothesis-consuming halves
+(separatedness from `_hpush`, glueing from `_o`) together with the
+refutation that drops them.
+
+**Two things this proof needed that the old note did not mention**, both
+now hoisted next to `curveBaseChangeMap_proj` above.  The overlap
+compatibility is an equation between two `RelPoint`s over the overlap's
+own structure morphism, and reaching it from each side requires
+`modPullbackCurveBaseChangeCompIso` (composition of base changes) and, on
+the second side only, `curveBaseChangeMap_congr` to absorb
+`pullback.condition`.  Neither is deep; both are invisible from the
+mathematics and cost a prover real time to rediscover.
+
+The cover used is the preimages `g ⁻¹ᵁ V` of affine opens of `S`, indexed
+by the POINTS of `T` — the same device `inj_of_isRelPicOverAffines` uses,
+and the reason no quasi-compactness of `T` is wanted anywhere. -/
+theorem surj_of_isRelPicOverAffines {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
+    (hproper : IsProper strX) (hsmooth : SmoothOfRelativeDimension 1 strX)
+    (hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S))
+    (hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX)
+    (hP : IsRelPicOverAffines strX pstr) {T : Scheme.{u}} {g : T ⟶ S}
+    (L : (curveBaseChange strX g).Modules) (hL : IsInvertibleSheaf L) :
+    ∃ p : RelPoint pstr g, RelPicEquiv strX g (hP.sheaf p) L := by
+  -- The cover of `T` by preimages of affine opens of `S`.
+  have key : ∀ x : T, ∃ U : T.Opens, x ∈ U ∧ FactorsThroughAffineOpen (U.ι ≫ g) := by
+    intro x
+    obtain ⟨V, hV, hxV, -⟩ :=
+      exists_isAffineOpen_mem_and_subset (X := S) (x := g.base x) (U := ⊤) trivial
+    exact ⟨g ⁻¹ᵁ V, hxV, ⟨V, hV, g ∣_ V, morphismRestrict_ι g V⟩⟩
+  choose U hxU hfac using key
+  -- The local classifying points.
+  have hlocal : ∀ x : T, ∃ q : RelPoint pstr ((U x).ι ≫ g),
+      RelPicEquiv strX ((U x).ι ≫ g) (hP.sheaf q)
+        (modPullback (curveBaseChangeMap strX (U x).ι rfl) L) :=
+    fun x => hP.surj (hfac x) _ (isInvertibleSheaf_modPullback _ hL)
+  choose q hq using hlocal
+  -- Compatibility on overlaps.
+  have hcompat : ∀ x y : T,
+      pullback.fst (U x).ι (U y).ι ≫ (q x).1 = pullback.snd (U x).ι (U y).ι ≫ (q y).1 := by
+    intro x y
+    set a := pullback.fst (U x).ι (U y).ι with ha
+    set b := pullback.snd (U x).ι (U y).ι with hb
+    have hcond : a ≫ (U x).ι = b ≫ (U y).ι := pullback.condition
+    have hga : a ≫ ((U x).ι ≫ g) = (a ≫ (U x).ι) ≫ g := (Category.assoc _ _ _).symm
+    have hgb : b ≫ ((U y).ι ≫ g) = (a ≫ (U x).ι) ≫ g := by
+      rw [← Category.assoc, hcond]
+    -- the overlap still lies over an affine open of `S`
+    have hfacW : FactorsThroughAffineOpen ((a ≫ (U x).ι) ≫ g) := by
+      obtain ⟨V, hV, gV, hgV⟩ := hfac x
+      exact ⟨V, hV, a ≫ gV, by rw [Category.assoc, hgV, ← Category.assoc]⟩
+    have hxx : RelPicEquiv strX ((a ≫ (U x).ι) ≫ g)
+        (hP.sheaf (RelPoint.pre a hga (q x)))
+        (modPullback (curveBaseChangeMap strX (a ≫ (U x).ι) rfl) L) := by
+      refine relPicEquiv_trans _ _ (hP.sheaf_pre a hga (q x)) ?_
+      refine relPicEquiv_trans _ _ (relPicEquiv_modPullback strX a hga (hq x)) ?_
+      exact relPicEquiv_of_iso _ _
+        (modPullbackCurveBaseChangeCompIso strX (U x).ι rfl a hga L)
+    have hyy : RelPicEquiv strX ((a ≫ (U x).ι) ≫ g)
+        (hP.sheaf (RelPoint.pre b hgb (q y)))
+        (modPullback (curveBaseChangeMap strX (a ≫ (U x).ι) rfl) L) := by
+      refine relPicEquiv_trans _ _ (hP.sheaf_pre b hgb (q y)) ?_
+      refine relPicEquiv_trans _ _ (relPicEquiv_modPullback strX b hgb (hq y)) ?_
+      refine relPicEquiv_of_iso _ _
+        (modPullbackCurveBaseChangeCompIso strX (U y).ι rfl b hgb L ≪≫ ?_)
+      exact modPullbackCongrIso
+        (curveBaseChangeMap_congr strX hcond.symm _ rfl) L
+    exact congrArg Subtype.val
+      (hP.inj hfacW _ _ (relPicEquiv_trans _ _ hxx (relPicEquiv_symm _ _ hyy)))
+  -- Glue.
+  let 𝒰 : T.OpenCover :=
+    { I₀ := T, X i := (U i), f i := (U i).ι,
+      mem₀ := by
+        rw [AlgebraicGeometry.Scheme.presieve₀_mem_precoverage_iff]
+        exact ⟨fun x ↦ ⟨x, by simpa using hxU x⟩, inferInstance⟩ }
+  have hglue : ∀ x : T, (U x).ι ≫ 𝒰.glueMorphisms (fun i => (q i).1) hcompat = (q x).1 :=
+    fun x => 𝒰.ι_glueMorphisms (fun i => (q i).1) hcompat x
+  set p := 𝒰.glueMorphisms (fun i => (q i).1) hcompat with hpdef
+  have hpg : p ≫ pstr = g := by
+    apply AlgebraicGeometry.Scheme.hom_ext_of_forall
+    intro x
+    exact ⟨U x, hxU x, by rw [← Category.assoc, hglue x, (q x).2]⟩
+  refine ⟨⟨p, hpg⟩, ?_⟩
+  -- The classified sheaf agrees with `L` locally on `T`; the leaf makes it global.
+  refine relPicEquiv_of_forall_restrict strX hproper hsmooth hconn o hpush _ L
+    (hP.invertible ⟨p, hpg⟩) hL ?_
+  intro x
+  refine ⟨U x, hxU x, ?_⟩
+  have hpre : RelPoint.pre (U x).ι rfl (⟨p, hpg⟩ : RelPoint pstr g) = q x :=
+    Subtype.ext (hglue x)
+  refine relPicEquiv_trans _ _ ?_ (hq x)
+  have := hP.sheaf_pre (U x).ι (rfl : (U x).ι ≫ g = (U x).ι ≫ g) (⟨p, hpg⟩ : RelPoint pstr g)
+  rw [hpre] at this
+  exact relPicEquiv_symm _ _ this
 
 /-- **REPRESENTABILITY OF THE RELATIVE PICARD FUNCTOR IS ZARISKI-LOCAL ON
 THE BASE** — Stacks 01JJ for the gluing, BLR 8.1/4 for the descent of
