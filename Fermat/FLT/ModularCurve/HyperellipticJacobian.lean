@@ -130,11 +130,17 @@ and the merged file has neither number: at the release-18 merge the
     finrank_residue_pt_eq_one, degOf_divisor_eq_zero,
     isRationalGenerator_of_divisor_eq_sub_single, not_isRationalGenerator,
     exists_smoothModel, exists_cubeModel_pic, exists_geomPic,
-    geomPic_bc_injective, geomPic_descent, geomPic_divisible,
+    geomPic_bc_injective, geomPic_descent, geomPic_divisible_place,
     finite_kummerCochains_pic, and `two_divisible_pic` at BOTH levels.
+
+(`geomPic_divisible_place` replaced `geomPic_divisible` in that set on
+2026-07-30: the general `∀ n ≠ 0, ∀ y` form is now PROVEN from the
+single-place, single-prime instance, so the leaf moved rather than
+multiplied — the count is unchanged.)
 
 `exists_functionFieldData`, `exists_placeSystem`, `exists_isPlaceOfPt`,
 `exists_degreeMap`, `sub_single_pt_notMem_princ`, `exists_descentHeight_pic`,
+`geomPic_divisible`, `divisible_of_prime`, `divisible_of_finsuppSingle`,
 `finite_quotient_psmul_pic` and both `finite_pic` are PROVEN; earlier text here
 listing them as open is stale.  All of the above except `two_divisible_pic` are
 generic in the sextic and
@@ -4117,7 +4123,9 @@ and it should be revisited when the Néron/abelian-scheme layer for this curve e
 `exists_descentHeight_pic` over `exists_cubeModel_pic` (all analysis removed), and
 `finite_quotient_psmul_pic` over `exists_geomPic`, `geomPic_bc_injective`,
 `geomPic_descent`, `geomPic_divisible` and `finite_kummerCochains_pic` (all cohomology
-removed).  The `X0` siblings remain the ones not to duplicate.
+removed) — of which `geomPic_divisible` has since been proven in turn, over the
+single-place, single-prime leaf `geomPic_divisible_place` (2026-07-30).  The `X0` siblings
+remain the ones not to duplicate.
 -/
 
 /-- **A finitely generated abelian group `A` with `A = 2·A` is finite** (PROVEN) — the
@@ -4554,22 +4562,180 @@ theorem geomPic_descent {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c�
     (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) (y : gp.Dbar.Pic)
     (hy : ∀ σ : QbarGal, gp.act σ y = y) : ∃ a : D.Pic, gp.bc a = y := sorry
 
-/-- **LEAF (weak Mordell–Weil, 4 of 4, geometric): `Pic⁰(X_ℚ̄)` is divisible.**
+/-- **Divisibility at every prime gives divisibility at every nonzero `n`** (PROVEN, pure
+group theory, no hypothesis on `G` beyond `AddCommGroup`).
 
-`[n] : J → J` is surjective on `K̄`-points for `n ≠ 0` and any abelian variety over an
-algebraically closed field — it is a finite flat isogeny of degree `n^{2g}`, so surjective
+Induction on the number of prime factors, done as a bounded induction so that only
+`Nat.minFac_prime` and `Nat.minFac_dvd` are needed.  This is the divisibility analogue of
+`Fermat.finite_quotient_nsmul_of_prime`, which promotes finiteness of `A/pA` from primes to
+every `n`, and it is here for the same reason: it lets the geometric leaf below be stated at
+a PRIME, where the intended proof lives, rather than at a general `n`. -/
+theorem divisible_of_prime {G : Type*} [AddCommGroup G]
+    (h : ∀ p : ℕ, p.Prime → ∀ y : G, ∃ z : G, p • z = y) (n : ℕ) (hn : n ≠ 0) (y : G) :
+    ∃ z : G, n • z = y := by
+  have key : ∀ k m : ℕ, m ≤ k → m ≠ 0 → ∀ y : G, ∃ z : G, m • z = y := by
+    intro k
+    induction k with
+    | zero => intro m hmk hm _; omega
+    | succ k ih =>
+      intro m hmk hm y
+      rcases eq_or_ne m 1 with rfl | h1
+      · exact ⟨y, one_smul ℕ y⟩
+      · have hp : (m.minFac).Prime := Nat.minFac_prime h1
+        obtain ⟨q, hq⟩ := m.minFac_dvd
+        have hq0 : q ≠ 0 := by rintro rfl; simp at hq; omega
+        have h2 := hp.two_le
+        have hqlt : q < m := by
+          rcases Nat.lt_or_ge q m with h | h
+          · exact h
+          · exfalso
+            have : m.minFac * q ≥ 2 * m := Nat.mul_le_mul h2 h
+            omega
+        obtain ⟨w, hw⟩ := ih q (by omega) hq0 y
+        obtain ⟨z, hz⟩ := h _ hp w
+        refine ⟨z, ?_⟩
+        have hm' : m = q * m.minFac := by rw [Nat.mul_comm q m.minFac]; exact hq
+        rw [hm', mul_smul, hz, hw]
+  exact key n n le_rfl hn y
+
+/-- **Divisibility on the classes of the generators gives divisibility everywhere** (PROVEN).
+
+`α →₀ ℤ` is FREE on `α`, so the classes of the `Finsupp.single a 1` generate every quotient
+of it, and `{x | ∃ z, n • z = x}` is the range of an `AddMonoidHom`, hence a SUBGROUP — which
+is what makes checking the generators enough.  Applied below with `α := Dbar.Places` and the
+quotient `PlaceData.Pic`, so that the geometric leaf need only divide the class of a SINGLE
+PLACE.
+
+The two steps that are not formal: `Finsupp.single a b = b • Finsupp.single a 1`, and the
+fact that a quotient map commutes with `zsmul` — both discharged here once and for all. -/
+theorem divisible_of_finsuppSingle {α : Type*} {H : AddSubgroup (α →₀ ℤ)} (n : ℕ)
+    (h : ∀ a : α, ∃ z : (α →₀ ℤ) ⧸ H, n • z = QuotientAddGroup.mk (Finsupp.single a 1))
+    (y : (α →₀ ℤ) ⧸ H) : ∃ z : (α →₀ ℤ) ⧸ H, n • z = y := by
+  set S : AddSubgroup ((α →₀ ℤ) ⧸ H) := (nsmulAddMonoidHom n).range
+  have hmem : ∀ x : (α →₀ ℤ) ⧸ H, x ∈ S → ∃ z, n • z = x := by
+    intro x hx
+    obtain ⟨z, hz⟩ := hx
+    exact ⟨z, hz⟩
+  have hsingle : ∀ (a : α) (c : ℤ),
+      (QuotientAddGroup.mk (Finsupp.single a c) : (α →₀ ℤ) ⧸ H) ∈ S := by
+    intro a c
+    have hbase : (QuotientAddGroup.mk (Finsupp.single a 1) : (α →₀ ℤ) ⧸ H) ∈ S := h a
+    have hz := S.zsmul_mem hbase c
+    have hpush : (c : ℤ) • (QuotientAddGroup.mk (Finsupp.single a 1) : (α →₀ ℤ) ⧸ H)
+        = QuotientAddGroup.mk (c • Finsupp.single a 1) :=
+      (map_zsmul (QuotientAddGroup.mk' H) c (Finsupp.single a 1)).symm
+    rw [hpush] at hz
+    have hc : (c • Finsupp.single a 1 : α →₀ ℤ) = Finsupp.single a c := by
+      rw [Finsupp.smul_single, smul_eq_mul, mul_one]
+    rwa [hc] at hz
+  refine hmem y ?_
+  induction y using QuotientAddGroup.induction_on with
+  | _ δ =>
+    induction δ using Finsupp.induction with
+    | zero => simp
+    | @single_add a b δ _ _ ih =>
+      have hsum : (QuotientAddGroup.mk (Finsupp.single a b + δ) : (α →₀ ℤ) ⧸ H)
+          = QuotientAddGroup.mk (Finsupp.single a b) + QuotientAddGroup.mk δ := rfl
+      rw [hsum]
+      exact S.add_mem (hsingle a b) ih
+
+/-- **LEAF (weak Mordell–Weil, 4 of 4, geometric): the class of a single geometric place is
+`p`-divisible in `Pic⁰(X_ℚ̄)`, for every prime `p`.**
+
+`[p] : J → J` is surjective on `K̄`-points for `p ≠ 0` and any abelian variety over an
+algebraically closed field — it is a finite flat isogeny of degree `p^{2g}`, so surjective
 on geometric points.  Equivalently, and closer to this presentation: a class of degree `0`
-on a curve over an algebraically closed field is `n` times another, because
-`Pic⁰` is a divisible group (it is the group of points of a connected algebraic group over
-an algebraically closed field).
+on a curve over an algebraically closed field is `p` times another, because `Pic⁰` is a
+divisible group (it is the group of points of a connected algebraic group over an
+algebraically closed field).
+
+**RESTATED 2026-07-30, STRICTLY WEAKENED, no consumer changed.**  Until this cycle the leaf
+was `geomPic_divisible` itself — `∀ n ≠ 0, ∀ y : Pic⁰(X_ℚ̄), ∃ z, n • z = y`.  That statement
+is now PROVEN immediately below, from this leaf plus `divisible_of_prime` and
+`divisible_of_finsuppSingle`, so the general form is a compiler-checked consequence and the
+remaining obligation is an INSTANCE of the old one.  What the reduction removes, permanently:
+the prime factorisation of `n`, the `Finsupp` generation argument, and the fact that
+`n • Pic` is a subgroup.  What is left is exactly the geometry — `[p]` is surjective — asked
+at one place at a time.
+
+**FAITHFULNESS (re-run against this composite statement, per the standing rule that a second
+restatement VOIDS the earlier audit).**  `p.Prime` gives `p ≥ 2`, so there is no `n = 0`
+degeneracy to worry about here; the `n ≠ 0` discussion moved to `geomPic_divisible` below,
+where `hn` still appears and is still load-bearing.  The statement is TRUE for every
+`PlaceData` over `AlgebraicClosure ℚ`, including the degenerate ones: `PlaceData`'s
+`ord_complete` pins `Places` as EXACTLY the normalised `ℚ̄`-trivial discrete valuations of
+`F`, i.e. the closed points of the smooth projective model, so `Pic = Div/(princ + ℤ·[∞₊])`
+is `Pic⁰` of that model (`deg [∞₊] = 1` because every point of a curve over an algebraically
+closed field has degree `1`, which is what splits `Pic ≅ ℤ ⊕ Pic⁰`).  Note this does NOT
+need the sextic to be separable: if `sextPoly` has a repeated root the model is a curve of
+genus `< 2` — possibly `ℙ¹`, where `Pic⁰ = 0` — and a trivial or elliptic `Pic⁰` is divisible
+too.  Note also that the statement mentions `Dbar` alone, not `bc`, so it carries none of the
+arithmetic; the arithmetic is entirely in the cochain leaf.
+
+## ATOMICITY AUDIT (2026-07-30) — which AXES were searched, and what would refute each
+
+* **GENERATOR / PRIME-FACTORISATION axis — TAKEN, and it is the reduction above.**  It is
+  the only axis on which anything was formal, and it is now spent: nothing further about `n`,
+  about `Finsupp`, or about which elements of `Pic` are hit remains to be cut.
+* **ELLIPTIC-ANALOGUE axis — the route is PROVEN IN THIS REPOSITORY at genus `1`, and does
+  not transfer.**  `Fermat.EllipticCurve.nsmul_surjective` (`Fermat/FLT/EllipticCurve/
+  Isogeny.lean`) is exactly this leaf for an elliptic curve over an algebraically closed
+  field, and it is proven — from DIVISION POLYNOMIALS plus algebraic closedness: `ΨSqₙ` is a
+  nonzero polynomial, `IsCoprime Φ ΨSq` keeps its value away from the pole, and a root of
+  the resulting one-variable equation exists because the field is algebraically closed.  The
+  argument is genuinely one-variable and genus-`1`-specific.  At genus `2` the analogue would
+  need the duplication (and `n`-division) formulas on the KUMMER SURFACE, i.e. `2`-dimensional
+  equation solving, where algebraic closedness alone no longer produces a solution — one needs
+  the multiplication map to be finite/dominant, which is the Jacobian-as-a-variety input this
+  leaf is trying to avoid.  *Refuting check*: a one-variable division polynomial for a genus-`2`
+  Jacobian whose roots are the `x`-coordinates of the `n`-division points of a given class.
+* **GEOMETRIC-SPLITTING axis — closed by GENERICITY, before any computation.**  If `J ⊗ ℚ̄`
+  were isogenous to a product of elliptic curves the previous axis would apply through the
+  isogeny; but this leaf is `∀`-quantified over the sextic, so no level-specific splitting is
+  available to it, and specialising the whole generic Mordell–Weil chain (`fg_pic`,
+  `finite_quotient_psmul_pic`) to the two levels would duplicate it and still need transport
+  of divisibility across a `ℚ̄`-isogeny of Jacobians presented as `PlaceData` quotients —
+  strictly more than the leaf.  For the record, and as an untrusted searcher only: PARI
+  `hyperellcharpoly` gives Frobenius traces `a_p` on `J₁(18)` of `0, −2, 3, −2, −6, −2` at
+  `p = 5, 7, 11, 13, 17, 19`, and on `J₁(13)` of `−2, 0, 0, 0, 3, −6` at `p = 3, 5, 7, 11,
+  17, 19` (vanishing at `5` of the `15` good `p < 60`, namely `5, 7, 11, 31, 47`) — so no
+  systematic vanishing at either level, hence no naive Weil-restriction pattern.  **This is
+  NOT evidence about `End⁰`**: the quantity is the trace on the SURFACE, i.e. `2 Re a_p(f)`,
+  which vanishes whenever `a_p(f)` is purely imaginary — so the level-`13` zeros are expected
+  and prove nothing either way.  *Refuting check*: Magma
+  `EndomorphismAlgebra`/`IsGeometricallySimple` on either Jacobian returning a split answer.
+* **RIEMANN–ROCH axis — a restatement, not a cut.**  For genus `2` every class of `Pic⁰` is
+  `[P + Q − 2∞₊]` (Riemann–Roch: `deg = g` forces effectivity), so one may reduce to dividing
+  such classes; but the resulting obligation is `[n]` surjective on the image of `C^{(2)}`,
+  which is all of `Pic⁰` — the same statement.  *Refuting check*: an argument that divides
+  `[P + Q − 2∞₊]` using only the effectivity, with no surjectivity input.
+* **SCHEME-THEORETIC axis — the same obligation exists in `X0.lean` and is also open there.**
+  `exists_finiteIndex_divisible_of_abelianScheme` (`Fermat/FLT/ModularCurve/X0.lean`) is the
+  scheme-theoretic form; it asks only for a finite-index divisible subgroup, which is weaker,
+  but for `J(ℚ̄)` the two are equally hard, since the finite-index subgroup would itself have
+  to be produced from `[n]`.  **Do not prove this twice** — see the `MordellWeil` section
+  docstring for the bridge that would make one of the two redundant.
+* **ANALYTIC axis — dead here as everywhere in this file.**  `J(ℂ) = ℂ²/Λ` is divisible on
+  sight, and `ℚ̄ ⊆ ℂ` with `n`-division points of a `ℚ̄`-point being algebraic would finish it;
+  but the uniformisation of an abelian variety by a complex torus exists neither in this
+  project nor in mathlib.  *Refuting check*: grep either for a complex-torus uniformisation. -/
+theorem geomPic_divisible_place {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
+    (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) (p : ℕ) (hp : p.Prime) (w : gp.Dbar.Places) :
+    ∃ z : gp.Dbar.Pic, p • z = QuotientAddGroup.mk (Finsupp.single w 1) := sorry
+
+/-- **`Pic⁰(X_ℚ̄)` is divisible** — a LEAF from its creation until 2026-07-30, now PROVEN
+over the strictly weaker leaf `geomPic_divisible_place` (one place, one prime) together with
+`divisible_of_prime` and `divisible_of_finsuppSingle`.
 
 **FAITHFULNESS.**  `hn` is load-bearing: at `n = 0` the statement reads `∃ z, 0 = y`, which
-is false for every `y ≠ 0`, and `Pic⁰(X_ℚ̄)` is never trivial for a genus-`2` curve.  Note
-this is stated for `Dbar` alone — it does not mention `bc` — so it carries none of the
-arithmetic; the arithmetic is entirely in the cochain leaf. -/
+is false for every `y ≠ 0`, and `Pic⁰(X_ℚ̄)` is never trivial for a genus-`2` curve.  The
+hypothesis survives the reduction as the `m ≠ 0` of `divisible_of_prime`; the leaf itself no
+longer carries it, `p.Prime` being stronger. -/
 theorem geomPic_divisible {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
     (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) (n : ℕ) (hn : n ≠ 0) (y : gp.Dbar.Pic) :
-    ∃ z : gp.Dbar.Pic, n • z = y := sorry
+    ∃ z : gp.Dbar.Pic, n • z = y :=
+  divisible_of_prime
+    (fun p hp y => divisible_of_finsuppSingle p (geomPic_divisible_place gp p hp) y) n hn y
 
 /-- **LEAF (weak Mordell–Weil, the arithmetic): only finitely many Kummer cochains occur.**
 
@@ -4629,7 +4795,10 @@ docstring.
 **NO LONGER A LEAF (2026-07-28).**  It is PROVEN below over the four leaves cut
 immediately above — `exists_geomPic`, `geomPic_bc_injective`, `geomPic_descent`,
 `geomPic_divisible` and `finite_kummerCochains_pic` — assembled by the released reduction
-`Fermat.finite_quotient_nsmul_of_kummerCochains`.  Note what the assembly does NOT mention:
+`Fermat.finite_quotient_nsmul_of_kummerCochains`.  Of those four, `geomPic_divisible` became
+PROVEN on 2026-07-30 in turn, so the open ones reached from here are `exists_geomPic`,
+`geomPic_bc_injective`, `geomPic_descent`, `geomPic_divisible_place` and
+`finite_kummerCochains_pic`.  Note what the assembly does NOT mention:
 no group cohomology, no `H¹`, no profinite topology.  The Kummer cochain is a plain
 function on `QbarGal` and the coboundary relation is never formed. -/
 theorem finite_quotient_psmul_pic {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ)
@@ -4802,6 +4971,28 @@ STRICTLY stronger.  They imply this leaf (no element of order `2` forces every o
 strictly harder ones, and the `2`-divisible phrasing in force is the right one.  The one
 defect this pass found is in the DESCENT-axis bullet below: its target group was the
 odd-degree one.  Corrected there.
+
+**THAT JUSTIFICATION IS WRONG ONCE `fg_pic` IS AVAILABLE — THE VERDICT STILL STANDS
+(2026-07-30, second pass the same day).**  The separating example above is `ℚ`, which is
+`2`-divisible with `ℚ[2] = 0` and not torsion — but `ℚ` is not finitely generated, and
+`fg_pic` (PROVEN) says `D.Pic` IS.  For a finitely generated abelian group `A` the three
+conditions `A = 2·A`, "`A` is finite of odd order", and "`A` is torsion with `A[2] = 0`" are
+EQUIVALENT: `A ≅ ℤ^r ⊕ T`, and `A = 2A` forces `r = 0` together with `T = 2T`, i.e. `#T` odd.
+So in the presence of `fg_pic` the re-cut trades one leaf for two of the same total strength,
+not for two strictly harder ones, and the reason not to make it is different from the recorded
+one.
+
+The better reason, and the verdict is unchanged: **the split leaves the hard half untouched.**
+"`Pic` is torsion" IS `rank J(ℚ) = 0`, verbatim, so all the deep arithmetic is carried over
+intact into the first of the two new leaves.  The second half is worth recording because it is
+the only part of this cluster that is pure algebra: `Pic[2] = 0` follows from `f` being
+IRREDUCIBLE over `ℚ` (PARI `polisirreducible`, recorded above), because `J[2]` is the group of
+even-cardinality subsets of the six Weierstrass points modulo complementation — a Galois-stable
+class `{S, Sᶜ}` other than `{∅, all}` needs either a stable even `S`, which transitivity
+forbids, or `#S = #Sᶜ = 3`, which is odd and so not in the group at all.  But `PlaceData`
+carries no description of `Pic[2]` in terms of the sextic, so even that half means building the
+`2`-torsion theory of hyperelliptic Jacobians from the valuation axioms.  Two leaves, one of
+them of unchanged difficulty and the other a fresh development: not a cut worth making.
 
 ## ATOMICITY AUDIT (2026-07-28) — which AXES were searched, and what would refute each
 
@@ -5307,6 +5498,16 @@ Left atomic for the reasons recorded at `X18.two_divisible_pic`, whose re-cut re
 re-derived this cycle and holds verbatim here ("`Pic` torsion" + "`J(ℚ)[2] = 0`" is strictly
 stronger than `Pic = 2·Pic`, `ℚ` being the separating example).  The descent-axis target
 group is corrected below, as at level `18`.
+
+**The `ℚ` justification is WITHDRAWN there and here, and the verdict rests on a different
+argument (2026-07-30, second pass)**: `ℚ` is not finitely generated and `fg_pic` (PROVEN) says
+`D.Pic` is, and for a finitely generated group the re-cut is EQUIVALENT rather than stronger.
+What actually rules the cut out is that "`Pic` is torsion" IS `rank J(ℚ) = 0` verbatim, so the
+split carries the whole difficulty into one of its two halves; the other half, `Pic[2] = 0`,
+does follow from `f` irreducible over `ℚ` (PARI, this cycle — the six Weierstrass points are a
+single Galois orbit, and a stable class `{S, Sᶜ} ≠ {∅, all}` would need `#S` even and stable,
+or `#S = 3`, which is odd) but needs a description of `Pic[2]` in terms of the sextic that
+`PlaceData` does not carry.  See `X18.two_divisible_pic` for the full statement.
 
 ## ATOMICITY AUDIT (2026-07-28)
 
