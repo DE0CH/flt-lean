@@ -1142,11 +1142,26 @@ for the coordinates of `τ + T` (the chord formulas, elements of `K`; note `x �
 in `K` because `x` is transcendental over `F`, so only the CHORD case is ever needed —
 no tangent case, no `2`-torsion case).
 
-* (A) `D` exists: the Hamiltonian derivation `F_Y·∂_X − F_X·∂_Y` on `F[X][Y]` kills the
-  curve polynomial, descends to `W.CoordinateRing`, and extends to `K` by the quotient
-  rule.  `InvariantDerivation.lean` does exactly this for the UNIVERSAL curve
-  (`PsiSumCompanion.Dham`, `DB`, `DK`); the construction is parametric in the base and
-  needs only to be repeated for a general `W/F`.
+* (A) `D` exists.  `InvariantDerivation.lean` builds this for the UNIVERSAL curve
+  (`PsiSumCompanion.Dham`, `DB`, `DK`), but repeating that route here would drag in its
+  hand-rolled fraction-field extension (there is no derivation-of-a-localisation in
+  mathlib, which is why `DK` is ~250 lines of quotient-rule bookkeeping).  **Take
+  `K := AdjoinRoot p` over `𝔽 := RatFunc F` instead, with**
+
+    `p := Y² + C (a₁X + a₃) · Y − C f`,   `f := X³ + a₂X² + a₄X + a₆`,
+
+  which is ALREADY a field — no localisation step at all.  Two things make this cheap.
+  (i) `p` is irreducible over `𝔽`: a root `g = r/s` in lowest terms gives
+  `r² + (a₁X + a₃)rs = f s²`, so `s ∣ r²` forces `s` constant, and then no degree works
+  (`2·deg g = 3` is impossible, and `deg g ≤ 1` makes the left side of degree `≤ 2`).
+  (ii) The derivation on `𝔽[Y]` is the Hamiltonian one, `𝒟 := ψ₂·∂_X + (f′ − a₁Y)·∂_Y`
+  with `∂_X` differentiating COEFFICIENTS (`RationalDerivation.rderiv`, bundled as a
+  `Derivation F 𝔽 𝔽`, then `Derivation.mapCoeffs`), and it kills `p` ON THE NOSE:
+  `∂_X p = a₁Y − f′` and `∂_Y p = 2Y + a₁X + a₃ = ψ₂`, so
+  `𝒟 p = ψ₂(a₁Y − f′) + (f′ − a₁Y)ψ₂ = 0`.  So `Derivation.liftOfSurjective` descends it
+  to `K` with no residue calculation — contrast mathlib's `Differential (AdjoinRoot p)`
+  instance, which is not usable here anyway because it assumes `CharZero`.  On `K` then
+  `𝒟 x = ψ₂` and `𝒟 y = f′ − a₁y = 3x² + 2a₂x + a₄ − a₁y`.
 * (B) **Translation invariance**, `D x₃ = 2y₃ + a₁x₃ + a₃`.  This is *AEC* III.5.1, and
   it is PURE FIELD ALGEBRA over an arbitrary derivation of an arbitrary field — the same
   shape as `RationalDerivation.chordDeriv_core`: with `L(x − x₂) = y − y₂`,
@@ -1172,6 +1187,51 @@ no tangent case, no `2`-torsion case).
 Note (E) needs only invariance of `Λ` under translation by a CONSTANT point, not the
 full additivity of `Λ` on `W′(K)`, because (B) is homogeneous in `D`.  That is what
 keeps the group law out of the proof.
+
+**HOW FAR `rderiv` ALONE GETS, and exactly where it stops.**  Translation invariance has
+a SYMMETRISED form that needs no field extension whatsoever.  Fix `T ∉ W[2]`, `T ≠ 0`,
+and put `x₊ = x(P + T)`, `x₋ = x(P − T)`.  Under `P ↦ −P` we have `x₊ ↔ x₋`, so
+`e₁ := x₊ + x₋` and `e₂ := x₊x₋` are EXPLICIT elements of `F(X)`; and `ψ₂(P + T)` picks
+up a sign, so `ψ₂(P+T) + ψ₂(P−T)` and `x₋ψ₂(P+T) + x₊ψ₂(P−T)` are anti-invariant, hence
+`ψ₂(P)·g₁(x)` and `ψ₂(P)·g₂(x)` with `g₁, g₂ ∈ F(X)` explicit.  Translation invariance is
+then exactly
+
+  `g₁ = rderiv e₁`  and  `g₂ = rderiv e₂`,
+
+two identities between explicit rational functions — `field_simp`/`linear_combination`
+territory, with `RationalDerivation.rderiv` and nothing else.  And they PIN
+`ψ₂(P ± T)` individually, since `x₊ ≠ x₋` off the finite locus:
+`ψ₂(P+T)·(x₊ − x₋) = ψ₂(P)·(e₁′x₊ − e₂′)`.
+
+What `rderiv` does NOT reach is (C) at the translated point: the chain-rule step produces
+`u′(x₊)·x₊′`, and `x₊′` is the derivative of an element that is quadratic over `F(X)`.
+Symmetrising that expression re-introduces `u(x₊)` and `u(x₋)` separately, so it does not
+descend.  **That single step is the whole reason (A) is needed** — everything else in
+(B) is `F(X)` algebra.
+
+**FAITHFULNESS CHECK (PARI/GP, 2026-07-30 — the leaf is NOT false as stated).**  Feeding
+the isogenies `ellisogeny` produces (which returns `[f, g, h]` with `x′ = f/h²` and
+`y′ = g/h³`, so `A = f`, `B = h²`, `Cx = coeff_y g`, `D = coeff_1 g`, `E = h³`) into the
+parent's conclusion `(A′B − AB′)·E = c·Cx·B²`:
+
+| curve / kernel | deg | `c` |
+|---|---|---|
+| `y² = x³ + x² − x`, ker `(0,0)` | 2 | `1` |
+| `y² = x³ − 4x`, ker `(0,0)` | 2 | `1` |
+| `y² + xy + y = x³ − x` (`a₁ = a₃ = 1`), ker `(0,0)` | 2 | `1` |
+| `19a1`, ker the `3`-torsion point `(5, 9)` | 3 | `1` |
+| `11a1`, ker the `5`-torsion point `(5, 5)` | 5 | `1` |
+| `y² = x³ + x² − x` over `𝔽₁₀₁`, ker `(0,0)` | 2 | `1` |
+| `y² + xy = x³ + 1` over `𝔽₂`, ker `(0,1)` | 2 | `1` |
+| `[2]` on `y² = x³ + 7x + 11` | 4 | `2` |
+
+The ratio is a constant in every case, exactly (not numerically), and the `[2]` row
+confirms the scalar is genuinely a variable and not always `1` — Vélu's normalisation is
+what makes the isogeny rows all read `1`.  The residual of the `y`-part identity
+`2·D·B + a₁′AE + a₃′BE − Cx·B·(a₁X + a₃)` (that is `diffChar_yWitness_onePart`) is `0` in
+every row too.  Inseparable maps are consistent as well: Frobenius on `y² + xy = x³ + 1`
+over `𝔽₂` has `A = X²`, `B = 1`, `Cx = X`, `D = X³ + 1`, `E = 1`, so `A′B − AB′ = 0` and
+`c = 0`, while the `y`-part reads `0 = X·X − X² = 0`.
 
 **THE CHECK THAT WOULD REFUTE IT**: a rational map of Weierstrass curves over an
 algebraically closed field, with witnesses `A, …, E`, and two points off the bad locus
