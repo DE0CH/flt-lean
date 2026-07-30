@@ -3897,6 +3897,205 @@ theorem connectedSpace_primeSpectrum_of_faithfullyFlat {R S : Type u} [CommRing 
   (PrimeSpectrum.comap_surjective_of_faithfullyFlat (A := R) (B := S)).connectedSpace
     (PrimeSpectrum.continuous_comap _)
 
+/-! #### Stacks `0363` support block (added 2026-07-30)
+
+Seven declarations closing the leaf below, all pure commutative algebra.  THE
+ROUTE is the first of the two the leaf's docstring records — idempotents — but
+with the finiteness moved to the RIGHT place, which is what makes it short.
+
+* `connectedSpace_primeSpectrum_iff` turns the topology into algebra:
+  `Spec R` is connected iff `R` is nontrivial with no idempotent but `0` and `1`
+  (mathlib supplies the clopen half, `PrimeSpectrum.isClopen_iff`).
+* An idempotent `z ∈ Ω ⊗[F] A` involves only FINITELY many elements of `Ω`
+  (`TensorProduct.exists_finset`), hence descends to `B ⊗[F] A` for
+  `B = F[those elements] ⊆ Ω` — a finitely generated `F`-DOMAIN.  The descent is
+  injective by `tensorProduct_map_injective`, so `z` is idempotent there too.
+* Over `B` the argument is a coordinate computation against an `F`-basis `e` of
+  `A`.  Each `F`-point `χ : B →ₐ[F] F` gives `χ ⊗ 1 : B ⊗ A → F ⊗ A ≅ A`, whose
+  value on `z` is an idempotent of `A`, hence `0` or `1`; reading coordinates
+  (`repr_tensorProduct_map`) that says every `χ` kills all coordinates of `z`, or
+  matches them all against those of `1`.  Fixing one coordinate `μ₁` where
+  `1 : A` is nonzero, `c(c − r)` is killed by every `χ`, so it VANISHES
+  (`eq_zero_of_forall_algHom_eq_zero_of_isAlgClosed`, the Nullstellensatz) and
+  `B` being a domain forces `c = 0` or `c = r`.  The two cases then propagate to
+  every coordinate and give `z = 0` or `z = 1`.
+
+WHERE ALGEBRAIC CLOSEDNESS IS CONSUMED: exactly once, in the Nullstellensatz
+step, where a maximal ideal `m` of `B` has `B ⧸ m = F` — via Zariski's lemma
+(`finite_of_finite_type_of_isJacobsonRing`) plus
+`IsAlgClosed.algebraMap_bijective_of_isIntegral`.  That is precisely the point
+the leaf's `ℚ ⊆ ℚ(i)` counterexample identifies: over `F = ℚ` a maximal ideal of
+`B = ℚ(i)` has residue field `ℚ(i) ≠ ℚ`, there is no `ℚ`-point at all, and the
+argument has nothing to specialise at.
+
+MATHLIB ABSENCE, re-checked 2026-07-30: `grep -rn "0363\|0385\|0387\|04KV"` over
+`.lake/packages/mathlib/Mathlib/` returns nothing, and
+`AlgebraicGeometry.GeometricallyConnected` is only the DEFINITION plus its
+stability formalities — no criterion producing it from `ConnectedSpace`. -/
+
+/-- An idempotent whose basic open is empty is `0`. -/
+theorem eq_zero_of_isIdempotentElem_of_basicOpen_eq_empty {R : Type*} [CommRing R] {e : R}
+    (he : IsIdempotentElem e) (h : (PrimeSpectrum.basicOpen e : Set (PrimeSpectrum R)) = ∅) :
+    e = 0 := by
+  obtain ⟨N, hN⟩ := (PrimeSpectrum.basicOpen_eq_bot_iff e).mp
+    (TopologicalSpace.Opens.ext (by simpa using h))
+  rcases N with _ | M
+  · rw [pow_zero] at hN
+    calc e = e * 1 := (mul_one e).symm
+      _ = e * 0 := by rw [hN]
+      _ = 0 := mul_zero e
+  · rwa [he.pow_succ_eq M] at hN
+
+/-- `Spec R` is connected exactly when `R` is nontrivial and has no idempotent
+besides `0` and `1`. -/
+theorem connectedSpace_primeSpectrum_iff (R : Type*) [CommRing R] :
+    ConnectedSpace (PrimeSpectrum R) ↔
+      Nontrivial R ∧ ∀ e : R, IsIdempotentElem e → e = 0 ∨ e = 1 := by
+  constructor
+  · intro hconn
+    refine ⟨PrimeSpectrum.nonempty_iff_nontrivial.mp hconn.toNonempty, fun e he => ?_⟩
+    rcases preconnectedSpace_iff_clopen.mp hconn.toPreconnectedSpace
+        (PrimeSpectrum.basicOpen e) (PrimeSpectrum.isClopen_iff.mpr ⟨e, he, rfl⟩) with h | h
+    · exact Or.inl (eq_zero_of_isIdempotentElem_of_basicOpen_eq_empty he h)
+    · refine Or.inr ?_
+      have h1 : (PrimeSpectrum.basicOpen (1 - e) : Set (PrimeSpectrum R)) = ∅ := by
+        rw [← PrimeSpectrum.zeroLocus_eq_basicOpen_of_isIdempotentElem e he,
+          ← Set.compl_univ, ← h, PrimeSpectrum.basicOpen_eq_zeroLocus_compl, compl_compl]
+      have h2 := eq_zero_of_isIdempotentElem_of_basicOpen_eq_empty he.one_sub h1
+      linear_combination -h2
+  · rintro ⟨hnt, hid⟩
+    haveI := hnt
+    haveI : PreconnectedSpace (PrimeSpectrum R) := by
+      refine preconnectedSpace_iff_clopen.mpr fun s hs => ?_
+      obtain ⟨e, he, rfl⟩ := PrimeSpectrum.isClopen_iff.mp hs
+      rcases hid e he with rfl | rfl
+      · exact Or.inl (by simp)
+      · exact Or.inr (by simp)
+    exact ⟨PrimeSpectrum.nonempty_iff_nontrivial.mpr hnt⟩
+
+attribute [local instance] Ideal.Quotient.field in
+/-- **NULLSTELLENSATZ**: over an ALGEBRAICALLY CLOSED field, an element of a
+reduced finitely generated algebra killed by every `F`-point is zero. -/
+theorem eq_zero_of_forall_algHom_eq_zero_of_isAlgClosed {F : Type*} [Field F] [IsAlgClosed F]
+    {B : Type*} [CommRing B] [IsReduced B] [Algebra F B] [Algebra.FiniteType F B]
+    {b : B} (h : ∀ χ : B →ₐ[F] F, χ b = 0) : b = 0 := by
+  haveI : IsJacobsonRing B := isJacobsonRing_of_finiteType (A := F)
+  have hbot : Ideal.jacobson (⊥ : Ideal B) = ⊥ :=
+    IsJacobsonRing.out ‹_› (nilradical_eq_zero B).le
+  have hmem : b ∈ Ideal.jacobson (⊥ : Ideal B) := by
+    refine Ideal.mem_sInf.mpr fun {m} hm => ?_
+    haveI : m.IsMaximal := hm.2
+    haveI : Algebra.FiniteType F (B ⧸ m) :=
+      Algebra.FiniteType.of_surjective (Ideal.Quotient.mkₐ F m) Ideal.Quotient.mk_surjective
+    haveI : Module.Finite F (B ⧸ m) := finite_of_finite_type_of_isJacobsonRing F (B ⧸ m)
+    haveI : Algebra.IsIntegral F (B ⧸ m) := Algebra.IsIntegral.of_finite F (B ⧸ m)
+    have hbij : Function.Bijective (algebraMap F (B ⧸ m)) :=
+      IsAlgClosed.algebraMap_bijective_of_isIntegral
+    let ee : F ≃ₐ[F] (B ⧸ m) := AlgEquiv.ofBijective (Algebra.ofId F (B ⧸ m)) hbij
+    have hb0 : (Ideal.Quotient.mkₐ F m) b = 0 := by
+      have := h (ee.symm.toAlgHom.comp (Ideal.Quotient.mkₐ F m))
+      have h2 := congrArg ee this
+      simpa using h2
+    exact Ideal.Quotient.eq_zero_iff_mem.mp hb0
+  simpa [hbot] using hmem
+
+open _root_.TensorProduct in
+/-- Coordinates against an `F`-basis of `A` are NATURAL in the left factor. -/
+theorem repr_tensorProduct_map {F : Type*} [Field F] {B C : Type*} [CommRing B] [CommRing C]
+    [Algebra F B] [Algebra F C] {A : Type*} [CommRing A] [Algebra F A] {ι : Type*}
+    (bA : Module.Basis ι F A) (φ : B →ₐ[F] C) (z : B ⊗[F] A) (μ : ι) :
+    (Algebra.TensorProduct.basis C bA).repr (Algebra.TensorProduct.map φ (AlgHom.id F A) z) μ
+      = φ ((Algebra.TensorProduct.basis B bA).repr z μ) := by
+  induction z using TensorProduct.induction_on with
+  | zero => simp
+  | tmul b a =>
+      simp [Algebra.TensorProduct.basis_repr_tmul, AlgHom.commutes]
+  | add x y hx hy => simp [hx, hy]
+
+open _root_.TensorProduct in
+/-- The coordinates of `1 : B ⊗[F] A` are the images of those of `1 : A`. -/
+theorem repr_basis_tensorProduct_one {F : Type*} [Field F] {B : Type*} [CommRing B] [Algebra F B]
+    {A : Type*} [CommRing A] [Algebra F A] {ι : Type*} (bA : Module.Basis ι F A) (μ : ι) :
+    (Algebra.TensorProduct.basis B bA).repr 1 μ = algebraMap F B (bA.repr (1 : A) μ) := by
+  rw [Algebra.TensorProduct.one_def (A := B) (B := A)]
+  simp
+
+open _root_.TensorProduct in
+/-- **THE ARITHMETIC HEART OF STACKS `0363`**: over an ALGEBRAICALLY CLOSED `F`,
+tensoring with a finitely generated `F`-DOMAIN creates no new idempotents. -/
+theorem eq_zero_or_one_of_isIdempotentElem_tensorProduct_fg
+    {F : Type*} [Field F] [IsAlgClosed F] {B : Type*} [CommRing B] [IsDomain B] [Algebra F B]
+    [Algebra.FiniteType F B] {A : Type*} [CommRing A] [Algebra F A] [Nontrivial A]
+    {ι : Type*} (bA : Module.Basis ι F A)
+    (hA : ∀ a : A, IsIdempotentElem a → a = 0 ∨ a = 1)
+    {z : B ⊗[F] A} (hz : IsIdempotentElem z) : z = 0 ∨ z = 1 := by
+  classical
+  -- Some coordinate of `1 : A` is nonzero.
+  obtain ⟨μ₁, hμ₁⟩ : ∃ μ, bA.repr (1 : A) μ ≠ 0 := by
+    by_contra hcon
+    simp only [not_exists, not_not] at hcon
+    have h0 : bA.repr (1 : A) = 0 := Finsupp.ext fun μ => by simpa using hcon μ
+    exact one_ne_zero (α := A) (bA.repr.injective (by simp [h0]))
+  -- Every `F`-point of `B` sends `z` to `0` or to `1`, coordinatewise.
+  have hpt : ∀ χ : B →ₐ[F] F,
+      (∀ μ, χ ((Algebra.TensorProduct.basis B bA).repr z μ) = 0) ∨
+      (∀ μ, χ ((Algebra.TensorProduct.basis B bA).repr z μ) = bA.repr (1 : A) μ) := by
+    intro χ
+    have hwi : IsIdempotentElem (Algebra.TensorProduct.map χ (AlgHom.id F A) z) := hz.map _
+    have hw01 : Algebra.TensorProduct.map χ (AlgHom.id F A) z = 0 ∨
+        Algebra.TensorProduct.map χ (AlgHom.id F A) z = 1 := by
+      rcases hA _ (hwi.map (Algebra.TensorProduct.lid F A)) with h | h
+      · exact Or.inl ((Algebra.TensorProduct.lid F A).injective (by simpa using h))
+      · exact Or.inr ((Algebra.TensorProduct.lid F A).injective (by simpa using h))
+    rcases hw01 with h | h
+    · exact Or.inl fun μ => by
+        rw [← repr_tensorProduct_map bA χ z μ, h, map_zero, Finsupp.coe_zero, Pi.zero_apply]
+    · exact Or.inr fun μ => by
+        rw [← repr_tensorProduct_map bA χ z μ, h, repr_basis_tensorProduct_one bA μ]
+        simp
+  -- The `μ₁`-coordinate is `0` or `1`, because `B` is a DOMAIN and `F` is algebraically closed.
+  have hkey : (Algebra.TensorProduct.basis B bA).repr z μ₁ = 0 ∨
+      (Algebra.TensorProduct.basis B bA).repr z μ₁ =
+        algebraMap F B (bA.repr (1 : A) μ₁) := by
+    have hz0 : (Algebra.TensorProduct.basis B bA).repr z μ₁ *
+        ((Algebra.TensorProduct.basis B bA).repr z μ₁ -
+          algebraMap F B (bA.repr (1 : A) μ₁)) = 0 := by
+      refine eq_zero_of_forall_algHom_eq_zero_of_isAlgClosed (F := F) fun χ => ?_
+      rcases hpt χ with h | h
+      · simp [h μ₁]
+      · simp [h μ₁, AlgHom.commutes]
+    rcases mul_eq_zero.mp hz0 with h | h
+    · exact Or.inl h
+    · exact Or.inr (by linear_combination h)
+  rcases hkey with hk | hk
+  · refine Or.inl ((Algebra.TensorProduct.basis B bA).repr.injective (Finsupp.ext fun μ => ?_))
+    rw [map_zero, Finsupp.coe_zero, Pi.zero_apply]
+    refine eq_zero_of_forall_algHom_eq_zero_of_isAlgClosed (F := F) fun χ => ?_
+    rcases hpt χ with h | h
+    · exact h μ
+    · exact absurd ((h μ₁).symm.trans (by rw [hk, map_zero])) hμ₁
+  · refine Or.inr ((Algebra.TensorProduct.basis B bA).repr.injective (Finsupp.ext fun μ => ?_))
+    rw [repr_basis_tensorProduct_one bA μ]
+    have hd : (Algebra.TensorProduct.basis B bA).repr z μ -
+        algebraMap F B (bA.repr (1 : A) μ) = 0 := by
+      refine eq_zero_of_forall_algHom_eq_zero_of_isAlgClosed (F := F) fun χ => ?_
+      rcases hpt χ with h | h
+      · refine absurd ?_ hμ₁
+        have h1 := h μ₁
+        rw [hk, AlgHom.commutes] at h1
+        simpa using h1
+      · simp [h μ, AlgHom.commutes]
+    linear_combination hd
+
+open _root_.TensorProduct in
+/-- Base change along an INJECTIVE map of the left factor is injective. -/
+theorem tensorProduct_map_injective {F : Type*} [Field F] {B C : Type*} [CommRing B] [CommRing C]
+    [Algebra F B] [Algebra F C] {A : Type*} [CommRing A] [Algebra F A] {ι : Type*}
+    (bA : Module.Basis ι F A) (φ : B →ₐ[F] C) (hφ : Function.Injective φ) :
+    Function.Injective (Algebra.TensorProduct.map φ (AlgHom.id F A)) := by
+  intro x y hxy
+  refine (Algebra.TensorProduct.basis B bA).repr.injective (Finsupp.ext fun μ => hφ ?_)
+  rw [← repr_tensorProduct_map bA φ x μ, ← repr_tensorProduct_map bA φ y μ, hxy]
 open _root_.TensorProduct in
 /-- **STACKS `0363` — THE ONLY NON-FORMAL STEP IN LEDGER ITEM 1** (sorry leaf,
 NAMED 2026-07-29). A connected affine scheme over an ALGEBRAICALLY CLOSED field
@@ -3946,12 +4145,54 @@ ABSENCE CHECK 2026-07-29 over all three trees the doctrine requires:
 `grep -rn "IsAlgClosed\|IsSepClosed" .lake/packages/mathlib/Mathlib/RingTheory/Spectrum/`
 and `grep -rn "connectedSpace.*tensor\|tensor.*[Cc]onnected" Fermat/ ~/cs/FLT/`
 return nothing running in this direction. That same grep is the refuting check
-for a future reader. -/
+for a future reader.
+
+**PROVEN 2026-07-30**, by the FIRST route (idempotents), over the seven
+declarations of the support block immediately above. The route note said the
+finitely generated subextension `L / F` would produce "a nontrivial finite étale
+`F`-algebra factor" to be forbidden — that step is not needed and was not taken.
+The subextension is NOT taken inside `Ω` as a field: it is the `F`-SUBALGEBRA
+`B` generated by the finitely many elements of `Ω` occurring in a `tmul`
+expansion of the idempotent, which is a finitely generated `F`-domain but in
+general has positive transcendence degree and is not finite over `F` at all.
+What replaces "finite étale" is the NULLSTELLENSATZ: `B` has enough `F`-points
+because `F` is algebraically closed, and specialising the idempotent at them is
+what forces it to be constant. So the second route (`04KV`) was not needed
+either, and neither was any scheme-theoretic input. -/
 theorem connectedSpace_primeSpectrum_baseChange_of_isAlgClosed
     {F : Type u} [Field F] [IsAlgClosed F] {A : Type u} [CommRing A] [Algebra F A]
     {Ω : Type u} [Field Ω] [Algebra F Ω] (h : ConnectedSpace (PrimeSpectrum A)) :
     ConnectedSpace (PrimeSpectrum (Ω ⊗[F] A)) := by
-  sorry
+  classical
+  obtain ⟨hnt, hid⟩ := (connectedSpace_primeSpectrum_iff A).mp h
+  haveI := hnt
+  have hinj : Function.Injective
+      (Algebra.TensorProduct.includeRight : A →ₐ[F] Ω ⊗[F] A) :=
+    Algebra.TensorProduct.includeRight_injective (algebraMap F Ω).injective
+  refine (connectedSpace_primeSpectrum_iff (Ω ⊗[F] A)).mpr ⟨⟨0, 1, fun hcon => ?_⟩, fun z hz => ?_⟩
+  · exact zero_ne_one (α := A) (hinj (by simp only [map_zero, map_one]; exact hcon))
+  · set bA := Module.Free.chooseBasis F A
+    obtain ⟨S, hS⟩ := TensorProduct.exists_finset z
+    set B : Subalgebra F Ω :=
+      Algebra.adjoin F (↑(S.image (fun p : Ω × A => p.1)) : Set Ω) with hB
+    haveI : Algebra.FiniteType F B :=
+      (Subalgebra.fg_iff_finiteType B).mp (hB ▸ Subalgebra.fg_adjoin_finset _)
+    set ψ := Algebra.TensorProduct.map B.val (AlgHom.id F A)
+    have hψinj : Function.Injective ψ :=
+      tensorProduct_map_injective bA B.val Subtype.val_injective
+    set z' : B ⊗[F] A :=
+      ∑ i ∈ S.attach, (⟨i.1.1, Algebra.subset_adjoin (by exact Finset.mem_image.mpr ⟨i.1, i.2, rfl⟩)⟩ : B) ⊗ₜ[F] i.1.2 with hz'
+    have hzz : ψ z' = z := by
+      rw [hz', map_sum, hS, ← Finset.sum_attach S (fun p => p.1 ⊗ₜ[F] p.2)]
+      exact Finset.sum_congr rfl fun i _ => rfl
+    have hz'i : IsIdempotentElem z' := by
+      refine hψinj ?_
+      rw [map_mul, hzz]
+      exact hz
+    rcases eq_zero_or_one_of_isIdempotentElem_tensorProduct_fg bA hid hz'i with hh | hh
+    · exact Or.inl (by rw [← hzz, hh, map_zero])
+    · exact Or.inr (by rw [← hzz, hh, map_one])
+
 
 /-- THE AMALGAM, PROVEN — and it needed none of the machinery the ledger
 expected. To run the `0387` argument one needs a single field `Ω` receiving both
@@ -10112,6 +10353,201 @@ def ratAlgEquivOfRingEquiv {A B : Type*} [CommRing A] [Algebra ℚ A] [CommRing 
       DFunLike.congr_fun
         (RingHom.ext_rat (e.toRingHom.comp (algebraMap ℚ A)) (algebraMap ℚ B)) r }
 
+/-! #### Geometric reducedness over a perfect field (added 2026-07-30)
+
+The missing half (i) of the leaf below: mathlib carries the PREDICATE
+`Algebra.IsGeometricallyReduced` and `Algebra.isGeometricallyReduced_field_iff`,
+but no implication deriving it from `IsReduced` over a perfect field. The five
+declarations here supply it (Stacks `030V`) and are pure commutative algebra —
+nothing in this file is used, and nothing below them uses anything but
+`isReduced_algebraicClosure_tensorProduct` and
+`isDomain_algebraicClosure_tensorProduct_quotient_nilradical`.
+
+THE ROUTE, and why it never needs the primitive element theorem.
+`IsReduced.tensorProduct_of_flat_of_forall_fg`
+(`Mathlib/RingTheory/Flat/Basic.lean`, and `S` is flat over the FIELD `k`)
+reduces `S ⊗[k] k̄` to `S ⊗[k] B` for `B` a FINITELY GENERATED `k`-subalgebra of
+`k̄` — which is a finite separable field extension, by
+`Subalgebra.isField_of_algebraic` and `Algebra.IsIntegral.finite`. For such a `B`
+the argument is a coordinate computation: pick a `k`-basis `e` of `B`, write
+`z = ∑ᵢ cᵢ ⊗ eᵢ`, and push `z` into `Frac (S ⧸ p) ⊗[k] B` for each prime `p` of
+`S`. That target is reduced by `Algebra.FormallyUnramified.isReduced_of_field`
+(`Mathlib/RingTheory/Unramified/Field.lean`) applied to the base change of the
+formally unramified `k`-algebra `B`, so the image of a nilpotent `z` vanishes;
+since the `eᵢ` stay a basis after base change, every `cᵢ` dies in `S ⧸ p`, i.e.
+`cᵢ ∈ p`. Intersecting over all primes gives `cᵢ ∈ nilradical S = 0`.
+
+WHERE PERFECTNESS IS CONSUMED: exactly once, in
+`Algebra.IsAlgebraic.isSeparable_of_perfectField`, to know that the finite
+subextension `B` is SEPARABLE. Over an imperfect `k` the statement is false —
+`k = 𝔽_p(t)`, `S = k[x] ⧸ (xᵖ − t)` is a reduced (indeed a field) `k`-algebra,
+and `k̄ ⊗ S` contains the nonzero nilpotent `x − t^{1/p}`. -/
+
+open _root_.TensorProduct in
+/-- Every element of `S ⊗[k] B` is a finite `S`-combination of the `1 ⊗ eᵢ`, for
+`e` a `k`-basis of `B` (PROVEN, 2026-07-30). -/
+theorem exists_coeffs_tmul_basis {k : Type*} [Field k] {S : Type*} [CommRing S] [Algebra k S]
+    {B : Type*} [AddCommGroup B] [Module k B] {ι : Type*} [Fintype ι]
+    (bB : Module.Basis ι k B) (z : S ⊗[k] B) :
+    ∃ c : ι → S, z = ∑ i, c i ⊗ₜ[k] bB i := by
+  induction z using TensorProduct.induction_on with
+  | zero => exact ⟨0, by simp⟩
+  | tmul s b =>
+      refine ⟨fun i => bB.repr b i • s, ?_⟩
+      conv_lhs => rw [← bB.sum_repr b]
+      rw [TensorProduct.tmul_sum]
+      refine Finset.sum_congr rfl fun i _ => ?_
+      rw [TensorProduct.tmul_smul, TensorProduct.smul_tmul']
+  | add x y hx hy =>
+      obtain ⟨c, rfl⟩ := hx
+      obtain ⟨d, rfl⟩ := hy
+      exact ⟨c + d, by simp [TensorProduct.add_tmul, Finset.sum_add_distrib]⟩
+
+open _root_.TensorProduct in
+/-- Those coefficients are unique: the `1 ⊗ eᵢ` are `S`-linearly independent in
+`S ⊗[k] B` (PROVEN, 2026-07-30 — it is `Algebra.TensorProduct.basis`). -/
+theorem forall_coeff_eq_zero_of_sum_tmul_basis_eq_zero {k : Type*} [Field k] {S : Type*}
+    [CommRing S] [Algebra k S] {B : Type*} [AddCommGroup B] [Module k B] {ι : Type*} [Fintype ι]
+    (bB : Module.Basis ι k B) {c : ι → S} (h : ∑ i, c i ⊗ₜ[k] bB i = 0) : ∀ i, c i = 0 := by
+  have hrw : ∑ i, c i • (Algebra.TensorProduct.basis S bB) i = 0 := by
+    rw [← h]
+    exact Finset.sum_congr rfl fun i _ => Algebra.TensorProduct.basis_repr_symm_apply' bB _ i
+  exact Fintype.linearIndependent_iff.mp (Algebra.TensorProduct.basis S bB).linearIndependent c hrw
+
+open _root_.TensorProduct in
+/-- A field tensored with a finite separable field extension is REDUCED (PROVEN,
+2026-07-30): `B` is formally unramified over `k` because it is separable, that
+property base-changes to `K`, and `Algebra.FormallyUnramified.isReduced_of_field`
+is exactly the conclusion. -/
+theorem isReduced_tensorProduct_field_of_isSeparable
+    (k : Type*) [Field k] (K : Type*) [Field K] [Algebra k K]
+    (B : Type*) [Field B] [Algebra k B] [Algebra.IsSeparable k B]
+    [Algebra.EssFiniteType k B] :
+    IsReduced (K ⊗[k] B) := by
+  haveI : Algebra.FormallyUnramified k B := Algebra.FormallyUnramified.of_isSeparable k B
+  exact Algebra.FormallyUnramified.isReduced_of_field K (K ⊗[k] B)
+
+open _root_.TensorProduct in
+/-- **A REDUCED ALGEBRA STAYS REDUCED ALONG A FINITE SEPARABLE FIELD EXTENSION**
+(PROVEN, 2026-07-30). The coordinate argument described in the section note. -/
+theorem isReduced_tensorProduct_of_finite_separable
+    {k : Type*} [Field k] {S : Type*} [CommRing S] [Algebra k S] [IsReduced S]
+    {B : Type*} [Field B] [Algebra k B] [Module.Finite k B] [Algebra.IsSeparable k B] :
+    IsReduced (S ⊗[k] B) := by
+  classical
+  set bB := Module.finBasis k B
+  constructor
+  intro z hz
+  obtain ⟨c, rfl⟩ := exists_coeffs_tmul_basis bB z
+  have hc : ∀ i, c i = 0 := by
+    intro i
+    have hnil : c i ∈ nilradical S := by
+      rw [nilradical_eq_sInf]
+      refine Ideal.mem_sInf.mpr fun {p} hp => ?_
+      haveI : p.IsPrime := hp
+      haveI : IsDomain (S ⧸ p) := Ideal.Quotient.isDomain p
+      set φ : S →ₐ[k] FractionRing (S ⧸ p) :=
+        (IsScalarTower.toAlgHom k (S ⧸ p) (FractionRing (S ⧸ p))).comp
+          (Ideal.Quotient.mkₐ k p) with hφ
+      set ψ := Algebra.TensorProduct.map φ (AlgHom.id k B) with hψ
+      haveI : IsReduced (FractionRing (S ⧸ p) ⊗[k] B) :=
+        isReduced_tensorProduct_field_of_isSeparable k _ B
+      have hz0 : ψ (∑ i, c i ⊗ₜ[k] bB i) = 0 := (hz.map ψ).eq_zero
+      rw [map_sum] at hz0
+      simp only [hψ, Algebra.TensorProduct.map_tmul, AlgHom.coe_id, id_eq] at hz0
+      have hcoeff := forall_coeff_eq_zero_of_sum_tmul_basis_eq_zero bB hz0 i
+      have hinj : Function.Injective (algebraMap (S ⧸ p) (FractionRing (S ⧸ p))) :=
+        IsFractionRing.injective _ _
+      have hmk : (Ideal.Quotient.mk p) (c i) = 0 := hinj (by simpa [hφ] using hcoeff)
+      exact (Ideal.Quotient.eq_zero_iff_mem).mp hmk
+    exact (mem_nilradical.mp hnil).eq_zero
+  simp [hc]
+
+open _root_.TensorProduct in
+/-- **OVER A PERFECT FIELD, REDUCED IMPLIES GEOMETRICALLY REDUCED** (Stacks
+`030V`; PROVEN 2026-07-30 — this is the half of the leaf below that mathlib does
+not carry). -/
+theorem isReduced_tensorProduct_algebraicClosure
+    {k : Type*} [Field k] [PerfectField k] {S : Type*} [CommRing S] [Algebra k S] [IsReduced S] :
+    IsReduced (S ⊗[k] AlgebraicClosure k) := by
+  refine IsReduced.tensorProduct_of_flat_of_forall_fg (R := k) (C := S)
+    (A := AlgebraicClosure k) fun B hB => ?_
+  haveI : Algebra.FiniteType k B := (Subalgebra.fg_iff_finiteType B).mp hB
+  haveI : Algebra.IsIntegral k B := by
+    constructor
+    intro x
+    exact IsIntegral.tower_bot (R := k) (A := B) (B := AlgebraicClosure k)
+      (fun _ _ h => Subtype.ext h)
+      (Algebra.IsIntegral.isIntegral (R := k) (x : AlgebraicClosure k))
+  haveI : Module.Finite k B := Algebra.IsIntegral.finite
+  letI : Field B := (Subalgebra.isField_of_algebraic (K := k) (L := AlgebraicClosure k) B).toField
+  haveI : Algebra.IsSeparable k B := inferInstance
+  exact isReduced_tensorProduct_of_finite_separable
+
+open _root_.TensorProduct in
+/-- The same with the base change on the LEFT, which is the side every consumer
+here uses (PROVEN 2026-07-30). -/
+theorem isReduced_algebraicClosure_tensorProduct
+    (k : Type*) [Field k] [PerfectField k] (S : Type*) [CommRing S] [Algebra k S] [IsReduced S] :
+    IsReduced (AlgebraicClosure k ⊗[k] S) := by
+  haveI : IsReduced (S ⊗[k] AlgebraicClosure k) := isReduced_tensorProduct_algebraicClosure
+  exact isReduced_of_injective (Algebra.TensorProduct.comm k (AlgebraicClosure k) S).toRingHom
+    (Algebra.TensorProduct.comm k (AlgebraicClosure k) S).injective
+
+/-- A RADICAL ideal all of whose elements are nilpotent IS the nilradical
+(PROVEN glue, 2026-07-30). This is the step that upgrades "the extended
+nilradical is contained in the nilradical" to an EQUALITY, and it is the only
+place geometric reducedness is consumed. -/
+theorem eq_nilradical_of_isRadical_of_le {U : Type*} [CommRing U] {J : Ideal U}
+    (hrad : J.IsRadical) (hle : J ≤ nilradical U) : J = nilradical U :=
+  le_antisymm hle (le_trans (Ideal.radical_mono bot_le) hrad)
+
+open _root_.TensorProduct in
+/-- **THE ABSTRACT SHAPE OF THE GEOMETRIC-INTEGRALITY LEAF** (PROVEN 2026-07-30).
+`e` identifies the base change of `A` with a ring `Abar` whose nilradical is
+PRIME; `q` is the base-change/quotient bridge. Then the base change of the
+REDUCED `A` is a domain. Instantiated at `A := IntegralSystemModel f ℚ`,
+`Abar := IntegralSystemModel f ℚ̄` immediately below.
+
+Its content is that the extended ideal `(nil A)ᵉ` EQUALS `nil Abar`: the
+containment `≤` is formal, and the reverse comes from
+`isReduced_algebraicClosure_tensorProduct` via
+`Ideal.isRadical_iff_quotient_reduced`. -/
+theorem isDomain_algebraicClosure_tensorProduct_quotient_nilradical
+    {k : Type u} [Field k] [PerfectField k] {A : Type u} [CommRing A] [Algebra k A]
+    {Abar : Type u} [CommRing Abar]
+    (e : (AlgebraicClosure k ⊗[k] A) ≃+* Abar)
+    (q : ((AlgebraicClosure k ⊗[k] A) ⧸
+        ((nilradical A).map (Algebra.TensorProduct.includeRight :
+          A →ₐ[k] AlgebraicClosure k ⊗[k] A).toRingHom)) ≃+*
+        (AlgebraicClosure k ⊗[k] (A ⧸ nilradical A)))
+    (hp : (nilradical Abar).IsPrime) :
+    IsDomain (AlgebraicClosure k ⊗[k] (A ⧸ nilradical A)) := by
+  set J₀ : Ideal (AlgebraicClosure k ⊗[k] A) :=
+    (nilradical A).map (Algebra.TensorProduct.includeRight :
+      A →ₐ[k] AlgebraicClosure k ⊗[k] A).toRingHom with hJ₀
+  set J : Ideal Abar := J₀.map (e : (AlgebraicClosure k ⊗[k] A) →+* Abar) with hJ
+  have hqe : ((AlgebraicClosure k ⊗[k] A) ⧸ J₀) ≃+* (Abar ⧸ J) :=
+    Ideal.quotientEquiv J₀ J (e : (AlgebraicClosure k ⊗[k] A) ≃+* Abar) rfl
+  haveI : IsReduced (A ⧸ nilradical A) := isReduced_quotient_nilradical A
+  haveI : IsReduced (AlgebraicClosure k ⊗[k] (A ⧸ nilradical A)) :=
+    isReduced_algebraicClosure_tensorProduct k _
+  haveI : IsReduced ((AlgebraicClosure k ⊗[k] A) ⧸ J₀) :=
+    isReduced_of_injective q.toRingHom (fun _ _ h => q.injective h)
+  haveI : IsReduced (Abar ⧸ J) :=
+    isReduced_of_injective hqe.symm.toRingHom (fun _ _ h => hqe.symm.injective h)
+  have hJrad : J.IsRadical := (Ideal.isRadical_iff_quotient_reduced J).mpr ‹_›
+  have hJle : J ≤ nilradical Abar := by
+    rw [hJ, Ideal.map_le_iff_le_comap, hJ₀, Ideal.map_le_iff_le_comap]
+    intro x hx
+    obtain ⟨N, hN⟩ := mem_nilradical.mp hx
+    refine Ideal.mem_comap.mpr (Ideal.mem_comap.mpr (mem_nilradical.mpr ⟨N, ?_⟩))
+    simp only [AlgHom.toRingHom_eq_coe, RingHom.coe_coe, ← map_pow, hN, map_zero]
+  have hJeq : J = nilradical Abar := eq_nilradical_of_isRadical_of_le hJrad hJle
+  haveI : (J).IsPrime := hJeq ▸ hp
+  haveI : IsDomain (Abar ⧸ J) := Ideal.Quotient.isDomain J
+  exact MulEquiv.isDomain (Abar ⧸ J) (q.symm.trans hqe).toMulEquiv
+
 open _root_.TensorProduct in
 /-- **GEOMETRIC INTEGRALITY OF THE REDUCED GENERIC FIBRE** — Poonen §3.2 step (b)
 (SORRY LEAF, cut 2026-07-28 out of
@@ -10158,13 +10594,26 @@ a restatement of `hQ`.
 
 CIRCULARITY GUARD: inherited from the consumer; pure commutative algebra, no
 Galois representation, no route through `Family.lean`, `Lift.lean` or
-`Modularity/Interface.lean`. -/
+`Modularity/Interface.lean`.
+
+**PROVEN 2026-07-30.** Half (i) — geometric reducedness over the perfect field
+`ℚ` — is the section note immediately above; half (ii) is
+`isDomain_algebraicClosure_tensorProduct_quotient_nilradical`, into which this
+statement substitutes `integralSystemModelBaseChange` for `e` and this file's
+own `baseChangeQuotientEquiv` for `q` (NOT mathlib's
+`Algebra.TensorProduct.tensorQuotientEquiv`, which the route note suggested:
+the local one is already stated with `includeRight` on the correct side and
+needs no `rightAlgebra` instance). -/
 theorem isDomain_algebraicClosure_tensorProduct_reduced_integralSystemModel_rat
     {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
     (hQ : (integralSystemIdeal f (AlgebraicClosure ℚ)).radical.IsPrime) :
     IsDomain (AlgebraicClosure ℚ ⊗[ℚ]
       (IntegralSystemModel f ℚ ⧸ nilradical (IntegralSystemModel f ℚ))) :=
-  sorry
+  isDomain_algebraicClosure_tensorProduct_quotient_nilradical
+    (integralSystemModelBaseChange f ℚ (AlgebraicClosure ℚ)).toRingEquiv
+    (BertiniBaseChange.baseChangeQuotientEquiv (k := ℚ) (S := IntegralSystemModel f ℚ)
+      (AlgebraicClosure ℚ) (nilradical (IntegralSystemModel f ℚ)))
+    (isPrime_nilradical_quotient_of_isPrime_radical _ hQ)
 
 /-- **BIRATIONAL HYPERSURFACE NORMAL FORM FOR A FINITELY GENERATED DOMAIN OVER
 `ℚ`** — Poonen §3.2 step (c) (SORRY LEAF, cut 2026-07-28 out of
