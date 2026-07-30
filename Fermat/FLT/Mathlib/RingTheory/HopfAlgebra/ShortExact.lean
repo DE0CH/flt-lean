@@ -1196,10 +1196,19 @@ be useful when `R` is **local**, and then it is big enough for everything.
 So over a local base this leaf is a theorem in the literature, and the residual difficulty of the
 global statement is *entirely* the passage from local to global.
 
-**And the only consumer of this cluster in the tree is over a local base.** The chain ends at
-`HopfAlgebra.isMultiplicativeType_of_isShortExact`, consumed in
-`Fermat/FLT/GaloisRepresentation/HardlyRamified/Family.lean` over
-`𝒪ᵖᵥ = adicCompletionIntegers ℚ v`, i.e. `ℤ_p` — a complete DVR. So adding `[IsLocalRing R]` to
+**And the intended consumer of this cluster is over a local base — but it does not exist yet, so
+this is a claim about the PLAN, not about a call site.** Checked 2026-07-30 by two independent
+comment-stripped scans of every `.lean` file under `Fermat/`: the only term-level references to
+`isMultiplicativeType_of_isShortExact`, `IsShortExact.cartierDual`, `exists_basis_cartierDual`,
+`exists_spanning_cartierDual` and this leaf are **inside this file**. The chain ends at
+`HopfAlgebra.isMultiplicativeType_of_isShortExact`, which has **no consumer anywhere in the tree**;
+the whole cluster is free-floating in the technical sense, built ahead of a consumer that is still
+unwritten. Every mention of it in `Family.lean` and `Threeadic.lean` is prose — `Family.lean`'s own
+`(R1)` section says the object it needs was "UNSTATABLE" in that file and is still being built.
+
+What the plan says is nonetheless specific and does support the patch: `Family.lean` describes
+`(R3)` as "an iterated extension of `μ`-types over the **henselian** `𝒪ᵖᵥ`", i.e.
+`adicCompletionIntegers ℚ v` = `ℤ_p`, a complete DVR. So adding `[IsLocalRing R]` to
 this leaf and to the five declarations that consume it in this file
 (`exists_lift_ker_le_span_cartierDual`, `exists_spanning_cartierDual`,
 `exists_basis_cartierDual`, `ker_cartierDual_le`, `faithfullyFlat_cartierDual`, and hence
