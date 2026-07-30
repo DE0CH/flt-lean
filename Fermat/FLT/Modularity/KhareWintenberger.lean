@@ -8863,29 +8863,60 @@ choice of the patching argument downstream, not of the transfer, so the form
 Jacquet–Langlands produces has no tame-`p` condition at all). What is
 genuinely hard is the first, and it is the ROUND-5 argument below.
 
-**WHY THIS IS NOT STATED AS A DELTA OVER
-`exists_eigenform_of_totallyDefinite_quaternionAlgebra`, WHICH IS WHAT
-ROUND 9 FIRST TRIED.** That declaration produces exactly this datum minus
-the `𝒮.S ⊆ badF` clause, so the economical cut is "an eigenform in, an
-eigenform out", composing with it and leaving its statement byte-identical.
-That version was written and then WITHDRAWN, because a `main` merged
-afterwards had given that declaration a new hypothesis
-`hauto : IsQuaternionicEigensystem F E badF (fun w => -(heckeF w).coeff 1)`
-— and `hauto` is not available here. It cannot be derived from `hJL` either:
-`hJL` supplies a Hecke CHARACTER for ONE algebra `D` and ONE auxiliary prime
-`p`, whereas `IsQuaternionicEigensystem` quantifies over EVERY `D` and every
-admissible `p` and yields an EIGENFORM. It is strictly the stronger
-statement, and threading it down to here would mean adding it to
-`exists_carayolJacobianPackage_of_totallyDefinite_heckeCharacter` and to its
-consumers — a cut-level change across declarations under other owners, which
-ROUND 9 deliberately did not make.
+**ROUND-10 AUTOMORPHY REPAIR (2026-07-30) — `hauto` IS NOW A HYPOTHESIS, and
+before it was the leaf was a MODULARITY STATEMENT, not a level statement.**
 
-CONSEQUENCE, and a successor should weigh it: this leaf and
-`exists_eigenform_of_totallyDefinite_quaternionAlgebra` now OVERLAP in
-content, the latter being nearly trivial given its `hauto`. The clean repair
-is to thread `hauto` into this branch of the chain and restate this leaf as
-the delta it wanted to be. That is a cut-level change and is REPORTED rather
-than made.
+As cut in ROUND 9 this leaf had NO automorphic input at all: every hypothesis
+was Galois-theoretic (the deformation block, `hmod` against an abstract
+`Polynomial E`-valued `heckeF`, the three `bad`-set clauses) while the
+conclusion demanded a NONZERO weight-`2` eigenform on `Dˣ` whose `T_w`
+eigenvalues are those of `heckeF`. That is precisely the shape the 2026-07-28
+AUTOMORPHY AUDIT diagnosed and removed from
+`exists_eigenform_of_totallyDefinite_quaternionAlgebra` (read it, above): a
+leaf in that shape is asking for Serre's conjecture for `ρbar` plus a
+modularity lifting theorem over `F` — the theorem this module exists to prove
+— and the CIRCULARITY GUARD below forbids the only in-tree route to it. So
+the ROUND-9 leaf could not be closed by any amount of Jacquet–Langlands work,
+and its title was not what it was asking for. The defect was reintroduced one
+declaration below the place it had just been repaired.
+
+ROUND 9's own docstring recorded the correct fix and declined to make it, on
+the ground that threading `hauto` "would mean adding it to
+`exists_carayolJacobianPackage_of_totallyDefinite_heckeCharacter` and to its
+consumers — a cut-level change across declarations under other owners". That
+ground does not hold: the entire chain that separates this leaf from a
+declaration already carrying `hauto` lives in THIS module, and no other file
+in the tree mentions any member of it. The five intermediaries —
+`exists_totallyDefinite_heckeCharacter_level_subset_badF`,
+`exists_carayolJacobianPackage_of_totallyDefinite_heckeCharacter`,
+`exists_carayolPackage_of_totallyDefinite_heckeCharacter`,
+`exists_threeadicField_realization_of_totallyDefinite_heckeCharacter` and
+`carayol_threeadic_of_totallyDefinite_heckeCharacter` — now forward `hauto`
+unchanged, and the top of that chain is `carayol_threeadic_…`'s sole call
+site inside `exists_threeadicRealization_of_heckePackage`, which HELD `hauto`
+already and merely discarded it. So no signature outside this module changed,
+and no instance of anything was deleted: adding a hypothesis to a leaf only
+weakens it.
+
+WHAT IS OWED NOW, therefore, is exactly the LEVEL statement of the title —
+`hauto` hands over an eigenform at SOME level `U₁(𝒮.S, ∅)` (it pins `𝒮.Q = ∅`
+outright and `f ≠ 0` and the eigenvalue matching, i.e. all four of the other
+conjuncts), and the residual obligation is the single clause
+`∀ w ∈ 𝒮.S, w ∈ badF`. That is the ROUND-5 argument below and nothing else.
+
+REMAINING OPTION, reported and NOT taken. The clause could be pushed one step
+further out, into `IsQuaternionicEigensystem` itself (add `∀ w ∈ 𝒮.S, w ∈ bad`
+to its existential), which would make this leaf a one-line assembly exactly
+like its sibling and would land the residual citation on
+`HilbertHeckeAlgebra.automorphic` — where `HilbertModularity.lean`'s own
+docstring argues the Jacquet–Langlands burden belongs, since that is the only
+point at which `T` is being BUILT as a Hecke algebra of Hilbert modular forms.
+It is not taken here for two reasons. It strengthens a definition in another
+module used by four other consumers, so it is a genuine cross-file cut; and it
+would assert, uniformly in `bad`, that the transfer's level is inside `bad` —
+true when `bad` contains the ramified places, which is the case in this chain
+but is NOT a consequence of the predicate's own hypotheses. Asserting it
+unchecked would be a promise this owner cannot vouch for.
 
 Content, i.e. what a prover of this leaf owes — the ROUND-5 argument, and
 NOTE THAT IT IS AN ARGUMENT ABOUT THE EIGENSYSTEM, NOT ABOUT THE FORM, which
@@ -8956,6 +8987,13 @@ theorem exists_eigenform_minimalLevel_subset_badF
       (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
     (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
       (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    -- THE AUTOMORPHIC INPUT (threaded 2026-07-30, ROUND-10).  Without it every
+    -- hypothesis of this leaf is Galois-theoretic while its conclusion demands a
+    -- genuine automorphic form, i.e. the leaf asks for modularity of `ρ|_{G_F}`
+    -- and not for the level minimality its title claims.  See the ROUND-10
+    -- AUTOMORPHY REPAIR in the docstring above.
+    (hauto : IsQuaternionicEigensystem F E badF
+      (fun w => -(heckeF w).coeff 1))
     (D : Type u) [DivisionRing D] [Algebra F D]
     [_root_.IsQuaternionAlgebra F D]
     [_root_.IsQuaternionAlgebra.IsTotallyDefinite F D]
@@ -9099,6 +9137,13 @@ theorem exists_totallyDefinite_heckeCharacter_level_subset_badF
       (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
     (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
       (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    -- THE AUTOMORPHIC INPUT (threaded 2026-07-30, ROUND-10), forwarded
+    -- unchanged down the Carayol chain to
+    -- `exists_eigenform_minimalLevel_subset_badF`, which without it was a
+    -- MODULARITY statement rather than the level statement its title claims.
+    -- See the ROUND-10 AUTOMORPHY REPAIR on that leaf.
+    (hauto : IsQuaternionicEigensystem F E badF
+      (fun w => -(heckeF w).coeff 1))
     (hJL : ∃ (D : Type u) (_ : DivisionRing D) (_ : Algebra F D)
       (_ : _root_.IsQuaternionAlgebra F D)
       (_ : _root_.IsQuaternionAlgebra.IsTotallyDefinite F D)
@@ -9131,8 +9176,8 @@ theorem exists_totallyDefinite_heckeCharacter_level_subset_badF
   -- `S ⊆ badF`: the transfer and the minimality of its level together.
   obtain ⟨𝒮, a, f, hQ, hSbad, hf0, hTa, hmatch⟩ :=
     exists_eigenform_minimalLevel_subset_badF hℓodd hℓ5 hZinj hrank hρ hW hρbar
-      hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ ιO hιO hmod hbad2 hbad3 hbadℓ D
-      p hp hcyc
+      hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ ιO hιO hmod hbad2 hbad3 hbadℓ
+      hauto D p hp hcyc
   -- `f` is scaled by every element of the Hecke algebra, not merely by the
   -- generators: `T`'s and `U`'s generate, and the `U`'s are vacuous since
   -- `𝒮.Q = ∅`.
@@ -9726,6 +9771,13 @@ theorem exists_carayolJacobianPackage_of_totallyDefinite_heckeCharacter
       (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
     (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
       (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    -- THE AUTOMORPHIC INPUT (threaded 2026-07-30, ROUND-10), forwarded
+    -- unchanged down the Carayol chain to
+    -- `exists_eigenform_minimalLevel_subset_badF`, which without it was a
+    -- MODULARITY statement rather than the level statement its title claims.
+    -- See the ROUND-10 AUTOMORPHY REPAIR on that leaf.
+    (hauto : IsQuaternionicEigensystem F E badF
+      (fun w => -(heckeF w).coeff 1))
     (hJL : ∃ (D : Type u) (_ : DivisionRing D) (_ : Algebra F D)
       (_ : _root_.IsQuaternionAlgebra F D)
       (_ : _root_.IsQuaternionAlgebra.IsTotallyDefinite F D)
@@ -9803,7 +9855,7 @@ theorem exists_carayolJacobianPackage_of_totallyDefinite_heckeCharacter
   obtain ⟨D, hDdiv, hDalg, hDquat, hDdef, hDrig, p, 𝒮, θ, hSbad, hQbad, hθ⟩ :=
     exists_totallyDefinite_heckeCharacter_level_subset_badF hℓodd hℓ5 hZinj
       hrank hρ hW hρbar hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ
-      ιO hιO hmod hbad2 hbad3 hbadℓ hJL
+      ιO hιO hmod hbad2 hbad3 hbadℓ hauto hJL
   -- CARAYOL'S THÉORÈME (A), with no `ℓ`-adic apparatus left in it
   exact exists_carayolJacobianPackage_of_heckeAlgebraCharacter F hFtr E badF
     heckeF hbad3 (fun w hw => (hshape w hw).1) (fun w hw => (hshape w hw).2.1)
@@ -9864,6 +9916,13 @@ theorem exists_carayolPackage_of_totallyDefinite_heckeCharacter
       (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
     (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
       (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    -- THE AUTOMORPHIC INPUT (threaded 2026-07-30, ROUND-10), forwarded
+    -- unchanged down the Carayol chain to
+    -- `exists_eigenform_minimalLevel_subset_badF`, which without it was a
+    -- MODULARITY statement rather than the level statement its title claims.
+    -- See the ROUND-10 AUTOMORPHY REPAIR on that leaf.
+    (hauto : IsQuaternionicEigensystem F E badF
+      (fun w => -(heckeF w).coeff 1))
     (hJL : ∃ (D : Type u) (_ : DivisionRing D) (_ : Algebra F D)
       (_ : _root_.IsQuaternionAlgebra F D)
       (_ : _root_.IsQuaternionAlgebra.IsTotallyDefinite F D)
@@ -9887,7 +9946,7 @@ theorem exists_carayolPackage_of_totallyDefinite_heckeCharacter
   obtain ⟨L, hFieldL, hAlgL, hFinL, ψ₃, ι, P, hPmatch, ⟨J⟩⟩ :=
     exists_carayolJacobianPackage_of_totallyDefinite_heckeCharacter hℓodd hℓ5
       hZinj hrank hρ hW hρbar hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF
-      ψℓ ιO hιO hmod hbad2 hbad3 hbadℓ hJL
+      ψℓ ιO hιO hmod hbad2 hbad3 hbadℓ hauto hJL
   refine ⟨L, hFieldL, hAlgL, hFinL, ?_⟩
   -- the topology on `L` is not a choice — `Module.Finite ℚ_3 L` pins it
   letI : TopologicalSpace L := moduleTopology ℚ_[3] L
@@ -10010,6 +10069,13 @@ theorem exists_threeadicField_realization_of_totallyDefinite_heckeCharacter
       (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
     (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
       (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    -- THE AUTOMORPHIC INPUT (threaded 2026-07-30, ROUND-10), forwarded
+    -- unchanged down the Carayol chain to
+    -- `exists_eigenform_minimalLevel_subset_badF`, which without it was a
+    -- MODULARITY statement rather than the level statement its title claims.
+    -- See the ROUND-10 AUTOMORPHY REPAIR on that leaf.
+    (hauto : IsQuaternionicEigensystem F E badF
+      (fun w => -(heckeF w).coeff 1))
     (hJL : ∃ (D : Type u) (_ : DivisionRing D) (_ : Algebra F D)
       (_ : _root_.IsQuaternionAlgebra F D)
       (_ : _root_.IsQuaternionAlgebra.IsTotallyDefinite F D)
@@ -10034,7 +10100,7 @@ theorem exists_threeadicField_realization_of_totallyDefinite_heckeCharacter
   obtain ⟨L, hFieldL, hAlgL, hFinL, ψ₃, ι, P, hPmatch, ⟨C⟩⟩ :=
     exists_carayolPackage_of_totallyDefinite_heckeCharacter hℓodd hℓ5
       hZinj hrank hρ hW hρbar hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF
-      ψℓ ιO hιO hmod hbad2 hbad3 hbadℓ hJL
+      ψℓ ιO hιO hmod hbad2 hbad3 hbadℓ hauto hJL
   refine ⟨L, hFieldL, hAlgL, hFinL, ?_⟩
   -- the topology on `L` is not a choice — `Module.Finite ℚ_3 L` pins it
   letI : TopologicalSpace L := moduleTopology ℚ_[3] L
@@ -11077,6 +11143,13 @@ theorem carayol_threeadic_of_totallyDefinite_heckeCharacter
       (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
     (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
       (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    -- THE AUTOMORPHIC INPUT (threaded 2026-07-30, ROUND-10), forwarded
+    -- unchanged down the Carayol chain to
+    -- `exists_eigenform_minimalLevel_subset_badF`, which without it was a
+    -- MODULARITY statement rather than the level statement its title claims.
+    -- See the ROUND-10 AUTOMORPHY REPAIR on that leaf.
+    (hauto : IsQuaternionicEigensystem F E badF
+      (fun w => -(heckeF w).coeff 1))
     (hJL : ∃ (D : Type u) (_ : DivisionRing D) (_ : Algebra F D)
       (_ : _root_.IsQuaternionAlgebra F D)
       (_ : _root_.IsQuaternionAlgebra.IsTotallyDefinite F D)
@@ -11102,7 +11175,7 @@ theorem carayol_threeadic_of_totallyDefinite_heckeCharacter
   obtain ⟨L, hFieldL, hAlgL, hFinL, τ, ψ₃, ι, hmatch⟩ :=
     exists_threeadicField_realization_of_totallyDefinite_heckeCharacter hℓodd hℓ5
       hZinj hrank hρ hW hρbar hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF
-      ψℓ ιO hιO hmod hbad2 hbad3 hbadℓ hJL
+      ψℓ ιO hιO hmod hbad2 hbad3 hbadℓ hauto hJL
   -- the topology on `L` must be FIXED before anything whose type mentions it is
   -- elaborated; it is not a choice, `Module.Finite ℚ_3 L` pins it
   letI : TopologicalSpace L := moduleTopology ℚ_[3] L
@@ -11992,7 +12065,7 @@ theorem carayol_threeadic_realization_of_heckePackage
   -- witnessing `D` totally definite.
   carayol_threeadic_of_totallyDefinite_heckeCharacter hℓodd hℓ5 hZinj hrank hρ hW
       hρbar hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ ιO hιO hmod hbad2
-      hbad3 hbadℓ
+      hbad3 hbadℓ hauto
     (exists_totallyDefinite_heckeCharacter_of_heckePackage hℓodd hℓ5 hZinj hrank hρ hW
       hρbar hirr π hπsurj hπ F hFtr hFgal hFeven hirrF E badF heckeF ψℓ ιO hιO hmod
       hbad2 hbad3 hbadℓ hauto)
