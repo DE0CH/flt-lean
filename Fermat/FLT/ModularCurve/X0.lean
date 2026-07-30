@@ -40596,91 +40596,259 @@ theorem valuationRing_stalk_affineLine (K : Type) [Field K]
   -- A local Bezout domain is a valuation ring.
   infer_instance
 
-/-- **NO RATIONAL CURVES ON AN ABELIAN VARIETY, from the WHOLE affine line: a
-`K`-morphism `𝔸¹_K ⟶ A` into an abelian scheme is CONSTANT** (sorry leaf,
-2026-07-28) — the second of the two leaves that
-`exists_section_of_denseOpen_affineLine_toAbelianScheme` below decomposes into,
-and the one that carries ALL of its mathematics.  The dense-open bookkeeping
-has been removed; what is left is the classical statement (Milne, *Abelian
-Varieties* I.3; Mumford, *Abelian Varieties* §4).
+/-- **THE SMOOTH PROPER COMPACTIFICATION OF THE AFFINE LINE, i.e. `ℙ¹_K`** (sorry
+leaf, new 2026-07-30) — the first of the two leaves that
+`exists_section_of_affineLine_toAbelianScheme` below is now PROVEN over, and the
+one that carries NO abelian-variety content whatever.  It mentions neither `A`,
+nor `AbelianSchemeStruct`, nor `N`, nor a moduli problem: it is a
+`Mathlib`-shaped existence statement about affine space over a field.
 
-**WHY THE SPLIT WAS WORTH MAKING, and it has paid off.**  The parent leaf mixed
-two unrelated obligations — an extension across the finitely many missing points
-of a dense open, and constancy — and the first was pure `Mathlib` bookkeeping.
-It is now **DONE**: `valuationRing_stalk_affineLine` immediately above is PROVEN
-(2026-07-30), so the parent is proven and THIS leaf is the whole of what remains
-below it.
+**WHY THIS CUT, AND WHY NOW.**  The docstring this replaces priced the two routes
+to "no rational curves on an abelian variety" and ended:
 
-**WHAT IS ACTUALLY MISSING, and it is NOT the extension theorem.**  The
-classical proof extends once more to `ℙ¹_K` and applies the RIGIDITY LEMMA.
-`ℙ¹` as a scheme is **absent from this pin**: checked 2026-07-28, `Mathlib`
-carries `ProjectiveSpectrum` and `EllipticCurve/Projective`, and a
+> So the `ℙ¹` route costs **`ℙ¹_K` plus a new rigidity theorem** of a shape
+> nothing here has: *a `K`-morphism from a proper geometrically connected
+> genus-`0` (or merely rational) `K`-scheme into an abelian scheme is constant*.
+> Budget both.
+
+Both are now BUDGETED, as two named leaves with the assembly written and
+compiling between them.  Nothing about the mathematics changes; what changes is
+that the two obligations can be owned, and attacked, separately — the
+compactification is pure `Mathlib` scheme theory with no group law in sight, and
+the rigidity theorem (`exists_section_of_rationalProperCurve_toAbelianScheme`
+below) never has to think about how `𝔸¹_K` sits inside its compactification.
+
+TRUE: the compactification is `ℙ¹_K = Proj K[x, y]`, with `𝔸¹_K` the standard
+chart `{y ≠ 0}` and complement the single point `∞`, so `finite_compl` holds with
+a one-point complement.  Properness, smoothness of relative dimension `1` and
+geometric connectedness of `ℙ¹_K` are all classical and hold over EVERY field —
+no perfectness, no separability, no characteristic hypothesis.
+
+**WHAT IS MISSING, AND THE ONE ROUTE THAT IS ALREADY HALF-BUILT HERE.**  `ℙ¹` as
+a scheme is absent from this pin (re-checked 2026-07-28 and again 2026-07-30:
+`Mathlib` carries `ProjectiveSpectrum` and `EllipticCurve/Projective`, and a
 `Topology/Compactification/OnePoint/ProjectiveLine.lean` that is topological
-only — there is no `AlgebraicGeometry.ProjectiveSpace`.
+only; there is no `AlgebraicGeometry.ProjectiveSpace`).  So a prover has two
+options, and the second is much the cheaper:
 
-**A STALE CITATION IN THAT ROUTE, CORRECTED 2026-07-30 — AND IT UNDERSTATES THE
-COST OF THE `ℙ¹` ROUTE BY A WHOLE THEOREM.**  The previous version of this
-paragraph said that once `ℙ¹_K` is built "the rigidity input is already here, in
-`Fermat/FLT/Mathlib/AlgebraicGeometry/ProperPushforward.lean`, whose
-`HasTrivialPushforward.existsUnique_comp_eq` and
-`eq_of_comp_eq_of_hasTrivialPushforward` are exactly the shape needed once
-`Γ(ℙ¹, 𝒪) = K` is available".  **They are not.**  All three candidate rigidity
-lemmas in this development were read and their hypotheses checked against this
-leaf's data:
+* build `Proj (K[x, y])` and its `𝔸¹` chart by hand.  `Mathlib` does supply the
+  one hard input — `AlgebraicGeometry.Proj.instIsProperToSpecZero`, properness of
+  `Proj 𝒜` over `Spec 𝒜₀` for a finite-type graded algebra
+  (`Mathlib/AlgebraicGeometry/ProjectiveSpectrum/Proper.lean`) — which is the
+  fact `CurveCompactification.lean`'s own audit records as the reason its Nagata
+  layer was provable at all.
+* **or invoke `exists_isSmoothCompactification_of_isAffine`**
+  (`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`, PROVEN and
+  sorry-free), which produces an `IsSmoothCompactification` of ANY affine
+  integral smooth curve over a PERFECT field.  Applied to `𝔸¹_K` it discharges
+  `comm`, `isOpenImmersion`, `isProper`, `smooth` and `finite_compl` in one call.
 
-* `HasTrivialPushforward.existsUnique_comp_eq` — the EXISTENCE half — carries
-  `[IsAffine Z]` on its TARGET.  `IsAffine A` is not available here:
-  `infer_instance` for it under `AbelianSchemeStruct astr` **fails**
-  (compiler-checked 2026-07-30).  It holds only in the degenerate case
-  `A = Spec K`.  So even with `ℙ¹_K` built and `Γ(ℙ¹, 𝒪) = K` in hand, this
-  lemma yields nothing about a positive-dimensional `A`.
-* `eq_of_comp_eq_of_hasTrivialPushforward` does take a general target, but it is
-  a CANCELLATION lemma (`g ≫ c₁ = g ≫ c₂ → c₁ = c₂`).  It gives UNIQUENESS of a
-  factorisation, never existence — so it cannot produce constancy either.
-* `isAdditiveOn_of_post_zero` (declared in this file, PROVEN) is the honest
-  rigidity theorem of the development, but its SOURCE must itself be an abelian
-  scheme (`abA : AbelianSchemeStruct af`).  `ℙ¹` is not one.
+**THE SECOND ROUTE HAS EXACTLY TWO GAPS, AND BOTH ARE NAMED HERE SO THAT NOBODY
+HAS TO REDISCOVER THEM.**
 
-So the `ℙ¹` route costs **`ℙ¹_K` plus a new rigidity theorem** of a shape nothing
-here has: *a `K`-morphism from a proper geometrically connected genus-`0` (or
-merely rational) `K`-scheme into an abelian scheme is constant*.  Budget both.
+1. `[SmoothOfRelativeDimension 1 (𝔸(Unit; Spec K) ↘ Spec K)]` is **not** an
+   instance at this pin (`infer_instance` fails; re-checked 2026-07-30, as is
+   `Smooth` and `GeometricallyConnected` for the same morphism).  Through
+   `HasRingHomProperty` it reduces to
+   `Algebra.IsStandardSmoothOfRelativeDimension 1 K (MvPolynomial Unit K)`, for
+   which `Mathlib/RingTheory/Smooth/StandardSmooth.lean` registers only `id`,
+   `baseChange`, `Subsingleton` and the localization-away case — so a
+   `SubmersivePresentation K (MvPolynomial Unit K) Unit PEmpty` has to be
+   written.  It is the obvious one (no relations, so the Jacobian is the empty
+   determinant `1`), and it is the same gap
+   `valuationRing_stalk_affineLine` above recorded and then ROUTED AROUND rather
+   than filling; that route is not available here, because the compactification
+   theorem asks for the instance itself.
+2. `GeometricallyConnected strC` is NOT a field of `IsSmoothCompactification`,
+   so it has to be supplied separately.  The argument is topological once
+   `GeometricallyConnected (𝔸(Unit; Spec K) ↘ Spec K)` is available: `𝔸¹_{K̄}` is
+   irreducible, hence connected, and it is dense in `C_{K̄}`, and a space with a
+   dense connected subspace is connected.
+3. And `[PerfectField K]` is a hypothesis of that theorem which THIS statement
+   does not have — `K` is an arbitrary field.  For `ℙ¹` the perfectness is not
+   mathematically needed (it is there for the normalisation step of the general
+   compactification theorem), so the second route proves this leaf only for
+   perfect `K` and a general `K` still needs either the `Proj` construction or a
+   descent along `K ⊆ K^perf`.  **Note where the consumers actually live**: the
+   `K`'s that reach `exists_section_of_affineLine_toAbelianScheme` through
+   `HasNoFibreAffineLine` are residue fields of a `ℚ`-scheme in every current
+   call site, hence of characteristic `0`, hence perfect — so filling gaps 1 and
+   2 alone would already unblock every consumer in this development, and the
+   imperfect case is dead weight one may leave for last.
 
-**AND THE COMPACTIFICATION SHORTCUT IS GATED ON `PerfectField`.**  A successor
-may notice `exists_isSmoothCompactification_of_isAffine`
-(`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`, PROVEN) and
-hope to skip building `ℙ¹` by compactifying `𝔸¹_K` abstractly.  It requires
-`[PerfectField K]`, which this leaf does not have — `K` is an arbitrary field —
-so that route needs a Galois-descent reduction to `K̄` first (legitimate: `Φ` is
-constant iff `Φ_K̄` is, and the resulting point descends because it is unique).
-It also still needs the same missing genus-`0` rigidity theorem afterwards, so
-it saves the `ℙ¹` construction and nothing else.  Note further that
-`SmoothOfRelativeDimension 1`, `GeometricallyConnected` and plain `Smooth` on
-`𝔸(Unit; Spec K) ↘ Spec K` are all **still not instances** at today's pin
-(re-checked 2026-07-30, all three `infer_instance` calls fail), so its
-hypotheses are not free either.
+**NOT VACUOUS**: the conclusion is an existence statement, and it is refutable —
+delete `IsProper strC` and `j := 𝟙` on `C := 𝔸¹_K` satisfies everything else, so
+properness is what has content.  `finite_compl` is what the extension theorem
+consumes and is what forbids the degenerate "compactification" that throws away
+all of `𝔸¹`. -/
+theorem exists_smoothProperCompactification_affineLine (K : Type) [Field K] :
+    ∃ (C : Scheme.{0}) (strC : C ⟶ Spec (CommRingCat.of K))
+      (j : 𝔸(Unit; Spec (CommRingCat.of K)) ⟶ C) (_ : IsOpenImmersion j),
+      IsProper strC ∧ SmoothOfRelativeDimension 1 strC ∧ GeometricallyConnected strC ∧
+        (Set.range j.base)ᶜ.Finite ∧
+        j ≫ strC = 𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K) :=
+  sorry
 
-The remaining alternative is the group-theoretic route: translate `Φ` so that
-`Φ(0) = 0`, note `𝔸¹_K = 𝔾_a` is a connected group variety, and use that a
-pointed morphism from a connected group variety to an abelian variety is a
-homomorphism, together with `Hom(𝔾_a, A) = 0`.  It avoids `ℙ¹` entirely.  With
-the correction above it is now clearly the cheaper of the two — the `ℙ¹` route's
-"rigidity is already here" advantage was the reason to prefer it, and that
-advantage does not exist.
+/-- **NO RATIONAL CURVES ON AN ABELIAN VARIETY, GENUS-`0` RIGIDITY: a `K`-morphism
+from a PROPER smooth geometrically connected RATIONAL curve into an abelian scheme
+is CONSTANT** (sorry leaf, new 2026-07-30) — the second of the two leaves that
+`exists_section_of_affineLine_toAbelianScheme` below is now PROVEN over, and the
+one that carries ALL of its mathematics.  The compactification bookkeeping has
+been removed; what is left is the classical statement (Milne, *Abelian Varieties*
+I.3; Mumford, *Abelian Varieties* §4: an abelian variety contains no rational
+curve).
 
-`abA` is load-bearing twice over: properness is what any extension argument
-consumes, and the group structure is what makes constancy TRUE.  The statement
-is FALSE for a non-proper target (`A = 𝔸¹_K`, `Φ = 𝟙`) and FALSE for a proper
-non-group target (`A` a genus-`0` conic with `Φ` a parametrisation).  The image
-point is `K`-rational because `𝔸¹_K` has `K`-points, which is why the
-conclusion is a SECTION `s` rather than a point of the underlying space. -/
+**WHY THE SOURCE IS PROPER HERE AND WAS NOT BEFORE, AND WHY THAT IS THE WHOLE
+POINT OF THE CUT.**  The previous leaf took `Φ : 𝔸¹_K ⟶ A` out of the AFFINE
+line, so every route to it had first to compactify — and the audit that stood on
+it established, by reading the hypotheses of all three candidate rigidity lemmas
+in this development, that "the `ℙ¹` route costs `ℙ¹_K` plus a new rigidity
+theorem".  Here the source `C` is proper by hypothesis, so the extension step is
+gone: what is asked for is exactly the missing rigidity theorem and nothing else.
+The compactification is
+`exists_smoothProperCompactification_affineLine` immediately above.
+
+**THE RATIONALITY HYPOTHESIS IS LOAD-BEARING AND THE LEAF IS FALSE WITHOUT IT.**
+Delete `j` (equivalently, allow `C` of positive genus) and take `C := A := E` an
+elliptic curve over `K` with `Ψ := 𝟙 E`: `C` is proper, smooth of relative
+dimension `1` and geometrically connected, `E` carries an `AbelianSchemeStruct`,
+and `𝟙 E` is not `strC ≫ s` for any section `s`, since `strC ≫ s` factors through
+`Spec K` and `𝟙 E` does not (`E` has more than one point).  So a proof that does
+not consume `j` is wrong.  What `j` says is precisely that `C` is a RATIONAL
+curve: it contains the affine line as a dense open with finite complement, hence
+has genus `0`.
+
+`abA` is load-bearing twice over, exactly as on the leaf this replaces:
+properness of the TARGET is what any degeneration argument consumes, and the
+group structure is what makes constancy TRUE.  The statement is FALSE for a
+non-proper target (`A := 𝔸¹_K`, `C := ℙ¹_K`, and a nonconstant `Ψ` — vacuously
+so, since no such `Ψ` exists; the honest non-proper witness is the one recorded
+below at `exists_section_of_denseOpen_affineLine_toAbelianScheme`, `A = 𝔸¹_K`
+with `d` an inclusion) and FALSE for a proper non-group target (`A` a genus-`0`
+conic, `Ψ` a parametrisation).  The image point is `K`-rational because `C`
+contains `𝔸¹_K`, which has `K`-points, which is why the conclusion is a SECTION
+`s` rather than a point of the underlying space.
+
+**THE TWO ROUTES, both unchanged from the audit of the leaf this replaces, and
+the second is still the cheaper.**
+
+* **Differentials.**  `Ω¹_{A/K}` is free, generated by the invariant
+  differentials, so `Ψ^*` sends each of them to a global section of `Ω¹_{C/K}`;
+  for `C` rational `H⁰(C, Ω¹) = 0` (this is `Ω¹_{ℙ¹} = 𝒪(−2)`), so `dΨ = 0`, and
+  in characteristic `0` that already gives constancy.  In characteristic `p` a
+  Frobenius-factorisation step is needed, and `Ω¹` of a `Scheme` relative to a
+  base is available at this pin, so this route is not blocked — but the genus-`0`
+  vanishing is, being Riemann–Roch again.
+* **Group-theoretic.**  Translate so that `Ψ` kills a `K`-point, note that the
+  rational curve `C` is dominated by `𝔸¹_K = 𝔾_a`, and use that a pointed
+  morphism from a connected group variety to an abelian variety is a
+  homomorphism, with `Hom(𝔾_a, A) = 0`.  This avoids Riemann–Roch entirely and
+  is the route the audit of the previous leaf recommended.
+
+**WHY THE RIGIDITY LEMMAS ALREADY IN THIS DEVELOPMENT DO NOT APPLY** — the record
+of a check made 2026-07-30 against the previous form of this leaf, which still
+stands verbatim, since neither `C` nor `A` changed class:
+
+* `HasTrivialPushforward.existsUnique_comp_eq`
+  (`Fermat/FLT/Mathlib/AlgebraicGeometry/ProperPushforward.lean`) — the EXISTENCE
+  half — carries `[IsAffine Z]` on its TARGET, and `IsAffine A` is not available
+  under `AbelianSchemeStruct astr` (`infer_instance` fails; it holds only in the
+  degenerate case `A = Spec K`).
+* `eq_of_comp_eq_of_hasTrivialPushforward` (same file) does take a general
+  target, but it is a CANCELLATION lemma (`g ≫ c₁ = g ≫ c₂ → c₁ = c₂`): it gives
+  UNIQUENESS of a factorisation, never existence.
+* `isAdditiveOn_of_post_zero` (this file, PROVEN) is the honest rigidity theorem
+  of the development, but its SOURCE must itself be an abelian scheme, and a
+  rational curve is not one.
+
+So this leaf really is a new theorem for this development, and that is what makes
+it worth a name of its own. -/
+theorem exists_section_of_rationalProperCurve_toAbelianScheme {K : Type} [Field K]
+    {C : Scheme.{0}} {strC : C ⟶ Spec (CommRingCat.of K)}
+    (hproper : IsProper strC) (hcurve : SmoothOfRelativeDimension 1 strC)
+    (hconn : GeometricallyConnected strC)
+    {j : 𝔸(Unit; Spec (CommRingCat.of K)) ⟶ C} (hj : IsOpenImmersion j)
+    (hjfin : (Set.range j.base)ᶜ.Finite)
+    (hjcomm : j ≫ strC = 𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K))
+    {A : Scheme.{0}} {astr : A ⟶ Spec (CommRingCat.of K)}
+    (abA : AbelianSchemeStruct astr) (Ψ : C ⟶ A) (hΨ : Ψ ≫ astr = strC) :
+    ∃ s : Spec (CommRingCat.of K) ⟶ A, s ≫ astr = 𝟙 _ ∧ Ψ = strC ≫ s :=
+  sorry
+
+/-- **NO RATIONAL CURVES ON AN ABELIAN VARIETY, from the WHOLE affine line: a
+`K`-morphism `𝔸¹_K ⟶ A` into an abelian scheme is CONSTANT** (**PROVEN
+2026-07-30** by decomposition over the two leaves immediately above; a sorry leaf
+from 2026-07-28 until then) — the second of the two leaves that
+`exists_section_of_denseOpen_affineLine_toAbelianScheme` below decomposes into,
+and the one that used to carry ALL of its mathematics.  The dense-open
+bookkeeping was removed when it was cut; what is left is the classical statement
+(Milne, *Abelian Varieties* I.3; Mumford, *Abelian Varieties* §4).
+
+**THE CUT TAKEN 2026-07-30 IS THE ONE ITS OWN AUDIT PRESCRIBED.**  That audit
+ended: *"the `ℙ¹` route costs `ℙ¹_K` plus a new rigidity theorem of a shape
+nothing here has: a `K`-morphism from a proper geometrically connected genus-`0`
+(or merely rational) `K`-scheme into an abelian scheme is constant.  Budget
+both."*  Both are now budgeted, as the two named leaves immediately above, and
+this declaration is the assembly between them:
+
+* `exists_smoothProperCompactification_affineLine` — `ℙ¹_K`, i.e. a proper
+  smooth geometrically connected curve containing `𝔸¹_K` as an open subscheme
+  with finite complement.  No abelian variety appears in it.
+* `exists_section_of_rationalProperCurve_toAbelianScheme` — the rigidity
+  theorem, with the source now PROPER, so that no extension step survives in it.
+
+The three-line assembly is `exists_unique_extension_of_isSmoothProperCurve`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`, PROVEN and
+sorry-free) to push `Φ` across `j`, the rigidity leaf to make the extension
+constant, and `hjcomm` to pull the resulting factorisation back to `𝔸¹_K`.  Note
+which extension theorem is used and why: unlike
+`exists_unique_extension_of_valuationRing_stalk_of_isOpenImmersion` — the one
+`exists_section_of_denseOpen_affineLine_toAbelianScheme` below needs, because
+ITS source `𝔸¹_K` is not proper — the packaged version is available here
+precisely BECAUSE the compactification `C` is proper, so the `ValuationRing`
+stalks come for free from `hcurve` inside it and no analogue of
+`valuationRing_stalk_affineLine` has to be proven for `C`.
+
+**WHY THIS IS A CUT AND NOT A RESTATEMENT.**  The two halves share no
+mathematics: the first is a `Proj` construction with no group law anywhere in it,
+the second is a statement about abelian varieties that never mentions how the
+affine line sits in its compactification.  They also have different obstructions
+— the first is gated on `ℙ¹` existing at this pin (or on `PerfectField`, through
+`exists_isSmoothCompactification_of_isAffine`), the second on genus-`0` rigidity,
+and neither gate has anything to say about the other.  Each docstring above
+records its own route, its own falsity witness, and its own inventory of what is
+missing.
+
+`abA` is load-bearing twice over: properness is what the extension step consumes,
+and the group structure is what makes constancy TRUE.  The statement is FALSE for
+a non-proper target (`A = 𝔸¹_K`, `Φ = 𝟙`) and FALSE for a proper non-group target
+(`A` a genus-`0` conic with `Φ` a parametrisation).  The image point is
+`K`-rational because `𝔸¹_K` has `K`-points, which is why the conclusion is a
+SECTION `s` rather than a point of the underlying space. -/
 theorem exists_section_of_affineLine_toAbelianScheme {K : Type} [Field K]
     {A : Scheme.{0}} {astr : A ⟶ Spec (CommRingCat.of K)}
     (abA : AbelianSchemeStruct astr)
     (Φ : 𝔸(Unit; Spec (CommRingCat.of K)) ⟶ A)
     (hΦ : Φ ≫ astr = 𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) :
     ∃ s : Spec (CommRingCat.of K) ⟶ A, s ≫ astr = 𝟙 _ ∧
-      Φ = (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) ≫ s :=
-  sorry
+      Φ = (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) ≫ s := by
+  obtain ⟨C, strC, j, hj, hproper, hcurve, hconn, hjfin, hjcomm⟩ :=
+    exists_smoothProperCompactification_affineLine K
+  haveI := hj
+  haveI := hproper
+  haveI := hcurve
+  haveI : IsProper astr := abA.proper
+  -- Extend `Φ` across the finitely many points of `C ∖ 𝔸¹_K`.
+  obtain ⟨Ψ, ⟨hΨ1, hΨ2⟩, -⟩ :=
+    exists_unique_extension_of_isSmoothProperCurve (strX := strC)
+      (strY := 𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K))
+      (strZ := astr) hconn hjfin hjcomm Φ hΦ
+  -- The extension is constant, and `Φ` is its restriction.
+  obtain ⟨s, hs1, hs2⟩ :=
+    exists_section_of_rationalProperCurve_toAbelianScheme hproper hcurve hconn hj hjfin hjcomm
+      abA Ψ hΨ1
+  refine ⟨s, hs1, ?_⟩
+  rw [← hΨ2, hs2, ← Category.assoc, hjcomm]
 
 /-- **NO RATIONAL CURVES ON AN ABELIAN VARIETY: a `K`-morphism from a
 DENSE OPEN of `𝔸¹_K` to an abelian scheme over `K` is CONSTANT** (PROVEN
@@ -40750,9 +40918,11 @@ to be proper, so `𝔸¹_K` is an admissible source.  It wants
 `[IsIntegral 𝔸(Unit; Spec K)]` (an instance, checked) and `ValuationRing`
 stalks; the latter is now `valuationRing_stalk_affineLine` above, where the
 full instance audit and the two routes to it are recorded.  Constancy is
-`exists_section_of_affineLine_toAbelianScheme` above, which is where the
-`ℙ¹`-or-`𝔾_a` question now lives.  The proof below is the three-line assembly:
-extend, apply constancy, restrict.
+`exists_section_of_affineLine_toAbelianScheme` above, which is itself PROVEN
+since 2026-07-30 over `exists_smoothProperCompactification_affineLine` (build
+`ℙ¹_K`) and `exists_section_of_rationalProperCurve_toAbelianScheme` (genus-`0`
+rigidity) — those two leaves are where the `ℙ¹`-or-`𝔾_a` question now lives.
+The proof below is the three-line assembly: extend, apply constancy, restrict.
 
 **`hV` IS LOAD-BEARING and the statement is FALSE without it**: for
 `V = ⊥` the empty scheme maps to `A` in exactly one way, and taking `A`
