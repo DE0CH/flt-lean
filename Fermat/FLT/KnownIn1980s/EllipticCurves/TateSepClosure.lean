@@ -1612,8 +1612,412 @@ theorem WeierstrassCurve.qUnitSepClosure_zpow_injective :
     (zero_lt_iff.mpr ((valuation k).ne_zero_iff.mpr E.q_ne_zero))
     (ne_of_lt E.valuation_q_lt_one) h4
 
-set_option backward.isDefEq.respectTransparency false in
-set_option maxHeartbeats 1000000 in
+/-! ### The CANONICAL étale-quotient map of the Tate uniformisation, at EVERY level
+
+`exists_tateTorsionQuotient` below produces the exact sequence's quotient map
+`E[N] ↠ ℤ/N` *existentially*, which is all its original consumers needed.  Two
+things it cannot say, and both are wanted by the `p`-new toric leaves of
+`Modularity/Interface.lean`:
+
+* the map is a *function of the uniformisation `e` alone*, so the maps at
+  different levels can be COMPARED — `zpowQuotientExponent_zsmul` below is that
+  comparison, and it is the coherence `T_p E_q = lim_n E_q[p ^ n]` is made of;
+* "`P` lies over the canonical generator of the étale quotient" can be said as
+  the equation `tateExponent P = 1` rather than as the radical clause
+  `∃ u, u ^ N = q ∧ P = point u`.  `zpowQuotientExponent_eq_one_iff` proves those two
+  are the SAME condition, so the leaves may be restated in either language
+  without strengthening or weakening anything.
+
+**A stale claim corrected (2026-07-30).**  The recommended-infrastructure note
+carried on `exists_toricTateModuleTower_of_weightTwoEigenform_pNew` asks to
+"generalise `exists_tateTorsionQuotient` from level `p` to level `p ^ n`".  No
+generalisation is needed and none is performed here: that theorem never used
+primality — its hypotheses are `p ≠ 0` and `(p : Ω) ≠ 0` — so instantiating it
+at `p ^ n` has always been legal.  What was genuinely missing is the CANONICAL
+choice, which is what this subsection supplies; the level-`p ^ n` instance is
+then the special case `N := p ^ n`.
+
+Everything here is pure group theory over an arbitrary uniformisation witness
+`e`: no properness, no reduction theory, and no hypothesis on `N` beyond the two
+already carried by `exists_tateTorsionQuotient` (and those only for
+surjectivity, which is the one statement that must produce an `N`-th root of the
+Tate parameter). -/
+
+/-! #### The general layer: the exponent of an `N`-torsion class of `G ⧸ Q ^ ℤ`
+
+**Why this layer exists — a defect in the first cut of this subsection, found
+and repaired the same day (2026-07-30).**  The API was built for the `p`-new
+toric leaves of `Modularity/Interface.lean` and, as first written, **could not
+be applied there.**
+
+It was stated over `E.qUnitSepClosure Ω`, so its uniformisation group is
+`zpowers (Units.map (algebraMap k Ω) E.qUnit)` with `E.qUnit = tateParameter E.j`,
+and it carries `E`'s instances `[E.IsElliptic]`,
+`[E.HasSplitMultiplicativeReduction 𝒪[k]]`.  The leaves work with
+`WeierstrassCurve.tateCurve (q : k)` for a **free** `q : kˣ` with `v q < 1` —
+`tateUnifSepClosure` / `tatePointOfUnit` there carry no curve hypotheses at all —
+whose uniformisation group is `zpowers (Units.map (algebraMap k Ω) q)`.  Matching
+the two types needs `(tateCurve q).qUnit = q`, i.e.
+
+    tateParameter (j (tateCurve q)) = q,
+
+the composite `tateParameter ∘ j ∘ tateCurve = id`.  **Only the other composite is
+available** — `isElliptic_tateCurve_tateParameter_and_j` (`FreyCurve/MazurTorsion.lean`)
+gives `j (tateCurve (tateParameter j)) = j`, and `isElliptic_tateCurve_and_j`
+gives it for `q = E.q`.  Getting the one wanted here from those needs injectivity
+of `q ↦ j(q)` on `v q < 1`, which this development does not have.  So the gap was
+a genuine type mismatch, not a missing `rw`.
+
+Nothing in the argument uses the curve.  It uses exactly two facts about the base
+element `Q` of the quotient: that `exists_rep_pow_eq_zpow_of_torsion` applies (it
+has no hypothesis), and that `a ↦ Q ^ a` is INJECTIVE — which is what makes the
+exponent well defined, and which the leaves have from `v q < 1` exactly as `E`
+has it from `v (q E) < 1` (`qUnitSepClosure_zpow_injective`).  Everything is
+therefore stated below for an arbitrary commutative group `G`, an arbitrary
+`Q : G` and an arbitrary target `A`; the curve-level statements that follow are
+its specialisation at `Q := E.qUnitSepClosure Ω`, with their statements
+UNCHANGED, so `exists_tateTorsionQuotient` and its consumers are untouched. -/
+
+section ZpowQuotientExponent
+
+variable {G : Type*} [CommGroup G] {A : Type*} [AddCommGroup A] {Q : G}
+
+/-- The uniformisation carries `N`-torsion to `N`-torsion (PROVEN): `e.symm` is
+additive, so it transports the defining equation of
+`AddSubgroup.torsionBy _ (N : ℤ)`. -/
+theorem zsmul_symm_eq_zero_of_torsionBy
+    (e : Additive (G ⧸ Subgroup.zpowers Q) ≃+ A)
+    {N : ℕ} (P : AddSubgroup.torsionBy A ((N : ℕ) : ℤ)) :
+    ((N : ℕ) : ℤ) • (e.symm (P : A)) = 0 := by
+  rw [← map_zsmul e.symm, (show ((N : ℕ) : ℤ) • (P : A) = 0 from P.2), map_zero]
+
+/-- **THE CANONICAL EXPONENT of an `N`-torsion element of `G ⧸ Q ^ ℤ`**
+(PROVEN — a definition, canonical in `(e, N, P)` and in nothing else).
+
+An `N`-torsion class of `G / Q ^ ℤ` is represented by some `u` with
+`u ^ N = Q ^ a` (`exists_rep_pow_eq_zpow_of_torsion`); the class of `a` in `ℤ/N`
+does not depend on the representative (`zpowQuotientExponent_eq_of_rep`), so this
+is the value at `P` of the quotient map of `0 → μ_N → (G ⧸ Q ^ ℤ)[N] → ℤ/N → 0`.
+At `G = Ωˣ`, `Q` the Tate parameter and `A = E_q(Ω)` it is the étale-quotient map
+of the Tate uniformisation.
+
+The definition picks a representative through `Classical.choose`, which is what
+makes it a FUNCTION rather than an existential; every consumer should go through
+`zpowQuotientExponent_spec` / `zpowQuotientExponent_eq_of_rep` and never unfold
+it. -/
+noncomputable def zpowQuotientExponent
+    (e : Additive (G ⧸ Subgroup.zpowers Q) ≃+ A)
+    {N : ℕ} (P : AddSubgroup.torsionBy A ((N : ℕ) : ℤ)) : ZMod N :=
+  (((exists_rep_pow_eq_zpow_of_torsion Q (e.symm (P : A))
+      (zsmul_symm_eq_zero_of_torsionBy e P)).choose_spec.choose : ℤ) : ZMod N)
+
+/-- **The defining property of `zpowQuotientExponent`** (PROVEN): SOME
+representative realises it.  This is the only lemma that unfolds the
+definition. -/
+theorem zpowQuotientExponent_spec
+    (e : Additive (G ⧸ Subgroup.zpowers Q) ≃+ A)
+    {N : ℕ} (P : AddSubgroup.torsionBy A ((N : ℕ) : ℤ)) :
+    ∃ (u : G) (a : ℤ),
+      Additive.ofMul ((u : G ⧸ Subgroup.zpowers Q)) = e.symm (P : A) ∧
+        u ^ N = Q ^ a ∧ ((a : ZMod N)) = zpowQuotientExponent e P :=
+  ⟨_, _,
+    (exists_rep_pow_eq_zpow_of_torsion Q (e.symm (P : A))
+      (zsmul_symm_eq_zero_of_torsionBy e P)).choose_spec.choose_spec.1,
+    (exists_rep_pow_eq_zpow_of_torsion Q (e.symm (P : A))
+      (zsmul_symm_eq_zero_of_torsionBy e P)).choose_spec.choose_spec.2,
+    rfl⟩
+
+/-- **`zpowQuotientExponent` is well defined: EVERY representative realises it**
+(PROVEN).
+
+Two representatives of the same class differ by `Q ^ m`, so their exponents
+differ by `m · N`, which is `0` in `ℤ/N`.  The injectivity of `a ↦ Q ^ a` is
+what turns the equality of `Q`-powers into an equality of exponents; without it
+the exponent would not be determined at all.  It is the ONLY hypothesis the
+well-definedness needs, and it is where `v(q) < 1` enters at the curve level. -/
+theorem zpowQuotientExponent_eq_of_rep
+    (hQ : Function.Injective (fun a : ℤ => Q ^ a))
+    (e : Additive (G ⧸ Subgroup.zpowers Q) ≃+ A)
+    {N : ℕ} (P : AddSubgroup.torsionBy A ((N : ℕ) : ℤ)) (v : G) (b : ℤ)
+    (hv : Additive.ofMul ((v : G ⧸ Subgroup.zpowers Q)) = e.symm (P : A))
+    (hvb : v ^ N = Q ^ b) :
+    ((b : ZMod N)) = zpowQuotientExponent e P := by
+  obtain ⟨u, a, hu, ha, hae⟩ := zpowQuotientExponent_spec e P
+  have h1 : ((u : G ⧸ Subgroup.zpowers Q)) = ((v : G ⧸ Subgroup.zpowers Q)) :=
+    Additive.ofMul.injective (hu.trans hv.symm)
+  obtain ⟨m, hm⟩ := Subgroup.mem_zpowers_iff.mp (QuotientGroup.eq.mp h1)
+  have h2 : v = u * Q ^ m := by rw [hm]; group
+  have h3 : Q ^ b = Q ^ (a + m * (N : ℤ)) := by
+    rw [← hvb, h2, mul_pow, ha, ← zpow_natCast (Q ^ m) N, ← zpow_mul, ← zpow_add]
+  have h4 : b = a + m * (N : ℤ) := hQ h3
+  rw [← hae, h4]
+  push_cast
+  simp
+
+/-- **THE PAYOFF: the exponent condition and the RADICAL condition are the same**
+(PROVEN).  `zpowQuotientExponent e P = c` says exactly that `P` is the image of
+some `N`-th root of `Q ^ c`.
+
+The direction that is not a restatement is `→`: the chosen representative has
+`u ^ N = Q ^ a` only with `a ≡ c (mod N)`, and `a` is corrected to `c` on the
+nose by replacing `u` with `u · Q ^ m` where `c − a = N · m` — a change of
+representative, so the class is unaffected.  That correction is possible ONLY
+because the ambiguity `Q ^ ℤ` is exactly an `N`-th-power ambiguity in the
+exponent; it is the reason a leaf may quantify over "some `p ^ n`-th root of `q`"
+and a named map may be substituted for it. -/
+theorem zpowQuotientExponent_eq_intCast_iff
+    (hQ : Function.Injective (fun a : ℤ => Q ^ a))
+    (e : Additive (G ⧸ Subgroup.zpowers Q) ≃+ A)
+    {N : ℕ} (P : AddSubgroup.torsionBy A ((N : ℕ) : ℤ)) (c : ℤ) :
+    zpowQuotientExponent e P = ((c : ZMod N)) ↔
+      ∃ u : G, u ^ N = Q ^ c ∧
+        e (Additive.ofMul ((u : G ⧸ Subgroup.zpowers Q))) = (P : A) := by
+  constructor
+  · intro hc
+    obtain ⟨u, a, hu, ha, hae⟩ := zpowQuotientExponent_spec e P
+    have hmod : a ≡ c [ZMOD (N : ℕ)] :=
+      (ZMod.intCast_eq_intCast_iff _ _ _).mp (hae.trans hc)
+    obtain ⟨m, hm⟩ := hmod.dvd
+    refine ⟨u * Q ^ m, ?_, ?_⟩
+    · rw [mul_pow, ha, ← zpow_natCast (Q ^ m) N, ← zpow_mul, ← zpow_add]
+      congr 1
+      linear_combination -hm
+    · have hcl : ((u * Q ^ m : G) : G ⧸ Subgroup.zpowers Q) =
+          ((u : G ⧸ Subgroup.zpowers Q)) := by
+        rw [QuotientGroup.mk_mul,
+          (QuotientGroup.eq_one_iff _).mpr
+            (Subgroup.zpow_mem _ (Subgroup.mem_zpowers _) m)]
+        exact mul_one ((u : G ⧸ Subgroup.zpowers Q))
+      rw [hcl, hu, e.apply_symm_apply]
+  · rintro ⟨u, hu, hP⟩
+    refine (zpowQuotientExponent_eq_of_rep hQ e P u c ?_ hu).symm
+    rw [← hP, e.symm_apply_apply]
+
+/-- **"`P` lies over the canonical generator of the quotient", as an EQUATION**
+(PROVEN): `zpowQuotientExponent e P = 1` iff `P` is the image of some `N`-th root
+of `Q` itself.  The case `c = 1` of `zpowQuotientExponent_eq_intCast_iff`, and the
+form the toric leaves of `Modularity/Interface.lean` state by hand. -/
+theorem zpowQuotientExponent_eq_one_iff
+    (hQ : Function.Injective (fun a : ℤ => Q ^ a))
+    (e : Additive (G ⧸ Subgroup.zpowers Q) ≃+ A)
+    {N : ℕ} (P : AddSubgroup.torsionBy A ((N : ℕ) : ℤ)) :
+    zpowQuotientExponent e P = 1 ↔
+      ∃ u : G, u ^ N = Q ∧
+        e (Additive.ofMul ((u : G ⧸ Subgroup.zpowers Q))) = (P : A) := by
+  have h := zpowQuotientExponent_eq_intCast_iff hQ e P 1
+  rw [Int.cast_one] at h
+  simpa only [zpow_one] using h
+
+/-- **`zpowQuotientExponent` is additive** (PROVEN): the product of two
+representatives represents the sum, and its exponent is the sum of the
+exponents. -/
+theorem zpowQuotientExponent_add
+    (hQ : Function.Injective (fun a : ℤ => Q ^ a))
+    (e : Additive (G ⧸ Subgroup.zpowers Q) ≃+ A)
+    {N : ℕ} (P R : AddSubgroup.torsionBy A ((N : ℕ) : ℤ)) :
+    zpowQuotientExponent e (P + R) =
+      zpowQuotientExponent e P + zpowQuotientExponent e R := by
+  obtain ⟨u, a, hu, ha, hae⟩ := zpowQuotientExponent_spec e P
+  obtain ⟨v, b, hv, hb, hbe⟩ := zpowQuotientExponent_spec e R
+  have hclass : Additive.ofMul (((u * v : G) : G ⧸ Subgroup.zpowers Q)) =
+      e.symm ((P + R : AddSubgroup.torsionBy A ((N : ℕ) : ℤ)) : A) := by
+    rw [show ((P + R : AddSubgroup.torsionBy A ((N : ℕ) : ℤ)) : A) =
+        (P : A) + (R : A) from rfl,
+      map_add e.symm, ← hu, ← hv, QuotientGroup.mk_mul, ofMul_mul]
+  have hpow : (u * v) ^ N = Q ^ (a + b) := by
+    rw [mul_pow, ha, hb, ← zpow_add]
+  rw [← zpowQuotientExponent_eq_of_rep hQ e (P + R) (u * v) (a + b) hclass hpow,
+    ← hae, ← hbe]
+  push_cast
+  ring
+
+/-- **The canonical quotient map `(G ⧸ Q ^ ℤ)[N] → ℤ/N`, bundled** (PROVEN). -/
+noncomputable def zpowQuotientExponentHom
+    (hQ : Function.Injective (fun a : ℤ => Q ^ a))
+    (e : Additive (G ⧸ Subgroup.zpowers Q) ≃+ A) (N : ℕ) :
+    AddSubgroup.torsionBy A ((N : ℕ) : ℤ) →+ ZMod N :=
+  AddMonoidHom.mk' (fun P => zpowQuotientExponent e P)
+    (zpowQuotientExponent_add hQ e)
+
+@[simp] theorem zpowQuotientExponentHom_apply
+    (hQ : Function.Injective (fun a : ℤ => Q ^ a))
+    (e : Additive (G ⧸ Subgroup.zpowers Q) ≃+ A) (N : ℕ)
+    (P : AddSubgroup.torsionBy A ((N : ℕ) : ℤ)) :
+    zpowQuotientExponentHom hQ e N P = zpowQuotientExponent e P := rfl
+
+/-- **`zpowQuotientExponent` is INVARIANT under any symmetry that fixes `Q`**
+(PROVEN).  If `f : G →* G` fixes `Q` and `φ : A → A` is `f` transported through
+`e`, then `φ` does not move the exponent: the quotient carries the trivial
+action.  At the curve level `f` is `σ` acting on `Ωˣ` and `φ` is `σ` acting on
+`E_q(Ω)`, and `f Q = Q` is "every `k`-automorphism fixes the Tate parameter". -/
+theorem zpowQuotientExponent_map
+    (hQ : Function.Injective (fun a : ℤ => Q ^ a))
+    (e : Additive (G ⧸ Subgroup.zpowers Q) ≃+ A)
+    (f : G →* G) (hfQ : f Q = Q) (φ : A → A)
+    (hφ : ∀ u : G, φ (e (Additive.ofMul ((u : G ⧸ Subgroup.zpowers Q)))) =
+      e (Additive.ofMul ((f u : G ⧸ Subgroup.zpowers Q))))
+    {N : ℕ} (P R : AddSubgroup.torsionBy A ((N : ℕ) : ℤ))
+    (hR : (R : A) = φ (P : A)) :
+    zpowQuotientExponent e R = zpowQuotientExponent e P := by
+  obtain ⟨u, a, hu, ha, hae⟩ := zpowQuotientExponent_spec e P
+  have hclass : Additive.ofMul ((f u : G ⧸ Subgroup.zpowers Q)) =
+      e.symm ((R : A)) := by
+    apply e.injective
+    rw [e.apply_symm_apply, ← hφ, hR]
+    congr 1
+    rw [hu, e.apply_symm_apply]
+  have hpow : (f u) ^ N = Q ^ a := by
+    rw [← map_pow, ha, map_zpow, hfQ]
+  rw [← zpowQuotientExponent_eq_of_rep hQ e R _ _ hclass hpow, hae]
+
+/-- **`zpowQuotientExponent` is SURJECTIVE as soon as `Q` has an `N`-th root in
+`G`** (PROVEN): such a root has exponent `1`, which generates `ℤ/N`.  At the
+curve level the root is produced by separable closedness of `Ω`. -/
+theorem zpowQuotientExponent_surjective
+    (hQ : Function.Injective (fun a : ℤ => Q ^ a))
+    (e : Additive (G ⧸ Subgroup.zpowers Q) ≃+ A)
+    {N : ℕ} (hN : N ≠ 0) (hroot : ∃ x : G, x ^ N = Q) :
+    Function.Surjective (zpowQuotientExponentHom hQ e N) := by
+  classical
+  obtain ⟨x, hx⟩ := hroot
+  have hxpow : x ^ N = Q ^ (1 : ℤ) := by rw [zpow_one]; exact hx
+  have htor : ((N : ℕ) : ℤ) •
+      (e (Additive.ofMul ((x : G ⧸ Subgroup.zpowers Q)))) = 0 := by
+    rw [← map_zsmul e, ← ofMul_zpow, ← QuotientGroup.mk_zpow, zpow_natCast, hxpow]
+    rw [show ((Q ^ (1 : ℤ) : G) : G ⧸ Subgroup.zpowers Q) = 1 from
+      (QuotientGroup.eq_one_iff _).mpr
+        (Subgroup.zpow_mem _ (Subgroup.mem_zpowers _) _), ofMul_one, map_zero]
+  set P₁ : AddSubgroup.torsionBy A ((N : ℕ) : ℤ) :=
+    ⟨e (Additive.ofMul ((x : G ⧸ Subgroup.zpowers Q))), htor⟩ with hP₁
+  have hπ1 : zpowQuotientExponentHom hQ e N P₁ = 1 := by
+    have hclass : Additive.ofMul ((x : G ⧸ Subgroup.zpowers Q)) =
+        e.symm ((P₁ : A)) := by
+      rw [hP₁]
+      exact (e.symm_apply_apply _).symm
+    have := zpowQuotientExponent_eq_of_rep hQ e P₁ x 1 hclass hxpow
+    rw [zpowQuotientExponentHom_apply hQ e N P₁, ← this]
+    norm_num
+  haveI : NeZero N := ⟨hN⟩
+  intro c
+  refine ⟨c.val • P₁, ?_⟩
+  rw [map_nsmul, hπ1, nsmul_eq_mul, mul_one, ZMod.natCast_val, ZMod.cast_id]
+
+/-- **THE COHERENCE BETWEEN LEVELS** (PROVEN — what makes the exponent a map on
+the inverse limit and not merely on each torsion group separately).
+
+If `R = [M] · P` with `P` of level `M · N`, then `R` has level `N` and
+
+    zpowQuotientExponent R = (zpowQuotientExponent P mod N).
+
+Reason: `u` represents `P` iff `u ^ M` represents `[M] · P`, and
+`(u ^ M) ^ N = u ^ (M · N) = Q ^ a` is the SAME exponent `a` — only the modulus
+changes.  Taking `M = p` and `N = p ^ n` this is exactly the coherence of the
+system `(P n)` under multiplication by `p` that defines
+`T_p E_q = lim_n E_q[p ^ n]`, transported to `lim_n ℤ/p ^ n = ℤ_p`. -/
+theorem zpowQuotientExponent_zsmul
+    (hQ : Function.Injective (fun a : ℤ => Q ^ a))
+    (e : Additive (G ⧸ Subgroup.zpowers Q) ≃+ A)
+    {M N : ℕ} (P : AddSubgroup.torsionBy A (((M * N : ℕ) : ℕ) : ℤ))
+    (R : AddSubgroup.torsionBy A ((N : ℕ) : ℤ))
+    (hR : (R : A) = (M : ℤ) • (P : A)) :
+    zpowQuotientExponent e R =
+      ZMod.castHom (⟨M, mul_comm M N⟩ : N ∣ M * N) (ZMod N)
+        (zpowQuotientExponent e P) := by
+  obtain ⟨u, a, hu, ha, hae⟩ := zpowQuotientExponent_spec e P
+  have hclass : Additive.ofMul (((u ^ M : G) : G ⧸ Subgroup.zpowers Q)) =
+      e.symm ((R : A)) := by
+    rw [hR, map_zsmul e.symm, ← hu, QuotientGroup.mk_pow,
+      ← zpow_natCast ((u : G ⧸ Subgroup.zpowers Q)) M, ofMul_zpow]
+  have hpow : (u ^ M) ^ N = Q ^ a := by
+    rw [← pow_mul, ha]
+  rw [← zpowQuotientExponent_eq_of_rep hQ e R _ _ hclass hpow, ← hae]
+  simp
+
+end ZpowQuotientExponent
+
+/-! #### The curve-level specialisation at `Q := E.qUnitSepClosure Ω` -/
+
+omit [E.IsMinimal 𝒪[k]] [IsSepClosed Ω] [Algebra.IsSeparable k Ω] in
+/-- **THE CANONICAL ÉTALE EXPONENT of an `N`-torsion point of a Tate-uniformised
+curve** (PROVEN): `zpowQuotientExponent` at the Tate parameter, i.e. the quotient
+map `E[N] ↠ ℤ/N` of `0 → μ_N → E[N] → ℤ/N → 0`.
+
+Consumers should go through `zpowQuotientExponent_spec` /
+`zpowQuotientExponent_eq_of_rep` and never unfold it. -/
+noncomputable def WeierstrassCurve.tateExponent
+    (e : Additive (Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω)) ≃+ ((E⁄Ω)).Point)
+    {N : ℕ} (P : AddSubgroup.torsionBy ((E⁄Ω)).Point ((N : ℕ) : ℤ)) : ZMod N :=
+  zpowQuotientExponent e P
+
+/-- **The canonical étale-quotient map `E[N] → ℤ/N`, bundled** (PROVEN): the
+quotient of `0 → μ_N → E[N] → ℤ/N → 0`, as an `AddMonoidHom` depending on
+nothing but the uniformisation `e` and the level `N`.  `zpowQuotientExponentHom`
+at the Tate parameter, whose injectivity of `a ↦ q ^ a` is
+`qUnitSepClosure_zpow_injective` — the one place `v(q) < 1` is used. -/
+noncomputable def WeierstrassCurve.tateExponentHom
+    (e : Additive (Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω)) ≃+ ((E⁄Ω)).Point)
+    (N : ℕ) :
+    AddSubgroup.torsionBy ((E⁄Ω)).Point ((N : ℕ) : ℤ) →+ ZMod N :=
+  zpowQuotientExponentHom (E.qUnitSepClosure_zpow_injective Ω) e N
+
+omit [E.IsMinimal 𝒪[k]] [IsSepClosed Ω] [Algebra.IsSeparable k Ω] in
+/-- **`tateExponent` is `Gal(Ω/k)`-INVARIANT** (PROVEN): the étale quotient
+carries the trivial action, because every `k`-automorphism of `Ω` fixes the Tate
+parameter (`map_zpow_qUnitSepClosure_eq`) and hence maps a representative of `P`
+to a representative, with the SAME exponent, of `σ P`. -/
+theorem WeierstrassCurve.tateExponent_map
+    (e : Additive (Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω)) ≃+ ((E⁄Ω)).Point)
+    (he : ∀ (σ : Ω ≃ₐ[k] Ω) (u : Ωˣ),
+      WeierstrassCurve.Affine.Point.map (W' := E) σ.toAlgHom (e (Additive.ofMul ↑u)) =
+        e (Additive.ofMul ↑(Units.map σ.toAlgHom.toRingHom.toMonoidHom u)))
+    {N : ℕ} (σ : Ω ≃ₐ[k] Ω)
+    (P Q : AddSubgroup.torsionBy ((E⁄Ω)).Point ((N : ℕ) : ℤ))
+    (hQ : (Q : ((E⁄Ω)).Point) =
+      WeierstrassCurve.Affine.Point.map (W' := E) σ.toAlgHom (P : ((E⁄Ω)).Point)) :
+    E.tateExponent Ω e Q = E.tateExponent Ω e P :=
+  zpowQuotientExponent_map (E.qUnitSepClosure_zpow_injective Ω) e
+    (Units.map σ.toAlgHom.toRingHom.toMonoidHom) (E.map_qUnitSepClosure_eq Ω σ)
+    (fun R => WeierstrassCurve.Affine.Point.map (W' := E) σ.toAlgHom R)
+    (fun u => he σ u) P Q hQ
+
+omit [E.IsMinimal 𝒪[k]] [Algebra.IsSeparable k Ω] in
+/-- **`tateExponent` is SURJECTIVE** (PROVEN): an `N`-th root of the Tate
+parameter itself has exponent `1`, which generates `ℤ/N`.  This is the one
+statement in the subsection that needs hypotheses — `N ≠ 0` and `(N : Ω) ≠ 0`
+make `X ^ N − q` separable of positive degree, so the separably closed `Ω`
+contains a root.  Both are exactly the hypotheses
+`exists_tateTorsionQuotient` has always carried. -/
+theorem WeierstrassCurve.tateExponent_surjective
+    (e : Additive (Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω)) ≃+ ((E⁄Ω)).Point)
+    {N : ℕ} (hN : N ≠ 0) (hNΩ : ((N : ℕ) : Ω) ≠ 0) :
+    Function.Surjective (E.tateExponentHom Ω e N) := by
+  classical
+  have hq0 : (algebraMap k Ω) E.q ≠ 0 := by
+    simp only [map_ne_zero]
+    exact E.q_ne_zero
+  obtain ⟨x, hx⟩ := IsSepClosed.exists_root
+    (Polynomial.X ^ N - Polynomial.C ((algebraMap k Ω) E.q))
+    (by
+      rw [Polynomial.degree_X_pow_sub_C (Nat.pos_of_ne_zero hN)]
+      exact_mod_cast Nat.pos_of_ne_zero hN |>.ne')
+    (Polynomial.separable_X_pow_sub_C _ hNΩ hq0)
+  have hxpow : x ^ N = (algebraMap k Ω) E.q := by
+    have h1 := hx
+    rw [Polynomial.IsRoot, Polynomial.eval_sub, Polynomial.eval_pow,
+      Polynomial.eval_X, Polynomial.eval_C, sub_eq_zero] at h1
+    exact h1
+  have hx0 : x ≠ 0 := by
+    intro h0
+    rw [h0, zero_pow hN] at hxpow
+    exact hq0 hxpow.symm
+  set xu : Ωˣ := Units.mk0 x hx0
+  have hxupow : xu ^ N = E.qUnitSepClosure Ω := by
+    apply Units.ext
+    rw [Units.val_pow_eq_pow_val]
+    exact hxpow
+  exact zpowQuotientExponent_surjective (E.qUnitSepClosure_zpow_injective Ω) e hN
+    ⟨xu, hxupow⟩
+
 omit [E.IsMinimal 𝒪[k]] [Algebra.IsSeparable k Ω] in
 /-- **The Tate valuation-exponent quotient on `p`-torsion** (PROVEN
 over any uniformization witness): the `p`-torsion of a Tate-uniformized
@@ -1624,7 +2028,19 @@ quotient of the filtration `0 → μ_p → E[p] → ℤ/p → 0`. Since every
 TRIVIAL `Gal(Ω/k)`-action; this is the split-case content of the
 tame-quotient condition at `2`. Surjectivity requires a `p`-th root of
 the Tate parameter, which exists in the separably closed `Ω` when
-`p ≠ 0` there. -/
+`p ≠ 0` there.
+
+**Since 2026-07-30 this is a COROLLARY of the canonical `tateExponentHom`
+above**, whose three properties are exactly its three clauses; the 124-line
+tactic proof it used to carry has moved there, split into named lemmas, and is
+not duplicated. The statement is UNCHANGED, so its consumers
+(`FreyConditions.lean`, `MazurTorsion.lean`) are unaffected.
+
+**`p` is NOT assumed prime here and never was** — `hp : p ≠ 0` and
+`hpΩ : (p : Ω) ≠ 0` are the whole hypothesis — so this already applies verbatim
+at level `p ^ n`. What level `p ^ n` additionally needs is the COMPARISON
+between levels, which an existential map cannot provide and
+`zpowQuotientExponent_zsmul` does. -/
 theorem WeierstrassCurve.exists_tateTorsionQuotient
     (e : Additive (Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω)) ≃+ ((E⁄Ω)).Point)
     (he : ∀ (σ : Ω ≃ₐ[k] Ω) (u : Ωˣ),
@@ -1638,130 +2054,9 @@ theorem WeierstrassCurve.exists_tateTorsionQuotient
         (Q : ((E⁄Ω)).Point) =
           WeierstrassCurve.Affine.Point.map (W' := E) σ.toAlgHom
             (P : ((E⁄Ω)).Point) →
-        π Q = π P := by
-  classical
-  -- torsion transfers to the quotient side
-  have htors : ∀ P : AddSubgroup.torsionBy ((E⁄Ω)).Point ((p : ℕ) : ℤ),
-      ((p : ℕ) : ℤ) • (e.symm (P : ((E⁄Ω)).Point)) = 0 := fun P => by
-    rw [← map_zsmul e.symm,
-      (show ((p : ℕ) : ℤ) • (P : ((E⁄Ω)).Point) = 0 from P.2), map_zero]
-  -- choose a representative and exponent for each torsion point
-  choose u a hu ha using fun P : AddSubgroup.torsionBy ((E⁄Ω)).Point
-      ((p : ℕ) : ℤ) =>
-    exists_rep_pow_eq_zpow_of_torsion (E.qUnitSepClosure Ω)
-      (e.symm (P : ((E⁄Ω)).Point)) (htors P)
-  -- the exponent is independent of the representative, mod `p`
-  have hindep : ∀ (P : AddSubgroup.torsionBy ((E⁄Ω)).Point ((p : ℕ) : ℤ))
-      (v : Ωˣ) (b : ℤ),
-      Additive.ofMul ((v : Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω))) =
-        e.symm (P : ((E⁄Ω)).Point) →
-      v ^ p = E.qUnitSepClosure Ω ^ b →
-      ((b : ZMod p)) = ((a P : ZMod p)) := by
-    intro P v b hv hvb
-    have h1 : ((u P : Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω))) =
-        ((v : Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω))) :=
-      Additive.ofMul.injective ((hu P).trans hv.symm)
-    obtain ⟨m, hm⟩ := Subgroup.mem_zpowers_iff.mp (QuotientGroup.eq.mp h1)
-    -- `v = u P * q^m`
-    have h2 : v = u P * E.qUnitSepClosure Ω ^ m := by
-      rw [hm]
-      group
-    have h3 : E.qUnitSepClosure Ω ^ b =
-        E.qUnitSepClosure Ω ^ (a P + m * (p : ℤ)) := by
-      rw [← hvb, h2, mul_pow, ha P, ← zpow_natCast
-        (E.qUnitSepClosure Ω ^ m) p, ← zpow_mul, ← zpow_add]
-    have h4 : b = a P + m * (p : ℤ) :=
-      E.qUnitSepClosure_zpow_injective Ω h3
-    rw [h4]
-    push_cast
-    simp
-  -- the exponent function and its additivity
-  have hadd : ∀ P Q : AddSubgroup.torsionBy ((E⁄Ω)).Point ((p : ℕ) : ℤ),
-      ((a (P + Q) : ZMod p)) = ((a P : ZMod p)) + ((a Q : ZMod p)) := by
-    intro P Q
-    have hclass : Additive.ofMul (((u P * u Q : Ωˣ) :
-        Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω))) =
-        e.symm ((P + Q : AddSubgroup.torsionBy ((E⁄Ω)).Point
-          ((p : ℕ) : ℤ)) : ((E⁄Ω)).Point) := by
-      rw [show ((P + Q : AddSubgroup.torsionBy ((E⁄Ω)).Point
-          ((p : ℕ) : ℤ)) : ((E⁄Ω)).Point) =
-          (P : ((E⁄Ω)).Point) + (Q : ((E⁄Ω)).Point) from rfl,
-        map_add e.symm, ← hu P, ← hu Q, QuotientGroup.mk_mul, ofMul_mul]
-    have hpow : (u P * u Q) ^ p =
-        E.qUnitSepClosure Ω ^ (a P + a Q) := by
-      rw [mul_pow, ha P, ha Q, ← zpow_add]
-    have := hindep (P + Q) (u P * u Q) (a P + a Q) hclass hpow
-    rw [← this]
-    push_cast
-    ring
-  let π : AddSubgroup.torsionBy ((E⁄Ω)).Point ((p : ℕ) : ℤ) →+ ZMod p :=
-    AddMonoidHom.mk' (fun P => ((a P : ZMod p))) hadd
-  refine ⟨π, ?_, ?_⟩
-  · -- surjectivity: a `p`-th root of the Tate parameter has exponent `1`
-    have hq0 : (algebraMap k Ω) E.q ≠ 0 := by
-      simp only [map_ne_zero]
-      exact E.q_ne_zero
-    obtain ⟨x, hx⟩ := IsSepClosed.exists_root
-      (Polynomial.X ^ p - Polynomial.C ((algebraMap k Ω) E.q))
-      (by
-        rw [Polynomial.degree_X_pow_sub_C (Nat.pos_of_ne_zero hp)]
-        exact_mod_cast Nat.pos_of_ne_zero hp |>.ne')
-      (Polynomial.separable_X_pow_sub_C _ hpΩ hq0)
-    have hxpow : x ^ p = (algebraMap k Ω) E.q := by
-      have h1 := hx
-      rw [Polynomial.IsRoot, Polynomial.eval_sub, Polynomial.eval_pow,
-        Polynomial.eval_X, Polynomial.eval_C, sub_eq_zero] at h1
-      exact h1
-    have hx0 : x ≠ 0 := by
-      intro h0
-      rw [h0, zero_pow hp] at hxpow
-      exact hq0 hxpow.symm
-    set xu : Ωˣ := Units.mk0 x hx0
-    have hxupow : xu ^ p = E.qUnitSepClosure Ω ^ (1 : ℤ) := by
-      apply Units.ext
-      rw [Units.val_pow_eq_pow_val, Units.val_zpow_eq_zpow_val, zpow_one]
-      exact hxpow
-    -- the corresponding torsion point
-    have htor : ((p : ℕ) : ℤ) • (e (Additive.ofMul ((xu :
-        Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω))))) = 0 := by
-      rw [← map_zsmul e, ← ofMul_zpow, ← QuotientGroup.mk_zpow,
-        zpow_natCast, hxupow]
-      rw [show ((E.qUnitSepClosure Ω ^ (1 : ℤ) :
-          Ωˣ) : Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω)) = 1 from
-        (QuotientGroup.eq_one_iff _).mpr (Subgroup.zpow_mem _
-          (Subgroup.mem_zpowers _) _), ofMul_one, map_zero]
-    set P₁ : AddSubgroup.torsionBy ((E⁄Ω)).Point ((p : ℕ) : ℤ) :=
-      ⟨e (Additive.ofMul ((xu : Ωˣ ⧸ Subgroup.zpowers
-        (E.qUnitSepClosure Ω)))), htor⟩ with hP₁
-    have hπ1 : π P₁ = 1 := by
-      have hclass : Additive.ofMul ((xu : Ωˣ ⧸ Subgroup.zpowers
-          (E.qUnitSepClosure Ω))) = e.symm ((P₁ :
-          ((E⁄Ω)).Point)) := by
-        rw [hP₁]
-        exact (e.symm_apply_apply _).symm
-      have := hindep P₁ xu 1 hclass hxupow
-      rw [show π P₁ = ((a P₁ : ZMod p)) from rfl, ← this]
-      norm_num
-    -- `1` generates `ZMod p`
-    haveI : NeZero p := ⟨hp⟩
-    intro c
-    refine ⟨c.val • P₁, ?_⟩
-    rw [map_nsmul, hπ1, nsmul_eq_mul, mul_one, ZMod.natCast_val,
-      ZMod.cast_id]
-  · -- Galois invariance: `σ`-images have the same exponent
-    intro σ P Q hQ
-    have hclass : Additive.ofMul
-        ((Units.map σ.toAlgHom.toRingHom.toMonoidHom (u P) :
-          Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω))) =
-        e.symm ((Q : ((E⁄Ω)).Point)) := by
-      apply e.injective
-      rw [e.apply_symm_apply, ← he, hQ]
-      congr 1
-      rw [hu P, e.apply_symm_apply]
-    have hpow : (Units.map σ.toAlgHom.toRingHom.toMonoidHom (u P)) ^ p =
-        E.qUnitSepClosure Ω ^ (a P) := by
-      rw [← map_pow, ha P, map_zpow_qUnitSepClosure_eq]
-    exact (hindep Q _ _ hclass hpow).symm
+        π Q = π P :=
+  ⟨E.tateExponentHom Ω e p, E.tateExponent_surjective Ω e hp hpΩ,
+    fun σ P Q hQ => E.tateExponent_map Ω e he σ P Q hQ⟩
 
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 1000000 in
