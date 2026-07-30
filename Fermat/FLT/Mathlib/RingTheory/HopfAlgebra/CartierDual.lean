@@ -730,16 +730,19 @@ functoriality `CartierDual.map` this file does not have, and `(R3)` itself as
 `HopfAlgebra.isMultiplicativeType_of_isShortExact`, whose three-symbol proof is the evidence
 that the definition really is pinned by its consumer. No fppf descent was needed.
 
-What is still OPEN there is the mathematics, in two named leaves:
-`HopfAlgebra.IsShortExact.cartierDual` (exactness of duality — three sorried steps, one per
-field of `IsShortExact`, the middle one spending freeness of `A` over `A''`) and
-`HopfAlgebra.etale_of_isShortExact` (an extension of étale by étale is étale). Those are the
-dispatchable targets; this file is complete and unconditional.
+CORRECTED 2026-07-27: this paragraph read "what is still OPEN there is the mathematics, in two
+named leaves: `HopfAlgebra.IsShortExact.cartierDual` … and `HopfAlgebra.etale_of_isShortExact`
+… those are the dispatchable targets". **BOTH ARE NOW PROVEN** — `IsShortExact.cartierDual` at
+`ShortExact.lean:669` (a four-field assembly) and `etale_of_isShortExact` at `:916` — so neither
+is a dispatchable target and neither is owned. The decomposition that was "in flight on an
+unreleased branch" landed; what is open in `ShortExact.lean` are the four leaves those two
+consume: `IsShortExact.exists_linearRetraction` (`:564`), `.ker_cartierDual_le` (`:628`),
+`.faithfullyFlat_cartierDual` (`:648`, the deepest — classically `Ext¹(G'', 𝔾ₘ) = 0`) and
+`Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation` (`:238`), all four
+separately queued as of 2026-07-27. This file remains complete and unconditional.
 
-Do not trust that count of two: a decomposition of `IsShortExact.cartierDual` was in flight on an
-unreleased branch when this was written, and one of its pieces is reportedly gated on fppf descent,
-which this mathlib pin does not carry. `grep -n 'sorry' ShortExact.lean` is the check that settles
-the current list.
+Do not trust that count of four either: `grep -n 'sorry' ShortExact.lean` is the check that
+settles the current list, and it costs nothing.
 
 **2. The examples — SUPERSEDED, mostly DONE (2026-07-27).** The blocker recorded here was the
 missing Hopf structure on the coordinate ring of a finite constant group scheme. It now exists as

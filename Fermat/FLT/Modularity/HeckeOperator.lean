@@ -90,6 +90,7 @@ public import Mathlib.NumberTheory.ModularForms.CongruenceSubgroups
 public import Mathlib.NumberTheory.ModularForms.QExpansion
 public import Mathlib.NumberTheory.ModularForms.NormTrace
 public import Mathlib.NumberTheory.ModularForms.Bounds
+public import Mathlib.NumberTheory.ModularForms.LevelOne.DimensionFormula
 public import Mathlib.NumberTheory.Modular
 public import Mathlib.Analysis.Complex.UpperHalfPlane.Manifold
 public import Mathlib.Data.Matrix.Mul
@@ -754,5 +755,104 @@ theorem heckeOp_coe {M : ℕ} (hM : 0 < M) {q : ℕ} (hq : q.Prime)
   (exists_heckeOpLinear_total M q).choose_spec hM hq f
 
 end HeckeOperator
+
+/-! ### `S₂(Γ₀(1)) = 0`
+
+**HOISTED HERE FROM `Modularity/Interface.lean` on 2026-07-28**, unchanged
+except for its position.  The block used to sit inside `Interface.lean`'s
+`LevelTwoEmptiness` section, which is *downstream* of
+`ModularCurve/X0.lean`; it is needed *upstream*, by
+`Fermat.cuspForm_eq_zero_of_properDivisor_oneSixtyNine` in `X0.lean`, whose
+`M ∣ 169`, `M ≠ 169` splits as `M = 1` (this theorem) and `M = 13` (a leaf).
+`Interface.lean` keeps `weightTwoEigenform_level_one_false`, which is stated
+with `qCoeff` and cannot move; it names `cuspForm_level_one_coe_eq_zero` in
+this same namespace, so nothing there changes.
+
+This module is the right home rather than an accident of the hoist: the
+`IsArithmetic` instance above already exists to feed exactly this
+"norms/traces to level 1" theory, and its own docstring says so.
+
+The argument (see `Interface.lean`'s section header for the level-2
+companion, which is the same one at relative index `3`): the norm of
+`f ∈ S₂(Γ₀(1))` over `SL(2, ℤ)` is a LEVEL-1 form of weight
+`2 · [SL(2,ℤ) : Γ₀(1)] = 2`; every factor vanishes at `i∞`, so the norm has
+positive `q`-expansion order, and the level-1 Sturm bound at weight `2`
+(`2/12 = 0`) forces it to vanish — while a nonzero `f` has nonzero norm.
+
+**Note for anyone extending this to another level.**  The route caps out
+here.  At level `M` the norm has weight `2·[SL(2,ℤ) : Γ₀(M)]` and the
+Sturm threshold is `⌊weight/12⌋`, while all this argument supplies is
+`order ≥ 1` (the constant term).  That is enough exactly when
+`2·[SL(2,ℤ):Γ₀(M)] < 24`, i.e. `[SL(2,ℤ):Γ₀(M)] ≤ 11` — true at `M = 1`
+(index `1`) and `M = 2` (index `3`), FALSE at `M = 13` (index `14`,
+weight `28`, threshold `2`).  So `S₂(Γ₀(13)) = 0` is genuinely out of
+reach here and is a leaf in `X0.lean`, not an oversight. -/
+
+section LevelOneEmptiness
+
+open UpperHalfPlane Matrix Matrix.SpecialLinearGroup ModularForm CongruenceSubgroup
+
+/-- `Γ₀(1) = SL(2, ℤ)`: the mod-1 congruence condition is vacuous
+(`ZMod 1` is trivial). -/
+theorem Gamma0_one_eq_top : CongruenceSubgroup.Gamma0 1 = ⊤ := by
+  ext g
+  simp [CongruenceSubgroup.Gamma0_mem, Subsingleton.elim (g.1 1 0 : ZMod 1) 0]
+
+/-- The relative index of `Γ₀(1)` in `SL(2, ℤ)` (both viewed in
+`GL(2, ℝ)`) is `1`: `Γ₀(1)` IS `SL(2, ℤ)`. -/
+theorem Gamma0GL_one_relIndex : (Gamma0GL 1).relIndex 𝒮ℒ = 1 := by
+  show ((CongruenceSubgroup.Gamma0 1).map (mapGL ℝ)).relIndex 𝒮ℒ = 1
+  rw [Gamma0_one_eq_top, ← MonoidHom.range_eq_map, Subgroup.relIndex_self]
+
+/-- Every `SL(2, ℤ)`-translate of a weight-2 cusp form on `Γ₀(1)`
+vanishes at `i∞` — these are the factors of the norm form. -/
+theorem quotientFunc_level_one_isZeroAtImInfty (f : CuspForm (Gamma0GL 1) 2)
+    (q : 𝒮ℒ ⧸ (Gamma0GL 1).subgroupOf 𝒮ℒ) :
+    IsZeroAtImInfty (SlashInvariantForm.quotientFunc f q) := by
+  induction q using Quotient.inductionOn with
+  | h r =>
+    rw [SlashInvariantForm.quotientFunc_mk]
+    have hinf : IsCusp OnePoint.infty 𝒮ℒ := isCusp_SL2Z_iff'.mpr ⟨1, by simp⟩
+    have hcusp : IsCusp ((r.val)⁻¹ • OnePoint.infty) (Gamma0GL 1) :=
+      (hinf.smul_of_mem (inv_mem r.2)).of_isFiniteRelIndex
+    exact CuspFormClass.zero_at_cusps f hcusp _ rfl
+
+/-- The norm (over `SL(2, ℤ)`) of a weight-2 cusp form on `Γ₀(1)`
+vanishes at `i∞`: it is a finite product of translates, each of which
+vanishes there. -/
+theorem norm_level_one_isZeroAtImInfty (f : CuspForm (Gamma0GL 1) 2) :
+    IsZeroAtImInfty ⇑(ModularForm.norm 𝒮ℒ f) := by
+  rw [ModularForm.coe_norm]
+  letI := Fintype.ofFinite (𝒮ℒ ⧸ (Gamma0GL 1).subgroupOf 𝒮ℒ)
+  rw [IsZeroAtImInfty, Filter.ZeroAtFilter]
+  have hzero : (0 : ℂ) = ∏ _q : 𝒮ℒ ⧸ (Gamma0GL 1).subgroupOf 𝒮ℒ, (0 : ℂ) := by
+    rw [Finset.prod_const, zero_pow]
+    simp [Finset.card_univ, Fintype.card_ne_zero]
+  rw [Finset.prod_fn, hzero]
+  exact tendsto_finsetProd _ fun q _ => quotientFunc_level_one_isZeroAtImInfty f q
+
+/-- **`S₂(Γ₀(1)) = 0`** — every weight-2 cusp form on `Γ₀(1)` (i.e. on
+`SL(2, ℤ)`) vanishes identically: its norm to level 1 is a weight-2
+level-1 form vanishing at `i∞`, killed by the level-1 Sturm bound
+(`2/12 = 0`). -/
+theorem cuspForm_level_one_coe_eq_zero (f : CuspForm (Gamma0GL 1) 2) : ⇑f = 0 := by
+  by_contra hf
+  refine ModularForm.norm_ne_zero 𝒮ℒ hf ?_
+  apply sturm_bound_levelOne
+  have hcoeff0 : (qExpansion 1 ⇑(ModularForm.norm 𝒮ℒ f)).coeff 0 = 0 := by
+    rw [qExpansion_coeff_zero one_pos
+      (ModularFormClass.analyticAt_cuspFunction_zero _ one_pos one_mem_strictPeriods_SL)
+      (SlashInvariantFormClass.periodic_comp_ofComplex _ one_mem_strictPeriods_SL)]
+    exact (norm_level_one_isZeroAtImInfty f).valueAtInfty_eq_zero
+  rw [PowerSeries.coeff_zero_eq_constantCoeff] at hcoeff0
+  have horder : 1 ≤ (qExpansion 1 ⇑(ModularForm.norm 𝒮ℒ f)).order :=
+    PowerSeries.one_le_order_iff_constCoeff_eq_zero.mpr hcoeff0
+  have hwt : ((2 * (Nat.card (𝒮ℒ ⧸ (Gamma0GL 1).subgroupOf 𝒮ℒ) : ℤ)).toNat / 12) = 0 := by
+    rw [show Nat.card (𝒮ℒ ⧸ (Gamma0GL 1).subgroupOf 𝒮ℒ) = 1 from Gamma0GL_one_relIndex]
+    decide
+  rw [hwt]
+  exact lt_of_lt_of_le (by norm_num) horder
+
+end LevelOneEmptiness
 
 end GaloisRepresentation.Modularity
