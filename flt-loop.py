@@ -87,6 +87,49 @@ def main_sha():
     return git_repo("rev-parse", "--short", "main").stdout.strip()
 
 
+# Everything a build could possibly read. A commit that touches NONE of these
+# cannot change a single olean, so it cannot invalidate a release -- which is
+# the whole content of `lean_equiv` below.
+LEAN_PATHS = ["Fermat", "Fermat.lean", "ProgressCensus.lean",
+              "lakefile.lean", "lake-manifest.json", "lean-toolchain"]
+
+
+def lean_equiv(sha, main):
+    """Would a build of `main` differ from a build of `sha`?
+
+    The loop used to ask `snapshot == main` and `audited == main` as raw string
+    equality, which quietly asserts that every commit to main invalidates a
+    release. CLAUDE.md says the opposite in as many words: a tooling commit
+    cannot make the Lean build red, and the orchestrator is told to put tooling
+    straight on main. So the two rules were in direct contradiction, and main
+    wins -- tooling commits happen, several a day.
+
+    The consequences were not subtle. Every tooling commit retroactively
+    unadopted the current release: row 10 stopped matching, the finished
+    merger's record was consumed by nobody, and the loop panicked. It happened
+    to the previous medic (`main != rebaselined` held permanently from its own
+    source commit onward) and then to me, from the very commit that repaired
+    the first three faults -- which is how a fourth fault gets found. It also
+    made row 11 declare the snapshot stale, so a commit that changed no Lean
+    code at all would order a fresh 4.6 GB rebuild of the whole tree.
+
+    So ask the question that actually matters. A sha is release-equivalent to
+    main when it is an ancestor of main and the two agree on every path a build
+    reads. The diff is the real test; the ancestry check only fixes the
+    direction, so that a sibling branch with an identical `Fermat/` cannot be
+    adopted as a release of main.
+    """
+    if not sha:
+        return False
+    if sha == main:
+        return True
+    if git_repo("rev-parse", "--verify", "-q", sha + "^{commit}").returncode:
+        return False
+    if git_repo("merge-base", "--is-ancestor", sha, main).returncode:
+        return False
+    return git_repo("diff", "--quiet", sha, main, "--", *LEAN_PATHS).returncode == 0
+
+
 def canon_sha(v):
     """Canonical short sha, or the value verbatim if git cannot resolve it.
 
@@ -485,6 +528,11 @@ def load():
         "main": main_sha(),
         "rebaselined": canon_sha(rd(STATE / "rebaselined", "") or ""),
         "snapshot": snap,
+        # Derived here, not in the rows: "is this release still current" is a
+        # question about the git tree, and the rows are shared with a simulator
+        # that has no tree. They get the answer, not the means of computing it.
+        "snapshot_current": bool(snap) and lean_equiv(snap["sha"], sha),
+        "audit_current": lean_equiv(aud, sha),
         "queue1": {"audited": aud, "tasks": split_tasks("\n".join(q1))},
         "queue2": split_tasks(rd(STATE / "queue2", "") or ""),
         "batch": [b for b in (rd(STATE / "batch", "") or "").splitlines() if b.strip()],

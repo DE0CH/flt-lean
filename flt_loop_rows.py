@@ -528,15 +528,32 @@ def r7_guard(s):
     m = s["jobs"].get("merger")
     if m and m["alive"]:
         return (False, "a merger is still alive")
-    if not (s["snapshot"] and s["snapshot"]["sha"] == s["main"]):
-        return (False, f"merger moved main to {s['main']} but left no snapshot for it")
-    if s["queue1"]["audited"] != s["main"]:
-        return (False, f"merger moved main to {s['main']} but left queue1 unaudited")
+    # `snapshot_current` / `audit_current`, NOT sha equality. A tooling commit
+    # moves main without touching a single Lean input, so raw equality made
+    # every one of them retroactively unadopt the release that was already
+    # delivered -- and then this row stopped matching, nobody consumed the
+    # finished merger, and the loop panicked. Twice, on two different medics'
+    # own repair commits. See lean_equiv() for what "current" now means.
+    if not s["snapshot_current"]:
+        snap = s["snapshot"]["sha"] if s["snapshot"] else "none"
+        return (False, f"main is {s['main']} but the snapshot is {snap}")
+    if not s["audit_current"]:
+        return (False, f"main is {s['main']} but queue1 is audited at "
+                       f"{s['queue1']['audited'] or 'none'}")
     return (True, "")
 
 
 def r7_action(s):
     s["rebaselined"] = s["main"]
+    # Only a merger's claim is discharged here. This row also fires with NO
+    # merger record -- main moving by a tooling commit is a re-baseline with no
+    # release behind it -- and in that case .inflight belongs to somebody else.
+    # Clearing it unconditionally would drop an outstanding claim on the floor,
+    # which is fault 3 all over again by a different door.
+    if s["jobs"].pop("merger", None) is None:
+        note(s, f"7  re-baselined to {s['main']} with no release behind it "
+                f"(main moved without changing any Lean input)")
+        return
     # The claim is DELIVERED, so it is discharged. Leaving it set would make
     # ".inflight non-empty with no merger record" ambiguous between "a claim was
     # dropped on the floor" and "a claim was honoured" -- and r11_action now
@@ -544,7 +561,6 @@ def r7_action(s):
     # clears it on the failure path; this is the success path saying the same
     # thing.
     s["inflight"] = None
-    s["jobs"].pop("merger", None)
     note(s, f"7  ADOPTED release {s['main']}: snapshot current, "
             f"queue1 AUDITED with {len(s['queue1']['tasks'])} task(s)")
 
@@ -552,8 +568,10 @@ def r7_action(s):
 def r11_guard(s):
     if "merger" in s["jobs"]:
         return (False, "a merger record already exists")
-    stale = (not s["snapshot"] or s["snapshot"]["sha"] != s["main"]
-             or s["queue1"]["audited"] != s["main"])
+    # Stale means "a build of main would differ from what we have", not "main
+    # moved". Under raw sha equality a tooling commit ordered a full 4.6 GB
+    # rebuild of a tree whose Lean sources had not changed by one byte.
+    stale = not s["snapshot_current"] or not s["audit_current"]
     if not s["batch"] and not stale:
         return (False, "nothing to merge and nothing derived from main is stale")
     return (True, "")
@@ -603,13 +621,13 @@ def r11_action(s):
 
 
 def r15_guard(s):
-    if s["queue1"]["audited"] != s["main"]:
+    if not s["audit_current"]:
         return (False, "queue1 is not AUDITED at main")
     if not s["queue1"]["tasks"]:
         return (False, "queue1 is empty")
     if not s["snapshot"]:
         return (False, "no snapshot for agents to copy .lake from")
-    if s["snapshot"]["sha"] != s["main"]:
+    if not s["snapshot_current"]:
         # Existence is not enough. After a rebaseline the PREVIOUS release's
         # snapshot is still on disk while the new one builds, and dispatching
         # against it seeds every agent with a .lake for the wrong main -- the
