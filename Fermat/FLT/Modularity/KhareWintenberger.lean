@@ -9804,6 +9804,209 @@ theorem exists_padicCoefficientField (p : ℕ) [Fact p.Prime]
   · ext x
     rfl
 
+namespace Carayol
+
+/-- The standard symplectic pairing on `L²`, the Poincaré–Weil pairing of the
+rank-two reverse witness for `CarayolJacobianPackage`. -/
+noncomputable def symplecticTwo {L : Type*} [Field L] :
+    (Fin 2 → L) →ₗ[L] (Fin 2 → L) →ₗ[L] L :=
+  LinearMap.mk₂ L (fun x y => x 0 * y 1 - x 1 * y 0)
+    (by intros; simp only [Pi.add_apply]; ring)
+    (by intros; simp only [Pi.smul_apply, smul_eq_mul]; ring)
+    (by intros; simp only [Pi.add_apply]; ring)
+    (by intros; simp only [Pi.smul_apply, smul_eq_mul]; ring)
+
+theorem symplecticTwo_apply {L : Type*} [Field L] (x y : Fin 2 → L) :
+    symplecticTwo x y = x 0 * y 1 - x 1 * y 0 := rfl
+
+/-- Every vector of `L²` is its own coordinate expansion in the standard
+basis. -/
+theorem eq_smul_single_add_smul_single {L : Type*} [Field L] (x : Fin 2 → L) :
+    x = x 0 • Pi.single 0 1 + x 1 • Pi.single 1 1 := by
+  funext i
+  fin_cases i <;> simp
+
+/-- **A `2 × 2` endomorphism scales the symplectic pairing by its
+determinant** — the "symplectic similitude in dimension two" computation, here
+in the elementary direction. -/
+theorem symplecticTwo_map_map {L : Type*} [Field L]
+    (M : Module.End L (Fin 2 → L)) (x y : Fin 2 → L) :
+    symplecticTwo (M x) (M y) = LinearMap.det M * symplecticTwo x y := by
+  have hdet : LinearMap.det M =
+      M (Pi.single 0 1) 0 * M (Pi.single 1 1) 1
+        - M (Pi.single 1 1) 0 * M (Pi.single 0 1) 1 := by
+    rw [← LinearMap.det_toMatrix' M, Matrix.det_fin_two]
+    simp [LinearMap.toMatrix'_apply]
+  have hMx : ∀ z : Fin 2 → L,
+      M z = z 0 • M (Pi.single 0 1) + z 1 • M (Pi.single 1 1) := by
+    intro z
+    conv_lhs => rw [eq_smul_single_add_smul_single z]
+    simp [map_add, map_smul]
+  rw [hdet, symplecticTwo_apply, symplecticTwo_apply, hMx x, hMx y]
+  simp only [Pi.add_apply, Pi.smul_apply, smul_eq_mul]
+  ring
+
+end Carayol
+
+open Carayol in
+/-- **THE REVERSE WITNESS FOR `CarayolJacobianPackage`, COMMITTED AS CODE**
+(PROVEN 2026-07-30, ROUND-14).
+
+A two-dimensional `3`-adic Galois representation `τ` whose Frobenius
+characteristic polynomials are `P` off `badF` INHABITS the package. Take
+
+* `Vlam := Fin 2 → L`, `tauJ := τ`, `hecke w := (−(P w).coeff 1) • 1`;
+* `basis₁ := Pi.single 0 1`, `basis₂ := Pi.single 1 1`;
+* `pair := symplecticTwo`, `e := 1`.
+
+Because `hecke` is a family of SCALARS, `heckeSubalgebra {w | w ∉ badF} hecke`
+is the scalar subalgebra `⊥` (`Algebra.adjoin_le` into `⊥`), which is what
+makes `span_free`/`indep_free` the ordinary coordinate expansion of `L²` and
+`eigen_idempotent` hold at `e = 1`. `congruence` is Cayley–Hamilton
+(`LinearMap.aeval_self_charpoly` expanded through
+`Polynomial.aeval_eq_sum_range'` at `natDegree < 3`), `monic`/`natDegree_eq`
+are `charFrob_monic_natDegree_two_of_rank_two`, and `pair_frob` is
+`symplecticTwo_map_map` together with
+`(P w).coeff 0 = det τ(Frob_w)` (`LinearMap.det_eq_sign_charpoly_coeff` at
+`finrank = 2`).
+
+**WHY THIS IS COMMITTED NOW, WHEN THE ROUND-7 EQUIVALENCE AUDIT DELIBERATELY
+DID NOT COMMIT IT.** That audit checked this witness BY HAND and recorded,
+correctly for its own time, that "nothing would consume it and it would be
+free-floating". That is no longer so: `nonempty_carayolJacobianPackage_of_heckeAlgebraCharacter`
+below is now a PROVEN ASSEMBLY over
+`exists_galoisRep_of_heckeAlgebraCharacter` and this theorem, so the witness
+has a consumer in the root cone and the audit's own reason for withholding it
+has lapsed. The mathematical content is unchanged; what changed is that the
+ROUND-7 audit's central claim is now MACHINE-CHECKED rather than believed. -/
+theorem nonempty_carayolJacobianPackage_of_galoisRep
+    {F : Type u} [Field F] [NumberField F]
+    {L : Type u} [Field L] [TopologicalSpace L] [IsTopologicalRing L]
+    {badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F))}
+    {P : HeightOneSpectrum (NumberField.RingOfIntegers F) → Polynomial L}
+    (τ : GaloisRep F L (Fin 2 → L))
+    (hτ : ∀ w ∉ badF, τ.charFrob w = P w) :
+    Nonempty (CarayolJacobianPackage F L badF P) := by
+  classical
+  set hk : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+      Module.End L (Fin 2 → L) :=
+    fun w => (-(P w).coeff 1) • (1 : Module.End L (Fin 2 → L)) with hkdef
+  have hrank2 : Module.rank L (Fin 2 → L) = 2 := by simp
+  have hshape : ∀ w ∉ badF, (P w).Monic ∧ (P w).natDegree = 2 := by
+    intro w hw
+    have := charFrob_monic_natDegree_two_of_rank_two (K := F) w τ hrank2
+    rwa [hτ w hw] at this
+  -- the Hecke subalgebra of a family of SCALARS is the scalar subalgebra
+  have hbot : heckeSubalgebra {w : HeightOneSpectrum (NumberField.RingOfIntegers F) |
+      w ∉ badF} hk ≤ ⊥ := by
+    refine Algebra.adjoin_le ?_
+    rintro φ ⟨i, _, rfl⟩
+    exact Algebra.mem_bot.mpr ⟨-(P i).coeff 1, by
+      rw [Algebra.algebraMap_eq_smul_one]⟩
+  have hscalar : ∀ a ∈ heckeSubalgebra {w : HeightOneSpectrum
+      (NumberField.RingOfIntegers F) | w ∉ badF} hk,
+      ∃ r : L, a = r • (1 : Module.End L (Fin 2 → L)) := by
+    intro a ha
+    obtain ⟨r, hr⟩ := Algebra.mem_bot.mp (hbot ha)
+    exact ⟨r, by rw [← hr, Algebra.algebraMap_eq_smul_one]⟩
+  refine ⟨{
+    Vlam := Fin 2 → L
+    tauJ := τ
+    hecke := hk
+    hecke_comm := ?_
+    hecke_mul_comm := ?_
+    monic := fun w hw => (hshape w hw).1
+    natDegree_eq := fun w hw => (hshape w hw).2
+    congruence := ?_
+    basis₁ := Pi.single 0 1
+    basis₂ := Pi.single 1 1
+    span_free := ?_
+    indep_free := ?_
+    pair := symplecticTwo
+    pair_self := ?_
+    pair_nondeg := ?_
+    pair_hecke := ?_
+    pair_frob := ?_
+    eigen_idempotent := ?_ }⟩
+  · intro w γ
+    rw [hkdef]
+    simp
+  · intro v w
+    rw [hkdef]
+    simp [smul_smul, mul_comm]
+  · -- EICHLER–SHIMURA IS CAYLEY–HAMILTON at a scalar Hecke family
+    intro w hw
+    set M := τ (globalFrob w) with hM
+    have hcp : P w = M.charpoly := by
+      rw [← hτ w hw, GaloisRep.charFrob_eq_charpoly_globalFrob]
+    have hdeg : (P w).natDegree = 2 := (hshape w hw).2
+    have hlt : (P w).natDegree < 3 := by omega
+    have hCH : (Polynomial.aeval M) (P w) = 0 := by
+      rw [hcp]; exact LinearMap.aeval_self_charpoly M
+    rw [Polynomial.aeval_eq_sum_range' hlt] at hCH
+    rw [Finset.sum_range_succ, Finset.sum_range_succ, Finset.sum_range_succ,
+      Finset.sum_range_zero] at hCH
+    have hc2 : (P w).coeff 2 = 1 := by
+      have := (hshape w hw).1.coeff_natDegree
+      rwa [hdeg] at this
+    rw [hc2, one_smul, pow_zero, pow_one] at hCH
+    rw [hkdef]
+    simp only []
+    have hscal : (-(P w).coeff 1) • (1 : Module.End L (Fin 2 → L)) * M
+        = (-(P w).coeff 1) • M := by
+      rw [smul_mul_assoc, one_mul]
+    have hgoal : M ^ 2 - (-(P w).coeff 1) • M
+        + (P w).coeff 0 • (1 : Module.End L (Fin 2 → L))
+        = 0 + (P w).coeff 0 • 1 + (P w).coeff 1 • M + M ^ 2 := by module
+    rw [hscal, hgoal, hCH]
+  · intro x
+    refine ⟨algebraMap L (Module.End L (Fin 2 → L)) (x 0),
+      Subalgebra.algebraMap_mem _ _, algebraMap L (Module.End L (Fin 2 → L)) (x 1),
+      Subalgebra.algebraMap_mem _ _, ?_⟩
+    simp only [Algebra.algebraMap_eq_smul_one]
+    show x = (x 0 • (1 : Module.End L (Fin 2 → L))) (Pi.single 0 1)
+      + (x 1 • (1 : Module.End L (Fin 2 → L))) (Pi.single 1 1)
+    simp only [LinearMap.smul_apply, Module.End.one_apply]
+    exact eq_smul_single_add_smul_single x
+  · intro a ha b hb hab
+    obtain ⟨r, rfl⟩ := hscalar a ha
+    obtain ⟨s, rfl⟩ := hscalar b hb
+    simp only [LinearMap.smul_apply, Module.End.one_apply] at hab
+    have h0 : r = 0 := by
+      have := congrFun hab 0
+      simpa using this
+    have h1 : s = 0 := by
+      have := congrFun hab 1
+      simpa using this
+    exact ⟨by rw [h0, zero_smul], by rw [h1, zero_smul]⟩
+  · intro x
+    rw [symplecticTwo_apply]; ring
+  · intro x hx
+    have h0 := hx (Pi.single 1 1)
+    have h1 := hx (Pi.single 0 1)
+    rw [symplecticTwo_apply] at h0 h1
+    simp only [Pi.single_eq_same, Pi.single_eq_of_ne, ne_eq, one_ne_zero,
+      not_false_eq_true] at h0 h1
+    funext i
+    fin_cases i
+    · simpa using h0
+    · simpa using h1
+  · intro w _ x y
+    rw [hkdef]
+    simp only [LinearMap.smul_apply, Module.End.one_apply, map_smul,
+      LinearMap.smul_apply, smul_eq_mul]
+  · intro w hw x y
+    have hcp : P w = (τ (globalFrob w)).charpoly := by
+      rw [← hτ w hw, GaloisRep.charFrob_eq_charpoly_globalFrob]
+    have hdet : (P w).coeff 0 = LinearMap.det (τ (globalFrob w)) := by
+      rw [hcp, LinearMap.det_eq_sign_charpoly_coeff, Module.finrank_fin_fun,
+        neg_one_sq, one_mul]
+    rw [hdet]
+    exact symplecticTwo_map_map _ x y
+  · refine ⟨1, Subalgebra.one_mem _, one_mul 1, one_ne_zero, ?_⟩
+    intro w _
+    rw [hkdef, mul_one]
+
 /-- **STEP 2a″-β, THE CITED CORE** (sorry leaf; CUT 2026-07-29, ROUND-9, out of
 `exists_carayolJacobianPackage_of_heckeAlgebraCharacter` below, which is now a
 PROVEN assembly over this leaf and `exists_padicCoefficientField`).
@@ -9969,9 +10172,39 @@ curve, by the ROUND-7 reverse witness), that `[F : ℚ]` is forced EVEN, and
 that in the case the chain uses the citation is TAYLOR 1989 rather than
 Carayol.
 
+**ROUND-14 (2026-07-30) — THIS DECLARATION IS THE CITATION; THE PACKAGE IS NOT.**
+The conclusion is no longer `Nonempty (CarayolJacobianPackage …)` but the bare
+existence of the `3`-adic representation,
+
+    ∃ τ : GaloisRep F L (Fin 2 → L), ∀ w ∉ badF, τ.charFrob w = P w ,
+
+and the package statement below is now a PROVEN ASSEMBLY over this leaf and
+`nonempty_carayolJacobianPackage_of_galoisRep` above. Frontier unchanged — one
+leaf in, one leaf out — and NO hypothesis moved: the binder list here is
+byte-identical to the one the package leaf carried, `hint` and `hιalg`
+included.
+
+This is exactly the step ROUND-9's finding (2) prescribed and stopped one move
+short of. That finding established that the package "follows FORMALLY from a
+single `τ` … `Vlam := Fin 2 → L`, `hecke` a family of SCALARS, `e := 1`,
+`congruence` by Cayley–Hamilton", and warned — rightly — that RESTATING the
+leaf over a bare `τ` would strand
+`nonempty_carayolPackage_of_carayolJacobianPackage` as free-floating. Cutting
+rather than restating avoids that entirely: the package is still constructed,
+still consumed by that theorem, and the witness ROUND-7 checked by hand is now
+COMPILED. What is cited is the one thing the literature owes and nothing else.
+
+Read together with ROUND-9 finding (3), that fixes the citation precisely: the
+theorem that discharges this leaf is TAYLOR 1989 (via congruences to forms that
+are discrete series somewhere), not Carayol's Théorème (A), because `D` is split
+at every finite place and no admissible `D'` exists for a generic `θ`. Nothing
+about a Shimura curve, étale cohomology, Poincaré duality or the
+Eichler–Shimura relation has to be formalised to close what remains here — all
+four were only ever inside the package, and the package is now proven from `τ`.
+
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
 through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
-theorem nonempty_carayolJacobianPackage_of_heckeAlgebraCharacter
+theorem exists_galoisRep_of_heckeAlgebraCharacter
     (F : Type u) [Field F] [NumberField F]
     (hFtr : NumberField.IsTotallyReal F)
     (E : Type u) [Field E] [NumberField E]
@@ -10014,8 +10247,73 @@ theorem nonempty_carayolJacobianPackage_of_heckeAlgebraCharacter
     letI : TopologicalSpace L := moduleTopology ℚ_[3] L
     letI : IsTopologicalRing L :=
       isTopologicalRing_moduleTopology_of_finite_padic 3 L
-    Nonempty (CarayolJacobianPackage F L badF P) := by
+    ∃ τ : GaloisRep F L (Fin 2 → L), ∀ w ∉ badF, τ.charFrob w = P w := by
   sorry
+
+/-- **STEP 2a″-β, THE PACKAGE** (**PROVEN 2026-07-30, ROUND-14**, as an
+assembly over `exists_galoisRep_of_heckeAlgebraCharacter` immediately above and
+the reverse witness `nonempty_carayolJacobianPackage_of_galoisRep`).
+
+**SIGNATURE UNCHANGED** — the sole call site,
+`exists_carayolJacobianPackage_of_heckeAlgebraCharacter` below, is untouched,
+and so is everything above it. What changed is that the citation no longer
+asserts a cohomology package: it asserts a two-dimensional representation, and
+the freeness over the Hecke algebra, the Poincaré duality with its cyclotomic
+multiplier, the `θ`-idempotent and the Eichler–Shimura congruence are all
+CONSTRUCTED from it. The full audit trail — rounds 6 through 13, including why
+no conclusion-side weakening exists and why `hint` and `hιalg` are
+load-bearing — is on the leaf above, which is where the citation now lives.
+
+A note for the next owner, since this is the shape that most invites a wasted
+cycle: the ROUND-7 EQUIVALENCE AUDIT's verdict is UNCHANGED by this cut and is
+in fact what licenses it. `Nonempty (CarayolJacobianPackage F L badF P)` and
+the existence of `τ` are EQUIVALENT — forward is this assembly, backward is the
+package's own `tauJ` — so nothing was weakened and nothing was strengthened. Do
+not go looking for a cheaper package. -/
+theorem nonempty_carayolJacobianPackage_of_heckeAlgebraCharacter
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F)
+    (E : Type u) [Field E] [NumberField E]
+    (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (heckeF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+      Polynomial E)
+    (hbad3 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (hmonic : ∀ w ∉ badF, (heckeF w).Monic)
+    (hdeg : ∀ w ∉ badF, (heckeF w).natDegree = 2)
+    (hnorm : ∀ w ∉ badF,
+      (heckeF w).coeff 0 = (Ideal.absNorm w.asIdeal : E))
+    (D : Type u) [DivisionRing D] [Algebra F D]
+    [_root_.IsQuaternionAlgebra F D]
+    [_root_.IsQuaternionAlgebra.IsTotallyDefinite F D]
+    [_root_.IsQuaternionAlgebra.NumberField.WithRigidification F D]
+    (p : ℕ) (𝒮 : _root_.TotallyDefiniteQuaternionAlgebra.U₁Data F E p)
+    (θ : _root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra D 𝒮 →ₐ[E] E)
+    (hSbad : ∀ w ∈ 𝒮.S, w ∈ badF) (hQbad : ∀ w ∈ 𝒮.Q, w ∈ badF)
+    (hθ : ∀ (w : HeightOneSpectrum (NumberField.RingOfIntegers F))
+        (hwS : w ∉ 𝒮.S) (hwQ : w ∉ 𝒮.Q), w ∉ badF →
+        (heckeF w).coeff 1 =
+          -θ (_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T D 𝒮 w hwS hwQ))
+    (hint : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      w ∉ 𝒮.S → w ∉ 𝒮.Q → w ∉ badF → IsIntegral ℤ ((heckeF w).coeff 1))
+    (L : Type u) [Field L] [Algebra ℚ_[3] L] [Module.Finite ℚ_[3] L]
+    (ψ₃ : E →+* AlgebraicClosure ℚ_[3])
+    (ι : L →+* AlgebraicClosure ℚ_[3])
+    (hιalg : ∀ x : ℚ_[3], ι (algebraMap ℚ_[3] L x) =
+      algebraMap ℚ_[3] (AlgebraicClosure ℚ_[3]) x)
+    (P : HeightOneSpectrum (NumberField.RingOfIntegers F) → Polynomial L)
+    (hP : ∀ w ∉ badF, (P w).map ι = (heckeF w).map ψ₃) :
+    letI : TopologicalSpace L := moduleTopology ℚ_[3] L
+    letI : IsTopologicalRing L :=
+      isTopologicalRing_moduleTopology_of_finite_padic 3 L
+    Nonempty (CarayolJacobianPackage F L badF P) := by
+  letI : TopologicalSpace L := moduleTopology ℚ_[3] L
+  haveI : IsTopologicalRing L :=
+    isTopologicalRing_moduleTopology_of_finite_padic 3 L
+  obtain ⟨τ, hτ⟩ :=
+    exists_galoisRep_of_heckeAlgebraCharacter F hFtr E badF heckeF hbad3 hmonic
+      hdeg hnorm D p 𝒮 θ hSbad hQbad hθ hint L ψ₃ ι hιalg P hP
+  exact nonempty_carayolJacobianPackage_of_galoisRep τ hτ
 
 /-- **STEP 2a″-β — CARAYOL'S THÉORÈME (A), STATED WITHOUT THE `ℓ`-ADIC
 APPARATUS** (PROVEN assembly since 2026-07-29, ROUND-9; CUT 2026-07-28,
