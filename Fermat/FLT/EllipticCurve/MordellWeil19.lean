@@ -68,28 +68,89 @@ on `19a1` instead would run in the SAME field but with `ℤ[ρ]` of index `152`
 this file descends on `19a3` and transports by the isogeny rather than the other
 way round.
 
-## THE ONE LEAF
+## THE ONE LEAF (moved 2026-07-30 from `19a3` to `19a1` — read this before working)
 
-`MazurX0Nineteen.integral_leaf` — the pure integer statement
+The leaf is now `MazurX0Nineteen.hesse_leaf`, the **Hesse cubic**
 
-    n² = p³ + 4p²e² + 16pe⁴ + 16e⁶,  gcd(p, e) = 1,  e > 0   ⟹   (p, e) = (0, 1).
+    X³ + Y³ + Z³ = 2XYZ,   gcd(X, Y) = 1   ⟹   X + Y + Z = 0,
 
-Everything else in this file is PROVEN over it:
-`U_eq_zero` (`RationalPointDescent.exists_int_model`, the shared plumbing from
-`MordellWeil.lean`), `x0Nineteen_x_eq_zero`, `cover_identity`, `cover_eq`,
+and `integral_leaf` — the pure integer statement
+
+    n² = p³ + 4p²e² + 16pe⁴ + 16e⁶,  gcd(p, e) = 1,  e > 0   ⟹   (p, e) = (0, 1)
+
+— is PROVEN over it by an explicit hand-written `3`-isogeny descent
+(`four_dvd_of_even`, `exists_reduced_even`, `descent_odd`, `descent_even`,
+`hesse_kill`).  Everything else in this file is PROVEN over `integral_leaf`, as
+before: `U_eq_zero`, `x0Nineteen_x_eq_zero`, `cover_identity`, `cover_eq`,
 `rational_point_x0Nineteen`.
 
-**The template for closing it is `MazurLevel11.integral_leaf`**, which was itself
-a leaf until 2026-07-27 and is now fully proven; its chain is
+**What the descent is, and which curve the leaf now lives on.**  `X³+Y³+Z³=2XYZ`
+IS `19a1`: `ellfromeqn(x³+y³+1−2xy)` has minimal model `[0,1,1,−9,−15]`,
+`Δ = −6859 = −19³`, conductor `19`, `ellrank = [0,0]`, `elltors = ℤ/3`, and its
+only primitive integer triples are the six `(±1,∓1,0)`, `(±1,0,∓1)`,
+`(0,±1,∓1)` — all with `X+Y+Z = 0`, which is why the leaf is TRUE.  So
+`descent_odd`/`descent_even` invert the `3`-isogeny `19a1 → 19a3` of
+`cover_identity`: they take a rational point of `19a3` and produce its preimage
+on `19a1`, one third of the canonical height.
+
+**THE ELEMENTARY DESCENT CANNOT BE ITERATED — this is the reason the leaf stops
+here, and it was checked rather than guessed (2026-07-30).**  The next step is
+available and completely explicit.  Writing `19a1` with its rational `3`-torsion
+at the origin, `y² + 8xy + 19y = x³` (from `[0,1,1,−9,−15]` by `x ↦ x+5`,
+`y ↦ y+4x+9`), the three inflectional tangents of the Hesse model satisfy, as a
+polynomial identity checkable by `linear_combination` (verified symbolically):
+
+    (3u−3v+2f)(2u−3v+3f)(3u−2v+3f) = 19(u−v+f)³ + (v³−u³−f³−2uvf),
+    (3u−3v+2f)+(2u−3v+3f)+(3u−2v+3f) = 8(u−v+f),
+
+so on the curve the three factors have product `19·M³` with `M = u−v+f`.  They
+are pairwise coprime for a primitive triple, and the argument is worth recording
+because it is the only fiddly step: the same linear system inverts to
+
+    8u = 3A − 5B + 3C,   8v = −3A − 3B + 5C,   8f = −5A + 3B + 3C
+
+(writing `A, B, C` for the three tangent forms), so a prime dividing two of them
+divides `8u`, `8v`, `8f` and `8M ≡ A+B+C`; away from `2` and `19` that forces it
+to divide `u`, `v` and `f` at once.  At `2` exactly one of the three is even, and
+at `19` the same inversion applies since `19 ∤ u, v, f`.  Extracting cubes then
+gives `a³ + b³ + 19c³ = 8abc`.  **That curve is `19a2`**
+(`ellfromeqn(x³+y³+19−8xy)` has minimal model `[0,1,1,−769,−8470]`, conductor
+`19`, rank `0`), and `19a2` has **trivial torsion** — no rational `3`-torsion
+point, hence no "`y` is a cube" descent.  The isogeny class is exactly
+`19a2 — 19a1 — 19a3` with matrix `[[1,3,3],[3,1,9],[3,9,1]]`, so the elementary
+chain runs `19a3 → 19a1 → 19a2` and terminates.  Closing the loop would need
+`19a1(ℚ)/ψ(19a3(ℚ))`, whose descent group is `H¹(G, ℤ/3) = Hom(G, ℤ/3)` — cyclic
+cubic fields, not `ℚ*/(ℚ*)³`.  **Do not spend another cycle looking for an
+elementary `3`-descent that closes; there is none.**
+
+**So the remaining work is still the `2`-descent, and the TRADE-OFF the move
+costs must be stated.**  The template is `MazurLevel11.integral_leaf`, itself a
+leaf until 2026-07-27 and now fully proven; its chain is
 `exists_halving_witness` (the `2`-descent proper: `descent_zs`,
 `descent_unit_square`, `descent_square_class`, `epsilon_class_impossible`, over
 `Cubic.ZS.isPrincipalIdealRing_zs` and `Cubic.ZS.unit_sq_class`), then
 `halving_relation` → `height_drop_or_small` (`reduced_fraction`,
 `forms_common_dvd`, `forms_archimedean`) → `smallPoints` (a bitmask
 quadratic-residue sieve) → `halving_descends`/`trivial_ascends` →
-`integral_leaf_aux` by strong induction on `|p| + e²`.  A successor should
-follow that file rather than looking for a general Mordell–Weil theorem, which
-exists nowhere in this tree, in `Mathlib`, or in `~/cs/FLT`.
+`integral_leaf_aux` by strong induction on `|p| + e²`.  A successor should follow
+that file rather than looking for a general Mordell–Weil theorem, which exists
+nowhere in this tree, in `Mathlib`, or in `~/cs/FLT`.
+
+That `2`-descent is CHEAPER ON `19a3` than on `19a1`: both run in the same cubic
+field `ℚ(θ)`, `θ³ + 2θ² + 4θ + 2 = 0`, of discriminant `−76`, but `19a3`'s monic
+cubic `U³ + 4U² + 16U + 16` generates the FULL ring of integers (index `1`) while
+`19a1`'s `U³ + 4U² − 144U − 944` generates an order of index `152 = 8·19`.  So a
+successor has two honest options:
+
+* prove `hesse_leaf` directly, paying the index-`152` bookkeeping (extra bad
+  primes `2` and `19` in the square-class analysis, nothing worse in kind); or
+* prove the `19a3` statement first as a SEPARATE theorem by the index-`1`
+  descent, then bridge it to `hesse_leaf` through `cover_identity` plus the
+  linear Hesse ↔ Weierstrass change of coordinates recorded above — this is NOT
+  circular, because `integral_leaf` is proven from `hesse_leaf` and not
+  conversely, but it does duplicate the `19a3` statement, so if that is the route
+  chosen it is cleaner to REVERT this file's routing and restore `integral_leaf`
+  as the leaf.  Either way the descent lemmas below are unaffected.
 
 CHECKED EXTERNALLY (PARI/GP 2.17.4, an untrusted searcher — not a proof; every
 witness used below is verified in Lean).  `ellinit([0,1,1,-9,-15])` gives
@@ -111,7 +172,308 @@ public import Fermat.FLT.EllipticCurve.MordellWeil
 
 namespace MazurX0Nineteen
 
-/-- **THE level-`19` statement** (sorry leaf, introduced 2026-07-28): the only
+/-! ### The `3`-isogeny descent `19a3 → 19a1`, by hand
+
+Everything in this section is elementary: no number field, no class group, no
+ideal theory.  The only nontrivial input is `exists_associated_pow_of_mul_eq_pow'`
+(coprime factors of a cube are cubes up to units) together with the fact that
+every unit of `ℤ` is a cube.  It reduces `integral_leaf` to the single leaf
+`hesse_leaf`; see the module docstring for what that costs and why the chain
+cannot be iterated. -/
+
+/-- Coprimality is unchanged by adding a multiple of the left argument to the
+right one. -/
+theorem cop_add_mul {x y z : ℤ} (h : IsCoprime x y) : IsCoprime x (y + x * z) := by
+  obtain ⟨a, b, hab⟩ := h
+  exact ⟨a - b * z, b, by linear_combination hab⟩
+
+/-- A coprime factor of a cube is a cube.  Over `ℤ` the unit ambiguity is
+harmless: `1` and `−1` are both cubes. -/
+theorem cube_of_coprime_mul_eq_cube {a b c : ℤ} (hab : IsCoprime a b) (h : a * b = c ^ 3) :
+    ∃ d : ℤ, a = d ^ 3 := by
+  obtain ⟨d, u, hu⟩ := exists_associated_pow_of_mul_eq_pow' hab h
+  rcases Int.isUnit_eq_one_or u.isUnit with h1 | h1
+  · exact ⟨d, by rw [← hu, h1, mul_one]⟩
+  · exact ⟨-d, by rw [← hu, h1]; ring⟩
+
+/-- If `a² = 2b` then `a` is even, delivered in the `2 * c` shape (`Even` unfolds
+to `c + c`, which `linarith` cannot use directly). -/
+theorem two_mul_of_sq_eq_two_mul {a b : ℤ} (h : a ^ 2 = 2 * b) : ∃ c : ℤ, a = 2 * c := by
+  obtain ⟨t, ht⟩ := (Int.even_pow.mp (⟨b, by linarith⟩ : Even (a ^ 2))).1
+  exact ⟨t, by linarith⟩
+
+/-- Cubing is injective on `ℤ`; proved by factoring `a³ − b³` rather than by a
+monotonicity argument, so that it works uniformly in sign. -/
+theorem cube_left_inj {a b : ℤ} (h : a ^ 3 = b ^ 3) : a = b := by
+  have hf : (a - b) * (a ^ 2 + a * b + b ^ 2) = 0 := by linear_combination h
+  rcases mul_eq_zero.mp hf with h1 | h1
+  · linarith
+  · have hb2 : b ^ 2 = 0 := le_antisymm (by nlinarith [sq_nonneg (2 * a + b)]) (sq_nonneg b)
+    have hb : b = 0 := by simpa using sq_eq_zero_iff.mp hb2
+    have ha2 : a ^ 2 = 0 := by rw [hb] at h1; linarith
+    have ha : a = 0 := by simpa using sq_eq_zero_iff.mp ha2
+    rw [ha, hb]
+
+/-- **THE level-`19` LEAF** (moved here 2026-07-30 from `integral_leaf`, which is
+now proven over it): the Hesse cubic
+
+    X³ + Y³ + Z³ = 2XYZ,   gcd(X, Y) = 1   ⟹   X + Y + Z = 0.
+
+**This IS "`19a1` has rank `0`"**, in the cleanest available form.
+`ellfromeqn(x³ + y³ + 1 − 2xy)` has minimal model `[0,1,1,−9,−15]`, i.e. `19a1`,
+with `Δ = −6859 = −19³` and conductor `19`; the cubic is smooth (the Hesse
+pencil `x³+y³+z³−3μxyz` is singular only at `μ³ = 1`, and here `μ = 2/3`), so it
+is a genus-`1` curve and the statement is exactly a Mordell–Weil assertion.
+
+TRUE, and the evidence is an ENUMERATION rather than a bound.  PARI/GP
+(untrusted searcher) gives `ellrank([0,1,1,−9,−15]) = [0,0]` — rank `0` proven,
+not merely bounded — and `elltors = ℤ/3`, so `19a1(ℚ)` has exactly three points;
+a plane cubic's projective rational points are in bijection with them, and each
+contributes exactly two primitive integer triples `±(X,Y,Z)`.  A direct search
+over `|X|, |Y|, |Z| ≤ 60` finds exactly those six:
+
+    (1,−1,0), (−1,1,0), (1,0,−1), (−1,0,1), (0,1,−1), (0,−1,1),
+
+every one of which satisfies `X + Y + Z = 0`.  Note `gcd(X, Y) = 1` already
+forces `gcd(X, Y, Z) = 1` (a prime dividing `X` and `Z` divides `Y³`), so the
+hypothesis really does cut out primitive triples and the list is complete.
+
+**FALSITY AUDIT (2026-07-30, first audit of this statement — it has not been
+restated before, so nothing is inherited).**
+
+* *Not vacuous*: all six triples above satisfy the hypotheses.
+* *The coprimality hypothesis is NOT needed for truth — it is kept deliberately,
+  and this is worth stating because the reflex is to assume otherwise.*  The
+  equation is homogeneous, so every integer solution is a scalar multiple of a
+  primitive one (or is `(0,0,0)`), and `X + Y + Z = 0` survives scaling; hence
+  the hypothesis-free statement is true as well.  `IsCoprime X Y` is kept
+  because a WEAKER leaf is a cheaper leaf, and because the sole consumer
+  supplies it for free.  A successor may drop it at the cost of one
+  `gcd`-extraction step, but there is no reason to.
+* *The conclusion is not a hidden triviality, and this is the subtle point.*
+  `X + Y + Z = 0` is NOT a component of the curve: substituting `Z = −(X+Y)`
+  gives `X³ + Y³ − (X+Y)³ = −3XY(X+Y)` against `2XYZ = −2XY(X+Y)`, so the line
+  meets the cubic only where `XY(X+Y) = 0`.  Hence conclusion-plus-equation is
+  equivalent to `XYZ = 0`, and the leaf really does assert that the curve has no
+  rational point off the three inflections.  A successor tempted to "simplify"
+  the conclusion to `XYZ = 0` may do so — the two are interchangeable here — but
+  must not weaken it to something the line `X+Y+Z = 0` satisfies identically.
+* *Consumed with no slack*: the sole consumer is `hesse_kill`, which feeds it
+  `IsCoprime (−u) v` and the equation in the form
+  `(−u)³ + v³ + (−w)³ = 2(−u)v(−w)`.
+
+THE ROUTE.  What remains is a `2`-descent, and the template is
+`MazurLevel11.integral_leaf` in `MordellWeil.lean` (fully proven 2026-07-27).
+Both `19a1` and `19a3` descend in the SAME cubic field `ℚ(θ)`,
+`θ³ + 2θ² + 4θ + 2 = 0`, of discriminant `−76`; the difference is the order.  For
+`19a3`'s monic model `W² = U³ + 4U² + 16U + 16` the ring `ℤ[θ]` is the FULL ring
+of integers (index `1`: `−76/f²` would have to be `−19` for `f = 2`, and `−19` is
+not a cubic field discriminant, the smallest complex one being `−23`), class
+number `1`, fundamental unit `ε = θ + 1` of norm `1`.  For `19a1`'s
+`U³ + 4U² − 144U − 944` the generated order has index `152 = 8·19`.
+
+The `19a3` computation, kept here because option 2 of the module docstring uses
+it, and because every constant in it was cross-checked:
+
+* **The norm form.**  `N(a + bθ + cθ²) = a³ − 2a²b − 4a²c + 4ab² − 2abc + 8ac²
+  − 2b³ + 4b²c − 8bc² + 4c³`, so with `(a, b, c) = (p, −2e², 0)`
+
+      N(p − 2e²θ) = p³ + 4p²e² + 16pe⁴ + 16e⁶ = n²,
+
+  the descent image `β = p − 2e²θ` of the point `U = p/e²`, exactly as
+  `MazurLevel11.descentImage p e = (p, −2e², 0)` is `p − 2e²s` there.
+* **Squaring.**  `θ³ = −2θ² − 4θ − 2` and `θ⁴ = 6θ + 4`, so
+
+      (a + bθ + cθ²)² = (a² − 4bc + 4c²) + (2ab − 8bc + 6c²)θ + (2ac + b² − 4bc)θ².
+
+* **The halving witness.**  `β = δ²` reads `b² + 2ac − 4bc = 0`,
+  `p = a² − 4bc + 4c²`, `e² = −ab + 4bc − 3c²`, the level-`19` form of
+  `MazurLevel11.exists_halving_witness`.
+* **Consistent at the known solution**, the cheapest check on the derivation:
+  `θ³ = −2(θ + 1)²` and `(θ + 1)⁻¹ = θ² + θ + 3` give
+  `−2θ = (θ² + 2θ + 2)²`, i.e. `(a, b, c) = (2, 2, 1)`, whence
+  `p = 4 − 8 + 4 = 0`, `e² = −4 + 8 − 3 = 1` and `4 + 4 − 8 = 0` — the solution
+  `(p, e) = (0, 1)`.
+* **What is left.**  The unit ambiguity is only `{1, ε}` modulo squares, since
+  `N(−1) = −1 < 0` cannot divide the square `n²`; the `ε`-class must be excluded
+  (`MazurLevel11.epsilon_class_impossible`, there by a character `mod 13`),
+  together with the valuation bookkeeping at the ramified primes — `(2) = (θ)³`,
+  and `19 = 𝔮₁𝔮₂²` with both residue degrees `1`.  Then an archimedean height
+  drop plus a finite sieve, exactly as at level `11`.
+
+**These bullets are a derivation, not a theorem**: only the identities are
+mechanical (`ring` checks the squaring rule, the norm form and the `(2, 2, 1)`
+witness).  That `β` is a square times a unit at all IS the descent. -/
+theorem hesse_leaf {X Y Z : ℤ} (hcop : IsCoprime X Y)
+    (h : X ^ 3 + Y ^ 3 + Z ^ 3 = 2 * X * Y * Z) : X + Y + Z = 0 := sorry
+
+/-- **Step 1 of the descent: `p ≡ 2 mod 4` is impossible** (PROVEN 2026-07-30).
+
+If `p` is even then `4 ∣ p`.  Writing `p = 2m` with `m` odd makes the right-hand
+side `8·(odd)`, so `n = 4n₂` would force `2 ∣ 2K + 1`. -/
+theorem four_dvd_of_even {p e n m : ℤ} (hm : p = 2 * m)
+    (h : n ^ 2 = p ^ 3 + 4 * p ^ 2 * e ^ 2 + 16 * p * e ^ 4 + 16 * e ^ 6) :
+    ∃ p₂ : ℤ, p = 4 * p₂ := by
+  rcases Int.even_or_odd m with hme | hmo
+  · obtain ⟨t, ht⟩ := hme
+    exact ⟨t, by rw [hm, ht]; ring⟩
+  · exfalso
+    obtain ⟨j, hj⟩ := hmo
+    subst hj
+    subst hm
+    obtain ⟨K, hK⟩ : ∃ K : ℤ, K = 4 * j ^ 3 + 6 * j ^ 2 + 3 * j + (2 * j + 1) ^ 2 * e ^ 2
+        + 2 * (2 * j + 1) * e ^ 4 + e ^ 6 := ⟨_, rfl⟩
+    have hn8 : n ^ 2 = 8 * (2 * K + 1) := by rw [hK]; linear_combination h
+    obtain ⟨n₁, hn₁⟩ := two_mul_of_sq_eq_two_mul (a := n) (b := 4 * (2 * K + 1)) (by linarith)
+    subst hn₁
+    have h1 : n₁ ^ 2 = 2 * (2 * K + 1) := by
+      have h4 : 4 * n₁ ^ 2 = 4 * (2 * (2 * K + 1)) := by linear_combination hn8
+      linarith
+    obtain ⟨n₂, hn₂⟩ := two_mul_of_sq_eq_two_mul (a := n₁) (b := 2 * K + 1) h1
+    subst hn₂
+    have h2 : (2 : ℤ) ∣ 2 * K + 1 := by
+      refine ⟨n₂ ^ 2, ?_⟩
+      have h4 : 2 * (2 * K + 1) = 2 * (2 * n₂ ^ 2) := by linear_combination -h1
+      linarith
+    omega
+
+/-- **Step 2: dividing the `4` out** (PROVEN 2026-07-30).  With `p = 4p₂` the
+equation becomes `16 ∣ n²`, and the reduced equation
+`n₂² = 4p₂³ + 4p₂²e² + 4p₂e⁴ + e⁶` is the one `descent_even` factors. -/
+theorem exists_reduced_even {p₂ e n : ℤ}
+    (h : n ^ 2 = (4 * p₂) ^ 3 + 4 * (4 * p₂) ^ 2 * e ^ 2 + 16 * (4 * p₂) * e ^ 4 + 16 * e ^ 6) :
+    ∃ n₂ : ℤ, n = 4 * n₂ ∧
+      n₂ ^ 2 = 4 * p₂ ^ 3 + 4 * p₂ ^ 2 * e ^ 2 + 4 * p₂ * e ^ 4 + e ^ 6 := by
+  obtain ⟨J, hJ⟩ : ∃ J : ℤ, J = 4 * p₂ ^ 3 + 4 * p₂ ^ 2 * e ^ 2 + 4 * p₂ * e ^ 4 + e ^ 6 :=
+    ⟨_, rfl⟩
+  have hn16 : n ^ 2 = 16 * J := by rw [hJ]; linear_combination h
+  obtain ⟨n₁, hn₁⟩ := two_mul_of_sq_eq_two_mul (a := n) (b := 8 * J) (by linarith)
+  subst hn₁
+  have h1 : n₁ ^ 2 = 4 * J := by
+    have h4 : 4 * n₁ ^ 2 = 4 * (4 * J) := by linear_combination hn16
+    linarith
+  obtain ⟨n₂, hn₂⟩ := two_mul_of_sq_eq_two_mul (a := n₁) (b := 2 * J) (by linarith)
+  subst hn₂
+  refine ⟨n₂, by ring, ?_⟩
+  have h4 : 4 * n₂ ^ 2 = 4 * J := by linear_combination h1
+  rw [hJ] at h4; linarith
+
+/-- **Step 3: the descent proper, `p` odd** (PROVEN 2026-07-30).
+
+The point of the whole construction is the identity
+
+    (n − 2pe − 4e³)(n + 2pe + 4e³) = n² − (2pe + 4e³)² = p³,
+
+so the equation exhibits `p³` as a product of two factors whose gcd divides
+`4e(p + 2e²)` — coprime to `p³` when `p` is odd and `gcd(p, e) = 1`.  Coprime
+factors of a cube are cubes, `p = uv`, and subtracting the two cubes gives the
+Hesse equation with `Z = 2e`. -/
+theorem descent_odd {p e n : ℤ} (hcop : IsCoprime p e) (hpo : Odd p)
+    (h : n ^ 2 = p ^ 3 + 4 * p ^ 2 * e ^ 2 + 16 * p * e ^ 4 + 16 * e ^ 6) :
+    ∃ u v : ℤ, IsCoprime u v ∧ p = u * v ∧
+      v ^ 3 - u ^ 3 - (2 * e) ^ 3 = 2 * u * v * (2 * e) := by
+  obtain ⟨k, hk⟩ := hpo
+  have hp2 : IsCoprime p (2 : ℤ) := ⟨1, -k, by linear_combination hk⟩
+  obtain ⟨S, hS⟩ : ∃ S : ℤ, S = n - 2 * p * e - 4 * e ^ 3 := ⟨_, rfl⟩
+  obtain ⟨T, hT⟩ : ∃ T : ℤ, T = n + 2 * p * e + 4 * e ^ 3 := ⟨_, rfl⟩
+  have hST : S * T = p ^ 3 := by rw [hS, hT]; linear_combination h
+  have hSd : S ∣ p ^ 3 := ⟨T, hST.symm⟩
+  have hSe : IsCoprime S e :=
+    (hcop.pow_left : IsCoprime (p ^ 3) e).of_isCoprime_of_dvd_left hSd
+  have hp4 : IsCoprime p (4 : ℤ) := by
+    have h1 : IsCoprime p ((2 : ℤ) ^ 2) := hp2.pow_right
+    rwa [show ((2 : ℤ) ^ 2) = 4 by norm_num] at h1
+  have hS4 : IsCoprime S (4 : ℤ) :=
+    (hp4.pow_left : IsCoprime (p ^ 3) 4).of_isCoprime_of_dvd_left hSd
+  have hq : IsCoprime p (p + 2 * e ^ 2) := by
+    have h1 : IsCoprime p (2 * e ^ 2) := hp2.mul_right hcop.pow_right
+    have h2 := cop_add_mul (z := 1) h1
+    rwa [show 2 * e ^ 2 + p * 1 = p + 2 * e ^ 2 by ring] at h2
+  have hSq : IsCoprime S (p + 2 * e ^ 2) :=
+    (hq.pow_left : IsCoprime (p ^ 3) (p + 2 * e ^ 2)).of_isCoprime_of_dvd_left hSd
+  have hSTcop : IsCoprime S T := by
+    have h1 : IsCoprime S (4 * e * (p + 2 * e ^ 2)) := (hS4.mul_right hSe).mul_right hSq
+    have h2 := cop_add_mul (z := 1) h1
+    rwa [show 4 * e * (p + 2 * e ^ 2) + S * 1 = T by rw [hS, hT]; ring] at h2
+  obtain ⟨u, hu⟩ : ∃ u : ℤ, S = u ^ 3 := cube_of_coprime_mul_eq_cube hSTcop hST
+  obtain ⟨v, hv⟩ : ∃ v : ℤ, T = v ^ 3 :=
+    cube_of_coprime_mul_eq_cube hSTcop.symm (show T * S = p ^ 3 by linear_combination hST)
+  have hud : u ∣ S := ⟨u ^ 2, by rw [hu]; ring⟩
+  have hvd : v ∣ T := ⟨v ^ 2, by rw [hv]; ring⟩
+  have huv : IsCoprime u v :=
+    (hSTcop.of_isCoprime_of_dvd_left hud).of_isCoprime_of_dvd_right hvd
+  have hpuv : p = u * v := by
+    have h1 : (u * v) ^ 3 = p ^ 3 := by rw [mul_pow, ← hu, ← hv]; exact hST
+    exact (cube_left_inj h1).symm
+  rw [hS] at hu
+  rw [hT] at hv
+  exact ⟨u, v, huv, hpuv, by linear_combination hu - hv + 4 * e * hpuv⟩
+
+/-- **Step 4: the descent proper, `4 ∣ p`** (PROVEN 2026-07-30).
+
+Same shape as `descent_odd` on the reduced equation of `exists_reduced_even`:
+`(n₂ − 2p₂e − e³)(n₂ + 2p₂e + e³) = 4p₂³`, both factors are even, and halving
+them gives `στ = p₂³` with `σ, τ` coprime.  The Hesse equation comes out with
+`Z = e` rather than `2e`. -/
+theorem descent_even {p₂ e n₂ : ℤ} (hcop : IsCoprime p₂ e)
+    (h : n₂ ^ 2 = 4 * p₂ ^ 3 + 4 * p₂ ^ 2 * e ^ 2 + 4 * p₂ * e ^ 4 + e ^ 6) :
+    ∃ u v : ℤ, IsCoprime u v ∧ p₂ = u * v ∧ v ^ 3 - u ^ 3 - e ^ 3 = 2 * u * v * e := by
+  obtain ⟨A, hA⟩ : ∃ A : ℤ, A = n₂ - 2 * p₂ * e - e ^ 3 := ⟨_, rfl⟩
+  obtain ⟨B, hB⟩ : ∃ B : ℤ, B = n₂ + 2 * p₂ * e + e ^ 3 := ⟨_, rfl⟩
+  have hAB : A * B = 4 * p₂ ^ 3 := by rw [hA, hB]; linear_combination h
+  obtain ⟨σ, hσ⟩ : ∃ σ : ℤ, A = 2 * σ := by
+    have hev : Even (A * B) := ⟨2 * p₂ ^ 3, by linarith⟩
+    rcases Int.even_mul.mp hev with hd | hd
+    · obtain ⟨c, hc⟩ := hd; exact ⟨c, by linarith⟩
+    · obtain ⟨c, hc⟩ := hd
+      exact ⟨c - 2 * p₂ * e - e ^ 3, by rw [hA]; rw [hB] at hc; linarith⟩
+  obtain ⟨τ, hτ⟩ : ∃ τ : ℤ, τ = σ + (2 * p₂ * e + e ^ 3) := ⟨_, rfl⟩
+  have hB2 : B = 2 * τ := by rw [hτ, hB]; rw [hA] at hσ; linarith
+  have hστ : σ * τ = p₂ ^ 3 := by
+    have h4 : 4 * (σ * τ) = 4 * p₂ ^ 3 := by rw [← hAB, hσ, hB2]; ring
+    linarith
+  have hσd : σ ∣ p₂ ^ 3 := ⟨τ, hστ.symm⟩
+  have hσe : IsCoprime σ e :=
+    (hcop.pow_left : IsCoprime (p₂ ^ 3) e).of_isCoprime_of_dvd_left hσd
+  have hq : IsCoprime p₂ (2 * p₂ + e ^ 2) := by
+    have h1 : IsCoprime p₂ (e ^ 2) := hcop.pow_right
+    have h2 := cop_add_mul (z := 2) h1
+    rwa [show e ^ 2 + p₂ * 2 = 2 * p₂ + e ^ 2 by ring] at h2
+  have hσq : IsCoprime σ (2 * p₂ + e ^ 2) :=
+    (hq.pow_left : IsCoprime (p₂ ^ 3) (2 * p₂ + e ^ 2)).of_isCoprime_of_dvd_left hσd
+  have hστcop : IsCoprime σ τ := by
+    have h1 : IsCoprime σ (e * (2 * p₂ + e ^ 2)) := hσe.mul_right hσq
+    have h2 := cop_add_mul (z := 1) h1
+    rwa [show e * (2 * p₂ + e ^ 2) + σ * 1 = τ by rw [hτ]; ring] at h2
+  obtain ⟨u, hu⟩ : ∃ u : ℤ, σ = u ^ 3 := cube_of_coprime_mul_eq_cube hστcop hστ
+  obtain ⟨v, hv⟩ : ∃ v : ℤ, τ = v ^ 3 :=
+    cube_of_coprime_mul_eq_cube hστcop.symm (show τ * σ = p₂ ^ 3 by linear_combination hστ)
+  have hud : u ∣ σ := ⟨u ^ 2, by rw [hu]; ring⟩
+  have hvd : v ∣ τ := ⟨v ^ 2, by rw [hv]; ring⟩
+  have huv : IsCoprime u v :=
+    (hστcop.of_isCoprime_of_dvd_left hud).of_isCoprime_of_dvd_right hvd
+  have hpuv : p₂ = u * v := by
+    have h1 : (u * v) ^ 3 = p₂ ^ 3 := by rw [mul_pow, ← hu, ← hv]; exact hστ
+    exact (cube_left_inj h1).symm
+  exact ⟨u, v, huv, hpuv, by linear_combination hu - hv + hτ + 2 * e * hpuv⟩
+
+/-- **The leaf, applied** (PROVEN 2026-07-30 over `hesse_leaf`).
+
+`(X, Y, Z) = (−u, v, −w)` turns `v³ − u³ − w³ = 2uvw` into `X³+Y³+Z³ = 2XYZ`, so
+`hesse_leaf` gives `v = u + w`.  Feeding that BACK into the equation collapses it
+to `3uvw = 2uvw`, i.e. `uvw = 0`; with `w ≠ 0` this is `uv = 0`.  (That
+back-substitution is the content flagged in `hesse_leaf`'s falsity audit: the
+line `X+Y+Z = 0` meets the cubic only where `XYZ = 0`.) -/
+theorem hesse_kill {u v w : ℤ} (hw : w ≠ 0) (huv : IsCoprime u v)
+    (hh : v ^ 3 - u ^ 3 - w ^ 3 = 2 * u * v * w) : u * v = 0 := by
+  have hsum : -u + v + -w = 0 := hesse_leaf huv.neg_left (by linear_combination hh)
+  have hveq : v = u + w := by linarith
+  have huvw : u * v * w = 0 := by rw [hveq] at hh ⊢; linear_combination hh
+  rcases mul_eq_zero.mp huvw with h1 | h1
+  · exact h1
+  · exact absurd h1 hw
+
+/-- **THE level-`19` statement** (PROVEN 2026-07-30 over `hesse_leaf`): the only
 coprime integral points of the monic model `W² = U³ + 4U² + 16U + 16` of `19a3`
 are `(p, e) = (0, 1)`, i.e. `U = 0`.
 
@@ -130,54 +492,19 @@ returns `ℤ/3` — the three points being `O`, `(0, 0)` and `(0, −1)`.
 coprimality hypothesis is load-bearing — `(p, e) = (0, k)` solves the equation
 for every `k` with `n = 4k³`.
 
-THE ROUTE, in the shape that closed the identical level-`11` leaf
-`MazurLevel11.integral_leaf`, with every constant below computed and
-cross-checked (PARI/GP for the field invariants, hand-verifiable identities for
-the rest).  Put `θ³ + 2θ² + 4θ + 2 = 0`.  Then:
+THE PROOF is the explicit `3`-isogeny descent of the section above, and it is
+elementary throughout.  Split on the parity of `p`: when `p` is even it is in
+fact divisible by `4` (`four_dvd_of_even`) and the equation reduces
+(`exists_reduced_even`); either branch then factors the equation as a difference
+of squares equal to a cube, `n² − (2pe + 4e³)² = p³`, whose two factors are
+coprime, hence cubes (`descent_odd`, `descent_even`).  That yields `p = uv`
+together with a point of `19a1` in Hesse coordinates, and `hesse_kill` forces
+`uv = 0`.  Finally `p = 0` makes `IsCoprime 0 e` say `IsUnit e`, so `e = ±1`, and
+`0 < e` picks `e = 1`.
 
-* **The norm form.**  `N(a + bθ + cθ²) = a³ − 2a²b − 4a²c + 4ab² − 2abc + 8ac²
-  − 2b³ + 4b²c − 8bc² + 4c³`, so with `(a, b, c) = (p, −2e², 0)`
-
-      N(p − 2e²θ) = p³ + 4p²e² + 16pe⁴ + 16e⁶ = n²,
-
-  which is the descent image `β = p − 2e²θ` of the point `U = p/e²`, exactly as
-  `MazurLevel11.descentImage p e = (p, −2e², 0)` is `p − 2e²s` there.
-
-* **The ring.**  `ℤ[θ]` is the FULL ring of integers of the cubic field of
-  discriminant `−76` (index `1`: `−76/f²` would have to be `−19` for `f = 2`,
-  and `−19` is not a cubic field discriminant, the smallest complex one being
-  `−23`).  Class number `1`; fundamental unit `ε = θ + 1`, of norm `1`.
-  Reduction: `θ³ = −2θ² − 4θ − 2` and `θ⁴ = 6θ + 4`, so squaring in the basis
-  `1, θ, θ²` is
-
-      (a + bθ + cθ²)² = (a² − 4bc + 4c²) + (2ab − 8bc + 6c²)θ + (2ac + b² − 4bc)θ².
-
-* **The halving witness.**  `β = δ²` therefore reads, in coordinates,
-
-      b² + 2ac − 4bc = 0,   p = a² − 4bc + 4c²,   e² = −ab + 4bc − 3c²,
-
-  which is the level-`19` form of `MazurLevel11.exists_halving_witness`
-  (`b² + 2ac + 4bc + 4c² = 0`, `p = a² − 4c² − 4bc`, `e² = c² − ab`).
-
-* **It is CONSISTENT at the known solution**, which is the cheapest available
-  check on the whole derivation.  `2 = −θ³/(θ + 1)²` (equivalently
-  `θ³ = −2(θ + 1)²`, an identity in `ℤ[θ]`), and `(θ + 1)⁻¹ = θ² + θ + 3`, so
-  `−2θ = (θ²(θ + 1)⁻¹)² = (θ² + 2θ + 2)²`.  That is `(a, b, c) = (2, 2, 1)`, and
-  the three equations above give `p = 4 − 8 + 4 = 0`, `e² = −4 + 8 − 3 = 1`,
-  `4 + 4 − 8 = 0` — the solution `(p, e) = (0, 1)`.
-
-* **What is left.**  The unit ambiguity is only `{1, ε}` modulo squares, since
-  `N(−1) = −1 < 0` cannot divide the square `n²`; so the `ε`-class must be
-  excluded (`MazurLevel11.epsilon_class_impossible`, there by a character
-  `mod 13`), together with the valuation bookkeeping at the ramified primes —
-  `(2) = (θ)³`, and `19 = 𝔮₁𝔮₂²` with both residue degrees `1`.  After that the
-  witness feeds an archimedean height drop plus a finite sieve, exactly as at
-  level `11`.
-
-**These bullets are a derivation, not a theorem.**  Only the identities are
-mechanical (`ring` will check the squaring rule, the norm form and the
-`(2, 2, 1)` witness); that `β` is a square times a unit at all is the descent
-itself, and it is what this leaf asks for.
+**The `2`-descent derivation that used to sit in this docstring has MOVED to
+`hesse_leaf`**, which is where the remaining work now is; the module docstring
+records what that move costs and how to undo it.
 
 **THE NAME IS NOT A PLACEHOLDER — AUDITED 2026-07-30, DO NOT RE-LITIGATE IT.**  A
 dispatch of that date flagged `integral_leaf` as "a name that generic in a file this
@@ -195,16 +522,28 @@ statement is the one the consumers need.  It is, and there is nothing to rename:
   the three hypotheses and the conclusion `p = 0 ∧ e = 1` are exactly what is
   consumed, with no slack;
 * it is TRUE as stated, not merely plausible: the exhaustive search recorded above
-  (`|p| ≤ 4000`, `1 ≤ e ≤ 300`, coprime) finds `(0, 1)` and nothing else, and the
-  `(a, b, c) = (2, 2, 1)` consistency check reproduces it from the descent equations;
+  (`|p| ≤ 4000`, `1 ≤ e ≤ 300`, coprime) finds `(0, 1)` and nothing else;
 * and it is neither vacuous nor over-strong — `(0, 1)` IS a solution, and dropping
-  `hcop` admits `(0, k)` for every `k`.
-
-So the work here is the DESCENT, following `MazurLevel11.integral_leaf`'s chain, and a
-successor should not spend a cycle re-auditing the name. -/
+  `hcop` admits `(0, k)` for every `k`. -/
 theorem integral_leaf {p e n : ℤ} (he : 0 < e) (hcop : IsCoprime p e)
     (h : n ^ 2 = p ^ 3 + 4 * p ^ 2 * e ^ 2 + 16 * p * e ^ 4 + 16 * e ^ 6) :
-    p = 0 ∧ e = 1 := sorry
+    p = 0 ∧ e = 1 := by
+  have hp0 : p = 0 := by
+    rcases Int.even_or_odd p with hpe | hpo
+    · obtain ⟨m, hm⟩ := hpe
+      obtain ⟨p₂, hp₂⟩ := four_dvd_of_even (m := m) (e := e) (n := n) (by linarith) h
+      subst hp₂
+      obtain ⟨n₂, hn₂, hn₂sq⟩ := exists_reduced_even h
+      obtain ⟨u, v, huv, hpuv, hh⟩ :=
+        descent_even (hcop.of_isCoprime_of_dvd_left ⟨4, by ring⟩) hn₂sq
+      rw [hpuv, hesse_kill he.ne' huv hh]; ring
+    · obtain ⟨u, v, huv, hpuv, hh⟩ := descent_odd hcop hpo h
+      rw [hpuv, hesse_kill (by positivity) huv hh]
+  refine ⟨hp0, ?_⟩
+  rw [hp0] at hcop
+  rcases Int.isUnit_iff.mp (isCoprime_zero_left.mp hcop) with h1 | h1
+  · exact h1
+  · omega
 
 /-- **The only rational `U` on `W² = U³ + 4U² + 16U + 16` is `U = 0`** (PROVEN
 2026-07-28 from `integral_leaf`).
