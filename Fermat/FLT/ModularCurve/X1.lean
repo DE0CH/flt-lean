@@ -145,6 +145,18 @@ public import Mathlib.NumberTheory.DirichletCharacter.Basic
 -- half of `exists_specSection_of_specGal_invariant` below.  `public` because that theorem's
 -- statement mentions `Field.absoluteGaloisGroup`; see the private-import trap in the doctrine.
 public import Mathlib.FieldTheory.Galois.Infinite
+-- the analytic inputs of `exists_cuspForm_gamma1GL_zero_lacunary` below:
+-- `differentiableOn_tsum_of_summable_norm` (holomorphy of a locally-uniformly convergent
+-- series), `UpperHalfPlane.mdifferentiable_iff` and the `MDiff` notation,
+-- `summable_pow_mul_geometric_of_norm_lt_one`, `Real.pi_gt_three`, and
+-- `OnePoint.IsZeroAt` / `UpperHalfPlane.IsZeroAtImInfty.slash`.  `public` because `MDiff`
+-- appears in the SIGNATURE of `mdiff_lacunaryTwoSeries`; see the private-import trap in
+-- the doctrine, whose second shape bites proof bodies too.
+public import Mathlib.Analysis.Complex.LocallyUniformLimit
+public import Mathlib.Analysis.Complex.UpperHalfPlane.Manifold
+public import Mathlib.Analysis.SpecificLimits.Normed
+public import Mathlib.Analysis.Real.Pi.Bounds
+public import Mathlib.NumberTheory.ModularForms.BoundedAtCusp
 
 @[expose] public section
 
@@ -441,7 +453,7 @@ open in them has been split along the theories it needed:
 | `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` | the "assemble the factors" half: finiteness of the index set, the oldform multiplicities, `finite_ker`, and the `neben` labelling.  It no longer owns the `N = 0` case: that case was REFUTED on 2026-07-28 (`isEmpty_isHeckeIsotypicDecompositionGamma1_zero`) and the leaf now carries `hN : N ≠ 0`; see its docstring | `ℚ` |
 | `isTorsion_factor_of_heckeIsotypic_gamma1` | Kolyvagin-Logachev on an isotypic factor | `ℚ` |
 | `cuspPeriod_ne_zero_x1TwentyFive` | the `L`-value numerics — the DEEP one, and the only row where `25` survives.  (`lFunction_apply_one_ne_zero_x1TwentyFive` was decomposed along the period 2026-07-28; its analytic half `lFunction_apply_one_eq_two_pi_mul_cuspPeriod_gamma1` is PROVEN the same day, as the `G = Γ₁(N)` instance of `lFunction_apply_one_eq_two_pi_mul_cuspPeriodOn`, which is in turn the group-generic form of `X0.lean`'s proven theorem.) | `ℚ` |
-| `not_birationalOver_affineLine_of_one_le_x1Genus_algClosed` | the genus formula and nothing else — Diamond–Shurman Thm 3.1.1: a fibre of `X_1(N)` with `genus ≥ 1` is not birational to `𝔸¹` over an ALGEBRAICALLY CLOSED field.  The only declaration in the `Γ₁` genus formula that still mentions `N`.  (Cut 2026-07-30 out of `exists_nonconstant_toAbelianScheme_of_one_le_x1Genus`, which is PROVEN over it and the row below.) | alg. closed `K` |
+| `not_birationalOver_affineLine_of_one_le_x1Genus_algClosed` | the genus formula and nothing else — Diamond–Shurman Thm 3.1.1: a fibre of `X_1(N)` with `genus ≥ 1` is not birational to `𝔸¹` over an ALGEBRAICALLY CLOSED field.  The only declaration in the `Γ₁` genus formula that still mentions `N`.  (Cut 2026-07-30 out of `exists_nonconstant_toAbelianScheme_of_one_le_x1Genus`, which is PROVEN over it and the row below.)  **RESTATED 2026-07-30 with `hchar : (N : K) ≠ 0`**: without it the leaf and its three proven consumers are FALSE, refuted by the Igusa curve `Ig(11)` in characteristic `11` — the falsity audit and the genus computation are on the declaration, and the hypothesis is discharged at the `SpecQ` base of `hasNonconstantAbelianMap_of_one_le_x1Genus`. | alg. closed `K`, `char K ∤ N` |
 | `exists_nonconstant_toAbelianScheme_of_notGeometricallyRational` | `Pic⁰` and the degree-`n` Abel–Jacobi map: a GEOMETRICALLY non-rational fibre receives a nonconstant map to an abelian variety.  LEVEL-FREE — no `N` in it, and the `Γ₀` sibling leaf would close over it verbatim; see its RELOCATION NOTE.  The same statement with the hypothesis taken over `K` rather than over `K̄` is FALSE (pointless conic over `ℝ`); the falsity audit is on the declaration. | any |
 
 (Table regenerated at the release-10 integration, 2026-07-28, from the
@@ -11229,13 +11241,29 @@ determine an anemic system from its primes (`T 1 = 𝟙 J`,
 `exists_modularHeckeAction` / `exists_modularHeckeAction_gamma1` revert to
 leaves.  Do NOT repair one side alone.
 
-**WHAT IS DELIBERATELY STILL NOT DONE:**
-`IsHeckeIsotypicDecompositionGamma1` has **not** gained a `heckeModuli`
-field, and `isTorsion_factor_of_heckeIsotypic_gamma1` is untouched.  That
-sharpening is a cut-level repair of the STRUCTURE, it needs its own
-faithfulness audit, and it is UNBLOCKED rather than done.  The `N = 37`
-eigen-system swap therefore still inhabits
-`IsHeckeIsotypicDecompositionGamma1`.
+**WHAT IS DELIBERATELY STILL NOT DONE — HALF OF THIS PARAGRAPH IS NOW
+STALE** (corrected 2026-07-30).  It used to read "`IsHeckeIsotypicDecomposition
+Gamma1` has **not** gained a `heckeModuli` field … the `N = 37`
+eigen-system swap therefore still inhabits it".  **The field WAS added, on
+2026-07-29**: `heckeModuli : IsModularHeckeActionGamma1 N h.some jac T
+T_comp` is a field of that structure, and the swap no longer inhabits it
+at the arities the pin reaches.  A note of the form "X does not exist" is
+refutable by one grep and this one had gone unrefuted for a day; it is the
+class of stale claim this project treats as worse than an open sorry.
+
+What IS still true, and is the whole of what remains here:
+`isTorsion_factor_of_heckeIsotypic_gamma1` is UNTOUCHED — it still takes
+the full `hL` rather than the sharper `L(D.form i, 1) ≠ 0`, and its own
+docstring's claim that the sharpening is blocked "because the structure
+has no such field" is stale for the same reason and is corrected there.
+The sharpening is a restatement needing its own faithfulness audit, and
+the thing that audit must settle is the **ARITY GAP above, not the missing
+field**: the pin reaches only primes `ℓ ∤ N`, so a sharpening argument may
+only use eigenvalues at primes.  That is enough to separate the `N = 37`
+systems — an anemic eigen-system is determined by its values at primes —
+but it is an argument to write, not a field to add.  Do not sharpen and
+close the arity gap in one edit; two individually-correct edits to one
+statement have made a leaf false in this development before.
 
 ## ⚠ CORRECTION (2026-07-30) — THAT SHARPENING WAS DONE, AND IT CHANGES WHICH REPAIR IS RIGHT
 
@@ -11327,15 +11355,18 @@ theorem exists_heckeAction_isotypicQuotients_gamma1 (N : ℕ) (hN : N ≠ 0)
     (jac : IsJacobianOf strX ab o) :
     ∃ (T : ℕ → (J ⟶ J)) (T_comp : ∀ n, T n ≫ jstr = jstr),
       (∀ n, IsAdditiveOn ab ab (T n) (T_comp n)) ∧
+        IsModularHeckeActionGamma1 N h.some jac T T_comp ∧
         ∀ (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ),
           IsWeightTwoEigenformOn (Gamma1GL N) N χ f a →
             Nonempty (IsIsotypicQuotient ab T N a) := by
-  -- `h` is `Nonempty (IsX1Compactification …)` and the goal is a `Prop`, so the
-  -- classifying DATUM the pin needs is recovered by `Nonempty` elimination.
-  obtain ⟨H⟩ := h
-  obtain ⟨T, T_comp, T_add, hmod⟩ := exists_modularHeckeAction_gamma1 N H jac
-  exact ⟨T, T_comp, T_add, fun χ f a hf =>
-    exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1 N hN H jac T T_comp T_add hmod
+  -- `h` is `Nonempty (IsX1Compactification …)`; the classifying DATUM the pin
+  -- needs is `h.some`, which is the SAME choice the decomposition structure's
+  -- `heckeModuli` field names — so the pin exported here is the one the
+  -- consumer can actually use.  (It used to be recovered by an anonymous
+  -- `obtain ⟨H⟩ := h`, which is a different term and would not match.)
+  obtain ⟨T, T_comp, T_add, hmod⟩ := exists_modularHeckeAction_gamma1 N h.some jac
+  exact ⟨T, T_comp, T_add, hmod, fun χ f a hf =>
+    exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1 N hN h.some jac T T_comp T_add hmod
       χ f a hf⟩
 
 /-! ### The level-`0` degeneracy of `Γ₁` Eichler–Shimura
@@ -11777,9 +11808,34 @@ not quantify over a larger group.  A prover who reaches for
 `CuspForm` had before it was generalised — will refute this leaf rather
 than prove it, and the refutation will be of the wrong statement.
 
-**WHAT IS MISSING** is only mathlib plumbing: locally-uniform convergence
-of a lacunary `q`-series and the resulting `MDiff`, plus the
-identification of the parabolic elements of `⟨T⟩`.  No theory. -/
+**WHAT WAS MISSING** was only mathlib plumbing: locally-uniform
+convergence of a lacunary `q`-series and the resulting `MDiff`, plus the
+identification of the parabolic elements of `⟨T⟩`.  No theory — and that
+prediction held.  All of it is the subsection immediately above:
+
+* `slashInvariant_lacunaryTwoSeries` over `gamma1GL_zero_entries`
+  (`ZMod 0 = ℤ`, so the congruences are equalities) and
+  `lacunaryTwoSeries_add_intCast` (`1`-periodicity of `q`);
+* `mdiff_lacunaryTwoSeries` over `differentiableOn_lacunaryTwoSeries`,
+  which is mathlib's `differentiableOn_tsum_of_summable_norm` on each
+  half-plane `im z > b` — the majorant is uniform there but not on all of
+  `ℍ`, hence the exhaustion at `b = im z / 2`;
+* `eq_infty_of_isCusp_gamma1GL_zero` and
+  `isZeroAtImInfty_lacunaryTwoSeries`, the latter via the explicit bound
+  `‖f‖ ≤ C · e ^ (-2π im τ)` above `im τ = 1`
+  (`norm_lacunaryTwoSeries_le`).
+
+**THE ONE IDEA WORTH REUSING**, because it is what makes the analysis
+routine rather than delicate.  The heading above says `2 ^ k` "outruns
+`|c| ^ k`", which is true but awkward to formalise directly.  Instead
+choose `s` with `‖c‖ ≤ 2 ^ s` and observe
+`‖lacunaryTwoCoeff c n‖ ≤ n ^ s` for EVERY `n`
+(`norm_lacunaryTwoCoeff_le`): at `n = 2 ^ k` this is
+`‖c‖ ^ k ≤ (2 ^ s) ^ k = (2 ^ k) ^ s`, and off the powers of `2` the
+coefficient vanishes.  The lacunary series is then an ORDINARY
+polynomially-bounded `q`-series and
+`summable_pow_mul_geometric_of_norm_lt_one` supplies every estimate.  The
+lacunarity is never used again after that one line. -/
 theorem exists_cuspForm_gamma1GL_zero_lacunary (c : ℂ) :
     ∃ f : CuspForm (Gamma1GL 0) 2,
       (∀ τ : UpperHalfPlane, f τ = ∑' n : ℕ, lacunaryTwoCoeff c (n + 1) *
@@ -12016,6 +12072,39 @@ rather than a split of the field groups.  Every such split dies to the
 witness `A i := SpecQ`, `astr i := 𝟙 SpecQ`, `u i := jstr`, which
 `finite_ker` kills globally and no per-field split does.
 
+**THE CUT HAD LEAKED, AND `hquot` NOW CARRIES THE MODULI PIN** (repaired
+2026-07-30).  Two individually-correct edits made this cut deliver
+nothing, which is a failure shape this development has hit before and
+which no falsity check sees, because the leaf stayed TRUE throughout:
+
+* 2026-07-28, the cut: `hquot` exports `∃ T` with `IsAdditiveOn` and the
+  isotypic quotients — and nothing else about `T`.
+* 2026-07-29, the structure: `IsHeckeIsotypicDecompositionGamma1` gained
+  `heckeModuli : IsModularHeckeActionGamma1 N h.some jac T T_comp`, the
+  field that excludes the `N = 37` eigen-system swap.
+
+After the second edit the conclusion demands a `T` that IS the genuine
+Hecke correspondence, while `hquot` hands over an existentially quantified
+`T` with no pin at all.  So a prover could not use `hquot`'s `T` for
+`heckeModuli`, and the only way forward was to DISCARD `hquot`, call
+`exists_modularHeckeAction_gamma1` and
+`exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` directly, and
+rebuild the hypothesis — i.e. this leaf was exactly as hard as the parent
+`exists_heckeIsotypicDecomposition_gamma1` and the decomposition bought
+nothing.  A stale docstring made it worse: the paragraph above says
+`hquot` "is consumed three times", which was true when written.
+
+The repair costs nothing and is on the SUPPLIER side.
+`exists_heckeAction_isotypicQuotients_gamma1` already HELD the pin — it
+obtains `hmod` from `exists_modularHeckeAction_gamma1` and feeds it to
+`exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` — and merely
+dropped it on the way out.  It is now exported, at `h.some`, which is the
+same choice `heckeModuli` names, so the two match.  (Its proof previously
+recovered the datum by an anonymous `obtain ⟨H⟩ := h`; that is a different
+term from `h.some` and would not have matched the field, so the fix is a
+statement change AND a proof change, not just a widening.)  That theorem
+is PROVEN and stays proven; only this leaf's hypothesis got stronger.
+
 **AXIS NOT SEARCHED**, inherited from the `Γ₀` node: the complex-analytic
 route through `Γ₁(N)\ℍ*`, which is how the classical proof identifies the
 factors in the first place.  Everything above is the algebraic-moduli
@@ -12055,6 +12144,7 @@ theorem exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1 (N : ℕ) 
     (jac : IsJacobianOf strX ab o)
     (hquot : ∃ (T : ℕ → (J ⟶ J)) (T_comp : ∀ n, T n ≫ jstr = jstr),
       (∀ n, IsAdditiveOn ab ab (T n) (T_comp n)) ∧
+        IsModularHeckeActionGamma1 N h.some jac T T_comp ∧
         ∀ (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ),
           IsWeightTwoEigenformOn (Gamma1GL N) N χ f a →
             Nonempty (IsIsotypicQuotient ab T N a)) :
@@ -12844,7 +12934,28 @@ character `χ` (eight cases) is mechanically available and is *not* a
 decomposition: it moves no theory and multiplies the frontier by eight.
 A cut that isolates the Fricke sign `ε` is a real decomposition but is
 worth nothing on its own, because the sum above still needs the certified
-`aₙ`; it becomes worth writing at the moment the basis does. -/
+`aₙ`; it becomes worth writing at the moment the basis does.
+
+**THE JUNK-VALUE REFUTATION DOES NOT RUN HERE, and it is worth saying so
+because the shape of it has killed two statements in this cluster
+already** (checked 2026-07-30 against `X0.lean`'s definition).  The
+obvious way for a period leaf to be FALSE in Lean is the one that made
+`IsWeightTwoEigenformOn` unsound before `qExpansionSummable` was added: a
+`tsum` of a non-summable family takes its junk value `0`, so a statement
+"the period is nonzero" is refuted for EVERY eigenform at once.  And the
+naive spelling of this period invites exactly that — Hecke's bound gives
+`aₙ = O(n^{1/2+ε})`, hence `aₙ/n = O(n^{-1/2+ε})`, which converges only
+CONDITIONALLY; had `cuspPeriod` been `∑' n, aₙ / n` it would be `0`
+identically and this leaf would be false with no arithmetic input
+whatsoever.
+
+It is not: `cuspPeriod` is a Bochner INTEGRAL
+`∫ y in Ioi 0, ∑' n, a (n+1) * exp (-(2π (n+1) y))`, whose integrand's
+inner `tsum` is summable at every `y > 0` (geometric decay) and which is
+integrable because `f (iy)` decays exponentially at BOTH ends — at `∞`
+from the `q`-expansion and at `0` because `f` vanishes at the cusp `0`,
+`Γ_1(25)` having finite index.  So the gate really is the certified basis
+above and nothing cheaper. -/
 theorem cuspPeriod_ne_zero_x1TwentyFive (χ : DirichletCharacter ℂ 25)
     (f : CuspForm (Gamma1GL 25) 2) (a : ℕ → ℂ)
     (hf : IsWeightTwoEigenformOn (Gamma1GL 25) 25 χ f a) :
@@ -13146,11 +13257,139 @@ FALSE if dropped**, with the same witnesses the node below carries.
 satisfiable — it holds for `𝔸¹_K` itself by `BirationalOver.refl`, and for
 any smooth proper rational curve since a dense open is birational to the
 whole (`Opens.birationalOver_of_dense`).  So the conclusion is a real
-constraint. -/
+constraint.
+
+**A FAITHFULNESS AXIS THAT IS NOT THE GENUS FORMULA, AND THAT THE CUT DID
+NOT INHERIT AN AUDIT FOR** (opened 2026-07-30; its second bullet is since
+the same day a REFUTATION rather than a question, and `hchar` is the
+repair — see the FALSITY AUDIT below).  The audits above range over the
+arithmetic parameters `hN`, `hg` and over what `hmodel` supplies; none of
+them looks at WHICH `K` and WHICH `k` are allowed, and both are arbitrary.
+Two obligations hide there, and the heading "Diamond–Shurman Thm 3.1.1 and
+NOTHING ELSE" is true only after they are discharged.
+
+* **`hmodel` is a statement over `S`; the conclusion is about the FIBRE.**
+  `coarse` says `strY : Y ⟶ S` is COARSE — initial among `S`-schemes
+  receiving a natural transformation from `[Γ₁(N)]` — and coarse moduli
+  spaces are NOT stable under base change in general.  So "the fibre `X_K`
+  is the `X_1(N)` of `K`", which is what ties `x1Genus N` to the geometry,
+  is an extra step.  The rescue is real but is not a hypothesis: `[Γ₁(N)]`
+  is RIGID for `N ≥ 4`, hence FINE, hence stable — and
+  `IsCoarseModuliY1`'s own docstring records that fineness as something it
+  deliberately does not carry as a field.  `hN : 5 ≤ N` is in scope, so
+  this is dischargeable; it is simply not free.
+* **Nothing makes `N` invertible on `S`, and `K` may have characteristic
+  `p ∣ N`.**  `PointOfExactOrder ab N` is the NAIVE level structure — a
+  section of exact order `N` — and that problem is represented by the
+  classical `X_1(N)` only where `N` is invertible.  In characteristic
+  `p ∣ N` an ordinary `E/K̄` has `E[p^a](K̄) ≅ ℤ/p^a`, so the problem is
+  NONEMPTY and its coarse space is an Igusa-type curve, not
+  `X_1(N) ⊗ 𝔽_p` — Katz–Mazur replace the naive structure by a Drinfeld
+  one precisely here.  Its genus is not `x1Genus N`, so in that
+  characteristic the leaf is not the genus formula at all.  **That second
+  bullet is now a refutation**, and `hchar : (N : K) ≠ 0` is the repair.
+
+**FALSITY AUDIT (2026-07-30, SECOND RESTATEMENT OF THIS LEAF).  Without
+`hchar` THE STATEMENT IS FALSE, and the witness is the IGUSA CURVE
+`Ig(11)` in characteristic `11`.**  The version cut earlier the same day
+carried no characteristic hypothesis and recorded the bullet above as an
+OPEN question with no witness claimed.  A witness exists, it is small, and
+it is explicit.  Per this project's rule that a second restatement VOIDS
+the earlier audits rather than inheriting them, the two bullets above have
+been re-checked against the composite statement and stand; what follows is
+the new audit that the composite requires.
+
+  `N = 11`,  `S = Spec 𝔽̄₁₁`,  `K = 𝔽̄₁₁`,  `k = 𝟙`,  `X = Ig(11) ≅ ℙ¹`.
+
+`5 ≤ 11` gives `hN`, and `x1Genus 11 = 1` gives `hg` (`decide`-checked
+with the rest of the table above); `𝔽̄₁₁` is algebraically closed.  What
+goes wrong is `hmodel`'s tie to the classical curve:
+
+* `PointOfExactOrder ab 11` asks only for a section whose additive order
+  on every GEOMETRIC fibre is `11`.  In characteristic `11` an ORDINARY
+  `E` has `E[11](K̄) ≅ ℤ/11`, so such sections exist — ten of them, five
+  up to `±1` — while a SUPERSINGULAR `E` has `E[11]` infinitesimal and has
+  none.  So `[Γ₁(11)]` over `𝔽̄₁₁` is NOT empty (the cheap rescue fails)
+  but lives over the ORDINARY locus; being rigid (`11 ≥ 4`) it is
+  representable, its moduli scheme is the open IGUSA CURVE `Ig(11)°`, and
+  that is the `Y` of the witness.  Initiality — all `IsCoarseModuliY1`
+  asks for — is Yoneda for a representable functor.
+* `Ig(11)° → 𝔸¹_j` is finite étale of degree `(11 − 1)/2 = 5`, Galois with
+  group `(ℤ/11)ˣ/±1 ≅ ℤ/5`, over the ordinary locus `ℙ¹_j ∖ {0, 1, ∞}`.
+  In characteristic `11` the supersingular `j` are exactly `0` and
+  `1728 = 1`, which is what makes this prime the clean case: the two
+  `X(1)` orbifold points are supersingular, so they contribute no EXTRA
+  ramification.  Take `X := Ig(11)`, the smooth compactification; then
+  `isProper`, `smooth`, `connected` (Igusa's irreducibility theorem) and
+  `finite_compl` (the complement of `Y` is the two supersingular points
+  and the five cusps) all hold.
+
+**`Ig(11)` HAS GENUS `0`**, and that is the whole refutation: `X_K = X` is
+`ℙ¹_{𝔽̄₁₁}`, which IS birational to `𝔸¹` over `𝔽̄₁₁`, so the conclusion
+fails with every hypothesis satisfied.  The genus is computed two
+independent ways, which agree here and at three further primes:
+
+* **Riemann–Hurwitz on `Ig(p) → ℙ¹_j`.**  Degree `d = (p−1)/2`, tame
+  (`gcd(d, p) = 1`), totally ramified over each supersingular `j`,
+  ramified with `e = 3` over an ORDINARY `j = 0` and `e = 2` over an
+  ORDINARY `j = 1728`, and UNRAMIFIED over `j = ∞` (`Ig(p)` has `(p−1)/2`
+  cusps).  At `p = 11` both orbifold points are supersingular, so
+  `2g − 2 = 5·(−2) + 4 + 4 + 0 = −2` and `g = 0`.
+* **The Katz–Mazur / Deligne–Rapoport special fibre.**  `X_1(p)_{𝔽_p}` is
+  two copies of `Ig(p)` crossing transversally at the supersingular
+  points, so `g(X_1(p)) = 2·g(Ig(p)) + #ss − 1`.  At `p = 11`,
+  `g(X_1(11)) = 1` and `#ss = 2`, giving `g(Ig(11)) = 0` again.  The `Γ₀`
+  form of the same identity — `g(X_0(p)) = #ss − 1`, the two components
+  there being `ℙ¹` — is the control, and it is correct at
+  `p = 11, 13, 17, 19` (`g = 1, 0, 1, 1` against `#ss = 2, 1, 2, 2`).
+
+The two methods also agree at `p = 13, 17, 19`, where they give
+`g(Ig(p)) = 1, 2, 3` against `g(X_1(p)) = 2, 5, 7`.  That is what makes
+`p = 11` a computed value rather than a guess: **`11` is the only prime at
+which the level-`p` Igusa curve is rational while `x1Genus p ≥ 1`.**  (At
+`p = 5, 7` it is rational too, but `x1Genus 5 = x1Genus 7 = 0` kills `hg`.)
+
+**WHY `(N : K) ≠ 0` IS THE MINIMAL REPAIR.**  It says exactly
+`char K ∤ N`, which is Katz–Mazur's own validity condition: where `N` is
+invertible the naive `PointOfExactOrder` structure IS the classical level
+structure, `[Γ₁(N)]` is finite étale over the whole `j`-line, and its
+coarse space really is `Y_1(N)_K` with genus `x1Genus N`.  In
+characteristic `p ∣ N` it is the DRINFELD structure that represents
+`X_1(N)`, and the naive problem represents an Igusa-type curve of a
+different genus.  So `hchar` removes nothing on which the statement was
+ever true, and the first bullet above (coarse-vs-fibre) is unchanged by it
+and still dischargeable from `hN : 5 ≤ N` through rigidity.
+
+**IT COSTS THE CONSUMERS NOTHING**, which is why the repair is carried
+through here rather than left to a successor.  `hchar` threads verbatim
+through `exists_nonconstant_toAbelianScheme_of_one_le_x1Genus` and
+`not_birationalOver_affineLine_of_one_le_x1Genus` below — a field
+extension `K → L` is injective, so `(N : K) ≠ 0` gives `(N : L) ≠ 0` and
+the algebraically closed `L` the geometric leaf quantifies over is covered
+— becomes the base-level `∀ K, (Spec K ⟶ S) → (N : K) ≠ 0` on
+`hasNoFibreAffineLine_of_one_le_x1Genus`, and is DISCHARGED at that
+theorem's single consumer `hasNonconstantAbelianMap_of_one_le_x1Genus`,
+whose base is `SpecQ`: a `ℚ`-point gives a ring map `ℚ →+* K`
+(`nonempty_ringHom_of_hom_specQ`), hence `CharZero K`, hence `(N : K) ≠ 0`
+from `5 ≤ N`.  Nothing above that line changes, and `N = 25` over `ℚ` —
+the only level this file is built for — never meets the hypothesis.
+
+**THE THREE THEOREMS BELOW WERE FALSE TOO, and the same hypothesis repairs
+them.**  All three are marked PROVEN over this leaf, and a proof over a
+false leaf establishes nothing: the same witness refutes
+`exists_nonconstant_toAbelianScheme_of_one_le_x1Genus` (`ℙ¹` receives only
+constant maps to abelian varieties), and
+`not_birationalOver_affineLine_of_one_le_x1Genus` together with
+`hasNoFibreAffineLine_of_one_le_x1Genus` (`𝔸¹ ⊂ ℙ¹` is a nonconstant
+fibre line).  The LEVEL-FREE geometric leaf
+`exists_nonconstant_toAbelianScheme_of_notGeometricallyRational` is NOT
+affected: its `hgeom` FAILS at the witness, `ℙ¹` being birational to `𝔸¹`,
+so no hypothesis of it is added. -/
 theorem not_birationalOver_affineLine_of_one_le_x1Genus_algClosed {N : ℕ} (hN : 5 ≤ N)
     (hg : 1 ≤ x1Genus N) {X Y S : Scheme.{0}} {strX : X ⟶ S} {strY : Y ⟶ S} {jY : Y ⟶ X}
     (hmodel : IsX1Compactification N strX strY jY)
-    (K : Type) [Field K] [IsAlgClosed K] (k : Spec (CommRingCat.of K) ⟶ S) :
+    (K : Type) [Field K] [IsAlgClosed K] (k : Spec (CommRingCat.of K) ⟶ S)
+    (hchar : (N : K) ≠ 0) :
     ¬ Scheme.BirationalOver (curveBaseChangeProj strX k)
         (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) :=
   sorry
@@ -13220,6 +13459,43 @@ rational cusps, but only where `N` is invertible, which is not a
 hypothesis.)  That gap IS the degree-`n` trick, and closing this leaf means
 either extending that development to the base-point-free case or producing
 the section some other way.
+
+**THERE IS A SECOND GAP, AND IT IS NOT THE SECTION** (2026-07-30).  The
+paragraph above names the missing base point and stops, which reads as
+"one extension of `RelativePicard.lean` and this closes".  It does not:
+the nonconstancy clause needs `Pic⁰` to have POSITIVE DIMENSION, and the
+only thing offered for that is `hgeom`.  Getting from `hgeom` to it is the
+implication
+
+> over an algebraically closed field, a smooth proper connected curve with
+> `Pic⁰ = 0` is birational to `𝔸¹`,
+
+which is Riemann–Roch content and is absent at this pin by exactly the
+audit that `exists_nonconstant_toAbelianScheme_of_one_le_x1Genus` below
+records under "THE AXIS THIS DECOMPOSITION IS NOT" — "a genus of a scheme,
+`h¹(𝒪_X)`, Riemann–Hurwitz — none of those exists at this pin".  That
+verdict was made about the ARITHMETIC half and applies here verbatim.  So
+this leaf is blocked on TWO theories, not one,
+and a cut that only splits off the base-point-free `Pic⁰` is a
+RESTATEMENT: the residue would be this same implication with a `Pic⁰` in
+front of it.  Note the phrasing above is deliberately `Pic⁰`-only — no
+genus NUMBER is needed, which is why the two halves are separable in
+principle even though neither is available.
+
+**THE DEGENERATE REFUTATION DOES NOT RUN, so do not spend a cycle on it**
+(checked 2026-07-30 by reading
+`Mathlib/AlgebraicGeometry/Geometrically/Connected.lean`).  The tempting
+cheap witness is `X_K = ∅`: `hgeom` would hold (`∅` is not birational to
+`𝔸¹`) while the conclusion would FAIL, because there is exactly one
+morphism out of the initial object and so `c = proj ≫ s` is forced.  It is
+blocked at the hypothesis: mathlib's `GeometricallyConnected f` is
+`geometrically (ConnectedSpace ·) f`, `ConnectedSpace` extends `Nonempty`,
+and mathlib derives `[GeometricallyConnected f] : Surjective f` as a
+low-priority instance — so `hconn` makes every fibre, `X_K` included,
+nonempty and connected.  `hconn` is therefore load-bearing for a second
+reason beyond the `Pic⁰` construction, and the same check disposes of the
+`S = ∅` variant, where no `k : Spec K ⟶ S` exists at all and the statement
+is vacuous rather than false.
 
 **RELOCATION NOTE.**  Nothing here is `Γ₁`-specific, and the `Γ₀` sibling
 `exists_nonconstant_toAbelianScheme_of_one_le_x0Genus` in `X0.lean` is an
@@ -13313,11 +13589,21 @@ statement FALSE if dropped.**
 alone**: `A = Spec K` with `astr = 𝟙` forces `c = curveBaseChangeProj
 strX k`, which is `curveBaseChangeProj strX k ≫ 𝟙`, so the final clause
 fails at `s = 𝟙`.  A prover must therefore produce a genuinely
-positive-dimensional `A`. -/
+positive-dimensional `A`.
+
+**`hchar : (N : K) ≠ 0` ADDED 2026-07-30, AND IT IS LOAD-BEARING: without
+it this statement is FALSE**, refuted by the same `Ig(11)` witness that
+refutes the arithmetic leaf above — `N = 11` over `𝔽̄₁₁` makes the fibre
+`ℙ¹`, and every morphism from `ℙ¹` to an abelian variety is constant, so
+no such `c` exists.  See that leaf's FALSITY AUDIT; this theorem was
+marked PROVEN over it, and a proof over a false leaf establishes nothing.
+The hypothesis is CONSUMED rather than merely carried: the geometric leaf
+quantifies over algebraically closed extensions `L/K`, and `hchar` is
+transported to each by injectivity of `algebraMap K L`. -/
 theorem exists_nonconstant_toAbelianScheme_of_one_le_x1Genus {N : ℕ} (hN : 5 ≤ N)
     (hg : 1 ≤ x1Genus N) {X Y S : Scheme.{0}} {strX : X ⟶ S} {strY : Y ⟶ S} {jY : Y ⟶ X}
     (hmodel : IsX1Compactification N strX strY jY)
-    (K : Type) [Field K] (k : Spec (CommRingCat.of K) ⟶ S) :
+    (K : Type) [Field K] (k : Spec (CommRingCat.of K) ⟶ S) (hchar : (N : K) ≠ 0) :
     ∃ (A : Scheme.{0}) (astr : A ⟶ Spec (CommRingCat.of K))
       (_ : AbelianSchemeStruct astr) (c : curveBaseChange strX k ⟶ A),
       c ≫ astr = curveBaseChangeProj strX k ∧
@@ -13325,6 +13611,7 @@ theorem exists_nonconstant_toAbelianScheme_of_one_le_x1Genus {N : ℕ} (hN : 5 �
   exists_nonconstant_toAbelianScheme_of_notGeometricallyRational
     hmodel.isProper hmodel.smooth hmodel.connected K k
     fun L _ _ _ => not_birationalOver_affineLine_of_one_le_x1Genus_algClosed hN hg hmodel L _
+      fun hL => hchar ((algebraMap K L).injective (by simpa using hL))
 
 /-- **The genus formula at `Γ₁`: no fibre of `X_1(N)` is a RATIONAL curve
 when `genus X_1(N) ≥ 1`** (PROVEN 2026-07-28 over the leaf above together
@@ -13363,11 +13650,18 @@ the leaf above.
 satisfiable — it holds for `𝔸¹_K` itself by `BirationalOver.refl`, and for
 any smooth proper rational curve since a dense open is birational to the
 whole (`Opens.birationalOver_of_dense`).  So the conclusion is a real
-constraint and this leaf really consumes the genus. -/
+constraint and this leaf really consumes the genus.
+
+**`hchar : (N : K) ≠ 0` ADDED 2026-07-30, AND IT IS LOAD-BEARING**: the
+`Ig(11)` witness of the arithmetic leaf above refutes this statement too
+(`N = 11` over `𝔽̄₁₁` gives the fibre `ℙ¹`, which contains `𝔸¹` as a dense
+open and so IS birational to it), exactly as `hN` and `hg` do at their own
+degenerate levels.  It is passed straight down to
+`exists_nonconstant_toAbelianScheme_of_one_le_x1Genus`. -/
 theorem not_birationalOver_affineLine_of_one_le_x1Genus {N : ℕ} (hN : 5 ≤ N)
     (hg : 1 ≤ x1Genus N) {X Y S : Scheme.{0}} {strX : X ⟶ S} {strY : Y ⟶ S} {jY : Y ⟶ X}
     (hmodel : IsX1Compactification N strX strY jY)
-    (K : Type) [Field K] (k : Spec (CommRingCat.of K) ⟶ S) :
+    (K : Type) [Field K] (k : Spec (CommRingCat.of K) ⟶ S) (hchar : (N : K) ≠ 0) :
     ¬ Scheme.BirationalOver (curveBaseChangeProj strX k)
         (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) := by
   intro hrat
@@ -13376,7 +13670,7 @@ theorem not_birationalOver_affineLine_of_one_le_x1Genus {N : ℕ} (hN : 5 ≤ N)
     haveI := smoothOfRelativeDimension_isStableUnderBaseChange (n := 1)
     exact MorphismProperty.pullback_snd _ _ ‹SmoothOfRelativeDimension 1 strX›
   obtain ⟨A, astr, abA, c, hc, hnc⟩ :=
-    exists_nonconstant_toAbelianScheme_of_one_le_x1Genus hN hg hmodel K k
+    exists_nonconstant_toAbelianScheme_of_one_le_x1Genus hN hg hmodel K k hchar
   obtain ⟨s, hs⟩ := eq_comp_of_birationalOver_affineLine_toAbelianScheme hsm abA hrat c hc
   exact hnc s hs
 
@@ -13486,10 +13780,21 @@ arithmetic guard, whereas `hN : 5 ≤ N` is a hypothesis here.
 the `Γ₀` side and RETIRED: it is a second, parallel copy of the genus
 formula with a theory build attached.  The cut taken here is the
 BIRATIONAL axis and is a different thing — it names the abelian variety
-nowhere and asks only that some nonconstant map to one exist. -/
+nowhere and asks only that some nonconstant map to one exist.
+
+**`hchar` ADDED 2026-07-30, AND IT IS LOAD-BEARING.**  `HasNoFibreAffineLine`
+quantifies over the field points of `S` internally, so the characteristic
+hypothesis that the three declarations above carry per-`K` becomes here a
+condition on the BASE: no field point of `S` may have characteristic
+dividing `N`.  Without it the statement is FALSE, by the `Ig(11)` witness
+audited on `not_birationalOver_affineLine_of_one_le_x1Genus_algClosed`
+(`N = 11`, `S = Spec 𝔽̄₁₁`, whose one field point has characteristic `11`
+and whose fibre `ℙ¹` does contain a nonconstant affine line).  It is
+DISCHARGED at the single consumer below, whose base is `SpecQ`. -/
 theorem hasNoFibreAffineLine_of_one_le_x1Genus {N : ℕ} (hN : 5 ≤ N) (hg : 1 ≤ x1Genus N)
     {X Y S : Scheme.{0}} {strX : X ⟶ S} {strY : Y ⟶ S} {jY : Y ⟶ X}
-    (hmodel : IsX1Compactification N strX strY jY) :
+    (hmodel : IsX1Compactification N strX strY jY)
+    (hchar : ∀ (K : Type) [Field K], (Spec (CommRingCat.of K) ⟶ S) → (N : K) ≠ 0) :
     HasNoFibreAffineLine strX := by
   intro K _ k u hu
   by_contra hcon'
@@ -13501,7 +13806,7 @@ theorem hasNoFibreAffineLine_of_one_le_x1Genus {N : ℕ} (hN : 5 ≤ N) (hg : 1 
   haveI hsm : SmoothOfRelativeDimension 1 (curveBaseChangeProj strX k) := by
     haveI := smoothOfRelativeDimension_isStableUnderBaseChange (n := 1)
     exact MorphismProperty.pullback_snd _ _ ‹SmoothOfRelativeDimension 1 strX›
-  refine not_birationalOver_affineLine_of_one_le_x1Genus hN hg hmodel K k ?_
+  refine not_birationalOver_affineLine_of_one_le_x1Genus hN hg hmodel K k (hchar K k) ?_
   refine birationalOver_affineLine_of_not_exists_section hsm inferInstance
     (CategoryTheory.Limits.pullback.lift u
       (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) hu) ?_ ?_
@@ -13625,7 +13930,20 @@ theory the `Γ₀` layer already needs — not a duplicate of it, because
 `N = 1` for exactly the reason recorded above; nothing else in the proof
 looks at `N`.  This is a strict improvement on the `Γ₀` side, whose
 fibrewise leaf has no such guard and whose prover must confront
-`x0Genus 0 = 1` by hand. -/
+`x0Genus 0 = 1` by hand.
+
+**AND `hN` NOW DOES A SECOND JOB HERE: it discharges the characteristic
+hypothesis** added to the four declarations above on 2026-07-30, and this
+theorem is where that chain stops.  `strX : X ⟶ SpecQ` is the first base
+in the chain that is pinned, and a `ℚ`-point forces `CharZero K`
+(`nonempty_ringHom_of_hom_specQ`, then
+`charZero_of_injective_algebraMap`), so `(N : K) ≠ 0` follows from
+`5 ≤ N` alone.  The statement of this theorem is therefore UNCHANGED by
+the repair, and so is everything above it — including
+`isTorsion_jacobian_x1TwentyFive`, whose level `25` is invertible on `ℚ`
+by inspection.  See the FALSITY AUDIT on
+`not_birationalOver_affineLine_of_one_le_x1Genus_algClosed` for the
+`Ig(11)` witness that made the repair necessary. -/
 theorem hasNonconstantAbelianMap_of_one_le_x1Genus (N : ℕ) (hN : 5 ≤ N)
     (hg : 1 ≤ x1Genus N) {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ}
     {jY : Y ⟶ X} (h : IsX1Compactification N strX strY jY)
@@ -13644,10 +13962,20 @@ theorem hasNonconstantAbelianMap_of_one_le_x1Genus (N : ℕ) (hN : 5 ≤ N)
       refine not_isIso_of_smoothOfRelativeDimension_one h.smooth
         ⟨o.1.base (Nonempty.some inferInstance)⟩ ?_
       exact ⟨o.1, congrArg Subtype.val hEq.symm, o.2⟩
+    -- the `SpecQ` base is what discharges the characteristic hypothesis:
+    -- a `ℚ`-point gives a ring map `ℚ →+* K`, hence `CharZero K`
+    have hchar : ∀ (K : Type) [Field K],
+        (Spec (CommRingCat.of K) ⟶ SpecQ) → (N : K) ≠ 0 := by
+      intro K _ k
+      haveI : CharZero K := by
+        obtain ⟨ψ⟩ := nonempty_ringHom_of_hom_specQ k
+        letI : Algebra ℚ K := ψ.toAlgebra
+        exact charZero_of_injective_algebraMap ψ.injective
+      exact Nat.cast_ne_zero.mpr (by omega)
     exact ⟨X, strX, _, _, fun hc =>
       hne (jac.injective_aj_of_mono
         (mono_ajHom_of_hasNoFibreAffineLine h.isProper h.smooth h.connected jac
-          (hasNoFibreAffineLine_of_one_le_x1Genus hN hg h)) strX hc)⟩
+          (hasNoFibreAffineLine_of_one_le_x1Genus hN hg h hchar)) strX hc)⟩
 
 /-- **The genus formula in its geometric form: `genus X_1(N) ≥ 1` makes
 the Jacobian nontrivial** (PROVEN 2026-07-27, over
@@ -13749,7 +14077,7 @@ disappearing:
 | `lFunction_apply_one_eq_two_pi_mul_cuspPeriod_gamma1` | Hecke's Mellin transform at `s = 1` | no | here, **PROVEN 2026-07-30** — the `G = Γ₁(N)` instance of `lFunction_apply_one_eq_two_pi_mul_cuspPeriodOn_of_le` |
 | `cuspPeriod_ne_zero_x1TwentyFive` | `L`-value numerics (`lFunction_apply_one_ne_zero_x1TwentyFive` is PROVEN over this and the row above) | **yes** | here |
 | `injective_aj_of_not_isIso_jacobian` | Riemann–Roch | no | `X0.lean`, REUSED |
-| `not_birationalOver_affineLine_of_one_le_x1Genus_algClosed` | genus formula, over `K̄` | **yes** | here, NEW 2026-07-30 |
+| `not_birationalOver_affineLine_of_one_le_x1Genus_algClosed` | genus formula, over `K̄`, in characteristic prime to `N` | **yes** | here, NEW 2026-07-30, RESTATED the same day (`hchar`; the unguarded form is FALSE — `Ig(11)`) |
 | `exists_nonconstant_toAbelianScheme_of_notGeometricallyRational` | `Pic⁰` + degree-`n` Abel–Jacobi | no | here, NEW 2026-07-30, LEVEL-FREE |
 | `not_isIso_of_smoothOfRelativeDimension_one` | rel. dimension of a standard smooth presentation | no | `CurveCompactification.lean`, REUSED, **PROVEN 2026-07-28** |
 
