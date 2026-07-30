@@ -12662,9 +12662,137 @@ is importable here but is NOT applicable from this leaf's hypotheses, so
 `exists_moretBaillySeed_residueCardTwo_of_five_le` below is a genuine open
 leaf and not a wrapper. -/
 
+/-- **BREAK B ALONE: the Moret–Bailly/Taylor base with a `ℚ_[2]`-point** (LEAF,
+cut 2026-07-30 out of `exists_moretBaillySeed_padicEmbedding_of_five_le` below,
+which is PROVEN over it).
+
+This is `Modularity.exists_hilbertBlumenthalPoint_of_five_le` — PROVEN in
+`Modularity/MoretBailly.lean` — with ONE conjunct added,
+`Nonempty (F →+* ℚ_[2])`. Nothing else differs: the totally real Galois `F`, its
+degree parity, the image-preserving restriction and the Hilbert–Blumenthal point
+are returned verbatim by that theorem. So the AUTOMORPHIC half of the old leaf
+(Carayol's eigensystem, the seed assembly) is no longer part of any citation —
+it is Lean, below.
+
+**WHY THE CUT IS HERE, AND WHY IT IS THE ONLY HONEST PLACE.** The
+`ℚ_[2]`-embedding is a property of the CHOSEN `F`, never one that can be
+demanded of an `F` already produced. `Nonempty (F →+* ℚ_[2])` is FALSE for most
+totally real Galois `F` — `ℚ(√5)` has `2` inert, hence no `ℚ_[2]`-embedding at
+all, while satisfying every other conjunct — so a decomposition that took `F`
+from `exists_moretBailly_seed_of_five_le` and then sorried the embedding for
+THAT `F` would manufacture a leaf that is FALSE AS STATED. That is exactly the
+trap `Modularity/KhareWintenberger.lean`'s chain fell into with `residueCardTwo`
+and that was repaired on 2026-07-29: a local condition at `2` must be arranged
+by the producer that chooses `F`. Hence the cut sits at the point of choice.
+
+**WHAT IT COSTS THE CITATION, AND NOTHING MORE.** Moret–Bailly (*Groupes de
+Picard et problèmes de Skolem II*, Ann. Sci. É.N.S. **22** (1989), Thm 1.3)
+prescribes, for each place `v` of a finite set `S`, a nonempty open
+`Ω_v ⊆ X(ℚ_v)` that the produced totally real field must meet. Taking `v = 2`
+with `Ω_2 ≠ ∅` makes `2` split completely in `F`, hence `F ↪ ℚ_[2]`. So the
+whole cost is a `ℚ_[2]`-POINT of the twisted Hilbert–Blumenthal variety
+surviving the Bertini cut to a curve — BREAK B of the audit in
+`nonempty_potentialHeckeDatum_of_five_le`, and nothing about residue degrees.
+
+**NOT VACUOUS — CHECKED, NOT ASSUMED.** Per CLAUDE.md's "two individually
+correct repairs can be fatal together", a leaf that gains conjuncts must be
+re-audited as a COMPOSITE. The conjuncts here are jointly satisfiable, so this
+is not a false leaf dressed as a citation: `F = ℚ(√17)` is totally real, Galois,
+of EVEN degree `2`, and `17 ≡ 1 mod 8` splits `2`, giving `F →+* ℚ_[2]`. Parity
+and the `ℚ_[2]`-embedding are therefore compatible, and the open content is the
+Hilbert–Blumenthal point — the geometry — which is what a citation should owe.
+
+**WHY NOT CUT FURTHER, with the blocker named.** The next cut down would replay
+`exists_hilbertBlumenthalPoint_of_five_le`'s own body against a Moret–Bailly
+step carrying local conditions, leaving two smaller leaves — (A) a
+`ℚ_[2]`-prescribing form of
+`exists_totallyReal_point_of_geometricallyIrreducible`, and (B)
+`HasRationalPoint fX (ULift ℚ_[2])` for the twisted moduli `X` — and it would
+additionally return the GEOMETRIC half of the chain to the root cone (see the
+cone note on the theorem below). It is blocked exactly where the Break-E bullet
+below says: `exists_totallyReal_point_of_geometricallyIrreducible` passes `∅`
+for `S₀` and discards any prescribed `ℚ_[2]`-point when it shrinks `X` to an
+affine open chosen around the REAL point, so leaf (A) is not a restatement but a
+repair BELOW that shrink. That is cut-level work in
+`Modularity/MoretBailly.lean` and is deliberately not attempted from here.
+
+CIRCULARITY GUARD, inherited: this leaf may only ever be discharged by the
+independent Moret–Bailly/Taylor construction — never through `Family.lean`,
+`Lift.lean`, `Modularity/Interface.lean`, or the odd-prime dichotomy
+`not_isIrreducible_of_isHardlyRamified_of_odd`, under whose hypotheses it is
+vacuously true and which is itself proven over pillar α, which is proven over
+this leaf. -/
+theorem exists_hilbertBlumenthalPoint_padicEmbedding_of_five_le
+    (ℓ : ℕ) [Fact ℓ.Prime] {hℓOdd : Odd ℓ} (hℓ5 : 5 ≤ ℓ)
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
+    [DiscreteTopology k] [Algebra ℤ_[ℓ] k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {hdim : Module.rank k V = 2} {ρbar : GaloisRep ℚ k V}
+    (hbar : IsHardlyRamified hℓOdd hdim ρbar) (hirr : ρbar.IsIrreducible) :
+    ∃ (F : Type u) (_ : Field F) (_ : NumberField F)
+      (_ : NumberField.IsTotallyReal F) (_ : IsGalois ℚ F),
+      Even (Module.finrank ℚ F) ∧
+      (∀ g : Field.absoluteGaloisGroup ℚ,
+        ∃ h : Field.absoluteGaloisGroup F,
+          (ρbar.map (algebraMap ℚ F)) h = ρbar g) ∧
+      Nonempty (F →+* ℚ_[2]) ∧
+      Nonempty (Modularity.HilbertBlumenthalPoint ℓ F
+        (ρbar.map (algebraMap ℚ F))) :=
+  sorry
+
 /-- **Taylor's Theorem B in residual form, with a `ℚ_[2]`-embedding in place of
-the residue-degree conjunct** (LEAF — the geometric/automorphic core of
-`exists_moretBaillySeed_residueCardTwo_of_five_le` below, cut off 2026-07-28).
+the residue-degree conjunct** (PROVEN 2026-07-30 over
+`exists_hilbertBlumenthalPoint_padicEmbedding_of_five_le` above; a LEAF from its
+cut on 2026-07-28 until then).
+
+# STATUS CHANGE 2026-07-30 — THIS IS NO LONGER A LEAF, AND THE GATE BELOW FIRED
+
+The audit below carries a section headed "BOTH GATING CHECKS RE-RUN 2026-07-28 —
+THE LEAF IS GENUINELY OPEN", whose first bullet is a REFUTING CHECK stated by
+this file against itself: read the binders of
+`Modularity.exists_moretBailly_seed_of_five_le` and look for `ρ`/`hρ`/`π`; if
+they are gone, the automorphic half of this leaf is closable. **They are gone.**
+That theorem now binds exactly
+`{ℓ} (hℓodd) [Fact ℓ.Prime] (hℓ5) {k} … {W} … (hW) {ρbar} (hρbar) (hirr)` — no
+`O`, no `hZinj`, no `ρ`, no `hrank`, no `π`, no `hπsurj`, no `hπ` — so the
+Break-D bullet below is STALE and is corrected in place there. The binder
+deletion it called "cut-level work not attempted from here" was carried out in
+`Modularity/MoretBailly.lean` by that file's owner; nothing announced it here.
+
+What was NOT possible, and the reason this is a decomposition rather than a
+deletion: `exists_moretBailly_seed_of_five_le` chooses its own `F`, and no
+`ℚ_[2]`-embedding can be demanded of that `F` after the fact (`ℚ(√5)` witnesses
+the failure — see the sub-leaf's audit above). So the seed producer cannot be
+called here. What IS possible, and is what the proof does, is to take `F`
+together with its `ℚ_[2]`-embedding from the sub-leaf and then replay
+`exists_moretBailly_seed_of_five_le`'s fifteen-line body — image preservation
+gives irreducibility over `F` by `isIrreducible_map_of_range_surjective`, and
+`exists_heckeEigensystem_of_hilbertBlumenthalPoint` supplies the automorphic
+joint — so the SEED conjunct is now Lean and the residue is Break B alone.
+
+# ROOT-CONE NOTE, AND A REGRESSION THIS PARTLY REPAIRS
+
+`Modularity/MoretBailly.lean` was made a `public import` of this module (see the
+import comment at the head of the file) for one stated reason: so that
+`nonempty_potentialHeckeDatum_of_five_le` could consume
+`exists_moretBailly_seed_of_five_le`. On 2026-07-29 the `hres2` threading in
+`Modularity/KhareWintenberger.lean` repointed the only consumer chain at
+`exists_moretBaillySeed_residueCardTwo_of_five_le`, whose route bottoms out in
+this declaration — which was then a `sorry`, and a sorried body contributes no
+dependency edges. The whole Moret–Bailly supply chain therefore left the root
+cone and became free-floating.
+
+Proving this declaration restores the edges into the AUTOMORPHIC half —
+`isIrreducible_map_of_range_surjective`,
+`exists_heckeEigensystem_of_hilbertBlumenthalPoint` and, through it,
+`exists_residualModularity_of_hilbertBlumenthalPoint` and
+`exists_heckeSystem_of_residualModularity`. It does NOT restore the GEOMETRIC
+half: `exists_moretBailly_seed_of_five_le` itself and
+`exists_hilbertBlumenthalPoint_of_five_le` still have no code consumer, because
+the sub-leaf above supersedes rather than calls them. Closing that gap is the
+further cut described under "WHY NOT CUT FURTHER" in the sub-leaf's docstring,
+and it is the honest reason to do it.
 
 This is the SAME citation as the leaf below, stated in the form Moret–Bailly
 actually produces. Moret–Bailly's theorem (*Groupes de Picard et problèmes de
@@ -12698,16 +12826,31 @@ independent Moret–Bailly/Taylor construction — never through `Family.lean`,
 `not_isIrreducible_of_isHardlyRamified_of_odd`.
 
 # BOTH GATING CHECKS RE-RUN 2026-07-28 — THE LEAF IS GENUINELY OPEN
+# (FIRST BULLET REFUTED 2026-07-30; SEE THE STATUS CHANGE ABOVE)
 
 Not read off an audit; the binders were read. Both checks that would turn this
 leaf into a citation still FAIL, and they are INDEPENDENT of each other, so
 closing either one alone does not open this leaf.
 
-* **The `ρ`-package gate (Break D) is live.** `exists_moretBailly_seed_of_five_le`
-  (`Modularity/MoretBailly.lean`) still binds `hZinj`, `{ρ : GaloisRep ℚ O (Fin 2 → O)}`,
-  `hrank`, `hρ : IsHardlyRamified … ρ`, `π`, `hπsurj`, `hπ` — the characteristic-zero
-  lift of `ρbar` OVER `ℚ` that potential modularity exists to route around. So that
-  theorem remains INAPPLICABLE here and this leaf is not a wrapper.
+* **STALE — the `ρ`-package gate (Break D) is DEAD as of 2026-07-30.** The text
+  as written on 2026-07-28 read: "`exists_moretBailly_seed_of_five_le`
+  (`Modularity/MoretBailly.lean`) still binds `hZinj`,
+  `{ρ : GaloisRep ℚ O (Fin 2 → O)}`, `hrank`, `hρ : IsHardlyRamified … ρ`, `π`,
+  `hπsurj`, `hπ` — the characteristic-zero lift of `ρbar` OVER `ℚ` that
+  potential modularity exists to route around. So that theorem remains
+  INAPPLICABLE here and this leaf is not a wrapper." **The binders were re-read
+  on 2026-07-30 and every one of them is gone**; the binder deletion this file
+  had sized as mechanical was carried out in `Modularity/MoretBailly.lean`. The
+  package is therefore no longer an obstruction to anything. Note what this did
+  and did not buy, since the 2026-07-28 text also predicted the consequence: it
+  does NOT make this declaration a wrapper around
+  `exists_moretBailly_seed_of_five_le`, because that theorem chooses its own `F`
+  and the `ℚ_[2]`-embedding cannot be demanded of an `F` after the fact. It
+  makes the AUTOMORPHIC half replayable, which is what the proof below does.
+  Kept rather than deleted because a gate that a file states against itself and
+  that later FIRES is the most useful kind of record — and because it is the
+  standing example of a live-looking gating claim that had silently gone stale
+  under an edit in another module.
 * **Break E is live**, and this is the check the audit of
   `nonempty_potentialHeckeDatum_of_five_le` names. Its binders were read:
   `exists_isAffineOpen_hasRationalPoint` takes exactly ONE prescribed point,
@@ -12720,7 +12863,30 @@ closing either one alone does not open this leaf.
 Both repairs are edits to PROVEN declarations in `Modularity/MoretBailly.lean` —
 a file with concurrent owners — so they are cut-level work for that file's owner
 and are deliberately not attempted from here. What this leaf owes remains exactly
-the Moret–Bailly citation with `Ω_2 ≠ ∅`. -/
+the Moret–Bailly citation with `Ω_2 ≠ ∅`.
+
+# THE DEGREE-PARITY CONJUNCT (added 2026-07-29)
+
+`Even (Module.finrank ℚ F)` was added to the conclusion. It is **not** a new
+burden on the citation: the same Moret–Bailly/Hilbert–Blumenthal construction
+already delivers it one level up, where
+`Modularity.exists_hilbertBlumenthalPoint_of_five_le` returns it and the PROVEN
+`Modularity.exists_moretBailly_seed_of_five_le` forwards it verbatim. `F` is cut
+out of a twisted Hilbert–Blumenthal variety for a real quadratic field, so its
+degree over `ℚ` is even by construction; a discharge of this leaf that does not
+produce the parity is not following the cited construction.
+
+WHY IT HAD TO BE ADDED HERE rather than obtained separately: parity and
+`residueCardTwo` are statements about the SAME `F`, and the only producer that
+can bind them together is the one that CHOOSES `F`. The consumer chain in
+`Modularity/KhareWintenberger.lean`
+(`exists_potentialModularityWitness_of_five_le`) needs both — parity for the
+`3`-adic realization and the Weil-bound citations, `residueCardTwo` for the
+tame-at-`2` gluing condition — so it must call ONE producer that returns both.
+Before this change it called `exists_moretBailly_seed_of_five_le` (parity, no
+residue condition) and the tame-at-`2` obligation was silently dropped, which is
+what left `exists_classifyingHom_of_hilbertDeformationDatum_of_not_splitTwo`
+standing as an unclosable residue in that file. -/
 theorem exists_moretBaillySeed_padicEmbedding_of_five_le
     (ℓ : ℕ) [Fact ℓ.Prime] {hℓOdd : Odd ℓ} (hℓ5 : 5 ≤ ℓ)
     {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
@@ -12731,10 +12897,35 @@ theorem exists_moretBaillySeed_padicEmbedding_of_five_le
     (hbar : IsHardlyRamified hℓOdd hdim ρbar) (hirr : ρbar.IsIrreducible) :
     ∃ (F : Type u) (_ : Field F) (_ : NumberField F)
       (_ : NumberField.IsTotallyReal F) (_ : IsGalois ℚ F)
+      (_ : Even (Module.finrank ℚ F))
       (_ : (ρbar.map (algebraMap ℚ F)).IsIrreducible),
       Nonempty (F →+* ℚ_[2]) ∧
-      Nonempty (Modularity.MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F))) :=
-  sorry
+      Nonempty (Modularity.MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F))) := by
+  classical
+  -- BREAK B, and nothing else: the base `F` with its `ℚ_[2]`-point, chosen
+  -- together so that the local condition at `2` is arranged by the producer
+  -- rather than demanded of an `F` already fixed.
+  obtain ⟨F, hF, hNF, hFtr, hFgal, hev, hrestr, hemb, ⟨pt⟩⟩ :=
+    exists_hilbertBlumenthalPoint_padicEmbedding_of_five_le (hℓOdd := hℓOdd)
+      (hdim := hdim) ℓ hℓ5 hbar hirr
+  -- irreducibility over `F` is PROVEN from image preservation, not assumed
+  have hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible :=
+    Modularity.isIrreducible_map_of_range_surjective _ hrestr hirr
+  -- the automorphic joint: the compatible system of the point is a
+  -- Hilbert-newform Hecke eigensystem (Carayol/Taylor, PROVEN glue upstream)
+  obtain ⟨E₀, hE₀, hNE₀, hecke₀, ψ₀, S, hsys⟩ :=
+    Modularity.exists_heckeEigensystem_of_hilbertBlumenthalPoint hℓOdd hℓ5
+      hdim hbar hirr F hFtr hFgal pt
+  -- glue: unite the bad sets and transport the match along `matchℓ`
+  refine ⟨F, hF, hNF, hFtr, hFgal, hev, hirrF, hemb,
+    ⟨{ E₀ := E₀, bad₀ := pt.bad ∪ S, hecke₀ := hecke₀, O₀ := pt.O₀,
+       σ := pt.σ, ψ₀ := ψ₀, ι₀ := pt.ιO₀, ι₀_injective := pt.ιO₀_injective,
+       π₀ := pt.π₀, modular₀ := ?_, residual₀ := ?_ }⟩⟩
+  · intro w hw
+    exact (pt.matchℓ w fun h => hw (Finset.mem_union_left _ h)).trans
+      (hsys w fun h => hw (Finset.mem_union_right _ h))
+  · intro w hw
+    exact pt.residualℓ w fun h => hw (Finset.mem_union_left _ h)
 
 /-- **Taylor's Theorem B in residual form, with `2` prescribed to split
 completely** (PROVEN GLUE since 2026-07-28 over
@@ -12898,14 +13089,15 @@ theorem exists_moretBaillySeed_residueCardTwo_of_five_le
     (hbar : IsHardlyRamified hℓOdd hdim ρbar) (hirr : ρbar.IsIrreducible) :
     ∃ (F : Type u) (_ : Field F) (_ : NumberField F)
       (_ : NumberField.IsTotallyReal F) (_ : IsGalois ℚ F)
+      (_ : Even (Module.finrank ℚ F))
       (_ : (ρbar.map (algebraMap ℚ F)).IsIrreducible),
       (∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal →
           Nat.card (𝓞 F ⧸ w.asIdeal) = 2) ∧
       Nonempty (Modularity.MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F))) := by
-  obtain ⟨F, hF, hNF, hFtr, hFgal, hirrF, hemb, hseed⟩ :=
+  obtain ⟨F, hF, hNF, hFtr, hFgal, hev, hirrF, hemb, hseed⟩ :=
     exists_moretBaillySeed_padicEmbedding_of_five_le (hℓOdd := hℓOdd)
       (hdim := hdim) ℓ hℓ5 hbar hirr
-  exact ⟨F, hF, hNF, hFtr, hFgal, hirrF,
+  exact ⟨F, hF, hNF, hFtr, hFgal, hev, hirrF,
     fun w hw => natCard_residue_eq_of_nonempty_ringHom_padic F hF hNF
       hFgal.to_normal 2 hemb w hw, hseed⟩
 
@@ -13833,7 +14025,7 @@ theorem nonempty_potentialHeckeDatum_of_five_le
     Nonempty (PotentialHeckeDatum ℓ ρbar) := by
   -- (T): Moret–Bailly/Taylor produce the totally real Galois base `F`, with
   -- `2` split completely and with an automorphic witness over it.
-  obtain ⟨F, hF, hNF, hFtr, hFgal, hirrF, hres2, ⟨seed⟩⟩ :=
+  obtain ⟨F, hF, hNF, hFtr, hFgal, _hev, hirrF, hres2, ⟨seed⟩⟩ :=
     exists_moretBaillySeed_residueCardTwo_of_five_le (hℓOdd := hℓOdd)
       (hdim := hdim) ℓ hℓ5 hbar hirr
   letI := hF
