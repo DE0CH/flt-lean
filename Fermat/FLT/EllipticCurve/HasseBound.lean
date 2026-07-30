@@ -104,17 +104,39 @@ Its docstring carries an elementary route (Deuring's congruence via character
 sums, twice) whose cost is the missing `𝔽_{q^n}` point-counting
 infrastructure rather than the argument.
 
+SIXTH CUT, 2026-07-30, and it is two things: a BRICK and a HALF-LEAF.
+
+* `F` is BIJECTIVE on `Wbar(𝔽̄_q)` — `bijective_frobeniusPointEnd` — and now
+  UNCONDITIONALLY, i.e. with no `hc`.  Three declarations here had asked for
+  this and the previous `surjective_frobeniusPointEnd` could not serve them:
+  it derived surjectivity from `hc` (as a left factor of the surjective `[q]`),
+  and the two characteristic-equation leaves are *upstream* of `hc` — they are
+  what produces it.  The unconditional proof does not use the curve at all:
+  `frobAlgHom q` is an AUTOMORPHISM of `𝔽̄_q` (injective as a field map,
+  surjective because every element of an algebraically closed field has a
+  `q`-th root), and `Point.map` along its inverse undoes `F`.
+* The SUPERSINGULAR half of `sq_frobeniusPointEnd_qPrimary` is machine-checked.
+  `E[q] = 0` forces `E[q^∞] = 0` (`eq_zero_of_qPow_zsmul_eq_zero`, induction on
+  `k`), so the hypothesis `q^k • P = 0` forces `P = 0` and the conclusion is
+  `hc` at `n = 1`.  What survives is `sq_frobeniusPointEnd_qPrimary_ordinary`,
+  the same statement with the extra hypothesis that a nonzero `q`-torsion point
+  exists — which is where the unit-root argument actually lives, and where
+  `E[q^k]` becomes cyclic of order `q^k` so that `F` acts on it by a single
+  unit `ε_k` and the leaf becomes the congruence `ε_k² − c·ε_k + q ≡ 0`.
+
 What remains open is EXACTLY FOUR declarations, each strictly smaller than what
 it replaced, and this list is the one to dispatch from — verified against the
 build's `declaration uses 'sorry'` warning set on 2026-07-30, four warnings and
 four `sorry` tokens, so there are no anonymous inner sorries here either:
-`exists_sq_frobeniusPointEnd_prime_to_char` and `sq_frobeniusPointEnd_qPrimary`
-(the two halves of the Frobenius characteristic equation on points,
-`F² = c·F − q`, split along the torsion-primary decomposition — the umbrella
-`exists_sq_frobeniusPointEnd` is PROVEN over them, see the FOURTH CUT below, so
-do NOT dispatch at that name), `natCard_ker_degreeFormEnd_le` (separable degree
-≤ degree, one-sided, no hypothesis on `m`), and `exists_ne_zero_qTorsion`
-(the curve is ORDINARY when `q ∤ c`).
+`exists_sq_frobeniusPointEnd_prime_to_char` and
+`sq_frobeniusPointEnd_qPrimary_ordinary` (the two halves of the Frobenius
+characteristic equation on points, `F² = c·F − q`, split along the
+torsion-primary decomposition — the umbrella `exists_sq_frobeniusPointEnd` is
+PROVEN over them, see the FOURTH CUT below, as is
+`sq_frobeniusPointEnd_qPrimary`, so do NOT dispatch at either of those names),
+`natCard_ker_degreeFormEnd_le` (separable degree ≤ degree, one-sided, no
+hypothesis on `m`), and `exists_ne_zero_qTorsion` (the curve is ORDINARY when
+`q ∤ c`).
 
 A NOTE FOR WHOEVER OWNS THE CHARACTERISTIC EQUATION.  The 2026-07-27 plan
 placed it in `FreyCurve/MazurTorsion.lean` as
@@ -144,8 +166,9 @@ rather than two halves of one argument:
   `q`-divisible group by the unit root.
 
 Both leaves want `F` bijective on `Wbar(𝔽̄_q)`, as does
-`natCard_ker_degreeFormEnd_of_dvd`; that is not yet a declaration here and is
-the obvious shared next brick.
+`natCard_ker_degreeFormEnd_of_dvd`; that was the obvious shared next brick, and
+since the SIXTH CUT it is `bijective_frobeniusPointEnd`, available to all of
+them without `hc`.
 -/
 module
 
@@ -510,13 +533,80 @@ route note of `natCard_ker_degreeFormEnd_of_dvd` below reduces its own
 and this leaf are the same piece of mathematics seen from two sides, so
 whichever is proven first should be stated so the other can consume it.  Both
 want `F` BIJECTIVE on `Wbar(𝔽̄_q)` (injective because `x ↦ x^q` is; surjective
-because `𝔽̄_q` is algebraically closed and perfect), which is not yet a
-declaration in this file.
+because `𝔽̄_q` is algebraically closed and perfect); since 2026-07-30 that is
+`bijective_frobeniusPointEnd`, proven with no hypothesis on `c`.
 
 THE CHECK THAT WOULD REFUTE the claim that this case is not covered by the leaf
 above: a torsion point of `q`-power order that is also killed by an integer
 prime to `q`.  There is none other than `0`, which is exactly why the split is
-exhaustive and why this leaf is needed. -/
+exhaustive and why this leaf is needed.
+
+SIXTH CUT, 2026-07-30: THE SUPERSINGULAR HALF IS NOW MACHINE-CHECKED, and what
+survives is the strictly smaller `sq_frobeniusPointEnd_qPrimary_ordinary`, whose
+extra hypothesis `hord` is the existence of a nonzero `q`-torsion point.  The
+docstring above already recorded "only the ordinary case is real work"; that
+observation is now a proof rather than a note, over
+`eq_zero_of_qPow_zsmul_eq_zero` (`E[q] = 0 ⟹ E[q^∞] = 0`, an induction on `k`).
+Nothing else about the leaf changed: `hc` is still load-bearing for exactly the
+reason argued above, and the ordinary case still wants the unit root. -/
+theorem eq_zero_of_qPow_zsmul_eq_zero (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q))
+    (hss : ∀ R : (Wbar⁄(AlgebraicClosure (ZMod q))).Point, (q : ℤ) • R = 0 → R = 0) :
+    ∀ (k : ℕ) (P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point),
+      ((q : ℤ) ^ k) • P = 0 → P = 0 := by
+  intro k
+  induction k with
+  | zero => intro P hP; simpa using hP
+  | succ k ih =>
+    intro P hP
+    refine ih P (hss _ ?_)
+    rw [smul_smul, ← pow_succ']
+    exact hP
+
+/-- **The characteristic equation on the `q`-primary torsion, ORDINARY case**
+(sorry leaf, opened 2026-07-30 as the surviving half of
+`sq_frobeniusPointEnd_qPrimary`; Silverman *AEC* V.3.1).
+
+Everything the umbrella's docstring says applies here verbatim; the one change
+is `hord`, the existence of a nonzero `q`-torsion point, which is exactly the
+ORDINARY branch of the dichotomy.  With it, `Wbar(𝔽̄_q)[q^∞] ≅ ℚ_q/ℤ_q` and what
+has to be shown is that `F` acts there by the UNIT ROOT of `X² − cX + q`.
+
+WHAT `hord` BUYS A SUCCESSOR, and it is the reason for stating it this way.
+`E[q^k]` is then cyclic of order exactly `q^k` (cyclicity from
+`TorsionCharP.exists_zsmul_eq_of_charP`, the count by induction along the
+surjective `[q]`), so `F` restricted to it is multiplication by a unit
+`ε_k ∈ (ZMod (q^k))ˣ`, and the whole leaf reduces to the single congruence
+`ε_k² − c·ε_k + q ≡ 0 (mod q^k)`.
+
+WHY IT IS NOT DERIVABLE FROM `hc`.  `hc` constrains `F` only on torsion prime to
+`q`, and `Wbar(𝔽̄_q)` splits as `A′ ⊕ A_q` with the two summands independent, so
+no amount of group theory transports the identity across.  The model in
+`exists_ne_zero_qTorsion`'s docstring makes the same point from the other side.
+`F` bijective is available unconditionally here, as
+`bijective_frobeniusPointEnd`. -/
+theorem sq_frobeniusPointEnd_qPrimary_ordinary (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {c : ℤ}
+    (hc : ∀ n : ℕ, ¬ (q ∣ n) →
+      ∀ P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point, (n : ℤ) • P = 0 →
+        frobeniusPointEnd q Wbar (frobeniusPointEnd q Wbar P)
+          = c • frobeniusPointEnd q Wbar P - (q : ℤ) • P)
+    (hord : ∃ R : (Wbar⁄(AlgebraicClosure (ZMod q))).Point, R ≠ 0 ∧ (q : ℤ) • R = 0)
+    (k : ℕ) (P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point)
+    (hP : ((q : ℤ) ^ k) • P = 0) :
+    frobeniusPointEnd q Wbar (frobeniusPointEnd q Wbar P)
+      = c • frobeniusPointEnd q Wbar P - (q : ℤ) • P :=
+  sorry
+
+/-- **The characteristic equation on the `q`-primary torsion** (PROVEN
+2026-07-30 over `sq_frobeniusPointEnd_qPrimary_ordinary` and
+`eq_zero_of_qPow_zsmul_eq_zero`): the SAME coefficient `c` that works away from
+`q` also works on the `q`-power torsion.
+
+The dichotomy is a `by_cases` on whether `E[q]` is trivial.  If it is —
+the SUPERSINGULAR branch — then `E[q^∞]` is trivial too, so `hP` forces `P = 0`
+and the conclusion is `hc` at `n = 1`.  If it is not, the ordinary leaf
+applies. -/
 theorem sq_frobeniusPointEnd_qPrimary (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {c : ℤ}
     (hc : ∀ n : ℕ, ¬ (q ∣ n) →
@@ -526,8 +616,15 @@ theorem sq_frobeniusPointEnd_qPrimary (q : ℕ) [Fact q.Prime]
     (k : ℕ) (P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point)
     (hP : ((q : ℤ) ^ k) • P = 0) :
     frobeniusPointEnd q Wbar (frobeniusPointEnd q Wbar P)
-      = c • frobeniusPointEnd q Wbar P - (q : ℤ) • P :=
-  sorry
+      = c • frobeniusPointEnd q Wbar P - (q : ℤ) • P := by
+  by_cases hss : ∀ R : (Wbar⁄(AlgebraicClosure (ZMod q))).Point, (q : ℤ) • R = 0 → R = 0
+  · have hP0 : P = 0 := eq_zero_of_qPow_zsmul_eq_zero q Wbar hss k P hP
+    refine hc 1 (fun h => (Fact.out : q.Prime).one_lt.ne' (Nat.dvd_one.mp h)) P ?_
+    rw [hP0]
+    exact zsmul_zero _
+  · push Not at hss
+    obtain ⟨R, hR2, hR1⟩ := hss
+    exact sq_frobeniusPointEnd_qPrimary_ordinary q Wbar hc ⟨R, hR1, hR2⟩ k P hP
 
 /-! ### The conjugate endomorphism
 
@@ -861,12 +958,74 @@ theorem injective_frobeniusPointEnd (q : ℕ) [Fact q.Prime]
     Function.Injective (frobeniusPointEnd q Wbar) :=
   WeierstrassCurve.Affine.Point.map_injective (W' := Wbar) (WeilPairing.frobAlgHom q)
 
+/-- **The `q`-power Frobenius of `𝔽̄_q` is surjective** (PROVEN 2026-07-30):
+every element of an algebraically closed field has a `q`-th root.  No
+perfectness instance is needed — `IsAlgClosed.exists_pow_nat_eq` is the whole
+proof. -/
+theorem surjective_frobAlgHom (q : ℕ) [Fact q.Prime] :
+    Function.Surjective (WeilPairing.frobAlgHom q) := fun x =>
+  IsAlgClosed.exists_pow_nat_eq (k := AlgebraicClosure (ZMod q))
+    x (Fact.out : q.Prime).pos
+
+/-- The `q`-power Frobenius of `𝔽̄_q` as an `𝔽_q`-algebra AUTOMORPHISM
+(PROVEN 2026-07-30).  It exists because `frobAlgHom` is injective (a ring
+homomorphism of a field) and surjective (`surjective_frobAlgHom`), and its
+inverse is what transports a point back along the Frobenius. -/
+noncomputable def frobAlgEquiv (q : ℕ) [Fact q.Prime] :
+    AlgebraicClosure (ZMod q) ≃ₐ[ZMod q] AlgebraicClosure (ZMod q) :=
+  AlgEquiv.ofBijective (WeilPairing.frobAlgHom q)
+    ⟨(WeilPairing.frobAlgHom q).toRingHom.injective, surjective_frobAlgHom q⟩
+
+/-- `F ∘ F⁻¹ = id` at the level of `𝔽_q`-algebra maps. -/
+theorem frobAlgHom_comp_symm (q : ℕ) [Fact q.Prime] :
+    (WeilPairing.frobAlgHom q).comp (frobAlgEquiv q).symm.toAlgHom
+      = AlgHom.id (ZMod q) (AlgebraicClosure (ZMod q)) :=
+  AlgHom.ext fun x => (frobAlgEquiv q).apply_symm_apply x
+
+/-- `Point.map` along the identity is the identity.  Mathlib's `Point.map_id`
+is stated for `Algebra.ofId F F`, i.e. with the *field* as the base ring; here
+the base ring is `ZMod q`, so the statement is re-proven (both sides are
+definitionally equal after a case split). -/
+theorem point_map_algHom_id (q : ℕ) [Fact q.Prime] (Wbar : WeierstrassCurve (ZMod q))
+    (P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point) :
+    WeierstrassCurve.Affine.Point.map (W' := Wbar) (S := ZMod q)
+      (AlgHom.id (ZMod q) (AlgebraicClosure (ZMod q))) P = P := by
+  cases P <;> rfl
+
+/-- **`F` is surjective** (PROVEN 2026-07-30, UNCONDITIONALLY): pull a point
+back along the inverse of the Frobenius automorphism of `𝔽̄_q`.
+
+This replaces an earlier version that derived surjectivity from the
+characteristic equation `hc` (as a left factor of the surjective `[q]`), and
+that is a genuine strengthening rather than a tidy-up: the two leaves
+`exists_sq_frobeniusPointEnd_prime_to_char` and `sq_frobeniusPointEnd_qPrimary`
+are *upstream* of `hc` — they are what produces it — so an `hc`-dependent
+bijectivity is unavailable to them.  Their docstrings each record `F` bijective
+as the shared brick they want; this is it. -/
+theorem surjective_frobeniusPointEnd (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) :
+    Function.Surjective (frobeniusPointEnd q Wbar) := by
+  intro P
+  refine ⟨WeierstrassCurve.Affine.Point.map (W' := Wbar) (S := ZMod q)
+    (frobAlgEquiv q).symm.toAlgHom P, ?_⟩
+  show WeierstrassCurve.Affine.Point.map (W' := Wbar) (S := ZMod q)
+    (WeilPairing.frobAlgHom q) _ = P
+  rw [WeierstrassCurve.Affine.Point.map_map, frobAlgHom_comp_symm, point_map_algHom_id]
+
+/-- **`F` is BIJECTIVE on `Wbar(𝔽̄_q)`** (PROVEN 2026-07-30, unconditionally):
+injective because `x ↦ x^q` is, surjective because `𝔽̄_q` is algebraically
+closed.  This is the brick three declarations in this file asked for. -/
+theorem bijective_frobeniusPointEnd (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) :
+    Function.Bijective (frobeniusPointEnd q Wbar) :=
+  ⟨injective_frobeniusPointEnd q Wbar, surjective_frobeniusPointEnd q Wbar⟩
+
 /-- **`#ker F = 1`** (PROVEN): the Frobenius is purely inseparable, so its
 kernel is trivial.  This is what makes peeling `F` off a composite free. -/
 theorem natCard_ker_frobeniusPointEnd (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) :
     Nat.card (LinearMap.ker (frobeniusPointEnd q Wbar)) = 1 := by
-  rw [LinearMap.ker_eq_bot.mpr (injective_frobeniusPointEnd q Wbar)]
+  rw [LinearMap.ker_eq_bot.mpr (bijective_frobeniusPointEnd q Wbar).1]
   exact Nat.card_unique
 
 /-- `[0] − [−1]∘F` is `F` (PROVEN, definitional): the conjugate of the
@@ -894,22 +1053,6 @@ theorem frobeniusConj_mul_frobeniusPointEnd (q : ℕ) [Fact q.Prime]
   rw [show c - 1 * c = (0 : ℤ) by ring, degreeFormEnd_zero_neg_one,
     show c ^ 2 - c * c * 1 + 1 ^ 2 * (q : ℤ) = (q : ℤ) by ring] at h
   exact h
-
-/-- **`F` is surjective** (PROVEN): it is the conjugate factor at
-`(m, n) = (c, 1)`, hence a left factor of the surjective `[q]`.  With
-`injective_frobeniusPointEnd` this makes `F` BIJECTIVE, which is the whole
-reason the peeling below preserves kernel counts. -/
-theorem surjective_frobeniusPointEnd (q : ℕ) [Fact q.Prime]
-    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {c : ℤ}
-    (hc : frobeniusPointEnd q Wbar * frobeniusPointEnd q Wbar
-      = c • frobeniusPointEnd q Wbar
-        - (q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point))) :
-    Function.Surjective (frobeniusPointEnd q Wbar) := by
-  have hq : (0 : ℤ) < (q : ℤ) := by exact_mod_cast (Fact.out : q.Prime).pos
-  have hd : c ^ 2 - c * c * 1 + 1 ^ 2 * (q : ℤ) ≠ 0 := by
-    rw [show c ^ 2 - c * c * 1 + 1 ^ 2 * (q : ℤ) = (q : ℤ) by ring]; omega
-  have h := (surjective_degreeFormEnd q Wbar hc (m := c) (n := 1) hd).2
-  rwa [show c - 1 * c = (0 : ℤ) by ring, degreeFormEnd_zero_neg_one] at h
 
 /-- **The ORDINARY criterion** (sorry leaf, opened 2026-07-29; Silverman *AEC*
 V.3.1, Deuring): a curve whose Frobenius trace is prime to `q` has a NONZERO
@@ -1077,7 +1220,7 @@ theorem natCard_ker_frobeniusConj (q : ℕ) [Fact q.Prime]
     (hqc : ¬ ((q : ℤ) ∣ c)) :
     Nat.card (LinearMap.ker (degreeFormEnd q Wbar c 1)) = q := by
   have h := natCard_ker_mul (degreeFormEnd q Wbar c 1) (frobeniusPointEnd q Wbar)
-    (surjective_frobeniusPointEnd q Wbar hc)
+    (bijective_frobeniusPointEnd q Wbar).2
   rw [frobeniusConj_mul_frobeniusPointEnd q Wbar hc, natCard_ker_zsmul_q q Wbar hc hqc,
     natCard_ker_frobeniusPointEnd] at h
   simpa using h.symm
