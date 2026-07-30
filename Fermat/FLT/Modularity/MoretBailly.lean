@@ -134,6 +134,12 @@ public import Mathlib.AlgebraicGeometry.Geometrically.Irreducible
 public import Mathlib.AlgebraicGeometry.Geometrically.Connected
 public import Mathlib.AlgebraicGeometry.Morphisms.Smooth
 public import Mathlib.AlgebraicGeometry.Morphisms.Separated
+-- fpqc descent of morphism properties: `MorphismProperty.DescendsAlong`, the
+-- instances for `Smooth`/`LocallyOfFiniteType`/`Surjective`/`UniversallyClosed`,
+-- and (transitively) `Mathlib.AlgebraicGeometry.Morphisms.FlatDescent`.
+-- Consumed by `of_isFormOver_of_descendsAlong` and the shape half of
+-- `isEffectiveQGaloisTwist_of_isOpenKernel`.
+public import Mathlib.AlgebraicGeometry.Morphisms.LocalFlatDescent
 public import Mathlib.AlgebraicGeometry.Morphisms.FiniteType
 public import Mathlib.AlgebraicGeometry.Morphisms.QuasiCompact
 -- Moret–Bailly §3.1's compactification datum is stated with `IsProper`, and
@@ -36943,6 +36949,314 @@ theorem isFormOver_of_isGaloisTwistForm {K : Type u} [Field K] [Algebra ℚ K]
   obtain ⟨e, he, -⟩ := h
   exact ⟨e, he⟩
 
+/-! ##### fpqc DESCENT OF THE SHAPE CLAUSES (2026-07-29)
+
+`IsEffectiveQGaloisTwist` bundles two things: the EXISTENCE of the twist
+(genuine Galois descent, Serre's criterion, the hard half) and the transfer of
+six SHAPE properties from `fX₀` to the twist `fX`. The section docstring of
+`IsEffectiveQGaloisTwist` said of the six clauses "what this pin lacks is the
+descent direction of `IsStableUnderBaseChange`, which is exactly axis 3 of the
+CUT-AXIS AUDIT and exactly why they must be carried here rather than derived
+from `IsFormOver`".
+
+**THAT CLAIM IS FALSE ON THIS PIN, and the block below is what it cost.** The
+descent direction has a name — `CategoryTheory.MorphismProperty.DescendsAlong` —
+and lives in `Mathlib/CategoryTheory/MorphismProperty/Descent.lean`, with
+scheme-level instances in `Mathlib/AlgebraicGeometry/Morphisms/FlatDescent.lean`
+(`Surjective`, `UniversallyClosed`, `UniversallyOpen`, `UniversallyInjective`,
+`isomorphisms`, `IsOpenImmersion`) and
+`Mathlib/AlgebraicGeometry/Morphisms/LocalFlatDescent.lean` (`LocallyOfFiniteType`,
+`LocallyOfFinitePresentation`, `Smooth`, `FormallyUnramified`, `Etale`) — all
+along the fpqc class `@Surjective ⊓ @Flat ⊓ @QuasiCompact`. The absence audit
+that produced the false claim searched for `IsStableUnderBaseChange` in the
+DESCENT direction, i.e. for a name that does not exist, and so missed the name
+that does. (The grep-proves-a-spelling-absent trap, in its purest form.)
+
+So five of the six clauses are DERIVED below rather than carried, and only
+`SmoothOfRelativeDimension n` remains open — as a clean, mathlib-shaped,
+independently ownable statement. Consequently the sorry node
+`isEffectiveQGaloisTwist_of_isOpenKernel` is now an ASSEMBLY, and the geometry
+it rests on is isolated in `exists_isGaloisTwistForm_of_isOpenKernel`.
+-/
+
+open CategoryTheory AlgebraicGeometry in
+/-- **`Spec K ⟶ Spec ℚ` is an fpqc cover** (PROVEN): surjective, flat and
+quasi-compact, for any field `K` that is a `ℚ`-algebra.
+
+This is the covering morphism ALL descent in this section happens along, so it
+is stated once. All three clauses are formal: `ℚ` is a field, so `K` is a free
+and nontrivial `ℚ`-module, hence faithfully flat, and
+`flat_and_surjective_SpecMap_iff` converts that into `Flat ∧ Surjective` of
+`Spec` of the structure map; quasi-compactness is automatic because both
+schemes are affine (`isAffineHom_of_isAffine`, then
+`IsAffineHom → QuasiCompact`). No algebraic closedness, no algebraicity and no
+Galois hypothesis is used. -/
+theorem surjectiveFlatQuasiCompact_specRatMap (K : Type u) [Field K] [Algebra ℚ K] :
+    (@AlgebraicGeometry.Surjective ⊓ @AlgebraicGeometry.Flat ⊓
+      @AlgebraicGeometry.QuasiCompact : MorphismProperty Scheme.{u}) (specRatMap K) := by
+  have hff : (ratStructHom K).hom.FaithfullyFlat := by
+    unfold RingHom.FaithfullyFlat
+    infer_instance
+  have h := (AlgebraicGeometry.flat_and_surjective_SpecMap_iff (ratStructHom K)).mpr hff
+  refine ⟨⟨?_, ?_⟩, ?_⟩
+  · rw [specRatMap_eq_specMap]; exact h.2
+  · rw [specRatMap_eq_specMap]; exact h.1
+  · rw [specRatMap_eq_specMap]; infer_instance
+
+open CategoryTheory AlgebraicGeometry in
+/-- **`QuasiCompact` satisfies fpqc descent** (PROVEN; absent from this pin).
+
+Mathlib proves fpqc descent for the local properties (`Smooth`,
+`LocallyOfFiniteType`, …) and for the topological ones (`Surjective`,
+`UniversallyClosed`, …) but not for `QuasiCompact` itself. It is elementary
+once the base is reduced to an affine, which `IsZariskiLocalAtTarget.descendsAlong`
+does: with `f : X ⟶ Spec R` surjective and quasi-compact, `X` is a compact
+space; `QuasiCompact (pullback.fst f g)` then makes `X ×_R Y` compact; and
+`pullback.snd f g` is surjective (base change of `f`) and continuous, so `Y` is
+the continuous image of a compact space. `Spec R` is quasi-separated, so
+`quasiCompact_of_compactSpace` turns `CompactSpace Y` back into `QuasiCompact g`.
+
+Note where flatness is NOT used: this argument needs only surjectivity and
+quasi-compactness of the cover. It is stated against the full fpqc class anyway,
+so that it composes with the mathlib instances without a `DescendsAlong.of_le`
+at every use site. -/
+instance quasiCompact_descendsAlong_surjectiveFlatQuasiCompact :
+    MorphismProperty.DescendsAlong @AlgebraicGeometry.QuasiCompact
+      (@AlgebraicGeometry.Surjective ⊓ @AlgebraicGeometry.Flat ⊓
+        @AlgebraicGeometry.QuasiCompact : MorphismProperty Scheme.{u}) := by
+  apply IsZariskiLocalAtTarget.descendsAlong
+  intro R X Y f g hf h
+  haveI : QuasiCompact f := hf.2
+  haveI : Surjective f := hf.1.1
+  haveI : QuasiCompact (Limits.pullback.fst f g) := h
+  haveI : CompactSpace X := QuasiCompact.compactSpace_of_compactSpace f
+  haveI : CompactSpace ↥(Limits.pullback f g) :=
+    QuasiCompact.compactSpace_of_compactSpace (Limits.pullback.fst f g)
+  haveI : Surjective (Limits.pullback.snd f g) :=
+    MorphismProperty.pullback_snd f g ‹_›
+  haveI : CompactSpace Y := by
+    constructor
+    have hc := isCompact_range (Limits.pullback.snd f g).continuous
+    rwa [Set.range_eq_univ.mpr (Limits.pullback.snd f g).surjective] at hc
+  infer_instance
+
+open CategoryTheory AlgebraicGeometry in
+/-- **Separatedness is the UNIVERSAL CLOSEDNESS of the diagonal** (PROVEN;
+absent from this pin).
+
+Mathlib has `isSeparated_eq_diagonal_isClosedImmersion`, i.e. `IsSeparated`
+is `MorphismProperty.diagonal @IsClosedImmersion`. That spelling is useless for
+descent, because `IsClosedImmersion` has no `DescendsAlong` instance and the
+route to one goes through mathlib's own open TODO in
+`AlgebraicGeometry/Morphisms/Descent.lean` ("Show that affine morphisms descend
+along faithfully-flat morphisms").
+
+The point of this lemma is that for a DIAGONAL the two conditions coincide, so
+`IsSeparated` can be re-expressed over `@UniversallyClosed`, which DOES descend
+(`Mathlib/AlgebraicGeometry/Morphisms/FlatDescent.lean`). Forward: a closed
+immersion is universally closed. Backward: `pullback.diagonal f` is always an
+immersion, and an immersion with closed range is a closed immersion
+(`IsClosedImmersion.of_isPreimmersion`); universal closedness gives closedness
+of the range. The detour is what makes `IsSeparated` descend on this pin without
+the affine-descent TODO. -/
+theorem isSeparated_eq_diagonal_universallyClosed :
+    @AlgebraicGeometry.IsSeparated =
+      MorphismProperty.diagonal @AlgebraicGeometry.UniversallyClosed := by
+  ext X Y f
+  constructor
+  · intro h
+    haveI := h
+    exact inferInstanceAs (UniversallyClosed (Limits.pullback.diagonal f))
+  · intro h
+    haveI : UniversallyClosed (Limits.pullback.diagonal f) := h
+    refine ⟨IsClosedImmersion.of_isPreimmersion _ ?_⟩
+    exact (Limits.pullback.diagonal f).isClosedMap.isClosed_range
+
+open CategoryTheory AlgebraicGeometry in
+/-- **`IsSeparated` satisfies fpqc descent** (PROVEN; absent from this pin).
+
+Immediate from `isSeparated_eq_diagonal_universallyClosed`, mathlib's
+`DescendsAlong @UniversallyClosed (@Surjective ⊓ @Flat ⊓ @QuasiCompact)` and the
+generic instance "if `P` descends along `Q` then `P.diagonal` descends along
+`Q`". -/
+instance isSeparated_descendsAlong_surjectiveFlatQuasiCompact :
+    MorphismProperty.DescendsAlong @AlgebraicGeometry.IsSeparated
+      (@AlgebraicGeometry.Surjective ⊓ @AlgebraicGeometry.Flat ⊓
+        @AlgebraicGeometry.QuasiCompact : MorphismProperty Scheme.{u}) := by
+  rw [isSeparated_eq_diagonal_universallyClosed]
+  infer_instance
+
+open CategoryTheory AlgebraicGeometry in
+/-- **`SmoothOfRelativeDimension n` satisfies fpqc descent** (SORRY LEAF, cut
+2026-07-29; a gap in this pin, not in the mathematics).
+
+TRUE: smoothness of relative dimension `n` is fpqc-local on the base
+(Stacks 02VL/02VM — descent of `IsStandardSmoothOfRelativeDimension` along a
+faithfully flat map, the relative-dimension refinement of the already-present
+`RingHom.Smooth.codescendsAlong_faithfullyFlat`).
+
+THE ROUTE, so the next owner does not re-survey. `SmoothOfRelativeDimension n`
+carries `HasRingHomProperty (@SmoothOfRelativeDimension n)
+(Locally (IsStandardSmoothOfRelativeDimension n))`
+(`Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean`), and
+`HasRingHomProperty.descendsAlong_flat` turns a
+`RingHom.CodescendsAlong Q RingHom.FaithfullyFlat` into exactly this statement —
+that is verbatim how the five instances in
+`Mathlib/AlgebraicGeometry/Morphisms/LocalFlatDescent.lean` are proved. So the
+whole content is the missing ring-level lemma
+`RingHom.CodescendsAlong (Locally (IsStandardSmoothOfRelativeDimension n))
+RingHom.FaithfullyFlat`, the exact analogue of
+`RingHom.Smooth.codescendsAlong_faithfullyFlat` in
+`Mathlib/RingTheory/Etale/Descent.lean`.
+
+CHEAP PARTIAL RESULT, recorded as a check on the statement: at `n = 0` this is
+ALREADY PROVEN in the pin, since
+`AlgebraicGeometry.Etale.eq_smoothOfRelativeDimension_zero` identifies
+`@SmoothOfRelativeDimension 0` with `@Etale`, and
+`DescendsAlong @Etale (@Surjective ⊓ @Flat ⊓ @QuasiCompact)` is one of the five
+instances above. So the leaf is open only for `n ≥ 1`, and anyone who believes
+it false should look for a counterexample there. -/
+theorem smoothOfRelativeDimension_descendsAlong_surjectiveFlatQuasiCompact (n : ℕ) :
+    MorphismProperty.DescendsAlong (@AlgebraicGeometry.SmoothOfRelativeDimension n)
+      (@AlgebraicGeometry.Surjective ⊓ @AlgebraicGeometry.Flat ⊓
+        @AlgebraicGeometry.QuasiCompact : MorphismProperty Scheme.{u}) :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **A morphism property that descends along fpqc covers transfers along a
+`K`-form** (PROVEN) — the engine of the shape half of
+`isEffectiveQGaloisTwist_of_isOpenKernel`.
+
+`IsFormOver K fX fX₀` says the two base changes along `Spec K ⟶ Spec ℚ` are
+isomorphic OVER `Spec K`. So: `P fX₀` base-changes to `P (pr₂ : (X₀)_K ⟶ Spec K)`;
+the form isomorphism carries that to `P (pr₂ : X_K ⟶ Spec K)` because
+`e.hom ≫ pr₂ = pr₂` and `P` respects isomorphisms; and `pr₂ : X_K ⟶ Spec K` is
+the base change of `fX` along the fpqc cover `specRatMap K`
+(`surjectiveFlatQuasiCompact_specRatMap`), so `DescendsAlong` returns `P fX`.
+
+`K` is only required to be a field over `ℚ` — no algebraic closedness. The
+statement is symmetric in `fX`/`fX₀` in the sense that `IsFormOver` is (up to
+`Iso.symm`); it is stated in the direction the consumer needs. -/
+theorem of_isFormOver_of_descendsAlong {K : Type u} [Field K] [Algebra ℚ K]
+    (P : MorphismProperty Scheme.{u}) [P.IsStableUnderBaseChange]
+    [P.DescendsAlong (@AlgebraicGeometry.Surjective ⊓ @AlgebraicGeometry.Flat ⊓
+      @AlgebraicGeometry.QuasiCompact)]
+    {X X₀ : Scheme.{u}}
+    {fX : X ⟶ Spec (CommRingCat.of (ULift.{u} ℚ))}
+    {fX₀ : X₀ ⟶ Spec (CommRingCat.of (ULift.{u} ℚ))}
+    (hform : IsFormOver K fX fX₀) (h₀ : P fX₀) : P fX := by
+  obtain ⟨e, he⟩ := hform
+  have hbase : P (Limits.pullback.snd fX₀ (specRatMap K)) :=
+    P.of_isPullback (IsPullback.of_hasPullback fX₀ (specRatMap K)) h₀
+  have hX : P (Limits.pullback.snd fX (specRatMap K)) := by
+    rw [← he]
+    exact (P.cancel_left_of_respectsIso e.hom _).mpr hbase
+  exact MorphismProperty.of_pullback_snd_of_descendsAlong
+    (surjectiveFlatQuasiCompact_specRatMap K) hX
+
+-- `TensorProduct` must be opened here for `⊗[ℚ]`, exactly as on
+-- `geometricallyIrreducible_of_isFormOver_isAlgClosed`, whose proof this one copies:
+-- the notation is only brought into file scope much further down.
+open CategoryTheory AlgebraicGeometry TensorProduct in
+/-- **Geometric connectedness transfers along a `K`-form** (PROVEN).
+
+`GeometricallyConnected` has no `DescendsAlong` instance in the pin, so
+`of_isFormOver_of_descendsAlong` does not apply; but it does not NEED one, for
+the same reason `geometricallyIrreducible_of_isFormOver_isAlgClosed` does not:
+a FORM carries more than a single irreducible/connected base change, and that
+surplus makes the descent elementary. The proof is that one, verbatim, with
+`IrreducibleSpace` replaced by `ConnectedSpace` — the only property of the
+predicate it uses is that it passes to continuous surjective images, which
+`IsConnected.image` supplies exactly as `IsIrreducible.image` did.
+
+Steps: (1) transport `GeometricallyConnected (pr₂ : (X₀)_K ⟶ Spec K)` across the
+form isomorphism to `X_K`; (2) test connectedness of `X_L` for an arbitrary
+field `L` over `ℚ`; (3) build a common extension `Ω` of `L` and `K` as a residue
+field of `L ⊗_ℚ K` (nonzero because `ℚ` is a field), the two maps `ℚ → Ω`
+agreeing automatically; (4) paste pullback squares to exhibit `X_Ω ⟶ X_L` as the
+base change of the surjective `Spec Ω ⟶ Spec L`; (5) `X_Ω` is connected by (1),
+and `X_L` is its continuous surjective image.
+
+No algebraic closedness of `K` is used, exactly as in the irreducible case. -/
+theorem geometricallyConnected_of_isFormOver
+    {K : Type u} [Field K] [Algebra ℚ K]
+    {X X₀ : AlgebraicGeometry.Scheme.{u}}
+    (fX : X ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (fX₀ : X₀ ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (hform : IsFormOver K fX fX₀)
+    (h₀ : AlgebraicGeometry.GeometricallyConnected fX₀) :
+    AlgebraicGeometry.GeometricallyConnected fX := by
+  obtain ⟨e, he⟩ := hform
+  have hK₀ : GeometricallyConnected (Limits.pullback.snd fX₀ (specRatMap K)) := inferInstance
+  have hKX : GeometricallyConnected (Limits.pullback.snd fX (specRatMap K)) := by
+    rw [← he]
+    exact (MorphismProperty.cancel_left_of_respectsIso
+      (P := @GeometricallyConnected) e.hom _).mpr hK₀
+  refine ⟨?_⟩
+  rw [geometrically_iff_of_isClosedUnderIsomorphisms]
+  intro L _ y
+  obtain ⟨ψ, rfl⟩ := Spec.map_surjective y
+  letI : Algebra ℚ L :=
+    (ψ.hom.comp (ULift.ringEquiv.symm : ℚ ≃+* ULift.{u} ℚ).toRingHom).toAlgebra
+  haveI : Nontrivial (L ⊗[ℚ] K) :=
+    Algebra.TensorProduct.nontrivial_of_algebraMap_injective_of_flat_left
+      (R := ℚ) L K (algebraMap ℚ K).injective
+  obtain ⟨m, hm⟩ := Ideal.exists_maximal (L ⊗[ℚ] K)
+  haveI := hm
+  let Ω : Type u := (L ⊗[ℚ] K) ⧸ m
+  letI : Field Ω := Ideal.Quotient.field m
+  let φL : L →+* Ω := (Ideal.Quotient.mk m).comp Algebra.TensorProduct.includeLeftRingHom
+  let φK : K →+* Ω :=
+    (Ideal.Quotient.mk m).comp
+      (Algebra.TensorProduct.includeRight (R := ℚ) (A := L) (B := K)).toRingHom
+  let u : Spec (CommRingCat.of Ω) ⟶ Spec (CommRingCat.of K) :=
+    Spec.map (CommRingCat.ofHom φK)
+  let v : Spec (CommRingCat.of Ω) ⟶ Spec (CommRingCat.of L) :=
+    Spec.map (CommRingCat.ofHom φL)
+  have huniq : ∀ f g : (ULift.{u} ℚ) →+* Ω, f = g := by
+    intro f g
+    have h := RingHom.ext_rat (R := Ω)
+      (f.comp (ULift.ringEquiv.symm : ℚ ≃+* ULift.{u} ℚ).toRingHom)
+      (g.comp (ULift.ringEquiv.symm : ℚ ≃+* ULift.{u} ℚ).toRingHom)
+    ext x
+    have hx := RingHom.congr_fun h (ULift.ringEquiv x)
+    simp only [RingHom.comp_apply, RingEquiv.toRingHom_eq_coe, RingHom.coe_coe,
+      RingEquiv.symm_apply_apply] at hx
+    exact hx
+  have hcompat : u ≫ specRatMap K = v ≫ Spec.map ψ := by
+    simp only [u, v, specRatMap, ← Spec.map_comp]
+    congr 1
+    apply CommRingCat.hom_ext
+    exact huniq _ _
+  have sqTop : IsPullback
+      (Limits.pullback.snd (Limits.pullback.snd fX (specRatMap K)) u)
+      (Limits.pullback.fst (Limits.pullback.snd fX (specRatMap K)) u) u
+      (Limits.pullback.snd fX (specRatMap K)) :=
+    (IsPullback.of_hasPullback _ _).flip
+  have sqMid : IsPullback (Limits.pullback.snd fX (specRatMap K))
+      (Limits.pullback.fst fX (specRatMap K)) (specRatMap K) fX :=
+    (IsPullback.of_hasPullback _ _).flip
+  have sqBig := sqTop.paste_vert sqMid
+  rw [hcompat] at sqBig
+  have sqBot : IsPullback (Limits.pullback.snd fX (Spec.map ψ))
+      (Limits.pullback.fst fX (Spec.map ψ)) (Spec.map ψ) fX :=
+    (IsPullback.of_hasPullback _ _).flip
+  obtain ⟨w, hw⟩ : ∃ w : Limits.pullback (Limits.pullback.snd fX (specRatMap K)) u ⟶
+      Limits.pullback fX (Spec.map ψ),
+      IsPullback (Limits.pullback.snd (Limits.pullback.snd fX (specRatMap K)) u) w v
+        (Limits.pullback.snd fX (Spec.map ψ)) :=
+    ⟨_, IsPullback.of_bot' sqBig sqBot⟩
+  haveI : Surjective v := inferInstance
+  haveI : Surjective w := MorphismProperty.of_isPullback hw ‹Surjective v›
+  haveI : ConnectedSpace
+      ↥(Limits.pullback (Limits.pullback.snd fX (specRatMap K)) u) :=
+    pullback_of_geometrically hKX.geometrically_connectedSpace Ω u
+  rw [connectedSpace_iff_univ]
+  have himg := (isConnected_univ (α :=
+    ↥(Limits.pullback (Limits.pullback.snd fX (specRatMap K)) u))).image
+      w.base w.continuous.continuousOn
+  rwa [Set.image_univ, Set.range_eq_univ.mpr w.surjective] at himg
+
 open CategoryTheory AlgebraicGeometry in
 /-- **The trivial cocycle is a cocycle** (PROVEN) — one half of the
 compiler-checked non-vacuity of this vocabulary. -/
@@ -36972,10 +37286,20 @@ descent itself; the two conditional ones (`SmoothOfRelativeDimension` at every
 `n`, and `GeometricallyConnected`) are what the `𝔞`-side consumer needs and
 the `ρbar`-side one does not. All six are fpqc-descent statements for morphism
 properties along the faithfully flat quasi-compact `Spec K ⟶ Spec ℚ`, so they
-are TRUE; what this pin lacks is the descent direction of
-`IsStableUnderBaseChange`, which is exactly axis 3 of the CUT-AXIS AUDIT and
-exactly why they must be carried here rather than derived from
-`IsFormOver`. -/
+are TRUE.
+
+CORRECTED 2026-07-29. This docstring used to continue "what this pin lacks is
+the descent direction of `IsStableUnderBaseChange`, which is exactly axis 3 of
+the CUT-AXIS AUDIT and exactly why they must be carried here rather than derived
+from `IsFormOver`". **That was FALSE.** The descent direction is
+`CategoryTheory.MorphismProperty.DescendsAlong`, and the pin carries instances
+for `Smooth`, `LocallyOfFiniteType`, `Surjective`, `UniversallyClosed` and
+several more along the fpqc class `@Surjective ⊓ @Flat ⊓ @QuasiCompact`. Five of
+the six clauses ARE now derived from `IsFormOver`, by
+`of_isFormOver_of_descendsAlong` and `geometricallyConnected_of_isFormOver`
+below; see the block "fpqc DESCENT OF THE SHAPE CLAUSES". They are still carried
+in this definition, because that is what the two consumers were written against
+and because the definition is the interface, not the proof. -/
 def IsEffectiveQGaloisTwist {K : Type u} [Field K] [Algebra ℚ K]
     (b : QGaloisBaseAction K) {X₀ : Scheme.{u}}
     (fX₀ : X₀ ⟶ Spec (CommRingCat.of (ULift.{u} ℚ)))
@@ -37069,7 +37393,68 @@ presieve form for the single cover `Spec K ⟶ Spec ℚ` — sitting on top of
 vocabulary that already exists, rather than a theory to be invented from
 nothing. A prover should look at `Sites/Descent/DescentData.lean`'s
 `pullFunctorEquivalence` and `Sites/Fpqc.lean` FIRST; only the finite-group
-quotient genuinely has to be built here. -/
+quotient genuinely has to be built here.
+
+SECOND CORRECTION 2026-07-29 — THE SHAPE CLAUSES ARE NOT PART OF THIS LEAF ANY
+MORE. See the block "fpqc DESCENT OF THE SHAPE CLAUSES" above
+`surjectiveFlatQuasiCompact_specRatMap`: the claim in `IsEffectiveQGaloisTwist`'s
+own docstring that this pin lacks the descent direction was FALSE — the name is
+`MorphismProperty.DescendsAlong`, with scheme-level instances for `Smooth`,
+`LocallyOfFiniteType`, `Surjective`, `UniversallyClosed` and more. Five of the
+six shape clauses are now DERIVED from the form (`Smooth`,
+`LocallyOfFiniteType`, `QuasiCompact`, `IsSeparated`, `GeometricallyConnected`),
+and the sixth is the separate, mathlib-shaped leaf
+`smoothOfRelativeDimension_descendsAlong_surjectiveFlatQuasiCompact`. What is
+left of the geometry is THIS leaf, and
+`isEffectiveQGaloisTwist_of_isOpenKernel` below is now the assembly of the two.
+Everything above about `horb`, `hopen` and `hac`/`halg` still applies — to this
+leaf, which is where it always belonged.
+
+The four shape hypotheses `hsm`/`hsep`/`hlft`/`hqc` are KEPT in this signature
+even though the descent block no longer needs them here: they may or may not be
+needed for the construction itself (Serre's route only visibly consumes `horb`
+and `hopen`), and supplying them costs the prover nothing while omitting one
+that turns out to be needed would cost a recut. Whoever proves this should
+record in this docstring which of them the proof actually consumes. -/
+theorem exists_isGaloisTwistForm_of_isOpenKernel {K : Type u} [Field K] [Algebra ℚ K]
+    (hac : IsAlgClosed K) (halg : Algebra.IsAlgebraic ℚ K)
+    (b : QGaloisBaseAction K) {X₀ : Scheme.{u}}
+    (fX₀ : X₀ ⟶ Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (hsm : AlgebraicGeometry.Smooth fX₀) (hsep : AlgebraicGeometry.IsSeparated fX₀)
+    (hlft : AlgebraicGeometry.LocallyOfFiniteType fX₀)
+    (hqc : AlgebraicGeometry.QuasiCompact fX₀)
+    (horb : ∀ s : Set X₀, s.Finite → ∃ U : X₀.Opens, IsAffineOpen U ∧ ∀ x ∈ s, x ∈ U)
+    (c : Field.absoluteGaloisGroup ℚ →
+      (Limits.pullback fX₀ (specRatMap K) ⟶ Limits.pullback fX₀ (specRatMap K)))
+    (hc : IsQGaloisCocycle b fX₀ c)
+    (hopen : ∃ N : Subgroup (Field.absoluteGaloisGroup ℚ), N.Normal ∧
+      IsOpen (N : Set (Field.absoluteGaloisGroup ℚ)) ∧ ∀ σ ∈ N, c σ = 𝟙 _) :
+    ∃ (X : Scheme.{u}) (fX : X ⟶ Spec (CommRingCat.of (ULift.{u} ℚ))),
+      IsGaloisTwistForm b fX fX₀ c :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **EFFECTIVITY OF GALOIS DESCENT** (PROVEN 2026-07-29 as an ASSEMBLY; it was
+the sorry node cut 2026-07-28).
+
+Two inputs, and nothing else:
+
+* `exists_isGaloisTwistForm_of_isOpenKernel` — the geometry, i.e. the twist
+  EXISTS. That leaf carries every hypothesis this statement does, and its
+  docstring is where the hypothesis audit (`hac`/`halg`, `horb`, `hopen`) now
+  lives.
+* the fpqc-descent block above `surjectiveFlatQuasiCompact_specRatMap`, which
+  turns `IsFormOver K fX fX₀` — obtained from the twist by
+  `isFormOver_of_isGaloisTwistForm` — into each of the six shape clauses. Five
+  are proven there; `SmoothOfRelativeDimension n` is the open leaf
+  `smoothOfRelativeDimension_descendsAlong_surjectiveFlatQuasiCompact`, invoked
+  here rather than assumed, so that it has one named owner instead of being
+  buried anonymously in this proof.
+
+WHAT THIS MEANS FOR THE TWO CONSUMERS
+(`exists_splitHilbertBlumenthalFamily_of_standardLevelModule` and
+`exists_twistedHilbertBlumenthalDescent_of_split`): nothing. The statement is
+unchanged and both keep calling it exactly as before. -/
 theorem isEffectiveQGaloisTwist_of_isOpenKernel {K : Type u} [Field K] [Algebra ℚ K]
     (hac : IsAlgClosed K) (halg : Algebra.IsAlgebraic ℚ K)
     (b : QGaloisBaseAction K) {X₀ : Scheme.{u}}
@@ -37083,8 +37468,21 @@ theorem isEffectiveQGaloisTwist_of_isOpenKernel {K : Type u} [Field K] [Algebra 
     (hc : IsQGaloisCocycle b fX₀ c)
     (hopen : ∃ N : Subgroup (Field.absoluteGaloisGroup ℚ), N.Normal ∧
       IsOpen (N : Set (Field.absoluteGaloisGroup ℚ)) ∧ ∀ σ ∈ N, c σ = 𝟙 _) :
-    IsEffectiveQGaloisTwist b fX₀ c :=
-  sorry
+    IsEffectiveQGaloisTwist b fX₀ c := by
+  obtain ⟨X, fX, htw⟩ :=
+    exists_isGaloisTwistForm_of_isOpenKernel hac halg b fX₀ hsm hsep hlft hqc horb c hc hopen
+  have hform : IsFormOver K fX fX₀ := isFormOver_of_isGaloisTwistForm htw
+  refine ⟨X, fX, htw, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · exact of_isFormOver_of_descendsAlong (K := K) _ hform hsm
+  · exact of_isFormOver_of_descendsAlong (K := K) _ hform hsep
+  · exact of_isFormOver_of_descendsAlong (K := K) _ hform hlft
+  · exact of_isFormOver_of_descendsAlong (K := K) _ hform hqc
+  · intro n hn
+    haveI := smoothOfRelativeDimension_isStableUnderBaseChange (n := n)
+    haveI := smoothOfRelativeDimension_descendsAlong_surjectiveFlatQuasiCompact.{u} n
+    exact of_isFormOver_of_descendsAlong (K := K) _ hform hn
+  · intro h0
+    exact geometricallyConnected_of_isFormOver fX fX₀ hform h0
 
 /-! ##### The CANONICAL BASE for descent (2026-07-29, PROVEN)
 
