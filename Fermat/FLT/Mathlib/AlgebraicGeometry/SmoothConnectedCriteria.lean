@@ -41,7 +41,12 @@ ring so that a consumer can discharge them by commutative algebra.
 * `smoothOfRelativeDimension_specMap_algebraMap_of_smooth` — what is LEFT of the
   previous item once regularity and perfectness have been consumed: for a
   **smooth** finite-type domain over ANY field, the relative dimension is the
-  Krull dimension (LEAF; no perfectness, no regularity, pure dimension theory).
+  Krull dimension (**PROVEN 2026-07-28**; no perfectness, no regularity).
+* `Algebra.linearIndepOn_pow_of_formallySmooth` — the file's ONLY remaining leaf:
+  a formally smooth field extension is separable in MacLane's sense, Stacks `0323`.
+  It is what the previous item pays for dropping `PerfectField`; mathlib records
+  the same implication as a TODO of its own in
+  `Mathlib/FieldTheory/SeparablyGenerated.lean`.
 * `ringKrullDim_eq_of_isIntegral_of_injective` — an injective integral ring
   extension preserves the Krull dimension, Stacks `00OJ`+`00OK` (**PROVEN
   2026-07-28**, by an `RelSeries.inductionOn'` lift of chains — this is the
@@ -84,6 +89,9 @@ public import Mathlib.RingTheory.KrullDimension.Field
 public import Mathlib.RingTheory.Localization.FractionRing
 public import Mathlib.LinearAlgebra.Dimension.Localization
 public import Mathlib.FieldTheory.IntermediateField.Adjoin.Algebra
+public import Mathlib.FieldTheory.SeparablyGenerated
+public import Mathlib.RingTheory.Smooth.StandardSmoothCotangent
+public import Mathlib.RingTheory.RingHom.Locally
 
 @[expose] public section
 
@@ -93,11 +101,13 @@ open CategoryTheory Limits TensorProduct CommRingCat
 
 /-! ### Commutative-algebra input: regularity, smoothness, and the rank of `Ω`
 
-This section is now sorry-free (`ringKrullDim_eq_of_isIntegral_of_injective`, the
-last leaf here, was PROVEN 2026-07-28).  The one remaining leaf of the file is
-`smoothOfRelativeDimension_specMap_algebraMap_of_smooth`, in the scheme section at
-the end; everything else there is *assembled* with no further mathematical
-content.
+`ringKrullDim_eq_of_isIntegral_of_injective` was PROVEN 2026-07-28, and so was the
+scheme section's `smoothOfRelativeDimension_specMap_algebraMap_of_smooth`.  The ONE
+remaining leaf of the whole file is `Algebra.linearIndepOn_pow_of_formallySmooth`
+below: a formally smooth field extension satisfies MacLane's separability condition
+(Stacks `0323`).  It is a statement purely about fields — no schemes, no dimension
+theory, no differentials — and it is the only place where dropping `PerfectField`
+from the smoothness criterion is paid for.
 -/
 
 namespace Algebra
@@ -175,14 +185,16 @@ theorem FormallySmooth.of_isRegularRing_of_perfectField
   exact FormallySmooth.of_isRegularLocalRing_of_perfectField (K := K)
 
 open scoped IntermediateField.algebraAdjoinAdjoin in
-/-- **The rank of the module of Kähler differentials of a finitely generated field
-extension of a perfect field is its transcendence degree** (PROVEN 2026-07-27).
+/-- **The rank of the module of Kähler differentials of a SEPARABLY GENERATED field
+extension is its transcendence degree** (PROVEN 2026-07-27 for a perfect base;
+generalised 2026-07-28 by moving the separating transcendence basis into the
+hypothesis, which is all the proof ever used).
 
 Mathlib computes `Ω` for a polynomial ring (`KaehlerDifferential.mvPolynomialBasis`)
 and has the whole separably-generated theory
-(`exists_isTranscendenceBasis_and_isSeparable_of_perfectField`), but nowhere
-connects them: `grep -rn "trdeg" Mathlib/RingTheory/Kaehler/` is empty at this pin,
-and so is the reverse grep for `Ω[` over `Mathlib/FieldTheory/`.
+(`Mathlib/FieldTheory/SeparablyGenerated.lean`), but nowhere connects them:
+`grep -rn "trdeg" Mathlib/RingTheory/Kaehler/` is empty at this pin, and so is the
+reverse grep for `Ω[` over `Mathlib/FieldTheory/`.
 
 The proof is a chain of three base changes along formally étale maps, each of
 which multiplies the rank by nothing:
@@ -197,16 +209,18 @@ The left-hand end is `KaehlerDifferential.mvPolynomialBasis`, of rank `#s`; the
 right-hand end is `Ω[L⁄K]`; and `#s = trdeg K L` because `s` is a transcendence
 basis.
 
-`PerfectField K` is load-bearing and is used exactly once, to produce a
-*separating* transcendence basis: over an imperfect field the third arrow can fail
-to be separable and the rank strictly exceeds the transcendence degree (e.g.
-`L = K(t^{1/p})` over `K = 𝔽_p(t)`, where `trdeg = 0` but `Ω[L⁄K]` is
-one-dimensional). -/
-theorem rank_kaehlerDifferential_eq_trdeg_of_perfectField
-    (K L : Type u) [Field K] [PerfectField K] [Field L] [Algebra K L]
-    [Algebra.EssFiniteType K L] :
+## Faithfulness
+
+The separating-basis hypothesis is load-bearing and cannot be weakened to the mere
+existence of a transcendence basis: for `L = K(t^{1/p})` over `K = 𝔽_p(t)` the
+transcendence degree is `0` while `Ω[L⁄K]` is one-dimensional.  What the hypothesis
+buys is exactly that the last arrow is separable algebraic, hence formally étale. -/
+theorem rank_kaehlerDifferential_eq_trdeg_of_exists_separating
+    (K L : Type u) [Field K] [Field L] [Algebra K L] [Algebra.EssFiniteType K L]
+    (hsg : ∃ s : Finset L, IsTranscendenceBasis K ((↑) : s → L) ∧
+      Algebra.IsSeparable (IntermediateField.adjoin K (s : Set L)) L) :
     Module.rank L Ω[L⁄K] = Algebra.trdeg K L := by
-  obtain ⟨s, hs, hsep⟩ := exists_isTranscendenceBasis_and_isSeparable_of_perfectField K L
+  obtain ⟨s, hs, hsep⟩ := hsg
   have hrange : Set.range (Subtype.val : {x // x ∈ s} → L) = (s : Set L) := Subtype.range_coe
   set P := MvPolynomial {x // x ∈ s} K with hP
   set A := Algebra.adjoin K (s : Set L) with hA
@@ -240,6 +254,109 @@ theorem rank_kaehlerDifferential_eq_trdeg_of_perfectField
   have h5 : Cardinal.mk {x // x ∈ s} = Algebra.trdeg K L := by
     simpa using hs.lift_cardinalMk_eq_trdeg
   rw [h1, h2, h3, h4, h5]
+
+/-- **`p`-th powers preserve `K`-linear independence in a formally smooth extension**
+(sorry leaf, opened 2026-07-28).
+
+This is Stacks `0323` — *a formally smooth field extension is separable* — in the
+concrete "MacLane condition" form that mathlib's separably-generated file consumes
+(`exists_isTranscendenceBasis_and_isSeparable_of_linearIndepOn_pow_of_essFiniteType`,
+which is Stacks `030W` (2) ⇒ (1)).  Mathlib records the missing converse as a TODO
+of its own, right above that lemma: *"TODO: show that this is an if and only if."*
+
+The condition is the linear-independence form of "`L ⊗_K K^{1/p}` is reduced".
+
+## The intended route, in three steps
+
+1. *Formal smoothness extends derivations.*  Given a derivation `D : K → K` (over
+   the prime field), the `K`-algebra structure `c ↦ (c, D c)` makes `L[ε] =
+   TrivSqZeroExt L L` a `K`-algebra, `(ε) ² = 0`, and the identity `L → L[ε]/(ε)`
+   is a `K`-algebra map.  `Algebra.FormallySmooth.comp_surjective` lifts it to
+   `σ : L →ₐ[K] L[ε]`, and `σ x = x + D̃ x · ε` defines a derivation `D̃` of `L`
+   restricting to `D` on `K`.  (Abstractly the same statement is that
+   `Ω[K⁄ℤ] ⊗_K L → Ω[L⁄ℤ]` is split injective, i.e. Jacobi–Zariski with
+   `H¹L_{L/K} = 0`.)
+2. *Derivations of `K` separate `K \ K ^ p`.*  If `c ∉ K ^ p` there is a derivation
+   `D` of `K` with `D c ≠ 0` — a `p`-basis argument.  **Neither the `p`-basis theory
+   nor any `Derivation` API for fields is in the pin**: `grep -rn "Derivation"
+   Mathlib/FieldTheory/*.lean` is empty and there is no `pBasis`.  This is the one
+   genuinely missing theory.
+3. *Minimal counterexample.*  Suppose `a₁, …, a_m` are `K`-linearly independent and
+   `∑ cᵢ aᵢ ^ p = 0` with `cᵢ ∈ K` not all zero, with the number of nonzero `cᵢ`
+   minimal; normalise `c₁ = 1`.  For any derivation `D` of `K`, extend it by step 1
+   and apply it: the `aᵢ ^ p` terms differentiate to `p · aᵢ ^ (p - 1) = 0`, leaving
+   `∑ D(cᵢ) aᵢ ^ p = 0`, again with coefficients in `K` and with `D c₁ = D 1 = 0`.
+   Minimality forces every `D cᵢ = 0`, so by step 2 every `cᵢ = dᵢ ^ p`, and then
+   `(∑ dᵢ aᵢ) ^ p = ∑ dᵢ ^ p aᵢ ^ p = 0` contradicts the independence of the `aᵢ`.
+
+*The check that would refute step 2's absence claim*: either grep returning a hit.
+
+## Faithfulness
+
+TRUE as stated, and not vacuous.  `[ExpChar K p]` allows `p = 1` (characteristic
+zero), where `(· ^ 1)` is the identity and the statement is trivially true; the
+content is at `p = char K` prime.  `Algebra.FormallySmooth K L` is load-bearing:
+without it take `K = 𝔽_p(t)`, `L = K(t ^ (1 / p))`, and the `K`-linearly independent
+pair `{1, t ^ (1 / p)}`, whose `p`-th powers `{1, t}` satisfy the nontrivial relation
+`t · 1 - 1 · t = 0`.  No finiteness hypothesis is needed — Stacks `0323` is stated
+for an arbitrary extension.
+
+`_hs` is load-bearing too and is underscored **only because the proof is `sorry`**,
+not because it is decorative: without it take `s = {a, 2 * a}` in characteristic
+`p ≠ 2`, whose `p`-th powers `{a ^ p, 2 ^ p * a ^ p}` are always dependent.  Restore
+the name when the proof is written. -/
+theorem linearIndepOn_pow_of_formallySmooth
+    (K L : Type u) [Field K] [Field L] [Algebra K L] [Algebra.FormallySmooth K L]
+    (p : ℕ) [ExpChar K p] (s : Finset L) (_hs : LinearIndepOn K _root_.id (s : Set L)) :
+    LinearIndepOn K (· ^ p) (s : Set L) :=
+  sorry
+
+/-- **A formally smooth field extension of finite type is separably generated**
+(PROVEN 2026-07-28 over the leaf above).
+
+In characteristic zero the base field is perfect and mathlib's
+`exists_isTranscendenceBasis_and_isSeparable_of_perfectField` applies directly, so
+the leaf is only ever consumed in characteristic `p`. -/
+theorem exists_isTranscendenceBasis_and_isSeparable_of_formallySmooth
+    (K L : Type u) [Field K] [Field L] [Algebra K L] [Algebra.EssFiniteType K L]
+    [Algebra.FormallySmooth K L] :
+    ∃ s : Finset L, IsTranscendenceBasis K ((↑) : s → L) ∧
+      Algebra.IsSeparable (IntermediateField.adjoin K (s : Set L)) L := by
+  obtain _ | ⟨p, hp, hpK⟩ := CharP.exists' K
+  · exact exists_isTranscendenceBasis_and_isSeparable_of_perfectField K L
+  · haveI : ExpChar K p := .prime hp.out
+    exact exists_isTranscendenceBasis_and_isSeparable_of_linearIndepOn_pow_of_essFiniteType
+      p hp.out fun s hs ↦ linearIndepOn_pow_of_formallySmooth K L p s hs
+
+/-- **The rank of `Ω` of a formally smooth field extension of finite type is its
+transcendence degree** (PROVEN 2026-07-28).
+
+This is the characteristic-free replacement for
+`rank_kaehlerDifferential_eq_trdeg_of_perfectField`: formal smoothness does exactly
+the job perfectness did, namely produce a *separating* transcendence basis. -/
+theorem rank_kaehlerDifferential_eq_trdeg_of_formallySmooth
+    (K L : Type u) [Field K] [Field L] [Algebra K L] [Algebra.EssFiniteType K L]
+    [Algebra.FormallySmooth K L] :
+    Module.rank L Ω[L⁄K] = Algebra.trdeg K L :=
+  rank_kaehlerDifferential_eq_trdeg_of_exists_separating K L
+    (exists_isTranscendenceBasis_and_isSeparable_of_formallySmooth K L)
+
+/-- **The rank of the module of Kähler differentials of a finitely generated field
+extension of a perfect field is its transcendence degree** (PROVEN 2026-07-27; since
+2026-07-28 a two-line corollary of
+`rank_kaehlerDifferential_eq_trdeg_of_exists_separating`, which carries the proof).
+
+`PerfectField K` is load-bearing and is used exactly once, to produce a
+*separating* transcendence basis: over an imperfect field the third arrow can fail
+to be separable and the rank strictly exceeds the transcendence degree (e.g.
+`L = K(t^{1/p})` over `K = 𝔽_p(t)`, where `trdeg = 0` but `Ω[L⁄K]` is
+one-dimensional). -/
+theorem rank_kaehlerDifferential_eq_trdeg_of_perfectField
+    (K L : Type u) [Field K] [PerfectField K] [Field L] [Algebra K L]
+    [Algebra.EssFiniteType K L] :
+    Module.rank L Ω[L⁄K] = Algebra.trdeg K L :=
+  rank_kaehlerDifferential_eq_trdeg_of_exists_separating K L
+    (exists_isTranscendenceBasis_and_isSeparable_of_perfectField K L)
 
 end Algebra
 
@@ -427,6 +544,62 @@ theorem rank_kaehlerDifferential_eq_of_ringKrullDim
     rank_kaehlerDifferential_eq_trdeg_of_perfectField K (FractionRing B),
     trdeg_fractionRing_eq_of_ringKrullDim K B n hdim]
 
+/-- **The module of Kähler differentials of a SMOOTH finite-type domain over ANY field
+has rank the Krull dimension** (PROVEN 2026-07-28).
+
+The characteristic-free companion of `rank_kaehlerDifferential_eq_of_ringKrullDim`:
+smoothness replaces perfectness of the base, because `Frac B` is then formally smooth
+over `K` and `rank_kaehlerDifferential_eq_trdeg_of_formallySmooth` applies at the
+generic point.  The rest is the same two moves: `Frac B` is a localization of `B`,
+hence formally étale over it, so `Ω` base-changes and the rank is read at the generic
+point; and there the rank is the transcendence degree, which is the dimension. -/
+theorem rank_kaehlerDifferential_eq_of_ringKrullDim_of_smooth
+    (K B : Type u) [Field K] [CommRing B] [IsDomain B] [Algebra K B]
+    [Algebra.Smooth K B] (n : ℕ) (hdim : ringKrullDim B = n) :
+    Module.rank B Ω[B⁄K] = (n : Cardinal) := by
+  haveI : Algebra.FormallyEtale B (FractionRing B) :=
+    Algebra.FormallyEtale.of_isLocalization (nonZeroDivisors B)
+  haveI : Algebra.EssFiniteType B (FractionRing B) := .of_isLocalization _ (nonZeroDivisors B)
+  haveI : Algebra.EssFiniteType K (FractionRing B) := .comp K B _
+  haveI : Algebra.FormallySmooth K (FractionRing B) := .comp K B _
+  rw [← (KaehlerDifferential.isBaseChange_of_formallyEtale K B (FractionRing B)).rank_eq,
+    rank_kaehlerDifferential_eq_trdeg_of_formallySmooth K (FractionRing B),
+    trdeg_fractionRing_eq_of_ringKrullDim K B n hdim]
+
+/-- **A localization away from a nonzero element of a smooth finite-type domain is
+standard smooth of relative dimension the Krull dimension of the domain** (PROVEN
+2026-07-28).
+
+This is the chart-level statement that makes the scheme statement below local: the
+relative dimension of a chart `B_t` is read off `Module.rank B_t Ω[B_t⁄K]`
+(`Algebra.IsStandardSmoothOfRelativeDimension.iff_of_isStandardSmooth`), and that rank
+is the rank of `Ω[B⁄K]` because `Ω[B_t⁄K]` is the localization of `Ω[B⁄K]`
+(`KaehlerDifferential.map` is an `IsLocalizedModule`) — so no dimension theory of the
+localization is needed and, in particular, one never has to know that
+`ringKrullDim B_t = ringKrullDim B`.
+
+`t ≠ 0` is load-bearing: `Localization.Away 0` is the zero ring, whose `Ω` has rank `0`,
+and the conclusion fails there for every `n ≠ 0`.  It is used twice, for `Nontrivial B_t`
+and to put the powers of `t` inside the non-zero-divisors. -/
+theorem isStandardSmoothOfRelativeDimension_localizationAway_of_smooth
+    (K B : Type u) [Field K] [CommRing B] [IsDomain B] [Algebra K B]
+    [Algebra.Smooth K B] (n : ℕ) (hdim : ringKrullDim B = n)
+    {Bt : Type u} [CommRing Bt] [Algebra B Bt] [Algebra K Bt] [IsScalarTower K B Bt]
+    (t : B) (ht : t ≠ 0) [IsLocalization.Away t Bt] [Algebra.IsStandardSmooth K Bt] :
+    Algebra.IsStandardSmoothOfRelativeDimension n K Bt := by
+  have hp : Submonoid.powers t ≤ nonZeroDivisors B :=
+    Submonoid.powers_le.mpr (mem_nonZeroDivisors_of_ne_zero ht)
+  haveI : Nontrivial Bt := (IsLocalization.injective Bt hp).nontrivial
+  have h1 : Module.rank B Ω[B⁄K] = (n : Cardinal) :=
+    rank_kaehlerDifferential_eq_of_ringKrullDim_of_smooth K B n hdim
+  have h2 : Module.rank Bt Ω[Bt⁄K] = Module.rank B Ω[Bt⁄K] :=
+    IsLocalization.rank_eq (R := B) Bt (Submonoid.powers t) hp
+  have h3 : Module.rank B Ω[Bt⁄K] = Module.rank B Ω[B⁄K] :=
+    IsLocalizedModule.rank_eq (p := Submonoid.powers t) (hp := hp)
+      (f := KaehlerDifferential.map K K B Bt)
+  exact (Algebra.IsStandardSmoothOfRelativeDimension.iff_of_isStandardSmooth n).mpr
+    (by rw [h2, h3, h1])
+
 end Algebra
 
 namespace AlgebraicGeometry
@@ -486,10 +659,11 @@ theorem geometricallyConnected_specMap_algebraMap_of_forall_isDomain
 /-! ### Smoothness of an affine curve over a perfect field -/
 
 /-- **THE RELATIVE DIMENSION OF A SMOOTH AFFINE VARIETY IS ITS KRULL DIMENSION**
-(sorry leaf, opened 2026-07-28 as the residue of
+(opened as a sorry leaf 2026-07-28 as the residue of
 `smoothOfRelativeDimension_specMap_algebraMap_of_isRegularRing` after Stacks
-`056S` was discharged onto
-`Algebra.Smooth.of_isRegularRing_of_perfectField`).
+`056S` was discharged onto `Algebra.Smooth.of_isRegularRing_of_perfectField`;
+**PROVEN 2026-07-28**, over the single new field-theoretic leaf
+`Algebra.linearIndepOn_pow_of_formallySmooth` — see "How it was closed" below).
 
 **There is no perfectness and no regularity left in this statement**, and that
 is the point of the cut: everything characteristic-theoretic has been consumed
@@ -513,13 +687,49 @@ So the whole content is:
 *Refute it with*: a smooth finite-type `K`-DOMAIN whose relative dimension over
 `K` differs from `ringKrullDim`.  There is none.  Note `IsDomain` cannot be
 dropped — see the faithfulness note on the consumer below — and `t = 0` must be
-excluded from the cover when the proof is written, since `Localization.Away 0`
-is the zero ring. -/
+excluded from the cover, since `Localization.Away 0` is the zero ring.
+
+## How it was closed
+
+`HasRingHomProperty.Spec_iff` turns the goal into
+`Locally (IsStandardSmoothOfRelativeDimension n) (algebraMap K B)`, i.e. into a
+cover of `Spec B` by basic opens on each of which the relative dimension is `n`.
+`Algebra.Smooth.exists_span_eq_top_isStandardSmooth` supplies a cover on which the
+charts are standard smooth; **`0` is deleted from it by hand** (which does not
+change the span), and then
+`Algebra.isStandardSmoothOfRelativeDimension_localizationAway_of_smooth` reads the
+relative dimension of each chart off `Module.rank B Ω[B⁄K]`.  Note that the Krull
+dimension of the CHART is never mentioned: the rank, not the dimension, is what
+localizes, which is why no catenary/equidimensionality theory is needed.
+
+The one piece of real mathematics is `Module.rank B Ω[B⁄K] = ringKrullDim B` for a
+smooth finite-type domain over an ARBITRARY field
+(`Algebra.rank_kaehlerDifferential_eq_of_ringKrullDim_of_smooth`), and it rests on
+one leaf: a formally smooth field extension is separably generated
+(`Algebra.linearIndepOn_pow_of_formallySmooth`, Stacks `0323`).  That is where the
+"no perfectness" of this statement is paid for — over a perfect base the same rank
+computation is unconditional. -/
 theorem smoothOfRelativeDimension_specMap_algebraMap_of_smooth
     (K B : Type u) [Field K] [CommRing B] [IsDomain B] [Algebra K B]
-    [Algebra.Smooth K B] (n : ℕ) (_hdim : ringKrullDim B = n) :
-    SmoothOfRelativeDimension n (Spec.map (ofHom (algebraMap K B))) :=
-  sorry
+    [Algebra.Smooth K B] (n : ℕ) (hdim : ringKrullDim B = n) :
+    SmoothOfRelativeDimension n (Spec.map (ofHom (algebraMap K B))) := by
+  rw [HasRingHomProperty.Spec_iff (P := @SmoothOfRelativeDimension n)]
+  obtain ⟨s, hspan, hsm⟩ := Algebra.Smooth.exists_span_eq_top_isStandardSmooth K B
+  refine ⟨s \ {0}, ?_, ?_⟩
+  · rw [eq_top_iff, ← hspan, Ideal.span_le]
+    intro x hx
+    by_cases hx0 : x = 0
+    · simp [hx0]
+    · exact Ideal.subset_span ⟨hx, hx0⟩
+  · rintro t ⟨hts, ht0⟩
+    haveI := hsm t hts
+    have hcomp : (algebraMap B (Localization.Away t)).comp
+        ((ofHom (algebraMap K B) : CommRingCat.of K ⟶ CommRingCat.of B)).hom
+        = algebraMap K (Localization.Away t) :=
+      (IsScalarTower.algebraMap_eq K B (Localization.Away t)).symm
+    rw [hcomp, RingHom.isStandardSmoothOfRelativeDimension_algebraMap]
+    exact Algebra.isStandardSmoothOfRelativeDimension_localizationAway_of_smooth
+      K B n hdim t (by simpa using ht0)
 
 /-- **Regular + finite type over a perfect field ⟹ smooth of relative dimension
 the Krull dimension** (**PROVEN 2026-07-28**; opened as a sorry leaf 2026-07-27).
