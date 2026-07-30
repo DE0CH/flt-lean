@@ -17777,9 +17777,204 @@ theorem exists_levelTateFrameTower_of_levelTateFrame_finiteBase
     exact congrArg Subtype.val (e.map_smul a u)
 
 open _root_.NumberField in
+/-- **THE LEVEL SCALARS ARE COHERENT: `s_b ≡ s_a (mod Iᵃ)` FOR `a ≤ b`**
+(PROVEN 2026-07-30).
+
+This is the "compatibility across `n` is derivable inside" clause of
+`exists_globalFrobCharScalar_atPrime_of_levelScalar_finiteBase`'s
+docstring, extracted as a statement of its own so that the leaf beneath
+it can RECEIVE it rather than re-derive it.  It is not content — no
+abelian-variety theory occurs — but it is not nothing either: it is what
+turns the family `sₙ` into an element of the `I`-adic completion, and it
+is exactly the half of that leaf that is NOT the integrality.
+
+THE ARGUMENT.  `A'[Iᵃ] ⊆ A'[Iᵇ]` for `a ≤ b`, so the level-`b` equation
+holds on `A'[Iᵃ]` as well, and subtracting the level-`a` equation kills
+`s_b − s_a` on `F(A'[Iᵃ])`.  That image is ALL of `A'[Iᵃ]`, because `F` is
+the action of a GROUP element: `z = F (σ⁻¹ · z)` and the torsion is
+Galois-stable (the second component of `Mult.torsion`).  So `s_b − s_a`
+annihilates `A'[Iᵃ]`; feeding the frame's first basis vector `(1, 0)`
+through the semilinearity clause and using injectivity of `c` gives
+`s_b − s_a ↦ 0` in `𝒪_D ⧸ Iᵃ`.
+
+`hc` IS LOAD-BEARING, and the statement is FALSE without it: the
+annihilator of `A'[Iᵃ]` is `Iᵃ` only because the frame makes that module
+free of rank two over `𝒪_D ⧸ Iᵃ`.  With no frame, `A'[Iᵃ]` may be `0` —
+a relative-dimension-zero `f'` gives exactly that — the equations are
+then vacuous at every level, and `sₙ` is unconstrained. -/
+theorem frobLevelScalar_sub_mem_of_levelTateFrame_finiteBase
+    {k : Type u} [Field k] (N : ℕ)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    (σ : Field.absoluteGaloisGroup k)
+    (I : Ideal (NumberField.RingOfIntegers D))
+    (s : ℕ → NumberField.RingOfIntegers D)
+    (hs : ∀ n : ℕ, ∀ y ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).1,
+      ab'.add (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ
+          (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y))
+        (m'.act (N : NumberField.RingOfIntegers D) y)
+        = m'.act (s n) (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y))
+    (a b : ℕ) (hab : a ≤ b)
+    (c : (Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ a) →
+      GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+    (hc : IsLevelTateFrame m' (𝟙 (Spec (CommRingCat.of k))) (I ^ a) c) :
+    s b - s a ∈ I ^ a := by
+  classical
+  letI : AddCommGroup (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
+    ab'.addCommGroup (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+  letI : Module (NumberField.RingOfIntegers D)
+      (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
+    m'.module (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+  letI : DistribMulAction (Field.absoluteGaloisGroup k)
+      (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
+    ab'.geomFibreAction (𝟙 (Spec (CommRingCat.of k)))
+  -- ### every `I ^ a`-torsion point is killed by `s b - s a`
+  have hkill : ∀ z ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ a)).1,
+      m'.act (s b - s a) z = 0 := by
+    intro z hz
+    set y := ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ⁻¹ z with hy_def
+    have hy : y ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ a)).1 :=
+      (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ a)).2 σ⁻¹ z hz
+    have hyb : y ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ b)).1 :=
+      LevelFrame.tors_mono (Ideal.pow_le_pow_right hab) hy
+    have hFy : ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y = z := by
+      rw [hy_def]
+      show σ • (σ⁻¹ • z) = z
+      rw [smul_smul, mul_inv_cancel, one_smul]
+    have h1 := hs b y hyb
+    have h2 := hs a y hy
+    rw [hFy] at h1 h2
+    have h3 : m'.act (s b) z = m'.act (s a) z := by rw [← h1, ← h2]
+    show (s b - s a) • z = 0
+    rw [sub_smul, sub_eq_zero]
+    exact h3
+  -- ### the frame turns that into a congruence in `𝒪_D ⧸ I ^ a`
+  have hc0 : c 0 = 0 := by
+    have h := hc.2.1 0 0
+    rw [add_zero] at h
+    have h2 : c 0 + c 0 = c 0 + 0 := by rw [add_zero]; exact h.symm
+    exact add_left_cancel h2
+  set u : Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ a := fun i => if i = 0 then 1 else 0
+    with hu_def
+  have hcu := hkill (c u) (hc.1 u)
+  have hsem := hc.2.2.2.2 (s b - s a) u
+  have hzero : c (fun i => Ideal.Quotient.mk (I ^ a) (s b - s a) * u i) = c 0 := by
+    rw [hsem, hc0]
+    exact hcu
+  have huz := hc.2.2.1 hzero
+  have hev : Ideal.Quotient.mk (I ^ a) (s b - s a) = 0 := by
+    have h := congrFun huz 0
+    simpa [hu_def] using h
+  exact (Ideal.Quotient.eq_zero_iff_mem).mp hev
+
+set_option linter.unusedVariables false in
+open _root_.NumberField in
+/-- **THE FROBENIUS CHARACTERISTIC SCALAR IS INTEGRAL, AT ONE PRIME —
+THE `I`-ADIC LIMIT LANDS IN THE GLOBAL RING** (sorry leaf; **SHARPENED
+2026-07-30**, see the note at the end).
+
+The level scalars `sₙ` are handed in as a plain sequence together with
+their coherence `s_b ≡ s_a (mod Iᵃ)`, which
+`frobLevelScalar_sub_mem_of_levelTateFrame_finiteBase` above supplies for
+free; so this leaf carries no frame quantifier, no existential over `s`,
+and its conclusion is a statement of pure ideal arithmetic.  What is left
+is EXACTLY the integrality: the coherent family defines an element of the
+`I`-adic completion `𝒪_{D,I}`, and the content is that it lies in the
+GLOBAL ring `𝒪_D`.
+
+**FAITHFULNESS — `htower` CANNOT BE DROPPED, AND THIS IS THE ONE THING TO
+CHECK BEFORE WEAKENING THE STATEMENT.**  With `htower` removed the leaf is
+FALSE, and not marginally: take `f'` of relative dimension zero, so
+`A'[Iⁿ] = 0` at every level.  Then `hs` is VACUOUS (both sides are the
+zero point), `hcoh` is the only constraint on `s`, and any sequence of
+partial sums `sₙ = Σ_{j<n} cⱼ πʲ` whose `I`-adic limit is irrational over
+`𝒪_D` satisfies it — `𝒪_D` is DENSE in `𝒪_{D,I}` and strictly smaller, so
+such a sequence exists — while the conclusion demands `t − sₙ ∈ Iⁿ` for
+every `n`, which pins `t` to that limit.  `htower` is what forbids this:
+a frame at level `n ≥ 1` is an injection of `(𝒪_D ⧸ Iⁿ)²` into `A'[Iⁿ]`,
+so the torsion is large enough that `hs` determines `sₙ` modulo `Iⁿ`.
+
+`hσ`, `hq`, `hqN` and `hqI` are carried unchanged from the pre-sharpening
+statement; `hσ` is what identifies the Galois action with the Frobenius
+endomorphism, without which the displayed equation has constant term `N`
+for no reason.
+
+**THE AXIS THAT WOULD REDUCE IT FURTHER, AND WHICH IS NOT SEARCHED HERE**
+(inherited from the pre-sharpening docstring, and still accurate).  The
+level and frame axes are CLOSED: every restatement in terms of the matrix
+`Φ`, of `A'[Iⁿ]` or of the Galois action on torsion is equivalent to the
+above modulo the determinant leaf, and coherence across `n` is now
+discharged above rather than merely derivable.  The open axis is the
+ENDOMORPHISM axis: `End_k(A')` as a ring (which needs rigidity — a
+pointed morphism of abelian schemes is additive), faithfulness of the
+`I`-adic representation `End⁰_D(A') ↪ End_{D_I}(V_I A')`, and
+`𝒪_D = D ∩ End_k(A')`.  With those three STATED — not proven — the
+argument is short: `D[F]` is a commutative `D`-subalgebra acting
+`D_I`-linearly on a rank-two module, hence of degree at most two, so `F`
+satisfies a monic quadratic over `D` whose coefficients are integral
+because `F` preserves the lattice `T_I`; the `sₙ` are its reductions.
+None of `End_k(A')`, rigidity or Tate-module faithfulness exists in this
+tree, in mathlib (`grep -rli frobenius
+.lake/packages/mathlib/Mathlib/AlgebraicGeometry/` is empty) or in
+`~/cs/FLT`, which is why the cut stops here rather than one level lower.
+
+An archimedean route is the other classical one and is NOT cheaper here:
+it needs `#A'(k_m) = deg(F^m − 1)` and positivity of the Rosati
+involution to get `|t| ≤ 2√N`, hence finitely many candidates in the
+lattice `𝒪_D`, hence a repeated value — and the degree formula is the
+same missing theory.
+
+**WHAT THE SHARPENING DID AND DID NOT DO.**  It did not reduce the leaf
+count: this is one `sorry` replacing one `sorry`.  It moved the
+frame-and-uniqueness bookkeeping OUT of the leaf (into the proven lemma
+above and into the consumer's assembly) and left the deep half alone, so
+the next owner reads a statement whose only mathematical content is
+integrality. -/
+theorem exists_globalFrobCharScalar_atPrime_of_coherentLevelScalar_finiteBase
+    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    (σ : Field.absoluteGaloisGroup k)
+    (hσ : ∀ z : AlgebraicClosure k,
+      (σ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k) z = z ^ N)
+    (q : ℕ) (hq : q.Prime) (hqN : ¬ q ∣ N)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    (htower : ∀ n : ℕ, ∃ c : (Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ n) →
+        GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
+      IsLevelTateFrame m' (𝟙 (Spec (CommRingCat.of k))) (I ^ n) c)
+    (s : ℕ → NumberField.RingOfIntegers D)
+    (hs : ∀ n : ℕ, ∀ y ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).1,
+      ab'.add (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ
+          (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y))
+        (m'.act (N : NumberField.RingOfIntegers D) y)
+        = m'.act (s n) (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y))
+    (hcoh : ∀ a b : ℕ, a ≤ b → s b - s a ∈ I ^ a) :
+    ∃ t : NumberField.RingOfIntegers D, ∀ n : ℕ, t - s n ∈ I ^ n :=
+  sorry
+
+open _root_.NumberField in
 /-- **THE FROBENIUS CHARACTERISTIC SCALAR IS INTEGRAL, AT ONE PRIME**
-(sorry leaf — the INTEGRALITY half of Weil's rationality theorem; Mumford
+(**PROVEN 2026-07-30** over the sharpened leaf
+`exists_globalFrobCharScalar_atPrime_of_coherentLevelScalar_finiteBase`
+and the coherence lemma
+`frobLevelScalar_sub_mem_of_levelTateFrame_finiteBase`, both immediately
+above — the INTEGRALITY half of Weil's rationality theorem; Mumford
 *Abelian Varieties* §19, Milne *Abelian Varieties* §V, Tate 1966).
+
+THE ASSEMBLY, which is all that is left here.  `htower` chooses a frame
+at every level and `hlev` then a scalar `sₙ` at every level; the
+coherence lemma makes the family coherent; the sharpened leaf produces
+the global `t` with `t − sₙ ∈ Iⁿ`; and `Iⁿ` annihilates `A'[Iⁿ]`, which
+contains `F y` because the torsion is Galois-stable, so `t` and `sₙ` act
+identically there and the level-`n` equation transfers from `sₙ` to `t`.
+
+The original docstring, kept because it records what the statement means
+and which axes are exhausted:
 
 Fix ONE maximal ideal `I` of residue characteristic prime to `N` whose
 whole tower is rank two (`htower`).  Given the LEVELWISE characteristic
@@ -17868,8 +18063,38 @@ theorem exists_globalFrobCharScalar_atPrime_of_levelScalar_finiteBase
         ab'.add (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ
             (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y))
           (m'.act (N : NumberField.RingOfIntegers D) y)
-          = m'.act t (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y) :=
-  sorry
+          = m'.act t (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y) := by
+  classical
+  letI : AddCommGroup (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
+    ab'.addCommGroup (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+  letI : Module (NumberField.RingOfIntegers D)
+      (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
+    m'.module (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+  -- ### a frame and a scalar at every level
+  choose c hc using htower
+  choose s hs using fun n => hlev n (c n) (hc n)
+  -- ### the scalars are coherent, by the lemma above
+  have hcoh : ∀ a b : ℕ, a ≤ b → s b - s a ∈ I ^ a := fun a b hab =>
+    frobLevelScalar_sub_mem_of_levelTateFrame_finiteBase N ab' m' σ I s hs a b hab (c a) (hc a)
+  -- ### the integrality leaf
+  obtain ⟨t, ht⟩ := exists_globalFrobCharScalar_atPrime_of_coherentLevelScalar_finiteBase
+    hfin N hN ab' m' σ hσ q hq hqN I hI hqI (fun n => ⟨c n, hc n⟩) s hs hcoh
+  refine ⟨t, fun n y hy => ?_⟩
+  -- ### `Iⁿ` annihilates `F y`, so `t` and `s n` act identically on it
+  have hFy : ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y
+      ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).1 :=
+    (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).2 σ y hy
+  have hdiff : m'.act (t - s n) (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y)
+      = ab'.zero (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k))) :=
+    (mem_torsion_iff m' (𝟙 (Spec (CommRingCat.of k))) (I ^ n) _).mp hFy _ (ht n)
+  have hact : m'.act t (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y)
+      = m'.act (s n) (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y) := by
+    show t • (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y)
+        = s n • (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y)
+    rw [← sub_eq_zero, ← sub_smul]
+    exact hdiff
+  rw [hact]
+  exact hs n y hy
 
 open _root_.NumberField in
 /-- **THE LEVELWISE FROBENIUS SCALARS COME FROM ONE GLOBAL INTEGER OF
