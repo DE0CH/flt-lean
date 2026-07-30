@@ -5769,11 +5769,32 @@ so the next reader can re-check a claim instead of redoing the survey.
   With `δ = 0` the residual obligation `ker δ ⊆ 2·Pic` IS this leaf's conclusion, verbatim
   — the junk-structure trap the `Picard` section docstring warns against.  An honest
   pinning must therefore constrain `δ` at a NON-rational closed point, which needs residue
-  fields `κ(v)` and the norms `N_{κ(v) ⊗ L / L}` — precisely the degree theory `PlaceData`
-  deliberately omits (see "Why `Pic` is `Pic⁰` although no degree map appears").  So the
-  cut is available exactly when someone extends `PlaceData` with residue fields.
+  fields `κ(v)` and the norms `N_{κ(v) ⊗ L / L}`.
   *Refuting check*: exhibit constraints on `δ` mentioning only rational points that the
   genuine descent map satisfies and the zero map does not.
+
+  **AMENDED 2026-07-30 — the "missing structure" is now HALF present, and the audit's
+  structural claim is stale.**  This bullet said the residue fields are "precisely the degree
+  theory `PlaceData` deliberately omits".  That was true of the interface as originally
+  written and is NOT true of the file today: the degree layer at the head of the `PlaceData`
+  namespace carries `valRing v` (a `K`-subalgebra of `F`), `valMax v` (an ideal of it),
+  `residue v = O_v/m_v` as a `K`-ALGEBRA, and `degOf v = [κ(v) : K]`, all PROVEN, and
+  `degOf_divisor_eq_zero'` is the degree formula over them.  `Algebra.norm` in mathlib then
+  supplies `N_{κ(v) ⊗ L / L}` for a finite `L`-algebra with no new interface at all.
+
+  What is genuinely still absent is ONE short step and one construction:
+
+  * `residue v` is **not proven to be a field** — `m_v` maximal, i.e. `ord v z = 0` makes `z`
+    a unit of `O_v`, which is `ord_inv` plus `mem_valRing_iff` and is a few lines.  The
+    `residue` docstring says so explicitly ("nothing below needs that, so it is not proven
+    here");
+  * nothing relates `κ(v)` to `L = ℚ[x]/(f)`, which is what the descent map is valued in.
+
+  **Do not go and prove the field lemma on its own.**  It would be FREE-FLOATING — no proof
+  reachable from `fermat_last_theorem` would consume it — and the project forbids that; work
+  top-down.  The correct next dispatch writes the `δ` SKELETON first (definition, the
+  non-rational-point pinning, and `ker δ ⊆ 2·Pic` as a sorried `have` with its exact
+  statement), and the field lemma and the norm then arrive with a consumer already waiting.
 * **REDUCTION axis — structurally empty, not merely unfinished.**  `exists_reduction` gives
   `red : D.Pic →+ D'.Pic` with torsion-free kernel.  For finitely generated `Pic` that
   makes `ker red ≅ ℤ^rank` and `Pic / ker red` embed in the finite `J(𝔽₅)`, so reduction
@@ -5795,9 +5816,11 @@ so the next reader can re-check a claim instead of redoing the survey.
   project, in mathlib, or in `~/cs/FLT`.  *Refuting check*: grep any of the three for an
   Euler system or a Gross–Zagier formula.
 
-**Do not manufacture a decomposition along the descent axis without the residue fields.**
-Every cut of the shape "a `δ` with `ker δ ⊆ 2·Pic` exists" plus "that `δ` vanishes" is
-discharged by `δ = 0` and is therefore vacuous, by the first bullet. -/
+**Do not manufacture a decomposition along the descent axis pinned only at rational
+points.**  Every cut of the shape "a `δ` with `ker δ ⊆ 2·Pic` exists" plus "that `δ`
+vanishes" is discharged by `δ = 0` and is therefore vacuous, by the first bullet.  Note the
+2026-07-30 amendment there: the obstruction is the PINNING, not the absence of residue
+fields, which the file has carried since the degree layer landed. -/
 theorem two_divisible_pic (D : PlaceData 1 (-2) 5 (-10) 10 (-4) ℚ) (z : D.Pic) :
     ∃ w : D.Pic, z = 2 • w := sorry
 
@@ -6240,7 +6263,12 @@ cut needs the map `δ : Pic → L*/L*²`, `L = ℚ[x]/(f)`, pinned by a CONSTRUC
 it by its values on rational points is powerless because `#Sel₂ = 1` makes the genuine `δ`
 identically zero on `J(ℚ)` — so the junk model `δ = 0` meets every such constraint and
 reduces the cut to this leaf's own conclusion.  Pinning needs residue fields `κ(v)` and
-their norms, which `PlaceData` deliberately does not carry.
+their norms.  **AMENDED 2026-07-30**: this used to end "which `PlaceData` deliberately does
+not carry", and that is stale — `valRing`, `valMax`, `residue` and `degOf` are all PROVEN in
+the `PlaceData` namespace, and `Algebra.norm` supplies the norm.  See the amended bullet on
+`X18.two_divisible_pic` for what is genuinely still missing (that `residue v` is a FIELD, and
+any map relating it to `L`) and for why the field lemma must NOT be proven ahead of a
+consumer.
 
 The level-`13` specifics that strengthen the same verdict: `IsSimple(JOne(13)) = true`
 (Magma `ModAbVar`, 2026-07-28) confirms by a second, independent method the `ℚ`-simplicity
