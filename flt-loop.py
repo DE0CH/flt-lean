@@ -23,6 +23,7 @@ import pathlib
 import re
 import shlex
 import subprocess
+import urllib.request
 import sys
 import time
 
@@ -44,6 +45,11 @@ SNAPSHOT = pathlib.Path.home() / ".flt-release-lake" / "build"
 SNAPSHOT_SHA = pathlib.Path.home() / ".flt-release-lake" / "sha"
 DOCTRINE = pathlib.Path.home() / ".flt-agent-doctrine.md"
 CLAUDE = str(pathlib.Path.home() / ".local" / "bin" / "claude")
+# The fleet's model, pinned. The quota probe deliberately keeps this too: it is
+# a negligible cost and Deyao wants the probe answering the "will the API serve
+# us" question on exactly the model the fleet uses, so a refusal it sees is a
+# refusal the workers would see.
+MODEL = "opus[1m]"
 TICK = 10
 HOST_REFRESH = 300          # seconds; a loadavg older than this is not useful
 ALIVE_CACHE = 20            # seconds; one ssh sweep per host, not per job
@@ -167,15 +173,50 @@ def ssh(host, cmd, timeout=60):
                            host, cmd], capture_output=True, text=True, timeout=timeout)
 
 
-def email(subject, body):
-    """Deyao asked to be told when things go wrong. One channel, no library."""
+NOTIFY = str(pathlib.Path.home() / ".local" / "bin" / "notify")
+# Homebrew's python -- which `/usr/bin/env python3` picks in a NON-interactive
+# shell -- reports cafile=None and looks only in ~/homebrew/etc/openssl@3/certs,
+# so it never sees the valid system bundle and every send died with
+# CERTIFICATE_VERIFY_FAILED. Pointing at the real bundle fixes it with
+# verification left ON; the same class of bug as `claude` not being on PATH.
+CA_BUNDLE = "/etc/ssl/certs/ca-certificates.crt"
+
+
+def notify(subject, body=""):
+    """Tell Deyao. Uses the existing `notify` CLI -- it DMs him and pushes to
+    his phone.
+
+    This replaced a Discord client I had written myself, which was the wrong
+    instinct: the working tool already existed, and building a second one meant
+    a second thing to configure, to break, and to not notice was broken.
+
+    Logged to notify.log FIRST, before any send. These messages report things
+    nobody is watching for, so one that cannot be delivered must still exist
+    somewhere. Exit codes from the CLI: 0 sent, 1 Discord refused, 2 not
+    configured -- recorded so a silent failure is impossible to mistake for
+    delivery.
+    """
     try:
-        subprocess.run(["mail", "-s", subject, "chendeyao001@proton.me"],
-                       input=body, text=True, timeout=60)
-    except Exception:
+        with open(STATE / "notify.log", "a") as fh:
+            fh.write("%s | %s\n%s\n" % (time.strftime("%F %T"), subject, body))
+    except OSError:
         pass
-    with open(STATE / "email.log", "a") as fh:
-        fh.write("%s | %s\n%s\n" % (time.strftime("%F %T"), subject, body))
+    env = dict(os.environ, SSL_CERT_FILE=CA_BUNDLE)
+    try:
+        r = subprocess.run([NOTIFY, "--title", subject[:200], body[:3500]],
+                           capture_output=True, text=True, timeout=60, env=env)
+        if r.returncode != 0:
+            with open(STATE / "notify.log", "a") as fh:
+                fh.write("  !! notify exit %d: %s\n"
+                         % (r.returncode, (r.stderr or r.stdout).strip()[:300]))
+        return r.returncode == 0
+    except Exception as e:
+        try:
+            with open(STATE / "notify.log", "a") as fh:
+                fh.write("  !! notify failed: %r\n" % (e,))
+        except OSError:
+            pass
+        return False
 
 
 # ------------------------------------------------------------- host metrics
@@ -289,18 +330,68 @@ Commit your work to your branch, then write this file, LAST, as your final act:
 
 containing exactly one JSON object:
 
-    {"token": "%(token)s", "panic": false, "why": "", "summary": "<one line>"}
+    {"token": "%(token)s",
+     "queue":     ["<full text of a task for a future agent>", ...],
+     "to_merger": ["<one thing the next merge worker must know>", ...],
+     "to_medic":  ""}
 
-  * `token` must be copied verbatim or the loop ignores the file.
-  * `panic` is NOT a verdict on the mathematics. A proof that did not go
-    through, a leaf that turned out to be FALSE AS STATED, a target already
-    proven elsewhere -- all of those are `panic: false`, they are results, and
-    a refutation with an explicit counterexample is a full success. Set
-    `panic: true` only if you could not operate at all: no .lake where you
-    were told to look, the worktree on a branch nobody claimed, a missing or
-    torn tree. Put one sentence in `why`.
-  * If you stop without writing it, the loop concludes you died and starts a
-    replacement. Write it even when the news is bad.
+NO HUMAN READS ANY OF THIS. NOBODY WILL FOLLOW UP.
+There is no operator watching, no review step, and no one to escalate to. Every
+output you produce is consumed by a Python state machine or by another agent
+that is equally unsupervised. So there is no such thing as "I cannot decide",
+"this needs a human", "flagging for review", "someone should check", or leaving
+a choice open for later. Nobody will make it. If you leave a decision unmade it
+stays unmade forever, and the work is simply lost.
+
+When you are genuinely uncertain: DECIDE ANYWAY, on the best evidence you have,
+do the work, and record what you assumed and what would change your mind -- in
+the commit message, and in `to_merger` if it affects the merge. A decision made
+on stated assumptions can be checked and reversed by whoever comes next. A
+question addressed to nobody cannot.
+
+The one exception is `to_medic`, and it is not an escape hatch for hard
+mathematics: it is only for the LOOP being broken, and it summons a repair
+agent, not a person.
+
+DO NOT WRITE A REPORT. There is no reader for one. The loop is a Python state
+machine; it cannot read prose, cannot summarise, and cannot pass anything on
+that is not addressed to a specific recipient. A summary field would be thrown
+away, so anything you want acted on must go in one of the three lists below,
+each of which is delivered to a named reader:
+
+  * `token` -- copy it verbatim or the loop ignores the whole file.
+
+  * `queue` -- tasks to be dispatched to future agents. Each entry is the FULL
+    prompt text for that task, written the way you would want to receive it:
+    name the declaration, the file, what is known, what was tried. Use
+    {{FLT_WORKTREE}} where the worktree path belongs. These go into queue2 and
+    are audited against main at the next release before anyone is sent at them.
+    Leave the list empty if you opened nothing.
+
+  * `to_merger` -- things the next merge worker must know: a branch that will
+    conflict and how you would resolve it, a declaration you renamed or moved,
+    a file you split, a leaf you proved that makes a queued task obsolete. It
+    is the only channel to the merger; it does not read your commits.
+
+  * `to_medic` -- ONE sentence, and only if the LOOP is broken. Setting it is a
+    panic: the loop stops dispatching and hands the state to a repair agent. It
+    is NOT a verdict on the mathematics. A proof that did not go through, a
+    leaf that turned out to be FALSE AS STATED, a target already proven
+    elsewhere -- all ordinary results, leave it "". A refutation with an
+    explicit counterexample is a FULL SUCCESS. Set it only if you could not
+    operate at all: no .lake where you were told to look, the worktree on a
+    branch nobody claimed, a missing or torn tree.
+
+A LESSON WORTH KEEPING GOES IN A FILE, NOT IN A MESSAGE
+If you learned something that should outlive this task -- a trap in the build,
+a fact about the fleet, a technique that worked -- edit CLAUDE.md or the memory
+files in your worktree directly and commit it with your work. The merge worker
+merges your branch into main, so the lesson lands where the next agent will
+actually read it. A note to the merger is for THIS merge; an edit to CLAUDE.md
+is for every agent after you.
+
+If you stop without writing the sentinel, the loop concludes you died and
+starts a replacement. Write it even when the news is bad.
 
 YOUR TASK FOLLOWS.
 ------------------------------------------------------------------------------
@@ -332,9 +423,11 @@ def compose(kind, name, j, s):
             head += TAKEOVER % {"worktree": pathlib.Path.home() / j["worktree"]}
         body = body.replace("{{FLT_WORKTREE}}", str(pathlib.Path.home() / j["worktree"]))
     elif kind == "merger":
+        inbox = j.get("inbox") or []
         body = MERGER_TASK % {"inflight": ", ".join(j["payload"]) or "(nothing)",
                               "snapshot": SNAPSHOT, "state": STATE,
-                              "snapshot_sha": SNAPSHOT_SHA}
+                              "snapshot_sha": SNAPSHOT_SHA,
+                              "inbox": "\n".join("  * " + m for m in inbox) or "  (none)"}
     elif kind == "medic":
         body = MEDIC_TASK % {"reason": body, "state": STATE,
                              "src": pathlib.Path(__file__).resolve()}
@@ -345,12 +438,34 @@ MERGER_TASK = """\
 You are the merge worker. You produce EVERY derived fact about main, and the
 loop refuses your release if any is missing. Work in ~/flt-staging.
 
+NOTES ADDRESSED TO YOU BY THE AGENTS WHOSE BRANCHES YOU ARE MERGING
+%(inbox)s
+These are the only channel those agents have to you -- they are gone, and you
+do not read their commits. Renames, splits, expected conflicts and now-obsolete
+queued tasks show up here and nowhere else.
+
 DO ALL FIVE, IN ORDER
  1. Merge these branches into main: %(inflight)s
     After EACH merge run `git diff --stat HEAD^1 HEAD`. A merge can report
     success and carry nothing -- and a dropped payload still builds. Empty for
     a branch that changed files means reset and re-merge. Decline a branch
     that will not reconcile and say so; declining is a result, not a panic.
+
+    EVERY branch on that list must end up an ANCESTOR of the main you publish,
+    and that is the loop's only receipt for it. A merge gives you one. So does
+    a decline, PROVIDED you record it the way CLAUDE.md's class-7 section
+    prescribes -- `git checkout HEAD -- <the files>`, then commit the merge, so
+    the diff against the first parent is empty ON PURPOSE and the commit
+    message says the payload was declined. `git merge --abort` and walking away
+    is NOT a decline: it leaves no receipt.
+
+    A branch you neither merge nor decline that way comes back to you, or to
+    the next merge worker, next release -- the loop folds the remainder of your
+    claim back into the batch. That is deliberate, and it is why running out of
+    time is safe: merge what you can, publish, and the rest is queued again
+    rather than lost. It used to be lost. A merger that merged 18 of 55
+    branches and was killed before reporting had the other 37 silently
+    discharged, and 78 worktrees' work was stranded that way in one day.
  2. Build main clean and leave the artifacts at %(snapshot)s. Every agent
     dispatched after you copies its .lake from there, so a torn or stale one
     poisons all of them.
@@ -512,7 +627,7 @@ def quota_until():
         rm(STATE / "quota-probe")          # rotated: probe now, do not wait
     if probe_quota():
         rm(STATE / "quota-blocked")
-        email("flt-loop: quota available again, resuming",
+        notify("flt-loop: quota available again, resuming",
               "A probe with the credential now on disk was served, so the "
               "block was lifted on evidence. Spawning has resumed.")
         return None
@@ -523,7 +638,7 @@ def note_quota(reset_epoch, why):
     wr(STATE / "quota-blocked",
        json.dumps({"since": int(time.time()), "creds": creds_stamp(),
                    "log_said": int(reset_epoch)}))
-    email("flt-loop: quota exhausted, idling",
+    notify("flt-loop: quota exhausted, idling",
           "Spawning is being refused. The loop is IDLING rather than retrying, "
           "and probes every %ds with whatever credential is on disk -- the "
           "reset time in the message is only a hint, since the rotator can "
@@ -531,9 +646,28 @@ def note_quota(reset_epoch, why):
 
 
 def refused(name, j):
-    """Did this job's log say it was refused? Only asked about dead-looking jobs."""
-    t = rd(STATE / "joblogs" / ("%s-%s.log" % (name, j["token"])), "") or ""
-    return t if LIMIT_MARK in t else None
+    """Did this job's log say it was refused? Only asked about dead-looking jobs.
+
+    The log is EVIDENCE, and evidence has to be consumed. A job refused an hour
+    ago keeps "session limit" in its log forever, and a refusal does not change
+    the job's token, so the same file is read again on every tick. That made
+    the block un-clearable: a probe would lift it and the very same load() pass
+    would re-arm it from a stale line -- both emails landed in the same second,
+    21:55:57, and the fleet never resumed.
+
+    So the file is moved aside once it has been acted on. The history is kept
+    (renamed, not deleted) but it is out of the evidence path, and only a
+    genuinely new refusal -- written by a fresh spawn attempt -- can block again.
+    """
+    log = STATE / "joblogs" / ("%s-%s.log" % (name, j["token"]))
+    t = rd(log, "") or ""
+    if LIMIT_MARK not in t:
+        return None
+    try:
+        log.rename(log.with_suffix(".log.refused-%d" % time.time()))
+    except OSError:
+        rm(log)
+    return t
 
 
 # --------------------------------------------------------------- spawn
@@ -557,18 +691,26 @@ def do_spawn(s, name, j):
     # so `claude` is not on PATH there and the spawn dies with "command not
     # found" into a log nobody reads. $HOME is shared, so this resolves on
     # every worker host.
+    # --model is PINNED rather than inherited. Without it every job takes
+    # whatever ~/.claude/settings.json happens to say, so a single edit to that
+    # file silently re-models the entire fleet -- and the model would appear in
+    # no job record, no prompt and no log, making the change invisible after
+    # the fact. There is precedent for that divergence here: the monitor
+    # already runs under its own CLAUDE_CONFIG_DIR with a different model.
+    # Recorded on the job too, so what ran is auditable from the state alone.
+    j["model"] = MODEL
     inner = ("cd %s 2>/dev/null || cd %s; "
-             "exec -a flt-job-%s %s --dangerously-skip-permissions "
+             "exec -a flt-job-%s %s --model %s --dangerously-skip-permissions "
              "-p \"$(cat %s)\""
              % (shlex.quote(str(wt)), shlex.quote(str(REPO)), j["token"],
-                shlex.quote(CLAUDE), shlex.quote(str(pf))))
+                shlex.quote(CLAUDE), shlex.quote(MODEL), shlex.quote(str(pf))))
     cmd = ("setsid --fork nohup bash -c %s >%s 2>&1 </dev/null"
            % (shlex.quote(inner), shlex.quote(str(log))))
     try:
         ssh(host, cmd, timeout=45)
     except Exception as e:
         note = "spawn of %s on %s failed: %s" % (name, host, e)
-        email("flt-loop: spawn failed", note)
+        notify("flt-loop: spawn failed", note)
     return (host, None, None)
 
 
@@ -697,6 +839,11 @@ def load():
         "audit_current": lean_equiv(aud, sha),
         "queue1": {"audited": aud, "tasks": split_tasks("\n".join(q1))},
         "queue2": split_tasks(rd(STATE / "queue2", "") or ""),
+        # Messages agents addressed to the merge worker. They are held here
+        # because an agent finishing and the next merger being created are
+        # minutes to hours apart, and the agent is long gone by then.
+        "merger_inbox": [l for l in (rd(STATE / "merger-inbox", "") or "").splitlines()
+                         if l.strip()],
         "batch": [b for b in (rd(STATE / "batch", "") or "").splitlines() if b.strip()],
         "inflight": ([b for b in (rd(STATE / "inflight") or "").splitlines() if b.strip()]
                      if (STATE / "inflight").exists() else None),
@@ -717,6 +864,7 @@ def save(s):
         s["queue1"]["audited"] or "none",
         "\n=== TASK ===\n".join(s["queue1"]["tasks"])))
     wr(STATE / "queue2", "\n=== TASK ===\n".join(s["queue2"]))
+    wr(STATE / "merger-inbox", "".join(m + "\n" for m in s["merger_inbox"]))
     wr(STATE / "batch", "".join(b + "\n" for b in s["batch"]))
     if s["inflight"] is None:
         rm(STATE / "inflight")
@@ -738,9 +886,14 @@ def save(s):
         # is named here -- a field that rows write and save() silently discards
         # reads as amnesia one tick later. Anything added to a job record must
         # be added here too.
+        # spawned_at MUST be here. do_spawn stamps it, but if it is not
+        # persisted the record comes back with None, `now - 0` is always older
+        # than GRACE, and every freshly spawned job is judged dead on its very
+        # first tick -- spawn, "died", re-dispatch, spawn, every ~15s, which is
+        # exactly the churn the grace period exists to stop.
         rec = {k: j.get(k) for k in ("kind", "worktree", "payload", "token",
                                      "retries", "host", "pid", "session",
-                                     "takeover")}
+                                     "takeover", "spawned_at", "model", "inbox")}
         wr(STATE / "jobs" / (n + ".json"), json.dumps(rec, indent=1))
         if j["started"]:
             wr(STATE / "jobs" / (n + ".started"), j["token"])
@@ -840,7 +993,7 @@ def adopt_source(startup_digest):
     if r.returncode:
         print("%s source changed but --dry-run FAILED; staying on the old "
               "table: %s" % (time.strftime("%T"), (r.stderr or "").strip()[-300:]))
-        email("flt-loop: edited source refused",
+        notify("flt-loop: edited source refused",
               "flt-loop source changed on disk but `--dry-run` exited %d, so the "
               "running loop did NOT adopt it and is still executing the source it "
               "started with. Fix the edit; the loop will pick it up on the next "
@@ -873,7 +1026,7 @@ def tick(dry=False):
             action(s)
             break
     for e in s["email"]:
-        email("flt-loop: " + e.split(":")[0][:60], e)
+        notify("flt-loop: " + e.split(":")[0][:60], e)
     save(s)
     if firing not in QUIET:
         extra = " [%s]" % s["spawned"] if s.get("spawned") else ""
@@ -924,7 +1077,7 @@ def main():
             if "medic" not in s["jobs"]:
                 adopt_source(startup_digest)
         except Exception as e:
-            email("flt-loop: tick raised", repr(e))
+            notify("flt-loop: tick raised", repr(e))
             time.sleep(30)
         if a.once:
             return

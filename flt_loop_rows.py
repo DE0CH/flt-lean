@@ -371,17 +371,38 @@ def r2_guard(s):
 
 
 def r2_action(s):
+    """Integrate a finished agent, and RELAY what it addressed to someone.
+
+    An agent's sentinel is not a report -- nothing reads reports. It carries at
+    most three things, each addressed to a specific reader, and each is
+    delivered here or it is lost:
+
+      queue     -> queue2, the accumulator the next release audits and dispatches
+      to_merger -> the merger inbox, pasted into the next merge worker's prompt
+      to_medic  -> a panic (row 5 sees it above every consumer)
+
+    Anything else an agent writes goes nowhere, which is the point: a message
+    with no addressee has no delivery.
+    """
     for n, j in list(jobs_of(s, "agent").items()):
         if not finished(j):
             continue
-        for leaf in j["sentinel"].get("opened", []):
-            s["queue2"].append(leaf)
+        sen = j["sentinel"]
+        # `opened` is the older spelling of the same thing; accept both so an
+        # agent running an older prompt is still integrated rather than dropped.
+        for task in (sen.get("queue") or []) + (sen.get("opened") or []):
+            if task and task not in s["queue2"]:
+                s["queue2"].append(task)
+        for msg in (sen.get("to_merger") or []):
+            if msg:
+                s["merger_inbox"].append("from %s: %s" % (n, msg))
         s["batch"].append(j["worktree"])
         s["workers"][j["worktree"]] = "awaiting_merge"   # set BEFORE deleting the record
         s["ancestor"][j["worktree"]] = False
         del s["jobs"][n]
-        note(s, f"2  integrated {n}: batched, opened {j['sentinel'].get('opened', [])}"
-                f" -> queue2; worker awaiting_merge")
+        note(s, "2  integrated %s: batched; %d task(s) -> queue2, %d note(s) -> merger"
+                % (n, len(sen.get("queue") or []) + len(sen.get("opened") or []),
+                   len(sen.get("to_merger") or [])))
 
 
 def r3_guard(s):
@@ -615,8 +636,13 @@ def r11_action(s):
     claim = orphaned + [b for b in s["batch"] if b not in orphaned]
     s["inflight"] = claim
     s["batch"] = []
+    # Drain the inbox onto the record: delivered exactly once, to the merger
+    # that actually carries these branches. Leaving it in place would repeat
+    # every note to every future merger forever.
+    inbox, s["merger_inbox"] = list(s["merger_inbox"]), []
     s["jobs"]["merger"] = {
         "kind": "merger", "worktree": "flt-staging", "payload": s["inflight"],
+        "inbox": inbox,
         "token": tok(), "retries": 0, "started": False, "alive": False,
         "sentinel": None,
     }
@@ -732,17 +758,21 @@ def reported_panic_guard(s):
     if "medic" in s["jobs"]:
         return (False, "a medic is already handling a panic")
     hits = [(n, j) for n, j in s["jobs"].items()
-            if finished(j) and j["sentinel"].get("panic")]
+            if finished(j) and (j["sentinel"].get("to_medic")
+                                or j["sentinel"].get("panic"))]
     if not hits:
         return (False, "no job reported panic")
     n, j = hits[0]
-    return (True, "%s: %s" % (n, j["sentinel"].get("why", "no reason given")))
+    return (True, "%s: %s" % (n, j["sentinel"].get("to_medic")
+                              or j["sentinel"].get("why") or "no reason given"))
 
 
 def reported_panic_action(s):
     n, j = next((n, j) for n, j in s["jobs"].items()
-                if finished(j) and j["sentinel"].get("panic"))
-    why = j["sentinel"].get("why", "no reason given")
+                if finished(j) and (j["sentinel"].get("to_medic")
+                                    or j["sentinel"].get("panic")))
+    why = (j["sentinel"].get("to_medic")
+           or j["sentinel"].get("why") or "no reason given")
     # The record is kept, not consumed: the medic needs to see what came back.
     panic(s, "%s (%s) reported PANIC: %s" % (n, j["kind"], why))
 
@@ -767,6 +797,93 @@ def inferred_panic(s):
     panic(s, why)
 
 
+def anomalies(s):
+    """Invariants that must hold of the state. Every violation is a bug.
+
+    EXPECT THIS TO GROW. It is the standing home for "this should never be
+    true", added to as bugs are found, so that each one is caught by the
+    machine the next time instead of by a human noticing two numbers do not
+    add up. Everything here must be genuinely always-true: a false positive
+    panics a healthy fleet, which is worse than the bug it was guarding.
+
+    Returns a list of one-line descriptions, empty when the state is sound.
+    """
+    out = []
+    aw = {w for w, st in s["workers"].items() if st == "awaiting_merge"}
+    batch, infl = set(s["batch"]), set(s["inflight"] or [])
+    queued = batch | infl
+
+    # A worker is awaiting_merge for exactly as long as its branch is waiting
+    # to be merged, so the two sets are the same set seen from either end. They
+    # are written by different rows (6 batches, 11 claims, 7 frees), which is
+    # precisely why they can drift apart without anyone noticing.
+    #
+    # Found 2026-07-30 with 97 awaiting_merge against 19 queued branches: when
+    # a merge worker DECLINES a branch, the branch leaves .inflight but nothing
+    # frees its worker, so the worker is stranded and the pool silently shrinks.
+    # A worker whose branch has ALREADY LANDED is not stranded -- row 7 frees
+    # it on the next tick. That window is opened by every release, so counting
+    # it as a fault would panic on the loop's own normal operation.
+    lost = sorted(w for w in (aw - queued) if not s["ancestor"].get(w))
+    if lost:
+        out.append("%d worker(s) awaiting_merge with no branch in batch or "
+                   "inflight -- stranded, pool shrinking: %s%s"
+                   % (len(lost), ", ".join(lost[:6]),
+                      " ..." if len(lost) > 6 else ""))
+    orphan = sorted(queued - aw)
+    if orphan:
+        out.append("%d branch(es) queued to merge whose worker is not "
+                   "awaiting_merge: %s%s"
+                   % (len(orphan), ", ".join(orphan[:6]),
+                      " ..." if len(orphan) > 6 else ""))
+
+    both = sorted(batch & infl)
+    if both:
+        out.append("branch(es) in BOTH batch and inflight, so a merge worker "
+                   "and the queue disagree about who owns them: %s"
+                   % ", ".join(both[:6]))
+
+    if len(s["batch"]) != len(batch):
+        out.append("batch contains duplicate entries -- a branch would be "
+                   "merged twice")
+    if s["inflight"] and len(s["inflight"]) != len(infl):
+        out.append("inflight contains duplicate entries")
+
+    # A worktree cannot be running a job and waiting to be merged at once.
+    for n, j in s["jobs"].items():
+        if j["kind"] == "agent" and s["workers"].get(j["worktree"]) == "awaiting_merge":
+            out.append("worktree %s has a live agent record AND is "
+                       "awaiting_merge" % j["worktree"])
+    return out
+
+
+def anomaly_guard(s):
+    """Fires only when nothing else can make progress.
+
+    Deliberately the LAST row before idle. Half the states that look wrong for
+    an instant are ones the very next row repairs -- a release leaves workers
+    awaiting_merge until row 7 frees them, an agent finishes before row 6
+    batches it. Checking above those rows would report the loop's own normal
+    operation as a fault. Sitting here means every row that could act has
+    declined, so what remains is a state the loop cannot progress out of, which
+    is what an anomaly actually is.
+    """
+    # Self-disabling in the same way the reported-panic row is: once a medic
+    # exists the violation is being handled, and re-firing would rebuild the
+    # medic record every tick and never let it start.
+    if "medic" in s["jobs"]:
+        return (False, "a medic is already handling something")
+    bad = anomalies(s)
+    if not bad:
+        return (False, "no invariant violated")
+    return (True, bad[0][:110])
+
+
+def anomaly_action(s):
+    bad = anomalies(s)
+    panic(s, "INVARIANT VIOLATED (%d): %s" % (len(bad), " | ".join(bad[:4])))
+
+
 ROWS = [
     (1, "STOP exists", r1_guard, r1_action),
     (2, "medic finished -> apply GO / NO-GO verdict", rmedic_done_guard, rmedic_done_action),
@@ -778,7 +895,7 @@ ROWS = [
     (3, "record ∧ ¬started ∧ no process -> SPAWN", r5_guard, r5_action),
     (4, "medic in flight -> SAFE MODE (all rows below suspended)",
      rmedic_wait_guard, rmedic_wait_action),
-    (5, "a job REPORTED panic -> email + medic", reported_panic_guard, reported_panic_action),
+    (5, "a job REPORTED panic -> notify + medic", reported_panic_guard, reported_panic_action),
     (6, "agent finished -> integrate, awaiting_merge", r2_guard, r2_action),
     (7, "awaiting_merge ∧ ancestor(main) -> free", r3_guard, r3_action),
     (8, "agent died -> resume from transcript", r4_guard, r4_action),
@@ -786,8 +903,9 @@ ROWS = [
     (10, "merger delivered main+snapshot+audit -> ADOPT", r7_guard, r7_action),
     (11, "batch ∨ derived-from-main is stale -> create merger record", r11_guard, r11_action),
     (12, "dispatch: pop queue1 -> agent records", r15_guard, r15_action),
+    (17, "INVARIANT VIOLATED -> notify + medic", anomaly_guard, anomaly_action),
     (13, "idle -- every live job is justified", idle_guard, lambda s: None),
-    (14, "ILLEGAL STATE -> email + medic", lambda s: (True, ""), inferred_panic),
+    (14, "ILLEGAL STATE -> notify + medic", lambda s: (True, ""), inferred_panic),
 ]
 
 
