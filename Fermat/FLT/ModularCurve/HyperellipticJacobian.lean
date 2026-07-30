@@ -5431,7 +5431,44 @@ arithmetic; the arithmetic is entirely in `geomPic_exists_finiteCover_kummer`.
 node on 2026-07-30, is the OTHER half of the same statement: `[n] : J → J` is a finite flat
 isogeny of degree `n^{2g}`, of which this leaf asks surjectivity and that one asks finiteness
 of the kernel.  Whatever supplies one should supply both, and a decomposition that produces
-the isogeny is the natural cut for the pair rather than for either alone. -/
+the isogeny is the natural cut for the pair rather than for either alone.
+
+## ATOMICITY AUDIT (2026-07-30) — the axes searched, and why each was rejected
+
+Left atomic deliberately, after the other four leaves of this cluster were decomposed on the
+same day.  Per the standing rule that an irreducibility verdict is only as wide as the axis
+its author searched, here is the survey, so the next reader can re-check a rejection instead
+of redoing it.  The common thread: **`PlaceData` is a divisor theory, not a variety**, and
+every route to divisibility passes through the Jacobian as an ALGEBRAIC GROUP.
+
+* **ISOGENY axis — the real proof, and it needs machinery this file does not speak.**  `[n]`
+  is a nonconstant homomorphism of `2`-dimensional abelian varieties with finite kernel, so
+  its image is a closed subgroup of dimension `2`, so it is everything.  Every word of that
+  is scheme-theoretic; `PlaceData` carries `Places`, `ord` and `Divisors` and nothing that
+  could host it.  *Refuting check*: a statement of surjectivity of `[n]` whose hypotheses are
+  divisor-theoretic.  See `X0.lean`'s `exists_finiteIndex_divisible_of_abelianScheme`, which
+  is the same obligation in the scheme-theoretic language and is the natural place to route
+  this if the bridge between the two presentations is ever built.
+* **RIEMANN–ROCH axis — reaches the representation and stops there.**  `deg (δ + 2·∞̄₊) = 2 = g`
+  gives `h⁰ ≥ 1`, so every class is `[P + Q − 2∞̄₊]` for geometric points `P, Q`.  That is
+  genuine and cheap.  It does NOT help: dividing by `n` asks for `R, S` with
+  `n(R + S − 2∞̄₊) ∼ P + Q − 2∞̄₊`, and the existence of a solution is exactly the
+  surjectivity being asked for — the representation converts the question into a system of
+  equations without saying it has a root.  *Refuting check*: derive `R, S` from `P, Q` by an
+  argument that does not assume `[n]` surjective.
+* **ANALYTIC axis (`ℚ̄ ⊆ ℂ`, uniformisation) — a genuine route, and it costs TWO big leaves
+  for one.**  `Pic⁰(X_ℂ) ≅ ℂ²/Λ` is divisible because `ℂ²` is; and the `n`-division points of
+  an algebraic class are algebraic, so a witness over `ℂ` descends to `ℚ̄`.  Neither half is
+  smaller than this leaf: the first is the whole analytic theory of the Jacobian, the second
+  is again "the fibre of `[n]` is a coset of `J[n]`", i.e. the isogeny axis.  Rejected as a
+  net loss, not as false.  *Refuting check*: one of the two halves available in mathlib.
+* **INDUCTION-ON-`n` axis — empty.**  `n = p·m` reduces to the two prime cases, so the leaf
+  is equivalent to its restriction to primes.  A cut that only does this creates a leaf of
+  the same difficulty and is bookkeeping, not progress.
+
+**So: do not cut this leaf inside `PlaceData`'s language.**  The two things that would change
+the verdict are the bridge to `X0.lean`'s abelian-scheme layer (which would close this leaf
+and `geomPic_finite_torsion` together, and is the recommended target) or the analytic theory. -/
 theorem geomPic_divisible {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
     (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) (n : ℕ) (hn : n ≠ 0) (y : gp.Dbar.Pic) :
     ∃ z : gp.Dbar.Pic, n • z = y := sorry
