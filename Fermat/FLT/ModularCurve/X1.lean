@@ -432,7 +432,7 @@ open in them has been split along the theories it needed:
 | `exists_gamma1RigidifiedModuliScheme` | Katz-Mazur 4.7.1/4.7.2 + 5.1.1 + 6.6.2: the rigidified moduli problem of `[Γ₁(N)], [Γ(n)]` is REPRESENTABLE, affineness not mentioned.  Split off `exists_gamma1RigidifiedModuli` on 2026-07-30 — that node is now PROVEN over this row and the next, and it is still what `exists_gamma1Rigidification`, `exists_gamma1GITPresentation`, `nonempty_gamma1GITPresentation_of_rigidification`, `isDomain_of_`, `smoothOfRelativeDimension_of_` and `geometricallyConnected_of_gamma1GITPresentation` are PROVEN over. | any `K`, `char K ∤ N`, `char K ∤ n` |
 | `isAffine_of_gamma1RigidifiedModuliScheme` | Katz-Mazur, the affineness parenthesis of 8.1.1 and nothing else: `𝔐([Γ₁(N)], [Γ(n)])` is AFFINE.  The second half of the same 2026-07-30 split.  Legitimate as a `∀` because `universal` is a FINE moduli property; see its docstring. | any `K`, `char K ∤ N`, `char K ∤ n` |
 | `exists_torsionBasisCover_field` | Katz-Mazur 2.3.1 / 5.1.1, Silverman *AEC* III.6.4: after a flat surjective quasi-compact cover the `n`-torsion of an abelian scheme of relative dimension one acquires a basis.  Stated for a BARE abelian scheme — no `Gamma1Datum`, no moduli scheme — and it is all that is left under `exists_gamma1FullLevelStructure_cover`, which is PROVEN over it (2026-07-28).  It is the general-base form of `X0.lean`'s `exists_torsionBasis_geomPoint` + `exists_torsionBasis_cover_of_geomPoint`, both of which are stated only over `SpecQ`. | any `K`, `char K ∤ n` |
-| `isOpenImmersion_equalizer_of_abelianFullLevelStructure` | NO citation beyond Katz–Mazur 2.3.1 — the equalizer of two `n`-torsion sections of an elliptic scheme over an ARBITRARY base carrying a full level-`n` structure is OPEN.  Step 2, and after the 2026-07-30 cut the ONLY step, of `exists_openCover_twist_of_abelianFullLevelStructure`, which is now PROVEN over it and over `exists_openCover_comb_of_abelianFullLevelStructure`; that node in turn is what `exists_gamma1DeckAction` (REFUTED 2026-07-29, restated with its over-`S` clause, then PROVEN) rests on.  Identical to `X0.lean`'s `isOpenImmersion_equalizer_of_nsmul_eq_zero` except that `L` replaces `g : Z ⟶ SpecQ` as the source of invertibility of `n`. | any base scheme, no characteristic hypothesis — see its FALSITY AUDIT for why `L` already pins `n` invertible |
+| ~~`isOpenImmersion_equalizer_of_abelianFullLevelStructure`~~ | PROVEN 2026-07-30, and NOT by proving anything: the row's own last sentence said it was identical to `X0.lean`'s `isOpenImmersion_equalizer_of_nsmul_eq_zero` bar the source of invertibility of `n`, so the two were UNIFIED there.  That leaf became `isOpenImmersion_equalizer_of_geomTorsionBasis`, taking the fibrewise `n`-torsion basis instead of `g : Z ⟶ SpecQ`, which BOTH a `FullLevelStructure` and an `AbelianFullLevelStructure` supply; this declaration is now a five-line specialisation of it.  The étaleness of `E[n]` is owed once, in `X0.lean`, for both modular curves. | — |
 | `smoothCurve_A_of_gamma1GITPresentation` | Katz-Mazur 8.2.1, stated ONCE and on the rigidified ring where 8.2.1 is proved: `Spec A` is a smooth affine curve over `K` (`Algebra.Smooth K A` and `ringKrullDim A = 1`).  Replaced `isReduced_A_of_gamma1GITPresentation` and the dimension conjunct of `smooth_coarseRing_of_gamma1GITPresentation` on 2026-07-28; BOTH of those are now PROVEN over it. | any `K`, `char K ∤ N` |
 | `formallySmoothInvariants_of_gamma1GITPresentation` | Deligne-Rapoport III.1, Katz-Mazur 8.2.1: `B = A^G` is FORMALLY smooth over `K`.  Cut 2026-07-30 out of `smoothInvariants_of_gamma1GITPresentation` (now PROVEN over it) by unfolding `Algebra.Smooth` and paying for the second conjunct: `finitePresentation_invariants_of_gamma1GITPresentation` is Noether's theorem on invariants, PROVEN over `smoothCurve_A_of_gamma1GITPresentation` and the new `Gamma1GITPresentation.isScalarTower`.  What is left still needs Stacks `02VL` plus freeness of the `G`-action, neither of which the structure supplies. | any `K`, `char K ∤ N` |
 | ~~`exists_weierstrassCurve_pointOfExactOrder`~~ | PROVEN 2026-07-30: Silverman *AEC* III.6.4 was already in cone as `WeierstrassCurve.n_torsion_dimension` (`EllipticCurve/Torsion.lean`), so the leaf was that theorem at `WeierstrassCurve.ofJ (0 : L)` plus additive-order bookkeeping; no longer a leaf | — |
@@ -1987,7 +1987,7 @@ it is spent in exactly TWO places, both of them for the single fact
 | `etale_nTorsion_of_specQBase` | only via the two above | `etale_nTorsion_of_fieldBase`, PROVEN |
 | `exists_zmodBasis_torsion_geomPoint` | `CharZero K'`, hence `(n : K') ≠ 0` | `exists_zmodBasis_torsion_geomPoint_field`, PROVEN |
 | `exists_torsionBasis_geomPoint` | only via the above | `exists_torsionBasis_geomPoint_field`, PROVEN |
-| `exists_isomTorsor_of_etale_nTorsion` | **nothing** — the `Isom`-sheaf | `exists_isomTorsor_of_etale_nTorsion_noBase`, **LEAF** |
+| `exists_isomTorsor_of_etale_nTorsion` | **nothing** — the `Isom`-sheaf | `exists_isomTorsor_of_etale_nTorsion_noBase`, ~~LEAF~~ **PROVEN 2026-07-30**: `g` was deleted from the `X0.lean` original instead, so this row's restatement IS that theorem |
 | `exists_torsionBasis_cover_of_geomPoint` | only via the above | `exists_torsionBasisCover_field`, PROVEN |
 
 `natCast_ne_zero_geomPoint_of_fieldBase` is the replacement for the
@@ -2164,6 +2164,24 @@ theorem etale_nTorsion_of_fieldBase (n : ℕ) (hn : 3 ≤ n)
 (sorry leaf, opened 2026-07-30) — `X0.lean`'s
 `exists_isomTorsor_of_etale_nTorsion` **with its `g : T ⟶ SpecQ` deleted**.
 
+## STATUS 2026-07-30: **NO LONGER A LEAF — `g` was deleted UPSTREAM instead**
+
+This node was opened because `X0.lean`'s version carried a `g : T ⟶ SpecQ` that
+its own audit conceded was unused ("it is not used by the route above beyond
+`hetale`"), and `X1.lean` cannot edit `X0.lean`'s signature from downstream — so
+the statement was restated here.  It has since been deleted THERE, which is the
+right place: `hetale` already forces `n` invertible on `T` (étale `E[n] ⟶ T` has
+reduced geometric fibres, and in residue characteristic `p ∣ n` it does not), so
+`g` was implied by another hypothesis.
+
+So this declaration is now a one-line specialisation and the `Isom`-sheaf is owed
+ONCE, in `X0.lean`, for `Γ₀` over `ℚ`, `Γ₀` over `𝔽_ℓ` and `Γ₁` over an arbitrary
+field alike.  The three `_noBase` / `_field` theorems above are likewise now
+duplicates of proven `X0.lean` declarations rather than of unproven ones
+(`isFinite_flat_nTorsion` and `etale_nTorsion_of_natCast_ne_zero` there have had
+their base hypotheses removed the same day); they are harmless but redundant, and
+this file's owner may want to collapse them.
+
 That hypothesis is inert there: the node's own docstring says it "owes
 nothing about characteristic, ranks, flatness or finiteness: `hetale` is
 `Etale (E[n] ⟶ T)`, and finite + étale is everything the construction uses".
@@ -2221,7 +2239,7 @@ theorem exists_isomTorsor_of_etale_nTorsion_noBase (n : ℕ) (hn : 3 ≤ n)
               ∃! c : Fin n × Fin n, x = (c.1 : ℕ) • y + (c.2 : ℕ) • z) →
           ∃ t' : Spec (CommRingCat.of K) ⟶ T', t' ≫ p = t) ∧
         (letI := ab.addCommGroup p; n • P = 0 ∧ n • Q = 0) :=
-  sorry
+  exists_isomTorsor_of_etale_nTorsion n hn ab hdim hetale
 
 /-- **The level-`n` torsor over an arbitrary base field: after a flat
 surjective quasi-compact cover the `n`-torsion of an abelian scheme of
@@ -3269,15 +3287,36 @@ affine-local on the base.  **This is a route sketch and has NOT been
 compiler-checked**; it is written down because it names the two exact
 declarations to look at, which is a cheap check and a large saving if it
 holds.  If it does hold, closing this leaf reduces to the count above, and
-`X0.lean`'s `isOpenImmersion_equalizer_of_nsmul_eq_zero` closes with it. -/
-theorem isOpenImmersion_equalizer_of_abelianFullLevelStructure (n : ℕ) (_hn : 3 ≤ n)
+`X0.lean`'s `isOpenImmersion_equalizer_of_nsmul_eq_zero` closes with it.
+
+## STATUS 2026-07-30: **NO LONGER A LEAF — the two were UNIFIED in `X0.lean`**
+
+The prediction in the paragraph above ("*it is the SAME assertion `X0.lean`
+already carries*") was right, and the unification has been done in the only
+place it can be done, since `X1.lean` imports `X0.lean` and not the reverse.
+`isOpenImmersion_equalizer_of_nsmul_eq_zero` was restated as
+`isOpenImmersion_equalizer_of_geomTorsionBasis`, taking the fibrewise
+`n`-torsion basis — the very count this docstring performs — as a hypothesis
+in place of `g : Z ⟶ SpecQ`, and deliberately with the two basis points
+EXISTENTIALLY quantified at each geometric point rather than pulled back from
+two global sections, so that an `AbelianFullLevelStructure` discharges it just
+as a `FullLevelStructure` does.
+
+So this declaration is now a five-line specialisation and carries no
+mathematics; the whole count above is its FALSITY AUDIT and is restated on the
+`X0.lean` leaf.  What is still owed — the étaleness of `E[n]`, i.e. the route
+sketch in the section immediately above — is owed THERE, once, for both
+modular curves. -/
+theorem isOpenImmersion_equalizer_of_abelianFullLevelStructure (n : ℕ) (hn : 3 ≤ n)
     {Z E : Scheme.{0}} {f : E ⟶ Z} (abs : AbelianSchemeStruct f)
-    (_hdim : SmoothOfRelativeDimension 1 f) (_L : AbelianFullLevelStructure n abs)
+    (hdim : SmoothOfRelativeDimension 1 f) (L : AbelianFullLevelStructure n abs)
     (x y : RelPoint f (𝟙 Z))
-    (_hx : letI := abs.addCommGroup (𝟙 Z); n • x = 0)
-    (_hy : letI := abs.addCommGroup (𝟙 Z); n • y = 0) :
+    (hx : letI := abs.addCommGroup (𝟙 Z); n • x = 0)
+    (hy : letI := abs.addCommGroup (𝟙 Z); n • y = 0) :
     IsOpenImmersion (Limits.pullback.fst x.1 y.1) :=
-  sorry
+  isOpenImmersion_equalizer_of_geomTorsionBasis n hn abs hdim
+    (fun K _ _ t => ⟨RelPoint.pre t (Category.comp_id t) L.P,
+      RelPoint.pre t (Category.comp_id t) L.Q, L.geom_basis K t⟩) x y hx hy
 
 /-- **The piece is an OPEN subscheme of `Z`** (PROVEN from the leaf): each
 of the two equalizers is open by
