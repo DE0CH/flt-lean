@@ -26258,11 +26258,171 @@ theorem not_isSpecialJ_of_gamma0Datum_fieldOfModuli {p : ℕ} (hp : p.Prime)
   · rw [hEj]
     exact (algebraMap ℚ (AlgebraicClosure ℚ)).injective (by rw [← hWj, hcon]; norm_num)
 
+/-- **THE COMPACTIFICATION HALF OF RIGIDITY, PROVEN 2026-07-30**: two `ℚ̄`-data
+that share a Weierstrass model have canonically ISOMORPHIC total spaces, by an
+isomorphism over `Spec ℚ̄` restricting to the identity of that model.
+
+**THIS CORRECTS A "MISSING MACHINERY" CLAIM.**  The rigidity leaf below records
+its blockers as "the uniqueness of the smooth compactification of a smooth affine
+curve … together with the rigidity of the group law".  The FIRST of those is not
+missing: it is `AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve`
+in `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`, PROVEN, and that
+module is already a `public import` of this one.  Its own docstring says it "is
+the single statement that replaces the three independently cut extension leaves
+in `Fermat/FLT/ModularCurve/X0.lean`"; this is a fourth such consumer.  So the
+claim was stale, not wrong when written — and it is exactly the shape
+CLAUDE.md's "FALSE 'DOES NOT EXIST' CLAIMS PROPAGATE" rule is about, so the
+correction is recorded here rather than only in a report.
+
+THE PROOF IS FOUR APPLICATIONS OF THAT ONE THEOREM.  `d₁.E` is proper
+(`d₁.ab.proper`), smooth of relative dimension one (`d₁.relativeDimensionOne`)
+and geometrically connected (`d₁.ab.connected`) over `Spec ℚ̄`, and `ι₁` is an
+open immersion whose complement is the range of the zero section — a single
+point, because `Spec ℚ̄` is a one-point space (`AlgebraicGeometry.Scheme`'s
+`Unique (Spec (.of K))` for a field `K`), which is where `hr₁` is spent and the
+only thing it is spent on.  So `ι₂` extends uniquely to `Φ : d₁.E ⟶ d₂.E` and
+`ι₁` extends uniquely to `Ψ : d₂.E ⟶ d₁.E`; `Φ ≫ Ψ` and `𝟙` are both extensions
+of `ι₁` into `d₁.E`, hence equal, and symmetrically.  Uniqueness is doing all the
+work — no property of the group law, of the level structure, or of `W` is used,
+and `W.IsElliptic` is not required.
+
+**WHAT THIS DOES NOT GIVE.**  An isomorphism of total spaces is not an
+isomorphism of `Γ₀(N)`-data: it must additionally carry zero section to zero
+section, respect the group law (the rigidity lemma proper) and match the level
+subschemes.  Those three are what
+`nonempty_isBaseChangeOf_of_isIso_isWeierstrassModel` below still asks for. -/
+theorem exists_isIso_of_isWeierstrassModel_common {N : ℕ}
+    (d₁ d₂ : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+    (W : WeierstrassCurve (AlgebraicClosure ℚ))
+    (ι₁ : weierstrassAffine W ⟶ d₁.E) (ho₁ : IsOpenImmersion ι₁)
+    (hs₁ : ι₁ ≫ d₁.f = weierstrassAffineStr W)
+    (hr₁ : Set.range ι₁.base
+      = (Set.range (d₁.ab.zero (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ))))).1.base)ᶜ)
+    (ι₂ : weierstrassAffine W ⟶ d₂.E) (ho₂ : IsOpenImmersion ι₂)
+    (hs₂ : ι₂ ≫ d₂.f = weierstrassAffineStr W)
+    (hr₂ : Set.range ι₂.base
+      = (Set.range (d₂.ab.zero (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ))))).1.base)ᶜ) :
+    ∃ Φ : d₁.E ⟶ d₂.E, IsIso Φ ∧ Φ ≫ d₂.f = d₁.f ∧ ι₁ ≫ Φ = ι₂ := by
+  haveI := ho₁
+  haveI := ho₂
+  haveI : IsProper d₁.f := d₁.ab.proper
+  haveI : IsProper d₂.f := d₂.ab.proper
+  haveI : SmoothOfRelativeDimension 1 d₁.f := d₁.relativeDimensionOne
+  haveI : SmoothOfRelativeDimension 1 d₂.f := d₂.relativeDimensionOne
+  have hfin₁ : (Set.range ι₁.base)ᶜ.Finite := by
+    rw [hr₁, compl_compl]; exact Set.finite_range _
+  have hfin₂ : (Set.range ι₂.base)ᶜ.Finite := by
+    rw [hr₂, compl_compl]; exact Set.finite_range _
+  obtain ⟨Φ, hΦ, -⟩ :=
+    exists_unique_extension_of_isSmoothProperCurve d₁.ab.connected hfin₁ hs₁ ι₂ hs₂
+  obtain ⟨Ψ, hΨ, -⟩ :=
+    exists_unique_extension_of_isSmoothProperCurve d₂.ab.connected hfin₂ hs₂ ι₁ hs₁
+  obtain ⟨Z₁, -, hid₁⟩ :=
+    exists_unique_extension_of_isSmoothProperCurve d₁.ab.connected hfin₁ hs₁ ι₁ hs₁
+  obtain ⟨Z₂, -, hid₂⟩ :=
+    exists_unique_extension_of_isSmoothProperCurve d₂.ab.connected hfin₂ hs₂ ι₂ hs₂
+  have h1 : Φ ≫ Ψ = 𝟙 d₁.E := by
+    refine (hid₁ (Φ ≫ Ψ) ⟨?_, ?_⟩).trans (hid₁ (𝟙 d₁.E) ⟨?_, ?_⟩).symm
+    · rw [Category.assoc, hΨ.1, hΦ.1]
+    · rw [← Category.assoc, hΦ.2, hΨ.2]
+    · rw [Category.id_comp]
+    · rw [Category.comp_id]
+  have h2 : Ψ ≫ Φ = 𝟙 d₂.E := by
+    refine (hid₂ (Ψ ≫ Φ) ⟨?_, ?_⟩).trans (hid₂ (𝟙 d₂.E) ⟨?_, ?_⟩).symm
+    · rw [Category.assoc, hΦ.1, hΨ.1]
+    · rw [← Category.assoc, hΨ.2, hΦ.2]
+    · rw [Category.id_comp]
+    · rw [Category.comp_id]
+  exact ⟨Φ, ⟨Ψ, h1, h2⟩, hΦ.1, hΦ.2⟩
+
+/-- **THE RESIDUE OF RIGIDITY ONCE THE COMPACTIFICATION IS DONE** (sorry leaf,
+cut 2026-07-30 out of `nonempty_isBaseChangeOf_of_isWeierstrassModel_common`
+below): the comparison isomorphism `Φ` is now HANDED IN, and what is left is that
+it is a morphism of `Γ₀(N)`-DATA rather than merely of schemes.
+
+TRUE, and it is exactly four obligations, listed here in increasing order of
+cost so that a successor knows where the work is.  They are the four fields of
+`IsBaseChangeOf`:
+
+1. `isPullback` — MECHANICAL.  The square is `d₁.f`, `Φ`, `𝟙`, `d₂.f`; it
+   commutes by `hΦs`, and both `Φ` and `𝟙` are isomorphisms, so it is cartesian.
+2. `map_zero` — the POINT ARGUMENT, and it is short.  `Φ` is a homeomorphism with
+   `ι₁ ≫ Φ = ι₂`, so it carries `Set.range ι₁.base` ONTO `Set.range ι₂.base`,
+   hence (by `hr₁`, `hr₂`) their complements onto each other; each complement is
+   the range of a zero section, i.e. a single point.  So `(d₁.ab.zero 𝟙).1 ≫ Φ`
+   and `(d₂.ab.zero 𝟙).1` are two `ℚ̄`-points of `d₂.E` over `Spec ℚ̄` with the
+   same image, and a `K`-point of a `K`-scheme is determined by its image point
+   together with a `K`-algebra map out of the residue field — which here is `ℚ̄`
+   itself, since the point admits a section.  The general base `g : T'' ⟶ Spec ℚ̄`
+   then follows from `ab.pre_zero` on both sides, so only `g = 𝟙` has content.
+3. `liesIn_iff` — `hlevel` PLUS ONE STEP.  `hlevel` is the statement for test
+   points that factor through `ι₁`; a general relative point need not (the zero
+   section does not).  Closing the gap needs that the two level subschemes, which
+   agree on the open complement of the zero section and both contain it, agree
+   outright — which holds because both are FINITE ÉTALE over a `ℚ`-scheme
+   (`CyclicSubgroupOfOrder.etale_of_specQBase`, PROVEN in this file), hence
+   reduced, hence determined by their geometric points.
+4. `map_add` — THE RIGIDITY LEMMA, and the only genuinely deep item.  A morphism
+   of abelian schemes carrying zero section to zero section is a homomorphism.
+   Over a field this is the classical rigidity lemma (Mumford, *Abelian
+   Varieties*, §II.4; Milne, *Abelian Varieties*, Thm. 1.1), and it needs
+   properness and connectedness of the fibres, both of which
+   `AbelianSchemeStruct` carries.  Nothing available here proves it, and this was
+   checked rather than assumed on 2026-07-30: a case-insensitive `grep -rl` for
+   `AbelianVariety` / `abelian variety` / `abelian scheme` over the WHOLE of
+   `.lake/packages/mathlib/Mathlib` returns **zero files**, `rigidity` over
+   `Mathlib/AlgebraicGeometry/` returns zero files, and `~/cs/FLT/FLT` has
+   neither.  The only abelian-scheme development reachable from here is this
+   project's own `Modularity/AbelianScheme.lean`, which states the structure
+   (`proper`, `smooth`, `connected` are fields of it) and proves no rigidity.
+
+**WHY THE CUT IS WORTH MAKING even though it is one leaf for one leaf.**  The
+half that has been removed — uniqueness of the smooth compactification — was
+named as a blocker on the parent and is now PROVEN
+(`exists_isIso_of_isWeierstrassModel_common` above) rather than owed, because the
+machinery for it was already in this module's import cone and the parent's
+docstring did not know that.  What remains is a statement about the GROUP LAW and
+the LEVEL STRUCTURE only: no curve theory, no compactification, no valuative
+criterion.  Item 4 is the whole of it, and it is a named classical theorem rather
+than an ad-hoc obligation — so the honest further cut, for whoever takes this on,
+is to state the rigidity lemma for `AbelianSchemeStruct` in
+`Modularity/AbelianScheme.lean`, where it belongs and where it will have other
+consumers, and to discharge items 1–3 here.
+
+**NOT VACUOUS.**  `d₂ := d₁`, `ι₂ := ι₁`, `Φ := 𝟙` satisfies every hypothesis, so
+the conclusion is a genuine obligation; and the consumer applies it to a
+genuinely different pair (`d` and the base change of the descended `d₀`).
+
+**`hs₁`, `hs₂` and `_hN` are carried but not needed by the sketch above**: `hs₁`
+follows from `hs₂`, `hΦs` and `hΦι`, and at `N = 0` the hypotheses are anyway
+contradictory by `isEmpty_of_gamma0Datum_zero`.  They are kept so that the leaf
+reads uniformly with its parent and so that a prover may use them freely. -/
+theorem nonempty_isBaseChangeOf_of_isIso_isWeierstrassModel {N : ℕ} (_hN : N ≠ 0)
+    (d₁ d₂ : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+    (W : WeierstrassCurve (AlgebraicClosure ℚ)) [W.IsElliptic]
+    (ι₁ : weierstrassAffine W ⟶ d₁.E) (ho₁ : IsOpenImmersion ι₁)
+    (hs₁ : ι₁ ≫ d₁.f = weierstrassAffineStr W)
+    (hr₁ : Set.range ι₁.base
+      = (Set.range (d₁.ab.zero (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ))))).1.base)ᶜ)
+    (ι₂ : weierstrassAffine W ⟶ d₂.E) (ho₂ : IsOpenImmersion ι₂)
+    (hs₂ : ι₂ ≫ d₂.f = weierstrassAffineStr W)
+    (hr₂ : Set.range ι₂.base
+      = (Set.range (d₂.ab.zero (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ))))).1.base)ᶜ)
+    (Φ : d₁.E ⟶ d₂.E) (hiso : IsIso Φ) (hΦs : Φ ≫ d₂.f = d₁.f) (hΦι : ι₁ ≫ Φ = ι₂)
+    (hlevel : ∀ (T : Scheme.{0}) (s : T ⟶ weierstrassAffine W),
+      (∃ y : T ⟶ d₁.cyc.C, y ≫ d₁.cyc.ι = s ≫ ι₁) ↔
+        (∃ y : T ⟶ d₂.cyc.C, y ≫ d₂.cyc.ι = s ≫ ι₂)) :
+    Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) d₁ d₂) :=
+  sorry
+
 /-- **RIGIDITY: two `ℚ̄`-data with a COMMON Weierstrass model and the same level
-locus are isomorphic** (sorry leaf, opened 2026-07-28 as the cut of
-`exists_gamma0Datum_specQ_isBaseChangeOf_of_j_generic` below) — the `ℚ̄`-analogue
-of `IsCoarseModuliY0.nonempty_isBaseChangeOf_of_classify_eq` (PROVEN) with the
-coarse space replaced by the coordinate pinning.
+locus are isomorphic** (a sorry leaf from 2026-07-28, opened as the cut of
+`exists_gamma0Datum_specQ_isBaseChangeOf_of_j_generic` below; **DECOMPOSED and
+PROVEN 2026-07-30** over `exists_isIso_of_isWeierstrassModel_common`, which is
+PROVEN, and the single residual leaf
+`nonempty_isBaseChangeOf_of_isIso_isWeierstrassModel`, both immediately above) —
+the `ℚ̄`-analogue of `IsCoarseModuliY0.nonempty_isBaseChangeOf_of_classify_eq`
+(PROVEN) with the coarse space replaced by the coordinate pinning.
 
 TRUE, and it carries NO arithmetic: `hinv`, the `j`-invariant and the Galois group
 appear nowhere.  Both `d₁.E` and `d₂.E` are proper smooth curves over `ℚ̄`
@@ -26305,7 +26465,28 @@ of the descended `d₀`).
 `hN : N ≠ 0` is not needed by the argument sketched above and is carried only so
 that the leaf reads uniformly with its siblings and so that a prover may use it
 freely; at `N = 0` the hypotheses are anyway contradictory by
-`isEmpty_of_gamma0Datum_zero`. -/
+`isEmpty_of_gamma0Datum_zero`.
+
+## DECOMPOSED 2026-07-30 ALONG "COMPACTIFICATION vs GROUP LAW", AND HALF OF IT IS
+## NOW PROVEN RATHER THAN OWED
+
+The first sentence of the argument above — "a smooth affine curve has a unique
+smooth compactification, so the identity of `weierstrassAffine W` extends to an
+isomorphism `d₁.E ≅ d₂.E` over `ℚ̄`" — was recorded on
+`exists_gamma0Datum_specQ_isBaseChangeOf_of_j_generic` as MISSING MACHINERY.  It
+is not missing.  `AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`) is PROVEN and that
+module is already a `public import` here, so the extension and its uniqueness are
+four one-line applications: `exists_isIso_of_isWeierstrassModel_common` above.
+The stale claim is corrected on both docstrings.
+
+What is left is `nonempty_isBaseChangeOf_of_isIso_isWeierstrassModel`, the SAME
+statement with the comparison isomorphism handed in.  Its docstring itemises the
+four `IsBaseChangeOf` fields with their costs; the only deep one is `map_add`,
+i.e. the rigidity lemma for abelian schemes, which is a named classical theorem
+absent from the pin and from this project, and which belongs in
+`Modularity/AbelianScheme.lean` rather than here.  Nothing about curves, models
+or compactifications survives into it. -/
 theorem nonempty_isBaseChangeOf_of_isWeierstrassModel_common {N : ℕ} (hN : N ≠ 0)
     (d₁ d₂ : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
     (W : WeierstrassCurve (AlgebraicClosure ℚ)) [W.IsElliptic]
@@ -26320,8 +26501,11 @@ theorem nonempty_isBaseChangeOf_of_isWeierstrassModel_common {N : ℕ} (hN : N �
     (hlevel : ∀ (T : Scheme.{0}) (s : T ⟶ weierstrassAffine W),
       (∃ y : T ⟶ d₁.cyc.C, y ≫ d₁.cyc.ι = s ≫ ι₁) ↔
         (∃ y : T ⟶ d₂.cyc.C, y ≫ d₂.cyc.ι = s ≫ ι₂)) :
-    Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) d₁ d₂) :=
-  sorry
+    Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) d₁ d₂) := by
+  obtain ⟨Φ, hiso, hΦs, hΦι⟩ :=
+    exists_isIso_of_isWeierstrassModel_common d₁ d₂ W ι₁ ho₁ hs₁ hr₁ ι₂ ho₂ hs₂ hr₂
+  exact nonempty_isBaseChangeOf_of_isIso_isWeierstrassModel hN d₁ d₂ W ι₁ ho₁ hs₁ hr₁
+    ι₂ ho₂ hs₂ hr₂ Φ hiso hΦs hΦι hlevel
 
 /-- **THE ARITHMETIC HALF OF THE `j`-GENERIC DESCENT** (sorry leaf, opened
 2026-07-28 as the cut of `exists_gamma0Datum_specQ_isBaseChangeOf_of_j_generic`
@@ -26515,7 +26699,19 @@ handed to both leaves explicitly rather than re-existentialised.
 the uniqueness of the smooth compactification of a smooth affine curve — the zero
 section is the one missing point on each side, which is exactly the `Set.range`
 clause of `IsWeierstrassModel` — together with the rigidity of the group law (an
-`AbelianSchemeStruct` is determined by its zero section).  The arithmetic leaf
+`AbelianSchemeStruct` is determined by its zero section).
+
+**HALF OF THAT SURVEY IS STALE, CORRECTED 2026-07-30.**  The uniqueness of the
+smooth compactification is NOT missing: it is
+`AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve` in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`, PROVEN, in this
+module's `public import` cone, and written precisely to replace the extension
+leaves this file kept re-cutting.  `nonempty_isBaseChangeOf_of_isWeierstrass`
+`Model_common` is accordingly no longer a leaf: it is PROVEN over
+`exists_isIso_of_isWeierstrassModel_common` (the compactification half, PROVEN)
+and one residual leaf `nonempty_isBaseChangeOf_of_isIso_isWeierstrassModel` (the
+group law and the level structure, with the comparison isomorphism handed in).
+The rigidity of the group law IS still missing, and it is the only thing that is.  The arithmetic leaf
 needs `weierstrassModel_j_unique` (a LEAF in this file) and the conjugate model
 `W^σ`, i.e. `isWeierstrassModel_map_of_isBaseChangeOf` applied to `specGal σ`,
 plus `Affine.Point.mapVariableChange` and `autPoint` (both present) for the
