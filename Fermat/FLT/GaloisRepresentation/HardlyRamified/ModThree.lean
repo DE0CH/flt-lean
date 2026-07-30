@@ -49233,22 +49233,23 @@ is SURJECTIVE. (The two are interchangeable through
 is stated here because it is what the glue below and
 `globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class` already speak.)
 
-WHY IT IS TRUE. Surjectivity is exactly `[F(ζ_m) : F] = φ(m)`, i.e.
-`F ∩ ℚ(ζ_m) = ℚ`, which is MINKOWSKI over `ℚ`. That argument now lives
-ONCE, in `exists_badPrimes_openSubgroup_realizes_pow_ray_class` above,
-whose docstring carries the full route, the machinery inventory and the
-faithfulness audit; this statement is the `H = ⊤` instance of it, and
-`(⊤ : Subgroup (Γ F))` is open because its carrier is `Set.univ`
-(`Subgroup.coe_top`).
+WHY IT IS TRUE, AND THE ROUTE. Surjectivity is exactly
+`[F(ζ_m) : F] = φ(m)`, i.e. `F ∩ ℚ(ζ_m) = ℚ`. Since `m` is prime to every
+prime ramifying in `F/ℚ`, and `ℚ(ζ_m)/ℚ` ramifies only at primes dividing
+`m`, the field `F ∩ ℚ(ζ_m)` is unramified over `ℚ` at EVERY prime, hence
+equals `ℚ` by MINKOWSKI. **The argument must go through `ℚ`** — "`E/F` is
+everywhere unramified, hence trivial" is false for a general number field
+`F`, which has a Hilbert class field.
 
-**THE OLD "RECOMMENDED NEXT CUT" HAS BEEN TAKEN, IN A DIFFERENT SHAPE.**
-This docstring used to propose cutting out the `ℚ`-SIDE statement and
-transporting both this leaf and
-`exists_badPrimes_charKernel_mul_muFixer_ray_class` below down to it
-along `Field.absoluteGaloisGroup.map`. The unified leaf above is that
-cut, executed at the level of `Γ F` instead — which keeps the transport
-inside a single leaf rather than in the interface of two. See THE SHAPE
-OF THE CUT there for why.
+**MINKOWSKI IS ALREADY IN THIS FILE'S IMPORT CONE, DO NOT REBUILD IT**:
+`MinkowskiUnramified.open_normal_subgroup_eq_top_of_inertia_le`
+(`Fermat/FLT/GaloisRepresentation/MinkowskiUnramified.lean`, PROVEN) says
+that an OPEN NORMAL subgroup of `Γ ℚ` containing the image of the local
+inertia group at every rational prime is `⊤`. Applied to
+`H := Γ_F · Γ_{ℚ(ζ_m)}` — a subgroup because the second factor is normal,
+open because the first is, and normal because its fixed field
+`F ∩ ℚ(ζ_m)` is abelian over `ℚ` hence Galois — it gives `H = ⊤`, which
+is `F ∩ ℚ(ζ_m) = ℚ`, which is the surjectivity wanted.
 
 **THE CUT WAS TAKEN, 2026-07-28.** The `ℚ`-side statement that this
 paragraph used to recommend is now the named leaf
