@@ -9857,12 +9857,38 @@ through `hker`: `v` is a limit of `j a_n` with `a_n ∈ 𝒪_D ∖ I`, and the
 class of `a_n` lies in the FINITE group `(𝒪_D / I^k)ˣ`.  That is why the
 clause is a hypothesis here rather than a lemma.
 
-Note also what is NOT demanded: `IsUnit v`.  It is not needed and it is not
-obviously available — `hker` at `n = 1` gives only `j a ∉ span {j π}` for
-`a ∉ I`, and `span {j π}` may be strictly smaller than the maximal ideal of
-`O` (same witness).  The eighth clause already implies `v` is invertible
-MODULO each `(j π)^k`, with inverse `v^{M-1}`, and that is all the
-reindexing uses.
+Note also what is NOT demanded: `IsUnit v`.  It is not needed — the eighth
+clause already implies `v` is invertible MODULO each `(j π)^k`, with inverse
+`v^{M-1}`, and that is all the reindexing uses, so leaving it out keeps
+`exists_tateWeilApprox_of_rawFamily` free of `IsLocalRing` and of `hI`.
+
+**BUT DO NOT READ THAT AS "`IsUnit v` IS UNAVAILABLE" — IT IS AVAILABLE, AND
+THE PERFECTNESS CLAUSE NEEDS IT** (audit 2026-07-30, re-run against the
+composite statement after this leaf was restated twice in one day; the rule
+that an earlier audit is VOID after a restatement is what turned this up).
+An earlier draft of this paragraph asserted the opposite and cited
+`O = 𝒪_{D,I}⟦X⟧` for it.  That witness is real but proves something weaker:
+it shows `span {j π} ⊊ 𝔪`, not that `j a` can be a non-unit.  In fact, in
+the setting of `exists_tateWeilRawFamily_of_qAdicWeilSystem`:
+
+  `a ∉ I  ⟹  IsUnit (j a)`.
+
+Proof: `I` is MAXIMAL, so `a * b + i = 1` for some `b ∈ 𝒪_D`, `i ∈ I`;
+applying `j`, `j a * j b = 1 - j i` with `j i ∈ span {j π}` by `hker`; and
+`span {j π} ⊆ 𝔪` because `j π` is a non-unit (`hker` at `n = 1` together
+with `I ≠ ⊤`, the argument already written out in
+`exists_tateWeilPairing_of_qAdicWeilSystem`); so `1 - j i` is a unit of the
+LOCAL ring `O` and `j a` divides a unit.
+
+This matters because the NINTH clause quantifies over every `N ≥ 1`, and
+classically `C N t s ≡ v^N · E t s`.  Were `v` a non-unit, every value of
+`C N` would be a non-unit for `N ≥ 1` and the clause would be FALSE — the
+reindexing lands at `N = 2·M 1`, a level a prover does not get to choose, so
+a level-one-only perfectness clause would not do.  With `v = lim j aₙ` for
+`aₙ ∉ I`, `v` differs from the unit `j a₁` by an element of
+`span {j π} ⊆ 𝔪` and is therefore itself a unit, and the clause is
+FAITHFUL.  A successor should prove `IsUnit v` on the way to the ninth
+clause even though the predicate does not record it.
 
 The sixth clause is stated at a level `k ≤ N` rather than at `N` itself
 because that is what the reindexing consumes: `C' k = C (N_k)` with
@@ -10176,23 +10202,38 @@ and what a successor must now produce is exactly two things:
     clause for the functional
     `b ↦ L (e·N) (w (e·N) (m.act b (t.1 (e·N))) (s.1 (e·N)))`,
 
-  with its six congruence clauses and its perfectness clause.  All seven
-  are FORMAL: each is the corresponding clause of `IsQAdicWeilSystem`
+  together with its six congruence clauses and its perfectness clause.  All
+  seven are FORMAL: each is the corresponding clause of `IsQAdicWeilSystem`
   (bi-multiplicativity of `w N`, the `𝒪_D`-adjointness clause, the
   `Γ_F`-equivariance clause) pushed through the additivity of `L N`
   (`hLadd`, `hLgal`) and the linearity of `θ` (`hθ`'s first two clauses),
   then transported across the uniqueness clause `hθ.4`.  No normalisation
-  and no limit occurs in any of them;
+  and no limit occurs in any of them.
+
+  `e` is now a BINDER of this leaf (`he1`, `hqe`, `hqe2`) rather than
+  something to be found: its existence is Krull's intersection theorem for
+  `𝒪_D` and is proven in `exists_tateWeilPairing_of_qAdicWeilSystem` below.
+  What each half of it is for: `(q^N) ⊆ I^{e·N}` by `hqe`, so `t.1 (e·N)`
+  IS `q^N`-torsion and `w N` may be evaluated on it; and `hqe2` is what
+  makes `q/π^e` a UNIT of `𝒪_{D,I}` rather than a nonunit, `v` being its
+  image.  With `hqe2` dropped, `v` would lie in the maximal ideal, `v^M ≡ 1
+  (mod (j π)^k)` would be unsatisfiable for `k ≥ 1`, and the eighth clause
+  of `IsTateWeilRawFamily` would be FALSE — the same ramification
+  obstruction as CORRECTION 1, seen from the other side;
 
 * the MULTIPLIER `v = u²` and its finite order modulo each `(j π)^k`.
   This is all that survives of CORRECTION 1 and CORRECTION 2.  `v` is the
   `hcplt`-limit of `j a_n` for `a_n → q/π^e` in `𝒪_{D,I}`, and its finite
   order comes from the finiteness of `(𝒪_D/I^k)ˣ` through `hker` — the
   argument written out under THE CORRECTED NORMALISATION above, which is
-  now the only part of that paragraph still owed.  **`IsUnit v` is NOT
-  demanded and should not be attempted**: see `IsTateWeilRawFamily`, where
-  the witness `O = 𝒪_{D,I}⟦X⟧` shows it is not available from `hker`, and
-  the reindexing does not use it.
+  now the only part of that paragraph still owed.  `IsUnit v` is not part
+  of `IsTateWeilRawFamily`, because the reindexing does not use it; but
+  PROVE IT ANYWAY on the way to the perfectness clause, which quantifies
+  over every `N ≥ 1` and would be FALSE for a non-unit `v`.  It is
+  available: `a ∉ I ⟹ IsUnit (j a)` by maximality of `I`, `hker`, and
+  locality of `O`, and `v` differs from such a `j a` by an element of
+  `span {j π} ⊆ 𝔪`.  See the audit paragraph in `IsTateWeilRawFamily`,
+  which corrects an earlier draft of this note that said the opposite.
 
 **AND THIS IS NOT THE SPLIT REFUTED IN THE PARAGRAPH ABOVE.**  The split
 rejected there is the one that builds the `ℤ_q`-valued form first and calls
@@ -10214,6 +10255,9 @@ theorem exists_tateWeilRawFamily_of_qAdicWeilSystem
     (q : ℕ) [Fact q.Prime]
     (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
     (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    (e : ℕ) (he1 : 1 ≤ e)
+    (hqe : (q : NumberField.RingOfIntegers D) ∈ I ^ e)
+    (hqe2 : (q : NumberField.RingOfIntegers D) ∉ I ^ (e + 1))
     (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
     (O : Type u) [CommRing O] [IsLocalRing O] [Algebra ℤ_[q] O]
     (j : NumberField.RingOfIntegers D →+* O)
@@ -10260,13 +10304,22 @@ so lets the perfectness clause survive the limit.  That step is identical to
 the one in `exists_tateWeilPairing_of_mult`, and it is the only use of `hI`
 here.
 
-WHICH HYPOTHESES THIS ASSEMBLY ITSELF USES: `hI`, `hker` and `hcplt`, and
-nothing else.  Every other binder is passed through untouched to the leaf,
-where the docstring above records what each is for.  They are NOT
-decoration and must not be dropped in a restatement — `hqI` fixes the
-ramification index, `hπ`/`hπ2` make `π` a uniformizer, and `hdiv` is what
-makes the transition maps of `TatePt` surjective, without which the
-perfectness clause has nothing to quantify over. -/
+IT ALSO PRODUCES THE RAMIFICATION INDEX.  The leaf takes `e` with
+`1 ≤ e`, `q ∈ I^e` and `q ∉ I^{e+1}` as binders rather than deriving it,
+because its existence is a two-line consequence of Krull's intersection
+theorem for the Noetherian domain `𝒪_D` (`q ≠ 0`, so `q ∉ ⋂_n I^n`, so the
+set of `n` with `q ∉ I^n` is nonempty; its least element is `≥ 2` because
+`hqI` puts `q` in `I`) and there is no reason for a geometric leaf to carry
+it.  `e` is the level at which the leaf reads its Tate points: `t.1 (e·N)`
+is `q^N`-torsion because `(q^N) ⊆ I^{e·N}`.
+
+WHICH HYPOTHESES THIS ASSEMBLY ITSELF USES: `hI`, `hqI`, `hker`, `hcplt`
+and the primality of `q`, and nothing else.  Every other binder is passed
+through untouched to the leaf, where the docstring above records what each
+is for.  They are NOT decoration and must not be dropped in a restatement —
+`hπ`/`hπ2` make `π` a uniformizer, and `hdiv` is what makes the transition
+maps of `TatePt` surjective, without which the perfectness clause has
+nothing to quantify over. -/
 theorem exists_tateWeilPairing_of_qAdicWeilSystem
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D]
@@ -10304,7 +10357,35 @@ theorem exists_tateWeilPairing_of_qAdicWeilSystem
     (hdiv : ∀ (a : NumberField.RingOfIntegers D), a ≠ 0 →
       ∀ y : GeomFibrePt f x, ∃ z : GeomFibrePt f x, m.act a z = y) :
     ∃ E : TatePt m x I π → TatePt m x I π → O, IsTateWeilPairing m x q I π j E := by
-  obtain ⟨v, C, hC⟩ := exists_tateWeilRawFamily_of_qAdicWeilSystem m x q I hI hqI π hπ hπ2 O j
+  -- THE RAMIFICATION INDEX of `I` over `q`, produced here rather than inside the
+  -- leaf: `q ≠ 0` and Krull's intersection theorem for the Noetherian domain
+  -- `𝒪_D` bound the `I`-adic valuation of `q`, and `hqI` puts it at least at `1`.
+  have hq0 : (q : NumberField.RingOfIntegers D) ≠ 0 := by
+    have hqp : q.Prime := Fact.out
+    exact_mod_cast hqp.ne_zero
+  have hne : ∃ n : ℕ, (q : NumberField.RingOfIntegers D) ∉ I ^ n := by
+    by_contra hall
+    have hmem : (q : NumberField.RingOfIntegers D) ∈ ⨅ n : ℕ, I ^ n :=
+      Submodule.mem_iInf _ |>.mpr fun n => not_not.mp fun h => hall ⟨n, h⟩
+    rw [Ideal.iInf_pow_eq_bot_of_isDomain I hI.ne_top] at hmem
+    exact hq0 hmem
+  classical
+  have hfs : (q : NumberField.RingOfIntegers D) ∉ I ^ Nat.find hne := Nat.find_spec hne
+  have hne0 : Nat.find hne ≠ 0 := by
+    intro h0
+    rw [h0, pow_zero, Ideal.one_eq_top] at hfs
+    exact hfs Submodule.mem_top
+  have hne1 : Nat.find hne ≠ 1 := by
+    intro h1
+    rw [h1, pow_one] at hfs
+    exact hfs hqI
+  have hesucc : Nat.find hne - 1 + 1 = Nat.find hne := by omega
+  have hqe : (q : NumberField.RingOfIntegers D) ∈ I ^ (Nat.find hne - 1) :=
+    not_not.mp (Nat.find_min hne (by omega))
+  have hqe2 : (q : NumberField.RingOfIntegers D) ∉ I ^ (Nat.find hne - 1 + 1) := by
+    rw [hesucc]; exact hfs
+  obtain ⟨v, C, hC⟩ := exists_tateWeilRawFamily_of_qAdicWeilSystem m x q I hI hqI
+    (Nat.find hne - 1) (by omega) hqe hqe2 π hπ hπ2 O j
     hcplt hker w hw θ hθ L hLadd hLgal hLtower hLinj hLsurj hdiv
   obtain ⟨C', hC'⟩ := exists_tateWeilApprox_of_rawFamily m x q I π O j v C hC
   refine exists_tateWeilPairing_of_approx m x q I π O j hcplt ?_ C' hC'
