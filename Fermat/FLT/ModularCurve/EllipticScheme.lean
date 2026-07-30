@@ -10331,9 +10331,183 @@ theorem exists_weierstrassRingEquiv_of_affineComplement {K : Type} [Field K] {A 
   exact ⟨E, ⟨(AlgEquiv.ofBijective φ
     ⟨_root_.injective_of_surjective_coordinateRing E hnf φ.toRingHom hφ, hφ⟩).symm⟩⟩
 
-/-- **A Weierstrass curve over `ℚ` with `Δ = 0` has a RATIONAL singular
-point** (**PROVEN 2026-07-28** — the char-`0` half of leaf 3 of
-`exists_weierstrassModel_of_ellipticScheme`; Silverman *AEC* III.1.4).
+/-! #### `Δ = 0` forces a rational singular point — over any PERFECT field
+
+The four lemmas below are the characteristic-`2` and characteristic-`3`
+branches of `exists_singular_of_Δ_eq_zero`, which was stated over a
+characteristic-zero field until 2026-07-30 and is now stated over a
+**perfect** one.  `PerfectField` is the exact hypothesis, in both
+directions:
+
+* it is ENOUGH, because the only place a root has to be extracted is the
+  degenerate branch of each small characteristic (`a₁ = 0` in char `2`,
+  `b₂ = 0` in char `3`), where the missing coordinate is a `p`-th root and
+  Frobenius is surjective;
+* it is NECESSARY, because the leaf is FALSE over an imperfect field.  In
+  char `2` take `K = 𝔽₂(t)` and `E = ⟨0, 0, 0, t, 0⟩`: every `bᵢ` except
+  `b₈ = -t²` vanishes, so `Δ = 0`, while `W_Y = a₁X + 2Y + a₃ ≡ 0` and
+  `W_X = X² + t`, so the unique singular point is `(√t, 0)` and `√t ∉ K`.
+  In char `3` take `K = 𝔽₃(t)` and `E = ⟨0, 0, 0, 0, -t⟩`: `Δ = 2a₄³ = 0`,
+  the singular point is `(∛t, 0)`, and `∛t ∉ K`.
+
+Both instances the development actually needs are perfect —
+`PerfectField.ofCharZero` covers `ℚ` and every other characteristic-zero
+base, and `IsAlgClosed.perfectField` covers the geometric fibres — so
+relaxing `CharZero` to `PerfectField` costs no call site and buys the
+char-`p` geometric points that `X1.lean`'s
+`exists_zmodBasis_torsion_geomPoint_field` needs.
+
+The three explicit witnesses were found with Singular over `𝔽₂` and `𝔽₃`
+and are verified here by `linear_combination`; the char-`3` identity
+`b₂³ · W(X, Y) = -b₂²b₈ + b₄³` turned out to hold over `ℤ` exactly, with no
+characteristic correction, which is why `charThree_b₂_ne_zero` closes on
+`hd` alone. -/
+
+/-- In a perfect field in which the prime `p` vanishes, every element is a
+`p`-th power: `PerfectField` gives `PerfectRing`, whose Frobenius is
+surjective. -/
+theorem exists_pow_eq_of_perfectField {K : Type} [Field K] [PerfectField K] {p : ℕ}
+    (hp : p.Prime) (hchar : (p : K) = 0) (a : K) : ∃ b : K, b ^ p = a := by
+  have hdvd : ringChar K ∣ p := (ringChar.spec K p).mp hchar
+  have hrc : ringChar K = p := by
+    rcases hp.eq_one_or_self_of_dvd _ hdvd with h | h
+    · exfalso
+      have h1 : ((1 : ℕ) : K) = 0 := (ringChar.spec K 1).mpr (by rw [h])
+      simp at h1
+    · exact h
+  haveI : CharP K p := hrc ▸ ringChar.charP K
+  haveI : ExpChar K p := ExpChar.prime hp
+  obtain ⟨b, hb⟩ := surjective_frobenius K p a
+  exact ⟨b, hb⟩
+
+/-- `Δ` in characteristic `2`, with every even coefficient discharged. -/
+theorem weierstrass_delta_charTwo {K : Type} [Field K] (E : WeierstrassCurve K)
+    (h2 : (2 : K) = 0) (hΔ : E.Δ = 0) :
+    E.a₁ ^ 6 * E.a₆ + E.a₁ ^ 5 * E.a₃ * E.a₄ + E.a₁ ^ 4 * E.a₂ * E.a₃ ^ 2
+      + E.a₁ ^ 4 * E.a₄ ^ 2 + E.a₃ ^ 4 + E.a₁ ^ 3 * E.a₃ ^ 3 = 0 := by
+  simp only [WeierstrassCurve.Δ, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+    WeierstrassCurve.b₆, WeierstrassCurve.b₈] at hΔ
+  linear_combination hΔ + (E.a₁ ^ 6 * E.a₆ + E.a₁ ^ 4 * E.a₂ * E.a₃ ^ 2
+    + 6 * E.a₁ ^ 4 * E.a₂ * E.a₆ - 4 * E.a₁ ^ 3 * E.a₂ * E.a₃ * E.a₄
+    - 18 * E.a₁ ^ 3 * E.a₃ * E.a₆ + 4 * E.a₁ ^ 2 * E.a₂ ^ 2 * E.a₃ ^ 2
+    + 24 * E.a₁ ^ 2 * E.a₂ ^ 2 * E.a₆ - 4 * E.a₁ ^ 2 * E.a₂ * E.a₄ ^ 2
+    + 15 * E.a₁ ^ 2 * E.a₃ ^ 2 * E.a₄ - 36 * E.a₁ ^ 2 * E.a₄ * E.a₆
+    - 8 * E.a₁ * E.a₂ ^ 2 * E.a₃ * E.a₄ - 18 * E.a₁ * E.a₂ * E.a₃ ^ 3
+    - 72 * E.a₁ * E.a₂ * E.a₃ * E.a₆ + 48 * E.a₁ * E.a₃ * E.a₄ ^ 2
+    + 8 * E.a₂ ^ 3 * E.a₃ ^ 2 + 32 * E.a₂ ^ 3 * E.a₆ - 8 * E.a₂ ^ 2 * E.a₄ ^ 2
+    - 36 * E.a₂ * E.a₃ ^ 2 * E.a₄ - 144 * E.a₂ * E.a₄ * E.a₆ + 14 * E.a₃ ^ 4
+    + 108 * E.a₃ ^ 2 * E.a₆ + 32 * E.a₄ ^ 3 + 216 * E.a₆ ^ 2) * h2
+
+/-- `Δ` in characteristic `3`: the `-27 b₆²` and `9 b₂b₄b₆` terms drop out. -/
+theorem weierstrass_delta_charThree {K : Type} [Field K] (E : WeierstrassCurve K)
+    (h3 : (3 : K) = 0) (hΔ : E.Δ = 0) : -E.b₂ ^ 2 * E.b₈ + E.b₄ ^ 3 = 0 := by
+  simp only [WeierstrassCurve.Δ, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+    WeierstrassCurve.b₆, WeierstrassCurve.b₈] at hΔ ⊢
+  linear_combination hΔ + (-12 * E.a₁ ^ 3 * E.a₃ * E.a₆ + 12 * E.a₁ ^ 2 * E.a₃ ^ 2 * E.a₄
+    - 24 * E.a₁ ^ 2 * E.a₄ * E.a₆ - 12 * E.a₁ * E.a₂ * E.a₃ ^ 3
+    - 48 * E.a₁ * E.a₂ * E.a₃ * E.a₆ + 36 * E.a₁ * E.a₃ * E.a₄ ^ 2
+    - 24 * E.a₂ * E.a₃ ^ 2 * E.a₄ - 96 * E.a₂ * E.a₄ * E.a₆ + 9 * E.a₃ ^ 4
+    + 72 * E.a₃ ^ 2 * E.a₆ + 24 * E.a₄ ^ 3 + 144 * E.a₆ ^ 2) * h3
+
+/-- Char `2`, `a₁ ≠ 0`: `W_Y = a₁X + a₃` pins `x = a₃/a₁`, then `W_X = 0`
+pins `y`, and `a₁⁶ · W(x, y) = Δ`.  No root extraction, so no
+`PerfectField`. -/
+theorem exists_singular_of_Δ_eq_zero_charTwo_a₁_ne_zero {K : Type} [Field K]
+    (E : WeierstrassCurve K) (h2 : (2 : K) = 0) (hΔ : E.Δ = 0) (ha1 : E.a₁ ≠ 0) :
+    ∃ x y : K, E.toAffine.Equation x y ∧ ¬ E.toAffine.Nonsingular x y := by
+  have hd := weierstrass_delta_charTwo E h2 hΔ
+  refine ⟨E.a₃ / E.a₁, (E.a₃ ^ 2 + E.a₁ ^ 2 * E.a₄) / E.a₁ ^ 3, ?_, ?_⟩
+  · rw [WeierstrassCurve.Affine.equation_iff']
+    field_simp
+    linear_combination hd + (E.a₁ ^ 2 * E.a₃ ^ 2 * E.a₄ - E.a₁ ^ 4 * E.a₂ * E.a₃ ^ 2
+      - E.a₁ ^ 6 * E.a₆) * h2
+  · rw [WeierstrassCurve.Affine.nonsingular_iff']
+    rintro ⟨-, h | h⟩
+    · refine h ?_
+      field_simp
+      linear_combination (-E.a₃ ^ 2 - E.a₁ * E.a₂ * E.a₃) * h2
+    · refine h ?_
+      field_simp
+      linear_combination (E.a₃ ^ 2 + E.a₁ ^ 2 * E.a₄ + E.a₃ * E.a₁ ^ 3) * h2
+
+/-- Char `2`, `a₁ = 0`: then `Δ = a₃⁴`, so `a₃ = 0`, `W_Y ≡ 0`, and the
+singular point is `(√a₄, √(a₂a₄ + a₆))` — two square roots, which is
+where `PerfectField` is spent. -/
+theorem exists_singular_of_Δ_eq_zero_charTwo_a₁_eq_zero {K : Type} [Field K] [PerfectField K]
+    (E : WeierstrassCurve K) (h2 : (2 : K) = 0) (hΔ : E.Δ = 0) (ha1 : E.a₁ = 0) :
+    ∃ x y : K, E.toAffine.Equation x y ∧ ¬ E.toAffine.Nonsingular x y := by
+  have hd := weierstrass_delta_charTwo E h2 hΔ
+  rw [ha1] at hd
+  have ha3 : E.a₃ = 0 := by
+    have h4 : E.a₃ ^ 4 = 0 := by linear_combination hd
+    exact pow_eq_zero_iff (n := 4) (by norm_num) |>.mp h4
+  obtain ⟨x, hx⟩ := exists_pow_eq_of_perfectField Nat.prime_two h2 E.a₄
+  obtain ⟨y, hy⟩ := exists_pow_eq_of_perfectField Nat.prime_two h2 (E.a₂ * E.a₄ + E.a₆)
+  refine ⟨x, y, ?_, ?_⟩
+  · rw [WeierstrassCurve.Affine.equation_iff']
+    linear_combination hy + (-E.a₂ - x) * hx + (x * y) * ha1 + y * ha3 + (-E.a₄ * x) * h2
+  · rw [WeierstrassCurve.Affine.nonsingular_iff']
+    rintro ⟨-, h | h⟩
+    · refine h ?_
+      linear_combination y * ha1 + (-3 : K) * hx + (-2 * E.a₄ - E.a₂ * x) * h2
+    · refine h ?_
+      linear_combination y * h2 + x * ha1 + ha3
+
+/-- Char `3`, `b₂ ≠ 0`: `3X²` drops out of `W_X`, so `W_X = W_Y = 0` is a
+LINEAR system with determinant `b₂`, and its unique solution
+`(-b₄/b₂, (a₁a₄ - 2a₂a₃)/b₂)` lies on the curve because
+`b₂³ · W = -b₂²b₈ + b₄³` identically over `ℤ`.  No root extraction. -/
+theorem exists_singular_of_Δ_eq_zero_charThree_b₂_ne_zero {K : Type} [Field K]
+    (E : WeierstrassCurve K) (h3 : (3 : K) = 0) (hΔ : E.Δ = 0) (hb2 : E.b₂ ≠ 0) :
+    ∃ x y : K, E.toAffine.Equation x y ∧ ¬ E.toAffine.Nonsingular x y := by
+  have hd := weierstrass_delta_charThree E h3 hΔ
+  refine ⟨-E.b₄ / E.b₂, (E.a₁ * E.a₄ - 2 * E.a₂ * E.a₃) / E.b₂, ?_, ?_⟩
+  · rw [WeierstrassCurve.Affine.equation_iff']
+    field_simp
+    simp only [WeierstrassCurve.b₂, WeierstrassCurve.b₄, WeierstrassCurve.b₈] at hd ⊢
+    linear_combination hd
+  · rw [WeierstrassCurve.Affine.nonsingular_iff']
+    rintro ⟨-, h | h⟩
+    · refine h ?_
+      field_simp
+      simp only [WeierstrassCurve.b₂, WeierstrassCurve.b₄] at ⊢
+      linear_combination (-(2 * E.a₄ + E.a₁ * E.a₃) ^ 2) * h3
+    · refine h ?_
+      field_simp
+      simp only [WeierstrassCurve.b₂, WeierstrassCurve.b₄] at ⊢
+      ring
+
+/-- Char `3`, `b₂ = 0`: then `Δ = b₄³` forces `b₄ = 0`, the two derivative
+conditions COLLAPSE onto each other, `y = a₁x + a₃`, and the equation
+becomes `x³ = 2a₃² - a₆` — one cube root, which is where `PerfectField` is
+spent. -/
+theorem exists_singular_of_Δ_eq_zero_charThree_b₂_eq_zero {K : Type} [Field K] [PerfectField K]
+    (E : WeierstrassCurve K) (h3 : (3 : K) = 0) (hΔ : E.Δ = 0) (hb2 : E.b₂ = 0) :
+    ∃ x y : K, E.toAffine.Equation x y ∧ ¬ E.toAffine.Nonsingular x y := by
+  have hd := weierstrass_delta_charThree E h3 hΔ
+  rw [hb2] at hd
+  have hb4 : E.b₄ = 0 := by
+    have h3' : E.b₄ ^ 3 = 0 := by linear_combination hd
+    exact pow_eq_zero_iff (n := 3) (by norm_num) |>.mp h3'
+  simp only [WeierstrassCurve.b₂] at hb2
+  simp only [WeierstrassCurve.b₄] at hb4
+  obtain ⟨x, hx⟩ := exists_pow_eq_of_perfectField Nat.prime_three h3 (2 * E.a₃ ^ 2 - E.a₆)
+  refine ⟨x, E.a₁ * x + E.a₃, ?_, ?_⟩
+  · rw [WeierstrassCurve.Affine.equation_iff']
+    linear_combination (-1 : K) * hx + (2 * x ^ 2) * hb2 + (4 * x) * hb4
+      + (-3 * E.a₂ * x ^ 2 - 3 * E.a₄ * x) * h3
+  · rw [WeierstrassCurve.Affine.nonsingular_iff']
+    rintro ⟨-, h | h⟩
+    · refine h ?_
+      linear_combination x * hb2 + hb4 + (-x ^ 2 - 2 * E.a₂ * x - E.a₄) * h3
+    · refine h ?_
+      linear_combination (E.a₁ * x + E.a₃) * h3
+
+/-- **A Weierstrass curve over a field in which `2` and `3` are invertible,
+with `Δ = 0`, has a RATIONAL singular point** (**PROVEN 2026-07-28** as the
+char-`0` half of leaf 3 of `exists_weierstrassModel_of_ellipticScheme`;
+`CharZero` weakened to `(2 : K) ≠ 0`, `(3 : K) ≠ 0` on 2026-07-30);
+Silverman *AEC* III.1.4.
 
 This is the step that makes leaf 3 work over `ℚ` rather than only over `ℚ̄`:
 the singular point of a singular Weierstrass cubic has coordinates in the
@@ -10364,48 +10538,83 @@ so both vanish given only `X ^ 2 = c₄` and `X ^ 3 = -c₆`, which is all that
 `X ^ 2 = c₄` pins `X = -c₆ / c₄`.  Choosing `+c₆ / c₄` instead gives the
 OTHER critical point of the cubic, which satisfies both derivative equations
 and is NOT on the curve. -/
-theorem exists_singular_of_Δ_eq_zero {K : Type} [Field K] [CharZero K]
+theorem exists_singular_of_Δ_eq_zero_of_two_three_ne_zero {K : Type} [Field K]
+    (E : WeierstrassCurve K) (h2 : (2 : K) ≠ 0) (h3 : (3 : K) ≠ 0) (hΔ : E.Δ = 0) :
+    ∃ x y : K, E.toAffine.Equation x y ∧ ¬ E.toAffine.Nonsingular x y := by
+  -- `ring` will NOT invert a numeral in a field of unknown characteristic (checked:
+  -- `2 * (x / 2) = x` fails for `[Field K]` and succeeds for `[Field K] [CharZero K]`),
+  -- so every step that divided by `2`, `12`, `48`, `576` or `864` in the `CharZero`
+  -- version is now cleared by `field_simp` against `h2`/`h3` first.
+  have h12 : (12 : K) ≠ 0 := by
+    intro h
+    have h' : (2 : K) * (2 * 3) = 0 := by linear_combination h
+    rcases mul_eq_zero.mp h' with h'' | h''
+    · exact h2 h''
+    · rcases mul_eq_zero.mp h'' with h3' | h3'
+      · exact h2 h3'
+      · exact h3 h3'
+  -- `X` is introduced OPAQUELY (rather than by `set`) so that the `simp only`
+  -- unfoldings of `b₂`/`c₄`/`c₆` below cannot reach inside its definition.
+  obtain ⟨X, hX2, hX3⟩ : ∃ X : K, X ^ 2 = E.c₄ ∧ X ^ 3 = -E.c₆ := by
+    have hc : E.c₄ ^ 3 = E.c₆ ^ 2 := by
+      have h := E.c_relation
+      rw [hΔ, mul_zero] at h
+      linear_combination -h
+    have hc6 : E.c₄ = 0 → E.c₆ = 0 := fun h => by
+      have h2' : E.c₆ ^ 2 = 0 := by rw [← hc, h]; ring
+      exact sq_eq_zero_iff.mp h2'
+    have hmul : E.c₄ * (-E.c₆ / E.c₄) = -E.c₆ := by
+      rcases eq_or_ne E.c₄ 0 with h | h
+      · rw [h, hc6 h]; ring
+      · field_simp
+    have hX2 : (-E.c₆ / E.c₄) ^ 2 = E.c₄ := by
+      rcases eq_or_ne E.c₄ 0 with h | h
+      · rw [h, hc6 h]; norm_num
+      · refine mul_left_cancel₀ (pow_ne_zero 2 h) ?_
+        calc E.c₄ ^ 2 * (-E.c₆ / E.c₄) ^ 2 = (E.c₄ * (-E.c₆ / E.c₄)) ^ 2 := by ring
+          _ = (-E.c₆) ^ 2 := by rw [hmul]
+          _ = E.c₄ ^ 2 * E.c₄ := by linear_combination -hc
+    exact ⟨-E.c₆ / E.c₄, hX2, by
+      have h : (-E.c₆ / E.c₄) ^ 3 = (-E.c₆ / E.c₄) ^ 2 * (-E.c₆ / E.c₄) := by ring
+      rw [h, hX2, hmul]⟩
+  refine ⟨(X - E.b₂) / 12, -(E.a₃ + E.a₁ * ((X - E.b₂) / 12)) / 2, ?_, ?_⟩
+  · rw [WeierstrassCurve.Affine.equation_iff']
+    field_simp
+    simp only [WeierstrassCurve.b₂, WeierstrassCurve.b₄, WeierstrassCurve.b₆,
+      WeierstrassCurve.c₄, WeierstrassCurve.c₆] at hX2 hX3 ⊢
+    linear_combination (-12 * X) * hX2 + (8 : K) * hX3
+  · rw [WeierstrassCurve.Affine.nonsingular_iff']
+    rintro ⟨-, h | h⟩
+    · refine h ?_
+      field_simp
+      simp only [WeierstrassCurve.b₂, WeierstrassCurve.b₄, WeierstrassCurve.c₄] at hX2 ⊢
+      linear_combination (-6 : K) * hX2
+    · refine h ?_
+      field_simp
+      ring
+
+/-- **A Weierstrass curve over a PERFECT field with `Δ = 0` has a RATIONAL
+singular point** (PROVEN 2026-07-28 over a characteristic-zero field;
+**base relaxed from `CharZero K` to `PerfectField K` on 2026-07-30**) —
+Silverman *AEC* III.1.4, and the arithmetic half of leaf 3 of
+`exists_weierstrassModel_of_ellipticScheme`.
+
+`PerfectField` is the sharp hypothesis: see the subsection note above for
+the two imperfect counterexamples (`𝔽₂(t)`, `⟨0,0,0,t,0⟩` and `𝔽₃(t)`,
+`⟨0,0,0,0,-t⟩`) that make the statement FALSE without it, and for why every
+base this development instantiates it at is perfect anyway. -/
+theorem exists_singular_of_Δ_eq_zero {K : Type} [Field K] [PerfectField K]
     (E : WeierstrassCurve K) (hΔ : E.Δ = 0) :
     ∃ x y : K, E.toAffine.Equation x y ∧ ¬ E.toAffine.Nonsingular x y := by
-  have hc : E.c₄ ^ 3 = E.c₆ ^ 2 := by
-    have h := E.c_relation
-    rw [hΔ, mul_zero] at h
-    linear_combination -h
-  have hc6 : E.c₄ = 0 → E.c₆ = 0 := fun h => by
-    have h2 : E.c₆ ^ 2 = 0 := by rw [← hc, h]; ring
-    exact sq_eq_zero_iff.mp h2
-  set X : K := -E.c₆ / E.c₄ with hXdef
-  have hmul : E.c₄ * X = -E.c₆ := by
-    rcases eq_or_ne E.c₄ 0 with h | h
-    · rw [hXdef, h, hc6 h]; ring
-    · rw [hXdef]; field_simp
-  have hX2 : X ^ 2 = E.c₄ := by
-    rcases eq_or_ne E.c₄ 0 with h | h
-    · rw [hXdef, h, hc6 h]; norm_num
-    · refine mul_left_cancel₀ (pow_ne_zero 2 h) ?_
-      calc E.c₄ ^ 2 * X ^ 2 = (E.c₄ * X) ^ 2 := by ring
-        _ = (-E.c₆) ^ 2 := by rw [hmul]
-        _ = E.c₄ ^ 2 * E.c₄ := by linear_combination -hc
-  have hX3 : X ^ 3 = -E.c₆ := by
-    have h : X ^ 3 = X ^ 2 * X := by ring
-    rw [h, hX2, hmul]
-  set x₀ : K := (X - E.b₂) / 12 with hx₀
-  set y₀ : K := -(E.a₃ + E.a₁ * x₀) / 2 with hy₀
-  have hY : 2 * y₀ + E.a₁ * x₀ + E.a₃ = 0 := by rw [hy₀]; ring
-  have hXpart : E.a₁ * y₀ - (3 * x₀ ^ 2 + 2 * E.a₂ * x₀ + E.a₄) = 0 := by
-    rw [hy₀, hx₀]
-    simp only [WeierstrassCurve.b₂, WeierstrassCurve.c₄, WeierstrassCurve.b₄] at hX2 ⊢
-    linear_combination (-1/48 : K) * hX2
-  have heq : E.toAffine.Equation x₀ y₀ := by
-    rw [WeierstrassCurve.Affine.equation_iff', hy₀, hx₀]
-    simp only [WeierstrassCurve.b₂, WeierstrassCurve.c₄, WeierstrassCurve.b₄,
-      WeierstrassCurve.c₆, WeierstrassCurve.b₆] at hX2 hX3 ⊢
-    linear_combination (-X/576 : K) * hX2 + (1/864 : K) * hX3
-  refine ⟨x₀, y₀, heq, ?_⟩
-  rw [WeierstrassCurve.Affine.nonsingular_iff']
-  rintro ⟨-, h | h⟩
-  · exact h hXpart
-  · exact h hY
+  by_cases h2 : (2 : K) = 0
+  · by_cases ha1 : E.a₁ = 0
+    · exact exists_singular_of_Δ_eq_zero_charTwo_a₁_eq_zero E h2 hΔ ha1
+    · exact exists_singular_of_Δ_eq_zero_charTwo_a₁_ne_zero E h2 hΔ ha1
+  · by_cases h3 : (3 : K) = 0
+    · by_cases hb2 : E.b₂ = 0
+      · exact exists_singular_of_Δ_eq_zero_charThree_b₂_eq_zero E h3 hΔ hb2
+      · exact exists_singular_of_Δ_eq_zero_charThree_b₂_ne_zero E h3 hΔ hb2
+    · exact exists_singular_of_Δ_eq_zero_of_two_three_ne_zero E h2 h3 hΔ
 
 section JacobianCriterion
 
@@ -10811,7 +11020,7 @@ Jacobian criterion, **also PROVEN, later the same day**, so this whole subtree
 is closed and nothing under it is a leaf any more).  The scheme-theoretic
 plumbing — that `ι ≫ f` is smooth and IS `Spec` of the structure map — costs
 two lines and carries no content. -/
-theorem isElliptic_of_isOpenImmersion_coordinateRing {K : Type} [Field K] [CharZero K]
+theorem isElliptic_of_isOpenImmersion_coordinateRing {K : Type} [Field K] [PerfectField K]
     {A : Scheme.{0}}
     {f : A ⟶ Spec (CommRingCat.of K)} (hdim : SmoothOfRelativeDimension 1 f)
     (E : WeierstrassCurve K)
@@ -10883,9 +11092,20 @@ morphisms to `Spec ℚ` agree, which is why no leaf has to carry a `ℚ`-algebra
 structure."*  That is the ONE step of the assembly that does not generalise, and it
 is now paid explicitly: leaf 1 hands back the compatibility, leaf 2's isomorphism is
 `K`-linear, and the two are combined by `hring`/`hstr'` below — three lines, no new
-leaf.  `CharZero K` is consumed only inside leaf 3, through
-`exists_singular_of_Δ_eq_zero`; the only instantiations are `ℚ` and `ℚ̄`. -/
-theorem exists_weierstrassModel_of_ellipticScheme {K : Type} [Field K] [CharZero K]
+leaf.
+
+**`CharZero K` WEAKENED TO `PerfectField K` (2026-07-30).**  It was consumed in
+exactly one place, leaf 3's `exists_singular_of_Δ_eq_zero`, which is now proved over
+any perfect field by adding the characteristic-`2` and characteristic-`3` branches;
+see the subsection note there for the two imperfect counterexamples that show
+`PerfectField` is sharp.  Nothing had to change at any call site — `CharZero` and
+`IsAlgClosed` each give `PerfectField` by a mathlib instance — and what the weakening
+buys is the char-`p` GEOMETRIC POINTS: `X0.lean`'s
+`exists_weierstrassModel_of_ellipticScheme_field` is now a one-line consequence of
+this declaration, and through it `X1.lean`'s
+`exists_zmodBasis_torsion_geomPoint_field`, whose whole point is a base field of
+arbitrary characteristic prime to `n`, no longer rests on a `sorry`. -/
+theorem exists_weierstrassModel_of_ellipticScheme {K : Type} [Field K] [PerfectField K]
     {A : Scheme.{0}}
     {f : A ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct f)
     (hdim : SmoothOfRelativeDimension 1 f) :
