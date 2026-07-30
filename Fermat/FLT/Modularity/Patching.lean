@@ -398,6 +398,26 @@ public import Mathlib.Topology.Connected.TotallyDisconnected
 -- is unavailable and `TotallyDisconnectedSpace ℤ_[p]` fails to synthesize
 -- with no hint of the cause
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Deformation
+-- ADDED 2026-07-30 by the proof of `raisedLevelIsSplitTorusAt_of_fibreProduct`
+-- below.  That leaf is the `F = ℚ` case of the PROVEN
+-- `isHilbertSplitTorusAt_of_fibreProduct`, and the seven pieces of local
+-- linear algebra its proof runs on live in that module and are already stated
+-- for an ARBITRARY `F` and (all but one) an arbitrary coefficient universe:
+-- `exists_frobEigenBasis_of_charFrob_map_eq`,
+-- `commute_toLocal_of_isHilbertSplitTorusAt`,
+-- `forall_localInertiaGroup_fixed_of_isHilbertSplitTorusAt`,
+-- `toLocal_diagonal_of_frobDiagonal_of_commute`,
+-- `exists_splitTorus_of_frobDiagonal_of_commute`, `eq_one_of_forall_map_mul_eq`,
+-- `det_eq_mul_of_toLocal_diagonal`.  Importing them is one line against ~450
+-- lines of duplication, and NO CYCLE is created: `HilbertModularity` imports
+-- `Modularity/PatchingCore` and `Modularity/MoretBailly` but not this module,
+-- verified over the full transitive closure (296 modules) on 2026-07-30.
+-- The ONE piece that could not be reused is
+-- `forall_map_eq_one_of_isHilbertSplitTorusAt_of_mul_eq_one`, whose `A` and `B`
+-- are bound to `F`'s universe (through `framePushforward`, which requires them
+-- equal); its universe-polymorphic `pushforwardFrame` port is
+-- `forall_map_eq_one_of_isSplitTorusAt_of_mul_eq_one` below.
+public import Fermat.FLT.GaloisRepresentation.HardlyRamified.HilbertModularity
 -- ADDED 2026-07-28 by the decomposition of
 -- `exists_taylorWilesPrime_locResDecomp_ne_zero` (DDT Lemma 2.48): the
 -- INHOMOGENEOUS description of degree-one continuous cohomology, without
@@ -10939,6 +10959,14 @@ def IsAuxFibreProductClause.{a, uK, uW} {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
       [Module.Free B V] {hdimV : Module.rank B V = 2}
       {ρ : GaloisRep ℚ B V} (πB : B →+* k)
       (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+    -- ADDED 2026-07-30 (`flt-lean-38`), both consumed in exactly one place, the
+    -- split-torus field `raisedLevelIsSplitTorusAt_of_fibreProduct`; see the
+    -- "THREE HYPOTHESES ADDED" section of that leaf for the witnesses showing
+    -- each is necessary, and for the follow-up that would delete `hQp`.
+    -- `Function.Surjective πB` mirrors `IsHilbertAuxFibreProductClause`, which
+    -- has carried it since its own PINNING REPAIR.
+    Function.Surjective πB →
+    (∀ q ∈ Q, q ≠ p) →
     (∀ (q : ℕ) (hq : q.Prime),
       hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
       πB ((ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
@@ -11011,6 +11039,376 @@ def IsAuxProLimitClause.{a, uK, uW} {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
       (hdimI : Module.rank (R ⧸ I) ((R ⧸ I) ⊗[R] (Fin 2 → R)) = 2),
       IsRaisedLevelHardlyRamified hpodd Q hdimI (ρ.baseChange (R ⧸ I))) →
     IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun R) ρ
+
+/-! ### The TRACE-ONLY conjugacy bridge (flt-lean-397, 2026-07-28)
+
+**RELOCATED 2026-07-30 (`flt-lean-38`), unchanged in content.**  This section
+used to sit ~1500 lines further down, immediately before `end_apply_finTwo`.  It
+was hoisted to HERE because the proof of `raisedLevelIsSplitTorusAt_of_fibreProduct`
+below calls `exists_distinct_charFrob_map_eq_of_isTaylorWilesPrimeSet`, and every
+docstring in this file that promised that theorem "PROVEN below" was written while
+the split-torus field was still a `sorry` — nothing had yet needed it EARLY.  The
+four declarations are self-contained: they mention no name defined between their
+old and new positions (checked over the whole intervening range), so the move is
+a pure reordering.  Prose in the section that says "above"/"below" is relative to
+the OLD position unless marked; the one that mattered is corrected inline.
+
+**AUDIT CORRECTION.**  The docstrings of `isAuxFibreProductClause`,
+`IsAuxProLimitClause` and `raisedLevelIsSplitTorusAt_of_forall_isOpen_quotient`
+below all say that "by `exists_conj_of_charFrob_eq_away` the residual
+representation of `ρ` is a conjugate of `ρbar`".  **That theorem does not apply
+from the hypotheses these clauses carry.**  `exists_conj_of_charFrob_eq_away`
+(above, and its shared node in `BrauerNesbittConjugacy.lean`) demands FULL
+`charFrob` agreement away from `S`; the residual pinning actually carried — by
+`IsAuxProLimitClause`, by `IsAuxFibreProductClause` and by
+`AuxDeformationDatum.charFrob_compat` — supplies only `coeff 1`, the Frobenius
+trace up to sign.  The missing coefficient is `coeff 0`, the determinant, and the
+usual repair `coeff_zero_charFrob_eq_of_isHardlyRamified` above needs
+`det ρbar` to be the mod-`p` cyclotomic character — which neither `hirr` nor
+`hQ` supplies, and which these statements deliberately do not carry (the module
+docstring's own note: the `ℚ`-side chain "carries only the linear `charFrob`
+coefficients").
+
+The gap is quantitative, not a technicality.  Take `p = 5`, `k = 𝔽₅`, `α = 1`,
+`β = 2`, and `q ≡ 1 [MOD 5]` as `IsTaylorWilesPrimeSet` requires.  Then
+`ρbar.charFrob q = (X - C 1) * (X - C 2) = X² - 3X + 2` has DISTINCT roots, while
+the polynomial with the same linear coefficient and the cyclotomic constant term
+forced on `ρ` by `raisedLevelDet_of_forall_isOpen_quotient` (below, since the
+2026-07-30 relocation) is
+`X² - 3X + C (q : 𝔽₅) = X² - 3X + 1`, of discriminant `9 - 4 = 5 = 0`: a DOUBLE
+root.  So place-by-place, trace agreement genuinely fails to transport residual
+distinctness, which is the one fact the split-torus clauses need.
+
+`exists_conj_of_charFrobCoeffOne_eq_away` below closes the gap and needs NO new
+hypothesis.  `p` is odd, so `2` is a unit in `k`; propagate the trace agreement
+from the Frobenius conjugacy classes to all of `Gal(ℚ̄/ℚ)` by Chebotarev density
+FIRST, and only then recover the determinant, by rank-two Cayley–Hamilton
+(`two_mul_det_eq_of_finrank_two`, `2 · det f = (tr f)² - tr (f²)`).  That is
+exactly the route `exists_conj_of_charFrob_eq_away_of_two_ne_zero`
+(`BrauerNesbittConjugacy.lean`, PROVEN) already takes; the only change is that
+trace agreement becomes the hypothesis instead of a consequence of charpoly
+agreement.  Stated in the general form, so `isAuxFibreProductClause` — which has
+the identical gap — can consume it unchanged.
+
+**CORRECTION, 2026-07-29 (flt-lean-38): `isAuxFibreProductClause` CANNOT consume
+it yet, and the reason is not the trace gap.**  Every route through this bridge
+must first FORM the residual representation `ρ.baseChange k` along the pinning,
+and `GaloisRep.baseChange` demands `ContinuousSMul B k`, i.e. a CONTINUOUS
+pinning.  By `ker_eq_maximalIdeal_of_ringHom_finiteField` below that is exactly
+"`𝔪_B` is open", a property of `B`'s topology and not of the map:
+`IsAuxProLimitClause` gets it from `hadic`, and the fibre-product clause — which
+carries no topological hypothesis on `B` at all, only `Finite` — does not.  So
+the two clauses are NOT in the same position, and the fibre-product clause has a
+second, independent obstruction; it is recorded as item (3) of that leaf's ROUTE
+AUDIT above, together with the `[DiscreteTopology]` repair that closes it.  The
+two steps that ARE shared are factored out below as
+`charFrob_map_eq_of_charFrobCoeffOne_eq_away` and
+`exists_distinct_charFrob_map_eq_of_isTaylorWilesPrimeSet`, both stated for an
+arbitrary free rank-two module and taking continuity of the pinning as an
+explicit hypothesis, so that the fibre-product clause needs no further
+mathematics once its topology is repaired.
+-/
+
+/-- **A ring homomorphism from a LOCAL ring to a FINITE field is local** (PROVEN):
+its kernel is the maximal ideal.  `R ⧸ ker π` injects into `k` by `kerLift`, hence
+is a finite integral domain, hence a field (`Finite.isField_of_domain`), so `ker π`
+is maximal — and in a local ring the maximal ideal is unique.
+
+This is what makes the residual pinning `πR : R →+* k` of `IsAuxProLimitClause`
+automatically CONTINUOUS, without continuity being carried as a datum: the maximal
+ideal is open because the topology is maximal-adic, `k` is discrete, so `πR` is
+locally constant.  Continuity is what the base change `ρ.baseChange k` along `πR`
+needs (`GaloisRep.baseChange` asks for `ContinuousSMul`), and the base change is
+how the abstract residual representation of `ρ` is formed at all. -/
+lemma ker_eq_maximalIdeal_of_ringHom_finiteField
+    {R : Type*} [CommRing R] [IsLocalRing R] {kk : Type*} [Field kk] [Finite kk]
+    (π : R →+* kk) : RingHom.ker π = IsLocalRing.maximalIdeal R := by
+  have hne : RingHom.ker π ≠ ⊤ := by
+    intro htop
+    have h1 : (1 : R) ∈ RingHom.ker π := htop ▸ Submodule.mem_top
+    rw [RingHom.mem_ker, map_one] at h1
+    exact one_ne_zero h1
+  haveI : Nontrivial (R ⧸ RingHom.ker π) := Ideal.Quotient.nontrivial_iff.mpr hne
+  haveI : Finite (R ⧸ RingHom.ker π) :=
+    Finite.of_injective (RingHom.kerLift π) (RingHom.kerLift_injective π)
+  haveI : IsDomain (R ⧸ RingHom.ker π) :=
+    Function.Injective.isDomain (RingHom.kerLift π) (RingHom.kerLift_injective π)
+  exact IsLocalRing.eq_maximalIdeal
+    (Ideal.Quotient.maximal_of_isField _ (Finite.isField_of_domain _))
+
+set_option backward.isDefEq.respectTransparency false in
+set_option linter.checkUnivs false in
+/-- **Chebotarev–Brauer–Nesbitt conjugacy from FROBENIUS TRACES ALONE** (PROVEN
+2026-07-28, flt-lean-397): a continuous representation `τ` of `Gal(ℚ̄/ℚ)` on a
+2-dimensional space over a finite discrete field `k` in which `2 ≠ 0`, whose
+Frobenius `charFrob` LINEAR COEFFICIENTS agree with those of an *irreducible*
+2-dimensional `ρbar` at all primes outside a finite set `S`, is conjugate to
+`ρbar`.
+
+This is the exact input the residual pinnings of this module carry
+(`AuxDeformationDatum.charFrob_compat`, `IsAuxFibreProductClause`,
+`IsAuxProLimitClause`), and `exists_conj_of_charFrob_eq_away` above — which asks
+for the whole `charFrob` — is NOT reachable from it; see the section preamble for
+the `p = 5`, `α = 1`, `β = 2` witness showing that the determinant really is not
+determined place by place.
+
+Route: `coeff 1` of the charpoly of a rank-two endomorphism is minus its trace
+(`charpoly_eq_quadratic_of_finrank_two`), so the hypothesis is trace agreement at
+the Frobenius elements; the trace-agreement locus is closed (both representations
+are continuous into DISCRETE finite endomorphism spaces,
+`discreteTopology_moduleTopology`) and conjugation-stable
+(`charpoly_conj_mul_inv`), hence everything by Chebotarev density
+(`dense_conjClasses_globalFrob`); rank-two Cayley–Hamilton
+(`two_mul_det_eq_of_finrank_two`) with `2` a unit turns traces everywhere back
+into determinants everywhere, hence charpolys everywhere; and the abstract
+dimension-2 Brauer–Nesbitt core `exists_linearEquiv_of_charpoly_eq` produces the
+intertwining isomorphism.  The ORDER matters and is the whole point: the
+determinant is recovered only after density has been used, never place by place.
+
+Both-ways audit: `h2` is load-bearing — in characteristic `2` the trace does not
+determine the determinant (`tr = 0` for every element of a nonsplit torus of
+`SL₂`), and the theorem is false there.  `hirr` is load-bearing for the same
+reason it is in `exists_conj_of_charFrob_eq_away`: without it only the
+semisimplifications agree.  No hypothesis on `ρbar`'s determinant is needed, and
+adding one would be redundant.
+
+Home note: this belongs beside its charpoly twin in
+`BrauerNesbittConjugacy.lean`; it is stated here to keep the edit inside this
+module's raised-level section.  Dedupe when that file is next touched. -/
+theorem exists_conj_of_charFrobCoeffOne_eq_away.{uK, uW, uW'}
+    {k : Type uK} [Field k] [Finite k] [TopologicalSpace k]
+    [DiscreteTopology k] [IsTopologicalRing k] (h2 : (2 : k) ≠ 0)
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2)
+    {ρbar : GaloisRep ℚ k W} (hirr : ρbar.IsIrreducible)
+    {W' : Type uW'} [AddCommGroup W'] [Module k W'] [Module.Finite k W']
+    [Module.Free k W']
+    (hW' : Module.rank k W' = 2)
+    (τ : GaloisRep ℚ k W')
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (hc1 : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+      (τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 =
+        (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) :
+    ∃ e : W' ≃ₗ[k] W, τ.conj e = ρbar := by
+  classical
+  have hfrW : Module.finrank k W = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast hW)
+  have hfrW' : Module.finrank k W' = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast hW')
+  have hc1W : ∀ f : Module.End k W,
+      (LinearMap.charpoly f).coeff 1 = -(LinearMap.trace k W f) := by
+    intro f
+    have h := congrArg (fun P : Polynomial k => P.coeff 1)
+      (charpoly_eq_quadratic_of_finrank_two hfrW f)
+    simpa using h
+  have hc1W' : ∀ f : Module.End k W',
+      (LinearMap.charpoly f).coeff 1 = -(LinearMap.trace k W' f) := by
+    intro f
+    have h := congrArg (fun P : Polynomial k => P.coeff 1)
+      (charpoly_eq_quadratic_of_finrank_two hfrW' f)
+    simpa using h
+  letI : TopologicalSpace (Module.End k W) :=
+    moduleTopology k (Module.End k W)
+  letI : TopologicalSpace (Module.End k W') :=
+    moduleTopology k (Module.End k W')
+  haveI : DiscreteTopology (Module.End k W) :=
+    discreteTopology_moduleTopology _ _
+  haveI : DiscreteTopology (Module.End k W') :=
+    discreteTopology_moduleTopology _ _
+  have hcont : Continuous fun g : Field.absoluteGaloisGroup ℚ =>
+      ((τ g : Module.End k W'), (ρbar g : Module.End k W)) :=
+    (ContinuousMonoidHom.continuous_toFun τ).prodMk
+      (ContinuousMonoidHom.continuous_toFun ρbar)
+  have hclosed : IsClosed {g : Field.absoluteGaloisGroup ℚ |
+      LinearMap.trace k W' (τ g) = LinearMap.trace k W (ρbar g)} := by
+    have hpre : {g : Field.absoluteGaloisGroup ℚ |
+        LinearMap.trace k W' (τ g) = LinearMap.trace k W (ρbar g)} =
+        (fun g : Field.absoluteGaloisGroup ℚ =>
+          ((τ g : Module.End k W'), (ρbar g : Module.End k W))) ⁻¹'
+        {pp : Module.End k W' × Module.End k W |
+          LinearMap.trace k W' pp.1 = LinearMap.trace k W pp.2} := rfl
+    rw [hpre]
+    exact (isClosed_discrete _).preimage hcont
+  have hsub : {x : Field.absoluteGaloisGroup ℚ |
+      ∃ v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ), v ∉ S ∧
+        ∃ g, x = g * globalFrob v * g⁻¹} ⊆
+      {g : Field.absoluteGaloisGroup ℚ |
+        LinearMap.trace k W' (τ g) = LinearMap.trace k W (ρbar g)} := by
+    rintro x ⟨v, hvS, g, rfl⟩
+    obtain ⟨q, hq, rfl⟩ := exists_prime_toHeightOneSpectrum v
+    have hval := hc1 q hq hvS
+    rw [GaloisRep.charFrob_eq_charpoly_globalFrob,
+      GaloisRep.charFrob_eq_charpoly_globalFrob] at hval
+    show LinearMap.trace k W' (τ _) = LinearMap.trace k W (ρbar _)
+    rw [← neg_inj, ← hc1W', ← hc1W, charpoly_conj_mul_inv τ,
+      charpoly_conj_mul_inv ρbar]
+    exact hval
+  have halltr : ∀ g : Field.absoluteGaloisGroup ℚ,
+      LinearMap.trace k W' (τ g) = LinearMap.trace k W (ρbar g) := by
+    intro g
+    have hdense := dense_conjClasses_globalFrob (K := ℚ) S
+    have huniv : (Set.univ : Set (Field.absoluteGaloisGroup ℚ)) ⊆
+        {g : Field.absoluteGaloisGroup ℚ |
+          LinearMap.trace k W' (τ g) = LinearMap.trace k W (ρbar g)} :=
+      hdense.closure_eq ▸ hclosed.closure_subset_iff.mpr hsub
+    exact huniv (Set.mem_univ g)
+  have hall : ∀ g : Field.absoluteGaloisGroup ℚ,
+      LinearMap.charpoly (τ g) = LinearMap.charpoly (ρbar g) := by
+    intro g
+    have hsq : LinearMap.trace k W' (τ g * τ g) =
+        LinearMap.trace k W (ρbar g * ρbar g) := by
+      rw [← map_mul, ← map_mul]
+      exact halltr (g * g)
+    have hdet : LinearMap.det (τ g) = LinearMap.det (ρbar g) := by
+      refine mul_left_cancel₀ h2 ?_
+      rw [two_mul_det_eq_of_finrank_two hfrW' (τ g),
+        two_mul_det_eq_of_finrank_two hfrW (ρbar g), halltr g, hsq]
+    rw [charpoly_eq_quadratic_of_finrank_two hfrW' (τ g),
+      charpoly_eq_quadratic_of_finrank_two hfrW (ρbar g), halltr g, hdet]
+  obtain ⟨e, he⟩ := exists_linearEquiv_of_charpoly_eq hfrW hfrW'
+    ρbar.toRepresentation τ.toRepresentation hirr hall
+  refine ⟨e, GaloisRep.ext fun σ => LinearMap.ext fun x => ?_⟩
+  have h1 : e (τ σ (e.symm x)) = ρbar σ (e (e.symm x)) := he σ (e.symm x)
+  rw [e.apply_symm_apply] at h1
+  calc (τ.conj e) σ x = (e.conj (τ σ)) x := by rw [GaloisRep.conj_apply]
+    _ = e (τ σ (e.symm x)) := by rw [LinearEquiv.conj_apply]; rfl
+    _ = ρbar σ x := h1
+
+set_option backward.isDefEq.respectTransparency false in
+set_option linter.checkUnivs false in
+/-- **The trace-only residual pinning upgrades to FULL `charFrob` agreement at
+EVERY prime** (PROVEN 2026-07-29, flt-lean-38): the four steps that turn a
+`coeff 1`-only pinning `πR`, valid away from a finite set `S`, into the honest
+identity `(ρ.charFrob v).map πR = ρbar.charFrob v` at *every* `v`, packaged once
+for every consumer of the raised-level residual pinning.
+
+This is `exists_conj_of_charFrobCoeffOne_eq_away` above with its two ends
+attached: the residual representation is FORMED (`ρ.baseChange k` along `πR`,
+which is why `hπcont` is a hypothesis — see below), `2 ≠ 0` is extracted from
+`hpodd`, the trace hypothesis is transported across `charFrob_baseChange`, and
+the resulting conjugacy is turned back into a charpoly identity by
+`charFrob_conj`.  **The finite exceptional set `S` disappears in the process** —
+that is the whole point, and it is what both split-torus routes need.
+
+**`hπcont : Continuous πR` IS A GENUINE HYPOTHESIS AND CANNOT BE DROPPED.**
+`ker πR = 𝔪_R` for free (`ker_eq_maximalIdeal_of_ringHom_finiteField` above,
+which needs only `IsLocalRing R` and `Finite k`), so continuity is EXACTLY the
+statement that `𝔪_R` is open — and that is a property of `R`'s topology, not of
+`πR`.  `IsAuxProLimitClause` supplies it from `hadic`; a clause carrying no
+topological hypothesis on `R` at all does NOT (see the ROUTE AUDIT of
+`isAuxFibreProductClause` below, where this is the second, previously unrecorded
+obstruction).  Without a continuous `πR` there is no residual representation of
+`ρ` over `k` at all, so this bridge — and with it every use of `hQ`'s residual
+distinctness — is unreachable.
+
+Stated for an arbitrary free rank-two `V` rather than for `Fin 2 → R`, so that
+the fibre-product clause (whose `V` is abstract) can consume it unchanged once
+its own topology gap is repaired. -/
+theorem charFrob_map_eq_of_charFrobCoeffOne_eq_away.{a, uK, uW}
+    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hirr : ρbar.IsIrreducible)
+    {R : Type a} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[p] R]
+    {V : Type a} [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V] (hV : Module.rank R V = 2)
+    {ρ : GaloisRep ℚ R V} (πR : R →+* k) (hπcont : Continuous πR)
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (hπR : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+      πR ((ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+        (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) :
+    ∀ (q : ℕ) (hq : q.Prime),
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map πR =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat := by
+  classical
+  letI : Algebra R k := πR.toAlgebra
+  haveI : ContinuousSMul R k := continuousSMul_of_algebraMap R k
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hπcont)
+  haveI hchar : CharP k p := charP_of_ringHom_padicInt (algebraMap ℤ_[p] k)
+  have h2 : (2 : k) ≠ 0 := by
+    intro h20
+    have hcast : ((2 : ℕ) : k) = 0 := by exact_mod_cast h20
+    have hdvd : p ∣ 2 := (CharP.cast_eq_zero_iff k p 2).mp hcast
+    have hp2 : p = 2 :=
+      (Nat.prime_dvd_prime_iff_eq (Fact.out : p.Prime) Nat.prime_two).mp hdvd
+    rw [hp2] at hpodd
+    exact (Nat.not_odd_iff_even.mpr even_two) hpodd
+  have hrk' : Module.rank k (k ⊗[R] V) = 2 := by
+    rw [Module.rank_baseChange, hV]
+    simp
+  have hc1 : ∀ (q' : ℕ) (hq' : q'.Prime),
+      hq'.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+      ((ρ.baseChange k).charFrob
+          hq'.toHeightOneSpectrumRingOfIntegersRat).coeff 1 =
+        (ρbar.charFrob hq'.toHeightOneSpectrumRingOfIntegersRat).coeff 1 := by
+    intro q' hq' hq'S
+    rw [charFrob_baseChange, Polynomial.coeff_map, RingHom.algebraMap_toAlgebra]
+    exact hπR q' hq' hq'S
+  obtain ⟨e₀, he₀⟩ := exists_conj_of_charFrobCoeffOne_eq_away h2 hW hirr hrk'
+    (ρ.baseChange k) S hc1
+  intro q' hq'
+  have h1 := charFrob_conj hq'.toHeightOneSpectrumRingOfIntegersRat
+    (ρ.baseChange k) e₀
+  rw [he₀, charFrob_baseChange, RingHom.algebraMap_toAlgebra] at h1
+  exact h1.symm
+
+set_option backward.isDefEq.respectTransparency false in
+set_option linter.checkUnivs false in
+/-- **Residual distinctness at a Taylor–Wiles prime transports to `ρ`** (PROVEN
+2026-07-29, flt-lean-38): the ONE fact the ambient arithmetic supplies to the
+split-torus clauses, in the exact shape
+`raisedLevelSplitTorusAt_of_charFrob_residually_distinct` below consumes as
+`hdist`.
+
+`hQ`'s local clause gives `ρbar.charFrob q = (X - C α) * (X - C β)` with
+`α ≠ β`; `charFrob_map_eq_of_charFrobCoeffOne_eq_away` above moves it across the
+residual pinning, at `q ∈ Q` in particular (which is where the disappearance of
+the exceptional set `S` is used — `Q` is not required to be disjoint from `S`,
+and nothing in the hypotheses would give that).
+
+Both-ways audit: `hirr` and `hpodd` are used only through the trace bridge, so
+the circularity guard of `exists_auxDeformationDatum` is respected — `hirr`
+enters positively, through Brauer–Nesbitt, and no proof here can end in
+`exfalso` against it.  `hπcont` is load-bearing for the reason recorded on the
+bridge.  `n` is inert: `hQ`'s congruence clause is not used, only its local
+clause; it is carried so that the statement matches the clause leaves that
+consume it. -/
+theorem exists_distinct_charFrob_map_eq_of_isTaylorWilesPrimeSet.{a, uK, uW}
+    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hirr : ρbar.IsIrreducible)
+    (n : ℕ) (Q : Finset ℕ) (hQ : IsTaylorWilesPrimeSet p ρbar n Q)
+    {R : Type a} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[p] R]
+    {V : Type a} [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V] (hV : Module.rank R V = 2)
+    {ρ : GaloisRep ℚ R V} (πR : R →+* k) (hπcont : Continuous πR)
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (hπR : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+      πR ((ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+        (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) :
+    ∀ q ∈ Q, ∀ hq : q.Prime,
+      ∃ α β : k, α ≠ β ∧
+        (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map πR =
+          (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β) := by
+  intro q hqQ hq
+  obtain ⟨hq', _hcong, α, β, hαβ, hfact⟩ := hQ.1 q hqQ
+  refine ⟨α, β, hαβ, ?_⟩
+  rw [charFrob_map_eq_of_charFrobCoeffOne_eq_away hpodd hW hirr hV πR hπcont S
+    hπR q hq]
+  exact hfact
 
 /-! #### `isAuxFibreProductClause`, decomposed field by field
 
@@ -11128,9 +11526,207 @@ theorem raisedLevelHardlyRamified_pushforwardFrame_of_baseChange.{a}
     (TensorProduct.piScalarRight B A A (Fin 2))
 
 set_option linter.checkUnivs false in
-/-- **THE SPLIT TORUS AT `q ∈ Q` GLUES ALONG A FIBRE PRODUCT** (sorry node, cut
-2026-07-30 as the ONE genuinely new field of `isAuxFibreProductClause` below;
-LEAF A2′-2a-v).
+/-- **THE DETERMINANT OF A CYCLOTOMICALLY PINNED REPRESENTATION IS TRIVIAL ON
+INERTIA AT `q ≠ p`** (sorry node, new 2026-07-30 — the ONE arithmetic input of
+`raisedLevelIsSplitTorusAt_of_fibreProduct` below, and the only thing that leaf
+does not prove outright).
+
+This is the `ℚ`-side, `p`-adic twin of the Hilbert leaf
+`cyclotomicCharacter_map_map_eq_one_of_mem_localInertiaGroup`
+(`HardlyRamified/HilbertModularity.lean`, also open), packaged in the shape its
+consumer actually uses — `LinearMap.det (ρ.toLocal v ι) = 1` rather than a bare
+statement about `cyclotomicCharacter`.  **That packaging is deliberate and not
+cosmetic**: `GaloisRep.toLocal` is `ρ.map (algebraMap _ _)` with the
+`HeightOneSpectrum.instAlgebraAdicCompletion` structure, while writing
+`algebraMap ℚ (v.adicCompletion ℚ)` by hand elaborates through
+`DivisionRing.toRatAlgebra` — two `Algebra ℚ (v.adicCompletion ℚ)` instances
+that are equal but not syntactically so, and `rw` cannot bridge them.  Stating
+the leaf through `toLocal` makes the instances agree by construction.  A prover
+who wants the bare cyclotomic statement should prove it and then bridge with
+`RingHom.ext_rat` (`v.adicCompletion ℚ` is a field, so a `ℚ`-algebra structure
+on it is unique).
+
+# THE ROUTE
+
+`hdet` reduces this to `cyclotomicCharacter (ℚᵃˡᵍ) p σ = 1` for `σ` the image in
+`Γ ℚ` of `ι ∈ localInertiaGroup v`; that is exactly "`ℚ(μ_{pⁿ})/ℚ` is unramified
+at every prime `q ≠ p`", and the model to follow is `Threeadic.lean`'s
+`cyclotomicCharacterModL_eq_one_of_mem_localInertiaGroup` (mod `3`, over `ℚ`,
+PROVEN 2026-07-24), which is that argument at `p = 3` for the mod-`p` character:
+`localInertiaGroup v` acts trivially modulo the maximal ideal `𝔪` of the integral
+closure of `𝒪ᵥ`; a primitive `pⁿ`-th root of unity `ζ` maps to one; `σ ζ = ζ^j`
+and `σ ζ ≡ ζ mod 𝔪` force `1 − ζ^{j−1} ∈ 𝔪`, impossible unless `j ≡ 1` because
+`∏_{0<i<pⁿ}(1 − ζ^i) = pⁿ` is a UNIT of `𝒪ᵥ` when `q ≠ p`
+(`isUnit_natCast_adicCompletionIntegers`).  So `σ` fixes `μ_{pⁿ}` pointwise and
+`cyclotomicCharacter.spec` gives `1` mod `pⁿ`; `n` is arbitrary, so the value is
+`1` in `ℤ_[p]ˣ` (`cyclotomicCharacter.toZModPow`).  The mod-`3` lemma is NOT
+reusable — fixed prime, mod-`p` character, and its module is outside this one's
+cone.
+
+# FALSITY AUDIT
+
+*`hqp : q ≠ p` is LOAD-BEARING and the statement is FALSE without it.*  At `q = p`
+the cyclotomic character restricted to inertia IS the local cyclotomic character,
+which is surjective onto `1 + pℤ_[p]` in the worst case (`ℚ_p(μ_{pⁿ})/ℚ_p` is
+totally ramified), so it is not trivial on `localInertiaGroup v`.  Concretely at
+`p = 3`, `n = 1`: `ℚ_3(ζ_3)/ℚ_3` is ramified, inertia surjects onto
+`Gal = (ℤ/3)ˣ`, and the character takes the value `−1`.
+
+*`hdet` is load-bearing.*  Without it `ρ` is arbitrary and its local determinant
+at `v` can be any character of `Γ ℚ_q`, ramified or not.
+
+*Not vacuous.*  `ρ := ` any hardly ramified representation satisfies `hdet`
+(`IsHardlyRamified.det`), and such objects are what the consumer supplies.
+
+References: Neukirch, *Algebraic Number Theory*, I §10, II §7 (the discriminant
+of `ℚ(μ_m)` is supported at the primes dividing `m`); Serre, *Abelian ℓ-adic
+representations*, I §1.2. -/
+theorem det_toLocal_eq_one_of_det_cyclotomicCharacter {p : ℕ} [Fact p.Prime]
+    {B : Type*} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    [Algebra ℤ_[p] B]
+    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p)
+    (ρ : GaloisRep ℚ B (Fin 2 → B))
+    (hdet : ∀ g : Field.absoluteGaloisGroup ℚ, ρ.det g = algebraMap ℤ_[p] B
+      (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv))
+    (ι : Field.absoluteGaloisGroup
+      (hq.toHeightOneSpectrumRingOfIntegersRat.adicCompletion ℚ))
+    (hι : ι ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat) :
+    LinearMap.det (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat ι) = 1 :=
+  sorry
+
+set_option linter.checkUnivs false in
+/-- **BOTH diagonal characters are trivial on inertia at each LEVEL** (PROVEN
+2026-07-30): the universe-polymorphic `ℚ`-side port of
+`forall_map_eq_one_of_isHilbertSplitTorusAt_of_mul_eq_one`
+(`HardlyRamified/HilbertModularity.lean`, PROVEN), which
+`raisedLevelIsSplitTorusAt_of_fibreProduct` below needs and cannot call.
+
+**Why a port rather than a call.**  That theorem's coefficient rings are declared
+`{B : Type u} {A : Type u}` with `u` the SAME universe variable as its
+`F : Type u`, because it is stated for `framePushforward`, whose two rings must
+share a universe.  Instantiating `F := ℚ` therefore forces `u = 0`, and this
+module's fibre-product data lives in an arbitrary universe `a`.  The proof itself
+is universe-agnostic, so the port is that proof verbatim with `framePushforward`
+replaced by `Deformation.lean`'s `pushforwardFrame`, whose `{B : Type u}
+{A : Type v}` are independent, and `framePushforward_toLocal_apply_map` replaced
+by the inline `pushforwardFrame_apply_map` computation.  Nothing else changed.
+
+The two inputs it does reach across the import are `F`-generic and
+universe-polymorphic already: `forall_localInertiaGroup_fixed_of_isHilbertSplitTorusAt`
+(the level-wise dichotomy "inertia fixes one of the two Frobenius eigenvectors")
+and `eq_one_of_forall_map_mul_eq` (a linear functional taking the value `1` at
+`v` turns "inertia fixes the image of `v`" into "the scalar maps to `1`").
+
+`hprod` — the determinant being trivial on inertia — is what turns that
+DISJUNCTION into a statement about BOTH characters, and it is the reason the leaf
+above is needed: the two levels may fix DIFFERENT eigenvectors, so neither side
+of the dichotomy alone identifies which character is the unramified one. -/
+theorem forall_map_eq_one_of_isSplitTorusAt_of_mul_eq_one
+    (w : HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    {B : Type*} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    {A : Type*} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    [IsLocalRing A]
+    (pr : B →+* A) (hp : Continuous pr)
+    (ρ : GaloisRep ℚ B (Fin 2 → B))
+    (hs : ∃ (eA : (Fin 2 → A) ≃ₗ[A] A × A)
+        (χ δ : GaloisRep (w.adicCompletion ℚ) A A),
+      (∀ (g : Field.absoluteGaloisGroup (w.adicCompletion ℚ)) (v : Fin 2 → A),
+        eA ((pushforwardFrame pr hp ρ).toLocal w g v)
+          = (χ g (eA v).1, δ g (eA v).2)) ∧
+      localInertiaGroup w ≤ δ.ker)
+    (e : (Fin 2 → B) ≃ₗ[B] B × B) (a b : B) (hab : IsUnit (a - b))
+    (hdiag : ∀ x : Fin 2 → B,
+      e (ρ.toLocal w (Field.AbsoluteGaloisGroup.adicArithFrob w) x)
+        = (a * (e x).1, b * (e x).2))
+    (c d : Field.absoluteGaloisGroup (w.adicCompletion ℚ) → B)
+    (hkey : ∀ (g : Field.absoluteGaloisGroup (w.adicCompletion ℚ))
+        (x : Fin 2 → B),
+      e (ρ.toLocal w g x) = (c g * (e x).1, d g * (e x).2))
+    (hprod : ∀ ι ∈ localInertiaGroup w, c ι * d ι = 1) :
+    ∀ ι ∈ localInertiaGroup w, pr (c ι) = 1 ∧ pr (d ι) = 1 := by
+  classical
+  set Fr := Field.AbsoluteGaloisGroup.adicArithFrob w with hFrdef
+  set u : Fin 2 → B := e.symm ((1 : B), (0 : B)) with hu
+  set v : Fin 2 → B := e.symm ((0 : B), (1 : B)) with hv
+  have heu : e u = ((1 : B), (0 : B)) := by rw [hu, e.apply_symm_apply]
+  have hev : e v = ((0 : B), (1 : B)) := by rw [hv, e.apply_symm_apply]
+  have key : ∀ (h : Field.absoluteGaloisGroup (w.adicCompletion ℚ))
+      (y : Fin 2 → B),
+      (pushforwardFrame pr hp ρ).toLocal w h (fun j => pr (y j))
+        = fun j => pr (ρ.toLocal w h y j) := by
+    intro h y
+    funext i
+    rw [GaloisRep.toLocal_apply, GaloisRep.toLocal_apply]
+    exact pushforwardFrame_apply_map pr hp ρ _ y i
+  have hFru : ρ.toLocal w Fr u = a • u := by
+    apply e.injective
+    rw [hdiag, map_smul, heu]
+    simp
+  have hFrv : ρ.toLocal w Fr v = b • v := by
+    apply e.injective
+    rw [hdiag, map_smul, hev]
+    simp
+  have hmapu : (pushforwardFrame pr hp ρ).toLocal w Fr (fun j => pr (u j))
+      = pr a • (fun j => pr (u j)) := by
+    rw [key Fr u, hFru]
+    funext j
+    simp [Pi.smul_apply, smul_eq_mul, map_mul]
+  have hmapv : (pushforwardFrame pr hp ρ).toLocal w Fr (fun j => pr (v j))
+      = pr b • (fun j => pr (v j)) := by
+    rw [key Fr v, hFrv]
+    funext j
+    simp [Pi.smul_apply, smul_eq_mul, map_mul]
+  have habq : IsUnit (pr a - pr b) := by
+    have h := hab.map pr
+    rwa [map_sub] at h
+  have hdich := forall_localInertiaGroup_fixed_of_isHilbertSplitTorusAt
+    (F := ℚ) (w := w) hs (pr a) (pr b) habq
+    (fun j => pr (u j)) (fun j => pr (v j)) hmapu hmapv
+  have hactu : ∀ ι : Field.absoluteGaloisGroup (w.adicCompletion ℚ),
+      ρ.toLocal w ι u = c ι • u := by
+    intro ι
+    apply e.injective
+    rw [hkey ι u, heu, map_smul, heu]
+    simp
+  have hactv : ∀ ι : Field.absoluteGaloisGroup (w.adicCompletion ℚ),
+      ρ.toLocal w ι v = d ι • v := by
+    intro ι
+    apply e.injective
+    rw [hkey ι v, hev, map_smul, hev]
+    simp
+  intro ι hι
+  have hcd := hprod ι hι
+  rcases hdich with hfix | hfix
+  · have hpd : pr (d ι) = 1 := by
+      refine eq_one_of_forall_map_mul_eq pr
+        ((LinearMap.snd B B B).comp e.toLinearMap) v
+        (by simpa using congrArg Prod.snd hev) (d ι) fun j => ?_
+      have h := hfix ι hι
+      rw [key ι v, hactv ι] at h
+      have hj := congrFun h j
+      simpa [Pi.smul_apply, smul_eq_mul, map_mul] using hj
+    refine ⟨?_, hpd⟩
+    have hc1 := congrArg pr hcd
+    rw [map_mul, hpd, mul_one, map_one] at hc1
+    exact hc1
+  · have hpc : pr (c ι) = 1 := by
+      refine eq_one_of_forall_map_mul_eq pr
+        ((LinearMap.fst B B B).comp e.toLinearMap) u
+        (by simpa using congrArg Prod.fst heu) (c ι) fun j => ?_
+      have h := hfix ι hι
+      rw [key ι u, hactu ι] at h
+      have hj := congrFun h j
+      simpa [Pi.smul_apply, smul_eq_mul, map_mul] using hj
+    refine ⟨hpc, ?_⟩
+    have hd1 := congrArg pr hcd
+    rw [map_mul, hpc, one_mul, map_one] at hd1
+    exact hd1
+
+set_option linter.checkUnivs false in
+/-- **THE SPLIT TORUS AT `q ∈ Q` GLUES ALONG A FIBRE PRODUCT** (**PROVEN
+2026-07-30, `flt-lean-38`**, over the single arithmetic leaf
+`det_toLocal_eq_one_of_det_cyclotomicCharacter` above; cut 2026-07-30 as the ONE
+genuinely new field of `isAuxFibreProductClause` below; LEAF A2′-2a-v).
 
 Everything else in that clause is now assembly: `det` and `isUnramified` are
 formal (an element of `B` is its pair of projections), `isFlat` is
@@ -11139,38 +11735,108 @@ both PROVEN in `HardlyRamified/Deformation.lean` and both called verbatim.  This
 leaf is the fifth field, stated on the standard frame `Fin 2 → B` because that is
 the form in which the consumer supplies its data.
 
-# THE ROUTE, AND WHAT IS ALREADY BUILT FOR IT
+# THE ROUTE — AND IT IS *NOT* THE ONE THE 2026-07-30 CUT PRESCRIBED
 
-The argument the audit on `isAuxFibreProductClause` prescribes, unchanged:
+The route recorded here previously was: build an idempotent of `End(A₀²)` over
+`A₀`, note it is determined by its residue (idempotents lifting uniquely along
+the nilpotent maximal ideal), conclude the two decompositions over `A₀` agree up
+to a swap, and GLUE the two matching idempotents into one over `B` using `hcart`.
 
-1. `h₁` and `h₂` supply decompositions of `ρ ⊗ A₁` and `ρ ⊗ A₂` at `q`.  Their
-   images along `f₁`, `f₂` are two decompositions of the SAME local
-   representation over `A₀` (`hcomm`, and `hf₂` to know the image is all of
-   `A₀`).
-2. Residual distinctness at `q`:
-   **`exists_distinct_charFrob_map_eq_of_isTaylorWilesPrimeSet` (PROVEN below) is
-   this step in full** — it takes exactly `hπB` plus `Continuous πB` and returns
-   `α ≠ β` with `(ρ.charFrob q).map πB = (X - C α)(X - C β)`.  `Continuous πB` is
-   `continuous_of_discreteTopology` here, which is the whole point of the
-   `[DiscreteTopology B]` repair recorded in the audit below (item (3)).
-3. An idempotent of `End(A₀²)` commuting with the local action is determined by
-   its residue, idempotents lifting uniquely along the nilpotent maximal ideal of
-   the finite local ring `A₀`.  So the two decompositions over `A₀` agree up to
-   swapping the two factors; swap `e₂` if necessary.
-4. Glue the two matching idempotents into one over `B` — `hcart` gives the
-   element of `B`, `hinj` gives its uniqueness — and read off the decomposition
-   of `ρ` itself, with `δ` unramified because both `δ₁` and `δ₂` are.
+**That route was not needed, and the proof below does not take it.**  The
+`F`-general twin `isHilbertSplitTorusAt_of_fibreProduct`
+(`HardlyRamified/HilbertModularity.lean`, PROVEN 2026-07-30) had already found a
+route with no idempotent lifting and no descent along `f₁`, `f₂` at all, and this
+is that proof at `F = ℚ`.  Its shape:
+
+1. **Diagonalise over `B` DIRECTLY**, not over `A₀`.  Residual distinctness at
+   `q` (`exists_distinct_charFrob_map_eq_of_isTaylorWilesPrimeSet`, PROVEN below,
+   consuming exactly `hπB` and `Continuous πB` — the latter is
+   `continuous_of_discreteTopology`, which is the point of the
+   `[DiscreteTopology B]` repair of the audit below) makes the eigenvalue gap a
+   UNIT, and `exists_frobEigenBasis_of_charFrob_map_eq` Hensel-lifts a Frobenius
+   eigenbasis `e : (Fin 2 → B) ≃ₗ[B] B × B` over `B` itself.  This is where
+   `hπBsurj` is spent, and only here.
+2. `h₁`, `h₂` are used ONLY to see that the whole local image COMMUTES with
+   Frobenius: a split torus makes each level's local image commutative
+   (`commute_toLocal_of_isHilbertSplitTorusAt`), and `hinj` reflects the two
+   level identities back to `B`.
+3. Commuting with a Frobenius whose eigenvalue gap is a unit forces every
+   `ρ.toLocal q g` to be diagonal in `e`
+   (`toLocal_diagonal_of_frobDiagonal_of_commute`), giving `c`, `d : Γ ℚ_q → B`.
+4. `c ι · d ι = det = 1` on inertia — this is the leaf
+   `det_toLocal_eq_one_of_det_cyclotomicCharacter` above, plus
+   `det_eq_mul_of_toLocal_diagonal` — and then
+   `forall_map_eq_one_of_isSplitTorusAt_of_mul_eq_one` (above) makes BOTH
+   characters trivial on inertia at each level, so `d ι = 1` over `B` by `hinj`.
+   Inertia therefore fixes the second eigenvector and
+   `exists_splitTorus_of_frobDiagonal_of_commute` packages the result.
+
+**Consequence worth recording: `hf₂`, `halg₁`, `halg₂`, `hcomm` and `hcart` are
+UNUSED.**  The split-torus clause does not need `B` to BE the fibre product — it
+needs only that `B` EMBEDS in `A₁ × A₂` (`hinj`).  They are kept because the
+clause `IsAuxFibreProductClause` carries them for its other four conjuncts, all
+of which do use them, and because dropping them from this leaf alone would make
+its signature disagree with its siblings for no gain.  They are
+underscore-prefixed so the emptiness is mechanically visible, exactly as the
+Hilbert twin does it; the arguments are positional, so the call site in
+`isAuxFibreProductClause` below is unaffected.
 
 # WHY THIS IS NOT FALSE, AND WHERE THE PINNING IS LOAD-BEARING
 
 **Without `hπB` the statement is FALSE** — the `k[u,v]/(u,v)²` counterexample of
-the section preamble.  The pinning is not decoration: step 2 is the only source
-of `α ≠ β`, and without residual distinctness the idempotent in step 3 is not
-determined by its residue, so the two decompositions over `A₀` need not be
-related at all.
+the section preamble.  The pinning is not decoration: step 1 is the only source
+of `α ≠ β`, and without residual distinctness the Frobenius eigenvalue gap is not
+a unit, so `ρ.toLocal q` need not be diagonalisable over `B` at all.
 
-`hirr`, `hW`, `n` and `hQ` are the inputs of step 2 and are passed straight to
+`hirr`, `hW`, `n` and `hQ` are the inputs of step 1 and are passed straight to
 `exists_distinct_charFrob_map_eq_of_isTaylorWilesPrimeSet`.
+
+# THE THREE HYPOTHESES ADDED ON 2026-07-30 (`flt-lean-38`), AND WHY EACH IS FREE
+AT THE CALL SITE
+
+The statement as cut on 2026-07-30 was **not provable as it stood**, for exactly
+the two reasons the PROVEN Hilbert twin had already recorded and repaired the same
+day; `hdetB` is the third and is pure bookkeeping.  All three are already in
+`isAuxFibreProductClause`'s hand.
+
+* **`hπBsurj : Function.Surjective πB`.**  `hπB` puts the two Frobenius
+  eigenvalues `α ≠ β` in `k`; what step 1 needs is them in `B`, i.e. that
+  `charFrob` SPLITS over `B` with a unit gap.  A non-surjective `πB` gives only
+  `ker πB = 𝔪_B` (`ker_eq_maximalIdeal_of_ringHom_finiteField` below), i.e. an
+  EMBEDDING `κ_B ↪ k`, and `α`, `β` may generate a quadratic extension of `κ_B` —
+  in which case `ρ.toLocal q Frob` is residually irreducible over `B` and there is
+  no `(Fin 2 → B) ≃ₗ[B] B × B` diagonalising it.  This is the same gap the Hilbert
+  twin's PINNING REPAIR note predicted for this leaf, in those words.  Supplied by
+  `IsAuxFibreProductClause`, which was given the hypothesis in this commit —
+  mirroring `IsHilbertAuxFibreProductClause`, which already carried it.
+  *An alternative that would let it be DROPPED, recorded for a later owner:*
+  `hf₂` together with `hcart` make `p₁` SURJECTIVE (given `a₁`, take `a₂` with
+  `f₂ a₂ = f₁ a₁`, then `hcart`), so `A₁ ≅ B / ker p₁` and
+  `κ_{A₁} ≅ κ_B`; `h₁`'s split torus then puts the eigenvalues in `A₁`, hence
+  their residues in `κ_B`, and `residue_{A₁} ∘ p₁ : B ↠ κ_{A₁}` is a SURJECTION
+  onto a field through which `πB` factors — enough to run step 1 with no
+  hypothesis on `πB` at all.  That route needs a charpoly-of-a-diagonal-map lemma
+  which does not exist here yet; it was not taken because the hypothesis is free.
+* **`hQp : ∀ q ∈ Q, q ≠ p`.**  Step 4 needs the determinant trivial on inertia at
+  `q`, and the cyclotomic character is ramified at `p`: at `q = p` the leaf
+  `det_toLocal_eq_one_of_det_cyclotomicCharacter` is FALSE (see its own falsity
+  audit).  The Hilbert twin gets this for free because
+  `IsHilbertTaylorWilesPrimeSet`'s first clause demands `ℓ ∉ w` OUTRIGHT; **the
+  `ℚ`-side `IsTaylorWilesPrimeSet` does not, and that asymmetry is a genuine
+  defect of the `ℚ`-side definition, not of this leaf.**  Its first conjunct gives
+  only `q ≡ 1 [MOD p ^ n]`, which is VACUOUS at `n = 0` and so does not exclude
+  `p ∈ Q`.  Carried as a hypothesis here, and added to `IsAuxFibreProductClause`
+  in the same commit, rather than repaired at the root: the repair belongs in
+  `IsTaylorWilesPrimeSet` and costs strengthening
+  `exists_taylorWilesPrime_locResDecomp_ne_zero`, whose Chebotarev step already
+  works away from `2` and `p` (see its own proof) but does not state it.  **That
+  is the right follow-up and it would let `hQp` be deleted from both this leaf and
+  the clause.**
+* **`hdetB`.**  The determinant identity over `B`.  `isAuxFibreProductClause`
+  already DERIVES it — from `h₁.det`, `h₂.det`, `halg₁`, `halg₂` and `hinj` — and
+  already binds it as `hdet`, two lines from the call site, where it is passed to
+  `isTameAtTwo_of_fibreProduct`.  So this follows the file's own established shape
+  for this leaf's siblings, exactly as the Hilbert twin does.
 
 CIRCULARITY GUARD (inherited): must not be proven through `Family.lean` or
 anything downstream of it, and a proof ending in `exfalso` against `hirr` is the
@@ -11188,6 +11854,7 @@ theorem raisedLevelIsSplitTorusAt_of_fibreProduct.{a, uK, uW} {p : ℕ}
     (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
     (hirr : ρbar.IsIrreducible)
     (n : ℕ) (Q : Finset ℕ) (hQ : IsTaylorWilesPrimeSet p ρbar n Q)
+    (hQp : ∀ q ∈ Q, q ≠ p)
     {A₀ : Type a} [CommRing A₀] [TopologicalSpace A₀] [IsTopologicalRing A₀]
     [IsLocalRing A₀] [Algebra ℤ_[p] A₀] [Finite A₀] [DiscreteTopology A₀]
     {A₁ : Type a} [CommRing A₁] [TopologicalSpace A₁] [IsTopologicalRing A₁]
@@ -11196,21 +11863,23 @@ theorem raisedLevelIsSplitTorusAt_of_fibreProduct.{a, uK, uW} {p : ℕ}
     [IsLocalRing A₂] [Algebra ℤ_[p] A₂] [Finite A₂] [DiscreteTopology A₂]
     {B : Type a} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
     [IsLocalRing B] [Algebra ℤ_[p] B] [Finite B] [DiscreteTopology B]
-    (f₁ : A₁ →+* A₀) (f₂ : A₂ →+* A₀) (hf₂ : Function.Surjective f₂)
+    (f₁ : A₁ →+* A₀) (f₂ : A₂ →+* A₀) (_hf₂ : Function.Surjective f₂)
     (p₁ : B →+* A₁) (p₂ : B →+* A₂) (hp₁ : Continuous p₁) (hp₂ : Continuous p₂)
-    (halg₁ : p₁.comp (algebraMap ℤ_[p] B) = algebraMap ℤ_[p] A₁)
-    (halg₂ : p₂.comp (algebraMap ℤ_[p] B) = algebraMap ℤ_[p] A₂)
-    (hcomm : f₁.comp p₁ = f₂.comp p₂)
+    (_halg₁ : p₁.comp (algebraMap ℤ_[p] B) = algebraMap ℤ_[p] A₁)
+    (_halg₂ : p₂.comp (algebraMap ℤ_[p] B) = algebraMap ℤ_[p] A₂)
+    (_hcomm : f₁.comp p₁ = f₂.comp p₂)
     (hinj : Function.Injective fun b : B => (p₁ b, p₂ b))
-    (hcart : ∀ (a₁ : A₁) (a₂ : A₂), f₁ a₁ = f₂ a₂ →
+    (_hcart : ∀ (a₁ : A₁) (a₂ : A₂), f₁ a₁ = f₂ a₂ →
       ∃ b : B, p₁ b = a₁ ∧ p₂ b = a₂)
     {ρ : GaloisRep ℚ B (Fin 2 → B)}
-    (πB : B →+* k)
+    (πB : B →+* k) (hπBsurj : Function.Surjective πB)
     (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
     (hπB : ∀ (q : ℕ) (hq : q.Prime),
       hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
       πB ((ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
         (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
+    (hdetB : ∀ g : Field.absoluteGaloisGroup ℚ, ρ.det g = algebraMap ℤ_[p] B
+      (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv))
     (h₁ : IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun A₁)
       (pushforwardFrame p₁ hp₁ ρ))
     (h₂ : IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun A₂)
@@ -11224,8 +11893,93 @@ theorem raisedLevelIsSplitTorusAt_of_fibreProduct.{a, uK, uW} {p : ℕ}
             (v : Fin 2 → B),
           e' (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat g v) =
             (χ g (e' v).1, δ g (e' v).2)) ∧
-        localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat ≤ δ.ker :=
-  sorry
+        localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat ≤ δ.ker := by
+  classical
+  intro q hqQ hq
+  set v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ) :=
+    hq.toHeightOneSpectrumRingOfIntegersRat with hvdef
+  set Fr := Field.AbsoluteGaloisGroup.adicArithFrob v with hFrdef
+  -- STEP 1: residual distinctness at `q ∈ Q`, transported to `B` by the pinning,
+  -- and the Frobenius eigenbasis it Hensel-lifts over `B`.
+  obtain ⟨α, β, hαβ, hchar⟩ :=
+    exists_distinct_charFrob_map_eq_of_isTaylorWilesPrimeSet hpodd hW hirr n Q hQ
+      (rank_finTwoFun B) πB continuous_of_discreteTopology S hπB q hqQ hq
+  obtain ⟨e, a, b, hab, hdiag⟩ :=
+    exists_frobEigenBasis_of_charFrob_map_eq (F := ℚ) (w := v) πB hπBsurj ρ α β
+      hαβ hchar
+  -- an element of `B` is determined by its two projections
+  have hinj2 : ∀ x y : B, p₁ x = p₁ y → p₂ x = p₂ y → x = y := fun x y hx hy =>
+    hinj (by simp only [Prod.mk.injEq]; exact ⟨hx, hy⟩)
+  have key₁ : ∀ (h : Field.absoluteGaloisGroup (v.adicCompletion ℚ))
+      (y : Fin 2 → B),
+      (pushforwardFrame p₁ hp₁ ρ).toLocal v h (fun j => p₁ (y j))
+        = fun j => p₁ (ρ.toLocal v h y j) := by
+    intro h y
+    funext i
+    rw [GaloisRep.toLocal_apply, GaloisRep.toLocal_apply]
+    exact pushforwardFrame_apply_map p₁ hp₁ ρ _ y i
+  have key₂ : ∀ (h : Field.absoluteGaloisGroup (v.adicCompletion ℚ))
+      (y : Fin 2 → B),
+      (pushforwardFrame p₂ hp₂ ρ).toLocal v h (fun j => p₂ (y j))
+        = fun j => p₂ (ρ.toLocal v h y j) := by
+    intro h y
+    funext i
+    rw [GaloisRep.toLocal_apply, GaloisRep.toLocal_apply]
+    exact pushforwardFrame_apply_map p₂ hp₂ ρ _ y i
+  -- STEP 2: commutation with Frobenius, read off the two levels through `hinj`.
+  have hcommFr : ∀ (g : Field.absoluteGaloisGroup (v.adicCompletion ℚ))
+      (x : Fin 2 → B),
+      ρ.toLocal v g (ρ.toLocal v Fr x) = ρ.toLocal v Fr (ρ.toLocal v g x) := by
+    intro g x
+    funext i
+    refine hinj2 _ _ ?_ ?_
+    · have hlev := commute_toLocal_of_isHilbertSplitTorusAt (F := ℚ) (w := v)
+        (ρS := pushforwardFrame p₁ hp₁ ρ) (h₁.isSplitTorusAt q hqQ hq) g Fr
+        (fun j => p₁ (x j))
+      rw [key₁ Fr x, key₁ g x, key₁ g (ρ.toLocal v Fr x),
+        key₁ Fr (ρ.toLocal v g x)] at hlev
+      exact congrFun hlev i
+    · have hlev := commute_toLocal_of_isHilbertSplitTorusAt (F := ℚ) (w := v)
+        (ρS := pushforwardFrame p₂ hp₂ ρ) (h₂.isSplitTorusAt q hqQ hq) g Fr
+        (fun j => p₂ (x j))
+      rw [key₂ Fr x, key₂ g x, key₂ g (ρ.toLocal v Fr x),
+        key₂ Fr (ρ.toLocal v g x)] at hlev
+      exact congrFun hlev i
+  -- STEP 3: the DIAGONAL form over `B`.
+  obtain ⟨c, d, hkey⟩ :
+      ∃ c d : Field.absoluteGaloisGroup (v.adicCompletion ℚ) → B,
+      ∀ (g : Field.absoluteGaloisGroup (v.adicCompletion ℚ)) (x : Fin 2 → B),
+        e (ρ.toLocal v g x) = (c g * (e x).1, d g * (e x).2) :=
+    ⟨_, _, toLocal_diagonal_of_frobDiagonal_of_commute (F := ℚ) v ρ e a b hab
+      hdiag hcommFr⟩
+  -- STEP 4: the DETERMINANT is trivial on inertia at `v`, because `q ≠ p` — the
+  -- one arithmetic leaf — and both characters follow, level by level.
+  have hprod : ∀ ι ∈ localInertiaGroup v, c ι * d ι = 1 := by
+    intro ι hι
+    have hD := det_eq_mul_of_toLocal_diagonal e (ρ.toLocal v ι) (c ι) (d ι)
+      (hkey ι)
+    rw [← hD]
+    exact det_toLocal_eq_one_of_det_cyclotomicCharacter hq (hQp q hqQ) ρ hdetB ι hι
+  have hlev₁ := forall_map_eq_one_of_isSplitTorusAt_of_mul_eq_one v p₁ hp₁ ρ
+    (h₁.isSplitTorusAt q hqQ hq) e a b hab hdiag c d hkey hprod
+  have hlev₂ := forall_map_eq_one_of_isSplitTorusAt_of_mul_eq_one v p₂ hp₂ ρ
+    (h₂.isSplitTorusAt q hqQ hq) e a b hab hdiag c d hkey hprod
+  have hd1 : ∀ ι ∈ localInertiaGroup v, d ι = 1 := by
+    intro ι hι
+    refine hinj2 _ _ ?_ ?_
+    · rw [(hlev₁ ι hι).2, map_one]
+    · rw [(hlev₂ ι hι).2, map_one]
+  -- inertia fixes the second eigenvector, and the split torus follows
+  have hiner : ∀ ι ∈ localInertiaGroup v,
+      ρ.toLocal v ι (e.symm ((0 : B), (1 : B))) = e.symm ((0 : B), (1 : B)) := by
+    intro ι hι
+    apply e.injective
+    rw [hkey ι, e.apply_symm_apply, hd1 ι hι]
+    simp
+  obtain ⟨χ, δ, hint, hδ⟩ :=
+    exists_splitTorus_of_frobDiagonal_of_commute (F := ℚ) (w := v) ρ e a b hab
+      hdiag hcommFr hiner
+  exact ⟨e, χ, δ, hint, hδ⟩
 
 set_option linter.checkUnivs false in
 /-- **The RAISED-LEVEL gluing clause** (LEAF A2′-2a of the
@@ -11464,7 +12218,7 @@ theorem isAuxFibreProductClause.{a, uK, uW} {p : ℕ} (hpodd : Odd p)
     IsAuxFibreProductClause.{a, uK, uW} hpodd Q ρbar := by
   intro A₀ _ _ _ _ _ _ _ A₁ _ _ _ _ _ _ _ A₂ _ _ _ _ _ _ _ B _ _ _ _ _ _ _
     f₁ f₂ hf₂ p₁ p₂ hp₁ hp₂ halg₁ halg₂ hcomm hinj hcart
-    V _ _ _ _ hdimV ρ πB S hπB h₁ h₂
+    V _ _ _ _ hdimV ρ πB S hπBsurj hQp hπB h₁ h₂
   -- FRAME `V` on the standard frame `Fin 2 → B`: the two arithmetic leaves
   -- called below are stated for `FramedGaloisRep ℚ B (Fin 2)`.
   have hfrk : Module.finrank B V = 2 :=
@@ -11550,8 +12304,8 @@ theorem isAuxFibreProductClause.{a, uK, uW} {p : ℕ} (hpodd : Odd p)
     exact hπB q hq hqS
   -- FIELD 5, THE SPLIT TORUS at `q ∈ Q`: the one genuinely new leaf.
   have hsplit := raisedLevelIsSplitTorusAt_of_fibreProduct.{a, uK, uW} hpodd hW
-    hirr n Q hQ f₁ f₂ hf₂ p₁ p₂ hp₁ hp₂ halg₁ halg₂ hcomm hinj hcart πB S hπB'
-    h₁' h₂'
+    hirr n Q hQ hQp f₁ f₂ hf₂ p₁ p₂ hp₁ hp₂ halg₁ halg₂ hcomm hinj hcart πB
+    hπBsurj S hπB' hdet h₁' h₂'
   -- ASSEMBLE, then transport back off the frame.
   have hρ'cond : IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun B) ρ' :=
     ⟨hdet, hunr, hflat, htame, hsplit⟩
@@ -12219,364 +12973,6 @@ theorem raisedLevelIsTameAtTwo_of_forall_isOpen_quotient.{a} {p : ℕ} (hpodd : 
         (∀ g : Field.absoluteGaloisGroup ℚ_[2], δ g * δ g = 1) :=
   isTameAtTwo_of_forall_isOpen_quotient hpodd hadic hcomplete
     (raisedLevelFramedTameAtTwo_of_forall_isOpen_quotient hpodd Q hlev)
-
-/-! ### The TRACE-ONLY conjugacy bridge (flt-lean-397, 2026-07-28)
-
-**AUDIT CORRECTION.**  The docstrings of `isAuxFibreProductClause`,
-`IsAuxProLimitClause` and `raisedLevelIsSplitTorusAt_of_forall_isOpen_quotient`
-below all say that "by `exists_conj_of_charFrob_eq_away` the residual
-representation of `ρ` is a conjugate of `ρbar`".  **That theorem does not apply
-from the hypotheses these clauses carry.**  `exists_conj_of_charFrob_eq_away`
-(above, and its shared node in `BrauerNesbittConjugacy.lean`) demands FULL
-`charFrob` agreement away from `S`; the residual pinning actually carried — by
-`IsAuxProLimitClause`, by `IsAuxFibreProductClause` and by
-`AuxDeformationDatum.charFrob_compat` — supplies only `coeff 1`, the Frobenius
-trace up to sign.  The missing coefficient is `coeff 0`, the determinant, and the
-usual repair `coeff_zero_charFrob_eq_of_isHardlyRamified` above needs
-`det ρbar` to be the mod-`p` cyclotomic character — which neither `hirr` nor
-`hQ` supplies, and which these statements deliberately do not carry (the module
-docstring's own note: the `ℚ`-side chain "carries only the linear `charFrob`
-coefficients").
-
-The gap is quantitative, not a technicality.  Take `p = 5`, `k = 𝔽₅`, `α = 1`,
-`β = 2`, and `q ≡ 1 [MOD 5]` as `IsTaylorWilesPrimeSet` requires.  Then
-`ρbar.charFrob q = (X - C 1) * (X - C 2) = X² - 3X + 2` has DISTINCT roots, while
-the polynomial with the same linear coefficient and the cyclotomic constant term
-forced on `ρ` by `raisedLevelDet_of_forall_isOpen_quotient` above is
-`X² - 3X + C (q : 𝔽₅) = X² - 3X + 1`, of discriminant `9 - 4 = 5 = 0`: a DOUBLE
-root.  So place-by-place, trace agreement genuinely fails to transport residual
-distinctness, which is the one fact the split-torus clauses need.
-
-`exists_conj_of_charFrobCoeffOne_eq_away` below closes the gap and needs NO new
-hypothesis.  `p` is odd, so `2` is a unit in `k`; propagate the trace agreement
-from the Frobenius conjugacy classes to all of `Gal(ℚ̄/ℚ)` by Chebotarev density
-FIRST, and only then recover the determinant, by rank-two Cayley–Hamilton
-(`two_mul_det_eq_of_finrank_two`, `2 · det f = (tr f)² - tr (f²)`).  That is
-exactly the route `exists_conj_of_charFrob_eq_away_of_two_ne_zero`
-(`BrauerNesbittConjugacy.lean`, PROVEN) already takes; the only change is that
-trace agreement becomes the hypothesis instead of a consequence of charpoly
-agreement.  Stated in the general form, so `isAuxFibreProductClause` — which has
-the identical gap — can consume it unchanged.
-
-**CORRECTION, 2026-07-29 (flt-lean-38): `isAuxFibreProductClause` CANNOT consume
-it yet, and the reason is not the trace gap.**  Every route through this bridge
-must first FORM the residual representation `ρ.baseChange k` along the pinning,
-and `GaloisRep.baseChange` demands `ContinuousSMul B k`, i.e. a CONTINUOUS
-pinning.  By `ker_eq_maximalIdeal_of_ringHom_finiteField` below that is exactly
-"`𝔪_B` is open", a property of `B`'s topology and not of the map:
-`IsAuxProLimitClause` gets it from `hadic`, and the fibre-product clause — which
-carries no topological hypothesis on `B` at all, only `Finite` — does not.  So
-the two clauses are NOT in the same position, and the fibre-product clause has a
-second, independent obstruction; it is recorded as item (3) of that leaf's ROUTE
-AUDIT above, together with the `[DiscreteTopology]` repair that closes it.  The
-two steps that ARE shared are factored out below as
-`charFrob_map_eq_of_charFrobCoeffOne_eq_away` and
-`exists_distinct_charFrob_map_eq_of_isTaylorWilesPrimeSet`, both stated for an
-arbitrary free rank-two module and taking continuity of the pinning as an
-explicit hypothesis, so that the fibre-product clause needs no further
-mathematics once its topology is repaired.
--/
-
-/-- **A ring homomorphism from a LOCAL ring to a FINITE field is local** (PROVEN):
-its kernel is the maximal ideal.  `R ⧸ ker π` injects into `k` by `kerLift`, hence
-is a finite integral domain, hence a field (`Finite.isField_of_domain`), so `ker π`
-is maximal — and in a local ring the maximal ideal is unique.
-
-This is what makes the residual pinning `πR : R →+* k` of `IsAuxProLimitClause`
-automatically CONTINUOUS, without continuity being carried as a datum: the maximal
-ideal is open because the topology is maximal-adic, `k` is discrete, so `πR` is
-locally constant.  Continuity is what the base change `ρ.baseChange k` along `πR`
-needs (`GaloisRep.baseChange` asks for `ContinuousSMul`), and the base change is
-how the abstract residual representation of `ρ` is formed at all. -/
-lemma ker_eq_maximalIdeal_of_ringHom_finiteField
-    {R : Type*} [CommRing R] [IsLocalRing R] {kk : Type*} [Field kk] [Finite kk]
-    (π : R →+* kk) : RingHom.ker π = IsLocalRing.maximalIdeal R := by
-  have hne : RingHom.ker π ≠ ⊤ := by
-    intro htop
-    have h1 : (1 : R) ∈ RingHom.ker π := htop ▸ Submodule.mem_top
-    rw [RingHom.mem_ker, map_one] at h1
-    exact one_ne_zero h1
-  haveI : Nontrivial (R ⧸ RingHom.ker π) := Ideal.Quotient.nontrivial_iff.mpr hne
-  haveI : Finite (R ⧸ RingHom.ker π) :=
-    Finite.of_injective (RingHom.kerLift π) (RingHom.kerLift_injective π)
-  haveI : IsDomain (R ⧸ RingHom.ker π) :=
-    Function.Injective.isDomain (RingHom.kerLift π) (RingHom.kerLift_injective π)
-  exact IsLocalRing.eq_maximalIdeal
-    (Ideal.Quotient.maximal_of_isField _ (Finite.isField_of_domain _))
-
-set_option backward.isDefEq.respectTransparency false in
-set_option linter.checkUnivs false in
-/-- **Chebotarev–Brauer–Nesbitt conjugacy from FROBENIUS TRACES ALONE** (PROVEN
-2026-07-28, flt-lean-397): a continuous representation `τ` of `Gal(ℚ̄/ℚ)` on a
-2-dimensional space over a finite discrete field `k` in which `2 ≠ 0`, whose
-Frobenius `charFrob` LINEAR COEFFICIENTS agree with those of an *irreducible*
-2-dimensional `ρbar` at all primes outside a finite set `S`, is conjugate to
-`ρbar`.
-
-This is the exact input the residual pinnings of this module carry
-(`AuxDeformationDatum.charFrob_compat`, `IsAuxFibreProductClause`,
-`IsAuxProLimitClause`), and `exists_conj_of_charFrob_eq_away` above — which asks
-for the whole `charFrob` — is NOT reachable from it; see the section preamble for
-the `p = 5`, `α = 1`, `β = 2` witness showing that the determinant really is not
-determined place by place.
-
-Route: `coeff 1` of the charpoly of a rank-two endomorphism is minus its trace
-(`charpoly_eq_quadratic_of_finrank_two`), so the hypothesis is trace agreement at
-the Frobenius elements; the trace-agreement locus is closed (both representations
-are continuous into DISCRETE finite endomorphism spaces,
-`discreteTopology_moduleTopology`) and conjugation-stable
-(`charpoly_conj_mul_inv`), hence everything by Chebotarev density
-(`dense_conjClasses_globalFrob`); rank-two Cayley–Hamilton
-(`two_mul_det_eq_of_finrank_two`) with `2` a unit turns traces everywhere back
-into determinants everywhere, hence charpolys everywhere; and the abstract
-dimension-2 Brauer–Nesbitt core `exists_linearEquiv_of_charpoly_eq` produces the
-intertwining isomorphism.  The ORDER matters and is the whole point: the
-determinant is recovered only after density has been used, never place by place.
-
-Both-ways audit: `h2` is load-bearing — in characteristic `2` the trace does not
-determine the determinant (`tr = 0` for every element of a nonsplit torus of
-`SL₂`), and the theorem is false there.  `hirr` is load-bearing for the same
-reason it is in `exists_conj_of_charFrob_eq_away`: without it only the
-semisimplifications agree.  No hypothesis on `ρbar`'s determinant is needed, and
-adding one would be redundant.
-
-Home note: this belongs beside its charpoly twin in
-`BrauerNesbittConjugacy.lean`; it is stated here to keep the edit inside this
-module's raised-level section.  Dedupe when that file is next touched. -/
-theorem exists_conj_of_charFrobCoeffOne_eq_away.{uK, uW, uW'}
-    {k : Type uK} [Field k] [Finite k] [TopologicalSpace k]
-    [DiscreteTopology k] [IsTopologicalRing k] (h2 : (2 : k) ≠ 0)
-    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
-    [Module.Free k W]
-    (hW : Module.rank k W = 2)
-    {ρbar : GaloisRep ℚ k W} (hirr : ρbar.IsIrreducible)
-    {W' : Type uW'} [AddCommGroup W'] [Module k W'] [Module.Finite k W']
-    [Module.Free k W']
-    (hW' : Module.rank k W' = 2)
-    (τ : GaloisRep ℚ k W')
-    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
-    (hc1 : ∀ (q : ℕ) (hq : q.Prime),
-      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
-      (τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 =
-        (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) :
-    ∃ e : W' ≃ₗ[k] W, τ.conj e = ρbar := by
-  classical
-  have hfrW : Module.finrank k W = 2 :=
-    Module.finrank_eq_of_rank_eq (by exact_mod_cast hW)
-  have hfrW' : Module.finrank k W' = 2 :=
-    Module.finrank_eq_of_rank_eq (by exact_mod_cast hW')
-  have hc1W : ∀ f : Module.End k W,
-      (LinearMap.charpoly f).coeff 1 = -(LinearMap.trace k W f) := by
-    intro f
-    have h := congrArg (fun P : Polynomial k => P.coeff 1)
-      (charpoly_eq_quadratic_of_finrank_two hfrW f)
-    simpa using h
-  have hc1W' : ∀ f : Module.End k W',
-      (LinearMap.charpoly f).coeff 1 = -(LinearMap.trace k W' f) := by
-    intro f
-    have h := congrArg (fun P : Polynomial k => P.coeff 1)
-      (charpoly_eq_quadratic_of_finrank_two hfrW' f)
-    simpa using h
-  letI : TopologicalSpace (Module.End k W) :=
-    moduleTopology k (Module.End k W)
-  letI : TopologicalSpace (Module.End k W') :=
-    moduleTopology k (Module.End k W')
-  haveI : DiscreteTopology (Module.End k W) :=
-    discreteTopology_moduleTopology _ _
-  haveI : DiscreteTopology (Module.End k W') :=
-    discreteTopology_moduleTopology _ _
-  have hcont : Continuous fun g : Field.absoluteGaloisGroup ℚ =>
-      ((τ g : Module.End k W'), (ρbar g : Module.End k W)) :=
-    (ContinuousMonoidHom.continuous_toFun τ).prodMk
-      (ContinuousMonoidHom.continuous_toFun ρbar)
-  have hclosed : IsClosed {g : Field.absoluteGaloisGroup ℚ |
-      LinearMap.trace k W' (τ g) = LinearMap.trace k W (ρbar g)} := by
-    have hpre : {g : Field.absoluteGaloisGroup ℚ |
-        LinearMap.trace k W' (τ g) = LinearMap.trace k W (ρbar g)} =
-        (fun g : Field.absoluteGaloisGroup ℚ =>
-          ((τ g : Module.End k W'), (ρbar g : Module.End k W))) ⁻¹'
-        {pp : Module.End k W' × Module.End k W |
-          LinearMap.trace k W' pp.1 = LinearMap.trace k W pp.2} := rfl
-    rw [hpre]
-    exact (isClosed_discrete _).preimage hcont
-  have hsub : {x : Field.absoluteGaloisGroup ℚ |
-      ∃ v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ), v ∉ S ∧
-        ∃ g, x = g * globalFrob v * g⁻¹} ⊆
-      {g : Field.absoluteGaloisGroup ℚ |
-        LinearMap.trace k W' (τ g) = LinearMap.trace k W (ρbar g)} := by
-    rintro x ⟨v, hvS, g, rfl⟩
-    obtain ⟨q, hq, rfl⟩ := exists_prime_toHeightOneSpectrum v
-    have hval := hc1 q hq hvS
-    rw [GaloisRep.charFrob_eq_charpoly_globalFrob,
-      GaloisRep.charFrob_eq_charpoly_globalFrob] at hval
-    show LinearMap.trace k W' (τ _) = LinearMap.trace k W (ρbar _)
-    rw [← neg_inj, ← hc1W', ← hc1W, charpoly_conj_mul_inv τ,
-      charpoly_conj_mul_inv ρbar]
-    exact hval
-  have halltr : ∀ g : Field.absoluteGaloisGroup ℚ,
-      LinearMap.trace k W' (τ g) = LinearMap.trace k W (ρbar g) := by
-    intro g
-    have hdense := dense_conjClasses_globalFrob (K := ℚ) S
-    have huniv : (Set.univ : Set (Field.absoluteGaloisGroup ℚ)) ⊆
-        {g : Field.absoluteGaloisGroup ℚ |
-          LinearMap.trace k W' (τ g) = LinearMap.trace k W (ρbar g)} :=
-      hdense.closure_eq ▸ hclosed.closure_subset_iff.mpr hsub
-    exact huniv (Set.mem_univ g)
-  have hall : ∀ g : Field.absoluteGaloisGroup ℚ,
-      LinearMap.charpoly (τ g) = LinearMap.charpoly (ρbar g) := by
-    intro g
-    have hsq : LinearMap.trace k W' (τ g * τ g) =
-        LinearMap.trace k W (ρbar g * ρbar g) := by
-      rw [← map_mul, ← map_mul]
-      exact halltr (g * g)
-    have hdet : LinearMap.det (τ g) = LinearMap.det (ρbar g) := by
-      refine mul_left_cancel₀ h2 ?_
-      rw [two_mul_det_eq_of_finrank_two hfrW' (τ g),
-        two_mul_det_eq_of_finrank_two hfrW (ρbar g), halltr g, hsq]
-    rw [charpoly_eq_quadratic_of_finrank_two hfrW' (τ g),
-      charpoly_eq_quadratic_of_finrank_two hfrW (ρbar g), halltr g, hdet]
-  obtain ⟨e, he⟩ := exists_linearEquiv_of_charpoly_eq hfrW hfrW'
-    ρbar.toRepresentation τ.toRepresentation hirr hall
-  refine ⟨e, GaloisRep.ext fun σ => LinearMap.ext fun x => ?_⟩
-  have h1 : e (τ σ (e.symm x)) = ρbar σ (e (e.symm x)) := he σ (e.symm x)
-  rw [e.apply_symm_apply] at h1
-  calc (τ.conj e) σ x = (e.conj (τ σ)) x := by rw [GaloisRep.conj_apply]
-    _ = e (τ σ (e.symm x)) := by rw [LinearEquiv.conj_apply]; rfl
-    _ = ρbar σ x := h1
-
-set_option backward.isDefEq.respectTransparency false in
-set_option linter.checkUnivs false in
-/-- **The trace-only residual pinning upgrades to FULL `charFrob` agreement at
-EVERY prime** (PROVEN 2026-07-29, flt-lean-38): the four steps that turn a
-`coeff 1`-only pinning `πR`, valid away from a finite set `S`, into the honest
-identity `(ρ.charFrob v).map πR = ρbar.charFrob v` at *every* `v`, packaged once
-for every consumer of the raised-level residual pinning.
-
-This is `exists_conj_of_charFrobCoeffOne_eq_away` above with its two ends
-attached: the residual representation is FORMED (`ρ.baseChange k` along `πR`,
-which is why `hπcont` is a hypothesis — see below), `2 ≠ 0` is extracted from
-`hpodd`, the trace hypothesis is transported across `charFrob_baseChange`, and
-the resulting conjugacy is turned back into a charpoly identity by
-`charFrob_conj`.  **The finite exceptional set `S` disappears in the process** —
-that is the whole point, and it is what both split-torus routes need.
-
-**`hπcont : Continuous πR` IS A GENUINE HYPOTHESIS AND CANNOT BE DROPPED.**
-`ker πR = 𝔪_R` for free (`ker_eq_maximalIdeal_of_ringHom_finiteField` above,
-which needs only `IsLocalRing R` and `Finite k`), so continuity is EXACTLY the
-statement that `𝔪_R` is open — and that is a property of `R`'s topology, not of
-`πR`.  `IsAuxProLimitClause` supplies it from `hadic`; a clause carrying no
-topological hypothesis on `R` at all does NOT (see the ROUTE AUDIT of
-`isAuxFibreProductClause` below, where this is the second, previously unrecorded
-obstruction).  Without a continuous `πR` there is no residual representation of
-`ρ` over `k` at all, so this bridge — and with it every use of `hQ`'s residual
-distinctness — is unreachable.
-
-Stated for an arbitrary free rank-two `V` rather than for `Fin 2 → R`, so that
-the fibre-product clause (whose `V` is abstract) can consume it unchanged once
-its own topology gap is repaired. -/
-theorem charFrob_map_eq_of_charFrobCoeffOne_eq_away.{a, uK, uW}
-    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
-    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
-    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
-    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
-    [Module.Free k W]
-    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
-    (hirr : ρbar.IsIrreducible)
-    {R : Type a} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
-    [IsLocalRing R] [Algebra ℤ_[p] R]
-    {V : Type a} [AddCommGroup V] [Module R V] [Module.Finite R V]
-    [Module.Free R V] (hV : Module.rank R V = 2)
-    {ρ : GaloisRep ℚ R V} (πR : R →+* k) (hπcont : Continuous πR)
-    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
-    (hπR : ∀ (q : ℕ) (hq : q.Prime),
-      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
-      πR ((ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
-        (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) :
-    ∀ (q : ℕ) (hq : q.Prime),
-      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map πR =
-        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat := by
-  classical
-  letI : Algebra R k := πR.toAlgebra
-  haveI : ContinuousSMul R k := continuousSMul_of_algebraMap R k
-    (by rw [RingHom.algebraMap_toAlgebra]; exact hπcont)
-  haveI hchar : CharP k p := charP_of_ringHom_padicInt (algebraMap ℤ_[p] k)
-  have h2 : (2 : k) ≠ 0 := by
-    intro h20
-    have hcast : ((2 : ℕ) : k) = 0 := by exact_mod_cast h20
-    have hdvd : p ∣ 2 := (CharP.cast_eq_zero_iff k p 2).mp hcast
-    have hp2 : p = 2 :=
-      (Nat.prime_dvd_prime_iff_eq (Fact.out : p.Prime) Nat.prime_two).mp hdvd
-    rw [hp2] at hpodd
-    exact (Nat.not_odd_iff_even.mpr even_two) hpodd
-  have hrk' : Module.rank k (k ⊗[R] V) = 2 := by
-    rw [Module.rank_baseChange, hV]
-    simp
-  have hc1 : ∀ (q' : ℕ) (hq' : q'.Prime),
-      hq'.toHeightOneSpectrumRingOfIntegersRat ∉ S →
-      ((ρ.baseChange k).charFrob
-          hq'.toHeightOneSpectrumRingOfIntegersRat).coeff 1 =
-        (ρbar.charFrob hq'.toHeightOneSpectrumRingOfIntegersRat).coeff 1 := by
-    intro q' hq' hq'S
-    rw [charFrob_baseChange, Polynomial.coeff_map, RingHom.algebraMap_toAlgebra]
-    exact hπR q' hq' hq'S
-  obtain ⟨e₀, he₀⟩ := exists_conj_of_charFrobCoeffOne_eq_away h2 hW hirr hrk'
-    (ρ.baseChange k) S hc1
-  intro q' hq'
-  have h1 := charFrob_conj hq'.toHeightOneSpectrumRingOfIntegersRat
-    (ρ.baseChange k) e₀
-  rw [he₀, charFrob_baseChange, RingHom.algebraMap_toAlgebra] at h1
-  exact h1.symm
-
-set_option backward.isDefEq.respectTransparency false in
-set_option linter.checkUnivs false in
-/-- **Residual distinctness at a Taylor–Wiles prime transports to `ρ`** (PROVEN
-2026-07-29, flt-lean-38): the ONE fact the ambient arithmetic supplies to the
-split-torus clauses, in the exact shape
-`raisedLevelSplitTorusAt_of_charFrob_residually_distinct` below consumes as
-`hdist`.
-
-`hQ`'s local clause gives `ρbar.charFrob q = (X - C α) * (X - C β)` with
-`α ≠ β`; `charFrob_map_eq_of_charFrobCoeffOne_eq_away` above moves it across the
-residual pinning, at `q ∈ Q` in particular (which is where the disappearance of
-the exceptional set `S` is used — `Q` is not required to be disjoint from `S`,
-and nothing in the hypotheses would give that).
-
-Both-ways audit: `hirr` and `hpodd` are used only through the trace bridge, so
-the circularity guard of `exists_auxDeformationDatum` is respected — `hirr`
-enters positively, through Brauer–Nesbitt, and no proof here can end in
-`exfalso` against it.  `hπcont` is load-bearing for the reason recorded on the
-bridge.  `n` is inert: `hQ`'s congruence clause is not used, only its local
-clause; it is carried so that the statement matches the clause leaves that
-consume it. -/
-theorem exists_distinct_charFrob_map_eq_of_isTaylorWilesPrimeSet.{a, uK, uW}
-    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
-    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
-    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
-    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
-    [Module.Free k W]
-    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
-    (hirr : ρbar.IsIrreducible)
-    (n : ℕ) (Q : Finset ℕ) (hQ : IsTaylorWilesPrimeSet p ρbar n Q)
-    {R : Type a} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
-    [IsLocalRing R] [Algebra ℤ_[p] R]
-    {V : Type a} [AddCommGroup V] [Module R V] [Module.Finite R V]
-    [Module.Free R V] (hV : Module.rank R V = 2)
-    {ρ : GaloisRep ℚ R V} (πR : R →+* k) (hπcont : Continuous πR)
-    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
-    (hπR : ∀ (q : ℕ) (hq : q.Prime),
-      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
-      πR ((ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
-        (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) :
-    ∀ q ∈ Q, ∀ hq : q.Prime,
-      ∃ α β : k, α ≠ β ∧
-        (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map πR =
-          (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β) := by
-  intro q hqQ hq
-  obtain ⟨hq', _hcong, α, β, hαβ, hfact⟩ := hQ.1 q hqQ
-  refine ⟨α, β, hαβ, ?_⟩
-  rw [charFrob_map_eq_of_charFrobCoeffOne_eq_away hpodd hW hirr hV πR hπcont S
-    hπR q hq]
-  exact hfact
 
 /-- **Coordinates of an endomorphism of `Fin 2 -> R`** (PROVEN): the value at `x` is
 read off the two columns.  A convenience lemma for the explicit `2 x 2` computations
