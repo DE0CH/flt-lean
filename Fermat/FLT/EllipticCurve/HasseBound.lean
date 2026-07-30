@@ -108,13 +108,27 @@ What remains open is EXACTLY FOUR declarations, each strictly smaller than what
 it replaced, and this list is the one to dispatch from — verified against the
 build's `declaration uses 'sorry'` warning set on 2026-07-30, four warnings and
 four `sorry` tokens, so there are no anonymous inner sorries here either:
-`exists_sq_frobeniusPointEnd_prime_to_char` and `sq_frobeniusPointEnd_qPrimary`
-(the two halves of the Frobenius characteristic equation on points,
-`F² = c·F − q`, split along the torsion-primary decomposition — the umbrella
-`exists_sq_frobeniusPointEnd` is PROVEN over them, see the FOURTH CUT below, so
-do NOT dispatch at that name), `natCard_ker_degreeFormEnd_le` (separable degree
+`exists_sq_frobeniusPointEnd_prime_to_char` and
+`sq_frobeniusPointEnd_qPrimary_ordinary` (the two halves of the Frobenius
+characteristic equation on points, `F² = c·F − q`, split along the
+torsion-primary decomposition — the umbrella `exists_sq_frobeniusPointEnd` is
+PROVEN over them, see the FOURTH CUT below, and so is
+`sq_frobeniusPointEnd_qPrimary`, see the SIXTH CUT, so do NOT dispatch at
+either of those two names), `natCard_ker_degreeFormEnd_le` (separable degree
 ≤ degree, one-sided, no hypothesis on `m`), and `exists_ne_zero_qTorsion`
 (the curve is ORDINARY when `q ∤ c`).
+
+SIXTH CUT, 2026-07-30: `sq_frobeniusPointEnd_qPrimary` is PROVEN, over the
+strictly smaller `sq_frobeniusPointEnd_qPrimary_ordinary`.  Its own docstring
+had already recorded that "only the ordinary case is real work"; that
+observation is now carried out rather than left to the next owner.  The
+supersingular case is discharged in place, from the single fact that a group
+with no element of order `q` has no element of order `q^k` (an induction
+peeling one `q` at a time, so it needs nothing about elliptic curves at all),
+after which the conclusion is `0 = 0`.  The frontier count is UNCHANGED at four
+— this is a decomposition, not a closure — but what survives now carries the
+hypothesis `hord` that the `q`-torsion is nonzero, which is exactly the input
+the unit-root argument needs.
 
 A NOTE FOR WHOEVER OWNS THE CHARACTERISTIC EQUATION.  The 2026-07-27 plan
 placed it in `FreyCurve/MazurTorsion.lean` as
@@ -479,6 +493,63 @@ theorem exists_sq_frobeniusPointEnd_prime_to_char (q : ℕ) [Fact q.Prime]
           = c • frobeniusPointEnd q Wbar P - (q : ℤ) • P :=
   sorry
 
+/-- **LEAF (opened 2026-07-30, the ORDINARY half of `sq_frobeniusPointEnd_qPrimary`;
+Silverman *AEC* V.3.1): the characteristic equation on the `q`-primary torsion, given
+that there IS nonzero `q`-torsion.**
+
+This is `sq_frobeniusPointEnd_qPrimary` with the supersingular case removed.  That
+removal is not cosmetic: the two cases are proven by different arguments and only one
+of them is mathematics.  Its own docstring said so — "only the ordinary case is real
+work" — and the split is now carried out, so a successor gets the hypothesis `hord`
+for free instead of having to establish the dichotomy first.
+
+**WHAT `hord` BUYS, and it is the whole shape of the argument.**  `hord` says
+`Wbar(𝔽̄_q)[q] ≠ 0`.  Since `F` is BIJECTIVE on points (`injective_frobeniusPointEnd`
+and `surjective_frobeniusPointEnd`, both PROVEN below), `F` restricts to an
+automorphism of each `Wbar(𝔽̄_q)[q^j]`.  In the ordinary case that group is CYCLIC of
+order `q^j` — cyclicity in characteristic `q` is
+`TorsionCharP.exists_zsmul_eq_of_charP` (PROVEN 2026-07-25, out of the vanishing of
+`ΨSqₚ′`) — so `Aut` of it is `(ZMod (q^j))ˣ` and `F` acts on it as multiplication by
+a single unit `u_j`.  The conclusion to be proven is then exactly
+`u_j² − c·u_j + q ≡ 0 (mod q^j)`, i.e. **that `u_j` is the UNIT ROOT of
+`X² − cX + q`**.  That is where the content sits: the other root has valuation `1`
+and so cannot act invertibly on `ℚ_q/ℤ_q`.
+
+**WHY IT DOES NOT FOLLOW FROM `hc` BY PURE ALGEBRA.**  `hc` pins `c` uniquely (for
+two candidates `c, c'` the difference gives `(c − c')·F = 0` on `Wbar[ℓ]` for every
+prime `ℓ ≠ q`, and `F` is injective, so `ℓ ∣ c − c'` for infinitely many `ℓ`), but it
+says nothing about the `q`-part: `Wbar(𝔽̄_q)[q^∞]` is `ℚ_q/ℤ_q`, never `(ℚ_q/ℤ_q)²`,
+so there is no `2 × 2` Cayley–Hamilton available there, and the Weil-pairing
+determinant `WeilPairing.det_frobeniusTorsionEnd` explicitly excludes `n = q`.  The
+missing link is `det(F) = q` on the `q`-divisible group, which is the Verschiebung
+identity `V ∘ F = [q]` — the same piece of mathematics that
+`natCard_ker_degreeFormEnd_of_dvd`'s route note reduces ITS `q`-primary case to.
+Whichever of the two is proven first should be stated so the other can consume it.
+
+**NOT VACUOUS, and `hord` is not a disguised falsity.**  Ordinary curves exist over
+every `𝔽_q` (indeed they are the generic case — supersingular ones are finite in
+number for each `q`), so the hypothesis is satisfiable; and `hc` remains
+load-bearing exactly as recorded on `sq_frobeniusPointEnd_qPrimary`, since without it
+`c` is a free integer and the `k = 1` conclusion fails for an ordinary curve.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: an ordinary `Wbar/𝔽_q`, the integer `c`
+that `hc` pins, and a `q`-power-torsion point at which `F² ≠ c·F − q`.  Equivalently,
+by the reduction above, an ordinary curve whose Frobenius acts on `Wbar[q]` by
+something other than `c mod q`. -/
+theorem sq_frobeniusPointEnd_qPrimary_ordinary (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {c : ℤ}
+    (hc : ∀ n : ℕ, ¬ (q ∣ n) →
+      ∀ P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point, (n : ℤ) • P = 0 →
+        frobeniusPointEnd q Wbar (frobeniusPointEnd q Wbar P)
+          = c • frobeniusPointEnd q Wbar P - (q : ℤ) • P)
+    (hord : ∃ P₀ : (Wbar⁄(AlgebraicClosure (ZMod q))).Point,
+      P₀ ≠ 0 ∧ (q : ℤ) • P₀ = 0)
+    (k : ℕ) (P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point)
+    (hP : ((q : ℤ) ^ k) • P = 0) :
+    frobeniusPointEnd q Wbar (frobeniusPointEnd q Wbar P)
+      = c • frobeniusPointEnd q Wbar P - (q : ℤ) • P :=
+  sorry
+
 /-- **The characteristic equation on the `q`-primary torsion** (sorry leaf,
 opened 2026-07-28; Silverman *AEC* V.3.1, the ordinary/supersingular
 dichotomy): the SAME coefficient `c` that works away from `q` also works on the
@@ -516,7 +587,12 @@ declaration in this file.
 THE CHECK THAT WOULD REFUTE the claim that this case is not covered by the leaf
 above: a torsion point of `q`-power order that is also killed by an integer
 prime to `q`.  There is none other than `0`, which is exactly why the split is
-exhaustive and why this leaf is needed. -/
+exhaustive and why this leaf is needed.
+
+**SPLIT 2026-07-30**: the supersingular case is discharged in the proof below and the
+ordinary case is now the separate leaf `sq_frobeniusPointEnd_qPrimary_ordinary`
+immediately above, whose docstring carries the route.  This statement is PROVEN over
+it. -/
 theorem sq_frobeniusPointEnd_qPrimary (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {c : ℤ}
     (hc : ∀ n : ℕ, ¬ (q ∣ n) →
@@ -526,8 +602,29 @@ theorem sq_frobeniusPointEnd_qPrimary (q : ℕ) [Fact q.Prime]
     (k : ℕ) (P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point)
     (hP : ((q : ℤ) ^ k) • P = 0) :
     frobeniusPointEnd q Wbar (frobeniusPointEnd q Wbar P)
-      = c • frobeniusPointEnd q Wbar P - (q : ℤ) • P :=
-  sorry
+      = c • frobeniusPointEnd q Wbar P - (q : ℤ) • P := by
+  by_cases hord : ∃ P₀ : (Wbar⁄(AlgebraicClosure (ZMod q))).Point,
+      P₀ ≠ 0 ∧ (q : ℤ) • P₀ = 0
+  · exact sq_frobeniusPointEnd_qPrimary_ordinary q Wbar hc hord k P hP
+  · -- SUPERSINGULAR: no nonzero `q`-torsion, so the whole `q`-primary part vanishes
+    -- and the conclusion is `0 = 0`.  This is the case the docstring records as free.
+    push_neg at hord
+    have hkill : ∀ (j : ℕ) (Q : (Wbar⁄(AlgebraicClosure (ZMod q))).Point),
+        ((q : ℤ) ^ j) • Q = 0 → Q = 0 := by
+      intro j
+      induction j with
+      | zero => intro Q hQ; simpa using hQ
+      | succ i ih =>
+        intro Q hQ
+        refine ih Q ?_
+        by_contra hne
+        refine hord _ hne ?_
+        rw [smul_smul, ← pow_succ']
+        exact hQ
+    have hP0 : P = 0 := hkill k P hP
+    subst hP0
+    simp only [map_zero]
+    abel
 
 /-! ### The conjugate endomorphism
 
