@@ -38011,30 +38011,68 @@ and the one that carries ALL of its mathematics.  The dense-open bookkeeping
 has been removed; what is left is the classical statement (Milne, *Abelian
 Varieties* I.3; Mumford, *Abelian Varieties* §4).
 
-**WHY THE SPLIT IS WORTH MAKING.**  The parent leaf mixed two unrelated
-obligations — an extension across the finitely many missing points of a dense
-open, and constancy — and the first is pure `Mathlib` bookkeeping that this
-file already owns machinery for
-(`exists_unique_extension_of_valuationRing_stalk_of_isOpenImmersion`), gated on
-one instance about affine space.  Splitting lets that gate be attacked without
-touching abelian varieties, and leaves this leaf stated over a source that is a
-whole scheme rather than an `Opens`.
+**WHY THE SPLIT WAS WORTH MAKING, and it has paid off.**  The parent leaf mixed
+two unrelated obligations — an extension across the finitely many missing points
+of a dense open, and constancy — and the first was pure `Mathlib` bookkeeping.
+It is now **DONE**: `valuationRing_stalk_affineLine` immediately above is PROVEN
+(2026-07-30), so the parent is proven and THIS leaf is the whole of what remains
+below it.
 
 **WHAT IS ACTUALLY MISSING, and it is NOT the extension theorem.**  The
 classical proof extends once more to `ℙ¹_K` and applies the RIGIDITY LEMMA.
 `ℙ¹` as a scheme is **absent from this pin**: checked 2026-07-28, `Mathlib`
 carries `ProjectiveSpectrum` and `EllipticCurve/Projective`, and a
 `Topology/Compactification/OnePoint/ProjectiveLine.lean` that is topological
-only — there is no `AlgebraicGeometry.ProjectiveSpace`.  So a successor must
-either build `ℙ¹_K` (and then the rigidity input is already here, in
+only — there is no `AlgebraicGeometry.ProjectiveSpace`.
+
+**A STALE CITATION IN THAT ROUTE, CORRECTED 2026-07-30 — AND IT UNDERSTATES THE
+COST OF THE `ℙ¹` ROUTE BY A WHOLE THEOREM.**  The previous version of this
+paragraph said that once `ℙ¹_K` is built "the rigidity input is already here, in
 `Fermat/FLT/Mathlib/AlgebraicGeometry/ProperPushforward.lean`, whose
 `HasTrivialPushforward.existsUnique_comp_eq` and
 `eq_of_comp_eq_of_hasTrivialPushforward` are exactly the shape needed once
-`Γ(ℙ¹, 𝒪) = K` is available), or take the group-theoretic route: translate `Φ`
-so that `Φ(0) = 0`, note `𝔸¹_K = 𝔾_a` is a connected group variety, and use
-that a pointed morphism from a connected group variety to an abelian variety is
-a homomorphism, together with `Hom(𝔾_a, A) = 0`.  Neither route is available
-off the shelf; the second avoids `ℙ¹` entirely and is the cheaper one to price.
+`Γ(ℙ¹, 𝒪) = K` is available".  **They are not.**  All three candidate rigidity
+lemmas in this development were read and their hypotheses checked against this
+leaf's data:
+
+* `HasTrivialPushforward.existsUnique_comp_eq` — the EXISTENCE half — carries
+  `[IsAffine Z]` on its TARGET.  `IsAffine A` is not available here:
+  `infer_instance` for it under `AbelianSchemeStruct astr` **fails**
+  (compiler-checked 2026-07-30).  It holds only in the degenerate case
+  `A = Spec K`.  So even with `ℙ¹_K` built and `Γ(ℙ¹, 𝒪) = K` in hand, this
+  lemma yields nothing about a positive-dimensional `A`.
+* `eq_of_comp_eq_of_hasTrivialPushforward` does take a general target, but it is
+  a CANCELLATION lemma (`g ≫ c₁ = g ≫ c₂ → c₁ = c₂`).  It gives UNIQUENESS of a
+  factorisation, never existence — so it cannot produce constancy either.
+* `isAdditiveOn_of_post_zero` (declared in this file, PROVEN) is the honest
+  rigidity theorem of the development, but its SOURCE must itself be an abelian
+  scheme (`abA : AbelianSchemeStruct af`).  `ℙ¹` is not one.
+
+So the `ℙ¹` route costs **`ℙ¹_K` plus a new rigidity theorem** of a shape nothing
+here has: *a `K`-morphism from a proper geometrically connected genus-`0` (or
+merely rational) `K`-scheme into an abelian scheme is constant*.  Budget both.
+
+**AND THE COMPACTIFICATION SHORTCUT IS GATED ON `PerfectField`.**  A successor
+may notice `exists_isSmoothCompactification_of_isAffine`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`, PROVEN) and
+hope to skip building `ℙ¹` by compactifying `𝔸¹_K` abstractly.  It requires
+`[PerfectField K]`, which this leaf does not have — `K` is an arbitrary field —
+so that route needs a Galois-descent reduction to `K̄` first (legitimate: `Φ` is
+constant iff `Φ_K̄` is, and the resulting point descends because it is unique).
+It also still needs the same missing genus-`0` rigidity theorem afterwards, so
+it saves the `ℙ¹` construction and nothing else.  Note further that
+`SmoothOfRelativeDimension 1`, `GeometricallyConnected` and plain `Smooth` on
+`𝔸(Unit; Spec K) ↘ Spec K` are all **still not instances** at today's pin
+(re-checked 2026-07-30, all three `infer_instance` calls fail), so its
+hypotheses are not free either.
+
+The remaining alternative is the group-theoretic route: translate `Φ` so that
+`Φ(0) = 0`, note `𝔸¹_K = 𝔾_a` is a connected group variety, and use that a
+pointed morphism from a connected group variety to an abelian variety is a
+homomorphism, together with `Hom(𝔾_a, A) = 0`.  It avoids `ℙ¹` entirely.  With
+the correction above it is now clearly the cheaper of the two — the `ℙ¹` route's
+"rigidity is already here" advantage was the reason to prefer it, and that
+advantage does not exist.
 
 `abA` is load-bearing twice over: properness is what any extension argument
 consumes, and the group structure is what makes constancy TRUE.  The statement
