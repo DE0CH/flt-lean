@@ -11215,33 +11215,117 @@ theorem commute_toLocal_of_forall_isOpen_quotient.{a} {p : ℕ} (hpodd : Odd p)
   have hzero := hsep _ (fun n => hlevelcomm n i)
   simpa [sub_eq_zero] using hzero
 
+/-- **Cayley-Hamilton against an eigenvector** (PROVEN 2026-07-30): if `f z = mu * z`
+then the value of the characteristic polynomial at `mu` annihilates `z`.
+
+Stated over an arbitrary COMMUTATIVE RING on purpose: the coefficient ring of the
+application below is a residue field `R / 𝔪`, whose `Field` structure is a `def`
+(`Ideal.Quotient.field`) rather than an instance, and keeping the field out of this
+lemma's statement is what stops the two structures from ever having to be reconciled
+during unification. -/
+theorem charpoly_eval_smul_eq_zero {K : Type*} [CommRing K] {V : Type*} [AddCommGroup V]
+    [Module K V] [Module.Finite K V] [Module.Free K V]
+    (f : Module.End K V) (μ : K) (z : V) (hfz : f z = μ • z) :
+    (LinearMap.charpoly f).eval μ • z = 0 := by
+  have hpow : ∀ n : ℕ, (f ^ n) z = (μ ^ n) • z := by
+    intro n
+    induction n with
+    | zero => simp
+    | succ m ih =>
+        have h1 : (f ^ (m + 1)) z = (f ^ m) (f z) := by
+          rw [pow_succ]; rfl
+        rw [h1, hfz, map_smul, ih, smul_smul, pow_succ, mul_comm]
+  have hev : ∀ P : Polynomial K,
+      (Polynomial.aeval f P) z = (P.eval μ) • z := by
+    intro P
+    refine Polynomial.induction_on' P ?_ ?_
+    · intro p q hp hq
+      simp only [map_add, Polynomial.eval_add, LinearMap.add_apply, hp, hq, add_smul]
+    · intro n c
+      rw [Polynomial.aeval_monomial, Polynomial.eval_monomial]
+      show (algebraMap K (Module.End K V) c) ((f ^ n) z) = _
+      rw [hpow n, Module.algebraMap_end_apply, smul_smul]
+  have h0 := hev (LinearMap.charpoly f)
+  rw [LinearMap.aeval_self_charpoly] at h0
+  simpa using h0.symm
+
+/-- **A residual eigenvalue is a root of the REDUCED characteristic polynomial** (PROVEN
+2026-07-30): an eigenvector of `M ⊗ R/I` over a MAXIMAL `I` exhibits its eigenvalue as a
+root of `(charpoly M).map (R → R/I)`.
+
+Two elaboration traps are packaged away here, and both cost a verification cycle when they
+were met inline.
+
+* `Ideal.Quotient.field` is a **`def`, not an instance** (mathlib uses it through
+  `attribute [local instance]`), so `Field (R ⧸ I)` does NOT synthesise from `I.IsMaximal`
+  alone.  Without the `letI` below, `smul_eq_zero` has no `Module.IsTorsionFree` to run on
+  and the elaborator DIVERGES — `(deterministic) timeout at whnf`, still failing at
+  1 000 000 heartbeats — instead of reporting a missing instance.  Raising the heartbeat
+  budget is therefore useless; the `letI` is the fix.
+* Keeping the whole argument inside ONE small declaration keeps a single instance path on
+  `(R ⧸ I) ⊗[R] N` for `Module.Free`/`Module.Finite`.  Spelling the same steps out at the
+  call site made the goal's `LinearMap.charpoly` (coming from `LinearMap.charpoly_baseChange`)
+  and the applied lemma's disagree on those instances, which is a second route to the same
+  divergence. -/
+theorem eval_map_charpoly_of_baseChange_eq_smul
+    {R : Type*} [CommRing R] (I : Ideal R) [I.IsMaximal]
+    {N : Type*} [AddCommGroup N] [Module R N] [Module.Finite R N] [Module.Free R N]
+    (M : Module.End R N) (μ : R ⧸ I) (z : (R ⧸ I) ⊗[R] N) (hz : z ≠ 0)
+    (hMz : LinearMap.baseChange (R ⧸ I) M z = μ • z) :
+    ((LinearMap.charpoly M).map (algebraMap R (R ⧸ I))).eval μ = 0 := by
+  letI := Ideal.Quotient.field I
+  have h : ((LinearMap.charpoly M).map (algebraMap R (R ⧸ I))).eval μ • z = 0 := by
+    rw [← LinearMap.charpoly_baseChange]
+    exact charpoly_eval_smul_eq_zero _ μ z hMz
+  rcases smul_eq_zero.mp h with h' | h'
+  · exact h'
+  · exact absurd h' hz
+
+/-- **Expansion of a product of two monic linear factors** (PROVEN). -/
+theorem X_sub_C_mul_X_sub_C_expand {R : Type*} [CommRing R] (x y : R) :
+    (Polynomial.X - Polynomial.C x) * (Polynomial.X - Polynomial.C y) =
+      Polynomial.X ^ 2 - Polynomial.C (x + y) * Polynomial.X + Polynomial.C (x * y) := by
+  simp only [Polynomial.C_add, Polynomial.C_mul]
+  ring
+
+set_option backward.isDefEq.respectTransparency false in
 set_option linter.checkUnivs false in
 /-- **HENSEL: the local Frobenius characteristic polynomial splits over `R` with unit
-root difference** (SORRY LEAF, cut 2026-07-29; sub-leaf (B) of
+root difference** (PROVEN 2026-07-30, flt-lean-188; cut 2026-07-29 as sub-leaf (B) of
 `raisedLevelSplitTorusAt_of_charFrob_residually_distinct` below).
 
-# ROUTE
+# ROUTE AS TAKEN (2026-07-30)
 
-Three steps, in this order - the order matters.
+Write `charpoly (rho.toLocal v Frob) = X^2 - t X + d` with `t` the trace and `d` the
+determinant (`charpoly_eq_quadratic_of_finrank_two`).  Three steps, in this order.
 
-1. **Residual splitting comes from `hlev`, NOT from `hdist`.**  At `I = m` the level
-   datum diagonalises the residual representation at `q`, so the reduction mod `m` of
-   `charpoly (rho.toLocal v Frob)` is a product of two linear factors with both roots
-   IN THE RESIDUE FIELD.  This step cannot be skipped: `hdist` only splits the
-   polynomial over `k`, and the residue field need not map onto `k`, so `hdist` alone
-   leaves open the case of an irreducible quadratic over the residue field splitting
-   in a quadratic extension - exactly the nonsplit torus, for which the conclusion is
-   FALSE.  (`Mathlib.LinearAlgebra.Charpoly.BaseChange` is imported and carries the
-   `charpoly` / base-change compatibility.)
-2. **Distinctness comes from `hdist` together with `hpiRker`.**  `ker piR = m` makes
-   `piR` factor as an EMBEDDING of the residue field into `k`, so `alpha` distinct from
-   `beta` in `k` forces the two residual eigenvalues to differ, i.e. any lifts
-   `a0, b0` in `R` have `a0 - b0` outside `m`, a UNIT.
+1. **A residual ROOT comes from `hlev`, NOT from `hdist`.**  At `I = m` the level datum
+   diagonalises the residual representation at `q`, so `z := e_m^{-1}(1, 0)` is a NONZERO
+   eigenvector of `M ⊗ R/m` with eigenvalue `alphabar := chibar(Frob)(1)`, and
+   `eval_map_charpoly_of_baseChange_eq_smul` above turns that into
+   `(charpoly M).map (R -> R/m)` having `alphabar` as a root.  This step cannot be
+   skipped: `hdist` only splits the polynomial over `k`, and the residue field need not
+   map onto `k`, so `hdist` alone leaves open the case of an irreducible quadratic over
+   the residue field splitting in a quadratic extension - exactly the nonsplit torus, for
+   which the conclusion is FALSE.
+
+   Note what is and is not needed here.  Only the EXISTENCE of a residual root is used;
+   the second residual root is then `t - alphabar` for free, so no separate appeal to the
+   residual splitting is required, and no `charpoly`-of-a-diagonal computation either.
+2. **Distinctness is the DISCRIMINANT, and that is where `hdist` and `hpiRker` are
+   spent.**  Comparing `X^2 - piR t X + piR d = (X - alpha)(X - beta)` at `alpha` and at
+   `beta` gives `piR t = alpha + beta` and `piR d = alpha beta`, whence
+   `piR (t^2 - 4d) = (alpha - beta)^2 != 0`; so `t^2 - 4d` is outside `ker piR = m`, i.e.
+   a UNIT of `R`.  Going through the discriminant rather than through two residual
+   eigenvalues avoids ever having to embed the residue field into `k`.
 3. **Hensel.**  `IsAdicComplete m R` gives `HenselianRing R m`
-   (`IsAdicComplete.henselianRing`), and the charpoly is monic with a simple root `a0`
-   mod `m` (its derivative at `a0` is `a0 - b0`, a unit), so it has a root `a` in `R`
-   congruent to `a0`.  Dividing, `charpoly = (X - a)(X - b)` with `b = trace - a`
-   congruent to `b0`, and `a - b` is a unit.
+   (`IsAdicComplete.henselianRing`).  Lift `alphabar` to `a0` in `R`: then
+   `eval a0 (charpoly M)` lies in `m` by step 1, and `2 a0 - t` - the derivative at `a0` -
+   is a unit, because `(2 a0 - t)^2 = (t^2 - 4d) + 4 (eval a0 (charpoly M))` and the first
+   summand is a unit by step 2 while the second lies in `m`.  Hensel produces a root `a`
+   with `a - a0` in `m`; put `b := t - a`, so `charpoly = (X - a)(X - b)` (the constant
+   coefficient matches because `a` is a root), and `a - b = 2a - t` is congruent to
+   `2 a0 - t` mod `m`, hence a unit.
 
 # WHY `hpiRker` IS CARRIED (statement CORRECTED 2026-07-29)
 
@@ -11283,40 +11367,182 @@ theorem exists_charpoly_toLocal_eq_mul_of_forall_isOpen_quotient.{a, uK} {p : �
           (Field.AbsoluteGaloisGroup.adicArithFrob
             hq.toHeightOneSpectrumRingOfIntegersRat)) =
       (Polynomial.X - Polynomial.C a) * (Polynomial.X - Polynomial.C b) ∧
-      IsUnit (a - b) := sorry
+      IsUnit (a - b) := by
+  classical
+  haveI := hcomplete
+  haveI hmax : (IsLocalRing.maximalIdeal R).IsMaximal :=
+    IsLocalRing.maximalIdeal.isMaximal R
+  set v := hq.toHeightOneSpectrumRingOfIntegersRat with hvdef
+  set F := Field.AbsoluteGaloisGroup.adicArithFrob v with hFdef
+  set M := ρ.toLocal v F with hMdef
+  set t := LinearMap.trace R (Fin 2 → R) M with htdef
+  set d := LinearMap.det M with hddef
+  have hfr : Module.finrank R (Fin 2 → R) = 2 := Module.finrank_fin_fun R
+  have hP : LinearMap.charpoly M =
+      Polynomial.X ^ 2 - Polynomial.C t * Polynomial.X + Polynomial.C d :=
+    charpoly_eq_quadratic_of_finrank_two hfr M
+  have hcf : ρ.charFrob v = LinearMap.charpoly M := rfl
+  -- STEP 1: the discriminant `t ^ 2 - 4 * d` is a UNIT of `R`
+  obtain ⟨α, β, hαβ, hfact⟩ := hdist
+  have hmapP : (Polynomial.X ^ 2 - Polynomial.C (πR t) * Polynomial.X
+      + Polynomial.C (πR d) : Polynomial k) =
+      (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β) := by
+    rw [← hfact, hcf, hP]
+    simp
+  have hevα := congrArg (fun P : Polynomial k => P.eval α) hmapP
+  have hevβ := congrArg (fun P : Polynomial k => P.eval β) hmapP
+  simp only [Polynomial.eval_add, Polynomial.eval_sub, Polynomial.eval_mul,
+    Polynomial.eval_pow, Polynomial.eval_X, Polynomial.eval_C, sub_self,
+    zero_mul, mul_zero] at hevα hevβ
+  have hαβ' : α - β ≠ 0 := sub_ne_zero.mpr hαβ
+  have hts : πR t = α + β := by
+    have h : (α - β) * (α + β - πR t) = 0 := by linear_combination hevα - hevβ
+    rcases mul_eq_zero.mp h with h' | h'
+    · exact absurd h' hαβ'
+    · linear_combination -h'
+  have hds : πR d = α * β := by linear_combination hevα + α * hts
+  have hdisc : IsUnit (t ^ 2 - 4 * d) := by
+    have hmap : πR (t ^ 2 - 4 * d) = (α - β) ^ 2 := by
+      have hexp : t ^ 2 - 4 * d = t * t - (d + d + d + d) := by ring
+      rw [hexp, map_sub, map_mul, map_add, map_add, map_add, hts, hds]
+      ring
+    have hne : πR (t ^ 2 - 4 * d) ≠ 0 := by
+      rw [hmap]; exact pow_ne_zero _ hαβ'
+    have hnm : t ^ 2 - 4 * d ∉ IsLocalRing.maximalIdeal R := by
+      rw [← hπRker]
+      exact fun hh => hne (RingHom.mem_ker.mp hh)
+    exact IsLocalRing.notMem_maximalIdeal.mp hnm
+  -- STEP 2: the residual charpoly has a ROOT, from the level datum at `I = 𝔪`
+  have hopen : IsOpen ((IsLocalRing.maximalIdeal R : Ideal R) : Set R) := by
+    simpa using (isAdic_iff.mp hadic).1 1
+  have hrkκ : Module.rank (R ⧸ IsLocalRing.maximalIdeal R)
+      ((R ⧸ IsLocalRing.maximalIdeal R) ⊗[R] (Fin 2 → R)) = 2 := by simp
+  obtain ⟨fκ, χκ, δκ, hfκ, -⟩ :=
+    (hlev (IsLocalRing.maximalIdeal R) hopen hrkκ).isSplitTorusAt q hqQ hq
+  set ᾱ := χκ F 1 with hᾱdef
+  set z := fκ.symm (1, 0) with hzdef
+  have hfz : fκ z = (1, 0) := by rw [hzdef]; exact fκ.apply_symm_apply _
+  have hz0 : z ≠ 0 := by
+    intro h0
+    have hcon : ((1 : R ⧸ IsLocalRing.maximalIdeal R),
+        (0 : R ⧸ IsLocalRing.maximalIdeal R)) = 0 := by
+      rw [← hfz, h0, map_zero]
+    exact one_ne_zero (congrArg Prod.fst hcon)
+  have hMz : LinearMap.baseChange (R ⧸ IsLocalRing.maximalIdeal R) M z = ᾱ • z := by
+    apply fκ.injective
+    rw [map_smul,
+      show LinearMap.baseChange (R ⧸ IsLocalRing.maximalIdeal R) M z =
+        (ρ.baseChange (R ⧸ IsLocalRing.maximalIdeal R)).toLocal v F z from rfl,
+      hfκ F z, hfz]
+    simp [hᾱdef]
+  obtain ⟨a₀, ha₀⟩ := Ideal.Quotient.mk_surjective (I := IsLocalRing.maximalIdeal R) ᾱ
+  have hevroot : ((LinearMap.charpoly M).map
+      (algebraMap R (R ⧸ IsLocalRing.maximalIdeal R))).eval ᾱ = 0 :=
+    eval_map_charpoly_of_baseChange_eq_smul _ M ᾱ z hz0 hMz
+  have hev : (LinearMap.charpoly M).eval a₀ ∈ IsLocalRing.maximalIdeal R := by
+    have h1 : ((LinearMap.charpoly M).map
+        (algebraMap R (R ⧸ IsLocalRing.maximalIdeal R))).eval
+        (algebraMap R (R ⧸ IsLocalRing.maximalIdeal R) a₀) = 0 := by
+      rw [Ideal.Quotient.algebraMap_eq, ha₀]
+      exact hevroot
+    rw [Polynomial.eval_map, Polynomial.eval₂_at_apply] at h1
+    rw [Ideal.Quotient.algebraMap_eq] at h1
+    exact Ideal.Quotient.eq_zero_iff_mem.mp h1
+  -- STEP 3: Hensel
+  have hevexp : (LinearMap.charpoly M).eval a₀ = a₀ ^ 2 - t * a₀ + d := by
+    rw [hP]; simp
+  have hnm2 : 2 * a₀ - t ∉ IsLocalRing.maximalIdeal R := by
+    intro hmem
+    have hsq : t ^ 2 - 4 * d = (2 * a₀ - t) ^ 2 - 4 * (a₀ ^ 2 - t * a₀ + d) := by ring
+    have hmem2 : t ^ 2 - 4 * d ∈ IsLocalRing.maximalIdeal R := by
+      rw [hsq]
+      refine Ideal.sub_mem _ ?_ ?_
+      · rw [pow_two]; exact Ideal.mul_mem_left _ _ hmem
+      · exact Ideal.mul_mem_left _ _ (by rw [← hevexp]; exact hev)
+    exact (IsLocalRing.notMem_maximalIdeal.mpr hdisc) hmem2
+  have hderiv : (LinearMap.charpoly M).derivative.eval a₀ = 2 * a₀ - t := by
+    rw [hP]; simp; ring
+  have hderivunit : IsUnit (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R)
+      ((LinearMap.charpoly M).derivative.eval a₀)) := by
+    rw [hderiv]
+    exact (IsLocalRing.notMem_maximalIdeal.mp hnm2).map _
+  obtain ⟨aa, haroot, hamem⟩ :=
+    HenselianRing.is_henselian (R := R) (I := IsLocalRing.maximalIdeal R)
+      (LinearMap.charpoly M) (LinearMap.charpoly_monic M) a₀ hev hderivunit
+  have haeq : aa ^ 2 - t * aa + d = 0 := by
+    have h := haroot
+    rw [Polynomial.IsRoot, hP] at h
+    simpa using h
+  refine ⟨aa, t - aa, ?_, ?_⟩
+  · rw [hP, X_sub_C_mul_X_sub_C_expand,
+      show aa + (t - aa) = t from by ring,
+      show aa * (t - aa) = d from by linear_combination -haeq]
+  · have hsub : aa - (t - aa) = 2 * aa - t := by ring
+    rw [hsub]
+    refine IsLocalRing.notMem_maximalIdeal.mp ?_
+    intro hmem
+    refine hnm2 ?_
+    have hrw : 2 * a₀ - t = (2 * aa - t) - 2 * (aa - a₀) := by ring
+    rw [hrw]
+    exact Ideal.sub_mem _ hmem (Ideal.mul_mem_left _ _ hamem)
 
 set_option linter.checkUnivs false in
-/-- **ONE OF THE TWO CHARACTERS KILLS INERTIA** (SORRY LEAF, cut 2026-07-29; sub-leaf
+/-- **ONE OF THE TWO CHARACTERS KILLS INERTIA** (PROVEN 2026-07-30, flt-lean-188; cut
+2026-07-29 as sub-leaf
 (C) of `raisedLevelSplitTorusAt_of_charFrob_residually_distinct` below).
 
-# ROUTE - a pigeonhole, and the reason the conclusion is a DISJUNCTION
+# ROUTE AS TAKEN (2026-07-30) - a pigeonhole, and the reason the conclusion is a
+DISJUNCTION
 
-Fix `n` and put `A := R / m ^ (n+1)`.  The level datum at `A` splits the local
-representation at `q` as `chi_A` plus `delta_A` with `delta_A` UNRAMIFIED.  Reducing
-the given global splitting mod `m ^ (n+1)` gives a second splitting into the
-eigenlines of `rho.toLocal v Frob`, whose eigenvalues `chi Frob`, `delta Frob` differ
-by a unit; since the maximal ideal of `A` is nilpotent, a root `r` of
-`(X - chi Frob)(X - delta Frob)` with `r - chi Frob` in that ideal satisfies
-`r = chi Frob` exactly (iterate `x ^ 2 = -u x`), so the two splittings agree up to the
-ORDER of the factors.  Hence at each level EITHER `chi` is congruent to `1` on inertia
-mod `m ^ (n+1)` OR `delta` is.
+Fix `n` and put `A := R / m ^ (n+1)`, `pi : R -> A`.  The level datum at `A` splits the
+local representation at `q` as `chi_A` plus `delta_A` with `delta_A` UNRAMIFIED, through
+some `f : A tensor V ≃ A x A`.  Compare it with the given global splitting `e` by looking
+at the SECOND COORDINATE ONLY of the composite: with `u1, u2` the `e`-basis of `V`, put
+`t21 := (f (1 tmul u1)).2` and `t22 := (f (1 tmul u2)).2`.  Two facts:
 
-**The order can a priori depend on `n`, and that is why the conclusion is a
-disjunction rather than a statement about `delta` alone.**  The two sets of levels
-cover the naturals, so one of them is infinite, hence cofinal; the corresponding
-congruence is antitone in `n`, so it then holds at EVERY level, and adic separatedness
-upgrades it to an identity in `R`.  The consumer discharges the remaining ambiguity by
-composing `e` with `LinearEquiv.prodComm` - the goal asks only that SOME factor be
-unramified, not which.
+* *intertwining*, read off the second coordinate at `u1` and at `u2`:
+  `pi (chi g) * t21 = delta_A g 1 * t21` and `pi (delta g) * t22 = delta_A g 1 * t22`,
+  for EVERY `g`;
+* *unimodularity*: `1 tmul u1` and `1 tmul u2` generate `A tensor V` over `A` and `f` is
+  bijective, so `t21` and `t22` generate the unit ideal, and `A` is LOCAL, so at least one
+  of them is a UNIT.
 
-# BOTH-WAYS AUDIT
+If `t21` is a unit, cancel it: `pi o chi = delta_A(-)(1)`, which is `1` on inertia.  If
+`t22` is a unit, likewise `pi o delta`.  Either way, at each level EITHER `chi` is
+congruent to `1` on inertia mod `m ^ (n+1)` OR `delta` is.
 
-`hud` is load-bearing: with `chi Frob = delta Frob` the level-wise eigenlines are not
-determined and the two splittings need not agree even up to order (the section
-preamble's `k[u,v]/(u,v)^2` counterexample).  `hcomplete` is load-bearing twice, for
-nilpotence of the maximal ideal of `A` and for the final separation.  `hqQ` is
-load-bearing.  Nothing about `rhobar` is used, so no circular discharge against `hirr`
-is possible here. -/
+**The alternative can a priori depend on `n`, and that is why the conclusion is a
+disjunction rather than a statement about `delta` alone.**  Both level sets are DOWNWARD
+CLOSED (`m ^ (n+1)` shrinks with `n`) and together cover the naturals, so if the first is
+not all of `N` it is bounded and the second is everything; adic separatedness then
+upgrades the surviving congruence to an identity in `R`.  The consumer discharges the
+remaining ambiguity by composing `e` with `LinearEquiv.prodComm` - the goal asks only that
+SOME factor be unramified, not which.
+
+**This replaces the route recorded at the cut**, which reduced the global splitting mod
+`m ^ (n+1)` and identified the two decompositions by matching eigenvalues, using
+nilpotence of the maximal ideal of `A` to promote a congruence `r = chi Frob` to an
+equality.  That is not needed: invertibility of the change of basis, plus localness of
+`A`, already forces the two character PAIRS to agree (in one order or the other), for
+every `g` at once and with no reference to `Frob`.
+
+# BOTH-WAYS AUDIT (CORRECTED 2026-07-30)
+
+**`_hud` is NOT load-bearing, and the audit written at the cut was wrong about it.**  It
+claimed that with `chi Frob = delta Frob` the level-wise eigenlines are undetermined and
+the two splittings need not agree even up to order.  That is a correct objection to the
+EIGENVALUE-MATCHING route, and no objection to the statement: the route above never
+separates the two eigenlines, it only cancels a unit scalar, and it goes through verbatim
+when `chi Frob = delta Frob`.  (Concretely, if `chi_A = delta_A` as characters then the
+intertwining forces `pi o chi = pi o delta = delta_A(-)(1)` and BOTH disjuncts hold.)  The
+hypothesis is kept because the consumer already has it and removing it would change the
+statement for no gain; it is bound as `_hud` to record that the proof does not use it.
+
+`hlev` is load-bearing (it is the entire input).  `hcomplete` is load-bearing ONCE, for
+the final separation - not twice: nilpotence of the maximal ideal of `A` is no longer
+used.  `hadic` is what makes `m ^ n` open so that `hlev` applies to it at all.  `hqQ` is
+load-bearing.  `he` is load-bearing.  Nothing about `rhobar` is used, so no circular
+discharge against `hirr` is possible here. -/
 theorem forall_localInertia_eq_one_of_forall_isOpen_quotient.{a} {p : ℕ}
     (hpodd : Odd p) [Fact p.Prime] (Q : Finset ℕ)
     {R : Type a} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
@@ -11333,13 +11559,194 @@ theorem forall_localInertia_eq_one_of_forall_isOpen_quotient.{a} {p : ℕ}
       ((hq.toHeightOneSpectrumRingOfIntegersRat).adicCompletion ℚ) → R)
     (he : ∀ g y, e (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat g y) =
       (χ g * (e y).1, δ g * (e y).2))
-    (hud : IsUnit (χ (Field.AbsoluteGaloisGroup.adicArithFrob
+    (_hud : IsUnit (χ (Field.AbsoluteGaloisGroup.adicArithFrob
         hq.toHeightOneSpectrumRingOfIntegersRat) -
       δ (Field.AbsoluteGaloisGroup.adicArithFrob
         hq.toHeightOneSpectrumRingOfIntegersRat))) :
     (∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat, χ σ = 1) ∨
-      (∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat, δ σ = 1) :=
-  sorry
+      (∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat, δ σ = 1) := by
+  classical
+  have hpow : ∀ n : ℕ, IsOpen ((IsLocalRing.maximalIdeal R ^ n : Ideal R) : Set R) :=
+    (isAdic_iff.mp hadic).1
+  have hnetop : ∀ n : ℕ, (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R) ≠ ⊤ := by
+    intro n htop
+    have hle : (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R) ≤
+        IsLocalRing.maximalIdeal R := Ideal.pow_le_self (Nat.succ_ne_zero n)
+    rw [htop, top_le_iff] at hle
+    exact (IsLocalRing.maximalIdeal.isMaximal R).ne_top hle
+  have hlocal : ∀ J : Ideal R, J ≠ ⊤ → IsLocalRing (R ⧸ J) := by
+    intro J hJt
+    haveI : Nontrivial (R ⧸ J) := Ideal.Quotient.nontrivial_iff.mpr hJt
+    exact IsLocalRing.of_surjective' (Ideal.Quotient.mk J) Ideal.Quotient.mk_surjective
+  have hrk : ∀ (J : Ideal R) [IsLocalRing (R ⧸ J)],
+      Module.rank (R ⧸ J) ((R ⧸ J) ⊗[R] (Fin 2 → R)) = 2 := by
+    intro J _
+    simp
+  have hsep : ∀ y : R,
+      (∀ n : ℕ, y ∈ (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R)) → y = 0 := by
+    intro y hy
+    refine IsHausdorff.haus (hcomplete.toIsHausdorff) _ fun n => ?_
+    rw [SModEq.zero, smul_eq_mul, Ideal.mul_top]
+    cases n with
+    | zero => simp
+    | succ m => exact hy m
+  -- THE LEVEL-WISE STEP
+  have hlevel : ∀ n : ℕ,
+      (∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        χ σ - 1 ∈ (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R)) ∨
+      (∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        δ σ - 1 ∈ (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R)) := by
+    intro n
+    haveI := hlocal _ (hnetop n)
+    obtain ⟨f, χA, δA, hf, hδker⟩ :=
+      (hlev (IsLocalRing.maximalIdeal R ^ (n + 1)) (hpow (n + 1)) (hrk _)).isSplitTorusAt
+        q hqQ hq
+    set A := R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R) with hAdef
+    have hcancel : ∀ (c x y : A), IsUnit c → x * c = y * c → x = y := by
+      intro c x y hc hxy
+      obtain ⟨u, rfl⟩ := hc
+      have h2 := congrArg (fun w : A => w * ((u⁻¹ : Aˣ) : A)) hxy
+      simpa [mul_assoc, Units.mul_inv] using h2
+    set Φ : (Fin 2 → R) → A × A := fun x => f ((1 : A) ⊗ₜ[R] x) with hΦdef
+    have hbc : ∀ (g : Field.absoluteGaloisGroup (hq.toHeightOneSpectrumRingOfIntegersRat.adicCompletion ℚ)) (y : Fin 2 → R),
+        (ρ.baseChange A).toLocal hq.toHeightOneSpectrumRingOfIntegersRat g ((1 : A) ⊗ₜ[R] y) =
+          (1 : A) ⊗ₜ[R] (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat g y) := by
+      intro g y
+      show LinearMap.baseChange _ (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat g) (_ ⊗ₜ[R] y) = _
+      simp
+    have hΦρ : ∀ (g : Field.absoluteGaloisGroup (hq.toHeightOneSpectrumRingOfIntegersRat.adicCompletion ℚ)) (y : Fin 2 → R),
+        Φ (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat g y) = (χA g (Φ y).1, δA g (Φ y).2) := by
+      intro g y
+      show f ((1 : A) ⊗ₜ[R] (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat g y)) = _
+      rw [← hbc g y, hf]
+    have hΦsmul : ∀ (r : R) (y : Fin 2 → R),
+        Φ (r • y) = (algebraMap R A r) • Φ y := by
+      intro r y
+      show f ((1 : A) ⊗ₜ[R] (r • y)) = (algebraMap R A r) • f ((1 : A) ⊗ₜ[R] y)
+      rw [← map_smul, TensorProduct.tmul_smul, algebraMap_smul]
+    have hΦadd : ∀ (y w : Fin 2 → R), Φ (y + w) = Φ y + Φ w := by
+      intro y w
+      show f ((1 : A) ⊗ₜ[R] (y + w)) = _
+      rw [TensorProduct.tmul_add, map_add]
+    set u₁ := e.symm ((1 : R), (0 : R)) with hu₁def
+    set u₂ := e.symm ((0 : R), (1 : R)) with hu₂def
+    have heu₁ : e u₁ = ((1 : R), (0 : R)) := by
+      rw [hu₁def]; exact e.apply_symm_apply _
+    have heu₂ : e u₂ = ((0 : R), (1 : R)) := by
+      rw [hu₂def]; exact e.apply_symm_apply _
+    have hdecomp : ∀ y : Fin 2 → R, y = (e y).1 • u₁ + (e y).2 • u₂ := by
+      intro y
+      have hy : ((e y).1 • ((1 : R), (0 : R)) + (e y).2 • ((0 : R), (1 : R))) = e y := by
+        refine Prod.ext ?_ ?_ <;> simp
+      calc y = e.symm (e y) := (e.symm_apply_apply y).symm
+        _ = e.symm ((e y).1 • ((1 : R), (0 : R)) + (e y).2 • ((0 : R), (1 : R))) := by
+              rw [hy]
+        _ = (e y).1 • u₁ + (e y).2 • u₂ := by
+              rw [map_add, map_smul, map_smul, hu₁def, hu₂def]
+    have hsnd : ∀ y : Fin 2 → R, (Φ y).2 =
+        algebraMap R A ((e y).1) * (Φ u₁).2 + algebraMap R A ((e y).2) * (Φ u₂).2 := by
+      intro y
+      conv_lhs => rw [hdecomp y]
+      rw [hΦadd, hΦsmul, hΦsmul]
+      simp only [Prod.snd_add, Prod.smul_snd, smul_eq_mul]
+    -- one of the two second coordinates is a UNIT
+    have hspan : ∀ w : A ⊗[R] (Fin 2 → R),
+        (f w).2 ∈ Ideal.span ({(Φ u₁).2, (Φ u₂).2} : Set A) := by
+      intro w
+      induction w using TensorProduct.induction_on with
+      | zero => simp
+      | tmul aa y =>
+          have hfa : f (aa ⊗ₜ[R] y) = aa • Φ y := by
+            show f (aa ⊗ₜ[R] y) = aa • f ((1 : A) ⊗ₜ[R] y)
+            rw [← map_smul, TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+          rw [hfa]
+          simp only [Prod.smul_snd, smul_eq_mul]
+          rw [hsnd y]
+          refine Ideal.mul_mem_left _ _ (Ideal.add_mem _ ?_ ?_)
+          · exact Ideal.mul_mem_left _ _ (Ideal.subset_span (by simp))
+          · exact Ideal.mul_mem_left _ _ (Ideal.subset_span (by simp))
+      | add x y hx hy =>
+          rw [map_add]
+          simpa using Ideal.add_mem _ hx hy
+    have hone : (1 : A) ∈ Ideal.span ({(Φ u₁).2, (Φ u₂).2} : Set A) := by
+      have h := hspan (f.symm ((0 : A), (1 : A)))
+      rwa [f.apply_symm_apply] at h
+    have hunit : IsUnit ((Φ u₁).2) ∨ IsUnit ((Φ u₂).2) := by
+      by_contra hcon
+      push Not at hcon
+      obtain ⟨h1, h2⟩ := hcon
+      have hm1 : (Φ u₁).2 ∈ IsLocalRing.maximalIdeal A := by
+        by_contra hc; exact h1 (IsLocalRing.notMem_maximalIdeal.mp hc)
+      have hm2 : (Φ u₂).2 ∈ IsLocalRing.maximalIdeal A := by
+        by_contra hc; exact h2 (IsLocalRing.notMem_maximalIdeal.mp hc)
+      have hle : Ideal.span ({(Φ u₁).2, (Φ u₂).2} : Set A) ≤
+          IsLocalRing.maximalIdeal A := by
+        rw [Ideal.span_le]
+        rintro x hx
+        simp only [Set.mem_insert_iff, Set.mem_singleton_iff] at hx
+        rcases hx with rfl | rfl
+        · exact hm1
+        · exact hm2
+      exact (IsLocalRing.maximalIdeal.isMaximal A).ne_top
+        (Ideal.eq_top_of_isUnit_mem _ (hle hone) isUnit_one)
+    -- the intertwining relations, read on the SECOND coordinate only
+    have hend : ∀ (φ : Module.End A A) (y : A), φ y = y * φ 1 := by
+      intro φ y
+      have hz : φ (y • (1 : A)) = y • φ 1 := map_smul φ y 1
+      simpa [smul_eq_mul] using hz
+    have hrel1 : ∀ g : Field.absoluteGaloisGroup (hq.toHeightOneSpectrumRingOfIntegersRat.adicCompletion ℚ),
+        algebraMap R A (χ g) * (Φ u₁).2 = (δA g 1) * (Φ u₁).2 := by
+      intro g
+      have h := congrArg Prod.snd (hΦρ g u₁)
+      rw [hsnd (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat g u₁), he g u₁, heu₁] at h
+      simp only [mul_one, mul_zero, map_zero, zero_mul, add_zero] at h
+      rw [hend (δA g) ((Φ u₁).2)] at h
+      linear_combination h
+    have hrel2 : ∀ g : Field.absoluteGaloisGroup (hq.toHeightOneSpectrumRingOfIntegersRat.adicCompletion ℚ),
+        algebraMap R A (δ g) * (Φ u₂).2 = (δA g 1) * (Φ u₂).2 := by
+      intro g
+      have h := congrArg Prod.snd (hΦρ g u₂)
+      rw [hsnd (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat g u₂), he g u₂, heu₂] at h
+      simp only [mul_one, mul_zero, map_zero, zero_mul, zero_add] at h
+      rw [hend (δA g) ((Φ u₂).2)] at h
+      linear_combination h
+    have hδone : ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat, δA σ 1 = (1 : A) := by
+      intro σ hσ
+      have hk : δA σ = 1 := hδker hσ
+      rw [hk]
+      simp
+    have hmemJ : ∀ x : R, algebraMap R A x = 1 →
+        x - 1 ∈ (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R) := by
+      intro x hx
+      have : Ideal.Quotient.mk (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R) (x - 1) = 0 := by
+        rw [← Ideal.Quotient.algebraMap_eq, map_sub, hx, map_one, sub_self]
+      exact Ideal.Quotient.eq_zero_iff_mem.mp this
+    rcases hunit with hu | hu
+    · left
+      intro σ hσ
+      refine hmemJ _ (hcancel _ _ _ hu ?_)
+      rw [hrel1 σ, hδone σ hσ]
+    · right
+      intro σ hσ
+      refine hmemJ _ (hcancel _ _ _ hu ?_)
+      rw [hrel2 σ, hδone σ hσ]
+  -- PIGEONHOLE over the levels, then adic separation
+  by_cases hall : ∀ n : ℕ, ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+      χ σ - 1 ∈ (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R)
+  · left
+    intro σ hσ
+    have h := hsep _ (fun n => hall n σ hσ)
+    exact sub_eq_zero.mp h
+  · right
+    push Not at hall
+    obtain ⟨n₀, σ₀, hσ₀, hn₀⟩ := hall
+    intro σ hσ
+    have hall2 : ∀ n : ℕ, δ σ - 1 ∈ (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R) := by
+      intro n
+      rcases hlevel (max n n₀) with h1 | h2
+      · exact absurd (Ideal.pow_le_pow_right (by omega) (h1 σ₀ hσ₀)) hn₀
+      · exact Ideal.pow_le_pow_right (by omega) (h2 σ hσ)
+    exact sub_eq_zero.mp (hsep _ hall2)
 
 set_option linter.checkUnivs false in
 /-- **The split torus at a raised prime, GIVEN residual distinctness** (PROVEN
