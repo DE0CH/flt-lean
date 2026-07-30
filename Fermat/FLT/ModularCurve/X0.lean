@@ -34149,8 +34149,9 @@ purely archimedean bounds; both acquired `M ≠ 0`, which is LOAD-BEARING
 (see the FALSITY AUDITs on them).  **`cuspPeriod_ne_zero_of_isNewEigenformAt`
 is PROVEN too** (2026-07-28), by the Fricke cut in the last subsection —
 the cut its own old docstring named as "safe only here, AFTER the
-reduction".  What is left open is exactly five statements, none of which
-is analysis-on-the-period any more:
+reduction".  What is left open is exactly six statements (five until
+2026-07-30, when the numerics leaf was cut in two along the coefficient
+bound), none of which is analysis-on-the-period any more:
 
 * `exists_satakeParams_of_isWeightTwoEigenform` — the inverse roots of
   the local Euler factor at `p` have absolute value `≤ √p`
@@ -34166,12 +34167,18 @@ is analysis-on-the-period any more:
 * `frickeSign_eq_neg_one_of_isNewEigenformAt` — its sign is `-1` at every
   divisor of a Kenku level (the analytic-rank-`0` statement, and the one
   that PARI's `mfatkineigenvalues` checks directly);
-* `frickeTailSum_tail_lt_head` — the `L`-value numerics, now a REAL
-  inequality `∑_{n ≥ 2} ‖bₙ‖/n e^{-2πn/√M} < e^{-2π/√M}` with no
-  cancellation in it, let alone an integral
-  (`integral_Ioi_one_axisRestrict_ne_zero`, which used to stand here, and
+* `norm_coeff_le_newformCoeffBound` and
+  `summable_and_tsum_newformCoeffBound_lt` — the `L`-value numerics, cut in
+  two along the multiplicative bound on 2026-07-30.  The real inequality
+  `∑_{n ≥ 2} ‖bₙ‖/n e^{-2πn/√M} < e^{-2π/√M}` that stood here as
+  `frickeTailSum_tail_lt_head` is PROVEN over them; the first is pure
+  arithmetic (Atkin–Lehner local values plus the `hecke` recursion, no
+  analysis and no level list) and the second is a pure real inequality
+  about the explicit function `newformCoeffBound` (no `CuspForm`, no
+  eigenform, a finite check over the 32 divisors of `kenkuLevels`).
+  `integral_Ioi_one_axisRestrict_ne_zero`, which used to stand here, and
   `frickeTailSum_ne_zero`, which stood here after the third round below,
-  are both PROVEN over it since the fourth).
+  are both PROVEN over that chain since the fourth.
 
 The passage between the last two — from `∫₀^∞` to `(1 - ε) ∫₁^∞`, which
 is the whole reason the Fricke hypothesis is worth having — is PROVEN
@@ -34613,8 +34620,10 @@ stated in.
 .lake/packages/mathlib/ ~/cs/FLT/` (run 2026-07-28: mathlib has
 `petersson`, the *inner product*, and nothing about the bound).  The
 Eichler–Shimura side of this file has an interface but no content —
-`exists_isotypicQuotient_of_isWeightTwoEigenform` below is itself a sorry
-leaf, and there is no reduction of an abelian scheme mod `p`, no
+`exists_isotypicQuotient_of_isWeightTwoEigenform` below is an assembly over
+two sorry leaves (`isIntegral_coeff_of_isWeightTwoEigenform` and
+`exists_isotypicQuotient_of_isIntegral`, split 2026-07-30), so there is
+still no `A_f` here, and there is no reduction of an abelian scheme mod `p`, no
 Frobenius, and no purity anywhere in the tree — so this leaf cannot
 currently be routed through it.
 
@@ -35250,8 +35259,139 @@ theorem tsum_ne_zero_of_tail_lt_norm_sum {t : ℕ → ℂ} (ht : Summable fun n 
   rw [heq, norm_neg] at hlt
   exact absurd hlt (not_lt.mpr hle)
 
+/-- **THE MULTIPLICATIVE ATKIN–LEHNER/HECKE BOUND ON `‖aₙ‖` AT LEVEL `M`**
+(new 2026-07-30) — the explicit arithmetic function that the docstring of
+`frickeTailSum_tail_lt_head` below describes in prose and measures, made
+into a definition so that the two halves of that leaf can be separated.
+
+It is the product over the primes `p ∣ n`, with `e := ord_p n`, of
+
+* `0`, when `p² ∣ M` — a newform of level `M` has `a_p = 0` there, hence
+  `a_{p^e} = 0` for `e ≥ 1` by `atkin`;
+* `1`, when `p ∥ M` — Atkin–Lehner's `U_p`-eigenvalue theorem gives
+  `‖a_p‖ = p^{(k-2)/2} = 1` in weight two, hence `‖a_{p^e}‖ = 1` by
+  `atkin`;
+* `(e + 1) · p^{e/2}`, when `p ∤ M` — `norm_coeff_le_two_mul_sqrt_of_not_dvd`
+  plus the `hecke` recursion `a_{p^{e+1}} = a_p a_{p^e} - p a_{p^{e-1}}`.
+
+At `n = 0` and `n = 1` the product is empty, so the bound is `1`; that is
+correct for `a 1 = 1` and slack for `a 0 = 0`.
+
+**This is a BOUND, not a value**, and it is deliberately blind to `g` and
+to the Fricke sign: nothing about it needs a certified `q`-expansion, a
+dimension formula or a basis of `S₂(Γ₀(M))^{new}`.  That is the whole
+point of the cut below. -/
+noncomputable def newformCoeffBound (M n : ℕ) : ℝ :=
+  ∏ p ∈ n.primeFactors,
+    if p * p ∣ M then 0
+    else if p ∣ M then 1
+    else ((n.factorization p : ℝ) + 1) * Real.sqrt p ^ (n.factorization p)
+
+/-- **THE ARITHMETIC HALF: a newform's coefficients obey the
+multiplicative Atkin–Lehner/Hecke bound** (sorry leaf, new 2026-07-30) —
+one of the two halves of `frickeTailSum_tail_lt_head` below.
+
+> `‖bₙ‖ ≤ newformCoeffBound M n` for every `n`.
+
+TRUE, and it is exactly the bound the reconnaissance on that leaf
+measured; see `newformCoeffBound`'s docstring for the three cases and the
+input each of them needs.  Two of the three are already THEOREMS in this
+file (`norm_coeff_le_two_mul_sqrt_of_not_dvd` at `p ∤ M`, and the
+`hecke`/`atkin` fields for the recursion and for multiplicativity across
+coprime factors — `hecke`'s correction term `p · a_{n/p}` vanishes
+exactly when `p ∤ n`). The one genuinely missing input is the Atkin–Lehner
+`U_p`-eigenvalue theorem FOR A NEWFORM at `p ∣ M`:
+
+> `a_p = 0` when `p² ∣ M`, and `‖a_p‖ = 1` when `p ∥ M`.
+
+**`hnew` IS LOAD-BEARING, and it cannot be dropped in favour of
+`norm_coeff_le_sqrt_of_dvd`.**  That theorem's `‖a_p‖ ≤ √p` is quantified
+over ALL eigenforms, including the stabilizations the descent needs, where
+`‖a_p‖ = √p` genuinely occurs — so it is sharp and cannot be strengthened
+in place.  Substituting it here weakens the bound enough to break the
+numeric half at `M = 75` (`tail/head = 1.058`); weakening only the `p ∥ M`
+case still fails there, at `1.032`.  So `hnew` is what buys the last level,
+and the accounting is recorded on `frickeTailSum_tail_lt_head` below.
+
+**`hM : M ≠ 0` IS LOAD-BEARING — WITHOUT IT THIS LEAF IS FALSE.**  At
+`M = 0` every prime satisfies `p * p ∣ M`, so `newformCoeffBound 0 n = 0`
+for every `n > 1` and the conclusion demands `b n = 0` there.  The
+level-`0` witness recorded on `norm_coeff_le_sqrt_of_dvd` above — `b n = n`,
+carried by `∑_{n ≥ 1} n qⁿ = q/(1-q)²`, which satisfies every field of
+`IsWeightTwoEigenform 0 g b` — refutes that at once.
+
+**`hb` is load-bearing in both of its `q`-expansion parts**, for the reason
+recorded on `IsWeightTwoEigenform` itself: without `qExpansion` *and*
+`qExpansionSummable` the sequence `b` is junk-satisfiable and no bound on
+it can hold.
+
+Stated for every `n`, including `n` not coprime to `M`, because the
+consumer sums over all `n ≥ 2`. -/
+theorem norm_coeff_le_newformCoeffBound {M : ℕ} (hM : M ≠ 0) {g : CuspForm (Gamma0GL M) 2}
+    {b : ℕ → ℂ} (hb : IsWeightTwoEigenform M g b) (hnew : IsNewEigenformAt M b) (n : ℕ) :
+    ‖b n‖ ≤ newformCoeffBound M n :=
+  sorry
+
+/-- **THE NUMERIC HALF: the bound's own tail is beaten by the head, at
+every divisor of a Kenku level** (sorry leaf, new 2026-07-30) — the other
+half of `frickeTailSum_tail_lt_head` below, and the one that carries all
+of the analysis.
+
+> `∑_{n ≥ 2} newformCoeffBound M n / n · e^{-2πn/√M}  <  e^{-2π/√M}`,
+> together with the summability that makes the left-hand side a genuine
+> sum rather than mathlib's junk `0`.
+
+**NO MODULAR FORM APPEARS IN THIS STATEMENT.**  No `CuspForm`, no
+eigenform, no coefficient sequence, no Fricke hypothesis — only `M`, a
+divisibility, and an explicit arithmetic function.  That is what the cut
+buys: the prover of this half needs real analysis and a finite
+computation, and the prover of the other half needs no analysis at all.
+
+**IT IS A FINITE CHECK.**  `hMN` and `hN` confine `M` to the 32 divisors
+of the fourteen `kenkuLevels`, `1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14,
+15, 18, 20, 21, 24, 25, 26, 27, 28, 30, 35, 36, 39, 42, 45, 50, 54, 63,
+75`.  `tail/head` was recomputed at all 32 on 2026-07-30 and agrees with
+the table on `frickeTailSum_tail_lt_head` below at the seventeen levels
+that table covers; the largest value is `0.965` at `M = 75`, then `0.826`
+(`63`), `0.701` (`35`), `0.657` (`39`), `0.654` (`45`).  The fifteen
+divisors with an EMPTY newspace, which that table omits because its
+hypotheses are contradictory there, are all comfortable — the largest is
+`0.534` at `M = 25` — so this half needs no dimension formula and no
+emptiness statement either, which is why it can drop `hb` and `hnew`
+rather than merely not using them.
+
+**`hMN` AND `hN` ARE LOAD-BEARING — the inequality is FALSE for general
+`M`.** It fails first at `M = 59` (prime, so the bound is the full
+`(e+1)p^{e/2}` at every prime, and `e^{-2π/√59}` is already `0.44`), and
+again at `61, 65, 67, 71, 73, 77, 79, …`; at `M = 77` the ratio is `1.256`
+and at `M = 79` it is `1.287`.  So this is not a statement about large
+levels that happens to be checked at small ones: `75` is close to the
+edge, and the edge is real.
+
+`hM : M ≠ 0` is derivable from `hMN` and `hN` and is taken as a hypothesis
+only to match the parent's signature; it is what makes `√M > 0`.
+
+**NON-VACUITY.**  The head `e^{-2π/√M}` is a positive real, and
+`newformCoeffBound M n ≥ 0` with `newformCoeffBound M 1 = 1`, so neither
+side is junk.  The summability conjunct is not decoration: without it a
+prover could satisfy the inequality at a level where the family is not
+summable by appealing to `tsum`'s junk value, and the assembly below
+genuinely consumes it (it is what dominates `‖bₙ‖`).
+
+PARI/GP and the 2026-07-30 recomputation are untrusted searchers: they
+establish that the statement is not false, and are not a proof. -/
+theorem summable_and_tsum_newformCoeffBound_lt (N : ℕ) (hN : N ∈ kenkuLevels) (M : ℕ)
+    (hMN : M ∣ N) (hM : M ≠ 0) :
+    (Summable fun n : ℕ => newformCoeffBound M (n + 2) / ((n : ℝ) + 2) *
+        Real.exp (-(2 * Real.pi * ((n : ℝ) + 2) / Real.sqrt M))) ∧
+      ∑' n : ℕ, newformCoeffBound M (n + 2) / ((n : ℝ) + 2) *
+          Real.exp (-(2 * Real.pi * ((n : ℝ) + 2) / Real.sqrt M))
+        < Real.exp (-(2 * Real.pi / Real.sqrt M)) :=
+  sorry
+
 /-- **THE `L`-VALUE NUMERICS, AT `K = 1`: the head of the coefficient
-series outweighs the WHOLE of its tail** (sorry leaf, RECUT 2026-07-28):
+series outweighs the WHOLE of its tail** (**PROVEN 2026-07-30** over the
+two leaves immediately above; a sorry leaf, RECUT 2026-07-28, until then):
 
 > `∑_{n ≥ 2} ‖bₙ‖/n · e^{-2πn/√M}  <  e^{-2π/√M}`.
 
@@ -35355,16 +35495,66 @@ statement is not false, and are not a proof.
 
 The *axis not searched*: `fin_cases hN`, mechanically available and not a
 decomposition (it multiplies the frontier by fourteen and moves no
-theory). -/
+theory).
+
+## DECOMPOSED 2026-07-30 ALONG THE BOUND, WHICH IS WHERE THE TWO THEORIES
+## MEET
+
+Everything above says the same thing twice: the inequality is reachable
+from BOUNDS, and the bound in question is multiplicative and explicit.
+So the bound is the cut.  `newformCoeffBound` above names it,
+`norm_coeff_le_newformCoeffBound` owns the arithmetic that establishes it
+(Atkin–Lehner local values, the `hecke` recursion, multiplicativity — no
+analysis, no `M ∣ N`, no level list), and
+`summable_and_tsum_newformCoeffBound_lt` owns the analysis and the finite
+computation (no `CuspForm`, no eigenform, no coefficient sequence).  This
+declaration is now the assembly: dominate termwise, transport summability
+by comparison, and chain `≤` with `<`.
+
+The two halves are genuinely independent, and neither inherits the other's
+difficulty.  The tables in this docstring are the reconnaissance for the
+numeric half and are reproduced there, extended from the seventeen levels
+with a nonempty newspace to all 32 divisors of the fourteen
+`kenkuLevels` — which is what lets that half drop `hb` and `hnew`
+altogether rather than merely leave them unused.  The `M = 75` accounting
+above is the reconnaissance for the arithmetic half, and it is recorded
+there as the reason `hnew` cannot be traded for
+`norm_coeff_le_sqrt_of_dvd`.
+
+**`hFE` is now underscored**, because the assembly demonstrably does not
+use it; the paragraph above predicted exactly that, and the rename makes
+it mechanically visible instead of merely asserted.  The hypothesis stays
+in the signature — every consumer holds it, all calls are positional, and
+keeping it leaves the leaf as weak as it can be. -/
 theorem frickeTailSum_tail_lt_head (N : ℕ) (hN : N ∈ kenkuLevels) (M : ℕ)
     (hMN : M ∣ N) (hM : M ≠ 0) (g : CuspForm (Gamma0GL M) 2) (b : ℕ → ℂ)
     (hb : IsWeightTwoEigenform M g b) (hnew : IsNewEigenformAt M b)
-    (hFE : ∀ y : ℝ, 0 < y →
+    (_hFE : ∀ y : ℝ, 0 < y →
       axisRestrict M g (1 / y) = ((y ^ (2 : ℝ) : ℝ) : ℂ) * axisRestrict M g y) :
     ∑' n : ℕ, ‖b (n + 2)‖ / ((n : ℝ) + 2) *
         Real.exp (-(2 * Real.pi * ((n : ℝ) + 2) / Real.sqrt M))
-      < Real.exp (-(2 * Real.pi / Real.sqrt M)) :=
-  sorry
+      < Real.exp (-(2 * Real.pi / Real.sqrt M)) := by
+  obtain ⟨hsum, hlt⟩ := summable_and_tsum_newformCoeffBound_lt N hN M hMN hM
+  have hterm : ∀ n : ℕ,
+      ‖b (n + 2)‖ / ((n : ℝ) + 2) *
+          Real.exp (-(2 * Real.pi * ((n : ℝ) + 2) / Real.sqrt M))
+        ≤ newformCoeffBound M (n + 2) / ((n : ℝ) + 2) *
+          Real.exp (-(2 * Real.pi * ((n : ℝ) + 2) / Real.sqrt M)) := by
+    intro n
+    have hbn : ‖b (n + 2)‖ ≤ newformCoeffBound M (n + 2) :=
+      norm_coeff_le_newformCoeffBound hM hb hnew (n + 2)
+    have hinv : (0 : ℝ) ≤ ((n : ℝ) + 2)⁻¹ := by positivity
+    have h1 : ‖b (n + 2)‖ * ((n : ℝ) + 2)⁻¹
+        ≤ newformCoeffBound M (n + 2) * ((n : ℝ) + 2)⁻¹ :=
+      mul_le_mul_of_nonneg_right hbn hinv
+    have h2 := mul_le_mul_of_nonneg_right h1
+      (Real.exp_pos (-(2 * Real.pi * ((n : ℝ) + 2) / Real.sqrt M))).le
+    simpa [div_eq_mul_inv] using h2
+  have hsumL : Summable fun n : ℕ =>
+      ‖b (n + 2)‖ / ((n : ℝ) + 2) *
+        Real.exp (-(2 * Real.pi * ((n : ℝ) + 2) / Real.sqrt M)) :=
+    Summable.of_nonneg_of_le (fun n => by positivity) hterm hsum
+  exact lt_of_le_of_lt (Summable.tsum_le_tsum hterm hsumL hsum) hlt
 
 /-- **THE `L`-VALUE NUMERICS: the coefficient series does not vanish**
 (PROVEN 2026-07-28, from `frickeTailSum_tail_lt_head` and
@@ -37600,9 +37790,57 @@ structure IsIsotypicQuotient {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
         (minpoly ℤ (a n)).coeff k •
           ((fun y : RelPoint astr g => RelPoint.post (S n) (S_comp n) y)^[k] x) = 0
 
+/-- **SHIMURA'S ALGEBRAICITY THEOREM: the Hecke eigenvalues of a weight-two
+eigenform of POSITIVE level are algebraic integers** (sorry leaf, new
+2026-07-30) — split out of `exists_isotypicQuotient_of_isIntegral` below,
+whose output structure carries it as the field `IsIsotypicQuotient.integral`.
+
+TRUE, and classical (Shimura, *Introduction to the arithmetic theory of
+automorphic functions*, §3.5 and §7.5; Diamond–Shurman §6.5).  `T_n`
+preserves the integral homology `H₁(X₀(N), ℤ)`, a lattice on which the
+anemic Hecke algebra therefore acts by integer matrices, and `a n` is an
+eigenvalue of one of them — so it is a root of a monic integer
+characteristic polynomial.
+
+**WHY THIS IS WORTH A DECLARATION OF ITS OWN.**  It is the only obligation
+of `IsIsotypicQuotient` that mentions no scheme.  Standing alone it can be
+attacked from either side — the integral-homology argument above, or the
+Hecke recursions plus a bound — without owning any of the `A_g`
+construction; and the geometric leaf below receives it as a hypothesis
+rather than having to produce a field about `ℂ`-valued eigenvalues in the
+middle of building an abelian variety.
+
+**`hN : N ≠ 0` IS LOAD-BEARING — WITHOUT IT THIS LEAF IS FALSE**, with the
+witness recorded on the leaf below: at level `0` the eigenform conditions
+collapse (`hecke` is vacuous because `p ∣ 0` for every `p`, `atkin` becomes
+plain complete multiplicativity), and `a (2 ^ k) := π ^ k`, `a n := 0` for
+`n` not a power of `2`, carried by `g τ = ∑_{k ≥ 1} π^k q^{2^k}`, satisfies
+every field of `IsWeightTwoEigenform 0 g a`.  `π` is transcendental, so
+`IsIntegral ℤ (a 2)` fails outright.  This is the same level-`0` pathology
+that forced `M ≠ 0` onto `integrableOn_qSeriesAt` and
+`lFunction_apply_one_eq_two_pi_mul_cuspPeriod`; the check that refutes any
+claim it has gone away is
+`grep -n "Gamma0 0" Fermat/FLT/ModularCurve/X0.lean`.
+
+**`hf` is load-bearing in both of its `q`-expansion parts**, for the reason
+recorded on `IsWeightTwoEigenform` itself: without `qExpansion` *and*
+`qExpansionSummable` the sequence `a` is junk-satisfiable and nothing ties
+it to `f` at all, so no integrality statement about it can hold.
+
+Stated for EVERY `n`, not merely for `n` coprime to `N`, because
+`IsIsotypicQuotient.integral` is: `minpoly ℤ (a n) = 0` for a non-integral
+`a n` would make `isotypic` degenerate to `(0 : ℤ) • x = 0` at that `n`, and
+`isotypic`'s own restriction to `Nat.Coprime n N` is a statement about which
+`T n` are controlled, not about which `a n` are algebraic. -/
+theorem isIntegral_coeff_of_isWeightTwoEigenform (N : ℕ) (hN : N ≠ 0)
+    (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ) (hf : IsWeightTwoEigenform N f a) (n : ℕ) :
+    IsIntegral ℤ (a n) :=
+  sorry
+
 /-- **SHIMURA'S `A_f`: EVERY WEIGHT-TWO EIGENFORM OF LEVEL `N` CUTS OUT AN
-ISOTYPIC QUOTIENT OF `J₀(N)`** (sorry leaf, new 2026-07-28) — the "BUILD one
-factor" half of the cut of
+ISOTYPIC QUOTIENT OF `J₀(N)`, GIVEN ALGEBRAICITY OF ITS EIGENVALUES**
+(sorry leaf, new 2026-07-28; RECUT 2026-07-30 to take `hint`) — the "BUILD
+one factor" half of the cut of
 `exists_heckeIsotypicDecomposition_of_modularHeckeAction` below.
 
 TRUE.  For a NEWFORM `g` of level `M ∣ N` this is Shimura,
@@ -37656,7 +37894,41 @@ in mathlib at this pin, or in `~/cs/FLT`; no `A_g`; no old/new decomposition
 of `S₂(Γ₀(N))`; and no isogeny theory for abelian SCHEMES here
 (`Modularity/AbelianSchemeIsogeny.lean` gives `[n] : A ⟶ A` and its flatness,
 nothing more).  What this leaf does NOT need, and the parent did, is the
-multiplicity bookkeeping — that is the sibling's, below. -/
+multiplicity bookkeeping — that is the sibling's, below.
+
+**RECUT 2026-07-30 ALONG `integral`**, which is the one obligation in the
+list of fields above that is not geometry at all.
+`isIntegral_coeff_of_isWeightTwoEigenform` (immediately above) now owns
+Shimura's algebraicity theorem as a free-standing statement about the
+coefficient SEQUENCE, and this leaf receives it as `hint`.  The cut is cheap
+and it is not cosmetic: a prover of the algebraicity half needs no scheme,
+no Jacobian and no `IsModularHeckeAction`, and this half no longer has to
+produce a field about `ℂ`-valued eigenvalues in the middle of building an
+abelian variety.  `hN` remains load-bearing on BOTH halves, and for the same
+level-`0` witness — here because a transcendental system makes `integral`
+unsatisfiable, there because it makes the conclusion false outright.
+
+`hint` is stated for EVERY `n`, not merely for `n` coprime to `N`, because
+`IsIsotypicQuotient.integral` is; see the sibling's docstring for why. -/
+theorem exists_isotypicQuotient_of_isIntegral (N : ℕ) (hN : N ≠ 0)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    (h : IsX0Compactification N strX strY j) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (T : ℕ → (J ⟶ J))
+    (T_comp : ∀ n, T n ≫ jstr = jstr) (T_add : ∀ n, IsAdditiveOn ab ab (T n) (T_comp n))
+    (hmod : IsModularHeckeAction N h jac T T_comp)
+    (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ) (hf : IsWeightTwoEigenform N f a)
+    (hint : ∀ n, IsIntegral ℤ (a n)) :
+    Nonempty (IsIsotypicQuotient ab T N a) :=
+  sorry
+
+/-- **SHIMURA'S `A_f`: EVERY WEIGHT-TWO EIGENFORM OF LEVEL `N` CUTS OUT AN
+ISOTYPIC QUOTIENT OF `J₀(N)`** (**PROVEN 2026-07-30** over the two leaves
+above; it was a sorry leaf until then).  The statement is unchanged — every
+consumer below calls it exactly as before — and this declaration is now the
+one-line assembly that hands Shimura's algebraicity theorem to the geometry.
+See the two docstrings above for the mathematics, the level-`0` falsity
+witness, and what is still missing on each side. -/
 theorem exists_isotypicQuotient_of_isWeightTwoEigenform (N : ℕ) (hN : N ≠ 0)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     (h : IsX0Compactification N strX strY j) {jstr : J ⟶ SpecQ}
@@ -37666,7 +37938,8 @@ theorem exists_isotypicQuotient_of_isWeightTwoEigenform (N : ℕ) (hN : N ≠ 0)
     (hmod : IsModularHeckeAction N h jac T T_comp)
     (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ) (hf : IsWeightTwoEigenform N f a) :
     Nonempty (IsIsotypicQuotient ab T N a) :=
-  sorry
+  exists_isotypicQuotient_of_isIntegral N hN h jac T T_comp T_add hmod f a hf
+    (fun n => isIntegral_coeff_of_isWeightTwoEigenform N hN f a hf n)
 
 /-- **`A i` IS THE *MAXIMAL* QUOTIENT OF `J₀(N)` CARRYING THE ANEMIC
 EIGEN-SYSTEM `D.coeff i`** (new 2026-07-28; HOISTED here 2026-07-28 from
@@ -37880,7 +38153,12 @@ QUANTIFIER over factors, made safe by the new `nontriv` field of
 * `exists_isotypicQuotient_of_isWeightTwoEigenform` — Shimura §7.5, the
   modular abelian variety `A_f` as a nontrivial surjective quotient of
   `J₀(N)` carrying the eigen-system of `f`, together with integrality of
-  that system.  This is the single hardest object in the node.
+  that system.  This is the single hardest object in the node.  It is
+  PROVEN since 2026-07-30 over two leaves, cut along `integral`:
+  `isIntegral_coeff_of_isWeightTwoEigenform` (Shimura's algebraicity
+  theorem, a statement about the coefficient SEQUENCE that mentions no
+  scheme) and `exists_isotypicQuotient_of_isIntegral` (the geometry, which
+  now receives integrality rather than having to produce it).
 * `exists_heckeIsotypicDecomposition_of_isotypicQuotients` — the assembly:
   finiteness of the set of eigen-systems, the old-form MULTIPLICITIES, and
   `finite_ker`.
@@ -41498,10 +41776,13 @@ and they are three different theories: `isFrickeEigenform_of_isNewEigenformAt`
 (a newform is a `W_M`-eigenvector), `frickeSign_eq_neg_one_of_isNewEigenformAt`
 (its sign is `-1`, which the identity shows IS the analytic-rank-`0`
 statement — at `ε = 1` the period is literally `0`, which is why `37` is not a
-Kenku level), and `frickeTailSum_tail_lt_head` (the numerics — reached through
-the PROVEN `integral_Ioi_one_axisRestrict_ne_zero`, whose termwise integration
-turns the tail integral into `∑ (bₙ/n) e^{-2πn/√M}`, and the PROVEN
-`frickeTailSum_ne_zero`, which truncates that series at `K = 1`).
+Kenku level), and the numerics — reached through the PROVEN
+`integral_Ioi_one_axisRestrict_ne_zero`, whose termwise integration turns the
+tail integral into `∑ (bₙ/n) e^{-2πn/√M}`, the PROVEN
+`frickeTailSum_ne_zero`, which truncates that series at `K = 1`, and the
+PROVEN `frickeTailSum_tail_lt_head`, which since 2026-07-30 splits the
+remaining real inequality into `norm_coeff_le_newformCoeffBound` (arithmetic)
+and `summable_and_tsum_newformCoeffBound_lt` (analysis and a finite check).
 The sign leaf was verified independently and DIRECTLY with PARI/GP's
 `mfatkineigenvalues` — `-1` at all `21` (level, divisor) pairs over the
 fourteen Kenku levels, with the controls `37`, `65`, `91` exhibiting the
@@ -41553,7 +41834,8 @@ line `⟨(P.isAlbaneseOf ⟨…⟩).isJacobianOf⟩`.  Do not dispatch anyone at
 | `finite_quotient_nsmul_of_abelianScheme` | weak Mordell–Weil | no |
 | `isFrickeEigenform_of_isNewEigenformAt` | old/new theory + multiplicity one | no |
 | `frickeSign_eq_neg_one_of_isNewEigenformAt` | the root number (analytic rank `0`) | **yes** |
-| `frickeTailSum_tail_lt_head` | `L`-value numerics, as a real inequality (`frickeTailSum_ne_zero` and `integral_Ioi_one_axisRestrict_ne_zero` are both PROVEN over it) | **yes** |
+| `norm_coeff_le_newformCoeffBound` | Atkin-Lehner `U_p` values for a NEWFORM (`a_p = 0` at `p² ∣ M`, `‖a_p‖ = 1` at `p ∥ M`) | no |
+| `summable_and_tsum_newformCoeffBound_lt` | `L`-value numerics, as a real inequality in `newformCoeffBound` alone (`frickeTailSum_tail_lt_head`, `frickeTailSum_ne_zero` and `integral_Ioi_one_axisRestrict_ne_zero` are all PROVEN over it) | **yes** |
 | `injective_ratToGeom` | Galois descent (`Spec ℚ̄ ⟶ Spec ℚ` is epi) | no |
 | `exists_ratPoint_of_galoisInvariant` | Galois descent (invariants) | no |
 | `finite_torsion_geomPt_of_abelianScheme` | `A[n] ≅ (ℤ/n)^{2g}` | no |
@@ -41562,7 +41844,8 @@ line `⟨(P.isAlbaneseOf ⟨…⟩).isJacobianOf⟩`.  Do not dispatch anyone at
 | `exists_isLFunctionOf_of_isWeightTwoEigenform` | Hecke continuation | no |
 | `lFunction_apply_one_ne_zero_of_kenkuLevel` | `L`-value numerics | **yes** |
 | `exists_modularHeckeAction` | Eichler-Shimura (the correspondence) | no |
-| `exists_isotypicQuotient_of_isWeightTwoEigenform` | Shimura's `A_f` (one factor) | no |
+| `isIntegral_coeff_of_isWeightTwoEigenform` | Shimura's algebraicity theorem (`aₙ` an algebraic integer; no scheme) | no |
+| `exists_isotypicQuotient_of_isIntegral` | Shimura's `A_f` (one factor), given algebraicity | no |
 | `exists_heckeIsotypicDecomposition_of_isotypicQuotients` | Atkin-Lehner multiplicities + Poincare | no |
 | `isTorsion_factor_of_heckeIsotypic` | Kolyvagin-Logachev | no |
 | `exists_affineLine_of_not_injective_aj` | Riemann-Roch | no |
