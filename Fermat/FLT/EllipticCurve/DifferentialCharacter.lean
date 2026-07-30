@@ -125,6 +125,13 @@ STATED.  EXACTLY ONE LEAF REMAINS:**
 
 * `exists_diffCharScalar_poly` — `(A′B − AB′)·E = c·C·B²` for some `c`.  Genuinely
   geometric (Abel–Jacobi); see the note on it for why no `linear_combination` exists.
+  It is now written GLUE-FIRST: its polynomial bookkeeping is discharged and its ONE inner
+  `sorry` is the point-level statement "the pullback ratio takes the same value at any two
+  points off the finite bad locus", i.e. translation invariance of `ω`.  Its docstring also
+  records a ROUTE CORRECTION with a characteristic-`2` counterexample: the leaf may NOT be
+  generalised to arbitrary `(u, γ) ∈ F(X)²` satisfying `Ψ_{W′}(u) = γ²Ψ_W`, because in
+  characteristic `2` that relation says nothing about the `y`-witness `D` and so does not
+  pin a morphism.
 
 `chordSum_xWitness` and `chordSum_yMultiplier` are **PROVEN**, and both needed a
 correction first: their hypotheses did not include `φ ≠ 0` and `ψ ≠ 0`, and without those
@@ -1172,15 +1179,107 @@ pair `(x₁, γ₁)` with `Ψ_{W′}(x₁) = γ₁²Ψ_W` is exactly a morphism 
 isogeny composed with a TRANSLATION — and "the pullback factor of a morphism is constant"
 is Abel–Jacobi, i.e. genuinely divisor theory.  That is why this leaf survived while the
 chord branch's did not: the chord branch has `c` and `d` handed to it, and this one has to
-produce one. -/
+produce one.
+
+**ROUTE CORRECTION (2026-07-30) — DO NOT DROP THE MAP AND GENERALISE TO ARBITRARY
+`(u, γ) ∈ F(X)²`; that statement is FALSE in characteristic `2`.**  The note above is
+right that `γ₁` is pinned by `x₁` through `Ψ_{W′}(x₁) = γ₁²Ψ_W`, and the tempting next step
+is to forget `φ` entirely and prove "for all `u, γ ∈ F(X)` with `Ψ_{W′}(u) = γ²Ψ_W`, `u′/γ`
+is constant".  In characteristic `≠ 2` that is legitimate: `δ` is recovered from `γ` as
+`(γ·(a₁X + a₃) − a₁′u − a₃′)/2`, so such a pair really is a morphism.  In characteristic
+`2` the relation carries NO information about `δ`, the pair need not be a morphism, and the
+generalised statement is refuted — take `W = W′ : y² + xy = x³ + 1` (`a₁ = 1`, `a₃ = 0`,
+`a₆ = 1`, so `Δ = a₆ = 1` and the curve is elliptic), where
+`Ψ_W = 4X³ + b₂X² + 2b₄X + b₆ = (a₁X + a₃)² = X²`, and put `u = X + 1`, `γ = (X + 1)/X`.
+Then `Ψ_{W′}(u) = u² = (X + 1)² = γ²·X² = γ²Ψ_W`, while `u′/γ = 1·X/(X + 1)` is not
+constant.  So the leaf's `D`-witness — equivalently the full `hrat` — must be kept, and any
+reduction that discards it needs a `CharZero`/`2 ≠ 0` hypothesis that this leaf does not
+have.
+
+**GLUE-FIRST RESTRUCTURE (2026-07-30): the polynomial bookkeeping below is DISCHARGED, and
+the proof carries exactly ONE inner `sorry`** — the `have hconst`, whose statement is "the
+pullback ratio takes the same value at any two points off the finite bad locus", with
+denominators cleared:
+
+  `(A′B − AB′)(x P₁)·E(x P₁) · (Cx·B²)(x P₂)
+     = (A′B − AB′)(x P₂)·E(x P₂) · (Cx·B²)(x P₁)`
+
+for `P₁, P₂ ≠ 0` off `ker φ` and off the roots of `B·E·Cx`.  Everything else is real code:
+`Cx ≠ 0` from `diffChar_yMultiplier_ne_zero`, the bad locus finite, a base point `t₀` in
+its (infinite) complement, `c := p(t₀)/q(t₀)` with `p = (A′B − AB′)E` and `q = Cx·B²`, then
+`p·C q(t₀) = C p(t₀)·q` by `Polynomial.eq_zero_of_infinite_isRoot` out of `hconst`, and
+finally cancellation of the nonzero constant `C q(t₀)`.
+
+So a successor has ONE point-level statement to prove, and it is exactly translation
+invariance: because `φ` is a homomorphism, `φ ∘ τ_Q = τ_{φQ} ∘ φ`, so `h = φ*ω′/ω`
+satisfies `h(P + Q) = h(P)` for every `Q`; taking `Q = P₂ − P₁` gives `h(P₁) = h(P₂)`.  The
+`sorry` is VOUCHED — it is Silverman *AEC* III.5.1 and it is equivalent to the leaf itself,
+so nothing has been assumed beyond what the leaf already asserts.  Note the missing
+machinery is a DERIVATION ON THE COORDINATE RING of `W`, not on `F(X)`: `x(P + Q)` genuinely
+involves `y(P)`, so `RationalDerivation.rderiv` (which lives on `RatFunc F`) does not reach
+it.  The one case where the `y` does drop out is `Q ∈ W[2]`, since `x(−P + T) = x(P + T)`
+for `2T = 0` — but that identifies only finitely many points and is not enough. -/
 theorem exists_diffCharScalar_poly [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
     {φ : W.Point →+ W'.Point} {A B Cx D E : F[X]} (hφ0 : φ ≠ 0) (hB : B ≠ 0) (hE : E ≠ 0)
     (hrat : ∀ P : W.Point, φ P ≠ 0 →
       veluPointX (φ P) * B.eval (veluPointX P) = A.eval (veluPointX P) ∧
       veluPointY (φ P) * E.eval (veluPointX P)
         = Cx.eval (veluPointX P) * veluPointY P + D.eval (veluPointX P)) :
-    ∃ c : F, (derivative A * B - A * derivative B) * E = C c * Cx * B ^ 2 :=
-  sorry
+    ∃ c : F, (derivative A * B - A * derivative B) * E = C c * Cx * B ^ 2 := by
+  classical
+  have hker : (AddMonoidHom.ker φ : Set W.Point).Finite :=
+    IsRationalMap.finite_ker ⟨A, B, Cx, D, E, hB, hE, hrat⟩ hφ0
+  have hCx : Cx ≠ 0 := diffChar_yMultiplier_ne_zero hφ0 hker hB hE hrat
+  -- **THE ONE REMAINING SORRY** — translation invariance of `ω` (*AEC* III.5.1), in the
+  -- form "the pullback ratio `φ*ω′/ω` takes the same value at any two points off the
+  -- finite bad locus", denominators cleared.  Everything after it is real code.
+  have hconst : ∀ P₁ P₂ : W.Point, P₁ ≠ 0 → P₂ ≠ 0 → φ P₁ ≠ 0 → φ P₂ ≠ 0 →
+      (B * E * Cx).eval (veluPointX P₁) ≠ 0 → (B * E * Cx).eval (veluPointX P₂) ≠ 0 →
+      ((derivative A * B - A * derivative B) * E).eval (veluPointX P₁)
+          * (Cx * B ^ 2).eval (veluPointX P₂)
+        = ((derivative A * B - A * derivative B) * E).eval (veluPointX P₂)
+          * (Cx * B ^ 2).eval (veluPointX P₁) := sorry
+  have hZ0 : B * E * Cx ≠ 0 := mul_ne_zero (mul_ne_zero hB hE) hCx
+  have hbad : ({t : F | (B * E * Cx).eval t = 0}
+      ∪ veluPointX '' (AddMonoidHom.ker φ : Set W.Point)).Finite :=
+    (Polynomial.finite_setOf_isRoot hZ0).union (hker.image _)
+  -- a base point off the bad locus, which is where the constant is read off
+  obtain ⟨t₀, ht₀⟩ := hbad.infinite_compl.nonempty
+  simp only [Set.mem_compl_iff, Set.mem_union, not_or, Set.mem_setOf_eq] at ht₀
+  obtain ⟨hZ₀, hnk₀⟩ := ht₀
+  obtain ⟨P₀, hP₀0, hP₀x⟩ := exists_point_veluPointX_eq (W := W) t₀
+  have hφP₀ : φ P₀ ≠ 0 := fun hc => hnk₀ ⟨P₀, AddMonoidHom.mem_ker.2 hc, hP₀x⟩
+  have hZP₀ : (B * E * Cx).eval (veluPointX P₀) ≠ 0 := by rw [hP₀x]; exact hZ₀
+  have hZ₀' : (B * E * Cx).eval t₀ ≠ 0 := hZ₀
+  simp only [Polynomial.eval_mul, mul_ne_zero_iff] at hZ₀'
+  obtain ⟨⟨hb₀, -⟩, hc₀⟩ := hZ₀'
+  have hq₀ : (Cx * B ^ 2).eval t₀ ≠ 0 := by
+    simp only [Polynomial.eval_mul, Polynomial.eval_pow]
+    exact mul_ne_zero hc₀ (pow_ne_zero _ hb₀)
+  refine ⟨((derivative A * B - A * derivative B) * E).eval t₀ / (Cx * B ^ 2).eval t₀, ?_⟩
+  refine mul_right_cancel₀ (b := C ((Cx * B ^ 2).eval t₀))
+    (Polynomial.C_ne_zero.mpr hq₀) ?_
+  have hkey : (derivative A * B - A * derivative B) * E * C ((Cx * B ^ 2).eval t₀)
+      - C (((derivative A * B - A * derivative B) * E).eval t₀) * (Cx * B ^ 2) = 0 := by
+    refine Polynomial.eq_zero_of_infinite_isRoot _ (Set.Infinite.mono ?_ hbad.infinite_compl)
+    intro t ht
+    simp only [Set.mem_compl_iff, Set.mem_union, not_or, Set.mem_setOf_eq] at ht
+    obtain ⟨hZt, hnkt⟩ := ht
+    obtain ⟨P, hP0, hPx⟩ := exists_point_veluPointX_eq (W := W) t
+    have hφP : φ P ≠ 0 := fun hc => hnkt ⟨P, AddMonoidHom.mem_ker.2 hc, hPx⟩
+    have hZP : (B * E * Cx).eval (veluPointX P) ≠ 0 := by rw [hPx]; exact hZt
+    have h := hconst P P₀ hP0 hP₀0 hφP hφP₀ hZP hZP₀
+    rw [hPx, hP₀x] at h
+    show (_ : F) = 0
+    simp only [Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_pow, Polynomial.eval_C]
+    simp only [Polynomial.eval_mul, Polynomial.eval_sub, Polynomial.eval_pow] at h
+    linear_combination h
+  have hC' : (C (((derivative A * B - A * derivative B) * E).eval t₀
+        / (Cx * B ^ 2).eval t₀) : F[X]) * C ((Cx * B ^ 2).eval t₀)
+      = C (((derivative A * B - A * derivative B) * E).eval t₀) := by
+    rw [← Polynomial.C_mul]
+    exact congrArg Polynomial.C (div_mul_cancel₀ _ hq₀)
+  linear_combination hkey - (Cx * B ^ 2) * hC'
 
 /-- **PROVEN 2026-07-30 over `exists_diffCharScalar_poly`**: the pullback ratio
 `φ*ω'/ω` is a constant, in the point-level form `exists_isDiffChar` consumes.
