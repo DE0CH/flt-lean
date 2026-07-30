@@ -3491,7 +3491,55 @@ char-`0` cluster, and now the finite-base cluster
 (`card_torsion_span_singleton_of_field`, and over it
 `card_torsion_of_isMaximal_finiteBase`) — is proven over THIS
 statement.  The honest inputs are all OUTSIDE this file: the theorem of
-the cube, singular/étale homology, or the rational Tate module. -/
+the cube, singular/étale homology, or the rational Tate module.
+
+**FAITHFULNESS RE-AUDIT, 2026-07-31 — TRUE AS STATED, in every
+characteristic.**  Dropping `[CharZero K]` is safe and the reason is not
+the one a reader might supply: it is NOT that "the degree is a
+polynomial identity".  For `ℓ' ≠ ringChar K`, `T_{ℓ'}A` is free of rank
+`2` over `𝓞_D ⊗ ℤ_{ℓ'}`, and Mumford *AV* §19 Thm 4 gives
+`deg α = det_{ℤ_{ℓ'}}(α ∣ T_{ℓ'}A)` as an equality **in `ℤ_{ℓ'}`**.
+`deg α` is a non-negative INTEGER, and an integer is determined by its
+image in `ℤ_{ℓ'}`, so one prime `ℓ' ≠ char` pins it exactly — including
+the `char`-part of the degree, which is where `[a]` is inseparable and
+where a naive count fails.  That is the whole content of "the DEGREE
+identity itself survives" in the paragraph above, spelled out.
+
+**FAITHFULNESS OF `m` IS AUTOMATIC — do not add an injectivity
+hypothesis.**  `ker (𝓞_D → End A)` is an ideal of `𝓞_D`; a nonzero one
+has FINITE quotient, so the image would be a finite subring containing
+`1` inside `End A`, which is torsion-free once `dim A > 0`.  Hence
+`ker = 0`.  Note where this uses `hdim`: at `dim A = 0` one has
+`End A = 0`, `1 = 0`, and every action is trivial — which is exactly the
+degenerate `fK = 𝟙` witness recorded above, seen from the other side.
+
+**THIRD AXIS SEARCHED AND CLOSED (2026-07-31) — NORM-COMPANION
+MULTIPLICATIVITY.  Do not re-take it.**  For `a ≠ 0` put
+`b := N_{D/ℚ}(a)/a`.  This lies in `D` and is an algebraic integer, so
+`b ∈ 𝓞_D`, and `m` being a ring action gives `[a] ≫ [b] = [N(a)]`,
+whence `deg[a] · deg[b] = deg[N(a)] = N(a)^{2g}` from the classical
+`deg[n] = n^{2g}`.  This is CONSISTENT with the claim — `N(b) =
+N(a)^{g-1}`, so `N(a)² · N(a)^{2(g-1)} = N(a)^{2g}` — and therefore
+proves nothing: it pins the PRODUCT and leaves each factor free.  The
+counterexample already recorded for the `ℤ`-module axis (the module
+`𝓞_{J₁} ⊕ 𝓞_{J₂}³` at a split prime, with local ranks `(1,3)` instead of
+`(2,2)`) satisfies every one of these multiplicativity identities.  So
+"`deg[n] = n^{2g}` plus multiplicativity" is insufficient for the same
+reason the first axis is, and it is not a cheaper packaging of it.
+
+**MECHANICAL ABSENCE, measured at this pin 2026-07-31.**  Even that
+insufficient axis is not available off the shelf: mathlib's
+`AlgebraicGeometry/Morphisms/FlatRank.lean` has **no composition law for
+`Scheme.Hom.finrank`**.  The complete public API there is
+`finrank_SpecMap_eq_finrank`, `finrank_SpecMap_algebraMap`,
+`finrank_comp_left_of_isIso`, `finrank_pullback_snd`,
+`finrank_pullback_fst`, `finrank_of_isPullback`, `finrank_eq_one_of_isIso`,
+`isLocallyConstant_finrank`, `one_le_finrank_iff_surjective`,
+`isIso_iff_finrank_eq` — `finrank (f ≫ g) = finrank f * finrank g` is
+not among them and would have to be proven first.  Relatedly,
+`AlgebraicGeometry/Group/Abelian.lean` exists at this pin but contains
+only `isCommMonObj_of_isProper_of_geometricallyIntegral`: there is no
+degree, no isogeny, and no dual abelian variety anywhere in mathlib. -/
 theorem finrank_mulByElt_of_field {X : Scheme.{u}} {K : Type u} [Field K]
     {fK : X ⟶ Spec (CommRingCat.of K)} {abK : AbelianSchemeStruct fK}
     {D : Type u} [Field D] [NumberField D]
@@ -16358,7 +16406,50 @@ prover has to build:
 `hσ` is used only in step 3, to say WHICH element of `Γ_{κ(w)}` the
 Frobenius reduces to; it is not an assumption, since
 `exists_absoluteGaloisGroup_pow_natCard_of_finite` produces such a `σ`
-and it is unique. -/
+and it is unique.
+
+**FAITHFULNESS RE-AUDIT, 2026-07-31 — TRUE AS STATED.**  The fibre `A_x`
+is an abelian variety over the number field `F` of dimension
+`[D : ℚ]` (`hdim`), and an abelian variety over a number field has good
+reduction outside a finite set of places; the existential `bad` is what
+carries that, and every clause under `∀ w ∉ bad` is a property of the
+good-reduction model.  Note in particular that `∀ σ, (σ is the
+`N w`-power map) → …` is a HARMLESS shape rather than a vacuous one:
+`exists_absoluteGaloisGroup_pow_natCard_of_finite` produces such a `σ`,
+so the conclusion is really being asserted, not dodged.  No hypothesis
+is idle: drop `hdim` and the special fibre's relative dimension in the
+conclusion is unobtainable; `[IsTotallyReal D]` is not used by the
+geometry and could be dropped, but every consumer holds it and removing
+it changes no proof burden, so leave it.
+
+**MEASURED AGAINST THE PIN, 2026-07-31 — a cost wall of THREE missing
+libraries, one per numbered step above.  A prover dispatched here with
+no new library will not close it.**
+
+* Step 1 (spread out `A_x` to an abelian scheme over `Spec 𝒪_F[1/N]`).
+  `Mathlib/AlgebraicGeometry/SpreadingOut.lean` sounds like the answer
+  and is NOT: its subject is spreading out a MORPHISM out of a
+  germ-injective scheme (`spread_out_of_isGermInjective`,
+  `exists_lift_of_germInjective`), not descending a finite-type scheme
+  and its group law to a finitely generated subring.  The formalism for
+  that is `AlgebraicGeometry/AffineTransitionLimit.lean` (EGA IV §8,
+  stacks 01YT), which supplies inverse limits with affine transition
+  maps and nothing about abelian schemes.
+* Step 2 (properness/smoothness of the model at almost every `w`, then
+  base change to the valuation ring of `F̄` at `w̄`).  There is NO Néron
+  model in mathlib — `grep -i neron Mathlib/` is empty — and no abelian
+  scheme over a Dedekind base.  `AlgebraicGeometry/ValuativeCriterion.lean`
+  is the one existing piece, and it is only the criterion itself.
+* Step 3 (the decomposition group preserves `O` and induces `Frob_w`).
+  This is the cheapest of the three and is the only one that could
+  plausibly be cut off as a separate task ahead of the others, since it
+  is Galois theory of `F̄/F` and residue fields rather than geometry.
+
+So the useful decomposition of this leaf is BY STEP, into three
+separately-ownable modules, and the first two are each library-building
+tasks rather than proof tasks.  Recorded so the next reader does not
+re-derive the absence table; every entry above was re-checked against
+the pin on the date given. -/
 theorem exists_finset_abelianReductionDatum_of_mult
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
@@ -17374,7 +17465,74 @@ maps.  Were `u` a `p`-th power in a stalk `𝒪_{A', x}`, it would be a `p`-th p
 in the function field `k(A')`; but `A'` is geometrically integral, so `k(A')/k`
 is separable and `k` is algebraically closed in it, whence `u^{1/p} ∉ k(A')`.
 So the leaf is FALSE over every imperfect base — and TRUE over `𝔽̄_p`, which is
-infinite.  Imperfection, not infinitude, is the obstruction. -/
+infinite.  Imperfection, not infinitude, is the obstruction.
+
+**FAITHFULNESS RE-AUDIT, 2026-07-31 — TRUE AS STATED, and `hchar` really does
+force the characteristic.**  Worth spelling out because `hchar` quantifies over
+ALL opens including `⊥`, where `Γ(A', ⊥) = 0` and the clause is vacuous:
+`ab'.zero` is a section of `f'`, so `A'` is NONEMPTY, so `Γ(A', ⊤) ≠ 0`, and
+`k ↪ Γ(A', ⊤)` because `k` is a field — hence `(p : k) = 0` and `ringChar k = p`.
+With `hfin` that makes `k` finite of characteristic `p`, hence perfect, which is
+what the paragraph above identifies as the exact hypothesis needed.
+
+**FOUR ROUTES MEASURED AGAINST THE PIN, 2026-07-31 — ALL FOUR BLOCKED, and each
+by a NAMED missing theory rather than by proof difficulty.  This is a cost wall,
+not a hard exercise; a prover dispatched at this leaf with no new library will
+not close it.**
+
+1. *Geometric / Verschiebung.*  From `∃ V, absFrobScheme A' p 1 hp hchar ≫ V =
+   ab'.mulByNat p` the leaf is three lines: `Scheme.stalkMap_comp` splits
+   `[p].stalkMap x` as `V.stalkMap (Fr.base x) ≫ Fr.stalkMap x`, `Fr.base = id`,
+   and `Fr.stalkMap x` is the `p`-power map, so `τ := V.stalkMap _ y` works.
+   But that geometric statement is the EXACT converse of
+   `exists_absFrobScheme_comp_eq_of_forall_exists_pow` above, so adopting it as
+   the leaf reverses a deliberate cut and buys nothing.  Building `V` honestly
+   needs `ker F ⊆ ker [p] ⟹ [p]` factors through `F`, i.e. fppf descent along a
+   finite flat group-scheme quotient.  Mathlib has no group-scheme kernels or
+   quotients: `AlgebraicGeometry/Group/` is two files, `Abelian.lean` (only
+   `isCommMonObj_of_isProper_of_geometricallyIntegral`) and `Smooth.lean`.
+   `Verschiebung` occurs in mathlib ONLY under `RingTheory/WittVector/`, which
+   is the Witt-vector shift and unrelated.
+
+2. *Kähler differentials at the scheme level.*  Still absent, re-verified today:
+   `Mathlib/AlgebraicGeometry/` contains no `Cotangent`/`Kaehler`/`Omega`
+   module; the only files that even mention them are `Morphisms/Etale.lean` and
+   `Morphisms/FormallyUnramified.lean`.  Unchanged since 2026-07-28 and
+   2026-07-30.
+
+3. *The FUNCTION-FIELD reduction (new here, and the cheapest packaging if its
+   prerequisite ever lands).*  `A'` is integral, so every stalk injects into
+   `k(A')`; and a `p`-th root in `k(A')` of an element `b ∈ 𝒪_{A',x}` is a root
+   of `T^p - b`, hence INTEGRAL over `𝒪_{A',x}`, hence lies in it as soon as
+   that ring is integrally closed.  So the whole "for every point `x`" clause
+   would collapse to ONE statement about ONE field.  BLOCKED at both ends:
+   (a) mathlib has no normality for schemes (`AlgebraicGeometry/` declares no
+   `IsNormal`) and nothing connecting `IsRegularLocalRing` — whose entire
+   development is `RingTheory/RegularLocalRing/Defs.lean` and `Polynomial.lean`
+   — to `IsIntegrallyClosed` or `UniqueFactorizationMonoid`; (b) the field-level
+   criterion `{x ∈ K : dx = 0} = K^p` is absent too.  `FieldTheory/`
+   `SeparablyGenerated.lean` reaches
+   `exists_isTranscendenceBasis_and_isSeparable_of_perfectField` — a separating
+   transcendence basis over a perfect base, which is the right FIRST half — and
+   stops; there is no `p`-basis anywhere and no `RingTheory/Kaehler/Field.lean`
+   (`RingTheory/Kaehler/` is `Basic`, `JacobiZariski`, `Polynomial`,
+   `TensorProduct`).
+
+4. *Formal groups.*  At the origin the argument is short and classical:
+   `[p]` acts as `p = 0` on the invariant differential, so `[p]'(T) = 0`, so
+   `[p](T) ∈ k[[T^p]]`, and over a perfect `k` every such series IS a `p`-th
+   power.  BLOCKED twice.  Mathlib's `RingTheory/FormalGroup/Basic.lean` is
+   ONE-DIMENSIONAL (`𝔾ₐ`, `𝔾ₘ`, `map`, associativity/commutativity) with no
+   invariant differential, no `[n]`, and no height — while an abelian variety
+   needs dimension `g`.  And the argument is only at the ORIGIN: a general
+   point `x` would have to be translated there, and a translation needs a point
+   that is `k`-rational, which a scheme point of `A'` need not be.
+
+The honest next step is therefore NOT another prover on this leaf.  It is one
+of the four libraries above, built as its own module and dispatched as its own
+task; route 3(a) (`IsRegularLocalRing → IsIntegrallyClosed`, then stalks of a
+smooth `k`-scheme) is the smallest of them and is the one that also pays off
+elsewhere in this file. -/
 theorem exists_pow_eq_stalkMap_mulByNat_prime
     {k : Type u} [Field k] (hfin : Finite k) (p : ℕ) (hp : p.Prime)
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}

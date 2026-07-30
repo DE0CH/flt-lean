@@ -786,6 +786,26 @@ independently by at least seven agents and repaired on branches by six of them,
 every one of which was working from a base that predated the fix landing. That
 is not seven confirmations; it is one bug and seven stale checkouts.
 
+**THE LINE NUMBERS IN YOUR OWN TASK PROMPT ARE A FREE STALENESS DETECTOR — check
+them first, before anything else** (2026-07-31, measured). The loop generates a
+task prompt's `Fermat/…:NNNN` references by scanning **`main` at the moment the
+task is written**; the worktree hook fast-forwards the worktree at the moment the
+task is *dispatched*. Those are different times, and under the loop they are
+routinely hours apart: `flt-lean-318` was handed three targets at lines
+3495/16362/17378 and opened a `TateModule.lean` whose copies of them were at
+3303/14089/15105 — the checkout was `1411711d` (2026-07-30 11:54) against a `main`
+of `d451d20b` (2026-07-31 00:25), **380 commits and +3057 lines in that one file**.
+
+So the check costs one `grep -n` and settles it: if a target's line number in the
+prompt does not match the worktree, the worktree is BEHIND `main` and everything
+you are about to read is stale — merge before you read, not after your first
+confusing result. The failure it prevents is the expensive one: reading a
+docstring's absence table, route history or "already refuted" list from a version
+that has since been rewritten, and then proving or re-refuting against it.
+
+Do not "fix" the discrepancy by trusting the prompt's numbers and seeking around
+them. A prompt is a snapshot of a file you do not have.
+
 **There is NO Lean MCP of any kind (Deyao, 2026-07-25).** Both the
 `lean-lsp` MCP and the per-worktree `report-flt-lean-N` servers are gone;
 `.mcp.json` holds exactly one entry, `annas-mcp`, which is for downloading
