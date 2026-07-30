@@ -2961,7 +2961,41 @@ parent.
 and `hdim` as a separate step and then running the `Γ₀` route** — that is
 the intended decomposition if the count above is wanted as a named lemma.
 It is deliberately NOT cut that way here, because doing so would make this
-node 1 → 2 open leaves rather than 1 → 1. -/
+node 1 → 2 open leaves rather than 1 → 1.
+
+## WHAT IS ALREADY IN CONE, and exactly where the remaining gap sits
+
+Recorded 2026-07-30 while making the cut, because the `Γ₀` leaf's own route
+list predates it and a prover reading only that list will re-derive this.
+The route's step 3 — *`E[n] ⟶ Z` is formally unramified* — is **one base
+change away from a PROVEN theorem**, not from nothing:
+
+* `formallyUnramified_mulByNat` — no `AbelianSchemeStruct` namespace, it is
+  applied as `formallyUnramified_mulByNat K ab n hn`
+  (`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`, PROVEN 2026-07-27):
+  `[n] : A ⟶ A` is `FormallyUnramified` whenever `(n : K) ≠ 0`.
+* `E[n] := pullback (ab.mulByNat n) ab.zeroSection` has `pullback.snd` the
+  base change of `[n]` along `ab.zeroSection : Z ⟶ E`, and
+  `FormallyUnramified` is stable under base change, so `E[n] ⟶ Z` inherits
+  it directly.
+
+**The gap is that `formallyUnramified_mulByNat` is stated over a FIELD
+base** — `fK : X ⟶ Spec (CommRingCat.of K)`, `[Field K]` — while `Z` here
+is an arbitrary scheme.  Its field hypothesis enters in exactly two places
+and both look like `IsUnit`, not like `Field`:
+
+1. `eq_zero_of_nsmul_eq_zero_of_squareZero` inverts `(n : K)` and uses
+   nothing else about `K` (`hz`, the three-line `calc` at the end);
+2. `nonempty_module_infKernel_of_squareZero` — itself the open leaf under
+   both — produces a `Module K` structure on the infinitesimal kernel.
+
+So the natural generalisation is `[CommRing R]` with `IsUnit (n : R)` in
+place of `[Field K]` with `(n : K) ≠ 0`, `FormallyUnramified` being
+affine-local on the base.  **This is a route sketch and has NOT been
+compiler-checked**; it is written down because it names the two exact
+declarations to look at, which is a cheap check and a large saving if it
+holds.  If it does hold, closing this leaf reduces to the count above, and
+`X0.lean`'s `isOpenImmersion_equalizer_of_nsmul_eq_zero` closes with it. -/
 theorem isOpenImmersion_equalizer_of_abelianFullLevelStructure (n : ℕ) (_hn : 3 ≤ n)
     {Z E : Scheme.{0}} {f : E ⟶ Z} (abs : AbelianSchemeStruct f)
     (_hdim : SmoothOfRelativeDimension 1 f) (_L : AbelianFullLevelStructure n abs)
