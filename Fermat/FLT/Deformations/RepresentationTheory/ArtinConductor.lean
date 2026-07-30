@@ -4408,12 +4408,15 @@ construction `nonempty_ramificationFiltration` below consumes them.
 new rather than lifted: see its own docstring and
 `GaloisRep.pos_of_card_filter_eq`.
 
-**STATUS 2026-07-30 — two of the five are now THEOREMS, not leaves**, so do not
-dispatch at them: `iInf_gp_eq_lvl` (`hterm`) over the `KrullSeparation` section
-above, and `iInf_lvl_eq_bot` (`hsep`) over `exists_lowerRamificationData_lvl_eq`.
-The three still open are `localInertiaGroup_le_gp_zero` (`hin`),
-`wildInertiaGroup_le_gp_one`, and `gp_le_upperRamificationFiltration_sup_lvl`
-(`hherb`, which is Herbrand's theorem itself and is the deep one). -/
+**STATUS 2026-07-30 (second pass) — four of the five are now THEOREMS, not
+leaves**, so do not dispatch at them: `iInf_gp_eq_lvl` (`hterm`) over the
+`KrullSeparation` section above, `iInf_lvl_eq_bot` (`hsep`) over
+`exists_lowerRamificationData_lvl_eq`, `localInertiaGroup_le_gp_zero` (`hin`),
+and `wildInertiaGroup_le_gp_one` — the last through the pair
+`dvd_smul_unif_sub_of_mem_wildInertiaGroup` (the tame character is trivial on
+`P_v`) and `mem_gp_one_of_dvd_smul_unif_sub` (Serre IV §1 Lemma 1), both proven.
+The ONE still open is `gp_le_upperRamificationFiltration_sup_lvl` (`hherb`,
+which is Herbrand's theorem itself and is the deep one). -/
 
 /-- **THE LOWER FILTRATION TERMINATES AT ITS LEVEL**, `⋂_m G_m = N`. An
 element moving every `x ∈ 𝒪_L` by arbitrarily high powers of the uniformizer
@@ -4670,58 +4673,318 @@ theorem LowerRamificationData.dvd_smul_unif_sub_of_mem_wildInertiaGroup
   obtain ⟨c, hc⟩ := D.unif_spec b hbfix hbnu
   exact ⟨c, by rw [hb, hc]; ring⟩
 
+section TeichmullerTorsion
+
+variable (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
+
+local notation "Kᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletion K v
+local notation "𝒪ᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v
+local notation "Kᵥᵃˡᵍ" => AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+local notation "Oᵥ" => IntegralClosure
+  (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+  (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+
+/-! ### Every unit of `Oᵥ` is a root of unity modulo `𝔪`
+
+(Built 2026-07-30 as the arithmetic input of
+`LowerRamificationData.mem_gp_one_of_dvd_smul_unif_sub`.)
+
+This is the ONE place in the section where the residue field is used as a
+FIELD rather than through the "non-unit ⇒ divisible by `unif`" axiom
+`unif_spec`, and it is unavoidable: `mem_gp_one_of_dvd_smul_unif_sub` is
+exactly the injectivity of the tame character on `G₀/G₁`, and the derivation
+`δ_x(σ) = (σ • x − x)/unif mod 𝔪` kills every non-unit for free while on the
+units it is a derivation of the residue extension `k_L/k_v`. What makes it
+vanish there is that `k_L` is a FINITE field — nothing weaker works, and the
+statement is false for an imperfect residue field.
+
+The route is stated so that no residue-field *theory* is needed downstream:
+the conclusion is a divisibility in `Oᵥ`.
+-/
+
+set_option synthInstance.maxHeartbeats 4000000 in
+set_option maxHeartbeats 1000000 in
+/-- **A UNIT OF `Oᵥ` IS A ROOT OF UNITY MODULO `𝔪`** (PROVEN 2026-07-30), with
+no control yet on the order.
+
+`x` is integral over `𝒪ᵥ`, so its residue `y` is integral over the residue
+field `k_v` of `𝒪ᵥ`, which is FINITE
+(`Finite (IsLocalRing.ResidueField 𝒪ᵥ)`, an instance since
+`AbsoluteGaloisGroup.lean`). Hence `k_v[y]` is a finite `k_v`-module, hence a
+finite SET, so the powers of `y` repeat: `y ^ i = y ^ j` for some `i < j`.
+`y ≠ 0` because `x` is a unit and the residue ring is a field, so `y ^ i` may
+be cancelled and `y ^ (j − i) = 1`. -/
+theorem exists_ne_zero_pow_sub_one_mem_maximalIdeal {x : Oᵥ} (hx : IsUnit x) :
+    ∃ n : ℕ, n ≠ 0 ∧ x ^ n - 1 ∈ IsLocalRing.maximalIdeal Oᵥ := by
+  classical
+  set y : IsLocalRing.ResidueField Oᵥ := IsLocalRing.residue Oᵥ x with hy
+  have hy0 : y ≠ 0 := by
+    rw [hy, Ne, IsLocalRing.residue_eq_zero_iff]
+    exact fun h => (IsLocalRing.mem_maximalIdeal _).mp h hx
+  -- `y` is integral over the (FINITE) residue field of `𝒪ᵥ`.
+  have hxint : IsIntegral 𝒪ᵥ x := Algebra.IsIntegral.isIntegral x
+  have hyint0 : IsIntegral 𝒪ᵥ y := by
+    have := hxint.map (IsScalarTower.toAlgHom 𝒪ᵥ Oᵥ (IsLocalRing.ResidueField Oᵥ))
+    simpa [hy, IsLocalRing.ResidueField.algebraMap_eq] using this
+  have hyint : IsIntegral (IsLocalRing.ResidueField 𝒪ᵥ) y := hyint0.tower_top
+  haveI : Module.Finite (IsLocalRing.ResidueField 𝒪ᵥ)
+      (Algebra.adjoin (IsLocalRing.ResidueField 𝒪ᵥ)
+        ({y} : Set (IsLocalRing.ResidueField Oᵥ))) :=
+    Algebra.finite_adjoin_simple_of_isIntegral hyint
+  haveI : Finite (Algebra.adjoin (IsLocalRing.ResidueField 𝒪ᵥ)
+      ({y} : Set (IsLocalRing.ResidueField Oᵥ))) :=
+    Module.finite_of_finite (IsLocalRing.ResidueField 𝒪ᵥ)
+  -- Pigeonhole on the powers of `y`.
+  have hmem : ∀ m : ℕ, y ^ m ∈ Algebra.adjoin (IsLocalRing.ResidueField 𝒪ᵥ)
+      ({y} : Set (IsLocalRing.ResidueField Oᵥ)) := fun m =>
+    pow_mem (Algebra.subset_adjoin (Set.mem_singleton _)) m
+  obtain ⟨i, j, hij, heq⟩ := Finite.exists_ne_map_eq_of_infinite
+    (fun m : ℕ => (⟨y ^ m, hmem m⟩ :
+      Algebra.adjoin (IsLocalRing.ResidueField 𝒪ᵥ)
+        ({y} : Set (IsLocalRing.ResidueField Oᵥ))))
+  have heq' : y ^ i = y ^ j := congrArg Subtype.val heq
+  have key : ∀ a b : ℕ, a < b → y ^ a = y ^ b →
+      ∃ n : ℕ, n ≠ 0 ∧ x ^ n - 1 ∈ IsLocalRing.maximalIdeal Oᵥ := by
+    intro a b hab hpow
+    have hprod : y ^ a * (y ^ (b - a) - 1) = 0 := by
+      rw [mul_sub, mul_one, ← pow_add, show a + (b - a) = b by omega, ← hpow, sub_self]
+    have hya : y ^ a ≠ 0 := pow_ne_zero _ hy0
+    have hone : y ^ (b - a) = 1 := by
+      have := (mul_eq_zero.mp hprod).resolve_left hya
+      linear_combination this
+    refine ⟨b - a, by omega, ?_⟩
+    rw [← IsLocalRing.residue_eq_zero_iff]
+    have hmap : IsLocalRing.residue Oᵥ (x ^ (b - a) - 1) = y ^ (b - a) - 1 := by
+      rw [hy]; push_cast [map_sub, map_pow, map_one]; ring
+    rw [hmap, hone, sub_self]
+  rcases lt_or_gt_of_ne hij with h | h
+  · exact key i j h heq'
+  · exact key j i h heq'.symm
+
+/-- **PEELING THE RESIDUE CHARACTERISTIC OFF THE EXPONENT** (PROVEN
+2026-07-30). Strong induction on `n`: if `n` already lies outside `v` we are
+done; otherwise `exists_prime_factor_mem_asIdeal` produces a prime `q ∣ n`
+lying in `v`, and `sub_one_mem_maximalIdeal_of_pow_prime_sub_one_mem`
+(freshman's dream) removes it, leaving the strictly smaller exponent `n / q`.
+This is where the `p`-part of the order of the residue is discarded, without
+ever naming `p`. -/
+theorem exists_notMem_asIdeal_pow_sub_one_mem_maximalIdeal (x : Oᵥ) :
+    ∀ n : ℕ, n ≠ 0 → x ^ n - 1 ∈ IsLocalRing.maximalIdeal Oᵥ →
+      ∃ m : ℕ, (m : 𝓞 K) ∉ v.asIdeal ∧ x ^ m - 1 ∈ IsLocalRing.maximalIdeal Oᵥ := by
+  intro n
+  induction n using Nat.strong_induction_on with
+  | _ n ih =>
+    intro hn0 hn
+    by_cases hv : (n : 𝓞 K) ∈ v.asIdeal
+    · obtain ⟨q, hqp, ⟨m, hm⟩, hqv⟩ := exists_prime_factor_mem_asIdeal v n hn0 hv
+      have hm0 : m ≠ 0 := by
+        rintro rfl
+        rw [Nat.mul_zero] at hm
+        exact hn0 hm
+      have hmlt : m < n := by
+        rw [hm]
+        exact (Nat.lt_mul_iff_one_lt_left (Nat.pos_of_ne_zero hm0)).mpr hqp.one_lt
+      have hstep : x ^ m - 1 ∈ IsLocalRing.maximalIdeal Oᵥ := by
+        refine sub_one_mem_maximalIdeal_of_pow_prime_sub_one_mem v hqp hqv ?_
+        rw [← pow_mul, show m * q = n by rw [hm]; ring]
+        exact hn
+      exact ih m hmlt hm0 hstep
+    · exact ⟨n, hv, hn⟩
+
+/-- **EVERY UNIT OF `Oᵥ` IS A ROOT OF UNITY OF ORDER PRIME TO THE RESIDUE
+CHARACTERISTIC, MODULO `𝔪`** (PROVEN 2026-07-30) — the two lemmas above
+composed. This is the arithmetic input of
+`LowerRamificationData.mem_gp_one_of_dvd_smul_unif_sub`, and the exponent
+being prime to `v` is what makes the geometric sum `∑_{i<n} (σx)ⁱ x^{n−1−i}`
+a UNIT (it is `n · x^{n−1}` modulo `𝔪`). -/
+theorem exists_pow_sub_one_mem_maximalIdeal_of_isUnit {x : Oᵥ} (hx : IsUnit x) :
+    ∃ n : ℕ, (n : 𝓞 K) ∉ v.asIdeal ∧ x ^ n - 1 ∈ IsLocalRing.maximalIdeal Oᵥ := by
+  obtain ⟨n, hn0, hn⟩ := exists_ne_zero_pow_sub_one_mem_maximalIdeal v hx
+  exact exists_notMem_asIdeal_pow_sub_one_mem_maximalIdeal v x n hn0 hn
+
+end TeichmullerTorsion
+
 /-- **SERRE, *CORPS LOCAUX* IV §1, LEMMA 1 — THE REMAINING INPUT TO
-`wildInertiaGroup_le_gp_one`** (SORRY LEAF, cut 2026-07-30): for an inertia
-element, membership in `G_1` is decided by its effect on the uniformizer
-ALONE.
+`wildInertiaGroup_le_gp_one`** (PROVEN 2026-07-30; cut as a sorry leaf earlier
+the same day): for an inertia element, membership in `G_1` is decided by its
+effect on the uniformizer ALONE.
 
 `mem_gp` quantifies over EVERY level-fixed `x`, so `unif ² ∣ σ • unif − unif`
-is on its face weaker than `σ ∈ D.gp 1`. Serre's lemma is that it is not:
-writing `𝒪_0` for the ring of integers of the maximal UNRAMIFIED
-subextension `L_0 ⊆ L`,
+is on its face weaker than `σ ∈ D.gp 1`. Serre's lemma is that it is not.
 
-* `𝒪_L = 𝒪_0[unif]` — `L/L_0` is totally ramified, so its ring of integers is
-  monogenic over `𝒪_0` on any uniformizer (Serre I §6);
-* `σ ∈ I_v` fixes `𝒪_0` POINTWISE — `L_0/Kᵥ` is unramified, so an
-  automorphism trivial on the residue field is trivial on `𝒪_0` by Hensel.
+THE PROOF, and it is a SPLIT ON `IsUnit x`, not the monogenicity route the
+first cut prescribed (see the correction below). Write
+`δ(x) := σ • x − x`; it is additive with `δ(xy) = (σ • x) δ(y) + δ(x) y`.
 
-Given both, `x = ∑_j a_j unif ^ j` with `a_j ∈ 𝒪_0` gives
-`σ • x − x = ∑_j a_j ((σ • unif) ^ j − unif ^ j)`, and every summand is
-divisible by `σ • unif − unif`, hence by `unif ²`.
+* NON-UNITS are free. `unif_spec` writes a level-fixed non-unit as
+  `x = unif · y` with `y` again level-fixed (cancel `unif ≠ 0` in
+  `τ • x = x`), so
+  `δ(x) = δ(unif) · (σ • y) + unif · δ(y)`; the first summand is divisible by
+  `unif ²` by hypothesis and the second because `σ ∈ G_0`
+  (`localInertiaGroup_le_gp_zero`) gives `unif ∣ δ(y)`. No residue theory at
+  all.
+* UNITS need exactly one arithmetic input, and it is the finiteness of the
+  residue field: `exists_pow_sub_one_mem_maximalIdeal_of_isUnit` produces `n`
+  PRIME TO `v` with `x ⁿ ≡ 1 mod 𝔪`. Then `x ⁿ − 1` is a level-fixed
+  non-unit, so the bullet above applies to it and `unif ² ∣ δ(x ⁿ)`. The
+  geometric factorisation `δ(x ⁿ) = S · δ(x)` with
+  `S = ∑_{i<n} (σ • x) ⁱ x ^ {n−1−i}` finishes, because `S ≡ n · x ^ {n−1}`
+  modulo `𝔪` — every term differs from `x ^ {n−1}` by a multiple of
+  `σ • x − x ∈ 𝔪` (inertia) — and that is a UNIT
+  (`isUnit_natCast_integralClosure_of_notMem_asIdeal`, which is the only place
+  `n` prime to `v` is used).
 
-WHY THIS IS THE SHARP CUT, AND WHY IT CANNOT BE AVOIDED (analysis 2026-07-30).
-Everything else in `P_v ≤ G_1` is now proven above. What is left is exactly the
-injectivity of the tame character on `G_0/G_1`, and that is not derivable from
-the fields of `LowerRamificationData`. Concretely, put
-`δ_x(σ) := (σ • x − x)/unif mod 𝔪`. Then
-
-* `δ_x(στ) = χ(σ) δ_x(τ) + δ_x(σ)` — a `χ`-cocycle, and `δ_x` vanishes on
-  `G_1` by definition, so `δ` factors through `G_0/G_1`;
-* `δ_·(σ)` is a DERIVATION in `x`, so it is determined by its value on a ring
-  generator of `𝒪_L` over the subring `σ` fixes — which is the monogenicity
-  above and nothing weaker.
-
-The prime-to-`p` divisibility of `P_v` (`exists_pow_eq_of_mem_wildInertiaGroup`)
-cannot substitute: with `σ = θ ^ n` and `χ(θ) = 1` — which is what
-`dvd_smul_unif_sub_of_mem_wildInertiaGroup` establishes — the telescoping sum
-gives `δ_x(σ) = n · δ_x(θ)` with `n` a unit mod `p`, so `δ_x(σ) = 0` iff
-`δ_x(θ) = 0`, and the descent never terminates. Likewise `σ ^ p ∈ G_1` yields
-`0 = (χ(σ) − 1) ^ {p−1} δ_x(σ)`, which is vacuous once `χ(σ) = 1`. Both were
-tried before this leaf was cut.
+**CORRECTION TO THE CUT ANALYSIS OF 2026-07-30.** The paragraph that stood
+here said this leaf "cannot be avoided" without the monogenicity
+`𝒪_L = 𝒪_0[unif]` plus "`σ ∈ I_v` fixes `𝒪_0` pointwise", on the ground that
+`δ_·(σ)` is a derivation and so is determined on a ring generator. The
+derivation observation is right and the conclusion drawn from it was wrong:
+one does not need a GENERATOR, only that the induced derivation of the
+residue extension vanishes — and it does, because the residue field of the
+finite level is a FINITE field, which is what
+`exists_pow_sub_one_mem_maximalIdeal_of_isUnit` says in the elementary form
+"every unit is a root of unity of order prime to `p` modulo `𝔪`". Nothing
+about Hensel, unramified subextensions or monogenicity is needed. What the old
+analysis got right is the negative half: prime-to-`p` divisibility of `P_v`
+alone genuinely cannot substitute, and neither can `σ ^ p ∈ G_1` — both
+descents are vacuous once `χ(σ) = 1`. Finiteness of the residue field is the
+irreplaceable input, and the statement is false for an imperfect residue
+field.
 
 FAITHFULNESS. TRUE, and it is the classical lemma; the hypothesis `σ ∈ I_v` is
-NOT removable — it is what makes `σ` fix `𝒪_0`, and without it the statement
-fails already for an unramified `L/Kᵥ` with `σ` a Frobenius lift (there
-`unif ∈ 𝒪ᵥ` is fixed, so the hypothesis is vacuous, while `σ ∉ D.gp 1`).
-Stated only at `i = 1`, which is all `wildInertiaGroup_le_gp_one` consumes; the
-same proof gives every `i`, and a prover who builds the monogenicity should
-generalise it. -/
+NOT removable — it is what puts `σ • x − x ∈ 𝔪` for every `x`, which is what
+makes `S` a unit, and without it the statement fails already for an unramified
+`L/Kᵥ` with `σ` a Frobenius lift (there `unif ∈ 𝒪ᵥ` is fixed, so the
+hypothesis is vacuous, while `σ ∉ D.gp 1`). Stated only at `i = 1`, which is
+all `wildInertiaGroup_le_gp_one` consumes. -/
 theorem LowerRamificationData.mem_gp_one_of_dvd_smul_unif_sub
     {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)} (D : LowerRamificationData v)
     {σ : Field.absoluteGaloisGroup (v.adicCompletion K)}
     (hσ : σ ∈ localInertiaGroup v)
     (h : D.unif ^ 2 ∣ σ • D.unif - D.unif) :
-    σ ∈ D.gp 1 := sorry
+    σ ∈ D.gp 1 := by
+  classical
+  rw [D.mem_gp]
+  -- `σ ∈ G_0`: every level-fixed element is moved by a multiple of `unif`.
+  have hg0 : ∀ y : IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure (v.adicCompletion K)),
+      (∀ τ ∈ D.lvl, τ • y = y) → D.unif ∣ σ • y - y := by
+    intro y hy
+    simpa using (D.mem_gp 0 σ).mp (D.localInertiaGroup_le_gp_zero hσ) y hy
+  -- dividing a level-fixed element by `unif` keeps it level-fixed
+  have hdiv : ∀ y z : IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure (v.adicCompletion K)),
+      (∀ τ ∈ D.lvl, τ • y = y) → y = D.unif * z → (∀ τ ∈ D.lvl, τ • z = z) := by
+    intro y z hy hyz τ hτ
+    have h1 := hy τ hτ
+    rw [hyz, smul_mul', D.unif_fixed τ hτ] at h1
+    exact mul_left_cancel₀ D.unif_ne_zero h1
+  intro x hx
+  show D.unif ^ 2 ∣ σ • x - x
+  by_cases hu : IsUnit x
+  · -- THE UNIT CASE.  `x` is a root of unity mod `𝔪` of order `n` prime to `p`.
+    obtain ⟨n, hn, hxn⟩ := exists_pow_sub_one_mem_maximalIdeal_of_isUnit v hu
+    -- `x ^ n - 1` is level-fixed and a non-unit, hence `unif * c`
+    have hxnfix : ∀ τ ∈ D.lvl, τ • (x ^ n - 1) = x ^ n - 1 := by
+      intro τ hτ
+      rw [smul_sub, smul_one, smul_pow_integralClosure, hx τ hτ]
+    obtain ⟨c, hc⟩ := D.unif_spec _ hxnfix ((IsLocalRing.mem_maximalIdeal _).mp hxn)
+    have hcfix := hdiv _ _ hxnfix hc
+    -- `unif ^ 2` divides `σ • (x ^ n) - x ^ n`
+    have hxnpow : σ • x ^ n - x ^ n = (σ • D.unif - D.unif) * (σ • c) +
+        D.unif * (σ • c - c) := by
+      have hxeq : x ^ n = 1 + D.unif * c := by linear_combination hc
+      rw [hxeq, smul_add, smul_one, smul_mul']
+      ring
+    have hkey : D.unif ^ 2 ∣ σ • x ^ n - x ^ n := by
+      rw [hxnpow]
+      refine dvd_add (h.mul_right _) ?_
+      obtain ⟨e, he⟩ := hg0 c hcfix
+      exact ⟨e, by rw [he]; ring⟩
+    -- the geometric factorisation `(σ • x) ^ n - x ^ n = S * (σ • x - x)`
+    set S : IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure (v.adicCompletion K)) :=
+      ∑ i ∈ Finset.range n, (σ • x) ^ i * x ^ (n - 1 - i) with hS
+    have hgeom : S * (σ • x - x) = σ • x ^ n - x ^ n := by
+      rw [hS, geom_sum₂_mul, smul_pow_integralClosure]
+    -- `S` is a unit, because it is `n * x ^ (n-1)` modulo `𝔪`
+    have hSm : S - (n : IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+        (AlgebraicClosure (v.adicCompletion K))) * x ^ (n - 1) ∈
+        IsLocalRing.maximalIdeal _ := by
+      have hcong : ∀ i ∈ Finset.range n,
+          (σ • x) ^ i * x ^ (n - 1 - i) - x ^ (n - 1)
+            = ((σ • x) ^ i - x ^ i) * x ^ (n - 1 - i) := by
+        intro i hi
+        have hin : i < n := Finset.mem_range.mp hi
+        have hxx : x ^ i * x ^ (n - 1 - i) = x ^ (n - 1) := by
+          rw [← pow_add]
+          congr 1
+          omega
+        rw [sub_mul, hxx]
+      -- `Finset.sum_sub_distrib` does NOT fire at the `IntegralClosure` type synonym
+      -- (its `AddCommGroup` instance is not found by keyed matching through the `def`
+      -- barrier), exactly as `sum_pow_sub_one_range` records; so split by induction.
+      have hgen : ∀ m : ℕ,
+          ∑ i ∈ Finset.range m, ((σ • x) ^ i * x ^ (n - 1 - i) - x ^ (n - 1))
+            = (∑ i ∈ Finset.range m, (σ • x) ^ i * x ^ (n - 1 - i))
+              - (m : IntegralClosure
+                  (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+                  (AlgebraicClosure (v.adicCompletion K))) * x ^ (n - 1) := by
+        intro m
+        induction m with
+        | zero => simp
+        | succ j ih =>
+            rw [Finset.sum_range_succ, Finset.sum_range_succ, ih]
+            push_cast
+            ring
+      have hsplit : S - (n : IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+          (AlgebraicClosure (v.adicCompletion K))) * x ^ (n - 1)
+          = ∑ i ∈ Finset.range n,
+              ((σ • x) ^ i * x ^ (n - 1 - i) - x ^ (n - 1)) := by
+        rw [hS]
+        exact (hgen n).symm
+      rw [hsplit, Finset.sum_congr rfl hcong]
+      refine Ideal.sum_mem _ fun i _ => Ideal.mul_mem_right _ _ ?_
+      obtain ⟨w, hw⟩ : σ • x - x ∣ (σ • x) ^ i - x ^ i := sub_dvd_pow_sub_pow _ _ i
+      rw [hw]
+      exact Ideal.mul_mem_right _ _ (hσ x)
+    have hSunit : IsUnit S := by
+      rw [← IsLocalRing.notMem_maximalIdeal]
+      intro hSmem
+      have hnx : (n : IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+          (AlgebraicClosure (v.adicCompletion K))) * x ^ (n - 1) ∈
+          IsLocalRing.maximalIdeal _ := by
+        have := Ideal.sub_mem _ hSmem hSm
+        simpa using this
+      exact (IsLocalRing.notMem_maximalIdeal.mpr
+        ((isUnit_natCast_integralClosure_of_notMem_asIdeal v hn).mul (hu.pow (n - 1)))) hnx
+    -- assemble: invert `S`
+    obtain ⟨Su, hSu⟩ := hSunit
+    have hinv : ((Su⁻¹ : _ˣ) : IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+        (AlgebraicClosure (v.adicCompletion K))) * S = 1 := by
+      rw [← hSu, ← Units.val_mul, inv_mul_cancel, Units.val_one]
+    have hrw : σ • x - x = ((Su⁻¹ : _ˣ) : IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+        (AlgebraicClosure (v.adicCompletion K))) * (σ • x ^ n - x ^ n) := by
+      rw [← hgeom, ← mul_assoc, hinv, one_mul]
+    rw [hrw]
+    exact hkey.mul_left _
+  · -- THE NON-UNIT CASE.  `x = unif * y`, and no residue theory is needed.
+    obtain ⟨y, hy⟩ := D.unif_spec x hx hu
+    have hyfix := hdiv _ _ hx hy
+    have hrw : σ • x - x = (σ • D.unif - D.unif) * (σ • y) + D.unif * (σ • y - y) := by
+      rw [hy, smul_mul']; ring
+    rw [hrw]
+    refine dvd_add (h.mul_right _) ?_
+    obtain ⟨e, he⟩ := hg0 y hyfix
+    exact ⟨e, by rw [he]; ring⟩
 
 /-- **THE WILD INERTIA LANDS IN `G_1` AT EVERY LEVEL**, `P_v ≤ G_1(L/Kᵥ)`.
 
@@ -4744,12 +5007,14 @@ a Herbrand value, through `RamificationFiltration.gp_herbrand`.
 Note what is NOT claimed: nothing here says `P_v = G_1`, which is false as
 soon as `L/Kᵥ` is not wildly ramified all the way up.
 
-DECOMPOSED AND HALF-PROVEN 2026-07-30. The proof below is
+DECOMPOSED AND PROVEN 2026-07-30 (decomposed and half-proven in the morning,
+completed the same day). The proof below is
 `mem_gp_one_of_dvd_smul_unif_sub ∘ dvd_smul_unif_sub_of_mem_wildInertiaGroup`:
-the tame character `χ(σ) = σ(unif)/unif mod 𝔪` is PROVEN trivial on `P_v`,
-and the one remaining input is `ker χ ∩ I_v ≤ G_1`, i.e. Serre IV §1 Lemma 1.
-See those two docstrings; in particular the second records why the split is
-forced rather than convenient. -/
+the tame character `χ(σ) = σ(unif)/unif mod 𝔪` is trivial on `P_v`, and
+`ker χ ∩ I_v ≤ G_1` is Serre IV §1 Lemma 1. See those two docstrings; the
+second records the actual route (a split on `IsUnit x`, with finiteness of
+the residue field as the single arithmetic input) and corrects the earlier
+claim that monogenicity of `𝒪_L` over the unramified subring was needed. -/
 theorem LowerRamificationData.wildInertiaGroup_le_gp_one
     {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)} (D : LowerRamificationData v) :
     wildInertiaGroup v ≤ D.gp 1 := fun _ hσ =>
@@ -4763,7 +5028,61 @@ arithmetic content of `RamificationFiltration.gp_herbrand`. Serre, *Corps
 Locaux* IV §3, Prop. 14.
 
 (SORRY LEAF, promoted 2026-07-29 from the anonymous `have hherb` inside
-`GaloisRep.exists_isSwanExponentAt`.) -/
+`GaloisRep.exists_isSwanExponentAt`.)
+
+**FAITHFULNESS AUDIT, 2026-07-30 — TRUE, and it is genuine Herbrand; do not
+look for a counterexample.** Unfolding the two sides at `m ≥ 1` (where
+`phi m > 0`, `phi_strictMono` and `phi_zero`) the claim is
+
+  `D.gp m ≤ (P_v ⊓ ⨅_{D'} D'.gp (ψ_{D'} (φ_D m))) ⊔ D.lvl`,
+
+and `upperRamificationFiltration` really is the classical `G^u`: `psiNat` is
+`⌈ψ⌉`, which is the correct index under the left-continuous convention
+`G_t = G_{⌈t⌉}`, so `D'.gp (ψ_{D'} u)` is `G^u(L'/Kᵥ)` pulled back to `Γ Kᵥ`
+and the `⨅` over levels is the inverse limit of Serre IV §3 "Passage à la
+limite". At `m = 0` it degenerates to `D.gp 0 ≤ I_v ⊔ D.lvl`, i.e. that the
+inertia SURJECTS onto `G₀(L/Kᵥ)`, which is also true and is not free either.
+No rescaling or admissibility slack is available here — both sides are
+constructed, not axiomatic.
+
+**WHY IT IS THE DEEP ONE, stated as the decomposition a prover will need.**
+The classical proof of `G_m(L/Kᵥ) = image of G^{φ_{L/Kᵥ}(m)}` is four steps,
+and only the first is available in this file today:
+
+1. *Cofinality of the levels.* Given `D` and any `D'`, `D.lvl ⊓ D'.lvl` is
+   open normal, so `exists_lowerRamificationData_lvl_eq` produces a common
+   refinement `D''` with `D''.lvl ≤ D.lvl ⊓ D'.lvl`. AVAILABLE.
+2. *Herbrand for one tower*: for `L ⊆ L''`, `G_m(L/Kᵥ)` is the image in
+   `Gal(L/Kᵥ)` of `G_{ψ_{L''/L}(m)}(L''/Kᵥ)`. Serre IV §3 Prop. 14. NOT
+   available, and not even STATABLE: it needs the ramification data of
+   `L''/L`, while `LowerRamificationData` is always relative to `Kᵥ` — the
+   structure has no relative `φ`, and building one is the real cost of this
+   leaf.
+3. *Transitivity of `φ`*, `φ_{L''/Kᵥ} = φ_{L/Kᵥ} ∘ φ_{L''/L}`, which is what
+   turns step 2's index `ψ_{L''/L}(m)` into `ψ_{D''}(φ_D m)`. Same missing
+   relative theory.
+4. *A compactness step.* Steps 1–3 give, for each single `D'`, a `λ ∈ D.lvl`
+   with `σλ ∈ D'.gp (ψ_{D'} (φ_D m))`; the conclusion needs ONE `λ` working
+   for every `D'` at once. That is the intersection of a downward-directed
+   family of nonempty CLOSED subsets of the compact `D.lvl`, so it needs the
+   `D'.gp` to be closed — see the note on
+   `exists_breaks_of_hasFiniteWildMonodromyAt` below, where the same
+   closedness is the missing ingredient for a different reason. They are
+   closed: `ContinuousSMulDiscrete` makes `{σ | σ • x = y}` open, so each
+   condition `unif ^ (i+1) ∣ σ • x − x` cuts out a CLOPEN set and `D'.gp i`
+   is an intersection of clopens. **This is compiler-checked, not asserted**
+   (2026-07-30, in a scratch module; the proof is `mem_gp` to rewrite the
+   carrier as `⋂ x ∈ {level-fixed}, {σ | unif ^ (i+1) ∣ σ • x − x}`, then
+   `isClosed_iInter`, with each factor closed because its complement contains
+   the open `{τ | τ • x = σ • x}` around each of its points — about ten lines).
+   It was NOT committed, because a theorem whose only consumers are still
+   sorried would be free-floating; write it as part of the proof that uses it.
+
+So a prover should expect to build a relative `LowerRamificationData` (or a
+`φ` for a tower of two levels) first. Step 2 is where the cost is; steps 1 and
+4 are cheap once the closedness lemma of step 4 is written, and it is worth
+writing on its own because the break-decomposition leaf below needs the very
+same fact. -/
 theorem LowerRamificationData.gp_le_upperRamificationFiltration_sup_lvl
     {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)} (D : LowerRamificationData v)
     (m : ℕ) :
@@ -4778,9 +5097,10 @@ Locaux* IV §3, "Passage à la limite"), and four of the six axioms —
 decreasing, `G⁰ = I_v`, `G^u ≤ P_v`, and left continuity — are PROVEN of it
 outright, the last from the minimality of `LowerRamificationData.psiNat`. The
 remaining arithmetic inputs are the named leaves immediately above — of which,
-as of 2026-07-30, only THREE are still open (`localInertiaGroup_le_gp_zero`,
-`wildInertiaGroup_le_gp_one`, `gp_le_upperRamificationFiltration_sup_lvl`);
-`iInf_gp_eq_lvl` and `iInf_lvl_eq_bot` are proven.
+as of 2026-07-30 (second pass), only ONE is still open,
+`gp_le_upperRamificationFiltration_sup_lvl`; `iInf_gp_eq_lvl`,
+`iInf_lvl_eq_bot`, `localInertiaGroup_le_gp_zero` and
+`wildInertiaGroup_le_gp_one` are proven.
 
 This is what discharges the `Nonempty` conjunct of `GaloisRep.IsSwanExponentAt`,
 and it is what keeps that leaf honest: nothing else prevents an over-strong
@@ -5240,7 +5560,9 @@ naming where:
 `exists_nat_forall_sum_breaks_eq` (`hsum`, PROVEN)
       → `sum_eq_of_card_filter_eq_of_dense` (pure combinatorics, PROVEN)
       → `pos_of_card_filter_eq` (PROVEN: the breaks are POSITIVE)
-          → `LowerRamificationData.wildInertiaGroup_le_gp_one` (LEAF)
+          → `LowerRamificationData.wildInertiaGroup_le_gp_one` (PROVEN
+            2026-07-30, over `dvd_smul_unif_sub_of_mem_wildInertiaGroup` and
+            `mem_gp_one_of_dvd_smul_unif_sub`)
       → `fixedSubmodule_gp_phi_eq` (PROVEN, and its proof is `gp_herbrand`
         plus Dedekind's modular law)
       → `exists_lowerRamificationData_phi_mem_Ioc` (LEAF: the arithmetic
@@ -5619,10 +5941,10 @@ The further input, `P_v ≤ D.gp 1`, is a theorem about
 `LowerRamificationData.mem_gp` and not a strengthening of any axiom:
 `mem_gp` DEFINES `D.gp` elementwise, `D.gp 1` is therefore the pulled-back
 `G₁(L/Kᵥ)` of the finite level, `L ∩ Kᵥᵗᵃᵐᵉ = L^{G₁}`, and
-`P_v = Gal(Kᵥᵃˡᵍ/Kᵥᵗᵃᵐᵉ)` maps onto `G₁(L/Kᵥ)`. It is worth building
-independently of this leaf — it is small, it is the input the retired-axiom
-era kept reaching for and never named correctly, and it makes the clause
-below a derived fact.
+`P_v = Gal(Kᵥᵃˡᵍ/Kᵥᵗᵃᵐᵉ)` maps onto `G₁(L/Kᵥ)`. **It is now BUILT** (2026-07-30):
+`LowerRamificationData.wildInertiaGroup_le_gp_one` above is exactly it, and it
+is sorry-free, so the positivity clause below is a derived fact rather than an
+extra obligation.
 
 THE ROUTE, and the three facts it needs about `c(u) := dim V − dim V^{G^u}`:
 
@@ -5670,11 +5992,62 @@ derivation above) and `0` (`hfin`) is settled, but a break list exists only
 if `c` is LEFT-continuous at each jump. That is the sharp place to look for
 a refuting `F`: an admissible filtration whose `c` is `1` on `(0, 1)` and
 `0` on `[1, ∞)` admits no `μ`, since `μ 0` would have to be both `≥ u` for
-every `u < 1` and `< 1`. Whether `gp_of_forall_lt` already excludes it
-(with `hfin` converting the intersection of the `G^w` into a union of fixed
-submodules) is the one question a prover — or a refuter — should settle
-first. It is cheaper than the rest of the leaf and it decides which of the
-two outcomes to aim for. -/
+every `u < 1` and `< 1`.
+
+**THAT DECIDING QUESTION, SETTLED 2026-07-30 — the answer is NO, and the
+missing ingredient is CLOSEDNESS of the `F.gp u`.** The question posed here
+was whether `gp_of_forall_lt`, with `hfin` converting the intersection of the
+`G^w` into a union of fixed submodules, already excludes such an `F`. Half of
+that conversion works and half does not, and it is worth being exact because
+the gap is a single group-theoretic identity.
+
+*What `hfin` DOES give.* Let `Q := N ⊓ P_v` be the subgroup it supplies; `Q`
+acts trivially on `M`, and `Q` is open in the compact `P_v`, so `[P_v : Q]` is
+finite and there are only FINITELY many subgroups of `P_v` containing `Q`. For
+`u > 0`, `gp_le_wild` puts `F.gp u ≤ P_v`, and since `Q` acts trivially
+`V^{F.gp u} = V^{F.gp u ⊔ Q}`. So `u ↦ F.gp u ⊔ Q` is an antitone map into a
+finite poset: for EVERY `u > 0` there is `0 < w₀ < u` with `F.gp w ⊔ Q`
+constant on `[w₀, u)`, hence **`c` is constant on a left-neighbourhood of every
+`u`**. In particular `c` has finitely many jumps for a second reason, and the
+only thing left is the value AT the jump.
+
+*What is left, and it is exactly one identity.* `gp_of_forall_lt` plus
+`gp_le_gp` give `F.gp u = ⋂_{0 < w < u} F.gp w`. Left continuity of `c` at `u`
+is therefore
+
+  `(⋂_{0 < w < u} F.gp w) ⊔ Q = ⋂_{0 < w < u} (F.gp w ⊔ Q)`,
+
+i.e. that `⊔ Q` commutes with a decreasing intersection. **This is NOT formal,
+and the axioms as they stand do not supply it.** Abstract counterexample, to
+show no rearrangement of the present axioms can work: in `ℤ_p` take
+`Q = pℤ_p` (open, index `p`) and `G_n = ℤ · a_n` with `a_n` units and
+`a_{n+1} = k_n a_n` for integers `k_n ≥ 2` prime to `p`. Every `G_n` is dense,
+so `G_n ⊔ Q = ℤ_p` for all `n`, while `⋂_n G_n = 0` and `0 ⊔ Q = Q ≠ ℤ_p`. A
+decreasing family of NON-CLOSED subgroups with constant `Q`-saturation and
+collapsing intersection is precisely the shape a refuting `F` would need.
+
+*Why this is a repair rather than a refutation.* With the `F.gp u` CLOSED the
+identity holds: pass to the normal core `Q₀ ≤ Q` (open, normal in the open
+subgroup `F.gp w₀ ⊔ Q`), note `F.gp w · Q₀` is then a genuine product subgroup,
+closed, and that a decreasing family of nonempty compact sets
+`(x Q₀) ∩ F.gp w` has nonempty intersection — which gives
+`(⋂ F.gp w) · Q₀ = ⋂ (F.gp w · Q₀)`, and saturating by `Q` finishes. And the
+genuine filtration IS closed-valued: `upperRamificationFiltration` is built
+from the `D.gp i`, each of which is an intersection of CLOPEN sets, because
+`ContinuousSMulDiscrete` makes `{σ | σ • x = y}` open and the condition
+`unif ^ (i+1) ∣ σ • x − x` is a union of such sets with open complement. That
+last step is compiler-checked (2026-07-30) — see step 4 of the audit on
+`LowerRamificationData.gp_le_upperRamificationFiltration_sup_lvl`, which needs
+the identical fact.
+
+So the recommended move is NOT to hunt a counterexample but to add a
+`gp_isClosed : ∀ u, IsClosed (F.gp u : Set (Γ Kᵥ))` field to
+`RamificationFiltration` and discharge it in `nonempty_ramificationFiltration`
+from the clopen-ness of `D.gp i`. That is a signature change to the structure,
+so it must land with its one construction site in the same commit. It also
+supplies step 4 of `gp_le_upperRamificationFiltration_sup_lvl` above, which
+needs the identical compactness fact — which is the reason to believe the
+axiom is the right one rather than a patch. -/
 theorem exists_breaks_of_hasFiniteWildMonodromyAt (ρ : GaloisRep K A M)
     (v : HeightOneSpectrum (𝓞 K)) (hfin : ρ.HasFiniteWildMonodromyAt v)
     (F : RamificationFiltration v) :
