@@ -18955,6 +18955,95 @@ theorem irreducible_map_paramFractionHom_translateFamily {K : Type*} [Field K] {
 
 end GaussLocalization
 
+/-! ### `d = 1`: the case with no general position in it (2026-07-30)
+
+`d = 0` is impossible (`totalDegree_ne_zero_of_irreducible`), and `d = 1` needs no
+Bertini content at all: `h` is then an affine form, so for any direction `u₁` off
+the zero locus of its linear part the section already has total degree one and is
+irreducible over EVERY field. The parameter family can even be empty (`m = 0`).
+Proving it here is what lets the remaining leaf assume `2 ≤ d`, which is the
+hypothesis every classical treatment of Theorem 3D carries. -/
+
+/-- `homogeneousComponent` at the total degree is nonzero. (Relocated upward
+2026-07-30 from the `BadLocusAssembly` section, where it was first proven, so that
+the `d = 1` case below can use it; its original consumers are unaffected.) -/
+lemma homogeneousComponent_totalDegree_ne_zero {σ : Type*} {k : Type*} [CommRing k]
+    (f : MvPolynomial σ k) (hf : f ≠ 0) :
+    MvPolynomial.homogeneousComponent f.totalDegree f ≠ 0 := by
+  classical
+  obtain ⟨m, hm, hmeq⟩ := Finset.exists_mem_eq_sup f.support
+    (MvPolynomial.support_nonempty.mpr hf) (fun s => s.sum fun _ e => e)
+  intro hzero
+  have h1 : MvPolynomial.coeff m (MvPolynomial.homogeneousComponent f.totalDegree f)
+      = MvPolynomial.coeff m f := by
+    rw [MvPolynomial.coeff_homogeneousComponent, if_pos]
+    show Finsupp.degree m = f.totalDegree
+    rw [MvPolynomial.totalDegree, hmeq]
+    rfl
+  rw [hzero, MvPolynomial.coeff_zero] at h1
+  exact (MvPolynomial.mem_support_iff.mp hm) h1.symm
+
+/-- **PROVEN**: a nonzero polynomial over an infinite integral domain does not
+vanish identically -- the contrapositive of `MvPolynomial.funext`. This is what
+supplies a direction with `h_d(u₁) ≠ 0`, `K` being infinite because it is
+algebraically closed. -/
+theorem exists_eval_ne_zero_of_ne_zero {K : Type*} [CommRing K] [IsDomain K] [Infinite K]
+    {N : ℕ} (f : MvPolynomial (Fin N) K) (hf : f ≠ 0) :
+    ∃ u : Fin N → K, MvPolynomial.eval u f ≠ 0 := by
+  by_contra hcon
+  refine hf (MvPolynomial.funext (fun x => ?_))
+  rw [map_zero]
+  by_contra hx
+  exact hcon ⟨x, hx⟩
+
+/-- **PROVEN**: an irreducible multivariate polynomial over a field is nonconstant.
+Over a field a constant is either `0` or a unit, and an irreducible is neither. -/
+theorem totalDegree_ne_zero_of_irreducible {K : Type*} [Field K] {σ : Type*}
+    {h : MvPolynomial σ K} (hirr : Irreducible h) : h.totalDegree ≠ 0 := by
+  intro hd
+  rcases eq_or_ne (h.coeff 0) 0 with hc | hc
+  · exact hirr.ne_zero (by rw [MvPolynomial.totalDegree_eq_zero_iff_eq_C.mp hd, hc, map_zero])
+  · exact hirr.not_isUnit (by
+      rw [MvPolynomial.totalDegree_eq_zero_iff_eq_C.mp hd]
+      exact IsUnit.map (MvPolynomial.C : K →+* MvPolynomial σ K) hc.isUnit)
+
+/-- **PROVEN**: the `d = 1` case of
+`exists_directionPlane_irreducible_familyPlaneSection`, with no general position
+and no Bertini content. Take `m = 0` (so the family is the single plane through
+the origin) and `u₁` with `h_1(u₁) ≠ 0`, which exists because `h_1 ≠ 0` and `K` is
+infinite. Then the family is `MvPolynomial.C` applied to the honest plane section
+`planeSection h 0 u₁ 0`, whose total degree is exactly `1`
+(`totalDegree_planeSection_of_eval_homogeneousComponent_ne_zero`); total degree is
+preserved by both maps because both are injective, and a polynomial of total
+degree `1` over a field is irreducible. -/
+theorem exists_directionPlane_irreducible_familyPlaneSection_degree_one
+    {K : Type*} [Field K] [IsAlgClosed K] (n : ℕ) (h : MvPolynomial (Fin (n + 3)) K)
+    (hdeg : h.totalDegree = 1) (hirr : Irreducible h) :
+    ∃ (m : ℕ) (Φ : Fin m → (Fin (n + 3) → K)) (u₁ u₂ : Fin (n + 3) → K),
+      (∃ a b : K, MvPolynomial.eval (fun i => a * u₁ i + b * u₂ i)
+        (MvPolynomial.homogeneousComponent 1 h) ≠ 0) ∧
+      Irreducible (MvPolynomial.map (paramAlgClosureHom K m)
+        (familyPlaneSection h Φ u₁ u₂)) := by
+  obtain ⟨u₁, hu₁⟩ := exists_eval_ne_zero_of_ne_zero
+    (MvPolynomial.homogeneousComponent 1 h)
+    (by rw [← hdeg]; exact homogeneousComponent_totalDegree_ne_zero h hirr.ne_zero)
+  refine ⟨0, fun _ => 0, u₁, 0, ⟨1, 0, by simpa using hu₁⟩, ?_⟩
+  have hG : (planeSection h 0 u₁ 0).totalDegree = 1 :=
+    totalDegree_planeSection_of_eval_homogeneousComponent_ne_zero h hdeg 0 u₁ 0 hu₁
+  have hfam : familyPlaneSection h (fun _ : Fin 0 => (0 : Fin (n + 3) → K)) u₁ 0
+      = MvPolynomial.map (MvPolynomial.C : K →+* MvPolynomial (Fin 0) K)
+          (planeSection h 0 u₁ 0) := by
+    rw [planeSection_map, familyPlaneSection]
+    congr 1
+    funext i
+    simp
+  have hinj : Function.Injective ((paramAlgClosureHom K 0).comp
+      (MvPolynomial.C : K →+* MvPolynomial (Fin 0) K)) :=
+    (paramAlgClosureHom_injective K 0).comp (MvPolynomial.C_injective (Fin 0) K)
+  rw [hfam, MvPolynomial.map_map]
+  refine irreducible_of_totalDegree_eq_one_field ?_
+  rw [totalDegree_map_eq_of_injective _ hinj, hG]
+
 /-- **SCHMIDT'S THEOREM 3D, STEP 2 IN THE BASIS NORMALISATION (SORRY LEAF, cut
 2026-07-30)** -- geometric integrality of the generic plane section, over the
 SMALLEST field it can be asked over.
@@ -19019,12 +19108,14 @@ precisely `s ^ 2 - y₀` after the identification -- which factors over `L̄` as
 absolutely irreducible. So clause (ii) is a genuine general-position condition on
 `A`, not a consequence of clause (i), and any proof must choose `A`.
 
-`d ≠ 0` is automatic (`h` irreducible over a field is nonconstant) and is derived
-in the parent's consumer; `d = 1` is the case where `h ∘ A` is affine and clause
-(ii) is free. -/
+`2 ≤ d` IS HANDED IN, not to be worried about. `d = 0` is impossible
+(`totalDegree_ne_zero_of_irreducible`) and `d = 1` is PROVEN separately, in
+`exists_directionPlane_irreducible_familyPlaneSection_degree_one`, where `h` is an
+affine form and clause (ii) really is free. So this leaf may assume the degree
+hypothesis every classical treatment of Theorem 3D carries. -/
 theorem exists_basisPlane_irreducible_familyPlaneSection {K : Type*} [Field K]
     [IsAlgClosed K] (n d : ℕ) (h : MvPolynomial (Fin (n + 3)) K)
-    (hdeg : h.totalDegree = d) (hirr : Irreducible h)
+    (hdeg : h.totalDegree = d) (hirr : Irreducible h) (hd : 2 ≤ d)
     (hstep1 : ∀ u₁ u₂ : Fin (n + 3) → K,
       (familyPlaneSection h (translateFamily K (n + 3)) u₁ u₂).totalDegree ≠ 0 →
       Irreducible (MvPolynomial.map (paramFractionHom K (n + 3))
@@ -19080,7 +19171,10 @@ specification for this leaf.
 Schmidt's own normalisation `m = n + 1` along a BASIS. That is the whole content
 of this statement -- the existential over `m` and `Φ` is discharged by taking the
 transversal family of an invertible matrix -- and it buys the prover a strictly
-smaller field to work over; see that leaf's docstring. -/
+smaller field to work over; see that leaf's docstring. The degenerate degrees are
+peeled off here: `d = 0` is impossible and `d = 1` is
+`exists_directionPlane_irreducible_familyPlaneSection_degree_one`, so the leaf is
+reached only with `2 ≤ d`. -/
 theorem exists_directionPlane_irreducible_familyPlaneSection {K : Type*} [Field K]
     [IsAlgClosed K] (n d : ℕ) (h : MvPolynomial (Fin (n + 3)) K)
     (hdeg : h.totalDegree = d) (hirr : Irreducible h)
@@ -19093,11 +19187,15 @@ theorem exists_directionPlane_irreducible_familyPlaneSection {K : Type*} [Field 
         (MvPolynomial.homogeneousComponent d h) ≠ 0) ∧
       Irreducible (MvPolynomial.map (paramAlgClosureHom K m)
         (familyPlaneSection h Φ u₁ u₂)) := by
-  obtain ⟨A, B, hAB, hBA, hlead, hgen⟩ :=
-    exists_basisPlane_irreducible_familyPlaneSection n d h hdeg hirr hstep1
-      (fun A B hAB hBA hne =>
-        irreducible_map_paramFractionHom_basisFamily h hirr A B hAB hBA hne)
-  exact ⟨n + 1, _, _, _, ⟨1, 0, by simpa using hlead⟩, hgen⟩
+  have hd0 : d ≠ 0 := fun hc => totalDegree_ne_zero_of_irreducible hirr (hdeg.trans hc)
+  rcases eq_or_lt_of_le (Nat.one_le_iff_ne_zero.mpr hd0) with hd1 | hd2
+  · subst hd1
+    exact exists_directionPlane_irreducible_familyPlaneSection_degree_one n h hdeg hirr
+  · obtain ⟨A, B, hAB, hBA, hlead, hgen⟩ :=
+      exists_basisPlane_irreducible_familyPlaneSection n d h hdeg hirr hd2 hstep1
+        (fun A B hAB hBA hne =>
+          irreducible_map_paramFractionHom_basisFamily h hirr A B hAB hBA hne)
+    exact ⟨n + 1, _, _, _, ⟨1, 0, by simpa using hlead⟩, hgen⟩
 
 /-- **SCHMIDT'S THEOREM 3D: A PLANE DIRECTION IN GENERAL POSITION (PROVEN
 2026-07-28 over one smaller leaf; cut as a leaf 2026-07-28)** -- the GEOMETRIC
@@ -23369,23 +23467,6 @@ lemma exists_eval_ne_zero_of_totalDegree_lt {p : ℕ} [Fact p.Prime] {M : ℕ}
       ≤ p ^ (Fintype.card (Fin M)) * F.totalDegree) hpos
     exact this
   omega
-
-/-- `homogeneousComponent` at the total degree is nonzero. -/
-lemma homogeneousComponent_totalDegree_ne_zero {σ : Type*} {k : Type*} [CommRing k]
-    (f : MvPolynomial σ k) (hf : f ≠ 0) :
-    MvPolynomial.homogeneousComponent f.totalDegree f ≠ 0 := by
-  classical
-  obtain ⟨m, hm, hmeq⟩ := Finset.exists_mem_eq_sup f.support
-    (MvPolynomial.support_nonempty.mpr hf) (fun s => s.sum fun _ e => e)
-  intro hzero
-  have h1 : MvPolynomial.coeff m (MvPolynomial.homogeneousComponent f.totalDegree f)
-      = MvPolynomial.coeff m f := by
-    rw [MvPolynomial.coeff_homogeneousComponent, if_pos]
-    show Finsupp.degree m = f.totalDegree
-    rw [MvPolynomial.totalDegree, hmeq]
-    rfl
-  rw [hzero, MvPolynomial.coeff_zero] at h1
-  exact (MvPolynomial.mem_support_iff.mp hm) h1.symm
 
 /-- Total-degree bound for the resultant of two polynomials with `MvPolynomial` coefficients. -/
 lemma totalDegree_resultant_le {σ : Type*} {k : Type*} [Field k]
