@@ -221,14 +221,45 @@ leaves it moved to are, in dependency order:
     2026-07-30 as `smooth_isSeparated_of_isRelPicOf` and is received back
     as the hypotheses `_hPsmooth`/`_hPsep`; the parent
     `exists_relPicZeroOf_of_relPicGroupLaw` discharges them by that leaf,
-    so nothing downstream changed.
+    so nothing downstream changed.  Later the same day that conjunction
+    was itself split into `smooth_of_isRelPicOf` (BLR 8.4/2) and
+    `isSeparated_of_isRelPicOf` (BLR 8.2/1), which are the two dispatch
+    targets; `smooth_isSeparated_of_isRelPicOf` is now their assembly and
+    is PROVEN.
 
 So the direct-sorry set of this module is 9 (verified against the
 compiler's `declaration uses 'sorry'` warnings, and against a
 comment-stripped token count — 9 = 9, so there are no anonymous inner
-sorries hiding behind a warning), and the four that belong to BLR 9.4/4
+sorries hiding behind a warning), and the five that belong to BLR 9.4/4
 are `isInvertibleSheaf_sectionIdeal`, `nonempty_modPullback_sectionIdeal`,
-`smooth_isSeparated_of_isRelPicOf` and `exists_relPicZeroSubgroup`.
+`smooth_of_isRelPicOf`, `isSeparated_of_isRelPicOf` and
+`exists_relPicZeroSubgroup`.
+
+**Amended 2026-07-30 (later the same day): 10 → 9 → 8 → 9.**  Both `modDual`
+leaves closed, `isInvertibleSheaf_modDual` first and then `isIso_modDualEv`,
+over one shared rank-one bridge across the `restrict` boundary
+(`ModDual.trAt … ModDual.gen_res`, then `ModDual.dualRestrictIso` and
+`ModDual.evLin_bijective`).  Read the count off the compiler, not off this
+paragraph — every previous version of it went stale within a day.  Of the
+eight that remain, ONE is not a dispatch target:
+`nonempty_modPullback_modTensorPic` is the verbatim twin of
+`Fermat.nonempty_modPullback_modTensor` in `Modularity/AmpleSheaf.lean`, and
+re-surveyed 2026-07-30 that twin is PROVEN there over a written comparison
+map whose own `IsIso` clause (`isIso_modPullbackTensorComparison`) is still
+that module's leaf.  So the hoist its docstring prescribes would move a leaf
+rather than close one, and mathlib has no monoidal structure on the pullback
+of (pre)sheaves of modules at this pin to shortcut it —
+`grep -rln Monoidal Mathlib/Algebra/Category/ModuleCat/{Presheaf,Sheaf}/`
+returns `Monoidal.lean`, `PushforwardZeroMonoidal.lean` and
+`ColimitFunctor.lean`, none of them about `pullback`.
+
+The 8 → 9 in that chain is a SPLIT, not a regression:
+`smooth_isSeparated_of_isRelPicOf` was a conjunction of BLR 8.4/2 and BLR
+8.2/1 — different chapters, different arguments, different hypotheses — and is
+now PROVEN as the assembly of `smooth_of_isRelPicOf` and
+`isSeparated_of_isRelPicOf`, so the two can be owned separately.  Nothing
+downstream changed; `exists_relPicZeroOf_of_relPicGroupLaw` still destructures
+the same conjunction.
 
 Also PROVEN here and worth knowing about before re-deriving them:
 `modTensorMapIso`, `modTensorUnitLeftIso`, `modTensorUnitRightIso`,
@@ -3465,8 +3496,67 @@ theorem exists_abelJacobiPoint {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P �
         (relPicEquiv_of_iso strX (𝟙 S) (modTensorUnitLeftIso _))
     exact hP.eq_of_relPicEquiv_tensor (hI S (𝟙 S) o) (hspec S (𝟙 S) o) hz
 
-/-- **`Pic` IS SMOOTH AND SEPARATED OVER `S`** (sorry leaf, cut 2026-07-29 out
-of `exists_relPicZeroSubgroup`) — the FIRST of BLR 9.4/4's three classical
+/-- **`Pic` IS SMOOTH OVER `S`** (sorry leaf; the smoothness half of
+`smooth_isSeparated_of_isRelPicOf`, split off from it 2026-07-30) — BLR 8.4/2.
+
+The relative Picard functor of a flat proper morphism is smooth over `S` as
+soon as `H²(X_s, 𝒪_{X_s})` vanishes on every fibre, because that group receives
+the obstructions to lifting a line bundle along a square-zero thickening.  On a
+relative CURVE it vanishes for dimension reasons, so this is the one place in
+BLR 9.4/4 where "the fibres are curves" is used as a *cohomological* input
+rather than as a geometric one.
+
+**HYPOTHESIS USAGE, and why the list is not tightened.**  The argument as just
+described spends `hproper` (flat + proper) and `hsmooth` (relative dimension 1,
+for the `H²` vanishing) and appears to spend neither `hconn` nor `hpush`; the
+sibling `isSeparated_of_isRelPicOf` is the reverse.  The full list is
+nevertheless kept on both halves, deliberately.  Dropping a hypothesis
+STRENGTHENS a leaf, and this development has a standing record of leaves that
+became FALSE when a correct-looking restatement composed with an earlier one
+(see `exists_artinDivisorNormIndex_le_ray_class`).  The parent asserted the
+conjunction under all five, so each conjunct is asserted under all five and
+splitting is faithfulness-neutral; a prover who finds a hypothesis genuinely
+idle should delete it THEN, with the proof in hand, which is a strictly better
+piece of evidence than this note.
+
+**FAITHFULNESS** is inherited verbatim from the parent's audit below, which
+covers this conjunct: `hP` is the whole content (any non-smooth `pstr` refutes
+it without `hP`), and dropping `hsmooth` refutes it at relative dimension `2`,
+where `H²(X_s, 𝒪)` need not vanish and `Pic` is genuinely obstructed — a K3
+over a non-reduced base is the standard witness. -/
+theorem smooth_of_isRelPicOf {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
+    (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
+    (_hconn : GeometricallyConnected strX) (_hP : IsRelPicOf strX pstr)
+    (_hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX) :
+    Smooth pstr := sorry
+
+/-- **`Pic` IS SEPARATED OVER `S`** (sorry leaf; the separatedness half of
+`smooth_isSeparated_of_isRelPicOf`, split off from it 2026-07-30) — BLR 8.2/1,
+`Pic_{X/S}` is a separated `S`-scheme locally of finite type.
+
+This is where `hpush` is spent: with `f_*𝒪 = 𝒪` universally the sequence
+`0 ⟶ Pic T ⟶ Pic X_T ⟶ P(T)` is exact, so two points of `P` agreeing on a dense
+open of a valuation base agree, and the valuative criterion applies.  Without
+`hpush` the functor is only a *presheaf* quotient and the criterion fails —
+already for `X = S ⊔ S`, the same witness the Zariski-gluing audit uses.
+
+**One correction to the parent's prose, which this split makes checkable.**  The
+paragraph below says separatedness "is where the section `o` and `_hpush` are
+spent".  The parent has NO section hypothesis — it never had one — and the
+displayed argument uses only `hpush`.  So `o` in that sentence is a carry-over
+from `exists_relPicZeroSubgroup`, where the section IS spent, and it is not an
+omission from the signature.  See `smooth_of_isRelPicOf` above for why the
+hypothesis list is nevertheless left at the parent's five. -/
+theorem isSeparated_of_isRelPicOf {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
+    (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
+    (_hconn : GeometricallyConnected strX) (_hP : IsRelPicOf strX pstr)
+    (_hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX) :
+    IsSeparated pstr := sorry
+
+/-- **`Pic` IS SMOOTH AND SEPARATED OVER `S`** (PROVEN 2026-07-30 as the
+assembly of the two halves just above; formerly a bare sorry leaf, cut
+2026-07-29 out of `exists_relPicZeroSubgroup`, and the audit below is the
+docstring written while it was one) — the FIRST of BLR 9.4/4's three classical
 steps, and the only one of the three that is a statement about `Pic` alone.
 
 *Smoothness* is BLR 8.4/2: the relative Picard functor of a flat proper
@@ -3505,12 +3595,24 @@ Zariski-gluing audit uses.
 
 **NOT VACUOUS.**  `IsRelPicOf strX pstr` is satisfiable — that is
 `exists_relPicFull`, PROVEN above — so this is not a statement about an empty
-class of `pstr`. -/
+class of `pstr`.
+
+**CUT IN TWO, 2026-07-30, and this declaration is now the assembly.**  The two
+conjuncts are BLR 8.4/2 and BLR 8.2/1: different chapters, different arguments
+(deformation theory against `H²` on the fibres, versus the valuative criterion),
+and — as the paragraphs above already say in prose — different hypotheses.  They
+were welded together only because they were cut out of
+`exists_relPicZeroSubgroup` in one motion, and one owner had to carry both.  See
+`smooth_of_isRelPicOf` and `isSeparated_of_isRelPicOf` below.  Nothing
+downstream changed: `exists_relPicZeroOf_of_relPicGroupLaw` still destructures
+this conjunction. -/
 theorem smooth_isSeparated_of_isRelPicOf {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
-    (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
-    (_hconn : GeometricallyConnected strX) (_hP : IsRelPicOf strX pstr)
-    (_hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX) :
-    Smooth pstr ∧ IsSeparated pstr := sorry
+    (hproper : IsProper strX) (hsmooth : SmoothOfRelativeDimension 1 strX)
+    (hconn : GeometricallyConnected strX) (hP : IsRelPicOf strX pstr)
+    (hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX) :
+    Smooth pstr ∧ IsSeparated pstr :=
+  ⟨smooth_of_isRelPicOf hproper hsmooth hconn hP hpush,
+    isSeparated_of_isRelPicOf hproper hsmooth hconn hP hpush⟩
 
 /-- **`Pic⁰` IS AN ABELIAN SCHEME INSIDE `Pic`** (sorry leaf, cut
 2026-07-29) — BLR 9.4/4's geometric half, and the whole of what that
@@ -3523,7 +3625,9 @@ three classical steps:
 * `Pic ⟶ S` is **smooth and separated** — this is where `_hpush`
   (`f_*𝒪 = 𝒪` universally) and the vanishing of `H²` on a relative curve
   are spent.  **CUT OUT** as `smooth_isSeparated_of_isRelPicOf` above
-  (stated 2026-07-29, wired up 2026-07-30), and received here as the two
+  (stated 2026-07-29, wired up 2026-07-30, and split later that day into
+  `smooth_of_isRelPicOf` + `isSeparated_of_isRelPicOf` — the conjunction
+  itself is now PROVEN as their assembly), and received here as the two
   hypotheses `_hPsmooth` and `_hPsep`; the parent
   `exists_relPicZeroOf_of_relPicGroupLaw` discharges them by that leaf, so
   nothing downstream changed;
