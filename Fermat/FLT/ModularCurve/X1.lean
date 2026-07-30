@@ -439,7 +439,6 @@ open in them has been split along the theories it needed:
 | `exists_heckeCorrespondenceFamilyGamma1` | the `Γ₁` Hecke correspondence as a natural family on points — the geometric half, and the `Γ₁` twin of `X0.lean`'s `exists_heckeCorrespondenceFamily`.  (`exists_heckeAction_isotypicQuotients_gamma1` was a leaf until 2026-07-28 and is now **PROVEN** over this row and the next, via the `Γ₁` moduli pin `IsModularHeckeActionGamma1`; `exists_modularHeckeAction_gamma1` is PROVEN over this row alone.) | `ℚ` |
 | `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` | Shimura's `A_f` on `Γ₁(N)`, one factor, given the PINNED Hecke action — the "build one factor" half of Eichler-Shimura.  (`IsIsotypicQuotient` is reused verbatim from `X0.lean`; it is shape-free.) | `ℚ` |
 | `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` | the "assemble the factors" half: finiteness of the index set, the oldform multiplicities, `finite_ker`, and the `neben` labelling.  It no longer owns the `N = 0` case: that case was REFUTED on 2026-07-28 (`isEmpty_isHeckeIsotypicDecompositionGamma1_zero`) and the leaf now carries `hN : N ≠ 0`; see its docstring | `ℚ` |
-| `exists_cuspForm_gamma1GL_zero_lacunary` | a weight-two cusp form for `Γ₁(0) = ⟨T⟩` with `q`-expansion `∑ c^k q^(2^k)` — the lone analytic input of that refutation, and pure mathlib plumbing (locally-uniform convergence of a lacunary `q`-series; the only cusp of `⟨T⟩` is `∞`) | — |
 | `isTorsion_factor_of_heckeIsotypic_gamma1` | Kolyvagin-Logachev on an isotypic factor | `ℚ` |
 | `cuspPeriod_ne_zero_x1TwentyFive` | the `L`-value numerics — the DEEP one, and the only row where `25` survives.  (`lFunction_apply_one_ne_zero_x1TwentyFive` was decomposed along the period 2026-07-28; its analytic half `lFunction_apply_one_eq_two_pi_mul_cuspPeriod_gamma1` is PROVEN the same day, as the `G = Γ₁(N)` instance of `lFunction_apply_one_eq_two_pi_mul_cuspPeriodOn`, which is in turn the group-generic form of `X0.lean`'s proven theorem.) | `ℚ` |
 | `not_birationalOver_affineLine_of_one_le_x1Genus_algClosed` | the genus formula and nothing else — Diamond–Shurman Thm 3.1.1: a fibre of `X_1(N)` with `genus ≥ 1` is not birational to `𝔸¹` over an ALGEBRAICALLY CLOSED field.  The only declaration in the `Γ₁` genus formula that still mentions `N`.  (Cut 2026-07-30 out of `exists_nonconstant_toAbelianScheme_of_one_le_x1Genus`, which is PROVEN over it and the row below.) | alg. closed `K` |
@@ -10158,6 +10157,146 @@ theorem exists_isLFunctionOf_of_isWeightTwoEigenformOn_of_le (N : ℕ) (hN : N �
         (Complex.Gamma s * (Complex.Gamma s)⁻¹) * LSeries a s from by ring,
       hcancel, mul_inv_cancel₀ hΓ, one_mul, one_mul]
 
+/-- **Hecke's Mellin transform at `s = 1`, on any group between `Γ₁(N)`
+and `Γ₀(N)`: `L(f, 1) = 2π ∫₀^∞ f(iy) dy`** (PROVEN 2026-07-30) — the
+group-generic form of `WeightTwoEigenform.lean`'s
+`lFunction_apply_one_eq_two_pi_mul_cuspPeriod`, and the theorem
+`lFunction_apply_one_eq_two_pi_mul_cuspPeriod_gamma1` below is its
+instance at `G = Γ₁(N)`.
+
+**THIS IS THE HOIST THE `Γ₁` LEAF'S DOCSTRING ASKED FOR, and it cost a
+citation rather than a theory build.**  That docstring diagnosed the
+situation exactly — "`X0.lean`'s theorem is proven, and its proof uses
+nothing about `Γ₀(N)` beyond the TYPE of `f`" — and prescribed replacing
+`Gamma0GL N` by a variable `G` in `axisRestrict`, `cuspFEPair` and the
+four analytic leaves.  **That work had already been done**, on
+2026-07-28, in the `HeckeOn` subsection above: `axisRestrictOn`,
+`exists_frickeInvolutionOn`, `cuspFEPairOn`,
+`isStrongFEPair_cuspFEPairOn`, `hasSum_axisRestrictOn` and
+`mellin_axisRestrictOn` are all group-generic and all PROVEN, because
+`exists_isLFunctionOf_of_isWeightTwoEigenformOn_of_le` immediately above
+needed exactly the same generalisation.  So the only thing missing was
+this second consumer of that machinery, and its proof is the `Γ₀` one
+with `axisRestrict N f ↦ axisRestrictOn G N f` and
+`cuspFEPair N hN f ↦ cuspFEPairOn N hN G h1 h0 f` — no step of the
+argument changes.
+
+The four ingredients, in the order the proof uses them:
+
+* `isStrongFEPair_cuspFEPairOn` makes `Λ` of the pair `(f, f ∣ W_N)`
+  entire (`IsStrongFEPair.differentiable_Λ`), so
+  `s ↦ (2π/√N)^s Λ(s) / Γ(s)` is entire — `1/Γ` being entire;
+* `mellin_axisRestrictOn` identifies `Λ(s) = Γ(s)(2π/√N)^{-s} L(f, s)` on
+  `Re s > 2`, so that function IS the Dirichlet series there;
+* `IsLFunctionOf` says `L` is entire and agrees with the Dirichlet series
+  on `Re s > 2`, so the identity theorem
+  (`AnalyticOnNhd.eqOn_of_preconnected_of_eventuallyEq` on the
+  preconnected `Set.univ`, seeded at `s = 3`) forces
+  `L 1 = (2π/√N)·Λ(1)`, using `Γ(1) = 1`;
+* `hasSum_axisRestrictOn` turns `Λ(1) = ∫₀^∞ f(iy/√N) dy` into
+  `√N · cuspPeriod a` by the change of variables `y ↦ y/√N`
+  (`integral_comp_mul_left_Ioi`), which is where `cuspPeriod`'s own
+  normalisation — a sum of `exp (-2π(n+1)y)`, no `√N` — is matched.
+
+`hN : N ≠ 0` is load-bearing twice: it is what makes `√N > 0`, hence the
+rescaling legitimate, and it is inherited from `mellin_axisRestrictOn`
+(through `isBigO_atTop_coeffOn`'s FALSITY REPAIR — `Γ₁(0)` has infinite
+index in `SL(2, ℤ)` and no polynomial coefficient bound holds).
+
+`χ` and the eigenform fields `hecke`/`atkin` are inert: `hf` is consumed
+only through `qExpansion`, `qExpansionSummable` (inside
+`hasSum_axisRestrictOn`) and `isBigO_atTop_coeffOn`. -/
+theorem lFunction_apply_one_eq_two_pi_mul_cuspPeriodOn_of_le (N : ℕ) (hN : N ≠ 0)
+    (G : Subgroup (GL (Fin 2) ℝ)) (h1 : Gamma1GL N ≤ G) (h0 : G ≤ Gamma0GL N)
+    (χ : DirichletCharacter ℂ N) (f : CuspForm G 2) (a : ℕ → ℂ)
+    (hf : IsWeightTwoEigenformOn G N χ f a)
+    (L : ℂ → ℂ) (hL : IsLFunctionOf a L) :
+    L 1 = 2 * (Real.pi : ℂ) * cuspPeriod a := by
+  have hsq : (0 : ℝ) < Real.sqrt N :=
+    Real.sqrt_pos.mpr (by exact_mod_cast Nat.pos_of_ne_zero hN)
+  have hcpos : (0 : ℝ) < 2 * Real.pi / Real.sqrt N := by positivity
+  have hcC : ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ≠ 0 :=
+    Complex.ofReal_ne_zero.mpr hcpos.ne'
+  have hstrong : IsStrongFEPair (cuspFEPairOn N hN G h1 h0 f) :=
+    isStrongFEPair_cuspFEPairOn N hN G h1 h0 f
+  -- `s ↦ c^s Λ(s) / Γ(s)` is entire: `Λ` is entire and `1/Γ` is entire.
+  have hFentire : AnalyticOnNhd ℂ
+      (fun s : ℂ => ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ s *
+        (cuspFEPairOn N hN G h1 h0 f).Λ s * (Complex.Gamma s)⁻¹) Set.univ := by
+    rw [Complex.analyticOnNhd_univ_iff_differentiable]
+    exact ((differentiable_id.const_cpow (Or.inl hcC)).mul
+      hstrong.differentiable_Λ).mul Complex.differentiable_one_div_Gamma
+  -- and it is the Dirichlet series on `Re s > 2`
+  have hFeq : ∀ s : ℂ, 2 < s.re →
+      ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ s * (cuspFEPairOn N hN G h1 h0 f).Λ s *
+        (Complex.Gamma s)⁻¹ = LSeries a s := by
+    intro s hs
+    have hΛ : (cuspFEPairOn N hN G h1 h0 f).Λ s =
+        Complex.Gamma s * ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ (-s) * LSeries a s := by
+      rw [congr_fun hstrong.Λ_eq s]
+      exact mellin_axisRestrictOn hN h1 hf hs
+    have hΓ : Complex.Gamma s ≠ 0 := Complex.Gamma_ne_zero_of_re_pos (by linarith)
+    have hcancel : ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ s *
+        ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ (-s) = 1 := by
+      rw [← Complex.cpow_add _ _ hcC, add_neg_cancel, Complex.cpow_zero]
+    rw [hΛ, show ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ s *
+        (Complex.Gamma s * ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ (-s) * LSeries a s) *
+        (Complex.Gamma s)⁻¹
+      = (((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ s *
+          ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ (-s)) *
+        (Complex.Gamma s * (Complex.Gamma s)⁻¹) * LSeries a s from by ring,
+      hcancel, mul_inv_cancel₀ hΓ, one_mul, one_mul]
+  -- identity theorem: two entire functions agreeing on `Re s > 2` agree at `s = 1`
+  have hL1 : L 1 = ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) *
+      (cuspFEPairOn N hN G h1 h0 f).Λ 1 := by
+    have hopen : IsOpen {z : ℂ | 2 < z.re} := isOpen_lt continuous_const Complex.continuous_re
+    have hmem : (3 : ℂ) ∈ {z : ℂ | 2 < z.re} := by norm_num
+    have key : Set.EqOn L (fun s : ℂ => ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ s *
+        (cuspFEPairOn N hN G h1 h0 f).Λ s * (Complex.Gamma s)⁻¹) Set.univ := by
+      refine hL.entire.eqOn_of_preconnected_of_eventuallyEq hFentire isPreconnected_univ
+        (Set.mem_univ (3 : ℂ)) ?_
+      filter_upwards [hopen.mem_nhds hmem] with z hz
+      rw [hL.eq_lseries z hz, hFeq z hz]
+    have := key (Set.mem_univ (1 : ℂ))
+    simpa [Complex.cpow_one, Complex.Gamma_one] using this
+  -- the completed transform at `s = 1` is `√N` times the period
+  have hΛ1 : (cuspFEPairOn N hN G h1 h0 f).Λ 1 =
+      ((Real.sqrt N : ℝ) : ℂ) * cuspPeriod a := by
+    have hmel : (cuspFEPairOn N hN G h1 h0 f).Λ 1
+        = ∫ y in Set.Ioi (0 : ℝ), axisRestrictOn G N f y := by
+      rw [congr_fun hstrong.Λ_eq 1]
+      simp only [mellin, sub_self, Complex.cpow_zero, one_smul]
+      rfl
+    have hpt : ∀ y ∈ Set.Ioi (0 : ℝ), axisRestrictOn G N f y =
+        (fun u : ℝ => ∑' n : ℕ,
+            a (n + 1) * Complex.exp (-(2 * (Real.pi : ℂ) * (n + 1) * (u : ℂ))))
+          ((Real.sqrt N)⁻¹ * y) := by
+      intro y hy
+      have hy' : (0 : ℝ) < y := hy
+      have h := (hasSum_axisRestrictOn hN hf hy').tsum_eq
+      rw [← h]
+      refine tsum_congr fun n => ?_
+      congr 1
+      rw [Complex.ofReal_exp]
+      congr 1
+      push_cast
+      ring
+    have hint : (∫ y in Set.Ioi (0 : ℝ), axisRestrictOn G N f y)
+        = ∫ y in Set.Ioi (0 : ℝ), (fun u : ℝ => ∑' n : ℕ,
+            a (n + 1) * Complex.exp (-(2 * (Real.pi : ℂ) * (n + 1) * (u : ℂ))))
+          ((Real.sqrt N)⁻¹ * y) :=
+      MeasureTheory.setIntegral_congr_fun measurableSet_Ioi hpt
+    rw [hmel, hint,
+      MeasureTheory.integral_comp_mul_left_Ioi (fun u : ℝ => ∑' n : ℕ,
+        a (n + 1) * Complex.exp (-(2 * (Real.pi : ℂ) * (n + 1) * (u : ℂ)))) 0
+        (inv_pos.mpr hsq)]
+    rw [cuspPeriod]
+    rw [mul_zero, inv_inv, Complex.real_smul]
+  rw [hL1, hΛ1]
+  have hsqC : ((Real.sqrt N : ℝ) : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr hsq.ne'
+  push_cast
+  field_simp
+
 end HeckeOn
 
 /-- **Hecke: the `L`-function of a weight-two eigenform on `Γ₁(N)`
@@ -10978,6 +11117,15 @@ SEPARATE ONE — the one place this STATEMENT must differ from
 `X0.lean`'s.**  On the `Γ₀` side the two halves are separable at the level
 of the parent structure because `IsHeckeIsotypicDecomposition.T` is PINNED
 by its `heckeModuli` field (`IsModularHeckeAction`, added 2026-07-28).
+
+**⚠ THE NEXT SENTENCE IS STALE AS OF 2026-07-29 — read the correction under
+"WHAT IS DELIBERATELY STILL NOT DONE" below before acting on it.**
+`IsHeckeIsotypicDecompositionGamma1` **does** now carry a `heckeModuli`
+field, and the "WHAT IS NOT PINNED, and it is the crux" heading it points
+at no longer exists.  What survives unchanged is the *refutation* in the
+rest of the paragraph, and with it the reason THIS statement quantifies `T`
+existentially; only the premise about the parent structure has moved.
+
 `IsHeckeIsotypicDecompositionGamma1` carries no such field — see its
 docstring, "WHAT IS NOT PINNED, and it is the crux" — so a `Γ₁` leaf
 taking a BARE `T` as an input would be **FALSE**, by exactly the
@@ -11088,6 +11236,63 @@ sharpening is a cut-level repair of the STRUCTURE, it needs its own
 faithfulness audit, and it is UNBLOCKED rather than done.  The `N = 37`
 eigen-system swap therefore still inhabits
 `IsHeckeIsotypicDecompositionGamma1`.
+
+## ⚠ CORRECTION (2026-07-30) — THAT SHARPENING WAS DONE, AND IT CHANGES WHICH REPAIR IS RIGHT
+
+The paragraph immediately above is **STALE**, and so are the two other places
+in this file that say the `Γ₁` structure has no pin (this docstring's "WHY THE
+HECKE ACTION IS PRODUCED IN THIS STATEMENT" paragraph, and
+`exists_heckeIsotypicDecomposition_gamma1`'s "the `Γ₁` transport is two leaves
+rather than three").  `IsHeckeIsotypicDecompositionGamma1.heckeModuli :
+IsModularHeckeActionGamma1 N h.some jac T T_comp` was **added on 2026-07-29**
+and is in the structure now; the `#### The Γ₁ moduli pin` subsection's own
+release-19 merge note already records the field's existence, but nothing
+propagated the consequences to the three paragraphs that reason from its
+absence.  Verified against the source at this commit, not from prose.
+
+**Consequence 1 — the recorded "one owner, both sides" repair is now the WORSE
+of the two options, and it was the better one when it was written.**  The
+FALSITY AUDIT on `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1`
+offers (a) add the anemic relations `T 1 = 𝟙 J`,
+`Nat.Coprime m n → T (m * n) = T m ≫ T n`,
+`T (ℓ^(k+2)) = T ℓ ≫ T (ℓ^(k+1)) − ℓ • T (ℓ^k)` to both pins — at the cost of
+`exists_modularHeckeAction` / `exists_modularHeckeAction_gamma1` reverting to
+leaves — or (b) restrict `IsIsotypicQuotient`'s `isotypic` and `equivariant` to
+primes `ℓ ∤ N`, dismissed as "a change to a structure shared with `X0.lean`".
+But (b) closes the arity gap on BOTH sides with **no leaf regression at all**,
+while (a) costs two proven theorems; and (b)'s shared-structure objection is no
+longer a discriminator, because after 2026-07-29 both parent structures pin `T`
+through `heckeModuli`, so both sides need the same edit either way.  Whoever
+owns `X0.lean`'s `IsIsotypicQuotient` should take (b).
+
+**Consequence 2, and it is not recorded anywhere else: the sibling cut
+`exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` HAS QUIETLY
+STOPPED BEING A REDUCTION.**  Its hypothesis `hquot` supplies
+`∃ T T_comp, (∀ n, IsAdditiveOn …) ∧ ∀ χ f a, … → Nonempty (IsIsotypicQuotient
+ab T N a)` — an **unpinned** `T`.  Its conclusion is
+`Nonempty (IsHeckeIsotypicDecompositionGamma1 N h jac)`, which since
+2026-07-29 requires a `T` satisfying `heckeModuli`.  So `hquot`'s `T` cannot be
+used for the field it was cut out to supply: a prover must build the genuine
+Hecke action from scratch anyway, and `hquot` now contributes only the factors.
+The leaf is still TRUE — the genuine action satisfies everything — but the
+"factors / all factors" split no longer removes the hardest object from it, and
+the frontier accounting that treats it as a proper decomposition of
+`exists_heckeIsotypicDecomposition_gamma1` is optimistic by one Hecke-action
+construction.  Repair (b) does not fix this; matching `hquot`'s conclusion to
+the parent's `heckeModuli` field does, and that is a one-line change to this
+file that costs nothing.
+
+**Consequence 3 — the "DO NOT HARMONISE" warning below was overtaken by events,
+not withdrawn.**  It says that giving `IsHeckeIsotypicDecompositionGamma1` a
+`heckeModuli` field *and then* taking `T` as a hypothesis in the factor leaf
+"would import a falsity".  Exactly half of that happened: the field was added,
+the factor leaf still takes `T` as a hypothesis, and the falsity is indeed
+present — which is what the FALSITY AUDIT on that leaf records.  The warning was
+right; it was simply not seen by the branch that added the field.
+
+Nothing in this correction is a Lean change, so nothing here can turn the build
+red; it is written here rather than in a commit message because a commit message
+cannot be maintained and the frontier can.
 
 **`hN : N ≠ 0` IS LOAD-BEARING — WITHOUT IT THIS LEAF IS FALSE**, and the
 witness is `X0.lean`'s, unchanged.  At level `0` every prime divides `N`,
@@ -11277,10 +11482,267 @@ theorem lacunaryTwoCoeff_atkin (c : ℂ) (p : ℕ) (hp : p.Prime) (n : ℕ) (hn 
   · rw [lacunaryTwoCoeff_eq_zero_of_odd_prime_dvd hp hp2 ⟨n, mul_comm n p⟩,
       lacunaryTwoCoeff_eq_zero_of_odd_prime_dvd hp hp2 dvd_rfl, zero_mul]
 
+section LacunaryLevelZero
+
+open Filter Asymptotics MeasureTheory UpperHalfPlane OnePoint
+open scoped ModularForm
+
+/-- The lacunary `q`-series `∑_{k ≥ 0} c^k q^{2^k}` as a function of `z : ℂ`,
+with `q = exp (2πiz)`.  Written on `ℂ` rather than on `ℍ` so that
+periodicity, holomorphy and decay are all statements about one honest
+complex function. -/
+noncomputable def lacunaryQSeries (c : ℂ) (z : ℂ) : ℂ :=
+  ∑' n : ℕ, lacunaryTwoCoeff c (n + 1) * Complex.exp (2 * Real.pi * Complex.I * (n + 1) * z)
+
+lemma norm_lacunaryQTerm (c : ℂ) (n : ℕ) (z : ℂ) :
+    ‖lacunaryTwoCoeff c (n + 1) * Complex.exp (2 * Real.pi * Complex.I * (n + 1) * z)‖
+      = ‖lacunaryTwoCoeff c (n + 1)‖ * Real.exp (-(2 * Real.pi * (n + 1) * z.im)) := by
+  rw [norm_mul, Complex.norm_exp]
+  congr 1
+  simp
+
+/-- The doubly-exponential decay that makes the series converge for EVERY
+`c`, however large: the ratio of consecutive terms is `‖c‖ · r^{2^k}` with
+`r = e^{-2πy} < 1`, which tends to `0`. -/
+lemma summable_lacunary_pow (c : ℂ) {y : ℝ} (hy : 0 < y) :
+    Summable fun k : ℕ => ‖c‖ ^ k * Real.exp (-(2 * Real.pi * 2 ^ k * y)) := by
+  have hpi := Real.pi_pos
+  -- `e^{-2πy} < 1`, so `‖c‖ · (e^{-2πy})^k → 0`; the ratio at step `k` is
+  -- `‖c‖ · e^{-2π 2^k y} ≤ ‖c‖ · (e^{-2πy})^k`, hence eventually `≤ 1/2`.
+  have hr1 : Real.exp (-(2 * Real.pi * y)) < 1 := by
+    rw [Real.exp_lt_one_iff]; nlinarith
+  have hlim : Tendsto (fun k : ℕ => ‖c‖ * Real.exp (-(2 * Real.pi * y)) ^ k)
+      atTop (nhds 0) := by
+    simpa using
+      (tendsto_pow_atTop_nhds_zero_of_lt_one (Real.exp_nonneg _) hr1).const_mul ‖c‖
+  have hev : ∀ᶠ k : ℕ in atTop, ‖c‖ * Real.exp (-(2 * Real.pi * y)) ^ k < 1 / 2 :=
+    hlim.eventually (gt_mem_nhds (by norm_num))
+  refine summable_of_ratio_norm_eventually_le (r := 1 / 2) (by norm_num) ?_
+  filter_upwards [hev] with k hk
+  have hnn : ∀ j : ℕ, 0 ≤ ‖c‖ ^ j * Real.exp (-(2 * Real.pi * 2 ^ j * y)) := fun j => by
+    positivity
+  rw [Real.norm_of_nonneg (hnn (k + 1)), Real.norm_of_nonneg (hnn k)]
+  -- `e^{-2π 2^{k+1} y} = e^{-2π 2^k y} · e^{-2π 2^k y}`
+  have hsplit : Real.exp (-(2 * Real.pi * 2 ^ (k + 1) * y))
+      = Real.exp (-(2 * Real.pi * 2 ^ k * y)) * Real.exp (-(2 * Real.pi * 2 ^ k * y)) := by
+    rw [← Real.exp_add]; congr 1; ring
+  -- the ratio is `‖c‖ · e^{-2π 2^k y}`, and `2^k ≥ k` makes it `≤ ‖c‖ · (e^{-2πy})^k`
+  have hkle : Real.exp (-(2 * Real.pi * 2 ^ k * y)) ≤ Real.exp (-(2 * Real.pi * y)) ^ k := by
+    rw [← Real.exp_nat_mul]
+    refine Real.exp_le_exp.2 ?_
+    have h2k : (k : ℝ) ≤ 2 ^ k := by
+      exact_mod_cast (Nat.lt_two_pow_self (n := k)).le
+    have hprod : (k : ℝ) * (2 * Real.pi * y) ≤ 2 ^ k * (2 * Real.pi * y) :=
+      mul_le_mul_of_nonneg_right h2k (by positivity)
+    linarith
+  have hratio : ‖c‖ * Real.exp (-(2 * Real.pi * 2 ^ k * y)) ≤ 1 / 2 := by
+    calc ‖c‖ * Real.exp (-(2 * Real.pi * 2 ^ k * y))
+        ≤ ‖c‖ * Real.exp (-(2 * Real.pi * y)) ^ k := by
+          exact mul_le_mul_of_nonneg_left hkle (norm_nonneg c)
+      _ ≤ 1 / 2 := hk.le
+  calc ‖c‖ ^ (k + 1) * Real.exp (-(2 * Real.pi * 2 ^ (k + 1) * y))
+      = (‖c‖ * Real.exp (-(2 * Real.pi * 2 ^ k * y)))
+          * (‖c‖ ^ k * Real.exp (-(2 * Real.pi * 2 ^ k * y))) := by
+        rw [hsplit]; ring
+    _ ≤ (1 / 2) * (‖c‖ ^ k * Real.exp (-(2 * Real.pi * 2 ^ k * y))) :=
+        mul_le_mul_of_nonneg_right hratio (hnn k)
+
+/-- The bound sequence for the `q`-series on `{im z ≥ y}` is summable.
+
+The family is supported on the powers of two, so it is the pushforward of
+`summable_lacunary_pow` along the injection `k ↦ 2^k - 1`. -/
+lemma summable_lacunaryBound (c : ℂ) {y : ℝ} (hy : 0 < y) :
+    Summable fun n : ℕ =>
+      ‖lacunaryTwoCoeff c (n + 1)‖ * Real.exp (-(2 * Real.pi * (n + 1) * y)) := by
+  have hi : Function.Injective fun k : ℕ => 2 ^ k - 1 := by
+    intro k₁ k₂ h
+    have hbeta : 2 ^ k₁ - 1 = 2 ^ k₂ - 1 := h
+    have h1 : 1 ≤ 2 ^ k₁ := Nat.one_le_two_pow
+    have h2 : 1 ≤ 2 ^ k₂ := Nat.one_le_two_pow
+    have h3 : (2 : ℕ) ^ k₁ = 2 ^ k₂ := by
+      have e1 : 2 ^ k₁ - 1 + 1 = 2 ^ k₂ - 1 + 1 := by rw [hbeta]
+      rwa [Nat.sub_add_cancel h1, Nat.sub_add_cancel h2] at e1
+    exact Nat.pow_right_injective le_rfl h3
+  have hzero : ∀ n ∉ Set.range fun k : ℕ => 2 ^ k - 1,
+      ‖lacunaryTwoCoeff c (n + 1)‖ * Real.exp (-(2 * Real.pi * (n + 1) * y)) = 0 := by
+    intro n hn
+    have hcoeff : lacunaryTwoCoeff c (n + 1) = 0 := by
+      rw [lacunaryTwoCoeff, if_neg]
+      intro hcond
+      exact hn ⟨Nat.log 2 (n + 1), show 2 ^ Nat.log 2 (n + 1) - 1 = n by omega⟩
+    simp [hcoeff]
+  rw [← hi.summable_iff hzero]
+  refine (summable_lacunary_pow c hy).congr fun k => ?_
+  have hpow : 2 ^ k - 1 + 1 = 2 ^ k := Nat.succ_pred_eq_of_pos (Nat.two_pow_pos k)
+  have hcast : ((2 ^ k - 1 : ℕ) : ℝ) + 1 = 2 ^ k := by
+    have : ((2 ^ k - 1 + 1 : ℕ) : ℝ) = ((2 ^ k : ℕ) : ℝ) := by rw [hpow]
+    push_cast at this ⊢
+    linarith
+  simp only [Function.comp_apply, hpow, hcast, lacunaryTwoCoeff_pow, norm_pow]
+
+lemma summable_lacunaryQTerm (c : ℂ) {z : ℂ} (hz : 0 < z.im) :
+    Summable fun n : ℕ =>
+      lacunaryTwoCoeff c (n + 1) * Complex.exp (2 * Real.pi * Complex.I * (n + 1) * z) := by
+  refine .of_norm ?_
+  refine (summable_lacunaryBound c hz).congr fun n => ?_
+  exact (norm_lacunaryQTerm c n z).symm
+
+lemma differentiableOn_lacunaryQSeries (c : ℂ) :
+    DifferentiableOn ℂ (lacunaryQSeries c) {z : ℂ | 0 < z.im} := by
+  intro z hz
+  have hz' : 0 < z.im := hz
+  have hU : IsOpen {w : ℂ | z.im / 2 < w.im} :=
+    isOpen_lt continuous_const Complex.continuous_im
+  have hy : 0 < z.im / 2 := by linarith
+  have hdiff : DifferentiableOn ℂ (lacunaryQSeries c) {w : ℂ | z.im / 2 < w.im} := by
+    refine Complex.differentiableOn_tsum_of_summable_norm (summable_lacunaryBound c hy) ?_ hU ?_
+    · intro n
+      exact Differentiable.differentiableOn (by fun_prop)
+    · intro n w hw
+      rw [norm_lacunaryQTerm]
+      refine mul_le_mul_of_nonneg_left (Real.exp_le_exp.2 ?_) (norm_nonneg _)
+      have hw' : z.im / 2 ≤ w.im := le_of_lt hw
+      have hc0 : (0 : ℝ) ≤ 2 * Real.pi * ((n : ℝ) + 1) := by positivity
+      nlinarith
+  have hmem : z ∈ {w : ℂ | z.im / 2 < w.im} := by simp only [Set.mem_setOf_eq]; linarith
+  exact (hdiff.differentiableAt (hU.mem_nhds hmem)).differentiableWithinAt
+
+/-- `1`-periodicity, termwise: `e^{2πi n (z + b)} = e^{2πi n z}` for `b : ℤ`. -/
+lemma lacunaryQSeries_add_int (c : ℂ) (z : ℂ) (b : ℤ) :
+    lacunaryQSeries c (z + b) = lacunaryQSeries c z := by
+  unfold lacunaryQSeries
+  refine tsum_congr fun n => ?_
+  congr 1
+  rw [mul_add, Complex.exp_add]
+  have hone : Complex.exp (2 * (Real.pi : ℂ) * Complex.I * ((n : ℂ) + 1) * (b : ℂ)) = 1 := by
+    rw [show 2 * (Real.pi : ℂ) * Complex.I * ((n : ℂ) + 1) * (b : ℂ)
+        = (((n + 1) * b : ℤ) : ℂ) * (2 * (Real.pi : ℂ) * Complex.I) by push_cast; ring]
+    exact Complex.exp_int_mul_two_pi_mul_I _
+  rw [hone, mul_one]
+
+/-- Exponential decay at `i∞`: on `im τ ≥ 1` the whole series is bounded by
+`e^{-2π·im τ}` times the fixed constant `∑ ‖aₙ‖ e^{-2πn}`, because
+`(n+1)·y ≥ y + n` there. -/
+lemma tendsto_lacunaryQSeries_atImInfty (c : ℂ) :
+    Tendsto (fun τ : ℍ => lacunaryQSeries c (τ : ℂ)) atImInfty (nhds 0) := by
+  have hpi := Real.pi_pos
+  -- the fixed comparison constant
+  have hS : Summable fun n : ℕ =>
+      ‖lacunaryTwoCoeff c (n + 1)‖ * Real.exp (-(2 * Real.pi * n)) := by
+    refine ((summable_lacunaryBound c one_pos).mul_right
+      (Real.exp (2 * Real.pi))).congr fun n => ?_
+    rw [mul_assoc, ← Real.exp_add,
+      show -(2 * Real.pi * ((n : ℝ) + 1) * 1) + 2 * Real.pi = -(2 * Real.pi * n) by ring]
+  set C : ℝ := ∑' n : ℕ, ‖lacunaryTwoCoeff c (n + 1)‖ * Real.exp (-(2 * Real.pi * n)) with hC
+  have hC0 : 0 ≤ C := by
+    rw [hC]; exact tsum_nonneg fun n => by positivity
+  -- the bound, valid once `im τ ≥ 1`
+  have hbound : ∀ᶠ τ : ℍ in atImInfty,
+      ‖lacunaryQSeries c (τ : ℂ)‖ ≤ Real.exp (-(2 * Real.pi * τ.im)) * C := by
+    rw [eventually_iff_exists_mem]
+    refine ⟨UpperHalfPlane.im ⁻¹' Set.Ici 1, atImInfty_basis.mem_of_mem trivial, ?_⟩
+    intro τ hτ
+    have hτ1 : (1 : ℝ) ≤ τ.im := hτ
+    have hτ0 : 0 < τ.im := lt_of_lt_of_le one_pos hτ1
+    have hsum : Summable fun n : ℕ =>
+        ‖lacunaryTwoCoeff c (n + 1) *
+          Complex.exp (2 * Real.pi * Complex.I * (n + 1) * (τ : ℂ))‖ := by
+      refine (summable_lacunaryBound c (y := τ.im) hτ0).congr fun n => ?_
+      exact (norm_lacunaryQTerm c n (τ : ℂ)).symm
+    calc ‖lacunaryQSeries c (τ : ℂ)‖
+        ≤ ∑' n : ℕ, ‖lacunaryTwoCoeff c (n + 1) *
+            Complex.exp (2 * Real.pi * Complex.I * (n + 1) * (τ : ℂ))‖ :=
+          norm_tsum_le_tsum_norm hsum
+      _ ≤ ∑' n : ℕ, Real.exp (-(2 * Real.pi * τ.im)) *
+            (‖lacunaryTwoCoeff c (n + 1)‖ * Real.exp (-(2 * Real.pi * n))) := by
+          refine Summable.tsum_le_tsum (fun n => ?_) hsum (hS.mul_left _)
+          rw [norm_lacunaryQTerm]
+          rw [show Real.exp (-(2 * Real.pi * τ.im)) *
+              (‖lacunaryTwoCoeff c (n + 1)‖ * Real.exp (-(2 * Real.pi * n)))
+            = ‖lacunaryTwoCoeff c (n + 1)‖ *
+              (Real.exp (-(2 * Real.pi * τ.im)) * Real.exp (-(2 * Real.pi * n))) by ring]
+          refine mul_le_mul_of_nonneg_left ?_ (norm_nonneg _)
+          rw [← Real.exp_add]
+          refine Real.exp_le_exp.2 ?_
+          -- `(n+1)·y ≥ y + n` for `y ≥ 1`
+          have hn0 : (0 : ℝ) ≤ (n : ℝ) := Nat.cast_nonneg n
+          have hcoe : ((τ : ℂ)).im = τ.im := rfl
+          rw [hcoe]
+          have hprod : (n : ℝ) * 1 ≤ (n : ℝ) * τ.im := mul_le_mul_of_nonneg_left hτ1 hn0
+          nlinarith
+      _ = Real.exp (-(2 * Real.pi * τ.im)) * C := by rw [hC, tsum_mul_left]
+  refine squeeze_zero_norm' hbound ?_
+  -- `e^{-2πy}·C → 0` as `y → ∞`
+  have him : Tendsto (fun τ : ℍ => τ.im) atImInfty atTop := tendsto_comap
+  have hlin : Tendsto (fun y : ℝ => -(2 * Real.pi * y)) atTop atBot := by
+    have hmul : Tendsto (fun y : ℝ => 2 * Real.pi * y) atTop atTop :=
+      Filter.Tendsto.const_mul_atTop (by positivity) tendsto_id
+    simpa [Function.comp_def] using tendsto_neg_atTop_atBot.comp hmul
+  simpa using ((Real.tendsto_exp_atBot.comp (hlin.comp him)).mul_const C)
+
+/-- **`∞` is the ONLY cusp of `Gamma1GL 0 = ⟨T⟩`.**  This is the fact the
+level-`0` refutation turns on: mathlib's `IsCusp` is the set of fixed
+points of the PARABOLIC elements OF THE GROUP, and every element of
+`Γ₁(0)` is lower-left `0`, so its parabolic fixed point is `∞`. -/
+lemma eq_infty_of_isCusp_gamma1GL_zero {x : OnePoint ℝ} (hx : IsCusp x (Gamma1GL 0)) :
+    x = ∞ := by
+  obtain ⟨g, hg, hgp, hgc⟩ := hx
+  obtain ⟨γ, hγ, rfl⟩ := hg
+  -- the lower-left entry of `γ` is `0` on the nose, `ZMod 0` being `ℤ`
+  have hz0 : ∀ a b : ℤ, ((a : ZMod 0) = (b : ZMod 0)) → a = b := by
+    intro a b h
+    simpa [Int.ModEq, Int.emod_zero] using (ZMod.intCast_eq_intCast_iff a b 0).1 h
+  have h10 : (γ : Matrix (Fin 2) (Fin 2) ℤ) 1 0 = 0 :=
+    hz0 _ _ (by simpa using ((CongruenceSubgroup.Gamma1_mem 0 γ).1 hγ).2.2)
+  rw [hgp.smul_eq_self_iff] at hgc
+  rwa [Matrix.GeneralLinearGroup.parabolicFixedPoint, if_pos (by simp [h10])] at hgc
+
 /-- **A weight-two cusp form for `Γ₁(0) = ⟨T⟩` with the lacunary
-`q`-expansion `∑_{k ≥ 0} c^k q^{2^k}`** (sorry leaf, NEW 2026-07-28) —
+`q`-expansion `∑_{k ≥ 0} c^k q^{2^k}`** (**PROVEN 2026-07-30**; a sorry
+leaf from 2026-07-28 until then) —
 the one analytic input of the level-`0` refutation above, and the ONLY
-new sorry this repair introduces.
+new sorry this repair introduced.
+
+**THE PROOF IS THE THREE BULLETS BELOW, IN ORDER, AND THE DIAGNOSIS WAS
+EXACTLY RIGHT** — "only mathlib plumbing, no theory".  It is carried by the
+six lemmas of the `LacunaryLevelZero` section above, all stated about the
+single complex function `lacunaryQSeries c` rather than about a function on
+`ℍ`, which is what makes periodicity, holomorphy and decay three
+statements about one object:
+
+* `summable_lacunary_pow` is the crux, and it is where "for EVERY `c`" is
+  earned.  The terms are `‖c‖^k r^{2^k}` with `r = e^{-2πy} < 1`, so the
+  RATIO is `‖c‖ r^{2^k} → 0` — doubly exponential decay beats any fixed
+  geometric growth, and `summable_of_ratio_norm_eventually_le` at `1/2`
+  closes it.  A comparison against a single geometric series cannot work:
+  `‖c‖^k r^{2^k} ≤ (Mr)^k` needs `r < 1/M`, i.e. `y` large, and `y` is
+  given.
+* `summable_lacunaryBound` transports that to the index set the
+  `q`-expansion actually runs over.  The family over `n` is supported on
+  `n + 1 = 2^k`, so it is the pushforward along the injection
+  `k ↦ 2^k - 1` (`Function.Injective.summable_iff`, whose side condition
+  "zero off the range" is `lacunaryTwoCoeff`'s own `if`).
+* `differentiableOn_lacunaryQSeries` is
+  `Complex.differentiableOn_tsum_of_summable_norm` on `{im w > (im z)/2}`
+  — a horizontal half-plane STRICTLY INSIDE `ℍ`, because the bound
+  degrades as `im → 0` and the lemma wants it uniform.  `DifferentiableOn`
+  there gives `DifferentiableAt` at `z`, and `mdifferentiable_iff` turns
+  the resulting `DifferentiableOn ℂ · {0 < im}` into `MDiff`.
+* `lacunaryQSeries_add_int` is `1`-periodicity, termwise, from
+  `Complex.exp_int_mul_two_pi_mul_I`; combined with
+  `coe_smul_of_det_pos` and `σ g = id` (`det (mapGL ℝ γ) = 1 > 0`) it is
+  the whole of slash-invariance, since every `γ ∈ Γ₁(0)` has
+  `γ₀₀ = γ₁₁ = 1` and `γ₁₀ = 0` ON THE NOSE (`ZMod 0` is `ℤ`), hence
+  `denom = 1` and `γ • τ = τ + γ₀₁`.
+* `tendsto_lacunaryQSeries_atImInfty` and
+  `eq_infty_of_isCusp_gamma1GL_zero` are the cusp condition.  The second
+  is where the trap below is DISCHARGED rather than avoided: `IsCusp` asks
+  for a fixed point of a parabolic element OF THE GROUP, every element of
+  `Γ₁(0)` has lower-left entry `0`, and `parabolicFixedPoint` of such an
+  element is `∞` by definition — so `∞` is the only cusp and
+  `isZeroAt_infty_iff` reduces the condition to `f → 0` at `i∞`.  The
+  decay itself is `‖f(τ)‖ ≤ e^{-2π·im τ} · ∑ ‖aₙ‖e^{-2πn}` for
+  `im τ ≥ 1`, which is `(n+1)y ≥ y + n` there.
 
 TRUE, and the argument is short enough to state completely.  `Gamma1 0`
 is `⟨T⟩` (see the section docstring), so mathlib's
@@ -11323,8 +11785,49 @@ theorem exists_cuspForm_gamma1GL_zero_lacunary (c : ℂ) :
       (∀ τ : UpperHalfPlane, f τ = ∑' n : ℕ, lacunaryTwoCoeff c (n + 1) *
           Complex.exp (2 * Real.pi * Complex.I * (n + 1) * (τ : ℂ))) ∧
         ∀ τ : UpperHalfPlane, Summable fun n : ℕ => lacunaryTwoCoeff c (n + 1) *
-          Complex.exp (2 * Real.pi * Complex.I * (n + 1) * (τ : ℂ)) :=
-  sorry
+          Complex.exp (2 * Real.pi * Complex.I * (n + 1) * (τ : ℂ)) := by
+
+  refine ⟨{ toFun := fun τ : ℍ => lacunaryQSeries c (τ : ℂ)
+            slash_action_eq' := ?_
+            holo' := ?_
+            zero_at_cusps' := ?_ }, fun τ => rfl, fun τ => summable_lacunaryQTerm c τ.im_pos⟩
+  · -- SLASH-INVARIANCE: every element of `Γ₁(0)` is `T^b`, so this is `1`-periodicity
+    intro g hg
+    obtain ⟨γ, hγ, rfl⟩ := hg
+    have hz0 : ∀ a b : ℤ, ((a : ZMod 0) = (b : ZMod 0)) → a = b := by
+      intro a b h
+      simpa [Int.ModEq, Int.emod_zero] using (ZMod.intCast_eq_intCast_iff a b 0).1 h
+    obtain ⟨h00, h11, h10⟩ := (CongruenceSubgroup.Gamma1_mem 0 γ).1 hγ
+    have e00 : (γ : Matrix (Fin 2) (Fin 2) ℤ) 0 0 = 1 := hz0 _ _ (by simpa using h00)
+    have e11 : (γ : Matrix (Fin 2) (Fin 2) ℤ) 1 1 = 1 := hz0 _ _ (by simpa using h11)
+    have e10 : (γ : Matrix (Fin 2) (Fin 2) ℤ) 1 0 = 0 := hz0 _ _ (by simpa using h10)
+    set g : GL (Fin 2) ℝ := Matrix.SpecialLinearGroup.mapGL ℝ γ with hgdef
+    have hdetpos : (0 : ℝ) < g.det.val := by simp [hgdef]
+    have hσ : ∀ w : ℂ, UpperHalfPlane.σ g w = w := fun w => by
+      rw [UpperHalfPlane.σ, if_pos hdetpos]; rfl
+    ext τ
+    rw [ModularForm.slash_apply, hσ]
+    -- `denom g τ = 1`, `|det g| = 1`, and `g • τ = τ + b`
+    have hden : denom g (τ : ℂ) = 1 := by simp [hgdef, denom, e10, e11]
+    have hsmul : ((g • τ : ℍ) : ℂ)
+        = (τ : ℂ) + (((γ : Matrix (Fin 2) (Fin 2) ℤ) 0 1 : ℤ) : ℂ) := by
+      rw [UpperHalfPlane.coe_smul_of_det_pos hdetpos]
+      simp [hgdef, num, denom, e00, e10, e11]
+    show lacunaryQSeries c ((g • τ : ℍ) : ℂ) * _ * _ = lacunaryQSeries c (τ : ℂ)
+    rw [hsmul, lacunaryQSeries_add_int, hden]
+    simp [hgdef]
+  · -- HOLOMORPHY on `ℍ`, from `DifferentiableOn` of the series on `{im > 0}`
+    rw [UpperHalfPlane.mdifferentiable_iff]
+    refine (differentiableOn_lacunaryQSeries c).congr fun z hz => ?_
+    rw [UpperHalfPlane.comp_ofComplex_of_im_pos _ z hz]
+    rfl
+  · -- VANISHING AT THE CUSPS: `∞` is the only cusp of `⟨T⟩`, and the leading
+    -- term `q` gives `f → 0` there
+    intro x hx
+    rw [eq_infty_of_isCusp_gamma1GL_zero hx, OnePoint.isZeroAt_infty_iff]
+    exact tendsto_lacunaryQSeries_atImInfty c
+
+end LacunaryLevelZero
 
 /-- **Every `c : ℂ` is the second coefficient of a level-`0` eigenform**
 (PROVEN 2026-07-28, over `exists_cuspForm_gamma1GL_zero_lacunary`) — the
@@ -11516,7 +12019,35 @@ witness `A i := SpecQ`, `astr i := 𝟙 SpecQ`, `u i := jstr`, which
 **AXIS NOT SEARCHED**, inherited from the `Γ₀` node: the complex-analytic
 route through `Γ₁(N)\ℍ*`, which is how the classical proof identifies the
 factors in the first place.  Everything above is the algebraic-moduli
-axis. -/
+axis.
+
+## ⚠ THIS IS NO LONGER A REDUCTION (found 2026-07-30, and it is a one-line fix)
+
+`IsHeckeIsotypicDecompositionGamma1` gained a `heckeModuli :
+IsModularHeckeActionGamma1 …` field on 2026-07-29.  `hquot` below was written
+the day before and hands over an **unpinned** `T`.  So the conclusion now
+demands of `T` something `hquot` does not supply, and the ONE object this cut
+exists to remove from the leaf — the genuine Hecke action — has to be built
+here after all.  A prover who reaches for `hquot`'s `T` to fill `heckeModuli`
+will find it cannot be done, and the fault is in the cut, not in the prover.
+
+Everything in the four bullets above is still owned here and still correct;
+what is wrong is only the claim, implicit in the shape of `hquot`, that the
+action comes for free.  The fix is to add
+`IsModularHeckeActionGamma1 N h.some jac T T_comp` to `hquot`'s conjunction,
+which costs nothing at the supply side —
+`exists_heckeAction_isotypicQuotients_gamma1`, the sole caller, obtains that
+very pin from `exists_modularHeckeAction_gamma1` and currently DISCARDS it.
+That is the shape CLAUDE.md records as usual: the missing hypothesis is
+already in the caller's hand.
+
+It is left unmade here deliberately, because it is entangled with the FALSITY
+of `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` (same arity gap,
+same pin) and the audit's standing instruction is that the pin be repaired by
+ONE owner across both files.  Doing the easy half first would make the pin
+mean two different things at two call sites in one file.  See "⚠ CORRECTION
+(2026-07-30)" on `exists_heckeAction_isotypicQuotients_gamma1` above for which
+of the two prescribed repairs is now the cheaper one. -/
 theorem exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1 (N : ℕ) (hN : N ≠ 0)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (h : ModularLevelShape.IsCompactification .gamma1 N strX strY jY) {jstr : J ⟶ SpecQ}
@@ -11576,6 +12107,17 @@ side can hand `T` to its factor-building leaf as a hypothesis only because
 `IsHeckeIsotypicDecompositionGamma1` has no such field, so the `Γ₁` leaf
 must quantify `T` existentially and thereby absorbs
 `exists_modularHeckeAction`'s job.
+
+**⚠ STALE (corrected 2026-07-30): the `Γ₁` structure DOES have a
+`heckeModuli` field**, added 2026-07-29.  The clause "and
+`IsHeckeIsotypicDecompositionGamma1` has no such field" above is false at
+this commit.  The count "two leaves rather than three" is still the right
+count of *declarations*, but the reason given for it has gone, and one of
+those two — `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1`
+— is no longer a genuine reduction, because its `hquot` hands over an
+UNPINNED `T` while its conclusion now needs a pinned one.  The full
+accounting is under "⚠ CORRECTION (2026-07-30)" on
+`exists_heckeAction_isotypicQuotients_gamma1` above.
 
 `IsIsotypicQuotient` is reused verbatim from `X0.lean` — it is
 shape-free — so this transport adds no structure.
@@ -12073,6 +12615,27 @@ NEBENTYPUS-FREE: it is the whole of the *analysis* under
 `lFunction_apply_one_ne_zero_x1TwentyFive` below, and `25` does not
 appear in it.
 
+**THIS IS NOW AN ASSEMBLY, NOT A LEAF.**  It is
+`lFunction_apply_one_eq_two_pi_mul_cuspPeriodOn_of_le` (in the `HeckeOn`
+subsection above) at `G = Γ₁(N)`, with the two side conditions `le_rfl`
+and `gamma1GL_le_gamma0GL`.  **The route the sections below prescribe was
+right about what was needed and wrong about where it was**: the
+group-generic machinery it asks for does not have to be built in
+`WeightTwoEigenform.lean`, because it was already built HERE on
+2026-07-28 — `axisRestrictOn`, `exists_frickeInvolutionOn`,
+`cuspFEPairOn`, `isStrongFEPair_cuspFEPairOn`, `hasSum_axisRestrictOn`,
+`mellin_axisRestrictOn`, all PROVEN, for the sake of
+`exists_isLFunctionOf_of_isWeightTwoEigenformOn_of_le`.  So the whole
+cost of closing this node was writing the *second* consumer of that
+machinery, which is the `Γ₀` proof with two names changed and no step of
+the argument altered.
+
+The analysis below is therefore a correct account of the mathematics and
+an obsolete account of the frontier; it is kept because the `Γ₁`-specific
+fact it records — that `W_N` normalises `Γ₁(N)`, computed out in full —
+is the one input the `Γ₀` docstring does not contain, and it is what
+makes `exists_frickeInvolutionOn` applicable at `G = Γ₁(N)`.
+
 TRUE, and it is the SAME classical theorem as the `Γ₀` one rather than an
 analogue of it.  Writing `Λ(s) = ∫₀^∞ f(iy/√N) y^{s-1} dy`:
 
@@ -12087,7 +12650,11 @@ analogue of it.  Writing `Λ(s) = ∫₀^∞ f(iy/√N) y^{s-1} dy`:
   since `Λ(1) = ∫₀^∞ f(iy/√N) dy = √N · cuspPeriod a` by the change of
   variables `y ↦ y/√N`.
 
-### WHY THIS IS A LEAF AND NOT AN APPLICATION OF THE `Γ₀` THEOREM
+### WHY THIS WAS A LEAF AND NOT AN APPLICATION OF THE `Γ₀` THEOREM
+
+(Historical, and it is the diagnosis that turned out to be correct — the
+hoist it prescribes is what `lFunction_apply_one_eq_two_pi_mul_cuspPeriodOn_of_le`
+now is.)
 
 `X0.lean`'s theorem is proven, and **its proof uses nothing about
 `Γ₀(N)` beyond the TYPE of `f`.**  All of it — `axisPoint`,
@@ -13177,9 +13744,10 @@ disappearing:
 | `exists_modularHeckeAction_gamma1` | `T_ℓ` as an endomorphism of `J_1(N)` | no | here, **PROVEN 2026-07-28** |
 | `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` | Shimura's `A_f`, one factor | no | here, **FALSE as stated — see its FALSITY AUDIT** |
 | `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` | multiplicities, `finite_ker`, `neben` (now under `hN : N ≠ 0`) | no | here |
-| `exists_cuspForm_gamma1GL_zero_lacunary` | the lacunary level-`0` cusp form; input to the `N = 0` refutation | no | here, NEW 2026-07-28 |
+| `exists_cuspForm_gamma1GL_zero_lacunary` | the lacunary level-`0` cusp form; input to the `N = 0` refutation | no | here, **PROVEN 2026-07-30** — the `LacunaryLevelZero` section, six lemmas, no theory |
 | `isTorsion_factor_of_heckeIsotypic_gamma1` | Kolyvagin–Logachev | no | here |
-| `lFunction_apply_one_ne_zero_x1TwentyFive` | `L`-value numerics | **yes** | here |
+| `lFunction_apply_one_eq_two_pi_mul_cuspPeriod_gamma1` | Hecke's Mellin transform at `s = 1` | no | here, **PROVEN 2026-07-30** — the `G = Γ₁(N)` instance of `lFunction_apply_one_eq_two_pi_mul_cuspPeriodOn_of_le` |
+| `cuspPeriod_ne_zero_x1TwentyFive` | `L`-value numerics (`lFunction_apply_one_ne_zero_x1TwentyFive` is PROVEN over this and the row above) | **yes** | here |
 | `injective_aj_of_not_isIso_jacobian` | Riemann–Roch | no | `X0.lean`, REUSED |
 | `not_birationalOver_affineLine_of_one_le_x1Genus_algClosed` | genus formula, over `K̄` | **yes** | here, NEW 2026-07-30 |
 | `exists_nonconstant_toAbelianScheme_of_notGeometricallyRational` | `Pic⁰` + degree-`n` Abel–Jacobi | no | here, NEW 2026-07-30, LEVEL-FREE |
