@@ -235,10 +235,35 @@ theorem isIntegrallyClosed_of_isInvariant (R S : Type*) [CommRing R] [CommRing S
 A nonzero prime `p` of `R` lies under some prime `Q` of `S` (lying over, valid
 because `S` is integral over `R` and `R → S` is injective), that `Q` is nonzero
 because its contraction is, hence maximal since `dim S ≤ 1`, and the
-contraction of a maximal ideal along an integral extension is maximal. -/
+contraction of a maximal ideal along an integral extension is maximal.
+
+**`[IsDomain S]` DROPPED 2026-07-30.**  It was used in exactly one place — the
+appeal to `Ideal.exists_ideal_over_prime_of_isIntegral_of_isDomain` — and
+`Ideal.exists_ideal_over_prime_of_isIntegral` (`Mathlib/RingTheory/Ideal/GoingUp.lean`)
+is the general going-up statement that replaces it, at `I := ⊥`, its side
+condition `(⊥ : Ideal S).comap (algebraMap R S) ≤ p` being free from injectivity.
+Nothing else in the proof needed a domain.
+
+Why this matters and who asked for it: `X1.lean`'s
+`smooth_coarseRing_of_gamma1GITPresentation` records, as item 2 of its route from
+the rigidified ring `A` down to `B = A^G`, that this theorem and
+`ringKrullDim_eq_one_of_isInvariant` below "both carry `[IsDomain S]`, i.e.
+`IsDomain A`, which is FALSE here" — over a general base field `K` the scheme
+`𝔐([Γ₁(N)], [Γ(n)])` has `φ(n)` components as soon as `ζ_n ∈ K`, so no
+presentation has `A` a domain.  It also gave the check that would refute the
+proposed repair: "read the proof of `dimensionLEOne_of_isInvariant` and find a
+second use of `IsDomain S`".  That check was run, there is no second use, and the
+repair is this hypothesis removal.  Item 2 of that route is therefore now
+AVAILABLE; items 1 and 3 of it are unchanged, and item 3 (descent of smoothness
+along the `G`-torsor `Spec A → Spec B`, Stacks `02VL`) is still missing from the
+pin, so the leaf is not closed by this.
+
+Removing an instance hypothesis is backward-compatible: every existing caller —
+`isDedekindDomain_of_isInvariant` and `ringKrullDim_eq_one_of_isInvariant` below,
+both of which do have `IsDomain S` in scope — is unaffected. -/
 theorem dimensionLEOne_of_isInvariant (R S : Type*) [CommRing R] [CommRing S] [Algebra R S]
     (G : Type*) [Group G] [Finite G] [MulSemiringAction G S] [SMulCommClass G R S]
-    [Algebra.IsInvariant R S G] [IsDomain S] [Ring.DimensionLEOne S]
+    [Algebra.IsInvariant R S G] [Ring.DimensionLEOne S]
     (hinj : Function.Injective (algebraMap R S)) :
     Ring.DimensionLEOne R := by
   haveI : Algebra.IsIntegral R S := Algebra.IsInvariant.isIntegral R S G
@@ -248,9 +273,9 @@ theorem dimensionLEOne_of_isInvariant (R S : Type*) [CommRing R] [CommRing S] [A
     ext x
     simp only [Ideal.mem_comap, Ideal.mem_bot]
     exact ⟨fun h => hinj (by simpa using h), fun h => by simp [h]⟩
-  obtain ⟨Q, hQ, hQc⟩ :=
-    Ideal.exists_ideal_over_prime_of_isIntegral_of_isDomain (R := R) (S := S) p
-      (by rw [RingHom.ker_eq_comap_bot, hcomapbot]; exact bot_le)
+  obtain ⟨Q, -, hQ, hQc⟩ :=
+    Ideal.exists_ideal_over_prime_of_isIntegral (R := R) (S := S) p ⊥
+      (by rw [hcomapbot]; exact bot_le)
   haveI := hQ
   have hQ0 : Q ≠ ⊥ := by
     rintro rfl
@@ -263,10 +288,14 @@ theorem dimensionLEOne_of_isInvariant (R S : Type*) [CommRing R] [CommRing S] [A
 `≤` is `dimensionLEOne_of_isInvariant`.  `≥` holds because contraction along an
 integral extension is strictly monotone on primes
 (`Ideal.IsIntegral.comap_lt_comap`), so it embeds a chain of `Spec S` into a
-chain of `Spec R`. -/
+chain of `Spec R`.
+
+**`[IsDomain S]` DROPPED 2026-07-30**, for the reason recorded on
+`dimensionLEOne_of_isInvariant` above: it entered only through that theorem, and
+`Ideal.IsIntegral.comap_lt_comap` needs nothing but `Algebra.IsIntegral R S`. -/
 theorem ringKrullDim_eq_one_of_isInvariant (R S : Type*) [CommRing R] [CommRing S] [Algebra R S]
     (G : Type*) [Group G] [Finite G] [MulSemiringAction G S] [SMulCommClass G R S]
-    [Algebra.IsInvariant R S G] [IsDomain S] [Ring.DimensionLEOne S]
+    [Algebra.IsInvariant R S G] [Ring.DimensionLEOne S]
     (hinj : Function.Injective (algebraMap R S)) (hdim : ringKrullDim S = (1 : ℕ)) :
     ringKrullDim R = (1 : ℕ) := by
   haveI : Algebra.IsIntegral R S := Algebra.IsInvariant.isIntegral R S G
