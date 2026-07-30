@@ -12458,8 +12458,121 @@ theorem exists_charpoly_toLocal_eq_mul_of_forall_isOpen_quotient.{a, uK} {p : �
   rw [← Ideal.Quotient.eq_zero_iff_mem, map_sub, hAa₀, hbb₀, sub_eq_zero] at hmem
   exact ha₀b₀ hmem
 
+/-- **THE PIGEONHOLE-AND-SEPARATION HALF, in the abstract** (PROVEN 2026-07-30,
+as the assembly half of the 2026-07-30 cut of
+`forall_localInertia_eq_one_of_forall_isOpen_quotient` below).
+
+From a LEVELWISE disjunction — at each `n`, either `χ` or `δ` is congruent to `1`
+on the whole predicate `P`, modulo `m ^ (n+1)` — one gets a GLOBAL disjunction,
+provided `R` is `m`-adically Hausdorff.
+
+The three moves, and none of them touches Galois theory, which is why this is
+stated with an opaque `P : G → Prop` and an opaque pair of functions:
+
+* ANTITONE.  `m ^ (n'+1) ≤ m ^ (n+1)` for `n ≤ n'`, so a congruence at a HIGHER
+  level implies it at every lower one.
+* PIGEONHOLE.  Either the `χ`-levels are cofinal — and then, by antitonicity, `χ`
+  is congruent to `1` at EVERY level — or they are bounded by some `N`, whence
+  every level `≥ N` is a `δ`-level, and the same argument runs for `δ`.  This is
+  exactly why the conclusion must be a disjunction rather than a statement about
+  `δ` alone: the level at which the two eigenlines are matched up may a priori
+  depend on `n`, and nothing forces the SAME one to win at every level.
+* SEPARATION.  `IsHausdorff` turns "congruent to `1` at every level" into
+  equality.  (Level `0` is free: `m ^ 0 = ⊤`.) -/
+theorem forall_eq_one_of_forall_level_sub_one_mem
+    {R : Type*} [CommRing R] {m : Ideal R} (hm : IsHausdorff m R)
+    {G : Type*} {P : G → Prop} {χ δ : G → R}
+    (h : ∀ n : ℕ, (∀ σ, P σ → χ σ - 1 ∈ m ^ (n + 1)) ∨
+      (∀ σ, P σ → δ σ - 1 ∈ m ^ (n + 1))) :
+    (∀ σ, P σ → χ σ = 1) ∨ (∀ σ, P σ → δ σ = 1) := by
+  classical
+  have anti : ∀ (f : G → R) {n n' : ℕ}, n ≤ n' →
+      (∀ σ, P σ → f σ - 1 ∈ m ^ (n' + 1)) → ∀ σ, P σ → f σ - 1 ∈ m ^ (n + 1) := by
+    intro f n n' hnn' hf σ hσ
+    exact Ideal.pow_le_pow_right (Nat.succ_le_succ hnn') (hf σ hσ)
+  have haus : ∀ (f : G → R), (∀ n : ℕ, ∀ σ, P σ → f σ - 1 ∈ m ^ (n + 1)) →
+      ∀ σ, P σ → f σ = 1 := by
+    intro f hf σ hσ
+    rw [← sub_eq_zero]
+    refine IsHausdorff.haus hm _ fun n => ?_
+    rw [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top, sub_zero]
+    cases n with
+    | zero => simp
+    | succ n => exact hf n σ hσ
+  by_cases hcof : ∀ N : ℕ, ∃ n, N ≤ n ∧ (∀ σ, P σ → χ σ - 1 ∈ m ^ (n + 1))
+  · refine Or.inl (haus χ fun n => ?_)
+    obtain ⟨n', hn', hP⟩ := hcof n
+    exact anti χ hn' hP
+  · push Not at hcof
+    obtain ⟨N, hN⟩ := hcof
+    refine Or.inr (haus δ fun n => ?_)
+    refine anti δ (le_max_left n N) ?_
+    rcases h (max n N) with hp | hq
+    · obtain ⟨σ, hσ, hnot⟩ := hN (max n N) (le_max_right n N)
+      exact absurd (hp σ hσ) hnot
+    · exact hq
+
 set_option linter.checkUnivs false in
-/-- **ONE OF THE TWO CHARACTERS KILLS INERTIA** (SORRY LEAF, cut 2026-07-29; sub-leaf
+/-- **ONE OF THE TWO CHARACTERS KILLS INERTIA, AT A SINGLE LEVEL** (SORRY LEAF,
+cut 2026-07-30 out of `forall_localInertia_eq_one_of_forall_isOpen_quotient`
+below, which is now its assembly and carries no `sorry` of its own).
+
+This is STEP 1 of that declaration's own route, verbatim and with the limit
+argument removed: fix `n`, put `A := R ⧸ m ^ (n+1)` (an OPEN ideal, by `hadic`,
+so `hlev` applies at it), and compare the two splittings of the local
+representation over `A` — the one `hlev`'s `isSplitTorusAt` provides, whose
+second character is UNRAMIFIED, and the reduction of the given global `(e, χ, δ)`.
+Since `χ Frob − δ Frob` is a unit and the maximal ideal of `A` is nilpotent, a
+root of `(X − χ Frob)(X − δ Frob)` congruent to `χ Frob` IS `χ Frob` (iterate
+`x² = −u x`), so the two splittings agree up to the ORDER of the factors.  Hence
+one of `χ`, `δ` is congruent to `1` on inertia mod `m ^ (n+1)`.
+
+**WHY THIS CUT IS SAFE — the sub-leaf is IMPLIED BY the statement it was cut
+from, not merely sufficient for it.**  If the consumer's conclusion holds, say
+`δ ≡ 1` on inertia outright, then `δ σ − 1 = 0` lies in every `m ^ (n+1)` and
+this leaf's right disjunct holds at every `n`.  So this statement is WEAKER than
+the one it replaces and cannot be false unless that one was; the cut can only
+have made the remaining work smaller.
+
+**BOTH-WAYS AUDIT, inherited and still load-bearing at a single level.**  `hud`
+is load-bearing: with `χ Frob = δ Frob` the levelwise eigenlines are not
+determined and the two splittings need not agree even up to order (the section
+preamble's `k[u,v]/(u,v)²` counterexample).  `hqQ` is load-bearing.  `hcomplete`
+is load-bearing ONCE here rather than twice — for nilpotence of the maximal
+ideal of `A`; its second use, the final separation, has moved to the assembly
+below.  Nothing about `ρbar` is used, so no circular discharge against `hirr` is
+possible here. -/
+theorem forall_level_localInertia_sub_one_mem_of_forall_isOpen_quotient.{a} {p : ℕ}
+    (hpodd : Odd p) [Fact p.Prime] (Q : Finset ℕ)
+    {R : Type a} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[p] R] [IsNoetherianRing R]
+    (hadic : IsAdic (IsLocalRing.maximalIdeal R))
+    (hcomplete : IsAdicComplete (IsLocalRing.maximalIdeal R) R)
+    {ρ : GaloisRep ℚ R (Fin 2 → R)}
+    (hlev : ∀ (I : Ideal R), IsOpen (I : Set R) → ∀ [IsLocalRing (R ⧸ I)]
+      (hdimI : Module.rank (R ⧸ I) ((R ⧸ I) ⊗[R] (Fin 2 → R)) = 2),
+      IsRaisedLevelHardlyRamified hpodd Q hdimI (ρ.baseChange (R ⧸ I)))
+    (q : ℕ) (hqQ : q ∈ Q) (hq : q.Prime)
+    (e : (Fin 2 → R) ≃ₗ[R] R × R)
+    (χ δ : Field.absoluteGaloisGroup
+      ((hq.toHeightOneSpectrumRingOfIntegersRat).adicCompletion ℚ) → R)
+    (he : ∀ g y, e (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat g y) =
+      (χ g * (e y).1, δ g * (e y).2))
+    (hud : IsUnit (χ (Field.AbsoluteGaloisGroup.adicArithFrob
+        hq.toHeightOneSpectrumRingOfIntegersRat) -
+      δ (Field.AbsoluteGaloisGroup.adicArithFrob
+        hq.toHeightOneSpectrumRingOfIntegersRat)))
+    (n : ℕ) :
+    (∀ σ, σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat →
+        χ σ - 1 ∈ IsLocalRing.maximalIdeal R ^ (n + 1)) ∨
+      (∀ σ, σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat →
+        δ σ - 1 ∈ IsLocalRing.maximalIdeal R ^ (n + 1)) :=
+  sorry
+
+set_option linter.checkUnivs false in
+/-- **ONE OF THE TWO CHARACTERS KILLS INERTIA** (ASSEMBLY since 2026-07-30 over
+the single leaf `forall_level_localInertia_sub_one_mem_of_forall_isOpen_quotient`
+above; was a SORRY LEAF cut 2026-07-29; sub-leaf
 (C) of `raisedLevelSplitTorusAt_of_charFrob_residually_distinct` below).
 
 # ROUTE - a pigeonhole, and the reason the conclusion is a DISJUNCTION
@@ -12481,6 +12594,15 @@ congruence is antitone in `n`, so it then holds at EVERY level, and adic separat
 upgrades it to an identity in `R`.  The consumer discharges the remaining ambiguity by
 composing `e` with `LinearEquiv.prodComm` - the goal asks only that SOME factor be
 unramified, not which.
+
+**CUT 2026-07-30, along exactly the paragraph break above.**  The first paragraph
+— the single-level comparison of splittings — is the leaf
+`forall_level_localInertia_sub_one_mem_of_forall_isOpen_quotient` above.  The
+second — pigeonhole, antitonicity, separation — is PROVEN, and in the abstract:
+it mentions no Galois theory at all and is
+`forall_eq_one_of_forall_level_sub_one_mem` above, stated over an opaque
+predicate and an opaque pair of functions.  This declaration is now their
+composition and carries no `sorry` of its own.
 
 # BOTH-WAYS AUDIT
 
@@ -12512,7 +12634,9 @@ theorem forall_localInertia_eq_one_of_forall_isOpen_quotient.{a} {p : ℕ}
         hq.toHeightOneSpectrumRingOfIntegersRat))) :
     (∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat, χ σ = 1) ∨
       (∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat, δ σ = 1) :=
-  sorry
+  forall_eq_one_of_forall_level_sub_one_mem hcomplete.toIsHausdorff
+    (fun n => forall_level_localInertia_sub_one_mem_of_forall_isOpen_quotient
+      hpodd Q hadic hcomplete hlev q hqQ hq e χ δ he hud n)
 
 set_option linter.checkUnivs false in
 /-- **The split torus at a raised prime, GIVEN residual distinctness** (PROVEN
