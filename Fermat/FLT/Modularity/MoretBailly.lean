@@ -38550,16 +38550,201 @@ instance isSeparated_descendsAlong_surjectiveFlatQuasiCompact :
   rw [isSeparated_eq_diagonal_universallyClosed]
   infer_instance
 
+/-- **THE RELATIVE DIMENSION OF A STANDARD SMOOTH ALGEBRA IS UNIQUE** (PROVEN;
+absent from this pin as a standalone lemma).
+
+`Nontrivial A` is load-bearing and the statement is FALSE without it: over the
+zero ring every `n` is admissible at once (one may present `0` as
+`R[x₀ … xₙ]/(1)`, whose Jacobian is `0 = 1` and hence a unit), so a trivial
+algebra is standard smooth of EVERY relative dimension simultaneously. That is
+exactly why mathlib's `IsStandardSmoothOfRelativeDimension.rank_kaehlerDifferential`
+carries the same hypothesis, and it is the whole content of this lemma: the
+relative dimension is pinned by the `A`-rank of `Ω[A⁄R]`, which does not depend
+on the chosen presentation. -/
+theorem relativeDimension_unique_of_nontrivial {R A : Type u} [CommRing R] [CommRing A]
+    [Algebra R A] [Nontrivial A] {m n : ℕ}
+    (hm : Algebra.IsStandardSmoothOfRelativeDimension m R A)
+    (hn : Algebra.IsStandardSmoothOfRelativeDimension n R A) : m = n := by
+  have h1 : Module.rank A (Ω[A⁄R]) = m := by
+    haveI := hm
+    exact Algebra.IsStandardSmoothOfRelativeDimension.rank_kaehlerDifferential m
+  have h2 : Module.rank A (Ω[A⁄R]) = n := by
+    haveI := hn
+    exact Algebra.IsStandardSmoothOfRelativeDimension.rank_kaehlerDifferential n
+  exact Nat.cast_injective (h1.symm.trans h2)
+
+/-- **A STANDARD SMOOTH ALGEBRA HAS *SOME* RELATIVE DIMENSION** (PROVEN).
+
+Unpacking only: `Algebra.IsStandardSmooth` is the existence of a submersive
+presentation, and any such presentation has a `dimension`. Mathlib has the
+noncomputable choice `Algebra.IsStandardSmooth.relativeDimension` but no lemma
+saying that `IsStandardSmoothOfRelativeDimension` holds at it, which is what a
+consumer needs. -/
+theorem exists_isStandardSmoothOfRelativeDimension {R A : Type u} [CommRing R] [CommRing A]
+    [Algebra R A] (h : Algebra.IsStandardSmooth R A) :
+    ∃ m, Algebra.IsStandardSmoothOfRelativeDimension m R A := by
+  obtain ⟨ι, σ, hσ, hι, ⟨P⟩⟩ := h.out
+  exact ⟨P.dimension, ⟨ι, σ, hσ, hι, P, rfl⟩⟩
+
+/-- **A LOCALIZATION AWAY FROM AN ELEMENT OUTSIDE A PRIME IS NONTRIVIAL** (PROVEN).
+
+`Localization.Away v` is the zero ring exactly when `v` is nilpotent, and a
+nilpotent element lies in every prime. So `v ∉ p` for one prime `p` is already
+enough, and the witness is `p` itself, which survives in `Spec A[1/v]` by
+`PrimeSpectrum.localization_away_comap_range`. This is what lets the descent
+below avoid the zero-ring corner of
+`relativeDimension_unique_of_nontrivial` entirely rather than having to prove
+the trivial-ring case. -/
+theorem nontrivial_localizationAway_of_notMem {B : Type u} [CommRing B] {v : B} {p : Ideal B}
+    (hp : p.IsPrime) (hv : v ∉ p) : Nontrivial (Localization.Away v) := by
+  have hmem : (⟨p, hp⟩ : PrimeSpectrum B) ∈
+      Set.range (PrimeSpectrum.comap (algebraMap B (Localization.Away v))) := by
+    rw [PrimeSpectrum.localization_away_comap_range (Localization.Away v) v]
+    exact hv
+  obtain ⟨q, -⟩ := hmem
+  refine ⟨1, 0, fun h => q.2.ne_top ((Ideal.eq_top_iff_one _).mpr ?_)⟩
+  rw [h]
+  exact q.asIdeal.zero_mem
+
+/-- `relativeDimension_unique_of_nontrivial` in `RingHom` language (PROVEN). -/
+theorem relativeDimension_unique_of_nontrivial' {R A : Type u} [CommRing R] [CommRing A]
+    [Nontrivial A] {f : R →+* A} {m n : ℕ}
+    (hm : f.IsStandardSmoothOfRelativeDimension m)
+    (hn : f.IsStandardSmoothOfRelativeDimension n) : m = n := by
+  algebraize [f]
+  exact relativeDimension_unique_of_nontrivial hm hn
+
+/-- `exists_isStandardSmoothOfRelativeDimension` in `RingHom` language (PROVEN). -/
+theorem exists_isStandardSmoothOfRelativeDimension' {R A : Type u} [CommRing R] [CommRing A]
+    {f : R →+* A} (h : f.IsStandardSmooth) :
+    ∃ m, f.IsStandardSmoothOfRelativeDimension m := by
+  algebraize [f]
+  exact exists_isStandardSmoothOfRelativeDimension h
+
+/-- Forgetting the relative dimension, in the `∀`-shape `RingHom.locally_of_locally`
+wants (PROVEN). -/
+theorem isStandardSmooth_of_isStandardSmoothOfRelativeDimension {n : ℕ} :
+    ∀ {R S : Type u} [CommRing R] [CommRing S] {f : R →+* S},
+      RingHom.IsStandardSmoothOfRelativeDimension n f → RingHom.IsStandardSmooth f := by
+  intro R S _ _ f hf
+  exact RingHom.IsStandardSmoothOfRelativeDimension.isStandardSmooth n f hf
+
+/-- **READING THE RELATIVE DIMENSION OFF A `Locally` WITNESS** (PROVEN) — if
+`f : S → B` is standard smooth of relative dimension `m` on the nose, and is
+LOCALLY of relative dimension `n`, and `B` is nontrivial, then `m = n`.
+
+The point is that a `Locally` witness is a cover `{v}` of `B` spanning the unit
+ideal, and one cannot simply pick a member of it: a `v` that is nilpotent makes
+`B[1/v]` the zero ring, where `relativeDimension_unique_of_nontrivial` has
+nothing to say. Choosing `v` OUTSIDE A MAXIMAL IDEAL fixes this — a spanning set
+cannot be contained in a maximal ideal, and an element outside a prime is not
+nilpotent — and then `B[1/v]` carries `n` from the cover and `m` from `f`
+composed with the localization map, so the two agree. -/
+theorem relativeDimension_eq_of_locally {S B : Type u} [CommRing S] [CommRing B] [Nontrivial B]
+    {f : S →+* B} {m n : ℕ} (hm : f.IsStandardSmoothOfRelativeDimension m)
+    (hn : RingHom.Locally (RingHom.IsStandardSmoothOfRelativeDimension n) f) : m = n := by
+  obtain ⟨s, hs, hP⟩ := hn
+  obtain ⟨𝔪, h𝔪⟩ := Ideal.exists_maximal B
+  have hnsub : ¬ (s ⊆ (𝔪 : Set B)) := by
+    intro hsub
+    exact h𝔪.ne_top (top_le_iff.mp (hs ▸ Ideal.span_le.mpr hsub))
+  obtain ⟨v, hvs, hv𝔪⟩ := Set.not_subset.mp hnsub
+  haveI := nontrivial_localizationAway_of_notMem h𝔪.isPrime hv𝔪
+  have hmv : ((algebraMap B (Localization.Away v)).comp f).IsStandardSmoothOfRelativeDimension
+      (0 + m) :=
+    RingHom.IsStandardSmoothOfRelativeDimension.comp
+      (RingHom.IsStandardSmoothOfRelativeDimension.algebraMap_isLocalizationAway v) hm
+  rw [zero_add] at hmv
+  exact relativeDimension_unique_of_nontrivial' hmv (hP v hvs)
+
+open _root_.TensorProduct in
+/-- **THE RING-LEVEL CODESCENT: `Locally (IsStandardSmoothOfRelativeDimension n)`
+CODESCENDS ALONG FAITHFULLY FLAT MAPS** (PROVEN 2026-07-30; absent from this pin).
+
+This is the whole content of
+`smoothOfRelativeDimension_descendsAlong_surjectiveFlatQuasiCompact` below, and
+it is proved WITHOUT the presentation-level lemma that leaf's docstring
+predicted would be needed (`RingHom.CodescendsAlong
+(Locally (IsStandardSmoothOfRelativeDimension n)) RingHom.FaithfullyFlat` as the
+"exact analogue of `RingHom.Smooth.codescendsAlong_faithfullyFlat`" — i.e. a
+descent statement about SUBMERSIVE PRESENTATIONS). No presentation is ever
+descended here. The route is:
+
+* smoothness itself already codescends
+  (`RingHom.Smooth.codescendsAlong_faithfullyFlat`, in the pin), so `R → T` is
+  smooth, hence LOCALLY standard smooth, hence locally of SOME relative
+  dimension `m` — the only thing left is to identify `m` with `n`;
+* the relative dimension is a rank, and ranks are pinned pointwise, so it is
+  enough to compare `m` and `n` over a single nontrivial ring;
+* `S ⊗[R] T[1/g] ≅ (S ⊗[R] T)[1/(1 ⊗ g)]`
+  (`IsLocalization.Away.tensorProductEquivTMulRight`) is that ring: it carries
+  `m` by base change from `T[1/g]` and `n` from the hypothesis by localizing the
+  target, and it is nontrivial because `S` is faithfully flat over `R`.
+
+So what looked like a missing chapter on presentations is a corollary of one
+uniqueness statement (`relativeDimension_unique_of_nontrivial`) plus descent of
+plain smoothness. The `n = 0` sanity check the leaf below records is consistent:
+there `@SmoothOfRelativeDimension 0 = @Etale`, and this proof specialises to the
+pin's own `Etale` instance. -/
+theorem locally_isStandardSmoothOfRelativeDimension_codescendsAlong_faithfullyFlat (n : ℕ) :
+    RingHom.CodescendsAlong (RingHom.Locally (RingHom.IsStandardSmoothOfRelativeDimension n))
+      RingHom.FaithfullyFlat := by
+  refine RingHom.CodescendsAlong.mk _
+    (RingHom.locally_respectsIso RingHom.isStandardSmoothOfRelativeDimension_respectsIso) ?_
+  intro R S T _ _ _ _ _ hff H
+  -- `R → T` is smooth, by codescent of plain smoothness along faithfully flat maps.
+  have hsmST : RingHom.Smooth (algebraMap S (S ⊗[R] T)) :=
+    RingHom.smooth_iff_locally_isStandardSmooth.mpr
+      (RingHom.locally_of_locally isStandardSmooth_of_isStandardSmoothOfRelativeDimension H)
+  have hlocT : RingHom.Locally RingHom.IsStandardSmooth (algebraMap R T) :=
+    RingHom.smooth_iff_locally_isStandardSmooth.mp
+      (RingHom.Smooth.codescendsAlong_faithfullyFlat.algebraMap_tensorProduct _ _ _ _ hff hsmST)
+  haveI : Module.FaithfullyFlat R S := RingHom.faithfullyFlat_algebraMap_iff.mp hff
+  -- so it is enough to see that the dimension is `n` on each member of a cover.
+  rw [RingHom.locally_iff_span_eq_top]
+  by_contra hspan
+  obtain ⟨𝔪, h𝔪, hle⟩ := Ideal.exists_le_maximal _ hspan
+  have hnsub : ¬ ({g : T | RingHom.IsStandardSmooth
+      ((algebraMap T (Localization.Away g)).comp (algebraMap R T))} ⊆ (𝔪 : Set T)) := by
+    intro hsub
+    exact h𝔪.ne_top (top_le_iff.mp (hlocT.span_eq_top ▸ Ideal.span_le.mpr hsub))
+  obtain ⟨g, hgss, hg𝔪⟩ := Set.not_subset.mp hnsub
+  refine hg𝔪 (hle (Ideal.subset_span ?_))
+  -- `T[1/g]` is a nontrivial standard smooth `R`-algebra; let `m` be its dimension.
+  haveI : Nontrivial (Localization.Away g) :=
+    nontrivial_localizationAway_of_notMem h𝔪.isPrime hg𝔪
+  simp only [Set.mem_setOf_eq, ← IsScalarTower.algebraMap_eq] at hgss ⊢
+  obtain ⟨m, hm⟩ := exists_isStandardSmoothOfRelativeDimension' hgss
+  -- `S ⊗[R] T[1/g] ≅ (S ⊗[R] T)[1/(1 ⊗ g)]` carries `m` by base change and `n` by `H`.
+  set e := IsLocalization.Away.tensorProductEquivTMulRight R S g (Localization.Away g)
+  have hmC : RingHom.IsStandardSmoothOfRelativeDimension m
+      (algebraMap S (Localization.Away ((1 : S) ⊗ₜ[R] g))) := by
+    rw [← e.toAlgHom.comp_algebraMap]
+    exact RingHom.isStandardSmoothOfRelativeDimension_respectsIso.left _ _
+      ((RingHom.isStandardSmoothOfRelativeDimension_isStableUnderBaseChange m).tensorProduct _ hm)
+  have hnC : RingHom.Locally (RingHom.IsStandardSmoothOfRelativeDimension n)
+      (algebraMap S (Localization.Away ((1 : S) ⊗ₜ[R] g))) := by
+    have hcomp := RingHom.locally_stableUnderCompositionWithLocalizationAwayTarget
+      (RingHom.isStandardSmoothOfRelativeDimension_stableUnderCompositionWithLocalizationAway n).2
+      (Localization.Away ((1 : S) ⊗ₜ[R] g)) ((1 : S) ⊗ₜ[R] g) (algebraMap S (S ⊗[R] T)) H
+    rwa [← IsScalarTower.algebraMap_eq] at hcomp
+  haveI : Nontrivial (Localization.Away ((1 : S) ⊗ₜ[R] g)) := e.symm.toEquiv.nontrivial
+  rw [← relativeDimension_eq_of_locally hmC hnC]
+  exact hm
+
 open CategoryTheory AlgebraicGeometry in
-/-- **`SmoothOfRelativeDimension n` satisfies fpqc descent** (SORRY LEAF, cut
-2026-07-29; a gap in this pin, not in the mathematics).
+/-- **`SmoothOfRelativeDimension n` satisfies fpqc descent** (**PROVEN
+2026-07-30** over
+`locally_isStandardSmoothOfRelativeDimension_codescendsAlong_faithfullyFlat`
+immediately above, which is where the mathematics and the route now live; it was
+the sorry leaf cut 2026-07-29).
 
 TRUE: smoothness of relative dimension `n` is fpqc-local on the base
 (Stacks 02VL/02VM — descent of `IsStandardSmoothOfRelativeDimension` along a
 faithfully flat map, the relative-dimension refinement of the already-present
 `RingHom.Smooth.codescendsAlong_faithfullyFlat`).
 
-THE ROUTE, so the next owner does not re-survey. `SmoothOfRelativeDimension n`
+THE ROUTE, which was correctly predicted and is now taken. `SmoothOfRelativeDimension n`
 carries `HasRingHomProperty (@SmoothOfRelativeDimension n)
 (Locally (IsStandardSmoothOfRelativeDimension n))`
 (`Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean`), and
@@ -38567,24 +38752,52 @@ carries `HasRingHomProperty (@SmoothOfRelativeDimension n)
 `RingHom.CodescendsAlong Q RingHom.FaithfullyFlat` into exactly this statement —
 that is verbatim how the five instances in
 `Mathlib/AlgebraicGeometry/Morphisms/LocalFlatDescent.lean` are proved. So the
-whole content is the missing ring-level lemma
+whole content is the ring-level lemma
 `RingHom.CodescendsAlong (Locally (IsStandardSmoothOfRelativeDimension n))
-RingHom.FaithfullyFlat`, the exact analogue of
-`RingHom.Smooth.codescendsAlong_faithfullyFlat` in
-`Mathlib/RingTheory/Etale/Descent.lean`.
+RingHom.FaithfullyFlat`, and that is
+`locally_isStandardSmoothOfRelativeDimension_codescendsAlong_faithfullyFlat`
+above. Only the two lines below are left here.
 
-CHEAP PARTIAL RESULT, recorded as a check on the statement: at `n = 0` this is
-ALREADY PROVEN in the pin, since
+**WHERE THE OLD ROUTE NOTE WAS WRONG, and it is worth recording because it is
+what made this leaf look expensive.** It called the missing lemma "the exact
+analogue of `RingHom.Smooth.codescendsAlong_faithfullyFlat` in
+`Mathlib/RingTheory/Etale/Descent.lean`". Read as a statement that is right; read
+as a statement about the PROOF it is not, and the difference is the whole cost.
+`Smooth.codescendsAlong_faithfullyFlat` descends a PROPERTY of the algebra
+(`Algebra.Smooth.of_smooth_tensorProduct_of_faithfullyFlat`), so its analogue
+looked like "descend a SUBMERSIVE PRESENTATION of dimension `n` along a
+faithfully flat map" — a genuine chapter, and nothing like it exists in the pin.
+No presentation is descended in the proof above. Plain smoothness codescends
+already; the relative dimension is a RANK
+(`IsStandardSmoothOfRelativeDimension.rank_kaehlerDifferential`), so it is pinned
+by a single nontrivial fibre of the cover, and the whole leaf reduces to
+uniqueness of that rank (`relativeDimension_unique_of_nontrivial`). The general
+lesson for the next survey of an "analogue of X" gap: check whether the analogue
+needs X's PROOF or only X's CONCLUSION plus a uniqueness statement.
+
+THE ZERO-RING CORNER, which is the one real trap and is why
+`relativeDimension_unique_of_nontrivial` carries `Nontrivial`. Over the zero ring
+EVERY relative dimension holds at once — `0 = R[x₀ … xₙ]/(1)` is submersive
+because `0` is a unit there — so the rank argument says nothing on a member of a
+cover coming from a nilpotent element. The proof above never meets that case: it
+picks its cover member OUTSIDE A MAXIMAL IDEAL, and an element outside a prime is
+not nilpotent (`nontrivial_localizationAway_of_notMem`). Anyone restating either
+lemma must keep that hypothesis.
+
+CHEAP PARTIAL RESULT, recorded as the check on the statement that it was: at
+`n = 0` this is ALREADY PROVEN in the pin, since
 `AlgebraicGeometry.Etale.eq_smoothOfRelativeDimension_zero` identifies
 `@SmoothOfRelativeDimension 0` with `@Etale`, and
 `DescendsAlong @Etale (@Surjective ⊓ @Flat ⊓ @QuasiCompact)` is one of the five
-instances above. So the leaf is open only for `n ≥ 1`, and anyone who believes
-it false should look for a counterexample there. -/
+instances above. The proof below agrees with it there rather than contradicting
+it, which is the sanity check that no counterexample was being papered over. -/
 theorem smoothOfRelativeDimension_descendsAlong_surjectiveFlatQuasiCompact (n : ℕ) :
     MorphismProperty.DescendsAlong (@AlgebraicGeometry.SmoothOfRelativeDimension n)
       (@AlgebraicGeometry.Surjective ⊓ @AlgebraicGeometry.Flat ⊓
-        @AlgebraicGeometry.QuasiCompact : MorphismProperty Scheme.{u}) :=
-  sorry
+        @AlgebraicGeometry.QuasiCompact : MorphismProperty Scheme.{u}) := by
+  haveI := AlgebraicGeometry.smoothOfRelativeDimension_isStableUnderBaseChange (n := n)
+  exact AlgebraicGeometry.HasRingHomProperty.descendsAlong_flat
+    (locally_isStandardSmoothOfRelativeDimension_codescendsAlong_faithfullyFlat n)
 
 open CategoryTheory AlgebraicGeometry in
 /-- **A morphism property that descends along fpqc covers transfers along a
