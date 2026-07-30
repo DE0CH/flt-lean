@@ -21143,6 +21143,49 @@ finite quotient, and let `z` be a continuous `1`-cocycle representing `c`.
   `z (g⁻¹) = −g⁻¹ · z g` and that `x` acts trivially on `M`. Its index is at
   most `#(Γ F / N₁) · #(image of z)`, both finite by compactness and
   discreteness, which is the `n` to take.
+
+  **THIS LAST SENTENCE IS THE ONE DEFECT IN THIS ROUTE, AND IT IS FATAL AS
+  WRITTEN (found 2026-07-30).** `n` is quantified BEFORE `c`, so the bound must
+  be UNIFORM in `z`; `#(image of z)` is not. It is finite for each `z` — a
+  continuous map from a compact group to a discrete space — but nothing here
+  bounds it independently of `z`.
+
+  The `ℚ`-level twin `Modularity/Patching.lean`'s
+  `exists_mem_inertiaOutsideSubgroups_resSubgroup_eq_zero` is PROVEN and takes
+  literally `N₁.index * Nat.card ↥(adZeroTwist p ρbar)` for its `n` — which is
+  uniform there **only because that file carries `[Finite k]`**, making the whole
+  coefficient module finite. THIS module deliberately does not (see
+  `finite_hilbertH1TwistUnramified`'s docstring), so the twin's `n` is `0` here
+  and the transcription does not survive the deviation. That the two leaves are
+  "honest twins" is exactly what hides this: the sentence was transcribed from a
+  file where it is true.
+
+  WHAT IS ACTUALLY TRUE, AND WHAT IT COSTS. `z|_{N₁}` is a continuous HOMOMORPHISM
+  `N₁ → M` (the action being trivial), so `N₁/N` embeds in `(M, +)`. If
+  `char k = 0` the only finite subgroup of `M` is `0`, so `N = N₁` and
+  `n := N₁.index` works with nothing further. If `char k = p` then `N₁/N` is
+  elementary abelian of exponent `p`, and `N` is an open subgroup of `Γ F`
+  containing every `I_w` for `w ∉ S`; so the fixed field of `N` sits inside the
+  maximal abelian exponent-`p` extension of the fixed field of `N₁` unramified
+  outside `S`, and the uniform bound is the degree of THAT — finite by class
+  field theory (finiteness of the `S`-ray class group, equivalently topological
+  finite generation of `Γ_{F,S}`).
+
+  **Hermite–Minkowski does NOT supply it**, and this is worth being explicit
+  about because this module has a Hermite–Minkowski block sitting right above:
+  `finite_hilbertInertiaOutsideSubgroups` bounds, for each `n`, the NUMBER of
+  admissible subgroups of index `≤ n`; it says nothing about how large the index
+  of one particular admissible subgroup can be. The two finitenesses are
+  independent.
+
+  So the genuinely missing input of this leaf is the finiteness of the maximal
+  elementary-abelian-`p` extension of a number field unramified outside a finite
+  set of places — not the cochain dictionary, which is present and which the
+  rest of this route uses correctly. A prover should either bring that in, or
+  ask an author whether `[Finite k]` may be added to this leaf and to
+  `finite_hilbertH1TwistUnramified` (at the intended instantiation `k` IS finite,
+  a residue field; the `[Finite k]`-free shape is a deliberate strengthening of
+  this module, not a requirement of its consumers).
 * `N ∈ hilbertInertiaOutsideSubgroups F S n`: for `w ∉ S` the module `M` is
   unramified at `w` (`hSunr`; the twist is by `det ρbar|_{G_F}`, which is
   unramified wherever `ρbar|_{G_F}` is, so no separate cyclotomic bookkeeping is
@@ -21898,11 +21941,155 @@ lemma hilbertSurvivingLocus_conj
     g * x * g⁻¹ ∈ hilbertSurvivingLocus F ρbar z :=
   fun hmem => hx (ContinuousCohomology.cocycles₁_eval₁_mem_range_sub_conj z g x hmem)
 
-/-- **The GLOBAL half of DDT Lemma 2.48 over `F`** (SORRY LEAF, cut out
-2026-07-28): for a cocycle `z` representing a nonzero class `c` unramified
+set_option maxHeartbeats 1000000 in
+/-- **The surviving locus is OPEN** (PROVEN 2026-07-30; the first half of
+`isOpen_hilbertSurvivingLocus_and_meets_hilbertTaylorWilesLocus` below, cut out
+and discharged so that only the nonemptiness half remains a leaf).
+
+This is the docstring's own route, and it is CHEAP once one has the observation
+that `x ↦ ρ x` factors through `ρbar|_{Γ F} x`
+(`HilbertResKer.rho_hilbertAdZeroTwist_eq_of_map_eq`): the pair
+`ψ x = (z x, ρbar|_{Γ F} x)` is a continuous map into a DISCRETE space
+(`ContinuousCohomology.continuous_eval₁`; `discreteTopology_moduleTopology`),
+membership in the locus depends on `x` only through `ψ x`, and hence the locus is
+`ψ ⁻¹' (ψ '' locus)` — a preimage of an (automatically open) subset of a discrete
+space.
+
+No irreducibility, no datum, no Chebotarev: openness costs only the two
+discreteness hypotheses this module keeps. -/
+theorem isOpen_hilbertSurvivingLocus
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V)
+    (z : ContinuousCohomology.cocycles₁ (hilbertAdZeroTwist F ρbar)) :
+    IsOpen (hilbertSurvivingLocus F ρbar z) := by
+  classical
+  letI := moduleTopology k (Module.End k V)
+  haveI : DiscreteTopology (Module.End k V) :=
+    GaloisRepresentation.discreteTopology_moduleTopology k (Module.End k V)
+  haveI : DiscreteTopology ↥(hilbertAdZeroTwist F ρbar) :=
+    inferInstanceAs (DiscreteTopology (HilbertAdZero k V))
+  have hρcont : Continuous fun x : Γ F => (ρbar.map (algebraMap ℚ F)) x :=
+    (ρbar.map (algebraMap ℚ F)).continuous_toFun
+  set ψ : Γ F → ↥(hilbertAdZeroTwist F ρbar) × Module.End k V :=
+    fun x => (ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1 x,
+      (ρbar.map (algebraMap ℚ F)) x) with hψ
+  have hψcont : Continuous ψ :=
+    (ContinuousCohomology.continuous_eval₁ (hilbertAdZeroTwist F ρbar) z.1).prodMk hρcont
+  have hdet : ∀ x y : Γ F, ψ x = ψ y →
+      (x ∈ hilbertSurvivingLocus F ρbar z ↔ y ∈ hilbertSurvivingLocus F ρbar z) := by
+    intro x y hxy
+    have h1 : ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1 x =
+        ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1 y :=
+      congrArg Prod.fst hxy
+    have h2 : (hilbertAdZeroTwist F ρbar).ρ x = (hilbertAdZeroTwist F ρbar).ρ y :=
+      HilbertResKer.rho_hilbertAdZeroTwist_eq_of_map_eq F ρbar (congrArg Prod.snd hxy)
+    show (ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1 x ∉
+        Set.range fun m : ↥(hilbertAdZeroTwist F ρbar) =>
+          (hilbertAdZeroTwist F ρbar).ρ x m - m) ↔
+      (ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1 y ∉
+        Set.range fun m : ↥(hilbertAdZeroTwist F ρbar) =>
+          (hilbertAdZeroTwist F ρbar).ρ y m - m)
+    rw [h1, h2]
+  have hpre : hilbertSurvivingLocus F ρbar z =
+      ψ ⁻¹' (ψ '' hilbertSurvivingLocus F ρbar z) := by
+    ext x
+    constructor
+    · intro hx
+      exact ⟨x, hx, rfl⟩
+    · rintro ⟨y, hy, hxy⟩
+      exact (hdet x y hxy.symm).mpr hy
+  rw [hpre]
+  exact hψcont.isOpen_preimage _ (isOpen_discrete _)
+
+/-- **The NONEMPTINESS half of DDT Lemma 2.48 over `F`** (SORRY LEAF, cut out
+2026-07-30 from `isOpen_hilbertSurvivingLocus_and_meets_hilbertTaylorWilesLocus`
+below, whose openness half is `isOpen_hilbertSurvivingLocus` immediately above
+and is now PROVEN).
+
+This is the deep half — the "nonemptiness step" of DDT §2 — and it is where
+absolute irreducibility of `ρbar|_{G_F}` is used classically. Everything the old
+combined leaf's docstring said about the OPENNESS half is discharged; what
+remains is exactly the paragraph below.
+
+# ROUTE
+
+Let `M = ad⁰ρbar(1)` and `L = F(M, μ_{ℓⁿ})`, a finite Galois extension of `F`.
+`Γ L` acts trivially on `M`, so `z|_{Γ L}` is a HOMOMORPHISM `Γ L → M`, and
+`Γ L` is normal, so `hilbertTaylorWilesLocus` contains the whole coset `σ · Γ L`
+of any `σ` in it — and `exists_hilbertFixing_rootsOfUnity_charpoly_split` above
+supplies one. Restriction `H¹(Γ F, M) → Hom(Γ L, M)` is injective on classes
+unramified outside `hilbertHardlyRamifiedPlaces ℓ F` because
+`H¹(Gal(L/F), M) = 0` — this is the step needing absolute irreducibility of
+`ρbar|_{G_{F(ζ_ℓ)}}`, which at `ℓ ≥ 5` follows from `hirrF` — so `z|_{Γ L} ≠ 0`.
+Now `ρ σ` has two DISTINCT eigenvalues, so `(ρ σ − 1) · M` is a PROPER subspace
+of `M`; if `z σ ∈ (ρ σ − 1) · M`, pick `τ ∈ Γ L` with `z τ` outside it and use
+`z (σ τ) = z σ + ρ σ (z τ)`
+(`ContinuousCohomology.cocycles₁_eval₁_mul`) to move out. Either `σ` or `σ τ`
+then lies in the intersection.
+
+**THE DATUM `𝒟₀` IS LOAD-BEARING AND MAY NOT BE DROPPED.** It is what supplies
+the Galois element, through
+`exists_hilbertFixing_rootsOfUnity_charpoly_split`; and deviation (1) of
+`exists_hilbertTaylorWilesPrime`'s docstring records why no `k`-side hypothesis
+can replace it in this module.
+
+**WARNING, inherited from that supplier and not to be discovered twice**:
+`exists_hilbertFixing_rootsOfUnity_charpoly_split` rests on
+`exists_hilbertFixing_rootsOfUnity_discrim_isSquare`, which carries a FALSITY
+AUDIT (2026-07-27) giving an explicit counterexample — curve `54b1`, `ℓ = 7`,
+`k = 𝔽₇`, residual image the order-`16` group `N(T_ns) ∩ SL₂(𝔽₇)`. So the
+Galois element this route asks for is NOT available at the stated generality,
+and a prover of this leaf will hit that wall. The honest repair recorded there
+is a quadratic ENLARGEMENT of `k`, threaded through `IsHilbertTaylorWilesPrimeSet`;
+it is a cut-level change to the cluster, not a proof obligation of this leaf.
+
+Both-ways audit: at the intended instantiation this is the cited Taylor–Wiles
+separation step. It is not vacuous — `hc0` is satisfiable as soon as
+`hilbertH1TwistUnramified ≠ ⊥`, and when that submodule IS `⊥` the leaf is
+vacuously true, which is harmless because `exists_hilbertTaylorWilesPrimeSet_core`
+then never calls it.
+
+CIRCULARITY GUARD (inherited): nothing from `Family.lean`, `Lift.lean`,
+`Modularity/*` or `Deformation.lean`; in particular a proof ending in `exfalso`
+on `hirrF` through `not_isIrreducible_of_isHardlyRamified_of_five_le` is
+FORBIDDEN, that dichotomy being proven over pillar α, which is proven over this
+cluster. -/
+theorem nonempty_inter_hilbertSurvivingLocus_hilbertTaylorWilesLocus
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟₀ : HilbertDeformationDatum ℓ F ρbar) (n : ℕ)
+    (z : ContinuousCohomology.cocycles₁ (hilbertAdZeroTwist F ρbar))
+    {c : continuousCohomology 1 (hilbertAdZeroTwist F ρbar)}
+    (hzc : ContinuousCohomology.cocycleClass (hilbertAdZeroTwist F ρbar) 1 z = c)
+    (hcunr : c ∈ hilbertH1TwistUnramified ℓ F ρbar) (hc0 : c ≠ 0) :
+    (hilbertSurvivingLocus F ρbar z ∩
+      hilbertTaylorWilesLocus ℓ F ρbar n).Nonempty :=
+  sorry
+
+/-- **The GLOBAL half of DDT Lemma 2.48 over `F`** (cut out
+2026-07-28; **its OPENNESS clause PROVEN 2026-07-30** by
+`isOpen_hilbertSurvivingLocus` above, its nonemptiness clause left over the
+single named leaf `nonempty_inter_hilbertSurvivingLocus_hilbertTaylorWilesLocus`
+immediately above — this declaration carries no direct `sorry` of its own).
+
+For a cocycle `z` representing a nonzero class `c` unramified
 outside `hilbertHardlyRamifiedPlaces ℓ F`, the surviving locus of `z` is OPEN and
 MEETS the Taylor–Wiles locus of `F` at level `n`. (The representative itself is
 supplied by `ContinuousCohomology.exists_cocycleClass_eq`, in the consumer.)
+
+WHY THE SPLIT. The two clauses have nothing in common: openness is a
+two-discreteness-hypotheses fact about the cochain model and costs neither the
+datum nor irreducibility, while nonemptiness is the arithmetic core and rests on
+a supplier that is currently REFUTED at the stated generality (see the warning on
+the leaf). Carrying them in one `sorry` hid a proven half behind an open one and
+made the leaf look uniformly deep.
 
 This is the deep half — the "nonemptiness step" of DDT §2 — and it is where
 absolute irreducibility of `ρbar|_{G_F}` is used classically.
@@ -21963,7 +22150,10 @@ theorem isOpen_hilbertSurvivingLocus_and_meets_hilbertTaylorWilesLocus
     (hcunr : c ∈ hilbertH1TwistUnramified ℓ F ρbar) (hc0 : c ≠ 0) :
     IsOpen (hilbertSurvivingLocus F ρbar z) ∧
       (hilbertSurvivingLocus F ρbar z ∩
-        hilbertTaylorWilesLocus ℓ F ρbar n).Nonempty := sorry
+        hilbertTaylorWilesLocus ℓ F ρbar n).Nonempty :=
+  ⟨isOpen_hilbertSurvivingLocus F ρbar z,
+    nonempty_inter_hilbertSurvivingLocus_hilbertTaylorWilesLocus ℓ hℓ5 F hirrF 𝒟₀ n z
+      hzc hcunr hc0⟩
 
 /-- **The LOCAL half of DDT Lemma 2.48 over `F`** (SORRY LEAF, cut out
 2026-07-28): at a place `w ∤ 2ℓ` where the class `c` is unramified, membership of
