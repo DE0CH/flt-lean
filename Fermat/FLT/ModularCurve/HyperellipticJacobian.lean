@@ -280,6 +280,9 @@ public import Mathlib.NumberTheory.Padics.PadicIntegers
 -- `finrank_residue_pt_eq_one` and the residue-field arguments around it
 public import Mathlib.FieldTheory.IntermediateField.Adjoin.Basic
 public import Mathlib.LinearAlgebra.FiniteDimensional.Basic
+-- `not_isRationalGenerator`: `RatFunc.finrank_eq_max_natDegree` is the step
+-- `max (deg A) (deg B) = [K(t) : K(A/B)]` that pins the pencil to binary quadratics
+public import Mathlib.FieldTheory.RatFunc.IntermediateField
 
 @[expose] public section
 
@@ -1988,6 +1991,168 @@ lemma adjoin_inv_eq {F : Type} [Field F] [Algebra K F] (g : F) :
     have h := inv_mem (IntermediateField.mem_adjoin_simple_self K g⁻¹)
     rwa [inv_inv] at h
 
+/-! ### Purely inseparable descent: a `PlaceData` cannot exist in characteristic `2`
+
+This block is the char-`2` half of `not_isRationalGenerator`, discharged once and for all
+rather than left as prose in that leaf's falsity audit.  See `two_ne_zero`. -/
+
+lemma aeval_xx_injective (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) :
+    Function.Injective (Polynomial.aeval D.xx : K[X] →ₐ[K] D.F) :=
+  transcendental_iff_injective.mp D.transcendental_xx
+
+lemma aeval_xx_ne_zero (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {p : K[X]} (hp : p ≠ 0) :
+    aeval D.xx p ≠ 0 := fun h => hp (D.aeval_xx_injective (by simpa using h))
+
+lemma xx_ne_zero (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) : D.xx ≠ 0 := by
+  simpa using D.aeval_xx_ne_zero (p := (X : K[X])) X_ne_zero
+
+/-- Auxiliary induction for `ord_aeval_of_ord_xx`. -/
+lemma ord_aeval_of_ord_xx_aux (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places)
+    (hv : D.ord v D.xx = -1) (n : ℕ) :
+    ∀ p : K[X], p.natDegree ≤ n → p ≠ 0 →
+      D.ord v (aeval D.xx p) = -(p.natDegree : ℤ) := by
+  induction n with
+  | zero =>
+      intro p hp hp0
+      obtain ⟨a, ha⟩ := Polynomial.natDegree_eq_zero.mp (Nat.le_zero.mp hp)
+      subst ha
+      have ha0 : a ≠ 0 := by
+        intro h
+        rw [h] at hp0
+        simp at hp0
+      simp [D.ord_algebraMap v a ha0]
+  | succ m ih =>
+      intro p hp hp0
+      rcases le_or_gt p.natDegree m with h | h
+      · exact ih p h hp0
+      have hxx := D.xx_ne_zero
+      have ha0 : p.leadingCoeff ≠ 0 := leadingCoeff_ne_zero.mpr hp0
+      have haF : algebraMap K D.F p.leadingCoeff ≠ 0 :=
+        (map_ne_zero_iff _ (algebraMap K D.F).injective).mpr ha0
+      have hleadval : aeval D.xx (C p.leadingCoeff * X ^ p.natDegree)
+          = algebraMap K D.F p.leadingCoeff * D.xx ^ p.natDegree := by simp
+      have hleadne : aeval D.xx (C p.leadingCoeff * X ^ p.natDegree) ≠ 0 := by
+        rw [hleadval]
+        exact mul_ne_zero haF (pow_ne_zero _ hxx)
+      have hlead : D.ord v (aeval D.xx (C p.leadingCoeff * X ^ p.natDegree))
+          = -(p.natDegree : ℤ) := by
+        rw [hleadval, D.ord_mul v _ _ haF (pow_ne_zero _ hxx),
+          D.ord_algebraMap v _ ha0, D.ord_pow v D.xx hxx, hv]
+        ring
+      have hsplit : aeval D.xx (C p.leadingCoeff * X ^ p.natDegree)
+          + aeval D.xx p.eraseLead = aeval D.xx p := by
+        rw [← map_add, add_comm]
+        exact congrArg _ p.eraseLead_add_C_mul_X_pow
+      rcases eq_or_ne p.eraseLead 0 with he | he
+      · rw [← hsplit, he, map_zero, add_zero]
+        exact hlead
+      · have hle : p.eraseLead.natDegree ≤ m := by
+          have h1 := Polynomial.eraseLead_natDegree_le p
+          omega
+        have herase := ih p.eraseLead hle he
+        have hne : aeval D.xx p.eraseLead ≠ 0 := D.aeval_xx_ne_zero he
+        have hltord : D.ord v (aeval D.xx (C p.leadingCoeff * X ^ p.natDegree))
+            < D.ord v (aeval D.xx p.eraseLead) := by
+          rw [hlead, herase]
+          have c1 : (p.eraseLead.natDegree : ℤ) ≤ (m : ℤ) := by exact_mod_cast hle
+          have c2 : (m : ℤ) < (p.natDegree : ℤ) := by exact_mod_cast h
+          omega
+        rw [← hsplit, D.ord_add_of_lt v hleadne hne hltord, hlead]
+
+/-- **At a place where `x` has a simple pole, `ord (p(x)) = −deg p`** (PROVEN).
+
+The strict ultrametric equality applied to the leading term: `ord (aₙxⁿ) = −n` while every
+lower term has strictly larger order, so the sum has order exactly `−n`. -/
+lemma ord_aeval_of_ord_xx (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places)
+    (hv : D.ord v D.xx = -1) {p : K[X]} (hp : p ≠ 0) :
+    D.ord v (aeval D.xx p) = -(p.natDegree : ℤ) :=
+  D.ord_aeval_of_ord_xx_aux v hv p.natDegree p le_rfl hp
+
+/-- **In characteristic `2`, a place is determined by `ord x = −1`** (PROVEN).
+
+The engine of `two_ne_zero`.  If `2 = 0` in `K` then squaring kills the cross term of the
+normal form `z·d(x) = a(x) + b(x)·y` supplied by `gen`, so
+
+    z² · d(x)² = a(x)² + b(x)²·f(x) = e(x),   e := a² + b²·f ∈ K[X],
+
+i.e. every SQUARE in `F` already lies in `K(x)` — which is `F/K(x)` being purely inseparable.
+At a place with `ord x = −1` the order of a polynomial in `x` is minus its degree
+(`ord_aeval_of_ord_xx`), so `2·ord z = ord (z²) = deg (d²) − deg e` is computed from `d` and
+`e` alone, with no reference to the place.  Two such places therefore have the same `ord`,
+and `ord_injective` makes them equal. -/
+lemma ord_eq_of_ord_xx_eq_neg_one (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (h2 : (2 : K) = 0)
+    {v w : D.Places} (hv : D.ord v D.xx = -1) (hw : D.ord w D.xx = -1) : v = w := by
+  refine D.ord_injective ?_
+  funext z
+  rcases eq_or_ne z 0 with rfl | hz
+  · rw [D.ord_zero, D.ord_zero]
+  obtain ⟨a, b, d, hd, hgen⟩ := D.gen z
+  have hd0 : d ≠ 0 := by
+    intro h
+    rw [h, map_zero] at hd
+    exact hd rfl
+  have h2F : (2 : D.F) = 0 := by
+    have h : algebraMap K D.F (2 : K) = 0 := by rw [h2, map_zero]
+    rwa [map_ofNat] at h
+  set e : K[X] := a ^ 2 + b ^ 2 * sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K with he
+  have hsq : z ^ 2 * aeval D.xx d ^ 2 = aeval D.xx e := by
+    have hyy : D.yy ^ 2 = aeval D.xx (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) := by
+      rw [aeval_sextPoly]
+      exact D.eqn
+    have hg2 : (z * aeval D.xx d) ^ 2 = (aeval D.xx a + aeval D.xx b * D.yy) ^ 2 := by
+      rw [hgen]
+    have hexp : (aeval D.xx a + aeval D.xx b * D.yy) ^ 2
+        = aeval D.xx a ^ 2 + aeval D.xx b ^ 2 * D.yy ^ 2
+          + 2 * (aeval D.xx a * (aeval D.xx b * D.yy)) := by ring
+    rw [hexp, h2F, zero_mul, add_zero, hyy] at hg2
+    have hE : aeval D.xx e = aeval D.xx a ^ 2
+        + aeval D.xx b ^ 2 * aeval D.xx (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) := by
+      rw [he]
+      simp only [map_add, map_mul, map_pow]
+    rw [hE, ← hg2]
+    ring
+  have hd2 : aeval D.xx d ^ 2 ≠ 0 := pow_ne_zero 2 (D.aeval_xx_ne_zero hd0)
+  have hz2 : z ^ 2 ≠ 0 := pow_ne_zero 2 hz
+  have he0 : e ≠ 0 := by
+    intro h
+    rw [h, map_zero] at hsq
+    exact (mul_ne_zero hz2 hd2) hsq
+  have hdsq0 : d ^ 2 ≠ 0 := pow_ne_zero 2 hd0
+  have hpow : aeval D.xx d ^ 2 = aeval D.xx (d ^ 2) := by rw [map_pow]
+  have key : ∀ u : D.Places, D.ord u D.xx = -1 →
+      2 * D.ord u z = ((d ^ 2).natDegree : ℤ) - (e.natDegree : ℤ) := by
+    intro u hu
+    have h1 : D.ord u (z ^ 2 * aeval D.xx d ^ 2) = D.ord u (aeval D.xx e) :=
+      congrArg (D.ord u) hsq
+    rw [D.ord_mul u _ _ hz2 hd2, D.ord_pow u z hz 2, hpow,
+      D.ord_aeval_of_ord_xx u hu hdsq0, D.ord_aeval_of_ord_xx u hu he0] at h1
+    push_cast at h1 ⊢
+    omega
+  have hfin := (key v hv).trans (key w hw).symm
+  omega
+
+/-- **A `PlaceData` forces `2 ≠ 0` in `K`** (PROVEN).
+
+The two points at infinity are distinct places (`pt_injective`) at both of which `ord x = −1`
+(`ord_pt_infinite`).  In characteristic `2` that is impossible:
+`ord_eq_of_ord_xx_eq_neg_one` shows a place with `ord x = −1` is unique there, because
+`F/K(x)` is purely inseparable and a purely inseparable extension has exactly one place above
+each place of the base.
+
+This is exactly the char-`2` half that the falsity audit above `not_isRationalGenerator`
+predicted: that leaf is true in characteristic `2` not because the pencil argument covers it
+— it does not, and over a perfect `K` of characteristic `2` the function field of a separable
+sextic really IS rational — but because no `PlaceData` exists there at all.  Rather than
+leaving that as prose, it is proven here once, so every consumer may simply use `2 ≠ 0`.
+
+Separability is NOT needed. -/
+theorem two_ne_zero (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) : (2 : K) ≠ 0 := by
+  intro h2
+  have h := D.ord_eq_of_ord_xx_eq_neg_one h2
+    (D.ord_pt_infinite true).1 (D.ord_pt_infinite false).1
+  have hb : (Sum.inr true : Pt c₀ c₁ c₂ c₃ c₄ c₅ K) = Sum.inr false := D.pt_injective h
+  simp at hb
+
 end PlaceData
 
 /-- **LEAF: `O_v` at an affine rational point is the LOCAL RING of the plane model there.**
@@ -2291,6 +2456,609 @@ theorem isRationalGenerator_of_divisor_eq_sub_single
     simp
   · exact ⟨r, s, h0, by rw [hrs, div_mul_cancel₀ _ h0]⟩
 
+section RationalityObstruction
+
+variable {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+
+/-- `f`, the sextic, viewed in `K(x)`. -/
+noncomputable def sextRat (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) (K : Type) [Field K] : RatFunc K :=
+  algebraMap K[X] (RatFunc K) (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K)
+
+/-- `Z² − f`, the polynomial whose root is the ordinate. -/
+noncomputable def quadPoly (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) (K : Type) [Field K] : (RatFunc K)[X] :=
+  X ^ 2 - C (sextRat c₀ c₁ c₂ c₃ c₄ c₅ K)
+
+lemma quadPoly_monic : (quadPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Monic :=
+  monic_X_pow_sub_C _ (by norm_num)
+
+@[simp] lemma natDegree_quadPoly : (quadPoly c₀ c₁ c₂ c₃ c₄ c₅ K).natDegree = 2 := by
+  unfold quadPoly
+  compute_degree!
+
+lemma not_isUnit_sextPoly : ¬ IsUnit (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) := by
+  intro h
+  have h1 := Polynomial.natDegree_eq_zero_of_isUnit h
+  rw [natDegree_sextPoly] at h1
+  exact absurd h1 (by norm_num)
+
+lemma quadPoly_irreducible (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) :
+    Irreducible (quadPoly c₀ c₁ c₂ c₃ c₄ c₅ K) :=
+  X_pow_sub_C_irreducible_of_prime Nat.prime_two
+    (not_isSquare_sextPoly hsep.squarefree not_isUnit_sextPoly)
+
+namespace FunctionFieldData
+
+variable (E : FunctionFieldData c₀ c₁ c₂ c₃ c₄ c₅ K)
+
+lemma aeval_xx_injective : Function.Injective (Polynomial.aeval E.xx : K[X] →ₐ[K] E.F) :=
+  transcendental_iff_injective.mp E.transcendental_xx
+
+/-- The abscissa embeds `K(x)` into `F`. -/
+noncomputable def ratFuncHom : RatFunc K →ₐ[K] E.F :=
+  RatFunc.liftAlgHom (Polynomial.aeval E.xx)
+    (nonZeroDivisors_le_comap_nonZeroDivisors_of_injective _ E.aeval_xx_injective)
+
+lemma ratFuncHom_injective : Function.Injective E.ratFuncHom :=
+  RatFunc.liftAlgHom_injective _ E.aeval_xx_injective _
+
+@[simp] lemma ratFuncHom_algebraMap (p : K[X]) :
+    E.ratFuncHom (algebraMap K[X] (RatFunc K) p) = Polynomial.aeval E.xx p := by
+  simpa [ratFuncHom] using RatFunc.liftAlgHom_apply_div' (S := K) (Polynomial.aeval E.xx)
+    (nonZeroDivisors_le_comap_nonZeroDivisors_of_injective _ E.aeval_xx_injective) p 1
+
+noncomputable instance ratFuncAlgebra : Algebra (RatFunc K) E.F :=
+  E.ratFuncHom.toRingHom.toAlgebra
+
+lemma algebraMap_ratFunc_eq : (algebraMap (RatFunc K) E.F) = E.ratFuncHom := rfl
+
+instance : IsScalarTower K (RatFunc K) E.F :=
+  IsScalarTower.of_algebraMap_eq fun a => (E.ratFuncHom.commutes a).symm
+
+@[simp] lemma algebraMap_ratFunc_polynomial (p : K[X]) :
+    algebraMap (RatFunc K) E.F (algebraMap K[X] (RatFunc K) p) = Polynomial.aeval E.xx p :=
+  E.ratFuncHom_algebraMap p
+
+/-- The ordinate is a root of `Z² − f` over `K(x)`. -/
+lemma aeval_yy_quadPoly : Polynomial.aeval E.yy (quadPoly c₀ c₁ c₂ c₃ c₄ c₅ K) = 0 := by
+  simp only [quadPoly, sextRat, map_sub, map_pow, aeval_X, aeval_C,
+    algebraMap_ratFunc_polynomial, aeval_sextPoly, E.eqn, sub_self]
+
+end FunctionFieldData
+
+namespace FunctionFieldData
+
+variable (E : FunctionFieldData c₀ c₁ c₂ c₃ c₄ c₅ K)
+
+/-- Every element of `F` lies in `K(x)⟮y⟯`: this is `gen`, read inside the lattice of
+intermediate fields. -/
+lemma adjoin_yy_eq_top :
+    IntermediateField.adjoin (RatFunc K) ({E.yy} : Set E.F) = ⊤ := by
+  refine eq_top_iff.mpr fun z _ => ?_
+  obtain ⟨a, b, d, hd, hz⟩ := E.gen z
+  have hy : E.yy ∈ IntermediateField.adjoin (RatFunc K) ({E.yy} : Set E.F) :=
+    IntermediateField.subset_adjoin _ _ rfl
+  have hmem : ∀ p : K[X], (Polynomial.aeval E.xx p : E.F)
+      ∈ IntermediateField.adjoin (RatFunc K) ({E.yy} : Set E.F) := by
+    intro p
+    rw [← E.algebraMap_ratFunc_polynomial p]
+    exact (IntermediateField.adjoin (RatFunc K) ({E.yy} : Set E.F)).algebraMap_mem _
+  have : z = (Polynomial.aeval E.xx a + Polynomial.aeval E.xx b * E.yy)
+      / Polynomial.aeval E.xx d := by
+    rw [eq_div_iff hd]; exact hz
+  rw [this]
+  exact div_mem (add_mem (hmem a) (mul_mem (hmem b) hy)) (hmem d)
+
+end FunctionFieldData
+
+namespace FunctionFieldData
+
+variable (E : FunctionFieldData c₀ c₁ c₂ c₃ c₄ c₅ K)
+
+lemma isIntegral_yy : IsIntegral (RatFunc K) E.yy :=
+  ⟨quadPoly c₀ c₁ c₂ c₃ c₄ c₅ K, quadPoly_monic, E.aeval_yy_quadPoly⟩
+
+instance finiteDimensional_ratFunc : FiniteDimensional (RatFunc K) E.F := by
+  have h : FiniteDimensional (RatFunc K) ↥(⊤ : IntermediateField (RatFunc K) E.F) :=
+    E.adjoin_yy_eq_top ▸ IntermediateField.adjoin.finiteDimensional E.isIntegral_yy
+  exact Module.Finite.equiv (IntermediateField.topEquiv).toLinearEquiv
+
+/-- The minimal polynomial of the ordinate over `K(x)` is `Z² − f`. -/
+lemma minpoly_yy (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) :
+    minpoly (RatFunc K) E.yy = quadPoly c₀ c₁ c₂ c₃ c₄ c₅ K :=
+  (minpoly.eq_of_irreducible_of_monic (quadPoly_irreducible hsep) E.aeval_yy_quadPoly
+    quadPoly_monic).symm
+
+/-- **The function field is quadratic over `K(x)`.** -/
+lemma finrank_ratFunc (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) :
+    Module.finrank (RatFunc K) E.F = 2 := by
+  have h1 : Module.finrank (RatFunc K)
+        ↥(IntermediateField.adjoin (RatFunc K) ({E.yy} : Set E.F))
+      = (minpoly (RatFunc K) E.yy).natDegree :=
+    IntermediateField.adjoin.finrank E.isIntegral_yy
+  rw [E.minpoly_yy hsep, natDegree_quadPoly] at h1
+  have h2 : Module.finrank (RatFunc K) ↥(⊤ : IntermediateField (RatFunc K) E.F) = 2 :=
+    E.adjoin_yy_eq_top ▸ h1
+  rw [← h2]
+  exact ((IntermediateField.topEquiv (F := RatFunc K) (E := E.F)).toLinearEquiv.finrank_eq).symm
+
+end FunctionFieldData
+
+
+/-! ### The transport: a rational generator turns the sextic into a square -/
+
+/-- `PlaceData` carries a `FunctionFieldData`: the first block of its fields. -/
+def PlaceData.toFunctionFieldData (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) :
+    FunctionFieldData c₀ c₁ c₂ c₃ c₄ c₅ K where
+  F := D.F
+  xx := D.xx
+  yy := D.yy
+  eqn := D.eqn
+  transcendental_xx := D.transcendental_xx
+  gen := D.gen
+
+/-- The `K`-embedding of `K(T)` determined by a transcendental element. -/
+noncomputable def ratFuncHomOf {F : Type} [Field F] [Algebra K F] {t : F}
+    (ht : Transcendental K t) : RatFunc K →ₐ[K] F :=
+  RatFunc.liftAlgHom (Polynomial.aeval t)
+    (nonZeroDivisors_le_comap_nonZeroDivisors_of_injective _
+      (transcendental_iff_injective.mp ht))
+
+@[simp] lemma ratFuncHomOf_algebraMap {F : Type} [Field F] [Algebra K F] {t : F}
+    (ht : Transcendental K t) (p : K[X]) :
+    ratFuncHomOf ht (algebraMap K[X] (RatFunc K) p) = Polynomial.aeval t p := by
+  simpa [ratFuncHomOf] using RatFunc.liftAlgHom_apply_div' (S := K) (Polynomial.aeval t)
+    (nonZeroDivisors_le_comap_nonZeroDivisors_of_injective _
+      (transcendental_iff_injective.mp ht)) p 1
+
+lemma ratFuncHomOf_injective {F : Type} [Field F] [Algebra K F] {t : F}
+    (ht : Transcendental K t) : Function.Injective (ratFuncHomOf ht) :=
+  RatFunc.liftAlgHom_injective _ (transcendental_iff_injective.mp ht) _
+
+/-- **The range of a `K`-embedding of `K(T)` is `K⟮t⟯`**, where `t` is the image of `T`.
+
+Stated for an arbitrary embedding rather than for `ratFuncHomOf` alone, because the transport
+below needs it for a COMPOSITE `K(T) → K(T)`, whose defining property is exactly the
+hypothesis `h`. -/
+lemma fieldRange_eq_adjoin {F : Type} [Field F] [Algebra K F] (f : RatFunc K →ₐ[K] F) {t : F}
+    (h : ∀ p : K[X], f (algebraMap K[X] (RatFunc K) p) = Polynomial.aeval t p) :
+    f.fieldRange = IntermediateField.adjoin K ({t} : Set F) := by
+  apply le_antisymm
+  · rintro z ⟨r, rfl⟩
+    rw [← RatFunc.num_div_denom r, map_div₀]
+    simp only [AlgHom.toRingHom_eq_coe, RingHom.coe_coe, h]
+    exact (IntermediateField.mem_adjoin_simple_iff K _).mpr ⟨r.num, r.denom, rfl⟩
+  · rw [IntermediateField.adjoin_le_iff]
+    rintro z rfl
+    exact ⟨RatFunc.X, by simpa using h (X : K[X])⟩
+
+/-- The range of `ratFuncHomOf` is `K⟮t⟯`. -/
+lemma fieldRange_ratFuncHomOf {F : Type} [Field F] [Algebra K F] {t : F}
+    (ht : Transcendental K t) :
+    (ratFuncHomOf ht).fieldRange = IntermediateField.adjoin K ({t} : Set F) :=
+  fieldRange_eq_adjoin _ (ratFuncHomOf_algebraMap ht)
+
+
+/-- **The homogenisation of the sextic**, `F(A, B) = B⁶ · sext (A/B)`, in any commutative
+ring.  Over `K[X]` with `A`, `B` coprime this is the numerator of `f(A/B)`. -/
+def homogSext (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) {R : Type*} [CommRing R] (A B : R) : R :=
+  A ^ 6 + (c₅ : R) * A ^ 5 * B + (c₄ : R) * A ^ 4 * B ^ 2 + (c₃ : R) * A ^ 3 * B ^ 3
+    + (c₂ : R) * A ^ 2 * B ^ 4 + (c₁ : R) * A * B ^ 5 + (c₀ : R) * B ^ 6
+
+lemma map_homogSext {R S : Type*} [CommRing R] [CommRing S] (f : R →+* S) (A B : R) :
+    f (homogSext c₀ c₁ c₂ c₃ c₄ c₅ A B) = homogSext c₀ c₁ c₂ c₃ c₄ c₅ (f A) (f B) := by
+  simp [homogSext]
+
+lemma sext_div_eq_homogSext {K : Type*} [Field K] (A B : K) (hB : B ≠ 0) :
+    sext c₀ c₁ c₂ c₃ c₄ c₅ (A / B) * B ^ 6 = homogSext c₀ c₁ c₂ c₃ c₄ c₅ A B :=
+  sext_div c₀ c₁ c₂ c₃ c₄ c₅ A B hB
+
+/-- **A square in `K(x)` that lies in `K[x]` is a square in `K[x]`** — `K[X]` is integrally
+closed in its fraction field.  This is the step factored out of `not_isSquare_sextPoly`. -/
+lemma exists_sq_of_sq_algebraMap {p : K[X]} {b : RatFunc K}
+    (hb : b ^ 2 = algebraMap K[X] (RatFunc K) p) : ∃ q : K[X], q ^ 2 = p := by
+  have hint : IsIntegral K[X] b := by
+    refine ⟨X ^ 2 - C p, monic_X_pow_sub_C p (by norm_num), ?_⟩
+    simp only [eval₂_sub, eval₂_X_pow, eval₂_C]
+    rw [hb, sub_self]
+  obtain ⟨q, hq⟩ := IsIntegrallyClosed.isIntegral_iff.mp hint
+  exact ⟨q, IsFractionRing.injective K[X] (RatFunc K) (by rw [map_pow, hq, hb])⟩
+
+namespace FunctionFieldData
+
+variable {E : FunctionFieldData c₀ c₁ c₂ c₃ c₄ c₅ K}
+
+/-- `t` generates: `K⟮t⟯ = ⊤`. -/
+lemma adjoin_eq_top_of_gen {t : E.F}
+    (ht : ∀ z : E.F, ∃ a b : K[X], aeval t b ≠ 0 ∧ z * aeval t b = aeval t a) :
+    IntermediateField.adjoin K ({t} : Set E.F) = ⊤ := by
+  refine eq_top_iff.mpr fun z _ => ?_
+  obtain ⟨a, b, hb, hz⟩ := ht z
+  exact (IntermediateField.mem_adjoin_simple_iff K z).mpr ⟨a, b, by rw [eq_div_iff hb]; exact hz⟩
+
+/-- A generator is transcendental: otherwise `F` would be finite over `K`, while the abscissa
+is transcendental. -/
+lemma transcendental_of_gen {t : E.F}
+    (ht : ∀ z : E.F, ∃ a b : K[X], aeval t b ≠ 0 ∧ z * aeval t b = aeval t a) :
+    Transcendental K t := by
+  intro halg
+  have hfin : FiniteDimensional K ↥(IntermediateField.adjoin K ({t} : Set E.F)) :=
+    IntermediateField.adjoin.finiteDimensional halg.isIntegral
+  have htop : FiniteDimensional K ↥(⊤ : IntermediateField K E.F) :=
+    (adjoin_eq_top_of_gen ht) ▸ hfin
+  have : FiniteDimensional K E.F :=
+    Module.Finite.equiv (IntermediateField.topEquiv (F := K) (E := E.F)).toLinearEquiv
+  have : Algebra.IsAlgebraic K E.F := Algebra.IsAlgebraic.of_finite K E.F
+  exact E.transcendental_xx (Algebra.IsAlgebraic.isAlgebraic E.xx)
+
+/-- The isomorphism `K(T) ≃ F` determined by a generator. -/
+noncomputable def ratFuncEquivOf {t : E.F}
+    (ht : ∀ z : E.F, ∃ a b : K[X], aeval t b ≠ 0 ∧ z * aeval t b = aeval t a) :
+    RatFunc K ≃ₐ[K] E.F :=
+  AlgEquiv.ofBijective (ratFuncHomOf (transcendental_of_gen ht))
+    ⟨ratFuncHomOf_injective _, by
+      intro z
+      have hz : z ∈ (ratFuncHomOf (transcendental_of_gen (E := E) ht)).fieldRange := by
+        rw [fieldRange_ratFuncHomOf, adjoin_eq_top_of_gen ht]
+        exact IntermediateField.mem_top
+      obtain ⟨y, hy⟩ := hz
+      exact ⟨y, hy⟩⟩
+
+end FunctionFieldData
+
+
+namespace FunctionFieldData
+
+/-- **THE TRANSPORT.**  A generator `t` of the function field turns the abscissa into a
+rational function `u = A/B` with `max (deg A) (deg B) = [F : K(x)] = 2`, and the ordinate into
+`P/B³`; the curve equation then says the homogenised sextic `F(A, B) = B⁶·f(A/B)` is a SQUARE
+in `K[X]`.
+
+This is where `[F : K(x)] = 2` (`finrank_ratFunc`) is spent, through
+`RatFunc.finrank_eq_max_natDegree`, and where the ordinate is turned into a polynomial by
+integral closedness of `K[X]`.  Nothing here uses the characteristic. -/
+theorem exists_homogSext_eq_sq (E : FunctionFieldData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) {t : E.F}
+    (ht : ∀ z : E.F, ∃ a b : K[X], aeval t b ≠ 0 ∧ z * aeval t b = aeval t a) :
+    ∃ A B P : K[X], IsCoprime A B ∧ max A.natDegree B.natDegree = 2 ∧
+      homogSext c₀ c₁ c₂ c₃ c₄ c₅ A B = P ^ 2 := by
+  set ψ : E.F ≃ₐ[K] RatFunc K := (ratFuncEquivOf ht).symm with hpsidef
+  obtain ⟨u, hudef⟩ : ∃ u : RatFunc K, ψ E.xx = u := ⟨_, rfl⟩
+  have hcomm : ∀ p : K[X], aeval u p = ψ (aeval E.xx p) := by
+    intro p
+    rw [← hudef]
+    simpa using (Polynomial.aeval_algHom_apply ψ.toAlgHom E.xx p)
+  -- the composite `K(T) → F → K(T)`, whose range is `K⟮u⟯`
+  set Theta : RatFunc K →ₐ[K] RatFunc K := ψ.toAlgHom.comp E.ratFuncHom with hThetadef
+  have hThetap : ∀ p : K[X], Theta (algebraMap K[X] (RatFunc K) p) = aeval u p := by
+    intro p
+    show ψ (E.ratFuncHom (algebraMap K[X] (RatFunc K) p)) = aeval u p
+    rw [E.ratFuncHom_algebraMap, hcomm]
+  have hrange : Theta.fieldRange = IntermediateField.adjoin K ({u} : Set (RatFunc K)) :=
+    fieldRange_eq_adjoin Theta hThetap
+  have hThetainj : Function.Injective Theta := ψ.injective.comp E.ratFuncHom_injective
+  set i : RatFunc K ≃ₐ[K] ↥(IntermediateField.adjoin K ({u} : Set (RatFunc K))) :=
+    (AlgEquiv.ofInjectiveField Theta).trans (IntermediateField.equivOfEq hrange) with hidef
+  -- `[F : K(x)] = [K(T) : K⟮u⟯]`
+  have hfr : Module.finrank (RatFunc K) E.F
+      = Module.finrank ↥(IntermediateField.adjoin K ({u} : Set (RatFunc K))) (RatFunc K) := by
+    refine Algebra.finrank_eq_of_equiv_equiv i.toRingEquiv ψ.toRingEquiv ?_
+    ext r
+    show ((i r : ↥(IntermediateField.adjoin K ({u} : Set (RatFunc K)))) : RatFunc K)
+      = ψ (algebraMap (RatFunc K) E.F r)
+    rw [E.algebraMap_ratFunc_eq]
+    rfl
+  have hmax : max u.num.natDegree u.denom.natDegree = 2 := by
+    rw [← RatFunc.finrank_eq_max_natDegree u, ← hfr, E.finrank_ratFunc hsep]
+  -- the ordinate becomes a polynomial
+  have hBne : (algebraMap K[X] (RatFunc K)) u.denom ≠ 0 :=
+    RatFunc.algebraMap_ne_zero u.denom_ne_zero
+  have hAB : (algebraMap K[X] (RatFunc K)) u.num / (algebraMap K[X] (RatFunc K)) u.denom = u :=
+    RatFunc.num_div_denom u
+  have hw2 : (ψ E.yy) ^ 2 = sext c₀ c₁ c₂ c₃ c₄ c₅ u := by
+    have h := congrArg ψ E.eqn
+    rw [map_pow] at h
+    rw [h, ← hudef]
+    simp [sext]
+  have hq : (ψ E.yy * (algebraMap K[X] (RatFunc K)) u.denom ^ 3) ^ 2
+      = (algebraMap K[X] (RatFunc K)) (homogSext c₀ c₁ c₂ c₃ c₄ c₅ u.num u.denom) := by
+    rw [map_homogSext (algebraMap K[X] (RatFunc K)) u.num u.denom,
+      ← sext_div_eq_homogSext _ _ hBne, hAB, mul_pow, hw2]
+    ring
+  obtain ⟨P, hP⟩ := exists_sq_of_sq_algebraMap hq
+  exact ⟨u.num, u.denom, P, RatFunc.isCoprime_num_denom u, hmax, hP.symm⟩
+
+end FunctionFieldData
+
+
+/-! ### The pencil argument: the homogenised sextic is not a square
+
+Everything from here on is polynomial algebra over `K[X]`; no function field, no places.
+The chain is the classical one, done RATIONALLY (no splitting field is needed anywhere):
+
+* `six_mul_homogSext` and `derivative_homogSext` express the two Euler-type identities
+  `6N = A·H + B·M` and `N' = A'·H + B'·M`, where `N = F(A,B)`, `H = B⁵f'(A/B)` and
+  `M = Σ(6−i)cᵢAⁱB⁵⁻ⁱ`;
+* eliminating `M` between them gives `B·N' − 6B'·N = W·H` with `W = A'B − AB'` the
+  Wronskian (`wronskian_mul_homogSextDeriv`);
+* if `N = P²` then `P ∣ N` and `P ∣ N' = 2PP'`, so `P ∣ W·H`; `N` and `H` are coprime
+  because `f` is separable, so `P ∣ W`;
+* `W ≠ 0` in characteristic `≠ 2` (`wronskian_ne_zero`), and `deg W ≤ 3`, so
+  `deg N = 2·deg P ≤ 6` — against `10 ≤ deg N`.
+-/
+
+/-- The homogenised DERIVATIVE of the sextic, `H(A, B) = B⁵·f′(A/B)`. -/
+def homogSextDeriv (c₁ c₂ c₃ c₄ c₅ : ℤ) {R : Type*} [CommRing R] (A B : R) : R :=
+  6 * A ^ 5 + 5 * (c₅ : R) * A ^ 4 * B + 4 * (c₄ : R) * A ^ 3 * B ^ 2
+    + 3 * (c₃ : R) * A ^ 2 * B ^ 3 + 2 * (c₂ : R) * A * B ^ 4 + (c₁ : R) * B ^ 5
+
+/-- The cofactor of `B′` in `N′`, `M(A, B) = Σ_{i≤5} (6−i)·cᵢ·Aⁱ·B⁵⁻ⁱ`. -/
+def homogSextCo (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) {R : Type*} [CommRing R] (A B : R) : R :=
+  (c₅ : R) * A ^ 5 + 2 * (c₄ : R) * A ^ 4 * B + 3 * (c₃ : R) * A ^ 3 * B ^ 2
+    + 4 * (c₂ : R) * A ^ 2 * B ^ 3 + 5 * (c₁ : R) * A * B ^ 4 + 6 * (c₀ : R) * B ^ 5
+
+/-- **Euler's identity for the homogenised sextic**: `6N = A·H + B·M` (PROVEN).
+
+`6 = i + (6 − i)` term by term. -/
+lemma six_mul_homogSext {R : Type*} [CommRing R] (A B : R) :
+    6 * homogSext c₀ c₁ c₂ c₃ c₄ c₅ A B
+      = A * homogSextDeriv c₁ c₂ c₃ c₄ c₅ A B + B * homogSextCo c₀ c₁ c₂ c₃ c₄ c₅ A B := by
+  simp only [homogSext, homogSextDeriv, homogSextCo]
+  ring
+
+/-- **The chain rule for the homogenised sextic**: `N′ = A′·H + B′·M` (PROVEN). -/
+lemma derivative_homogSext (A B : K[X]) :
+    derivative (homogSext c₀ c₁ c₂ c₃ c₄ c₅ A B)
+      = derivative A * homogSextDeriv c₁ c₂ c₃ c₄ c₅ A B
+        + derivative B * homogSextCo c₀ c₁ c₂ c₃ c₄ c₅ A B := by
+  simp only [homogSext, homogSextDeriv, homogSextCo, derivative_add, derivative_mul,
+    derivative_pow, derivative_intCast, zero_mul, zero_add, Polynomial.C_eq_natCast]
+  push_cast
+  ring
+
+/-- **Eliminating `M`: `B·N′ − 6B′·N = W·H`** (PROVEN), where `W = A′B − AB′`.
+
+This is the whole reason the Wronskian appears: it is the determinant of the two Euler
+identities. -/
+lemma wronskian_mul_homogSextDeriv (A B : K[X]) :
+    B * derivative (homogSext c₀ c₁ c₂ c₃ c₄ c₅ A B)
+        - 6 * derivative B * homogSext c₀ c₁ c₂ c₃ c₄ c₅ A B
+      = (derivative A * B - A * derivative B) * homogSextDeriv c₁ c₂ c₃ c₄ c₅ A B := by
+  have h6 := six_mul_homogSext (R := K[X]) (c₀ := c₀) (c₁ := c₁) (c₂ := c₂) (c₃ := c₃)
+    (c₄ := c₄) (c₅ := c₅) A B
+  rw [derivative_homogSext]
+  linear_combination (-(derivative B)) * h6
+
+/-- **A polynomial of degree `≤ 2` with vanishing derivative is constant**, in characteristic
+`≠ 2` (PROVEN).  In characteristic `2` this fails — `X²` is the counterexample — and that is
+exactly why `wronskian_ne_zero` needs `h2`. -/
+lemma natDegree_eq_zero_of_derivative_eq_zero (h2 : (2 : K) ≠ 0) {p : K[X]}
+    (hp : p.natDegree ≤ 2) (hd : derivative p = 0) : p.natDegree = 0 := by
+  have hc : ∀ n : ℕ, p.coeff (n + 1) * (n + 1 : K) = 0 := by
+    intro n
+    have := congrArg (fun q : K[X] => q.coeff n) hd
+    simpa [Polynomial.coeff_derivative] using this
+  have h1 : p.coeff 1 = 0 := by
+    have := hc 0
+    simpa using this
+  have h2' : p.coeff 2 = 0 := by
+    have h := hc 1
+    have hcast : ((1 : ℕ) : K) + 1 = 2 := by norm_num
+    rw [hcast] at h
+    exact (mul_eq_zero.mp h).resolve_right h2
+  refine Nat.le_zero.mp (Polynomial.natDegree_le_iff_coeff_eq_zero.mpr ?_)
+  intro m hm
+  match m, hm with
+  | 1, _ => exact h1
+  | 2, _ => exact h2'
+  | (n + 3), _ => exact Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)
+
+/-- **The Wronskian of a coprime pair of degree `≤ 2` with `max = 2` is nonzero** (PROVEN),
+in characteristic `≠ 2`.
+
+If `A′B = AB′` then `A ∣ A′B`, so `A ∣ A′` by coprimality, so `A′ = 0` by degrees; likewise
+`B′ = 0`; and in characteristic `≠ 2` a polynomial of degree `≤ 2` with zero derivative is
+constant, contradicting `max (deg A) (deg B) = 2`. -/
+lemma wronskian_ne_zero (h2 : (2 : K) ≠ 0) {A B : K[X]} (hAB : IsCoprime A B)
+    (hdeg : max A.natDegree B.natDegree = 2) :
+    derivative A * B - A * derivative B ≠ 0 := by
+  intro hW
+  have hA2 : A.natDegree ≤ 2 := hdeg ▸ le_max_left _ _
+  have hB2 : B.natDegree ≤ 2 := hdeg ▸ le_max_right _ _
+  -- a coprime factor dividing a product of its partner's derivative divides that derivative
+  have hkey : ∀ {U V : K[X]}, IsCoprime U V → derivative U * V = U * derivative V →
+      U.natDegree ≤ 2 → derivative U = 0 := by
+    intro U V hUV hEq hU2
+    have hdvd : U ∣ derivative U * V := ⟨derivative V, hEq⟩
+    have hdU : U ∣ derivative U := hUV.dvd_of_dvd_mul_right hdvd
+    by_contra hne
+    have h1 : U.natDegree ≤ (derivative U).natDegree :=
+      Polynomial.natDegree_le_of_dvd hdU hne
+    have h2' : (derivative U).natDegree ≤ U.natDegree - 1 := Polynomial.natDegree_derivative_le U
+    have hU0 : U ≠ 0 := fun h => hne (by rw [h, derivative_zero])
+    have : U.natDegree ≠ 0 := by
+      intro h
+      obtain ⟨a, ha⟩ := Polynomial.natDegree_eq_zero.mp h
+      exact hne (by rw [← ha, derivative_C])
+    omega
+  have hEqAB : derivative A * B = A * derivative B := by linear_combination hW
+  have hdA : derivative A = 0 := hkey hAB hEqAB hA2
+  have hdB : derivative B = 0 := hkey hAB.symm (by linear_combination -hEqAB) hB2
+  have hA0 : A.natDegree = 0 := natDegree_eq_zero_of_derivative_eq_zero h2 hA2 hdA
+  have hB0 : B.natDegree = 0 := natDegree_eq_zero_of_derivative_eq_zero h2 hB2 hdB
+  rw [hA0, hB0] at hdeg
+  simp at hdeg
+
+/-! #### `N` and `H` are coprime (PROVEN)
+
+The route the earlier draft of this block proposed — homogenise a Bézout relation
+`u·f + v·f′ = 1` in degrees `4` and `5` and read off `H₄(u)·N + H₅(v)·H = B¹⁰` — is correct
+but needs a general homogenisation operator together with its multiplicativity.  The residue
+field does the same work with no new operator: a common irreducible factor `π` of `N` and `H`
+gives a common PROJECTIVE zero `(A : B) mod π` of `f` and `f′` over the field `K[X]/(π)`, and
+Bézout is then evaluated at a point rather than homogenised.  Neither `max (deg A) (deg B) = 2`
+nor any characteristic hypothesis is used. -/
+
+lemma derivative_sextPoly (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) (R : Type*) [CommRing R] :
+    derivative (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ R)
+      = 6 * X ^ 5 + 5 * (c₅ : R[X]) * X ^ 4 + 4 * (c₄ : R[X]) * X ^ 3
+        + 3 * (c₃ : R[X]) * X ^ 2 + 2 * (c₂ : R[X]) * X + (c₁ : R[X]) := by
+  simp only [sextPoly, derivative_add, derivative_mul, derivative_pow, derivative_X,
+    derivative_intCast, zero_mul, zero_add, mul_one, Polynomial.C_eq_natCast]
+  push_cast
+  ring
+
+lemma aeval_derivative_sextPoly {R : Type*} [CommRing R] [Algebra K R] (x : R) :
+    aeval x (derivative (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K))
+      = 6 * x ^ 5 + 5 * (c₅ : R) * x ^ 4 + 4 * (c₄ : R) * x ^ 3
+        + 3 * (c₃ : R) * x ^ 2 + 2 * (c₂ : R) * x + (c₁ : R) := by
+  rw [derivative_sextPoly]
+  simp [map_ofNat]
+
+lemma homogSextDeriv_div {L : Type*} [Field L] (A B : L) (hB : B ≠ 0) :
+    (6 * (A / B) ^ 5 + 5 * (c₅ : L) * (A / B) ^ 4 + 4 * (c₄ : L) * (A / B) ^ 3
+        + 3 * (c₃ : L) * (A / B) ^ 2 + 2 * (c₂ : L) * (A / B) + (c₁ : L)) * B ^ 5
+      = homogSextDeriv c₁ c₂ c₃ c₄ c₅ A B := by
+  simp only [homogSextDeriv]
+  field_simp
+
+@[simp] lemma homogSext_zero_right {R : Type*} [CommRing R] (A : R) :
+    homogSext c₀ c₁ c₂ c₃ c₄ c₅ A 0 = A ^ 6 := by
+  simp [homogSext]
+
+lemma map_homogSextDeriv {R S : Type*} [CommRing R] [CommRing S] (f : R →+* S) (A B : R) :
+    f (homogSextDeriv c₁ c₂ c₃ c₄ c₅ A B) = homogSextDeriv c₁ c₂ c₃ c₄ c₅ (f A) (f B) := by
+  simp [homogSextDeriv, map_ofNat]
+
+/-- **A separable sextic and its derivative have no common projective zero over a field.**
+
+`(α : β)` with `F(α,β) = 0 = H(α,β)` and `(α,β) ≠ (0,0)` would give `β ≠ 0` — else
+`0 = F(α,0) = α⁶` — and then `r = α/β` a common root of `f` and `f′`, which a Bézout relation
+`u·f + v·f′ = 1` forbids. -/
+lemma no_common_projective_zero {L : Type*} [Field L] [Algebra K L]
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) {α β : L} (hnz : ¬(α = 0 ∧ β = 0))
+    (hN : homogSext c₀ c₁ c₂ c₃ c₄ c₅ α β = 0)
+    (hH : homogSextDeriv c₁ c₂ c₃ c₄ c₅ α β = 0) : False := by
+  have hβ : β ≠ 0 := by
+    intro hb
+    rw [hb, homogSext_zero_right] at hN
+    exact hnz ⟨pow_eq_zero_iff (n := 6) (by norm_num) |>.mp hN, hb⟩
+  have hfr : aeval (α / β) (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) = 0 := by
+    have h := sext_div c₀ c₁ c₂ c₃ c₄ c₅ α β hβ
+    simp only [homogSext] at hN
+    rw [hN] at h
+    rw [aeval_sextPoly]
+    exact (mul_eq_zero.mp h).resolve_right (pow_ne_zero 6 hβ)
+  have hfr' : aeval (α / β) (derivative (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K)) = 0 := by
+    have h := homogSextDeriv_div (c₁ := c₁) (c₂ := c₂) (c₃ := c₃) (c₄ := c₄) (c₅ := c₅) α β hβ
+    rw [hH] at h
+    rw [aeval_derivative_sextPoly]
+    exact (mul_eq_zero.mp h).resolve_right (pow_ne_zero 5 hβ)
+  obtain ⟨u, v, huv⟩ := hsep
+  have hev := congrArg (fun p : K[X] => aeval (α / β) p) huv
+  simp only [map_add, map_mul, map_one, hfr, hfr', mul_zero, add_zero] at hev
+  exact zero_ne_one hev
+
+/-- **No irreducible divides both the homogenised sextic and its homogenised derivative.**
+
+Reduce modulo `π`: the residue field `K[X]/(π)` receives `IsCoprime A B`, so the images of
+`A` and `B` are not both zero, and `no_common_projective_zero` applies. -/
+lemma not_dvd_homogSextDeriv_of_dvd_homogSext
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) {A B : K[X]} (hAB : IsCoprime A B)
+    {π : K[X]} (hπ : Irreducible π) (h1 : π ∣ homogSext c₀ c₁ c₂ c₃ c₄ c₅ A B)
+    (h2 : π ∣ homogSextDeriv c₁ c₂ c₃ c₄ c₅ A B) : False := by
+  haveI hmax : (Ideal.span ({π} : Set K[X])).IsMaximal :=
+    PrincipalIdealRing.isMaximal_of_irreducible hπ
+  letI : Field (K[X] ⧸ Ideal.span ({π} : Set K[X])) := Ideal.Quotient.field _
+  set φ : K[X] →+* (K[X] ⧸ Ideal.span ({π} : Set K[X])) :=
+    Ideal.Quotient.mk (Ideal.span ({π} : Set K[X])) with hφ
+  have hzero : ∀ z : K[X], π ∣ z → φ z = 0 := fun z hz =>
+    (Ideal.Quotient.eq_zero_iff_mem).mpr (Ideal.mem_span_singleton.mpr hz)
+  have hcopL : IsCoprime (φ A) (φ B) := hAB.map φ
+  refine no_common_projective_zero (K := K) hsep (α := φ A) (β := φ B) ?_ ?_ ?_
+  · rintro ⟨hA0, hB0⟩
+    obtain ⟨u, v, huv⟩ := hcopL
+    rw [show (φ A) = 0 from hA0, show (φ B) = 0 from hB0, mul_zero, mul_zero, add_zero] at huv
+    exact zero_ne_one huv
+  · rw [← map_homogSext φ A B]
+    exact hzero _ h1
+  · rw [← map_homogSextDeriv φ A B]
+    exact hzero _ h2
+
+/-- **PROVEN: the homogenised sextic and its homogenised derivative are coprime.** -/
+theorem isCoprime_homogSext_homogSextDeriv
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) {A B : K[X]} (hAB : IsCoprime A B) :
+    IsCoprime (homogSext c₀ c₁ c₂ c₃ c₄ c₅ A B) (homogSextDeriv c₁ c₂ c₃ c₄ c₅ A B) := by
+  refine isRelPrime_iff_isCoprime.mp (WfDvdMonoid.isRelPrime_of_no_irreducible_factors ?_ ?_)
+  · rintro ⟨hN0, hH0⟩
+    exact not_dvd_homogSextDeriv_of_dvd_homogSext hsep hAB (Polynomial.irreducible_X (R := K))
+      (hN0 ▸ dvd_zero _) (hH0 ▸ dvd_zero _)
+  · intro z hz hzN hzH
+    exact not_dvd_homogSextDeriv_of_dvd_homogSext hsep hAB hz hzN hzH
+
+/-- **LEAF: the homogenised sextic has degree at least `10`.**
+
+`N = B⁶f(A/B)` with `A`, `B` coprime and `max (deg A) (deg B) = 2`.  Three cases, by which of
+`A`, `B` attains the maximum and — when both do — by whether the ratio of leading
+coefficients is a root of `f`:
+
+* `deg A = 2 > deg B`: the term `A⁶` has degree `12` and every other term `cᵢAⁱB⁶⁻ⁱ` has
+  degree `≤ 2i + (6−i) = i + 6 ≤ 11`, so `deg N = 12`.
+* `deg B = 2 > deg A`: the term `c₀B⁶` has degree `12` and the others degree `≤ 12 − i`.  If
+  `c₀ ≠ 0` then `deg N = 12`.  If `c₀ = 0` then **separability forces `c₁ ≠ 0`** (else `X²`
+  divides `f`), and `deg (c₁AB⁵) = deg A + 10` strictly dominates the terms with `i ≥ 2`, so
+  `deg N = deg A + 10 ≥ 10`.
+* `deg A = deg B = 2`, with leading coefficients `α`, `β` and `ρ = α/β`.  The coefficient of
+  `X¹²` in `N` is `β⁶f(ρ)`.  If `f(ρ) ≠ 0` then `deg N = 12`.  Otherwise write `f = (Y−ρ)·g`
+  with `g(ρ) ≠ 0` (separability again); then `N = (A − ρB)·H₅(g)`, the second factor has
+  degree exactly `10` because its `X¹⁰`-coefficient is `β⁵g(ρ) ≠ 0`, and `A − ρB ≠ 0` because
+  `A = ρB` would make `B` a unit.  So `deg N ≥ 10`.
+
+The bound `10` is what the pencil count needs; the true value is `12` unless the point at
+infinity of the `t`-line maps to a root of `f`, in which case it can drop to `10`. -/
+theorem ten_le_natDegree_homogSext
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) {A B : K[X]} (hAB : IsCoprime A B)
+    (hdeg : max A.natDegree B.natDegree = 2) :
+    10 ≤ (homogSext c₀ c₁ c₂ c₃ c₄ c₅ A B).natDegree := sorry
+
+/-- **The homogenised sextic of a separable monic sextic is never a square**, for a coprime
+pair of degree `max = 2` in characteristic `≠ 2` (PROVEN from the two leaves above).
+
+This is the pencil count of the classical argument, in its rational form: `P ∣ W` bounds
+`deg P` by `deg W ≤ 3`, so `deg N ≤ 6`, while `deg N ≥ 10`. -/
+theorem not_isSquare_homogSext (h2 : (2 : K) ≠ 0)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) {A B : K[X]} (hAB : IsCoprime A B)
+    (hdeg : max A.natDegree B.natDegree = 2) (P : K[X]) :
+    homogSext c₀ c₁ c₂ c₃ c₄ c₅ A B ≠ P ^ 2 := by
+  intro hN
+  have hA2 : A.natDegree ≤ 2 := hdeg ▸ le_max_left _ _
+  have hB2 : B.natDegree ≤ 2 := hdeg ▸ le_max_right _ _
+  have hW : derivative A * B - A * derivative B ≠ 0 := wronskian_ne_zero h2 hAB hdeg
+  -- `P` divides both `N` and `N′`, hence `W·H`
+  have hPN : P ∣ homogSext c₀ c₁ c₂ c₃ c₄ c₅ A B := ⟨P, by rw [hN]; ring⟩
+  have hPN' : P ∣ derivative (homogSext c₀ c₁ c₂ c₃ c₄ c₅ A B) := by
+    have hPP : homogSext c₀ c₁ c₂ c₃ c₄ c₅ A B = P * P := by rw [hN]; ring
+    rw [hPP, derivative_mul]
+    exact ⟨derivative P + derivative P, by ring⟩
+  have hPWH : P ∣ (derivative A * B - A * derivative B) * homogSextDeriv c₁ c₂ c₃ c₄ c₅ A B := by
+    rw [← wronskian_mul_homogSextDeriv]
+    exact dvd_sub (Dvd.dvd.mul_left hPN' _) (Dvd.dvd.mul_left hPN _)
+  have hcop : IsCoprime P (homogSextDeriv c₁ c₂ c₃ c₄ c₅ A B) :=
+    (isCoprime_homogSext_homogSextDeriv hsep hAB).of_isCoprime_of_dvd_left hPN
+  have hPW : P ∣ derivative A * B - A * derivative B := hcop.dvd_of_dvd_mul_right hPWH
+  -- degrees
+  have hWdeg : (derivative A * B - A * derivative B).natDegree ≤ 3 := by
+    refine le_trans (Polynomial.natDegree_sub_le _ _) (max_le ?_ ?_)
+    · exact le_trans (Polynomial.natDegree_mul_le)
+        (by have := Polynomial.natDegree_derivative_le A; omega)
+    · exact le_trans (Polynomial.natDegree_mul_le)
+        (by have := Polynomial.natDegree_derivative_le B; omega)
+  have hPdeg : P.natDegree ≤ 3 := le_trans (Polynomial.natDegree_le_of_dvd hPW hW) hWdeg
+  have hten := ten_le_natDegree_homogSext hsep hAB hdeg
+  rw [hN, Polynomial.natDegree_pow] at hten
+  omega
+
+end RationalityObstruction
+
 /-- **LEAF: the function field of a separable sextic is NOT rational** — "genus ≥ 1".
 
 `F ≠ K(t)` for every `t ∈ F`.  **This is the only leaf in the whole Picard layer that uses
@@ -2340,11 +3108,49 @@ The same remark applies to `finrank_residue_pt_eq_one`,
 `isRationalGenerator_of_divisor_eq_sub_single` and hence to `sub_single_pt_notMem_princ`
 itself, which has carried this since it was written: none of them says `2 ≠ 0`, and none of
 them needs to.  **Do not "repair" these statements by adding a characteristic hypothesis** —
-that would push a new obligation onto every consumer for a case that is already vacuous. -/
+that would push a new obligation onto every consumer for a case that is already vacuous.
+
+## PROVEN 2026-07-30, with both of the above route notes CONFIRMED and one of them BYPASSED
+
+The proof follows the sketch, with two changes that are improvements rather than corrections.
+
+*The characteristic-`2` case is no longer a separate argument.*  The audit above is right that
+the pencil argument does not reach characteristic `2` and right about why the leaf is
+nevertheless true there — but it is not proven by studying purely inseparable extensions of
+the abstract `PlaceData`'s places one by one.  It is `PlaceData.two_ne_zero`: in
+characteristic `2` every SQUARE of `F` lies in `K(x)` (squaring the normal form of `gen`
+kills its cross term), so at a place with `ord x = −1` the order of any element is computed
+from `deg` data alone — hence there is exactly ONE such place, while `ord_pt_infinite` and
+`pt_injective` demand two.  So a `PlaceData` cannot exist in characteristic `2` at all, and
+`2 ≠ 0` is simply available here for free.  That is strictly stronger than what the audit
+asked for, and it is why this statement still carries no characteristic hypothesis.
+
+*The pencil count is done RATIONALLY — no splitting field.*  Instead of factoring `f` over
+`K̄` into `∏ (A − rᵢB)` and arguing that a product of pairwise coprime factors is a square
+only if each is, the argument stays inside `K[X]`.  Writing `N = F(A, B) = B⁶f(A/B)` for the
+homogenised sextic and `H = B⁵f′(A/B)` for its homogenised derivative, the two Euler
+identities `6N = A·H + B·M` and `N′ = A′·H + B′·M` eliminate `M` to give
+
+    B·N′ − 6B′·N = (A′B − AB′)·H ,
+
+so `N = P²` forces `P ∣ (A′B − AB′)·H`; `N` and `H` are coprime because `f` is separable, so
+`P` divides the WRONSKIAN `A′B − AB′`, whose degree is at most `3`.  Then `deg N = 2·deg P ≤ 6`
+against `deg N ≥ 10`.  The Wronskian is the pencil's discriminant in disguise: it vanishes at
+exactly the ramification points of `t ↦ A/B`, which is why "at most two singular members of
+the pencil" becomes "at most `deg W` multiple roots of `N`".
+
+Assembled from `PlaceData.two_ne_zero`, `FunctionFieldData.exists_homogSext_eq_sq` (the
+transport, which is where `[F : K(x)] = 2` is spent) and `not_isSquare_homogSext` (the pencil
+count).  Two purely polynomial leaves remain under the last of these:
+`isCoprime_homogSext_homogSextDeriv` and `ten_le_natDegree_homogSext`. -/
 theorem not_isRationalGenerator {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
     (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
     (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (t : D.F) :
-    ¬ D.IsRationalGenerator t := sorry
+    ¬ D.IsRationalGenerator t := by
+  intro ht
+  obtain ⟨A, B, P, hcop, hdeg, hsq⟩ :=
+    FunctionFieldData.exists_homogSext_eq_sq D.toFunctionFieldData hsep (t := t) ht
+  exact not_isSquare_homogSext D.two_ne_zero hsep hcop hdeg P hsq
 
 /-- **Obligation 2b, now PROVEN** from `isRationalGenerator_of_divisor_eq_sub_single` and
 `not_isRationalGenerator`, over `PlaceData.mem_princ_iff`. -/
