@@ -5129,7 +5129,50 @@ A NARROW RAY CLASS and nothing else: the narrowness is the `γ ≻ 0` clause and
 NOT removable (it is what the consumer spends to get the sign of `b`), and the
 ray class group, the ray class field and the Artin map for it all still have zero
 hits in the pin. The honest next step is to build `Cl_𝔪(F)` and its class field,
-not to re-cut this statement. -/
+not to re-cut this statement.
+
+## ROUND-12 BLOCKED AUDIT (2026-07-30) — RE-RUN AT THIS RELEASE, NOT INHERITED
+
+Every claim in the paragraph above was re-checked against the current pin rather
+than quoted from ROUND 11, because MISSING-MACHINERY claims in this tree go stale
+faster than the prose that records them. All four checks confirm it, and two of
+them are new:
+
+* `RayClass` / `rayClass`, `NarrowClass` / `narrowClass` and
+  `ArtinMap` / `artinMap` have ZERO hits of any kind under `Mathlib/`, and the
+  only two hits for `ClassField` / `classField` are URLs in comments (the
+  `LocalClassFieldTheory` and `ClassFieldTheory` repositories, cited in
+  `RingTheory/Valuation/Discrete/Basic.lean` and
+  `RepresentationTheory/Homological/TateCohomology/Basic.lean`) — i.e. pointers
+  to work that is NOT in this pin. The ray class group, the ray class field and
+  the Artin map for one are all absent, so this leaf cannot be cited upstream.
+* NEW, and it kills the most tempting in-tree lead: **the `*RayClass` identifiers
+  this tree DOES carry are Galois-side, not ideal-side**, so none of them founds
+  this leaf. `HardlyRamified/ModThree.lean`'s `muFixerRayClass`,
+  `charKernelRayClass` and `IsRamifiedCharRayClass` are subgroups of `Γ F`; and
+  `abs_discr_le_discr_of_isIntegral_ray_class`, in that file's
+  `QuadraticClassNumberRayClass` section, is a Minkowski-style discriminant bound
+  that merely inherits the section's name suffix. Searching the tree for "ray
+  class" and reading the hit list as machinery is a phantom waiting to happen.
+* NEW, and it closes the specialisation escape: **`F = ℚ` is not a way out, and
+  the chain above this leaf is FALSE there.** Mathlib's Dirichlet theorem on
+  primes in arithmetic progressions (`Mathlib/NumberTheory/LSeries/PrimesInAP.lean`)
+  is over `ℕ` / `ZMod n` only, so it would only ever serve a `ℚ`-shaped
+  restatement of this leaf — and the top of this leaf's consumer chain is
+  `exists_totallyNegative_localNorm_of_even_nrRealPlaces`, whose own FAITHFULNESS
+  paragraph refutes itself at `F = ℚ` by Hilbert's product formula (an odd
+  `nrRealPlaces`). The consumer needs the general-`F` theorem and nothing weaker.
+* `Chebotarev.lean`'s `infinite_setOf_isArithFrobAt` IS strong enough to finish
+  the argument once a class field is in hand: it takes an arbitrary finite normal
+  `L/F` and an arbitrary `τ` and returns infinitely many places of `F` carrying a
+  Frobenius prime for `τ` with trivial inertia. That is worth knowing and is NOT
+  a reason to cut — a leaf packaging that application would have to carry this
+  leaf's whole conclusion in its hypothesis, which is the forbidden re-cut in yet
+  another suit.
+
+So this leaf is ATOMIC at this pin, and the ROUND-11 verdict stands with the two
+extra escapes closed. It should not be dispatched at again as a proof task until
+`Cl_𝔪(F)` and its class field exist. -/
 theorem exists_heightOneSpectrum_mul_span_eq_span_of_sup_eq_top
     (F : Type u) [Field F] [NumberField F]
     (𝔣 : Ideal (NumberField.RingOfIntegers F)) (h𝔣 : 𝔣 ≠ ⊥)
@@ -9921,6 +9964,61 @@ its `S` and `Q` carrying no nonemptiness condition) is not a way out.
 `a` IS ONLY PINNED OUTSIDE `badF ∪ 𝒮.S`, inherited verbatim from the input
 leaf and for its reason: the eigenvalue at `w ∈ badF \ 𝒮.S` is not determined
 by the data and must not be asserted.
+
+## ROUND-12 BLOCKED AUDIT (2026-07-30), AND A TRAP IN THE OBVIOUS SKELETON
+
+**FOUR OF THE FIVE CONJUNCTS ARE FREE; THE FIFTH IS THE WHOLE LEAF.** Unfolding
+`hauto` (`HilbertModularity.lean`'s `IsQuaternionicEigensystem`) at the given
+`D`, `p`, `hp`, `hcyc` returns `𝒮, a, f` together with `𝒮.Q = ∅`, `f ≠ 0`, the
+`T`-eigenvector clause verbatim, and `a w = -(heckeF w).coeff 1` at every
+`w ∉ 𝒮.S ∪ badF` — which is the fifth conjunct after moving the sign. What it
+does NOT return is `∀ w ∈ 𝒮.S, w ∈ badF`.
+
+This was CHECKED WITH THE COMPILER this round rather than read off: the
+four-conjunct weakening of this statement — the conclusion with
+`∀ w ∈ 𝒮.S, w ∈ badF` deleted, and with `ℓ`, `O`, `ρ`, `k`, `W`, `ρbar`, `π`,
+`ιO`, `ψℓ`, `hmod`, `hbad2`, `hbad3`, `hbadℓ` and every other Galois-theoretic
+binder DELETED from the hypotheses — elaborates from `hauto` alone in three
+lines (`obtain`, `refine`, `rw … ; ring`). So the entire Galois-theoretic half
+of this leaf's hypothesis list exists to serve the level clause and nothing
+else.
+
+**DO NOT WRITE THE GLUE-FIRST SKELETON FOR THIS LEAF — it manufactures a FALSE
+leaf.** The shape the sorry-discipline would ordinarily prescribe here,
+
+    obtain ⟨𝒮, a, f, hQ, hf0, hT, hm⟩ := hauto D p hp hcyc
+    have hlevel : ∀ w ∈ 𝒮.S, w ∈ badF := sorry
+
+is a promise nobody can keep. `IsQuaternionicEigensystem` is an EXISTENTIAL with
+no control whatever on the level: the `𝒮` it hands over is an arbitrary
+realisation, and nothing in the predicate forbids its `S` from containing places
+outside `badF`. The residual obligation is not a clause *about that* `𝒮`; it is
+the existence of a DIFFERENT one. So the `obtain` must not happen before the
+level is controlled, and any `sorry` written after it is vouching for a statement
+that is false at the witness in scope.
+
+MISSING MACHINERY, checked at this pin rather than inherited. The ROUND-5
+argument cites three things and all three have to be BUILT:
+
+* *strong multiplicity one* and *"minimal level = conductor"* — `newform`,
+  `oldform`, `multiplicityOne` and `strongMultiplicity` occur under `Fermat/`
+  only inside DOCSTRINGS on the Hilbert/quaternionic side; there is no
+  declaration, and neither this tree nor mathlib carries a conductor for an
+  automorphic representation;
+* *local–global compatibility at `w ∤ ℓ`* — likewise absent on this side.
+
+**AND THE ONE PLACE THE ANALOGUE DOES EXIST IS UNREACHABLE, for a reason
+stronger than the circularity guard.** `Modularity/Interface.lean` carries a
+genuine classical newform development — `IsWeightTwoNewform`,
+`eq_of_isWeightTwoNewform_of_qCoeff_prime_eq` (strong multiplicity one at a
+FIXED level, PROVEN) and `dvd_of_isWeightTwoNewform_qCoeff_prime_eq_of_not_dvd_mul`
+(the level divisibility `N ∣ N'`, itself still a SORRY LEAF there, which is a
+fair measure of how much the analogous step costs) — but it is `Gamma0GL M`
+classical forms over `ℚ`, not Hilbert forms over `F` and not quaternionic;
+**and `Interface.lean` IMPORTS this
+module**, so citing it is a literal import cycle, not merely a guard violation.
+Anyone who finds those names while searching for level machinery should stop
+there.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
 through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
