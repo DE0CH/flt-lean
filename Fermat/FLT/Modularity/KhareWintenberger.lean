@@ -14126,6 +14126,48 @@ eigensystem's level to be bounded by `badF`, which is exactly what
 `exists_totallyDefinite_heckeCharacter_level_subset_badF` supplies on the OTHER
 pillar and what the `_of_heckePackage` chain does not.
 
+**ROUND-14 (2026-07-30) — TWO CHECKS RUN AGAINST THE CONCLUSION, BOTH NEGATIVE,
+recorded because the arrival of `hint` makes the second one look available and
+it is NOT.**  Write `N := Nw` and `a := φ ((heckeF w).coeff 1)` throughout.
+
+*(A) `Bw` being existential and completely unconstrained does NOT make clause 2
+free.*  This is the first thing a reader notices — no positivity, no bound, `Bw`
+simply chosen — and it is a trap.  Substituting clause 1 into clause 2 turns the
+pair into `|∑ κ, γ κ ^ s| ≤ Bw · √N ^ s` for ALL `s > 0` with ONE constant.  Let
+`M := max κ, |γ κ|`.  The series `∑_{s>0} (∑ κ, γ κ ^ s) z ^ s` is the finite sum
+`∑ κ, γ κ · z / (1 − γ κ · z)`, whose poles are exactly the `1 / γ κ`; the ones
+nearest the origin sit at distance `1 / M` and are genuine poles, their residues
+counting multiplicities in the multiset, so no cancellation between distinct
+`γ κ` can remove them.  Hence the radius of convergence is exactly `1 / M` and
+`limsup_s |∑ κ, γ κ ^ s| ^ (1/s) = M`, while clause 2 forces that `limsup ≤ √N`.
+So clause 2 forces `|γ κ| ≤ √N` for EVERY `κ`, and with clause 3 (`γ i · γ j = N`)
+that forces `|γ i| = |γ j| = √N`, i.e. `|a| ≤ 2√N`.  Clause 2 IS the Riemann
+Hypothesis for curves, exactly as the ROUND-12 CUT AUDIT says; the free `Bw`
+buys nothing.
+
+*(B) `hint` PLUS the Ramanujan bound do not assemble the point count.*  With
+`hint` in hand it is tempting to read the ROUND-12 padding argument as a recipe
+and build `n`, `γ`, `Npt` directly.  Clause 1 leaves no freedom —
+`Npt s = N ^ s + 1 − ∑ κ, γ κ ^ s` — so `Npt s : ℕ` demands both (a)
+`∑ κ, γ κ ^ s ∈ ℤ` for every `s`, and (b) `∑ κ, γ κ ^ s ≤ N ^ s + 1`.  The two
+obvious multisets each fail one of them, and the failures are different:
+
+* `γ = ![γ i, γ j]` alone gives `∑ = T_s(−a, N)`, which lies in `ℤ` only when `a`
+  is a RATIONAL integer.  `hint` gives an ALGEBRAIC integer, and `a = φ(a_w)` for
+  an arbitrary `φ : E →+* ℂ`, so (a) fails as soon as the Hecke field is bigger
+  than `ℚ` — which is the generic case for a Hilbert newform;
+* taking all conjugates — the roots of `∏ k, (X² + φ_k(a_w) · X + N)`, monic with
+  RATIONAL-INTEGER coefficients precisely because `hint` holds — repairs (a) by
+  Newton, but at `s = 1` the sum is `−Tr_{E/ℚ}(a_w)`, bounded only by
+  `2 · [E : ℚ] · √N`, and nothing forces that below `N + 1` at a small `N`.  So
+  (b) fails.
+
+This does not prove no assembly exists — padding with further Weil-number pairs
+is not ruled out here — but it does say what such a route owes: the CONSTRUCTION
+of an integral Weil multiset of the right size, which is the geometry again and
+not bookkeeping.  A prover should read `hint` as removing a hypothesis-side gap,
+as ROUND 13 says, and NOT as a step towards the conclusion.
+
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
 through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
 theorem exists_frobEigenvalues_of_totallyDefinite_heckeCharacter
