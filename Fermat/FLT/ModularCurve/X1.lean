@@ -10633,13 +10633,29 @@ determine an anemic system from its primes (`T 1 = 𝟙 J`,
 `exists_modularHeckeAction` / `exists_modularHeckeAction_gamma1` revert to
 leaves.  Do NOT repair one side alone.
 
-**WHAT IS DELIBERATELY STILL NOT DONE:**
-`IsHeckeIsotypicDecompositionGamma1` has **not** gained a `heckeModuli`
-field, and `isTorsion_factor_of_heckeIsotypic_gamma1` is untouched.  That
-sharpening is a cut-level repair of the STRUCTURE, it needs its own
-faithfulness audit, and it is UNBLOCKED rather than done.  The `N = 37`
-eigen-system swap therefore still inhabits
-`IsHeckeIsotypicDecompositionGamma1`.
+**WHAT IS DELIBERATELY STILL NOT DONE — HALF OF THIS PARAGRAPH IS NOW
+STALE** (corrected 2026-07-30).  It used to read "`IsHeckeIsotypicDecomposition
+Gamma1` has **not** gained a `heckeModuli` field … the `N = 37`
+eigen-system swap therefore still inhabits it".  **The field WAS added, on
+2026-07-29**: `heckeModuli : IsModularHeckeActionGamma1 N h.some jac T
+T_comp` is a field of that structure, and the swap no longer inhabits it
+at the arities the pin reaches.  A note of the form "X does not exist" is
+refutable by one grep and this one had gone unrefuted for a day; it is the
+class of stale claim this project treats as worse than an open sorry.
+
+What IS still true, and is the whole of what remains here:
+`isTorsion_factor_of_heckeIsotypic_gamma1` is UNTOUCHED — it still takes
+the full `hL` rather than the sharper `L(D.form i, 1) ≠ 0`, and its own
+docstring's claim that the sharpening is blocked "because the structure
+has no such field" is stale for the same reason and is corrected there.
+The sharpening is a restatement needing its own faithfulness audit, and
+the thing that audit must settle is the **ARITY GAP above, not the missing
+field**: the pin reaches only primes `ℓ ∤ N`, so a sharpening argument may
+only use eigenvalues at primes.  That is enough to separate the `N = 37`
+systems — an anemic eigen-system is determined by its values at primes —
+but it is an argument to write, not a field to add.  Do not sharpen and
+close the arity gap in one edit; two individually-correct edits to one
+statement have made a leaf false in this development before.
 
 **`hN : N ≠ 0` IS LOAD-BEARING — WITHOUT IT THIS LEAF IS FALSE**, and the
 witness is `X0.lean`'s, unchanged.  At level `0` every prime divides `N`,
@@ -11553,12 +11569,33 @@ lives there: `IsHeckeIsotypicDecomposition` acquired a `heckeModuli`
 field (`IsModularHeckeAction`, the moduli description
 `(E, C) ↦ ∑_D (E/D, (C+D)/D)` of `T_ℓ` at `ℓ ∤ N`), the `N = 37` swap does
 **not** inhabit the pinned structure, and sharpening the `Γ₀` leaf is
-recorded there as UNBLOCKED.  `IsHeckeIsotypicDecompositionGamma1` has no
-such field, so the swap survives here and the sharpening is still blocked
-on the `Γ₁` side.  **The repair is to build the `Γ₁` pin** — a
-`ModularLevelShape`-shaped or `Γ₁`-specific analogue of `IsGamma0Isogeny`
-with `(E, P) ↦ ∑_D (E/D, P + D)` — and then to sharpen this leaf in a
-SEPARATE edit with its own faithfulness audit.
+recorded there as UNBLOCKED.
+
+**AND THE SENTENCE THAT USED TO FOLLOW IS STALE** (corrected 2026-07-30).
+It said "`IsHeckeIsotypicDecompositionGamma1` has no such field, so the
+swap survives here and the sharpening is still blocked on the `Γ₁` side.
+The repair is to BUILD the `Γ₁` pin — a `ModularLevelShape`-shaped or
+`Γ₁`-specific analogue of `IsGamma0Isogeny` with `(E, P) ↦ ∑_D (E/D,
+P + D)`."  **That pin exists and is already a field of the structure.**
+`IsGamma1Isogeny` and `IsModularHeckeActionGamma1` were written
+2026-07-28 and the field
+`heckeModuli : IsModularHeckeActionGamma1 N h.some jac T T_comp` was added
+2026-07-29 — it is visible in `IsHeckeIsotypicDecompositionGamma1` above,
+with a docstring saying in as many words that it "is what excludes the
+`N = 37` eigen-system swap".  So the `Γ₁` side is UNBLOCKED too, and no
+new structure has to be built; nothing here is asymmetric with `Γ₀` any
+more.
+
+**WHAT THE SHARPENING'S AUDIT MUST SETTLE IS THE ARITY GAP, NOT A MISSING
+FIELD.**  `IsModularHeckeActionGamma1` constrains `T` only at PRIMES
+`ℓ ∤ N` (`exists_modularHeckeAction_gamma1` takes `𝟙 J` at every other
+arity), while the isotypy fields range over every `n` coprime to `N` —
+the mismatch recorded on `exists_heckeAction_isotypicQuotients_gamma1`
+above.  A sharpening argument may therefore use eigenvalues only at
+PRIMES.  That is enough to separate the `N = 37` systems, an anemic
+eigen-system being determined by its values at primes, but it is an
+argument to write.  Sharpen in a SEPARATE edit with its own faithfulness
+audit, and do not also close the arity gap in the same edit.
 
 **BEFORE BUILDING THAT PIN, READ THE ARITY-GAP WARNING** on
 `exists_heckeAction_isotypicQuotients_gamma1` above.  `IsModularHeckeAction`
