@@ -28,6 +28,9 @@ public import Mathlib.RingTheory.KrullDimension.Field
 public import Mathlib.RingTheory.MvPolynomial.Basic
 public import Mathlib.Algebra.MvPolynomial.Funext
 public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
+-- the projective closure of an affine scheme, as a graded quotient: the construction
+-- `nonempty_projChart_of_surjective` is proven over.
+public import Fermat.FLT.Mathlib.RingTheory.GradedAlgebra.ProjectiveClosure
 -- E. Noether's finiteness theorem below (`module_finite_integralClosure_of_isFractionRing` and
 -- the three statements it is proven over) needs the separable/purely-inseparable factorisation
 -- of a finite field extension and the integral-closure finiteness engine over an integrally
@@ -119,14 +122,11 @@ leaves declarations that were already PROVEN — `topologicalKrullDim_normalizat
 `smoothOfRelativeDimension_of_isDominant`, `infinite_of_smoothOfRelativeDimension_one` and
 the now-deleted `exists_isOpenImmersion_isProper` have all been in it while closed.
 **Regenerate it from the build's `declaration uses 'sorry'` warnings before acting on it; do
-not trust the prose.**  As of the free-floating deletion of the Nagata gluing cluster
-(2026-07-28), and of main's concurrent closure of the finite-model descent, this file's
-sorries are exactly ONE — **the whole normality half is now CLOSED, and so is the whole of
-E. Noether's finiteness theorem**:
-
-| leaf | content |
-| --- | --- |
-| `nonempty_projChart_of_surjective` | the projective closure of an affine variety |
+not trust the prose.**  As of 2026-07-30 this file has **NO sorries at all**: the last one,
+`nonempty_projChart_of_surjective`, was closed over the new module
+`Fermat/FLT/Mathlib/RingTheory/GradedAlgebra/ProjectiveClosure.lean`.  The whole normality
+half is closed, the whole of E. Noether's finiteness theorem is closed, and so is Nagata
+compactification for an affine scheme over a field.
 
 **Proven and no longer leaves** (do NOT dispatch at these):
 `exists_finset_span_powSubalgebra_of_mem_span` — the FINITE-MODEL DESCENT, the last leaf of
@@ -434,8 +434,9 @@ The two pieces:
 * `nonempty_projChart_mvPolynomial` (PROVEN 2026-07-27) — the standard affine chart of `ℙⁿ`:
   dehomogenisation at `X₀`, now a theorem over the single arithmetic leaf
   `eq_zero_of_isHomogeneous_of_dehomogenisation`, which is itself proven;
-* `nonempty_projChart_of_surjective` (LEAF) — the projective closure: a chart for `B'`
-  descends along a surjection `B' ↠ B`.
+* `nonempty_projChart_of_surjective` (PROVEN 2026-07-30, over
+  `Fermat/FLT/Mathlib/RingTheory/GradedAlgebra/ProjectiveClosure.lean`) — the projective
+  closure: a chart for `B'` descends along a surjection `B' ↠ B`.
 
 (A third piece, `exists_isOpenImmersion_isProper_of_affineCase` — Nagata's gluing induction,
 the only part that was still Nagata's theorem proper — was needed solely by the general
@@ -784,83 +785,79 @@ theorem nonempty_projChart_mvPolynomial (n : ℕ) :
 
 end ProjChartMvPolynomial
 
-/-- **Projective closure: a chart descends along a surjection** (sorry leaf).
+/-- **Projective closure: a chart descends along a surjection** (PROVEN 2026-07-30 over
+`Fermat/FLT/Mathlib/RingTheory/GradedAlgebra/ProjectiveClosure.lean`).
 
-TRUE and classical.  Given a chart `(A', 𝒜', f')` for `B'` and a surjection `q : B' ↠ B`,
-let `I ⊆ A'` be the homogeneous ideal whose degree-`d` part is
-`{a ∈ 𝒜'_d : q(a / f'^d) = 0}` — the homogeneous vanishing ideal of the closed subscheme
-`Spec B ⊆ Spec B'` — and take `A := A' ⧸ I` with the induced grading and `f :=` the image of
-`f'`.  Geometrically `Proj A` is the SCHEME-THEORETIC CLOSURE of `Spec B` inside `Proj A'`,
-which is exactly the classical construction of the projective closure of an affine variety
-(Stacks tag `01MZ`, Hartshorne I.2.9 in the classical language).
+Given a chart `(A', 𝒜', f')` for `B'` and a surjection `q : B' ↠ B`, the coordinate ring of the
+projective closure is `A' ⧸ I` where `I` is the homogeneous vanishing ideal of `Spec B` inside
+`Proj 𝒜'`.  Geometrically `Proj (A' ⧸ I)` is the SCHEME-THEORETIC CLOSURE of `Spec B` inside
+`Proj 𝒜'` — the classical projective closure of an affine variety (Stacks tag `01MZ`,
+Hartshorne I.2.9).
 
-The obligations are: `I` is a homogeneous ideal; `A ⧸ I` is still of finite type over its
-degree-zero part (a quotient of a finite-type algebra is); `Module.Finite K (𝒜 0)` — here
-`𝒜₀ = 𝒜'₀ ⧸ I₀` is a quotient of a finite `K`-module; and
-`(A_f)₀ ≅ (A'_{f'})₀ ⧸ (that ideal) ≅ B`, which is where the surjectivity of `q` and the
-saturation built into `I` are consumed.
+## How it was actually done, and where the two earlier route notes were mispriced
+
+The earlier audit offered two routes: build `I` degreewise and prove it SATURATED, or build
+`A` as the IMAGE of a graded map `Φ : A' → B[t]` and get saturation for free.  The route that
+worked is a **third** one that takes the good half of each: build `Φ`, but take
+`A := A' ⧸ ker Φ` rather than `A := Φ.range`.
+
+* Saturation is free exactly as the image route promised — `mem_ker_iff` — because distinct
+  degrees land in distinct COEFFICIENTS of `B[t]`, so the kernel cannot mix them.
+* But the induced grading is available only on the QUOTIENT: `HomogeneousIdeal.quotientGrading`
+  (this project's `Fermat/FLT/Mathlib/RingTheory/GradedAlgebra/Quotient.lean`) supplies the
+  `GradedAlgebra` instance on `A' ⧸ I` outright, whereas the audit's own last paragraph
+  correctly observed that **nothing grades a `Subalgebra`** in any of the three trees.  So
+  `Φ.range` would have needed its `DirectSum.Decomposition` built by hand, and the quotient
+  needs nothing.
+
+Two claims in the earlier notes were priced wrongly and are corrected here:
+
+* **`Polynomial B` needing an internal `ℕ`-grading was NOT a cost.**  The target of `Φ` never
+  has to be graded: only `Polynomial.coeff` is used, to separate degrees and to see that
+  `ker Φ` is homogeneous.  So the detour through `MvPolynomial (Fin 1) B` +
+  `MvPolynomial.gradedAlgebra` is unnecessary, and `Polynomial B` is used directly.
+* **`Φ` assembles from its degreewise pieces without difficulty**, by `DirectSum.toSemiring`
+  over `DirectSum.decomposeRingEquiv` — so the "check that would refute this note" passes.
+
+The identification `((A' ⧸ I)_{f̄})₀ ≅ B` is built DOWNWARD by `Localization.awayLift` out of
+the dehomogenisation `a ↦ (Φ a)(1)`, exactly the reversal that closed
+`nonempty_projChart_mvPolynomial` above: the image of `f'` becomes the UNIT `1` under that map
+(since `f'/f' = 1`), which is precisely what `awayLift` needs.  Surjectivity of the comparison
+map is where `q` being surjective is consumed; injectivity is the saturation.
 
 **The degenerate case is real and is the reason `ProjChart` asks only for
-`Module.Finite K 𝒜₀`.**  If `B = 0` then `I = A'` and `A = 0`, so `𝒜₀ = 0`; that is finite
-over `K` but NOT isomorphic to `K`.  (A chart still exists for `B = 0` by other means —
-`A := K` concentrated in degree zero and `f := 0`, whose away-localisation is the zero ring
-by `HomogeneousLocalization.subsingleton` — but the uniform construction is the one above,
-and it only works because the chart does not demand `𝒜₀ ≅ K`.)
-
-`Mathlib` has no Nagata/Japanese-ring theory and no projective closure at this pin.
-
-**CORRECTION 2026-07-27 (grep over all three trees, not just `Mathlib`).**  An earlier
-version of this line said `Mathlib` "does have `HomogeneousIdeal`, `GradedRing`, and the
-quotient grading".  It has the first two and NOT the third: `quotientGrading` does not occur
-anywhere in the pin, and `Mathlib/RingTheory/GradedAlgebra/` carries `Ideal.IsHomogeneous`
-and `HomogeneousIdeal` but no induced grading on `A ⧸ I`.  What supplies it is THIS PROJECT:
-
-    Fermat/FLT/Mathlib/RingTheory/GradedAlgebra/Quotient.lean
-
-defining `HomogeneousIdeal.quotientGrading 𝒜 I i := (𝒜 i).map (Ideal.Quotient.mk I)`, with
-`mem_quotientGrading` / `mk_mem_quotientGrading` and the instance
-`instGradedAlgebraQuotientGrading : GradedAlgebra (quotientGrading 𝒜 I)`.  It imports only
-`Mathlib`, so importing it here is acyclic; it is already used throughout
-`Fermat/FLT/ModularCurve/EllipticScheme.lean` and
-`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveModel.lean`.  So the
-saturated-ideal route is NOT blocked on missing infrastructure — only on the saturation
-argument itself.
-
-The corresponding question for the cheaper route below is whether a graded structure on a
-`Φ.range`-style graded SUBalgebra is equally available; that one was not found in any of the
-three trees and is the piece to check first.
-
-**A CHEAPER ROUTE THAN THE SATURATED IDEAL ABOVE (2026-07-27, from the author of
-`nonempty_projChart_mvPolynomial`, which closed by an analogous reversal).**  Do not construct
-`I` and prove it saturated; construct `A` as an IMAGE instead, and the saturation is what you
-get for free rather than what you have to prove.
-
-Grade `B[t]` (a one-variable polynomial ring over `B`) by `t`-degree, and define a GRADED
-`K`-algebra map `Φ : A' → B[t]` by sending `a ∈ 𝒜'_d` to `q (C.awayIso ⟦a / f'^d⟧) · t^d`.  It
-is multiplicative because `(ab)/f'^{d+e} = (a/f'^d)(b/f'^e)` in the away-localisation, and
-additive within each degree; so it is determined on the `GradedRing` decomposition of `A'`.
-Take `A := Φ.range` with the induced grading and `f := Φ f' = t` (note `f'/f' = 1`, so
-`Φ f' = q 1 · t = t`, giving `f ∈ 𝒜 1` on the nose).  Then:
-
-* `Algebra.FiniteType 𝒜₀ A` and `Module.Finite K 𝒜₀` are inherited from `A'` because `A` is a
-  quotient of `A'` and `𝒜₀` a quotient of `𝒜'₀` — no separate argument for either;
-* `(A_f)₀ = B` **by construction**: `(A_t)₀ = {a/t^d : a ∈ 𝒜_d}` is exactly the union over `d`
-  of `q (C.awayIso ⟦𝒜'_d / f'^d⟧)`, which is `q '' B' = B` since `q` is surjective and
-  `B' = (A'_{f'})₀`.  Surjectivity is where `q` is consumed and injectivity is by construction
-  of the image — the two places the saturated-ideal route needs real work;
-* the DEGENERATE case is automatic: for `B = 0`, `q 1 = 0` so `A = 0` and `𝒜₀ = 0`, which is
-  finite over `K` and not `≅ K` — exactly the reason `ProjChart` asks only for
-  `Module.Finite K 𝒜₀`.
-
-**The check that would refute this note**: that `Φ` cannot be assembled as a ring hom from its
-degreewise pieces at this pin.  It is assembled from `DirectSum.toSemiring` / the `GradedRing`
-decomposition of `A'`, and the degreewise pieces are `HomogeneousLocalization.Away.mk` composed
-with `C.awayIso.hom` and `q`; if that assembly is genuinely unavailable, the note is wrong and
-the saturated-ideal route stands. -/
+`Module.Finite K 𝒜₀`.**  If `B = 0` then `ρ = 0`, so `I = A'` and `A' ⧸ I = 0`, whence
+`𝒜₀ = 0` — finite over `K` but NOT isomorphic to `K`.  A chart demanding `𝒜₀ ≅ K` would make
+this theorem FALSE for the zero ring.  Nothing in the construction special-cases it. -/
 theorem nonempty_projChart_of_surjective {B B' : CommRingCat.{u}}
-    {b' : CommRingCat.of K ⟶ B'} (_C : ProjChart K B' b') (q : B' ⟶ B)
-    (_hq : Function.Surjective q.hom) : Nonempty (ProjChart K B (b' ≫ q)) :=
-  sorry
+    {b' : CommRingCat.of K ⟶ B'} (C : ProjChart K B' b') (q : B' ⟶ B)
+    (hq : Function.Surjective q.hom) : Nonempty (ProjChart K B (b' ≫ q)) := by
+  letI := C.commRing
+  letI := C.algebra
+  letI := C.gradedAlgebra
+  haveI := C.finiteType
+  haveI := C.zeroFinite
+  -- the surjection `(A_f)₀ = B' ↠ B` that cuts `Spec B` out of the chart `D₊(f)`
+  let e : HomogeneousLocalization.Away C.grading C.f ≃+* B' :=
+    C.awayIso.commRingCatIsoToRingEquiv
+  let ρ : HomogeneousLocalization.Away C.grading C.f →+* B :=
+    q.hom.comp (e : HomogeneousLocalization.Away C.grading C.f →+* B')
+  have hρ : Function.Surjective ρ := hq.comp e.surjective
+  refine ⟨{ A := C.A ⧸ (ProjClosure.vanishingIdeal C.grading C.f_deg ρ).toIdeal
+            grading := ProjClosure.closureGrading C.grading C.f_deg ρ
+            finiteType := ProjClosure.finiteType_closure C.grading C.f_deg ρ C.finiteType
+            zeroFinite := ProjClosure.finite_closureGrading_zero C.grading C.f_deg ρ C.zeroFinite
+            f := ProjClosure.mkGraded C.grading C.f_deg ρ C.f
+            f_deg := ProjClosure.mkGraded_f_mem C.grading C.f_deg ρ
+            awayIso := (ProjClosure.awayEquiv C.grading C.f_deg ρ hρ).toCommRingCatIso
+            compat := ?_ }⟩
+  refine CommRingCat.hom_ext (RingHom.ext fun k => ?_)
+  have hC := congrArg (fun (g : CommRingCat.of K ⟶ B') => g.hom k) C.compat
+  simp only [CommRingCat.hom_comp, RingHom.comp_apply, CommRingCat.hom_ofHom,
+    RingEquiv.toCommRingCatIso_hom, RingEquiv.coe_toRingHom,
+    ProjClosure.awayEquiv_apply] at hC ⊢
+  rw [ProjClosure.toB_algebraMap]
+  exact congrArg q.hom hC
 
 /-- **Every finite-type `K`-algebra has a projective chart** (PROVEN over the two leaves
 above).

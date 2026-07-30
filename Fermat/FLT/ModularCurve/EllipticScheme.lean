@@ -23,10 +23,22 @@ public import Fermat.FLT.EllipticCurve.Torsion
 -- through an instance or a `simp` lemma that no proof term mentions, so dropping them
 -- is a separate build-verified experiment, not a bookkeeping edit.
 public import Fermat.FLT.EllipticCurve.Isogeny
+-- `PerfectField`, `PerfectRing` and `surjective_frobenius`: the honest scope of
+-- `exists_singular_of_Δ_eq_zero`, which needs a Frobenius root extraction in
+-- characteristics two and three.
+public import Mathlib.FieldTheory.Perfect
 public import Mathlib.AlgebraicGeometry.Morphisms.Smooth
 public import Mathlib.AlgebraicGeometry.Morphisms.Proper
 public import Mathlib.AlgebraicGeometry.ProjectiveSpectrum.Proper
 public import Mathlib.RingTheory.FiniteType
+-- LOAD-BEARING for `PoleOrderFiltration` below (the pure-algebra half of Riemann–Roch):
+-- `LinearIndependent.span_eq_top_of_card_eq_finrank`, `Module.finite_of_finrank_pos` and
+-- `Algebra.adjoin_eq_ring_closure` respectively.  Almost certainly already in the
+-- transitive closure through the algebraic-geometry imports; stated explicitly so the
+-- block does not depend on a re-export it does not control.
+public import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
+public import Mathlib.LinearAlgebra.Dimension.Free
+public import Mathlib.Algebra.Algebra.Subalgebra.Lattice
 public import Mathlib.RingTheory.MvPolynomial.Ideal
 public import Mathlib.Algebra.MvPolynomial.Division
 public import Mathlib.Algebra.MvPolynomial.Equiv
@@ -146,10 +158,19 @@ GROUP-LAW-FREE halves of the chart: a commutative-algebra one
 Fermat.FLT.ModularCurve.EllipticScheme` emits **exactly ONE** `declaration uses
 'sorry'` warning, and it is
 
-* `exists_weierstrassGenerators_of_affineComplement` — the Riemann–Roch-flavoured
-  statement that an affine complement of the zero section is generated in
-  Weierstrass form.  Its docstring records that neither mathlib nor `~/cs/FLT` has
-  Riemann–Roch or an arithmetic genus at this pin.
+* `exists_poleOrder_of_affineComplement` — the Riemann–Roch DIMENSION COUNT
+  `finrank K (L (n·[O])) = n` for the linear systems at the zero section, together
+  with the pole-order function that states them.  Its docstring records that
+  neither mathlib nor `~/cs/FLT` has Riemann–Roch or an arithmetic genus at this
+  pin.
+
+**UPDATED 2026-07-30**: the warning used to sit on
+`exists_weierstrassGenerators_of_affineComplement`, which is now PROVEN over the leaf
+above.  Everything between a pole-order filtration and the Weierstrass generators —
+the choice of `x` and `y`, the relation, the normalisation, the generation of `R` — is
+proven, sorry-free, in `PoleOrderFiltration` below.  The count is unchanged at ONE; what
+changed is that the remaining leaf is now purely a dimension count and carries no
+algebra.
 
 That is the module's whole DIRECT frontier.  A token scan agrees: with block
 comments (nested) and line comments stripped, the source contains exactly one
@@ -9983,10 +10004,505 @@ theorem exists_affineComplement_zeroSection {K : Type} [Field K] {A : Scheme.{0}
   exact _root_.AlgebraicGeometry.exists_isOpenImmersion_range_eq_compl_of_section
     f ab.connected (ab.zero (𝟙 _)).1 (ab.zero (𝟙 _)).2
 
+/-! ### Riemann–Roch in elements: the pure-algebra half
+
+`PoleOrderFiltration` below is the ELEMENT-LEVEL content of Silverman *AEC* III.3.1,
+separated from every trace of scheme theory.  Its input is a **pole-order function**
+`deg : R → ℕ` on a `K`-algebra `R` together with the linear systems
+`L n = {r | deg r ≤ n}` as `K`-subspaces, and the one genus-one dimension count
+`finrank K (L n) = n` for `n ≥ 1`.  Its output is a Weierstrass equation and a pair of
+ring generators.  Nothing in it knows what a scheme is; the geometry enters exactly once,
+through `exists_poleOrder_of_affineComplement`.
+
+The argument is Silverman's, run in the `L n`:
+
+* `L 1 < L 2` and `L 2 < L 3` by the dimension count, giving `x` of pole order exactly `2`
+  and `y` of pole order exactly `3`;
+* elements of pairwise distinct pole orders are linearly independent
+  (`PoleOrderFiltration.linearIndependent_of_deg_injective` — the ultrametric argument,
+  where the maximal-degree term of a vanishing combination cannot be cancelled);
+* the monomials `x^i` and `x^i y`, indexed by their pole order `d ∈ {0, 2, 3, …, n}`, are
+  `n` in number, independent, and therefore a BASIS of the `n`-dimensional `L n`.  Both
+  halves of the conclusion are read off this single fact: at `n = 6` it expresses `y ^ 2`
+  in `1, x, y, x ^ 2, xy, x ^ 3`, and at general `n` it exhibits `L n` inside
+  `Algebra.adjoin K {x, y}`.
+
+Note there is no separate step proving `y ^ 2` and `x ^ 3` both occur: the basis of `L 6`
+does not contain `y ^ 2` at all, so the relation comes out already solved for it, and the
+only thing to check is that the coefficient of `x ^ 3` is nonzero — which is immediate,
+since otherwise `y ^ 2` would lie in `L 5` while having pole order `6`.  The final
+rescaling `(x, y) ↦ (c₅ x, c₅ y)` is what normalises that coefficient to `1`; it is a unit
+multiple, so it changes neither the generated subring nor anything else.
+
+`IsDomain R` is NOT a hypothesis — it is a consequence: `deg (rs) = deg r + deg s` forces
+a zero divisor to have pole order `0`, hence to be a nonzero constant, hence a unit. -/
+
+namespace PoleOrderFiltration
+
+section PoleOrder
+
+variable {K R : Type*} [Field K] [CommRing R] [Algebra K R]
+  {deg : R → ℕ} {L : ℕ → Submodule K R}
+
+theorem mem_poleFiltration_iff (hL : ∀ n : ℕ, (L n : Set R) = {r : R | deg r ≤ n})
+    (r : R) (n : ℕ) : r ∈ L n ↔ deg r ≤ n := by
+  rw [← SetLike.mem_coe, hL n]; exact Iff.rfl
+
+theorem poleFiltration_mono (hL : ∀ n : ℕ, (L n : Set R) = {r : R | deg r ≤ n}) :
+    Monotone L := by
+  intro m n hmn r hr
+  rw [mem_poleFiltration_iff hL] at hr ⊢
+  exact hr.trans hmn
+
+theorem deg_smul_le (hL : ∀ n : ℕ, (L n : Set R) = {r : R | deg r ≤ n}) (c : K) (r : R) :
+    deg (c • r) ≤ deg r := by
+  rw [← mem_poleFiltration_iff hL]
+  exact Submodule.smul_mem _ c ((mem_poleFiltration_iff hL _ _).2 le_rfl)
+
+theorem deg_smul (hL : ∀ n : ℕ, (L n : Set R) = {r : R | deg r ≤ n}) {c : K} (hc : c ≠ 0)
+    (r : R) : deg (c • r) = deg r := by
+  refine le_antisymm (deg_smul_le hL c r) ?_
+  conv_lhs => rw [← inv_smul_smul₀ hc r]
+  exact deg_smul_le hL c⁻¹ (c • r)
+
+/-- Elements with pairwise distinct pole orders are linearly independent. -/
+theorem linearIndependent_of_deg_injective {ι : Type*}
+    (hL : ∀ n : ℕ, (L n : Set R) = {r : R | deg r ≤ n}) (v : ι → R)
+    (hv0 : ∀ i, v i ≠ 0) (hinj : ∀ i j, deg (v i) = deg (v j) → i = j) :
+    LinearIndependent K v := by
+  classical
+  rw [linearIndependent_iff']
+  intro s g hg i hi
+  by_contra hgi
+  set t := s.filter (fun j => g j ≠ 0) with ht
+  have hts : t ⊆ s := Finset.filter_subset _ _
+  have hit : i ∈ t := Finset.mem_filter.2 ⟨hi, hgi⟩
+  have hsum : ∑ j ∈ t, g j • v j = 0 := by
+    rw [Finset.sum_subset hts]
+    · exact hg
+    · intro j hjs hjt
+      have hgj : g j = 0 := by
+        by_contra h
+        exact hjt (Finset.mem_filter.2 ⟨hjs, h⟩)
+      simp [hgj]
+  obtain ⟨i₀, hi₀t, hi₀max⟩ := t.exists_max_image (fun j => deg (v j)) ⟨i, hit⟩
+  have hgi₀ : g i₀ ≠ 0 := (Finset.mem_filter.1 hi₀t).2
+  have hadd := Finset.add_sum_erase t (fun j => g j • v j) hi₀t
+  rw [hsum] at hadd
+  have hsplit : g i₀ • v i₀ = -∑ j ∈ t.erase i₀, g j • v j :=
+    eq_neg_of_add_eq_zero_left hadd
+  rcases Finset.eq_empty_or_nonempty (t.erase i₀) with hemp | ⟨j₀, hj₀⟩
+  · rw [hemp, Finset.sum_empty, neg_zero] at hsplit
+    rcases smul_eq_zero.1 hsplit with h | h
+    · exact hgi₀ h
+    · exact hv0 i₀ h
+  · -- there is another index, so `deg (v i₀) ≥ 1`
+    have hj₀ne : j₀ ≠ i₀ := (Finset.mem_erase.1 hj₀).1
+    have hj₀t : j₀ ∈ t := (Finset.mem_erase.1 hj₀).2
+    have hj₀lt : deg (v j₀) < deg (v i₀) :=
+      lt_of_le_of_ne (hi₀max j₀ hj₀t) (fun h => hj₀ne (hinj _ _ h))
+    have hMpos : 1 ≤ deg (v i₀) := by omega
+    have hterm : ∀ j ∈ t.erase i₀, g j • v j ∈ L (deg (v i₀) - 1) := by
+      intro j hj
+      have hjne : j ≠ i₀ := (Finset.mem_erase.1 hj).1
+      have hjt : j ∈ t := (Finset.mem_erase.1 hj).2
+      have hlt : deg (v j) < deg (v i₀) :=
+        lt_of_le_of_ne (hi₀max j hjt) (fun h => hjne (hinj _ _ h))
+      exact Submodule.smul_mem _ _ ((mem_poleFiltration_iff hL _ _).2 (by omega))
+    have hsummem : (∑ j ∈ t.erase i₀, g j • v j) ∈ L (deg (v i₀) - 1) :=
+      Submodule.sum_mem _ hterm
+    have hfin : g i₀ • v i₀ ∈ L (deg (v i₀) - 1) := by
+      rw [hsplit]; exact Submodule.neg_mem _ hsummem
+    rw [mem_poleFiltration_iff hL, deg_smul hL hgi₀] at hfin
+    omega
+
+end PoleOrder
+
+set_option maxHeartbeats 1000000 in
+/-- **RIEMANN–ROCH, IN ELEMENTS — the pure-algebra half.**  A `K`-algebra `R`
+carrying a pole-order function with the genus-one dimension counts is generated
+by two elements satisfying a Weierstrass relation. -/
+theorem exists_weierstrassGenerators_of_poleOrder {K R : Type*} [Field K] [CommRing R]
+    [Algebra K R] (deg : R → ℕ) (L : ℕ → Submodule K R)
+    (hL : ∀ n : ℕ, (L n : Set R) = {r : R | deg r ≤ n})
+    (hzero : deg 0 = 0)
+    (hmul : ∀ r s : R, r ≠ 0 → s ≠ 0 → deg (r * s) = deg r + deg s)
+    (hconst : ∀ r : R, r ≠ 0 → (deg r = 0 ↔ r ∈ Set.range (algebraMap K R)))
+    (hrank : ∀ n : ℕ, 1 ≤ n → Module.finrank K (L n) = n)
+    (htop : ⨆ n, L n = ⊤) :
+    ∃ (E : WeierstrassCurve K) (x y : R),
+      y ^ 2 + (algebraMap K R E.a₁ * x + algebraMap K R E.a₃) * y
+          = x ^ 3 + algebraMap K R E.a₂ * x ^ 2 + algebraMap K R E.a₄ * x
+            + algebraMap K R E.a₆ ∧
+        Subring.closure (Set.range (algebraMap K R) ∪ {x, y}) = ⊤ := by
+  classical
+  have hmono : Monotone L := poleFiltration_mono hL
+  -- `R` is nontrivial, because `L 1` is one-dimensional.
+  haveI hntriv : Nontrivial R := by
+    by_contra h
+    rw [not_nontrivial_iff_subsingleton] at h
+    have h1 : Module.finrank K (L 1) = 0 := Module.finrank_zero_of_subsingleton
+    rw [hrank 1 le_rfl] at h1
+    exact one_ne_zero h1
+  have hinjK : Function.Injective (algebraMap K R) := (algebraMap K R).injective
+  have hdegC : ∀ c : K, c ≠ 0 → deg (algebraMap K R c) = 0 := fun c hc =>
+    (hconst _ ((map_ne_zero_iff _ hinjK).2 hc)).2 ⟨c, rfl⟩
+  have hdeg1 : deg (1 : R) = 0 := by
+    have h : (1 : R) = algebraMap K R 1 := (map_one _).symm
+    rw [h]; exact hdegC 1 one_ne_zero
+  -- `R` is a domain: an element of pole order `0` is a nonzero constant, hence a unit.
+  haveI hnzd : NoZeroDivisors R := by
+    refine ⟨fun {a b} hab => ?_⟩
+    rcases eq_or_ne a 0 with rfl | ha
+    · exact Or.inl rfl
+    rcases eq_or_ne b 0 with rfl | hb
+    · exact Or.inr rfl
+    exfalso
+    have h := hmul a b ha hb
+    rw [hab, hzero] at h
+    obtain ⟨c, hc⟩ := (hconst a ha).1 (by omega)
+    have hcne : c ≠ 0 := by
+      rintro rfl
+      rw [map_zero] at hc
+      exact ha hc.symm
+    have h1 : algebraMap K R c⁻¹ * (a * b) = b := by
+      rw [← hc, ← mul_assoc, ← map_mul, inv_mul_cancel₀ hcne, map_one, one_mul]
+    rw [hab, mul_zero] at h1
+    exact hb h1.symm
+  have hfin : ∀ n : ℕ, 1 ≤ n → Module.Finite K (L n) := fun n hn =>
+    Module.finite_of_finrank_pos (by rw [hrank n hn]; omega)
+  -- the two generators
+  have hlt12 : L 1 < L 2 := lt_of_le_of_ne (hmono (by norm_num)) (by
+    intro h
+    have h1 := hrank 1 le_rfl
+    rw [h, hrank 2 (by norm_num)] at h1
+    omega)
+  obtain ⟨x, hxmem, hxnot⟩ := SetLike.exists_of_lt hlt12
+  have hdegx : deg x = 2 := by
+    have ha := (mem_poleFiltration_iff hL x 2).1 hxmem
+    have hb : ¬ deg x ≤ 1 := fun h => hxnot ((mem_poleFiltration_iff hL x 1).2 h)
+    omega
+  have hlt23 : L 2 < L 3 := lt_of_le_of_ne (hmono (by norm_num)) (by
+    intro h
+    have h1 := hrank 2 (by norm_num)
+    rw [h, hrank 3 (by norm_num)] at h1
+    omega)
+  obtain ⟨y, hymem, hynot⟩ := SetLike.exists_of_lt hlt23
+  have hdegy : deg y = 3 := by
+    have ha := (mem_poleFiltration_iff hL y 3).1 hymem
+    have hb : ¬ deg y ≤ 2 := fun h => hynot ((mem_poleFiltration_iff hL y 2).2 h)
+    omega
+  have hxne : x ≠ 0 := by
+    intro h; rw [h, hzero] at hdegx; exact absurd hdegx (by norm_num)
+  have hyne : y ≠ 0 := by
+    intro h; rw [h, hzero] at hdegy; exact absurd hdegy (by norm_num)
+  have hdegpow : ∀ (r : R), r ≠ 0 → ∀ k : ℕ, deg (r ^ k) = k * deg r := by
+    intro r hr k
+    induction k with
+    | zero => rw [pow_zero, hdeg1]; ring
+    | succ n ih => rw [pow_succ, hmul _ _ (pow_ne_zero n hr) hr, ih]; ring
+  -- the monomials `x^i` and `x^i y`, indexed by their pole order
+  set m : ℕ → R := fun d => if d % 2 = 0 then x ^ (d / 2) else x ^ ((d - 3) / 2) * y with hm
+  have hmne : ∀ d, m d ≠ 0 := by
+    intro d
+    rw [hm]
+    dsimp only
+    split
+    · exact pow_ne_zero _ hxne
+    · exact mul_ne_zero (pow_ne_zero _ hxne) hyne
+  have hmdeg : ∀ d, d ≠ 1 → deg (m d) = d := by
+    intro d hd
+    rw [hm]
+    dsimp only
+    split
+    · rename_i h
+      rw [hdegpow x hxne, hdegx]; omega
+    · rename_i h
+      rw [hmul _ _ (pow_ne_zero _ hxne) hyne, hdegpow x hxne, hdegx, hdegy]; omega
+  have hxa : x ∈ Algebra.adjoin K ({x, y} : Set R) := Algebra.subset_adjoin (by simp)
+  have hya : y ∈ Algebra.adjoin K ({x, y} : Set R) := Algebra.subset_adjoin (by simp)
+  have hmadj : ∀ d, m d ∈ Algebra.adjoin K ({x, y} : Set R) := by
+    intro d
+    rw [hm]
+    dsimp only
+    split
+    · exact Subalgebra.pow_mem _ hxa _
+    · exact Subalgebra.mul_mem _ (Subalgebra.pow_mem _ hxa _) hya
+  -- the monomials of pole order at most `n` span `L n`
+  have hspan : ∀ n : ℕ, 1 ≤ n →
+      L n ≤ Subalgebra.toSubmodule (Algebra.adjoin K ({x, y} : Set R)) := by
+    intro n hn
+    haveI := hfin n hn
+    set S : Finset ℕ := (Finset.range (n + 1)).erase 1 with hS
+    haveI : Fintype {d // d ∈ S} := FinsetCoe.fintype S
+    have hScard : S.card = n := by
+      rw [hS, Finset.card_erase_of_mem (Finset.mem_range.2 (by omega)), Finset.card_range]
+      omega
+    have hS0 : (0 : ℕ) ∈ S :=
+      Finset.mem_erase.2 ⟨by norm_num, Finset.mem_range.2 (by omega)⟩
+    have hSle : ∀ d ∈ S, d ≤ n ∧ d ≠ 1 := by
+      intro d hd
+      obtain ⟨h1, h2⟩ := Finset.mem_erase.1 hd
+      exact ⟨by have := Finset.mem_range.1 h2; omega, h1⟩
+    have hbmem : ∀ d ∈ S, m d ∈ L n := by
+      intro d hd
+      obtain ⟨h1, h2⟩ := hSle d hd
+      exact (mem_poleFiltration_iff hL _ _).2 (by rw [hmdeg d h2]; exact h1)
+    set b : {d // d ∈ S} → ↥(L n) := fun d => ⟨m d.1, hbmem d.1 d.2⟩ with hb
+    have hbli : LinearIndependent K b := by
+      apply LinearIndependent.of_comp (L n).subtype
+      have hcomp : ((L n).subtype ∘ b) = fun d : {d // d ∈ S} => m d.1 := rfl
+      rw [hcomp]
+      refine linearIndependent_of_deg_injective hL _ (fun d => hmne d.1) ?_
+      intro i j hij
+      rw [hmdeg i.1 (hSle i.1 i.2).2, hmdeg j.1 (hSle j.1 j.2).2] at hij
+      exact Subtype.ext hij
+    haveI : Nonempty {d // d ∈ S} := ⟨⟨0, hS0⟩⟩
+    have hcard : Fintype.card {d // d ∈ S} = Module.finrank K ↥(L n) := by
+      rw [Fintype.card_coe, hScard, hrank n hn]
+    have hsp := hbli.span_eq_top_of_card_eq_finrank hcard
+    intro r hr
+    have hmem : (⟨r, hr⟩ : ↥(L n)) ∈ Submodule.span K (Set.range b) := by
+      rw [hsp]; trivial
+    have hle : Submodule.span K (Set.range b) ≤
+        Submodule.comap (L n).subtype
+          (Subalgebra.toSubmodule (Algebra.adjoin K ({x, y} : Set R))) := by
+      rw [Submodule.span_le]
+      rintro _ ⟨d, rfl⟩
+      simpa [hb] using hmadj d.1
+    simpa using hle hmem
+  have hadjtop : Algebra.adjoin K ({x, y} : Set R) = ⊤ := by
+    rw [eq_top_iff]
+    intro r _
+    have hr : r ∈ ⨆ n, L n := by rw [htop]; trivial
+    rw [Submodule.mem_iSup_of_directed _ hmono.directed_le] at hr
+    obtain ⟨n, hn⟩ := hr
+    have hn' : r ∈ L (n + 1) := hmono (by omega) hn
+    simpa using hspan (n + 1) (by omega) hn'
+  -- the Weierstrass relation, from the six monomials spanning `L 6`
+  haveI := hfin 6 (by norm_num)
+  have hne1 : ∀ i : Fin 6, (![0, 2, 3, 4, 5, 6] : Fin 6 → ℕ) i ≠ 1 := by decide
+  have hle6 : ∀ i : Fin 6, (![0, 2, 3, 4, 5, 6] : Fin 6 → ℕ) i ≤ 6 := by decide
+  have hinj6 : Function.Injective (![0, 2, 3, 4, 5, 6] : Fin 6 → ℕ) := by decide
+  set w : Fin 6 → R := fun i => m (![0, 2, 3, 4, 5, 6] i) with hw
+  have hwd : ∀ i : Fin 6, deg (w i) = ![0, 2, 3, 4, 5, 6] i := by
+    intro i
+    rw [hw]
+    exact hmdeg _ (hne1 i)
+  have hwmem : ∀ i : Fin 6, w i ∈ L 6 := by
+    intro i
+    refine (mem_poleFiltration_iff hL _ _).2 ?_
+    rw [hwd i]
+    exact hle6 i
+  set W : Fin 6 → ↥(L 6) := fun i => ⟨w i, hwmem i⟩ with hW
+  have hWli : LinearIndependent K W := by
+    apply LinearIndependent.of_comp (L 6).subtype
+    have hcomp : ((L 6).subtype ∘ W) = w := rfl
+    rw [hcomp]
+    refine linearIndependent_of_deg_injective hL _ (fun i => by rw [hw]; exact hmne _) ?_
+    intro i j hij
+    rw [hwd i, hwd j] at hij
+    exact hinj6 hij
+  have hWcard : Fintype.card (Fin 6) = Module.finrank K ↥(L 6) := by
+    rw [Fintype.card_fin, hrank 6 (by norm_num)]
+  have hWsp := hWli.span_eq_top_of_card_eq_finrank hWcard
+  have hy2mem : y ^ 2 ∈ L 6 :=
+    (mem_poleFiltration_iff hL _ _).2 (by have := hdegpow y hyne 2; omega)
+  have hy2 : (⟨y ^ 2, hy2mem⟩ : ↥(L 6)) ∈ Submodule.span K (Set.range W) := by
+    rw [hWsp]; trivial
+  rw [Submodule.mem_span_range_iff_exists_fun] at hy2
+  obtain ⟨c, hc⟩ := hy2
+  have hcR : ∑ i, c i • w i = y ^ 2 := by
+    have h := congrArg (L 6).subtype hc
+    rw [map_sum] at h
+    simp only [map_smul, Submodule.subtype_apply, hW] at h
+    exact h
+  rw [Fin.sum_univ_six] at hcR
+  have hw0 : w 0 = 1 := by show m 0 = 1; norm_num [hm]
+  have hw1 : w 1 = x := by show m 2 = x; norm_num [hm]
+  have hw2 : w 2 = y := by show m 3 = y; norm_num [hm]
+  have hw3 : w 3 = x ^ 2 := by show m 4 = x ^ 2; norm_num [hm]
+  have hw4 : w 4 = x * y := by show m 5 = x * y; norm_num [hm]
+  have hw5 : w 5 = x ^ 3 := by show m 6 = x ^ 3; norm_num [hm]
+  rw [hw0, hw1, hw2, hw3, hw4, hw5] at hcR
+  -- the coefficient of `x^3` cannot vanish: `y^2` has pole order exactly `6`
+  have hc5 : c 5 ≠ 0 := by
+    intro h5
+    have h1' : (1 : R) ∈ L 5 := (mem_poleFiltration_iff hL _ _).2 (by omega)
+    have hx' : x ∈ L 5 := (mem_poleFiltration_iff hL _ _).2 (by omega)
+    have hy' : y ∈ L 5 := (mem_poleFiltration_iff hL _ _).2 (by omega)
+    have hx2' : x ^ 2 ∈ L 5 :=
+      (mem_poleFiltration_iff hL _ _).2 (by have := hdegpow x hxne 2; omega)
+    have hxy' : x * y ∈ L 5 :=
+      (mem_poleFiltration_iff hL _ _).2 (by have := hmul x y hxne hyne; omega)
+    have hmem5 : y ^ 2 ∈ L 5 := by
+      rw [← hcR, h5, zero_smul, add_zero]
+      exact Submodule.add_mem _ (Submodule.add_mem _ (Submodule.add_mem _
+        (Submodule.add_mem _ (Submodule.smul_mem _ _ h1') (Submodule.smul_mem _ _ hx'))
+        (Submodule.smul_mem _ _ hy')) (Submodule.smul_mem _ _ hx2'))
+        (Submodule.smul_mem _ _ hxy')
+    have hcontra := (mem_poleFiltration_iff hL _ _).1 hmem5
+    have := hdegpow y hyne 2
+    omega
+  simp only [Algebra.smul_def] at hcR
+  refine ⟨⟨-c 4, c 3, -(c 2 * c 5), c 1 * c 5, c 0 * c 5 ^ 2⟩,
+    algebraMap K R (c 5) * x, algebraMap K R (c 5) * y, ?_, ?_⟩
+  · simp only [map_neg, map_mul, map_pow]
+    linear_combination (-(algebraMap K R (c 5)) ^ 2) * hcR
+  · have hxin : x ∈ Algebra.adjoin K
+        ({algebraMap K R (c 5) * x, algebraMap K R (c 5) * y} : Set R) := by
+      have h := Subalgebra.mul_mem _ (Subalgebra.algebraMap_mem
+        (Algebra.adjoin K ({algebraMap K R (c 5) * x, algebraMap K R (c 5) * y} : Set R))
+        (c 5)⁻¹)
+        (Algebra.subset_adjoin (show algebraMap K R (c 5) * x ∈
+          ({algebraMap K R (c 5) * x, algebraMap K R (c 5) * y} : Set R) by simp))
+      rwa [← mul_assoc, ← map_mul, inv_mul_cancel₀ hc5, map_one, one_mul] at h
+    have hyin : y ∈ Algebra.adjoin K
+        ({algebraMap K R (c 5) * x, algebraMap K R (c 5) * y} : Set R) := by
+      have h := Subalgebra.mul_mem _ (Subalgebra.algebraMap_mem
+        (Algebra.adjoin K ({algebraMap K R (c 5) * x, algebraMap K R (c 5) * y} : Set R))
+        (c 5)⁻¹)
+        (Algebra.subset_adjoin (show algebraMap K R (c 5) * y ∈
+          ({algebraMap K R (c 5) * x, algebraMap K R (c 5) * y} : Set R) by simp))
+      rwa [← mul_assoc, ← map_mul, inv_mul_cancel₀ hc5, map_one, one_mul] at h
+    have hle : Algebra.adjoin K ({x, y} : Set R) ≤ Algebra.adjoin K
+        ({algebraMap K R (c 5) * x, algebraMap K R (c 5) * y} : Set R) := by
+      rw [Algebra.adjoin_le_iff]
+      rintro z hz
+      simp only [Set.mem_insert_iff, Set.mem_singleton_iff] at hz
+      rcases hz with rfl | rfl
+      · exact hxin
+      · exact hyin
+    have htopadj : Algebra.adjoin K
+        ({algebraMap K R (c 5) * x, algebraMap K R (c 5) * y} : Set R) = ⊤ :=
+      top_le_iff.1 (hadjtop ▸ hle)
+    rw [← Algebra.adjoin_eq_ring_closure, htopadj]
+    rfl
+
+end PoleOrderFiltration
+
+/-- **RIEMANN–ROCH: the affine complement of the zero section carries a pole-order
+filtration with the genus-one dimension counts** (sorry leaf, cut 2026-07-30 out of
+`exists_weierstrassGenerators_of_affineComplement`, whose entire ELEMENT-LEVEL content is
+now proven in `PoleOrderFiltration.exists_weierstrassGenerators_of_poleOrder`).
+
+This leaf carries the whole Riemann–Roch content of the reverse bridge and nothing else.
+It asks for exactly two things:
+
+* the pole-order function `deg = -ord_O` at the zero section, with its three defining
+  properties — `deg 0 = 0`, multiplicativity `deg (rs) = deg r + deg s`, and
+  `deg r = 0 ↔ r` constant — together with the linear systems `L n = L(n·[O])` presented
+  as `K`-SUBMODULES whose carrier is `{r | deg r ≤ n}` (that they are submodules at all is
+  the ultrametric inequality, so it is folded into the statement rather than stated
+  separately), and the exhaustion `⨆ n, L n = ⊤`;
+* the DIMENSION COUNT `finrank K (L n) = n` for `n ≥ 1`.
+
+Everything else — the Weierstrass equation, the generation of `R` by two elements, the
+normalisation of the leading coefficients — is pure algebra and is already discharged.
+
+TRUE — Silverman *AEC* III.3.1.  `A` is a smooth proper geometrically connected curve
+over `K` carrying a group-scheme structure, hence has trivial tangent bundle, hence
+arithmetic genus one; `O` is the `K`-rational point `ab.zero (𝟙 (Spec (CommRingCat.of K)))`.
+Clause by clause:
+
+* the stalk `O_{A,O}` is a DVR — this project already owns it as
+  `isDiscreteValuationRing_stalk_of_smoothOfRelativeDimension_one` in
+  `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean` — so `ord_O` exists on the
+  function field of `A`, and `deg r := -ord_O r` (with `deg 0 := 0`) is defined on all of
+  `R`, since `Spec R` IS `A ∖ {O}` and hence every `r ∈ R` is regular away from `O`;
+* `deg r ≥ 0` for `r ≠ 0`, i.e. `deg` really lands in `ℕ`: an `r` with `ord_O r > 0` would
+  be regular on all of `A` and vanish at `O`, hence be a global section of a proper
+  geometrically connected geometrically reduced curve vanishing somewhere, hence `0`;
+* `deg r = 0 ↔ r` constant is the same computation together with `Γ(A, O_A) = K`, which
+  holds because `f` is proper (`ab.proper`), geometrically connected (`ab.connected`) and
+  geometrically reduced (from `hdim`, smoothness);
+* multiplicativity and the ultrametric inequality are the valuation axioms;
+* `⨆ n, L n = ⊤` says every nonzero `r ∈ R` has FINITE order at `O`, which is the
+  statement that `ord_O` takes values in `ℤ` on nonzero elements;
+* `finrank K (L n) = n` for `n ≥ 1` is Riemann–Roch: `deg (n·[O]) = n ≥ 1 > 0 = 2g - 2`,
+  so the `L(K − D)` term vanishes and `dim L(n·[O]) = n - g + 1 = n`.
+
+**Genus one is a STEP OF THE PROOF, not a missing hypothesis**, and `ab` is where it
+enters: a smooth proper geometrically connected curve carrying a group law has trivial
+canonical bundle.  There is no genus in the pin to state it with, and none is needed.
+
+## FALSITY AUDIT (fresh, 2026-07-30 — this is a NEW statement, so no earlier audit applies)
+
+**`hrange` IS LOAD-BEARING, and the clause it protects is `finrank K (L n) = n`.**  Drop
+it and take `ι` the open immersion onto the complement of TWO rational points `O` and `P`.
+Then `deg` is still the pole order at `O` alone, and `{r | deg r ≤ n}` contains every
+function with a pole of arbitrary order at `P` — an INFINITE-dimensional space for every
+`n ≥ 1`, so `finrank K (L n) = n` fails for all `n` at once.  Note this is a sharper
+witness than the one the old docstring gave for the generators statement: there the
+contradiction was indirect (via `injective_of_surjective_coordinateRing` and the number of
+punctures); here it is a direct dimension count.
+
+**`hstr` IS LOAD-BEARING, and this is the clause that would be missed.**  `hstr` pins
+`algebraMap K R` to BE the structure map.  Without it, `R` may carry a `K`-algebra
+structure through a NON-SURJECTIVE self-embedding of `K` — take `K = ℚ(t)`, `R` the affine
+coordinate ring of an elliptic curve over `K`, and let `K` act through `t ↦ t²`.  The
+constants of `R` are unchanged as a SET, so `hconst` survives, `deg` survives, and the
+`L n` survive; but each `L n` is then a `K`-vector space of dimension `2n`, not `n`,
+because the constant subfield is a quadratic extension of the image of the action.  So the
+counterexample kills only `hrank`, silently, and only for a base field admitting a proper
+self-embedding — which is exactly the kind of witness a `ℚ`-only reading of the statement
+would never produce.  (Over `ℚ` and over `ℚ̄` — the only two bases instantiated — the
+structure map is the unique ring map out of the base or is surjective, which is why the
+`ℚ`-era statement could omit `hstr`.  That is a fact about those two fields, not about
+this statement.)
+
+**`hdim` IS LOAD-BEARING FOR THE PROOF, not for the truth.**  Without it `A` may be an
+abelian scheme of relative dimension `≥ 2`, but then `A ∖ {O}` has affine complement of
+codimension `≥ 2` and is not affine, so no such `ι` exists and the statement is vacuous
+there.  What `hdim` actually buys is the DVR stalk, i.e. the existence of `deg` at all.
+
+**NOT VACUOUS**: instantiate at the `(A, f, ab, ι)` produced by
+`exists_ellipticScheme_isWeierstrassModel_of_projModel` and `exists_affineChart_projModel`,
+where `deg` is the pole order at the point at infinity of the Weierstrass model —
+`deg (x^i y^j) = 2i + 3j` — and `L n` is spanned by the monomials of pole order `≤ n`.
+
+**`IsDomain R` IS NOT NEEDED AS A HYPOTHESIS OR A CONCLUSION.**  It follows from the
+clauses above (see the note on `PoleOrderFiltration`), so a prover of this leaf need not
+produce it, and a consumer need not ask for it.
+
+WHAT WOULD REFUTE THE "MISSING" DIAGNOSIS: a Riemann–Roch theorem, a genus, or a theory of
+divisors/linear systems on a relative curve, in `Fermat/`, `.lake/packages/mathlib` or
+`~/cs/FLT`.  Still absent from all three as of 2026-07-30.  The pin DOES have
+`Mathlib/AlgebraicGeometry/OrderOfVanishing.lean` — `Scheme.ord`, the order of vanishing at
+a codimension-one point of a locally Noetherian integral scheme — which is enough to
+CONSTRUCT `deg` and to state `L n`; what is missing is the dimension count, and after this
+cut that is the ONLY thing missing. -/
+theorem exists_poleOrder_of_affineComplement {K : Type} [Field K] {A : Scheme.{0}}
+    {f : A ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct f)
+    (hdim : SmoothOfRelativeDimension 1 f)
+    (R : Type) [CommRing R] [Algebra K R] (ι : Spec (CommRingCat.of R) ⟶ A)
+    (hopen : IsOpenImmersion ι)
+    (hstr : ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap K R)))
+    (hrange : Set.range ι.base =
+      (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of K)))).1.base)ᶜ) :
+    ∃ (deg : R → ℕ) (L : ℕ → Submodule K R),
+      (∀ n : ℕ, (L n : Set R) = {r : R | deg r ≤ n}) ∧
+      deg 0 = 0 ∧
+      (∀ r s : R, r ≠ 0 → s ≠ 0 → deg (r * s) = deg r + deg s) ∧
+      (∀ r : R, r ≠ 0 → (deg r = 0 ↔ r ∈ Set.range (algebraMap K R))) ∧
+      (∀ n : ℕ, 1 ≤ n → Module.finrank K (L n) = n) ∧
+      (⨆ n, L n) = ⊤ :=
+  sorry
+
 /-- **RIEMANN–ROCH, IN ELEMENTS: the affine complement of the zero section
-has two generators satisfying a Weierstrass relation** (sorry leaf, cut
-2026-07-28 out of `exists_surjective_coordinateRingHom_of_affineComplement`,
-whose coordinate-ring packaging is now proven).
+has two generators satisfying a Weierstrass relation** (PROVEN 2026-07-30 over the
+single sub-leaf `exists_poleOrder_of_affineComplement`; it was cut 2026-07-28 out of
+`exists_surjective_coordinateRingHom_of_affineComplement`, whose coordinate-ring
+packaging was proven then).
+
+**This declaration has no `sorry` of its own any more.**  Everything the paragraphs
+below describe as the argument — the linear systems, `x ∈ L(2) ∖ L(1)`,
+`y ∈ L(3) ∖ L(2)`, the relation among the seven monomials, and the exhaustion — is
+proven in `PoleOrderFiltration.exists_weierstrassGenerators_of_poleOrder` above, from a
+pole-order filtration supplied by `exists_poleOrder_of_affineComplement`.  What survived
+the cut is ONLY the dimension count `finrank K (L n) = n`; read that leaf's own docstring
+for its (fresh) falsity audit, which supersedes the `hopen`/`hrange`/`hstr` discussion
+below for everything except this declaration's own interface.
 
 This is the RIEMANN–ROCH ATOM of the reverse bridge, and it mentions no
 scheme-theoretic or `AdjoinRoot` machinery at all: it asks for a structure
@@ -10093,8 +10609,11 @@ theorem exists_weierstrassGenerators_of_affineComplement {K : Type} [Field K] {A
       y ^ 2 + (algebraMap K R E.a₁ * x + algebraMap K R E.a₃) * y
           = x ^ 3 + algebraMap K R E.a₂ * x ^ 2 + algebraMap K R E.a₄ * x
             + algebraMap K R E.a₆ ∧
-        Subring.closure (Set.range (algebraMap K R) ∪ {x, y}) = ⊤ :=
-  sorry
+        Subring.closure (Set.range (algebraMap K R) ∪ {x, y}) = ⊤ := by
+  obtain ⟨deg, L, hL, hzero, hmul, hconst, hrank, htop⟩ :=
+    exists_poleOrder_of_affineComplement ab hdim R ι hopen hstr hrange
+  exact PoleOrderFiltration.exists_weierstrassGenerators_of_poleOrder
+    deg L hL hzero hmul hconst hrank htop
 
 /-- **RIEMANN–ROCH: the affine complement of the zero section is
 GENERATED by two elements satisfying a Weierstrass relation** (sorry leaf,
@@ -10331,81 +10850,312 @@ theorem exists_weierstrassRingEquiv_of_affineComplement {K : Type} [Field K] {A 
   exact ⟨E, ⟨(AlgEquiv.ofBijective φ
     ⟨_root_.injective_of_surjective_coordinateRing E hnf φ.toRingHom hφ, hφ⟩).symm⟩⟩
 
-/-- **A Weierstrass curve over `ℚ` with `Δ = 0` has a RATIONAL singular
-point** (**PROVEN 2026-07-28** — the char-`0` half of leaf 3 of
-`exists_weierstrassModel_of_ellipticScheme`; Silverman *AEC* III.1.4).
+/-! ### The singular point of a `Δ = 0` Weierstrass cubic is rational over a PERFECT field
 
-This is the step that makes leaf 3 work over `ℚ` rather than only over `ℚ̄`:
-the singular point of a singular Weierstrass cubic has coordinates in the
-base field.  It is proved here with an EXPLICIT witness rather than by
-completing the square and the cube, so no `VariableChange` transport of
-`Equation`/`Nonsingular` — which mathlib does not have — is needed.
+`exists_singular_of_Δ_eq_zero` at the end of this block is the arithmetic input to
+leaf 3 of `exists_weierstrassModel_of_ellipticScheme` (Silverman *AEC* III.1.4):
+what makes that leaf work over the base itself rather than only over `k̄` is that
+the singular point of a singular Weierstrass cubic has coordinates IN THE BASE.
 
-**The witness.**  Write `X := -c₆ / c₄` (with Lean's `x / 0 = 0`, which is
-exactly right in the degenerate case: `Δ = 0` and `c₄ = 0` force `c₆ = 0`
-through `c₄ ^ 3 = c₆ ^ 2`).  Then
+**SCOPE, and it is not `CharZero` (generalised 2026-07-30).**  The statement was
+written over a characteristic-zero field, where a single explicit witness
+`x₀ = (X - b₂)/12, y₀ = -(a₃ + a₁x₀)/2` with `X = -c₆/c₄` does the whole job.  The
+honest scope is `PerfectField`, and the char-`0` proof is one of four cases:
 
-    x₀ = (X - b₂) / 12,      y₀ = -(a₃ + a₁ x₀) / 2.
+* `2 ≠ 0`, `c₄ ≠ 0` — the same witness, rewritten as
+  `x₀ = (18 b₆ - b₂ b₄)/c₄`, which is `(X - b₂)/12` cleared of its `12` and
+  therefore available in characteristic `3` as well;
+* `2 ≠ 0`, `3 ≠ 0`, `c₄ = 0` — `Δ = 0` then forces `c₆ = 0` too and the cubic has a
+  TRIPLE root `x₀ = -b₂/12`;
+* `2 ≠ 0`, `3 = 0`, `c₄ = 0` — `c₄ = b₂²` in characteristic three, so `b₂ = 0`, and
+  then `Δ = -8b₄³` forces `b₄ = 0`; the cubic is `x³ + b₆` and its root is a CUBE
+  ROOT of `-b₆`.  **This is the first of the two places perfectness is used**, via
+  `surjective_frobenius K 3`;
+* `2 = 0` — the `y`-partial is `a₁x + a₃`, so there is no completing of the square
+  at all.  For `a₁ ≠ 0` the point is `x₀ = a₃/a₁`, `y₀ = (x₀² + a₄)/a₁`, rational
+  with no root extraction (the certificate is `a₁⁶ · W(x₀,y₀) = Δ + 4·(…)`).  For
+  `a₁ = 0`, `Δ = a₃⁴` forces `a₃ = 0`, the `y`-partial vanishes identically, and the
+  point is `x₀ = √a₄`, `y₀ = √(x₀³ + a₂x₀² + a₄x₀ + a₆)` — **the second use of
+  perfectness**, via `surjective_frobenius K 2`.
 
-`y₀` is forced by `W_Y(x₀, y₀) = 2 y₀ + a₁ x₀ + a₃ = 0`, and with it the two
-remaining conditions become polynomial identities in `X` and the `aᵢ`:
+**FALSITY AUDIT: `PerfectField` is LOAD-BEARING and cannot be dropped.**  Over the
+imperfect field `𝔽₂(t)` take `y² = x³ + t x`, i.e. `a₁ = a₃ = 0`, `a₂ = a₆ = 0`,
+`a₄ = t`.  Then `b₂ = b₄ = b₆ = 0`, so `Δ = 0`; but `W_Y ≡ 0` and
+`W_X = x² + t`, so a singular point needs `x² = t`, and `t` is not a square in
+`𝔽₂(t)`.  So the conclusion FAILS for this curve: the singular point exists only
+over `𝔽₂(t^{1/2})`.  That is exactly the `a₁ = 0` case above, with the Frobenius
+surjectivity removed.
 
-    W_X(x₀, y₀) = -(X ^ 2 - c₄) / 48,
-    W(x₀, y₀)   = (-3 X (X ^ 2 - c₄) + 2 (X ^ 3 + c₆)) / 1728,
+`CharZero → PerfectField` is `PerfectField.ofCharZero` and
+`IsAlgClosed → PerfectField` is `IsAlgClosed.perfectField`, so every base this
+development instantiates at (`ℚ`, `ℚ̄`, and any algebraically closed `k`) supplies
+the instance by synthesis and no call site changes.
 
-so both vanish given only `X ^ 2 = c₄` and `X ^ 3 = -c₆`, which is all that
-`Δ = 0` is used for (through `WeierstrassCurve.c_relation`,
-`1728 Δ = c₄ ^ 3 - c₆ ^ 2`).
+Everything is proved with EXPLICIT witnesses rather than by `VariableChange`
+transport of `Equation`/`Nonsingular`, which mathlib does not have. -/
 
-**Where the sign comes from**, since the two roots of `6x² + b₂x + b₄` are
-`x = (±√c₄ - b₂)/12` and only ONE of them lies on the curve: eliminating
-`b₄` and `b₆` against the two derivative conditions gives
-`c₆ = -(b₂ + 12 x₀) ^ 3`, i.e. `X ^ 3 = -c₆`, which together with
-`X ^ 2 = c₄` pins `X = -c₆ / c₄`.  Choosing `+c₆ / c₄` instead gives the
-OTHER critical point of the cubic, which satisfies both derivative equations
-and is NOT on the curve. -/
-theorem exists_singular_of_Δ_eq_zero {K : Type} [Field K] [CharZero K]
+/-- **Assembly step**: a point at which the Weierstrass polynomial and BOTH of its
+partials vanish is a singular point of the affine chart (PROVEN, bookkeeping only). -/
+theorem exists_singular_of_partials_eq_zero {K : Type} [Field K] (E : WeierstrassCurve K)
+    (x y : K)
+    (heq : y ^ 2 + E.a₁ * x * y + E.a₃ * y - (x ^ 3 + E.a₂ * x ^ 2 + E.a₄ * x + E.a₆) = 0)
+    (hX : E.a₁ * y - (3 * x ^ 2 + 2 * E.a₂ * x + E.a₄) = 0)
+    (hY : 2 * y + E.a₁ * x + E.a₃ = 0) :
+    ∃ x y : K, E.toAffine.Equation x y ∧ ¬ E.toAffine.Nonsingular x y := by
+  refine ⟨x, y, ?_, ?_⟩
+  · rw [WeierstrassCurve.Affine.equation_iff']
+    exact heq
+  · rw [WeierstrassCurve.Affine.nonsingular_iff']
+    rintro ⟨-, h | h⟩
+    · exact h hX
+    · exact h hY
+
+/-- **Away from characteristic two, a DOUBLE ROOT of `4x³ + b₂x² + 2b₄x + b₆` is the
+`x`-coordinate of a singular point** (PROVEN).
+
+Completing the square, `4·W(x,y) = W_Y(x,y)² - (4x³ + b₂x² + 2b₄x + b₆)`, and
+`g'(x) = 12x² + 2b₂x + 2b₄ = -4·W_X(x,y) + 2a₁·W_Y(x,y)`.  So with
+`y := -(a₃ + a₁x)/2`, which kills `W_Y` outright, a root of `g` gives `W = 0` and a
+root of `g'` gives `W_X = 0`.  Both divisions are by `4`, which is why this route is
+confined to `2 ≠ 0`; characteristic two is handled separately, and needs no square
+completion because `W_Y = a₁x + a₃` is already linear there. -/
+theorem exists_singular_of_double_root {K : Type} [Field K] (E : WeierstrassCurve K)
+    (h2 : (2 : K) ≠ 0) (x : K)
+    (hcubic : 4 * x ^ 3 + E.b₂ * x ^ 2 + 2 * E.b₄ * x + E.b₆ = 0)
+    (hquad : 12 * x ^ 2 + 2 * E.b₂ * x + 2 * E.b₄ = 0) :
+    ∃ x y : K, E.toAffine.Equation x y ∧ ¬ E.toAffine.Nonsingular x y := by
+  have h4 : (4 : K) ≠ 0 := by
+    have h : (4 : K) = 2 * 2 := by norm_num
+    rw [h]; exact mul_ne_zero h2 h2
+  obtain ⟨y, hy⟩ : ∃ y : K, y = -(E.a₃ + E.a₁ * x) / 2 := ⟨_, rfl⟩
+  have hv : 2 * y + E.a₁ * x + E.a₃ = 0 := by rw [hy]; field_simp; ring
+  refine exists_singular_of_partials_eq_zero E x y ?_ ?_ hv
+  · have hG1 : 4 * (y ^ 2 + E.a₁ * x * y + E.a₃ * y
+        - (x ^ 3 + E.a₂ * x ^ 2 + E.a₄ * x + E.a₆))
+        = (2 * y + E.a₁ * x + E.a₃) ^ 2 - (4 * x ^ 3 + E.b₂ * x ^ 2 + 2 * E.b₄ * x + E.b₆) := by
+      simp only [WeierstrassCurve.b₂, WeierstrassCurve.b₄, WeierstrassCurve.b₆]; ring
+    have h0 : (4 : K) * (y ^ 2 + E.a₁ * x * y + E.a₃ * y
+        - (x ^ 3 + E.a₂ * x ^ 2 + E.a₄ * x + E.a₆)) = 0 := by
+      rw [hG1, hv, hcubic]; ring
+    exact (mul_eq_zero.mp h0).resolve_left h4
+  · have hG2 : -4 * (E.a₁ * y - (3 * x ^ 2 + 2 * E.a₂ * x + E.a₄))
+        = 12 * x ^ 2 + 2 * E.b₂ * x + 2 * E.b₄ - 2 * E.a₁ * (2 * y + E.a₁ * x + E.a₃) := by
+      simp only [WeierstrassCurve.b₂, WeierstrassCurve.b₄]; ring
+    have h0 : (-4 : K) * (E.a₁ * y - (3 * x ^ 2 + 2 * E.a₂ * x + E.a₄)) = 0 := by
+      rw [hG2, hquad, hv]; ring
+    exact (mul_eq_zero.mp h0).resolve_left (neg_ne_zero.mpr h4)
+
+/-- **`2 ≠ 0` and `c₄ ≠ 0`: the double root is `(18 b₆ - b₂ b₄)/c₄`** (PROVEN).
+
+This is the classical char-`0` witness `x₀ = (X - b₂)/12` with `X = -c₆/c₄`, cleared
+of its `12`: `(X - b₂)/12 = (18 b₆ - b₂ b₄)/c₄` identically, so the formula is
+available in characteristic three too.  The two facts it needs are polynomial
+identities in the `bᵢ` ALONE, and `WeierstrassCurve.b_relation` (`4b₈ = b₂b₆ - b₄²`)
+is their only input:
+
+    4N³ + b₂N²c₄ + 2b₄Nc₄² + b₆c₄³ = 4 c₆ Δ,      N := 18b₆ - b₂b₄
+    12N² + 2b₂Nc₄ + 2b₄c₄²          = -144 Δ
+
+which are `c₄³·g(N/c₄)` and `c₄²·g'(N/c₄)/1` respectively.  Stating them in `N` and
+`c₄` rather than substituting `x` keeps them small; substituting into a single
+`c₄³ · W(x,y) = -c₆ Δ` over the `aᵢ` is the same mathematics and does not elaborate
+inside the default heartbeat budget. -/
+theorem exists_singular_of_Δ_eq_zero_of_c₄_ne_zero {K : Type} [Field K]
+    (E : WeierstrassCurve K) (hΔ : E.Δ = 0) (h2 : (2 : K) ≠ 0) (hc4 : E.c₄ ≠ 0) :
+    ∃ x y : K, E.toAffine.Equation x y ∧ ¬ E.toAffine.Nonsingular x y := by
+  obtain ⟨x, hx⟩ : ∃ x : K, x = (18 * E.b₆ - E.b₂ * E.b₄) / E.c₄ := ⟨_, rfl⟩
+  have hI1 : 4 * (18 * E.b₆ - E.b₂ * E.b₄) ^ 3
+      + E.b₂ * (18 * E.b₆ - E.b₂ * E.b₄) ^ 2 * E.c₄
+      + 2 * E.b₄ * (18 * E.b₆ - E.b₂ * E.b₄) * E.c₄ ^ 2 + E.b₆ * E.c₄ ^ 3
+      = 4 * E.c₆ * E.Δ := by
+    simp only [WeierstrassCurve.c₄, WeierstrassCurve.c₆, WeierstrassCurve.Δ]
+    linear_combination (-E.b₂ ^ 2 * (E.b₂ ^ 3 - 36 * E.b₂ * E.b₄ + 216 * E.b₆)) * E.b_relation
+  have hI2 : 12 * (18 * E.b₆ - E.b₂ * E.b₄) ^ 2
+      + 2 * E.b₂ * (18 * E.b₆ - E.b₂ * E.b₄) * E.c₄ + 2 * E.b₄ * E.c₄ ^ 2
+      = -(144 * E.Δ) := by
+    simp only [WeierstrassCurve.c₄, WeierstrassCurve.Δ]
+    linear_combination (-36 * E.b₂ ^ 2) * E.b_relation
+  have hgx : E.c₄ ^ 3 * (4 * x ^ 3 + E.b₂ * x ^ 2 + 2 * E.b₄ * x + E.b₆)
+      = 4 * (18 * E.b₆ - E.b₂ * E.b₄) ^ 3
+        + E.b₂ * (18 * E.b₆ - E.b₂ * E.b₄) ^ 2 * E.c₄
+        + 2 * E.b₄ * (18 * E.b₆ - E.b₂ * E.b₄) * E.c₄ ^ 2 + E.b₆ * E.c₄ ^ 3 := by
+    rw [hx]; field_simp
+  have hqx : E.c₄ ^ 2 * (12 * x ^ 2 + 2 * E.b₂ * x + 2 * E.b₄)
+      = 12 * (18 * E.b₆ - E.b₂ * E.b₄) ^ 2
+        + 2 * E.b₂ * (18 * E.b₆ - E.b₂ * E.b₄) * E.c₄ + 2 * E.b₄ * E.c₄ ^ 2 := by
+    rw [hx]; field_simp
+  refine exists_singular_of_double_root E h2 x ?_ ?_
+  · have h1 : E.c₄ ^ 3 * (4 * x ^ 3 + E.b₂ * x ^ 2 + 2 * E.b₄ * x + E.b₆) = 0 := by
+      rw [hgx, hI1, hΔ]; ring
+    exact (mul_eq_zero.mp h1).resolve_left (pow_ne_zero 3 hc4)
+  · have h1 : E.c₄ ^ 2 * (12 * x ^ 2 + 2 * E.b₂ * x + 2 * E.b₄) = 0 := by
+      rw [hqx, hI2, hΔ]; ring
+    exact (mul_eq_zero.mp h1).resolve_left (pow_ne_zero 2 hc4)
+
+/-- **`2 ≠ 0`, `3 ≠ 0` and `c₄ = 0`: the cubic has a TRIPLE root `-b₂/12`** (PROVEN).
+
+`1728 Δ = c₄³ - c₆²` turns `Δ = c₄ = 0` into `c₆ = 0` with no division, and then
+`216·g(-b₂/12) = -c₆` and `12·g'(-b₂/12) = -c₄`. -/
+theorem exists_singular_of_Δ_eq_zero_of_c₄_eq_zero {K : Type} [Field K]
+    (E : WeierstrassCurve K) (hΔ : E.Δ = 0) (h2 : (2 : K) ≠ 0) (h3 : (3 : K) ≠ 0)
+    (hc4 : E.c₄ = 0) :
+    ∃ x y : K, E.toAffine.Equation x y ∧ ¬ E.toAffine.Nonsingular x y := by
+  have h12 : (12 : K) ≠ 0 := by
+    have h : (12 : K) = 2 * 2 * 3 := by norm_num
+    rw [h]; exact mul_ne_zero (mul_ne_zero h2 h2) h3
+  have h216 : (216 : K) ≠ 0 := by
+    have h : (216 : K) = 2 * 2 * 2 * (3 * 3 * 3) := by norm_num
+    rw [h]
+    exact mul_ne_zero (mul_ne_zero (mul_ne_zero h2 h2) h2) (mul_ne_zero (mul_ne_zero h3 h3) h3)
+  have hc6 : E.c₆ = 0 := by
+    have h := E.c_relation
+    rw [hΔ, mul_zero, hc4] at h
+    have h' : E.c₆ ^ 2 = 0 := by linear_combination h
+    exact pow_eq_zero_iff (by norm_num : (2 : ℕ) ≠ 0) |>.mp h'
+  obtain ⟨x, hx⟩ : ∃ x : K, x = -E.b₂ / 12 := ⟨_, rfl⟩
+  refine exists_singular_of_double_root E h2 x ?_ ?_
+  · have key : (216 : K) * (4 * x ^ 3 + E.b₂ * x ^ 2 + 2 * E.b₄ * x + E.b₆) = -E.c₆ := by
+      rw [hx]; simp only [WeierstrassCurve.c₆]; field_simp; ring
+    have h1 : (216 : K) * (4 * x ^ 3 + E.b₂ * x ^ 2 + 2 * E.b₄ * x + E.b₆) = 0 := by
+      rw [key, hc6]; ring
+    exact (mul_eq_zero.mp h1).resolve_left h216
+  · have key : (12 : K) * (12 * x ^ 2 + 2 * E.b₂ * x + 2 * E.b₄) = -E.c₄ := by
+      rw [hx]; simp only [WeierstrassCurve.c₄]; field_simp; ring
+    have h1 : (12 : K) * (12 * x ^ 2 + 2 * E.b₂ * x + 2 * E.b₄) = 0 := by
+      rw [key, hc4]; ring
+    exact (mul_eq_zero.mp h1).resolve_left h12
+
+/-- **Characteristic three with `c₄ = 0`: the root is a CUBE ROOT of `-b₆`**
+(PROVEN — the first of the two places `PerfectField` is used).
+
+In characteristic three `c₄ = b₂²`, so `c₄ = 0` gives `b₂ = 0`, and then
+`Δ = -b₂²b₈ - 8b₄³ = -8b₄³` with `8 ≠ 0` gives `b₄ = 0`.  The cubic is `4x³ + b₆`,
+which is `x³ + b₆` here, and `x³ = -b₆` is solvable because Frobenius is surjective.
+Its derivative `12x²` vanishes identically, so no second condition is imposed —
+the root is triple, as it must be for a cuspidal cubic in characteristic three. -/
+theorem exists_singular_of_Δ_eq_zero_of_char_three {K : Type} [Field K] [PerfectField K]
+    (E : WeierstrassCurve K) (hΔ : E.Δ = 0) (h2 : (2 : K) ≠ 0) (h3 : (3 : K) = 0)
+    (hc4 : E.c₄ = 0) :
+    ∃ x y : K, E.toAffine.Equation x y ∧ ¬ E.toAffine.Nonsingular x y := by
+  haveI : CharP K 3 := (CharP.charP_iff_prime_eq_zero Nat.prime_three).mpr h3
+  haveI : ExpChar K 3 := ExpChar.prime Nat.prime_three
+  have h8 : (8 : K) ≠ 0 := by
+    have h : (8 : K) = 2 * 2 * 2 := by norm_num
+    rw [h]; exact mul_ne_zero (mul_ne_zero h2 h2) h2
+  have hb2 : E.b₂ = 0 := by
+    have h := E.c₄_of_char_three
+    rw [hc4] at h
+    exact pow_eq_zero_iff (by norm_num : (2 : ℕ) ≠ 0) |>.mp h.symm
+  have hb4 : E.b₄ = 0 := by
+    have h := E.Δ_of_char_three
+    rw [hΔ, hb2] at h
+    have h3' : (8 : K) * E.b₄ ^ 3 = 0 := by linear_combination h
+    have h4' := (mul_eq_zero.mp h3').resolve_left h8
+    exact pow_eq_zero_iff (by norm_num : (3 : ℕ) ≠ 0) |>.mp h4'
+  obtain ⟨x, hx⟩ := surjective_frobenius K 3 (-E.b₆)
+  rw [frobenius_def] at hx
+  refine exists_singular_of_double_root E h2 x ?_ ?_
+  · linear_combination 4 * hx + x ^ 2 * hb2 + 2 * x * hb4 - E.b₆ * h3
+  · linear_combination 4 * x ^ 2 * h3 + 2 * x * hb2 + 2 * hb4
+
+/-- **Characteristic two with `a₁ ≠ 0`: the singular point is RATIONAL with no root
+extraction** (PROVEN, and it needs no perfectness).
+
+`W_Y = a₁x + a₃` in characteristic two, so `x₀ = a₃/a₁`; `W_X = a₁y + x₀² + a₄` then
+forces `y₀ = (x₀² + a₄)/a₁`.  That the point lies ON the curve is where `Δ = 0`
+enters, through the integral certificate
+
+    a₁⁶ · W(x₀, y₀) = Δ + 4·(…)
+
+whose `4·(…)` term dies in characteristic two.  The two partials come out of the
+cheaper `a₁² · W_X = 2·(…)` and `a₁³ · W_Y = 2·(…)`. -/
+theorem exists_singular_of_Δ_eq_zero_of_char_two_of_a₁_ne_zero {K : Type} [Field K]
+    (E : WeierstrassCurve K) (hΔ : E.Δ = 0) (h2 : (2 : K) = 0) (ha1 : E.a₁ ≠ 0) :
+    ∃ x y : K, E.toAffine.Equation x y ∧ ¬ E.toAffine.Nonsingular x y := by
+  obtain ⟨x, hx⟩ : ∃ x : K, x = E.a₃ / E.a₁ := ⟨_, rfl⟩
+  obtain ⟨y, hy⟩ : ∃ y : K, y = (x ^ 2 + E.a₄) / E.a₁ := ⟨_, rfl⟩
+  refine exists_singular_of_partials_eq_zero E x y ?_ ?_ ?_
+  · have key : E.a₁ ^ 6 *
+        (y ^ 2 + E.a₁ * x * y + E.a₃ * y - (x ^ 3 + E.a₂ * x ^ 2 + E.a₄ * x + E.a₆))
+        = E.Δ + 2 * (2 * (3 * E.a₁ ^ 4 * E.a₂ * E.a₆ - 2 * E.a₁ ^ 3 * E.a₂ * E.a₃ * E.a₄
+            - 9 * E.a₁ ^ 3 * E.a₃ * E.a₆ + 2 * E.a₁ ^ 2 * E.a₂ ^ 2 * E.a₃ ^ 2
+            + 12 * E.a₁ ^ 2 * E.a₂ ^ 2 * E.a₆ - 2 * E.a₁ ^ 2 * E.a₂ * E.a₄ ^ 2
+            + 8 * E.a₁ ^ 2 * E.a₃ ^ 2 * E.a₄ - 18 * E.a₁ ^ 2 * E.a₄ * E.a₆
+            - 4 * E.a₁ * E.a₂ ^ 2 * E.a₃ * E.a₄ - 9 * E.a₁ * E.a₂ * E.a₃ ^ 3
+            - 36 * E.a₁ * E.a₂ * E.a₃ * E.a₆ + 24 * E.a₁ * E.a₃ * E.a₄ ^ 2
+            + 4 * E.a₂ ^ 3 * E.a₃ ^ 2 + 16 * E.a₂ ^ 3 * E.a₆ - 4 * E.a₂ ^ 2 * E.a₄ ^ 2
+            - 18 * E.a₂ * E.a₃ ^ 2 * E.a₄ - 72 * E.a₂ * E.a₄ * E.a₆ + 7 * E.a₃ ^ 4
+            + 54 * E.a₃ ^ 2 * E.a₆ + 16 * E.a₄ ^ 3 + 108 * E.a₆ ^ 2)) := by
+      rw [hy, hx]
+      simp only [WeierstrassCurve.Δ, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+        WeierstrassCurve.b₆, WeierstrassCurve.b₈]
+      field_simp
+      ring
+    have h0 : E.a₁ ^ 6 *
+        (y ^ 2 + E.a₁ * x * y + E.a₃ * y - (x ^ 3 + E.a₂ * x ^ 2 + E.a₄ * x + E.a₆)) = 0 := by
+      rw [key, hΔ, h2]; ring
+    exact (mul_eq_zero.mp h0).resolve_left (pow_ne_zero 6 ha1)
+  · have key : E.a₁ ^ 2 * (E.a₁ * y - (3 * x ^ 2 + 2 * E.a₂ * x + E.a₄))
+        = 2 * (-(E.a₃ * (E.a₁ * E.a₂ + E.a₃))) := by
+      rw [hy, hx]; field_simp; ring
+    have h0 : E.a₁ ^ 2 * (E.a₁ * y - (3 * x ^ 2 + 2 * E.a₂ * x + E.a₄)) = 0 := by
+      rw [key, h2]; ring
+    exact (mul_eq_zero.mp h0).resolve_left (pow_ne_zero 2 ha1)
+  · have key : E.a₁ ^ 3 * (2 * y + E.a₁ * x + E.a₃)
+        = 2 * (E.a₁ ^ 3 * E.a₃ + E.a₁ ^ 2 * E.a₄ + E.a₃ ^ 2) := by
+      rw [hy, hx]; field_simp; ring
+    have h0 : E.a₁ ^ 3 * (2 * y + E.a₁ * x + E.a₃) = 0 := by
+      rw [key, h2]; ring
+    exact (mul_eq_zero.mp h0).resolve_left (pow_ne_zero 3 ha1)
+
+/-- **Characteristic two with `a₁ = 0`: two SQUARE ROOTS** (PROVEN — the second and
+last place `PerfectField` is used, and the case that makes it load-bearing).
+
+`Δ = a₁⁴b₈ + a₃⁴ + a₁³a₃³` collapses to `a₃⁴` here, so `a₃ = 0` and `W_Y = 2y` is
+identically zero.  `W_X = x² + a₄` then asks for `x₀ = √a₄` and the equation for
+`y₀ = √(x₀³ + a₂x₀² + a₄x₀ + a₆)`; both are supplied by `surjective_frobenius K 2`.
+
+This is precisely the configuration refuted over `𝔽₂(t)` in the audit above: drop
+perfectness and `y² = x³ + tx` has `Δ = 0` and no singular point over the base. -/
+theorem exists_singular_of_Δ_eq_zero_of_char_two_of_a₁_eq_zero {K : Type} [Field K]
+    [PerfectField K] (E : WeierstrassCurve K) (hΔ : E.Δ = 0) (h2 : (2 : K) = 0)
+    (ha1 : E.a₁ = 0) :
+    ∃ x y : K, E.toAffine.Equation x y ∧ ¬ E.toAffine.Nonsingular x y := by
+  haveI : CharP K 2 := (CharP.charP_iff_prime_eq_zero Nat.prime_two).mpr h2
+  haveI : ExpChar K 2 := ExpChar.prime Nat.prime_two
+  have ha3 : E.a₃ = 0 := by
+    have h := E.Δ_of_char_two
+    rw [hΔ, ha1] at h
+    have h4 : E.a₃ ^ 4 = 0 := by linear_combination -h
+    exact pow_eq_zero_iff (by norm_num : (4 : ℕ) ≠ 0) |>.mp h4
+  obtain ⟨x, hx⟩ := surjective_frobenius K 2 E.a₄
+  obtain ⟨y, hy⟩ := surjective_frobenius K 2 (x ^ 3 + E.a₂ * x ^ 2 + E.a₄ * x + E.a₆)
+  rw [frobenius_def] at hx hy
+  refine exists_singular_of_partials_eq_zero E x y ?_ ?_ ?_
+  · linear_combination hy + (x * y) * ha1 + y * ha3
+  · linear_combination y * ha1 + hx - (2 * x ^ 2 + E.a₂ * x) * h2
+  · linear_combination y * h2 + x * ha1 + ha3
+
+/-- **A Weierstrass curve over a PERFECT field with `Δ = 0` has a RATIONAL singular
+point** (PROVEN 2026-07-28 over `ℚ`; base generalised to an arbitrary
+characteristic-zero field 2026-07-30, and to an arbitrary PERFECT field the same
+day) — Silverman *AEC* III.1.4.
+
+See the section note above for the four-case split, for where perfectness is used
+(twice, and only for a Frobenius root extraction) and for the `𝔽₂(t)` counterexample
+that shows `PerfectField` cannot be dropped. -/
+theorem exists_singular_of_Δ_eq_zero {K : Type} [Field K] [PerfectField K]
     (E : WeierstrassCurve K) (hΔ : E.Δ = 0) :
     ∃ x y : K, E.toAffine.Equation x y ∧ ¬ E.toAffine.Nonsingular x y := by
-  have hc : E.c₄ ^ 3 = E.c₆ ^ 2 := by
-    have h := E.c_relation
-    rw [hΔ, mul_zero] at h
-    linear_combination -h
-  have hc6 : E.c₄ = 0 → E.c₆ = 0 := fun h => by
-    have h2 : E.c₆ ^ 2 = 0 := by rw [← hc, h]; ring
-    exact sq_eq_zero_iff.mp h2
-  set X : K := -E.c₆ / E.c₄ with hXdef
-  have hmul : E.c₄ * X = -E.c₆ := by
-    rcases eq_or_ne E.c₄ 0 with h | h
-    · rw [hXdef, h, hc6 h]; ring
-    · rw [hXdef]; field_simp
-  have hX2 : X ^ 2 = E.c₄ := by
-    rcases eq_or_ne E.c₄ 0 with h | h
-    · rw [hXdef, h, hc6 h]; norm_num
-    · refine mul_left_cancel₀ (pow_ne_zero 2 h) ?_
-      calc E.c₄ ^ 2 * X ^ 2 = (E.c₄ * X) ^ 2 := by ring
-        _ = (-E.c₆) ^ 2 := by rw [hmul]
-        _ = E.c₄ ^ 2 * E.c₄ := by linear_combination -hc
-  have hX3 : X ^ 3 = -E.c₆ := by
-    have h : X ^ 3 = X ^ 2 * X := by ring
-    rw [h, hX2, hmul]
-  set x₀ : K := (X - E.b₂) / 12 with hx₀
-  set y₀ : K := -(E.a₃ + E.a₁ * x₀) / 2 with hy₀
-  have hY : 2 * y₀ + E.a₁ * x₀ + E.a₃ = 0 := by rw [hy₀]; ring
-  have hXpart : E.a₁ * y₀ - (3 * x₀ ^ 2 + 2 * E.a₂ * x₀ + E.a₄) = 0 := by
-    rw [hy₀, hx₀]
-    simp only [WeierstrassCurve.b₂, WeierstrassCurve.c₄, WeierstrassCurve.b₄] at hX2 ⊢
-    linear_combination (-1/48 : K) * hX2
-  have heq : E.toAffine.Equation x₀ y₀ := by
-    rw [WeierstrassCurve.Affine.equation_iff', hy₀, hx₀]
-    simp only [WeierstrassCurve.b₂, WeierstrassCurve.c₄, WeierstrassCurve.b₄,
-      WeierstrassCurve.c₆, WeierstrassCurve.b₆] at hX2 hX3 ⊢
-    linear_combination (-X/576 : K) * hX2 + (1/864 : K) * hX3
-  refine ⟨x₀, y₀, heq, ?_⟩
-  rw [WeierstrassCurve.Affine.nonsingular_iff']
-  rintro ⟨-, h | h⟩
-  · exact h hXpart
-  · exact h hY
+  rcases eq_or_ne (2 : K) 0 with h2 | h2
+  · rcases eq_or_ne E.a₁ 0 with ha1 | ha1
+    · exact exists_singular_of_Δ_eq_zero_of_char_two_of_a₁_eq_zero E hΔ h2 ha1
+    · exact exists_singular_of_Δ_eq_zero_of_char_two_of_a₁_ne_zero E hΔ h2 ha1
+  · rcases eq_or_ne E.c₄ 0 with hc4 | hc4
+    · rcases eq_or_ne (3 : K) 0 with h3 | h3
+      · exact exists_singular_of_Δ_eq_zero_of_char_three E hΔ h2 h3 hc4
+      · exact exists_singular_of_Δ_eq_zero_of_c₄_eq_zero E hΔ h2 h3 hc4
+    · exact exists_singular_of_Δ_eq_zero_of_c₄_ne_zero E hΔ h2 hc4
 
 section JacobianCriterion
 
@@ -10805,13 +11555,22 @@ NOT VACUOUS: `exists_affineChart_projInfty` supplies, for every elliptic
 
 **CUT 2026-07-28.**  The node is now PROVEN from the two declarations
 immediately above it, along exactly the axis the paragraph above describes:
-`exists_singular_of_Δ_eq_zero` (**PROVEN**, the char-`0` rationality of the
+`exists_singular_of_Δ_eq_zero` (**PROVEN**, the rationality of the
 singular point) and `not_smooth_specMap_coordinateRing_of_singular` (the
 Jacobian criterion, **also PROVEN, later the same day**, so this whole subtree
 is closed and nothing under it is a leaf any more).  The scheme-theoretic
 plumbing — that `ι ≫ f` is smooth and IS `Spec` of the structure map — costs
-two lines and carries no content. -/
-theorem isElliptic_of_isOpenImmersion_coordinateRing {K : Type} [Field K] [CharZero K]
+two lines and carries no content.
+
+**`[CharZero K]` REPLACED BY `[PerfectField K]` (2026-07-30).**  The hypothesis was
+never used by this declaration; it was inherited wholesale from
+`exists_singular_of_Δ_eq_zero`, whose char-`0` witness has since been replaced by a
+four-case argument valid over every perfect field.  Perfectness IS still
+load-bearing — see the section note there for the `𝔽₂(t)` counterexample — and the
+paragraph above ("in char `0` by completing the square and the cube") now describes
+only one of the four cases.  `PerfectField.ofCharZero` and `IsAlgClosed.perfectField`
+mean the instance is synthesised at every base this development uses. -/
+theorem isElliptic_of_isOpenImmersion_coordinateRing {K : Type} [Field K] [PerfectField K]
     {A : Scheme.{0}}
     {f : A ⟶ Spec (CommRingCat.of K)} (hdim : SmoothOfRelativeDimension 1 f)
     (E : WeierstrassCurve K)
@@ -10883,9 +11642,20 @@ morphisms to `Spec ℚ` agree, which is why no leaf has to carry a `ℚ`-algebra
 structure."*  That is the ONE step of the assembly that does not generalise, and it
 is now paid explicitly: leaf 1 hands back the compatibility, leaf 2's isomorphism is
 `K`-linear, and the two are combined by `hring`/`hstr'` below — three lines, no new
-leaf.  `CharZero K` is consumed only inside leaf 3, through
-`exists_singular_of_Δ_eq_zero`; the only instantiations are `ℚ` and `ℚ̄`. -/
-theorem exists_weierstrassModel_of_ellipticScheme {K : Type} [Field K] [CharZero K]
+leaf.
+
+**AND THE CHARACTERISTIC HYPOTHESIS WEAKENED TO `[PerfectField K]` (2026-07-30).**
+It is consumed only inside leaf 3, through `exists_singular_of_Δ_eq_zero`, and that
+declaration now covers every perfect field rather than only the char-`0` ones.  What
+remains is genuinely load-bearing along THIS route: over `𝔽₂(t)` the curve
+`y² = x³ + tx` has `Δ = 0` and no singular point over the base, so the Jacobian
+criterion cannot be applied at a rational point (the audit is on
+`exists_singular_of_Δ_eq_zero`).  Reaching an ARBITRARY field means testing
+smoothness after base change to `k̄` instead of at a rational point, which is a
+different argument and is not attempted here; the consumers that want it
+(`X0.lean`'s `exists_weierstrassModel_of_ellipticScheme_field` and its two call
+sites) are all at algebraically closed bases, which are perfect. -/
+theorem exists_weierstrassModel_of_ellipticScheme {K : Type} [Field K] [PerfectField K]
     {A : Scheme.{0}}
     {f : A ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct f)
     (hdim : SmoothOfRelativeDimension 1 f) :

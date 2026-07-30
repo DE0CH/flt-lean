@@ -221,14 +221,45 @@ leaves it moved to are, in dependency order:
     2026-07-30 as `smooth_isSeparated_of_isRelPicOf` and is received back
     as the hypotheses `_hPsmooth`/`_hPsep`; the parent
     `exists_relPicZeroOf_of_relPicGroupLaw` discharges them by that leaf,
-    so nothing downstream changed.
+    so nothing downstream changed.  Later the same day that conjunction
+    was itself split into `smooth_of_isRelPicOf` (BLR 8.4/2) and
+    `isSeparated_of_isRelPicOf` (BLR 8.2/1), which are the two dispatch
+    targets; `smooth_isSeparated_of_isRelPicOf` is now their assembly and
+    is PROVEN.
 
 So the direct-sorry set of this module is 9 (verified against the
 compiler's `declaration uses 'sorry'` warnings, and against a
 comment-stripped token count — 9 = 9, so there are no anonymous inner
-sorries hiding behind a warning), and the four that belong to BLR 9.4/4
+sorries hiding behind a warning), and the five that belong to BLR 9.4/4
 are `isInvertibleSheaf_sectionIdeal`, `nonempty_modPullback_sectionIdeal`,
-`smooth_isSeparated_of_isRelPicOf` and `exists_relPicZeroSubgroup`.
+`smooth_of_isRelPicOf`, `isSeparated_of_isRelPicOf` and
+`exists_relPicZeroSubgroup`.
+
+**Amended 2026-07-30 (later the same day): 10 → 9 → 8 → 9.**  Both `modDual`
+leaves closed, `isInvertibleSheaf_modDual` first and then `isIso_modDualEv`,
+over one shared rank-one bridge across the `restrict` boundary
+(`ModDual.trAt … ModDual.gen_res`, then `ModDual.dualRestrictIso` and
+`ModDual.evLin_bijective`).  Read the count off the compiler, not off this
+paragraph — every previous version of it went stale within a day.  Of the
+eight that remain, ONE is not a dispatch target:
+`nonempty_modPullback_modTensorPic` is the verbatim twin of
+`Fermat.nonempty_modPullback_modTensor` in `Modularity/AmpleSheaf.lean`, and
+re-surveyed 2026-07-30 that twin is PROVEN there over a written comparison
+map whose own `IsIso` clause (`isIso_modPullbackTensorComparison`) is still
+that module's leaf.  So the hoist its docstring prescribes would move a leaf
+rather than close one, and mathlib has no monoidal structure on the pullback
+of (pre)sheaves of modules at this pin to shortcut it —
+`grep -rln Monoidal Mathlib/Algebra/Category/ModuleCat/{Presheaf,Sheaf}/`
+returns `Monoidal.lean`, `PushforwardZeroMonoidal.lean` and
+`ColimitFunctor.lean`, none of them about `pullback`.
+
+The 8 → 9 in that chain is a SPLIT, not a regression:
+`smooth_isSeparated_of_isRelPicOf` was a conjunction of BLR 8.4/2 and BLR
+8.2/1 — different chapters, different arguments, different hypotheses — and is
+now PROVEN as the assembly of `smooth_of_isRelPicOf` and
+`isSeparated_of_isRelPicOf`, so the two can be owned separately.  Nothing
+downstream changed; `exists_relPicZeroOf_of_relPicGroupLaw` still destructures
+the same conjunction.
 
 Also PROVEN here and worth knowing about before re-deriving them:
 `modTensorMapIso`, `modTensorUnitLeftIso`, `modTensorUnitRightIso`,
@@ -1099,6 +1130,12 @@ lemma res_self {Z : Scheme.{u}} {V : Z.Opens} (h : V ≤ V) (r : Γ(Z, V)) :
   rw [Subsingleton.elim (homOfLE h).op (𝟙 _), CategoryTheory.Functor.map_id,
     CommRingCat.id_apply]
 
+/-- `res_self` for sections of `L`: restricting along `V ≤ V` does nothing. -/
+lemma resL_self {Z : Scheme.{u}} (L : Z.Modules) {V : Z.Opens} (h : V ≤ V) (x : Γ(L, V)) :
+    L.presheaf.map (homOfLE h).op x = x := by
+  rw [Subsingleton.elim (homOfLE h).op (𝟙 _), CategoryTheory.Functor.map_id,
+    ConcreteCategory.id_apply]
+
 /-- The ambient type of a dual section over `U`: a functional on `Γ(L, V)` for
 every ambient open `V ≤ U`. -/
 abbrev DualPi {Z : Scheme.{u}} (L : Z.Modules) (U : Z.Opens) : Type u :=
@@ -1363,8 +1400,360 @@ noncomputable def modDualEv {Z : Scheme.{u}} (L : Z.Modules) :
   (PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)).map (ModDual.modDualEvPre L) ≫
     (modSheafifyValIso (modUnit Z)).hom
 
-/-- **`L^∨` IS INVERTIBLE WHEN `L` IS** (sorry leaf, cut 2026-07-30 out of
-`exists_modDual`) — the first of the two local halves that remain.
+/-! ### The rank-one bridge across the `restrict` boundary
+
+`L` trivialized on `U` is free of rank one on every AMBIENT open `V ≤ U`, and
+this section says so in ambient sections — which is what both `modDual` leaves
+below need and what the subsection docstring above prices as the real cost.
+
+The crossing lemma is `smul_restrict_eq`, and it is the whole trick: state the
+scalar action in BUNDLED `Scheme.Modules.smul` form, so the two sides pin their
+two different modules instead of letting instance search collapse them; then
+mathlib's `smul_restrictAppIso_hom_apply` plus `Scheme.Opens.ι_appIso` proves
+it.  Everything after that is transport along
+`U.ι ''ᵁ (U.ι ⁻¹ᵁ V) = V` for `V ≤ U`, done in one direction only
+(`le_image_preimage` plus `Scheme.Hom.image_preimage_le`), so no equality of
+opens is ever rewritten. -/
+
+namespace ModDual
+
+section Bridge
+
+variable {Z : Scheme.{u}} {L : Z.Modules} {U : Z.Opens}
+
+/-- **THE CROSSING LEMMA.**  The `Γ(U,·)`-action on sections of `L.restrict U.ι`
+and the `Γ(Z,·)`-action on the corresponding ambient sections of `L` agree. -/
+lemma smul_restrict_eq (W : (U : Scheme.{u}).Opens) (r : Γ((U : Scheme.{u}), W))
+    (x : Γ(L.restrict U.ι, W)) :
+    ((L.restrict U.ι).smul r).hom x = (L.smul r).hom x := by
+  have h := Scheme.Modules.smul_restrictAppIso_hom_apply U.ι L W r x
+  rw [Scheme.Opens.ι_appIso] at h
+  exact h
+
+/-- A morphism `L|_U ⟶ 𝒪_U`, read as a map of AMBIENT sections. -/
+noncomputable def trAt (ψ : L.restrict U.ι ⟶ modUnit (U : Scheme.{u}))
+    (W : (U : Scheme.{u}).Opens) (x : Γ(L, U.ι ''ᵁ W)) : Γ(Z, U.ι ''ᵁ W) :=
+  ψ.val.app (op W) x
+
+/-- A morphism `𝒪_U ⟶ L|_U`, read as a map of AMBIENT sections. -/
+noncomputable def trAtInv (χ : modUnit (U : Scheme.{u}) ⟶ L.restrict U.ι)
+    (W : (U : Scheme.{u}).Opens) (r : Γ(Z, U.ι ''ᵁ W)) : Γ(L, U.ι ''ᵁ W) :=
+  χ.val.app (op W) r
+
+lemma trAt_add (ψ : L.restrict U.ι ⟶ modUnit (U : Scheme.{u}))
+    (W : (U : Scheme.{u}).Opens) (x y : Γ(L, U.ι ''ᵁ W)) :
+    trAt ψ W (x + y) = trAt ψ W x + trAt ψ W y :=
+  map_add (ψ.val.app (op W)).hom x y
+
+lemma trAt_smul (ψ : L.restrict U.ι ⟶ modUnit (U : Scheme.{u}))
+    (W : (U : Scheme.{u}).Opens) (r : Γ(Z, U.ι ''ᵁ W)) (x : Γ(L, U.ι ''ᵁ W)) :
+    trAt ψ W (r • x) = r * trAt ψ W x := by
+  calc trAt ψ W (r • x)
+      = trAt ψ W ((L.smul r).hom x) := by rw [Scheme.Modules.smul_apply]
+    _ = trAt ψ W (((L.restrict U.ι).smul r).hom x) :=
+        congrArg (trAt ψ W) (smul_restrict_eq W r x).symm
+    _ = r * trAt ψ W x := Scheme.Modules.Hom.app_smul ψ r x
+
+lemma trAt_nat (ψ : L.restrict U.ι ⟶ modUnit (U : Scheme.{u}))
+    {W W' : (U : Scheme.{u}).Opens} (h : W' ≤ W) (x : Γ(L, U.ι ''ᵁ W)) :
+    trAt ψ W' (L.presheaf.map (homOfLE (Scheme.Hom.image_mono U.ι h)).op x) =
+      Z.presheaf.map (homOfLE (Scheme.Hom.image_mono U.ι h)).op (trAt ψ W x) :=
+  PresheafOfModules.naturality_apply ψ.val (homOfLE h).op x
+
+lemma trAtInv_trAt (φ : L.restrict U.ι ≅ modUnit (U : Scheme.{u}))
+    (W : (U : Scheme.{u}).Opens) (x : Γ(L, U.ι ''ᵁ W)) :
+    trAtInv φ.inv W (trAt φ.hom W x) = x := by
+  show ((φ.hom ≫ φ.inv).val.app (op W)) x = x
+  rw [φ.hom_inv_id]
+  rfl
+
+lemma trAt_trAtInv (φ : L.restrict U.ι ≅ modUnit (U : Scheme.{u}))
+    (W : (U : Scheme.{u}).Opens) (r : Γ(Z, U.ι ''ᵁ W)) :
+    trAt φ.hom W (trAtInv φ.inv W r) = r := by
+  show ((φ.inv ≫ φ.hom).val.app (op W)) r = r
+  rw [φ.inv_hom_id]
+  rfl
+
+lemma le_image_preimage {V : Z.Opens} (hV : V ≤ U) : V ≤ U.ι ''ᵁ (U.ι ⁻¹ᵁ V) := by
+  rw [Scheme.Hom.image_preimage_eq_opensRange_inf, Scheme.Opens.opensRange_ι]
+  exact le_inf hV le_rfl
+
+section
+variable (φ : L.restrict U.ι ≅ modUnit (U : Scheme.{u}))
+
+/-- The trivialization read at an AMBIENT open `V ≤ U`. -/
+noncomputable def tr {V : Z.Opens} (hV : V ≤ U) (x : Γ(L, V)) : Γ(Z, V) :=
+  Z.presheaf.map (homOfLE (le_image_preimage hV)).op
+    (trAt φ.hom (U.ι ⁻¹ᵁ V) (L.presheaf.map (homOfLE (U.ι.image_preimage_le V)).op x))
+
+/-- The inverse trivialization read at an AMBIENT open `V ≤ U`. -/
+noncomputable def trInv {V : Z.Opens} (hV : V ≤ U) (r : Γ(Z, V)) : Γ(L, V) :=
+  L.presheaf.map (homOfLE (le_image_preimage hV)).op
+    (trAtInv φ.inv (U.ι ⁻¹ᵁ V) (Z.presheaf.map (homOfLE (U.ι.image_preimage_le V)).op r))
+
+lemma tr_add {V : Z.Opens} (hV : V ≤ U) (x y : Γ(L, V)) :
+    tr φ hV (x + y) = tr φ hV x + tr φ hV y := by
+  simp only [tr, map_add, trAt_add]
+
+lemma tr_smul {V : Z.Opens} (hV : V ≤ U) (r : Γ(Z, V)) (x : Γ(L, V)) :
+    tr φ hV (r • x) = r * tr φ hV x := by
+  rw [tr, tr, Scheme.Modules.map_smul, trAt_smul, map_mul, res_res, res_self]
+
+lemma trInv_tr {V : Z.Opens} (hV : V ≤ U) (x : Γ(L, V)) : trInv φ hV (tr φ hV x) = x := by
+  rw [trInv, tr, res_res, res_self, trAtInv_trAt, resL_resL, resL_self]
+
+lemma tr_trInv {V : Z.Opens} (hV : V ≤ U) (r : Γ(Z, V)) : tr φ hV (trInv φ hV r) = r := by
+  rw [trInv, tr, resL_resL, resL_self, trAt_trAtInv, res_res, res_self]
+
+lemma tr_injective {V : Z.Opens} (hV : V ≤ U) : Function.Injective (tr φ hV) :=
+  Function.LeftInverse.injective (trInv_tr φ hV)
+
+lemma tr_nat {V W : Z.Opens} (hV : V ≤ U) (hWV : W ≤ V) (x : Γ(L, V)) :
+    tr φ (hWV.trans hV) (L.presheaf.map (homOfLE hWV).op x) =
+      Z.presheaf.map (homOfLE hWV).op (tr φ hV x) := by
+  have hpre : U.ι ⁻¹ᵁ W ≤ U.ι ⁻¹ᵁ V := fun a ha => hWV ha
+  rw [tr, tr, resL_resL,
+    ← resL_resL L (Scheme.Hom.image_mono U.ι hpre) (U.ι.image_preimage_le V),
+    trAt_nat, res_res, res_res]
+  exact hpre
+
+/-- The local generator: the preimage of `1`. -/
+noncomputable def gen {V : Z.Opens} (hV : V ≤ U) : Γ(L, V) := trInv φ hV 1
+
+lemma tr_gen {V : Z.Opens} (hV : V ≤ U) : tr φ hV (gen φ hV) = 1 := tr_trInv φ hV 1
+
+/-- **`L` IS FREE OF RANK ONE ON `U`, IN AMBIENT SECTIONS.** -/
+lemma eq_smul_gen {V : Z.Opens} (hV : V ≤ U) (x : Γ(L, V)) :
+    x = tr φ hV x • gen φ hV := by
+  refine tr_injective φ hV ?_
+  rw [tr_smul, tr_gen, mul_one]
+
+lemma gen_res {V W : Z.Opens} (hV : V ≤ U) (hWV : W ≤ V) :
+    L.presheaf.map (homOfLE hWV).op (gen φ hV) = gen φ (hWV.trans hV) := by
+  refine tr_injective φ (hWV.trans hV) ?_
+  rw [tr_nat (hV := hV), tr_gen, tr_gen, map_one]
+
+/-- **THE FORWARD MAP** `L^∨(A) ⟶ 𝒪(A)` for `A ≤ U`: evaluate against the
+local generator. -/
+noncomputable def dualFwd {A : Z.Opens} (hA : A ≤ U) (ψ : DualSec L A) : Γ(Z, A) :=
+  ψ.φ ⟨A, le_rfl⟩ (gen φ hA)
+
+/-- The functional attached to `r : Γ(Z, A)` at an open `V ≤ A`. -/
+noncomputable def dualBwdMap {A : Z.Opens} (hA : A ≤ U) (r : Γ(Z, A))
+    (V : {V : Z.Opens // V ≤ A}) : Γ(L, V.1) →ₗ[Γ(Z, V.1)] Γ(Z, V.1) where
+  toFun x := tr φ (V.2.trans hA) x * Z.presheaf.map (homOfLE V.2).op r
+  map_add' x y := by rw [tr_add, add_mul]
+  map_smul' c x := by rw [tr_smul]; simp [mul_assoc]
+
+@[simp] lemma dualBwdMap_apply {A : Z.Opens} (hA : A ≤ U) (r : Γ(Z, A))
+    (V : {V : Z.Opens // V ≤ A}) (x : Γ(L, V.1)) :
+    dualBwdMap φ hA r V x = tr φ (V.2.trans hA) x * Z.presheaf.map (homOfLE V.2).op r := rfl
+
+/-- **THE BACKWARD MAP** `𝒪(A) ⟶ L^∨(A)`: the functional `x ↦ tr(x) · r`. -/
+noncomputable def dualBwd {A : Z.Opens} (hA : A ≤ U) (r : Γ(Z, A)) : DualSec L A :=
+  ⟨dualBwdMap φ hA r, fun V W hWV x => by
+    rw [dualBwdMap_apply, dualBwdMap_apply, tr_nat (hV := V.2.trans hA) (hWV := hWV),
+      map_mul, res_res]⟩
+
+@[simp] lemma dualBwd_φ {A : Z.Opens} (hA : A ≤ U) (r : Γ(Z, A))
+    (V : {V : Z.Opens // V ≤ A}) (x : Γ(L, V.1)) :
+    (dualBwd φ hA r).φ V x = tr φ (V.2.trans hA) x * Z.presheaf.map (homOfLE V.2).op r := rfl
+
+lemma dualFwd_add {A : Z.Opens} (hA : A ≤ U) (ψ χ : DualSec L A) :
+    dualFwd φ hA (ψ + χ) = dualFwd φ hA ψ + dualFwd φ hA χ := by
+  simp only [dualFwd, DualSec.add_φ, LinearMap.add_apply]
+
+lemma dualFwd_smul {A : Z.Opens} (hA : A ≤ U) (r : Γ(Z, A)) (ψ : DualSec L A) :
+    dualFwd φ hA (r • ψ) = r * dualFwd φ hA ψ :=
+  dualSec_smul_apply_self A r ψ (gen φ hA)
+
+lemma dualFwd_dualBwd {A : Z.Opens} (hA : A ≤ U) (r : Γ(Z, A)) :
+    dualFwd φ hA (dualBwd φ hA r) = r := by
+  rw [dualFwd, dualBwd_φ, tr_gen, res_self, one_mul]
+
+lemma dualBwd_dualFwd {A : Z.Opens} (hA : A ≤ U) (ψ : DualSec L A) :
+    dualBwd φ hA (dualFwd φ hA ψ) = ψ := by
+  refine DualSec.ext (fun V => LinearMap.ext (fun x => ?_))
+  have hg : ψ.φ V (gen φ (V.2.trans hA)) =
+      Z.presheaf.map (homOfLE V.2).op (dualFwd φ hA ψ) := by
+    rw [dualFwd, ← gen_res φ hA V.2, ψ.compat ⟨A, le_rfl⟩ V V.2]
+  rw [dualBwd_φ, ← hg, ← smul_eq_mul, ← LinearMap.map_smul]
+  exact congrArg (ψ.φ V) (eq_smul_gen φ (V.2.trans hA) x).symm
+
+lemma dualFwd_nat {A A' : Z.Opens} (hA : A ≤ U) (h : A' ≤ A) (ψ : DualSec L A) :
+    dualFwd φ (h.trans hA) (DualSec.res h ψ) =
+      Z.presheaf.map (homOfLE h).op (dualFwd φ hA ψ) := by
+  rw [dualFwd, dualFwd, DualSec.res_φ, ← gen_res φ hA h,
+    ψ.compat ⟨A, le_rfl⟩ ⟨A', h⟩ h (gen φ hA)]
+
+/-- **`L^∨` IS FREE OF RANK ONE ON `U`**, as an additive equivalence at each
+ambient open `A ≤ U`. -/
+noncomputable def dualEquivAt {A : Z.Opens} (hA : A ≤ U) : DualSec L A ≃+ Γ(Z, A) where
+  toFun := dualFwd φ hA
+  invFun := dualBwd φ hA
+  left_inv := dualBwd_dualFwd φ hA
+  right_inv := dualFwd_dualBwd φ hA
+  map_add' := dualFwd_add φ hA
+
+/-- The scalar action crossing the `restrict` boundary, at `modDual L`. -/
+lemma dualFwd_smul_restrict (W : (U : Scheme.{u}).Opens) (r : Γ((U : Scheme.{u}), W))
+    (ψ : Γ((modDual L).restrict U.ι, W)) :
+    dualFwd φ (U.ι_image_le W) ((((modDual L).restrict U.ι).smul r).hom ψ) =
+      ((modUnit (U : Scheme.{u})).smul r).hom (dualFwd φ (U.ι_image_le W) ψ) :=
+  (congrArg (dualFwd φ (U.ι_image_le W)) (smul_restrict_eq (L := modDual L) W r ψ)).trans
+    (dualFwd_smul φ (U.ι_image_le W) r ψ)
+
+/-- Naturality of `dualFwd` across the `restrict` boundary. -/
+lemma dualFwd_map_restrict {W W' : (U : Scheme.{u}).Opens} (h : W' ≤ W)
+    (ψ : Γ((modDual L).restrict U.ι, W)) :
+    dualFwd φ (U.ι_image_le W') (((modDual L).restrict U.ι).presheaf.map (homOfLE h).op ψ) =
+      Z.presheaf.map (homOfLE (Scheme.Hom.image_mono U.ι h)).op
+        (dualFwd φ (U.ι_image_le W) ψ) :=
+  dualFwd_nat φ (U.ι_image_le W) (Scheme.Hom.image_mono U.ι h) ψ
+
+set_option maxHeartbeats 1000000 in
+/-- **`L^∨` IS TRIVIAL ON A TRIVIALIZING OPEN OF `L`.**  Note
+`Γ((modDual L).restrict U.ι, W) = DualSec L (U.ι ''ᵁ W)` BY RFL, because
+`modDual L` is an honest presheaf and `Scheme.Modules.restrict_obj` is `rfl`;
+there is no sheafification to move past. -/
+noncomputable def dualRestrictIso : (modDual L).restrict U.ι ≅ modUnit (U : Scheme.{u}) := by
+  refine (SheafOfModules.fullyFaithfulForget _).preimageIso <|
+    PresheafOfModules.isoMk (fun W ↦ ModuleCat.isoMk
+      (AddEquiv.toAddCommGrpIso (dualEquivAt φ (U.ι_image_le W.unop))) ?_) ?_
+  · intro r
+    ext ψ
+    exact (dualFwd_smul_restrict φ W.unop r ψ).symm
+  · intro W W' f
+    ext ψ
+    rw [ConcreteCategory.comp_apply, ConcreteCategory.comp_apply]
+    exact dualFwd_map_restrict φ (leOfHom f.unop) ψ
+
+/-! ##### The evaluation pairing on a trivializing open
+
+The same bridge, run once more: on `A ≤ U` the pairing
+`Γ(L,A) ⊗_{Γ(Z,A)} L^∨(A) ⟶ Γ(Z,A)` is BIJECTIVE, with explicit inverse
+`r ↦ g_A ⊗ (x ↦ tr(x)·r)`.  This is the whole local input of
+`isIso_modDualEv`; everything after it is the sites machinery. -/
+
+/-- The evaluation pairing at a single open, read as an honest `Γ(Z,A)`-linear
+map out of the honest tensor product.  Stating it this way is what makes `rw`
+usable: the `ModuleCat`-side instances are replaced by the ones a reader would
+write. -/
+noncomputable def evLin (L : Z.Modules) (A : Z.Opens) :
+    TensorProduct Γ(Z, A) Γ(L, A) (DualSec L A) →ₗ[Γ(Z, A)] Γ(Z, A) :=
+  ModuleCat.Hom.hom ((modDualEvPre L).app (op A))
+
+@[simp] lemma evLin_tmul (A : Z.Opens) (x : Γ(L, A)) (ψ : DualSec L A) :
+    evLin L A (x ⊗ₜ[Γ(Z, A)] ψ) = ψ.φ ⟨A, le_rfl⟩ x := rfl
+
+lemma dualBwd_zero {A : Z.Opens} (hA : A ≤ U) : dualBwd φ hA 0 = 0 := by
+  refine DualSec.ext (fun V => LinearMap.ext (fun x => ?_))
+  rw [dualBwd_φ, map_zero, mul_zero]
+  rfl
+
+lemma dualBwd_add {A : Z.Opens} (hA : A ≤ U) (r s : Γ(Z, A)) :
+    dualBwd φ hA (r + s) = dualBwd φ hA r + dualBwd φ hA s := by
+  refine DualSec.ext (fun V => LinearMap.ext (fun x => ?_))
+  rw [dualBwd_φ, map_add, mul_add, DualSec.add_φ, LinearMap.add_apply, dualBwd_φ, dualBwd_φ]
+
+lemma dualBwd_mul {A : Z.Opens} (hA : A ≤ U) (r s : Γ(Z, A)) :
+    dualBwd φ hA (r * s) = r • dualBwd φ hA s := by
+  refine DualSec.ext (fun V => LinearMap.ext (fun x => ?_))
+  rw [dualBwd_φ, DualSec.smul_φ, LinearMap.smul_apply, dualBwd_φ, map_mul, smul_eq_mul]
+  ring
+
+/-- **THE BACKWARD MAP OF THE EVALUATION PAIRING** on a trivializing open:
+`r ↦ g_A ⊗ (x ↦ tr(x)·r)`. -/
+noncomputable def evBwd {A : Z.Opens} (hA : A ≤ U) (r : Γ(Z, A)) :
+    TensorProduct Γ(Z, A) Γ(L, A) (DualSec L A) :=
+  gen φ hA ⊗ₜ[Γ(Z, A)] dualBwd φ hA r
+
+lemma evLin_evBwd {A : Z.Opens} (hA : A ≤ U) (r : Γ(Z, A)) :
+    evLin L A (evBwd φ hA r) = r := by
+  rw [evBwd, evLin_tmul]
+  exact dualFwd_dualBwd φ hA r
+
+lemma evBwd_evLin {A : Z.Opens} (hA : A ≤ U)
+    (t : TensorProduct Γ(Z, A) Γ(L, A) (DualSec L A)) :
+    evBwd φ hA (evLin L A t) = t := by
+  induction t with
+  | zero => rw [map_zero, evBwd, dualBwd_zero, TensorProduct.tmul_zero]
+  | tmul x ψ =>
+      have hx : ψ.φ ⟨A, le_rfl⟩ x = tr φ hA x * dualFwd φ hA ψ := by
+        conv_lhs => rw [eq_smul_gen φ hA x]
+        rw [LinearMap.map_smul, smul_eq_mul, dualFwd]
+      rw [evLin_tmul, hx, evBwd, dualBwd_mul, dualBwd_dualFwd, ← TensorProduct.smul_tmul,
+        ← eq_smul_gen]
+  | add a b ha hb =>
+      rw [map_add, evBwd, dualBwd_add, TensorProduct.tmul_add, ← evBwd, ← evBwd, ha, hb]
+
+/-- **THE EVALUATION PAIRING IS BIJECTIVE ON A TRIVIALIZING OPEN.**  `φ` is
+explicit because the statement does not mention it. -/
+lemma evLin_bijective (φ : L.restrict U.ι ≅ modUnit (U : Scheme.{u}))
+    {A : Z.Opens} (hA : A ≤ U) : Function.Bijective (evLin L A) :=
+  Function.bijective_iff_has_inverse.2
+    ⟨evBwd φ hA, evBwd_evLin φ hA, evLin_evBwd φ hA⟩
+
+end
+
+/-! ##### Local bijectivity of the evaluation pairing
+
+A sieve on `Opens Z` is covering exactly when it contains a neighbourhood of
+each point (`TopologicalSpace.Opens.mem_grothendieckTopology`), so "for each `z`
+a trivializing `U`, intersected with the ambient open" IS the covering
+condition, and both clauses fall straight out of `evLin_bijective`. -/
+
+section LocalBijectivity
+
+variable {Z : Scheme.{u}} (L : Z.Modules)
+
+/-- Naturality of the evaluation pairing, read through `evLin`. -/
+lemma evLin_nat {A B : Z.Opens} (h : B ≤ A)
+    (t : TensorProduct Γ(Z, A) Γ(L, A) (DualSec L A)) :
+    evLin L B
+        ((PresheafOfModules.Monoidal.tensorObj (R := Z.presheaf) L.val
+          (modDualPre L)).map (homOfLE h).op t) =
+      Z.presheaf.map (homOfLE h).op (evLin L A t) :=
+  PresheafOfModules.naturality_apply (modDualEvPre L) (homOfLE h).op t
+
+lemma isLocallyInjective_modDualEvPre (hL : IsInvertibleSheaf L) :
+    Presheaf.IsLocallyInjective (Opens.grothendieckTopology Z)
+      ((PresheafOfModules.toPresheaf _).map (modDualEvPre L)) where
+  equalizerSieve_mem {X} x y h := by
+    intro z hz
+    obtain ⟨U, hzU, ⟨φ⟩⟩ := hL z
+    refine ⟨X.unop ⊓ U, homOfLE inf_le_left, ?_, hz, hzU⟩
+    have key : ∀ t s : TensorProduct Γ(Z, X.unop) Γ(L, X.unop) (DualSec L X.unop),
+        evLin L X.unop t = evLin L X.unop s →
+        (PresheafOfModules.Monoidal.tensorObj (R := Z.presheaf) L.val (modDualPre L)).map
+            (homOfLE (inf_le_left : X.unop ⊓ U ≤ X.unop)).op t =
+          (PresheafOfModules.Monoidal.tensorObj (R := Z.presheaf) L.val (modDualPre L)).map
+            (homOfLE (inf_le_left : X.unop ⊓ U ≤ X.unop)).op s := by
+      intro t s hts
+      refine (evLin_bijective φ (inf_le_right : X.unop ⊓ U ≤ U)).injective ?_
+      rw [evLin_nat, evLin_nat, hts]
+    exact key x y h
+
+lemma isLocallySurjective_modDualEvPre (hL : IsInvertibleSheaf L) :
+    Presheaf.IsLocallySurjective (Opens.grothendieckTopology Z)
+      ((PresheafOfModules.toPresheaf _).map (modDualEvPre L)) where
+  imageSieve_mem {A} s := by
+    intro z hz
+    obtain ⟨U, hzU, ⟨φ⟩⟩ := hL z
+    refine ⟨A ⊓ U, homOfLE inf_le_left, ?_, hz, hzU⟩
+    exact ⟨evBwd φ (inf_le_right : A ⊓ U ≤ U)
+        (Z.presheaf.map (homOfLE (inf_le_left : A ⊓ U ≤ A)).op s),
+      evLin_evBwd φ _ _⟩
+
+end LocalBijectivity
+
+end Bridge
+
+end ModDual
+
+/-- **`L^∨` IS INVERTIBLE WHEN `L` IS** (PROVEN 2026-07-30 over the rank-one
+bridge `ModDual.dualRestrictIso` just above; formerly a bare sorry leaf, and the
+audit below is the docstring written while it was one).
 
 **The mathematics is one line** and needs no geometry: if `φ : L|_U ≅ 𝒪_U` then
 `Γ(L, V)` is free of rank one on `g_V := φ⁻¹(1)|_V` for every `V ≤ U`, so a
@@ -1392,159 +1781,27 @@ Both leaves in this pair need the SAME bridge, so build it once as a
 free-standing "`L` is free of rank one on `U`, in ambient sections" statement
 and prove both from it.
 
-**THAT BRIDGE IS BUILT AND COMPILER-CHECKED — PASTE IT IN (2026-07-30).**  Every
-declaration below was elaborated and ACCEPTED against this pin, in a scratch
-module importing only `Mathlib.AlgebraicGeometry.Modules.Sheaf`.  It is recorded
-here rather than as declarations because this project forbids free-floating code
-and nothing can consume it until one of the two leaves closes — the same reason
-`isInvertibleSheaf_modUnit` and `modTensorSymmIso` spent time as docstring
-one-liners in this file.  `res_res`, `resL_resL`, `res_self` and `resL_self` are
-already declared above in `ModDual` (only `resL_self` is missing there and is
-three lines, the `CommRingCat.id_apply` of `res_self` replaced by
-`ConcreteCategory.id_apply`).
-
-**The crossing lemma is the whole trick**, and it is what the paragraph above
-says cannot be done by defeq: state it with the scalar action in BUNDLED
-`Scheme.Modules.smul` form, so the two sides pin their two different modules
-instead of letting instance search collapse them, and then mathlib's own
-`smul_restrictAppIso_hom_apply` plus `Scheme.Opens.ι_appIso` proves it.
-
-    variable {L : Z.Modules} {U : Z.Opens}
-
-    lemma smul_restrict_eq (W : (U : Scheme.{u}).Opens) (r : Γ((U : Scheme.{u}), W))
-        (x : Γ(L.restrict U.ι, W)) :
-        ((L.restrict U.ι).smul r).hom x = (L.smul r).hom x := by
-      have h := Scheme.Modules.smul_restrictAppIso_hom_apply U.ι L W r x
-      rw [Scheme.Opens.ι_appIso] at h
-      exact h
-
-    /-- A morphism `L|_U ⟶ 𝒪_U`, read as a map of AMBIENT sections. -/
-    noncomputable def trAt (ψ : L.restrict U.ι ⟶ modUnit (U : Scheme.{u}))
-        (W : (U : Scheme.{u}).Opens) (x : Γ(L, U.ι ''ᵁ W)) : Γ(Z, U.ι ''ᵁ W) :=
-      ψ.val.app (op W) x
-
-    noncomputable def trAtInv (χ : modUnit (U : Scheme.{u}) ⟶ L.restrict U.ι)
-        (W : (U : Scheme.{u}).Opens) (r : Γ(Z, U.ι ''ᵁ W)) : Γ(L, U.ι ''ᵁ W) :=
-      χ.val.app (op W) r
-
-    lemma trAt_add (ψ : L.restrict U.ι ⟶ modUnit (U : Scheme.{u}))
-        (W : (U : Scheme.{u}).Opens) (x y : Γ(L, U.ι ''ᵁ W)) :
-        trAt ψ W (x + y) = trAt ψ W x + trAt ψ W y :=
-      map_add (ψ.val.app (op W)).hom x y
-
-    lemma trAt_smul (ψ : L.restrict U.ι ⟶ modUnit (U : Scheme.{u}))
-        (W : (U : Scheme.{u}).Opens) (r : Γ(Z, U.ι ''ᵁ W)) (x : Γ(L, U.ι ''ᵁ W)) :
-        trAt ψ W (r • x) = r * trAt ψ W x := by
-      calc trAt ψ W (r • x)
-          = trAt ψ W ((L.smul r).hom x) := by rw [Scheme.Modules.smul_apply]
-        _ = trAt ψ W (((L.restrict U.ι).smul r).hom x) :=
-            congrArg (trAt ψ W) (smul_restrict_eq W r x).symm
-        _ = r * trAt ψ W x := Scheme.Modules.Hom.app_smul ψ r x
-
-    lemma trAt_nat (ψ : L.restrict U.ι ⟶ modUnit (U : Scheme.{u}))
-        {W W' : (U : Scheme.{u}).Opens} (h : W' ≤ W) (x : Γ(L, U.ι ''ᵁ W)) :
-        trAt ψ W' (L.presheaf.map (homOfLE (Scheme.Hom.image_mono U.ι h)).op x) =
-          Z.presheaf.map (homOfLE (Scheme.Hom.image_mono U.ι h)).op (trAt ψ W x) :=
-      PresheafOfModules.naturality_apply ψ.val (homOfLE h).op x
-
-    lemma trAtInv_trAt (φ : L.restrict U.ι ≅ modUnit (U : Scheme.{u}))
-        (W : (U : Scheme.{u}).Opens) (x : Γ(L, U.ι ''ᵁ W)) :
-        trAtInv φ.inv W (trAt φ.hom W x) = x := by
-      show ((φ.hom ≫ φ.inv).val.app (op W)) x = x
-      rw [φ.hom_inv_id]
-      rfl
-
-    lemma trAt_trAtInv (φ : L.restrict U.ι ≅ modUnit (U : Scheme.{u}))
-        (W : (U : Scheme.{u}).Opens) (r : Γ(Z, U.ι ''ᵁ W)) :
-        trAt φ.hom W (trAtInv φ.inv W r) = r := by
-      show ((φ.inv ≫ φ.hom).val.app (op W)) r = r
-      rw [φ.inv_hom_id]
-      rfl
-
-    lemma le_image_preimage {V : Z.Opens} (hV : V ≤ U) : V ≤ U.ι ''ᵁ (U.ι ⁻¹ᵁ V) := by
-      rw [Scheme.Hom.image_preimage_eq_opensRange_inf, Scheme.Opens.opensRange_ι]
-      exact le_inf hV le_rfl
-
-    section
-    variable (φ : L.restrict U.ι ≅ modUnit (U : Scheme.{u}))
-
-    /-- The trivialization read at an AMBIENT open `V ≤ U`. -/
-    noncomputable def tr {V : Z.Opens} (hV : V ≤ U) (x : Γ(L, V)) : Γ(Z, V) :=
-      Z.presheaf.map (homOfLE (le_image_preimage hV)).op
-        (trAt φ.hom (U.ι ⁻¹ᵁ V) (L.presheaf.map (homOfLE (U.ι.image_preimage_le V)).op x))
-
-    noncomputable def trInv {V : Z.Opens} (hV : V ≤ U) (r : Γ(Z, V)) : Γ(L, V) :=
-      L.presheaf.map (homOfLE (le_image_preimage hV)).op
-        (trAtInv φ.inv (U.ι ⁻¹ᵁ V) (Z.presheaf.map (homOfLE (U.ι.image_preimage_le V)).op r))
-
-    lemma tr_add {V : Z.Opens} (hV : V ≤ U) (x y : Γ(L, V)) :
-        tr φ hV (x + y) = tr φ hV x + tr φ hV y := by
-      simp only [tr, map_add, trAt_add]
-
-    lemma tr_smul {V : Z.Opens} (hV : V ≤ U) (r : Γ(Z, V)) (x : Γ(L, V)) :
-        tr φ hV (r • x) = r * tr φ hV x := by
-      rw [tr, tr, Scheme.Modules.map_smul, trAt_smul, map_mul, res_res, res_self]
-
-    lemma trInv_tr {V : Z.Opens} (hV : V ≤ U) (x : Γ(L, V)) : trInv φ hV (tr φ hV x) = x := by
-      rw [trInv, tr, res_res, res_self, trAtInv_trAt, resL_resL, resL_self]
-
-    lemma tr_trInv {V : Z.Opens} (hV : V ≤ U) (r : Γ(Z, V)) : tr φ hV (trInv φ hV r) = r := by
-      rw [trInv, tr, resL_resL, resL_self, trAt_trAtInv, res_res, res_self]
-
-    lemma tr_injective {V : Z.Opens} (hV : V ≤ U) : Function.Injective (tr φ hV) :=
-      Function.LeftInverse.injective (trInv_tr φ hV)
-
-    lemma tr_nat {V W : Z.Opens} (hV : V ≤ U) (hWV : W ≤ V) (x : Γ(L, V)) :
-        tr φ (hWV.trans hV) (L.presheaf.map (homOfLE hWV).op x) =
-          Z.presheaf.map (homOfLE hWV).op (tr φ hV x) := by
-      have hpre : U.ι ⁻¹ᵁ W ≤ U.ι ⁻¹ᵁ V := fun a ha => hWV ha
-      rw [tr, tr, resL_resL,
-        ← resL_resL L (Scheme.Hom.image_mono U.ι hpre) (U.ι.image_preimage_le V),
-        trAt_nat, res_res, res_res]
-      exact hpre
-
-    /-- The local generator: the preimage of `1`. -/
-    noncomputable def gen {V : Z.Opens} (hV : V ≤ U) : Γ(L, V) := trInv φ hV 1
-
-    lemma tr_gen {V : Z.Opens} (hV : V ≤ U) : tr φ hV (gen φ hV) = 1 := tr_trInv φ hV 1
-
-    /-- **`L` IS FREE OF RANK ONE ON `U`, IN AMBIENT SECTIONS.** -/
-    lemma eq_smul_gen {V : Z.Opens} (hV : V ≤ U) (x : Γ(L, V)) :
-        x = tr φ hV x • gen φ hV := by
-      refine tr_injective φ hV ?_
-      rw [tr_smul, tr_gen, mul_one]
-
-    lemma gen_res {V W : Z.Opens} (hV : V ≤ U) (hWV : W ≤ V) :
-        L.presheaf.map (homOfLE hWV).op (gen φ hV) = gen φ (hWV.trans hV) := by
-      refine tr_injective φ (hWV.trans hV) ?_
-      rw [tr_nat (hV := hV), tr_gen, tr_gen, map_one]
-
-    end
-
-**WHAT IS LEFT FOR THIS LEAF, and the mathematics of it is already checked by
-hand — only the `ModuleCat`/`isoMk` plumbing remains.**  Write `A := U.ι ''ᵁ W`
-for `W : U.Opens`, so `hA : A ≤ U` is `U.ι_image_le W`, and note
-`Γ((modDual L).restrict U.ι, W) = ModDual.DualSec L A` by `rfl`.  Then
-
-* forward: `ψ ↦ ψ.φ ⟨A, le_rfl⟩ (gen φ hA)`.  Additive by `DualSec.add_φ`;
-  `Γ(Z,A)`-linear by `ModDual.dualSec_smul_apply_self`, which is ALREADY PROVEN
-  above and exists for exactly this purpose;
-* backward: `r ↦ ⟨fun V => fun x => tr φ (V.2.trans hA) x * (r restricted to V.1),
-  …⟩`, whose compatibility clause is `tr_nat` + `res_res` + `map_mul`;
-* `forward ∘ backward = id` is `tr_gen` and `res_self`;
-* `backward ∘ forward = id` is `ψ.compat` + `gen_res` + `eq_smul_gen`;
-* naturality in `W` is again `ψ.compat` + `gen_res`.
-
-The template to copy for the plumbing is mathlib's own
-`Scheme.Modules.restrictUnitIso`, which builds an iso of exactly this shape
-(`(fullyFaithfulForget _).preimageIso <| PresheafOfModules.isoMk (fun U ↦ …) …`,
-then `ModuleCat.isoMk` from an `Ab`-iso plus one linearity check). -/
+**THE BRIDGE IS NOW REAL CODE** — `ModDual.trAt` … `ModDual.gen_res`, in the
+`### The rank-one bridge across the `restrict` boundary` section above, ending
+in `ModDual.dualRestrictIso`, which IS the "`L^∨` is trivial on a trivializing
+open of `L`" statement this leaf needs.  The plumbing followed mathlib's own
+`Scheme.Modules.restrictUnitIso` (`(fullyFaithfulForget _).preimageIso <|
+PresheafOfModules.isoMk (fun U ↦ …) …`, then `ModuleCat.isoMk` from an `Ab`-iso
+plus one linearity check), with `A := U.ι ''ᵁ W` for `W : U.Opens`, so
+`hA : A ≤ U` is `U.ι_image_le W`.  The forward map is
+`ψ ↦ ψ.φ ⟨A, le_rfl⟩ (gen φ hA)` — additive by `DualSec.add_φ`, `Γ(Z,A)`-linear
+by `ModDual.dualSec_smul_apply_self`, which was declared above for exactly this
+purpose; the backward map is `r ↦ (x ↦ tr φ _ x * r|_V)`, whose compatibility
+clause is `tr_nat` + `res_res` + `map_mul`. -/
 theorem isInvertibleSheaf_modDual {Z : Scheme.{u}} {L : Z.Modules}
-    (_hL : IsInvertibleSheaf L) : IsInvertibleSheaf (modDual L) :=
-  sorry
+    (hL : IsInvertibleSheaf L) : IsInvertibleSheaf (modDual L) := fun z =>
+  let ⟨U, hzU, ⟨φ⟩⟩ := hL z
+  ⟨U, hzU, ⟨ModDual.dualRestrictIso φ⟩⟩
 
-/-- **THE EVALUATION PAIRING IS AN ISOMORPHISM** (sorry leaf, cut 2026-07-30 out
-of `exists_modDual`) — the second local half.
+/-- **THE EVALUATION PAIRING IS AN ISOMORPHISM** (PROVEN 2026-07-30; cut the
+same day out of `exists_modDual`, and the audit below is the docstring written
+while it was a sorry leaf — the route it records is the route taken) — the
+second local half.
 
 Note this is the GLOBAL statement, deliberately stronger than the local clause
 `exists_modDual` asks for; `exists_modDual`'s own docstring already records that
@@ -1575,10 +1832,47 @@ A covering sieve on `Opens Z` is checked pointwise —
 trivializing neighbourhood" is literally the covering condition.
 
 The one input both bullets need is the same rank-one bridge that
-`isInvertibleSheaf_modDual` needs; see its docstring. -/
-theorem isIso_modDualEv {Z : Scheme.{u}} {L : Z.Modules} (_hL : IsInvertibleSheaf L) :
-    IsIso (modDualEv L) :=
-  sorry
+`isInvertibleSheaf_modDual` needs; see its docstring.
+
+**WHAT THE PROOF ACTUALLY DOES, and the two places it can go wrong.**  The
+route above is right, with one simplification: `modLocW Z` is ALREADY defined in
+this file as "becomes an isomorphism after sheafification", and
+`modLocW_whiskerLeft` above already contains the rewrite
+`PresheafOfModules.inverseImage_W_toPresheaf_eq_inverseImage_isomorphisms` that
+turns it into `J.W` on underlying `Ab`-presheaves.  So the whole global half is
+that rewrite plus `GrothendieckTopology.W_iff_isLocallyBijective`, and the local
+half is `ModDual.isLocallyInjective_modDualEvPre` /
+`ModDual.isLocallySurjective_modDualEvPre`, both one screen long over
+`ModDual.evLin_bijective`.
+
+*First trap — instance arguments do not match reducibly.*
+`GrothendieckTopology.W_of_isLocallyBijective` takes its two hypotheses as
+INSTANCES, and a `haveI` of them is not found: the lemmas above elaborate
+`PresheafOfModules.toPresheaf _` to `Z.presheaf ⋙ forget₂ CommRingCat RingCat`
+while the goal carries `Z.ringCatSheaf.obj`, which is the same thing at default
+but not at reducible transparency.  Use the `_iff_` form and `exact` the two
+lemmas as ordinary propositions.
+
+*Second trap, the same disease one level up.*  `Z.Modules` is a `def` for
+`SheafOfModules Z.ringCatSheaf` carrying its OWN `Category` instance, and
+`modDualEv`'s two factors are typed in `Z.Modules` while the sheafification
+functor's `map` is typed in `SheafOfModules _`.  So after `rw [modDualEv]`,
+`infer_instance` and `exact IsIso.comp_isIso` both fail even with the first
+factor's `IsIso` in context.  `IsIso.comp_isIso'` takes both as EXPLICIT
+arguments, so the defeq check happens at `exact` rather than in instance
+search, and it goes through. -/
+theorem isIso_modDualEv {Z : Scheme.{u}} {L : Z.Modules} (hL : IsInvertibleSheaf L) :
+    IsIso (modDualEv L) := by
+  have key : modLocW Z = _ :=
+    (PresheafOfModules.inverseImage_W_toPresheaf_eq_inverseImage_isomorphisms
+      (𝟙 Z.ringCatSheaf.obj)).symm
+  have hW : modLocW Z (ModDual.modDualEvPre L) := by
+    rw [key]
+    exact (GrothendieckTopology.W_iff_isLocallyBijective _ _).2
+      ⟨ModDual.isLocallyInjective_modDualEvPre L hL,
+        ModDual.isLocallySurjective_modDualEvPre L hL⟩
+  rw [modDualEv]
+  exact IsIso.comp_isIso' hW inferInstance
 
 /-- **THE DUAL SHEAF AND ITS EVALUATION PAIRING** (PROVEN 2026-07-30 over
 `modDual`, `modDualEv`, `isInvertibleSheaf_modDual` and `isIso_modDualEv`;
@@ -3221,8 +3515,67 @@ theorem exists_abelJacobiPoint {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P �
         (relPicEquiv_of_iso strX (𝟙 S) (modTensorUnitLeftIso _))
     exact hP.eq_of_relPicEquiv_tensor (hI S (𝟙 S) o) (hspec S (𝟙 S) o) hz
 
-/-- **`Pic` IS SMOOTH AND SEPARATED OVER `S`** (sorry leaf, cut 2026-07-29 out
-of `exists_relPicZeroSubgroup`) — the FIRST of BLR 9.4/4's three classical
+/-- **`Pic` IS SMOOTH OVER `S`** (sorry leaf; the smoothness half of
+`smooth_isSeparated_of_isRelPicOf`, split off from it 2026-07-30) — BLR 8.4/2.
+
+The relative Picard functor of a flat proper morphism is smooth over `S` as
+soon as `H²(X_s, 𝒪_{X_s})` vanishes on every fibre, because that group receives
+the obstructions to lifting a line bundle along a square-zero thickening.  On a
+relative CURVE it vanishes for dimension reasons, so this is the one place in
+BLR 9.4/4 where "the fibres are curves" is used as a *cohomological* input
+rather than as a geometric one.
+
+**HYPOTHESIS USAGE, and why the list is not tightened.**  The argument as just
+described spends `hproper` (flat + proper) and `hsmooth` (relative dimension 1,
+for the `H²` vanishing) and appears to spend neither `hconn` nor `hpush`; the
+sibling `isSeparated_of_isRelPicOf` is the reverse.  The full list is
+nevertheless kept on both halves, deliberately.  Dropping a hypothesis
+STRENGTHENS a leaf, and this development has a standing record of leaves that
+became FALSE when a correct-looking restatement composed with an earlier one
+(see `exists_artinDivisorNormIndex_le_ray_class`).  The parent asserted the
+conjunction under all five, so each conjunct is asserted under all five and
+splitting is faithfulness-neutral; a prover who finds a hypothesis genuinely
+idle should delete it THEN, with the proof in hand, which is a strictly better
+piece of evidence than this note.
+
+**FAITHFULNESS** is inherited verbatim from the parent's audit below, which
+covers this conjunct: `hP` is the whole content (any non-smooth `pstr` refutes
+it without `hP`), and dropping `hsmooth` refutes it at relative dimension `2`,
+where `H²(X_s, 𝒪)` need not vanish and `Pic` is genuinely obstructed — a K3
+over a non-reduced base is the standard witness. -/
+theorem smooth_of_isRelPicOf {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
+    (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
+    (_hconn : GeometricallyConnected strX) (_hP : IsRelPicOf strX pstr)
+    (_hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX) :
+    Smooth pstr := sorry
+
+/-- **`Pic` IS SEPARATED OVER `S`** (sorry leaf; the separatedness half of
+`smooth_isSeparated_of_isRelPicOf`, split off from it 2026-07-30) — BLR 8.2/1,
+`Pic_{X/S}` is a separated `S`-scheme locally of finite type.
+
+This is where `hpush` is spent: with `f_*𝒪 = 𝒪` universally the sequence
+`0 ⟶ Pic T ⟶ Pic X_T ⟶ P(T)` is exact, so two points of `P` agreeing on a dense
+open of a valuation base agree, and the valuative criterion applies.  Without
+`hpush` the functor is only a *presheaf* quotient and the criterion fails —
+already for `X = S ⊔ S`, the same witness the Zariski-gluing audit uses.
+
+**One correction to the parent's prose, which this split makes checkable.**  The
+paragraph below says separatedness "is where the section `o` and `_hpush` are
+spent".  The parent has NO section hypothesis — it never had one — and the
+displayed argument uses only `hpush`.  So `o` in that sentence is a carry-over
+from `exists_relPicZeroSubgroup`, where the section IS spent, and it is not an
+omission from the signature.  See `smooth_of_isRelPicOf` above for why the
+hypothesis list is nevertheless left at the parent's five. -/
+theorem isSeparated_of_isRelPicOf {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
+    (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
+    (_hconn : GeometricallyConnected strX) (_hP : IsRelPicOf strX pstr)
+    (_hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX) :
+    IsSeparated pstr := sorry
+
+/-- **`Pic` IS SMOOTH AND SEPARATED OVER `S`** (PROVEN 2026-07-30 as the
+assembly of the two halves just above; formerly a bare sorry leaf, cut
+2026-07-29 out of `exists_relPicZeroSubgroup`, and the audit below is the
+docstring written while it was one) — the FIRST of BLR 9.4/4's three classical
 steps, and the only one of the three that is a statement about `Pic` alone.
 
 *Smoothness* is BLR 8.4/2: the relative Picard functor of a flat proper
@@ -3261,12 +3614,24 @@ Zariski-gluing audit uses.
 
 **NOT VACUOUS.**  `IsRelPicOf strX pstr` is satisfiable — that is
 `exists_relPicFull`, PROVEN above — so this is not a statement about an empty
-class of `pstr`. -/
+class of `pstr`.
+
+**CUT IN TWO, 2026-07-30, and this declaration is now the assembly.**  The two
+conjuncts are BLR 8.4/2 and BLR 8.2/1: different chapters, different arguments
+(deformation theory against `H²` on the fibres, versus the valuative criterion),
+and — as the paragraphs above already say in prose — different hypotheses.  They
+were welded together only because they were cut out of
+`exists_relPicZeroSubgroup` in one motion, and one owner had to carry both.  See
+`smooth_of_isRelPicOf` and `isSeparated_of_isRelPicOf` below.  Nothing
+downstream changed: `exists_relPicZeroOf_of_relPicGroupLaw` still destructures
+this conjunction. -/
 theorem smooth_isSeparated_of_isRelPicOf {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
-    (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
-    (_hconn : GeometricallyConnected strX) (_hP : IsRelPicOf strX pstr)
-    (_hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX) :
-    Smooth pstr ∧ IsSeparated pstr := sorry
+    (hproper : IsProper strX) (hsmooth : SmoothOfRelativeDimension 1 strX)
+    (hconn : GeometricallyConnected strX) (hP : IsRelPicOf strX pstr)
+    (hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX) :
+    Smooth pstr ∧ IsSeparated pstr :=
+  ⟨smooth_of_isRelPicOf hproper hsmooth hconn hP hpush,
+    isSeparated_of_isRelPicOf hproper hsmooth hconn hP hpush⟩
 
 /-- **`Pic⁰` IS AN ABELIAN SCHEME INSIDE `Pic`** (sorry leaf, cut
 2026-07-29) — BLR 9.4/4's geometric half, and the whole of what that
@@ -3279,7 +3644,9 @@ three classical steps:
 * `Pic ⟶ S` is **smooth and separated** — this is where `_hpush`
   (`f_*𝒪 = 𝒪` universally) and the vanishing of `H²` on a relative curve
   are spent.  **CUT OUT** as `smooth_isSeparated_of_isRelPicOf` above
-  (stated 2026-07-29, wired up 2026-07-30), and received here as the two
+  (stated 2026-07-29, wired up 2026-07-30, and split later that day into
+  `smooth_of_isRelPicOf` + `isSeparated_of_isRelPicOf` — the conjunction
+  itself is now PROVEN as their assembly), and received here as the two
   hypotheses `_hPsmooth` and `_hPsep`; the parent
   `exists_relPicZeroOf_of_relPicGroupLaw` discharges them by that leaf, so
   nothing downstream changed;
