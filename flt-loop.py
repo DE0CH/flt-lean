@@ -531,9 +531,28 @@ def note_quota(reset_epoch, why):
 
 
 def refused(name, j):
-    """Did this job's log say it was refused? Only asked about dead-looking jobs."""
-    t = rd(STATE / "joblogs" / ("%s-%s.log" % (name, j["token"])), "") or ""
-    return t if LIMIT_MARK in t else None
+    """Did this job's log say it was refused? Only asked about dead-looking jobs.
+
+    The log is EVIDENCE, and evidence has to be consumed. A job refused an hour
+    ago keeps "session limit" in its log forever, and a refusal does not change
+    the job's token, so the same file is read again on every tick. That made
+    the block un-clearable: a probe would lift it and the very same load() pass
+    would re-arm it from a stale line -- both emails landed in the same second,
+    21:55:57, and the fleet never resumed.
+
+    So the file is moved aside once it has been acted on. The history is kept
+    (renamed, not deleted) but it is out of the evidence path, and only a
+    genuinely new refusal -- written by a fresh spawn attempt -- can block again.
+    """
+    log = STATE / "joblogs" / ("%s-%s.log" % (name, j["token"]))
+    t = rd(log, "") or ""
+    if LIMIT_MARK not in t:
+        return None
+    try:
+        log.rename(log.with_suffix(".log.refused-%d" % time.time()))
+    except OSError:
+        rm(log)
+    return t
 
 
 # --------------------------------------------------------------- spawn
