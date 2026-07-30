@@ -8496,8 +8496,18 @@ REFUTING CHECK for that claim: look for `PolarizationStruct`, `lam`, `𝔞` or
 `posElt` in the statement below.  There are none, and `hom` is a bare
 function whose every clause quantifies over `GeomFibrePt f x`.
 
-**FALSITY AUDIT (2026-07-30) — THIS LEAF IS FALSE AS STATED, AND THE
-DEFECT IS IN `DualStruct`, NOT IN THE POLARIZATION.**  The audit of
+**FALSITY AUDIT (2026-07-30), AND ITS REPAIR (2026-07-31) — THE LEAF WAS
+FALSE AS STATED; THE DEFECT WAS IN `DualStruct`, NOT IN THE POLARIZATION,
+AND IT HAS NOW BEEN FIXED THERE.**  Read the audit below as the reason the
+gate `(n : F) ≠ 0` now sits on `DualStruct.weil_nondegenerate`
+(`Modularity/AbelianScheme.lean`), not as a live refutation: with that gate
+in place the witness no longer applies, `DualStruct ab m` is inhabitable
+again, and the statement below is TRUE (and deep — it is Grothendieck
+representability of `Pic⁰` plus Mumford §13/§16/§23).  The `sorry` is
+therefore VOUCHED.  Nothing in the statement itself changed; the audit is
+retained verbatim because it is the argument that justifies the gate, and
+because it is the shape of mistake most likely to be made again.  The audit
+of
 2026-07-29 above found ONE way `weil_nondegenerate` can be read into
 contradiction (`R = ℤ`, `I = (2)`, `n = 4`) and repaired it by fixing the
 READING of `weil`.  There is a second way, and no reading repairs it: it is
@@ -8548,13 +8558,26 @@ at which the axiom is contradictory.  `weil` itself needs no change — a
 pairing landing in a trivial group is harmless, it is only the
 nondegeneracy claim about it that is false.
 
+**THAT REPAIR LANDED 2026-07-31.**  `DualStruct.weil_nondegenerate` now
+reads `… (hn : (n : R) ∈ I) (hnF : (n : F) ≠ 0) (y : GeomFibrePt f x), …`,
+and the only code consumer in the tree —
+`DualStruct.baseChangeOfIsPullback`, which builds the pullback dual — passes
+the new hypothesis straight through, since base change does not change the
+fibre field.  Every other occurrence of the name in this development is
+prose.  So the leaf below is no longer false, and a successor may attack it
+as an ordinary (deep) geometric statement.
+
 CONSEQUENCE FOR THE FINITE-BASE SIBLING, which is why the audit was run
-here.  `exists_qAdicPolarizedSystem_finiteBase` must NOT be cut along this
-seam: its base IS a finite field, so `DualStruct ab' m'` is uninhabited for
-every fibre of positive `p`-rank (an ordinary elliptic curve over `𝔽_p`
-suffices) and a leaf of the shape `∃ d : DualStruct ab' m', …` would be
-false for a reason having nothing to do with polarizations.  That note is
-repeated on that leaf. -/
+here.  Before the repair, `exists_qAdicPolarizedSystem_finiteBase` could NOT
+be cut along this seam: its base IS a finite field, so `DualStruct ab' m'`
+was uninhabited for every fibre of positive `p`-rank (an ordinary elliptic
+curve over `𝔽_p` suffices) and a leaf of the shape
+`∃ d : DualStruct ab' m', …` would have been false for a reason having
+nothing to do with polarizations.  **With the gate in place that route is
+open again**, and it is the obvious way to attack that leaf: the finite-base
+statement mentions only the levels `q^M` with `q ∤ #k`, at which `(q^M : k)`
+is a unit, so the gate is discharged by `hqN`.  The note is repeated on that
+leaf, corrected in the same direction. -/
 theorem exists_dualPolarization_of_mult
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
@@ -18968,15 +18991,22 @@ not about the Frobenius, and the multiplier `N` is produced in
 `exists_levelWeilPairing_of_qAdicPolarizedSystem_finiteBase`, where `hσ`
 is in scope.
 
-**DO NOT CUT THIS THROUGH `DualStruct` — THE RESULTING LEAF WOULD BE
-FALSE** (audit 2026-07-30; the witness is written out on
-`exists_dualPolarization_of_mult`).  The obvious move is to mirror the
+**CUTTING THIS THROUGH `DualStruct` WOULD HAVE PRODUCED A FALSE LEAF UNTIL
+2026-07-31, WHEN THE OBSTRUCTION WAS REMOVED AT SOURCE** (audit 2026-07-30;
+the witness is written out on `exists_dualPolarization_of_mult`).  The
+paragraph below is retained because it is the argument that justified the
+repair, and because the reasoning is what a successor must re-run before
+trusting any `DualStruct`-shaped cut.  **The repair has landed**:
+`DualStruct.weil_nondegenerate` is now gated on `(n : F) ≠ 0`, which at the
+levels this statement mentions (`n = q^M` with `q ∤ N = #k`) is discharged
+by `hqN` — so the route described below is now AVAILABLE and is the
+recommended attack on this leaf.  The obvious move is to mirror the
 characteristic-zero half: there `exists_qAdicWeilSystem_of_mult` is PROVEN
 over `exists_dualPolarization_of_mult`, which discharges six of that
 predicate's eight clauses from the axioms of `DualStruct` alone, and the
 same glue would discharge seven of the eight here (only the bounded-radical
-clause differs).  It does not work, and the obstruction is not about
-polarizations at all.
+clause differs).  Before the repair that did not work, and the obstruction
+was not about polarizations at all:
 
 `DualStruct.weil_nondegenerate` is asserted at every `(F', x', I, n)` with
 `(n : R) ∈ I`, and `weil` lands in `rootsOfUnity n (AlgebraicClosure F')`.
@@ -18987,16 +19017,19 @@ holds vacuously for every `p`-torsion point, and the axiom concludes
 `A'[p](k̄) ≅ ℤ/p ≠ 0`, so `DualStruct ab' m'` is UNINHABITED for it — while
 that curve satisfies every hypothesis of this leaf (`D = ℚ` is totally
 real, `q` is any prime `≠ p`).  A leaf of the shape
-`∃ d : DualStruct ab' m', …` is therefore false here for a reason with no
-mathematical content, and proving it is impossible rather than hard.
+`∃ d : DualStruct ab' m', …` was therefore false here for a reason with no
+mathematical content, and proving it was impossible rather than hard.
 
-So a cut of this leaf must either repair `DualStruct` first (gate
-`weil_nondegenerate` on `(n : F) ≠ 0`, which is free in characteristic zero
-— see the audit cited above) or introduce a FIBRE-LOCAL dual-pairing datum
-carrying the pairing only at the prime-to-`p` levels `q^M` that this
-statement actually mentions.  Until one of those exists, this statement is
-already the minimal fibre-local form of "the polarized `q`-adic Weil system
-exists", and there is nothing to strip off it. -/
+The two ways out were: repair `DualStruct` (gate `weil_nondegenerate` on
+`(n : F) ≠ 0`, which is free in characteristic zero — see the audit cited
+above), or introduce a FIBRE-LOCAL dual-pairing datum carrying the pairing
+only at the prime-to-`p` levels `q^M` that this statement actually mentions.
+**The first was done on 2026-07-31**, so a `DualStruct`-shaped cut of this
+leaf is now legitimate; note only that the gate must be discharged at each
+use, which here means `((q ^ M : ℕ) : k) ≠ 0`, i.e. `hqN` plus
+`q ∤ N = #k`.  Absent that cut, this statement remains the minimal
+fibre-local form of "the polarized `q`-adic Weil system exists" and there is
+nothing to strip off it. -/
 theorem exists_qAdicPolarizedSystem_finiteBase
     {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
