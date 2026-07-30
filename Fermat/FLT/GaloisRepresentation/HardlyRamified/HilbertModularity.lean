@@ -19361,13 +19361,355 @@ theorem charpoly_natDegree_eq_two_of_hilbertDeformationDatum {ℓ : ℕ}
   rw [← Module.finrank_eq_rank] at h
   exact_mod_cast h
 
-/-- ### ⚠ THIS LEAF IS **FALSE AS STATED**. DO NOT DISPATCH A PROVER AT IT.
+/-! #### The rank-two trace/determinant dictionary, and the commutator identity
 
-**(Banner added 2026-07-27 by flt-lean-182, which was dispatched to prove it,
-re-ran the FALSITY AUDIT's load-bearing computation, and confirmed it
-MACHINE-CHECKED. The audit itself sits ~200 lines below, under
-"FALSITY AUDIT (2026-07-27)"; the banner is here because a dispatcher reads
-the head of a docstring and this one is 180 lines long.)**
+The seven lemmas below are the mechanical half of the cut made at
+`exists_hilbertFixing_rootsOfUnity_discrim_isSquare` on 2026-07-30 (late). They
+turn that leaf's Galois-cohomological statement into the purely group-theoretic
+`exists_trace_discrim_isSquare_of_hilbertDeformationDatum`, along the route the
+repair paragraph on that leaf already prescribed.
+
+The one identity worth stating in words, because it is what makes the cut sharp:
+for `J` an involution of determinant `−1` and `Y` invertible on a rank-two space,
+
+    disc (charpoly (J Y J Y⁻¹)) · (det Y)² = (s² − u²) · (s² − u² − 4 det Y),
+    where s = tr Y  and  u = tr (J Y).
+
+In a basis diagonalising `J = diag(1, −1)` and with `Y = [[a, b], [c, d]]` this
+reads `s² − u² = 4ad` and `s² − u² − 4 det Y = 4bc`, so the right-hand side is
+`16 abcd` — i.e. **the commutator `[J, Y]` splits with distinct roots exactly
+when the product of the four entries of `Y` is a nonzero square**. That is the
+form in which the remaining obligation is stated. -/
+
+/-- **`coeff 1` of a rank-two characteristic polynomial is minus the trace**
+(PROVEN): `Matrix.trace_eq_neg_charpoly_coeff` transported along a basis with
+`LinearMap.charpoly_toMatrix` and `LinearMap.trace_eq_matrix_trace`. -/
+theorem charpoly_coeff_one_eq_neg_trace_of_finrank_eq_two {k : Type*} [Field k]
+    {V : Type*} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (hV : Module.finrank k V = 2) (f : Module.End k V) :
+    f.charpoly.coeff 1 = -LinearMap.trace k V f := by
+  classical
+  haveI : FiniteDimensional k V := Module.Finite.of_basis (Module.Free.chooseBasis k V)
+  let b : Module.Basis (Fin 2) k V := Module.finBasisOfFinrankEq k V hV
+  have h1 : LinearMap.trace k V f = Matrix.trace (LinearMap.toMatrix b b f) :=
+    LinearMap.trace_eq_matrix_trace k b f
+  have h2 : Matrix.trace (LinearMap.toMatrix b b f) =
+      -(LinearMap.toMatrix b b f).charpoly.coeff (Fintype.card (Fin 2) - 1) :=
+    Matrix.trace_eq_neg_charpoly_coeff _
+  rw [h1, h2, LinearMap.charpoly_toMatrix]
+  simp
+
+/-- **`coeff 0` of a rank-two characteristic polynomial is the determinant**
+(PROVEN): `LinearMap.det_eq_sign_charpoly_coeff` with `(−1)² = 1`. -/
+theorem charpoly_coeff_zero_eq_det_of_finrank_eq_two {k : Type*} [Field k]
+    {V : Type*} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (hV : Module.finrank k V = 2) (f : Module.End k V) :
+    f.charpoly.coeff 0 = LinearMap.det f := by
+  rw [LinearMap.det_eq_sign_charpoly_coeff, hV]
+  ring
+
+/-- **The rank-two characteristic polynomial in closed form** (PROVEN):
+`X² − (tr f) X + det f`, from `monic_natDegree_two_normalForm` above and the two
+coefficient lemmas. -/
+theorem charpoly_eq_of_finrank_eq_two {k : Type*} [Field k] {V : Type*}
+    [AddCommGroup V] [Module k V] [Module.Finite k V] [Module.Free k V]
+    (hV : Module.finrank k V = 2) (f : Module.End k V) :
+    f.charpoly = Polynomial.X ^ 2
+      - Polynomial.C (LinearMap.trace k V f) * Polynomial.X
+      + Polynomial.C (LinearMap.det f) := by
+  have hd : f.charpoly.natDegree = 2 := by rw [LinearMap.charpoly_natDegree, hV]
+  have h := monic_natDegree_two_normalForm f.charpoly (LinearMap.charpoly_monic f) hd
+  rw [charpoly_coeff_one_eq_neg_trace_of_finrank_eq_two hV,
+    charpoly_coeff_zero_eq_det_of_finrank_eq_two hV] at h
+  rw [h, map_neg]
+  ring
+
+/-- **Cayley–Hamilton in rank two** (PROVEN): `f² = (tr f) • f − (det f) • 1`,
+i.e. `LinearMap.aeval_self_charpoly` read through the closed form above. -/
+theorem mul_self_eq_of_finrank_eq_two {k : Type*} [Field k] {V : Type*}
+    [AddCommGroup V] [Module k V] [Module.Finite k V] [Module.Free k V]
+    (hV : Module.finrank k V = 2) (f : Module.End k V) :
+    f * f = (LinearMap.trace k V f) • f - (LinearMap.det f) • 1 := by
+  have h := LinearMap.aeval_self_charpoly f
+  rw [charpoly_eq_of_finrank_eq_two hV] at h
+  simp only [map_add, map_sub, map_mul, map_pow, Polynomial.aeval_X, Polynomial.aeval_C] at h
+  rw [Algebra.algebraMap_eq_smul_one, Algebra.algebraMap_eq_smul_one,
+    smul_mul_assoc, one_mul, sq] at h
+  linear_combination (norm := module) h
+
+/-- **The trace of a rank-two square** (PROVEN): `tr (f²) = (tr f)² − 2 det f`,
+by taking traces in Cayley–Hamilton and using `tr 1 = finrank = 2`. -/
+theorem trace_mul_self_of_finrank_eq_two {k : Type*} [Field k] {V : Type*}
+    [AddCommGroup V] [Module k V] [Module.Finite k V] [Module.Free k V]
+    (hV : Module.finrank k V = 2) (f : Module.End k V) :
+    LinearMap.trace k V (f * f) = LinearMap.trace k V f ^ 2 - 2 * LinearMap.det f := by
+  rw [mul_self_eq_of_finrank_eq_two hV f, map_sub, map_smul, map_smul]
+  have h1 : LinearMap.trace k V (1 : Module.End k V) = (2 : k) := by
+    rw [show (1 : Module.End k V) = LinearMap.id from rfl, LinearMap.trace_id, hV]
+    norm_num
+  rw [h1]
+  simp only [smul_eq_mul]
+  ring
+
+/-- **The determinant of a commutator with an involution is `1`** (PROVEN):
+`det (J Y J Y⁻¹) = (det J)² (det Y)(det Y⁻¹) = 1`, needing only `J² = 1` and
+`Y Y⁻¹ = 1` — no rank hypothesis. -/
+theorem det_commutator_of_involution {k : Type*} [Field k] {V : Type*}
+    [AddCommGroup V] [Module k V] [Module.Finite k V] [Module.Free k V]
+    (J Y Y' : Module.End k V) (hJ : J * J = 1) (hYY' : Y * Y' = 1) :
+    LinearMap.det (J * Y * J * Y') = 1 := by
+  have hdm : ∀ f g : Module.End k V,
+      LinearMap.det (f * g) = LinearMap.det f * LinearMap.det g := fun f g =>
+    LinearMap.det_comp f g
+  have hd1 : LinearMap.det (1 : Module.End k V) = 1 := LinearMap.det_id
+  have hJd : LinearMap.det J * LinearMap.det J = 1 := by
+    rw [← hdm, hJ, hd1]
+  have hYd : LinearMap.det Y * LinearMap.det Y' = 1 := by
+    rw [← hdm, hYY', hd1]
+  rw [hdm, hdm, hdm]
+  calc LinearMap.det J * LinearMap.det Y * LinearMap.det J * LinearMap.det Y'
+      = (LinearMap.det J * LinearMap.det J) * (LinearMap.det Y * LinearMap.det Y') := by ring
+    _ = 1 := by rw [hJd, hYd, one_mul]
+
+/-- **The trace of a commutator with an involution of determinant `−1`**
+(PROVEN): `(det Y) · tr (J Y J Y⁻¹) = (tr Y)² − (tr (J Y))² − 2 det Y`.
+
+Route, and it is the whole computational content of the cut: Cayley–Hamilton
+gives `(det Y) • Y⁻¹ = (tr Y) • 1 − Y`, so multiplying the commutator through by
+`det Y` removes the inverse and leaves
+`(tr Y) • (J Y J) − (J Y)²`. Then `tr (J Y J) = tr Y` (cyclicity of the trace
+plus `J² = 1`) and `tr ((J Y)²) = (tr (J Y))² − 2 det J det Y`, and `det J = −1`
+turns the last term into `+2 det Y`. -/
+theorem trace_commutator_of_involution {k : Type*} [Field k] {V : Type*}
+    [AddCommGroup V] [Module k V] [Module.Finite k V] [Module.Free k V]
+    (hV : Module.finrank k V = 2) (J Y Y' : Module.End k V)
+    (hJ : J * J = 1) (hdJ : LinearMap.det J = -1) (hYY' : Y * Y' = 1) :
+    LinearMap.det Y * LinearMap.trace k V (J * Y * J * Y')
+      = LinearMap.trace k V Y ^ 2 - LinearMap.trace k V (J * Y) ^ 2
+        - 2 * LinearMap.det Y := by
+  have hCH : (LinearMap.det Y) • Y' = (LinearMap.trace k V Y) • 1 - Y := by
+    have h := congrArg (fun A : Module.End k V => A * Y')
+      (mul_self_eq_of_finrank_eq_two hV Y)
+    simp only [smul_mul_assoc, one_mul, sub_mul, mul_assoc, hYY', mul_one] at h
+    linear_combination (norm := module) h
+  have hmul : (LinearMap.det Y) • (J * Y * J * Y')
+      = (LinearMap.trace k V Y) • (J * Y * J) - (J * Y) * (J * Y) := by
+    have h1 : (LinearMap.det Y) • (J * Y * J * Y') = (J * Y * J) * ((LinearMap.det Y) • Y') := by
+      rw [mul_smul_comm, mul_assoc]
+    rw [h1, hCH, mul_sub, mul_smul_comm, mul_one]
+    have hfold : J * Y * J * Y = (J * Y) * (J * Y) := by simp only [mul_assoc]
+    rw [hfold]
+  have htr := congrArg (LinearMap.trace k V) hmul
+  simp only [map_sub, map_smul, smul_eq_mul] at htr
+  have h2 : LinearMap.trace k V (J * Y * J) = LinearMap.trace k V Y := by
+    rw [LinearMap.trace_mul_comm, ← mul_assoc, hJ, one_mul]
+  have h3 : LinearMap.trace k V ((J * Y) * (J * Y))
+      = LinearMap.trace k V (J * Y) ^ 2 - 2 * (LinearMap.det J * LinearMap.det Y) := by
+    have hdJY : LinearMap.det (J * Y) = LinearMap.det J * LinearMap.det Y :=
+      LinearMap.det_comp J Y
+    rw [trace_mul_self_of_finrank_eq_two hV, hdJY]
+  rw [h2, h3, hdJ] at htr
+  rw [htr]
+  ring
+
+/-- **The discriminant of a commutator with an involution of determinant `−1`**
+(PROVEN): the identity advertised in the section note,
+
+    (det Y)² · disc (charpoly (J Y J Y⁻¹)) = (s² − u²)(s² − u² − 4 det Y),
+
+with `s = tr Y`, `u = tr (J Y)`, `disc p = (p.coeff 1)² − 4 p.coeff 0`. Combines
+the two coefficient lemmas with `det_commutator_of_involution` (the commutator
+has determinant `1`, so `disc = (tr)² − 4`) and
+`trace_commutator_of_involution`. -/
+theorem discrim_commutator_of_involution {k : Type*} [Field k] {V : Type*}
+    [AddCommGroup V] [Module k V] [Module.Finite k V] [Module.Free k V]
+    (hV : Module.finrank k V = 2) (J Y Y' : Module.End k V)
+    (hJ : J * J = 1) (hdJ : LinearMap.det J = -1) (hYY' : Y * Y' = 1) :
+    LinearMap.det Y ^ 2 *
+        ((J * Y * J * Y').charpoly.coeff 1 ^ 2 - 4 * (J * Y * J * Y').charpoly.coeff 0)
+      = (LinearMap.trace k V Y ^ 2 - LinearMap.trace k V (J * Y) ^ 2) *
+        (LinearMap.trace k V Y ^ 2 - LinearMap.trace k V (J * Y) ^ 2
+          - 4 * LinearMap.det Y) := by
+  have hc1 := charpoly_coeff_one_eq_neg_trace_of_finrank_eq_two hV (J * Y * J * Y')
+  have hc0 := charpoly_coeff_zero_eq_det_of_finrank_eq_two hV (J * Y * J * Y')
+  have hd := det_commutator_of_involution J Y Y' hJ hYY'
+  have ht := trace_commutator_of_involution hV J Y Y' hJ hdJ hYY'
+  rw [hc1, hc0, hd]
+  linear_combination (LinearMap.det Y * LinearMap.trace k V (J * Y * J * Y')
+    + LinearMap.trace k V Y ^ 2 - LinearMap.trace k V (J * Y) ^ 2 - 2 * LinearMap.det Y) * ht
+
+/-- **The `ℓ`-adic cyclotomic character kills commutators** (PROVEN): it is a
+monoid homomorphism `(ℚᵃˡᵍ ≃+* ℚᵃˡᵍ) →* ℤ_[ℓ]ˣ` and `ℤ_[ℓ]ˣ` is commutative, so
+`χ_ℓ(x y x⁻¹ y⁻¹) = 1`. Passing from `Γ ℚ` to `ℚᵃˡᵍ ≃+* ℚᵃˡᵍ` is `rfl` on
+products and on the identity, which is why no bundled homomorphism is
+introduced. -/
+theorem cyclotomicCharacter_commutator_eq_one (ℓ : ℕ) [Fact ℓ.Prime] (x y : Γ ℚ) :
+    cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ (x * y * x⁻¹ * y⁻¹).toRingEquiv = 1 := by
+  have hmul : ∀ a b : Γ ℚ, cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ (a * b).toRingEquiv
+      = cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ a.toRingEquiv
+        * cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ b.toRingEquiv := by
+    intro a b
+    rw [show (a * b).toRingEquiv = a.toRingEquiv * b.toRingEquiv from rfl, map_mul]
+  have hone : cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ (1 : Γ ℚ).toRingEquiv = 1 := by
+    rw [show (1 : Γ ℚ).toRingEquiv = 1 from rfl, map_one]
+  have hinv : ∀ a : Γ ℚ, cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ (a⁻¹).toRingEquiv
+      = (cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ a.toRingEquiv)⁻¹ := by
+    intro a
+    have h := hmul a a⁻¹
+    rw [mul_inv_cancel, hone] at h
+    exact eq_inv_of_mul_eq_one_right h.symm
+  have hcomm : ∀ a b : ℤ_[ℓ]ˣ, a * b * a⁻¹ * b⁻¹ = 1 := by
+    intro a b
+    rw [mul_comm a b]
+    group
+  rw [hmul, hmul, hmul, hinv, hinv, hcomm]
+
+/-- **An element in the kernel of the `ℓ`-adic cyclotomic character fixes every
+`ℓⁿ`-th root of unity, at every `n` at once** (PROVEN): `cyclotomicCharacter.spec`
+evaluates `σ ζ` as `ζ ^ (χ_ℓ(σ) mod ℓⁿ).val`, and at `χ_ℓ(σ) = 1` that exponent
+is `1` (for `n ≥ 1`, by `ZMod.val_one`, `ℓⁿ > 1`) or the statement is trivial
+(for `n = 0`, where `ζ ^ ℓ⁰ = 1` already forces `ζ = 1`). -/
+theorem apply_eq_self_of_cyclotomicCharacter_eq_one (ℓ : ℕ) [Fact ℓ.Prime]
+    (σ : Γ ℚ) (hσ : cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ σ.toRingEquiv = 1)
+    (n : ℕ) (ζ : ℚ ᵃˡᵍ) (hζ : ζ ^ ℓ ^ n = 1) : σ ζ = ζ := by
+  have hspec := cyclotomicCharacter.spec (L := ℚ ᵃˡᵍ) ℓ σ.toRingEquiv ζ hζ
+  rw [hσ] at hspec
+  rcases Nat.eq_zero_or_pos n with hn | hn
+  · subst hn
+    have hζ1 : ζ = 1 := by simpa using hζ
+    rw [hζ1]
+    simp
+  · haveI : Fact (1 < ℓ ^ n) := ⟨by
+      have h2 : 2 ≤ ℓ := (Fact.out : ℓ.Prime).two_le
+      calc 1 < 2 ^ n := Nat.one_lt_two_pow (by omega)
+        _ ≤ ℓ ^ n := Nat.pow_le_pow_left h2 n⟩
+    simp only [Units.val_one, map_one] at hspec
+    rw [ZMod.val_one] at hspec
+    simpa using hspec
+
+/-- **(★) — WHAT IS LEFT OF THE TAYLOR–WILES GALOIS ELEMENT OVER `F`, ONCE `F`
+IS TOTALLY REAL** (SORRY LEAF, cut 2026-07-30 (late) out of
+`exists_hilbertFixing_rootsOfUnity_discrim_isSquare` below, which is PROVEN over
+it and carries the full history).
+
+In the notation of the section note, writing `J = ρbar(complexConj)` — an
+involution of determinant `−1` sitting inside `ρbar(Γ F)` because `F` is totally
+real — there is `g : Γ F` with, for `Y = ρbar|_{G_F}(g)`,
+
+    (s² − u²) · (s² − u² − 4 det Y)   a NONZERO SQUARE in `k`,
+    s = tr Y,   u = tr (J Y).
+
+**In a basis diagonalising `J = diag(1, −1)` and with `Y = [[a, b], [c, d]]` this
+says exactly that `16 abcd` is a nonzero square**, i.e. that the commutator
+`[complexConj, g]` has residual characteristic polynomial splitting with two
+distinct roots in `k`.
+
+# WHY THIS IS THE RIGHT REMAINING OBLIGATION
+
+This is `(★)` of the repair paragraph on the consumer below, transcribed. That
+paragraph established, and this file now proves, that everything else in the leaf
+is free once `F` is totally real:
+
+* the involution `J` exists in the image, by `exists_map_eq_complexConj` together
+  with the determinant clause of the datum (`cyclotomicCharacter_complexConj`);
+* the `μ_{ℓⁿ}`-fixing clause costs NOTHING at any `n`, because the commutator
+  `c g c⁻¹ g⁻¹` lies in the kernel of the `ℓ`-adic cyclotomic character
+  (`cyclotomicCharacter_commutator_eq_one`,
+  `apply_eq_self_of_cyclotomicCharacter_eq_one`) — the `n` of the consumer has
+  disappeared here, and that is the main gain of the cut;
+* the discriminant bookkeeping is the closed identity
+  `discrim_commutator_of_involution`.
+
+# THE OBSTRUCTION, RESTATED IN THESE TERMS — AND IT IS NOT FREE
+
+`(★)` FAILS for `G = ρbar(Γ F)` contained in the normalizer of a Cartan
+subgroup, and BOTH Cartans obstruct it, which is worth recording because only
+the nonsplit one appears in the audits below:
+
+* `G ⊆ N(T_split)` with `T_split` the torus of `J`: every element is diagonal or
+  antidiagonal, so `abcd = 0` identically. Such a `G` is irreducible (dihedral),
+  so `hirrF` does not exclude it.
+* `G ⊆ N(T_ns)`: at `k = 𝔽₇` the discriminant set of `N(T_ns) ∩ SL₂` is
+  `{0, 3, 5}` against squares `{1, 2, 4}` (enumerated; see the FALSITY AUDIT
+  below), and every commutator `[J, Y]` lands in `G ∩ SL₂`.
+
+So a proof MUST use an arithmetic hypothesis that excludes residually dihedral
+image, and the only candidate left in the package is `isTameAtTwo` — see
+"SO WHERE MUST THE PROOF COME FROM? `isTameAtTwo`" on the consumer, which the
+2026-07-30 repair paragraph explicitly reinstates. **This leaf is therefore an
+ARITHMETIC leaf wearing group-theoretic clothes; a purely group-theoretic proof
+is impossible and anyone who finds one has made an error.**
+
+# STRENGTH AUDIT — THIS LEAF IS FORMALLY STRONGER THAN ITS CONSUMER, AND THE
+DIFFERENCE IS RECORDED HERE RATHER THAN HIDDEN
+
+The consumer asks, for each `n` separately, for SOME `σ ∈ Γ F` fixing `μ_{ℓⁿ}`.
+This leaf produces one `σ` — a commutator with complex conjugation — that works
+for EVERY `n` at once. Two strengthenings are therefore in play:
+
+1. uniformity in `n`;
+2. the restriction of the search from all of `Γ F(μ_{ℓⁿ})` to the commutators
+   `[c, g]`.
+
+Neither is a weakening of the mathematics and neither is idle: (1) is what
+removes `n` from the statement, and (2) is the route the consumer's own repair
+paragraph prescribes ("what is left of this leaf, once `F` is totally real, is
+purely group-theoretic: (★)"). The known counterexample analysis is untouched by
+both — in the residually dihedral shape the consumer already fails at `n = 1`,
+because `ρbar(Γ F(μ_ℓ)) = G ∩ SL₂` has no split element at all. **But a closer
+should know that a proof of the consumer that does NOT go through a commutator
+would not close this leaf**, and in that event the honest move is to prove the
+consumer directly and delete this declaration rather than to weaken it.
+
+`hirrF` and `hℓ5` are carried because the intended route needs them (`hℓ5`
+through `two_ne_zero_of_hilbertDeformationDatum`, which is what makes the
+eigenvalues `±1` of `J` distinct; `hirrF` to exclude the reducible images, where
+`G` fixes a line and `(★)` is false for the trivial reason that all commutators
+are unipotent). `𝒟₀` is load-bearing: it is what pins `det ρbar|_{G_F}` to the
+cyclotomic character, hence `det J = −1`.
+
+CIRCULARITY GUARD (inherited): nothing from `Family.lean`, `Lift.lean`,
+`Modularity/*` or `Deformation.lean`; in particular the `ℚ`-level `exfalso`
+through `not_isIrreducible_of_isHardlyRamified_of_five_le` is FORBIDDEN. -/
+theorem exists_trace_discrim_isSquare_of_hilbertDeformationDatum
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (F : Type u) [Field F] [NumberField F] [NumberField.IsTotallyReal F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟₀ : HilbertDeformationDatum ℓ F ρbar) :
+    ∃ g : Γ F, ∃ t : k, t ≠ 0 ∧
+      t ^ 2 =
+        (LinearMap.trace k V ((ρbar.map (algebraMap ℚ F)) g) ^ 2
+            - LinearMap.trace k V (ρbar complexConj * (ρbar.map (algebraMap ℚ F)) g) ^ 2) *
+          (LinearMap.trace k V ((ρbar.map (algebraMap ℚ F)) g) ^ 2
+            - LinearMap.trace k V (ρbar complexConj * (ρbar.map (algebraMap ℚ F)) g) ^ 2
+            - 4 * LinearMap.det ((ρbar.map (algebraMap ℚ F)) g)) :=
+  sorry
+
+/-- ### THIS DECLARATION IS **PROVEN** (2026-07-30, late), over the single new
+leaf `exists_trace_discrim_isSquare_of_hilbertDeformationDatum` above. DO NOT
+DISPATCH A PROVER AT IT.
+
+**THE "FALSE AS STATED" BANNER THAT STOOD HERE FROM 2026-07-27 IS RETIRED, AND
+THE AUDIT IT POINTED AT IS HISTORY, NOT A LIVE WARNING.** It described the
+statement *before* `[NumberField.IsTotallyReal F]` was threaded through this
+cluster (2026-07-30, earlier the same day). The audit's arithmetic is correct and
+is kept verbatim below because it is what forces the repair; its counterexample
+field is totally imaginary and necessarily so, so it does not touch the statement
+as it now stands. See "REPAIRED 2026-07-30 BY ONE HYPOTHESIS" below, which is the
+paragraph that supersedes it.
+
+**WHAT REMAINS OPEN IS THE NEW LEAF, NOT THIS DECLARATION.** The route recorded
+in the repair paragraph — complex conjugation `c ∈ Γ F` from total realness, and
+the commutator `σ = c g c⁻¹ g⁻¹`, which fixes every `ℓ`-power root of unity at
+every `n` at once because the cyclotomic character is a homomorphism into an
+abelian group — is now WRITTEN, and everything in it except the group-theoretic
+assertion `(★)` is proven. `(★)` is
+`exists_trace_discrim_isSquare_of_hilbertDeformationDatum`, whose docstring
+carries the analysis of what is left.
 
 The counterexample is `E = 54b1` at `ℓ = 7`, over a field `F` cut out so that
 `ρ̄_{E,7}(Γ F) = H := N(T_ns) ∩ SL₂(𝔽₇)`. Re-verified by exhaustive enumeration
@@ -19683,8 +20025,76 @@ theorem exists_hilbertFixing_rootsOfUnity_discrim_isSquare
         (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) ζ = ζ) ∧
       ∃ δ : k, δ ≠ 0 ∧
         δ ^ 2 = ((ρbar.map (algebraMap ℚ F)) σ).charpoly.coeff 1 ^ 2
-          - 4 * ((ρbar.map (algebraMap ℚ F)) σ).charpoly.coeff 0 :=
-  sorry
+          - 4 * ((ρbar.map (algebraMap ℚ F)) σ).charpoly.coeff 0 := by
+  classical
+  have hℓOdd : Odd ℓ := (Fact.out : ℓ.Prime).odd_of_ne_two (by omega)
+  have hfr : Module.finrank k V = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast rank_eq_two_of_hilbertDeformationDatum 𝒟₀)
+  -- **A complex conjugation inside `Γ F`** — the one place total realness enters.
+  obtain ⟨c, hc⟩ := exists_map_eq_complexConj F
+  set J : Module.End k V := ρbar complexConj with hJdef
+  have hJc : (ρbar.map (algebraMap ℚ F)) c = J := by rw [GaloisRep.map_apply, hc]
+  have hJJ : J * J = 1 := by
+    rw [hJdef, ← map_mul ρbar]
+    convert map_one ρbar using 2
+    exact complexConj_mul_self
+  -- **Oddness**, through `𝒟₀`: the determinant clause gives `det (𝒟₀.ρ c) = −1`,
+  -- and `𝒟₀.resid` carries it to `J` through the constant charpoly coefficient.
+  have hdet𝒟 : LinearMap.det (𝒟₀.ρ c) = -1 := by
+    have hd := 𝒟₀.isHilbertHardlyRamified.det c
+    rw [GaloisRep.det_apply, hc, cyclotomicCharacter_complexConj ℓ hℓOdd] at hd
+    rw [hd]
+    simp
+  have hdetJ : LinearMap.det J = -1 := by
+    have h1 : LinearMap.det J = J.charpoly.coeff 0 := by
+      rw [LinearMap.det_eq_sign_charpoly_coeff, hfr]
+      ring
+    have h2 : LinearMap.det (𝒟₀.ρ c) = (𝒟₀.ρ c).charpoly.coeff 0 := by
+      rw [LinearMap.det_eq_sign_charpoly_coeff,
+        show Module.finrank 𝒟₀.R (Fin 2 → 𝒟₀.R) = 2 by simp]
+      ring
+    have h3 : J.charpoly = ((𝒟₀.ρ c).charpoly).map 𝒟₀.π := by
+      rw [← hJc]; exact (𝒟₀.resid c).symm
+    rw [h1, h3, Polynomial.coeff_map, ← h2, hdet𝒟, map_neg, map_one]
+  -- **The group-theoretic input `(★)`**, the one remaining leaf.
+  obtain ⟨g, t, ht0, hteq⟩ :=
+    exists_trace_discrim_isSquare_of_hilbertDeformationDatum ℓ hℓ5 F hirrF 𝒟₀
+  set Y : Module.End k V := (ρbar.map (algebraMap ℚ F)) g with hYdef
+  set Y' : Module.End k V := (ρbar.map (algebraMap ℚ F)) g⁻¹ with hY'def
+  have hYY' : Y * Y' = 1 := by
+    rw [hYdef, hY'def, ← map_mul, mul_inv_cancel, map_one]
+  have hΔ : LinearMap.det Y ≠ 0 := by
+    intro h0
+    have hdm : LinearMap.det (Y * Y') = LinearMap.det Y * LinearMap.det Y' :=
+      LinearMap.det_comp Y Y'
+    have hd1 : LinearMap.det (1 : Module.End k V) = 1 := LinearMap.det_id
+    rw [hYY', h0, zero_mul, hd1] at hdm
+    exact one_ne_zero hdm
+  -- **The commutator with the complex conjugation** is the required `σ`.
+  refine ⟨c * g * c⁻¹ * g⁻¹, ?_, t / LinearMap.det Y, div_ne_zero ht0 hΔ, ?_⟩
+  · -- it fixes every `ℓⁿ`-th root of unity, at every `n` at once
+    intro ζ hζ
+    refine apply_eq_self_of_cyclotomicCharacter_eq_one ℓ _ ?_ n ζ hζ
+    have hsplit : Field.absoluteGaloisGroup.map (algebraMap ℚ F) (c * g * c⁻¹ * g⁻¹)
+        = Field.absoluteGaloisGroup.map (algebraMap ℚ F) c *
+            Field.absoluteGaloisGroup.map (algebraMap ℚ F) g *
+            (Field.absoluteGaloisGroup.map (algebraMap ℚ F) c)⁻¹ *
+            (Field.absoluteGaloisGroup.map (algebraMap ℚ F) g)⁻¹ := by
+      simp only [map_mul, map_inv]
+    rw [hsplit]
+    exact cyclotomicCharacter_commutator_eq_one ℓ _ _
+  · -- and its discriminant is the nonzero square supplied by `(★)`
+    have hWeq : (ρbar.map (algebraMap ℚ F)) (c * g * c⁻¹ * g⁻¹) = J * Y * J * Y' := by
+      rw [map_mul, map_mul, map_mul, hJc, ← hYdef, ← hY'def]
+      congr 1
+      rw [show (ρbar.map (algebraMap ℚ F)) c⁻¹ = J from ?_]
+      · rw [GaloisRep.map_apply, map_inv, hc,
+          show complexConj⁻¹ = complexConj from inv_eq_of_mul_eq_one_right complexConj_mul_self]
+    have hkey := discrim_commutator_of_involution hfr J Y Y' hJJ hdetJ hYY'
+    rw [hWeq]
+    rw [← hteq] at hkey
+    rw [div_pow, div_eq_iff (pow_ne_zero 2 hΔ)]
+    linear_combination -hkey
 
 /-- **The Taylor–Wiles Galois element over `F`** (PROVEN 2026-07-27 over
 `exists_hilbertFixing_rootsOfUnity_discrim_isSquare` above; the
