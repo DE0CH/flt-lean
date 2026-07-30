@@ -426,7 +426,7 @@ open in them has been split along the theories it needed:
 | `nonempty_gamma1Datum_of_weierstrassPoint` | the base-generalisation of `nonempty_gamma1Datum_of_ratPoint`, which is the SAME statement at `ℚ` and is PROVEN.  Its whole obstruction is that `EllipticScheme.lean` is written at the concrete base `ℚ`; no new mathematics.  Cut out of `exists_gamma1Datum_fieldExtension` 2026-07-28, which is PROVEN over it and the row above (and `geometricComponents_of_gamma1GITPresentation` over that plus the two rows below, and `nontrivial_A_of_gamma1GITPresentation` over that alone). | any field `L` |
 | ~~`isReduced_A_of_gamma1GITPresentation`~~ | PROVEN 2026-07-28 over `smoothCurve_A_of_gamma1GITPresentation` and the in-tree `Algebra.Smooth.isReduced_of_isField`; no longer a leaf | — |
 | `transitiveMinimalPrimes_of_gamma1GITPresentation` | Deligne-Rapoport IV.5.5: `det` is onto, so `G` permutes the components of `Spec A` transitively | any `K`, `char K ∤ N` |
-| `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation` | Deligne-Rapoport IV.5.5 — `det` is onto for `[Γ₁(N)]`, i.e. `Frac B / K` is a regular extension (`K` algebraically closed in `Frac B`, separably generated).  `connectedSpace_tensorProduct_of_gamma1GITPresentation` is PROVEN over it, 2026-07-28. | any `K`, `char K ∤ N` |
+| `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation` | Deligne-Rapoport IV.5.5 — `det` is onto for `[Γ₁(N)]`, i.e. `Spec (B ⊗[K] L)` is IRREDUCIBLE for every field extension `L/K`.  Cut 2026-07-30 out of `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation`, which is now PROVEN over it and `smoothInvariants_of_gamma1GITPresentation`: the REDUCEDNESS half of "regular extension" is free from smoothness, so only the primary half is modular.  `connectedSpace_tensorProduct_of_gamma1GITPresentation` is PROVEN over that, 2026-07-28. | any `K`, `char K ∤ N` |
 | `exists_rationalCuspPointsX1_field` | `φ(N)/2` rational cusps of `X_1(N)` (Deligne-Rapoport VI.5).  Base field FREED 2026-07-28: this single leaf now carries the former `exists_rationalCuspPointsX1` (over `ℚ`, PROVEN over it) and the `≥` half of the former `card_cuspLocusPoints_x1_finiteField` (over `𝔽_3`) — one sentence of Deligne-Rapoport that used to be two open leaves at two bases. | any `K` with `N` invertible |
 | `exists_fineGamma1Atlas` | fineness at `N ≥ 4`, `ℓ` prime, `ℓ ∤ N`: `[Γ₁(N)]` is representable, so some atlas has `M ⟶ Y` an isomorphism.  (Was `nonempty_relPoint_atlas_of_relPoint`, REFUTED and restated 2026-07-28 — see its FALSITY AUDIT; the `∀ atlas` form is false at the Katz–Mazur atlas itself.) | `𝔽_ℓ` |
 | `nonempty_gamma1Datum_baseChange` | base change of a `Γ₁(N)`-datum — formal, no arithmetic | any |
@@ -544,7 +544,7 @@ along the GIT axis its own docstring named as NOT SEARCHED.  This is the
 | `gamma0Atlas_isIso` + `isAffine_of_gamma0Atlas` (PROVEN) | not needed — see the section comment on the geometry below |
 | `isDomain_of_gamma0GITPresentation` (leaf) | `geometricComponents_of_gamma1GITPresentation` (PROVEN 2026-07-28 over `exists_gamma1Datum_fieldExtension`, `isReduced_A_of_gamma1GITPresentation` — itself PROVEN later the same day over `smoothCurve_A_of_gamma1GITPresentation` — and `transitiveMinimalPrimes_of_gamma1GITPresentation`); `isDomain_of_gamma1GITPresentation` is PROVEN over it |
 | `smoothOfRelativeDimension_of_gamma0GITPresentation` (leaf) | `locallyStandardSmooth_of_gamma1GITPresentation` (leaf); `smoothOfRelativeDimension_of_gamma1GITPresentation` is PROVEN over it |
-| `geometricallyConnected_of_gamma0GITPresentation` (leaf) | `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation` (leaf); `connectedSpace_tensorProduct_of_gamma1GITPresentation` and `geometricallyConnected_of_gamma1GITPresentation` are PROVEN over it |
+| `geometricallyConnected_of_gamma0GITPresentation` (leaf) | `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation` (leaf, cut 2026-07-30); `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation`, `connectedSpace_tensorProduct_of_gamma1GITPresentation` and `geometricallyConnected_of_gamma1GITPresentation` are PROVEN over it |
 | `Gamma0AffineModel` / `exists_gamma0AffineModel` (PROVEN) | `Gamma1AffineModel` / `exists_gamma1AffineModel` (PROVEN) |
 
 `specInvariants_universal` (`X0.lean`, PROVEN and sorry-free) is REUSED
@@ -2235,7 +2235,7 @@ geometric statements is equivalent to a statement about the `K`-algebra
 |---|---|---|
 | `isDomain_of_gamma1GITPresentation` | `geometricComponents_of_gamma1GITPresentation` | `Scheme.ΓSpecIso` + `isDomain_of_minimalPrimes_transitive` |
 | `smoothOfRelativeDimension_of_gamma1GITPresentation` | `locallyStandardSmooth_of_gamma1GITPresentation` | `HasRingHomProperty.Spec_iff` |
-| `geometricallyConnected_of_gamma1GITPresentation` | `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation` | `geometrically_iff_of_commRing_of_isClosedUnderIsomorphisms` + `pullbackSpecIso`, then (2026-07-28) `isDomain_tensorProduct_of_injective` |
+| `geometricallyConnected_of_gamma1GITPresentation` | `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation` (2026-07-30; `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation` is PROVEN over it) | `geometrically_iff_of_commRing_of_isClosedUnderIsomorphisms` + `pullbackSpecIso`, then (2026-07-28) `isDomain_tensorProduct_of_injective` |
 
 So a prover sent at any of the three open leaves below works in
 commutative algebra over `K` and never touches a scheme.  This is the
@@ -3030,9 +3030,10 @@ last, and `K` is arbitrary by design — see the note at the foot of
 counterexample `y² = x³ + t` over `𝔽₃(t)` recorded on
 `smoothOfRelativeDimension_specMap_algebraMap_of_isRegularRing`.  Over an
 imperfect `K` regular is strictly weaker than smooth, and closing that gap
-needs `Frac B / K` separably generated — which is half 2 of the route on
-`isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation`, i.e. a
-sibling leaf, not a free step.
+needs `Frac B / K` separably generated — which is exactly what THIS
+statement supplies to
+`isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation` (PROVEN
+2026-07-30 over it), so it is not available here without circularity.
 
 ## FAITHFULNESS
 
@@ -3239,23 +3240,220 @@ theorem smoothOfRelativeDimension_of_gamma1GITPresentation {N : ℕ} (hN : 4 ≤
   rw [← P.specMap_algebraMap, HasRingHomProperty.Spec_iff (P := @SmoothOfRelativeDimension 1)]
   exact locallyStandardSmooth_of_gamma1GITPresentation hN hchar P
 
-/-- **`Frac B` is a REGULAR field extension of `K`** (sorry leaf, cut
-2026-07-28 out of `connectedSpace_tensorProduct_of_gamma1GITPresentation`) —
+/-- **Common denominators in `Frac B ⊗[K] L`** (PROVEN 2026-07-30).
+
+Every element of `Frac B ⊗[K] L` becomes an element of the image of
+`B ⊗[K] L` after multiplication by a single denominator `s ⊗ₜ 1` with
+`s ∈ B⁰`.  This is the concrete form of "`Frac B ⊗[K] L` is a localization
+of `B ⊗[K] L` at the image of `B⁰`", proved by the tensor-product induction
+rather than through `Algebra.isLocalization_iff_isPushout`, which would
+need an `Algebra (B ⊗[K] L) (Frac B ⊗[K] L)` instance and two scalar towers
+to be introduced by hand first.
+
+GENERAL COMMUTATIVE ALGEBRA, nothing modular: it belongs in
+`Fermat/FLT/Mathlib/RingTheory/`, and lives here only because it has a
+single consumer, immediately below.  Hoist it if a second one appears. -/
+theorem exists_commonDenominator_tensorProduct {K B : Type} [Field K] [CommRing B]
+    [Algebra K B] (L : Type) [Field L] [Algebra K L]
+    (z : TensorProduct K (FractionRing B) L) :
+    ∃ (s : nonZeroDivisors B) (w : TensorProduct K B L),
+      ((algebraMap B (FractionRing B) (s : B)) ⊗ₜ[K] (1 : L)) * z =
+        Algebra.TensorProduct.map (IsScalarTower.toAlgHom K B (FractionRing B))
+          (AlgHom.id K L) w := by
+  induction z using TensorProduct.induction_on with
+  | zero => exact ⟨1, 0, by simp⟩
+  | tmul x l =>
+      obtain ⟨⟨b, s⟩, rfl⟩ := IsLocalization.mk'_surjective (nonZeroDivisors B) x
+      refine ⟨s, b ⊗ₜ[K] l, ?_⟩
+      rw [Algebra.TensorProduct.tmul_mul_tmul, one_mul, Algebra.TensorProduct.map_tmul]
+      congr 1
+      exact IsLocalization.mk'_spec' _ b s
+  | add z₁ z₂ h₁ h₂ =>
+      obtain ⟨s₁, w₁, e₁⟩ := h₁
+      obtain ⟨s₂, w₂, e₂⟩ := h₂
+      refine ⟨s₁ * s₂, ((s₂ : B) ⊗ₜ[K] (1 : L)) * w₁ + ((s₁ : B) ⊗ₜ[K] (1 : L)) * w₂, ?_⟩
+      have hu : ((algebraMap B (FractionRing B) ((s₁ * s₂ : nonZeroDivisors B) : B)) ⊗ₜ[K]
+            (1 : L)) =
+          ((algebraMap B (FractionRing B) ((s₁ : nonZeroDivisors B) : B)) ⊗ₜ[K] (1 : L)) *
+            ((algebraMap B (FractionRing B) ((s₂ : nonZeroDivisors B) : B)) ⊗ₜ[K] (1 : L)) := by
+        rw [Algebra.TensorProduct.tmul_mul_tmul, one_mul, Submonoid.coe_mul, map_mul]
+      rw [hu, map_add, map_mul, map_mul, Algebra.TensorProduct.map_tmul,
+        Algebra.TensorProduct.map_tmul, ← e₁, ← e₂]
+      simp only [AlgHom.id_apply, IsScalarTower.coe_toAlgHom']
+      ring
+
+/-- **Passing `IsDomain` from `B ⊗[K] L` to `Frac B ⊗[K] L`** (PROVEN
+2026-07-30).
+
+`Frac B ⊗[K] L` is a localization of `B ⊗[K] L` (at the image of `B⁰`), and
+a localization of a domain at a submonoid of nonzerodivisors is a domain.
+The proof clears denominators with `exists_commonDenominator_tensorProduct`
+and uses that `B ⊗[K] L → Frac B ⊗[K] L` is injective, `L` being flat over
+the field `K`.
+
+GENERAL COMMUTATIVE ALGEBRA — see the note on the previous declaration. -/
+theorem isDomain_fractionRing_tensorProduct_of_isDomain_tensorProduct {K B : Type} [Field K]
+    [CommRing B] [IsDomain B] [Algebra K B] (L : Type) [Field L] [Algebra K L]
+    (h : IsDomain (TensorProduct K B L)) :
+    IsDomain (TensorProduct K (FractionRing B) L) := by
+  haveI := h
+  set φ : TensorProduct K B L →ₐ[K] TensorProduct K (FractionRing B) L :=
+    Algebra.TensorProduct.map (IsScalarTower.toAlgHom K B (FractionRing B)) (AlgHom.id K L)
+    with hφdef
+  have hφ : Function.Injective φ :=
+    Module.Flat.rTensor_preserves_injective_linearMap _
+      (IsFractionRing.injective B (FractionRing B))
+  have hunit : ∀ s : nonZeroDivisors B,
+      IsUnit (((algebraMap B (FractionRing B) (s : B)) ⊗ₜ[K] (1 : L)) :
+        TensorProduct K (FractionRing B) L) := by
+    intro s
+    have h1 : IsUnit (algebraMap B (FractionRing B) (s : B)) := IsLocalization.map_units _ s
+    have h2 := h1.map (Algebra.TensorProduct.includeLeft :
+      FractionRing B →ₐ[K] TensorProduct K (FractionRing B) L)
+    simpa using h2
+  haveI : Nontrivial (TensorProduct K (FractionRing B) L) := hφ.nontrivial
+  haveI : NoZeroDivisors (TensorProduct K (FractionRing B) L) := by
+    refine ⟨fun {a b} hab => ?_⟩
+    obtain ⟨s₁, w₁, e₁⟩ := exists_commonDenominator_tensorProduct L a
+    obtain ⟨s₂, w₂, e₂⟩ := exists_commonDenominator_tensorProduct L b
+    have hz : φ w₁ * φ w₂ = 0 := by
+      rw [← e₁, ← e₂]
+      calc _ = (((algebraMap B (FractionRing B) (s₁ : B)) ⊗ₜ[K] (1 : L)) *
+            ((algebraMap B (FractionRing B) (s₂ : B)) ⊗ₜ[K] (1 : L))) * (a * b) := by ring
+        _ = 0 := by rw [hab, mul_zero]
+    have hw : w₁ * w₂ = 0 := hφ (by rw [map_mul, hz, map_zero])
+    rcases mul_eq_zero.1 hw with h1 | h1
+    · refine Or.inl ?_
+      rw [h1, map_zero] at e₁
+      exact (hunit s₁).mul_right_eq_zero.1 e₁
+    · refine Or.inr ?_
+      rw [h1, map_zero] at e₂
+      exact (hunit s₂).mul_right_eq_zero.1 e₂
+  exact NoZeroDivisors.to_isDomain _
+
+/-- **`Spec (B ⊗[K] L)` is IRREDUCIBLE for every field extension `L/K`**
+(sorry leaf, cut 2026-07-30 out of
+`isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation`, which is now
+a THEOREM over it) — Deligne–Rapoport IV.5.5, and the whole of what that
+leaf's docstring identified as its genuinely modular residue.
+
+`(nilradical R).IsPrime` is exactly `IrreducibleSpace (PrimeSpectrum R)` —
+`PrimeSpectrum.irreducibleSpace_iff_isPrime_nilradical`
+(`Mathlib/RingTheory/Spectrum/Prime/Topology.lean`) — so this says the
+geometric fibres of `Y_1(N)` are IRREDUCIBLE, with no reducedness content
+whatever.  That is the `det`-surjectivity of IV.5.5: the subgroup of
+`GL₂(ℤ/N)` attached to `[Γ₁(N)]` is `{[[1, b], [0, d]]}`, whose determinant
+is `d`, so `det` is onto `(ℤ/N)ˣ`, the constants of `Y_1(N)` are `K`
+itself, and no base change breaks the space into components.
+
+## WHY THE CUT: reducedness was the OTHER half and it is FREE
+
+The leaf this was cut from asked for `Frac B ⊗[K] L` to be a DOMAIN, i.e.
+for `Frac B / K` to be a regular field extension, i.e. (MacLane) for `K` to
+be algebraically closed in `Frac B` **and** `Frac B / K` to be separably
+generated.  Its own docstring recorded — compiler-checked, 2026-07-28 —
+that the second half costs nothing once
+`smoothInvariants_of_gamma1GITPresentation` exists:
+`Algebra.Smooth.baseChange` is an instance, so `Algebra.Smooth K B` gives
+`Algebra.Smooth L (L ⊗[K] B)` by typeclass search, and the project's
+`Algebra.Smooth.isReduced_of_isField` finishes.  Separability is paid for by
+smoothness.
+
+What was recorded but NOT done there was the corresponding restatement.  It
+is done here, and without moving any consumer: the old leaf keeps its
+statement verbatim and becomes a theorem over this one plus smoothness, so
+`connectedSpace_tensorProduct_of_gamma1GITPresentation` and everything below
+it are untouched.
+
+The ring is `B ⊗[K] L` rather than `Frac B ⊗[K] L` because irreducibility
+of `Spec` is insensitive to localization and `B` is where smoothness lives;
+`isDomain_fractionRing_tensorProduct_of_isDomain_tensorProduct` above moves
+the assembled domain statement across.
+
+## FAITHFULNESS
+
+`_hB` is kept, and for the same reason it was kept on the leaf this was cut
+from: at `L := K` the statement reads `(nilradical (B ⊗[K] K)).IsPrime`,
+which together with the free reducedness would give `IsDomain B` — the
+content of `isDomain_invariants_of_gamma1GITPresentation`, which this
+development obtains from the components of the RIGIDIFIED scheme, where
+Katz–Mazur (8.1.1) actually leaves it.  Taking `_hB` as an INPUT confines
+this leaf to the irreducibility content alone and makes the `L := K` case
+trivial, so it cannot be used to re-derive its sibling.  That deliberate
+asymmetry with the `Γ₀` side is preserved here rather than quietly dropped.
+
+`hN` and `hchar` are REQUIRED: at `N = 0`, or at `char K ∣ N`, the moduli
+problem is not representable by a nonempty smooth curve and `_hB` itself
+fails. -/
+theorem isPrime_nilradical_tensorProduct_of_gamma1GITPresentation {N : ℕ} (_hN : 4 ≤ N)
+    {K : Type} [Field K] (_hchar : ¬ ringChar K ∣ N)
+    (P : Gamma1GITPresentation N (Spec (CommRingCat.of K)))
+    (_hB : letI := P.commRing_B; IsDomain P.B)
+    (L : Type) [Field L] [Algebra K L] :
+    letI := P.commRing_B; letI := P.algebraB;
+    (nilradical (TensorProduct K P.B L)).IsPrime :=
+  sorry
+
+/-- **`Frac B` is a REGULAR field extension of `K`** (**PROVEN 2026-07-30**
+over `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation` and
+`smoothInvariants_of_gamma1GITPresentation`; opened as a sorry leaf
+2026-07-28, cut out of
+`connectedSpace_tensorProduct_of_gamma1GITPresentation`) —
 Deligne–Rapoport IV.5.5, in the function-field form.
 
-For every field extension `L/K` the ring `Frac B ⊗[K] L` is a domain.  That
-is the classical statement that `Frac B / K` is a **regular** field
-extension — equivalently, by MacLane's criterion, that `K` is algebraically
-closed in `Frac B` and `Frac B / K` is separably generated; equivalently
-again, that `Y_1(N)` is geometrically INTEGRAL over `K`.
+**The statement is unchanged**; only the proof and the leaf beneath it are
+new.  The 2026-07-28 docstring recorded a "recommended cut" and deliberately
+did not perform it, on the ground that it would restate this leaf and move
+its consumer at the same time.  Only the first half of that was true: the
+cut can be made with the statement kept verbatim, by proving this
+declaration from a SMALLER leaf.  That is what is done here, and
+`connectedSpace_tensorProduct_of_gamma1GITPresentation` did not move.
 
-TRUE and classical, and this is where the second genuinely modular
-geometric input now sits.  The criterion is that the subgroup of `GL₂(ℤ/N)`
-attached to the level structure surjects onto `(ℤ/N)ˣ` under `det`; for
-`[Γ₁(N)]` that subgroup is `{[[1, b], [0, d]]}`, whose determinant is `d`,
-so `det` IS surjective, `K` is algebraically closed in `Frac B`, and the
-geometric fibres of `Y_1(N)` over `ℤ[1/N]` are connected.  That is the
-q-expansion-principle content of IV.5.5.
+## The proof, in three steps
+
+1. `IsReduced (B ⊗[K] L)` — free from `smoothInvariants_of_gamma1GITPresentation`
+   via the instance `Algebra.Smooth.baseChange` and the project's
+   `Algebra.Smooth.isReduced_of_isField`.  This is the *separability* half of
+   MacLane's criterion, and it costs nothing.
+2. `IsDomain (B ⊗[K] L)` — step 1 plus the irreducibility leaf: a reduced
+   ring whose nilradical is prime has `(⊥ : Ideal _)` prime.  This is the
+   *primary* half, i.e. IV.5.5.
+3. `IsDomain (Frac B ⊗[K] L)` —
+   `isDomain_fractionRing_tensorProduct_of_isDomain_tensorProduct`, general
+   commutative algebra (localization of a domain).
+
+Everything modular is in step 2.
+
+## The `Γ₀` sibling of this statement exists, and CANNOT be reused verbatim
+
+`isDomain_fractionRing_tensorProduct_of_isAlgebraic_mem_bot`
+(`Fermat/FLT/Mathlib/RingTheory/InvariantCoarseRing.lean`, itself a sorry
+leaf) has exactly this conclusion, with the modular input replaced by the
+hypotheses `[IsIntegrallyClosed B]`, `∀ x : B, IsAlgebraic k x → x ∈ ⊥` —
+and **`[CharZero k]`**.  The `CharZero` is what blocks reuse: this statement
+quantifies over an arbitrary `K` with `char K ∤ N`, and the `𝔽_ℓ` case is
+not decoration, it is what `exists_x1Compactification_finiteField` consumes.
+Nor is that hypothesis lazy over there — its own faithfulness note gives the
+counterexample (`k = 𝔽_p(u)`, `B = L = k(u^{1/p})`, where `L ⊗[k] L` carries
+the nonzero nilpotent `u^{1/p} ⊗ 1 - 1 ⊗ u^{1/p}`).  Note that the route
+taken here is precisely the char-free replacement that note asked for: the
+separability input that `CharZero` was standing in for is supplied by
+SMOOTHNESS of `B`, which the `Γ₁` presentation carries and the abstract
+`Γ₀` statement does not.  That is the merge worth making if anyone
+generalises that file.
+
+**What is still missing from the pin, re-checked 2026-07-28.**  Mathlib has
+the linear-disjointness theory (`Mathlib/FieldTheory/LinearDisjoint.lean`)
+and the relative algebraic closure
+(`Mathlib/FieldTheory/AlgebraicClosure.lean`), but no notion of a regular or
+primary extension, and nothing relating `algebraicClosure` to base change.
+It does have `IsGeometricallyReduced`
+(`Mathlib/RingTheory/Nilpotent/GeometricallyReduced.lean`) and, at scheme
+level, `GeometricallyIntegral` with
+`GeometricallyIntegral.of_geometricallyReduced_of_geometricallyIrreducible`
+— so the DECOMPOSITION used here is supported even though the
+field-theoretic packaging (`IsRegularExtension` / `IsPrimaryExtension`) is
+absent.
 
 ## Why `IsDomain P.B` is a HYPOTHESIS here and not a consequence
 
@@ -3264,112 +3462,44 @@ Without `_hB` this statement would carry integrality a second time: at
 development obtains integrality from
 `geometricComponents_of_gamma1GITPresentation` instead — from the components
 of the RIGIDIFIED scheme, which is where Katz–Mazur (8.1.1) actually leaves
-it — so taking `_hB` as an input confines this leaf to the
-regular-extension content alone: given `_hB` the `L := K` case is trivial,
-and the leaf therefore cannot be used to re-derive its sibling.  That is the
-deliberate asymmetry with the `Γ₀` side recorded on the consumer below,
-preserved rather than quietly dropped.
-
-## The `Γ₀` sibling of this leaf exists, and CANNOT be reused verbatim
-
-`isDomain_fractionRing_tensorProduct_of_isAlgebraic_mem_bot`
-(`Fermat/FLT/Mathlib/RingTheory/InvariantCoarseRing.lean`, itself a sorry
-leaf) has exactly this conclusion, with the modular input replaced by the
-hypotheses `[IsIntegrallyClosed B]`, `∀ x : B, IsAlgebraic k x → x ∈ ⊥` —
-and **`[CharZero k]`**.  The `CharZero` is what blocks reuse: this leaf
-quantifies over an arbitrary `K` with `char K ∤ N`, and the `𝔽_ℓ` case is
-not decoration, it is what `exists_x1Compactification_finiteField` consumes.
-Nor is that hypothesis lazy over there — its own faithfulness note gives the
-counterexample (`k = 𝔽_p(u)`, `B = L = k(u^{1/p})`, where `L ⊗[k] L` carries
-the nonzero nilpotent `u^{1/p} ⊗ 1 - 1 ⊗ u^{1/p}`).  So a shared, char-free
-form of that leaf would need a SEPARABILITY input in place of `CharZero`,
-and producing one is a strictly larger job than this leaf; it is recorded
-here as the merge worth making if anyone generalises that file.
-
-## Route for whoever proves this, in two independent halves
-
-1. `K` is algebraically closed in `Frac B` — the modular half, IV.5.5 as
-   above.
-2. `Frac B / K` is separably generated — NOT modular, and free in
-   characteristic `0`.  In characteristic `p` it follows from
-   `locallyStandardSmooth_of_gamma1GITPresentation`: smooth over `K` implies
-   geometrically reduced, which implies a separably generated function
-   field.
-
-MacLane's criterion turns 1 + 2 into regularity, and regularity gives the
-conclusion for every `L` at once.
-
-**What is missing from the pin, re-checked 2026-07-28.**  Mathlib has the
-linear-disjointness theory (`Mathlib/FieldTheory/LinearDisjoint.lean` —
-`IntermediateField.LinearDisjoint.isDomain`, `.isDomain'`,
-`.exists_field_of_isDomain`, `.isField_of_forall`) and the relative
-algebraic closure (`Mathlib/FieldTheory/AlgebraicClosure.lean`), but no
-notion of a regular or primary extension, and nothing relating
-`algebraicClosure` to base change.  *The checks that would refute this*:
-`grep -rn "IsRegularExtension\|IsPrimaryExtension" .lake/packages/mathlib/Mathlib/`
-returning anything, or a mathlib lemma whose conclusion is
-`IsDomain (F ⊗[k] L)` and whose hypothesis mentions `algebraicClosure`.
-`Mathlib/FieldTheory/SeparablyGenerated.lean` is the handle for half 2.
-
-## HALF OF THIS LEAF IS NOW FREE — the residue is IRREDUCIBILITY alone
-
-**Added 2026-07-28, and each claim below was compiler-checked.**  Since
-`smoothInvariants_of_gamma1GITPresentation` (`Algebra.Smooth K B`) exists,
-the *reducedness* half of "regular extension" costs nothing:
-
-* `Algebra.Smooth.baseChange` (`Mathlib/RingTheory/Smooth/Basic.lean:574`)
-  is an INSTANCE, so `Algebra.Smooth K B` gives `Algebra.Smooth L (L ⊗[K] B)`
-  by typeclass search alone;
-* `Algebra.Smooth.isReduced_of_isField` (project, PROVEN) then gives
-  `IsReduced (L ⊗[K] B)`;
-* `isReduced_of_injective` along `Algebra.TensorProduct.comm` puts it in the
-  order the consumer uses.
-
-Verified 2026-07-28 as exactly this, `EXIT=0`:
-
-    example (K B : Type) [Field K] [CommRing B] [Algebra K B] [Algebra.Smooth K B]
-        (L : Type) [Field L] [Algebra K L] : IsReduced (TensorProduct K B L) := by
-      haveI : IsReduced (TensorProduct K L B) :=
-        Algebra.Smooth.isReduced_of_isField (R := L) (Field.toIsField L)
-      exact isReduced_of_injective (Algebra.TensorProduct.comm K B L).toRingHom
-        (Algebra.TensorProduct.comm K B L).injective
-
-So the genuinely modular content of THIS leaf is not "regular extension" but
-its *primary* half — `K` algebraically closed in `Frac B`, equivalently
-geometric IRREDUCIBILITY — which is the `det`-surjectivity of IV.5.5 and
-nothing else.  Separability, the other half of MacLane's criterion, is
-already paid for by smoothness.
-
-**And the pin supports that split**, which the "what is missing" note below
-did not know: mathlib has `IsGeometricallyReduced`
-(`Mathlib/RingTheory/Nilpotent/GeometricallyReduced.lean`) and, at the
-scheme level, `GeometricallyIntegral` with the combining lemma
-`GeometricallyIntegral.of_geometricallyReduced_of_geometricallyIrreducible`
-(`Mathlib/AlgebraicGeometry/Geometrically/Integral.lean:61`), plus
-`GeometricallyIntegral.eq_geometricallyReduced_inf_geometricallyIrreducible`.
-What is still absent is only the FIELD-THEORETIC packaging (`IsRegularExtension`
-/ `IsPrimaryExtension`, re-checked absent 2026-07-28), not the decomposition
-itself.
-
-*The recommended cut, for whoever takes this leaf*: replace it by
-geometric irreducibility of `Spec B` over `K` and derive the tensor-domain
-conclusion from that plus the reducedness above.  **Not done here** because
-it restates the leaf and would move the consumer
-`connectedSpace_tensorProduct_of_gamma1GITPresentation` at the same time,
-and this task's owner ran out of budget to re-verify that chain — it is
-recorded rather than half-done deliberately.
+it.  The hypothesis is passed straight through to the leaf below, which
+keeps it for the same reason.
 
 The hypotheses are REQUIRED: at `N = 0` or at `char K ∣ N` the moduli
 problem is not representable by a nonempty smooth curve, and `Frac B` is
 then not a regular extension of `K` — indeed `_hB` itself fails. -/
-theorem isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation {N : ℕ} (_hN : 4 ≤ N)
-    {K : Type} [Field K] (_hchar : ¬ ringChar K ∣ N)
+theorem isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation {N : ℕ} (hN : 4 ≤ N)
+    {K : Type} [Field K] (hchar : ¬ ringChar K ∣ N)
     (P : Gamma1GITPresentation N (Spec (CommRingCat.of K)))
-    (_hB : letI := P.commRing_B; IsDomain P.B)
+    (hB : letI := P.commRing_B; IsDomain P.B)
     (L : Type) [Field L] [Algebra K L] :
     letI := P.commRing_B; letI := P.algebraB;
-    IsDomain (TensorProduct K (FractionRing P.B) L) :=
-  sorry
+    IsDomain (TensorProduct K (FractionRing P.B) L) := by
+  letI := P.commRing_B
+  letI := P.algebraB
+  haveI := hB
+  haveI : Algebra.Smooth K P.B := smoothInvariants_of_gamma1GITPresentation hN hchar P
+  -- step 1: the separability half, free from smoothness
+  haveI hred : IsReduced (TensorProduct K P.B L) := by
+    haveI : IsReduced (TensorProduct K L P.B) :=
+      Algebra.Smooth.isReduced_of_isField (R := L) (Field.toIsField L)
+    exact isReduced_of_injective (Algebra.TensorProduct.comm K P.B L).toRingHom
+      (Algebra.TensorProduct.comm K P.B L).injective
+  -- step 2: the primary half, the modular leaf
+  have hirr := isPrime_nilradical_tensorProduct_of_gamma1GITPresentation hN hchar P hB L
+  rw [nilradical_eq_zero] at hirr
+  haveI : Nontrivial (TensorProduct K P.B L) := by
+    refine nontrivial_of_ne (1 : TensorProduct K P.B L) 0 fun e => hirr.ne_top ?_
+    exact (Ideal.eq_top_iff_one _).2 (by simp [e])
+  haveI : NoZeroDivisors (TensorProduct K P.B L) :=
+    ⟨fun {a b} hab => by
+      rcases hirr.mem_or_mem (show a * b ∈ (0 : Ideal (TensorProduct K P.B L)) by
+        simpa using hab) with ha | hb
+      · exact Or.inl (by simpa using ha)
+      · exact Or.inr (by simpa using hb)⟩
+  -- step 3: localize
+  exact isDomain_fractionRing_tensorProduct_of_isDomain_tensorProduct L
+    (NoZeroDivisors.to_isDomain _)
 
 /-- **`B ⊗[K] L` has connected spectrum for every field extension `L/K`**
 (PROVEN 2026-07-28 over
@@ -3629,9 +3759,10 @@ LIVE leaves are:
   `locallyStandardSmooth_of_gamma1GITPresentation` and
   `smoothOfRelativeDimension_of_gamma1GITPresentation` are PROVEN over them;
 * geometric connectedness —
-  `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation`, which
-  replaced `connectedSpace_tensorProduct_of_gamma1GITPresentation` (now
-  PROVEN over it).
+  `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation` (cut
+  2026-07-30), over which
+  `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation` and in turn
+  `connectedSpace_tensorProduct_of_gamma1GITPresentation` are PROVEN.
 
 **Updated 2026-07-27**: the three properties were first stated at the
 scheme level (`isDomain_of_gamma1GITPresentation`,
