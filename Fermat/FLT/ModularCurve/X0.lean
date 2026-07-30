@@ -4797,6 +4797,105 @@ theorem exists_rigidifiedModuli (N : ℕ) (hN : 0 < N) (n : ℕ) (hn : 3 ≤ n) 
     nonempty_rigidifiedModuli_of_isAffine R
       (isAffine_of_rigidifiedModuliScheme N hN n hn R)
 
+/-- **The rigidified moduli scheme is a smooth affine integral `ℚ`-curve**
+(sorry leaf, opened 2026-07-30 as the THIRD citation half of this cluster, beside
+`exists_rigidifiedModuliScheme` and `isAffine_of_rigidifiedModuliScheme` above) —
+Katz–Mazur (4.7.1) for the smoothness and Deligne–Rapoport III.1 for the
+geometry, read at the ring level: `R.A` is a **Dedekind domain of finite type
+over `ℚ` of Krull dimension one**.
+
+## Where this came from, and what it replaces
+
+It is the whole modular content of what used to be
+`exists_gamma0GITPresentation_dedekindModuli`, moved down onto the object the
+citation is actually about.  That declaration is now a THEOREM (see its
+docstring): the `∃ P` there existed only because `IsDomain A` is false for a
+general `Gamma0GITPresentation`, and the presentation whose `A` is good is the
+one built from a `RigidifiedModuli` — which is exactly this `R`.  Stating the
+geometry here removes the `∃ P` hedge and lets the assembly carry it, via
+`exists_gamma0GITPresentation_of_rigidified_motive`.
+
+## What the prover of this node owes
+
+That `𝔐([Γ₀(N)], [Γ(n)])_ℚ` is a smooth affine **integral** curve over `ℚ`:
+
+* **smooth of relative dimension one** — (4.7.1), "any relatively representable
+  moduli problem which is affine and etale over `(Ell)`, and rigid, is
+  representable by a **smooth affine curve** over `ℤ`", combined with (6.6.2) for
+  the `Γ₀(N)`-refinement, which is finite flat over it and regular
+  two-dimensional; over `ℚ` that is a smooth affine curve.  Regular + dimension
+  one + Noetherian + domain is `IsDedekindDomain`.
+* **finite type over `ℚ`** — the same citation ("affine curve over `ℤ[1/n]`",
+  base-changed to `ℚ`).
+* **`ringKrullDim = 1`** — nonemptiness is what rules out the junk value here:
+  `ringKrullDim 0 = ⊥ ≠ 1`, so the prover must also know
+  `𝔐([Γ₀(N)], [Γ(n)])(ℚ̄) ≠ ∅`, which for `N ≥ 1`, `n ≥ 3` is the statement that
+  some elliptic curve over `ℚ̄` carries a cyclic `N`-subgroup and a full level-`n`
+  structure — true for every one of them.
+
+## Integrality is the ONLY clause that is not verbatim citation, and here is why
+## it holds
+
+`𝔐([Γ₀(N)], [Γ(n)]) ⊗ ℚ̄` is **NOT** connected for `n ≥ 3`: it has `φ(n)`
+components, indexed by the value of the Weil pairing `e_n(P, Q)` on the universal
+full level-`n` structure, which is a locally constant function to the primitive
+`n`-th roots of unity.  So one cannot get `IsDomain R.A` from geometric
+connectedness — and indeed `ℚ` is *not* algebraically closed in `R.A`, which is
+precisely why `isAlgebraic_coarseRing_of_gamma0GITPresentation` far below must be
+stated for `B = A^G` and cannot be stated here.
+
+What is true is that `Gal(ℚ(ζ_n)/ℚ) ≅ (ℤ/n)ˣ` permutes those `φ(n)` components
+**transitively**, because it acts transitively on primitive `n`-th roots of
+unity.  A scheme over a field whose geometric components are permuted
+transitively by the Galois group of the base is connected over that base; being
+also smooth, hence normal, it is irreducible, i.e. integral.  So `R.A` is a
+domain over `ℚ` while `R.A ⊗ ℚ̄` is not.
+
+Smallest instance, as a check: `N = 1`, `n = 3`.  Then `R.A ⊗ ℚ̄` has `φ(3) = 2`
+components, interchanged by `Gal(ℚ(ζ₃)/ℚ) ≅ ℤ/2`, and `R.A` is a domain.
+
+## Why the `∀ R` is legitimate, and not the junk-witness trap
+
+`RigidifiedModuli.universal` is a **fine** moduli property, so any two inhabitants
+are related by a unique isomorphism of schemes over `SpecQ` (apply each one's
+`universal` to the other's universal family, then to its own to identify the
+composites with the identity), hence by a `ℚ`-algebra isomorphism of their `A`s.
+Every clause of the conclusion is invariant under such an isomorphism
+(`IsDedekindDomain`, `Algebra.FiniteType`, `ringKrullDim`).  So "the Katz–Mazur
+`𝔐([Γ₀(N)], [Γ(n)])` has this geometry" and "every inhabitant of
+`RigidifiedModuli N n` has it" are the same statement.  This is verbatim the
+argument `isAffine_of_rigidifiedModuliScheme` above already records for `IsAffine`.
+
+*The check that would refute this paragraph*: exhibit two inhabitants of
+`RigidifiedModuli N n` (some `N ≥ 1`, `n ≥ 3`) that are not isomorphic over
+`SpecQ`.
+
+## Faithfulness
+
+* `hN` is **load-bearing**: at `N = 0` a `Γ₀(0)`-datum forces its base to be
+  empty (`isEmpty_of_gamma0Datum_zero` above), so `R.A` is the zero ring, which is
+  not a domain and has `ringKrullDim = ⊥ ≠ 1`.  Dropping `hN` makes this leaf
+  FALSE, not merely unprovable.
+* `hn : 3 ≤ n` is load-bearing for INHABITEDNESS only (at `n ≤ 2` the rigidified
+  problem still has the automorphism `-1`, so no inhabitant exists and the
+  statement is vacuously true); it is kept to match the family, exactly as on
+  `isAffine_of_rigidifiedModuliScheme`.
+* The `Algebra ℚ R.A` binder is **not** a choice and the statement is **not**
+  vacuous for want of one: `Spec.preimage R.strM` is a ring map `ℚ →+* R.A`, so an
+  instance exists, and a ring map out of `ℚ` is unique, so there is only one.
+* The hypothesis `Spec.map (ofHom (algebraMap ℚ R.A)) = R.strM` is **implied** by
+  `subsingleton_hom_specQ` (morphisms to `SpecQ` are unique) and therefore
+  constrains nothing.  It is carried only to match the shape of the consumers in
+  this cluster, all of which state the same redundant clause; it costs a
+  `Subsingleton.elim` at each use and cannot make the leaf vacuous. -/
+theorem isDedekindDomain_rigidifiedModuli (N : ℕ) (hN : 0 < N) (n : ℕ) (hn : 3 ≤ n)
+    (R : RigidifiedModuli N n) :
+    letI := R.commRing_A
+    ∀ [Algebra ℚ R.A],
+      Spec.map (CommRingCat.ofHom (algebraMap ℚ R.A)) = R.strM →
+        IsDedekindDomain R.A ∧ Algebra.FiniteType ℚ R.A ∧ ringKrullDim R.A = (1 : ℕ) :=
+  sorry
+
 /-! #### `IsBaseChangeOf` is a category: identities and composites
 
 Opened 2026-07-27 while proving `exists_gamma0GITPresentation_of_rigidified`
@@ -6834,14 +6933,40 @@ strength of `Nonempty (Gamma0GITPresentation N)`.
 `_hN` is underscored, not dropped: the docstring of `exists_rigidifiedModuli`
 already records that `0 < N` is not load-bearing here (at `N = 0` the moduli
 problem is supported on the empty scheme), and the binder is retained only
-to match the call in `exists_gamma0GITPresentation_of_cover` below. -/
-theorem exists_gamma0GITPresentation_of_rigidified (N : ℕ) (_hN : 0 < N)
+to match the call in `exists_gamma0GITPresentation_of_cover` below.
+
+## The `motive` parameter (added 2026-07-30) — why the conclusion is not a bare
+## `Nonempty`
+
+The presentation this proof builds has `A := R.A` **definitionally**, with the
+same `CommRing` instance and the same structure morphism `strM := R.strM`.  That
+identification is the only bridge between a statement about the Katz–Mazur
+rigidified moduli ring and a statement about "some `Gamma0GITPresentation`", and a
+`Nonempty` conclusion **destroys it**: the `P` obtained from a `Nonempty` carries
+no relation to `R` at all, and there is no way to recover one — `P.A` and `R.A` are
+two `Type`-valued projections, so transporting a `CommRing`-dependent property
+across an equality of them needs the instances to be transported too.
+
+Rather than expose that equality (which forces a `HEq` on `commRing_A` and a
+`cases`-then-`subst` at every use), the conclusion is parametrised by an arbitrary
+predicate `motive` on `(A, its CommRing, its structure morphism)`.  Feeding it
+`fun _ _ _ => True` recovers the old `Nonempty` statement verbatim — that is
+`exists_gamma0GITPresentation_of_rigidified` immediately below, whose statement is
+unchanged, so no call site moved.  Feeding it the Dedekind package is what makes
+`exists_gamma0GITPresentation_dedekindModuli` a THEOREM over
+`isDedekindDomain_rigidifiedModuli` instead of a citation of its own.
+
+`motive` is applied with `@`, at `R.commRing_A` and `P.commRing_A` explicitly,
+precisely so that no instance synthesis is involved in either direction. -/
+theorem exists_gamma0GITPresentation_of_rigidified_motive (N : ℕ) (_hN : 0 < N)
     (n : ℕ) (hn : 3 ≤ n) (R : RigidifiedModuli N n)
     (hcov : ∀ {T : Scheme.{0}}, (T ⟶ SpecQ) → ∀ d : Gamma0Datum N T,
       ∃ (T' : Scheme.{0}) (p : T' ⟶ T) (d' : Gamma0Datum N T'),
         AlgebraicGeometry.Flat p ∧ AlgebraicGeometry.Surjective p ∧ QuasiCompact p ∧
-        Nonempty (IsBaseChangeOf p d' d) ∧ Nonempty (FullLevelStructure n d')) :
-    Nonempty (Gamma0GITPresentation N) := by
+        Nonempty (IsBaseChangeOf p d' d) ∧ Nonempty (FullLevelStructure n d'))
+    (motive : ∀ (A : Type) [CommRing A], (Spec (CommRingCat.of A) ⟶ SpecQ) → Prop)
+    (hmot : @motive R.A R.commRing_A R.strM) :
+    ∃ P : Gamma0GITPresentation N, @motive P.A P.commRing_A P.strM := by
   classical
   letI := R.commRing_A
   haveI : NeZero n := ⟨by omega⟩
@@ -6899,7 +7024,7 @@ theorem exists_gamma0GITPresentation_of_rigidified (N : ℕ) (_hN : 0 < N)
             dM := R.dM
             classify_dM := ?_
             cover := fun {T} g d => hcov' g d
-            dM_equivariant := hequiv }⟩
+            dM_equivariant := hequiv }, hmot⟩
   · -- naturality: both sides agree after the rigidifying cover of `d'`, and
     -- that cover is an epimorphism.
     intro T' T h g g' hg d' d bch
@@ -6919,6 +7044,25 @@ theorem exists_gamma0GITPresentation_of_rigidified (N : ℕ) (_hN : 0 < N)
       (IsBaseChangeOf.refl R.dM)
     rw [Category.id_comp, Category.id_comp] at h1
     exact h1
+
+/-- **A rigidified moduli scheme yields a GIT presentation** (PROVEN 2026-07-27;
+restated 2026-07-30 as the `motive := fun _ _ _ => True` instance of
+`exists_gamma0GITPresentation_of_rigidified_motive` above, which now carries the
+whole proof).
+
+**The statement below is unchanged**, deliberately: every call site of this name
+continues to work, and the generalisation is additive.  See the section of the
+docstring above headed "The `motive` parameter" for why the generalisation was
+needed at all. -/
+theorem exists_gamma0GITPresentation_of_rigidified (N : ℕ) (_hN : 0 < N)
+    (n : ℕ) (hn : 3 ≤ n) (R : RigidifiedModuli N n)
+    (hcov : ∀ {T : Scheme.{0}}, (T ⟶ SpecQ) → ∀ d : Gamma0Datum N T,
+      ∃ (T' : Scheme.{0}) (p : T' ⟶ T) (d' : Gamma0Datum N T'),
+        AlgebraicGeometry.Flat p ∧ AlgebraicGeometry.Surjective p ∧ QuasiCompact p ∧
+        Nonempty (IsBaseChangeOf p d' d) ∧ Nonempty (FullLevelStructure n d')) :
+    Nonempty (Gamma0GITPresentation N) :=
+  (exists_gamma0GITPresentation_of_rigidified_motive N _hN n hn R
+    (fun {_T} g d => hcov g d) (fun _ _ _ => True) trivial).elim fun P _ => ⟨P⟩
 
 /-- **Representability of the rigidified moduli problem** (PROVEN
 2026-07-27 from the two halves it was split into) —
@@ -12571,9 +12715,34 @@ theorem coarseRing_algEquiv {N : ℕ} (P P' : Gamma0GITPresentation N) :
   exact congrArg (fun g => (CommRingCat.Hom.hom g) r) hcomm
 
 /-- **The rigidified moduli scheme of a Katz–Mazur GIT presentation is a smooth
-affine curve** (sorry leaf, opened 2026-07-28) — Katz–Mazur (8.1.1),
-representability of the rigidified problem `[Γ₀(N)], [Γ(n)]` for `n ≥ 3`, plus
-Deligne–Rapoport III.1 for its smoothness.
+affine curve** (**PROVEN 2026-07-30** over the single leaf
+`isDedekindDomain_rigidifiedModuli`, ~8000 lines above; was a sorry leaf from
+2026-07-28) — Katz–Mazur (8.1.1), representability of the rigidified problem
+`[Γ₀(N)], [Γ(n)]` for `n ≥ 3`, plus Deligne–Rapoport III.1 for its smoothness.
+
+## How it became a theorem (2026-07-30), and what moved
+
+The citation did not disappear; it moved DOWN, onto the object it is actually
+about.  The presentation this statement asserts the existence of is the one
+`exists_gamma0GITPresentation` already builds — from `exists_rigidifiedModuli`,
+through `exists_gamma0GITPresentation_of_rigidified`, whose construction sets
+`A := R.A` for the rigidified moduli ring `R : RigidifiedModuli N 3`
+**definitionally**.  So the only thing this statement adds beyond
+`exists_gamma0GITPresentation` is the geometry of `R.A`, and that is now the leaf
+`isDedekindDomain_rigidifiedModuli`, stated as a `∀ R` (legitimate: `R` is pinned
+by a fine moduli property) with the same three conjuncts.
+
+The one obstruction was that `exists_gamma0GITPresentation_of_rigidified` returned
+a bare `Nonempty`, which discards the identification `P.A = R.A` irrecoverably.
+It is now the `motive := fun _ _ _ => True` instance of
+`exists_gamma0GITPresentation_of_rigidified_motive`, whose conclusion is
+`∃ P, motive P.A P.commRing_A P.strM`; its own statement is unchanged and no call
+site moved.  Feeding that the Dedekind package is this proof, in five lines.
+
+The `Spec.map (ofHom (algebraMap ℚ P.A)) = P.strM` that the leaf asks for is
+supplied by `subsingleton_hom_specQ`: morphisms to `SpecQ` are unique, so the
+clause is automatic (as is the `= P.str` clause in this statement's own
+hypothesis).
 
 *Some* presentation has coordinate ring `A` a **Dedekind domain of finite type
 over `ℚ` of Krull dimension one** — i.e. `𝔐([Γ₀(N)], [Γ(n)])` is a smooth affine
@@ -12598,7 +12767,43 @@ supply the instances it has already built.
 
 `hN` is REQUIRED: `exists_gamma0GITPresentation` itself needs it, and at `N = 0`
 a `Γ₀(0)`-datum forces its base to be empty, so `A` is the zero ring and
-`ringKrullDim A = ⊥ ≠ 1`. -/
+`ringKrullDim A = ⊥ ≠ 1`.
+
+## FAITHFULNESS AUDIT (2026-07-30) — `IsDomain A` is TRUE, and the next
+## docstring down looks like it says otherwise
+
+The one clause here that could make this leaf false as stated is `IsDomain A`
+(carried inside `IsDedekindDomain A`).  It holds — but it is worth writing down
+why, because the docstring of the very next declaration,
+`isAlgebraic_coarseRing_of_gamma0GITPresentation`, says in terms that
+`𝔐([Γ₀(N)], [Γ(n)])` is **NOT geometrically connected** over `ℚ` for `n ≥ 3`,
+which reads like a refutation of this clause and is not one.
+
+Both statements are true and they are consistent.  `𝔐([Γ₀(N)], [Γ(n)]) ⊗ ℚ̄` has
+`φ(n)` connected components — one for each primitive `n`-th root of unity, namely
+the value of the Weil pairing `e_n(P, Q)` on the universal full level-`n`
+structure, which is a locally constant function on the moduli space.  And
+`Gal(ℚ(ζ_n)/ℚ) ≅ (ℤ/n)ˣ` permutes those components **TRANSITIVELY**, because it
+acts transitively on primitive `n`-th roots of unity.  A scheme over a field
+whose geometric components are permuted transitively by the Galois group of the
+base is connected over that base; being also smooth, hence normal, it is
+irreducible, i.e. integral.  So `A` is a domain over `ℚ` while `A ⊗ ℚ̄` is not.
+
+That is exactly why the constant-field-extension statement below has to be about
+`B = A^G` and cannot be about `A` — passing to invariants is what kills the
+`Gal(ℚ(ζ_n)/ℚ)`-orbit — and it is not evidence against `IsDomain A`.
+
+Smallest instance, as a check: `N = 1`, `n = 3`.  Then `A ⊗ ℚ̄` has `φ(3) = 2`
+components, interchanged by `Gal(ℚ(ζ₃)/ℚ) ≅ ℤ/2`, and `A` is a domain.
+
+The rest is then automatic: a smooth affine `ℚ`-curve (Deligne–Rapoport III.1)
+that is a domain of Krull dimension one is a Dedekind domain.  So a prover of
+this leaf owes *representability plus smoothness*, and owes NOTHING extra for
+integrality beyond the transitivity above.
+
+**This audit now belongs to `isDedekindDomain_rigidifiedModuli`**, which is where
+the clause it audits lives; it is reproduced there and kept here because the
+paragraph about the *next* docstring down is about this statement's neighbours. -/
 theorem exists_gamma0GITPresentation_dedekindModuli (N : ℕ) (hN : 0 < N) :
     ∃ P : Gamma0GITPresentation N,
       letI := P.commRing_A
@@ -12606,8 +12811,21 @@ theorem exists_gamma0GITPresentation_dedekindModuli (N : ℕ) (hN : 0 < N) :
       letI := P.algebra_BA
       ∀ [Algebra ℚ P.B] [Algebra ℚ P.A] [IsScalarTower ℚ P.B P.A],
         Spec.map (CommRingCat.ofHom (algebraMap ℚ P.B)) = P.str →
-          IsDedekindDomain P.A ∧ Algebra.FiniteType ℚ P.A ∧ ringKrullDim P.A = (1 : ℕ) :=
-  sorry
+          IsDedekindDomain P.A ∧ Algebra.FiniteType ℚ P.A ∧ ringKrullDim P.A = (1 : ℕ) := by
+  obtain ⟨R⟩ := exists_rigidifiedModuli N hN 3 le_rfl
+  letI := R.commRing_A
+  obtain ⟨P, hP⟩ := exists_gamma0GITPresentation_of_rigidified_motive N hN 3 le_rfl R
+    (fun {_T} g d => exists_fullLevelStructure_cover 3 le_rfl g d)
+    (fun A _ strA => ∀ [Algebra ℚ A],
+      Spec.map (CommRingCat.ofHom (algebraMap ℚ A)) = strA →
+        IsDedekindDomain A ∧ Algebra.FiniteType ℚ A ∧ ringKrullDim A = (1 : ℕ))
+    (isDedekindDomain_rigidifiedModuli N hN 3 le_rfl R)
+  refine ⟨P, ?_⟩
+  letI := P.commRing_A
+  letI := P.commRing_B
+  letI := P.algebra_BA
+  intro _ _ _ _
+  exact hP (@Subsingleton.elim _ (subsingleton_hom_specQ _) _ _)
 
 /-- **`ℚ` is algebraically closed in the coarse ring `B = A^G`** (sorry leaf,
 opened 2026-07-28 as the geometric-integrality half of
@@ -12621,9 +12839,18 @@ normal domain (`isRegularRing_coarseRing_of_gamma0GITPresentation` below, via
 `Algebra.IsInvariant.isDedekindDomain_of_isInvariant`), that is equivalent to
 `ℚ` being algebraically closed in `Frac B`, hence — `ℚ` being perfect — to
 `Frac B / ℚ` being a regular extension, hence to geometric integrality.  The
-last two equivalences are the mathlib-facing leaf
+last two equivalences are
 `isDomain_fractionRing_tensorProduct_of_isAlgebraic_mem_bot`; what is asked here
 is only the arithmetic input.
+
+(**Correction, 2026-07-30**: that declaration is called "the mathlib-facing leaf"
+here and in the section comment above, and it is NOT a leaf — it is a PROVEN
+theorem in `Fermat/FLT/Mathlib/RingTheory/InvariantCoarseRing.lean:1171`, with no
+`sorry` in its body.  It is transitively sorried, through
+`isDomain_tensorProduct_of_algebraicClosure_eq_bot` and thence the one open leaf
+of that file, `isDomain_tensorProduct_adjoin_finset_of_not_isAlgebraic_of_`
+`algebraicClosure_eq_bot` at line 1123.  The distinction matters for dispatch:
+that name is not something to send an agent at — it has nothing to prove.)
 
 **Do not attempt this through a rational point.**  "Connected + a rational point
 ⟹ geometrically connected" (EGA IV 4.5.13) is unavailable for a MATHEMATICAL
@@ -12641,7 +12868,48 @@ genuinely needed rather than merely convenient.
 coarse space is empty, so `B` is the zero ring, in which every element equals
 `algebraMap ℚ B 0` and the conclusion is trivially true.  It is kept as a binder
 only to match the family; the `hN` on the consumers is load-bearing for a
-different reason (`ringKrullDim B = 1`). -/
+different reason (`ringKrullDim B = 1`).
+
+## FAITHFULNESS AUDIT (2026-07-30) — the `∀ P` survives, and the leaf must NOT be
+## moved down to `A`
+
+Two checks, because the `∀ P` here sits directly beside an `∃ P` whose docstring
+explains at length why *it* cannot be a `∀ P`.
+
+**(a) The `∀ P` is legitimate.**  The clause quantified over is a property of `B`
+alone.  `coarseRing_algEquiv` above gives `Nonempty (P.B ≃ₐ[ℚ] P'.B)` for any two
+presentations satisfying the same `str` hypothesis, and "every element algebraic
+over `ℚ` lies in `⊥`" transports along a `ℚ`-algebra isomorphism.  So no junk
+presentation can refute this, even though a junk presentation does refute
+`IsDomain A` — the two statements differ exactly in whether they mention `A`.
+*The check that would refute this*: a presentation `P` with `P.B` not
+`ℚ`-algebra-isomorphic to the Katz–Mazur coarse ring, which would first have to
+refute `gamma0Atlas_isIso`.
+
+**(b) The obvious "simplification" is a REGRESSION, and was considered and
+rejected on 2026-07-30.**  The statement is equivalent to its `A`-level form —
+*every `G`-invariant element of `A` that is algebraic over `ℚ` lies in
+`⊥ : Subalgebra ℚ A`* — because `Algebra.IsInvariant P.B P.A P.G` makes the
+invariants exactly the image of `B`, and `SMulCommClass G B A` with `smul_one`
+makes that image invariant; `injective_algebraMap` moves `IsAlgebraic` and
+membership in `⊥` back and forth across it.  Restating the leaf that way looks
+like the same reduction that turned the neighbouring `∃ P` statement into a
+theorem over `isDedekindDomain_rigidifiedModuli`, and it is not: `B` is PINNED
+(by `coarseRing_algEquiv`) and `A` is NOT, so a prover of the `A`-level form
+would have to re-derive "invariants = the coarse ring" before it could use the
+q-expansion principle at all.  The reduction that helped the Dedekind leaf helped
+because it moved TOWARDS the fine moduli object; this one would move AWAY from
+the pinned one.  Leave the statement at `B`.
+
+**Not audited here, and still open:** whether the q-expansion principle is the
+cheapest available route.  The obvious-looking alternative in this development's
+reach is `geometricallyIntegral_of_gamma0CurveAtlasOver` far below, which proves
+geometric integrality over an arbitrary base field — but it takes geometric
+CONNECTEDNESS as an input (the `connected` field of `Gamma0CurveAtlasOver`), and
+at `ℚ` that field is supplied by `nonempty_gamma0CurveAtlasOver_rat` out of
+`exists_gamma0AffineModel`, whose connectedness is
+`geometricallyConnected_of_gamma0GITPresentation` — i.e. this leaf.  Checked
+2026-07-30: it is a consumer, not a route around. -/
 theorem isAlgebraic_coarseRing_of_gamma0GITPresentation {N : ℕ} (_hN : 0 < N)
     (P : Gamma0GITPresentation N) :
     letI := P.commRing_B
