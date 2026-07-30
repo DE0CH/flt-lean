@@ -13772,7 +13772,9 @@ declarations are
   `exists_muThree_cocycle_of_autStable_of_j_eq_zero` (LEAF — extract the cocycle and
   its finite Galois level), the *Kummer* half
   `Field.exists_pow_eq_algebraMap_forall_absoluteGalois_apply_eq_mul`
-  (`Fermat/FLT/Mathlib/FieldTheory/AbsoluteHilbert90.lean`, PROVEN over one leaf), and
+  (`Fermat/FLT/Mathlib/FieldTheory/AbsoluteHilbert90.lean`, PROVEN OUTRIGHT — the
+  "over one leaf" this line used to say went stale when
+  `Field.exists_ne_zero_forall_absoluteGalois_apply_eq_mul` was proved), and
   the *geometric* half `exists_stableCyclic_of_muThree_coboundary_of_j_eq_zero`
   (LEAF — build `E_{bd}` and check the residual factor is `±1`);
 * `autPoint_one`, `autPoint_negVariableChange`, `autPoint_injective` (PROVEN) — the
@@ -14605,12 +14607,13 @@ The route above is now written out.  The three inputs, in the order the proof us
    consumed: they are what forces `Aut(E, ⟨g⟩) = μ₂`, hence that `C_σ` is determined by
    `σ` up to sign and `c` is well defined.
 2. `Field.exists_pow_eq_algebraMap_forall_absoluteGalois_apply_eq_mul`
-   (`Fermat/FLT/Mathlib/FieldTheory/AbsoluteHilbert90.lean`, PROVEN over the single
-   leaf `Field.exists_ne_zero_forall_absoluteGalois_apply_eq_mul`) — Kummer theory in
-   the form `H¹(Γ_ℚ, μ₃) ≅ ℚˣ/(ℚˣ)³`: trivialises `c` as `σ γ / γ` and descends `γ³` to
-   `d ∈ ℚ`.  The `γ³ ∈ ℚ` half is proved there outright; the leaf underneath it is
-   Hilbert 90 for `Γ_ℚ` proper, which the pin has only for FINITE extensions
-   (extending it is an explicit TODO in mathlib's own `Hilbert90.lean`).
+   (`Fermat/FLT/Mathlib/FieldTheory/AbsoluteHilbert90.lean`, **PROVEN OUTRIGHT**, as is
+   `Field.exists_ne_zero_forall_absoluteGalois_apply_eq_mul` underneath it — that file
+   has no `sorry`; this line said "PROVEN over the single leaf …" and was stale) —
+   Kummer theory in the form `H¹(Γ_ℚ, μ₃) ≅ ℚˣ/(ℚˣ)³`: trivialises `c` as `σ γ / γ` and
+   descends `γ³` to `d ∈ ℚ`.  Hilbert 90 for `Γ_ℚ` proper, which the pin has only for
+   FINITE extensions (extending it is an explicit TODO in mathlib's own
+   `Hilbert90.lean`), is what that file supplies, by inflation from a finite level.
 3. `exists_stableCyclic_of_muThree_coboundary_of_j_eq_zero` (LEAF, this file) — the
    coordinate half: the sextic twist `E' = E_{bd}`, `g' = ψ g` with `ψ(x,y) =
    (δ²x, δ³y)`, `δ² = γ`, and the verification that the residual scaling factor
@@ -14644,9 +14647,14 @@ theorem exists_stableCyclic_twist_of_autStable_of_j_eq_zero {N : ℕ} (hN : N �
           AddSubgroup.zmultiples g' := by
   obtain ⟨c, L, hLfin, hLgal, hcL, hc3, hccoc, hcinfl, hcC⟩ :=
     exists_muThree_cocycle_of_autStable_of_j_eq_zero hN E hj g hg haut ι hι hmove hu6 hu2
+  -- `IsGalois ℚ ℚ̄` has to be supplied by hand: at the literal `F = ℚ` the two `Algebra ℚ ℚ̄`
+  -- instances form a diamond, so `Algebra.IsAlgebraic ℚ ℚ̄` does not synthesise (the same
+  -- workaround as `mem_range_of_fixed` above and as in `Modularity/Patching.lean`).
+  haveI hgalQ : IsGalois ℚ (AlgebraicClosure ℚ) :=
+    Field.isGalois_of_isAlgClosed (AlgebraicClosure.isAlgebraic ℚ)
   obtain ⟨γ, d, hγ0, hd, hγ⟩ :=
-    @Field.exists_pow_eq_algebraMap_forall_absoluteGalois_apply_eq_mul ℚ _ _ L hLfin hLgal 3
-      (by norm_num) c hcL hc3 hccoc hcinfl
+    @Field.exists_pow_eq_algebraMap_forall_absoluteGalois_apply_eq_mul ℚ _
+      (AlgebraicClosure ℚ) _ _ hgalQ L hLfin hLgal 3 (by norm_num) c hcL hc3 hccoc hcinfl
   exact exists_stableCyclic_of_muThree_coboundary_of_j_eq_zero hN E hj g hg c hcC γ hγ0 hγ d hd
 
 /-- **THE ARITHMETIC HEART: the descent obstruction is killed by a twist, at

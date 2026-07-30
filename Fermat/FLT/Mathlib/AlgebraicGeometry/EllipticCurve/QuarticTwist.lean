@@ -39,9 +39,12 @@ in `Ω` that need not be there.  The witness (`K = ℚ`, `Ω = ℚ(ζ₈)`, `y²
 of order `2`) is written out in that theorem's docstring; the instances were added on
 2026-07-28 and cost the only call site nothing, since it works over `AlgebraicClosure ℚ`.
 
-The two residual leaves are `WeierstrassCurve.exists_finiteLevel_quarticTwistChar` (the finite
-Galois level of `χ`) and `Field.exists_sq_eq_algebraMap_of_quadraticChar` (Hilbert 90 at
-`n = 2` over a general algebraic closure).
+**This file is now sorry-free** (2026-07-29).  Its last two leaves —
+`WeierstrassCurve.exists_finiteLevel_quarticTwistChar` (the finite Galois level of `χ`) and
+`Field.exists_sq_eq_algebraMap_of_quadraticChar` (Hilbert 90 at `n = 2` over a general
+algebraic closure) — are proven, the second after generalising the two theorems of
+`Fermat/FLT/Mathlib/FieldTheory/AbsoluteHilbert90.lean` from `AlgebraicClosure K` to an
+arbitrary `Ω` with `[IsGalois K Ω]`.
 -/
 
 @[expose] public section
@@ -50,8 +53,9 @@ namespace Field
 
 variable {K : Type*} [Field K] {Ω : Type*} [Field Ω] [Algebra K Ω]
 
-/-- **An open index-`≤ 2` subgroup of `Γ_K` is the stabiliser of a square root** (sorry leaf,
-opened 2026-07-28 while repairing `WeierstrassCurve.exists_quarticTwistParameter`).
+/-- **An open index-`≤ 2` subgroup of `Γ_K` is the stabiliser of a square root** (opened as a
+sorry leaf 2026-07-28 while repairing `WeierstrassCurve.exists_quarticTwistParameter`;
+**PROVEN 2026-07-29**).
 
 A quadratic character `χ : Gal(Ω/K) → {±1}` that is *inflated from a finite Galois level* `L`
 is `σ ↦ σ(s)/s` for a square root `s` of an element `d ∈ Kˣ`.  This is the whole field-theoretic
@@ -59,24 +63,27 @@ content of the `j = 1728` descent, and it is what the docstring of
 `exists_stableCyclic_twist_of_autStable_of_j_eq_1728` in `Fermat/FLT/ModularCurve/X0.lean`
 calls "item 3: the quadratic field cut out by an open index-`2` subgroup of `Γ_ℚ`".
 
-#### The route: this is `n = 2` of the Kummer theorem one module upstream
+#### The route: this is `n = 2` of the Kummer theorem one module upstream (PROVEN 2026-07-29)
 
 `Field.exists_pow_eq_algebraMap_forall_absoluteGalois_apply_eq_mul`
-(`Fermat/FLT/Mathlib/FieldTheory/AbsoluteHilbert90.lean`, PROVEN) is exactly this statement for
-`Ω = AlgebraicClosure K`: take `n := 2` and `c σ := algebraMap K Ω (χ σ)`.  Its four hypotheses
-are discharged by, in order, `hval` (`(±1)² = 1`), `hval` again together with `hmul` — the
-cocycle identity `c (σ * τ) = c σ * σ (c τ)` degenerates to multiplicativity because `χ τ = ±1`
-lies in `K` and is therefore fixed by `σ` — membership of `±1` in any `L`, and `hinfl`.
+(`Fermat/FLT/Mathlib/FieldTheory/AbsoluteHilbert90.lean`) is exactly this statement: take
+`n := 2` and `c σ := algebraMap K Ω (χ σ)`.  Its four hypotheses are discharged by, in order,
+membership of `algebraMap K Ω (χ σ)` in any `L` (`IntermediateField.algebraMap_mem`), `hval`
+(`(±1)² = 1`), `hmul` together with `AlgEquiv.commutes` — the cocycle identity
+`c (σ * τ) = c σ * σ (c τ)` degenerates to multiplicativity because `χ τ` lies in `K` and is
+therefore fixed by `σ` — and `hinfl`.
 
-**So the only thing left to do here is the TRANSPORT from `AlgebraicClosure K` to an arbitrary
-algebraic closure `Ω`**, along `IsAlgClosure.equiv K Ω (AlgebraicClosure K)`: conjugate the
-character (`χ' ρ := χ (e.symm.trans (ρ.trans e))`), carry `L` across with
-`IntermediateField.map`, and pull the resulting `γ` back with `e.symm`.  An equally good repair
-is to GENERALISE the two theorems in `AbsoluteHilbert90.lean` from `AlgebraicClosure K` to any
-`Ω` with `[IsGalois K Ω]` — their proofs use only `AlgEquiv.restrictNormalHom_surjective` and
-`InfiniteGalois.mem_range_algebraMap_iff_fixed`, both of which are already stated for a general
-`Ω` — which would discharge this leaf by `exact`.  That is the better engineering; it is left
-to the owner of that file rather than done here, since it changes a released signature.
+**The transport that this leaf was cut for no longer exists.**  When it was opened, that
+theorem was stated for `Ω = AlgebraicClosure K`, and the leaf's original docstring proposed
+either conjugating everything along `IsAlgClosure.equiv K Ω (AlgebraicClosure K)` or
+generalising the upstream file.  The second was done instead (2026-07-29): both theorems in
+`AbsoluteHilbert90.lean` now take an arbitrary `Ω` with `[IsGalois K Ω]`, since their proofs
+only ever used `AlgEquiv.restrictNormalHom_surjective` and
+`InfiniteGalois.mem_range_algebraMap_iff_fixed`, both already general.  The generalisation
+also *dropped* `[PerfectField K]` there — it had been used only to make `K̄/K` separable.
+
+`[PerfectField K]` and `[IsAlgClosed Ω]` survive HERE because they are what supplies
+`IsGalois K Ω` from `halg`, through `Field.isGalois_of_isAlgClosed`.
 
 #### Non-vacuity
 
@@ -90,8 +97,25 @@ theorem exists_sq_eq_algebraMap_of_quadraticChar [PerfectField K] [IsAlgClosed �
     (L : IntermediateField K Ω) [FiniteDimensional K L] [IsGalois K L]
     (hinfl : ∀ σ τ : Ω ≃ₐ[K] Ω, (∀ x ∈ L, σ x = τ x) → χ σ = χ τ) :
     ∃ (d : K) (s : Ω), d ≠ 0 ∧ s ^ 2 = algebraMap K Ω d ∧
-      ∀ σ : Ω ≃ₐ[K] Ω, σ s = algebraMap K Ω (χ σ) * s :=
-  sorry
+      ∀ σ : Ω ≃ₐ[K] Ω, σ s = algebraMap K Ω (χ σ) * s := by
+  haveI : IsGalois K Ω := isGalois_of_isAlgClosed halg
+  have hcmem : ∀ σ : Ω ≃ₐ[K] Ω, algebraMap K Ω (χ σ) ∈ L := fun σ => L.algebraMap_mem (χ σ)
+  have hcpow : ∀ σ : Ω ≃ₐ[K] Ω, algebraMap K Ω (χ σ) ^ 2 = 1 := by
+    intro σ
+    rcases hval σ with h | h <;> rw [h] <;> simp
+  have hcoc : ∀ σ τ : Ω ≃ₐ[K] Ω, algebraMap K Ω (χ (σ * τ))
+      = algebraMap K Ω (χ σ) * σ (algebraMap K Ω (χ τ)) := by
+    intro σ τ
+    rw [σ.commutes (χ τ), hmul σ τ, map_mul]
+  have hinfl' : ∀ σ τ : Ω ≃ₐ[K] Ω, (∀ x ∈ L, σ x = τ x) →
+      algebraMap K Ω (χ σ) = algebraMap K Ω (χ τ) := fun σ τ h => by rw [hinfl σ τ h]
+  obtain ⟨γ, d, hγ0, hd, hγ⟩ :=
+    exists_pow_eq_algebraMap_forall_absoluteGalois_apply_eq_mul (n := 2) L two_ne_zero
+      (fun σ => algebraMap K Ω (χ σ)) hcmem hcpow hcoc hinfl'
+  refine ⟨d, γ, ?_, hd, hγ⟩
+  intro h0
+  rw [h0, map_zero] at hd
+  exact hγ0 (pow_eq_zero_iff two_ne_zero |>.mp hd)
 
 end Field
 
@@ -709,30 +733,76 @@ theorem algebraMap_quarticTwistChar_eq {N : ℕ} (hN : N ≠ 0) (E : Weierstrass
     rw [hchar, hsq]
     simp
 
-/-- **The descent character is inflated from a finite Galois level** (sorry leaf, opened
-2026-07-28 while repairing `exists_quarticTwistParameter`).
+omit [CharZero Ω] in
+/-- **The descent character is inflated from a finite Galois level** (opened as a sorry leaf
+2026-07-28 while repairing `exists_quarticTwistParameter`; **PROVEN 2026-07-29**).
 
-`χ` depends only on the action of `σ` on the FINITE set `⟨g⟩` (`addOrderOf g = N ≠ 0`, so
-`Nat.card (AddSubgroup.zmultiples g) = N` by `Nat.card_zmultiples`).  Each of those `N` points
-has two coordinates in `Ω`, each algebraic over `K`; adjoining all of them gives a finite
-subextension `L₀`, and `L := normalClosure K L₀ Ω` is finite and Galois (separable because
-`char K = 0`).  Two automorphisms agreeing on `L` agree on every point of `⟨g⟩`, hence give the
-same set `σ⟨g⟩`, hence the same `χ`.
+`χ` depends only on the action of `σ` on `⟨g⟩`, and `Affine.Point.map σ` is an ADDITIVE
+homomorphism (`WeierstrassCurve.Affine.Point.map` is bundled as a `→+` in the pin), so
+`σ (n • g) = n • σ g`: the whole of `⟨g⟩` is controlled by the single point `g`.  Adjoining
+the (at most two) coordinates of `g` and taking the normal closure —
+`FiniteGaloisIntermediateField.adjoin K {x_g, y_g}`, which packages
+`IntermediateField.finiteDimensional_adjoin`, `normalClosure.is_finiteDimensional` and
+`IsGalois.normalClosure` — gives the required `L`.
 
-This is the continuity hypothesis of Hilbert 90 in the concrete form
-`Field.exists_sq_eq_algebraMap_of_quadraticChar` consumes it, and it is where `hN` and `hg`
-are used.  Everything needed is in the pin: `IntermediateField.adjoin`,
-`IntermediateField.finiteDimensional_adjoin` (each generator is integral, from
-`Algebra.IsAlgebraic K Ω`), `normalClosure.is_finiteDimensional` and
-`normalClosure.isGalois`.  What must be written is the bookkeeping that turns the finite point
-set into a finite generating set — the mathematics is not the obstacle here, the plumbing is. -/
-theorem exists_finiteLevel_quarticTwistChar (halg : Algebra.IsAlgebraic K Ω) {N : ℕ}
-    (hN : N ≠ 0) (E : WeierstrassCurve K) [E.IsElliptic]
-    (g : (E⁄Ω).toAffine.Point) (hg : addOrderOf g = N) :
+#### Two corrections to the docstring this leaf was cut with
+
+*It claimed the proof needs all `N` points of `⟨g⟩` and hence `hN`, `hg`.*  It does not: by
+additivity only `g`'s own two coordinates are needed, and the hypotheses `{N} (hN) (hg)` have
+accordingly been REMOVED from the statement.  (They were never used by any route; the
+finiteness of `⟨g⟩` really is used in `algebraMap_quarticTwistChar_eq`, which is presumably
+where the claim drifted in from.)
+
+*It did not say that `Ω` must be normal over `K`.*  `normalClosure K L₀ Ω` is Galois over `K`
+only when the conjugates are available inside `Ω` — for `K = ℚ`, `Ω = ℚ(2^{1/3})`,
+`L₀ = Ω` the normal closure computed inside `Ω` is `Ω` itself, which is not Galois.  So
+`[IsAlgClosed Ω]` has been ADDED, and with `halg` it gives `IsGalois K Ω` through
+`Field.isGalois_of_isAlgClosed`.  This costs the one call site
+(`exists_quarticTwistParameter`) nothing: it already carries `[IsAlgClosed Ω]`. -/
+theorem exists_finiteLevel_quarticTwistChar [IsAlgClosed Ω]
+    (halg : Algebra.IsAlgebraic K Ω) (E : WeierstrassCurve K) [E.IsElliptic]
+    (g : (E⁄Ω).toAffine.Point) :
     ∃ (L : IntermediateField K Ω) (_ : FiniteDimensional K L) (_ : IsGalois K L),
       ∀ σ τ : Ω ≃ₐ[K] Ω, (∀ x ∈ L, σ x = τ x) →
-        quarticTwistChar g σ = quarticTwistChar g τ :=
-  sorry
+        quarticTwistChar g σ = quarticTwistChar g τ := by
+  classical
+  haveI : IsGalois K Ω := Field.isGalois_of_isAlgClosed halg
+  -- agreement on the coordinates of a single point pins down its Galois conjugate
+  have hcoord : ∀ P : (E⁄Ω).toAffine.Point, ∃ S : Set Ω, S.Finite ∧
+      ∀ σ τ : Ω ≃ₐ[K] Ω, (∀ z ∈ S, σ z = τ z) →
+        Affine.Point.map σ.toAlgHom P = Affine.Point.map τ.toAlgHom P := by
+    rintro (_ | ⟨x, y, hns⟩)
+    · exact ⟨∅, Set.finite_empty, fun _ _ _ => rfl⟩
+    · refine ⟨{x, y}, Set.toFinite _, fun σ τ h => ?_⟩
+      rw [Affine.Point.map_some, Affine.Point.map_some]
+      exact some_eq_some (E⁄Ω) (h x (by simp)) (h y (by simp))
+  obtain ⟨S, hSfin, hSmain⟩ := hcoord g
+  haveI : Finite S := hSfin
+  -- `Affine.Point.map σ` is additive, so `⟨g⟩` is controlled by `g` alone
+  have main : ∀ σ τ : Ω ≃ₐ[K] Ω,
+      Affine.Point.map σ.toAlgHom g = Affine.Point.map τ.toAlgHom g →
+      quarticTwistChar g σ = quarticTwistChar g τ := by
+    intro σ τ hst
+    have hpt : ∀ z ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map σ.toAlgHom z = Affine.Point.map τ.toAlgHom z := by
+      intro z hz
+      obtain ⟨n, rfl⟩ := AddSubgroup.mem_zmultiples_iff.mp hz
+      rw [map_zsmul, map_zsmul, hst]
+    have hiff : (∀ z ∈ AddSubgroup.zmultiples g,
+          Affine.Point.map σ.toAlgHom z ∈ AddSubgroup.zmultiples g) ↔
+        (∀ z ∈ AddSubgroup.zmultiples g,
+          Affine.Point.map τ.toAlgHom z ∈ AddSubgroup.zmultiples g) :=
+      ⟨fun H z hz => hpt z hz ▸ H z hz, fun H z hz => (hpt z hz).symm ▸ H z hz⟩
+    unfold quarticTwistChar
+    split_ifs with ha hb hc
+    · rfl
+    · exact absurd (hiff.mp ha) hb
+    · exact absurd (hiff.mpr hc) ha
+    · rfl
+  refine ⟨(FiniteGaloisIntermediateField.adjoin K S).toIntermediateField,
+    inferInstance, inferInstance, fun σ τ hστ => ?_⟩
+  exact main σ τ (hSmain σ τ fun z hz =>
+    hστ z (FiniteGaloisIntermediateField.subset_adjoin K S hz))
 
 /-- **The quartic twisting parameter** (opened as a sorry leaf 2026-07-28 by decomposing
 `exists_stableCyclic_twist_of_autStable_of_j_eq_1728`; **REFUTED AS STATED, RESTATED, AND
@@ -838,7 +908,7 @@ theorem exists_quarticTwistParameter [IsAlgClosed Ω] (halg : Algebra.IsAlgebrai
         (∀ x ∈ AddSubgroup.zmultiples g,
           autMap h (Affine.Point.map σ.toAlgHom x) ∈ AddSubgroup.zmultiples g) →
         σ (δ : Ω) ^ 2 = (δ : Ω) ^ 2 * (C.u : Ω) ^ 2 := by
-  obtain ⟨L, hLfin, hLgal, hLinfl⟩ := exists_finiteLevel_quarticTwistChar halg hN E g hg
+  obtain ⟨L, hLfin, hLgal, hLinfl⟩ := exists_finiteLevel_quarticTwistChar halg E g
   obtain ⟨d, s, hd0, hs2, hs⟩ :=
     Field.exists_sq_eq_algebraMap_of_quadraticChar halg (quarticTwistChar g)
       (quarticTwistChar_eq_one_or g)
