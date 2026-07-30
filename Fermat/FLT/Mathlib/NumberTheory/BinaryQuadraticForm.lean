@@ -240,6 +240,8 @@ public import Mathlib.NumberTheory.ModularForms.LevelOne.GradedRing
 public import Mathlib.FieldTheory.IntermediateField.Adjoin.Basic
 public import Mathlib.FieldTheory.Minpoly.IsIntegrallyClosed
 public import Mathlib.Algebra.Polynomial.SpecificDegree
+-- for `Complex.isAlgClosed`, used to split `minpoly ℚ (j(τ₀))` over `ℂ`
+public import Mathlib.Analysis.Complex.Polynomial.Basic
 
 @[expose] public section
 
@@ -4687,39 +4689,299 @@ hence `⊇ ℚ(α⁴) = ℚ(α)` hence `∋ β/α = ζ₈`, so `ℚ(β) = ℚ(α
 step — the whole engine of the route — is gone, and `ℚ(β) ∩ ℝ` is then a real sextic field, not
 `ℚ`. -/
 
-/-- **LEAF 4b′ — `j(τ₀) ∈ ℚ`. THE FIRST MAIN THEOREM OF COMPLEX MULTIPLICATION.**
+section HeegnerConjugates
 
-This replaces the `K`-valued `LEAF 4b` (see the section note: the two are equivalent, because
-`j(τ₀)` is real), and it is the ONLY leaf in this file that needs complex multiplication.
+open UpperHalfPlane MatrixGroups Matrix.SpecialLinearGroup
+
+/-! #### `LEAF 4b′` RECUT (2026-07-31) — the class-number hypothesis is spent HERE, not in the leaf
+
+`exists_rat_jInvariant_heegnerPoint` is no longer a leaf. It is PROVEN below from a single
+smaller statement, `exists_posDefForm_root_of_aeval_minpoly_jInvariant`, together with the
+elementary form/point dictionary developed in this section. What moved, and why the split is
+the right one:
+
+* the NEW leaf says only that every complex root of `minpoly ℚ (j(τ₀))` is `j(w)` for `w ∈ ℍ`
+  a root of SOME positive definite integral form of discriminant `−p`. That is the standard
+  statement "the conjugates of a CM `j`-value are the `j`-values of the other classes of the
+  same discriminant", i.e. the first main theorem of complex multiplication, and it carries
+  **no class-number hypothesis at all** — it is true for every `p ≡ 3 mod 4`, exactly as
+  `isIntegral_jInvariant_heegnerPoint` is;
+* `hcl` is spent entirely in the GLUE, where it collapses that set of forms to one class, and
+  the collapse is elementary: properly equivalent forms have `SL₂(ℤ)`-equivalent roots in `ℍ`
+  (`jInvariant_eq_of_act`), and `j` is `SL₂(ℤ)`-invariant (`jInvariant_smul`, already proven);
+* the step from "all conjugates coincide" to "`j(τ₀) ∈ ℚ`" is separability of the minimal
+  polynomial in characteristic zero, which is mathlib's (`Irreducible.separable`).
+
+WHAT THIS BUYS, against the old shape where the whole implication was one leaf. The old leaf's
+docstring said the next cut belonged at the modular polynomial `Φ_N` and that a refinement here
+"needs a `Finset` of form classes and a `form ↦ τ_f` map". That reading was right about the
+`Finset` and wrong about needing it: quantifying over the ROOTS OF THE MINIMAL POLYNOMIAL
+rather than over a `Finset` of classes avoids the class group entirely, and the `form ↦ τ_f`
+map is not needed either, because the leaf may hand back the point `w` alongside the form.
+Both halves of the old leaf's stated obstruction are therefore gone, and what is left is the
+theorem itself rather than the theorem plus its bookkeeping.
+
+WHAT IS NOT CLAIMED. This is a decomposition, not a proof: the CM content is untouched and
+sits in the one leaf below. The `Φ_N` route named in the old docstring is still the way to
+prove it, and `exists_modularPolynomial` (PROVEN above, over `exists_modularPolynomial_prod`)
+is still its main missing input. -/
+
+/-- **A positive definite integral binary quadratic form has AT MOST ONE root in `ℍ` — PROVEN.**
+
+`a x² + b x + c` has two complex roots, differing by conjugation about `−b/(2a)`; only one of
+them can have positive imaginary part. Formally: subtracting the two relations gives
+`(v − w)(a(v + w) + b) = 0`, and if `v ≠ w` then `a(v + w) + b = 0`, whose imaginary part is
+`a(Im v + Im w) = 0` — impossible with `a ≠ 0` and both imaginary parts positive.
+
+Only `a ≠ 0` is needed; neither positive definiteness nor a sign condition on the discriminant
+enters, and the roots are not assumed to come from the same form as anything else. -/
+theorem eq_of_quadratic_root {a b c : ℤ} (ha : a ≠ 0) {v w : UpperHalfPlane}
+    (hv : (a : ℂ) * (v : ℂ) ^ 2 + (b : ℂ) * (v : ℂ) + (c : ℂ) = 0)
+    (hw : (a : ℂ) * (w : ℂ) ^ 2 + (b : ℂ) * (w : ℂ) + (c : ℂ) = 0) :
+    v = w := by
+  by_contra hne
+  have hne' : (v : ℂ) - (w : ℂ) ≠ 0 := by
+    intro h
+    exact hne (UpperHalfPlane.coe_injective (by linear_combination h))
+  have hfac : ((v : ℂ) - (w : ℂ)) * ((a : ℂ) * ((v : ℂ) + (w : ℂ)) + (b : ℂ)) = 0 := by
+    linear_combination hv - hw
+  have hsum : (a : ℂ) * ((v : ℂ) + (w : ℂ)) + (b : ℂ) = 0 := by
+    rcases mul_eq_zero.mp hfac with h | h
+    · exact absurd h hne'
+    · exact h
+  have him := congrArg Complex.im hsum
+  simp only [Complex.add_im, Complex.mul_im, Complex.intCast_re, Complex.intCast_im,
+    Complex.zero_im] at him
+  have hvim : 0 < (v : ℂ).im := v.im_pos
+  have hwim : 0 < (w : ℂ).im := w.im_pos
+  have haR : (a : ℝ) ≠ 0 := Int.cast_ne_zero.mpr ha
+  have hz : (a : ℝ) * ((v : ℂ).im + (w : ℂ).im) = 0 := by
+    simpa [Complex.add_im] using him
+  rcases mul_eq_zero.mp hz with h | h
+  · exact haR h
+  · linarith
+
+/-- **The Möbius denominator of a unimodular integral matrix does not vanish on `ℍ` — PROVEN.**
+
+If `r = 0` then `ps = 1` forces `s ≠ 0`; otherwise `Im(r w + s) = r · Im w ≠ 0`. Stated with
+the two entries loose rather than through mathlib's `UpperHalfPlane.denom` so that the caller
+need not produce a `GL (Fin 2) ℝ` first. -/
+theorem denom_ne_zero_of_det {p q r s : ℤ} (hdet : p * s - q * r = 1) (w : UpperHalfPlane) :
+    (r : ℂ) * (w : ℂ) + (s : ℂ) ≠ 0 := by
+  intro h
+  have him := congrArg Complex.im h
+  simp only [Complex.add_im, Complex.mul_im, Complex.intCast_re, Complex.intCast_im,
+    Complex.zero_im, zero_mul, add_zero] at him
+  have hwim : 0 < (w : ℂ).im := w.im_pos
+  have hr : (r : ℝ) = 0 := by
+    rcases mul_eq_zero.mp him with h' | h'
+    · exact h'
+    · linarith
+  have hr0 : r = 0 := by exact_mod_cast hr
+  subst hr0
+  simp only [Int.cast_zero, zero_mul, zero_add] at h
+  have hs0 : s = 0 := by exact_mod_cast h
+  subst hs0
+  simp at hdet
+
+/-- **PROPERLY EQUIVALENT FORMS HAVE THE SAME `j`-VALUE AT THEIR ROOTS IN `ℍ` — PROVEN.**
+
+This is the whole of the form/point dictionary that the `LEAF 4b′` glue needs, and it needs no
+`form ↦ τ_f` map: the two points are supplied by the caller as roots, and the conclusion is an
+equality of `j`-values rather than of points.
+
+THE MECHANISM. `g = f ∘ M` with `M = [[p,q],[r,s]] ∈ SL₂(ℤ)` means `g(x, y) = f(px+qy, rx+sy)`
+(`BinaryQuadraticForm.act`), so `g(x, 1) = (rx+s)² · f((px+q)/(rx+s), 1)`. Hence if `w ∈ ℍ`
+kills `g(·, 1)` then `M • w` kills `f(·, 1)`; it is again in `ℍ` because `M` is real with
+positive determinant; and `f(·, 1)` has at most one root there (`eq_of_quadratic_root`), so
+`v = M • w`. Then `j(v) = j(M • w) = j(w)` by `jInvariant_smul`.
+
+`f.a ≠ 0` IS LOAD-BEARING and is the only nondegeneracy assumed — without it `f(·, 1)` is
+linear or constant and the uniqueness step fails. Callers get it from `IsPosDef.a_pos`. Note
+the hypothesis is on `f` only: `g.a` may be anything, since `g` is only ever used through its
+own root. -/
+theorem jInvariant_eq_of_act {f g : BinaryQuadraticForm} {p q r s : ℤ}
+    (hdet : p * s - q * r = 1) (hact : f.act p q r s = g) (hfa : f.a ≠ 0)
+    {v w : UpperHalfPlane}
+    (hv : (f.a : ℂ) * (v : ℂ) ^ 2 + (f.b : ℂ) * (v : ℂ) + (f.c : ℂ) = 0)
+    (hw : (g.a : ℂ) * (w : ℂ) ^ 2 + (g.b : ℂ) * (w : ℂ) + (g.c : ℂ) = 0) :
+    jInvariant v = jInvariant w := by
+  subst hact
+  have hden : (r : ℂ) * (w : ℂ) + (s : ℂ) ≠ 0 := denom_ne_zero_of_det hdet w
+  let γ : SL(2, ℤ) := ⟨!![p, q; r, s], by
+    rw [Matrix.det_fin_two_of]; linear_combination hdet⟩
+  have hγ00 : γ 0 0 = p := rfl
+  have hγ01 : γ 0 1 = q := rfl
+  have hγ10 : γ 1 0 = r := rfl
+  have hγ11 : γ 1 1 = s := rfl
+  have hu : ((γ • w : UpperHalfPlane) : ℂ)
+      = ((p : ℂ) * (w : ℂ) + (q : ℂ)) / ((r : ℂ) * (w : ℂ) + (s : ℂ)) := by
+    rw [coe_specialLinearGroup_apply, hγ00, hγ01, hγ10, hγ11]
+    simp only [algebraMap_int_eq, eq_intCast, Complex.ofReal_intCast]
+  have hw' : (f.a : ℂ) * ((p : ℂ) * (w : ℂ) + (q : ℂ)) ^ 2
+      + (f.b : ℂ) * (((p : ℂ) * (w : ℂ) + (q : ℂ)) * ((r : ℂ) * (w : ℂ) + (s : ℂ)))
+      + (f.c : ℂ) * ((r : ℂ) * (w : ℂ) + (s : ℂ)) ^ 2 = 0 := by
+    simp only [BinaryQuadraticForm.act, BinaryQuadraticForm.eval] at hw
+    push_cast at hw
+    linear_combination hw
+  have hu' : ((γ • w : UpperHalfPlane) : ℂ) * ((r : ℂ) * (w : ℂ) + (s : ℂ))
+      = (p : ℂ) * (w : ℂ) + (q : ℂ) := by
+    rw [hu, div_mul_cancel₀ _ hden]
+  have hroot : (f.a : ℂ) * ((γ • w : UpperHalfPlane) : ℂ) ^ 2
+      + (f.b : ℂ) * ((γ • w : UpperHalfPlane) : ℂ) + (f.c : ℂ) = 0 := by
+    have hD2 : ((r : ℂ) * (w : ℂ) + (s : ℂ)) ^ 2 ≠ 0 := pow_ne_zero 2 hden
+    have hmul : ((f.a : ℂ) * ((γ • w : UpperHalfPlane) : ℂ) ^ 2
+        + (f.b : ℂ) * ((γ • w : UpperHalfPlane) : ℂ) + (f.c : ℂ))
+        * ((r : ℂ) * (w : ℂ) + (s : ℂ)) ^ 2 = 0 := by
+      linear_combination hw'
+        + ((f.a : ℂ) * (((γ • w : UpperHalfPlane) : ℂ) * ((r : ℂ) * (w : ℂ) + (s : ℂ))
+            + ((p : ℂ) * (w : ℂ) + (q : ℂ))) + (f.b : ℂ) * ((r : ℂ) * (w : ℂ) + (s : ℂ))) * hu'
+    rcases mul_eq_zero.mp hmul with h | h
+    · exact h
+    · exact absurd h hD2
+  have hvw : v = γ • w := eq_of_quadratic_root hfa hv hroot
+  rw [hvw, jInvariant_smul]
+
+/-- **The Heegner point is the root in `ℍ` of a positive definite form of discriminant `−p`
+— PROVEN.**
+
+The form is `f₀ = ⟨1, −3, (p+9)/4⟩`, the same one `isIntegral_jInvariant_heegnerPoint` uses:
+writing `p = 4k+3` its third coefficient is `k + 3`, its discriminant is
+`9 − 4(k+3) = −(4k+3) = −p`, and `a = 1 > 0` makes it positive definite (the discriminant is
+negative because `p > 0`). It is also primitive, `a` being `1`, though nothing below needs
+that.
+
+`p ≡ 3 mod 4` IS LOAD-BEARING and is exactly the condition for `−p` to BE a discriminant:
+`b² − 4ac ≡ b² ≡ 0, 1 (mod 4)` for every form, so for `p ≡ 1 mod 4` no form of discriminant
+`−p` exists at all. -/
+theorem exists_heegnerForm {p : ℕ} (hp : 0 < p) (hp4 : p % 4 = 3) :
+    ∃ f : BinaryQuadraticForm, f.IsPosDef ∧ f.discr = -(p : ℤ) ∧
+      (f.a : ℂ) * (heegnerPoint p hp : ℂ) ^ 2 + (f.b : ℂ) * (heegnerPoint p hp : ℂ)
+        + (f.c : ℂ) = 0 := by
+  obtain ⟨k, hk⟩ : ∃ k : ℕ, p = 4 * k + 3 := ⟨p / 4, by omega⟩
+  have hkZ : (p : ℤ) = 4 * (k : ℤ) + 3 := by
+    exact_mod_cast congrArg (fun n : ℕ => (n : ℤ)) hk
+  refine ⟨⟨1, -3, (k : ℤ) + 3⟩, ⟨by norm_num, ?_⟩, ?_, ?_⟩
+  · simp only [BinaryQuadraticForm.discr]
+    omega
+  · simp only [BinaryQuadraticForm.discr]
+    omega
+  · have hcoe : ((heegnerPoint p hp : UpperHalfPlane) : ℂ)
+        = (3 + Complex.I * (Real.sqrt p : ℂ)) / 2 := UpperHalfPlane.coe_mk _ _
+    have hs : ((Real.sqrt p : ℂ)) ^ 2 = (p : ℂ) := by
+      rw [← Complex.ofReal_pow, Real.sq_sqrt (by positivity)]
+      norm_num
+    have hI : (Complex.I) ^ 2 = -1 := Complex.I_sq
+    have hp' : (p : ℂ) = 4 * (k : ℂ) + 3 := by
+      exact_mod_cast congrArg (fun n : ℕ => (n : ℂ)) hk
+    rw [hcoe]
+    push_cast
+    linear_combination (((Real.sqrt p : ℂ)) ^ 2 / 4) * hI - (1 / 4) * hs - (1 / 4) * hp'
+
+/-- **LEAF 4b″ — THE CONJUGATES OF `j(τ₀)` ARE `j`-VALUES OF FORMS OF THE SAME DISCRIMINANT.
+THE FIRST MAIN THEOREM OF COMPLEX MULTIPLICATION.**
+
+Every complex root `x` of `minpoly ℚ (j(τ₀))` is `j(w)` for some `w ∈ ℍ` killing some positive
+definite integral form of discriminant exactly `−p`. This is the ONLY leaf in this file that
+needs complex multiplication, and it replaces `exists_rat_jInvariant_heegnerPoint`, which is
+PROVEN from it just below.
+
+WHY IT IS TRUE. `j(τ₀)` is an algebraic integer (`isIntegral_jInvariant_heegnerPoint`, PROVEN
+above over the modular polynomial), and its minimal polynomial over `ℚ` is the class
+polynomial `H_{−p}(X) = ∏_{f ∈ Cl(−p)} (X − j(τ_f))`, which is irreducible over `ℚ` (Cox
+Theorem 11.1). Its roots are therefore exactly the `j(τ_f)` with `f` running over the classes
+of primitive positive definite forms of discriminant `−p`, and each such `f` with its root
+`τ_f ∈ ℍ` witnesses the conclusion. `τ₀` itself is the case `f = ⟨1, −3, (p+9)/4⟩`
+(`exists_heegnerForm`).
+
+WHAT IT WOULD TAKE, unchanged from the statement it replaces: complex multiplication and ring
+class fields are absent from mathlib at this pin, from `~/cs/FLT` and from this project. The
+route is Cox §11 through the modular polynomial `Φ_N`, whose existence is
+`exists_modularPolynomial` — PROVEN above, over the separate leaf
+`exists_modularPolynomial_prod`. So the two open CM leaves of this file are not independent:
+closing `exists_modularPolynomial_prod` is a prerequisite for the intended proof of this one.
+
+WHY THE EXISTENTIAL IS NOT WEAKENED BY DROPPING PRIMITIVITY. The conclusion asks only for
+SOME positive definite `f` of discriminant `−p`; imprimitive forms enlarge the target set and
+so make the statement easier, never harder. The direction that matters is the consumer's, and
+there `hcl` quantifies over the same enlarged set — see the note on `p = 27` below.
+
+FALSITY AUDIT (2026-07-31, run fresh against this statement, which was cut the same day).
+
+* NOT VACUOUS, and satisfiable without any class-number hypothesis. `x = j(τ₀)` is always a
+  root (`minpoly.aeval`), and `exists_heegnerForm` witnesses the conclusion for it. So the
+  statement has content at every `p ≡ 3 mod 4`, and in particular is NOT of the shape whose
+  hypotheses can go empty.
+* `hp4` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT IT, by the same empty-family
+  mechanism the old `LEAF 4b′` audit identified — but running the OTHER WAY, which is worth
+  stating because it is the reverse of the trap. `discr f = b² − 4ac ≡ 0 or 1 (mod 4)`, so for
+  `p ≡ 1 mod 4` NO form of discriminant `−p` exists and the CONCLUSION is unsatisfiable, while
+  the hypothesis stays satisfiable (`x = j(τ₀)` is always a root). Witness: `p = 5`, where
+  `τ₀ = (3+√−5)/2` satisfies `2x² − 6x + 7 = 0`, a form of discriminant `−20`; `h(−20) = 2`, so
+  `minpoly ℚ (j(τ₀))` has degree `2` and roots exist, and no form of discriminant `−5` does.
+  Same at every `p ≡ 1 mod 4`.
+* `hp` (`0 < p`) is forced by the statement, which mentions `heegnerPoint p hp`.
+* NEITHER PRIMALITY NOR `p ≡ 3 mod 8` IS NEEDED, exactly as for
+  `isIntegral_jInvariant_heegnerPoint`: the class polynomial of ANY discriminant `−p ≡ 1 mod 4`
+  is irreducible with the stated roots, whatever the class number and whether or not `−p` is
+  fundamental. Checked at `p = 15` (`h(−15) = 2`, the two classes `⟨1,1,4⟩` and `⟨2,1,2⟩`,
+  `j` of the second being the conjugate of `j(τ₀)`) and at `p = 27` (non-fundamental,
+  `−27 = 3²·(−3)`, `h(−27) = 1`). The `p = 27` case is also where the imprimitive forms become
+  visible: `⟨3,3,3⟩` is positive definite of discriminant `−27` with `j = 0 ≠ j(τ₀)`, so at
+  that `p` the CONSUMER's `hcl` is false — which is correct, since `j(τ₀) = −12288000` there
+  and the consumer's conclusion happens to hold for an unrelated reason. At the five `p` where
+  `hcl` is satisfiable (`11, 19, 43, 67, 163`) `p` is prime and squarefree, so every form of
+  discriminant `−p` is primitive and `hcl` says exactly `h(−p) = 1`, as its own audit records.
+
+Refute this leaf by exhibiting a `p ≡ 3 mod 4` and a root of `minpoly ℚ (j(τ₀))` that is not
+`j` of any root of a positive definite integral form of discriminant `−p`. -/
+theorem exists_posDefForm_root_of_aeval_minpoly_jInvariant {p : ℕ} (hp : 0 < p) (hp4 : p % 4 = 3)
+    {x : ℂ}
+    (hx : (Polynomial.aeval x) (minpoly ℚ (jInvariant (heegnerPoint p hp))) = 0) :
+    ∃ (f : BinaryQuadraticForm) (w : UpperHalfPlane), f.IsPosDef ∧ f.discr = -(p : ℤ) ∧
+      (f.a : ℂ) * (w : ℂ) ^ 2 + (f.b : ℂ) * (w : ℂ) + (f.c : ℂ) = 0 ∧
+      x = jInvariant w :=
+  sorry
+
+end HeegnerConjugates
+
+/-- **LEAF 4b′ — `j(τ₀) ∈ ℚ`. NO LONGER A LEAF: PROVEN (2026-07-31) over `LEAF 4b″`**
+(`exists_posDefForm_root_of_aeval_minpoly_jInvariant`) and the form/point dictionary of the
+`HeegnerConjugates` section above.
+
+THE PROOF, in three steps, of which only the first is complex multiplication:
+
+1. every complex root of `minpoly ℚ (j(τ₀))` is `j(w)` for `w ∈ ℍ` a root of SOME positive
+   definite integral form of discriminant `−p` — that is `LEAF 4b″`, and it carries no
+   class-number hypothesis;
+2. `hcl` makes any such form properly equivalent to `f₀ = ⟨1, −3, (p+9)/4⟩`, whose root is
+   `τ₀` (`exists_heegnerForm`), and properly equivalent forms have equal `j` at their roots
+   (`jInvariant_eq_of_act`, PROVEN: the roots differ by the `SL₂(ℤ)` element itself, and `j`
+   is `SL₂(ℤ)`-invariant). So EVERY complex root of the minimal polynomial is `j(τ₀)`;
+3. hence `minpoly ℚ (j(τ₀))` maps to `(X − j(τ₀))^n` over `ℂ`; it is separable because it is
+   irreducible in characteristic zero (`Irreducible.separable`), hence squarefree, hence
+   `n = 1` — and a monic rational polynomial of degree `1` killing `j(τ₀)` exhibits it as a
+   rational number.
 
 `τ₀ = (3+√−p)/2 = 1 + (1+√−p)/2`, so `ℤ + ℤτ₀ = ℤ[(1+√−p)/2] = 𝒪_K`, the MAXIMAL order (here
-`p ≡ 3 mod 4` follows from `p ≡ 3 mod 8`). By the first main theorem of CM (Booher Theorem
-34/36; Cox §11) `K(j(𝒪_K))` is the Hilbert class field of `K` and `[K(j(𝒪_K)) : K] = h(−p)`.
-`hcl` says every positive definite form of discriminant `−p` is properly equivalent to every
-other, i.e. `h(−p) = 1`, so that field is `K` itself; with `j(τ₀)` real that gives `j(τ₀) ∈ ℚ`.
+`p ≡ 3 mod 4` follows from `p ≡ 3 mod 8`); the classical account is that by the first main
+theorem of CM (Booher Theorem 34/36; Cox §11) `K(j(𝒪_K))` is the Hilbert class field of `K`
+with `[K(j(𝒪_K)) : K] = h(−p)`, and `hcl` says `h(−p) = 1`. Step 1 above is exactly the part
+of that account which is not bookkeeping.
 
-WHAT IT WOULD TAKE. Complex multiplication, ring class fields and the Galois action
-`σ_𝔞(j(𝔟)) = j(𝔞𝔟)` are absent from mathlib at this pin, from `~/cs/FLT` and from this
-project. The route is Cox §11: the modular polynomial `Φ_N ∈ ℤ[X, Y]`, then that `Gal(ℚ̄/ℚ)`
-permutes the finite set `{j(τ_f) : f of discriminant −p}`, then `h = 1` makes that set a
-singleton, so `j(τ₀)` is fixed by every automorphism. Building `Φ_N` is the bulk of it and is a
-project in its own right; **that** is where the next cut belongs, not here.
+CHEAPER ALTERNATIVE STILL UNCOSTED, and it now applies to `LEAF 4b″` rather than to this
+statement: Stark's remark (quoted at the end of Booher) that "nothing more modern is required"
+— Weber's own computations replace the class field theory. Nobody in this development has
+costed that route.
 
-WHAT THE 2026-07-30 RECUT COSTED THE NEXT CUT: nothing was lost, and one thing was gained.
-`hcl` enters only through "`h(−p) = 1`", and this file already has the elementary theory of
-reduction of positive definite forms (`exists_reduced_equivalent`, `not_represents_one`,
-`Equivalent.represents`) — so the intermediate statement "all `j(τ_f)`, `f` of discriminant
-`−p`, coincide" is elementary GIVEN `SL₂(ℤ)`-invariance of `j`, which is in reach from
-mathlib (`E₄ : ModularForm 𝒮ℒ 4` and `Δ` as a weight-`12` cusp form, so the weight-`12`
-factors cancel in `E₄³/Δ`). The irreducible remainder is then exactly "the class polynomial
-has rational coefficients", which is the standard shape of the theorem and the right thing to
-vendor. That refinement is deliberately NOT done here: it needs a `Finset` of form classes and
-a `form ↦ τ_f` map, i.e. new infrastructure, and this leaf is already the honest residue.
+`h3` IS NOT USED by this proof and is underscored to make that mechanically visible; the
+signature is unchanged because callers pass it positionally. `p = 3` is in fact admissible:
+`h(−3) = 1`, `τ₀ = (3+√−3)/2 = ρ + 2` and `j(τ₀) = 0 ∈ ℚ`. What IS used is `hp8`, and only
+through `p % 4 = 3` — see the sharp form in the audit below.
 
-CHEAPER ALTERNATIVE STILL UNCOSTED: Stark's remark (quoted at the end of Booher) that
-"nothing more modern is required" — Weber's own computations replace the class field theory.
-Nobody in this development has costed that route; doing so is a legitimate outcome for whoever
-owns this leaf.
+The FALSITY AUDIT below was written for this statement when it was a leaf. It is retained
+verbatim because it audits the STATEMENT, which has not changed, and because its last
+paragraph is about the whole `hcl`-taking family rather than about this declaration.
 
 FALSITY AUDIT (2026-07-30, `flt-lean-185`, run FRESH against this statement — the leaf was cut
 the same day, so no earlier audit covers it). The statement is TRUE and NOT VACUOUS: `hcl` is
@@ -4750,11 +5012,58 @@ This applies verbatim to every `hcl`-taking declaration in this file
 the reason none is broken is `hp8`, not anything about class numbers, and a future weakening of
 that binder must not treat `hcl` as if it still said `h(−p) = 1`. -/
 theorem exists_rat_jInvariant_heegnerPoint {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3)
-    (h3 : 3 < p)
+    (_h3 : 3 < p)
     (hcl : ∀ f g : BinaryQuadraticForm, f.IsPosDef → g.IsPosDef →
       f.discr = -(p : ℤ) → g.discr = -(p : ℤ) → f.Equivalent g) :
-    ∃ u : ℚ, (u : ℂ) = jInvariant (heegnerPoint p hp.pos) :=
-  sorry
+    ∃ u : ℚ, (u : ℂ) = jInvariant (heegnerPoint p hp.pos) := by
+  have hp4 : p % 4 = 3 := by omega
+  obtain ⟨f₀, hf₀pd, hf₀d, hf₀root⟩ := exists_heegnerForm hp.pos hp4
+  set c : ℂ := jInvariant (heegnerPoint p hp.pos) with hcdef
+  have hint : IsIntegral ℚ c := (isIntegral_jInvariant_heegnerPoint hp.pos hp4).tower_top
+  set qp : Polynomial ℚ := minpoly ℚ c with hqpdef
+  have hmonic : qp.Monic := minpoly.monic hint
+  have hn : 0 < qp.natDegree := minpoly.natDegree_pos hint
+  set Q : Polynomial ℂ := qp.map (algebraMap ℚ ℂ) with hQdef
+  have hQmonic : Q.Monic := hmonic.map _
+  have hQdeg : Q.natDegree = qp.natDegree := hmonic.natDegree_map _
+  have hsplits : Q.Splits := IsAlgClosed.splits Q
+  have hcard : Q.roots.card = qp.natDegree := by
+    rw [← hQdeg]; exact Polynomial.splits_iff_card_roots.mp hsplits
+  -- every complex root of the minimal polynomial is `c` itself
+  have hroots : ∀ y ∈ Q.roots, y = c := by
+    intro y hy
+    have hy0 : Polynomial.aeval y qp = 0 := by
+      have h1 : Q.eval y = 0 := Polynomial.isRoot_of_mem_roots hy
+      rwa [hQdef, Polynomial.eval_map, ← Polynomial.aeval_def] at h1
+    obtain ⟨f, w, hfpd, hfd, hfroot, hyw⟩ :=
+      exists_posDefForm_root_of_aeval_minpoly_jInvariant hp.pos hp4 hy0
+    obtain ⟨P, R, S, T, hdet, hact⟩ := hcl f f₀ hfpd hf₀pd hfd hf₀d
+    rw [hyw, hcdef]
+    exact jInvariant_eq_of_act hdet hact (ne_of_gt hfpd.a_pos) hfroot hf₀root
+  -- hence `Q = (X − C c) ^ n`
+  have hrepl : Q.roots = Multiset.replicate qp.natDegree c :=
+    Multiset.eq_replicate.mpr ⟨hcard, hroots⟩
+  have hQeq : Q = (Polynomial.X - Polynomial.C c) ^ qp.natDegree := by
+    rw [hsplits.eq_prod_roots_of_monic hQmonic, hrepl, Multiset.map_replicate,
+      Multiset.prod_replicate]
+  -- the minimal polynomial is separable in characteristic zero, so `n = 1`
+  have hsq : Squarefree Q := ((minpoly.irreducible hint).separable.map).squarefree
+  have hdeg1 : qp.natDegree = 1 := by
+    by_contra hne
+    have h2 : 2 ≤ qp.natDegree := by omega
+    have hdvd : (Polynomial.X - Polynomial.C c) * (Polynomial.X - Polynomial.C c) ∣ Q := by
+      rw [hQeq, ← sq]
+      exact pow_dvd_pow _ h2
+    exact Polynomial.not_isUnit_X_sub_C c (hsq _ hdvd)
+  -- a monic rational polynomial of degree one killing `c` exhibits `c` as a rational
+  have hX : qp = Polynomial.X + Polynomial.C (qp.coeff 0) := hmonic.eq_X_add_C hdeg1
+  refine ⟨-(qp.coeff 0), ?_⟩
+  have haev : Polynomial.aeval c qp = 0 := minpoly.aeval ℚ c
+  rw [hX] at haev
+  simp only [map_add, Polynomial.aeval_X, Polynomial.aeval_C] at haev
+  push_cast
+  rw [eq_comm, ← sub_eq_zero]
+  simpa [algebraMap] using haev
 
 /-- **LEAF 4b — `j(τ₀) ∈ K = ℚ(√−p)`. NOW PROVEN**, from `LEAF 4b′` (`j(τ₀) ∈ ℚ`) by taking
 the `√−p` coefficient to be `0`. The `K` was always dressing — see the section note. -/
