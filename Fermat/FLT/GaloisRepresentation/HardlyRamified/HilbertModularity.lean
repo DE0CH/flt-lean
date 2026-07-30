@@ -12720,7 +12720,30 @@ closing either one alone does not open this leaf.
 Both repairs are edits to PROVEN declarations in `Modularity/MoretBailly.lean` —
 a file with concurrent owners — so they are cut-level work for that file's owner
 and are deliberately not attempted from here. What this leaf owes remains exactly
-the Moret–Bailly citation with `Ω_2 ≠ ∅`. -/
+the Moret–Bailly citation with `Ω_2 ≠ ∅`.
+
+# THE DEGREE-PARITY CONJUNCT (added 2026-07-29)
+
+`Even (Module.finrank ℚ F)` was added to the conclusion. It is **not** a new
+burden on the citation: the same Moret–Bailly/Hilbert–Blumenthal construction
+already delivers it one level up, where
+`Modularity.exists_hilbertBlumenthalPoint_of_five_le` returns it and the PROVEN
+`Modularity.exists_moretBailly_seed_of_five_le` forwards it verbatim. `F` is cut
+out of a twisted Hilbert–Blumenthal variety for a real quadratic field, so its
+degree over `ℚ` is even by construction; a discharge of this leaf that does not
+produce the parity is not following the cited construction.
+
+WHY IT HAD TO BE ADDED HERE rather than obtained separately: parity and
+`residueCardTwo` are statements about the SAME `F`, and the only producer that
+can bind them together is the one that CHOOSES `F`. The consumer chain in
+`Modularity/KhareWintenberger.lean`
+(`exists_potentialModularityWitness_of_five_le`) needs both — parity for the
+`3`-adic realization and the Weil-bound citations, `residueCardTwo` for the
+tame-at-`2` gluing condition — so it must call ONE producer that returns both.
+Before this change it called `exists_moretBailly_seed_of_five_le` (parity, no
+residue condition) and the tame-at-`2` obligation was silently dropped, which is
+what left `exists_classifyingHom_of_hilbertDeformationDatum_of_not_splitTwo`
+standing as an unclosable residue in that file. -/
 theorem exists_moretBaillySeed_padicEmbedding_of_five_le
     (ℓ : ℕ) [Fact ℓ.Prime] {hℓOdd : Odd ℓ} (hℓ5 : 5 ≤ ℓ)
     {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
@@ -12731,6 +12754,7 @@ theorem exists_moretBaillySeed_padicEmbedding_of_five_le
     (hbar : IsHardlyRamified hℓOdd hdim ρbar) (hirr : ρbar.IsIrreducible) :
     ∃ (F : Type u) (_ : Field F) (_ : NumberField F)
       (_ : NumberField.IsTotallyReal F) (_ : IsGalois ℚ F)
+      (_ : Even (Module.finrank ℚ F))
       (_ : (ρbar.map (algebraMap ℚ F)).IsIrreducible),
       Nonempty (F →+* ℚ_[2]) ∧
       Nonempty (Modularity.MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F))) :=
@@ -12898,14 +12922,15 @@ theorem exists_moretBaillySeed_residueCardTwo_of_five_le
     (hbar : IsHardlyRamified hℓOdd hdim ρbar) (hirr : ρbar.IsIrreducible) :
     ∃ (F : Type u) (_ : Field F) (_ : NumberField F)
       (_ : NumberField.IsTotallyReal F) (_ : IsGalois ℚ F)
+      (_ : Even (Module.finrank ℚ F))
       (_ : (ρbar.map (algebraMap ℚ F)).IsIrreducible),
       (∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal →
           Nat.card (𝓞 F ⧸ w.asIdeal) = 2) ∧
       Nonempty (Modularity.MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F))) := by
-  obtain ⟨F, hF, hNF, hFtr, hFgal, hirrF, hemb, hseed⟩ :=
+  obtain ⟨F, hF, hNF, hFtr, hFgal, hev, hirrF, hemb, hseed⟩ :=
     exists_moretBaillySeed_padicEmbedding_of_five_le (hℓOdd := hℓOdd)
       (hdim := hdim) ℓ hℓ5 hbar hirr
-  exact ⟨F, hF, hNF, hFtr, hFgal, hirrF,
+  exact ⟨F, hF, hNF, hFtr, hFgal, hev, hirrF,
     fun w hw => natCard_residue_eq_of_nonempty_ringHom_padic F hF hNF
       hFgal.to_normal 2 hemb w hw, hseed⟩
 
@@ -13833,7 +13858,7 @@ theorem nonempty_potentialHeckeDatum_of_five_le
     Nonempty (PotentialHeckeDatum ℓ ρbar) := by
   -- (T): Moret–Bailly/Taylor produce the totally real Galois base `F`, with
   -- `2` split completely and with an automorphic witness over it.
-  obtain ⟨F, hF, hNF, hFtr, hFgal, hirrF, hres2, ⟨seed⟩⟩ :=
+  obtain ⟨F, hF, hNF, hFtr, hFgal, _hev, hirrF, hres2, ⟨seed⟩⟩ :=
     exists_moretBaillySeed_residueCardTwo_of_five_le (hℓOdd := hℓOdd)
       (hdim := hdim) ℓ hℓ5 hbar hirr
   letI := hF

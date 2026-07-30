@@ -1526,7 +1526,39 @@ stack directly applicable: `exists_hilbertHeckeDatum_of_hilbertHeckeAlgebra`,
 below is one composition away from them.  It costs the `public import` of that
 module added at the head of this file, and no module in any cone. -/
 
-/-- **Potential modularity at the GIVEN totally real base `F`** (SORRY leaf,
+/-! #### `nonempty_hilbertHeckeAlgebra_of_moretBaillySeed` — DELETED FROM THIS
+FILE 2026-07-29, THE DUPLICATION AUDIT BELOW ACTED ON
+
+**This section is the docstring of a declaration that no longer exists here.**
+It was `GaloisRepresentation.Modularity.nonempty_hilbertHeckeAlgebra_of_moretBaillySeed`,
+a SORRY leaf shadowing the upstream
+`GaloisRepresentation.nonempty_hilbertHeckeAlgebra_of_moretBaillySeed`
+(`HardlyRamified/HilbertModularity.lean`) inside this file's namespace. The
+DUPLICATION AUDIT further down diagnosed the two as the same statement with the
+local copy missing `hres2`, and its RECOMMENDATION was "the two namesakes should
+become ONE declaration ... the surviving statement should be the twin". That is
+what happened: `exists_heckeTraceAlgebra_of_congruentSeed` now carries `hres2`
+and calls the twin by its fully-qualified name, and the local copy is gone. The
+text is kept because it is the audit the twin inherits, and because the two
+paragraphs on WHY THE CONDITION AT `2` IS LOAD-BEARING are the mathematical
+justification for threading `hres2` down the whole chain.
+
+The `hres2` supply that unblocked the repair was NOT a new leaf: it is
+`exists_moretBaillySeed_residueCardTwo_of_five_le`
+(`HilbertModularity.lean`, PROVEN glue over
+`exists_moretBaillySeed_padicEmbedding_of_five_le`), which
+`exists_potentialModularityWitness_of_five_le` in this file now calls in place
+of `exists_moretBailly_seed_of_five_le`. So the "WHY THE OBVIOUS REPAIR IS
+BLOCKED" section below is **SUPERSEDED**: it correctly observed that no
+declaration on the consumer chain could supply `hres2`, and correctly concluded
+the fix had to be made where `F` is BORN — but it looked for that fix as a
+cut-level change to the Moret–Bailly geometric chain, and missed that a producer
+binding `F` to `residueCardTwo` **already existed one module upstream** and was
+simply not the one this chain called.
+
+--- the original docstring follows, verbatim ---
+
+**Potential modularity at the GIVEN totally real base `F`** (was a SORRY leaf,
 cut 2026-07-27 out of `exists_heckeTraceAlgebra_of_congruentSeed` below):
 the Moret–Bailly seed over `F` is the eigensystem of a Hilbert newform whose
 localized Hecke algebra, at MINIMAL level, exists as a
@@ -1732,21 +1764,6 @@ than the twin, with the cluster's own tame-at-`2` machinery unavailable to them.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
 through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
-theorem nonempty_hilbertHeckeAlgebra_of_moretBaillySeed
-    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
-    [TopologicalSpace k] [DiscreteTopology k]
-    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
-    [Module.Free k W]
-    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
-    (hρbar : IsHardlyRamified hℓodd hW ρbar)
-    (hirr : ρbar.IsIrreducible)
-    (F : Type u) [Field F] [NumberField F]
-    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
-    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
-    (seed : MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F))) :
-    Nonempty (HilbertHeckeAlgebra ℓ F ρbar) :=
-  sorry
 
 /-! #### Bricks for the `R_F = T_F` assembly (2026-07-28)
 
@@ -1971,42 +1988,68 @@ theorem forall_charpoly_map_eq_of_charFrob_map_eq_over_base
   intro σ
   rw [← hbc σ, ← he, GaloisRep.conj_apply, LinearEquiv.charpoly_conj]
 
-/-! #### The `R_F = T_F` citation, SPLIT ON THE BEHAVIOUR OF `2` (2026-07-29)
+/-! #### The `R_F = T_F` citation — NO LONGER A CITATION AT ALL (2026-07-29)
 
-`exists_classifyingHom_of_hilbertDeformationDatum` below is **no longer a bare
-citation**: it is a two-case assembly over the two declarations in this block.
+**Status after the `hres2` threading of 2026-07-29: this block contains ONE
+declaration, `…_of_splitTwo`, and it is PROVEN.**  There is no `R_F = T_F` leaf
+in this file any more.
 
-The case split is on the hypothesis its own docstring already identified as the
+History, because two declarations that used to live here are gone and their
+names appear in docstrings all over this module.
+
+`exists_classifyingHom_of_hilbertDeformationDatum` was a bare citation; on
+2026-07-29 it was split on the hypothesis its own docstring had identified as the
 one and only obstruction to the in-tree route,
 
     hw2 : ∀ w ∣ 2, ℓ ∤ N(w)² − 1
 
-* **`…_of_splitTwo`** — WITH `hw2` — is now **PROVEN**, as exactly the
-  composition that docstring mapped out (`φ = f ∘ ψ⁻¹ ∘ e⁻¹`), over four
-  in-tree bricks and nothing else.  Its verification also CORRECTS that
-  docstring on one point: the route needs `𝒟u` to be **trace-generated** as
-  well as weakly universal, which `exists_isWeaklyUniversal_hilbertDeformationDatum`
-  does not deliver — the upgrade is a second, separate brick
+* **`…_of_splitTwo`** — WITH `hw2` — was PROVEN, as exactly the composition that
+  docstring mapped out (`φ = f ∘ ψ⁻¹ ∘ e⁻¹`), over four in-tree bricks and
+  nothing else.  Its verification also CORRECTS that docstring on one point: the
+  route needs `𝒟u` to be **trace-generated** as well as weakly universal, which
+  `exists_isWeaklyUniversal_hilbertDeformationDatum` does not deliver — the
+  upgrade is a second, separate brick
   (`exists_isWeaklyUniversal_isTraceGenerated_hilbertDeformationDatum`), and it
   costs `((ℓ : ℕ) : k) = 0`, discharged by `natCast_eq_zero_of_finite_algebra`.
-* **`…_of_not_splitTwo`** — with `¬ hw2` — is the residual LEAF.
+* **`…_of_not_splitTwo`** — with `¬ hw2` — was the residual LEAF, and
+* `exists_classifyingHom_of_hilbertDeformationDatum` was the `by_cases` assembly
+  of the two.
 
-So the citation that remains is strictly the NON-split-at-`2` corner, and the
-generic case is Lean.  **Where the residue really belongs** (this is the fix, and
-it is a signature change, not a proof): `PotentialHeckeDatum.residueCardTwo`
-(`HardlyRamified/HilbertModularity.lean:12444`) is exactly `hw2` in stronger
-form, and `exists_moretBaillySeed_residueCardTwo_of_five_le` PRODUCES `F`
-together with it.  The `ℚ`-level chain in THIS file drops it: compare
+Both of the latter are now **DELETED**.  The residue was never mathematically
+necessary: it existed only because this file's chain dropped the condition at
+`2` that the object it is building already carries.
+`PotentialHeckeDatum.residueCardTwo` is `hw2` in the stronger form `N(w) = 2`,
+and the PROVEN `exists_moretBaillySeed_residueCardTwo_of_five_le`
+(`HardlyRamified/HilbertModularity.lean`) produces `F` together with it.  The
+chain here called `exists_moretBailly_seed_of_five_le` instead, which does not,
+and so arrived at the `R_F = T_F` node with no information at `2` whatever.
 
-    HardlyRamified/HilbertModularity.lean:12645  nonempty_hilbertHeckeAlgebra_of_moretBaillySeed  -- HAS hres2
-    Modularity/KhareWintenberger.lean:1591       nonempty_hilbertHeckeAlgebra_of_moretBaillySeed  -- LACKS hres2
+What changed, end to end:
 
-— two distinct same-named leaves, the local one strictly stronger.  Threading
-`hres2` through `nonempty_hilbertHeckeAlgebra_of_moretBaillySeed`,
-`exists_classifyingHom_hilbertHeckeAlgebra` and
-`exists_heckeTraceAlgebra_of_congruentSeed` would let the `by_cases` below be
-deleted and would close `…_of_not_splitTwo` by vacuity.  That crosses
-declarations owned elsewhere and is left to the orchestrator. -/
+    exists_potentialModularityWitness_of_five_le
+        now calls exists_moretBaillySeed_residueCardTwo_of_five_le
+        (which also carries `Even (finrank ℚ F)`, added to it and to
+         exists_moretBaillySeed_padicEmbedding_of_five_le for this purpose)
+      → exists_heckePackage_of_seed                (+ hres2)
+      → exists_heckeEigensystem_of_congruentSeed   (+ hres2)
+      → exists_heckeTraceAlgebra_of_congruentSeed  (+ hres2)
+      → exists_classifyingHom_hilbertHeckeAlgebra  (+ hres2)
+      → exists_classifyingHom_of_hilbertDeformationDatum_of_splitTwo
+
+with `hw2` obtained from `hres2` by
+`not_dvd_natCard_sq_sub_one_of_residueCard_eq_two` below (`N(w) = 2` gives
+`N(w)² − 1 = 3`, and `5 ≤ ℓ` gives `ℓ ∤ 3`).  The same threading deleted this
+file's shadowing copy of `nonempty_hilbertHeckeAlgebra_of_moretBaillySeed`, whose
+DUPLICATION AUDIT above prescribed exactly this and is the reason the change was
+made in one piece.
+
+NOTE for anyone reading the `ℚ(√5)` witness in the deleted leaf's docstring: it
+was and remains correct.  `¬ hw2` IS satisfiable for a totally real Galois `F`
+(`ℓ = 5`, `2` inert, `N(w) = 4`, `5 ∣ 15`), so the residue leaf was **not**
+vacuous *as stated* and could never have been closed from its own hypotheses.
+What removed it is that no such `F` is ever produced by this chain — the
+producer now chooses an `F` in which `2` splits completely. That is a change of
+what is quantified over, not a proof of the old statement. -/
 theorem exists_classifyingHom_of_hilbertDeformationDatum_of_splitTwo
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     (F : Type u) [Field F] [NumberField F]
@@ -2089,8 +2132,21 @@ theorem exists_classifyingHom_of_hilbertDeformationDatum_of_splitTwo
           rw [RingHom.comp_assoc, hcomp, RingHom.comp_id]
     _ = (𝒟.ρ g).charpoly := hfρ g
 
-/-- **`R_F = T_F` in the NON-split-at-`2` case** (SORRY leaf, cut 2026-07-29 out
-of `exists_classifyingHom_of_hilbertDeformationDatum` below, which is now the
+/-! #### DELETED 2026-07-29 — the audit of the removed residue leaf
+
+**The declaration this text described no longer exists.**  It was
+`exists_classifyingHom_of_hilbertDeformationDatum_of_not_splitTwo`.  Route 1 of
+its own "THE TWO HONEST WAYS TO CLOSE IT" below is what was taken, and the audit
+is kept verbatim because it is the record of why the repair had to happen where
+`F` is born rather than here.  One correction to it: it named the repair as a
+cut-level change to the Moret–Bailly geometric chain, and that was not needed —
+`exists_moretBaillySeed_residueCardTwo_of_five_le` already existed, PROVEN, one
+module upstream, and the chain in this file simply was not calling it.
+
+--- the original docstring follows, verbatim ---
+
+**`R_F = T_F` in the NON-split-at-`2` case** (was a SORRY leaf, cut 2026-07-29 out
+of `exists_classifyingHom_of_hilbertDeformationDatum` below, which was then the
 two-case assembly of this and `…_of_splitTwo` above).
 
 This is the whole residue of the `R_F = T_F` citation.  It is the SAME
@@ -2139,30 +2195,23 @@ and Hecke algebras in the totally real case*; Taylor, Doc. Math. Extra Vol.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge through
 `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
-theorem exists_classifyingHom_of_hilbertDeformationDatum_of_not_splitTwo
-    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    (F : Type u) [Field F] [NumberField F]
-    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
-    (hnw2 : ¬ ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
-      ((2 : ℕ) : NumberField.RingOfIntegers F) ∈ w.asIdeal →
-      ¬ ((ℓ : ℤ) ∣
-        ((Nat.card (NumberField.RingOfIntegers F ⧸ w.asIdeal) : ℤ) ^ 2 - 1)))
-    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
-    [TopologicalSpace k] [DiscreteTopology k]
-    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
-    [Module.Free k W]
-    {ρbar : GaloisRep ℚ k W}
-    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
-    (𝒟 : HilbertDeformationDatum ℓ F ρbar)
-    (H : HilbertHeckeAlgebra ℓ F ρbar) :
-    ∃ φ : H.T →+* 𝒟.R, ∀ g : Field.absoluteGaloisGroup F,
-      ((H.ρT g).charpoly).map φ = (𝒟.ρ g).charpoly :=
-  sorry
+/-! #### DELETED 2026-07-29 — the audit of the removed `R_F = T_F` assembly
 
-/-- **`R_F = T_F`, in its bare classifying-map form** (PROVEN 2026-07-29 as the
+**The declaration this text described no longer exists.**  It was
+`exists_classifyingHom_of_hilbertDeformationDatum`, the `by_cases` assembly over
+`…_of_splitTwo` and the deleted `…_of_not_splitTwo`.  With `hres2` threaded down
+the chain the case split has nothing to decide, so the assembly was removed and
+`exists_classifyingHom_hilbertHeckeAlgebra` calls `…_of_splitTwo` directly.  The
+audit is kept because `…_of_splitTwo` — the surviving declaration — inherits it,
+and it is the only place the FAITHFULNESS and level-raising analysis is written
+down.
+
+--- the original docstring follows, verbatim ---
+
+**`R_F = T_F`, in its bare classifying-map form** (was PROVEN 2026-07-29 as the
 two-case assembly over `…_of_splitTwo` and `…_of_not_splitTwo` above — it was a
 SORRY leaf from its cut on 2026-07-28 until then, and the audit below is kept
-because it is what the surviving `…_of_not_splitTwo` inherits; the paragraph
+because it is what `…_of_splitTwo` inherits; the paragraph
 "THE IN-TREE ROUTE, AND THE ONE THING THAT BLOCKS IT" is CORRECTED in place):
 a Hilbert
 Hecke algebra of `ρbar` over `F` CLASSIFIES every `F`-level deformation datum —
@@ -2252,28 +2301,38 @@ Skinner–Wiles; the FLT blueprint ch. 4.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge through
 `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
-theorem exists_classifyingHom_of_hilbertDeformationDatum
-    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+/-- **`N(w) = 2` at every place over `2` gives the tame-at-`2` gluing condition
+`ℓ ∤ N(w)² − 1`, for `5 ≤ ℓ`** (PROVEN 2026-07-29).
+
+This is the whole of the conversion between the two forms of the condition at
+`2` that this development uses: `PotentialHeckeDatum.residueCardTwo` /
+`nonempty_hilbertHeckeAlgebra_of_moretBaillySeed`'s `hres2` state `N(w) = 2`,
+while `exists_isWeaklyUniversal_hilbertDeformationDatum` and
+`injective_classifyingMap_hilbertHeckeDatum` ask for `ℓ ∤ N(w)² − 1`.  With
+`N(w) = 2` the right-hand side is the constant `3`, and `5 ≤ ℓ` finishes it.
+
+`hℓ5` is load-bearing and cannot be weakened to `Odd ℓ`: at `ℓ = 3` the
+conclusion is FALSE, since `3 ∣ 3`.  The stronger form is also strictly
+stronger as a hypothesis on `F` — `ℚ(√5)` has `2` inert with `N(w) = 4`, so it
+satisfies neither, and is the standing witness that neither condition may be
+assumed of an arbitrary totally real Galois `F`. -/
+theorem not_dvd_natCard_sq_sub_one_of_residueCard_eq_two
+    {ℓ : ℕ} (hℓ5 : 5 ≤ ℓ)
     (F : Type u) [Field F] [NumberField F]
-    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
-    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
-    [TopologicalSpace k] [DiscreteTopology k]
-    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
-    [Module.Free k W]
-    {ρbar : GaloisRep ℚ k W}
-    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
-    (𝒟 : HilbertDeformationDatum ℓ F ρbar)
-    (H : HilbertHeckeAlgebra ℓ F ρbar) :
-    ∃ φ : H.T →+* 𝒟.R, ∀ g : Field.absoluteGaloisGroup F,
-      ((H.ρT g).charpoly).map φ = (𝒟.ρ g).charpoly := by
-  by_cases hw2 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+    (hres2 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      ((2 : ℕ) : NumberField.RingOfIntegers F) ∈ w.asIdeal →
+      Nat.card (NumberField.RingOfIntegers F ⧸ w.asIdeal) = 2) :
+    ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
       ((2 : ℕ) : NumberField.RingOfIntegers F) ∈ w.asIdeal →
       ¬ ((ℓ : ℤ) ∣
-        ((Nat.card (NumberField.RingOfIntegers F ⧸ w.asIdeal) : ℤ) ^ 2 - 1))
-  · exact exists_classifyingHom_of_hilbertDeformationDatum_of_splitTwo
-      ℓ hℓ5 F hFtr hFgal hw2 hirrF 𝒟 H
-  · exact exists_classifyingHom_of_hilbertDeformationDatum_of_not_splitTwo
-      ℓ hℓ5 F hFtr hFgal hw2 hirrF 𝒟 H
+        ((Nat.card (NumberField.RingOfIntegers F ⧸ w.asIdeal) : ℤ) ^ 2 - 1)) := by
+  intro w hw hdvd
+  have he : ((Nat.card (NumberField.RingOfIntegers F ⧸ w.asIdeal) : ℤ) ^ 2 - 1)
+      = 3 := by rw [hres2 w hw]; norm_num
+  rw [he] at hdvd
+  have hle : (ℓ : ℤ) ≤ 3 := Int.le_of_dvd (by norm_num) hdvd
+  have h5 : (5 : ℤ) ≤ (ℓ : ℤ) := by exact_mod_cast hℓ5
+  omega
 
 set_option linter.unusedVariables false in
 /-- **`R_F = T_F` at the given `F`, in classifying-map form** (PROVEN
@@ -2428,6 +2487,15 @@ theorem exists_classifyingHom_hilbertHeckeAlgebra
     (F : Type u) [Field F] [NumberField F]
     (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    -- the condition at the places over `2` (2026-07-29).  This is
+    -- `PotentialHeckeDatum.residueCardTwo`; it is what the `R_F = T_F` node
+    -- below needs (in the equivalent form `ℓ ∤ N(w)² − 1`) and what this
+    -- file's chain used to drop.  It is not a constraint on an arbitrary `F`
+    -- — it is a property of the `F` the Moret–Bailly producer CHOOSES, and it
+    -- arrives here from `exists_moretBaillySeed_residueCardTwo_of_five_le`.
+    (hres2 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      ((2 : ℕ) : NumberField.RingOfIntegers F) ∈ w.asIdeal →
+      Nat.card (NumberField.RingOfIntegers F ⧸ w.asIdeal) = 2)
     (badρ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
     (hcong : ∀ w ∉ badρ,
       ((ρ.map (algebraMap ℚ F)).charFrob w).map π =
@@ -2463,7 +2531,8 @@ theorem exists_classifyingHom_hilbertHeckeAlgebra
       π_surjective := hπsurj
       resid := hall }
   obtain ⟨φ, hφ⟩ :=
-    exists_classifyingHom_of_hilbertDeformationDatum ℓ hℓ5 F hFtr hFgal hirrF 𝒟' H
+    exists_classifyingHom_of_hilbertDeformationDatum_of_splitTwo ℓ hℓ5 F hFtr hFgal
+      (not_dvd_natCard_sq_sub_one_of_residueCard_eq_two hℓ5 F hres2) hirrF 𝒟' H
   exact ⟨φ, hφ⟩
 
 /-- **`R = 𝕋` over the totally real base, in Hecke-algebra form** (PROVEN
@@ -2733,6 +2802,13 @@ theorem exists_heckeTraceAlgebra_of_congruentSeed
     (F : Type u) [Field F] [NumberField F]
     (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    -- the condition at the places over `2` (2026-07-29); see the binder note on
+    -- `exists_classifyingHom_hilbertHeckeAlgebra` above.  BOTH halves of this
+    -- assembly consume it: potential modularity at `F` (through the twin's
+    -- `hres2`) and `R_F = T_F` (through `ℓ ∤ N(w)² − 1`).
+    (hres2 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      ((2 : ℕ) : NumberField.RingOfIntegers F) ∈ w.asIdeal →
+      Nat.card (NumberField.RingOfIntegers F ⧸ w.asIdeal) = 2)
     (seed : MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F)))
     (badρ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
     (hcong : ∀ w ∉ badρ,
@@ -2759,11 +2835,18 @@ theorem exists_heckeTraceAlgebra_of_congruentSeed
         IsQuaternionicEigensystem F E badF (fun w => θ (t w))) := by
   classical
   -- potential modularity at the given `F`: the seed newform's Hecke algebra
-  obtain ⟨H⟩ := nonempty_hilbertHeckeAlgebra_of_moretBaillySeed hℓodd hℓ5 hW
-    hρbar hirr F hFtr hFgal hirrF seed
+  -- (2026-07-29) this is the UPSTREAM declaration
+  -- `GaloisRepresentation.nonempty_hilbertHeckeAlgebra_of_moretBaillySeed`, not
+  -- the copy that used to shadow it inside `GaloisRepresentation.Modularity`.
+  -- That copy was this one with `hres2` deleted, hence strictly stronger and
+  -- unprovable as stated; it is gone, and the name is written out in full so
+  -- the shadowing cannot silently return.
+  obtain ⟨H⟩ :=
+    _root_.GaloisRepresentation.nonempty_hilbertHeckeAlgebra_of_moretBaillySeed
+      (hℓOdd := hℓodd) (hdim := hW) ℓ hℓ5 hρbar hirr F hFtr hFgal hirrF hres2 seed
   -- `R_F = T_F`: the lift `ρ|_{G_F}` is a point of that Hecke algebra
   obtain ⟨φ, hφ⟩ := exists_classifyingHom_hilbertHeckeAlgebra hℓodd hℓ5 hZinj
-    hrank hρ hW hρbar hirr π hπsurj F hFtr hFgal hirrF badρ hcong H
+    hrank hρ hW hρbar hirr π hπsurj F hFtr hFgal hirrF hres2 badρ hcong H
   haveI := H.charPK
   have hℓne : ((ℓ : ℕ) : NumberField.RingOfIntegers F) ≠ 0 :=
     Nat.cast_ne_zero.mpr (Fact.out (p := ℓ.Prime)).ne_zero
@@ -3039,6 +3122,11 @@ theorem exists_heckeEigensystem_of_congruentSeed
     (F : Type u) [Field F] [NumberField F]
     (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    -- the condition at the places over `2` (2026-07-29), forwarded unchanged;
+    -- see the binder note on `exists_classifyingHom_hilbertHeckeAlgebra` above.
+    (hres2 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      ((2 : ℕ) : NumberField.RingOfIntegers F) ∈ w.asIdeal →
+      Nat.card (NumberField.RingOfIntegers F ⧸ w.asIdeal) = 2)
     (seed : MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F)))
     (badρ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
     (hcong : ∀ w ∉ badρ,
@@ -3064,7 +3152,7 @@ theorem exists_heckeEigensystem_of_congruentSeed
   -- the automorphic half: the Hecke algebra, module-finite over `ℤ`
   obtain ⟨T, iT, hTfin, ιT, badF, t, hbadℓ, htr, hauto⟩ :=
     exists_heckeTraceAlgebra_of_congruentSeed hℓodd hℓ5 hZinj hrank hρ hW hρbar
-      hirr π hπsurj hπ F hFtr hFgal hirrF seed badρ hcong ιO hιO
+      hirr π hπsurj hπ F hFtr hFgal hirrF hres2 seed badρ hcong ιO hιO
   letI : CommRing T := iT
   haveI : Module.Finite ℤ T := hTfin
   -- the commutative-algebra half: its image lies in a number field
@@ -3584,6 +3672,11 @@ theorem exists_heckePackage_of_seed
     (F : Type u) [Field F] [NumberField F]
     (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    -- the condition at the places over `2` (2026-07-29), forwarded unchanged;
+    -- see the binder note on `exists_classifyingHom_hilbertHeckeAlgebra` above.
+    (hres2 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      ((2 : ℕ) : NumberField.RingOfIntegers F) ∈ w.asIdeal →
+      Nat.card (NumberField.RingOfIntegers F ⧸ w.asIdeal) = 2)
     (seed : MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F))) :
     ∃ (E : Type u) (_ : Field E) (_ : NumberField E)
       (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
@@ -3620,7 +3713,7 @@ theorem exists_heckePackage_of_seed
   -- eigenvalue function `a`
   obtain ⟨E, hE, hNE, ψℓ, badF, a, hbadℓ, htr, hauto⟩ :=
     exists_heckeEigensystem_of_congruentSeed hℓodd hℓ5 hZinj hrank hρ hW
-      hρbar hirr π hπsurj hπ F hFtr hFgal hirrF seed badρ hcong ιO hιO
+      hρbar hirr π hπsurj hπ F hFtr hFgal hirrF hres2 seed badρ hcong ιO hιO
   letI : Field E := hE
   -- the trace of the assembled Hecke polynomial is the eigenvalue back again
   have hcoeff : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
@@ -14110,14 +14203,39 @@ theorem exists_potentialModularityWitness_of_five_le
         ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat) :
     Nonempty (PotentialModularityWitness ℓ O ρ) := by
   classical
-  -- (i) the Moret–Bailly base: totally real Galois `F`, irreducibility
-  -- preservation, and the modular congruent seed (Taylor 2002 Thm B)
-  obtain ⟨F, hF, hNF, hFtr, hFgal, hev, hirrF, ⟨seed⟩⟩ :=
-    exists_moretBailly_seed_of_five_le hℓodd hℓ5 hW hρbar hirr
+  -- (i) the Moret–Bailly base: totally real Galois `F` of even degree, `2`
+  -- SPLIT COMPLETELY in it, irreducibility preservation, and the modular
+  -- congruent seed (Taylor 2002 Thm B).
+  --
+  -- PRODUCER CHANGED 2026-07-29 from `exists_moretBailly_seed_of_five_le` to
+  -- `exists_moretBaillySeed_residueCardTwo_of_five_le`
+  -- (`HardlyRamified/HilbertModularity.lean`, PROVEN glue).  The two are the
+  -- same Taylor/Moret–Bailly citation; the latter additionally returns
+  --
+  --     hres2 : ∀ w ∣ 2, Nat.card (𝓞 F ⧸ w.asIdeal) = 2
+  --
+  -- i.e. `PotentialHeckeDatum.residueCardTwo`.  It is REQUIRED, not decorative:
+  -- `HilbertHeckeAlgebra`'s `isHilbertHardlyRamified` demands the tame-at-`2`
+  -- local condition of `ρT`, whose deformation-theoretic construction
+  -- (`isHilbertTameAtTwo_of_fibreProduct`) was refuted on 2026-07-26 without
+  -- `ℓ ∤ N(w)² − 1` and now carries it.  Calling the producer WITHOUT the
+  -- residue conjunct is what forced the `R_F = T_F` node into a case split with
+  -- an unclosable non-split-at-`2` residue; that residue is now deleted.  The
+  -- condition cannot be added as a hypothesis about an arbitrary totally real
+  -- Galois `F` — `ℚ(√5)` has `2` inert, `N(w) = 4` and `5 ∣ 15` — which is
+  -- exactly why it must be arranged HERE, where `F` is chosen.
+  --
+  -- `hev : Even (finrank ℚ F)` is still in hand: it was added to the
+  -- residueCardTwo producer (and to the leaf beneath it) for this call site,
+  -- since the `3`-adic realization and both Weil-bound citations below consume
+  -- it and it must be about the SAME `F`.
+  obtain ⟨F, hF, hNF, hFtr, hFgal, hev, hirrF, hres2, ⟨seed⟩⟩ :=
+    _root_.GaloisRepresentation.exists_moretBaillySeed_residueCardTwo_of_five_le
+      (hℓOdd := hℓodd) (hdim := hW) ℓ hℓ5 hρbar hirr
   -- (ii) modularity lifting over `F`: the ℓ-adic Hecke block
   obtain ⟨E, hE, hNE, badF, heckeF, ψℓ, ιO, hιO, hmod, hauto⟩ :=
     exists_heckePackage_of_seed hℓodd hℓ5 hZinj hrank hρ hW hρbar hirr
-      π hπsurj hπ F hFtr hFgal hirrF seed
+      π hπsurj hπ F hFtr hFgal hirrF hres2 seed
   -- (ii') ENLARGE the exceptional set by the places of `F` over `2`, `3`
   -- and `ℓ` (2026-07-26; the `3` step was step (ii') of the round-2 cut,
   -- the `2` and `ℓ` steps complete it). The `ℓ`-adic clause `hmod` only
