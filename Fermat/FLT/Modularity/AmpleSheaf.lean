@@ -1247,6 +1247,90 @@ theorem isInvertibleSheaf_modTensorPow {Z : Scheme.{u}} {L : Z.Modules}
   | 0 => isInvertibleSheaf_modUnit Z
   | (n + 1) => isInvertibleSheaf_modTensor hL (isInvertibleSheaf_modTensorPow hL n)
 
+/-- Applying a presheaf-of-modules morphism equation at one open and one section.
+**HOISTED 2026-07-30** from § *The canonical trivialization of a tensor product*, for the
+same reason as the block below: the braiding-free core and the local-section half both use
+it, and both are above where it was written. -/
+lemma presheafHom_congr_apply {C : Type*} [Category* C] {R : Cᵒᵖ ⥤ RingCat.{u}}
+    {A B : PresheafOfModules.{u} R} {m₁ m₂ : A ⟶ B} (h : m₁ = m₂) (V : Cᵒᵖ) (z : A.obj V) :
+    m₁.app V z = m₂.app V z := by rw [h]
+
+/-! #### Endomorphisms of `𝒪_W`
+
+The general form of the transition-function computation already done at `⊤` in
+`nonvanishingLocus_modUnit`: an endomorphism of `𝒪_W` is multiplication by its
+value at `1`, and it is an isomorphism as soon as that value is a unit.
+
+**HOISTED here 2026-07-30** from § *The canonical trivialization of a tensor product*,
+~700 lines below, where it was written; `exists_modUnitHom_isIso_modTensorMap` below is
+proven by exactly this unit argument.  Verbatim, and it used none of that section's
+`variable`s. -/
+
+/-- `1 : Γ(W, V)`, read as a section of the unit module over `V`. -/
+def unitOneAt (W : Scheme.{u}) (V : W.Opens) : Γ(modUnit W, V) := (1 : Γ(W, V))
+
+/-- An endomorphism of `𝒪_W` applied to a section over `V`, both sides typed in
+`Γ(W, V)`.  Same role as `unitEndoApply` above, for a bare morphism and over an
+arbitrary open. -/
+noncomputable def unitHomApply {W : Scheme.{u}} (α : modUnit W ⟶ modUnit W) {V : W.Opens}
+    (a : Γ(W, V)) : Γ(W, V) := α.val.app (op V) a
+
+lemma unitHomApply_eq {W : Scheme.{u}} (α : modUnit W ⟶ modUnit W) {V : W.Opens}
+    (a : Γ(W, V)) :
+    unitHomApply α a = a * unitHomApply α (1 : Γ(W, V)) := by
+  have h2 : unitHomApply α (a * 1) = a * unitHomApply α (1 : Γ(W, V)) :=
+    (α.val.app (op V)).hom.map_smul a (unitOneAt W V)
+  simpa using h2
+
+lemma unitHom_app_one {W : Scheme.{u}} (α : modUnit W ⟶ modUnit W) (V : W.Opens) :
+    unitHomApply α (1 : Γ(W, V))
+      = W.presheaf.map (homOfLE le_top).op (unitHomApply α (1 : Γ(W, ⊤))) := by
+  have h1 : ((modUnit W).val.map (homOfLE (le_top : V ≤ ⊤)).op) (unitOneAt W ⊤)
+      = unitOneAt W V :=
+    PresheafOfModules.unit_map_one W.ringCatSheaf.obj (homOfLE le_top).op
+  have hnat := PresheafOfModules.naturality_apply α.val
+    (X := op (⊤ : W.Opens)) (Y := op V) (homOfLE le_top).op (unitOneAt W ⊤)
+  rw [h1] at hnat
+  exact hnat
+
+/-- The compatible family of restrictions of a global section of `𝒪_W`. -/
+noncomputable def unitSectionOf {W : Scheme.{u}} (c : Γ(W, ⊤)) : (modUnit W).sections :=
+  PresheafOfModules.sectionsMk (fun V => W.presheaf.map (homOfLE le_top).op c)
+    (fun V V' g => by
+      show W.presheaf.map g (W.presheaf.map (homOfLE le_top).op c) = _
+      rw [← ConcreteCategory.comp_apply, ← Functor.map_comp]
+      congr 1)
+
+/-- Multiplication by a global section of `𝒪_W`, as an endomorphism of `𝒪_W`.
+Built through `SheafOfModules.unitHomEquiv`, so no naturality proof is needed. -/
+noncomputable def unitMulHom {W : Scheme.{u}} (c : Γ(W, ⊤)) : modUnit W ⟶ modUnit W :=
+  (SheafOfModules.unitHomEquiv (modUnit W)).symm (unitSectionOf c)
+
+lemma unitMulHom_app_one {W : Scheme.{u}} (c : Γ(W, ⊤)) (V : W.Opens) :
+    unitHomApply (unitMulHom c) (1 : Γ(W, V))
+      = W.presheaf.map (homOfLE le_top).op c :=
+  congrArg (fun s : (modUnit W).sections => s.val (op V))
+    ((SheafOfModules.unitHomEquiv (modUnit W)).apply_symm_apply (unitSectionOf c))
+
+/-- **An endomorphism of `𝒪_W` whose value at `1` is a unit is an isomorphism**
+(PROVEN 2026-07-29). -/
+theorem isIso_of_isUnit_unitHom {W : Scheme.{u}} (α : modUnit W ⟶ modUnit W)
+    (h : IsUnit (unitHomApply α (1 : Γ(W, ⊤)))) : IsIso α := by
+  obtain ⟨v, hv⟩ := h
+  refine ⟨unitMulHom ((v⁻¹ : (Γ(W, ⊤))ˣ) : Γ(W, ⊤)), ?_, ?_⟩
+  · refine (SheafOfModules.unitHomEquiv (modUnit W)).injective
+      (PresheafOfModules.sections_ext _ _ (fun V => ?_))
+    show unitHomApply (unitMulHom ((v⁻¹ : (Γ(W, ⊤))ˣ) : Γ(W, ⊤)))
+        (unitHomApply α (1 : Γ(W, V.unop))) = (1 : Γ(W, V.unop))
+    rw [unitHom_app_one, unitHomApply_eq, unitMulHom_app_one, ← map_mul, ← hv,
+      v.mul_inv, map_one]
+  · refine (SheafOfModules.unitHomEquiv (modUnit W)).injective
+      (PresheafOfModules.sections_ext _ _ (fun V => ?_))
+    show unitHomApply α (unitHomApply (unitMulHom ((v⁻¹ : (Γ(W, ⊤))ˣ) : Γ(W, ⊤)))
+        (1 : Γ(W, V.unop))) = (1 : Γ(W, V.unop))
+    rw [unitMulHom_app_one, unitHomApply_eq, unitHom_app_one, ← map_mul, ← hv,
+      v.inv_mul, map_one]
+
 /-! ### THE BRAIDING-FREE MONOIDAL CORE
 
 **This section REFUTES the central claim of the route audit that stood on
@@ -1438,9 +1522,220 @@ theorem isIso_of_isIso_modTensorMap {Z : Scheme.{u}} {L N : Z.Modules}
     rw [modTensorUnitRightIso_naturality, Iso.inv_hom_id_assoc]
   rw [hfin]; infer_instance
 
-/-- **THE LOCAL-SECTION HALF OF STACKS 01CV, AND THE ONLY THING LEFT OF IT**
-(LEAF, CUT 2026-07-30 out of `exists_trivialization_of_modTensor_trivial` below,
-which is three lines over it and over `isIso_of_isIso_modTensorMap` above): if
+/-! ### THE LOCAL-SECTION HALF OF STACKS 01CV
+
+**PROVEN 2026-07-30**, over the single new leaf `exists_restrict_modTensor_tensorSection`
+at the end of this block.  The five-step witness that the cut of that morning wrote out in
+prose is now Lean: steps 1–4 (produce a pair of local sections whose tensor generates) are
+`exists_modTensorMk_preimage` and `exists_mem_basicOpen_tmul` below, and step 5 (read the
+generation statement through the unitor) is the assembly in
+`exists_modUnitHom_isIso_modTensorMap`.
+
+**What the leaf at the end is, and why it is a better node than the one it replaces.**
+Step 5 compares `L|_W ⊗ N|_W` with `(L ⊗ N)|_W`, and it needs that comparison to be an
+isomorphism *with a known effect on `tensorSection`* — the anonymous
+`nonempty_restrict_modTensor` will not do, for the reason recorded at length on
+`exists_trivialization_modTensor`.  That PINNED comparison is exactly what this file has
+been asking for in three separate route audits ("the honest form is to strengthen
+`nonempty_restrict_modTensor` from `Nonempty` to a NAMED comparison isomorphism carrying
+`(a ⊗ b)|_f` to `a|_f ⊗ b|_f`"), and it is pure formal sheaf theory: sheafification
+commutes with restriction to an open subsite.  Nothing about sections, local rings or
+generation survives in it. -/
+
+/-- `a ⊗ b` as a section of `L ⊗ M` over an ARBITRARY open — `tensorSection` is the case
+`V = ⊤`, and the local argument below needs the general one. -/
+noncomputable def tensorSectionAt {Z : Scheme.{u}} (L M : Z.Modules) {V : Z.Opens}
+    (a : Γ(L, V)) (b : Γ(M, V)) : Γ(modTensor L M, V) :=
+  (modTensorMk L M).app (op V) (a ⊗ₜ b)
+
+/-- The compatible family of restrictions of a global section of `M`.  Generalises
+`unitSectionOf` above, which is the case `M = 𝒪_W`. -/
+noncomputable def modSectionOf {W : Scheme.{u}} {M : W.Modules} (c : Γ(M, ⊤)) : M.sections :=
+  PresheafOfModules.sectionsMk (fun V => M.presheaf.map (homOfLE le_top).op c)
+    (fun V V' g => by
+      show M.presheaf.map g (M.presheaf.map (homOfLE le_top).op c) = _
+      rw [← ConcreteCategory.comp_apply, ← Functor.map_comp]
+      congr 1)
+
+/-- **A global section of `M` READ AS A MAP `𝒪_W ⟶ M`** — the direction of
+`SheafOfModules.unitHomEquiv` that the local-section argument needs.  Generalises
+`unitMulHom`, which is the case `M = 𝒪_W`. -/
+noncomputable def modMulHom {W : Scheme.{u}} {M : W.Modules} (c : Γ(M, ⊤)) : modUnit W ⟶ M :=
+  (SheafOfModules.unitHomEquiv M).symm (modSectionOf c)
+
+/-- …and it sends `1` back to the section it came from. -/
+lemma modMulHom_app_top {W : Scheme.{u}} {M : W.Modules} (c : Γ(M, ⊤)) :
+    (modMulHom c).val.app (op ⊤) (1 : Γ(W, ⊤)) = c := by
+  have h : (SheafOfModules.unitHomEquiv M) (modMulHom c) = modSectionOf c :=
+    (SheafOfModules.unitHomEquiv M).apply_symm_apply _
+  have h2 : ((SheafOfModules.unitHomEquiv M) (modMulHom c)).val (op ⊤)
+      = (modSectionOf c).val (op ⊤) := by rw [h]
+  refine h2.trans ?_
+  show M.presheaf.map (homOfLE le_top).op c = c
+  rw [Subsingleton.elim (homOfLE (le_top : (⊤ : W.Opens) ≤ ⊤)) (𝟙 _)]
+  simp
+
+/-- **`modTensorMk` IS LOCALLY SURJECTIVE**, because it is `CategoryTheory.toSheafify` —
+`rfl`, by `toPresheaf_map_sheafificationAdjunction_unit_app` — and mathlib carries
+`instance : IsLocallySurjective J (toSheafify α φ)` in
+`Mathlib/Algebra/Category/ModuleCat/Presheaf/Sheafify.lean`. -/
+lemma isLocallySurjective_modTensorMk {Z : Scheme.{u}} (L M : Z.Modules) :
+    Presheaf.IsLocallySurjective (Opens.grothendieckTopology Z)
+      ((PresheafOfModules.toPresheaf (Z.presheaf ⋙ forget₂ CommRingCat RingCat)).map
+        (modTensorMk L M)) := by
+  show Presheaf.IsLocallySurjective _ (CategoryTheory.toSheafify _ _)
+  infer_instance
+
+/-- **STEP 2 OF STACKS 01CV: near every point of `V`, a section of `L ⊗ M` IS an honest
+element of the presheaf tensor product** (PROVEN 2026-07-30).
+
+This is the step the previous cut named as "where the remaining work actually is":
+unfolding `Presheaf.IsLocallySurjective` over `Opens.grothendieckTopology` into an open
+cover.  It is three lines, because `Opens.mem_grothendieckTopology` is `.rfl` — a covering
+sieve of `V` is literally a family of opens through every point of `V`. -/
+lemma exists_modTensorMk_preimage {Z : Scheme.{u}} (L M : Z.Modules) {V : Z.Opens}
+    (s : Γ(modTensor L M, V)) {z : Z} (hz : z ∈ V) :
+    ∃ (V' : Z.Opens) (h : V' ≤ V), z ∈ V' ∧
+      ∃ t : (PresheafOfModules.Monoidal.tensorObj (R := Z.presheaf) L.val M.val).obj (op V'),
+        (modTensorMk L M).app (op V') t = (modTensor L M).val.map (homOfLE h).op s := by
+  haveI := isLocallySurjective_modTensorMk L M
+  have hmem := Presheaf.imageSieve_mem (Opens.grothendieckTopology Z)
+    ((PresheafOfModules.toPresheaf (Z.presheaf ⋙ forget₂ CommRingCat RingCat)).map
+      (modTensorMk L M)) (U := op V) s
+  obtain ⟨V', f, hf, hzV'⟩ := hmem z hz
+  refine ⟨V', leOfHom f, hzV', ?_⟩
+  obtain ⟨t, ht⟩ := hf
+  exact ⟨t, ht⟩
+
+/-- **STEPS 3 AND 4 OF STACKS 01CV: an additive map out of the presheaf tensor product
+which hits `1` sends some PURE tensor to a section that does not vanish at `z`** (PROVEN
+2026-07-30).
+
+The two steps of the prose witness — "a tensor is a finite sum of pure tensors", then "a
+sum equal to `1` cannot have every term in the maximal ideal of `𝒪_z`" — collapse into a
+single induction once they are run in the right order: the set of `w` whose germ at `z`
+lands in `𝔪_z` is an additive subgroup, so `TensorProduct.induction_on` needs no Finset
+and no cardinality at all.  Locality of `𝒪_z` enters exactly once, as `1 ∉ 𝔪_z`. -/
+lemma exists_mem_basicOpen_tmul {Z : Scheme.{u}} (L M : Z.Modules) {V : Z.Opens}
+    (F : (PresheafOfModules.Monoidal.tensorObj (R := Z.presheaf) L.val M.val).obj (op V) →
+      Γ(Z, V))
+    (hzero : F 0 = 0) (hadd : ∀ a b, F (a + b) = F a + F b)
+    (t : (PresheafOfModules.Monoidal.tensorObj (R := Z.presheaf) L.val M.val).obj (op V))
+    (ht : F t = 1) {z : Z} (hz : z ∈ V) :
+    ∃ (x : Γ(L, V)) (y : Γ(M, V)), z ∈ Z.basicOpen (F (x ⊗ₜ y)) := by
+  by_contra hcon
+  push Not at hcon
+  have key : ∀ w, Z.presheaf.germ V z hz (F w) ∈ IsLocalRing.maximalIdeal _ := by
+    intro w
+    induction w using TensorProduct.induction_on with
+    | zero =>
+        have h0 : Z.presheaf.germ V z hz (F 0) = 0 := by rw [hzero]; exact map_zero _
+        have hm := Submodule.zero_mem (IsLocalRing.maximalIdeal ↑(Z.presheaf.stalk z))
+        rwa [← h0] at hm
+    | tmul x y =>
+        refine (IsLocalRing.mem_maximalIdeal _).mpr ?_
+        have h1 := hcon x y
+        rw [Scheme.mem_basicOpen _ _ _ hz] at h1
+        exact h1
+    | add a b ha hb =>
+        have hm := Submodule.add_mem (IsLocalRing.maximalIdeal ↑(Z.presheaf.stalk z)) ha hb
+        rwa [← map_add, ← hadd] at hm
+  have hfin := key t
+  rw [ht] at hfin
+  exact (IsLocalRing.notMem_maximalIdeal.mpr isUnit_one) (by rwa [map_one] at hfin)
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The left unitor computes on `modTensorMk`-images.**  Same two-step proof as
+`tensorPairingSheaf_modTensorMk`: naturality of the sheafification unit, then the right
+triangle identity of the sheafification adjunction. -/
+lemma modTensorUnitLeftIso_modTensorMk {Z : Scheme.{u}} (M : Z.Modules) (V : Z.Opensᵒᵖ)
+    (x : (PresheafOfModules.Monoidal.tensorObj (R := Z.presheaf) (modUnit Z).val M.val).obj V) :
+    (modTensorUnitLeftIso M).hom.val.app V ((modTensorMk (modUnit Z) M).app V x)
+      = (MonoidalCategory.leftUnitor M.val).hom.app V x := by
+  have hnat := presheafHom_congr_apply
+    ((PresheafOfModules.sheafificationAdjunction (𝟙 Z.ringCatSheaf.obj)).unit.naturality
+      (MonoidalCategory.leftUnitor M.val).hom) V x
+  have htri := presheafHom_congr_apply
+    ((PresheafOfModules.sheafificationAdjunction
+      (𝟙 Z.ringCatSheaf.obj)).right_triangle_components M) V
+      ((MonoidalCategory.leftUnitor M.val).hom.app V x)
+  have hnat' : ((PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)).map
+        (MonoidalCategory.leftUnitor M.val).hom).val.app V
+        ((modTensorMk (modUnit Z) M).app V x)
+      = ((PresheafOfModules.sheafificationAdjunction (𝟙 Z.ringCatSheaf.obj)).unit.app
+          M.val).app V ((MonoidalCategory.leftUnitor M.val).hom.app V x) := hnat.symm
+  show ((modSheafifyValIso M).hom).val.app V
+      (((PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)).map
+        (MonoidalCategory.leftUnitor M.val).hom).val.app V
+          ((modTensorMk (modUnit Z) M).app V x)) = _
+  rw [hnat']
+  exact htri
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The left unitor sends `1 ⊗ 1` to `1`.**  The `letI` is the `ringCatSheaf`-vs-`presheaf`
+re-keying recorded on `exists_modPushforwardTensorPre`; without it
+`ModuleCat.MonoidalCategory.leftUnitor_hom_apply` cannot be applied here. -/
+lemma modTensorUnitLeftIso_tensorSection_one (W : Scheme.{u}) :
+    (modTensorUnitLeftIso (modUnit W)).hom.val.app (op ⊤)
+        (tensorSection (unitOne W) (unitOne W)) = (1 : Γ(W, ⊤)) := by
+  letI : CommRing ↑(W.ringCatSheaf.obj.obj (op (⊤ : W.Opens))) :=
+    inferInstanceAs (CommRing ↑(W.presheaf.obj (op (⊤ : W.Opens))))
+  show (modTensorUnitLeftIso (modUnit W)).hom.val.app (op ⊤)
+    ((modTensorMk (modUnit W) (modUnit W)).app (op ⊤) ((1 : Γ(W, ⊤)) ⊗ₜ (1 : Γ(W, ⊤)))) = _
+  rw [modTensorUnitLeftIso_modTensorMk, PresheafOfModules.leftUnitor_hom_app]
+  erw [ModuleCat.MonoidalCategory.leftUnitor_hom_apply]
+  simp
+
+/-- **LEAF (2026-07-30) — RESTRICTION COMMUTES WITH `modTensor`, CANONICALLY: the
+comparison `(L ⊗ M)|_W ≅ L|_W ⊗ M|_W` PINNED on tensors of sections.**
+
+This is the `Nonempty` statement `nonempty_restrict_modTensor` above, strengthened to a
+NAMED isomorphism with a known effect on `tensorSection`, and it is the residue of the
+local-section half of Stacks 01CV: `exists_modUnitHom_isIso_modTensorMap` below is proven
+over it and over nothing else that is open.
+
+**Three route audits in this file already named this as the honest missing node**, in the
+same words: on `exists_trivialization_modTensor` ("the honest form is to strengthen
+`nonempty_restrict_modTensor` from `Nonempty` to a NAMED comparison isomorphism
+`(L ⊗ M)|_f ≅ L|_f ⊗ M|_f` carrying `(a ⊗ b)|_f` to `a|_f ⊗ b|_f`"), on
+`exists_modPullback_modTensor`, and on `exists_trivialization_tensorPow`.  Each of them
+then found a way NOT to need it; this one cannot, because a *split* mono/epi argument needs
+the comparison to be invertible and the *unit* argument needs its value.
+
+**Note the statement needs no `restrictAppIso` transport**: `Scheme.Modules.restrictAppIso`
+is `Iso.refl` at this pin (`restrict_obj` is `rfl`), so `Γ(L.restrict W.ι, ⊤)` IS
+`Γ(L, W.ι ''ᵁ ⊤)`, and `tensorSectionAt L M a b` on the left is literally a section of
+`(L ⊗ M).restrict W.ι` over `⊤`.
+
+**WHAT IT WILL TAKE.**  `modTensor (L|_W) (M|_W)` is the sheafification of the restriction
+and `(L ⊗ M)|_W` is the restriction of the sheafification.  The comparison map itself is
+free — maps OUT of a sheafification are supplied by the universal property from presheaf
+data, and the presheaf tensor is OBJECTWISE while restriction to an open subsite is
+precomposition, so the required presheaf map is `modTensorMk` at shifted opens and the
+pinning clause is then true by construction.  What has to be proven is that it is an
+ISOMORPHISM, i.e. that sheafification commutes with restriction to an open subsite.  The
+honest route is local bijectivity: `modTensorMk` is locally injective and locally surjective
+(both are mathlib instances on `toSheafify`), a covering sieve of `V ≤ W` in `W` is a
+covering sieve in `Z`, so both legs are locally bijective and a locally bijective map of
+SHEAVES is an isomorphism (`J.W_of_isLocallyBijective`, `homEquivOfIsLocallyBijective`).
+
+**FAITHFUL.**  Not vacuous: at `W = ⊤` it is `Scheme.Modules.restrictFunctorId` and holds.
+It is not under-pinned either — the `∀ a b` clause pins `e` on every pure tensor of sections
+over `W`, which is exactly what the consumer consumes, and an `e` differing by a unit fails
+it.  The direction is chosen to match `nonempty_restrict_modTensor`, so a proof of this leaf
+also DISCHARGES that theorem's dependence on the still-open
+`isIso_modPullbackTensorComparison`. -/
+theorem exists_restrict_modTensor_tensorSection {Z : Scheme.{u}} (L M : Z.Modules)
+    (W : Z.Opens) :
+    ∃ e : (modTensor L M).restrict W.ι ≅ modTensor (L.restrict W.ι) (M.restrict W.ι),
+      ∀ (a : Γ(L.restrict W.ι, ⊤)) (b : Γ(M.restrict W.ι, ⊤)),
+        e.hom.val.app (op ⊤) (tensorSectionAt L M a b) = tensorSection a b :=
+  sorry
+
+set_option maxHeartbeats 1600000 in
+/-- **THE LOCAL-SECTION HALF OF STACKS 01CV** (**PROVEN 2026-07-30** over the single leaf
+`exists_restrict_modTensor_tensorSection` above; was itself a leaf, cut that morning out of
+`exists_trivialization_of_modTensor_trivial` below): if
 `L ⊗ N` is trivial on `U`, then near each point of `U` there are maps
 `α : 𝒪 ⟶ L` and `γ : 𝒪 ⟶ N` whose tensor `α ⊗ γ` is an isomorphism.
 
@@ -1472,11 +1767,11 @@ stalk-module structure is needed either.  Concretely the intended witness is:
     `isIso_of_isUnit_unitHom` (proven in this file, § *Endomorphisms of `𝒪_W`*)
     is exactly the statement that such an endomorphism of `𝒪_W` is invertible.
 
-**FAITHFUL, and `hν` is load-bearing.**  Without `hν` the statement is FALSE:
-take `L` the skyscraper `k` at the origin of `Spec k[u]` and `N = 𝒪`, the
+**FAITHFUL, and the trivialization hypothesis is load-bearing.**  Without it the statement
+is FALSE: take `A` the skyscraper `k` at the origin of `Spec k[u]` and `B = 𝒪`, the
 counterexample already recorded on
 `nonvanishingLocus_modPullback_of_isAmpleSheaf`; no `α ⊗ γ` out of `𝒪 ⊗ 𝒪` is an
-isomorphism onto `L ⊗ N` near the origin, since `L` is not generated by one
+isomorphism onto `A ⊗ B` near the origin, since `A` is not generated by one
 section there.  It is not vacuous for the same reason.
 
 **Pinned as tightly as an existential can be**, and deliberately not more: the
@@ -1486,22 +1781,130 @@ yields a true consumer.  Unlike the `Nonempty` forms this module had to correct
 (see `exists_trivialization_modTensor`), there is nothing here for a unit twist
 to destroy — `IsIso` is stable under it.
 
-**Where the remaining work actually is**: step 2, unfolding
-`Presheaf.IsLocallySurjective` over `Opens.grothendieckTopology` into an open
-cover, and step 5, the section-level computation.  Both are bookkeeping against
-machinery that is present — for step 5, the whole `§ Endomorphisms of 𝒪_W` and
-`§ The CANONICAL trivialization of a tensor product` blocks below are the model
-to copy, and `exists_trivialization_modTensor` is the same shape of argument run
-in the opposite direction (a map OUT of `modTensor`, proven invertible by
-evaluating at `1`). -/
-theorem exists_modUnitHom_isIso_modTensorMap {Z : Scheme.{u}} {L N : Z.Modules} {U : Z.Opens}
-    (hν : Nonempty ((modTensor L N).restrict U.ι ≅ modUnit (U : Scheme.{u})))
-    {z : Z} (hz : z ∈ U) :
-    ∃ (W : Z.Opens) (_ : W ≤ U) (_ : z ∈ W)
-      (α : modUnit (W : Scheme.{u}) ⟶ L.restrict W.ι)
-      (γ : modUnit (W : Scheme.{u}) ⟶ N.restrict W.ι),
-      IsIso (modTensorMap α γ) :=
-  sorry
+**RESTATED 2026-07-30 AT `U = ⊤`, and that is the whole reason it is now proven.**  The
+statement above ranged over an open `U` of `Z` and produced a `W ≤ U`; the version below
+takes the tensor product trivial on the WHOLE of `Y` and produces an open `W ∋ z`.  Nothing
+mathematical changed — `exists_trivialization_of_modTensor_trivial` below recovers the old
+form by applying this on the scheme `U` and pushing the resulting `U`-open forward with
+`Scheme.Hom.isoImage` — but the SEARCH (steps 1–4) then runs entirely at opens of ONE
+scheme, with no `restrictAppIso`/`appIso` transport in it.  In the `U`-relative form every
+one of those four steps has to cross between `Γ(U, U.ι ⁻¹ᵁ V)` and `Γ(Z, V)`, and the
+crossing is only a propositional equality of opens (`U.ι ''ᵁ (U.ι ⁻¹ᵁ V) = V ⊓ U`), i.e.
+`eqToHom` everywhere.  Restating cost one application of `restrictFunctorComp` at the very
+end and removed all of it.
+
+**Where the remaining work went**: step 2 is `exists_modTensorMk_preimage`, steps 3–4 are
+`exists_mem_basicOpen_tmul`, and step 5 is the assembly below, which needs — and is the only
+consumer of — `exists_restrict_modTensor_tensorSection`. -/
+theorem exists_modUnitHom_isIso_modTensorMap {Y : Scheme.{u}} {A B : Y.Modules}
+    (σ : modTensor A B ≅ modUnit Y) (z : Y) :
+    ∃ (W : Y.Opens) (_ : z ∈ W)
+      (α : modUnit (W : Scheme.{u}) ⟶ A.restrict W.ι)
+      (γ : modUnit (W : Scheme.{u}) ⟶ B.restrict W.ι),
+      IsIso (modTensorMap α γ) := by
+  -- STEP 1: the trivializing section, and the fact that `σ` sends it to `1`.
+  set s : Γ(modTensor A B, ⊤) := σ.inv.val.app (op ⊤) (1 : Γ(Y, ⊤)) with hsdef
+  have hs : σ.hom.val.app (op ⊤) s = (1 : Γ(Y, ⊤)) :=
+    presheafHom_congr_apply (congrArg SheafOfModules.Hom.val σ.inv_hom_id) (op ⊤) _
+  -- STEP 2: a local presentation of it as an honest element of the presheaf tensor.
+  obtain ⟨V, hVtop, hzV, t, ht⟩ := exists_modTensorMk_preimage A B s (V := ⊤) (z := z) trivial
+  -- STEPS 3–4: some pure tensor is sent by `σ` to a section not vanishing at `z`.
+  set F : (PresheafOfModules.Monoidal.tensorObj (R := Y.presheaf) A.val B.val).obj (op V) →
+      Γ(Y, V) := fun w => σ.hom.val.app (op V) ((modTensorMk A B).app (op V) w) with hF
+  have hFzero : F 0 = 0 := by
+    show σ.hom.val.app (op V) ((modTensorMk A B).app (op V) 0) = 0
+    rw [map_zero, map_zero]
+  have hFadd : ∀ a b, F (a + b) = F a + F b := by
+    intro a b
+    show σ.hom.val.app (op V) ((modTensorMk A B).app (op V) (a + b)) = _
+    rw [map_add, map_add]
+    rfl
+  have hFt : F t = (1 : Γ(Y, V)) := by
+    have hnat := PresheafOfModules.naturality_apply σ.hom.val (homOfLE hVtop).op s
+    rw [hF]
+    show σ.hom.val.app (op V) ((modTensorMk A B).app (op V) t) = _
+    rw [ht, hnat, hs]
+    exact PresheafOfModules.unit_map_one Y.ringCatSheaf.obj (homOfLE hVtop).op
+  obtain ⟨x, y, hxy⟩ := exists_mem_basicOpen_tmul A B F hFzero hFadd t hFt hzV
+  set u : Γ(Y, V) := F (x ⊗ₜ y) with hu
+  refine ⟨V ⊓ Y.basicOpen u, ⟨hzV, hxy⟩, ?_⟩
+  set W : Y.Opens := V ⊓ Y.basicOpen u with hW
+  have hWtop : (W.ι ''ᵁ (⊤ : (W : Scheme.{u}).Opens)) ≤ V := by
+    rw [Scheme.Opens.ι_image_top]; exact inf_le_left
+  have hWb : (W.ι ''ᵁ (⊤ : (W : Scheme.{u}).Opens)) ≤ Y.basicOpen u := by
+    rw [Scheme.Opens.ι_image_top]; exact inf_le_right
+  set x' : Γ(A.restrict W.ι, ⊤) := A.presheaf.map (homOfLE hWtop).op x with hx'
+  set y' : Γ(B.restrict W.ι, ⊤) := B.presheaf.map (homOfLE hWtop).op y with hy'
+  set α : modUnit (W : Scheme.{u}) ⟶ A.restrict W.ι := modMulHom x' with hα
+  set γ : modUnit (W : Scheme.{u}) ⟶ B.restrict W.ι := modMulHom y' with hγ
+  refine ⟨α, γ, ?_⟩
+  -- STEP 5: the trivialization of `(A ⊗ B)|_W`, with its value on `x' ⊗ y'` known.
+  obtain ⟨e, he⟩ := exists_restrict_modTensor_tensorSection A B W
+  set T : modTensor (A.restrict W.ι) (B.restrict W.ι) ≅ modUnit (W : Scheme.{u}) :=
+    e.symm ≪≫ (Scheme.Modules.restrictFunctor W.ι).mapIso σ ≪≫
+      Scheme.Modules.restrictUnitIso W.ι with hT
+  have hTval : T.hom.val.app (op ⊤) (tensorSection x' y')
+      = (W.ι.appIso ⊤).hom (Y.presheaf.map (homOfLE hWtop).op u) := by
+    have hinv : e.inv.val.app (op ⊤) (tensorSection x' y') = tensorSectionAt A B x' y' := by
+      rw [← he x' y']
+      exact presheafHom_congr_apply (congrArg SheafOfModules.Hom.val e.hom_inv_id) (op ⊤) _
+    have hres : tensorSectionAt A B x' y'
+        = (modTensor A B).val.map (homOfLE hWtop).op (tensorSectionAt A B x y) := by
+      have hnat := PresheafOfModules.naturality_apply (modTensorMk A B) (homOfLE hWtop).op
+        (x ⊗ₜ y)
+      erw [PresheafOfModules.Monoidal.tensorObj_map_tmul] at hnat
+      exact hnat
+    show (Scheme.Modules.restrictUnitIso W.ι).hom.val.app (op ⊤)
+      (((Scheme.Modules.restrictFunctor W.ι).mapIso σ).hom.val.app (op ⊤)
+        (e.inv.val.app (op ⊤) (tensorSection x' y'))) = _
+    rw [hinv, hres]
+    have hsig : ((Scheme.Modules.restrictFunctor W.ι).mapIso σ).hom.val.app (op ⊤)
+        ((modTensor A B).val.map (homOfLE hWtop).op (tensorSectionAt A B x y))
+        = (modUnit Y).val.map (homOfLE hWtop).op
+            (σ.hom.val.app (op V) (tensorSectionAt A B x y)) :=
+      PresheafOfModules.naturality_apply σ.hom.val (homOfLE hWtop).op _
+    rw [hsig]
+    rfl
+  have huW : IsUnit (Y.presheaf.map (homOfLE hWtop).op u) := by
+    have h1 : IsUnit (Y.presheaf.map (homOfLE (Y.basicOpen_le u)).op u) :=
+      RingedSpace.isUnit_res_basicOpen _ u
+    have h2 := h1.map (CommRingCat.Hom.hom (Y.presheaf.map (homOfLE hWb).op))
+    rwa [← ConcreteCategory.comp_apply, ← Functor.map_comp,
+      show ((homOfLE (Y.basicOpen_le u)).op ≫ (homOfLE hWb).op) = (homOfLE hWtop).op from
+        Subsingleton.elim _ _] at h2
+  -- the composite endomorphism of `𝒪_W` is multiplication by that unit, hence invertible
+  have hk : IsUnit (unitHomApply
+      ((modTensorUnitLeftIso (modUnit (W : Scheme.{u}))).inv ≫ modTensorMap α γ ≫ T.hom)
+      (1 : Γ((W : Scheme.{u}), ⊤))) := by
+    letI : CommRing ↑((modUnit (W : Scheme.{u})).val.obj (op (⊤ : (W : Scheme.{u}).Opens))) :=
+      inferInstanceAs (CommRing ↑((W : Scheme.{u}).presheaf.obj (op (⊤ : (W : Scheme.{u}).Opens))))
+    have hunit : (modTensorUnitLeftIso (modUnit (W : Scheme.{u}))).inv.val.app (op ⊤)
+        (1 : Γ((W : Scheme.{u}), ⊤))
+        = tensorSection (unitOne (W : Scheme.{u})) (unitOne (W : Scheme.{u})) := by
+      have h := congrArg ((modTensorUnitLeftIso (modUnit (W : Scheme.{u}))).inv.val.app (op ⊤))
+        (modTensorUnitLeftIso_tensorSection_one (W : Scheme.{u}))
+      rw [← h]
+      exact presheafHom_congr_apply
+        (congrArg SheafOfModules.Hom.val (modTensorUnitLeftIso
+          (modUnit (W : Scheme.{u}))).hom_inv_id) (op ⊤) _
+    show IsUnit (((modTensorUnitLeftIso (modUnit (W : Scheme.{u}))).inv ≫
+      modTensorMap α γ ≫ T.hom).val.app (op ⊤) (1 : Γ((W : Scheme.{u}), ⊤)))
+    have hcomp : ((modTensorUnitLeftIso (modUnit (W : Scheme.{u}))).inv ≫
+        modTensorMap α γ ≫ T.hom).val.app (op ⊤) (1 : Γ((W : Scheme.{u}), ⊤))
+        = T.hom.val.app (op ⊤) ((modTensorMap α γ).val.app (op ⊤)
+          ((modTensorUnitLeftIso (modUnit (W : Scheme.{u}))).inv.val.app (op ⊤)
+            (1 : Γ((W : Scheme.{u}), ⊤)))) := rfl
+    rw [hcomp, hunit, modTensorMap_tensorSection, hα, hγ]
+    simp only [unitOne]
+    rw [modMulHom_app_top, modMulHom_app_top, hTval]
+    exact huW.map (CommRingCat.Hom.hom (W.ι.appIso ⊤).hom)
+  haveI hkiso := isIso_of_isUnit_unitHom _ hk
+  have hfac : modTensorMap α γ = (modTensorUnitLeftIso (modUnit (W : Scheme.{u}))).hom ≫
+      ((modTensorUnitLeftIso (modUnit (W : Scheme.{u}))).inv ≫ modTensorMap α γ ≫ T.hom) ≫
+        T.inv := by
+    simp only [Category.assoc, Iso.hom_inv_id, Category.comp_id, Iso.hom_inv_id_assoc]
+  rw [hfac]
+  infer_instance
 
 /-- **AN INVERTIBLE SHEAF OF MODULES IS LOCALLY FREE OF RANK ONE** (was a leaf,
 cut 2026-07-29 out of `exists_trivialization_of_modTensorPow`; **PROVEN
@@ -1628,9 +2031,25 @@ theorem exists_trivialization_of_modTensor_trivial {Z : Scheme.{u}} {L N : Z.Mod
     (hν : Nonempty ((modTensor L N).restrict U.ι ≅ modUnit (U : Scheme.{u})))
     {z : Z} (hz : z ∈ U) :
     ∃ W : Z.Opens, W ≤ U ∧ z ∈ W ∧ Nonempty (L.restrict W.ι ≅ modUnit (W : Scheme.{u})) := by
-  obtain ⟨W, hWU, hzW, α, γ, hiso⟩ := exists_modUnitHom_isIso_modTensorMap hν hz
+  -- Run the whole argument on the scheme `U`, where the tensor product is trivial on the
+  -- WHOLE space; `nonempty_restrict_modTensor` is what moves `hν` there, and it is used for
+  -- EXISTENCE only, which is all it has.
+  obtain ⟨ν⟩ := hν
+  obtain ⟨d⟩ := nonempty_restrict_modTensor U.ι L N
+  obtain ⟨W', hzW', α, γ, hiso⟩ :=
+    exists_modUnitHom_isIso_modTensorMap (d.symm ≪≫ ν) (⟨z, hz⟩ : (U : Scheme.{u}))
   haveI hα : IsIso α := isIso_of_isIso_modTensorMap α γ hiso
-  exact ⟨W, hWU, hzW, ⟨(asIso α).symm⟩⟩
+  -- Push the `U`-open `W'` forward to the `Z`-open `U.ι ''ᵁ W'`.  `Scheme.Hom.isoImage`
+  -- identifies the two as schemes, and `restrictFunctorComp` turns the resulting
+  -- factorisation `(U.ι ''ᵁ W').ι = j⁻¹ ≫ W'.ι ≫ U.ι` into the composite of restrictions.
+  refine ⟨U.ι ''ᵁ W', U.ι_image_le W', ⟨⟨z, hz⟩, hzW', rfl⟩, ⟨?_⟩⟩
+  set j := U.ι.isoImage W' with hj
+  have hfeq : (U.ι ''ᵁ W').ι = j.inv ≫ (W'.ι ≫ U.ι) := (Scheme.Hom.isoImage_inv_ι U.ι W').symm
+  exact (Scheme.Modules.restrictFunctorCongr hfeq).app L ≪≫
+    (Scheme.Modules.restrictFunctorComp j.inv (W'.ι ≫ U.ι)).app L ≪≫
+    (Scheme.Modules.restrictFunctor j.inv).mapIso
+      ((Scheme.Modules.restrictFunctorComp W'.ι U.ι).app L ≪≫ (asIso α).symm) ≪≫
+    Scheme.Modules.restrictUnitIso j.inv
 
 /-- **AN INVERTIBLE SHEAF OF MODULES IS LOCALLY FREE OF RANK ONE, in the tensor
 power form the audit needs** (PROVEN 2026-07-29 over
@@ -1860,11 +2279,6 @@ noncomputable def trivializationMulHom (φ : L.restrict U.ι ≅ modUnit (U : Sc
   (Scheme.Modules.restrictFunctor U.ι).map (tensorPairingSheaf φ χ) ≫
     (Scheme.Modules.restrictAdjunction U.ι).counit.app (modUnit (U : Scheme.{u}))
 
-/-- Applying a presheaf-of-modules morphism equation at one open and one section. -/
-lemma presheafHom_congr_apply {C : Type*} [Category* C] {R : Cᵒᵖ ⥤ RingCat.{u}}
-    {A B : PresheafOfModules.{u} R} {m₁ m₂ : A ⟶ B} (h : m₁ = m₂) (V : Cᵒᵖ) (z : A.obj V) :
-    m₁.app V z = m₂.app V z := by rw [h]
-
 /-- The transpose undoes the sheafification unit: naturality of the unit plus the
 right triangle identity. -/
 lemma tensorPairingSheaf_modTensorMk (φ : L.restrict U.ι ≅ modUnit (U : Scheme.{u}))
@@ -1980,74 +2394,10 @@ theorem trivializedSectionHom_trivializationMulHom
 
 /-! #### Endomorphisms of `𝒪_W`
 
-The general form of the transition-function computation already done at `⊤` in
-`nonvanishingLocus_modUnit`: an endomorphism of `𝒪_W` is multiplication by its
-value at `1`, and it is an isomorphism as soon as that value is a unit. -/
-
-/-- `1 : Γ(W, V)`, read as a section of the unit module over `V`. -/
-def unitOneAt (W : Scheme.{u}) (V : W.Opens) : Γ(modUnit W, V) := (1 : Γ(W, V))
-
-/-- An endomorphism of `𝒪_W` applied to a section over `V`, both sides typed in
-`Γ(W, V)`.  Same role as `unitEndoApply` above, for a bare morphism and over an
-arbitrary open. -/
-noncomputable def unitHomApply {W : Scheme.{u}} (α : modUnit W ⟶ modUnit W) {V : W.Opens}
-    (a : Γ(W, V)) : Γ(W, V) := α.val.app (op V) a
-
-lemma unitHomApply_eq {W : Scheme.{u}} (α : modUnit W ⟶ modUnit W) {V : W.Opens}
-    (a : Γ(W, V)) :
-    unitHomApply α a = a * unitHomApply α (1 : Γ(W, V)) := by
-  have h2 : unitHomApply α (a * 1) = a * unitHomApply α (1 : Γ(W, V)) :=
-    (α.val.app (op V)).hom.map_smul a (unitOneAt W V)
-  simpa using h2
-
-lemma unitHom_app_one {W : Scheme.{u}} (α : modUnit W ⟶ modUnit W) (V : W.Opens) :
-    unitHomApply α (1 : Γ(W, V))
-      = W.presheaf.map (homOfLE le_top).op (unitHomApply α (1 : Γ(W, ⊤))) := by
-  have h1 : ((modUnit W).val.map (homOfLE (le_top : V ≤ ⊤)).op) (unitOneAt W ⊤)
-      = unitOneAt W V :=
-    PresheafOfModules.unit_map_one W.ringCatSheaf.obj (homOfLE le_top).op
-  have hnat := PresheafOfModules.naturality_apply α.val
-    (X := op (⊤ : W.Opens)) (Y := op V) (homOfLE le_top).op (unitOneAt W ⊤)
-  rw [h1] at hnat
-  exact hnat
-
-/-- The compatible family of restrictions of a global section of `𝒪_W`. -/
-noncomputable def unitSectionOf {W : Scheme.{u}} (c : Γ(W, ⊤)) : (modUnit W).sections :=
-  PresheafOfModules.sectionsMk (fun V => W.presheaf.map (homOfLE le_top).op c)
-    (fun V V' g => by
-      show W.presheaf.map g (W.presheaf.map (homOfLE le_top).op c) = _
-      rw [← ConcreteCategory.comp_apply, ← Functor.map_comp]
-      congr 1)
-
-/-- Multiplication by a global section of `𝒪_W`, as an endomorphism of `𝒪_W`.
-Built through `SheafOfModules.unitHomEquiv`, so no naturality proof is needed. -/
-noncomputable def unitMulHom {W : Scheme.{u}} (c : Γ(W, ⊤)) : modUnit W ⟶ modUnit W :=
-  (SheafOfModules.unitHomEquiv (modUnit W)).symm (unitSectionOf c)
-
-lemma unitMulHom_app_one {W : Scheme.{u}} (c : Γ(W, ⊤)) (V : W.Opens) :
-    unitHomApply (unitMulHom c) (1 : Γ(W, V))
-      = W.presheaf.map (homOfLE le_top).op c :=
-  congrArg (fun s : (modUnit W).sections => s.val (op V))
-    ((SheafOfModules.unitHomEquiv (modUnit W)).apply_symm_apply (unitSectionOf c))
-
-/-- **An endomorphism of `𝒪_W` whose value at `1` is a unit is an isomorphism**
-(PROVEN 2026-07-29). -/
-theorem isIso_of_isUnit_unitHom {W : Scheme.{u}} (α : modUnit W ⟶ modUnit W)
-    (h : IsUnit (unitHomApply α (1 : Γ(W, ⊤)))) : IsIso α := by
-  obtain ⟨v, hv⟩ := h
-  refine ⟨unitMulHom ((v⁻¹ : (Γ(W, ⊤))ˣ) : Γ(W, ⊤)), ?_, ?_⟩
-  · refine (SheafOfModules.unitHomEquiv (modUnit W)).injective
-      (PresheafOfModules.sections_ext _ _ (fun V => ?_))
-    show unitHomApply (unitMulHom ((v⁻¹ : (Γ(W, ⊤))ˣ) : Γ(W, ⊤)))
-        (unitHomApply α (1 : Γ(W, V.unop))) = (1 : Γ(W, V.unop))
-    rw [unitHom_app_one, unitHomApply_eq, unitMulHom_app_one, ← map_mul, ← hv,
-      v.mul_inv, map_one]
-  · refine (SheafOfModules.unitHomEquiv (modUnit W)).injective
-      (PresheafOfModules.sections_ext _ _ (fun V => ?_))
-    show unitHomApply α (unitHomApply (unitMulHom ((v⁻¹ : (Γ(W, ⊤))ˣ) : Γ(W, ⊤)))
-        (1 : Γ(W, V.unop))) = (1 : Γ(W, V.unop))
-    rw [unitMulHom_app_one, unitHomApply_eq, unitHom_app_one, ← map_mul, ← hv,
-      v.inv_mul, map_one]
+**HOISTED 2026-07-30** to just above § *The braiding-free monoidal core*, ~700 lines up.
+`exists_modUnitHom_isIso_modTensorMap` there is proven by exactly the unit argument this
+block supplies (`isIso_of_isUnit_unitHom`), and a proof cannot cite a declaration below it.
+Nothing was reworded; the block used none of this section's `variable`s. -/
 
 /-- `φ⁻¹(1) ⊗ χ⁻¹(1)`, a section of `L ⊗ M` over `U`.  This is the witness that
 makes `trivializationMulHom` surjective on `𝒪_U`, and it is where `φ` and `χ`
