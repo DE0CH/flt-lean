@@ -25908,7 +25908,14 @@ level raising. Only this direction holds, and it is the one the control map
 needs.
 
 References: Wiles, Ann. of Math. 141 (1995), ch. 3; Darmon–Diamond–Taylor
-§5.3 (the local condition at a Taylor–Wiles prime); Fujiwara §3. -/
+§5.3 (the local condition at a Taylor–Wiles prime); Fujiwara §3.
+
+**PROVEN 2026-07-30.** The argument above was already available VERBATIM in
+this file: `exists_isSplitTorusAt_of_isUnramifiedAt` is exactly the Hensel
+eigenbasis-plus-diagonalisation package for a single place, and
+`exists_hilbertAuxHeckeAlgebra` above already runs this very proof for the
+bottom-level `ρ_T`. So this leaf is that same three-line discharge for `𝒟.ρ`
+instead of `T.ρT`; nothing new was needed, and no hypothesis was added. -/
 theorem isHilbertRaisedLevelHardlyRamified_of_isHilbertTaylorWilesPrimeSet
     (ℓ : ℕ) [Fact ℓ.Prime]
     (F : Type u) [Field F] [NumberField F]
@@ -25919,8 +25926,23 @@ theorem isHilbertRaisedLevelHardlyRamified_of_isHilbertTaylorWilesPrimeSet
     (n : ℕ) (Q : Finset (HeightOneSpectrum (𝓞 F)))
     (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q)
     (𝒟 : HilbertDeformationDatum ℓ F ρbar) :
-    IsHilbertRaisedLevelHardlyRamified ℓ F Q (rank_finTwoPi 𝒟.R) 𝒟.ρ :=
-  sorry
+    IsHilbertRaisedLevelHardlyRamified ℓ F Q (rank_finTwoPi 𝒟.R) 𝒟.ρ := by
+  haveI : IsAdicComplete (IsLocalRing.maximalIdeal 𝒟.R) 𝒟.R := 𝒟.isAdicComplete
+  refine { det := 𝒟.isHilbertHardlyRamified.det
+           isUnramified := fun w _ => 𝒟.isHilbertHardlyRamified.isUnramified w
+           isFlat := 𝒟.isHilbertHardlyRamified.isFlat
+           isTameAtTwo := 𝒟.isHilbertHardlyRamified.isTameAtTwo
+           isSplitTorusAt := ?_ }
+  intro w hw
+  -- `hQ.1` is the LOCAL conjunct: `w ∤ 2ℓ`, the congruence, and the two
+  -- DISTINCT residual Frobenius eigenvalues.
+  obtain ⟨hwℓ, hw2, -, α, β, hαβ, hpoly⟩ := hQ.1 w hw
+  refine exists_isSplitTorusAt_of_isUnramifiedAt w 𝒟.π 𝒟.π_surjective 𝒟.ρ
+    (𝒟.isHilbertHardlyRamified.isUnramified w hw2 hwℓ) α β hαβ ?_
+  -- `charFrob` is the charpoly at `globalFrob w`, so `resid` transports it
+  rw [GaloisRep.charFrob_eq_charpoly_globalFrob, 𝒟.resid (globalFrob w),
+    ← GaloisRep.charFrob_eq_charpoly_globalFrob]
+  exact hpoly
 
 /-- **A base-level datum IS a raised-level datum at `Q`** (PROVEN — the general
 form of `HilbertDeformationDatum.toAuxEmpty` above, which is the case `Q = ∅`).
@@ -25954,6 +25976,236 @@ def HilbertDeformationDatum.toAux {ℓ : ℕ} [Fact ℓ.Prime]
   π_surjective := 𝒟.π_surjective
   resid := 𝒟.resid
 
+/-! ### Two ingredients for the surjectivity leaf below (both new 2026-07-30)
+
+`surjective_of_hilbertAux_classifying` needs two facts that were not in the
+tree. Both are stated here rather than upstream in
+`HardlyRamified/CompleteLocalNoetherian.lean` — which is where the first one
+belongs on grounds of subject matter — because moving them there costs two new
+mathlib imports on a module the whole `HardlyRamified/` cone sits on top of, for
+no gain to any present consumer. Hoist them if a second consumer appears. -/
+
+/-- **A local homomorphism with DENSE image between complete local rings, the
+target Noetherian, is SURJECTIVE** (PROVEN; pure commutative algebra).
+
+**This corrects the route recorded on `surjective_of_hilbertAux_classifying`
+below**, which read: "the image of a complete ring under a continuous local map
+is complete and therefore closed". That step is FALSE in general —
+completeness is not preserved by continuous maps, only by compactness or by a
+quotient map — and the compactness route is unavailable here, since it needs a
+FINITE residue field, which the leaf does not assume. What is true, and is what
+is proven here, is the ordinary complete-local surjectivity criterion:
+
+1. `f⁻¹(𝔪_B) = 𝔪_A`, since `𝔪_A` is maximal and the preimage is proper. So
+   density at level `2` gives `𝔪_B = f(𝔪_A) + 𝔪_B²`, and **Nakayama** (`𝔪_B` is
+   f.g. because `B` is Noetherian, and `𝔪_B ≤ jacobson ⊥` because `B` is local)
+   upgrades that to `Ideal.map f 𝔪_A = 𝔪_B`, hence `Ideal.map f (𝔪_A ^ n) =
+   𝔪_B ^ n` for every `n`.
+2. Therefore each `c ∈ 𝔪_B ^ n` is `f u` modulo `𝔪_B ^ (n+1)` for some
+   `u ∈ 𝔪_A ^ n`. The set of such `c` is shown to be an IDEAL of `B` — the only
+   nontrivial closure property is under multiplication by `r : B`, where density
+   at level `1` writes `r = f w + z` with `z ∈ 𝔪_B` and the error
+   `z · f u ∈ 𝔪_B · 𝔪_B ^ n` is absorbed — and it contains `f '' (𝔪_A ^ n)`, so
+   it contains the ideal they generate, which is `𝔪_B ^ n` by step 1.
+3. Iterating step 2 from `b` produces `g : ℕ → A` with `b - f (g n) ∈ 𝔪_B ^ n`
+   and `g (n+1) - g n ∈ 𝔪_A ^ n`. That is Cauchy in `A`, so `IsPrecomplete`
+   supplies a limit `L`; `f (g n) - f L ∈ 𝔪_B ^ n` by step 1 again, so
+   `b - f L ∈ ⋂ 𝔪_B ^ n`, which is `0` by `IsHausdorff`.
+
+Note what is NOT used: no topology on either ring, no continuity, no
+compactness, no finiteness of the residue field. Density is consumed only in
+the two arithmetic forms `hdense 1` and `hdense 2` plus once per approximation
+step. -/
+theorem surjective_of_dense_of_isAdicComplete
+    {A : Type*} [CommRing A] [IsLocalRing A]
+    [IsAdicComplete (IsLocalRing.maximalIdeal A) A]
+    {B : Type*} [CommRing B] [IsLocalRing B] [IsNoetherianRing B]
+    [IsAdicComplete (IsLocalRing.maximalIdeal B) B]
+    (f : A →+* B)
+    (hloc : ∀ x : A, x ∈ IsLocalRing.maximalIdeal A ↔
+      f x ∈ IsLocalRing.maximalIdeal B)
+    (hdense : ∀ (n : ℕ) (b : B), ∃ a : A,
+      b - f a ∈ (IsLocalRing.maximalIdeal B) ^ n) :
+    Function.Surjective f := by
+  classical
+  set mA : Ideal A := IsLocalRing.maximalIdeal A with hmA
+  set mB : Ideal B := IsLocalRing.maximalIdeal B with hmB
+  have hmaple : Ideal.map f mA ≤ mB :=
+    Ideal.map_le_iff_le_comap.mpr fun x hx => (hloc x).mp hx
+  have hstep : mB ≤ Ideal.map f mA ⊔ mB • mB := by
+    intro b hb
+    obtain ⟨a, ha⟩ := hdense 2 b
+    have hfa : f a ∈ mB := by
+      have h2 : mB ^ 2 ≤ mB := Ideal.pow_le_self (by norm_num)
+      have hd : b - (b - f a) ∈ mB := Ideal.sub_mem _ hb (h2 ha)
+      simpa using hd
+    have haA : a ∈ mA := (hloc a).mpr hfa
+    have hsplit : b = f a + (b - f a) := by ring
+    rw [hsplit]
+    refine Ideal.add_mem _ (Submodule.mem_sup_left (Ideal.mem_map_of_mem f haA))
+      (Submodule.mem_sup_right ?_)
+    rwa [smul_eq_mul, ← pow_two]
+  have hjac : mB ≤ Ideal.jacobson ⊥ := by
+    rw [IsLocalRing.jacobson_eq_maximalIdeal ⊥ bot_ne_top]
+  have hfg : (mB : Submodule B B).FG := (IsNoetherian.noetherian mB)
+  have hmapeq : Ideal.map f mA = mB :=
+    le_antisymm hmaple
+      (Submodule.le_of_le_smul_of_le_jacobson_bot hfg hjac hstep)
+  have hpow : ∀ n : ℕ, Ideal.map f (mA ^ n) = mB ^ n := by
+    intro n; rw [Ideal.map_pow, hmapeq]
+  have hkey : ∀ (n : ℕ) (c : B), c ∈ mB ^ n →
+      ∃ u : A, u ∈ mA ^ n ∧ c - f u ∈ mB ^ (n + 1) := by
+    intro n
+    let G : Ideal B :=
+      { carrier := {c : B | ∃ u : A, u ∈ mA ^ n ∧ c - f u ∈ mB ^ (n + 1)}
+        zero_mem' := ⟨0, Submodule.zero_mem _, by simp⟩
+        add_mem' := by
+          rintro c₁ c₂ ⟨u₁, hu₁, hc₁⟩ ⟨u₂, hu₂, hc₂⟩
+          refine ⟨u₁ + u₂, Ideal.add_mem _ hu₁ hu₂, ?_⟩
+          have hr : c₁ + c₂ - f (u₁ + u₂) = (c₁ - f u₁) + (c₂ - f u₂) := by
+            rw [map_add]; ring
+          rw [hr]; exact Ideal.add_mem _ hc₁ hc₂
+        smul_mem' := by
+          rintro r c ⟨u, hu, hc⟩
+          obtain ⟨w, hw⟩ := hdense 1 r
+          refine ⟨w * u, Ideal.mul_mem_left _ _ hu, ?_⟩
+          have hsplit : r • c - f (w * u)
+              = r * (c - f u) + (r - f w) * f u := by
+            rw [map_mul, smul_eq_mul]; ring
+          rw [hsplit]
+          refine Ideal.add_mem _ (Ideal.mul_mem_left _ _ hc) ?_
+          have hfu : f u ∈ mB ^ n := by
+            rw [← hpow n]; exact Ideal.mem_map_of_mem f hu
+          have hr : r - f w ∈ mB := by simpa using hw
+          rw [pow_succ, mul_comm (mB ^ n) mB]
+          exact Ideal.mul_mem_mul hr hfu }
+    have hsub : Ideal.map f (mA ^ n) ≤ G := by
+      rw [Ideal.map_le_iff_le_comap]
+      intro u hu
+      exact ⟨u, hu, by simp⟩
+    intro c hc
+    exact hsub (by rw [hpow n]; exact hc)
+  intro b
+  have hkey' : ∀ (n : ℕ) (c : B), ∃ u : A,
+      c ∈ mB ^ n → (u ∈ mA ^ n ∧ c - f u ∈ mB ^ (n + 1)) := by
+    intro n c
+    by_cases h : c ∈ mB ^ n
+    · obtain ⟨u, hu1, hu2⟩ := hkey n c h
+      exact ⟨u, fun _ => ⟨hu1, hu2⟩⟩
+    · exact ⟨0, fun hc => absurd hc h⟩
+  choose u hu using hkey'
+  let g : ℕ → A := fun n => Nat.rec (0 : A) (fun m gm => gm + u m (b - f gm)) n
+  have hgsucc : ∀ n, g (n + 1) = g n + u n (b - f (g n)) := fun _ => rfl
+  have hinv : ∀ n, b - f (g n) ∈ mB ^ n := by
+    intro n
+    induction n with
+    | zero => simp
+    | succ n ih =>
+        have h := (hu n (b - f (g n)) ih).2
+        rw [hgsucc n, map_add]
+        have hr : b - (f (g n) + f (u n (b - f (g n))))
+            = (b - f (g n)) - f (u n (b - f (g n))) := by ring
+        rw [hr]; exact h
+  have hdiff : ∀ n, g (n + 1) - g n ∈ mA ^ n := by
+    intro n
+    have h := (hu n (b - f (g n)) (hinv n)).1
+    rw [hgsucc n]
+    simpa using h
+  have hcauchy : ∀ {m n : ℕ}, m ≤ n →
+      g m ≡ g n [SMOD (mA ^ m • ⊤ : Submodule A A)] := by
+    intro m n hmn
+    rw [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top]
+    induction n, hmn using Nat.le_induction with
+    | base => simp
+    | succ n hmn ih =>
+        have hsplit : g m - g (n + 1) = (g m - g n) - (g (n + 1) - g n) := by ring
+        rw [hsplit]
+        exact Ideal.sub_mem _ ih (Ideal.pow_le_pow_right hmn (hdiff n))
+  obtain ⟨L, hL⟩ := IsPrecomplete.prec (inferInstance : IsPrecomplete mA A) hcauchy
+  refine ⟨L, ?_⟩
+  have hfinal : ∀ n : ℕ, b - f L ∈ mB ^ n := by
+    intro n
+    have h1 : g n - L ∈ mA ^ n := by
+      have h := hL n
+      rw [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top] at h
+      exact h
+    have h2 : f (g n) - f L ∈ mB ^ n := by
+      rw [← map_sub, ← hpow n]; exact Ideal.mem_map_of_mem f h1
+    have hsplit : b - f L = (b - f (g n)) + (f (g n) - f L) := by ring
+    rw [hsplit]; exact Ideal.add_mem _ (hinv n) h2
+  have hz := IsHausdorff.haus (inferInstance : IsHausdorff mB B) (b - f L)
+    (fun n => by
+      rw [SModEq.zero, smul_eq_mul, Ideal.mul_top]
+      exact hfinal n)
+  exact (sub_eq_zero.mp hz).symm
+
+/-- **Teichmüller lifting WITHOUT a finiteness hypothesis on the residue
+field** (PROVEN, Hensel).
+
+`exists_mem_teichmullerRootSet_map_eq` above lifts EVERY element of a FINITE
+residue field, and finiteness is used for exactly one thing: to know
+`a ^ |k| = a`. When that identity is already in hand — which it is whenever `a`
+is the residue of a Teichmüller root, and that is the only case the
+surjectivity leaf below needs — the hypothesis is unnecessary, and the same
+Hensel argument runs verbatim on `X ^ ℓ ^ n − X`: the value at any lift of `a`
+is in `𝔪` by `ha`, and the derivative reduces to `−1` because `hlR` puts `ℓ` in
+`𝔪`.
+
+Stated separately rather than by generalising the existing lemma, because that
+lemma's `[Finite k]` is load-bearing for ITS conclusion (every element lifts)
+and dropping it there would be false. -/
+theorem exists_mem_teichmullerRootSet_map_eq_of_pow_eq {ℓ : ℕ} [Fact ℓ.Prime]
+    {R : Type*} [CommRing R] [IsLocalRing R]
+    [IsAdicComplete (IsLocalRing.maximalIdeal R) R]
+    {k : Type*} [Field k] (π : R →+* k) (hπ : Function.Surjective π)
+    (hlR : ((ℓ : ℕ) : R) ∈ IsLocalRing.maximalIdeal R)
+    {a : k} {n : ℕ} (hn : 0 < n) (ha : a ^ ℓ ^ n = a) :
+    ∃ x ∈ teichmullerRootSet ℓ R, π x = a := by
+  classical
+  haveI : HenselianLocalRing R := by
+    constructor
+    intro p hp a₀ h₁ h₂
+    exact HenselianRing.is_henselian (I := IsLocalRing.maximalIdeal R) p hp a₀ h₁
+      (h₂.map (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R)))
+  have hker : RingHom.ker π = IsLocalRing.maximalIdeal R :=
+    IsLocalRing.ker_eq_maximalIdeal π hπ
+  set M : ℕ := ℓ ^ n with hM
+  have hM2 : 1 < M := by
+    rw [hM]; exact Nat.one_lt_pow hn.ne' (Fact.out : ℓ.Prime).one_lt
+  have hmono : (Polynomial.X ^ M - Polynomial.X : Polynomial R).Monic := by
+    refine (Polynomial.monic_X_pow M).sub_of_left ?_
+    rw [Polynomial.degree_X_pow, Polynomial.degree_X]
+    exact_mod_cast hM2
+  have hlk : ((ℓ : ℕ) : k) = 0 := by
+    rw [← map_natCast π ℓ, ← RingHom.mem_ker, hker]; exact hlR
+  have hMz : ((M : ℕ) : k) = 0 := by
+    rw [hM, Nat.cast_pow, hlk, zero_pow hn.ne']
+  obtain ⟨a₀, ha₀⟩ := hπ a
+  have hev : (Polynomial.X ^ M - Polynomial.X : Polynomial R).eval a₀
+      ∈ IsLocalRing.maximalIdeal R := by
+    rw [← hker, RingHom.mem_ker, Polynomial.eval_sub, Polynomial.eval_pow,
+      Polynomial.eval_X, map_sub, map_pow, ha₀, ha, sub_self]
+  have hder : IsUnit ((Polynomial.X ^ M - Polynomial.X :
+      Polynomial R).derivative.eval a₀) := by
+    refine IsLocalRing.notMem_maximalIdeal.mp ?_
+    rw [← hker, RingHom.mem_ker, Polynomial.derivative_sub,
+      Polynomial.derivative_X_pow, Polynomial.derivative_X, Polynomial.eval_sub,
+      Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_pow,
+      Polynomial.eval_X, Polynomial.eval_one, map_sub, map_mul, map_pow,
+      map_natCast, map_one, hMz, zero_mul, zero_sub]
+    exact fun hcontra => one_ne_zero (neg_eq_zero.mp hcontra)
+  obtain ⟨x, hroot, hsub⟩ :=
+    HenselianLocalRing.is_henselian (Polynomial.X ^ M - Polynomial.X) hmono a₀
+      hev hder
+  refine ⟨x, ⟨n, hn, ?_⟩, ?_⟩
+  · rw [Polynomial.IsRoot, Polynomial.eval_sub, Polynomial.eval_pow,
+      Polynomial.eval_X] at hroot
+    rw [← hM]
+    exact sub_eq_zero.mp hroot
+  · have hmem : x - a₀ ∈ RingHom.ker π := hker ▸ hsub
+    rw [RingHom.mem_ker, map_sub, sub_eq_zero] at hmem
+    rw [hmem, ha₀]
+
 /-- **The classifying map onto a TRACE-GENERATED datum is surjective** (LEAF —
 the surjectivity clause of `exists_hilbertAuxDiamondControl`).
 
@@ -25986,7 +26238,56 @@ only `h𝒟w`. Dropping `h𝒟t` makes the statement FALSE, not merely open: tak
 compatibility still holds and the image misses `T`.
 
 References: Mazur, *Deforming Galois representations*, §1.2; Carayol,
-*Formes modulaires et représentations galoisiennes*, §1. -/
+*Formes modulaires et représentations galoisiennes*, §1.
+
+# PROVEN 2026-07-30, WITH ONE HYPOTHESIS ADDED — `hlk`, AND IT IS NECESSARY
+
+Two corrections to the route recorded above, both found while proving it.
+
+**1. "The image of a complete ring under a continuous local map is complete
+and therefore closed" is FALSE.** Continuity does not preserve completeness;
+only compactness or a quotient map does, and compactness of `𝒟Q.R` needs a
+FINITE residue field, which this leaf does not assume. The theorem is
+nevertheless TRUE, by the ordinary complete-local surjectivity criterion —
+`f⁻¹(𝔪_B) = 𝔪_A`, then Nakayama gives `Ideal.map f 𝔪_A = 𝔪_B`, then successive
+approximation converges by `IsPrecomplete` and is pinned by `IsHausdorff`. That
+is `surjective_of_dense_of_isAdicComplete` above, and it uses no topology at
+all: density is consumed only as `∀ n b, ∃ a, b - f a ∈ 𝔪_B ^ n`, which is what
+`h𝒟t` plus `𝒟.isAdic` deliver.
+
+**2. `hlk : ((ℓ : ℕ) : k) = 0` HAD TO BE ADDED, and the gap it closes is in the
+TEICHMÜLLER third of the generating set, not in the topology.** The generating
+set of `IsTraceGenerated` has three parts. The `ℤ_ℓ`-image is in `range f` by
+`halg` and the `charpoly` coefficients by `hρ`, both immediately. The
+Teichmüller roots are NOT: to put a Teichmüller root `x` of `𝒟.R` in the image
+one must produce a Teichmüller root of `𝒟Q.R` with the same residue and then
+invoke UNIQUENESS (`eq_of_mem_teichmullerRootSet`), and **both halves of that
+need `ℓ` to lie in the maximal ideal** — existence because Hensel's derivative
+`ℓ ^ n · X ^ (ℓ ^ n − 1) − 1` must reduce to a unit, uniqueness because
+`eq_of_mem_teichmullerRootSet` asks for `hlR` by name. Without it the argument
+has no purchase on the Teichmüller generators at all, and `range f` is not
+known to be dense.
+
+That this is a real gap and not a proof artefact is visible in the shape of the
+obstruction: with `ℓ` a UNIT the reduction `teichmullerRootSet ℓ R → k` stops
+being injective, so two data with the same residue field can have Teichmüller
+roots that `f` cannot match. No counterexample to the unpinned statement was
+constructed (that would need a `HilbertDeformationDatum` with residue
+characteristic `≠ ℓ`, and the `det` clause makes such a datum hard to build —
+`Γ F` is compact, so a deformation into a DISCRETE `ℚ_ℓ`-algebra has finite
+image while the cyclotomic character does not). So this is recorded as
+**"the documented route is unavailable without `hlk`"**, in the same form as
+the `IsHilbertAuxProLimitClause` pinning note above, and not as a refutation.
+
+`hlk` is FREE at the only call site. The chain
+`surjective_of_hilbertAux_classifying` → `exists_hilbertAuxDiamondControl` →
+`exists_hilbertAuxDeformationRingPresentation` →
+`exists_hilbertTaylorWilesAuxLevelData` has exactly one call site at each step
+(all in this file; `Modularity/Patching.lean` mentions these names only in
+prose), and the top of it already carries `[Finite k]` and `[Algebra ℤ_[ℓ] k]`,
+from which `natCast_eq_zero_of_finite_algebra ℓ k` gives `hlk` in one line. The
+three intervening statements are WEAKENED by carrying it, which is safe for
+every producer; that weakening is flagged in each of their docstrings. -/
 theorem surjective_of_hilbertAux_classifying
     (ℓ : ℕ) [Fact ℓ.Prime]
     (F : Type u) [Field F] [NumberField F]
@@ -25995,14 +26296,82 @@ theorem surjective_of_hilbertAux_classifying
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
     {Q : Finset (HeightOneSpectrum (𝓞 F))}
+    (hlk : ((ℓ : ℕ) : k) = 0)
     (𝒟 : HilbertDeformationDatum ℓ F ρbar) (h𝒟t : 𝒟.IsTraceGenerated)
     (𝒟Q : HilbertAuxDeformationDatum ℓ F Q ρbar)
     (f : 𝒟Q.R →+* 𝒟.R)
     (halg : f.comp (algebraMap ℤ_[ℓ] 𝒟Q.R) = algebraMap ℤ_[ℓ] 𝒟.R)
     (hπ : 𝒟.π.comp f = 𝒟Q.π)
     (hρ : ∀ g : Γ F, ((𝒟Q.ρ g).charpoly).map f = (𝒟.ρ g).charpoly) :
-    Function.Surjective f :=
-  sorry
+    Function.Surjective f := by
+  classical
+  haveI : IsAdicComplete (IsLocalRing.maximalIdeal 𝒟.R) 𝒟.R := 𝒟.isAdicComplete
+  haveI : IsAdicComplete (IsLocalRing.maximalIdeal 𝒟Q.R) 𝒟Q.R :=
+    𝒟Q.isAdicComplete
+  have hkerD : RingHom.ker 𝒟.π = IsLocalRing.maximalIdeal 𝒟.R :=
+    IsLocalRing.ker_eq_maximalIdeal 𝒟.π 𝒟.π_surjective
+  have hkerQ : RingHom.ker 𝒟Q.π = IsLocalRing.maximalIdeal 𝒟Q.R :=
+    IsLocalRing.ker_eq_maximalIdeal 𝒟Q.π 𝒟Q.π_surjective
+  -- `hπ` makes `f` LOCAL, and in fact detects `𝔪` in both directions: both
+  -- maximal ideals are the kernels of the reductions onto the SAME `k`.
+  have hloc : ∀ x : 𝒟Q.R, x ∈ IsLocalRing.maximalIdeal 𝒟Q.R ↔
+      f x ∈ IsLocalRing.maximalIdeal 𝒟.R := by
+    intro x
+    rw [← hkerQ, ← hkerD, RingHom.mem_ker, RingHom.mem_ker, ← RingHom.comp_apply,
+      hπ]
+  have hlD : ((ℓ : ℕ) : 𝒟.R) ∈ IsLocalRing.maximalIdeal 𝒟.R :=
+    natCast_mem_maximalIdeal_of_surjective 𝒟.π 𝒟.π_surjective hlk
+  have hlQ : ((ℓ : ℕ) : 𝒟Q.R) ∈ IsLocalRing.maximalIdeal 𝒟Q.R :=
+    natCast_mem_maximalIdeal_of_surjective 𝒟Q.π 𝒟Q.π_surjective hlk
+  -- Every generator of `IsTraceGenerated` lies in the image.
+  have hgen : (Set.range (algebraMap ℤ_[ℓ] 𝒟.R) ∪
+      (teichmullerRootSet ℓ 𝒟.R ∪
+        {x : 𝒟.R | ∃ (g : Γ F) (m : ℕ), x = ((𝒟.ρ g).charpoly).coeff m})) ⊆
+      (f.range : Set 𝒟.R) := by
+    rintro x (⟨c, rfl⟩ | hx | ⟨g, m, rfl⟩)
+    · exact ⟨algebraMap ℤ_[ℓ] 𝒟Q.R c, by rw [← RingHom.comp_apply, halg]⟩
+    · -- the Teichmüller third: lift the RESIDUE, then use uniqueness
+      obtain ⟨m, hm, hxe⟩ := hx
+      have ha : (𝒟.π x) ^ ℓ ^ m = 𝒟.π x := by rw [← map_pow, hxe]
+      obtain ⟨y, hy, hyπ⟩ :=
+        exists_mem_teichmullerRootSet_map_eq_of_pow_eq 𝒟Q.π 𝒟Q.π_surjective hlQ
+          hm ha
+      refine ⟨y, ?_⟩
+      refine eq_of_mem_teichmullerRootSet hlD
+        (map_mem_teichmullerRootSet f hy) ⟨m, hm, hxe⟩ ?_
+      rw [← hkerD, RingHom.mem_ker, map_sub, sub_eq_zero, ← RingHom.comp_apply,
+        hπ, hyπ]
+    · refine ⟨((𝒟Q.ρ g).charpoly).coeff m, ?_⟩
+      have h := congrArg (fun p : Polynomial 𝒟.R => p.coeff m) (hρ g)
+      simpa using h
+  have hsub : Subring.closure (Set.range (algebraMap ℤ_[ℓ] 𝒟.R) ∪
+      (teichmullerRootSet ℓ 𝒟.R ∪
+        {x : 𝒟.R | ∃ (g : Γ F) (m : ℕ), x = ((𝒟.ρ g).charpoly).coeff m})) ≤
+      f.range := Subring.closure_le.mpr hgen
+  have htop : (⊤ : Subring 𝒟.R) ≤ (f.range).topologicalClosure := by
+    rw [← h𝒟t]; exact Subring.topologicalClosure_mono hsub
+  -- Density, in the arithmetic form the criterion consumes.
+  have hdense : ∀ (n : ℕ) (b : 𝒟.R), ∃ a : 𝒟Q.R,
+      b - f a ∈ (IsLocalRing.maximalIdeal 𝒟.R) ^ n := by
+    intro n b
+    have hbcl : b ∈ _root_.closure (Set.range f) := by
+      have hbm : b ∈ (f.range).topologicalClosure := htop (Subring.mem_top b)
+      rw [← RingHom.coe_range]
+      exact hbm
+    have hopen : IsOpen ((fun y : 𝒟.R => y - b) ⁻¹'
+        (((IsLocalRing.maximalIdeal 𝒟.R ^ n : Ideal 𝒟.R) : Set 𝒟.R))) :=
+      ((isAdic_iff.mp 𝒟.isAdic).1 n).preimage
+        (continuous_id.sub continuous_const)
+    have hbo : b ∈ (fun y : 𝒟.R => y - b) ⁻¹'
+        (((IsLocalRing.maximalIdeal 𝒟.R ^ n : Ideal 𝒟.R) : Set 𝒟.R)) := by
+      simp only [Set.mem_preimage, sub_self, SetLike.mem_coe]
+      exact Submodule.zero_mem _
+    obtain ⟨y, hy1, a, rfl⟩ := mem_closure_iff.mp hbcl _ hopen hbo
+    refine ⟨a, ?_⟩
+    have hmem : f a - b ∈ (IsLocalRing.maximalIdeal 𝒟.R ^ n : Ideal 𝒟.R) := hy1
+    have hneg := neg_mem hmem
+    simpa using hneg
+  exact surjective_of_dense_of_isAdicComplete f hloc hdense
 
 /-- **The exponent vector of a Taylor–Wiles prime set, PINNED to the places of
 `Q`** (added 2026-07-30 as a FAITHFULNESS REPAIR of the CONTROL/GENERATORS cut;
@@ -26171,7 +26540,15 @@ ring belongs to the generator bound, not to the diamonds.
 
 References: Taylor–Wiles, Ann. of Math. 141 (1995), §2; Wiles, Ann. of Math.
 141 (1995), ch. 3 (the local condition at `Q`); Fujiwara, *Deformation rings
-and Hecke algebras in the totally real case*, §3; Darmon–Diamond–Taylor §5.3. -/
+and Hecke algebras in the totally real case*, §3; Darmon–Diamond–Taylor §5.3.
+
+**`hlk : ((ℓ : ℕ) : k) = 0` ADDED 2026-07-30, and it WEAKENS this statement.**
+It is threaded through to `surjective_of_hilbertAux_classifying`, which needs it
+to put the TEICHMÜLLER generators of `IsTraceGenerated` into the image of the
+classifying map; the full reason is on that leaf. It is discharged for free at
+the top of the chain (`exists_hilbertTaylorWilesAuxLevelData`, which carries
+`[Finite k]` and `[Algebra ℤ_[ℓ] k]`), so no use site pays for it, and being an
+added hypothesis it cannot break any producer. -/
 theorem exists_hilbertAuxDiamondControl
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     (F : Type u) [Field F] [NumberField F]
@@ -26179,6 +26556,7 @@ theorem exists_hilbertAuxDiamondControl
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
+    (hlk : ((ℓ : ℕ) : k) = 0)
     (htr : NumberField.IsTotallyReal F) (hgal : IsGalois ℚ F)
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (𝒟 : HilbertDeformationDatum ℓ F ρbar)
@@ -26208,7 +26586,7 @@ theorem exists_hilbertAuxDiamondControl
   obtain ⟨toRuniv, halg, hπ, hρ⟩ := h𝒟Q (𝒟.toAux hr)
   -- Surjectivity is exactly trace generation of the base ring.
   have hsurj : Function.Surjective toRuniv :=
-    surjective_of_hilbertAux_classifying ℓ F 𝒟 h𝒟t 𝒟Q toRuniv halg hπ hρ
+    surjective_of_hilbertAux_classifying ℓ F hlk 𝒟 h𝒟t 𝒟Q toRuniv halg hπ hρ
   -- The diamonds and the control identification, at this now-FIXED `toRuniv`
   -- — which is what excludes the junk `diamond` that refutes the naive cut.
   obtain ⟨ex, diamond, hex, hexpin, hker, hbex⟩ :=
@@ -26522,7 +26900,12 @@ off cleanly.
 References: Taylor–Wiles, Ann. of Math. 141 (1995), §2; Wiles, Ann. of Math.
 141 (1995), ch. 3 (the local condition at `Q`); Diamond, Invent. Math. 128
 (1997), Thm. 2.1; Fujiwara, *Deformation rings and Hecke algebras in the
-totally real case*, §3; Darmon–Diamond–Taylor §5.3. -/
+totally real case*, §3; Darmon–Diamond–Taylor §5.3.
+
+**`hlk : ((ℓ : ℕ) : k) = 0` ADDED 2026-07-30**, purely as a conduit: it is
+consumed two levels down, by `surjective_of_hilbertAux_classifying`, and
+discharged one level up in `exists_hilbertTaylorWilesAuxLevelData` from
+`[Finite k]` + `[Algebra ℤ_[ℓ] k]`. See that leaf for why it is necessary. -/
 theorem exists_hilbertAuxDeformationRingPresentation
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     (F : Type u) [Field F] [NumberField F]
@@ -26530,6 +26913,7 @@ theorem exists_hilbertAuxDeformationRingPresentation
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
+    (hlk : ((ℓ : ℕ) : k) = 0)
     (htr : NumberField.IsTotallyReal F) (hgal : IsGalois ℚ F)
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (𝒟 : HilbertDeformationDatum ℓ F ρbar)
@@ -26553,8 +26937,8 @@ theorem exists_hilbertAuxDeformationRingPresentation
       RingHom.ker toRuniv = (Modularity.taylorWilesAug ℓ q).map diamond ∧
       Modularity.taylorWilesLevelIdeal ℓ ex ≤ RingHom.ker diamond := by
   obtain ⟨ex, diamond, toRuniv, hex, hexpin, htoRuniv, hker, hbex⟩ :=
-    exists_hilbertAuxDiamondControl ℓ hℓ5 F htr hgal hirrF 𝒟 h𝒟w h𝒟t h𝒟e q n Q
-      hQcard hQ 𝒟Q h𝒟Q
+    exists_hilbertAuxDiamondControl ℓ hℓ5 F hlk htr hgal hirrF 𝒟 h𝒟w h𝒟t h𝒟e q n
+      Q hQcard hQ 𝒟Q h𝒟Q
   obtain ⟨pres, hpres⟩ :=
     exists_hilbertAuxDeformationRingGenerators ℓ hℓ5 F htr hgal hirrF 𝒟 q coeff
       hcoeff n Q hQcard hQ 𝒟Q h𝒟Q
@@ -27025,9 +27409,13 @@ theorem exists_hilbertTaylorWilesAuxLevelData
     letI := L.commRingR
     exact ⟨L.toRuniv.comp L.pres,
       L.toRuniv_surjective.comp L.pres_surjective⟩
-  -- The RING half.
+  -- The RING half.  `hlk` is the residue characteristic, discharged here for
+  -- free from `[Finite k]` + `[Algebra ℤ_[ℓ] k]`; it is consumed three levels
+  -- down by `surjective_of_hilbertAux_classifying`, on the Teichmüller
+  -- generators of `IsTraceGenerated`.
   obtain ⟨ex, pres, diamond, toRuniv, hex, hexpin, hpres, htoRuniv, hker, hbex⟩ :=
-    exists_hilbertAuxDeformationRingPresentation ℓ hℓ5 F htr hgal hirrF 𝒟 h𝒟w
+    exists_hilbertAuxDeformationRingPresentation ℓ hℓ5 F
+      (natCast_eq_zero_of_finite_algebra ℓ k) htr hgal hirrF 𝒟 h𝒟w
       h𝒟t (𝒟.isWeaklyUniversal_toAuxEmpty h𝒟w) q coeff hcoeff n Q hQcard hQ 𝒟Q
       h𝒟Q
   -- The HECKE half.  Since the FREENESS/COMPARISON refutation of 2026-07-28 it
