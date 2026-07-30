@@ -3277,10 +3277,38 @@ and therefore circular for anyone trying to use this leaf to prove
 route (`E[N] ≅ (ℤ/N)²`, then any element of exact order `N`) needs no
 such locus and is the one the leaf below is stated for. -/
 
+/-- **Passing to the ambient group does not change the additive order of an
+element of `Submodule.torsionBy ℤ A m`** (PROVEN 2026-07-30) — the one piece of
+plumbing `exists_weierstrassCurve_pointOfExactOrder` below needs, and stated
+separately only because `AddSubmonoidClass.subtype`'s implicit submodule cannot
+be inferred from a bare coercion in the goal.
+
+mathlib's `addOrderOf_addSubmonoid` is the same statement for an
+`AddSubmonoid`; a `Submodule ℤ A` is not one syntactically, so it does not
+apply. -/
+theorem addOrderOf_torsionBy_coe {A : Type} [AddCommGroup A] {m : ℤ}
+    (x : Submodule.torsionBy ℤ A m) : addOrderOf (x : A) = addOrderOf x :=
+  addOrderOf_injective (AddSubmonoidClass.subtype _) Subtype.coe_injective x
+
 /-- **Over an algebraically closed field of characteristic prime to `N`,
-some elliptic curve carries a point of exact order `N`** (sorry leaf,
-opened 2026-07-28) — Silverman *AEC* III.6.4, and pure elliptic-curve
-arithmetic: no schemes, no moduli, no `Γ₁`.
+some elliptic curve carries a point of exact order `N`** (**PROVEN
+2026-07-30**; opened as a sorry leaf 2026-07-28) — Silverman *AEC* III.6.4,
+and pure elliptic-curve arithmetic: no schemes, no moduli, no `Γ₁`.
+
+**ROUTE ACTUALLY TAKEN, and one correction to the sketch below.**  III.6.4 is
+already in cone as `WeierstrassCurve.n_torsion_dimension`
+(`Fermat/FLT/EllipticCurve/Torsion.lean`, PROVEN over an arbitrary
+separably closed field), so the whole leaf is that theorem plus order
+bookkeeping.  The correction is to the witness curve: the note below proposes
+`⟨1, 0, 0, 0, 1⟩` as having "discriminant a unit in every characteristic".  It
+does **not** — its discriminant is `−433`, which vanishes in characteristic
+`433` — and no integral Weierstrass equation has that property, since a unit
+discriminant over `ℤ` is an elliptic curve over `ℚ` with everywhere good
+reduction and Tate's theorem forbids one.  A characteristic case split is
+therefore unavoidable, and mathlib has already made it: `WeierstrassCurve.ofJ`
+is `ofJ0` (`y² + y = x³`, `Δ = −27`) away from characteristic `3` and `ofJ1728`
+(`Δ = −64`) there, and carries an unconditional `IsElliptic` instance over any
+field.
 
 ## The route
 
@@ -3313,8 +3341,32 @@ theorem exists_weierstrassCurve_pointOfExactOrder (N : ℕ)
     (L : Type) [Field L] [DecidableEq L] [IsAlgClosed L] (hchar : ¬ ringChar L ∣ N) :
     ∃ (E : WeierstrassCurve L) (hE : E.IsElliptic),
       letI := hE
-      ∃ P : E.toAffine.Point, addOrderOf P = N :=
-  sorry
+      ∃ P : E.toAffine.Point, addOrderOf P = N := by
+  -- `¬ ringChar L ∣ N` is exactly `(N : L) ≠ 0` (`ringChar.spec`); note this
+  -- already forces `N ≠ 0`, since `c ∣ 0` for every `c`.
+  have hNL : (N : L) ≠ 0 := fun h => hchar ((ringChar.spec L N).mp h)
+  -- The witness curve.  `WeierstrassCurve.ofJ (0 : L)` is mathlib's
+  -- characteristic-uniform model: it is `ofJ0` (`y² + y = x³`, `Δ = −27`) away
+  -- from characteristic `3` and `ofJ1728` (`Δ = −64`) there, and carries an
+  -- `IsElliptic` instance over EVERY field.  This is what the docstring above
+  -- asks for and is why no explicit five-coefficient witness is written out:
+  -- no single integral Weierstrass equation has unit discriminant in every
+  -- characteristic (that would be an elliptic curve over `ℚ` with everywhere
+  -- good reduction, which Tate's theorem forbids), so the case split is
+  -- unavoidable and mathlib has already made it.
+  refine ⟨WeierstrassCurve.ofJ (0 : L), inferInstance, ?_⟩
+  -- Silverman *AEC* III.6.4, in the form proven in
+  -- `Fermat/FLT/EllipticCurve/Torsion.lean`: over a separably closed field in
+  -- which `N` is invertible, `E[N] ≅ (ℤ/N)²`.  `IsAlgClosed L → IsSepClosed L`
+  -- is an instance.
+  obtain ⟨φ⟩ := (WeierstrassCurve.ofJ (0 : L)).n_torsion_dimension hNL
+  -- `(1, 0)` has additive order `lcm N 1 = N`, and both the transport along
+  -- `φ.symm` and the inclusion `E[N] ↪ E(L)` preserve additive order.
+  refine ⟨(φ.symm ((1, 0) : ZMod N × ZMod N)).val, ?_⟩
+  have h1 : addOrderOf (φ.symm ((1, 0) : ZMod N × ZMod N)) = N := by
+    rw [φ.symm.addOrderOf_eq, Prod.addOrderOf_mk, ZMod.addOrderOf_one, addOrderOf_zero,
+      Nat.lcm_one_right]
+  exact (addOrderOf_torsionBy_coe (φ.symm ((1, 0) : ZMod N × ZMod N))).trans h1
 
 /-- **A point of exact order `N` on an elliptic curve over an arbitrary
 field `L` gives a `Γ₁(N)`-structure over `Spec L`** (sorry leaf, opened
