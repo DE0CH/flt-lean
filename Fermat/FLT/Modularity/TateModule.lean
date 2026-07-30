@@ -366,6 +366,37 @@ theorem exists_mem_notMem_sq_of_isMaximal {R : Type*} [CommRing R] [IsDedekindDo
   obtain ⟨π, hπ, hπ2⟩ := Ideal.exists_mem_pow_notMem_pow_succ I hI0 hI.ne_top 1
   exact ⟨π, by simpa using hπ, by simpa using hπ2⟩
 
+/-- **Stripping the `I`-part off a nonzero ideal of a Dedekind domain**
+(PROVEN 2026-07-30): every nonzero ideal `𝔞` factors as `Iᵛ · J` with `J`
+PRIME TO `I`, i.e. `J ⊄ I`.
+
+This is the `I`-adic valuation of `𝔞`, read as a factorization rather than
+as a number, and it is the only form in which it is used below: the point
+is never the value of `v` but that the complementary factor `J` is coprime
+to `I`, so that `Iᵐ ⊔ J = ⊤` for every `m` and a partition of unity
+`1 = e + j` is available with `e ∈ Iᵐ`, `j ∈ J`.
+
+The proof is `WfDvdMonoid.max_power_factor` in the MONOID OF IDEALS — the
+nonzero ideals of a Dedekind domain form a unique-factorization monoid
+(`Ideal.uniqueFactorizationMonoid`), in which a nonzero maximal ideal is
+irreducible (`Ideal.prime_iff_isPrime`) — so no explicit factorization
+multiset, no `normalizedFactors` count and no `HeightOneSpectrum` is
+needed.  `hI0` is genuinely required and not merely convenient: `Prime I`
+in the ideal monoid is equivalent to `I.IsPrime` only away from `⊥`.
+
+`exists_mem_notMem_sq_of_isMaximal` above is the special case
+`𝔞 = I`, `v = 1` read at the level of elements, and is NOT re-derived from
+this — it is released and its own proof is one line. -/
+theorem exists_pow_mul_not_le_of_isMaximal {R : Type*} [CommRing R] [IsDedekindDomain R]
+    {I : Ideal R} (hI : I.IsMaximal) (hI0 : I ≠ ⊥)
+    (𝔞 : Ideal R) (h𝔞 : 𝔞 ≠ ⊥) :
+    ∃ (v : ℕ) (J : Ideal R), 𝔞 = I ^ v * J ∧ ¬ J ≤ I := by
+  haveI : I.IsMaximal := hI
+  have hIirr : Irreducible I :=
+    ((Ideal.prime_iff_isPrime hI0).mpr hI.isPrime).irreducible
+  obtain ⟨v, J, hnd, heq⟩ := WfDvdMonoid.max_power_factor h𝔞 hIirr
+  exact ⟨v, J, heq, fun hle => hnd (Ideal.dvd_iff_le.mpr hle)⟩
+
 /-! ### The `I`-adic completion of `𝒪_D`
 
 `exists_adicCoefficientRing` below is discharged by taking `O` to be
@@ -1459,6 +1490,109 @@ theorem exists_mem_torsion_act_uniformizer_eq
     exact Ideal.mul_mem_mul hb hj
   · show π • (j • (a • w)) = y
     rw [smul_smul, mul_comm, ← smul_smul, hπz₀, hjy]
+
+open _root_.NumberField in
+/-- **THE `I`-PRIMARY TORSION IS DIVISIBLE BY EVERY NONZERO `a ∈ 𝒪_D`**
+(PROVEN 2026-07-30): given `y ∈ A[Iⁿ]` and `a ≠ 0` there is a level
+`mm ≥ n` and a `z ∈ A[I^mm]` with `a·z = y`.
+
+This is `exists_mem_torsion_act_uniformizer_eq` above with the uniformizer
+`π` replaced by an ARBITRARY nonzero element, at the cost of no longer
+naming the level: the model lemma lands in `A[Iⁿ⁺¹]` exactly, and here the
+level is `n + v_I(a)`, which is returned existentially because its value is
+never used.  The proof is the model's four steps verbatim, with step 3's
+"factor `(π) = I·J`, and `π ∉ I²` says `I ∤ J`" replaced by the general
+`I`-adic factorization `exists_pow_mul_not_le_of_isMaximal`.  That is the
+only difference, and it is why `hπ2` disappears: a uniformizer is exactly
+an element of valuation one, and once the valuation is existential there is
+nothing to assume.
+
+**WHY THIS IS THE FORM THE DENSITY ARGUMENT NEEDS.**  What
+`exists_abelianSubscheme_closure_of_divisibleGaloisSubmodule_finiteBase`
+consumes is that `T = ⋃ₙ A[Iⁿ]` is a DIVISIBLE group — divisible by every
+natural number `M ≠ 0`, since that is what forbids a nontrivial finite
+quotient and hence forces the Zariski closure to be connected.  Taking
+`a = (M : 𝒪_D)`, which is nonzero because `𝒪_D` has characteristic zero,
+gives exactly that.
+
+The classical sketch of the density argument discharges `M = q` quite
+differently — "the `𝒪_D/q^{n+1}`-module `A[q^{n+1}]` splits as the direct
+sum of its `J`-components for `J ∣ q`, so the `I`-component of `z` is the
+required element" — and that route needs a primary decomposition of the
+torsion which does not exist in this tree.  The route here needs none: the
+partition of unity `1 = e + j` with `e ∈ I^{n+v}` and `j ∈ J` performs the
+same projection onto the `I`-part, one element at a time, and is available
+from coprimality alone.  So the `M`-divisibility of `T` is uniform in `M`
+and there is no case split on whether `M` is prime to `q`. -/
+theorem exists_mem_torsion_act_eq_of_ne_zero
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal) (hI0 : I ≠ ⊥)
+    (a : NumberField.RingOfIntegers D) (ha0 : a ≠ 0)
+    (n : ℕ) (y : GeomFibrePt f x) (hy : y ∈ (m.torsion x (I ^ n)).1) :
+    ∃ (mm : ℕ) (z : GeomFibrePt f x),
+      n ≤ mm ∧ z ∈ (m.torsion x (I ^ mm)).1 ∧ m.act a z = y := by
+  classical
+  letI : AddCommGroup (GeomFibrePt f x) := ab.addCommGroup (specAlgClos F ≫ x)
+  letI : Module (𝓞 D) (GeomFibrePt f x) := m.module (specAlgClos F ≫ x)
+  haveI : I.IsMaximal := hI
+  -- ### 1. `a` divides a nonzero rational integer, its absolute norm
+  have hspan0 : Ideal.span {a} ≠ ⊥ := by
+    simpa [Ideal.span_singleton_eq_bot] using ha0
+  have hNne : Ideal.absNorm (Ideal.span {a}) ≠ 0 := fun h =>
+    hspan0 (Ideal.absNorm_eq_zero_iff.mp h)
+  obtain ⟨b, hb⟩ : a ∣ ((Ideal.absNorm (Ideal.span {a}) : ℕ) : 𝓞 D) :=
+    Ideal.mem_span_singleton.mp (Ideal.absNorm_mem (Ideal.span {a}))
+  -- ### 2. the prime-to-`I` part `J` of `(a)`, and coprimality with `I ^ (n + v)`
+  obtain ⟨v, J, hJ, hJnotle⟩ := exists_pow_mul_not_le_of_isMaximal hI hI0 _ hspan0
+  have hsup : I ⊔ J = ⊤ := by
+    rcases eq_or_lt_of_le (le_sup_left : I ≤ I ⊔ J) with h | h
+    · exact absurd (le_sup_right.trans h.ge) hJnotle
+    · exact hI.out.2 _ h
+  have hcop : I ^ (n + v) ⊔ J = ⊤ :=
+    Ideal.isCoprime_iff_sup_eq.mp (Ideal.isCoprime_iff_sup_eq.mpr hsup).pow_left
+  obtain ⟨e, he, j, hj, hej⟩ :=
+    Submodule.mem_sup.mp (hcop ▸ (Submodule.mem_top : (1 : 𝓞 D) ∈ (⊤ : Ideal (𝓞 D))))
+  -- ### 3. `·a` is surjective on ALL geometric points, by divisibility
+  obtain ⟨w, hw⟩ := exists_nsmul_eq_geomFibrePt ab x _ hNne y
+  have hw' : ((Ideal.absNorm (Ideal.span {a}) : ℕ) : 𝓞 D) • w = y := by
+    rw [Nat.cast_smul_eq_nsmul]; exact hw
+  have haz₀ : a • (b • w) = y := by rw [smul_smul, ← hb]; exact hw'
+  -- ### 4. the annihilator of `b • w` contains `Iⁿ · (a)`
+  have hann : (I ^ n) * Ideal.span {a} ≤
+      (Submodule.span (𝓞 D) {b • w}).annihilator := by
+    rw [Ideal.mul_le]
+    intro r hr s hs
+    rw [Submodule.mem_annihilator_span_singleton]
+    obtain ⟨d, rfl⟩ := Ideal.mem_span_singleton.mp hs
+    have h1 : (r * (a * d)) • (b • w) = (r * d) • (a • (b • w)) := by
+      simp only [← mul_smul]
+      congr 1
+      ring
+    rw [h1, haz₀]
+    exact (mem_torsion_iff m x (I ^ n) y).mp hy (r * d) (Ideal.mul_mem_right d _ hr)
+  -- ### 5. correcting `b • w` by `j` lands it in `A[I^(n+v)]` without moving `a · _`
+  have hjy : j • y = y := by
+    have hey : e • y = 0 :=
+      (mem_torsion_iff m x (I ^ n) y).mp hy e
+        (Ideal.pow_le_pow_right (Nat.le_add_right n v) he)
+    have h := add_smul e j y
+    rw [hej, one_smul, hey, zero_add] at h
+    exact h.symm
+  have hEq : (I ^ (n + v)) * J = (I ^ n) * Ideal.span {a} := by
+    rw [hJ, pow_add, mul_assoc]
+  refine ⟨n + v, j • (b • w), Nat.le_add_right _ _, ?_, ?_⟩
+  · refine (mem_torsion_iff m x (I ^ (n + v)) _).mpr fun c hc => ?_
+    show c • (j • (b • w)) = 0
+    rw [smul_smul]
+    refine (Submodule.mem_annihilator_span_singleton _ _).mp (hann ?_)
+    rw [← hEq]
+    exact Ideal.mul_mem_mul hc hj
+  · show a • (j • (b • w)) = y
+    rw [smul_smul, mul_comm, ← smul_smul, haz₀, hjy]
 
 /-! #### The commutative algebra behind a single-level frame
 
@@ -17784,8 +17918,95 @@ def push {A B S : Scheme.{u}} (f : A ⟶ S) (ι : B ⟶ A) {T : Scheme.{u}} {g :
 end RelPoint
 
 open _root_.NumberField in
+/-- **THE ZARISKI CLOSURE OF A DIVISIBLE, GALOIS-STABLE, `𝒪_D`-STABLE
+SUBGROUP OF `A'(k̄)` IS AN ABELIAN SUBSCHEME** (SORRY LEAF — cut 2026-07-30
+out of `exists_abelianSubscheme_closure_torsionGeomPt_finiteBase`, which is
+now PROVEN over it; Chevalley's theorem that the closure of a subgroup of a
+group variety is a subgroup variety, together with "a reduced group scheme
+of finite type over a PERFECT field is smooth"; Mumford *Abelian
+Varieties* §II.4, Milne *Abelian Varieties* §I.1, SGA 3 VI_A 0.2 and
+VI_B 1.3.1).
+
+**WHAT THE CUT DID.**  The consuming leaf's docstring lists what its
+classical argument needs of the torsion `T = ⋃ₙ A'[Iⁿ](k̄)`: that it is a
+SUBGROUP, that it is `𝒪_D`-stable, that it is `Γ_k`-stable, and that it is
+DIVISIBLE.  All four are now PROVEN there and handed in here as binders,
+so this leaf sees an abstract `T` and its statement contains no ideal, no
+`q` and no torsion at all.  What is left is EXACTLY the geometry, in three
+steps and no more:
+
+* CHEVALLEY: the Zariski closure `Z` of `T` in `A'_{k̄}` is a closed
+  subgroup scheme, and `Z_red` is smooth because `k` is perfect (`hfin`);
+* CONNECTEDNESS: the components of `Z` are open, so `T` surjects onto the
+  finite component group `Z/Z⁰`, and a finite quotient of a DIVISIBLE group
+  is trivial — this is the only use of `hTdiv`, and it is what upgrades
+  "group variety" to "abelian variety";
+* DESCENT: `Z` is `Γ_k`-stable (`hTgal`), so it descends to a closed
+  subscheme `B` of `A'` over `k`; and the displayed equation
+  `closure … = Set.range ι.base` holds in `|A'|` because `|A'_{k̄}| → |A'|`
+  is continuous, closed and surjective.
+
+**DIVISIBILITY IS WHY `hTdiv` IS STATED FOR NATURAL NUMBERS AND NOT FOR
+`𝒪_D`.**  The component group is a finite ABELIAN group, so what kills it
+is divisibility by integers; asking for divisibility by every nonzero
+`a ∈ 𝒪_D` would be a strictly stronger hypothesis (it is true of the
+torsion, by `exists_mem_torsion_act_eq_of_ne_zero`) and would make this
+leaf weaker for no gain.  The `m'.act (M : 𝒪_D)` spelling rather than
+`M • ·` keeps the statement free of the `letI`-bound module instances.
+
+**FAITHFULNESS.**  Every binder is load-bearing.
+
+* Without `hTdiv` the leaf is FALSE: take `T = {0} ∪ {y}` for a point `y`
+  of order two on an elliptic curve — a `Γ_k`-stable, `𝒪_D`-stable
+  subgroup whose Zariski closure is two reduced points, which is a
+  group SCHEME but not CONNECTED, hence carries no
+  `AbelianSchemeStruct` (`connected` is a field of that structure).  This
+  is not a corner case: any finite subgroup refutes it.
+* Without `hTgal` the closure need not descend to `k` and there is no `B`
+  over `Spec k` at all; without `hTzero`/`hTadd`/`hTact` the closure is not
+  a subgroup and the two restriction clauses are unstatable.
+* The last conjunct `closure … = Set.range ι.base` is what pins `B`; drop
+  it and the leaf is discharged by `B = A'`, `ι = 𝟙`.  See the
+  FAITHFULNESS paragraph of the consumer, which records the same thing.
+
+**`hfin` IS USED ONLY FOR PERFECTNESS**, so a finite field is more than
+the argument needs; it is carried in this form because that is what the
+consumer has and because `Finite k → PerfectField k` is not the shape of
+any binder in this file. -/
+theorem exists_abelianSubscheme_closure_of_divisibleGaloisSubmodule_finiteBase
+    {k : Type u} [Field k] (hfin : Finite k)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    (T : Set (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))))
+    (hTzero : ab'.zero (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k))) ∈ T)
+    (hTadd : ∀ y ∈ T, ∀ z ∈ T, ab'.add y z ∈ T)
+    (hTact : ∀ a : NumberField.RingOfIntegers D, ∀ y ∈ T, m'.act a y ∈ T)
+    (hTgal : ∀ σ : Field.absoluteGaloisGroup k, ∀ y ∈ T,
+      ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y ∈ T)
+    (hTdiv : ∀ M : ℕ, M ≠ 0 → ∀ y ∈ T,
+      ∃ z ∈ T, m'.act (M : NumberField.RingOfIntegers D) z = y) :
+    ∃ (B : Scheme.{u}) (ι : B ⟶ A') (abB : AbelianSchemeStruct (ι ≫ f'))
+      (mB : Mult abB (NumberField.RingOfIntegers D)),
+      IsClosedImmersion ι ∧
+      (∀ {W : Scheme.{u}} {g : W ⟶ Spec (CommRingCat.of k)} (y z : RelPoint (ι ≫ f') g),
+        RelPoint.push f' ι (abB.add y z)
+          = ab'.add (RelPoint.push f' ι y) (RelPoint.push f' ι z)) ∧
+      (∀ {W : Scheme.{u}} {g : W ⟶ Spec (CommRingCat.of k)}
+        (a : NumberField.RingOfIntegers D) (y : RelPoint (ι ≫ f') g),
+        RelPoint.push f' ι (mB.act a y) = m'.act a (RelPoint.push f' ι y)) ∧
+      (∀ y ∈ T, ∃ z : GeomFibrePt (ι ≫ f') (𝟙 (Spec (CommRingCat.of k))),
+        RelPoint.push f' ι z = y) ∧
+      closure {x : A' | ∃ y ∈ T, x ∈ Set.range y.1.base} = Set.range ι.base :=
+  sorry
+
+open _root_.NumberField in
 /-- **THE ZARISKI CLOSURE OF THE `I`-POWER TORSION IS AN ABELIAN
-SUBSCHEME** (sorry leaf — the SUBGROUP half of the density argument;
+SUBSCHEME** (**PROVEN 2026-07-30** over
+`exists_abelianSubscheme_closure_of_divisibleGaloisSubmodule_finiteBase`
+immediately above, which is the residual sorry leaf — the SUBGROUP half of
+the density argument;
 Chevalley's theorem that the closure of a subgroup of a group variety is
 a subgroup variety, together with "a reduced group scheme of finite type
 over a PERFECT field is smooth"; Mumford *Abelian Varieties* §II.4,
@@ -17822,6 +18043,34 @@ and the displayed equation `closure T = Set.range ι.base` holds in `|A'|`
 because `|A'_{k̄}| → |A'|` is continuous (so the image of the closure
 upstairs lies in the closure downstairs) and closed and surjective (so
 the image of `Z` is closed and contains `T`).
+
+**WHAT THE PROOF BELOW DOES, AND WHAT IS LEFT** (2026-07-30).  The four
+properties of `T` that the sketch above uses are now all PROVEN here, and
+the residual leaf receives them as binders:
+
+* `T` is a SUBGROUP and is `𝒪_D`-STABLE — an increasing union, since
+  `Iⁿ⁺¹ ≤ Iⁿ` makes `A'[Iⁿ] ⊆ A'[Iⁿ⁺¹]`, so a sum lands at the max of the
+  two levels and `a·y` stays at the same level;
+* `T` is `Γ_k`-STABLE — this is literally the second component of
+  `Mult.torsion`, which carries that proof;
+* `T` is DIVISIBLE — `exists_mem_torsion_act_eq_of_ne_zero`, PROVEN the
+  same day.  This is the step the sketch above spends two bullet points on,
+  and the route taken is NOT the one it proposes: there is no case split on
+  whether `M` is prime to `q` and no primary decomposition of
+  `A'[q^{n+1}]`.  Instead, `·(M)` is surjective on all of `A'(k̄)` by
+  `exists_nsmul_eq_geomFibrePt`, and the partition of unity `1 = e + j`
+  coming from the coprimality of `I^{n+v}` with the prime-to-`I` part of
+  `(M)` projects the solution back into the `I`-primary part, one element
+  at a time.  That is available from `exists_pow_mul_not_le_of_isMaximal`
+  alone, and the primary decomposition of the torsion — which does not
+  exist in this tree — is never needed.
+
+What remains open is `exists_abelianSubscheme_closure_of_divisible\
+GaloisSubmodule_finiteBase`: Chevalley, smoothness over a perfect field,
+the connectedness argument, and Galois descent.  **The leaf count is
+unchanged by the cut — one `sorry` replaces one `sorry`** — and what it
+buys is that the open statement mentions no ideal, no `q` and no torsion,
+so its content is purely geometric.
 
 **`hqN` IS NOT NEEDED HERE, AND THAT IS THE POINT OF THE CUT.**  This
 half is true for EVERY maximal `I`, including one above the residue
@@ -17861,8 +18110,69 @@ theorem exists_abelianSubscheme_closure_torsionGeomPt_finiteBase
         ∃ z : GeomFibrePt (ι ≫ f') (𝟙 (Spec (CommRingCat.of k))),
           RelPoint.push f' ι z = y) ∧
       closure {x : A' | ∃ n : ℕ, ∃ y ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).1,
-        x ∈ Set.range y.1.base} = Set.range ι.base :=
-  sorry
+        x ∈ Set.range y.1.base} = Set.range ι.base := by
+  classical
+  haveI : I.IsMaximal := hI
+  -- a maximal ideal of `𝒪_D` is nonzero, because `𝒪_D` is not a field
+  have hI0 : I ≠ ⊥ :=
+    Ring.ne_bot_of_isMaximal_of_not_isField hI (NumberField.RingOfIntegers.not_isField D)
+  set T : Set (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
+    ⋃ n : ℕ, (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).1 with hTdef
+  -- `0 ∈ T`: the zero point is killed by everything, so it lies in `A'[I⁰]`
+  have hTzero : ab'.zero (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k))) ∈ T := by
+    refine Set.mem_iUnion.mpr ⟨0, (mem_torsion_iff m' _ _ _).mpr fun a _ => ?_⟩
+    letI : AddCommGroup (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
+      ab'.addCommGroup (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+    letI : Module (NumberField.RingOfIntegers D)
+        (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
+      m'.module (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+    exact smul_zero a
+  -- `T` is closed under addition: an increasing union of subgroups, since `Iⁿ⁺¹ ≤ Iⁿ`
+  have hTadd : ∀ y ∈ T, ∀ z ∈ T, ab'.add y z ∈ T := by
+    intro y hy z hz
+    obtain ⟨n, hn⟩ := Set.mem_iUnion.mp hy
+    obtain ⟨p, hp⟩ := Set.mem_iUnion.mp hz
+    refine Set.mem_iUnion.mpr ⟨max n p, (mem_torsion_iff m' _ _ _).mpr fun a ha => ?_⟩
+    have hy' := (mem_torsion_iff m' _ (I ^ n) y).mp hn a
+      (Ideal.pow_le_pow_right (le_max_left n p) ha)
+    have hz' := (mem_torsion_iff m' _ (I ^ p) z).mp hp a
+      (Ideal.pow_le_pow_right (le_max_right n p) ha)
+    rw [m'.act_addPt, hy', hz']
+    exact ab'.zero_add _
+  -- `T` is `𝒪_D`-stable, because each `A'[Iⁿ]` is
+  have hTact : ∀ a : NumberField.RingOfIntegers D, ∀ y ∈ T, m'.act a y ∈ T := by
+    intro a y hy
+    obtain ⟨n, hn⟩ := Set.mem_iUnion.mp hy
+    refine Set.mem_iUnion.mpr ⟨n, (mem_torsion_iff m' _ _ _).mpr fun c hc => ?_⟩
+    rw [← m'.act_mul]
+    exact (mem_torsion_iff m' _ (I ^ n) y).mp hn (c * a) (Ideal.mul_mem_right a _ hc)
+  -- `T` is `Γ_k`-stable: this is the second component of `Mult.torsion`
+  have hTgal : ∀ σ : Field.absoluteGaloisGroup k, ∀ y ∈ T,
+      ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y ∈ T := by
+    intro σ y hy
+    obtain ⟨n, hn⟩ := Set.mem_iUnion.mp hy
+    exact Set.mem_iUnion.mpr ⟨n, (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).2 σ y hn⟩
+  -- `T` is DIVISIBLE — the step the classical sketch does by primary decomposition
+  have hTdiv : ∀ M : ℕ, M ≠ 0 → ∀ y ∈ T,
+      ∃ z ∈ T, m'.act (M : NumberField.RingOfIntegers D) z = y := by
+    intro M hM y hy
+    obtain ⟨n, hn⟩ := Set.mem_iUnion.mp hy
+    obtain ⟨mm, z, _, hz, hzy⟩ :=
+      exists_mem_torsion_act_eq_of_ne_zero m' (𝟙 (Spec (CommRingCat.of k))) I hI hI0
+        ((M : ℕ) : NumberField.RingOfIntegers D) (Nat.cast_ne_zero.mpr hM) n y hn
+    exact ⟨z, Set.mem_iUnion.mpr ⟨mm, hz⟩, hzy⟩
+  obtain ⟨B, ι, abB, mB, hιcl, hadd, hact, hlift, hclos⟩ :=
+    exists_abelianSubscheme_closure_of_divisibleGaloisSubmodule_finiteBase hfin ab' m' T
+      hTzero hTadd hTact hTgal hTdiv
+  refine ⟨B, ι, abB, mB, hιcl, hadd, hact, fun n y hy => hlift y ?_, ?_⟩
+  · exact Set.mem_iUnion.mpr ⟨n, hy⟩
+  · rw [← hclos]
+    congr 1
+    ext x
+    simp only [Set.mem_setOf_eq, hTdef, Set.mem_iUnion]
+    constructor
+    · rintro ⟨n, y, hy, hx⟩; exact ⟨y, ⟨n, hy⟩, hx⟩
+    · rintro ⟨y, ⟨n, hy⟩, hx⟩; exact ⟨n, y, hy, hx⟩
 
 open _root_.NumberField in
 /-- **AN `𝒪_D`-STABLE ABELIAN SUBSCHEME CARRYING THE WHOLE `I`-ADIC TATE
