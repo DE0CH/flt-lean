@@ -5132,6 +5132,18 @@ and no anonymous `have`.
     proved from `psiNat_phi`, so this is the entire arithmetic content of
     `gp_herbrand`. (Was `hherb`.)
 
+  The fourth input, `hin` (`I_v ≤ G_0` at each level), is the named leaf
+  `LowerRamificationData.localInertiaGroup_le_gp_zero` above.  **It is
+  PROVEN on branch `flt-lean-282` (`d4beba8c`), which is not carried here**
+  — that branch cut this cluster into three leaves rather than five, by a
+  different route, and merging its block would have meant replacing this
+  one wholesale.  Its proof goes through `unif_spec` and normality of the
+  level, NOT through the residue-field description, which is not enough
+  because `𝔪` is non-principal over `Kᵥᵃˡᵍ`.  The same branch also proves
+  `LowerRamificationData.wildInertiaGroup_le_gp_one`.  Transcribing those
+  two proofs onto these two statements is the cheapest −2 available in this
+  file; see the flt-lean-282 merge commit.
+
   This step discharges the `Nonempty` conjunct, and it is the one that
   keeps the leaf honest: nothing else prevents an over-strong anchor from
   emptying the class and closing this leaf vacuously.
