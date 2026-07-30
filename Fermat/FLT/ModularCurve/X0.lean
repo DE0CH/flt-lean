@@ -38466,12 +38466,30 @@ theorem IsJacobianOf.isIso_of_ajMor_eq_const {X J : Scheme.{0}} {strX : X ⟶ Sp
     rw [← Category.assoc, (jac.aj g x).2, key g x]
   exact ⟨⟨z, h2.trans h1.symm, hz⟩⟩
 
-/-- **A curve whose Abel–Jacobi map is not injective on `ℚ`-points
-contains a DENSE AFFINE LINE** (sorry leaf, 2026-07-27) — the whole
-RIEMANN–ROCH half of `ajMor_eq_const_of_not_injective`, separated at last
-from its rigidity half.
+/-- **A curve whose Abel–Jacobi map is not injective on `ℚ`-points is
+RATIONAL** (sorry leaf, 2026-07-27; **WEAKENED 2026-07-30 and renamed from
+`exists_affineLine_of_not_injective_aj`**) — the whole RIEMANN–ROCH half of
+`ajMor_eq_const_of_not_injective`, separated at last from its rigidity half.
 
-TRUE and classical, in three steps:
+**THE WEAKENING, which is the one this docstring itself priced and declared
+available.**  The conclusion used to be
+`∃ u : 𝔸¹_ℚ ⟶ X, IsOpenImmersion u ∧ IsDominant u ∧ u ≫ strX = …` — the affine
+line as an explicit dense OPEN SUBSCHEME.  It is now
+`Scheme.BirationalOver strX (𝔸(Unit; SpecQ) ↘ SpecQ)`, i.e. plain rationality of
+`X`, which is strictly less to prove: step 3 below is no longer owed at all.
+The paragraph "A WEAKER CONCLUSION WOULD ALREADY SUFFICE FOR THE CONSUMER" that
+used to sit further down named the two non-mathematical costs and warned that
+"doing half of this is worse than doing none of it"; **both were paid in one
+change** —
+
+* `eq_comp_of_birationalOver_affineLine_toAbelianScheme` was hoisted from ~1 500
+  lines below to immediately above the consumer, and
+* `exists_const_of_affineLine_to_abelianScheme`, which the restatement leaves
+  with no consumer, was DELETED (it was the `V = ⊤`, `K = ℚ` corollary of
+  `exists_section_of_denseOpen_affineLine_toAbelianScheme`, which survives and is
+  what the hoisted lemma calls, so no mathematics was lost and no sorry moved).
+
+TRUE and classical, in two steps — the third is what the weakening removed:
 
 1. **Abel.**  `aj x = aj y` with `x ≠ y` two rational points gives
    `[x] − [o] = [y] − [o]` in `Pic⁰`, so the nonzero degree-`0` divisor
@@ -38479,10 +38497,12 @@ TRUE and classical, in three steps:
    exactly one simple pole, at `y`.
 2. **Degree `1`.**  That `f` is a morphism `X → ℙ¹_ℚ` of degree
    `deg (div f)_∞ = 1`, so `ℚ(X) = ℚ(ℙ¹)`; both curves being smooth and
-   proper, `f` is an isomorphism and `X ≅ ℙ¹_ℚ`.
-3. **Removing the pole.**  Pulling back `𝔸¹ = ℙ¹ ∖ {∞}` along `f` gives
-   an open immersion `u : 𝔸¹_ℚ ⟶ X` over `ℚ` with image `X ∖ {y}`, dense
-   because `X` is an irreducible curve.
+   proper, `f` is an isomorphism and `X ≅ ℙ¹_ℚ` — which, since `𝔸¹` is a dense
+   open of `ℙ¹`, is already `BirationalOver strX (𝔸¹ ↘ SpecQ)`.
+
+   *(Formerly step 3, **no longer owed**: pulling back `𝔸¹ = ℙ¹ ∖ {∞}` along `f`
+   to get an open immersion `u : 𝔸¹_ℚ ⟶ X` with dense image `X ∖ {y}`.  A
+   `Scheme.PartialIso` between dense opens is all the conclusion now asks for.)*
 
 **WHY `𝔸¹` AND NOT `ℙ¹` — this is the axis the previous audit had not
 searched.**  The consumer's earlier docstring recorded a further cut at
@@ -38521,12 +38541,14 @@ counterexample**, so a proof that does not consume all three is wrong:
   `𝔸¹` as `𝔾ₘ` minus finitely many points, whose smooth compactification
   is `ℙ¹` minus `2 + #S ≥ 2` points, not `1`.  So the conclusion fails.
 
-`IsOpenImmersion u` is recorded even though the consumer needs only
-`IsDominant u`: it is the honest content of step 3 (`X ∖ {y} ≅ 𝔸¹`, i.e.
-`X` is RATIONAL), whereas dominance alone would say only that `X` is
-unirational — the same thing for curves, by Lüroth, but only after a
-theorem.  Stating the stronger form costs a prover nothing and keeps the
-leaf reusable.
+**A NOTE ON UNIRATIONALITY, kept because the weakening could look like it walks
+into it and does not.**  The old conclusion recorded `IsOpenImmersion u` even
+though the consumer needed only `IsDominant u`, on the ground that dominance
+alone would say only that `X` is *unirational* — the same thing for curves by
+Lüroth, but only after a theorem.  `Scheme.BirationalOver` is not the dominance
+form: it is a `Scheme.PartialIso`, an ISOMORPHISM between dense opens, so it
+still says `X` is rational and Lüroth is still not needed.  What was dropped is
+only the demand that the dense open be `𝔸¹` *on the nose inside `X`*.
 
 IRREDUCIBLE at this pin, ALONG THE GEOMETRIC AXIS (divisors and linear
 systems on `X`): Riemann–Roch for curves does not exist in `Mathlib`, in
@@ -38546,36 +38568,34 @@ prose occurrences inside docstrings — no declaration of any of those
 shapes exists anywhere.  Recorded so that the next reader knows the date
 of the check rather than only its conclusion.
 
-**A WEAKER CONCLUSION WOULD ALREADY SUFFICE FOR THE CONSUMER, and that
-is worth knowing before attacking this as stated** (2026-07-28).  The
-only consumer is `ajMor_eq_const_of_not_injective` below, and what it
-does with `u` is to compose it with `ajMor` and feed the result to
-`exists_const_of_affineLine_to_abelianScheme`.  A second, independently
-developed route to the same conclusion exists further down this file:
-`eq_comp_of_birationalOver_affineLine_toAbelianScheme` (PROVEN) yields
-`∃ s, c = strP ≫ s` for any `c : P ⟶ A` into an abelian scheme, from the
-strictly weaker input `Scheme.BirationalOver strX (𝔸¹ ↘ SpecQ)` — no
-open immersion, no `IsDominant`, and it supplies the reducedness it needs
-from `hcurve` itself.  So this leaf could be restated as
-"`¬ Injective aj → Scheme.BirationalOver strX (𝔸¹ ↘ SpecQ)`", i.e. "`X`
-is RATIONAL", which is a genuinely weaker demand than exhibiting the
-affine line as an open subscheme.
+**THE WEAKENING THIS PARAGRAPH PROPOSED HAS BEEN CARRIED OUT** (2026-07-28
+proposal, executed 2026-07-30; see the header).  It read: the only consumer is
+`ajMor_eq_const_of_not_injective` below, and what it does with `u` is compose it
+with `ajMor` and feed the result to `exists_const_of_affineLine_to_abelianScheme`;
+a second, independently developed route to the same conclusion exists further
+down this file, `eq_comp_of_birationalOver_affineLine_toAbelianScheme` (PROVEN),
+which yields `∃ s, c = strP ≫ s` for any `c : P ⟶ A` into an abelian scheme from
+the strictly weaker input `Scheme.BirationalOver strX (𝔸¹ ↘ SpecQ)` — no open
+immersion, no `IsDominant` — and supplies the reducedness it needs from `hcurve`
+itself.  It then priced two non-mathematical costs (relocate that lemma, which is
+declared below the consumer; delete `exists_const_of_affineLine_to_abelianScheme`,
+which the restatement leaves free-floating) and warned that "doing half of this is
+worse than doing none of it".
 
-**Two costs a successor must price before doing that**, neither of them
-mathematical: `eq_comp_of_birationalOver_affineLine_toAbelianScheme` is
-declared BELOW `ajMor_eq_const_of_not_injective`, so it would have to be
-relocated (as `exists_section_of_denseOpen_affineLine_toAbelianScheme`
-already was, for the same reason); and the restatement would leave
-`exists_const_of_affineLine_to_abelianScheme` with no consumer, i.e.
-free-floating, so it would have to be deleted in the same change.  Doing
-half of this is worse than doing none of it. -/
-theorem exists_affineLine_of_not_injective_aj {X J : Scheme.{0}} {strX : X ⟶ SpecQ}
+Both were paid together: the lemma now sits immediately above
+`ajMor_eq_const_of_not_injective`, occupying the slot the deleted corollary
+vacated, and the consumer's proof went from four steps to two — the reducedness
+of `X`, the dominance of the affine line and `ext_of_isDominant_of_isSeparated`
+all moved inside the hoisted lemma, where they already were.  Verified by a full
+`lake build` of `X0`/`X1`; the sorry count did not move, since nothing here was
+proven or opened — a leaf was made cheaper and a proven corollary was retired. -/
+theorem birationalOver_affineLine_of_not_injective_aj {X J : Scheme.{0}}
+    {strX : X ⟶ SpecQ}
     (hproper : IsProper strX) (hcurve : SmoothOfRelativeDimension 1 strX)
     (hconn : GeometricallyConnected strX) {jstr : J ⟶ SpecQ}
     {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
     (jac : IsJacobianOf strX ab o) (hni : ¬ Function.Injective (jac.aj (𝟙 SpecQ))) :
-    ∃ u : 𝔸(Unit; SpecQ) ⟶ X, IsOpenImmersion u ∧ IsDominant u ∧
-      u ≫ strX = 𝔸(Unit; SpecQ) ↘ SpecQ :=
+    Scheme.BirationalOver strX (𝔸(Unit; SpecQ) ↘ SpecQ) :=
   sorry
 
 /-- **A LOCALIZATION OF A PRINCIPAL IDEAL RING IS A PRINCIPAL IDEAL RING**
@@ -38776,10 +38796,12 @@ theorem exists_section_of_affineLine_toAbelianScheme {K : Type} [Field K]
 /-- **NO RATIONAL CURVES ON AN ABELIAN VARIETY: a `K`-morphism from a
 DENSE OPEN of `𝔸¹_K` to an abelian scheme over `K` is CONSTANT** (PROVEN
 2026-07-30 by decomposition over the two leaves immediately above; formerly a
-bare sorry leaf) — the level-free, base-free geometric core of BOTH
-`exists_const_of_affineLine_to_abelianScheme` immediately below (its
-`V = ⊤`, `K = ℚ` case) and
-`not_birationalOver_affineLine_of_one_le_x0Genus` further down.  It
+bare sorry leaf) — the level-free, base-free geometric core of
+`eq_comp_of_birationalOver_affineLine_toAbelianScheme` immediately below and of
+`not_birationalOver_affineLine_of_one_le_x0Genus` further down.  (Until
+2026-07-30 it also served `exists_const_of_affineLine_to_abelianScheme`, the
+`V = ⊤`, `K = ℚ` corollary; that corollary has been DELETED — see the note on
+the relocation below.)  It
 mentions neither `N`, nor `x0Genus`, nor `IsX0Compactification`, nor the
 base `S`, and it is the ONLY new mathematics that half of the genus
 formula needs.
@@ -38794,9 +38816,18 @@ this file carried the same classical theorem twice, once as a special
 case of the other.  Moving this one up (a pure relocation: it depends on
 nothing but `AbelianSchemeStruct`, `𝔸(Unit; Spec K)` and `Scheme.Opens`,
 all declared far above, and there is no `section`/`variable` boundary
-between the two sites) turns that special case into a five-line
-corollary.  **Do not move it back**, and do not restate the `V = ⊤` case
-as a leaf again.
+between the two sites) turned that special case into a five-line
+corollary.  **Do not move it back.**
+
+**AND ON 2026-07-30 THE CORRECT FOLLOW-UP WAS MADE: the `V = ⊤` corollary is
+GONE, and `eq_comp_of_birationalOver_affineLine_toAbelianScheme` followed this
+declaration up here.**  Weakening
+`birationalOver_affineLine_of_not_injective_aj` to plain rationality (see its
+docstring) left that corollary with no consumer, i.e. free-floating, so it was
+deleted and the hoisted lemma took its slot.  So the standing instruction is now
+the stronger one: do not restate the `V = ⊤` case as a leaf *or* as a corollary
+— `eq_comp_of_birationalOver_affineLine_toAbelianScheme` is the general form and
+it is what the Abel–Jacobi consumer calls directly.
 
 TRUE and classical (Milne, *Abelian Varieties* I.3; Mumford, *Abelian
 Varieties* §4: an abelian variety contains no rational curve).  Two
@@ -38881,81 +38912,78 @@ theorem exists_section_of_denseOpen_affineLine_toAbelianScheme {K : Type} [Field
   refine ⟨s, hs1, ?_⟩
   rw [← hΦ2, hs2, Category.assoc]
 
-/-- **RIGIDITY: every morphism `𝔸¹_ℚ ⟶ A` to an abelian scheme over `ℚ`
-is CONSTANT** — "there are no rational curves in an abelian variety", in
-the form this file can state it, and the second half of
-`ajMor_eq_const_of_not_injective`.
+/-- **A RATIONAL curve over `K` maps CONSTANTLY to every abelian scheme
+over `K`** (PROVEN 2026-07-28 over
+`exists_section_of_denseOpen_affineLine_toAbelianScheme`) — the level-free
+half of `not_birationalOver_affineLine_of_one_le_x0Genus`.
 
-**PROVEN 2026-07-28, and NOT by new mathematics: this is the `V = ⊤`,
-`K = ℚ` case of `exists_section_of_denseOpen_affineLine_toAbelianScheme`
-immediately above.**  Two independent cuts of the same classical theorem
-had been made in this file — this one on 2026-07-27 from the Abel–Jacobi
-side, the general one on 2026-07-28 from the `x0Genus` side — and the
-general one was declared BELOW this one, which is the only reason this
-was still a `sorry`.  Relocating it (see its docstring) removes the
-duplication: `(⊤ : 𝔸¹.Opens).ι` is `Scheme.topIso.hom`, hence an
-isomorphism, so the two statements differ by cancelling an iso.
+**What the assembly does, and why nothing but the leaf above is needed.**
+`hrat` is a `Scheme.PartialIso` `f` between a dense open `f.source ⊆ P`
+and a dense open `f.target ⊆ 𝔸¹_K`, compatible with the two structure
+maps (`f.IsOver`).  Transporting `c` backwards along `f.iso` gives a
+`K`-morphism `f.iso.inv ≫ f.source.ι ≫ c` out of `f.target`, which the
+leaf makes equal to `(structure map) ≫ s` for a section `s`.  Pushing
+that forward again says `c` and `strP ≫ s` AGREE ON `f.source`; and
+since `P` is REDUCED, `f.source.ι` is DOMINANT (`Opens.isDominant_ι`
+applied to `f.dense_source`) and `astr` is SEPARATED (an abelian scheme
+is proper), `Mathlib`'s `ext_of_isDominant_of_isSeparated` upgrades that
+to equality on all of `P`.
 
-TRUE and classical, in two steps — recorded here because they are what
-the surviving leaf above still owes:
+**Reducedness of `P` is derived, not assumed**, and this is the one place
+the `hcurve` hypothesis is spent: `SmoothOfRelativeDimension 1 strP` gives
+`Smooth strP`, hence `GeometricallyReduced strP` by this development's own
+`AlgebraicGeometry.GeometricallyReduced.of_smooth`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/Morphisms/SmoothReduced.lean`,
+sorry-free), and `IsReduced P` follows by
+`GeometricallyReduced.isReduced_of_flat_of_isLocallyNoetherian` — flatness
+over a field being free and local noetherianness coming from
+`LocallyOfFiniteType`.  Mathlib itself proves NOTHING of this shape
+(`Smooth ⟹ IsReduced` is absent from the pin; see the audit in
+`ModularCurve/EllipticScheme.lean`), so the route matters.
 
-1. `A` is proper (`ab.proper`) and `𝔸¹_ℚ` is a dense open subscheme of
-   the smooth curve `ℙ¹_ℚ`, so `φ` extends to a morphism `ℙ¹_ℚ → A`: a
-   rational map from a smooth curve to a proper scheme is defined
-   everywhere.
-2. In characteristic `0`, `H⁰(ℙ¹, Ω¹) = 0`, so the pullback along that
-   extension of every invariant differential of `A` vanishes; the
-   extended morphism has zero differential and is therefore constant.
-
-**AUDIT CORRECTION, 2026-07-28.**  The previous version of this docstring
-ended with an "IRREDUCIBLE at this pin" verdict whose stated refutation
-check was "a rational-map extension theorem, or any statement about `Ω¹`
-of a proper curve, appearing in any of the three trees".  That check now
-**passes on its first clause**: `exists_unique_extension_of_isSmoothProperCurve`
-and `exists_unique_extension_of_valuationRing_stalk_of_isOpenImmersion`
-(`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`) are PROVEN
-and sorry-free, so step 1 exists in the tree.  Step 2 is still absent
-everywhere.  The verdict was correct when written and is now half wrong,
-which is exactly the failure mode a dated audit has; it has been rewritten
-rather than deleted so that the next reader can see which half moved.
-
-**The constant is a `ℚ`-POINT**, which is what `c ≫ astr = 𝟙 SpecQ`
-records and what the consumer needs in order to identify it with the zero
-section.  It is rational because `𝔸¹_ℚ` has rational points (the origin),
-so the image point has residue field `ℚ`.
-
-**`ab.proper` is LOAD-BEARING** and the statement is FALSE without it:
-take `A = 𝔾ₐ = 𝔸¹_ℚ` with its additive group structure — smooth,
-geometrically connected, a commutative group scheme with a functorial
-group law, everything an `AbelianSchemeStruct` asks for EXCEPT properness
-— and `φ = 𝟙`, which is not constant.  So a proof must use properness of
-`A`, and a proof that does not is wrong.  Properness is consumed here by
-being handed to the leaf above, which is where it does its work.
-
-**Not vacuous.**  The degenerate case `A = Spec ℚ` is discharged by
-`c = 𝟙`, but the statement has real content for every positive-dimensional
-`A`: it is exactly the classical rigidity that makes Abel–Jacobi
-injective in positive genus. -/
-theorem exists_const_of_affineLine_to_abelianScheme {A : Scheme.{0}} {astr : A ⟶ SpecQ}
-    (ab : AbelianSchemeStruct astr) (φ : 𝔸(Unit; SpecQ) ⟶ A)
-    (hφ : φ ≫ astr = 𝔸(Unit; SpecQ) ↘ SpecQ) :
-    ∃ c : SpecQ ⟶ A, c ≫ astr = 𝟙 SpecQ ∧ φ = (𝔸(Unit; SpecQ) ↘ SpecQ) ≫ c := by
-  have hdense : Dense (X := 𝔸(Unit; SpecQ))
-      ((⊤ : (𝔸(Unit; SpecQ)).Opens) : Set (𝔸(Unit; SpecQ))) := by
-    rw [TopologicalSpace.Opens.coe_top]
-    exact dense_univ
-  obtain ⟨c, hc, hcomp⟩ :=
-    exists_section_of_denseOpen_affineLine_toAbelianScheme (K := ℚ) ab ⊤ hdense
-      ((⊤ : (𝔸(Unit; SpecQ)).Opens).ι ≫ φ) (by rw [Category.assoc, hφ])
-  refine ⟨c, hc, ?_⟩
-  calc φ = (𝔸(Unit; SpecQ)).topIso.inv ≫ ((⊤ : (𝔸(Unit; SpecQ)).Opens).ι ≫ φ) := by
-        rw [← Category.assoc, Scheme.toIso_inv_ι, Category.id_comp]
-    _ = (𝔸(Unit; SpecQ)).topIso.inv ≫
-          (((⊤ : (𝔸(Unit; SpecQ)).Opens).ι ≫ (𝔸(Unit; SpecQ) ↘ SpecQ)) ≫ c) := by
-        rw [hcomp]
-    _ = (𝔸(Unit; SpecQ) ↘ SpecQ) ≫ c := by
-        rw [Category.assoc, ← Category.assoc (𝔸(Unit; SpecQ)).topIso.inv,
-          Scheme.toIso_inv_ι, Category.id_comp]
+**`hcurve` IS LOAD-BEARING and the statement is FALSE without it**: on a
+NON-REDUCED source the conclusion fails.  Take `K` of any characteristic,
+`P = 𝔸¹_K` with a nilpotent thickening at the origin — more precisely any
+`P` whose reduction is `𝔸¹_K`, so that `hrat` still holds through the
+reduced dense open — and `c` a morphism to an elliptic curve that is
+constant on the reduction but has a nonzero tangent component at the fat
+point.  Then `c ≠ strP ≫ s` for every `s`, while `hrat` is untouched.
+`GeometricallyConnected` is NOT assumed: it is implied by `hrat`, since a
+scheme with a dense open isomorphic to an open of the irreducible `𝔸¹_K`
+is itself irreducible. -/
+theorem eq_comp_of_birationalOver_affineLine_toAbelianScheme {K : Type} [Field K]
+    {P A : Scheme.{0}}
+    {strP : P ⟶ Spec (CommRingCat.of K)} {astr : A ⟶ Spec (CommRingCat.of K)}
+    (hcurve : SmoothOfRelativeDimension 1 strP)
+    (abA : AbelianSchemeStruct astr)
+    (hrat : Scheme.BirationalOver strP
+      (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)))
+    (c : P ⟶ A) (hc : c ≫ astr = strP) :
+    ∃ s : Spec (CommRingCat.of K) ⟶ A, c = strP ≫ s := by
+  obtain ⟨f, hf⟩ := hrat
+  haveI := hcurve
+  haveI : AlgebraicGeometry.Smooth strP := SmoothOfRelativeDimension.smooth 1 strP
+  haveI : GeometricallyReduced strP := _root_.AlgebraicGeometry.GeometricallyReduced.of_smooth strP
+  haveI : IsLocallyNoetherian P := LocallyOfFiniteType.isLocallyNoetherian strP
+  haveI : IsReduced P := GeometricallyReduced.isReduced_of_flat_of_isLocallyNoetherian strP
+  haveI : IsProper astr := abA.proper
+  haveI : IsDominant f.source.ι := _root_.AlgebraicGeometry.Opens.isDominant_ι f.dense_source
+  have hd : (f.iso.inv ≫ f.source.ι ≫ c) ≫ astr =
+      f.target.ι ≫ (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) := by
+    rw [Category.assoc, Category.assoc, hc, ← hf, ← Category.assoc, ← Category.assoc,
+      Iso.inv_hom_id, Category.id_comp]
+  obtain ⟨s, hsec, hs⟩ :=
+    exists_section_of_denseOpen_affineLine_toAbelianScheme abA f.target f.dense_target _ hd
+  refine ⟨s, ?_⟩
+  refine ext_of_isDominant_of_isSeparated astr ?_ f.source.ι ?_
+  · rw [hc, Category.assoc, hsec, Category.comp_id]
+  · have h2 := congrArg (fun t => f.iso.hom ≫ t) hs
+    simp only [← Category.assoc, Iso.hom_inv_id, Category.id_comp] at h2
+    have hf0 : f.iso.hom ≫ f.target.ι ≫
+        (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) =
+        f.source.ι ≫ strP := hf
+    simp only [Category.assoc] at h2 ⊢
+    rw [h2, reassoc_of% hf0]
 
 /-- **A curve whose Abel–Jacobi map is not injective on `ℚ`-points has a
 CONSTANT Abel–Jacobi map** (PROVEN 2026-07-27 by decomposition; formerly
@@ -38973,32 +39001,36 @@ must be phrased with `ℙ¹` at all — and it need not: mathlib DOES have
 connected curve "`X ≅ ℙ¹_ℚ`" is equivalent to "`X` contains a dense open
 copy of `𝔸¹_ℚ`".  So the two classical theorems are now separated:
 
-* `exists_affineLine_of_not_injective_aj` — **Riemann–Roch**: a
+* `birationalOver_affineLine_of_not_injective_aj` — **Riemann–Roch**: a
   non-injective Abel–Jacobi map makes `x − y` principal, hence gives a
-  degree-`1` map to `ℙ¹`, hence `X ∖ {y} ≅ 𝔸¹_ℚ`.  This is the only half
+  degree-`1` map to `ℙ¹`, hence `X` is RATIONAL.  This is the only half
   that uses `hproper`, `hcurve` and `hconn`, and its docstring records a
   separate counterexample for each of the three.
-* `exists_const_of_affineLine_to_abelianScheme` — **rigidity**: there are
-  no rational curves in an abelian variety, so `𝔸¹_ℚ ⟶ J` is constant.
-  This half uses only `ab.proper`, and is FALSE without it (`𝔾ₐ`).
-  **PROVEN 2026-07-28** as the `V = ⊤`, `K = ℚ` case of
-  `exists_section_of_denseOpen_affineLine_toAbelianScheme`, which is the
-  general form of the same classical theorem and is where the rigidity
-  sorry now lives; so this half of the cut no longer carries a leaf of
-  its own.
+* `eq_comp_of_birationalOver_affineLine_toAbelianScheme` — **rigidity**:
+  there are no rational curves in an abelian variety, so a morphism out of a
+  rational curve into one is constant.  This half uses only `abA.proper`, and
+  is FALSE without it (`𝔾ₐ`).  **PROVEN 2026-07-28** over
+  `exists_section_of_denseOpen_affineLine_toAbelianScheme`, which is where the
+  rigidity sorry now lives; so this half of the cut carries no leaf of its own.
 
-**The glue below is real mathematics-free bookkeeping, and it is what the
-cut buys.**  Three ingredients, none of them geometric:
+**REWRITTEN 2026-07-30, and the glue got shorter.**  Until then the first half
+delivered an explicit open immersion `u : 𝔸¹_ℚ ⟶ X` and the second half was
+`exists_const_of_affineLine_to_abelianScheme` (the `V = ⊤`, `K = ℚ` corollary),
+leaving this proof to bridge them with three further steps: reducedness of `X`,
+dominance of `u`, and `ext_of_isDominant_of_isSeparated`.  All three already sat
+inside `eq_comp_of_birationalOver_affineLine_toAbelianScheme`, which needs only
+`BirationalOver` — so the leaf was weakened to exactly that, the general lemma
+was hoisted to just above this one, and the corollary was DELETED as
+free-floating.  What is left here is two steps: quote the leaf, then pin the
+constant.
 
-1. `ext_of_isDominant_of_isSeparated` (mathlib) upgrades "constant on the
-   dense `𝔸¹`" to "constant on `X`".  It needs `IsReduced X`, which is
-   `isReduced_of_smooth_over_field` applied to `hcurve` — a project shim,
-   since a smooth scheme over a field being reduced is itself absent from
-   the pin — and `IsSeparated jstr`, which is `ab.proper`.
-2. `(jac.aj strX ⟨𝟙 X, _⟩).2` says `ajMor ≫ jstr = strX`, i.e. `ajMor` is
+**What the surviving glue is**, and it is the part that is genuinely this
+node's:
+
+1. `(jac.aj strX ⟨𝟙 X, _⟩).2` says `ajMor ≫ jstr = strX`, i.e. `ajMor` is
    a morphism over `ℚ`; that is what lets the two sides be compared over
    the separated `jstr`.
-3. `aj_eq_ajMor` and `aj_base` at the base point `o` pin the constant `c`
+2. `aj_eq_ajMor` and `aj_base` at the base point `o` pin the constant `c`
    to be the zero section: `c = o.1 ≫ ajMor = (aj (𝟙 SpecQ) o).1 = 0`.
    This is where `o` is consumed, and it is why the conclusion is
    `strX ≫ zero` rather than merely "`ajMor` factors through `Spec ℚ`".
@@ -39014,24 +39046,18 @@ theorem ajMor_eq_const_of_not_injective {X J : Scheme.{0}} {strX : X ⟶ SpecQ}
     {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
     (jac : IsJacobianOf strX ab o) (hni : ¬ Function.Injective (jac.aj (𝟙 SpecQ))) :
     jac.ajMor = strX ≫ (ab.zero (𝟙 SpecQ)).1 := by
-  obtain ⟨u, -, hdom, hu⟩ :=
-    exists_affineLine_of_not_injective_aj hproper hcurve hconn jac hni
-  haveI := hdom
-  haveI : Smooth strX := SmoothOfRelativeDimension.smooth (n := 1) (f := strX)
-  haveI : IsReduced X := isReduced_of_smooth_over_field (K := ℚ) strX
-  haveI : IsProper jstr := ab.proper
+  -- Riemann–Roch: `X` is RATIONAL.
+  have hrat : Scheme.BirationalOver strX (𝔸(Unit; SpecQ) ↘ SpecQ) :=
+    birationalOver_affineLine_of_not_injective_aj hproper hcurve hconn jac hni
   -- `ajMor` is a morphism over `ℚ`: it is the underlying map of a relative point.
   have hajover : jac.ajMor ≫ jstr = strX :=
     (jac.aj strX ⟨𝟙 X, Category.id_comp strX⟩).2
-  -- Rigidity on the dense affine line.
-  obtain ⟨c, hc, hφ⟩ := exists_const_of_affineLine_to_abelianScheme ab (u ≫ jac.ajMor)
-    (by rw [Category.assoc, hajover, hu])
-  -- Density plus reducedness of `X` and separatedness of `J` propagate constancy.
-  have hconst : jac.ajMor = strX ≫ c := by
-    refine ext_of_isDominant_of_isSeparated jstr ?_ u ?_
-    · rw [hajover, Category.assoc, hc, Category.comp_id]
-    · rw [← Category.assoc, hu]
-      exact hφ
+  -- Rigidity: no rational curves on an abelian variety.  This absorbs what used
+  -- to be three separate steps here — the reducedness of `X`, the dominance of
+  -- the affine line and `ext_of_isDominant_of_isSeparated` — all of which now
+  -- live inside `eq_comp_of_birationalOver_affineLine_toAbelianScheme`.
+  obtain ⟨c, hconst⟩ := eq_comp_of_birationalOver_affineLine_toAbelianScheme
+    (K := ℚ) hcurve ab hrat jac.ajMor hajover
   -- The base point pins the constant to the origin.
   have hcz : c = (ab.zero (𝟙 SpecQ)).1 := by
     have h1 : o.1 ≫ jac.ajMor = (ab.zero (𝟙 SpecQ)).1 := by
@@ -39065,8 +39091,8 @@ factors through the constancy of the Abel–Jacobi *morphism*:
 
 * `ajMor_eq_const_of_not_injective` — Riemann–Roch plus rigidity, where
   the depth lives.  Itself a PROVEN assembly since 2026-07-27, over
-  `exists_affineLine_of_not_injective_aj` (Riemann–Roch: `X` contains a
-  dense `𝔸¹_ℚ`) and `exists_const_of_affineLine_to_abelianScheme`
+  `birationalOver_affineLine_of_not_injective_aj` (Riemann–Roch: `X` is
+  RATIONAL) and `eq_comp_of_birationalOver_affineLine_toAbelianScheme`
   (rigidity: no rational curves in an abelian variety).  It is the only
   half that uses `hproper`, `hcurve`, `hconn`; each of the three has its
   own counterexample recorded on the Riemann–Roch leaf.
@@ -39330,7 +39356,7 @@ isomorphism — which is exactly the `0 = 1` the proof rules out.
 Only `Mono v` is consumed, so the leaves below may state the stronger and
 more informative `IsOpenImmersion` at no cost here.  This is step 3
 ("removing the pole") of the classical argument recorded on
-`exists_affineLine_of_not_injective_aj`, made rigorous once and shared by
+`birationalOver_affineLine_of_not_injective_aj`, made rigorous once and shared by
 both Riemann–Roch leaves. -/
 theorem false_of_fibreAffineLine_of_hasNoFibreAffineLine {X S : Scheme.{0}} {strX : X ⟶ S}
     (hnr : HasNoFibreAffineLine strX) (K : Type) [Field K]
@@ -39381,7 +39407,7 @@ conclusion of Abel plus Riemann–Roch in degree `1`: if the degree-`0` divisor
 
 **THE CONCLUSION IS STATED IN THIS FILE'S ESTABLISHED IDIOM FOR
 RATIONALITY** — `∃ v : 𝔸(Unit; …) ⟶ …, IsOpenImmersion v ∧ …`, the shape of
-`exists_affineLine_of_not_injective_aj` — and for the reason recorded there:
+`birationalOver_affineLine_of_not_injective_aj` — and for the reason recorded there:
 `ℙ¹` does not exist as a scheme at this pin while `𝔸(n; S)` does, and for a
 smooth proper geometrically connected curve "contains an open `𝔸¹`" and "is
 `ℙ¹`" say the same thing.  `IsOpenImmersion` is stronger than the `Mono` the
@@ -39402,7 +39428,7 @@ sight does.
 
 **THE THREE CURVE HYPOTHESES ARE LOAD-BEARING**, with the counterexamples
 recorded on `eq_of_relPicEquiv_sectionIdeal` below and on
-`exists_affineLine_of_not_injective_aj`: `𝔾ₘ` for `hproper` (`Pic 𝔾ₘ,K = 0`,
+`birationalOver_affineLine_of_not_injective_aj`: `𝔾ₘ` for `hproper` (`Pic 𝔾ₘ,K = 0`,
 so *every* pair of `K`-points is linearly equivalent, while `𝔾ₘ` contains no
 open `𝔸¹`), `ℙ¹ × E` for `hcurve`, `ℙ¹ ⊔ ℙ¹` for `hconn`.  `hlin` is the
 whole input and `hne` is what makes the divisor nonzero.
@@ -39638,7 +39664,7 @@ realising it has exactly one simple pole, hence is a degree-`1` morphism
 `X_K ⟶ ℙ¹_K` — an isomorphism — and deleting the pole exhibits
 `𝔸¹_K ⟶ X_K ⟶ X` over `k` as a morphism factoring through no `K`-point of
 `X`, contradicting `hnr`.  That is Abel's theorem plus Riemann–Roch in
-degree `1`, the same gap `exists_affineLine_of_not_injective_aj` records
+degree `1`, the same gap `birationalOver_affineLine_of_not_injective_aj` records
 at `S = Spec ℚ`.
 
 **`hnr` IS LOAD-BEARING AND THE LEAF IS FALSE WITHOUT IT.**  On
@@ -39656,7 +39682,7 @@ of `K`-points, while `𝔾ₘ(K)` is infinite.
 `hcurve` and `hconn` are consumed by the classical argument, which is
 Riemann–Roch on the base-changed fibre and needs it to be a geometrically
 integral curve; their counterexamples for the parent node (`ℙ¹ × E`,
-`ℙ¹ ⊔ ℙ¹`) are recorded on `exists_affineLine_of_not_injective_aj`, and
+`ℙ¹ ⊔ ℙ¹`) are recorded on `birationalOver_affineLine_of_not_injective_aj`, and
 both of those also fail `hnr`.  **The check that would refute this note**:
 a counterexample with `hcurve` or `hconn` dropped and `hnr` retained.
 
@@ -39841,7 +39867,7 @@ function is a degree-`1` morphism `X_K ⟶ ℙ¹_K`, hence an isomorphism, and
 deleting the pole exhibits `𝔸¹_K ⟶ X_K ⟶ X` as a nonconstant morphism
 over the `K`-point `u₁ ≫ strX` of `S` — contradicting `hnr`.  This is
 Abel's theorem plus Riemann–Roch in degree `1`, the same gap
-`exists_affineLine_of_not_injective_aj` records at `S = Spec ℚ`.
+`birationalOver_affineLine_of_not_injective_aj` records at `S = Spec ℚ`.
 
 **Universal injectivity is stable under base change** (mathlib instance),
 so nothing here has to be re-proved fibre by fibre once it is known over
@@ -39850,7 +39876,7 @@ adequate and no separate descent step is needed.  What it does NOT see is
 the infinitesimal direction — see the sibling leaf.
 
 All four hypotheses are load-bearing, with the counterexamples recorded on
-`exists_affineLine_of_not_injective_aj` (`ℙ¹ × E` for `hcurve`,
+`birationalOver_affineLine_of_not_injective_aj` (`ℙ¹ × E` for `hcurve`,
 `ℙ¹ ⊔ ℙ¹` for `hconn`, `𝔾ₘ` for `hproper`) and `X_0(1) = ℙ¹` for `hnr`.
 
 **THE PROOF (2026-07-28), and it consumes no geometry at all.**
@@ -39997,11 +40023,11 @@ Two steps, and they are the two theories:
    nonconstant witness contradicting `hnr`.  Step 1 uses Abel's theorem —
    `[x] = [y]` with `x ≠ y` makes `x − y` principal, so a rational
    function has a single simple pole, giving a degree-`1` map to `ℙ¹` —
-   which is the same Riemann–Roch gap `exists_affineLine_of_not_injective_aj`
+   which is the same Riemann–Roch gap `birationalOver_affineLine_of_not_injective_aj`
    records at `S = Spec ℚ`.
 
 **ALL THREE CURVE HYPOTHESES ARE LOAD-BEARING**, with the counterexamples
-already recorded on `exists_affineLine_of_not_injective_aj` (`ℙ¹ × E` for
+already recorded on `birationalOver_affineLine_of_not_injective_aj` (`ℙ¹ × E` for
 `hcurve`, `ℙ¹ ⊔ ℙ¹` for `hconn`, `𝔾ₘ` for `hproper`); each of them is a
 scheme over `Spec ℚ`, so each is a counterexample here too, `hnr` being
 vacuously satisfiable for none of them.  `hnr` itself is load-bearing:
@@ -40415,79 +40441,6 @@ theorem birationalOver_affineLine_of_not_exists_section {K : Type} [Field K] {P 
       (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) :=
   birationalOver_affineLine_of_isDominant hcurve hconn u hu
     (isDominant_of_not_exists_section hcurve hconn u hu hnc)
-
-/-- **A RATIONAL curve over `K` maps CONSTANTLY to every abelian scheme
-over `K`** (PROVEN 2026-07-28 over
-`exists_section_of_denseOpen_affineLine_toAbelianScheme`) — the level-free
-half of `not_birationalOver_affineLine_of_one_le_x0Genus`.
-
-**What the assembly does, and why nothing but the leaf above is needed.**
-`hrat` is a `Scheme.PartialIso` `f` between a dense open `f.source ⊆ P`
-and a dense open `f.target ⊆ 𝔸¹_K`, compatible with the two structure
-maps (`f.IsOver`).  Transporting `c` backwards along `f.iso` gives a
-`K`-morphism `f.iso.inv ≫ f.source.ι ≫ c` out of `f.target`, which the
-leaf makes equal to `(structure map) ≫ s` for a section `s`.  Pushing
-that forward again says `c` and `strP ≫ s` AGREE ON `f.source`; and
-since `P` is REDUCED, `f.source.ι` is DOMINANT (`Opens.isDominant_ι`
-applied to `f.dense_source`) and `astr` is SEPARATED (an abelian scheme
-is proper), `Mathlib`'s `ext_of_isDominant_of_isSeparated` upgrades that
-to equality on all of `P`.
-
-**Reducedness of `P` is derived, not assumed**, and this is the one place
-the `hcurve` hypothesis is spent: `SmoothOfRelativeDimension 1 strP` gives
-`Smooth strP`, hence `GeometricallyReduced strP` by this development's own
-`AlgebraicGeometry.GeometricallyReduced.of_smooth`
-(`Fermat/FLT/Mathlib/AlgebraicGeometry/Morphisms/SmoothReduced.lean`,
-sorry-free), and `IsReduced P` follows by
-`GeometricallyReduced.isReduced_of_flat_of_isLocallyNoetherian` — flatness
-over a field being free and local noetherianness coming from
-`LocallyOfFiniteType`.  Mathlib itself proves NOTHING of this shape
-(`Smooth ⟹ IsReduced` is absent from the pin; see the audit in
-`ModularCurve/EllipticScheme.lean`), so the route matters.
-
-**`hcurve` IS LOAD-BEARING and the statement is FALSE without it**: on a
-NON-REDUCED source the conclusion fails.  Take `K` of any characteristic,
-`P = 𝔸¹_K` with a nilpotent thickening at the origin — more precisely any
-`P` whose reduction is `𝔸¹_K`, so that `hrat` still holds through the
-reduced dense open — and `c` a morphism to an elliptic curve that is
-constant on the reduction but has a nonzero tangent component at the fat
-point.  Then `c ≠ strP ≫ s` for every `s`, while `hrat` is untouched.
-`GeometricallyConnected` is NOT assumed: it is implied by `hrat`, since a
-scheme with a dense open isomorphic to an open of the irreducible `𝔸¹_K`
-is itself irreducible. -/
-theorem eq_comp_of_birationalOver_affineLine_toAbelianScheme {K : Type} [Field K]
-    {P A : Scheme.{0}}
-    {strP : P ⟶ Spec (CommRingCat.of K)} {astr : A ⟶ Spec (CommRingCat.of K)}
-    (hcurve : SmoothOfRelativeDimension 1 strP)
-    (abA : AbelianSchemeStruct astr)
-    (hrat : Scheme.BirationalOver strP
-      (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)))
-    (c : P ⟶ A) (hc : c ≫ astr = strP) :
-    ∃ s : Spec (CommRingCat.of K) ⟶ A, c = strP ≫ s := by
-  obtain ⟨f, hf⟩ := hrat
-  haveI := hcurve
-  haveI : AlgebraicGeometry.Smooth strP := SmoothOfRelativeDimension.smooth 1 strP
-  haveI : GeometricallyReduced strP := _root_.AlgebraicGeometry.GeometricallyReduced.of_smooth strP
-  haveI : IsLocallyNoetherian P := LocallyOfFiniteType.isLocallyNoetherian strP
-  haveI : IsReduced P := GeometricallyReduced.isReduced_of_flat_of_isLocallyNoetherian strP
-  haveI : IsProper astr := abA.proper
-  haveI : IsDominant f.source.ι := _root_.AlgebraicGeometry.Opens.isDominant_ι f.dense_source
-  have hd : (f.iso.inv ≫ f.source.ι ≫ c) ≫ astr =
-      f.target.ι ≫ (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) := by
-    rw [Category.assoc, Category.assoc, hc, ← hf, ← Category.assoc, ← Category.assoc,
-      Iso.inv_hom_id, Category.id_comp]
-  obtain ⟨s, hsec, hs⟩ :=
-    exists_section_of_denseOpen_affineLine_toAbelianScheme abA f.target f.dense_target _ hd
-  refine ⟨s, ?_⟩
-  refine ext_of_isDominant_of_isSeparated astr ?_ f.source.ι ?_
-  · rw [hc, Category.assoc, hsec, Category.comp_id]
-  · have h2 := congrArg (fun t => f.iso.hom ≫ t) hs
-    simp only [← Category.assoc, Iso.hom_inv_id, Category.id_comp] at h2
-    have hf0 : f.iso.hom ≫ f.target.ι ≫
-        (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) =
-        f.source.ι ≫ strP := hf
-    simp only [Category.assoc] at h2 ⊢
-    rw [h2, reassoc_of% hf0]
 
 /-- **EICHLER–SHIMURA, FIBREWISE: `genus X_0(N) ≥ 1` gives EVERY fibre of
 `X_0(N)` a nonconstant map to an abelian variety** (sorry leaf,
@@ -41280,7 +41233,7 @@ line `⟨(P.isAlbaneseOf ⟨…⟩).isJacobianOf⟩`.  Do not dispatch anyone at
 | `exists_isotypicQuotient_of_isWeightTwoEigenform` | Shimura's `A_f` (one factor) | no |
 | `exists_heckeIsotypicDecomposition_of_isotypicQuotients` | Atkin-Lehner multiplicities + Poincare | no |
 | `isTorsion_factor_of_heckeIsotypic` | Kolyvagin-Logachev | no |
-| `exists_affineLine_of_not_injective_aj` | Riemann-Roch | no |
+| `birationalOver_affineLine_of_not_injective_aj` | Riemann-Roch | no |
 | `exists_section_of_denseOpen_affineLine_toAbelianScheme` | rigidity of abelian varieties | no |
 
 (`isTorsion_jacobian_of_lFunction_ne_zero` stood in this table until
@@ -63325,7 +63278,7 @@ Concretely: a dense open `U ⊆ X` and a FINITE morphism `φ : U ⟶ 𝔸¹_ℚ`
 over `ℚ` no fibre of which has three points valued in one field.
 
 **WHY `𝔸¹` AND NOT `ℙ¹`, and why a dense open.**  Exactly as for
-`exists_affineLine_of_not_injective_aj`, which records the same choice in
+`birationalOver_affineLine_of_not_injective_aj`, which records the same choice in
 degree `1`: mathlib at this pin has `Proj` but no projective space, and
 `Mathlib.AlgebraicGeometry.AffineSpace` supplies `𝔸(n; S)`.  A degree-`2`
 morphism `X ⟶ ℙ¹_ℚ` is the same datum as its restriction over
@@ -63532,7 +63485,7 @@ rational** (PROVEN 2026-07-28 by decomposition over
 `hasDoubleCoverOfAffineLine_of_relPicEquiv`; introduced as a sorry leaf
 2026-07-27) — the geometric half of
 `ajPair_ne_of_disjoint_x0OneSixtyNine`, and the exact degree-`2` analogue
-of `exists_affineLine_of_not_injective_aj`.  It mentions neither `169`
+of `birationalOver_affineLine_of_not_injective_aj`.  It mentions neither `169`
 nor `IsX0Compactification`.
 
 TRUE and classical.  `aj x = [x] − [o]`, so the hypothesis `heq` says
@@ -63555,7 +63508,7 @@ an effective degree-`2` divisor and the argument is unchanged; only the
 disjointness of the two supports is used.
 
 **ALL THREE CURVE HYPOTHESES ARE LOAD-BEARING**, with the counterexamples
-already recorded on `exists_affineLine_of_not_injective_aj` (`ℙ¹ × E` for
+already recorded on `birationalOver_affineLine_of_not_injective_aj` (`ℙ¹ × E` for
 `hcurve`, `ℙ¹ ⊔ ℙ¹` for `hconn`, `𝔾ₘ` for `hproper`): on each of them the
 conclusion fails while `aj` collapses points, for the reasons recorded
 there.
@@ -64216,7 +64169,7 @@ leaves of the two nodes now line up:
 
 | degree | level-free (Riemann–Roch) | level-specific (arithmetic) |
 |---|---|---|
-| `1` | `exists_affineLine_of_not_injective_aj` | `hasNoFibreAffineLine_of_one_le_x0Genus` |
+| `1` | `birationalOver_affineLine_of_not_injective_aj` | `hasNoFibreAffineLine_of_one_le_x0Genus` |
 | `2` | `hasDoubleCoverOfAffineLine_of_ajPair_eq` | `not_hasDoubleCoverOfAffineLine_x0OneSixtyNine` |
 
 `aj x = [x] − [o]`, so `aj x₁ + aj x₂ = aj y₁ + aj y₂` says exactly
