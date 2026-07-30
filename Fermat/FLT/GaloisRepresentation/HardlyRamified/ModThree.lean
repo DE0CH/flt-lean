@@ -48840,387 +48840,530 @@ theorem map_pow_muAction_iff_ray_class (F : Type u) [Field F] [NumberField F]
   have hkk : (k : ZMod m) = (k' : ZMod m) := he1.symm.trans he2
   rw [hspec ζ hζ, pow_eq_pow_val_ray_class hζ k', pow_eq_pow_val_ray_class hζ k, hkk]
 
-/-- **`ℚ(ζ_m)/ℚ` IS UNRAMIFIED OUTSIDE `m`, IN INERTIA-SUBGROUP FORM**
-(sorry leaf, created 2026-07-29 as sub-leaf (a) of the shared Minkowski
-cut `exists_badPrimes_mul_muFixer_eq_top_ray_class` below, whose earlier
-docstring named exactly this statement as one of its two missing inputs).
+/-- **`AlgebraicClosure.map (algebraMap ℚ F)` IS BIJECTIVE** (PROVEN
+2026-07-30, axiom-clean; the first of the three seam lemmas that make
+`exists_badPrimes_mul_muFixer_eq_top_ray_class` below glue).
 
-For a rational prime `q` NOT dividing `m`, the image in `Γ ℚ` of the
-local inertia group at `q` fixes every `m`-th root of unity, i.e. lands
-in `muFixerRayClass ℚ m = Γ_{ℚ(ζ_m)}`.
+`Fᵃˡᵍ` is algebraic over `ℚ` hence over `ℚᵃˡᵍ`, and an algebraic extension of an
+algebraically closed field is trivial
+(`IsAlgClosed.algebraMap_bijective_of_isIntegral`).
 
-**THIS IS THE CONVERSE INERTIA DICTIONARY**, specialised to cyclotomic
-extensions. `MinkowskiUnramified` proves only the forward direction
-(`isUnramifiedAt_of_inertia_le_fixingSubgroup`: *inertia trivial ⟹
-unramified*); the converse *unramified ⟹ inertia trivial* is nowhere in
-`Fermat/`, in mathlib, or in `~/cs/FLT` (re-checked 2026-07-29 by grep,
-confirming the 2026-07-28 finding).
-
-ROUTE FOR A SUCCESSOR. The arithmetic half — `q ∤ m ⟹ q` is unramified
-in `ℚ(ζ_m)/ℚ` — is classical and available ideal-theoretically through
-mathlib's cyclotomic-discriminant material. The missing half is the
-passage from `Algebra.IsUnramifiedAt` back to the LOCAL inertia group,
-i.e. running the chain
-`exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup →
-inertia_eq_bot_of_le_fixingSubgroup → isUnramifiedAt_of_inertia_le_fixingSubgroup`
-BACKWARDS. Note `Ideal.card_inertia_eq_ramificationIdxIn` (mathlib,
-`RamificationInertia/Galois.lean`) is an EQUALITY, so the ideal-level
-converse `e = 1 ⟹ inertia = ⊥` is free; what genuinely has to be built is
-the local-global step, `e(Q|q) = 1 ⟹ e(M_w/ℚ_q) = 1 ⟹` the local inertia
-acts trivially on `M`, for which `LocalInertiaFixedField.lean`'s
-`restrictNormalHom_inertia_surjective` and `card_inertia_intermediate`
-are the intended tools.
-
-FAITHFULNESS. `_hm : 0 < m` is **NOT USED** and is underscore-prefixed so
-that this is mechanically visible; it is carried only so the statement
-has the same shape as its sibling (b) and can be applied uniformly by the
-glue below. At `m = 0` the hypothesis `¬ q ∣ 0` is already false, so the
-statement is vacuous there rather than wrong; at `m = 1` the conclusion
-is `⊤` and it is trivially true. -/
-theorem inertia_le_muFixer_of_not_dvd_ray_class {q : ℕ} (hq : q.Prime) (m : ℕ) (_hm : 0 < m)
-    (_hqm : ¬ q ∣ m) :
-    Subgroup.map (Field.absoluteGaloisGroup.map (algebraMap ℚ
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-          hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
-        (localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat)
-      ≤ muFixerRayClass ℚ m := by
-  sorry
-
-attribute [local instance 100000] AlgebraicClosure.instAlgebra in
-/-- **FINITE RAMIFICATION, IN INERTIA-SUBGROUP FORM** (sorry leaf,
-created 2026-07-29 as sub-leaf (b) of the shared Minkowski cut
-`exists_badPrimes_mul_muFixer_eq_top_ray_class` below).
-
-A finite extension `L/ℚ` is ramified at only finitely many rational
-primes: there is a finite `T` such that for every prime `q ∉ T` the image
-in `Γ ℚ` of the local inertia group at `q` fixes `L` pointwise.
-
-**STATED FOR A FINITE-DIMENSIONAL `L`, NOT FOR AN OPEN SUBGROUP.** The
-earlier docstring of the cut phrased this input as "`N` open normal in
-`Γ ℚ`". That form is equivalent but strictly harder to prove, because the
-prover would first have to redo the `fixedField`/`normalClosure`
-reduction. That reduction is now DONE, once, inside
-`exists_badPrimes_mul_muFixer_eq_top_rat_ray_class` below, which applies
-this leaf to the Galois closure `M` of the fixed field of `H`. So a
-successor gets the statement in its purely arithmetic form and owes no
-group theory at all.
-
-ROUTE FOR A SUCCESSOR. `NumberField.not_dvd_discr_iff_forall_mem` (already
-in this file's import cone) is the ideal-theoretic half: take `T :=` the
-primes dividing `discr L`. The remaining half is the same converse
-inertia dictionary that sub-leaf (a) above needs, so the two should very
-likely be cut over ONE shared lemma of the form "`q` unramified in a
-finite Galois `L/ℚ` ⟹ image of `localInertiaGroup q ≤ L.fixingSubgroup`",
-and (a) then follows by feeding it `L := ℚ(ζ_m)`. A successor taking both
-should build that lemma first.
-
-FAITHFULNESS. Non-vacuous: `T` may not be empty — for `L = ℚ(i)` the
-prime `2` genuinely ramifies and its inertia does not fix `L`. Finite
-dimensionality is LOAD-BEARING: for `L = ℚ(ζ_{2^∞})` every prime ramifies
-in some finite layer, so no finite `T` exists. -/
-theorem exists_badPrimes_inertia_le_fixingSubgroup_ray_class
-    (L : IntermediateField ℚ (AlgebraicClosure ℚ)) [FiniteDimensional ℚ L] :
-    ∃ T : Finset ℕ, ∀ (q : ℕ) (hq : q.Prime), q ∉ T →
-      Subgroup.map (Field.absoluteGaloisGroup.map (algebraMap ℚ
-          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-            hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
-          (localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat)
-        ≤ L.fixingSubgroup := by
-  sorry
-
-set_option backward.isDefEq.respectTransparency false in
-attribute [local instance 100000] AlgebraicClosure.instAlgebra in
-open scoped Pointwise in
-/-- **`Γ ℚ = H · Γ_{ℚ(ζ_m)}` FOR EVERY OPEN `H` AND ALMOST EVERY `m`**
-(**PROVEN 2026-07-29** over sub-leaves (a) and (b) above; created the same
-day as the `ℚ`-side core of
-`exists_badPrimes_mul_muFixer_eq_top_ray_class` below).
-
-**MINKOWSKI MUST BE APPLIED AT `ℚ`.** "Everywhere unramified hence
-trivial" is FALSE over a general number field, which has a Hilbert class
-field, so the whole arithmetic content of the general-`F` cut lives here
-and the general case below is pure seam-crossing.
-
-THE ROUTE, ALL OF IT PROVEN HERE. `H` is open hence closed, so
-`H = Γ_L` for `L := fixedField H`, FINITE over `ℚ`
-(`InfiniteGalois.isOpen_iff_finite`). Let `M` be the Galois closure of
-`L`; then `Γ_M` is OPEN and NORMAL and `Γ_M ≤ Γ_L = H`. Sub-leaf (b)
-gives the bad set `T` for `M`. For `m > 0` prime to `T` put
-`N := Γ_M ⊔ muFixerRayClass ℚ m`. It is NORMAL (`Subgroup.sup_normal`,
-both factors normal — `muFixerRayClass_normal`), OPEN
-(`Subgroup.isOpen_mono` from the open `Γ_M`), and contains every local
-inertia image by a two-case split with no overlap: if `q ∣ m` then
-`q ∉ T` (contrapositive of the hypothesis on `m`) so (b) applies; if
-`q ∤ m` then (a) applies. Hence `N = ⊤` by
-`MinkowskiUnramified.open_normal_subgroup_eq_top_of_inertia_le`, and
-`Subgroup.mul_normal` turns membership in the sup into the wanted
-factorisation `σ = τ ρ`.
-
-**NO MODULAR LAW IS NEEDED** — the earlier plan descended from `ℚ` to `F`
-by Dedekind's modular law, but reducing the general case to this one at
-the level of GROUPS (see below) removes that step entirely. -/
-theorem exists_badPrimes_mul_muFixer_eq_top_rat_ray_class
-    (H : Subgroup (Γ ℚ)) (hHopen : IsOpen (H : Set (Γ ℚ))) :
-    ∃ T : Finset ℕ, ∀ m : ℕ, 0 < m → (∀ q ∈ T, q.Prime → ¬ q ∣ m) →
-      ∀ σ : Γ ℚ, ∃ τ ρ : Γ ℚ, τ ∈ H ∧
-        (∀ ζ : AlgebraicClosure ℚ, ζ ^ m = 1 → ρ ζ = ζ) ∧ σ = τ * ρ := by
-  classical
-  haveI hgal : IsGalois ℚ (AlgebraicClosure ℚ) := inferInstance
-  have hclosed : IsClosed (H : Set (Γ ℚ)) := Subgroup.isClosed_of_isOpen H hHopen
-  set L : IntermediateField ℚ (AlgebraicClosure ℚ) :=
-    IntermediateField.fixedField (E := AlgebraicClosure ℚ) H with hLdef
-  have hfix : L.fixingSubgroup = H :=
-    InfiniteGalois.fixingSubgroup_fixedField ⟨H, hclosed⟩
-  haveI hfd : FiniteDimensional ℚ L :=
-    (InfiniteGalois.isOpen_iff_finite L).mp (by rw [hfix]; exact hHopen)
-  set M : IntermediateField ℚ (AlgebraicClosure ℚ) :=
-    IntermediateField.normalClosure ℚ L (AlgebraicClosure ℚ) with hMdef
-  haveI hgalM : IsGalois ℚ M := ⟨⟩
-  have hopenM : IsOpen (M.fixingSubgroup : Set (Γ ℚ)) :=
-    (InfiniteGalois.isOpen_iff_finite M).mpr inferInstance
-  haveI hnormM : M.fixingSubgroup.Normal :=
-    (InfiniteGalois.normal_iff_isGalois M).mpr inferInstance
-  have hMH : M.fixingSubgroup ≤ H := by
-    rw [← hfix]
-    exact IntermediateField.fixingSubgroup_antitone (IntermediateField.le_normalClosure L)
-  obtain ⟨T, hT⟩ := exists_badPrimes_inertia_le_fixingSubgroup_ray_class M
-  refine ⟨T, ?_⟩
-  intro m hm hTm σ
-  have hNopen : IsOpen ((M.fixingSubgroup ⊔ muFixerRayClass ℚ m : Subgroup (Γ ℚ)) : Set (Γ ℚ)) :=
-    Subgroup.isOpen_mono le_sup_left hopenM
-  have hNtop : (M.fixingSubgroup ⊔ muFixerRayClass ℚ m : Subgroup (Γ ℚ)) = ⊤ := by
-    refine open_normal_subgroup_eq_top_of_inertia_le _ hNopen ?_
-    intro q hq
-    by_cases hqm : q ∣ m
-    · have hqT : q ∉ T := fun hmem => (hTm q hmem hq) hqm
-      exact le_trans (hT q hq hqT) le_sup_left
-    · exact le_trans (inertia_le_muFixer_of_not_dvd_ray_class hq m hm hqm) le_sup_right
-  have hmem : σ ∈ (M.fixingSubgroup ⊔ muFixerRayClass ℚ m : Subgroup (Γ ℚ)) := by
-    rw [hNtop]; exact Subgroup.mem_top σ
-  have hmul : (σ : Γ ℚ) ∈
-      ((M.fixingSubgroup : Set (Γ ℚ)) * (muFixerRayClass ℚ m : Set (Γ ℚ))) := by
-    rw [← Subgroup.mul_normal]
-    exact hmem
-  obtain ⟨τ, hτ, ρ, hρ, hτρ⟩ := Set.mem_mul.mp hmul
-  exact ⟨τ, ρ, hMH hτ, hρ, hτρ.symm⟩
-
-set_option backward.isDefEq.respectTransparency false in
-attribute [local instance 100000] AlgebraicClosure.instAlgebra in
-/-- **THE IMAGE OF AN OPEN SUBGROUP OF `Γ F` IS OPEN IN `Γ ℚ`**
-(**PROVEN 2026-07-29**; created the same day as the one seam input of
-`exists_badPrimes_mul_muFixer_eq_top_ray_class` below).
-
-This is the strict generalisation of
-`isOpen_range_absoluteGaloisGroupMap_rat_ray_class` above, which is the
-case `H = ⊤`, and it is proved the same way: the whole point is that the
-range computation there was never special to `⊤`.
-
-ROUTE. `ι := AlgebraicClosure.map (algebraMap ℚ F)` is BIJECTIVE
-(`Fᵃˡᵍ` is algebraic over the algebraically closed `ℚᵃˡᵍ`), so it is a
-ring iso `ε`, and `ψ := ε⁻¹` is a `ℚ`-algebra map `Fᵃˡᵍ →ₐ[ℚ] ℚᵃˡᵍ`.
-`H` is open hence closed, so `H = Γ_E` for `E := fixedField H`, finite
-over `F` hence over `ℚ`. Put `W := ψ(E)`, an intermediate field of
-`ℚᵃˡᵍ/ℚ`, FINITE-dimensional because `IntermediateField.equivMap` makes
-it `ℚ`-isomorphic to `E`. Then the image of `H` is exactly
-`W.fixingSubgroup`: `⊆` is `lift_map` plus injectivity of `ι`, and `⊇`
-conjugates `τ` by `ε` into an honest `F`-automorphism — it lands in
-`Γ F` because `E ⊇ F`, and it lies in `H` because it fixes `E`.
-`InfiniteGalois.isOpen_iff_finite` then converts finiteness into
-openness.
-
-The `attribute [local instance 100000] AlgebraicClosure.instAlgebra` is
-the `Algebra ℚ` diamond documented on
-`exists_cyclotomicChar_surjective_rat_ray_class` above: without it the
-`IntermediateField ℚ (AlgebraicClosure ℚ)` here is over the wrong algebra
-instance and does not match `Subgroup (Γ ℚ)`.
-
-**DUPLICATION NOTE, FOR THE ORCHESTRATOR.** This shares its first fifteen
-lines with `isOpen_range_absoluteGaloisGroupMap_rat_ray_class` above,
-which in turn duplicates `Modularity/MoretBailly.lean`. The right repair
-is still the one that lemma's docstring names — hoist the `ε`/`ψ`
-construction into
-`Deformations/RepresentationTheory/AbsoluteGaloisGroup.lean` — and it is
-still a cross-file move, deliberately not done from inside this leaf's
-worktree. Doing it would collapse three copies into one, and this lemma
-SUBSUMES the older one (take `H = ⊤`), so the hoist should keep this
-statement and delete the other. -/
-theorem isOpen_map_absoluteGaloisGroupMap_rat_ray_class (F : Type u) [Field F] [NumberField F]
-    (H : Subgroup (Γ F)) (hHopen : IsOpen (H : Set (Γ F))) :
-    IsOpen (((H.map (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom :
-      Subgroup (Γ ℚ))) : Set (Γ ℚ)) := by
-  classical
+This is the "instance dance" that `map_pow_muAction_iff_ray_class` above
+explicitly declined to pay ("we would need `AlgebraicClosure.map` to be
+SURJECTIVE — true, but an instance dance"). It is paid here because the leaf
+below needs surjectivity for something that has no workaround: the INJECTIVITY
+of `Γ F → Γ ℚ`. Note that, unlike
+`isOpen_range_absoluteGaloisGroupMap_rat_ray_class` above, this statement
+mentions no `Subgroup (Γ ℚ)` and no `IntermediateField ℚ (AlgebraicClosure ℚ)`,
+so the `Algebra ℚ (AlgebraicClosure ℚ)` diamond documented there is invisible to
+it and no `attribute [local instance 100000]` is needed. -/
+theorem bijective_algebraicClosureMap_rat_ray_class (F : Type u) [Field F] [NumberField F] :
+    Function.Bijective (AlgebraicClosure.map (algebraMap ℚ F)) := by
   haveI : Algebra.IsAlgebraic ℚ (AlgebraicClosure F) :=
     Algebra.IsAlgebraic.trans (R := ℚ) (S := F) (A := AlgebraicClosure F)
-  set ι : AlgebraicClosure ℚ →+* AlgebraicClosure F :=
-    AlgebraicClosure.map (algebraMap ℚ F) with hι
-  letI : Algebra (AlgebraicClosure ℚ) (AlgebraicClosure F) := ι.toAlgebra
+  letI : Algebra (AlgebraicClosure ℚ) (AlgebraicClosure F) :=
+    (AlgebraicClosure.map (algebraMap ℚ F)).toAlgebra
   haveI : IsScalarTower ℚ (AlgebraicClosure ℚ) (AlgebraicClosure F) :=
     IsScalarTower.of_algebraMap_eq' (by
       ext x
       exact (AlgebraicClosure.map_algebraMap (algebraMap ℚ F) x).symm)
   haveI : Algebra.IsAlgebraic (AlgebraicClosure ℚ) (AlgebraicClosure F) :=
     Algebra.IsAlgebraic.tower_top (K := ℚ) (AlgebraicClosure ℚ) (A := AlgebraicClosure F)
-  have hbij : Function.Bijective ι :=
-    IsAlgClosed.algebraMap_bijective_of_isIntegral (k := AlgebraicClosure ℚ)
-      (K := AlgebraicClosure F)
-  set ε : AlgebraicClosure ℚ ≃+* AlgebraicClosure F := RingEquiv.ofBijective ι hbij with hε
-  have hεapp : ∀ x, ε x = ι x := fun _ => rfl
-  set ψ : AlgebraicClosure F →ₐ[ℚ] AlgebraicClosure ℚ :=
-    { toRingHom := (ε.symm : AlgebraicClosure F →+* AlgebraicClosure ℚ)
-      commutes' := fun x => by
-        show ε.symm (algebraMap ℚ (AlgebraicClosure F) x) = algebraMap ℚ (AlgebraicClosure ℚ) x
-        have h1 : (algebraMap ℚ (AlgebraicClosure F)) x
-            = ι (algebraMap ℚ (AlgebraicClosure ℚ) x) := by
-          rw [hι, AlgebraicClosure.map_algebraMap]
-          exact IsScalarTower.algebraMap_apply ℚ F (AlgebraicClosure F) x
-        rw [h1, ← hεapp, RingEquiv.symm_apply_apply] } with hψ
-  have hψapp : ∀ y, ψ y = ε.symm y := fun _ => rfl
-  have hclosed : IsClosed (H : Set (Γ F)) := Subgroup.isClosed_of_isOpen H hHopen
-  set E : IntermediateField F (AlgebraicClosure F) :=
-    IntermediateField.fixedField (E := AlgebraicClosure F) H with hEdef
-  have hfixE : E.fixingSubgroup = H :=
-    InfiniteGalois.fixingSubgroup_fixedField ⟨H, hclosed⟩
-  haveI hfdE : FiniteDimensional F E :=
-    (InfiniteGalois.isOpen_iff_finite E).mp (by rw [hfixE]; exact hHopen)
-  haveI hfdQE : FiniteDimensional ℚ E := FiniteDimensional.trans ℚ F E
-  haveI hfdQE' : FiniteDimensional ℚ (E.restrictScalars ℚ) := hfdQE
-  set W : IntermediateField ℚ (AlgebraicClosure ℚ) := (E.restrictScalars ℚ).map ψ with hWdef
-  haveI hfdW : FiniteDimensional ℚ W :=
-    LinearEquiv.finiteDimensional
-      (IntermediateField.equivMap (E.restrictScalars ℚ) ψ).toLinearEquiv
-  have hmemW : ∀ e : AlgebraicClosure F, e ∈ E → ψ e ∈ W := by
-    intro e he
-    exact ⟨e, he, rfl⟩
-  have hkey : (H.map (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom :
-      Subgroup (Γ ℚ)) = W.fixingSubgroup := by
-    apply le_antisymm
-    · intro τ hτ
-      obtain ⟨g, hgH, rfl⟩ := Subgroup.mem_map.mp hτ
-      rw [IntermediateField.mem_fixingSubgroup_iff]
-      rintro w ⟨e, he, rfl⟩
-      have hgE : g e = e := by
-        have hg' : g ∈ E.fixingSubgroup := by rw [hfixE]; exact hgH
-        rw [IntermediateField.mem_fixingSubgroup_iff] at hg'
-        exact hg' e he
-      have h1 : ι ((Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom g (ψ e))
-          = g (ι (ψ e)) :=
-        Field.absoluteGaloisGroup.lift_map (algebraMap ℚ F) g (ψ e)
-      have h2 : ι (ψ e) = e := by
-        rw [hψapp, ← hεapp, RingEquiv.apply_symm_apply]
-      apply ι.injective
-      show ι ((Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom g (ψ e)) = ι (ψ e)
-      rw [h1, h2, hgE]
-    · intro τ hτ
-      rw [IntermediateField.mem_fixingSubgroup_iff] at hτ
-      have hfixW : ∀ e : AlgebraicClosure F, e ∈ E → τ (ψ e) = ψ e := fun e he =>
-        hτ (ψ e) (hmemW e he)
-      set σ0 : AlgebraicClosure F ≃+* AlgebraicClosure F :=
-        (ε.symm.trans τ.toRingEquiv).trans ε with hσ0
-      have hσ0app : ∀ w, σ0 w = ε (τ (ε.symm w)) := fun _ => rfl
-      have hcomm : ∀ y : F, σ0 (algebraMap F (AlgebraicClosure F) y)
-          = algebraMap F (AlgebraicClosure F) y := by
-        intro y
-        have hmemE : algebraMap F (AlgebraicClosure F) y ∈ E := E.algebraMap_mem y
-        rw [hσ0app, ← hψapp, hfixW _ hmemE, hψapp, RingEquiv.apply_symm_apply]
-      set σ : Field.absoluteGaloisGroup F := AlgEquiv.ofRingEquiv (f := σ0) hcomm with hσ
-      have hσH : σ ∈ H := by
-        rw [← hfixE, IntermediateField.mem_fixingSubgroup_iff]
-        intro e he
-        show σ0 e = e
-        rw [hσ0app, ← hψapp, hfixW e he, hψapp, RingEquiv.apply_symm_apply]
-      refine Subgroup.mem_map.mpr ⟨σ, hσH, ?_⟩
-      apply AlgEquiv.ext
-      intro x
-      apply ι.injective
-      have hx : ε.symm (ι x) = x := by rw [← hεapp]; exact ε.symm_apply_apply x
-      have hrhs : σ (ι x) = ι (τ x) := by
-        show σ0 (ι x) = ι (τ x)
-        rw [hσ0app, hx, hεapp]
-      exact (Field.absoluteGaloisGroup.lift_map (algebraMap ℚ F) σ x).trans hrhs
-  rw [hkey]
-  exact (InfiniteGalois.isOpen_iff_finite W).mpr inferInstance
+  exact IsAlgClosed.algebraMap_bijective_of_isIntegral (k := AlgebraicClosure ℚ)
+    (K := AlgebraicClosure F)
 
-/-- **`Γ F = H · Γ_{F(ζ_m)}` FOR EVERY OPEN `H` AND ALMOST EVERY `m`**
-(created 2026-07-28 as **the single shared Minkowski cut** of the two
-leaves below, which were previously two independent sorries each carrying
-the whole of Minkowski; **PROVEN 2026-07-29** over the `ℚ`-case and the
-seam lemma above, so that all that is left open beneath it is the pair of
-purely arithmetic sub-leaves (a) and (b) above).
+/-- **`Γ F → Γ ℚ` IS INJECTIVE** (PROVEN 2026-07-30): an element of `Γ F` is
+determined by its action on `ℚᵃˡᵍ` through the identification
+`ι = AlgebraicClosure.map (algebraMap ℚ F)`, because `ι` is SURJECTIVE
+(`bijective_algebraicClosureMap_rat_ray_class` above) and
+`Field.absoluteGaloisGroup.lift_map` says `ι ((map f g) y) = g (ι y)`. -/
+theorem injective_absoluteGaloisGroupMap_rat_ray_class
+    (F : Type u) [Field F] [NumberField F] :
+    Function.Injective (Field.absoluteGaloisGroup.map (algebraMap ℚ F)) := by
+  intro g g' h
+  have hsurj := (bijective_algebraicClosureMap_rat_ray_class F).2
+  ext x
+  obtain ⟨y, rfl⟩ := hsurj x
+  have h1 := Field.absoluteGaloisGroup.lift_map (algebraMap ℚ F) g y
+  have h2 := Field.absoluteGaloisGroup.lift_map (algebraMap ℚ F) g' y
+  rw [← h1, ← h2, DFunLike.congr_fun h y]
 
-For any number field `F` and any OPEN subgroup `H ≤ Γ F` there is a
-finite bad set `T` of primes such that every modulus `m > 0` prime to `T`
-already satisfies `Γ F = H · Γ_{F(ζ_m)}`: every `σ : Γ F` factors as
-`τ ρ` with `τ ∈ H` and `ρ` fixing `μ_m` pointwise.
+/-- **THE IMAGE IN `Γ ℚ` OF AN OPEN SUBGROUP OF `Γ F` IS OPEN** (PROVEN
+2026-07-30): the third seam lemma. It is what lets
+`exists_badPrimes_mul_muFixer_eq_top_ray_class` below transport its
+hypothesis `H` into `Γ ℚ`, where Minkowski lives.
 
-**IT IS DELIBERATELY OVER A GENERAL NUMBER FIELD, AND THAT IS
-LOAD-BEARING** — do not "simplify" it back to `ℚ`. It is free at both
-call sites only in this form:
-
-* `exists_badPrimes_charKernel_mul_muFixer_ray_class` (Childress's clause
-  (iii)) is this statement at `F` with `H := charKernelRayClass χ`, which
-  is open by `Subgroup.isOpen_mono` from the open `V ≤ ker χ`. No
-  transport across the `F/ℚ` seam is needed at all.
-* `exists_badPrimes_cyclotomicChar_surjective_ray_class` is this
-  statement at `ℚ` with `H := range (Γ F → Γ ℚ)`, open by
+ROUTE, and note it is purely topological — no Galois correspondence and no
+field arithmetic. `Subgroup.map ψ H` is
+* CLOSED, because `H` is open hence closed in the COMPACT `Γ F`, hence compact,
+  and its continuous image is compact hence closed in the Hausdorff `Γ ℚ`
+  (continuity is free: `Field.absoluteGaloisGroup.map` is a
+  `ContinuousMonoidHom`);
+* of FINITE INDEX, because `Subgroup.index_map_of_injective` factors
+  `(H.map ψ).index = H.index * ψ.range.index` (this is where injectivity is
+  used), and both factors are finite — `H` is open in the compact `Γ F` and
+  `ψ.range` is open in `Γ ℚ` by
   `isOpen_range_absoluteGaloisGroupMap_rat_ray_class` above.
 
-Stating the `ℚ`-side version only would have forced the FIRST call site
-to transport `ker χ` INTO `Γ ℚ` and prove its image open there, which is
-strictly harder than the range case.
+`Subgroup.isOpen_of_isClosed_of_finiteIndex` then closes it. -/
+theorem isOpen_map_absoluteGaloisGroupMap_rat_ray_class
+    (F : Type u) [Field F] [NumberField F]
+    (H : Subgroup (Γ F)) (hHopen : IsOpen (H : Set (Γ F))) :
+    IsOpen ((Subgroup.map (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom H :
+      Subgroup (Γ ℚ)) : Set (Γ ℚ)) := by
+  have hcont : Continuous (Field.absoluteGaloisGroup.map (algebraMap ℚ F)) :=
+    (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).continuous
+  have hinj := injective_absoluteGaloisGroupMap_rat_ray_class F
+  have hHclosed : IsClosed (H : Set (Γ F)) := Subgroup.isClosed_of_isOpen H hHopen
+  have hcpt : IsCompact ((Subgroup.map
+      (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom H : Subgroup (Γ ℚ)) :
+      Set (Γ ℚ)) := by
+    rw [Subgroup.coe_map]
+    exact (hHclosed.isCompact).image hcont
+  haveI : Finite (Γ F ⧸ H) := Subgroup.quotient_finite_of_isOpen H hHopen
+  haveI hHfi : H.FiniteIndex := Subgroup.finiteIndex_of_finite_quotient
+  haveI : Finite (Γ ℚ ⧸ (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom.range) :=
+    Subgroup.quotient_finite_of_isOpen _ (isOpen_range_absoluteGaloisGroupMap_rat_ray_class F)
+  haveI hRfi : (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom.range.FiniteIndex :=
+    Subgroup.finiteIndex_of_finite_quotient
+  haveI : (Subgroup.map
+      (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom H).FiniteIndex := by
+    refine ⟨?_⟩
+    rw [Subgroup.index_map_of_injective _ hinj]
+    exact Nat.mul_ne_zero hHfi.index_ne_zero hRfi.index_ne_zero
+  exact Subgroup.isOpen_of_isClosed_of_finiteIndex _ hcpt.isClosed
 
-**HOW IT IS NOW PROVEN, AND HOW THAT DIFFERS FROM THE ORIGINAL PLAN.**
-The original route took `E := fixedField H` INSIDE `Fᵃˡᵍ`, formed its
-Galois closure over `ℚ`, and descended from `ℚ` to `F` by Dedekind's
-modular law. That plan has a hidden cost: `E` lives in `Fᵃˡᵍ` while
-Minkowski is stated over `ℚᵃˡᵍ`, so the field `M` has to be transported
-across the seam anyway.
+/-- **AN INTEGER PRIME TO `q` IS A UNIT OF `𝒪_q`** (PROVEN 2026-07-30):
+`(n : 𝓞 ℚ) ∉ q` says the `q`-adic valuation of `n` is `1`, which in the
+valuation ring `adicCompletionIntegers` is exactly unitness. The last step is
+`natCast_mem_toHeightOneSpectrum_iff`'s computation unfolded for a general `n`
+rather than a prime: `(hq.toHeightOneSpectrumRingOfIntegersRat).asIdeal` is by
+`rfl` the comap of `span {(q : ℤ)}`, so membership of `(n : 𝓞 ℚ)` is `q ∣ n`.
 
-The proof used instead crosses the seam ONCE, at the level of GROUPS, and
-never moves a field: push `H` forward to `H' := φ(H) ≤ Γ ℚ` along
-`φ := Field.absoluteGaloisGroup.map (algebraMap ℚ F)`, which is OPEN by
-`isOpen_map_absoluteGaloisGroupMap_rat_ray_class` above; apply the
-`ℚ`-case `exists_badPrimes_mul_muFixer_eq_top_rat_ray_class` to get
-`φ σ = a b` with `a = φ τ`, `τ ∈ H`; then `ρ := τ⁻¹ σ` satisfies
-`φ ρ = b` by group algebra alone, and `map_pow_muAction_iff_ray_class`
-(at exponent `k = 1`) transports the `μ_m`-clause BACK across the seam.
-**No injectivity of `φ` is needed** — the backward direction of that iff
-does all the work — and no modular law is needed.
+`Chebotarev.lean`'s `isUnit_natCast_adicCompletionIntegers` is this statement
+for `n` a PRIME different from `q`; a general modulus needs the divisibility
+form, which is why it is restated here rather than reused. -/
+theorem isUnit_natCast_adicCompletionIntegers_of_not_dvd_ray_class
+    {q : ℕ} (hq : q.Prime) {n : ℕ} (hqn : ¬ q ∣ n) :
+    IsUnit ((n : ℕ) : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat) := by
+  have hints : (Valued.v).Integers
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat) :=
+    Valuation.valuationSubring.integers _
+  refine hints.isUnit_iff_valuation_eq_one.mpr ?_
+  rw [map_natCast]
+  have h2 := IsDedekindDomain.HeightOneSpectrum.valuedAdicCompletion_eq_valuation
+    (K := ℚ) (v := hq.toHeightOneSpectrumRingOfIntegersRat)
+    ((n : ℕ) : NumberField.RingOfIntegers ℚ)
+  push_cast at h2
+  rw [h2, show ((n : ℕ) : ℚ) = algebraMap (NumberField.RingOfIntegers ℚ) ℚ
+      ((n : ℕ) : NumberField.RingOfIntegers ℚ) from (map_natCast _ n).symm,
+    IsDedekindDomain.HeightOneSpectrum.valuation_of_algebraMap,
+    IsDedekindDomain.HeightOneSpectrum.intValuation_eq_one_iff]
+  intro hmem
+  refine hqn ?_
+  have h1 : (hq.toHeightOneSpectrumRingOfIntegersRat).asIdeal =
+      Ideal.comap (Rat.ringOfIntegersEquiv.symm.symm) (Ideal.span {(q : ℤ)}) := rfl
+  rw [h1, Ideal.mem_comap, map_natCast, Ideal.mem_span_singleton,
+    Int.natCast_dvd_natCast] at hmem
+  exact hmem
 
-FAITHFULNESS. `hHopen` is LOAD-BEARING and cannot be weakened to closed:
-take `F = ℚ` and `H := ker` of the `p`-adic cyclotomic character (a
-closed, non-open subgroup, the fixer of `ℚ(ζ_{p^∞})`); for ANY finite `T`
-pick a prime `p ∉ T` and `m = p²`, and then `H · Γ_{ℚ(ζ_{p²})}` fixes
-`ℚ(ζ_{p²}) ≠ ℚ`, so it is not `⊤`. `0 < m` is load-bearing too: at
-`m = 0` every `ζ` satisfies `ζ ^ 0 = 1`, so the `μ`-clause forces
-`ρ = 1` and the conclusion degenerates to `H = ⊤`, false for any proper
-open `H`. Non-vacuous: at `H = Γ_{F(ζ_p)}` it is the linear disjointness
-of `F(ζ_p)` and `F(ζ_m)` for `m` prime to `p`. -/
+/-- **… hence avoids the maximal ideal of the integral closure `O_q`** (PROVEN
+2026-07-30): units are preserved by any ring map, and a unit is not in the
+maximal ideal of a local ring. -/
+theorem natCast_notMem_maximalIdeal_of_not_dvd_ray_class
+    {q : ℕ} (hq : q.Prime) {n : ℕ} (hqn : ¬ q ∣ n) :
+    ((n : ℕ) : IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))) ∉ IsLocalRing.maximalIdeal _ := by
+  have h2 := (isUnit_natCast_adicCompletionIntegers_of_not_dvd_ray_class hq hqn).map
+    (algebraMap
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+      (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))))
+  rw [map_natCast] at h2
+  intro hmem
+  exact ((IsLocalRing.mem_maximalIdeal _).mp hmem) h2
+
+/-- **AN `N`-TH ROOT OF UNITY IN `ℚ̄_v` IS INTEGRAL OVER `𝒪ᵥ`** (PROVEN
+2026-07-30): it kills the monic `X ^ N - 1`. -/
+theorem isIntegral_of_pow_eq_one_ray_class
+    {v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
+    {N : ℕ} (hN : 0 < N)
+    {z : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)}
+    (hz : z ^ N = 1) :
+    IsIntegral (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v) z := by
+  refine ⟨Polynomial.X ^ N - 1, ?_, ?_⟩
+  · have := Polynomial.monic_X_pow_sub_C
+      (R := IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v) (1 : _) (n := N) hN.ne'
+    simpa [Polynomial.C_1] using this
+  · simp [Polynomial.eval₂_sub, hz]
+
+/-- **REDUCTION IS INJECTIVE ON `μ_N` WHEN `N` IS A UNIT** (PROVEN 2026-07-30):
+two `N`-th roots of unity in the integral closure of `𝒪ᵥ` whose difference lies
+in the maximal ideal are equal. The geometric cofactor `∑ aⁱ bᴺ⁻¹⁻ⁱ` kills
+`a - b ≠ 0` hence vanishes, while modulo `𝔪` it equals `N · bᴺ⁻¹` with `b` a
+unit — so `N ∈ 𝔪`, contradiction. -/
+theorem eq_of_sub_mem_maximalIdeal_of_pow_eq_one_ray_class
+    {v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
+    {N : ℕ}
+    (hN : ((N : ℕ) : IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) ∉
+      IsLocalRing.maximalIdeal _)
+    {a b : IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))}
+    (ha : a ^ N = 1) (hb : b ^ N = 1)
+    (hab : a - b ∈ IsLocalRing.maximalIdeal _) : a = b := by
+  have hNpos : 0 < N := by
+    rcases Nat.eq_zero_or_pos N with rfl | h
+    · exact absurd (by simp) hN
+    · exact h
+  by_contra hne
+  have hsub0 : a - b ≠ 0 := sub_ne_zero_of_ne hne
+  have hgeom := geom_sum₂_mul a b N
+  rw [ha, hb, sub_self] at hgeom
+  have hzero : (∑ i ∈ Finset.range N, a ^ i * b ^ (N - 1 - i)) = 0 := by
+    rcases mul_eq_zero.mp hgeom with h | h
+    · exact h
+    · exact absurd h hsub0
+  have hcong : (∑ i ∈ Finset.range N, (a ^ i - b ^ i) * b ^ (N - 1 - i)) =
+      (∑ i ∈ Finset.range N, a ^ i * b ^ (N - 1 - i)) -
+        (∑ i ∈ Finset.range N, b ^ i * b ^ (N - 1 - i)) := by
+    simp only [sub_mul]
+    exact Finset.sum_sub_distrib _ _
+  have hmem : (∑ i ∈ Finset.range N, a ^ i * b ^ (N - 1 - i)) -
+      (∑ i ∈ Finset.range N, b ^ i * b ^ (N - 1 - i)) ∈
+      IsLocalRing.maximalIdeal (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) := by
+    rw [← hcong]
+    refine Ideal.sum_mem _ fun i _ => ?_
+    obtain ⟨c, hc⟩ := sub_dvd_pow_sub_pow a b i
+    rw [hc]
+    exact Ideal.mul_mem_right _ _ (Ideal.mul_mem_right _ _ hab)
+  rw [hzero, geom_sum₂_self, zero_sub, neg_mem_iff] at hmem
+  have hbunit : IsUnit (b ^ (N - 1)) := by
+    have hmul : b ^ (N - 1) * b = 1 := by
+      rw [← pow_succ, Nat.sub_add_cancel hNpos]
+      exact hb
+    exact IsUnit.of_mul_eq_one b hmul
+  exact hN ((Ideal.mul_unit_mem_iff_mem _ hbunit).mp hmem)
+
+/-- **SUB-LEAF (a) OF THE MINKOWSKI CUT: `ℚ(ζ_m)/ℚ` IS UNRAMIFIED OUTSIDE
+`m`** (**PROVEN 2026-07-30**, axiom-clean), in the local form the cut below
+consumes: the image in `Γ ℚ` of `localInertiaGroup q` fixes `μ_m` pointwise
+whenever `q ∤ m`.
+
+This is one of the two "inertia dictionary" statements that
+`exists_badPrimes_mul_muFixer_eq_top_ray_class` below used to record as
+missing from this project, from mathlib and from `~/cs/FLT`. It is NOT missing;
+it is a five-line consequence of the two roots-of-unity bricks above, and the
+proof is the mirror image of the Frobenius argument in `Chebotarev.lean`'s
+`cyclotomicCharacter_globalFrob`: transport `ζ` along the chosen embedding of
+algebraic closures, note `σ • ζ` is again an `m`-th root of unity, note
+`σ • ζ ≡ ζ (mod 𝔪)` BY THE DEFINITION of `localInertiaGroup` (it is an
+`AddSubgroup.inertia`), and conclude `σ • ζ = ζ` because reduction is injective
+on `μ_m` once `m` is a `q`-adic unit.
+
+**`0 < m` IS NOT A HYPOTHESIS AND MUST NOT BE ADDED**: `¬ q ∣ m` already forces
+`m ≠ 0`, since every `q` divides `0`.
+
+**DUPLICATION NOTE, FOR THE ORCHESTRATOR.** `Modularity/Interface.lean` carries
+this statement verbatim as `map_fixes_of_pow_eq_one_of_mem_localInertiaGroup`
+(with `natCast_pow_notMem_maximalIdeal`, `isIntegral_of_pow_eq_one`,
+`pos_of_natCast_notMem_maximalIdeal` and
+`eq_of_sub_mem_maximalIdeal_of_pow_eq_one` beside it), and that copy is the
+original — the four bricks above are its restatements with `_ray_class`
+suffixes and with the prime-power hypothesis relaxed to `¬ q ∣ m`. They are NOT
+reused, because `Interface.lean` `import`s THIS file (its line 408), so the
+dependency can only run this way. **The proper repair is to hoist the block into
+`Fermat/FLT/Deformations/RepresentationTheory/ArtinConductor.lean`**, which
+already carries `isUnit_natCast_integralClosure_of_notMem_asIdeal` — the general
+`n` form of the unit brick, over an arbitrary number field — and is upstream of
+both consumers; that is a three-file move and deliberately not done from inside
+this leaf's worktree. Until then the two copies must be kept in step. -/
+theorem localInertiaGroup_le_muFixer_of_not_dvd_ray_class
+    (m : ℕ) {q : ℕ} (hq : q.Prime) (hqm : ¬ q ∣ m) :
+    Subgroup.map (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
+      (localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat)
+    ≤ muFixerRayClass ℚ m := by
+  classical
+  have hNmax := natCast_notMem_maximalIdeal_of_not_dvd_ray_class hq hqm
+  have hmpos : 0 < m := by
+    rcases Nat.eq_zero_or_pos m with rfl | h
+    · exact absurd (dvd_zero q) hqm
+    · exact h
+  rintro g hg
+  obtain ⟨σ, hσ, rfl⟩ := Subgroup.mem_map.mp hg
+  intro x hx
+  set ζ : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat) :=
+    AlgebraicClosure.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) x with hζdef
+  have hζpow : ζ ^ m = 1 := by rw [hζdef, ← map_pow, hx, map_one]
+  have hint : IsIntegral (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat) ζ := isIntegral_of_pow_eq_one_ray_class hmpos hζpow
+  set y : IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) := ⟨ζ, hint⟩ with hydef
+  have hypow : y ^ m = 1 := by
+    apply Subtype.ext
+    push_cast [hydef]
+    exact hζpow
+  have hsmulpow : (σ • y) ^ m = 1 := by
+    rw [← smul_pow', hypow, smul_one]
+  have hdiff : σ • y - y ∈ IsLocalRing.maximalIdeal (IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))) :=
+    (AddSubgroup.mem_inertia.mp hσ) y
+  have hfix : σ • y = y :=
+    eq_of_sub_mem_maximalIdeal_of_pow_eq_one_ray_class hNmax hsmulpow hypow hdiff
+  show Field.absoluteGaloisGroup.map (algebraMap ℚ
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) σ x = x
+  apply (AlgebraicClosure.map (algebraMap ℚ
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat))).injective
+  rw [Field.absoluteGaloisGroup.lift_map (algebraMap ℚ
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) σ x]
+  have h1 := congrArg Subtype.val hfix
+  rw [IntegralClosure.coe_smul] at h1
+  exact h1
+
+/-- **SUB-LEAF (b) OF THE MINKOWSKI CUT: FINITE RAMIFICATION — AN OPEN SUBGROUP
+OF `Γ ℚ` CONTAINS ALL BUT FINITELY MANY LOCAL INERTIA IMAGES** (SORRY LEAF,
+created 2026-07-30 as the ONLY remaining mathematical input of
+`exists_badPrimes_mul_muFixer_eq_top_ray_class` just below, which is now GLUE
+over it and over sub-leaf (a) above).
+
+For every open `N ≤ Γ ℚ` there is a finite set `T` of rational primes such that
+the image in `Γ ℚ` of `localInertiaGroup q` lies in `N` for every prime
+`q ∉ T`. Equivalently: the number field cut out by `N` is ramified at only
+finitely many primes, in the LOCAL INERTIA form rather than the ideal-theoretic
+one.
+
+**THIS IS THE CONVERSE OF `MinkowskiUnramified.lean`'s
+`isUnramifiedAt_of_inertia_le_fixingSubgroup`**, and it is the one dictionary
+lemma this cluster cannot avoid. It is wanted in at least three other places —
+`HilbertModularity.lean`'s `finite_hilbertInertiaOutsideSubgroups` and
+`exists_finset_isUnramifiedAt_hilbert_of_notMem` both name it as their missing
+input, and `Modularity/Patching.lean`'s `exists_finset_isUnramifiedAt_of_notMem`
+is the same statement dressed as a representation. Whoever closes it should be
+told that those are its other customers; a hoist into
+`Fermat/FLT/GaloisRepresentation/MinkowskiUnramified.lean`, beside the direction
+that IS proven, would serve all four.
+
+**THE ROUTE, AND IT IS NOT THE ONE THE OLD DOCSTRING PROPOSED.** The route
+previously recorded here was "get from `Algebra.IsUnramifiedAt` back to the
+local inertia group", i.e. run
+`exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup →
+inertia_eq_bot_of_le_fixingSubgroup → isUnramifiedAt_of_inertia_le_fixingSubgroup`
+backwards. That is not necessary, and there is a route that never mentions
+ramification of ideals at all — it is the SAME argument as sub-leaf (a) above,
+with `X ^ m - 1` replaced by a minimal polynomial:
+
+* `N` is open hence closed, so `N = L.fixingSubgroup` for `L := fixedField N`
+  (`InfiniteGalois.fixingSubgroup_fixedField`), and `L/ℚ` is FINITE
+  (`InfiniteGalois.isOpen_iff_finite`).
+* Pick a primitive element `α` of `L/ℚ` and scale it to be integral over `ℤ`;
+  then `L = ℚ⟮α⟯`, so it suffices that `σ` fix `α`.
+* Let `g := minpoly ℤ α`, monic and SEPARABLE (char `0`), and let
+  `Δ := ∏_{β ≠ γ roots of g in ℚᵃˡᵍ} (β - γ)`. `Δ ≠ 0` by separability; it is
+  fixed by every element of `Γ ℚ` (which permutes the roots) hence lies in `ℚ`,
+  and it is integral over `ℤ` hence lies in `ℤ`. Take `T :=` the primes
+  dividing `Δ`.
+* For `q ∤ Δ` and `σ ∈ localInertiaGroup q`: `σ • ι α` is a root of `ι g`, so it
+  is `ι β` for some root `β` of `g`, and `ι (α - β) ∈ 𝔪` because `σ` is in the
+  inertia. If `β ≠ α` then `α - β` divides `Δ` among integral elements, so
+  `ι Δ ∈ 𝔪` — impossible, `Δ` being a `q`-adic unit
+  (`natCast_notMem_maximalIdeal_of_not_dvd_ray_class` above, up to sign). Hence
+  `β = α` and `σ` fixes `ι α`, hence `map σ` fixes `α`, hence all of `ℚ⟮α⟯ = L`.
+
+So the bad set is "the primes dividing the discriminant of a primitive element",
+which is the classical answer, and no `IsUnramifiedAt` ever appears. The three
+formal costs are: the primitive element in `IntermediateField ℚ (AlgebraicClosure ℚ)`
+form, the `Γ ℚ`-invariance-implies-rational step
+(`IsGalois ℚ (AlgebraicClosure ℚ)`, already an instance in this file's cone —
+see `open_normal_subgroup_eq_top_of_inertia_le`'s proof), and the divisibility
+`(α - β) ∣ Δ`.
+
+**FAITHFULNESS (audited 2026-07-30): TRUE as stated, non-vacuous, and `hN`
+load-bearing.**
+
+* *True*: the route above.
+* *`hN : IsOpen N` cannot be dropped*: for `N` merely CLOSED the statement is
+  false. Take `N := muFixerRayClass ℚ 0`'s counterpart, the fixer of
+  `ℚ(ζ_{p^∞})` — a closed non-open subgroup. Every prime `q ≠ p` ramifies in no
+  finite layer, but `p` is not the only obstruction: `ℚ(ζ_{p^∞})/ℚ` is
+  infinitely ramified at `p` and, more to the point, for ANY finite `T` the
+  fixed field of `N` is of infinite degree, so no discriminant bounds it. The
+  clean witness is `N = ⊥`, closed, for which `T` would have to contain every
+  prime that ramifies anywhere in `ℚᵃˡᵍ/ℚ` — all of them.
+* *Not vacuous*: at `N = ⊤` it is trivial, but at `N` of index `2` cutting out
+  `ℚ(√d)` it asserts exactly that `ℚ(√d)/ℚ` is unramified outside the primes
+  dividing `4d`, which is genuine arithmetic and not a bookkeeping identity.
+
+**Check that would refute it**: an open `N ≤ Γ ℚ` and an infinite set of primes
+`q` with `Subgroup.map … (localInertiaGroup q) ⊄ N` — equivalently a number
+field ramified at infinitely many rational primes. -/
+theorem exists_badPrimes_localInertiaGroup_le_of_isOpen_ray_class
+    (N : Subgroup (Γ ℚ)) (hN : IsOpen (N : Set (Γ ℚ))) :
+    ∃ T : Finset ℕ, ∀ (q : ℕ) (hq : q.Prime), q ∉ T →
+      Subgroup.map (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
+        (localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat) ≤ N :=
+  sorry
+
+/-- **`Γ F = H · Γ_{F(ζ_m)}` FOR EVERY OPEN `H` AND ALMOST EVERY `m`**
+(**DECOMPOSED AND ITS GLUE PROVEN 2026-07-30**; created 2026-07-28 as **the
+single shared Minkowski cut** of the two leaves below, which were previously
+two independent sorries each carrying the whole of Minkowski. It is now glue
+over sub-leaf (a) `localInertiaGroup_le_muFixer_of_not_dvd_ray_class` — PROVEN
+above — and sub-leaf (b) `exists_badPrimes_localInertiaGroup_le_of_isOpen_ray_class`,
+the finite-ramification dictionary, which is the ONLY thing still open here.)
+
+For any number field `F` and any OPEN subgroup `H ≤ Γ F` there is a finite bad
+set `T` of primes such that every modulus `m > 0` prime to `T` already satisfies
+`Γ F = H · Γ_{F(ζ_m)}`: every `σ : Γ F` factors as `τ ρ` with `τ ∈ H` and `ρ`
+fixing `μ_m` pointwise.
+
+**AT `F = ℚ` THIS IS EXACTLY THE `ℚ`-SIDE STATEMENT** that the two leaves below
+used to name in their docstrings as the recommended next cut. It is stated here
+over a GENERAL number field rather than over `ℚ` only, because that is what
+makes the cut free at both call sites:
+
+* `exists_badPrimes_charKernel_mul_muFixer_ray_class` (Childress's clause
+  (iii)) is this statement at `F` with `H := charKernelRayClass χ`, which is
+  open by `Subgroup.isOpen_mono` from the open `V ≤ ker χ`. No transport across
+  the `F/ℚ` seam is needed at all.
+* `exists_badPrimes_cyclotomicChar_surjective_ray_class` is this statement at
+  `ℚ` with `H := range (Γ F → Γ ℚ)`, which is open by
+  `isOpen_range_absoluteGaloisGroupMap_rat_ray_class` above; the seam is crossed
+  once, by `map_pow_muAction_iff_ray_class` above.
+
+Stating the `ℚ`-side version only would have forced the SECOND call site to
+transport `ker χ` INTO `Γ ℚ` and prove its image open there, which is strictly
+harder than the range case; generalising the base field removes that obligation
+instead of paying it.
+
+**THE PROOF, AND WHY IT IS SHORTER THAN THE ROUTE THIS DOCSTRING USED TO
+PRESCRIBE.** The recorded route was: replace `H` by the Galois closure `M` of
+its fixed field over `ℚ`, prove `Γ_M · Γ_{ℚ(ζ_m)} = ⊤` by Minkowski, and descend
+to `F` by DEDEKIND'S MODULAR LAW. Two of those three steps are unnecessary.
+
+* The Galois closure is `Subgroup.normalCore`, and nothing about fields is
+  needed to see it is open: `H` transports to the open `H' := ψ H` in `Γ ℚ`
+  (`isOpen_map_absoluteGaloisGroupMap_rat_ray_class` above), an open subgroup of
+  a compact group has finite index, and mathlib's
+  `Subgroup.normalCore_isClosed` plus `Subgroup.isOpen_of_isClosed_of_finiteIndex`
+  make `A := H'.normalCore` open. This is exactly the construction of
+  `IsTopologicalGroup.exist_openNormalSubgroup_sub_clopen_nhds_of_one`.
+* `A ⊔ muFixerRayClass ℚ m = ⊤` is then
+  `MinkowskiUnramified.open_normal_subgroup_eq_top_of_inertia_le` (PROVEN, in
+  this file's cone), fed by a two-case split with no overlap: if `q ∣ m` then
+  `q ∉ T`, so sub-leaf (b) puts `I_q` in `A`; if `q ∤ m` then sub-leaf (a) puts
+  `I_q` in `muFixerRayClass ℚ m`. Normality of the join is
+  `Subgroup.sup_normal`, openness is `Subgroup.isOpen_mono` from `A`.
+* **THE MODULAR LAW IS NOT NEEDED.** Given `σ : Γ F`, write
+  `ψ σ = a * u` with `a ∈ A` and `u ∈ muFixerRayClass ℚ m` (`Subgroup.mul_normal`,
+  the second factor being normal). Since `A ≤ H' = ψ H`, `a = ψ τ` with `τ ∈ H`;
+  then `ψ (τ⁻¹ σ) = u` and `σ = τ · (τ⁻¹ σ)`, and `τ⁻¹ σ` fixes `μ_m` because
+  `map_pow_muAction_iff_ray_class F m hm (τ⁻¹ σ) 1` transports the `μ_m`-clause
+  back across the seam. Descending the CONCLUSION one element at a time replaces
+  descending the SUBGROUP identity, and the seam lemma for that is already
+  proven above.
+
+**THE HONEST COST IS NOW ONE LEAF, NOT TWO.** This docstring used to record
+that the inertia dictionary was missing in two named forms, (a) and (b), and
+that neither was anywhere in this project, in mathlib or in `~/cs/FLT`. That was
+half right: (a) IS in the project — `Modularity/Interface.lean` proves it as
+`map_fixes_of_pow_eq_one_of_mem_localInertiaGroup` — but downstream of this
+file, so it is restated and reproved above. Only (b), finite ramification,
+remains, and its own docstring records a route for it that avoids
+`IsUnramifiedAt` altogether.
+
+FAITHFULNESS. `hHopen` is LOAD-BEARING and cannot be weakened to closed: take
+`F = ℚ` and `H := ker` of the `p`-adic cyclotomic character (a closed, non-open
+subgroup, the fixer of `ℚ(ζ_{p^∞})`); for ANY finite `T` pick a prime `p ∉ T`
+and `m = p²`, and then `H · Γ_{ℚ(ζ_{p²})}` fixes `ℚ(ζ_{p²}) ≠ ℚ`, so it is not
+`⊤`. `0 < m` is load-bearing too: at `m = 0` every `ζ` satisfies `ζ ^ 0 = 1`, so
+the `μ`-clause forces `ρ = 1` and the conclusion degenerates to `H = ⊤`, false
+for any proper open `H`. Non-vacuous: at `H = Γ_{F(ζ_p)}` it is the linear
+disjointness of `F(ζ_p)` and `F(ζ_m)` for `m` prime to `p`. -/
 theorem exists_badPrimes_mul_muFixer_eq_top_ray_class (F : Type u) [Field F] [NumberField F]
     (H : Subgroup (Γ F)) (hHopen : IsOpen (H : Set (Γ F))) :
     ∃ T : Finset ℕ, ∀ m : ℕ, 0 < m → (∀ q ∈ T, q.Prime → ¬ q ∣ m) →
       ∀ σ : Γ F, ∃ τ ρ : Γ F, τ ∈ H ∧
         (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ρ ζ = ζ) ∧ σ = τ * ρ := by
   classical
-  obtain ⟨T, hT⟩ := exists_badPrimes_mul_muFixer_eq_top_rat_ray_class
-    (H.map (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom)
-    (isOpen_map_absoluteGaloisGroupMap_rat_ray_class F H hHopen)
+  have hinj := injective_absoluteGaloisGroupMap_rat_ray_class F
+  have hH'open : IsOpen ((Subgroup.map
+      (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom H : Subgroup (Γ ℚ)) :
+      Set (Γ ℚ)) := isOpen_map_absoluteGaloisGroupMap_rat_ray_class F H hHopen
+  have hH'closed : IsClosed ((Subgroup.map
+      (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom H : Subgroup (Γ ℚ)) :
+      Set (Γ ℚ)) := Subgroup.isClosed_of_isOpen _ hH'open
+  haveI : Finite (Γ ℚ ⧸ (Subgroup.map
+      (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom H : Subgroup (Γ ℚ))) :=
+    Subgroup.quotient_finite_of_isOpen _ hH'open
+  haveI : (Subgroup.map
+      (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom H :
+        Subgroup (Γ ℚ)).FiniteIndex :=
+    Subgroup.finiteIndex_of_finite_quotient
+  have hAopen : IsOpen (((Subgroup.map
+      (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom H :
+        Subgroup (Γ ℚ))).normalCore : Set (Γ ℚ)) :=
+    Subgroup.isOpen_of_isClosed_of_finiteIndex _
+      (Subgroup.normalCore_isClosed _ hH'closed)
+  obtain ⟨T, hT⟩ := exists_badPrimes_localInertiaGroup_le_of_isOpen_ray_class _ hAopen
   refine ⟨T, ?_⟩
   intro m hm hTm σ
-  obtain ⟨a, b, ha, hb, hab⟩ :=
-    hT m hm hTm ((Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom σ)
-  obtain ⟨τ, hτH, hτ⟩ := Subgroup.mem_map.mp ha
-  subst hτ
+  have hNtop : ((Subgroup.map
+      (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom H :
+        Subgroup (Γ ℚ))).normalCore ⊔ muFixerRayClass ℚ m = ⊤ := by
+    refine open_normal_subgroup_eq_top_of_inertia_le _
+      (Subgroup.isOpen_mono le_sup_left hAopen) ?_
+    intro q hq
+    by_cases hqm : q ∣ m
+    · exact le_trans (hT q hq (fun hqT => hTm q hqT hq hqm)) le_sup_left
+    · exact le_trans (localInertiaGroup_le_muFixer_of_not_dvd_ray_class m hq hqm) le_sup_right
+  have hmem : (Field.absoluteGaloisGroup.map (algebraMap ℚ F)) σ ∈
+      ((((Subgroup.map
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom H :
+          Subgroup (Γ ℚ))).normalCore ⊔ muFixerRayClass ℚ m : Subgroup (Γ ℚ)) : Set (Γ ℚ)) := by
+    rw [hNtop]; trivial
+  rw [Subgroup.mul_normal] at hmem
+  obtain ⟨a, ha, u, hu, hau⟩ := hmem
+  obtain ⟨τ, hτH, hτ⟩ := Subgroup.mem_map.mp (Subgroup.normalCore_le _ ha)
   refine ⟨τ, τ⁻¹ * σ, hτH, ?_, by group⟩
-  have hab' : (Field.absoluteGaloisGroup.map (algebraMap ℚ F)) σ
-      = (Field.absoluteGaloisGroup.map (algebraMap ℚ F)) τ * b := hab
-  have hφ : (Field.absoluteGaloisGroup.map (algebraMap ℚ F)) (τ⁻¹ * σ) = b := by
-    simp [map_mul, map_inv, hab']
-  have hiff := map_pow_muAction_iff_ray_class F m hm (τ⁻¹ * σ) 1
-  simp only [pow_one] at hiff
-  refine hiff.mpr ?_
-  intro x hx
-  rw [hφ]
-  exact hb x hx
+  have hgoal : ∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → (τ⁻¹ * σ) ζ = ζ ^ 1 := by
+    rw [map_pow_muAction_iff_ray_class F m hm (τ⁻¹ * σ) 1]
+    intro x hx
+    have hau' : a * u = (Field.absoluteGaloisGroup.map (algebraMap ℚ F)) σ := hau
+    have hτ' : (Field.absoluteGaloisGroup.map (algebraMap ℚ F)) τ = a := hτ
+    have hψeq : (Field.absoluteGaloisGroup.map (algebraMap ℚ F)) (τ⁻¹ * σ) = u := by
+      rw [map_mul, map_inv, ← hau', hτ']
+      group
+    rw [pow_one, hψeq]
+    exact hu x hx
+  intro ζ hζ
+  simpa using hgoal ζ hζ
 
 /-- **THE MOD-`m` CYCLOTOMIC CHARACTER OF `F` IS SURJECTIVE FOR ALMOST
 EVERY `m`** (created 2026-07-27 as sub-leaf (A3a-1-1-b-2-B-2) of
