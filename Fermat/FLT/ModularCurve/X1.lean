@@ -12121,7 +12121,28 @@ character `χ` (eight cases) is mechanically available and is *not* a
 decomposition: it moves no theory and multiplies the frontier by eight.
 A cut that isolates the Fricke sign `ε` is a real decomposition but is
 worth nothing on its own, because the sum above still needs the certified
-`aₙ`; it becomes worth writing at the moment the basis does. -/
+`aₙ`; it becomes worth writing at the moment the basis does.
+
+**THE JUNK-VALUE REFUTATION DOES NOT RUN HERE, and it is worth saying so
+because the shape of it has killed two statements in this cluster
+already** (checked 2026-07-30 against `X0.lean`'s definition).  The
+obvious way for a period leaf to be FALSE in Lean is the one that made
+`IsWeightTwoEigenformOn` unsound before `qExpansionSummable` was added: a
+`tsum` of a non-summable family takes its junk value `0`, so a statement
+"the period is nonzero" is refuted for EVERY eigenform at once.  And the
+naive spelling of this period invites exactly that — Hecke's bound gives
+`aₙ = O(n^{1/2+ε})`, hence `aₙ/n = O(n^{-1/2+ε})`, which converges only
+CONDITIONALLY; had `cuspPeriod` been `∑' n, aₙ / n` it would be `0`
+identically and this leaf would be false with no arithmetic input
+whatsoever.
+
+It is not: `cuspPeriod` is a Bochner INTEGRAL
+`∫ y in Ioi 0, ∑' n, a (n+1) * exp (-(2π (n+1) y))`, whose integrand's
+inner `tsum` is summable at every `y > 0` (geometric decay) and which is
+integrable because `f (iy)` decays exponentially at BOTH ends — at `∞`
+from the `q`-expansion and at `0` because `f` vanishes at the cusp `0`,
+`Γ_1(25)` having finite index.  So the gate really is the certified basis
+above and nothing cheaper. -/
 theorem cuspPeriod_ne_zero_x1TwentyFive (χ : DirichletCharacter ℂ 25)
     (f : CuspForm (Gamma1GL 25) 2) (a : ℕ → ℂ)
     (hf : IsWeightTwoEigenformOn (Gamma1GL 25) 25 χ f a) :
@@ -12423,7 +12444,42 @@ FALSE if dropped**, with the same witnesses the node below carries.
 satisfiable — it holds for `𝔸¹_K` itself by `BirationalOver.refl`, and for
 any smooth proper rational curve since a dense open is birational to the
 whole (`Opens.birationalOver_of_dense`).  So the conclusion is a real
-constraint. -/
+constraint.
+
+**A FAITHFULNESS AXIS THAT IS NOT THE GENUS FORMULA, AND THAT THE CUT DID
+NOT INHERIT AN AUDIT FOR** (2026-07-30).  The audits above range over the
+arithmetic parameters `hN`, `hg` and over what `hmodel` supplies; none of
+them looks at WHICH `K` and WHICH `k` are allowed, and both are arbitrary.
+Two obligations hide there, and the heading "Diamond–Shurman Thm 3.1.1 and
+NOTHING ELSE" is true only after they are discharged.
+
+* **`hmodel` is a statement over `S`; the conclusion is about the FIBRE.**
+  `coarse` says `strY : Y ⟶ S` is COARSE — initial among `S`-schemes
+  receiving a natural transformation from `[Γ₁(N)]` — and coarse moduli
+  spaces are NOT stable under base change in general.  So "the fibre `X_K`
+  is the `X_1(N)` of `K`", which is what ties `x1Genus N` to the geometry,
+  is an extra step.  The rescue is real but is not a hypothesis: `[Γ₁(N)]`
+  is RIGID for `N ≥ 4`, hence FINE, hence stable — and
+  `IsCoarseModuliY1`'s own docstring records that fineness as something it
+  deliberately does not carry as a field.  `hN : 5 ≤ N` is in scope, so
+  this is dischargeable; it is simply not free.
+* **Nothing makes `N` invertible on `S`, and `K` may have characteristic
+  `p ∣ N`.**  `PointOfExactOrder ab N` is the NAIVE level structure — a
+  section of exact order `N` — and that problem is represented by the
+  classical `X_1(N)` only where `N` is invertible.  In characteristic
+  `p ∣ N` an ordinary `E/K̄` has `E[p^a](K̄) ≅ ℤ/p^a`, so the problem is
+  NONEMPTY and its coarse space is an Igusa-type curve, not
+  `X_1(N) ⊗ 𝔽_p` — Katz–Mazur replace the naive structure by a Drinfeld
+  one precisely here.  Its genus is not `x1Genus N`, so in that
+  characteristic the leaf is not the genus formula at all.
+
+This is recorded as an OPEN faithfulness question, not as a refutation: no
+witness is claimed, because exhibiting one means verifying the initiality
+field for an Igusa-type curve and computing its genus, neither of which
+this tree can do.  The cheap and honest repair, if a prover does not want
+to own it, is a hypothesis — `Invertible (N : K)` or `(N : K) ≠ 0` — and
+per this project's rule it belongs in a SEPARATE edit with its own audit,
+since this statement has already been restated once today. -/
 theorem not_birationalOver_affineLine_of_one_le_x1Genus_algClosed {N : ℕ} (hN : 5 ≤ N)
     (hg : 1 ≤ x1Genus N) {X Y S : Scheme.{0}} {strX : X ⟶ S} {strY : Y ⟶ S} {jY : Y ⟶ X}
     (hmodel : IsX1Compactification N strX strY jY)
@@ -12497,6 +12553,43 @@ rational cusps, but only where `N` is invertible, which is not a
 hypothesis.)  That gap IS the degree-`n` trick, and closing this leaf means
 either extending that development to the base-point-free case or producing
 the section some other way.
+
+**THERE IS A SECOND GAP, AND IT IS NOT THE SECTION** (2026-07-30).  The
+paragraph above names the missing base point and stops, which reads as
+"one extension of `RelativePicard.lean` and this closes".  It does not:
+the nonconstancy clause needs `Pic⁰` to have POSITIVE DIMENSION, and the
+only thing offered for that is `hgeom`.  Getting from `hgeom` to it is the
+implication
+
+> over an algebraically closed field, a smooth proper connected curve with
+> `Pic⁰ = 0` is birational to `𝔸¹`,
+
+which is Riemann–Roch content and is absent at this pin by exactly the
+audit that `exists_nonconstant_toAbelianScheme_of_one_le_x1Genus` below
+records under "THE AXIS THIS DECOMPOSITION IS NOT" — "a genus of a scheme,
+`h¹(𝒪_X)`, Riemann–Hurwitz — none of those exists at this pin".  That
+verdict was made about the ARITHMETIC half and applies here verbatim.  So
+this leaf is blocked on TWO theories, not one,
+and a cut that only splits off the base-point-free `Pic⁰` is a
+RESTATEMENT: the residue would be this same implication with a `Pic⁰` in
+front of it.  Note the phrasing above is deliberately `Pic⁰`-only — no
+genus NUMBER is needed, which is why the two halves are separable in
+principle even though neither is available.
+
+**THE DEGENERATE REFUTATION DOES NOT RUN, so do not spend a cycle on it**
+(checked 2026-07-30 by reading
+`Mathlib/AlgebraicGeometry/Geometrically/Connected.lean`).  The tempting
+cheap witness is `X_K = ∅`: `hgeom` would hold (`∅` is not birational to
+`𝔸¹`) while the conclusion would FAIL, because there is exactly one
+morphism out of the initial object and so `c = proj ≫ s` is forced.  It is
+blocked at the hypothesis: mathlib's `GeometricallyConnected f` is
+`geometrically (ConnectedSpace ·) f`, `ConnectedSpace` extends `Nonempty`,
+and mathlib derives `[GeometricallyConnected f] : Surjective f` as a
+low-priority instance — so `hconn` makes every fibre, `X_K` included,
+nonempty and connected.  `hconn` is therefore load-bearing for a second
+reason beyond the `Pic⁰` construction, and the same check disposes of the
+`S = ∅` variant, where no `k : Spec K ⟶ S` exists at all and the statement
+is vacuous rather than false.
 
 **RELOCATION NOTE.**  Nothing here is `Γ₁`-specific, and the `Γ₀` sibling
 `exists_nonconstant_toAbelianScheme_of_one_le_x0Genus` in `X0.lean` is an
