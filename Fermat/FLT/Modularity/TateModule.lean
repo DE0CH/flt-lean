@@ -19808,7 +19808,30 @@ leaf weaker for no gain.  The `m'.act (M : 𝒪_D)` spelling rather than
 **`hfin` IS USED ONLY FOR PERFECTNESS**, so a finite field is more than
 the argument needs; it is carried in this form because that is what the
 consumer has and because `Finite k → PerfectField k` is not the shape of
-any binder in this file. -/
+any binder in this file.
+
+**WHAT IS ALREADY IN THE PIN, FOUND 2026-07-31** (the three bullets above
+read as if all three steps were missing theory; the SMOOTHNESS one is not).
+`Mathlib/AlgebraicGeometry/Group/` exists and holds two of the inputs:
+
+* `AlgebraicGeometry.smooth_of_grpObj` (`Group/Smooth.lean`) — for
+  `f : G ⟶ Spec (.of K)` with `[LocallyOfFiniteType f] [GrpObj (Over.mk f)]`
+  and `[GeometricallyReduced f]`, `Smooth f`.  That IS "a reduced group
+  scheme of finite type over a perfect field is smooth", already proven,
+  already reduced to the algebraically closed case internally;
+* `AlgebraicGeometry.isCommMonObj_of_isProper_of_geometricallyIntegral`
+  (`Group/Abelian.lean`, stacks 0BFD) — a proper geometrically integral
+  group scheme over a field is commutative, which is what makes the `B`
+  produced here commutative without a separate argument.
+
+Both are stated for `GrpObj (Over.mk f)`, i.e. mathlib's group-object
+structure on the over-category, NOT for this file's `AbelianSchemeStruct`;
+so using them costs a translation between the two, and that translation
+does not exist in this tree yet.  What is genuinely missing is CHEVALLEY —
+the Zariski closure of an abstract subgroup of `G(k̄)` carries a closed
+subgroup-scheme structure — for which `grep -rl` over
+`.lake/packages/mathlib/Mathlib/AlgebraicGeometry/` and over `~/cs/FLT`
+returns nothing, and the GALOIS DESCENT of that closure. -/
 theorem exists_abelianSubscheme_closure_of_divisibleGaloisSubmodule_finiteBase
     {k : Type u} [Field k] (hfin : Finite k)
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
@@ -20059,7 +20082,29 @@ bijection satisfies everything else.  `htor` is what makes the conclusion
 non-vacuous — with `htor` weakened to a single `n` the statement is FALSE
 (`A'[I]` is finite, and its Zariski closure is finite, so `B` may be a
 finite subgroup scheme and `ι` far from surjective).  It is the whole
-tower `∀ n` that pins `T_I B = T_I A'`. -/
+tower `∀ n` that pins `T_I B = T_I A'`.
+
+**WHAT WAS SEARCHED AND NOT FOUND, 2026-07-31** (recorded so the next owner
+does not repeat it).  The classical argument needs the QUOTIENT abelian
+variety `C = A'/B` — or, equivalently for this purpose, Poincaré
+reducibility — and nothing in this tree, in the pin, or in `~/cs/FLT`
+constructs either: `Mathlib/AlgebraicGeometry/Group/` contains exactly
+`Abelian.lean` and `Smooth.lean` (commutativity of a proper geometrically
+integral group scheme, and smoothness of a geometrically reduced one), and
+`~/cs/FLT/FLT/GroupScheme/` contains only `FiniteFlat.lean`.
+
+The COUNTING route, which would avoid quotients entirely, does not close
+either, and the reason is worth stating because it looks available from
+this file's contents.  One would want `#A'[Iⁿ] > #B[Iⁿ]` for large `n`
+whenever `dim B < dim A'`; the counting machinery here
+(`card_torsion_span_singleton_of_isAlgClosed`, `finrank_mulByElt_of_isAlgClosed`)
+is stated in CHARACTERISTIC ZERO and consumes a relative-dimension
+hypothesis `hdim : SmoothOfRelativeDimension (finrank ℚ D) f'`, and this
+leaf has neither — deliberately, since the FAITHFULNESS paragraph above
+records that no rank hypothesis is needed.  Adding one would change the
+signature of `dense_torsionGeomPt_finiteBase` and of everything above it,
+and its consumers do not have it to give.  So the counting route is not a
+cheap alternative; it is a different leaf with a wider blast radius. -/
 theorem range_eq_univ_of_abelianSubscheme_torsion_finiteBase
     {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
