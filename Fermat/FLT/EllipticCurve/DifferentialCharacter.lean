@@ -137,6 +137,11 @@ functoriality), *ATAEC* II.2.
 module
 
 public import Fermat.FLT.EllipticCurve.Isogeny
+-- `RationalDerivation.rderiv` (`d/dX` on `F(X)`) and `chordDeriv_core` (the chord
+-- formula differentiated, as pure field algebra).  Cut out of this file 2026-07-30;
+-- it is what `isDiffCharCert_add_of_ne` below calls THE MISSING MACHINERY.  Its own
+-- cone is `Mathlib.FieldTheory.RatFunc.Basic` and nothing from this project.
+public import Fermat.FLT.EllipticCurve.RationalDerivation
 
 @[expose] public section
 
