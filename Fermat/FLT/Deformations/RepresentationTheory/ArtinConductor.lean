@@ -3923,6 +3923,161 @@ lemma upperRamificationFiltration_of_not_pos
     upperRamificationFiltration v u = localInertiaGroup v :=
   if_neg hu
 
+/-! ### Krull separation in `Oᵥ`, and the passage from integers to the fixed field
+
+Two facts about the big integral closure `Oᵥ = 𝒪_{Kᵥᵃˡᵍ}`, proved 2026-07-30
+as the machinery of `LowerRamificationData.iInf_gp_eq_lvl` below.
+
+* `eq_zero_of_forall_pow_dvd_integralClosure` — **`⋂ₘ (u)ᵐ = 0` for a NON-UNIT
+  `u`.** `Oᵥ` is a valuation ring of rank one but NOT noetherian, and its
+  maximal ideal is idempotent (`𝔪² = 𝔪`, since the value group is divisible),
+  so the Krull intersection theorem does not apply and the statement is FALSE
+  for `𝔪` in place of a principal `(u)`. What makes the principal case true is
+  the rank: `spectralNorm` is a genuine `ℝ`-valued multiplicative absolute
+  value, `‖u‖ < 1` for a non-unit, and `‖y‖ ≤ ‖u‖ᵐ` for every `m` forces
+  `‖y‖ = 0`. The two spectral-norm inputs are the dichotomy
+  `‖z‖ ≤ 1 ↔ z` integral: the `←` half is `isIntegral_of_spectralNorm_le_one`
+  (`AbsoluteGaloisGroup.lean`), the `→` half
+  `spectralNorm_le_one_of_isIntegral_algebraicClosure` here.
+
+* `smul_eq_self_of_forall_smul_integralClosure_eq_self` — an automorphism that
+  fixes every `H`-fixed INTEGER of `Kᵥᵃˡᵍ` fixes every `H`-fixed ELEMENT. This
+  is what converts `mem_gp` (a statement about `𝒪_L`) into a statement about
+  the fixed FIELD, where the infinite Galois correspondence applies. No
+  denominator-clearing is needed: `Oᵥ` is a valuation ring, so `y` or `y⁻¹` is
+  already an integer, and the `H`-fixedness passes to the inverse.
+-/
+
+section KrullSeparation
+
+variable (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
+
+local notation "Kᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletion K v
+local notation "𝒪ᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v
+local notation "Kᵥᵃˡᵍ" => AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+local notation "Oᵥ" => IntegralClosure
+  (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+  (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+local notation "Γᵥ" => Field.absoluteGaloisGroup
+  (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+
+/-- The spectral norm on `Kᵥᵃˡᵍ` is MULTIPLICATIVE — `Kᵥ` is complete and
+nonarchimedean, so `spectralAlgNorm` is a `MulRingNorm`. -/
+theorem spectralNorm_mul_algebraicClosure (x y : Kᵥᵃˡᵍ) :
+    spectralNorm Kᵥ Kᵥᵃˡᵍ (x * y) = spectralNorm Kᵥ Kᵥᵃˡᵍ x * spectralNorm Kᵥ Kᵥᵃˡᵍ y := by
+  simpa [spectralAlgNorm_def] using spectralAlgNorm_mul (K := Kᵥ) (L := Kᵥᵃˡᵍ) x y
+
+/-- `‖1‖ = 1` for the spectral norm. -/
+theorem spectralNorm_one_algebraicClosure : spectralNorm Kᵥ Kᵥᵃˡᵍ 1 = 1 := by
+  simpa [spectralAlgNorm_def] using spectralAlgNorm_one (K := Kᵥ) (L := Kᵥᵃˡᵍ)
+
+/-- The spectral norm on `Kᵥᵃˡᵍ` commutes with powers. -/
+theorem spectralNorm_pow_algebraicClosure (x : Kᵥᵃˡᵍ) (m : ℕ) :
+    spectralNorm Kᵥ Kᵥᵃˡᵍ (x ^ m) = (spectralNorm Kᵥ Kᵥᵃˡᵍ x) ^ m := by
+  induction m with
+  | zero => simpa using spectralNorm_one_algebraicClosure v
+  | succ n ih => rw [pow_succ, spectralNorm_mul_algebraicClosure v, ih, ← pow_succ]
+
+/-- A product in `Oᵥ` is computed in `Kᵥᵃˡᵍ` (the ring structure is the
+subalgebra's, so this is `rfl` — but the `IntegralClosure` `def` barrier stops
+`push_cast` from finding it). -/
+theorem coe_mul_integralClosure (a b : Oᵥ) : ((a * b).1 : Kᵥᵃˡᵍ) = a.1 * b.1 := rfl
+
+/-- … and likewise a power. -/
+theorem coe_pow_integralClosure (a : Oᵥ) (m : ℕ) : ((a ^ m).1 : Kᵥᵃˡᵍ) = (a.1) ^ m := by
+  induction m with
+  | zero => rfl
+  | succ n ih => rw [pow_succ, coe_mul_integralClosure, ih, ← pow_succ]
+
+/-- **An element integral over `𝒪ᵥ` has spectral norm at most one** — the
+converse of `isIntegral_of_spectralNorm_le_one`. `𝒪ᵥ` is a DVR, hence
+integrally closed with fraction field `Kᵥ`, so `minpoly Kᵥ y` is the image of
+`minpoly 𝒪ᵥ y` and all its coefficients have norm `≤ 1`; then
+`spectralValue_le_one_iff`. -/
+theorem spectralNorm_le_one_of_isIntegral_algebraicClosure {y : Kᵥᵃˡᵍ}
+    (hy : IsIntegral 𝒪ᵥ y) : spectralNorm Kᵥ Kᵥᵃˡᵍ y ≤ 1 := by
+  have hyK : IsIntegral Kᵥ y := hy.tower_top
+  have hmonic : (minpoly Kᵥ y).Monic := minpoly.monic hyK
+  show spectralValue (minpoly Kᵥ y) ≤ 1
+  rw [spectralValue_le_one_iff hmonic]
+  intro n
+  rw [minpoly.isIntegrallyClosed_eq_field_fractions' Kᵥ hy, Polynomial.coeff_map,
+    Valued.toNormedField.norm_le_one_iff]
+  exact ((minpoly 𝒪ᵥ y).coeff n).2
+
+/-- **A NON-UNIT of `Oᵥ` has spectral norm STRICTLY below one.** If the norm
+were `1` then the inverse would have norm `1 ≤ 1`, hence be integral, hence
+invert the element inside `Oᵥ`. -/
+theorem spectralNorm_lt_one_of_not_isUnit_integralClosure {u : Oᵥ} (hu : ¬ IsUnit u) :
+    spectralNorm Kᵥ Kᵥᵃˡᵍ (u.1 : Kᵥᵃˡᵍ) < 1 := by
+  rcases lt_or_eq_of_le
+    (spectralNorm_le_one_of_isIntegral_algebraicClosure v (y := u.1) u.2) with h | h
+  · exact h
+  · exfalso
+    have hu0 : (u.1 : Kᵥᵃˡᵍ) ≠ 0 := by
+      intro h0
+      rw [h0, spectralNorm_zero] at h
+      exact zero_ne_one h
+    have hinv : spectralNorm Kᵥ Kᵥᵃˡᵍ (u.1)⁻¹ ≤ 1 := by
+      rw [spectralNorm_inv, h, inv_one]
+    have hint : IsIntegral 𝒪ᵥ (u.1)⁻¹ := isIntegral_of_spectralNorm_le_one hinv
+    refine hu (isUnit_iff_exists_inv.mpr ⟨⟨(u.1)⁻¹, hint⟩, ?_⟩)
+    exact Subtype.ext (by rw [coe_mul_integralClosure]; exact mul_inv_cancel₀ hu0)
+
+/-- **`⋂ₘ (u)ᵐ = 0` IN `Oᵥ` FOR A NON-UNIT `u`**: an element divisible by every
+power of a non-unit is zero. See the section docstring for why the Krull
+intersection theorem does not apply and the rank-one norm is what does. -/
+theorem eq_zero_of_forall_pow_dvd_integralClosure {u y : Oᵥ} (hu : ¬ IsUnit u)
+    (h : ∀ m : ℕ, u ^ m ∣ y) : y = 0 := by
+  by_contra hy0
+  have hyne : (y.1 : Kᵥᵃˡᵍ) ≠ 0 := fun h0 => hy0 (Subtype.ext h0)
+  have hNy : 0 < spectralNorm Kᵥ Kᵥᵃˡᵍ y.1 :=
+    spectralNorm_zero_lt hyne (Algebra.IsAlgebraic.isAlgebraic _)
+  have hNu : spectralNorm Kᵥ Kᵥᵃˡᵍ u.1 < 1 :=
+    spectralNorm_lt_one_of_not_isUnit_integralClosure v hu
+  have key : ∀ m : ℕ, spectralNorm Kᵥ Kᵥᵃˡᵍ y.1 ≤ (spectralNorm Kᵥ Kᵥᵃˡᵍ u.1) ^ m := by
+    intro m
+    obtain ⟨z, hz⟩ := h m
+    have hz' : (y.1 : Kᵥᵃˡᵍ) = (u.1) ^ m * z.1 := by
+      rw [hz, coe_mul_integralClosure, coe_pow_integralClosure]
+    rw [hz', spectralNorm_mul_algebraicClosure v, spectralNorm_pow_algebraicClosure v]
+    calc (spectralNorm Kᵥ Kᵥᵃˡᵍ u.1) ^ m * spectralNorm Kᵥ Kᵥᵃˡᵍ z.1
+        ≤ (spectralNorm Kᵥ Kᵥᵃˡᵍ u.1) ^ m * 1 :=
+          mul_le_mul_of_nonneg_left
+            (spectralNorm_le_one_of_isIntegral_algebraicClosure v z.2)
+            (pow_nonneg (spectralNorm_nonneg _) m)
+      _ = (spectralNorm Kᵥ Kᵥᵃˡᵍ u.1) ^ m := mul_one _
+  obtain ⟨m, hm⟩ := exists_pow_lt_of_lt_one hNy hNu
+  exact absurd (key m) (not_le.mpr hm)
+
+/-- **FROM THE `H`-FIXED INTEGERS TO THE `H`-FIXED FIELD.** If `σ` fixes every
+`H`-fixed element of `Oᵥ`, it fixes every `H`-fixed element of `Kᵥᵃˡᵍ`. `Oᵥ` is
+a valuation ring (`isIntegral_or_isIntegral_inv_algebraicClosure`), so `y` or
+`y⁻¹` is an integer, and `H`-fixedness transports along `y ↦ y⁻¹`. -/
+theorem smul_eq_self_of_forall_smul_integralClosure_eq_self {H : Subgroup Γᵥ} {σ : Γᵥ}
+    (hA : ∀ x : Oᵥ, (∀ τ ∈ H, τ • x = x) → σ • x = x)
+    {y : Kᵥᵃˡᵍ} (hy : ∀ τ ∈ H, τ • y = y) : σ • y = y := by
+  have main : ∀ z : Kᵥᵃˡᵍ, IsIntegral 𝒪ᵥ z → (∀ τ ∈ H, τ • z = z) → σ • z = z := by
+    intro z hz hzfix
+    have hx := hA ⟨z, hz⟩ (fun τ hτ => Subtype.ext (by
+      rw [IntegralClosure.coe_smul]; exact hzfix τ hτ))
+    have h2 := congrArg (fun t : Oᵥ => (t.1 : Kᵥᵃˡᵍ)) hx
+    rw [IntegralClosure.coe_smul] at h2
+    exact h2
+  rcases isIntegral_or_isIntegral_inv_algebraicClosure v y with hy' | hy'
+  · exact main y hy' hy
+  · by_cases hy0 : y = 0
+    · rw [hy0, smul_zero]
+    · have hinv : ∀ τ ∈ H, τ • y⁻¹ = y⁻¹ := by
+        intro τ hτ
+        rw [show τ • y⁻¹ = (τ • y)⁻¹ from map_inv₀ (MulSemiringAction.toRingHom _ _ τ) y, hy τ hτ]
+      have hfix := main y⁻¹ hy' hinv
+      have h3 : (σ • y)⁻¹ = y⁻¹ := by
+        rw [← hfix]; exact (map_inv₀ (MulSemiringAction.toRingHom _ _ σ) y).symm
+      exact inv_injective h3
+
+end KrullSeparation
+
 /-! ### The arithmetic inputs to the construction, as NAMED leaves
 
 The four statements below were, until 2026-07-29, anonymous sorried `have`s
@@ -3942,11 +4097,54 @@ element moving every `x ∈ 𝒪_L` by arbitrarily high powers of the uniformize
 moves none of them, so it fixes `L`, so it lies in `N` by the Galois
 correspondence. Serre, *Corps Locaux* IV §1.
 
-(SORRY LEAF, promoted 2026-07-29 from the anonymous `have hterm` inside
-`GaloisRep.exists_isSwanExponentAt`.) -/
+**PROVEN 2026-07-30** (promoted 2026-07-29 from the anonymous `have hterm`
+inside `GaloisRep.exists_isSwanExponentAt`).
+
+THE PROOF, in three steps, over the section `KrullSeparation` above.
+
+* `≥` is `lvl_le_gp` — an element of `N` moves no `N`-fixed element at all.
+* `≤`, step 1: `σ ∈ ⋂ₘ G_m` says, through `mem_gp`, that `unif ^ (m+1)`
+  divides `σ • x − x` for EVERY `m` and every `N`-fixed `x ∈ 𝒪_L`. Since
+  `unif` is a non-unit of `Oᵥ` (`unif_not_isUnit`), the rank-one separation
+  `eq_zero_of_forall_pow_dvd_integralClosure` gives `σ • x = x`. Note
+  `unif_ne_zero` and `unif_spec` are NOT used: the argument needs only that
+  `unif` is a non-unit, because `‖unif‖ < 1` is all that drives it.
+* `≤`, step 2: `smul_eq_self_of_forall_smul_integralClosure_eq_self` upgrades
+  "fixes the `N`-fixed integers" to "fixes the `N`-fixed FIELD", i.e.
+  `σ ∈ (fixedField N).fixingSubgroup`; and `N` is open, hence closed, so
+  `InfiniteGalois.fixingSubgroup_fixedField` returns `σ ∈ N`. This is the only
+  place `lvl_isOpen` is consumed, and it is consumed exactly as the Galois
+  correspondence needs it. -/
 theorem LowerRamificationData.iInf_gp_eq_lvl
     {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)} (D : LowerRamificationData v) :
-    (⨅ m : ℕ, D.gp m) = D.lvl := sorry
+    (⨅ m : ℕ, D.gp m) = D.lvl := by
+  refine le_antisymm ?_ (le_iInf fun m => D.lvl_le_gp m)
+  intro σ hσ
+  rw [Subgroup.mem_iInf] at hσ
+  -- Step 1: `σ` fixes every `N`-fixed integer of `Kᵥᵃˡᵍ`.
+  have hA : ∀ x : IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure (v.adicCompletion K)),
+      (∀ τ ∈ D.lvl, τ • x = x) → σ • x = x := by
+    intro x hx
+    have hdvd : ∀ m : ℕ, D.unif ^ m ∣ σ • x - x := by
+      intro m
+      cases m with
+      | zero => rw [pow_zero]; exact one_dvd _
+      | succ n => exact (D.mem_gp n σ).mp (hσ n) x hx
+    exact sub_eq_zero.mp
+      (eq_zero_of_forall_pow_dvd_integralClosure v D.unif_not_isUnit hdvd)
+  -- Step 2: the infinite Galois correspondence at the OPEN subgroup `N`.
+  have hclosed : IsClosed (D.lvl :
+      Set (Field.absoluteGaloisGroup (v.adicCompletion K))) :=
+    Subgroup.isClosed_of_isOpen _ D.lvl_isOpen
+  have hcorr : (IntermediateField.fixedField D.lvl).fixingSubgroup = D.lvl :=
+    InfiniteGalois.fixingSubgroup_fixedField
+      (⟨D.lvl, hclosed⟩ : ClosedSubgroup (Field.absoluteGaloisGroup (v.adicCompletion K)))
+  rw [← hcorr, IntermediateField.fixingSubgroup, mem_fixingSubgroup_iff]
+  intro y hy
+  exact smul_eq_self_of_forall_smul_integralClosure_eq_self v hA
+    (fun τ hτ => (IntermediateField.mem_fixedField_iff _ y).mp hy τ hτ)
 
 /-- **THE FINITE LEVELS SEPARATE POINTS**, `⋂_D N_D = 1`. This is
 profiniteness of `Γ Kᵥ` together with the fact that EVERY open normal subgroup
