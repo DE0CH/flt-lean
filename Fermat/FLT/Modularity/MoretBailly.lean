@@ -29535,7 +29535,10 @@ of §3's five inputs is absent from `Fermat/`, from the mathlib pin, and from
 `~/cs/FLT`.** These are the greps that would REFUTE it — run them rather than re-reading
 the paper:
 
-* `grep -rn "PicardScheme\|PicardFunctor\|Pic⁰\|picardGroupScheme" --include=*.lean Fermat/ .lake/packages/mathlib/ ~/cs/FLT/`
+* **STALE SINCE 2026-07-27 — see the CORRECTION dated 2026-07-29 at the end of this
+  docstring: the relative Picard scheme and `Pic⁰` now exist in `Fermat/`, under names this
+  grep does not match.** The bullet as originally written:
+  `grep -rn "PicardScheme\|PicardFunctor\|Pic⁰\|picardGroupScheme" --include=*.lean Fermat/ .lake/packages/mathlib/ ~/cs/FLT/`
   — no Picard SCHEME or functor anywhere. Mathlib's `CommRing.Pic R`
   (`Mathlib/RingTheory/PicardGroup.lean`) is the Picard *group of a ring* — invertible
   modules up to isomorphism, a `CommGroup`, with `ClassGroup.equivPic` for a domain. It
@@ -29584,7 +29587,9 @@ corrections and one extension, because the survey as written says less than it s
   merely unproven — the sheaves it is about cannot be written**, and that, not the Picard
   scheme, is the largest single missing chapter.
 
-**SURVEY RE-RUN A THIRD TIME AND UNCHANGED (2026-07-27, after release 4).** All five
+**SURVEY RE-RUN A THIRD TIME AND UNCHANGED (2026-07-27, after release 4).** *[Its
+Picard-scheme, invertible-sheaf and ampleness clauses were overtaken LATER THE SAME DAY;
+the 2026-07-29 CORRECTION at the end of this docstring supersedes them.]* All five
 absence greps above, plus the ten measured absences in the EXTENSION bullet, were
 re-executed against `Fermat/`, the pin and `~/cs/FLT`. Every one still returns
 nothing outside this docstring: `CartierDivisor`, `WeilDivisor`, `InvertibleSheaf`,
@@ -29620,7 +29625,9 @@ obligation is discharged (`hZ` is proven upstream), and the `residueCardTwo` lay
 break that gates its two sibling leaves does not touch it. What stands between it and a
 proof is the five absent chapters above, in the order §3.2 → §3.4 → §3.5 → §3.8 → §3.10.
 A prover dispatched here without at least the Picard scheme and the symmetric power in
-hand has nothing to write.
+hand has nothing to write. **The last sentence is HALF STALE as of 2026-07-29: the Picard
+scheme IS in hand (`Fermat.IsRelPicOf`, `Fermat.IsRelPicZeroOf`), the symmetric power is
+not. See the CORRECTION at the end.**
 
 FAITHFULNESS. Re-checked against the paper itself (2026-07-27), not a summary. `hdim`
 and `hXdim` are `dim = 1` ("`dim(X_K) = 1`", 3.1); `hZ` is `z > 0` (3.1, and it is what
@@ -29721,11 +29728,144 @@ rather than repeat the search. This is deliberately NOT an unscoped "irreducible
 **WHAT WOULD ACTUALLY UNBLOCK THIS LEAF, in dependency order, with the largest item first.**
 The survey above names five absent chapters; the measurement added to it today reorders
 them. §3.6 is the deepest: it is Riemann–Roch plus `R¹`-vanishing for a sheaf on `X̄`, and
-at this pin there is no invertible sheaf, no ampleness and no coherent cohomology at all, so
-its STATEMENT cannot be written, let alone proved. §3.2's `X̄^(d)` and §3.4's `PG_d(X̄,Z)`
+at this pin there is no `𝒪(D)`, no `deg` and no `genus`, so it cannot be
+PROVED. **Two clauses that used to stand here are FALSE and are corrected at the end of
+this docstring (2026-07-29): "its STATEMENT cannot be written" — the sheaf and its `Hⁿ`
+both compile today — and "no ampleness", which is true of the mathlib pin but not of this
+project, where `Fermat.IsAmpleSheaf` is in this module's import closure.** §3.2's `X̄^(d)`
+and §3.4's `PG_d(X̄,Z)`
 come next and are each a development in their own right. Only §3.5 and §3.7–3.9 are
 "ordinary" work once those exist. The one brick that IS present and that any of this would
-build on is `AlgebraicGeometry.ord`, recorded in the survey correction above. -/
+build on is `AlgebraicGeometry.ord`, recorded in the survey correction above.
+
+**CORRECTION (A), 2026-07-29 — THE PICARD SCHEME, `Pic⁰`, THE INVERTIBLE SHEAF AND
+AMPLENESS ARE ALL IN `Fermat/` AND HAVE BEEN SINCE THE EVENING OF 2026-07-27, i.e. since
+a few hours after the third survey re-run above.** The survey's greps were correct when
+executed; the names that landed match none of their patterns, which is why three re-runs
+agreed with each other. What exists today, checked by reading the files:
+
+* `Fermat.IsInvertibleSheaf` (`ModularCurve/RelativePicard.lean:239`) — an invertible
+  `𝒪_Z`-module on a scheme, over `Fermat.modTensor` / `Fermat.modUnit` /
+  `Fermat.modPullback`, with a recorded proof that it is SATISFIABLE (so the structures
+  below are not vacuous);
+* `Fermat.IsAmpleSheaf` (`Modularity/AmpleSheaf.lean:276`) — ampleness, with the
+  `modTensorPow` / `nonvanishingLocus` API around it;
+* `Fermat.IsRelPicOf` (`:405`) — the FULL relative Picard functor `T ↦ Pic(X_T)/Pic(T)`
+  with `inj`, `surj` and naturality, i.e. §3.4's `Pic_{X̄/B}`; and `Fermat.IsRelPicZeroOf`
+  (`:327`) — `Pic⁰` as an abelian scheme with the Abel–Jacobi map;
+* `Fermat.exists_relPicZero` (`:661`) — **PROVEN**, over the two named leaves
+  `exists_relPicFull` (BLR 8.2/1) and `exists_relPicZero_of_isRelPicOf` (BLR 9.4/4): for a
+  proper, smooth-of-relative-dimension-1, geometrically connected `strX` with a section,
+  `Pic⁰_{X/S}` exists as an abelian scheme over an ARBITRARY base.
+
+That is §3.4's object, over a base general enough for §3.4's use of it. **And all four
+names are ALREADY IN SCOPE in this file** — `Fermat.FLT.ModularCurve.RelativePicard` and
+`Fermat.FLT.Modularity.AmpleSheaf` both lie in this module's `public import` CLOSURE (via
+`Modularity/AbelianScheme.lean`), which was checked by walking `public import` edges and
+not by reading the import block, since only `public` chains carry visibility. So a prover
+here needs no import edit to write `Fermat.IsInvertibleSheaf`, `Fermat.IsAmpleSheaf`,
+`Fermat.IsRelPicOf` or `Fermat.IsRelPicZeroOf` in a statement or a proof body. **This
+docstring was the last surviving copy of the stale claim**: the same correction is already
+recorded ~9700 lines below in this very file, on the Hilbert–Blumenthal cluster, which says
+of a different leaf that "the absence it asserted is NO LONGER an absence" and names
+`Fermat.IsAmpleSheaf` and `Fermat.IsRelPicZeroOf`. Cite these by NAME — the line numbers
+in that note (`AmpleSheaf.lean:156`, `RelativePicard.lean:302`, `exists_relPicZero` at
+`:432`) have all rotted, which is the argument against citing by line at all.
+
+What this does NOT supply, and the distinction is the one that matters here: `IsRelPicOf`
+is the ORDINARY relative Picard functor, whereas §3.4 needs the GENERALISED one
+`PG(X̄, Z)` — pairs `(ℒ, α)` with `α` a trivialisation of `ℒ|_Z` — together with the exact
+sequence `1 → 𝔾_m → (π_Z)_* 𝔾_m → PG(X̄,Z) → Pic_{X̄/B} → 1` that presents it as an
+extension. That is now a DEFINABLE object built on parts that exist, not a missing
+chapter. Reordered accordingly, what is left is: §3.2's `X̄^(d)` (still absent
+everywhere — re-verified today), the trivialisation layer of §3.4, §3.5–3.6's
+Riemann–Roch, and §3.10.2's compactness of `J(K_v)`.
+
+**CORRECTION (B), 2026-07-29 — "THE SHEAVES CANNOT BE WRITTEN" IS FALSE, AND IT WAS FALSE
+BECAUSE THE GREP WAS SCOPED TO `Mathlib/AlgebraicGeometry/`.** The EXTENSION bullet above
+concluded "there is no coherent-sheaf cohomology in `AlgebraicGeometry/` at all (the sole
+`Cohomology` hit is `Sites/ElladicCohomology.lean`)" and from it that §3.6's statement is
+unwritable. The grep is accurate and the inference is not: sheaf cohomology at this pin
+lives in **`Mathlib/CategoryTheory/Sites/SheafCohomology/`** (`Basic.lean`, `Cech.lean`,
+`MayerVietoris.lean`), one directory the survey never looked in. Verified by COMPILING, not
+by grepping — all four of the following elaborate clean (`lake env lean`, exit 0):
+
+* `SheafOfModules.IsLocallyFree L` for `L : X.Modules`, `X : Scheme.{u}` — so a locally
+  free `𝒪_X̄`-module IS an expressible object (`AlgebraicGeometry.Scheme.Modules`, and
+  `Mathlib/Algebra/Category/ModuleCat/Sheaf/LocallyFree.lean`; the rank condition that
+  makes it INVERTIBLE is expressible too, as a condition on the index types of a
+  `LocalGeneratorsData`, though nothing packages it);
+* `IsGrothendieckAbelian.{u} (Sheaf (Opens.grothendieckTopology ↥X) AddCommGrpCat.{u})` —
+  instance found (`Mathlib/Topology/Sheaves/Abelian.lean`);
+* `HasExt.{u} (Sheaf (Opens.grothendieckTopology ↥X) AddCommGrpCat.{u})` — instance found
+  (`IsGrothendieckAbelian.hasExt`);
+* `Sheaf.H ((SheafOfModules.toSheaf X.ringCatSheaf).obj L) n : Type u` — **`Hⁿ(X̄, ℒ)` is a
+  writable type today**, for any scheme and any `𝒪`-module, as `Ext` from the constant
+  sheaf `ℤ` on the Zariski site.
+
+So the boundary moves one notch out, and the move changes what a dispatcher can do here:
+§3.6 is UNPROVEN, not UNSTATABLE, and "`R¹(X̄, 𝒩_d) = 0`" is a proposition someone can
+write down and be dispatched at. Also present and never recorded: the Mayer–Vietoris LONG
+EXACT SEQUENCE in sheaf cohomology (`MayerVietoris.lean`), which is the tool for computing
+`H¹` of a curve from a two-affine cover; the Čech complex (`Cech.lean`);
+`SheafOfModules.IsQuasicoherent` and `Mathlib/AlgebraicGeometry/Modules/Tilde.lean`.
+
+What is genuinely absent FROM THE MATHLIB PIN, re-measured the same day, is a list of
+THEOREMS AND CONSTRUCTIONS rather than of inexpressible objects — `𝒪(D)`, `deg` of a
+divisor, `genus`, ampleness (present in `Fermat/`, see correction (A)), Serre duality,
+Serre's affine vanishing `Hⁿ(affine, quasi-coherent) = 0` for `n ≥ 1`, finiteness of `Hⁱ`
+on a proper scheme, and the symmetric power `X̄^(d)`. That is a weaker and more actionable
+obstruction than the one recorded above. Of the five original absence greps, the symmetric
+power, strong approximation (now PROVEN in this file for the case §3.8 needs) and
+Altman–Kleiman ones were re-run today and still return nothing but this docstring's own
+copies; the Picard-scheme and generalised-Jacobian ones are superseded by correction (A).
+`genus` in particular matches ZERO lines in the whole of `Mathlib/`, case-insensitively,
+which is worth knowing before pricing §3.6.
+
+**A SIXTH AXIS, ABSENT FROM THE AXIS-SCOPED RECORD ABOVE: WHICH PROOF OF THÉORÈME 1.3 TO
+FOLLOW. Searched 2026-07-29 and CLOSED — the elementary route fails by exactly `g`.** It is
+the first thing a prover here will try, so it is recorded rather than left to be
+rediscovered:
+
+* `C` is affine, smooth, of dimension `1` over `ℚ`, so `A = Γ(C, 𝒪)` is a Dedekind domain
+  of finite type over `ℚ` and NOETHER NORMALISATION — not Riemann–Roch — already gives a
+  FINITE map `f : C → 𝔸¹_ℚ`, say of degree `n`; that half really is free, and this module
+  already imports it (`Mathlib.RingTheory.NoetherNormalization`,
+  `exists_finite_inj_algHom_of_fg`). For `a ∈ ℚ` the fibre algebra `A/(f - a)`
+  has `ℚ`-dimension `n` and every one of its points has a NUMBER FIELD residue field. So
+  the tempting route is: choose `a ∈ ℚ` well and read the point off the fibre.
+* It delivers ONE local root, not a split fibre. `hreal`/`hSpt` give a single `K_v`-point
+  `P_v`; for `a` close to `f(P_v)` the real IFT (resp. Hensel) makes exactly ONE of the `n`
+  roots `K_v`-rational and leaves the other `n - 1` unconstrained. A residue field with ONE
+  real embedding is not totally real — and `Nat.card (κ(x) →+* ℝ) = [κ(x) : ℚ]` is the
+  entire difficulty of this leaf, the inequality `≥ 1` being the easy half.
+* Constraining ALL `n` roots means choosing the FUNCTION, not the value: one needs
+  `h ∈ L(D)`, `D = nZ`, whose zero divisor is a prescribed configuration of `K_v`-points.
+  Now `dim_ℚ L(D) = deg D - g + 1` once `deg D > 2g - 2`, while `div₀(h)` has degree
+  `deg D`, and vanishing at a prescribed point is ONE linear condition — so at most
+  `dim L(D) - 1 = deg D - g` of the `deg D` zeros can be prescribed. **Exactly `g` of them
+  stay free, and the deficit is `g` however large `D` is: enlarging the linear system
+  enlarges the dimension and the zero count in lockstep.** Those `g` uncontrolled points
+  are precisely what §3.4 and §3.9–3.10 — the generalised Jacobian, and quasi-compactness
+  of `P₀(K_Σ)/im Γ(Z, 𝒪_Z^×)` — exist to move. For `g = 0` the deficit vanishes and the
+  bullet above IS a proof, which is the sanity check on the count.
+* CONSEQUENCE: there is no route to this leaf through "a bigger linear system", "a cleverer
+  finite map to `𝔸¹`", or a reformulation of the whole statement in Dedekind-domain
+  language (`A` a smooth `ℚ`-algebra of dimension `1`, `∃ m` maximal with `A/m` totally
+  real and split at `S`). The last is a genuine relocation — mathlib's `ClassGroup` even
+  supplies `Pic(A)` — but it loses the TOPOLOGY on `Pic(C)(K_v)`, which is what §3.9's
+  quasi-compactness argument runs on, so it converts a stated blocker into an unstated one.
+  The Jacobian is not an artefact of Moret–Bailly's write-up; it is where the `g` goes.
+
+FAITHFULNESS RE-AUDIT (2026-07-29, third audit; the statement has NOT been recut since the
+uniform-`Σ` restatement, so the audits above are inherited rather than void). Two
+degeneracies were checked that the earlier audits do not mention, both clean. (i) The `∀ a`
+premise can never be VACUOUS — `exists_rat_strongApprox_pi` produces an `a` inside the balls
+for ANY `t`, `w` and `ε > 0` — so no choice of `(d, t, w, ε)` discharges this leaf cheaply;
+that is the same fact as the `d = 0` collapse recorded in the CUT-STRENGTH AUDIT, seen from
+the other side. (ii) `hdim`/`hXdim` are `≤ 1` and so admit dimension `0`, but that case is
+excluded rather than assumed away: a smooth proper geometrically irreducible `X̄/ℚ` of
+dimension `0` is `Spec ℚ`, `hZ` then forces `C = ∅`, and `hreal` contradicts that. -/
 theorem exists_skolemBallDatum_of_projectiveCompactification
     {C Xbar : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
     (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
