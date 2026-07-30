@@ -120,18 +120,32 @@ Together these are eight of `chordDeriv_core`'s ten hypotheses, and with
 `RationalDerivation.polyForm_add` (the instantiation at `RatFunc F`, denominators
 cleared) `isDiffCharCert_add_of_ne` is now **PROVEN**.
 
-**SO THE LEAF LIST IS NOW THREE, AND THIS IS THE ONE TO DISPATCH FROM:**
+**LATER STILL ON 2026-07-30 — THE TWO GROUP-LAW LEAVES ARE PROVEN, AND EACH WAS FALSE AS
+STATED.  EXACTLY ONE LEAF REMAINS:**
 
 * `exists_diffCharScalar_poly` — `(A′B − AB′)·E = c·C·B²` for some `c`.  Genuinely
   geometric (Abel–Jacobi); see the note on it for why no `linear_combination` exists.
-* `chordSum_xWitness` — the chord formula for `x₃`, `y` eliminated, cleared.
-* `chordSum_yMultiplier` — the `y`-part of the chord formula for `y₃`, cleared.
 
-The last two are PURE GROUP-LAW BOOKKEEPING: no derivative, no `ψ₂`, no `c` or `d`
-anywhere in either statement, and each goes by the density pattern this file already
-uses four times.  The count went `2 → 3` and that is a decomposition, not a
-regression: what left the frontier is the differential geometry, which is now
-machine-checked, and what replaced it is the addition law written in coordinates.
+`chordSum_xWitness` and `chordSum_yMultiplier` are **PROVEN**, and both needed a
+correction first: their hypotheses did not include `φ ≠ 0` and `ψ ≠ 0`, and without those
+the `IsRationalMap` certificates are VACUOUS, so *any* polynomial tuple witnesses them and
+each conclusion is a nontrivial identity between arbitrary polynomials.  Explicit
+counterexamples are in the two docstrings; both are `φ = ψ = 0` over `y² = x³ + 1`, and the
+second shows `hψ0` is needed on its own.  This is the SAME trap the section "The
+degenerate-witness trap" above records for `IsDiffChar` itself, one level down — worth
+knowing for any future leaf phrased over a fixed witness tuple.  The repair costs the only
+consumer nothing: `isDiffCharCert_add_of_ne` already derives `hφ0` and `hψ0` from
+`hφP`/`hψP`.  `φ + ψ ≠ 0` and `φ ≠ ψ` need NOT be assumed — `hG` already implies both, by
+`diffChar_add_ne_zero_of_xWitness_ne` (new here).
+
+Two things about the proofs are worth recording because they made them short.  First, the
+crux of `IsRationalMap.add_of_x_ne` — `U = 0`, there a `±P` symmetrisation and a density
+argument — is here a two-term `linear_combination` of `diffChar_yWitness_onePart` for `φ`
+and for `ψ`, because `U = K²·N·[K(2M − N·p) + a₁′LG]` and that bracket is
+`E₁B₁·(1`-part for `ψ`) `− E₂B₂·(1`-part for `φ`).  Second, `chordSum_yMultiplier` needs no
+`±P` symmetrisation at all, its field algebra being isolated as `chordSum_y_core`.  So the
+count went `2 → 3 → 1`: what left the frontier was the differential geometry, and the
+addition law in coordinates went with it.
 
 **Do not attack them from the raw definition.** The section "What the certificate
 really says" below is PROVEN infrastructure written for exactly this purpose:
@@ -1844,6 +1858,40 @@ theorem isDiffChar_mulByHom_two [IsAlgClosed F] [W.IsElliptic] :
   rw [hWr, hY2', hX2', hSq]
   linear_combination Ep.eval (veluPointX P) * hcore
 
+/-- **`hG` already contains `φ + ψ ≠ 0`** (2026-07-30), so neither chord-formula leaf below
+has to assume it.  If `φ + ψ = 0` then `ψ = −φ`, hence `x(ψP) = x(φP)` for every `P` off
+`ker φ` (`velu_pointX_neg`), so `(A₂, B₂)` is a SECOND `x`-witness for `φ` and
+`diffChar_xWitness_eq` returns `A₁B₂ = A₂B₁`.  The same argument with `ψ` in place of `−φ`
+shows `hG` also rules out `φ = ψ`.
+
+`φ ≠ 0` is load-bearing here for the usual reason: it is what makes `ker φ` finite, hence
+`hrat₁` a real constraint rather than a vacuous one. -/
+theorem diffChar_add_ne_zero_of_xWitness_ne [IsAlgClosed F] [W.IsElliptic]
+    {φ ψ : W.Point →+ W'.Point} (hφ0 : φ ≠ 0)
+    {A₁ B₁ C₁ D₁ E₁ A₂ B₂ C₂ D₂ E₂ : F[X]} (hB₁ : B₁ ≠ 0) (hE₁ : E₁ ≠ 0)
+    (hrat₁ : ∀ P : W.Point, φ P ≠ 0 →
+      veluPointX (φ P) * B₁.eval (veluPointX P) = A₁.eval (veluPointX P) ∧
+      veluPointY (φ P) * E₁.eval (veluPointX P)
+        = C₁.eval (veluPointX P) * veluPointY P + D₁.eval (veluPointX P))
+    (hrat₂ : ∀ P : W.Point, ψ P ≠ 0 →
+      veluPointX (ψ P) * B₂.eval (veluPointX P) = A₂.eval (veluPointX P) ∧
+      veluPointY (ψ P) * E₂.eval (veluPointX P)
+        = C₂.eval (veluPointX P) * veluPointY P + D₂.eval (veluPointX P))
+    (hG : A₂ * B₁ - A₁ * B₂ ≠ 0) : φ + ψ ≠ 0 := by
+  intro hz
+  have hψeq : ψ = -φ := eq_neg_of_add_eq_zero_left (by rw [add_comm]; exact hz)
+  have hker : (AddMonoidHom.ker φ : Set W.Point).Finite :=
+    IsRationalMap.finite_ker ⟨A₁, B₁, C₁, D₁, E₁, hB₁, hE₁, hrat₁⟩ hφ0
+  have h2 : ∀ P : W.Point, φ P ≠ 0 →
+      veluPointX (φ P) * B₂.eval (veluPointX P) = A₂.eval (veluPointX P) := by
+    intro P hφP
+    have hψP : ψ P ≠ 0 := by rw [hψeq]; simpa using hφP
+    have h := (hrat₂ P hψP).1
+    rw [hψeq] at h
+    simpa [velu_pointX_neg] using h
+  exact hG (by
+    linear_combination -(diffChar_xWitness_eq hker (fun P h => (hrat₁ P h).1) h2))
+
 /-- **LEAF (opened 2026-07-30): THE CHORD FORMULA FOR THE `x`-COORDINATE, cleared.**
 
 Pure group-law bookkeeping — no differentials, no `c`, no `d`.  With
@@ -1871,12 +1919,44 @@ identity.  `Isogeny.lean`'s `chordAdd_x_core` is the same computation with `y` s
 present and may be reused.
 
 NOT VACUOUS: `hG` is satisfiable (two maps with different `x`-coordinate functions —
-e.g. `1` and `[2]`), and it is load-bearing, being what makes `x₂ − x₁` invertible. -/
+e.g. `1` and `[2]`), and it is load-bearing, being what makes `x₂ − x₁` invertible.
+
+**FALSITY AUDIT (2026-07-30) — THE LEAF WAS FALSE AS FIRST STATED, and the repair is the
+two hypotheses `hφ0`, `hψ0` that the only consumer already holds.**  `IsRationalMap`'s
+certificate is quantified over the points where the map is nonzero, so for `φ = 0` it is
+VACUOUS and *any* tuple `A₁, …, E₁` is a legal witness — the same trap the module docstring
+records for `IsDiffChar`, hit again one level down.  Explicit counterexample, with `F` an
+algebraic closure of `ℚ` and `W = W' : y² = x³ + 1`:
+
+* `φ = ψ = 0` (so all THREE `hrat` are vacuous), `A₁ = 0, B₁ = 1, C₁ = D₁ = 0, E₁ = 1`,
+  `A₂ = 1, B₂ = 1, C₂ = D₂ = 0, E₂ = 1`, `A = 0, B = 1, Cp = Dp = 0, E = 1`.  Then
+  `hG : A₂B₁ − A₁B₂ = 1 ≠ 0` holds, `K = L = G = 1`, `N = M = 0`, `S = 1`, and the
+  conclusion reads `0 = −(a₂′ + 1) = −1`.
+* `hψ0` is needed SEPARATELY: with `φ = 1` and `ψ = 0`, taking `A = A₁ = X`, `B = B₁ = 1`,
+  `Cp = C₁ = 1`, `Dp = D₁ = 0`, `E = E₁ = 1` and `A₂ = 0, B₂ = 1, C₂ = D₂ = 0, E₂ = 1`
+  gives `G = −X ≠ 0`, `N = −1`, `M = 0`, `S = X`, and the conclusion reads
+  `X³ = a₄X + a₆`.
+
+With `φ ≠ 0` and `ψ ≠ 0` the kernels are finite, `hrat₁`/`hrat₂` genuinely pin `A₁/B₁` and
+`A₂/B₂`, and the statement is the chord formula.  Note `φ + ψ ≠ 0` and `φ ≠ ψ` need NOT be
+assumed: both would force `A₂B₁ = A₁B₂` through `diffChar_xWitness_eq`, contradicting `hG`
+(that is `diffChar_add_ne_zero_of_xWitness_ne` below).  `hB`/`hE` are not consumed either
+— the identity is proven by clearing denominators, never by dividing by `B` — and are kept
+in the signature because the consumer has them and because they record the intent of the
+cut.
+
+**PROVEN 2026-07-30.**  Not by re-running `IsRationalMap.add_of_x_ne`'s `±P`
+symmetrisation: the crux of that theorem, `U = 0`, is here a two-term
+`linear_combination` of `diffChar_yWitness_onePart` for `φ` and for `ψ`, because
+`U = K²·N·[K(2M − N·p) + a₁′·L·G]` and the bracket is `E₁B₁·(1`-part for `ψ`)
+`− E₂B₂·(1`-part for `φ`)`.  With `U` polynomially zero the density argument needs only
+`G ≠ 0` and the two kernels — no `2`-torsion, no `−P`. -/
 theorem chordSum_xWitness [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
     {φ ψ : W.Point →+ W'.Point}
     {A₁ B₁ C₁ D₁ E₁ A₂ B₂ C₂ D₂ E₂ A B Cp Dp E : F[X]}
+    (hφ0 : φ ≠ 0) (hψ0 : ψ ≠ 0)
     (hB₁ : B₁ ≠ 0) (hE₁ : E₁ ≠ 0) (hB₂ : B₂ ≠ 0) (hE₂ : E₂ ≠ 0)
-    (hB : B ≠ 0) (hE : E ≠ 0) (hG : A₂ * B₁ - A₁ * B₂ ≠ 0)
+    (_hB : B ≠ 0) (_hE : E ≠ 0) (hG : A₂ * B₁ - A₁ * B₂ ≠ 0)
     (hrat₁ : ∀ P : W.Point, φ P ≠ 0 →
       veluPointX (φ P) * B₁.eval (veluPointX P) = A₁.eval (veluPointX P) ∧
       veluPointY (φ P) * E₁.eval (veluPointX P)
@@ -1894,8 +1974,132 @@ theorem chordSum_xWitness [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
               * (X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆) + (D₂ * E₁ - D₁ * E₂) ^ 2)
           + C W'.a₁ * (D₂ * E₁ - D₁ * E₂) * (A₂ * B₁ - A₁ * B₂) * (B₁ * B₂) ^ 2 * (E₁ * E₂)
           - (C W'.a₂ * (B₁ * B₂) + (A₁ * B₂ + A₂ * B₁))
-            * (A₂ * B₁ - A₁ * B₂) ^ 2 * (E₁ * E₂) ^ 2) :=
-  sorry
+            * (A₂ * B₁ - A₁ * B₂) ^ 2 * (E₁ * E₂) ^ 2) := by
+  classical
+  have hkerφ : (AddMonoidHom.ker φ : Set W.Point).Finite :=
+    IsRationalMap.finite_ker ⟨A₁, B₁, C₁, D₁, E₁, hB₁, hE₁, hrat₁⟩ hφ0
+  have hkerψ : (AddMonoidHom.ker ψ : Set W.Point).Finite :=
+    IsRationalMap.finite_ker ⟨A₂, B₂, C₂, D₂, E₂, hB₂, hE₂, hrat₂⟩ hψ0
+  -- **`U = 0`**, the crux, as a polynomial identity: the `y`-coefficient of the cleared
+  -- chord formula is `K²·N` times the bracket below, and the bracket is the `1`-part
+  -- identity for `ψ` minus the one for `φ`.
+  have hU : B₁ * B₂ * (C 2 * (D₂ * E₁ - D₁ * E₂)
+        - (C₂ * E₁ - C₁ * E₂) * (C W.a₁ * X + C W.a₃))
+      + C W'.a₁ * (E₁ * E₂) * (A₂ * B₁ - A₁ * B₂) = 0 := by
+    linear_combination (E₁ * B₁) * diffChar_yWitness_onePart (W' := W') hkerψ hrat₂
+      - (E₂ * B₂) * diffChar_yWitness_onePart (W' := W') hkerφ hrat₁
+  have hbad : ({t : F | (A₂ * B₁ - A₁ * B₂).eval t = 0}
+      ∪ (veluPointX '' (AddMonoidHom.ker φ : Set W.Point)
+        ∪ veluPointX '' (AddMonoidHom.ker ψ : Set W.Point))).Finite :=
+    (Polynomial.finite_setOf_isRoot hG).union ((hkerφ.image _).union (hkerψ.image _))
+  have hzero : A * ((E₁ * E₂) ^ 2 * (A₂ * B₁ - A₁ * B₂) ^ 2 * (B₁ * B₂))
+      - B * ((B₁ * B₂) ^ 3 * ((C₂ * E₁ - C₁ * E₂) ^ 2
+              * (X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆) + (D₂ * E₁ - D₁ * E₂) ^ 2)
+          + C W'.a₁ * (D₂ * E₁ - D₁ * E₂) * (A₂ * B₁ - A₁ * B₂) * (B₁ * B₂) ^ 2 * (E₁ * E₂)
+          - (C W'.a₂ * (B₁ * B₂) + (A₁ * B₂ + A₂ * B₁))
+            * (A₂ * B₁ - A₁ * B₂) ^ 2 * (E₁ * E₂) ^ 2) = 0 := by
+    refine Polynomial.eq_zero_of_infinite_isRoot _ (Set.Infinite.mono ?_ hbad.infinite_compl)
+    intro t ht
+    simp only [Set.mem_compl_iff, Set.mem_union, not_or, Set.mem_setOf_eq] at ht
+    obtain ⟨hGt, hnkφ, hnkψ⟩ := ht
+    obtain ⟨P, hP0, hPx⟩ := exists_point_veluPointX_eq (W := W) t
+    obtain ⟨x0, y0, hns0, rfl⟩ :
+        ∃ (x0 : F) (y0 : F) (h : W.Nonsingular x0 y0), P = Affine.Point.some x0 y0 h := by
+      cases P with
+      | zero => exact absurd rfl hP0
+      | some a b h => exact ⟨a, b, h, rfl⟩
+    simp only [veluPointX_some] at hPx
+    subst hPx
+    have hφP : φ (Affine.Point.some x0 y0 hns0) ≠ 0 := fun hc =>
+      hnkφ ⟨_, AddMonoidHom.mem_ker.2 hc, rfl⟩
+    have hψP : ψ (Affine.Point.some x0 y0 hns0) ≠ 0 := fun hc =>
+      hnkψ ⟨_, AddMonoidHom.mem_ker.2 hc, rfl⟩
+    obtain ⟨hx₁, hy₁⟩ := hrat₁ (Affine.Point.some x0 y0 hns0) hφP
+    obtain ⟨hx₂, hy₂⟩ := hrat₂ (Affine.Point.some x0 y0 hns0) hψP
+    simp only [veluPointX_some, veluPointY_some] at hx₁ hy₁ hx₂ hy₂
+    rcases hφ' : φ (Affine.Point.some x0 y0 hns0) with _ | ⟨x₁, y₁', hns₁⟩
+    · exact absurd hφ' hφP
+    rcases hψ' : ψ (Affine.Point.some x0 y0 hns0) with _ | ⟨x₂, y₂', hns₂⟩
+    · exact absurd hψ' hψP
+    rw [hφ'] at hx₁ hy₁
+    rw [hψ'] at hx₂ hy₂
+    simp only [veluPointX_some, veluPointY_some] at hx₁ hy₁ hx₂ hy₂
+    have hxne : x₁ ≠ x₂ := by
+      intro hc
+      refine hGt ?_
+      simp only [Polynomial.eval_sub, Polynomial.eval_mul]
+      rw [← hx₁, ← hx₂, hc]
+      ring
+    -- `hG` also supplies `(φ + ψ) P ≠ 0`: two points with distinct `x` never sum to `0`.
+    have hsumne : (φ + ψ) (Affine.Point.some x0 y0 hns0) ≠ 0 := by
+      show φ (Affine.Point.some x0 y0 hns0) + ψ (Affine.Point.some x0 y0 hns0) ≠ 0
+      rw [hφ', hψ', Affine.Point.add_of_X_ne hxne]
+      simp
+    obtain ⟨hx3w, -⟩ := hrat (Affine.Point.some x0 y0 hns0) hsumne
+    simp only [veluPointX_some] at hx3w
+    have hxx : veluPointX ((φ + ψ) (Affine.Point.some x0 y0 hns0))
+        = W'.slope x₁ x₂ y₁' y₂' ^ 2 + W'.a₁ * W'.slope x₁ x₂ y₁' y₂' - W'.a₂ - x₁ - x₂ := by
+      show veluPointX (φ (Affine.Point.some x0 y0 hns0)
+        + ψ (Affine.Point.some x0 y0 hns0)) = _
+      rw [hφ', hψ', Affine.Point.add_of_X_ne hxne]
+      rfl
+    rw [hxx] at hx3w
+    have hL : W'.slope x₁ x₂ y₁' y₂' * (x₁ - x₂) = y₁' - y₂' := by
+      rw [Affine.slope_of_X_ne hxne]
+      exact div_mul_cancel₀ _ (sub_ne_zero.2 hxne)
+    have hEq : y0 ^ 2 + W.a₁ * x0 * y0 + W.a₃ * y0
+        = x0 ^ 3 + W.a₂ * x0 ^ 2 + W.a₄ * x0 + W.a₆ := (Affine.equation_iff ..).1 hns0.1
+    have hLh := chordAdd_slope_core (A₁.eval x0) (B₁.eval x0) (C₁.eval x0) (D₁.eval x0)
+      (E₁.eval x0) (A₂.eval x0) (B₂.eval x0) (C₂.eval x0) (D₂.eval x0) (E₂.eval x0)
+      x₁ y₁' x₂ y₂' y0 (W'.slope x₁ x₂ y₁' y₂') hx₁ hx₂ hy₁ hy₂ hL
+    have hkx : (x₁ + x₂) * (B₁.eval x0 * B₂.eval x0)
+        = A₁.eval x0 * B₂.eval x0 + A₂.eval x0 * B₁.eval x0 := by
+      linear_combination (B₂.eval x0) * hx₁ + (B₁.eval x0) * hx₂
+    have hcore := chordAdd_x_core W'.a₁ W'.a₂ W.a₁ W.a₂ W.a₃ W.a₄ W.a₆ x0 y0 x₁ x₂
+      (W'.slope x₁ x₂ y₁' y₂') (B₁.eval x0 * B₂.eval x0)
+      (E₁.eval x0 * E₂.eval x0 * (A₂.eval x0 * B₁.eval x0 - A₁.eval x0 * B₂.eval x0))
+      (C₂.eval x0 * E₁.eval x0 - C₁.eval x0 * E₂.eval x0)
+      (D₂.eval x0 * E₁.eval x0 - D₁.eval x0 * E₂.eval x0)
+      (A₁.eval x0 * B₂.eval x0 + A₂.eval x0 * B₁.eval x0) hkx hEq hLh
+    have hUt := congrArg (Polynomial.eval x0) hU
+    simp only [Polynomial.eval_add, Polynomial.eval_sub, Polynomial.eval_mul,
+      Polynomial.eval_C, Polynomial.eval_X, Polynomial.eval_zero] at hUt
+    show (_ : F) = 0
+    simp only [Polynomial.eval_sub, Polynomial.eval_add, Polynomial.eval_mul,
+      Polynomial.eval_pow, Polynomial.eval_C, Polynomial.eval_X]
+    linear_combination
+      (-((E₁.eval x0 * E₂.eval x0
+            * (A₂.eval x0 * B₁.eval x0 - A₁.eval x0 * B₂.eval x0)) ^ 2
+          * (B₁.eval x0 * B₂.eval x0))) * hx3w
+      + (B.eval x0) * hcore
+      + (B.eval x0 * (B₁.eval x0 * B₂.eval x0) ^ 2
+          * (C₂.eval x0 * E₁.eval x0 - C₁.eval x0 * E₂.eval x0) * y0) * hUt
+  linear_combination hzero
+
+omit [DecidableEq F] in
+/-- **The `y`-multiplier relation of a chord sum, as pure field algebra.**  `p` is `ψ₂(P)`;
+`hp3`, `hp1`, `hp2` are `diffChar_psi_image_eq` at the three image points with the
+`B`-factors cancelled (`ψ₂′(Qᵢ)·eᵢ = cᵢ·p`); `hy3` and `hL` are the chord/tangent group
+law, `y₃ = −(λ(x₃ − x₁) + y₁) − a₁′x₃ − a₃′` and `λ(x₁ − x₂) = y₁ − y₂`.
+
+The whole content is the internal `hgeo`, which is `ψ₂′(Q₃) + ψ₂′(Q₁) = −(2λ + a₁′)(x₃ − x₁)`
+against `ψ₂′(Q₂) − ψ₂′(Q₁) = (2λ + a₁′)(x₂ − x₁)` — the two cancel after multiplying by
+`(x₂ − x₁)` and `(x₃ − x₁)` respectively.  Note the conclusion carries the factor `p`: the
+statement is `(…)·p = 0`, and `p ≠ 0` off the `2`-torsion is what the caller supplies. -/
+theorem chordSum_y_core (α₁ α₃ p x₁ y₁ x₂ y₂ x₃ y₃ L e e₁ e₂ cp c₁ c₂ : F)
+    (hy3 : y₃ = -(L * (x₃ - x₁) + y₁) - α₁ * x₃ - α₃)
+    (hL : L * (x₁ - x₂) = y₁ - y₂)
+    (hp3 : (2 * y₃ + α₁ * x₃ + α₃) * e = cp * p)
+    (hp1 : (2 * y₁ + α₁ * x₁ + α₃) * e₁ = c₁ * p)
+    (hp2 : (2 * y₂ + α₁ * x₂ + α₃) * e₂ = c₂ * p) :
+    (cp * (x₂ - x₁) * e₁ * e₂ + c₁ * (x₂ - x₁) * e * e₂
+      + (c₂ * e₁ - c₁ * e₂) * (x₃ - x₁) * e) * p = 0 := by
+  have hgeo : (2 * y₃ + α₁ * x₃ + α₃) * (x₂ - x₁) + (2 * y₁ + α₁ * x₁ + α₃) * (x₂ - x₁)
+      + ((2 * y₂ + α₁ * x₂ + α₃) - (2 * y₁ + α₁ * x₁ + α₃)) * (x₃ - x₁) = 0 := by
+    rw [hy3]; linear_combination (2 * (x₃ - x₁)) * hL
+  linear_combination (-((x₂ - x₁) * e₁ * e₂)) * hp3
+    + (-((x₂ - x₁) * e * e₂) + (x₃ - x₁) * e * e₂) * hp1
+    + (-((x₃ - x₁) * e * e₁)) * hp2 + (e * e₁ * e₂) * hgeo
 
 /-- **LEAF (opened 2026-07-30): THE CHORD FORMULA FOR THE `y`-MULTIPLIER, cleared.**
 
@@ -1908,10 +2112,25 @@ THE ROUTE, and it needs NO `±P` symmetrisation, which is what makes it short:
 `ψ₂′(Q₁) = γ₁·ψ₂(P)`; the group law gives
 `ψ₂′(Q₃) = −ψ₂′(Q₁) − (2λ + a₁′)(x₃ − x₁)`; and
 `(2λ + a₁′)(x₂ − x₁) = Γ·ψ₂(P)` by `diffChar_yWitness_onePart`.  So the whole relation
-carries a factor `ψ₂(P)`, nonzero off the (finite) `2`-torsion, and density finishes. -/
+carries a factor `ψ₂(P)`, nonzero off the (finite) `2`-torsion, and density finishes.
+
+**FALSITY AUDIT (2026-07-30) — FALSE AS FIRST STATED, same defect as `chordSum_xWitness`
+and the same repair.**  With `φ = ψ = 0` all three `hrat` are vacuous, so over `F = ℚ̄`
+and `W = W' : y² = x³ + 1` the tuple `A₁ = 0, B₁ = 1, C₁ = D₁ = 0, E₁ = 1`,
+`A₂ = 1, B₂ = 1, C₂ = D₂ = 0, E₂ = 1`, `A = 0, B = 1, Cp = 1, Dp = 0, E = 1` satisfies
+every hypothesis (`hG : 1 ≠ 0`) and the conclusion reads `1 + 0 + 0 = 0`.  Adding
+`hφ0 : φ ≠ 0` and `hψ0 : ψ ≠ 0` — both held by the only consumer — repairs it, and
+`φ + ψ ≠ 0` is then automatic from `hG` by
+`diffChar_add_ne_zero_of_xWitness_ne`.
+
+**PROVEN 2026-07-30** along the route above, with the field algebra isolated as
+`chordSum_y_core` just above.  No `±P` symmetrisation, and the only geometric inputs are
+`Affine.Point.add_of_X_ne` / `Affine.slope_of_X_ne` and the three
+`diffChar_psi_image_eq` instances. -/
 theorem chordSum_yMultiplier [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
     {φ ψ : W.Point →+ W'.Point}
     {A₁ B₁ C₁ D₁ E₁ A₂ B₂ C₂ D₂ E₂ A B Cp Dp E : F[X]}
+    (hφ0 : φ ≠ 0) (hψ0 : ψ ≠ 0)
     (hB₁ : B₁ ≠ 0) (hE₁ : E₁ ≠ 0) (hB₂ : B₂ ≠ 0) (hE₂ : E₂ ≠ 0)
     (hB : B ≠ 0) (hE : E ≠ 0) (hG : A₂ * B₁ - A₁ * B₂ ≠ 0)
     (hrat₁ : ∀ P : W.Point, φ P ≠ 0 →
@@ -1928,8 +2147,140 @@ theorem chordSum_yMultiplier [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
         = Cp.eval (veluPointX P) * veluPointY P + Dp.eval (veluPointX P)) :
     Cp * (A₂ * B₁ - A₁ * B₂) * (E₁ * E₂) * B
         + C₁ * (A₂ * B₁ - A₁ * B₂) * E * E₂ * B
-        + (C₂ * E₁ - C₁ * E₂) * (A * B₁ - A₁ * B) * E * B₂ = 0 :=
-  sorry
+        + (C₂ * E₁ - C₁ * E₂) * (A * B₁ - A₁ * B) * E * B₂ = 0 := by
+  classical
+  have hkerφ : (AddMonoidHom.ker φ : Set W.Point).Finite :=
+    IsRationalMap.finite_ker ⟨A₁, B₁, C₁, D₁, E₁, hB₁, hE₁, hrat₁⟩ hφ0
+  have hkerψ : (AddMonoidHom.ker ψ : Set W.Point).Finite :=
+    IsRationalMap.finite_ker ⟨A₂, B₂, C₂, D₂, E₂, hB₂, hE₂, hrat₂⟩ hψ0
+  have hsum0 : φ + ψ ≠ 0 :=
+    diffChar_add_ne_zero_of_xWitness_ne hφ0 hB₁ hE₁ hrat₁ hrat₂ hG
+  have hkers : (AddMonoidHom.ker (φ + ψ) : Set W.Point).Finite :=
+    IsRationalMap.finite_ker ⟨A, B, Cp, Dp, E, hB, hE, hrat⟩ hsum0
+  have hprod : (A₂ * B₁ - A₁ * B₂) * B₁ * B₂ * B ≠ 0 :=
+    mul_ne_zero (mul_ne_zero (mul_ne_zero hG hB₁) hB₂) hB
+  have hbad : ({t : F | ((A₂ * B₁ - A₁ * B₂) * B₁ * B₂ * B).eval t = 0}
+      ∪ ((veluPointX '' (AddMonoidHom.ker φ : Set W.Point)
+          ∪ veluPointX '' (AddMonoidHom.ker ψ : Set W.Point))
+        ∪ veluPointX '' {R : W.Point | (2 : ℕ) • R = 0})).Finite :=
+    (Polynomial.finite_setOf_isRoot hprod).union
+      (((hkerφ.image _).union (hkerψ.image _)).union
+        ((finite_nsmulKer (W := W) two_ne_zero).image _))
+  refine Polynomial.eq_zero_of_infinite_isRoot _ (Set.Infinite.mono ?_ hbad.infinite_compl)
+  intro t ht
+  simp only [Set.mem_compl_iff, Set.mem_union, not_or, Set.mem_setOf_eq] at ht
+  obtain ⟨hZ, ⟨hnkφ, hnkψ⟩, htor⟩ := ht
+  obtain ⟨P, hP0, hPx⟩ := exists_point_veluPointX_eq (W := W) t
+  obtain ⟨x0, y0, hns0, rfl⟩ :
+      ∃ (x0 : F) (y0 : F) (h : W.Nonsingular x0 y0), P = Affine.Point.some x0 y0 h := by
+    cases P with
+    | zero => exact absurd rfl hP0
+    | some a b h => exact ⟨a, b, h, rfl⟩
+  simp only [veluPointX_some] at hPx
+  subst hPx
+  have hφP : φ (Affine.Point.some x0 y0 hns0) ≠ 0 := fun hc =>
+    hnkφ ⟨_, AddMonoidHom.mem_ker.2 hc, rfl⟩
+  have hψP : ψ (Affine.Point.some x0 y0 hns0) ≠ 0 := fun hc =>
+    hnkψ ⟨_, AddMonoidHom.mem_ker.2 hc, rfl⟩
+  have h2P : (2 : ℕ) • (Affine.Point.some x0 y0 hns0 : W.Point) ≠ 0 := fun hc =>
+    htor ⟨_, hc, rfl⟩
+  have hpsi : 2 * y0 + W.a₁ * x0 + W.a₃ ≠ 0 := by
+    have := psi_ne_zero_of_two_nsmul_ne_zero (W := W) h2P
+    simpa using this
+  have hZ' : ((A₂ * B₁ - A₁ * B₂) * B₁ * B₂ * B).eval x0 ≠ 0 := hZ
+  simp only [Polynomial.eval_mul, mul_ne_zero_iff] at hZ'
+  obtain ⟨⟨⟨hGt, hb₁⟩, hb₂⟩, hb⟩ := hZ'
+  simp only [Polynomial.eval_sub, Polynomial.eval_mul] at hGt
+  obtain ⟨hx₁, hy₁⟩ := hrat₁ (Affine.Point.some x0 y0 hns0) hφP
+  obtain ⟨hx₂, hy₂⟩ := hrat₂ (Affine.Point.some x0 y0 hns0) hψP
+  simp only [veluPointX_some, veluPointY_some] at hx₁ hy₁ hx₂ hy₂
+  rcases hφ' : φ (Affine.Point.some x0 y0 hns0) with _ | ⟨x₁, y₁', hns₁⟩
+  · exact absurd hφ' hφP
+  rcases hψ' : ψ (Affine.Point.some x0 y0 hns0) with _ | ⟨x₂, y₂', hns₂⟩
+  · exact absurd hψ' hψP
+  rw [hφ'] at hx₁ hy₁
+  rw [hψ'] at hx₂ hy₂
+  simp only [veluPointX_some, veluPointY_some] at hx₁ hy₁ hx₂ hy₂
+  have hxne : x₁ ≠ x₂ := by
+    intro hc
+    refine hGt ?_
+    rw [← hx₁, ← hx₂, hc]; ring
+  have hsumne : (φ + ψ) (Affine.Point.some x0 y0 hns0) ≠ 0 := by
+    show φ (Affine.Point.some x0 y0 hns0) + ψ (Affine.Point.some x0 y0 hns0) ≠ 0
+    rw [hφ', hψ', Affine.Point.add_of_X_ne hxne]
+    simp
+  obtain ⟨hx3w, -⟩ := hrat (Affine.Point.some x0 y0 hns0) hsumne
+  simp only [veluPointX_some] at hx3w
+  have hx3form : veluPointX ((φ + ψ) (Affine.Point.some x0 y0 hns0))
+      = W'.addX x₁ x₂ (W'.slope x₁ x₂ y₁' y₂') := by
+    show veluPointX (φ (Affine.Point.some x0 y0 hns0)
+      + ψ (Affine.Point.some x0 y0 hns0)) = _
+    rw [hφ', hψ', Affine.Point.add_of_X_ne hxne]; rfl
+  have hy3form : veluPointY ((φ + ψ) (Affine.Point.some x0 y0 hns0))
+      = W'.addY x₁ x₂ y₁' (W'.slope x₁ x₂ y₁' y₂') := by
+    show veluPointY (φ (Affine.Point.some x0 y0 hns0)
+      + ψ (Affine.Point.some x0 y0 hns0)) = _
+    rw [hφ', hψ', Affine.Point.add_of_X_ne hxne]; rfl
+  have hy3 : veluPointY ((φ + ψ) (Affine.Point.some x0 y0 hns0))
+      = -(W'.slope x₁ x₂ y₁' y₂'
+          * (veluPointX ((φ + ψ) (Affine.Point.some x0 y0 hns0)) - x₁) + y₁')
+        - W'.a₁ * veluPointX ((φ + ψ) (Affine.Point.some x0 y0 hns0)) - W'.a₃ := by
+    rw [hy3form, hx3form]
+    simp only [Affine.addY, Affine.negY, Affine.negAddY]
+  have hL : W'.slope x₁ x₂ y₁' y₂' * (x₁ - x₂) = y₁' - y₂' := by
+    rw [Affine.slope_of_X_ne hxne]
+    exact div_mul_cancel₀ _ (sub_ne_zero.2 hxne)
+  -- the three `diffChar_psi_image_eq` instances, with the `B`-factors cancelled
+  have hp3 : (2 * veluPointY ((φ + ψ) (Affine.Point.some x0 y0 hns0))
+        + W'.a₁ * veluPointX ((φ + ψ) (Affine.Point.some x0 y0 hns0)) + W'.a₃)
+      * E.eval x0 = Cp.eval x0 * (2 * y0 + W.a₁ * x0 + W.a₃) := by
+    refine mul_right_cancel₀ hb ?_
+    have h := diffChar_psi_image_eq (W' := W') hkers hrat
+      (Affine.Point.some x0 y0 hns0) hsumne
+    simp only [veluPointX_some, veluPointY_some] at h
+    linear_combination h
+  have hp1 : (2 * y₁' + W'.a₁ * x₁ + W'.a₃) * E₁.eval x0
+      = C₁.eval x0 * (2 * y0 + W.a₁ * x0 + W.a₃) := by
+    refine mul_right_cancel₀ hb₁ ?_
+    have h := diffChar_psi_image_eq (W' := W') hkerφ hrat₁
+      (Affine.Point.some x0 y0 hns0) hφP
+    rw [hφ'] at h
+    simp only [veluPointX_some, veluPointY_some] at h
+    linear_combination h
+  have hp2 : (2 * y₂' + W'.a₁ * x₂ + W'.a₃) * E₂.eval x0
+      = C₂.eval x0 * (2 * y0 + W.a₁ * x0 + W.a₃) := by
+    refine mul_right_cancel₀ hb₂ ?_
+    have h := diffChar_psi_image_eq (W' := W') hkerψ hrat₂
+      (Affine.Point.some x0 y0 hns0) hψP
+    rw [hψ'] at h
+    simp only [veluPointX_some, veluPointY_some] at h
+    linear_combination h
+  have hcore := chordSum_y_core W'.a₁ W'.a₃ (2 * y0 + W.a₁ * x0 + W.a₃)
+    x₁ y₁' x₂ y₂' (veluPointX ((φ + ψ) (Affine.Point.some x0 y0 hns0)))
+    (veluPointY ((φ + ψ) (Affine.Point.some x0 y0 hns0))) (W'.slope x₁ x₂ y₁' y₂')
+    (E.eval x0) (E₁.eval x0) (E₂.eval x0) (Cp.eval x0) (C₁.eval x0) (C₂.eval x0)
+    hy3 hL hp3 hp1 hp2
+  have hbr : Cp.eval x0 * (x₂ - x₁) * E₁.eval x0 * E₂.eval x0
+      + C₁.eval x0 * (x₂ - x₁) * E.eval x0 * E₂.eval x0
+      + (C₂.eval x0 * E₁.eval x0 - C₁.eval x0 * E₂.eval x0)
+        * (veluPointX ((φ + ψ) (Affine.Point.some x0 y0 hns0)) - x₁) * E.eval x0 = 0 := by
+    rcases mul_eq_zero.mp hcore with h | h
+    · exact h
+    · exact absurd h hpsi
+  have hGt' : A₂.eval x0 * B₁.eval x0 - A₁.eval x0 * B₂.eval x0
+      = B₁.eval x0 * B₂.eval x0 * (x₂ - x₁) := by
+    linear_combination (-(B₁.eval x0)) * hx₂ + (B₂.eval x0) * hx₁
+  have hAB : A.eval x0 * B₁.eval x0 - A₁.eval x0 * B.eval x0
+      = B.eval x0 * B₁.eval x0
+        * (veluPointX ((φ + ψ) (Affine.Point.some x0 y0 hns0)) - x₁) := by
+    linear_combination (-(B₁.eval x0)) * hx3w + (B.eval x0) * hx₁
+  show (_ : F) = 0
+  simp only [Polynomial.eval_add, Polynomial.eval_sub, Polynomial.eval_mul]
+  linear_combination
+    (Cp.eval x0 * (E₁.eval x0 * E₂.eval x0) * B.eval x0
+      + C₁.eval x0 * E.eval x0 * E₂.eval x0 * B.eval x0) * hGt'
+    + ((C₂.eval x0 * E₁.eval x0 - C₁.eval x0 * E₂.eval x0) * E.eval x0 * B₂.eval x0) * hAB
+    + (B.eval x0 * B₁.eval x0 * B₂.eval x0) * hbr
 
 /-- **LEAF (chord branch of additivity): the differential certificate of a sum,
 at a generic point.**
@@ -2130,9 +2481,9 @@ theorem isDiffCharCert_add_of_ne [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
       (diffChar_curveEq (W' := W') hkerφ hB₁ hE₁ hrat₁)
       (diffChar_curveEq (W' := W') hkerψ hB₂ hE₂ hrat₂)
       (chordSum_xWitness (φ := φ) (ψ := ψ) (Cp := Cp) (Dp := D)
-        hB₁ hE₁ hB₂ hE₂ hB hE hG hrat₁ hrat₂ hrat)
+        hφ0 hψ0 hB₁ hE₁ hB₂ hE₂ hB hE hG hrat₁ hrat₂ hrat)
       (chordSum_yMultiplier (φ := φ) (ψ := ψ) (Cp := Cp) (Dp := D)
-        hB₁ hE₁ hB₂ hE₂ hB hE hG hrat₁ hrat₂ hrat)
+        hφ0 hψ0 hB₁ hE₁ hB₂ hE₂ hB hE hG hrat₁ hrat₂ hrat)
   -- the certificate at `P`, by cancelling the single factor `B (x P)`
   obtain ⟨hx, hy⟩ := hrat P hsumP
   refine isDiffCharCert_of_reduced hx hy ?_
