@@ -14746,9 +14746,39 @@ accounting of what the cut does and does not buy, and for the full route.  The o
 thing worth repeating here, because it is what makes this the right spelling:
 `exists_unramified_extension_of_residueField`
 (`Fermat/FLT/Mathlib/RingTheory/Unramified/LocalRing.lean`, PROVEN, and NOT yet in
-this file's public import closure) hands back a DVR `S` with `𝔪_S = 𝔪_R·S` — an
-ideal identity, not an inertia statement — so this conclusion is what a consumer of
-that theorem can produce without first redoing Hilbert's `|I| = e`.
+this file's public import closure) hands back a DVR `S` whose ramification over `R`
+is trivial, so this conclusion is what a consumer of that theorem can produce
+without first redoing Hilbert's `|I| = e`.
+
+**ROUTE CORRECTION, 2026-07-30 — THE INPUT DOES NOT CONTAIN THE IDEAL IDENTITY.**
+Read against the source, `exists_unramified_extension_of_residueField` does NOT
+conclude `𝔪_S = 𝔪_R·S`; that clause is nowhere in its statement.  What it actually
+returns is
+`Module.finrank K L = Module.finrank (ResidueField R) k'`,
+`Nonempty (ResidueField S ≃ₐ[ResidueField R] k')`, and the primitive-element data
+`⟨θ, Q⟩` with `Q` monic over `R`, `Algebra.adjoin K {θ} = ⊤` and `Q.map (residue R)`
+separable — together with `IsDiscreteValuationRing S`, `Module.Finite R S`,
+`IsFractionRing S L` and `IsLocalHom (algebraMap R S)`.  The `e = 1` statement
+appears only as an informal parenthetical in that module's docstring ("the residue
+degree being `[L : K]` forces ramification index `1`"), which is TRUE but is a
+remark, not a conclusion.  Both this docstring and the parent's asserted that the
+identity was delivered "verbatim"; it is not, and a successor that plans around
+that will be one lemma short.
+
+**AND HERE IS THAT LEMMA, WHICH IS SHORT — the missing step is a DIMENSION COUNT,
+not `e·f = n`.**  Write `k = ResidueField R`, `f = d`.  Mathlib's
+`Ideal.finrank_quotient_map` (`Mathlib/NumberTheory/RamificationInertia/Basic.lean:224`,
+for `S` the integral closure of a Dedekind `R` in `L`) — or the local-ring form
+`IsLocalRing.finrank_quotient_map` (`Mathlib/RingTheory/LocalRing/Quotient.lean:65`,
+which wants `Module.Free R S`, automatic for a finite torsion-free module over a
+DVR) — gives
+`finrank k (S ⧸ 𝔪_R·S) = finrank K L = d`.
+The reduction `S ⧸ 𝔪_R·S ↠ S ⧸ 𝔪_S = ResidueField S` is a surjection of
+`k`-spaces, and `ResidueField S ≃ₐ[k] k'` already has dimension `d`.  Equal finite
+dimensions force the surjection to be injective, i.e. `𝔪_R·S = 𝔪_S`, and
+`𝔪_R = span {3}` (`maximalIdeal_adicCompletionIntegers_eq_span Nat.prime_three`)
+turns that into the conclusion.  So NO appeal to `Ideal.sum_ramification_inertia`
+and no ramification-index API is needed at all.
 
 WHAT REMAINS, unchanged from the parent: apply that theorem with `R = 𝒪₃ᵥ`,
 `K = ℚ₃ᵥ`, `k' = GF(3^d)` over `ResidueField 𝒪₃ᵥ`; embed the abstract `L` into the
@@ -14756,7 +14786,34 @@ algebraically closed `ℚ₃ᵥᵃˡᵍ` and take `U` to be its image; get `IsGa
 separability (automatic in characteristic zero) plus normality; and identify
 `IntegralClosure 𝒪₃ᵥ U` with `S`, both being the integral closure of `𝒪₃ᵥ` in `U`.
 That last identification is the step that carries `𝔪_S = 𝔪_R·S` across, and it is
-the one this cut does NOT help with. -/
+the one this cut does NOT help with.
+
+**THE `k'` HYPOTHESES ARE ALSO REACHABLE, AND THE PIECES ARE ALREADY IN THE TREE**
+(recorded 2026-07-30 so the next owner does not re-hunt them).  To hand
+`exists_unramified_extension_of_residueField` a `k'` one needs
+`Algebra (ResidueField 𝒪₃ᵥ) k'`, `FiniteDimensional` of dimension `d`, and
+`Algebra.IsSeparable`.  Two ways, both stocked:
+
+* CONCRETE.  `ResidueField 𝒪₃ᵥ ≃+* ZMod 3`, via
+  `GaloisRepresentation.natCard_residue_quotient_toHeightOneSpectrum` for the
+  cardinality and `charP_residueField_adicCompletionIntegers`
+  (`Fermat/FLT/FreyCurve/MazurTorsion.lean`) for the characteristic; the
+  `ZMod.castHom`-is-bijective recipe is written out at
+  `Fermat/FLT/EllipticCurve/WeilPairing.lean:2185-2215` and can be lifted verbatim.
+  Then `k' = GaloisField 3 d` with `Algebra` transported along that `RingEquiv`,
+  `finrank = d` from `GaloisField.finrank`, separability because finite fields are
+  perfect.
+* ABSTRACT, and it avoids computing the cardinality at all.
+  `FiniteField.nonempty_algHom_iff_finrank_dvd`
+  (`Mathlib/FieldTheory/Finite/GaloisField.lean:331`) turns `m ∣ m·d` into an
+  `AlgHom (ResidueField 𝒪₃ᵥ) (GaloisField 3 (m·d))` where `m` is whatever the
+  residue degree happens to be, and `RingHom.toAlgebra` makes it the algebra
+  structure, of `finrank` exactly `d`.
+
+So the ONLY genuinely open mathematics left under this leaf is NORMALITY of the
+unramified extension — the fact that `U` is the splitting field of
+`X^(3^d − 1) − 1`, equivalently that the unramified extension of a given degree is
+unique.  Everything else above is plumbing with named instruments. -/
 theorem exists_span_three_eq_maximalIdeal_and_finrank_eq (d : ℕ) (hd : 0 < d) :
     ∃ (U : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (_ : FiniteDimensional ℚ₃ᵥ U) (_ : IsGalois ℚ₃ᵥ U),
       Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ U)} =
@@ -14819,7 +14876,9 @@ of `~/cs/FLT` and FALSE of this repository:
 `exists_unramified_extension_of_residueField` — a finite separable extension `k'`
 of the residue field of a discrete valuation ring `R` with fraction field `K`
 lifts to `L/K` with `[L : K] = [k' : k]`, together with a DVR `S` with fraction
-field `L`, `𝔪_S = 𝔪_R·S` (ramification index one) and
+field `L`, ramification index one (but see the ROUTE CORRECTION in the leaf's own
+docstring above: that clause is NOT in the theorem's conclusion, only in its
+module docstring, and recovering it costs one dimension count) and
 `ResidueField S ≃ₐ[ResidueField R] k'`.  Apply it with `R = 𝒪₃ᵥ`, `K = ℚ₃ᵥ` and
 `k' = GF(3^d)` over `ResidueField 𝒪₃ᵥ`.
 
@@ -14859,10 +14918,20 @@ are EQUIVALENT in strength, because `#I(U) = e(U/ℚ₃ᵥ)` is already proven h
 content whatever — it is a RESTATEMENT, and its whole value is that it restates the
 open goal in the vocabulary the available input actually speaks: item 3 of the
 "WHAT REMAINS" list above ("read `#I(U) = 1` off `𝔪_S = 3·S` through
-`span_three_eq_maximalIdeal_pow_card_inertia`") is now discharged, and
-`exists_unramified_extension_of_residueField` delivers `𝔪_S = 𝔪_R·S` verbatim
-rather than an inertia statement.  Items 1 and 2 — the embedding into `ℚ₃ᵥᵃˡᵍ` and
-`IsGalois` — are untouched and are where the work still is.
+`span_three_eq_maximalIdeal_pow_card_inertia`") is now discharged, and the
+restated goal is in ideal-theoretic vocabulary rather than inertia vocabulary,
+which is what a consumer of `exists_unramified_extension_of_residueField` can
+actually feed.  Items 1 and 2 — the embedding into `ℚ₃ᵥᵃˡᵍ` and `IsGalois` — are
+untouched and are where the work still is.
+
+**CORRECTED 2026-07-30**: an earlier version of this sentence said that
+`exists_unramified_extension_of_residueField` "delivers `𝔪_S = 𝔪_R·S` verbatim".
+It does not — the ideal identity is absent from its conclusion, appearing only as a
+parenthetical remark in its module docstring.  The one-lemma repair (a
+`finrank_quotient_map` dimension count against `ResidueField S ≃ₐ k'`) is written
+out in the leaf's own docstring above, together with the two available ways to
+construct `k'`.  So the cut is still worth what it was worth; it just does not
+discharge item 3 for free the way this paragraph claimed.
 
 THE IMPORT CAUTION ABOVE WAS RE-CHECKED 2026-07-28 AND IS ACCURATE:
 `Fermat.FLT.Mathlib.RingTheory.Unramified.LocalRing` is reached only by a PRIVATE
@@ -21726,27 +21795,26 @@ theorem pow_sum_card_inertia_inf_sub_one_dvd_relative_local_differentIdeal
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
--- RELEASE-17 MERGE BLOCKER (2026-07-29) — READ BEFORE TOUCHING THIS DECLARATION.
--- `htower` below applies mathlib's `differentIdeal_eq_differentIdeal_mul_differentIdeal`,
--- and on `merger` its instance
+-- RELEASE-17 MERGE BLOCKER (2026-07-29) — RESOLVED 2026-07-30; kept because the
+-- DIAGNOSIS recorded here was wrong in an instructive way.  `htower` inside this
+-- declaration applies mathlib's `differentIdeal_eq_differentIdeal_mul_differentIdeal`,
+-- whose instance argument
 --   `Algebra.IsSeparable (FractionRing 𝒪₃ᵥ) (FractionRing (IntegralClosure 𝒪₃ᵥ ↥L))`
--- FAILS TO SYNTHESISE.  Established facts, so nobody re-derives them:
---   * this theorem is BYTE-IDENTICAL to `main`'s (241 lines, diffed), and `main` is green,
---     so it is an ENVIRONMENT change, not a source defect;
---   * ModThree gained ~1300 lines this release but NO new `instance` and no new global
---     `attribute [instance]` of its own (both checked by diffing the declaration sets);
---   * so the change arrives through an IMPORT.  The candidates added this release are
---     `attribute [instance] Gamma0GITPresentationOver.commRing_A/_B` in `ModularCurve/X0.lean`
---     (which this file imports) and `attribute [instance] HardlyRamifiedRealization.commRing`;
---     a new global `CommRing` instance is exactly the shape that derails an
---     `Algebra.IsSeparable` search.
---   * `set_option maxSynthPendingDepth 4` was TRIED and does NOT fix it — the failure is a
---     dead end in the search, not a depth cutoff.  Do not re-try it.
--- The fix is to supply the instance explicitly at `htower`, next to the three
--- `IsIntegralClosure.*` instances already provided there: over the characteristic-zero
--- `FractionRing 𝒪₃ᵥ = ℚ₃ᵥ` separability is automatic, so it is
--- `PerfectField` + `Algebra.IsAlgebraic` feeding mathlib's instance at
--- `Mathlib/FieldTheory/Perfect.lean:340`.
+-- stopped synthesising.  It was blamed on a new global `CommRing` instance arriving
+-- from `ModularCurve/X0.lean` "derailing the search".  It is not that.  The argument is
+-- stated over `FractionRing.liftAlgebra`, which `Different.lean` installs as a
+-- `local instance` and which is therefore out of scope at every call site outside that
+-- file; this file installs it too, but in `section RelativeDifferentTransport`, which
+-- closes ~370 lines above.  And the road to the separability runs through
+-- `Module.Finite.of_isLocalization`, a `lemma` rather than an `instance` — unreachable
+-- by search at any depth.  Both facts explain the two symptoms recorded at the time
+-- (an explicit `inferInstance` probe failing, and `maxSynthPendingDepth` making no
+-- difference) better than "a redirected search" does.  The repair is written out at
+-- the `htower` step below: name `liftAlgebra`, apply `of_isLocalization` by hand, and
+-- take separability from `PerfectField.ofCharZero` on `FractionRing 𝒪₃ᵥ`.
+-- GENERAL LESSON for the next `Algebra.IsSeparable (FractionRing _) (FractionRing _)`
+-- failure anywhere in this tree: check first whether `FractionRing.liftAlgebra` is in
+-- scope where you are standing.
 /-- **The local Serre different formula, divisibility half, through a
 subextension tower** (PROVEN 2026-07-26; decomposed 2026-07-25 into the
 four `have` steps (i)–(iv) written inside its own proof, all four of
@@ -21974,44 +22042,54 @@ theorem pow_card_inertia_inf_mul_add_sum_dvd_local_differentIdeal
         (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))).map
         (algebraMap (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))
           (IntegralClosure 𝒪₃ᵥ L)) := by
-    -- MERGE-ENVIRONMENT REGRESSION, release 17 (2026-07-29).  NOT a mathematical gap:
-    -- this step is PROVEN on `main` and the enclosing theorem is byte-identical to
-    -- main's over all 241 lines.  What broke is instance resolution.  The proof was
-    --
-    --     haveI : IsFractionRing (IntegralClosure 𝒪₃ᵥ ↥(comap L.val M)) ↥(comap L.val M) := …
-    --     haveI : Module.Finite 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ ↥(comap L.val M)) := …
-    --     haveI : Module.Finite 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ ↥L) := …
-    --     haveI : Module.Finite (IntegralClosure 𝒪₃ᵥ ↥(comap L.val M)) (IntegralClosure 𝒪₃ᵥ ↥L) := …
-    --     exact differentIdeal_eq_differentIdeal_mul_differentIdeal 𝒪₃ᵥ
-    --       (IntegralClosure 𝒪₃ᵥ ↥(comap L.val M)) (IntegralClosure 𝒪₃ᵥ ↥L)
-    --
-    -- and the tower lemma's ONE instance argument
-    --   `Algebra.IsSeparable (FractionRing A) (FractionRing C)`
-    --   (Mathlib/RingTheory/DedekindDomain/Different.lean:570 — the other two
-    --    separability facts are derived inside it)
-    -- no longer synthesises at
-    --   `Algebra.IsSeparable (FractionRing 𝒪₃ᵥ) (FractionRing (IntegralClosure 𝒪₃ᵥ ↥L))`.
-    --
-    -- WHAT HAS BEEN RULED OUT, so nobody repeats it:
-    --   * not a depth cutoff — `set_option maxSynthPendingDepth 4` does not help;
-    --   * not goal-directedness — an explicit
-    --     `haveI : Algebra.IsSeparable … := inferInstance` at this very spot ALSO
-    --     fails, so the instance is unreachable, not merely un-found as a side-goal;
-    --   * not this file — ModThree grew ~1300 lines this release but added no
-    --     `instance` and no global `attribute [instance]` of its own (declaration
-    --     sets diffed against `main`).
-    -- So it arrives through an IMPORT.  The candidate is
-    -- `attribute [instance] Gamma0GITPresentationOver.commRing_A/_B`, made GLOBAL this
-    -- release in `ModularCurve/X0.lean`, which this file imports: a new global
-    -- `CommRing` instance on a structure projection is exactly the shape that
-    -- redirects an `Algebra`/`IsSeparable` search.  The other new global is
-    -- `attribute [instance] HardlyRamifiedRealization.commRing`.
-    --
-    -- The fix is to restore reachability (scope those attributes, or give the
-    -- separability instance a form the search can reach), then delete this `sorry`
-    -- and restore the five lines above.  The statement needs no proof effort — it is
-    -- mathlib's tower formula and it was proven here yesterday.
-    sorry
+    haveI : IsFractionRing (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))
+        ↥(IntermediateField.comap L.val M) :=
+      IsIntegralClosure.isFractionRing_of_finite_extension 𝒪₃ᵥ ℚ₃ᵥ
+        ↥(IntermediateField.comap L.val M)
+        (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))
+    haveI : Module.Finite 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M)) :=
+      IsIntegralClosure.finite 𝒪₃ᵥ ℚ₃ᵥ ↥(IntermediateField.comap L.val M)
+        (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))
+    haveI : Module.Finite 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ ↥L) :=
+      IsIntegralClosure.finite 𝒪₃ᵥ ℚ₃ᵥ ↥L (IntegralClosure 𝒪₃ᵥ ↥L)
+    haveI : Module.Finite (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))
+        (IntegralClosure 𝒪₃ᵥ ↥L) :=
+      Module.Finite.of_restrictScalars_finite 𝒪₃ᵥ
+        (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M)) (IntegralClosure 𝒪₃ᵥ ↥L)
+    /- **RELEASE-17 REGRESSION, REPAIRED 2026-07-30, and here is the actual cause** —
+    the four `haveI`s above plus the `exact` below are exactly the proof that stood on
+    `main` until release 17, and the diagnosis recorded in this slot when it was
+    `sorry`d (a new global `CommRing` instance arriving from `ModularCurve/X0.lean`
+    "redirecting the search") was WRONG.  Nothing was redirected: the tower lemma's
+    instance argument
+
+        `Algebra.IsSeparable (FractionRing A) (FractionRing C)`
+
+    is stated in `Mathlib/RingTheory/DedekindDomain/Different.lean` over the algebra
+    structure `FractionRing.liftAlgebra`, which that file installs with
+    `attribute [local instance]` — so it is NOT in scope at any call site outside it.
+    This file installs it too, in `section RelativeDifferentTransport` above, and that
+    section CLOSES ~370 lines before this declaration.  The route to the separability
+    also passes through `Module.Finite.of_isLocalization`, which is a `lemma` and not
+    an `instance`, so no amount of search depth reaches it: it has to be applied by
+    hand.  That is why the earlier `haveI … := inferInstance` probe failed and why
+    `maxSynthPendingDepth` made no difference.
+
+    So the fix is not to scope anything elsewhere — it is to name the three steps here:
+    the `liftAlgebra` structure itself, the finiteness of `Frac 𝒪_L / Frac 𝒪₃ᵥ` obtained
+    from `Module.Finite 𝒪₃ᵥ 𝒪_L` by localisation, and then separability, which is free
+    because `FractionRing 𝒪₃ᵥ` has characteristic zero, hence is perfect
+    (`PerfectField.ofCharZero`), and a finite extension of it is algebraic. -/
+    letI : Algebra (FractionRing 𝒪₃ᵥ) (FractionRing (IntegralClosure 𝒪₃ᵥ ↥L)) :=
+      FractionRing.liftAlgebra 𝒪₃ᵥ (FractionRing (IntegralClosure 𝒪₃ᵥ ↥L))
+    haveI : IsScalarTower 𝒪₃ᵥ (FractionRing 𝒪₃ᵥ) (FractionRing (IntegralClosure 𝒪₃ᵥ ↥L)) :=
+      FractionRing.isScalarTower_liftAlgebra 𝒪₃ᵥ (FractionRing (IntegralClosure 𝒪₃ᵥ ↥L))
+    haveI : FiniteDimensional (FractionRing 𝒪₃ᵥ) (FractionRing (IntegralClosure 𝒪₃ᵥ ↥L)) :=
+      Module.Finite.of_isLocalization 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ ↥L) (nonZeroDivisors 𝒪₃ᵥ)
+    haveI : Algebra.IsSeparable (FractionRing 𝒪₃ᵥ) (FractionRing (IntegralClosure 𝒪₃ᵥ ↥L)) :=
+      Algebra.IsAlgebraic.isSeparable_of_perfectField
+    exact differentIdeal_eq_differentIdeal_mul_differentIdeal 𝒪₃ᵥ
+      (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M)) (IntegralClosure 𝒪₃ᵥ ↥L)
   -- assembly: the extended hypothesis contributes `𝔪_L^(h₀·d)`
   have hmapd : IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^
       (Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
@@ -48840,43 +48918,123 @@ theorem map_pow_muAction_iff_ray_class (F : Type u) [Field F] [NumberField F]
   have hkk : (k : ZMod m) = (k' : ZMod m) := he1.symm.trans he2
   rw [hspec ζ hζ, pow_eq_pow_val_ray_class hζ k', pow_eq_pow_val_ray_class hζ k, hkk]
 
+/-- **Integers prime to `q` are units of the completed integer ring
+`ℤ_qˆ`** (PROVEN 2026-07-24 — cast-arithmetic helper for the
+unramifiedness bridge `map_localInertiaGroup_fixes_sqrt_neg_three`
+below): if `q ∤ r`, then `r` is a unit of
+`𝒪ᵥ = adicCompletionIntegers ℚ v_q`. A non-unit of the local ring
+`𝒪ᵥ` lies in `𝔪ᵥ = (q)`
+(`maximalIdeal_adicCompletionIntegers_eq_span`), so `r = q·s`; the
+Bézout identity `1 = q·a + r·b` (`Nat.gcd_eq_gcd_ab`, `gcd = 1` since
+`q` is prime and `q ∤ r`) then makes `q` itself a unit, forcing
+`𝔪ᵥ = ⊤`. -/
+theorem isUnit_intCast_adicCompletionIntegers_of_not_dvd
+    {q : ℕ} (hq : q.Prime) (r : ℤ) (hr : ¬ ((q : ℤ) ∣ r)) :
+    IsUnit ((r : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) := by
+  by_contra hnu
+  have hmem : ((r : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) ∈
+      IsLocalRing.maximalIdeal
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat) := by
+    rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff]
+    exact hnu
+  rw [maximalIdeal_adicCompletionIntegers_eq_span hq,
+    Ideal.mem_span_singleton] at hmem
+  obtain ⟨s, hs⟩ := hmem
+  -- Bézout: `1 = q·a + r·b` over `ℤ`
+  have hcop : Nat.gcd q r.natAbs = 1 :=
+    (Nat.Prime.coprime_iff_not_dvd hq).mpr fun hdvd =>
+      hr (Int.dvd_natAbs.mp (Int.natCast_dvd_natCast.mpr hdvd))
+  have hbez := Nat.gcd_eq_gcd_ab q r.natAbs
+  rw [hcop] at hbez
+  have hbez' : (1 : ℤ) = q * Nat.gcdA q r.natAbs +
+      (r.natAbs : ℤ) * Nat.gcdB q r.natAbs := by exact_mod_cast hbez
+  obtain ⟨b, hZ⟩ : ∃ b : ℤ, (1 : ℤ) = q * Nat.gcdA q r.natAbs + r * b := by
+    rcases Int.natAbs_eq r with habs | habs
+    · refine ⟨Nat.gcdB q r.natAbs, ?_⟩
+      rw [← habs] at hbez'
+      exact hbez'
+    · refine ⟨-Nat.gcdB q r.natAbs, ?_⟩
+      have habs' : ((r.natAbs : ℤ)) = -r := by omega
+      rw [habs'] at hbez'
+      linear_combination hbez'
+  have hO := congrArg (fun t : ℤ =>
+    (t : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) hZ
+  push_cast at hO
+  rw [hs] at hO
+  have hqu : IsUnit ((q : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) :=
+    IsUnit.of_mul_eq_one
+      ((Nat.gcdA q r.natAbs : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat) + s * b) (by linear_combination hO.symm)
+  have hqmem : ((q : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) ∈
+      IsLocalRing.maximalIdeal
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat) := by
+    rw [maximalIdeal_adicCompletionIntegers_eq_span hq]
+    exact Ideal.mem_span_singleton_self _
+  exact (IsLocalRing.maximalIdeal.isMaximal _).ne_top
+    (Ideal.eq_top_of_isUnit_mem _ hqmem hqu)
+
 /-- **`ℚ(ζ_m)/ℚ` IS UNRAMIFIED OUTSIDE `m`, IN INERTIA-SUBGROUP FORM**
-(sorry leaf, created 2026-07-29 as sub-leaf (a) of the shared Minkowski
-cut `exists_badPrimes_mul_muFixer_eq_top_ray_class` below, whose earlier
-docstring named exactly this statement as one of its two missing inputs).
+(PROVEN 2026-07-30; created 2026-07-29 as sub-leaf (a) of the shared
+Minkowski cut `exists_badPrimes_mul_muFixer_eq_top_ray_class` below,
+whose earlier docstring named exactly this statement as one of its two
+missing inputs).
 
 For a rational prime `q` NOT dividing `m`, the image in `Γ ℚ` of the
 local inertia group at `q` fixes every `m`-th root of unity, i.e. lands
 in `muFixerRayClass ℚ m = Γ_{ℚ(ζ_m)}`.
 
-**THIS IS THE CONVERSE INERTIA DICTIONARY**, specialised to cyclotomic
-extensions. `MinkowskiUnramified` proves only the forward direction
-(`isUnramifiedAt_of_inertia_le_fixingSubgroup`: *inertia trivial ⟹
-unramified*); the converse *unramified ⟹ inertia trivial* is nowhere in
-`Fermat/`, in mathlib, or in `~/cs/FLT` (re-checked 2026-07-29 by grep,
-confirming the 2026-07-28 finding).
-
-ROUTE FOR A SUCCESSOR. The arithmetic half — `q ∤ m ⟹ q` is unramified
-in `ℚ(ζ_m)/ℚ` — is classical and available ideal-theoretically through
-mathlib's cyclotomic-discriminant material. The missing half is the
-passage from `Algebra.IsUnramifiedAt` back to the LOCAL inertia group,
-i.e. running the chain
+**THE ROUTE ACTUALLY TAKEN IS NOT THE ONE THIS DOCSTRING USED TO
+PRESCRIBE, AND IT IS MUCH CHEAPER — READ THIS BEFORE REACHING FOR THE
+CONVERSE INERTIA DICTIONARY ANYWHERE ELSE IN THIS FILE.** The superseded
+plan was to run
 `exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup →
 inertia_eq_bot_of_le_fixingSubgroup → isUnramifiedAt_of_inertia_le_fixingSubgroup`
-BACKWARDS. Note `Ideal.card_inertia_eq_ramificationIdxIn` (mathlib,
-`RamificationInertia/Galois.lean`) is an EQUALITY, so the ideal-level
-converse `e = 1 ⟹ inertia = ⊥` is free; what genuinely has to be built is
-the local-global step, `e(Q|q) = 1 ⟹ e(M_w/ℚ_q) = 1 ⟹` the local inertia
-acts trivially on `M`, for which `LocalInertiaFixedField.lean`'s
-`restrictNormalHom_inertia_surjective` and `card_inertia_intermediate`
-are the intended tools.
+BACKWARDS, i.e. to build the missing local-global step
+`e(Q|q) = 1 ⟹ e(M_w/ℚ_q) = 1 ⟹` inertia acts trivially on `M`, on top of
+the classical cyclotomic discriminant computation. That is a whole theory,
+and **none of it is needed**: for ROOTS OF UNITY the conclusion follows
+from the DEFINING property of inertia by a two-line Hensel-style argument,
+with no discriminant, no ramification index, and no descent through a
+subextension. Concretely, with `𝒪ᵥ = ℤ_qˆ` and `Z` the integral closure of
+`𝒪ᵥ` in `ℚ̄_qᵥ`:
+
+* a root of unity `ζ` is integral over `𝒪ᵥ` outright — it is a root of the
+  monic `X ^ m - 1` — so it lifts to `Z` with no hypothesis at all;
+* `σ ∈ I` means exactly `σ z - z ∈ 𝔪_Z` for every `z : Z`, so
+  `U = (σ ζ) · ζ ^ (m - 1) = (σ ζ)/ζ` satisfies `U ≡ 1 (mod 𝔪_Z)`, and `U`
+  is itself an `m`-th root of unity;
+* hence `S = ∑_{i < m} U ^ i ≡ m (mod 𝔪_Z)`, and `m` is a UNIT of `𝒪ᵥ`
+  precisely because `q ∤ m` (`isUnit_intCast_adicCompletionIntegers_of_not_dvd`,
+  hoisted above this declaration on 2026-07-30 for exactly this use — its
+  own consumer `map_localInertiaGroup_fixes_sqrt_neg_three` is further
+  below and unaffected), so `S` is a unit of `Z`;
+* `(U - 1) · S = U ^ m - 1 = 0` in a DOMAIN with `S` a unit forces `U = 1`,
+  i.e. `σ ζ = ζ`; injectivity of `AlgebraicClosure.map` descends this from
+  `ℚ̄_qᵥ` to `ℚ̄`.
+
+This is the standard "inertia acts trivially on `μ_m` when `q ∤ m`"
+argument (Serre, *Local Fields* IV §1; Neukirch ANT II §7) and it is
+uniform in `q` — in particular `q = 2` needs no special case, because the
+integrality used is that of `ζ` itself rather than of any Kummer
+generator. The observation worth carrying elsewhere: **the converse
+inertia dictionary is still missing from `Fermat/`, from mathlib and from
+`~/cs/FLT`, and this leaf did not need it.** Before building it, check
+whether the object being fixed is integral and torsion, because then the
+geometric-series trick applies verbatim.
 
 FAITHFULNESS. `_hm : 0 < m` is **NOT USED** and is underscore-prefixed so
 that this is mechanically visible; it is carried only so the statement
 has the same shape as its sibling (b) and can be applied uniformly by the
-glue below. At `m = 0` the hypothesis `¬ q ∣ 0` is already false, so the
-statement is vacuous there rather than wrong; at `m = 1` the conclusion
-is `⊤` and it is trivially true. -/
+glue below. It is not merely unused but REDUNDANT: `¬ q ∣ m` already
+forces `m ≠ 0`, since every `q` divides `0`, and the proof derives `hm0`
+that way. At `m = 1` the conclusion is `⊤` and trivially true. -/
 theorem inertia_le_muFixer_of_not_dvd_ray_class {q : ℕ} (hq : q.Prime) (m : ℕ) (_hm : 0 < m)
     (_hqm : ¬ q ∣ m) :
     Subgroup.map (Field.absoluteGaloisGroup.map (algebraMap ℚ
@@ -48884,7 +49042,169 @@ theorem inertia_le_muFixer_of_not_dvd_ray_class {q : ℕ} (hq : q.Prime) (m : �
           hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
         (localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat)
       ≤ muFixerRayClass ℚ m := by
-  sorry
+  classical
+  -- `m ≠ 0` is FORCED by `¬ q ∣ m` (every `q` divides `0`); `_hm` is genuinely unused.
+  have hm0 : m ≠ 0 := fun h => _hqm (h ▸ dvd_zero q)
+  rintro τ ⟨σ, hσ, rfl⟩ x hx
+  show Field.absoluteGaloisGroup.map (algebraMap ℚ
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) σ x = x
+  -- transport `x` to the local algebraic closure
+  set f : ℚ →+* IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat := algebraMap ℚ _ with hf
+  set xh : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat) := AlgebraicClosure.map f x with hxh
+  have hxhm : xh ^ m = 1 := by rw [hxh, ← map_pow, hx, map_one]
+  -- STEP 1.  `xh` is integral over `𝒪ᵥ`: it is a root of the monic `X ^ m - 1`.
+  have hint : IsIntegral (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat) xh := by
+    refine ⟨Polynomial.X ^ m - 1, ?_, ?_⟩
+    · simpa using Polynomial.monic_X_pow_sub_C
+        (1 : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat) hm0
+    · rw [Polynomial.eval₂_sub, Polynomial.eval₂_pow, Polynomial.eval₂_X, Polynomial.eval₂_one,
+        hxhm, sub_self]
+  set Z : IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) := ⟨xh, hint⟩ with hZ
+  have hZm : Z ^ m = 1 := by
+    apply Subtype.ext
+    show (Z ^ m).1 = (1 : IntegralClosure _ _).1
+    rw [show (Z ^ m).1 = Z.1 ^ m from rfl, hZ]
+    exact hxhm
+  -- STEP 2.  Inertia moves `Z` only inside `𝔪`.
+  have hD := (AddSubgroup.mem_inertia.mp hσ) Z
+  rw [Submodule.mem_toAddSubgroup] at hD
+  -- STEP 3.  `U = (σ • Z) * Z ^ (m - 1)` is an `m`-th root of unity congruent to `1`.
+  set U : IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) := (σ • Z) * Z ^ (m - 1) with hU
+  have hZmul : Z * Z ^ (m - 1) = 1 := by
+    rw [← pow_succ']
+    rw [show m - 1 + 1 = m by omega]
+    exact hZm
+  have hsZm : (σ • Z) ^ m = 1 := by
+    rw [← smul_pow', hZm, smul_one]
+  have hUm : U ^ m = 1 := by
+    rw [hU, mul_pow, hsZm, one_mul, ← pow_mul, mul_comm, pow_mul, hZm, one_pow]
+  have hU1 : U - 1 ∈ IsLocalRing.maximalIdeal
+      (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))) := by
+    have hrw : U - 1 = (σ • Z - Z) * Z ^ (m - 1) := by
+      rw [hU, sub_mul, hZmul]
+    rw [hrw]
+    exact Ideal.mul_mem_right _ _ hD
+  -- STEP 4.  `S = ∑_{i < m} U ^ i` is `≡ m (mod 𝔪)`, hence a UNIT, because `q ∤ m`.
+  set S : IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) := ∑ i ∈ Finset.range m, U ^ i with hS
+  have hSm : S - (m : IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))) ∈
+      IsLocalRing.maximalIdeal
+        (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)
+          (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))) := by
+    have hgen : ∀ n : ℕ, (∑ i ∈ Finset.range n, U ^ i) -
+        (n : IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)
+          (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))) ∈
+        IsLocalRing.maximalIdeal
+          (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)
+            (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat))) := by
+      intro n
+      induction n with
+      | zero => simp
+      | succ k ih =>
+        have hk : U ^ k - 1 ∈ IsLocalRing.maximalIdeal
+            (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat)
+              (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat))) := by
+          obtain ⟨c, hc⟩ : U - 1 ∣ U ^ k - 1 := by
+            simpa using sub_dvd_pow_sub_pow U 1 k
+          rw [hc]
+          exact Ideal.mul_mem_right _ _ hU1
+        rw [Finset.sum_range_succ]
+        have hrw : (∑ i ∈ Finset.range k, U ^ i) + U ^ k - ((k : IntegralClosure _ _) + 1) =
+            ((∑ i ∈ Finset.range k, U ^ i) - (k : IntegralClosure _ _)) + (U ^ k - 1) := by
+          ring
+        push_cast
+        rw [hrw]
+        exact Ideal.add_mem _ ih hk
+    have := hgen m
+    rwa [← hS] at this
+  have hmunit : IsUnit ((m : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) := by
+    have hnd : ¬ ((q : ℤ) ∣ (m : ℤ)) := by
+      intro hdvd; exact _hqm (Int.natCast_dvd_natCast.mp hdvd)
+    have := isUnit_intCast_adicCompletionIntegers_of_not_dvd hq (m : ℤ) hnd
+    simpa using this
+  have hmunitIC : IsUnit ((m : IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)))) := by
+    have := hmunit.map (algebraMap (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)
+      (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))))
+    simpa using this
+  have hSunit : IsUnit S := by
+    by_contra hns
+    have hSmem : S ∈ IsLocalRing.maximalIdeal
+        (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)
+          (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))) :=
+      (IsLocalRing.mem_maximalIdeal _).mpr (mem_nonunits_iff.mpr hns)
+    have hmmem : (m : IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))) ∈ IsLocalRing.maximalIdeal _ := by
+      have := Ideal.sub_mem _ hSmem hSm
+      simpa using this
+    exact (IsLocalRing.maximalIdeal.isMaximal _).ne_top
+      (Ideal.eq_top_of_isUnit_mem _ hmmem hmunitIC)
+  -- STEP 5.  `(U - 1) * S = U ^ m - 1 = 0` in a DOMAIN with `S` a unit, so `U = 1`.
+  have hgeom : (U - 1) * S = 0 := by
+    have h := geom_sum_mul U m
+    rw [hUm, sub_self] at h
+    rw [hS, mul_comm]
+    exact h
+  have hU1' : U = 1 := by
+    rcases mul_eq_zero.mp hgeom with h | h
+    · exact sub_eq_zero.mp h
+    · exact absurd h hSunit.ne_zero
+  -- STEP 6.  `U = 1` gives `σ • Z = Z`, i.e. `σ xh = xh`; injectivity descends it to `x`.
+  have hsZ : σ • Z = Z := by
+    have h1 : (σ • Z) * (Z ^ (m - 1) * Z) = Z := by
+      rw [← mul_assoc, ← hU, hU1', one_mul]
+    rw [mul_comm (Z ^ (m - 1)) Z, hZmul, mul_one] at h1
+    exact h1
+  have hσxh : σ xh = xh := by
+    have := congrArg (fun z : IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) => z.1) hsZ
+    rwa [IntegralClosure.coe_smul] at this
+  have hlift := Field.absoluteGaloisGroup.lift_map f σ x
+  apply (AlgebraicClosure.map f).injective
+  rw [hlift, ← hxh, hσxh, hxh]
 
 attribute [local instance 100000] AlgebraicClosure.instAlgebra in
 /-- **FINITE RAMIFICATION, IN INERTIA-SUBGROUP FORM** (sorry leaf,
@@ -62758,68 +63078,6 @@ theorem exists_kummer_element_of_quadratic_character_ray_class
       rcases mul_eq_zero.mp h3 with h4 | h4
       · norm_num at h4
       · exact sub_ne_zero_of_ne (Ne.symm hg₀t) h4
-
-/-- **Integers prime to `q` are units of the completed integer ring
-`ℤ_qˆ`** (PROVEN 2026-07-24 — cast-arithmetic helper for the
-unramifiedness bridge `map_localInertiaGroup_fixes_sqrt_neg_three`
-below): if `q ∤ r`, then `r` is a unit of
-`𝒪ᵥ = adicCompletionIntegers ℚ v_q`. A non-unit of the local ring
-`𝒪ᵥ` lies in `𝔪ᵥ = (q)`
-(`maximalIdeal_adicCompletionIntegers_eq_span`), so `r = q·s`; the
-Bézout identity `1 = q·a + r·b` (`Nat.gcd_eq_gcd_ab`, `gcd = 1` since
-`q` is prime and `q ∤ r`) then makes `q` itself a unit, forcing
-`𝔪ᵥ = ⊤`. -/
-theorem isUnit_intCast_adicCompletionIntegers_of_not_dvd
-    {q : ℕ} (hq : q.Prime) (r : ℤ) (hr : ¬ ((q : ℤ) ∣ r)) :
-    IsUnit ((r : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
-      hq.toHeightOneSpectrumRingOfIntegersRat)) := by
-  by_contra hnu
-  have hmem : ((r : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
-      hq.toHeightOneSpectrumRingOfIntegersRat)) ∈
-      IsLocalRing.maximalIdeal
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
-          hq.toHeightOneSpectrumRingOfIntegersRat) := by
-    rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff]
-    exact hnu
-  rw [maximalIdeal_adicCompletionIntegers_eq_span hq,
-    Ideal.mem_span_singleton] at hmem
-  obtain ⟨s, hs⟩ := hmem
-  -- Bézout: `1 = q·a + r·b` over `ℤ`
-  have hcop : Nat.gcd q r.natAbs = 1 :=
-    (Nat.Prime.coprime_iff_not_dvd hq).mpr fun hdvd =>
-      hr (Int.dvd_natAbs.mp (Int.natCast_dvd_natCast.mpr hdvd))
-  have hbez := Nat.gcd_eq_gcd_ab q r.natAbs
-  rw [hcop] at hbez
-  have hbez' : (1 : ℤ) = q * Nat.gcdA q r.natAbs +
-      (r.natAbs : ℤ) * Nat.gcdB q r.natAbs := by exact_mod_cast hbez
-  obtain ⟨b, hZ⟩ : ∃ b : ℤ, (1 : ℤ) = q * Nat.gcdA q r.natAbs + r * b := by
-    rcases Int.natAbs_eq r with habs | habs
-    · refine ⟨Nat.gcdB q r.natAbs, ?_⟩
-      rw [← habs] at hbez'
-      exact hbez'
-    · refine ⟨-Nat.gcdB q r.natAbs, ?_⟩
-      have habs' : ((r.natAbs : ℤ)) = -r := by omega
-      rw [habs'] at hbez'
-      linear_combination hbez'
-  have hO := congrArg (fun t : ℤ =>
-    (t : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
-      hq.toHeightOneSpectrumRingOfIntegersRat)) hZ
-  push_cast at hO
-  rw [hs] at hO
-  have hqu : IsUnit ((q : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
-      hq.toHeightOneSpectrumRingOfIntegersRat)) :=
-    IsUnit.of_mul_eq_one
-      ((Nat.gcdA q r.natAbs : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
-        hq.toHeightOneSpectrumRingOfIntegersRat) + s * b) (by linear_combination hO.symm)
-  have hqmem : ((q : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
-      hq.toHeightOneSpectrumRingOfIntegersRat)) ∈
-      IsLocalRing.maximalIdeal
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
-          hq.toHeightOneSpectrumRingOfIntegersRat) := by
-    rw [maximalIdeal_adicCompletionIntegers_eq_span hq]
-    exact Ideal.mem_span_singleton_self _
-  exact (IsLocalRing.maximalIdeal.isMaximal _).ne_top
-    (Ideal.eq_top_of_isUnit_mem _ hqmem hqu)
 
 set_option maxHeartbeats 1000000 in
 /-- **Local inertia away from `3` fixes `√-3`** (PROVEN 2026-07-24 —
