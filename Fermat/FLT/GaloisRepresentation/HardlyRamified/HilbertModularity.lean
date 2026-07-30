@@ -21429,6 +21429,26 @@ instead of two — and it is a ~500-line move across two large, actively edited
 files, which is why it is recorded here rather than performed in the same commit
 as the interface repair.
 
+# CONCLUSION STRENGTHENED 2026-07-30: `𝒪` MUST BE ABSOLUTELY UNRAMIFIED
+
+The conclusion now also asserts
+`IsLocalRing.maximalIdeal coeff.carrier = Ideal.span {(ℓ : coeff.carrier)}`.
+This is NOT an extra burden on the intended proof: the `𝒪` this leaf is meant to
+produce is `W(k)`, and `W(k)` is absolutely unramified by construction —
+mathlib's `WittVector.isAdicCompleteIdealSpanP` is stated for exactly the ideal
+`(p)`. Anything a prover would have used to produce `𝒪` already gives it.
+
+It is asserted here because this is the ONLY place in the Hilbert subtree where
+`coeff` is chosen, and because `Modularity.TaylorWilesCoefficients` admits
+RAMIFIED coefficient rings — which makes the `q`-generator bound
+`exists_hilbertAuxDeformationRingGenerators` far below FALSE without it. See the
+section "`hunram` ADDED 2026-07-30" on that declaration, and the FALSITY AUDIT
+on `exists_hilbertAuxCoeffRingHom`, for the counterexample: a tower of ramified
+`ℤ_[ℓ][π] ⧸ (π^e − ℓ)` forces `(ℓ : R_Q) ∈ ⋂_e 𝔪^e = ⊥`. Pinning the choice
+here is what keeps every consumer's statement true, and it is the cheap form of
+the structural repair `Modularity/Patching.lean`'s audit declined as too
+expensive on the `ℚ` side.
+
 References: as for `exists_hilbertTaylorWilesBottomLevel` below. -/
 theorem exists_hilbertTaylorWilesBottomPresentation
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
@@ -21447,6 +21467,8 @@ theorem exists_hilbertTaylorWilesBottomPresentation
     ∃ (q : ℕ), q0 ≤ q ∧
       ∃ (coeff : Modularity.TaylorWilesCoefficients)
         (pres : MvPowerSeries (Fin q) coeff.carrier →+* 𝒟.R),
+        IsLocalRing.maximalIdeal coeff.carrier
+          = Ideal.span {(ℓ : coeff.carrier)} ∧
         Function.Surjective pres :=
   sorry
 
@@ -21824,6 +21846,8 @@ theorem exists_hilbertTaylorWilesBottomLevel
     ∃ (q d : ℕ) (coeff : Modularity.TaylorWilesCoefficients) (M0 : Type u)
       (_ : AddCommGroup M0) (_ : Module 𝒟T.R M0) (_ : Nontrivial M0),
       q0 ≤ q ∧
+      IsLocalRing.maximalIdeal coeff.carrier
+        = Ideal.span {(ℓ : coeff.carrier)} ∧
       Nonempty (M0 ≃ₗ[𝒟T.R] (Fin 2 → 𝒟T.R)) ∧
       Nonempty
         (Modularity.TaylorWilesLevelRaw.{u, u, u, u, u} ℓ ψ q d 0 coeff M0) := by
@@ -21835,7 +21859,7 @@ theorem exists_hilbertTaylorWilesBottomLevel
   -- ring `𝒪 = W(k)`, the Taylor–Wiles number `q`, and the `q`-generator
   -- presentation of `𝒟.R` over `𝒪`.  `hq0 : q0 ≤ q` is what the depth-`n`
   -- levels need in order to call the prime supply at size `q` at all.
-  obtain ⟨q, hq0, coeff, pres, hpres⟩ :=
+  obtain ⟨q, hq0, coeff, pres, hunram, hpres⟩ :=
     exists_hilbertTaylorWilesBottomPresentation ℓ hℓ5 F htr hgal hirrF 𝒟 h𝒟w
       h𝒟t q0 hTW
   -- LEAF B2 (`exists_hilbertTaylorWilesBottomHeckeModule`): the bottom Hecke
@@ -21847,7 +21871,7 @@ theorem exists_hilbertTaylorWilesBottomLevel
   -- through `ψ`.
   letI : Module 𝒟.R M0 := Module.compHom M0 ψ
   have hRsmul : ∀ (x : 𝒟.R) (m : M0), x • m = ψ x • m := fun _ _ => rfl
-  refine ⟨q, d, coeff, M0, instM0add, instM0T, instM0nt, hq0, hM0T, ⟨?_⟩⟩
+  refine ⟨q, d, coeff, M0, instM0add, instM0T, instM0nt, hq0, hunram, hM0T, ⟨?_⟩⟩
   refine { R := 𝒟.R
            commRingR := inferInstance
            pres := pres
@@ -26404,19 +26428,171 @@ def IsHilbertTaylorWilesExponents (ℓ : ℕ) (F : Type u) [Field F] [NumberFiel
     (∀ i, wOf i ∈ Q) ∧
     ∀ i, ex i = padicValNat ℓ (Nat.card (𝓞 F ⧸ (wOf i).asIdeal) - 1)
 
+/-! ### The exponent vector is CONSTRUCTIBLE, not arithmetic
+
+Three elementary lemmas, added 2026-07-30 so that
+`exists_hilbertAuxDiamondQuotient` below can CHOOSE `ex` in glue and pass it to
+its arithmetic core as an input. Between them they discharge every clause the
+cut states about `ex` — `IsHilbertTaylorWilesExponents` by construction and
+`∀ i, n ≤ ex i` from the congruence clause of `hQ` — which is what removes the
+under-determination hazard STRUCTURALLY rather than by asking a prover to
+respect it. See the DECOMPOSITION note on that leaf.
+-/
+
+/-- **The residue cardinality of a place is at least `2`** (PROVEN, elementary):
+the residue ring is finite (`Ring.HasFiniteQuotients.finiteQuotient`, from
+`w.ne_bot`) and nontrivial (`w.isPrime.ne_top`). The strengthening of
+`natCard_residue_ne_zero` above that `Nat.sub` bookkeeping needs: `Nw − 1 ≠ 0`
+does not follow from `Nw ≠ 0`. -/
+theorem one_lt_natCard_residue {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F)) : 1 < Nat.card (𝓞 F ⧸ w.asIdeal) := by
+  haveI : Finite (𝓞 F ⧸ w.asIdeal) :=
+    Ring.HasFiniteQuotients.finiteQuotient w.ne_bot
+  haveI : Nontrivial (𝓞 F ⧸ w.asIdeal) :=
+    Ideal.Quotient.nontrivial_iff.mpr w.isPrime.ne_top
+  exact Finite.one_lt_card
+
+/-- **The congruence clause of `IsHilbertTaylorWilesPrimeSet` IS the lower bound
+on the exponent** (PROVEN, elementary): `Nw ≡ 1 mod ℓ^n` says `ℓ^n ∣ Nw − 1`,
+which is `n ≤ v_ℓ(Nw − 1)`.
+
+This is why `∀ i, n ≤ ex i` need not be an obligation on the prover of the
+diamonds once `ex` is pinned to `v_ℓ(N w_i − 1)`: it is a consequence of `hQ`,
+and the glue below discharges it here. `one_lt_natCard_residue` is what supplies
+both `1 ≤ Nw` (for `Nat.modEq_iff_dvd'`) and `Nw − 1 ≠ 0` (for
+`padicValNat_dvd_iff_le`). -/
+theorem le_padicValNat_natCard_residue_sub_one {F : Type u} [Field F]
+    [NumberField F] (ℓ : ℕ) [Fact ℓ.Prime] (n : ℕ)
+    (w : HeightOneSpectrum (𝓞 F))
+    (hmod : Nat.card (𝓞 F ⧸ w.asIdeal) ≡ 1 [MOD ℓ ^ n]) :
+    n ≤ padicValNat ℓ (Nat.card (𝓞 F ⧸ w.asIdeal) - 1) := by
+  have h1 : 1 < Nat.card (𝓞 F ⧸ w.asIdeal) := one_lt_natCard_residue w
+  have hdvd : ℓ ^ n ∣ Nat.card (𝓞 F ⧸ w.asIdeal) - 1 :=
+    (Nat.modEq_iff_dvd' h1.le).mp hmod.symm
+  have hne : Nat.card (𝓞 F ⧸ w.asIdeal) - 1 ≠ 0 := by omega
+  exact (padicValNat_dvd_iff_le hne).mp hdvd
+
+/-- **A `Finset` of cardinality `q` is enumerated injectively by `Fin q`**
+(PROVEN, elementary): `Finset.equivFin` transported along `hQcard`.
+
+This is the `wOf` that `IsHilbertTaylorWilesExponents` asks for. Stated
+separately because it is the only place the standing hypothesis
+`hQcard : Q.card = q` is used for anything other than counting. -/
+theorem exists_finEnum_of_card_eq {α : Type*} (Q : Finset α) (q : ℕ)
+    (hQcard : Q.card = q) :
+    ∃ wOf : Fin q → α, Function.Injective wOf ∧ ∀ i, wOf i ∈ Q := by
+  classical
+  let e : Q ≃ Fin q := (Q.equivFin).trans (finCongr hQcard)
+  refine ⟨fun i => ((e.symm i : Q) : α), ?_, fun i => (e.symm i).2⟩
+  intro i j h
+  exact e.symm.injective (Subtype.ext h)
+
+/-- **The diamonds and the control identification, at a GIVEN control map AND a
+GIVEN exponent vector** (LEAF — the arithmetic core of
+`exists_hilbertAuxDiamondControl`; cut out of
+`exists_hilbertAuxDiamondQuotient` below on 2026-07-30, which is now PROVEN
+GLUE over it).
+
+Everything the old statement said about `ex` has moved OUT of this leaf and into
+its consumer: `ex` arrives as a hypothesis, already pinned to
+`v_ℓ(N w_i − 1)` by `hexpin` and already known to dominate `n` by `hex`. What is
+left is exactly the two clauses that are genuinely Taylor–Wiles arithmetic —
+`diamond` itself, and the control identification of `ker toRuniv`.
+
+**WHY THE CUT GOES HERE, and why it is a repair rather than a convenience.** The
+2026-07-30 FALSITY AUDIT on `exists_hilbertAuxHeckeModuleData` showed that with
+`ex` EXISTENTIAL a prover may return the genuine `diamond` beside an INFLATED
+`ex` and satisfy every clause, because `taylorWilesLevelIdeal ℓ ex` SHRINKS as
+`ex` grows. `IsHilbertTaylorWilesExponents` was added to the conclusion the same
+day to forbid that. Adding a clause to a conclusion is the weaker fix: it leaves
+the prover holding an obligation that has nothing to do with the mathematics it
+is being asked for, and — the point — it leaves `ex` chosen in the SAME place
+that `diamond` is chosen, so the two can still be picked to suit each other.
+Making `ex` an INPUT removes the degree of freedom instead of constraining it.
+The consumer discharges both clauses in five lines
+(`exists_finEnum_of_card_eq`, `le_padicValNat_natCard_residue_sub_one`), so the
+cut costs nothing and no obligation is lost.
+
+**WHAT IS STILL OPEN HERE, unchanged.** `diamond` is local class field theory at
+the places of `Q`: the split-torus clause of
+`IsHilbertRaisedLevelHardlyRamified` gives at each `w ∈ Q` a character `χ_w`,
+its restriction to `I_w` factors through the tame quotient, and
+`taylorWilesLevelIdeal ℓ ex ≤ ker diamond` says `diamond` factors through
+`Λ ⧸ 𝔟_ex = ℤ_ℓ[Δ_Q]`. The control clause `ker toRuniv = 𝔫 · R_Q` says killing
+the diamonds kills the level raising. The three compatibilities of `toRuniv` are
+what identify it as the classifying map.
+
+**TWO WEAKNESSES OF `isSplitTorusAt` THAT A PROVER MUST DERIVE, NOT READ OFF**
+(recorded at the predicate and repeated here because this is the half that needs
+them): the clause does NOT pin `χ`/`δ` to reduce to the two residual eigenvalues
+in a prescribed order, and does NOT pin `χ|_{I_w}` to factor through the
+`ℓ`-Sylow `Δ_w`. Both are properties of the CONSTRUCTION, derivable from
+`𝒟Q.resid` together with the distinct-eigenvalue clause of `hQ`.
+
+**READ §5a OF `exists_hilbertAuxHeckeModuleData`, AND THE TAME-INTERFACE NOTE ON
+`exists_hilbertAuxDiamondQuotient` BELOW, BEFORE WORKING ON `diamond`.** The
+honest strengthening of this conclusion is to pin `diamond` to the CONSTRUCTION
+— `Λ ↠ ℤ_ℓ[Δ_Q] → R_Q` through the tame characters — and the note below records
+that the tame-character machinery this needs ALREADY EXISTS and is sorry-free,
+correcting an earlier claim here that it did not.
+
+No cohomology is used here, and `coeff` is deliberately absent: the coefficient
+ring belongs to the generator bound, not to the diamonds.
+
+References: Taylor–Wiles, Ann. of Math. 141 (1995), §2; Wiles, ibid. ch. 3;
+Fujiwara §3; Darmon–Diamond–Taylor §5.3. -/
+theorem exists_hilbertAuxDiamondQuotient_of_exponents
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (htr : NumberField.IsTotallyReal F) (hgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟 : HilbertDeformationDatum ℓ F ρbar)
+    (h𝒟w : 𝒟.IsWeaklyUniversal) (h𝒟t : 𝒟.IsTraceGenerated)
+    (h𝒟e : 𝒟.toAuxEmpty.IsWeaklyUniversal)
+    (q : ℕ)
+    (n : ℕ) (Q : Finset (HeightOneSpectrum (𝓞 F))) (hQcard : Q.card = q)
+    (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q)
+    (𝒟Q : HilbertAuxDeformationDatum ℓ F Q ρbar)
+    (h𝒟Q : 𝒟Q.IsWeaklyUniversal)
+    (toRuniv : 𝒟Q.R →+* 𝒟.R)
+    (halg : toRuniv.comp (algebraMap ℤ_[ℓ] 𝒟Q.R) = algebraMap ℤ_[ℓ] 𝒟.R)
+    (hπ : 𝒟.π.comp toRuniv = 𝒟Q.π)
+    (hρ : ∀ g : Γ F, ((𝒟Q.ρ g).charpoly).map toRuniv = (𝒟.ρ g).charpoly)
+    (ex : Fin q → ℕ) (hex : ∀ i, n ≤ ex i)
+    (hexpin : IsHilbertTaylorWilesExponents ℓ F Q ex) :
+    ∃ diamond : MvPowerSeries (Fin q) ℤ_[ℓ] →+* 𝒟Q.R,
+      RingHom.ker toRuniv = (Modularity.taylorWilesAug ℓ q).map diamond ∧
+      Modularity.taylorWilesLevelIdeal ℓ ex ≤ RingHom.ker diamond :=
+  sorry
+
 /-- **The diamonds and the control identification, at a GIVEN control map**
-(LEAF — the arithmetic core of `exists_hilbertAuxDiamondControl`).
+(PROVEN GLUE since 2026-07-30 over
+`exists_hilbertAuxDiamondQuotient_of_exponents` above; formerly the arithmetic
+core of `exists_hilbertAuxDiamondControl` itself).
 
 This is local class field theory at the places of `Q` together with the control
 theorem, stated against the control map `toRuniv` that the assembly has already
 CONSTRUCTED from `h𝒟Q`. See the section note above for why fixing `toRuniv`
 first is what makes this cut safe where the documented one was not.
 
+**WHAT THIS DECLARATION NOW DOES**: it CHOOSES the exponent vector and hands it
+to `exists_hilbertAuxDiamondQuotient_of_exponents`. `exists_finEnum_of_card_eq`
+turns `hQcard` into an injective enumeration `wOf : Fin q → Q`, `ex` is *defined*
+as `v_ℓ(N (wOf i) − 1)` — so `IsHilbertTaylorWilesExponents` holds by
+construction, with `wOf` as its witness — and
+`le_padicValNat_natCard_residue_sub_one` derives `∀ i, n ≤ ex i` from the
+congruence clause of `hQ`. Nothing arithmetic happens here; see the cut leaf's
+docstring for why moving `ex` out of the existential is a repair and not a
+convenience.
+
 **`diamond`.** The split-torus clause of `IsHilbertRaisedLevelHardlyRamified`
 gives at each `w ∈ Q` a character `χ_w` whose restriction to `I_w` factors
 through the tame quotient `(𝓞_F/w)ˣ`; `ex i` is the `ℓ`-valuation of
-`N w_i − 1`, so `Δ_{w_i} ≅ ℤ/ℓ^{ex i}` is its `ℓ`-Sylow, and `n ≤ ex i` is
-precisely the congruence clause `N w_i ≡ 1 mod ℓ^n` of `hQ`. The conclusion
+`N w_i − 1`, so `Δ_{w_i} ≅ ℤ/ℓ^{ex i}` is its `ℓ`-Sylow. The conclusion
 `taylorWilesLevelIdeal ℓ ex ≤ ker diamond` says `diamond` factors through
 `Λ ⧸ 𝔟_ex = ℤ_ℓ[Δ_Q]`.
 
@@ -26432,6 +26608,63 @@ needs them): the clause does NOT pin `χ`/`δ` to reduce to the two residual
 eigenvalues in a prescribed order, and does NOT pin `χ|_{I_w}` to factor
 through the `ℓ`-Sylow `Δ_w`. Both are properties of the CONSTRUCTION, derivable
 from `𝒟Q.resid` together with the distinct-eigenvalue clause of `hQ`.
+
+# THE TAME-CHARACTER INTERFACE ALREADY EXISTS. THE EARLIER CLAIM HERE THAT IT
+# DID NOT WAS WRONG, AND THE GENUINELY MISSING PIECE IS SOMETHING ELSE
+# (2026-07-30, verified by compilation)
+
+A note that stood here, and its twin in §5 of `exists_hilbertAuxHeckeModuleData`
+below, said the honest strengthening of this conclusion — pinning `diamond` to
+factor as `Λ ↠ ℤ_ℓ[Δ_Q] → R_Q` through the tame characters — "needs one piece of
+interface this file does not yet have — the tame character `I_w ↠ Δ_w` onto the
+`ℓ`-Sylow of `(𝓞_F ⧸ w)ˣ`", and told the reader the seam was open at both ends
+until somebody built it. **That is false.** A complete, SORRY-FREE tame-character
+development sits in
+`Fermat/FLT/Deformations/RepresentationTheory/ArtinConductor.lean`, and it is
+reachable from HERE through a fully `public` chain —
+`HilbertModularity → HermiteMinkowski → FreyCurve/MazurTorsion → ArtinConductor`
+— so the names resolve in this file in both signature and proof-body position.
+Checked by compiling `#check` against each of them in a scratch module importing
+this one, 34 s, `EXIT=0`; the relevant ones are
+
+* `wildInertiaGroup v`, `wildInertiaGroup_le_localInertiaGroup`;
+* `tameCharacter v hn hX0 hXn : I_v →* rootsOfUnity n Kᵥᵃˡᵍ` — the tame
+  character `θ(τ) = τ(X)/X` itself, for any `X` with `Xⁿ` Galois-fixed and `n`
+  prime to the residue characteristic, together with `tameCharacter_eq_one_iff`;
+* `exists_pow_eq_of_mem_wildInertiaGroup` — `P_v` is pro-`p` for `p` the residue
+  characteristic, so the `m`-th power map is ONTO `P_v` for `p ∤ m`;
+* `exists_localInertia_pow_eq_of_wildInertiaGroup_le_ker` — every finite
+  quotient of `I_v` killing `P_v` is cyclic, *with an explicit generator and
+  non-negative exponents*, and carrying NO continuity hypothesis.
+
+Those last two are exactly `I_w ↠ Δ_w` in the form a prover of `diamond` wants.
+Since `w ∈ Q` has `((ℓ : ℕ) : 𝓞 F) ∉ w.asIdeal` (first conjunct of `hQ`), `ℓ^e`
+is prime to the residue characteristic at `w`, so
+`exists_pow_eq_of_mem_wildInertiaGroup` makes every element of `P_w` an
+`ℓ^e`-th power in `P_w`; hence ANY homomorphism out of `I_w` into a group of
+exponent dividing `ℓ^e` kills `P_w`, and
+`exists_localInertia_pow_eq_of_wildInertiaGroup_le_ker` then produces the single
+`σ_w ∈ I_w` whose image generates. A character `χ_w|_{I_w}` into `𝒟Q.Rˣ` is of
+that kind because it is residually trivial (`ρbar` is unramified at `Q`), so its
+values lie in `1 + 𝔪`, a pro-`ℓ` group.
+
+**WHAT IS ACTUALLY MISSING is the FROBENIUS RELATION, and it is where the
+exponent `ℓ^{ex}` comes from at all.** The paragraph above bounds the order of
+`χ_w(σ_w)` by *some* power of `ℓ`; nothing in it gives `ℓ^{v_ℓ(Nw − 1)}`. The
+full tame quotient of `I_w` has `ℓ`-part `ℤ_ℓ`, not `ℤ/ℓ^{ex}`, so no bound on
+`χ_w|_{I_w}` can come from inertia alone. What supplies `ex` is conjugation by
+Frobenius: on the tame quotient `F σ F⁻¹ = σ^{Nw}`, equivalently
+`θ(F σ F⁻¹) = θ(σ)^{Nw}` because `F` acts on `μ_m ⊆ 𝔽̄_p` by `x ↦ x^{Nw}`. Since
+`χ_w` extends to the whole decomposition group (`isSplitTorusAt` splits
+`ρ|_{G_{F_w}}`, not merely `ρ|_{I_w}`), `χ_w(σ) = χ_w(F σ F⁻¹) = χ_w(σ)^{Nw}`,
+i.e. `χ_w(σ)^{Nw − 1} = 1`; combined with the `ℓ`-power order this gives
+`χ_w(σ)^{ℓ^{v_ℓ(Nw−1)}} = 1`, which IS `𝔟_ex ≤ ker diamond`.
+
+`ArtinConductor.lean` does not have that relation — `grep -n Frobenius` there
+returns one docstring mention and no statement — and it is the ONE thing a
+successor must add. It is a bounded, self-contained piece of local theory over a
+sorry-free base, NOT the multi-module tame-ramification project the withdrawn
+note implied. **Redirect accordingly: do not rebuild `tameCharacter`.**
 
 No cohomology is used here, and `coeff` is deliberately absent: the coefficient
 ring belongs to the generator bound, not to the diamonds.
@@ -26449,6 +26682,17 @@ kept even though the pin plus the congruence clause of `hQ` implies it: it is
 what the two `bIdeal` bounds are discharged from downstream, and leaving it
 stated costs the prover nothing.
 
+**SUPERSEDED 2026-07-30 BY THE CUT ABOVE — the predicate is now DISCHARGED HERE,
+not imposed on a prover.** The paragraph above is retained because its refutation
+is the reason the pin exists at all, but its remedy has been replaced by a
+better one: `ex` is no longer existential at this leaf, it is CONSTRUCTED in the
+proof below and passed as an input to
+`exists_hilbertAuxDiamondQuotient_of_exponents`. That removes the degree of
+freedom rather than constraining it, so an inflated `ex` is not merely forbidden
+but unreachable. `∀ i, n ≤ ex i` is likewise discharged here, from the
+congruence clause of `hQ`, so both clauses of the conclusion that concern `ex`
+are now theorems of this file rather than obligations on anybody.
+
 **READ §5a OF `exists_hilbertAuxHeckeModuleData` BEFORE WORKING ON `diamond`**
 (2026-07-30). This leaf is the PRODUCER of the `diamond` that its consumer's §5
 records as a hazard, and §5a shows the consumer's conclusion forces
@@ -26458,17 +26702,18 @@ theory this leaf has — and it does NOT mean the equality should be added to th
 conclusion: §5 already declined that, correctly, because the `≥` half is
 `ℤ_ℓ[Δ_Q] ↪ R_Q`, i.e. automorphic input this leaf's hypotheses do not contain.
 
-What it does mean is that the honest strengthening here is the CONSTRUCTION
-rather than its consequence: require `diamond` to factor as
-`Λ ↠ ℤ_ℓ[Δ_Q] → R_Q` through the tame characters the split-torus clause
-supplies, exactly as `IsHilbertTaylorWilesExponents` pins `ex` rather than
-asserting a property of it. That is provable here, and it needs one piece of
-interface this file does not yet have — the tame character `I_w ↠ Δ_w` onto the
-`ℓ`-Sylow of `(𝓞_F ⧸ w)ˣ`. **Whoever builds that interface should do this
-strengthening in the same pass**, and thread the extra clause through
-`exists_hilbertAuxDiamondControl` and
-`exists_hilbertAuxDeformationRingPresentation` to the Hecke leaf. Until then the
-seam is genuinely open at both ends and neither leaf can close it alone.
+What it does mean is that the honest strengthening is the CONSTRUCTION rather
+than its consequence: require `diamond` to factor as `Λ ↠ ℤ_ℓ[Δ_Q] → R_Q`
+through the tame characters the split-torus clause supplies, exactly as `ex` is
+now pinned by construction rather than by a clause. **The interface that needs is
+NOT missing — see the TAME-CHARACTER section of
+`exists_hilbertAuxDiamondQuotient_of_exponents` above, which corrects the claim
+that stood here, names the sorry-free `ArtinConductor.lean` machinery, and
+identifies the one genuinely absent ingredient (the Frobenius relation
+`θ(FσF⁻¹) = θ(σ)^{Nw}`, which is where the exponent `ℓ^{v_ℓ(Nw−1)}` comes
+from).** Whoever adds that relation should take the strengthening in the same
+pass and thread the extra clause through `exists_hilbertAuxDiamondControl` and
+`exists_hilbertAuxDeformationRingPresentation` to the Hecke leaf.
 
 References: Taylor–Wiles, Ann. of Math. 141 (1995), §2; Wiles, ibid. ch. 3;
 Fujiwara §3; Darmon–Diamond–Taylor §5.3. -/
@@ -26498,8 +26743,23 @@ theorem exists_hilbertAuxDiamondQuotient
       (∀ i, n ≤ ex i) ∧
       IsHilbertTaylorWilesExponents ℓ F Q ex ∧
       RingHom.ker toRuniv = (Modularity.taylorWilesAug ℓ q).map diamond ∧
-      Modularity.taylorWilesLevelIdeal ℓ ex ≤ RingHom.ker diamond :=
-  sorry
+      Modularity.taylorWilesLevelIdeal ℓ ex ≤ RingHom.ker diamond := by
+  -- Enumerate `Q` by `Fin q`; this is the only use of `hQcard` here.
+  obtain ⟨wOf, hwinj, hwmem⟩ := exists_finEnum_of_card_eq Q q hQcard
+  -- DEFINE the exponent vector.  `IsHilbertTaylorWilesExponents` then holds by
+  -- construction, with `wOf` as its witness — no prover has to respect it.
+  refine ⟨fun i => padicValNat ℓ (Nat.card (𝓞 F ⧸ (wOf i).asIdeal) - 1), ?_⟩
+  -- `∀ i, n ≤ ex i` is the congruence clause of `hQ`, not an obligation.
+  have hex : ∀ i, n ≤ padicValNat ℓ (Nat.card (𝓞 F ⧸ (wOf i).asIdeal) - 1) :=
+    fun i => le_padicValNat_natCard_residue_sub_one ℓ n (wOf i)
+      (hQ.1 (wOf i) (hwmem i)).2.2.1
+  have hexpin : IsHilbertTaylorWilesExponents ℓ F Q
+      (fun i => padicValNat ℓ (Nat.card (𝓞 F ⧸ (wOf i).asIdeal) - 1)) :=
+    ⟨wOf, hwinj, hwmem, fun _ => rfl⟩
+  obtain ⟨diamond, hker, hbex⟩ :=
+    exists_hilbertAuxDiamondQuotient_of_exponents ℓ hℓ5 F htr hgal hirrF 𝒟 h𝒟w
+      h𝒟t h𝒟e q n Q hQcard hQ 𝒟Q h𝒟Q toRuniv halg hπ hρ _ hex hexpin
+  exact ⟨diamond, hex, hexpin, hker, hbex⟩
 
 /-- **The diamond operators at `Q` and the control map down to `R_∅`**
 (**PROVEN GLUE since 2026-07-28 (second pass)** over the three sub-leaves
@@ -26615,8 +26875,378 @@ theorem exists_hilbertAuxDiamondControl
       hQcard hQ 𝒟Q h𝒟Q toRuniv halg hπ hρ
   exact ⟨ex, diamond, toRuniv, hex, hexpin, hsurj, hker, hbex⟩
 
-/-- **The `q`-generator bound for `R_Q`** (LEAF — the GLOBAL half of the
-2026-07-28 CONTROL/GENERATORS cut of
+/-- **Substitution out of a power-series ring, over an arbitrary coefficient
+ring** (PROVEN 2026-07-30 — pure commutative algebra, no deformation theory and
+no Taylor–Wiles input; piece 3a of the three-piece route recorded on
+`exists_hilbertAuxDeformationRingGenerators` below).
+
+Given a complete local `R` and any ring map `ι : Λ →+* R`, a family `t` of
+elements of `𝔪_R` determines a ring map `Λ⟦x_1, …, x_g⟧ →+* R` sending `C a` to
+`ι a` and `x_i` to `t i`. The point is convergence: a power series in the `x_i`
+maps to a series in the `t_i ∈ 𝔪_R`, which converges because `R` is
+`𝔪_R`-adically complete.
+
+Proof: `IsAdic.isAdicComplete_iff` converts the ALGEBRAIC hypothesis
+`IsAdicComplete 𝔪_R R` into `CompleteSpace R ∧ T2Space R` for the `𝔪_R`-adic
+uniformity; `WithIdeal Λ := ⟨⊥⟩` makes `Λ` discrete so `ι` is continuous
+(`WithIdeal.uniformContinuous_of_map_le`, since `⊥.map ι = ⊥`); and
+`MvPowerSeries.HasEval t` holds because `t i ∈ 𝔪_R` gives `(t i)^n ∈ 𝔪_R^n → 0`
+while `Fin g` is finite, so the cofinite filter is `⊥` and the
+vanishing-at-infinity clause is vacuous. The two conclusions are then
+`MvPowerSeries.eval₂_C` and `MvPowerSeries.eval₂_X`.
+
+**WHY IT IS RESTATED HERE RATHER THAN CITED.** `Deformation.lean` carries the
+same statement as `exists_mvPowerSeries_ringHom_of_mem_maximalIdeal`, and that
+file `public import`s THIS one, so importing it back is a cycle — the standing
+CIRCULARITY GUARD that already forced `exists_unit_smul_of_vecMul_eq_row` above
+to be a re-proof of that file's `exists_unit_smul_of_vecMul_eq`. The right
+long-term home for both is `HardlyRamified/CompleteLocalNoetherian.lean`, which
+is upstream of both and is already where the adic-completeness lemmas live; the
+hoist is recorded there rather than performed here because it moves two
+declarations across a module the whole cone sits on. -/
+theorem exists_mvPowerSeries_ringHom_of_isAdicComplete {R : Type*}
+    [CommRing R] [IsLocalRing R]
+    [IsAdicComplete (IsLocalRing.maximalIdeal R) R]
+    {Λ : Type*} [CommRing Λ] (ι : Λ →+* R) {g : ℕ} (t : Fin g → R)
+    (ht : ∀ i, t i ∈ IsLocalRing.maximalIdeal R) :
+    ∃ φ : MvPowerSeries (Fin g) Λ →+* R,
+      φ.comp (MvPowerSeries.C : Λ →+* MvPowerSeries (Fin g) Λ) = ι ∧
+      ∀ i, φ (MvPowerSeries.X i) = t i := by
+  letI : WithIdeal Λ := ⟨⊥⟩
+  letI : WithIdeal R := ⟨IsLocalRing.maximalIdeal R⟩
+  have hIadic : IsAdic (IsLocalRing.maximalIdeal R) := rfl
+  obtain ⟨hcomplete, hT2⟩ := hIadic.isAdicComplete_iff.mp inferInstance
+  letI := hcomplete
+  letI := hT2
+  have hι : Continuous ι :=
+    (WithIdeal.uniformContinuous_of_map_le (f := ι)
+      (by show Ideal.map ι ⊥ ≤ IsLocalRing.maximalIdeal R
+          rw [Ideal.map_bot]
+          exact bot_le)).continuous
+  have hteval : MvPowerSeries.HasEval t := by
+    refine ⟨fun i => ?_, ?_⟩
+    · rw [IsTopologicallyNilpotent,
+        (IsLocalRing.maximalIdeal R).hasBasis_nhds_zero_adic.tendsto_right_iff]
+      intro n _
+      filter_upwards [Filter.eventually_ge_atTop n] with m hm
+      exact Ideal.pow_le_pow_right hm (Ideal.pow_mem_pow (ht i) m)
+    · rw [Filter.cofinite_eq_bot]
+      exact Filter.tendsto_bot
+  refine ⟨MvPowerSeries.eval₂Hom hι hteval, ?_, fun i => ?_⟩
+  · refine RingHom.ext fun r => ?_
+    rw [RingHom.comp_apply, MvPowerSeries.coe_eval₂Hom, MvPowerSeries.eval₂_C]
+  · rw [MvPowerSeries.coe_eval₂Hom, MvPowerSeries.eval₂_X]
+
+/-- **Complete-local generation: the substitution map is SURJECTIVE as soon as
+the `t_i` span the cotangent space over `Λ`** (PROVEN 2026-07-30 — pure
+commutative algebra; piece 3b of the route recorded on
+`exists_hilbertAuxDeformationRingGenerators` below, and the step that removes
+all commutative algebra from that leaf).
+
+Two applications of mathlib's complete-Nakayama criterion
+`surjective_of_mk_map_comp_surjective` — a map out of an `I`-adically
+precomplete ring onto an `I·S`-adically Hausdorff ring is onto as soon as it is
+onto modulo `I·S`:
+
+* in the VARIABLE direction, with `I = (x_1, …, x_g)`: precompleteness is
+  mathlib's `IsAdicComplete (span (range X)) (MvPowerSeries σ Λ)` for finite
+  `σ`, and `I·R = (t_1, …, t_g) =: T` is Hausdorff because `R` is Noetherian
+  local (`IsHausdorff.of_isLocalRing`); so it suffices that `φ` be onto `R ⧸ T`;
+* in the COEFFICIENT direction, with `I = 𝔪_Λ`, applied to `Λ → R ⧸ T`; this is
+  where `[IsPrecomplete (𝔪_Λ) Λ]` is used, and it suffices that `Λ` be onto
+  `(R ⧸ T) ⧸ 𝔪_Λ·(R ⧸ T)`.
+
+That last surjectivity is residue-field surjectivity plus NAKAYAMA: `hspan`
+says `𝔪_R = T + 𝔪_R² + ι(𝔪_Λ)R`, so
+`Submodule.le_of_le_smul_of_le_jacobson_bot` (over the Noetherian `𝔪_R`,
+contained in the Jacobson radical) upgrades it to `𝔪_R = T + ι(𝔪_Λ)R` on the
+nose; given `r ∈ R`, surjectivity of `π ∘ ι` supplies `a ∈ Λ` with
+`r − ι a ∈ ker π = 𝔪_R = T + ι(𝔪_Λ)R`, which is the required congruence.
+
+**`[IsPrecomplete (𝔪_Λ) Λ]` IS NECESSARY, NOT DECORATION.** Counterexample at
+`g = 0`: `Λ = ℤ_(ℓ)` (the localisation of `ℤ` at `ℓ`, local with `𝔪 = (ℓ)`),
+`R = ℤ_[ℓ]`, `t` the empty family — every other hypothesis holds and `φ` is the
+inclusion `ℤ_(ℓ) ↪ ℤ_[ℓ]`, which is not onto. Completeness of the coefficient
+ring is what makes the successive approximation converge.
+
+**GENERALISED FROM THE `ℚ`-LEVEL FORM, AND THE GENERALISATION IS THE POINT.**
+`Deformation.lean`'s `surjective_of_mvPowerSeries_ringHom` states the cotangent
+condition with the summand `Ideal.span {(ℓ : R)}` and pays for it with the
+hypothesis `𝔪_Λ = Ideal.span {(ℓ : Λ)}` — i.e. it is stated only for an
+ABSOLUTELY UNRAMIFIED coefficient ring. Here the summand is
+`(IsLocalRing.maximalIdeal Λ).map ι`, which is what the Nakayama step actually
+uses, and no hypothesis relating `𝔪_Λ` to `ℓ` is needed at all. That matters
+because `Modularity.TaylorWilesCoefficients` does NOT demand absolute
+unramifiedness: see the FALSITY AUDIT on
+`exists_hilbertAuxDeformationRingGenerators` below, where a ramified `coeff` is
+exactly what refutes the leaf's earlier form. Keeping the commutative algebra
+free of that hypothesis localises the ramification obstruction in one place —
+the existence of `ι` itself — instead of spreading it over the whole route. -/
+theorem surjective_mvPowerSeries_ringHom_of_span_maximalIdeal {R : Type*}
+    [CommRing R] [IsLocalRing R] [IsNoetherianRing R]
+    [IsAdicComplete (IsLocalRing.maximalIdeal R) R]
+    {Λ : Type*} [CommRing Λ] [IsLocalRing Λ]
+    [IsPrecomplete (IsLocalRing.maximalIdeal Λ) Λ]
+    {k' : Type*} [Field k']
+    (π : R →+* k') (ι : Λ →+* R) (hι : Function.Surjective (π.comp ι))
+    {g : ℕ} (t : Fin g → R)
+    (hspan : IsLocalRing.maximalIdeal R = Ideal.span (Set.range t) ⊔
+      (IsLocalRing.maximalIdeal R ^ 2 ⊔ (IsLocalRing.maximalIdeal Λ).map ι))
+    (φ : MvPowerSeries (Fin g) Λ →+* R)
+    (hφC : φ.comp (MvPowerSeries.C : Λ →+* MvPowerSeries (Fin g) Λ) = ι)
+    (hφX : ∀ i, φ (MvPowerSeries.X i) = t i) :
+    Function.Surjective φ := by
+  classical
+  have hπsurj : Function.Surjective π := Function.Surjective.of_comp hι
+  have hkerπ : RingHom.ker π = IsLocalRing.maximalIdeal R :=
+    IsLocalRing.ker_eq_maximalIdeal π hπsurj
+  -- Nakayama: the `t i` and `ι(𝔪_Λ)` generate `𝔪_R` on the nose
+  have hle : IsLocalRing.maximalIdeal R ≤
+      Ideal.span (Set.range t) ⊔ (IsLocalRing.maximalIdeal Λ).map ι := by
+    refine Submodule.le_of_le_smul_of_le_jacobson_bot
+      (Ideal.fg_of_isNoetherianRing _) (IsLocalRing.maximalIdeal_le_jacobson _) ?_
+    have hsq : IsLocalRing.maximalIdeal R • IsLocalRing.maximalIdeal R
+        = IsLocalRing.maximalIdeal R ^ 2 := by
+      rw [Ideal.smul_eq_mul, ← pow_two]
+    rw [hsq]
+    conv_lhs => rw [hspan]
+    exact sup_le (le_sup_of_le_left le_sup_left)
+      (sup_le le_sup_right (le_sup_of_le_left le_sup_right))
+  set T : Ideal R := Ideal.span (Set.range t) with hTdef
+  have hmapT : Ideal.map φ
+      (Ideal.span (Set.range
+        (MvPowerSeries.X : Fin g → MvPowerSeries (Fin g) Λ))) = T := by
+    rw [hTdef, Ideal.map_span]
+    congr 1
+    ext r
+    constructor
+    · rintro ⟨_, ⟨i, rfl⟩, rfl⟩
+      exact ⟨i, (hφX i).symm⟩
+    · rintro ⟨i, rfl⟩
+      exact ⟨MvPowerSeries.X i, ⟨i, rfl⟩, hφX i⟩
+  have hTle : T ≤ IsLocalRing.maximalIdeal R := by
+    rw [hTdef]; conv_rhs => rw [hspan]
+    exact le_sup_left
+  have hTne : T ≠ ⊤ := by
+    intro h
+    rw [h, top_le_iff] at hTle
+    exact (IsLocalRing.maximalIdeal.isMaximal R).ne_top hTle
+  haveI : Nontrivial (R ⧸ T) := Ideal.Quotient.nontrivial_iff.mpr hTne
+  haveI : IsLocalRing (R ⧸ T) :=
+    IsLocalRing.of_surjective' (Ideal.Quotient.mk T) Ideal.Quotient.mk_surjective
+  haveI : IsNoetherianRing (R ⧸ T) :=
+    isNoetherianRing_of_surjective R (R ⧸ T) (Ideal.Quotient.mk T)
+      Ideal.Quotient.mk_surjective
+  haveI : IsHausdorff (Ideal.map φ
+      (Ideal.span (Set.range
+        (MvPowerSeries.X : Fin g → MvPowerSeries (Fin g) Λ)))) R := by
+    rw [hmapT]
+    exact IsHausdorff.of_isLocalRing T R hTne
+  refine surjective_of_mk_map_comp_surjective
+    (I := Ideal.span (Set.range
+      (MvPowerSeries.X : Fin g → MvPowerSeries (Fin g) Λ))) φ ?_
+  rw [hmapT]
+  -- it suffices that `Λ` already surjects onto `R ⧸ T`
+  have hbar : Function.Surjective ((Ideal.Quotient.mk T).comp ι) := by
+    haveI : IsHausdorff (Ideal.map ((Ideal.Quotient.mk T).comp ι)
+        (IsLocalRing.maximalIdeal Λ)) (R ⧸ T) := by
+      refine IsHausdorff.of_isLocalRing _ _ ?_
+      refine ne_of_lt (lt_of_le_of_lt ?_
+        (lt_top_iff_ne_top.mpr (IsLocalRing.maximalIdeal.isMaximal (R ⧸ T)).ne_top))
+      rw [Ideal.map_le_iff_le_comap]
+      intro a ha
+      simp only [Ideal.mem_comap, RingHom.comp_apply]
+      haveI : IsLocalHom (Ideal.Quotient.mk T) :=
+        IsLocalHom.of_surjective _ Ideal.Quotient.mk_surjective
+      refine map_nonunit (Ideal.Quotient.mk T) _ ?_
+      rw [← hkerπ, RingHom.mem_ker]
+      have := IsLocalRing.ker_eq_maximalIdeal (π.comp ι) hι
+      rw [← this, RingHom.mem_ker] at ha
+      exact ha
+    refine surjective_of_mk_map_comp_surjective (I := IsLocalRing.maximalIdeal Λ) _ ?_
+    intro y
+    obtain ⟨x, rfl⟩ := Ideal.Quotient.mk_surjective y
+    obtain ⟨r, rfl⟩ := Ideal.Quotient.mk_surjective x
+    obtain ⟨a, ha⟩ := hι (π r)
+    refine ⟨a, ?_⟩
+    rw [RingHom.comp_apply, Ideal.Quotient.eq]
+    have hdiff : ι a - r ∈ T ⊔ (IsLocalRing.maximalIdeal Λ).map ι := by
+      refine hle ?_
+      rw [← hkerπ, RingHom.mem_ker, map_sub, sub_eq_zero]
+      exact ha
+    obtain ⟨x₁, hx₁, x₂, hx₂, hx⟩ := Submodule.mem_sup.mp hdiff
+    have hkey : (Ideal.Quotient.mk T) (ι a) - (Ideal.Quotient.mk T) r
+        = (Ideal.Quotient.mk T) x₂ := by
+      rw [← map_sub, ← hx, map_add, Ideal.Quotient.eq_zero_iff_mem.mpr hx₁, zero_add]
+    rw [RingHom.comp_apply, hkey, ← Ideal.map_map]
+    exact Ideal.mem_map_of_mem _ hx₂
+  intro y
+  obtain ⟨a, ha⟩ := hbar y
+  exact ⟨MvPowerSeries.C a, by
+    rw [RingHom.comp_apply,
+      show φ (MvPowerSeries.C a) = ι a from RingHom.congr_fun hφC a]
+    exact ha⟩
+
+/-- **The coefficient structure on `R_Q`** (LEAF — new 2026-07-30, piece 1 of
+the three-piece route recorded on `exists_hilbertAuxDeformationRingGenerators`
+below; pieces 3a and 3b are the two PROVEN theorems above, and piece 2 is
+`exists_hilbertAuxCotangentSpanningFamily` immediately below).
+
+Two conclusions, both about the coefficient ring alone — nothing here mentions
+`Q`, the prime set clauses, or any cohomology:
+
+1. **`𝒪` is `𝔪_𝒪`-adically precomplete.** `Modularity.TaylorWilesCoefficients`
+   does not carry this as a field, and piece 3b genuinely needs it (see the
+   `ℤ_(ℓ) ↪ ℤ_[ℓ]` counterexample on that theorem). It is nevertheless TRUE of
+   every `TaylorWilesCoefficients`, and the argument is short enough to record
+   so that a prover does not have to find it: `𝒪` is compact Hausdorff and
+   totally disconnected, hence profinite, so every open ideal `I` has finite
+   index; `𝒪 ⧸ I` is then a finite, hence Artinian, local ring, so `𝔪^N ⊆ I`
+   for some `N` — i.e. the `𝔪`-adic topology REFINES the given one. Meanwhile
+   `exists_isRegular_maximalIdeal` makes `𝔪 = (π)` principal, so
+   `𝔪^n = π^n · 𝒪` is the image of the compact `𝒪` under multiplication by
+   `π^n`, hence compact, hence CLOSED. Now an `𝔪`-adically Cauchy sequence is
+   Cauchy for the coarser compact topology and so has a cluster point `a`; for
+   each `n`, fixing `m` beyond the Cauchy threshold puts the whole tail inside
+   the closed set `a_m + 𝔪^n`, so `a ∈ a_m + 𝔪^n`. That is precisely
+   `IsPrecomplete`.
+
+2. **A coefficient map `c : 𝒪 →+* R_Q` inducing a surjection on residue
+   fields.** This is Cohen structure theory. `hunram` says `𝔪_𝒪 = (ℓ)`, i.e.
+   `𝒪` is ABSOLUTELY UNRAMIFIED; with `finite_residueField` and
+   `exists_isRegular_maximalIdeal` that makes `𝒪` a complete unramified DVR with
+   finite residue field, i.e. `W(κ)`, and `hcoeff` forces `κ ≅ k` (a surjection
+   `MvPowerSeries (Fin q) 𝒪 ↠ 𝒟.R` carries residue field onto residue field,
+   and `𝒟.π` makes the latter `k`). `R_Q` is a complete local Noetherian ring
+   with residue field `k`, so `W(k)` maps to it lifting the identity on residue
+   fields — formal smoothness of `W(k)` over `ℤ_[ℓ]` plus completeness, the
+   step Mazur's category takes for granted by working over `𝒪` from the start.
+
+# `hunram` IS NOT DECORATION — WITHOUT IT CLAUSE 2 IS FALSE
+
+This is `Modularity/Patching.lean`'s FALSITY AUDIT on
+`exists_auxDeformationPresSurjection`, obstruction (2) ("*Ramification* — and
+this one is NOT repairable by threading"), transferred to the Hilbert side,
+where that audit itself says it applies verbatim. Without `hunram`, take
+`k := 𝔽_ℓ`, `𝒟` any datum with `𝒟.R` of residue characteristic `ℓ` (so that
+`hcoeff` is satisfiable through the residue map), and
+
+    coeff.carrier := ℤ_[ℓ][π] ⧸ (π^e − ℓ)     for each e ≥ 1
+
+— a complete DVR with residue field `𝔽_ℓ`, every field of
+`TaylorWilesCoefficients` satisfied, and NOTHING in the hypothesis package
+pinning `e`. A `c` would supply `s := c π` with `s^e = (ℓ : R_Q)`; `s` is not a
+unit because `𝒟Q.π s` is a root of `X^e` in a field of characteristic `ℓ`, so
+`(ℓ : R_Q) ∈ 𝔪^e`. Running this for every `e` puts `(ℓ : R_Q)` in
+`⋂_e 𝔪^e = ⊥` (Krull, available since `R_Q` is Noetherian local and
+`𝒟Q.isAdicComplete` is separated), i.e. the leaf would ENTAIL
+`(ℓ : R_Q) = 0` — false in every intended model, where `R_Q ↠ T_Q` with `T_Q`
+nontrivial and `Module.Free ℤ_[ℓ] T_Q`.
+
+The classical statement has no such gap because Mazur's deformation category is
+a category of complete local **`𝒪`-algebras**, whereas
+`HilbertAuxDeformationDatum` is a category of complete local `ℤ_[ℓ]`-algebras;
+over `ℤ_[ℓ]` a ramified `𝒪` reaches `R_Q` only through Cohen structure theory,
+which is absent from the pin, from `Fermat/` and from `~/cs/FLT`. The `ℚ`-level
+audit prices the structural repair — parameterise the datum by `coeff` and carry
+`[Algebra coeff.carrier R]` — as a cut-level change across several owners, and
+declines it. `hunram` is the same repair taken in the CHEAP direction, as a
+hypothesis rather than a structure field, and it costs nothing at the point of
+use: `coeff` is chosen in this file, by
+`exists_hilbertTaylorWilesBottomPresentation`, whose intended witness is `W(k)`
+— absolutely unramified by definition. It is threaded down from there through
+`exists_hilbertTaylorWilesBottomLevel`, `exists_hilbertTaylorWilesLevels`,
+`exists_hilbertTaylorWilesLevelRaw`, `exists_hilbertTaylorWilesAuxLevelData` and
+`exists_hilbertAuxDeformationRingPresentation`, each of which is WEAKENED by
+carrying it, which is safe for every producer.
+
+References: Cohen, *On the structure and ideal theory of complete local rings*,
+Trans. AMS 59 (1946); Mazur, *Deforming Galois representations*, §1.2; Wiles,
+Ann. of Math. 141 (1995), ch. 1. -/
+theorem exists_hilbertAuxCoeffRingHom
+    (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (𝒟 : HilbertDeformationDatum ℓ F ρbar)
+    (q : ℕ) (coeff : Modularity.TaylorWilesCoefficients)
+    (hcoeff : ∃ c : MvPowerSeries (Fin q) coeff.carrier →+* 𝒟.R,
+      Function.Surjective c)
+    (hunram : IsLocalRing.maximalIdeal coeff.carrier
+      = Ideal.span {(ℓ : coeff.carrier)})
+    (Q : Finset (HeightOneSpectrum (𝓞 F)))
+    (𝒟Q : HilbertAuxDeformationDatum ℓ F Q ρbar) :
+    IsPrecomplete (IsLocalRing.maximalIdeal coeff.carrier) coeff.carrier ∧
+      ∃ c : coeff.carrier →+* 𝒟Q.R, Function.Surjective (𝒟Q.π.comp c) :=
+  sorry
+
+/-- **The cotangent bound: `q` elements span `𝔪_{R_Q}` modulo `𝔪² + c(𝔪_𝒪)`**
+(LEAF — new 2026-07-30, piece 2 of the route recorded on
+`exists_hilbertAuxDeformationRingGenerators` below, **and the ONLY piece of that
+leaf that is Taylor–Wiles mathematics**).
+
+This is Greenberg–Wiles over `F` together with Mazur's identification of the
+mod-`𝔪²` cotangent space of a weakly universal deformation ring with the dual of
+the Selmer group. The formula
+
+    dim H¹_Q(F, ad⁰ρbar) − dim H¹_{Q*}(F, ad⁰ρbar(1)) = Σ_v (local terms)
+
+has archimedean terms that consume `htr` — a totally real `F` is a hypothesis
+here and not decoration — and its dual Selmer group vanishes by the SECOND
+conjunct of `IsHilbertTaylorWilesPrimeSet`, i.e. by `hQ`, so it collapses to
+`dim_k H¹_Q(F, ad⁰ρbar) = #Q = q`, which is `hQcard`. `hirrF` is what makes
+`ad⁰` the right adjoint module and the space finite-dimensional, and `h𝒟Q` is
+what makes `𝒟Q.R` the ring whose cotangent space that is.
+
+**`c` IS AN INPUT HERE, NOT AN OUTPUT, AND THAT IS THE WHOLE REASON THE CUT IS
+SAFE.** The conclusion mentions `Ideal.map c (𝔪_𝒪)`, so it cannot be stated
+before a coefficient map exists; producing `c` here as well as in piece 1 would
+leave the two halves free to mean DIFFERENT coefficient maps, and their
+conjunction would then carry no arithmetic — the same shape of defect that
+`hexpin` had to repair for the exponent vector `ex` (see the 2026-07-30 FALSITY
+AUDIT on `exists_hilbertAuxHeckeModuleData` below, and CLAUDE.md's "TWO
+INDIVIDUALLY-CORRECT REPAIRS CAN BE FATAL TOGETHER"). Threading the SAME `c`
+through both halves is what makes the agreement structural rather than hoped
+for.
+
+`ht : ∀ i, t i ∈ 𝔪_{R_Q}` is deliberately NOT a conclusion: it follows from the
+span identity, since `t i ∈ Ideal.span (Set.range t) ≤ 𝔪_{R_Q}`. The consumer
+below derives it in two lines.
+
+References: Greenberg, *Iwasawa theory and p-adic deformations*; Wiles, Ann. of
+Math. 141 (1995), ch. 2 (the Selmer-group formula); Darmon–Diamond–Taylor §2.7;
+Fujiwara, *Deformation rings and Hecke algebras in the totally real case*, §3;
+Mazur, *Deforming Galois representations*, §1.6. -/
+theorem exists_hilbertAuxCotangentSpanningFamily
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (htr : NumberField.IsTotallyReal F) (hgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (q : ℕ) (coeff : Modularity.TaylorWilesCoefficients)
+    (n : ℕ) (Q : Finset (HeightOneSpectrum (𝓞 F))) (hQcard : Q.card = q)
+    (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q)
+    (𝒟Q : HilbertAuxDeformationDatum ℓ F Q ρbar)
+    (h𝒟Q : 𝒟Q.IsWeaklyUniversal)
+    (c : coeff.carrier →+* 𝒟Q.R)
+    (hc : Function.Surjective (𝒟Q.π.comp c)) :
+    ∃ t : Fin q → 𝒟Q.R,
+      IsLocalRing.maximalIdeal 𝒟Q.R = Ideal.span (Set.range t) ⊔
+        (IsLocalRing.maximalIdeal 𝒟Q.R ^ 2 ⊔
+          Ideal.map c (IsLocalRing.maximalIdeal coeff.carrier)) :=
+  sorry
+
+/-- **The `q`-generator bound for `R_Q`** (PROVEN GLUE since 2026-07-30 over the
+three-piece cut recorded below and now executed —
+`exists_hilbertAuxCoeffRingHom`, `exists_hilbertAuxCotangentSpanningFamily`, and
+the two commutative-algebra theorems `exists_mvPowerSeries_ringHom_of_isAdicComplete`
+and `surjective_mvPowerSeries_ringHom_of_span_maximalIdeal`, all four immediately
+above; formerly the GLOBAL half of the 2026-07-28 CONTROL/GENERATORS cut of
 `exists_hilbertAuxDeformationRingPresentation` below).
 
 Item 1 of that declaration's docstring: a surjection
@@ -26744,12 +27374,65 @@ does not need to add `[Finite k]` to the interface to do it.
 `natCast_eq_zero_of_finite_algebra` needs `[Algebra ℤ_[ℓ] k]` as well, and this
 leaf has no `ℤ_ℓ`-algebra structure on `k` in scope.)
 
-# THE ROUTE, IN THREE PIECES — not yet cut, and stated so it can be
+# THE ROUTE, IN THREE PIECES — CUT AND EXECUTED 2026-07-30
 
-Left undivided on purpose: the statement was FALSE until the repair above, and
-decomposing a statement in the same pass that repairs it is how two
-individually-correct edits combine into a third wrong one. The cut below is
-what a successor should write, and each piece is a genuine named leaf:
+The route was recorded here undivided on purpose (the statement was FALSE until
+the `hcoeff` repair above, and decomposing a statement in the same pass that
+repairs it is how two individually-correct edits combine into a third wrong
+one). It is now taken, one pass later, exactly as written, with ONE correction
+which is the subject of the next section: **piece 1 needed `hunram` too.**
+
+* piece 1 → `exists_hilbertAuxCoeffRingHom` (LEAF, above);
+* piece 2 → `exists_hilbertAuxCotangentSpanningFamily` (LEAF, above) — the only
+  Taylor–Wiles mathematics left in this subtree;
+* piece 3 → `exists_mvPowerSeries_ringHom_of_isAdicComplete` and
+  `surjective_mvPowerSeries_ringHom_of_span_maximalIdeal` (both PROVEN, above).
+
+Two departures from the letter of the route, both deliberate:
+
+* **`c` is threaded, not produced twice.** Piece 2's conclusion mentions
+  `Ideal.map c (𝔪_𝒪)`, so it cannot be stated before piece 1 has produced `c`;
+  it therefore takes `c` and `hc` as INPUTS. Producing `c` in both halves would
+  let them mean different coefficient maps and their conjunction would carry no
+  arithmetic — the `ex`/`hexpin` defect again, one level over.
+* **`IsPrecomplete (𝔪_𝒪) 𝒪` is a conclusion of piece 1, not a new hypothesis
+  here.** `Modularity.TaylorWilesCoefficients` does not carry it and piece 3
+  genuinely needs it; it is TRUE of every `TaylorWilesCoefficients` and the
+  two-paragraph proof is recorded on piece 1, so it costs the interface nothing.
+
+# `hunram` ADDED 2026-07-30 — THE LEAF WAS STILL FALSE AFTER `hcoeff`
+
+`hcoeff` repaired the residue field. It does NOT repair RAMIFICATION, and the
+section "WHAT `hcoeff` DOES AND DOES NOT BUY" above named the gap correctly —
+"for a RAMIFIED `𝒪` with residue field `k` no lift need exist" — but recorded it
+as an interface decision to be made later rather than as a falsity. It is a
+falsity: `Modularity/Patching.lean`'s FALSITY AUDIT on
+`exists_auxDeformationPresSurjection` turns the same observation into a
+refutation by letting the ramification degree `e` grow, and says in terms that
+the same defect is present verbatim in this Hilbert twin. The witness, the Krull
+intersection argument and the reason the classical statement has no such gap are
+written out on `exists_hilbertAuxCoeffRingHom` above; the short version is that
+without `hunram` this leaf ENTAILS `(ℓ : R_Q) = 0`.
+
+`hunram : 𝔪_𝒪 = (ℓ)` is that audit's structural repair — parameterise the
+deformation datum by `coeff` — taken in the cheap direction, as a hypothesis
+instead of a structure field, which is possible on this side because `coeff` is
+chosen IN THIS FILE. It is threaded up through
+`exists_hilbertAuxDeformationRingPresentation`,
+`exists_hilbertTaylorWilesAuxLevelData`, `exists_hilbertTaylorWilesLevelRaw` and
+`exists_hilbertTaylorWilesLevels` to `exists_hilbertTaylorWilesBottomPresentation`,
+whose conclusion now asserts it and whose intended witness `W(k)` satisfies it by
+definition. Every statement in that chain is WEAKENED by carrying it, which is
+safe for every producer, and no statement outside this file changes.
+
+**REPORT TO THE `ℚ` SIDE.** `Modularity/Patching.lean` priced this repair as "a
+cut-level change across several owners" and declined it. On the Hilbert side it
+cost six binders and one strengthened leaf conclusion, because the coefficient
+ring is chosen inside the same module. If the `ℚ` side's `coeff` is likewise
+chosen within `Patching.lean`, the same cheap repair is available there and
+`exists_auxDeformationPresSurjection` need not stay unvouched.
+
+The route as originally recorded read:
 
 1. **The coefficient structure.** `∃ c : coeff.carrier →+* 𝒟Q.R` compatible
    with the residue maps (`𝒟Q.π ∘ c` is the residue map of `coeff.carrier`
@@ -26773,7 +27456,10 @@ what a successor should write, and each piece is a genuine named leaf:
    "generates the cotangent space" to "generates topologically" to "onto".
 
 **PIECE 3 EXISTS ALREADY BUT IS UNREACHABLE FROM HERE, AND THAT IS A STANDING
-STRUCTURAL FACT, NOT AN OVERSIGHT.** `Deformation.lean` has exactly this
+STRUCTURAL FACT, NOT AN OVERSIGHT** (2026-07-30: the first option below was
+taken — re-proved here, and GENERALISED while being re-proved, since
+`Deformation.lean`'s form assumes an absolutely unramified coefficient ring and
+piece 3 does not need that). `Deformation.lean` has exactly this
 machinery — `surjective_of_mvPowerSeries_ringHom`,
 `exists_minimal_mvPowerSeries_presentation`,
 `exists_tangent_family_of_mvPowerSeries_presentation`. It cannot be used here:
@@ -26807,13 +27493,33 @@ theorem exists_hilbertAuxDeformationRingGenerators
     (q : ℕ) (coeff : Modularity.TaylorWilesCoefficients)
     (hcoeff : ∃ c : MvPowerSeries (Fin q) coeff.carrier →+* 𝒟.R,
       Function.Surjective c)
+    (hunram : IsLocalRing.maximalIdeal coeff.carrier
+      = Ideal.span {(ℓ : coeff.carrier)})
     (n : ℕ) (Q : Finset (HeightOneSpectrum (𝓞 F))) (hQcard : Q.card = q)
     (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q)
     (𝒟Q : HilbertAuxDeformationDatum ℓ F Q ρbar)
     (h𝒟Q : 𝒟Q.IsWeaklyUniversal) :
     ∃ pres : MvPowerSeries (Fin q) coeff.carrier →+* 𝒟Q.R,
-      Function.Surjective pres :=
-  sorry
+      Function.Surjective pres := by
+  classical
+  haveI := 𝒟Q.isAdicComplete
+  -- PIECE 1: the coefficient ring is precomplete, and maps to `R_Q` compatibly
+  -- with the residue fields.  This is where `hunram` is consumed.
+  obtain ⟨hprec, c, hc⟩ :=
+    exists_hilbertAuxCoeffRingHom ℓ F 𝒟 q coeff hcoeff hunram Q 𝒟Q
+  haveI := hprec
+  -- PIECE 2: Greenberg–Wiles over `F`.  The only arithmetic in the cut.
+  obtain ⟨t, hspan⟩ :=
+    exists_hilbertAuxCotangentSpanningFamily ℓ hℓ5 F htr hgal hirrF q coeff n Q
+      hQcard hQ 𝒟Q h𝒟Q c hc
+  -- `t i ∈ 𝔪` is not a separate obligation: it falls out of the span identity.
+  have ht : ∀ i, t i ∈ IsLocalRing.maximalIdeal 𝒟Q.R := fun i => by
+    rw [hspan]
+    exact Ideal.mem_sup_left (Ideal.subset_span ⟨i, rfl⟩)
+  -- PIECE 3: pure commutative algebra, proven above.
+  obtain ⟨φ, hφC, hφX⟩ := exists_mvPowerSeries_ringHom_of_isAdicComplete c t ht
+  exact ⟨φ, surjective_mvPowerSeries_ringHom_of_span_maximalIdeal
+    𝒟Q.π c hc t hspan φ hφC hφX⟩
 
 /-- **The auxiliary deformation ring at raised level, in presented form**
 (PROVEN GLUE since 2026-07-28 over the CONTROL/GENERATORS cut above; formerly
@@ -26972,6 +27678,8 @@ theorem exists_hilbertAuxDeformationRingPresentation
     (q : ℕ) (coeff : Modularity.TaylorWilesCoefficients)
     (hcoeff : ∃ c : MvPowerSeries (Fin q) coeff.carrier →+* 𝒟.R,
       Function.Surjective c)
+    (hunram : IsLocalRing.maximalIdeal coeff.carrier
+      = Ideal.span {(ℓ : coeff.carrier)})
     (n : ℕ) (Q : Finset (HeightOneSpectrum (𝓞 F))) (hQcard : Q.card = q)
     (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q)
     (𝒟Q : HilbertAuxDeformationDatum ℓ F Q ρbar)
@@ -26991,7 +27699,7 @@ theorem exists_hilbertAuxDeformationRingPresentation
       Q hQcard hQ 𝒟Q h𝒟Q
   obtain ⟨pres, hpres⟩ :=
     exists_hilbertAuxDeformationRingGenerators ℓ hℓ5 F htr hgal hirrF 𝒟 q coeff
-      hcoeff n Q hQcard hQ 𝒟Q h𝒟Q
+      hcoeff hunram n Q hQcard hQ 𝒟Q h𝒟Q
   exact ⟨ex, pres, diamond, toRuniv, hex, hexpin, hpres, htoRuniv, hker, hbex⟩
 
 /-- **The auxiliary Hecke module at raised level, with its bottom control**
@@ -27184,11 +27892,26 @@ the local-CFT construction rather than its consequence. `diamond` should be
 required to factor as `Λ ↠ ℤ_ℓ[Δ_Q] → R_Q` for the tame characters the
 split-torus clause supplies — at each `w ∈ Q` a surjection `I_w ↠ Δ_w` onto the
 `ℓ`-Sylow of `(𝓞_F ⧸ w)ˣ` composed with `χ_w`. That is provable where `diamond`
-is chosen, it excludes the degenerate `diamond` for the same structural reason
-`hexpin` excludes the inflated `ex`, and it needs one piece of interface this
-file does not yet have: the tame character `I_w ↠ Δ_w` itself. Until that
-interface exists the hazard stays as recorded here — an open check, not a
-refutation, since nothing in `h𝒟Q` and `hQ` has been shown to permit
+is chosen, and it excludes the degenerate `diamond` for the same structural
+reason the `ex` pin excludes the inflated `ex`.
+
+**CORRECTION 2026-07-30: the sentence that followed here — "it needs one piece of
+interface this file does not yet have: the tame character `I_w ↠ Δ_w` itself" —
+IS FALSE, and it was the load-bearing reason this hazard was left recorded rather
+than repaired.** The tame-character development exists, sorry-free, in
+`Fermat/FLT/Deformations/RepresentationTheory/ArtinConductor.lean`
+(`tameCharacter`, `wildInertiaGroup`, `exists_pow_eq_of_mem_wildInertiaGroup`,
+`exists_localInertia_pow_eq_of_wildInertiaGroup_le_ker`) and is reachable in THIS
+file through a fully `public` import chain — verified by compilation. The full
+correction, with the derivation and with the one ingredient that genuinely IS
+missing (the Frobenius relation `θ(FσF⁻¹) = θ(σ)^{Nw}`, which is where the
+exponent `ℓ^{v_ℓ(Nw−1)}` comes from — inertia alone cannot bound `χ_w|_{I_w}`,
+since the `ℓ`-part of the tame quotient is `ℤ_ℓ`), is in the TAME-CHARACTER
+section of `exists_hilbertAuxDiamondQuotient_of_exponents` above. Read it before
+concluding this seam is expensive to close.
+
+Until that relation is added the hazard stays as recorded here — an open check,
+not a refutation, since nothing in `h𝒟Q` and `hQ` has been shown to permit
 `R_Q ≅ R_∅` at `q ≥ 1` either.
 
 ## 5a. §5 UPGRADED (2026-07-30): the SHARP form is a contrapositive, and it says
@@ -27464,6 +28187,8 @@ theorem exists_hilbertTaylorWilesAuxLevelData
     [AddCommGroup M0] [Module 𝒟T.R M0] (hM0 : Nontrivial M0)
     (hbot : Nonempty
       (Modularity.TaylorWilesLevelRaw.{u, u, u, u, u} ℓ ψ q d 0 coeff M0))
+    (hunram : IsLocalRing.maximalIdeal coeff.carrier
+      = Ideal.span {(ℓ : coeff.carrier)})
     (n : ℕ) (Q : Finset (HeightOneSpectrum (𝓞 F))) (hQcard : Q.card = q)
     (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q) :
     ∃ ex : Fin q → ℕ, (∀ i, n ≤ ex i) ∧
@@ -27520,8 +28245,8 @@ theorem exists_hilbertTaylorWilesAuxLevelData
   obtain ⟨ex, pres, diamond, toRuniv, hex, hexpin, hpres, htoRuniv, hker, hbex⟩ :=
     exists_hilbertAuxDeformationRingPresentation ℓ hℓ5 F
       (natCast_eq_zero_of_finite_algebra ℓ k) htr hgal hirrF 𝒟 h𝒟w
-      h𝒟t (𝒟.isWeaklyUniversal_toAuxEmpty h𝒟w) q coeff hcoeff n Q hQcard hQ 𝒟Q
-      h𝒟Q
+      h𝒟t (𝒟.isWeaklyUniversal_toAuxEmpty h𝒟w) q coeff hcoeff hunram n Q hQcard
+      hQ 𝒟Q h𝒟Q
   -- The HECKE half.  Since the FREENESS/COMPARISON refutation of 2026-07-28 it
   -- PRODUCES the auxiliary Hecke module rather than asserting freeness of the
   -- unpinned `H.M`; classically the `M` it hands back IS `H.M`.
@@ -27653,6 +28378,8 @@ theorem exists_hilbertTaylorWilesLevelRaw
     [AddCommGroup M0] [Module 𝒟T.R M0] (hM0 : Nontrivial M0)
     (hbot : Nonempty
       (Modularity.TaylorWilesLevelRaw.{u, u, u, u, u} ℓ ψ q d 0 coeff M0))
+    (hunram : IsLocalRing.maximalIdeal coeff.carrier
+      = Ideal.span {(ℓ : coeff.carrier)})
     (n : ℕ) :
     Nonempty
       (Modularity.TaylorWilesLevelRaw.{u, u, u, u, u} ℓ ψ q d n coeff M0) := by
@@ -27668,7 +28395,7 @@ theorem exists_hilbertTaylorWilesLevelRaw
     instML, projM, hpres, htoRuniv, hker, hdsmul, ⟨coord⟩, hprojsurj,
     hprojsmul, hprojzero⟩ :=
     exists_hilbertTaylorWilesAuxLevelData ℓ hℓ5 F hw2 htr hgal hirrF 𝒟 𝒟T T e h𝒟w
-      h𝒟t ψ hψalg hψπ hψρ q d coeff M0 hM0 hbot n Q hQcard hQ
+      h𝒟t ψ hψalg hψπ hψρ q d coeff M0 hM0 hbot hunram n Q hQcard hQ
   -- The two level-ideal bounds are discharged off the arithmetic leaf, from
   -- the explicit shape of `𝔟_n`.
   exact ⟨{ R := R
@@ -28020,14 +28747,14 @@ theorem exists_hilbertTaylorWilesLevels
   -- bound `q0` that the dual-Selmer clause of `IsHilbertTaylorWilesPrimeSet`
   -- forces.  (The old `exists_card_eq_isHilbertTaylorWilesPrimeSet` SHRANK a
   -- supplied `Q`, which the repaired predicate makes unsound.)
-  obtain ⟨q, d, coeff, M0, iAG, iMod, iNt, hq0, hbot⟩ :=
+  obtain ⟨q, d, coeff, M0, iAG, iMod, iNt, hq0, hunram, hbot⟩ :=
     exists_hilbertTaylorWilesBottomLevel ℓ hℓ5 F htr hgal hirrF 𝒟 𝒟T T e h𝒟w h𝒟t
       ψ hψalg hψπ hψρ q0 hTW
   letI := iAG
   letI := iMod
   exact ⟨q, d, coeff, M0, iAG, iMod, iNt, fun n =>
     exists_hilbertTaylorWilesLevelRaw ℓ hℓ5 F hw2 htr hgal hirrF 𝒟 𝒟T T e h𝒟w h𝒟t
-      ψ hψalg hψπ hψρ q0 hTW q d hq0 coeff M0 iNt hbot.2 n⟩
+      ψ hψalg hψπ hψρ q0 hTW q d hq0 coeff M0 iNt hbot.2 hunram n⟩
 
 /-- **The Taylor–Wiles tower over `F` assembles into a system** (PROVEN
 2026-07-27 as pure glue over `exists_hilbertTaylorWilesLevels` above).
