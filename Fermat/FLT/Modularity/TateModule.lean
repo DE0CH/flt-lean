@@ -9579,6 +9579,247 @@ theorem exists_tatePt_val_eq
     rw [Nat.sub_self, pow_zero, m.act_one]
     exact hU0
 
+/-- **A LEVELWISE FAMILY APPROXIMATING AN `I`-ADIC WEIL PAIRING ON THE TATE
+MODULE** — the input shape of `exists_tateWeilPairing_of_approx`, and the
+form in which the residual content of
+`exists_tateWeilPairing_of_qAdicWeilSystem` is isolated (cut 2026-07-30).
+
+`C k` is a candidate for the pairing accurate MODULO `(j π)^k`: each clause
+of `IsTateWeilPairing` is asserted for `C k` only up to
+`Ideal.span {j π} ^ k`, together with a CAUCHY clause
+`C (k+1) t s ≡ C k t s (mod (j π)^k)` and an exact perfectness clause at
+level one.  The clauses, in order: bi-additivity in each variable,
+alternating, `𝒪_D`-bilinearity through `j`, `Γ_F`-equivariance with
+multiplier `χ_cyc`, level-`k` continuity, the Cauchy clause, and
+perfectness.
+
+**WHY THIS IS NOT `IsTateWeilSystem` IN DISGUISE, and why the cut is here.**
+`IsTateWeilSystem` is a family of pairings on the FINITE TORSION GROUPS
+`A[I^k]`, its clauses are exact identities there, and its tower clause is
+the geometric `e_{k+1}(y,z) ≡ e_k(π y, π z)`.  `C` is a family of forms on
+the TATE MODULE itself, its clauses are congruences rather than identities,
+and its tower clause compares two forms at the SAME pair of Tate points.
+The distinction is forced by CORRECTION 1 of
+`exists_tateWeilApprox_of_qAdicWeilSystem`: at a ramified `I` there is no
+levelwise system to build at all, because the `q^N`-Weil pairing vanishes
+identically on `A[I^k]`, while a family of congruence-level forms on `T`
+still exists.  Nothing in the clauses below mentions `A[I^k]`.
+
+**WHAT THE CUT BUYS, stated so that a successor does not have to re-derive
+it.**  The seven congruence clauses are exactly the clauses that the
+`q`-adic data `(w, L, θ)` delivers DIRECTLY at each level, by
+bi-multiplicativity of `w N`, additivity of `L N`, and linearity of `θ` —
+no limit and no normalisation is involved in any of them EXCEPT the sixth
+(Cauchy), which is the one place the unit `u = q/π^e` enters and the only
+place CORRECTION 1 bites.  So this predicate separates the seven formal
+clauses from the single hard one, and the limit machinery below is proven
+once and for all.
+
+NON-VACUITY, the same test as for the two predicates above: the constant
+zero family satisfies the first seven clauses, and the eighth —
+`IsUnit (C 1 t s)` for some pair — is what carries the content. -/
+def IsTateWeilApprox {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (q : ℕ) [Fact q.Prime]
+    (I : Ideal (NumberField.RingOfIntegers D)) (π : NumberField.RingOfIntegers D)
+    {O : Type u} [CommRing O] [Algebra ℤ_[q] O]
+    (j : NumberField.RingOfIntegers D →+* O)
+    (C : ℕ → TatePt m x I π → TatePt m x I π → O) : Prop :=
+  (∀ (k : ℕ) (t t' t'' s : TatePt m x I π), (∀ n, t''.1 n = ab.add (t.1 n) (t'.1 n)) →
+      C k t'' s - (C k t s + C k t' s) ∈ Ideal.span {j π} ^ k) ∧
+  (∀ (k : ℕ) (t s s' s'' : TatePt m x I π), (∀ n, s''.1 n = ab.add (s.1 n) (s'.1 n)) →
+      C k t s'' - (C k t s + C k t s') ∈ Ideal.span {j π} ^ k) ∧
+  (∀ (k : ℕ) (t : TatePt m x I π), C k t t ∈ Ideal.span {j π} ^ k) ∧
+  (∀ (k : ℕ) (a : NumberField.RingOfIntegers D) (t t' s : TatePt m x I π),
+      (∀ n, t'.1 n = m.act a (t.1 n)) →
+      C k t' s - j a * C k t s ∈ Ideal.span {j π} ^ k) ∧
+  (∀ (k : ℕ) (σ : Field.absoluteGaloisGroup F) (t t' s s' : TatePt m x I π),
+      (∀ n, t'.1 n = ab.galSMul x σ (t.1 n)) →
+      (∀ n, s'.1 n = ab.galSMul x σ (s.1 n)) →
+      C k t' s' - algebraMap ℤ_[q] O
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) q
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ).toRingEquiv) : ℤ_[q]ˣ) : ℤ_[q])
+        * C k t s ∈ Ideal.span {j π} ^ k) ∧
+  (∀ (k : ℕ) (t t' s s' : TatePt m x I π), t.1 k = t'.1 k → s.1 k = s'.1 k →
+      C k t s - C k t' s' ∈ Ideal.span {j π} ^ k) ∧
+  (∀ (k : ℕ) (t s : TatePt m x I π), C (k + 1) t s - C k t s ∈ Ideal.span {j π} ^ k) ∧
+  (∃ t s : TatePt m x I π, IsUnit (C 1 t s))
+
+/-- **THE LIMIT OF A LEVELWISE APPROXIMATING FAMILY IS AN `I`-ADIC WEIL
+PAIRING** (PROVEN 2026-07-30) — the `(j π)`-adic completeness argument,
+extracted once so that no successor has to redo it.
+
+This is the exact analogue of `exists_tateWeilPairing_of_tateWeilSystem`
+one level up: that theorem takes the limit of a system of pairings on the
+finite groups `A[I^k]`, this one takes the limit of a system of forms on
+`T_I A` itself.  Both are the same three moves — telescope the Cauchy
+clause into `C a t s ≡ C b t s (mod (j π)^a)` for `a ≤ b`, apply
+`IsPrecomplete.prec` to get the limit, apply `IsHausdorff.haus` to upgrade
+each congruence clause into the corresponding identity — and neither can be
+obtained from the other, because their inputs are forms on different
+objects.
+
+WHERE EACH HYPOTHESIS IS SPENT.  `hcplt` is both halves of completeness:
+`IsPrecomplete` produces `E`, `IsHausdorff` discharges the five algebraic
+clauses.  `hnu` is spent ONLY in the perfectness clause, where it puts
+`span {j π}` inside the maximal ideal of the local ring `O` so that a unit
+survives a perturbation by it — the same step, for the same reason, as in
+`exists_tateWeilPairing_of_tateWeilSystem`.  The CONTINUITY clause of
+`IsTateWeilPairing` comes from the continuity clause of `IsTateWeilApprox`
+together with the two level-`k` approximations, and needs no completeness
+at all. -/
+theorem exists_tateWeilPairing_of_approx
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (q : ℕ) [Fact q.Prime]
+    (I : Ideal (NumberField.RingOfIntegers D)) (π : NumberField.RingOfIntegers D)
+    (O : Type u) [CommRing O] [IsLocalRing O] [Algebra ℤ_[q] O]
+    (j : NumberField.RingOfIntegers D →+* O)
+    (hcplt : IsAdicComplete (Ideal.span {j π}) O)
+    (hnu : ¬ IsUnit (j π))
+    (C : ℕ → TatePt m x I π → TatePt m x I π → O)
+    (hC : IsTateWeilApprox m x q I π j C) :
+    ∃ E : TatePt m x I π → TatePt m x I π → O, IsTateWeilPairing m x q I π j E := by
+  classical
+  obtain ⟨hadd1, hadd2, halt, hact, hgal, hcont, htow, hunit⟩ := hC
+  -- STEP 1.  Telescoping the Cauchy clause.
+  have hmono : ∀ (t s : TatePt m x I π) (a b : ℕ), a ≤ b →
+      C a t s - C b t s ∈ Ideal.span {j π} ^ a := by
+    intro t s a b hab
+    induction b, hab using Nat.le_induction with
+    | base => simp
+    | succ n hn ih =>
+        have h2 : (Ideal.span {j π} : Ideal O) ^ n ≤ Ideal.span {j π} ^ a :=
+          Ideal.pow_le_pow_right hn
+        have h3 : C n t s - C (n + 1) t s ∈ Ideal.span {j π} ^ a := by
+          have hneg := Submodule.neg_mem (Ideal.span {j π} ^ n) (htow n t s)
+          rw [neg_sub] at hneg
+          exact h2 hneg
+        have hrw : C a t s - C (n + 1) t s
+            = (C a t s - C n t s) + (C n t s - C (n + 1) t s) := by ring
+        rw [hrw]
+        exact Ideal.add_mem _ ih h3
+  -- STEP 2.  `IsPrecomplete` supplies the limit.
+  have hex : ∀ t s : TatePt m x I π, ∃ Lim : O,
+      ∀ n : ℕ, C n t s - Lim ∈ Ideal.span {j π} ^ n := by
+    intro t s
+    obtain ⟨Lim, hLim⟩ := hcplt.toIsPrecomplete.prec (f := fun n => C n t s)
+      (fun {a b} hab => by
+        rw [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top]
+        exact hmono t s a b hab)
+    refine ⟨Lim, fun n => ?_⟩
+    have h := hLim n
+    rwa [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top] at h
+  choose E hEspec using hex
+  -- STEP 3.  `IsHausdorff` turns congruences at every level into equalities.
+  have haus : ∀ z : O, (∀ n : ℕ, z ∈ Ideal.span {j π} ^ n) → z = 0 := fun z hz =>
+    hcplt.toIsHausdorff.haus z fun n => by
+      rw [SModEq.sub_mem, sub_zero, smul_eq_mul, Ideal.mul_top]; exact hz n
+  refine ⟨E, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · -- bi-additivity, first variable
+    intro t t' t'' s ht''
+    refine sub_eq_zero.mp (haus _ fun k => ?_)
+    have h1 := hEspec t'' s k
+    have h2 := hEspec t s k
+    have h3 := hEspec t' s k
+    have h4 := hadd1 k t t' t'' s ht''
+    have hrw : E t'' s - (E t s + E t' s)
+        = -(C k t'' s - E t'' s)
+          + (C k t'' s - (C k t s + C k t' s))
+          + (C k t s - E t s) + (C k t' s - E t' s) := by ring
+    rw [hrw]
+    exact Ideal.add_mem _ (Ideal.add_mem _ (Ideal.add_mem _ (Submodule.neg_mem _ h1) h4) h2) h3
+  · -- bi-additivity, second variable
+    intro t s s' s'' hs''
+    refine sub_eq_zero.mp (haus _ fun k => ?_)
+    have h1 := hEspec t s'' k
+    have h2 := hEspec t s k
+    have h3 := hEspec t s' k
+    have h4 := hadd2 k t s s' s'' hs''
+    have hrw : E t s'' - (E t s + E t s')
+        = -(C k t s'' - E t s'')
+          + (C k t s'' - (C k t s + C k t s'))
+          + (C k t s - E t s) + (C k t s' - E t s') := by ring
+    rw [hrw]
+    exact Ideal.add_mem _ (Ideal.add_mem _ (Ideal.add_mem _ (Submodule.neg_mem _ h1) h4) h2) h3
+  · -- alternating
+    intro t
+    refine haus _ fun k => ?_
+    have h1 := hEspec t t k
+    have h2 := halt k t
+    have hrw : E t t = -(C k t t - E t t) + C k t t := by ring
+    rw [hrw]
+    exact Ideal.add_mem _ (Submodule.neg_mem _ h1) h2
+  · -- `𝒪_D`-bilinearity
+    intro a t t' s ht'
+    refine sub_eq_zero.mp (haus _ fun k => ?_)
+    have h1 := hEspec t' s k
+    have h2 := hEspec t s k
+    have h4 := hact k a t t' s ht'
+    have hrw : E t' s - j a * E t s
+        = -(C k t' s - E t' s)
+          + (C k t' s - j a * C k t s)
+          + j a * (C k t s - E t s) := by ring
+    rw [hrw]
+    exact Ideal.add_mem _ (Ideal.add_mem _ (Submodule.neg_mem _ h1) h4) (Ideal.mul_mem_left _ _ h2)
+  · -- `Γ_F`-equivariance
+    intro σ t t' s s' ht' hs'
+    refine sub_eq_zero.mp (haus _ fun k => ?_)
+    have h1 := hEspec t' s' k
+    have h2 := hEspec t s k
+    have h4 := hgal k σ t t' s s' ht' hs'
+    have hrw : E t' s' -
+        algebraMap ℤ_[q] O
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) q
+            ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ).toRingEquiv) : ℤ_[q]ˣ) : ℤ_[q])
+          * E t s
+        = -(C k t' s' - E t' s')
+          + (C k t' s' -
+              algebraMap ℤ_[q] O
+                ((cyclotomicCharacter (AlgebraicClosure ℚ) q
+                  ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ).toRingEquiv) :
+                    ℤ_[q]ˣ) : ℤ_[q])
+                * C k t s)
+          + algebraMap ℤ_[q] O
+              ((cyclotomicCharacter (AlgebraicClosure ℚ) q
+                ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ).toRingEquiv) :
+                  ℤ_[q]ˣ) : ℤ_[q])
+              * (C k t s - E t s) := by ring
+    rw [hrw]
+    exact Ideal.add_mem _ (Ideal.add_mem _ (Submodule.neg_mem _ h1) h4) (Ideal.mul_mem_left _ _ h2)
+  · -- continuity
+    intro k t t' s s' hts hss
+    have h1 := hEspec t s k
+    have h2 := hEspec t' s' k
+    have h3 := hcont k t t' s s' hts hss
+    have hrw : E t s - E t' s'
+        = -(C k t s - E t s) + (C k t s - C k t' s') + (C k t' s' - E t' s') := by ring
+    rw [hrw]
+    exact Ideal.add_mem _ (Ideal.add_mem _ (Submodule.neg_mem _ h1) h3) h2
+  · -- perfectness: a unit stays a unit under a perturbation by the maximal ideal
+    obtain ⟨t, s, hts⟩ := hunit
+    refine ⟨t, s, ?_⟩
+    have h1 := hEspec t s 1
+    rw [pow_one] at h1
+    by_contra hv
+    have hjm : j π ∈ IsLocalRing.maximalIdeal O :=
+      (IsLocalRing.mem_maximalIdeal _).mpr (mem_nonunits_iff.mpr hnu)
+    have hsub : (Ideal.span {j π} : Ideal O) ≤ IsLocalRing.maximalIdeal O :=
+      Ideal.span_le.mpr (by simpa using hjm)
+    have hvm : E t s ∈ IsLocalRing.maximalIdeal O :=
+      (IsLocalRing.mem_maximalIdeal _).mpr (mem_nonunits_iff.mpr hv)
+    have hum : C 1 t s ∈ IsLocalRing.maximalIdeal O := by
+      have hrw : C 1 t s = (C 1 t s - E t s) + E t s := by ring
+      rw [hrw]
+      exact Ideal.add_mem _ (hsub h1) hvm
+    exact (mem_nonunits_iff.mp ((IsLocalRing.mem_maximalIdeal _).mp hum)) hts
+
 /-- **The `q`-adic Weil system refines to an `I`-adic Weil pairing ON THE
 TATE MODULE** (SORRY LEAF, cut 2026-07-29 out of
 `exists_tateWeilSystem_of_qAdicWeilSystem` — the whole mathematical content
@@ -9676,7 +9917,100 @@ MATHLIB / PROJECT INGREDIENTS: `IsAdicComplete.limit`-style assembly as in
 `exists_tateWeilPairing_of_tateWeilSystem` (which does the analogous Cauchy
 argument and is PROVEN), `IsTraceDualFunctional`'s third and fourth clauses
 for the refinement, and the seventh clause of `IsQAdicWeilSystem` (the
-INTEGER-tower compatibility) for the limit. -/
+INTEGER-tower compatibility) for the limit.
+
+**RESTATED 2026-07-30 — the conclusion is now `IsTateWeilApprox` rather than
+`IsTateWeilPairing`, and the limit has been PROVEN off it.**  Everything
+above is unchanged and describes this leaf verbatim; what changed is that
+the final passage to the limit — which is `hcplt` and nothing else — is no
+longer part of the burden.  It is `exists_tateWeilPairing_of_approx`, and
+`exists_tateWeilPairing_of_qAdicWeilSystem` immediately below is now PROVEN
+over this leaf.  Concretely, what a successor must now produce is the
+family of level-`k` constants
+
+  `C k t s = ` the constant returned by `IsTraceDualFunctional`'s third
+  clause for the functional `b ↦ L N (w N (m.act b (t.1 (e·N))) (s.1 (e·N)))`,
+
+at the level `N` prescribed by THE CORRECTED NORMALISATION above, together
+with its eight congruence clauses.  Seven of those eight are formal: each
+is the corresponding clause of `IsQAdicWeilSystem` (bi-multiplicativity of
+`w N`, the `𝒪_D`-adjointness clause, the `Γ_F`-equivariance clause) pushed
+through the additivity of `L N` (`hLadd`, `hLgal`) and the linearity of `θ`
+(`hθ`'s first two clauses), then transported across the uniqueness clause
+`hθ.4`.  **The eighth — the CAUCHY clause `C (k+1) t s ≡ C k t s` — is the
+whole of CORRECTION 1 and CORRECTION 2, and it is the only clause where the
+unit `u = q/π^e` appears at all.**  That is the point of the cut: it
+confines the normalisation problem to one clause of one predicate.
+
+**AND THIS IS NOT THE SPLIT REFUTED IN THE PARAGRAPH ABOVE.**  The split
+rejected there is the one that builds the `ℤ_q`-valued form first and calls
+the trace-duality refinement formal; it fails because the natural
+nondegeneracy of the `ℤ_q`-form, `∃ t s, IsUnit (θ (E t s))`, does not
+deliver a UNIT OF `O`.  The split taken here never leaves the
+`O`-vocabulary: `IsTateWeilApprox`'s perfectness clause is
+`∃ t s, IsUnit (C 1 t s)` — an honest unit of `O` at level one, exactly the
+form `IsTateWeilPairing` demands — and `θ` does not occur in the predicate.
+The refuting check is the same one that paragraph prescribes: look for `θ`
+or `ℤ_[q]`-valued quantities in `IsTateWeilApprox`.  There are none except
+the cyclotomic multiplier, which `IsTateWeilPairing` carries too. -/
+theorem exists_tateWeilApprox_of_qAdicWeilSystem
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (q : ℕ) [Fact q.Prime]
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (O : Type u) [CommRing O] [IsLocalRing O] [Algebra ℤ_[q] O]
+    (j : NumberField.RingOfIntegers D →+* O)
+    (hcplt : IsAdicComplete (Ideal.span {j π}) O)
+    (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
+      j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n)
+    (w : ℕ → GeomFibrePt f x → GeomFibrePt f x → (AlgebraicClosure F)ˣ)
+    (hw : IsQAdicWeilSystem m x q w)
+    (θ : O → ℤ_[q]) (hθ : IsTraceDualFunctional q I π j θ)
+    (L : ℕ → (AlgebraicClosure F)ˣ → ℤ_[q])
+    (hLadd : ∀ (k : ℕ) (ζ ξ : (AlgebraicClosure F)ˣ), ζ ^ q ^ k = 1 → ξ ^ q ^ k = 1 →
+      L k (ζ * ξ) - (L k ζ + L k ξ) ∈ Ideal.span {(q : ℤ_[q])} ^ k)
+    (hLgal : ∀ (k : ℕ) (σ : Field.absoluteGaloisGroup F) (ζ : (AlgebraicClosure F)ˣ),
+      ζ ^ q ^ k = 1 →
+      L k (Units.map
+            ((σ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom.toRingHom.toMonoidHom) ζ)
+        - (((cyclotomicCharacter (AlgebraicClosure ℚ) q
+              ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ).toRingEquiv) : ℤ_[q]ˣ) : ℤ_[q])
+          * L k ζ) ∈ Ideal.span {(q : ℤ_[q])} ^ k)
+    (hLtower : ∀ (k : ℕ) (ζ : (AlgebraicClosure F)ˣ), ζ ^ q ^ (k + 1) = 1 →
+      L (k + 1) ζ - L k (ζ ^ q) ∈ Ideal.span {(q : ℤ_[q])} ^ k)
+    (hLinj : ∀ (k : ℕ) (ζ : (AlgebraicClosure F)ˣ), ζ ^ q ^ k = 1 →
+      (L k ζ ∈ Ideal.span {(q : ℤ_[q])} ^ k ↔ ζ = 1))
+    (hLsurj : ∀ (k : ℕ) (r : ℤ_[q]), ∃ ζ : (AlgebraicClosure F)ˣ,
+      ζ ^ q ^ k = 1 ∧ L k ζ - r ∈ Ideal.span {(q : ℤ_[q])} ^ k)
+    (hdiv : ∀ (a : NumberField.RingOfIntegers D), a ≠ 0 →
+      ∀ y : GeomFibrePt f x, ∃ z : GeomFibrePt f x, m.act a z = y) :
+    ∃ C : ℕ → TatePt m x I π → TatePt m x I π → O, IsTateWeilApprox m x q I π j C :=
+  sorry
+
+/-- **The `q`-adic Weil system refines to an `I`-adic Weil pairing on the
+Tate module** (PROVEN 2026-07-30 over the single leaf
+`exists_tateWeilApprox_of_qAdicWeilSystem` immediately above, which is this
+statement with the passage to the limit removed).
+
+The proof is three lines of glue plus the one step that is genuinely about
+`O` rather than about the pairing: `hker` at `n = 1` together with the
+maximality of `I` says `j π` is a NON-UNIT, which is what puts
+`span {j π}` inside the maximal ideal of the local ring `O` and so lets the
+perfectness clause survive the limit.  That step is identical to the one in
+`exists_tateWeilPairing_of_mult`, and it is the only use of `hI` here.
+
+WHICH HYPOTHESES THIS ASSEMBLY ITSELF USES: `hI`, `hker` and `hcplt`, and
+nothing else.  Every other binder is passed through untouched to the leaf,
+where the docstring above records what each is for.  They are NOT
+decoration and must not be dropped in a restatement — `hqI` fixes the
+ramification index, `hπ`/`hπ2` make `π` a uniformizer, and `hdiv` is what
+makes the transition maps of `TatePt` surjective, without which the
+perfectness clause has nothing to quantify over. -/
 theorem exists_tateWeilPairing_of_qAdicWeilSystem
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D]
@@ -9713,8 +10047,20 @@ theorem exists_tateWeilPairing_of_qAdicWeilSystem
       ζ ^ q ^ k = 1 ∧ L k ζ - r ∈ Ideal.span {(q : ℤ_[q])} ^ k)
     (hdiv : ∀ (a : NumberField.RingOfIntegers D), a ≠ 0 →
       ∀ y : GeomFibrePt f x, ∃ z : GeomFibrePt f x, m.act a z = y) :
-    ∃ E : TatePt m x I π → TatePt m x I π → O, IsTateWeilPairing m x q I π j E :=
-  sorry
+    ∃ E : TatePt m x I π → TatePt m x I π → O, IsTateWeilPairing m x q I π j E := by
+  obtain ⟨C, hC⟩ := exists_tateWeilApprox_of_qAdicWeilSystem m x q I hI hqI π hπ hπ2 O j
+    hcplt hker w hw θ hθ L hLadd hLgal hLtower hLinj hLsurj hdiv
+  refine exists_tateWeilPairing_of_approx m x q I π O j hcplt ?_ C hC
+  -- `j π` is a non-unit: were `span {j π}` the unit ideal, `hker` at `n = 1`
+  -- would put `1` in `I`, contradicting maximality.
+  intro hu
+  have h1 : (Ideal.span {j π} : Ideal O) = ⊤ := Ideal.span_singleton_eq_top.mpr hu
+  have h2 : (1 : NumberField.RingOfIntegers D) ∈ I ^ 1 := by
+    refine (hker 1 1).mp ?_
+    rw [pow_one, h1]
+    exact Submodule.mem_top
+  rw [pow_one] at h2
+  exact hI.ne_top ((Ideal.eq_top_iff_one I).mpr h2)
 
 /-- **Trace duality refines the `q`-adic Weil system to the `I`-adic one**
 (PROVEN 2026-07-29 over `exists_tateWeilPairing_of_qAdicWeilSystem` and
