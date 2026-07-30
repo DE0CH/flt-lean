@@ -424,6 +424,18 @@ public import Mathlib.Order.KonigLemma
 -- `𝒪₃ᵥ` to that of the local integral closure `𝒪_E`.  (The module is already
 -- in this file's cone through `ConnectedEtale`, but only non-publicly.)
 public import Fermat.FLT.Mathlib.RingTheory.AdicCompletion.Finite
+-- `Fermat.TraceForm.*`: the trace of a number field as a sum over its infinite
+-- places, the trace FORM read off `NumberField.mixedEmbedding`, and the
+-- identification of `Submodule.traceDual ℤ ℚ` with the dual for that pairing.
+-- This is the algebraic half of sub-leaf (B) of
+-- `heckeIdealTheta_functionalEquation` below — the half the leaf's own CUT
+-- GUIDANCE calls "the only one with no analysis in it and the right place to
+-- start".  Added 2026-07-30; see that module's docstring for what (B) still
+-- needs on top of it.  Nothing in this file CONSUMES it yet, deliberately: the
+-- consumer is the still-open leaf, and the material is committed here (rather
+-- than left as the blob tag `flt-lean-272-trace-over-places`, where it spent
+-- two days) so that it is compiled, greppable and owned.
+public import Fermat.FLT.Mathlib.NumberTheory.NumberField.TraceForm
 
 /-!
 # Mod-3 hardly ramified representations
@@ -26058,25 +26070,57 @@ representation, (B) the trace-dual/covolume-`1` identification above,
 and (C) invariance of `𝔉` under `y ↦ y⁻¹`; (B) is the only one with no
 analysis in it and is the right place to start.
 
-FIRST BRICK OF (B), ALREADY PROVEN AND VERIFIED — but NOT committed to
-the build, because nothing consumes it yet and it would be free-floating.
-It is preserved as the git blob tag `flt-lean-272-trace-over-places`
-(recover with `git cat-file blob flt-lean-272-trace-over-places`), and it
-compiles clean against our pin (`lake env lean`, `EXIT=0`, no warnings).
-It supplies the additive analogue of `prod_eq_abs_norm` that mathlib
-lacks, proved on the template of that lemma (`trace_eq_sum_embeddings`,
-`RingHom.equivRatAlgHom`, `Finset.sum_fiberwise`, `card_filter_mk_eq`):
+FIRST BRICK OF (B) — **NO LONGER A BLOB: COMMITTED 2026-07-30, TOGETHER WITH
+THE ASSEMBLY THAT CONSUMES IT, AS `Fermat/FLT/Mathlib/NumberTheory/
+NumberField/TraceForm.lean`**, `public import`ed at the top of this file.  The
+paragraph that stood here said these lemmas were withheld from the build
+because nothing consumed them and they would be free-floating; that was true
+when written and its mathematics is unchanged, only its status is.  The blob
+tag `flt-lean-272-trace-over-places` still exists and its contents differ from
+what is committed only by the namespace, so
+`git cat-file blob flt-lean-272-trace-over-places` remains a valid
+cross-check.  What is now in the build, in `namespace Fermat.TraceForm`:
 
 * `filter_mk_eq` — the fibre of `InfinitePlace.mk` over `w` is exactly
   `{embedding w, ComplexEmbedding.conjugate (embedding w)}`;
 * `sum_fiber_eq` — `∑_{φ ↦ w} φ x = mult w · Re(σ_w x)`;
-* `trace_eq_sum_mult_re` — `Tr_{K/ℚ}(x) = ∑_w mult(w)·Re(σ_w x)`;
+* `trace_eq_sum_mult_re` — `Tr_{K/ℚ}(x) = ∑_w mult(w)·Re(σ_w x)`, the
+  additive analogue of `prod_eq_abs_norm` that mathlib lacks, proved on the
+  template of that lemma (`trace_eq_sum_embeddings`,
+  `RingHom.equivRatAlgHom`, `Finset.sum_fiberwise`);
 * `trace_eq_sum_real_add_two_sum_complex` — the split
-  `Tr(x) = ∑_{w real} σ_w x + 2·∑_{w complex} Re(σ_w x)`, which is
-  literally the mixed-space form `Σ_real + 2Σ_complex Re` that has to be
-  matched against `⟪·,·⟫` to identify the trace-dual with the lattice
-  dual.  A successor building (B) should lift these four verbatim and
-  commit them TOGETHER with the assembly that consumes them.
+  `Tr(x) = ∑_{w real} σ_w x + 2·∑_{w complex} Re(σ_w x)`;
+* `trace_mul_eq_mixedPairing` — the trace FORM read off
+  `NumberField.mixedEmbedding`:
+  `Tr(x·y) = ∑_{w real} x_w y_w + 2·∑_{w complex} Re(x_w y_w)`.  Note the
+  second factor is `y_w` and NOT its conjugate — the trace form is the
+  BILINEAR pairing;
+* `trace_mul_eq_mixedInner` — the same written with the real inner product of
+  `ℂ`, `Tr(x·y) = ∑_{w real} x_w y_w + 2·∑_{w complex} ⟪x_w, conj y_w⟫_ℝ`,
+  which puts BOTH discrepancies from `euclidean.mixedSpace`'s own metric
+  `Σ_real x_w² + Σ_complex |x_w|²` on the page: the factor `2` on the complex
+  block (the `√2` rescaling this docstring predicted) and the coordinatewise
+  conjugation, which is a linear isometry and hence invisible to theta sums;
+* `mem_traceDual_iff_mixedPairing_isInt` — the consumer, and the algebraic
+  content of (B): `x ∈ Submodule.traceDual ℤ ℚ I` **iff** the mixed-space
+  pairing of `x` against every `y ∈ I` is a rational integer.  That is, the
+  ARITHMETIC dual and the GEOMETRIC dual of an ideal are the same subset of
+  `K`.
+
+All seven are PROVEN and `sorry`-free; verified by
+`lake build Fermat.FLT.Mathlib.NumberTheory.NumberField.TraceForm`
+(`Build completed successfully (3341 jobs)`), with no warnings of any kind.
+
+**WHAT (B) STILL NEEDS — all of it transport, none of it arithmetic**: the
+passage along `mixedEmbedding.euclidean.toMixed` (`volumePreserving_toMixed`)
+into an inner-product space, carrying the `√2` on the complex block that
+`trace_mul_eq_mixedInner` now exhibits; the `ZLattice.comap` bookkeeping
+identifying the transported `mixedEmbedding.idealLattice K J` with a
+`ZLattice` of that space, as `NumberField.Ideal.Asymptotics` does it; the
+passage from `Submodule.traceDual` to the FRACTIONAL ideal `(J·𝔡_K)⁻¹`
+(`FractionalIdeal.dual`, `differentIdeal`, and `absNorm_differentIdeal` for
+`N𝔡 = |d_K|` — all three exist in the pin); and `covolume_idealLattice`.  The
+UNIVERSE OBSTRUCTION recorded above is untouched by any of this.
 
 **THE `dedekindDualClass` CLAUSE WAS NEVER TESTED BY EITHER PARI AUDIT ABOVE, AND NO
 QUADRATIC FIELD CAN EVER TEST IT. Tested 2026-07-30 in two new fields; the clause is
@@ -53621,6 +53665,69 @@ narrowness of `P` is doing the work.
 **CROSS-REFERENCE — THE SAME MISSING THEOREM IS OPEN IN `Modularity/Interface.lean`,
 AND THE TWO EFFORTS SHOULD CITE ONE STATEMENT RATHER THAN BUILD TWO**
 (established 2026-07-28 by reading both docstrings).
+
+**⚠ THE NAMED TWIN IS STALE — CORRECTED 2026-07-30 AGAINST THE COMPILER, AND THE
+"CITE ONE STATEMENT" ADVICE IS WORTH LESS THAN THE PARAGRAPH BELOW CLAIMS.** Both
+names this cross-reference reaches for are now PROVEN and neither is a work item:
+`finrank_le_card_classGroup_of_unramified_abelian` (`Interface.lean:39180`) is
+`rcases`/`rw`/`exact` glue, and the statement it descends to,
+`NumberField.finrank_le_index_relNormClassSubgroup`
+(`Fermat/FLT/NumberField/UnramifiedClassFieldBound.lean`), is PROVEN as well —
+that whole module is `sorry`-free. Verified by
+`lake build Fermat.FLT.NumberField.ArtinSymbol
+Fermat.FLT.NumberField.UnramifiedClassFieldBound`, `Build completed successfully
+(3531 jobs)`, whose ONLY `declaration uses 'sorry'` warnings in the entire cone are
+`ArtinSymbol.lean:325` and `:369`. (`Interface.lean`'s own docstring still calls
+`finrank_le_index_relNormClassSubgroup` "the ONE remaining open leaf"; that is
+stale by the same measurement.) The live residue on that side is those two
+`ArtinSymbol.lean` leaves — `exists_classGroupHom_eq_frobAt` (Artin reciprocity at
+modulus `1`) and `closure_frobAt_eq_top` (the density half) — i.e. the side went
+down the **Artin-map** route that the paragraph below rejects for this one, not
+down the shared norm-index statement. Nobody is building the shared statement.
+
+**And the two leaves are NOT of equal strength, which is the other reason "state it
+once" buys less than it looks like it does.** This leaf's Galois group is
+automatically CYCLIC — since 2026-07-30 that is a discharged HYPOTHESIS of the
+sub-leaf `exists_natCard_charDivisorImage_le_ray_class` above, not an observation —
+whereas the `Interface.lean` side genuinely quantifies over an abelian
+`L ≃ₐ[K] L`. So the idele-free Chevalley (ambiguous class number) route, which
+needs cyclicity, reaches THIS leaf and stops one gap short of that one. The full
+argument, with the two `Subgroup` lemmas it rests on, is recorded in the docstring
+of `exists_surjective_classGroupHom_aut_of_unramified_abelian` in
+`UnramifiedClassFieldBound.lean`. What does NOT follow: Chevalley as recorded there
+is the modulus-`1` unramified statement, while this leaf needs a RAY-class norm
+index at a RAMIFIED modulus, so cyclicity retires one obstruction here and not the
+other. **The atomicity verdict below is unaffected and has now been reached
+independently a third time (2026-07-30).**
+
+**A FOURTH PASS (2026-07-30, different owner) CLOSES THE ONE SHORTCUT THE
+HYPOTHESES LOOK LIKE THEY OFFER — do not spend a cycle rediscovering it.**
+`hord` bounds the order of `χ`'s values by `ℓ^k` with `ℓ` prime and `ℓ ≠ 3`,
+and the values live in `(Dickson.K 3)ˣ`.  It is tempting to read that as a
+finiteness bound and split the leaf into a hard `ℓ = 2` case and an easy odd-`ℓ`
+case in which `χ ∘ globalFrob` is forced trivial, so that `A.relIndex Im = 1`
+and only finiteness of the ray class group is needed.  **That split does not
+exist.**  `Dickson.K p` is `AlgebraicClosure (ZMod p)`
+(`Fermat/FLT/KnownIn1980s/PGL2/Basic.lean:34`), so `(Dickson.K 3)ˣ` is the
+multiplicative group of `𝔽̄₃` — a torsion group containing an element of order
+`n` for EVERY `n` prime to `3`, and nothing else.  So `hℓ3` is exactly the
+condition under which an order-`ℓ^k` character can exist at all, `χ`'s image can
+be cyclic of any `ℓ`-power order for any `ℓ ≠ 3`, and `A.relIndex Im` is an
+unbounded `[L:K]`.  Refuting check: `grep -n "abbrev K" that file` — it reads
+`noncomputable abbrev K : Type := AlgebraicClosure (ZMod p)`, not a finite
+field.  With that gone, the conclusion `A.relIndex Im ≤ (P ⊔ N).relIndex Im`
+is the norm-index inequality `[I_mm : P_mm·N] ≥ [L:K]` in full, for a cyclic
+`L/K` of arbitrary `ℓ`-power degree: Neukirch VI (4.1)/(4.6) (the "first
+inequality", proved from the Herbrand quotient `h(C_L) = [L:K]` of the idele
+class group), NOT the analytic inequality of the opposite sense.  The two
+inequalities are named in opposite orders by different authors, and a successor
+who reaches for the analytic route because the file already carries Hecke
+`L`-function machinery (`heckeIdealTheta_functionalEquation` and its cluster,
+above) will be building the WRONG half; that machinery bounds the index from
+ABOVE.
+
+The paragraph as originally written, kept because its mathematics is right even
+though its status labels are not:
 
 `finrank_le_card_classGroup_of_unramified_abelian` (`Interface.lean`, sorry leaf
 cut 2026-07-28) is **this leaf at modulus `1`**: its own docstring names the same
