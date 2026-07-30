@@ -60167,7 +60167,7 @@ theorem — `exists_abelianImage_of_isAdditiveOn` here, cut for
 `exists_prym_of_involution` and stated only for an ENDOMORPHISM
 `u : J ⟶ J` with conclusion `Epi p`, and
 `exists_surjectiveAbelianImage_of_isAdditiveOn` ~2500 lines below, cut for
-`exists_albaneseQuotientAbelianImage_x0OneSixtyNine`, stated for a general
+`exists_albaneseQuotientAbelianImage`, stated for a general
 `u : J ⟶ A` with conclusion `AlgebraicGeometry.Surjective π`.  `Epi` and
 `Surjective` are NOT interchangeable in `Scheme` — `Spec K ⟶ Spec R` is
 epi and not surjective — which is why they were written separately and
@@ -67373,7 +67373,7 @@ all — it is *defined* as `x ↦ π (aj x)`, and its naturality is
 
 | leaf | theory | level |
 |---|---|---|
-| `exists_albaneseQuotientAbelianImage_x0OneSixtyNine` | the `hA` repair: the translate of `c` killing the base point, factored through the Albanese | PROVEN 2026-07-28 |
+| `exists_albaneseQuotientAbelianImage` | the `hA` repair: the translate of `c` killing the base point, factored through the Albanese | PROVEN 2026-07-28 |
 | `exists_surjectiveAbelianImage_of_isAdditiveOn` | the image of a homomorphism of abelian varieties is an abelian subvariety | generic (PROVEN 2026-07-28, relocated ~2500 lines up, over three leaves) |
 | `exists_goodAbelianReduction_of_abelianQuotient` | Néron–Ogg–Šafarevič | generic (PROVEN 2026-07-28 over `hasGoodAbelianModelAtBase_of_surjective`) |
 | `exists_abelianSpread_of_neronModel` | the Néron mapping property for a morphism out of a smooth model | generic |
@@ -67498,17 +67498,22 @@ what makes the two normalisations agree.  Translating by the value at any
 other point would leave `c' o ≠ 0` and the universal property would not
 apply.
 
-**`hX` IS NOT USED, and that is a real fact about the statement rather
-than a gap in the proof** (measured 2026-07-28: the `unusedVariables`
-linter reports it, hence the `_hX`).  Every level-specific input —
-positive rank of `J_0(169)`, the rank-`0` `5`-dimensional quotient,
-Kolyvagin–Logachev — is already inside `hA`, and the argument above uses
-only that `A` is an abelian variety, that `c` is natural, and that `jac`
-is initial.  The hypothesis is kept anyway: it costs the caller nothing,
-it keeps the statement's name honest about where it is used, and removing
-it would churn `exists_x0AbelianNeronDatum_oneSixtyNine`'s call site for
-no mathematical gain.  A future consumer at another level may simply
-instantiate it.
+**`hX` WAS REMOVED 2026-07-30, and the theorem renamed accordingly** (it
+was `exists_albaneseQuotientAbelianImage_x0OneSixtyNine`, carrying an
+`_hX : IsX0Compactification 169 strX strY jY` that the `unusedVariables`
+linter had already reported as unused on 2026-07-28).  Every
+level-specific input — positive rank of `J_0(169)`, the rank-`0`
+`5`-dimensional quotient, Kolyvagin–Logachev — is inside `hA`, and the
+argument below uses only that `A` is an abelian variety, that `c` is
+natural, and that `jac` is initial.
+
+The earlier docstring kept the hypothesis on the grounds that removing it
+"would churn `exists_x0AbelianNeronDatum_oneSixtyNine`'s call site for no
+mathematical gain".  That judgement was wrong about the gain: the literal
+`169` in the type was the only thing standing between this theorem and
+step (1) of `injective_redX_of_rankZeroAbelianImage`, which is
+LEVEL-GENERIC and is now proven over it.  The churn was one argument at
+the single call site.
 
 **`c` is not returned**, and that is deliberate: with `π` in hand the map
 is *defined* by `c_B := fun T g x => RelPoint.post π hπ (jac.aj g x)`, so
@@ -67535,9 +67540,8 @@ proves.
 for which no translate factors through the Albanese — impossible, since
 `aj` is initial among abelian schemes under `X` by `jac.universal`, which
 is exactly what `IsJacobianOf` asserts. -/
-theorem exists_albaneseQuotientAbelianImage_x0OneSixtyNine {X Y J : Scheme.{0}}
-    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
-    (_hX : IsX0Compactification 169 strX strY jY)
+theorem exists_albaneseQuotientAbelianImage {X J : Scheme.{0}}
+    {strX : X ⟶ SpecQ}
     {jstr : J ⟶ SpecQ} {abJ : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
     (jac : IsJacobianOf strX abJ o)
     (hA : HasRankZeroAbelianImage strX) :
@@ -68199,7 +68203,7 @@ abelian scheme.
 SUBvariety of an abelian variety with good reduction has good reduction —
 is equally true, but it cannot be used here: the only map this
 development has between the repaired abelian image and the Jacobian goes
-the quotient way (`exists_albaneseQuotientAbelianImage_x0OneSixtyNine`),
+the quotient way (`exists_albaneseQuotientAbelianImage`),
 and the sub-shaped hypothesis available from `exists_prym_of_involution`
 is injectivity of `RelPoint.post ι hι` on `ℚ`-POINTS ONLY, which is
 strictly weaker than monomorphy and makes the sub-shaped leaf FALSE — see
@@ -68316,7 +68320,7 @@ generality discussion on `hasGoodAbelianModelAtBase_of_surjective`.
 SUBvariety of an abelian variety with good reduction has good reduction —
 is equally true, but it cannot be used here: the only map this
 development has between the repaired image and the Jacobian goes the
-quotient way (`exists_albaneseQuotientAbelianImage_x0OneSixtyNine`), and
+quotient way (`exists_albaneseQuotientAbelianImage`), and
 the sub-shaped hypothesis available from `exists_prym_of_involution` is
 injectivity of `RelPoint.post ι hι` on `ℚ`-POINTS ONLY, which is strictly
 weaker than monomorphy and makes the sub-shaped leaf FALSE — see the
@@ -68823,7 +68827,7 @@ of the Albanese `J_0(169)` — hence has good reduction at every `ℓ ∤ 169`
 by Néron–Ogg–Šafarevič, the `ℓ`-adic Tate module of a quotient being a
 quotient of an unramified one.  `hA` is therefore load-bearing and is
 consumed exactly there — in
-`exists_albaneseQuotientAbelianImage_x0OneSixtyNine`, which is the only
+`exists_albaneseQuotientAbelianImage`, which is the only
 place in this chain where it appears.  The SUBvariety form of the same
 argument is not available and must not be substituted for it; see the
 subsection heading above for why, with the counterexample.
@@ -68839,7 +68843,7 @@ to this theorem:
   `exists_goodAbelianReduction_of_abelianQuotient` from the JACOBIAN's own
   Néron model — which is `exists_x0JacobianModel_of_curveModel`, PROVEN —
   along the surjection produced by
-  `exists_albaneseQuotientAbelianImage_x0OneSixtyNine`.  `neronA` is FREE
+  `exists_albaneseQuotientAbelianImage`.  `neronA` is FREE
   from `abZ.proper` through `bijective_pre_generic_of_isProper`, exactly as
   `neronJ` is;
 * `cZ` together with `cZ_pre` and `genX_c` is
@@ -68891,7 +68895,7 @@ theorem exists_x0AbelianNeronDatum_oneSixtyNine {X Y : Scheme.{0}} {strX : X ⟶
   obtain ⟨J, jstr, abJ, ⟨jac⟩⟩ := exists_jacobianOf_x0 169 hX o
   -- the REPAIR of `hA`: a rank-`0` abelian image that is a quotient of the Albanese
   obtain ⟨B, bstr, abB, π, hπ, hsurj, hfin, hinj⟩ :=
-    exists_albaneseQuotientAbelianImage_x0OneSixtyNine hX jac hA
+    exists_albaneseQuotientAbelianImage jac hA
   refine ⟨B, bstr, abB, fun T g x => RelPoint.post π hπ (jac.aj g x), hfin, hinj, ?_⟩
   intro ℓ hℓ hℓ2 hℓN
   obtain ⟨R, toF, hbase⟩ := exists_isReductionBase ℓ hℓ
@@ -70523,9 +70527,13 @@ theorem hasRankZeroAbelianImage_of_chabautyColemanPrime
   sorry
 
 /-- **Reduction is injective on `X_0(N)(ℚ)` whenever the curve has a
-rank-`0` abelian image** (sorry LEAF, new 2026-07-28 — the GEOMETRIC half
-of `injective_redX_of_chabautyColemanPrime`, and LEVEL-GENERIC: no `N`, no
-level list, no arithmetic).
+rank-`0` abelian image** (PROVEN 2026-07-30 over
+`exists_albaneseQuotientAbelianImage`,
+`exists_goodAbelianReduction_of_abelianQuotient`,
+`exists_abelianSpread_of_neronModel` and `neronReduction_injective`, all
+four of them already in this file; a sorry LEAF from 2026-07-28 — the
+GEOMETRIC half of `injective_redX_of_chabautyColemanPrime`, and
+LEVEL-GENERIC: no `N`, no level list, no arithmetic).
 
 TRUE, and it is `card_le_of_rankZeroJacobian`'s injectivity step with the
 Jacobian replaced by an arbitrary abelian image — the replacement
@@ -70534,7 +70542,7 @@ it is the one this file already runs in the `169` chain:
 
 1. translate `c` by `c o` and use the UNIVERSAL property of `jac` to factor
    it through the Albanese, then corestrict to the image `B ⊆ A`: that is
-   `exists_albaneseQuotientAbelianImage_x0OneSixtyNine` over
+   `exists_albaneseQuotientAbelianImage` over
    `exists_surjectiveAbelianImage_of_isAdditiveOn`, giving a SURJECTION
    `π : J ↠ B` with `B(ℚ)` finite and `x ↦ π(aj x)` injective on
    `ℚ`-points;
@@ -70567,16 +70575,95 @@ which by the chain above would force either a non-injective `π ∘ aj`
 (contradicting `hA`) or a nontrivial reduction kernel on a finite group at
 an odd prime.
 
-A successor may reasonably prove this by GENERALISING
-`exists_albaneseQuotientAbelianImage_x0OneSixtyNine`, whose `_hX` is
-already recorded there as UNUSED — the literal `169` in its type is the
-only thing standing between that theorem and this leaf's step (1). -/
+**PROVEN 2026-07-30, and along exactly the route this docstring
+prescribed**: by GENERALISING `exists_albaneseQuotientAbelianImage`, whose
+`_hX` was already recorded there as UNUSED — the literal `169` in its type
+was the only thing standing between that theorem and step (1).  Removing
+it cost one argument at its single call site and nothing else.
+
+**Where the four steps landed.**  Steps (2) and (3) are the two theorems
+named above, applied to `d`'s OWN data rather than to freshly chosen
+models: `exists_goodAbelianReduction_of_abelianQuotient` consumes
+`⟨d.genJ, d.genJ_nat⟩` as an `IsFibreIdent` — that pair IS the structure,
+field for field, which is what `IsFibreIdent`'s own docstring records —
+and `exists_abelianSpread_of_neronModel` consumes
+`⟨d.model.isProper, d.model.smooth, d.model.connected⟩` as the
+`IsSmoothProperCurve` and `⟨d.genX, d.genX_nat⟩` as the generic fibre.
+
+**Step (4) is what makes the sandwich legal, and it is the whole subtlety.**
+The reduction bound is `IsX0AbelianNeronDatum.red_c`, a statement about
+*that* structure's `redX`; the goal is about `IsX0NeronDatum.redX`.  So the
+abelian datum is assembled **on `d`'s own curve model** — `genX`, `spX`,
+`model` and `properX` all taken from `d` — and then the two `redX`s are
+DEFINITIONALLY equal, `rfl`.  Assembling a datum from any other model
+would prove injectivity of a different map.  The equation is carried out
+of the assembly explicitly (`dA.redX = d.redX` is returned alongside the
+datum) rather than left to be recovered afterwards, because an `obtain`
+from a bare `∃`/`Nonempty` makes the datum OPAQUE and the `rfl` is then
+unavailable — measured, not feared.
+
+Step (5) is then three lines: `red_c` twice turns `d.redX x = d.redX y`
+into `dA.redA (c x) = dA.redA (c y)`; `toAbelianReduction`'s `redA_inj`
+— which is `neronReduction_injective`, and is where `hℓ2` is spent —
+cancels `redA`; and `hA`'s repaired injectivity from step (1) finishes.
+`c'` is never inspected: it exists only to state `red_c`. -/
 theorem injective_redX_of_rankZeroAbelianImage (hℓ2 : ℓ ≠ 2)
     (d : IsX0NeronDatum N ℓ R toF jac jac'
       (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ)
     (hA : HasRankZeroAbelianImage strX) :
-    Function.Injective d.redX :=
-  sorry
+    Function.Injective d.redX := by
+  -- (1) the REPAIR of `hA`: a rank-`0` abelian image that is a quotient of the Albanese
+  obtain ⟨B, bstr, abB, π, hπ, hsurj, hfin, hinj⟩ :=
+    exists_albaneseQuotientAbelianImage jac hA
+  -- (2) `B` has GOOD REDUCTION at `ℓ`, from the Jacobian's own Néron model inside `d`
+  obtain ⟨B', BZ, bstr', abB', bstrZ, abBZ, genB, spB, hgenB_add, hspB_add⟩ :=
+    exists_goodAbelianReduction_of_abelianQuotient ℓ R toF d.base abZ
+      ⟨d.genJ, d.genJ_nat⟩ abB π hπ hsurj
+  -- (3) the map `x ↦ π (aj x)` spreads out over `d`'s curve model
+  obtain ⟨cZ, hcZ_pre, hgenX_c⟩ :=
+    exists_abelianSpread_of_neronModel ℓ R toF d.base
+      (X := X) (xstr := xstr) ⟨d.model.isProper, d.model.smooth, d.model.connected⟩
+      abBZ ⟨d.genX, d.genX_nat⟩ genB (fun T g x => RelPoint.post π hπ (jac.aj g x))
+      (by
+        intro T' T h g g' hg x
+        rw [jac.aj_pre, RelPoint.post_pre])
+  -- (4) the abelian datum, assembled on `d`'s OWN curve model — which is what makes
+  -- its `redX` be `d.redX` on the nose, and the equation is returned with it
+  obtain ⟨c', dA, hredX⟩ : ∃ (c' : ∀ (T : Scheme.{0}) (g : T ⟶ SpecF ℓ),
+          RelPoint strX' g → RelPoint bstr' g)
+        (dA : IsX0AbelianNeronDatum N ℓ R toF abB abB' abBZ
+          (fun T g x => RelPoint.post π hπ (jac.aj g x)) c' cZ (ystr := ystr) (jZ := jZ)),
+      dA.redX = d.redX :=
+    ⟨fun T g x => (spB.toEquiv g (g ≫ SpecLoc.special toF) rfl).symm
+      (cZ T (g ≫ SpecLoc.special toF) (d.spX g (g ≫ SpecLoc.special toF) rfl x)),
+      { base := d.base
+        model := d.model
+        genX := ⟨d.genX, d.genX_nat⟩
+        spX := ⟨d.spX, d.spX_nat⟩
+        genA := genB
+        spA := spB
+        genA_add := fun g g₀ h x y => hgenB_add _ g g₀ h x y
+        spA_add := fun g g₀ h x y => hspB_add _ g g₀ h x y
+        cZ_pre := hcZ_pre
+        genX_c := hgenX_c
+        spX_c := by
+          intro T g g₀ h x
+          subst h
+          exact Equiv.apply_symm_apply _ _
+        neronA := bijective_pre_generic_of_isProper ℓ R toF d.base bstrZ abBZ.proper
+        properX := d.properX }, rfl⟩
+  -- (5) the sandwich
+  have hredA : Function.Injective dA.redA :=
+    (dA.toAbelianReduction
+      (neronReduction_injective ℓ R toF d.base hℓ2 abBZ (dA.finite_intPoints hfin))).redA_inj
+  intro x y hxy
+  refine hinj ?_
+  refine hredA ?_
+  have e1 := dA.red_c x
+  have e2 := dA.red_c y
+  rw [hredX] at e1 e2
+  show dA.redA _ = dA.redA _
+  rw [e1, e2, hxy]
 
 /-- **Chabauty–Coleman at `65` and `91`: reduction is injective on
 `X_0(N)(ℚ)`** (PROVEN 2026-07-28 over
