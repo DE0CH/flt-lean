@@ -19272,6 +19272,40 @@ than assumed, so the next owner reads a statement whose content is only the
 limit and the scaling, and does not have to rediscover that the different and
 the pin are already in the tree.
 
+**ITS ROUTE WAS CLOSED AND IS NOW OPEN (2026-07-31).**  "Refine it by `θ` to
+an `𝒪_{D,I}`-bilinear `E`" above is the third clause of
+`IsTraceDualFunctional`, and until this date that clause could not be invoked
+here at all when `I` RAMIFIES over `q`.  It demanded that the functional kill
+`I^k`; the functional this leaf feeds it is
+`b ↦ L M (w M (m'.act b y) z)`, classically `Tr(δ · b · X) mod q^M`, which
+kills `I^{e·k}` and NOT `I^k` — at `D = ℚ(√5)`, `q = 5`, `I = (√5)`, `e = 2`,
+`b = π ∈ I` its value is `Tr(E) = 2`, a unit of `ℤ₅`.  Worse, every constant
+the old clause could return lay in `(jπ)^{(e-1)k}`, hence was a NON-UNIT,
+which is precisely what the perfectness clause of `IsLevelWeilPairing` — the
+unit value of the primitivized `E'` — cannot tolerate.  The clause has been
+strengthened (its hypothesis is now `j a ∈ span {(q : O)} ^ k`, i.e.
+`a ∈ I^{e·k}`), and `exists_traceDualFunctional_of_adicPin` supplies it with
+NO change to its proof, because the `θ` it builds is a GENERATOR of
+`Hom_{ℤ_q}(O, ℤ_q)` and was already correctly normalised.  See the audit on
+`IsTraceDualFunctional` for the count showing that only the correctly
+normalised `θ` satisfies the strengthened clause.
+
+Two notes for whoever takes this leaf, both learned the same day on the
+characteristic-zero sibling `exists_tateWeilRawFamily_of_qAdicWeilSystem`,
+whose docstring writes the analogous route out step by step:
+
+* `hne` here is LOAD-BEARING in exactly the way that sibling's newly added
+  `htors` is.  That sibling was FALSE without it — refuted by the ZERO
+  abelian scheme, where `TatePt` is a singleton and the alternating and
+  perfectness clauses contradict each other — and the finite-base half was
+  saved only because `hne` was already present.  Do not drop it.
+* the usable form of `hθ`'s second clause is the UPPER bound
+  `c ∈ span {(q : O)}^M ⟹ ∀ b, θ (j b * c) ∈ (q)^M`, got by writing
+  `c = (q:O)^M * z = algebraMap ((q : ℤ_[q])^M) * z`.  `hθ`'s fourth clause
+  is the LOWER bound, and those two are the only handles on `θ`: there is no
+  estimate of `θ` on `span {j π}^m` for `m` not a multiple of `e`, and
+  hunting for one is the commonest way to lose a day here.
+
 **FAITHFULNESS.**  This statement is `exists_levelWeilPairing_of_qAdic\
 PolarizedSystem_finiteBase` with strictly MORE hypotheses and the SAME
 conclusion, so it is implied by that leaf and cannot be false unless that one

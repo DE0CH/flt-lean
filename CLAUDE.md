@@ -5,6 +5,70 @@ This repository was split out of Deyao's dissertation repo on
 history of the formalization is preserved. The project root IS the
 Lean package (formerly the `fermat/` subfolder).
 
+## THE DEGENERATE OBJECT REFUTES EVERY UNGUARDED PERFECTNESS CLAUSE
+
+(2026-07-31.) `exists_tateWeilRawFamily_of_qAdicWeilSystem` was refuted with no
+arithmetic at all: take the ZERO abelian scheme, `A = S`, `f = 𝟙 S`.
+`AbelianSchemeStruct` asks for a group law plus `IsProper`, `Smooth`,
+`GeometricallyConnected` — **there is no nontriviality axiom in it**, and `𝟙 S`
+satisfies all three, its fibres being points. Then every `RelPoint` is a
+singleton, so `TatePt` is a singleton, so the ALTERNATING clause
+(`C N t t ∈ 𝔪`) and the PERFECTNESS clause (`∃ t s, IsUnit (C N t s)`) are the
+same statement about the same element and contradict each other. The two proven
+consumers inherited the defect, because their conclusions carry a unit clause
+too.
+
+The general shape, worth running as a standing check: **any leaf whose
+conclusion asserts a UNIT VALUE, a NONDEGENERACY, or a BASIS needs a hypothesis
+that the object is nonzero, and that hypothesis is easy to lose in a cut** —
+the geometric half of a decomposition keeps `hdim`, the arithmetic half gets
+the pairing handed to it as a binder, and nobody notices that the pairing's own
+axioms are vacuously satisfiable on the zero object. Here the finite-base
+sibling had exactly the right hypothesis (`hne`) with the reason written on it,
+and the characteristic-zero half had simply dropped it. **When two halves of a
+development mirror each other, DIFF THEIR BINDER LISTS** — that is a
+five-minute check and it found this one.
+
+Corollary about audits: this leaf carried two 2026-07-30 falsity audits, both
+CORRECT, neither of which saw it. They were about the normalisation, and they
+presupposed a nonzero Tate module. CLAUDE.md's existing rule — a second
+restatement VOIDS the earlier audit — is what prompted re-running it from
+scratch, and it earned its keep.
+
+## AN INTERFACE PREDICATE CAN BE UNDER-COMMITTED: SATISFIED BY THE WRONG NORMALISATION
+
+(2026-07-31, same cluster, and it is the subtler half.) `IsTraceDualFunctional`
+pins a functional `θ : O → ℤ_q` by four clauses, and
+`exists_traceDualFunctional_of_adicPin` PROVES it, so it looks settled. It was
+not: at a RAMIFIED `I` the four clauses are satisfied by `θ_m = Tr(δ π^m ·)`
+for EVERY `0 ≤ m ≤ e-1`, not only by the correct `m = 0`. Consequences:
+
+- the third clause's hypothesis ("`φ` kills `I^k`") was one the intended input
+  never satisfies — the Weil functional kills `I^{e·k}` — so the clause was
+  dead at every positive level, and the leaf whose whole route it is could not
+  be started;
+- every constant it could return lay in `(jπ)^{(e-1)k}`, hence was a NON-UNIT,
+  hence could never satisfy the consumer's perfectness clause.
+
+**The producer was already correct** — it builds `θ` as a GENERATOR of
+`Hom_{ℤ_q}(O, ℤ_q)`, which is `m = 0` on the nose — so strengthening the
+statement cost its proof nothing. One `have hNk : k ≤ N` was deleted, and it
+was the line that had been throwing the extra strength away.
+
+The lesson generalises past this file: **when a leaf's prescribed route "just
+does not work", check whether the INTERFACE it routes through is weaker than
+the object that satisfies it.** A predicate proven inhabited is not thereby
+adequate; ask what ELSE inhabits it. The mechanical test is a scaling family —
+perturb the intended witness by a unit, a uniformizer power, a twist — and see
+which clauses still hold. If a wrong scaling survives every clause, the
+predicate cannot support any conclusion that needs the right one.
+
+Related trap in the same vocabulary, since it cost a false start: a
+"perfect pairing `𝒪_D/I^k × O/(jπ)^k → ℤ_q/q^k`" gloss in a docstring can be
+WELL-DEFINED-FALSE while the formal clauses beside it are true. `Tr(δ I^k 𝒪)`
+is `q^{⌊k/e⌋}ℤ_q`, not `q^k ℤ_q`, so that pairing does not descend at all for
+`e ≥ 2`. Read the CLAUSES, not the gloss.
+
 ## Missing tools: brew install is pre-authorized
 
 (Deyao, 2026-07-21.) If a needed tool is missing and available through
