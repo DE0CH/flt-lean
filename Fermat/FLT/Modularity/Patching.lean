@@ -374,6 +374,17 @@ public import Mathlib.RingTheory.WittVector.Teichmuller
 -- below: `WittVector.isDiscreteValuationRing`, `quotientPEquiv`,
 -- `ker_constantCoeff`, `mem_span_p_pow_iff_le_coeff_eq_zero`, `truncate`
 -- and `teichmuller`
+public import Mathlib.RingTheory.Perfectoid.FontaineTheta
+-- `WittVector.ghostComponentModPPow : 𝕎 (R ⧸ p) →+* R ⧸ p^(n+1)` (which needs
+-- NO hypothesis on `R` at all — the perfectoid hypotheses in that file are
+-- imposed only afterwards, for `fontaineTheta` itself) and, through its own
+-- `WittVector.TeichmullerSeries` import, `WittVector.eq_of_apply_teichmuller_eq`.
+-- These are the two mathlib facts that carry
+-- `existsUnique_ringHom_wittVector_of_isNilpotent` below: the first BUILDS the
+-- lift `𝕎 k → S`, the second proves it UNIQUE.
+public import Mathlib.Algebra.CharP.Lemmas
+-- `Commute.exists_add_pow_prime_eq`: `(x + y)^p = x^p + y^p + p·x·y·r`, the
+-- binomial input to the `p`-power contraction `sub_pow_mem_pow_succ` below
 public import Mathlib.RingTheory.AdicCompletion.RingHom
 -- `IsAdicComplete.StrictMono.liftRingHom`: the universal property of
 -- `IsAdicComplete` for RING maps, which discharges the completion half of
@@ -5119,6 +5130,7 @@ def kerFixSubgroup.{uK, uW} (p : ℕ) [Fact p.Prime]
       calc a⁻¹ ζ = a⁻¹ (a ζ) := by rw [hfix]
         _ = ζ := by simp⟩
 
+set_option backward.isDefEq.respectTransparency false in
 /-- **The open normal subgroup acting trivially on `ad⁰ρbar(1)`, containing the
 inertia away from `T`** (cut out 2026-07-28 as the ONE arithmetic
 input of `exists_mem_inertiaOutsideSubgroups_resSubgroup_eq_zero` below; that
@@ -5195,7 +5207,48 @@ cohomology in it, and non-vacuous — `N₁ = ⊤` is NOT admissible unless `ρb
 `χ` are both trivial, since the trivial-action clause is quantified over all of
 `N₁`.  The conclusion is an existential over subgroups, so it cannot be
 discharged by refuting a package; no hypothesis on `ρbar` beyond its type and
-`hT` is present. -/
+`hT` is present.
+
+# PROVEN 2026-07-30 — and the two "missing" items above cost nothing
+
+The subgroup taken is **`N₁ = ker ρbar ⊓ Fix(μ_p)`**, NOT the
+`ker ρbar ⊓ ker (adZeroCycloChar p k)` the route above prescribed.  That single
+substitution is what removes both itemised obstructions, because `Fix(μ_p)` is
+open outright and the character is trivial on it — the strictly weaker fact that
+`Deformation.lean`'s section preamble already records as "entirely sufficient":
+
+1. *Continuity of `adZeroCycloChar` is never needed.*  `Fix(μ_p)` is open by
+   `isOpen_setOf_fixes_rootsOfUnity` (it is the fixing subgroup of the FINITE
+   extension `ℚ(μ_p)/ℚ`), and `adZeroCycloChar_eq_one_of_fixes_rootsOfUnity`
+   gives `χ = 1` on it.  Both are PROVEN upstream in
+   `HardlyRamified/Deformation.lean`, and the trivial action is then
+   `adZeroTwist_rho_apply_eq_self` verbatim.
+2. *Inertia-triviality of the character at `q ≠ p` was already in the cone*, as
+   the sharper statement that inertia FIXES `μ_p` pointwise:
+   `MazurTorsion.lean`'s `localInertia_fixes_rootOfUnity` (an `n`-th root of
+   unity with `n` a `v`-adic unit is fixed by `I_v`), whose unit hypothesis is
+   `natCast_notMem_maximalIdeal_integralClosure` at `¬ q ∣ p`.  `hpT` enters
+   exactly here and only here: `q ∉ T` and `p ∈ T` give `q ≠ p`.
+   `Field.absoluteGaloisGroup.lift_map` transports the local fixing statement
+   back to `ℚᵃˡᵍ`.  (`Modularity/Interface.lean`'s
+   `map_fixes_of_pow_eq_one_of_mem_localInertiaGroup` is this same statement but
+   is DOWNSTREAM of this file and therefore unusable here.)
+
+Normality of `Fix(μ_p)` is direct rather than via `ℚ(μ_p)/ℚ` being Galois:
+`g⁻¹ ζ` is again a `p`-th root of unity, so `g n g⁻¹` fixes `ζ` whenever `n`
+does.  Finiteness of the index is openness plus compactness of `Γ ℚ`; the
+`set_option backward.isDefEq.respectTransparency false` is what lets
+`CompactSpace (AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)` be found at all,
+since `Algebra ℚ (AlgebraicClosure ℚ)` otherwise elaborates against
+`DivisionRing.toRatAlgebra` instead of `AlgebraicClosure.instAlgebra` — the same
+instance clash `isOpen_setOf_fixes_rootsOfUnity` carries the option for, and the
+same one the `Subsingleton.elim` on the `ρbar` clause below repairs.
+
+`inertiaToGlobalHom_apply` is inlined as the local `hIG` rather than cited:
+that lemma sits ~5300 lines BELOW this one, so it does not exist yet here.  It
+is `rfl`, and unfolding it in this position — at the head of a goal rather than
+buried inside an application of a representation — succeeds, which is the case
+its own docstring says the named form is not needed for. -/
 theorem exists_openNormal_trivial_adZeroTwist.{uK, uW} (p : ℕ) [Fact p.Prime]
     {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
     [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
@@ -9332,7 +9385,127 @@ noncomputable def TaylorWilesCoefficients.wittVector (p : ℕ) [Fact p.Prime] (k
     topologicallyFG := wittVector_topologicallyFG p k
     exists_isRegular_maximalIdeal := wittVector_exists_isRegular_maximalIdeal p k }
 
-/-- **Lifting `𝕎 k` along a NILPOTENT thickening** (sorry node, LEAF
+/-- Iterating `frobeniusEquiv⁻¹` `n` times and then raising to the `p ^ n`
+is the identity (PROVEN 2026-07-30).  This is the ONLY place perfectness of
+`k` is used in the Witt-vector lifting leaf below, and it is used twice: once
+to exhibit a Teichmüller representative as a `p ^ n`-th power (uniqueness),
+and once to cancel the Frobenius twist that `ghostComponentModPPow` introduces
+(existence). -/
+theorem symm_frobeniusEquiv_pow_pow {p : ℕ} [Fact p.Prime]
+    {k : Type*} [CommRing k] [CharP k p] [PerfectRing k p] (n : ℕ) (a : k) :
+    (((_root_.frobeniusEquiv k p).symm ^ n) a) ^ p ^ n = a := by
+  induction n generalizing a with
+  | zero => simp
+  | succ n ih =>
+    have hmul : ((_root_.frobeniusEquiv k p).symm ^ (n + 1)) a
+        = ((_root_.frobeniusEquiv k p).symm ^ n) ((_root_.frobeniusEquiv k p).symm a) := by
+      rw [pow_succ]; rfl
+    rw [hmul, pow_succ p n, pow_mul, ih]
+    exact frobeniusEquiv_symm_pow_p k p a
+
+/-- **The characteristic-`p` section along a NILPOTENT ideal** (PROVEN
+2026-07-30): a surjection `π : T ↠ k` of characteristic-`p` rings with
+NILPOTENT kernel splits, provided `k` is perfect.
+
+This is the char-`p` shadow of Cohen's theorem, and it is completely
+elementary: if `(ker π) ^ M = ⊥` then `ker π ≤ ker (Frob ^ M)`, because
+`x ∈ ker π` gives `x ^ (p ^ M) ∈ (ker π) ^ (p ^ M) ≤ (ker π) ^ M = ⊥`.  So
+`Frob ^ M : T →+* T` factors through `π`, giving `s' : k →+* T` with
+`π ∘ s' = Frob_k ^ M`; precomposing with `Frob_k⁻¹ ^ M` — which exists
+EXACTLY because `k` is perfect — turns it into a genuine section.
+
+NOTE the hypothesis is nilpotence of the IDEAL, not elementwise nilpotence:
+a uniform exponent is what makes `Frob ^ M` kill the kernel, and no single
+`M` works for a merely nil ideal. -/
+theorem exists_ringHom_section_of_isNilpotent_ker
+    {p : ℕ} [Fact p.Prime]
+    {T : Type*} [CommRing T] [CharP T p]
+    {k : Type*} [CommRing k] [CharP k p] [PerfectRing k p]
+    (π : T →+* k) (hπ : Function.Surjective π)
+    (hnil : IsNilpotent (RingHom.ker π)) :
+    ∃ s : k →+* T, ∀ a, π (s a) = a := by
+  obtain ⟨M, hM⟩ := hnil
+  have hMle : M ≤ p ^ M := (Nat.lt_pow_self (Fact.out : p.Prime).one_lt).le
+  have hle : RingHom.ker π ≤ RingHom.ker (_root_.iterateFrobenius T p M) := by
+    intro x hx
+    have h1 : x ^ p ^ M ∈ RingHom.ker π ^ p ^ M := Ideal.pow_mem_pow hx _
+    have h2 : (RingHom.ker π : Ideal T) ^ p ^ M ≤ RingHom.ker π ^ M :=
+      Ideal.pow_le_pow_right hMle
+    have h3 := h2 h1
+    rw [hM] at h3
+    simpa [RingHom.mem_ker, _root_.iterateFrobenius] using h3
+  set s' : k →+* T := π.liftOfSurjective hπ ⟨_root_.iterateFrobenius T p M, hle⟩ with hs'
+  have hs'comp : ∀ x : T, s' (π x) = x ^ p ^ M := fun x =>
+    RingHom.liftOfSurjective_comp_apply π hπ ⟨_root_.iterateFrobenius T p M, hle⟩ x
+  have hπs' : ∀ a : k, π (s' a) = a ^ p ^ M := by
+    intro a
+    obtain ⟨x, rfl⟩ := hπ a
+    rw [hs'comp, map_pow]
+  refine ⟨s'.comp (((_root_.frobeniusEquiv k p).symm ^ M : k ≃+* k) : k →+* k), fun a => ?_⟩
+  rw [RingHom.comp_apply, hπs']
+  exact symm_frobeniusEquiv_pow_pow M a
+
+/-- **The `p`-power map contracts the `I`-adic filtration by one step**, for
+`I` an ideal CONTAINING `p` (PROVEN 2026-07-30): if `x − y ∈ I ^ m` with
+`m ≥ 1` then `x ^ p − y ^ p ∈ I ^ (m + 1)`.
+
+Write `d = x − y`.  The prime binomial identity
+`(y + d) ^ p = y ^ p + d ^ p + p·y·d·r` (`Commute.exists_add_pow_prime_eq`)
+puts the error into two pieces: `d ^ p ∈ I ^ (m·p) ≤ I ^ (m+1)` since
+`m·p ≥ 2m ≥ m+1`, and `p·y·d·r ∈ I ^ m · I` since `p ∈ I`. -/
+theorem sub_pow_mem_pow_succ {S : Type*} [CommRing S] {p : ℕ} (hp : p.Prime)
+    {I : Ideal S} (hpI : (p : S) ∈ I) {m : ℕ} (hm : 1 ≤ m) {x y : S}
+    (h : x - y ∈ I ^ m) : x ^ p - y ^ p ∈ I ^ (m + 1) := by
+  obtain ⟨r, hr⟩ := (Commute.all y (x - y)).exists_add_pow_prime_eq hp
+  rw [show y + (x - y) = x by ring] at hr
+  have h1 : (x - y) ^ p ∈ I ^ (m + 1) := by
+    have hmp : I ^ (m * p) ≤ I ^ (m + 1) :=
+      Ideal.pow_le_pow_right (by nlinarith [hp.two_le])
+    refine hmp ?_
+    rw [pow_mul]
+    exact Ideal.pow_mem_pow h p
+  have h2 : (p : S) * y * (x - y) * r ∈ I ^ (m + 1) := by
+    have hmem : (x - y) * ((p : S) * y * r) ∈ I ^ m * I := Ideal.mul_mem_mul h
+      (I.mul_mem_right _ (I.mul_mem_right _ hpI))
+    rw [pow_succ]
+    convert hmem using 1
+    ring
+  rw [show x ^ p - y ^ p = (x - y) ^ p + (p : S) * y * (x - y) * r by rw [hr]; ring]
+  exact Ideal.add_mem _ h1 h2
+
+/-- Iterating the previous lemma: `x − y ∈ I` gives
+`x ^ (p ^ n) − y ^ (p ^ n) ∈ I ^ (n + 1)` (PROVEN 2026-07-30).  Note the growth
+is only LINEAR in `n`, which is all that is needed and all that is true. -/
+theorem sub_pow_pow_mem_pow {S : Type*} [CommRing S] {p : ℕ} (hp : p.Prime)
+    {I : Ideal S} (hpI : (p : S) ∈ I) {x y : S} (h : x - y ∈ I) (n : ℕ) :
+    x ^ p ^ n - y ^ p ^ n ∈ I ^ (n + 1) := by
+  induction n with
+  | zero => simpa using h
+  | succ n ih =>
+    have hstep := sub_pow_mem_pow_succ hp hpI (Nat.succ_le_succ (Nat.zero_le n)) ih
+    simpa [pow_succ p n, pow_mul] using hstep
+
+/-- **Two elements that are `p ^ n`-th powers of congruent elements for EVERY
+`n` are equal**, modulo a nilpotent ideal containing `p` (PROVEN 2026-07-30).
+
+This is the uniqueness of the Teichmüller (multiplicative) section, in the
+form the Witt-vector leaf below consumes it: `f ([a])` is a `p ^ n`-th power
+for every `n` (of `f ([a ^ (1/p ^ n)])`), and its image in `S ⧸ I` is pinned,
+so any two ring maps agreeing after `σ` agree on Teichmüller representatives —
+whereupon `WittVector.eq_of_apply_teichmuller_eq` finishes. -/
+theorem eq_of_forall_exists_pow_sub_mem {S : Type*} [CommRing S] {p : ℕ} (hp : p.Prime)
+    {I : Ideal S} (hpI : (p : S) ∈ I) (hI : IsNilpotent I) {u v : S}
+    (h : ∀ n : ℕ, ∃ x y : S, u = x ^ p ^ n ∧ v = y ^ p ^ n ∧ x - y ∈ I) : u = v := by
+  obtain ⟨M, hM⟩ := hI
+  obtain ⟨x, y, hu, hv, hxy⟩ := h M
+  have hmem := sub_pow_pow_mem_pow hp hpI hxy M
+  rw [← hu, ← hv] at hmem
+  have hle : I ^ (M + 1) ≤ I ^ M := Ideal.pow_le_pow_right (Nat.le_succ M)
+  have hbot : u - v ∈ I ^ M := hle hmem
+  rw [hM] at hbot
+  exact sub_eq_zero.mp (by simpa using hbot)
+
+/-- **Lifting `𝕎 k` along a NILPOTENT thickening** (PROVEN 2026-07-30; was LEAF
 B1a-i-α of the 2026-07-27 decomposition of
 `exists_taylorWilesCoefficients_ringHom`; this is the ENTIRE remaining
 content of Cohen's coefficient-ring map): if `p` is nilpotent in `S` and
@@ -9346,26 +9519,47 @@ Algebra*, Thm. 7.7), and it is what makes `𝕎 k` "the" `p`-adic lift of a
 perfect ring: `𝕎 k` is formally étale over `ℤ_p` in the `p`-adic sense,
 so a lift along a nilpotent thickening exists and is unique.
 
-# ROUTE
+# ROUTE AS ACTUALLY TAKEN (2026-07-30) — and the classical route was NOT it
 
-Both halves go through the Teichmüller expansion.
+Both halves go through the Teichmüller expansion, but neither half needed the
+"expand `f x = Σ_i ω(x_i^{p^{-i}}) · p^i` and check it is a ring map"
+computation this docstring used to prescribe, and NEITHER needed an induction
+along the filtration by powers of `ker σ`.  That computation is the expensive
+way to write down a map out of `𝕎`, and mathlib already contains it.
 
-* **UNIQUENESS is already in mathlib.**  `WittVector.eq_of_apply_teichmuller_eq`
-  (`Mathlib/RingTheory/WittVector/TeichmullerSeries.lean`) says exactly
-  that two ring maps `𝕎 k →+* S` agreeing on Teichmüller
-  representatives are equal when `p` is nilpotent in `S`.  So it remains
-  to show that `σ.comp f = constantCoeff` PINS `f (τ a)`: `f (τ a)` is
-  the unique element of `S` lying over `a` that is a `p^n`-th power for
-  every `n` — the multiplicative (Teichmüller) section of `σ`, whose
-  uniqueness is the standard `x ↦ lim_n x̃_n^{p^n}` argument, using that
-  `k` is PERFECT and that `ker σ` is nilpotent.
-* **EXISTENCE** is the multiplicative section itself plus additivity:
-  set `f x = Σ_i ω(x_i^{p^{-i}}) · p^i` (a FINITE sum, since `p` is
-  nilpotent in `S`), with `ω` the Teichmüller section.  That the sum is
-  a ring map is the classical computation; the standard formal route is
-  to induct along the filtration by powers of `ker σ`, lifting through
-  each SQUARE-ZERO extension, where the obstruction vanishes because `k`
-  is perfect.
+* **UNIQUENESS.**  `WittVector.eq_of_apply_teichmuller_eq`
+  (`Mathlib/RingTheory/WittVector/TeichmullerSeries.lean`) says two ring maps
+  `𝕎 k →+* S` agreeing on Teichmüller representatives are equal when `p` is
+  nilpotent in `S`.  So it remains to show that `σ.comp f = constantCoeff`
+  PINS `f ([a])`.  It does, and with NO limit argument: `[a] = [a^{p^{-n}}]^{p^n}`
+  because `k` is perfect, so `f ([a])` is a `p^n`-th power of an element lying
+  over `a^{p^{-n}}` for EVERY `n`, and two such elements agree because the
+  `p`-power map contracts the `ker σ`-adic filtration by one step each time
+  (`sub_pow_mem_pow_succ`, `sub_pow_pow_mem_pow`, `eq_of_forall_exists_pow_sub_mem`
+  above).  Note `p ∈ ker σ` automatically, since `k` has characteristic `p`;
+  that is what makes the contraction available.
+
+* **EXISTENCE — the whole map is `𝕎(section) ; ghostComponentModPPow`.**  The
+  key observation is that `WittVector.ghostComponentModPPow`
+  (`Mathlib/RingTheory/Perfectoid/FontaineTheta.lean`) is stated with **no
+  hypothesis on `R` whatsoever** — the perfectoid/`IsAdicComplete` assumptions
+  in that file are imposed only later, for `fontaineTheta` itself.  It is the
+  lift of the `n`-th ghost component along `𝕎 R ↠ 𝕎 (R ⧸ p)`:
+
+      ghostComponentModPPow n : 𝕎 (R ⧸ p) →+* R ⧸ p^(n+1).
+
+  Take `R = S` and `n = N` where `p^N = 0` in `S`.  Then `(p)^{N+1} = ⊥`, so
+  `S ⧸ (p)^{N+1} ≅ S` and the target IS `S`.  It therefore suffices to produce
+  a ring map `k →+* S ⧸ p`, i.e. a SECTION of `S ⧸ p ↠ k` — and `S ⧸ p` has
+  characteristic `p`, so that is the elementary char-`p` splitting
+  `exists_ringHom_section_of_isNilpotent_ker` above (Frobenius kills a nilpotent
+  ideal after finitely many steps; perfectness of `k` untwists the result).
+
+  The composite `𝕎 k --𝕎(s ∘ Frob⁻ᴺ)--> 𝕎 (S ⧸ p) --gh_N--> S` is the lift.  The
+  `Frob⁻ᴺ` twist is not cosmetic: `gh_N` of a Teichmüller class is the `p^N`-th
+  power of a lift, so without it the map would induce `a ↦ a^{p^N}` on residue
+  fields rather than the identity — the same twist, and for the same reason,
+  that `fontaineThetaModPPow` carries.
 
 # WHAT IS **NOT** OWED, and this is what shrank the leaf (2026-07-27)
 
@@ -9387,15 +9581,101 @@ canonical multiplicative section for imperfect `k`); dropping
 nilpotence of `ker σ` makes it false (`S` must be an infinitesimal
 thickening for the successive lifting to terminate).
 
+**HYPOTHESIS CORRECTED 2026-07-30 — `ker σ` NILPOTENT, not elementwise nil.**
+The statement previously read `hker : ∀ x ∈ RingHom.ker σ, IsNilpotent x`,
+which is the strictly weaker "nil ideal" condition and does NOT match the
+docstring's own prose ("nilpotent kernel", "`S` must be an infinitesimal
+thickening").  The difference is not pedantic and it is exactly where the
+proof lives: the char-`p` section is built from `Frobenius^M` killing the
+kernel, and a nil ideal admits no uniform `M` — the sets
+`{x^{p^n} : σ x = a^{p^{-n}}}` form a decreasing chain of nonempty sets whose
+intersection is nonempty for a NILPOTENT ideal (the sets are eventually
+singletons) and need not be for a merely nil one.  The uniqueness half
+survives the weakening; the existence half is not known to.
+
+Nothing was lost downstream: the sole consumer
+`exists_ringHom_wittVector_of_isAdicComplete` applies this at
+`R ⧸ 𝔪^{n+1}`, whose kernel `𝔪/𝔪^{n+1}` is nilpotent with the UNIFORM
+exponent `n+1` — indeed its old proof of the elementwise form already
+produced that uniform exponent and then threw it away.
+
 CIRCULARITY GUARD: none applies — no `ρbar`, no deformation functor, no
 Hecke algebra occurs in the statement. -/
 theorem existsUnique_ringHom_wittVector_of_isNilpotent
     {p : ℕ} [Fact p.Prime] {k : Type*} [Field k] [CharP k p] [PerfectRing k p]
     {S : Type*} [CommRing S] (hpS : IsNilpotent (p : S))
     {σ : S →+* k} (hσ : Function.Surjective σ)
-    (hker : ∀ x ∈ RingHom.ker σ, IsNilpotent x) :
-    ∃! f : WittVector p k →+* S, σ.comp f = WittVector.constantCoeff :=
-  sorry
+    (hker : IsNilpotent (RingHom.ker σ)) :
+    ∃! f : WittVector p k →+* S, σ.comp f = WittVector.constantCoeff := by
+  have hp : p.Prime := Fact.out
+  have hpmem : (p : S) ∈ RingHom.ker σ := by
+    simp [RingHom.mem_ker, map_natCast]
+  -- UNIQUENESS: two lifts agree on Teichmüller representatives.
+  have key : ∀ f g : WittVector p k →+* S, σ.comp f = WittVector.constantCoeff →
+      σ.comp g = WittVector.constantCoeff → f = g := by
+    intro f g hf hg
+    refine WittVector.eq_of_apply_teichmuller_eq f g hpS fun a => ?_
+    refine eq_of_forall_exists_pow_sub_mem hp hpmem hker fun n => ?_
+    refine ⟨f (WittVector.teichmuller p (((_root_.frobeniusEquiv k p).symm ^ n) a)),
+      g (WittVector.teichmuller p (((_root_.frobeniusEquiv k p).symm ^ n) a)), ?_, ?_, ?_⟩
+    · rw [← map_pow, ← map_pow, symm_frobeniusEquiv_pow_pow n a]
+    · rw [← map_pow, ← map_pow, symm_frobeniusEquiv_pow_pow n a]
+    · have h1 := congrArg (fun h : WittVector p k →+* k =>
+        h (WittVector.teichmuller p (((_root_.frobeniusEquiv k p).symm ^ n) a))) hf
+      have h2 := congrArg (fun h : WittVector p k →+* k =>
+        h (WittVector.teichmuller p (((_root_.frobeniusEquiv k p).symm ^ n) a))) hg
+      simp only [RingHom.coe_comp, Function.comp_apply] at h1 h2
+      rw [RingHom.mem_ker, map_sub, h1, h2, sub_self]
+  -- EXISTENCE: `𝕎 k --𝕎(s ∘ Frob⁻ᴺ)--> 𝕎 (S ⧸ p) --gh_N--> S ⧸ (p)^{N+1} ≅ S`.
+  obtain ⟨N, hN⟩ := hpS
+  have hbot : (Ideal.span {(p : S)}) ^ (N + 1) = ⊥ := by
+    rw [Ideal.span_singleton_pow, Ideal.span_singleton_eq_bot, pow_succ, hN, zero_mul]
+  have hple : Ideal.span {(p : S)} ≤ RingHom.ker σ := by
+    rw [Ideal.span_le]; simp
+  set σbar : (S ⧸ Ideal.span {(p : S)}) →+* k :=
+    Ideal.Quotient.lift _ σ (fun a ha => RingHom.mem_ker.mp (hple ha)) with hσbar
+  have hσbar_mk : ∀ x : S, σbar (Ideal.Quotient.mk (Ideal.span {(p : S)}) x) = σ x :=
+    fun _ => rfl
+  have hσbar_surj : Function.Surjective σbar := fun a => by
+    obtain ⟨x, hx⟩ := hσ a
+    exact ⟨Ideal.Quotient.mk _ x, by rw [hσbar_mk, hx]⟩
+  haveI : Nontrivial (S ⧸ Ideal.span {(p : S)}) := σbar.domain_nontrivial
+  haveI : CharP (S ⧸ Ideal.span {(p : S)}) p := by
+    have h0 : ((p : ℕ) : S ⧸ Ideal.span {(p : S)}) = 0 := by
+      rw [← map_natCast (Ideal.Quotient.mk (Ideal.span {(p : S)})),
+        Ideal.Quotient.eq_zero_iff_mem]
+      exact Ideal.mem_span_singleton_self _
+    rcases hp.eq_one_or_self_of_dvd _ (ringChar.dvd h0) with h1 | hpe
+    · haveI : CharP (S ⧸ Ideal.span {(p : S)}) 1 := ringChar.of_eq h1
+      exact (CharP.false_of_nontrivial_of_char_one (R := S ⧸ Ideal.span {(p : S)})).elim
+    · exact ringChar.of_eq hpe
+  have hkerbar : IsNilpotent (RingHom.ker σbar) := by
+    obtain ⟨M, hM⟩ := hker
+    refine ⟨M, ?_⟩
+    rw [hσbar, Ideal.ker_quotient_lift, ← Ideal.map_pow, hM]
+    simp
+  obtain ⟨s, hs⟩ := exists_ringHom_section_of_isNilpotent_ker σbar hσbar_surj hkerbar
+  set φ : k →+* k := (((_root_.frobeniusEquiv k p).symm ^ N : k ≃+* k) : k →+* k) with hφ
+  set ψ : (S ⧸ (Ideal.span {(p : S)}) ^ (N + 1)) →+* S :=
+    Ideal.Quotient.lift _ (RingHom.id S) (fun a ha => by
+      rw [hbot] at ha; simpa using ha) with hψ
+  have hF : σ.comp (ψ.comp ((WittVector.ghostComponentModPPow N).comp
+      (WittVector.map (s.comp φ)))) = WittVector.constantCoeff := by
+    refine WittVector.eq_of_apply_teichmuller_eq _ _ ⟨1, by simp⟩ fun a => ?_
+    obtain ⟨t, ht⟩ := Ideal.Quotient.mk_surjective (s (φ a))
+    have e1 : WittVector.map (s.comp φ) (WittVector.teichmuller p a)
+        = WittVector.map (Ideal.Quotient.mk (Ideal.span {(p : S)}))
+            (WittVector.teichmuller p t) := by
+      rw [WittVector.map_teichmuller, WittVector.map_teichmuller, ht]
+      rfl
+    have hσt : σ t = φ a := by
+      rw [← hσbar_mk, ht, hs]
+    simp only [RingHom.coe_comp, Function.comp_apply, e1,
+      WittVector.ghostComponentModPPow_map_mk, WittVector.ghostComponent_teichmuller]
+    show σ (t ^ p ^ N) = _
+    rw [map_pow, hσt, hφ]
+    simp
+  exact ⟨_, hF, fun g hg => key g _ hg hF⟩
 
 /-- **Cohen's coefficient-ring map `𝕎 k → R`** (PROVEN 2026-07-27 over
 `existsUnique_ringHom_wittVector_of_isNilpotent`): for `R` local and
@@ -9448,9 +9728,20 @@ theorem exists_ringHom_wittVector_of_isAdicComplete
     refine hres_ker n _ ?_
     simp only [RingHom.mem_ker, map_natCast]
     exact CharP.cast_eq_zero k p
+  -- The IDEAL `ker (res n) = 𝔪/𝔪^{n+1}` is nilpotent, with the uniform exponent
+  -- `n + 1` that `hres_ker` above already exhibits elementwise and discards.
+  -- The leaf needs the ideal form (see its FAITHFULNESS note): a merely nil
+  -- kernel admits no uniform Frobenius power, and the section it is built from
+  -- does not exist.
+  have hres_ker_nilp : ∀ n : ℕ, IsNilpotent (RingHom.ker (res n)) := by
+    intro n
+    refine ⟨n + 1, ?_⟩
+    simp only [hresdef]
+    rw [Ideal.ker_quotient_lift, ← Ideal.map_pow, hkerpi]
+    simpa using Ideal.map_quotient_self (I ^ (n + 1))
   choose f hf huniq using fun n : ℕ =>
     existsUnique_ringHom_wittVector_of_isNilpotent (p := p) (k := k) (hpnil n)
-      (hres_surj n) (hres_ker n)
+      (hres_surj n) (hres_ker_nilp n)
   have ha : StrictMono (fun n : ℕ => n + 1) := fun _ _ h => Nat.succ_lt_succ h
   have hcompat : ∀ m : ℕ,
       (Ideal.Quotient.factorPow I (ha.monotone m.le_succ)).comp (f (m + 1)) = f m := by
@@ -9540,10 +9831,11 @@ is multiplicative, and `W(k)`'s universal property in the OTHER
 direction from `WittVector.lift` — a multiplicative section of
 `R ↠ k` induces `W(k) → R` — is what has to be written.
 
-WHAT WAS OWED, AND WHAT REMAINS (2026-07-27).  The two obligations this
-docstring recorded have been discharged as follows; NOTHING in this
-declaration is open any more, and its whole residual content is the one
-leaf `existsUnique_ringHom_wittVector_of_isNilpotent` above.
+WHAT WAS OWED, AND WHAT REMAINS (2026-07-27; UPDATED 2026-07-30).  The two
+obligations this docstring recorded have been discharged as follows; NOTHING in
+this declaration is open any more, and its whole residual content was the one
+leaf `existsUnique_ringHom_wittVector_of_isNilpotent` above — **which was
+itself PROVEN on 2026-07-30, so this declaration is now sorry-free outright.**
 
 1. **The bundle — DONE, sorry-free**, as
    `TaylorWilesCoefficients.wittVector` above.  Two of this docstring's
@@ -9931,7 +10223,8 @@ Three pieces, of which the first two are PROVEN:
   half"; the bundle is now sorry-free
   (`TaylorWilesCoefficients.wittVector`) and the map is assembled from
   mathlib's `IsAdicComplete` universal property over the single leaf
-  `existsUnique_ringHom_wittVector_of_isNilpotent`.
+  `existsUnique_ringHom_wittVector_of_isNilpotent`, which is itself PROVEN
+  since 2026-07-30.
 * `surjective_of_span_range_eq_maximalIdeal` (PROVEN 2026-07-27) —
   complete Nakayama, from `MvPowerSeries.instIsAdicComplete` plus a
   `Submodule.span_induction` approximation step; it needed no new
@@ -9939,8 +10232,9 @@ Three pieces, of which the first two are PROVEN:
 
 Both were closed on the same day by different owners, each of whom
 recorded the OTHER as the remaining leaf; this list is the composed one.
-What is left under this node is `existsUnique_ringHom_wittVector_of_isNilpotent`
-alone. -/
+What was left under this node was `existsUnique_ringHom_wittVector_of_isNilpotent`
+alone, and that leaf was PROVEN on 2026-07-30 — so nothing under this node is
+open. -/
 theorem exists_taylorWilesCoefficientsPresentation.{u, v}
     {R : Type u} [CommRing R] [IsLocalRing R] [IsNoetherianRing R]
     (hcomplete : IsAdicComplete (IsLocalRing.maximalIdeal R) R)
@@ -13873,7 +14167,58 @@ theorem X_sub_C_mul_X_sub_C_expand {R : Type*} [CommRing R] (x y : R) :
   ring
 
 set_option backward.isDefEq.respectTransparency false in
+open Polynomial in
+/-- **THE CONVERSE of `exists_linearEquiv_prod_of_charpoly_eq_mul`** (PROVEN
+2026-07-30): a diagonalised endomorphism of a free module has the SPLIT
+characteristic polynomial `(X - a)(X - b)`.
+
+Neither localness nor a unit gap is needed in this direction — the content is
+just that `e` conjugates `M` to `prodMap (a • id) (b • id)`, whose trace is
+`a + b` and whose determinant is `a * b`, read through
+`charpoly_eq_quadratic_of_finrank_two`.  (Going through the quadratic form rather
+than `LinearMap.charpoly_prodMap` avoids having to identify the charpoly of a
+scalar on a rank-ONE free module, which mathlib does not carry directly.)
+
+This is the "residual splitting" half of
+`exists_charpoly_toLocal_eq_mul_of_forall_isOpen_quotient` below: the level datum
+supplies the diagonalisation and this lemma turns it into the polynomial
+identity that Hensel's lemma is then applied to. -/
+theorem charpoly_eq_mul_of_linearEquiv_prod {A : Type*} [CommRing A] [Nontrivial A]
+    {V : Type*} [AddCommGroup V] [Module A V] [Module.Free A V] [Module.Finite A V]
+    (M : Module.End A V) (a b : A) (e : V ≃ₗ[A] A × A)
+    (h : ∀ x, e (M x) = (a * (e x).1, b * (e x).2)) :
+    LinearMap.charpoly M = (X - C a) * (X - C b) := by
+  classical
+  set D : Module.End A (A × A) :=
+    LinearMap.prodMap (a • LinearMap.id) (b • LinearMap.id) with hD
+  have hconj : e.conj M = D := by
+    refine LinearMap.ext fun y => ?_
+    have hy : (e.conj M) y = e (M (e.symm y)) := rfl
+    rw [hy, h (e.symm y), e.apply_symm_apply]
+    simp [hD, smul_eq_mul]
+  have hfr : Module.finrank A V = 2 := by
+    rw [e.finrank_eq]
+    simp
+  have htr : LinearMap.trace A V M = a + b := by
+    have h1 : LinearMap.trace A (A × A) (e.conj M) = LinearMap.trace A V M :=
+      LinearMap.trace_conj' M e
+    rw [hconj] at h1
+    rw [← h1, hD, LinearMap.trace_prodMap']
+    simp
+  have hdet : LinearMap.det M = a * b := by
+    have h1 : LinearMap.det (e.conj M) = LinearMap.det M := by
+      rw [LinearEquiv.conj_apply]
+      exact LinearMap.det_conj M e
+    rw [hconj] at h1
+    rw [← h1, hD, LinearMap.det_prodMap]
+    simp
+  rw [charpoly_eq_quadratic_of_finrank_two hfr M, htr, hdet]
+  ring_nf
+  simp [C_add, C_mul]
+  ring
+
 set_option linter.checkUnivs false in
+open Polynomial in
 /-- **HENSEL: the local Frobenius characteristic polynomial splits over `R` with unit
 root difference** (PROVEN 2026-07-30, flt-lean-188; cut 2026-07-29 as sub-leaf (B) of
 `raisedLevelSplitTorusAt_of_charFrob_residually_distinct` below).
@@ -13929,7 +14274,37 @@ DISCARDING it - and it is the minimal such hypothesis: what the proof needs is
 
 `hlev` is load-bearing (step 1) and so is `hdist` (step 2); neither implies the other.
 `hcomplete` is load-bearing for Hensel.  `hqQ` is load-bearing, since `hlev` constrains
-the local behaviour only at primes of `Q`.  No hypothesis on `rhobar` appears. -/
+the local behaviour only at primes of `Q`.  No hypothesis on `rhobar` appears.
+
+# THE PROOF AS TAKEN (2026-07-30) — the prescribed three steps, unchanged
+
+1. `hadic` makes `m = m ^ 1` open, so `hlev` applies at `I = m`, and its
+   `isSplitTorusAt` at `q` diagonalises the residual local representation.
+   `charpoly_eq_mul_of_linearEquiv_prod` (just above) converts that
+   diagonalisation into `(charFrob q).map (mk m) = (X - a₀)(X - b₀)` with BOTH
+   roots in the residue field, via `charFrob_baseChange`.  (An eigenvalue here is
+   `chi Frob 1`: the split-torus datum's characters are valued in
+   `Module.End (R/m) (R/m)`, and `phi z = z * phi 1` for such a `phi`.)
+2. `hπRker` makes `πR` factor as `ι ∘ mk m`, so mapping step 1 along `ι` and
+   comparing with `hdist` gives `(X - ι a₀)(X - ι b₀) = (X - α)(X - β)` in `k[X]`.
+   Distinctness of `a₀` and `b₀` is then read off by EVALUATING at `α` and at `β`:
+   if `a₀ = b₀ =: u` then `(α - ι u)² = 0` and `(β - ι u)² = 0`, so `α = β` in the
+   field `k`, against `hdist`.  (No injectivity of `ι` is needed — the evaluation
+   argument does not use it.)
+3. `IsAdicComplete.henselianRing` gives `HenselianRing R m`; `charFrob` is monic
+   (`charFrob_monic`) of degree two (`charFrob_natDegree`), its value at any lift
+   `A₀` of `a₀` lies in `m`, and its derivative there reduces to `a₀ - b₀`, a unit
+   because `R ⧸ m` is a field.  Dividing the resulting root out
+   (`mul_divByMonic_eq_iff_isRoot`, cofactor monic of degree one by
+   `Monic.of_mul_monic_left` and `natDegree_divByMonic`) gives `b`, and cancelling
+   `X - a₀` in the DOMAIN `(R ⧸ m)[X]` identifies `b` mod `m` with `b₀`.  Hence
+   `A - b ∉ m`, i.e. a unit.
+
+The residue-field structure is used only through `IsField (R ⧸ m)` and
+`IsDomain (R ⧸ m)`, deliberately NOT through a `Field (R ⧸ m)` instance: a local
+`haveI` of the latter forks the `Zero` instance away from `Ideal.Quotient`'s and
+makes `isUnit_iff_ne_zero` inapplicable to a hypothesis stated with the ring's own
+zero. -/
 theorem exists_charpoly_toLocal_eq_mul_of_forall_isOpen_quotient.{a, uK} {p : ℕ}
     (hpodd : Odd p) [Fact p.Prime] (Q : Finset ℕ)
     {k : Type uK} [Field k]
@@ -17707,8 +18082,9 @@ from `~/cs/FLT`".
 `exists_ringHom_wittVector_of_isAdicComplete` above is PROVEN and is exactly
 Cohen's coefficient-ring map: for `R` local, `𝔪_R`-adically complete, with
 perfect residue field `k` of characteristic `p`, it produces `ι : 𝕎 k →+* R`
-inducing the identity on residue fields.  Its only open input is the
-finite-level leaf `existsUnique_ringHom_wittVector_of_isNilpotent`.  So the
+inducing the identity on residue fields.  Its only open input WAS the
+finite-level leaf `existsUnique_ringHom_wittVector_of_isNilpotent`, PROVEN
+2026-07-30, so it now rests on no sorry at all.  So the
 `𝒪`-algebra structure on `𝒟Q.R` is one application away — the gap was never
 Cohen's theorem, it was that `coeff` is a FREE `TaylorWilesCoefficients`
 parameter and `TaylorWilesCoefficients` does not pin `𝒪 = W(k)`.
