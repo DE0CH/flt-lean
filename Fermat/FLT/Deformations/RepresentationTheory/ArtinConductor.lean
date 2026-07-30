@@ -2430,135 +2430,6 @@ theorem exists_pow_eq_zpow_mul_isUnit {π : 𝒪ᵥ} (hπ : Irreducible π)
     have h1 : a ^ (d : ℤ) = ((a⁻¹) ^ d)⁻¹ := by rw [inv_pow, inv_inv, zpow_natCast]
     rw [hu'val, h1, heq, mul_inv, zpow_neg, zpow_natCast, zpow_neg_one]
 
-/-! ### Units of `Oᵥ` are roots of unity of order prime to `v`, modulo `𝔪`
-
-The three declarations below are the arithmetic input to
-`LowerRamificationData.mem_gp_one_of_dvd_smul_unif_sub` (Serre IV §1 Lemma 1),
-and they are the reason that leaf did NOT need the monogenicity `𝒪_L = 𝒪_0[π]`
-its docstring once said was unavoidable. See that docstring for the analysis
-this supersedes.
-
-The content is that the residue field of `Oᵥ` is ALGEBRAIC over the finite
-residue field of `𝒪ᵥ` — every `u ∈ Oᵥ` is integral over `𝒪ᵥ`, so its residue
-generates a FINITE subfield — so a unit's residue is a root of unity. Its order
-is then stripped of its residue-characteristic part by
-`sub_one_mem_maximalIdeal_of_pow_prime_sub_one_mem`, which is the freshman's
-dream running in the direction that is available. -/
-
-set_option synthInstance.maxHeartbeats 1000000 in
-/-- **`𝒪ᵥ → Oᵥ` IS A LOCAL RING HOM**, i.e. a non-unit downstairs is a non-unit
-upstairs. This is `Ideal.LiesOver.over` for `𝔪 Oᵥ` over `𝔪 𝒪ᵥ` read as a
-statement about units — the same integrality input as
-`natCast_mem_maximalIdeal_integralClosure_of_mem_asIdeal`, packaged as the
-instance the residue-field functor needs. -/
-theorem isLocalHom_algebraMap_integralClosure : IsLocalHom (algebraMap 𝒪ᵥ Oᵥ) := by
-  constructor
-  intro a ha
-  by_contra hnu
-  have hmem : a ∈ IsLocalRing.maximalIdeal 𝒪ᵥ := (IsLocalRing.mem_maximalIdeal _).mpr hnu
-  have hlies : IsLocalRing.maximalIdeal 𝒪ᵥ =
-      Ideal.comap (algebraMap 𝒪ᵥ Oᵥ) (IsLocalRing.maximalIdeal Oᵥ) :=
-    Ideal.LiesOver.over
-  rw [hlies, Ideal.mem_comap] at hmem
-  exact (IsLocalRing.notMem_maximalIdeal.mpr ha) hmem
-
-/-- **EVERY UNIT OF `Oᵥ` IS A ROOT OF UNITY MODULO `𝔪`** (PROVEN 2026-07-31).
-
-`u` is integral over `𝒪ᵥ`, so its residue `ū` is integral over the residue
-field `F` of `𝒪ᵥ`, which is FINITE (`Finite (IsLocalRing.ResidueField 𝒪ᵥ)`, an
-instance from `AbsoluteGaloisGroup.lean`). Hence `F⟮ū⟯` is a finite field and
-`ū ^ (#F⟮ū⟯ − 1) = 1`.
-
-No claim is made here about the exponent being prime to the residue
-characteristic; that is `exists_natCast_notMem_pow_sub_one_mem_maximalIdeal`
-below. -/
-theorem exists_pos_pow_sub_one_mem_maximalIdeal {u : Oᵥ} (hu : IsUnit u) :
-    ∃ N : ℕ, N ≠ 0 ∧ u ^ N - 1 ∈ IsLocalRing.maximalIdeal Oᵥ := by
-  haveI : IsLocalHom (algebraMap 𝒪ᵥ Oᵥ) := isLocalHom_algebraMap_integralClosure v
-  set k := IsLocalRing.ResidueField Oᵥ with hk
-  set F := IsLocalRing.ResidueField 𝒪ᵥ with hF
-  set x : k := IsLocalRing.residue Oᵥ u with hxdef
-  have hx0 : x ≠ 0 := by
-    intro h
-    exact (IsLocalRing.notMem_maximalIdeal.mpr hu) (Ideal.Quotient.eq_zero_iff_mem.mp h)
-  have hint : IsIntegral 𝒪ᵥ u := Algebra.IsIntegral.isIntegral u
-  have hintk : IsIntegral 𝒪ᵥ x := hint.map (IsScalarTower.toAlgHom 𝒪ᵥ Oᵥ k)
-  have hxint : IsIntegral F x := hintk.tower_top
-  haveI : FiniteDimensional F (IntermediateField.adjoin F {x}) :=
-    IntermediateField.adjoin.finiteDimensional hxint
-  haveI : Finite (IntermediateField.adjoin F {x}) := Module.finite_of_finite F
-  haveI : Fintype (IntermediateField.adjoin F {x}) := Fintype.ofFinite _
-  have hgen0 : IntermediateField.AdjoinSimple.gen F x ≠ 0 := by
-    intro h
-    apply hx0
-    have h2 := congrArg (algebraMap (IntermediateField.adjoin F {x}) k) h
-    rwa [IntermediateField.AdjoinSimple.algebraMap_gen, map_zero] at h2
-  have hpow := FiniteField.pow_card_sub_one_eq_one _ hgen0
-  set N := Fintype.card (IntermediateField.adjoin F {x}) - 1 with hN
-  have hcard : 1 < Fintype.card (IntermediateField.adjoin F {x}) := Fintype.one_lt_card
-  have hN0 : N ≠ 0 := by omega
-  have hxN : x ^ N = 1 := by
-    have h2 := congrArg (algebraMap (IntermediateField.adjoin F {x}) k) hpow
-    rwa [map_pow, IntermediateField.AdjoinSimple.algebraMap_gen, map_one] at h2
-  refine ⟨N, hN0, ?_⟩
-  refine Ideal.Quotient.eq_zero_iff_mem.mp ?_
-  show IsLocalRing.residue Oᵥ (u ^ N - 1) = 0
-  rw [map_sub, map_pow, map_one, ← hxdef, hxN, sub_self]
-
-/-- **STRIPPING THE RESIDUE-CHARACTERISTIC PART OF AN EXPONENT**: if
-`A ^ N₀ ≡ 1` then already `A ^ N ≡ 1` for some `N` prime to `v`.
-
-Strong induction on `N₀`. If `N₀` is itself prime to `v` there is nothing to
-do; otherwise `exists_prime_factor_mem_asIdeal` produces a prime `q ∣ N₀` lying
-in `v`, and `sub_one_mem_maximalIdeal_of_pow_prime_sub_one_mem` peels it off
-`A ^ N₀ = (A ^ (N₀/q)) ^ q`. -/
-theorem exists_notMem_pow_sub_one_mem_maximalIdeal :
-    ∀ N₀ : ℕ, N₀ ≠ 0 → ∀ A : Oᵥ, A ^ N₀ - 1 ∈ IsLocalRing.maximalIdeal Oᵥ →
-      ∃ N : ℕ, (N : 𝓞 K) ∉ v.asIdeal ∧ A ^ N - 1 ∈ IsLocalRing.maximalIdeal Oᵥ := by
-  intro N₀
-  induction N₀ using Nat.strong_induction_on with
-  | _ N₀ ih =>
-    intro hN₀ A hA
-    by_cases hv : ((N₀ : ℕ) : 𝓞 K) ∈ v.asIdeal
-    · obtain ⟨q, hqp, hqd, hqv⟩ := exists_prime_factor_mem_asIdeal v N₀ hN₀ hv
-      obtain ⟨m, hm⟩ := hqd
-      have hm0 : m ≠ 0 := by
-        rintro rfl
-        rw [Nat.mul_zero] at hm
-        exact hN₀ hm
-      have hmlt : m < N₀ := by
-        rw [hm]
-        exact (Nat.lt_mul_iff_one_lt_left (Nat.pos_of_ne_zero hm0)).mpr hqp.one_lt
-      have hpow : (A ^ m) ^ q = A ^ N₀ := by
-        rw [← pow_mul, mul_comm m q, ← hm]
-      exact ih m hmlt hm0 A
-        (sub_one_mem_maximalIdeal_of_pow_prime_sub_one_mem v hqp hqv (by rw [hpow]; exact hA))
-    · exact ⟨N₀, hv, hA⟩
-
-/-- **EVERY UNIT OF `Oᵥ` IS, MODULO `𝔪`, A ROOT OF UNITY OF ORDER PRIME TO THE
-RESIDUE CHARACTERISTIC** (PROVEN 2026-07-31).
-
-This is what makes the tame character injective on `G₀/G₁` in
-`LowerRamificationData.mem_gp_one_of_dvd_smul_unif_sub`: the geometric sum
-`∑_{i<N} (σ•x)ⁱ x^{N−1−i}` is congruent to `N · x^{N−1}` modulo `𝔪`, and `N`
-must be a UNIT there for the cancellation to run. -/
-theorem exists_natCast_notMem_pow_sub_one_mem_maximalIdeal {u : Oᵥ} (hu : IsUnit u) :
-    ∃ N : ℕ, (N : 𝓞 K) ∉ v.asIdeal ∧ u ^ N - 1 ∈ IsLocalRing.maximalIdeal Oᵥ := by
-  obtain ⟨N₀, hN₀, hmem⟩ := exists_pos_pow_sub_one_mem_maximalIdeal v hu
-  exact exists_notMem_pow_sub_one_mem_maximalIdeal v N₀ hN₀ u hmem
-
-/-- `∑_{i<m} (f i − c) = (∑_{i<m} f i) − m·c`, by induction — the same
-work-around as `sum_pow_sub_one_range` above, since `Finset.sum_sub_distrib`
-does not fire at the `IntegralClosure` type synonym. -/
-theorem sum_sub_const_range (f : ℕ → Oᵥ) (c : Oᵥ) (m : ℕ) :
-    ∑ i ∈ Finset.range m, (f i - c) = (∑ i ∈ Finset.range m, f i) - (m : Oᵥ) * c := by
-  induction m with
-  | zero => simp
-  | succ j ih =>
-      rw [Finset.sum_range_succ, Finset.sum_range_succ, ih]
-      push_cast
-      ring
-
 end TameProcyclic
 
 /-- The exponent bookkeeping of the `q`-divisibility construction of
@@ -4800,187 +4671,57 @@ theorem LowerRamificationData.dvd_smul_unif_sub_of_mem_wildInertiaGroup
   exact ⟨c, by rw [hb, hc]; ring⟩
 
 /-- **SERRE, *CORPS LOCAUX* IV §1, LEMMA 1 — THE REMAINING INPUT TO
-`wildInertiaGroup_le_gp_one`** (cut 2026-07-30, **PROVEN 2026-07-31**): for an
-inertia element, membership in `G_1` is decided by its effect on the
-uniformizer ALONE.
+`wildInertiaGroup_le_gp_one`** (SORRY LEAF, cut 2026-07-30): for an inertia
+element, membership in `G_1` is decided by its effect on the uniformizer
+ALONE.
 
 `mem_gp` quantifies over EVERY level-fixed `x`, so `unif ² ∣ σ • unif − unif`
-is on its face weaker than `σ ∈ D.gp 1`. Serre's lemma is that it is not.
+is on its face weaker than `σ ∈ D.gp 1`. Serre's lemma is that it is not:
+writing `𝒪_0` for the ring of integers of the maximal UNRAMIFIED
+subextension `L_0 ⊆ L`,
 
-**THE ROUTE ACTUALLY TAKEN, AND WHY IT IS NOT THE ONE THE 2026-07-30 ANALYSIS
-PREDICTED.** That analysis (kept below, corrected) concluded the leaf needed
-the monogenicity `𝒪_L = 𝒪_0[unif]` over the maximal unramified subextension
-"and nothing weaker", and that the cut therefore could not be avoided. The
-first half is a correct reading of the classical proof; the second half is
-FALSE, and the counter-route costs about forty lines.
+* `𝒪_L = 𝒪_0[unif]` — `L/L_0` is totally ramified, so its ring of integers is
+  monogenic over `𝒪_0` on any uniformizer (Serre I §6);
+* `σ ∈ I_v` fixes `𝒪_0` POINTWISE — `L_0/Kᵥ` is unramified, so an
+  automorphism trivial on the residue field is trivial on `𝒪_0` by Hensel.
 
-Write `R = {x : x is `lvl`-fixed}` for `𝒪_L` and
-`S = {x ∈ R : unif ² ∣ σ • x − x}` for what has to be shown to be all of `R`.
-Then `S` is a subring of `R` (the Leibniz identity
-`σ•(xy) − xy = (σ•x − x)(σ•y) + x(σ•y − y)`), and:
+Given both, `x = ∑_j a_j unif ^ j` with `a_j ∈ 𝒪_0` gives
+`σ • x − x = ∑_j a_j ((σ • unif) ^ j − unif ^ j)`, and every summand is
+divisible by `σ • unif − unif`, hence by `unif ²`.
 
-* `unif · R ⊆ S`, since `σ•(unif·z) − unif·z = (σ•unif − unif)(σ•z) +
-  unif(σ•z − z)` and `unif ∣ σ•z − z` by `localInertiaGroup_le_gp_zero`. So
-  every NON-unit of `R` is in `S`, by `unif_spec`.
-* A UNIT `x ∈ R` is handled by the residue field rather than by a ring
-  generator. By `exists_natCast_notMem_pow_sub_one_mem_maximalIdeal` there is
-  an `N` PRIME TO `v` with `x ^ N ≡ 1 mod 𝔪`; then `x ^ N − 1` is a level-fixed
-  non-unit, so `x ^ N ∈ 1 + unif·R ⊆ S`. Expanding
-  `(σ•x) ^ N − x ^ N = T · (σ•x − x)` with `T = ∑_{i<N} (σ•x)ⁱ x^{N−1−i}` and
-  `T ≡ N · x^{N−1} mod 𝔪` — a UNIT, which is exactly what `N` prime to `v`
-  buys — the membership `x ^ N ∈ S` cancels down to `x ∈ S`.
+WHY THIS IS THE SHARP CUT, AND WHY IT CANNOT BE AVOIDED (analysis 2026-07-30).
+Everything else in `P_v ≤ G_1` is now proven above. What is left is exactly the
+injectivity of the tame character on `G_0/G_1`, and that is not derivable from
+the fields of `LowerRamificationData`. Concretely, put
+`δ_x(σ) := (σ • x − x)/unif mod 𝔪`. Then
 
-So the derivation `δ_x(σ) := (σ • x − x)/unif mod 𝔪` is indeed determined on a
-generating set, but the generating set is `{unif} ∪ R ^×`, and `δ` kills `R ^×`
-for the soft reason that `R ^×` is (modulo `𝔪`) torsion of order prime to `p`,
-NOT because the units are polynomials in `unif`. That is where the predicted
-obstruction dissolves: the classical argument transports `δ` along a ring
-generator, this one along a torsion exponent.
+* `δ_x(στ) = χ(σ) δ_x(τ) + δ_x(σ)` — a `χ`-cocycle, and `δ_x` vanishes on
+  `G_1` by definition, so `δ` factors through `G_0/G_1`;
+* `δ_·(σ)` is a DERIVATION in `x`, so it is determined by its value on a ring
+  generator of `𝒪_L` over the subring `σ` fixes — which is the monogenicity
+  above and nothing weaker.
 
-Recorded for the record, since it was the operative analysis for a day and is
-correct about what it rules out: the prime-to-`p` divisibility of `P_v`
-(`exists_pow_eq_of_mem_wildInertiaGroup`) cannot substitute — with `σ = θ ^ n`
-and `χ(θ) = 1`, the telescoping sum gives `δ_x(σ) = n · δ_x(θ)` with `n` a unit
-mod `p`, so the descent never terminates; and `σ ^ p ∈ G_1` yields
-`0 = (χ(σ) − 1) ^ {p−1} δ_x(σ)`, vacuous once `χ(σ) = 1`. Both remain dead
-ends. What was missed is that the quantifier in `mem_gp` can be attacked by
-CASES on the element rather than by a normal form for it.
+The prime-to-`p` divisibility of `P_v` (`exists_pow_eq_of_mem_wildInertiaGroup`)
+cannot substitute: with `σ = θ ^ n` and `χ(θ) = 1` — which is what
+`dvd_smul_unif_sub_of_mem_wildInertiaGroup` establishes — the telescoping sum
+gives `δ_x(σ) = n · δ_x(θ)` with `n` a unit mod `p`, so `δ_x(σ) = 0` iff
+`δ_x(θ) = 0`, and the descent never terminates. Likewise `σ ^ p ∈ G_1` yields
+`0 = (χ(σ) − 1) ^ {p−1} δ_x(σ)`, which is vacuous once `χ(σ) = 1`. Both were
+tried before this leaf was cut.
 
-FAITHFULNESS. TRUE, and it is the classical lemma; the hypothesis
-`σ ∈ I_v` is NOT removable — it is used twice, once through
-`localInertiaGroup_le_gp_zero` and once as `σ • x − x ∈ 𝔪` in the estimate on
-`T` — and without it the statement fails already for an unramified `L/Kᵥ` with
-`σ` a Frobenius lift (there `unif ∈ 𝒪ᵥ` is fixed, so the hypothesis is vacuous,
-while `σ ∉ D.gp 1`). Stated only at `i = 1`, which is all
-`wildInertiaGroup_le_gp_one` consumes. -/
+FAITHFULNESS. TRUE, and it is the classical lemma; the hypothesis `σ ∈ I_v` is
+NOT removable — it is what makes `σ` fix `𝒪_0`, and without it the statement
+fails already for an unramified `L/Kᵥ` with `σ` a Frobenius lift (there
+`unif ∈ 𝒪ᵥ` is fixed, so the hypothesis is vacuous, while `σ ∉ D.gp 1`).
+Stated only at `i = 1`, which is all `wildInertiaGroup_le_gp_one` consumes; the
+same proof gives every `i`, and a prover who builds the monogenicity should
+generalise it. -/
 theorem LowerRamificationData.mem_gp_one_of_dvd_smul_unif_sub
     {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)} (D : LowerRamificationData v)
     {σ : Field.absoluteGaloisGroup (v.adicCompletion K)}
     (hσ : σ ∈ localInertiaGroup v)
     (h : D.unif ^ 2 ∣ σ • D.unif - D.unif) :
-    σ ∈ D.gp 1 := by
-  classical
-  -- `σ ∈ G_0`: it moves every level-fixed element by at least `unif`.
-  have hgp0 : ∀ y : IntegralClosure
-      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
-      (AlgebraicClosure (v.adicCompletion K)),
-      (∀ τ ∈ D.lvl, τ • y = y) → D.unif ∣ σ • y - y := by
-    have hz := (D.mem_gp 0 σ).mp (D.localInertiaGroup_le_gp_zero hσ)
-    simpa using hz
-  -- Multiples of `unif` are moved by at least `unif ^ 2`.
-  have hmul : ∀ z : IntegralClosure
-      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
-      (AlgebraicClosure (v.adicCompletion K)),
-      (∀ τ ∈ D.lvl, τ • z = z) →
-      D.unif ^ 2 ∣ σ • (D.unif * z) - D.unif * z := by
-    intro z hz
-    have hrw : σ • (D.unif * z) - D.unif * z
-        = (σ • D.unif - D.unif) * (σ • z) + D.unif * (σ • z - z) := by
-      rw [smul_mul']
-      ring
-    rw [hrw]
-    refine dvd_add (Dvd.dvd.mul_right h _) ?_
-    obtain ⟨c, hc⟩ := hgp0 z hz
-    exact ⟨c, by rw [hc]; ring⟩
-  rw [D.mem_gp]
-  intro x hx
-  have hgoal : D.unif ^ (1 + 1) = D.unif ^ 2 := by norm_num
-  rw [hgoal]
-  by_cases hxu : IsUnit x
-  · -- UNIT CASE: `x ^ N ∈ 1 + unif · R` for an `N` prime to `v`, and the
-    -- geometric sum `T ≡ N · x ^ (N−1)` is then a unit, so `x ^ N ∈ S` cancels
-    -- down to `x ∈ S`.
-    obtain ⟨N, hN, hNmem⟩ := exists_natCast_notMem_pow_sub_one_mem_maximalIdeal v hxu
-    have hfixN : ∀ τ ∈ D.lvl, τ • (x ^ N - 1) = x ^ N - 1 := by
-      intro τ hτ
-      rw [smul_sub, smul_one, smul_pow_integralClosure v τ x N, hx τ hτ]
-    have hnu : ¬ IsUnit (x ^ N - 1) := (IsLocalRing.mem_maximalIdeal _).mp hNmem
-    obtain ⟨w, hw⟩ := D.unif_spec _ hfixN hnu
-    have hwfix : ∀ τ ∈ D.lvl, τ • w = w := by
-      intro τ hτ
-      refine mul_left_cancel₀ D.unif_ne_zero ?_
-      have h1 : τ • (D.unif * w) = D.unif * w := by rw [← hw]; exact hfixN τ hτ
-      rwa [smul_mul', D.unif_fixed τ hτ] at h1
-    have hxN : D.unif ^ 2 ∣ σ • (x ^ N) - x ^ N := by
-      have hval : x ^ N = 1 + D.unif * w := by rw [← hw]; ring
-      have hmw := hmul w hwfix
-      rw [hval, smul_add, smul_one]
-      have hrw : (1 : IntegralClosure
-          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
-          (AlgebraicClosure (v.adicCompletion K))) + σ • (D.unif * w) - (1 + D.unif * w)
-          = σ • (D.unif * w) - D.unif * w := by ring
-      rw [hrw]
-      exact hmw
-    obtain ⟨c, hc⟩ := hgp0 x hx
-    set T : IntegralClosure
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
-        (AlgebraicClosure (v.adicCompletion K)) :=
-      ∑ i ∈ Finset.range N, (σ • x) ^ i * x ^ (N - 1 - i) with hT
-    have hgeom : T * (σ • x - x) = (σ • x) ^ N - x ^ N := geom_sum₂_mul _ _ N
-    have hTm : T - (N : IntegralClosure
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
-        (AlgebraicClosure (v.adicCompletion K))) * x ^ (N - 1)
-        ∈ IsLocalRing.maximalIdeal _ := by
-      have hsum := sum_sub_const_range v (fun i => (σ • x) ^ i * x ^ (N - 1 - i))
-        (x ^ (N - 1)) N
-      rw [← hT] at hsum
-      rw [← hsum]
-      refine Ideal.sum_mem _ fun i hi => ?_
-      have hi' : i < N := Finset.mem_range.mp hi
-      have hsplit : x ^ (N - 1) = x ^ i * x ^ (N - 1 - i) := by
-        rw [← pow_add]
-        congr 1
-        omega
-      rw [hsplit, ← sub_mul]
-      refine Ideal.mul_mem_right _ _ ?_
-      obtain ⟨d, hd⟩ := sub_dvd_pow_sub_pow (σ • x) x i
-      rw [hd]
-      exact Ideal.mul_mem_right _ _ (hσ x)
-    have hTunit : IsUnit T := by
-      rw [← IsLocalRing.notMem_maximalIdeal]
-      intro hTmem
-      have hprod := Ideal.sub_mem _ hTmem hTm
-      simp only [sub_sub_cancel] at hprod
-      exact (IsLocalRing.notMem_maximalIdeal.mpr
-        ((isUnit_natCast_integralClosure_of_notMem_asIdeal v hN).mul (hxu.pow (N - 1)))) hprod
-    have hdvd2 : D.unif ^ 2 ∣ D.unif * (T * c) := by
-      have h1 : σ • (x ^ N) - x ^ N = D.unif * (T * c) := by
-        rw [smul_pow_integralClosure v σ x N, ← hgeom, hc]
-        ring
-      rw [← h1]
-      exact hxN
-    obtain ⟨e, he⟩ := hdvd2
-    have hTc : T * c = D.unif * e := by
-      refine mul_left_cancel₀ D.unif_ne_zero ?_
-      rw [he]
-      ring
-    obtain ⟨U, hU⟩ := hTunit
-    have hinv : (↑U⁻¹ : IntegralClosure
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
-        (AlgebraicClosure (v.adicCompletion K))) * T = 1 := by
-      rw [← hU, ← Units.val_mul, inv_mul_cancel, Units.val_one]
-    have hcd : D.unif ∣ c := by
-      refine ⟨(↑U⁻¹ : IntegralClosure
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
-        (AlgebraicClosure (v.adicCompletion K))) * e, ?_⟩
-      calc c = ((↑U⁻¹ : IntegralClosure
-            (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
-            (AlgebraicClosure (v.adicCompletion K))) * T) * c := by rw [hinv, one_mul]
-        _ = (↑U⁻¹ : IntegralClosure
-            (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
-            (AlgebraicClosure (v.adicCompletion K))) * (T * c) := by ring
-        _ = _ := by rw [hTc]; ring
-    obtain ⟨f, hf⟩ := hcd
-    exact ⟨f, by rw [hc, hf]; ring⟩
-  · -- NON-UNIT CASE: `unif ∣ x` by `unif_spec`, and `unif · R ⊆ S`.
-    obtain ⟨z, hz⟩ := D.unif_spec x hx hxu
-    have hzfix : ∀ τ ∈ D.lvl, τ • z = z := by
-      intro τ hτ
-      refine mul_left_cancel₀ D.unif_ne_zero ?_
-      have h1 : τ • (D.unif * z) = D.unif * z := by rw [← hz]; exact hx τ hτ
-      rwa [smul_mul', D.unif_fixed τ hτ] at h1
-    have hmz := hmul z hzfix
-    rwa [← hz] at hmz
+    σ ∈ D.gp 1 := sorry
 
 /-- **THE WILD INERTIA LANDS IN `G_1` AT EVERY LEVEL**, `P_v ≤ G_1(L/Kᵥ)`.
 
