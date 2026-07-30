@@ -14941,6 +14941,127 @@ theorem charpoly_fin_two_coeff_zero {R : Type*} [CommRing R] [Nontrivial R]
     (A : Matrix (Fin 2) (Fin 2) R) : A.charpoly.coeff 0 = A.det := by
   rw [Matrix.charpoly_fin_two]; simp
 
+/-- **`Fermat.traceSum` IS Dickson evaluation** (PROVEN 2026-07-30, elementary):
+`traceSum x N n = (dickson 1 N n).eval x`.  Both are defined by the SAME
+two-step recursion — `p₀ = 2`, `p₁ = x`, `p_{n+2} = x·p_{n+1} − N·p_n` — one as
+a bare function (`Mathlib/Analysis/WeilBoundDescent.lean`, where the archimedean
+descent needs it over `ℂ`) and one as a polynomial (mathlib's Dickson family,
+where this module's Frobenius power-sum block needs its monicity).  This is the
+bridge between the two, and it is what lets the PROVEN
+`trace_pow_eq_eval_dickson` be read as a `traceSum` identity. -/
+theorem traceSum_eq_dickson_eval {R : Type*} [CommRing R] (x N : R) :
+    ∀ n : ℕ, Fermat.traceSum x N n = (dickson 1 N n).eval x
+  | 0 => by
+      rw [Fermat.traceSum, dickson_zero]
+      norm_num
+  | 1 => by rw [Fermat.traceSum, dickson_one, eval_X]
+  | (n + 2) => by
+      rw [Fermat.traceSum, traceSum_eq_dickson_eval x N (n + 1),
+        traceSum_eq_dickson_eval x N n, dickson_add_two]
+      simp only [eval_sub, eval_mul, eval_X, eval_C]
+
+/-- **The trace of a power of a `2 × 2` matrix is the `traceSum` of its own
+trace and determinant** (PROVEN 2026-07-30): `tr (Mⁿ) = D_n(tr M, det M)`.
+This is `trace_pow_eq_eval_dickson` (Cayley–Hamilton in rank two, proven in
+`HardlyRamified/Deformation.lean`) read through the bridge above. -/
+theorem trace_pow_eq_traceSum {A : Type*} [CommRing A] [Nontrivial A]
+    (M : Matrix (Fin 2) (Fin 2) A) (n : ℕ) :
+    (M ^ n).trace = Fermat.traceSum M.trace M.det n := by
+  rw [traceSum_eq_dickson_eval, trace_pow_eq_eval_dickson]
+
+/-- **The linear coefficient of the charpoly of a POWER, in `traceSum` shape**
+(PROVEN 2026-07-30): for an endomorphism `M` of a rank-`2` free module,
+
+    ((Mⁿ).charpoly).coeff 1 = − D_n(−(M.charpoly).coeff 1, (M.charpoly).coeff 0).
+
+In words: the charpoly of `Mⁿ` is determined by the charpoly of `M` through the
+Dickson recursion, since `coeff 1 = −tr` and `coeff 0 = det` in rank two.  No
+eigenvalues are needed — the recursion is Cayley–Hamilton, valid over any
+commutative ring, which is the whole point of `traceSum` existing at all. -/
+theorem charpoly_pow_coeff_one_eq {A : Type*} [CommRing A] [Nontrivial A]
+    (M : Module.End A (Fin 2 → A)) (n : ℕ) :
+    ((M ^ n).charpoly).coeff 1
+      = - Fermat.traceSum (- (M.charpoly.coeff 1)) (M.charpoly.coeff 0) n := by
+  classical
+  set b := Pi.basisFun A (Fin 2) with hbdef
+  set X : Matrix (Fin 2) (Fin 2) A := LinearMap.toMatrix b b M with hXdef
+  have hpow : ∀ m : ℕ, LinearMap.toMatrix b b (M ^ m) = X ^ m := by
+    intro m
+    induction m with
+    | zero => simp [hXdef]
+    | succ m ih => rw [pow_succ, pow_succ, LinearMap.toMatrix_mul, ih, ← hXdef]
+  have hcp : ∀ m : ℕ, (M ^ m).charpoly = (X ^ m).charpoly := by
+    intro m; rw [← hpow m, LinearMap.charpoly_toMatrix]
+  have hM1 : M.charpoly = X.charpoly := by
+    have h := hcp 1
+    rwa [pow_one, pow_one] at h
+  have htr : X.trace = - (M.charpoly.coeff 1) := by
+    rw [hM1, charpoly_fin_two_coeff_one, neg_neg]
+  have hdet : X.det = M.charpoly.coeff 0 := by
+    rw [hM1, charpoly_fin_two_coeff_zero]
+  rw [hcp n, charpoly_fin_two_coeff_one, trace_pow_eq_traceSum, htr, hdet]
+
+/-- **THE `p`-TH-POWER FROBENIUS COMPARISON AT AN INERT PLACE** (**PROVEN
+2026-07-30**; PURE ALGEBRAIC NUMBER THEORY — no automorphic datum appears).
+
+STATEMENT.  For a hardly ramified `ρ`, a rational prime `q ∉ {2, ℓ}`, a place
+`w` of `M` with `Nw = q^e` and a place `v` of `L` with `Nv = q^{e·p}`,
+
+    ((ρ|_{G_L}).charFrob v).coeff 1
+      = − D_p( −((ρ|_{G_M}).charFrob w).coeff 1 , Nw ).
+
+Neither `v` nor `L` is required to lie over `w` or `M`: as with the sibling
+`charFrob_baseChange_eq_of_absNorm_eq` below, `charFrob` is a function of the
+residue CARDINALITY alone, so `Nv = Nw^p` is the whole hypothesis.  At an inert
+place of a degree-`p` extension that is exactly the relation the unique place
+above `w` satisfies, which is why this is the Dickson relation
+`a_W = D_p(a_w, Nw)` of the Arthur–Clozel descent — but stated, and proven,
+with no reference to the extension.
+
+PROOF, and it is three lines because the work is already done.  `ρ` is a
+representation of `G_ℚ`, so `exists_charpoly_pow_eq_charFrob_of_prime` supplies
+ONE endomorphism `M₀ = ρ(Frob_q)` with `charFrob` at ANY place of residue
+cardinality `q^n` equal to `(M₀^n).charpoly`.  Applying it at `w` and at `v`
+gives `A := M₀^e` and `M₀^{e·p} = A^p`; `charpoly_pow_coeff_one_eq` reads the
+linear coefficient of the power off by Cayley–Hamilton; and
+`charFrob_baseChange_coeff_zero_eq_absNorm` (`hwℓ` is what it needs) replaces
+`A.charpoly.coeff 0` by the residue cardinality `Nw`, which is the shape the
+consumer wants.
+
+FAITHFULNESS.  `hq2`/`hqℓ` are load-bearing for the reason recorded on
+`exists_charpoly_pow_eq_charFrob_of_prime`: at `q ∈ {2, ℓ}` the representation
+is ramified and `charFrob` genuinely depends on the choice of Frobenius lift.
+`hwℓ` is load-bearing only for the NORMALISATION of the second argument — with
+it the statement is about `Nw`, without it it would have to be about
+`(charFrob w).coeff 0`, which is the same thing away from `ℓ`. -/
+theorem charFrob_baseChange_coeff_one_eq_traceSum_of_absNorm_eq_pow {ℓ : ℕ}
+    (hℓodd : Odd ℓ) [Fact ℓ.Prime]
+    {O : Type u} [CommRing O] [TopologicalSpace O] [IsTopologicalRing O]
+    [IsLocalRing O] [Algebra ℤ_[ℓ] O]
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    (M L : Type u) [Field M] [NumberField M] [Field L] [NumberField L]
+    (w : HeightOneSpectrum (NumberField.RingOfIntegers M))
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers L))
+    (q e p : ℕ) (hq : q.Prime) (hq2 : q ≠ 2) (hqℓ : q ≠ ℓ)
+    (hwℓ : (ℓ : NumberField.RingOfIntegers M) ∉ w.asIdeal)
+    (hw : Ideal.absNorm w.asIdeal = q ^ e)
+    (hv : Ideal.absNorm v.asIdeal = q ^ (e * p)) :
+    ((ρ.map (algebraMap ℚ L)).charFrob v).coeff 1 =
+      - Fermat.traceSum (-(((ρ.map (algebraMap ℚ M)).charFrob w).coeff 1))
+          ((Ideal.absNorm w.asIdeal : ℕ) : O) p := by
+  obtain ⟨M₀, _hdet, hall⟩ :=
+    exists_charpoly_pow_eq_charFrob_of_prime hℓodd hrank hρ q hq hq2 hqℓ
+  have hW : (ρ.map (algebraMap ℚ M)).charFrob w = (M₀ ^ e).charpoly := hall M w e hw
+  have hV : (ρ.map (algebraMap ℚ L)).charFrob v = (M₀ ^ (e * p)).charpoly :=
+    hall L v (e * p) hv
+  have hdet0 : ((M₀ ^ e).charpoly).coeff 0 = ((Ideal.absNorm w.asIdeal : ℕ) : O) := by
+    rw [← hW]
+    exact charFrob_baseChange_coeff_zero_eq_absNorm hℓodd hrank hρ M w hwℓ
+  rw [hV, hW, show M₀ ^ (e * p) = (M₀ ^ e) ^ p from by rw [pow_mul],
+    charpoly_pow_coeff_one_eq (M₀ ^ e) p, hdet0]
+
 /-- **Two Frobenius traces over one rational prime are power sums of ONE
 pair of complex numbers** (**PROVEN 2026-07-28**; PURE FIELD THEORY
 AND LINEAR ALGEBRA — no automorphic datum, no `ρ`).
@@ -17624,34 +17745,163 @@ theorem charFrob_baseChange_eq_of_absNorm_eq {ℓ : ℕ}
   exact charFrob_eq_of_conj_of_inertia ρ w v hq'.toHeightOneSpectrumRingOfIntegersRat
     (hρ.isUnramified q' hq' ⟨hq2, hqℓ⟩) μM μL XM XL h2 hMeq hLeq
 
+/-- **ARTHUR–CLOZEL DESCENT FOR ONE PRIME-DEGREE CYCLIC STEP — THE HECKE-FIELD
+HALF, AND ALL THAT IS LEFT OF IT** (sorry LEAF; cut 2026-07-30, TENTH OWNER,
+out of `exists_baseChangeDickson_of_prime_cyclic_step_of_inert` immediately
+below, which is now a PROVEN assembly over this leaf).
+
+WHAT THIS LEAF ASSERTS, and it is the whole automorphic content of the descent
+step: the Frobenius TRACES of `ρ` over `M = F^D` are ALGEBRAIC, and lie in ONE
+number field `EM` containing `EL` compatibly — together with the purely
+arithmetic side condition that an inert `w` (in the norm-realisation sense the
+hypothesis expresses) has a place `v` of `L = F^C` above it with `Nv = Nw^p`.
+
+WHAT WAS REMOVED FROM THE PREVIOUS CITATION, all three now DERIVED below:
+
+* the `ζ`-TORSOR (`ζ w ^ p = 1`, with the trace read only up to `ζ w`);
+* the DETERMINANT clause (`coeff 0 = ζ w ^ 2 * ψM (δ w)`), which away from `ℓ`
+  is `charFrob_baseChange_coeff_zero_eq_absNorm` and carries no information;
+* the DICKSON RELATION `ιM ((PL v).coeff 1) = − D_p(−(a w), N w)`, which is now
+  the PROVEN `charFrob_baseChange_coeff_one_eq_traceSum_of_absNorm_eq_pow`
+  earlier in this module — Cayley–Hamilton plus "`charFrob` depends only on the
+  residue cardinality", with no reference to the extension `L/M` at all.
+
+**WHY THE `ζ`-TORSOR COULD BE DROPPED, AND WHY THE PREVIOUS AUDIT'S ARGUMENT
+FOR KEEPING IT WAS WRONG.**  The NINTH-OWNER AUDIT on the consumer below
+contains a paragraph "*Faithfulness of the Dickson clause, checked for every
+`ζ`, not only `ζ w = 1`*", whose argument is: writing `π` for the untwisted
+member of the base-change fibre, `ρ|_{G_M} ≅ ρ_π ⊗ χ` with `ζ w = χ(Frob_w)`,
+clause (2) makes `−(a w)` the trace of `ρ_π` at `w`, the twist is invisible
+upstairs, "so `tr_v = D_p(tr_w(π), N w)`".
+
+**That last step is FALSE, and the missing factor is the DETERMINANT.**
+`D_p(·, ·)` takes the trace AND the determinant of the SAME representation, and
+`det ρ_π = det(ρ|_{G_M}) · χ^{-2} = N w · ζ^{-2}` — which is exactly what the
+audit's OWN clause (3) says, `ιO (coeff 0) = ζ^2 · ψM (δ w)`.  So the identity
+that actually holds at a twisted `ζ` is
+
+    tr_v = D_p( tr_w(π), δ w )      NOT      D_p( tr_w(π), N w ),
+
+the two agreeing precisely when `ζ^2 = 1`.  Concretely, with `α, β` the
+Frobenius eigenvalues of `ρ|_{G_M}` at `w` (so `α + β = tr`, `αβ = N w`), the
+fibre of `D_p(·, N w)` over `α^p + β^p` is `{ζ' α + ζ'^{-1} β : ζ'^p = 1}`,
+while clause (2) offers `ζ^{-1}(α + β)`; for `α/β` not a root of unity those
+coincide only for `ζ' = ζ^{-1} = ζ'^{-1}`, i.e. `ζ^2 = 1`, hence `ζ = 1` at odd
+`p`.  So the fourth conjunct of the previous statement did not survive a
+nontrivial twist — it silently FORCED `ζ w = 1`.
+
+**The leaf was nevertheless TRUE, and this restatement is what makes that
+visible rather than accidental.**  `ζ = 1` is admissible because `EM` is
+EXISTENTIALLY quantified: `χ` has order dividing `p`, so its values are `p`-th
+roots of unity and the untwisted trace `χ(Frob_w) · tr_π(Frob_w)` lies in the
+number field generated by the Hecke field of `π`, the `p`-th roots of unity and
+`ψL(EL)` — a number field, all three generators being algebraic.  The
+`ζ`-torsor is the shape in which the classical descent theorem is STATED
+(the fibre of base change is a torsor under the characters of `Gal(L/M)`); it
+is not a limitation on what can be asserted here, because adjoining `μ_p` to
+the coefficient field absorbs it.  This is the same move that finding (7)'s
+2026-07-29 correction already made for the degree-`p` Dickson root: once the
+coefficient field is existential, "algebraic" is all that is needed.
+
+Status of that audit paragraph, stated so nobody re-derives this: its VERDICT
+(the leaf is true, the cut does not secretly force `ζ w = 1`) is half right —
+the leaf is true, and the cut DID force `ζ w = 1`.  Its REFUTING CHECK
+("exhibit a place where `ρ|_{G_L}` sees the character `χ`") is answered
+correctly and is beside the point: `χ` is invisible on `G_L`, and the gap is on
+the `M` side, in the determinant that `D_p` consumes.
+
+FAITHFULNESS OF WHAT REMAINS.  The trace clause is the Hecke-field statement of
+Arthur–Clozel Ch. 3 Thm 4.2(d) (via Carayol local–global compatibility), with
+the twist absorbed as above; it is TRUE and it is a citation.  The place clause
+is elementary and would be the natural NEXT CUT: for `L/M` cyclic of prime
+degree `p`, a `w` whose residue cardinality is realised by no good place of `L`
+is inert, and the unique place above it has `Nv = Nw^p`.  That is ordinary
+ramification theory (`Ideal.sum_ramification_inertia`) and needs no automorphic
+input; it is left here only because peeling it requires the `L/M` tower
+instances, which this statement deliberately does not carry.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge through
+`Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem exists_baseChangeHeckeField_of_prime_cyclic_step_of_inert
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (Wit : PotentialModularityWitness ℓ O ρ)
+    (C D : Subgroup (Wit.F ≃ₐ[ℚ] Wit.F)) (hCD : C ≤ D)
+    (hnormal : (C.subgroupOf D).Normal)
+    (p : ℕ) (hp : p.Prime)
+    (hcard : Nat.card (D ⧸ C.subgroupOf D) = p)
+    (EL : Type u) [Field EL] [NumberField EL]
+    (ψL : EL →+* AlgebraicClosure ℚ_[ℓ])
+    (SL : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
+      (IntermediateField.fixedField C))))
+    (PL : HeightOneSpectrum (NumberField.RingOfIntegers
+      (IntermediateField.fixedField C)) → Polynomial EL)
+    (hPL : ∀ v ∉ SL,
+      ((ρ.map (algebraMap ℚ (IntermediateField.fixedField C))).charFrob
+        v).map Wit.ιO = (PL v).map ψL) :
+    ∃ (EM : Type u) (_ : Field EM) (_ : NumberField EM)
+      (ψM : EM →+* AlgebraicClosure ℚ_[ℓ]) (ιM : EL →+* EM),
+      (∀ x : EL, ψM (ιM x) = ψL x) ∧
+      ∃ (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
+          (IntermediateField.fixedField D))))
+        (a : HeightOneSpectrum (NumberField.RingOfIntegers
+          (IntermediateField.fixedField D)) → EM),
+        ∀ w ∉ S,
+          (∀ v ∉ SL, Ideal.absNorm v.asIdeal ≠ Ideal.absNorm w.asIdeal) →
+          Wit.ιO (((ρ.map (algebraMap ℚ (IntermediateField.fixedField D))).charFrob
+            w).coeff 1) = ψM (a w) ∧
+          ∃ v, v ∉ SL ∧
+            Ideal.absNorm v.asIdeal = Ideal.absNorm w.asIdeal ^ p :=
+  sorry
+
 /-- **ARTHUR–CLOZEL DESCENT FOR ONE PRIME-DEGREE CYCLIC STEP — THE ALGEBRAIC
-HALF** (sorry LEAF; cut 2026-07-29, NINTH OWNER, out of
+HALF** (**PROVEN 2026-07-30, TENTH OWNER**, as an assembly over
+`exists_baseChangeHeckeField_of_prime_cyclic_step_of_inert` immediately above;
+cut 2026-07-29, NINTH OWNER, out of
 `exists_baseChangeDescentData_of_prime_cyclic_step_of_inert` below).
 
-This is the old citation with its ARCHIMEDEAN clause removed and the DICKSON
-RELATION that produces it put in instead.  The trade is exact and it is a
-reduction: the fourth conjunct used to ASSERT the Ramanujan–Petersson bound
-`‖φ (a w)‖ ≤ 2 √(N w)` on the descended eigenvalue — a genuine piece of
-Blasius/Brylinski–Labesse/Carayol — and now asserts only that the UPSTAIRS
-eigensystem's coefficient at the place above `w` is the `p`-th Dickson value
-of the descended one.  The bound is then DERIVED, in Lean, by
-`Fermat.norm_le_two_mul_sqrt_of_dickson_of_norm_le`
-(`Mathlib/Analysis/WeilBoundDescent.lean`), from the bound UPSTAIRS, which the
-sole call site already holds and used to discard.
+**SIGNATURE UNCHANGED** — the sole call site
+(`exists_baseChangeDescentData_of_prime_cyclic_step_of_inert`) is untouched.
+What changed is that the statement is now DERIVED rather than cited.  The proof
+takes `ζ ≡ 1` and `δ w := N w`, which the leaf above records is admissible
+(the base-change character's values are `p`-th roots of unity and `EM` is
+existential, so the untwisted trace already lies in a number field), and then:
 
-**WHY THIS IS A REAL REDUCTION AND NOT A RELOCATION.**  The Dickson clause is
-pure Galois theory: at an inert `w` the unique place `W` of `L` above it has
-`Frob_W = Frob_w ^ p`, so the Satake parameters upstairs are the `p`-th powers
-of those downstairs and `tr_W = D_p(tr_w, N w)`.  Nothing automorphic enters.
-The archimedean bound, by contrast, is Ramanujan–Petersson, and it is exactly
-what has been removed from the citation.  See the NINTH-OWNER AUDIT on the
-consumer below for the check that the clause is faithful for every `ζ`, not
-only for the untwisted `ζ w = 1`.
+* the `ζ` clause is `one_pow`, and the trace clause is the leaf's own;
+* the DETERMINANT clause is `charFrob_baseChange_coeff_zero_eq_absNorm` — away
+  from `ℓ` the constant coefficient of the Frobenius charpoly IS `N w`, a
+  rational integer, hence in every coefficient field;
+* the DICKSON clause is the PROVEN
+  `charFrob_baseChange_coeff_one_eq_traceSum_of_absNorm_eq_pow` (Cayley–Hamilton
+  in rank two, plus `charFrob` depending only on the residue cardinality),
+  transported along `Wit.ιO` by `Fermat.map_traceSum` and pulled back through
+  the injective `ψM`.
 
-The residual citation here is therefore Arthur–Clozel Ch. 3 Thm 4.2(d) TOGETHER
-WITH the `p`-th-power Frobenius comparison at inert places — the two things
-findings (1) and (4) of the consumer's docstring identify — and no longer the
-archimedean estimate on top of them. -/
+The finitely many places whose residue characteristic is `2` or `ℓ` are pushed
+into the existential `S` (`exists_finset_forall_natCast_notMem_asIdeal` at
+`2 * ℓ`); that costs the consumer nothing, since `S` was already existential.
+
+WHY THE `ζ`-INVARIANCE OF THE DICKSON CLAUSE IS NOT NEEDED AND WAS NOT TRUE:
+see the leaf's docstring above, which corrects the NINTH-OWNER AUDIT's
+paragraph on that point.  The rest of that audit, and the whole of the
+citation's history, is retained on the consumer below. -/
 theorem exists_baseChangeDickson_of_prime_cyclic_step_of_inert
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
@@ -17706,8 +17956,75 @@ theorem exists_baseChangeDickson_of_prime_cyclic_step_of_inert
             Ideal.absNorm v.asIdeal = Ideal.absNorm w.asIdeal ^ p ∧
             ιM ((PL v).coeff 1) =
               - Fermat.traceSum (-(a w))
-                ((Ideal.absNorm w.asIdeal : ℕ) : EM) p :=
-  sorry
+                ((Ideal.absNorm w.asIdeal : ℕ) : EM) p := by
+  classical
+  obtain ⟨EM, hfieldEM, hnfEM, ψM, ιM, hψι, S₀, a, hdata⟩ :=
+    exists_baseChangeHeckeField_of_prime_cyclic_step_of_inert hℓodd hℓ5 hZinj hrank hρ
+      hW hρbar hirr π hπsurj hπ Wit C D hCD hnormal p hp hcard EL ψL SL PL hPL
+  letI := hfieldEM
+  letI := hnfEM
+  -- the finitely many places of `M = F^D` whose residue characteristic is `2` or `ℓ`
+  have hℓ0 : ℓ ≠ 0 := (Fact.out : ℓ.Prime).ne_zero
+  obtain ⟨S₂, hS₂⟩ := exists_finset_forall_natCast_notMem_asIdeal
+    (IntermediateField.fixedField D) (2 * ℓ) (by simpa using hℓ0)
+  refine ⟨EM, hfieldEM, hnfEM, ψM, ιM, hψι, S₀ ∪ S₂, a,
+    fun w => ((Ideal.absNorm w.asIdeal : ℕ) : EM), fun _ => 1, ?_⟩
+  intro w hwS hinert
+  have hw₀ : w ∉ S₀ := fun h => hwS (Finset.mem_union_left _ h)
+  have hw₂ : w ∉ S₂ := fun h => hwS (Finset.mem_union_right _ h)
+  obtain ⟨hcoeff1, v, hvSL, hNv⟩ := hdata w hw₀ hinert
+  have h2ℓ : ((2 * ℓ : ℕ) : NumberField.RingOfIntegers (IntermediateField.fixedField D))
+      ∉ w.asIdeal := hS₂ w hw₂
+  -- the residue characteristic of `w`, and the two exclusions read off from it
+  obtain ⟨q, e, hq, he, hcomapw, hnormw⟩ :=
+    exists_prime_place_rat (IntermediateField.fixedField D) w
+  have hqw : (q : NumberField.RingOfIntegers (IntermediateField.fixedField D)) ∈ w.asIdeal := by
+    have h1 : (q : NumberField.RingOfIntegers ℚ) ∈
+        hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal := by
+      rw [asIdeal_toHeightOneSpectrumRingOfIntegersRat]
+      exact Ideal.mem_span_singleton_self _
+    rw [← hcomapw, Ideal.mem_comap] at h1
+    rwa [map_natCast] at h1
+  have hqdvd : ∀ n : ℕ, q ∣ n →
+      ((n : ℕ) : NumberField.RingOfIntegers (IntermediateField.fixedField D)) ∈ w.asIdeal := by
+    rintro n ⟨c, rfl⟩
+    push_cast
+    exact Ideal.mul_mem_right _ _ hqw
+  have hq2 : q ≠ 2 := by
+    rintro rfl
+    exact h2ℓ (hqdvd (2 * ℓ) (Dvd.intro ℓ rfl))
+  have hqℓ : q ≠ ℓ := by
+    rintro rfl
+    exact h2ℓ (hqdvd (2 * q) (Dvd.intro_left 2 rfl))
+  have hwℓ : (ℓ : NumberField.RingOfIntegers (IntermediateField.fixedField D))
+      ∉ w.asIdeal := by
+    intro hmem
+    refine h2ℓ ?_
+    have hcast : ((2 * ℓ : ℕ) : NumberField.RingOfIntegers (IntermediateField.fixedField D))
+        = 2 * (ℓ : NumberField.RingOfIntegers (IntermediateField.fixedField D)) := by
+      push_cast; ring
+    rw [hcast]
+    exact Ideal.mul_mem_left _ _ hmem
+  -- the determinant coefficient is the residue cardinality
+  have hdet := charFrob_baseChange_coeff_zero_eq_absNorm hℓodd hrank hρ
+    (IntermediateField.fixedField D) w hwℓ
+  refine ⟨one_pow p, by rw [one_mul]; exact hcoeff1, ?_, v, hvSL, hNv, ?_⟩
+  · rw [one_pow, one_mul, hdet, map_natCast, map_natCast]
+  -- THE DICKSON RELATION, now DERIVED
+  · have hinj : Function.Injective ψM := ψM.injective
+    refine hinj ?_
+    rw [hψι]
+    have hL : ψL ((PL v).coeff 1)
+        = Wit.ιO (((ρ.map (algebraMap ℚ (IntermediateField.fixedField C))).charFrob
+            v).coeff 1) := by
+      have h := hPL v hvSL
+      have h2 := congrArg (fun t : Polynomial (AlgebraicClosure ℚ_[ℓ]) => t.coeff 1) h
+      simpa [Polynomial.coeff_map] using h2.symm
+    have hkey := charFrob_baseChange_coeff_one_eq_traceSum_of_absNorm_eq_pow hℓodd hrank hρ
+      (IntermediateField.fixedField D) (IntermediateField.fixedField C) w v q e p hq hq2 hqℓ
+      hwℓ hnormw (by rw [hNv, hnormw, ← pow_mul])
+    rw [hL, hkey, map_neg, Fermat.map_traceSum, map_neg, map_natCast, map_neg,
+      Fermat.map_traceSum, map_neg, ← hcoeff1, map_natCast]
 
 /-- **ARTHUR–CLOZEL DESCENT FOR ONE PRIME-DEGREE CYCLIC STEP — THE
 LITERATURE CITATION ITSELF** (**PROVEN 2026-07-29, NINTH OWNER**, as an
@@ -18304,6 +18621,18 @@ existentially bound object is the citation under another name — but the price
 was overstated by a whole theory.
 
 *Faithfulness of the Dickson clause, checked for every `ζ`, not only `ζ w = 1`.*
+**THE ARGUMENT IN THIS PARAGRAPH IS WRONG — CORRECTED 2026-07-30 BY THE TENTH
+OWNER; read the docstring of
+`exists_baseChangeHeckeField_of_prime_cyclic_step_of_inert` above for the
+correction and keep this text only as the record of what was claimed.**  In one
+line: `D_p` consumes the trace AND the determinant of the SAME representation,
+and `det ρ_π = N w · ζ^{-2}` (which is what clause (3) of this very conclusion
+says), so the identity that holds at a twisted `ζ` is `tr_v = D_p(tr_w(π), δ w)`
+and NOT `D_p(tr_w(π), N w)`; the two agree exactly when `ζ^2 = 1`.  The clause
+therefore DID force `ζ w = 1`.  The VERDICT nevertheless stands — the clause is
+true — because `EM` is existential and may contain `μ_p`, so the untwisted trace
+is itself in a number field; that is how the leaf above now states it, and the
+clause is PROVEN from it rather than cited.  The original text follows.
 The clause says `ιM ((PL v).coeff 1) = - traceSum (-(a w)) (N w) p` at the place
 `v` above `w`.  Write `π` for the untwisted member of the base-change fibre, so
 that `ρ|_{G_M} ≅ ρ_π ⊗ χ` and `ζ w = χ(Frob_w)`.  Then clause (2) forces
