@@ -618,6 +618,15 @@ public import Mathlib.LinearAlgebra.Eigenspace.Zero
 -- summands, and on a generalized eigenspace it is scaled by the eigenvalue.
 -- Together these are the whole proof of the second power sum.
 public import Mathlib.Algebra.DirectSum.LinearMap
+-- `Polynomial.coeff_eq_esymm_roots_of_splits`: Vieta, i.e. the coefficients
+-- of a split polynomial as elementary symmetric functions of its roots.  With
+-- Newton's second identity this is what turns the banked charpoly of `T_ℓ`
+-- into `Tr(T_ℓ²)`; see `trace_sq_eq_charpoly_coeff`.
+public import Mathlib.RingTheory.Polynomial.Vieta
+-- `LinearMap.charpoly_toMatrix`: the charpoly of the matrix of an
+-- endomorphism in any basis is the charpoly of the endomorphism.  This is
+-- what moves `x0HeckeCharpolyTable`'s banked polynomial off the matrix.
+public import Mathlib.LinearAlgebra.Charpoly.ToMatrix
 public import Mathlib.Data.List.GetD
 public import Mathlib.FieldTheory.IsAlgClosed.Basic
 public import Mathlib.CategoryTheory.Limits.Shapes.Pullback.IsPullback.Defs
@@ -45599,7 +45608,7 @@ It was a leaf for one day; the cut that replaced it separates the two
 different pieces of mathematics it was carrying:
 
 * `finrank_cuspForm_of_x0HeckeCharpolyTable` — `dim_ℂ S₂(Γ₀(N)) = g(X₀(N))`
-  at the sixteen banked levels.  The classical weight-2 dimension formula.
+  at the seventeen banked levels.  The classical weight-2 dimension formula.
   It mentions no Hecke operator and no basis.
 * `charpoly_toMatrix_heckeOp_of_x0HeckeCharpolyTable` — given ANY basis
   indexed by `Fin d`, the matrix of `T_ℓ` in it has the banked charpoly.
@@ -45679,7 +45688,7 @@ theorem eval_charpolyOfCoeffs (c : List ℤ) (t : ℂ) :
   rw [charpolyOfCoeffs, Polynomial.eval_finsetSum]
   simp
 
-/-- **The sixteen banked Hecke rows**: `(N, ℓ, dim_ℂ S₂(Γ₀(N)),
+/-- **The seventeen banked Hecke rows**: `(N, ℓ, dim_ℂ S₂(Γ₀(N)),
 charpoly(T_ℓ ∣ S₂(Γ₀(N))))`, the coefficient list ascending and monic — the
 eleven rows of `x0WitnessTable` followed by the five of `x0SieveTable`.
 
@@ -45701,6 +45710,27 @@ eleven rows of `x0WitnessTable` followed by the five of `x0SieveTable`.
 | `54` | `5` | `4` | `X⁴ − 9X²` | `0` | `6` | `972` |
 | `63` | `5` | `5` | `X⁵ + 2X⁴ − 16X³ − 32X² + 48X + 96` | `−2` | `8` | `6144` |
 | `75` | `7` | `5` | `X⁵ − 9X²` | `0` | `8` | `28160` |
+| `169` | `3` | `8` | `X⁸ − 10X⁶ + 2X⁵ + 29X⁴ − 10X³ − 19X² + 4X + 4` | `0` | — | — |
+
+**THE `169` ROW IS NOT A WITNESS OR SIEVE ROW** (added 2026-07-30), which is
+why its last two columns are blank: nothing consumes `ℓ + 1 − Tr T_ℓ` or
+`det((ℓ+1)·1 − T_ℓ)` at level `169`, and `#X_0(169)(𝔽₃) = 4` is USELESS as a
+gonality witness — see the audit on `card_relPoint_x0OneSixtyNine_quadratic`,
+which is why that node counts over `𝔽₉` instead.  What the row IS consumed by
+is the pair `finrank_cuspForm_x0OneSixtyNine` (`dim = 8`, the `d` column) and
+`trace_heckeOpSq_x0OneSixtyNine` (`Tr(T_3²) = 20`, read off the polynomial by
+`trace_heckeOpSq_of_charpolyTable` below as `c₇² − 2c₆ = 0 − 2·(−10)`).
+
+Adding it MERGES two obligations rather than adding one: both of those were
+standing sorry leaves asserting exactly these two numbers, and both are now
+proven from this row.  It does make the two table leaves quantify over a
+dimension-`8` level, one above the previous maximum `N = 91`; that is the
+honest cost and it is recorded here rather than buried.  PARI/GP, 2026-07-30:
+`mf = mfinit([169,2],1); Vecrev(charpoly(mfheckemat(mf,3)))` gives
+`[4, 4, -19, -10, 29, 2, -10, 0, 1]`, against `mfdim(mf) = 8`,
+`trace(mfheckemat(mf,3)) = 0` and `trace(t*t) = 20` — so the row reproduces
+all three numbers already banked in that node's docstring, and the middle one
+is the `c₇ = 0` entry.
 
 The last three columns are NOT stored — they are computed from the stored
 polynomial by `trace_heckeOp_of_charpolyTable` and
@@ -45733,7 +45763,8 @@ def x0HeckeCharpolyTable : List (ℕ × ℕ × ℕ × List ℤ) :=
     (50, 3, 2, [-1, 0, 1]), (65, 3, 5, [8, 12, -4, -8, 0, 1]),
     (91, 5, 7, [126, -213, -130, 147, 30, -23, -2, 1]),
     (26, 5, 2, [3, 4, 1]), (45, 7, 3, [0, 0, 0, 1]), (54, 5, 4, [0, 0, -9, 0, 1]),
-    (63, 5, 5, [96, 48, -32, -16, 2, 1]), (75, 7, 5, [0, 0, 0, -9, 0, 1])]
+    (63, 5, 5, [96, 48, -32, -16, 2, 1]), (75, 7, 5, [0, 0, 0, -9, 0, 1]),
+    (169, 3, 8, [4, 4, -19, -10, 29, 2, -10, 0, 1])]
 
 /-- **Every banked charpoly row has positive dimension** (PROVEN, one
 `norm_num` per row).  Consumed by `exists_basis_charpoly_heckeOp` below, which
@@ -45745,27 +45776,34 @@ theorem pos_of_mem_x0HeckeCharpolyTable {N ℓ d : ℕ} {c : List ℤ}
     (h : (N, ℓ, d, c) ∈ x0HeckeCharpolyTable) : 0 < d := by
   fin_cases h <;> norm_num
 
+set_option maxRecDepth 8000 in
 /-- **The `d` column of `x0HeckeCharpolyTable` IS `x0Genus N`** (PROVEN, one
 `decide` per row — the `decide` evaluates the classical genus formula, index,
-elliptic points, cusps and all, at each of the sixteen levels).
+elliptic points, cusps and all, at each of the seventeen levels).
 
 The docstring of `x0HeckeCharpolyTable` asserted this match ("as it must —
 `g(X₀(N)) = dim_ℂ S₂(Γ₀(N))`"); since 2026-07-28 it is a theorem, and that
 matters at two levels which no other `decide` in this file reaches:
 `x0Genus 65 = 5` and `x0Genus 91 = 7` are outside `kenkuLevels`, so the
-sixteen-row match had never been machine-checked before.  Like
+seventeen-row match had never been machine-checked before.  Like
 `exists_charpolyRow_of_x0WitnessTable`, this is a drift guard: a charpoly row
 whose `d` disagrees with the genus of `X₀(N)` breaks HERE, at a `decide`,
 rather than silently downstream.
 
 It is also what lets the dimension leaf below be stated against `x0Genus N`
-rather than against the raw column, so that the sixteen numbers stay banked in
-exactly one place. -/
+rather than against the raw column, so that the seventeen numbers stay banked
+in exactly one place.
+
+The `maxRecDepth` bump is for the `169` row alone: the genus formula at that
+level nests deeper than the default `512` during kernel reduction.  It is set
+explicitly rather than left to chance because a `decide` that overflows emits
+a HARD ERROR with no `sorry` token, which is invisible to every frontier
+scan. -/
 theorem x0Genus_eq_of_mem_x0HeckeCharpolyTable {N ℓ d : ℕ} {c : List ℤ}
     (h : (N, ℓ, d, c) ∈ x0HeckeCharpolyTable) : x0Genus N = (d : ℤ) := by
   fin_cases h <;> decide
 
-/-- **THE DIMENSION LEAF: `dim_ℂ S₂(Γ₀(N)) = g(X₀(N))` at the sixteen banked
+/-- **THE DIMENSION LEAF: `dim_ℂ S₂(Γ₀(N)) = g(X₀(N))` at the seventeen banked
 levels** (sorry node, 2026-07-28 — one of the two halves into which the old
 single leaf `exists_basis_charpoly_heckeOp` was cut; the other is
 `charpoly_toMatrix_heckeOp_of_x0HeckeCharpolyTable` below).
@@ -45788,7 +45826,7 @@ would destroy the cheap attack surface: at a SINGLE level the dimension can be
 discharged by exhibiting an explicit basis — eta quotients, with
 `Mathlib/NumberTheory/ModularForms/DedekindEta.lean` in the pin — together
 with the Sturm bound for the upper bound, and that route needs no Riemann–Roch
-and no genus of a scheme.  Sixteen levels of dimension `1`–`7` is a finite
+and no genus of a scheme.  Seventeen levels of dimension `1`–`8` is a finite
 amount of that; `∀ N` is not.
 
 **OVERLAP TO BE RESOLVED AT CUT LEVEL, NOT HERE** (recorded 2026-07-28 rather
@@ -45833,7 +45871,7 @@ costs nothing in content, because when `dim_ℂ S₂(Γ₀(N)) ≠ d` there is n
 dimension half is doing the work.  So no assertion is duplicated between the
 two leaves, and neither implies the other.
 
-Faithfulness is settled affirmatively at all sixteen rows by the PARI/GP run
+Faithfulness is settled affirmatively at all seventeen rows by the PARI/GP run
 recorded on `x0HeckeCharpolyTable`.  It is NOT vacuous through a junk branch:
 the hypothesis `b` forces `dim_ℂ S₂(Γ₀(N)) = d`, and the banked polynomials
 include eleven with a nonzero non-leading coefficient, so the statement
@@ -45844,8 +45882,8 @@ WHAT MAKES THIS PROVABLE AT ALL, rather than an equation in an opaque
 constant: `heckeOp N ℓ` is pinned to the Hecke slash-sum by `heckeOp_coe`,
 and `S₂(Γ₀(N))` is a genuine `ℂ`-module of cusp forms, so once a basis is
 produced the charpoly is the charpoly of an explicit matrix.  The route is a
-`q`-expansion basis at each of the sixteen levels — a FINITE computation at
-dimension `1`–`7` — or Eichler–Selberg.  See the section docstring above for
+`q`-expansion basis at each of the seventeen levels — a FINITE computation at
+dimension `1`–`8` — or Eichler–Selberg.  See the section docstring above for
 why the finite-dimensionality half of the old hoist estimate is NOT part of
 that cost, and what the residual hoist actually is.
 
@@ -45856,7 +45894,7 @@ WHICH AXES HAVE BEEN SEARCHED, AND ONE THAT LOOKS CHEAPER THAN IT IS.**
 `q`-expansion layer of `Interface.lean`; the section docstring above
 corrects that downwards, and it remains true that the hoist **closes nothing
 by itself** — with a basis in scope one still needs the explicit basis at
-sixteen levels up to dimension `7` and the matrix of `T_ℓ` in it.  So the
+seventeen levels up to dimension `8` and the matrix of `T_ℓ` in it.  So the
 hoist is necessary, not sufficient, and should be done by whoever is
 actually going to do the computation.
 
@@ -45904,10 +45942,11 @@ checked and all three go the wrong way.
    construction of a basis by a much larger analytic theory.
 
 AXIS SEARCHED: the theory axis, the module axis, the geometric axis, and
-now Eichler–Selberg.  NOT searched: whether the sixteen levels admit
+now Eichler–Selberg.  NOT searched: whether the seventeen levels admit
 explicit spanning families cheap enough to formalise — eta quotients are
 known to span `S₂(Γ₀(N))` at some of the small-dimension rows here and
-certainly not at the dimension-`7` row `N = 91`, and the pin does have
+certainly not at the dimension-`7` row `N = 91` nor at the dimension-`8` row
+`N = 169` added 2026-07-30, and the pin does have
 `Mathlib/NumberTheory/ModularForms/DedekindEta.lean`.  That is the direction
 with the best prospects, and it is a per-row question rather than a uniform
 one.  Note that this axis is now split across the two leaves in exactly the
@@ -45995,6 +46034,127 @@ theorem det_heckeOp_of_charpolyTable {N ℓ d : ℕ} {c : List ℤ}
   rw [map_sub, map_smul, LinearMap.toMatrix_one]
   ext i j
   simp [Matrix.scalar_apply, Matrix.one_apply, Matrix.diagonal_apply]
+
+/-! #### `Tr(T_ℓ² ∣ S₂(Γ₀(N)))` from the banked charpoly
+
+The trace and determinant columns above are read off the banked polynomial by
+one mathlib lemma each.  The SECOND power sum needs two things that were not
+present: `Tr(T²) = Σ λᵢ²` (supplied by `sum_pow_charpoly_roots_eq_trace_pow`,
+proven far above beside `exists_isCharRootMultiset`) and Newton's identity
+`p₂ = e₁² − 2e₂` relating it to the coefficients, which is the three
+`Multiset` lemmas below.
+
+The docstring of `trace_heckeOpSq_x0OneSixtyNine` recorded this route as
+CLOSED — "`Mathlib` at this pin has `Matrix.trace_eq_sum_roots_charpoly`
+(first power sum only) with no counterpart for the second, so the charpoly
+route would cost a triangularisation argument for no gain here".  Both halves
+of that were correct when written.  The triangularisation was paid for
+independently (by `sumSq_isWeilEigenvalues_x0`, which needed the same missing
+power sum on the OTHER side of Eichler–Shimura), so the route is now open and
+the gain is real: it closes that leaf and `finrank_cuspForm_x0OneSixtyNine`
+together off one table row. -/
+
+/-- **`e₁ = Σ xᵢ`** (PROVEN 2026-07-30) — mathlib has `Multiset.esymm_pair_one`
+for a two-element multiset and no general first-order lemma. -/
+theorem esymm_one_eq_sum {R : Type*} [CommRing R] (s : Multiset R) :
+    s.esymm 1 = s.sum := by
+  simp [Multiset.esymm, Multiset.powersetCard_one, Multiset.map_map]
+
+/-- **`e₂(a ::ₘ s) = e₂(s) + a·Σ s`** (PROVEN 2026-07-30) — the cons rule for
+the second elementary symmetric function, from `Multiset.powersetCard_cons`.
+This is the induction step of `sum_map_sq_eq_sq_sum_sub`. -/
+theorem esymm_two_cons {R : Type*} [CommRing R] (a : R) (s : Multiset R) :
+    (a ::ₘ s).esymm 2 = s.esymm 2 + a * s.sum := by
+  rw [Multiset.esymm, Multiset.powersetCard_cons]
+  simp only [Multiset.map_add, Multiset.sum_add, Multiset.map_map, Function.comp_def,
+    Multiset.prod_cons, Multiset.powersetCard_one]
+  rw [Multiset.sum_map_mul_left]
+  simp [Multiset.esymm]
+
+/-- **NEWTON'S SECOND IDENTITY: `Σ xᵢ² = (Σ xᵢ)² − 2e₂`** (PROVEN 2026-07-30).
+
+Mathlib's Newton identities (`Mathlib/RingTheory/MvPolynomial/Symmetric/
+NewtonIdentities.lean`) are stated for `MvPolynomial` in a `Fintype` of
+variables, i.e. for `psum σ R k` and `esymm σ R k`; specialising them to a
+MULTISET of scalars — which is what Vieta hands back from a polynomial's
+roots — is not a rewrite.  At `k = 2` the direct induction is four lines, so
+it is done here rather than through that machinery. -/
+theorem sum_map_sq_eq_sq_sum_sub {R : Type*} [CommRing R] (s : Multiset R) :
+    (s.map (fun x => x ^ 2)).sum = s.sum ^ 2 - 2 * s.esymm 2 := by
+  induction s using Multiset.induction_on with
+  | empty => simp [Multiset.esymm]
+  | cons a s ih =>
+      rw [Multiset.map_cons, Multiset.sum_cons, ih, Multiset.sum_cons, esymm_two_cons]
+      ring
+
+/-- **`Tr(T²)` FROM THE TOP TWO COEFFICIENTS OF `charpoly T`** (PROVEN
+2026-07-30) — `Tr(T²) = c_{d−1}² − 2c_{d−2}`, the coefficient form of Newton's
+second identity for an endomorphism of a finite-dimensional `ℂ`-space.
+
+Vieta (`Polynomial.coeff_eq_esymm_roots_of_splits`, applicable because
+`charpoly` is monic and `ℂ` is algebraically closed) turns `c_{d−1}` into
+`−e₁` and `c_{d−2}` into `+e₂` of the root multiset; `sum_map_sq_eq_sq_sum_sub`
+turns `e₁² − 2e₂` into the second power sum; and
+`sum_pow_charpoly_roots_eq_trace_pow` turns that into `Tr(T²)`.  The two signs
+come out of `(−1)^(d−k)` at `d − k = 1` and `2` respectively, which is why the
+statement has a `−2` and not a `+2`.
+
+`2 ≤ dim` is needed and not decoration: at `dim = 1` the index `d − 2`
+truncates to `0 = d − 1` in `ℕ` and the formula would read
+`Tr(T²) = c₀² − 2c₀`, which is false already for `T = 1` on `ℂ`. -/
+theorem trace_sq_eq_charpoly_coeff {V : Type*} [AddCommGroup V] [Module ℂ V]
+    [FiniteDimensional ℂ V] (T : Module.End ℂ V) (hd : 2 ≤ Module.finrank ℂ V) :
+    LinearMap.trace ℂ V (T * T)
+      = (T.charpoly.coeff (Module.finrank ℂ V - 1)) ^ 2
+        - 2 * T.charpoly.coeff (Module.finrank ℂ V - 2) := by
+  have hdeg : T.charpoly.natDegree = Module.finrank ℂ V := T.charpoly_natDegree
+  have hmonic : T.charpoly.Monic := T.charpoly_monic
+  have hsplit : T.charpoly.Splits := IsAlgClosed.splits _
+  have h1 := _root_.Polynomial.coeff_eq_esymm_roots_of_splits hsplit
+    (k := T.charpoly.natDegree - 1) (by omega)
+  have h2 := _root_.Polynomial.coeff_eq_esymm_roots_of_splits hsplit
+    (k := T.charpoly.natDegree - 2) (by omega)
+  rw [hmonic.leadingCoeff] at h1 h2
+  have he1 : T.charpoly.natDegree - (T.charpoly.natDegree - 1) = 1 := by omega
+  have he2 : T.charpoly.natDegree - (T.charpoly.natDegree - 2) = 2 := by omega
+  rw [he1, esymm_one_eq_sum] at h1
+  rw [he2] at h2
+  have hsum := sum_pow_charpoly_roots_eq_trace_pow T 2
+  rw [sum_map_sq_eq_sq_sum_sub] at hsum
+  rw [← pow_two, ← hdeg, ← hsum, h1, h2]
+  ring
+
+/-- **`Tr(T_ℓ² ∣ S₂(Γ₀(N)))` from the banked charpoly** (PROVEN 2026-07-30) —
+the third column readable off `x0HeckeCharpolyTable`, beside
+`trace_heckeOp_of_charpolyTable` and `det_heckeOp_of_charpolyTable`.
+
+The basis from `exists_basis_charpoly_heckeOp` gives both the finite
+dimensionality and `dim = d`, `LinearMap.charpoly_toMatrix` moves the banked
+polynomial from the matrix to the endomorphism, and
+`trace_sq_eq_charpoly_coeff` reads the answer off its top two coefficients.
+
+`2 ≤ d` excludes the four dimension-`1` rows, where the statement would be
+about a `1 × 1` matrix and the `d − 2` index truncates; nothing needs it
+there. -/
+theorem trace_heckeOpSq_of_charpolyTable {N ℓ d : ℕ} {c : List ℤ} (hd : 2 ≤ d)
+    (h : (N, ℓ, d, c) ∈ x0HeckeCharpolyTable) :
+    LinearMap.trace ℂ
+        (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2)
+        (_root_.GaloisRepresentation.Modularity.heckeOp N ℓ *
+          _root_.GaloisRepresentation.Modularity.heckeOp N ℓ)
+      = ((c.getD (d - 1) 0 : ℤ) : ℂ) ^ 2 - 2 * ((c.getD (d - 2) 0 : ℤ) : ℂ) := by
+  obtain ⟨b, hb⟩ := exists_basis_charpoly_heckeOp h
+  haveI : FiniteDimensional ℂ
+      (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2) :=
+    Module.Finite.of_basis b
+  have hfr : Module.finrank ℂ
+      (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2) = d := by
+    rw [Module.finrank_eq_card_basis b, Fintype.card_fin]
+  have hcp : (_root_.GaloisRepresentation.Modularity.heckeOp N ℓ).charpoly
+      = charpolyOfCoeffs c := by
+    rw [← hb, LinearMap.charpoly_toMatrix]
+  rw [trace_sq_eq_charpoly_coeff _ (by omega), hcp, coeff_charpolyOfCoeffs,
+    coeff_charpolyOfCoeffs, hfr]
 
 /-- **Every witness row has a charpoly row, and its trace column is
 `ℓ + 1 − m`** (PROVEN, one `decide` and one `norm_num` per row).
@@ -66981,7 +67141,9 @@ theorem sumSq_isWeilEigenvalues_x0 (N ℓ : ℕ) (hN : 0 < N) (hℓ : ℓ.Prime)
   have hes := isEichlerShimuraTransform_x0 N ℓ hN hℓ hℓN h hα ha
   rw [hes.sumSq_eq, ha.sum_pow_eq 2, ha.card_eq, sq]
 
-/-- **`dim_ℂ S₂(Γ₀(169)) = 8`** (sorry leaf, 2026-07-28) — equivalently
+/-- **`dim_ℂ S₂(Γ₀(169)) = 8`** (**PROVEN 2026-07-30** from the `169` row
+of `x0HeckeCharpolyTable`, added the same day; a sorry leaf from 2026-07-28)
+— equivalently
 `g(X_0(169)) = 8`, and one of the two arithmetic inputs of
 `card_relPoint_x0OneSixtyNine_quadratic`.
 
@@ -67005,10 +67167,16 @@ general bridge closes both**, and stating it generally is the better
 target than either instance. -/
 theorem finrank_cuspForm_x0OneSixtyNine :
     Module.finrank ℂ
-      (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL 169) 2) = 8 :=
-  sorry
+      (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL 169) 2) = 8 := by
+  have hmem : ((169 : ℕ), (3 : ℕ), (8 : ℕ), ([4, 4, -19, -10, 29, 2, -10, 0, 1] : List ℤ))
+      ∈ x0HeckeCharpolyTable := by decide
+  have h1 := finrank_cuspForm_of_x0HeckeCharpolyTable hmem
+  rw [x0Genus_eq_of_mem_x0HeckeCharpolyTable hmem] at h1
+  exact_mod_cast h1
 
-/-- **`Tr(T_3² ∣ S₂(Γ₀(169))) = 20`** (sorry leaf, 2026-07-28) — the second
+/-- **`Tr(T_3² ∣ S₂(Γ₀(169))) = 20`** (**PROVEN 2026-07-30**; a sorry leaf
+from 2026-07-28 — see the dated note at the END of this docstring, which is
+where the route is recorded) — the second
 arithmetic input of `card_relPoint_x0OneSixtyNine_quadratic`, and the only
 place where a number about the level `169` enters the gonality argument.
 
@@ -67036,13 +67204,38 @@ characteristic polynomial needs Newton's identity in the form
 `p₂ = e₁² − 2e₂`, and `Mathlib` at this pin has
 `Matrix.trace_eq_sum_roots_charpoly` (first power sum only) with no
 counterpart for the second, so the charpoly route would cost a
-triangularisation argument for no gain here. -/
+triangularisation argument for no gain here.
+
+**THAT LAST PARAGRAPH IS NOW OUT OF DATE, AND THIS LEAF CLOSED THROUGH THE
+ROUTE IT ADVISED AGAINST** (2026-07-30).  Both of its factual claims were
+correct: mathlib still has no second power sum, and the charpoly route still
+costs a triangularisation.  What changed is that the triangularisation was
+paid for ELSEWHERE and for an independent reason —
+`sumSq_isWeilEigenvalues_x0` needed exactly `Tr(T²) = Σ aᵢ²` on the other
+side of Eichler–Shimura, and closing it produced
+`sum_pow_charpoly_roots_eq_trace_pow` for every order `n`.  With that in
+hand the cost of this route dropped to Newton's identity at `k = 2`
+(`sum_map_sq_eq_sq_sum_sub`, four lines) plus Vieta, both above.
+
+So the accounting the old paragraph did was right and its conclusion has
+simply expired.  Recorded rather than deleted, because "for no gain" is the
+kind of judgement that a later reader would otherwise re-derive.
+
+**PROVEN 2026-07-30** from the `169` row of `x0HeckeCharpolyTable` (added the
+same day; see that table's docstring for the PARI/GP run and for what adding
+the row does and does not cost) via `trace_heckeOpSq_of_charpolyTable`, which
+reads `c₇² − 2c₆ = 0² − 2·(−10) = 20` off the banked polynomial.  Note this is
+the SAME `Tr(T_3) = 0` that the cross-check above records, now as the `c₇`
+entry of the row rather than as a separate assertion. -/
 theorem trace_heckeOpSq_x0OneSixtyNine :
     LinearMap.trace ℂ
         (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL 169) 2)
         (_root_.GaloisRepresentation.Modularity.heckeOp 169 3 *
-          _root_.GaloisRepresentation.Modularity.heckeOp 169 3) = 20 :=
-  sorry
+          _root_.GaloisRepresentation.Modularity.heckeOp 169 3) = 20 := by
+  have hmem : ((169 : ℕ), (3 : ℕ), (8 : ℕ), ([4, 4, -19, -10, 29, 2, -10, 0, 1] : List ℤ))
+      ∈ x0HeckeCharpolyTable := by decide
+  rw [trace_heckeOpSq_of_charpolyTable (by norm_num) hmem]
+  norm_num
 
 /-- **`#X_0(169)(𝔽₉) = 38`** (**PROVEN 2026-07-28** by decomposition over
 `sumSq_isWeilEigenvalues_x0`, `trace_heckeOpSq_x0OneSixtyNine` and
