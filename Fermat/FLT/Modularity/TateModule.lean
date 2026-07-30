@@ -8302,7 +8302,67 @@ multiplication, not an extra demand.
 
 REFUTING CHECK for that claim: look for `PolarizationStruct`, `lam`, `𝔞` or
 `posElt` in the statement below.  There are none, and `hom` is a bare
-function whose every clause quantifies over `GeomFibrePt f x`. -/
+function whose every clause quantifies over `GeomFibrePt f x`.
+
+**FALSITY AUDIT (2026-07-30) — THIS LEAF IS FALSE AS STATED, AND THE
+DEFECT IS IN `DualStruct`, NOT IN THE POLARIZATION.**  The audit of
+2026-07-29 above found ONE way `weil_nondegenerate` can be read into
+contradiction (`R = ℤ`, `I = (2)`, `n = 4`) and repaired it by fixing the
+READING of `weil`.  There is a second way, and no reading repairs it: it is
+about the CHARACTERISTIC of the fibre, and the 2026-07-29 audit did not
+look there because the fibre it had in mind was the one at `x`, which is a
+number field.
+
+`weil x' I n hn` takes values in `rootsOfUnity n (AlgebraicClosure F')`,
+and `weil_nondegenerate` is asserted at EVERY field `F'`, EVERY point
+`x' : Spec F' ⟶ S` and every `(I, n)` with `(n : R) ∈ I` — the binders are
+`∀ {F : Type u} [Field F] (x : ...)`, not the single `x` this leaf cares
+about.  In characteristic `p` the group `rootsOfUnity p (AlgebraicClosure F')`
+is TRIVIAL (`z ^ p = 1 ↔ (z - 1) ^ p = 0 ↔ z = 1`).  So at `I = (p)`,
+`n = p` — legal, since `(p : R) ∈ (p)` — the pairing is constantly `1`,
+the hypothesis of `weil_nondegenerate` holds for EVERY `p`-torsion point,
+and the axiom concludes that `A'[p](F̄') = 0`.  Any fibre of positive
+`p`-rank refutes that, so `DualStruct ab m` is UNINHABITED as soon as `S`
+has a point of positive residue characteristic `p` whose fibre has a
+nonzero `p`-torsion geometric point.
+
+WITNESS, concrete and standard.  `S = Spec ℤ[1/11]`, `A` the smooth proper
+model of `X₀(11)` (conductor `11`, so good reduction at every `p ≠ 11`),
+`D = ℚ` — so `R = 𝒪_ℚ ≅ ℤ`, `Module.finrank ℚ D = 1` — `m` the tautological
+`ℤ`-multiplication, `F = ℚ` and `x` the generic point.  Every hypothesis
+holds, `hdim` included (the relative dimension is `1`).  Now take
+`x' : Spec 𝔽_5 ⟶ S`, the point `(5)`.  The fibre is the elliptic curve
+`11a1` over `𝔽_5`, with `a_5 = 1`, hence `#E(𝔽_5) = 5 + 1 - 1 = 5` and
+`5 ∤ a_5`, i.e. ORDINARY; so `E[5](𝔽̄_5) ≅ ℤ/5 ≠ 0`.  At `I = (5)`, `n = 5`
+the axiom forces that group to vanish.  Hence no `d : DualStruct ab m`
+exists over this `S`, while the hypotheses of this leaf are all satisfied:
+the statement is FALSE, not merely hard.
+
+WHAT THIS DOES AND DOES NOT INVALIDATE.  `exists_qAdicWeilSystem_of_mult`
+is proven over this leaf, so it is resting on a false hypothesis and cannot
+be completed as things stand; nothing derived from it is trustworthy.  The
+CHARACTERISTIC-ZERO mathematics is untouched — the classical `q`-power Weil
+pairing at the single fibre `x` is fine, and so is every clause of
+`IsQAdicPolarizationHom`.  The defect is that `DualStruct` asserts its
+nondegeneracy axiom UNIFORMLY IN THE FIBRE while the axiom is only true at
+levels prime to the residue characteristic.
+
+THE MINIMAL REPAIR, and it is in `Modularity/AbelianScheme.lean`, not
+here: gate `weil_nondegenerate` on invertibility of the level, i.e. add
+`(n : F) ≠ 0` (equivalently `IsUnit (n : F)`) to its binders.  In
+characteristic zero that hypothesis is free, so no existing consumer over a
+number field changes; in characteristic `p` it removes exactly the levels
+at which the axiom is contradictory.  `weil` itself needs no change — a
+pairing landing in a trivial group is harmless, it is only the
+nondegeneracy claim about it that is false.
+
+CONSEQUENCE FOR THE FINITE-BASE SIBLING, which is why the audit was run
+here.  `exists_qAdicPolarizedSystem_finiteBase` must NOT be cut along this
+seam: its base IS a finite field, so `DualStruct ab' m'` is uninhabited for
+every fibre of positive `p`-rank (an ordinary elliptic curve over `𝔽_p`
+suffices) and a leaf of the shape `∃ d : DualStruct ab' m', …` would be
+false for a reason having nothing to do with polarizations.  That note is
+repeated on that leaf. -/
 theorem exists_dualPolarization_of_mult
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
@@ -16686,7 +16746,37 @@ REFUTING CHECK for that claim: look for `hdim'`, `c` or
 `σ` and `hσ` do not occur either: this statement is about the pairing and
 not about the Frobenius, and the multiplier `N` is produced in
 `exists_levelWeilPairing_of_qAdicPolarizedSystem_finiteBase`, where `hσ`
-is in scope. -/
+is in scope.
+
+**DO NOT CUT THIS THROUGH `DualStruct` — THE RESULTING LEAF WOULD BE
+FALSE** (audit 2026-07-30; the witness is written out on
+`exists_dualPolarization_of_mult`).  The obvious move is to mirror the
+characteristic-zero half: there `exists_qAdicWeilSystem_of_mult` is PROVEN
+over `exists_dualPolarization_of_mult`, which discharges six of that
+predicate's eight clauses from the axioms of `DualStruct` alone, and the
+same glue would discharge seven of the eight here (only the bounded-radical
+clause differs).  It does not work, and the obstruction is not about
+polarizations at all.
+
+`DualStruct.weil_nondegenerate` is asserted at every `(F', x', I, n)` with
+`(n : R) ∈ I`, and `weil` lands in `rootsOfUnity n (AlgebraicClosure F')`.
+Over a base of characteristic `p` take `I = (p)`, `n = p`: the target group
+is TRIVIAL, so the pairing is constantly `1`, the nondegeneracy hypothesis
+holds vacuously for every `p`-torsion point, and the axiom concludes
+`A'[p](k̄) = 0`.  An ORDINARY elliptic curve over `𝔽_p` has
+`A'[p](k̄) ≅ ℤ/p ≠ 0`, so `DualStruct ab' m'` is UNINHABITED for it — while
+that curve satisfies every hypothesis of this leaf (`D = ℚ` is totally
+real, `q` is any prime `≠ p`).  A leaf of the shape
+`∃ d : DualStruct ab' m', …` is therefore false here for a reason with no
+mathematical content, and proving it is impossible rather than hard.
+
+So a cut of this leaf must either repair `DualStruct` first (gate
+`weil_nondegenerate` on `(n : F) ≠ 0`, which is free in characteristic zero
+— see the audit cited above) or introduce a FIBRE-LOCAL dual-pairing datum
+carrying the pairing only at the prime-to-`p` levels `q^M` that this
+statement actually mentions.  Until one of those exists, this statement is
+already the minimal fibre-local form of "the polarized `q`-adic Weil system
+exists", and there is nothing to strip off it. -/
 theorem exists_qAdicPolarizedSystem_finiteBase
     {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
@@ -17533,9 +17623,96 @@ theorem dense_torsionGeomPt_finiteBase
 
 
 open _root_.NumberField in
-/-- **ONE RANK-TWO LEVEL FORCES A FULL PRIME-TO-`N` TOWER** (sorry leaf —
-the abelian-variety input of the `I`-independence cut; Mumford *Abelian
-Varieties* §6 and §19, Milne *Abelian Varieties* §I.7).
+/-- **ONE RANK-TWO LEVEL PINS THE RELATIVE DIMENSION** (sorry leaf, cut
+2026-07-30 out of `exists_levelTateFrameTower_of_levelTateFrame_finiteBase`
+— Mumford *Abelian Varieties* §19, Milne *Abelian Varieties* §I.10 and
+§I.7, Shimura *Introduction to the arithmetic theory of automorphic
+functions* §5.1).
+
+A single level `A'[I₁^{n₁}]` free of rank two over `𝒪_D/I₁^{n₁}`, at a
+maximal `I₁` of residue characteristic prime to `N` and with `n₁ ≥ 1`,
+forces `f'` to be smooth of relative dimension `[D : ℚ]`.
+
+**WHY THIS IS THE WHOLE CONTENT OF ITS CONSUMER, AND WHY THE CUT IS AT
+EXACTLY THIS PLACE.**  `exists_levelTateFrame_finiteBase` is PROVEN in
+this file and already produces a frame at EVERY level `Iⁿ` of EVERY
+prime-to-`N` maximal ideal; its hypotheses are those of the consumer plus
+exactly one thing — `hdim'`.  So the consumer's tower is not a separate
+piece of mathematics at all: once the relative dimension is known, the
+tower is 330 already-proven lines away (the `LevelFrame` namespace, the
+divisibility leaf, and `card_torsion_of_isMaximal_finiteBase`).  What the
+consumer genuinely asserts, and all it asserts, is the RANK TRANSFER
+recorded below.
+
+THE ROUTE.  `q₁ ≠ char k` makes `A'[I₁^n]` the reduction `T_{I₁}A'/I₁^n`
+of the `I₁`-adic Tate module, and `T_{I₁}A'` is a finitely generated
+torsion-free module over the discrete valuation ring `𝒪_{D,I₁}`, hence
+FREE, say of rank `r`.  Then `A'[I₁^{n₁}] ≅ (𝒪_D/I₁^{n₁})^r`, and
+`n₁ ≥ 1` makes `𝒪_D/I₁^{n₁}` a nonzero local ring, over which rank is
+well defined; the frame therefore forces `r = 2`.  Finally
+`V_{q₁}A' = T_{q₁}A' ⊗ ℚ_{q₁}` is FREE over `D ⊗ ℚ_{q₁} = ∏_{J ∣ q₁} D_J`
+of rank `2 · dim A' / [D : ℚ]` — this is the one deep input, and it is
+what makes the local rank at the single `J = I₁` see the global dimension
+— so `2 = 2 · dim A' / [D : ℚ]`, i.e. `dim A' = [D : ℚ]`.  `A'` is
+already smooth over `k` (`ab'.smooth`), so that dimension count IS
+`SmoothOfRelativeDimension (Module.finrank ℚ D) f'`.
+
+Note the consumer's own docstring routed this through "the rank of
+`V_I A'` is independent of `I`" and then reinstated a frame at a possibly
+DIFFERENT auxiliary prime.  That detour is unnecessary and is not taken
+here: the transfer is needed only to convert the rank at `I₁` into the
+DIMENSION, after which `exists_levelTateFrame_finiteBase` reinstates the
+tower at `I₁` itself.  The consumer's existential `q`/`I` is discharged
+with `q₁`/`I₁`.
+
+**FAITHFULNESS — `hn₁` and `hq₁N` are both load-bearing, with explicit
+witnesses.**
+
+*`hn₁`.*  At `n₁ = 0` the ideal `I₁^0` is `⊤`, `𝒪_D ⧸ ⊤` is the ZERO
+ring, `(Fin 2 → 𝒪_D ⧸ ⊤)` is a singleton and `A'[⊤] = 0`, so
+`IsLevelTateFrame` holds for the unique map and carries no information.
+Without `hn₁` the leaf would assert relative dimension `[D : ℚ] ≥ 1` for
+`A' = Spec k`, whose relative dimension is `0`.  FALSE, not merely weak.
+
+*`hq₁N`.*  At the residue characteristic the reduction step fails and the
+count is off by the difference between the `p`-rank and `2 · dim`.
+Witness: `k = 𝔽_p`, `D = ℚ` (so `𝒪_D = ℤ`, `Module.finrank ℚ D = 1`),
+`A' = E₁ ×_k E₂` a product of two ORDINARY elliptic curves over `𝔽_p`
+with the tautological `ℤ`-multiplication, `I₁ = (p)`, `n₁ = 1`.  Then
+`A'[p](k̄) = E₁[p](k̄) × E₂[p](k̄) ≅ ℤ/p × ℤ/p` is free of rank two over
+`ℤ/p = 𝒪_D/I₁`, so `c₁`/`hc₁` are available, while the relative dimension
+is `2 ≠ 1`.  So the conclusion fails and every other hypothesis holds:
+`hq₁N` is not decoration.
+
+*`[NumberField.IsTotallyReal D]`* is NOT used by the argument above — the
+rank transfer never looks at the signature of `D`.  It is carried because
+the consumer has it and because `exists_levelTateFrame_finiteBase`, which
+the consumer feeds this conclusion to, demands it; dropping it here would
+force the consumer to carry it anyway.  `hfin` and `hN` occur only to give
+`hq₁N` its meaning (`N = #k` is a power of `char k`, so `¬ q₁ ∣ N` says
+`q₁ ≠ char k`), and `hq₁I₁` is what ties `q₁` to `I₁`. -/
+theorem smoothOfRelativeDimension_of_levelTateFrame_finiteBase
+    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    (q₁ : ℕ) (hq₁ : q₁.Prime) (hq₁N : ¬ q₁ ∣ N)
+    (I₁ : Ideal (NumberField.RingOfIntegers D)) (hI₁ : I₁.IsMaximal)
+    (hq₁I₁ : (q₁ : NumberField.RingOfIntegers D) ∈ I₁)
+    (n₁ : ℕ) (hn₁ : n₁ ≠ 0)
+    (c₁ : (Fin 2 → NumberField.RingOfIntegers D ⧸ I₁ ^ n₁) →
+      GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+    (hc₁ : IsLevelTateFrame m' (𝟙 (Spec (CommRingCat.of k))) (I₁ ^ n₁) c₁) :
+    SmoothOfRelativeDimension (Module.finrank ℚ D) f' :=
+  sorry
+
+open _root_.NumberField in
+/-- **ONE RANK-TWO LEVEL FORCES A FULL PRIME-TO-`N` TOWER**
+(**PROVEN 2026-07-30** over the single rank-transfer leaf
+`smoothOfRelativeDimension_of_levelTateFrame_finiteBase` and the already
+proven `exists_levelTateFrame_finiteBase`; Mumford *Abelian Varieties* §6
+and §19, Milne *Abelian Varieties* §I.7).
 
 If `A'[I₁^{n₁}]` is free of rank two over `𝒪_D/I₁^{n₁}` for a SINGLE
 maximal `I₁` of residue characteristic prime to `N` and a single
@@ -17571,7 +17748,26 @@ is false.
 
 `q` and `I` are left EXISTENTIAL in the conclusion rather than returning
 the tower at `I₁` itself: a prover is free to pick a convenient auxiliary
-prime, and the only consumer needs just one. -/
+prime, and the only consumer needs just one.
+
+**THE CUT (2026-07-30), AND ONE CORRECTION TO THE ROUTE RECORDED ABOVE.**
+The freedom just described is not used, and the auxiliary prime is `q₁`
+itself.  The classical route above runs through "`rank V_I A'` is
+independent of `I`" and then reinstates a frame at every level of the
+chosen `I`; the SECOND of those two steps is not open in this file at all
+— `exists_levelTateFrame_finiteBase` is PROVEN, and it produces a frame at
+every level `Iⁿ` of every prime-to-`N` maximal ideal from the hypotheses
+carried here PLUS exactly one extra thing, `hdim'`.  So the only content
+of this statement is the transfer of rank two at ONE level to the RELATIVE
+DIMENSION, which is now the separate leaf
+`smoothOfRelativeDimension_of_levelTateFrame_finiteBase`, and the proof
+below is that leaf followed by the frame theorem, level by level.
+
+That correction matters for a successor: the earlier reading invited a
+prover to rebuild the tower recursion (the `LevelFrame` namespace, the
+`π`-divisibility step, `card_torsion_of_isMaximal_finiteBase`) at a fresh
+auxiliary prime, all of which already exists and none of which is a leaf.
+What does not exist is the dimension count. -/
 theorem exists_levelTateFrameTower_of_levelTateFrame_finiteBase
     {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
@@ -17590,8 +17786,14 @@ theorem exists_levelTateFrameTower_of_levelTateFrame_finiteBase
         (q : NumberField.RingOfIntegers D) ∈ I ∧
         ∀ n : ℕ, ∃ c : (Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ n) →
             GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
-          IsLevelTateFrame m' (𝟙 (Spec (CommRingCat.of k))) (I ^ n) c :=
-  sorry
+          IsLevelTateFrame m' (𝟙 (Spec (CommRingCat.of k))) (I ^ n) c := by
+  -- the ONE piece of mathematics: rank two at `I₁^{n₁}` pins the relative dimension
+  have hdim' : SmoothOfRelativeDimension (Module.finrank ℚ D) f' :=
+    smoothOfRelativeDimension_of_levelTateFrame_finiteBase hfin N hN ab' m'
+      q₁ hq₁ hq₁N I₁ hI₁ hq₁I₁ n₁ hn₁ c₁ hc₁
+  -- and then the tower at `I₁` itself is the already-proven levelwise frame theorem
+  exact ⟨q₁, hq₁, hq₁N, I₁, hI₁, hq₁I₁, fun n =>
+    exists_levelTateFrame_finiteBase hfin N hN ab' m' hdim' q₁ hq₁ hq₁N I₁ hI₁ hq₁I₁ n⟩
 
 open _root_.NumberField in
 /-- **THE FROBENIUS CHARACTERISTIC SCALAR IS INTEGRAL, AT ONE PRIME**
