@@ -14,6 +14,8 @@ public import Mathlib.AlgebraicGeometry.Morphisms.Affine
 public import Mathlib.AlgebraicGeometry.Geometrically.Connected
 public import Mathlib.AlgebraicGeometry.Properties
 public import Mathlib.AlgebraicGeometry.ZariskisMainTheorem
+public import Mathlib.AlgebraicGeometry.ValuativeCriterion
+public import Mathlib.AlgebraicGeometry.Noetherian
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 public import Mathlib.RingTheory.PrincipalIdealDomain
 public import Mathlib.RingTheory.IntegralClosure.IsIntegralClosure.Basic
@@ -39,8 +41,22 @@ the *affine chart* of a pointed curve exist — and it is the scheme-theoretic h
 * `affineLineOver` — the structure morphism `𝔸¹_K ⟶ Spec K`, used only to say "over `K`".
 * `exists_locallyQuasiFinite_toAffineLine_compl_singleton` — **sorry leaf**: RIEMANN–ROCH,
   a nonconstant regular function on `X ∖ {z}`.
-* `isProper_of_locallyQuasiFinite_toAffineLine_compl_singleton` — **sorry leaf**: the
-  compactification step, that any such function's morphism to `𝔸¹_K` is proper.
+* `locallyOfFiniteType_affineLineOver` — `𝔸¹_K ⟶ Spec K` is locally of finite type.
+  **PROVEN 2026-07-30**; the side condition of the right-cancellation used just below.
+* `isProper_of_locallyQuasiFinite_toAffineLine_compl_singleton` — the compactification step,
+  that any such function's morphism to `𝔸¹_K` is proper.  **PROVEN 2026-07-30** over ONE
+  sub-leaf, the next item; it was a bare `sorry` until then.
+* `valuativeCriterionExistence_of_locallyQuasiFinite_toAffineLine_compl_singleton` — the
+  EXISTENCE half of the valuative criterion for that morphism.  **PROVEN 2026-07-30** over the
+  next item; the uniqueness half and all three shape hypotheses
+  `IsProper.of_valuativeCriterion` asks for (`QuasiCompact`, `QuasiSeparated`,
+  `LocallyOfFiniteType`) are proven at its consumer.
+* `notMem_range_of_valuativeLift_toAffineLine_compl_singleton` — **sorry leaf** (cut
+  2026-07-30): a lift of a valuative square into `X` cannot hit `z`.  This is the POLE at `z`
+  in valuative form, and after two rounds of cutting it is the ONLY mathematics left under
+  properness — the square construction, the lift, the factorisation through the open and both
+  triangles are all proven.  Its docstring carries the pole argument and a counterexample
+  showing its `hcomm` hypothesis is load-bearing.
 * `isAffineOpen_compl_singleton_of_isSmoothProperCurve` — **PROVEN 2026-07-28** over those
   two, by Zariski's main theorem.  It does NOT go through ampleness; see the next section.
 * `exists_isOpenImmersion_range_eq_compl_of_section` — the packaged existential a consumer
@@ -63,7 +79,10 @@ proven here over exactly two named sub-leaves, along the Zariski's-main-theorem 
   place it enters: a nonconstant regular function on `X ∖ {z}`, packaged as a
   `K`-morphism `X ∖ {z} ⟶ 𝔸¹_K` that is `LocallyQuasiFinite`.
 * `isProper_of_locallyQuasiFinite_toAffineLine_compl_singleton` — **the compactification
-  step**: any such morphism is proper.
+  step**: any such morphism is proper.  Itself decomposed on 2026-07-30, so the file's second
+  leaf is now
+  `valuativeCriterionExistence_of_locallyQuasiFinite_toAffineLine_compl_singleton` rather
+  than this.  The two leaves are still independent, and the RIEMANN–ROCH one is untouched.
 
 and the glue between them, which is what this file newly PROVES:
 `IsFinite.of_isProper_of_locallyQuasiFinite` (Zariski's main theorem, stacks `02LS`) turns
@@ -89,12 +108,17 @@ carry `Mathlib/AlgebraicGeometry/ZariskisMainTheorem.lean`, and that is the whol
 affineness step — so the ampleness gap never had to be paid at all.  Only the two sub-leaves
 above remain, and neither of them mentions a divisor.
 
-Note for whoever takes `isProper_of_locallyQuasiFinite_toAffineLine_compl_singleton`:
-`ℙ¹` is *not* needed to state it, but the intended proof does go through the projective
-model, using `exists_unique_extension_of_valuationRing_stalk` (PROVEN, no sorry, in
-`CurveExtension.lean`) for the extension across `z`.  See that declaration's own docstring
-for the route and for the step that has to be paid: a `K`-morphism `X ⟶ 𝔸¹_K` out of a
-proper `X` cannot be quasi-finite, so `g` genuinely fails to extend and `z` is a pole.
+Note for whoever takes the compactification step — **updated 2026-07-30, and the previous
+note's advice is now WRONG in one respect**.  It said the intended proof goes through the
+projective model and `exists_unique_extension_of_valuationRing_stalk`.  It does not have to:
+the pin carries `Mathlib/AlgebraicGeometry/ValuativeCriterion.lean` with
+`IsProper.of_valuativeCriterion` (stacks `0BX5`), and no `ℙ¹` and no extension theorem is
+needed to *set up* the proof — only to supply the lift.  So the properness statement is now
+proven outright over the valuative-existence leaf, and what a prover owes is that leaf alone.
+The half of the old note that survives is the half that matters: the step that has to be paid
+is that a `K`-morphism `X ⟶ 𝔸¹_K` out of a proper `X` cannot be quasi-finite, so `g` genuinely
+fails to extend and `z` is a pole.  That is B2 in the new leaf's docstring, and it is worth
+splitting off as a leaf of its own.
 -/
 
 @[expose] public section
@@ -213,6 +237,226 @@ theorem exists_locallyQuasiFinite_toAffineLine_compl_singleton
           Scheme.Opens.ι (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) ≫ strX :=
   sorry
 
+/-- **The affine line is of finite type over its base field** (PROVEN 2026-07-30).
+
+`K[T]` is generated as a `K`-algebra by `T` (`Polynomial.adjoin_X`), which is exactly
+`RingHom.FiniteType (algebraMap K K[T])`; `LocallyOfFiniteType` is a
+`HasRingHomProperty` for that, so `HasRingHomProperty.Spec_iff` transports it.
+
+This is the side condition of the right-cancellation
+`locallyOfFiniteType_of_comp`, and it is the only reason
+`isProper_of_locallyQuasiFinite_toAffineLine_compl_singleton` can get
+`LocallyOfFiniteType g` out of its `hover` clause. -/
+theorem locallyOfFiniteType_affineLineOver (K : Type u) [Field K] :
+    LocallyOfFiniteType (affineLineOver K) := by
+  rw [affineLineOver, HasRingHomProperty.Spec_iff (P := @LocallyOfFiniteType)]
+  exact RingHom.finiteType_algebraMap.mpr
+    ⟨⟨{Polynomial.X}, by simp [Polynomial.adjoin_X (R := K)]⟩⟩
+
+/-- **THE POLE AT `z`, in valuative form: a lift of a valuative square into `X` cannot hit `z`**
+(sorry leaf, cut 2026-07-30; the ONLY residue of
+`isProper_of_locallyQuasiFinite_toAffineLine_compl_singleton`, which is now proven over the
+existence lemma below, which is in turn proven over this).
+
+Given a valuation ring `R` with fraction field `L`, a point `i₁ : Spec L ⟶ X ∖ {z}`, a
+`Spec R ⟶ 𝔸¹_K` that agrees with it through `g` (that is `hcomm` — see the FAITHFULNESS note,
+it is not optional), and a lift `l : Spec R ⟶ X` of the resulting square over `strX`, the
+range of `l` misses `z`.
+
+This is where ALL the mathematics of properness now sits.  Everything categorical around it —
+building the square, extracting `l`, factoring through the open, and both triangles — is proven
+in `valuativeCriterionExistence_of_locallyQuasiFinite_toAffineLine_compl_singleton` below.
+
+TRUE, in two substeps.
+
+**B1 — only the closed point can be the problem.**  In `Spec R` every prime is contained in
+the maximal ideal, so every point specializes to the closed point `m`; `l.base` is continuous
+and `{z}` is closed, so `z ∈ Set.range l.base ↔ l.base m = z`.  One point to rule out, not a
+range.
+
+**B2 — the pole rules it out.**  If `l.base m = z` then `Scheme.Hom.stalkMap l m` is a LOCAL
+homomorphism `𝒪_{X,z} ⟶ 𝒪_{Spec R, m} ≅ R` (`R` is local, so the stalk at its closed point is
+`R`).  Let `f ∈ Γ(U)` be `g`'s pull-back of `T`.  `X` is integral
+(`isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected` in `CurveExtension.lean`
+— this is where `hconn` is consumed), so `Γ(U)` and `𝒪_{X,z}` both sit inside
+`X.functionField`, with `IsFractionRing (X.presheaf.stalk z) X.functionField`.  And `𝒪_{X,z}`
+is a DISCRETE VALUATION RING
+(`isDiscreteValuationRing_stalk_of_smoothOfRelativeDimension_one`, same file).  So if
+`f ∉ 𝒪_{X,z}` then `f⁻¹ ∈ 𝔪_z`, hence `stalkMap l m f⁻¹ ∈ 𝔪_R`, so `f`'s image has NEGATIVE
+valuation in `R` — while `hcomm` says that image is `i₂`'s pull-back of `T`, which lies in `R`.
+Contradiction.
+
+**What B2 rests on, and it is worth a leaf of its own: `f ∉ 𝒪_{X,z}`, i.e. `g` DOES NOT EXTEND
+ACROSS `z`.**  That statement mentions `X` and `g` only — no valuation ring — and it is the
+only place `hqf` is consumed.  Its proof is a dichotomy on a hypothetical extension
+`ĝ : X ⟶ 𝔸¹_K` with `Scheme.Opens.ι U ≫ ĝ = g`:
+
+* `ĝ ≫ affineLineOver K = strX`, because the two agree on `U`, which is DENSE
+  (`isDominant_of_finite_compl`, `CurveExtension.lean`) — so `ĝ` is a `K`-morphism, hence
+  proper by `IsProper.of_comp` cancelling against the separated `affineLineOver K`;
+* if some fibre of `ĝ` is infinite it is all of the irreducible curve `X`, so `g` is constant
+  on the infinite `U` (`infinite_of_smoothOfRelativeDimension_one`), contradicting `hqf`;
+* otherwise `ĝ` is quasi-finite, hence FINITE by
+  `IsFinite.of_isProper_of_locallyQuasiFinite`, so `affineLineOver K` is proper AND affine,
+  hence finite, i.e. `K[T]` is a finite `K`-module — false, `Polynomial.basisMonomials`
+  being a basis indexed by `ℕ`.
+
+**That last contradiction is cleaner than the one this file used to record.**  The old note
+said a finite surjection from a universally closed `X` would make `affineLineOver K`
+universally closed, "which it is not" — leaving a prover to prove that `𝔸¹` is not universally
+closed over `K`, which is real work.  Going through `Module.Finite K K[T]` avoids it entirely.
+
+## FAITHFULNESS AUDIT
+
+**`hcomm` IS LOAD-BEARING and the statement is FALSE without it.**  This was caught by
+audit, not by the compiler, and the first draft of this leaf omitted it.  `hl₁` only says
+`l`'s generic point lands in `U`, and `hl₂` only ties `l` to `i₂` through the BASE `Spec K`;
+neither says anything about the value of `T`.  Witness: `X = ℙ¹_K`, `z = ∞`, `R = K[[t]]`,
+`L = K((t))`, `l` the standard map hitting `∞` at the closed point and the generic point of
+`ℙ¹` at the generic point.  Then `hl₁` holds with `i₁` the generic point of `U`, and `hl₂`
+holds for any `K`-morphism `i₂` whatever, since both `strX` and `affineLineOver K` land in
+`Spec K` and everything in sight is a `K`-morphism.  So `z ∈ Set.range l.base` with every
+other hypothesis satisfied.  It is `hcomm` — `f`'s value at the generic point IS `i₂`'s value
+of `T`, hence lies in `R` — that excludes this.
+
+`hqf` is load-bearing for the same reason it is in the consumer: `g` constant at `0` satisfies
+everything else, and its lift may perfectly well hit `z`.
+
+NOT VACUOUS: `ValuativeCommSq g` is inhabited — `U`'s local rings are valuation rings
+(`valuationRing_stalk_of_smoothOfRelativeDimension_one`) — and the consumer below instantiates
+this leaf at every one of them. -/
+theorem notMem_range_of_valuativeLift_toAffineLine_compl_singleton
+    {K : Type u} [Field K] {X : Scheme.{u}} (strX : X ⟶ Spec (CommRingCat.of K))
+    [IsProper strX] [SmoothOfRelativeDimension 1 strX]
+    (hconn : GeometricallyConnected strX)
+    {z : X} (hz : IsClosed ({z} : Set X))
+    (g : Scheme.Opens.toScheme (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) ⟶
+        Spec (CommRingCat.of (Polynomial K)))
+    (hqf : LocallyQuasiFinite g)
+    (hover : g ≫ affineLineOver K =
+      Scheme.Opens.ι (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) ≫ strX)
+    {R : Type u} [CommRing R] [IsDomain R] [ValuationRing R]
+    {L : Type u} [Field L] [Algebra R L] [IsFractionRing R L]
+    (i₁ : Spec (CommRingCat.of L) ⟶
+      Scheme.Opens.toScheme (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens))
+    (i₂ : Spec (CommRingCat.of R) ⟶ Spec (CommRingCat.of (Polynomial K)))
+    (hcomm : i₁ ≫ g = Spec.map (CommRingCat.ofHom (algebraMap R L)) ≫ i₂)
+    (l : Spec (CommRingCat.of R) ⟶ X)
+    (hl₁ : Spec.map (CommRingCat.ofHom (algebraMap R L)) ≫ l =
+      i₁ ≫ Scheme.Opens.ι (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens))
+    (hl₂ : l ≫ strX = i₂ ≫ affineLineOver K) :
+    z ∉ Set.range l.base :=
+  sorry
+
+/-- **The valuative lift: a valuation ring mapping to `𝔸¹_K` whose generic point lands in
+`X ∖ {z}` lands there entirely** (**PROVEN 2026-07-30** over the leaf immediately above, which
+is the only thing left under it).
+
+This is the EXISTENCE half of the valuative criterion for `g`, and after the cut it is the
+whole geometric content of properness: the uniqueness half and all three shape hypotheses of
+`IsProper.of_valuativeCriterion` are proven at the consumer.  See its docstring for which
+lemma discharges which.
+
+TRUE.  Unfolded, a `ValuativeCommSq g` is a valuation ring `R` with fraction field `L`
+together with `i₁ : Spec L ⟶ X ∖ {z}` and `i₂ : Spec R ⟶ 𝔸¹_K` agreeing over `Spec R`'s
+generic point, and the task is to produce `Spec R ⟶ X ∖ {z}`.
+
+## THE PROOF, in four steps; three of them are here and only step B is a leaf
+
+**A. Lift into `X`.**  Push `i₁` forward along `Scheme.Opens.ι` and `i₂` along
+`affineLineOver K`.  The resulting square over `strX` commutes — that is `hover` plus
+`S.commSq` and nothing else — and `IsProper strX` gives `ValuativeCriterion strX` by
+rewriting with `IsProper.eq_valuativeCriterion`.  So there is `l : Spec R ⟶ X` with
+`Spec.map (algebraMap R L) ≫ l = i₁ ≫ ι` and `l ≫ strX = i₂ ≫ affineLineOver K`.
+
+**B. `l` misses `z`.**  THIS IS THE CONTENT, and it is the leaf
+`notMem_range_of_valuativeLift_toAffineLine_compl_singleton` above; see there for the pole
+argument and for why its `hcomm` hypothesis is load-bearing.
+
+**C. Factor through `U`.**  `IsOpenImmersion.lift (Scheme.Opens.ι U) l ⟨B⟩`, with
+`IsOpenImmersion.lift_fac` for the factorisation.  The range condition needs only that `U` is
+`{z}ᶜ`, via `Scheme.Opens.range_ι`.
+
+**D. The two triangles, and `fac_right` is the one trap here.**  `fac_left` follows by
+cancelling the mono `Scheme.Opens.ι U`.  `fac_right` CANNOT be got the same way —
+`affineLineOver K` is not a mono, so knowing `(lift ≫ g) ≫ affineLineOver K = i₂ ≫
+affineLineOver K` is useless.  What works instead: the two morphisms `Spec R ⟶ 𝔸¹_K` agree
+after composing with `Spec.map (algebraMap R L)` (that is `fac_left` plus `S.commSq`), both are
+morphisms between AFFINE schemes, so `Spec.preimage` turns them into ring maps
+`K[T] ⟶ R`; `Spec.map_injective` transports the equality to those, and `algebraMap R L` is
+injective because `R` is a domain with fraction field `L`
+(`IsFractionRing.injective`) — so the two ring maps agree and `Spec.map_preimage` closes it.
+Note the last rewrite must not touch `S.i₂`, which occurs in `l`'s own type: rewriting it
+gives an ill-typed motive.
+
+## Faithfulness
+
+`hconn` and `hqf` are not consumed here — they are consumed inside step B's leaf, which is
+also where `SmoothOfRelativeDimension 1 strX` is used.  What this proof consumes is
+`IsProper strX` (step A) and `hover` (steps A and D). -/
+theorem valuativeCriterionExistence_of_locallyQuasiFinite_toAffineLine_compl_singleton
+    {K : Type u} [Field K] {X : Scheme.{u}} (strX : X ⟶ Spec (CommRingCat.of K))
+    [IsProper strX] [SmoothOfRelativeDimension 1 strX]
+    (hconn : GeometricallyConnected strX)
+    {z : X} (hz : IsClosed ({z} : Set X))
+    (g : Scheme.Opens.toScheme (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) ⟶
+        Spec (CommRingCat.of (Polynomial K)))
+    (hqf : LocallyQuasiFinite g)
+    (hover : g ≫ affineLineOver K =
+      Scheme.Opens.ι (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) ≫ strX) :
+    ValuativeCriterion.Existence g := by
+  intro S
+  -- STEP A: push the square forward along `Scheme.Opens.ι` and `affineLineOver K`, and lift
+  -- into `X` by the valuative criterion for the proper `strX`.
+  have hVC : ValuativeCriterion strX := by
+    have h : IsProper strX := inferInstance
+    rw [IsProper.eq_valuativeCriterion] at h
+    exact h.1.1.1
+  have hsq : CommSq (S.i₁ ≫ Scheme.Opens.ι (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens))
+      (Spec.map (CommRingCat.ofHom (algebraMap S.R S.K))) strX (S.i₂ ≫ affineLineOver K) := by
+    constructor
+    rw [Category.assoc, ← hover, ← Category.assoc, S.commSq.w, Category.assoc]
+  obtain ⟨⟨l, hfl, hfr⟩⟩ := (hVC ⟨S.R, S.K, _, _, hsq⟩).some.toInhabited
+  -- STEP B: the lift misses `z`.  This is the leaf.
+  have hmiss : z ∉ Set.range l.base :=
+    notMem_range_of_valuativeLift_toAffineLine_compl_singleton
+      strX hconn hz g hqf hover S.i₁ S.i₂ S.commSq.w l hfl hfr
+  -- STEP C: factor through the open `U`.
+  have hrange : Set.range l.base ⊆
+      Set.range (Scheme.Opens.ι (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens)).base := by
+    rw [Scheme.Opens.range_ι]
+    intro x hx
+    rintro (rfl : x = z)
+    exact hmiss hx
+  -- STEP D: the two triangles.
+  have hfac := IsOpenImmersion.lift_fac
+    (Scheme.Opens.ι (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens)) l hrange
+  have hleft : Spec.map (CommRingCat.ofHom (algebraMap S.R S.K)) ≫
+      IsOpenImmersion.lift _ l hrange = S.i₁ := by
+    refine (cancel_mono
+      (Scheme.Opens.ι (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens))).mp ?_
+    rw [Category.assoc, hfac, hfl]
+  refine ⟨⟨IsOpenImmersion.lift _ l hrange, hleft, ?_⟩⟩
+  -- `fac_right` cannot cancel `affineLineOver K`, which is not a mono.  Instead the two
+  -- morphisms of AFFINE schemes agree after `Spec.map (algebraMap R L)`, and `algebraMap R L`
+  -- is injective, so the ring maps behind them are equal.
+  have key : Spec.map (CommRingCat.ofHom (algebraMap S.R S.K)) ≫
+      (IsOpenImmersion.lift _ l hrange ≫ g) =
+      Spec.map (CommRingCat.ofHom (algebraMap S.R S.K)) ≫ S.i₂ := by
+    rw [← Category.assoc, hleft, S.commSq.w]
+  have hpre : Spec.preimage (IsOpenImmersion.lift _ l hrange ≫ g) = Spec.preimage S.i₂ := by
+    have h2 : Spec.map (Spec.preimage (IsOpenImmersion.lift _ l hrange ≫ g) ≫
+          CommRingCat.ofHom (algebraMap S.R S.K)) =
+        Spec.map (Spec.preimage S.i₂ ≫ CommRingCat.ofHom (algebraMap S.R S.K)) := by
+      rw [Spec.map_comp, Spec.map_comp, Spec.map_preimage, Spec.map_preimage]
+      exact key
+    have h3 := Spec.map_injective h2
+    refine CommRingCat.hom_ext (RingHom.ext fun x => IsFractionRing.injective S.R S.K ?_)
+    have h4 := congrArg
+      (fun (f : CommRingCat.of (Polynomial K) ⟶ CommRingCat.of S.K) => f.hom x) h3
+    simpa using h4
+  rw [← Spec.map_preimage (IsOpenImmersion.lift _ l hrange ≫ g), hpre, Spec.map_preimage]
+
 /-- **The compactification step: a quasi-finite `K`-morphism `X ∖ {z} ⟶ 𝔸¹_K` is proper**
 (sorry leaf, cut 2026-07-28 out of
 `isAffineOpen_compl_singleton_of_isSmoothProperCurve`).
@@ -257,7 +501,33 @@ over the second puncture's neighbourhood without being proper.
 NOT VACUOUS: `exists_locallyQuasiFinite_toAffineLine_compl_singleton` supplies a `g`
 satisfying every hypothesis, and the projective model of an elliptic curve over `ℚ`
 punctured at infinity, with `f = x`, witnesses the conclusion (there `g` is finite of
-degree two). -/
+degree two).
+
+## DECOMPOSED 2026-07-30 — everything except the valuative lift is now PROVEN
+
+This declaration is no longer a bare `sorry`.  It is proven below over the single sub-leaf
+`valuativeCriterionExistence_of_locallyQuasiFinite_toAffineLine_compl_singleton`, along the
+route the two steps above describe, and everything that is *not* step 2's lift is discharged
+here: the pin's `IsProper.of_valuativeCriterion` (stacks `0BX5`) asks for `QuasiCompact`,
+`QuasiSeparated` and `LocallyOfFiniteType` on `g` plus the two halves of the criterion, and
+four of those five are free once one knows where to look.
+
+* `LocallyOfFiniteType g` — from `hover` and `locallyOfFiniteType_of_comp`, the right
+  cancellation, whose side condition is `LocallyOfFiniteType (affineLineOver K)`.  That is
+  proven just above as `locallyOfFiniteType_affineLineOver`.
+* `IsSeparated g` — from `hover` and `IsSeparated.of_comp`, which is UNCONDITIONAL: separated
+  morphisms cancel on the left with no hypothesis on the second factor.
+* `QuasiSeparated g` — an instance of `IsSeparated g` (`Morphisms/Separated.lean`).
+* `QuasiCompact g` — `X` is a NOETHERIAN SCHEME, so its open `U` has a noetherian space and
+  `quasiCompact_of_noetherianSpace_source` applies.  `IsNoetherian X` is
+  `IsLocallyNoetherian X` (from `LocallyOfFiniteType.isLocallyNoetherian` against the
+  noetherian `Spec K`) together with `CompactSpace X` (from `QuasiCompact strX`, both of
+  which `IsProper strX` supplies).
+* the UNIQUENESS half — `IsSeparated.valuativeCriterion`, from `IsSeparated g` again.
+
+So the whole residue is the EXISTENCE half, and the sub-leaf is stated as exactly that.
+`hconn` and `hqf` are not consumed here; they are exactly the hypotheses the sub-leaf needs,
+and it is where the pole argument lives. -/
 theorem isProper_of_locallyQuasiFinite_toAffineLine_compl_singleton
     {K : Type u} [Field K] {X : Scheme.{u}} (strX : X ⟶ Spec (CommRingCat.of K))
     [IsProper strX] [SmoothOfRelativeDimension 1 strX]
@@ -268,8 +538,27 @@ theorem isProper_of_locallyQuasiFinite_toAffineLine_compl_singleton
     (hqf : LocallyQuasiFinite g)
     (hover : g ≫ affineLineOver K =
       Scheme.Opens.ι (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) ≫ strX) :
-    IsProper g :=
-  sorry
+    IsProper g := by
+  haveI := locallyOfFiniteType_affineLineOver K
+  -- `X` is a noetherian scheme, hence so is the open `U = X ∖ {z}`.
+  haveI : CompactSpace X := QuasiCompact.compactSpace_of_compactSpace strX
+  haveI : IsLocallyNoetherian X := LocallyOfFiniteType.isLocallyNoetherian strX
+  haveI : IsNoetherian X := ⟨⟩
+  haveI : NoetherianSpace
+      (Scheme.Opens.toScheme (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens)) := by
+    show NoetherianSpace (({z}ᶜ : Set X))
+    infer_instance
+  -- the three shape hypotheses of `IsProper.of_valuativeCriterion`
+  haveI : QuasiCompact g := inferInstance
+  haveI : LocallyOfFiniteType (g ≫ affineLineOver K) := by rw [hover]; infer_instance
+  haveI : LocallyOfFiniteType g := locallyOfFiniteType_of_comp g (affineLineOver K)
+  haveI : IsSeparated (g ≫ affineLineOver K) := by rw [hover]; infer_instance
+  haveI : IsSeparated g := IsSeparated.of_comp g (affineLineOver K)
+  haveI : QuasiSeparated g := inferInstance
+  exact IsProper.of_valuativeCriterion g (ValuativeCriterion.iff.mpr
+    ⟨valuativeCriterionExistence_of_locallyQuasiFinite_toAffineLine_compl_singleton
+      strX hconn hz g hqf hover,
+      IsSeparated.valuativeCriterion g⟩)
 
 /-- **The complement of a closed point of a smooth proper geometrically connected curve
 over a field is affine** (**PROVEN 2026-07-28** over the two sub-leaves immediately above —
