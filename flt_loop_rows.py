@@ -797,6 +797,80 @@ def inferred_panic(s):
     panic(s, why)
 
 
+def anomalies(s):
+    """Invariants that must hold of the state. Every violation is a bug.
+
+    EXPECT THIS TO GROW. It is the standing home for "this should never be
+    true", added to as bugs are found, so that each one is caught by the
+    machine the next time instead of by a human noticing two numbers do not
+    add up. Everything here must be genuinely always-true: a false positive
+    panics a healthy fleet, which is worse than the bug it was guarding.
+
+    Returns a list of one-line descriptions, empty when the state is sound.
+    """
+    out = []
+    aw = {w for w, st in s["workers"].items() if st == "awaiting_merge"}
+    batch, infl = set(s["batch"]), set(s["inflight"] or [])
+    queued = batch | infl
+
+    # A worker is awaiting_merge for exactly as long as its branch is waiting
+    # to be merged, so the two sets are the same set seen from either end. They
+    # are written by different rows (6 batches, 11 claims, 7 frees), which is
+    # precisely why they can drift apart without anyone noticing.
+    #
+    # Found 2026-07-30 with 97 awaiting_merge against 19 queued branches: when
+    # a merge worker DECLINES a branch, the branch leaves .inflight but nothing
+    # frees its worker, so the worker is stranded and the pool silently shrinks.
+    lost = sorted(aw - queued)
+    if lost:
+        out.append("%d worker(s) awaiting_merge with no branch in batch or "
+                   "inflight -- stranded, pool shrinking: %s%s"
+                   % (len(lost), ", ".join(lost[:6]),
+                      " ..." if len(lost) > 6 else ""))
+    orphan = sorted(queued - aw)
+    if orphan:
+        out.append("%d branch(es) queued to merge whose worker is not "
+                   "awaiting_merge: %s%s"
+                   % (len(orphan), ", ".join(orphan[:6]),
+                      " ..." if len(orphan) > 6 else ""))
+
+    both = sorted(batch & infl)
+    if both:
+        out.append("branch(es) in BOTH batch and inflight, so a merge worker "
+                   "and the queue disagree about who owns them: %s"
+                   % ", ".join(both[:6]))
+
+    if len(s["batch"]) != len(batch):
+        out.append("batch contains duplicate entries -- a branch would be "
+                   "merged twice")
+    if s["inflight"] and len(s["inflight"]) != len(infl):
+        out.append("inflight contains duplicate entries")
+
+    # A worktree cannot be running a job and waiting to be merged at once.
+    for n, j in s["jobs"].items():
+        if j["kind"] == "agent" and s["workers"].get(j["worktree"]) == "awaiting_merge":
+            out.append("worktree %s has a live agent record AND is "
+                       "awaiting_merge" % j["worktree"])
+    return out
+
+
+def anomaly_guard(s):
+    # Self-disabling in the same way the reported-panic row is: once a medic
+    # exists the violation is being handled, and re-firing would rebuild the
+    # medic record every tick and never let it start.
+    if "medic" in s["jobs"]:
+        return (False, "a medic is already handling something")
+    bad = anomalies(s)
+    if not bad:
+        return (False, "no invariant violated")
+    return (True, bad[0][:110])
+
+
+def anomaly_action(s):
+    bad = anomalies(s)
+    panic(s, "INVARIANT VIOLATED (%d): %s" % (len(bad), " | ".join(bad[:4])))
+
+
 ROWS = [
     (1, "STOP exists", r1_guard, r1_action),
     (2, "medic finished -> apply GO / NO-GO verdict", rmedic_done_guard, rmedic_done_action),
@@ -809,6 +883,7 @@ ROWS = [
     (4, "medic in flight -> SAFE MODE (all rows below suspended)",
      rmedic_wait_guard, rmedic_wait_action),
     (5, "a job REPORTED panic -> notify + medic", reported_panic_guard, reported_panic_action),
+    (17, "INVARIANT VIOLATED -> notify + medic", anomaly_guard, anomaly_action),
     (6, "agent finished -> integrate, awaiting_merge", r2_guard, r2_action),
     (7, "awaiting_merge ∧ ancestor(main) -> free", r3_guard, r3_action),
     (8, "agent died -> resume from transcript", r4_guard, r4_action),
