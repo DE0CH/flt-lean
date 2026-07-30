@@ -179,9 +179,11 @@ leaves it moved to are, in dependency order:
   independent of each other:
 
   * `exists_abelJacobiPoint` — the Abel–Jacobi map `x ↦ [x] − [o]` into
-    the POINTS of `Pic`.  Owes two facts about `sectionIdeal` (that
-    `𝒪(−σ)` is invertible, and that it commutes with base change) plus
-    one tensor-calculus statement its docstring names precisely;
+    the POINTS of `Pic`.  **Amended 2026-07-29: PROVEN**, over exactly the
+    two facts about `sectionIdeal` its audit predicted, now the named
+    leaves `isInvertibleSheaf_sectionIdeal` and
+    `nonempty_modPullback_sectionIdeal`.  The tensor-calculus statement
+    it also named is PROVEN, not a leaf — `isInvertibleSheaf_modPullback`;
   * `exists_relPicZeroSubgroup` — the geometry: cut `Pic⁰` out of `Pic`
     and show it is proper, smooth and geometrically connected.  This is
     what BLR 9.4/4 is usually cited FOR, and it is the leaf with real
@@ -190,8 +192,13 @@ leaves it moved to are, in dependency order:
 
 Also PROVEN here and worth knowing about before re-deriving them:
 `modTensorMapIso`, `modTensorUnitLeftIso`, `modTensorUnitRightIso`,
-`modPullbackUnitIso`, `isInvertibleSheaf_modUnit`,
-`isInvertibleSheaf_modTensorPic`, `relPicEquiv_refl/symm/trans/equivalence`,
+`modTensorSymmIso` (the BRAIDING), `modPullbackUnitIso`,
+`isInvertibleSheaf_modUnit`, `isInvertibleSheaf_modTensorPic`,
+`isInvertibleSheaf_modPullback`, `nonempty_modTensor_middleFourPic`,
+`nonempty_iso_of_modTensorPic_left` (cancellation),
+`relPicEquiv_refl/symm/trans/equivalence`, the four congruence lemmas
+`relPicEquiv_of_iso/tensor_right/modPullback/cancel_left`,
+`IsRelPicOf.eq_of_relPicEquiv_tensor`,
 and `IsRelPicOf.zeroPoint/addPoint` with their two classification specs.
 Most of the first group was HOISTED from `AmpleSheaf.lean`; see the
 tensor-calculus section header.
@@ -372,11 +379,20 @@ oleans, in full:
         modTensor L M ≅ modTensor M L :=
       (PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)).mapIso (β_ L.val M.val)
 
-Neither is a declaration here, because nothing in the module consumes one
-yet and this project forbids free-floating declarations — the same reason
-`isInvertibleSheaf_modUnit` spent a day as a docstring one-liner.  **Paste
-them in as soon as you have a consumer**; `exists_abelJacobiPoint` below
-is the first, and its docstring says where each use falls.
+**PASTED IN 2026-07-29, with their consumer.**  Both are now declarations —
+`presheafOfModulesSymm` and `modTensorSymmIso` below — because
+`exists_abelJacobiPoint` is proven and consumes the braiding four times
+(`nonempty_modTensor_middleFourPic`, `nonempty_iso_of_modTensorPic_left`, and
+twice in `IsRelPicOf.eq_of_relPicEquiv_tensor`).  They were correct as written:
+the two blocks below are the docstring's text verbatim.
+
+Note `Modularity/AmpleSheaf.lean`, DOWNSTREAM, carries its own copies under the
+names `presheafOfModulesSymmetric` and `modTensorComm`.  The names are
+deliberately different so that nothing collides while that module has live
+owners; the follow-up is the usual hoist — delete those two there and redirect
+`nonempty_iso_of_modTensor_left`, `RelPicEquiv.symm` and `modLocW_whiskerLeft`'s
+braiding uses to these.  A duplicate *instance* is harmless here because both are
+`inferInstanceAs` of the very same mathlib instance, hence defeq.
 
 The immediate consequences, so that nobody prices them as leaves:
 `modTensor L M ≅ 𝒪 → modTensor M L ≅ 𝒪` is one line, and the
@@ -462,6 +478,25 @@ noncomputable def modTensorUnitRightIso {Z : Scheme.{u}} (L : Z.Modules) :
     modTensor L (modUnit Z) ≅ L :=
   (PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)).mapIso (ρ_ L.val) ≪≫
     modSheafifyValIso L
+
+/-- Presheaves of modules over a presheaf of COMMUTATIVE rings form a SYMMETRIC
+monoidal category; as with `presheafOfModulesMonoidal`, typeclass search cannot
+invert the composition `Z.presheaf ⋙ forget₂ _ _` against `Z.ringCatSheaf.obj`
+on its own, so the instance is supplied by hand. -/
+noncomputable instance presheafOfModulesSymm (Z : Scheme.{u}) :
+    SymmetricCategory (PresheafOfModules.{u} Z.ringCatSheaf.obj) :=
+  inferInstanceAs (SymmetricCategory
+    (PresheafOfModules.{u} (Z.presheaf ⋙ forget₂ CommRingCat RingCat)))
+
+/-- **THE BRAIDING**, `L ⊗ M ≅ M ⊗ L` (PROVEN 2026-07-29, one line) — `modTensor`
+is SYMMETRIC at this pin.
+
+Sheafify mathlib's presheaf-level braiding, exactly as `modTensorUnitLeftIso`
+sheafifies the presheaf-level unitor.  See the section header for why the
+"`modTensor` has no symmetry" claim that stood in three audits was false. -/
+noncomputable def modTensorSymmIso {Z : Scheme.{u}} (L M : Z.Modules) :
+    modTensor L M ≅ modTensor M L :=
+  (PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)).mapIso (β_ L.val M.val)
 
 /-! #### `f^* 𝒪_Y ≅ 𝒪_X` -/
 
@@ -600,6 +635,55 @@ theorem isInvertibleSheaf_modTensorPic {Z : Scheme.{u}} {L M : Z.Modules}
   obtain ⟨e⟩ := nonempty_restrict_modTensorPic (U ⊓ V : Z.Opens).ι L M
   exact ⟨U ⊓ V, ⟨hzU, hzV⟩, ⟨e ≪≫ modTensorMapIso (trivializationOfLE inf_le_left φ)
     (trivializationOfLE inf_le_right ψ) ≪≫ modTensorUnitLeftIso _⟩⟩
+
+/-- **PULLBACK PRESERVES INVERTIBILITY** (PROVEN 2026-07-29, and NOT a leaf).
+
+`exists_abelJacobiPoint`'s route audit named this as the one statement blocking
+`aj_pre` — "absent from this module … whoever takes this leaf should state and
+prove it in the tensor-calculus section above".  Here it is, and it needs no new
+leaf: every component of the chain was already proven above.
+
+**Route.**  For `w : W` trivialize `L` on a neighbourhood `U` of `f w` and take
+the preimage `f ⁻¹ᵁ U`.  Then
+
+    (f^*L)|_{f⁻¹U} ≅ ((f⁻¹U).ι)^*(f^*L) ≅ ((f⁻¹U).ι ≫ f)^*L
+                   ≅ ((f ∣_ U) ≫ U.ι)^*L ≅ (f ∣_ U)^*(U.ι^* L)
+                   ≅ (f ∣_ U)^*(L|_U) ≅ (f ∣_ U)^*𝒪_U ≅ 𝒪_{f⁻¹U},
+
+by `modRestrictPullbackIso`, `modPullbackCompIso`, mathlib's `morphismRestrict_ι`
+(the base-change identity `(f⁻¹U).ι ≫ f = (f ∣_ U) ≫ U.ι`), `modPullbackCompIso`
+again, `modPullbackMapIso` applied to the trivialization, and
+`modPullbackUnitIso`.  Membership of `w` in `f ⁻¹ᵁ U` is definitionally
+membership of `f w` in `U`.
+
+The same chain is written as real code, with its section identity, in
+`Modularity/AmpleSheaf.lean` as `trivializationOfPullback`; that module is
+DOWNSTREAM, so it could not be used here and the chain is inlined instead rather
+than hoisting a declaration out from under that module's live owners. -/
+theorem isInvertibleSheaf_modPullback {Z W : Scheme.{u}} (f : W ⟶ Z) {L : Z.Modules}
+    (hL : IsInvertibleSheaf L) : IsInvertibleSheaf (modPullback f L) := by
+  intro w
+  obtain ⟨U, hU, ⟨φ⟩⟩ := hL (f.base w)
+  refine ⟨f ⁻¹ᵁ U, hU, ⟨?_⟩⟩
+  exact modRestrictPullbackIso (f ⁻¹ᵁ U).ι (modPullback f L) ≪≫
+    modPullbackCompIso (f ⁻¹ᵁ U).ι f L ≪≫
+    modPullbackCongrIso (morphismRestrict_ι f U).symm L ≪≫
+    (modPullbackCompIso (f ∣_ U) U.ι L).symm ≪≫
+    modPullbackMapIso (f ∣_ U) ((modRestrictPullbackIso U.ι L).symm ≪≫ φ) ≪≫
+    modPullbackUnitIso (f ∣_ U)
+
+/-- **THE MIDDLE-FOUR INTERCHANGE**, `(L ⊗ M) ⊗ N ≅ (L ⊗ N) ⊗ M` (PROVEN over
+`nonempty_modTensor_assocPic` and the braiding).
+
+Exactly the "assoc twice plus one braiding" the section header prices.  It is
+what makes `RelPicEquiv` a congruence for `⊗` on the right
+(`relPicEquiv_tensor_right`): a twist by `π^*N` on the left factor has to be
+moved past the new right factor `M`. -/
+theorem nonempty_modTensor_middleFourPic {Z : Scheme.{u}} (L M N : Z.Modules) :
+    Nonempty (modTensor (modTensor L M) N ≅ modTensor (modTensor L N) M) := by
+  obtain ⟨a1⟩ := nonempty_modTensor_assocPic L M N
+  obtain ⟨a2⟩ := nonempty_modTensor_assocPic L N M
+  exact ⟨a1 ≪≫ modTensorMapIso (Iso.refl L) (modTensorSymmIso M N) ≪≫ a2.symm⟩
 
 /-! #### Global-from-local, and the dual sheaf
 
@@ -799,6 +883,30 @@ theorem exists_modTensor_inv {Z : Scheme.{u}} {L : Z.Modules} (hL : IsInvertible
   haveI : IsIso ev := isIso_of_locally_isIso ev hloc
   exact ⟨M, hM, ⟨asIso ev⟩⟩
 
+/-- **CANCELLATION OF AN INVERTIBLE TENSOR FACTOR** (PROVEN 2026-07-29 over
+`exists_modTensor_inv`, `nonempty_modTensor_assocPic` and the braiding): if `L`
+is invertible then `L ⊗ A ≅ L ⊗ B` forces `A ≅ B`.
+
+Tensor on the left with a left inverse `M` of `L` — obtained from the right
+inverse `exists_modTensor_inv` supplies by composing with `modTensorSymmIso` —
+and reassociate.  `A` and `B` are arbitrary `𝒪_Z`-modules; no invertibility of
+them is used or needed.
+
+This is the verbatim twin of `nonempty_iso_of_modTensor_left` in
+`Modularity/AmpleSheaf.lean`, which is DOWNSTREAM and therefore unusable here;
+the proof is that declaration's, unchanged but for the `Pic`-suffixed names.  It
+is what pins the Abel–Jacobi point: `IsRelPicOf.eq_of_relPicEquiv_tensor` below
+cancels `𝒪(−x)` from `𝒪(x − o) ⊗ 𝒪(−x)`. -/
+theorem nonempty_iso_of_modTensorPic_left {Z : Scheme.{u}} {L A B : Z.Modules}
+    (hL : IsInvertibleSheaf L) (e : modTensor L A ≅ modTensor L B) : Nonempty (A ≅ B) := by
+  obtain ⟨M, -, ⟨eLM⟩⟩ := exists_modTensor_inv hL
+  have eML : modTensor M L ≅ modUnit Z := modTensorSymmIso M L ≪≫ eLM
+  obtain ⟨aA⟩ := nonempty_modTensor_assocPic M L A
+  obtain ⟨aB⟩ := nonempty_modTensor_assocPic M L B
+  exact ⟨(modTensorUnitLeftIso A).symm ≪≫ modTensorMapIso eML.symm (Iso.refl A) ≪≫ aA ≪≫
+    modTensorMapIso (Iso.refl M) e ≪≫ aB.symm ≪≫ modTensorMapIso eML (Iso.refl B) ≪≫
+    modTensorUnitLeftIso B⟩
+
 /-! ### The relative Picard functor -/
 
 /-- **The base change `X ×_S T` of `strX : X ⟶ S` along `g : T ⟶ S`.**
@@ -834,6 +942,25 @@ base-changed curve. -/
 def relBasePoint {X S T : Scheme.{u}} {strX : X ⟶ S} (o : RelPoint strX (𝟙 S)) (g : T ⟶ S) :
     RelPoint strX g :=
   RelPoint.pre g (Category.comp_id g) o
+
+/-- **The base point is natural** (PROVEN): `o_{T'} = (o_T)|_{T'}`.
+
+Both sides are `⟨h ≫ (g ≫ o.1), _⟩` and `⟨g' ≫ o.1, _⟩` with `h ≫ g = g'`, so
+this is `Subtype.ext` plus `Category.assoc` — recorded because it LOOKS like
+`rfl`, is not, and `exists_abelJacobiPoint`'s `aj_pre` cannot start without
+it. -/
+theorem relBasePoint_pre {X S T T' : Scheme.{u}} {strX : X ⟶ S} (o : RelPoint strX (𝟙 S))
+    {g : T ⟶ S} {g' : T' ⟶ S} (h : T' ⟶ T) (hg : h ≫ g = g') :
+    RelPoint.pre h hg (relBasePoint o g) = relBasePoint o g' := by
+  apply Subtype.ext
+  show h ≫ (g ≫ o.1) = g' ≫ o.1
+  rw [← hg, Category.assoc]
+
+/-- **The base point at the identity base is the section itself** (PROVEN) —
+again `Subtype.ext`, not `rfl`, and what `aj_base` needs. -/
+theorem relBasePoint_id {X S : Scheme.{u}} {strX : X ⟶ S} (o : RelPoint strX (𝟙 S)) :
+    relBasePoint o (𝟙 S) = o :=
+  Subtype.ext (Category.id_comp o.1)
 
 /-- **The ideal sheaf `I_σ = 𝒪(−σ)` of a section `σ : T ⟶ Z`.**
 
@@ -955,6 +1082,98 @@ theorem relPicEquiv_equivalence : Equivalence (RelPicEquiv strX g) :=
   ⟨relPicEquiv_refl strX g, relPicEquiv_symm strX g, relPicEquiv_trans strX g⟩
 
 end RelPicEquivIsEquivalence
+
+/-! ### `RelPicEquiv` as a CONGRUENCE
+
+Being an equivalence relation is not enough for the Abel–Jacobi construction:
+the classes have to be manipulable.  Four PROVEN facts, added 2026-07-29 with
+`exists_abelJacobiPoint` as their consumer, and none of them a leaf:
+
+* an ISOMORPHISM is a relative-Picard equality (`relPicEquiv_of_iso`) — the
+  bridge that lets a chain of coherence isomorphisms be spliced into a chain of
+  `RelPicEquiv`s;
+* `⊗` on the right is a CONGRUENCE (`relPicEquiv_tensor_right`) — this is where
+  the middle-four interchange is spent;
+* PULLBACK preserves the relation (`relPicEquiv_modPullback`) — the step
+  `aj_pre` is built on, and the one that needs `isInvertibleSheaf_modPullback`,
+  since the twisting sheaf `N` on `T` becomes `h^* N` on `T'`;
+* an invertible factor CANCELS (`relPicEquiv_cancel_left`) — what makes `aj`
+  determined by `aj_spec` rather than merely chosen.
+
+Together these say `Pic(X_T)/Pic(T)` is a genuine abelian group, functorial in
+`T`.  `Modularity/AmpleSheaf.lean` carries a twin of the last one
+(`RelPicEquiv.cancel_left`); it is downstream, so the two coexist until the
+hoist recorded on `modTensorSymmIso`. -/
+
+/-- **An isomorphism is a relative-Picard equality** (PROVEN): take the twist
+`N := 𝒪_T`, as in `relPicEquiv_refl`. -/
+theorem relPicEquiv_of_iso {X S T : Scheme.{u}} (strX : X ⟶ S) (g : T ⟶ S)
+    {L L' : (curveBaseChange strX g).Modules} (e : L ≅ L') : RelPicEquiv strX g L L' :=
+  ⟨modUnit T, isInvertibleSheaf_modUnit T,
+    ⟨e ≪≫ (modTensorUnitRightIso L').symm ≪≫
+      modTensorMapIso (Iso.refl L') (modPullbackUnitIso (curveBaseChangeProj strX g)).symm⟩⟩
+
+/-- **`RelPicEquiv` is a congruence for `⊗` on the right** (PROVEN over
+`nonempty_modTensor_middleFourPic`).
+
+`L ≅ L' ⊗ π^*N` gives `L ⊗ M ≅ (L' ⊗ π^*N) ⊗ M ≅ (L' ⊗ M) ⊗ π^*N`, which is the
+middle-four interchange and nothing else.  The twisting sheaf is unchanged, so
+no new invertibility obligation arises. -/
+theorem relPicEquiv_tensor_right {X S T : Scheme.{u}} (strX : X ⟶ S) (g : T ⟶ S)
+    {L L' : (curveBaseChange strX g).Modules} (M : (curveBaseChange strX g).Modules)
+    (h : RelPicEquiv strX g L L') :
+    RelPicEquiv strX g (modTensor L M) (modTensor L' M) := by
+  obtain ⟨N, hN, ⟨e⟩⟩ := h
+  obtain ⟨m4⟩ := nonempty_modTensor_middleFourPic L'
+    (modPullback (curveBaseChangeProj strX g) N) M
+  exact ⟨N, hN, ⟨modTensorMapIso e (Iso.refl M) ≪≫ m4⟩⟩
+
+/-- **The base-change square commutes**: `φ ≫ π_g = π_{g'} ≫ h` for
+`φ = curveBaseChangeMap strX h hg`.  One `pullback.lift_snd`, but it is an
+equality of morphisms rather than a definitional identity, so it has to be fed
+to `modPullbackCongrIso` by name. -/
+theorem curveBaseChangeMap_proj {X S T T' : Scheme.{u}} (strX : X ⟶ S) {g : T ⟶ S}
+    {g' : T' ⟶ S} (h : T' ⟶ T) (hg : h ≫ g = g') :
+    curveBaseChangeMap strX h hg ≫ curveBaseChangeProj strX g
+      = curveBaseChangeProj strX g' ≫ h :=
+  pullback.lift_snd _ _ _
+
+/-- **PULLBACK PRESERVES `RelPicEquiv`** (PROVEN over
+`nonempty_modPullback_modTensorPic` and `isInvertibleSheaf_modPullback`).
+
+`L ≅ L' ⊗ π_g^* N` pulls back to
+`φ^*L ≅ φ^*L' ⊗ φ^*π_g^*N = φ^*L' ⊗ (φ ≫ π_g)^*N = φ^*L' ⊗ (π_{g'} ≫ h)^*N
+     ≅ φ^*L' ⊗ π_{g'}^*(h^*N)`,
+so the new twist is `h^* N` — and it is invertible **only because pullback
+preserves invertibility**.  That is the precise sense in which
+`isInvertibleSheaf_modPullback` was the blocking piece of `aj_pre`: without it
+the witness for the new twist has no `IsInvertibleSheaf` field. -/
+theorem relPicEquiv_modPullback {X S T T' : Scheme.{u}} (strX : X ⟶ S) {g : T ⟶ S}
+    {g' : T' ⟶ S} (h : T' ⟶ T) (hg : h ≫ g = g')
+    {L L' : (curveBaseChange strX g).Modules} (hLL' : RelPicEquiv strX g L L') :
+    RelPicEquiv strX g' (modPullback (curveBaseChangeMap strX h hg) L)
+      (modPullback (curveBaseChangeMap strX h hg) L') := by
+  obtain ⟨N, hN, ⟨e⟩⟩ := hLL'
+  refine ⟨modPullback h N, isInvertibleSheaf_modPullback h hN, ⟨?_⟩⟩
+  refine modPullbackMapIso _ e ≪≫
+    (nonempty_modPullback_modTensorPic (curveBaseChangeMap strX h hg) L'
+      (modPullback (curveBaseChangeProj strX g) N)).some ≪≫
+    modTensorMapIso (Iso.refl _) ?_
+  refine modPullbackCompIso (curveBaseChangeMap strX h hg) (curveBaseChangeProj strX g) N ≪≫ ?_
+  refine modPullbackCongrIso (curveBaseChangeMap_proj strX h hg) N ≪≫ ?_
+  exact (modPullbackCompIso (curveBaseChangeProj strX g') h N).symm
+
+/-- **CANCELLATION IN THE RELATIVE PICARD GROUP** (PROVEN over
+`nonempty_iso_of_modTensorPic_left`): an invertible factor common to both sides
+may be deleted.  Only the cancelled factor `L` has to be invertible; `A` and `B`
+are arbitrary. -/
+theorem relPicEquiv_cancel_left {X S T : Scheme.{u}} (strX : X ⟶ S) (g : T ⟶ S)
+    {L A B : (curveBaseChange strX g).Modules} (hL : IsInvertibleSheaf L)
+    (h : RelPicEquiv strX g (modTensor L A) (modTensor L B)) : RelPicEquiv strX g A B := by
+  obtain ⟨N, hN, ⟨e⟩⟩ := h
+  obtain ⟨a⟩ := nonempty_modTensor_assocPic L B (modPullback (curveBaseChangeProj strX g) N)
+  obtain ⟨f⟩ := nonempty_iso_of_modTensorPic_left hL (e ≪≫ a)
+  exact ⟨N, hN, ⟨f⟩⟩
 
 /-! ### `Pic⁰` as an abelian scheme -/
 
@@ -1620,7 +1839,9 @@ why they are cut apart rather than left as one node:
 * the **`𝒪(D)` dictionary** — `exists_abelJacobiPoint` — the Abel–Jacobi
   map `x ↦ [x] − [o]` as a map into the points of `Pic`.  No identity
   component enters it: it is a statement about `sectionIdeal` on a smooth
-  relative curve, plus `surj`;
+  relative curve, plus `surj`.  **PROVEN 2026-07-29**, leaving only its
+  two `sectionIdeal` obligations open (`isInvertibleSheaf_sectionIdeal`,
+  `nonempty_modPullback_sectionIdeal`);
 * the **geometry** — `exists_relPicZeroSubgroup` — cutting `Pic⁰` out of
   `Pic` and showing it is proper, smooth and geometrically connected over
   `S`.  It takes the Abel–Jacobi map as an INPUT, because "contains the
@@ -1640,7 +1861,122 @@ point-level form is what the assembly consumes; stating it as an open
 immersion would force the caller to convert, and would add an `IsIso`/
 `IsOpenImmersion` obligation that no field of `IsRelPicZeroOf` reads. -/
 
-/-- **THE ABEL–JACOBI MAP INTO `Pic`** (sorry leaf, cut 2026-07-29) — the
+/-- **THE ABEL–JACOBI POINT IS UNIQUE** (PROVEN 2026-07-29 over
+`relPicEquiv_cancel_left`) — two points of `Pic` whose classes solve the same
+equation `[p] + [x] = [C]` are equal.
+
+This is the formal content of the "Pinned." paragraph on
+`exists_abelJacobiPoint` below: the first clause of that leaf determines `aj`
+POINTWISE, so the naturality and base-point clauses are theorems about it rather
+than extra freedom for an adversary.  It is also how both of those clauses are
+proven — each is `hinj` applied to a chain of `RelPicEquiv`s, never a comparison
+of the two `Classical.choose`s.
+
+The braiding is spent twice here, to move the cancelled factor `I` from the
+right of `sheaf p` to the left, where `relPicEquiv_cancel_left` wants it. -/
+theorem IsRelPicOf.eq_of_relPicEquiv_tensor {X P S T : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
+    (hP : IsRelPicOf strX pstr) {g : T ⟶ S} {I C : (curveBaseChange strX g).Modules}
+    (hI : IsInvertibleSheaf I) {p q : RelPoint pstr g}
+    (hp : RelPicEquiv strX g (modTensor (hP.sheaf p) I) C)
+    (hq : RelPicEquiv strX g (modTensor (hP.sheaf q) I) C) : p = q := by
+  refine hP.inj p q (relPicEquiv_cancel_left strX g hI ?_)
+  exact relPicEquiv_trans strX g (relPicEquiv_of_iso strX g (modTensorSymmIso I (hP.sheaf p)))
+    (relPicEquiv_trans strX g (relPicEquiv_trans strX g hp (relPicEquiv_symm strX g hq))
+      (relPicEquiv_of_iso strX g (modTensorSymmIso (hP.sheaf q) I)))
+
+/-- **A SECTION OF A SMOOTH RELATIVE CURVE IS AN EFFECTIVE CARTIER DIVISOR**
+(sorry leaf, cut 2026-07-29 out of `exists_abelJacobiPoint`) — its ideal sheaf
+`𝒪(−σ)` is invertible.
+
+Stacks 0C4S / EGA IV 17.12.1: for `f : Y ⟶ T` smooth of relative dimension `1`
+and separated, a section `σ` is a closed immersion whose ideal is locally
+generated by one element that is a nonzerodivisor on every fibre — the local
+coordinate of the smooth curve at `σ`.  Here `Y = X ×_S T`, which is proper and
+smooth of relative dimension `1` over `T` because both properties are stable
+under base change, and `σ = relSection x`.
+
+**This is one of the exactly TWO genuinely new geometric obligations of
+`exists_abelJacobiPoint`, and it is where the smoothness hypothesis of that leaf
+is spent.**  Nothing in the pin says it: there is no divisor theory at `a3364fa`
+(no `𝒪(D)`, no Cartier divisors), which is why `sectionIdeal` is defined as a
+kernel in the first place.  So it has to be proven from that definition —
+`sectionIdeal σ = ker (𝒪_Y ⟶ σ_*𝒪_T)` — by trivializing on a neighbourhood of
+each point of the image and using `f` smooth of relative dimension `1` there;
+off the image the kernel is all of `𝒪_Y` and the statement is the (proven)
+`isInvertibleSheaf_modUnit` locally.
+
+**FAITHFULNESS.  Both hypotheses are load-bearing, neither is decoration.**
+
+* Drop `_hsmooth` and it is FALSE: for the nodal cubic `Y : y² = x³ + x²` over a
+  field, a section through the node has ideal sheaf which is not invertible at
+  the node — the local ring is not regular there, and `𝔪` needs two generators.
+  The relative-dimension-`1` part is equally load-bearing: at relative dimension
+  `2` a section is a regular immersion of CODIMENSION `2`, and its ideal sheaf
+  has rank `2` at the section, so it is not invertible either (`𝔸²_T` with the
+  zero section is the smallest witness).
+* Drop `_hproper` and it is FALSE: properness is used only through
+  SEPARATEDNESS, but it is used.  A section of a non-separated morphism is an
+  immersion that need not be closed, and then `ker (𝒪_Y ⟶ σ_*𝒪_T)` is the ideal
+  of functions vanishing on a non-closed subset.  Take `Y` the affine line with
+  doubled origin over `T = Spec k`, smooth of relative dimension `1`, and `σ`
+  one of the two origins: the kernel is the ideal of a point whose closure meets
+  the other origin, and it is not invertible at that second point.
+
+**NOT VACUOUS.**  Satisfied whenever `X ⟶ S` is a smooth proper relative curve
+with a section, which is the situation the whole module is about; `X = S`,
+`strX = 𝟙 S` is excluded because that is relative dimension `0`, and the
+statement is not vacuously true by an empty quantifier — `IsInvertibleSheaf` is
+a `∀` over the points of `X ×_S T`, which is nonempty as soon as `T` is. -/
+theorem isInvertibleSheaf_sectionIdeal {X S T : Scheme.{u}} {strX : X ⟶ S}
+    (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
+    {g : T ⟶ S} (x : RelPoint strX g) :
+    IsInvertibleSheaf (sectionIdeal (relSection x)) := sorry
+
+/-- **`𝒪(−σ)` COMMUTES WITH BASE CHANGE** (sorry leaf, cut 2026-07-29 out of
+`exists_abelJacobiPoint`) — `φ^* 𝒪(−x) ≅ 𝒪(−x_{T'})` for
+`φ = curveBaseChangeMap strX h hg`.
+
+The second of the two genuinely new geometric obligations, and the only one
+`aj_pre` needs beyond the tensor calculus.
+
+**The square is cartesian and the sections match**, which is what makes this
+true and is worth recording because it is the only part a prover has to check by
+hand: writing `σ = relSection x` and `σ' = relSection (RelPoint.pre h hg x)`,
+
+    σ' ≫ φ = h ≫ σ,
+
+since both have first component `h ≫ x.1` (`pullback.lift_fst`, `x'.1 = h ≫ x.1`
+by definition of `RelPoint.pre`) and second component `h` (`pullback.lift_snd`
+together with `curveBaseChangeMap_proj`).  And `X ×_S T' = (X ×_S T) ×_T T'`, so
+the divisor `D_{x'}` really is the pullback of `D_x`.
+
+**Why it is not formal.**  `φ^*` is right exact, not left exact, so it does not
+commute with a kernel for free; the statement is exactly that the surjection
+`𝒪_{X_T} ↠ 𝒪_{D_x}` stays injective-on-the-ideal after pullback, i.e. that
+`D_x` is FLAT over `T` — which is the content of
+`isInvertibleSheaf_sectionIdeal` above (an effective relative Cartier divisor is
+flat over the base).  So this leaf DEPENDS on that one, and a proof should
+consume it rather than redo it.
+
+**FAITHFULNESS.**  Same two hypotheses, same reason: drop either and `𝒪(−x)`
+need not be invertible, hence need not be flat over `T`, and the pullback map
+`φ^*𝒪(−x) ⟶ 𝒪(−x_{T'})` has a kernel.  Concretely, over the nodal cubic with
+`T' ⟶ T` the inclusion of the node's residue field, `φ^*` of the ideal has rank
+`2` while `𝒪(−x_{T'})` has rank `1`, so no isomorphism exists.
+
+**NOT VACUOUS, and not a relocation.**  `h = 𝟙 T` gives a nontrivial instance
+(`φ` is then an automorphism of the pullback, not the identity, since
+`curveBaseChangeMap` is defined by `pullback.lift`), and the general case is
+consumed once in `aj_pre` at each of `x` and the base point `o`. -/
+theorem nonempty_modPullback_sectionIdeal {X S T T' : Scheme.{u}} {strX : X ⟶ S}
+    (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
+    {g : T ⟶ S} {g' : T' ⟶ S} (h : T' ⟶ T) (hg : h ≫ g = g') (x : RelPoint strX g) :
+    Nonempty (modPullback (curveBaseChangeMap strX h hg) (sectionIdeal (relSection x))
+      ≅ sectionIdeal (relSection (RelPoint.pre h hg x))) := sorry
+
+/-- **THE ABEL–JACOBI MAP INTO `Pic`** (PROVEN 2026-07-29 over the two geometric
+leaves `isInvertibleSheaf_sectionIdeal` and `nonempty_modPullback_sectionIdeal`,
+and the tensor calculus above) — the
 `𝒪(D)` dictionary for section divisors on a relative curve, which is BLR
 9.4/4's first input and the only place `sectionIdeal` is consumed.
 
@@ -1648,64 +1984,59 @@ Classically: for `x` a `T`-point of the curve, `𝒪(x − o)` is an
 invertible sheaf on `X_T`, so `surj` classifies it, and the resulting
 point of `Pic` is natural in `T` and sends `o` to the origin.
 
-**ROUTE, worked out 2026-07-29 far enough to price it; do not re-derive
-the survey.**  Written out, the construction at one `(T, g)` is
-`M := 𝒪(−o) ⊗ 𝒪(−x)⁻¹`, then `hP.surj M`, and `aj` is `choose` over
-`(T, g, x)`.  So the route is fixed; what follows is what it costs.
+**ROUTE — carried out, and every step of the pricing below held.**  The
+construction at one `(T, g)` is `M := 𝒪(−o_T) ⊗ 𝒪(−x)⁻¹`, then `hP.surj M`, and
+`aj` is `choose` over `(T, g, x)`.  What follows is what it cost, with the two
+things that were NOT foreseen marked.
 
-*Two genuinely NEW geometric obligations, both about `sectionIdeal`
-alone, and both small enough to dispatch on their own once there is a
-consumer for them:*
+*The two genuinely NEW geometric obligations are now the two named leaves
+immediately above*, `isInvertibleSheaf_sectionIdeal` (consumed at `Ix := 𝒪(−x)`
+and at `Io := 𝒪(−o_T)`) and `nonempty_modPullback_sectionIdeal` (consumed only
+by `aj_pre`, at `x` and at `o_T`).  They carry ALL the algebraic geometry of
+this leaf; everything else below is tensor calculus.
 
-* **`𝒪(−σ)` is invertible** for `σ` a section of a smooth relative curve
-  — the regular-immersion statement, i.e. a section of a smooth curve is
-  an effective Cartier divisor.  Nothing in the pin says so (there is no
-  divisor theory at `a3364fa`), so it has to come out of `sectionIdeal`'s
-  definition as a kernel.  Consumed for `Ix := 𝒪(−x)` and for
-  `Io := 𝒪(−o_T)`;
-* **`𝒪(−σ)` commutes with base change**,
-  `φ^* 𝒪(−x) ≅ 𝒪(−x_{T'})` for `φ = curveBaseChangeMap strX h hg`.  Flat
-  base change for that kernel.  Needed only by `aj_pre`.
+*The tensor bookkeeping.*  `aj_spec` is as priced: `hP.sheaf (aj x) ∼ Io ⊗ Jx`
+(with `Ix ⊗ Jx ≅ 𝒪` from `exists_modTensor_inv`), tensor on the right by `Ix`,
+then `(Io ⊗ Jx) ⊗ Ix ≅ Io ⊗ (Jx ⊗ Ix) ≅ Io ⊗ 𝒪 ≅ Io` — associativity, one
+braiding, the right unitor.  The two helpers it named are proven above as
+`relPicEquiv_of_iso` and `relPicEquiv_tensor_right`.
 
-*And the tensor bookkeeping, which is NOT free and is the reason this
-leaf was left atomic rather than cut a third time.*  `aj_spec` is cheap:
-`hP.sheaf (aj x) ∼ Io ⊗ Jx` (where `Ix ⊗ Jx ≅ 𝒪` from
-`exists_modTensor_inv`), tensor on the right by `Ix`, then
-`(Io ⊗ Jx) ⊗ Ix ≅ Io ⊗ (Jx ⊗ Ix) ≅ Io ⊗ 𝒪 ≅ Io` — associativity, one
-braiding (see the tensor-calculus header: the braiding is FREE at this
-pin), and the right unitor.  It needs two helpers that do not exist yet
-and are each a few lines: `RelPicEquiv` is preserved by an isomorphism,
-and `RelPicEquiv` is a congruence for `⊗` on the right (proof:
-`(L' ⊗ π^*N) ⊗ M ≅ (L' ⊗ M) ⊗ π^*N`, the middle-four interchange).
+*`aj_pre`*, and the audit's diagnosis was exactly right: the blocking piece was
+neither geometric obligation but **`IsInvertibleSheaf (modPullback h N)`**, now
+PROVEN above as `isInvertibleSheaf_modPullback` over the `morphismRestrict`
+chain it predicted, and consumed through `relPicEquiv_modPullback`.
 
-`aj_pre` is where the cost is, and the blocking piece is neither of the
-two geometric obligations above.  It needs `RelPicEquiv` to be preserved
-by `φ^*` — and *that* needs **`IsInvertibleSheaf (modPullback h N)`**,
-which is absent from this module.  (`RelPicEquiv` twists by `π^*N` with
-`N` invertible on the BASE, and pushing the relation through `φ^*`
-rewrites the twist as `π_{g'}^*(h^* N)` — via `pullback.lift_snd` for
-`φ ≫ π_g = π_{g'} ≫ h`, then `modPullbackCompIso` and
-`modPullbackCongrIso` — so the new twist is invertible only if pullback
-preserves invertibility.)  That statement is about the tensor-calculus
-section rather than about Picard theory, and `AmpleSheaf.lean` already
-carries the restriction/`morphismRestrict` machinery a proof of it would
-use.  **Whoever takes this leaf should state and prove it in the
-tensor-calculus section above, next to `isInvertibleSheaf_modTensorPic`,
-before touching `aj_pre`.**
+**TWO CORRECTIONS to the route, both found by carrying it out.**
 
-`aj_base` needs none of it: it is `hP.inj` applied to `𝒪(o − o) ∼ 𝒪`.
+1. *`aj_base` does need more than `hP.inj` applied to `𝒪(o − o) ∼ 𝒪`.*  The
+   audit said it "needs none of it".  In fact both `aj_base` and `aj_pre` are
+   proven the SAME way — `IsRelPicOf.eq_of_relPicEquiv_tensor` above — and that
+   lemma rests on `relPicEquiv_cancel_left`, hence on
+   `nonempty_iso_of_modTensorPic_left`, hence on `exists_modTensor_inv` and the
+   braiding.  The reason is that the two `Classical.choose`s being compared are
+   made at different `(T, g)`, so they can only be identified through the SPEC,
+   never directly; `hP.inj` alone gets you as far as `𝒪(x−o) ⊗ 𝒪(−x)`, and the
+   `𝒪(−x)` has to be cancelled.
+2. *No comparison of chosen inverses is needed.*  A first plan proved `aj_pre`
+   by showing `φ^* Jx ≅ J_{x'}` — uniqueness of tensor inverses.  That is true
+   but unnecessary: pushing the SPEC through `φ^*` and appealing to uniqueness
+   of the solution avoids the chosen inverses entirely, and is why `Jinv` never
+   appears outside `hspec`.
 
 One identity that looks like nothing and is not `rfl`:
 `RelPoint.pre h hg (relBasePoint o g) = relBasePoint o g'`.  Both sides
 are `⟨h ≫ (g ≫ o.1), _⟩` and `⟨(h ≫ g) ≫ o.1, _⟩`; it is `Subtype.ext`
-plus `Category.assoc`, and `aj_pre` cannot start without it.
+plus `Category.assoc`, and `aj_pre` cannot start without it.  It is proven
+above as `relBasePoint_pre`, with its `𝟙 S` companion `relBasePoint_id`, and
+the audit was right that `aj_pre` cannot start without it.
 
 **Pinned.**  The `∃` looks under-pinned — an adversary might try to
 replace `aj` by any other family of points — but `hP.inj` makes the point
 satisfying the first clause UNIQUE, so the clause determines `aj`
 pointwise and the other two clauses are then theorems about it rather
 than extra freedom.  This is the same argument that makes
-`IsRelPicOf.addPoint` well defined.
+`IsRelPicOf.addPoint` well defined, and it is now a theorem rather than a
+remark: `IsRelPicOf.eq_of_relPicEquiv_tensor`.
 
 **Not vacuous.**  At `g ≥ 1` the map is non-constant (already at `T = X`,
 `g = strX`, comparing the diagonal with the constant section `o_X`), and
@@ -1723,8 +2054,103 @@ theorem exists_abelJacobiPoint {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P �
         (∀ (T' T : Scheme.{u}) (h : T' ⟶ T) (g : T ⟶ S) (g' : T' ⟶ S) (hg : h ≫ g = g')
             (x : RelPoint strX g),
             aj T' g' (RelPoint.pre h hg x) = RelPoint.pre h hg (aj T g x)) ∧
-        aj S (𝟙 S) o = hP.zeroPoint (𝟙 S) :=
-  sorry
+        aj S (𝟙 S) o = hP.zeroPoint (𝟙 S) := by
+  -- `𝒪(−σ)` is invertible for every section, at every base
+  have hI : ∀ (T : Scheme.{u}) (g : T ⟶ S) (x : RelPoint strX g),
+      IsInvertibleSheaf (sectionIdeal (relSection x)) :=
+    fun T g x => isInvertibleSheaf_sectionIdeal _hproper _hsmooth x
+  -- a tensor inverse `Jx` of each `Ix := 𝒪(−x)`
+  choose Jinv hJinv hJ using fun (T : Scheme.{u}) (g : T ⟶ S) (x : RelPoint strX g) =>
+    exists_modTensor_inv (hI T g x)
+  -- the Abel–Jacobi point: the class of `𝒪(−o_T) ⊗ 𝒪(−x)⁻¹`, classified by `surj`
+  choose aj haj using fun (T : Scheme.{u}) (g : T ⟶ S) (x : RelPoint strX g) =>
+    hP.surj (T := T) (g := g)
+      (modTensor (sectionIdeal (relSection (relBasePoint o g))) (Jinv T g x))
+      (isInvertibleSheaf_modTensorPic (hI T g (relBasePoint o g)) (hJinv T g x))
+  -- `aj_spec`: `(Io ⊗ Jx) ⊗ Ix ≅ Io ⊗ (Jx ⊗ Ix) ≅ Io ⊗ 𝒪 ≅ Io`
+  have hspec : ∀ (T : Scheme.{u}) (g : T ⟶ S) (x : RelPoint strX g),
+      RelPicEquiv strX g (modTensor (hP.sheaf (aj T g x)) (sectionIdeal (relSection x)))
+        (sectionIdeal (relSection (relBasePoint o g))) := by
+    intro T g x
+    refine relPicEquiv_trans strX g
+      (relPicEquiv_tensor_right strX g _ (haj T g x)) (relPicEquiv_of_iso strX g ?_)
+    refine (nonempty_modTensor_assocPic _ (Jinv T g x) (sectionIdeal (relSection x))).some ≪≫ ?_
+    refine modTensorMapIso (Iso.refl _) ?_ ≪≫ modTensorUnitRightIso _
+    exact modTensorSymmIso (Jinv T g x) (sectionIdeal (relSection x)) ≪≫ (hJ T g x).some
+  refine ⟨aj, hspec, ?_, ?_⟩
+  · -- `aj_pre`: the pulled-back point solves the spec at `(T', g')`, and the
+    -- solution is unique
+    intro T' T h g g' hg x
+    refine hP.eq_of_relPicEquiv_tensor (hI T' g' (RelPoint.pre h hg x))
+      (hspec T' g' (RelPoint.pre h hg x)) ?_
+    obtain ⟨bcx⟩ := nonempty_modPullback_sectionIdeal _hproper _hsmooth h hg x
+    obtain ⟨bco⟩ := nonempty_modPullback_sectionIdeal _hproper _hsmooth h hg (relBasePoint o g)
+    rw [relBasePoint_pre o h hg] at bco
+    refine relPicEquiv_trans strX g'
+      (relPicEquiv_tensor_right strX g' _ (hP.sheaf_pre h hg (aj T g x))) ?_
+    refine relPicEquiv_trans strX g'
+      (relPicEquiv_of_iso strX g'
+        (modTensorMapIso (Iso.refl _) bcx.symm ≪≫
+          (nonempty_modPullback_modTensorPic (curveBaseChangeMap strX h hg)
+            (hP.sheaf (aj T g x)) (sectionIdeal (relSection x))).some.symm)) ?_
+    exact relPicEquiv_trans strX g'
+      (relPicEquiv_modPullback strX h hg (hspec T g x)) (relPicEquiv_of_iso strX g' bco)
+  · -- `aj_base`: the origin solves the spec at `(S, 𝟙 S)` for `x = o`
+    have hz : RelPicEquiv strX (𝟙 S)
+        (modTensor (hP.sheaf (hP.zeroPoint (𝟙 S))) (sectionIdeal (relSection o)))
+        (sectionIdeal (relSection (relBasePoint o (𝟙 S)))) := by
+      rw [relBasePoint_id o]
+      exact relPicEquiv_trans strX (𝟙 S)
+        (relPicEquiv_tensor_right strX (𝟙 S) _ (hP.sheaf_zeroPoint (𝟙 S)))
+        (relPicEquiv_of_iso strX (𝟙 S) (modTensorUnitLeftIso _))
+    exact hP.eq_of_relPicEquiv_tensor (hI S (𝟙 S) o) (hspec S (𝟙 S) o) hz
+
+/-- **`Pic` IS SMOOTH AND SEPARATED OVER `S`** (sorry leaf, cut 2026-07-29 out
+of `exists_relPicZeroSubgroup`) — the FIRST of BLR 9.4/4's three classical
+steps, and the only one of the three that is a statement about `Pic` alone.
+
+*Smoothness* is BLR 8.4/2: the relative Picard functor of a flat proper
+morphism is smooth over `S` as soon as `H²(X_s, 𝒪_{X_s})` vanishes on every
+fibre, because that group receives the obstructions to lifting a line bundle
+along a square-zero thickening.  On a relative CURVE it vanishes for dimension
+reasons, so no hypothesis beyond `_hsmooth` is needed — this is the one place in
+BLR 9.4/4 where "the fibres are curves" is used as a *cohomological* input
+rather than as a geometric one.
+
+*Separatedness* is BLR 8.2/1 (`Pic_{X/S}` is a separated `S`-scheme locally of
+finite type), which is where the section `o` and `_hpush` are spent: with
+`f_*𝒪 = 𝒪` universally, the sequence `0 ⟶ Pic T ⟶ Pic X_T ⟶ P(T)` is exact, so
+two points of `P` agreeing on a dense open of a valuation base agree, and the
+valuative criterion applies.  Without `_hpush` the functor is only a *presheaf*
+quotient and the criterion fails.
+
+**WHY THIS IS A CUT AND NOT A RELOCATION.**  It removes an obligation from
+`exists_relPicZeroSubgroup` that is *independent* of the two remaining ones: the
+identity component and the valuative criterion for `Pic⁰` both CONSUME
+smoothness and separatedness of `Pic` and neither contributes to proving them.
+The two are also both statements about `Pic` only, with no reference to `J`,
+`incl` or `aj` — which is exactly why they can be stated before the object that
+does not yet exist.
+
+**FAITHFULNESS.**  `_hP` is load-bearing and is the whole content of the
+statement: `pstr` is an arbitrary morphism until `IsRelPicOf` pins it, and `inj`
++ `surj` pin it up to unique `S`-isomorphism by Yoneda, so smoothness and
+separatedness transport.  Drop `_hP` and the statement is FALSE for the obvious
+reason — any non-smooth `pstr` is a counterexample, e.g. `Spec k[t]/(t²) ⟶ Spec k`.
+Drop `_hsmooth` and smoothness fails: for `X ⟶ S` of relative dimension `2`,
+`H²(X_s, 𝒪)` need not vanish and `Pic` is genuinely obstructed (a K3 over a
+non-reduced base is the standard witness).  Drop `_hpush` and separatedness
+fails as described above, already for `X = S ⊔ S`, the same witness the
+Zariski-gluing audit uses.
+
+**NOT VACUOUS.**  `IsRelPicOf strX pstr` is satisfiable — that is
+`exists_relPicFull`, PROVEN above — so this is not a statement about an empty
+class of `pstr`. -/
+theorem smooth_isSeparated_of_isRelPicOf {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
+    (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
+    (_hconn : GeometricallyConnected strX) (_hP : IsRelPicOf strX pstr)
+    (_hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX) :
+    Smooth pstr ∧ IsSeparated pstr := sorry
 
 /-- **`Pic⁰` IS AN ABELIAN SCHEME INSIDE `Pic`** (sorry leaf, cut
 2026-07-29) — BLR 9.4/4's geometric half, and the whole of what that
@@ -1736,7 +2162,9 @@ three classical steps:
 
 * `Pic ⟶ S` is **smooth and separated** — this is where `_hpush`
   (`f_*𝒪 = 𝒪` universally) and the vanishing of `H²` on a relative curve
-  are spent;
+  are spent.  **CUT OUT 2026-07-29** as `smooth_isSeparated_of_isRelPicOf`
+  above, and received here as the two hypotheses `_hPsmooth` and `_hPsep`;
+  the parent discharges them by that leaf, so nothing downstream changed;
 * the **identity component** `Pic⁰ ⊆ Pic` exists as an open subgroup
   scheme.  Genuinely absent from the pin: there is no identity-component
   construction for group schemes at `a3364fa`;
