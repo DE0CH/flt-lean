@@ -29769,13 +29769,95 @@ day, so it is recorded first — a reader who skips it will re-propose it:
   point that item 2 "is what item 1 already says".
 
 Everything else is unchanged, hypothesis for hypothesis and clause for clause.
-In particular EVERY audit recorded on `exists_hilbertAuxHeckeModuleData` below
-— §1 (the `M := H.M × H.M` refutation of the 2026-07-28 FREENESS/COMPARISON
-cut), §3 (why a freeness half and an Ihara half cannot be separated), the
-2026-07-30 FALSITY AUDIT (the inflated `ex`, repaired by `hexpin`), §5 and §5a
-— applies to THIS statement verbatim, because this statement carries the
-content those audits are about. Read them there before working here; they are
-not duplicated.
+
+# SECOND AUDIT (2026-07-30, third change of the day) — RE-RUN, NOT INHERITED
+
+This statement was CUT out of `exists_hilbertAuxHeckeModuleData` and then
+RESTATED (the CONTROL-MAP AUDIT above), both on 2026-07-30. CLAUDE.md's rule for
+exactly that history is that **the earlier audits are VOID, not inherited**: a
+leaf can carry an honest, correct falsity audit and still be false, because each
+audit certifies a statement that no longer exists. An earlier draft of this
+docstring asserted that §1, §3, the FALSITY AUDIT, §5 and §5a of
+`exists_hilbertAuxHeckeModuleData` "apply to THIS statement verbatim". That
+assertion is the forbidden move, and it is withdrawn. What follows is those five
+re-run against the COMPOSITE statement below. Read the originals for their
+arguments and their witnesses — they are not duplicated — but read this for
+whether they still bite.
+
+**The restatement is a strict WEAKENING, and that is checkable rather than
+plausible.** Write `P(toRuniv, diamond, M, …)` for the clause block. The old
+form was `∀ toRuniv, (halg ∧ hπ ∧ hρ) → ∃ (diamond, M, …), P`; the new form is
+`∃ (diamond, toRuniv, M, …), Function.Surjective toRuniv ∧ P`. Old ⟹ new: `h𝒟Q`
+applied to `𝒟.toAux hr` supplies one `toRuniv` meeting the specification, so the
+old form's conclusion instantiates, and `surjective_of_hilbertAux_classifying`
+supplies the extra conjunct. So nothing that was provable has become unprovable,
+and every audit below that CONCLUDED "true" still concludes "true". Only the
+audits that concluded "false" or "unvouched" need re-running against the new
+freedom, and they are the four re-run here.
+
+* **§1 (the `M := H.M × H.M` refutation) — STILL INAPPLICABLE, same reason.**
+  It refutes any statement asserting freeness OF the received `H.M`. `M` is
+  existentially quantified here, so the doubling witness has nothing to attack.
+  Unaffected by the `toRuniv` change, which touches no module clause.
+
+* **§3 (freeness and Ihara cannot be separated) — STILL BINDING, and now for a
+  second reason.** §3 says the two halves are coupled through the RING action.
+  They are also coupled through `toRuniv` itself now: `hprojsmul` intertwines
+  through `ψ ∘ toRuniv`, and `toRuniv` is chosen in this leaf. So an Ihara half
+  receiving `toRuniv` from a freeness half would receive it constrained only by
+  `Function.Surjective` and `hker` — strictly less than the old received form
+  gave it. The restatement makes §3 harder to circumvent, not easier.
+
+* **THE FALSITY AUDIT (the inflated `ex`) — REPAIR INTACT, checked at the
+  definition.** That witness needs `ex` to be a free variable its supplier may
+  inflate. `ex` is still a HYPOTHESIS here, still carrying
+  `hexpin : IsHilbertTaylorWilesExponents ℓ F Q ex`, which unfolds (line 28351)
+  to `∃ wOf, Injective wOf ∧ (∀ i, wOf i ∈ Q) ∧ ∀ i, ex i = padicValNat ℓ
+  (Nat.card (𝓞 F ⧸ (wOf i).asIdeal) - 1)`. With `hQcard : Q.card = q` that `wOf`
+  is a bijection onto `Q`, so `ex` is determined by `Q` up to a permutation of
+  `Fin q` and `ex' = ex + 1` is excluded. The `toRuniv` change does not touch
+  `ex`, `hexpin` or any clause mentioning either.
+
+* **§5 (the degenerate `diamond`) — STILL INAPPLICABLE.** It needs a RECEIVED
+  `diamond`. `diamond` remains the first existential here.
+
+* **§5a (the contrapositive: the leaf DECIDES `R_Q ≇ R_∅`) — STILL THE THING
+  THIS LEAF OWES, and the restatement neither discharges nor worsens it.** By
+  (★) the coordinate clause plus `hdsmul` forces `ker diamond = 𝔟_ex`, hence
+  `𝔫.map diamond ≠ ⊥` for `q, n ≥ 1`, hence `ker toRuniv ≠ ⊥`. That is genuine
+  automorphic input and it is what a prover must supply. It is VOUCHED because
+  every object it speaks about is produced here from the classical construction
+  (Fujiwara), not quantified over.
+
+**THE ONE CHECK THE RESTATEMENT GENUINELY NEEDED, because weakening can gut a
+leaf as surely as strengthening can falsify it: is the statement still
+non-vacuous — can a prover now cheat?** Three routes, all closed:
+
+* `M := 0`. Blocked: `Function.Surjective projM` onto `M0`, and
+  `hM0 : Nontrivial M0`. This is `one_le_of_surjective_of_nontrivial` above,
+  which forces `d ≥ 1`.
+* a degenerate `diamond` (`𝔫 ≤ ker diamond`, i.e. each `X i ↦ 0`). Blocked by
+  the leaf's OWN conclusion, not by a hypothesis: `hdsmul` plus the coordinate
+  clause give `ker diamond ≤ 𝔟_ex` at `d ≥ 1` (`ker_le_of_free_of_smul_eq`
+  above), and `X i ∈ 𝔫 \ 𝔟_ex` whenever `ex i ≥ 1`, which `hex` supplies from
+  `n ≥ 1`. This is the same computation §5a runs, used here in the opposite
+  direction.
+* a junk `toRuniv`. Blocked: it must be surjective onto `𝒟.R`, have kernel
+  exactly `𝔫.map diamond` for the `diamond` just pinned, and intertwine `projM`
+  onto the `𝒟T.R`-module `M0` that `hbot` pins to `(Λ ⧸ 𝔫)^d ≅ ℤ_ℓ^d`.
+
+**One consequence of the weakening is real and is REPORTED rather than
+repaired**, because it is a pre-existing interface decision of
+`exists_hilbertAuxHeckeModuleData` rather than anything this cut introduced: the
+`toRuniv` exported upward is no longer known to satisfy `halg`/`hπ`/`hρ`. It
+never was — that declaration has always exported `toRuniv` with only
+`Function.Surjective` and `hker`, and its consumer
+`exists_hilbertTaylorWilesAuxLevelData` builds a
+`Modularity.TaylorWilesLevelRaw`, whose fields ask for the kernel and the
+intertwining and never for compatibility with `π` or `ρ`. So no consumer
+regresses. Whether the patching argument above ought to demand that
+compatibility is a question about that interface, and it belongs to whoever owns
+it, not here.
 
 # WHAT THIS LEAF OWES
 
@@ -29907,6 +29989,17 @@ for clause, so `exists_hilbertTaylorWilesAuxLevelData`'s call is untouched.
 Everything from here to the end of this docstring is the audit history, which
 is about the arithmetic and therefore now about
 `exists_hilbertAuxHeckeDiamondModuleData` above.
+
+**AND IT IS HISTORY, NOT A CERTIFICATE. THE LIVE AUDIT IS THE `SECOND AUDIT`
+SECTION IN THAT DECLARATION'S OWN DOCSTRING.** §1, §3, the FALSITY AUDIT, §5 and
+§5a below were each written against a statement that has since been cut in two
+and then restated — twice on 2026-07-30 alone — and CLAUDE.md's rule for a leaf
+restated a second time is that the earlier audit is VOID, not inherited. All
+five were re-run there against the composite statement (verdicts: inapplicable,
+still binding, repair intact, inapplicable, still owed), together with the
+non-vacuity check the weakening made necessary. Read the sections below for
+their arguments and their witnesses; read the SECOND AUDIT for what is currently
+certified.
 
 # 2026-07-30 — `diamond` AND `toRuniv` ARE NOW PRODUCED HERE, NOT RECEIVED.
 # THAT IS WHAT MAKES THIS LEAF VOUCHED, AND §5a BELOW IS THE REASON
