@@ -73,7 +73,19 @@ them without a human. Do not re-wrap it.
 - `exists_framedGaloisRep_baseChange_traceSubring`
 - `exists_relations_le_smul_of_minimal_mvPowerSeries_presentation`
 - `exists_obstructionCocycle_smallExtension_deformation`
-- `finiteDimensional_h1_adZeroTwistRestricted`
+- ~~`finiteDimensional_h1_adZeroTwistRestricted`~~ (**PROVEN**; struck 2026-07-30.
+  It has a real proof at `theorem finiteDimensional_h1_adZeroTwistRestricted`
+  below — the `restrictedOpenNormalSubgroups` covering argument — and had been
+  listed here as open for at least two releases.  A stale entry in THIS list is
+  expensive out of proportion to its size: the list is what dispatch reads, so
+  an entry that names a proven declaration manufactures a phantom leaf and burns
+  a worker.  Regenerate against the compiler's `declaration uses 'sorry'` warning
+  set, never against this list.)
+- ~~`exists_injective_sha2_dual_sha1Twist_of_selfDual`~~ (never listed here, and
+  it should have been; **PROVEN 2026-07-30** over the pairing leaf below via
+  `merger`'s dimension-count route — see the release-18 NOTE and the STATUS
+  paragraph on that declaration for why joining the two rival decompositions was
+  the right resolution rather than retiring one)
 - `exists_poitouTatePairing_sha2_sha1Twist` (cut out 2026-07-29; THE
   Poitou–Tate input — a `k`-bilinear pairing `Ш²_S(ad⁰) × Ш¹_S(ad⁰(1)) → k`,
   nondegenerate on both sides.  It REPLACES the two leaves
@@ -19665,6 +19677,46 @@ here so that a successor budgets it.  Note `char k = ℓ` is not an extra
 hypothesis: it is forced by `Algebra ℤ_[ℓ] k` (`natCast_self_eq_zero` at the
 top of this module).
 
+**THE TRANSPORT, WRITTEN OUT — 2026-07-30, so that "budget it" is not the last
+word on it.**  The paragraph above says the step is standard and names the
+mathlib lemma; what it does not say is what the construction IS or what it costs
+here, and both were checked while working this section.  Given a `k`-BALANCED
+`𝔽_ℓ`-bilinear `T : A × B → 𝔽_ℓ`, nondegenerate on both sides, the `k`-valued
+form is defined pointwise by
+
+  `B x y := the unique z ∈ k with Tr_{k/𝔽_ℓ}(c * z) = T (c • x) y for all c ∈ k`,
+
+which exists and is unique because `c ↦ Tr(c * −)` is an isomorphism
+`k ≃ Hom_{𝔽_ℓ}(k, 𝔽_ℓ)` (`Algebra.traceForm_nondegenerate`, plus finiteness).
+All four verifications are one line each, and it is worth seeing that BOTH
+`k`-linearities come out, since only one of them is obvious:
+
+* in `x`: `Tr(c * B (a•x) y) = T (ca • x) y = Tr(ca * B x y)`, so `B (a•x) y = a * B x y`;
+* in `y`: `Tr(c * B x (a•y)) = T (c•x) (a•y) = T (ca•x) y = Tr(ca * B x y)` — this
+  is the ONLY place balancedness is used, and it is what makes the construction
+  work at all;
+* nondegeneracy transfers because `B x y = 0` for all `y` forces `T (c•x) y = 0`
+  for all `c, y`, and `c = 1` then gives `x = 0` from `T`'s left nondegeneracy;
+  symmetrically on the right.
+
+**The cost is NOT the mathematics, it is the instance surface, and that is the
+part worth budgeting.**  `Algebra (ZMod ℓ) k` is **not an instance** in our pin —
+`Mathlib/FieldTheory/Cardinality.lean:42` carries a literal `TODO` asking for it —
+so it must be introduced by hand as `letI := ZMod.algebra k ℓ` under a
+`CharP k ℓ` derived from `Algebra ℤ_[ℓ] k`, exactly as
+`Mathlib/FieldTheory/Finite/Extension.lean:49` and
+`NumberTheory/LegendreSymbol/AddCharacter.lean:223` do.  A `letI`-supplied
+`Algebra` does not propagate through this module's section variables, so stating
+the `𝔽_ℓ`-bilinear form of the pairing over `Ш²`/`Ш¹` ALSO needs
+`Module (ZMod ℓ) ↥(Sha2 …)` and the matching `IsScalarTower` to be arranged by
+hand on both subtypes.  That is why this leaf is still stated `k`-bilinearly and
+was NOT recut into "balanced pairing + transport" on 2026-07-30: the transport
+lemma itself is ~100 lines of ordinary linear algebra, and the instance
+plumbing to make it CONSUMABLE here is the larger and less predictable half.
+A successor building local class field theory should hoist that plumbing into
+the module where the `𝔽_ℓ`-valued pairing is first constructed, where the
+`letI` is local and cheap, rather than retrofitting it onto this section.
+
 **The `ad⁰* ≅ ad⁰(1)` identification is cheap ONLY because `ℓ` is odd.**
 `ad⁰* = Hom(ad⁰, μ_ℓ) = (ad⁰)^∨(1) ≅ ad⁰(1)` uses nondegeneracy of the trace
 form `(X, Y) ↦ tr(X Y)` on `sl₂`, which holds exactly when `char k ≠ 2`.
@@ -20013,12 +20065,26 @@ self-duality of `ad⁰` (the trace form, the section that follows).
 
 The node's proof takes `flt-lean-43`'s route, because that branch additionally
 DISCHARGES the `ad⁰* ≅ ad⁰(1)` identification, which merger's route only assumes.
-The three declarations above are therefore currently UNCONSUMED.  They are kept,
-not deleted, because they are a live alternative decomposition and may have an
-owner: `finrank_sha2_le_finrank_sha1Twist` and
-`exists_injective_sha2_dual_sha1Twist_of_selfDual` are the SAME arithmetic
-(Poitou–Tate), stated once as a dimension inequality and once as a map.  Whoever
-owns that arithmetic should close ONE of them and retire the other.
+The three declarations above were therefore UNCONSUMED, and this note ended:
+*"Whoever owns that arithmetic should close ONE of them and retire the other."*
+
+**RESOLVED 2026-07-30, and by JOINING the routes rather than retiring one.**
+Both routes rest on the SAME arithmetic leaf,
+`exists_poitouTatePairing_sha2_sha1Twist` above — `merger`'s explicitly (the two
+`obtain ⟨B, hleft, -⟩` lines above), `flt-lean-43`'s implicitly, since a
+self-dual coefficient module is an INPUT to Poitou–Tate and not a substitute for
+it.  So there was never a second piece of arithmetic to own.
+`exists_injective_sha2_dual_sha1Twist_of_selfDual` below is now PROVEN by
+running `merger`'s route inside `flt-lean-43`'s statement: the three
+declarations above are consumed there, the trace-form section below is still
+consumed by `exists_injective_sha2_dual_sha1Twist`, and the file's frontier goes
+`4 → 3` with the Poitou–Tate content stated in exactly one place.
+
+The general lesson, since this file has now hit it twice: when two branches
+decompose one node along different axes, the question to ask is not *which axis
+wins* but *whether the two axes bottom out at the same object*.  Here they did,
+and the answer was to name that object once (which the 2026-07-29 pairing cut
+did) and then let both axes consume it.
 -/
 
 /-! ### Self-duality of `ad⁰`: the trace form
@@ -20183,10 +20249,56 @@ lemma adZeroTraceForm_nondegenerate {x : AdZero k V} (hx : x ≠ 0) :
   exact htr
 
 /-- **Poitou–Tate duality: `Ш²_S(ad⁰)` embeds `k`-linearly into the DUAL of
-`Ш¹_S(ad⁰(1))`, GIVEN the self-duality of the coefficients** (sorry leaf; cut
-out 2026-07-27 as the DUALITY half of `rank_sha2_le_rank_sha1_twist` below, and
-RECUT 2026-07-28 to receive the trace pairing rather than manufacture it — see
-STATUS immediately below).
+`Ш¹_S(ad⁰(1))`, GIVEN the self-duality of the coefficients** (**PROVEN
+2026-07-30** over `exists_poitouTatePairing_sha2_sha1Twist` above, through the
+merger route `finiteDimensional_sha2` + `finrank_sha2_le_finrank_sha1Twist` +
+`exists_injective_toDual_of_finrank_le` — NOT a sorry node any more, see STATUS
+2026-07-30 immediately below.  Cut out 2026-07-27 as the DUALITY half of
+`rank_sha2_le_rank_sha1_twist` below, and RECUT 2026-07-28 to receive the trace
+pairing rather than manufacture it).
+
+**STATUS 2026-07-30 — THE TWO RIVAL DECOMPOSITIONS ARE NOW ONE, AND THIS NODE
+IS THE JOIN.**  The release-18 NOTE above recorded that two routes to
+`exists_injective_sha2_dual_sha1Twist` coexisted — `merger`'s dimension-count
+route and `flt-lean-43`'s self-duality route (this leaf) — that the node took
+the latter, and that the former's three declarations were consequently
+UNCONSUMED.  It ended: *"Whoever owns that arithmetic should close ONE of them
+and retire the other."*
+
+That is what happened here, and the merge is better than the retirement: BOTH
+routes rest on the single arithmetic leaf
+`exists_poitouTatePairing_sha2_sha1Twist` above, so this node is now PROVEN by
+running `merger`'s route inside `flt-lean-43`'s statement.  Consequences, all
+checked by the compiler:
+
+* the frontier of this file goes `4 → 3`; the Poitou–Tate arithmetic is stated
+  in exactly ONE place, as a pairing;
+* `finiteDimensional_sha2`, `finrank_sha2_le_finrank_sha1Twist` and
+  `exists_injective_toDual_of_finrank_le` are UNCONSUMED NO LONGER — they are
+  consumed here, so nothing in the section free-floats;
+* the trace-form section below stays consumed too, because
+  `exists_injective_sha2_dual_sha1Twist` still feeds it into this node's
+  `_B`/`_hBrep`/`_hBnd` slots.
+
+**THE THREE SELF-DUALITY HYPOTHESES ARE NOW VESTIGIAL, AND THEY ARE KEPT ON
+PURPOSE.**  The proof does not read `_B` (hence the underscores): the
+`ad⁰* ≅ ad⁰(1)` identification is consumed one level DOWN, inside the pairing
+leaf, which is where a Poitou–Tate prover meets it anyway.  Removing them from
+this signature would be a gratuitous churn of a consumer that is proven and of a
+trace-form section that is proven; and a future owner who prefers to prove this
+node DIRECTLY from a self-dual pairing (rather than through the pairing leaf)
+gets the hypotheses back for free.  If instead the pairing leaf is ever restated
+to RECEIVE `B` — which is the natural next move, since its own docstring says
+the `k`-balanced-to-`k`-bilinear transport is a real step — then these three
+become load-bearing again by pass-through.
+
+**WHAT THIS DID NOT DO.**  It proved no arithmetic.  The Poitou–Tate content and
+every gate below (the cup product, the local invariant map, local class field
+theory) are untouched and now sit entirely on
+`exists_poitouTatePairing_sha2_sha1Twist` above.  The audits below are the
+mathematical record of that content; they are kept here because they were
+written for this statement, but the WORK they describe belongs to the pairing
+leaf.
 
 **STATUS 2026-07-28 — WHAT THIS RECUT DID AND DID NOT DO.** The statement
 `exists_injective_sha2_dual_sha1Twist` below is UNCHANGED, still has the same
@@ -20358,14 +20470,21 @@ theorem exists_injective_sha2_dual_sha1Twist_of_selfDual
     (hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
     (hirr : ρbar.IsIrreducible)
-    (B : AdZero k V →ₗ[k] AdZero k V →ₗ[k] k)
-    (hBrep : ∀ (σ : Field.absoluteGaloisGroup ℚ) (x y : AdZero k V),
-      B (AdZero.rep ρbar σ x) (AdZero.rep ρbar σ y) = B x y)
-    (hBnd : ∀ x : AdZero k V, x ≠ 0 → ∃ y : AdZero k V, B x y ≠ 0) :
+    (_B : AdZero k V →ₗ[k] AdZero k V →ₗ[k] k)
+    (_hBrep : ∀ (σ : Field.absoluteGaloisGroup ℚ) (x y : AdZero k V),
+      _B (AdZero.rep ρbar σ x) (AdZero.rep ρbar σ y) = _B x y)
+    (_hBnd : ∀ x : AdZero k V, x ≠ 0 → ∃ y : AdZero k V, _B x y ≠ 0) :
     ∃ f : ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) →ₗ[k]
         Module.Dual k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)),
-      Function.Injective f :=
-  sorry
+      Function.Injective f := by
+  haveI : FiniteDimensional k
+      (continuousCohomology 1 (adZeroTwistRestricted ℓ ρbar (hardlyRamifiedPlaces ℓ))) :=
+    finiteDimensional_h1_adZeroTwistRestricted hℓOdd hdim hℓ5 h
+  haveI : FiniteDimensional k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) := inferInstance
+  haveI : FiniteDimensional k ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) :=
+    finiteDimensional_sha2 hℓOdd hdim hℓ5 h
+  exact exists_injective_toDual_of_finrank_le
+    (finrank_sha2_le_finrank_sha1Twist hℓOdd hdim hℓ5 h hirr)
 
 /-- **Poitou–Tate duality: `Ш²_S(ad⁰)` embeds `k`-linearly into the DUAL of
 `Ш¹_S(ad⁰(1))`** (**PROVEN 2026-07-28** over the leaf
