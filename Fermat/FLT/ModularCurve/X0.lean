@@ -65358,8 +65358,311 @@ structure IsNeronModelAtBase (R : Subring ℚ) {B : Scheme.{0}} (bstr : B ⟶ Sp
       ∃! uZ : Z ⟶ BZ, uZ ≫ bstrZ = zstr ∧
         u ≫ gen.universalPoint.1 = genZ.universalPoint.1 ≫ uZ
 
+/-! #### The base `↥R` is a PRINCIPAL IDEAL RING, and its generic point
+
+`exists_isNeronModelAtBase`'s docstring records that "a prover will have to
+say" that `↥R` is Dedekind, and that nothing in this file did.  These three
+declarations say it, in the strongest available form (`↥R` is a PID — a
+localization of `ℤ`, so either a field or Dedekind), and they are consumed
+by that theorem's assembly below, so the Néron-existence leaf no longer
+carries the arithmetic.
+
+The argument avoids `IsLocalization` entirely.  The only fact needed is
+that a subring of `ℚ` INVERTS THE DENOMINATOR of each of its elements
+(`inv_den_mem_of_mem_subring_rat`) — Bézout on `gcd(num, den) = 1` — after
+which `I ↦ I ∩ ℤ` is a bijection onto the ideals of `ℤ`, and `ℤ` is a PID. -/
+
+/-- **A subring of `ℚ` contains the inverse of the denominator of each of
+its elements** (PROVEN).
+
+`x = num/den` in lowest terms, so `u·num + v·den = 1` for integers `u, v`
+by Bézout; dividing by `den` gives `den⁻¹ = u·x + v`, and every integer
+lies in `R`.  This is the whole reason `R = ℤ[S⁻¹]` for `S` the primes it
+inverts, stated in the only form the ideal-theoretic argument below needs. -/
+theorem inv_den_mem_of_mem_subring_rat (R : Subring ℚ) {x : ℚ} (hx : x ∈ R) :
+    ((x.den : ℚ))⁻¹ ∈ R := by
+  have hcop : Int.gcd x.num (x.den : ℤ) = 1 := by
+    simpa [Int.gcd] using x.reduced
+  have hbez : x.num * Int.gcdA x.num (x.den : ℤ)
+      + (x.den : ℤ) * Int.gcdB x.num (x.den : ℤ) = 1 := by
+    have h := Int.gcd_eq_gcd_ab x.num (x.den : ℤ)
+    rw [hcop] at h
+    exact_mod_cast h.symm
+  have hden : ((x.den : ℚ)) ≠ 0 := by exact_mod_cast x.den_nz
+  have hnum : (x.num : ℚ) = x * (x.den : ℚ) := by
+    have h := Rat.num_div_den x
+    rw [div_eq_iff hden] at h
+    exact h
+  have h : (x * (Int.gcdA x.num (x.den : ℤ) : ℚ) + (Int.gcdB x.num (x.den : ℤ) : ℚ))
+      * (x.den : ℚ) = 1 := by
+    have hb : ((x.num * Int.gcdA x.num (x.den : ℤ)
+        + (x.den : ℤ) * Int.gcdB x.num (x.den : ℤ) : ℤ) : ℚ) = 1 := by
+      rw [hbez]; norm_num
+    push_cast at hb
+    rw [hnum] at hb
+    linear_combination hb
+  have hint : ∀ n : ℤ, ((n : ℚ)) ∈ R := fun n => by simp
+  rw [(eq_inv_of_mul_eq_one_left h).symm]
+  exact R.add_mem (R.mul_mem hx (hint _)) (hint _)
+
+/-- **The inverse of the denominator, as an element of the subring**
+(PROVEN) — the unit of `↥R` that `isPrincipalIdealRing_subring_rat` clears
+denominators with. -/
+noncomputable def subringRatDenInv (R : Subring ℚ) (y : ↥R) : ↥R :=
+  ⟨(((y : ℚ).den : ℚ))⁻¹, inv_den_mem_of_mem_subring_rat R y.2⟩
+
+/-- **EVERY SUBRING OF `ℚ` IS A PRINCIPAL IDEAL RING** (PROVEN).
+
+This is the arithmetic input of BLR 1.4/3, and it is what
+`exists_isNeronModelAtBase`'s docstring named as the missing "small,
+self-contained first step".  A PID is either a field (`R = ℚ`) or a
+Dedekind domain, which is the hypothesis BLR's existence theorem is stated
+over, so `exists_neronModelData` below can take it as given.
+
+The proof is the contraction `I ↦ Ideal.comap (Int.castRingHom ↥R) I`.
+Surjectivity of `ℤ`'s generator onto `I` is exactly
+`inv_den_mem_of_mem_subring_rat`: for `y ∈ I` the numerator
+`num(y) = y · den(y)` is again in `I`, hence divisible by the generator
+`d` of the contracted ideal, and `y = d · (k · den(y)⁻¹)` with
+`den(y)⁻¹ ∈ R`. -/
+theorem isPrincipalIdealRing_subring_rat (R : Subring ℚ) : IsPrincipalIdealRing ↥R := by
+  constructor
+  intro I
+  obtain ⟨d, hd⟩ := (IsPrincipalIdealRing.principal (Ideal.comap (Int.castRingHom ↥R) I)).principal
+  refine ⟨⟨(d : ↥R), le_antisymm ?_ ?_⟩⟩
+  · intro y hy
+    have hden : (((y : ℚ).den : ℚ)) ≠ 0 := by exact_mod_cast (y : ℚ).den_nz
+    have hnum : (((y : ℚ).num : ℚ)) = (y : ℚ) * ((y : ℚ).den : ℚ) := by
+      have h := Rat.num_div_den (y : ℚ)
+      rw [div_eq_iff hden] at h
+      exact h
+    have hnumR : (((y : ℚ).num : ℤ) : ↥R) = y * ((((y : ℚ).den : ℤ)) : ↥R) := by
+      apply Subtype.ext; push_cast; exact hnum
+    have hmemI : (((y : ℚ).num : ℤ) : ↥R) ∈ I := by
+      rw [hnumR]; exact I.mul_mem_right _ hy
+    have hmemJ : ((y : ℚ).num : ℤ) ∈ Ideal.comap (Int.castRingHom ↥R) I := hmemI
+    rw [hd] at hmemJ
+    obtain ⟨k, hk⟩ := Ideal.mem_span_singleton.1 hmemJ
+    refine Ideal.mem_span_singleton.2 ⟨(k : ↥R) * subringRatDenInv R y, ?_⟩
+    apply Subtype.ext
+    show (y : ℚ) = ((d : ↥R) : ℚ) * (((k : ↥R) : ℚ) * (((y : ℚ).den : ℚ))⁻¹)
+    have hkq : (((y : ℚ).num : ℚ)) = (d : ℚ) * (k : ℚ) := by
+      exact_mod_cast congrArg (Int.cast : ℤ → ℚ) hk
+    have hyd : (y : ℚ) * (((y : ℚ).den : ℚ)) = (d : ℚ) * (k : ℚ) := by rw [← hnum]; exact hkq
+    push_cast
+    field_simp
+    linear_combination hyd
+  · rw [Ideal.span_le, Set.singleton_subset_iff]
+    have hdJ : d ∈ Ideal.comap (Int.castRingHom ↥R) I := by
+      rw [hd]; exact Ideal.mem_span_singleton_self d
+    exact hdJ
+
+/-- **`Spec ↥R` is reduced** (PROVEN): a subring of a field is a domain,
+and `Spec` of a reduced ring is reduced.  Supplied to
+`isReduced_of_smooth` in the assembly below. -/
+theorem isReduced_specLoc (R : Subring ℚ) : IsReduced (SpecLoc R) := by
+  haveI : _root_.IsReduced ↥R := inferInstance
+  infer_instance
+
+/-- **`Spec ℚ ⟶ Spec ↥R` hits the GENERIC POINT, and only it** (PROVEN):
+`R.subtype` is injective, so the contraction of the zero ideal of `ℚ` is
+the zero ideal of `↥R`.
+
+Stated pointwise rather than as an equality of ranges because that is the
+form `isDominant_pullback_fst_generic` consumes, and because `PrimeSpectrum ℚ`
+is a singleton so the two are the same statement. -/
+theorem base_specLoc_generic (R : Subring ℚ) (p : PrimeSpectrum ℚ) :
+    (SpecLoc.generic R).base p = ⟨⊥, Ideal.isPrime_bot⟩ := by
+  apply PrimeSpectrum.ext
+  show Ideal.comap R.subtype p.asIdeal = ⊥
+  have hp : p.asIdeal = ⊥ := by
+    rcases eq_bot_or_eq_top p.asIdeal with h | h
+    · exact h
+    · exact absurd h p.isPrime.ne_top
+  rw [hp, ← RingHom.ker_eq_comap_bot]
+  exact (RingHom.ker_eq_bot_iff_eq_zero _).2 (fun x hx => Subtype.ext hx)
+
+/-- **THE GENERIC FIBRE OF A FLAT `R`-SCHEME IS DENSE IN IT** (PROVEN),
+in the form `Z ×_R ℚ ⟶ Z` is dominant.
+
+This is the statement `exists_abelianSchemeStruct_of_neronModelSpread`'s
+docstring records as "a THIRD statement this tree does not have", under the
+name *schematic density of the generic fibre*, and reports as absent from
+this project, from the mathlib pin and from `~/cs/FLT` on the strength of a
+grep for `schematicallyDense|SchematicallyDense`.  **That grep was a
+SPELLING search and the theorem is at the pin**: the topological half is
+`AlgebraicGeometry.Flat.generalizingMap`
+(`Mathlib/AlgebraicGeometry/Morphisms/UniversallyOpen.lean`), and the
+scheme-theoretic consequence that two morphisms agreeing on a dominant
+subscheme into a separated target are equal is
+`AlgebraicGeometry.ext_of_isDominant_of_isSeparated`
+(`Mathlib/AlgebraicGeometry/Morphisms/Separated.lean`) — which needs
+`IsDominant` and `IsReduced`, not a density predicate.  The audit's verdict
+is therefore CORRECTED here, and the three-way split it declared unwritable
+is written: see `eq_of_generic_of_isSeparated` and the two halves of
+`exists_abelianSchemeStruct_of_neronModelSpread` below.
+
+The argument: `↥R` is a domain, so `⊥` is its generic point and every
+prime is a specialization of it; `zstr` is flat, hence generalizing, so
+every `z : Z` has a generalization lying over `⊥`; and
+`Scheme.Pullback.range_fst` identifies the range of the projection with
+`zstr ⁻¹' Set.range (SpecLoc.generic R)`, which contains that
+generalization. -/
+theorem isDominant_pullback_fst_generic (R : Subring ℚ) {Z : Scheme.{0}}
+    (zstr : Z ⟶ SpecLoc R) [Flat zstr] :
+    IsDominant (Limits.pullback.fst zstr (SpecLoc.generic R)) := by
+  have hgen : (⟨⊥, Ideal.isPrime_bot⟩ : PrimeSpectrum ↥R)
+      ∈ Set.range (SpecLoc.generic R).base :=
+    ⟨⟨⊥, Ideal.isPrime_bot⟩, base_specLoc_generic R _⟩
+  constructor
+  show Dense (Set.range (Limits.pullback.fst zstr (SpecLoc.generic R)).base)
+  rw [Scheme.Pullback.range_fst]
+  intro z
+  have hspec : (⟨⊥, Ideal.isPrime_bot⟩ : PrimeSpectrum ↥R) ⤳ zstr.base z := by
+    rw [← PrimeSpectrum.le_iff_specializes]; exact bot_le
+  obtain ⟨z', hz', hz'eq⟩ := (Flat.generalizingMap zstr) hspec
+  have hmem : z' ∈ zstr.base ⁻¹' Set.range (SpecLoc.generic R).base := by
+    rw [Set.mem_preimage, hz'eq]; exact hgen
+  exact closure_mono (Set.singleton_subset_iff.2 hmem) (specializes_iff_mem_closure.1 hz')
+
+/-- **A fibre identification of the generic fibre is DOMINANT** (PROVEN) —
+the previous lemma transported along `IsFibreIdent.compareIso`.
+
+This is the form every consumer wants, because `extend` and the whole
+Néron block are phrased with `universalPoint` rather than with an explicit
+pullback. -/
+theorem isDominant_universalPoint_generic (R : Subring ℚ) {Z ZQ : Scheme.{0}}
+    {zstr : Z ⟶ SpecLoc R} {zqstr : ZQ ⟶ SpecQ} (hz : Flat zstr)
+    (genZ : IsFibreIdent (SpecLoc.generic R) zstr zqstr) :
+    IsDominant genZ.universalPoint.1 := by
+  haveI := hz
+  haveI : IsIso genZ.compareHom :=
+    ⟨genZ.compareInv, genZ.compareHom_compareInv, genZ.compareInv_compareHom⟩
+  haveI := isDominant_pullback_fst_generic R zstr
+  rw [← genZ.compareHom_fst]
+  infer_instance
+
+/-- **TWO `R`-MORPHISMS INTO A SEPARATED `R`-SCHEME AGREEING ON THE
+GENERIC FIBRE ARE EQUAL** (PROVEN) — the UNIQUENESS half of the Néron
+mapping property, isolated so that
+`exists_neronModelData` below need only produce an extension and not prove
+it unique.
+
+`IsReduced Z` is genuinely needed and is not decoration: without it the
+equalizer of `u` and `v` is a closed subscheme with the same points as `Z`
+but a smaller structure sheaf, and mathlib's
+`ext_of_isDominant_of_isSeparated` requires it for exactly that reason.
+For `Z` smooth over `↥R` it is supplied by `isReduced_of_smooth` below.
+
+This is the lemma whose absence
+`exists_abelianSchemeStruct_of_neronModelSpread`'s docstring priced as
+blocking the (a)/(b) split of that leaf; it is now available, and that
+split is taken. -/
+theorem eq_of_generic_of_isSeparated (R : Subring ℚ) {Z ZQ BZ : Scheme.{0}}
+    {zstr : Z ⟶ SpecLoc R} {zqstr : ZQ ⟶ SpecQ} {bstrZ : BZ ⟶ SpecLoc R}
+    (hz : Flat zstr) (hred : IsReduced Z) (hsep : IsSeparated bstrZ)
+    (genZ : IsFibreIdent (SpecLoc.generic R) zstr zqstr)
+    {u v : Z ⟶ BZ} (hu : u ≫ bstrZ = zstr) (hv : v ≫ bstrZ = zstr)
+    (huv : genZ.universalPoint.1 ≫ u = genZ.universalPoint.1 ≫ v) : u = v := by
+  haveI := hred
+  haveI := hsep
+  haveI := isDominant_universalPoint_generic R hz genZ
+  exact AlgebraicGeometry.ext_of_isDominant_of_isSeparated bstrZ (by rw [hu, hv])
+    genZ.universalPoint.1 huv
+
+/-- **A SCHEME SMOOTH OVER A REDUCED BASE IS REDUCED** (sorry leaf, new
+2026-07-30) — EGA IV 17.5.7 with 11.3.13: a smooth morphism is flat with
+geometrically regular fibres, hence regular, and a scheme regular over a
+reduced base is reduced (EGA IV 3.3.5, or: reducedness of the local rings
+descends from flatness plus reducedness of the fibres and of the base).
+
+TRUE and SHALLOW, and it is the only geometric input
+`eq_of_generic_of_isSeparated` still needs from outside mathlib.  Stated
+mathlib-facing — over an arbitrary base scheme `S`, with no mention of `ℚ`,
+`SpecLoc` or Néron models — because it is a general fact and because three
+other open leaves in the Néron block will want it.
+
+**ABSENT FROM THE PIN, checked by statement shape and not by name**: a
+grep of `Mathlib/AlgebraicGeometry/Properties.lean` for every `IsReduced`
+declaration returns transfers along open immersions, open covers, `Spec`,
+affineness and integrality, and no transfer along ANY morphism property;
+`Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean` mentions `IsReduced`
+once, as a HYPOTHESIS of
+`Scheme.Hom.genericPoint_mem_smoothLocus_of_perfectField`; and
+`Mathlib/RingTheory/Smooth/` and `Mathlib/RingTheory/Etale/` do not
+mention it at all.
+
+**WHERE THE HYPOTHESIS ENTERS.**  `hS` is load-bearing: **drop it and the
+statement is FALSE**, the witness being `S := Spec (ℚ[ε]/ε²)` and
+`zstr := 𝟙 S`, which is smooth (an isomorphism) with `Z = S` not reduced.
+So this is not "smoothness implies reduced"; it is reducedness descending
+along a smooth morphism.
+
+**NON-VACUITY.**  `S := Spec ℚ`, `Z := Spec ℚ`, `zstr := 𝟙`: smooth over a
+reduced base, and reduced. -/
+theorem isReduced_of_smooth {S Z : Scheme.{0}} (zstr : Z ⟶ S) (hz : Smooth zstr)
+    (hS : IsReduced S) : IsReduced Z :=
+  sorry
+
+/-- **NÉRON MODELS EXIST, existence half: an EXTENSION, not a UNIQUE one**
+(sorry leaf, new 2026-07-30, replacing the `∃!` form of
+`exists_isNeronModelAtBase`) — Bosch–Lütkebohmert–Raynaud, *Néron Models*,
+1.4/3.
+
+This is `exists_isNeronModelAtBase` with two things removed, and it is the
+whole of that theorem's geometry:
+
+* the mapping property asks only for `∃ uZ`, not `∃!`.  Uniqueness is now
+  a THEOREM (`eq_of_generic_of_isSeparated`), so a prover of BLR 1.4/3 no
+  longer has to establish it — which matters because BLR's construction
+  produces the extension and reads uniqueness off separatedness exactly as
+  this cut does;
+* the Dedekindness of `↥R` is a HYPOTHESIS here rather than an obligation.
+  `hR` is discharged at the single call site by
+  `isPrincipalIdealRing_subring_rat`, so the arithmetic that the previous
+  docstring flagged as a missing first step is done.
+
+**WHERE THE HYPOTHESES ENTER.**  `abB` is what makes `B` an abelian
+VARIETY, and it is what BLR's construction consumes — **drop it and the
+statement is FALSE**, since a Néron model in this sense need not exist for
+an arbitrary `ℚ`-scheme (BLR construct them only for smooth separated
+group schemes of finite type).  `hR` is what makes `Spec ↥R` a Dedekind
+base, which is the hypothesis of BLR 1.4/3; it is not decoration but it is
+also not a restriction, since it holds for every `R : Subring ℚ`.
+
+**FINITE TYPE is still deliberately absent** — see the discussion on
+`IsNeronModelAtBase`.  Nothing here changes that: the `∃!` that pinned the
+model up to unique isomorphism is now assembled from this leaf plus
+`eq_of_generic_of_isSeparated`, so the pinning argument recorded there
+still runs, and any inhabitant is still isomorphic to the genuine Néron
+model.
+
+**NON-VACUITY, in both directions.**  For `B` with good reduction take
+`BZ` the abelian scheme and its own mapping property (BLR 1.2/8), so the
+conclusion is inhabited and cannot be discharged by contradicting the
+hypotheses; and the conclusion is a bare existential, so it cannot be
+discharged vacuously either.
+
+**The check that refutes it**: an abelian variety `B/ℚ` and a subring
+`R ⊆ ℚ` admitting no smooth separated `R`-model in which every
+`ℚ`-morphism from the generic fibre of a smooth `R`-scheme extends — which
+would contradict BLR 1.4/3. -/
+theorem exists_neronModelData (R : Subring ℚ) (hR : IsPrincipalIdealRing ↥R)
+    {B : Scheme.{0}} {bstr : B ⟶ SpecQ} (abB : AbelianSchemeStruct bstr) :
+    ∃ (BZ : Scheme.{0}) (bstrZ : BZ ⟶ SpecLoc R)
+      (gen : IsFibreIdent (SpecLoc.generic R) bstrZ bstr),
+      Smooth bstrZ ∧ IsSeparated bstrZ ∧
+        ∀ {Z ZQ : Scheme.{0}} {zstr : Z ⟶ SpecLoc R} {zqstr : ZQ ⟶ SpecQ},
+          Smooth zstr → ∀ (genZ : IsFibreIdent (SpecLoc.generic R) zstr zqstr)
+            (u : ZQ ⟶ B), u ≫ bstr = zqstr →
+            ∃ uZ : Z ⟶ BZ, uZ ≫ bstrZ = zstr ∧
+              u ≫ gen.universalPoint.1 = genZ.universalPoint.1 ≫ uZ :=
+  sorry
+
 /-- **NÉRON MODELS EXIST: every abelian variety over `ℚ` has one over any
-subring `R ⊆ ℚ`** (sorry leaf, new 2026-07-28) —
+subring `R ⊆ ℚ`** (PROVEN by decomposition 2026-07-30, over
+`exists_neronModelData` and `eq_of_generic_of_isSeparated` above; a sorry
+leaf from 2026-07-28) —
 Bosch–Lütkebohmert–Raynaud, *Néron Models*, 1.4/3.
 
 TRUE, and this is the classical statement, not a weakening of it: BLR
@@ -65367,12 +65670,40 @@ TRUE, and this is the classical statement, not a weakening of it: BLR
 field of a DEDEKIND domain, and `↥R` is one — every subring of `ℚ` is
 `ℤ[1/S]` for `S` the set of primes it inverts, hence a localization of
 `ℤ`, hence a PID (or `ℚ` itself, where the statement is trivial with
-`BZ := B` and `gen := IsFibreIdent` of the identity).  **A prover will
-have to say that**: nothing in this file currently records
-`IsDedekindDomain ↥R` or `IsPrincipalIdealRing ↥R` for a general
-`R : Subring ℚ` — `IsReductionBase` supplies `ValuationRing ↥R`, which is
-the LOCAL case only.  Establishing it from `IsLocalization` of `ℤ` is a
-small, self-contained first step and is not part of the geometry.
+`BZ := B` and `gen := IsFibreIdent` of the identity).
+
+**That arithmetic is now SAID, and it is no longer part of any leaf.**  The
+previous version of this docstring recorded that nothing in this file
+established `IsDedekindDomain ↥R` or `IsPrincipalIdealRing ↥R` for a
+general `R : Subring ℚ` (`IsReductionBase` supplies `ValuationRing ↥R`,
+which is the LOCAL case only), and named "establishing it from
+`IsLocalization` of `ℤ`" as a small first step.
+`isPrincipalIdealRing_subring_rat` above PROVES it, and NOT through
+`IsLocalization`: the only input is that a subring of `ℚ` inverts the
+denominators of its own elements (Bézout on `gcd(num, den) = 1`), after
+which contraction along `ℤ → ↥R` carries ideals to ideals of `ℤ`.  It is
+discharged at the call site below, so `exists_neronModelData` receives
+Dedekindness as a hypothesis instead of owing it.
+
+## HOW THE ASSEMBLY RUNS (2026-07-30)
+
+The `∃!` of `IsNeronModelAtBase.extend` is split into its two halves, and
+only the first is still open:
+
+* `exists_neronModelData` — BLR 1.4/3 with the mapping property asking
+  only for an EXTENSION.  This is the geometry, and it is where BLR's
+  smoothening and birational-group-law machinery lives;
+* `eq_of_generic_of_isSeparated` — UNIQUENESS, PROVEN.  Two `R`-morphisms
+  into the separated `𝔅` agreeing on the generic fibre of the smooth
+  `R`-scheme `Z` are equal, because the generic fibre is dense in `Z`
+  (`isDominant_universalPoint_generic`, from flatness) and `Z` is reduced.
+
+Reducedness of `Z` is the one shallow obligation this creates
+(`isReduced_of_smooth`, a sorry leaf); it is supplied with
+`isReduced_specLoc`, which is PROVEN.  This is why the frontier count for
+this block RISES by two while both of its `∃!`-shaped leaves close: the
+`∃!` is disclosed as `∃` plus a density argument plus a reducedness
+transfer, and only the first of those three is deep.
 
 **WHERE THE HYPOTHESIS ENTERS.**  `abB` is what makes `B` an abelian
 VARIETY — proper, smooth, geometrically connected over `ℚ`, with a group
@@ -65398,11 +65729,185 @@ content of `exists_abelianSchemeStruct_of_neronModelSpread` below.
 `R ⊆ ℚ` admitting no smooth separated `R`-model with the unique-extension
 property — which would contradict BLR 1.4/3. -/
 theorem exists_isNeronModelAtBase (R : Subring ℚ) {B : Scheme.{0}} {bstr : B ⟶ SpecQ}
-    (abB : AbelianSchemeStruct bstr) : Nonempty (IsNeronModelAtBase R bstr) :=
+    (abB : AbelianSchemeStruct bstr) : Nonempty (IsNeronModelAtBase R bstr) := by
+  obtain ⟨BZ, bstrZ, gen, hsm, hsep, hex⟩ :=
+    exists_neronModelData R (isPrincipalIdealRing_subring_rat R) abB
+  refine ⟨{ BZ := BZ, bstrZ := bstrZ, smooth := hsm, separated := hsep, gen := gen,
+            extend := ?_ }⟩
+  intro Z ZQ zstr zqstr hz genZ u hu
+  obtain ⟨uZ, h1, h2⟩ := hex hz genZ u hu
+  haveI := hz
+  refine ⟨uZ, ⟨h1, h2⟩, ?_⟩
+  rintro uZ' ⟨h1', h2'⟩
+  exact eq_of_generic_of_isSeparated R inferInstance
+    (isReduced_of_smooth zstr hz (isReduced_specLoc R)) hsep genZ h1' h1 (h2'.symm.trans h2)
+
+/-! #### BLR 7.4/5 SPLIT along the (a)/(b) axis its own audit named
+
+`exists_abelianSchemeStruct_of_neronModelSpread`'s AXIS SEARCHED section
+(below) identified the right seam — (a) *`nB.bstrZ` is proper with
+geometrically connected fibres*, the scheme-theoretic image argument; (b)
+*the group law transports onto it*, Yoneda through `nB.extend` — and
+declined to cut it, on the ground that (b) would silently owe a third
+statement the tree did not have, namely schematic density of the generic
+fibre.  **That statement is now `eq_of_generic_of_isSeparated` above**, so
+the seam is cut here.
+
+**BOTH HALVES CARRY THE IDENTICAL HYPOTHESIS LIST, deliberately.**  The
+split is on the CONCLUSION, not on the hypotheses.  Trimming each half to
+the hypotheses its intended argument uses would be a claim about which
+hypothesis belongs to which half, and such claims have been wrong in this
+tree before — a hypothesis dropped from a half that turns out to need it
+makes that half FALSE, whereas an unused hypothesis only makes it weaker.
+So (a) carries `hgenJ` and `hadd`, which the image argument is not
+expected to consume, and (b) carries `hsurj`, which the transport is not
+expected to consume; a prover who finds a half provable without one of
+them should say so rather than contort the proof.
+
+Note that (a)'s conclusion is a CONSEQUENCE of the leaf's conclusion —
+`IsProper` and `GeometricallyConnected` are two of the fields of the
+`AbelianSchemeStruct` being asked for — so the two halves are not
+independent statements about different objects but a genuine
+"geometry first, group law second" ordering of one argument.  That is
+exactly what makes (b) writable: with properness and connectedness in
+hand, `AbelianSchemeStruct.ofMorphisms` needs only `m`, `e`, `i` and the
+group axioms, each produced or proved by `nB.extend` and its uniqueness. -/
+
+/-- **BLR 7.4/5, half (a): THE NÉRON MODEL IS PROPER WITH GEOMETRICALLY
+CONNECTED FIBRES** (sorry leaf, new 2026-07-30) —
+Bosch–Lütkebohmert–Raynaud, *Néron Models*, 7.4/5, the scheme-theoretic
+image argument alone.
+
+TRUE.  `spread` is proper, being a morphism from a proper `R`-scheme
+(`abZJ.proper`) to a separated one (`nB.separated`), so its
+scheme-theoretic image is CLOSED and proper over `R`.  That image is ALL
+of `nB.BZ`: `nB.smooth` makes `nB.bstrZ` flat, so the generic fibre `B` is
+dense in `nB.BZ` (`isDominant_pullback_fst_generic` above is exactly this
+density, for the model itself), and on the generic fibre the image is all
+of `B` by `hsurj` together with `hsq`.  Hence `nB.bstrZ` is proper.  Its
+fibres are then images of the geometrically connected fibres of `jstrZ`
+(`abZJ.connected`), hence geometrically connected.
+
+**WHERE THE HYPOTHESES ENTER.**  `hsurj` is what makes the image all of
+`B` — **drop it and the statement is FALSE**, since the ZERO homomorphism
+`J ⟶ B` satisfies every other hypothesis for every `B`, including ones
+with bad reduction, and then `spread` is the zero section whose image is a
+section of `nB.bstrZ` rather than all of it, and a `B` with bad reduction
+has a non-proper Néron model.  `abZJ` supplies both properties actually
+pushed forward, properness and connectedness of the source fibres;
+`nB.separated` is what makes the image closed; `nB.smooth` is
+`R`-flatness, i.e. density of the generic fibre; `hsq` and `hspread` are
+what tie `spread` to `π` at all.  `hgenJ`, `hadd`, `abJ` and `abB` are
+carried for the reason given in the section heading above and are not
+expected to be consumed here.
+
+**NON-VACUITY, in both directions.**  Take `J := B` with good reduction,
+`π := 𝟙`, `nB` its own Néron model (an abelian scheme is one, BLR 1.2/8),
+`genJ := nB.gen`, `spread := 𝟙`: every hypothesis holds, so the leaf
+cannot be discharged by contradicting them, and the conclusion holds too,
+witnessed by that abelian scheme's `proper` and `connected` fields.
+
+**The check that refutes it**: a surjective homomorphism `J ↠ B` of
+abelian varieties over `ℚ` with `J` of good reduction at `p` and `B` of
+bad reduction at `p`, for which the Néron model of `B` at `p` is not
+proper. -/
+theorem isProper_geometricallyConnected_of_neronModelSpread (R : Subring ℚ)
+    {J B JZ : Scheme.{0}} {jstr : J ⟶ SpecQ} {bstr : B ⟶ SpecQ} {jstrZ : JZ ⟶ SpecLoc R}
+    (abJ : AbelianSchemeStruct jstr) (abB : AbelianSchemeStruct bstr)
+    (abZJ : AbelianSchemeStruct jstrZ)
+    (genJ : IsFibreIdent (SpecLoc.generic R) jstrZ jstr)
+    (hgenJ : ∀ (T : Scheme.{0}) (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R)
+      (h : g ≫ SpecLoc.generic R = g₀) (x y : RelPoint jstr g),
+      genJ.toEquiv g g₀ h (abJ.add x y)
+        = abZJ.add (genJ.toEquiv g g₀ h x) (genJ.toEquiv g g₀ h y))
+    (π : J ⟶ B) (hπ : π ≫ bstr = jstr) (hadd : IsAdditiveOn abJ abB π hπ)
+    (hsurj : AlgebraicGeometry.Surjective π)
+    (nB : IsNeronModelAtBase R bstr)
+    (spread : JZ ⟶ nB.BZ) (hspread : spread ≫ nB.bstrZ = jstrZ)
+    (hsq : π ≫ nB.gen.universalPoint.1 = genJ.universalPoint.1 ≫ spread) :
+    IsProper nB.bstrZ ∧ GeometricallyConnected nB.bstrZ :=
+  sorry
+
+/-- **BLR 7.4/5, half (b): THE GROUP LAW TRANSPORTS ONTO A PROPER
+CONNECTED NÉRON MODEL** (sorry leaf, new 2026-07-30) — this is the
+writable half its own audit identified, now that
+`eq_of_generic_of_isSeparated` supplies the density statement the audit
+priced as missing.
+
+TRUE, and the route is written out rather than cited.  `nB.BZ` is smooth
+(`nB.smooth`), separated (`nB.separated`), proper (`hproper`) and has
+geometrically connected fibres (`hconn`), so the only thing to produce is
+the group law, and `AbelianSchemeStruct.ofMorphisms`
+(`Modularity/AbelianScheme.lean`) takes it as EQUATIONS OF MORPHISMS:
+
+* `m : nB.BZ ×_R nB.BZ ⟶ nB.BZ`, `e : Spec ↥R ⟶ nB.BZ` and
+  `i : nB.BZ ⟶ nB.BZ` each come from `nB.extend`, applied to the smooth
+  `R`-schemes `nB.BZ ×_R nB.BZ`, `Spec ↥R` and `nB.BZ` respectively — the
+  first is smooth because a fibre product of smooths over the base is
+  smooth (`Smooth` is stable under base change and composition at our
+  pin), and the generic datum handed to `extend` is `abB`'s own addition,
+  zero and negation read through `nB.gen`;
+* each group AXIOM — associativity, commutativity, the unit law, the
+  inverse law — is an equation between two `R`-morphisms out of a smooth
+  `R`-scheme (`nB.BZ ×_R nB.BZ ×_R nB.BZ` for associativity, `nB.BZ` for
+  the unit and inverse laws) which agree on the generic fibre because
+  `abB` satisfies the corresponding axiom.  `eq_of_generic_of_isSeparated`
+  turns "agree generically" into "are equal", using `nB.separated` and
+  reducedness of the smooth source.
+
+The final additivity clause is then `abB`'s addition read through
+`nB.gen`, which is how `m` was defined in the first place.
+
+**WHERE THE HYPOTHESES ENTER.**  `hproper` and `hconn` are what make the
+result an ABELIAN scheme rather than merely a smooth separated group
+scheme — **drop them and the statement is FALSE**, because the
+`AbelianSchemeStruct` being asked for has `proper` and `connected` as
+fields and a Néron model is in general neither.  `hadd` and `hgenJ` are
+what make `spread` a HOMOMORPHISM rather than a bare morphism; `abB` is
+the generic group law being transported and is consumed both in building
+`m` and in the conclusion.  `hsurj` is carried for the reason given in the
+section heading above and is not expected to be consumed here — if a
+prover needs it, the (a)/(b) seam is in the wrong place and that should be
+reported rather than worked around.
+
+**THE CONCLUSION IS PINNED TO `nB`'s MODEL, deliberately** — see the
+discussion on `exists_abelianSchemeStruct_of_neronModelSpread` below.  It
+is not `∃ BZ, …` but an `AbelianSchemeStruct` on `nB.bstrZ` itself,
+together with additivity of `nB.gen` for the GIVEN `abB`.
+
+**NON-VACUITY, in both directions.**  With `J := B` of good reduction,
+`π := 𝟙` and `nB` the abelian scheme itself, every hypothesis holds
+(including `hproper` and `hconn`, from that scheme's own fields) and the
+conclusion holds, witnessed by its own structure.  So neither half of this
+cut is vacuous, and in particular adding `hproper`/`hconn` has not
+over-constrained the hypotheses into emptiness. -/
+theorem exists_abelianSchemeStruct_of_isProper_of_neronModelSpread (R : Subring ℚ)
+    {J B JZ : Scheme.{0}} {jstr : J ⟶ SpecQ} {bstr : B ⟶ SpecQ} {jstrZ : JZ ⟶ SpecLoc R}
+    (abJ : AbelianSchemeStruct jstr) (abB : AbelianSchemeStruct bstr)
+    (abZJ : AbelianSchemeStruct jstrZ)
+    (genJ : IsFibreIdent (SpecLoc.generic R) jstrZ jstr)
+    (hgenJ : ∀ (T : Scheme.{0}) (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R)
+      (h : g ≫ SpecLoc.generic R = g₀) (x y : RelPoint jstr g),
+      genJ.toEquiv g g₀ h (abJ.add x y)
+        = abZJ.add (genJ.toEquiv g g₀ h x) (genJ.toEquiv g g₀ h y))
+    (π : J ⟶ B) (hπ : π ≫ bstr = jstr) (hadd : IsAdditiveOn abJ abB π hπ)
+    (hsurj : AlgebraicGeometry.Surjective π)
+    (nB : IsNeronModelAtBase R bstr)
+    (spread : JZ ⟶ nB.BZ) (hspread : spread ≫ nB.bstrZ = jstrZ)
+    (hsq : π ≫ nB.gen.universalPoint.1 = genJ.universalPoint.1 ≫ spread)
+    (hproper : IsProper nB.bstrZ) (hconn : GeometricallyConnected nB.bstrZ) :
+    ∃ abZ : AbelianSchemeStruct nB.bstrZ,
+      ∀ (T : Scheme.{0}) (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R)
+        (h : g ≫ SpecLoc.generic R = g₀) (x y : RelPoint bstr g),
+        nB.gen.toEquiv g g₀ h (abB.add x y)
+          = abZ.add (nB.gen.toEquiv g g₀ h x) (nB.gen.toEquiv g g₀ h y) :=
   sorry
 
 /-- **A NÉRON MODEL DOMINATED BY AN ABELIAN SCHEME IS AN ABELIAN SCHEME**
-(sorry leaf, new 2026-07-28) — Bosch–Lütkebohmert–Raynaud, *Néron
+(PROVEN by decomposition 2026-07-30, over
+`isProper_geometricallyConnected_of_neronModelSpread` and
+`exists_abelianSchemeStruct_of_isProper_of_neronModelSpread` above; a sorry
+leaf from 2026-07-28) — Bosch–Lütkebohmert–Raynaud, *Néron
 Models*, 7.4/5.  This is the Néron–Ogg–Šafarevič content proper, with the
 existence of the Néron model already supplied and the mapping property
 already applied.
@@ -65437,7 +65942,32 @@ the two properties actually pushed forward; `nB.separated` is what makes
 the image closed; `nB.smooth` is `R`-flatness, i.e. schematic density of
 the generic fibre. `abJ` is consumed through `hgenJ` and `hadd`.
 
-## AXIS SEARCHED — the further split, and why it is NOT taken here
+## AXIS SEARCHED — the further split, WHICH IS NOW TAKEN (2026-07-30)
+
+**The verdict recorded below has been overturned, and by its own named
+check.**  The section identified the seam correctly and declined to cut it
+only because (b) would owe an unstated third statement, *two `R`-morphisms
+from an `R`-flat scheme to a separated `R`-scheme agreeing on generic
+fibres are equal*.  The check it prescribed and ran was
+`grep -rn "schematicallyDense\|SchematicallyDense"`, which returned zero
+hits in all three trees — **a SPELLING search**.  The theorem is at the
+pin, and under other names: `AlgebraicGeometry.Flat.generalizingMap`
+(`Morphisms/UniversallyOpen.lean`) for the topology, and
+`AlgebraicGeometry.ext_of_isDominant_of_isSeparated`
+(`Morphisms/Separated.lean`) for the scheme-theoretic consequence, which
+is phrased with `IsDominant` and `IsReduced` rather than with any density
+predicate.  Assembled over `Spec ↥R` these give
+`eq_of_generic_of_isSeparated` above.  So the three-way split
+(a)/(b)/density is writable, is — as this section itself said — strictly
+better than the two-way one, and is what
+`isProper_geometricallyConnected_of_neronModelSpread` and
+`exists_abelianSchemeStruct_of_isProper_of_neronModelSpread` above now
+are.
+
+The reasoning of the section is kept verbatim below because everything in
+it except that grep is still exactly right, including its closing
+observation that `nB.extend`'s `∃!` already gives the density statement for
+morphisms into `𝔅` — which is now redundant but was correct.
 
 The residue divides along literature lines into (a) *`nB.bstrZ` is proper
 with geometrically connected fibres* and (b) *an `AbelianSchemeStruct`
@@ -65502,7 +66032,11 @@ theorem exists_abelianSchemeStruct_of_neronModelSpread (R : Subring ℚ)
         (h : g ≫ SpecLoc.generic R = g₀) (x y : RelPoint bstr g),
         nB.gen.toEquiv g g₀ h (abB.add x y)
           = abZ.add (nB.gen.toEquiv g g₀ h x) (nB.gen.toEquiv g g₀ h y) :=
-  sorry
+ by
+  obtain ⟨hproper, hconn⟩ := isProper_geometricallyConnected_of_neronModelSpread R abJ abB abZJ
+    genJ hgenJ π hπ hadd hsurj nB spread hspread hsq
+  exact exists_abelianSchemeStruct_of_isProper_of_neronModelSpread R abJ abB abZJ genJ hgenJ π hπ
+    hadd hsurj nB spread hspread hsq hproper hconn
 
 /-- **NÉRON–OGG–ŠAFAREVIČ, quotient form: GOOD REDUCTION DESCENDS ALONG A
 SURJECTIVE HOMOMORPHISM of abelian varieties** (PROVEN by decomposition
