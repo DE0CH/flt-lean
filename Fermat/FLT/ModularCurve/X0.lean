@@ -60779,6 +60779,443 @@ theorem exists_isogenyComplement_of_surjective_isAdditiveOn {J A : Scheme.{0}}
   have hbu : (b ≫ u) ≫ astr = bstr := by rw [Category.assoc, hu, hb]
   exact isFinite_of_isFinite_kerHom (hv := hbu) (hbadd.comp (hvw := hbu) hadd) hbker
 
+/-! #### The kernel of a finite homomorphism as a FINITE GROUP SCHEME, and
+Cartier's theorem applied to it
+
+New 2026-07-30, and it discharges the characteristic-zero half of
+`exists_exponent_kernel_of_isFinite_isAdditiveOn` below.
+
+**TWO CLAIMS ON THAT LEAF WERE STALE, AND BOTH COST IT WORK.**
+
+* Its docstring ended "Cartier's theorem that a finite group scheme in
+  characteristic `0` is étale … Absent from mathlib at this pin."  True of
+  mathlib, FALSE of this project: `CartierTheorem.isReduced_of_charZero`
+  (`Fermat/FLT/GroupScheme/Cartier.lean`) is **PROVEN and sorry-free**, and
+  this module has `public import`ed it since the day it was written — the
+  import comment at the top of the file says so, and
+  `CyclicSubgroupOfOrder.isReduced_geomFibre_of_specQBase` above already
+  consumes it.
+* "the kernel as a finite group scheme (the scheme itself is already
+  writable)" understated what was free: `ker φ ⟶ Spec ℚ` is
+  `Limits.pullback.snd φ abA.zeroSection`, and its finiteness is a mathlib
+  INSTANCE (`AlgebraicGeometry.IsFinite`, stable under base change) given
+  `IsFinite φ` — nothing to prove.
+
+So what this block does is the DICTIONARY, exactly as
+`CyclicSubgroupOfOrder.exists_hopfAlgebra_geomFibre` above does it for the
+fibres of a cyclic subgroup scheme, and by the same route: a functorial
+group structure on the `R`-points (`kerPtsFunctor`), then
+`Fermat.exists_hopfAlgebra_of_ptsFunctor`
+(`Fermat/FLT/GroupScheme/AffineGroupHopf.lean`), which produces the Hopf
+algebra out of `GrpObj.ofRepresentableBy` plus `Γ ⊣ Spec`.  It is simpler
+here than there: the `R`-points of `ker φ` are relative points of `B`
+killed by `φ`, and the bijection with `Hom(Spec R, ker φ)` is the universal
+property of the pullback outright — no monomorphism hypothesis is needed,
+where the cyclic-subgroup version had to spend `c.isClosedImmersion`.
+
+The block ends at `isReduced_kerHom`: **the kernel of a finite homomorphism
+of abelian schemes over `ℚ` is a REDUCED scheme.**  Equivalently `ker φ` is
+finite étale over `ℚ`, which is the whole content of "characteristic zero"
+for the exponent leaf.  What that leaf still needs is recorded on
+`exists_mulByNat_comp_kerHom_eq_zero`, and it is now Lagrange plus a descent
+statement, with no Cartier and no Hopf algebra left in it. -/
+
+section KerHomHopf
+
+open CategoryTheory.Limits
+
+/-- **`−0 = 0`** in the group of relative points — the group axioms of
+`AbelianSchemeStruct` read through `addCommGroup`.  Needed because the
+closure of `ker φ` under inversion is checked against `abA.zero`, which is
+not syntactically the `0` of the instance. -/
+theorem AbelianSchemeStruct.neg_zero' {X S : Scheme.{0}} {f : X ⟶ S}
+    (ab : AbelianSchemeStruct f) {T : Scheme.{0}} (g : T ⟶ S) :
+    ab.neg (ab.zero g) = ab.zero g := by
+  letI := ab.addCommGroup g
+  show -(0 : RelPoint f g) = (0 : RelPoint f g)
+  exact neg_zero
+
+/-- **A homomorphism carries negatives to negatives** — `map_neg` for the
+`AddMonoidHom` that `IsAdditiveOn` is, obtained from `post_sub` at `0` so
+that the `isDefEq` that `post_sub`'s `maxHeartbeats` bump pays for is paid
+only once. -/
+theorem IsAdditiveOn.post_neg {X Y S : Scheme.{0}} {xf : X ⟶ S} {yf : Y ⟶ S}
+    {abX : AbelianSchemeStruct xf} {abY : AbelianSchemeStruct yf} {u : X ⟶ Y}
+    {hu : u ≫ yf = xf} (h : IsAdditiveOn abX abY u hu)
+    {T : Scheme.{0}} {g : T ⟶ S} (x : RelPoint xf g) :
+    RelPoint.post u hu (abX.neg x) = abY.neg (RelPoint.post u hu x) := by
+  letI := abX.addCommGroup g
+  letI := abY.addCommGroup g
+  have h1 := h.post_sub (abX.zero g) x
+  rw [h.post_zero] at h1
+  have h2 : (abX.zero g : RelPoint xf g) - x = abX.neg x := by
+    show (0 : RelPoint xf g) - x = -x
+    rw [zero_sub]
+  rw [h2] at h1
+  rw [h1]
+  show (0 : RelPoint yf g) - RelPoint.post u hu x = -(RelPoint.post u hu x)
+  rw [zero_sub]
+
+variable {B A : Scheme.{0}} {bstr : B ⟶ SpecQ} {astr : A ⟶ SpecQ}
+
+/-- **THE YONEDA REDUCTION** (PROVEN 2026-07-30): if `[m]` kills the
+TAUTOLOGICAL point of `ker φ` — a single equation of MORPHISMS
+`ker φ ⟶ B` — then it kills every relative point in the kernel, at every
+test scheme and every base point.
+
+This is what turns `exists_exponent_kernel_of_isFinite_isAdditiveOn` into a
+statement about one morphism.  The point `x` factors through
+`ker φ = B ×_{φ, A, e} Spec ℚ` by the universal property of the pullback,
+and the two projections of that factorisation are the whole proof. -/
+theorem post_mulByNat_eq_zero_of_comp_kerHomι
+    (abB : AbelianSchemeStruct bstr) (abA : AbelianSchemeStruct astr)
+    (φ : B ⟶ A) (hφ : φ ≫ astr = bstr) (m : ℕ)
+    (hm : pullback.fst φ abA.zeroSection ≫ abB.mulByNat m
+        = pullback.snd φ abA.zeroSection ≫ abB.zeroSection)
+    {T : Scheme.{0}} {g : T ⟶ SpecQ} (x : RelPoint bstr g)
+    (hx : RelPoint.post φ hφ x = abA.zero g) :
+    RelPoint.post (abB.mulByNat m) (abB.mulByNat_comp m) x = abB.zero g := by
+  have hxv : x.1 ≫ φ = g ≫ abA.zeroSection := by
+    have h := congrArg Subtype.val hx
+    rw [abA.zero_val] at h
+    exact h
+  refine Subtype.ext ?_
+  rw [abB.zero_val]
+  show x.1 ≫ abB.mulByNat m = g ≫ abB.zeroSection
+  have h1 : pullback.lift x.1 g hxv ≫ pullback.fst φ abA.zeroSection = x.1 :=
+    pullback.lift_fst _ _ _
+  have h2 : pullback.lift x.1 g hxv ≫ pullback.snd φ abA.zeroSection = g :=
+    pullback.lift_snd _ _ _
+  calc x.1 ≫ abB.mulByNat m
+      = (pullback.lift x.1 g hxv ≫ pullback.fst φ abA.zeroSection) ≫ abB.mulByNat m := by
+        rw [h1]
+    _ = pullback.lift x.1 g hxv ≫ (pullback.fst φ abA.zeroSection ≫ abB.mulByNat m) :=
+        Category.assoc _ _ _
+    _ = pullback.lift x.1 g hxv ≫ (pullback.snd φ abA.zeroSection ≫ abB.zeroSection) := by
+        rw [hm]
+    _ = (pullback.lift x.1 g hxv ≫ pullback.snd φ abA.zeroSection) ≫ abB.zeroSection :=
+        (Category.assoc _ _ _).symm
+    _ = g ≫ abB.zeroSection := by rw [h2]
+
+/-- **THE CONVERSE OF THE YONEDA REDUCTION** (PROVEN 2026-07-30) — the
+morphism equation is exactly the `∀ T, g` hypothesis read at the
+tautological point of `ker φ`, so the cut below LOSES NOTHING: the new leaf
+is equivalent to the old statement, not weaker.  Recorded because a cut that
+merely *implies* its parent is a place where a consumer can silently be left
+unprovable. -/
+theorem comp_kerHomι_of_post_mulByNat_eq_zero
+    (abB : AbelianSchemeStruct bstr) (abA : AbelianSchemeStruct astr)
+    (φ : B ⟶ A) (hφ : φ ≫ astr = bstr) (m : ℕ)
+    (hker : ∀ {T : Scheme.{0}} {g : T ⟶ SpecQ} (x : RelPoint bstr g),
+      RelPoint.post φ hφ x = abA.zero g →
+        RelPoint.post (abB.mulByNat m) (abB.mulByNat_comp m) x = abB.zero g) :
+    pullback.fst φ abA.zeroSection ≫ abB.mulByNat m
+      = pullback.snd φ abA.zeroSection ≫ abB.zeroSection := by
+  have hbase : pullback.fst φ abA.zeroSection ≫ bstr = pullback.snd φ abA.zeroSection :=
+    kerHomι_comp_structure abA φ hφ
+  have hzero : RelPoint.post φ hφ (⟨pullback.fst φ abA.zeroSection, hbase⟩ :
+      RelPoint bstr (pullback.snd φ abA.zeroSection)) = abA.zero _ := by
+    refine Subtype.ext ?_
+    rw [abA.zero_val]
+    exact pullback.condition
+  have h := congrArg Subtype.val (hker _ hzero)
+  rw [abB.zero_val] at h
+  exact h
+
+noncomputable section
+
+variable (abB : AbelianSchemeStruct bstr) (abA : AbelianSchemeStruct astr)
+  (φ : B ⟶ A) (hφ : φ ≫ astr = bstr)
+
+/-- **The relative point of `B` underlying an `R`-point of `ker φ`.**  This
+is the Yoneda direction that `AbelianSchemeStruct.ofMorphisms` does not
+provide, in the form the kernel needs: compose with the first projection. -/
+def kerPt (R : CommAlgCat.{0} ℚ)
+    (v : SchemePts (pullback.snd φ abA.zeroSection) R) :
+    RelPoint bstr (Spec.map (CommRingCat.ofHom (algebraMap ℚ R))) :=
+  ⟨v.1 ≫ pullback.fst φ abA.zeroSection, by
+    rw [Category.assoc, kerHomι_comp_structure abA φ hφ]
+    exact v.2⟩
+
+/-- An `R`-point of `ker φ` is killed by `φ` — this is `pullback.condition`. -/
+theorem kerPt_post (R : CommAlgCat.{0} ℚ)
+    (v : SchemePts (pullback.snd φ abA.zeroSection) R) :
+    RelPoint.post φ hφ (kerPt abA φ hφ R v)
+      = abA.zero (Spec.map (CommRingCat.ofHom (algebraMap ℚ (R : Type)))) := by
+  refine Subtype.ext ?_
+  rw [abA.zero_val]
+  show (v.1 ≫ pullback.fst φ abA.zeroSection) ≫ φ = _
+  rw [Category.assoc, pullback.condition, ← Category.assoc, v.2]
+
+/-- `kerPt` is injective — `pullback.hom_ext`, with the second component
+supplied by the two points lying over the same base.  No monomorphism
+hypothesis is needed. -/
+theorem kerPt_injective (R : CommAlgCat.{0} ℚ) :
+    Function.Injective (kerPt abA φ hφ R) := by
+  intro a b hab
+  refine Subtype.ext (pullback.hom_ext ?_ ?_)
+  · exact congrArg Subtype.val hab
+  · exact a.2.trans b.2.symm
+
+/-- **Conversely, a relative point of `B` killed by `φ` is an `R`-point of
+`ker φ`** — the universal property of the pullback. -/
+def kerLift (R : CommAlgCat.{0} ℚ)
+    (x : RelPoint bstr (Spec.map (CommRingCat.ofHom (algebraMap ℚ R))))
+    (hx : RelPoint.post φ hφ x
+      = abA.zero (Spec.map (CommRingCat.ofHom (algebraMap ℚ (R : Type))))) :
+    SchemePts (pullback.snd φ abA.zeroSection) R :=
+  ⟨pullback.lift x.1 (Spec.map (CommRingCat.ofHom (algebraMap ℚ R))) (by
+      have h := congrArg Subtype.val hx
+      rw [abA.zero_val] at h
+      exact h),
+    pullback.lift_snd _ _ _⟩
+
+theorem kerPt_kerLift (R : CommAlgCat.{0} ℚ)
+    (x : RelPoint bstr (Spec.map (CommRingCat.ofHom (algebraMap ℚ R))))
+    (hx : RelPoint.post φ hφ x
+      = abA.zero (Spec.map (CommRingCat.ofHom (algebraMap ℚ (R : Type))))) :
+    kerPt abA φ hφ R (kerLift abA φ hφ R x hx) = x :=
+  Subtype.ext (pullback.lift_fst _ _ _)
+
+/-- The `R`-points of `ker φ` are closed under addition. -/
+theorem kerPt_add_mem (hadd : IsAdditiveOn abB abA φ hφ) (R : CommAlgCat.{0} ℚ)
+    (a b : SchemePts (pullback.snd φ abA.zeroSection) R) :
+    RelPoint.post φ hφ (abB.add (kerPt abA φ hφ R a) (kerPt abA φ hφ R b))
+      = abA.zero (Spec.map (CommRingCat.ofHom (algebraMap ℚ (R : Type)))) := by
+  rw [hadd, kerPt_post, kerPt_post]
+  exact abA.zero_add _
+
+/-- The `R`-points of `ker φ` are closed under inversion. -/
+theorem kerPt_neg_mem (hadd : IsAdditiveOn abB abA φ hφ) (R : CommAlgCat.{0} ℚ)
+    (a : SchemePts (pullback.snd φ abA.zeroSection) R) :
+    RelPoint.post φ hφ (abB.neg (kerPt abA φ hφ R a))
+      = abA.zero (Spec.map (CommRingCat.ofHom (algebraMap ℚ (R : Type)))) := by
+  rw [hadd.post_neg, kerPt_post]
+  exact abA.neg_zero' _
+
+/-- The group law on the `R`-points of `ker φ`.  Written multiplicatively
+because `GrpCat` is. -/
+def kerMul (hadd : IsAdditiveOn abB abA φ hφ) (R : CommAlgCat.{0} ℚ)
+    (a b : SchemePts (pullback.snd φ abA.zeroSection) R) :
+    SchemePts (pullback.snd φ abA.zeroSection) R :=
+  kerLift abA φ hφ R _ (kerPt_add_mem abB abA φ hφ hadd R a b)
+
+/-- The neutral `R`-point of `ker φ` — `hadd.post_zero`. -/
+def kerOne (hadd : IsAdditiveOn abB abA φ hφ) (R : CommAlgCat.{0} ℚ) :
+    SchemePts (pullback.snd φ abA.zeroSection) R :=
+  kerLift abA φ hφ R _ (hadd.post_zero (Spec.map (CommRingCat.ofHom (algebraMap ℚ (R : Type)))))
+
+/-- Inversion on the `R`-points of `ker φ`. -/
+def kerInv (hadd : IsAdditiveOn abB abA φ hφ) (R : CommAlgCat.{0} ℚ)
+    (a : SchemePts (pullback.snd φ abA.zeroSection) R) :
+    SchemePts (pullback.snd φ abA.zeroSection) R :=
+  kerLift abA φ hφ R _ (kerPt_neg_mem abB abA φ hφ hadd R a)
+
+theorem kerPt_kerMul (hadd : IsAdditiveOn abB abA φ hφ) (R : CommAlgCat.{0} ℚ)
+    (a b : SchemePts (pullback.snd φ abA.zeroSection) R) :
+    kerPt abA φ hφ R (kerMul abB abA φ hφ hadd R a b)
+      = abB.add (kerPt abA φ hφ R a) (kerPt abA φ hφ R b) :=
+  kerPt_kerLift _ _ _ _ _ _
+
+theorem kerPt_kerOne (hadd : IsAdditiveOn abB abA φ hφ) (R : CommAlgCat.{0} ℚ) :
+    kerPt abA φ hφ R (kerOne abB abA φ hφ hadd R)
+      = abB.zero (Spec.map (CommRingCat.ofHom (algebraMap ℚ (R : Type)))) :=
+  kerPt_kerLift _ _ _ _ _ _
+
+theorem kerPt_kerInv (hadd : IsAdditiveOn abB abA φ hφ) (R : CommAlgCat.{0} ℚ)
+    (a : SchemePts (pullback.snd φ abA.zeroSection) R) :
+    kerPt abA φ hφ R (kerInv abB abA φ hφ hadd R a) = abB.neg (kerPt abA φ hφ R a) :=
+  kerPt_kerLift _ _ _ _ _ _
+
+/-- **The group of `R`-points of `ker φ`.**  The axioms are those of `abB`,
+transported along the injection `kerPt`. -/
+@[reducible] def kerGroup (hadd : IsAdditiveOn abB abA φ hφ) (R : CommAlgCat.{0} ℚ) :
+    Group (SchemePts (pullback.snd φ abA.zeroSection) R) :=
+  letI : Mul (SchemePts (pullback.snd φ abA.zeroSection) R) := ⟨kerMul abB abA φ hφ hadd R⟩
+  letI : One (SchemePts (pullback.snd φ abA.zeroSection) R) := ⟨kerOne abB abA φ hφ hadd R⟩
+  letI : Inv (SchemePts (pullback.snd φ abA.zeroSection) R) := ⟨kerInv abB abA φ hφ hadd R⟩
+  Group.ofLeftAxioms
+    (fun a b d => kerPt_injective abA φ hφ R (by
+      show kerPt abA φ hφ R (kerMul abB abA φ hφ hadd R (kerMul abB abA φ hφ hadd R a b) d)
+        = kerPt abA φ hφ R (kerMul abB abA φ hφ hadd R a (kerMul abB abA φ hφ hadd R b d))
+      rw [kerPt_kerMul, kerPt_kerMul, kerPt_kerMul, kerPt_kerMul, abB.add_assoc]))
+    (fun a => kerPt_injective abA φ hφ R (by
+      show kerPt abA φ hφ R (kerMul abB abA φ hφ hadd R (kerOne abB abA φ hφ hadd R) a)
+        = kerPt abA φ hφ R a
+      rw [kerPt_kerMul, kerPt_kerOne, abB.zero_add]))
+    (fun a => kerPt_injective abA φ hφ R (by
+      show kerPt abA φ hφ R (kerMul abB abA φ hφ hadd R (kerInv abB abA φ hφ hadd R a) a)
+        = kerPt abA φ hφ R (kerOne abB abA φ hφ hadd R)
+      rw [kerPt_kerMul, kerPt_kerInv, kerPt_kerOne, abB.neg_add]))
+
+theorem kerSpecAlg_comp {R S : CommAlgCat.{0} ℚ} (ψ : R ⟶ S) :
+    Spec.map (CommRingCat.ofHom ψ.hom.toRingHom) ≫
+        Spec.map (CommRingCat.ofHom (algebraMap ℚ R))
+      = Spec.map (CommRingCat.ofHom (algebraMap ℚ S)) := by
+  rw [← Spec.map_comp]
+  congr 1
+  exact CommRingCat.hom_ext (RingHom.ext fun x => ψ.hom.commutes x)
+
+/-- Base change of `R`-points of `ker φ` along a `ℚ`-algebra map. -/
+def kerPre {R S : CommAlgCat.{0} ℚ} (ψ : R ⟶ S)
+    (a : SchemePts (pullback.snd φ abA.zeroSection) R) :
+    SchemePts (pullback.snd φ abA.zeroSection) S :=
+  ⟨Spec.map (CommRingCat.ofHom ψ.hom.toRingHom) ≫ a.1, by
+    rw [Category.assoc, a.2, kerSpecAlg_comp]⟩
+
+theorem kerPt_kerPre {R S : CommAlgCat.{0} ℚ} (ψ : R ⟶ S)
+    (a : SchemePts (pullback.snd φ abA.zeroSection) R) :
+    kerPt abA φ hφ S (kerPre abA φ ψ a)
+      = RelPoint.pre (Spec.map (CommRingCat.ofHom ψ.hom.toRingHom))
+          (kerSpecAlg_comp ψ) (kerPt abA φ hφ R a) :=
+  Subtype.ext (Category.assoc _ _ _)
+
+/-- Base change is a group homomorphism — this is `abB.pre_add`, i.e. the
+naturality of the group law in the test object. -/
+theorem kerPre_kerMul (hadd : IsAdditiveOn abB abA φ hφ) {R S : CommAlgCat.{0} ℚ} (ψ : R ⟶ S)
+    (a b : SchemePts (pullback.snd φ abA.zeroSection) R) :
+    kerPre abA φ ψ (kerMul abB abA φ hφ hadd R a b)
+      = kerMul abB abA φ hφ hadd S (kerPre abA φ ψ a) (kerPre abA φ ψ b) :=
+  kerPt_injective abA φ hφ S (by
+    rw [kerPt_kerPre, kerPt_kerMul, kerPt_kerMul, kerPt_kerPre, kerPt_kerPre, abB.pre_add])
+
+/-- **The functor of points of `ker φ`**, valued in groups.  This is the one
+input `Fermat.exists_hopfAlgebra_of_ptsFunctor` asks for. -/
+def kerPtsFunctor (hadd : IsAdditiveOn abB abA φ hφ) : CommAlgCat.{0} ℚ ⥤ GrpCat.{0} :=
+  letI grp : ∀ R : CommAlgCat.{0} ℚ,
+      Group (SchemePts (pullback.snd φ abA.zeroSection) R) := kerGroup abB abA φ hφ hadd
+  { obj := fun R => GrpCat.of (SchemePts (pullback.snd φ abA.zeroSection) R)
+    map := fun {R S} ψ =>
+      GrpCat.ofHom (MonoidHom.mk' (kerPre abA φ ψ) (kerPre_kerMul abB abA φ hφ hadd ψ))
+    map_id := fun R => by
+      apply GrpCat.hom_ext
+      refine MonoidHom.ext fun a => Subtype.ext ?_
+      show Spec.map (CommRingCat.ofHom (CommAlgCat.Hom.hom (𝟙 R)).toRingHom) ≫ a.1 = a.1
+      rw [show CommRingCat.ofHom (CommAlgCat.Hom.hom (𝟙 R)).toRingHom
+          = 𝟙 (CommRingCat.of (R : Type)) from rfl,
+        Spec.map_id, Category.id_comp]
+    map_comp := fun {R S U} ψ ρ => by
+      apply GrpCat.hom_ext
+      refine MonoidHom.ext fun a => Subtype.ext ?_
+      show Spec.map (CommRingCat.ofHom (CommAlgCat.Hom.hom (ψ ≫ ρ)).toRingHom) ≫ a.1
+        = Spec.map (CommRingCat.ofHom ρ.hom.toRingHom) ≫
+          Spec.map (CommRingCat.ofHom ψ.hom.toRingHom) ≫ a.1
+      rw [← Category.assoc, ← Spec.map_comp]
+      rfl }
+
+/-- **THE KERNEL OF A FINITE HOMOMORPHISM OF ABELIAN SCHEMES OVER `ℚ` IS
+`Spec` OF A FINITE COMMUTATIVE HOPF `ℚ`-ALGEBRA** (PROVEN 2026-07-30).
+
+Purely formal — there is no characteristic hypothesis here and none is
+needed.  `ker φ ⟶ Spec ℚ` is finite because `IsFinite` is stable under base
+change, hence `ker φ` is affine with a `ℚ`-finite coordinate ring; and
+`kerPtsFunctor` makes its functor of points a group functor, which
+`exists_hopfAlgebra_of_ptsFunctor` turns into the Hopf structure through
+`GrpObj.ofRepresentableBy` and `Γ ⊣ Spec`.
+
+The statement is discharged VACUOUSLY when `ker φ` is empty (take the zero
+ring, a finite Hopf algebra), which is the case `φ` a closed immersion. -/
+theorem exists_hopfAlgebra_kerHom (hadd : IsAdditiveOn abB abA φ hφ) (hfin : IsFinite φ) :
+    ∃ (R : Type) (_ : CommRing R) (_ : HopfAlgebra ℚ R) (_ : Module.Finite ℚ R),
+      Nonempty (pullback φ abA.zeroSection ≅ Spec (CommRingCat.of R)) := by
+  haveI := hfin
+  haveI : IsFinite (pullback.snd φ abA.zeroSection) := inferInstance
+  refine exists_hopfAlgebra_of_ptsFunctor (pullback.snd φ abA.zeroSection)
+    (kerPtsFunctor abB abA φ hφ hadd) (fun R => Equiv.refl _) (fun R S ψ a b hb => ?_)
+  exact Subtype.ext hb
+
+/-- **CARTIER'S THEOREM FOR THE KERNEL: the kernel of a finite homomorphism
+of abelian schemes over `ℚ` is REDUCED** (PROVEN 2026-07-30) — equivalently,
+`ker φ` is finite ÉTALE over `ℚ`.
+
+This is the ENTIRE characteristic-zero content of
+`exists_exponent_kernel_of_isFinite_isAdditiveOn` below, and it is now
+closed: `exists_hopfAlgebra_kerHom` above presents `ker φ` as `Spec` of a
+finite commutative Hopf `ℚ`-algebra, and
+`CartierTheorem.isReduced_of_charZero` — **proven and sorry-free** in
+`Fermat/FLT/GroupScheme/Cartier.lean`, already in this module's import cone
+— says such an algebra is reduced.
+
+**In residue characteristic `p` this is FALSE**, and the witness is the one
+the `flat_torsionι` falsity audit uses: `ker F ⊆ 𝔾_a` over `𝔽̄_p` is finite
+flat of rank `p` with a single non-reduced geometric point,
+Hopf-algebraically `𝔽̄_p[t]/(tᵖ)` with `t` primitive.  `astr`/`bstr` landing
+in `SpecQ` is where that is excluded, and it is spent here and nowhere else
+in this block. -/
+theorem isReduced_kerHom (hadd : IsAdditiveOn abB abA φ hφ) (hfin : IsFinite φ) :
+    AlgebraicGeometry.IsReduced (pullback φ abA.zeroSection) := by
+  obtain ⟨R, _, _, _, ⟨e⟩⟩ := exists_hopfAlgebra_kerHom abB abA φ hφ hadd hfin
+  haveI : _root_.IsReduced R := _root_.CartierTheorem.isReduced_of_charZero ℚ R
+  exact AlgebraicGeometry.isReduced_of_isOpenImmersion e.hom
+
+end
+
+/-- **A FINITE ÉTALE KERNEL IS KILLED BY SOME `m > 0`, AS AN EQUATION OF
+MORPHISMS** (sorry leaf, new 2026-07-30) — all that is left of
+`exists_exponent_kernel_of_isFinite_isAdditiveOn` below.
+
+`pullback.fst φ abA.zeroSection : ker φ ⟶ B` is the inclusion and
+`pullback.snd φ abA.zeroSection : ker φ ⟶ Spec ℚ` the structure morphism, so
+the conclusion says `[m] ∘ ι = e ∘ (structure map)`, i.e. `[m]` kills the
+TAUTOLOGICAL point of `ker φ`.  By `post_mulByNat_eq_zero_of_comp_kerHomι`
+that implies the `∀ T, g` statement of the leaf below, and by
+`comp_kerHomι_of_post_mulByNat_eq_zero` it is IMPLIED by it — the two are
+equivalent, so nothing is lost by cutting here.
+
+**WHAT IS ALREADY DISCHARGED, AND IT IS THE HARD HALF.**
+
+* The kernel is a finite `ℚ`-scheme: `IsFinite (pullback.snd φ abA.zeroSection)`
+  is a mathlib INSTANCE given `IsFinite φ` (base change).  Nothing to prove.
+* The kernel is a finite commutative GROUP SCHEME, i.e. `Spec` of a finite
+  commutative Hopf `ℚ`-algebra: `exists_hopfAlgebra_kerHom` above, PROVEN.
+* **Cartier's theorem**: the kernel is REDUCED, hence finite étale over `ℚ`:
+  `isReduced_kerHom` above, PROVEN, over the sorry-free
+  `CartierTheorem.isReduced_of_charZero`.  The old docstring's "Cartier …
+  absent from mathlib at this pin" was true of mathlib and FALSE of this
+  project, and it had been costing this leaf.
+
+**WHAT REMAINS**, and it is no longer characteristic-zero mathematics:
+
+1. **Lagrange.**  `ker φ` is finite étale over `ℚ`, so its `ℚ̄`-points form a
+   finite abelian group — a subgroup of `B(ℚ̄)` — of order
+   `m = dim_ℚ Γ(ker φ)` (the rank equals the geometric point count exactly
+   because the fibre is reduced, which is
+   `Scheme.Hom.finrank_eq_card_geometricPoints` /
+   `Algebra.finrank_eq_card_algHom` in
+   `Fermat/FLT/Mathlib/AlgebraicGeometry/FinrankGeometricPoints.lean`, also
+   already imported).  `pow_card_eq_one` kills it by `m`, and `m > 0`
+   because a finite group is nonempty.
+2. **Descent from `ℚ̄`-points to the tautological point.**  The two morphisms
+   `ι ≫ [m]` and `(structure map) ≫ e` out of `ker φ` agree on `ℚ̄`-points;
+   `ker φ` is reduced, finite and étale over `ℚ`, so they are equal.
+   Concretely: `Γ(ker φ) ⊗ ℚ̄ ≅ ℚ̄^m` (finite reduced over an algebraically
+   closed field, `ℚ` being perfect so reduced ⟹ geometrically reduced —
+   `Mathlib.RingTheory.Nilpotent.GeometricallyReduced`, imported), the group
+   functor on `ℚ̄`-algebras is the CONSTANT group functor on that finite
+   group, and `R ⟶ R ⊗ ℚ̄` is injective, so `ker φ (R)` embeds in a group
+   killed by `m` for every `R` — in particular at `R = Γ(ker φ)`, where the
+   tautological point lives.
+
+Step 2 is the one that still has to be written; it is étale descent, not
+Cartier.  Both steps are about an arbitrary finite étale commutative group
+scheme over a field, so the natural home for them is
+`Fermat/FLT/GroupScheme/`, not here.
+
+**FAITHFULNESS.**  The audit of the leaf below transfers verbatim, because
+the two statements are equivalent (see above).  `hadd` and `hfin` are both
+load-bearing for TRUTH there with explicit witnesses, and `Surjective φ` is
+deliberately absent; none of that changes here. -/
+theorem exists_mulByNat_comp_kerHom_eq_zero
+    (abB : AbelianSchemeStruct bstr) (abA : AbelianSchemeStruct astr)
+    (φ : B ⟶ A) (hφ : φ ≫ astr = bstr) (_hadd : IsAdditiveOn abB abA φ hφ)
+    (_hfin : IsFinite φ) :
+    ∃ m : ℕ, 0 < m ∧
+      pullback.fst φ abA.zeroSection ≫ abB.mulByNat m
+        = pullback.snd φ abA.zeroSection ≫ abB.zeroSection :=
+  sorry
+
+end KerHomHopf
+
 /-- **THE KERNEL OF A FINITE HOMOMORPHISM IS KILLED BY SOME `m > 0`**
 (sorry leaf, new 2026-07-29) — step 2a of the quotient half of Poincaré
 reducibility, and after the cut below the ONLY open mathematics left in
@@ -60821,21 +61258,43 @@ surjective, but not a homomorphism.  Then `φ ∘ x = 0` says `x = −P`, and
 finite homomorphism is finite whether or not the map is onto.  The consumer
 has surjectivity in hand and passes it only to the descent lemma below.
 
-**What proving it needs**: the kernel as a finite group scheme (the scheme
-itself is already writable — it is `Limits.pullback φ abA.zeroSection`, and
-`isFinite_of_isFinite_kerHom` above is the converse direction), Cartier's
-theorem that a finite group scheme in characteristic `0` is étale, and
-Lagrange.  Absent from mathlib at this pin. -/
+**NO LONGER A SORRY LEAF (2026-07-30).**  It is now PROVEN over the single
+smaller leaf `exists_mulByNat_comp_kerHom_eq_zero` in the block immediately
+above, by `post_mulByNat_eq_zero_of_comp_kerHomι` — the Yoneda reduction that
+turns "`[m]` kills the tautological point of `ker φ`", an equation of
+MORPHISMS, into this `∀ T, g` statement.  The converse holds too
+(`comp_kerHomι_of_post_mulByNat_eq_zero`), so the cut is an equivalence and
+this audit transfers to the new leaf verbatim.
+
+The old version of this paragraph read "the kernel as a finite group scheme
+…, Cartier's theorem that a finite group scheme in characteristic `0` is
+étale, and Lagrange.  Absent from mathlib at this pin."  The first two items
+have since been DISCHARGED and the absence claim was half wrong:
+
+* `IsFinite (Limits.pullback.snd φ abA.zeroSection)` is a mathlib INSTANCE
+  given `IsFinite φ`, `IsFinite` being stable under base change;
+* the kernel as a finite commutative HOPF ALGEBRA is
+  `exists_hopfAlgebra_kerHom` above, PROVEN;
+* **Cartier is not absent from this project** — it is
+  `CartierTheorem.isReduced_of_charZero`
+  (`Fermat/FLT/GroupScheme/Cartier.lean`, sorry-free, and `public import`ed
+  by this module since it was written), applied to the kernel in
+  `isReduced_kerHom` above, PROVEN.  Only its absence from MATHLIB was
+  correct.
+
+What is left is Lagrange plus étale descent, recorded on the new leaf. -/
 theorem exists_exponent_kernel_of_isFinite_isAdditiveOn {B A : Scheme.{0}}
     {bstr : B ⟶ SpecQ} {astr : A ⟶ SpecQ}
     (abB : AbelianSchemeStruct bstr) (abA : AbelianSchemeStruct astr)
-    (φ : B ⟶ A) (hφ : φ ≫ astr = bstr) (_hadd : IsAdditiveOn abB abA φ hφ)
-    (_hfin : IsFinite φ) :
+    (φ : B ⟶ A) (hφ : φ ≫ astr = bstr) (hadd : IsAdditiveOn abB abA φ hφ)
+    (hfin : IsFinite φ) :
     ∃ m : ℕ, 0 < m ∧
       ∀ {T : Scheme.{0}} {g : T ⟶ SpecQ} (x : RelPoint bstr g),
         RelPoint.post φ hφ x = abA.zero g →
-          RelPoint.post (abB.mulByNat m) (abB.mulByNat_comp m) x = abB.zero g :=
-  sorry
+          RelPoint.post (abB.mulByNat m) (abB.mulByNat_comp m) x = abB.zero g := by
+  obtain ⟨m, hm, hcomp⟩ := exists_mulByNat_comp_kerHom_eq_zero abB abA φ hφ hadd hfin
+  exact ⟨m, hm, fun x hx =>
+    post_mulByNat_eq_zero_of_comp_kerHomι abB abA φ hφ m hcomp x hx⟩
 
 /-- **`[m]` DESCENDS ALONG A SURJECTIVE HOMOMORPHISM WHOSE KERNEL IT KILLS**
 (**PROVEN 2026-07-29**) — step 2b of the quotient half of Poincaré
