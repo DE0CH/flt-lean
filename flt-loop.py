@@ -912,16 +912,37 @@ def load():
     snap = {"sha": ssha} if ssha and SNAPSHOT.is_dir() else None
     stored = _pairs("workers")
     sha = main_sha()
-    # Only awaiting_merge branches can be ancestors that matter, and the answer
-    # can only change when main moves -- so it is cached on the sha. Asking git
-    # about all 400 worktrees every 10 seconds would be 40 subprocesses a
-    # second to answer a question about 47 of them.
+    batch = [b for b in (rd(STATE / "batch", "") or "").splitlines() if b.strip()]
+    inflight = ([b for b in (rd(STATE / "inflight") or "").splitlines() if b.strip()]
+                if (STATE / "inflight").exists() else None)
+    # Ancestry is asked about TWO populations, for two different reasons, and
+    # computing it for only the first is what produced the 2026-07-31 panic.
+    #
+    #   * a WORKER that is awaiting_merge is freed when its branch lands;
+    #   * a QUEUED BRANCH -- batch or inflight -- is discharged when it lands,
+    #     because a branch already in main has nothing left to merge.
+    #
+    # The second population is not the first. Row 7 frees the worker the
+    # instant the branch becomes an ancestor, so from the very next tick the
+    # branch is queued behind a worker that is FREE -- and with ancestry
+    # computed only for awaiting_merge workers it read back as "not an
+    # ancestor", i.e. as still needing a merge, for ever. 31 branches sat in
+    # the batch that way, all 31 already in main, and the orphan invariant
+    # (rightly) refused to explain it.
+    #
+    # Still cached on the sha, and the answer can only change when main moves,
+    # so this costs one `merge-base` per queued branch per RELEASE -- not per
+    # tick. Asking about all 400 worktrees every 10 seconds is what the cache
+    # exists to prevent; asking about the ~150 that are actually in play once
+    # an hour is what it is for.
     anc = {}
     if _anc_cache.get("sha") != sha:
         _anc_cache.clear()
         _anc_cache["sha"] = sha
+    asked = ({w for w in wh if stored.get(w) == "awaiting_merge"}
+             | set(batch) | set(inflight or []))
     for w in wh:
-        if stored.get(w) == "awaiting_merge":
+        if w in asked:
             if w not in _anc_cache:
                 _anc_cache[w] = is_ancestor(w)
             anc[w] = _anc_cache[w]
@@ -944,9 +965,8 @@ def load():
         # minutes to hours apart, and the agent is long gone by then.
         "merger_inbox": [l for l in (rd(STATE / "merger-inbox", "") or "").splitlines()
                          if l.strip()],
-        "batch": [b for b in (rd(STATE / "batch", "") or "").splitlines() if b.strip()],
-        "inflight": ([b for b in (rd(STATE / "inflight") or "").splitlines() if b.strip()]
-                     if (STATE / "inflight").exists() else None),
+        "batch": batch,
+        "inflight": inflight,
         "jobs": jobs,
         "workers": {w: (stored.get(w) or None) for w in wh},
         "worker_host": wh,

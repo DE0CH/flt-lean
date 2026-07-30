@@ -405,17 +405,57 @@ def r2_action(s):
                    len(sen.get("to_merger") or [])))
 
 
-def r3_guard(s):
-    hits = [w for w in s["workers"]
+def landed(s):
+    """Everything a landed branch entitles us to discharge.
+
+    LANDING IS ONE EVENT WITH TWO CONSEQUENCES, and this row used to take only
+    the first. A branch that becomes an ancestor of main frees its worker AND
+    settles its place in the merge queue -- there is nothing left to merge, so
+    a queue entry for it is a claim on work that no longer exists.
+
+    Taking only the worker half produced the 2026-07-31 panic. The merge worker
+    publishes main WHILE it is still running, and a medic had (correctly, on
+    the evidence available to it) restored branches that turned out to be
+    already merged into `merger` but not yet published. When main moved, this
+    row freed 31 workers and left all 31 branches sitting in the batch -- and
+    from that instant they were invisible to their own repair, because
+    s["ancestor"] was computed for awaiting_merge workers only, so a freed
+    worker's landed branch read back as un-merged. Permanently queued, and
+    correctly reported by the orphan invariant as a state the loop could not
+    progress out of.
+
+    Note this is a FOLD, not the assignment-that-deletes-work that has now
+    caused three separate leaks: the claim is discharged only where ancestry --
+    the fleet's one receipt, which a decline produces as surely as a merge --
+    says it has been honoured.
+    """
+    free = [w for w in s["workers"]
             if wstate(s, w) == "awaiting_merge" and s["ancestor"].get(w)]
-    return (bool(hits), "no awaiting_merge worker whose branch is an ancestor of main")
+    done = [b for b in (list(s["batch"]) + list(s["inflight"] or []))
+            if s["ancestor"].get(b)]
+    return free, done
+
+
+def r3_guard(s):
+    free, done = landed(s)
+    return (bool(free or done),
+            "no landed branch to discharge: no awaiting_merge worker and no "
+            "queued branch is an ancestor of main")
 
 
 def r3_action(s):
-    for w in list(s["workers"]):
-        if wstate(s, w) == "awaiting_merge" and s["ancestor"].get(w):
-            s["workers"][w] = None
-            note(s, f"3  {w} branch landed -> free")
+    free, done = landed(s)
+    for w in free:
+        s["workers"][w] = None
+        note(s, f"3  {w} branch landed -> free")
+    if done:
+        drop = set(done)
+        s["batch"] = [b for b in s["batch"] if b not in drop]
+        if s["inflight"] is not None:
+            s["inflight"] = [b for b in s["inflight"] if b not in drop]
+        note(s, "3  %d queued branch(es) already in main -> dropped from the "
+                "merge queue: %s%s" % (len(done), ", ".join(sorted(drop)[:6]),
+                                       " ..." if len(drop) > 6 else ""))
 
 
 def r4_guard(s):
@@ -603,15 +643,20 @@ def r7_action(s):
     # merger never dealt with, so it goes back to the batch and the next merger
     # gets it. Partial delivery is now self-correcting rather than a leak.
     #
-    # `wstate(...) == "awaiting_merge"` matters as much as the ancestry test:
-    # row 7 sits ABOVE this one and may already have freed the branches that
-    # DID land, and s["ancestor"] is only computed for awaiting_merge workers,
-    # so a freed worker reads back as "not an ancestor". Without the state
-    # test, every branch row 7 had just freed would be re-batched -- the leak
-    # inverted into a duplicate merge.
+    # ANCESTRY ALONE decides, and it has to be ancestry of the BRANCH rather
+    # than the state of its worker. This test was once `wstate(...) ==
+    # "awaiting_merge" and not ancestor`, because row 7 sits ABOVE this one and
+    # may already have freed the branches that DID land, while s["ancestor"]
+    # was computed for awaiting_merge workers only -- so a freed worker read
+    # back as "not an ancestor" and the worker-state test was the only thing
+    # stopping every just-freed branch from being re-batched. load() now asks
+    # about the queued branches themselves, which answers the question
+    # directly. The worker-state proxy has to go with it: a branch whose worker
+    # was freed WITHOUT landing (a medic repairing state, a worktree
+    # re-dispatched under it) still carries unmerged work, and the proxy would
+    # have silently dropped it -- fault 3 one more time, by one more door.
     claim = list(s["inflight"] or [])
-    unmerged = [b for b in claim
-                if wstate(s, b) == "awaiting_merge" and not s["ancestor"].get(b)]
+    unmerged = [b for b in claim if not s["ancestor"].get(b)]
     # Discharged only after the unmerged remainder has been taken out of it.
     # Leaving it set would make ".inflight non-empty with no merger record"
     # ambiguous between "a claim was dropped on the floor" and "a claim was
@@ -864,7 +909,16 @@ def anomalies(s):
                    "inflight -- stranded, pool shrinking: %s%s"
                    % (len(lost), ", ".join(lost[:6]),
                       " ..." if len(lost) > 6 else ""))
-    orphan = sorted(queued - aw)
+    # Mirror of the exemption above, and for the mirror-image reason: between a
+    # branch landing and row 7 dropping it from the queue there is one tick in
+    # which it is queued behind a worker row 7 has already freed. That window
+    # is opened by every release, so counting it as a fault would panic on the
+    # loop's own normal operation -- which is exactly what it did on
+    # 2026-07-31, when nothing dropped landed branches from the queue at all
+    # and the window never closed. A queued branch that is NOT in main and has
+    # no worker waiting on it is still a real fault: nobody is holding that
+    # worktree, so it can be re-dispatched under the branch.
+    orphan = sorted(w for w in (queued - aw) if not s["ancestor"].get(w))
     if orphan:
         out.append("%d branch(es) queued to merge whose worker is not "
                    "awaiting_merge: %s%s"
@@ -931,7 +985,8 @@ ROWS = [
      rmedic_wait_guard, rmedic_wait_action),
     (5, "a job REPORTED panic -> notify + medic", reported_panic_guard, reported_panic_action),
     (6, "agent finished -> integrate, awaiting_merge", r2_guard, r2_action),
-    (7, "awaiting_merge ∧ ancestor(main) -> free", r3_guard, r3_action),
+    (7, "branch landed -> free its worker, drop it from the merge queue",
+     r3_guard, r3_action),
     (8, "agent died -> resume from transcript", r4_guard, r4_action),
     (9, "merger died without releasing -> restore .inflight", r6_guard, r6_action),
     (10, "merger delivered main+snapshot+audit -> ADOPT", r7_guard, r7_action),
