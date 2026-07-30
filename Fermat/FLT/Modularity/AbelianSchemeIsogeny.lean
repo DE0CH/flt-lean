@@ -2873,8 +2873,46 @@ theorem essFinitePresentation_of_essFinitePresentation_comp {R B A : Type u}
     EssFinitePresentation v :=
   sorry
 
-/-- **A LOCALIZATION OF A LOCALIZATION, ACROSS TWO BASE CHANGES** (SORRY LEAF; cut
-2026-07-28 out of `nonempty_noetherianApproxSystem_of_baseSystem`).
+section IsLocalizationTensorComp
+
+attribute [local instance] Algebra.TensorProduct.rightAlgebra
+
+/-- **TRANSPORT `IsLocalization` ALONG A RING ISOMORPHISM OF THE SOURCE** (PROVEN).
+
+*If `Q` is the localization of `A'` at `V` along `φ`, and `e : A ≃+* A'`, then `Q` is
+the localization of `A` at `V.comap e` along `φ.comp e`.*
+
+Stated for BARE ring homomorphisms with `RingHom.toAlgebra` rather than for algebras,
+because that is the shape `exists_isLocalization_tensor_comp` below needs: there the
+source is replaced by an isomorphic tensor product and no `AlgEquiv` over a common base
+ring is available (see step 2 of that proof's docstring).
+
+Nothing deeper than the three `IsLocalization` fields transported one at a time; `e`
+being an isomorphism is what makes `surj` and `exists_of_eq` go both ways. -/
+theorem isLocalization_comap_of_ringEquiv {A A' Q : Type u} [CommRing A] [CommRing A']
+    [CommRing Q] (e : A ≃+* A') (φ : A' →+* Q) (V : Submonoid A')
+    (h : letI := φ.toAlgebra; IsLocalization V Q) :
+    letI := (φ.comp (e : A →+* A')).toAlgebra
+    IsLocalization (V.comap (e : A →+* A')) Q := by
+  letI : Algebra A' Q := φ.toAlgebra
+  letI : Algebra A Q := (φ.comp (e : A →+* A')).toAlgebra
+  have key : ∀ a : A, algebraMap A Q a = algebraMap A' Q (e a) := fun _ => rfl
+  refine ⟨fun y => ?_, fun z => ?_, fun {x y} hxy => ?_⟩
+  · rw [key]
+    exact IsLocalization.map_units (M := V) Q ⟨e y.1, y.2⟩
+  · obtain ⟨⟨x, v⟩, hx⟩ := IsLocalization.surj (M := V) z
+    refine ⟨⟨e.symm x, ⟨e.symm v.1, ?_⟩⟩, ?_⟩
+    · simp
+    · simpa [key] using hx
+  · rw [key, key] at hxy
+    obtain ⟨c, hc⟩ := IsLocalization.exists_of_eq (M := V) hxy
+    refine ⟨⟨e.symm c.1, ?_⟩, ?_⟩
+    · simp
+    · simpa using congrArg e.symm hc
+
+set_option maxHeartbeats 2000000 in
+/-- **A LOCALIZATION OF A LOCALIZATION, ACROSS TWO BASE CHANGES** (PROVEN 2026-07-30;
+cut 2026-07-28 out of `nonempty_noetherianApproxSystem_of_baseSystem`).
 
 *Given a commuting ladder*
 ```
@@ -2901,37 +2939,53 @@ hypotheses and the conclusion are SYNTACTICALLY the fields at
 application below needs no transport.  Changing how an `Algebra` instance is
 spelled here will break that match even if it stays defeq on paper.
 
-**A FULL ROUTE, in four mathlib steps, all verified present in the pin 2026-07-28.**
+**THE PROOF, IN THREE STEPS.**  Write `P := R₁ ⊗[R₀] S₀`, `A := R₁ ⊗[R₀] T₀`,
+`Q := S₁ ⊗[S₀] T₀` and `PT := P ⊗[S₀] T₀`.
 
-1. `Algebra.TensorProduct.cancelBaseChange` gives
-   `S₁ ⊗_{R₁ ⊗[R₀] S₀} ((R₁ ⊗[R₀] S₀) ⊗_{S₀} T₀) ≃ S₁ ⊗_{S₀} T₀`.
-2. `Algebra.TensorProduct.cancelBaseChange` again (or associativity) gives
-   `(R₁ ⊗[R₀] S₀) ⊗_{S₀} T₀ ≃ R₁ ⊗[R₀] T₀`.
-3. `IsLocalization.tensor` (`Mathlib/RingTheory/Localization/BaseChange.lean`)
-   base-changes the first hypothesis: `S₁ ⊗_{S₀} T₀` is a localization of
-   `R₁ ⊗[R₀] T₀` at `Algebra.algebraMapSubmonoid _ W₁`.
-4. `IsLocalization.localization_localization_isLocalization`
-   (`Mathlib/RingTheory/Localization/LocalizationLocalization.lean`) composes that
-   with the second hypothesis, at `localizationLocalizationSubmodule`.
+1. *Localization commutes with base change.*  This is the only mathematical input, and
+   it is one mathlib lemma: `IsLocalization.tensorProduct_tensorProduct`
+   (`Mathlib/RingTheory/Localization/BaseChange.lean`) at base `S₀` with `A := P`,
+   `B := S₁`, `S := T₀` says `Q` is a localization of `PT` at
+   `Algebra.algebraMapSubmonoid PT W₁`.  The lemma takes `Algebra PT Q` as an
+   *instance argument* plus a compatibility hypothesis, so the instance is supplied
+   here — as `Algebra.TensorProduct.map (IsScalarTower.toAlgHom S₀ P S₁) (AlgHom.id S₀ T₀)`
+   — and no diamond can form; the hypothesis is `by ext t; simp`.
+   (`IsLocalization.tensor`, which the cut note originally pointed at, is the
+   `IsLocalization.Away` special case and is NOT the lemma wanted.)
+2. *`A ≃+* PT`.*  Built by hand rather than out of `Algebra.TensorProduct.cancelBaseChange`
+   and two `Algebra.TensorProduct.comm`s, because those three equivalences have no common
+   base ring here — `cancelBaseChange`'s shape is `X ⊗[S] (S ⊗[R] Y)`, with the base on the
+   *inner left*, and `PT` has it on the inner right.  So: the forward map is the
+   `R₀`-algebra map `r ⊗ t ↦ (r ⊗ 1) ⊗ t`, the backward map the `S₀`-algebra map
+   `(r ⊗ s) ⊗ t ↦ r ⊗ (b₀ s · t)`, and each round trip is one
+   `Algebra.TensorProduct.ringHom_ext`.  The only content in the round trips is that `S₀`
+   may be slid between the two tensor slots (`hslide`), which is
+   `Algebra.TensorProduct.algebraMap_apply` composed with `algebraMap_apply'`.
+3. *Transport and compose.*  `isLocalization_comap_of_ringEquiv` above moves step 1 from
+   source `PT` to source `A`, and `IsLocalization.localization_localization_isLocalization`
+   composes that with `_h₂` at `localizationLocalizationSubmodule`.  The scalar tower
+   `A → Q → T₁` it needs is exactly the claim that the goal's own
+   `Algebra (R₁ ⊗[R₀] T₀) T₁` instance factors through `Q`, and that is checked on the two
+   tensor generators — which is where the "compatibility with the *specific* instance the
+   goal names" worry recorded at the cut is discharged.
 
-**TWO THINGS CHECKED AT THE CUT, so the next owner does not pay for them again.**
-Step 3's lemma really does fire in the shape wanted — `IsLocalization.tensor A W`
-takes exactly two explicit arguments and yields
-`IsLocalization (Algebra.algebraMapSubmonoid Q W) (Q ⊗[P] A)`, verified against the
-pin in a scratch on 2026-07-28.  And the `S₀`-algebra structure on `R₁ ⊗[R₀] S₀`
-that steps 1–3 all need is NOT a global instance: it is
-`Algebra.TensorProduct.rightAlgebra`, which mathlib deliberately keeps scoped, so
-the proof will need `attribute [local instance] Algebra.TensorProduct.rightAlgebra`.
-Missing that is the first thing that will look like a missing theory and is not one.
+**THE THREE INSTANCE TRAPS, recorded because each presents as a missing theory and is
+not one.**
 
-**WHY IT IS STILL OPEN.**  The four steps above are each one lemma, but the
-`≃ₐ`-transports between them are not: the chain
-`Q ⊗[P] S₁ ≅ S₁ ⊗[P] Q ≅ S₁ ⊗[P] (P ⊗[S₀] T₀) ≅ S₁ ⊗[S₀] T₀` needs
-`Algebra.TensorProduct.comm` twice and `cancelBaseChange` once, and then the
-resulting `IsLocalization` has to be shown compatible with the *specific*
-`Algebra (R₁ ⊗[R₀] T₀) T₁` instance the goal names (the `Algebra.TensorProduct.lift`
-one), not merely with some algebra structure.  That compatibility, not the four
-steps, is the work.
+* The `S₀`-algebra structure on `P` is not global: it is
+  `Algebra.TensorProduct.rightAlgebra`, which mathlib deliberately keeps scoped, so the
+  whole block sits inside a section under `attribute [local instance]`.
+* **Do NOT supply `Algebra P Q` by hand.**  Mathlib's `Algebra.TensorProduct.leftAlgebra`
+  already gives it from `Algebra P S₁` and the tower `S₀ → P → S₁`, and its `SMul` *is*
+  `TensorProduct.leftHasSMul` — the very instance typeclass search picks for `SMul P Q`.
+  A hand-rolled `RingHom.toAlgebra` version has a different, merely extensionally equal,
+  `SMul`, and then `IsScalarTower P PT Q` cannot be produced by
+  `IsScalarTower.of_algebraMap_eq` at all: the instance arguments do not unify, and the
+  error names the SMul instances rather than anything mathematical.
+* For the same reason the two towers `IsScalarTower R₀ R₀ PT` and `IsScalarTower S₀ S₀ A`
+  that `Algebra.TensorProduct.lift` demands are given as `⟨fun x y z => mul_smul x y z⟩`,
+  which adapts to whichever `SMul` search happens to find, rather than through any
+  `Algebra`-flavoured constructor.
 
 **FAITHFULNESS.**  The conclusion is one of 10.127.11's own conclusions applied to
 `R → S'` and is implied by the two hypotheses, so it cannot be stronger than them;
@@ -2985,8 +3039,134 @@ theorem exists_isLocalization_tensor_comp
     letI : Algebra (R₁ ⊗[R₀] T₀) T₁ :=
       (Algebra.TensorProduct.lift (IsScalarTower.toAlgHom R₀ R₁ T₁)
         (IsScalarTower.toAlgHom R₀ T₀ T₁) fun _ _ => Commute.all _ _).toRingHom.toAlgebra
-    ∃ W : Submonoid (R₁ ⊗[R₀] T₀), IsLocalization W T₁ :=
-  sorry
+    ∃ W : Submonoid (R₁ ⊗[R₀] T₀), IsLocalization W T₁ := by
+  -- ## The instance blocks, transcribed from the two hypotheses and the conclusion
+  letI algR₀S₀ : Algebra R₀ S₀ := a₀.toAlgebra
+  letI algR₀R₁ : Algebra R₀ R₁ := f.toAlgebra
+  letI algR₀S₁ : Algebra R₀ S₁ := (a₁.comp f).toAlgebra
+  letI algR₁S₁ : Algebra R₁ S₁ := a₁.toAlgebra
+  letI algS₀S₁ : Algebra S₀ S₁ := p.toAlgebra
+  haveI towR₀R₁S₁ : IsScalarTower R₀ R₁ S₁ := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI towR₀S₀S₁ : IsScalarTower R₀ S₀ S₁ :=
+    IsScalarTower.of_algebraMap_eq fun x => DFunLike.congr_fun hsq₁ x
+  letI algPS₁ : Algebra (R₁ ⊗[R₀] S₀) S₁ :=
+    (Algebra.TensorProduct.lift (IsScalarTower.toAlgHom R₀ R₁ S₁)
+      (IsScalarTower.toAlgHom R₀ S₀ S₁) fun _ _ => Commute.all _ _).toRingHom.toAlgebra
+  letI algS₀T₀ : Algebra S₀ T₀ := b₀.toAlgebra
+  letI algS₀T₁ : Algebra S₀ T₁ := (b₁.comp p).toAlgebra
+  letI algS₁T₁ : Algebra S₁ T₁ := b₁.toAlgebra
+  letI algT₀T₁ : Algebra T₀ T₁ := q.toAlgebra
+  haveI towS₀S₁T₁ : IsScalarTower S₀ S₁ T₁ := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI towS₀T₀T₁ : IsScalarTower S₀ T₀ T₁ :=
+    IsScalarTower.of_algebraMap_eq fun x => DFunLike.congr_fun hsq₂ x
+  letI algQT₁ : Algebra (S₁ ⊗[S₀] T₀) T₁ :=
+    (Algebra.TensorProduct.lift (IsScalarTower.toAlgHom S₀ S₁ T₁)
+      (IsScalarTower.toAlgHom S₀ T₀ T₁) fun _ _ => Commute.all _ _).toRingHom.toAlgebra
+  letI algR₀T₀ : Algebra R₀ T₀ := (b₀.comp a₀).toAlgebra
+  letI algR₀T₁ : Algebra R₀ T₁ := (b₁.comp (a₁.comp f)).toAlgebra
+  letI algR₁T₁ : Algebra R₁ T₁ := (b₁.comp a₁).toAlgebra
+  haveI towR₀R₁T₁ : IsScalarTower R₀ R₁ T₁ := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI towR₀T₀T₁ : IsScalarTower R₀ T₀ T₁ :=
+    IsScalarTower.of_algebraMap_eq fun x =>
+      (congrArg b₁ (DFunLike.congr_fun hsq₁ x)).trans (DFunLike.congr_fun hsq₂ (a₀ x))
+  letI algAT₁ : Algebra (R₁ ⊗[R₀] T₀) T₁ :=
+    (Algebra.TensorProduct.lift (IsScalarTower.toAlgHom R₀ R₁ T₁)
+      (IsScalarTower.toAlgHom R₀ T₀ T₁) fun _ _ => Commute.all _ _).toRingHom.toAlgebra
+  haveI towR₀S₀T₀ : IsScalarTower R₀ S₀ T₀ := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  obtain ⟨W₁, hW₁⟩ := _h₁
+  obtain ⟨W₂, hW₂⟩ := _h₂
+  haveI : IsLocalization W₁ S₁ := hW₁
+  haveI : IsLocalization W₂ T₁ := hW₂
+  -- ## `S₀ → R₁ ⊗[R₀] S₀ → S₁` is the structure map `p`
+  haveI towS₀PS₁ : IsScalarTower S₀ (R₁ ⊗[R₀] S₀) S₁ :=
+    IsScalarTower.of_algebraMap_eq fun x => by
+      show p x = Algebra.TensorProduct.lift _ _ _ ((1 : R₁) ⊗ₜ[R₀] x)
+      simp
+      rfl
+  -- ## The base-change square `P ⊗[S₀] T₀ → S₁ ⊗[S₀] T₀`
+  letI algPTQ : Algebra ((R₁ ⊗[R₀] S₀) ⊗[S₀] T₀) (S₁ ⊗[S₀] T₀) :=
+    (Algebra.TensorProduct.map (IsScalarTower.toAlgHom S₀ (R₁ ⊗[R₀] S₀) S₁)
+      (AlgHom.id S₀ T₀)).toRingHom.toAlgebra
+  haveI towPPTQ :
+      IsScalarTower (R₁ ⊗[R₀] S₀) ((R₁ ⊗[R₀] S₀) ⊗[S₀] T₀) (S₁ ⊗[S₀] T₀) := by
+    exact @IsScalarTower.of_algebraMap_eq (R₁ ⊗[R₀] S₀) ((R₁ ⊗[R₀] S₀) ⊗[S₀] T₀)
+      (S₁ ⊗[S₀] T₀) _ _ _ _ _ _
+      (fun x => by simp [RingHom.algebraMap_toAlgebra, Algebra.TensorProduct.algebraMap_def])
+  -- ## LOCALIZATION COMMUTES WITH BASE CHANGE (the mathematical core)
+  haveI hcore : IsLocalization
+      (Algebra.algebraMapSubmonoid ((R₁ ⊗[R₀] S₀) ⊗[S₀] T₀) W₁) (S₁ ⊗[S₀] T₀) :=
+    IsLocalization.tensorProduct_tensorProduct S₀ T₀ W₁ S₁
+      (by ext t; simp [RingHom.algebraMap_toAlgebra])
+  -- ## `R₁ ⊗[R₀] T₀ ≃+* (R₁ ⊗[R₀] S₀) ⊗[S₀] T₀`
+  letI algS₀A : Algebra S₀ (R₁ ⊗[R₀] T₀) :=
+    ((algebraMap T₀ (R₁ ⊗[R₀] T₀)).comp b₀).toAlgebra
+  haveI towR₀R₀PT : IsScalarTower R₀ R₀ ((R₁ ⊗[R₀] S₀) ⊗[S₀] T₀) :=
+    ⟨fun x y z => mul_smul x y z⟩
+  haveI towS₀S₀A : IsScalarTower S₀ S₀ (R₁ ⊗[R₀] T₀) := ⟨fun x y z => mul_smul x y z⟩
+  -- `S₀` may be pushed from the `T₀` slot of `P ⊗[S₀] T₀` into the `S₀` slot of `P`
+  have hslide : ∀ s : S₀, (1 : R₁ ⊗[R₀] S₀) ⊗ₜ[S₀] (b₀ s)
+      = ((1 : R₁) ⊗ₜ[R₀] s) ⊗ₜ[S₀] (1 : T₀) := fun s => by
+    rw [show ((1 : R₁) ⊗ₜ[R₀] s) = algebraMap S₀ (R₁ ⊗[R₀] S₀) s from rfl,
+      show b₀ s = algebraMap S₀ T₀ s from rfl,
+      ← Algebra.TensorProduct.algebraMap_apply,
+      ← Algebra.TensorProduct.algebraMap_apply']
+  -- the same identity with `(1 : R₁ ⊗[R₀] S₀)` in the form `simp` normalizes it to
+  have hslide' : ∀ s : S₀, ((1 : R₁) ⊗ₜ[R₀] (1 : S₀)) ⊗ₜ[S₀] (b₀ s)
+      = ((1 : R₁) ⊗ₜ[R₀] s) ⊗ₜ[S₀] (1 : T₀) := fun s => hslide s
+  set fwd : (R₁ ⊗[R₀] T₀) →ₐ[R₀] ((R₁ ⊗[R₀] S₀) ⊗[S₀] T₀) :=
+    Algebra.TensorProduct.lift
+      { toRingHom := (Algebra.TensorProduct.includeLeftRingHom (R := S₀)
+          (A := R₁ ⊗[R₀] S₀) (B := T₀)).comp
+          (Algebra.TensorProduct.includeLeftRingHom (R := R₀) (A := R₁) (B := S₀))
+        commutes' := by intro r; simp [Algebra.TensorProduct.algebraMap_def] }
+      { toRingHom := (Algebra.TensorProduct.includeRight (R := S₀)
+          (A := R₁ ⊗[R₀] S₀) (B := T₀)).toRingHom
+        commutes' := by
+          intro r
+          show (1 : R₁ ⊗[R₀] S₀) ⊗ₜ[S₀] (b₀ (a₀ r)) = _
+          rw [hslide (a₀ r), Algebra.TensorProduct.algebraMap_apply,
+            Algebra.TensorProduct.algebraMap_apply']
+          rfl }
+      (fun _ _ => Commute.all _ _) with hfwd
+  set bwd : ((R₁ ⊗[R₀] S₀) ⊗[S₀] T₀) →ₐ[S₀] (R₁ ⊗[R₀] T₀) :=
+    Algebra.TensorProduct.lift
+      { toRingHom := (Algebra.TensorProduct.map (AlgHom.id R₀ R₁)
+          (IsScalarTower.toAlgHom R₀ S₀ T₀)).toRingHom
+        commutes' := by intro s; simp [RingHom.algebraMap_toAlgebra] }
+      { toRingHom := algebraMap T₀ (R₁ ⊗[R₀] T₀)
+        commutes' := fun s => rfl }
+      (fun _ _ => Commute.all _ _) with hbwd
+  have hbf : bwd.toRingHom.comp fwd.toRingHom = RingHom.id (R₁ ⊗[R₀] T₀) := by
+    ext x <;> simp [hfwd, hbwd, RingHom.algebraMap_toAlgebra]
+  have hfb : fwd.toRingHom.comp bwd.toRingHom =
+      RingHom.id ((R₁ ⊗[R₀] S₀) ⊗[S₀] T₀) := by
+    ext x <;>
+      simp [hfwd, hbwd, RingHom.algebraMap_toAlgebra, Algebra.TensorProduct.one_def,
+        hslide']
+  set ε : (R₁ ⊗[R₀] T₀) ≃+* ((R₁ ⊗[R₀] S₀) ⊗[S₀] T₀) :=
+    { fwd.toRingHom with
+      invFun := bwd
+      left_inv := fun x => DFunLike.congr_fun hbf x
+      right_inv := fun x => DFunLike.congr_fun hfb x }
+  -- ## Transport the core along `ε`, then compose the two localizations
+  letI algAQ : Algebra (R₁ ⊗[R₀] T₀) (S₁ ⊗[S₀] T₀) :=
+    ((algebraMap ((R₁ ⊗[R₀] S₀) ⊗[S₀] T₀) (S₁ ⊗[S₀] T₀)).comp
+      (ε : (R₁ ⊗[R₀] T₀) →+* ((R₁ ⊗[R₀] S₀) ⊗[S₀] T₀))).toAlgebra
+  haveI hQ : IsLocalization
+      ((Algebra.algebraMapSubmonoid ((R₁ ⊗[R₀] S₀) ⊗[S₀] T₀) W₁).comap
+        (ε : (R₁ ⊗[R₀] T₀) →+* ((R₁ ⊗[R₀] S₀) ⊗[S₀] T₀))) (S₁ ⊗[S₀] T₀) :=
+    isLocalization_comap_of_ringEquiv ε
+      (algebraMap ((R₁ ⊗[R₀] S₀) ⊗[S₀] T₀) (S₁ ⊗[S₀] T₀))
+      (Algebra.algebraMapSubmonoid ((R₁ ⊗[R₀] S₀) ⊗[S₀] T₀) W₁) hcore
+  have hεapp : ∀ a : R₁ ⊗[R₀] T₀, ε a = fwd a := fun _ => rfl
+  haveI towAQT₁ : IsScalarTower (R₁ ⊗[R₀] T₀) (S₁ ⊗[S₀] T₀) T₁ := by
+    apply IsScalarTower.of_algebraMap_eq'
+    ext x <;> simp [hεapp, hfwd, RingHom.algebraMap_toAlgebra]
+  exact ⟨_, IsLocalization.localization_localization_isLocalization
+    ((Algebra.algebraMapSubmonoid ((R₁ ⊗[R₀] S₀) ⊗[S₀] T₀) W₁).comap
+      (ε : (R₁ ⊗[R₀] T₀) →+* ((R₁ ⊗[R₀] S₀) ⊗[S₀] T₀))) W₂ T₁⟩
+
+end IsLocalizationTensorComp
 
 /-- **THE CONSTRUCTION OF 10.127.11, ONCE: a rung over a given base tower**
 (SORRY LEAF; cut 2026-07-28 out of `nonempty_noetherianApproxSystem_of_baseSystem`,
@@ -3094,8 +3274,9 @@ a comparison map that would have to be built.
 
 So the whole of the "eight commutation and functoriality fields", the four colimit
 conditions and the two `isLocalization` fields that this leaf used to owe are
-DISCHARGED here; what is left is exactly three named leaves above, in decreasing
-order of size:
+DISCHARGED here; what is left is exactly TWO named leaves above (the third,
+`exists_isLocalization_tensor_comp`, was PROVEN on 2026-07-30), in decreasing order of
+size:
 
 * `exists_noetherianLocalExtSystem_of_essFinitePresentation` — the construction of
   10.127.11 itself, i.e. the models `S_λ = (R_λ[x]/(f_λ))_{𝔮_λ}` and their
@@ -3108,12 +3289,16 @@ order of size:
   essentially finite presentation, needed because the second rung is built for
   `v : B →+* A` while 00R7 gives the hypothesis on `v.comp g`.  A complete route is
   in its docstring, over the pin's
-  `RingHom.FinitePresentation.of_comp_finiteType`;
-* `exists_isLocalization_tensor_comp` — `isLocalizationTotBaseT` derived from the
-  other two localization fields, which `NoetherianApproxSystem`'s own docstring
-  already said was derivable.  A four-step route over `IsLocalization.tensor`,
-  `Algebra.TensorProduct.cancelBaseChange` and
-  `IsLocalization.localization_localization_isLocalization` is in its docstring.
+  `RingHom.FinitePresentation.of_comp_finiteType`.
+
+`exists_isLocalization_tensor_comp` — `isLocalizationTotBaseT` derived from the other two
+localization fields — is **PROVEN** (2026-07-30), over
+`IsLocalization.tensorProduct_tensorProduct` and
+`IsLocalization.localization_localization_isLocalization`, with a hand-built
+`R₁ ⊗[R₀] T₀ ≃+* (R₁ ⊗[R₀] S₀) ⊗[S₀] T₀` in between; the three instance traps that made
+it look like missing theory are recorded in its docstring.  Neither
+`Algebra.TensorProduct.cancelBaseChange` nor `IsLocalization.tensor` is used — the cut
+note named both and both were wrong turns.
 
 **FAITHFULNESS.**  The hypotheses are 00R7's plus one that is unconditionally
 satisfiable (`_bs`, by `nonempty_noetherianLocalBaseSystem`), and the conclusion
