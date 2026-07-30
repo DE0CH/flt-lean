@@ -108,7 +108,9 @@ PROVEN, over three new analytic leaves:
 * `Heegner.eta_pow_24_add_eta_two_pow_24` — `η²⁴ + 256η(2z)²⁴ = E₄·(η·η(2z))⁸`, the single
   modular-form identity carrying ALL of Weber's `γ₂³ = j`. Given it, LEAF 5 is field algebra.
   **Now PROVEN** (2026-07-29), over ONE new leaf, `Heegner.eta_two_torsion_key`
-  (`η(z/2)⁸η(2z)⁸(η(z/2)⁸+16η(2z)⁸) = η(z)²⁴`). Everything else is proven here: `η(z+1)`,
+  (`η(z/2)⁸η(2z)⁸(η(z/2)⁸+16η(2z)⁸) = η(z)²⁴`) — **which is itself PROVEN as of 2026-07-30**,
+  over the strictly smaller `Heegner.eulerProd_neg_pow_eight`; see the bullet below.
+  Everything else is proven here: `η(z+1)`,
   the `S`-transformation of `F = (η²⁴+256η(2z)²⁴)/(ηη(2z))⁸` from the key identity, the
   packaging of `F` as a `ModularForm 𝒮ℒ 4`, its value `1` at the cusp, and
   `F = E₄` from `ModularForm.levelOne_weight_four_rank_one`;
@@ -126,8 +128,13 @@ this merge, not inherited from any of the three sides that disagreed about it �
 them was RIGHT about its own base, which is exactly why none of their lists survives:
 `Heegner.natDegree_minpoly_weberAlpha`, `Heegner.exists_modularPolynomial`, the two
 class-field leaves `Heegner.exists_quadratic_jInvariant_heegnerPoint` and
-`Heegner.exists_quadratic_gammaTwo_of_jInvariant`, and the single `η`-product identity
-`Heegner.eta_two_torsion_key`.
+`Heegner.exists_quadratic_gammaTwo_of_jInvariant`, and — **as of 2026-07-30, replacing
+`Heegner.eta_two_torsion_key`, which is now PROVEN** — the pure disc identity
+`Heegner.eulerProd_neg_pow_eight`, `∏(1−(−x)ⁿ)⁸ = ∏(1−xⁿ)⁸ + 16x·∏(1−x⁴ⁿ)⁸` for `‖x‖ < 1`.
+That last move is a NARROWING and not a rename: the old leaf carried Weber's two relations
+`f·f₁·f₂ = √2` and `f⁸ = f₁⁸ + f₂⁸` together, and the first of the two costs nothing but the
+odd/even splitting of Euler's product — it is PROVEN as `Heegner.eta_triple_pow_eight`. The
+count is unchanged at five; the depth behind one of the five is not.
 
 Six names moved between release 19 and here, in three independent directions:
 
@@ -1720,6 +1727,14 @@ STATUS UPDATE (2026-07-29): all three of those sub-leaves are now closed too.
 `η`-product identity. The sentence that used to stand here, listing the two `E`-estimates as
 open, was stale.
 
+SECOND STATUS UPDATE (2026-07-30): `eta_two_torsion_key` is PROVEN as well, so **nothing in the
+LEAF 5 / LEAF 6 reduction is open at all**. What replaced it is not an `η`-identity but a
+statement about power series on the open unit disc, `eulerProd_neg_pow_eight` — Jacobi's quartic
+identity — and the whole `η`-and-modular-forms half of the old leaf is now discharged. Read the
+prose immediately below with that in mind: it correctly describes how the `S`-transformation
+reduces to `B·C·(B + 16C) = E`, but where it calls that "the remaining leaf" the remaining leaf
+is now one step further down.
+
 CORRECTION TO THE NAMESPACE DOCSTRING ABOVE (checked 2026-07-28, `grep` over
 `.lake/packages/mathlib`). The claim that "nothing of the modular theory used below is in
 mathlib at this pin" is too strong and cost this decomposition a wrong first plan. Mathlib at
@@ -1829,64 +1844,374 @@ lemma zeta24_pow_24 : Complex.exp (↑Real.pi * Complex.I / 12) ^ 24 = 1 := by
       push_cast; ring]
   exact Complex.exp_two_pi_mul_I
 
+/-! ### The Euler product behind `η`, and the split of SUB-LEAF 5a-i into its two classical halves
+
+(2026-07-30.) `eta_two_torsion_key` — `η(z/2)⁸η(2z)⁸(η(z/2)⁸+16η(2z)⁸) = η(z)²⁴` — was a single
+opaque leaf. It is the combination of the TWO classical Weber relations, and those two are of
+completely different depth:
+
+* `f·f₁·f₂ = √2`, i.e. Jacobi's `θ₂θ₃θ₄ = 2η³`, is a pure REARRANGEMENT of Euler products —
+  no theta function, no modularity, no cusp analysis. It is **PROVEN below**
+  (`eta_triple_pow_eight`), over the disc identity `eulerProd_neg_mul_eulerProd_mul_pow_four`;
+* `f⁸ = f₁⁸ + f₂⁸`, i.e. Jacobi's quartic `θ₃⁴ = θ₂⁴ + θ₄⁴`, is genuinely deep. It is the
+  ONLY thing left open, as `eulerProd_neg_pow_eight`.
+
+The previous docstring said the honest cut was "their COMBINATION … a single identity in `η`
+alone", and that was right about the CONSUMER but wrong about the WORK: the combination hides
+a free half behind a hard one. Splitting them costs one extra leaf name and buys the closure
+of everything except one line of classical theta theory.
+
+The vehicle is the Euler product `eulerProd x = ∏_{n≥1}(1 − xⁿ)` on the open unit disc, which
+is literally the product inside `ModularForm.eta` (`eta w = 𝕢₂₄ w · eulerProd (𝕢₁ w)`, `rfl`).
+Writing `x = e^{πiz}` — so that `𝕢₁(z/2) = x`, `𝕢₁ z = x²`, `𝕢₁(2z) = x⁴` and
+`𝕢₁((z+1)/2) = −x`, the last because `e^{πi} = −1` — every `η` occurring in this cluster becomes
+an explicit exponential times a value of `eulerProd`, and both halves become statements on the
+disc with no `ℍ` and no modularity in them at all. -/
+
+/-- `eulerProd x = ∏_{n ≥ 1} (1 − xⁿ)`, the product occurring in `ModularForm.eta`. -/
+noncomputable def eulerProd (x : ℂ) : ℂ := ∏' n : ℕ, (1 - x ^ (n + 1))
+
+/-- `eulerProdOdd x = ∏_{k ≥ 0} (1 − x^{2k+1})`, the odd-exponent half of `eulerProd`.
+Note `eulerProdOdd (-x) = ∏_{k ≥ 0} (1 + x^{2k+1})`, so no separate name is needed for that. -/
+noncomputable def eulerProdOdd (x : ℂ) : ℂ := ∏' k : ℕ, (1 - x ^ (2 * k + 1))
+
+section EulerProd
+
+variable {x : ℂ} (hx : ‖x‖ < 1)
+include hx
+
+lemma norm_pow_lt_one_of_norm_lt_one (a : ℕ) (ha : 0 < a) : ‖x ^ a‖ < 1 := by
+  rw [norm_pow]
+  have h2 : ‖x‖ ^ a ≤ ‖x‖ ^ 1 := pow_le_pow_of_le_one (norm_nonneg _) hx.le ha
+  rw [pow_one] at h2
+  exact lt_of_le_of_lt h2 hx
+
+lemma summable_norm_pow_linear (a b : ℕ) (ha : 0 < a) :
+    Summable fun k : ℕ ↦ ‖x ^ (a * k + b)‖ := by
+  have hr0 : (0 : ℝ) ≤ ‖x‖ ^ a := by positivity
+  have hr1 : ‖x‖ ^ a < 1 := by
+    simpa [norm_pow] using norm_pow_lt_one_of_norm_lt_one hx a ha
+  have h1 : ∀ k : ℕ, ‖x ^ (a * k + b)‖ = ‖x‖ ^ b * (‖x‖ ^ a) ^ k := by
+    intro k
+    rw [norm_pow, pow_add, pow_mul]
+    ring
+  exact Summable.congr ((summable_geometric_of_lt_one hr0 hr1).mul_left (‖x‖ ^ b))
+    (fun k ↦ (h1 k).symm)
+
+lemma multipliable_one_sub_pow_linear (a b : ℕ) (ha : 0 < a) :
+    Multipliable fun k : ℕ ↦ 1 - x ^ (a * k + b) := by
+  have h := multipliable_one_add_of_summable (f := fun k : ℕ ↦ -x ^ (a * k + b))
+    (by simpa using summable_norm_pow_linear hx a b ha)
+  exact h.congr (fun k ↦ by ring)
+
+/-- **Odd/even split of the Euler product**: `eulerProd x = eulerProdOdd x · eulerProd (x²)`.
+The even-exponent factors `1 − x^{2k+2}` are exactly the factors of `eulerProd (x²)`. -/
+lemma eulerProd_eq_eulerProdOdd_mul : eulerProdOdd x * eulerProd (x ^ 2) = eulerProd x := by
+  have he : Multipliable fun k : ℕ ↦ (1 : ℂ) - x ^ (2 * k + 1) :=
+    multipliable_one_sub_pow_linear hx 2 1 (by norm_num)
+  have ho : Multipliable fun k : ℕ ↦ (1 : ℂ) - x ^ (2 * k + 2) :=
+    multipliable_one_sub_pow_linear hx 2 2 (by norm_num)
+  have h : (∏' k : ℕ, (1 - x ^ (2 * k + 1))) * (∏' k : ℕ, (1 - x ^ (2 * k + 2)))
+      = ∏' n : ℕ, (1 - x ^ (n + 1)) :=
+    tprod_even_mul_odd (f := fun n : ℕ ↦ 1 - x ^ (n + 1)) he ho
+  have h2 : (∏' k : ℕ, (1 - x ^ (2 * k + 2))) = eulerProd (x ^ 2) := by
+    rw [eulerProd]
+    refine tprod_congr fun k ↦ ?_
+    rw [← pow_mul]
+    ring_nf
+  rw [eulerProdOdd, ← h2]
+  exact h
+
+/-- `(1 − y)(1 + y) = 1 − y²` termwise on the odd exponents. -/
+lemma eulerProdOdd_mul_neg :
+    eulerProdOdd x * eulerProdOdd (-x) = eulerProdOdd (x ^ 2) := by
+  have hxn : ‖(-x)‖ < 1 := by simpa using hx
+  rw [eulerProdOdd, eulerProdOdd, eulerProdOdd,
+    ← Multipliable.tprod_mul (multipliable_one_sub_pow_linear hx 2 1 (by norm_num))
+      (multipliable_one_sub_pow_linear hxn 2 1 (by norm_num))]
+  refine tprod_congr fun k ↦ ?_
+  have hpow : (x ^ 2) ^ (2 * k + 1) = (x ^ (2 * k + 1)) ^ 2 := by
+    rw [← pow_mul, ← pow_mul, Nat.mul_comm]
+  rw [hpow, Odd.neg_pow (odd_two_mul_add_one k)]
+  ring
+
+end EulerProd
+
+/-- **THE FREE HALF OF WEBER'S TWO RELATIONS, PROVEN**: the Euler-product form of
+`θ₂θ₃θ₄ = 2η³`,
+
+  `eulerProd(−x) · eulerProd(x) · eulerProd(x⁴) = eulerProd(x²)³`   for `‖x‖ < 1`.
+
+It is a pure rearrangement, with no division and no analysis beyond multipliability. Write
+`Po = eulerProdOdd`. The odd/even split gives all three of
+
+  `eulerProd(x) = Po(x)·eulerProd(x²)`, `eulerProd(−x) = Po(−x)·eulerProd(x²)`,
+  `eulerProd(x²) = Po(x²)·eulerProd(x⁴)`
+
+(the middle one because `(−x)² = x²`), and `Po(x)·Po(−x) = Po(x²)` is the termwise
+`(1−y)(1+y) = 1−y²` on `y = x^{2k+1}`. Multiplying the first two and substituting the fourth
+turns the left side into `Po(x²)·eulerProd(x²)²·eulerProd(x⁴)`, and the third collapses that to
+`eulerProd(x²)³`. -/
+theorem eulerProd_neg_mul_eulerProd_mul_pow_four {x : ℂ} (hx : ‖x‖ < 1) :
+    eulerProd (-x) * eulerProd x * eulerProd (x ^ 4) = eulerProd (x ^ 2) ^ 3 := by
+  have hxn : ‖(-x)‖ < 1 := by simpa using hx
+  have hx2 : ‖x ^ 2‖ < 1 := norm_pow_lt_one_of_norm_lt_one hx 2 (by norm_num)
+  have h1 : eulerProd (-x) = eulerProdOdd (-x) * eulerProd (x ^ 2) := by
+    rw [← eulerProd_eq_eulerProdOdd_mul hxn, neg_pow, show (-1 : ℂ) ^ 2 = 1 by norm_num, one_mul]
+  have h2 : eulerProd x = eulerProdOdd x * eulerProd (x ^ 2) :=
+    (eulerProd_eq_eulerProdOdd_mul hx).symm
+  have h3 : eulerProd (x ^ 2) = eulerProdOdd (x ^ 2) * eulerProd (x ^ 4) := by
+    rw [← eulerProd_eq_eulerProdOdd_mul hx2, show ((x : ℂ) ^ 2) ^ 2 = x ^ 4 by ring]
+  have h4 : eulerProdOdd x * eulerProdOdd (-x) = eulerProdOdd (x ^ 2) := eulerProdOdd_mul_neg hx
+  calc eulerProd (-x) * eulerProd x * eulerProd (x ^ 4)
+      = (eulerProdOdd x * eulerProdOdd (-x)) * eulerProd (x ^ 2) *
+        (eulerProd (x ^ 2) * eulerProd (x ^ 4)) := by rw [h1, h2]; ring
+    _ = eulerProdOdd (x ^ 2) * eulerProd (x ^ 4) *
+        (eulerProd (x ^ 2) * eulerProd (x ^ 2)) := by rw [h4]; ring
+    _ = eulerProd (x ^ 2) ^ 3 := by rw [← h3]; ring
+
+/-! ### `η` in terms of `eulerProd` -/
+
+/-- `η w = 𝕢₂₄ w · eulerProd (𝕢₁ w)`. This is `rfl`: `ModularForm.eta_q n w` is by definition
+`(𝕢₁ w) ^ (n+1)`. -/
+lemma eta_eq_qParam_mul_eulerProd (w : ℂ) :
+    ModularForm.eta w = Periodic.qParam 24 w * eulerProd (Periodic.qParam 1 w) := rfl
+
+lemma norm_exp_pi_I_lt_one (z : ℍ) : ‖Complex.exp (↑Real.pi * Complex.I * (z : ℂ))‖ < 1 := by
+  rw [Complex.norm_exp]
+  have hre : (↑Real.pi * Complex.I * (z : ℂ)).re = -(Real.pi * (z : ℂ).im) := by
+    simp [Complex.mul_re, Complex.mul_im]
+  rw [hre, Real.exp_lt_one_iff]
+  have h1 : 0 < (z : ℂ).im := z.im_pos
+  have h2 : (0 : ℝ) < Real.pi := Real.pi_pos
+  nlinarith
+
+lemma eta_div_two_eq (w : ℂ) :
+    ModularForm.eta (w / 2)
+      = Complex.exp (↑Real.pi * Complex.I * w / 24) *
+        eulerProd (Complex.exp (↑Real.pi * Complex.I * w)) := by
+  rw [eta_eq_qParam_mul_eulerProd]
+  congr 1
+  · simp only [Periodic.qParam]; congr 1; push_cast; ring
+  · congr 1
+    simp only [Periodic.qParam, Complex.ofReal_one, div_one]
+    congr 1
+    ring
+
+lemma eta_eq_exp_mul_eulerProd (w : ℂ) :
+    ModularForm.eta w
+      = Complex.exp (↑Real.pi * Complex.I * w / 12) *
+        eulerProd (Complex.exp (↑Real.pi * Complex.I * w) ^ 2) := by
+  rw [eta_eq_qParam_mul_eulerProd]
+  congr 1
+  · simp only [Periodic.qParam]; congr 1; push_cast; ring
+  · congr 1
+    simp only [Periodic.qParam, Complex.ofReal_one, div_one, ← Complex.exp_nat_mul]
+    congr 1
+    push_cast
+    ring
+
+lemma eta_two_mul_eq (w : ℂ) :
+    ModularForm.eta (2 * w)
+      = Complex.exp (↑Real.pi * Complex.I * w / 6) *
+        eulerProd (Complex.exp (↑Real.pi * Complex.I * w) ^ 4) := by
+  rw [eta_eq_qParam_mul_eulerProd]
+  congr 1
+  · simp only [Periodic.qParam]; congr 1; push_cast; ring
+  · congr 1
+    simp only [Periodic.qParam, Complex.ofReal_one, div_one, ← Complex.exp_nat_mul]
+    congr 1
+    push_cast
+    ring
+
+/-- The `−x` in this one is `e^{πi} = −1`: `𝕢₁((w+1)/2) = e^{πi(w+1)} = −e^{πiw}`. -/
+lemma eta_add_one_div_two_eq (w : ℂ) :
+    ModularForm.eta ((w + 1) / 2)
+      = Complex.exp (↑Real.pi * Complex.I * (w + 1) / 24) *
+        eulerProd (-Complex.exp (↑Real.pi * Complex.I * w)) := by
+  rw [eta_eq_qParam_mul_eulerProd]
+  congr 1
+  · simp only [Periodic.qParam]; congr 1; push_cast; ring
+  · congr 1
+    simp only [Periodic.qParam, Complex.ofReal_one, div_one]
+    rw [show 2 * (↑Real.pi : ℂ) * Complex.I * ((w + 1) / 2)
+        = ↑Real.pi * Complex.I * w + ↑Real.pi * Complex.I by ring,
+      Complex.exp_add, Complex.exp_pi_mul_I]
+    ring
+
+/-- **WEBER'S FIRST RELATION `f·f₁·f₂ = √2`, IN `η` FORM AND PROVEN**:
+
+  `η(z/2)⁸ · η(2z)⁸ · η((z+1)/2)⁸ = e^{πi/3} · η(z)²⁴`.
+
+This is Jacobi's `θ₂θ₃θ₄ = 2η³` raised to the 8th power, and it needs NO theta function and no
+modularity: substituting the four `q`-parameters of `eta_div_two_eq`, `eta_two_mul_eq`,
+`eta_add_one_div_two_eq` and `eta_eq_exp_mul_eulerProd` splits it into
+
+* the exponential bookkeeping `e^{πiz/3}·e^{4πiz/3}·e^{πi(z+1)/3} = e^{πi/3}·e^{2πiz}`, and
+* the 8th power of `eulerProd_neg_mul_eulerProd_mul_pow_four`.
+
+The constant `e^{πi/3}` is forced: it is `ζ₄₈⁸` where `ζ₄₈ = e^{πi/24}` is the root of unity in
+Weber's `f = ζ₄₈⁻¹η((z+1)/2)/η(z)`. -/
+theorem eta_triple_pow_eight (z : ℍ) :
+    ModularForm.eta ((z : ℂ) / 2) ^ 8 * ModularForm.eta (2 * (z : ℂ)) ^ 8 *
+        ModularForm.eta (((z : ℂ) + 1) / 2) ^ 8
+      = Complex.exp (↑Real.pi * Complex.I / 3) * ModularForm.eta (z : ℂ) ^ 24 := by
+  set x : ℂ := Complex.exp (↑Real.pi * Complex.I * (z : ℂ)) with hxdef
+  have hxlt : ‖x‖ < 1 := norm_exp_pi_I_lt_one z
+  have hP8 : eulerProd x ^ 8 * eulerProd (x ^ 4) ^ 8 * eulerProd (-x) ^ 8
+      = eulerProd (x ^ 2) ^ 24 := by
+    rw [← mul_pow, ← mul_pow,
+      show eulerProd x * eulerProd (x ^ 4) * eulerProd (-x)
+        = eulerProd (-x) * eulerProd x * eulerProd (x ^ 4) by ring,
+      eulerProd_neg_mul_eulerProd_mul_pow_four hxlt, ← pow_mul]
+  have hexp : Complex.exp (↑Real.pi * Complex.I * (z : ℂ) / 24) ^ 8 *
+      Complex.exp (↑Real.pi * Complex.I * (z : ℂ) / 6) ^ 8 *
+      Complex.exp (↑Real.pi * Complex.I * ((z : ℂ) + 1) / 24) ^ 8
+      = Complex.exp (↑Real.pi * Complex.I / 3) *
+        Complex.exp (↑Real.pi * Complex.I * (z : ℂ) / 12) ^ 24 := by
+    simp only [← Complex.exp_nat_mul, ← Complex.exp_add]
+    congr 1
+    push_cast
+    ring
+  rw [eta_div_two_eq, eta_two_mul_eq, eta_add_one_div_two_eq, eta_eq_exp_mul_eulerProd, ← hxdef]
+  calc (Complex.exp (↑Real.pi * Complex.I * (z : ℂ) / 24) * eulerProd x) ^ 8 *
+        (Complex.exp (↑Real.pi * Complex.I * (z : ℂ) / 6) * eulerProd (x ^ 4)) ^ 8 *
+        (Complex.exp (↑Real.pi * Complex.I * ((z : ℂ) + 1) / 24) * eulerProd (-x)) ^ 8
+      = (Complex.exp (↑Real.pi * Complex.I * (z : ℂ) / 24) ^ 8 *
+          Complex.exp (↑Real.pi * Complex.I * (z : ℂ) / 6) ^ 8 *
+          Complex.exp (↑Real.pi * Complex.I * ((z : ℂ) + 1) / 24) ^ 8) *
+        (eulerProd x ^ 8 * eulerProd (x ^ 4) ^ 8 * eulerProd (-x) ^ 8) := by ring
+    _ = (Complex.exp (↑Real.pi * Complex.I / 3) *
+        Complex.exp (↑Real.pi * Complex.I * (z : ℂ) / 12) ^ 24) *
+        eulerProd (x ^ 2) ^ 24 := by rw [hexp, hP8]
+    _ = Complex.exp (↑Real.pi * Complex.I / 3) *
+        (Complex.exp (↑Real.pi * Complex.I * (z : ℂ) / 12) * eulerProd (x ^ 2)) ^ 24 := by
+        rw [mul_pow]; ring
+
+/-- **SUB-LEAF 5a-i′ — THE ONE REMAINING ANALYTIC INPUT, AND IT IS NOW A STATEMENT ABOUT THE
+OPEN UNIT DISC AND NOTHING ELSE.**
+
+  `eulerProd(−x)⁸ = eulerProd(x)⁸ + 16 x · eulerProd(x⁴)⁸`   for `‖x‖ < 1`,
+
+i.e. `∏(1−(−x)ⁿ)⁸ = ∏(1−xⁿ)⁸ + 16x·∏(1−x⁴ⁿ)⁸`.
+
+WHAT IT IS. This is **Weber's second relation `f⁸ = f₁⁸ + f₂⁸`**, equivalently **Jacobi's
+quartic identity `θ₃⁴ = θ₂⁴ + θ₄⁴`**, with the `η`-prefactor `e^{πiz/3}` divided out — see
+`eta_jacobi_quartic` just below, which derives the `η` form from this one in four lines. It
+replaces the former leaf `eta_two_torsion_key`, which bundled it together with
+`θ₂θ₃θ₄ = 2η³`; that companion turned out to be FREE (`eta_triple_pow_eight` above), so this
+is a strictly smaller leaf than the one it replaces, not a re-statement of it.
+
+WHY IT IS NOT PROVED HERE. Re-grepped over `.lake/packages/mathlib` at this pin (2026-07-30):
+`ModularForms/JacobiTheta/{OneVariable,TwoVariable,Bounds,Manifold}` define `jacobiTheta₂` as a
+SUM only — there is no Jacobi triple product anywhere in the pin, no `θ₂`/`θ₄`, no product
+formula tying any `θ` to `η`, and no Weber function. `~/cs/FLT` has none of it either. So the
+two classical routes both need new theory:
+
+* prove the Jacobi triple product for `jacobiTheta₂`, read off `θ₃⁴ = θ₂⁴ + θ₄⁴` from the
+  addition formulas, and convert; or
+* prove it as a level-2 modular identity — the three functions `f⁸, f₁⁸, f₂⁸` are permuted by
+  `Γ/Γ(2) ≅ S₃`, so `f⁸ − f₁⁸ − f₂⁸` is a `Γ(2)`-modular function, holomorphic on `ℍ`, and one
+  checks it vanishes at all three cusps. Mathlib's dimension/Sturm machinery
+  (`levelOne_weight_four_rank_one`, `sturm_bound_levelOne`) is LEVEL ONE and does not apply.
+
+AN EQUIVALENT AND SLIGHTLY MORE SYMMETRIC FORM, if it helps: with `u = eulerProdOdd(x)⁸` and
+`v = eulerProdOdd(−x)⁸` (the odd-exponent products `∏(1−x^{2k+1})⁸` and `∏(1+x^{2k+1})⁸`), the
+statement is exactly `u·v·(v − u) = 16x`. It follows from the displayed one by the three
+odd/even splits proved above, dividing by `eulerProd(x²)⁸`, which is nonzero.
+
+MACHINE-CHECKED FAITHFULNESS (`PARI/GP`, 60 digits, 2026-07-30). Both this identity and
+`eta_triple_pow_eight` were evaluated at `z = 0.3+0.7i`, `0.1+1.3i`, `−0.4+0.55i`, `0.05+i`,
+`3i`, `0.49+0.35i` and `i/√2` — deep in the cusp, close to the real axis, and at the fixed
+point of the Fricke involution where the factor `16η(2z)⁸ − η(z/2)⁸` in the `S`-transformation
+vanishes. Residual `< 1.1·10⁻⁷⁵` relative in every case, and `0` exactly at `i/√2` for this
+identity. The points are generic, not CM points: this is an identity on all of `ℍ`.
+
+WHAT WOULD REFUTE IT: any `x` in the open unit disc where the two sides differ. The constant
+`16` is not a normalisation — it is `(√2)⁸` from `f₂ = √2·η(2z)/η(z)` — and the exponent `8` is
+forced by `f₂⁸` being the smallest power of `f₂` that is a modular FUNCTION. -/
+theorem eulerProd_neg_pow_eight {x : ℂ} (hx : ‖x‖ < 1) :
+    eulerProd (-x) ^ 8 = eulerProd x ^ 8 + 16 * x * eulerProd (x ^ 4) ^ 8 := sorry
+
+/-- **WEBER'S SECOND RELATION `f⁸ = f₁⁸ + f₂⁸` IN `η` FORM** — PROVEN from
+`eulerProd_neg_pow_eight`, which is the same statement with the common factor `e^{πiz/3}`
+divided out:
+
+  `e^{−πi/3} · η((z+1)/2)⁸ = η(z/2)⁸ + 16 η(2z)⁸`. -/
+theorem eta_jacobi_quartic (z : ℍ) :
+    Complex.exp (-(↑Real.pi * Complex.I / 3)) * ModularForm.eta (((z : ℂ) + 1) / 2) ^ 8
+      = ModularForm.eta ((z : ℂ) / 2) ^ 8 + 16 * ModularForm.eta (2 * (z : ℂ)) ^ 8 := by
+  set x : ℂ := Complex.exp (↑Real.pi * Complex.I * (z : ℂ)) with hxdef
+  have hxlt : ‖x‖ < 1 := norm_exp_pi_I_lt_one z
+  have hA : Complex.exp (-(↑Real.pi * Complex.I / 3)) *
+      Complex.exp (↑Real.pi * Complex.I * ((z : ℂ) + 1) / 24) ^ 8
+      = Complex.exp (↑Real.pi * Complex.I * (z : ℂ) / 24) ^ 8 := by
+    simp only [← Complex.exp_nat_mul, ← Complex.exp_add]
+    congr 1
+    push_cast
+    ring
+  have hB : Complex.exp (↑Real.pi * Complex.I * (z : ℂ) / 6) ^ 8
+      = Complex.exp (↑Real.pi * Complex.I * (z : ℂ) / 24) ^ 8 * x := by
+    rw [hxdef]
+    simp only [← Complex.exp_nat_mul, ← Complex.exp_add]
+    congr 1
+    push_cast
+    ring
+  rw [eta_add_one_div_two_eq, eta_div_two_eq, eta_two_mul_eq, ← hxdef, mul_pow, mul_pow, mul_pow,
+    ← mul_assoc, hA, hB, eulerProd_neg_pow_eight hxlt]
+  ring
+
 /-! ### The weight-four eta quotient -/
 
-/-- **SUB-LEAF 5a-i — THE ONE REMAINING ANALYTIC INPUT.**
+/-- **SUB-LEAF 5a-i — NOW PROVEN** (2026-07-30), from the two Weber relations separately:
 
   `η(z/2)⁸ · η(2z)⁸ · (η(z/2)⁸ + 16 η(2z)⁸) = η(z)²⁴`.
 
-Everything else in `eta_pow_24_add_eta_two_pow_24` is PROVEN below from this single identity;
-see the section prose above for the derivation and for why this is a strictly cleaner cut than
-the two Weber relations the previous plan named.
-
-WHERE IT COMES FROM. In Weber's notation `f = ζ₄₈⁻¹η((z+1)/2)/η(z)`, `f₁ = η(z/2)/η(z)`,
-`f₂ = √2·η(2z)/η(z)`, put `a = f⁸`, `b = f₁⁸ = η(z/2)⁸/η(z)⁸`, `c = f₂⁸ = 16η(2z)⁸/η(z)⁸`.
-The two classical Weber relations are
+In Weber's notation `f = ζ₄₈⁻¹η((z+1)/2)/η(z)`, `f₁ = η(z/2)/η(z)`, `f₂ = √2·η(2z)/η(z)`, put
+`a = f⁸`, `b = f₁⁸ = η(z/2)⁸/η(z)⁸`, `c = f₂⁸ = 16η(2z)⁸/η(z)⁸`. The two classical relations are
 
   `f·f₁·f₂ = √2`  (equivalently `abc = 16`)   and   `f⁸ = f₁⁸ + f₂⁸`  (equivalently `a = b + c`),
 
-the second being Jacobi's `θ₂⁴ + θ₄⁴ = θ₃⁴`.  Substituting `a = b + c` into `abc = 16`
-ELIMINATES `f` (and with it `η((z+1)/2)` and the 48-th root of unity) and leaves exactly
-`bc(b+c) = 16`, which cleared of denominators is the statement above.  So this one identity
-carries the full content of both Weber relations that the `S`-transformation actually needs,
-and it is stated purely in `ModularForm.eta` — no Weber function, no root of unity, no theta
-constant appears.
+and this statement is `bc(b+c) = 16`, i.e. the two of them combined. The previous cut treated
+that combination as ONE leaf, on the ground that eliminating `f` also eliminates `η((z+1)/2)`
+and the 48-th root of unity. That is true and it was the wrong trade: **the two relations have
+completely different depth**, and bundling them hid a free half behind a hard one.
 
-MACHINE-CHECKED FAITHFULNESS (`PARI/GP`, `eta(z,1)`, 60 digits, 2026-07-29): the relative
-residual of `η(z/2)⁸η(2z)⁸(η(z/2)⁸+16η(2z)⁸) − η(z)²⁴` is `< 9·10⁻⁷⁶` at all NINE of
-`z = 0.3+0.7i`, `0.1+1.3i`, `−0.4+0.55i`, `0.05+i`, `3i`, `0.3i`, `0.49+0.05i`, `−0.25+0.1i`,
-`i/√2`.  The last five were chosen to probe the places where such an identity most often
+Taken apart (2026-07-30):
+
+* `abc = 16` is `eta_triple_pow_eight` above — PROVEN, a pure rearrangement of Euler products;
+* `a = b + c` is `eta_jacobi_quartic` above — Jacobi's `θ₃⁴ = θ₂⁴ + θ₄⁴`, still open, and now
+  stated in its smallest form as `eulerProd_neg_pow_eight`, an identity on the unit disc.
+
+So the proof below is three lines: replace `b + c` by `a` using the second, then read off `abc`
+using the first, and the two occurrences of `e^{±πi/3}` cancel.
+
+MACHINE-CHECKED FAITHFULNESS (`PARI/GP`, `eta(z,1)`, 60 digits, 2026-07-29, re-run 2026-07-30):
+the relative residual of `η(z/2)⁸η(2z)⁸(η(z/2)⁸+16η(2z)⁸) − η(z)²⁴` is `< 9·10⁻⁷⁶` at all NINE
+of `z = 0.3+0.7i`, `0.1+1.3i`, `−0.4+0.55i`, `0.05+i`, `3i`, `0.3i`, `0.49+0.05i`,
+`−0.25+0.1i`, `i/√2`. The last five probe the places where such an identity most often
 degenerates: deep in the cusp (`3i`), close to the real axis (`0.3i`, `0.49+0.05i`,
 `−0.25+0.1i`), and at the fixed point `i/√2` of the Fricke involution, which is exactly where
-the factor `16η(2z)⁸ − η(z/2)⁸` in the `S`-transformation vanishes.  The two Weber relations
-and the final target were checked at the first four points with the same residual, so the
-reduction above is not a mis-derivation.  The points are generic, not CM points: this is an
-identity on all of `ℍ`.
-
-WHAT WOULD REFUTE IT: any `z ∈ ℍ` where the two sides differ.  Note the constant `16` is
-forced twice over and is not a normalisation — it is `(√2)⁸` on one side and the `2⁴` inside
-`f₂⁸ = 2⁴η(2z)⁸/η(z)⁸` on the other — and the exponent `8` is forced by `f₂⁸` being the
-smallest power of `f₂` that is a modular FUNCTION.
-
-ROUTE FOR THE NEXT OWNER.  Re-grepped over `.lake/packages/mathlib` at this pin (2026-07-29):
-there are no Weber functions, `ModularForms/JacobiTheta/` has no product formula tying `θ` to
-`η`, and there is no Jacobi triple product anywhere.  So neither Weber relation can be quoted
-and this really is new theory.  Two routes, both classical:
-
-* prove the Jacobi triple product for `jacobiTheta₂` and read off `θ₂θ₃θ₄ = 2η³` together with
-  `θ₂⁴+θ₄⁴ = θ₃⁴`; or
-* prove it as a level-2 modular identity: `b` and `c` are holomorphic and non-vanishing on `ℍ`,
-  `bc(b+c) − 16` is invariant under `Γ(2)` (the group is generated by `T²` and `ST²S`, and both
-  act on the pair `(b, c)` by the `η`-transformation formulas already in
-  `ModularForms/Discriminant.lean`), and it vanishes at all three cusps by the `q`-expansions
-  `b = q^{1/3}(1 + O(q^{1/2}))`, `c = 16q^{1/3}·q^{1/2}(1 + O(q))`.
-
-An equivalent purely `q`-series form, with `x = e^{πiz}`, is
-`∏(1−(−1)ⁿxⁿ)⁸ = ∏(1−xⁿ)⁸ + 16x·∏(1−x⁴ⁿ)⁸`. -/
+the factor `16η(2z)⁸ − η(z/2)⁸` in the `S`-transformation vanishes. Both halves of the new
+decomposition were checked at the same points, so the split is not a mis-derivation. -/
 theorem eta_two_torsion_key (z : ℍ) :
     ModularForm.eta ((z : ℂ) / 2) ^ 8 * ModularForm.eta (2 * (z : ℂ)) ^ 8 *
         (ModularForm.eta ((z : ℂ) / 2) ^ 8 + 16 * ModularForm.eta (2 * (z : ℂ)) ^ 8)
-      = ModularForm.eta (z : ℂ) ^ 24 := sorry
+      = ModularForm.eta (z : ℂ) ^ 24 := by
+  have hone : Complex.exp (-(↑Real.pi * Complex.I / 3)) *
+      Complex.exp (↑Real.pi * Complex.I / 3) = 1 := by
+    rw [← Complex.exp_add, neg_add_cancel, Complex.exp_zero]
+  calc ModularForm.eta ((z : ℂ) / 2) ^ 8 * ModularForm.eta (2 * (z : ℂ)) ^ 8 *
+        (ModularForm.eta ((z : ℂ) / 2) ^ 8 + 16 * ModularForm.eta (2 * (z : ℂ)) ^ 8)
+      = ModularForm.eta ((z : ℂ) / 2) ^ 8 * ModularForm.eta (2 * (z : ℂ)) ^ 8 *
+        (Complex.exp (-(↑Real.pi * Complex.I / 3)) *
+          ModularForm.eta (((z : ℂ) + 1) / 2) ^ 8) := by rw [eta_jacobi_quartic]
+    _ = Complex.exp (-(↑Real.pi * Complex.I / 3)) * (ModularForm.eta ((z : ℂ) / 2) ^ 8 *
+        ModularForm.eta (2 * (z : ℂ)) ^ 8 * ModularForm.eta (((z : ℂ) + 1) / 2) ^ 8) := by ring
+    _ = Complex.exp (-(↑Real.pi * Complex.I / 3)) *
+        (Complex.exp (↑Real.pi * Complex.I / 3) * ModularForm.eta (z : ℂ) ^ 24) := by
+        rw [eta_triple_pow_eight]
+    _ = ModularForm.eta (z : ℂ) ^ 24 := by rw [← mul_assoc, hone, one_mul]
 
 /-- `F(z) = (η(z)²⁴ + 256 η(2z)²⁴)/(η(z)η(2z))⁸`. -/
 noncomputable def etaWeightFour (z : ℍ) : ℂ :=
@@ -3321,11 +3646,15 @@ DEFINED there over mathlib's `ModularForm.eta`, `ModularForm.discriminant` and
   theorem of CM**);
 * `Heegner.exists_quadratic_gammaTwo_of_jInvariant` — `γ₂(τ₀) ∈ K` once `j(τ₀) ∈ K` (Weber's
   level-`3` descent);
-* `Heegner.eta_two_torsion_key` — the `η`-product identity
-  `η(z/2)⁸η(2z)⁸(η(z/2)⁸+16η(2z)⁸) = η(z)²⁴` behind Weber's `γ₂³ = j`. It replaced
-  `Heegner.eta_pow_24_add_eta_two_pow_24`, which is PROVEN over it, and hence so are
-  `Heegner.gammaTwo_pow_three_eq_jInvariant` and
-  `Heegner.exp_pi_sqrt_le_of_jInvariant_eq` (the latter also over the two `E`-approximations).
+* `Heegner.eulerProd_neg_pow_eight` — **Jacobi's quartic identity on the unit disc**,
+  `∏(1−(−x)ⁿ)⁸ = ∏(1−xⁿ)⁸ + 16x·∏(1−x⁴ⁿ)⁸` for `‖x‖ < 1`. This REPLACES
+  `Heegner.eta_two_torsion_key`, which is now PROVEN over it (2026-07-30), and hence so are
+  `Heegner.eta_pow_24_add_eta_two_pow_24`, `Heegner.gammaTwo_pow_three_eq_jInvariant` and
+  `Heegner.exp_pi_sqrt_le_of_jInvariant_eq` (the last also over the two `E`-approximations).
+  The replacement is a strict narrowing, not a re-statement: `eta_two_torsion_key` bundled
+  Weber's two relations `f·f₁·f₂ = √2` and `f⁸ = f₁⁸ + f₂⁸`, and the FIRST of them turned out
+  to be free — it is the odd/even splitting of `∏(1−xⁿ)` and is PROVEN as
+  `Heegner.eta_triple_pow_eight`. Only the second, Jacobi's quartic, is left.
 
 `Heegner.exists_rat_gammaTwo_heegnerPoint` is no longer among them: it was decomposed and
 PROVEN on 2026-07-28 over the two class-field items together with
@@ -3334,10 +3663,10 @@ cuts `K` down to `ℚ`).
 
 Of these only `exists_quadratic_jInvariant_heegnerPoint` needs class field theory;
 `exists_quadratic_gammaTwo_of_jInvariant` needs Weber's level-`3` modular theory but no class
-field theory. `eta_two_torsion_key` is classical elliptic-function theory over machinery
-mathlib already has (`η`, `Δ = η²⁴`, `E₄`, `Δ = (E₄³−E₆²)/1728`, `qExpansion`), and
-`exists_modularPolynomial` is the integrality of the class equation; those two are the cheap
-targets. (This list is referred to BY NAME rather than by position — its ordinals went stale
+field theory. `eulerProd_neg_pow_eight` needs no modular theory AT ALL — it is an identity of
+holomorphic functions on the open unit disc, classically read off from the Jacobi triple
+product, which mathlib does not have at this pin — and `exists_modularPolynomial` is the
+integrality of the class equation; those two are the cheap targets. (This list is referred to BY NAME rather than by position — its ordinals went stale
 twice, and at one point "the seventh" had no referent at all.) -/
 theorem exists_heegnerRelation_of_classNumberOne {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3)
     (h3 : 3 < p)
