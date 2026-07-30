@@ -13406,6 +13406,67 @@ theorem exists_isAmpleSheaf_of_field {X : Scheme.{u}} (K : Type u) [Field K]
     ∃ L : X.Modules, IsAmpleSheaf L :=
   sorry
 
+/-- **`(L ⊗ M)^{⊗k} ≅ L^{⊗k} ⊗ M^{⊗k}`** (PROVEN 2026-07-30, in three lines) — the
+`modTensorPow` half of what `isAmpleSheaf_modTensor` below needs.
+
+Induction on `k` over `nonempty_modTensor_middleFour` (`AmpleSheaf.lean`, PROVEN):
+`modTensorPow` is right-nested, so the successor step is literally
+`(L ⊗ M) ⊗ (L^{⊗k} ⊗ M^{⊗k}) ≅ (L ⊗ L^{⊗k}) ⊗ (M ⊗ M^{⊗k})`, which is the
+middle-four interchange with no reassociation on either side.  The base case is the
+left unitor at `𝒪_Z`, backwards.
+
+Like `isAmpleSheaf_modTensor` below this belongs in `Modularity/AmpleSheaf.lean`,
+beside `nonempty_modTensorPow_mul`; it is here only so that the 2026-07-30 cut
+lands in one file. -/
+theorem nonempty_modTensorPow_modTensor {Z : Scheme.{u}} (L M : Z.Modules) (k : ℕ) :
+    Nonempty (modTensorPow (modTensor L M) k ≅
+      modTensor (modTensorPow L k) (modTensorPow M k)) := by
+  induction k with
+  | zero => exact ⟨(modTensorUnitLeftIso (modUnit Z)).symm⟩
+  | succ k ih =>
+    obtain ⟨e⟩ := ih
+    obtain ⟨m4⟩ := nonempty_modTensor_middleFour L M (modTensorPow L k) (modTensorPow M k)
+    exact ⟨modTensorMapIso (Iso.refl _) e ≪≫ m4⟩
+
+/-- **A TENSOR OF TWO SECTIONS IS A GENERATOR EXACTLY WHERE BOTH FACTORS ARE**
+(PROVEN 2026-07-30): `Z_{a ⊗ b} = Z_a ∩ Z_b`, for INVERTIBLE `A` and `B`.
+
+This is the second half of what `isAmpleSheaf_modTensor` below needs, and it is
+where the "a tensor of two sections is a unit exactly where both factors are"
+clause of that leaf's route is discharged.
+
+**INVERTIBILITY IS USED, AND ONLY TO PRODUCE TRIVIALIZATIONS.**  Both directions go
+through `nonvanishingAt_iff_trivializedSection` at ONE common open: `hA` and `hB`
+give trivializing neighbourhoods `U₁, U₂ ∋ z`, `trivializationOfLE` restricts both
+to `U₁ ⊓ U₂`, and `exists_trivialization_modTensor` (`AmpleSheaf.lean`, PROVEN)
+turns that pair into a trivialization `θ` of `A ⊗ B` there whose VALUE on
+`tensorSection a b` is the honest product `trivializedSection φ a *
+trivializedSection χ b`.  `Scheme.basicOpen_mul` then splits the membership.
+
+It is the pinned VALUE that makes the `⊆` direction work: the anonymous
+isomorphism `nonempty_restrict_modTensor` supplies would give a trivialization of
+`A ⊗ B` but no equation, and the locus is not recoverable from it — the same
+unit-scaling gap recorded on `exists_trivialization_modTensor` itself.
+
+Like the two statements around it, this belongs in `Modularity/AmpleSheaf.lean`,
+beside `nonvanishingLocus_tensorPowSection`. -/
+theorem nonvanishingLocus_tensorSection {Z : Scheme.{u}} {A B : Z.Modules}
+    (hA : IsInvertibleSheaf A) (hB : IsInvertibleSheaf B) (a : Γ(A, ⊤)) (b : Γ(B, ⊤)) :
+    nonvanishingLocus (modTensor A B) (tensorSection a b)
+      = nonvanishingLocus A a ∩ nonvanishingLocus B b := by
+  ext z
+  obtain ⟨U₁, hz₁, ⟨φ₁⟩⟩ := hA z
+  obtain ⟨U₂, hz₂, ⟨φ₂⟩⟩ := hB z
+  have hz : z ∈ U₁ ⊓ U₂ := ⟨hz₁, hz₂⟩
+  obtain ⟨θ, hθ⟩ := exists_trivialization_modTensor
+    (trivializationOfLE (inf_le_left : U₁ ⊓ U₂ ≤ U₁) φ₁)
+    (trivializationOfLE (inf_le_right : U₁ ⊓ U₂ ≤ U₂) φ₂)
+  show NonvanishingAt _ _ z ↔ NonvanishingAt _ _ z ∧ NonvanishingAt _ _ z
+  rw [nonvanishingAt_iff_trivializedSection _ θ hz,
+    nonvanishingAt_iff_trivializedSection a _ hz,
+    nonvanishingAt_iff_trivializedSection b _ hz, hθ a b, Scheme.basicOpen_mul]
+  exact Iff.rfl
+
 /-- **A TENSOR PRODUCT OF AMPLE INVERTIBLE SHEAVES IS AMPLE** (sorry leaf, cut
 2026-07-30 out of `exists_isAmpleSheaf_symmetric_cube` above) — EGA II 4.5.7,
 Hartshorne II Ex. 7.5.
@@ -13431,22 +13492,73 @@ and `Spec` is affine.
 
 This statement belongs in `Modularity/AmpleSheaf.lean` beside
 `isAmpleSheaf_modTensorPow` and `isAmpleSheaf_modPullback`; it is here only so
-that this cut lands in one file.  Move it when convenient. -/
+that this cut lands in one file.  Move it when convenient — and take the two
+lemmas immediately above with it, which belong there for the same reason.
+
+**PROVEN 2026-07-30**, along exactly the route above, over the two lemmas
+`nonempty_modTensorPow_modTensor` and `nonvanishingLocus_tensorSection`
+immediately above.  Two notes for a reader:
+
+* the exponent is `n * m` on BOTH sides — `s^{⊗m}` lives in `(L^{⊗n})^{⊗m}` and
+  `t^{⊗n}` in `(M^{⊗m})^{⊗n}`, so the right factor needs `Nat.mul_comm` and the
+  left does not, which is the only asymmetry in the assembly;
+* `[IsSeparated g]` and `[IsAffine W]` are consumed EXACTLY ONCE, and only to
+  produce `Scheme.IsSeparated Z` (`g ≫ terminal.from W = terminal.from Z`) and
+  through it the instance `IsAffineHom (pullback.diagonal (terminal.from Z))`
+  that mathlib's `IsAffineOpen.inf` demands.  So the counterexample recorded
+  above — the line with a doubled origin — is exactly what the hypothesis is
+  bought against, and nothing else in the proof looks at `g`. -/
 theorem isAmpleSheaf_modTensor {Z W : Scheme.{u}} (g : Z ⟶ W) [IsAffine W] [IsSeparated g]
     {L M : Z.Modules} (hL : IsAmpleSheaf L) (hM : IsAmpleSheaf M) :
-    IsAmpleSheaf (modTensor L M) :=
-  sorry
+    IsAmpleSheaf (modTensor L M) := by
+  -- `Z` is separated over `⊤_ Scheme`, which is what `IsAffineOpen.inf` needs.
+  haveI : Scheme.IsSeparated Z := by
+    constructor
+    have h : IsSeparated (g ≫ terminal.from W) := inferInstance
+    rwa [terminal.comp_from] at h
+  intro z
+  obtain ⟨n, hn, s, V, hzV, hV, hlocV⟩ := hL z
+  obtain ⟨m, hm, t, V', hzV', hV', hlocV'⟩ := hM z
+  have hLinv : IsInvertibleSheaf L := isInvertibleSheaf_of_isAmpleSheaf hL
+  have hMinv : IsInvertibleSheaf M := isInvertibleSheaf_of_isAmpleSheaf hM
+  -- `s^{⊗m}` and `t^{⊗n}`, both read in degree `n * m`, with unchanged loci.
+  obtain ⟨s', hs'⟩ := exists_tensorPowSection (k := m) (modTensorPow L n) s hm V hlocV
+  obtain ⟨t', ht'⟩ := exists_tensorPowSection (k := n) (modTensorPow M m) t hn V' hlocV'
+  obtain ⟨eL⟩ := nonempty_modTensorPow_mul L n m
+  obtain ⟨eM⟩ := nonempty_modTensorPow_mul M m n
+  have eM' : modTensorPow (modTensorPow M m) n ≅ modTensorPow M (n * m) :=
+    eM ≪≫ eqToIso (by rw [Nat.mul_comm])
+  set sL : Γ(modTensorPow L (n * m), ⊤) := eL.hom.val.app (Opposite.op ⊤) s' with hsL
+  set tM : Γ(modTensorPow M (n * m), ⊤) := eM'.hom.val.app (Opposite.op ⊤) t' with htM
+  have hlocL : nonvanishingLocus (modTensorPow L (n * m)) sL = (V : Set Z) := by
+    rw [hsL, nonvanishingLocus_of_iso]; exact hs'
+  have hlocM : nonvanishingLocus (modTensorPow M (n * m)) tM = (V' : Set Z) := by
+    rw [htM, nonvanishingLocus_of_iso]; exact ht'
+  obtain ⟨e⟩ := nonempty_modTensorPow_modTensor L M (n * m)
+  refine ⟨n * m, Nat.mul_pos hn hm, e.symm.hom.val.app (Opposite.op ⊤) (tensorSection sL tM),
+    V ⊓ V', ⟨hzV, hzV'⟩, hV.inf hV', ?_⟩
+  rw [nonvanishingLocus_of_iso,
+    nonvanishingLocus_tensorSection (isInvertibleSheaf_modTensorPow hLinv _)
+      (isInvertibleSheaf_modTensorPow hMinv _), hlocL, hlocM]
+  rfl
 
-/-- **`Pic (Spec K) = 0` FOR A FIELD `K`** (sorry leaf, cut 2026-07-30) — every
-invertible sheaf on the spectrum of a field is trivial.
+/-- **`Pic (Spec K) = 0` FOR A FIELD `K`** (**PROVEN 2026-07-30**; cut 2026-07-30) —
+every invertible sheaf on the spectrum of a field is trivial.
 
-ROUTE, and it is short.  `Spec K` has exactly ONE point, so the only open
+ROUTE, and it is short — this is what was written.  `Spec K` has exactly ONE point
+(`Unique (Spec (.of K))`, an instance in the pin for a field), so the only open
 containing that point is `⊤`.  `IsInvertibleSheaf M` therefore hands back `U = ⊤`
 together with `M.restrict (⊤ : Opens).ι ≅ modUnit ((⊤ : Opens) : Scheme)`, and all
-that remains is to transport along the isomorphism `(⊤ : Opens) ≅ Spec K` of
-schemes — `Scheme.Modules.restrictUnitIso` and `Scheme.Opens.topIso` are the
-pin-side names to look at, and `isInvertibleSheaf_modUnit`'s one-line proof in
-`AmpleSheaf.lean` is the template for the `U = ⊤` direction.
+that remains is to transport along the isomorphism `Scheme.topIso : (⊤ : Opens) ≅ Spec K`
+of schemes.
+
+The transport is done through `modPullback` rather than through
+`Scheme.Modules.restrictUnitIso`, which is what the original route suggested:
+`modRestrictPullbackIso` turns `M.restrict ⊤.ι` into `modPullback ⊤.ι M`, and then
+pulling back along `Scheme.topIso.inv` and using `modPullbackCompIso`,
+`Scheme.toIso_inv_ι` and `Scheme.Modules.pullbackId` gives `M` itself; the unit side
+is `modPullbackUnitIso`.  Every one of those five is PROVEN upstream in
+`ModularCurve/RelativePicard.lean`, so this leaf added no machinery.
 
 **This is the ONE leaf of this cut that is not mathlib-scale**, and it is the
 reason both `exists_isAmpleSheaf_symmetric_cube` and its coordinate sibling need
@@ -13454,8 +13566,24 @@ a FIELD base rather than an arbitrary one: over a base with `Pic S ≠ 0` the
 normalization conjunct is simply false for the sheaf the construction produces. -/
 theorem nonempty_iso_modUnit_of_isInvertibleSheaf_of_field (K : Type u) [Field K]
     (M : (Spec (CommRingCat.of K)).Modules) (hM : IsInvertibleSheaf M) :
-    Nonempty (M ≅ modUnit (Spec (CommRingCat.of K))) :=
-  sorry
+    Nonempty (M ≅ modUnit (Spec (CommRingCat.of K))) := by
+  -- `Spec K` has a unique point, so the trivializing open around it is `⊤`.
+  obtain ⟨U, hzU, ⟨α⟩⟩ := hM default
+  have hUtop : U = ⊤ :=
+    le_antisymm le_top fun z _ => by rwa [Subsingleton.elim z default]
+  subst hUtop
+  -- transport along `Spec K ≃ (⊤ : (Spec K).Opens)`, which turns `M|_⊤ ≅ 𝒪_⊤` into `M ≅ 𝒪`.
+  have hid : modPullback (𝟙 (Spec (CommRingCat.of K))) M ≅ M :=
+    (Scheme.Modules.pullbackId (Spec (CommRingCat.of K))).app M
+  have hchain : M ≅ modPullback (Spec (CommRingCat.of K)).topIso.inv
+      (M.restrict (⊤ : (Spec (CommRingCat.of K)).Opens).ι) :=
+    (modPullbackMapIso (Spec (CommRingCat.of K)).topIso.inv
+        (modRestrictPullbackIso (⊤ : (Spec (CommRingCat.of K)).Opens).ι M) ≪≫
+      modPullbackCompIso (Spec (CommRingCat.of K)).topIso.inv
+        (⊤ : (Spec (CommRingCat.of K)).Opens).ι M ≪≫
+      modPullbackCongrIso (Scheme.toIso_inv_ι (Spec (CommRingCat.of K))) M ≪≫ hid).symm
+  exact ⟨hchain ≪≫ modPullbackMapIso (Spec (CommRingCat.of K)).topIso.inv α ≪≫
+    modPullbackUnitIso (Spec (CommRingCat.of K)).topIso.inv⟩
 
 /-- **THE THEOREM OF THE CUBE, FOR A SYMMETRIC NORMALIZED INVERTIBLE SHEAF**
 (sorry leaf, cut 2026-07-30 out of `exists_isAmpleSheaf_symmetric_cube` above):

@@ -37,11 +37,17 @@ from pathlib import Path
 
 # The tree this script lives in — NOT a hardcoded path.  It used to be
 # `Path("/home/chend/flt-lean")`, so a worker running it inside its own worktree
-# silently scanned a DIFFERENT tree: on 2026-07-30 `flt-lean-188` was told its
-# `Patching.lean` held 11 sorried declarations when the file in front of it held 9,
-# because the two it had just closed were still open on the other tree.  A count
-# that reads a tree you are not looking at is the worst shape of wrong answer, so
-# the root is now derived from the script's own location and follows the worktree.
+# silently scanned a DIFFERENT tree, and a RELATIVE argument resolved against main
+# instead of the checkout in front of you.  The script then reports main's frontier
+# while claiming to report yours, which is the worst shape of wrong answer.  Two
+# independent hits on 2026-07-30:
+#   * `flt-lean-188` was told its `Patching.lean` held 11 sorried declarations when
+#     the file in front of it held 9 — the two it had just closed were still open
+#     on the other tree;
+#   * `flt-lean-362` ran `flt-hidden-sorries.py
+#     Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean` and got 8 against the 6 the
+#     compiler had just warned about in that worktree.
+# So the root is derived from the script's own location and follows the worktree.
 ROOT = Path(__file__).resolve().parent
 
 HDR = re.compile(
