@@ -79,6 +79,8 @@ def unjustified(s):
 
 
 def idle_guard(s):
+    if s.get("quota_until"):
+        return (True, "")      # idling on quota is a legitimate wait
     live = [n for n, j in s["jobs"].items() if j["alive"]]
     if not live:
         # ...unless we are waiting on host capacity, which IS a legitimate
@@ -214,6 +216,11 @@ MEDIC_HOST = "mystique"
 
 def spawnable(s, j):
     if not unspawned(j):
+        return False
+    # The API is refusing work. Spawning now burns an attempt and achieves
+    # nothing, so the loop waits instead -- the wait is the correct action,
+    # not a degraded one.
+    if s.get("quota_until"):
         return False
     # SAFE MODE, enforced at the spawner rather than by row order. SPAWN has
     # to sit ABOVE the SAFE MODE row -- otherwise the row that engages safe
