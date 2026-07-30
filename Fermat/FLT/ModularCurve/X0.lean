@@ -60271,15 +60271,101 @@ is PROVEN over this leaf and the arithmetic one after it.
 
 TRUE.  `_hnew` makes `S₂(Γ₀(N))` entirely new, so each eigen-system
 occurs in `J₀(N)` with multiplicity one.  `D.isotypic` (with `D.T` pinned
-to the genuine Hecke correspondences by `D.heckeModuli`, and strong
-multiplicity one separating distinct newform orbits already in the
-ANEMIC range) makes `A i` isotypic for `D.coeff i`, and `D.u_surj i`
-makes it a quotient of `J₀(N)`; multiplicity one then forces `A i` to be
-`ℚ`-isogenous to `A_g` for the orbit `g` of `D.coeff i`, or trivial.
-`A_g` is `ℚ`-simple with `End⁰(A_g) = K_g` the Hecke FIELD (Shimura), so
-`ι := F.wA i` — which lies in `End⁰(A i)` and by `F.hecke_comm` commutes
-with the anemic Hecke action — is an element of a field with `ι² = 1`
-(`F.wA_invol`), hence `ι = ±1`.
+to the genuine Hecke correspondences by `D.heckeModuli`, and distinct
+newform orbits separated already in the ANEMIC range — see the AUDIT
+REFINEMENT below for the sharper form of that separation which is what a
+proof actually needs) makes `A i` isotypic for `D.coeff i`, and
+`D.u_surj i` makes it a quotient of `J₀(N)`; multiplicity one then forces
+`A i` to be `ℚ`-isogenous to `A_g` for the orbit `g` of `D.coeff i`, or
+trivial.  `A_g` is `ℚ`-simple with `End⁰(A_g) = K_g` the Hecke FIELD
+(Shimura), so `ι := F.wA i` — which lies in `End⁰(A i)` and by
+`F.hecke_comm` commutes with the anemic Hecke action — is an element of a
+field with `ι² = 1` (`F.wA_invol`), hence `ι = ±1`.
+
+**AUDIT REFINEMENT (2026-07-30): `D.isotypic` gives POINTWISE conjugacy,
+and plain strong multiplicity one does NOT close the gap.**  The paragraph
+above originally read the anemic separation as licensing "`A i` is
+isogenous to a single `A_g`" directly.  It is one step short.
+`D.isotypic` says only that `minpoly ℤ (D.coeff i n)` annihilates
+`S i n` for each `n` coprime to `N` — i.e. every anemic eigenvalue
+occurring on `A i` is *a* conjugate of `D.coeff i n`, **with the Galois
+element allowed to depend on `n`**.  Strong multiplicity one hypothesises
+a UNIFORM system (`a_n(h) = a_n(g)` for every `n` coprime to `N`), which
+is not what is in hand.  What a prover must reach for is therefore the
+SEPARATION statement
+
+  (SEP)  if `a_n(h)` is a Galois conjugate of `a_n(g)` — equivalently
+  `minpoly(a_n(g)) = minpoly(a_n(h))`, the conjugating element free to
+  depend on `n` — for EVERY `n` coprime to `N`, then the newform orbits
+  `g` and `h` coincide.
+
+The gap is not cosmetic: a pair `g ≠ h` violating (SEP) REFUTES this leaf.
+`A i := A_g × A_h` is then a quotient of `J₀(N)` (both new of level `N`)
+satisfying `D.isotypic` for `D.coeff i := a(g)`, since that one minimal
+polynomial annihilates `S i n` on BOTH factors for every `n` coprime to
+`N`; and `ι := (+1, −1)` is an additive involution commuting with the
+whole anemic Hecke action which is neither `+1` nor `−1`.  The remaining
+fields are satisfiable alongside (`cover` by adding the other orbits as
+further factors, `finite_ker` because the joint map is still an isogeny),
+so BOTH disjuncts would fail.
+
+**CORRECTION TO AN EARLIER DRAFT OF THIS AUDIT (2026-07-30, same day).**
+An earlier form of the paragraph above stated (SEP) with `n` restricted to
+PRIMES `p ∤ N`, and concluded that the leaf "stands or falls" on that.
+Both halves are off, by one observation: `D.isotypic` quantifies over
+every `n` coprime to `N`, not only over primes, and `a_{pq} = a_p a_q` is
+a genuinely further constraint — with `a_p(h) = σ(a_p(g))` and
+`a_q(h) = τ(a_q(g))` for possibly DIFFERENT `σ, τ`, the product
+`σ(a_p) τ(a_q)` need not be conjugate to `a_p a_q`.  So the prime-only
+condition brackets the leaf on both sides without pinning it:
+
+  * as a REFUTATION condition it is NOT sufficient.  A pair agreeing at
+    every good prime need not make `A_g × A_h` isotypic, because the
+    composite `n` may still separate them; the leaf does not fall with it.
+  * as a PROOF input it IS sufficient, since primes are among the `n`
+    coprime to `N` — but strictly stronger than needed.  (SEP) is the
+    minimal statement, and the cheaper thing to aim at.
+
+The prime-only form is nonetheless the one with a classical proof, and a
+prover may legitimately take that route and ignore composite `n`
+altogether: equal minimal polynomials at every good `p` make the good
+Euler factors of `(∏_σ L(g^σ, s))^{[K_h : ℚ]}` and
+`(∏_τ L(h^τ, s))^{[K_g : ℚ]}` agree — the exponents are what match the
+multiplicities `[K_g : ℚ(a_p(g))]` when the two Hecke fields have
+different degrees, and without them the two products need not be equal —
+and unique factorisation into primitive `L`-functions then forces the two
+orbits to coincide.  Either way this is a strictly stronger input than the
+strong multiplicity one named below, and a prover who takes the plain form
+off the shelf will find a hole here.
+
+**SEARCHED FOR A COUNTEREXAMPLE TO (SEP) AND FOUND NONE** (PARI/GP,
+2026-07-30; the screen was run twice, independently, the second time on
+2.15.4).  Every level `N ≤ 600` at which `_hnew` is SATISFIABLE — i.e.
+`S₂(Γ₀(M)) = 0` for every proper divisor `M ∣ N` — was enumerated: the
+genus-zero levels are `1..10, 12, 13, 16, 18, 25`, and the all-new levels
+with nonzero newspace are exactly **121**, namely the 114 odd ones (the
+104 odd primes other than `3, 5, 7, 13`, together with the ten odd
+composites `15, 21, 27, 35, 39, 49, 65, 91, 125, 169`) and the seven even
+ones `14, 20, 24, 26, 32, 36, 50`.  Note this is NOT "all odd levels" —
+`33, 45, 51, 55, 57, 63, …` all carry an old part.
+
+Two passes, the second subsuming the first:
+
+  * *Screen at `p = 2`.*  Squarefreeness of
+    `charpoly(T_2 | S₂(Γ₀(N))^new)` is sound and complete for detecting a
+    shared `minpoly(a_2)`, since a collision forces that polynomial to
+    divide the charpoly twice.  It leaves 13 levels — `113, 227, 251, 307,
+    347, 431, 433, 439, 487, 503, 563, 571, 577`.
+  * *Direct check of (SEP).*  At each of the **103** of those 121 levels
+    that carry at least two orbits, `minpoly(a_n)` was compared across
+    every pair of distinct orbits for every `n ≤ 60` coprime to `N` —
+    composite `n` included, which is what the prime-only pass could not
+    see.  **Zero collisions.**  The only `a_2` coincidences are the orbit
+    pairs at `26, 50, 307, 431, 487, 503, 563`, and every one of them
+    separates already at `n = 3`.
+
+So no counterexample to (SEP) exists below level `600`, and the leaf
+survives the one axis that would have killed it.
 
 **NOTHING ATKIN–LEHNER IS ASKED FOR.**  `w`, `IsAtkinLehner` and the
 `_hchar` pin are not hypotheses: the conclusion holds for the descent of
@@ -60324,10 +60410,12 @@ weakening**: no involution of a factor can fail to be `±1` once
 multiplicity one holds, whatever `w_J` is and whatever the `L`-values are.
 Adding either would make the leaf harder to consume and no truer.
 
-**What proving it needs**: multiplicity one for newforms of level `N`
-(strong multiplicity one, plus `End⁰(A_g) = K_g`).  Absent from mathlib,
-from `~/cs/FLT` and from this development — `grep -ri "multiplicity one"`
-over all three returns only this file's own prose. -/
+**What proving it needs**: multiplicity one for newforms of level `N` — in
+the SHARPENED form (SEP) isolated above, `minpoly`-at-every-`n`-coprime-
+to-`N` rather than equal-anemic-systems — plus `End⁰(A_g) = K_g`.  Absent
+from mathlib, from `~/cs/FLT` and from this development —
+`grep -ri "multiplicity one"` over all three returns only this file's own
+prose. -/
 theorem atkinLehnerFactor_eq_pm_one_of_new (N : ℕ) {X Y J : Scheme.{0}}
     {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (hX : IsX0Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
@@ -60379,6 +60467,23 @@ searched 2026-07-29 and CLOSED.
 would be satisfied by a factor with `2 · A i(ℚ) = 0` and `w_{A i} = +1`,
 where the conclusion is still true but only through Mordell–Weil
 finite generation, which this development does not have.
+
+**THE MULTIPLICITY-ONE STEP HERE NEEDS THE SHARPENED SEPARATION TOO**
+(2026-07-30).  The `TRUE` paragraph's "by multiplicity one `A i` is
+`ℚ`-isogenous to `A_g`" is the same inference
+`atkinLehnerFactor_eq_pm_one_of_new` makes, and it has the same one-step
+gap: `D.isotypic` gives only that `minpoly ℤ (D.coeff i n)` annihilates
+`S i n`, i.e. POINTWISE conjugacy with the Galois element depending on `n`,
+whereas strong multiplicity one hypothesises a uniform eigen-system.  The
+AUDIT REFINEMENT on that leaf states the sharper input required — (SEP)
+there: `minpoly(a_n)` agreeing at every `n` coprime to `N` implies the
+same orbit — and records the PARI/GP search that found no counterexample
+to it below level `600`.  A prover here should read that paragraph before
+reaching for strong multiplicity one; unlike there, the gap does not
+threaten THIS leaf's truth — a factor isogenous to `A_g × A_h` for two
+pointwise-conjugate orbits with `w_N = −1` on both would still have finite
+`ℚ`-points by `_hL` applied to each — but it does change what must be
+proven.
 
 **`_hnew` MAY NOT BE DROPPED, and the witness is `N = 74`.**  `_hL` HOLDS
 at `74` — all four newforms are Atkin–Lehner-minus
@@ -60457,7 +60562,11 @@ correspondences by `D.heckeModuli`), so `End⁰(A i)` is the Hecke field
 `K_g`, a FIELD.  `F.hecke_comm` puts `w_{A i}` in that field and
 `F.wA_invol` makes it a square root of `1` there, so `w_{A i} = ±1`
 — the sign exists for free, with no `±`-splitting of an abelian variety.
-Then:
+(The step "`A i` is isotypic, so `End⁰(A i) = K_g`" is exactly the one the
+AUDIT REFINEMENT on `atkinLehnerFactor_eq_pm_one_of_new` above shows to be
+one quantifier short of what `D.isotypic` supplies; this docstring is
+descriptive only — the theorem is PROVEN over that leaf, which is where the
+gap now lives and is recorded.)  Then:
 
 * `w_{A i} = +1`: `x − w_{A i} x = 0`, torsion.
 * `w_{A i} = −1`: `A i` is isogenous to a product of `A_g`'s whose
