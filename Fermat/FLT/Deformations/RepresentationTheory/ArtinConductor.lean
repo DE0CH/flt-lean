@@ -3891,6 +3891,31 @@ lemma phi_psiNat_pred_lt {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)}
   have h2 := D.psiNat_pos hu
   omega
 
+/-- `φ(1)` is the reciprocal of the TAME ramification index `[G₀ : G₁]` — the
+first step of `φ`, the empty sum having been added to nothing. -/
+lemma phi_one {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)}
+    (D : LowerRamificationData v) :
+    D.phi 1 = 1 / (((D.gp 1).relIndex (D.gp 0) : ℕ) : ℚ) := by
+  rw [show (1 : ℕ) = 0 + 1 from rfl, D.phi_succ 0, D.phi_zero, zero_add]
+
+/-- **`φ(1)` BOUNDS EVERY STEP OF `φ`.** The steps are `1/[G₀ : G_m]` and the
+`G_m` decrease, so their relative indices grow — divisibly, in fact
+(`Subgroup.relIndex_dvd_of_le_left`). This is what makes the FIRST step the
+only one a density argument has to control. -/
+lemma step_le_phi_one {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)}
+    (D : LowerRamificationData v) (m : ℕ) :
+    1 / (((D.gp (m + 1)).relIndex (D.gp 0) : ℕ) : ℚ) ≤ D.phi 1 := by
+  rw [D.phi_one]
+  have hdvd : (D.gp 1).relIndex (D.gp 0) ∣ (D.gp (m + 1)).relIndex (D.gp 0) :=
+    Subgroup.relIndex_dvd_of_le_left (D.gp 0) (D.gp_antitone (Nat.le_add_left 1 m))
+  have hpos : 0 < (D.gp (m + 1)).relIndex (D.gp 0) :=
+    Nat.pos_of_ne_zero (D.relIndex_ne_zero (m + 1))
+  have hle : (D.gp 1).relIndex (D.gp 0) ≤ (D.gp (m + 1)).relIndex (D.gp 0) :=
+    Nat.le_of_dvd hpos hdvd
+  have h1 : (0 : ℚ) < (((D.gp 1).relIndex (D.gp 0) : ℕ) : ℚ) := by
+    exact_mod_cast Nat.pos_of_ne_zero (D.relIndex_ne_zero 1)
+  exact one_div_le_one_div_of_le h1 (by exact_mod_cast hle)
+
 end LowerRamificationData
 
 /-- **THE UPPER-NUMBERING FILTRATION, CONSTRUCTED AS AN INVERSE LIMIT**
@@ -5357,6 +5382,46 @@ theorem exists_nat_eq_sum_breaks (ρ : GaloisRep K A M)
         ((Finset.range (ρ.wildCodim v)).filter fun k => u ≤ μ k).card) :
     ∃ s : ℕ, (s : ℚ) = ∑ k ∈ Finset.range (ρ.wildCodim v), μ k := sorry
 
+/-- **LEVELS OF UNBOUNDED TAME RAMIFICATION EXIST INSIDE ANY OPEN SUBGROUP**
+(SORRY LEAF, cut 2026-07-30 out of `exists_lowerRamificationData_phi_mem_Ioc`
+below, which is now PROVEN over it and over
+`exists_lowerRamificationData_lvl_eq`).
+
+`D.phi 1 = 1/[G₀ : G₁]` (`LowerRamificationData.phi_one`) and `[G₀ : G₁]` is the
+TAME ramification index `e_tame(L/Kᵥ)`, so this says: inside any open `N` there
+are finite levels of arbitrarily large tame ramification. It is the whole
+arithmetic content of the density leaf below, and it is the ONLY thing that
+leaf still needs — the inhabitation and the φ-combinatorics are both discharged
+(see that docstring).
+
+WHY IT IS TRUE, and it is a statement about `Kᵥ` alone. `Kᵥ` is a local field
+with finite residue field of characteristic `ℓ`, so for every `M` prime to `ℓ`
+the Kummer extension `Kᵥⁿʳ(π^{1/M})/Kᵥⁿʳ` is TOTALLY (tamely) ramified of degree
+`M` — which this file already proves, as
+`exists_localInertia_smul_eq_mul_of_pow_eq_one` (surjectivity of the tame
+character onto `μ_M`) over `irreducible_X_pow_sub_C_uniformizer`. There are
+infinitely many such `M`. To place the level inside `N`, take the compositum
+with the fixed field of `N` (an open subgroup, hence a finite level) and pass to
+the Galois closure; enlarging `L` cannot decrease `e_tame`, because
+`[G₀ : G₁]` is multiplicative in towers on the tame part.
+
+WHAT A PROVER MUST NOT DO. `[G₀ : G₁]` here is the relative index of the
+ELEMENTWISE groups of `LowerRamificationData.mem_gp`, not of an abstract
+inertia quotient, so the bound has to be exhibited by elements: `M` elements of
+`G₀` that are pairwise inequivalent modulo `G₁`. With `X` an `M`-th root of a
+uniformizer and `σ_ζ • X = ζ · X`, the ratio `ρ = σ_{ζ'}⁻¹σ_ζ` sends `X` to
+`ζζ'⁻¹ X`, and `ζζ'⁻¹ − 1` is a UNIT of `Oᵥ` (from `∏_{η ≠ 1}(1 − η) = M` and
+`isUnit_natCast_integralClosure_of_notMem_asIdeal`), so `ρ ∈ G₁` would force
+`unif² ∣ X`. That is the contradiction, and it needs `X` to have `L`-valuation
+exactly `1` — which is where the "totally ramified" half of the construction is
+actually consumed. -/
+theorem exists_lowerRamificationData_phi_one_le
+    (v : HeightOneSpectrum (𝓞 K))
+    (N : Subgroup (Field.absoluteGaloisGroup (v.adicCompletion K)))
+    (hN : IsOpen (N : Set (Field.absoluteGaloisGroup (v.adicCompletion K))))
+    (ε : ℚ) (hε : 0 < ε) :
+    ∃ D : LowerRamificationData v, D.lvl ≤ N ∧ D.phi 1 ≤ ε := sorry
+
 /-- **HERBRAND VALUES ARE DENSE, ARBITRARILY DEEP** (SORRY LEAF, cut
 2026-07-28 out of step `hsum`): inside any open subgroup `N ≤ Γ Kᵥ` there is
 a finite level `D` and an `m` with `φ_D(m)` in any prescribed interval
@@ -5392,14 +5457,59 @@ refinement argument above is indifferent to which it is: `φ_{L'/Kᵥ}` samples
 `φ_{L/Kᵥ}` on `(1/e)ℤ` for every `e` prime to the residue characteristic, and
 those values are dense in the whole of `(0, ∞)`, not merely above `1`. Note
 `0 < w` cannot be dropped in turn: `φ(0) = 0` and `φ` is strictly increasing,
-so there is no Herbrand value in `(w, u]` when `u ≤ 0`. -/
+so there is no Herbrand value in `(w, u]` when `u ≤ 0`.
+
+**RECUT 2026-07-30 — this leaf is now PROVEN over a single, much smaller one,
+`exists_lowerRamificationData_phi_one_le` immediately above.** Two of the three
+things this docstring said had to be built are done and are no longer part of
+it:
+
+* INHABITATION is settled outright by `exists_lowerRamificationData_lvl_eq`,
+  which produces a datum at every prescribed open normal level — so the
+  `D.lvl ≤ N` clause costs nothing.
+* The φ-COMBINATORICS is settled here. It needed no transitivity of Herbrand's
+  function and no tower `L'/L`: `φ` is a sum of steps `1/[G₀ : G_m]`, the steps
+  DECREASE (`step_le_phi_one`, because the `G_m` do), and `φ` is unbounded
+  (`exists_le_phi`). So `k = ψ(w)` is the first index at or above `w`, one of
+  `φ(k)` and `φ(k+1)` lies strictly above `w`, and it overshoots by at most one
+  step, hence by at most `φ(1)`.
+
+What is left is exactly the arithmetic, in one line: **`φ(1) = 1/[G₀ : G₁]` can
+be made arbitrarily small inside any open subgroup**, i.e. levels of unbounded
+TAME ramification exist. That is the leaf above. -/
 theorem exists_lowerRamificationData_phi_mem_Ioc
     (v : HeightOneSpectrum (𝓞 K))
     (N : Subgroup (Field.absoluteGaloisGroup (v.adicCompletion K)))
     (hN : IsOpen (N : Set (Field.absoluteGaloisGroup (v.adicCompletion K))))
     (w u : ℚ) (hw : 0 < w) (hwu : w < u) :
     ∃ (D : LowerRamificationData v) (m : ℕ),
-      D.lvl ≤ N ∧ w < D.phi m ∧ D.phi m ≤ u := sorry
+      D.lvl ≤ N ∧ w < D.phi m ∧ D.phi m ≤ u := by
+  obtain ⟨D, hDN, hDphi⟩ :=
+    exists_lowerRamificationData_phi_one_le v N hN (u - w) (by linarith)
+  have hk1 : 0 < D.psiNat w := D.psiNat_pos hw
+  have hkge : w ≤ D.phi (D.psiNat w) := D.le_phi_psiNat w
+  have hpred : D.phi (D.psiNat w - 1) < w := D.phi_psiNat_pred_lt hw
+  obtain ⟨j, hj⟩ : ∃ j : ℕ, D.psiNat w = j + 1 := ⟨D.psiNat w - 1, by omega⟩
+  have hjpred : D.phi j < w := by
+    have hjj : D.psiNat w - 1 = j := by omega
+    rwa [hjj] at hpred
+  rcases lt_or_eq_of_le hkge with hlt | heq
+  · -- `φ(k)` already overshoots `w`; it overshoots by at most one step.
+    refine ⟨D, D.psiNat w, hDN, hlt, ?_⟩
+    rw [hj, D.phi_succ j]
+    have hs := D.step_le_phi_one j
+    linarith
+  · -- `φ(k) = w` exactly; take the next value.
+    refine ⟨D, D.psiNat w + 1, hDN, ?_, ?_⟩
+    · rw [D.phi_succ (D.psiNat w), ← heq]
+      have hden : (0 : ℚ) < (((D.gp (D.psiNat w + 1)).relIndex (D.gp 0) : ℕ) : ℚ) := by
+        exact_mod_cast Nat.pos_of_ne_zero (D.relIndex_ne_zero (D.psiNat w + 1))
+      have hpos : (0 : ℚ) < 1 / (((D.gp (D.psiNat w + 1)).relIndex (D.gp 0) : ℕ) : ℚ) := by
+        positivity
+      linarith
+    · rw [D.phi_succ (D.psiNat w), ← heq]
+      have hs := D.step_le_phi_one (D.psiNat w)
+      linarith
 
 /-- **THE COUNTING CLAUSE FORCES THE BREAKS TO BE POSITIVE** — the statement
 the `IsSwanExponentAt` docstring has claimed since 2026-07-28, now a theorem
