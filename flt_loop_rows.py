@@ -222,7 +222,12 @@ def r5_action(s):
         if unspawned(j):
             j["started"] = True
             j["alive"] = True
+            # Name what was spawned: row 7 is the ONE spawner for every kind,
+            # so a bare "SPAWN" in the transition log is unreadable -- two
+            # consecutive firings look like a double-spawn when they are a
+            # lakebuild and an editor.
             note(s, f"5  spawned {j['kind']} '{n}' (token {j['token']})")
+            s["spawned"] = f"{j['kind']} '{n}'"
 
 
 def r6_guard(s):
@@ -401,6 +406,16 @@ def r15_guard(s):
         return (False, "queue1 is empty")
     if not s["snapshot"]:
         return (False, "no snapshot for agents to copy .lake from")
+    if s["snapshot"]["sha"] != s["main"]:
+        # Existence is not enough. After a rebaseline the PREVIOUS release's
+        # snapshot is still on disk while the new one builds, and dispatching
+        # against it seeds every agent with a .lake for the wrong main -- the
+        # inconsistent-olean failure this project already knows well, where
+        # loading does not typecheck and the mismatch surfaces later as a
+        # bogus kernel error in an unrelated file. Row 13 already required
+        # snapshot == main before starting a merger; dispatch was the row that
+        # only checked non-None.
+        return (False, f"snapshot is {s['snapshot']['sha']}, main is {s['main']}")
     free = [w for w in s["workers"]
             if wstate(s, w) == "free" and s["healthy"].get(w)]
     if not free:

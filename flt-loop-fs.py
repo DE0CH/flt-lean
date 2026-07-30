@@ -236,7 +236,8 @@ def tick():
     # message is written by the row itself and must reach git before the
     # medic touches anything.
     if firing != 18:
-        commit_fs(s["git"][0] if s["git"] else f"row {firing}: {label}")
+        extra = f" [{s['spawned']}]" if s.get("spawned") else ""
+        commit_fs(s["git"][0] if s["git"] else f"row {firing}: {label}{extra}")
     return firing, s
 
 
