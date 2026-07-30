@@ -21474,6 +21474,47 @@ instead of two — and it is a ~500-line move across two large, actively edited
 files, which is why it is recorded here rather than performed in the same commit
 as the interface repair.
 
+# THE HOIST INVENTORY, RE-MEASURED 2026-07-30 (flt-lean-195) — FINDING (1) NAMES
+# THE WRONG DECLARATION, AND THE MOVE IS BIGGER THAN "THREE SUPPORTS"
+
+Not performed here either; what follows is the survey, so that whoever takes it
+does not have to redo it. Two corrections, one of substance and one of size.
+
+**`exists_taylorWilesCoefficients_ringHom` IS NO LONGER A LEAF.** The parenthesis
+above — "itself a LEAF" — was true when finding (1) was written and is now
+false: `Patching.lean` carries a direct `sorry` at lines 3034, 5047, 6262, 6309,
+7831, 10006, 11874, 11930, 12622, 13591, 13879, 14593 and NONE of them is in
+that theorem's body (8056–8135) or in
+`exists_taylorWilesCoefficientsPresentation`'s (8377–8392). Both are directly
+proven. **So for the DIRECT frontier the hoist WOULD close this leaf**, not merge
+it: the `sorry` here disappears and no new one appears anywhere.
+
+Transitively, finding (1)'s conclusion survives but bottoms out one level lower
+and at a differently-named declaration:
+`exists_taylorWilesCoefficients_ringHom` → `exists_ringHom_wittVector_of_isAdicComplete`
+(Patching.lean:7850, proven) → **`existsUnique_ringHom_wittVector_of_isNilpotent`
+(Patching.lean:7825, OPEN)**. That is the one leaf the merged proof would rest
+on, and it is an ordinary Witt-vector universal property, not Cohen's theorem.
+
+**The move is EIGHT declarations spanning ~1000 lines**, not three spanning
+~500. In dependency order they are, all in `Modularity/Patching.lean`:
+`exists_fin_span_range_eq_maximalIdeal` (7360),
+`exists_ringHom_mvPowerSeries_of_isAdicComplete` (7427),
+`existsUnique_ringHom_wittVector_of_isNilpotent` (7825, the LEAF),
+`exists_ringHom_wittVector_of_isAdicComplete` (7850),
+`IsCohenCoefficients` (7946, a `def`, and it must move or the two theorems'
+statements do not typecheck), `exists_taylorWilesCoefficients_ringHom` (8056),
+`surjective_of_span_range_eq_maximalIdeal` (8184),
+`exists_taylorWilesCoefficientsPresentation` (8377).
+`TaylorWilesCoefficients` itself is ALREADY in `PatchingCore.lean` (line 170) and
+must not be duplicated — that is why the structure is nameable from this module
+today while the theorems about it are not.
+
+Cost note for whoever schedules it: `PatchingCore.lean` is upstream of this
+module, so the move invalidates this file's oleans and everything between, and
+the verification is a `lake build` of that whole cone rather than one
+`lake env lean`. That, and not the editing, is what makes it a scheduled job.
+
 References: as for `exists_hilbertTaylorWilesBottomLevel` below. -/
 theorem exists_hilbertTaylorWilesBottomPresentation
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
