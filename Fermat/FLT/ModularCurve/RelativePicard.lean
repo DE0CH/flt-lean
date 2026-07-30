@@ -155,6 +155,18 @@ leaves it moved to are, in dependency order:
   and owned there, and the action on them is a hoist rather than a
   proof — see their docstrings.
 
+  **Amended 2026-07-30 (third amendment): `nonempty_modPullback_modTensorPic`
+  is PROVEN, and the "hoist rather than proof" reading of it was wrong.**
+  It is now a five-line composition over the single presheaf-level leaf
+  `nonempty_presheafPullback_tensor` (`p(A ⊗ B) ≅ pA ⊗ pB` for the pullback
+  of PRESHEAVES of modules).  The piece every audit of that leaf had missed
+  is that mathlib ALREADY has "pullback commutes with sheafification"
+  (`SheafOfModules.sheafificationCompPullback`), so no waiting on
+  `AmpleSheaf.lean`'s owner was ever necessary.  The new leaf carries a
+  falsity audit: the mathlib-shaped generalisation to an arbitrary functor
+  between sites is FALSE, and it is `F = Opens.map h.base` having FILTERED
+  comma categories that makes the scheme case true.
+
   **Amended 2026-07-29 (second amendment): `nonempty_modTensor_assocPic`
   is GONE.**  Its hoist was performed — the `modLocW` / `ModLM` /
   `modTensorLocIso` / `nonempty_modTensor_assoc` block was moved out of
@@ -163,7 +175,9 @@ leaves it moved to are, in dependency order:
   `nonempty_modTensor_assoc`.  `nonempty_modPullback_modTensorPic` is NOT
   similarly ready: its twin is proven only over the still-open
   `isIso_modPullbackTensorComparison` in `AmpleSheaf.lean`, so hoisting it
-  would move a leaf rather than remove one.
+  would move a leaf rather than remove one.  (Superseded by the third
+  amendment above — the observation is still true, and the conclusion drawn
+  from it, that waiting was the only option, was not.)
 
   **Amended 2026-07-29: `exists_modTensor_inv` is now PROVEN**, and the
   leaf under it is `exists_modDual` — the dual sheaf `L^∨` with its
@@ -229,6 +243,13 @@ comment-stripped token count — 9 = 9, so there are no anonymous inner
 sorries hiding behind a warning), and the four that belong to BLR 9.4/4
 are `isInvertibleSheaf_sectionIdeal`, `nonempty_modPullback_sectionIdeal`,
 `smooth_isSeparated_of_isRelPicOf` and `exists_relPicZeroSubgroup`.
+
+**Amended 2026-07-30: still 9, but not the same 9.**
+`nonempty_modPullback_modTensorPic` left the set and
+`nonempty_presheafPullback_tensor` entered it (a leaf-for-leaf cut, with the
+sheaf theory discharged and only a `PresheafOfModules` statement left).  Do
+not read the unchanged COUNT as an unchanged FRONTIER — regenerate the list
+with `flt-frontier.py` rather than trusting any of the names above.
 
 Also PROVEN here and worth knowing about before re-deriving them:
 `modTensorMapIso`, `modTensorUnitLeftIso`, `modTensorUnitRightIso`,
@@ -470,13 +491,29 @@ hoist its own docstring prescribed, made possible by
 `modLocW_whiskerLeft`/`Right` having been proven.  `AmpleSheaf.lean`
 inherits the whole block by import and is otherwise untouched.
 
-**What is genuinely still open** is exactly the part needing
-*sheafification to commute with PULLBACK*: one leaf,
-`nonempty_modPullback_modTensorPic`, whose twin
-`nonempty_modPullback_modTensor` in `AmpleSheaf.lean` is proven only over
-the still-open `isIso_modPullbackTensorComparison` there.  **It must not be
-dispatched at independently** — hoisting it would drag that leaf up rather
-than remove one; the correct action is the hoist, once it is settled. -/
+**Amended 2026-07-30 — and the paragraph this replaces was wrong in a way
+worth recording, because it talked three separate audits out of even
+looking.**  It read: "what is genuinely still open is exactly the part
+needing *sheafification to commute with PULLBACK*: one leaf,
+`nonempty_modPullback_modTensorPic` … **It must not be dispatched at
+independently** — hoisting it would drag [`AmpleSheaf.lean`'s
+`isIso_modPullbackTensorComparison`] up rather than remove one; the correct
+action is the hoist, once it is settled."
+
+**"Sheafification commutes with pullback" is FREE FROM THE PIN.** It is
+`SheafOfModules.sheafificationCompPullback` in
+`Mathlib/Algebra/Category/ModuleCat/Sheaf/PullbackContinuous.lean`, and it
+had been there the whole time.  So the diagnosis named the one ingredient
+that costs nothing, and the "do not dispatch" instruction it carried kept
+anyone from finding that out.  `nonempty_modPullback_modTensorPic` is now
+PROVEN over the presheaf-level leaf `nonempty_presheafPullback_tensor`; see
+the section note on it below for the reduction, for a falsity audit killing
+its mathlib-shaped generalisation, and for the two routes that remain.
+
+The general lesson, since this file has now made the same mistake twice
+(the unitors, the braiding, associativity, and now this): **a claim of the
+form "the pin does not have X" is a hypothesis to check against the pin, not
+a fact to build audits on** — and it must name the file it grepped. -/
 
 /-! #### Pseudo-functoriality of `modPullback` (PROVEN — free from the pin) -/
 
@@ -855,22 +892,169 @@ theorem nonempty_modTensor_assoc {Z : Scheme.{u}} (L M N : Z.Modules) :
       (modTensorLocIso L (modTensor M N)).symm
   exact ⟨{ hom := e.hom, inv := e.inv, hom_inv_id := e.hom_inv_id, inv_hom_id := e.inv_hom_id }⟩
 
-/-- **PULLBACK COMMUTES WITH `modTensor`** (sorry leaf — **BUT SEE THE
-WARNING**).
+/-! #### Pullback commutes with `modTensor`, reduced to a PRESHEAF statement
 
-`Scheme.Modules.pullback` is a left adjoint and the presheaf pullback is
-strong monoidal, so the content is again that sheafification is monoidal:
-the sheafification inside `modTensor` has to move across the pullback.
+**Cut 2026-07-30, and it retires the "wait for the hoist" instruction that stood
+on `nonempty_modPullback_modTensorPic` below.**  That instruction said the leaf
+was the verbatim twin of `Fermat.nonempty_modPullback_modTensor` in
+`Modularity/AmpleSheaf.lean` (open there over `isIso_modPullbackTensorComparison`,
+which is still open as of `85ee56a7`), so the only correct action was to wait and
+hoist.  It is no longer the only action: **everything sheaf-theoretic in the leaf
+is formal from the pin, and what is left is a statement about PRESHEAVES of
+modules with no sheafification, no invertibility and no scheme geometry in it.**
 
-**DO NOT DISPATCH A PROVER AT THIS.**  It is the verbatim twin of
-`Fermat.nonempty_modPullback_modTensor` in
-`Fermat/FLT/Modularity/AmpleSheaf.lean`, which is an open leaf there with
-a live owner as of 2026-07-28.  Same reason as the leaf above: it could
-not be hoisted without colliding with that owner's work.  **The correct
-action is the hoist**, once that owner has finished. -/
-theorem nonempty_modPullback_modTensorPic {Z W : Scheme.{u}} (h : W ⟶ Z) (L M : Z.Modules) :
-    Nonempty (modPullback h (modTensor L M) ≅ modTensor (modPullback h L) (modPullback h M)) :=
+The reduction is four lines of mathlib plus this module's own localized-monoidal
+block, and it is worth spelling out because two of the three ingredients are
+easy to miss:
+
+* `SheafOfModules.sheafificationCompPullback` (mathlib,
+  `Sheaf/PullbackContinuous.lean`) — **PULLBACK ALREADY COMMUTES WITH
+  SHEAFIFICATION at this pin**, `a ⋙ f^* ≅ p ⋙ a`, where `p` is the PRESHEAF
+  pullback.  Nothing had to be proven for this and no audit in this file
+  mentioned it;
+* `modSheafifyValIso` (above) — `a(L.val) ≅ L`, so `f^*L ≅ a(p L.val)`;
+* `Localization.Monoidal.μ` for `modLocW W` (this module's own block, PROVEN
+  over `modLocW_whiskerLeft`) — `a X ⊗ a Y ≅ a (X ⊗ Y)` in `ModLM W`.
+
+Chaining them turns both sides of the leaf into `a` applied to a presheaf:
+`f^*(L ⊗ M) ≅ a(p(L.val ⊗ M.val))` and
+`f^*L ⊗ f^*M ≅ a(p L.val ⊗ p M.val)`.  So the whole obligation is
+`p(A ⊗ B) ≅ pA ⊗ pB` — `nonempty_presheafPullback_tensor`.
+
+**FALSITY AUDIT ON THE OBVIOUS GENERALISATION — do not state the leaf for a
+general functor between sites.**  Mathlib's `PresheafOfModules.pullback` is
+defined for an arbitrary `F : C ⥤ D` and `φ : S ⟶ F.op ⋙ R`, and the
+mathlib-shaped statement would be "`pullback φ` is strong monoidal".  **That is
+FALSE.**  Take `D` a single object with ring `k`, `C` two objects (discrete),
+`F` the unique functor, `φ = 𝟙`.  Then `pushforward` is the constant presheaf
+functor and its left adjoint is `p A = A(c₁) ⊕ A(c₂)`, so
+`p(A ⊗ B) = (A(c₁) ⊗ B(c₁)) ⊕ (A(c₂) ⊗ B(c₂))` while
+`pA ⊗ pB = (A(c₁) ⊕ A(c₂)) ⊗ (B(c₁) ⊕ B(c₂))` — four summands against two, and
+already different for `A = B = k` at both objects (`k²` against `k⁴`).
+
+What rescues the case at hand is that `F = Opens.map h.base`, for which the
+comma categories computing the left Kan extension are **filtered**: the index
+category at `V : W.Opens` is the opens `U ⊇ h(V)` ordered by reverse inclusion,
+closed under intersection.  Tensor products commute with filtered colimits, and
+that — not formal nonsense — is the content of the remaining leaf.  So the leaf
+is deliberately stated for a MORPHISM OF SCHEMES and must not be "generalised"
+to an arbitrary site map; the same warning applies to any attempt to upstream
+it.
+
+**Route for whoever takes the remaining leaf.**  The honest next cut, if it is
+wanted, is `PresheafOfModules.pullbackComp` (mathlib) factoring
+`φ : S ⟶ F.op ⋙ R` as `S ⟶ 𝟭.op ⋙ (F.op ⋙ R)` followed by
+`(F.op ⋙ R) ⟶ F.op ⋙ R`, i.e. `p = (base change of scalars) ⋙ (Lan along
+F.op)`.  The first half is an objectwise `ModuleCat` base change, hence strong
+monoidal by `ModuleCat`-level algebra; the second is where filteredness is
+consumed.  Mathlib has neither half's monoidality, and it has no objectwise
+description of `pullback` at all — only `pullbackObjIsDefined_free_yoneda` and
+`SheafOfModules.pullbackObjFreeIso` (pullback of a FREE object is free), which
+with `PresheafOfModules.Generator.isColimitFreeYonedaCoproductsCokernelCofork`
+is the other available route: both sides preserve colimits, so it suffices to
+compare them on `freeYoneda` objects, where both are free.
+
+**Consequence for `AmpleSheaf.lean`, which nobody should act on from here.**
+Once `nonempty_presheafPullback_tensor` is proven, `AmpleSheaf.lean`'s
+`nonempty_modPullback_modTensor` follows by IMPORT from
+`nonempty_modPullback_modTensorPic`, and its
+`modPullbackTensorComparison` / `isIso_modPullbackTensorComparison` block
+becomes optional rather than blocking.  That is a hoist for that module's owner
+to perform; it is recorded here only so it is not rediscovered. -/
+
+/-- **Pullback of PRESHEAVES of `𝒪`-modules along a morphism of schemes** — the
+functor mathlib's `sheafificationCompPullback` moves the sheafification past.
+
+A thin wrapper, for the same reason `modPullback` is one: it keeps the statement
+below readable and pins the `F`/`φ` pair to the one coming from `h`. -/
+noncomputable abbrev presheafPullback {Z W : Scheme.{u}} (h : W ⟶ Z) :
+    PresheafOfModules.{u} Z.ringCatSheaf.obj ⥤ PresheafOfModules.{u} W.ringCatSheaf.obj :=
+  PresheafOfModules.pullback h.toRingCatSheafHom.hom
+
+/-- **THE PRESHEAF-LEVEL TENSOR COMPARISON** (sorry leaf) — `p(A ⊗ B) ≅ pA ⊗ pB`
+for the pullback of PRESHEAVES of modules along a morphism of schemes.
+
+This is the whole of what is left of `nonempty_modPullback_modTensorPic`: no
+sheafification, no invertibility, no scheme geometry beyond the fact that `h` is
+a morphism of schemes — and that fact is LOAD-BEARING, not decoration.  See the
+section note above for the counterexample that kills the general-`F` version
+(two-object discrete `C` over a point: `k²` against `k⁴`) and for the two known
+routes (filtered Kan extension, or comparison on `freeYoneda` generators).
+
+Stated as `Nonempty` rather than as `IsIso` of a named comparison map because
+the assembly only ever transports it through the functor `a`, and a bare iso of
+presheaves is enough for that; a prover who finds it easier to build the
+canonical map and prove it invertible may of course do so and derive this. -/
+theorem nonempty_presheafPullback_tensor {Z W : Scheme.{u}} (h : W ⟶ Z)
+    (A B : PresheafOfModules.{u} Z.ringCatSheaf.obj) :
+    Nonempty ((presheafPullback h).obj (A ⊗ B) ≅
+      (presheafPullback h).obj A ⊗ (presheafPullback h).obj B) :=
   sorry
+
+/-- **`f^*(a A) ≅ a(p A)`: PULLBACK COMMUTES WITH SHEAFIFICATION** — mathlib's
+`SheafOfModules.sheafificationCompPullback`, read on an object.
+
+Free from the pin, and the piece every audit of this leaf missed. -/
+noncomputable def modPullbackSheafifyIso {Z W : Scheme.{u}} (h : W ⟶ Z)
+    (A : PresheafOfModules.{u} Z.ringCatSheaf.obj) :
+    modPullback h ((PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)).obj A) ≅
+      (PresheafOfModules.sheafification (𝟙 W.ringCatSheaf.obj)).obj ((presheafPullback h).obj A) :=
+  (SheafOfModules.sheafificationCompPullback h.toRingCatSheafHom).app A
+
+/-- **`f^*L ≅ a(p L.val)`** — the previous isomorphism composed with
+`modSheafifyValIso`, which is what lets a SHEAF be fed to a statement about
+presheaf pullback. -/
+noncomputable def modPullbackValIso {Z W : Scheme.{u}} (h : W ⟶ Z) (L : Z.Modules) :
+    modPullback h L ≅
+      (PresheafOfModules.sheafification (𝟙 W.ringCatSheaf.obj)).obj
+        ((presheafPullback h).obj L.val) :=
+  modPullbackMapIso h (modSheafifyValIso L).symm ≪≫ modPullbackSheafifyIso h L.val
+
+/-- `modPullbackValIso`, read in `ModLM W`.  Same field-copy as
+`modSheafifyValIsoLM`: `ModLM W` is a type synonym for `W.Modules`, so an
+isomorphism there is the same data, but the elaborator will not see it without
+being told. -/
+noncomputable def modPullbackValIsoLM {Z W : Scheme.{u}} (h : W ⟶ Z) (L : Z.Modules) :
+    toModLM (modPullback h L) ≅ (modLocA W).obj ((presheafPullback h).obj L.val) where
+  hom := (modPullbackValIso h L).hom
+  inv := (modPullbackValIso h L).inv
+  hom_inv_id := (modPullbackValIso h L).hom_inv_id
+  inv_hom_id := (modPullbackValIso h L).inv_hom_id
+
+/-- `modPullbackSheafifyIso` at a tensor product, read in `ModLM W`.  Note the
+left-hand side is `modPullback h (modTensor L M)` on the nose: `modTensor L M` is
+`a (L.val ⊗ M.val)` by definition. -/
+noncomputable def modPullbackTensorValIsoLM {Z W : Scheme.{u}} (h : W ⟶ Z) (L M : Z.Modules) :
+    toModLM (modPullback h (modTensor L M)) ≅
+      (modLocA W).obj ((presheafPullback h).obj (L.val ⊗ M.val)) where
+  hom := (modPullbackSheafifyIso h (L.val ⊗ M.val)).hom
+  inv := (modPullbackSheafifyIso h (L.val ⊗ M.val)).inv
+  hom_inv_id := (modPullbackSheafifyIso h (L.val ⊗ M.val)).hom_inv_id
+  inv_hom_id := (modPullbackSheafifyIso h (L.val ⊗ M.val)).inv_hom_id
+
+/-- **PULLBACK COMMUTES WITH `modTensor`** (**PROVEN 2026-07-30** over the single
+presheaf-level leaf `nonempty_presheafPullback_tensor`; formerly a bare sorry
+leaf carrying a "do not dispatch, wait for the hoist" instruction).
+
+The old note was right that this is the twin of
+`Fermat.nonempty_modPullback_modTensor` in `Modularity/AmpleSheaf.lean` and
+right that hoisting that declaration would have moved a leaf rather than removed
+one.  What it missed is that the SHEAF-THEORETIC half of the statement is free
+from the pin — `SheafOfModules.sheafificationCompPullback` — so the leaf does not
+have to be waited for at all; see the section note above for the reduction, the
+falsity audit on its obvious generalisation, and what is left to prove. -/
+theorem nonempty_modPullback_modTensorPic {Z W : Scheme.{u}} (h : W ⟶ Z) (L M : Z.Modules) :
+    Nonempty (modPullback h (modTensor L M) ≅ modTensor (modPullback h L) (modPullback h M)) := by
+  obtain ⟨ν⟩ := nonempty_presheafPullback_tensor h L.val M.val
+  have e : toModLM (modPullback h (modTensor L M))
+      ≅ toModLM (modTensor (modPullback h L) (modPullback h M)) :=
+    modPullbackTensorValIsoLM h L M ≪≫
+      (modLocA W).mapIso ν ≪≫
+      (Localization.Monoidal.μ _ (modLocW W) (modLocEps W)
+        ((presheafPullback h).obj L.val) ((presheafPullback h).obj M.val)).symm ≪≫
+      MonoidalCategory.tensorIso (modPullbackValIsoLM h L).symm (modPullbackValIsoLM h M).symm ≪≫
+      (modTensorLocIso (modPullback h L) (modPullback h M)).symm
+  exact ⟨{ hom := e.hom, inv := e.inv, hom_inv_id := e.hom_inv_id, inv_hom_id := e.inv_hom_id }⟩
 
 /-- **RESTRICTION COMMUTES WITH `modTensor`** (PROVEN over
 `nonempty_modPullback_modTensorPic`) — the special case the invertibility
