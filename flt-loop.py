@@ -23,6 +23,7 @@ import pathlib
 import re
 import shlex
 import subprocess
+import urllib.request
 import sys
 import time
 
@@ -167,15 +168,70 @@ def ssh(host, cmd, timeout=60):
                            host, cmd], capture_output=True, text=True, timeout=timeout)
 
 
-def email(subject, body):
-    """Deyao asked to be told when things go wrong. One channel, no library."""
+DISCORD_ENV = pathlib.Path.home() / ".claude" / "channels" / "discord" / ".env"
+
+
+def _discord_conf():
+    """Token + DM target, from the same file the discord plugin uses.
+
+    Read fresh each call rather than cached: the loop outlives any particular
+    configuration, and a token dropped in while it is running should start
+    working without needing a restart.
+    """
+    conf = {}
+    for line in (rd(DISCORD_ENV, "") or "").splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            k, _, v = line.partition("=")
+            conf[k.strip()] = v.strip().strip("'").strip('"')
+    return conf
+
+
+def notify(subject, body):
+    """Tell Deyao, over Discord's REST API -- no Bun, no MCP server needed.
+
+    Every message is written to notify.log FIRST, before any attempt to send.
+    These notifications exist to report things nobody is watching for, so a
+    message that cannot be delivered must still exist somewhere; dropping one
+    silently is worse than not sending it at all.
+    """
     try:
-        subprocess.run(["mail", "-s", subject, "chendeyao001@proton.me"],
-                       input=body, text=True, timeout=60)
-    except Exception:
+        with open(STATE / "notify.log", "a") as fh:
+            fh.write("%s | %s\n%s\n" % (time.strftime("%F %T"), subject, body))
+    except OSError:
         pass
-    with open(STATE / "email.log", "a") as fh:
-        fh.write("%s | %s\n%s\n" % (time.strftime("%F %T"), subject, body))
+
+    c = _discord_conf()
+    tok = c.get("DISCORD_BOT_TOKEN")
+    chan = c.get("DISCORD_CHANNEL_ID")
+    uid = c.get("DISCORD_USER_ID")
+    if not tok or not (chan or uid):
+        return False                        # unconfigured: logged, not lost
+
+    def api(path, payload):
+        req = urllib.request.Request(
+            "https://discord.com/api/v10" + path,
+            data=json.dumps(payload).encode(),
+            headers={"Authorization": "Bot " + tok,
+                     "Content-Type": "application/json",
+                     "User-Agent": "flt-loop (https://localhost, 1.0)"})
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return json.loads(r.read() or b"{}")
+
+    try:
+        if not chan:
+            chan = api("/users/@me/channels", {"recipient_id": uid})["id"]
+        msg = "**%s**\n%s" % (subject, body)
+        for i in range(0, min(len(msg), 5700), 1900):   # 2000-char cap per message
+            api("/channels/%s/messages" % chan, {"content": msg[i:i + 1900]})
+        return True
+    except Exception as e:
+        try:
+            with open(STATE / "notify.log", "a") as fh:
+                fh.write("  !! discord send failed: %r\n" % (e,))
+        except OSError:
+            pass
+        return False
 
 
 # ------------------------------------------------------------- host metrics
@@ -512,7 +568,7 @@ def quota_until():
         rm(STATE / "quota-probe")          # rotated: probe now, do not wait
     if probe_quota():
         rm(STATE / "quota-blocked")
-        email("flt-loop: quota available again, resuming",
+        notify("flt-loop: quota available again, resuming",
               "A probe with the credential now on disk was served, so the "
               "block was lifted on evidence. Spawning has resumed.")
         return None
@@ -523,7 +579,7 @@ def note_quota(reset_epoch, why):
     wr(STATE / "quota-blocked",
        json.dumps({"since": int(time.time()), "creds": creds_stamp(),
                    "log_said": int(reset_epoch)}))
-    email("flt-loop: quota exhausted, idling",
+    notify("flt-loop: quota exhausted, idling",
           "Spawning is being refused. The loop is IDLING rather than retrying, "
           "and probes every %ds with whatever credential is on disk -- the "
           "reset time in the message is only a hint, since the rotator can "
@@ -587,7 +643,7 @@ def do_spawn(s, name, j):
         ssh(host, cmd, timeout=45)
     except Exception as e:
         note = "spawn of %s on %s failed: %s" % (name, host, e)
-        email("flt-loop: spawn failed", note)
+        notify("flt-loop: spawn failed", note)
     return (host, None, None)
 
 
@@ -757,9 +813,14 @@ def save(s):
         # is named here -- a field that rows write and save() silently discards
         # reads as amnesia one tick later. Anything added to a job record must
         # be added here too.
+        # spawned_at MUST be here. do_spawn stamps it, but if it is not
+        # persisted the record comes back with None, `now - 0` is always older
+        # than GRACE, and every freshly spawned job is judged dead on its very
+        # first tick -- spawn, "died", re-dispatch, spawn, every ~15s, which is
+        # exactly the churn the grace period exists to stop.
         rec = {k: j.get(k) for k in ("kind", "worktree", "payload", "token",
                                      "retries", "host", "pid", "session",
-                                     "takeover")}
+                                     "takeover", "spawned_at")}
         wr(STATE / "jobs" / (n + ".json"), json.dumps(rec, indent=1))
         if j["started"]:
             wr(STATE / "jobs" / (n + ".started"), j["token"])
@@ -859,7 +920,7 @@ def adopt_source(startup_digest):
     if r.returncode:
         print("%s source changed but --dry-run FAILED; staying on the old "
               "table: %s" % (time.strftime("%T"), (r.stderr or "").strip()[-300:]))
-        email("flt-loop: edited source refused",
+        notify("flt-loop: edited source refused",
               "flt-loop source changed on disk but `--dry-run` exited %d, so the "
               "running loop did NOT adopt it and is still executing the source it "
               "started with. Fix the edit; the loop will pick it up on the next "
@@ -892,7 +953,7 @@ def tick(dry=False):
             action(s)
             break
     for e in s["email"]:
-        email("flt-loop: " + e.split(":")[0][:60], e)
+        notify("flt-loop: " + e.split(":")[0][:60], e)
     save(s)
     if firing not in QUIET:
         extra = " [%s]" % s["spawned"] if s.get("spawned") else ""
@@ -943,7 +1004,7 @@ def main():
             if "medic" not in s["jobs"]:
                 adopt_source(startup_digest)
         except Exception as e:
-            email("flt-loop: tick raised", repr(e))
+            notify("flt-loop: tick raised", repr(e))
             time.sleep(30)
         if a.once:
             return
