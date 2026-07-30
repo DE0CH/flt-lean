@@ -37366,6 +37366,147 @@ structure IsIsotypicQuotient {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
         (minpoly ℤ (a n)).coeff k •
           ((fun y : RelPoint astr g => RelPoint.post (S n) (S_comp n) y)^[k] x) = 0
 
+/-- **The underlying space of an `X_0(N)`-compactification over a base with a
+FIELD-VALUED POINT is INFINITE** (PROVEN 2026-07-28) — the base-change
+bookkeeping step that `pos_of_isX0Compactification_of_fieldPoint` below needs,
+split off because it mentions neither `N` nor the cusp locus.
+
+**HOISTED here 2026-07-30, together with `pos_of_isX0Compactification_of_fieldPoint`,
+from ~2 800 lines below** (they sat just above
+`exists_nonconstant_toAbelianScheme_of_one_le_x0Genus`, their original consumer,
+which still consumes them from their new position).  The statements, the proofs
+and the docstrings are unchanged; only the position moved.  The reason for the
+move is that the pair is what discharges `hN : N ≠ 0` for
+`exists_heckeIsotypicDecomposition_of_isotypicQuotients` and
+`exists_isotypicQuotient_of_isWeightTwoEigenform` below, whose own docstrings
+had recorded that obligation as still open and asked a prover to redo the very
+argument these two already contain.  Neither theorem depends on anything in the
+Eichler–Shimura seam, so the hoist is a pure move: their inputs are
+`isEmpty_of_gamma0Datum_zero` (~36 000 lines above) and
+`infinite_of_smoothOfRelativeDimension_one` (an imported module).
+
+The `Spec ℚ` argument moved to a general base.  `k` is used ONLY to name a
+point `s := k.base pt` of `S` (`Spec K` is nonempty, `K` being a field), so
+`Nonempty S` would do just as well; the field-valued form is kept because it
+is what the consumers hold.
+
+The step the previous docstring recorded as remaining — *"move
+`infinite_of_smoothOfRelativeDimension_one` to the fibre"* — is discharged by
+`Scheme.Hom.fiber`: the fibre `strX.fiber s` is a scheme over `Spec κ(s)`,
+`SmoothOfRelativeDimension 1` base-changes to it along
+`S.fromSpecResidueField s` (`fiberToSpecResidueField` is `pullback.snd`), and
+`GeometricallyConnected strX` supplies `ConnectedSpace (strX.fiber s)`, hence
+its nonemptiness — both are `Mathlib` instances.  So the fibre is infinite, and
+`Scheme.Hom.fiberHomeo` identifies it with the subspace `strX ⁻¹' {s} ⊆ X`.
+
+Note `IsProper` is NOT used: infinitude of a smooth curve over a field is a
+statement about the affine charts alone. -/
+theorem infinite_of_isX0Compactification_of_fieldPoint {N : ℕ} {X Y S : Scheme.{0}}
+    {strX : X ⟶ S} {strY : Y ⟶ S} {jY : Y ⟶ X}
+    (hmodel : IsX0Compactification N strX strY jY)
+    (K : Type) [Field K] (k : Spec (CommRingCat.of K) ⟶ S) :
+    Infinite X := by
+  haveI : SmoothOfRelativeDimension 1 strX := hmodel.smooth
+  haveI : GeometricallyConnected strX := hmodel.connected
+  obtain ⟨pt⟩ : Nonempty (Spec (CommRingCat.of K)) := inferInstance
+  set s : S := k.base pt
+  haveI := smoothOfRelativeDimension_isStableUnderBaseChange (n := 1)
+  haveI : SmoothOfRelativeDimension 1 (strX.fiberToSpecResidueField s) :=
+    MorphismProperty.pullback_snd _ _ ‹SmoothOfRelativeDimension 1 strX›
+  haveI : ConnectedSpace (strX.fiber s) := inferInstance
+  haveI : Nonempty (strX.fiber s) := inferInstance
+  have hinf : Infinite (strX.fiber s) :=
+    @infinite_of_smoothOfRelativeDimension_one (S.residueField s) _ _
+      (strX.fiberToSpecResidueField s) ‹_› ‹_›
+  haveI : Infinite (strX.base ⁻¹' {s}) :=
+    Infinite.of_injective _ (strX.fiberHomeo s).injective
+  exact Infinite.of_injective (fun x : strX.base ⁻¹' {s} => (x : X)) Subtype.val_injective
+
+/-- **A `Γ₀(N)`-compactification whose base has a FIELD-VALUED POINT forces
+`0 < N`** (PROVEN 2026-07-28, over the base-change step above and
+`isEmpty_of_gamma0Datum_zero`).  NOT bookkeeping: without it
+`not_birationalOver_affineLine_of_one_le_x0Genus` below is FALSE at `N = 0`,
+because `x0Genus 0 = 1`.
+
+**A STALE CITATION, CORRECTED (2026-07-28).**  The previous version of this
+docstring called this leaf "the base-general analogue of
+`pos_of_isX0Compactification`" and referred the reader to that declaration's
+docstring three times, for the `decide` check and for the empty-base
+counterexample.  **`Fermat.pos_of_isX0Compactification` does not exist**, and
+`grep` finds no declaration of that name anywhere under `Fermat/` — only
+docstring mentions, here, at `card_compl_range_le_card_divisors`'s subsection
+note, and five times in `FreyCurve/MazurTorsion.lean`.  The nearest real
+declaration is `pos_of_isX0Compactification_of_nonempty`
+(`FreyCurve/MazurTorsion.lean`), which is itself still a sorry leaf, is
+DOWNSTREAM of this file, and whose own docstring says it "subsumes
+`Fermat.pos_of_isX0Compactification`, which … lives in `ModularCurve/X0.lean`".
+It does not.  With this leaf proven, that one is a one-line corollary in the
+other direction: the proof below uses `k` only to name a point of `S`, so
+`Nonempty S` is the honest hypothesis and the two statements have the same
+content.
+
+THE ARGUMENT.  At `N = 0`, `isEmpty_of_gamma0Datum_zero` makes every base
+carrying a `Γ₀(0)`-datum initial, so the EMPTY scheme carries the moduli
+problem; the `universal` clause of `hmodel.coarse` then produces a morphism
+`Y ⟶ ∅` and hence `IsEmpty Y`.  The cusp locus is therefore all of `X`, which
+`finite_compl` makes finite — contradicting the infinitude above.  Note this
+needs no point of `Y` and no `Gamma0Datum` to be produced: the previous
+docstring's route ("a point of `Y` produces a `Gamma0Datum 0` through
+`hmodel.coarse`") is not available, since `IsCoarseModuliY0` maps data TO
+points and never back.  Initiality is what replaces it.
+
+TRUE, by the same argument as the `Spec ℚ` version, with `k` supplying
+the nonemptiness that the `Spec ℚ` version got from its base.
+`GeometricallyConnected` is `geometrically (ConnectedSpace ·)` and
+`ConnectedSpace` carries `Nonempty`, so the fibre `X ×_S Spec K` is
+nonempty and `X` is nonempty; a smooth proper curve over a field is
+infinite, so `finite_compl` makes `Y` nonempty; a point of `Y` produces a
+`Gamma0Datum 0`, i.e. a `CyclicSubgroupOfOrder 0` subgroup scheme, and a
+group scheme cannot have order `0` since its geometric fibres contain the
+identity section.
+
+**THE `Spec ℚ` VERSION'S "WHERE THE BURDEN SITS" NOTE IS SUPERSEDED.**  It
+records "a smooth proper geometrically connected curve over a field is
+infinite" as the one step this file does not have.  It DOES have it, as
+of 2026-07-27: `infinite_of_smoothOfRelativeDimension_one`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`, PROVEN and
+`public import`ed above, over a field base).  What remains for THIS
+statement is to move it to the fibre — `SmoothOfRelativeDimension 1` and
+`IsProper` are stable under base change, so that is a base-change
+bookkeeping step, not a new theory.
+
+**`k` IS LOAD-BEARING and the statement is FALSE without it**: over an EMPTY
+base `S = X = Y = ∅` satisfies every field of `IsX0Compactification 0`
+vacuously.  A field-valued point of `S` is the weakest nonemptiness
+hypothesis that excludes it, and it is the one the consumer has in
+hand. -/
+theorem pos_of_isX0Compactification_of_fieldPoint {N : ℕ} {X Y S : Scheme.{0}}
+    {strX : X ⟶ S} {strY : Y ⟶ S} {jY : Y ⟶ X}
+    (hmodel : IsX0Compactification N strX strY jY)
+    (K : Type) [Field K] (k : Spec (CommRingCat.of K) ⟶ S) : 0 < N := by
+  rcases Nat.eq_zero_or_pos N with hN | hN
+  · exfalso
+    subst hN
+    -- Every base carrying a `Γ₀(0)`-datum is INITIAL, by `isEmpty_of_gamma0Datum_zero`.
+    have hinit : ∀ {T : Scheme.{0}}, Gamma0Datum 0 T → Limits.IsInitial T := by
+      intro T d
+      have : IsEmpty T := isEmpty_of_gamma0Datum_zero d
+      exact isInitialOfIsEmpty
+    -- So the EMPTY scheme receives the moduli problem, and initiality of `Y`
+    -- (the `universal` clause of `coarse`) produces a morphism `Y ⟶ ∅`.
+    obtain ⟨u, -, -⟩ := hmodel.coarse.universal (Y' := (∅ : Scheme.{0}))
+      (emptyIsInitial.to S)
+      (fun {_T} _g d => ⟨(hinit d).to _, (hinit d).hom_ext _ _⟩)
+      (fun {_T' _T} _h {_g _g'} _hg {d'} {_d} _hbc => Subtype.ext ((hinit d').hom_ext _ _))
+    haveI : IsEmpty Y := Function.isEmpty u.base
+    -- Then the cusp locus is ALL of `X`, which `finite_compl` makes finite …
+    have hfin := hmodel.finite_compl
+    rw [Set.range_eq_empty jY.base, Set.compl_empty] at hfin
+    -- … contradicting infinitude of `X`.
+    haveI : Infinite X := infinite_of_isX0Compactification_of_fieldPoint hmodel K k
+    exact Set.infinite_univ hfin
+  · exact hN
+
 /-- **SHIMURA'S `A_f`: EVERY WEIGHT-TWO EIGENFORM OF LEVEL `N` CUTS OUT AN
 ISOTYPIC QUOTIENT OF `J₀(N)`** (sorry leaf, new 2026-07-28) — the "BUILD one
 factor" half of the cut of
@@ -37558,19 +37699,34 @@ cannot see:
 `D.T = T`; that clause is what stops this leaf from being the parent with an
 unused hypothesis.
 
-**THE `N = 0` OBLIGATION IS THIS LEAF'S, AND IT IS DISCHARGEABLE.**  `hquot`
-is handed over only for `N ≠ 0` — see the FALSITY note on
-`exists_isotypicQuotient_of_isWeightTwoEigenform` above, where a level-`0`
-eigen-system with a transcendental coefficient is exhibited — so at `N = 0`
-this leaf has nothing to build with.  It does not need anything: the
-HYPOTHESES are contradictory there.  `h.coarse : IsCoarseModuliY0 0 strY`
-gives `IsEmpty Y` (`isEmpty_of_isCoarseModuliY0_zero`), so
-`Set.range j.base = ∅` and `h.finite_compl` says the whole underlying space
-of `X` is FINITE; while `o` makes `X` nonempty and `h.smooth :
-SmoothOfRelativeDimension 1 strX` makes it a curve, and a nonempty
-finite-type `ℚ`-scheme of positive relative dimension has infinitely many
-closed points.  So `N = 0` is `False.elim`, and the only step needing work is
-"finite space ⟹ relative dimension `0`".
+**THE `N = 0` OBLIGATION IS NO LONGER THIS LEAF'S — IT IS DISCHARGED, AND THE
+WORK THE PREVIOUS DOCSTRING ASKED FOR WAS ALREADY DONE** (2026-07-30).  That
+paragraph said the hypotheses are contradictory at `N = 0`, sketched the route
+(`h.coarse` forces `IsEmpty Y`, so `h.finite_compl` makes the whole space of
+`X` finite, contradicting `X` being a nonempty curve) and ended "the only step
+needing work is *finite space ⟹ relative dimension 0*".  **That step exists
+and is PROVEN**: `infinite_of_isX0Compactification_of_fieldPoint` moves
+`infinite_of_smoothOfRelativeDimension_one` to the fibre, and
+`pos_of_isX0Compactification_of_fieldPoint` completes the contradiction — both
+proven 2026-07-28, ~2 800 lines below this point, i.e. before the paragraph
+they refute was ever read.  They are HOISTED above this seam (see the note on
+the first of them) so that the consumer
+`exists_heckeIsotypicDecomposition_of_modularHeckeAction` can discharge `hN`,
+which it now does.
+
+So this leaf carries `hN : N ≠ 0` as a hypothesis and `hquot` is UNGUARDED.
+Nothing is assumed that was not already available: `hN` is a theorem about
+`h`, not a restriction on the consumer, and the signature of every declaration
+above this one is unchanged.  The shape now matches the `Γ₁` sibling
+`exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1`, which has
+carried `hN : N ≠ 0` since 2026-07-28 for the same reason (there the `N = 0`
+case was refuted through `isEmpty_isHeckeIsotypicDecompositionGamma1_zero`
+rather than through the compactification).
+
+The FALSITY note on `exists_isotypicQuotient_of_isWeightTwoEigenform` above —
+a level-`0` eigen-system with a transcendental coefficient, which is why THAT
+leaf needs `hN` too — is untouched and is still the reason `hN` has to appear
+somewhere in this cluster rather than nowhere.
 
 **WHY THIS IS A CUT AND NOT A RESTATEMENT.**  The hypothesis is consumed
 three times (one factor per system for `cover`; the factors themselves for
@@ -37605,14 +37761,14 @@ this leaf stays atomic until then.
 Recording the axis rather than the verdict, per the standing rule: what was
 searched is the modular-forms/geometry seam; what was NOT searched is the
 complex-analytic route through `Γ₀(N)\ℍ*`, still inherited from the parent. -/
-theorem exists_heckeIsotypicDecomposition_of_isotypicQuotients (N : ℕ)
+theorem exists_heckeIsotypicDecomposition_of_isotypicQuotients (N : ℕ) (hN : N ≠ 0)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     (h : IsX0Compactification N strX strY j) {jstr : J ⟶ SpecQ}
     {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
     (jac : IsJacobianOf strX ab o) (T : ℕ → (J ⟶ J))
     (T_comp : ∀ n, T n ≫ jstr = jstr) (T_add : ∀ n, IsAdditiveOn ab ab (T n) (T_comp n))
     (hmod : IsModularHeckeAction N h jac T T_comp)
-    (hquot : N ≠ 0 → ∀ (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ),
+    (hquot : ∀ (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ),
       IsWeightTwoEigenform N f a → Nonempty (IsIsotypicQuotient ab T N a)) :
     ∃ D : IsHeckeIsotypicDecomposition N h jac,
       D.T = T ∧ ∀ i, IsUniversalIsotypicFactor D i :=
@@ -37727,8 +37883,13 @@ theorem exists_heckeIsotypicDecomposition_of_modularHeckeAction (N : ℕ)
     (hmod : IsModularHeckeAction N h jac T T_comp) :
     ∃ D : IsHeckeIsotypicDecomposition N h jac,
       D.T = T ∧ ∀ i, IsUniversalIsotypicFactor D i :=
-  exists_heckeIsotypicDecomposition_of_isotypicQuotients N h jac T T_comp T_add hmod
-    fun hN f a hf =>
+  -- `N ≠ 0` is not an extra assumption on this cluster: it is a THEOREM about
+  -- `h`, because a `Γ₀(0)`-compactification over a base with a field-valued
+  -- point does not exist (`pos_of_isX0Compactification_of_fieldPoint`, hoisted
+  -- above for exactly this call).  Both leaves therefore receive it for free.
+  have hN : N ≠ 0 := (pos_of_isX0Compactification_of_fieldPoint h ℚ (𝟙 SpecQ)).ne'
+  exists_heckeIsotypicDecomposition_of_isotypicQuotients N hN h jac T T_comp T_add hmod
+    fun f a hf =>
       exists_isotypicQuotient_of_isWeightTwoEigenform N hN h jac T T_comp T_add hmod f a hf
 
 /-- **EICHLER–SHIMURA: the Hecke-isotypic decomposition exists**
@@ -40327,133 +40488,6 @@ theorem eq_comp_of_birationalOver_affineLine_toAbelianScheme {K : Type} [Field K
         f.source.ι ≫ strP := hf
     simp only [Category.assoc] at h2 ⊢
     rw [h2, reassoc_of% hf0]
-
-/-- **The underlying space of an `X_0(N)`-compactification over a base with a
-FIELD-VALUED POINT is INFINITE** (PROVEN 2026-07-28) — the base-change
-bookkeeping step that `pos_of_isX0Compactification_of_fieldPoint` below needs,
-split off because it mentions neither `N` nor the cusp locus.
-
-The `Spec ℚ` argument moved to a general base.  `k` is used ONLY to name a
-point `s := k.base pt` of `S` (`Spec K` is nonempty, `K` being a field), so
-`Nonempty S` would do just as well; the field-valued form is kept because it
-is what the consumers hold.
-
-The step the previous docstring recorded as remaining — *"move
-`infinite_of_smoothOfRelativeDimension_one` to the fibre"* — is discharged by
-`Scheme.Hom.fiber`: the fibre `strX.fiber s` is a scheme over `Spec κ(s)`,
-`SmoothOfRelativeDimension 1` base-changes to it along
-`S.fromSpecResidueField s` (`fiberToSpecResidueField` is `pullback.snd`), and
-`GeometricallyConnected strX` supplies `ConnectedSpace (strX.fiber s)`, hence
-its nonemptiness — both are `Mathlib` instances.  So the fibre is infinite, and
-`Scheme.Hom.fiberHomeo` identifies it with the subspace `strX ⁻¹' {s} ⊆ X`.
-
-Note `IsProper` is NOT used: infinitude of a smooth curve over a field is a
-statement about the affine charts alone. -/
-theorem infinite_of_isX0Compactification_of_fieldPoint {N : ℕ} {X Y S : Scheme.{0}}
-    {strX : X ⟶ S} {strY : Y ⟶ S} {jY : Y ⟶ X}
-    (hmodel : IsX0Compactification N strX strY jY)
-    (K : Type) [Field K] (k : Spec (CommRingCat.of K) ⟶ S) :
-    Infinite X := by
-  haveI : SmoothOfRelativeDimension 1 strX := hmodel.smooth
-  haveI : GeometricallyConnected strX := hmodel.connected
-  obtain ⟨pt⟩ : Nonempty (Spec (CommRingCat.of K)) := inferInstance
-  set s : S := k.base pt
-  haveI := smoothOfRelativeDimension_isStableUnderBaseChange (n := 1)
-  haveI : SmoothOfRelativeDimension 1 (strX.fiberToSpecResidueField s) :=
-    MorphismProperty.pullback_snd _ _ ‹SmoothOfRelativeDimension 1 strX›
-  haveI : ConnectedSpace (strX.fiber s) := inferInstance
-  haveI : Nonempty (strX.fiber s) := inferInstance
-  have hinf : Infinite (strX.fiber s) :=
-    @infinite_of_smoothOfRelativeDimension_one (S.residueField s) _ _
-      (strX.fiberToSpecResidueField s) ‹_› ‹_›
-  haveI : Infinite (strX.base ⁻¹' {s}) :=
-    Infinite.of_injective _ (strX.fiberHomeo s).injective
-  exact Infinite.of_injective (fun x : strX.base ⁻¹' {s} => (x : X)) Subtype.val_injective
-
-/-- **A `Γ₀(N)`-compactification whose base has a FIELD-VALUED POINT forces
-`0 < N`** (PROVEN 2026-07-28, over the base-change step above and
-`isEmpty_of_gamma0Datum_zero`).  NOT bookkeeping: without it
-`not_birationalOver_affineLine_of_one_le_x0Genus` below is FALSE at `N = 0`,
-because `x0Genus 0 = 1`.
-
-**A STALE CITATION, CORRECTED (2026-07-28).**  The previous version of this
-docstring called this leaf "the base-general analogue of
-`pos_of_isX0Compactification`" and referred the reader to that declaration's
-docstring three times, for the `decide` check and for the empty-base
-counterexample.  **`Fermat.pos_of_isX0Compactification` does not exist**, and
-`grep` finds no declaration of that name anywhere under `Fermat/` — only
-docstring mentions, here, at `card_compl_range_le_card_divisors`'s subsection
-note, and five times in `FreyCurve/MazurTorsion.lean`.  The nearest real
-declaration is `pos_of_isX0Compactification_of_nonempty`
-(`FreyCurve/MazurTorsion.lean`), which is itself still a sorry leaf, is
-DOWNSTREAM of this file, and whose own docstring says it "subsumes
-`Fermat.pos_of_isX0Compactification`, which … lives in `ModularCurve/X0.lean`".
-It does not.  With this leaf proven, that one is a one-line corollary in the
-other direction: the proof below uses `k` only to name a point of `S`, so
-`Nonempty S` is the honest hypothesis and the two statements have the same
-content.
-
-THE ARGUMENT.  At `N = 0`, `isEmpty_of_gamma0Datum_zero` makes every base
-carrying a `Γ₀(0)`-datum initial, so the EMPTY scheme carries the moduli
-problem; the `universal` clause of `hmodel.coarse` then produces a morphism
-`Y ⟶ ∅` and hence `IsEmpty Y`.  The cusp locus is therefore all of `X`, which
-`finite_compl` makes finite — contradicting the infinitude above.  Note this
-needs no point of `Y` and no `Gamma0Datum` to be produced: the previous
-docstring's route ("a point of `Y` produces a `Gamma0Datum 0` through
-`hmodel.coarse`") is not available, since `IsCoarseModuliY0` maps data TO
-points and never back.  Initiality is what replaces it.
-
-TRUE, by the same argument as the `Spec ℚ` version, with `k` supplying
-the nonemptiness that the `Spec ℚ` version got from its base.
-`GeometricallyConnected` is `geometrically (ConnectedSpace ·)` and
-`ConnectedSpace` carries `Nonempty`, so the fibre `X ×_S Spec K` is
-nonempty and `X` is nonempty; a smooth proper curve over a field is
-infinite, so `finite_compl` makes `Y` nonempty; a point of `Y` produces a
-`Gamma0Datum 0`, i.e. a `CyclicSubgroupOfOrder 0` subgroup scheme, and a
-group scheme cannot have order `0` since its geometric fibres contain the
-identity section.
-
-**THE `Spec ℚ` VERSION'S "WHERE THE BURDEN SITS" NOTE IS SUPERSEDED.**  It
-records "a smooth proper geometrically connected curve over a field is
-infinite" as the one step this file does not have.  It DOES have it, as
-of 2026-07-27: `infinite_of_smoothOfRelativeDimension_one`
-(`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`, PROVEN and
-`public import`ed above, over a field base).  What remains for THIS
-statement is to move it to the fibre — `SmoothOfRelativeDimension 1` and
-`IsProper` are stable under base change, so that is a base-change
-bookkeeping step, not a new theory.
-
-**`k` IS LOAD-BEARING and the statement is FALSE without it**: over an EMPTY
-base `S = X = Y = ∅` satisfies every field of `IsX0Compactification 0`
-vacuously.  A field-valued point of `S` is the weakest nonemptiness
-hypothesis that excludes it, and it is the one the consumer has in
-hand. -/
-theorem pos_of_isX0Compactification_of_fieldPoint {N : ℕ} {X Y S : Scheme.{0}}
-    {strX : X ⟶ S} {strY : Y ⟶ S} {jY : Y ⟶ X}
-    (hmodel : IsX0Compactification N strX strY jY)
-    (K : Type) [Field K] (k : Spec (CommRingCat.of K) ⟶ S) : 0 < N := by
-  rcases Nat.eq_zero_or_pos N with hN | hN
-  · exfalso
-    subst hN
-    -- Every base carrying a `Γ₀(0)`-datum is INITIAL, by `isEmpty_of_gamma0Datum_zero`.
-    have hinit : ∀ {T : Scheme.{0}}, Gamma0Datum 0 T → Limits.IsInitial T := by
-      intro T d
-      have : IsEmpty T := isEmpty_of_gamma0Datum_zero d
-      exact isInitialOfIsEmpty
-    -- So the EMPTY scheme receives the moduli problem, and initiality of `Y`
-    -- (the `universal` clause of `coarse`) produces a morphism `Y ⟶ ∅`.
-    obtain ⟨u, -, -⟩ := hmodel.coarse.universal (Y' := (∅ : Scheme.{0}))
-      (emptyIsInitial.to S)
-      (fun {_T} _g d => ⟨(hinit d).to _, (hinit d).hom_ext _ _⟩)
-      (fun {_T' _T} _h {_g _g'} _hg {d'} {_d} _hbc => Subtype.ext ((hinit d').hom_ext _ _))
-    haveI : IsEmpty Y := Function.isEmpty u.base
-    -- Then the cusp locus is ALL of `X`, which `finite_compl` makes finite …
-    have hfin := hmodel.finite_compl
-    rw [Set.range_eq_empty jY.base, Set.compl_empty] at hfin
-    -- … contradicting infinitude of `X`.
-    haveI : Infinite X := infinite_of_isX0Compactification_of_fieldPoint hmodel K k
-    exact Set.infinite_univ hfin
-  · exact hN
 
 /-- **EICHLER–SHIMURA, FIBREWISE: `genus X_0(N) ≥ 1` gives EVERY fibre of
 `X_0(N)` a nonconstant map to an abelian variety** (sorry leaf,
