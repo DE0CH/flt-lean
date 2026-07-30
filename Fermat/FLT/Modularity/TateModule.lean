@@ -4775,7 +4775,11 @@ over `DualStruct`; the standing refutation test is the proven
 LEVEL-GUARDED — `PolarizationStruct d 𝒩 𝔞 𝔞pos` asserts it only at
 `I ∈ 𝒩` — after a second repair the same day; an unguarded version forces
 a PRINCIPAL polarization, see the docstring of
-`exists_tateWeilPairing_of_mult` below.
+`exists_tateWeilPairing_of_mult` below. Since 2026-07-30 it is also
+CHARACTERISTIC-GUARDED by `(n : F) ≠ 0`, without which the axiom is
+contradictory at any level divisible by the residue characteristic of a
+point of `S`; that repair, its witness and its cost are recorded on
+`exists_dualPolarization_of_mult`.
 
 A THIRD repair the same day added POSITIVITY, which is why the structure
 now takes four parameters: the level-guard released it onto every
@@ -8821,6 +8825,25 @@ reviewer would check:
   is retained at every level where it is true and dropped at exactly the
   levels where it was contradictory.
 
+**THE SAME DEFECT WAS FOUND, AND GATED, ON
+`PolarizationStruct.weil_hom_nondegenerate` IN THE SAME COMMIT.**  It is a
+separate axiom in a separate structure and the `I ∈ 𝒩` guard does NOT cover
+it: `𝒩` is a parameter, so it may contain an ideal above the residue
+characteristic of a point of `S`, and the witness above transports verbatim
+with `𝒩 = {(5)}` — `PolarizationStruct d {(5)} 𝔞 𝔞pos` was uninhabitable
+over `Spec ℤ[1/11]`.  Four wrapper theorems in `AbelianScheme.lean` gain
+`hnF : (n : F) ≠ 0` alongside their `hI : I ∈ 𝒩`
+(`pairing_nondegenerate`, `exists_pairing_ne_one`,
+`torsion_eq_zero_of_hom_eq_zero`, `posElt_ne_zero`), and no code outside
+that file used any of them.  The structure's two standing content tests —
+`torsion_eq_zero_of_hom_eq_zero` and `posElt_ne_zero`, which their
+docstrings require re-running after any weakening — were re-run and pass.
+What the gate costs there is stated on the first of them: at a level
+divisible by the characteristic the zero map is no longer excluded, which
+is unavoidable, because at such a level the induced pairing is identically
+`1` for EVERY `hom` and no axiom about it can tell the zero map from a
+genuine polarization.
+
 What this does NOT do is prove the leaf: it removes the obstruction that
 made proving it impossible.  The `q`-adic mathematics recorded above is
 unchanged, and so is the statement below — no signature here moved. -/
@@ -12282,6 +12305,20 @@ re-run each REFUTING CHECK rather than trust this list:
    docstring of `exists_tateWeilPairing_of_mult` above. A successor
    pursuing gap 2 must therefore ask for `PolarizationStruct d {I}` at
    the level it needs, never for an unindexed one.
+   **THIRD REPAIR TO THIS AXIOM, 2026-07-30 (`flt-lean-71`): a SECOND
+   guard, `(n : F) ≠ 0`, orthogonal to `hI`.** `𝒩` is a parameter, so it
+   may contain an ideal above the residue characteristic of a point of
+   `S`, and there `d.weil` lands in a TRIVIAL group — the axiom then
+   concludes `A[I](F̄) = 0` for a fibre that may have positive `p`-rank.
+   The same defect on `DualStruct.weil_nondegenerate` made THAT structure
+   uninhabitable outright; the audit and the witness (`X₀(11)` over
+   `Spec ℤ[1/11]`, the point `Spec 𝔽_5`, `I = (5)`, `n = 5`) are on
+   `exists_dualPolarization_of_mult` below. So `pairing_nondegenerate`,
+   `exists_pairing_ne_one`, `torsion_eq_zero_of_hom_eq_zero` and
+   `posElt_ne_zero` now each take `hnF : (n : F) ≠ 0` as well as `hI`,
+   and a successor must carry "the level is prime to the residue
+   characteristic" to the point of use. In characteristic zero it says
+   only `n ≠ 0`, so nothing over a number field is affected.
 
 The same remaining gaps block the sibling `card_torsion_of_isMaximal`,
 where gap 1 does NOT bite (that leaf is level one), and where the layer
