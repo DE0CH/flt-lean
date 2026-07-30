@@ -14658,10 +14658,165 @@ theorem isUnit_natCast_of_notMem (q : ℕ) (hqw : (q : 𝓞 F) ∉ w.asIdeal) :
 
 end IsAbelianReductionDatum
 
+/-! #### `[N]` over a base on which `N` is invertible
+
+The geometric half of `abelianSchemePt_eq_zero_of_pre_eq_of_isUnit` below —
+"a clopen subscheme of a connected base containing a point is everything" —
+is carried out here in full, over the SINGLE remaining input
+`formallyUnramified_mulByNat_of_isUnit_base`.  Nothing in this subsection is
+specific to abelian schemes with real multiplication; the three lemmas before
+the leaf are general facts about local rings, pullbacks and unramified
+morphisms. -/
+
+section MulByNatUnramifiedBase
+
+open _root_.CategoryTheory.Limits
+
+/-- **Idempotents of a local ring are trivial.**  `e (1 - e) = 0`, and one of
+the two factors is a unit. -/
+theorem eq_zero_or_one_of_isIdempotentElem_of_isLocalRing {R : Type*} [CommRing R] [IsLocalRing R]
+    {e : R} (he : IsIdempotentElem e) : e = 0 ∨ e = 1 := by
+  have h0 : e * (1 - e) = 0 := by rw [mul_sub, mul_one, he, sub_self]
+  rcases IsLocalRing.isUnit_or_isUnit_one_sub_self e with h | h
+  · exact Or.inr (sub_eq_zero.mp (h.mul_right_eq_zero.mp h0)).symm
+  · exact Or.inl (h.mul_left_eq_zero.mp h0)
+
+/-- **`Spec` of a local ring is PRECONNECTED.**  Its clopens are the basic
+opens of idempotents (`PrimeSpectrum.isClopen_iff`), and a local ring has only
+the trivial ones.
+
+This is the hypothesis that `abelianSchemePt_eq_zero_of_pre_eq_of_isUnit`'s
+docstring calls INDISPENSABLE: over a disconnected base a `qⁿ`-torsion section
+may vanish on one component and not on another. -/
+theorem preconnectedSpace_primeSpectrum_of_isLocalRing (R : Type u) [CommRing R] [IsLocalRing R] :
+    PreconnectedSpace (PrimeSpectrum R) := by
+  refine preconnectedSpace_iff_clopen.mpr ?_
+  intro s hs
+  obtain ⟨e, he, rfl⟩ := PrimeSpectrum.isClopen_iff.mp hs
+  rcases eq_zero_or_one_of_isIdempotentElem_of_isLocalRing he with rfl | rfl
+  · left
+    rw [PrimeSpectrum.basicOpen_zero]
+    simp
+  · right
+    rw [PrimeSpectrum.basicOpen_one]
+    simp
+
+/-- **A pullback square whose first projection is an isomorphism exhibits a
+factorisation.**  If `pullback.fst f g` is invertible then `f` factors through
+`g`; this is how "the equaliser of `s` and `t` is all of `S`" is turned back
+into `s = t` below. -/
+theorem exists_hom_comp_eq_of_isIso_pullback_fst {A B C : Scheme.{u}} (f : A ⟶ C) (g : B ⟶ C)
+    [IsIso (pullback.fst f g)] : ∃ u : A ⟶ B, f = u ≫ g :=
+  ⟨inv (pullback.fst f g) ≫ pullback.snd f g, by
+    rw [Category.assoc, ← pullback.condition, ← Category.assoc, IsIso.inv_hom_id,
+      Category.id_comp]⟩
+
+/-- **TWO SECTIONS OF AN UNRAMIFIED SEPARATED MORPHISM OVER A CONNECTED BASE
+THAT AGREE AT ONE POINT ARE EQUAL.**
+
+`p : Z ⟶ S` unramified and locally of finite type makes `pullback.diagonal p`
+an OPEN immersion (`FormallyUnramified.isOpenImmersion_diagonal`); `p`
+separated makes it a CLOSED immersion.  The equaliser of the two sections `s`
+and `t` — the pullback of `pullback.lift s t` against that diagonal — is
+therefore a clopen subscheme of `S`, and `hw` provides a point of it, so
+connectedness makes it all of `S`.
+
+`w : T ⟶ S` with `T` nonempty is the "one point": in the consumer it is the
+closed point of `Spec O`, i.e. `Spec` of the residue map. -/
+theorem section_eq_of_formallyUnramified_of_preconnectedSpace {Z S : Scheme.{u}} (p : Z ⟶ S)
+    [FormallyUnramified p] [LocallyOfFiniteType p] [IsSeparated p]
+    [PreconnectedSpace S] {T : Scheme.{u}} [Nonempty T] (w : T ⟶ S)
+    {s t : S ⟶ Z} (hs : s ≫ p = 𝟙 S) (ht : t ≫ p = 𝟙 S)
+    (hw : w ≫ s = w ≫ t) : s = t := by
+  have hst : s ≫ p = t ≫ p := by rw [hs, ht]
+  have hefst : pullback.lift s t hst ≫ pullback.fst p p = s := pullback.lift_fst _ _ _
+  have hesnd : pullback.lift s t hst ≫ pullback.snd p p = t := pullback.lift_snd _ _ _
+  have hfac : w ≫ pullback.lift s t hst = (w ≫ s) ≫ pullback.diagonal p := by
+    refine pullback.hom_ext ?_ ?_
+    · rw [Category.assoc, hefst, Category.assoc, pullback.diagonal_fst, Category.comp_id]
+    · rw [Category.assoc, hesnd, Category.assoc, pullback.diagonal_snd, Category.comp_id, hw]
+  obtain ⟨x⟩ := ‹Nonempty ↥T›
+  haveI hne := Nonempty.intro ((pullback.lift w (w ≫ s) hfac).base x)
+  haveI : IsIso (pullback.fst (pullback.lift s t hst) (pullback.diagonal p)) := by
+    refine (isIso_iff_isOpenImmersion_and_surjective _).mpr ⟨inferInstance, ⟨?_⟩⟩
+    rw [← Set.range_eq_univ]
+    refine IsClopen.eq_univ ⟨?_, ?_⟩ (Set.range_nonempty _)
+    · exact (pullback.fst (pullback.lift s t hst)
+        (pullback.diagonal p)).isClosedEmbedding.isClosed_range
+    · exact (pullback.fst (pullback.lift s t hst)
+        (pullback.diagonal p)).isOpenEmbedding.isOpen_range
+  obtain ⟨u, hu⟩ := exists_hom_comp_eq_of_isIso_pullback_fst
+    (pullback.lift s t hst) (pullback.diagonal p)
+  have h1 : s = u := by
+    rw [← hefst, hu, Category.assoc, pullback.diagonal_fst, Category.comp_id]
+  have h2 : t = u := by
+    rw [← hesnd, hu, Category.assoc, pullback.diagonal_snd, Category.comp_id]
+  rw [h1, h2]
+
+/-- **`[N]` IS FORMALLY UNRAMIFIED OVER ANY BASE ON WHICH `N` IS INVERTIBLE**
+(sorry leaf, CUT 2026-07-30 out of
+`abelianSchemePt_eq_zero_of_pre_eq_of_isUnit` below, which is PROVEN over it
+— SGA 3 Exp. II, Mumford *AV* §11, Milne *AV* I.7).
+
+**THIS IS EXACTLY `formallyUnramified_mulByNat` WITH THE BASE FIELD REPLACED BY
+A RING**, and the classical proof is the same functor-of-points argument.  Over
+a field `K` it is PROVEN, in
+`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean:formallyUnramified_mulByNat`,
+by way of `eq_zero_of_nsmul_eq_zero_of_squareZero` and
+`nonempty_module_infKernel_of_squareZero`: the infinitesimal kernel
+`ker(A(R) ⟶ A(R₀))` of a square-zero thickening is a `K`-vector space (the Lie
+algebra), so multiplication by an `N` invertible in `K` is injective on it, so
+two lifts that agree mod a square-zero ideal and have the same image under `[N]`
+coincide.
+
+**WHAT IS ACTUALLY LEFT, AND IT IS ONE STEP.**  Read
+`nonempty_module_infKernel_of_squareZero`'s own docstring: it says the
+generalisation "the kernel is a module over `R₀` itself, over an arbitrary base,
+and without `ab.smooth`" IS TRUE, and its proof never touches `Ω`.  Inspecting
+that proof, the base field is used in exactly ONE place —
+`base_eq_zeroSection_of_infKernel`, which concludes that the base map of a
+kernel point is CONSTANT because `Spec K` is a ONE-POINT space, and hence that
+every kernel point at once factors through a SINGLE affine chart `U ∋ e`.  Over
+a ring base the same computation gives `w.base p = e.base (q.base p)` with no
+`Subsingleton` needed, but the image is now the whole zero section and need not
+fit in one affine open.
+
+So a prover has two things to do and no third:
+
+1. *Restate the crux with a chart hypothesis.*  Transcribe
+   `nonempty_module_infKernel_of_squareZero` with `K` replaced by `B` and the
+   extra hypothesis `∀ p, ab.zeroSection.base (q.base p) ∈ U` for one affine
+   open `U`.  Note the consumer needs LESS than a module structure: additivity
+   of the difference cocycle `t` in the point (the `hadd` crux) plus its
+   injectivity already give `N · t d = t (N • d) = 0`, hence `t d = 0` and
+   `d = 0`, since `N` is a unit in `R`.  The `μ`-twist at the end of that proof,
+   which is what actually builds the module, can be dropped.
+2. *Remove the chart hypothesis by localising.*  `d = 0` is an equality of
+   morphisms `Spec R ⟶ A`, hence ZARISKI-LOCAL ON `Spec R`.  Every point of
+   `Spec R` has a basic open `D(h)` with `(e ∘ q)(D(h))` inside an affine chart,
+   and `R_h ↠ (R₀)_{φ h}` is again surjective with square-zero kernel, so step 1
+   applies there; glue.
+
+**`IsUnit` IS LOAD-BEARING AND `Nat.Prime` IS NOT.**  Over `B = ℤ` and `q = p`
+the leaf is FALSE: `A[p]` is not étale in characteristic `p`, and indeed
+`exists_pow_eq_stalkMap_mulByNat_prime` elsewhere in this file is the assertion
+that `[p]` is INSEPARABLE there.  What the hypothesis buys is precisely that
+`(q : R)` is a unit for every `B`-algebra `R`, which is the one arithmetic input
+of the argument. -/
+theorem formallyUnramified_mulByNat_of_isUnit_base (B : CommRingCat.{u}) (N : ℕ)
+    (hN : IsUnit ((N : ℕ) : B)) {A : Scheme.{u}} {f : A ⟶ Spec B}
+    (ab : AbelianSchemeStruct f) : FormallyUnramified (ab.mulByNat N) :=
+  sorry
+
+end MulByNatUnramifiedBase
+
+open _root_.CategoryTheory.Limits in
 /-- **THE KERNEL OF REDUCTION IS TORSION-FREE AWAY FROM THE RESIDUE
-CHARACTERISTIC** (sorry leaf — the finite étale torsion subscheme; BLR
+CHARACTERISTIC** (**PROVEN 2026-07-30** over the single leaf
+`formallyUnramified_mulByNat_of_isUnit_base` immediately above — BLR
 *Néron Models* 7.3, Mumford *AV* §6, Silverman *AEC* VII.3.1 in the
-elliptic case).
+elliptic case).  Everything the docstring below describes as classical is
+now written out; what remains open is only the unramifiedness of `[qⁿ]`.
 
 An `O`-point `u` of an abelian scheme over a LOCAL ring `O`, killed by
 `qⁿ` for `q` invertible on `O`, which reduces to `0` at the closed point,
@@ -14682,21 +14837,87 @@ and `π` is its residue map" — the kernel of a ring map is an ideal, so
 disconnected base a `qⁿ`-torsion section may vanish on one component and
 not on another, so the statement is false for a general `O`.
 
-`hq` is not needed — `hqO` alone drives the argument — and is carried
+`_hq` is not needed — `hqO` alone drives the argument — and is carried
 only because every consumer has it. -/
 theorem abelianSchemePt_eq_zero_of_pre_eq_of_isUnit
     {D : Type u} [Field D] [NumberField D]
     {O : CommRingCat.{u}} {κ : Type u} [Field κ] (π : O ⟶ CommRingCat.of κ)
     (hlocal : ∀ z : O, π.hom z = 0 ↔ ¬ IsUnit z)
     {𝒜 : Scheme.{u}} {fO : 𝒜 ⟶ Spec O} {abO : AbelianSchemeStruct fO}
-    (mO : Mult abO (𝓞 D)) (q n : ℕ) (hq : q.Prime) (hqO : IsUnit ((q : O)))
+    (mO : Mult abO (𝓞 D)) (q n : ℕ) (_hq : q.Prime) (hqO : IsUnit ((q : O)))
     (u : RelPoint fO (𝟙 (Spec O)))
     (hu : mO.act ((q : 𝓞 D) ^ n) u = abO.zero (𝟙 (Spec O)))
     (hred : RelPoint.pre (Spec.map π) (Category.comp_id (Spec.map π)) u
       = RelPoint.pre (Spec.map π) (Category.comp_id (Spec.map π))
           (abO.zero (𝟙 (Spec O)))) :
-    u = abO.zero (𝟙 (Spec O)) :=
-  sorry
+    u = abO.zero (𝟙 (Spec O)) := by
+  classical
+  -- `O` is a local ring: `ker π` is the set of non-units.
+  haveI hnt : Nontrivial ↥O := by
+    refine ⟨0, 1, fun h => ?_⟩
+    have h0 : π.hom (0 : O) = π.hom (1 : O) := by rw [h]
+    simp at h0
+  haveI hloc : IsLocalRing ↥O := by
+    refine IsLocalRing.of_nonunits_add ?_
+    intro a b ha hb
+    have ha' : π.hom a = 0 := (hlocal a).mpr ha
+    have hb' : π.hom b = 0 := (hlocal b).mpr hb
+    exact (hlocal (a + b)).mp (by rw [map_add, ha', hb', add_zero])
+  haveI : PreconnectedSpace (PrimeSpectrum ↥O) :=
+    preconnectedSpace_primeSpectrum_of_isLocalRing ↥O
+  haveI : PreconnectedSpace ↥(Spec O) :=
+    inferInstanceAs (PreconnectedSpace (PrimeSpectrum ↥O))
+  haveI : Nonempty ↥(Spec (CommRingCat.of κ)) :=
+    inferInstanceAs (Nonempty (PrimeSpectrum κ))
+  set N : ℕ := q ^ n with hNdef
+  have hNO : IsUnit ((N : ℕ) : ↥O) := by
+    rw [hNdef, Nat.cast_pow]
+    exact hqO.pow n
+  haveI hfu : FormallyUnramified (abO.mulByNat N) :=
+    formallyUnramified_mulByNat_of_isUnit_base O N hNO abO
+  haveI : LocallyOfFiniteType (abO.mulByNat N) := abO.locallyOfFiniteType_mulByNat N
+  haveI : IsSeparated (abO.mulByNat N) := (abO.isProper_mulByNat N).toIsSeparated
+  -- the torsion hypothesis, read as a factorisation through `[N]`
+  have hx : u.1 ≫ abO.mulByNat N = 𝟙 (Spec O) ≫ abO.zeroSection := by
+    letI := abO.addCommGroup (𝟙 (Spec O))
+    letI := mO.module (𝟙 (Spec O))
+    have hcast : mO.act ((q : 𝓞 D) ^ n) u = N • u := by
+      show ((q : 𝓞 D) ^ n) • u = N • u
+      rw [hNdef, ← Nat.cast_pow]
+      exact Nat.cast_smul_eq_nsmul (𝓞 D) (q ^ n) u
+    have h := congrArg Subtype.val (hcast ▸ hu :
+      (N • u : RelPoint fO (𝟙 (Spec O))) = abO.zero (𝟙 (Spec O)))
+    rw [abO.nsmul_val N u] at h
+    rw [h, abO.zero_val (𝟙 (Spec O))]
+  have h0 : abO.zeroSection ≫ abO.mulByNat N = 𝟙 (Spec O) ≫ abO.zeroSection := by
+    rw [abO.zeroSection_comp_mulByNat N, Category.id_comp]
+  set sx : Spec O ⟶ pullback (abO.mulByNat N) abO.zeroSection :=
+    pullback.lift u.1 (𝟙 _) hx with hsx
+  set s0 : Spec O ⟶ pullback (abO.mulByNat N) abO.zeroSection :=
+    pullback.lift abO.zeroSection (𝟙 _) h0 with hs0
+  have hsxs : sx ≫ pullback.snd (abO.mulByNat N) abO.zeroSection = 𝟙 _ :=
+    pullback.lift_snd _ _ _
+  have hs0s : s0 ≫ pullback.snd (abO.mulByNat N) abO.zeroSection = 𝟙 _ :=
+    pullback.lift_snd _ _ _
+  have hredval : Spec.map π ≫ u.1 = Spec.map π ≫ abO.zeroSection := by
+    have h := congrArg Subtype.val hred
+    rw [abO.pre_zero (Spec.map π) (Category.comp_id (Spec.map π)),
+      abO.zero_val (Spec.map π)] at h
+    exact h
+  have hw : Spec.map π ≫ sx = Spec.map π ≫ s0 := by
+    refine pullback.hom_ext ?_ ?_
+    · rw [Category.assoc, hsx, pullback.lift_fst, Category.assoc, hs0, pullback.lift_fst]
+      exact hredval
+    · rw [Category.assoc, hsx, pullback.lift_snd, Category.assoc, hs0, pullback.lift_snd]
+  haveI : FormallyUnramified (pullback.snd (abO.mulByNat N) abO.zeroSection) :=
+    MorphismProperty.pullback_snd (P := @FormallyUnramified) _ _ hfu
+  have heq : sx = s0 :=
+    section_eq_of_formallyUnramified_of_preconnectedSpace _ (Spec.map π) hsxs hs0s hw
+  refine Subtype.ext ?_
+  rw [abO.zero_val (𝟙 (Spec O)), Category.id_comp]
+  have hfin := congrArg (fun m => m ≫ pullback.fst (abO.mulByNat N) abO.zeroSection) heq
+  simp only [hsx, hs0, pullback.lift_fst] at hfin
+  exact hfin
 
 namespace IsAbelianReductionDatum
 
