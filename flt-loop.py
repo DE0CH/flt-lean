@@ -350,18 +350,50 @@ Commit your work to your branch, then write this file, LAST, as your final act:
 
 containing exactly one JSON object:
 
-    {"token": "%(token)s", "panic": false, "why": "", "summary": "<one line>"}
+    {"token": "%(token)s",
+     "queue":     ["<full text of a task for a future agent>", ...],
+     "to_merger": ["<one thing the next merge worker must know>", ...],
+     "to_medic":  ""}
 
-  * `token` must be copied verbatim or the loop ignores the file.
-  * `panic` is NOT a verdict on the mathematics. A proof that did not go
-    through, a leaf that turned out to be FALSE AS STATED, a target already
-    proven elsewhere -- all of those are `panic: false`, they are results, and
-    a refutation with an explicit counterexample is a full success. Set
-    `panic: true` only if you could not operate at all: no .lake where you
-    were told to look, the worktree on a branch nobody claimed, a missing or
-    torn tree. Put one sentence in `why`.
-  * If you stop without writing it, the loop concludes you died and starts a
-    replacement. Write it even when the news is bad.
+DO NOT WRITE A REPORT. There is no reader for one. The loop is a Python state
+machine; it cannot read prose, cannot summarise, and cannot pass anything on
+that is not addressed to a specific recipient. A summary field would be thrown
+away, so anything you want acted on must go in one of the three lists below,
+each of which is delivered to a named reader:
+
+  * `token` -- copy it verbatim or the loop ignores the whole file.
+
+  * `queue` -- tasks to be dispatched to future agents. Each entry is the FULL
+    prompt text for that task, written the way you would want to receive it:
+    name the declaration, the file, what is known, what was tried. Use
+    {{FLT_WORKTREE}} where the worktree path belongs. These go into queue2 and
+    are audited against main at the next release before anyone is sent at them.
+    Leave the list empty if you opened nothing.
+
+  * `to_merger` -- things the next merge worker must know: a branch that will
+    conflict and how you would resolve it, a declaration you renamed or moved,
+    a file you split, a leaf you proved that makes a queued task obsolete. It
+    is the only channel to the merger; it does not read your commits.
+
+  * `to_medic` -- ONE sentence, and only if the LOOP is broken. Setting it is a
+    panic: the loop stops dispatching and hands the state to a repair agent. It
+    is NOT a verdict on the mathematics. A proof that did not go through, a
+    leaf that turned out to be FALSE AS STATED, a target already proven
+    elsewhere -- all ordinary results, leave it "". A refutation with an
+    explicit counterexample is a FULL SUCCESS. Set it only if you could not
+    operate at all: no .lake where you were told to look, the worktree on a
+    branch nobody claimed, a missing or torn tree.
+
+A LESSON WORTH KEEPING GOES IN A FILE, NOT IN A MESSAGE
+If you learned something that should outlive this task -- a trap in the build,
+a fact about the fleet, a technique that worked -- edit CLAUDE.md or the memory
+files in your worktree directly and commit it with your work. The merge worker
+merges your branch into main, so the lesson lands where the next agent will
+actually read it. A note to the merger is for THIS merge; an edit to CLAUDE.md
+is for every agent after you.
+
+If you stop without writing the sentinel, the loop concludes you died and
+starts a replacement. Write it even when the news is bad.
 
 YOUR TASK FOLLOWS.
 ------------------------------------------------------------------------------
@@ -393,9 +425,11 @@ def compose(kind, name, j, s):
             head += TAKEOVER % {"worktree": pathlib.Path.home() / j["worktree"]}
         body = body.replace("{{FLT_WORKTREE}}", str(pathlib.Path.home() / j["worktree"]))
     elif kind == "merger":
+        inbox = j.get("inbox") or []
         body = MERGER_TASK % {"inflight": ", ".join(j["payload"]) or "(nothing)",
                               "snapshot": SNAPSHOT, "state": STATE,
-                              "snapshot_sha": SNAPSHOT_SHA}
+                              "snapshot_sha": SNAPSHOT_SHA,
+                              "inbox": "\n".join("  * " + m for m in inbox) or "  (none)"}
     elif kind == "medic":
         body = MEDIC_TASK % {"reason": body, "state": STATE,
                              "src": pathlib.Path(__file__).resolve()}
@@ -405,6 +439,12 @@ def compose(kind, name, j, s):
 MERGER_TASK = """\
 You are the merge worker. You produce EVERY derived fact about main, and the
 loop refuses your release if any is missing. Work in ~/flt-staging.
+
+NOTES ADDRESSED TO YOU BY THE AGENTS WHOSE BRANCHES YOU ARE MERGING
+%(inbox)s
+These are the only channel those agents have to you -- they are gone, and you
+do not read their commits. Renames, splits, expected conflicts and now-obsolete
+queued tasks show up here and nowhere else.
 
 DO ALL FIVE, IN ORDER
  1. Merge these branches into main: %(inflight)s
@@ -785,6 +825,11 @@ def load():
         "audit_current": lean_equiv(aud, sha),
         "queue1": {"audited": aud, "tasks": split_tasks("\n".join(q1))},
         "queue2": split_tasks(rd(STATE / "queue2", "") or ""),
+        # Messages agents addressed to the merge worker. They are held here
+        # because an agent finishing and the next merger being created are
+        # minutes to hours apart, and the agent is long gone by then.
+        "merger_inbox": [l for l in (rd(STATE / "merger-inbox", "") or "").splitlines()
+                         if l.strip()],
         "batch": [b for b in (rd(STATE / "batch", "") or "").splitlines() if b.strip()],
         "inflight": ([b for b in (rd(STATE / "inflight") or "").splitlines() if b.strip()]
                      if (STATE / "inflight").exists() else None),
@@ -805,6 +850,7 @@ def save(s):
         s["queue1"]["audited"] or "none",
         "\n=== TASK ===\n".join(s["queue1"]["tasks"])))
     wr(STATE / "queue2", "\n=== TASK ===\n".join(s["queue2"]))
+    wr(STATE / "merger-inbox", "".join(m + "\n" for m in s["merger_inbox"]))
     wr(STATE / "batch", "".join(b + "\n" for b in s["batch"]))
     if s["inflight"] is None:
         rm(STATE / "inflight")
@@ -833,7 +879,7 @@ def save(s):
         # exactly the churn the grace period exists to stop.
         rec = {k: j.get(k) for k in ("kind", "worktree", "payload", "token",
                                      "retries", "host", "pid", "session",
-                                     "takeover", "spawned_at", "model")}
+                                     "takeover", "spawned_at", "model", "inbox")}
         wr(STATE / "jobs" / (n + ".json"), json.dumps(rec, indent=1))
         if j["started"]:
             wr(STATE / "jobs" / (n + ".started"), j["token"])
