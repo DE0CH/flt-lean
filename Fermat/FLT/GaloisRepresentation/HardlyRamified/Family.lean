@@ -3697,6 +3697,158 @@ theorem exists_levelOneFlag_of_levelOneGeneratingSeq
     refine ⟨x i, AddSubmonoid.subset_closure ⟨i, by simp, rfl⟩, htor i hi, ?_⟩
     rw [hins i, AddSubmonoid.closure_union]
 
+/-- **A FINITE additive group has no proper "one-sided" submonoids**: every `AddSubmonoid`
+of it is closed under negation, so submonoids and subgroups coincide (PROVEN 2026-07-30).
+
+Used by `exists_levelOneFlag_of_injective_equivariant` below, whose argument genuinely needs
+SUBTRACTION inside the members of the flag — the flag is stated with `AddSubmonoid`s only
+because the point "group" of a Hopf order reaches this file through a bare `Monoid`
+instance, not because the members fail to be subgroups.
+
+`(addOrderOf t - 1) • t = -t` because `addOrderOf t • t = 0` and `addOrderOf t > 0`; the
+first `nsmul` lands in `T` by `AddSubmonoid.nsmul_mem`. -/
+theorem neg_mem_of_finite {N : Type*} [AddGroup N] [Finite N] (T : AddSubmonoid N)
+    {t : N} (ht : t ∈ T) : -t ∈ T := by
+  have hpos : 0 < addOrderOf t := addOrderOf_pos t
+  have hkill : addOrderOf t • t = 0 := addOrderOf_nsmul_eq_zero t
+  have hmem : (addOrderOf t - 1) • t ∈ T := T.nsmul_mem ht _
+  have hsum : (addOrderOf t - 1) • t + t = 0 := by
+    rw [← succ_nsmul]
+    rw [Nat.sub_add_cancel hpos]
+    exact hkill
+  rwa [eq_neg_of_add_eq_zero_left hsum] at hmem
+
+/-- **`zsmul` lands in an `AddSubmonoid` of a finite additive group** (PROVEN 2026-07-30);
+the `ℤ`-coefficient companion of `neg_mem_of_finite` above. -/
+theorem zsmul_mem_of_finite {N : Type*} [AddGroup N] [Finite N] (T : AddSubmonoid N)
+    {t : N} (ht : t ∈ T) (k : ℤ) : k • t ∈ T := by
+  rcases Int.natAbs_eq k with h | h
+  · rw [h, natCast_zsmul]; exact T.nsmul_mem ht _
+  · rw [h, neg_zsmul, natCast_zsmul]
+    exact neg_mem_of_finite T (T.nsmul_mem ht _)
+
+/-- **Transport of a level-one flag along an INJECTIVE equivariant additive map** (PROVEN
+2026-07-30; pure lattice/group theory, no arithmetic and no Hopf algebras).
+
+This is the strengthening of `exists_levelOneFlag_of_bijective_equivariant` above that a
+SUBOBJECT needs: the flag is pulled back along `f` exactly as there, but with `f` merely
+injective the one-step-generation clause is no longer transported by the Galois connection,
+because `comap f` of a `⊔` is not a `⊔` of `comap`s without surjectivity. The generator of
+the pulled-back step has to be produced instead, and that is the only new content.
+
+THE ARGUMENT for the step clause, at index `i` with `Q (i+1) = Q i ⊔ closure {x}`. Consider
+
+    B := {c : ℤ | ∃ w : M₀, f w ∈ Q (i + 1) ∧ f w - c • x ∈ Q i},
+
+the set of `x`-exponents attained modulo `Q i` by elements OF THE IMAGE. It is a subgroup of
+`ℤ` (closure under `+` and `-` is immediate, using `neg_mem_of_finite` to keep the witnesses
+inside the `AddSubmonoid`s), hence `B = closure {e}` for some `e`, and a witness `y` for `e`
+itself is the generator we want:
+
+* `q • y` lands in `comap f (Q i)` because `f (q • y) - (q * e) • x = q • (f y - e • x)` lies
+  in `Q i` and `(q * e) • x = e • (q • x)` lies in `Q i` by the source flag's own torsion
+  clause;
+* for the `⊔` identity, an arbitrary `w` with `f w ∈ Q (i+1)` writes `f w = a + c • x` with
+  `a ∈ Q i`, so `c ∈ B`, so `c = k * e`, and then `w - k • y ∈ comap f (Q i)`.
+
+`[Finite N₀]` is what makes the two ambient `AddSubmonoid`s closed under negation
+(`neg_mem_of_finite`); the point group of a finite flat Hopf order is finite, so this costs
+nothing at the call site. Commutativity is genuinely used (the `B`-subgroup manipulations
+and `AddSubmonoid.mem_sup` both need it), which is why this lemma — unlike its bijective
+sibling — asks for `AddCommGroup` rather than a bare `AddMonoid`. -/
+theorem exists_levelOneFlag_of_injective_equivariant
+    {Grp : Type*} [Monoid Grp] {M₀ N₀ : Type*} [AddCommGroup M₀] [AddCommGroup N₀]
+    [Finite N₀]
+    [DistribMulAction Grp M₀] [DistribMulAction Grp N₀]
+    (f : M₀ →+[Grp] N₀) (hf : Function.Injective f)
+    (S : Grp → Prop) (q : ℕ) (n : ℕ) (Q : ℕ → AddSubmonoid N₀)
+    (h0 : Q 0 = ⊥) (hn : Q n = ⊤) (hmono : ∀ i, Q i ≤ Q (i + 1))
+    (hstab : ∀ i, ∀ σ, S σ → ∀ x ∈ Q i, σ • x ∈ Q i)
+    (hstep : ∀ i < n, ∃ x ∈ Q (i + 1), q • x ∈ Q i ∧
+      Q (i + 1) = Q i ⊔ AddSubmonoid.closure {x}) :
+    ∃ (m : ℕ) (P : ℕ → AddSubmonoid M₀), P 0 = ⊥ ∧ P m = ⊤ ∧ (∀ i, P i ≤ P (i + 1)) ∧
+      (∀ i, ∀ σ, S σ → ∀ y ∈ P i, σ • y ∈ P i) ∧
+      (∀ i < m, ∃ y ∈ P (i + 1), q • y ∈ P i ∧
+        P (i + 1) = P i ⊔ AddSubmonoid.closure {y}) := by
+  classical
+  haveI : Finite M₀ := Finite.of_injective f hf
+  refine ⟨n, fun i => (Q i).comap f, ?_, ?_, ?_, ?_, ?_⟩
+  · show (Q 0).comap f = ⊥
+    rw [h0]; ext w
+    simp only [AddSubmonoid.mem_comap, AddSubmonoid.mem_bot]
+    exact ⟨fun hw => hf (by simpa using hw), fun hw => by simp [hw]⟩
+  · show (Q n).comap f = ⊤
+    rw [hn]; ext w; simp
+  · intro i w hw; exact hmono i hw
+  · intro i σ hσ w hw
+    simp only [AddSubmonoid.mem_comap] at hw ⊢
+    rw [map_smul f σ w]
+    exact hstab i σ hσ _ hw
+  · intro i hi
+    obtain ⟨x, hxmem, hxq, hxsup⟩ := hstep i hi
+    -- the set of "exponents of `x` attained modulo `Q i` by the image of the source"
+    let B : AddSubgroup ℤ :=
+      { carrier := {c : ℤ | ∃ w : M₀, f w ∈ Q (i + 1) ∧ f w - c • x ∈ Q i}
+        zero_mem' := ⟨0, by simp, by simp⟩
+        add_mem' := by
+          rintro c₁ c₂ ⟨w₁, hw₁, hc₁⟩ ⟨w₂, hw₂, hc₂⟩
+          refine ⟨w₁ + w₂, by rw [map_add]; exact (Q (i + 1)).add_mem hw₁ hw₂, ?_⟩
+          have : f (w₁ + w₂) - (c₁ + c₂) • x = (f w₁ - c₁ • x) + (f w₂ - c₂ • x) := by
+            rw [map_add, add_zsmul]; abel
+          rw [this]; exact (Q i).add_mem hc₁ hc₂
+        neg_mem' := by
+          rintro c ⟨w, hw, hc⟩
+          refine ⟨-w, by rw [map_neg]; exact neg_mem_of_finite _ hw, ?_⟩
+          have : f (-w) - (-c) • x = -(f w - c • x) := by rw [map_neg, neg_zsmul]; abel
+          rw [this]; exact neg_mem_of_finite _ hc }
+    obtain ⟨e, he⟩ := Int.subgroup_cyclic B
+    have heB : e ∈ B := by rw [he]; exact AddSubgroup.mem_closure_singleton_self e
+    obtain ⟨y, hy1, hy2⟩ := heB
+    have hyP : y ∈ (Q (i + 1)).comap f := hy1
+    refine ⟨y, hyP, ?_, ?_⟩
+    · -- `q • y` lands in the previous step
+      show f (q • y) ∈ Q i
+      have h1 : ((q : ℤ) * e) • x = e • (q • x) := by
+        rw [mul_comm, mul_zsmul, natCast_zsmul]
+      have h2 : f (q • y) - ((q : ℤ) * e) • x = (q : ℤ) • (f y - e • x) := by
+        rw [map_nsmul, ← natCast_zsmul (f y) q, smul_sub, smul_smul]
+      have h3 : f (q • y) = (f (q • y) - ((q : ℤ) * e) • x) + ((q : ℤ) * e) • x := by abel
+      rw [h3, h2, h1]
+      exact (Q i).add_mem (zsmul_mem_of_finite _ hy2 (q : ℤ)) (zsmul_mem_of_finite _ hxq e)
+    · -- the step is generated by `y` over the previous one
+      apply le_antisymm
+      · intro w hw
+        have hfw : f w ∈ Q (i + 1) := hw
+        rw [hxsup] at hfw
+        obtain ⟨a, ha, b, hb, hab⟩ := AddSubmonoid.mem_sup.mp hfw
+        obtain ⟨c, rfl⟩ := AddSubmonoid.mem_closure_singleton.mp hb
+        have hcB : (c : ℤ) ∈ B := by
+          refine ⟨w, hw, ?_⟩
+          rw [natCast_zsmul, ← hab]
+          simpa using ha
+        rw [he, AddSubgroup.mem_closure_singleton] at hcB
+        obtain ⟨k, hk⟩ := hcB
+        have hkey : f (w - k • y) ∈ Q i := by
+          have hstep1 : f (w - k • y) = (f w - (c : ℤ) • x) + ((c : ℤ) • x - k • f y) := by
+            rw [map_sub, map_zsmul]; abel
+          have hstep2 : (c : ℤ) • x - k • f y = -(k • (f y - e • x)) := by
+            rw [← hk, smul_eq_mul, smul_sub, smul_smul]; abel
+          rw [hstep1, hstep2]
+          refine (Q i).add_mem ?_ (neg_mem_of_finite _ (zsmul_mem_of_finite _ hy2 k))
+          rw [natCast_zsmul, ← hab]
+          simpa using ha
+        have hmem : w - k • y ∈ (Q i).comap f := hkey
+        have : w = (w - k • y) + k • y := by abel
+        rw [this]
+        exact AddSubmonoid.mem_sup.mpr
+          ⟨w - k • y, hmem, k • y,
+            zsmul_mem_of_finite _ (AddSubmonoid.subset_closure (Set.mem_singleton y)) k, rfl⟩
+      · refine sup_le ?_ ?_
+        · intro w hw; exact hmono i hw
+        · rw [AddSubmonoid.closure_le]
+          rintro z (rfl : z = y)
+          exact hyP
+
 set_option synthInstance.maxHeartbeats 1000000 in
 /-- **THE ARITHMETIC HALF OF `(R1)`, WITH THE GROUP SCHEME REMOVED: the residual
 representation admits an inertia-stable `𝔽_p`-flag** (SORRY LEAF, cut out of
