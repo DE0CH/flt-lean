@@ -1066,3 +1066,88 @@ part". The repair here was one hypothesis (`hmm₀ram : ∀ w, IsRamifiedCharRay
 that the consumer **already held and was discarding** — so the fix cost nothing, and the consumer's
 statement did not change. That is the usual shape: the missing hypothesis is often already in the caller's
 hand.
+
+## SEVENTH invisibility class: A CLEAN MERGE THAT DOES NOT COMPILE — the interface split
+
+(2026-07-30, release 22, three instances in one batch.) The six classes above are all about
+*not seeing work*. This one is about *seeing a merge succeed*. Every check this file prescribes
+for a merge — no conflict markers, `git diff --stat HEAD^1 HEAD` non-empty, the sorry counts,
+the `declaration uses 'sorry'` warning set — passed on all three, and the tree did not build.
+
+The shape is always the same. **An interface change and its call sites are ONE edit, and a merge
+can split them across the conflict boundary.** The half that conflicts gets resolved; the half
+that does not conflict lands unexamined; and the two halves now contradict each other.
+
+- `RelativePicard.lean`: `flt-lean-133` CLOSED `nonempty_modTensor_assocPic` by hoisting, deleting
+  the leaf and re-pointing the call sites *its base had*. `main` had gained more call sites since.
+  Both edits merged without conflict; six calls to a deleted declaration survived.
+- `ArtinConductor.lean`: `flt-lean-197` split break POSITIVITY into its own clause, so one theorem
+  returns `⟨pos, counting⟩` and another takes two binders. The SIGNATURES were the non-conflicting
+  half; the CALL SITES were the conflicted half, resolved to `ours`, still passing one conjunction.
+- `Patching.lean`/`Interface.lean`: two owners threaded DIFFERENT hypotheses (`hp5`, `hgen`) through
+  the same six-theorem positional argument chain. Signature edits merged cleanly, so the callees
+  bind both; each side's call line passes only its own. **Neither `ours` nor `theirs` compiles** —
+  and the conflict looks like a trivial whitespace disagreement. Positional argument lists are
+  what make this a merge hazard at all.
+
+**Corollary, and it inverts the obvious rule: resolving every conflict to `ours` is NOT a safe way
+to decline a payload.** Twice this release it left the tree broken, because the branch's chain
+straddled the boundary:
+`flt-lean-366`'s three new leaves landed non-conflictingly while the two proven helpers they call
+sat in the dropped half (seven live references to nothing); `flt-lean-123`'s hoist inserted 5164
+lines into `X0.lean` while `MazurTorsion.lean` kept its copy (duplicate declarations). **To decline
+a payload, `git checkout HEAD -- <the files>`** and let the diff against the first parent be empty
+on purpose. Say so in the commit message, because an empty payload otherwise reads as the
+dropped-merge bug of class six.
+
+**Two checks catch this class before the build, and both cost seconds.**
+
+1. *Duplicate declaration names, WITHIN a file and ACROSS files*, diffed against the previous
+   release so the tree's many legitimate same-last-component names in different namespaces do not
+   drown the new ones. Two real errors this release: `Gamma0AtlasOver.bcUniversal_transport`
+   declared twice in `X0.lean` by two branches whose regions were too far apart to conflict, and
+   `Fermat.isInvertibleSheaf_modPullback` declared in two modules one of which imports the other.
+   A per-file scan cannot see the second.
+2. *Per merge: names declared on the BRANCH but absent from the resolved file, grepped
+   (comments stripped) against the resolved file.* This is what found `flt-lean-366`'s breakage
+   before a build ran.
+
+And the standing one, which is what caught the rest: **the release build is not optional and its
+first failure is not its last.** Fix, rebuild, repeat — FOUR rounds this release, and the reason is
+structural rather than bad luck. **The errors are serialised behind each other by the import
+graph**, so round *n* only reveals what round *n−1*'s failure was hiding: one interface change
+(`IsSwanExponentAt` gaining a third clause) broke a consumer in its own module, found in round 1,
+and a second consumer 79 000 lines away in another module from another branch, found only in round
+4 after twenty minutes of elaboration. Budget three rounds minimum, and schedule nothing behind the
+first green one.
+
+## RIVAL CUTS ARE OFTEN COMPLEMENTARY — check before choosing
+
+(2026-07-30.) Nine of 57 branches in one batch were declined because another agent had cut the
+same node differently. In one case that verdict would have been wrong. `flt-lean-134` proved
+sub-leaf (γ) of `exists_relNormDivisorHom_ray_class` OUTRIGHT and left (α) over a fresh sorry;
+`flt-lean-343` proved (α) OUTRIGHT and left (γ) over a fresh sorry. **Taking either branch whole
+keeps an avoidable open node; taking one proof from each closes both.** It cost one careful read
+of four hunks and netted zero new sorries where either alone netted one.
+
+So when two branches cut one node, the question is not "which cut is better" but "did they close
+different halves". Ask it first. The tie-breakers, in the order that has actually decided cases:
+
+- **fewer OPEN leaves after**, not fewer leaves created — `flt-lean-44`'s divisor-set cut left ONE
+  leaf and closed 23 of 32 cases outright, against a bound-cut that left TWO and closed none;
+- **named beats anonymous** — a cut leaving 8 NAMED leaves beats one leaving 4 declarations with 4
+  anonymous inner sorries inside them, even though the headline count is worse, because an inner
+  sorry is ownerless by construction;
+- **already integrated and consumed by neighbours**, which is the merge worker's only defensible
+  ground when the mathematics is genuinely equivalent (two complete proofs of one theorem cannot
+  both be carried — the name collides — so that is a CHOICE, not a merge, and it belongs to an
+  author; record the rejected branch's sha in the merge commit).
+
+**And a branch that was right when dispatched can be wrong when it lands.** `flt-lean-91` and
+`flt-lean-195` independently generalised `EllipticScheme.lean`'s reverse Riemann-Roch chain from
+`ℚ` to an arbitrary field, both truthfully reporting "NO LEAF WAS ADDED" — true at their base,
+where the three leaves were open. They were PROVEN at `ℚ` by the time the branches merged, so the
+same edit would have traded one closed leaf for three re-opened ones. Re-derive a branch's own
+accounting against the release, never against its base; and when you decline for this reason, queue
+the follow-up, because the work usually got CHEAPER (here: generalise the PROOFS, and both targets
+close with no new sorry).
