@@ -20679,7 +20679,94 @@ theorem exists_finset_isUnramifiedAt_hilbert_of_notMem
     ∃ S : Finset (HeightOneSpectrum (𝓞 F)), ∀ w : HeightOneSpectrum (𝓞 F),
       w ∉ S → (ρbar.map (algebraMap ℚ F)).IsUnramifiedAt w := sorry
 
+/-- **THE COCYCLE FORM OF THE SMALL-SUBGROUP STATEMENT** (SORRY LEAF, cut
+2026-07-30 (late) out of
+`exists_mem_hilbertInertiaOutsideSubgroups_resSubgroup_eq_zero` below, which is
+PROVEN over it and carries the full route, the `[Finite k]` discussion and the
+uniform-`n` correction).
+
+There is a bound `n` such that EVERY continuous `1`-cocycle whose class is
+unramified outside `hilbertHardlyRamifiedPlaces ℓ F` VANISHES IDENTICALLY on some
+`N ∈ hilbertInertiaOutsideSubgroups F S n`.
+
+# WHY THIS IS THE RIGHT CUT
+
+The consumer's statement is cohomological — a class in the kernel of
+`hilbertResSubgroupTwist1` — and its route is entirely about a COCYCLE: build
+`N₁ = ker(Γ F → Aut_k M)`, cut it down to `N = {g ∈ N₁ | z g = 0}`, bound the
+index. Only the very last line of that route is cohomological, and it is the one
+line that needs the degree-one continuous-cochain dictionary of
+`Mathlib/RepresentationTheory/Homological/ContCohomology/LowDegreeOne.lean`.
+
+That line is now DISCHARGED in the consumer, from this leaf, by
+`ContinuousCohomology.map_cocycleClass_cocyclesMapKer` followed by
+`ContinuousCohomology.cocycleClass_eq_zero_of_eval₁_eq_sub` at `m = 0` — the
+restricted cocycle is literally the zero function, so its class is zero for the
+cheapest possible reason. **A prover of this leaf therefore never has to touch
+the cochain model, `ContinuousCohomology.map`, or `cocycleClass` at all**: the
+obligation is the elementary-looking `∀ g ∈ N, eval₁ z g = 0`, which is how the
+route already phrased it ("`res^{Γ F}_N c = 0` because `z` restricts to the zero
+cocycle on `N`").
+
+# WHAT IS STILL HARD, AND IT IS NOT THE BOOKKEEPING
+
+The quantifier order `∃ n, ∀ z` is the whole difficulty, and the consumer's
+2026-07-30 note analyses it: the natural bound `#(Γ F / N₁) · #(image z)` depends
+on `z`, and this module deliberately drops `[Finite k]`, so `M` is infinite as a
+set and the `ℚ`-level twin's uniform bound `#(image z) ≤ #M` is unavailable. In
+characteristic zero `image z` is a finite subgroup of a torsion-free module hence
+trivial, and `N = N₁` works; in characteristic `p` the uniform bound exists but
+needs finiteness of the maximal abelian exponent-`p` extension of a number field
+unramified outside a finite set — Hermite–Minkowski again, and NOT supplied by
+`finite_hilbertInertiaOutsideSubgroups`, which bounds a different thing. That
+split, and not the cohomology, is what a prover should plan for.
+
+# STRENGTH AUDIT
+
+This leaf quantifies over COCYCLES where the consumer quantifies over CLASSES.
+That is a strengthening only in appearance: the consumer obtains its cocycle from
+`ContinuousCohomology.exists_cocycleClass_eq`, which is surjective, so every
+class in play is the class of some `z` covered here; and conversely a `z` whose
+class is not unramified is not constrained. The genuine strengthening is that the
+conclusion is VANISHING of `z` on `N` rather than vanishing of its class, which
+is what the route proves anyway and is strictly more usable.
+
+Both-ways audit inherited from the consumer: `hSram` and `hSunr` are both
+load-bearing and are passed through unchanged; the statement is not vacuous
+(`z = 0` is covered, and `⊤ ∈ hilbertInertiaOutsideSubgroups F S n` for `n ≥ 1`),
+and no hypothesis on `ρbar` beyond its type is available, so no circular discharge
+exists. -/
+theorem exists_forall_mem_hilbertInertiaOutsideSubgroups_eval₁_eq_zero
+    (ℓ : ℕ) [Fact ℓ.Prime] (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V)
+    (S : Finset (HeightOneSpectrum (𝓞 F)))
+    (hSram : hilbertHardlyRamifiedPlaces ℓ F ⊆ (S : Set (HeightOneSpectrum (𝓞 F))))
+    (hSunr : ∀ w : HeightOneSpectrum (𝓞 F), w ∉ S →
+      (ρbar.map (algebraMap ℚ F)).IsUnramifiedAt w) :
+    ∃ n : ℕ, ∀ z : ContinuousCohomology.cocycles₁ (hilbertAdZeroTwist F ρbar),
+      ContinuousCohomology.cocycleClass (hilbertAdZeroTwist F ρbar) 1 z
+          ∈ hilbertH1TwistUnramified ℓ F ρbar →
+      ∃ N ∈ hilbertInertiaOutsideSubgroups F S n,
+        ∀ g : Γ F, g ∈ N →
+          ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1 g = 0 :=
+  sorry
+
 /-- **An unramified-outside-`hilbertHardlyRamifiedPlaces` class dies on a small
+open subgroup** (a SORRY LEAF from its cut on 2026-07-28 until 2026-07-30 (late);
+**PROVEN** that day over the single leaf
+`exists_forall_mem_hilbertInertiaOutsideSubgroups_eval₁_eq_zero` immediately
+above, which is the same statement about the COCYCLE. The statement here is
+unchanged and no consumer changed; the sentence below calling this "the only one
+of the four that touches the cochain model" is now the reason the cut was made,
+since the cochain model is entirely on THIS side of it and a prover of the leaf
+never meets it. Everything else below remains accurate — in particular the
+uniform-`n` correction, which is where the remaining difficulty lives.)
+
+Original header follows.
+
+**An unramified-outside-`hilbertHardlyRamifiedPlaces` class dies on a small
 open subgroup** (SORRY LEAF, cut out 2026-07-28 as the third of the four inputs
 of `finite_hilbertH1TwistUnramified` below — this is the cocycle bookkeeping,
 and the only one of the four that touches the cochain model; the `F`-level twin
@@ -20813,8 +20900,34 @@ theorem exists_mem_hilbertInertiaOutsideSubgroups_resSubgroup_eq_zero
       (ρbar.map (algebraMap ℚ F)).IsUnramifiedAt w) :
     ∃ n : ℕ, ∀ c ∈ hilbertH1TwistUnramified ℓ F ρbar,
       ∃ N ∈ hilbertInertiaOutsideSubgroups F S n,
-        c ∈ LinearMap.ker (hilbertResSubgroupTwist1 F ρbar N).hom.toLinearMap :=
-  sorry
+        c ∈ LinearMap.ker (hilbertResSubgroupTwist1 F ρbar N).hom.toLinearMap := by
+  classical
+  obtain ⟨n, hn⟩ :=
+    exists_forall_mem_hilbertInertiaOutsideSubgroups_eval₁_eq_zero ℓ F ρbar S hSram hSunr
+  refine ⟨n, fun c hc => ?_⟩
+  -- every class is the class of a cocycle
+  obtain ⟨z, hz⟩ :=
+    ContinuousCohomology.exists_cocycleClass_eq (X := hilbertAdZeroTwist F ρbar) 1 c
+  obtain ⟨N, hN, hzero⟩ := hn z (by rw [hz]; exact hc)
+  refine ⟨N, hN, ?_⟩
+  -- the restricted cocycle is literally zero, so its class is the zero class
+  rw [LinearMap.mem_ker, ← hz]
+  show ContinuousCohomology.map (hilbertSubgroupToGlobalHom F N)
+      (CategoryTheory.CategoryStruct.id (hilbertAdZeroTwistSubgroup F ρbar N)) 1
+      (ContinuousCohomology.cocycleClass (hilbertAdZeroTwist F ρbar) 1 z) = 0
+  rw [ContinuousCohomology.map_cocycleClass_cocyclesMapKer]
+  refine ContinuousCohomology.cocycleClass_eq_zero_of_eval₁_eq_sub _ 0 ?_ ?_
+  · simpa using continuous_const
+  · intro g
+    rw [ContinuousCohomology.eval₁_cocyclesMapKer]
+    simp only [map_zero, sub_zero]
+    show (CategoryTheory.CategoryStruct.id
+        (hilbertAdZeroTwistSubgroup F ρbar N)).hom
+        (ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1
+          (hilbertSubgroupToGlobalHom F N g)) = 0
+    have hg : hilbertSubgroupToGlobalHom F N g = (g : Γ F) := rfl
+    rw [hg, hzero _ g.2]
+    rfl
 
 /-- **Inflation–restriction: the kernel of restriction to an open normal
 subgroup is FINITE-DIMENSIONAL over `k`** (SORRY LEAF, cut out 2026-07-28 as the
