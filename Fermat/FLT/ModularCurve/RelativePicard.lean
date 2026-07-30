@@ -231,7 +231,14 @@ leaves it moved to are, in dependency order:
     was itself split into `smooth_of_isRelPicOf` (BLR 8.4/2) and
     `isSeparated_of_isRelPicOf` (BLR 8.2/1), which are the two dispatch
     targets; `smooth_isSeparated_of_isRelPicOf` is now their assembly and
-    is PROVEN.
+    is PROVEN.  **Amended 2026-07-31**: `exists_relPicZeroSubgroup` is now
+    PROVEN too, as the transport of a group law along an injection, over
+    the new leaf `exists_relPicZeroSubfunctor` — which asks for the same
+    geometry with the twelve fields of `AbelianSchemeStruct` replaced by
+    three CLOSURE clauses (image contains `zeroPoint`, closed under
+    `addPoint` and under `negPoint`).  The group axioms it no longer has
+    to prove are now proven once and for all about `Pic` itself, in the
+    `IsRelPicOf` group-law section.
 
 So the direct-sorry set of this module is 9 (verified against the
 compiler's `declaration uses 'sorry'` warnings, and against a
@@ -241,7 +248,16 @@ are `isInvertibleSheaf_sectionIdeal`,
 `nonempty_modPullback_sectionIdeal_of_isPullback` (2026-07-31: this slot used to
 be `nonempty_modPullback_sectionIdeal`, which is now its consumer and PROVEN),
 `smooth_of_isRelPicOf`, `isSeparated_of_isRelPicOf` and
-`exists_relPicZeroSubgroup`.
+`exists_relPicZeroSubfunctor` (2026-07-31: likewise, this slot used to be
+`exists_relPicZeroSubgroup`).
+
+**A note on the count, since it did not move on 2026-07-31 and two leaves
+closed that day.**  Both closures were CUTS: one leaf proven, one opened, net
+zero.  That is the expected shape when a node is decomposed rather than
+discharged, and reading the count alone would say nothing happened.  What did
+happen is that the two open statements got strictly smaller — one lost every
+mention of a curve, the other lost nine group axioms — and eleven declarations
+that used to be inside them are now theorems.
 
 **Amended 2026-07-30 (later the same day): 10 → 9 → 8 → 9.**  Both `modDual`
 leaves closed, `isInvertibleSheaf_modDual` first and then `isIso_modDualEv`,
@@ -2270,6 +2286,23 @@ theorem relPicEquiv_tensor_right {X S T : Scheme.{u}} (strX : X ⟶ S) (g : T �
     (modPullback (curveBaseChangeProj strX g) N) M
   exact ⟨N, hN, ⟨modTensorMapIso e (Iso.refl M) ≪≫ m4⟩⟩
 
+/-- **`RelPicEquiv` is a congruence for `⊗` on the LEFT** (PROVEN 2026-07-31) —
+the braiding conjugate of `relPicEquiv_tensor_right`.
+
+Needed because `RelPicEquiv` puts the twisting sheaf on the right, so the
+right-hand congruence is the one that comes out of the middle-four
+interchange; the left-hand one is then two applications of `modTensorSymmIso`
+around it.  Its consumers are the group axioms for `IsRelPicOf.addPoint`
+below — associativity moves the bracket, and only the left congruence can
+rewrite inside `L ⊗ (M ⊗ N)`. -/
+theorem relPicEquiv_tensor_left {X S T : Scheme.{u}} (strX : X ⟶ S) (g : T ⟶ S)
+    {L L' : (curveBaseChange strX g).Modules} (M : (curveBaseChange strX g).Modules)
+    (h : RelPicEquiv strX g L L') :
+    RelPicEquiv strX g (modTensor M L) (modTensor M L') :=
+  relPicEquiv_trans strX g (relPicEquiv_of_iso strX g (modTensorSymmIso M L))
+    (relPicEquiv_trans strX g (relPicEquiv_tensor_right strX g M h)
+      (relPicEquiv_of_iso strX g (modTensorSymmIso L' M)))
+
 /-- **The base-change square commutes**: `φ ≫ π_g = π_{g'} ≫ h` for
 `φ = curveBaseChangeMap strX h hg`.  One `pullback.lift_snd`, but it is an
 equality of morphisms rather than a definitional identity, so it has to be fed
@@ -2476,6 +2509,134 @@ theorem sheaf_addPoint {T : Scheme.{u}} {g : T ⟶ S} (p q : RelPoint pstr g) :
       (modTensor (hP.sheaf p) (hP.sheaf q)) :=
   (hP.surj (modTensor (hP.sheaf p) (hP.sheaf q))
     (isInvertibleSheaf_modTensorPic (hP.invertible p) (hP.invertible q))).choose_spec
+
+/-! #### The points of `Pic` form an abelian group, functorially
+
+**PROVEN 2026-07-31**, and every one of these is `hP.inj` applied to a chain of
+`RelPicEquiv`s — never a comparison of the two `Classical.choose`s that
+`zeroPoint` and `addPoint` are defined by.  That is the whole technique: `inj`
+says a point of `Pic` is DETERMINED by the class of its sheaf, so an identity
+between classes is an identity between points.
+
+Why this section exists rather than being left to each consumer: it is exactly
+the input the `AbelianSchemeStruct` on `Pic⁰` is transported from.  The
+subfunctor `Pic⁰ ⊆ Pic` produced by `exists_relPicZeroSubfunctor` below carries
+NO group axioms of its own — they are all pulled back through an injection from
+the ones proven here, which is what makes that leaf a statement about geometry
+alone.
+
+The dictionary is one line long: `zeroPoint ↔ 𝒪`, `addPoint ↔ ⊗`,
+`negPoint ↔ the inverse sheaf`, and the four group axioms are the unitor, the
+associator, the braiding and `exists_modTensor_inv`.  The two naturality
+statements are `sheaf_pre` composed with `modPullbackUnitIso` and with
+`nonempty_modPullback_modTensorPic` respectively — i.e. the group law on `Pic`
+is natural precisely because pullback is monoidal. -/
+
+/-- **`Pic` is COMMUTATIVE** (PROVEN 2026-07-31) — the braiding, through
+`inj`. -/
+theorem addPoint_comm {T : Scheme.{u}} {g : T ⟶ S} (p q : RelPoint pstr g) :
+    hP.addPoint p q = hP.addPoint q p :=
+  hP.inj _ _ <| relPicEquiv_trans strX g (hP.sheaf_addPoint p q) <|
+    relPicEquiv_trans strX g (relPicEquiv_of_iso strX g (modTensorSymmIso _ _))
+      (relPicEquiv_symm strX g (hP.sheaf_addPoint q p))
+
+/-- **`Pic` is ASSOCIATIVE** (PROVEN 2026-07-31) — the associator
+`nonempty_modTensor_assoc`, with `relPicEquiv_tensor_right` used to rewrite the
+left factor and `relPicEquiv_tensor_left` the right one. -/
+theorem addPoint_assoc {T : Scheme.{u}} {g : T ⟶ S} (p q r : RelPoint pstr g) :
+    hP.addPoint (hP.addPoint p q) r = hP.addPoint p (hP.addPoint q r) := by
+  refine hP.inj _ _ ?_
+  refine relPicEquiv_trans strX g (hP.sheaf_addPoint (hP.addPoint p q) r) ?_
+  refine relPicEquiv_trans strX g
+    (relPicEquiv_tensor_right strX g _ (hP.sheaf_addPoint p q)) ?_
+  refine relPicEquiv_trans strX g
+    (relPicEquiv_of_iso strX g (nonempty_modTensor_assoc _ _ _).some) ?_
+  refine relPicEquiv_trans strX g
+    (relPicEquiv_tensor_left strX g _ (relPicEquiv_symm strX g (hP.sheaf_addPoint q r))) ?_
+  exact relPicEquiv_symm strX g (hP.sheaf_addPoint p (hP.addPoint q r))
+
+/-- **`zeroPoint` IS a left unit** (PROVEN 2026-07-31) — the LEFT unitor
+`modTensorUnitLeftIso`, which is the one mathlib's sheafified tensor already
+had. -/
+theorem zeroPoint_addPoint {T : Scheme.{u}} {g : T ⟶ S} (p : RelPoint pstr g) :
+    hP.addPoint (hP.zeroPoint g) p = p := by
+  refine hP.inj _ _ ?_
+  refine relPicEquiv_trans strX g (hP.sheaf_addPoint (hP.zeroPoint g) p) ?_
+  refine relPicEquiv_trans strX g
+    (relPicEquiv_tensor_right strX g _ (hP.sheaf_zeroPoint g)) ?_
+  exact relPicEquiv_of_iso strX g (modTensorUnitLeftIso _)
+
+/-- **EVERY POINT OF `Pic` HAS AN INVERSE** (PROVEN 2026-07-31) — the inverse
+sheaf `exists_modTensor_inv` is invertible, hence classified by `surj`.
+
+Stated as an existential over the *defining property* rather than over a chosen
+point, so that `negPoint` below is the `choose` of a spec that is already the
+useful one. -/
+theorem exists_negPoint {T : Scheme.{u}} {g : T ⟶ S} (p : RelPoint pstr g) :
+    ∃ q : RelPoint pstr g,
+      RelPicEquiv strX g (modTensor (hP.sheaf p) (hP.sheaf q)) (modUnit _) := by
+  obtain ⟨M, hM, ⟨e⟩⟩ := exists_modTensor_inv (hP.invertible p)
+  obtain ⟨q, hq⟩ := hP.surj M hM
+  exact ⟨q, relPicEquiv_trans strX g (relPicEquiv_tensor_left strX g _ hq)
+    (relPicEquiv_of_iso strX g e)⟩
+
+/-- **Negation on the points of `Pic`** — the point classifying the inverse
+sheaf.  Determined by its spec, since `inj` makes it unique. -/
+noncomputable def negPoint {T : Scheme.{u}} {g : T ⟶ S} (p : RelPoint pstr g) :
+    RelPoint pstr g := (hP.exists_negPoint p).choose
+
+/-- `p + (−p) = 0` (PROVEN 2026-07-31). -/
+theorem addPoint_negPoint {T : Scheme.{u}} {g : T ⟶ S} (p : RelPoint pstr g) :
+    hP.addPoint p (hP.negPoint p) = hP.zeroPoint g := by
+  refine hP.inj _ _ ?_
+  refine relPicEquiv_trans strX g (hP.sheaf_addPoint p (hP.negPoint p)) ?_
+  refine relPicEquiv_trans strX g (hP.exists_negPoint p).choose_spec ?_
+  exact relPicEquiv_symm strX g (hP.sheaf_zeroPoint g)
+
+/-- `(−p) + p = 0` (PROVEN 2026-07-31) — the form `AbelianSchemeStruct.neg_add`
+asks for. -/
+theorem negPoint_addPoint {T : Scheme.{u}} {g : T ⟶ S} (p : RelPoint pstr g) :
+    hP.addPoint (hP.negPoint p) p = hP.zeroPoint g := by
+  rw [hP.addPoint_comm]; exact hP.addPoint_negPoint p
+
+/-- **The origin is NATURAL** (PROVEN 2026-07-31) — `sheaf_pre` followed by
+`modPullbackUnitIso`: `φ^*𝒪 ≅ 𝒪`. -/
+theorem pre_zeroPoint {T' T : Scheme.{u}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+    (hg : h ≫ g = g') : RelPoint.pre h hg (hP.zeroPoint g) = hP.zeroPoint g' := by
+  refine hP.inj _ _ ?_
+  refine relPicEquiv_trans strX g' (hP.sheaf_pre h hg (hP.zeroPoint g)) ?_
+  refine relPicEquiv_trans strX g'
+    (relPicEquiv_modPullback strX h hg (hP.sheaf_zeroPoint g)) ?_
+  refine relPicEquiv_trans strX g'
+    (relPicEquiv_of_iso strX g' (modPullbackUnitIso (curveBaseChangeMap strX h hg))) ?_
+  exact relPicEquiv_symm strX g' (hP.sheaf_zeroPoint g')
+
+/-- **Addition is NATURAL** (PROVEN 2026-07-31) — `sheaf_pre` followed by
+`nonempty_modPullback_modTensorPic`, i.e. `φ^*(L ⊗ M) ≅ φ^*L ⊗ φ^*M`.
+
+This is the one place in the group-law section that consumes an open leaf, and
+it is `nonempty_modPullback_modTensorPic` (the pullback/tensor interchange),
+not a new obligation. -/
+theorem pre_addPoint {T' T : Scheme.{u}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+    (hg : h ≫ g = g') (p q : RelPoint pstr g) :
+    RelPoint.pre h hg (hP.addPoint p q)
+      = hP.addPoint (RelPoint.pre h hg p) (RelPoint.pre h hg q) := by
+  refine hP.inj _ _ ?_
+  refine relPicEquiv_trans strX g' (hP.sheaf_pre h hg (hP.addPoint p q)) ?_
+  refine relPicEquiv_trans strX g'
+    (relPicEquiv_modPullback strX h hg (hP.sheaf_addPoint p q)) ?_
+  refine relPicEquiv_trans strX g'
+    (relPicEquiv_of_iso strX g'
+      (nonempty_modPullback_modTensorPic (curveBaseChangeMap strX h hg)
+        (hP.sheaf p) (hP.sheaf q)).some) ?_
+  refine relPicEquiv_trans strX g'
+    (relPicEquiv_tensor_right strX g' _
+      (relPicEquiv_symm strX g' (hP.sheaf_pre h hg p))) ?_
+  refine relPicEquiv_trans strX g'
+    (relPicEquiv_tensor_left strX g' _
+      (relPicEquiv_symm strX g' (hP.sheaf_pre h hg q))) ?_
+  exact relPicEquiv_symm strX g'
+    (hP.sheaf_addPoint (RelPoint.pre h hg p) (RelPoint.pre h hg q))
 
 end IsRelPicOf
 
@@ -3769,9 +3930,17 @@ theorem smooth_isSeparated_of_isRelPicOf {X P S : Scheme.{u}} {strX : X ⟶ S} {
   ⟨smooth_of_isRelPicOf hproper hsmooth hconn hP hpush,
     isSeparated_of_isRelPicOf hproper hsmooth hconn hP hpush⟩
 
-/-- **`Pic⁰` IS AN ABELIAN SCHEME INSIDE `Pic`** (sorry leaf, cut
+/-! ### The 2026-07-29 audit of `exists_relPicZeroSubgroup`
+
+**`Pic⁰` IS AN ABELIAN SCHEME INSIDE `Pic`** (sorry leaf, cut
 2026-07-29) — BLR 9.4/4's geometric half, and the whole of what that
 theorem is usually cited for.
+
+This was the docstring of `exists_relPicZeroSubgroup` while that
+declaration was a leaf.  It is demoted to a section comment on 2026-07-31,
+unchanged, because the leaf was cut again on that day and the survey it
+records is what a reader of EITHER half needs; the two declarations below
+carry their own docstrings.
 
 Given `Pic` and the Abel–Jacobi map into it, cut out the identity
 component and show it is an abelian scheme over `S`.  Concretely the
@@ -3825,7 +3994,135 @@ a hypothesis that only positive genus can meet.
 `hequiv` is derivable in this file (`relPicEquiv_equivalence`) and is
 passed in anyway, matching the parent's own hypothesis list: the
 subfunctor of degree-zero classes is only well defined once
-`Pic(X_T)/Pic(T)` is a quotient set. -/
+`Pic(X_T)/Pic(T)` is a quotient set.
+
+**CUT AGAIN, 2026-07-31, and this declaration is now the assembly.**  What is
+below is `exists_relPicZeroSubfunctor` plus the transport of the group law
+along `incl`; the audit above is left intact because it is still what a reader
+needs, and every one of its junk-witness arguments applies verbatim to the new
+leaf (which carries the same properness, Abel–Jacobi and injectivity clauses).
+See the section heading immediately below for what moved and why. -/
+
+/-! ### BLR 9.4/4's geometric half: the subfunctor, and the group law on it
+
+**CUT 2026-07-31.**  `exists_relPicZeroSubgroup` used to be asked for an
+`AbelianSchemeStruct` on `Pic⁰` — twelve fields, of which nine are group
+axioms and two are naturality.  None of those nine has anything to do with the
+identity component: they are the group axioms of `Pic` itself, restricted to a
+subgroup, and a prover of the geometry had to reprove them from scratch.
+
+So the leaf below asks instead for the subfunctor: a scheme `J`, proper, smooth
+and with geometrically connected fibres, injecting naturally into the points of
+`Pic`, whose image is CLOSED UNDER the group law of `Pic` (contains
+`zeroPoint`, closed under `addPoint` and under `negPoint`) and contains the
+Abel–Jacobi image.  The group structure is then transported by
+`exists_relPicZeroSubgroup` below, over the group axioms for `IsRelPicOf`
+proven earlier in this file.
+
+**Why this is a cut and not a relocation.**  The three closure clauses are the
+ONLY group-theoretic content left in the leaf, and each is a single existential
+with no equations to verify — an owner discharges them by exhibiting a point of
+`Pic⁰`, which is what an identity-component construction produces anyway.  What
+leaves the leaf is: `add`, `zero`, `neg` as operations; `add_assoc`,
+`add_comm`, `zero_add`, `neg_add`; `pre_add`, `pre_zero`; and the three
+conclusion clauses of the parent that name `ab.zero` and `ab.add`.  All nine of
+those are now discharged by `hinj` applied to a rewrite chain, in the assembly
+below, and none of them was ever geometry.
+
+**What the cut does NOT do**, and this is the reason it is small rather than
+decisive: the two genuinely missing pieces are unchanged and both still sit in
+the leaf — the identity component of a group scheme (absent from the pin in any
+form) and properness of `Pic⁰` by the valuative criterion (BLR 9.4).  Whoever
+takes the leaf takes both.  A further cut along THAT line is possible — state
+`J` open in `P` with connected fibres, then properness separately — but it
+needs an `IsOpenImmersion`-flavoured statement, and the parent's own audit
+records why the conclusion is on points rather than on subschemes ("stating it
+as an open immersion would force the caller to convert").  I left that boundary
+where the parent put it.
+
+**Faithfulness of the closure clauses.**  `negPoint` is a `Classical.choose`,
+so "closed under `negPoint`" reads, on its face, as a condition on an arbitrary
+choice.  It is not: `hP.inj` makes the point classifying the inverse sheaf
+unique, so `negPoint p` is THE inverse and the clause is the honest statement
+that the subfunctor is closed under inversion.  The same remark applies to
+`zeroPoint` and `addPoint`, and is why the group axioms above could be proven
+about them at all. -/
+
+/-- **`Pic⁰` IS A PROPER SMOOTH SUBFUNCTOR OF `Pic` WITH CONNECTED FIBRES**
+(sorry leaf, cut 2026-07-31 out of `exists_relPicZeroSubgroup`) — BLR 9.4/4's
+geometric half with the group axioms removed.
+
+The two classical steps that remain, both genuinely absent from the pin:
+
+* the **identity component** `Pic⁰ ⊆ Pic` exists as an open subgroup scheme —
+  there is no identity-component construction for group schemes at `a3364fa`;
+* `Pic⁰ ⟶ S` is **proper**, the valuative criterion for line bundles on a
+  relative curve.
+
+Everything else the parent used to ask for — the `AbelianSchemeStruct` — is
+supplied by transport from `IsRelPicOf.addPoint_assoc` and its siblings; see the
+section heading above.
+
+**FAITHFULNESS.**  The parent's audit applies clause for clause, because the
+clauses are the same ones:
+
+* drop `IsProper jstr` and `J = P`, `incl = id` satisfies everything else —
+  `Pic` itself is the junk witness (its image is trivially closed under its own
+  group law), exactly as recorded on `exists_relPicZero`;
+* drop the **Abel–Jacobi clause** and `J = S`, `jstr = 𝟙 S` survives:
+  `RelPoint (𝟙 S) g` is a singleton, so injectivity, naturality and all three
+  closure clauses are free, and `𝟙 S` is proper, smooth and has connected
+  (point) fibres.  The Abel–Jacobi clause kills it: at `T = X`, `g = strX` the
+  classes of `𝒪(Δ − o_X)` and `𝒪` are distinct for `g ≥ 1`, so `aj` takes two
+  values there and cannot factor through a singleton;
+* drop **injectivity** of `incl` and `J` may be any proper smooth connected
+  scheme mapping onto `Pic⁰`, e.g. `Pic⁰ × E` for an elliptic curve `E` — and
+  then the transport below is not merely unprovable but FALSE, since `ab.add`
+  would have to be a `choose` among several preimages.
+
+**TRUE at genus 0**, where `Pic⁰ = S` is the junk witness above and the
+Abel–Jacobi clause is satisfiable by it, every `𝒪(x − o)` being trivial.
+
+**NOT VACUOUS**: `IsRelPicOf strX pstr` is satisfiable (`exists_relPicFull`,
+PROVEN above), so this is not a statement about an empty class of `pstr`. -/
+theorem exists_relPicZeroSubfunctor {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
+    (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
+    (_hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S))
+    (hP : IsRelPicOf strX pstr)
+    (_hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX)
+    (_hPsmooth : Smooth pstr) (_hPsep : IsSeparated pstr)
+    (_hequiv : ∀ {T : Scheme.{u}} (g : T ⟶ S), Equivalence (RelPicEquiv strX g))
+    (aj : ∀ (T : Scheme.{u}) (g : T ⟶ S), RelPoint strX g → RelPoint pstr g)
+    (_haj : ∀ (T : Scheme.{u}) (g : T ⟶ S) (x : RelPoint strX g),
+      RelPicEquiv strX g (modTensor (hP.sheaf (aj T g x)) (sectionIdeal (relSection x)))
+        (sectionIdeal (relSection (relBasePoint o g)))) :
+    ∃ (J : Scheme.{u}) (jstr : J ⟶ S)
+      (incl : ∀ (T : Scheme.{u}) (g : T ⟶ S), RelPoint jstr g → RelPoint pstr g),
+      IsProper jstr ∧ Smooth jstr ∧ GeometricallyConnected jstr ∧
+        (∀ (T : Scheme.{u}) (g : T ⟶ S) (p q : RelPoint jstr g),
+          incl T g p = incl T g q → p = q) ∧
+        (∀ (T' T : Scheme.{u}) (h : T' ⟶ T) (g : T ⟶ S) (g' : T' ⟶ S) (hg : h ≫ g = g')
+          (p : RelPoint jstr g),
+          incl T' g' (RelPoint.pre h hg p) = RelPoint.pre h hg (incl T g p)) ∧
+        (∀ (T : Scheme.{u}) (g : T ⟶ S),
+          ∃ z : RelPoint jstr g, incl T g z = hP.zeroPoint g) ∧
+        (∀ (T : Scheme.{u}) (g : T ⟶ S) (p q : RelPoint jstr g),
+          ∃ r : RelPoint jstr g, incl T g r = hP.addPoint (incl T g p) (incl T g q)) ∧
+        (∀ (T : Scheme.{u}) (g : T ⟶ S) (p : RelPoint jstr g),
+          ∃ r : RelPoint jstr g, incl T g r = hP.negPoint (incl T g p)) ∧
+        (∀ (T : Scheme.{u}) (g : T ⟶ S) (x : RelPoint strX g),
+          ∃ p : RelPoint jstr g, incl T g p = aj T g x) := sorry
+
+/-- **`Pic⁰` IS AN ABELIAN SCHEME INSIDE `Pic`** (PROVEN 2026-07-31 over
+`exists_relPicZeroSubfunctor` and the group axioms for `IsRelPicOf.addPoint`; a
+sorry leaf from 2026-07-29 to 2026-07-31) — BLR 9.4/4's geometric half.
+
+The whole proof is the transport of a group structure along an injection whose
+image is a subgroup: `ab.add p q` is the unique preimage of
+`hP.addPoint (incl p) (incl q)`, existing by the closure clause and unique by
+`hinj`, and each of the nine remaining fields is `hinj` applied to a rewrite
+chain that ends in the corresponding law on `Pic`.  Not one of them touches the
+geometry, which is the point of the cut. -/
 theorem exists_relPicZeroSubgroup {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
     (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
     (_hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S))
@@ -3848,8 +4145,48 @@ theorem exists_relPicZeroSubgroup {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : 
             (p : RelPoint jstr g),
             incl T' g' (RelPoint.pre h hg p) = RelPoint.pre h hg (incl T g p)) ∧
         (∀ (T : Scheme.{u}) (g : T ⟶ S) (x : RelPoint strX g),
-            ∃ p : RelPoint jstr g, incl T g p = aj T g x) :=
-  sorry
+            ∃ p : RelPoint jstr g, incl T g p = aj T g x) := by
+  obtain ⟨J, jstr, incl, hpr, hsm, hcn, hinj, hpre, hzero, hadd, hneg, himg⟩ :=
+    exists_relPicZeroSubfunctor _hproper _hsmooth _hconn o hP _hpush _hPsmooth _hPsep
+      _hequiv aj _haj
+  choose zer hzer using hzero
+  choose ad had using hadd
+  choose ng hng using hneg
+  refine ⟨J, jstr,
+    { add := fun p q => ad _ _ p q
+      zero := fun g => zer _ g
+      neg := fun p => ng _ _ p
+      add_assoc := ?_
+      add_comm := ?_
+      zero_add := ?_
+      neg_add := ?_
+      pre_add := ?_
+      pre_zero := ?_
+      proper := hpr
+      smooth := hsm
+      connected := hcn }, incl, hinj, ?_, ?_, hpre, himg⟩
+  · intro T g x y z
+    refine hinj _ _ _ _ ?_
+    rw [had, had, had, had, hP.addPoint_assoc]
+  · intro T g x y
+    refine hinj _ _ _ _ ?_
+    rw [had, had, hP.addPoint_comm]
+  · intro T g x
+    refine hinj _ _ _ _ ?_
+    rw [had, hzer, hP.zeroPoint_addPoint]
+  · intro T g x
+    refine hinj _ _ _ _ ?_
+    rw [had, hng, hzer, hP.negPoint_addPoint]
+  · intro T' T h g g' hg x y
+    refine hinj _ _ _ _ ?_
+    rw [hpre, had, had, hP.pre_addPoint, hpre, hpre]
+  · intro T' T h g g' hg
+    refine hinj _ _ _ _ ?_
+    rw [hpre, hzer, hzer, hP.pre_zeroPoint]
+  · intro T g
+    exact hzer T g
+  · intro T g p q
+    exact had T g p q
 
 /-- **`Pic⁰` IS AN ABELIAN SCHEME, GIVEN `Pic`** — BLR 9.4/4 (PROVEN
 2026-07-29, over `exists_abelJacobiPoint` and `exists_relPicZeroSubgroup`).
