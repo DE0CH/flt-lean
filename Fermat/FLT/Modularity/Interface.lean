@@ -31572,9 +31572,10 @@ theorem index_le_card_classGroup_of_localInertiaCommutatorSubgroup_le
   exact finrank_le_card_classGroup_of_unramified_abelian (p := p) CF L habel hunr
 
 /-- **THE COMPOSITUM OF TWO EVERYWHERE-UNRAMIFIED FINITE GALOIS EXTENSIONS
-IS UNRAMIFIED AT EVERY FINITE PLACE** (SORRY LEAF, cut 2026-07-28 out of
-`exists_unramifiedAbelian_lcm_dvd_finrank` immediately below, whose other
-three conclusions are now PROVEN over this one).
+IS UNRAMIFIED AT EVERY FINITE PLACE** (**PROVEN 2026-07-30**, closing the
+last open piece of the compositum half of the Hilbert class field cut; cut
+2026-07-28 out of `exists_unramifiedAbelian_lcm_dvd_finrank` immediately
+below, whose other three conclusions were discharged there).
 
 **THE CUT, along the GALOIS-THEORY / RAMIFICATION-THEORY axis.** The parent
 leaf packaged four independent claims about `H₁ ⊔ H₂` — finite, Galois,
@@ -31594,38 +31595,65 @@ documented there as unnecessary (**confirmed 2026-07-28**: the parent's
 proof of the other three clauses does not use it either). Dropping both is
 deliberate — a prover here must not reach for either.
 
-**Route (the classical inertia argument).** Let `H := H₁ ⊔ H₂`,
-`G := Gal(H/CF)`, let `Q` be a prime of `𝓞 H` and `p := Q ∩ 𝓞 CF`. Then
-`Nat.card (Q.inertia G) = e(Q/p)` by `Ideal.card_inertia_eq_ramificationIdxIn`
-together with `Ideal.ramificationIdxIn_eq_ramificationIdx`, and
-`Ideal.ramificationIdx_eq_one_iff` converts `e = 1` into
-`Algebra.IsUnramifiedAt` (its `PerfectField` side condition is free: the
-residue field of `p` is finite). So everything reduces to
-`Q.inertia G = ⊥`. For that, take `σ ∈ Q.inertia G`, i.e. `σ • x - x ∈ Q`
-for all `x : 𝓞 H`. Restricting along `AlgEquiv.restrictNormalHom H₁`
-(legitimate: `H₁` is normal over `CF`) and using
-`AlgEquiv.restrictNormal_commutes`, for `x : 𝓞 H₁` the element
-`σ|_{H₁} • x - x` lies in `Q ∩ 𝓞 H₁`, so `σ|_{H₁}` lies in the inertia
-group of `Q ∩ 𝓞 H₁`, which is trivial by `hunr₁` (same cardinality
-argument, run backwards). Hence `σ ∈ H₁.fixingSubgroup`, and symmetrically
-`σ ∈ H₂.fixingSubgroup`; by `IntermediateField.fixingSubgroup_sup` (which
-the parent already uses for the abelian clause) `σ` fixes `H₁ ⊔ H₂ = H`
-pointwise, i.e. `σ = 1`.
+**PROOF, as carried out below (the classical inertia argument, in three
+steps).** Let `H := H₁ ⊔ H₂` and `G := Gal(H/CF)`.
+
+1. *The criterion* (`crit`, stated for an ARBITRARY number field Galois
+   over `CF` so that it can be used three times — on `H₁`, on `H₂` and on
+   `H`): a prime `Q` is unramified over `𝓞 CF` **iff its inertia subgroup
+   is trivial**. Four rewrites and nothing else:
+   `Ideal.ramificationIdx_eq_one_iff` turns `Algebra.IsUnramifiedAt` into
+   `e(Q) = 1`, `Ideal.ramificationIdxIn_eq_ramificationIdx` moves to the
+   `In` form, `Ideal.card_inertia_eq_ramificationIdxIn` replaces it by
+   `Nat.card (Q.inertia G)`, and `Subgroup.card_eq_one` turns `= 1` into
+   `= ⊥`. Both `PerfectField (Q.under (𝓞 CF)).ResidueField` side
+   conditions are FREE, through the instance at
+   `Mathlib/RingTheory/Ideal/Quotient/HasFiniteQuotients.lean` — a number
+   ring has finite quotients and characteristic-zero fraction field, so
+   every residue field is finite or of characteristic zero, hence perfect.
+
+2. *Transport* (`transport`): if `σ` of the ABSOLUTE Galois group
+   `Gal(CF̄/CF)` restricts into the inertia group of `Q`, then `σ` fixes
+   pointwise every `H' ≤ H` that is finite Galois and unramified at every
+   finite place. Indeed `σ|_{H'}` lies in the inertia group of
+   `P := Q ∩ 𝓞 H'`, which step 1 makes `⊥` — `P` is a nonzero prime by
+   `Ideal.under_ne_bot` — so `σ|_{H'} = 1`, which is
+   `σ ∈ H'.fixingSubgroup` by `IntermediateField.restrictNormalHom_ker`.
+   The inertia membership is `Ideal.mem_under` plus the equivariance
+   `algebraMap (σ|_{H'} • y) = σ|_{H} • algebraMap y` for `y : 𝓞 H'`, and
+   THAT is where the classical argument's only real content sits: it holds
+   because both restrictions are restrictions of the SAME `σ`
+   (`AlgEquiv.restrictNormalHom_apply`, used twice), everything else being
+   definitional — the action on a ring of integers is the restricted
+   action on the field (`Mathlib/NumberTheory/NumberField/Basic.lean`'s
+   `MulSemiringAction G (𝓞 K)` instance), and `algebraMap ↥H' ↥H` is
+   `IntermediateField.inclusion`.
+
+3. *Assembly*: take `σ` in the inertia group of `Q`, lift it along
+   `AlgEquiv.restrictNormalHom_surjective` to the absolute Galois group,
+   apply step 2 to `H₁` and to `H₂`, and land in
+   `H₁.fixingSubgroup ⊓ H₂.fixingSubgroup`, which IS
+   `(H₁ ⊔ H₂).fixingSubgroup = ker` by
+   `IntermediateField.fixingSubgroup_sup` — so `σ = 1`, the inertia group
+   is `⊥`, and step 1 gives the conclusion. Working in the absolute group
+   (rather than injecting `Gal(H/CF) →* Gal(H₁/CF) × Gal(H₂/CF)`) is the
+   same device the parent uses for its abelian clause, and for the same
+   reason: in `Gal(CF̄/CF)` every instance already exists.
 
 **The one real obstacle, MEASURED 2026-07-28 rather than guessed, and the
-reason this is its own leaf.** `Algebra ↥H₁ ↥(H₁ ⊔ H₂)` **is not an
+reason this was its own leaf.** `Algebra ↥H₁ ↥(H₁ ⊔ H₂)` **is not an
 instance** — `exact?` on that goal fails outright. So the tower
-`CF ⊆ H₁ ⊆ H₁ ⊔ H₂` must be installed by hand
+`CF ⊆ H₁ ⊆ H₁ ⊔ H₂` is installed by hand below
 (`(IntermediateField.inclusion le_sup_left).toAlgebra` plus
-`IsScalarTower.of_algebraMap_eq'`, the pattern used by
+`IsScalarTower.of_algebraMap_eq`, the pattern used by
 `IntermediateField.finrank_dvd_of_le_right` itself).
 
-**Every instance the inertia argument needs was then MEASURED, one by one,
-by elaborating the `letI` and asking for each in turn (2026-07-28).** The
-result is that the plumbing is much lighter than it looks — the standing
-temptation is to hand-roll these, and every one of them already exists. The
-distinction that matters is *synthesizes* vs *exists but must be passed
-EXPLICITLY*; three of these do not synthesize, and none needs proving:
+**Every instance the inertia argument needs was MEASURED, one by one, by
+elaborating the `letI` and asking for each in turn (2026-07-28), and the
+proof below uses exactly that list.** The plumbing is much lighter than it
+looks — the standing temptation is to hand-roll these, and every one of
+them already exists. The distinction that matters is *synthesizes* vs
+*exists but must be passed EXPLICITLY*; none needs proving:
 
 * `NumberField ↥(H₁ ⊔ H₂)` — does NOT synthesize. Supply
   `NumberField.of_module_finite CF _`.
@@ -31641,38 +31669,18 @@ EXPLICITLY*; three of these do not synthesize, and none needs proving:
 * `MulSemiringAction Gal(↥(H₁ ⊔ H₂)/CF) (𝓞 ↥(H₁ ⊔ H₂))` — **synthesizes**.
   The action on the ring of integers is free; no
   `IsIntegralClosure.MulSemiringAction` invocation is required.
-* `IsGaloisGroup Gal(↥(H₁ ⊔ H₂)/CF) CF ↥(H₁ ⊔ H₂)` — does NOT synthesize
-  (`IsGaloisGroup.of_isGalois` is an instance but does not fire here).
-  Supply `IsGaloisGroup.of_isGalois CF ↥(H₁ ⊔ H₂)` explicitly.
-* Once that one is in scope, **both**
-  `IsGaloisGroup Gal(↥(H₁ ⊔ H₂)/CF) (𝓞 CF) (𝓞 ↥(H₁ ⊔ H₂))` and
-  `Finite Gal(↥(H₁ ⊔ H₂)/CF)` **infer**, the former through the number-field
-  instance at `Mathlib/FieldTheory/Galois/IsGaloisGroup.lean:47`.
+* `IsGaloisGroup Gal(H/CF) (𝓞 CF) (𝓞 H)` and `Finite Gal(H/CF)`, both
+  needed by `Ideal.card_inertia_eq_ramificationIdxIn`, **synthesize** for
+  the three fields used here once `NumberField` is in scope — so in the
+  end even `IsGaloisGroup.of_isGalois` never had to be passed by hand.
 
-**So the residual cost is the MATHEMATICS, not the plumbing** — contrary to
-this docstring's own first draft, which said the opposite and was wrong in
-three separate places. What actually remains is: transporting `σ` along
-`AlgEquiv.restrictNormalHom H₁` and identifying `Q ∩ 𝓞 H₁` (the `LiesOver`
-bookkeeping, plus `AlgEquiv.restrictNormal_commutes` to see that `σ` and
-its restriction agree on `𝓞 H₁`), and running the cardinality chain
-backwards on `H₁` and `H₂` to turn `hunr₁`/`hunr₂` into triviality of their
-inertia groups. `PerfectField p.ResidueField`, required by both
-`Ideal.card_inertia_eq_ramificationIdxIn` and
-`Ideal.ramificationIdx_eq_one_iff`, is free because the residue field of a
-nonzero prime of a number ring is finite.
-
-**Alternative route if the inertia plumbing proves worse than the above.**
-`Algebra.FormallyUnramified` is stable under base change and under
-surjections (`Algebra.FormallyUnramified.of_surjective`), and
-`Algebra.IsUnramifiedAt.comp` chains a tower. Since `𝓞 H₁` and `𝓞 H₂` are
-étale over `𝓞 CF` away from nothing, `𝓞 H₁ ⊗_{𝓞 CF} 𝓞 H₂` is étale, hence
-normal, hence its image in `H₁ ⊔ H₂` — which is integrally closed, finite
-over `𝓞 CF`, and has fraction field `H₁ ⊔ H₂` — **is** `𝓞 (H₁ ⊔ H₂)`. That
-surjection is what makes the tensor route work, and it is exactly the step
-that FAILS for a general pair of number rings (`𝓞 H₁ · 𝓞 H₂` is a proper
-subring of `𝓞 (H₁H₂)` when the discriminants are not coprime); it is
-rescued here precisely by unramifiedness. Do not assume the surjection
-without the hypothesis.
+**The tensor-product route was NOT needed and is recorded here only so it
+is not attempted again.** `𝓞 H₁ ⊗_{𝓞 CF} 𝓞 H₂` is unramified over `𝓞 CF`
+by base change, and one wants `𝓞 H` as a quotient of it — but that
+surjection (`𝓞 H₁ · 𝓞 H₂ = 𝓞 H`, false for a general pair of number rings
+and true here only BECAUSE of unramifiedness) costs an
+`IsFractionRing (𝓞 H₁ · 𝓞 H₂) H` argument strictly harder than the whole
+inertia proof below.
 
 **Faithfulness.** Nothing is asserted at the infinite places, matching the
 hypotheses, which assert nothing there either — so no narrow/wide class
@@ -31697,14 +31705,98 @@ theorem isUnramifiedAt_sup_of_isUnramifiedAt
     (hunr₂ : ∀ (Q : Ideal (𝓞 H₂)) (_ : Q.IsPrime), Q ≠ ⊥ →
       Algebra.IsUnramifiedAt (𝓞 CF) Q) :
     ∀ (Q : Ideal (𝓞 ↥(H₁ ⊔ H₂))) (_ : Q.IsPrime), Q ≠ ⊥ →
-      Algebra.IsUnramifiedAt (𝓞 CF) Q :=
-  sorry
+      Algebra.IsUnramifiedAt (𝓞 CF) Q := by
+  haveI : NumberField ↥(H₁ ⊔ H₂) := NumberField.of_module_finite CF _
+  -- STEP 1.  Over any number field Galois over `CF`, a prime is unramified exactly when its
+  -- inertia subgroup is trivial: `#I(Q) = e(Q)`, and `e = 1` is `Algebra.IsUnramifiedAt`.
+  have crit : ∀ (H : Type) [Field H] [NumberField H] [Algebra CF H] [IsGalois CF H]
+      (Q : Ideal (𝓞 H)) (_ : Q.IsPrime),
+      (Algebra.IsUnramifiedAt (𝓞 CF) Q ↔ Q.inertia (H ≃ₐ[CF] H) = ⊥) := by
+    intro H _ _ _ _ Q hQ
+    haveI := hQ
+    rw [← Ideal.ramificationIdx_eq_one_iff,
+      ← Ideal.ramificationIdxIn_eq_ramificationIdx (Q.under (𝓞 CF)) Q (H ≃ₐ[CF] H),
+      ← Ideal.card_inertia_eq_ramificationIdxIn (G := H ≃ₐ[CF] H) (Q.under (𝓞 CF)) Q,
+      Subgroup.card_eq_one]
+  -- STEP 2.  If `σ` of the ABSOLUTE Galois group restricts into the inertia group of `Q`, then
+  -- it fixes pointwise every everywhere-unramified finite Galois `H' ≤ H₁ ⊔ H₂`: its restriction
+  -- to `H'` lies in the inertia group of `Q ∩ 𝓞 H'`, which STEP 1 makes trivial.
+  have transport : ∀ (H' : IntermediateField CF (AlgebraicClosure CF)),
+      H' ≤ H₁ ⊔ H₂ → FiniteDimensional CF H' → IsGalois CF H' →
+      (∀ (P : Ideal (𝓞 H')) (_ : P.IsPrime), P ≠ ⊥ → Algebra.IsUnramifiedAt (𝓞 CF) P) →
+      ∀ (Q : Ideal (𝓞 ↥(H₁ ⊔ H₂))) (_ : Q.IsPrime), Q ≠ ⊥ →
+      ∀ σ : AlgebraicClosure CF ≃ₐ[CF] AlgebraicClosure CF,
+        AlgEquiv.restrictNormalHom (F := CF) ↥(H₁ ⊔ H₂) σ ∈
+          Q.inertia (↥(H₁ ⊔ H₂) ≃ₐ[CF] ↥(H₁ ⊔ H₂)) →
+        σ ∈ H'.fixingSubgroup := by
+    intro H' hle hfd hgal hunr Q hQ hQ0 σ hσ
+    haveI := hfd
+    haveI := hgal
+    haveI := hQ
+    haveI : NumberField ↥H' := NumberField.of_module_finite CF _
+    -- the tower `CF ⊆ H' ⊆ H₁ ⊔ H₂`, which is not an instance and must be installed by hand
+    letI : Algebra ↥H' ↥(H₁ ⊔ H₂) := (IntermediateField.inclusion hle).toAlgebra
+    haveI : IsScalarTower CF ↥H' ↥(H₁ ⊔ H₂) := IsScalarTower.of_algebraMap_eq fun _ => rfl
+    haveI : IsScalarTower (𝓞 CF) (𝓞 ↥H') (𝓞 ↥(H₁ ⊔ H₂)) :=
+      NumberField.RingOfIntegers.inst_isScalarTower CF ↥H' ↥(H₁ ⊔ H₂)
+    have hP0 : Q.under (𝓞 ↥H') ≠ ⊥ := Ideal.under_ne_bot _ hQ0
+    have hbot := (crit ↥H' (Q.under (𝓞 ↥H')) inferInstance).mp
+      (hunr (Q.under (𝓞 ↥H')) inferInstance hP0)
+    have hmem : AlgEquiv.restrictNormalHom (F := CF) ↥H' σ ∈
+        (Q.under (𝓞 ↥H')).inertia (↥H' ≃ₐ[CF] ↥H') := by
+      intro y
+      -- the restrictions of `σ` to `H'` and to `H₁ ⊔ H₂` agree on `𝓞 H'`, because both are
+      -- restrictions of the SAME `σ`: `AlgEquiv.restrictNormalHom_apply` twice, the rest is
+      -- definitional (the action on a ring of integers is the restricted action on the field,
+      -- and `algebraMap ↥H' ↥(H₁ ⊔ H₂)` is `IntermediateField.inclusion`).
+      have key : algebraMap (𝓞 ↥H') (𝓞 ↥(H₁ ⊔ H₂))
+            (AlgEquiv.restrictNormalHom (F := CF) ↥H' σ • y) =
+          AlgEquiv.restrictNormalHom (F := CF) ↥(H₁ ⊔ H₂) σ •
+            algebraMap (𝓞 ↥H') (𝓞 ↥(H₁ ⊔ H₂)) y := by
+        apply NumberField.RingOfIntegers.ext
+        apply Subtype.val_injective
+        have e0 : ∀ z : ↥H',
+            ((algebraMap ↥H' ↥(H₁ ⊔ H₂) z : ↥(H₁ ⊔ H₂)) : AlgebraicClosure CF)
+              = (z : AlgebraicClosure CF) := fun _ => rfl
+        have e1 : ∀ w : 𝓞 ↥H',
+            ((algebraMap (𝓞 ↥H') (𝓞 ↥(H₁ ⊔ H₂)) w : 𝓞 ↥(H₁ ⊔ H₂)) : ↥(H₁ ⊔ H₂))
+              = algebraMap ↥H' ↥(H₁ ⊔ H₂) ((w : ↥H')) := fun _ => rfl
+        have e2 : ∀ (g : ↥(H₁ ⊔ H₂) ≃ₐ[CF] ↥(H₁ ⊔ H₂)) (v : 𝓞 ↥(H₁ ⊔ H₂)),
+            ((g • v : 𝓞 ↥(H₁ ⊔ H₂)) : ↥(H₁ ⊔ H₂)) = g (v : ↥(H₁ ⊔ H₂)) := fun _ _ => rfl
+        have e3 : ∀ (g : ↥H' ≃ₐ[CF] ↥H') (v : 𝓞 ↥H'),
+            ((g • v : 𝓞 ↥H') : ↥H') = g (v : ↥H') := fun _ _ => rfl
+        simp only [e0, e1, e2, e3, AlgEquiv.restrictNormalHom_apply]
+      have h := hσ (algebraMap (𝓞 ↥H') (𝓞 ↥(H₁ ⊔ H₂)) y)
+      rw [Submodule.mem_toAddSubgroup] at h ⊢
+      rw [Ideal.mem_under, map_sub, key]
+      exact h
+    rw [hbot, Subgroup.mem_bot] at hmem
+    rw [← IntermediateField.restrictNormalHom_ker H', MonoidHom.mem_ker]
+    exact hmem
+  -- STEP 3.  An element of the inertia group of `Q`, lifted to the absolute Galois group, fixes
+  -- `H₁` and `H₂` pointwise by STEP 2, hence lies in
+  -- `H₁.fixingSubgroup ⊓ H₂.fixingSubgroup = (H₁ ⊔ H₂).fixingSubgroup = ker`, i.e. it is `1`.
+  intro Q hQ hQ0
+  haveI := hQ
+  rw [crit ↥(H₁ ⊔ H₂) Q hQ, Subgroup.eq_bot_iff_forall]
+  intro σ hσ
+  obtain ⟨σ', rfl⟩ := AlgEquiv.restrictNormalHom_surjective (F := CF)
+    (E := AlgebraicClosure CF) (K₁ := ↥(H₁ ⊔ H₂)) σ
+  have h1 := transport H₁ le_sup_left inferInstance inferInstance hunr₁ Q hQ hQ0 σ' hσ
+  have h2 := transport H₂ le_sup_right inferInstance inferInstance hunr₂ Q hQ hQ0 σ' hσ
+  have hfix : σ' ∈ (H₁ ⊔ H₂).fixingSubgroup := by
+    rw [IntermediateField.fixingSubgroup_sup]
+    exact Subgroup.mem_inf.mpr ⟨h1, h2⟩
+  rw [← IntermediateField.restrictNormalHom_ker (H₁ ⊔ H₂), MonoidHom.mem_ker] at hfix
+  exact hfix
 
 /-- **THE COMPOSITUM OF TWO EVERYWHERE-UNRAMIFIED ABELIAN EXTENSIONS OF
 `ℚ(μ_p)` IS ONE AGAIN, AND ITS DEGREE IS DIVISIBLE BY BOTH DEGREES**
 (**PROVEN 2026-07-28** over the single leaf
-`isUnramifiedAt_sup_of_isUnramifiedAt` immediately above; cut 2026-07-28
-out of `exists_unramifiedAbelian_finrank_eq_card_classGroup` below).
+`isUnramifiedAt_sup_of_isUnramifiedAt` immediately above, which is itself
+**PROVEN as of 2026-07-30 — so this node is now sorry-free outright**; cut
+2026-07-28 out of `exists_unramifiedAbelian_finrank_eq_card_classGroup`
+below).
 
 The **BOOKKEEPING** half of that leaf's decomposition into `ℓ`-primary
 layers. It contains **no class field theory at all** — only Galois theory
@@ -31730,9 +31822,10 @@ leaves cut here, so it can be owned separately from
   commutativity hypothesis — which is `(H₁ ⊔ H₂).fixingSubgroup` by
   `IntermediateField.fixingSubgroup_sup`. Everything happens in the
   ambient absolute Galois group, where all the instances already exist.
-* *Unramified at every finite place*: the whole content is the leaf
-  `isUnramifiedAt_sup_of_isUnramifiedAt` immediately above, which records
-  the inertia argument and the tensor-product alternative in full.
+* *Unramified at every finite place*: the whole content is
+  `isUnramifiedAt_sup_of_isUnramifiedAt` immediately above — cut out as a
+  leaf on 2026-07-28 and PROVEN there on 2026-07-30 by the classical
+  inertia argument, whose write-up that docstring carries in full.
 * *Degree*: `IntermediateField.finrank_dvd_of_le_right` applied to
   `le_sup_left` and `le_sup_right`, then `Nat.lcm_dvd`. Two lines.
 
@@ -32247,8 +32340,13 @@ that is class field theory and the piece that is infinite Galois theory:
   existence theorem, where the class field theory now lives) and
   `exists_unramifiedAbelian_lcm_dvd_finrank` (the compositum — Galois and
   ramification theory only), plus the sibling upper bound listed just
-  above. So the leaves OPEN in this cluster are those two, the upper bound,
-  and the two dictionary leaves below — five, not four.
+  above. Of those two, **`exists_unramifiedAbelian_lcm_dvd_finrank` is no
+  longer open**: it was proven on 2026-07-28 over the single leaf
+  `isUnramifiedAt_sup_of_isUnramifiedAt`, and that leaf was proven on
+  2026-07-30, so the whole compositum half is now sorry-free. What remains
+  open here is the `ℓ`-primary existence theorem, the upper bound, and the
+  two dictionary leaves below. (Counts in this docstring go stale within
+  hours — regenerate the frontier rather than trusting one.)
 * `exists_unramifiedAbelian_finrank_eq_index` and
   `exists_localInertiaCommutatorSubgroup_le_index_eq_finrank` — the Galois
   dictionary in its two directions, containing NO class field theory. They
