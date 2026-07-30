@@ -3029,8 +3029,202 @@ elements (`𝔽₃`-dimension `≤ 2`). Then:
 
 That is route (b)–(d) of the parent's audit, and at dimension `2` it is
 COMPLETE; the `[IsCocomm]` threading it needs is the separate upstream
-cut already named there. Whether consumers can supply a dimension bound
-is the cut-level question, and it is not answered here.
+cut already named there.
+
+THE THRESHOLD IS SHARP AT `9`, RE-CHECKED 2026-07-29 (and the check is
+worth recording, because "order `9` connected killed by `3`" LOOKS like
+it should admit the same Kummer wildness the order-`27` witness does).
+A connected killed-by-`3` object of order `9` over `ℤ₃` is an extension
+of `μ₃` by `μ₃` — the only connected order-`3` pieces at `e = 1 < p − 1`
+are the unramified twists of `μ₃` — and
+
+    Ext¹_{ℤ₃-fl}(μ₃, μ₃) ≅ H¹_fl(ℤ₃, Hom(μ₃, μ₃)) = H¹_ét(ℤ₃, ℤ/3),
+
+the UNRAMIFIED classes, so `K(G) ⊆ ℚ₃(ζ₃)·(unramified)` and the action is
+tame. The wildly ramified Kummer extensions `ℚ₃(ζ₃, u^{1/3})` with `u` a
+non-cube unit are real — `u = 4`: `x³ − 4` is irreducible over `ℚ₃`
+(`factorpadic`, one degree-`3` factor), `v₃(disc(x³ − 4)) = v₃(−432) = 3`,
+and `4 ≢ 1, 8 mod 9` so `4` is not a cube of a unit — but they are the
+generic fibres of extensions of `ℤ/3` by `μ₃`, which are NOT CONNECTED.
+The order-`27` witness escapes only because `Ext¹_fl(E[3], μ₃) ≅
+H¹_fl(ℤ₃, E[3])` (self-duality + the Weil pairing) is a flat, NOT an
+unramified, condition. So `≤ 9` is exactly the right bound: `9` is tame,
+`27` is not.
+
+**THE CUT-LEVEL QUESTION, ANSWERED 2026-07-29: THE CONSUMERS CANNOT
+SUPPLY A DIMENSION BOUND, AND THREADING ONE TERMINATES IN AN UNPROVABLE
+HYPOTHESIS.** Measured, not estimated:
+
+* The upward cone of this leaf inside this file is **39 declarations**,
+  ending at `three_adic` itself. Twenty-three of them take `(G : Type)`
+  as a parameter and would simply carry the extra hypothesis. The other
+  sixteen sit above the FOUR places that CONSTRUCT `G` out of
+  `hρ.isFlat.cond (𝔪ⁿ⁺²)` — inside
+  `omega_defect_vanishes_on_cyclotomicKernel_of_connectedEtale`,
+  `omega_defect_vanishes_on_localInertia_at_three`,
+  `flat_prolongation_trivial_component_vanishes` and
+  `trivial_component_vanishes_on_localInertia_at_three`. Those four are
+  where the bound would have to be DISCHARGED, and if it could be, the
+  thread would stop there and nothing above would change.
+* At those four sites the socle is the connected `3`-torsion of the flat
+  model of `ρ ⧸ 𝔪ⁿ⁺²` at `3`. `V` is free of rank `2` over `R`, so the
+  connected part is free of rank `1` and its `3`-torsion has
+  `Nat.card (R ⧸ 3R) = 3 ^ Module.finrank ℤ_[3] R` elements. Hence
+  `Nat.card S ≤ 9` **⟺** `Module.finrank ℤ_[3] R ≤ 2` — a condition on
+  the COEFFICIENT RING, not on the group scheme.
+* `IsHardlyRamified` (`HardlyRamified/Defs.lean`) constrains neither the
+  residue field nor the ramification of `R`, and `three_adic` is stated
+  for an arbitrary `R` finite free over `ℤ_[3]`. Its single external
+  consumer, `HardlyRamified/Lift.lean:301`, instantiates it at the
+  coefficient ring `A` of a `3`-adic member of a compatible family,
+  produced by an EXISTENTIAL (`hodd h3fact _ φ₃`) with no rank control.
+  So the threaded hypothesis arrives there neither provable nor true,
+  and `sorry`ing it would manufacture a FALSE leaf with live consumers.
+  A partial thread is worse than none; a complete one is worse still.
+
+**SO THE REPAIR IS A RE-CUT, NOT A THREAD, AND THE RE-CUT IS NAMED.**
+What every one of the four constructor sites DOES have is the RESIDUAL
+flat model: `isFlatAt_baseChange_residue` (line ~373 of this file) gives
+`(ρ.baseChange kk).IsFlatAt` at `3`, and there the connected `3`-torsion
+socle is a `kk`-VECTOR SPACE of `kk`-dimension `≤ 2`, because `V` is free
+of rank `2` over `R` — unconditionally, for every coefficient ring.
+That is also the hypothesis Raynaud's theorem actually wants: it is a
+statement about `𝔽`-VECTOR SPACE SCHEMES, and route (b)–(d) above goes
+through verbatim over `𝔽 = kk` (the wild image `P` acts `kk`-linearly,
+so `S^P` is a `kk`-LINE, the graded pieces have `kk`-dimension `1`, and
+Oort–Tate over `𝔽` makes them `μ`-type). The level-`𝔪ⁿ⁺²` statements are
+then Wiles's dévissage from the residual level (ch. 1 prop. 1.1), which
+is how the literature does it and is precisely the step this cut skipped
+by working at level `𝔪ⁿ⁺²` directly.
+
+**THE TRAP IN THAT RE-CUT — the scalars must be a FIELD, and "generated
+by `≤ 2` elements over the Galois-commuting scalars" is NOT a repair.**
+It fails to exclude the witness: a regular unipotent `u ∈ GL₃(𝔽₃)` has
+commutant `𝔽₃[u] ≅ 𝔽₃[x]/(x³)`, over which `𝔽₃³` is FREE OF RANK `1`, so
+a "rank `≤ 2` over some commuting scalar ring" hypothesis is satisfied by
+the very configuration it is meant to forbid. At level `𝔪ⁿ⁺²` the
+natural scalars are `R ⧸ 3R`, which is exactly such a non-field — which
+is the structural reason the level-`𝔪ⁿ⁺²` statements cannot be repaired
+in place and the residual level can.
+
+**THE WITNESS RE-VERIFIED INDEPENDENTLY, 2026-07-30.** Every
+computational claim above reproduces, on a fresh `gp` run written from
+the statement rather than from the recorded script: `37a1 = [0,0,1,-1,0]`
+has conductor `37` and `disc = 37` (good at `3`), `a₃ = -3` so
+`#Ẽ(𝔽₃) = 7` and the reduction is SUPERSINGULAR; `phi3 = x*p3^2 - p4`
+has degree `9` and `phi3/p3^2` at `x = 0` is `-1 = x(3·(0,0))`, matching
+`ellmul(E,[0,0],3) = [-1,-1]` (so the `x`-multiplication formula is the
+right one); at `x(P) = 1/9`, `1 + 4(x³ - x) = 409/729` is a square in
+`ℚ₃` (`issquare(… + O(3^20)) = 1`), so `P` really is a `ℚ₃`-point with
+`v₃(x(P)) = -2`; `newtonpoly(phi3 - (1/9)·p3^2, 3)` is `[-2/9]` with
+multiplicity `9` — a single segment, so `9 ∣ e` and the extension is
+WILD; and the control at `v₃(x) = -4` splits as `[-1/4 (×8), -2]`,
+i.e. one rational preimage plus eight translates at `v(z) = 1/8`, which
+is the picture that validates the method. The group-theoretic step (a
+`3`-group in `GL₃(𝔽₃)` is unipotent; take `k` maximal with
+`(σ-1)^k ψ₀ ≠ 0` and set `ψ := (σ-1)^{k-1} ψ₀`, `χ := (σ-1)^k ψ₀`) was
+re-checked by hand. **So the refutation is not a single agent's claim any
+more.** Two side-notes from the re-check, both in the audit's favour:
+`_hprim₀` and `_hcomul₀` are VACUOUS at `e₀ = 1` (the first says
+`𝒪(G)` has no nontrivial idempotent, which is connectedness; the second
+is `1 ⊗ 1 = 1 ⊗ 1`), so the connectedness hypotheses cost the witness
+nothing; and `_hcomm` holds because `G = M^∨` is COcommutative, `M`
+being an extension of `ℤ/3` by `E[3]` inside the commutative finite flat
+category — the audit's "`_hcomm` holds because `G` is commutative" is
+the right conclusion by slightly the wrong route (convolution
+commutativity is cocommutativity of `𝒪(G)`, not commutativity of it,
+which every `𝒪(G)` has anyway).
+
+**NO WEAKER, ROUTE-LEVEL HYPOTHESIS WORKS EITHER — the obvious attempt
+to induct past dimension `2` is blocked by the SAME curve.** The
+tempting repair is to drop the cardinality bound and hypothesise only
+what route (b)–(d) literally consumes: an `I₃`-stable filtration of `S`
+whose graded pieces carry a trivial WILD action, obtained by iterating
+`S ↦ S^P` (legitimate, since `P ⊴ I₃`). That filtration always exists
+and is always `I₃`-stable. It is useless, because step (d) needs pieces
+of ORDER `3`, and "trivial wild action" does not deliver them:
+**supersingular `E[3]` for the very same `E = 37a1` is a connected,
+killed-by-`3`, order-`9` object on which `I₃` acts TAMELY** — through
+the level-`2` fundamental characters of `𝔽₉ˣ`, Serre, Invent. Math. 15
+(1972) §1.11 prop. 12, exactly as this file already records in the
+falsity audit of `exists_inertia_scalar_on_connected_locus_of_hopf_package`
+below — and it is `I₃`-SIMPLE (a nonsplit Cartan has no stable line).
+So a wild-trivial graded piece of dimension `2` need not split further,
+the induction stops at dimension `2` on the nose, and the cardinality
+bound is not an artefact of the chosen route but the sharp hypothesis.
+
+**AND YET THE CONCLUSION THE CLUSTER NEEDS IS TRUE SUPERSINGULARLY**,
+which is what makes a re-cut worth doing rather than a dead end: on that
+same `E[3]` the image of `I₃` lies in the normaliser of a nonsplit
+Cartan of `GL₂(𝔽₃)` and has order dividing `8`, PRIME TO `3`. Both
+dimension-`2` cases — ordinary (filtration by order-`3` pieces,
+`μ`-type, inertia scalar) and supersingular (simple, tame by the
+fundamental characters) — give tameness, by different arguments. What
+dimension `3` refutes is therefore the ARBITRARY-`G` ROUTE, not the
+theorem the cluster consumes; the repair is to re-base the route, not to
+weaken the conclusion.
+
+# THE SHAPE OF THE RE-CUT IS A DELETION, NOT A THREAD (2026-07-30)
+
+The paragraph above says "a partial thread would be worse than none".
+The re-measurement shows something stronger and it is what actually
+settles the cut-level decision: **a COMPLETE thread is not available at
+all, because it ends by orphaning everything it threaded.** The
+argument is mechanical:
+
+1. the socle bound has to be DISCHARGED at the four constructor sites,
+   and cannot be (measured above: it is equivalent to a bound on
+   `Module.finrank ℤ_[3] R`, which nothing in `IsHardlyRamified`
+   supplies and which `Lift.lean`'s existential cannot);
+2. so those four sites become `sorry`s;
+3. at which point NOTHING in the root cone calls the threaded chain —
+   `34` declarations in this file take `(G : Type)`, `25` of them below
+   this leaf — and free-floating code is banned here, so they must be
+   deleted anyway.
+
+So the two candidate operations are not "thread (cheap)" versus "re-cut
+(expensive)". They are the same operation, and its actual shape is:
+
+* state ONE new leaf for the flat model of `ρ ⧸ 𝔪ⁿ⁺²` at `3` — the
+  residual dévissage, TRUE and vouchable, `Nat.card`-free;
+* rewire the four constructor sites to it;
+* DELETE the arbitrary-`G` tower, whose statements are false as stated
+  (recoverable from git history, as this project's deletion commits
+  always are), preserving this audit and the route analysis in the new
+  leaf's docstring.
+
+Ledger: one FALSE direct sorry becomes one TRUE direct sorry; `25`-odd
+false theorems leave the tree; the `16` declarations above the
+constructor sites stop resting on a refuted premise. That is the whole
+benefit, and it is real — but it is a deletion of several thousand lines
+and it is not a decision a single prover agent should take by itself,
+which is why it is written down here instead of performed.
+
+**WHERE THE WORK MUST LAND — and both independently-found upstream cuts
+converge on ONE definition.** `GaloisRep.HasFlatProlongationAt`
+(`Deformations/RepresentationTheory/GaloisRep.lean:275`) is
+`∃ G, CommRing G × HopfAlgebra 𝒪ᵥ G × Module.Flat × Module.Finite ×
+Algebra.Etale Kᵥ (Kᵥ ⊗ G)`, together with a `Γ Kᵥ`-equivariant ADDITIVE
+bijection from `Additive (points)` onto the space. It records:
+
+* NOT cocommutativity — which is the `[IsCocomm]` obligation the
+  2026-07-28 measurement above traced to `FlatPointsGroup.lean` /
+  `FlatProlongation.lean` for step (c);
+* NOT any socle datum — hence the 2026-07-29 bound has nowhere to come
+  from;
+* NOT `A`-linearity of the identification `f`, only additivity. Worth
+  noticing on its own: the "scalars" the TRAP paragraph reasons with
+  (`R ⧸ 3R` acting on the socle) are not even recorded, so a repair
+  phrased in terms of them would first have to put them there.
+
+And `flat_prolongation_trivial_component_vanishes` takes
+`HasFlatProlongationAt` as a RAW HYPOTHESIS rather than obtaining it
+from `hρ.isFlat.cond`. So unlike the other three sites it cannot be
+repaired by strengthening `IsHardlyRamified` or `IsFlatAt` at all: any
+strengthening has to land in the DEFINITION. Two cuts found a month
+apart by two different routes therefore terminate in the same place,
+and doing them in one pass is strictly cheaper than either alone —
+which is the concrete recommendation this audit leaves behind.
 
 WHAT ELSE THE WITNESS REFUTES. It contradicts, verbatim, every
 statement in this cluster that quantifies over an ARBITRARY Hopf order
@@ -3043,9 +3237,19 @@ to `3` works), and
 `wildInertia_fixes_connected_threeTorsion_of_hopf_package`. All three
 are PROVEN over this leaf, so the FILE is not inconsistent — but they
 inherit the falsity of their premise. The repair therefore spans them
-and their consumers (lines `3364`, `3635`, `3763`, `3813`, `4086`,
-`5869` at the time of writing) and is a cut-level decision; a partial
-thread would be worse than none, so none is attempted.
+and the whole `39`-declaration cone measured above, and is a cut-level
+decision; a partial thread would be worse than none, so none is
+attempted. **Cite the declarations, not the line numbers** — an earlier
+version of this paragraph listed six consumer LINE NUMBERS, every one of
+which had already moved by the next edit of the file. The call sites are
+exactly: this leaf inside
+`smul_eq_of_pow_three_smul_eq_localInertia_connected_threeTorsion` (the
+two branches of its `by_cases hc1`), that inside
+`exists_coprime_three_exponent_localInertia_connected_threeTorsion`,
+that inside `wildInertia_fixes_connected_threeTorsion_of_hopf_package`
+and inside `exists_pow_smul_connected_threeTorsion_of_flat_hopf_package`,
+and the last inside
+`exists_localInertia_generates_on_connected_threeTorsion_of_hopf_package`.
 
 Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102
 (1974), 3.3.2–3.3.5 and 3.4.3; Fontaine, *Il n'y a pas de variété
