@@ -45595,6 +45595,17 @@ at all eleven rows of `x0WitnessTable` and all five of `x0SieveTable`, and
 So nothing in this table is an independent numerical claim: it is the two
 existing tables' source data, kept in the form that generates both columns.
 
+**RE-VERIFIED INDEPENDENTLY, 2026-07-30**: a fresh PARI/GP run
+(`mf = mfinit([N,2],1); [mfdim([N,2],1), Vecrev(charpoly(mfheckemat(mf,ℓ)))]`)
+reproduces **all sixteen rows exactly** — the `d` column against `mfdim` and the
+coefficient list against `Vecrev(charpoly(·))`, sixteen out of sixteen with zero
+mismatches in either column.  This is worth recording because these numbers are
+the FAITHFULNESS of two open leaves at once
+(`finrank_cuspForm_of_x0HeckeCharpolyTable` for the `d` column,
+`charpoly_toMatrix_heckeOp_of_x0HeckeCharpolyTable` for the polynomials), and
+until now they rested on a single run.  PARI/GP is an untrusted searcher, so
+this is evidence about the statements and not a step in any proof.
+
 The `d` column is `dim_ℂ S₂(Γ₀(N))` and matches `x0Genus` at every row, as
 it must — `g(X₀(N)) = dim_ℂ S₂(Γ₀(N))` — and `x0Genus` is already
 `decide`-computable in this file, which is a cheap independent check on the
