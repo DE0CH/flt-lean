@@ -58,23 +58,47 @@ each re-flowed the same prose paragraph. One name per line means two
 owners adding different leaves touch different lines, and git merges
 them without a human. Do not re-wrap it.
 
-- `frameLevels_classification`
-- `exists_universalFrame_profinite_of_levelIdealSystem`
-- `exists_levelIdealSystem_of_deformationCondition`
-- `hasFlatProlongationAt_of_pi_surjection`
-- `hasFlatProlongationAt_of_prod_injection`
-- `exists_cyclotomicCharacter_padicTwo_eq_two`
-- `exists_ringHom_matrix_quotient_of_finite`
+**STALENESS SWEEP 2026-07-30 — ELEVEN of the fifteen entries below were
+listed as open and are in fact PROVEN.** The list is append-mostly, so
+closures were being recorded on the declarations themselves and not here,
+and a leaf list is exactly what dispatch harvests: CLAUDE.md names a stale
+`(sorry leaf)` label as a standing source of phantom work. Every entry has
+now been checked against the compiler rather than against prose — the
+authority is the `declaration uses 'sorry'` warning set of a green
+`lake build`, not any claim in this file, including this one.
+
+**AS OF 2026-07-30 THIS MODULE HAS EXACTLY THREE OPEN LEAVES**, marked
+`OPEN` below, and a token scan agrees with the warning set (3 raw `sorry`
+tokens outside comments, 3 owning declarations, 3 warnings — so there are
+no anonymous inner sorries hiding behind a declaration count here, which
+is the failure mode CLAUDE.md records for `exists_isSwanExponentAt`).
+Regenerate rather than trusting this paragraph; it was accurate when
+written and the frontier moves.
+
+- ~~`frameLevels_classification`~~ — PROVEN (verified sorry-free 2026-07-30)
+- ~~`exists_universalFrame_profinite_of_levelIdealSystem`~~ — PROVEN (verified 2026-07-30)
+- ~~`exists_levelIdealSystem_of_deformationCondition`~~ — PROVEN (verified 2026-07-30)
+- ~~`hasFlatProlongationAt_of_pi_surjection`~~ — PROVEN (verified 2026-07-30)
+- ~~`hasFlatProlongationAt_of_prod_injection`~~ — PROVEN (verified 2026-07-30)
+- ~~`exists_cyclotomicCharacter_padicTwo_eq_two`~~ — PROVEN (verified 2026-07-30)
+- ~~`exists_ringHom_matrix_quotient_of_finite`~~ — PROVEN (verified 2026-07-30)
 - `exists_peirceGenerators_of_single_mem` — CLOSED 2026-07-26, and with it
   `exists_conj_entries_mem_of_single_mem` and
   `exists_conj_entries_mem_of_basis_repr_mem`: Carayol's step 2c is now
   entirely sorry-free
-- `exists_finiteIndex_isIntegral_charpolyCoeff_quotient_minimalPrime_of_isWeaklyUniversal_isTraceGenerated`
-- `exists_framedGaloisRep_baseChange_traceSubring`
-- `exists_relations_le_smul_of_minimal_mvPowerSeries_presentation`
-- `exists_obstructionCocycle_smallExtension_deformation`
-- `finiteDimensional_h1_adZeroTwistRestricted`
-- `exists_poitouTatePairing_sha2_sha1Twist` (cut out 2026-07-29; THE
+- ~~`exists_finiteIndex_isIntegral_charpolyCoeff_quotient_minimalPrime_of_isWeaklyUniversal_isTraceGenerated`~~ — PROVEN (verified 2026-07-30)
+- ~~`exists_framedGaloisRep_baseChange_traceSubring`~~ — PROVEN (verified 2026-07-30)
+- ~~`exists_relations_le_smul_of_minimal_mvPowerSeries_presentation`~~ — PROVEN (verified 2026-07-30)
+- `exists_obstructionCocycle_smallExtension_deformation` — **OPEN.** Böckle's
+  obstruction cocycle along a small extension. Its binding sub-item is item (5)
+  of its own audit, which is NOT a preservation lemma (the naive "the lift of a
+  hardly ramified representation is hardly ramified" is FALSE, and every clause
+  of `IsHardlyRamified` fails it separately — see the WARNING FOR WHOEVER TAKES
+  IT on the declaration); expect one sub-leaf per clause
+- ~~`finiteDimensional_h1_adZeroTwistRestricted`~~ — PROVEN (verified 2026-07-30;
+  this one had already caused a phantom dispatch in the 2026-07-28 release
+  window, per CLAUDE.md's list of leaves agents were sent at after they closed)
+- `exists_poitouTatePairing_sha2_sha1Twist` — **OPEN.** (cut out 2026-07-29; THE
   Poitou–Tate input — a `k`-bilinear pairing `Ш²_S(ad⁰) × Ш¹_S(ad⁰(1)) → k`,
   nondegenerate on both sides.  It REPLACES the two leaves
   `finiteDimensional_sha2` and `finrank_sha2_le_finrank_sha1Twist`, which are
@@ -85,11 +109,24 @@ them without a human. Do not re-wrap it.
   AUDIT on it for why that is free here and why it is NOT the mistake the
   `finiteDimensional_h2_adZeroRestricted` episode was.  Its dominant cost is
   local class field theory, absent from the pin, from `Fermat/` and from
-  `~/cs/FLT` — re-verified 2026-07-29 by statement shape)
-- `card_sha1Twist_le_card_dualNumberPoints` (re-cut 2026-07-28 in `ℕ` and over
-  `D.IsUniversal`, then re-cut again the same day as a COUNT of `k[ε]`-points;
-  `finrank_sha1Twist_le_cotangentFinrank` and `rank_sha1Twist_le_cotangentFinrank`
-  are now both PROVEN over it)
+  `~/cs/FLT` — re-verified 2026-07-29 by statement shape, and AGAIN 2026-07-30
+  over all three trees by statement shape and not by name: the only mathlib hit
+  is a docstring pointer to the out-of-tree `LocalClassFieldTheory` repository,
+  and `~/cs/FLT`'s `ContCohomology/CupProduct.lean` is still present and still
+  sorry-free, so item (a) of the build order below is still shovel-ready.
+  **2026-07-30: this leaf also now discharges
+  `exists_injective_sha2_dual_sha1Twist_of_selfDual`**, which was a separate
+  `sorry` for one obligation the STRENGTH AUDIT had already shown it implies, so
+  proving it closes FOUR declarations rather than two)
+- `card_sha1Twist_le_card_dualNumberPoints` — **OPEN.** (re-cut 2026-07-28 in `ℕ`
+  and over `D.IsUniversal`, then re-cut again the same day as a COUNT of
+  `k[ε]`-points; `finrank_sha1Twist_le_cotangentFinrank` and
+  `rank_sha1Twist_le_cotangentFinrank` are now both PROVEN over it. Gated on the
+  SAME single object as the pairing leaf above — the local Tate pairing — so the
+  two are one cost and belong to one owner. **Its COMPOSITE FAITHFULNESS RE-AUDIT
+  is VOID as of the third re-cut and has been re-run 2026-07-30; verdict still
+  FAITHFUL — see the fresh audit on the declaration** for why the `Nat.card`
+  junk value cannot make it either vacuous or false)
 - ~~`card_dualNumberPoints_eq_pow_cotangentFinrankModL`~~ (cut out 2026-07-28 as
   the COMMUTATIVE-ALGEBRA half of the tangent identification — no Galois theory,
   and behind none of the gates that block its arithmetic sibling; **PROVEN
@@ -19732,6 +19769,31 @@ an ASSUMPTION; `Assumptions/Odlyzko.lean` cites Poitou's discriminant paper).
 **So local class field theory must be built, and it, not the cup product, is
 the dominant cost of this leaf.**
 
+**WHAT THIS LEAF NOW CARRIES, AND WHAT IT SHARES ITS GATE WITH (2026-07-30).**
+Two things arrived here on that date, neither of them new mathematics:
+
+* `exists_injective_sha2_dual_sha1Twist_of_selfDual` below is **PROVEN over this
+  leaf** — the LEFT nondegeneracy clause plus `injective_of_forall_apply_eq_zero`
+  above.  The STRENGTH AUDIT above had already established `PT ⟹ M` as a fact,
+  but the arrow to that intermediate leaf was never written, so the compiler
+  carried two `sorry`s for one obligation.  Discharging this leaf therefore now
+  discharges FOUR declarations, not two: `finiteDimensional_sha2`,
+  `finrank_sha2_le_finrank_sha1Twist`, that leaf, and `M` through it.
+* **The shared-gate note, MOVED here from that leaf, because this is where the
+  work is.**  This leaf and `card_sha1Twist_le_card_dualNumberPoints` below are
+  blocked on ONE object — the local Tate pairing
+  `H^i(ℚ_v, M) × H^{2−i}(ℚ_v, M*) → k`.  This leaf needs it for the global
+  duality; that leaf needs it because the dual Selmer group `H¹_{L^⊥}` cannot be
+  STATED without it.  They are ONE cost, not two, and should go to ONE owner, in
+  the order: (a) vendor the cup product from `~/cs/FLT`
+  (`ContCohomology/CupProduct.lean`, 582 lines, sorry-free) with its
+  `linHom`/`iHom` shims; (b) build the local invariant map; (c) then both leaves.
+  Before building anything, read the DODGE PRECEDENT recorded on that leaf —
+  `Modularity/Patching.lean` runs the same Greenberg–Wiles argument with no
+  pairing at all, by describing the dual Selmer source as an explicit
+  unramified-outside-`S` condition instead of as an orthogonal complement.  It
+  does not transplant by copying, and it is the cheapest lead in this subtree.
+
 **HOW TO DECOMPOSE IT FURTHER — and why that was NOT done here.**  The next
 level down is genuine but is a construction, not a restatement: the nine-term
 sequence needs `P^i_S(M) = ⊕_{v ∈ S} H^i(ℚ_v, M)` (a two-term product here,
@@ -20183,12 +20245,72 @@ lemma adZeroTraceForm_nondegenerate {x : AdZero k V} (hx : x ≠ 0) :
   exact htr
 
 /-- **Poitou–Tate duality: `Ш²_S(ad⁰)` embeds `k`-linearly into the DUAL of
-`Ш¹_S(ad⁰(1))`, GIVEN the self-duality of the coefficients** (sorry leaf; cut
-out 2026-07-27 as the DUALITY half of `rank_sha2_le_rank_sha1_twist` below, and
-RECUT 2026-07-28 to receive the trace pairing rather than manufacture it — see
-STATUS immediately below).
+`Ш¹_S(ad⁰(1))`, GIVEN the self-duality of the coefficients** (**PROVEN
+2026-07-30** over `exists_poitouTatePairing_sha2_sha1Twist` above — NOT a sorry
+node any more, see STATUS 2026-07-30 immediately below; cut out 2026-07-27 as the
+DUALITY half of `rank_sha2_le_rank_sha1_twist` below, and RECUT 2026-07-28 to
+receive the trace pairing rather than manufacture it).
 
-**STATUS 2026-07-28 — WHAT THIS RECUT DID AND DID NOT DO.** The statement
+**STATUS 2026-07-30: THIS NODE IS NO LONGER A LEAF, AND THE FILE ALREADY SAID SO
+IN PROSE.** It is the two-line assembly
+
+  take the pairing `B : Ш²_S(ad⁰) × Ш¹_S(ad⁰(1)) → k` from
+  `exists_poitouTatePairing_sha2_sha1Twist` above, discard its RIGHT
+  nondegeneracy clause, and feed the LEFT one to
+  `injective_of_forall_apply_eq_zero` above — which is exactly the statement that
+  left-nondegeneracy IS injectivity into the dual, since `Module.Dual k U` is by
+  definition `U →ₗ[k] k`.
+
+**Why this was not done at the 2026-07-29 cut, and why it is not a circular
+re-cut.**  The STRENGTH AUDIT on the pairing leaf above records `PT ⟹ {S₂, P}`
+and `{S₂, P} ⟺ M`, where `M` is `exists_injective_sha2_dual_sha1Twist` below and
+`{S₂, P}` are `finiteDimensional_sha2`/`finrank_sha2_le_finrank_sha1Twist` above.
+Since `M` is proven over THIS declaration, `PT ⟹ M` was already established as a
+mathematical fact in that audit — but the arrow `PT ⟹` *this leaf* was never
+written down, so the compiler still carried two independent `sorry`s for one
+obligation.  It is written now.  This is NOT the circular re-cut that audit warns
+against: that warning is about WEAKENING the pairing leaf by dropping its right
+nondegeneracy clause, which would make it equivalent to `M`.  Nothing is weakened
+here; the strictly stronger leaf discharges the weaker one, which is the ordinary
+direction.  Frontier `2 → 1` in this subsection.
+
+The same audit's shared-gate note — **this statement and
+`card_sha1Twist_le_card_dualNumberPoints` below are ONE cost, the local Tate
+pairing, not two** — is therefore now a note about the PAIRING LEAF above and
+that leaf; it has been copied there, which is where the work still is.
+
+**WHAT THIS DOES NOT BUY, stated plainly so nobody reads the count as
+progress on the arithmetic.**  The Poitou–Tate content is untouched: it sits, in
+full and undivided, on `exists_poitouTatePairing_sha2_sha1Twist` above, still
+gated on the local invariant map `H²(ℚ_v, μ) ≅ ℚ/ℤ`.  What this buys is that a
+future owner of that leaf discharges this one for free instead of proving global
+duality twice, and that the tree no longer claims two independent obligations
+where the file's own prose had identified one.
+
+**THE THREE COEFFICIENT-SELF-DUALITY HYPOTHESES ARE NOT CONSUMED BY THIS PROOF,
+AND ARE DELIBERATELY RETAINED** (renamed `_hBrep`, `_hBnd` — and `hirr` to
+`_hirr` — following this file's established convention for a binder kept for its
+consumer's hypothesis surface, exactly as the pairing leaf above records for its
+own `_hirr`; `B` keeps its name because the other two binders' TYPES mention it.
+The renaming was forced by the compiler: while the body was `sorry` the
+unusedVariables linter was suppressed, and a real proof term makes it fire.)
+**Do not "clean them up" any further.**  Two reasons, and the second is a project
+rule:
+
+* The signature of this declaration and the proof of `M` below are UNCHANGED by
+  this commit, so nothing downstream moved.
+* `adZeroTraceForm`, `adZeroTraceForm_apply`, `adZeroTraceForm_rep` and
+  `adZeroTraceForm_nondegenerate` above have **exactly one consumer in the whole
+  tree** — `M`'s application of this declaration to them.  Dropping these three
+  binders would make that whole (proven, ~120-line) trace-form development
+  FREE-FLOATING, which the project forbids.  And the development is not
+  scaffolding to be deleted: it is genuinely needed material, because the
+  `ad⁰* ≅ ad⁰(1)` identification that the pairing leaf above must perform is
+  precisely nondegeneracy-of-the-trace-form (see that leaf's own paragraph on why
+  it is cheap only for odd `ℓ`).  So these binders keep it in the root cone until
+  the pairing leaf is proven and consumes it directly, at which point they may go.
+
+**STATUS 2026-07-28 — WHAT THAT EARLIER RECUT DID AND DID NOT DO.** The statement
 `exists_injective_sha2_dual_sha1Twist` below is UNCHANGED, still has the same
 consumer (`rank_sha2_le_rank_sha1_twist`), and is now PROVEN: it is this leaf
 applied to `adZeroTraceForm` above. What moved is one of the two identifications
@@ -20357,15 +20479,16 @@ References: Neukirch–Schmidt–Wingberg, *Cohomology of Number Fields*, VIII.6
 theorem exists_injective_sha2_dual_sha1Twist_of_selfDual
     (hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
-    (hirr : ρbar.IsIrreducible)
+    (_hirr : ρbar.IsIrreducible)
     (B : AdZero k V →ₗ[k] AdZero k V →ₗ[k] k)
-    (hBrep : ∀ (σ : Field.absoluteGaloisGroup ℚ) (x y : AdZero k V),
+    (_hBrep : ∀ (σ : Field.absoluteGaloisGroup ℚ) (x y : AdZero k V),
       B (AdZero.rep ρbar σ x) (AdZero.rep ρbar σ y) = B x y)
-    (hBnd : ∀ x : AdZero k V, x ≠ 0 → ∃ y : AdZero k V, B x y ≠ 0) :
+    (_hBnd : ∀ x : AdZero k V, x ≠ 0 → ∃ y : AdZero k V, B x y ≠ 0) :
     ∃ f : ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) →ₗ[k]
         Module.Dual k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)),
-      Function.Injective f :=
-  sorry
+      Function.Injective f := by
+  obtain ⟨PT, hleft, -⟩ := exists_poitouTatePairing_sha2_sha1Twist hℓOdd hdim hℓ5 h
+  exact ⟨PT, injective_of_forall_apply_eq_zero PT hleft⟩
 
 /-- **Poitou–Tate duality: `Ш²_S(ad⁰)` embeds `k`-linearly into the DUAL of
 `Ш¹_S(ad⁰(1))`** (**PROVEN 2026-07-28** over the leaf
@@ -21615,6 +21738,65 @@ hypothesis to lean on, and adding one would be restating the target to make it
 provable. The transplantable part is the DESCRIPTION of the dual Selmer group,
 not the hypothesis. Note also that `Patching.lean` is DOWNSTREAM of this module,
 so nothing there is consumable here; a shared version would have to be hoisted.
+
+**FAITHFULNESS RE-AUDIT No. 2, 2026-07-30 — THE COMPOSITE AUDIT ABOVE WAS VOID,
+AND THIS ONE REPLACES IT.  VERDICT: FAITHFUL.**
+
+Why it was void, which is a project rule and not a quibble: that audit says it
+was run because the statement had changed TWICE, and its four checks are all
+phrased against a right-hand side of `cotangentFinrankModL D.R ℓ`.  The statement
+was then re-cut a THIRD time, the same day, into a `Nat.card` of `k[ε]`-points —
+so the audit on the page certified a statement that no longer exists, while its
+LABEL survived to say the leaf had been checked.  CLAUDE.md records exactly this
+shape (`exists_artinDivisorNormIndex_le_ray_class`): two individually-correct
+edits composing into a false leaf, with an honest audit attached.  So the earlier
+audit is re-run below against the statement AS IT NOW READS, not inherited.
+
+**The new hazard the third re-cut introduces is the `Nat.card` JUNK VALUE**, and
+it is the only genuinely new thing to check: `Nat.card` is `0` on an infinite
+type, so each side has to be shown to be a real count.  The two sides fail
+differently, and only one direction is dangerous.
+
+* *RIGHT side — a junk `0` here would make the leaf FALSE, not vacuous.*  It
+  would read `Nat.card Ш¹_S(ad⁰(1)) ≤ 0`, i.e. that `Ш¹` is empty or infinite;
+  `Ш¹` is a `k`-submodule, so it contains `0` and is nonempty, and it is finite
+  (next bullet) — so a junk right side would refute the leaf outright.  **It
+  cannot occur.**  `card_dualNumberPoints_eq_pow_cotangentFinrankModL` above is
+  PROVEN and gives `Nat.card (dualNumberPoints R π) = Nat.card k ^
+  cotangentFinrankModL R ℓ` for `R` commutative, local, Noetherian, a
+  `ℤ_ℓ`-algebra, with `π` surjective — and `HardlyRamifiedDeformation` supplies
+  every one of those (`commRing`, `isLocalRing`, `isNoetherianRing`, `algebra`,
+  `π_surjective`).  `k` is a finite field, so `Nat.card k ≥ 2` and the right side
+  is a positive power, hence `≥ 1`.  Never junk.
+* *LEFT side — a junk `0` here would make the leaf VACUOUS but still true*
+  (`0 ≤` a positive number), which is the milder failure and would merely mean
+  the leaf carries no content.  It also cannot occur:
+  `finiteDimensional_h1_adZeroTwistRestricted` above (PROVEN) makes
+  `continuousCohomology 1 (adZeroTwistRestricted ℓ ρbar S)` finite-dimensional
+  over the finite field `k`, and `Sha1Twist` is a submodule of it, hence finite.
+
+**AND THE THIRD RE-CUT IS FAITHFULNESS-NEUTRAL, which is why the four checks of
+the void audit do transfer after all — but for a reason nobody had written
+down.**  `Sha1Twist` is a `k`-vector space, so `Nat.card Ш¹ = (Nat.card k) ^
+dim_k Ш¹`; and by the proven count above the right side is
+`(Nat.card k) ^ cotangentFinrankModL D.R ℓ`.  Since `Nat.card k ≥ 2`, the map
+`n ↦ (Nat.card k) ^ n` is strictly monotone, so this leaf is **equivalent** —
+not merely implied by, and not merely implying — the previous `finrank` form
+`dim_k Ш¹_S(ad⁰(1)) ≤ cotangentFinrankModL D.R ℓ`.  The re-cut exponentiated both
+sides of the same inequality.  So the void audit's substantive findings (that
+`D.R` is the unframed fixed-determinant ring and both mis-readings enlarge the
+RIGHT side; that `cotangent = 0` is the ordinary rigid case and not junk; that
+`hirr` is load-bearing twice over via `h⁰(ℚ, ad⁰)` and `h⁰(ℚ, ad⁰(1))`; that the
+archimedean convention is correct and must not be "repaired") all stand
+unchanged, and the degenerate case now reads `Nat.card Ш¹ ≤ 1`, i.e. `Ш¹ = 0`,
+which is what Greenberg–Wiles gives there.
+
+**A successor should NOT read this as licence to restate the leaf back into
+`finrank` form.**  The `Nat.card` form is what lets the commutative-algebra half
+leave through `card_dualNumberPoints_eq_pow_cotangentFinrankModL`, which is
+PROVEN; reverting would re-absorb that.  The equivalence above is recorded so
+that literature stated in dimensions can be applied to it without a further
+re-cut — and, per the rule, a fourth re-cut would void this audit too.
 
 **CIRCULARITY GUARD — INHERITED VERBATIM, and it binds this leaf** exactly as
 it binds `rank_sha2_le_rank_sha1_twist` above; see there for the BANNED INPUTS

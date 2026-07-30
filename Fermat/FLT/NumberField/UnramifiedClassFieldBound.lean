@@ -4,13 +4,13 @@ project (not vendored from the FLT project).
 -/
 module
 
+public import Fermat.FLT.NumberField.ArtinSymbol
 public import Mathlib.NumberTheory.NumberField.ClassNumber
 public import Mathlib.NumberTheory.NumberField.ExistsRamified
 public import Mathlib.NumberTheory.NumberField.InfinitePlace.Ramification
 public import Mathlib.RingTheory.Ideal.Norm.RelNorm
 public import Mathlib.RingTheory.Unramified.LocalRing
 public import Mathlib.FieldTheory.Galois.Basic
-public import Mathlib.RingTheory.Frobenius
 
 /-!
 # The unramified upper bound of class field theory, at finite level
@@ -24,9 +24,16 @@ field of `K`.
 
 It lives in its own module ON PURPOSE. `Modularity/Interface.lean`
 elaborates for over an hour on one core, and everything here is pure
-algebraic number theory that needs none of it — a prover attacking the open
-leaf below iterates against THIS file in seconds. Do not move the material
-back.
+algebraic number theory that needs none of it — a prover working on this
+cluster iterates against THIS file in seconds. Do not move the material back.
+
+**THIS FILE IS NOW SORRY-FREE (2026-07-30).** The two remaining inputs of
+unramified class field theory were moved one module upstream, to
+`Fermat/FLT/NumberField/ArtinSymbol.lean`, where they sit beside the Frobenius
+material that is proven: `NumberField.exists_classGroupHom_eq_frobAt` (Artin
+RECIPROCITY — the Artin symbol descends to the ideal class group) and
+`NumberField.closure_frobAt_eq_top` (CHEBOTAREV — the Frobenius elements
+generate `Gal(L/K)`). Everything here is proven over those two.
 
 ## Main results
 
@@ -34,26 +41,15 @@ back.
   Minkowski at a degree-one base.
 * `NumberField.relNormClassSubgroup` — the image of the ideal norm in the
   class group; `index` of this subgroup IS the classical `[I_K : P_K·N I_L]`.
-* `NumberField.IsArithFrobOver` — `σ` is an arithmetic Frobenius at some prime
-  of `𝓞 L` above a given prime of `𝓞 K`, over mathlib's `IsArithFrobAt`.
-* `NumberField.exists_isArithFrobOver` — PROVEN. A Frobenius exists above every
-  nonzero prime of `𝓞 K` (mathlib's `IsArithFrobAt.exists_of_isInvariant`).
 * `NumberField.exists_surjective_classGroupHom_aut_of_unramified_abelian` —
-  **PROVEN 2026-07-29**, by pure group theory, over the four leaves below.
-  The Artin map at modulus `1`, packaged as "there is a surjection
-  `Cl(𝓞 K) ↠ Gal(L/K)` killing the norm classes".
-* `NumberField.exists_isPrime_classGroupMk0_eq` — OPEN. Every ideal class of a
-  number field contains a prime ideal.
-* `NumberField.prod_eq_one_of_forall_isArithFrobOver` — OPEN. **ARTIN
-  RECIPROCITY at modulus `1`, in product form** — this is where the missing
-  mathematics now is.
-* `NumberField.exists_isArithFrobOver_of_aut` — OPEN. Chebotarev: every element
-  of `Gal(L/K)` is a Frobenius at some prime.
-* `NumberField.apply_classGroupMk0_relNorm_eq_one` — OPEN, and NOT class field
-  theory: the classes of relative norms are killed by any Frobenius-compatible
-  homomorphism. Pure ideal arithmetic (`Frob^f = 1`, `N 𝔔 = 𝔭^f`).
-* `NumberField.finrank_le_index_relNormClassSubgroup` — PROVEN from the leaf
-  above by pure group theory (index is antitone; `Subgroup.index_ker`).
+  PROVEN 2026-07-30 (was the file's open leaf from 2026-07-28). The Artin map
+  at modulus `1`, packaged as "there is a surjection `Cl(𝓞 K) ↠ Gal(L/K)`
+  killing the norm classes". Its surjectivity comes from
+  `closure_frobAt_eq_top`, its values from `exists_classGroupHom_eq_frobAt`,
+  and its norm clause is a THEOREM here (`frobAt_pow_inertiaDeg` plus
+  `mem_of_relNorm_of_forall_isMaximal`) rather than an assumption.
+* `NumberField.finrank_le_index_relNormClassSubgroup` — PROVEN from the
+  previous one by pure group theory (index is antitone; `Subgroup.index_ker`).
   The second inequality at modulus `1`.
 * `NumberField.finrank_le_card_classGroup_of_unramified_abelian_of_isUnramifiedAtInfinitePlaces`
   — PROVEN from the previous one by Lagrange.
@@ -179,370 +175,36 @@ noncomputable def relNormClassSubgroup : Subgroup (ClassGroup (𝓞 K)) :=
       mem_nonZeroDivisors_of_ne_zero (by
         simpa using (Ideal.relNorm_eq_bot_iff (R := 𝓞 K) (I := I)).not.mpr hI)⟩}
 
-/-- **The Galois group of `L/K` commutes with the `𝓞 K`-action on `𝓞 L`.**
-
-This is the one instance mathlib does not already supply, and without it
-`IsArithFrobAt (𝓞 K) σ Q` does not even elaborate for `σ : L ≃ₐ[K] L` and
-`Q : Ideal (𝓞 L)`. Mathlib HAS `SMulCommClass G R (integralClosure R K)`
-(`Mathlib/RingTheory/IntegralClosure/Algebra/Basic.lean`), but `𝓞 L` is
-`integralClosure ℤ L`, not `integralClosure (𝓞 K) L`, so that instance does not
-fire. The content is just that a `K`-algebra equivalence fixes the image of
-`𝓞 K`. -/
-instance : SMulCommClass (L ≃ₐ[K] L) (𝓞 K) (𝓞 L) where
-  smul_comm g a b := by
-    apply NumberField.RingOfIntegers.ext
-    show g ((a • b : 𝓞 L) : L) = ((a • (g • b) : 𝓞 L) : L)
-    simp only [Algebra.smul_def, map_mul]
-    congr 1
-    rw [← IsScalarTower.algebraMap_apply (𝓞 K) (𝓞 L) L,
-      IsScalarTower.algebraMap_apply (𝓞 K) K L, AlgEquiv.commutes]
-
-/-- **`σ` is an arithmetic Frobenius above the prime `P` of `𝓞 K`**: there is a
-prime `Q` of `𝓞 L` lying over `P` at which `σ` is a Frobenius in mathlib's
-sense (`IsArithFrobAt`, i.e. `σ x ≡ x ^ #(𝓞 K / P) (mod Q)` for all `x`).
-
-`P` ranges over `(Ideal (𝓞 K))⁰` rather than over `Ideal (𝓞 K)` so that
-`ClassGroup.mk0 P` is available without a side condition; membership in the
-nonzero divisors of the ideal monoid of a Dedekind domain is exactly `P ≠ ⊥`.
-
-Note that the prime `Q` is EXISTENTIAL, not a parameter. That is deliberate and
-costs nothing in the intended application: `Gal(L/K)` acts transitively on the
-primes above `P`, and the Frobenius elements at the various `Q | P` form one
-conjugacy class — a single element when the extension is abelian. -/
-def IsArithFrobOver (P : (Ideal (𝓞 K))⁰) (σ : L ≃ₐ[K] L) : Prop :=
-  ∃ Q : Ideal (𝓞 L), Q.IsPrime ∧ Q.under (𝓞 K) = (P : Ideal (𝓞 K)) ∧
-    IsArithFrobAt (𝓞 K) σ Q
-
-/-- **EVERY IDEAL CLASS OF A NUMBER FIELD CONTAINS A PRIME IDEAL** (SORRY LEAF,
-cut 2026-07-29 out of `exists_surjective_classGroupHom_aut_of_unramified_abelian`
-below).
-
-This is the classical statement that each class of `Cl(𝓞 K)` contains
-infinitely many prime ideals; only one is asked for here. Note it mentions `L`
-nowhere: it is a statement about the single number field `K`, and closing it is
-useful far beyond this file.
-
-**Route.** Chebotarev / Dirichlet density applied to the Hilbert class field
-`H/K`: a prime `𝔭` of `K` whose Frobenius in `Gal(H/K) ≅ Cl(𝓞 K)` is the
-prescribed class lies in that class. Equivalently, and without class field
-theory on the nose, the Hecke `L`-function of the ideal-class group has a
-nonvanishing statement at `s = 1` giving positive density in each class
-(Hecke; Neukirch VII (13.2); Lang *ANT* ch. VIII). No purely algebraic proof is
-known, and none is expected — the statement fails for general Dedekind domains,
-whose class groups can be arbitrary (Claborn) with prime ideals confined to a
-subgroup. That last sentence is a POINTER, not a verified counterexample; the
-`NumberField K` hypothesis has not been refuted here by an explicit witness.
-
-**Not vacuous, and true in the degenerate case.** At `c = 1` the statement says
-`𝓞 K` has a principal nonzero prime, which is true (and, for `K = ℚ`, witnessed
-by `(2)`). At `K = ℚ` the class group is trivial and the statement is exactly
-that. For `K = ℚ(√-5)`, `Cl = ℤ/2`, the nontrivial class is realised by the
-prime `(2, 1 + √-5)`.
-
-**The check that would refute it**: a number field `K` and a class of
-`Cl(𝓞 K)` containing no prime ideal. -/
-theorem exists_isPrime_classGroupMk0_eq (c : ClassGroup (𝓞 K)) :
-    ∃ P : (Ideal (𝓞 K))⁰, (P : Ideal (𝓞 K)).IsPrime ∧ ClassGroup.mk0 P = c :=
-  sorry
-
-/-- **A FROBENIUS EXISTS ABOVE EVERY NONZERO PRIME OF `𝓞 K`** (PROVEN
-2026-07-29, entirely from mathlib).
-
-There is nothing arithmetic to do here: `Ideal.nonempty_primesOver` supplies a
-prime `Q` of `𝓞 L` over `P` (going up, `𝓞 L` being integral over `𝓞 K`),
-`Ring.HasFiniteQuotients.finiteQuotient` makes its residue ring finite, and
-`IsArithFrobAt.exists_of_isInvariant` produces the Frobenius. The invariance
-hypothesis `Algebra.IsInvariant (𝓞 K) (𝓞 L) Gal(L/K)` is mathlib's
-`IsGaloisGroup.isInvariant`.
-
-Recorded as a separate declaration because the leaves above and below all need
-it and because it is the boundary between "mathlib has this" and "this
-development must build it": Frobenius EXISTENCE is free, Frobenius RECIPROCITY
-is not. -/
-theorem exists_isArithFrobOver [IsGalois K L] (P : (Ideal (𝓞 K))⁰)
-    (hP : (P : Ideal (𝓞 K)).IsPrime) : ∃ σ : L ≃ₐ[K] L, IsArithFrobOver K L P σ := by
-  haveI := hP
-  haveI : Algebra.IsInvariant (𝓞 K) (𝓞 L) (L ≃ₐ[K] L) := IsGaloisGroup.isInvariant
-  haveI : Algebra.IsIntegral (𝓞 K) (𝓞 L) := Algebra.IsInvariant.isIntegral (G := L ≃ₐ[K] L) ..
-  obtain ⟨⟨Q, hQ, hQlies⟩⟩ :
-      Nonempty (Ideal.primesOver (P : Ideal (𝓞 K)) (𝓞 L)) := inferInstance
-  haveI := hQ
-  have hQunder : Q.under (𝓞 K) = (P : Ideal (𝓞 K)) := hQlies.over.symm
-  have hQ0 : Q ≠ ⊥ := by
-    rintro rfl
-    refine nonZeroDivisors.coe_ne_zero P ?_
-    rw [← hQunder]
-    exact Ideal.comap_bot_of_injective _ (FaithfulSMul.algebraMap_injective (𝓞 K) (𝓞 L))
-  haveI : Finite (𝓞 L ⧸ Q) := Ring.HasFiniteQuotients.finiteQuotient hQ0
-  obtain ⟨σ, hσ⟩ := IsArithFrobAt.exists_of_isInvariant (𝓞 K) (L ≃ₐ[K] L) Q
-  exact ⟨σ, Q, hQ, hQunder, hσ⟩
-
-/-- **ARTIN RECIPROCITY AT MODULUS `1`, IN PRODUCT FORM: if a finite list of
-nonzero primes of `𝓞 K` has trivial product in `Cl(𝓞 K)` — i.e. their product
-is a principal ideal — then the product of their Frobenius elements in
-`Gal(L/K)` is trivial** (SORRY LEAF, cut 2026-07-29 out of
-`exists_surjective_classGroupHom_aut_of_unramified_abelian` below; **THIS IS
-WHERE THE MISSING MATHEMATICS IS**).
-
-**Why product form rather than a map on ideals.** Reciprocity is classically
-stated as "the Artin map `I_K → Gal(L/K)` kills `P_K`", which requires first
-CONSTRUCTING that map — extending `𝔭 ↦ Frob_𝔭` multiplicatively over the free
-monoid of ideals. The product form says the same thing without any
-construction: it is exactly what a prover of reciprocity ends up with, and the
-consumer below turns it into a homomorphism out of `Cl(𝓞 K)` by pure group
-theory. The same cut is used, and is PROVEN over, in the sibling
-`exists_artinIdealMap_of_unramifiedAbelianSubgroup` in
-`Fermat/FLT/Modularity/Interface.lean`, whose leaf
-`prod_frobConj_mem_of_mk0_prod_frobIdeal_eq_one` is this statement transported
-into the `Γℚ`/character setting.
-
-**Route.** Neukirch VI (6.7)–(6.9); Childress ch. 4–5; Lang *ANT* ch. X;
-Cassels–Fröhlich ch. VII. Modulus `1` is admissible exactly because of
-`IsUnramifiedAtInfinitePlaces`.
-
-**⚠ ALL THREE HYPOTHESES ARE LOAD-BEARING.**
-
-* `hunr` — **witness, checked 2026-07-29**: `K = ℚ`, `L = ℚ(√5)`, which is
-  abelian of degree `2` and unramified at the infinite place (disc `5 > 0`, so
-  both archimedean places of `L` are real) but RAMIFIED at `5`. Take the
-  one-element list `[((2), Frob₂)]`. Since `5 ≡ 5 (mod 8)`, `x² - x - 1` is
-  irreducible mod `2`, so `2` is INERT and `Frob₂` is the nontrivial
-  automorphism. `Cl(ℤ)` is trivial, so the class hypothesis holds vacuously,
-  while the conclusion reads `Frob₂ = 1`. False.
-* `IsUnramifiedAtInfinitePlaces` — **witness**: `K = ℚ(√3)`, `L` its NARROW
-  Hilbert class field. `h_K = 1` but `h⁺_K = 2` (PARI/GP, recorded below), so
-  `L/K` is abelian of degree `2`, unramified at every finite place, and
-  ramified at both real places. Again every class of `Cl(𝓞 K)` is trivial, so
-  every list satisfies the hypothesis. Since `L ≠ K`, not every prime of `K`
-  splits completely in `L` (Chebotarev), so some prime `𝔭` is inert and the
-  one-element list `[(𝔭, Frob_𝔭)]` refutes the conclusion.
-* `habel` is load-bearing **FORMALLY**, and the argument is worth recording
-  because it is not the usual "the class group is abelian" one. Swapping the
-  first two entries of a three-element list leaves the class hypothesis
-  unchanged (`Cl(𝓞 K)` is commutative) but reverses the order of the first two
-  Frobenii, so the statement forces `σ₁σ₂ = σ₂σ₁` for ANY two Frobenius
-  elements; by `exists_isArithFrobOver_of_aut` below (Chebotarev) those
-  generate `Gal(L/K)`. So this leaf IMPLIES `habel`, and dropping `habel` makes
-  it false for every everywhere-unramified extension with non-abelian Galois
-  group — such exist, being what a Golod–Shafarevich class field tower of
-  length `≥ 2` produces.
-
-**Not vacuous.** The one-element list at a PRINCIPAL prime says `Frob_𝔭 = 1`
-for every principal `𝔭`, which is the whole substance of reciprocity; the empty
-list is the trivial `1 = 1`.
-
-**The check that would refute it**: an everywhere-unramified abelian `L/K` and
-nonzero primes `𝔭₁, …, 𝔭ₙ` of `𝓞 K` with `𝔭₁ ⋯ 𝔭ₙ` principal but
-`Frob_{𝔭₁} ⋯ Frob_{𝔭ₙ} ≠ 1`. -/
-theorem prod_eq_one_of_forall_isArithFrobOver [IsGalois K L]
-    [IsUnramifiedAtInfinitePlaces K L]
-    (habel : ∀ a b : L ≃ₐ[K] L, a * b = b * a)
-    (hunr : ∀ (Q : Ideal (𝓞 L)) (_ : Q.IsPrime), Q ≠ ⊥ →
-      Algebra.IsUnramifiedAt (𝓞 K) Q)
-    (l : List ((Ideal (𝓞 K))⁰ × (L ≃ₐ[K] L)))
-    (hl : ∀ x ∈ l, (x.1 : Ideal (𝓞 K)).IsPrime ∧ IsArithFrobOver K L x.1 x.2)
-    (hcl : (l.map fun x => ClassGroup.mk0 x.1).prod = 1) :
-    (l.map Prod.snd).prod = 1 :=
-  sorry
-
-/-- **CHEBOTAREV, IN THE FORM USED HERE: every element of `Gal(L/K)` is an
-arithmetic Frobenius above some nonzero prime of `𝓞 K`** (SORRY LEAF, cut
-2026-07-29 out of `exists_surjective_classGroupHom_aut_of_unramified_abelian`
-below).
-
-**This is TRUE for an arbitrary finite Galois extension of number fields** —
-no abelian and no unramifiedness hypothesis is taken, and none is needed: the
-Chebotarev density theorem produces, for each `σ`, infinitely many primes
-UNRAMIFIED in `L/K` whose Frobenius class contains `σ`, and for an unramified
-prime the Frobenius at a prime above it is genuinely an `IsArithFrobAt`
-witness. Stating it in this generality is deliberate: the leaf is then a clean,
-quotable theorem rather than a fragment of this file's argument.
-
-**Route.** Chebotarev density (Neukirch VII (13.4); Lang *ANT* ch. VIII);
-for the weaker "the Frobenius elements generate `Gal(L/K)`" that this leaf is
-used for, the analytic input is unavoidable — the algebraic statement "no
-proper subfield in which every prime splits completely" IS the first
-inequality.
-
-**Not vacuous, and the degenerate case is true.** At `σ = 1` the statement asks
-for a prime of `K` splitting completely in `L`, which exists. At `L = K` every
-prime works and `Gal(L/K)` is trivial.
-
-**The check that would refute it**: a finite Galois extension of number fields
-and a `σ ∈ Gal(L/K)` which is not a Frobenius at any prime — equivalently, by
-Chebotarev, nothing. -/
-theorem exists_isArithFrobOver_of_aut [IsGalois K L] (σ : L ≃ₐ[K] L) :
-    ∃ P : (Ideal (𝓞 K))⁰, (P : Ideal (𝓞 K)).IsPrime ∧ IsArithFrobOver K L P σ :=
-  sorry
-
-/-- **THE NORM CLASSES ARE KILLED BY ANY FROBENIUS-COMPATIBLE HOMOMORPHISM**
-(SORRY LEAF, cut 2026-07-29 out of
-`exists_surjective_classGroupHom_aut_of_unramified_abelian` below).
-
-**THIS LEAF IS NOT CLASS FIELD THEORY.** It is the "two-line computation" that
-the parent's docstring promised: given ANY homomorphism `φ : Cl(𝓞 K) → Gal(L/K)`
-which sends the class of each nonzero prime `𝔭` to a Frobenius above `𝔭`, the
-class of `N_{L/K} I` is in its kernel. Whoever closes it needs no reciprocity,
-no Chebotarev and no ideles — only ideal arithmetic:
-
-1. `Ideal.relNorm` is multiplicative and `I` factors into primes in the
-   Dedekind domain `𝓞 L`, so it suffices to treat `I = 𝔔` prime.
-2. `N_{L/K} 𝔔 = 𝔭 ^ f`, where `𝔭 = 𝔔 ∩ 𝓞 K` and `f = Ideal.inertiaDeg 𝔭 𝔔`.
-3. `φ (mk0 𝔭)` is a Frobenius at some prime above `𝔭`, and at an UNRAMIFIED
-   prime the decomposition group is cyclic of order `f` generated by the
-   Frobenius, so `φ (mk0 𝔭) ^ f = 1`.
-4. Hence `φ (mk0 (N 𝔔)) = φ (mk0 𝔭) ^ f = 1`.
-
-**`hunr` is used at step 3 and the ARGUMENT provably fails without it**: at a
-ramified prime a Frobenius at `Q` is only determined modulo the inertia group,
-`IsArithFrobAt` is satisfied by `Frob · i` for every `i` in inertia, and
-`(Frob · i) ^ f` lands in inertia rather than at `1`. That is a failure of the
-PROOF; no counterexample to the STATEMENT with `hunr` deleted has been
-constructed here, and any witness would need `Cl(𝓞 K)` nontrivial (otherwise
-`φ` is the trivial map and the conclusion is free) — the obvious candidate
-`K = ℚ`, `L = ℚ(√5)` does NOT refute it for exactly that reason. Treat the
-necessity of `hunr` as unaudited.
-
-**`hφ` is what makes the leaf non-vacuous, and it is not free**: the trivial
-homomorphism satisfies the conclusion but not `hφ` unless every Frobenius is
-trivial. Conversely `hφ` alone does not force `φ` to be the Artin map — it
-constrains `φ` only on classes of primes — but by
-`exists_isPrime_classGroupMk0_eq` every class IS the class of a prime, so `hφ`
-in fact pins `φ` completely. Nothing weaker is needed here.
-
-**The check that would refute it**: an everywhere-unramified `L/K`, a
-homomorphism `φ` satisfying `hφ`, and a nonzero `I ⊆ 𝓞 L` with
-`φ [N_{L/K} I] ≠ 1`.
-
-**SCAFFOLD FOR STEP 3, WRITTEN AND COMPILER-VERIFIED 2026-07-29 against this
-module's import cone, then NOT committed** — it has no consumer while this leaf
-is open, and free-floating code is not allowed here. Paste it back in as part of
-the proof. Each of the four compiles as written (whole file, 10 s):
-
-```
-theorem aut_eq_of_smul_eq {σ τ : L ≃ₐ[K] L} (h : ∀ x : 𝓞 L, σ • x = τ • x) : σ = τ := by
-  ext y
-  obtain ⟨a, b, hb, rfl⟩ := IsFractionRing.div_surjective (A := 𝓞 L) y
-  have ha : σ (algebraMap (𝓞 L) L a) = τ (algebraMap (𝓞 L) L a) :=
-    congrArg (algebraMap (𝓞 L) L) (h a)
-  have hb' : σ (algebraMap (𝓞 L) L b) = τ (algebraMap (𝓞 L) L b) :=
-    congrArg (algebraMap (𝓞 L) L) (h b)
-  rw [map_div₀, map_div₀, ha, hb']
-
-theorem cardQuot_pow (Q : Ideal (𝓞 L)) [Q.IsMaximal] [(Q.under (𝓞 K)).IsMaximal]
-    [Q.LiesOver (Q.under (𝓞 K))] :
-    Nat.card (𝓞 K ⧸ Q.under (𝓞 K)) ^ Q.inertiaDeg (𝓞 K) = Nat.card (𝓞 L ⧸ Q) := by
-  rw [← Submodule.cardQuot_apply, ← Submodule.cardQuot_apply]
-  exact Ideal.cardQuot_pow_inertiaDeg _ _
-
-set_option maxHeartbeats 2000000 in
-theorem pow_card_sub_mem (Q : Ideal (𝓞 L)) [Q.IsMaximal] (hQ : Q ≠ ⊥) (x : 𝓞 L) :
-    x ^ (Nat.card (𝓞 L ⧸ Q)) - x ∈ Q := by
-  haveI : Finite (𝓞 L ⧸ Q) := Ring.HasFiniteQuotients.finiteQuotient hQ
-  haveI : IsDomain (𝓞 L ⧸ Q) := Ideal.Quotient.isDomain Q
-  letI : Field (𝓞 L ⧸ Q) := (Finite.isField_of_domain (𝓞 L ⧸ Q)).toField
-  cases nonempty_fintype (𝓞 L ⧸ Q)
-  rw [← Ideal.Quotient.eq_zero_iff_mem, map_sub, map_pow, sub_eq_zero, Nat.card_eq_fintype_card]
-  exact FiniteField.pow_card (Ideal.Quotient.mk Q x)
-
-theorem iterate_frob [IsGalois K L] (Q : Ideal (𝓞 L)) [Q.IsPrime] (σ : L ≃ₐ[K] L)
-    (hσ : IsArithFrobAt (𝓞 K) σ Q) (n : ℕ) (x : 𝓞 L) :
-    (σ ^ n) • x - x ^ (Nat.card (𝓞 K ⧸ Q.under (𝓞 K)) ^ n) ∈ Q := by
-  have hstab : σ • Q = Q := hσ.mem_stabilizer
-  have hmem : ∀ y ∈ Q, σ • y ∈ Q := by
-    intro y hy
-    rw [← hstab]
-    exact Ideal.smul_mem_pointwise_smul _ _ _ hy
-  induction n with
-  | zero => simp
-  | succ n ih =>
-    have h2 : σ • ((σ ^ n) • x) - (σ • x) ^ (Nat.card (𝓞 K ⧸ Q.under (𝓞 K)) ^ n) ∈ Q := by
-      have := hmem _ ih
-      rwa [smul_sub, smul_pow'] at this
-    have h3 : (σ • x) ^ (Nat.card (𝓞 K ⧸ Q.under (𝓞 K)) ^ n) -
-        (x ^ Nat.card (𝓞 K ⧸ Q.under (𝓞 K))) ^ (Nat.card (𝓞 K ⧸ Q.under (𝓞 K)) ^ n) ∈ Q :=
-      Ideal.mem_of_dvd _ (sub_dvd_pow_sub_pow _ _ _) (hσ x)
-    have := Q.add_mem h2 h3
-    rw [pow_succ', mul_smul]
-    rw [← pow_mul, ← pow_succ'] at this
-    simpa using this
-```
-
-`iterate_frob` at `n = f` plus `cardQuot_pow` plus `pow_card_sub_mem` gives
-`σ ^ f • x - x ∈ Q` for every `x`; hence `σ ^ (f+1)` is ALSO an
-`IsArithFrobAt` witness at `Q`, so `AlgHom.IsArithFrobAt.eq_of_isUnramifiedAt`
-(mathlib, and the ONLY place `hunr` enters) gives
-`MulSemiringAction.toAlgHom _ _ (σ ^ (f+1)) = MulSemiringAction.toAlgHom _ _ σ`,
-and `aut_eq_of_smul_eq` turns that into `σ ^ (f+1) = σ`, i.e. `σ ^ f = 1`.
-Requires `open scoped Pointwise` for `σ • Q`.
-
-**⚠ A DEFEQ TRAP THAT COSTS AN HOUR IF YOU MEET IT COLD.** In
-`pow_card_sub_mem` the `Field (𝓞 L ⧸ Q)` instance MUST be built as
-`(Finite.isField_of_domain _).toField`, NOT as mathlib's
-`Ideal.Quotient.field Q`. With the latter, `FiniteField.pow_card` is stated
-with `Field.toSemifield.toDivisionSemiring.toGroupWithZero.toMonoid` while the
-`^` produced by `map_pow` through `Ideal.Quotient.mk` carries
-`(Ideal.Quotient.semiring Q).toMonoid`, and the two are **not** defeq: `exact`
-fails at 2 000 000 heartbeats, and `convert … using n` peels
-`instHPow → NPow.toPow → …` forever until `whnf` times out.
-`IsField.toField` reuses the existing ring structure and the mismatch
-disappears. -/
-theorem apply_classGroupMk0_relNorm_eq_one [IsGalois K L]
-    (hunr : ∀ (Q : Ideal (𝓞 L)) (_ : Q.IsPrime), Q ≠ ⊥ →
-      Algebra.IsUnramifiedAt (𝓞 K) Q)
-    (φ : ClassGroup (𝓞 K) →* (L ≃ₐ[K] L))
-    (hφ : ∀ P : (Ideal (𝓞 K))⁰, (P : Ideal (𝓞 K)).IsPrime →
-      IsArithFrobOver K L P (φ (ClassGroup.mk0 P)))
-    (I : Ideal (𝓞 L)) (hI : I ≠ ⊥) (J : (Ideal (𝓞 K))⁰)
-    (hJ : (J : Ideal (𝓞 K)) = Ideal.relNorm (𝓞 K) I) :
-    φ (ClassGroup.mk0 J) = 1 :=
-  sorry
-
 /-- **THE ARTIN MAP AT MODULUS `1`, AS AN EXISTENTIAL: for `L/K` finite
 abelian, unramified at every finite prime and at every infinite place, there
 is a SURJECTIVE homomorphism `Cl(𝓞 K) →* Gal(L/K)` that kills the class of
-every relative norm `N_{L/K} I`** (cut 2026-07-28 out of
-`finrank_le_index_relNormClassSubgroup` below; **DECOMPOSED AND PROVEN
-2026-07-29** — the proof below is `choose`, three applications of
-`prod_eq_one_of_forall_isArithFrobOver` to lists of length `2` and `3`, and
-`MonoidHom.mk'`, and contains no arithmetic whatsoever).
-
-**THE CUT, 2026-07-29.** What was one monolithic leaf is now four, and only
-one of them is class field theory:
-
-* `exists_isPrime_classGroupMk0_eq` — every ideal class contains a prime
-  ideal. A statement about `K` alone; Chebotarev/Hecke.
-* `prod_eq_one_of_forall_isArithFrobOver` — **RECIPROCITY**, in product form:
-  a list of primes with principal product has trivial product of Frobenii.
-  **This is where the missing mathematics is.**
-* `exists_isArithFrobOver_of_aut` — **CHEBOTAREV**: every element of
-  `Gal(L/K)` is a Frobenius somewhere. Needs neither `habel` nor `hunr`.
-* `apply_classGroupMk0_relNorm_eq_one` — the norm clause. NOT class field
-  theory: ideal factorisation, `N 𝔔 = 𝔭^f`, and `Frob^f = 1`.
-
-Frobenius EXISTENCE is free from mathlib and is proven above as
-`exists_isArithFrobOver`; the cut is drawn exactly at the boundary where
-mathlib stops.
-
-**Why the cut is safe — the assembly, in one paragraph.**
-`exists_isPrime_classGroupMk0_eq` and `exists_isArithFrobOver` give, for each
-class `c`, a prime `P c` in that class and a Frobenius `A c` above it. Applying
-reciprocity to `[(P c, A c), (P d, A d), (P (cd)⁻¹, A (cd)⁻¹)]` and to
-`[(P (cd), A (cd)), (P (cd)⁻¹, A (cd)⁻¹)]` — both lists have trivial class
-product — and cancelling gives `A (cd) = A c · A d`, so `A` is a homomorphism.
-The same trick on `[(P', τ), (P (mk0 P')⁻¹, A (mk0 P')⁻¹)]` shows that ANY
-Frobenius `τ` above ANY prime `P'` equals `A (mk0 P')`: that single lemma
-yields surjectivity (from Chebotarev) and the Frobenius-compatibility
-hypothesis `hφ` of the norm leaf. No padding is needed — unlike the sibling
-cut in `Modularity/Interface.lean`, where the target group is a quotient
-`ker χ / N` and Lagrange has to be run by hand.
+every relative norm `N_{L/K} I`** (cut 2026-07-28; DECOMPOSED AND PROVEN
+2026-07-30 from `exists_classGroupHom_eq_frobAt` and `closure_frobAt_eq_top` in
+`Fermat/FLT/NumberField/ArtinSymbol.lean`, and from nothing else).
 
 Classically this is the Artin map of the everywhere-unramified abelian
 extension `L/K`: `𝔭 ↦ Frob_𝔭` on `I_K`, which descends to `Cl(𝓞 K)` because
 principal ideals lie in its kernel (Artin RECIPROCITY), is surjective by
 Chebotarev, and kills `N_{L/K} I_L` because `Frob_{N𝔓} = Frob_𝔭^{f(𝔓/𝔭)} = 1`.
-Only the first of those three is deep; the third is a two-line computation
-once the map exists, and is the reason the norm clause is cheap to add here.
+**Those three are now three separate obligations rather than one**, and only
+the first two are still open:
+
+* the descent to `Cl(𝓞 K)` is `NumberField.exists_classGroupHom_eq_frobAt`;
+* the surjectivity is `NumberField.closure_frobAt_eq_top`;
+* the norm clause is PROVEN here, out of
+  `NumberField.frobAt_pow_inertiaDeg` (`Frob_𝔭 ^ f = 1`, itself proven from
+  mathlib's uniqueness of the Frobenius at an unramified prime) and
+  `NumberField.mem_of_relNorm_of_forall_isMaximal` (a norm class is a product
+  of norm classes of primes).
+
+**The step performed here.** `exists_classGroupHom_eq_frobAt` supplies a `φ` with
+`φ [Q ∩ 𝓞 K] = frobAt K L Q`. For surjectivity, `φ.range` is a subgroup
+containing every `frobAt K L Q` — the prime below `Q` is nonzero by
+integrality, so it has a class to be hit — hence contains the subgroup they
+generate, which is `⊤` by `closure_frobAt_eq_top`. For the norm clause,
+`Ideal.relNorm_eq_pow_of_isMaximal` gives `N_{L/K} Q = (Q ∩ 𝓞 K) ^ f(Q|𝓞 K)`,
+so `φ` sends that class to `frobAt K L Q ^ f(Q|𝓞 K) = 1`; the reduction from
+a general nonzero ideal to the primes is the factorisation lemma above.
 
 **Why the conclusion is an `∃` and why that is safely PINNED.** The consumer
 below uses EXACTLY the two stated clauses and nothing else, and the
@@ -553,16 +215,16 @@ adversary who post-composes an automorphism of `Gal(L/K)`, or replaces `φ`
 by a different surjection with a larger kernel, still yields a true
 consumer — there is nothing to pin. Note that the true Artin map has kernel
 EXACTLY `relNormClassSubgroup K L`; only `≤` is asked for, because only `≤`
-is used, and asking for equality would make the leaf strictly harder for no
-gain.
+is used, and asking for equality would make the statement strictly harder
+for no gain.
 
 **Route.** Neukirch VI (6.9) and the sections preceding it; Childress
 ch. 4–5; Lang *ANT* ch. X; Cassels–Fröhlich ch. VII.
 
 **Relation to the sibling leaf — read this before starting.** This IS the
-reciprocity route, and the docstring that this leaf was cut out of said, in
-so many words, that the reciprocity route is "NOT independent of the sibling
-leaf `exists_artinIdealMap_of_unramifiedAbelianSubgroup` in
+reciprocity route, and the docstring that this statement was cut out of said,
+in so many words, that the reciprocity route is "NOT independent of the
+sibling leaf `exists_artinIdealMap_of_unramifiedAbelianSubgroup` in
 `Modularity/Interface.lean`". That remains true and the choice was made
 anyway, deliberately, on 2026-07-28: the allegedly independent route is the
 cohomological one, and it needs the idele class group and the Tate
@@ -594,38 +256,24 @@ bounds `[Cl_K : N_{L/K} Cl_L]` from ABOVE (the image index
 itself a theorem of class field theory. Anyone who closes that gap gets the
 whole file without reciprocity.
 
-*Assessed 2026-07-29, and the gap is worse than "not obvious".* Two natural
-repairs were tried and both fail, for the same structural reason.
-(i) *Tower induction on the degree.* With `K ⊆ M ⊆ L`, `M/K` cyclic of prime
-degree `p` and `L/M` abelian everywhere unramified, induction gives
-`[L : M] ≤ h_M` and `[M : K] = p ≤ h_K`, but `h_M` is unrelated to `h_K` — the
-naive product `p · h_M ≤ h_K` is simply false, and relating `h_M` to `h_K`
-along an unramified extension is again reciprocity.
-(ii) *Characters.* Every cyclic quotient of `G = Gal(L/K)` cuts out a cyclic
-everywhere-unramified subextension, so the cyclic case gives `m ∣ h_K` for the
-order `m` of every character of `G`. That bounds the EXPONENT of `G`, never its
-ORDER: `G = (ℤ/2)^10` over a `K` with `h_K = 2` is consistent with every
-character statement, and excluding it is precisely genus theory, i.e. class
-field theory again. What the cyclic case does deliver in Chevalley's form is
-`|Cl_M^{Gal}| = |(Cl_M)_{Gal}|` (true for any finite module over a cyclic
-group) — but identifying the `p`-quotients of `(Cl_M)_{Gal}` with unramified
-extensions is the correspondence itself. So route (2) closes the CYCLIC case
-and nothing more; the honest cheap deliverable it offers is a cyclic-only
-sibling of this leaf, not a replacement for it.
-
 **⚠ ALL THREE HYPOTHESES ARE LOAD-BEARING, and for this statement `habel` is
 load-bearing FORMALLY.** `Cl(𝓞 K)` is abelian, so it cannot surject onto a
-non-abelian group at all; without `habel` the leaf is false for every
+non-abelian group at all; without `habel` the statement is false for every
 everywhere-unramified extension with non-abelian Galois group (such exist —
 they are what a Golod–Shafarevich class field tower of length `≥ 2`
 produces). For the two ramification hypotheses see the consumer below;
 both counterexamples recorded there refute THIS statement as well, since in
-each of them `Cl(𝓞 K)` is trivial and `Gal(L/K)` has order `2`.
+each of them `Cl(𝓞 K)` is trivial and `Gal(L/K)` has order `2`. All three are
+passed straight through to `exists_classGroupHom_eq_frobAt`, whose own docstring
+records where each is used.
 
-**The check that would refute it**: a finite abelian extension of a number
-field `K`, unramified at every finite prime and at every infinite place, for
-which no surjection `Cl(𝓞 K) ↠ Gal(L/K)` kills the norm classes — for
-instance any such `L/K` with `[L : K] > h_K`. -/
+**Mathlib survey correction (2026-07-30).** The survey below, and the earlier
+version of this docstring, said the Artin map is absent from the pin. That is
+true of the map on IDEALS and false of its local input: mathlib's
+`Mathlib/RingTheory/Frobenius.lean` has `arithFrobAt`, the Frobenius ELEMENT,
+together with its uniqueness at an unramified prime and its conjugacy along a
+`Gal`-orbit — which is why the Frobenius layer of this cluster is now proven
+rather than assumed. Do not re-derive "there is no Frobenius here". -/
 theorem exists_surjective_classGroupHom_aut_of_unramified_abelian [IsGalois K L]
     [IsUnramifiedAtInfinitePlaces K L]
     (habel : ∀ a b : L ≃ₐ[K] L, a * b = b * a)
@@ -635,75 +283,36 @@ theorem exists_surjective_classGroupHom_aut_of_unramified_abelian [IsGalois K L]
       ∀ (I : Ideal (𝓞 L)) (J : (Ideal (𝓞 K))⁰), I ≠ ⊥ →
         (J : Ideal (𝓞 K)) = Ideal.relNorm (𝓞 K) I → φ (ClassGroup.mk0 J) = 1 := by
   classical
-  -- a prime in every ideal class, and a Frobenius above it
-  choose P hPprime hPclass using exists_isPrime_classGroupMk0_eq K
-  choose A hA using fun c : ClassGroup (𝓞 K) => exists_isArithFrobOver K L (P c) (hPprime c)
-  have hpack : ∀ c : ClassGroup (𝓞 K),
-      ((P c : Ideal (𝓞 K)).IsPrime ∧ IsArithFrobOver K L (P c) (A c)) :=
-    fun c => ⟨hPprime c, hA c⟩
-  -- `A` is multiplicative, from reciprocity applied to two short lists
-  have hmul : ∀ c d : ClassGroup (𝓞 K), A (c * d) = A c * A d := by
-    intro c d
-    have hl3 : ∀ x ∈ [(P c, A c), (P d, A d), (P (c * d)⁻¹, A (c * d)⁻¹)],
-        (x.1 : Ideal (𝓞 K)).IsPrime ∧ IsArithFrobOver K L x.1 x.2 := by
-      intro x hx
-      simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-      rcases hx with rfl | rfl | rfl <;> exact hpack _
-    have hc3 : (([(P c, A c), (P d, A d), (P (c * d)⁻¹, A (c * d)⁻¹)]).map
-        fun x => ClassGroup.mk0 x.1).prod = 1 := by
-      simp [hPclass]
-    have h3 := prod_eq_one_of_forall_isArithFrobOver K L habel hunr _ hl3 hc3
-    have hl2 : ∀ x ∈ [(P (c * d), A (c * d)), (P (c * d)⁻¹, A (c * d)⁻¹)],
-        (x.1 : Ideal (𝓞 K)).IsPrime ∧ IsArithFrobOver K L x.1 x.2 := by
-      intro x hx
-      simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-      rcases hx with rfl | rfl <;> exact hpack _
-    have hc2 : (([(P (c * d), A (c * d)), (P (c * d)⁻¹, A (c * d)⁻¹)]).map
-        fun x => ClassGroup.mk0 x.1).prod = 1 := by
-      simp [hPclass]
-    have h2 := prod_eq_one_of_forall_isArithFrobOver K L habel hunr _ hl2 hc2
-    simp only [List.map_cons, List.map_nil, List.prod_cons, List.prod_nil, mul_one,
-      ← mul_assoc] at h3 h2
-    exact mul_right_cancel (h2.trans h3.symm)
-  -- every Frobenius above every prime is the value of `A` on that prime's class
-  have hfrobeq : ∀ (P' : (Ideal (𝓞 K))⁰) (τ : L ≃ₐ[K] L), (P' : Ideal (𝓞 K)).IsPrime →
-      IsArithFrobOver K L P' τ → τ = A (ClassGroup.mk0 P') := by
-    intro P' τ hP' hτ
-    have hl2 : ∀ x ∈ [(P', τ), (P (ClassGroup.mk0 P')⁻¹, A (ClassGroup.mk0 P')⁻¹)],
-        (x.1 : Ideal (𝓞 K)).IsPrime ∧ IsArithFrobOver K L x.1 x.2 := by
-      intro x hx
-      simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-      rcases hx with rfl | rfl
-      · exact ⟨hP', hτ⟩
-      · exact hpack _
-    have hc2 : (([(P', τ), (P (ClassGroup.mk0 P')⁻¹, A (ClassGroup.mk0 P')⁻¹)]).map
-        fun x => ClassGroup.mk0 x.1).prod = 1 := by
-      simp [hPclass]
-    have h2 := prod_eq_one_of_forall_isArithFrobOver K L habel hunr _ hl2 hc2
-    have hl2' : ∀ x ∈ [(P (ClassGroup.mk0 P'), A (ClassGroup.mk0 P')),
-          (P (ClassGroup.mk0 P')⁻¹, A (ClassGroup.mk0 P')⁻¹)],
-        (x.1 : Ideal (𝓞 K)).IsPrime ∧ IsArithFrobOver K L x.1 x.2 := by
-      intro x hx
-      simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-      rcases hx with rfl | rfl <;> exact hpack _
-    have hc2' : (([(P (ClassGroup.mk0 P'), A (ClassGroup.mk0 P')),
-        (P (ClassGroup.mk0 P')⁻¹, A (ClassGroup.mk0 P')⁻¹)]).map
-        fun x => ClassGroup.mk0 x.1).prod = 1 := by
-      simp [hPclass]
-    have h2' := prod_eq_one_of_forall_isArithFrobOver K L habel hunr _ hl2' hc2'
-    simp only [List.map_cons, List.map_nil, List.prod_cons, List.prod_nil, mul_one] at h2 h2'
-    exact mul_right_cancel (h2.trans h2'.symm)
-  refine ⟨MonoidHom.mk' A hmul, fun g => ?_, fun I J hI hJ => ?_⟩
-  · -- surjectivity, from Chebotarev
-    obtain ⟨P', hP', hfrob⟩ := exists_isArithFrobOver_of_aut K L g
-    exact ⟨ClassGroup.mk0 P', (hfrobeq P' g hP' hfrob).symm⟩
-  · -- the norm clause
-    refine apply_classGroupMk0_relNorm_eq_one K L hunr (MonoidHom.mk' A hmul) ?_ I hI J hJ
-    intro P' hP'
-    obtain ⟨τ, hτ⟩ := exists_isArithFrobOver K L P' hP'
-    have hval : (MonoidHom.mk' A hmul) (ClassGroup.mk0 P') = τ := (hfrobeq P' τ hP' hτ).symm
-    rw [hval]
-    exact hτ
+  obtain ⟨φ, hfrob⟩ := exists_classGroupHom_eq_frobAt K L habel hunr
+  -- every maximal ideal of `𝓞 L` lies over a NONZERO prime of `𝓞 K`
+  have hunder : ∀ (Q : Ideal (𝓞 L)), Q.IsMaximal → Q.under (𝓞 K) ≠ ⊥ := by
+    intro Q hQ
+    exact Ideal.under_ne_bot (𝓞 K)
+      (Ideal.bot_lt_of_maximal Q (NumberField.RingOfIntegers.not_isField L)).ne'
+  refine ⟨φ, ?_, ?_⟩
+  · -- SURJECTIVITY: the range contains every Frobenius, and those generate `⊤`.
+    refine MonoidHom.range_eq_top.1 (top_le_iff.1 ?_)
+    rw [← closure_frobAt_eq_top K L]
+    refine (Subgroup.closure_le _).2 ?_
+    rintro σ ⟨Q, hQ, -, rfl⟩
+    exact ⟨ClassGroup.mk0 ⟨Q.under (𝓞 K), mem_nonZeroDivisors_of_ne_zero (hunder Q hQ)⟩,
+      hfrob Q hQ _ rfl⟩
+  · -- THE NORM CLAUSE: reduce to the primes, where `N_{L/K} Q = 𝔭 ^ f` and `Frob^f = 1`.
+    intro I J _ hJ
+    refine mem_of_relNorm_of_forall_isMaximal K L (H := φ.ker) ?_ I J hJ
+    intro Q J' hQ hJ'
+    haveI := hQ
+    haveI := hunr Q hQ.isPrime
+      (Ideal.bot_lt_of_maximal Q (NumberField.RingOfIntegers.not_isField L)).ne'
+    have hp : Ideal.relNorm (𝓞 K) Q = (Q.under (𝓞 K)) ^ Q.inertiaDeg (𝓞 K) :=
+      Ideal.relNorm_eq_pow_of_isMaximal Q (Q.under (𝓞 K))
+    set Jp : (Ideal (𝓞 K))⁰ :=
+      ⟨Q.under (𝓞 K), mem_nonZeroDivisors_of_ne_zero (hunder Q hQ)⟩ with hJpdef
+    have hJpow : J' = Jp ^ Q.inertiaDeg (𝓞 K) := by
+      refine Subtype.ext ?_
+      rw [hJ', hp, SubmonoidClass.coe_pow]
+    rw [MonoidHom.mem_ker, hJpow, map_pow, map_pow, hfrob Q hQ Jp rfl]
+    exact frobAt_pow_inertiaDeg K L Q
 
 /-- **THE SECOND INEQUALITY AT MODULUS `1`: for `L/K` finite abelian,
 unramified at every finite prime and at every infinite place,

@@ -253,10 +253,20 @@ bridge as the concrete next step for polarizations), so it is worth
 having for more than this leaf.
 
 The autoduality half of the cut lives next to its consumer in
-`ModularCurve/X0.lean`, as the two general-base leaves
-`IsRelPicZeroOf.exists_albaneseFactorisation` (autoduality and
-biduality) and `IsRelPicZeroOf.eq_of_aj_eq` (generation).  Those two are
-the whole of what autoduality still owes.
+`ModularCurve/X0.lean`, as two general-base leaves.  **Amended 2026-07-30:
+those are no longer `IsRelPicZeroOf.exists_albaneseFactorisation` and
+`IsRelPicZeroOf.eq_of_aj_eq` — both of THOSE are now PROVEN.**  They are
+`IsRelPicZeroOf.exists_flatSurj_ajListSum` (`Sym^d C ↠ Pic^d`, i.e.
+Riemann–Roch) and `IsRelPicZeroOf.listSum_map_eq_of_listSum_aj_eq`
+(Abel's theorem: `Σ c(yᵢ)` depends only on the class `Σ aj(yᵢ)`).  Those
+two are the whole of what autoduality still owes.
+
+Note that the phrase "autoduality and biduality" this paragraph used to
+carry was ALSO wrong about the mathematics, not merely about which names
+are open: the route actually taken needs no dual abelian scheme and no
+biduality at all.  It defines `u` fppf-locally by `Σ aj(yᵢ) ↦ Σ c(yᵢ)`
+and descends, and the descent is in the pin already
+(`Mathlib/AlgebraicGeometry/Sites/Fpqc.lean`).
 
 Amended 2026-07-27: the `Spec ℚ` node `exists_relPicZeroOf` is now
 PROVEN, as `exists_relPicZero strX hproper hsmooth hconn o` and nothing
@@ -274,6 +284,15 @@ set for `X0.lean`, not against its docstrings.  The two genuinely open
 leaves left in the autoduality half are still
 `IsRelPicZeroOf.exists_albaneseFactorisation` and
 `IsRelPicZeroOf.eq_of_aj_eq`.
+
+Amended 2026-07-30, and by the same method (the `declaration uses 'sorry'`
+set for `X0.lean`, 109 warnings, neither of these among them): the
+sentence immediately above is now STALE.  `IsRelPicZeroOf.eq_of_aj_eq` was
+proven earlier the same day and `IsRelPicZeroOf.exists_albaneseFactorisation`
+later on it; the two open leaves that replaced them are named in the
+"autoduality half" paragraph above.  It is left visible rather than deleted
+because it dates a claim that was true when written — which is exactly how
+this file's leaf lists go stale, and worth one example.
 -/
 module
 

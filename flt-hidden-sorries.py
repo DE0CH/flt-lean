@@ -35,7 +35,20 @@ import re
 import sys
 from pathlib import Path
 
-ROOT = Path("/home/chend/flt-lean")
+# The tree this script lives in — NOT a hardcoded path.  It used to be
+# `Path("/home/chend/flt-lean")`, so a worker running it inside its own worktree
+# silently scanned a DIFFERENT tree, and a RELATIVE argument resolved against main
+# instead of the checkout in front of you.  The script then reports main's frontier
+# while claiming to report yours, which is the worst shape of wrong answer.  Two
+# independent hits on 2026-07-30:
+#   * `flt-lean-188` was told its `Patching.lean` held 11 sorried declarations when
+#     the file in front of it held 9 — the two it had just closed were still open
+#     on the other tree;
+#   * `flt-lean-362` ran `flt-hidden-sorries.py
+#     Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean` and got 8 against the 6 the
+#     compiler had just warned about in that worktree.
+# So the root is derived from the script's own location and follows the worktree.
+ROOT = Path(__file__).resolve().parent
 
 HDR = re.compile(
     r"^(?:@\[[^\]]*\]\s*)?"
@@ -115,7 +128,15 @@ def main():
     targets = sys.argv[1:] or ["Fermat"]
     files = []
     for t in targets:
-        p = (ROOT / t) if not Path(t).is_absolute() else Path(t)
+        # A relative path resolves against the CURRENT directory when it names
+        # something there, and only then falls back to ROOT.  Resolving against
+        # ROOT unconditionally silently measured the MAIN repo whenever this was
+        # run from one of the ~/flt-lean-N worktrees, so an agent that had just
+        # closed a leaf saw its own work as absent -- the file it got back was
+        # main's copy, not the one it had edited.
+        p = Path(t)
+        if not p.is_absolute() and not p.exists():
+            p = ROOT / t
         files += sorted(p.rglob("*.lean")) if p.is_dir() else [p]
 
     total_decls = total_tokens = 0

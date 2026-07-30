@@ -5072,9 +5072,64 @@ FAITHFULNESS. Every hypothesis is load-bearing.
   all; it is the hypothesis of the classical theorem.
 
 NOT VACUOUS, checked at `F = ℚ`, `𝔣 = (4)`, `a = -7`: take `α = β = 1` and
-`w = (7)`, giving `(7) · (1) = (-7)`. Not a relocation of its consumer either:
-the consumer needs a GENERATOR with a prescribed congruence and sign, and
-producing one from this identity is the separate proven step below. -/
+`w = (7)`, giving `(7) · (1) = (-7)`.
+
+## EQUIVALENCE AUDIT (2026-07-30) — THIS LEAF AND ITS CONSUMER ARE THE SAME
+## THEOREM, SO THE `-α`/`-β` SPLIT IS AN IDENTITY AND NOT A CUT
+
+The paragraph above used to end "Not a relocation of its consumer either: the
+consumer needs a GENERATOR with a prescribed congruence and sign, and producing
+one from this identity is the separate proven step below." **That is wrong in the
+direction that matters.** The step below is a real derivation, but it is
+INVERTIBLE: `exists_prime_generator_sub_mem_of_sup_eq_top` implies this leaf
+back, under exactly the hypotheses both already carry. So the two statements are
+equivalent, and no content sits between them.
+
+*The converse, with its witness.* Given `c` and `w` from `-β` — so
+`Ideal.span {c} = w.asIdeal`, `c - a ∈ 𝔣`, and `0 < σ(c)·σ(a)` at every real
+`σ` — take `x := c` and `y := a`. Then `w.asIdeal * (y) = (c)·(a) = (a·x)`,
+`x - y = c - a ∈ 𝔣`, `y` is coprime to `𝔣` by `hcop`, and `σ(x)·σ(y) > 0`. Pick
+`z` with `z·a ≡ 1 (mod 𝔣)` (from `hcop`; take `z := 1` in the degenerate case
+`𝔣 = ⊤`, and note that otherwise `z·a ≢ 0`, so `z ≠ 0`) and set
+
+    α := z² · c · a,      β := (z · a)².
+
+Every clause holds, and each for a reason worth naming because it is what makes
+the two forms interchangeable:
+
+* `β ≠ 0` from `z ≠ 0` and `a ≠ 0` (`ha0`) in a domain;
+* `β - 1 ∈ 𝔣` because `β = (za)²` and `za ≡ 1`; `α - 1 ∈ 𝔣` because
+  `α = (zc)·(za)` and `zc ≡ za ≡ 1 (mod 𝔣)`, the first step being `c ≡ a`;
+* both TOTALLY POSITIVE **by squaring**: `σ(β) = σ(z)²σ(a)² > 0`, and
+  `σ(α) = σ(z)²·σ(c)σ(a) > 0` is exactly the sign-product clause of `-β`;
+* the ideal identity is the one above multiplied by `(z²y)`:
+  `w.asIdeal · (z²a²) = (a·z²·c·a)`.
+
+**THE GENERAL LESSON, and it is what closes the axis.** Neither the two
+`≡ 1 (mod 𝔣)` normalisations nor total positivity is a burden on a prover of
+this leaf, because both are FREE operations on a ray-class relation:
+
+* multiplying numerator and denominator by an inverse of the denominator mod `𝔣`
+  moves any `x/y` with `x ≡ y (mod 𝔣)` to a quotient of two elements each
+  `≡ 1 (mod 𝔣)`, and
+* multiplying both by the denominator (i.e. `x/y = xy/y²`) makes both totally
+  positive as soon as `x/y` is,
+
+and NEITHER changes the fractional ideal `(a)·(x/y)`, hence neither changes which
+prime is being exhibited. So the raw output of the classical theorem — a prime
+`𝔭` and a `γ ∈ Fˣ` with `γ ≻ 0`, `γ ≡ 1 (mod^× 𝔣)` and `𝔭 = (a)·(γ)` — already
+gives this statement, in three lines.
+
+*Consequence for the next round.* Do NOT restate this leaf a third time in an
+equivalent shape — in particular not in the tempting "`∃ x y`, `x ≡ y (mod 𝔣)`,
+`0 < σ(x)σ(y)`, `w·(y) = (a·x)`" form, which drops total positivity and the
+congruences-to-`1` and looks like a cut. It is the same theorem again, by the
+two bullets above. What remains after every such normalisation is DIRICHLET FOR
+A NARROW RAY CLASS and nothing else: the narrowness is the `γ ≻ 0` clause and is
+NOT removable (it is what the consumer spends to get the sign of `b`), and the
+ray class group, the ray class field and the Artin map for it all still have zero
+hits in the pin. The honest next step is to build `Cl_𝔪(F)` and its class field,
+not to re-cut this statement. -/
 theorem exists_heightOneSpectrum_mul_span_eq_span_of_sup_eq_top
     (F : Type u) [Field F] [NumberField F]
     (𝔣 : Ideal (NumberField.RingOfIntegers F)) (h𝔣 : 𝔣 ≠ ⊥)
@@ -7293,7 +7348,58 @@ What that buys, and it is the same trade `exists_padicCoefficientField` made for
 Carayol citation: the residual leaf no longer quantifies over families, so a prover works
 at ONE completion `F_w` with ONE lattice and never touches the adelic bookkeeping. The
 three missing theories listed above are unchanged — this shortens no literature input, and
-the frontier is one leaf in, one leaf out. -/
+the frontier is one leaf in, one leaf out.
+
+**The ROUTE NOTE below was written against this statement BEFORE the decomposition
+above, and it survives it unchanged — it is a route for the LOCAL mathematics, which
+is exactly what the residual leaf `eventually_exists_integralSplitting` still owes.
+Read it as addressed to that leaf.**
+
+## ROUTE NOTE (2026-07-30) — MAXIMAL ORDERS ARE AVOIDABLE HERE, AND SO IS
+## SKOLEM–NOETHER: OVER A COMPLETE DVR THE `M₂` CASE IS A LATTICE-STABILISER ARGUMENT
+
+The three items above are the shape of the argument as Eichler and Vignéras state it, and
+two of them are avoidable. **No notion of maximality and no conjugacy theorem is needed**;
+what is needed is the stabiliser of an `A`-stable lattice, which runs from the definition
+of an order. This is a route proposal, not verified Lean — but it is what should be
+attempted before `IsMaximalOrder` is defined, because it replaces a theorem by a
+construction.
+
+Fix a `w` at which `Λ_w` is an order and `disc(b)` is a unit — both hold at almost every
+`w`, for the reasons already recorded above. Put `V := F_w²` and
+`A := (e w)(Λ_w) ⊆ M₂(F_w) = End_{F_w}(V)` for the splitting `e w` handed over by
+`hsplit`.
+
+1. *`A` sits inside a conjugate of `M₂(𝒪_w)`, CONSTRUCTIVELY.* Take `L := 𝒪_w²` and put
+   `L' := A · L`, the `𝒪_w`-span of `{a • x : a ∈ A, x ∈ L}`. It is finitely generated
+   (`A` is a finitely generated `𝒪_w`-module and so is `L`), it spans `V` (it contains
+   `1 • L`), and it is `A`-stable because `A` is a ring — `A·(A·L) ⊆ (A·A)·L ⊆ A·L`. So
+   `L'` is a full lattice, hence FREE of rank `2`, `𝒪_w` being a DVR and `L'` finitely
+   generated and torsion-free. `A`-stability says exactly `A ⊆ End_{𝒪_w}(L')`, and an
+   `𝒪_w`-basis of `L'` identifies `End_{𝒪_w}(L')` with `M₂(𝒪_w)` inside
+   `End_{F_w}(V) = M₂(F_w)`. The identification is conjugation by the change-of-basis
+   matrix, which is VISIBLY an `F_w`-algebra automorphism — Skolem–Noether is not invoked,
+   it is only what would be needed to prove the converse.
+
+2. *The inclusion is an EQUALITY, by discriminants.* For an inclusion `Λ ⊆ Γ` of full
+   `𝒪_w`-lattices of the same rank, `disc Λ = [Γ : Λ]² · disc Γ`. Here `disc A = disc Λ_w`
+   up to a unit square, because `e w` is an `F_w`-algebra isomorphism and the reduced trace
+   form is intrinsic; that is `disc(b)`, a unit at this `w` by assumption. And
+   `disc M₂(𝒪_w)` is a unit — the Gram matrix of the reduced trace form on the matrix units
+   has determinant `±1`. So `[M₂(𝒪_w) : A]` is a unit, hence `1`, hence `A = M₂(𝒪_w)` in
+   those coordinates.
+
+Composing `e w` with that conjugation therefore carries `Λ_w` ONTO `M₂(𝒪_w)`, which is
+both directions of the `↔` in `IsAEIntegralSplitting` at once; at the finitely many
+remaining `w` take `hsplit`'s splitting unchanged, the conclusion being `∀ᶠ`.
+
+So what is genuinely owed is narrower than the list above: **(a)** the discriminant of a
+full `𝒪_w`-lattice in a quaternion `F_w`-algebra against the reduced trace form,
+**(b)** its multiplicativity in the index for an inclusion of full lattices, and **(c)** the
+two almost-everywhere facts (structure constants of `b` integral; `disc(b)` a unit), which
+are the two places the finiteness of the discriminant is actually spent. Items (a) and (b)
+are lattice statements over a DVR with no quaternion input beyond the trace form, which is
+a considerably smaller build than a theory of maximal orders. -/
 theorem exists_finset_ae_integral_split_of_forall_split (b : Module.Basis ι F D)
     (hsplit : ∀ w : HeightOneSpectrum (𝓞 F),
       Nonempty ((w.adicCompletion F) ⊗[F] D ≃ₐ[w.adicCompletion F]

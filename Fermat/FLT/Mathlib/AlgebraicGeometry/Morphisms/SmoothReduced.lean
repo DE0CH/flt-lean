@@ -40,6 +40,13 @@ its proof is present, and this file is now **sorry-free**.
 * `AlgebraicGeometry.GeometricallyReduced.of_smooth` — `Smooth f →
   GeometricallyReduced f` (proven from the previous item, since `Smooth` is
   stable under base change).
+* `Algebra.Smooth.isReduced_of_isDomain`, `RingHom.Smooth.isReduced_of_isDomain`
+  and `AlgebraicGeometry.isReduced_of_smooth_over_domain` — the same three
+  statements over a DOMAIN base rather than a field (added 2026-07-30 for
+  `MazurTorsion.lean`'s `eq_of_comp_open_x0JNeronModel`, whose base is
+  `Spec R` for `R : Subring ℚ`).  Each is proven from its field twin through
+  the generic fibre: `A` is flat over `R`, so `A ↪ Frac R ⊗_R A`, and the
+  target is smooth over the field `Frac R`.
 
 ## Why this file exists
 
@@ -202,6 +209,27 @@ theorem RingHom.Smooth.isReduced_of_isField {R S : Type u} [CommRing R] [CommRin
   haveI : Algebra.Smooth R S := hφ
   exact Algebra.Smooth.isReduced_of_isField hR
 
+open scoped TensorProduct in
+/-- **A smooth algebra over a DOMAIN is reduced** (PROVEN over
+`Algebra.Smooth.isReduced_of_isField`). -/
+theorem Algebra.Smooth.isReduced_of_isDomain (R : Type u) (A : Type v) [CommRing R]
+    [IsDomain R] [CommRing A] [Algebra R A] [Algebra.Smooth R A] : IsReduced A := by
+  haveI : IsReduced (FractionRing R ⊗[R] A) :=
+    Algebra.Smooth.isReduced_of_isField (Field.toIsField (FractionRing R))
+  exact isReduced_of_injective
+    (Algebra.TensorProduct.includeRight (R := R) (A := FractionRing R) (B := A))
+    (Algebra.TensorProduct.includeRight_injective
+      (IsFractionRing.injective R (FractionRing R)))
+
+/-- **A smooth ring homomorphism out of a domain has reduced target** — the `RingHom`
+restatement of `Algebra.Smooth.isReduced_of_isDomain`, which is the shape the
+scheme-theoretic `HasRingHomProperty` API produces. -/
+theorem RingHom.Smooth.isReduced_of_isDomain {R S : Type u} [CommRing R] [CommRing S]
+    [IsDomain R] {φ : R →+* S} (hφ : φ.Smooth) : IsReduced S := by
+  letI := φ.toAlgebra
+  haveI : Algebra.Smooth R S := hφ
+  exact Algebra.Smooth.isReduced_of_isDomain R S
+
 namespace AlgebraicGeometry
 
 /-- **A scheme smooth over a field is reduced.**
@@ -244,5 +272,47 @@ theorem GeometricallyReduced.of_smooth {X Y : Scheme.{u}} (f : X ⟶ Y) [Smooth 
     intro K _ y Z fst snd h
     haveI : Smooth snd := MorphismProperty.of_isPullback h ‹Smooth f›
     exact isReduced_of_smooth_over_field snd
+
+/-! ### The same statement over a DOMAIN base, not a field
+
+`Fermat/FLT/FreyCurve/MazurTorsion.lean`'s `eq_of_comp_open_x0JNeronModel` needs
+`IsReduced X` for `X` smooth over `Spec R` with `R : Subring ℚ`, which is a domain and not
+a field.  Its `Spec ℚ`-base twin in `X0.lean` gets that from
+`isReduced_of_smooth_over_field` above; this subsection supplies the domain-base form, and
+it costs three lines because the field case does all the work.
+
+**THE MECHANISM.**  `A` smooth over `R` is FLAT over `R`, and `R` is a domain, so the unit
+`A ↪ Frac R ⊗_R A` is injective (`Algebra.TensorProduct.includeRight_injective`).  The
+target is smooth over the FIELD `Frac R` by base change, hence reduced by the field lemma
+above; and a ring that injects into a reduced ring is reduced.  No regular local rings, no
+Cohen structure theorem, no dimension theory — see the audit on
+`Algebra.IsStandardSmooth.isReduced_of_field` for why those routes are dead ends at this
+pin, and note that the reduction here does not reopen any of them.
+
+**IT IS NOT TRUE FOR AN ARBITRARY BASE, and the domain hypothesis is exactly right.**  The
+polynomial algebra `(R ⧸ (x²))[t]` is smooth over the non-reduced `R ⧸ (x²)` and is not
+reduced, so "smooth ⟹ reduced" fails outright over a non-reduced base.  What the argument
+really uses is a reduced base with reduced total generic fibre; `IsDomain` is the case the
+consumers hold and is stated because it is what makes `Frac R` available in one step. -/
+
+/-- **A scheme smooth over the spectrum of a DOMAIN is reduced** (PROVEN) — the domain-base
+twin of `isReduced_of_smooth_over_field`, by the same affine cover.
+
+The one difference is that `Γ(Spec R, ⊤)` is transported to `R` by `ΓSpecIso` as a DOMAIN
+rather than as a field, which is `Function.Injective.isDomain` applied to that isomorphism
+rather than `MulEquiv.isField`. -/
+theorem isReduced_of_smooth_over_domain {X : Scheme.{u}} {R : Type u} [CommRing R] [IsDomain R]
+    (f : X ⟶ Spec (CommRingCat.of R)) [Smooth f] : IsReduced X := by
+  haveI hR : IsDomain Γ(Spec (CommRingCat.of R), ⊤) :=
+    Function.Injective.isDomain
+      (Scheme.ΓSpecIso (CommRingCat.of R)).commRingCatIsoToRingEquiv.toRingHom
+      (Scheme.ΓSpecIso (CommRingCat.of R)).commRingCatIsoToRingEquiv.injective
+  haveI : ∀ i, IsReduced (X.affineCover.X i) := by
+    intro i
+    haveI : _root_.IsReduced Γ(X.affineCover.X i, ⊤) :=
+      RingHom.Smooth.isReduced_of_isDomain
+        (HasRingHomProperty.appTop (@Smooth) (X.affineCover.f i ≫ f) inferInstance)
+    exact isReduced_of_isAffine_isReduced _
+  exact IsReduced.of_openCover _ X.affineCover
 
 end AlgebraicGeometry

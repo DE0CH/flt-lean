@@ -466,6 +466,114 @@ theorem isUnit_natCast_integralClosure_of_notMem_asIdeal
     (algebraMap 𝒪ᵥ Oᵥ)
   simpa using this
 
+set_option synthInstance.maxHeartbeats 1000000 in
+/-- **… and an integer LYING IN `v` is a NON-unit of `Oᵥ`** (PROVEN
+2026-07-30) — the converse of the two lemmas above, and the only place the
+residue characteristic is needed as an element of `Oᵥ` rather than as a side
+condition on `n`.
+
+`Ideal.LiesOver.over` says `𝔪 𝒪ᵥ` is the contraction of `𝔪 Oᵥ` along
+`𝒪ᵥ → Oᵥ`, so a non-unit downstairs stays a non-unit upstairs. That is not
+formal: it is integrality of `Oᵥ` over `𝒪ᵥ`, and it fails for a general ring
+extension (invert `q`). -/
+theorem natCast_mem_maximalIdeal_integralClosure_of_mem_asIdeal
+    {q : ℕ} (hq : (q : 𝓞 K) ∈ v.asIdeal) :
+    ((q : ℕ) : Oᵥ) ∈ IsLocalRing.maximalIdeal Oᵥ := by
+  have hnu : ¬ IsUnit ((q : ℕ) : 𝒪ᵥ) := by
+    intro hu
+    rw [IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers.isUnit_iff_valued_eq_one] at hu
+    have h1 : (((q : ℕ) : 𝒪ᵥ) : Kᵥ) = algebraMap (𝓞 K) Kᵥ (q : 𝓞 K) := by
+      push_cast
+      rfl
+    have h2 : Valued.v (algebraMap (𝓞 K) Kᵥ (q : 𝓞 K)) =
+        v.valuation K (algebraMap (𝓞 K) K (q : 𝓞 K)) :=
+      IsDedekindDomain.HeightOneSpectrum.valuedAdicCompletion_eq_valuation v _
+    rw [h1, h2] at hu
+    exact (IsDedekindDomain.HeightOneSpectrum.valuation_eq_one_iff_notMem v).mp hu hq
+  have hmem : ((q : ℕ) : 𝒪ᵥ) ∈ IsLocalRing.maximalIdeal 𝒪ᵥ :=
+    (IsLocalRing.mem_maximalIdeal _).mpr hnu
+  have hlies : IsLocalRing.maximalIdeal 𝒪ᵥ =
+      Ideal.comap (algebraMap 𝒪ᵥ Oᵥ) (IsLocalRing.maximalIdeal Oᵥ) :=
+    Ideal.LiesOver.over
+  rw [hlies, Ideal.mem_comap] at hmem
+  simpa using hmem
+
+/-- **FRESHMAN'S DREAM MODULO `𝔪`**: if `B ^ q ≡ 1` for `q` the residue
+characteristic, then `B ≡ 1` (PROVEN 2026-07-30).
+
+`(B − 1) ^ q = (B ^ q − 1) − q · (B − 1) · r` for some `r`
+(`exists_add_pow_prime_eq`, which needs no `CharP` hypothesis), and both
+summands on the right lie in `𝔪` — the second because `q` does, which is
+`natCast_mem_maximalIdeal_integralClosure_of_mem_asIdeal`. `𝔪` is prime, so
+`B − 1 ∈ 𝔪`.
+
+This is the statement that has NO analogue for `q` prime to the residue
+characteristic: there `X ^ q − 1` is separable and its roots stay distinct
+modulo `𝔪` (that is
+`eq_one_of_pow_eq_one_of_sub_one_mem_maximalIdeal`, which runs the other
+way). -/
+theorem sub_one_mem_maximalIdeal_of_pow_prime_sub_one_mem
+    {q : ℕ} (hqp : q.Prime) (hqv : (q : 𝓞 K) ∈ v.asIdeal) {B : Oᵥ}
+    (hB : B ^ q - 1 ∈ IsLocalRing.maximalIdeal Oᵥ) :
+    B - 1 ∈ IsLocalRing.maximalIdeal Oᵥ := by
+  obtain ⟨r, hr⟩ := exists_add_pow_prime_eq hqp (B - 1) (1 : Oᵥ)
+  have hkey : (B - 1) ^ q = (B ^ q - 1) - (q : Oᵥ) * (B - 1) * 1 * r := by
+    have h0 : (B - 1) + (1 : Oᵥ) = B := by ring
+    rw [h0, one_pow] at hr
+    linear_combination -hr
+  have hmem : (B - 1) ^ q ∈ IsLocalRing.maximalIdeal Oᵥ := by
+    rw [hkey]
+    refine Ideal.sub_mem _ hB (Ideal.mul_mem_right _ _ (Ideal.mul_mem_right _ _
+      (Ideal.mul_mem_right _ _ ?_)))
+    exact natCast_mem_maximalIdeal_integralClosure_of_mem_asIdeal v hqv
+  exact ((IsLocalRing.maximalIdeal.isMaximal Oᵥ).isPrime).mem_of_pow_mem q hmem
+
+/-- **A ROOT OF UNITY OF `p`-POWER ORDER IS TRIVIAL MODULO `𝔪`** (PROVEN
+2026-07-30), in the form the tame-character computation needs it: `M` is
+handed over not as a power of the residue characteristic but as a number
+COPRIME TO EVERY integer prime to `v`, which is what
+`coprime_card_quotient_wildInertiaGroup` actually delivers and which says
+the same thing without ever naming `p`.
+
+Strong induction on `M` through `Nat.minFac`: the least prime factor `q` of
+`M > 1` must lie in `v` (otherwise `M` would be coprime to it), so
+`sub_one_mem_maximalIdeal_of_pow_prime_sub_one_mem` peels it off `A ^ M =
+(A ^ m) ^ q`, and the induction hypothesis at `m < M` finishes. -/
+theorem sub_one_mem_maximalIdeal_of_pow_sub_one_mem :
+    ∀ M : ℕ, M ≠ 0 → (∀ n : ℕ, (n : 𝓞 K) ∉ v.asIdeal → Nat.Coprime M n) →
+      ∀ A : Oᵥ, A ^ M - 1 ∈ IsLocalRing.maximalIdeal Oᵥ →
+        A - 1 ∈ IsLocalRing.maximalIdeal Oᵥ := by
+  intro M
+  induction M using Nat.strong_induction_on with
+  | _ M ih =>
+    intro hM0 hcop A hA
+    rcases eq_or_lt_of_le (Nat.one_le_iff_ne_zero.mpr hM0) with h1 | h1
+    · rw [← h1, pow_one] at hA
+      exact hA
+    · have hqp : (M.minFac).Prime := Nat.minFac_prime (by omega)
+      obtain ⟨m, hm⟩ : M.minFac ∣ M := Nat.minFac_dvd M
+      have hm0 : m ≠ 0 := by
+        rintro rfl
+        rw [Nat.mul_zero] at hm
+        exact hM0 hm
+      have hqv : ((M.minFac : ℕ) : 𝓞 K) ∈ v.asIdeal := by
+        by_contra hqn
+        have hcp := hcop _ hqn
+        have hd : M.minFac ∣ Nat.gcd M M.minFac := Nat.dvd_gcd (Nat.minFac_dvd M) dvd_rfl
+        rw [hcp] at hd
+        have := Nat.le_of_dvd one_pos hd
+        have := hqp.one_lt
+        omega
+      have hmlt : m < M := by
+        rw [hm]
+        exact (Nat.lt_mul_iff_one_lt_left (Nat.pos_of_ne_zero hm0)).mpr hqp.one_lt
+      have hpow : (A ^ m) ^ M.minFac = A ^ M := by
+        rw [← pow_mul, mul_comm m M.minFac, ← hm]
+      have hstep : A ^ m - 1 ∈ IsLocalRing.maximalIdeal Oᵥ :=
+        sub_one_mem_maximalIdeal_of_pow_prime_sub_one_mem v hqp hqv (by rw [hpow]; exact hA)
+      refine ih m hmlt hm0 (fun n hn => ?_) A hstep
+      exact Nat.Coprime.coprime_dvd_left ⟨M.minFac, by rw [mul_comm]; exact hm⟩ (hcop n hn)
+
 /-- The Galois action on the integral closure commutes with powers — the
 action is by ring automorphisms. -/
 theorem smul_pow_integralClosure (σ : Γᵥ) (x : Oᵥ) (m : ℕ) : σ • (x ^ m) = (σ • x) ^ m :=
@@ -3891,6 +3999,31 @@ lemma phi_psiNat_pred_lt {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)}
   have h2 := D.psiNat_pos hu
   omega
 
+/-- `φ(1)` is the reciprocal of the TAME ramification index `[G₀ : G₁]` — the
+first step of `φ`, the empty sum having been added to nothing. -/
+lemma phi_one {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)}
+    (D : LowerRamificationData v) :
+    D.phi 1 = 1 / (((D.gp 1).relIndex (D.gp 0) : ℕ) : ℚ) := by
+  rw [show (1 : ℕ) = 0 + 1 from rfl, D.phi_succ 0, D.phi_zero, zero_add]
+
+/-- **`φ(1)` BOUNDS EVERY STEP OF `φ`.** The steps are `1/[G₀ : G_m]` and the
+`G_m` decrease, so their relative indices grow — divisibly, in fact
+(`Subgroup.relIndex_dvd_of_le_left`). This is what makes the FIRST step the
+only one a density argument has to control. -/
+lemma step_le_phi_one {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)}
+    (D : LowerRamificationData v) (m : ℕ) :
+    1 / (((D.gp (m + 1)).relIndex (D.gp 0) : ℕ) : ℚ) ≤ D.phi 1 := by
+  rw [D.phi_one]
+  have hdvd : (D.gp 1).relIndex (D.gp 0) ∣ (D.gp (m + 1)).relIndex (D.gp 0) :=
+    Subgroup.relIndex_dvd_of_le_left (D.gp 0) (D.gp_antitone (Nat.le_add_left 1 m))
+  have hpos : 0 < (D.gp (m + 1)).relIndex (D.gp 0) :=
+    Nat.pos_of_ne_zero (D.relIndex_ne_zero (m + 1))
+  have hle : (D.gp 1).relIndex (D.gp 0) ≤ (D.gp (m + 1)).relIndex (D.gp 0) :=
+    Nat.le_of_dvd hpos hdvd
+  have h1 : (0 : ℚ) < (((D.gp 1).relIndex (D.gp 0) : ℕ) : ℚ) := by
+    exact_mod_cast Nat.pos_of_ne_zero (D.relIndex_ne_zero 1)
+  exact one_div_le_one_div_of_le h1 (by exact_mod_cast hle)
+
 end LowerRamificationData
 
 /-- **THE UPPER-NUMBERING FILTRATION, CONSTRUCTED AS AN INVERSE LIMIT**
@@ -3923,6 +4056,344 @@ lemma upperRamificationFiltration_of_not_pos
     upperRamificationFiltration v u = localInertiaGroup v :=
   if_neg hu
 
+/-! ### Krull separation in `Oᵥ`, and the passage from integers to the fixed field
+
+Two facts about the big integral closure `Oᵥ = 𝒪_{Kᵥᵃˡᵍ}`, proved 2026-07-30
+as the machinery of `LowerRamificationData.iInf_gp_eq_lvl` below.
+
+* `eq_zero_of_forall_pow_dvd_integralClosure` — **`⋂ₘ (u)ᵐ = 0` for a NON-UNIT
+  `u`.** `Oᵥ` is a valuation ring of rank one but NOT noetherian, and its
+  maximal ideal is idempotent (`𝔪² = 𝔪`, since the value group is divisible),
+  so the Krull intersection theorem does not apply and the statement is FALSE
+  for `𝔪` in place of a principal `(u)`. What makes the principal case true is
+  the rank: `spectralNorm` is a genuine `ℝ`-valued multiplicative absolute
+  value, `‖u‖ < 1` for a non-unit, and `‖y‖ ≤ ‖u‖ᵐ` for every `m` forces
+  `‖y‖ = 0`. The two spectral-norm inputs are the dichotomy
+  `‖z‖ ≤ 1 ↔ z` integral: the `←` half is `isIntegral_of_spectralNorm_le_one`
+  (`AbsoluteGaloisGroup.lean`), the `→` half
+  `spectralNorm_le_one_of_isIntegral_algebraicClosure` here.
+
+* `smul_eq_self_of_forall_smul_integralClosure_eq_self` — an automorphism that
+  fixes every `H`-fixed INTEGER of `Kᵥᵃˡᵍ` fixes every `H`-fixed ELEMENT. This
+  is what converts `mem_gp` (a statement about `𝒪_L`) into a statement about
+  the fixed FIELD, where the infinite Galois correspondence applies. No
+  denominator-clearing is needed: `Oᵥ` is a valuation ring, so `y` or `y⁻¹` is
+  already an integer, and the `H`-fixedness passes to the inverse.
+-/
+
+section KrullSeparation
+
+variable (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
+
+local notation "Kᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletion K v
+local notation "𝒪ᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v
+local notation "Kᵥᵃˡᵍ" => AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+local notation "Oᵥ" => IntegralClosure
+  (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+  (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+local notation "Γᵥ" => Field.absoluteGaloisGroup
+  (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+
+/-- The spectral norm on `Kᵥᵃˡᵍ` is MULTIPLICATIVE — `Kᵥ` is complete and
+nonarchimedean, so `spectralAlgNorm` is a `MulRingNorm`. -/
+theorem spectralNorm_mul_algebraicClosure (x y : Kᵥᵃˡᵍ) :
+    spectralNorm Kᵥ Kᵥᵃˡᵍ (x * y) = spectralNorm Kᵥ Kᵥᵃˡᵍ x * spectralNorm Kᵥ Kᵥᵃˡᵍ y := by
+  simpa [spectralAlgNorm_def] using spectralAlgNorm_mul (K := Kᵥ) (L := Kᵥᵃˡᵍ) x y
+
+/-- `‖1‖ = 1` for the spectral norm. -/
+theorem spectralNorm_one_algebraicClosure : spectralNorm Kᵥ Kᵥᵃˡᵍ 1 = 1 := by
+  simpa [spectralAlgNorm_def] using spectralAlgNorm_one (K := Kᵥ) (L := Kᵥᵃˡᵍ)
+
+/-- The spectral norm on `Kᵥᵃˡᵍ` commutes with powers. -/
+theorem spectralNorm_pow_algebraicClosure (x : Kᵥᵃˡᵍ) (m : ℕ) :
+    spectralNorm Kᵥ Kᵥᵃˡᵍ (x ^ m) = (spectralNorm Kᵥ Kᵥᵃˡᵍ x) ^ m := by
+  induction m with
+  | zero => simpa using spectralNorm_one_algebraicClosure v
+  | succ n ih => rw [pow_succ, spectralNorm_mul_algebraicClosure v, ih, ← pow_succ]
+
+/-- A product in `Oᵥ` is computed in `Kᵥᵃˡᵍ` (the ring structure is the
+subalgebra's, so this is `rfl` — but the `IntegralClosure` `def` barrier stops
+`push_cast` from finding it). -/
+theorem coe_mul_integralClosure (a b : Oᵥ) : ((a * b).1 : Kᵥᵃˡᵍ) = a.1 * b.1 := rfl
+
+/-- … and likewise a power. -/
+theorem coe_pow_integralClosure (a : Oᵥ) (m : ℕ) : ((a ^ m).1 : Kᵥᵃˡᵍ) = (a.1) ^ m := by
+  induction m with
+  | zero => rfl
+  | succ n ih => rw [pow_succ, coe_mul_integralClosure, ih, ← pow_succ]
+
+/-- **An element integral over `𝒪ᵥ` has spectral norm at most one** — the
+converse of `isIntegral_of_spectralNorm_le_one`. `𝒪ᵥ` is a DVR, hence
+integrally closed with fraction field `Kᵥ`, so `minpoly Kᵥ y` is the image of
+`minpoly 𝒪ᵥ y` and all its coefficients have norm `≤ 1`; then
+`spectralValue_le_one_iff`. -/
+theorem spectralNorm_le_one_of_isIntegral_algebraicClosure {y : Kᵥᵃˡᵍ}
+    (hy : IsIntegral 𝒪ᵥ y) : spectralNorm Kᵥ Kᵥᵃˡᵍ y ≤ 1 := by
+  have hyK : IsIntegral Kᵥ y := hy.tower_top
+  have hmonic : (minpoly Kᵥ y).Monic := minpoly.monic hyK
+  show spectralValue (minpoly Kᵥ y) ≤ 1
+  rw [spectralValue_le_one_iff hmonic]
+  intro n
+  rw [minpoly.isIntegrallyClosed_eq_field_fractions' Kᵥ hy, Polynomial.coeff_map,
+    Valued.toNormedField.norm_le_one_iff]
+  exact ((minpoly 𝒪ᵥ y).coeff n).2
+
+/-- **A NON-UNIT of `Oᵥ` has spectral norm STRICTLY below one.** If the norm
+were `1` then the inverse would have norm `1 ≤ 1`, hence be integral, hence
+invert the element inside `Oᵥ`. -/
+theorem spectralNorm_lt_one_of_not_isUnit_integralClosure {u : Oᵥ} (hu : ¬ IsUnit u) :
+    spectralNorm Kᵥ Kᵥᵃˡᵍ (u.1 : Kᵥᵃˡᵍ) < 1 := by
+  rcases lt_or_eq_of_le
+    (spectralNorm_le_one_of_isIntegral_algebraicClosure v (y := u.1) u.2) with h | h
+  · exact h
+  · exfalso
+    have hu0 : (u.1 : Kᵥᵃˡᵍ) ≠ 0 := by
+      intro h0
+      rw [h0, spectralNorm_zero] at h
+      exact zero_ne_one h
+    have hinv : spectralNorm Kᵥ Kᵥᵃˡᵍ (u.1)⁻¹ ≤ 1 := by
+      rw [spectralNorm_inv, h, inv_one]
+    have hint : IsIntegral 𝒪ᵥ (u.1)⁻¹ := isIntegral_of_spectralNorm_le_one hinv
+    refine hu (isUnit_iff_exists_inv.mpr ⟨⟨(u.1)⁻¹, hint⟩, ?_⟩)
+    exact Subtype.ext (by rw [coe_mul_integralClosure]; exact mul_inv_cancel₀ hu0)
+
+/-- **`⋂ₘ (u)ᵐ = 0` IN `Oᵥ` FOR A NON-UNIT `u`**: an element divisible by every
+power of a non-unit is zero. See the section docstring for why the Krull
+intersection theorem does not apply and the rank-one norm is what does. -/
+theorem eq_zero_of_forall_pow_dvd_integralClosure {u y : Oᵥ} (hu : ¬ IsUnit u)
+    (h : ∀ m : ℕ, u ^ m ∣ y) : y = 0 := by
+  by_contra hy0
+  have hyne : (y.1 : Kᵥᵃˡᵍ) ≠ 0 := fun h0 => hy0 (Subtype.ext h0)
+  have hNy : 0 < spectralNorm Kᵥ Kᵥᵃˡᵍ y.1 :=
+    spectralNorm_zero_lt hyne (Algebra.IsAlgebraic.isAlgebraic _)
+  have hNu : spectralNorm Kᵥ Kᵥᵃˡᵍ u.1 < 1 :=
+    spectralNorm_lt_one_of_not_isUnit_integralClosure v hu
+  have key : ∀ m : ℕ, spectralNorm Kᵥ Kᵥᵃˡᵍ y.1 ≤ (spectralNorm Kᵥ Kᵥᵃˡᵍ u.1) ^ m := by
+    intro m
+    obtain ⟨z, hz⟩ := h m
+    have hz' : (y.1 : Kᵥᵃˡᵍ) = (u.1) ^ m * z.1 := by
+      rw [hz, coe_mul_integralClosure, coe_pow_integralClosure]
+    rw [hz', spectralNorm_mul_algebraicClosure v, spectralNorm_pow_algebraicClosure v]
+    calc (spectralNorm Kᵥ Kᵥᵃˡᵍ u.1) ^ m * spectralNorm Kᵥ Kᵥᵃˡᵍ z.1
+        ≤ (spectralNorm Kᵥ Kᵥᵃˡᵍ u.1) ^ m * 1 :=
+          mul_le_mul_of_nonneg_left
+            (spectralNorm_le_one_of_isIntegral_algebraicClosure v z.2)
+            (pow_nonneg (spectralNorm_nonneg _) m)
+      _ = (spectralNorm Kᵥ Kᵥᵃˡᵍ u.1) ^ m := mul_one _
+  obtain ⟨m, hm⟩ := exists_pow_lt_of_lt_one hNy hNu
+  exact absurd (key m) (not_le.mpr hm)
+
+/-- **FROM THE `H`-FIXED INTEGERS TO THE `H`-FIXED FIELD.** If `σ` fixes every
+`H`-fixed element of `Oᵥ`, it fixes every `H`-fixed element of `Kᵥᵃˡᵍ`. `Oᵥ` is
+a valuation ring (`isIntegral_or_isIntegral_inv_algebraicClosure`), so `y` or
+`y⁻¹` is an integer, and `H`-fixedness transports along `y ↦ y⁻¹`. -/
+theorem smul_eq_self_of_forall_smul_integralClosure_eq_self {H : Subgroup Γᵥ} {σ : Γᵥ}
+    (hA : ∀ x : Oᵥ, (∀ τ ∈ H, τ • x = x) → σ • x = x)
+    {y : Kᵥᵃˡᵍ} (hy : ∀ τ ∈ H, τ • y = y) : σ • y = y := by
+  have main : ∀ z : Kᵥᵃˡᵍ, IsIntegral 𝒪ᵥ z → (∀ τ ∈ H, τ • z = z) → σ • z = z := by
+    intro z hz hzfix
+    have hx := hA ⟨z, hz⟩ (fun τ hτ => Subtype.ext (by
+      rw [IntegralClosure.coe_smul]; exact hzfix τ hτ))
+    have h2 := congrArg (fun t : Oᵥ => (t.1 : Kᵥᵃˡᵍ)) hx
+    rw [IntegralClosure.coe_smul] at h2
+    exact h2
+  rcases isIntegral_or_isIntegral_inv_algebraicClosure v y with hy' | hy'
+  · exact main y hy' hy
+  · by_cases hy0 : y = 0
+    · rw [hy0, smul_zero]
+    · have hinv : ∀ τ ∈ H, τ • y⁻¹ = y⁻¹ := by
+        intro τ hτ
+        rw [show τ • y⁻¹ = (τ • y)⁻¹ from map_inv₀ (MulSemiringAction.toRingHom _ _ τ) y, hy τ hτ]
+      have hfix := main y⁻¹ hy' hinv
+      have h3 : (σ • y)⁻¹ = y⁻¹ := by
+        rw [← hfix]; exact (map_inv₀ (MulSemiringAction.toRingHom _ _ σ) y).symm
+      exact inv_injective h3
+
+end KrullSeparation
+
+/-! ### THE FINITE LEVELS ARE INHABITED — the sanity check the section asked for
+
+The `RamificationFiltration` docstring calls "constructing one datum (any wildly
+ramified finite Galois `L/Kᵥ`)" **the cheapest possible sanity check on the whole
+section**, and the `exists_lowerRamificationData_phi_mem_Ioc` docstring lists it
+under WHAT MUST BE BUILT FIRST, adding "whoever builds it should build it once
+and reuse it". This block is that construction (2026-07-30), and it is stronger
+than the bare `Nonempty`: it produces a datum at EVERY prescribed open normal
+level, which is exactly what `iInf_lvl_eq_bot` needs.
+
+Given an open normal `U ⊴ Γ Kᵥ`, the level is `L = (Kᵥᵃˡᵍ)^U`, finite over `Kᵥ`
+by `InfiniteGalois.isOpen_iff_finite`, and `𝒪_L = IntegralClosure 𝒪ᵥ L` is a DVR
+(`isDiscreteValuationRing_integralClosure`, `LocalInertiaFixedField.lean`). The
+uniformizer is any irreducible `ϖ` of `𝒪_L`, pushed into `Oᵥ` along
+`integralClosureInclusion`. Everything then turns on one dictionary, proved here
+as the two steps `hK2`/`hK3` of the construction:
+
+  `ι` maps `𝒪_L` ONTO the `U`-fixed elements of `Oᵥ`, injectively.
+
+`hK3` (surjectivity onto the fixed part) is the Galois correspondence in the
+easy direction — a `U`-fixed element of `Kᵥᵃˡᵍ` lies in `fixedField U` BY
+DEFINITION, and it stays integral — and it is what turns `unif_spec` into the
+DVR fact `𝔪_L = (ϖ)`, and `unif_not_isUnit` into `¬ IsUnit ϖ`.
+
+`gpOfLevel` is the filtration itself, as the elementwise condition of `mem_gp`
+read as a set. That it is a SUBGROUP is not decoration and not free:
+
+* `mul_mem` needs `unif ∣ σ • unif`, which is NOT an assumption — it is the
+  membership condition of `σ` applied at `x := unif` itself, legitimate because
+  `unif` is `U`-fixed. Without it `σ • (unif ^ (i+1) * w)` need not be divisible
+  by `unif ^ (i+1)` at all, since `σ` moves the uniformizer.
+* `inv_mem` needs `U` NORMAL, to know that `σ⁻¹ • x` is again `U`-fixed and so
+  is a legal test element. This is the same normality that `lvl_normal` records,
+  used at the only place it is mathematically indispensable.
+
+`lvl_relIndex_ne_zero` is then `U` open in the COMPACT `Γ Kᵥ`
+(`Subgroup.quotient_finite_of_isOpen`) plus `relIndex ∣ index`.
+-/
+
+section FiniteLevelInhabitation
+
+variable (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
+
+local notation "Kᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletion K v
+local notation "𝒪ᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v
+local notation "Kᵥᵃˡᵍ" => AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+local notation "Oᵥ" => IntegralClosure
+  (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+  (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+local notation "Γᵥ" => Field.absoluteGaloisGroup
+  (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+
+/-- The candidate `i`-th lower-numbering group of the level `U` with respect to
+a uniformizer `unif`: the elementwise condition of `LowerRamificationData.mem_gp`,
+read as a set. -/
+def LowerRamificationData.gpSetOfLevel (U : Subgroup Γᵥ) (unif : Oᵥ) (i : ℕ) : Set Γᵥ :=
+  {σ | ∀ x : Oᵥ, (∀ τ ∈ U, τ • x = x) → unif ^ (i + 1) ∣ σ • x - x}
+
+/-- `gpSetOfLevel` is a SUBGROUP. See the section docstring for why neither
+closure proof is formal: `mul_mem` runs on `unif ∣ σ • unif` (the membership
+condition of `σ` at `x := unif`), and `inv_mem` on normality of `U`. -/
+def LowerRamificationData.gpOfLevel (U : Subgroup Γᵥ) (hUn : U.Normal) (unif : Oᵥ)
+    (hfix : ∀ τ ∈ U, τ • unif = unif) (i : ℕ) : Subgroup Γᵥ where
+  carrier := LowerRamificationData.gpSetOfLevel v U unif i
+  one_mem' := by
+    intro x _
+    rw [one_smul, sub_self]
+    exact dvd_zero _
+  mul_mem' := by
+    intro σ ρ hσ hρ x hx
+    -- `unif ∣ σ • unif`, from the membership condition at `x := unif`
+    have hunif : unif ∣ σ • unif := by
+      have h1 : unif ∣ σ • unif - unif :=
+        dvd_trans (dvd_pow_self unif (Nat.succ_ne_zero i)) (hσ unif hfix)
+      have h2 : σ • unif = (σ • unif - unif) + unif := by ring
+      rw [h2]
+      exact dvd_add h1 dvd_rfl
+    obtain ⟨w, hw⟩ := hρ x hx
+    have hsplit : (σ * ρ) • x - x = σ • (ρ • x - x) + (σ • x - x) := by
+      rw [mul_smul, smul_sub]
+      ring
+    rw [hsplit]
+    refine dvd_add ?_ (hσ x hx)
+    rw [hw, smul_mul', smul_pow_integralClosure]
+    exact Dvd.dvd.mul_right (pow_dvd_pow_of_dvd hunif _) _
+  inv_mem' := by
+    intro σ hσ x hx
+    have hy : ∀ τ ∈ U, τ • (σ⁻¹ • x) = σ⁻¹ • x := by
+      intro τ hτ
+      rw [← mul_smul, show τ * σ⁻¹ = σ⁻¹ * (σ * τ * σ⁻¹) by group, mul_smul,
+        hx _ (hUn.conj_mem τ hτ σ)]
+    have h := hσ (σ⁻¹ • x) hy
+    rw [← mul_smul, mul_inv_cancel, one_smul] at h
+    exact (dvd_sub_comm).mp h
+
+/-- **EVERY OPEN NORMAL SUBGROUP OF `Γ Kᵥ` CARRIES A `LowerRamificationData`**
+whose level is exactly it. In particular `LowerRamificationData v` is INHABITED,
+which is the sanity check the `RamificationFiltration` docstring asks for and
+the prerequisite `exists_lowerRamificationData_phi_mem_Ioc` names. -/
+theorem exists_lowerRamificationData_lvl_eq
+    (U : Subgroup Γᵥ) (hUn : U.Normal) (hUo : IsOpen (U : Set Γᵥ)) :
+    ∃ D : LowerRamificationData v, D.lvl = U := by
+  classical
+  -- The fixed field is a FINITE level.
+  have hclosed : IsClosed (U : Set Γᵥ) := Subgroup.isClosed_of_isOpen _ hUo
+  have hcorr : (IntermediateField.fixedField U).fixingSubgroup = U :=
+    InfiniteGalois.fixingSubgroup_fixedField (⟨U, hclosed⟩ : ClosedSubgroup Γᵥ)
+  haveI hfd : FiniteDimensional Kᵥ (IntermediateField.fixedField U) :=
+    (InfiniteGalois.isOpen_iff_finite (IntermediateField.fixedField U)).mp
+      (by rw [hcorr]; exact hUo)
+  set L := IntermediateField.fixedField U with hLdef
+  set ι : IntegralClosure 𝒪ᵥ L →+* Oᵥ := integralClosureInclusion v L with hιdef
+  have hιval : ∀ a : IntegralClosure 𝒪ᵥ L, ((ι a).1 : Kᵥᵃˡᵍ) = ((a.1 : L) : Kᵥᵃˡᵍ) :=
+    fun _ => rfl
+  have hιinj : Function.Injective ι := by
+    intro a b hab
+    exact Subtype.ext (Subtype.ext (by rw [← hιval a, ← hιval b, hab]))
+  -- Elements coming from the level are `U`-fixed …
+  have hK2 : ∀ (a : IntegralClosure 𝒪ᵥ L), ∀ τ ∈ U, τ • ι a = ι a := by
+    intro a τ hτ
+    refine Subtype.ext ?_
+    rw [IntegralClosure.coe_smul, hιval]
+    exact (IntermediateField.mem_fixedField_iff _ _).mp (a.1).2 τ hτ
+  -- … and conversely every `U`-fixed integer comes from the level.
+  have hK3 : ∀ x : Oᵥ, (∀ τ ∈ U, τ • x = x) → ∃ a : IntegralClosure 𝒪ᵥ L, ι a = x := by
+    intro x hx
+    have hmem : (x.1 : Kᵥᵃˡᵍ) ∈ L := by
+      rw [hLdef, IntermediateField.mem_fixedField_iff]
+      intro f hf
+      have h2 := congrArg (fun t : Oᵥ => (t.1 : Kᵥᵃˡᵍ)) (hx f hf)
+      rw [IntegralClosure.coe_smul] at h2
+      exact h2
+    have hint : IsIntegral 𝒪ᵥ (⟨x.1, hmem⟩ : L) := by
+      rw [← isIntegral_algebraMap_iff (A := L) (B := Kᵥᵃˡᵍ)
+        (algebraMap L Kᵥᵃˡᵍ).injective]
+      exact x.2
+    exact ⟨⟨⟨x.1, hmem⟩, hint⟩, Subtype.ext rfl⟩
+  -- A uniformizer of the level.
+  obtain ⟨ϖ, hϖ⟩ := IsDiscreteValuationRing.exists_irreducible (IntegralClosure 𝒪ᵥ L)
+  have hϖ0 : ι ϖ ≠ 0 := fun h => hϖ.ne_zero (hιinj (by rw [h, map_zero]))
+  have hunifnu : ¬ IsUnit (ι ϖ) := by
+    rintro ⟨u, hu⟩
+    -- the inverse is `U`-fixed, hence comes from the level
+    have hb : ∀ τ ∈ U, τ • (u.inv : Oᵥ) = (u.inv : Oᵥ) := by
+      intro τ hτ
+      have h1 : ι ϖ * (u.inv : Oᵥ) = 1 := by rw [← hu]; exact u.val_inv
+      have h2 : τ • (ι ϖ * (u.inv : Oᵥ)) = τ • (1 : Oᵥ) := by rw [h1]
+      rw [smul_mul', hK2 ϖ τ hτ, smul_one] at h2
+      exact mul_left_cancel₀ hϖ0 (h2.trans h1.symm)
+    obtain ⟨c, hc⟩ := hK3 _ hb
+    refine hϖ.not_isUnit (isUnit_iff_exists_inv.mpr ⟨c, hιinj ?_⟩)
+    rw [map_mul, hc, map_one, ← hu]
+    exact u.val_inv
+  have hunifspec : ∀ x : Oᵥ, (∀ τ ∈ U, τ • x = x) → ¬ IsUnit x → ι ϖ ∣ x := by
+    intro x hx hxu
+    obtain ⟨a, rfl⟩ := hK3 x hx
+    have hanu : ¬ IsUnit a := fun h => hxu (h.map ι)
+    have hmax : a ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪ᵥ L) := hanu
+    rw [hϖ.maximalIdeal_eq, Ideal.mem_span_singleton] at hmax
+    exact map_dvd ι hmax
+  refine ⟨{ lvl := U
+            lvl_normal := hUn
+            lvl_isOpen := hUo
+            unif := ι ϖ
+            unif_fixed := hK2 ϖ
+            unif_ne_zero := hϖ0
+            unif_not_isUnit := hunifnu
+            unif_spec := hunifspec
+            gp := LowerRamificationData.gpOfLevel v U hUn (ι ϖ) (hK2 ϖ)
+            mem_gp := fun _ _ => Iff.rfl
+            lvl_relIndex_ne_zero := ?_ }, rfl⟩
+  -- `[G₀ : N] < ∞`, because `N` is open in the compact group `Γ Kᵥ`.
+  have hle : U ≤ LowerRamificationData.gpOfLevel v U hUn (ι ϖ) (hK2 ϖ) 0 := by
+    intro σ hσ x hx
+    rw [hx σ hσ, sub_self]
+    exact dvd_zero _
+  haveI : Finite (Γᵥ ⧸ U) := Subgroup.quotient_finite_of_isOpen U hUo
+  have hidx : U.index ≠ 0 := Subgroup.index_ne_zero_of_finite
+  intro h0
+  exact hidx (Nat.eq_zero_of_zero_dvd (h0 ▸ Subgroup.relIndex_dvd_index_of_le hle))
+
+end FiniteLevelInhabitation
+
 /-! ### The arithmetic inputs to the construction, as NAMED leaves
 
 The four statements below were, until 2026-07-29, anonymous sorried `have`s
@@ -3935,18 +4406,68 @@ construction `nonempty_ramificationFiltration` below consumes them.
 
 `LowerRamificationData.wildInertiaGroup_le_gp_one` is a FIFTH leaf, and it is
 new rather than lifted: see its own docstring and
-`GaloisRep.pos_of_card_filter_eq`. -/
+`GaloisRep.pos_of_card_filter_eq`.
+
+**STATUS 2026-07-30 — two of the five are now THEOREMS, not leaves**, so do not
+dispatch at them: `iInf_gp_eq_lvl` (`hterm`) over the `KrullSeparation` section
+above, and `iInf_lvl_eq_bot` (`hsep`) over `exists_lowerRamificationData_lvl_eq`.
+The three still open are `localInertiaGroup_le_gp_zero` (`hin`),
+`wildInertiaGroup_le_gp_one`, and `gp_le_upperRamificationFiltration_sup_lvl`
+(`hherb`, which is Herbrand's theorem itself and is the deep one). -/
 
 /-- **THE LOWER FILTRATION TERMINATES AT ITS LEVEL**, `⋂_m G_m = N`. An
 element moving every `x ∈ 𝒪_L` by arbitrarily high powers of the uniformizer
 moves none of them, so it fixes `L`, so it lies in `N` by the Galois
 correspondence. Serre, *Corps Locaux* IV §1.
 
-(SORRY LEAF, promoted 2026-07-29 from the anonymous `have hterm` inside
-`GaloisRep.exists_isSwanExponentAt`.) -/
+**PROVEN 2026-07-30** (promoted 2026-07-29 from the anonymous `have hterm`
+inside `GaloisRep.exists_isSwanExponentAt`).
+
+THE PROOF, in three steps, over the section `KrullSeparation` above.
+
+* `≥` is `lvl_le_gp` — an element of `N` moves no `N`-fixed element at all.
+* `≤`, step 1: `σ ∈ ⋂ₘ G_m` says, through `mem_gp`, that `unif ^ (m+1)`
+  divides `σ • x − x` for EVERY `m` and every `N`-fixed `x ∈ 𝒪_L`. Since
+  `unif` is a non-unit of `Oᵥ` (`unif_not_isUnit`), the rank-one separation
+  `eq_zero_of_forall_pow_dvd_integralClosure` gives `σ • x = x`. Note
+  `unif_ne_zero` and `unif_spec` are NOT used: the argument needs only that
+  `unif` is a non-unit, because `‖unif‖ < 1` is all that drives it.
+* `≤`, step 2: `smul_eq_self_of_forall_smul_integralClosure_eq_self` upgrades
+  "fixes the `N`-fixed integers" to "fixes the `N`-fixed FIELD", i.e.
+  `σ ∈ (fixedField N).fixingSubgroup`; and `N` is open, hence closed, so
+  `InfiniteGalois.fixingSubgroup_fixedField` returns `σ ∈ N`. This is the only
+  place `lvl_isOpen` is consumed, and it is consumed exactly as the Galois
+  correspondence needs it. -/
 theorem LowerRamificationData.iInf_gp_eq_lvl
     {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)} (D : LowerRamificationData v) :
-    (⨅ m : ℕ, D.gp m) = D.lvl := sorry
+    (⨅ m : ℕ, D.gp m) = D.lvl := by
+  refine le_antisymm ?_ (le_iInf fun m => D.lvl_le_gp m)
+  intro σ hσ
+  rw [Subgroup.mem_iInf] at hσ
+  -- Step 1: `σ` fixes every `N`-fixed integer of `Kᵥᵃˡᵍ`.
+  have hA : ∀ x : IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure (v.adicCompletion K)),
+      (∀ τ ∈ D.lvl, τ • x = x) → σ • x = x := by
+    intro x hx
+    have hdvd : ∀ m : ℕ, D.unif ^ m ∣ σ • x - x := by
+      intro m
+      cases m with
+      | zero => rw [pow_zero]; exact one_dvd _
+      | succ n => exact (D.mem_gp n σ).mp (hσ n) x hx
+    exact sub_eq_zero.mp
+      (eq_zero_of_forall_pow_dvd_integralClosure v D.unif_not_isUnit hdvd)
+  -- Step 2: the infinite Galois correspondence at the OPEN subgroup `N`.
+  have hclosed : IsClosed (D.lvl :
+      Set (Field.absoluteGaloisGroup (v.adicCompletion K))) :=
+    Subgroup.isClosed_of_isOpen _ D.lvl_isOpen
+  have hcorr : (IntermediateField.fixedField D.lvl).fixingSubgroup = D.lvl :=
+    InfiniteGalois.fixingSubgroup_fixedField
+      (⟨D.lvl, hclosed⟩ : ClosedSubgroup (Field.absoluteGaloisGroup (v.adicCompletion K)))
+  rw [← hcorr, IntermediateField.fixingSubgroup, mem_fixingSubgroup_iff]
+  intro y hy
+  exact smul_eq_self_of_forall_smul_integralClosure_eq_self v hA
+    (fun τ hτ => (IntermediateField.mem_fixedField_iff _ y).mp hy τ hτ)
 
 /-- **THE FINITE LEVELS SEPARATE POINTS**, `⋂_D N_D = 1`. This is
 profiniteness of `Γ Kᵥ` together with the fact that EVERY open normal subgroup
@@ -3956,20 +4477,251 @@ meet would be `⊤`). That is deliberate: it makes the inhabitation check
 mechanical rather than prose. See the SECOND FALSITY AUDIT on
 `RamificationFiltration`.
 
-(SORRY LEAF, promoted 2026-07-29 from the anonymous `have hsep` inside
-`GaloisRep.exists_isSwanExponentAt`.) -/
+**PROVEN 2026-07-30** (promoted 2026-07-29 from the anonymous `have hsep`
+inside `GaloisRep.exists_isSwanExponentAt`), and the inhabitation half is
+exactly where the work is: `exists_lowerRamificationData_lvl_eq` above builds a
+datum at EVERY prescribed open normal level, so the proof here is only the
+profinite separation. Given `σ ≠ 1`, the Krull topology is Hausdorff
+(`krullTopology_t2`), so `{σ}ᶜ` is a neighbourhood of `1`;
+`exists_openNormal_subset_of_mem_nhds_one` puts an open normal `U` inside it;
+and the datum at that `U` has `σ ∉ D.lvl`. -/
 theorem LowerRamificationData.iInf_lvl_eq_bot
     (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)) :
-    (⨅ D : LowerRamificationData v, D.lvl) = ⊥ := sorry
+    (⨅ D : LowerRamificationData v, D.lvl) = ⊥ := by
+  refine le_antisymm ?_ bot_le
+  intro σ hσ
+  rw [Subgroup.mem_iInf] at hσ
+  by_contra hne
+  have hσ1 : σ ≠ 1 := fun h => hne (by rw [h]; exact Subgroup.mem_bot.mpr rfl)
+  haveI : T2Space (Field.absoluteGaloisGroup (v.adicCompletion K)) := krullTopology_t2
+  have hmem : ({σ}ᶜ : Set (Field.absoluteGaloisGroup (v.adicCompletion K))) ∈
+      nhds (1 : Field.absoluteGaloisGroup (v.adicCompletion K)) :=
+    (isOpen_compl_singleton).mem_nhds (by simpa using (Ne.symm hσ1))
+  obtain ⟨U, hUn, hUo, hUsub⟩ := exists_openNormal_subset_of_mem_nhds_one v _ hmem
+  obtain ⟨D, hD⟩ := exists_lowerRamificationData_lvl_eq v U hUn hUo
+  exact (hUsub (hD ▸ hσ D)) rfl
 
 /-- **THE INERTIA LANDS IN `G_0` AT EVERY LEVEL**: an inertia element acts
 trivially on the residue field of `L`, i.e. `unif ∣ σ • x − x`.
 
-(SORRY LEAF, promoted 2026-07-29 from the anonymous `have hin` inside
-`GaloisRep.exists_isSwanExponentAt`.) -/
+(PROVEN 2026-07-30; promoted 2026-07-29 from the anonymous `have hin` inside
+`GaloisRep.exists_isSwanExponentAt`.)
+
+`localInertiaGroup v` is by definition the inertia of the maximal ideal of
+`IntegralClosure 𝒪ᵥ Kᵥᵃˡᵍ`, i.e. `σ • x − x ∈ 𝔪` for EVERY `x` of that ring.
+For `x` fixed by the level `N`, normality of `N` makes `σ • x` fixed by `N`
+too (`τ • σ • x = σ • ((σ⁻¹τσ) • x) = σ • x`), hence so is `σ • x − x`; and
+`𝔪` is exactly the non-units. So `unif_spec` — "every `N`-fixed non-unit is
+divisible by `unif`" — applies and gives `unif ^ (0+1) ∣ σ • x − x`, which is
+`mem_gp` at `i = 0`.
+
+Note the step that is NOT available without `unif_spec`: membership in `𝔪`
+alone does not give divisibility by `unif`, because the value group of
+`Kᵥᵃˡᵍ` is DIVISIBLE and `𝔪` is not principal — `y ∈ 𝔪` says `v y > 0`,
+while `unif ∣ y` says `v y ≥ v unif`. The descent to the level, where the
+valuation IS discrete, is the whole content. -/
 theorem LowerRamificationData.localInertiaGroup_le_gp_zero
     {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)} (D : LowerRamificationData v) :
-    localInertiaGroup v ≤ D.gp 0 := sorry
+    localInertiaGroup v ≤ D.gp 0 := by
+  intro σ hσ
+  rw [D.mem_gp]
+  intro x hx
+  have hconj : ∀ τ ∈ D.lvl, σ⁻¹ * τ * σ ∈ D.lvl := by
+    intro τ hτ
+    simpa using D.lvl_normal.conj_mem τ hτ σ⁻¹
+  have hfix : ∀ τ ∈ D.lvl, τ • (σ • x - x) = σ • x - x := by
+    intro τ hτ
+    have h1 : τ • (σ • x) = σ • x := by
+      rw [smul_smul]
+      have hrw : τ * σ = σ * (σ⁻¹ * τ * σ) := by group
+      rw [hrw, ← smul_smul, hx _ (hconj τ hτ)]
+    rw [smul_sub, h1, hx τ hτ]
+  have hmem : σ • x - x ∈ IsLocalRing.maximalIdeal
+      (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+        (AlgebraicClosure (v.adicCompletion K))) := hσ x
+  have hnu : ¬ IsUnit (σ • x - x) := (IsLocalRing.mem_maximalIdeal _).mp hmem
+  simpa using D.unif_spec _ hfix hnu
+
+/-- **`σ • x − x` IS LEVEL-FIXED WHENEVER `x` IS** — the normality step of
+`localInertiaGroup_le_gp_zero`, isolated because
+`dvd_smul_unif_sub_of_mem_wildInertiaGroup` needs it too:
+`τ • σ • x = σ • ((σ⁻¹τσ) • x) = σ • x`. -/
+theorem LowerRamificationData.smul_sub_self_fixed
+    {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)} (D : LowerRamificationData v)
+    (σ : Field.absoluteGaloisGroup (v.adicCompletion K))
+    {x : IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure (v.adicCompletion K))}
+    (hx : ∀ τ ∈ D.lvl, τ • x = x) :
+    ∀ τ ∈ D.lvl, τ • (σ • x - x) = σ • x - x := by
+  intro τ hτ
+  have hconj : σ⁻¹ * τ * σ ∈ D.lvl := by
+    simpa using D.lvl_normal.conj_mem τ hτ σ⁻¹
+  have h1 : τ • (σ • x) = σ • x := by
+    rw [smul_smul]
+    have hrw : τ * σ = σ * (σ⁻¹ * τ * σ) := by group
+    rw [hrw, ← smul_smul, hx _ hconj]
+  rw [smul_sub, h1, hx τ hτ]
+
+/-- **THE TAME CHARACTER IS TRIVIAL ON THE WILD INERTIA** (PROVEN 2026-07-30):
+for `σ ∈ P_v`, `unif ² ∣ σ • unif − unif`, i.e. `χ(σ) := σ(unif)/unif = 1` in
+the residue field.
+
+This is the half of `wildInertiaGroup_le_gp_one` that the axioms of
+`LowerRamificationData` DO reach, and the route is the one this development
+already owns:
+
+* `σ ∈ P_v ≤ I_v ≤ G_0` (`localInertiaGroup_le_gp_zero`) at `x = unif` gives
+  `σ • unif = unif · A` with `A = 1 + b`, and `b` is level-fixed
+  (`smul_sub_self_fixed`, then cancel `unif ≠ 0`).
+* Iterating, `σ ^ k • unif = unif · ∏_{i<k} σ ^ i • A`.
+* `M := #(P_v ⧸ N ∩ P_v)` is finite and, by
+  `coprime_card_quotient_wildInertiaGroup`, COPRIME TO EVERY integer prime to
+  `v` — i.e. a power of the residue characteristic, said without naming it.
+  Lagrange gives `σ ^ M ∈ N`, so `σ ^ M • unif = unif` and the product at
+  `k = M` is `1`.
+* Reducing mod `𝔪` and using that `σ ^ i ∈ I_v` acts trivially there, the
+  product is `A ^ M`, so `A ^ M ≡ 1`; and
+  `sub_one_mem_maximalIdeal_of_pow_sub_one_mem` — freshman's dream, iterated —
+  forces `A ≡ 1`, i.e. `b ∈ 𝔪`.
+* `b` is level-fixed and a non-unit, so `unif ∣ b` by `unif_spec`, which is
+  `unif ² ∣ unif · b = σ • unif − unif`.
+
+The last step is again the one that CANNOT be replaced by "`b` lies in `𝔪`":
+`𝔪` is non-principal over `Kᵥᵃˡᵍ`. `unif_spec` is what descends to the level,
+where the valuation is discrete. -/
+theorem LowerRamificationData.dvd_smul_unif_sub_of_mem_wildInertiaGroup
+    {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)} (D : LowerRamificationData v)
+    {σ : Field.absoluteGaloisGroup (v.adicCompletion K)}
+    (hσ : σ ∈ wildInertiaGroup v) :
+    D.unif ^ 2 ∣ σ • D.unif - D.unif := by
+  classical
+  haveI hlvlN : D.lvl.Normal := D.lvl_normal
+  set mm : Ideal (IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure (v.adicCompletion K))) :=
+    IsLocalRing.maximalIdeal _ with hmm
+  have hσI : σ ∈ localInertiaGroup v := wildInertiaGroup_le_localInertiaGroup v hσ
+  -- (1) `σ ∈ G_0` read at `x = unif`.
+  obtain ⟨b, hb⟩ : D.unif ∣ σ • D.unif - D.unif := by
+    simpa using (D.mem_gp 0 σ).mp (D.localInertiaGroup_le_gp_zero hσI) D.unif D.unif_fixed
+  have hsmulA : σ • D.unif = D.unif * (1 + b) := by linear_combination hb
+  -- (2) `b` is level-fixed.
+  have hbfix : ∀ τ ∈ D.lvl, τ • b = b := by
+    intro τ hτ
+    have h1 := D.smul_sub_self_fixed σ D.unif_fixed τ hτ
+    rw [hb, smul_mul', D.unif_fixed τ hτ] at h1
+    exact mul_left_cancel₀ D.unif_ne_zero h1
+  -- (3) the telescoping iteration.
+  have hiter : ∀ k : ℕ, (σ ^ k) • D.unif
+      = D.unif * ∏ i ∈ Finset.range k, (σ ^ i) • (1 + b) := by
+    intro k
+    induction k with
+    | zero => simp
+    | succ j ih =>
+      rw [pow_succ, mul_smul, hsmulA, smul_mul', ih, Finset.prod_range_succ]
+      ring
+  -- (4) a `p`-power exponent killing `σ` modulo the level.
+  obtain ⟨M, hM0, hMcop, hσM⟩ :
+      ∃ M : ℕ, M ≠ 0 ∧ (∀ n : ℕ, (n : 𝓞 K) ∉ v.asIdeal → Nat.Coprime M n) ∧
+        σ ^ M ∈ D.lvl := by
+    refine ⟨Nat.card (wildInertiaGroup v ⧸ D.lvl.subgroupOf (wildInertiaGroup v)), ?_,
+      fun n hn => coprime_card_quotient_wildInertiaGroup v hn D.lvl D.lvl_isOpen, ?_⟩
+    · haveI : Finite (Field.absoluteGaloisGroup (v.adicCompletion K) ⧸ D.lvl) :=
+        Subgroup.quotient_finite_of_isOpen _ D.lvl_isOpen
+      have hcard : Nat.card (wildInertiaGroup v ⧸ D.lvl.subgroupOf (wildInertiaGroup v))
+          = D.lvl.relIndex (wildInertiaGroup v) := rfl
+      have hdvd : D.lvl.relIndex (wildInertiaGroup v) ∣ D.lvl.index :=
+        Subgroup.relIndex_dvd_index_of_normal _ _
+      have hidx : D.lvl.index ≠ 0 := Subgroup.index_ne_zero_of_finite
+      rw [hcard]
+      exact fun h => hidx (Nat.eq_zero_of_zero_dvd (h ▸ hdvd))
+    · haveI : (D.lvl.subgroupOf (wildInertiaGroup v)).Normal := hlvlN.subgroupOf _
+      have h : (QuotientGroup.mk (⟨σ, hσ⟩ : wildInertiaGroup v) :
+            wildInertiaGroup v ⧸ D.lvl.subgroupOf (wildInertiaGroup v)) ^
+          Nat.card (wildInertiaGroup v ⧸ D.lvl.subgroupOf (wildInertiaGroup v)) = 1 :=
+        pow_card_eq_one'
+      rw [← QuotientGroup.mk_pow, QuotientGroup.eq_one_iff, Subgroup.mem_subgroupOf] at h
+      simpa using h
+  -- (5) the product at `k = M` collapses to `1`.
+  have hprod : ∏ i ∈ Finset.range M, (σ ^ i) • (1 + b) = 1 := by
+    have h := hiter M
+    rw [D.unif_fixed _ hσM] at h
+    exact ((mul_right_eq_self₀).mp h.symm).resolve_right D.unif_ne_zero
+  -- (6) reduce mod `𝔪`: every factor is `1 + b`, so `(1 + b) ^ M ≡ 1`.
+  have hres : (1 + b) ^ M - 1 ∈ mm := by
+    have hcongr : ∀ i ∈ Finset.range M,
+        Ideal.Quotient.mk mm ((σ ^ i) • (1 + b)) = Ideal.Quotient.mk mm (1 + b) := by
+      intro i _
+      exact (Ideal.Quotient.mk_eq_mk_iff_sub_mem _ _).mpr
+        (((localInertiaGroup v).pow_mem hσI i) (1 + b))
+    have h := congrArg (Ideal.Quotient.mk mm) hprod
+    rw [map_prod, Finset.prod_congr rfl hcongr, Finset.prod_const, Finset.card_range,
+      map_one] at h
+    rw [← Ideal.Quotient.mk_eq_mk_iff_sub_mem, map_pow, map_one]
+    exact h
+  -- (7) hence `b ∈ 𝔪`, hence `unif ∣ b`.
+  have hbm : b ∈ mm := by
+    have h := sub_one_mem_maximalIdeal_of_pow_sub_one_mem v M hM0 hMcop (1 + b) hres
+    have hcancel : (1 : IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+        (AlgebraicClosure (v.adicCompletion K))) + b - 1 = b := by ring
+    rwa [hcancel] at h
+  have hbnu : ¬ IsUnit b := (IsLocalRing.mem_maximalIdeal _).mp hbm
+  obtain ⟨c, hc⟩ := D.unif_spec b hbfix hbnu
+  exact ⟨c, by rw [hb, hc]; ring⟩
+
+/-- **SERRE, *CORPS LOCAUX* IV §1, LEMMA 1 — THE REMAINING INPUT TO
+`wildInertiaGroup_le_gp_one`** (SORRY LEAF, cut 2026-07-30): for an inertia
+element, membership in `G_1` is decided by its effect on the uniformizer
+ALONE.
+
+`mem_gp` quantifies over EVERY level-fixed `x`, so `unif ² ∣ σ • unif − unif`
+is on its face weaker than `σ ∈ D.gp 1`. Serre's lemma is that it is not:
+writing `𝒪_0` for the ring of integers of the maximal UNRAMIFIED
+subextension `L_0 ⊆ L`,
+
+* `𝒪_L = 𝒪_0[unif]` — `L/L_0` is totally ramified, so its ring of integers is
+  monogenic over `𝒪_0` on any uniformizer (Serre I §6);
+* `σ ∈ I_v` fixes `𝒪_0` POINTWISE — `L_0/Kᵥ` is unramified, so an
+  automorphism trivial on the residue field is trivial on `𝒪_0` by Hensel.
+
+Given both, `x = ∑_j a_j unif ^ j` with `a_j ∈ 𝒪_0` gives
+`σ • x − x = ∑_j a_j ((σ • unif) ^ j − unif ^ j)`, and every summand is
+divisible by `σ • unif − unif`, hence by `unif ²`.
+
+WHY THIS IS THE SHARP CUT, AND WHY IT CANNOT BE AVOIDED (analysis 2026-07-30).
+Everything else in `P_v ≤ G_1` is now proven above. What is left is exactly the
+injectivity of the tame character on `G_0/G_1`, and that is not derivable from
+the fields of `LowerRamificationData`. Concretely, put
+`δ_x(σ) := (σ • x − x)/unif mod 𝔪`. Then
+
+* `δ_x(στ) = χ(σ) δ_x(τ) + δ_x(σ)` — a `χ`-cocycle, and `δ_x` vanishes on
+  `G_1` by definition, so `δ` factors through `G_0/G_1`;
+* `δ_·(σ)` is a DERIVATION in `x`, so it is determined by its value on a ring
+  generator of `𝒪_L` over the subring `σ` fixes — which is the monogenicity
+  above and nothing weaker.
+
+The prime-to-`p` divisibility of `P_v` (`exists_pow_eq_of_mem_wildInertiaGroup`)
+cannot substitute: with `σ = θ ^ n` and `χ(θ) = 1` — which is what
+`dvd_smul_unif_sub_of_mem_wildInertiaGroup` establishes — the telescoping sum
+gives `δ_x(σ) = n · δ_x(θ)` with `n` a unit mod `p`, so `δ_x(σ) = 0` iff
+`δ_x(θ) = 0`, and the descent never terminates. Likewise `σ ^ p ∈ G_1` yields
+`0 = (χ(σ) − 1) ^ {p−1} δ_x(σ)`, which is vacuous once `χ(σ) = 1`. Both were
+tried before this leaf was cut.
+
+FAITHFULNESS. TRUE, and it is the classical lemma; the hypothesis `σ ∈ I_v` is
+NOT removable — it is what makes `σ` fix `𝒪_0`, and without it the statement
+fails already for an unramified `L/Kᵥ` with `σ` a Frobenius lift (there
+`unif ∈ 𝒪ᵥ` is fixed, so the hypothesis is vacuous, while `σ ∉ D.gp 1`).
+Stated only at `i = 1`, which is all `wildInertiaGroup_le_gp_one` consumes; the
+same proof gives every `i`, and a prover who builds the monogenicity should
+generalise it. -/
+theorem LowerRamificationData.mem_gp_one_of_dvd_smul_unif_sub
+    {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)} (D : LowerRamificationData v)
+    {σ : Field.absoluteGaloisGroup (v.adicCompletion K)}
+    (hσ : σ ∈ localInertiaGroup v)
+    (h : D.unif ^ 2 ∣ σ • D.unif - D.unif) :
+    σ ∈ D.gp 1 := sorry
 
 /-- **THE WILD INERTIA LANDS IN `G_1` AT EVERY LEVEL**, `P_v ≤ G_1(L/Kᵥ)`.
 
@@ -3992,10 +4744,17 @@ a Herbrand value, through `RamificationFiltration.gp_herbrand`.
 Note what is NOT claimed: nothing here says `P_v = G_1`, which is false as
 soon as `L/Kᵥ` is not wildly ramified all the way up.
 
-(SORRY LEAF, cut 2026-07-29.) -/
+DECOMPOSED AND HALF-PROVEN 2026-07-30. The proof below is
+`mem_gp_one_of_dvd_smul_unif_sub ∘ dvd_smul_unif_sub_of_mem_wildInertiaGroup`:
+the tame character `χ(σ) = σ(unif)/unif mod 𝔪` is PROVEN trivial on `P_v`,
+and the one remaining input is `ker χ ∩ I_v ≤ G_1`, i.e. Serre IV §1 Lemma 1.
+See those two docstrings; in particular the second records why the split is
+forced rather than convenient. -/
 theorem LowerRamificationData.wildInertiaGroup_le_gp_one
     {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)} (D : LowerRamificationData v) :
-    wildInertiaGroup v ≤ D.gp 1 := sorry
+    wildInertiaGroup v ≤ D.gp 1 := fun _ hσ =>
+  D.mem_gp_one_of_dvd_smul_unif_sub (wildInertiaGroup_le_localInertiaGroup v hσ)
+    (D.dvd_smul_unif_sub_of_mem_wildInertiaGroup hσ)
 
 /-- **HERBRAND'S THEOREM**, the crux: `Γ^{φ(m)}` SURJECTS onto `G_m` at every
 finite level. The reverse containment is proved in
@@ -4018,7 +4777,10 @@ inverse limit `upperRamificationFiltration v` over the finite levels (*Corps
 Locaux* IV §3, "Passage à la limite"), and four of the six axioms —
 decreasing, `G⁰ = I_v`, `G^u ≤ P_v`, and left continuity — are PROVEN of it
 outright, the last from the minimality of `LowerRamificationData.psiNat`. The
-remaining arithmetic inputs are the four named leaves immediately above.
+remaining arithmetic inputs are the named leaves immediately above — of which,
+as of 2026-07-30, only THREE are still open (`localInertiaGroup_le_gp_zero`,
+`wildInertiaGroup_le_gp_one`, `gp_le_upperRamificationFiltration_sup_lvl`);
+`iInf_gp_eq_lvl` and `iInf_lvl_eq_bot` are proven.
 
 This is what discharges the `Nonempty` conjunct of `GaloisRep.IsSwanExponentAt`,
 and it is what keeps that leaf honest: nothing else prevents an over-strong
@@ -4958,6 +5720,46 @@ theorem exists_nat_eq_sum_breaks (ρ : GaloisRep K A M)
         ((Finset.range (ρ.wildCodim v)).filter fun k => u ≤ μ k).card) :
     ∃ s : ℕ, (s : ℚ) = ∑ k ∈ Finset.range (ρ.wildCodim v), μ k := sorry
 
+/-- **LEVELS OF UNBOUNDED TAME RAMIFICATION EXIST INSIDE ANY OPEN SUBGROUP**
+(SORRY LEAF, cut 2026-07-30 out of `exists_lowerRamificationData_phi_mem_Ioc`
+below, which is now PROVEN over it and over
+`exists_lowerRamificationData_lvl_eq`).
+
+`D.phi 1 = 1/[G₀ : G₁]` (`LowerRamificationData.phi_one`) and `[G₀ : G₁]` is the
+TAME ramification index `e_tame(L/Kᵥ)`, so this says: inside any open `N` there
+are finite levels of arbitrarily large tame ramification. It is the whole
+arithmetic content of the density leaf below, and it is the ONLY thing that
+leaf still needs — the inhabitation and the φ-combinatorics are both discharged
+(see that docstring).
+
+WHY IT IS TRUE, and it is a statement about `Kᵥ` alone. `Kᵥ` is a local field
+with finite residue field of characteristic `ℓ`, so for every `M` prime to `ℓ`
+the Kummer extension `Kᵥⁿʳ(π^{1/M})/Kᵥⁿʳ` is TOTALLY (tamely) ramified of degree
+`M` — which this file already proves, as
+`exists_localInertia_smul_eq_mul_of_pow_eq_one` (surjectivity of the tame
+character onto `μ_M`) over `irreducible_X_pow_sub_C_uniformizer`. There are
+infinitely many such `M`. To place the level inside `N`, take the compositum
+with the fixed field of `N` (an open subgroup, hence a finite level) and pass to
+the Galois closure; enlarging `L` cannot decrease `e_tame`, because
+`[G₀ : G₁]` is multiplicative in towers on the tame part.
+
+WHAT A PROVER MUST NOT DO. `[G₀ : G₁]` here is the relative index of the
+ELEMENTWISE groups of `LowerRamificationData.mem_gp`, not of an abstract
+inertia quotient, so the bound has to be exhibited by elements: `M` elements of
+`G₀` that are pairwise inequivalent modulo `G₁`. With `X` an `M`-th root of a
+uniformizer and `σ_ζ • X = ζ · X`, the ratio `ρ = σ_{ζ'}⁻¹σ_ζ` sends `X` to
+`ζζ'⁻¹ X`, and `ζζ'⁻¹ − 1` is a UNIT of `Oᵥ` (from `∏_{η ≠ 1}(1 − η) = M` and
+`isUnit_natCast_integralClosure_of_notMem_asIdeal`), so `ρ ∈ G₁` would force
+`unif² ∣ X`. That is the contradiction, and it needs `X` to have `L`-valuation
+exactly `1` — which is where the "totally ramified" half of the construction is
+actually consumed. -/
+theorem exists_lowerRamificationData_phi_one_le
+    (v : HeightOneSpectrum (𝓞 K))
+    (N : Subgroup (Field.absoluteGaloisGroup (v.adicCompletion K)))
+    (hN : IsOpen (N : Set (Field.absoluteGaloisGroup (v.adicCompletion K))))
+    (ε : ℚ) (hε : 0 < ε) :
+    ∃ D : LowerRamificationData v, D.lvl ≤ N ∧ D.phi 1 ≤ ε := sorry
+
 /-- **HERBRAND VALUES ARE DENSE, ARBITRARILY DEEP** (SORRY LEAF, cut
 2026-07-28 out of step `hsum`): inside any open subgroup `N ≤ Γ Kᵥ` there is
 a finite level `D` and an `m` with `φ_D(m)` in any prescribed interval
@@ -4993,14 +5795,59 @@ refinement argument above is indifferent to which it is: `φ_{L'/Kᵥ}` samples
 `φ_{L/Kᵥ}` on `(1/e)ℤ` for every `e` prime to the residue characteristic, and
 those values are dense in the whole of `(0, ∞)`, not merely above `1`. Note
 `0 < w` cannot be dropped in turn: `φ(0) = 0` and `φ` is strictly increasing,
-so there is no Herbrand value in `(w, u]` when `u ≤ 0`. -/
+so there is no Herbrand value in `(w, u]` when `u ≤ 0`.
+
+**RECUT 2026-07-30 — this leaf is now PROVEN over a single, much smaller one,
+`exists_lowerRamificationData_phi_one_le` immediately above.** Two of the three
+things this docstring said had to be built are done and are no longer part of
+it:
+
+* INHABITATION is settled outright by `exists_lowerRamificationData_lvl_eq`,
+  which produces a datum at every prescribed open normal level — so the
+  `D.lvl ≤ N` clause costs nothing.
+* The φ-COMBINATORICS is settled here. It needed no transitivity of Herbrand's
+  function and no tower `L'/L`: `φ` is a sum of steps `1/[G₀ : G_m]`, the steps
+  DECREASE (`step_le_phi_one`, because the `G_m` do), and `φ` is unbounded
+  (`exists_le_phi`). So `k = ψ(w)` is the first index at or above `w`, one of
+  `φ(k)` and `φ(k+1)` lies strictly above `w`, and it overshoots by at most one
+  step, hence by at most `φ(1)`.
+
+What is left is exactly the arithmetic, in one line: **`φ(1) = 1/[G₀ : G₁]` can
+be made arbitrarily small inside any open subgroup**, i.e. levels of unbounded
+TAME ramification exist. That is the leaf above. -/
 theorem exists_lowerRamificationData_phi_mem_Ioc
     (v : HeightOneSpectrum (𝓞 K))
     (N : Subgroup (Field.absoluteGaloisGroup (v.adicCompletion K)))
     (hN : IsOpen (N : Set (Field.absoluteGaloisGroup (v.adicCompletion K))))
     (w u : ℚ) (hw : 0 < w) (hwu : w < u) :
     ∃ (D : LowerRamificationData v) (m : ℕ),
-      D.lvl ≤ N ∧ w < D.phi m ∧ D.phi m ≤ u := sorry
+      D.lvl ≤ N ∧ w < D.phi m ∧ D.phi m ≤ u := by
+  obtain ⟨D, hDN, hDphi⟩ :=
+    exists_lowerRamificationData_phi_one_le v N hN (u - w) (by linarith)
+  have hk1 : 0 < D.psiNat w := D.psiNat_pos hw
+  have hkge : w ≤ D.phi (D.psiNat w) := D.le_phi_psiNat w
+  have hpred : D.phi (D.psiNat w - 1) < w := D.phi_psiNat_pred_lt hw
+  obtain ⟨j, hj⟩ : ∃ j : ℕ, D.psiNat w = j + 1 := ⟨D.psiNat w - 1, by omega⟩
+  have hjpred : D.phi j < w := by
+    have hjj : D.psiNat w - 1 = j := by omega
+    rwa [hjj] at hpred
+  rcases lt_or_eq_of_le hkge with hlt | heq
+  · -- `φ(k)` already overshoots `w`; it overshoots by at most one step.
+    refine ⟨D, D.psiNat w, hDN, hlt, ?_⟩
+    rw [hj, D.phi_succ j]
+    have hs := D.step_le_phi_one j
+    linarith
+  · -- `φ(k) = w` exactly; take the next value.
+    refine ⟨D, D.psiNat w + 1, hDN, ?_, ?_⟩
+    · rw [D.phi_succ (D.psiNat w), ← heq]
+      have hden : (0 : ℚ) < (((D.gp (D.psiNat w + 1)).relIndex (D.gp 0) : ℕ) : ℚ) := by
+        exact_mod_cast Nat.pos_of_ne_zero (D.relIndex_ne_zero (D.psiNat w + 1))
+      have hpos : (0 : ℚ) < 1 / (((D.gp (D.psiNat w + 1)).relIndex (D.gp 0) : ℕ) : ℚ) := by
+        positivity
+      linarith
+    · rw [D.phi_succ (D.psiNat w), ← heq]
+      have hs := D.step_le_phi_one (D.psiNat w)
+      linarith
 
 /-- **THE COUNTING CLAUSE FORCES THE BREAKS TO BE POSITIVE** — the statement
 the `IsSwanExponentAt` docstring has claimed since 2026-07-28, now a theorem
@@ -5262,7 +6109,8 @@ theorem exists_isSwanExponentAt (ρ : GaloisRep K A M)
     ∃ s : ℕ, ρ.IsSwanExponentAt v s := by
   -- STEP 1 (`hexists`): the upper-numbering filtration exists — CONSTRUCTED
   -- as Serre's inverse limit `upperRamificationFiltration v` over the finite
-  -- levels, in `nonempty_ramificationFiltration`, over four named leaves.
+  -- levels, in `nonempty_ramificationFiltration`, over named leaves (three of
+  -- the five still open as of 2026-07-30).
   obtain ⟨F₀⟩ := nonempty_ramificationFiltration v
   -- STEP 3 (`hsum`): the break sum is a natural number, the same for every
   -- admissible `F` — `exists_nat_forall_sum_breaks_eq`.
