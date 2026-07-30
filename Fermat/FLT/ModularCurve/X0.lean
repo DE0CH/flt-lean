@@ -828,6 +828,13 @@ public import Mathlib.Tactic.NormNum.Prime
 -- everything — no prime, no `j`-table, no modular curves — and because a 67k-line file is the
 -- wrong place to develop an EDS scaling law.
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomialTwist
+-- `Polynomial.exists_monic_dvd_map_zmod_of_monic_dvd_map_rat`, the corrected GAUSS STEP that
+-- `not_monic_dvd_preΨ_of_mem_isolatedNonCMJInvariants`'s certificate table needs: `Ψ_p` is NOT
+-- monic (`leadingCoeff_preΨ' = p`), so the inherited "a monic rational factor of a monic
+-- integral polynomial is integral" is the wrong lemma.  The right side condition is
+-- `ℓ ∤ leadingCoeff F`, and the proof runs over `ℤ_[ℓ]` where that makes the leading
+-- coefficient a UNIT.  Mathlib-facing and uniform in everything — no curve, no table.
+public import Fermat.FLT.Mathlib.RingTheory.Polynomial.ReductionModPrime
 
 @[expose] public section
 
@@ -18763,8 +18770,11 @@ inherited note describes the step as "a monic rational factor of a MONIC
 integral polynomial is integral".  `Ψ_p` is **not monic**: mathlib's
 `leadingCoeff_preΨ'` gives `leadingCoeff (preΨ' p) = p` for odd `p`, so the
 leading coefficients here are `11`, `17`, `37`, and the naive statement is false
-in general (`X + 1/2 ∣ 2X² + 3X + 1`).  The step that IS true, and the one to
-formalise:
+in general (`X + 1/2 ∣ 2X² + 3X + 1`).  The step that IS true — **FORMALISED
+2026-07-30** as `Polynomial.exists_monic_dvd_map_zmod_of_monic_dvd_map_rat` in
+`Fermat/FLT/Mathlib/RingTheory/Polynomial/ReductionModPrime.lean`, and applied to the six rows
+by `not_monic_dvd_preΨ_of_mod` below, so that five of the six row leaves are now statements
+over `ZMod ℓ` alone:
 
 > Let `F ∈ ℤ[X]` and let `ℓ` be a prime with `ℓ ∤ leadingCoeff F`.  If `g ∈ ℚ[X]`
 > is monic with `g ∣ F` in `ℚ[X]`, then `g ∈ ℤ_(ℓ)[X]`, and `ḡ ∣ F̄` in
@@ -19050,69 +19060,362 @@ theorem j_nonCMModelThirtySevenB :
   norm_num at h
   linarith
 
-/-- **Row `p = 11`, `j = −121`** (sorry leaf, cut 2026-07-28).  Certificate:
-minimal model `[1,1,0,-2,-7]`, conductor `121`, `Δ = −14641`; at `ℓ = 23`
-(`23 ∤ Δ`, `23 ∤ 11`) `Ψ₁₁ mod 23` is squarefree of degree `60` with
-irreducible-factor degrees `1⁵, 11⁵`.  The factors of degree `≤ 10` are the five
-linear ones, of total degree `5 < 10`, so no monic factor of degree `10` exists
-mod `23`, hence none over `ℚ`.  See the subsection docstring for the Gauss step
-(`ℓ ∤ leadingCoeff Ψ₁₁ = 11`) and for the chain that certifies the degree list.
-Cheapest of the six: `≈ 2·10⁵` `F₂₃` operations. -/
-theorem not_monic_dvd_preΨ_nonCMModelElevenA (g : Polynomial ℚ) (_hg : g.Monic)
-    (_hdeg : g.natDegree = 10) (_hdvd : g ∣ nonCMModelElevenA.preΨ' 11) : False :=
+/-! #### The integral and mod-`ℓ` models, and the Gauss step
+
+(2026-07-30.)  FIVE of the six rows above are now PROVEN from a purely finite-field statement
+about the SAME models read over `ZMod ℓ`; the sixth,
+`not_monic_dvd_preΨ_nonCMModelThirtySevenB`, was left alone because it was another worktree's
+target at the time, and its docstring records the three declarations that finish it.  The passage — which is the entire `ℚ`-side of
+the certificate, and the half the subsection docstring above flagged as needing a correction —
+is `not_monic_dvd_preΨ_of_mod` below, over
+`Polynomial.exists_monic_dvd_map_zmod_of_monic_dvd_map_rat` in
+`Fermat/FLT/Mathlib/RingTheory/Polynomial/ReductionModPrime.lean`.
+
+Three things make the passage work and none of them is about elliptic curves:
+
+* the models are INTEGRAL, so `Ψ_p` over `ℚ` is the base change of `Ψ_p` over `ℤ`
+  (`WeierstrassCurve.map_preΨ'`) and likewise over `ZMod ℓ`.  That is why the `…ℤ` models
+  below exist at all: they are the common source of the `ℚ` model and the `ZMod ℓ` model, so
+  ONE `map_preΨ'` rewrite in each direction replaces any comparison of division polynomials;
+* `leadingCoeff (Ψ_p) = p` for odd `p` (`WeierstrassCurve.leadingCoeff_preΨ'`), so the side
+  condition `ℓ ∤ leadingCoeff` is exactly `ℓ ∤ p` — `23 ∤ 11`, `67 ∤ 17`, `397 ∤ 37`, and it
+  is also why `ℓ = p` is barred;
+* Gauss over `ℤ_[ℓ]`, where that leading coefficient becomes a unit.
+
+**What is left open is now a statement in `(ZMod ℓ)[X]` and nothing else** — no `ℚ`, no
+content, no valuation.  See `not_monic_dvd_preΨ_mod_nonCMModelElevenA` for the route that
+closes one, which is the same for all six and differs only in cost.
+-/
+
+/-- Integral model of the `p = 11`, `j = −121` row. -/
+def nonCMModelElevenAℤ : WeierstrassCurve ℤ := ⟨1, 1, 0, -2, -7⟩
+
+/-- Integral model of the `p = 11`, `j = −24729001` row. -/
+def nonCMModelElevenBℤ : WeierstrassCurve ℤ := ⟨1, 1, 1, -30, -76⟩
+
+/-- Integral model of the `p = 17`, `j = −882216989/131072` row. -/
+def nonCMModelSeventeenAℤ : WeierstrassCurve ℤ := ⟨1, 1, 0, -660, -7600⟩
+
+/-- Integral model of the `p = 17`, `j = −297756989/2` row. -/
+def nonCMModelSeventeenBℤ : WeierstrassCurve ℤ := ⟨1, 0, 1, -3041, 64278⟩
+
+/-- Integral model of the `p = 37`, `j = −9317` row. -/
+def nonCMModelThirtySevenAℤ : WeierstrassCurve ℤ := ⟨1, 1, 1, -8, 6⟩
+
+/-- The `p = 11`, `j = −121` row read over `ZMod 23`.  Good reduction: `Δ = −14641 = −11⁴`
+and `23 ∤ 11`. -/
+def nonCMModelElevenAmod : WeierstrassCurve (ZMod 23) := ⟨1, 1, 0, -2, -7⟩
+
+/-- The `p = 11`, `j = −24729001` row read over `ZMod 23`.  Good reduction: `Δ = −121`. -/
+def nonCMModelElevenBmod : WeierstrassCurve (ZMod 23) := ⟨1, 1, 1, -30, -76⟩
+
+/-- The `p = 17`, `j = −882216989/131072` row read over `ZMod 67`.  Good reduction:
+`Δ = −4734976000 = −2¹⁰·5³·17⁴` and `67 ∤ 17`. -/
+def nonCMModelSeventeenAmod : WeierstrassCurve (ZMod 67) := ⟨1, 1, 0, -660, -7600⟩
+
+/-- The `p = 17`, `j = −297756989/2` row read over `ZMod 67`.  Good reduction:
+`Δ = −20880250`. -/
+def nonCMModelSeventeenBmod : WeierstrassCurve (ZMod 67) := ⟨1, 0, 1, -3041, 64278⟩
+
+/-- The `p = 37`, `j = −9317` row read over `ZMod 397`.  Good reduction: `Δ = −6125 = −5³·7²`
+and `397 ∤ 37`. -/
+def nonCMModelThirtySevenAmod : WeierstrassCurve (ZMod 397) := ⟨1, 1, 1, -8, 6⟩
+
+theorem map_nonCMModelElevenAℤ :
+    nonCMModelElevenAℤ.map (Int.castRingHom ℚ) = nonCMModelElevenA := by
+  ext <;> norm_num [nonCMModelElevenAℤ, nonCMModelElevenA, _root_.WeierstrassCurve.map]
+
+theorem map_nonCMModelElevenBℤ :
+    nonCMModelElevenBℤ.map (Int.castRingHom ℚ) = nonCMModelElevenB := by
+  ext <;> norm_num [nonCMModelElevenBℤ, nonCMModelElevenB, _root_.WeierstrassCurve.map]
+
+theorem map_nonCMModelSeventeenAℤ :
+    nonCMModelSeventeenAℤ.map (Int.castRingHom ℚ) = nonCMModelSeventeenA := by
+  ext <;> norm_num [nonCMModelSeventeenAℤ, nonCMModelSeventeenA, _root_.WeierstrassCurve.map]
+
+theorem map_nonCMModelSeventeenBℤ :
+    nonCMModelSeventeenBℤ.map (Int.castRingHom ℚ) = nonCMModelSeventeenB := by
+  ext <;> norm_num [nonCMModelSeventeenBℤ, nonCMModelSeventeenB, _root_.WeierstrassCurve.map]
+
+theorem map_nonCMModelThirtySevenAℤ :
+    nonCMModelThirtySevenAℤ.map (Int.castRingHom ℚ) = nonCMModelThirtySevenA := by
+  ext <;> norm_num [nonCMModelThirtySevenAℤ, nonCMModelThirtySevenA, _root_.WeierstrassCurve.map]
+
+theorem map_nonCMModelElevenAℤ_mod :
+    nonCMModelElevenAℤ.map (Int.castRingHom (ZMod 23)) = nonCMModelElevenAmod := by
+  ext <;> norm_num [nonCMModelElevenAℤ, nonCMModelElevenAmod, _root_.WeierstrassCurve.map]
+
+theorem map_nonCMModelElevenBℤ_mod :
+    nonCMModelElevenBℤ.map (Int.castRingHom (ZMod 23)) = nonCMModelElevenBmod := by
+  ext <;> norm_num [nonCMModelElevenBℤ, nonCMModelElevenBmod, _root_.WeierstrassCurve.map]
+
+theorem map_nonCMModelSeventeenAℤ_mod :
+    nonCMModelSeventeenAℤ.map (Int.castRingHom (ZMod 67)) = nonCMModelSeventeenAmod := by
+  ext <;> norm_num [nonCMModelSeventeenAℤ, nonCMModelSeventeenAmod, _root_.WeierstrassCurve.map]
+
+theorem map_nonCMModelSeventeenBℤ_mod :
+    nonCMModelSeventeenBℤ.map (Int.castRingHom (ZMod 67)) = nonCMModelSeventeenBmod := by
+  ext <;> norm_num [nonCMModelSeventeenBℤ, nonCMModelSeventeenBmod, _root_.WeierstrassCurve.map]
+
+theorem map_nonCMModelThirtySevenAℤ_mod :
+    nonCMModelThirtySevenAℤ.map (Int.castRingHom (ZMod 397)) = nonCMModelThirtySevenAmod := by
+  ext <;> norm_num [nonCMModelThirtySevenAℤ, nonCMModelThirtySevenAmod,
+    _root_.WeierstrassCurve.map]
+
+/-- **THE GAUSS STEP, PACKAGED FOR A ROW** (PROVEN 2026-07-30): a mod-`ℓ` obstruction to a
+monic divisor of degree `n` of `Ψ_p` is an obstruction over `ℚ`, provided the model is
+integral, `p` is odd and `ℓ ∤ p`.
+
+`hodd` and `hp0` are consumed only through `WeierstrassCurve.leadingCoeff_preΨ'`, which reads
+`leadingCoeff (preΨ' p) = if Even p then p / 2 else p`; the `Even` branch would give `p / 2`
+and a different side condition, and `hp0` is its own hypothesis there.  `hlc : ℓ ∤ p` is the
+CORRECTED side condition — see the subsection docstring, and note it is what bars `ℓ = p`,
+where the certificate is silent for a structural reason (the `p`-isogeny exists, so the
+characteristic polynomial of every Frobenius has a root mod `p`).
+
+Nothing here is specific to the six rows, and a successor adding a seventh certificate should
+reuse it rather than re-deriving it. -/
+theorem not_monic_dvd_preΨ_of_mod {ℓ p n : ℕ} [Fact ℓ.Prime] (Eℤ : WeierstrassCurve ℤ)
+    (E : WeierstrassCurve ℚ) (hE : Eℤ.map (Int.castRingHom ℚ) = E)
+    (Emod : WeierstrassCurve (ZMod ℓ)) (hEmod : Eℤ.map (Int.castRingHom (ZMod ℓ)) = Emod)
+    (hodd : ¬ Even p) (hp0 : (p : ℤ) ≠ 0) (hlc : ¬ (ℓ : ℤ) ∣ (p : ℤ))
+    (hcert : ∀ G : Polynomial (ZMod ℓ), G.Monic → G.natDegree = n → ¬ G ∣ Emod.preΨ' p)
+    (g : Polynomial ℚ) (hg : g.Monic) (hdeg : g.natDegree = n) (hdvd : g ∣ E.preΨ' p) : False := by
+  rw [← hE, _root_.WeierstrassCurve.map_preΨ'] at hdvd
+  have hlc' : ¬ (ℓ : ℤ) ∣ (Eℤ.preΨ' p).leadingCoeff := by
+    rw [Eℤ.leadingCoeff_preΨ' hp0, if_neg hodd]; exact hlc
+  obtain ⟨G, hGm, hGd, hGdvd⟩ :=
+    Polynomial.exists_monic_dvd_map_zmod_of_monic_dvd_map_rat hlc' hg hdvd
+  rw [← _root_.WeierstrassCurve.map_preΨ', hEmod] at hGdvd
+  exact hcert G hGm (by rw [hGd, hdeg]) hGdvd
+
+/-! #### The mod-`ℓ` certificates
+
+One leaf per row, each a statement in `(ZMod ℓ)[X]` about ONE explicit curve over a FINITE
+field.  This is what is left of a row after `not_monic_dvd_preΨ_of_mod`; the `ℚ`-side
+— integrality, content, the leading coefficient, the Gauss descent — is proven.
+
+**THE ROUTE THAT CLOSES ONE, and the mathlib lemma that makes it short.**  Fix a row, write
+`q = #(ZMod ℓ) = ℓ` and `Ψ̄ = Emod.preΨ' p`.  From the certificate table, `Ψ̄` factors as
+`C p * (D * H)` with `D` the product of the SMALL irreducible factors — degree `5, 8, 18` at
+`p = 11, 17, 37` — and `H` the product of the large ones, each of degree a multiple of `p`.
+Then for `G` monic of degree `n = p − 1` dividing `Ψ̄`:
+
+1. `IsCoprime G H`.  Otherwise `G` and `H` share an irreducible factor `π`, and
+   `deg π ≤ deg G = n`.  Now `H ∣ X ^ (q ^ m) - X` for the common large degree `m`
+   (`m = 11, 34, 222`), so `Irreducible.natDegree_dvd_of_dvd_X_pow_card_pow_sub_X`
+   — `Mathlib/FieldTheory/Finite/Extension.lean`, and it is the whole reason this route is
+   short — gives `deg π ∣ m`.  The divisors of `m` that are `≤ n` are `1` at `p = 11`
+   (`m = 11` is prime, `n = 10`) and `1, 2` at `p = 17` (`m = 34`, `n = 16`); each is
+   excluded by one further coprimality of `H` with `X ^ (q ^ d) - X`, which at `d = 1` is
+   just "`H` has no root in `ZMod ℓ`".
+2. Hence `G ∣ C p * D` by `IsCoprime.dvd_of_dvd_mul_right`, and `C p` is a unit, so `G ∣ D`.
+3. `n = deg G ≤ deg D`, i.e. `10 ≤ 5`, `16 ≤ 8`, `36 ≤ 18`.  Contradiction.
+
+Note the argument does NOT need `Ψ̄` squarefree, and does not need `H` factored: only the
+single divisibility `H ∣ X ^ (q ^ m) - X` and the small coprimalities.  Squarefreeness is what
+makes the certificate TRUE, not what makes the proof go.
+
+**WHAT IT COSTS, and the asymmetry that decides where to dispatch.**  Everything above is
+cheap except producing `D`, `H` and the divisibility `H ∣ X ^ (q ^ m) - X`, which is a chain
+of `m` Frobenius steps `r ↦ r ^ q mod H`.  Over `ZMod ℓ` the Frobenius is LINEAR — `r ^ q` is
+`Polynomial.expand ℓ r` since `c ^ ℓ = c` (`ZMod.pow_card`, and `Polynomial.expand_char`) — so
+a step is a linear combination of the precomputed table `X ^ (ℓ i) mod H`, not a modular
+exponentiation.  With that, `p = 11` (`deg H = 55`, `ℓ = 23`, `m = 11`) is a few dozen
+polynomial identities over `ZMod 23`; `p = 17` (`deg H = 136`, `ℓ = 67`, `m = 34`) is several
+hundred; `p = 37` (`deg H = 666`, `ℓ = 397`, `m = 222`) is out of reach of the kernel by about
+two orders of magnitude, and `native_decide` is barred by the root sorry gate.  **So the two
+`p = 11` leaves are the ones to dispatch at first, and the two `p = 37` leaves should not be
+dispatched at as a plain computation at all.**
+-/
+
+/-- **Row `p = 11`, `j = −121`, MOD `23`** (sorry leaf, cut 2026-07-30 out of
+`not_monic_dvd_preΨ_nonCMModelElevenA` as the arithmetic remainder after the Gauss step).
+
+`Ψ₁₁ mod 23` is squarefree of degree `60` with irreducible-factor degrees `1⁵, 11⁵`
+(PARI/GP 2.15.4, re-verified 2026-07-30).  So `D` is the product of the five linear factors
+(degree `5`), `H` the product of the five factors of degree `11`, and `m = 11`.  The factors
+of degree `≤ 10` total `5 < 10`, and `11 > 10`, so `10` is not a subset sum.
+
+Cheapest of the six.  See the subsection docstring for the three-step argument and for the
+Frobenius-linearity trick that makes the `H ∣ X ^ (23 ^ 11) - X` chain cheap.
+
+**THE CERTIFICATE, MACHINE-CHECKED AGAIN 2026-07-30** (PARI/GP 2.15.4), in the exact form the
+route above consumes:
+
+    Ψ̄ = C 11 * (D * H),   deg D = 5,  deg H = 55
+    D = X ^ 5 + 14 X ^ 4 + 7 X ^ 3 + 9 X ^ 2 + 16 X + 1
+    H has NO root in `ZMod 23`  (`#polrootsmod(H, 23) = 0`)
+    X ^ (23 ^ 11) ≡ X   mod H
+
+and the same run re-checked that no prime `ℓ ≤ 60` other than `23` gives a certificate at all:
+at `ℓ ∈ {2, 7, 13, 17, 19, 29, 41}` the degrees are `5², 10⁵` and at
+`ℓ ∈ {3, 5, 31, 37, 47, 53, 59}` they are `5¹²`, so `5 + 5 = 10` is a subset sum every time.
+That is the structural reason recorded in the subsection docstring, not bad luck, and a
+successor should not go looking for a cheaper `ℓ`.
+
+**WHAT IS ACTUALLY IN THE WAY, and it is not the Frobenius chain.**  Getting `Ψ̄` into the
+explicit form above is its own computation: `preΨ'` is an EDS recursion, so it has to be run
+in `(ZMod 23)[X]` through `Ψ₂Sq, Ψ₃, preΨ₄, preΨ' 5, preΨ' 6, preΨ' 7, preΨ' 11` — seven
+steps, since `preΨ'_odd 3` needs exactly `preΨ' 7, preΨ' 5, preΨ₄, preΨ' 6` and `Ψ₂Sq`.  That
+IS mechanical, and the tactic idiom that does it was found and verified 2026-07-30:
+
+    rw [WeierstrassCurve.Ψ₃]        -- or the relevant `preΨ'_odd`/`preΨ'_even` instance
+    simp only [<the curve>, WeierstrassCurve.b₂, WeierstrassCurve.b₄, WeierstrassCurve.b₆,
+      WeierstrassCurve.b₈, map_ofNat, C_neg, C_add, C_mul, C_pow, C_1, C_0]
+    ring_nf
+    reduce_mod_char
+
+Two traps in it, both of which cost a cycle: `map_ofNat` is what turns the leftover `C 5` into
+the numeral `5`, without which `reduce_mod_char` cannot see the coefficient at all; and the
+ORDER matters — `reduce_mod_char` before `ring_nf` reduces the inputs and then `ring_nf`
+re-inflates them (`626` for a coefficient that is `5`), so the reduction has to come LAST.
+With that, `Ψ₂Sq`, `Ψ₃`, `preΨ₄` and `preΨ' 5` (degree `12`) all go through in about `25 s`
+together.  Degree `60` was not attempted. -/
+theorem not_monic_dvd_preΨ_mod_nonCMModelElevenA (G : Polynomial (ZMod 23)) (_hG : G.Monic)
+    (_hdeg : G.natDegree = 10) (_hdvd : G ∣ nonCMModelElevenAmod.preΨ' 11) : False :=
   sorry
 
-/-- **Row `p = 11`, `j = −24729001`** (sorry leaf, cut 2026-07-28).
+/-- **Row `p = 11`, `j = −24729001`, MOD `23`** (sorry leaf, cut 2026-07-30).
+
+Degrees of `Ψ₁₁ mod 23` are again `1⁵, 11⁵`, all multiplicities `1`.  Identical in shape to
+`not_monic_dvd_preΨ_mod_nonCMModelElevenA` — the two curves are the two members of the
+isogeny class `121` — so whoever proves one should prove both. -/
+theorem not_monic_dvd_preΨ_mod_nonCMModelElevenB (G : Polynomial (ZMod 23)) (_hG : G.Monic)
+    (_hdeg : G.natDegree = 10) (_hdvd : G ∣ nonCMModelElevenBmod.preΨ' 11) : False :=
+  sorry
+
+/-- **Row `p = 17`, `j = −882216989/131072`, MOD `67`** (sorry leaf, cut 2026-07-30).
+
+`Ψ₁₇ mod 67` is squarefree of degree `144` with irreducible-factor degrees `2⁴, 34⁴`.  So `D`
+is the product of the four quadratics (degree `8`), `H` the product of the four factors of
+degree `34`, and `m = 34`.  Here step 1 of the subsection route needs TWO coprimalities, at
+`d = 1` and `d = 2`, since both divide `m = 34` and are `≤ 16`. -/
+theorem not_monic_dvd_preΨ_mod_nonCMModelSeventeenA (G : Polynomial (ZMod 67)) (_hG : G.Monic)
+    (_hdeg : G.natDegree = 16) (_hdvd : G ∣ nonCMModelSeventeenAmod.preΨ' 17) : False :=
+  sorry
+
+/-- **Row `p = 17`, `j = −297756989/2`, MOD `67`** (sorry leaf, cut 2026-07-30).
+
+Degrees of `Ψ₁₇ mod 67` are again `2⁴, 34⁴`, all multiplicities `1`.  Same isogeny class as
+`not_monic_dvd_preΨ_mod_nonCMModelSeventeenA`; prove them together. -/
+theorem not_monic_dvd_preΨ_mod_nonCMModelSeventeenB (G : Polynomial (ZMod 67)) (_hG : G.Monic)
+    (_hdeg : G.natDegree = 16) (_hdvd : G ∣ nonCMModelSeventeenBmod.preΨ' 17) : False :=
+  sorry
+
+/-- **Row `p = 37`, `j = −9317`, MOD `397`** (sorry leaf, cut 2026-07-30).
+
+`Ψ₃₇ mod 397` is squarefree of degree `684` with irreducible-factor degrees `6³, 222³`, so
+`deg D = 18` and `deg H = 666` with `m = 222`.
+
+**DO NOT DISPATCH A PLAIN COMPUTATION AT THIS ROW.**  Even with the Frobenius-linearity
+trick, the chain is `222` steps on a degree-`666` modulus over `F₃₉₇` — two orders of
+magnitude beyond what the Lean kernel will do, and `native_decide` is barred by the root
+sorry gate.  The subsection docstring on
+`not_monic_dvd_preΨ_of_mem_isolatedNonCMJInvariants` gives the Frobenius-ORBIT route that
+would make this row cheap by replacing `F₃₉₇` arithmetic with an orbit count over `684`
+elements, together with the one gap that route still has (the characteristic polynomial of
+`ρ̄_p(Frob_ℓ)` does not separate the non-semisimple class from the scalar class). -/
+theorem not_monic_dvd_preΨ_mod_nonCMModelThirtySevenA (G : Polynomial (ZMod 397)) (_hG : G.Monic)
+    (_hdeg : G.natDegree = 36) (_hdvd : G ∣ nonCMModelThirtySevenAmod.preΨ' 37) : False :=
+  sorry
+
+/-- **Row `p = 11`, `j = −121`** (cut 2026-07-28; **PROVEN 2026-07-30** over
+`not_monic_dvd_preΨ_mod_nonCMModelElevenA` and `not_monic_dvd_preΨ_of_mod`).
+Certificate: minimal model `[1,1,0,-2,-7]`, conductor `121`, `Δ = −14641`; at
+`ℓ = 23` (`23 ∤ Δ`, `23 ∤ 11`) `Ψ₁₁ mod 23` is squarefree of degree `60` with
+irreducible-factor degrees `1⁵, 11⁵`.  The factors of degree `≤ 10` are the five
+linear ones, of total degree `5 < 10`, so no monic factor of degree `10` exists
+mod `23`, hence none over `ℚ`.
+
+What is proven here is the "hence none over `ℚ`": the Gauss step
+(`ℓ ∤ leadingCoeff Ψ₁₁ = 11`, the CORRECTED side condition — `Ψ₁₁` is not monic)
+together with the integrality of the model.  What remains open is the mod-`23`
+half alone. -/
+theorem not_monic_dvd_preΨ_nonCMModelElevenA (g : Polynomial ℚ) (hg : g.Monic)
+    (hdeg : g.natDegree = 10) (hdvd : g ∣ nonCMModelElevenA.preΨ' 11) : False := by
+  haveI : Fact (Nat.Prime 23) := ⟨by norm_num⟩
+  exact not_monic_dvd_preΨ_of_mod nonCMModelElevenAℤ nonCMModelElevenA map_nonCMModelElevenAℤ
+    nonCMModelElevenAmod map_nonCMModelElevenAℤ_mod (by decide) (by norm_num) (by decide)
+    not_monic_dvd_preΨ_mod_nonCMModelElevenA g hg hdeg hdvd
+
+/-- **Row `p = 11`, `j = −24729001`** (cut 2026-07-28; **PROVEN 2026-07-30** over
+`not_monic_dvd_preΨ_mod_nonCMModelElevenB`).
 Certificate: minimal model `[1,1,1,-30,-76]`, conductor `121`, `Δ = −121`; at
 `ℓ = 23` the degrees of `Ψ₁₁ mod 23` are `1⁵, 11⁵`, all multiplicities `1`.
 Identical in shape to `not_monic_dvd_preΨ_nonCMModelElevenA` — the two curves
 are the two members of the isogeny class `121`, so whoever proves one should
 prove both. -/
-theorem not_monic_dvd_preΨ_nonCMModelElevenB (g : Polynomial ℚ) (_hg : g.Monic)
-    (_hdeg : g.natDegree = 10) (_hdvd : g ∣ nonCMModelElevenB.preΨ' 11) : False :=
-  sorry
+theorem not_monic_dvd_preΨ_nonCMModelElevenB (g : Polynomial ℚ) (hg : g.Monic)
+    (hdeg : g.natDegree = 10) (hdvd : g ∣ nonCMModelElevenB.preΨ' 11) : False := by
+  haveI : Fact (Nat.Prime 23) := ⟨by norm_num⟩
+  exact not_monic_dvd_preΨ_of_mod nonCMModelElevenBℤ nonCMModelElevenB map_nonCMModelElevenBℤ
+    nonCMModelElevenBmod map_nonCMModelElevenBℤ_mod (by decide) (by norm_num) (by decide)
+    not_monic_dvd_preΨ_mod_nonCMModelElevenB g hg hdeg hdvd
 
-/-- **Row `p = 17`, `j = −882216989/131072`** (sorry leaf, cut 2026-07-28).
+/-- **Row `p = 17`, `j = −882216989/131072`** (cut 2026-07-28; **PROVEN 2026-07-30**
+over `not_monic_dvd_preΨ_mod_nonCMModelSeventeenA`).
 Certificate: minimal model `[1,1,0,-660,-7600]`, conductor `14450`,
 `Δ = −4734976000`; at `ℓ = 67` (`67 ∤ Δ`, `67 ∤ 17`) `Ψ₁₇ mod 67` is squarefree
 of degree `144` with irreducible-factor degrees `2⁴, 34⁴`.  The factors of
-degree `≤ 16` are the four quadratics, of total degree `8 < 16`.  Cost of the
-certifying chain `≈ 2·10⁶` `F₆₇` operations — kernel-checkable, expect
-minutes. -/
-theorem not_monic_dvd_preΨ_nonCMModelSeventeenA (g : Polynomial ℚ) (_hg : g.Monic)
-    (_hdeg : g.natDegree = 16) (_hdvd : g ∣ nonCMModelSeventeenA.preΨ' 17) : False :=
-  sorry
+degree `≤ 16` are the four quadratics, of total degree `8 < 16`. -/
+theorem not_monic_dvd_preΨ_nonCMModelSeventeenA (g : Polynomial ℚ) (hg : g.Monic)
+    (hdeg : g.natDegree = 16) (hdvd : g ∣ nonCMModelSeventeenA.preΨ' 17) : False := by
+  haveI : Fact (Nat.Prime 67) := ⟨by norm_num⟩
+  exact not_monic_dvd_preΨ_of_mod nonCMModelSeventeenAℤ nonCMModelSeventeenA
+    map_nonCMModelSeventeenAℤ nonCMModelSeventeenAmod map_nonCMModelSeventeenAℤ_mod
+    (by decide) (by norm_num) (by decide)
+    not_monic_dvd_preΨ_mod_nonCMModelSeventeenA g hg hdeg hdvd
 
-/-- **Row `p = 17`, `j = −297756989/2`** (sorry leaf, cut 2026-07-28).
+/-- **Row `p = 17`, `j = −297756989/2`** (cut 2026-07-28; **PROVEN 2026-07-30**
+over `not_monic_dvd_preΨ_mod_nonCMModelSeventeenB`).
 Certificate: minimal model `[1,0,1,-3041,64278]`, conductor `14450`,
 `Δ = −20880250`; at `ℓ = 67` the degrees of `Ψ₁₇ mod 67` are `2⁴, 34⁴`, all
 multiplicities `1`.  Same isogeny class as
 `not_monic_dvd_preΨ_nonCMModelSeventeenA`; prove them together. -/
-theorem not_monic_dvd_preΨ_nonCMModelSeventeenB (g : Polynomial ℚ) (_hg : g.Monic)
-    (_hdeg : g.natDegree = 16) (_hdvd : g ∣ nonCMModelSeventeenB.preΨ' 17) : False :=
-  sorry
+theorem not_monic_dvd_preΨ_nonCMModelSeventeenB (g : Polynomial ℚ) (hg : g.Monic)
+    (hdeg : g.natDegree = 16) (hdvd : g ∣ nonCMModelSeventeenB.preΨ' 17) : False := by
+  haveI : Fact (Nat.Prime 67) := ⟨by norm_num⟩
+  exact not_monic_dvd_preΨ_of_mod nonCMModelSeventeenBℤ nonCMModelSeventeenB
+    map_nonCMModelSeventeenBℤ nonCMModelSeventeenBmod map_nonCMModelSeventeenBℤ_mod
+    (by decide) (by norm_num) (by decide)
+    not_monic_dvd_preΨ_mod_nonCMModelSeventeenB g hg hdeg hdvd
 
-/-- **Row `p = 37`, `j = −9317`** (sorry leaf, cut 2026-07-28).  Certificate:
+/-- **Row `p = 37`, `j = −9317`** (cut 2026-07-28; **PROVEN 2026-07-30** over
+`not_monic_dvd_preΨ_mod_nonCMModelThirtySevenA`).  Certificate:
 minimal model `[1,1,1,-8,6]`, conductor `1225`, `Δ = −6125`; at `ℓ = 397`
 (`397 ∤ Δ`, `397 ∤ 37`) `Ψ₃₇ mod 397` is squarefree of degree `684` with
 irreducible-factor degrees `6³, 222³`.  The factors of degree `≤ 36` are the
 three sextics, of total degree `18 < 36`.
 
-**DO NOT DISPATCH A PLAIN COMPUTATION AT THIS ROW.**  The certifying chain is
+**DO NOT DISPATCH A PLAIN COMPUTATION AT THE MOD-`397` LEAF.**  That chain is
 `≈ 1.5·10⁸` `F₃₉₇` operations — two orders of magnitude beyond what the Lean
 kernel will do, and `native_decide` is barred by the root sorry gate.  The
 subsection docstring gives the Frobenius-orbit route that would make it cheap,
 together with the one gap that route still has. -/
-theorem not_monic_dvd_preΨ_nonCMModelThirtySevenA (g : Polynomial ℚ) (_hg : g.Monic)
-    (_hdeg : g.natDegree = 36) (_hdvd : g ∣ nonCMModelThirtySevenA.preΨ' 37) : False :=
-  sorry
+theorem not_monic_dvd_preΨ_nonCMModelThirtySevenA (g : Polynomial ℚ) (hg : g.Monic)
+    (hdeg : g.natDegree = 36) (hdvd : g ∣ nonCMModelThirtySevenA.preΨ' 37) : False := by
+  haveI : Fact (Nat.Prime 397) := ⟨by norm_num⟩
+  exact not_monic_dvd_preΨ_of_mod nonCMModelThirtySevenAℤ nonCMModelThirtySevenA
+    map_nonCMModelThirtySevenAℤ nonCMModelThirtySevenAmod map_nonCMModelThirtySevenAℤ_mod
+    (by decide) (by norm_num) (by decide)
+    not_monic_dvd_preΨ_mod_nonCMModelThirtySevenA g hg hdeg hdvd
 
 /-- **Row `p = 37`, `j = −162677523113838677`** (sorry leaf, cut 2026-07-28).
 Certificate: minimal model `[1,1,1,-208083,-36621194]`, conductor `1225`,
 `Δ = −6125`; at `ℓ = 397` the degrees of `Ψ₃₇ mod 397` are `6³, 222³`, all
 multiplicities `1`.  Same isogeny class as
 `not_monic_dvd_preΨ_nonCMModelThirtySevenA`, and it carries the same cost
-warning: a direct kernel computation is not feasible here. -/
+warning: a direct kernel computation is not feasible here.
+
+**LEFT UNTOUCHED DELIBERATELY 2026-07-30** — this row is `flt-lean-29`'s target, and the
+five siblings above were re-cut without it.  The reduction that closes them applies here
+verbatim and costs three declarations: an integral model `⟨1,1,1,-208083,-36621194⟩` over
+`ℤ`, the same tuple over `ZMod 397`, the two `map` lemmas proven by
+`ext <;> norm_num [_root_.WeierstrassCurve.map]`, and then
+`not_monic_dvd_preΨ_of_mod` with `(by decide) (by norm_num) (by decide)` for
+`¬ Even 37`, `(37 : ℤ) ≠ 0` and `¬ (397 : ℤ) ∣ 37`.  Copy
+`not_monic_dvd_preΨ_nonCMModelThirtySevenA` above. -/
 theorem not_monic_dvd_preΨ_nonCMModelThirtySevenB (g : Polynomial ℚ) (_hg : g.Monic)
     (_hdeg : g.natDegree = 36) (_hdvd : g ∣ nonCMModelThirtySevenB.preΨ' 37) : False :=
   sorry
