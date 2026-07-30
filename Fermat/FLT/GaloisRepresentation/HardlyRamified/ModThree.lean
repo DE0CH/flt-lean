@@ -21711,30 +21711,34 @@ theorem pow_sum_card_inertia_inf_sub_one_dvd_relative_local_differentIdeal
   rw [hexp, ← Finset.prod_pow_eq_pow_sum]
   exact Finset.prod_dvd_prod_of_dvd _ _ fun σ _ => hσest σ
 
+section DifferentTowerThroughSubextension
+
+-- **THE RELEASE-17 MERGE BLOCKER LIVED HERE, AND THIS LINE IS THE WHOLE FIX** (2026-07-30).
+-- `htower` inside the theorem below applies mathlib's
+-- `differentIdeal_eq_differentIdeal_mul_differentIdeal`, whose instance argument
+-- `Algebra.IsSeparable (FractionRing A) (FractionRing C)` is stated with respect to
+-- `FractionRing.liftAlgebra` — a **`local` instance** installed at
+-- `Mathlib/RingTheory/DedekindDomain/Different.lean:42` and therefore NOT exported.
+-- Every application site has to install it again.  This file does, at line 21354 — but
+-- inside `section RelativeDifferentTransport`, which `end`s some 540 lines above this
+-- point, so the `Algebra (FractionRing 𝒪₃ᵥ) (FractionRing 𝒪_L)` structure simply did not
+-- exist here.  That is why `haveI … := inferInstance` failed as well, and why no
+-- `maxSynthPendingDepth` could help: there was nothing to find, not something buried.
+--
+-- The 2026-07-29 diagnosis recorded here previously — a new global `CommRing` instance
+-- (`Gamma0GITPresentationOver.commRing_A/_B`, `HardlyRamifiedRealization.commRing`)
+-- arriving through an import and derailing the search — was WRONG.  Nothing arrived
+-- through an import; nothing needs to be un-globalised; the theorem never depended on
+-- anything that changed.  It is recorded because "an instance vanished, so an import must
+-- have shadowed it" is a plausible and expensive false lead, and the cheap discriminating
+-- check is to ask whether the instance is `local` at its definition site before asking
+-- what might be hiding it.
+attribute [local instance] FractionRing.liftAlgebra
+  FractionRing.isScalarTower_liftAlgebra
+
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
--- RELEASE-17 MERGE BLOCKER (2026-07-29) — READ BEFORE TOUCHING THIS DECLARATION.
--- `htower` below applies mathlib's `differentIdeal_eq_differentIdeal_mul_differentIdeal`,
--- and on `merger` its instance
---   `Algebra.IsSeparable (FractionRing 𝒪₃ᵥ) (FractionRing (IntegralClosure 𝒪₃ᵥ ↥L))`
--- FAILS TO SYNTHESISE.  Established facts, so nobody re-derives them:
---   * this theorem is BYTE-IDENTICAL to `main`'s (241 lines, diffed), and `main` is green,
---     so it is an ENVIRONMENT change, not a source defect;
---   * ModThree gained ~1300 lines this release but NO new `instance` and no new global
---     `attribute [instance]` of its own (both checked by diffing the declaration sets);
---   * so the change arrives through an IMPORT.  The candidates added this release are
---     `attribute [instance] Gamma0GITPresentationOver.commRing_A/_B` in `ModularCurve/X0.lean`
---     (which this file imports) and `attribute [instance] HardlyRamifiedRealization.commRing`;
---     a new global `CommRing` instance is exactly the shape that derails an
---     `Algebra.IsSeparable` search.
---   * `set_option maxSynthPendingDepth 4` was TRIED and does NOT fix it — the failure is a
---     dead end in the search, not a depth cutoff.  Do not re-try it.
--- The fix is to supply the instance explicitly at `htower`, next to the three
--- `IsIntegralClosure.*` instances already provided there: over the characteristic-zero
--- `FractionRing 𝒪₃ᵥ = ℚ₃ᵥ` separability is automatic, so it is
--- `PerfectField` + `Algebra.IsAlgebraic` feeding mathlib's instance at
--- `Mathlib/FieldTheory/Perfect.lean:340`.
 /-- **The local Serre different formula, divisibility half, through a
 subextension tower** (PROVEN 2026-07-26; decomposed 2026-07-25 into the
 four `have` steps (i)–(iv) written inside its own proof, all four of
@@ -21962,44 +21966,50 @@ theorem pow_card_inertia_inf_mul_add_sum_dvd_local_differentIdeal
         (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))).map
         (algebraMap (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))
           (IntegralClosure 𝒪₃ᵥ L)) := by
-    -- MERGE-ENVIRONMENT REGRESSION, release 17 (2026-07-29).  NOT a mathematical gap:
-    -- this step is PROVEN on `main` and the enclosing theorem is byte-identical to
-    -- main's over all 241 lines.  What broke is instance resolution.  The proof was
+    -- RELEASE-17 REGRESSION, DIAGNOSED AND CLOSED 2026-07-30.  The `sorry` that stood
+    -- here blamed a new global `CommRing` instance arriving through an import; that was
+    -- wrong, and the record is kept because the wrong diagnosis is the expensive part.
     --
-    --     haveI : IsFractionRing (IntegralClosure 𝒪₃ᵥ ↥(comap L.val M)) ↥(comap L.val M) := …
-    --     haveI : Module.Finite 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ ↥(comap L.val M)) := …
-    --     haveI : Module.Finite 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ ↥L) := …
-    --     haveI : Module.Finite (IntegralClosure 𝒪₃ᵥ ↥(comap L.val M)) (IntegralClosure 𝒪₃ᵥ ↥L) := …
-    --     exact differentIdeal_eq_differentIdeal_mul_differentIdeal 𝒪₃ᵥ
-    --       (IntegralClosure 𝒪₃ᵥ ↥(comap L.val M)) (IntegralClosure 𝒪₃ᵥ ↥L)
+    -- `Algebra.IsSeparable (FractionRing A) (FractionRing C)` — the tower lemma's one
+    -- instance argument (`Mathlib/RingTheory/DedekindDomain/Different.lean:570`) — is
+    -- stated there with respect to `FractionRing.liftAlgebra`, which that file installs
+    -- as a **`local` instance** at its line 42.  It is not global, so it must be
+    -- installed again at every application site.  This file does install it — but at
+    -- line 21354, inside `section RelativeDifferentTransport`, which `end`s at 21416,
+    -- some 540 lines ABOVE this proof.  So `Algebra (FractionRing 𝒪₃ᵥ) (FractionRing 𝒪_L)`
+    -- was not merely hard to find here, it did not exist; that is why the explicit
+    -- `haveI … := inferInstance` failed too, and why no `maxSynthPendingDepth` could help.
+    -- Nothing arrived through an import and nothing needs to be un-globalised.
     --
-    -- and the tower lemma's ONE instance argument
-    --   `Algebra.IsSeparable (FractionRing A) (FractionRing C)`
-    --   (Mathlib/RingTheory/DedekindDomain/Different.lean:570 — the other two
-    --    separability facts are derived inside it)
-    -- no longer synthesises at
-    --   `Algebra.IsSeparable (FractionRing 𝒪₃ᵥ) (FractionRing (IntegralClosure 𝒪₃ᵥ ↥L))`.
-    --
-    -- WHAT HAS BEEN RULED OUT, so nobody repeats it:
-    --   * not a depth cutoff — `set_option maxSynthPendingDepth 4` does not help;
-    --   * not goal-directedness — an explicit
-    --     `haveI : Algebra.IsSeparable … := inferInstance` at this very spot ALSO
-    --     fails, so the instance is unreachable, not merely un-found as a side-goal;
-    --   * not this file — ModThree grew ~1300 lines this release but added no
-    --     `instance` and no global `attribute [instance]` of its own (declaration
-    --     sets diffed against `main`).
-    -- So it arrives through an IMPORT.  The candidate is
-    -- `attribute [instance] Gamma0GITPresentationOver.commRing_A/_B`, made GLOBAL this
-    -- release in `ModularCurve/X0.lean`, which this file imports: a new global
-    -- `CommRing` instance on a structure projection is exactly the shape that
-    -- redirects an `Algebra`/`IsSeparable` search.  The other new global is
-    -- `attribute [instance] HardlyRamifiedRealization.commRing`.
-    --
-    -- The fix is to restore reachability (scope those attributes, or give the
-    -- separability instance a form the search can reach), then delete this `sorry`
-    -- and restore the five lines above.  The statement needs no proof effort — it is
-    -- mathlib's tower formula and it was proven here yesterday.
-    sorry
+    -- The fix is the `attribute [local instance]` line on the section enclosing this
+    -- theorem, plus the two `haveI`s below that discharge the separability side
+    -- condition explicitly rather than by search: over `FractionRing 𝒪₃ᵥ`, which has
+    -- characteristic zero, `PerfectField` is automatic (`PerfectField.ofCharZero`) and
+    -- an algebraic extension of a perfect field is separable
+    -- (`Algebra.IsAlgebraic.isSeparable_of_perfectField`); algebraicity comes from
+    -- `Module.Finite 𝒪₃ᵥ 𝒪_L` through `FiniteDimensional.of_isLocalization`.
+    haveI : IsFractionRing (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))
+        ↥(IntermediateField.comap L.val M) :=
+      IsIntegralClosure.isFractionRing_of_finite_extension 𝒪₃ᵥ ℚ₃ᵥ
+        ↥(IntermediateField.comap L.val M)
+        (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))
+    haveI : Module.Finite 𝒪₃ᵥ
+        (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M)) :=
+      IsIntegralClosure.finite 𝒪₃ᵥ ℚ₃ᵥ ↥(IntermediateField.comap L.val M)
+        (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))
+    haveI : Module.Finite 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ ↥L) :=
+      IsIntegralClosure.finite 𝒪₃ᵥ ℚ₃ᵥ ↥L (IntegralClosure 𝒪₃ᵥ ↥L)
+    haveI : Module.Finite (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))
+        (IntegralClosure 𝒪₃ᵥ ↥L) :=
+      Module.Finite.of_restrictScalars_finite 𝒪₃ᵥ _ _
+    haveI : FiniteDimensional (FractionRing 𝒪₃ᵥ)
+        (FractionRing (IntegralClosure 𝒪₃ᵥ ↥L)) :=
+      .of_isLocalization 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ ↥L) (nonZeroDivisors 𝒪₃ᵥ)
+    haveI : Algebra.IsSeparable (FractionRing 𝒪₃ᵥ)
+        (FractionRing (IntegralClosure 𝒪₃ᵥ ↥L)) :=
+      Algebra.IsAlgebraic.isSeparable_of_perfectField
+    exact differentIdeal_eq_differentIdeal_mul_differentIdeal 𝒪₃ᵥ
+      (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M)) (IntegralClosure 𝒪₃ᵥ ↥L)
   -- assembly: the extended hypothesis contributes `𝔪_L^(h₀·d)`
   have hmapd : IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^
       (Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
@@ -22039,6 +22049,8 @@ theorem pow_card_inertia_inf_mul_add_sum_dvd_local_differentIdeal
     rw [← pow_add, Nat.add_comm]
   rw [htower, hsplit]
   exact mul_dvd_mul hrel hmapd
+
+end DifferentTowerThroughSubextension
 
 
 set_option backward.isDefEq.respectTransparency false in
