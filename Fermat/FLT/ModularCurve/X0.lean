@@ -3558,6 +3558,50 @@ The `Isom`-sheaf itself.  Re-checked 2026-07-28: absent from the pin, from
 this*: `grep -rn 'IsomSheaf\|IsFiniteEtale' Fermat/
 .lake/packages/mathlib/Mathlib/AlgebraicGeometry/ ~/cs/FLT/FLT/`.
 
+## A CONSTRUCTION of the basis locus that needs no `Isom`-sheaf (2026-07-30)
+
+The concrete route above still owes "being a basis is a locally constant
+condition on a finite étale scheme", which is the fibrewise-isomorphism
+criterion in disguise.  **It can be replaced by a finite boolean combination of
+equalizers, and every ingredient of that is now PROVEN in this file.**
+
+Over an algebraically closed field of characteristic `0` the group `E[n](K)` has
+exactly `n²` elements, so for a pair `(y, z)` of `n`-torsion points the map
+`(ZMod n)² → E[n](K)`, `(a, b) ↦ a·y + b·z`, is bijective as soon as it is
+INJECTIVE, i.e. as soon as
+
+> `a·y + b·z ≠ 0` for every `(a, b) ∈ (ZMod n)²` with `(a, b) ≠ (0, 0)`.
+
+So inside `W := E[n] ×_T E[n]` — with `P, Q` the two tautological projections,
+which are `n`-torsion relative points of `f` over `W ⟶ T` by
+`Limits.pullback.condition` alone — the basis locus is
+
+    T' := W \ ⋃_{(a,b) ≠ 0} { a·P + b·Q = 0 },
+
+a finite union of `n² − 1` pieces.  Each piece is the equalizer of the
+`n`-torsion relative point `RelPoint.comb ab a b P Q` (an `n`-torsion point by
+`nsmul_comb_eq_zero` below) with the zero section, and
+`isClopen_range_equalizer_of_nsmul_eq_zero` below says each such equalizer has
+CLOPEN range: OPEN is `isOpenImmersion_equalizer_of_nsmul_eq_zero` (the leaf that
+was closed on 2026-07-30), CLOSED is free from separatedness of `f`.  A finite
+union of clopen sets is clopen, so `T'` is a clopen subset of `W`, which is
+exactly what the two morphism clauses need — `Flat p` from the open half
+(open immersion ∘ étale) and `QuasiCompact p` from the closed half
+(closed-in-affine ∘ finite).
+
+Those lemmas are stated for relative points over `𝟙 Z`, i.e. for SECTIONS, so
+the base change to `Z := W` has to be made first; that is
+`relPointBaseChangeIdAddEquiv` above, together with stability of `Etale` under
+base change to see that `(E ×_T W)[n] ⟶ W` is still étale.
+
+What remains after this is bookkeeping rather than geometry: turning the clopen
+SUBSET into an open subscheme `T'` with its immersion, checking that a geometric
+point of `T` carrying a basis lands in it (clause (B)), and reading clause (A)
+off `nsmul_eq_zero_iff_existsUnique_finPair`.  *The check that would refute this
+paragraph*: a pair `(y, z)` of `n`-torsion points of an elliptic curve over an
+algebraically closed field of characteristic `0` with `a·y + b·z ≠ 0` for all
+`(a, b) ≠ 0` which is nevertheless not a basis.
+
 ## Faithfulness
 
 `hetale` is TRUE (it is `etale_nTorsion_of_specQBase` above, now proven
@@ -5776,9 +5820,81 @@ theorem comp_eq_of_factors_equalizer {W E Z : Scheme.{u}} {f : E ⟶ Z}
     (hk : k ≫ Limits.pullback.fst x.1 y.1 = w) : w ≫ x.1 = w ≫ y.1 := by
   rw [← hk, Category.assoc, Category.assoc, pullback_fst_comp_relPoint]
 
+/-- **An `n`-torsion section factors through `E[n]`** (PROVEN 2026-07-30) —
+`liesIn_torsionι_iff` read with `ι = 𝟙`, in the bare form the equalizer
+argument below needs: not a `LiesIn` but the factoring morphism itself.
+
+`nsmul_val` turns `n • x = 0` into `x.1 ≫ [n] = 𝟙 ≫ e`, which is exactly
+the datum `Limits.pullback.lift` consumes. -/
+theorem exists_factor_nTorsion_of_nsmul_eq_zero {n : ℕ} {Z E : Scheme.{u}} {f : E ⟶ Z}
+    (ab : AbelianSchemeStruct f) (x : RelPoint f (𝟙 Z))
+    (hx : letI := ab.addCommGroup (𝟙 Z); n • x = 0) :
+    ∃ x' : Z ⟶ Limits.pullback (ab.mulByNat n) ab.zeroSection,
+      x' ≫ Limits.pullback.fst (ab.mulByNat n) ab.zeroSection = x.1 := by
+  letI := ab.addCommGroup (𝟙 Z)
+  have hval : (n • x).1 = x.1 ≫ ab.mulByNat n := ab.nsmul_val n x
+  have heq : x.1 ≫ ab.mulByNat n = 𝟙 Z ≫ ab.zeroSection := by
+    rw [← hval, show (n • x) = ab.zero (𝟙 Z) from hx, ab.zero_val]
+  exact ⟨Limits.pullback.lift x.1 (𝟙 Z) heq, Limits.pullback.lift_fst _ _ _⟩
+
+/-- **A SECTION of a formally unramified, locally-of-finite-type morphism is
+an OPEN IMMERSION** (PROVEN 2026-07-30) — the one general fact that the
+equalizer leaf below rests on, and the exact analogue for a *section* of what
+`section_eq_of_formallyUnramified` (far below, in `NeronEtaleRigidity`) is for
+a *pair* of sections.
+
+`s` is a base change of the diagonal `Δ_q`, which is an open immersion by
+`FormallyUnramified.isOpenImmersion_diagonal`.  The comparison map is
+`m := (𝟙, q ≫ s) : K ⟶ K ×_Z K`; the square
+
+    Z --s--> K
+    |        |
+    s        Δ_q
+    v        v
+    K --m--> K ×_Z K
+
+is cartesian because `q ≫ s ≫ q = q` makes `m` well defined, and a cone
+`(c₁, c₂)` over it satisfies `c₁ = c₂` (first projection) and
+`c₁ ≫ q ≫ s = c₂` (second), so `c₁ ≫ q` is the unique lift — uniqueness
+because `s` is a split mono. -/
+theorem isOpenImmersion_section_of_formallyUnramified {K Z : Scheme.{u}} (q : K ⟶ Z)
+    [FormallyUnramified q] [LocallyOfFiniteType q]
+    (s : Z ⟶ K) (hs : s ≫ q = 𝟙 Z) : IsOpenImmersion s := by
+  have hm : (𝟙 K) ≫ q = (q ≫ s) ≫ q := by
+    rw [Category.id_comp, Category.assoc, hs, Category.comp_id]
+  set m : K ⟶ Limits.pullback q q := Limits.pullback.lift (𝟙 K) (q ≫ s) hm with hmdef
+  have hmfst : m ≫ Limits.pullback.fst q q = 𝟙 K := Limits.pullback.lift_fst _ _ _
+  have hmsnd : m ≫ Limits.pullback.snd q q = q ≫ s := Limits.pullback.lift_snd _ _ _
+  have hcomm : s ≫ m = s ≫ Limits.pullback.diagonal q := by
+    refine Limits.pullback.hom_ext ?_ ?_
+    · rw [Category.assoc, hmfst, Category.assoc, Limits.pullback.diagonal_fst, Category.comp_id]
+    · rw [Category.assoc, hmsnd, Category.assoc, Limits.pullback.diagonal_snd, Category.comp_id,
+        ← Category.assoc, hs, Category.id_comp]
+  have hPB : IsPullback s s m (Limits.pullback.diagonal q) := by
+    refine IsPullback.of_isLimit (Limits.PullbackCone.IsLimit.mk hcomm
+      (fun c => c.fst ≫ q) ?_ ?_ ?_)
+    · intro c
+      have h1 : c.fst = c.snd := by
+        have := congrArg (fun t => t ≫ Limits.pullback.fst q q) c.condition
+        simpa [Category.assoc, hmfst, Limits.pullback.diagonal_fst] using this
+      have h2 : c.fst ≫ q ≫ s = c.snd := by
+        have := congrArg (fun t => t ≫ Limits.pullback.snd q q) c.condition
+        simpa [Category.assoc, hmsnd, Limits.pullback.diagonal_snd] using this
+      rw [Category.assoc, h2, ← h1]
+    · intro c
+      have h2 : c.fst ≫ q ≫ s = c.snd := by
+        have := congrArg (fun t => t ≫ Limits.pullback.snd q q) c.condition
+        simpa [Category.assoc, hmsnd, Limits.pullback.diagonal_snd] using this
+      rw [Category.assoc, h2]
+    · intro c w hw1 _
+      rw [← hw1, Category.assoc, hs, Category.comp_id]
+  haveI : IsOpenImmersion (Limits.pullback.fst m (Limits.pullback.diagonal q)) := inferInstance
+  rw [← hPB.isoPullback_hom_fst]
+  infer_instance
+
 /-- **THE ONE OPEN LEAF under `exists_openCover_twist_of_fullLevelStructure`**
-(opened 2026-07-28): *the equalizer of two `n`-torsion sections of an
-elliptic scheme over a `ℚ`-scheme is OPEN in the base.*
+(opened 2026-07-28; **PROVEN 2026-07-30**): *the equalizer of two `n`-torsion
+sections of an elliptic scheme over a `ℚ`-scheme is OPEN in the base.*
 
 ## What the prover of this node owes
 
@@ -5848,8 +5964,89 @@ theorem isOpenImmersion_equalizer_of_nsmul_eq_zero (n : ℕ) (hn : 3 ≤ n)
     (hdim : SmoothOfRelativeDimension 1 f) (x y : RelPoint f (𝟙 Z))
     (hx : letI := ab.addCommGroup (𝟙 Z); n • x = 0)
     (hy : letI := ab.addCommGroup (𝟙 Z); n • y = 0) :
-    IsOpenImmersion (Limits.pullback.fst x.1 y.1) :=
-  sorry
+    IsOpenImmersion (Limits.pullback.fst x.1 y.1) := by
+  -- STEP 1.  `E[n] ⟶ Z` is ÉTALE.  This is the only place `hn`, `hdim` and `g`
+  -- are spent, and it is exactly `etale_nTorsion_of_specQBase`.
+  haveI hq : AlgebraicGeometry.Etale
+      (Limits.pullback.fst (ab.mulByNat n) ab.zeroSection ≫ f) :=
+    etale_nTorsion_of_specQBase n hn ab hdim g
+  -- STEP 2.  Both sections factor through `E[n]`.
+  obtain ⟨x', hx'⟩ := exists_factor_nTorsion_of_nsmul_eq_zero ab x hx
+  obtain ⟨y', hy'⟩ := exists_factor_nTorsion_of_nsmul_eq_zero ab y hy
+  -- STEP 3.  `E[n] ⟶ E` is a MONO: it is the base change of the zero section,
+  -- which is split by `f`.
+  haveI : IsSplitMono ab.zeroSection := IsSplitMono.mk ⟨f, ab.zeroSection_comp⟩
+  haveI hmono : Mono (Limits.pullback.fst (ab.mulByNat n) ab.zeroSection) := inferInstance
+  -- STEP 4.  `y'` is a section of the étale `E[n] ⟶ Z`, hence an OPEN IMMERSION,
+  -- and so is its base change along `x'`.
+  have hsecy : y' ≫ (Limits.pullback.fst (ab.mulByNat n) ab.zeroSection ≫ f) = 𝟙 Z := by
+    rw [← Category.assoc, hy']; exact y.2
+  haveI : IsOpenImmersion y' := isOpenImmersion_section_of_formallyUnramified _ y' hsecy
+  haveI : IsOpenImmersion (Limits.pullback.fst x' y') := inferInstance
+  -- STEP 5.  The two equalizers agree, `E[n] ⟶ E` being a mono.
+  have hcond : Limits.pullback.fst x.1 y.1 ≫ x' = Limits.pullback.snd x.1 y.1 ≫ y' := by
+    rw [← cancel_mono (Limits.pullback.fst (ab.mulByNat n) ab.zeroSection),
+      Category.assoc, Category.assoc, hx', hy']
+    exact Limits.pullback.condition
+  have hcond2 : Limits.pullback.fst x' y' ≫ x.1 = Limits.pullback.snd x' y' ≫ y.1 := by
+    rw [← hx', ← hy', ← Category.assoc, ← Category.assoc, Limits.pullback.condition]
+  haveI : IsIso (Limits.pullback.lift (Limits.pullback.fst x.1 y.1)
+      (Limits.pullback.snd x.1 y.1) hcond) := by
+    refine ⟨Limits.pullback.lift (Limits.pullback.fst x' y')
+      (Limits.pullback.snd x' y') hcond2, ?_, ?_⟩
+    · refine Limits.pullback.hom_ext ?_ ?_ <;>
+        simp only [Category.assoc, Limits.pullback.lift_fst, Limits.pullback.lift_snd,
+          Category.id_comp]
+    · refine Limits.pullback.hom_ext ?_ ?_ <;>
+        simp only [Category.assoc, Limits.pullback.lift_fst, Limits.pullback.lift_snd,
+          Category.id_comp]
+  have hfst : Limits.pullback.fst x.1 y.1
+      = Limits.pullback.lift (Limits.pullback.fst x.1 y.1) (Limits.pullback.snd x.1 y.1) hcond
+        ≫ Limits.pullback.fst x' y' :=
+    (Limits.pullback.lift_fst _ _ _).symm
+  rw [hfst]
+  infer_instance
+
+/-- **The equalizer of two SECTIONS of a separated morphism is a CLOSED
+immersion** (PROVEN 2026-07-30) — the free half, and the companion of the leaf
+above: `pullback.fst x y` is the base change of `y`, and `y` is a section of the
+separated `f`, hence a closed immersion by `IsClosedImmersion.of_comp` (the same
+two lines as `AbelianSchemeStruct.isClosedImmersion_zeroSection` below). -/
+theorem isClosedImmersion_equalizer_relPoint {Z E : Scheme.{u}} {f : E ⟶ Z}
+    [IsSeparated f] (x y : RelPoint f (𝟙 Z)) :
+    IsClosedImmersion (Limits.pullback.fst x.1 y.1) := by
+  haveI : IsClosedImmersion y.1 := by
+    haveI : IsClosedImmersion (y.1 ≫ f) := by rw [y.2]; infer_instance
+    exact IsClosedImmersion.of_comp _ f
+  infer_instance
+
+/-- **The locus where two `n`-torsion sections agree is CLOPEN** (PROVEN
+2026-07-30) — the two immersion statements above, read on ranges.
+
+This is the form the `Isom`-scheme construction wants (see the route recorded in
+the docstring of `exists_isomTorsor_of_etale_nTorsion` above): the basis locus
+inside `E[n] ×_T E[n]` is the intersection of the complements of the `n² − 1`
+loci `a·P + b·Q = 0`, and a finite intersection of complements of CLOPEN sets is
+clopen.  Openness is the leaf; closedness is free.
+
+**Pre-positioned, and deliberately so: this has NO consumer yet.**  It is the
+first brick of the construction recorded in the docstring of
+`exists_isomTorsor_of_etale_nTorsion` above, written now because it is a
+two-line corollary of the leaf that was just closed and would otherwise have to
+be rediscovered.  A floating-code sweep will report it; the right response is to
+write the consumer, not to delete the lemma. -/
+theorem isClopen_range_equalizer_of_nsmul_eq_zero (n : ℕ) (hn : 3 ≤ n)
+    {Z E : Scheme.{0}} (g : Z ⟶ SpecQ) {f : E ⟶ Z} (ab : AbelianSchemeStruct f)
+    (hdim : SmoothOfRelativeDimension 1 f) (x y : RelPoint f (𝟙 Z))
+    (hx : letI := ab.addCommGroup (𝟙 Z); n • x = 0)
+    (hy : letI := ab.addCommGroup (𝟙 Z); n • y = 0) :
+    IsClopen (Set.range (Limits.pullback.fst x.1 y.1).base) := by
+  haveI := ab.proper
+  haveI : IsSeparated f := inferInstance
+  haveI := isClosedImmersion_equalizer_relPoint x y
+  haveI := isOpenImmersion_equalizer_of_nsmul_eq_zero n hn g ab hdim x y hx hy
+  exact ⟨(Limits.pullback.fst x.1 y.1).isClosedEmbedding.isClosed_range,
+    (Limits.pullback.fst x.1 y.1).isOpenEmbedding.isOpen_range⟩
 
 /-- **The comparison matrix of two fibrewise bases is INVERTIBLE**
 (PROVEN 2026-07-28) — the pure-algebra half of
