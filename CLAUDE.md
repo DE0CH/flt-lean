@@ -9133,12 +9133,16 @@ closure of the false leaf's consumers gives **18 poisoned and 17 clean**. The cl
 consumerless once the tower above them went — which is a consequence of the
 deletion, not evidence for it.
 
-The chain to the target split exactly along that line: two links poisoned, four
-provable. Restoring the four with their original proofs and re-cutting at the two
-poisoned STATEMENTS moved the frontier from one bundled leaf to two crisp
-coefficient-free ones, put ~840 lines of previously verified proof back in the tree,
-and left strictly less open mathematics — at the cost of `+1` on the sorry count,
-which is the disclosure trade this file already describes.
+**What you want is not the poisoned SET but its MINIMAL elements — where the poison
+ENTERS.** The transitive closure necessarily swallows everything above an entry point,
+including the theorem the cut was aiming at, so reading it as "all of this is unusable"
+is exactly the mistake. Along the chain to the target the poison entered at just two
+declarations; the four above them cite the false leaf only THROUGH those two, so
+re-sorrying the two entry points restores all four with their original, previously
+verified proofs. That moved the frontier from one bundled leaf to two crisp
+coefficient-free ones, put ~840 lines of proof back in the tree, and left strictly less
+open mathematics — at the cost of `+1` on the sorry count, which is the disclosure
+trade this file already describes.
 
 So the procedure when a leaf is refuted, before deleting anything:
 
