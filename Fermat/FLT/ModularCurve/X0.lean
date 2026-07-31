@@ -34832,19 +34832,122 @@ constraint is free once the scalar exists: `W_M` is an involution, so
 involution in the only form the analytic side needs), and putting it in
 this statement would only hide proven mathematics inside a `sorry`.
 
-**What this leaf still needs**, and it is a genuinely missing theory:
-Hecke operators as OPERATORS on `S₂(Γ₀(M))` — this development's
-`IsWeightTwoEigenform` carries them only as recurrences on the
-`q`-expansion sequence, which is enough to *state* eigenness but not to
-say that `W_M` commutes with them — the commutation `W_M T_n = T_n W_M`
-for `(n, M) = 1` (a double-coset computation), and multiplicity one for
-the newspace (Atkin–Lehner, via the Petersson inner product or via the
-theory of oldforms).  `grep -rn "Hecke\|heckeOp\|newform" Fermat/
-.lake/packages/mathlib/ ~/cs/FLT/` returns no operator-level Hecke theory
-anywhere on this pin; `Mathlib/NumberTheory/ModularForms/` has no Hecke
-operator at all.  So this is a subtree to be built, not a proof to be
-found — and it is the SAME missing subtree named by
-`frickeSign_eq_neg_one_of_isNewEigenformAt`.
+**THE "GENUINELY MISSING THEORY" PARAGRAPH THAT STOOD HERE WAS FALSE, AND
+ITS CORRECTION IS THE ROUTE** (2026-07-31).  It said that what this leaf
+still needs is Hecke operators as OPERATORS on `S₂(Γ₀(M))` — the
+commutation `W_M T_n = T_n W_M` for `(n, M) = 1` and multiplicity one for
+the newspace — and that a grep over `Fermat/`, the mathlib pin and
+`~/cs/FLT/` "returns no operator-level Hecke theory anywhere on this pin",
+so that this was "a subtree to be built, not a proof to be found".
+
+**None of the theory is missing.**  All of it is PROVEN in this tree, and
+the last clause was already wrong when it was written: the hoist that made
+Hecke operators nameable here landed 2026-07-27 and is recorded in the
+`THE CYCLE IS BROKEN` note ~7 400 lines below.
+
+* `heckeOp M q : Module.End ℂ (CuspForm (Gamma0GL M) 2)` lives in
+  `Fermat/FLT/Modularity/HeckeOperator.lean`, is pinned to the Hecke
+  slash-sum by `heckeOp_coe`, and **this file `public import`s that
+  module** — `IsX0EichlerShimura` above already uses it.
+* `Modularity/Interface.lean` PROVES the entire classical argument this
+  leaf wants, for the Atkin–Lehner operator `W_q` at a prime `q ‖ M`, with
+  no `sorry` in any of these five declarations (checked at `9a2ca10d` by a
+  comment-stripping scan that attributes each token to its enclosing
+  declaration):
+  `heckeTransform_slash_atkinLehnerRep` — the double-coset computation,
+  `T_r (f ∣ W_q) = (T_r f) ∣ W_q` for primes `r ≠ q`;
+  `heckeOp_comm_atkinLehnerOp` — the same as endomorphisms;
+  `heckeOp_apply_eq_smul_of_isWeightTwoEigenform` — a coefficient-recurrence
+  eigenform really is an eigenVECTOR of the operator, which is precisely the
+  step the old paragraph declared impossible;
+  `exists_smul_of_heckeOp_eq_smul_of_not_dvd_level` — strong multiplicity
+  one: a joint good-prime eigenvector at a NEWFORM's eigensystem is a scalar
+  multiple of it, i.e. *exactly this leaf's conclusion shape*;
+  and the assembled `atkinLehnerOp_apply_eq_neg_qCoeff_smul`,
+  `W_q g = (−a_q) • g`.
+* **The Fricke case is `Q = M`, and it is not a new case.**
+  `A = !![0, -1; M, 0]` satisfies `IsAtkinLehnerMatrix M M` on the nose
+  (`det A = M`, and `M ∣ A 0 0 = 0`, `M ∣ A 1 0 = M`, `M ∣ A 1 1 = 0`);
+  `Nat.Coprime M (M / M)` is `Nat.Coprime M 1`; and `atkinLehnerRep A` and
+  `frickeMatrix M hM` have the same underlying matrix, so
+  `atkinLehnerOp M M g = frickeSlash M hM g` follows from
+  `atkinLehnerOp_coe` and `coe_frickeSlash` by `DFunLike.coe_injective`.
+  The one place `Q`'s primality is used is
+  `heckeTransform_slash_atkinLehnerRep`'s `hq`, where the side condition
+  `r ≠ q` has to be restated as `¬ r ∣ M`; nothing in its proof — a
+  bijection of the `ℙ¹(𝔽_r)`-indexed coset representatives — knows that `q`
+  is prime.
+
+**SO WHAT BLOCKS THIS LEAF IS THE MODULE DIRECTION, NOT THE MATHEMATICS**,
+which is the same obstruction the ROUTE AUDIT below diagnosed for
+`heckeOp`, one hoist earlier.  `Interface.lean` `public import`s THIS file
+(`Interface → HardlyRamified/ModThree → FreyCurve/MazurTorsion → X0`), so
+none of the declarations above may be named here.  The repair is the SECOND
+hoist, by the recipe the first one established: move the analytic block out
+of `Interface.lean` into a module beside `HeckeOperator.lean`.  Nothing in
+that block mentions a scheme — `Interface`'s uses of THIS file are confined
+to its Eichler–Shimura and Jacobian material, and the block lies between
+those two regions and touches neither.
+
+**AND IT IS BIG — MEASURED, NOT ESTIMATED (2026-07-31).**  The transitive
+closure inside `Interface.lean` of the five declarations above, taken over
+comment-stripped source with `isalnum` tokenisation, is **204 declarations
+and ≈ 9 000 non-comment lines** (with docstrings, a substantial fraction of
+that file), running from `qCoeff` to `atkinLehnerOp_apply_eq_neg_qCoeff_smul`.
+It is not the qCoeff-plus-AtkinLehner shortlist one would guess: the closure
+drags in the degeneracy operators and the oldform subspace, the Sturm bound
+and `cuspForm_finiteDimensional`, and — the bulk of it — the Petersson inner
+product with its fundamental-domain measure theory
+(`exists_peterssonProduct_selfAdjoint_heckeOp`,
+`peterssonSelfAdjoint_of_gamma0FundamentalDomain`, `gamma0Domain` and about
+forty supporting volume lemmas).  So the old paragraph was right that the
+Petersson product is what multiplicity one runs on, and wrong only that it
+does not exist here.
+
+**The closure of what THIS leaf needs is smaller and, more to the point,
+SORRY-FREE: 193 declarations and 8 267 non-comment lines, with zero sorried
+declarations anywhere in it.**  It is the closure of
+`exists_smul_of_heckeOp_eq_smul_of_not_dvd_level`,
+`heckeTransform_slash_atkinLehnerRep`, `heckeOp_comm_atkinLehnerOp`,
+`heckeOp_apply_eq_smul_of_isWeightTwoEigenform`, `atkinLehnerOp_coe`,
+`eq_qCoeff_one_smul_of_heckeOp_eigen` and `IsWeightTwoNewform` — i.e. the
+204-declaration figure above minus the tail that only
+`atkinLehnerOp_apply_eq_neg_qCoeff_smul` drags in.  That tail is where the
+closure's single sorry lives (`heckeOp_traceOp_comm_of_not_dvd`, under the
+`traceOp`/degeneracy route to the `q`-expansion of `W_q g`), and this leaf
+does not need it: the scalar here is left as `∃ c` precisely because its
+VALUE is not asked for.  So after the hoist this leaf is provable outright,
+modulo the one carrier bridge below — no new sorry is inherited.
+
+That measurement is why this is a hoist to DISPATCH rather than to fold into
+proving the leaf, and why it must not be attempted alongside other edits to
+`Interface.lean` — a relocation of that size raced against a concurrent
+editor produces a duplicate that no `sorry` scan can see.
+
+**ONE GENUINE MATHEMATICAL GAP SURVIVES THE HOIST, and it is not
+bookkeeping.**  The two newform carriers do not bridge definitionally — the
+same survey the `Gamma0GL` note below records, where `Gamma0GL` DOES bridge
+by `rfl` and the eigenform carriers do not.  This file's
+`IsNewEigenformAt M b` says the SEQUENCE `b` is not a stabilization of a
+proper-divisor-level eigenform, whereas
+`exists_smul_of_heckeOp_eq_smul_of_not_dvd_level` consumes
+`IsWeightTwoNewform`'s `eigensystem_minimal`: no proper divisor level
+realizes the away-from-`M` eigensystem.  The direction needed is
+`IsNewEigenformAt M b → eigensystem_minimal`; contrapositively, an
+eigenform of level `M' ∣ M`, `M' ≠ M`, agreeing with `b` at every prime
+`q ∤ M` forces `b` to be a stabilization tower over it.  That is
+Atkin–Lehner Theorem 1 / Diamond–Shurman Thm 5.8.3, it is small beside the
+hoist, and it is where a successor's mathematics should go.
+
+The old paragraph's closing claim — that this is the SAME missing subtree
+as `frickeSign_eq_neg_one_of_isNewEigenformAt` — survives only in the
+weakened form that both are unblocked by the same hoist.  The SIGN at a
+Kenku divisor is a root-number computation that the multiplicity-one chain
+does not supply.
+
+**Refute this note** by exhibiting a `sorry` in any of the five
+`Interface.lean` declarations named above, or an import path from
+`HeckeOperator.lean`'s neighbourhood back into `ModularCurve/X0.lean`.
 
 **The axis NOT searched** (in the sense of the doctrine's
 irreducibility-verdict rule): everything above ranges over
