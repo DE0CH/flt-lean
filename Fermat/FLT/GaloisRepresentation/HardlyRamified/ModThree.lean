@@ -8,6 +8,9 @@ module
 -- The three different-ideal / discriminant-exponent statements hoisted out of
 -- this module on 2026-07-28 to take it off `HermiteMinkowski`'s critical path;
 -- `public` so every reference below resolves unchanged.  See that module's header.
+-- The trace form on the Euclidean mixed space: sub-leaf (B) of the cut of
+-- `heckeIdealTheta_functionalEquation` below (2026-07-31).
+public import Fermat.FLT.NumberField.MixedSpaceTraceForm
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.DifferentIdeal
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
 -- The PROVEN character bookkeeping (stable-line characters, kernel
@@ -25897,8 +25900,63 @@ theorem tsum_classIdealCount_mul (K : Type*) [Field K] [NumberField K]
   rw [tsum_eq_toReal_tsum_ofReal hLnn, tsum_eq_toReal_tsum_ofReal hRnn, key]
 
 open scoped nonZeroDivisors in
-/-- **Hecke's unit-domain theta functional equation, in its IDEAL-INDEXED
-form** (sorry node, stated 2026-07-25 — the geometric residue of
+/-- **Hecke's unit-domain theta functional equation, ideal-indexed, MODULO THE METRIC
+BRIDGE** (open node; the `htrace` hypothesis below is PROVEN and is discharged
+immediately in `heckeIdealTheta_functionalEquation`, which is the form consumers use —
+so this is the SAME open node, minus sub-leaf (B)).
+
+**2026-07-31, `flt-lean-197`: sub-leaf (B) of the cut described below is DONE, in full.**
+`Fermat.MixedSpaceTrace.TraceFormBridge K` — the `htrace` hypothesis here — is a
+CONJUNCTION, and both halves are proven in
+`Fermat/FLT/NumberField/MixedSpaceTraceForm.lean`:
+
+* the METRIC identification
+  `⟪traceEmbedding a, mixedConj (traceEmbedding b)⟫ = Tr_{K/ℚ}(a·b)`, where
+  `traceEmbedding` is the canonical embedding with its complex block rescaled by `√2` and
+  `mixedConj` is coordinatewise conjugation, a linear ISOMETRY;
+* the DUAL-LATTICE identification
+  `dualSubmodule (innerₗ _) (traceLattice K I) = mixedConj '' traceLattice K (dualIdeal K I)`,
+  with `dualIdeal K I = FractionalIdeal.dual ℤ ℚ I = (I·𝔡_K)⁻¹` — stated in exactly the
+  `LinearMap.BilinForm.dualSubmodule (innerₗ _)` shape that `hθ` above consumes, so it can
+  be fed straight into `hθ` with no translation.
+
+That file also carries the four `InfinitePlace`-indexed trace lemmas mathlib lacks (the
+ones the paragraph at the foot of this docstring used to describe as living only in a git
+blob — that paragraph is now history, and the blob has been lifted verbatim there).  The
+proof needs NO covolume computation and no double-dual argument: `traceLatticeBasis I` is
+an `ℝ`-basis that `ℤ`-spans the lattice, biorthogonality against
+`mixedConj ∘ traceEmbedding ∘ (basisOfFractionalIdeal K I).traceDual` follows from the
+metric identity and `Basis.trace_mul_traceDual`, so that family IS the
+`LinearMap.BilinForm.dualBasis` and `dualSubmodule_span_of_basis` finishes it.
+
+A successor may therefore use `htrace.2` directly as the input to `hθ`, and `htrace.1`
+for anything else it needs from the places/trace side.
+
+**What is still open here is (A) and (C)**, and the arithmetic below is worth recording
+because it was re-derived from scratch while (B) was being proved, and it pins every
+normalisation a successor must reproduce.  Write `n = [K:ℚ]`, `r = r₁ + r₂`,
+`w = #μ(K)`, `V = N(J)·√|d_K|`.
+
+* The metric to use is `M = Σ_real x_w² + 2·Σ_complex |x_w|²`, i.e. the one
+  `traceEmbedding` realises inside mathlib's Euclidean mixed space.  **Not** mathlib's own
+  `Σ_real + Σ_complex`: with that one the `ℤ`-dual of `σ(J)` is the image of an ideal
+  lattice under coordinatewise scaling by `2` on the complex block, which is not a
+  homothety in mixed signature and therefore is NOT invisible to a theta sum.  With `M`,
+  `dual_M(σ J) = conj(σ((J·𝔡)⁻¹))` on the nose, and `conj` is an isometry.
+* Normalise to COVOLUME ONE: `L_C := V^{-1/n}·σ(J)` with `[J] = C⁻¹`.  Then
+  `covol_M(L_C) = 1`, `dual(L_C)` is (isometrically) `L_{C'}` for
+  `C' = dedekindDualClass K C`, and `hθ` gives `Θ_{L_C}(t⁻¹) = t^{n/2}·Θ_{L_{C'}}(t)`
+  with constant exactly `1` — which is where the `x^{1/2}` of the conclusion comes from,
+  via `t = x^{1/n}` (that same `n`-th root is why `hGdec` is stated with
+  `τ^{(finrank ℚ K)⁻¹}`).
+* Sub-leaf (A) is then `ρ₀ + Σ_{𝔟∈C} G(N𝔟²x/|d|) = (1/w)·∫_𝔉 Θ_{y·L_C}(x^{1/n}) dy`, with
+  the `α = 0` term contributing `ρ₀ = (1/w)·vol(𝔉) = 2^{r−1}·Reg(K)/w`.
+* CHECKED numerically while re-deriving this: `K = ℚ(i)` (`n = 2`, `V = 1`,
+  `G(τ) = e^{-2π√τ}`) gives `1/4 + Σ_𝔟 e^{-πN𝔟√x} = (1/4)Σ_{α∈ℤ[i]} e^{-π√x|α|²}`, and
+  `K = ℚ(√-5)` (`V = √5`) gives `1/2 + Σ_𝔟 e^{-πN𝔟√(x/5)}`, both matching the two PARI/GP
+  audits recorded further down.  Any candidate normalisation that fails these two is wrong.
+
+(Original header, stated 2026-07-25 — the geometric residue of
 `heckeCanonicalThetaProfile_functionalEquation` after the ideal dictionary
 `tsum_classIdealCount_mul` has been divided out; Neukirch, *Algebraic
 Number Theory*, VII §§3 + 5, (5.5)–(5.6)): given the `ZLattice` Poisson law
@@ -26058,14 +26116,17 @@ representation, (B) the trace-dual/covolume-`1` identification above,
 and (C) invariance of `𝔉` under `y ↦ y⁻¹`; (B) is the only one with no
 analysis in it and is the right place to start.
 
-FIRST BRICK OF (B), ALREADY PROVEN AND VERIFIED — but NOT committed to
-the build, because nothing consumes it yet and it would be free-floating.
-It is preserved as the git blob tag `flt-lean-272-trace-over-places`
-(recover with `git cat-file blob flt-lean-272-trace-over-places`), and it
-compiles clean against our pin (`lake env lean`, `EXIT=0`, no warnings).
-It supplies the additive analogue of `prod_eq_abs_norm` that mathlib
-lacks, proved on the template of that lemma (`trace_eq_sum_embeddings`,
-`RingHom.equivRatAlgHom`, `Finset.sum_fiberwise`, `card_filter_mk_eq`):
+SUB-LEAF (B) IS NOW CLOSED (2026-07-31) — this paragraph is kept only as a
+record of where the material came from.  The four lemmas below lived in the
+git blob tag `flt-lean-272-trace-over-places`, uncommitted because nothing
+consumed them; they are now in
+`Fermat/FLT/NumberField/MixedSpaceTraceForm.lean`, consumed by
+`Fermat.MixedSpaceTrace.inner_traceEmbedding_mixedConj`, hence by
+`Fermat.MixedSpaceTrace.dualSubmodule_traceLattice` and `traceFormBridge`, which is in
+turn consumed by `heckeIdealTheta_functionalEquation`.  They supply the additive analogue of
+`prod_eq_abs_norm` that mathlib lacks, proved on the template of that lemma
+(`trace_eq_sum_embeddings`, `RingHom.equivRatAlgHom`, `Finset.sum_fiberwise`,
+`card_filter_mk_eq`):
 
 * `filter_mk_eq` — the fibre of `InfinitePlace.mk` over `w` is exactly
   `{embedding w, ComplexEmbedding.conjugate (embedding w)}`;
@@ -26075,8 +26136,57 @@ lacks, proved on the template of that lemma (`trace_eq_sum_embeddings`,
   `Tr(x) = ∑_{w real} σ_w x + 2·∑_{w complex} Re(σ_w x)`, which is
   literally the mixed-space form `Σ_real + 2Σ_complex Re` that has to be
   matched against `⟪·,·⟫` to identify the trace-dual with the lattice
-  dual.  A successor building (B) should lift these four verbatim and
-  commit them TOGETHER with the assembly that consumes them. -/
+  dual.  That is exactly what `inner_traceEmbedding_mixedConj` now does. -/
+theorem heckeIdealTheta_functionalEquation_of_traceForm (K : Type*) [Field K] [NumberField K]
+    (hθ : ∀ (E : Type) [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+      [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
+      (L : Submodule ℤ E) [DiscreteTopology L] [IsZLattice ℝ L]
+      (t : ℝ), 0 < t →
+      ∑' v : L, Real.exp (-Real.pi * t⁻¹ * ‖(v : E)‖ ^ 2) =
+        (ZLattice.covolume L)⁻¹ * t ^ ((Module.finrank ℝ E : ℝ) / 2) *
+          ∑' w : LinearMap.BilinForm.dualSubmodule (innerₗ E) L,
+            Real.exp (-Real.pi * t * ‖(w : E)‖ ^ 2))
+    (G : ℝ → ℝ)
+    (hGcont : ContinuousOn G (Set.Ioi 0))
+    (hGpos : ∀ τ : ℝ, τ ∈ Set.Ioi (0 : ℝ) → 0 ≤ G τ)
+    (hGanti : AntitoneOn G (Set.Ioi 0))
+    (hGdec : ∃ A a : ℝ, 0 < a ∧ ∀ τ : ℝ, 1 ≤ τ →
+      G τ ≤ A * Real.exp (-a * τ ^ ((Module.finrank ℚ K : ℝ)⁻¹)))
+    (hGmel : ∀ s : ℂ, 1 < s.re →
+      HasMellin (fun τ : ℝ => (G τ : ℂ)) (s / 2)
+        (((Real.pi : ℂ) ^ (-s / 2) * Complex.Gamma (s / 2)) ^
+            NumberField.InfinitePlace.nrRealPlaces K *
+          ((2 : ℂ) * ((2 * Real.pi : ℝ) : ℂ) ^ (-s) * Complex.Gamma s) ^
+            NumberField.InfinitePlace.nrComplexPlaces K))
+    (htrace : Fermat.MixedSpaceTrace.TraceFormBridge K) :
+    ∃ ρ₀ : ℝ, ∀ C : ClassGroup (NumberField.RingOfIntegers K), ∀ x : ℝ, 0 < x →
+      ρ₀ + ∑' I : {I : (Ideal (NumberField.RingOfIntegers K))⁰ // ClassGroup.mk0 I = C},
+          G ((Ideal.absNorm (I : Ideal (NumberField.RingOfIntegers K)) : ℝ) ^ 2 /
+            (|(NumberField.discr K : ℝ)| * x)) =
+        x ^ ((1 : ℝ) / 2) *
+          (ρ₀ + ∑' I : {I : (Ideal (NumberField.RingOfIntegers K))⁰ //
+                ClassGroup.mk0 I = dedekindDualClass K C},
+            G ((Ideal.absNorm (I : Ideal (NumberField.RingOfIntegers K)) : ℝ) ^ 2 * x /
+              |(NumberField.discr K : ℝ)|)) := by
+  sorry
+
+open scoped nonZeroDivisors in
+/-- **Hecke's unit-domain theta functional equation, ideal-indexed** — the form the
+consumers use, obtained from `heckeIdealTheta_functionalEquation_of_traceForm` by
+discharging its `Fermat.MixedSpaceTrace.TraceFormBridge` hypothesis with
+`Fermat.MixedSpaceTrace.traceFormBridge`, which is PROVEN (2026-07-31,
+`Fermat/FLT/NumberField/MixedSpaceTraceForm.lean`).
+
+The statement is unchanged from before that split, so every consumer is unaffected.  What
+the split accomplishes is that sub-leaf (B) of the cut described at length above — the
+identification of the mixed-space metric with the trace form, which is where mathlib's
+absence of any `InfinitePlace`-indexed trace formula bites — is now DONE and in the build
+rather than sitting in a git blob nothing consumes.  What remains open is
+`heckeIdealTheta_functionalEquation_of_traceForm`, i.e. sub-leaves (A) and (C): the
+integral representation of the class sum over the unit fundamental domain `𝔉`, and the
+invariance of `𝔉` under `y ↦ y⁻¹`.  Neither has any trace-form content left in it.  See
+that theorem's docstring; everything it says about the route, the numerics and the
+universe obstruction still applies verbatim. -/
 theorem heckeIdealTheta_functionalEquation (K : Type*) [Field K] [NumberField K]
     (hθ : ∀ (E : Type) [NormedAddCommGroup E] [InnerProductSpace ℝ E]
       [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
@@ -26106,8 +26216,9 @@ theorem heckeIdealTheta_functionalEquation (K : Type*) [Field K] [NumberField K]
           (ρ₀ + ∑' I : {I : (Ideal (NumberField.RingOfIntegers K))⁰ //
                 ClassGroup.mk0 I = dedekindDualClass K C},
             G ((Ideal.absNorm (I : Ideal (NumberField.RingOfIntegers K)) : ℝ) ^ 2 * x /
-              |(NumberField.discr K : ℝ)|)) := by
-  sorry
+              |(NumberField.discr K : ℝ)|)) :=
+  heckeIdealTheta_functionalEquation_of_traceForm K hθ G hGcont hGpos hGanti hGdec hGmel
+    (Fermat.MixedSpaceTrace.traceFormBridge K)
 
 /-- **The canonical archimedean profile and its unit-domain theta
 functional equation** (assembly PROVEN 2026-07-25, over the two
