@@ -36,6 +36,9 @@ from semmerge import split_blocks, comment_mask
 PLAN = '/tmp/dedup-plan.txt'
 
 # Lines that must survive the deletion of the block that happens to contain them.
+MODIFIER = re.compile(r'^(omit|open|set_option|attribute|include|variable)\b.*\bin\s*$')
+SCOPE_ONLY = re.compile(r'^\s*(end|section|namespace)\b')
+
 SCOPE = re.compile(r'^\s*(namespace\b|section\b|end\b|variable\b|universe\b|open\b|'
                    r'attribute\b|noncomputable\s+section\b|set_option\b|/-!)')
 
@@ -118,6 +121,26 @@ def apply(root):
                 total += 1
                 continue
             out.extend(ls)
+        # A `... in` MODIFIER (`omit`/`open`/`set_option`/`attribute`/`include`/
+        # `variable`) binds to the NEXT declaration, and split_blocks leaves it in
+        # the GLUE before a block rather than attaching it.  Deleting the block
+        # therefore strands it, and a stranded modifier is a hard error reported
+        # at the following `end` -- "the current section is unnamed", thousands of
+        # lines from the cause.  Drop any that no longer have a declaration to
+        # bind to, to a fixpoint (they come in runs).
+        changed = True
+        while changed:
+            changed = False
+            for i, l in enumerate(out):
+                if MODIFIER.match(l):
+                    j = i + 1
+                    while j < len(out) and out[j].strip() == '':
+                        j += 1
+                    if j >= len(out) or SCOPE_ONLY.match(out[j]):
+                        del out[i]
+                        kept_scope -= 0
+                        changed = True
+                        break
         open(p, 'w', encoding='utf-8').write('\n'.join(out))
         print('  %s: removed %d' % (dn, len([n for n in names])))
     print('removed %d declaration block(s); preserved %d scope line(s)' % (total, kept_scope))

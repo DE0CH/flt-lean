@@ -23184,8 +23184,6 @@ def postComp {A C S : Scheme.{u}} {f : A ⟶ S} {h : C ⟶ S} (π : A ⟶ C) (h�
     (hπ : π ≫ h = f) {T : Scheme.{u}} {g : T ⟶ S} (y : RelPoint f g) :
     (postComp π hπ y).1 = y.1 ≫ π := rfl
 
-end RelPoint
-
 /-- **`push` commutes with a change of test object.**  Both sides are
 `h ≫ y.1 ≫ ι` up to the associator, so this is `Category.assoc`; it is what
 turns the `pre_act` field of a `Mult` on the subscheme into the `pre_act`

@@ -1088,7 +1088,6 @@ theorem inertiaDeg_eq_one_of_forall_pow_natCard
   have hle : p ^ f - 1 ≤ p - 1 := Nat.le_of_dvd (by omega) hdvd
   omega
 
-omit [IsGalois K L] in
 end Chebotarev
 /-- **CHEBOTAREV, IN THE ONLY FORM THIS DEVELOPMENT NEEDS: the Frobenius elements
 of the unramified primes GENERATE `Gal(L/K)`** (PROVEN 2026-07-31 over the single
