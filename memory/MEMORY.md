@@ -158,3 +158,5 @@
 - [Merger red? verify against the release farm](flt-merger-red-verify-against-release-farm.md) — the target may exist ONLY on a `merger` that does not build; base there anyway and verify a verbatim restatement in a 12-second scratch against `~/.flt-release-lake`
 - [Re-run a checker you just fixed](flt-rerun-a-checker-you-just-fixed.md) — merging a two-line fix to xdup.py took the tree from 0 to 21 qualified duplicates with no code change; a checker's blast radius is every previous clean verdict
 - [Atomicity verdicts audit hypotheses only](flt-atomicity-verdict-checks-hypotheses-only.md) — "no clause-shaped cut" misses the conclusion's quantifier over a finite set; the descent is in-tree even when the step is a citation
+- [A frozen main rots the queue](flt-frozen-main-rots-the-queue.md) — under a HELD release main does not move, so queue1 stays AUDITED and dispatchable while 18% of its tasks name leaves merger already closed; audit against merger
+- [A decl-order tangle is a graph](flt-decl-order-tangle-is-a-graph.md) — "the intended order is not recoverable from the text" is wrong: find the block that cannot move (hoistcheck HITS>0) and the rest is forced
