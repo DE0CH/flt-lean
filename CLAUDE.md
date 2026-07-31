@@ -350,6 +350,56 @@ before agents reported back that their targets were already proven. **Build
 task lists from the DIRECT set; use the transitive set only for judging
 whether a subtree still blocks the root.**
 
+**AND THE PER-DECLARATION ANSWER IS `#print axioms`, RUN IN-FILE — a green build
+cannot give it to you** (2026-07-31, `HilbertClassFieldNormal.lean`). An agent
+arriving at a target needs to know which of three states it is in: open, proven
+outright, or proven-but-transitively-tainted. `lake build` distinguishes only the
+first from the other two — a module with no `declaration uses 'sorry'` warning is
+*direct*-clean and says nothing about the cone — and the fleet has repeatedly
+paid a worker to rediscover the difference.
+
+`#print axioms <name>` gives it exactly, but **it must be appended to the END OF
+THE FILE THAT DECLARES THE NAME**, not written in a scratch module that imports
+it. The module system elides imported proof bodies (`value? = none`, and
+`import all` does not help), so from a scratch importer the traversal has nothing
+to walk. Cost is one `lake env lean` of the module; restore the file afterwards:
+
+    cp F.lean /tmp/orig.lean
+    printf '\n#print axioms Some.Decl\n' >> F.lean
+    lake env lean F.lean            # `[propext, Classical.choice, Quot.sound]` = finished
+    cp /tmp/orig.lean F.lean
+
+Here it separated four declarations in one run that a build reported identically:
+`conj_unramifiedAbelian` and `sup_unramifiedAbelian` came back axiom-clean, while
+`exists_hilbertClassField_normal_over_rat` came back `sorryAx` — and the same
+output **names the blocking DIRECTION for free**, since the only paths out led
+into `UnramifiedClassFieldExistence.lean` and `ArtinSymbol.lean`.
+
+**But the direction is all it gives you — do not queue the named leaves without
+re-checking them against `merger`.** `#print axioms` is evaluated against YOUR
+import cone, which is `main`, and `main` is the frontier as of the last release.
+Measured the same afternoon: the cluster this audit pointed at had four open
+leaves on `main` and three on `merger`, because Chebotarev (`closure_frobAt_eq_top`)
+and `exists_hilbertClassField_artinIso` were both already proven and merely
+sitting in the release window. So the audit is authoritative about *your* target
+and merely indicative about everyone else's; pair it with
+`git show merger:<file>` before writing a queue entry, or you will pay someone to
+prove Chebotarev a second time.
+
+Two corollaries. Record the verdict in the file's module docstring, because it is
+the only place the next frontier scan will look and the only thing that stops the
+same target being re-dispatched off the transitive census. And note the reverse
+reading: `sorryAx` on your target is **not** a failure when every path to it
+leaves your file — say so, name the upstream leaves, and do not go prove them.
+
+**Small trap that cost one wasted build: `lake` is NOT on `PATH` in a worker
+shell**, even when you are already logged in to the owning host and never touch
+`ssh`. The first invocation returns `lake: command not found` / `EXIT=127`, which
+reads like a broken worktree rather than a missing environment. Prefix every
+command with `export PATH="$HOME/.elan/bin:$PATH"`. The existing note about this
+is filed under *ssh* builds; the cause is the login shell not sourcing elan, so
+it bites local runs identically.
+
 **`verified: true` does NOT mean the import cone is current** (2026-07-25, hit
 independently by two agents). Lean's LSP caches the `lake setup-file` result per
 HEADER SNAPSHOT and replays a failed one verbatim until the IMPORT LIST changes.
@@ -413,6 +463,39 @@ per-file `diagnostics` reveals. Treat any hard error as an immediate defect
 with a named owner (CLAUDE.md's sorry-gate rule (b)), and do not assume a
 clean direct-sorry scan means a clean tree.** A proof that verified in one
 worktree can error on main; resource-limit `set_option`s are the usual fix.
+
+**AND AN ERRORED DECLARATION DISGUISES ITSELF AS A MISSING ONE, IN THE SAME
+FILE, HUNDREDS OF LINES AWAY** (2026-07-31, `HilbertClassFieldNormal.lean`). A
+heartbeat timeout does not merely fail its own declaration — the declaration is
+never added to the environment, so every later USE of it reports
+
+    error: …:1029:8: (kernel) unknown constant 'NumberField.conj_unramifiedAbelian'
+
+and that is the error a reader's eye lands on, because it is the last one lake
+prints. It reads as a rename, a bad merge, or a declaration lost to a
+merge-side removal — exactly the class-6/class-7 shapes this file spends pages
+on — and every one of those diagnoses sends you to `git log -m -S` instead of
+to the real cause 600 lines above. Here the real cause was two
+`(deterministic) timeout at isDefEq` / `at whnf` lines earlier in the same log,
+and the fix was one `set_option maxHeartbeats 1600000 in`.
+
+**So read a build log from the TOP, and never diagnose an `unknown constant`
+against a name that is declared in the very file being compiled.** If the name
+is right there in the source, the constant is not missing — its declaration
+errored. Grep the log for `timeout`/`maximum recursion` before touching git.
+
+Two cost-shapes worth knowing, both from that declaration:
+
+* The timeouts were `isDefEq`/`whnf` unification through stacked
+  `AlgEquiv → RingHom → FunLike` coercions over `IntermediateField` subtypes.
+  Files whose OBJECTS are intermediate fields cannot avoid this, so a heartbeat
+  bump there is a legitimate fix rather than a smell.
+* **`let`-binding a structure literal is the expensive way to name a map;
+  `obtain`-ing it from an `∃` is the cheap one.** A `let`-bound literal stays in
+  the local context and every subsequent `isDefEq` unfolds it. Destructing an
+  existential makes the map a genuine free variable whose only handle is its
+  characterising equation, and nothing can unfold it. Same mathematics, and it
+  was the difference between elaborating and not.
 
 **Fourth category, invisible to ALL THREE: a module UNREACHABLE from
 `Fermat.lean` is never compiled at all** (2026-07-27). `lake build` builds the
