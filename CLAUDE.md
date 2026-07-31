@@ -3909,9 +3909,17 @@ dependency order, **the four were serialised behind one another**: each would ha
 its own release-build round, which is where the "budget three rounds minimum" figure in
 the class-7 section comes from. The scan finds all four at once in a couple of seconds.
 
-**One caveat, so nobody chases it: `depth < 0` is NOISE.** The scanner matches two
-characters and Lean's lexer does not; `X0.lean` scores `-7` and Lean accepts its comments
-without complaint. Only `depth > 0` is a finding. The script says so in its own docstring.
+**`depth < 0` is MOSTLY noise and OCCASIONALLY the mirror defect — check it, cheaply,
+and do not "fix" it blind.** The scanner matches two characters and Lean's lexer does
+not, so a file Lean accepts can score negative: `X0.lean` scores `−11` and its comments
+are fine. But `InvariantCoarseRing.lean` scored `−2` and was genuinely broken, in the
+OTHER direction: a merge kept the first two lines of one branch's `theorem` signature
+and then the other branch's docstring BODY without its `/--`, so the surviving `-/`
+closed a comment that had never opened *and* ten lines of English were parsed as the
+continuation of a truncated signature. Lean's diagnostic for that is
+`unexpected token; expected ':'` — nothing about comments at all. So: `depth > 0` names
+its own culprit and is always real; `depth < 0` is a prompt to run `lake env lean` on
+that one file, which settles it in a couple of minutes.
 
 Corollary about doctrine generally, and it is the uncomfortable half: this check was
 already written down, in bold, one section up, described as the cheapest available — and

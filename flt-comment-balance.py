@@ -27,14 +27,19 @@ READ THE OUTPUT AS FOLLOWS.
     orphaned header line is a RENAMED-AND-MOVED copy of a block that still
     exists elsewhere in the file (grep its title), so DELETE the stranded line
     rather than closing it with `-/`.
-*   `depth < 0` is NOISE, not a finding.  The scanner is a two-character
-    matcher and Lean's lexer is not: a `-/` occurring inside prose, or a `/-`
-    the scanner counts and Lean does not, desynchronises it.  A file Lean
-    accepts can score negative here.  Do not "fix" a negative; confirm with
-    `lake env lean` first.
+*   `depth < 0` is USUALLY noise and OCCASIONALLY the mirror defect.  The
+    scanner is a two-character matcher and Lean's lexer is not, so a file Lean
+    accepts can score negative — `X0.lean` scores about `-11` and is fine.  But
+    `InvariantCoarseRing.lean` scored `-2` and was really broken: a merge kept
+    two lines of one branch's `theorem` signature followed by the other
+    branch's docstring BODY with no `/--`, so a `-/` closed a comment that
+    never opened and ten lines of English were parsed as the continuation of
+    the truncated signature.  Lean reports that as
+    `unexpected token; expected ':'`, which says nothing about comments.
 
-So: `depth > 0` is worth acting on before a build, `depth < 0` is worth
-ignoring.  The check costs nothing and belongs in a release preflight.
+So `depth > 0` is actionable on sight; `depth < 0` is a prompt to run
+`lake env lean` on that one file.  Either way the check costs seconds and
+belongs in a release preflight.
 """
 
 import os
