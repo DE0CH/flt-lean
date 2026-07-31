@@ -12830,7 +12830,26 @@ that check as RUN and NOT closing from `exists_velu_quotient_isogeny` plus
 `exists_ellipticScheme_of_weierstrass`, because those produce maps of
 POINT GROUPS while `map` is a morphism of SCHEMES; the obstruction is
 level-structure-free, so it transfers here verbatim and should not be
-re-run from those two inputs. -/
+re-run from those two inputs.
+
+**CLAUSE (4) GAINED THE BASE-POINT CONSTANT ON 2026-07-31, AND IT WAS A
+FALSITY REPAIR, NOT A GENERALISATION.**  It used to read
+`T ℓ (aj [d]) = ∑_k aj [d/D_k]` with nothing on the right beyond the sum, and
+in that form the genuine Hecke operators DO NOT SATISFY IT: the recipe forces
+`ε := T_ℓ[o] − (ℓ+1)[o]` to vanish, and `ε` is the failure of the
+correspondence to fix the BASE POINT, which is nonzero for a general `o`.  The
+derivation, the `Γ₁`-specific witness (`N = 11`, `ℓ = 2`, `o` a rational cusp
+of `X_1(11)`), and why `X0.lean`'s `N = 37` witness does NOT transport are all
+on `exists_heckeCorrespondenceFamilyGamma1` below.  This is the `Γ₁` transport
+of `X0.lean`'s cluster repair of 2026-07-30, which asks for it in these words
+("the repair transposes verbatim").
+
+The repaired clause is strictly WEAKER than the old one — take
+`e := ab.zero (𝟙 SpecQ)` to recover it — so the consumers that hold the pin
+only as a HYPOTHESIS (`exists_isotypicQuotient_of_isIntegral_gamma1`,
+`exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1`, and the
+`heckeModuli` field of `IsHeckeIsotypicDecompositionGamma1`) are unaffected,
+and no proof in this file projects clause (4). -/
 def IsModularHeckeActionGamma1 (N : ℕ)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (H : IsX1Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
@@ -12849,8 +12868,15 @@ def IsModularHeckeActionGamma1 (N : ℕ)
         = RelPoint.post (T ℓ) (T_comp ℓ)
               (RelPoint.post (T (ℓ ^ (k + 1))) (T_comp (ℓ ^ (k + 1))) x)
             - ℓ • RelPoint.post (T (ℓ ^ k)) (T_comp (ℓ ^ k)) x) ∧
-  -- (4) the moduli recipe at primes `ℓ ∤ N` (the original body)
+  -- (4) the moduli recipe at primes `ℓ ∤ N` (the original body), WITH the per-`ℓ`
+  -- base-point constant `e = −ε` that the FALSITY AUDIT of 2026-07-31 found
+  -- missing.  `ε := T_ℓ[o] − (ℓ+1)[o]` is the failure of the correspondence to fix
+  -- the BASE POINT; at `Γ₀` it is nonzero at a general non-cuspidal rational point
+  -- (`X0.lean`'s `N = 37` witness), and at `Γ₁` — where Mazur leaves no such point
+  -- — it is nonzero already at a rational CUSP.  See
+  -- `exists_heckeCorrespondenceFamilyGamma1` for the witness and the derivation
   (∀ (ℓ : ℕ), ℓ.Prime → ¬ ℓ ∣ N →
+    ∃ e : RelPoint jstr (𝟙 SpecQ),
     ∀ (d : Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) (m : ℕ)
       (dq : Fin m → Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
       (iso : ∀ k, IsGamma1Isogeny N ℓ d (dq k)),
@@ -12866,8 +12892,9 @@ def IsModularHeckeActionGamma1 (N : ℕ)
       RelPoint.post (T ℓ) (T_comp ℓ)
           (jac.aj (specAlgClos ℚ)
             (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) d)))
-        = ∑ k : Fin m, jac.aj (specAlgClos ℚ)
+        = (∑ k : Fin m, jac.aj (specAlgClos ℚ)
             (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) (dq k))))
+          + RelPoint.pre (specAlgClos ℚ) (Category.comp_id (specAlgClos ℚ)) e)
 
 /-- **EICHLER–SHIMURA for `Γ₁(N)`, as a datum: the Hecke-isotypic
 decomposition of `J_1(N)`** (new 2026-07-28) — the `Γ₁` counterpart of
@@ -13087,13 +13114,112 @@ whoever builds the correspondence.
 **AXIS NOT SEARCHED**, recorded so the next owner does not assume it was:
 the complex-analytic route, where `c` comes from the action of
 `Γ₁(N)`-double cosets on `H₁(Γ₁(N)\ℍ*, ℤ)`.  Everything above is the
-algebraic-moduli axis. -/
+algebraic-moduli axis.
+
+## FALSITY AUDIT 2026-07-31 — THIS LEAF WAS FALSE AS STATED, AND IS REPAIRED HERE
+
+The paragraph "TRUE, and the witness is `c := RelPoint.post (T_ℓ) _ ∘ jac.aj`"
+above is the record of what went wrong; the statement now carries a second
+existentially bound datum `e : RelPoint jstr (𝟙 SpecQ)` and the recipe clause
+reads
+
+    c [d] = ∑_k aj [d/D_k] + e
+
+with `e` pulled back to `Spec ℚ̄` along `specAlgClos ℚ`.  This is the `Γ₁`
+transport of `X0.lean`'s cluster repair of 2026-07-30, which that file's
+`exists_heckeCorrespondenceFamily` explicitly asks for ("**THE Γ₁ TWIN IS
+STILL UNREPAIRED** … the repair transposes verbatim").
+
+**THE DEFECT.**  Write `[·]` for `IsCoarseModuliY1.classify` pushed into `X`
+and `aj x = [x] − [o]`.  The honest witness `c := T_ℓ ∘ aj` gives
+`c [d] = T_ℓ[d] − T_ℓ[o]`, while the unrepaired recipe demanded
+`∑_k aj [d/D_k] = T_ℓ[d] − (ℓ+1)[o]`.  The two agree exactly when
+
+    ε := T_ℓ[o] − (ℓ+1)[o] = 0,
+
+i.e. when the correspondence fixes the base point.  And the old statement did
+not merely fail for that one `c`: it was UNSATISFIABLE whenever `ε ≠ 0`.  Given
+any `c` with the naturality and base-point clauses, `IsJacobianOf.universal`
+returns `u` with `RelPoint.post u _ ∘ aj = c`; subtracting the recipe at `d`
+from the recipe at `d'` cancels the `−(ℓ+1)[o]` and yields
+`u ([d] − [d']) = T_ℓ ([d] − [d'])`, so `u = T_ℓ` on the subgroup generated by
+differences of non-cuspidal `ℚ̄`-points, which is all of `J_1(N)(ℚ̄)`; the
+recipe at a single `d` then reads `T_ℓ[o] = (ℓ+1)[o]`, i.e. `ε = 0`.
+
+**`X0.lean`'s WITNESS DOES NOT TRANSPORT, AND THE SENTENCE THERE THAT SAYS IT
+DOES IS WRONG.**  That file says "the same witness refutes them (the base-point
+defect is a statement about the correspondence, not about the level
+structure)".  The DEFECT does transport; the WITNESS does not, and a reader who
+took the sentence at face value would conclude this leaf is true.  The `Γ₀`
+witness is `N = 37`, `ℓ = 2`, `o` a NON-CUSPIDAL rational point of `X₀(37)`
+with `[o] − [∞]` of infinite order.  **`X_1(N)` has no such point.**  A
+non-cuspidal rational point of `X_1(N)` is a pair `(E, P)` with `P` of exact
+order `N` over `ℚ`, and by Mazur's torsion theorem those exist only for
+`N ≤ 10` and `N = 12` — precisely the `N` for which `X_1(N)` has genus `0`, so
+`J_1(N) = 0` and `ε = 0` trivially.  For every `N` of positive genus
+(`N = 11` and `N ≥ 13`) the rational points of `X_1(N)` are exactly its
+rational CUSPS, which is where the `Γ₀` audit stopped looking: it records
+"`ε = 0` DOES hold for every rational cusp", and that is a `Γ₀` fact.
+
+**IT FAILS AT `Γ₁` AT THE CUSPS, WHICH IS WHY THE LEAF IS STILL FALSE.**  On
+`X₀(N)` the cusp `∞` is fixed by the correspondence with multiplicity `ℓ + 1`,
+because the `Γ₀`-structure `μ_N ⊂ E_q` is carried to `μ_N` by every one of the
+`ℓ + 1` isogenies.  A `Γ₁`-structure is a POINT, and the isogenies move it.
+Write the cusps of `X_1(N)` on the Tate curve `E_q = ℚ̄((q^{1/N}))^*/q^ℤ`:
+
+* `c_a := (E_q, q^{a/N})`, the `0`-type cusps, `a ∈ (ℤ/N)^*/±1`;
+* `c'_a := (E_q, ζ_N^a)`, the `∞`-type cusps.
+
+The `ℓ + 1` order-`ℓ` subgroups are `μ_ℓ` and the `ℓ` groups
+`⟨ζ_ℓ^i q^{1/ℓ}⟩`.  Quotienting by `μ_ℓ` is `z ↦ z^ℓ`, which sends
+`q^{a/N} ↦ (q^ℓ)^{a/N}` and `ζ_N ↦ ζ_N^ℓ`; quotienting by
+`⟨ζ_ℓ^i q^{1/ℓ}⟩` is the inclusion into `E_{q^{1/ℓ}}`, which sends
+`q^{a/N} ↦ (q^{1/ℓ})^{aℓ/N}` and fixes `ζ_N`.  Hence
+
+    T_ℓ [c_a]  = [c_a] + ℓ [c_{aℓ}],        T_ℓ [c'_a] = [c'_{aℓ}] + ℓ [c'_a],
+
+so `ε(c_a) = ℓ ([c_{aℓ}] − [c_a])` and `ε(c'_a) = [c'_{aℓ}] − [c'_a]`.  Both are
+nonzero as soon as the two cusps are distinct, i.e. as soon as
+`ℓ ≢ ±1 (mod N)`.
+
+**THE WITNESS: `N = 11`, `ℓ = 2`, `o` a rational cusp of `X_1(11)`.**
+`X_1(11)` has genus `1` and IS the elliptic curve `11a3` (`y² + y = x³ − x²`),
+so `J_1(11) = X_1(11)` and `J_1(11)(ℚ) ≅ ℤ/5ℤ`.  `X_1(11)` has `10` cusps, `5`
+of them rational, and by Mazur those `5` are ALL of `X_1(11)(ℚ)` — so the group
+`ℤ/5ℤ` is generated by differences of rational cusps.  Take `o` to be one of
+them.  Since `2 ≢ ±1 (mod 11)`, the cusp `o` is moved, and on a genus-`1` curve
+with a base point `[P] − [Q] = 0` iff `P = Q`, so the difference is a NONZERO
+element of `ℤ/5ℤ`; `ℤ/5ℤ` has no `2`-torsion, so multiplying it by `ℓ = 2`
+does not kill it either.  Hence `ε(o) ≠ 0` on both cusp families, and the
+unrepaired statement is refuted.  (This is a cleaner witness than the `Γ₀` one:
+`J` is an elliptic curve, so no Manin–Drinfeld or infinite-order input is
+needed — the whole computation is inside a group of order `5`.)
+
+**WHAT THE REFUTATION IS CONDITIONAL ON, stated so it can be checked.**  The
+forcing step needs the pin to be non-vacuous, i.e. at least one `d` over
+`Spec ℚ̄` carrying a full family of `IsGamma1Isogeny`.  That is the inhabitation
+question recorded on `IsModularHeckeActionGamma1` above, and it is NOT settled.
+The repair is safe in both regimes: the new statement is strictly WEAKER than
+the old one (take `e := ab.zero (𝟙 SpecQ)` to recover it), and in the vacuous
+regime the leaf is cheap either way.  What would overturn this audit is a proof
+that `T_ℓ` fixes every rational cusp of `X_1(N)` — which the cusp computation
+above refutes — or a proof that the pin is vacuous, which would make the
+question moot rather than restore the old statement.
+
+**THE CLUSTER.**  A shifted recipe here and an unshifted pin above do not
+typecheck against each other, so this edit is, as on the `Γ₀` side, one commit
+touching: this leaf, `IsModularHeckeActionGamma1`'s clause (4),
+`IsHeckeAlbaneseRecipeGamma1`, `exists_commutingHeckeAlbaneseFamilyGamma1`, and
+the single proof in the blast radius, `exists_modularHeckeAction_gamma1`, which
+threads the constant through and re-verifies otherwise unchanged.  Consumers
+holding the pin only as a hypothesis needed no change. -/
 theorem exists_heckeCorrespondenceFamilyGamma1 (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (H : IsX1Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
     {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
     (jac : IsJacobianOf strX ab o) :
-    ∃ c : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ), RelPoint strX g → RelPoint jstr g,
+    ∃ (c : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ), RelPoint strX g → RelPoint jstr g)
+      (e : RelPoint jstr (𝟙 SpecQ)),
       (∀ {T' T : Scheme.{0}} (p : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
           (hg : p ≫ g = g') (x : RelPoint strX g),
           c g' (RelPoint.pre p hg x) = RelPoint.pre p hg (c g x)) ∧
@@ -13110,8 +13236,9 @@ theorem exists_heckeCorrespondenceFamilyGamma1 (N ℓ : ℕ) (_hℓ : ℓ.Prime)
           letI := ab.addCommGroup (specAlgClos ℚ)
           c (specAlgClos ℚ)
               (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) d))
-            = ∑ k : Fin m, jac.aj (specAlgClos ℚ)
-                (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) (dq k))) :=
+            = (∑ k : Fin m, jac.aj (specAlgClos ℚ)
+                (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) (dq k))))
+              + RelPoint.pre (specAlgClos ℚ) (Category.comp_id (specAlgClos ℚ)) e :=
   sorry
 
 /-- **THE `Γ₁` MODULI RECIPE FOR ONE ALBANESE ENDOMORPHISM**, factored out of
@@ -13121,18 +13248,29 @@ eighteen lines.  This is the `Γ₁` transport of `X0.lean`'s
 `IsHeckeAlbaneseRecipe`, and it is DEFINITIONALLY the clause the consumer already
 produces, so no conversion is needed at either end.
 
-Note the absence of the per-`ℓ` base-point constant `e` that the `Γ₀` recipe
-carries: `IsModularHeckeActionGamma1` has not had the 2026-07-29 falsity repair
-applied to it, and adding it here would be a pin change in a file whose consumer
-chain this merge is not touching.  Recorded rather than done — the audit on
-`X0.lean`'s `IsModularHeckeAction` clause 4 applies verbatim to `Γ₁`, and this is
-the natural place for a successor to start. -/
+**`e` IS THE BASE-POINT CONSTANT, and it is a PARAMETER here while clause (4)
+of `IsModularHeckeActionGamma1` binds it existentially** (added 2026-07-31 with
+the `Γ₁` cluster repair; the note that used to stand here — "`IsModularHeckeActionGamma1`
+has not had the 2026-07-29 falsity repair applied to it … recorded rather than
+done" — is DISCHARGED, and the successor it invited is the one that wrote this
+paragraph).  See `exists_heckeCorrespondenceFamilyGamma1` above for the `N = 11`,
+`ℓ = 2` cusp witness that made the constant necessary at `Γ₁`, and note that the
+`Γ₀` witness there does NOT transport.
+
+Taking `e` as a parameter rather than binding it here is what keeps the
+verbatim-ness claimed above: clause (4) IS
+`∀ ℓ, ℓ.Prime → ¬ ℓ ∣ N → ∃ e, IsHeckeAlbaneseRecipeGamma1 N H jac ℓ (T ℓ) (T_comp ℓ) e`
+definitionally, and a proof of one is still a proof of the other with no glue.
+Binding it inside this definition instead would say "for every `ℓ` there is a
+constant making the recipe hold at that `ℓ`" only after an extra unfolding, and
+would stop consumers from naming the constant they were handed.  This is
+`X0.lean`'s `IsHeckeAlbaneseRecipe` verbatim, parameter for parameter. -/
 def IsHeckeAlbaneseRecipeGamma1 (N : ℕ)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (H : IsX1Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
     {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
     (jac : IsJacobianOf strX ab o) (ℓ : ℕ) (u : J ⟶ J)
-    (hu : u ≫ jstr = jstr) : Prop :=
+    (hu : u ≫ jstr = jstr) (e : RelPoint jstr (𝟙 SpecQ)) : Prop :=
   ∀ (d : Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) (m : ℕ)
     (dq : Fin m → Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
     (iso : ∀ k, IsGamma1Isogeny N ℓ d (dq k)),
@@ -13146,8 +13284,9 @@ def IsHeckeAlbaneseRecipeGamma1 (N : ℕ)
     RelPoint.post u hu
         (jac.aj (specAlgClos ℚ)
           (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) d)))
-      = ∑ k : Fin m, jac.aj (specAlgClos ℚ)
-          (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) (dq k)))
+      = (∑ k : Fin m, jac.aj (specAlgClos ℚ)
+          (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) (dq k))))
+        + RelPoint.pre (specAlgClos ℚ) (Category.comp_id (specAlgClos ℚ)) e
 
 /-- **THE `Γ₁` HECKE CORRESPONDENCES COMMUTE** (sorry leaf, new 2026-07-30 at the
 release-25 merge) — the `Γ₁` transport of `X0.lean`'s
@@ -13166,7 +13305,26 @@ TRUE, and it is the same classical fact as in the `Γ₀` case — the Hecke
 correspondences commute (Diamond–Shurman Prop. 5.2.4), here on `J_1(N)`.  Witness:
 take `u n` to be the genuine `T_n` at the primes `ℓ ∤ N`, where the recipe pins it,
 and `𝟙 J` at every other arity, where nothing does; `𝟙` commutes with everything,
-so pairwise commutation reduces to the pinned arities. -/
+so pairwise commutation reduces to the pinned arities.
+
+**WHY THIS IS AN EXISTENCE AND NOT `∀ v, commuting`** — inherited verbatim from
+`X0.lean`'s twin, and a faithfulness point rather than a convenience.  If
+`IsGamma1Isogeny N ℓ` is uninhabited over `Spec ℚ̄` (the inhabitation question
+recorded on `IsModularHeckeActionGamma1` above, which is NOT settled) then
+`IsHeckeAlbaneseRecipeGamma1` is VACUOUS, every endomorphism of `J` satisfies it,
+and "any two of them commute" would ask two arbitrary elements of `End_ℚ(J_1(N))`
+to commute — false for any `J` with `End ⊇ M₂(ℤ)`.  Phrased as a REPLACEMENT it is
+true in both regimes: vacuous pin, take `u := fun _ => 𝟙 J`; genuine pin, take the
+honest Hecke family.
+
+**THE PIN IS NOW `∃ e, IsHeckeAlbaneseRecipeGamma1 … e` ON BOTH SIDES**
+(2026-07-31, with the `Γ₁` cluster repair of the base-point constant — see
+`exists_heckeCorrespondenceFamilyGamma1` above for the `N = 11` cusp witness).
+The existential is per-`ℓ` and appears identically in the hypothesis and in the
+conclusion, so the leaf says exactly what it said before: the family handed back
+carries the SAME pin.  A prover taking `u := v` may take the same constant it was
+given, and in the vacuous-pin regime `u := fun _ => 𝟙 J` still works with any `e`
+whatever. -/
 theorem exists_commutingHeckeAlbaneseFamilyGamma1 (N : ℕ)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (H : IsX1Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
@@ -13175,12 +13333,12 @@ theorem exists_commutingHeckeAlbaneseFamilyGamma1 (N : ℕ)
     (v : ℕ → (J ⟶ J)) (v_comp : ∀ n, v n ≫ jstr = jstr)
     (_v_add : ∀ n, IsAdditiveOn ab ab (v n) (v_comp n))
     (_v_pin : ∀ ℓ : ℕ, ℓ.Prime → ¬ ℓ ∣ N →
-      IsHeckeAlbaneseRecipeGamma1 N H jac ℓ (v ℓ) (v_comp ℓ)) :
+      ∃ e, IsHeckeAlbaneseRecipeGamma1 N H jac ℓ (v ℓ) (v_comp ℓ) e) :
     ∃ (u : ℕ → (J ⟶ J)) (u_comp : ∀ n, u n ≫ jstr = jstr),
       (∀ n, IsAdditiveOn ab ab (u n) (u_comp n)) ∧
         (∀ m n : ℕ, u m ≫ u n = u n ≫ u m) ∧
         (∀ ℓ : ℕ, ℓ.Prime → ¬ ℓ ∣ N →
-          IsHeckeAlbaneseRecipeGamma1 N H jac ℓ (u ℓ) (u_comp ℓ)) :=
+          ∃ e, IsHeckeAlbaneseRecipeGamma1 N H jac ℓ (u ℓ) (u_comp ℓ) e) :=
   sorry
 
 /-- **THE HECKE CORRESPONDENCE ACTS ON `J_1(N)`** (**PROVEN 2026-07-28**,
@@ -13221,7 +13379,13 @@ theorem exists_modularHeckeAction_gamma1 (N : ℕ)
   -- One endomorphism per natural number, with the pin attached at exactly the
   -- arities `IsModularHeckeActionGamma1` constrains: the Albanese image of the
   -- correspondence family at a prime `n ∤ N`, and `𝟙 J` at every other `n`.
+  -- The base-point constant `e` (`= −ε`, the failure of the correspondence to fix
+  -- the base point) is carried alongside `u` from here on: the 2026-07-31 falsity
+  -- audit on `exists_heckeCorrespondenceFamilyGamma1` showed the recipe is
+  -- UNSATISFIABLE without it, and the repair is a per-`ℓ` existential.  At the
+  -- unpinned arities any constant will do.
   have key : ∀ n : ℕ, ∃ u : J ⟶ J, ∃ hu : u ≫ jstr = jstr,
+      ∃ e : RelPoint jstr (𝟙 SpecQ),
       IsAdditiveOn ab ab u hu ∧
       (n.Prime → ¬ n ∣ N →
         ∀ (d : Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) (m : ℕ)
@@ -13237,35 +13401,36 @@ theorem exists_modularHeckeAction_gamma1 (N : ℕ)
           RelPoint.post u hu
               (jac.aj (specAlgClos ℚ)
                 (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) d)))
-            = ∑ k : Fin m, jac.aj (specAlgClos ℚ)
+            = (∑ k : Fin m, jac.aj (specAlgClos ℚ)
                 (RelPoint.post jY H.comm
-                  (H.coarse.classify (specAlgClos ℚ) (dq k)))) := by
+                  (H.coarse.classify (specAlgClos ℚ) (dq k))))
+              + RelPoint.pre (specAlgClos ℚ) (Category.comp_id (specAlgClos ℚ)) e) := by
     intro n
     by_cases hn : n.Prime ∧ ¬ n ∣ N
-    · obtain ⟨c, hnat, hzero, hrec⟩ :=
+    · obtain ⟨c, e, hnat, hzero, hrec⟩ :=
         exists_heckeCorrespondenceFamilyGamma1 N n hn.1 hn.2 H jac
       obtain ⟨u, ⟨hu, hueq⟩, -⟩ := jac.universal ab c hnat hzero
       -- the Albanese equation, read as an equation of relative points
       have hpost : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
           RelPoint.post u hu (jac.aj g x) = c g x := fun g x =>
         Subtype.ext (hueq g x).symm
-      refine ⟨u, hu, ?_, ?_⟩
+      refine ⟨u, hu, e, ?_, ?_⟩
       · -- relative rigidity: `u` sends `0` to `0`, hence is a homomorphism
         refine isAdditiveOn_of_post_zero ab ab hu ?_
         rw [← jac.aj_base, hpost (𝟙 SpecQ) o, hzero, jac.aj_base]
       · intro _ _ d m dq iso hinj hsurj
         rw [hpost (specAlgClos ℚ) _]
         exact hrec d m dq iso hinj hsurj
-    · exact ⟨𝟙 J, Category.id_comp jstr, fun x y => by
+    · exact ⟨𝟙 J, Category.id_comp jstr, ab.zero (𝟙 SpecQ), fun x y => by
         simp only [RelPoint.post, Category.comp_id, Subtype.coe_eta],
         fun hp hd => absurd ⟨hp, hd⟩ hn⟩
-  choose v v_comp v_add v_pin using key
+  choose v v_comp ve v_add v_pin using key
   -- COMMUTATION, added at the release-25 merge: `exists_anemicHeckeExtension`
   -- REQUIRES `u_comm` (see its FALSITY AUDIT in `X0.lean` -- the conclusion read at
   -- `6 = 2*3 = 3*2` ENTAILS it), and the pinned family `v` is not known to commute.
   obtain ⟨V, V_comp, V_add, V_comm, V_pin⟩ :=
     exists_commutingHeckeAlbaneseFamilyGamma1 N H jac v v_comp v_add
-      (fun ℓ hℓ hℓN => v_pin ℓ hℓ hℓN)
+      (fun ℓ hℓ hℓN => ⟨ve ℓ, v_pin ℓ hℓ hℓN⟩)
   -- the multiplicative extension: it agrees with `V` at the primes `ℓ ∤ N`, so it
   -- inherits the moduli recipe, and it satisfies the three anemic relations.
   -- `exists_anemicHeckeExtension` (`X0.lean`) mentions no level structure, so the
@@ -13273,13 +13438,17 @@ theorem exists_modularHeckeAction_gamma1 (N : ℕ)
   obtain ⟨T, T_comp, T_add, hTv, hT1, hTmul, hTrec⟩ :=
     exists_anemicHeckeExtension N ab V V_comp V_add V_comm
   refine ⟨T, T_comp, T_add, hT1, hTmul, hTrec, ?_⟩
-  intro ℓ hℓ hℓN d m dq iso hinj hsurj
+  intro ℓ hℓ hℓN
+  -- `T ℓ = V ℓ` at the pinned arities, so the constant `V` came with serves here.
+  obtain ⟨e, he⟩ := V_pin ℓ hℓ hℓN
+  refine ⟨e, ?_⟩
+  intro d m dq iso hinj hsurj
   have hpostℓ : ∀ {T' : Scheme.{0}} {g : T' ⟶ SpecQ} (y : RelPoint jstr g),
       RelPoint.post (T ℓ) (T_comp ℓ) y = RelPoint.post (V ℓ) (V_comp ℓ) y := by
     intro T' g y
     exact Subtype.ext (by show y.1 ≫ T ℓ = y.1 ≫ V ℓ; rw [hTv ℓ hℓ hℓN])
   rw [hpostℓ]
-  exact V_pin ℓ hℓ hℓN d m dq iso hinj hsurj
+  exact he d m dq iso hinj hsurj
 
 /-- **SHIMURA'S `A_f` FOR `Γ₁(N)`: EVERY WEIGHT-TWO EIGENFORM OF LEVEL `N`
 AND ANY NEBENTYPUS CUTS OUT AN ISOTYPIC QUOTIENT OF `J_1(N)`** (sorry leaf,
