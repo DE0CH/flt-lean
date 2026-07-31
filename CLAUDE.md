@@ -655,6 +655,33 @@ cut on an unmerged branch (the release window); or **cut, merged, and deliberate
 Only the third is permanent, and only `-m` distinguishes it. Before reporting a phantom name,
 run that command — the merge's own subject line usually says which rival cut won and why.
 
+## "That theorem HANDS BACK X" is a claim about its CONCLUSION, not about its proof
+
+(2026-07-31.) `exists_span_three_eq_maximalIdeal_and_finrank_eq_of_residueField`'s
+docstring said, twice and in bold, that the only thing its proof was missing was one
+`public import`, and that `exists_unramified_extension_of_residueField` "delivers
+`𝔪_S = 𝔪_R·S` verbatim". The import claim was exactly right and saved real time. The
+delivery claim was **false**: that theorem's proof does establish `𝔪_S = 𝔪_R·S`
+internally (it is a named `have` in its body, `hmaxS`) and its conclusion does **not**
+export it. So the consumer, having added the promised import, still could not close the
+leaf.
+
+The recovery was cheap once the shape was clear — `S` is free of rank `n` over `R` and
+its residue field already has degree `n`, so `n = e·f` forces `e = 1`, which is a
+general lemma (`maximalIdeal_eq_map_of_finrank_residueField_eq`, proved from mathlib's
+`IsLocalRing.finrank_quotient_map` plus rank–nullity, ~30 lines) — but it is work
+nobody had budgeted, and the docstring said it was not needed.
+
+So: **when a docstring tells you what an upstream theorem gives you, read that
+theorem's STATEMENT before believing it.** A `have` inside a proof is invisible to
+every consumer. And the repair when the fact really is only internal is a choice with
+different costs, worth making deliberately:
+* *export it* — add the clause to the upstream conclusion and fix its consumers. Two
+  lines, but it rebuilds everything downstream of a widely-imported module;
+* *re-derive it downstream* — a self-contained lemma in the file you already own. More
+  Lean, zero extra rebuild, no merge conflict with other agents.
+Prefer the second when the upstream module has consumers outside your cone.
+
 ## A `sorry` is a PROMISE that the statement is provable
 
 (2026-07-29, orchestrator error, caught only because an agent quoted the file's
@@ -825,6 +852,34 @@ client-side timeout means the server is still elaborating, so re-issuing
 attaches rather than restarting (see the single-flight section); and
 splitting oversized modules is what converts idle cores into throughput,
 because the file is the unit of elaboration.
+
+**THE BEST SCRATCH IMPORTS THE TARGET MODULE ITSELF** (2026-07-31, measured on
+`ModThree.lean`: **18 s** per scratch round trip against **>30 min** for one
+`lake build` of the module). The rule above says "imports only what you need",
+which reads as "import as little as possible" and leads agents to reconstruct a
+minimal import list by hand. When the target module's own `.olean` is CURRENT,
+the fastest and most faithful scratch is
+
+    module
+    public import Fermat.FLT.<the module you are editing>
+    @[expose] public section
+    local notation "𝒪₃ᵥ" => …      -- re-declare its `local notation` lines verbatim
+    theorem my_attempt … := by …
+    end
+
+Loading one big `.olean` costs seconds; you get every lemma already proven in the
+file, the exact instance environment, and no guessing about which import supplies
+what. Copy the `local notation` block out of the target file — notations are
+`local` and do NOT come through the import, and that is the only thing that has to
+be repeated.
+
+Two caveats, both real:
+* it says NOTHING about the target file's own import surface or notation scope —
+  the existing warnings above still apply, and the one final verify is still
+  against the real file;
+* **`lake build <Module>` DELETES that `.olean` while it runs**, so a scratch
+  importing it fails with `object file … does not exist` for the whole duration.
+  Do the scratch iteration first and the build last; do not interleave them.
 
 ## Sorry and have discipline (glue-first, no floating)
 
