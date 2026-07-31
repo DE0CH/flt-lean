@@ -154,7 +154,14 @@ smaller statement; the frontier of this file is the FIVE leaves
 
 * `Heegner.exists_ratPoly_weberAlpha_pow_four` — `LEAF 1b`, Weber's descent `α ∈ ℚ[α⁴]`,
   class-number-FREE (it replaced `natDegree_minpoly_weberAlpha_le`, which is now a theorem);
-* `Heegner.exists_intPolynomial_eq_prod` — `LEAF 3a-i`, the construction of `Φ_N`;
+* `Heegner.exists_intPolynomial_eq_prod_of_smul_invariant` — `LEAF 3a-i′`, the construction of
+  `Φ_N` GIVEN `Γ`-invariance of the product. It replaced `exists_intPolynomial_eq_prod`
+  (`LEAF 3a-i`), which is now a theorem: the `Γ`-invariance is
+  `prod_triangularReps_jInvariant_smul`, PROVEN unconditionally over
+  `exists_triangularReps_right_mul` (the permutation of triangular representatives under right
+  multiplication by `γ`) and `triangularReps_eq_of_right_mul` (its injectivity, which is where
+  `triangular_unique` is spent). So this leaf is now PURE ANALYSIS — the group theory is gone
+  from it, and what is left is the pole-order induction and the `q`-expansion integrality;
 * `Heegner.isUnit_leadingCoeff_diag_of_eq_prod` — `LEAF 3a-ii`, Kronecker (these two replaced
   `exists_modularPolynomial_prod`, now a theorem);
 * `Heegner.exists_posDefForm_root_of_aeval_minpoly_jInvariant` — `LEAF 4b″`, the conjugates of
@@ -4253,26 +4260,332 @@ theorem triangular_unique {α β δ ε a b d a' b' d' : ℤ}
   rw [hβ] at h2
   omega
 
-/-- **LEAF 3a-i — THE CONSTRUCTION OF `Φ_N`.** One `Φ ∈ ℤ[Y][X]` whose specialisation at
-`Y = j(z)` is the monic product `∏_{(a,b,d) ∈ triangularReps N} (X − j((a z + b)/d))`, for
-every `z ∈ ℍ` simultaneously.
+/-- **The Möbius denominator of a unimodular integral matrix does not vanish on `ℍ` — PROVEN.**
 
-This is the first of the two halves that `exists_modularPolynomial_prod` was split into on
-2026-07-31; the second is `isUnit_leadingCoeff_diag_of_eq_prod` (Kronecker). Read the section
-note on `exists_modularPolynomial_prod` below for why the split is possible and what each half
-inherits. In one line: this half is Cox Theorem 11.18, the other is Cox Lemma 11.23, and
-neither uses the other's technique.
+If `r = 0` then `ps = 1` forces `s ≠ 0`; otherwise `Im(r w + s) = r · Im w ≠ 0`. Stated with
+the two entries loose rather than through mathlib's `UpperHalfPlane.denom` so that the caller
+need not produce a `GL (Fin 2) ℝ` first.
 
-WHAT IS IN IT. The coefficients of the product are, for each fixed `z`, the elementary
-symmetric functions of the `ψ(N)` numbers `j((a z + b)/d)`. Three things must be shown:
+HOISTED 2026-07-31 from just above `jInvariant_eq_of_act`, which is still its other consumer:
+`exists_triangularReps_right_mul` just below needs it too, and it is the earlier of the two. -/
+theorem denom_ne_zero_of_det {p q r s : ℤ} (hdet : p * s - q * r = 1) (w : UpperHalfPlane) :
+    (r : ℂ) * (w : ℂ) + (s : ℂ) ≠ 0 := by
+  intro h
+  have him := congrArg Complex.im h
+  simp only [Complex.add_im, Complex.mul_im, Complex.intCast_re, Complex.intCast_im,
+    Complex.zero_im, zero_mul, add_zero] at him
+  have hwim : 0 < (w : ℂ).im := w.im_pos
+  have hr : (r : ℝ) = 0 := by
+    rcases mul_eq_zero.mp him with h' | h'
+    · exact h'
+    · linarith
+  have hr0 : r = 0 := by exact_mod_cast hr
+  subst hr0
+  simp only [Int.cast_zero, zero_mul, zero_add] at h
+  have hs0 : s = 0 := by exact_mod_cast h
+  subst hs0
+  simp at hdet
 
-* those functions of `z` are `Γ`-INVARIANT — right multiplication by `γ ∈ SL₂(ℤ)` permutes the
-  triangular representatives modulo left `Γ`-translation, and `j` is `Γ`-invariant
-  (`jInvariant_smul`, PROVEN). `exists_hermite_of_primitive` (PROVEN above) is the existence
-  half of that permutation and `triangular_unique` (PROVEN just above) is its uniqueness half,
-  so each left `Γ`-class of primitive matrices of determinant `N` meets `triangularReps N` in
-  exactly one point; `triangularReps_spec` unpacks membership. What is still to be written is
-  the permutation itself and the resulting `Finset.prod_bij` — see the note below;
+/-- The integral matrix `[[a, b], [0, d]]` of a triangular datum `t = (a, b, d)`.
+
+It exists only so that the `Γ`-invariance argument below can state "`B_t · γ = g · B_{t'}`" as
+one equation instead of four, which is what makes the injectivity step (`γ` cancels on the
+right, `g₂⁻¹` on the left) a two-line matrix computation. Everything else about triangular
+data is stated entrywise, as `triangular_unique` and `exists_hermite_of_primitive` are. -/
+def triMat (t : ℤ × ℤ × ℤ) : Matrix (Fin 2) (Fin 2) ℤ := !![t.1, t.2.1; 0, t.2.2]
+
+/-- **RIGHT MULTIPLICATION BY `γ ∈ SL₂(ℤ)` MOVES A TRIANGULAR REPRESENTATIVE TO ANOTHER ONE
+— PROVEN.** For `t ∈ triangularReps N` there is a `t' ∈ triangularReps N` and a `g ∈ SL₂(ℤ)`
+with `B_t · γ = g · B_{t'}`, and then `j` at the `t`-point of `γ • z` agrees with `j` at the
+`t'`-point of `z`, for every `z ∈ ℍ` at once.
+
+This is the existence half of the permutation underlying `Γ`-invariance of the coefficients of
+`∏_t (X − j(t·z))`; `triangularReps_eq_of_right_mul` below is the injectivity half, and
+`prod_triangularReps_jInvariant_smul` assembles them.
+
+THE CONSTRUCTION. `B_t · γ = [[aA+bD, aB+bE], [dD, dE]]` has determinant `N` and is primitive
+— primitivity transfers back through `γ⁻¹`, which is integral, and the three divisibility
+identities that do it are written out below. `exists_hermite_of_primitive` factors it as
+`γ₁ · B_{t₁}`, and `b₁` is normalised into `[0, d₁)` by absorbing `T^k` into `γ₁`; that
+absorption is exactly the identity `[[A₁,B₁],[D₁,E₁]] · T^k = [[A₁, A₁k+B₁], [D₁, D₁k+E₁]]`,
+which is where the `g` of the conclusion comes from.
+
+THE POINT IDENTITY is pure Möbius algebra and is done here by exhibiting the COMMON VALUE
+`(P z + Q)/(R z + S)`, where `(P, Q, R, S)` are the entries of `B_t · γ`: both
+`(a (γ z) + b)/d` and `g • ((a₁ z + b')/d₁)` reduce to it, the second because the Hermite
+identities `P = A₁a₁`, `Q = A₁b₁ + B₁d₁`, `R = D₁a₁`, `S = D₁b₁ + E₁d₁` and `d₁k + b' = b₁`
+turn its numerator and denominator into `(P z + Q)/d₁` and `(R z + S)/d₁`. Then
+`jInvariant_smul` finishes. Doing it through the common value rather than by one `field_simp`
+keeps every denominator's non-vanishing (`d`, `d₁`, `Dz+E`, `Rz+S`) local to the step that
+needs it. -/
+theorem exists_triangularReps_right_mul {N : ℤ} (hN : 0 < N) (γ : SL(2, ℤ))
+    {t : ℤ × ℤ × ℤ} (ht : t ∈ triangularReps N) :
+    ∃ t', t' ∈ triangularReps N ∧
+      (∃ g : SL(2, ℤ),
+        triMat t * (γ : Matrix (Fin 2) (Fin 2) ℤ) = (g : Matrix (Fin 2) (Fin 2) ℤ) * triMat t') ∧
+      ∀ z : UpperHalfPlane, jInvariant (triPoint (γ • z) t) = jInvariant (triPoint z t') := by
+  obtain ⟨a, b, d⟩ := t
+  obtain ⟨ha, hd, had, hb0, hbd, hprim⟩ := triangularReps_spec ht
+  set A := γ 0 0 with hA
+  set B := γ 0 1 with hB
+  set D := γ 1 0 with hD
+  set E := γ 1 1 with hE
+  have hdet : A * E - B * D = 1 := by
+    have h := γ.2
+    rw [Matrix.det_fin_two] at h
+    exact h
+  -- the entries of `B_t · γ`
+  have hdetA : (a * A + b * D) * (d * E) - (a * B + b * E) * (d * D) = N := by
+    linear_combination (a * d) * hdet + had
+  have hprimA : ∀ e : ℤ, e ∣ (a * A + b * D) → e ∣ (a * B + b * E) → e ∣ (d * D) →
+      e ∣ (d * E) → IsUnit e := by
+    intro e h1 h2 h3 h4
+    refine hprim e ?_ ?_ ?_
+    · have hEq : a = (a * A + b * D) * E - (a * B + b * E) * D := by
+        linear_combination (-a) * hdet
+      rw [hEq]; exact (h1.mul_right E).sub (h2.mul_right D)
+    · have hEq : b = (a * B + b * E) * A - (a * A + b * D) * B := by
+        linear_combination (-b) * hdet
+      rw [hEq]; exact (h2.mul_right A).sub (h1.mul_right B)
+    · have hEq : d = (d * E) * A - (d * D) * B := by
+        linear_combination (-d) * hdet
+      rw [hEq]; exact (h4.mul_right A).sub (h3.mul_right B)
+  obtain ⟨A1, B1, D1, E1, a1, b1, d1, hg1, ha1, hd1, had1, hprim1, hp1, hq1, hr1, hs1⟩ :=
+    exists_hermite_of_primitive hN hdetA hprimA
+  -- normalise `b1` into `[0, d1)`
+  set k : ℤ := b1 / d1 with hk
+  set b' : ℤ := b1 % d1 with hb'
+  have hbk : d1 * k + b' = b1 := Int.mul_ediv_add_emod b1 d1
+  have hb0' : 0 ≤ b' := Int.emod_nonneg b1 hd1.ne'
+  have hbd' : b' < d1 := Int.emod_lt_of_pos b1 hd1
+  have hprim' : ∀ e : ℤ, e ∣ a1 → e ∣ b' → e ∣ d1 → IsUnit e := by
+    intro e h1 h2 h3
+    refine hprim1 e h1 ?_ h3
+    have : e ∣ d1 * k + b' := (h3.mul_right k).add h2
+    rwa [hbk] at this
+  have hmem' : (a1, b', d1) ∈ triangularReps N :=
+    mem_triangularReps ha1 hd1 had1 hb0' hbd' hprim'
+  have hgdet : (!![A1, A1 * k + B1; D1, D1 * k + E1] : Matrix (Fin 2) (Fin 2) ℤ).det = 1 := by
+    rw [Matrix.det_fin_two_of]; linear_combination hg1
+  set g : SL(2, ℤ) := ⟨!![A1, A1 * k + B1; D1, D1 * k + E1], hgdet⟩ with hgdef
+  have hgc : (g : Matrix (Fin 2) (Fin 2) ℤ) = !![A1, A1 * k + B1; D1, D1 * k + E1] := rfl
+  have hg00 : g 0 0 = A1 := rfl
+  have hg01 : g 0 1 = A1 * k + B1 := rfl
+  have hg10 : g 1 0 = D1 := rfl
+  have hg11 : g 1 1 = D1 * k + E1 := rfl
+  refine ⟨(a1, b', d1), hmem', ⟨g, ?_⟩, ?_⟩
+  · rw [hgc]
+    ext i j
+    fin_cases i <;> fin_cases j <;>
+      simp [triMat, Matrix.mul_apply, Fin.sum_univ_two, ← hA, ← hB, ← hD, ← hE]
+    · linear_combination hp1
+    · linear_combination hq1 - A1 * hbk
+    · linear_combination hr1
+    · linear_combination hs1 - D1 * hbk
+  · intro z
+    -- the common Möbius value `(P z + Q)/(R z + S)`, `(P, Q, R, S)` the entries of `B_t · γ`
+    have hd1C : ((d1 : ℤ) : ℂ) ≠ 0 := Int.cast_ne_zero.mpr hd1.ne'
+    have hdC : ((d : ℤ) : ℂ) ≠ 0 := Int.cast_ne_zero.mpr hd.ne'
+    have hdenγ : (D : ℂ) * (z : ℂ) + (E : ℂ) ≠ 0 := denom_ne_zero_of_det hdet z
+    have hγz : ((γ • z : UpperHalfPlane) : ℂ)
+        = ((A : ℂ) * (z : ℂ) + (B : ℂ)) / ((D : ℂ) * (z : ℂ) + (E : ℂ)) := by
+      rw [coe_specialLinearGroup_apply, ← hA, ← hB, ← hD, ← hE]
+      simp only [algebraMap_int_eq, eq_intCast, Complex.ofReal_intCast]
+    set P : ℂ := (a : ℂ) * (A : ℂ) + (b : ℂ) * (D : ℂ) with hPdef
+    set Q : ℂ := (a : ℂ) * (B : ℂ) + (b : ℂ) * (E : ℂ) with hQdef
+    set R : ℂ := (d : ℂ) * (D : ℂ) with hRdef
+    set S : ℂ := (d : ℂ) * (E : ℂ) with hSdef
+    have hRS : R * (z : ℂ) + S ≠ 0 := by
+      have hfac : R * (z : ℂ) + S = (d : ℂ) * ((D : ℂ) * (z : ℂ) + (E : ℂ)) := by
+        rw [hRdef, hSdef]; ring
+      rw [hfac]
+      exact mul_ne_zero hdC hdenγ
+    have hp1C : P = (A1 : ℂ) * (a1 : ℂ) := by
+      rw [hPdef]; exact_mod_cast congrArg (Int.cast : ℤ → ℂ) hp1
+    have hq1C : Q = (A1 : ℂ) * (b1 : ℂ) + (B1 : ℂ) * (d1 : ℂ) := by
+      rw [hQdef]; exact_mod_cast congrArg (Int.cast : ℤ → ℂ) hq1
+    have hr1C : R = (D1 : ℂ) * (a1 : ℂ) := by
+      rw [hRdef]; exact_mod_cast congrArg (Int.cast : ℤ → ℂ) hr1
+    have hs1C : S = (D1 : ℂ) * (b1 : ℂ) + (E1 : ℂ) * (d1 : ℂ) := by
+      rw [hSdef]; exact_mod_cast congrArg (Int.cast : ℤ → ℂ) hs1
+    have hbkC : (d1 : ℂ) * (k : ℂ) + (b' : ℂ) = (b1 : ℂ) := by
+      exact_mod_cast congrArg (Int.cast : ℤ → ℂ) hbk
+    -- the `t`-point of `γ • z`
+    have hdenγ' : (z : ℂ) * (D : ℂ) + (E : ℂ) ≠ 0 := by rw [mul_comm]; exact hdenγ
+    have hW : ((triPoint (γ • z) (a, b, d) : UpperHalfPlane) : ℂ)
+        = (P * (z : ℂ) + Q) / (R * (z : ℂ) + S) := by
+      rw [coe_triPoint _ ha hd, hγz, hPdef, hQdef, hRdef, hSdef]
+      field_simp [hdenγ']
+      ring
+    -- the `t'`-point of `z`, translated by `g`
+    have hVc : ((triPoint z (a1, b', d1) : UpperHalfPlane) : ℂ)
+        = ((a1 : ℂ) * (z : ℂ) + (b' : ℂ)) / ((d1 : ℤ) : ℂ) := coe_triPoint z ha1 hd1
+    have hgVc : ((g • triPoint z (a1, b', d1) : UpperHalfPlane) : ℂ)
+        = ((A1 : ℂ) * ((triPoint z (a1, b', d1) : UpperHalfPlane) : ℂ)
+            + ((A1 * k + B1 : ℤ) : ℂ))
+          / ((D1 : ℂ) * ((triPoint z (a1, b', d1) : UpperHalfPlane) : ℂ)
+            + ((D1 * k + E1 : ℤ) : ℂ)) := by
+      rw [coe_specialLinearGroup_apply, hg00, hg01, hg10, hg11]
+      simp only [algebraMap_int_eq, eq_intCast, Complex.ofReal_intCast]
+    have hnumC : (A1 : ℂ) * ((a1 : ℂ) * (z : ℂ) + (b' : ℂ))
+        + (d1 : ℂ) * ((A1 : ℂ) * (k : ℂ) + (B1 : ℂ)) = P * (z : ℂ) + Q := by
+      linear_combination (-(z : ℂ)) * hp1C + (A1 : ℂ) * hbkC - hq1C
+    have hdenC : (D1 : ℂ) * ((a1 : ℂ) * (z : ℂ) + (b' : ℂ))
+        + (d1 : ℂ) * ((D1 : ℂ) * (k : ℂ) + (E1 : ℂ)) = R * (z : ℂ) + S := by
+      linear_combination (-(z : ℂ)) * hr1C + (D1 : ℂ) * hbkC - hs1C
+    have hn : (A1 : ℂ) * (((a1 : ℂ) * (z : ℂ) + (b' : ℂ)) / ((d1 : ℤ) : ℂ))
+        + ((A1 * k + B1 : ℤ) : ℂ) = (P * (z : ℂ) + Q) / ((d1 : ℤ) : ℂ) := by
+      push_cast
+      field_simp
+      linear_combination hnumC
+    have hdn : (D1 : ℂ) * (((a1 : ℂ) * (z : ℂ) + (b' : ℂ)) / ((d1 : ℤ) : ℂ))
+        + ((D1 * k + E1 : ℤ) : ℂ) = (R * (z : ℂ) + S) / ((d1 : ℤ) : ℂ) := by
+      push_cast
+      field_simp
+      linear_combination hdenC
+    have hgV : ((g • triPoint z (a1, b', d1) : UpperHalfPlane) : ℂ)
+        = (P * (z : ℂ) + Q) / (R * (z : ℂ) + S) := by
+      rw [hgVc, hVc, hn, hdn, div_div_div_cancel_right₀ hd1C]
+    have hsmul : g • (triPoint z (a1, b', d1)) = triPoint (γ • z) (a, b, d) := by
+      rw [← UpperHalfPlane.coe_inj, hgV, hW]
+    rw [← hsmul, jInvariant_smul]
+
+/-- **INJECTIVITY OF THAT MAP — PROVEN**, and this is where `triangular_unique` is spent.
+
+If two normalised triangular data `t₁`, `t₂` are carried by right multiplication by the same
+`γ` onto the SAME `t'`, they coincide. The two hypotheses give `B_{t₁}γ = g₁B_{t'}` and
+`B_{t₂}γ = g₂B_{t'}`; substituting the second into the first after left-multiplying by
+`g₁g₂⁻¹` gives `B_{t₁}γ = (g₁g₂⁻¹ B_{t₂})γ`, and `γ` cancels on the right because it is
+unimodular. So `B_{t₁} = h · B_{t₂}` with `h = g₁g₂⁻¹ ∈ SL₂(ℤ)`, which is exactly
+`triangular_unique`'s hypothesis in entrywise form.
+
+`t'` NEED NOT BE NORMALISED and is not assumed to lie in `triangularReps N`: it is cancelled
+before any normalisation is used. Only `t₁` and `t₂` are constrained, and only through
+`triangularReps_spec`. -/
+theorem triangularReps_eq_of_right_mul {N : ℤ} {γ g₁ g₂ : SL(2, ℤ)} {t₁ t₂ t' : ℤ × ℤ × ℤ}
+    (h₁ : t₁ ∈ triangularReps N) (h₂ : t₂ ∈ triangularReps N)
+    (e₁ : triMat t₁ * (γ : Matrix (Fin 2) (Fin 2) ℤ)
+      = (g₁ : Matrix (Fin 2) (Fin 2) ℤ) * triMat t')
+    (e₂ : triMat t₂ * (γ : Matrix (Fin 2) (Fin 2) ℤ)
+      = (g₂ : Matrix (Fin 2) (Fin 2) ℤ) * triMat t') :
+    t₁ = t₂ := by
+  obtain ⟨a₁, b₁, d₁⟩ := t₁
+  obtain ⟨a₂, b₂, d₂⟩ := t₂
+  obtain ⟨ha₁, hd₁, -, hb₁0, hb₁d, -⟩ := triangularReps_spec h₁
+  obtain ⟨ha₂, hd₂, -, hb₂0, hb₂d, -⟩ := triangularReps_spec h₂
+  set h : SL(2, ℤ) := g₁ * g₂⁻¹ with hhdef
+  have hg₂ : ((g₂⁻¹ : SL(2, ℤ)) : Matrix (Fin 2) (Fin 2) ℤ) * (g₂ : Matrix (Fin 2) (Fin 2) ℤ)
+      = 1 := by
+    rw [← Matrix.SpecialLinearGroup.coe_mul, inv_mul_cancel]
+    rfl
+  have hγγ : (γ : Matrix (Fin 2) (Fin 2) ℤ) * ((γ⁻¹ : SL(2, ℤ)) : Matrix (Fin 2) (Fin 2) ℤ)
+      = 1 := by
+    rw [← Matrix.SpecialLinearGroup.coe_mul, mul_inv_cancel]
+    rfl
+  have hshift : (h : Matrix (Fin 2) (Fin 2) ℤ)
+      * (triMat (a₂, b₂, d₂) * (γ : Matrix (Fin 2) (Fin 2) ℤ))
+      = (g₁ : Matrix (Fin 2) (Fin 2) ℤ) * triMat t' := by
+    rw [e₂, hhdef, Matrix.SpecialLinearGroup.coe_mul, mul_assoc,
+      ← mul_assoc ((g₂⁻¹ : SL(2, ℤ)) : Matrix (Fin 2) (Fin 2) ℤ), hg₂, one_mul]
+  have hstep : triMat (a₁, b₁, d₁) * (γ : Matrix (Fin 2) (Fin 2) ℤ)
+      = ((h : Matrix (Fin 2) (Fin 2) ℤ) * triMat (a₂, b₂, d₂))
+        * (γ : Matrix (Fin 2) (Fin 2) ℤ) := by
+    rw [e₁, ← hshift, mul_assoc]
+  have key : triMat (a₁, b₁, d₁)
+      = (h : Matrix (Fin 2) (Fin 2) ℤ) * triMat (a₂, b₂, d₂) := by
+    have hc := congrArg (fun M => M * ((γ⁻¹ : SL(2, ℤ)) : Matrix (Fin 2) (Fin 2) ℤ)) hstep
+    simpa only [mul_assoc, hγγ, mul_one] using hc
+  have hdeth : h 0 0 * h 1 1 - h 0 1 * h 1 0 = 1 := by
+    have := h.2
+    rwa [Matrix.det_fin_two] at this
+  have E1 : a₁ = h 0 0 * a₂ := by
+    have hc := congrFun (congrFun key 0) 0
+    simpa [triMat, Matrix.mul_apply, Fin.sum_univ_two] using hc
+  have E2 : b₁ = h 0 0 * b₂ + h 0 1 * d₂ := by
+    have hc := congrFun (congrFun key 0) 1
+    simpa [triMat, Matrix.mul_apply, Fin.sum_univ_two] using hc
+  have E3 : (0 : ℤ) = h 1 0 * a₂ := by
+    have hc := congrFun (congrFun key 1) 0
+    simpa [triMat, Matrix.mul_apply, Fin.sum_univ_two] using hc
+  have E4 : d₁ = h 1 0 * b₂ + h 1 1 * d₂ := by
+    have hc := congrFun (congrFun key 1) 1
+    simpa [triMat, Matrix.mul_apply, Fin.sum_univ_two] using hc
+  obtain ⟨hea, heb, hed⟩ :=
+    triangular_unique hdeth ha₂ hd₂ hb₂0 hb₂d ha₁ hd₁ hb₁0 hb₁d E1 E2 E3 E4
+  simp [hea, heb, hed]
+
+/-- **`Γ`-INVARIANCE OF THE PRODUCT `∏_t (X − j(t·z))` — PROVEN.** Replacing `z` by `γ • z`
+permutes the factors and leaves the product alone, for every `γ ∈ SL₂(ℤ)` and every `z ∈ ℍ`.
+
+This is the first of the three bullets `LEAF 3a-i` was documented as needing, and it is
+discharged here: the leaf below now assumes it and the leaf's old statement is recovered by
+feeding this in. It is stated as an equality of POLYNOMIALS rather than of each elementary
+symmetric function, which is strictly stronger and no harder — the coefficientwise form a
+consumer wants is one `congrArg (Polynomial.coeff · k)` away.
+
+`Finset.prod_bij` over the map of `exists_triangularReps_right_mul`, whose injectivity is
+`triangularReps_eq_of_right_mul`; surjectivity is then free on a finite set
+(`Finset.surj_on_of_inj_on_of_card_le` with `#s ≤ #s`), so `γ⁻¹` never has to be run through
+the construction a second time. -/
+theorem prod_triangularReps_jInvariant_smul {N : ℤ} (hN : 0 < N) (γ : SL(2, ℤ))
+    (z : UpperHalfPlane) :
+    ∏ t ∈ triangularReps N,
+        (Polynomial.X - Polynomial.C (jInvariant (triPoint (γ • z) t)))
+      = ∏ t ∈ triangularReps N,
+        (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))) := by
+  classical
+  have hspec : ∀ t (ht : t ∈ triangularReps N),
+      (exists_triangularReps_right_mul hN γ ht).choose ∈ triangularReps N ∧
+      (∃ g : SL(2, ℤ), triMat t * (γ : Matrix (Fin 2) (Fin 2) ℤ)
+        = (g : Matrix (Fin 2) (Fin 2) ℤ)
+          * triMat (exists_triangularReps_right_mul hN γ ht).choose) ∧
+      ∀ w : UpperHalfPlane, jInvariant (triPoint (γ • w) t)
+        = jInvariant (triPoint w (exists_triangularReps_right_mul hN γ ht).choose) :=
+    fun t ht => (exists_triangularReps_right_mul hN γ ht).choose_spec
+  refine Finset.prod_bij (fun t ht => (exists_triangularReps_right_mul hN γ ht).choose)
+    (fun t ht => (hspec t ht).1) ?_ ?_ ?_
+  · intro t₁ ht₁ t₂ ht₂ heq
+    obtain ⟨-, ⟨g₁, e₁⟩, -⟩ := hspec t₁ ht₁
+    obtain ⟨-, ⟨g₂, e₂⟩, -⟩ := hspec t₂ ht₂
+    rw [heq] at e₁
+    exact triangularReps_eq_of_right_mul ht₁ ht₂ e₁ e₂
+  · intro b hb
+    obtain ⟨t, ht, hbt⟩ :=
+      Finset.surj_on_of_inj_on_of_card_le
+        (fun t ht => (exists_triangularReps_right_mul hN γ ht).choose)
+        (fun t ht => (hspec t ht).1)
+        (by
+          intro t₁ t₂ ht₁ ht₂ heq
+          obtain ⟨-, ⟨g₁, e₁⟩, -⟩ := hspec t₁ ht₁
+          obtain ⟨-, ⟨g₂, e₂⟩, -⟩ := hspec t₂ ht₂
+          rw [heq] at e₁
+          exact triangularReps_eq_of_right_mul ht₁ ht₂ e₁ e₂)
+        le_rfl b hb
+    exact ⟨t, ht, hbt.symm⟩
+  · intro t ht
+    rw [(hspec t ht).2.2 z]
+
+/-- **LEAF 3a-i′ — THE CONSTRUCTION OF `Φ_N`, WITH `Γ`-INVARIANCE DISCHARGED.** One
+`Φ ∈ ℤ[Y][X]` whose specialisation at `Y = j(z)` is the monic product
+`∏_{(a,b,d) ∈ triangularReps N} (X − j((a z + b)/d))`, for every `z ∈ ℍ` simultaneously,
+GIVEN that that product is `Γ`-invariant in `z`.
+
+RECUT 2026-07-31 out of `exists_intPolynomial_eq_prod`, which is now PROVEN from it: `hinv`
+is `prod_triangularReps_jInvariant_smul` above, proved unconditionally, so the old statement
+is recovered verbatim and nothing was weakened. This is one leaf replacing one leaf; what
+changed is that the GROUP THEORY is gone from it and only the ANALYSIS is left.
+
+Adding a hypothesis cannot make a leaf false, so the earlier faithfulness audit of
+`exists_intPolynomial_eq_prod` (reproduced below, and still the audit of the CONCLUSION)
+survives this recut intact — which is the one thing the "a restated leaf voids its audit"
+rule of `CLAUDE.md` does not apply to.
+
+WHAT IS LEFT IN IT. The coefficients of the product are, for each fixed `z`, the elementary
+symmetric functions of the `ψ(N)` numbers `j((a z + b)/d)`. Of the three things that had to be
+shown, the first is now the hypothesis and two remain:
+
+* ~~those functions of `z` are `Γ`-INVARIANT~~ — this is `hinv`, and a consumer gets the
+  coefficientwise form from it by `congrArg (Polynomial.coeff · k)`;
 * they are holomorphic on `ℍ` and meromorphic at the cusp, hence POLYNOMIALS IN `j`. See the
   partial refutation in the section note below: this step is NOT the missing structure theorem
   `M_* = ℂ[E₄, E₆]`, it is a pole-order induction over `ModularForm.levelOne_weight_zero_const`,
@@ -4280,7 +4593,15 @@ symmetric functions of the `ψ(N)` numbers `j((a z + b)/d)`. Three things must b
 * those polynomials have INTEGER coefficients — the `q`-expansions lie in `ℤ[ζ_N]` and are
   `Gal(ℚ(ζ_N)/ℚ)`-stable, hence in `ℤ`.
 
-MACHINE-CHECKED FAITHFULNESS OF THE STATEMENT, 2026-07-31, and this is a check of the PRODUCT
+Those last two share no technique either, and the same splitting move would separate them:
+state `∃ Ψ ∈ ℂ[Y][X]` with the product formula, and then "any `Ψ` with the product formula has
+integer coefficients". The first clause pins `Ψ` (see the uniqueness paragraph on
+`isUnit_leadingCoeff_diag_of_eq_prod` below — `j` is non-constant, so two solutions differ by
+coefficients vanishing at infinitely many points), so the split is legitimate; it is NOT done
+here only because it costs a `Polynomial.map` composition glue that is worth writing once,
+carefully, rather than in passing.
+
+MACHINE-CHECKED FAITHFULNESS OF THE CONCLUSION, 2026-07-31, and this is a check of the PRODUCT
 IDENTITY itself rather than of its degrees — the earlier audit checked only degrees and leading
 coefficients. With `triangularReps N` transcribed LITERALLY from the definition above
 (`a, d ∈ [1, N]`, `b ∈ [0, N)`, `a d = N`, `b < d`, `gcd(a, gcd(b, d)) = 1`), `PARI/GP` at
@@ -4297,35 +4618,36 @@ classical `Φ_N` — refute by exhibiting an `N` and a `z` where the two disagre
 `hN` IS NOT LOAD-BEARING and is carried only to match the consumer: for `N ≤ 0` the ambient
 box `Finset.Icc 1 N` is empty, so `triangularReps N = ∅`, the product is `1`, and `Φ = 1`
 works. It is kept because every classical source states the theorem for `N > 0` and because
-dropping it would invite a reader to think the empty case is the interesting one.
-
-THE NEXT STEP, WORKED OUT BUT NOT WRITTEN, so that whoever takes this does not re-derive it.
-The `Γ`-invariance bullet above becomes the statement
-
-    ∏_{t ∈ triangularReps N} (X − C (j(triPoint w t)))
-      = ∏_{t ∈ triangularReps N} (X − C (j(triPoint z t)))
-
-for `w = γ • z`, `γ = [[α,β],[δ,ε]]` unimodular, proved by `Finset.prod_bij`. The map: for
-`t = (a, b, d)` put `(p, q, r, s) = (aα + bδ, aβ + bε, dδ, dε)` — this is `B_t · γ`, of
-determinant `N`, and primitive because `γ⁻¹` is integral. `exists_hermite_of_primitive` turns
-it into `γ' · B_{t'}`; normalise `b'` into `[0, d')` by absorbing `T^k` into `γ'`
-(`b' = d'k + b₀`, exactly as `exists_modularPolynomial_triangular` already does); then
-`triangularReps_spec`/`mem_triangularReps` give `t' ∈ triangularReps N`. The point identity is
-pure algebra: `(a·(γz) + b)/d = (pz + q)/(rz + s) = γ' • ((a'z + b')/d')`, so
-`j(triPoint w t) = j(triPoint z t')` by `jInvariant_smul` — the general Möbius step is the one
-inside `jInvariant_eq_of_act` further down, which is worth extracting first. INJECTIVITY is
-where `triangular_unique` is spent: if `B_{t₁}γ = g₁ B_{t'}` and `B_{t₂}γ = g₂ B_{t'}` then
-cancelling `γ` (unimodular, so cancellable over `ℤ`) gives `B_{t₂} = g₂g₁⁻¹ B_{t₁}`, and
-uniqueness forces `t₁ = t₂`. SURJECTIVITY is then free from injectivity on a finite set
-(`Finset.surj_on_of_inj_on_of_card_le`), so `γ⁻¹` never has to be run through the construction
-a second time. -/
-theorem exists_intPolynomial_eq_prod {N : ℤ} (hN : 0 < N) :
+dropping it would invite a reader to think the empty case is the interesting one. -/
+theorem exists_intPolynomial_eq_prod_of_smul_invariant {N : ℤ} (hN : 0 < N)
+    (hinv : ∀ (γ : SL(2, ℤ)) (z : UpperHalfPlane),
+      ∏ t ∈ triangularReps N,
+          (Polynomial.X - Polynomial.C (jInvariant (triPoint (γ • z) t)))
+        = ∏ t ∈ triangularReps N,
+          (Polynomial.X - Polynomial.C (jInvariant (triPoint z t)))) :
     ∃ Φ : Polynomial (Polynomial ℤ),
       ∀ z : UpperHalfPlane,
         Φ.map (Polynomial.eval₂RingHom (Int.castRingHom ℂ) (jInvariant z))
           = ∏ t ∈ triangularReps N,
               (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))) :=
   sorry
+
+/-- **THE CONSTRUCTION OF `Φ_N` — PROVEN** over `LEAF 3a-i′` and
+`prod_triangularReps_jInvariant_smul`. Same statement it had as a leaf; only its proof moved.
+
+This is the first of the two halves that `exists_modularPolynomial_prod` was split into on
+2026-07-31; the second is `isUnit_leadingCoeff_diag_of_eq_prod` (Kronecker). Read the section
+note on `exists_modularPolynomial_prod` below for why the split is possible and what each half
+inherits. In one line: this half is Cox Theorem 11.18, the other is Cox Lemma 11.23, and
+neither uses the other's technique. -/
+theorem exists_intPolynomial_eq_prod {N : ℤ} (hN : 0 < N) :
+    ∃ Φ : Polynomial (Polynomial ℤ),
+      ∀ z : UpperHalfPlane,
+        Φ.map (Polynomial.eval₂RingHom (Int.castRingHom ℂ) (jInvariant z))
+          = ∏ t ∈ triangularReps N,
+              (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))) :=
+  exists_intPolynomial_eq_prod_of_smul_invariant hN
+    (fun γ z => prod_triangularReps_jInvariant_smul hN γ z)
 
 /-- **LEAF 3a-ii — KRONECKER'S LEADING COEFFICIENT.** The diagonal `Φ_N(Y, Y) ∈ ℤ[Y]` of ANY
 `Φ` satisfying the product formula has leading coefficient `±1` when `N` is not a square.
@@ -5043,29 +5365,6 @@ theorem eq_of_quadratic_root {a b c : ℤ} (ha : a ≠ 0) {v w : UpperHalfPlane}
   rcases mul_eq_zero.mp hz with h | h
   · exact haR h
   · linarith
-
-/-- **The Möbius denominator of a unimodular integral matrix does not vanish on `ℍ` — PROVEN.**
-
-If `r = 0` then `ps = 1` forces `s ≠ 0`; otherwise `Im(r w + s) = r · Im w ≠ 0`. Stated with
-the two entries loose rather than through mathlib's `UpperHalfPlane.denom` so that the caller
-need not produce a `GL (Fin 2) ℝ` first. -/
-theorem denom_ne_zero_of_det {p q r s : ℤ} (hdet : p * s - q * r = 1) (w : UpperHalfPlane) :
-    (r : ℂ) * (w : ℂ) + (s : ℂ) ≠ 0 := by
-  intro h
-  have him := congrArg Complex.im h
-  simp only [Complex.add_im, Complex.mul_im, Complex.intCast_re, Complex.intCast_im,
-    Complex.zero_im, zero_mul, add_zero] at him
-  have hwim : 0 < (w : ℂ).im := w.im_pos
-  have hr : (r : ℝ) = 0 := by
-    rcases mul_eq_zero.mp him with h' | h'
-    · exact h'
-    · linarith
-  have hr0 : r = 0 := by exact_mod_cast hr
-  subst hr0
-  simp only [Int.cast_zero, zero_mul, zero_add] at h
-  have hs0 : s = 0 := by exact_mod_cast h
-  subst hs0
-  simp at hdet
 
 /-- **PROPERLY EQUIVALENT FORMS HAVE THE SAME `j`-VALUE AT THEIR ROOTS IN `ℍ` — PROVEN.**
 
@@ -5915,19 +6214,26 @@ DEFINED there over mathlib's `ModularForm.eta`, `ModularForm.discriminant` and
   inequality. Its former companion `Heegner.isIntegral_weberAlpha` is PROVEN too, from
   `Heegner.exists_int_gammaTwo`: `α⁴` is a root of `x³ − γ₂(τ₀)x − 16` by the definition of
   `γ₂`, so an integral `γ₂(τ₀)` already forces an integral `α`;
-* `Heegner.exists_modularPolynomial_prod` — the modular polynomial `Φ_N` with Kronecker's
-  leading coefficient (integrality of the class equation). **NARROWED 2026-07-30** from
-  `Heegner.exists_modularPolynomial`, which is now PROVEN from it, as are
-  `Heegner.exists_modularPolynomial_triangular`,
+* `Heegner.exists_intPolynomial_eq_prod_of_smul_invariant` — the construction of `Φ_N` given
+  `Γ`-invariance of `∏_t (X − j(t·z))` (`LEAF 3a-i′`), and
+* `Heegner.isUnit_leadingCoeff_diag_of_eq_prod` — Kronecker's `±1` leading coefficient on the
+  diagonal (`LEAF 3a-ii`). These two REPLACE `Heegner.exists_modularPolynomial_prod`, PROVEN
+  from them on 2026-07-31; that in turn had REPLACED `Heegner.exists_modularPolynomial`, which
+  is PROVEN from it, as are `Heegner.exists_modularPolynomial_triangular`,
   `Heegner.isIntegral_jInvariant_of_fixedPoint`,
   `Heegner.isIntegral_jInvariant_of_quadratic` and
-  `Heegner.isIntegral_gammaTwo_heegnerPoint`. What went away was the quantifier over all
-  primitive integral matrices of determinant `N` (Hermite normal form, `Γ`-invariance of `j`,
-  and translation of `b` mod `d`); what remains is the analytic core alone — that the
-  elementary symmetric functions of `j` over the `ψ(N)` triangular points `(az+b)/d` are
-  integral polynomials in `j`;
-* `Heegner.exists_rat_jInvariant_heegnerPoint` — `j(τ₀) ∈ ℚ` (**the main theorem of CM**). It
-  REPLACES `Heegner.exists_quadratic_jInvariant_heegnerPoint`, which is PROVEN from it;
+  `Heegner.isIntegral_gammaTwo_heegnerPoint`. Three things went away in three steps: the
+  quantifier over all primitive integral matrices of determinant `N` (Hermite normal form and
+  translation of `b` mod `d`); Kronecker's leading coefficient, which shares no technique with
+  the construction; and now the `Γ`-invariance itself
+  (`Heegner.prod_triangularReps_jInvariant_smul`, PROVEN). What is left in `LEAF 3a-i′` is the
+  ANALYSIS alone — that the elementary symmetric functions of `j` over the `ψ(N)` triangular
+  points `(az+b)/d` are polynomials in `j` (pole-order induction), with INTEGER coefficients
+  (the `q`-expansion Galois argument);
+* `Heegner.exists_posDefForm_root_of_aeval_minpoly_jInvariant` — the conjugates of `j(τ₀)`
+  (`LEAF 4b″`). It REPLACES `Heegner.exists_rat_jInvariant_heegnerPoint` (`j(τ₀) ∈ ℚ`, **the
+  main theorem of CM**), PROVEN from it on 2026-07-31, which had itself REPLACED
+  `Heegner.exists_quadratic_jInvariant_heegnerPoint`, PROVEN from that;
 * `Heegner.exists_ratCube_jInvariant_heegnerPoint` — `j(τ₀)` is a CUBE in `ℚ`, given that it is
   rational (Weber's level-`3` descent). It REPLACES
   `Heegner.exists_quadratic_gammaTwo_of_jInvariant`, which is PROVEN from it; the `K = ℚ(√−p)`
@@ -5951,10 +6257,12 @@ the two `j`-statements listed above, once reality was used to remove the `K` (se
 first over `Heegner.eta_pow_24_add_eta_two_pow_24` — which is itself PROVEN, over
 `Heegner.eta_two_torsion_key`, which is itself PROVEN.
 
-Of these only `exists_rat_jInvariant_heegnerPoint` needs class field theory;
+Of these only `exists_posDefForm_root_of_aeval_minpoly_jInvariant` needs class field theory;
 `exists_ratCube_jInvariant_heegnerPoint` needs Weber's level-`3` modular theory but no class
-field theory, and `exists_modularPolynomial_prod` is the analytic core of the integrality of
-the class equation — that last is the cheap target now that the analytic cluster is closed.
+field theory, and `exists_intPolynomial_eq_prod_of_smul_invariant` is the analytic core of the
+integrality of the class equation. `isUnit_leadingCoeff_diag_of_eq_prod` is the cheap one: it
+is a `q`-expansion leading-term count over `ψ(N)` factors, with no invariance, no holomorphy
+and no Galois theory in it, and its statement already carries the three leading powers.
 (This list is referred to BY NAME rather than by position — its ordinals went stale
 twice, and at one point "the seventh" had no referent at all.) -/
 theorem exists_heegnerRelation_of_classNumberOne {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3)
