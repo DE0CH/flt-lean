@@ -47489,10 +47489,19 @@ theorem exists_subgroup_of_independent_ray_class
     ∃ H : Subgroup Q, f ∈ H ∧
       (∀ x : Q, cA x = 1 → cB x = 1 → x ∈ H) ∧
       (∀ x : Q, ∃ t : Q, cA t = 1 ∧ ∃ h ∈ H, x = t * h) ∧
-      (∀ h ∈ H, cB h = 1 → cA h = 1) := by
+      (∀ h ∈ H, cB h = 1 → cA h = 1) ∧
+      -- **`H` IS NORMAL** (added 2026-07-31, flt-lean-201).  It is the preimage of a
+      -- subgroup of the COMMUTATIVE group `A × B`, so conjugation-stability is one
+      -- line — and without it the clause `globalFrob p ∈ H` further down the chain is
+      -- not conjugation-invariant, while `globalFrob` is only well defined up to
+      -- conjugacy.  Consumed by `exists_commonNormBase_ray_class` far below, which
+      -- gets its prime from Chebotarev and therefore only ever knows a CONJUGATE of
+      -- its Frobenius.
+      (∀ g x : Q, x ∈ H → g * x * g⁻¹ ∈ H) := by
   classical
   set q : Q →* A × B := MonoidHom.prod cA cB with hq
-  refine ⟨Subgroup.comap q (Subgroup.closure ({q w, q f} : Set (A × B))), ?_, ?_, ?_, ?_⟩
+  refine ⟨Subgroup.comap q (Subgroup.closure ({q w, q f} : Set (A × B))),
+    ?_, ?_, ?_, ?_, ?_⟩
   · exact Subgroup.subset_closure (by simp)
   · intro x hxA hxB
     have hx1 : q x = 1 := by
@@ -47523,6 +47532,12 @@ theorem exists_subgroup_of_independent_ray_class
       rw [zpow_mul, zpow_natCast, hexp f, one_zpow]
     rw [hw1, hf1, one_mul] at h1
     exact h1.symm
+  · -- normality: `q (g x g⁻¹) = q x` because `A × B` is commutative
+    intro g x hx
+    have hqeq : q (g * x * g⁻¹) = q x := by
+      rw [map_mul, map_mul, map_inv, mul_comm (q g) (q x), mul_assoc, mul_inv_cancel, mul_one]
+    rw [Subgroup.mem_comap, hqeq]
+    exact Subgroup.mem_comap.mp hx
 
 /-- **The fixer of `μ_m` inside `Γ F`, as a subgroup** (PROVEN 2026-07-26;
 created the same day so that `exists_artinPackage_ray_class` below can be
@@ -50118,16 +50133,20 @@ theorem exists_artinAuxiliaryField_ray_class
       (∀ σ ∈ H, (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → σ ζ = ζ) → χ σ = 1) ∧
       (∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧
         (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ρ ζ = ζ) ∧ σ = τ * ρ) ∧
-      globalFrob p ∈ H := by
+      globalFrob p ∈ H ∧
+      -- (v) **`H` IS NORMAL** (added 2026-07-31, flt-lean-201): `E/F` is abelian, so
+      -- clause (iv) does not depend on which Frobenius at `p` is meant.  Forwarded
+      -- from `exists_subgroup_of_independent_ray_class`, where it is one line.
+      (∀ g σ : Γ F, σ ∈ H → g * σ * g⁻¹ ∈ H) := by
   -- (A3a-1): the auxiliary modulus and the two commutative quotients.
   obtain ⟨m, hm0, hmS, hmp, hiii, A, B, iA, iB, cA, cB, n, w,
     hAker, hBker, hgen, hexp, hwB, hfB, hind, hopen⟩ :=
     exists_artinPackage_ray_class F χ hmul V hVopen hVker p S
-  -- (A3a-0): the finite group theory builds `H` and gives (i), (ii), (iv).
-  obtain ⟨H, hfH, hkerH, hi, hii⟩ :=
+  -- (A3a-0): the finite group theory builds `H` and gives (i), (ii), (iv), (v).
+  obtain ⟨H, hfH, hkerH, hi, hii, hnorm⟩ :=
     exists_subgroup_of_independent_ray_class cA cB n w (globalFrob p)
       hgen hexp hwB hfB hind
-  refine ⟨m, H, hm0, hmS, hmp, hopen H hkerH, ?_, ?_, hiii, hfH⟩
+  refine ⟨m, H, hm0, hmS, hmp, hopen H hkerH, ?_, ?_, hiii, hfH, hnorm⟩
   · -- (i) `ker χ · H = Γ F`, read off through `cA`
     intro σ
     obtain ⟨t, htA, h, hhH, hσ⟩ := hi σ
@@ -50383,15 +50402,139 @@ theorem exists_artinAuxiliaryNumberField_ray_class
         (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ρ ζ = ζ) ∧ σ = τ * ρ) ∧
       globalFrob p ∈ H ∧
       (∀ x : E, j (algebraMap E (AlgebraicClosure E) x) = jE x) ∧
-      (∀ (σ : Γ E) (x : AlgebraicClosure E), ι σ (j x) = j (σ x)) := by
-  obtain ⟨m, H, hm0, hmS, hmp, hHopen, hi, hii, hiii, hfrob⟩ :=
+      (∀ (σ : Γ E) (x : AlgebraicClosure E), ι σ (j x) = j (σ x)) ∧
+      -- **`H` IS NORMAL** (added 2026-07-31, flt-lean-201); see the clause of the same
+      -- name on `exists_artinAuxiliaryField_ray_class` above.
+      (∀ (g σ : Γ F), σ ∈ H → g * σ * g⁻¹ ∈ H) := by
+  obtain ⟨m, H, hm0, hmS, hmp, hHopen, hi, hii, hiii, hfrob, hnorm⟩ :=
     exists_artinAuxiliaryField_ray_class F χ hmul V hVopen hVker p S
   obtain ⟨E, fE, nE, aE, ι, jE, j, hfin, hinj, hmemH, hsurj, hmu, hjE, hιapp⟩ :=
     exists_auxiliaryNumberField_ray_class F H hHopen
   refine ⟨m, H, E, fE, nE, aE, ι, jE, j, hm0, hmS, hmp, hHopen, hfin, hinj, hmemH, hsurj,
-    hi, ?_, hiii, hfrob, hjE, hιapp⟩
+    hi, ?_, hiii, hfrob, hjE, hιapp, hnorm⟩
   intro σ hσ
   exact hii (ι σ) (hmemH σ) ((hmu m σ).mp hσ)
+
+set_option maxHeartbeats 1000000 in
+/-- **ARTIN'S LEMMA RELATIVE TO AN ALREADY-BUILT AUXILIARY FIELD** (SORRY LEAF,
+created 2026-07-31 (flt-lean-201) because the `hbase` step of
+`exists_artinNormSubgroups_ramified_ray_class` far below is **NOT PROVABLE** from
+the clauses `exists_artinAuxiliaryNumberField_ray_class` exports — see the
+COUNTEREXAMPLE below, which is explicit and arithmetic).
+
+**WHAT IT IS.** Verbatim `exists_artinAuxiliaryNumberField_ray_class` above, with
+one extra input — an open subgroup `H₀ ≤ Γ F` with `ker χ · H₀ = Γ F`, i.e. an
+auxiliary field `E₀` already built with `M ∩ E₀ = F` — and one extra output
+clause, the COMPOSITUM clause
+
+    ker χ · (H ⊓ H₀) = Γ F,   i.e.   M ∩ E₀E = F.
+
+Applying the old lemma twice and asking for the compositum clause afterwards does
+not work, and that is the whole content of this leaf.
+
+**THE COUNTEREXAMPLE that forces it** (found 2026-07-31, flt-lean-201; verified
+numerically with PARI). The old lemma couples its two applications ONLY through
+`hm₂cop`, coprimality of the two moduli. That is not enough:
+
+  `F = ℚ`; `χ` the quadratic character cutting out `M = ℚ(√-15)`; `mm = (15)`
+  (so `hmmram` holds — `χ` ramifies only at `3` and `5`);
+  `m₁ = 5`, `H₁ = Gal(ℚ̄/ℚ(√-3))`, i.e. `E₁ = ℚ(√-3)`;
+  `m₂ = 3`, `H₂ = Gal(ℚ̄/ℚ(√5))`,  i.e. `E₂ = ℚ(√5)`;
+  `v = 7`, `v₀ = 11`.
+
+Every clause of the old lemma holds at BOTH applications:
+`5 ∤ 3` (`hm₂cop`); `5 ∉ (7)`, `3 ∉ (11)`; `M ∩ E₁ = M ∩ E₂ = ℚ` (clause (i),
+because `√-15 ∉ ℚ(√-3)`, `√-15 ∉ ℚ(√5)`); `M ⊆ E₁(ζ₅)` and `M ⊆ E₂(ζ₃)`
+(clause (ii), since `√-15 = √-3·√5`, `√5 ∈ ℚ(ζ₅)`, `√-3 ∈ ℚ(ζ₃)`);
+`M ∩ ℚ(ζ₅) = M ∩ ℚ(ζ₃) = ℚ` (clause (iii), the unique quadratic subfield of
+`ℚ(ζ₅)` is `ℚ(√5)`); `7` splits completely in `ℚ(√-3)` (`(-3/7) = 1`) and `11`
+in `ℚ(√5)` (`(5/11) = 1`) (clause (iv)); `7, 11 ∤ 15`.
+
+But `E₁E₂ = ℚ(√-3, √5) ⊇ ℚ(√-15) = M`, so `H₁ ⊓ H₂ ≤ ker χ` and
+`χ (H₁ ⊓ H₂) = {1}` — while `χ (globalFrob 11) = (-15/11) = -1` and
+`χ (globalFrob 7) = (-15/7) = -1`.
+
+*What that kills, precisely.* `hbase` asks for a divisor `β` with Artin symbol
+`χ (globalFrob v₀)` lying in `𝔑₁(Im₁) ⊓ 𝔑₂(Im₂)`. Clause (0) of
+`exists_relNormDivisorHom_ray_class` pins `𝔑_i` on the basis, so
+`𝔑_i (Im_i) = ⊕_w f_i(w) ℤ` with `f_i(w)` the residue degree in `E_i`; an
+exponent `n_w` occurring in an element of the intersection is divisible by
+`lcm (f₁(w), f₂(w))`, hence is odd only when `w` splits completely in BOTH
+`E₁` and `E₂`, hence only when `w` splits completely in `E₁E₂ ⊇ M`, hence only
+when `χ (globalFrob w) = 1`. So `φ` is IDENTICALLY `1` on
+`𝔑₁(Im₁) ⊓ 𝔑₂(Im₂)`, and no `β` with symbol `-1` exists. The same computation
+kills every weakening of `hbase` that keeps `𝒜 = 𝔑₁(Im₁)`, `𝒜₀ = 𝔑₂(Im₂)`.
+
+The configuration is not exotic: `E₁ = ℚ(√-3)` and `E₂ = ℚ(√5)` are exactly what
+Artin's construction produces (the fixed field, inside `M(ζ_{m_i})`, of a cyclic
+subgroup projecting onto `Gal(M/F)`), so this is what the construction does by
+default, not a pathology one has to arrange.
+
+**WHY IT IS TRUE with the extra input, and the ROUTE for a prover.** Childress's
+own multi-prime argument (ch. 5 §2, pp. 121–123) builds the auxiliary fields
+SUCCESSIVELY, and the second construction must see the first. The only place the
+extra clause touches the existing proof is the CHOICE OF `m` — Lemmas 2.3–2.7,
+which already choose the auxiliary primes `q ∣ m` to avoid a finite set `S` and
+to make `Gal(F(ζ_m)/F) ≅ (ℤ/mℤ)ˣ`. Require in addition that those `q` be
+unramified in `M E₀`. Then `F(ζ_m)/F` is (totally) ramified at every `q ∣ m`
+while `M E₀/F` is not, so `F(ζ_m) ∩ M E₀ = F`, hence `H₀` still surjects onto
+`Gal(M(ζ_m)/F)` and the generator `w` of Childress's Lemma 5.2.8 may be taken
+INSIDE `H₀`. Since `H = q⁻¹⟨q w, q (globalFrob p)⟩` and clause (i) is proved by
+writing `σ = (σ w^{-i}) · w^i` with `w^i ∈ H`, the same computation gives
+`w^i ∈ H ⊓ H₀`, which IS the compositum clause. So a prover should re-run
+`exists_artinModulusCore_ray_class`'s route with `M E₀` in place of `M` at the
+ramification step; **`w ∈ H₀` is the single fact to add, everything else is
+verbatim.**
+
+Equivalently, and this is the shape of the standard proof: from `M ∩ E₀ = F` and
+`M E₀ ∩ E = F` one gets `M ∩ E₀E = F` by a two-line character computation
+(if `ψ ∈ X_M ∩ X_{E₀}X_E`, write `ψ = ψ₀ψ_E`; then `ψψ₀⁻¹ = ψ_E ∈ X_M X_{E₀} ∩
+X_E = 1`, so `ψ = ψ₀ ∈ X_M ∩ X_{E₀} = 1`).
+
+**FAITHFULNESS: TRUE as stated, and NOT vacuous.** True by the route above. Not
+vacuous in the strong sense: taking `H₀ = ⊤` recovers
+`exists_artinAuxiliaryNumberField_ray_class` exactly (the compositum clause
+becomes clause (i)), so this leaf is a genuine generalisation of a statement
+already believed; and the compositum clause is not derivable from the others, by
+the counterexample above.
+
+**Check that would refute it**: an open `H₀` with `ker χ · H₀ = Γ F` and a prime
+`p` for which no `m`, `H` satisfy all the clauses at once — equivalently, by the
+route, a `M E₀` in which every sufficiently large auxiliary prime ramifies. -/
+theorem exists_relArtinAuxiliaryNumberField_ray_class
+    (F : Type u) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1)
+    (H₀ : Subgroup (Γ F)) (hH₀open : IsOpen (H₀ : Set (Γ F)))
+    (hH₀ : ∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧ ρ ∈ H₀ ∧ σ = τ * ρ)
+    (p : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F))
+    (S : Finset ℕ) :
+    ∃ (m : ℕ) (H : Subgroup (Γ F)) (E : Type u) (_ : Field E) (_ : NumberField E)
+      (_ : Algebra F E) (ι : Γ E →* Γ F) (jE : E →ₐ[F] AlgebraicClosure F)
+      (j : AlgebraicClosure E ≃+* AlgebraicClosure F),
+      0 < m ∧
+      (∀ q ∈ S, q.Prime → ¬ q ∣ m) ∧
+      (m : NumberField.RingOfIntegers F) ∉ p.asIdeal ∧
+      IsOpen (H : Set (Γ F)) ∧
+      Module.Finite F E ∧
+      Function.Injective ι ∧
+      (∀ σ : Γ E, ι σ ∈ H) ∧
+      (∀ τ ∈ H, ∃ σ : Γ E, ι σ = τ) ∧
+      (∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧ ρ ∈ H ∧ σ = τ * ρ) ∧
+      (∀ σ : Γ E, (∀ ζ : AlgebraicClosure E, ζ ^ m = 1 → σ ζ = ζ) → χ (ι σ) = 1) ∧
+      (∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧
+        (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ρ ζ = ζ) ∧ σ = τ * ρ) ∧
+      globalFrob p ∈ H ∧
+      (∀ x : E, j (algebraMap E (AlgebraicClosure E) x) = jE x) ∧
+      (∀ (σ : Γ E) (x : AlgebraicClosure E), ι σ (j x) = j (σ x)) ∧
+      (∀ (g σ : Γ F), σ ∈ H → g * σ * g⁻¹ ∈ H) ∧
+      -- **THE COMPOSITUM CLAUSE**, `M ∩ E₀E = F`.  This is the one clause that is
+      -- not a clause of `exists_artinAuxiliaryNumberField_ray_class`, and the whole
+      -- reason this leaf exists.
+      (∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧ ρ ∈ H ⊓ H₀ ∧ σ = τ * ρ) :=
+  sorry
 
 /-- **A homomorphism out of the free abelian group `Multiplicative (ι →₀ ℤ)` may
 be prescribed arbitrarily on the basis** (PROVEN 2026-07-27), by
@@ -54538,6 +54681,149 @@ theorem exists_relNormDivisorHom_ray_class
     norm_num
 
 set_option maxHeartbeats 1000000 in
+/-- **THE COMMON NORM BASE `b_F` OF CHILDRESS pp. 121–123** (created 2026-07-31,
+flt-lean-201, by hoisting the last sorried `have` — `hbase` — out of
+`exists_artinNormSubgroups_ramified_ray_class` below, which is now SORRY-FREE
+glue over this and `exists_relNormDivisorHom_ray_class`).
+
+**WHAT IT ASKS FOR.** A divisor `β` of `F` whose Artin symbol is
+`χ (globalFrob v₀)` and which is a NORM from both auxiliary fields — i.e. lies in
+`𝔑₁(Im₁)` and in `𝔑₂(Im₂)`. Childress needs a single such base because Artin's
+Lemma at `v` says nothing about `v₀`, so `v · v₀^{-e}` is in general a norm from
+neither field, and the two primes have to be related through a common third
+object.
+
+**THE PROOF IS ONE PRIME, NOT A COMPOSITUM NORM.** Childress writes
+`b_F = N_{E/F} B_E` for `E = E₁E₂` and gets `B_E` from surjectivity of the Artin
+map over `E`. Formalising that needs the compositum AS A FIELD, the tower
+identity `N_{E/F} = 𝔑_i ∘ N_{E/E_i}`, and Chebotarev at `E`. None of it is
+needed. Take instead a PRIME `p` of `F` that splits completely in both auxiliary
+fields and has `χ (globalFrob p) = χ (globalFrob v₀)`, and put
+`β := single p 1`:
+
+* `φ (single p 1) = χ (globalFrob p) = χ (globalFrob v₀)` by `hφv`;
+* `p` splits completely in `E_i`, so `exists_heightOneSpectrum_inertiaDeg_eq_one_ray_class`
+  gives `W_i ∣ p` with `f(W_i/p) = 1`, and clause (0) (`hbasis_i`) reads
+  `𝔑_i (single W_i 1) = single p 1`. `W_i ∤ mmE_i` because `p ∤ mm` and
+  `(m_i) ∉ p`, via `hmmE_i supp` — so `single W_i 1 ∈ Im_i`.
+
+The prime comes from Chebotarev at `F` (`exists_frobenius_conj_mem_coset`, PROVEN
+in `Chebotarev.lean`) applied to the coset `σ₀ · U`, where
+`U := H₁ ⊓ H₂ ⊓ V` is open and `σ₀ ∈ H₁ ⊓ H₂` has `χ σ₀ = χ (globalFrob v₀)`.
+Membership in `σ₀ U` gives both conclusions at once: `H₁ ⊓ H₂` because `U ≤ H₁ ⊓ H₂`,
+and the symbol because `U ≤ V ≤ ker χ`.
+
+**THE COMPOSITUM IS PRESENT ONLY AS `hcompos`.** That `σ₀` exists — i.e. that `χ`
+is SURJECTIVE on `H₁ ⊓ H₂`, equivalently `M ∩ E₁E₂ = F` — is exactly the
+compositum clause, and it is the one thing here that is not free. It is NOT
+implied by the clauses of `exists_artinAuxiliaryNumberField_ray_class` at the two
+primes, not even with coprime moduli; the counterexample is on
+`exists_relArtinAuxiliaryNumberField_ray_class` above, which is the leaf that
+supplies it.
+
+**`hH₁norm`/`hH₂norm` ARE LOAD-BEARING, and are the reason the normality clause
+was threaded down to `exists_subgroup_of_independent_ray_class`.** Chebotarev
+delivers a CONJUGATE `g · globalFrob p · g⁻¹` in the coset, never `globalFrob p`
+itself — `globalFrob` is well defined only up to conjugacy — whereas
+`exists_heightOneSpectrum_inertiaDeg_eq_one_ray_class` wants the literal
+`∃ σ : Γ E, ι σ = globalFrob p`. Normality of `H_i` is what closes that gap, and
+it is true for the reason clause (iv) of Artin's Lemma is meaningful at all: `H`
+is the preimage of a subgroup of a COMMUTATIVE quotient.
+
+**The finite set Chebotarev avoids is read off `hd`.** It is the support of
+`d (δ₀ · m₁ · m₂)` for any nonzero `δ₀ ∈ mm`; a prime outside it divides none of
+`mm`, `(m₁)`, `(m₂)`, which is all `hmmE_i supp` needs. No new finiteness input.
+
+**FAITHFULNESS: TRUE as stated, and every hypothesis is used.** `hcompos` gives
+`σ₀`; `hV*` make `U` open and kill `χ` on it; `hH_i norm` transport the
+Frobenius; `hsurH_i` turn `globalFrob p ∈ H_i` into the splitting hypothesis;
+`hbasis_i` are clause (0) and are what makes `𝔑_i (single W_i 1) = single p 1`;
+`hmm`, `hm_i pos` build the avoidance set; `hmmE_i supp` and `hIm_i` place
+`W_i` inside `Im_i`. Dropping `hcompos` makes it FALSE (same counterexample);
+dropping either `hH_i norm` makes it unprovable, not false. -/
+theorem exists_commonNormBase_ray_class
+    (F : Type u) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1)
+    (E₁ : Type u) [Field E₁] [NumberField E₁] [Algebra F E₁]
+    (hfin₁ : Module.Finite F E₁)
+    (ι₁ : Γ E₁ →* Γ F) (hinj₁ : Function.Injective ι₁)
+    (jE₁ : E₁ →ₐ[F] AlgebraicClosure F)
+    (j₁ : AlgebraicClosure E₁ ≃+* AlgebraicClosure F)
+    (hjE₁ : ∀ x : E₁, j₁ (algebraMap E₁ (AlgebraicClosure E₁) x) = jE₁ x)
+    (hιapp₁ : ∀ (σ : Γ E₁) (x : AlgebraicClosure E₁), ι₁ σ (j₁ x) = j₁ (σ x))
+    (E₂ : Type u) [Field E₂] [NumberField E₂] [Algebra F E₂]
+    (hfin₂ : Module.Finite F E₂)
+    (ι₂ : Γ E₂ →* Γ F) (hinj₂ : Function.Injective ι₂)
+    (jE₂ : E₂ →ₐ[F] AlgebraicClosure F)
+    (j₂ : AlgebraicClosure E₂ ≃+* AlgebraicClosure F)
+    (hjE₂ : ∀ x : E₂, j₂ (algebraMap E₂ (AlgebraicClosure E₂) x) = jE₂ x)
+    (hιapp₂ : ∀ (σ : Γ E₂) (x : AlgebraicClosure E₂), ι₂ σ (j₂ x) = j₂ (σ x))
+    (H₁ H₂ : Subgroup (Γ F))
+    (hH₁open : IsOpen (H₁ : Set (Γ F))) (hH₂open : IsOpen (H₂ : Set (Γ F)))
+    (hsurH₁ : ∀ τ ∈ H₁, ∃ σ : Γ E₁, ι₁ σ = τ)
+    (hsurH₂ : ∀ τ ∈ H₂, ∃ σ : Γ E₂, ι₂ σ = τ)
+    (hH₁norm : ∀ g x : Γ F, x ∈ H₁ → g * x * g⁻¹ ∈ H₁)
+    (hH₂norm : ∀ g x : Γ F, x ∈ H₂ → g * x * g⁻¹ ∈ H₂)
+    (hcompos : ∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧ ρ ∈ H₁ ⊓ H₂ ∧ σ = τ * ρ)
+    (m₁ m₂ : ℕ) (hm₁pos : 0 < m₁) (hm₂pos : 0 < m₂)
+    (mm : Ideal (NumberField.RingOfIntegers F)) (hmm : mm ≠ ⊥)
+    (mmE₁ : Ideal (NumberField.RingOfIntegers E₁))
+    (mmE₂ : Ideal (NumberField.RingOfIntegers E₂))
+    (hmmE₁supp : ∀ W : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E₁),
+      W.asIdeal ∣ mmE₁ → W.asIdeal.under (NumberField.RingOfIntegers F) ∣ mm ∨
+        (m₁ : NumberField.RingOfIntegers E₁) ∈ W.asIdeal)
+    (hmmE₂supp : ∀ W : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E₂),
+      W.asIdeal ∣ mmE₂ → W.asIdeal.under (NumberField.RingOfIntegers F) ∣ mm ∨
+        (m₂ : NumberField.RingOfIntegers E₂) ∈ W.asIdeal)
+    (φ : Multiplicative (IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers F) →₀ ℤ) →* (Dickson.K 3)ˣ)
+    (d : NumberField.RingOfIntegers F → Multiplicative
+      (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ))
+    (hd : ∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
+      ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F), ∀ n : ℕ,
+        (w.asIdeal ^ n ∣ Ideal.span {δ} ↔ (n : ℤ) ≤ Multiplicative.toAdd (d δ) w))
+    (hφv : ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      ((φ (Multiplicative.ofAdd (Finsupp.single w (1 : ℤ)))) : Dickson.K 3)
+        = χ (globalFrob w))
+    (Im₁ : Subgroup (Multiplicative (IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers E₁) →₀ ℤ)))
+    (Im₂ : Subgroup (Multiplicative (IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers E₂) →₀ ℤ)))
+    (hIm₁ : ∀ x, x ∈ Im₁ ↔ ∀ W : IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers E₁), W.asIdeal ∣ mmE₁ → Multiplicative.toAdd x W = 0)
+    (hIm₂ : ∀ x, x ∈ Im₂ ↔ ∀ W : IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers E₂), W.asIdeal ∣ mmE₂ → Multiplicative.toAdd x W = 0)
+    (𝔑₁ : Multiplicative (IsDedekindDomain.HeightOneSpectrum
+        (NumberField.RingOfIntegers E₁) →₀ ℤ) →*
+      Multiplicative (IsDedekindDomain.HeightOneSpectrum
+        (NumberField.RingOfIntegers F) →₀ ℤ))
+    (𝔑₂ : Multiplicative (IsDedekindDomain.HeightOneSpectrum
+        (NumberField.RingOfIntegers E₂) →₀ ℤ) →*
+      Multiplicative (IsDedekindDomain.HeightOneSpectrum
+        (NumberField.RingOfIntegers F) →₀ ℤ))
+    (hbasis₁ : ∀ (W : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E₁))
+      (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F)),
+      W.asIdeal.under (NumberField.RingOfIntegers F) = w.asIdeal →
+      𝔑₁ (Multiplicative.ofAdd (Finsupp.single W (1 : ℤ)))
+        = Multiplicative.ofAdd (Finsupp.single w
+            (W.asIdeal.inertiaDeg (NumberField.RingOfIntegers F) : ℤ)))
+    (hbasis₂ : ∀ (W : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E₂))
+      (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F)),
+      W.asIdeal.under (NumberField.RingOfIntegers F) = w.asIdeal →
+      𝔑₂ (Multiplicative.ofAdd (Finsupp.single W (1 : ℤ)))
+        = Multiplicative.ofAdd (Finsupp.single w
+            (W.asIdeal.inertiaDeg (NumberField.RingOfIntegers F) : ℤ)))
+    (v₀ : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F)) :
+    ∃ β : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ,
+      ((φ (Multiplicative.ofAdd β) : Dickson.K 3)) = χ (globalFrob v₀) ∧
+      Multiplicative.ofAdd β ∈ Subgroup.map 𝔑₁ Im₁ ∧
+      Multiplicative.ofAdd β ∈ Subgroup.map 𝔑₂ Im₂ := by
+  sorry
+
+set_option maxHeartbeats 1000000 in
 /-- **THE COMMON NORM BASE AND THE TWO AUXILIARY NORM SUBGROUPS OF
 CHILDRESS pp. 121–123, WITH NO UNRAMIFIEDNESS HYPOTHESIS ON `χ`**
 (SORRY LEAF, created 2026-07-27 (flt-lean-65) as the sole sub-leaf of
@@ -54649,14 +54935,40 @@ could share it.  The assembly never used `hunr`, so it transplants verbatim
 into the general form and the special form below is now a one-line
 delegation.
 
-**CURRENT STATE OF THE ASSEMBLY (flt-lean-346, 2026-07-28).** Steps 1 and 4 —
-Artin's Lemma at `v` and at `v₀` with the auxiliary fields realised, and
-cyclotomic reciprocity upstairs — are PROVEN. Step 3 is now the NAMED leaf
-`exists_relNormDivisorHom_ray_class` above, applied twice; it was previously
-TWO anonymous sorried `have`s (`hnorm₁`, `hnorm₂`) carrying identical
-mathematics, so hoisting it was a net **−1** on the open frontier as well as
-making it dispatchable. Step 2 — the common norm base `β` from the compositum
-— is the ONE remaining sorried `have` (`hbase`) in the body below.
+**CURRENT STATE OF THE ASSEMBLY (flt-lean-201, 2026-07-31).** The body below is
+now SORRY-FREE. Steps 1 and 4 — Artin's Lemma at `v` and at `v₀` with the
+auxiliary fields realised, and cyclotomic reciprocity upstairs — were already
+PROVEN. Step 3 is the NAMED leaf `exists_relNormDivisorHom_ray_class` above,
+applied twice. Step 2 — the common norm base `β` from the compositum — was the
+last sorried `have` (`hbase`) and is now the PROVEN top-level
+`exists_commonNormBase_ray_class` above; what it consumes that this proof did
+not previously have is the COMPOSITUM clause `M ∩ E₁E₂ = F`, supplied by the new
+leaf `exists_relArtinAuxiliaryNumberField_ray_class`.
+
+**`hbase` WAS NOT PROVABLE WHERE IT STOOD, and this is the interesting part
+(2026-07-31, flt-lean-201).** The note below used to say `hbase` was
+"deliberately NOT hoisted" because it sees `𝔑₁`, `𝔑₂`, `Im₁`, `Im₂`, `H₁`, `H₂`,
+`ι₁`, `ι₂`, `E₁`, `E₂` and their pinning clauses for free. That is true and it
+is not the point: what the enclosing scope did NOT contain was any reason for
+`M ∩ E₁E₂ = F`, and `hbase` is FALSE without it. The two applications of
+`exists_artinAuxiliaryNumberField_ray_class` were coupled ONLY by `hm₂cop`,
+coprimality of the moduli, and coprimality is not enough —
+
+  `F = ℚ`, `M = ℚ(√-15)`, `mm = (15)`, `m₁ = 5`, `E₁ = ℚ(√-3)`, `m₂ = 3`,
+  `E₂ = ℚ(√5)`, `v = 7`, `v₀ = 11`
+
+satisfies every clause of that lemma at BOTH applications (checked clause by
+clause, and numerically, on `exists_relArtinAuxiliaryNumberField_ray_class`)
+while `E₁E₂ = ℚ(√-3,√5) ⊇ M`, so `χ` is trivial on `H₁ ⊓ H₂` and `φ` is
+identically `1` on `𝔑₁(Im₁) ⊓ 𝔑₂(Im₂)`, whereas `χ (globalFrob 11) = -1`. So no
+`β` exists. The repair is the relative Artin lemma, not a cleverer proof of
+`hbase`.
+
+*Lesson, since it generalises*: a `have` whose data is produced by TWO
+independent applications of one existential lemma can need a coupling between
+those applications that neither application's clause list mentions. Reading the
+`have`'s hypothesis list — or even the whole enclosing scope — will not reveal
+it; only asking "what does this step need that nothing in scope supplies?" will.
 
 **THE MODULI AT THE AUXILIARY FIELDS CHANGED 2026-07-28 (flt-lean-182), and it
 was a correctness fix, not a style choice.** `mmE_i` was
@@ -54793,17 +55105,27 @@ theorem exists_artinNormSubgroups_ramified_ray_class
   classical
   have hℓk : ℓ ^ k ≠ 0 := pow_ne_zero k hℓ.ne_zero
   -- STEP 1 (Childress p. 121): Artin's Lemma at `v` and at `v₀`, with the
-  -- auxiliary fields realised as number fields in `Type u`.  The second call
-  -- avoids the primes of `m₁`, which is Childress's coprimality of the two moduli.
+  -- auxiliary fields realised as number fields in `Type u`.
+  --
+  -- **THE SECOND CALL IS RELATIVE TO THE FIRST** (2026-07-31, flt-lean-201), and it
+  -- has to be.  Coprimality of the two moduli — all the coupling the old
+  -- `exists_artinAuxiliaryNumberField_ray_class` provided — does NOT imply
+  -- `M ∩ E₁E₂ = F`, and without that the common norm base `hbase` below does not
+  -- exist: `F = ℚ`, `M = ℚ(√-15)`, `m₁ = 5`, `E₁ = ℚ(√-3)`, `m₂ = 3`, `E₂ = ℚ(√5)`
+  -- satisfies every clause of the old lemma at both applications while
+  -- `E₁E₂ = ℚ(√-3,√5) ⊇ M`.  See the COUNTEREXAMPLE on
+  -- `exists_relArtinAuxiliaryNumberField_ray_class` above, which is the leaf that
+  -- repairs it and whose extra output `hcompos` is what STEP 2 consumes.
   obtain ⟨m₁, H₁, E₁, fE₁, nE₁, aE₁, ι₁, jE₁, j₁, hm₁pos, -, hm₁v, hH₁open, hfin₁, hinj₁,
-      -, hsurH₁, hi₁, hcyc₁, -, hfrobv₁, hjE₁, hιapp₁⟩ :=
+      -, hsurH₁, hi₁, hcyc₁, -, hfrobv₁, hjE₁, hιapp₁, hnorm₁⟩ :=
     exists_artinAuxiliaryNumberField_ray_class F χ hmul V hVopen hVker v ∅
   letI := fE₁
   letI := nE₁
   letI := aE₁
-  obtain ⟨m₂, H₂, E₂, fE₂, nE₂, aE₂, ι₂, jE₂, j₂, hm₂pos, hm₂cop, hm₂v, hH₂open, hfin₂,
-      hinj₂, -, hsurH₂, hi₂, hcyc₂, -, hfrobv₂, hjE₂, hιapp₂⟩ :=
-    exists_artinAuxiliaryNumberField_ray_class F χ hmul V hVopen hVker v₀ m₁.primeFactors
+  obtain ⟨m₂, H₂, E₂, fE₂, nE₂, aE₂, ι₂, jE₂, j₂, hm₂pos, -, hm₂v, hH₂open, hfin₂,
+      hinj₂, -, hsurH₂, -, hcyc₂, -, hfrobv₂, hjE₂, hιapp₂, hnorm₂, hcompos⟩ :=
+    exists_relArtinAuxiliaryNumberField_ray_class F χ hmul V hVopen hVker
+      H₁ hH₁open hi₁ v₀ m₁.primeFactors
   letI := fE₂
   letI := nE₂
   letI := aE₂
@@ -54927,36 +55249,33 @@ theorem exists_artinNormSubgroups_ramified_ray_class
       φ φ₂ d d₂ P N
       Im₂ P₂ N₂ hd hd₂ hφv hφv₂ hIm₂ hP hN hP₂def hN₂def v₀ hv₀ hm₂v
       (hsurH₂ (globalFrob v₀) hfrobv₂)
-  -- STEP 2 (OPEN, item (2) of the decomposition note): the common norm base,
-  -- built from the COMPOSITUM of the two auxiliary fields — this is Childress's
-  -- `b_F = N_{E/F} B_E`, and it is why a single auxiliary field cannot work.
-  -- `hbasis₁`/`hbasis₂` are passed in and are LOAD-BEARING: the argument is
-  -- `N_{E/F} = 𝔑_i ∘ N_{E/E_i}` for `E = E₁E₂`, which is a statement about the
-  -- relative NORM, not about an arbitrary map satisfying consistency.
-  have hbase : (∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧ ρ ∈ H₁ ∧ σ = τ * ρ) →
-      (∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧ ρ ∈ H₂ ∧ σ = τ * ρ) →
-      IsOpen (H₁ : Set (Γ F)) → IsOpen (H₂ : Set (Γ F)) →
-      (∀ q ∈ m₁.primeFactors, q.Prime → ¬ q ∣ m₂) →
-      (∀ (W : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E₁))
-        (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F)),
-        W.asIdeal.under (NumberField.RingOfIntegers F) = w.asIdeal →
-        𝔑₁ (Multiplicative.ofAdd (Finsupp.single W (1 : ℤ)))
-          = Multiplicative.ofAdd (Finsupp.single w
-              (W.asIdeal.inertiaDeg (NumberField.RingOfIntegers F) : ℤ))) →
-      (∀ (W : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E₂))
-        (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F)),
-        W.asIdeal.under (NumberField.RingOfIntegers F) = w.asIdeal →
-        𝔑₂ (Multiplicative.ofAdd (Finsupp.single W (1 : ℤ)))
-          = Multiplicative.ofAdd (Finsupp.single w
-              (W.asIdeal.inertiaDeg (NumberField.RingOfIntegers F) : ℤ))) →
-      ∃ β : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ,
-        ((φ (Multiplicative.ofAdd β) : Dickson.K 3)) = χ (globalFrob v₀) ∧
-        Multiplicative.ofAdd β ∈ Subgroup.map 𝔑₁ Im₁ ∧
-        Multiplicative.ofAdd β ∈ Subgroup.map 𝔑₂ Im₂ := by
-    intro _ _ _ _ _ _ _
-    sorry
+  -- STEP 2 (**PROVEN 2026-07-31**, flt-lean-201, as the hoisted
+  -- `exists_commonNormBase_ray_class` above): the common norm base, built from the
+  -- COMPOSITUM of the two auxiliary fields — Childress's `b_F = N_{E/F} B_E`, and
+  -- the reason a single auxiliary field cannot work.
+  --
+  -- It was a sorried `have` here from 2026-07-27 until 2026-07-31, and it was NOT
+  -- provable in that position: its list of seven hypotheses does not determine it
+  -- (`φ` is unconstrained by them), and the enclosing scope did not determine it
+  -- either, because coprimality of `m₁` and `m₂` does not give `M ∩ E₁E₂ = F`.
+  -- The missing input is `hcompos`, now supplied by
+  -- `exists_relArtinAuxiliaryNumberField_ray_class`.
+  --
+  -- `hbasis₁`/`hbasis₂` remain LOAD-BEARING: the base is `single p 1` for a prime
+  -- `p` splitting completely in BOTH auxiliary fields, and clause (0) is what says
+  -- `𝔑_i` sends the prime above `p` of residue degree `1` to it.
+  have hcompos' : ∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧ ρ ∈ H₁ ⊓ H₂ ∧ σ = τ * ρ := by
+    intro σ
+    obtain ⟨t, r, ht, hr, hσ⟩ := hcompos σ
+    exact ⟨t, r, ht, Subgroup.mem_inf.mpr ⟨(Subgroup.mem_inf.mp hr).2,
+      (Subgroup.mem_inf.mp hr).1⟩, hσ⟩
   obtain ⟨β, hβsym, hβ₁, hβ₂⟩ :=
-    hbase hi₁ hi₂ hH₁open hH₂open hm₂cop hbasis₁ hbasis₂
+    exists_commonNormBase_ray_class F χ hmul V hVopen hVker
+      E₁ hfin₁ ι₁ hinj₁ jE₁ j₁ hjE₁ hιapp₁
+      E₂ hfin₂ ι₂ hinj₂ jE₂ j₂ hjE₂ hιapp₂
+      H₁ H₂ hH₁open hH₂open hsurH₁ hsurH₂ hnorm₁ hnorm₂ hcompos'
+      m₁ m₂ hm₁pos hm₂pos mm hmm mmE₁ mmE₂ hmmE₁supp hmmE₂supp
+      φ d hd hφv Im₁ Im₂ hIm₁ hIm₂ 𝔑₁ 𝔑₂ hbasis₁ hbasis₂ v₀
   exact ⟨β, Subgroup.map 𝔑₁ Im₁, Subgroup.map 𝔑₂ Im₂, hβsym, hv𝔑₁, hβ₁, hv𝔑₂, hβ₂,
     map_inf_ker_le_sup_of_normCompatible_ray_class 𝔑₁ φ φ₁ Im₁ P₁ N₁ P N hcons₁
       hP𝔑₁ hN𝔑₁ hker₁,
@@ -55136,31 +55455,35 @@ note on `exists_artinAuxiliaryNumberField_ray_class`:**
    `𝔑 (single W n) = single w (n·f)` with `orderOf (χ (Frob w)) ∣ n·f` because
    `n = orderOf (χ (Frob w)^f)`. **It is applied TWICE by the parent**, at `E₁`
    and at `E₂`; before the hoist it was two separate sorried `have`s.
-2. `hbase` — *the common norm base*, and the ONLY remaining sorried `have` in
-   the parent's body. A divisor `β` with Artin symbol
-   `χ (globalFrob v₀)` lying in BOTH `𝔑₁(Im₁)` and `𝔑₂(Im₂)`. This is the step
-   that forces the COMPOSITUM: `β := N_{E/F} B` for `E = E₁E₂` is a norm from
-   each factor, and `B` with `c_E B = χ (globalFrob v₀)` is surjectivity of the
-   Artin map over `E`. `E` itself is cheap — `exists_auxiliaryNumberField_ray_class`
-   applies to the open subgroup `H₁ ⊓ H₂` — and the coprimality clause
-   `hm₂cop`, together with the two `hi` clauses (`χ(H_i) = χ(Γ F)`), is what is
-   passed in for the `K ∩ E = F` half of that surjectivity.
+2. `hbase` — *the common norm base*. **PROVEN 2026-07-31 (flt-lean-201), hoisted
+   as `exists_commonNormBase_ray_class`**, and the last sorry in the parent's
+   body. A divisor `β` with Artin symbol `χ (globalFrob v₀)` lying in BOTH
+   `𝔑₁(Im₁)` and `𝔑₂(Im₂)`. This is the step that forces the COMPOSITUM.
 
-   **It is passed `hbasis₁`/`hbasis₂` — clause (0) of item 1 — and they are
-   LOAD-BEARING** (2026-07-28). Its argument is `N_{E/F} = 𝔑_i ∘ N_{E/E_i}`,
-   a statement about the relative NORM; before clause (0) existed, `𝔑_i` was
-   pinned only by (α)–(γ), which many non-norm maps satisfy, and this `have`
-   was therefore not provable as stated. That is the same under-pinning defect
-   that was recorded against `ι` and is discharged below — the two were found
-   and fixed together, which is why the note there says the reasoning
-   generalises: it generalised on the very next map in the same proof.
+   **The proof is NOT Childress's `β = N_{E/F} B_E` over `E = E₁E₂`** — it is one
+   PRIME. Chebotarev at `F` (`exists_frobenius_conj_mem_coset`, PROVEN) in the
+   coset `σ₀ · (H₁ ⊓ H₂ ⊓ V)`, where `σ₀ ∈ H₁ ⊓ H₂` carries the symbol
+   `χ (globalFrob v₀)`, produces a prime `p` splitting completely in BOTH
+   auxiliary fields with `χ (globalFrob p) = χ (globalFrob v₀)`; then
+   `β := single p 1` is `𝔑_i` of the degree-`1` prime above `p`, by clause (0).
+   The compositum is present only through `σ₀`, i.e. through the clause
+   `ker χ · (H₁ ⊓ H₂) = Γ F`, and never as a field. That removes the entire
+   `N_{E/F} = 𝔑_i ∘ N_{E/E_i}` tower-of-norms argument the route note prescribed:
+   **the compositum is needed for the GALOIS THEORY, not for the norm.**
 
-   **It is deliberately NOT hoisted to a top-level leaf.** It mentions `𝔑₁`,
-   `𝔑₂`, `Im₁`, `Im₂`, `H₁`, `H₂`, `ι₁`, `ι₂`, `E₁`, `E₂` and their pinning
-   clauses, so a faithful hoist would carry every binder of item 1 twice; the
-   `have` keeps them in scope for free. Hoist it only if it needs a separate
-   owner, and if you do, carry clause (0) for BOTH fields or the leaf you
-   create is false.
+   Two things it does need that were not on the table before 2026-07-31:
+   NORMALITY of `H₁`, `H₂` (Chebotarev only ever gives a CONJUGATE of a
+   Frobenius; the clause is now exported all the way down from
+   `exists_subgroup_of_independent_ray_class`, where it is one line), and the
+   COMPOSITUM clause itself, which is `exists_relArtinAuxiliaryNumberField_ray_class`.
+
+   The finite set of primes Chebotarev must avoid is read off `hd`: it is the
+   support of `d (δ₀ · m₁ · m₂)` for any nonzero `δ₀ ∈ mm`, which is exactly the
+   set of primes dividing `mm`, `(m₁)` or `(m₂)`. No new finiteness lemma.
+
+   **`hbasis₁`/`hbasis₂` — clause (0) of item 1 — remain LOAD-BEARING**
+   (2026-07-28): without them `𝔑_i` is pinned only by (α)–(γ), which many
+   non-norm maps satisfy, and `𝔑_i (single W 1) = single p 1` is unavailable.
 
 **THE CAVEAT THAT USED TO STAND HERE IS DISCHARGED (2026-07-28), and the note
 is kept because the reasoning generalises.** It read: `hcycl` is applied to the
