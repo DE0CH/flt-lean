@@ -366,6 +366,37 @@ theorem exists_mem_notMem_sq_of_isMaximal {R : Type*} [CommRing R] [IsDedekindDo
   obtain ⟨π, hπ, hπ2⟩ := Ideal.exists_mem_pow_notMem_pow_succ I hI0 hI.ne_top 1
   exact ⟨π, by simpa using hπ, by simpa using hπ2⟩
 
+/-- **Stripping the `I`-part off a nonzero ideal of a Dedekind domain**
+(PROVEN 2026-07-30): every nonzero ideal `𝔞` factors as `Iᵛ · J` with `J`
+PRIME TO `I`, i.e. `J ⊄ I`.
+
+This is the `I`-adic valuation of `𝔞`, read as a factorization rather than
+as a number, and it is the only form in which it is used below: the point
+is never the value of `v` but that the complementary factor `J` is coprime
+to `I`, so that `Iᵐ ⊔ J = ⊤` for every `m` and a partition of unity
+`1 = e + j` is available with `e ∈ Iᵐ`, `j ∈ J`.
+
+The proof is `WfDvdMonoid.max_power_factor` in the MONOID OF IDEALS — the
+nonzero ideals of a Dedekind domain form a unique-factorization monoid
+(`Ideal.uniqueFactorizationMonoid`), in which a nonzero maximal ideal is
+irreducible (`Ideal.prime_iff_isPrime`) — so no explicit factorization
+multiset, no `normalizedFactors` count and no `HeightOneSpectrum` is
+needed.  `hI0` is genuinely required and not merely convenient: `Prime I`
+in the ideal monoid is equivalent to `I.IsPrime` only away from `⊥`.
+
+`exists_mem_notMem_sq_of_isMaximal` above is the special case
+`𝔞 = I`, `v = 1` read at the level of elements, and is NOT re-derived from
+this — it is released and its own proof is one line. -/
+theorem exists_pow_mul_not_le_of_isMaximal {R : Type*} [CommRing R] [IsDedekindDomain R]
+    {I : Ideal R} (hI : I.IsMaximal) (hI0 : I ≠ ⊥)
+    (𝔞 : Ideal R) (h𝔞 : 𝔞 ≠ ⊥) :
+    ∃ (v : ℕ) (J : Ideal R), 𝔞 = I ^ v * J ∧ ¬ J ≤ I := by
+  haveI : I.IsMaximal := hI
+  have hIirr : Irreducible I :=
+    ((Ideal.prime_iff_isPrime hI0).mpr hI.isPrime).irreducible
+  obtain ⟨v, J, hnd, heq⟩ := WfDvdMonoid.max_power_factor h𝔞 hIirr
+  exact ⟨v, J, heq, fun hle => hnd (Ideal.dvd_iff_le.mpr hle)⟩
+
 /-! ### The `I`-adic completion of `𝒪_D`
 
 `exists_adicCoefficientRing` below is discharged by taking `O` to be
@@ -1460,6 +1491,109 @@ theorem exists_mem_torsion_act_uniformizer_eq
   · show π • (j • (a • w)) = y
     rw [smul_smul, mul_comm, ← smul_smul, hπz₀, hjy]
 
+open _root_.NumberField in
+/-- **THE `I`-PRIMARY TORSION IS DIVISIBLE BY EVERY NONZERO `a ∈ 𝒪_D`**
+(PROVEN 2026-07-30): given `y ∈ A[Iⁿ]` and `a ≠ 0` there is a level
+`mm ≥ n` and a `z ∈ A[I^mm]` with `a·z = y`.
+
+This is `exists_mem_torsion_act_uniformizer_eq` above with the uniformizer
+`π` replaced by an ARBITRARY nonzero element, at the cost of no longer
+naming the level: the model lemma lands in `A[Iⁿ⁺¹]` exactly, and here the
+level is `n + v_I(a)`, which is returned existentially because its value is
+never used.  The proof is the model's four steps verbatim, with step 3's
+"factor `(π) = I·J`, and `π ∉ I²` says `I ∤ J`" replaced by the general
+`I`-adic factorization `exists_pow_mul_not_le_of_isMaximal`.  That is the
+only difference, and it is why `hπ2` disappears: a uniformizer is exactly
+an element of valuation one, and once the valuation is existential there is
+nothing to assume.
+
+**WHY THIS IS THE FORM THE DENSITY ARGUMENT NEEDS.**  What
+`exists_abelianSubscheme_closure_of_divisibleGaloisSubmodule_finiteBase`
+consumes is that `T = ⋃ₙ A[Iⁿ]` is a DIVISIBLE group — divisible by every
+natural number `M ≠ 0`, since that is what forbids a nontrivial finite
+quotient and hence forces the Zariski closure to be connected.  Taking
+`a = (M : 𝒪_D)`, which is nonzero because `𝒪_D` has characteristic zero,
+gives exactly that.
+
+The classical sketch of the density argument discharges `M = q` quite
+differently — "the `𝒪_D/q^{n+1}`-module `A[q^{n+1}]` splits as the direct
+sum of its `J`-components for `J ∣ q`, so the `I`-component of `z` is the
+required element" — and that route needs a primary decomposition of the
+torsion which does not exist in this tree.  The route here needs none: the
+partition of unity `1 = e + j` with `e ∈ I^{n+v}` and `j ∈ J` performs the
+same projection onto the `I`-part, one element at a time, and is available
+from coprimality alone.  So the `M`-divisibility of `T` is uniform in `M`
+and there is no case split on whether `M` is prime to `q`. -/
+theorem exists_mem_torsion_act_eq_of_ne_zero
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal) (hI0 : I ≠ ⊥)
+    (a : NumberField.RingOfIntegers D) (ha0 : a ≠ 0)
+    (n : ℕ) (y : GeomFibrePt f x) (hy : y ∈ (m.torsion x (I ^ n)).1) :
+    ∃ (mm : ℕ) (z : GeomFibrePt f x),
+      n ≤ mm ∧ z ∈ (m.torsion x (I ^ mm)).1 ∧ m.act a z = y := by
+  classical
+  letI : AddCommGroup (GeomFibrePt f x) := ab.addCommGroup (specAlgClos F ≫ x)
+  letI : Module (𝓞 D) (GeomFibrePt f x) := m.module (specAlgClos F ≫ x)
+  haveI : I.IsMaximal := hI
+  -- ### 1. `a` divides a nonzero rational integer, its absolute norm
+  have hspan0 : Ideal.span {a} ≠ ⊥ := by
+    simpa [Ideal.span_singleton_eq_bot] using ha0
+  have hNne : Ideal.absNorm (Ideal.span {a}) ≠ 0 := fun h =>
+    hspan0 (Ideal.absNorm_eq_zero_iff.mp h)
+  obtain ⟨b, hb⟩ : a ∣ ((Ideal.absNorm (Ideal.span {a}) : ℕ) : 𝓞 D) :=
+    Ideal.mem_span_singleton.mp (Ideal.absNorm_mem (Ideal.span {a}))
+  -- ### 2. the prime-to-`I` part `J` of `(a)`, and coprimality with `I ^ (n + v)`
+  obtain ⟨v, J, hJ, hJnotle⟩ := exists_pow_mul_not_le_of_isMaximal hI hI0 _ hspan0
+  have hsup : I ⊔ J = ⊤ := by
+    rcases eq_or_lt_of_le (le_sup_left : I ≤ I ⊔ J) with h | h
+    · exact absurd (le_sup_right.trans h.ge) hJnotle
+    · exact hI.out.2 _ h
+  have hcop : I ^ (n + v) ⊔ J = ⊤ :=
+    Ideal.isCoprime_iff_sup_eq.mp (Ideal.isCoprime_iff_sup_eq.mpr hsup).pow_left
+  obtain ⟨e, he, j, hj, hej⟩ :=
+    Submodule.mem_sup.mp (hcop ▸ (Submodule.mem_top : (1 : 𝓞 D) ∈ (⊤ : Ideal (𝓞 D))))
+  -- ### 3. `·a` is surjective on ALL geometric points, by divisibility
+  obtain ⟨w, hw⟩ := exists_nsmul_eq_geomFibrePt ab x _ hNne y
+  have hw' : ((Ideal.absNorm (Ideal.span {a}) : ℕ) : 𝓞 D) • w = y := by
+    rw [Nat.cast_smul_eq_nsmul]; exact hw
+  have haz₀ : a • (b • w) = y := by rw [smul_smul, ← hb]; exact hw'
+  -- ### 4. the annihilator of `b • w` contains `Iⁿ · (a)`
+  have hann : (I ^ n) * Ideal.span {a} ≤
+      (Submodule.span (𝓞 D) {b • w}).annihilator := by
+    rw [Ideal.mul_le]
+    intro r hr s hs
+    rw [Submodule.mem_annihilator_span_singleton]
+    obtain ⟨d, rfl⟩ := Ideal.mem_span_singleton.mp hs
+    have h1 : (r * (a * d)) • (b • w) = (r * d) • (a • (b • w)) := by
+      simp only [← mul_smul]
+      congr 1
+      ring
+    rw [h1, haz₀]
+    exact (mem_torsion_iff m x (I ^ n) y).mp hy (r * d) (Ideal.mul_mem_right d _ hr)
+  -- ### 5. correcting `b • w` by `j` lands it in `A[I^(n+v)]` without moving `a · _`
+  have hjy : j • y = y := by
+    have hey : e • y = 0 :=
+      (mem_torsion_iff m x (I ^ n) y).mp hy e
+        (Ideal.pow_le_pow_right (Nat.le_add_right n v) he)
+    have h := add_smul e j y
+    rw [hej, one_smul, hey, zero_add] at h
+    exact h.symm
+  have hEq : (I ^ (n + v)) * J = (I ^ n) * Ideal.span {a} := by
+    rw [hJ, pow_add, mul_assoc]
+  refine ⟨n + v, j • (b • w), Nat.le_add_right _ _, ?_, ?_⟩
+  · refine (mem_torsion_iff m x (I ^ (n + v)) _).mpr fun c hc => ?_
+    show c • (j • (b • w)) = 0
+    rw [smul_smul]
+    refine (Submodule.mem_annihilator_span_singleton _ _).mp (hann ?_)
+    rw [← hEq]
+    exact Ideal.mul_mem_mul hc hj
+  · show a • (j • (b • w)) = y
+    rw [smul_smul, mul_comm, ← smul_smul, haz₀, hjy]
+
 /-! #### The commutative algebra behind a single-level frame
 
 Everything in the `LevelFrame` namespace below is pure module theory
@@ -1614,6 +1748,64 @@ end Torsion
 section Frame
 
 variable {R : Type*} [CommRing R] [IsDedekindDomain R] {P : Type*} [AddCommGroup P] [Module R P]
+
+/-- **`#A[Iⁿ] = (#A[I])ⁿ`** (PROVEN 2026-07-30), given only that
+multiplication by a uniformizer `π` carries each torsion level onto the
+previous one.
+
+This is the counting half of `exists_linearEquiv_tors_pow` below, hoisted
+out of its proof so that it can be run in the OTHER direction: there it
+combines with `hcard : #A[I] = (#R/I)²` to give `#A[Iⁿ] = (#R/I)^{2n}`,
+while `exists_levelTateFrameTower_of_levelTateFrame_finiteBase` has a
+frame at ONE level `n₁ ≠ 0` — hence the left-hand side at `n = n₁` — and
+needs to extract `hcard` from it by taking `n₁`-th roots.  No rank
+hypothesis and no cardinality input occur, which is exactly why it can
+serve both.
+
+The induction is the classical one: `·π` is a surjection
+`A[Iⁿ⁺¹] ↠ A[Iⁿ]` (that is `hsurj`) whose kernel is `A[I]`
+(`mem_tors_of_smul_eq_zero`, where `hπ2` is spent), so each level
+multiplies the count by `#A[I]`. -/
+theorem card_tors_pow_eq (I : Ideal R) (hI : I.IsMaximal) (hI0 : I ≠ ⊥)
+    {π : R} (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (hsurj : ∀ (k : ℕ) (y : P), y ∈ Submodule.torsionBySet R P ((I ^ k : Ideal R) : Set R) →
+      ∃ z ∈ Submodule.torsionBySet R P ((I ^ (k + 1) : Ideal R) : Set R), π • z = y)
+    (n : ℕ) :
+    Nat.card (Submodule.torsionBySet R P ((I ^ n : Ideal R) : Set R))
+      = Nat.card (Submodule.torsionBySet R P ((I : Ideal R) : Set R)) ^ n := by
+  classical
+  induction n with
+  | zero => simp [pow_zero, Ideal.one_eq_top]
+  | succ k ih =>
+      have hmem : ∀ z : (Submodule.torsionBySet R P ((I ^ (k + 1) : Ideal R) : Set R)),
+          π • (z : P) ∈ Submodule.torsionBySet R P ((I ^ k : Ideal R) : Set R) := fun z =>
+        smul_tors_le I k (Submodule.smul_mem_smul hπ z.2)
+      set g : (Submodule.torsionBySet R P ((I ^ (k + 1) : Ideal R) : Set R)) →ₗ[R]
+          (Submodule.torsionBySet R P ((I ^ k : Ideal R) : Set R)) :=
+        LinearMap.codRestrict _
+          ((LinearMap.lsmul R P π).comp
+            (Submodule.torsionBySet R P ((I ^ (k + 1) : Ideal R) : Set R)).subtype) hmem with hg
+      have hgapp : ∀ z, ((g z : _) : P) = π • (z : P) := fun z => rfl
+      have hgsurj : Function.Surjective g := by
+        intro y
+        obtain ⟨z, hz, hzy⟩ := hsurj k (y : P) y.2
+        exact ⟨⟨z, hz⟩, Subtype.ext (by rw [hgapp]; exact hzy)⟩
+      have hkercard : Nat.card (LinearMap.ker g)
+          = Nat.card (Submodule.torsionBySet R P ((I : Ideal R) : Set R)) := by
+        refine Nat.card_congr ⟨fun z => ⟨(z.1 : P), ?_⟩, fun y => ⟨⟨(y : P), ?_⟩, ?_⟩,
+          fun _ => rfl, fun _ => rfl⟩
+        · refine mem_tors_of_smul_eq_zero I hI hI0 hπ hπ2 k z.1.2 ?_
+          have hz0 : ((g z.1 : _) : P) = 0 := by rw [LinearMap.mem_ker.mp z.2]; rfl
+          rwa [hgapp] at hz0
+        · exact tors_mono (Ideal.pow_le_self k.succ_ne_zero) y.2
+        · simp only [LinearMap.mem_ker]
+          exact Subtype.ext (by rw [hgapp]; exact (mem_tors_iff _ _).mp y.2 π hπ)
+      have hquot : Nat.card
+          ((Submodule.torsionBySet R P ((I ^ (k + 1) : Ideal R) : Set R)) ⧸ LinearMap.ker g)
+          = Nat.card (Submodule.torsionBySet R P ((I ^ k : Ideal R) : Set R)) :=
+        Nat.card_congr (g.quotKerEquivOfSurjective hgsurj).toEquiv
+      rw [Submodule.card_eq_card_quotient_mul_card (LinearMap.ker g), hkercard, hquot, ih]
+      ring
 
 /-- **The `Iⁿ`-torsion of an abstract module is free of rank two over
 `R/Iⁿ`** (PROVEN 2026-07-26), given only that the `I`-torsion has
@@ -3359,7 +3551,52 @@ and a prover need not track which one needs what.
 below `card_torsion_span_singleton_of_isAlgClosed` is proven over it, so
 citing any of it here closes the loop.  The honest inputs are all OUTSIDE
 this file: the theorem of the cube, singular/étale homology, or the
-rational Tate module. -/
+rational Tate module.
+
+**A THIRD AXIS SEARCHED AND REFUTED — MULTIPLICATIVITY IN `a`** (2026-07-28;
+the two axes recorded on the consumer below are at the level of the ℤ-module
+structure, this one is at the level of `deg` itself, so it is genuinely a
+different search).  The obvious reduction is to make `deg` a multiplicative
+function of `a` and prove it on generators: `[a·b] = [b] ≫ [a]`
+(`Mult.mulByElt_mul`) and `N(ab) = N(a)·N(b)`, while `[u]` is an ISOMORPHISM for
+a unit `u`, so both sides depend only on the principal ideal `(a)`.  It fails
+twice over, and each failure is worth recording because each looks repairable:
+
+* **There are no generators to reduce to: `𝒪_D` need not be a UFD.**  Both sides
+  depend only on `(a)`, and in a Dedekind domain every ideal factors — but not
+  into PRINCIPAL primes.  `D = ℚ(√10)` has class number `2` (PARI/GP,
+  2026-07-28), so a principal `(a)` can be a product of non-principal primes
+  with no useful factorisation of `a` itself.  This is not a corner case.
+* **Even granted multiplicativity, `deg` is NOT PINNED by it.**  Let `p` SPLIT
+  in a real quadratic `D` (so `g = 2` and `deg[n] = n⁴`), and write `p = π π̄`.
+  Multiplicativity plus the integer case give only `deg[π] · deg[π̄] = p⁴`, which
+  `deg[π] = p`, `deg[π̄] = p³` satisfies exactly as well as the truth
+  `deg[π] = deg[π̄] = p²`.  So this is the SAME obstruction as the split-prime
+  refutation recorded on the consumer, seen one level up: what is missing is a
+  constraint that sees each prime SEPARATELY, and no amount of multiplicativity
+  is such a constraint.
+
+**AND THAT AXIS' INFRASTRUCTURE IS ABSENT TOO** (re-verified 2026-07-28 against
+this worktree's own pin, so it is checkable in one `grep`): `Scheme.Hom.finrank`
+has NO multiplicativity lemma under composition.
+`Mathlib/AlgebraicGeometry/Morphisms/FlatRank.lean` carries exactly
+`finrank_SpecMap_eq_finrank`, `finrank_SpecMap_algebraMap`,
+`finrank_comp_left_of_isIso`, `finrank_pullback_snd`, `finrank_of_isPullback`,
+`finrank_pullback_fst`, `finrank_eq_one_of_isIso`, local constancy, and the
+surjectivity / `IsIso` characterisations — nothing of the shape
+`finrank (f ≫ g) = finrank f * finrank g`.  So even the step
+`deg[a] · deg[b] = deg[N]` is not available.  Anyone taking this axis must write
+that lemma first, and should read the two bullets above before assuming it pays.
+
+**FAITHFULNESS RE-CHECKED 2026-07-28**, numerically (PARI/GP) and then read back
+against the statement.  `Nat.card (𝒪_D ⧸ (a)) = |N_{D/ℚ}(a)|` in every case
+tried, so the right-hand side really is the classical `N(a)²`; at `a = n` a
+rational integer the claim degenerates to `deg[n] = n^(2g)` exactly, since
+`#(𝒪_D/(n)) = n^g`; and at a UNIT `u` it degenerates to `deg[u] = 1`, which is
+forced independently because `[u]` is an isomorphism (`Mult.mulByElt_one` and
+`mulByElt_mul`).  Both degenerate cases come out right and no counterexample
+appeared: the leaf is FAITHFUL as stated, and what it needs is theory, not
+repair. -/
 theorem finrank_mulByElt_of_isAlgClosed {X : Scheme.{u}} {K : Type u} [Field K]
     [IsAlgClosed K] [CharZero K] {fK : X ⟶ Spec (CommRingCat.of K)}
     {abK : AbelianSchemeStruct fK} {D : Type u} [Field D] [NumberField D]
@@ -8049,6 +8286,287 @@ def IsQAdicWeilSystem {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct
         z ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N})).1 ∧
         w N y z ≠ 1)
 
+/-- **`q^N` lies in the ideal it spans** — the `hn` argument of
+`DualStruct.weil` at every level of the `q`-adic tower, isolated so that the
+same proof term is used at every occurrence and the levels are
+syntactically comparable.
+
+`Nat.cast_pow` is what makes this a one-liner: the `ℕ`-cast of `q^N` IS the
+`N`-th power of the `ℕ`-cast of `q`, and the ideal is spanned by exactly
+that. -/
+theorem natCast_pow_mem_span_pow (D : Type u) [Field D] [NumberField D] (q N : ℕ) :
+    ((q ^ N : ℕ) : NumberField.RingOfIntegers D)
+      ∈ Ideal.span {(q : NumberField.RingOfIntegers D) ^ N} := by
+  rw [Nat.cast_pow]
+  exact Ideal.mem_span_singleton_self _
+
+/-- **THE INTEGER-TOWER COMPATIBILITY OF THE CANONICAL WEIL PAIRING** —
+the field that `DualStruct` is missing, written at the `q`-power levels and
+at a single geometric fibre.
+
+  `e_{q^{N+1}}(y, ẑ)^q = e_{q^N}(q y, q ẑ)`   for `y ∈ A[q^{N+1}]`, `ẑ ∈ Â[q^{N+1}]`.
+
+This is Silverman *AEC* III.8.1(e) (`e_{mn}(P,Q) = e_n(mP,Q)`) read
+symmetrically, and it is the CORRECTION recorded in the docstring of
+`exists_tateWeilSystem_of_qAdicWeilSystem`: the compatibility along the
+INTEGER tower is writable in `μ`-vocabulary, is true, and is exactly what
+`DualStruct` does not assert.  What is NOT writable there — and what that
+docstring correctly refutes — is the `π`-indexed compatibility, which only
+exists after the trace refinement.
+
+It is stated in `(F̄)ˣ` rather than in `rootsOfUnity`, for the same reason
+`IsQAdicWeilSystem` is: the two sides live at levels `q^{N+1}` and `q^N`, so
+in the subtype they would not even have the same type.
+
+WHY IT IS NOT A FIELD OF `DualStruct` HERE.  Adding a field to that
+structure would change every existing consumer of it in
+`Modularity/AbelianScheme.lean`; the clause is needed only at the `q`-power
+levels of one fibre, and a `Prop` on an existing `d` costs nothing. -/
+def IsQAdicWeilTower {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    {m : Mult ab (NumberField.RingOfIntegers D)}
+    (d : DualStruct ab m)
+    {F : Type u} [Field F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (q : ℕ) : Prop :=
+  ∀ (N : ℕ) (y : GeomFibrePt f x) (z : GeomFibrePt d.dualMap x),
+    y ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ (N + 1)})).1 →
+    z ∈ (d.dualMult.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ (N + 1)})).1 →
+    ((d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ (N + 1)}) (q ^ (N + 1))
+        (natCast_pow_mem_span_pow D q (N + 1)) y z : (AlgebraicClosure F)ˣ)) ^ q
+      = ((d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N}) (q ^ N)
+            (natCast_pow_mem_span_pow D q N)
+            (m.act (q : NumberField.RingOfIntegers D) y)
+            (d.dualMult.act (q : NumberField.RingOfIntegers D) z) : (AlgebraicClosure F)ˣ))
+
+/-- **AN `𝒪_D`-LINEAR POLARIZATION OF THE GEOMETRIC FIBRE, PERFECT ON
+`q`-POWER TORSION** — the polarization datum of
+`exists_qAdicWeilSystem_of_mult`, cut down to what that leaf actually
+consumes.
+
+`hom` is `λ : A ⟶ A^∨` read on geometric points of the fibre at `x`.  It is
+a BARE FUNCTION and not a `PolarizationStruct`, deliberately, and the
+difference is not cosmetic — see the FAITHFULNESS section of
+`exists_dualPolarization_of_mult`.
+
+The clauses, in order: additivity, `𝒪_D`-linearity, preservation of
+`q^N`-torsion, `Γ_F`-EQUIVARIANCE (i.e. `λ` is defined over `F`, not merely
+over `F̄`), `𝒪_D`-ALTERNATING in the strong form, and PERFECTNESS on
+`A[q^N]`.
+
+TWO CLAUSES CARRY THE WEIGHT, and they are the two that the formal glue
+above `IsQAdicWeilSystem` cannot manufacture.
+
+*`𝒪_D`-alternating in the strong form* (`e(a y, λ y) = 1` for every `a`, not
+merely `e(y, λ y) = 1`).  This is where `[NumberField.IsTotallyReal D]` is
+spent: for totally real `D` the Rosati involution of `λ` is trivial on
+`𝒪_D`, so the induced form is `𝒪_D`-BILINEAR and alternating, whence
+`e(a y, λ y) = ψ(Tr(δ · a · E(y,y))) = 1`.  The weak form is what
+`PolarizationStruct.weil_self` gives, and from it plus adjointness one
+recovers only `e(a y, λ y)^2 = 1` — enough for odd `q`, not for `q = 2`,
+which is exactly the level `IsQAdicWeilSystem`'s third clause of
+`IsTateWeilSystem` would fail at.
+
+*Perfectness on `A[q^N]`* is where `hdim` is spent.  `hdim` puts the fibre in
+the Hilbert–Blumenthal case, where `Hom^sym_{𝒪_D}(A, Â)` is an invertible
+`𝒪_D`-module `𝔞` and `deg λ_a = N(a 𝔞⁻¹)²`; every narrow ideal class
+contains integral ideals prime to `q`, so `a` may be chosen with
+`deg λ_a` prime to `q`, i.e. `ker λ ∩ A[q^N] = 0`.  **This is the line the
+finite-base sibling `exists_qAdicPolarizedSystem_finiteBase` is on the other
+side of**: without `hdim` nothing bounds the polarization module, a
+perfectness clause would be FALSE (an `NS` generated by one polarization of
+degree divisible by `q` makes every radical nonzero), and that leaf pays for
+it with a bounded-radical clause instead.
+
+NON-VACUITY, IN BOTH DIRECTIONS.  The constant zero map `hom ≡ 0` satisfies
+the first five clauses over every fibre — additivity, linearity, torsion,
+equivariance and the alternating clause all hold of it by
+`DualStruct.weil_zero_right` — and satisfies the sixth only when
+`A[q^N] = 0` for every `N`.  Since the fibre is an abelian variety of
+dimension `[D : ℚ] ≥ 1` over a field of characteristic zero, `A[q^N] ≠ 0`,
+so the perfectness clause is the one carrying the content and the predicate
+is not satisfied by junk.  This is the same standing refutation test as
+`PolarizationStruct.torsion_eq_zero_of_hom_eq_zero`, re-run against this
+weaker package. -/
+def IsQAdicPolarizationHom {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    {m : Mult ab (NumberField.RingOfIntegers D)}
+    (d : DualStruct ab m)
+    {F : Type u} [Field F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (q : ℕ)
+    (hom : GeomFibrePt f x → GeomFibrePt d.dualMap x) : Prop :=
+  (∀ y z : GeomFibrePt f x, hom (ab.add y z) = d.dualAb.add (hom y) (hom z)) ∧
+  (∀ (a : NumberField.RingOfIntegers D) (y : GeomFibrePt f x),
+      hom (m.act a y) = d.dualMult.act a (hom y)) ∧
+  (∀ (N : ℕ) (y : GeomFibrePt f x),
+      y ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N})).1 →
+      hom y ∈ (d.dualMult.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N})).1) ∧
+  (∀ (σ : Field.absoluteGaloisGroup F) (y : GeomFibrePt f x),
+      hom (ab.galSMul x σ y) = d.dualAb.galSMul x σ (hom y)) ∧
+  (∀ (N : ℕ) (a : NumberField.RingOfIntegers D) (y : GeomFibrePt f x),
+      y ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N})).1 →
+      d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N}) (q ^ N)
+        (natCast_pow_mem_span_pow D q N) (m.act a y) (hom y) = 1) ∧
+  (∀ (N : ℕ) (y : GeomFibrePt f x),
+      y ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N})).1 →
+      (∀ z : GeomFibrePt f x,
+          z ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N})).1 →
+          d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N}) (q ^ N)
+            (natCast_pow_mem_span_pow D q N) y (hom z) = 1) →
+      y = ab.zero (specAlgClos F ≫ x))
+
+/-- **THE DUAL ABELIAN SCHEME AND AN `𝒪_D`-LINEAR POLARIZATION PERFECT ON
+`q`-POWER TORSION** (SORRY LEAF, cut 2026-07-29 out of
+`exists_qAdicWeilSystem_of_mult` — Grothendieck representability of `Pic⁰`,
+Mumford *Abelian Varieties* §13, §16, §23, Silverman *AEC* III.8.1).
+
+This is steps 1 and 2 of the classical route recorded on
+`exists_tateWeilSystem_of_mult`, and it is now ALL that is open in the
+`q`-adic half: `exists_qAdicWeilSystem_of_mult` is PROVEN from it, and the
+proof discharges six of that predicate's eight clauses from the axioms of
+`DualStruct` alone.
+
+**WHY THIS CUT IS NOT THE ONE THE OLD DOCSTRING REFUTED.**  The docstring of
+`exists_qAdicWeilSystem_of_mult` records that the leaf is deliberately NOT
+`∃ d : DualStruct ab m, Nonempty (PolarizationStruct d 𝒩)`, and gives two
+reasons.  Both are answered here, and neither is answered by hand-waving:
+
+1. *`DualStruct` carries no cross-level axiom, so `d` and `p` cannot
+   contribute to the tower clause.*  Correct — which is why the tower
+   clause is part of THIS leaf's CONCLUSION, as `IsQAdicWeilTower`.  A
+   successor proving this leaf must produce a `d` whose pairing satisfies
+   `e_{q^{N+1}}(y,ẑ)^q = e_{q^N}(qy,qẑ)`, and that is a real obligation, not
+   a formality.
+2. *`PolarizationStruct.weil_hom_nondegenerate` is false at an `I` ramified
+   over `q`.*  Correct — and `PolarizationStruct` does not appear here at
+   all.  Perfectness is asserted only on `A[q^N]`, where the classical
+   pairing really is perfect; the RAMIFICATION OBSTRUCTION concerns `A[I^k]`
+   for `I` ramified over `q`, which this leaf never mentions.
+
+**AND A THIRD REASON THE OLD SHAPE WAS WRONG, FOUND WHILE CUTTING THIS
+(2026-07-29) — it also constrains how `DualStruct` may be READ.**
+`DualStruct.weil_nondegenerate` is asserted at EVERY pair `(I, n)` with
+`(n : R) ∈ I`, and under the naive reading of `weil x I n hn` as "the
+`n`-Weil pairing `e_n` RESTRICTED to `A[I] × Â[I]`" the structure is
+UNINHABITABLE.  Witness: `R = ℤ`, `I = (2)`, `n = 4` (legal, since
+`(4 : ℤ) ∈ (2)`).  Every `y ∈ A[2]` is `2y'` and every `ẑ ∈ Â[2]` is `2ẑ'`
+with `y' ∈ A[4]`, `ẑ' ∈ Â[4]`, so
+`e_4(y, ẑ) = e_4(2y', 2ẑ') = e_4(y', ẑ')^4 = 1`; the restriction is
+identically `1` while `A[2] ≠ 0`, contradicting `weil_nondegenerate`.
+The structure IS inhabitable, but only under the other reading: `weil x I n`
+is the CANONICAL PERFECT pairing `A[I] × Â[I] ⟶ μ_e`, `e` the exponent of
+`A[I]` (which divides `n`, because `(n : R) ∈ I` forces `A[I] ⊆ A[n]`),
+composed with `μ_e ↪ μ_n`.  At the levels used here — `I = (q^N)`,
+`n = q^N`, where the exponent IS `q^N` — the two readings agree and the
+pairing is `e_{q^N}`, so `IsQAdicWeilTower` says the classical thing.
+Reported as a cut-level finding for `Modularity/AbelianScheme.lean`; nothing
+in this file depends on which reading is intended, but a successor building
+a `DualStruct` must build the second one.
+
+**FAITHFULNESS.**  Every hypothesis of `exists_qAdicWeilSystem_of_mult` is
+kept, and each is spent:
+
+* `hdim` gives the polarization module and hence a `λ` of degree prime to
+  `q` — the PERFECTNESS clause.  See `IsQAdicPolarizationHom`.
+* `[NumberField.IsTotallyReal D]` gives Rosati triviality on `𝒪_D` — the
+  `𝒪_D`-ALTERNATING clause, in its strong form.
+* `[NumberField F]` is what makes `Γ_F`-equivariance of `λ` meaningful and
+  available: `A_F` is an abelian variety over a field, hence PROJECTIVE,
+  hence carries an ample sheaf and a polarization DEFINED OVER `F`;
+  averaging over a `ℤ`-basis of `𝒪_D` keeps it over `F`; and
+  `Hom^sym_{𝒪_D}(A_{F̄}, Â_{F̄})` is a rank-one `𝒪_D`-module on which `Γ_F`
+  acts `𝒪_D`-linearly, so its invariants are either `0` or everything —
+  being nonzero, they are everything, and the degree-adjustment above may be
+  performed over `F`.
+
+**WHAT IS DELIBERATELY NOT DEMANDED, AND WHY — a global polarization would
+have been a FALSE leaf.**  `PolarizationStruct` lives over the BASE `S`, and
+an abelian scheme over an arbitrary base need not be projective (Raynaud),
+hence need not admit ANY global polarization; `lam_surjective` would in
+addition demand that the polarization module be globally constant.  `hom`
+here is a function on `GeomFibrePt f x` only — the fibre at the single point
+`x` the target cares about, over a FIELD, where projectivity is automatic.
+`d` is still global, and that is safe for a different reason: the dual of an
+abelian scheme exists over any base, and its `weil_act` axiom (Rosati
+trivial on `R`) is the DEFINITION of `dualMult` as the transposed
+multiplication, not an extra demand.
+
+REFUTING CHECK for that claim: look for `PolarizationStruct`, `lam`, `𝔞` or
+`posElt` in the statement below.  There are none, and `hom` is a bare
+function whose every clause quantifies over `GeomFibrePt f x`.
+
+**FALSITY AUDIT (2026-07-30) — THIS LEAF IS FALSE AS STATED, AND THE
+DEFECT IS IN `DualStruct`, NOT IN THE POLARIZATION.**  The audit of
+2026-07-29 above found ONE way `weil_nondegenerate` can be read into
+contradiction (`R = ℤ`, `I = (2)`, `n = 4`) and repaired it by fixing the
+READING of `weil`.  There is a second way, and no reading repairs it: it is
+about the CHARACTERISTIC of the fibre, and the 2026-07-29 audit did not
+look there because the fibre it had in mind was the one at `x`, which is a
+number field.
+
+`weil x' I n hn` takes values in `rootsOfUnity n (AlgebraicClosure F')`,
+and `weil_nondegenerate` is asserted at EVERY field `F'`, EVERY point
+`x' : Spec F' ⟶ S` and every `(I, n)` with `(n : R) ∈ I` — the binders are
+`∀ {F : Type u} [Field F] (x : ...)`, not the single `x` this leaf cares
+about.  In characteristic `p` the group `rootsOfUnity p (AlgebraicClosure F')`
+is TRIVIAL (`z ^ p = 1 ↔ (z - 1) ^ p = 0 ↔ z = 1`).  So at `I = (p)`,
+`n = p` — legal, since `(p : R) ∈ (p)` — the pairing is constantly `1`,
+the hypothesis of `weil_nondegenerate` holds for EVERY `p`-torsion point,
+and the axiom concludes that `A'[p](F̄') = 0`.  Any fibre of positive
+`p`-rank refutes that, so `DualStruct ab m` is UNINHABITED as soon as `S`
+has a point of positive residue characteristic `p` whose fibre has a
+nonzero `p`-torsion geometric point.
+
+WITNESS, concrete and standard.  `S = Spec ℤ[1/11]`, `A` the smooth proper
+model of `X₀(11)` (conductor `11`, so good reduction at every `p ≠ 11`),
+`D = ℚ` — so `R = 𝒪_ℚ ≅ ℤ`, `Module.finrank ℚ D = 1` — `m` the tautological
+`ℤ`-multiplication, `F = ℚ` and `x` the generic point.  Every hypothesis
+holds, `hdim` included (the relative dimension is `1`).  Now take
+`x' : Spec 𝔽_5 ⟶ S`, the point `(5)`.  The fibre is the elliptic curve
+`11a1` over `𝔽_5`, with `a_5 = 1`, hence `#E(𝔽_5) = 5 + 1 - 1 = 5` and
+`5 ∤ a_5`, i.e. ORDINARY; so `E[5](𝔽̄_5) ≅ ℤ/5 ≠ 0`.  At `I = (5)`, `n = 5`
+the axiom forces that group to vanish.  Hence no `d : DualStruct ab m`
+exists over this `S`, while the hypotheses of this leaf are all satisfied:
+the statement is FALSE, not merely hard.
+
+WHAT THIS DOES AND DOES NOT INVALIDATE.  `exists_qAdicWeilSystem_of_mult`
+is proven over this leaf, so it is resting on a false hypothesis and cannot
+be completed as things stand; nothing derived from it is trustworthy.  The
+CHARACTERISTIC-ZERO mathematics is untouched — the classical `q`-power Weil
+pairing at the single fibre `x` is fine, and so is every clause of
+`IsQAdicPolarizationHom`.  The defect is that `DualStruct` asserts its
+nondegeneracy axiom UNIFORMLY IN THE FIBRE while the axiom is only true at
+levels prime to the residue characteristic.
+
+THE MINIMAL REPAIR, and it is in `Modularity/AbelianScheme.lean`, not
+here: gate `weil_nondegenerate` on invertibility of the level, i.e. add
+`(n : F) ≠ 0` (equivalently `IsUnit (n : F)`) to its binders.  In
+characteristic zero that hypothesis is free, so no existing consumer over a
+number field changes; in characteristic `p` it removes exactly the levels
+at which the axiom is contradictory.  `weil` itself needs no change — a
+pairing landing in a trivial group is harmless, it is only the
+nondegeneracy claim about it that is false.
+
+CONSEQUENCE FOR THE FINITE-BASE SIBLING, which is why the audit was run
+here.  `exists_qAdicPolarizedSystem_finiteBase` must NOT be cut along this
+seam: its base IS a finite field, so `DualStruct ab' m'` is uninhabited for
+every fibre of positive `p`-rank (an ordinary elliptic curve over `𝔽_p`
+suffices) and a leaf of the shape `∃ d : DualStruct ab' m', …` would be
+false for a reason having nothing to do with polarizations.  That note is
+repeated on that leaf. -/
+theorem exists_dualPolarization_of_mult
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f)
+    (q : ℕ) [Fact q.Prime] :
+    ∃ (d : DualStruct ab m) (hom : GeomFibrePt f x → GeomFibrePt d.dualMap x),
+      IsQAdicWeilTower d x q ∧ IsQAdicPolarizationHom d x q hom :=
+  sorry
+
 /-- **A trace-duality functional for the pin `(O, j, π)`** — the
 `𝒪_D`-module-theoretic half of the refinement of the `q`-adic Weil pairing
 to an `I`-adic one, isolated as a statement of pure algebraic number theory
@@ -8101,10 +8619,30 @@ def IsTraceDualFunctional {D : Type u} [Field D] [NumberField D]
       c ∈ Ideal.span {j π} ^ k)
 
 /-- **The geometric fibre of a Hilbert–Blumenthal abelian scheme carries a
-compatible system of `q`-adic Weil pairings** (SORRY LEAF — steps 1 and 2 of
+compatible system of `q`-adic Weil pairings** (PROVEN 2026-07-29 over the
+single geometric leaf `exists_dualPolarization_of_mult` — steps 1 and 2 of
 the classical route: Grothendieck representability of `Pic⁰`, an
 `𝒪_D`-linear polarization, and the Weil pairing it induces; Mumford
 *Abelian Varieties* §13, §16, §23, Silverman *AEC* III.8.1).
+
+WHAT THE PROOF BELOW DOES, AND WHAT IT LEAVES.  `w N y z` is
+`e_{q^N}(y, λ z)`, and SIX of the eight clauses come out of the axioms of
+`DualStruct` and the linearity of `λ` with no geometry at all: values in
+`μ_{q^N}` from the target of `DualStruct.weil`; bi-multiplicativity from
+`weil_add_left`/`weil_add_right`; `𝒪_D`-adjointness from `weil_act`;
+`Γ_F`-equivariance from `weil_gal`; perfectness from the last clause of
+`IsQAdicPolarizationHom`.  The two that CANNOT be manufactured formally are
+the strong `𝒪_D`-ALTERNATING clause (from it, adjointness and
+bi-multiplicativity give only `w N (a y) y ^ 2 = 1`, which settles odd `q`
+and leaves `q = 2` open) and the TOWER clause (`DualStruct` has no
+cross-level axiom at all); both are therefore part of the geometric leaf's
+conclusion, as `IsQAdicPolarizationHom` and `IsQAdicWeilTower`.  The
+paragraph below explaining why this leaf was NOT stated as
+`∃ d, Nonempty (PolarizationStruct d 𝒩)` is retained because both of its
+reasons are still correct and both are answered — see the corresponding
+paragraph of `exists_dualPolarization_of_mult` for how, and for a THIRD
+reason (an inhabitability constraint on `DualStruct` itself) found while
+making the cut.
 
 This is the purely GEOMETRIC input to `exists_tateWeilSystem_of_mult`, and
 nothing about `I`, `π` or the pin appears in it: the datum is the classical
@@ -8151,8 +8689,76 @@ theorem exists_qAdicWeilSystem_of_mult
     (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f)
     (q : ℕ) [Fact q.Prime] :
     ∃ w : ℕ → GeomFibrePt f x → GeomFibrePt f x → (AlgebraicClosure F)ˣ,
-      IsQAdicWeilSystem m x q w :=
-  sorry
+      IsQAdicWeilSystem m x q w := by
+  obtain ⟨d, hom, htower, hadd, hact, htors, hgal, halt, hnd⟩ :=
+    exists_dualPolarization_of_mult m x hdim q
+  refine ⟨fun N y z =>
+    ((d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N}) (q ^ N)
+        (natCast_pow_mem_span_pow D q N) y (hom z) : (AlgebraicClosure F)ˣ)), ?_, ?_, ?_, ?_, ?_,
+    ?_, ?_, ?_⟩
+  · -- values are `q^N`-th roots of unity: the target of `DualStruct.weil` says so
+    intro N y z
+    exact (mem_rootsOfUnity _ _).mp
+      (d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N}) (q ^ N)
+        (natCast_pow_mem_span_pow D q N) y (hom z)).2
+  · -- additivity in the first variable: `DualStruct.weil_add_left`
+    intro N y y' z hy hy' hz
+    have h := d.weil_add_left x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N}) (q ^ N)
+      (natCast_pow_mem_span_pow D q N) y y' (hom z) hy hy' (htors N z hz)
+    exact congrArg (fun t : rootsOfUnity (q ^ N) (AlgebraicClosure F) =>
+      (t : (AlgebraicClosure F)ˣ)) h
+  · -- additivity in the second variable: additivity of `hom`, then `weil_add_right`
+    intro N y z z' hy hz hz'
+    have h : d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N}) (q ^ N)
+          (natCast_pow_mem_span_pow D q N) y (hom (ab.add z z'))
+        = d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N}) (q ^ N)
+            (natCast_pow_mem_span_pow D q N) y (hom z)
+          * d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N}) (q ^ N)
+            (natCast_pow_mem_span_pow D q N) y (hom z') := by
+      rw [hadd z z']
+      exact d.weil_add_right x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N}) (q ^ N)
+        (natCast_pow_mem_span_pow D q N) y (hom z) (hom z') hy (htors N z hz) (htors N z' hz')
+    exact congrArg (fun t : rootsOfUnity (q ^ N) (AlgebraicClosure F) =>
+      (t : (AlgebraicClosure F)ˣ)) h
+  · -- `𝒪_D`-alternating: the strong clause of `IsQAdicPolarizationHom`, and the
+    -- one place where no formal argument would do (see its docstring for `q = 2`)
+    intro N a y hy
+    exact congrArg (fun t : rootsOfUnity (q ^ N) (AlgebraicClosure F) =>
+      (t : (AlgebraicClosure F)ˣ)) (halt N a y hy)
+  · -- `𝒪_D`-adjointness: `𝒪_D`-linearity of `hom`, then `DualStruct.weil_act`
+    intro N a y z hy hz
+    have h : d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N}) (q ^ N)
+          (natCast_pow_mem_span_pow D q N) (m.act a y) (hom z)
+        = d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N}) (q ^ N)
+            (natCast_pow_mem_span_pow D q N) y (hom (m.act a z)) := by
+      rw [hact a z]
+      exact d.weil_act x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N}) (q ^ N)
+        (natCast_pow_mem_span_pow D q N) a y (hom z) hy (htors N z hz)
+    exact congrArg (fun t : rootsOfUnity (q ^ N) (AlgebraicClosure F) =>
+      (t : (AlgebraicClosure F)ˣ)) h
+  · -- `Γ_F`-equivariance: `hom` is defined over `F`, then `DualStruct.weil_gal`;
+    -- `galRoot σ` IS `Units.map σ` on the underlying unit, by definition
+    intro N σ y z hy hz
+    have h : d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N}) (q ^ N)
+          (natCast_pow_mem_span_pow D q N) (ab.galSMul x σ y) (hom (ab.galSMul x σ z))
+        = galRoot σ (d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N}) (q ^ N)
+            (natCast_pow_mem_span_pow D q N) y (hom z)) := by
+      rw [hgal σ z]
+      exact d.weil_gal x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N}) (q ^ N)
+        (natCast_pow_mem_span_pow D q N) σ y (hom z) hy (htors N z hz)
+    exact congrArg (fun t : rootsOfUnity (q ^ N) (AlgebraicClosure F) =>
+      (t : (AlgebraicClosure F)ˣ)) h
+  · -- level compatibility along the integer tower: `IsQAdicWeilTower`, with
+    -- `𝒪_D`-linearity of `hom` moving `q` across it
+    intro N y z hy hz
+    have h := htower N y (hom z) hy (htors (N + 1) z hz)
+    rw [← hact (q : NumberField.RingOfIntegers D) z] at h
+    exact h
+  · -- perfectness: the contrapositive of the last clause of `IsQAdicPolarizationHom`
+    intro N y hy hy0
+    by_contra hcon
+    push Not at hcon
+    exact hy0 (hnd N y hy (fun z hz => Subtype.ext (hcon z hz)))
 
 /-- **A nonzero element of `𝒪_D` acts surjectively on the geometric points
 of a fibre** (PROVEN 2026-07-28, over the divisibility leaf
@@ -8213,10 +8819,939 @@ theorem exists_preimage_act_of_mult
   rw [smul_smul, ← hb]
   exact hw'
 
-/-- **The pin `(O, j, π)` admits a trace-duality functional** (SORRY LEAF —
-step 3 of the classical route, in its pure-algebra half; the inverse
-different of a complete discrete valuation ring is principal and the trace
-form against a generator is perfect).
+/-! ### The trace-duality functional of the pin — decomposition (2026-07-29)
+
+`exists_traceDualFunctional_of_adicPin` is PROVEN below.  Its two remaining
+statements of pure commutative algebra —
+`moduleFinite_moduleFree_padicInt_of_adicPin` and
+`exists_generatingFunctional_of_adicPin` — were CLOSED on 2026-07-30, so
+this whole cluster is now unconditional.  The mathematics is recorded here
+once rather than repeated in each docstring.
+
+Under the pin, `O` is the `I`-adic completion `𝒪_{D,I}`: `hdense` and
+`hker` make `𝒪_D ⟶ O/(jπ)^n` surjective with kernel `I^n`, so
+`O/(jπ)^n ≅ 𝒪_D/I^n` for every `n`, and `hcplt` makes `O` the limit.  Two
+consequences are cheap and are PROVEN here:
+
+* `span_uniformizer_eq_maximalIdeal_of_adicPin` — `O/(jπ) ≅ 𝒪_D/I` is a
+  FIELD, so `(jπ)` is a maximal ideal of the local ring `O`, hence THE
+  maximal ideal.  This is what turns "not in `(jπ)`" into "is a unit", and
+  it is the only place locality of `O` is used.
+* `exists_pow_span_uniformizer_eq_span_natCast_of_adicPin` — `(jπ)^e = (q)`,
+  for `e` the largest exponent with `q ∈ I^e` (it exists by Krull's
+  intersection theorem in `𝒪_D`, and `hqI` makes it positive).  So the
+  `(jπ)`-adic and `q`-adic filtrations of `O` are cofinal, which is what
+  lets a `(jπ)`-adic approximation be read as a `q`-adic congruence.
+
+The whole content of the leaf is then ONE statement,
+`exists_generatingFunctional_of_adicPin`: the `O`-module `Hom_{ℤ_q}(O, ℤ_q)`
+is FREE OF RANK ONE, i.e. some `θ` generates it.  That is exactly
+principality of the inverse different, whose classical witness is
+`θ = Tr_{D_I/ℚ_q}(δ · )` for a generator `δ` of `𝔡_I⁻¹`.  The intended
+proof needs no trace: `Hom_{ℤ_q}(O, ℤ_q)` is a finitely generated
+torsion-free `O`-module of rank one and `O` is a DVR, hence a PID, so it is
+free (`Module.free_of_finite_type_torsion_free'`), of rank one by comparing
+`ℤ_q`-ranks (`n = r · n`).
+
+WHY ONE GENERATOR GIVES BOTH DIRECTIONS OF PERFECTNESS, and why a
+cardinality argument would have been the wrong route.  Write `Π = jπ`.  For
+a generating `θ` the map `c ↦ θ(· c)` from `O` to `ℤ_q`-functionals has
+kernel exactly `q^k O`, NOT `Π^k O`: `θ(bc) ∈ (q^k)` for all `b` says
+`θ(c ·) ∈ q^k · Hom`, and `Hom ≅ O` via `θ`.  So the fourth clause of
+`IsTraceDualFunctional` (`c ∈ (jπ)^k`) is STRICTLY WEAKER than what comes
+out (`c ∈ (q)^k ⊆ (jπ)^k`), and the third clause is not the inverse of an
+isomorphism `O/Π^k ≅ Hom(𝒪_D/I^k, ℤ/q^k)` — the representing `c` produced
+for a level-`k` functional lies in `Π^{(e-1)k}`, and only on that ideal is
+the pairing `𝒪_D/I^k × O/Π^k ⟶ ℤ/q^k` well defined in the right variable.
+None of that is needed below, because surjectivity is obtained by LIFTING
+rather than by counting:
+
+* `exists_linearMap_congr_of_adicPin` (PROVEN) — a `φ` that is additive
+  modulo `q^k` and kills `I^k` modulo `q^k` is the reduction of an honest
+  `ℤ_q`-LINEAR `Ψ : O → ℤ_q`.  The functional it induces on `O` is
+  `z ↦ φ a` for any `a` with `z ≡ j a` modulo `(jπ)^{ek}`; well-definedness
+  is `hker` plus additivity modulo `q^k`; `ℤ_q`-linearity is automatic
+  because `ℤ ↠ ℤ_q/q^k`, which is where `PadicInt.appr` enters; and the
+  lift along `ℤ_q ↠ ℤ_q/q^k` is projectivity of `O`.
+* `moduleFinite_moduleFree_padicInt_of_adicPin` (PROVEN 2026-07-30) — `O` is
+  finite and free over `ℤ_q`.  This is the only reason the lifting carries
+  a `Module.Free` hypothesis instead of deriving it.  The ENGINE was already
+  in this file and PROVEN: `finite_free_moduleTopology_of_approx`.  What it
+  needed supplied is what
+  `module_finite_free_moduleTopology_padicIntAlgebra` gets for free from
+  the concrete `𝒪_v` — `IsDomain O`, a `(q)`-adic topology on the abstract
+  `O` of the pin, and the reconciliation of `(algebraMap ℤ_q O).toAlgebra`
+  with the given `Algebra ℤ_[q] O` instance (`Algebra.algebra_ext`).  All
+  three are now proven, in that order, as `isDomain_of_adicPin`,
+  `isHausdorff_span_natCast_of_pow_span_eq` (fed to a `WithIdeal O := ⟨(q)⟩`
+  topology) and `moduleFinite_moduleFree_congr_algebra`.
+  `IsDomain O` came out exactly as predicted: every nonzero `x`
+  is `Π^a · unit` (take `a` maximal with `x ∈ Π^a`, which exists by
+  `hcplt.toIsHausdorff`, and use maximality of `(jπ)`) —
+  `exists_pow_mul_isUnit_of_adicPin` — and `Π^m ≠ 0`
+  because `j (π^m) = 0` would put `π^m` in every `I^n`, forcing `π = 0`
+  against `hπ2` — `pow_span_uniformizer_ne_zero_of_adicPin`.
+
+THE NORMAL FORM IS THE WHOLE STRUCTURAL INPUT, and it is worth stating
+separately because three different facts come out of that one lemma:
+`IsDomain O`, `IsPrincipalIdealRing O` (a nonzero ideal is generated by the
+least power of `Π` occurring in it — `isPrincipalIdealRing_of_adicPin`), and
+the `O`-torsion-freeness of `Hom_{ℤ_q}(O, ℤ_q)`.  So `O` is a DVR without
+any appeal to a mathlib DVR characterisation, and
+`Module.basisOfFiniteTypeTorsionFree'` then does all of the structure
+theory.
+
+A DISPATCH NOTE, AND A "CORRECTION" OF IT, BOTH WRONG (2026-07-30).  A
+dispatch note described `mem_span_natCast_pow_iff` and
+`sub_natCast_mem_span_of_modEq` as "newly proven upstream" and as "the
+working vocabulary for congruences in this cluster"; a first pass at this
+section then recorded that **neither exists**, "zero hits across `Fermat/`
+and across every local branch".  That denial is FALSE and has been removed:
+both are proven, sorry-free, IN THIS FILE — see the `theorem` lines a few
+hundred lines below, and their seven uses in the `exists_linearMap_congr_of_adicPin`
+cluster.  They are present on `main` and on `merger` as well, so they
+predate this section entirely.
+
+What is true is narrower, and is the only reason the two proofs above do not
+call them: both sit BELOW this point in the file, so they are out of scope
+here by DECLARATION ORDER, and both are statements about `ℤ_q` (`x ∈ (q)^k`
+iff `x` dies in `ZMod (q^k)`) rather than about `O`.  The congruences needed
+above are congruences in `O`, and run through `Ideal.span_singleton_pow`
+plus `Ideal.mem_span_singleton` / `Ideal.mem_span_singleton'`.
+
+Recorded at length because the failure mode is the expensive one: a grep
+that returns nothing is evidence about a SPELLING, never about a theorem,
+and a denial written into a docstring outlives the mistake that produced it.
+-/
+
+/-- **`(j π)` is the maximal ideal of `O`** (PROVEN 2026-07-29).
+
+`hdense` at `n = 1` makes `𝒪_D ⟶ O/(jπ)` surjective and `hker` at `n = 1`
+makes its kernel `I`, so `O/(jπ) ≅ 𝒪_D/I`, a field because `I` is maximal.
+Hence `(jπ)` is maximal, and in a local ring that identifies it with the
+maximal ideal.  `hcplt` is not needed: this is a statement about one
+level. -/
+theorem span_uniformizer_eq_maximalIdeal_of_adicPin
+    {D : Type u} [Field D] [NumberField D]
+    {I : Ideal (NumberField.RingOfIntegers D)} (hI : I.IsMaximal)
+    {π : NumberField.RingOfIntegers D}
+    {O : Type u} [CommRing O] [IsLocalRing O]
+    {j : NumberField.RingOfIntegers D →+* O}
+    (hdense : ∀ (n : ℕ) (z : O), ∃ a : NumberField.RingOfIntegers D,
+      z - j a ∈ Ideal.span {j π} ^ n)
+    (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
+      j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n) :
+    Ideal.span {j π} = IsLocalRing.maximalIdeal O := by
+  classical
+  have hmem : ∀ a : NumberField.RingOfIntegers D,
+      j a ∈ Ideal.span {j π} ↔ a ∈ I := by
+    intro a
+    have h1 := hker 1 a
+    rwa [pow_one, pow_one] at h1
+  set P : Ideal O := Ideal.span {j π} with hPdef
+  set g : NumberField.RingOfIntegers D →+* O ⧸ P := (Ideal.Quotient.mk P).comp j with hgdef
+  have hsurj : Function.Surjective g := by
+    intro y
+    obtain ⟨z, rfl⟩ := Ideal.Quotient.mk_surjective y
+    obtain ⟨a, ha⟩ := hdense 1 z
+    rw [pow_one] at ha
+    refine ⟨a, ?_⟩
+    rw [hgdef]
+    simp only [RingHom.coe_comp, Function.comp_apply]
+    exact Ideal.Quotient.eq.mpr (by simpa using neg_mem ha)
+  have hkerg : RingHom.ker g = I := by
+    ext a
+    rw [RingHom.mem_ker, hgdef]
+    simp only [RingHom.coe_comp, Function.comp_apply, Ideal.Quotient.eq_zero_iff_mem]
+    exact hmem a
+  have hkermax : (RingHom.ker g).IsMaximal := by rw [hkerg]; exact hI
+  have hfield0 : IsField (NumberField.RingOfIntegers D ⧸ RingHom.ker g) :=
+    (Ideal.Quotient.maximal_ideal_iff_isField_quotient _).mp hkermax
+  have hfield : IsField (O ⧸ P) :=
+    (g.quotientKerEquivOfSurjective hsurj).symm.toMulEquiv.isField hfield0
+  exact IsLocalRing.eq_maximalIdeal (Ideal.Quotient.maximal_of_isField P hfield)
+
+/-- **The `(j π)`-adic and `q`-adic filtrations of `O` are cofinal**
+(PROVEN 2026-07-29): `(j π)^e = (q)` where `e` is the ramification index of
+`I` over `q`, i.e. the largest exponent with `q ∈ I^e`.
+
+That exponent exists because `⋂ₙ Iⁿ = ⊥` in the Noetherian domain `𝒪_D`
+(`Ideal.iInf_pow_eq_bot_of_isDomain`) while `q ≠ 0`, and it is positive
+because `hqI` puts `q` in `I`.  Then `hker` transports `q ∈ I^e ∖ I^{e+1}`
+to `j q ∈ (jπ)^e ∖ (jπ)^{e+1}`, so `j q = u · (jπ)^e` with `u` outside the
+maximal ideal — that is, a unit — by
+`span_uniformizer_eq_maximalIdeal_of_adicPin`. -/
+theorem exists_pow_span_uniformizer_eq_span_natCast_of_adicPin
+    {D : Type u} [Field D] [NumberField D]
+    {q : ℕ} [Fact q.Prime]
+    {I : Ideal (NumberField.RingOfIntegers D)} (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    {π : NumberField.RingOfIntegers D}
+    {O : Type u} [CommRing O] [IsLocalRing O]
+    {j : NumberField.RingOfIntegers D →+* O}
+    (hdense : ∀ (n : ℕ) (z : O), ∃ a : NumberField.RingOfIntegers D,
+      z - j a ∈ Ideal.span {j π} ^ n)
+    (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
+      j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n) :
+    ∃ e : ℕ, 0 < e ∧ Ideal.span {j π} ^ e = Ideal.span {(q : O)} := by
+  classical
+  have hmax := span_uniformizer_eq_maximalIdeal_of_adicPin hI hdense hker
+  have hq0 : (q : NumberField.RingOfIntegers D) ≠ 0 :=
+    Nat.cast_ne_zero.mpr (Fact.out : q.Prime).ne_zero
+  have hex : ∃ n : ℕ, (q : NumberField.RingOfIntegers D) ∉ I ^ n := by
+    by_contra hcon
+    have hall : ∀ n : ℕ, (q : NumberField.RingOfIntegers D) ∈ I ^ n :=
+      fun n => not_not.mp fun h => hcon ⟨n, h⟩
+    have hbot : (⨅ n : ℕ, I ^ n) = ⊥ := Ideal.iInf_pow_eq_bot_of_isDomain I hI.ne_top
+    have hmemi : (q : NumberField.RingOfIntegers D) ∈ (⨅ n : ℕ, I ^ n) := by
+      simp only [Submodule.mem_iInf]
+      exact hall
+    rw [hbot, Ideal.mem_bot] at hmemi
+    exact hq0 hmemi
+  have hfpos : 0 < Nat.find hex := by
+    rcases Nat.eq_zero_or_pos (Nat.find hex) with h | h
+    · exact absurd (by rw [h, pow_zero, Ideal.one_eq_top]; exact Submodule.mem_top)
+        (Nat.find_spec hex)
+    · exact h
+  refine ⟨Nat.find hex - 1, ?_, ?_⟩
+  · rcases Nat.eq_zero_or_pos (Nat.find hex - 1) with h | h
+    · exfalso
+      have h1 : Nat.find hex = 1 := by omega
+      exact (h1 ▸ Nat.find_spec hex) (by rwa [pow_one])
+    · exact h
+  · set e := Nat.find hex - 1 with hedef
+    have hfe : Nat.find hex = e + 1 := by omega
+    have hqe : (q : NumberField.RingOfIntegers D) ∈ I ^ e :=
+      not_not.mp (Nat.find_min hex (by omega))
+    have hqe1 : (q : NumberField.RingOfIntegers D) ∉ I ^ (e + 1) := by
+      rw [← hfe]; exact Nat.find_spec hex
+    have hjq : (q : O) = j (q : NumberField.RingOfIntegers D) := (map_natCast j q).symm
+    have hmemP : (q : O) ∈ Ideal.span {j π} ^ e := by
+      rw [hjq]; exact (hker e _).mpr hqe
+    have hnotP : (q : O) ∉ Ideal.span {j π} ^ (e + 1) := by
+      rw [hjq]; exact fun h => hqe1 ((hker (e + 1) _).mp h)
+    rw [Ideal.span_singleton_pow, Ideal.mem_span_singleton'] at hmemP
+    obtain ⟨u, hu⟩ := hmemP
+    have hunit : IsUnit u := by
+      rw [← IsLocalRing.notMem_maximalIdeal, ← hmax]
+      intro hmem
+      apply hnotP
+      rw [← hu, pow_succ']
+      exact Ideal.mul_mem_mul hmem (by
+        rw [Ideal.span_singleton_pow]
+        exact Ideal.mem_span_singleton_self _)
+    rw [← hu, Ideal.span_singleton_mul_left_unit hunit, Ideal.span_singleton_pow]
+
+/-- **A `ℤ_q`-functional all of whose values lie in `(q^k)` is `q^k` times a
+`ℤ_q`-functional** (PROVEN 2026-07-29).
+
+Division is legitimate because `ℤ_q` is a domain and `q^k ≠ 0`, so the
+quotient is unique and additivity and `ℤ_q`-linearity of the quotient
+follow by cancellation.  This is what converts the fourth clause of
+`IsTraceDualFunctional` from a statement about VALUES into a statement
+about the representing element. -/
+theorem exists_linearMap_of_forall_mem_span_natCast_pow
+    {q : ℕ} [Fact q.Prime] {M : Type*} [AddCommGroup M] [Module ℤ_[q] M]
+    (k : ℕ) (Ψ : M →ₗ[ℤ_[q]] ℤ_[q])
+    (h : ∀ z : M, Ψ z ∈ Ideal.span {(q : ℤ_[q])} ^ k) :
+    ∃ Ψ' : M →ₗ[ℤ_[q]] ℤ_[q], ∀ z : M, Ψ z = (q : ℤ_[q]) ^ k * Ψ' z := by
+  classical
+  have hq : ((q : ℤ_[q])) ^ k ≠ 0 :=
+    pow_ne_zero _ (Nat.cast_ne_zero.mpr (Fact.out : q.Prime).ne_zero)
+  have hex : ∀ z : M, ∃ y : ℤ_[q], Ψ z = (q : ℤ_[q]) ^ k * y := by
+    intro z
+    have hz := h z
+    rw [Ideal.span_singleton_pow, Ideal.mem_span_singleton] at hz
+    exact hz
+  choose y hy using hex
+  refine ⟨{ toFun := y, map_add' := ?_, map_smul' := ?_ }, hy⟩
+  · intro a b
+    apply mul_left_cancel₀ hq
+    rw [← hy, map_add, hy, hy, mul_add]
+  · intro r a
+    apply mul_left_cancel₀ hq
+    rw [← hy, map_smul, hy]
+    simp only [RingHom.id_apply, smul_eq_mul]
+    ring
+
+/-- **No power of the uniformizer vanishes in `O`** (PROVEN 2026-07-30).
+
+`(j π)^m = j (π^m)`, so if it were `0` it would lie in `(jπ)^n` for EVERY
+`n`, and `hker` would put `π^m` in `Iⁿ` for every `n`.  Krull's
+intersection theorem in the Noetherian domain `𝒪_D`
+(`Ideal.iInf_pow_eq_bot_of_isDomain`) then forces `π^m = 0`, hence `π = 0`
+for `m ≥ 1` — against `hπ2`, since `0 ∈ I²` — and `1 = 0` in `𝒪_D` for
+`m = 0`.
+
+This is the only place `hπ2` is used in the finite-freeness cluster, and
+it is used exactly as `π ≠ 0`; no minimality of the valuation of `π` is
+needed here. -/
+theorem pow_span_uniformizer_ne_zero_of_adicPin
+    {D : Type u} [Field D] [NumberField D]
+    {I : Ideal (NumberField.RingOfIntegers D)} (hI : I.IsMaximal)
+    {π : NumberField.RingOfIntegers D} (hπ2 : π ∉ I ^ 2)
+    {O : Type u} [CommRing O]
+    {j : NumberField.RingOfIntegers D →+* O}
+    (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
+      j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n)
+    (m : ℕ) : (j π) ^ m ≠ 0 := by
+  intro h
+  have hall : ∀ n : ℕ, π ^ m ∈ I ^ n := by
+    intro n
+    refine (hker n (π ^ m)).mp ?_
+    rw [map_pow, h]
+    exact Submodule.zero_mem _
+  have hbot : (⨅ n : ℕ, I ^ n) = ⊥ := Ideal.iInf_pow_eq_bot_of_isDomain I hI.ne_top
+  have hzero : π ^ m = 0 := by
+    have hmem : π ^ m ∈ (⨅ n : ℕ, I ^ n) := by
+      simp only [Submodule.mem_iInf]; exact hall
+    rw [hbot, Ideal.mem_bot] at hmem
+    exact hmem
+  rcases Nat.eq_zero_or_pos m with hm | hm
+  · rw [hm, pow_zero] at hzero; exact one_ne_zero hzero
+  · have hπ0 : π = 0 := (pow_eq_zero_iff hm.ne').mp hzero
+    exact hπ2 (by rw [hπ0]; exact Submodule.zero_mem _)
+
+/-- **Every nonzero element of `O` is `(j π)ᵃ` times a unit** (PROVEN
+2026-07-30) — the valuation normal form, and the single structural fact
+from which `IsDomain O` and `IsPrincipalIdealRing O` both follow.
+
+`hcplt.toIsHausdorff` says `⋂ₙ (jπ)ⁿ = 0`, so a nonzero `x` fails to lie
+in some `(jπ)ⁿ`; take `a` maximal with `x ∈ (jπ)ᵃ` (`Nat.find` on that
+failure, minus one) and write `x = (jπ)ᵃ · u`.  Then `u ∉ (jπ)`, since
+otherwise `x ∈ (jπ)^{a+1}`; and `(jπ)` IS the maximal ideal
+(`span_uniformizer_eq_maximalIdeal_of_adicPin`), so `u` is a unit.
+
+Note `hπ2` is NOT needed: this statement is vacuous when `O` is trivial
+and does not assert `(jπ)ᵃ ≠ 0`. -/
+theorem exists_pow_mul_isUnit_of_adicPin
+    {D : Type u} [Field D] [NumberField D]
+    {I : Ideal (NumberField.RingOfIntegers D)} (hI : I.IsMaximal)
+    {π : NumberField.RingOfIntegers D}
+    {O : Type u} [CommRing O] [IsLocalRing O]
+    {j : NumberField.RingOfIntegers D →+* O}
+    (hcplt : IsAdicComplete (Ideal.span {j π}) O)
+    (hdense : ∀ (n : ℕ) (z : O), ∃ a : NumberField.RingOfIntegers D,
+      z - j a ∈ Ideal.span {j π} ^ n)
+    (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
+      j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n)
+    {x : O} (hx : x ≠ 0) :
+    ∃ (a : ℕ) (u : O), IsUnit u ∧ x = (j π) ^ a * u := by
+  classical
+  haveI := hcplt
+  have hmax := span_uniformizer_eq_maximalIdeal_of_adicPin hI hdense hker
+  obtain ⟨N, hNmem, hNnot⟩ : ∃ N : ℕ, x ∈ Ideal.span {j π} ^ N ∧
+      x ∉ Ideal.span {j π} ^ (N + 1) := by
+    have hex : ∃ n : ℕ, x ∉ Ideal.span {j π} ^ n := by
+      by_contra hcon
+      exact hx (IsHausdorff.haus' (I := Ideal.span {j π}) x fun n => by
+        simpa [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top] using
+          (not_not.mp fun h => hcon ⟨n, h⟩ : x ∈ Ideal.span {j π} ^ n))
+    have hN : x ∉ Ideal.span {j π} ^ Nat.find hex := Nat.find_spec hex
+    have hNpos : 0 < Nat.find hex := by
+      rcases Nat.eq_zero_or_pos (Nat.find hex) with h | h
+      · exact absurd (show x ∈ Ideal.span {j π} ^ Nat.find hex by
+          rw [h, pow_zero, Ideal.one_eq_top]; exact Submodule.mem_top) hN
+      · exact h
+    refine ⟨Nat.find hex - 1, not_not.mp (Nat.find_min hex (by omega)), ?_⟩
+    have hNeq : Nat.find hex - 1 + 1 = Nat.find hex := by omega
+    rw [hNeq]
+    exact hN
+  rw [Ideal.span_singleton_pow, Ideal.mem_span_singleton'] at hNmem
+  obtain ⟨u, hu⟩ := hNmem
+  refine ⟨N, u, ?_, by rw [← hu, mul_comm]⟩
+  rw [← IsLocalRing.notMem_maximalIdeal, ← hmax]
+  intro humem
+  apply hNnot
+  rw [pow_succ', ← hu]
+  exact Ideal.mul_mem_mul humem
+    (by rw [Ideal.span_singleton_pow]; exact Ideal.mem_span_singleton_self _)
+
+/-- **`O` is a domain** (PROVEN 2026-07-30).  `x = (jπ)ᵃu`, `y = (jπ)ᵇw`
+with `u, w` units, so `xy = 0` forces `(jπ)^{a+b} = 0`, which
+`pow_span_uniformizer_ne_zero_of_adicPin` forbids.  `Nontrivial O` is
+already part of `IsLocalRing O`. -/
+theorem isDomain_of_adicPin
+    {D : Type u} [Field D] [NumberField D]
+    {I : Ideal (NumberField.RingOfIntegers D)} (hI : I.IsMaximal)
+    {π : NumberField.RingOfIntegers D} (hπ2 : π ∉ I ^ 2)
+    {O : Type u} [CommRing O] [IsLocalRing O]
+    {j : NumberField.RingOfIntegers D →+* O}
+    (hcplt : IsAdicComplete (Ideal.span {j π}) O)
+    (hdense : ∀ (n : ℕ) (z : O), ∃ a : NumberField.RingOfIntegers D,
+      z - j a ∈ Ideal.span {j π} ^ n)
+    (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
+      j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n) :
+    IsDomain O := by
+  haveI : NoZeroDivisors O := by
+    constructor
+    intro x y hxy
+    by_contra hcon
+    have hx : x ≠ 0 := fun h => hcon (Or.inl h)
+    have hy : y ≠ 0 := fun h => hcon (Or.inr h)
+    obtain ⟨a, u, hu, hxa⟩ := exists_pow_mul_isUnit_of_adicPin hI hcplt hdense hker hx
+    obtain ⟨b, w, hw, hyb⟩ := exists_pow_mul_isUnit_of_adicPin hI hcplt hdense hker hy
+    rw [hxa, hyb] at hxy
+    have h : (j π) ^ (a + b) * (u * w) = 0 := by
+      rw [pow_add]; linear_combination hxy
+    exact pow_span_uniformizer_ne_zero_of_adicPin hI hπ2 hker (a + b)
+      ((hu.mul hw).mul_left_eq_zero.mp h)
+  exact NoZeroDivisors.to_isDomain O
+
+/-- **`O` is a principal ideal ring** (PROVEN 2026-07-30) — with
+`isDomain_of_adicPin` this makes `O` a DVR, which is all the structure
+theory `exists_generatingFunctional_of_adicPin` needs.
+
+Every nonzero ideal `J` is `((jπ)^N)` for `N` the least exponent
+occurring in the normal form of a nonzero element of `J`: the generator
+lies in `J` because `(jπ)^N = y · u⁻¹` for the witness `y`, and `J` is
+contained in it because every nonzero `z ∈ J` has exponent `b ≥ N` by
+minimality, so `z = (jπ)^N · ((jπ)^{b-N} w)`.  `hπ2` is not needed. -/
+theorem isPrincipalIdealRing_of_adicPin
+    {D : Type u} [Field D] [NumberField D]
+    {I : Ideal (NumberField.RingOfIntegers D)} (hI : I.IsMaximal)
+    {π : NumberField.RingOfIntegers D}
+    {O : Type u} [CommRing O] [IsLocalRing O]
+    {j : NumberField.RingOfIntegers D →+* O}
+    (hcplt : IsAdicComplete (Ideal.span {j π}) O)
+    (hdense : ∀ (n : ℕ) (z : O), ∃ a : NumberField.RingOfIntegers D,
+      z - j a ∈ Ideal.span {j π} ^ n)
+    (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
+      j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n) :
+    IsPrincipalIdealRing O := by
+  classical
+  constructor
+  intro J
+  by_cases hJ : ∀ x ∈ J, x = 0
+  · refine ⟨0, ?_⟩
+    simp only [Submodule.span_zero_singleton]
+    exact (Submodule.eq_bot_iff J).mpr hJ
+  · obtain ⟨x, hxJ, hx0⟩ : ∃ x ∈ J, x ≠ 0 := by
+      by_contra hcon
+      exact hJ fun z hzJ => not_not.mp fun h => hcon ⟨z, hzJ, h⟩
+    obtain ⟨N, y, hyJ, ⟨u, hu, hyeq⟩, hmin⟩ :
+        ∃ (N : ℕ) (y : O), y ∈ J ∧ (∃ u : O, IsUnit u ∧ y = (j π) ^ N * u) ∧
+          ∀ b : ℕ, (∃ z : O, z ∈ J ∧ z ≠ 0 ∧ ∃ w : O, IsUnit w ∧ z = (j π) ^ b * w) →
+            N ≤ b := by
+      have hS : ∃ a : ℕ, ∃ z : O, z ∈ J ∧ z ≠ 0 ∧
+          ∃ w : O, IsUnit w ∧ z = (j π) ^ a * w := by
+        obtain ⟨a, u, hu, hxa⟩ := exists_pow_mul_isUnit_of_adicPin hI hcplt hdense hker hx0
+        exact ⟨a, x, hxJ, hx0, u, hu, hxa⟩
+      obtain ⟨y, hyJ, _hy0, u, hu, hyeq⟩ := Nat.find_spec hS
+      exact ⟨Nat.find hS, y, hyJ, ⟨u, hu, hyeq⟩, fun b hb => Nat.find_le hb⟩
+    obtain ⟨v, hv⟩ := hu.exists_right_inv
+    refine ⟨(j π) ^ N, ?_⟩
+    apply le_antisymm
+    · intro z hzJ
+      by_cases hz0 : z = 0
+      · rw [hz0]; exact Submodule.zero_mem _
+      · obtain ⟨b, w, hw, hzb⟩ := exists_pow_mul_isUnit_of_adicPin hI hcplt hdense hker hz0
+        have hle : N ≤ b := hmin b ⟨z, hzJ, hz0, w, hw, hzb⟩
+        have hbN : b - N + N = b := by omega
+        refine Submodule.mem_span_singleton.mpr ⟨(j π) ^ (b - N) * w, ?_⟩
+        rw [smul_eq_mul, hzb]
+        calc (j π) ^ (b - N) * w * (j π) ^ N
+            = (j π) ^ (b - N) * (j π) ^ N * w := by ring
+          _ = (j π) ^ (b - N + N) * w := by rw [← pow_add]
+          _ = (j π) ^ b * w := by rw [hbN]
+    · rw [Submodule.span_le, Set.singleton_subset_iff]
+      have hgen : (j π) ^ N = y * v := by
+        rw [hyeq, mul_assoc, hv, mul_one]
+      rw [hgen]
+      exact J.mul_mem_right v hyJ
+
+/-- **Any ring map `ℤ_q → O` into a domain in which `q ≠ 0` is injective**
+(PROVEN 2026-07-30): a nonzero `x : ℤ_q` is `unit · q^v`
+(`PadicInt.unitCoeff_spec`), whose image is a unit times `(q : O)^v ≠ 0`.
+This is the argument `finite_free_moduleTopology_of_approx` runs
+internally, isolated because the torsion-freeness of `O` over `ℤ_q` is
+needed again downstream (for `Module.finrank_pos`). -/
+theorem injective_ringHom_padicInt_of_natCast_ne_zero
+    {q : ℕ} [Fact q.Prime] {O : Type u} [CommRing O] [IsDomain O]
+    (F : ℤ_[q] →+* O) (hq0 : (q : O) ≠ 0) : Function.Injective F := by
+  rw [injective_iff_map_eq_zero]
+  intro x hx
+  by_contra hx0
+  rw [PadicInt.unitCoeff_spec hx0, map_mul, map_pow, map_natCast] at hx
+  rcases mul_eq_zero.mp hx with h | h
+  · exact ((PadicInt.unitCoeff hx0).isUnit.map F).ne_zero h
+  · rcases Nat.eq_zero_or_pos (PadicInt.valuation x) with h0 | h0
+    · rw [h0, pow_zero] at h
+      exact one_ne_zero h
+    · exact hq0 ((pow_eq_zero_iff h0.ne').mp h)
+
+/-- **`Module.Finite`/`Module.Free` transfer across two `Algebra`
+structures with the same `algebraMap`** (PROVEN 2026-07-30).
+
+This is the `Algebra.algebra_ext` reconciliation the section header calls
+for, packaged so that the caller never has to rewrite inside an instance
+argument.  It is stated with `P` and `Q` as ordinary variables precisely
+so that `Algebra.algebra_ext` can be `subst`ed; a `rw` at the `letI`-headed
+hypothesis does not work, because the instance there is a let-bound
+variable and not the term `P`. -/
+theorem moduleFinite_moduleFree_congr_algebra {R A : Type*} [CommSemiring R] [CommSemiring A]
+    (P Q : Algebra R A)
+    (h : ∀ r : R, (haveI := P; algebraMap R A r) = haveI := Q; algebraMap R A r)
+    (H : letI := P; Module.Finite R A ∧ Module.Free R A) :
+    letI := Q; Module.Finite R A ∧ Module.Free R A := by
+  have hPQ : P = Q := Algebra.algebra_ext P Q h
+  subst hPQ
+  exact H
+
+/-- **Hausdorffness passes between cofinal adic filtrations** (PROVEN
+2026-07-30): if `(t)^e = (q)` with `e ≥ 1` then `(q)ⁿ = (t)^{en} ⊆ (t)ⁿ`,
+so an element killed by every power of `(q)` is killed by every power of
+`(t)`. -/
+theorem isHausdorff_span_natCast_of_pow_span_eq
+    {q : ℕ} {O : Type u} [CommRing O] {t : O} {e : ℕ} (he0 : 0 < e)
+    (hqe : Ideal.span {t} ^ e = Ideal.span {(q : O)})
+    (hhP : IsHausdorff (Ideal.span {t}) O) :
+    IsHausdorff (Ideal.span {(q : O)}) O := by
+  constructor
+  intro x hx
+  refine IsHausdorff.haus' (I := Ideal.span {t}) x ?_
+  intro n
+  have h1 := hx n
+  simp only [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top, sub_zero] at h1 ⊢
+  have hpow : Ideal.span {(q : O)} ^ n = Ideal.span {t} ^ (e * n) := by
+    rw [← hqe, ← pow_mul]
+  rw [hpow] at h1
+  exact Ideal.pow_le_pow_right (Nat.le_mul_of_pos_left n he0) h1
+
+/-- **`O` is a finite free `ℤ_q`-module** (PROVEN 2026-07-30).
+
+This is the standard fact that the completion `𝒪_{D,I}` is finite free of
+rank `e · f` over `ℤ_q`, stated for the abstract `O` of the pin.  The route
+predicted by the section header was exactly right: the engine
+`finite_free_moduleTopology_of_approx` is already PROVEN in this file, and
+what remained was to feed it the abstract `O`.  The four inputs are
+
+* `isDomain_of_adicPin` — `IsDomain O`, from the valuation normal form
+  `exists_pow_mul_isUnit_of_adicPin` and `(jπ)^m ≠ 0`;
+* the `(q)`-adic topology, installed as `WithIdeal O := ⟨(q)⟩` so that
+  `IsAdic (q)` is `rfl` and `IsTopologicalRing O` comes from
+  `WithIdeal`'s `NonarchimedeanRing` instance; Hausdorffness is
+  `hcplt.toIsHausdorff` transported along
+  `exists_pow_span_uniformizer_eq_span_natCast_of_adicPin` by
+  `isHausdorff_span_natCast_of_pow_span_eq`, turned into `T2Space O` by
+  `IsAdic.isHausdorff_iff`;
+* the approximation family — a `ℤ`-basis of `𝒪_D` pushed along `j`, with
+  `hdense` read at precision `e · n`, exactly as in
+  `module_finite_free_moduleTopology_padicIntAlgebra`;
+* `moduleFinite_moduleFree_congr_algebra` for the `Algebra.algebra_ext`
+  reconciliation.
+
+WHY NO COMPATIBILITY BETWEEN THE `ℤ_q`-STRUCTURE AND `j` IS NEEDED, which
+answers the worry recorded in `exists_adicCoefficientRing`'s docstring
+("the statement does NOT tie the `ℤ_q`-structure to `j`").  The engine
+takes an ARBITRARY ring map `F : ℤ_q →+* O`, so the proof simply feeds it
+`F := algebraMap ℤ_[q] O` — the given instance's own structure map — and
+the reconciliation is then `fun _ => rfl`, because
+`RingHom.algebraMap_toAlgebra` is definitional.  So this leaf is true for
+EVERY `Algebra ℤ_[q] O` instance, compatible with `j` or not, and no
+uniqueness-of-the-lift argument is required.  (Such an argument is
+available — any ring map out of `ℤ_q` is local, hence continuous, hence
+determined on the dense `ℤ` — but it is not used.)
+
+`hπ2` is carried because it is what makes `π ≠ 0`, hence `(j π)^m ≠ 0`,
+hence `O` a domain; `hcplt` is carried for the Hausdorff half. -/
+theorem moduleFinite_moduleFree_padicInt_of_adicPin
+    {D : Type u} [Field D] [NumberField D]
+    {q : ℕ} [Fact q.Prime]
+    {I : Ideal (NumberField.RingOfIntegers D)} (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    {π : NumberField.RingOfIntegers D} (hπ2 : π ∉ I ^ 2)
+    (O : Type u) [CommRing O] [IsLocalRing O] [Algebra ℤ_[q] O]
+    (j : NumberField.RingOfIntegers D →+* O)
+    (hcplt : IsAdicComplete (Ideal.span {j π}) O)
+    (hdense : ∀ (n : ℕ) (z : O), ∃ a : NumberField.RingOfIntegers D,
+      z - j a ∈ Ideal.span {j π} ^ n)
+    (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
+      j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n) :
+    Module.Finite ℤ_[q] O ∧ Module.Free ℤ_[q] O := by
+  classical
+  haveI := hcplt
+  haveI hdom : IsDomain O := isDomain_of_adicPin hI hπ2 hcplt hdense hker
+  obtain ⟨e, he0, hqe⟩ :=
+    exists_pow_span_uniformizer_eq_span_natCast_of_adicPin hI hqI hdense hker
+  have hq0 : (q : O) ≠ 0 := by
+    intro h
+    refine pow_span_uniformizer_ne_zero_of_adicPin hI hπ2 hker e ?_
+    have hmem : (j π) ^ e ∈ Ideal.span {(q : O)} := by
+      rw [← hqe, Ideal.span_singleton_pow]; exact Ideal.mem_span_singleton_self _
+    rw [h, Ideal.mem_span_singleton] at hmem
+    exact zero_dvd_iff.mp hmem
+  have hhaus : IsHausdorff (Ideal.span {(q : O)}) O :=
+    isHausdorff_span_natCast_of_pow_span_eq he0 hqe inferInstance
+  letI : WithIdeal O := ⟨Ideal.span {(q : O)}⟩
+  have hadic : IsAdic (Ideal.span {(q : O)}) := rfl
+  haveI : T2Space O := (IsAdic.isHausdorff_iff hadic).mp hhaus
+  set bD := Module.Free.chooseBasis ℤ (NumberField.RingOfIntegers D) with hbD
+  have happrox : ∀ (z : O) (n : ℕ), ∃ c : Module.Free.ChooseBasisIndex ℤ
+        (NumberField.RingOfIntegers D) → ℤ,
+      z - ∑ i, (c i : O) * j (bD i) ∈ Ideal.span {(q : O)} ^ n := by
+    intro z n
+    obtain ⟨a, ha⟩ := hdense (e * n) z
+    refine ⟨fun i => bD.repr a i, ?_⟩
+    have hsum : ∑ i, ((bD.repr a i : ℤ) : O) * j (bD i) = j a := by
+      conv_rhs => rw [← bD.sum_repr a]
+      rw [map_sum]
+      exact Finset.sum_congr rfl fun i _ => by rw [map_zsmul, zsmul_eq_mul]
+    rw [hsum, ← hqe, ← pow_mul]
+    exact ha
+  have hmain := finite_free_moduleTopology_of_approx (O := O)
+    (algebraMap ℤ_[q] O) hadic hq0 (fun i => j (bD i)) happrox
+  exact moduleFinite_moduleFree_congr_algebra ((algebraMap ℤ_[q] O).toAlgebra)
+    ‹Algebra ℤ_[q] O› (fun r => rfl) ⟨hmain.1, hmain.2.1⟩
+
+/-- **The inverse different of the pin is principal**, in the form actually
+used: `Hom_{ℤ_q}(O, ℤ_q)` is free of rank one over `O` (PROVEN 2026-07-30).
+
+`θ` is a generator, and the `∃!` says precisely that `c ↦ θ(c · )` is a
+BIJECTION `O ⟶ Hom_{ℤ_q}(O, ℤ_q)` — surjectivity is generation, injectivity
+is torsion-freeness.  The classical witness is `θ = Tr_{D_I/ℚ_q}(δ · )` for
+`δ` a generator of `𝔡_I⁻¹`; the route taken avoids the trace entirely, as
+the section header predicted, and NONE of `Submodule.traceDual`,
+`FractionalIdeal.dual`, `differentIdeal` or `Algebra.traceForm_nondegenerate`
+appears anywhere in it.
+
+HOW IT IS PROVEN.  Write `M = O →ₗ[ℤ_q] ℤ_q`, an `O`-module by
+PRECOMPOSITION — `(c • Ψ) z = Ψ (c z)`, which is an action because `O` is
+commutative.  Mathlib has no instance for this (its `LinearMap.module`
+acts on the TARGET), so the structure is built locally inside the proof and
+deliberately not exported: a global `Module O (O →ₗ[ℤ_q] ℤ_q)` would
+collide with the target action wherever both apply.  Then
+
+* `Module.Finite O M` — `M` is finite over `ℤ_q` (`Module.Finite.linearMap`,
+  using `moduleFinite_moduleFree_padicInt_of_adicPin`), hence over `O`
+  through `IsScalarTower ℤ_q O M`;
+* `Module.IsTorsionFree O M` — for `r ≠ 0` write `r = (jπ)ᵃu`; then
+  `(q)ᵃ = (jπ)^{ea} ⊆ (jπ)ᵃ = (r)`, so a functional killing `rO` kills
+  `q^a O`, and `q^a` is regular in `ℤ_q`;
+* `Module.Free O M` — `isPrincipalIdealRing_of_adicPin` plus
+  `isDomain_of_adicPin` make `O` a PID, so
+  `Module.basisOfFiniteTypeTorsionFree'` produces a basis of some rank `r`;
+* `r = 1` — the tower law `Module.finrank_mul_finrank` gives
+  `finrank_{ℤ_q} O · r = finrank_{ℤ_q} M`, and
+  `Module.finrank_linearMap_self` gives `finrank_{ℤ_q} M = finrank_{ℤ_q} O`,
+  which is POSITIVE (`Module.finrank_pos`, via
+  `injective_ringHom_padicInt_of_natCast_ne_zero`).  Cancelling gives
+  `r = 1`.
+
+Note the last step is where the nonvanishing of `finrank_{ℤ_q} O` is
+load-bearing: `n · r = n` says nothing about `r` when `n = 0`, which is the
+usual junk-value trap for ℕ-valued invariants.  Here `n > 0` because `O` is
+nontrivial (part of `IsLocalRing`) and torsion-free over `ℤ_q`.
+
+WHY THE `∃!` AND NOT A WEAKER CLAUSE.  Uniqueness of `c` is what discharges
+the fourth clause of `IsTraceDualFunctional`; without it a `θ` killing a
+nonzero ideal would satisfy the surjectivity half and make the consumer
+false.  Existence for EVERY `Ψ`, not just for those arising at some level,
+is what lets the third clause be proven by lifting rather than by counting.
+
+`hπ` (`π ∈ I`) is REDUNDANT and unused: `hker` at `n = 1` already gives it,
+since `j π ∈ (jπ)` always.  It is retained so the statement and the
+consumer's call site are unchanged, and named `_hπ` only to keep the tree
+warning-clean.
+
+This leaf is the entire mathematical content of
+`exists_traceDualFunctional_of_adicPin`. -/
+theorem exists_generatingFunctional_of_adicPin
+    {D : Type u} [Field D] [NumberField D]
+    {q : ℕ} [Fact q.Prime]
+    {I : Ideal (NumberField.RingOfIntegers D)} (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    {π : NumberField.RingOfIntegers D} (_hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (O : Type u) [CommRing O] [IsLocalRing O] [Algebra ℤ_[q] O]
+    (j : NumberField.RingOfIntegers D →+* O)
+    (hcplt : IsAdicComplete (Ideal.span {j π}) O)
+    (hdense : ∀ (n : ℕ) (z : O), ∃ a : NumberField.RingOfIntegers D,
+      z - j a ∈ Ideal.span {j π} ^ n)
+    (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
+      j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n) :
+    ∃ θ : O →ₗ[ℤ_[q]] ℤ_[q], ∀ Ψ : O →ₗ[ℤ_[q]] ℤ_[q], ∃! c : O, ∀ z : O, Ψ z = θ (c * z) := by
+  classical
+  haveI := hcplt
+  haveI hdom : IsDomain O := isDomain_of_adicPin hI hπ2 hcplt hdense hker
+  haveI hpid : IsPrincipalIdealRing O := isPrincipalIdealRing_of_adicPin hI hcplt hdense hker
+  obtain ⟨e, he0, hqe⟩ :=
+    exists_pow_span_uniformizer_eq_span_natCast_of_adicPin hI hqI hdense hker
+  have hq0 : (q : O) ≠ 0 := by
+    intro h
+    refine pow_span_uniformizer_ne_zero_of_adicPin hI hπ2 hker e ?_
+    have hmem : (j π) ^ e ∈ Ideal.span {(q : O)} := by
+      rw [← hqe, Ideal.span_singleton_pow]; exact Ideal.mem_span_singleton_self _
+    rw [h, Ideal.mem_span_singleton] at hmem
+    exact zero_dvd_iff.mp hmem
+  obtain ⟨hfin, hfree⟩ :=
+    moduleFinite_moduleFree_padicInt_of_adicPin hI hqI hπ2 O j hcplt hdense hker
+  haveI := hfin
+  haveI := hfree
+  -- `O` is torsion-free over `ℤ_q`, which is what makes its rank positive
+  have hinj : Function.Injective (algebraMap ℤ_[q] O) :=
+    injective_ringHom_padicInt_of_natCast_ne_zero (algebraMap ℤ_[q] O) hq0
+  haveI htfO : Module.IsTorsionFree ℤ_[q] O :=
+    Module.IsTorsionFree.comap (S := O) (M := O) (fun r => algebraMap ℤ_[q] O r)
+      (fun r hr => by
+        rw [isRegular_iff_ne_zero] at hr ⊢
+        exact fun hcon => hr (hinj (by rw [hcon, map_zero])))
+      (fun r m => by rw [smul_eq_mul, Algebra.smul_def])
+  -- the `O`-module structure on the `ℤ_q`-dual, by precomposition
+  letI smulO : SMul O (O →ₗ[ℤ_[q]] ℤ_[q]) :=
+    ⟨fun c Ψ => Ψ ∘ₗ (LinearMap.mulLeft ℤ_[q] c)⟩
+  have hsmul : ∀ (c : O) (Ψ : O →ₗ[ℤ_[q]] ℤ_[q]) (z : O), (c • Ψ) z = Ψ (c * z) :=
+    fun _ _ _ => rfl
+  letI modO : Module O (O →ₗ[ℤ_[q]] ℤ_[q]) :=
+    { one_smul := fun Ψ => by ext z; rw [hsmul]; rw [one_mul]
+      mul_smul := fun c c' Ψ => by
+        ext z
+        rw [hsmul, hsmul, hsmul]
+        exact congrArg Ψ (by ring)
+      smul_zero := fun c => by ext z; rw [hsmul]; simp
+      smul_add := fun c Ψ Φ => by ext z; simp only [hsmul, LinearMap.add_apply]
+      add_smul := fun c c' Ψ => by
+        ext z
+        rw [LinearMap.add_apply, hsmul, hsmul, hsmul, add_mul, Ψ.map_add]
+      zero_smul := fun Ψ => by ext z; rw [hsmul, zero_mul, map_zero]; rfl }
+  haveI htower : IsScalarTower ℤ_[q] O (O →ₗ[ℤ_[q]] ℤ_[q]) := by
+    refine ⟨fun r c Ψ => ?_⟩
+    ext z
+    rw [hsmul, LinearMap.smul_apply, hsmul, Algebra.smul_def, mul_assoc, ← Algebra.smul_def,
+      Ψ.map_smul]
+  haveI hfinZ : Module.Finite ℤ_[q] (O →ₗ[ℤ_[q]] ℤ_[q]) := inferInstance
+  haveI hfinO : Module.Finite O (O →ₗ[ℤ_[q]] ℤ_[q]) :=
+    Module.Finite.of_restrictScalars_finite ℤ_[q] O _
+  -- torsion-freeness over `O`: a functional killing `rO` kills `q^a O`
+  have hkey : ∀ r : O, r ≠ 0 → ∀ Θ : O →ₗ[ℤ_[q]] ℤ_[q], (∀ z : O, Θ (r * z) = 0) → Θ = 0 := by
+    intro r hr0 Θ hΘ
+    obtain ⟨a, u, hu, hra⟩ := exists_pow_mul_isUnit_of_adicPin hI hcplt hdense hker hr0
+    have hspanr : Ideal.span {r} = Ideal.span {j π} ^ a := by
+      rw [hra, mul_comm, Ideal.span_singleton_mul_left_unit hu, Ideal.span_singleton_pow]
+    have hmemr : (q : O) ^ a ∈ Ideal.span {r} := by
+      rw [hspanr]
+      have h1 : (q : O) ^ a ∈ Ideal.span {(q : O)} ^ a := by
+        rw [Ideal.span_singleton_pow]; exact Ideal.mem_span_singleton_self _
+      rw [← hqe, ← pow_mul] at h1
+      exact Ideal.pow_le_pow_right (Nat.le_mul_of_pos_left a he0) h1
+    obtain ⟨s, hs⟩ := Ideal.mem_span_singleton'.mp hmemr
+    ext z
+    have h1 : Θ ((q : O) ^ a * z) = 0 := by
+      have hzz : (q : O) ^ a * z = r * (s * z) := by rw [← hs]; ring
+      rw [hzz]; exact hΘ (s * z)
+    have hcast : (q : O) ^ a * z = ((q : ℤ_[q]) ^ a) • z := by
+      rw [Algebra.smul_def, map_pow, map_natCast]
+    rw [hcast, Θ.map_smul, smul_eq_mul] at h1
+    have hqa : ((q : ℤ_[q]) ^ a) ≠ 0 :=
+      pow_ne_zero _ (Nat.cast_ne_zero.mpr (Fact.out : q.Prime).ne_zero)
+    have := (mul_eq_zero.mp h1).resolve_left hqa
+    simpa using this
+  haveI htfM : Module.IsTorsionFree O (O →ₗ[ℤ_[q]] ℤ_[q]) := by
+    refine ⟨fun {r} hr => ?_⟩
+    have hr0 : r ≠ 0 := (isRegular_iff_ne_zero).mp hr
+    intro Ψ Φ h
+    have hz : ∀ z : O, Ψ (r * z) = Φ (r * z) := by
+      intro z
+      have hh := congrArg (fun f : O →ₗ[ℤ_[q]] ℤ_[q] => f z) h
+      simpa [hsmul] using hh
+    have hzero := hkey r hr0 (Ψ - Φ) (fun z => by simp [hz z])
+    exact sub_eq_zero.mp hzero
+  -- the rank count: `finrank_{ℤ_q} O * r = finrank_{ℤ_q} O` with the left factor positive
+  have hn : 0 < Module.finrank ℤ_[q] O := Module.finrank_pos
+  obtain ⟨rk, b⟩ := Module.basisOfFiniteTypeTorsionFree' (R := O) (M := O →ₗ[ℤ_[q]] ℤ_[q])
+  have hrk1 : rk = 1 := by
+    have h1 : Module.finrank O (O →ₗ[ℤ_[q]] ℤ_[q]) = rk := by
+      rw [Module.finrank_eq_card_basis b, Fintype.card_fin]
+    have h2 : Module.finrank ℤ_[q] O * Module.finrank O (O →ₗ[ℤ_[q]] ℤ_[q])
+        = Module.finrank ℤ_[q] (O →ₗ[ℤ_[q]] ℤ_[q]) :=
+      Module.finrank_mul_finrank ℤ_[q] O (O →ₗ[ℤ_[q]] ℤ_[q])
+    have h3 : Module.finrank ℤ_[q] (O →ₗ[ℤ_[q]] ℤ_[q]) = Module.finrank ℤ_[q] O :=
+      Module.finrank_linearMap_self ℤ_[q] ℤ_[q] O
+    rw [h1, h3] at h2
+    exact Nat.eq_of_mul_eq_mul_left hn (by rw [h2, mul_one])
+  subst hrk1
+  refine ⟨b 0, fun Ψ => ?_⟩
+  have hsum : (b.repr Ψ 0) • b 0 = Ψ := by
+    have hh := b.sum_repr Ψ
+    rwa [Fin.sum_univ_one] at hh
+  refine ⟨b.repr Ψ 0, fun z => ?_, ?_⟩
+  · calc Ψ z = ((b.repr Ψ 0) • b 0) z := by rw [hsum]
+      _ = (b 0) ((b.repr Ψ 0) * z) := hsmul _ _ _
+  · intro c hc
+    have h1 : c • b 0 = Ψ := by
+      ext z; rw [hsmul]; exact (hc z).symm
+    have h3 : (c - b.repr Ψ 0) • b 0 = 0 := by
+      ext z
+      rw [hsmul, sub_mul, map_sub, LinearMap.zero_apply]
+      have e1 : (b 0) (c * z) = Ψ z := (hc z).symm
+      have e2 : (b 0) ((b.repr Ψ 0) * z) = Ψ z := by rw [← hsmul, hsum]
+      rw [e1, e2, sub_self]
+    by_contra hne
+    exact b.ne_zero 0 ((smul_eq_zero_iff_right (sub_ne_zero.mpr hne)).mp h3)
+
+/-- **A level-`k` functional on `𝒪_D` is the reduction of a `ℤ_q`-linear
+functional on `O`** (PROVEN 2026-07-29).
+
+This is the surjectivity half of trace duality done by LIFTING rather than
+by counting, and it is why no cardinality argument appears anywhere in this
+cluster.  `φ` is only additive modulo `q^k` and only kills `I^k` modulo
+`q^k` — which is what the applications supply, since they arise as
+`b ↦ L k (w k (b y) z)` — and the conclusion is an honest `ℤ_q`-LINEAR map
+agreeing with it modulo `q^k` on `j 𝒪_D`.
+
+Three steps, each of which is where one hypothesis is consumed.
+
+1. `z ↦ φ a` for any `a` with `z ≡ j a` modulo `(jπ)^{ek}` is well defined:
+   two such `a` differ by an element of `I^{ek} ⊆ I^k` (`hker`, and `e ≥ 1`),
+   which `φ` kills modulo `q^k`.  This is where
+   `exists_pow_span_uniformizer_eq_span_natCast_of_adicPin` is used, to make
+   `(jπ)^{ek} = (q)^k`.
+2. The resulting map is automatically `ℤ_q`-LINEAR, not merely additive,
+   because `ℤ ↠ ℤ_q/q^k`: approximate `r : ℤ_q` by `PadicInt.appr r k` and
+   the difference acts by zero on `ℤ_q/q^k` and lands in `(q)^k ⊆ (jπ)^{ek}`
+   on `O`.  Additivity modulo `q^k` upgrades to `ℕ`-homogeneity modulo
+   `q^k` by induction.
+3. The lift along `ℤ_q ↠ ℤ_q/q^k` is projectivity of `O`, which is `hfree`.
+   That is the ONLY use of freeness, and the only reason this statement
+   takes it as a hypothesis rather than deriving it from the pin — see
+   `moduleFinite_moduleFree_padicInt_of_adicPin`. -/
+theorem exists_linearMap_congr_of_adicPin
+    {D : Type u} [Field D] [NumberField D]
+    {q : ℕ} [Fact q.Prime]
+    {I : Ideal (NumberField.RingOfIntegers D)} (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    {π : NumberField.RingOfIntegers D}
+    (O : Type u) [CommRing O] [IsLocalRing O] [Algebra ℤ_[q] O]
+    (j : NumberField.RingOfIntegers D →+* O)
+    (hdense : ∀ (n : ℕ) (z : O), ∃ a : NumberField.RingOfIntegers D,
+      z - j a ∈ Ideal.span {j π} ^ n)
+    (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
+      j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n)
+    (hfree : Module.Free ℤ_[q] O)
+    (k : ℕ) (φ : NumberField.RingOfIntegers D → ℤ_[q])
+    (hadd : ∀ a b : NumberField.RingOfIntegers D,
+      φ (a + b) - (φ a + φ b) ∈ Ideal.span {(q : ℤ_[q])} ^ k)
+    (hann : ∀ a ∈ I ^ k, φ a ∈ Ideal.span {(q : ℤ_[q])} ^ k) :
+    ∃ Ψ : O →ₗ[ℤ_[q]] ℤ_[q], ∀ b : NumberField.RingOfIntegers D,
+      Ψ (j b) - φ b ∈ Ideal.span {(q : ℤ_[q])} ^ k := by
+  classical
+  haveI := hfree
+  obtain ⟨e, he0, hespan⟩ :=
+    exists_pow_span_uniformizer_eq_span_natCast_of_adicPin hI hqI hdense hker
+  set Q : Ideal ℤ_[q] := Ideal.span {(q : ℤ_[q])} ^ k with hQdef
+  set N : ℕ := e * k with hNdef
+  have hNk : k ≤ N := by
+    rw [hNdef]
+    calc k = 1 * k := (one_mul k).symm
+      _ ≤ e * k := Nat.mul_le_mul_right k he0
+  have hspanN : Ideal.span {j π} ^ N = Ideal.span {(q : O)} ^ k := by
+    rw [hNdef, pow_mul, hespan]
+  have hφadd' : ∀ a b : NumberField.RingOfIntegers D, φ (a + b) - φ a - φ b ∈ Q := by
+    intro a b
+    have h1 := hadd a b
+    have h2 : φ (a + b) - (φ a + φ b) = φ (a + b) - φ a - φ b := by ring
+    rwa [h2] at h1
+  have hφ0 : φ 0 ∈ Q := by
+    have h1 := hφadd' 0 0
+    rw [add_zero] at h1
+    have h2 : φ 0 - φ 0 - φ 0 = -φ 0 := by ring
+    rw [h2] at h1
+    simpa using neg_mem h1
+  have hφnsmul : ∀ (m : ℕ) (a : NumberField.RingOfIntegers D), φ (m • a) - m • φ a ∈ Q := by
+    intro m a
+    induction m with
+    | zero => simpa using hφ0
+    | succ n ih =>
+      have h1 := hφadd' (n • a) a
+      have h2 : φ ((n + 1) • a) - (n + 1) • φ a
+          = (φ (n • a + a) - φ (n • a) - φ a) + (φ (n • a) - n • φ a) := by
+        rw [succ_nsmul, succ_nsmul]
+        abel
+      rw [h2]
+      exact add_mem h1 ih
+  choose apx hapx using hdense N
+  have hwd : ∀ (z : O) (b : NumberField.RingOfIntegers D), z - j b ∈ Ideal.span {j π} ^ N →
+      (Submodule.Quotient.mk (p := Q) (φ b)) = Submodule.Quotient.mk (p := Q) (φ (apx z)) := by
+    intro z b hb
+    have hsub : b - apx z ∈ I ^ N := by
+      refine (hker N _).mp ?_
+      have h1 : j (b - apx z) = (z - j (apx z)) - (z - j b) := by
+        rw [map_sub]; ring
+      rw [h1]
+      exact sub_mem (hapx z) hb
+    have hval : φ (b - apx z) ∈ Q := hann _ (Ideal.pow_le_pow_right hNk hsub)
+    have h2 := hφadd' (apx z) (b - apx z)
+    rw [add_sub_cancel] at h2
+    have h3 : φ b - φ (apx z) = (φ b - φ (apx z) - φ (b - apx z)) + φ (b - apx z) := by ring
+    refine (Submodule.Quotient.eq Q).mpr ?_
+    rw [h3]
+    exact add_mem h2 hval
+  have hsmul0 : ∀ (r : ℤ_[q]) (z : O), ∃ m : ℕ, (r - (m : ℤ_[q]) ∈ Q) ∧
+      r • z - j ((m : NumberField.RingOfIntegers D) * apx z) ∈ Ideal.span {j π} ^ N := by
+    intro r z
+    have hrm : r - ((r.appr k : ℕ) : ℤ_[q]) ∈ Q := by
+      rw [hQdef, Ideal.span_singleton_pow]
+      exact PadicInt.appr_spec k r
+    refine ⟨r.appr k, hrm, ?_⟩
+    rw [hQdef, Ideal.span_singleton_pow, Ideal.mem_span_singleton] at hrm
+    obtain ⟨s, hs⟩ := hrm
+    have hsplit : r • z - j ((((r.appr k : ℕ)) : NumberField.RingOfIntegers D) * apx z)
+        = (r - ((r.appr k : ℕ) : ℤ_[q])) • z
+          + ((r.appr k : ℕ) : O) * (z - j (apx z)) := by
+      rw [map_mul, map_natCast, sub_smul, Algebra.smul_def, Algebra.smul_def, map_natCast]
+      ring
+    rw [hsplit, hspanN]
+    refine add_mem ?_ ?_
+    · have h1 : (r - ((r.appr k : ℕ) : ℤ_[q])) • z = (q : O) ^ k * ((s : ℤ_[q]) • z) := by
+        rw [hs, Algebra.smul_def, Algebra.smul_def, map_mul, map_pow, map_natCast]
+        ring
+      rw [h1]
+      exact Ideal.mul_mem_right _ _ (Ideal.pow_mem_pow (Ideal.mem_span_singleton_self _) k)
+    · exact Ideal.mul_mem_left _ _ (by rw [← hspanN]; exact hapx z)
+  set ψ : O →ₗ[ℤ_[q]] (ℤ_[q] ⧸ Q) :=
+    { toFun := fun z => Submodule.Quotient.mk (p := Q) (φ (apx z))
+      map_add' := by
+        intro z z'
+        have h1 : (z + z') - j (apx z + apx z') ∈ Ideal.span {j π} ^ N := by
+          have h2 : (z + z') - j (apx z + apx z') = (z - j (apx z)) + (z' - j (apx z')) := by
+            rw [map_add]; ring
+          rw [h2]
+          exact add_mem (hapx z) (hapx z')
+        rw [← hwd _ _ h1]
+        refine (Submodule.Quotient.eq Q).mpr ?_
+        exact hadd (apx z) (apx z')
+      map_smul' := by
+        intro r z
+        obtain ⟨m, h3, hm⟩ := hsmul0 r z
+        simp only [RingHom.id_apply]
+        rw [← hwd _ _ hm]
+        have h1 : ((m : NumberField.RingOfIntegers D) * apx z) = m • apx z := by
+          rw [nsmul_eq_mul]
+        rw [h1]
+        refine (Submodule.Quotient.eq Q).mpr ?_
+        have h2 : φ (m • apx z) - r • φ (apx z)
+            = (φ (m • apx z) - m • φ (apx z))
+              + (((m : ℤ_[q])) - r) * φ (apx z) := by
+          rw [nsmul_eq_mul, smul_eq_mul]
+          ring
+        rw [h2]
+        refine add_mem (hφnsmul m (apx z)) (Ideal.mul_mem_right _ _ ?_)
+        have h4 := neg_mem h3
+        rwa [neg_sub] at h4 } with hψdef
+  obtain ⟨Ψ, hΨ⟩ := Module.projective_lifting_property Q.mkQ ψ Q.mkQ_surjective
+  refine ⟨Ψ, fun b => ?_⟩
+  have h1 : Q.mkQ (Ψ (j b)) = ψ (j b) := LinearMap.congr_fun hΨ (j b)
+  have h2 : ψ (j b) = Submodule.Quotient.mk (p := Q) (φ b) := by
+    rw [hψdef]
+    exact (hwd (j b) b (by simp)).symm
+  rw [h2] at h1
+  exact (Submodule.Quotient.eq Q).mp h1
+
+/-- **The pin `(O, j, π)` admits a trace-duality functional** (PROVEN
+2026-07-29 over `exists_generatingFunctional_of_adicPin`,
+`moduleFinite_moduleFree_padicInt_of_adicPin` and
+`exists_linearMap_congr_of_adicPin` — step 3 of the classical route, in its
+pure-algebra half; **UNCONDITIONAL since 2026-07-30**, when the first two of
+those were closed).
 
 No geometry occurs here.  Under `hcplt`/`hdense`/`hker` the ring `O` is the
 `I`-adic completion of `𝒪_D`; `hI` and `hπ`/`hπ2` make `I` a maximal ideal
@@ -8228,8 +9763,28 @@ single `δ`.  Take `θ = Tr(δ · )`.
 already implied by the pin, and is listed rather than derived so that a
 successor does not have to re-derive it before starting.
 
-See `IsTraceDualFunctional` for what the four clauses say and for the
-mathlib ingredients. -/
+HOW THE FOUR CLAUSES COME OUT.  Take for `θ` a generator of
+`Hom_{ℤ_q}(O, ℤ_q)` as an `O`-module.  The first two clauses are then its
+additivity and `ℤ_q`-linearity, with `algebraMap r * c = r • c`.  The third
+is `exists_linearMap_congr_of_adicPin` — lift `φ` to a `ℤ_q`-linear `Ψ`,
+then write `Ψ = θ(c · )` — and note it produces the representing `c` with
+no cardinality argument at all.  The fourth divides: if `θ(j b · c)` lies in
+`(q^k)` for every `b ∈ 𝒪_D` then, `j 𝒪_D` being dense and `(q)^k` being a
+neighbourhood of `0` for the `(jπ)`-adic filtration, `θ(c · )` has all its
+values in `(q^k)`; dividing by `q^k`
+(`exists_linearMap_of_forall_mem_span_natCast_pow`) and using UNIQUENESS of
+the representing element gives `c ∈ (q)^k`, which is contained in `(jπ)^k`
+because `q ∈ I`.  That is strictly stronger than the clause asks.
+
+A note on `θ = Tr(δ · )` above: that is the CLASSICAL witness, and the proof
+does not use it.  `exists_generatingFunctional_of_adicPin` produces a
+generator of `Hom_{ℤ_q}(O, ℤ_q)` from "finitely generated torsion-free of
+rank one over a DVR is free of rank one", so the trace never appears and
+neither do `Submodule.traceDual`, `FractionalIdeal.dual`, `differentIdeal`
+or `Algebra.traceForm_nondegenerate`.
+
+See `IsTraceDualFunctional` for what the four clauses say, and the section
+header above for the mathematics.  Nothing in this cluster remains open. -/
 theorem exists_traceDualFunctional_of_adicPin
     {D : Type u} [Field D] [NumberField D]
     (q : ℕ) [Fact q.Prime]
@@ -8243,8 +9798,64 @@ theorem exists_traceDualFunctional_of_adicPin
       z - j a ∈ Ideal.span {j π} ^ n)
     (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
       j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n) :
-    ∃ θ : O → ℤ_[q], IsTraceDualFunctional q I π j θ :=
-  sorry
+    ∃ θ : O → ℤ_[q], IsTraceDualFunctional q I π j θ := by
+  classical
+  obtain ⟨e, _he0, hespan⟩ :=
+    exists_pow_span_uniformizer_eq_span_natCast_of_adicPin hI hqI hdense hker
+  obtain ⟨_hfin, hfree⟩ :=
+    moduleFinite_moduleFree_padicInt_of_adicPin hI hqI hπ2 O j hcplt hdense hker
+  obtain ⟨θ, hθ⟩ :=
+    exists_generatingFunctional_of_adicPin hI hqI hπ hπ2 O j hcplt hdense hker
+  have hqmem : (q : O) ∈ Ideal.span {j π} := by
+    have hqj : (q : O) = j (q : NumberField.RingOfIntegers D) := (map_natCast j q).symm
+    have hmem := (hker 1 (q : NumberField.RingOfIntegers D)).mpr (by rwa [pow_one])
+    rw [pow_one] at hmem
+    rwa [hqj]
+  refine ⟨⇑θ, fun c c' => map_add θ c c', ?_, ?_, ?_⟩
+  · intro r c
+    rw [← Algebra.smul_def, map_smul, smul_eq_mul]
+  · intro k φ hadd hann
+    obtain ⟨Ψ, hΨ⟩ :=
+      exists_linearMap_congr_of_adicPin hI hqI O j hdense hker hfree k φ hadd hann
+    obtain ⟨c, hc, -⟩ := hθ Ψ
+    refine ⟨c, fun b => ?_⟩
+    have h1 : θ (j b * c) = Ψ (j b) := by rw [hc (j b), mul_comm]
+    rw [h1]
+    have h2 := neg_mem (hΨ b)
+    rwa [neg_sub] at h2
+  · intro k c hc
+    set Ψ : O →ₗ[ℤ_[q]] ℤ_[q] := θ.comp (LinearMap.mulLeft ℤ_[q] c) with hΨdef
+    have hΨapp : ∀ z : O, Ψ z = θ (c * z) := fun z => rfl
+    have hqpow : ((q : O)) ^ k = algebraMap ℤ_[q] O ((q : ℤ_[q]) ^ k) := by
+      rw [map_pow, map_natCast]
+    have hall : ∀ z : O, Ψ z ∈ Ideal.span {(q : ℤ_[q])} ^ k := by
+      intro z
+      obtain ⟨a, ha⟩ := hdense (e * k) z
+      have hmem : z - j a ∈ Ideal.span {(q : O)} ^ k := by
+        rw [← hespan, ← pow_mul]; exact ha
+      rw [Ideal.span_singleton_pow, Ideal.mem_span_singleton] at hmem
+      obtain ⟨w, hw⟩ := hmem
+      have hz : z = (q : O) ^ k * w + j a := sub_eq_iff_eq_add.mp hw
+      rw [hΨapp, hz, mul_add, map_add]
+      refine add_mem ?_ ?_
+      · have hrw : c * ((q : O) ^ k * w) = ((q : ℤ_[q]) ^ k) • (c * w) := by
+          rw [Algebra.smul_def, hqpow]; ring
+        rw [hrw, map_smul, smul_eq_mul, Ideal.span_singleton_pow]
+        exact Ideal.mem_span_singleton.mpr ⟨θ (c * w), rfl⟩
+      · rw [mul_comm]
+        exact hc a
+    obtain ⟨Ψ', hΨ'⟩ := exists_linearMap_of_forall_mem_span_natCast_pow k Ψ hall
+    obtain ⟨d, hd, -⟩ := hθ Ψ'
+    have hkey : ∀ z : O, Ψ z = θ (((q : O) ^ k * d) * z) := by
+      intro z
+      rw [hΨ' z, hd z]
+      have hrw : ((q : O) ^ k * d) * z = ((q : ℤ_[q]) ^ k) • (d * z) := by
+        rw [Algebra.smul_def, hqpow]; ring
+      rw [hrw, map_smul, smul_eq_mul]
+    obtain ⟨c₀, _hc₀, huniq⟩ := hθ Ψ
+    have hc2 : c = (q : O) ^ k * d := (huniq c hΨapp).trans (huniq _ hkey).symm
+    rw [hc2]
+    exact Ideal.mul_mem_right d _ (Ideal.pow_mem_pow hqmem k)
 
 /-- **Membership in `(q)^k ⊆ ℤ_q` is vanishing of the level-`k` reduction**
 (PROVEN — `Ideal.span_singleton_pow` turns `span {q} ^ k` into
@@ -8351,10 +9962,10 @@ theorem galois_apply_pow_eq_pow_of_cyclotomicCharacter_pow
           hspec, hpp]
     _ = ζ ^ n := by rw [map_pow, hFz]
 
-/-- **A compatible system of primitive `q^k`-th roots of unity** (PROVEN):
-in an algebraically closed field of characteristic zero there is a sequence
-`ζ k` with `ζ k` primitive of order `q^k` and `ζ (k+1) ^ q = ζ k` — i.e. a
-`ℤ_q`-BASIS of the Tate module `T_q μ`.
+/-- **A compatible system of primitive `q^k`-th roots of unity, over any
+algebraically closed field in which `q` is invertible** (PROVEN 2026-07-30):
+there is a sequence `ζ k` with `ζ k` primitive of order `q^k` and
+`ζ (k+1) ^ q = ζ k` — i.e. a `ℤ_q`-BASIS of the Tate module `T_q μ`.
 
 This is the choice that makes `exists_cyclotomicLog` an EXISTENCE statement:
 `L k` is `log` to the base `ζ k`, and the tower clause of that leaf is
@@ -8371,14 +9982,25 @@ this construction wrong.
 
 The sequence itself is assembled by `Nat.rec` valued in the SUBTYPE
 `{z // IsPrimitiveRoot z (q ^ k)}`, so that the step always receives the
-primitivity of its predecessor. -/
-theorem exists_compatible_primitiveRootSystem (K : Type u) [Field K] [IsAlgClosed K]
-    [CharZero K] (q : ℕ) [Fact q.Prime] :
+primitivity of its predecessor.
+
+**WHY THE HYPOTHESIS IS `NeZero ((q : ℕ) : K)` AND NOT `CharZero K`.**  This
+declaration stood with `[CharZero K]` until 2026-07-30, and that hypothesis
+was used in exactly one place: to produce `NeZero ((q : ℕ) : K)`, which is
+what `HasEnoughRootsOfUnity` and `IsAlgClosed.exists_pow_nat_eq` actually
+need.  The argument itself never mentions the characteristic.  Taking the
+instance as the hypothesis makes the statement available over
+`AlgebraicClosure k` for a FINITE field `k` of residue characteristic `≠ q`,
+which is what the finite-base half of this development needs and what
+`CharZero` locked it out of.  The `CharZero` form is retained below as a
+two-line corollary, so there is one proof and not two. -/
+theorem exists_compatible_primitiveRootSystem_of_neZero
+    (K : Type u) [Field K] [IsAlgClosed K]
+    (q : ℕ) [Fact q.Prime] [NeZero ((q : ℕ) : K)] :
     ∃ ζ : ℕ → K, (∀ k, IsPrimitiveRoot (ζ k) (q ^ k)) ∧ ∀ k, ζ (k + 1) ^ q = ζ k := by
   classical
   have hq := (Fact.out : q.Prime)
   haveI : NeZero q := ⟨hq.ne_zero⟩
-  haveI : NeZero ((q : ℕ) : K) := ⟨by exact_mod_cast hq.ne_zero⟩
   have step : ∀ (k : ℕ) (μ : K), IsPrimitiveRoot μ (q ^ k) →
       ∃ z : K, z ^ q = μ ∧ IsPrimitiveRoot z (q ^ (k + 1)) := by
     intro k μ hμ
@@ -8415,6 +10037,19 @@ theorem exists_compatible_primitiveRootSystem (K : Type u) [Field K] [IsAlgClose
     Nat.rec (motive := fun k => {z : K // IsPrimitiveRoot z (q ^ k)})
       ⟨1, h0⟩ (fun n ih => ⟨g n ih.1 ih.2, hg2 n ih.1 ih.2⟩) k
   exact ⟨fun k => (f k).1, fun k => (f k).2, fun k => hg1 k (f k).1 (f k).2⟩
+
+/-- **A compatible system of primitive `q^k`-th roots of unity in
+characteristic zero** (PROVEN) — the released `CharZero` form of
+`exists_compatible_primitiveRootSystem_of_neZero`, kept because it is what
+`exists_cyclotomicLog` and its consumers call.
+
+In characteristic zero `(q : K) ≠ 0` for a prime `q`, so the instance the
+general form asks for is derivable and there is nothing else to do. -/
+theorem exists_compatible_primitiveRootSystem (K : Type u) [Field K] [IsAlgClosed K]
+    [CharZero K] (q : ℕ) [Fact q.Prime] :
+    ∃ ζ : ℕ → K, (∀ k, IsPrimitiveRoot (ζ k) (q ^ k)) ∧ ∀ k, ζ (k + 1) ^ q = ζ k := by
+  haveI : NeZero ((q : ℕ) : K) := ⟨by exact_mod_cast (Fact.out : q.Prime).ne_zero⟩
+  exact exists_compatible_primitiveRootSystem_of_neZero K q
 
 /-- **A compatible system of discrete logarithms on the `q`-power roots of
 unity of `F̄`, intertwining the Galois action with the cyclotomic
@@ -8611,10 +10246,1221 @@ theorem exists_cyclotomicLog (F : Type u) [Field F] [NumberField F]
         (ZMod.natCast_eq_natCast_iff _ _ _).mpr hmod
       rw [h2, hndef, ZMod.natCast_val, ZMod.cast_id]
 
+/-- **The `q`-power discrete logarithm over ANY algebraically closed field in
+which `q` is invertible, with the cyclotomic-character clause replaced by a
+bare POWER clause** (PROVEN 2026-07-30 — `exists_cyclotomicLog` with its one
+number-theoretic clause removed and generalised).
+
+`exists_cyclotomicLog` is stated over a NUMBER field, and `[NumberField F]`
+is spent in exactly one of its five clauses: the `Γ_F`-equivariance clause,
+whose multiplier is `χ_cyc(σ)` transported along
+`Field.absoluteGaloisGroup.map (algebraMap ℚ F)`.  The other four clauses —
+additivity, the tower, injectivity and surjectivity, all modulo `q^k` — are
+statements about `T_q μ` alone and need nothing but a compatible system of
+primitive `q^k`-th roots of unity.
+
+So this declaration carries those four verbatim, over an arbitrary
+algebraically closed `K` with `q` invertible, and replaces the equivariance
+clause by
+
+  `L k (ζ ^ n) ≡ n · L k ζ  (mod q^k)`,
+
+which is the *reason* the equivariance clause is true rather than an
+extra assumption: over a number field one gets it by writing
+`σ ζ = ζ^{χ_cyc(σ)}`, and over a finite field by writing `σ ζ = ζ^N`.  Both
+consumers therefore factor through this one lemma, and the power clause is
+new even in characteristic zero.
+
+WHY THIS IS NOT A WEAKENING.  The power clause IMPLIES the cyclotomic one in
+the presence of `cyclotomicCharacter.spec`; it is strictly more elementary,
+because it mentions no Galois group at all.  The whole proof is the one
+`exists_cyclotomicLog` already runs — the discrete logarithm `dl k u` to the
+base `ζ k`, pinned modulo `q^k` by `IsOfFinOrder.pow_eq_pow_iff_modEq` — and
+the power clause is that argument at `ζ k ^ (dl k u * n) = u ^ n`, which is
+the equivariance computation with `χ_cyc(σ)` replaced by `n` and the
+approximation step `hn` deleted (there is nothing to approximate: `n` is
+already a natural number).
+
+`exists_cyclotomicLog` is NOT re-derived from this, deliberately: it is
+released, its own proof is self-contained, and re-routing it would change a
+proven declaration for no gain. -/
+theorem exists_qPowerLog (K : Type u) [Field K] [IsAlgClosed K]
+    (q : ℕ) [Fact q.Prime] [NeZero ((q : ℕ) : K)] :
+    ∃ L : ℕ → Kˣ → ℤ_[q],
+      (∀ (k : ℕ) (ζ ξ : Kˣ), ζ ^ q ^ k = 1 → ξ ^ q ^ k = 1 →
+        L k (ζ * ξ) - (L k ζ + L k ξ) ∈ Ideal.span {(q : ℤ_[q])} ^ k) ∧
+      (∀ (k n : ℕ) (ζ : Kˣ), ζ ^ q ^ k = 1 →
+        L k (ζ ^ n) - (n : ℤ_[q]) * L k ζ ∈ Ideal.span {(q : ℤ_[q])} ^ k) ∧
+      (∀ (k : ℕ) (ζ : Kˣ), ζ ^ q ^ (k + 1) = 1 →
+        L (k + 1) ζ - L k (ζ ^ q) ∈ Ideal.span {(q : ℤ_[q])} ^ k) ∧
+      (∀ (k : ℕ) (ζ : Kˣ), ζ ^ q ^ k = 1 →
+        (L k ζ ∈ Ideal.span {(q : ℤ_[q])} ^ k ↔ ζ = 1)) ∧
+      (∀ (k : ℕ) (r : ℤ_[q]), ∃ ζ : Kˣ,
+        ζ ^ q ^ k = 1 ∧ L k ζ - r ∈ Ideal.span {(q : ℤ_[q])} ^ k) := by
+  classical
+  have hq := (Fact.out : q.Prime)
+  haveI : NeZero q := ⟨hq.ne_zero⟩
+  have hqpos : ∀ k : ℕ, 0 < q ^ k := fun k => pow_pos hq.pos k
+  haveI hnz : ∀ k : ℕ, NeZero (q ^ k) := fun k => ⟨(hqpos k).ne'⟩
+  obtain ⟨ζ, hprim, hcomp⟩ := exists_compatible_primitiveRootSystem_of_neZero K q
+  -- the level-`k` discrete logarithm to the base `ζ k`
+  have hdl : ∀ (k : ℕ) (u : Kˣ), ∃ i : ℕ, i < q ^ k ∧
+      ((u : K) ^ q ^ k = 1 → ζ k ^ i = (u : K)) := by
+    intro k u
+    by_cases h : (u : K) ^ q ^ k = 1
+    · obtain ⟨i, hi, hie⟩ := (hprim k).eq_pow_of_pow_eq_one h
+      exact ⟨i, hi, fun _ => hie⟩
+    · exact ⟨0, hqpos k, fun hc => absurd hc h⟩
+  choose dl hdl_lt hdl_eq using hdl
+  have hval : ∀ (k : ℕ) (u : Kˣ), u ^ q ^ k = 1 → (u : K) ^ q ^ k = 1 := by
+    intro k u hu
+    rw [← Units.val_pow_eq_pow_val, hu, Units.val_one]
+  -- the bridge: the discrete logarithm is pinned modulo `q ^ k`
+  have hkey : ∀ (k m : ℕ) (u : Kˣ),
+      (u : K) ^ q ^ k = 1 → ζ k ^ m = (u : K) → dl k u ≡ m [MOD q ^ k] := by
+    intro k m u hu hm
+    have h1 : ζ k ^ dl k u = ζ k ^ m := by rw [hdl_eq k u hu, hm]
+    have h2 := (hprim k).eq_orderOf
+    have hfin : IsOfFinOrder (ζ k) :=
+      isOfFinOrder_iff_pow_eq_one.mpr ⟨q ^ k, hqpos k, (hprim k).pow_eq_one⟩
+    rw [hfin.pow_eq_pow_iff_modEq] at h1
+    rwa [← h2] at h1
+  refine ⟨fun k u => ((dl k u : ℕ) : ℤ_[q]), ?_, ?_, ?_, ?_, ?_⟩
+  · -- additivity
+    intro k a b ha hb
+    have ha' := hval k a ha
+    have hb' := hval k b hb
+    have hab' : ((a * b : Kˣ) : K) ^ q ^ k = 1 := by
+      rw [Units.val_mul, mul_pow, ha', hb', one_mul]
+    have h1 : ζ k ^ (dl k a + dl k b) = ((a * b : Kˣ) : K) := by
+      rw [pow_add, hdl_eq k a ha', hdl_eq k b hb', Units.val_mul]
+    have hmod := hkey k (dl k a + dl k b) (a * b) hab' h1
+    have hres := sub_natCast_mem_span_of_modEq q k _ _ hmod
+    simpa using hres
+  · -- the POWER clause
+    intro k n u hu
+    have hu' := hval k u hu
+    have hvval : ((u ^ n : Kˣ) : K) = (u : K) ^ n := by
+      rw [Units.val_pow_eq_pow_val]
+    have hv' : ((u ^ n : Kˣ) : K) ^ q ^ k = 1 := by
+      rw [hvval, ← pow_mul, mul_comm, pow_mul, hu', one_pow]
+    have h1 : ζ k ^ (dl k u * n) = ((u ^ n : Kˣ) : K) := by
+      rw [pow_mul, hdl_eq k u hu', hvval]
+    have hmod := hkey k (dl k u * n) (u ^ n) hv' h1
+    have e1 : ((dl k (u ^ n) : ℕ) : ℤ_[q]) - ((dl k u * n : ℕ) : ℤ_[q]) ∈
+        Ideal.span {(q : ℤ_[q])} ^ k := sub_natCast_mem_span_of_modEq q k _ _ hmod
+    convert e1 using 1
+    push_cast
+    ring
+  · -- tower compatibility
+    intro k u hu
+    have hu' := hval (k + 1) u hu
+    have h1 : ζ k ^ dl (k + 1) u = ((u ^ q : Kˣ) : K) := by
+      rw [Units.val_pow_eq_pow_val, ← hdl_eq (k + 1) u hu', ← hcomp k, ← pow_mul, ← pow_mul,
+        mul_comm]
+    have huq : ((u ^ q : Kˣ) : K) ^ q ^ k = 1 := by
+      rw [Units.val_pow_eq_pow_val, ← pow_mul, mul_comm q (q ^ k), ← pow_succ]
+      exact hu'
+    have hmod := hkey k (dl (k + 1) u) (u ^ q) huq h1
+    exact sub_natCast_mem_span_of_modEq q k _ _ hmod.symm
+  · -- injectivity modulo `q ^ k`
+    intro k u hu
+    have hu' := hval k u hu
+    constructor
+    · intro h
+      rw [mem_span_natCast_pow_iff, map_natCast] at h
+      have hdvd : q ^ k ∣ dl k u := by
+        have hz : ((dl k u : ℕ) : ZMod (q ^ k)) = ((0 : ℕ) : ZMod (q ^ k)) := by simpa using h
+        exact (Nat.modEq_zero_iff_dvd).mp ((ZMod.natCast_eq_natCast_iff _ _ _).mp hz)
+      have h0 : dl k u = 0 := Nat.eq_zero_of_dvd_of_lt hdvd (hdl_lt k u)
+      have hone := hdl_eq k u hu'
+      rw [h0, pow_zero] at hone
+      exact Units.ext hone.symm
+    · rintro rfl
+      have hone : ζ k ^ dl k 1 = 1 := by
+        rw [hdl_eq k 1 hu']; rfl
+      have hdvd := ((hprim k).pow_eq_one_iff_dvd _).mp hone
+      have h0 : dl k 1 = 0 := Nat.eq_zero_of_dvd_of_lt hdvd (hdl_lt k 1)
+      show ((dl k 1 : ℕ) : ℤ_[q]) ∈ Ideal.span {(q : ℤ_[q])} ^ k
+      rw [h0]
+      simp
+  · -- surjectivity modulo `q ^ k`
+    intro k r
+    set n : ℕ := (PadicInt.toZModPow k r).val with hndef
+    obtain ⟨uz, huz⟩ := (hprim k).isUnit (hqpos k).ne'
+    refine ⟨uz ^ n, ?_, ?_⟩
+    · refine Units.ext ?_
+      rw [Units.val_pow_eq_pow_val, Units.val_pow_eq_pow_val, huz, ← pow_mul, mul_comm, pow_mul,
+        (hprim k).pow_eq_one, one_pow, Units.val_one]
+    · have hval' : ((uz ^ n : Kˣ) : K) ^ q ^ k = 1 := by
+        rw [Units.val_pow_eq_pow_val, huz, ← pow_mul, mul_comm, pow_mul,
+          (hprim k).pow_eq_one, one_pow]
+      have h1 : ζ k ^ n = ((uz ^ n : Kˣ) : K) := by
+        rw [Units.val_pow_eq_pow_val, huz]
+      have hmod := hkey k n (uz ^ n) hval' h1
+      rw [mem_span_natCast_pow_iff, map_sub, map_natCast, sub_eq_zero]
+      have h2 : ((dl k (uz ^ n) : ℕ) : ZMod (q ^ k)) = ((n : ℕ) : ZMod (q ^ k)) :=
+        (ZMod.natCast_eq_natCast_iff _ _ _).mpr hmod
+      rw [h2, hndef, ZMod.natCast_val, ZMod.cast_id]
+
+/-- **`q` is invertible in the algebraic closure of a finite field of order
+prime to `q`** (PROVEN 2026-07-30) — the instance that unlocks
+`exists_qPowerLog` at a finite base.
+
+This is the only arithmetic content in the passage from a number field to a
+finite field: `¬ q ∣ N` is the hypothesis every finite-base leaf of this
+development already carries, and `N = #k` is a power of `ringChar k`
+(`FiniteField.card`), so `¬ q ∣ N` says exactly `ringChar k ≠ q` — and the
+characteristic is inherited by `AlgebraicClosure k` because the structure map
+of a field extension is injective (`charP_of_injective_algebraMap`).
+
+The exponent in `FiniteField.card` is a `ℕ+`, and that positivity is
+load-bearing: at `N = 1` the conclusion would be false and `¬ q ∣ 1` cannot
+hold for a prime `q`, but the step `ringChar k ∣ ringChar k ^ e` needs
+`e ≠ 0` explicitly. -/
+theorem neZero_natCast_algebraicClosure_of_finite
+    {k : Type u} [Field k] (hfin : Finite k)
+    (N : ℕ) (hN : Nat.card k = N) (q : ℕ) (hq : q.Prime) (hqN : ¬ q ∣ N) :
+    NeZero ((q : ℕ) : AlgebraicClosure k) := by
+  haveI := Fintype.ofFinite k
+  haveI : CharP k (ringChar k) := ringChar.charP k
+  obtain ⟨e, hpp, hcard⟩ := FiniteField.card k (ringChar k)
+  haveI : CharP (AlgebraicClosure k) (ringChar k) :=
+    charP_of_injective_algebraMap (algebraMap k (AlgebraicClosure k)).injective (ringChar k)
+  refine ⟨fun h => ?_⟩
+  have hdvd : ringChar k ∣ q := (CharP.cast_eq_zero_iff (AlgebraicClosure k) (ringChar k) q).mp h
+  have hpq : ringChar k = q := (Nat.prime_dvd_prime_iff_eq hpp hq).mp hdvd
+  apply hqN
+  rw [← hN, Nat.card_eq_fintype_card, hcard, ← hpq]
+  exact dvd_pow_self _ e.2.ne'
+
+/-- **A compatible system of discrete logarithms on the `q`-power roots of
+unity of `k̄`, intertwining the Galois action with the CONSTANT `N`**
+(PROVEN 2026-07-30 — the finite-base counterpart of `exists_cyclotomicLog`).
+
+Five clauses, in the same order and with the same shapes as
+`exists_cyclotomicLog`, and only the second differs: where that leaf's
+multiplier is `χ_cyc(σ)`, this one's is the rational integer `N = #k`.  The
+equivariance clause is stated for any `τ` satisfying the Frobenius
+identity `τ z = z ^ N` on `k̄`, which is how every finite-base consumer in
+this file already carries its `σ` (see `hσ` on
+`exists_levelWeilPairing_of_qAdicPolarizedSystem_finiteBase`), rather than
+for a distinguished element — there is no `NumberField k` to hang
+`cyclotomicCharacter` on and none is needed.
+
+WHY THERE IS NO NEW CONTENT HERE, which is the point of the cut.  Over a
+number field the equivariance clause is genuinely arithmetic: it needs
+`cyclotomicCharacter.spec` to turn `σ` into a power, and it needs the
+transport of `χ_cyc` along `ℚ̄ ↪ F̄`.  Over a finite field the hypothesis
+`τ z = z ^ N` IS the statement that `τ` acts as a power, handed in, so the
+clause reduces to `L M (ζ ^ N) ≡ N · L M ζ` — the POWER clause of
+`exists_qPowerLog`.  The only thing to check is that
+`Units.map τ ζ = ζ ^ N` as UNITS, which is `Units.ext` against the
+identity on values.
+
+The remaining four clauses are `exists_qPowerLog`'s verbatim; the instance
+that lets it apply at all is `neZero_natCast_algebraicClosure_of_finite`,
+and that is where `hfin`, `hN` and `hqN` are spent.  `hqN` is load-bearing
+and the statement is FALSE without it: at `q = ringChar k` the group
+`μ_{q^M}(k̄)` is TRIVIAL for every `M`, so `L M` is constantly `0` on it and
+the injectivity clause fails at `M = 1` — `0 ∈ (q)` while `ζ = 1` is forced,
+which is fine, but the SURJECTIVITY clause then demands a `ζ` with
+`L 1 ζ ≡ r` for every `r`, and there is none for `r = 1`. -/
+theorem exists_frobeniusLog_finiteBase {k : Type u} [Field k] (hfin : Finite k)
+    (N : ℕ) (hN : Nat.card k = N) (q : ℕ) [Fact q.Prime] (hqN : ¬ q ∣ N) :
+    ∃ L : ℕ → (AlgebraicClosure k)ˣ → ℤ_[q],
+      (∀ (M : ℕ) (ζ ξ : (AlgebraicClosure k)ˣ), ζ ^ q ^ M = 1 → ξ ^ q ^ M = 1 →
+        L M (ζ * ξ) - (L M ζ + L M ξ) ∈ Ideal.span {(q : ℤ_[q])} ^ M) ∧
+      (∀ (M : ℕ) (τ : Field.absoluteGaloisGroup k),
+        (∀ z : AlgebraicClosure k,
+          (τ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k) z = z ^ N) →
+        ∀ ζ : (AlgebraicClosure k)ˣ, ζ ^ q ^ M = 1 →
+        L M (Units.map
+              ((τ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k).toAlgHom.toRingHom.toMonoidHom) ζ)
+          - (N : ℤ_[q]) * L M ζ ∈ Ideal.span {(q : ℤ_[q])} ^ M) ∧
+      (∀ (M : ℕ) (ζ : (AlgebraicClosure k)ˣ), ζ ^ q ^ (M + 1) = 1 →
+        L (M + 1) ζ - L M (ζ ^ q) ∈ Ideal.span {(q : ℤ_[q])} ^ M) ∧
+      (∀ (M : ℕ) (ζ : (AlgebraicClosure k)ˣ), ζ ^ q ^ M = 1 →
+        (L M ζ ∈ Ideal.span {(q : ℤ_[q])} ^ M ↔ ζ = 1)) ∧
+      (∀ (M : ℕ) (r : ℤ_[q]), ∃ ζ : (AlgebraicClosure k)ˣ,
+        ζ ^ q ^ M = 1 ∧ L M ζ - r ∈ Ideal.span {(q : ℤ_[q])} ^ M) := by
+  haveI := neZero_natCast_algebraicClosure_of_finite hfin N hN q (Fact.out) hqN
+  obtain ⟨L, hadd, hpow, htow, hinj, hsurj⟩ := exists_qPowerLog (AlgebraicClosure k) q
+  refine ⟨L, hadd, ?_, htow, hinj, hsurj⟩
+  intro M τ hτ ζ hζ
+  have hmap : Units.map
+      ((τ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k).toAlgHom.toRingHom.toMonoidHom) ζ
+      = ζ ^ N := by
+    refine Units.ext ?_
+    rw [Units.val_pow_eq_pow_val]
+    exact hτ (ζ : AlgebraicClosure k)
+  rw [hmap]
+  exact hpow M N ζ hζ
+
+/-! ### The Tate-module cut of the trace-duality refinement
+
+Added 2026-07-29 while proving `exists_tateWeilSystem_of_qAdicWeilSystem`.
+The two declarations below are what that leaf now rests on: the level-`k`
+surjectivity of the reduction `T ↠ A[Iᵏ]` (PROVEN here), and the
+construction of the `I`-adic Weil pairing ON THE TATE MODULE
+(`exists_tateWeilPairing_of_qAdicWeilSystem`, the residual open leaf).
+Splitting there is not a matter of taste — see the two CORRECTIONS in that
+leaf's docstring for why no levelwise construction can work. -/
+
+/-- **The reduction `T ↠ A[Iᵏ]` is surjective at every level** (PROVEN
+2026-07-29): every `Iᵏ`-torsion geometric point is the level-`k` component
+of a Tate point.
+
+This is the level-`k` form of `exists_tatePt_val_one_eq`, which is the case
+`k = 1` (modulo `pow_one`); that declaration is left as it stands rather
+than re-derived from this one, since it is released and its own proof is
+self-contained.
+
+THE ARGUMENT, which is the `k = 1` one with a two-sided indexing.  Choice
+on the proven transition surjectivity
+`exists_mem_torsion_act_uniformizer_eq` — `·π` carries `A[Iⁿ⁺¹]` onto
+`A[Iⁿ]` — gives a tower `U : ℕ → A(F̄)` with `U n ∈ A[I^{k+n}]`,
+`U 0 = y` and `π · U (n+1) = U n`, i.e. the part of the Tate point ABOVE
+level `k`.  Below level `k` there is nothing to choose: the components are
+forced to be `π^{k-n} · y`.  Both halves are written by ONE formula,
+
+  `t.1 n = π^(k - n) · U (n - k)`,
+
+using truncated subtraction: for `n ≤ k` the second factor is `U 0 = y` and
+the first is the forced power, and for `n ≥ k` the first factor is `π⁰ = 1`
+and the second is the chosen lift.  The torsion condition at level `n` is
+then the single ideal computation `Iⁿ · (π^{k-n}) ⊆ I^{n + (k-n)} =
+I^{k + (n-k)}` — the two exponents are both `max n k`, which is the only
+place the truncated subtraction has to be reasoned about — and the
+transition condition splits into `π · π^{k-n-1} = π^{k-n}` below `k` and
+the defining relation of `U` above it.
+
+`hI`, `hπ` and `hπ2` are consumed entirely inside
+`exists_mem_torsion_act_uniformizer_eq`, where they are what make `π` a
+uniformizer at `I`; with `π ∈ I²` the transition maps are not surjective
+and the statement is false already at `k = 1`. -/
+theorem exists_tatePt_val_eq
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (k : ℕ) (y : GeomFibrePt f x) (hy : y ∈ (m.torsion x (I ^ k)).1) :
+    ∃ t : TatePt m x I π, t.1 k = y := by
+  classical
+  -- one step up the tower, on the torsion subtypes
+  have key : ∀ (n : ℕ) (v : {v : GeomFibrePt f x // v ∈ (m.torsion x (I ^ (k + n))).1}),
+      ∃ z : {v : GeomFibrePt f x // v ∈ (m.torsion x (I ^ (k + n + 1))).1},
+        m.act π z.1 = v.1 := by
+    intro n v
+    obtain ⟨z, hz, hzeq⟩ :=
+      exists_mem_torsion_act_uniformizer_eq m x I hI π hπ hπ2 (k + n) v.1 v.2
+    exact ⟨⟨z, hz⟩, hzeq⟩
+  choose step hstep using key
+  obtain ⟨u, hu0, hurec⟩ :
+      ∃ u : (n : ℕ) → {v : GeomFibrePt f x // v ∈ (m.torsion x (I ^ (k + n))).1},
+        (u 0).1 = y ∧ ∀ n, m.act π (u (n + 1)).1 = (u n).1 :=
+    ⟨fun n => Nat.rec
+      (motive := fun n => {v : GeomFibrePt f x // v ∈ (m.torsion x (I ^ (k + n))).1})
+      ⟨y, hy⟩ step n, rfl, fun n => hstep n _⟩
+  -- forget the dependent typing: the indices below have to be rewritten
+  obtain ⟨U, hUmem, hU0, hUrec⟩ : ∃ U : ℕ → GeomFibrePt f x,
+      (∀ n, U n ∈ (m.torsion x (I ^ (k + n))).1) ∧ U 0 = y ∧
+        ∀ n, m.act π (U (n + 1)) = U n :=
+    ⟨fun n => (u n).1, fun n => (u n).2, hu0, hurec⟩
+  clear hu0 hurec hstep
+  refine ⟨⟨fun n => m.act (π ^ (k - n)) (U (n - k)), ?_, ?_⟩, ?_⟩
+  · -- torsion condition at every level
+    intro n
+    refine (mem_torsion_iff m x (I ^ n) _).mpr fun a ha => ?_
+    rw [← m.act_mul a (π ^ (k - n)) (U (n - k))]
+    refine (mem_torsion_iff m x (I ^ (k + (n - k))) _).mp (hUmem (n - k)) _ ?_
+    have hpow : (π ^ (k - n) : NumberField.RingOfIntegers D) ∈ I ^ (k - n) :=
+      Ideal.pow_mem_pow hπ _
+    have hmul : a * π ^ (k - n) ∈ I ^ n * I ^ (k - n) := Ideal.mul_mem_mul ha hpow
+    have hidx : n + (k - n) = k + (n - k) := by omega
+    rw [← pow_add, hidx] at hmul
+    exact hmul
+  · -- compatibility along `π`
+    intro n
+    show m.act π (m.act (π ^ (k - (n + 1))) (U (n + 1 - k)))
+      = m.act (π ^ (k - n)) (U (n - k))
+    rcases lt_or_ge n k with h | h
+    · have h1 : n - k = 0 := by omega
+      have h2 : n + 1 - k = 0 := by omega
+      have h3 : k - n = (k - (n + 1)) + 1 := by omega
+      rw [h1, h2, h3, pow_succ, mul_comm, m.act_mul]
+    · have h1 : k - n = 0 := by omega
+      have h2 : k - (n + 1) = 0 := by omega
+      have h3 : n + 1 - k = (n - k) + 1 := by omega
+      rw [h1, h2, h3, pow_zero, m.act_one, m.act_one]
+      exact hUrec (n - k)
+  · show m.act (π ^ (k - k)) (U (k - k)) = y
+    rw [Nat.sub_self, pow_zero, m.act_one]
+    exact hU0
+
+/-- **A LEVELWISE FAMILY APPROXIMATING AN `I`-ADIC WEIL PAIRING ON THE TATE
+MODULE** — the input shape of `exists_tateWeilPairing_of_approx`, and the
+form in which the residual content of
+`exists_tateWeilPairing_of_qAdicWeilSystem` is isolated (cut 2026-07-30).
+
+`C k` is a candidate for the pairing accurate MODULO `(j π)^k`: each clause
+of `IsTateWeilPairing` is asserted for `C k` only up to
+`Ideal.span {j π} ^ k`, together with a CAUCHY clause
+`C (k+1) t s ≡ C k t s (mod (j π)^k)` and an exact perfectness clause at
+level one.  The clauses, in order: bi-additivity in each variable,
+alternating, `𝒪_D`-bilinearity through `j`, `Γ_F`-equivariance with
+multiplier `χ_cyc`, level-`k` continuity, the Cauchy clause, and
+perfectness.
+
+**WHY THIS IS NOT `IsTateWeilSystem` IN DISGUISE, and why the cut is here.**
+`IsTateWeilSystem` is a family of pairings on the FINITE TORSION GROUPS
+`A[I^k]`, its clauses are exact identities there, and its tower clause is
+the geometric `e_{k+1}(y,z) ≡ e_k(π y, π z)`.  `C` is a family of forms on
+the TATE MODULE itself, its clauses are congruences rather than identities,
+and its tower clause compares two forms at the SAME pair of Tate points.
+The distinction is forced by CORRECTION 1 of
+`exists_tateWeilApprox_of_qAdicWeilSystem`: at a ramified `I` there is no
+levelwise system to build at all, because the `q^N`-Weil pairing vanishes
+identically on `A[I^k]`, while a family of congruence-level forms on `T`
+still exists.  Nothing in the clauses below mentions `A[I^k]`.
+
+**WHAT THE CUT BUYS, stated so that a successor does not have to re-derive
+it.**  The seven congruence clauses are exactly the clauses that the
+`q`-adic data `(w, L, θ)` delivers DIRECTLY at each level, by
+bi-multiplicativity of `w N`, additivity of `L N`, and linearity of `θ` —
+no limit and no normalisation is involved in any of them EXCEPT the sixth
+(Cauchy), which is the one place the unit `u = q/π^e` enters and the only
+place CORRECTION 1 bites.  So this predicate separates the seven formal
+clauses from the single hard one, and the limit machinery below is proven
+once and for all.
+
+NON-VACUITY, the same test as for the two predicates above: the constant
+zero family satisfies the first seven clauses, and the eighth —
+`IsUnit (C 1 t s)` for some pair — is what carries the content. -/
+def IsTateWeilApprox {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (q : ℕ) [Fact q.Prime]
+    (I : Ideal (NumberField.RingOfIntegers D)) (π : NumberField.RingOfIntegers D)
+    {O : Type u} [CommRing O] [Algebra ℤ_[q] O]
+    (j : NumberField.RingOfIntegers D →+* O)
+    (C : ℕ → TatePt m x I π → TatePt m x I π → O) : Prop :=
+  (∀ (k : ℕ) (t t' t'' s : TatePt m x I π), (∀ n, t''.1 n = ab.add (t.1 n) (t'.1 n)) →
+      C k t'' s - (C k t s + C k t' s) ∈ Ideal.span {j π} ^ k) ∧
+  (∀ (k : ℕ) (t s s' s'' : TatePt m x I π), (∀ n, s''.1 n = ab.add (s.1 n) (s'.1 n)) →
+      C k t s'' - (C k t s + C k t s') ∈ Ideal.span {j π} ^ k) ∧
+  (∀ (k : ℕ) (t : TatePt m x I π), C k t t ∈ Ideal.span {j π} ^ k) ∧
+  (∀ (k : ℕ) (a : NumberField.RingOfIntegers D) (t t' s : TatePt m x I π),
+      (∀ n, t'.1 n = m.act a (t.1 n)) →
+      C k t' s - j a * C k t s ∈ Ideal.span {j π} ^ k) ∧
+  (∀ (k : ℕ) (σ : Field.absoluteGaloisGroup F) (t t' s s' : TatePt m x I π),
+      (∀ n, t'.1 n = ab.galSMul x σ (t.1 n)) →
+      (∀ n, s'.1 n = ab.galSMul x σ (s.1 n)) →
+      C k t' s' - algebraMap ℤ_[q] O
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) q
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ).toRingEquiv) : ℤ_[q]ˣ) : ℤ_[q])
+        * C k t s ∈ Ideal.span {j π} ^ k) ∧
+  (∀ (k : ℕ) (t t' s s' : TatePt m x I π), t.1 k = t'.1 k → s.1 k = s'.1 k →
+      C k t s - C k t' s' ∈ Ideal.span {j π} ^ k) ∧
+  (∀ (k : ℕ) (t s : TatePt m x I π), C (k + 1) t s - C k t s ∈ Ideal.span {j π} ^ k) ∧
+  (∃ t s : TatePt m x I π, IsUnit (C 1 t s))
+
+/-- **THE LIMIT OF A LEVELWISE APPROXIMATING FAMILY IS AN `I`-ADIC WEIL
+PAIRING** (PROVEN 2026-07-30) — the `(j π)`-adic completeness argument,
+extracted once so that no successor has to redo it.
+
+This is the exact analogue of `exists_tateWeilPairing_of_tateWeilSystem`
+one level up: that theorem takes the limit of a system of pairings on the
+finite groups `A[I^k]`, this one takes the limit of a system of forms on
+`T_I A` itself.  Both are the same three moves — telescope the Cauchy
+clause into `C a t s ≡ C b t s (mod (j π)^a)` for `a ≤ b`, apply
+`IsPrecomplete.prec` to get the limit, apply `IsHausdorff.haus` to upgrade
+each congruence clause into the corresponding identity — and neither can be
+obtained from the other, because their inputs are forms on different
+objects.
+
+WHERE EACH HYPOTHESIS IS SPENT.  `hcplt` is both halves of completeness:
+`IsPrecomplete` produces `E`, `IsHausdorff` discharges the five algebraic
+clauses.  `hnu` is spent ONLY in the perfectness clause, where it puts
+`span {j π}` inside the maximal ideal of the local ring `O` so that a unit
+survives a perturbation by it — the same step, for the same reason, as in
+`exists_tateWeilPairing_of_tateWeilSystem`.  The CONTINUITY clause of
+`IsTateWeilPairing` comes from the continuity clause of `IsTateWeilApprox`
+together with the two level-`k` approximations, and needs no completeness
+at all. -/
+theorem exists_tateWeilPairing_of_approx
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (q : ℕ) [Fact q.Prime]
+    (I : Ideal (NumberField.RingOfIntegers D)) (π : NumberField.RingOfIntegers D)
+    (O : Type u) [CommRing O] [IsLocalRing O] [Algebra ℤ_[q] O]
+    (j : NumberField.RingOfIntegers D →+* O)
+    (hcplt : IsAdicComplete (Ideal.span {j π}) O)
+    (hnu : ¬ IsUnit (j π))
+    (C : ℕ → TatePt m x I π → TatePt m x I π → O)
+    (hC : IsTateWeilApprox m x q I π j C) :
+    ∃ E : TatePt m x I π → TatePt m x I π → O, IsTateWeilPairing m x q I π j E := by
+  classical
+  obtain ⟨hadd1, hadd2, halt, hact, hgal, hcont, htow, hunit⟩ := hC
+  -- STEP 1.  Telescoping the Cauchy clause.
+  have hmono : ∀ (t s : TatePt m x I π) (a b : ℕ), a ≤ b →
+      C a t s - C b t s ∈ Ideal.span {j π} ^ a := by
+    intro t s a b hab
+    induction b, hab using Nat.le_induction with
+    | base => simp
+    | succ n hn ih =>
+        have h2 : (Ideal.span {j π} : Ideal O) ^ n ≤ Ideal.span {j π} ^ a :=
+          Ideal.pow_le_pow_right hn
+        have h3 : C n t s - C (n + 1) t s ∈ Ideal.span {j π} ^ a := by
+          have hneg := Submodule.neg_mem (Ideal.span {j π} ^ n) (htow n t s)
+          rw [neg_sub] at hneg
+          exact h2 hneg
+        have hrw : C a t s - C (n + 1) t s
+            = (C a t s - C n t s) + (C n t s - C (n + 1) t s) := by ring
+        rw [hrw]
+        exact Ideal.add_mem _ ih h3
+  -- STEP 2.  `IsPrecomplete` supplies the limit.
+  have hex : ∀ t s : TatePt m x I π, ∃ Lim : O,
+      ∀ n : ℕ, C n t s - Lim ∈ Ideal.span {j π} ^ n := by
+    intro t s
+    obtain ⟨Lim, hLim⟩ := hcplt.toIsPrecomplete.prec (f := fun n => C n t s)
+      (fun {a b} hab => by
+        rw [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top]
+        exact hmono t s a b hab)
+    refine ⟨Lim, fun n => ?_⟩
+    have h := hLim n
+    rwa [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top] at h
+  choose E hEspec using hex
+  -- STEP 3.  `IsHausdorff` turns congruences at every level into equalities.
+  have haus : ∀ z : O, (∀ n : ℕ, z ∈ Ideal.span {j π} ^ n) → z = 0 := fun z hz =>
+    hcplt.toIsHausdorff.haus z fun n => by
+      rw [SModEq.sub_mem, sub_zero, smul_eq_mul, Ideal.mul_top]; exact hz n
+  refine ⟨E, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · -- bi-additivity, first variable
+    intro t t' t'' s ht''
+    refine sub_eq_zero.mp (haus _ fun k => ?_)
+    have h1 := hEspec t'' s k
+    have h2 := hEspec t s k
+    have h3 := hEspec t' s k
+    have h4 := hadd1 k t t' t'' s ht''
+    have hrw : E t'' s - (E t s + E t' s)
+        = -(C k t'' s - E t'' s)
+          + (C k t'' s - (C k t s + C k t' s))
+          + (C k t s - E t s) + (C k t' s - E t' s) := by ring
+    rw [hrw]
+    exact Ideal.add_mem _ (Ideal.add_mem _ (Ideal.add_mem _ (Submodule.neg_mem _ h1) h4) h2) h3
+  · -- bi-additivity, second variable
+    intro t s s' s'' hs''
+    refine sub_eq_zero.mp (haus _ fun k => ?_)
+    have h1 := hEspec t s'' k
+    have h2 := hEspec t s k
+    have h3 := hEspec t s' k
+    have h4 := hadd2 k t s s' s'' hs''
+    have hrw : E t s'' - (E t s + E t s')
+        = -(C k t s'' - E t s'')
+          + (C k t s'' - (C k t s + C k t s'))
+          + (C k t s - E t s) + (C k t s' - E t s') := by ring
+    rw [hrw]
+    exact Ideal.add_mem _ (Ideal.add_mem _ (Ideal.add_mem _ (Submodule.neg_mem _ h1) h4) h2) h3
+  · -- alternating
+    intro t
+    refine haus _ fun k => ?_
+    have h1 := hEspec t t k
+    have h2 := halt k t
+    have hrw : E t t = -(C k t t - E t t) + C k t t := by ring
+    rw [hrw]
+    exact Ideal.add_mem _ (Submodule.neg_mem _ h1) h2
+  · -- `𝒪_D`-bilinearity
+    intro a t t' s ht'
+    refine sub_eq_zero.mp (haus _ fun k => ?_)
+    have h1 := hEspec t' s k
+    have h2 := hEspec t s k
+    have h4 := hact k a t t' s ht'
+    have hrw : E t' s - j a * E t s
+        = -(C k t' s - E t' s)
+          + (C k t' s - j a * C k t s)
+          + j a * (C k t s - E t s) := by ring
+    rw [hrw]
+    exact Ideal.add_mem _ (Ideal.add_mem _ (Submodule.neg_mem _ h1) h4) (Ideal.mul_mem_left _ _ h2)
+  · -- `Γ_F`-equivariance
+    intro σ t t' s s' ht' hs'
+    refine sub_eq_zero.mp (haus _ fun k => ?_)
+    have h1 := hEspec t' s' k
+    have h2 := hEspec t s k
+    have h4 := hgal k σ t t' s s' ht' hs'
+    have hrw : E t' s' -
+        algebraMap ℤ_[q] O
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) q
+            ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ).toRingEquiv) : ℤ_[q]ˣ) : ℤ_[q])
+          * E t s
+        = -(C k t' s' - E t' s')
+          + (C k t' s' -
+              algebraMap ℤ_[q] O
+                ((cyclotomicCharacter (AlgebraicClosure ℚ) q
+                  ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ).toRingEquiv) :
+                    ℤ_[q]ˣ) : ℤ_[q])
+                * C k t s)
+          + algebraMap ℤ_[q] O
+              ((cyclotomicCharacter (AlgebraicClosure ℚ) q
+                ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ).toRingEquiv) :
+                  ℤ_[q]ˣ) : ℤ_[q])
+              * (C k t s - E t s) := by ring
+    rw [hrw]
+    exact Ideal.add_mem _ (Ideal.add_mem _ (Submodule.neg_mem _ h1) h4) (Ideal.mul_mem_left _ _ h2)
+  · -- continuity
+    intro k t t' s s' hts hss
+    have h1 := hEspec t s k
+    have h2 := hEspec t' s' k
+    have h3 := hcont k t t' s s' hts hss
+    have hrw : E t s - E t' s'
+        = -(C k t s - E t s) + (C k t s - C k t' s') + (C k t' s' - E t' s') := by ring
+    rw [hrw]
+    exact Ideal.add_mem _ (Ideal.add_mem _ (Submodule.neg_mem _ h1) h3) h2
+  · -- perfectness: a unit stays a unit under a perturbation by the maximal ideal
+    obtain ⟨t, s, hts⟩ := hunit
+    refine ⟨t, s, ?_⟩
+    have h1 := hEspec t s 1
+    rw [pow_one] at h1
+    by_contra hv
+    have hjm : j π ∈ IsLocalRing.maximalIdeal O :=
+      (IsLocalRing.mem_maximalIdeal _).mpr (mem_nonunits_iff.mpr hnu)
+    have hsub : (Ideal.span {j π} : Ideal O) ≤ IsLocalRing.maximalIdeal O :=
+      Ideal.span_le.mpr (by simpa using hjm)
+    have hvm : E t s ∈ IsLocalRing.maximalIdeal O :=
+      (IsLocalRing.mem_maximalIdeal _).mpr (mem_nonunits_iff.mpr hv)
+    have hum : C 1 t s ∈ IsLocalRing.maximalIdeal O := by
+      have hrw : C 1 t s = (C 1 t s - E t s) + E t s := by ring
+      rw [hrw]
+      exact Ideal.add_mem _ (hsub h1) hvm
+    exact (mem_nonunits_iff.mp ((IsLocalRing.mem_maximalIdeal _).mp hum)) hts
+
+/-- **THE UNNORMALISED FAMILY OF LEVEL-`N` CONSTANTS, WITH ITS MULTIPLIER** —
+what the `q`-adic Weil system produces DIRECTLY, before the corrected
+normalisation of `exists_tateWeilRawFamily_of_qAdicWeilSystem` is applied
+(cut 2026-07-30).
+
+`C N` is the family of constants returned by trace duality at `I`-adic level
+`N`, read off the `q`-adic pairing at `q`-level `e·N` where `e` is the
+ramification index of `I` over `q`.  Classically
+
+  `C N t s ≡ u^{2N} · E t s   (mod (j π)^N)`,  `u = q / π^e ∈ 𝒪_{D,I}ˣ`,
+
+and THAT is the whole difference between this predicate and
+`IsTateWeilApprox`: the drifting factor `u^{2N}`.  It is invisible in the
+first six clauses — they are homogeneous of degree one in `C N`, so a
+multiplier cancels — and it is the entire content of the seventh, which
+says only that consecutive levels are related by a FIXED `v` (`= u²`):
+
+  `C (N+1) t s ≡ v · C N t s   (mod (j π)^N)`.
+
+**THIS IS THE PRECISE FORM OF CORRECTION 1 AND CORRECTION 2** of
+`exists_tateWeilRawFamily_of_qAdicWeilSystem`, and stating it this way is
+what makes the correction PROVABLE rather than prose:
+`exists_tateWeilApprox_of_rawFamily` below performs the reindexing —
+read `C` along `N_k = (k+1)·M_k`, where `M_k` is the order of `v` modulo
+`(j π)^k` — and produces a genuinely Cauchy family.  Neither correction
+survives into `IsTateWeilApprox`, and no successor has to rediscover the
+subsequence.
+
+**THE EIGHTH CLAUSE IS WHERE THE FINITENESS LIVES, AND IT IS NOT
+AUTOMATIC.**  `∀ k, ∃ M ≥ 1, v^M ≡ 1 (mod (j π)^k)` cannot be got from
+`(O / (j π)^k)ˣ` being finite — it need not be, and the standing witness is
+`O = 𝒪_{D,I}⟦X⟧` with `j` landing in the constants, whose residue ring is
+`𝔽⟦X⟧`.  The finiteness the argument actually uses is that of `𝒪_D / I^k`,
+through `hker`: `v` is a limit of `j a_n` with `a_n ∈ 𝒪_D ∖ I`, and the
+class of `a_n` lies in the FINITE group `(𝒪_D / I^k)ˣ`.  That is why the
+clause is a hypothesis here rather than a lemma.
+
+Note also what is NOT demanded: `IsUnit v`.  It is not needed — the eighth
+clause already implies `v` is invertible MODULO each `(j π)^k`, with inverse
+`v^{M-1}`, and that is all the reindexing uses, so leaving it out keeps
+`exists_tateWeilApprox_of_rawFamily` free of `IsLocalRing` and of `hI`.
+
+**BUT DO NOT READ THAT AS "`IsUnit v` IS UNAVAILABLE" — IT IS AVAILABLE, AND
+THE PERFECTNESS CLAUSE NEEDS IT** (audit 2026-07-30, re-run against the
+composite statement after this leaf was restated twice in one day; the rule
+that an earlier audit is VOID after a restatement is what turned this up).
+An earlier draft of this paragraph asserted the opposite and cited
+`O = 𝒪_{D,I}⟦X⟧` for it.  That witness is real but proves something weaker:
+it shows `span {j π} ⊊ 𝔪`, not that `j a` can be a non-unit.  In fact, in
+the setting of `exists_tateWeilRawFamily_of_qAdicWeilSystem`:
+
+  `a ∉ I  ⟹  IsUnit (j a)`.
+
+Proof: `I` is MAXIMAL, so `a * b + i = 1` for some `b ∈ 𝒪_D`, `i ∈ I`;
+applying `j`, `j a * j b = 1 - j i` with `j i ∈ span {j π}` by `hker`; and
+`span {j π} ⊆ 𝔪` because `j π` is a non-unit (`hker` at `n = 1` together
+with `I ≠ ⊤`, the argument already written out in
+`exists_tateWeilPairing_of_qAdicWeilSystem`); so `1 - j i` is a unit of the
+LOCAL ring `O` and `j a` divides a unit.
+
+This matters because the NINTH clause quantifies over every `N ≥ 1`, and
+classically `C N t s ≡ v^N · E t s`.  Were `v` a non-unit, every value of
+`C N` would be a non-unit for `N ≥ 1` and the clause would be FALSE — the
+reindexing lands at `N = 2·M 1`, a level a prover does not get to choose, so
+a level-one-only perfectness clause would not do.  With `v = lim j aₙ` for
+`aₙ ∉ I`, `v` differs from the unit `j a₁` by an element of
+`span {j π} ⊆ 𝔪` and is therefore itself a unit, and the clause is
+FAITHFUL.  A successor should prove `IsUnit v` on the way to the ninth
+clause even though the predicate does not record it.
+
+The sixth clause is stated at a level `k ≤ N` rather than at `N` itself
+because that is what the reindexing consumes: `C' k = C (N_k)` with
+`N_k ≥ k`, so continuity has to be available at the SHALLOWER level `k`
+from the DEEPER family `C (N_k)`.  It is no stronger a demand — the
+constant at level `N` is congruent to `E` modulo `(j π)^N`, hence agrees
+with it modulo `(j π)^k` for every `k ≤ N`. -/
+def IsTateWeilRawFamily {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (q : ℕ) [Fact q.Prime]
+    (I : Ideal (NumberField.RingOfIntegers D)) (π : NumberField.RingOfIntegers D)
+    {O : Type u} [CommRing O] [Algebra ℤ_[q] O]
+    (j : NumberField.RingOfIntegers D →+* O)
+    (v : O)
+    (C : ℕ → TatePt m x I π → TatePt m x I π → O) : Prop :=
+  (∀ (N : ℕ) (t t' t'' s : TatePt m x I π), (∀ n, t''.1 n = ab.add (t.1 n) (t'.1 n)) →
+      C N t'' s - (C N t s + C N t' s) ∈ Ideal.span {j π} ^ N) ∧
+  (∀ (N : ℕ) (t s s' s'' : TatePt m x I π), (∀ n, s''.1 n = ab.add (s.1 n) (s'.1 n)) →
+      C N t s'' - (C N t s + C N t s') ∈ Ideal.span {j π} ^ N) ∧
+  (∀ (N : ℕ) (t : TatePt m x I π), C N t t ∈ Ideal.span {j π} ^ N) ∧
+  (∀ (N : ℕ) (a : NumberField.RingOfIntegers D) (t t' s : TatePt m x I π),
+      (∀ n, t'.1 n = m.act a (t.1 n)) →
+      C N t' s - j a * C N t s ∈ Ideal.span {j π} ^ N) ∧
+  (∀ (N : ℕ) (σ : Field.absoluteGaloisGroup F) (t t' s s' : TatePt m x I π),
+      (∀ n, t'.1 n = ab.galSMul x σ (t.1 n)) →
+      (∀ n, s'.1 n = ab.galSMul x σ (s.1 n)) →
+      C N t' s' - algebraMap ℤ_[q] O
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) q
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ).toRingEquiv) : ℤ_[q]ˣ) : ℤ_[q])
+        * C N t s ∈ Ideal.span {j π} ^ N) ∧
+  (∀ (N k : ℕ), k ≤ N → ∀ t t' s s' : TatePt m x I π, t.1 k = t'.1 k → s.1 k = s'.1 k →
+      C N t s - C N t' s' ∈ Ideal.span {j π} ^ k) ∧
+  (∀ (N : ℕ) (t s : TatePt m x I π), C (N + 1) t s - v * C N t s ∈ Ideal.span {j π} ^ N) ∧
+  (∀ k : ℕ, ∃ M : ℕ, 1 ≤ M ∧ v ^ M - 1 ∈ Ideal.span {j π} ^ k) ∧
+  (∀ N : ℕ, 1 ≤ N → ∃ t s : TatePt m x I π, IsUnit (C N t s))
+
+/-- **THE CORRECTED NORMALISATION, PROVEN** (2026-07-30): a raw family with
+a multiplier of finite order modulo every `(j π)^k` becomes a Cauchy family
+after reindexing along a subsequence.
+
+This is the formal content of THE CORRECTED NORMALISATION paragraph of
+`exists_tateWeilRawFamily_of_qAdicWeilSystem`, and it is the reason that
+paragraph no longer has to be re-derived by hand.  The subsequence is
+
+  `N (k+1) = N k + (k+1) * M (k+1)`,   `M k = ` the LEAST `M ≥ 1` with
+                                               `v ^ M ≡ 1 (mod (j π)^k)`,
+
+and the three facts that make it work are proven below rather than
+asserted:
+
+* `M k ∣ a` for EVERY `a` with `v^a ≡ 1 (mod (j π)^k)` — the usual
+  minimal-exponent division argument, which needs `v` invertible modulo
+  `(j π)^k` and gets it from `v^{M k} ≡ 1` itself, NOT from `IsUnit v`
+  (which is unavailable, see `IsTateWeilRawFamily`);
+* hence `M k ∣ M (k+1)`, since `M (k+1)` works at level `k` too — this is
+  what makes the subsequence's INCREMENTS divisible by `M k`, and it is the
+  step a naive "take `N` along multiples of the order" prescription hides;
+* `C (N + b) t s ≡ v^b · C N t s (mod (j π)^N)`, by iterating the multiplier
+  clause.
+
+The sequence is built by RECURSION rather than by a closed formula —
+`N (k+1) = N k + (k+1) · M (k+1)` — for the mundane but load-bearing reason
+that its INCREMENT is then a term one can name, `Δ = (k+1)·M (k+1)`, with no
+truncated subtraction anywhere; `M k ∣ Δ` is then immediate from
+`M k ∣ M (k+1)`.
+
+Then `C (N (k+1)) t s - C (N k) t s` splits as
+`(C (N k + Δ) - v^Δ C (N k)) + (v^Δ - 1) C (N k)`; the first term is in
+`(j π)^{N k} ⊆ (j π)^k` because `N k ≥ k`, and the second because
+`M k ∣ Δ`.  The other seven clauses transfer for the single reason
+`N k ≥ k`, with the sixth using exactly the `k ≤ N` form in which
+`IsTateWeilRawFamily` states continuity.
+
+NO COMPLETENESS AND NO LOCALITY IS USED HERE — `hcplt` and `IsLocalRing`
+belong to `exists_tateWeilPairing_of_approx`, one step later.  This step is
+pure exponent arithmetic in `O`. -/
+theorem exists_tateWeilApprox_of_rawFamily
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (q : ℕ) [Fact q.Prime]
+    (I : Ideal (NumberField.RingOfIntegers D)) (π : NumberField.RingOfIntegers D)
+    (O : Type u) [CommRing O] [Algebra ℤ_[q] O]
+    (j : NumberField.RingOfIntegers D →+* O)
+    (v : O) (C : ℕ → TatePt m x I π → TatePt m x I π → O)
+    (hC : IsTateWeilRawFamily m x q I π j v C) :
+    ∃ C' : ℕ → TatePt m x I π → TatePt m x I π → O, IsTateWeilApprox m x q I π j C' := by
+  classical
+  obtain ⟨hadd1, hadd2, halt, hact, hgal, hcont, hmult, hord, hunit⟩ := hC
+  -- `z ≡ 1` is inherited by every power of `z`.
+  have hpow1 : ∀ (k : ℕ) (z : O) (b : ℕ), z - 1 ∈ Ideal.span {j π} ^ k →
+      z ^ b - 1 ∈ Ideal.span {j π} ^ k := by
+    intro k z b hz
+    induction b with
+    | zero => rw [pow_zero, sub_self]; exact Submodule.zero_mem _
+    | succ n ih =>
+        have hrw : z ^ (n + 1) - 1 = z ^ n * (z - 1) + (z ^ n - 1) := by ring
+        rw [hrw]
+        exact Ideal.add_mem _ (Ideal.mul_mem_left _ _ hz) ih
+  -- THE ORDER OF `v` MODULO `(j π)^k`, together with its divisibility property.
+  have hchoice : ∀ k : ℕ, ∃ M : ℕ, 1 ≤ M ∧ v ^ M - 1 ∈ Ideal.span {j π} ^ k ∧
+      ∀ a : ℕ, v ^ a - 1 ∈ Ideal.span {j π} ^ k → M ∣ a := by
+    intro k
+    refine ⟨Nat.find (hord k), (Nat.find_spec (hord k)).1, (Nat.find_spec (hord k)).2, ?_⟩
+    intro a ha
+    set Mk : ℕ := Nat.find (hord k) with hMk
+    rcases Nat.eq_zero_or_pos (a % Mk) with h0 | hpos
+    · exact Nat.dvd_of_mod_eq_zero h0
+    · exfalso
+      have hb : v ^ (Mk * (a / Mk)) - 1 ∈ Ideal.span {j π} ^ k := by
+        rw [pow_mul]
+        exact hpow1 k (v ^ Mk) (a / Mk) (Nat.find_spec (hord k)).2
+      have hsplit : v ^ a = v ^ (Mk * (a / Mk)) * v ^ (a % Mk) := by
+        rw [← pow_add, Nat.div_add_mod]
+      have hr : v ^ (a % Mk) - 1 ∈ Ideal.span {j π} ^ k := by
+        have h1 : v ^ (a % Mk) * (v ^ (Mk * (a / Mk)) - 1) ∈ Ideal.span {j π} ^ k :=
+          Ideal.mul_mem_left _ _ hb
+        have hrw : v ^ (a % Mk) - 1
+            = (v ^ a - 1) - v ^ (a % Mk) * (v ^ (Mk * (a / Mk)) - 1) := by
+          rw [hsplit]; ring
+        rw [hrw]
+        exact Ideal.sub_mem _ ha h1
+      exact Nat.find_min (hord k) (Nat.mod_lt a (Nat.find_spec (hord k)).1) ⟨hpos, hr⟩
+  choose M hM1 hMspec hMdvd using hchoice
+  have hMmono : ∀ k : ℕ, M k ∣ M (k + 1) := fun k =>
+    hMdvd k (M (k + 1)) (Ideal.pow_le_pow_right (Nat.le_succ k) (hMspec (k + 1)))
+  -- THE SUBSEQUENCE, built by RECURSION so that its increments are explicit and
+  -- no truncated subtraction is ever formed.
+  obtain ⟨Nn, hNnsucc⟩ : ∃ Nn : ℕ → ℕ,
+      ∀ k : ℕ, Nn (k + 1) = Nn k + (k + 1) * M (k + 1) :=
+    ⟨fun k => Nat.rec 0 (fun n ih => ih + (n + 1) * M (n + 1)) k, fun _ => rfl⟩
+  have hNge : ∀ k : ℕ, k ≤ Nn k := by
+    intro k
+    induction k with
+    | zero => exact Nat.zero_le _
+    | succ n ih =>
+        have h1 : n + 1 ≤ (n + 1) * M (n + 1) := by
+          calc n + 1 = (n + 1) * 1 := by ring
+          _ ≤ (n + 1) * M (n + 1) := Nat.mul_le_mul_left _ (hM1 (n + 1))
+        rw [hNnsucc n]
+        omega
+  -- ITERATING THE MULTIPLIER CLAUSE.
+  have hiter : ∀ (t s : TatePt m x I π) (N b : ℕ),
+      C (N + b) t s - v ^ b * C N t s ∈ Ideal.span {j π} ^ N := by
+    intro t s N b
+    induction b with
+    | zero => rw [Nat.add_zero, pow_zero, one_mul, sub_self]; exact Submodule.zero_mem _
+    | succ n ih =>
+        have h1 : C (N + n + 1) t s - v * C (N + n) t s ∈ Ideal.span {j π} ^ N :=
+          Ideal.pow_le_pow_right (Nat.le_add_right N n) (hmult (N + n) t s)
+        have h2 : v * (C (N + n) t s - v ^ n * C N t s) ∈ Ideal.span {j π} ^ N :=
+          Ideal.mul_mem_left _ _ ih
+        have hrw : C (N + n + 1) t s - v ^ (n + 1) * C N t s
+            = (C (N + n + 1) t s - v * C (N + n) t s)
+              + v * (C (N + n) t s - v ^ n * C N t s) := by ring
+        show C (N + (n + 1)) t s - v ^ (n + 1) * C N t s ∈ _
+        rw [show N + (n + 1) = N + n + 1 from rfl, hrw]
+        exact Ideal.add_mem _ h1 h2
+  refine ⟨fun k t s => C (Nn k) t s, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · intro k t t' t'' s ht''
+    exact Ideal.pow_le_pow_right (hNge k) (hadd1 (Nn k) t t' t'' s ht'')
+  · intro k t s s' s'' hs''
+    exact Ideal.pow_le_pow_right (hNge k) (hadd2 (Nn k) t s s' s'' hs'')
+  · intro k t
+    exact Ideal.pow_le_pow_right (hNge k) (halt (Nn k) t)
+  · intro k a t t' s ht'
+    exact Ideal.pow_le_pow_right (hNge k) (hact (Nn k) a t t' s ht')
+  · intro k σ t t' s s' ht' hs'
+    exact Ideal.pow_le_pow_right (hNge k) (hgal (Nn k) σ t t' s s' ht' hs')
+  · intro k t t' s s' hts hss
+    exact hcont (Nn k) k (hNge k) t t' s s' hts hss
+  · -- THE CAUCHY CLAUSE: this is where the reindexing earns its keep.
+    intro k t s
+    obtain ⟨d, hd⟩ : M k ∣ (k + 1) * M (k + 1) := (hMmono k).mul_left (k + 1)
+    have h1 : C (Nn k + (k + 1) * M (k + 1)) t s
+        - v ^ ((k + 1) * M (k + 1)) * C (Nn k) t s ∈ Ideal.span {j π} ^ k :=
+      Ideal.pow_le_pow_right (hNge k) (hiter t s (Nn k) ((k + 1) * M (k + 1)))
+    have h2 : (v ^ ((k + 1) * M (k + 1)) - 1) * C (Nn k) t s ∈ Ideal.span {j π} ^ k := by
+      refine Ideal.mul_mem_right _ _ ?_
+      rw [hd, pow_mul]
+      exact hpow1 k (v ^ M k) d (hMspec k)
+    have hrw : C (Nn (k + 1)) t s - C (Nn k) t s
+        = (C (Nn k + (k + 1) * M (k + 1)) t s
+            - v ^ ((k + 1) * M (k + 1)) * C (Nn k) t s)
+          + (v ^ ((k + 1) * M (k + 1)) - 1) * C (Nn k) t s := by
+      rw [hNnsucc k]; ring
+    rw [hrw]
+    exact Ideal.add_mem _ h1 h2
+  · exact hunit (Nn 1) (hNge 1)
+
+/-- **The `q`-adic Weil system refines to an `I`-adic Weil pairing ON THE
+TATE MODULE** (SORRY LEAF, cut 2026-07-29 out of
+`exists_tateWeilSystem_of_qAdicWeilSystem` — the whole mathematical content
+of that leaf, relocated to the object the classical construction actually
+produces).
+
+The consumer's LEVELWISE system is recovered from this by choosing lifts,
+which is what `exists_tatePt_val_eq` is for; that assembly is proven and no
+part of it is left here.  What is left is the construction of the form
+itself, and the two corrections below are the reason it cannot be done one
+level at a time.
+
+NOTATION for both corrections.  Write `T = T_I A`, `E : T × T → O` for the
+true `O`-valued alternating form, `𝔡_I⁻¹ = (δ)`, `θ = Tr(δ ·)`, `e` for the
+ramification index of `I` over `q`, so `q = π^e u` with `u ∈ Oˣ`, and for
+`y ∈ A[Iᵏ]` let `ỹ ∈ T` be a level-`k` lift (`ỹ.1 k = y`).  Since
+`A[Iᵏ] ⊆ A[qᵏ]` and `y = ỹ/πᵏ = ((qᵏ/πᵏ)·ỹ)/qᵏ`, the classical formula
+`L N (w N (û/q^N) (v̂/q^N)) ≡ θ(E(û, v̂)) mod q^N` gives every computation
+below.
+
+**CORRECTION 1 — the levelwise construction is not merely "not obviously
+tower-compatible", it is quantifiably wrong, and in TWO different ways.**
+The level-`k` functional named in the docstring of
+`exists_tateWeilSystem_of_qAdicWeilSystem`,
+
+  `φ_{y,z}(b) = L k (w k (b·y) z)`,
+
+is `θ(j b · (qᵏ/πᵏ)² E(ỹ, z̃))` modulo `qᵏ`, so the constant that trace
+duality returns for it is
+
+  `c_k(y,z) = (qᵏ/πᵏ)² · E(ỹ, z̃)   mod Iᵏ`,   `(qᵏ/πᵏ)² = π^{2(e-1)k} u^{2k}`.
+
+* If `e ≥ 2` then `π^{2(e-1)k} ∈ I^{2(e-1)k} ⊆ Iᵏ`, so `c_k ≡ 0`
+  IDENTICALLY, for every `k`.  This is the RAMIFICATION OBSTRUCTION already
+  recorded on that leaf, in its sharpest form: it is not confined to
+  `k = 1`, and it is not repaired by raising the Weil level.
+* If `e = 1` the factor is the unit `u^{2k}`, `c_k` is nonzero, and it is
+  exactly the TOWER clause that fails: `c_{k+1} ≡ c_k (mod Iᵏ)` demands
+  `u² ≡ 1 (mod Iᵏ)`, which is false in general.
+
+**CORRECTION 2 — the limit prescribed on that leaf is NOT CAUCHY, and this
+is not a ramification phenomenon.**  That docstring says to recover the
+`ℤ_q`-bilinear form "as the limit over `N` of `L N (w N (·) (·))` evaluated
+at the level-`N` components of Tate points".  The same computation gives
+
+  `L N (w N (t.1 N) (s.1 N)) ≡ θ((q^N/π^N)² E(t,s))   mod q^N`,
+
+which is the constant `θ(E(t,s))` only when `q = π` on the nose.
+
+WITNESS, in the simplest UNRAMIFIED case, so that the failure cannot be
+blamed on ramification: `D = ℚ`, `q = 5`, `I = (5)`, `π = 10`.  These
+satisfy every hypothesis (`10 ∈ (5) ∖ (25)`, so `π` is a uniformizer).
+Here `q/π = 1/2 ∈ ℤ₅ˣ`, and `(q^N/π^N)² = 4^{-N} ≡ (-1)^N (mod 5)`, which
+oscillates: the prescribed sequence has no limit.  For `e ≥ 2` the sequence
+does converge — to `0`, which is the same obstruction again.
+
+**THE CORRECTED NORMALISATION.**  Read `t` at level `eN` rather than at
+level `N`, which replaces the factor by `u^{2N}` for every `e`, and then
+take `N` along the multiples of the ORDER OF `u²` modulo `(j π)ᵏ`, so that
+`u^{2N} ≡ 1 mod (j π)ᵏ`.  The constants `c_k` are then Cauchy and `hcplt`
+produces `E(t,s)`.  Both ingredients are available, and the second needs
+care:
+
+* `e` is the `I`-adic valuation of `q` in `𝒪_D` — the largest `e` with
+  `q ∈ Iᵉ` — which is finite because `q ≠ 0` and `𝒪_D` is Dedekind, and is
+  `≥ 1` by `hqI`;
+* `u = q/π^e` lies in `𝒪_{D,I}ˣ` rather than in `𝒪_D`, but it still has an
+  image in `O`: `𝒪_D` is `I`-adically dense in `𝒪_{D,I}`, so `u` is a limit
+  of elements `j a_n`, and `hcplt` supplies the limit.  Its order modulo
+  `(j π)ᵏ` is finite because that class lies in the image of the FINITE
+  group `(𝒪_D / Iᵏ)ˣ`.  **It is NOT enough to say `(O / (j π)ᵏ)ˣ` is
+  finite — it need not be.**  Without `hdense` the residue ring `O/(j π)`
+  can be infinite (see the `𝒪_{D,I}⟦X⟧` example below, whose residue ring
+  is `𝔽⟦X⟧`), even though `hker` embeds `𝒪_D/I` in it.  The finiteness that
+  the argument actually uses is the finiteness of `𝒪_D/Iᵏ`.
+
+**A FURTHER SPLIT, NOT TAKEN, AND WHY.**  The natural two-way cut is
+(a) build the `ℤ_q`-valued form on `T` from `w` and `L` — the limit above,
+where all the difficulty is — and (b) refine it to `O` by trace duality,
+which is formal.  It was not cut here because of the PERFECTNESS clause:
+`IsTateWeilPairing` demands a value of `E` that is a UNIT of `O`, and the
+natural nondegeneracy of the `ℤ_q`-form (`∃ t s, IsUnit (θ (E t s))`) does
+NOT deliver one.  The fourth clause of `IsTraceDualFunctional` pins the
+representing constant only modulo `Ideal.span {j π}`, and under the
+hypotheses available here that ideal need not be the maximal ideal of `O`:
+`hdense` is deliberately absent from this leaf, and without it
+`O = 𝒪_{D,I}⟦X⟧` with `j` landing in the constants satisfies
+`[IsLocalRing O]`, `hcplt` and `hker` while `span {j π} ⊊ 𝔪`.  A successor
+who wants the split must therefore either carry `hdense`, or state the
+intermediate leaf's nondegeneracy already in the `O`-vocabulary it will be
+refined into.  Stating it as `∃ t s, IsUnit (θ (E t s))` and calling the
+refinement formal would make (b) FALSE.
+
+MATHLIB / PROJECT INGREDIENTS: `IsAdicComplete.limit`-style assembly as in
+`exists_tateWeilPairing_of_tateWeilSystem` (which does the analogous Cauchy
+argument and is PROVEN), `IsTraceDualFunctional`'s third and fourth clauses
+for the refinement, and the seventh clause of `IsQAdicWeilSystem` (the
+INTEGER-tower compatibility) for the limit.
+
+**RESTATED 2026-07-30 — the conclusion is now `IsTateWeilRawFamily`, and
+BOTH the corrected normalisation and the limit have been PROVEN off it.**
+Everything above is unchanged and describes this leaf verbatim; what changed
+is that neither the subsequence nor `hcplt` is any longer part of the
+burden.  The chain below this leaf is
+
+  `exists_tateWeilRawFamily_of_qAdicWeilSystem`   (this leaf)
+    ↓ `exists_tateWeilApprox_of_rawFamily`        (PROVEN — reindexing)
+    ↓ `exists_tateWeilPairing_of_approx`          (PROVEN — the limit)
+  `exists_tateWeilPairing_of_qAdicWeilSystem`     (PROVEN)
+
+and what a successor must now produce is exactly two things:
+
+* the family of level-`N` constants
+
+    `C N t s = ` the constant returned by `IsTraceDualFunctional`'s third
+    clause for the functional
+    `b ↦ L (e·N) (w (e·N) (m.act b (t.1 (e·N))) (s.1 (e·N)))`,
+
+  together with its six congruence clauses and its perfectness clause.  All
+  seven are FORMAL: each is the corresponding clause of `IsQAdicWeilSystem`
+  (bi-multiplicativity of `w N`, the `𝒪_D`-adjointness clause, the
+  `Γ_F`-equivariance clause) pushed through the additivity of `L N`
+  (`hLadd`, `hLgal`) and the linearity of `θ` (`hθ`'s first two clauses),
+  then transported across the uniqueness clause `hθ.4`.  No normalisation
+  and no limit occurs in any of them.
+
+  `e` is now a BINDER of this leaf (`he1`, `hqe`, `hqe2`) rather than
+  something to be found: its existence is Krull's intersection theorem for
+  `𝒪_D` and is proven in `exists_tateWeilPairing_of_qAdicWeilSystem` below.
+  What each half of it is for: `(q^N) ⊆ I^{e·N}` by `hqe`, so `t.1 (e·N)`
+  IS `q^N`-torsion and `w N` may be evaluated on it; and `hqe2` is what
+  makes `q/π^e` a UNIT of `𝒪_{D,I}` rather than a nonunit, `v` being its
+  image.  With `hqe2` dropped, `v` would lie in the maximal ideal, `v^M ≡ 1
+  (mod (j π)^k)` would be unsatisfiable for `k ≥ 1`, and the eighth clause
+  of `IsTateWeilRawFamily` would be FALSE — the same ramification
+  obstruction as CORRECTION 1, seen from the other side;
+
+* the MULTIPLIER `v = u²` and its finite order modulo each `(j π)^k`.
+  This is all that survives of CORRECTION 1 and CORRECTION 2.  `v` is the
+  `hcplt`-limit of `j a_n` for `a_n → q/π^e` in `𝒪_{D,I}`, and its finite
+  order comes from the finiteness of `(𝒪_D/I^k)ˣ` through `hker` — the
+  argument written out under THE CORRECTED NORMALISATION above, which is
+  now the only part of that paragraph still owed.  `IsUnit v` is not part
+  of `IsTateWeilRawFamily`, because the reindexing does not use it; but
+  PROVE IT ANYWAY on the way to the perfectness clause, which quantifies
+  over every `N ≥ 1` and would be FALSE for a non-unit `v`.  It is
+  available: `a ∉ I ⟹ IsUnit (j a)` by maximality of `I`, `hker`, and
+  locality of `O`, and `v` differs from such a `j a` by an element of
+  `span {j π} ⊆ 𝔪`.  See the audit paragraph in `IsTateWeilRawFamily`,
+  which corrects an earlier draft of this note that said the opposite.
+
+**AND THIS IS NOT THE SPLIT REFUTED IN THE PARAGRAPH ABOVE.**  The split
+rejected there is the one that builds the `ℤ_q`-valued form first and calls
+the trace-duality refinement formal; it fails because the natural
+nondegeneracy of the `ℤ_q`-form, `∃ t s, IsUnit (θ (E t s))`, does not
+deliver a UNIT OF `O`.  The split taken here never leaves the
+`O`-vocabulary: the perfectness clause of `IsTateWeilRawFamily` is
+`∃ t s, IsUnit (C N t s)` — an honest unit of `O`, exactly the form
+`IsTateWeilPairing` demands — and `θ` does not occur in the predicate.  The
+refuting check is the same one that paragraph prescribes: look for `θ` or
+`ℤ_[q]`-valued quantities in `IsTateWeilRawFamily`.  There are none except
+the cyclotomic multiplier, which `IsTateWeilPairing` carries too. -/
+theorem exists_tateWeilRawFamily_of_qAdicWeilSystem
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (q : ℕ) [Fact q.Prime]
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    (e : ℕ) (he1 : 1 ≤ e)
+    (hqe : (q : NumberField.RingOfIntegers D) ∈ I ^ e)
+    (hqe2 : (q : NumberField.RingOfIntegers D) ∉ I ^ (e + 1))
+    (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (O : Type u) [CommRing O] [IsLocalRing O] [Algebra ℤ_[q] O]
+    (j : NumberField.RingOfIntegers D →+* O)
+    (hcplt : IsAdicComplete (Ideal.span {j π}) O)
+    (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
+      j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n)
+    (w : ℕ → GeomFibrePt f x → GeomFibrePt f x → (AlgebraicClosure F)ˣ)
+    (hw : IsQAdicWeilSystem m x q w)
+    (θ : O → ℤ_[q]) (hθ : IsTraceDualFunctional q I π j θ)
+    (L : ℕ → (AlgebraicClosure F)ˣ → ℤ_[q])
+    (hLadd : ∀ (k : ℕ) (ζ ξ : (AlgebraicClosure F)ˣ), ζ ^ q ^ k = 1 → ξ ^ q ^ k = 1 →
+      L k (ζ * ξ) - (L k ζ + L k ξ) ∈ Ideal.span {(q : ℤ_[q])} ^ k)
+    (hLgal : ∀ (k : ℕ) (σ : Field.absoluteGaloisGroup F) (ζ : (AlgebraicClosure F)ˣ),
+      ζ ^ q ^ k = 1 →
+      L k (Units.map
+            ((σ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom.toRingHom.toMonoidHom) ζ)
+        - (((cyclotomicCharacter (AlgebraicClosure ℚ) q
+              ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ).toRingEquiv) : ℤ_[q]ˣ) : ℤ_[q])
+          * L k ζ) ∈ Ideal.span {(q : ℤ_[q])} ^ k)
+    (hLtower : ∀ (k : ℕ) (ζ : (AlgebraicClosure F)ˣ), ζ ^ q ^ (k + 1) = 1 →
+      L (k + 1) ζ - L k (ζ ^ q) ∈ Ideal.span {(q : ℤ_[q])} ^ k)
+    (hLinj : ∀ (k : ℕ) (ζ : (AlgebraicClosure F)ˣ), ζ ^ q ^ k = 1 →
+      (L k ζ ∈ Ideal.span {(q : ℤ_[q])} ^ k ↔ ζ = 1))
+    (hLsurj : ∀ (k : ℕ) (r : ℤ_[q]), ∃ ζ : (AlgebraicClosure F)ˣ,
+      ζ ^ q ^ k = 1 ∧ L k ζ - r ∈ Ideal.span {(q : ℤ_[q])} ^ k)
+    (hdiv : ∀ (a : NumberField.RingOfIntegers D), a ≠ 0 →
+      ∀ y : GeomFibrePt f x, ∃ z : GeomFibrePt f x, m.act a z = y) :
+    ∃ (v : O) (C : ℕ → TatePt m x I π → TatePt m x I π → O),
+      IsTateWeilRawFamily m x q I π j v C :=
+  sorry
+
+/-- **The `q`-adic Weil system refines to an `I`-adic Weil pairing on the
+Tate module** (PROVEN 2026-07-30 over the single leaf
+`exists_tateWeilApprox_of_qAdicWeilSystem` immediately above, which is this
+statement with the passage to the limit removed).
+
+The proof is the two-step chain
+`exists_tateWeilApprox_of_rawFamily` (the corrected normalisation) followed
+by `exists_tateWeilPairing_of_approx` (the `(j π)`-adic limit), plus the one
+step that is genuinely about `O` rather than about the pairing: `hker` at
+`n = 1` together with the maximality of `I` says `j π` is a NON-UNIT, which
+is what puts `span {j π}` inside the maximal ideal of the local ring `O` and
+so lets the perfectness clause survive the limit.  That step is identical to
+the one in `exists_tateWeilPairing_of_mult`, and it is the only use of `hI`
+here.
+
+IT ALSO PRODUCES THE RAMIFICATION INDEX.  The leaf takes `e` with
+`1 ≤ e`, `q ∈ I^e` and `q ∉ I^{e+1}` as binders rather than deriving it,
+because its existence is a two-line consequence of Krull's intersection
+theorem for the Noetherian domain `𝒪_D` (`q ≠ 0`, so `q ∉ ⋂_n I^n`, so the
+set of `n` with `q ∉ I^n` is nonempty; its least element is `≥ 2` because
+`hqI` puts `q` in `I`) and there is no reason for a geometric leaf to carry
+it.  `e` is the level at which the leaf reads its Tate points: `t.1 (e·N)`
+is `q^N`-torsion because `(q^N) ⊆ I^{e·N}`.
+
+WHICH HYPOTHESES THIS ASSEMBLY ITSELF USES: `hI`, `hqI`, `hker`, `hcplt`
+and the primality of `q`, and nothing else.  Every other binder is passed
+through untouched to the leaf, where the docstring above records what each
+is for.  They are NOT decoration and must not be dropped in a restatement —
+`hπ`/`hπ2` make `π` a uniformizer, and `hdiv` is what makes the transition
+maps of `TatePt` surjective, without which the perfectness clause has
+nothing to quantify over. -/
+theorem exists_tateWeilPairing_of_qAdicWeilSystem
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (q : ℕ) [Fact q.Prime]
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (O : Type u) [CommRing O] [IsLocalRing O] [Algebra ℤ_[q] O]
+    (j : NumberField.RingOfIntegers D →+* O)
+    (hcplt : IsAdicComplete (Ideal.span {j π}) O)
+    (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
+      j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n)
+    (w : ℕ → GeomFibrePt f x → GeomFibrePt f x → (AlgebraicClosure F)ˣ)
+    (hw : IsQAdicWeilSystem m x q w)
+    (θ : O → ℤ_[q]) (hθ : IsTraceDualFunctional q I π j θ)
+    (L : ℕ → (AlgebraicClosure F)ˣ → ℤ_[q])
+    (hLadd : ∀ (k : ℕ) (ζ ξ : (AlgebraicClosure F)ˣ), ζ ^ q ^ k = 1 → ξ ^ q ^ k = 1 →
+      L k (ζ * ξ) - (L k ζ + L k ξ) ∈ Ideal.span {(q : ℤ_[q])} ^ k)
+    (hLgal : ∀ (k : ℕ) (σ : Field.absoluteGaloisGroup F) (ζ : (AlgebraicClosure F)ˣ),
+      ζ ^ q ^ k = 1 →
+      L k (Units.map
+            ((σ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom.toRingHom.toMonoidHom) ζ)
+        - (((cyclotomicCharacter (AlgebraicClosure ℚ) q
+              ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ).toRingEquiv) : ℤ_[q]ˣ) : ℤ_[q])
+          * L k ζ) ∈ Ideal.span {(q : ℤ_[q])} ^ k)
+    (hLtower : ∀ (k : ℕ) (ζ : (AlgebraicClosure F)ˣ), ζ ^ q ^ (k + 1) = 1 →
+      L (k + 1) ζ - L k (ζ ^ q) ∈ Ideal.span {(q : ℤ_[q])} ^ k)
+    (hLinj : ∀ (k : ℕ) (ζ : (AlgebraicClosure F)ˣ), ζ ^ q ^ k = 1 →
+      (L k ζ ∈ Ideal.span {(q : ℤ_[q])} ^ k ↔ ζ = 1))
+    (hLsurj : ∀ (k : ℕ) (r : ℤ_[q]), ∃ ζ : (AlgebraicClosure F)ˣ,
+      ζ ^ q ^ k = 1 ∧ L k ζ - r ∈ Ideal.span {(q : ℤ_[q])} ^ k)
+    (hdiv : ∀ (a : NumberField.RingOfIntegers D), a ≠ 0 →
+      ∀ y : GeomFibrePt f x, ∃ z : GeomFibrePt f x, m.act a z = y) :
+    ∃ E : TatePt m x I π → TatePt m x I π → O, IsTateWeilPairing m x q I π j E := by
+  -- THE RAMIFICATION INDEX of `I` over `q`, produced here rather than inside the
+  -- leaf: `q ≠ 0` and Krull's intersection theorem for the Noetherian domain
+  -- `𝒪_D` bound the `I`-adic valuation of `q`, and `hqI` puts it at least at `1`.
+  have hq0 : (q : NumberField.RingOfIntegers D) ≠ 0 := by
+    have hqp : q.Prime := Fact.out
+    exact_mod_cast hqp.ne_zero
+  have hne : ∃ n : ℕ, (q : NumberField.RingOfIntegers D) ∉ I ^ n := by
+    by_contra hall
+    have hmem : (q : NumberField.RingOfIntegers D) ∈ ⨅ n : ℕ, I ^ n :=
+      Submodule.mem_iInf _ |>.mpr fun n => not_not.mp fun h => hall ⟨n, h⟩
+    rw [Ideal.iInf_pow_eq_bot_of_isDomain I hI.ne_top] at hmem
+    exact hq0 hmem
+  classical
+  have hfs : (q : NumberField.RingOfIntegers D) ∉ I ^ Nat.find hne := Nat.find_spec hne
+  have hne0 : Nat.find hne ≠ 0 := by
+    intro h0
+    rw [h0, pow_zero, Ideal.one_eq_top] at hfs
+    exact hfs Submodule.mem_top
+  have hne1 : Nat.find hne ≠ 1 := by
+    intro h1
+    rw [h1, pow_one] at hfs
+    exact hfs hqI
+  have hesucc : Nat.find hne - 1 + 1 = Nat.find hne := by omega
+  have hqe : (q : NumberField.RingOfIntegers D) ∈ I ^ (Nat.find hne - 1) :=
+    not_not.mp (Nat.find_min hne (by omega))
+  have hqe2 : (q : NumberField.RingOfIntegers D) ∉ I ^ (Nat.find hne - 1 + 1) := by
+    rw [hesucc]; exact hfs
+  obtain ⟨v, C, hC⟩ := exists_tateWeilRawFamily_of_qAdicWeilSystem m x q I hI hqI
+    (Nat.find hne - 1) (by omega) hqe hqe2 π hπ hπ2 O j
+    hcplt hker w hw θ hθ L hLadd hLgal hLtower hLinj hLsurj hdiv
+  obtain ⟨C', hC'⟩ := exists_tateWeilApprox_of_rawFamily m x q I π O j v C hC
+  refine exists_tateWeilPairing_of_approx m x q I π O j hcplt ?_ C' hC'
+  -- `j π` is a non-unit: were `span {j π}` the unit ideal, `hker` at `n = 1`
+  -- would put `1` in `I`, contradicting maximality.
+  intro hu
+  have h1 : (Ideal.span {j π} : Ideal O) = ⊤ := Ideal.span_singleton_eq_top.mpr hu
+  have h2 : (1 : NumberField.RingOfIntegers D) ∈ I ^ 1 := by
+    refine (hker 1 1).mp ?_
+    rw [pow_one, h1]
+    exact Submodule.mem_top
+  rw [pow_one] at h2
+  exact hI.ne_top ((Ideal.eq_top_iff_one I).mpr h2)
+
 /-- **Trace duality refines the `q`-adic Weil system to the `I`-adic one**
-(SORRY LEAF — step 3 of the classical route, in its geometric half: the
-passage from `μ_{q^N}`-valued pairings on `A[q^N]` to `𝒪_D/I^k`-valued
-pairings on `A[I^k]`, along the inverse different).
+(PROVEN 2026-07-29 over `exists_tateWeilPairing_of_qAdicWeilSystem` and
+`exists_tatePt_val_eq` — step 3 of the classical route, in its geometric
+half: the passage from `μ_{q^N}`-valued pairings on `A[q^N]` to
+`𝒪_D/I^k`-valued pairings on `A[I^k]`, along the inverse different).
+
+WHAT IS PROVEN HERE is exactly the passage from the TATE-MODULE form to
+the LEVELWISE system — the step the analysis below identifies as the trap,
+and the one the naive route gets wrong.  Given the `O`-valued alternating
+form `E` on `TatePt m x I π` of `IsTateWeilPairing`, put
+
+  `e k y z := E (lift k y) (lift k z)`,
+
+`lift k` being any section of the reduction `T ↠ A[Iᵏ]`, which exists by
+`exists_tatePt_val_eq`.  Then EVERY clause of `IsTateWeilSystem` is a
+one-line consequence of a structural clause of `IsTateWeilPairing` together
+with its CONTINUITY clause (`E` is determined modulo `(j π)ᵏ` by the
+level-`k` components), because the structural clauses hold on the nose for
+Tate points whose components realise the operation, and continuity moves
+the answer to whichever lift `lift k` happened to choose.  The TOWER clause
+needs no structural input at all: if `t.1 (k+1) = y` then
+`t.1 k = π · y` by the defining relation of `TatePt`, so
+`e (k+1) y z` and `e k (π y) (π z)` are values of `E` at Tate points with
+the SAME level-`k` components, and continuity alone gives the congruence.
+That is the formal content of the docstring's observation that "a lift of
+`y ∈ A[I^{k+1}]` is also a lift of `π y ∈ A[Iᵏ]`".
+
+Perfectness transports because `Ideal.span {j π} ≤ IsLocalRing.maximalIdeal
+O`: `j π` is a nonunit, since `Ideal.span {j π} = ⊤` would make `hker` at
+`n = 1` say that every element of `𝒪_D` lies in `I`, contradicting
+`hI.ne_top`.
+
+The residue — the construction of `E` itself — is
+`exists_tateWeilPairing_of_qAdicWeilSystem`, whose docstring carries TWO
+CORRECTIONS to the route recorded below: the levelwise constant is off by
+`(qᵏ/πᵏ)²` (which vanishes mod `Iᵏ` when `I` is ramified over `q` and
+breaks the tower clause when it is not), and the limit prescribed below is
+NOT CAUCHY even in the unramified case — `D = ℚ`, `q = 5`, `I = (5)`,
+`π = 10` is a legal witness.  Read those before acting on this one.
 
 Every hypothesis is consumed, and the shape of the intended proof is fixed
 by two facts that took some work to establish and that a successor should
@@ -8730,8 +11576,141 @@ theorem exists_tateWeilSystem_of_qAdicWeilSystem
       ζ ^ q ^ k = 1 ∧ L k ζ - r ∈ Ideal.span {(q : ℤ_[q])} ^ k)
     (hdiv : ∀ (a : NumberField.RingOfIntegers D), a ≠ 0 →
       ∀ y : GeomFibrePt f x, ∃ z : GeomFibrePt f x, m.act a z = y) :
-    ∃ e : ℕ → GeomFibrePt f x → GeomFibrePt f x → O, IsTateWeilSystem m x q I π j e :=
-  sorry
+    ∃ e : ℕ → GeomFibrePt f x → GeomFibrePt f x → O, IsTateWeilSystem m x q I π j e := by
+  classical
+  obtain ⟨E, hEadd1, hEadd2, hEalt, hEbil, hEgal, hEcont, t₀, s₀, hunit⟩ :=
+    exists_tateWeilPairing_of_qAdicWeilSystem m x q I hI hqI π hπ hπ2 O j hcplt hker
+      w hw θ hθ L hLadd hLgal hLtower hLinj hLsurj hdiv
+  -- ### torsion bookkeeping
+  have hadd_mem : ∀ (k : ℕ) (y y' : GeomFibrePt f x), y ∈ (m.torsion x (I ^ k)).1 →
+      y' ∈ (m.torsion x (I ^ k)).1 → ab.add y y' ∈ (m.torsion x (I ^ k)).1 := by
+    intro k y y' hy hy'
+    refine (mem_torsion_iff m x (I ^ k) _).mpr fun a ha => ?_
+    rw [m.act_addPt a y y', (mem_torsion_iff m x (I ^ k) y).mp hy a ha,
+      (mem_torsion_iff m x (I ^ k) y').mp hy' a ha]
+    exact ab.zero_add _
+  have hact_mem : ∀ (k : ℕ) (a : NumberField.RingOfIntegers D) (y : GeomFibrePt f x),
+      y ∈ (m.torsion x (I ^ k)).1 → m.act a y ∈ (m.torsion x (I ^ k)).1 := by
+    intro k a y hy
+    refine (mem_torsion_iff m x (I ^ k) _).mpr fun b hb => ?_
+    rw [← m.act_mul b a y]
+    exact (mem_torsion_iff m x (I ^ k) y).mp hy _ (Ideal.mul_mem_right a _ hb)
+  have hpi_mem : ∀ (k : ℕ) (y : GeomFibrePt f x), y ∈ (m.torsion x (I ^ (k + 1))).1 →
+      m.act π y ∈ (m.torsion x (I ^ k)).1 := by
+    intro k y hy
+    refine (mem_torsion_iff m x (I ^ k) _).mpr fun a ha => ?_
+    rw [← m.act_mul a π y]
+    refine (mem_torsion_iff m x (I ^ (k + 1)) y).mp hy _ ?_
+    rw [pow_succ]
+    exact Ideal.mul_mem_mul ha hπ
+  -- ### the three Tate-point constructions the structural clauses quantify over
+  have hsum : ∀ t t' : TatePt m x I π, ∃ t'' : TatePt m x I π,
+      ∀ n, t''.1 n = ab.add (t.1 n) (t'.1 n) := by
+    intro t t'
+    refine ⟨⟨fun n => ab.add (t.1 n) (t'.1 n), fun n => hadd_mem n _ _ (t.2.1 n) (t'.2.1 n),
+      fun n => ?_⟩, fun n => rfl⟩
+    rw [m.act_addPt π (t.1 (n + 1)) (t'.1 (n + 1)), t.2.2 n, t'.2.2 n]
+  have hactT : ∀ (a : NumberField.RingOfIntegers D) (t : TatePt m x I π),
+      ∃ t' : TatePt m x I π, ∀ n, t'.1 n = m.act a (t.1 n) := by
+    intro a t
+    refine ⟨⟨fun n => m.act a (t.1 n), fun n => hact_mem n a _ (t.2.1 n), fun n => ?_⟩,
+      fun n => rfl⟩
+    rw [← m.act_mul π a, mul_comm, m.act_mul, t.2.2 n]
+  have hgalT : ∀ (σ : Field.absoluteGaloisGroup F) (t : TatePt m x I π),
+      ∃ t' : TatePt m x I π, ∀ n, t'.1 n = ab.galSMul x σ (t.1 n) := by
+    intro σ t
+    refine ⟨⟨fun n => ab.galSMul x σ (t.1 n),
+      fun n => (m.torsion x (I ^ n)).2 σ _ (t.2.1 n), fun n => ?_⟩, fun n => rfl⟩
+    rw [← m.galSMul_act x σ π (t.1 (n + 1)), t.2.2 n]
+  -- ### a section of the reduction `T ↠ A[Iᵏ]`
+  obtain ⟨lf, hlfval⟩ : ∃ lf : ℕ → GeomFibrePt f x → TatePt m x I π,
+      ∀ (k : ℕ) (y : GeomFibrePt f x), y ∈ (m.torsion x (I ^ k)).1 → (lf k y).1 k = y := by
+    refine ⟨fun k y => if h : ∃ t : TatePt m x I π, t.1 k = y then h.choose else t₀, ?_⟩
+    intro k y hy
+    have h : ∃ t : TatePt m x I π, t.1 k = y := exists_tatePt_val_eq m x I hI π hπ hπ2 k y hy
+    show (if h' : ∃ t : TatePt m x I π, t.1 k = y then h'.choose else t₀).1 k = y
+    rw [dif_pos h]
+    exact h.choose_spec
+  -- ### `(j π)` sits in the maximal ideal, which is what transports perfectness
+  have hjπ : ¬ IsUnit (j π) := by
+    intro hu
+    have htop : Ideal.span {j π} = ⊤ := Ideal.span_singleton_eq_top.mpr hu
+    have h1 : (1 : NumberField.RingOfIntegers D) ∈ I ^ 1 := by
+      refine (hker 1 1).mp ?_
+      rw [pow_one, htop]
+      trivial
+    rw [pow_one] at h1
+    exact hI.ne_top (Ideal.eq_top_of_isUnit_mem I h1 isUnit_one)
+  have hspan_le : Ideal.span {j π} ≤ IsLocalRing.maximalIdeal O :=
+    Ideal.span_le.mpr (Set.singleton_subset_iff.mpr
+      (IsLocalRing.mem_maximalIdeal _ |>.mpr hjπ))
+  refine ⟨fun k y z => E (lf k y) (lf k z), ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · -- additivity in the first variable
+    intro k y y' z hy hy' hz
+    obtain ⟨t'', ht''⟩ := hsum (lf k y) (lf k y')
+    have h1 : E t'' (lf k z) = E (lf k y) (lf k z) + E (lf k y') (lf k z) :=
+      hEadd1 (lf k y) (lf k y') t'' (lf k z) ht''
+    have h2 : E (lf k (ab.add y y')) (lf k z) - E t'' (lf k z) ∈ Ideal.span {j π} ^ k := by
+      refine hEcont k _ t'' _ _ ?_ rfl
+      rw [hlfval k _ (hadd_mem k y y' hy hy'), ht'' k, hlfval k y hy, hlfval k y' hy']
+    rwa [h1] at h2
+  · -- additivity in the second variable
+    intro k y z z' hy hz hz'
+    obtain ⟨s'', hs''⟩ := hsum (lf k z) (lf k z')
+    have h1 : E (lf k y) s'' = E (lf k y) (lf k z) + E (lf k y) (lf k z') :=
+      hEadd2 (lf k y) (lf k z) (lf k z') s'' hs''
+    have h2 : E (lf k y) (lf k (ab.add z z')) - E (lf k y) s'' ∈ Ideal.span {j π} ^ k := by
+      refine hEcont k _ _ _ s'' rfl ?_
+      rw [hlfval k _ (hadd_mem k z z' hz hz'), hs'' k, hlfval k z hz, hlfval k z' hz']
+    rwa [h1] at h2
+  · -- alternating
+    intro k y _
+    show E (lf k y) (lf k y) ∈ Ideal.span {j π} ^ k
+    rw [hEalt (lf k y)]
+    exact Ideal.zero_mem _
+  · -- `𝒪_D`-bilinearity
+    intro k a y z hy hz
+    obtain ⟨t', ht'⟩ := hactT a (lf k y)
+    have h1 : E t' (lf k z) = j a * E (lf k y) (lf k z) := hEbil a (lf k y) t' (lf k z) ht'
+    have h2 : E (lf k (m.act a y)) (lf k z) - E t' (lf k z) ∈ Ideal.span {j π} ^ k := by
+      refine hEcont k _ t' _ _ ?_ rfl
+      rw [hlfval k _ (hact_mem k a y hy), ht' k, hlfval k y hy]
+    rwa [h1] at h2
+  · -- `Γ_F`-equivariance
+    intro k σ y z hy hz
+    obtain ⟨t', ht'⟩ := hgalT σ (lf k y)
+    obtain ⟨s', hs'⟩ := hgalT σ (lf k z)
+    have h1 : E t' s' = algebraMap ℤ_[q] O
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) q
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ).toRingEquiv) : ℤ_[q]ˣ) : ℤ_[q])
+        * E (lf k y) (lf k z) := hEgal σ (lf k y) t' (lf k z) s' ht' hs'
+    have h2 : E (lf k (ab.galSMul x σ y)) (lf k (ab.galSMul x σ z)) - E t' s'
+        ∈ Ideal.span {j π} ^ k := by
+      refine hEcont k _ t' _ s' ?_ ?_
+      · rw [hlfval k _ ((m.torsion x (I ^ k)).2 σ y hy), ht' k, hlfval k y hy]
+      · rw [hlfval k _ ((m.torsion x (I ^ k)).2 σ z hz), hs' k, hlfval k z hz]
+    rwa [h1] at h2
+  · -- tower compatibility: continuity alone, at the SAME level-`k` components
+    intro k y z hy hz
+    show E (lf (k + 1) y) (lf (k + 1) z) - E (lf k (m.act π y)) (lf k (m.act π z))
+      ∈ Ideal.span {j π} ^ k
+    refine hEcont k (lf (k + 1) y) (lf k (m.act π y)) (lf (k + 1) z) (lf k (m.act π z)) ?_ ?_
+    · rw [hlfval k _ (hpi_mem k y hy), ← (lf (k + 1) y).2.2 k, hlfval (k + 1) y hy]
+    · rw [hlfval k _ (hpi_mem k z hz), ← (lf (k + 1) z).2.2 k, hlfval (k + 1) z hz]
+  · -- perfectness
+    refine ⟨t₀, s₀, ?_⟩
+    have h2 : E t₀ s₀ - E (lf 1 (t₀.1 1)) (lf 1 (s₀.1 1)) ∈ Ideal.span {j π} ^ 1 := by
+      refine hEcont 1 t₀ (lf 1 (t₀.1 1)) s₀ (lf 1 (s₀.1 1)) ?_ ?_
+      · exact (hlfval 1 (t₀.1 1) (t₀.2.1 1)).symm
+      · exact (hlfval 1 (s₀.1 1) (s₀.2.1 1)).symm
+    rw [pow_one] at h2
+    by_contra hcon
+    have hmem : E (lf 1 (t₀.1 1)) (lf 1 (s₀.1 1)) ∈ IsLocalRing.maximalIdeal O :=
+      (IsLocalRing.mem_maximalIdeal _).mpr hcon
+    have : E t₀ s₀ ∈ IsLocalRing.maximalIdeal O := by
+      have := Ideal.add_mem _ (hspan_le h2) hmem
+      simpa using this
+    exact (IsLocalRing.mem_maximalIdeal _).mp this hunit
 
 /-- **The torsion of a Hilbert–Blumenthal abelian scheme carries a
 compatible system of `I`-adic Weil pairings** (DECOMPOSED 2026-07-27 into
@@ -12701,10 +15680,511 @@ theorem isUnit_natCast_of_notMem (q : ℕ) (hqw : (q : 𝓞 F) ∉ w.asIdeal) :
 
 end IsAbelianReductionDatum
 
+/-! #### `[N]` over a base on which `N` is invertible
+
+`abelianSchemePt_eq_zero_of_pre_eq_of_isUnit` below is PROVEN, and this
+subsection is everything it needs.  Two halves:
+
+* the GEOMETRIC half — "a clopen subscheme of a connected base containing a
+  point is everything" — in `preconnectedSpace_primeSpectrum_of_isLocalRing`
+  and `section_eq_of_formallyUnramified_of_preconnectedSpace`;
+* the INFINITESIMAL half — `[N]` is formally unramified over a local base on
+  which `N` is invertible — in `section GeneralBase`, which is
+  `nonempty_module_infKernel_of_squareZero` and `formallyUnramified_mulByNat`
+  (both in `AbelianSchemeIsogeny.lean`, both over a base FIELD) transcribed to a
+  local base RING.
+
+Nothing here is specific to abelian schemes with real multiplication. -/
+
+section MulByNatUnramifiedBase
+
+open _root_.CategoryTheory.Limits
+
+/-- **Idempotents of a local ring are trivial.**  `e (1 - e) = 0`, and one of
+the two factors is a unit. -/
+theorem eq_zero_or_one_of_isIdempotentElem_of_isLocalRing {R : Type*} [CommRing R] [IsLocalRing R]
+    {e : R} (he : IsIdempotentElem e) : e = 0 ∨ e = 1 := by
+  have h0 : e * (1 - e) = 0 := by rw [mul_sub, mul_one, he, sub_self]
+  rcases IsLocalRing.isUnit_or_isUnit_one_sub_self e with h | h
+  · exact Or.inr (sub_eq_zero.mp (h.mul_right_eq_zero.mp h0)).symm
+  · exact Or.inl (h.mul_left_eq_zero.mp h0)
+
+/-- **`Spec` of a local ring is PRECONNECTED.**  Its clopens are the basic
+opens of idempotents (`PrimeSpectrum.isClopen_iff`), and a local ring has only
+the trivial ones.
+
+This is the hypothesis that `abelianSchemePt_eq_zero_of_pre_eq_of_isUnit`'s
+docstring calls INDISPENSABLE: over a disconnected base a `qⁿ`-torsion section
+may vanish on one component and not on another. -/
+theorem preconnectedSpace_primeSpectrum_of_isLocalRing (R : Type u) [CommRing R] [IsLocalRing R] :
+    PreconnectedSpace (PrimeSpectrum R) := by
+  refine preconnectedSpace_iff_clopen.mpr ?_
+  intro s hs
+  obtain ⟨e, he, rfl⟩ := PrimeSpectrum.isClopen_iff.mp hs
+  rcases eq_zero_or_one_of_isIdempotentElem_of_isLocalRing he with rfl | rfl
+  · left
+    rw [PrimeSpectrum.basicOpen_zero]
+    simp
+  · right
+    rw [PrimeSpectrum.basicOpen_one]
+    simp
+
+/-- **A pullback square whose first projection is an isomorphism exhibits a
+factorisation.**  If `pullback.fst f g` is invertible then `f` factors through
+`g`; this is how "the equaliser of `s` and `t` is all of `S`" is turned back
+into `s = t` below. -/
+theorem exists_hom_comp_eq_of_isIso_pullback_fst {A B C : Scheme.{u}} (f : A ⟶ C) (g : B ⟶ C)
+    [IsIso (pullback.fst f g)] : ∃ u : A ⟶ B, f = u ≫ g :=
+  ⟨inv (pullback.fst f g) ≫ pullback.snd f g, by
+    rw [Category.assoc, ← pullback.condition, ← Category.assoc, IsIso.inv_hom_id,
+      Category.id_comp]⟩
+
+/-- **TWO SECTIONS OF AN UNRAMIFIED SEPARATED MORPHISM OVER A CONNECTED BASE
+THAT AGREE AT ONE POINT ARE EQUAL.**
+
+`p : Z ⟶ S` unramified and locally of finite type makes `pullback.diagonal p`
+an OPEN immersion (`FormallyUnramified.isOpenImmersion_diagonal`); `p`
+separated makes it a CLOSED immersion.  The equaliser of the two sections `s`
+and `t` — the pullback of `pullback.lift s t` against that diagonal — is
+therefore a clopen subscheme of `S`, and `hw` provides a point of it, so
+connectedness makes it all of `S`.
+
+`w : T ⟶ S` with `T` nonempty is the "one point": in the consumer it is the
+closed point of `Spec O`, i.e. `Spec` of the residue map. -/
+theorem section_eq_of_formallyUnramified_of_preconnectedSpace {Z S : Scheme.{u}} (p : Z ⟶ S)
+    [FormallyUnramified p] [LocallyOfFiniteType p] [IsSeparated p]
+    [PreconnectedSpace S] {T : Scheme.{u}} [Nonempty T] (w : T ⟶ S)
+    {s t : S ⟶ Z} (hs : s ≫ p = 𝟙 S) (ht : t ≫ p = 𝟙 S)
+    (hw : w ≫ s = w ≫ t) : s = t := by
+  have hst : s ≫ p = t ≫ p := by rw [hs, ht]
+  have hefst : pullback.lift s t hst ≫ pullback.fst p p = s := pullback.lift_fst _ _ _
+  have hesnd : pullback.lift s t hst ≫ pullback.snd p p = t := pullback.lift_snd _ _ _
+  have hfac : w ≫ pullback.lift s t hst = (w ≫ s) ≫ pullback.diagonal p := by
+    refine pullback.hom_ext ?_ ?_
+    · rw [Category.assoc, hefst, Category.assoc, pullback.diagonal_fst, Category.comp_id]
+    · rw [Category.assoc, hesnd, Category.assoc, pullback.diagonal_snd, Category.comp_id, hw]
+  obtain ⟨x⟩ := ‹Nonempty ↥T›
+  haveI hne := Nonempty.intro ((pullback.lift w (w ≫ s) hfac).base x)
+  haveI : IsIso (pullback.fst (pullback.lift s t hst) (pullback.diagonal p)) := by
+    refine (isIso_iff_isOpenImmersion_and_surjective _).mpr ⟨inferInstance, ⟨?_⟩⟩
+    rw [← Set.range_eq_univ]
+    refine IsClopen.eq_univ ⟨?_, ?_⟩ (Set.range_nonempty _)
+    · exact (pullback.fst (pullback.lift s t hst)
+        (pullback.diagonal p)).isClosedEmbedding.isClosed_range
+    · exact (pullback.fst (pullback.lift s t hst)
+        (pullback.diagonal p)).isOpenEmbedding.isOpen_range
+  obtain ⟨u, hu⟩ := exists_hom_comp_eq_of_isIso_pullback_fst
+    (pullback.lift s t hst) (pullback.diagonal p)
+  have h1 : s = u := by
+    rw [← hefst, hu, Category.assoc, pullback.diagonal_fst, Category.comp_id]
+  have h2 : t = u := by
+    rw [← hesnd, hu, Category.assoc, pullback.diagonal_snd, Category.comp_id]
+  rw [h1, h2]
+
+section GeneralBase
+
+variable {X : Scheme.{u}} {B : CommRingCat.{u}} {f : X ⟶ Spec B}
+
+/-- **The base map of an infinitesimal-kernel point, over an arbitrary base
+RING** (PROVEN 2026-07-30).
+
+`base_eq_zeroSection_of_infKernel` in `AbelianSchemeIsogeny.lean` states the
+case of a base FIELD, where `Spec K` is a one-point space and the conclusion is
+that the base map is CONSTANT.  Over a ring the same two lines give the honest
+statement — the base map is the zero section read along the base point — and no
+`Subsingleton` is used anywhere.  Only the CONSUMER of that lemma needed the
+field: the constancy is what makes every kernel point at once factor through a
+single affine chart of `X`. -/
+theorem base_comp_eq_zeroSection_of_infKernel (ab : AbelianSchemeStruct f)
+    {C C₀ : CommRingCat.{u}} (ψ : C ⟶ C₀)
+    (hsurj : Function.Surjective (Spec.map ψ).base)
+    {gC : Spec C ⟶ Spec B} (w : RelPoint f gC)
+    (hw : Spec.map ψ ≫ w.1 = (Spec.map ψ ≫ gC) ≫ ab.zeroSection)
+    (p : ↥(Spec C)) :
+    w.1.base p = ab.zeroSection.base (gC.base p) := by
+  obtain ⟨p', hp'⟩ := hsurj p
+  have h1 : w.1.base ((Spec.map ψ).base p') =
+      ((Spec.map ψ ≫ gC) ≫ ab.zeroSection).base p' := by
+    rw [← hw]; rfl
+  rw [← hp', h1]
+  rfl
+
+/-- **OVER A LOCAL BASE THE WHOLE ZERO SECTION FITS IN ONE AFFINE CHART**
+(PROVEN 2026-07-30), and this is what replaces the one-point base of
+`nonempty_module_infKernel_of_squareZero`.
+
+Take any affine open `U` around `e(closed point)`.  Its preimage
+`e ⁻¹ᵁ U` is an open of `Spec B` containing the closed point, and the ONLY such
+open is `⊤` (`IsLocalRing.closedPoint_mem_iff`: every prime specialises to the
+maximal ideal, and opens are stable under generalisation).  So `e(Spec B) ⊆ U`.
+
+The statement is FALSE for a general base — the zero section of an abelian
+scheme over a disconnected or higher-dimensional base need not lie in an affine
+open — which is exactly why the theorem below carries `[IsLocalRing ↥B]`.  A
+successor wanting the general base should not strengthen this lemma but drop it:
+`d = 0` is Zariski-local on `Spec R`, so it suffices to cover `Spec R` by basic
+opens `D(h)` over which the chart condition holds, and `R_h ↠ (R₀)_{φ h}` is
+again a square-zero surjection. -/
+theorem exists_isAffineOpen_zeroSection_of_isLocalRing [IsLocalRing ↥B]
+    (ab : AbelianSchemeStruct f) :
+    ∃ U : X.Opens, IsAffineOpen U ∧ ∀ p : ↥(Spec B), ab.zeroSection.base p ∈ U := by
+  obtain ⟨U, hU, hx₀, -⟩ := exists_isAffineOpen_mem_and_subset
+    (X := X) (x := ab.zeroSection.base (IsLocalRing.closedPoint ↥B))
+    (U := ⊤) (by trivial)
+  refine ⟨U, hU, fun p => ?_⟩
+  have htop : (ab.zeroSection ⁻¹ᵁ U) = ⊤ :=
+    (IsLocalRing.closedPoint_mem_iff (R := ↥B) (ab.zeroSection ⁻¹ᵁ U)).mp hx₀
+  have hp : p ∈ (ab.zeroSection ⁻¹ᵁ U) := by rw [htop]; trivial
+  exact hp
+
+/-- **THE INFINITESIMAL KERNEL HAS NO `n`-TORSION WHEN `n` IS INVERTIBLE ON A
+LOCAL BASE** (PROVEN 2026-07-30).  This is
+`eq_zero_of_nsmul_eq_zero_of_squareZero` with the base FIELD replaced by a
+local base RING.
+
+**WHAT IS THE SAME.**  The whole engine is
+`nonempty_module_infKernel_of_squareZero`'s crux, transcribed: the kernel point
+`d` factors through an affine chart as a ring map `θ d`, the difference cocycle
+`t d b := (θ d) b - (θ 0) b` lands in the square-zero ideal, and the triple
+fibre product `R ×_{R₀} R ×_{R₀} R` with its section `σ(a,b,c) = b + c - a`
+witnesses that `t` is ADDITIVE in `d`.  That is the only non-formal step and it
+is unchanged.
+
+**WHAT IS DIFFERENT, AND IT IS TWO THINGS.**
+
+1. *Where the base enters.*  Over a field the chart is chosen around
+   `e(the unique point)`; here it is chosen around `e(closed point)` and
+   `exists_isAffineOpen_zeroSection_of_isLocalRing` extends it over the whole
+   section.  Everything else about the base is inert.
+2. *No module structure is built.*  The field version ends by promoting `t` to
+   a `K`-linear injection, which costs the `μ`-twist
+   `θ 0 + c · t d` and a `RingHom` construction.  It is not needed: `t` additive
+   in `d` already gives `t (n • d) = (n : R) · t d` by induction, so
+   `n • d = 0` forces `(n : R) · t d = 0`, and `(n : R) = qR (n : B)` is a UNIT
+   because `n` is one in `B`.  Injectivity of `t` — which is just injectivity of
+   `θ`, since `θ 0` is common — finishes.  Dropping the `μ`-twist removes about
+   fifty lines and the only place the field was used a second time. -/
+theorem eq_zero_of_nsmul_eq_zero_of_squareZero_of_isLocalRing [IsLocalRing ↥B]
+    (ab : AbelianSchemeStruct f) (n : ℕ) (hn : IsUnit ((n : ℕ) : ↥B))
+    {R R₀ : CommRingCat.{u}} (φ : R ⟶ R₀) (hφ : Function.Surjective φ)
+    (hker : RingHom.ker φ.hom ^ 2 = ⊥)
+    {q : Spec R ⟶ Spec B} (x : RelPoint f q)
+    (hres : letI := ab.addCommGroup (Spec.map φ ≫ q)
+      RelPoint.pre (Spec.map φ) rfl x = 0)
+    (hnx : letI := ab.addCommGroup q; n • x = 0) :
+    letI := ab.addCommGroup q; x = 0 := by
+  letI := ab.addCommGroup q
+  letI := ab.addCommGroup (Spec.map φ ≫ q)
+  set D := ab.infKernel (Spec.map φ) (rfl : Spec.map φ ≫ q = Spec.map φ ≫ q)
+  -- ONE affine chart carries the whole zero section, because the base is local
+  obtain ⟨U, hU, hall⟩ := exists_isAffineOpen_zeroSection_of_isLocalRing ab
+  have hsurj : Function.Surjective (Spec.map φ).base :=
+    surjective_specMap_of_sq_ker_eq_bot φ hφ hker
+  -- every kernel point factors through the chart
+  have hfac : ∀ d : ↥D, ∃ θ : Γ(X, U) ⟶ R, Spec.map θ ≫ affineOpenChart hU = d.1.1 := by
+    intro d
+    refine exists_affineOpenChart_factor hU _ ?_
+    rintro _ ⟨p, rfl⟩
+    rw [base_comp_eq_zeroSection_of_infKernel ab φ hsurj d.1
+      ((ab.mem_infKernel_iff _ rfl d.1).mp d.2) p]
+    exact hall _
+  choose θ hθ using hfac
+  -- the reference ring homomorphisms
+  obtain ⟨qR, hqR⟩ : ∃ r : B ⟶ R, Spec.map r = q :=
+    ⟨Spec.preimage q, Spec.map_preimage q⟩
+  obtain ⟨κ, hκ⟩ : ∃ r : B ⟶ Γ(X, U), Spec.map r = affineOpenChart hU ≫ f :=
+    ⟨Spec.preimage _, Spec.map_preimage _⟩
+  -- the difference cocycle
+  set t : ↥D → ↥Γ(X, U) → ↥R := fun d b => (θ d).hom b - (θ 0).hom b with ht
+  -- all chart coordinates agree after `φ`
+  have hφeq : ∀ d : ↥D, θ d ≫ φ = θ 0 ≫ φ := by
+    intro d
+    refine affineOpenChart_injective hU R₀ ?_
+    show Spec.map (θ d ≫ φ) ≫ affineOpenChart hU = Spec.map (θ 0 ≫ φ) ≫ affineOpenChart hU
+    rw [Spec.map_comp, Spec.map_comp, Category.assoc, Category.assoc, hθ, hθ]
+    rw [(ab.mem_infKernel_iff _ rfl d.1).mp d.2,
+      (ab.mem_infKernel_iff _ rfl (0 : ↥D).1).mp (0 : ↥D).2]
+  -- each `t d b` lies in the square-zero ideal
+  have hker_mem : ∀ (d : ↥D) (b : ↥Γ(X, U)), t d b ∈ RingHom.ker φ.hom := by
+    intro d b
+    have := congrArg (fun (g : Γ(X, U) ⟶ R₀) => g.hom b) (hφeq d)
+    simp only [CommRingCat.hom_comp, RingHom.coe_comp, Function.comp_apply] at this
+    show (θ d).hom b - (θ 0).hom b ∈ RingHom.ker φ.hom
+    rw [RingHom.mem_ker, map_sub, this, sub_self]
+  -- products of two such vanish
+  have hsq : ∀ (a b : ↥R), a ∈ RingHom.ker φ.hom → b ∈ RingHom.ker φ.hom → a * b = 0 := by
+    intro a b ha hb
+    have : a * b ∈ RingHom.ker φ.hom ^ 2 := by
+      rw [pow_two]; exact Ideal.mul_mem_mul ha hb
+    rw [hker] at this
+    simpa using this
+  -- every chart coordinate restricts to the structure map on the base
+  have hκθ : ∀ d' : ↥D, κ ≫ θ d' = qR := by
+    intro d'
+    apply Spec.map_injective
+    rw [Spec.map_comp, hκ, hqR, ← Category.assoc, hθ]
+    exact d'.1.2
+  have hκθa : ∀ (a : ↥D) (k : ↥B), (θ a).hom (κ.hom k) = qR.hom k := by
+    intro a k
+    have := congrArg (fun (g : B ⟶ R) => g.hom k) (hκθ a)
+    simpa only [CommRingCat.hom_comp, RingHom.coe_comp, Function.comp_apply] using this
+  -- THE CRUX: additivity of `t` in the point
+  have hadd : ∀ d d' : ↥D, ∀ b, t (d + d') b = t d b + t d' b := by
+    intro d d'
+    -- the triple fibre product `R ×_{R₀} R ×_{R₀} R` and its structure maps
+    set JC : CommRingCat.{u} := CommRingCat.of ↥(sqZeroTriple φ.hom)
+    set p₁ : JC ⟶ R := CommRingCat.ofHom (sqZeroTriple.pr₁ φ.hom)
+    set p₂ : JC ⟶ R := CommRingCat.ofHom (sqZeroTriple.pr₂ φ.hom)
+    set p₃ : JC ⟶ R := CommRingCat.ofHom (sqZeroTriple.pr₃ φ.hom)
+    set sg : JC ⟶ R := CommRingCat.ofHom (sqZeroTriple.sigma φ.hom hsq)
+    have hagree : ∀ (a : ↥D) (b : ↥Γ(X, U)), φ.hom ((θ 0).hom b) = φ.hom ((θ a).hom b) := by
+      intro a b
+      have h := congrArg (fun (g : Γ(X, U) ⟶ R₀) => g.hom b) (hφeq a)
+      simp only [CommRingCat.hom_comp, RingHom.coe_comp, Function.comp_apply] at h
+      exact h.symm
+    set mk : ↥D → ↥D → (Γ(X, U) ⟶ JC) := fun a c =>
+      CommRingCat.ofHom (sqZeroTriple.lift φ.hom (θ 0).hom (θ a).hom (θ c).hom
+        (hagree a) (hagree c))
+    have hmk₁ : ∀ a c : ↥D, mk a c ≫ p₁ = θ 0 :=
+      fun a c => CommRingCat.hom_ext (RingHom.ext fun b => rfl)
+    have hmk₂ : ∀ a c : ↥D, mk a c ≫ p₂ = θ a :=
+      fun a c => CommRingCat.hom_ext (RingHom.ext fun b => rfl)
+    have hmk₃ : ∀ a c : ↥D, mk a c ≫ p₃ = θ c :=
+      fun a c => CommRingCat.hom_ext (RingHom.ext fun b => rfl)
+    have hmkσ : ∀ (a c : ↥D) (b : ↥Γ(X, U)),
+        (mk a c ≫ sg).hom b = (θ a).hom b + (θ c).hom b - (θ 0).hom b := fun a c b => rfl
+    -- all patches share one base point on `Spec JC`
+    have hκmk : ∀ a c : ↥D, κ ≫ mk a c = κ ≫ mk 0 0 := by
+      intro a c
+      apply CommRingCat.hom_ext
+      refine sqZeroTriple.hom_ext φ.hom (fun k => rfl) (fun k => ?_) (fun k => ?_)
+      · show (θ a).hom (κ.hom k) = (θ 0).hom (κ.hom k)
+        rw [hκθa a k, hκθa 0 k]
+      · show (θ c).hom (κ.hom k) = (θ 0).hom (κ.hom k)
+        rw [hκθa c k, hκθa 0 k]
+    set qJ : Spec JC ⟶ Spec B := Spec.map (κ ≫ mk 0 0) with hqJ
+    letI := ab.addCommGroup qJ
+    -- the restriction maps to `Spec R`
+    have hresm : ∀ ρ : JC ⟶ R, mk 0 0 ≫ ρ = θ 0 → Spec.map ρ ≫ qJ = q := by
+      intro ρ hρ
+      rw [hqJ, ← Spec.map_comp, Category.assoc, hρ, hκθ 0, hqR]
+    have hsg00 : mk 0 0 ≫ sg = θ 0 :=
+      CommRingCat.hom_ext (RingHom.ext fun b => by rw [hmkσ]; ring)
+    have h₁ : Spec.map p₁ ≫ qJ = q := hresm p₁ (hmk₁ 0 0)
+    have h₂ : Spec.map p₂ ≫ qJ = q := hresm p₂ (hmk₂ 0 0)
+    have h₃ : Spec.map p₃ ≫ qJ = q := hresm p₃ (hmk₃ 0 0)
+    have hσ : Spec.map sg ≫ qJ = q := hresm sg hsg00
+    -- the patch points
+    have hPt : ∀ a c : ↥D, (Spec.map (mk a c) ≫ affineOpenChart hU) ≫ f = qJ := by
+      intro a c
+      rw [Category.assoc, ← hκ, ← Spec.map_comp, hκmk a c, hqJ]
+    set Pt : ↥D → ↥D → RelPoint f qJ :=
+      fun a c => ⟨Spec.map (mk a c) ≫ affineOpenChart hU, hPt a c⟩
+    -- restriction of a patch point along a structure map
+    have key : ∀ (a c : ↥D) (ρ : JC ⟶ R) (g : Γ(X, U) ⟶ R) (_ : mk a c ≫ ρ = g)
+        (hg : (Spec.map g ≫ affineOpenChart hU) ≫ f = q) (hs : Spec.map ρ ≫ qJ = q),
+        RelPoint.pre (Spec.map ρ) hs (Pt a c) = ⟨Spec.map g ≫ affineOpenChart hU, hg⟩ := by
+      intro a c ρ g hρ hg hs
+      apply Subtype.ext
+      show Spec.map ρ ≫ Spec.map (mk a c) ≫ affineOpenChart hU = Spec.map g ≫ affineOpenChart hU
+      rw [← Category.assoc, ← Spec.map_comp, hρ]
+    have hval : ∀ a : ↥D, (Spec.map (θ a) ≫ affineOpenChart hU) ≫ f = q := by
+      intro a; rw [hθ a]; exact a.1.2
+    have hDpt : ∀ a : ↥D, (⟨Spec.map (θ a) ≫ affineOpenChart hU, hval a⟩ : RelPoint f q) = a.1 :=
+      fun a => Subtype.ext (hθ a)
+    have hzeroval : Spec.map (θ 0) ≫ affineOpenChart hU = (ab.zero q).1 := hθ 0
+    -- the three restrictions of the two patch points
+    have hA₁ : RelPoint.pre (Spec.map p₁) h₁ (Pt d 0) = 0 := by
+      rw [key d 0 p₁ (θ 0) (hmk₁ d 0) (hval 0) h₁]; exact Subtype.ext hzeroval
+    have hA₂ : RelPoint.pre (Spec.map p₂) h₂ (Pt d 0) = d.1 := by
+      rw [key d 0 p₂ (θ d) (hmk₂ d 0) (hval d) h₂]; exact hDpt d
+    have hA₃ : RelPoint.pre (Spec.map p₃) h₃ (Pt d 0) = 0 := by
+      rw [key d 0 p₃ (θ 0) (hmk₃ d 0) (hval 0) h₃]; exact Subtype.ext hzeroval
+    have hB₁ : RelPoint.pre (Spec.map p₁) h₁ (Pt 0 d') = 0 := by
+      rw [key 0 d' p₁ (θ 0) (hmk₁ 0 d') (hval 0) h₁]; exact Subtype.ext hzeroval
+    have hB₂ : RelPoint.pre (Spec.map p₂) h₂ (Pt 0 d') = 0 := by
+      rw [key 0 d' p₂ (θ 0) (hmk₂ 0 d') (hval 0) h₂]; exact Subtype.ext hzeroval
+    have hB₃ : RelPoint.pre (Spec.map p₃) h₃ (Pt 0 d') = d'.1 := by
+      rw [key 0 d' p₃ (θ d') (hmk₃ 0 d') (hval d') h₃]; exact hDpt d'
+    -- naturality of the group law along each structure map
+    have hsum : ∀ (ρ : JC ⟶ R) (hs : Spec.map ρ ≫ qJ = q),
+        RelPoint.pre (Spec.map ρ) hs (Pt d 0 + Pt 0 d') =
+          RelPoint.pre (Spec.map ρ) hs (Pt d 0) + RelPoint.pre (Spec.map ρ) hs (Pt 0 d') :=
+      fun ρ hs => ab.pre_add (Spec.map ρ) hs _ _
+    -- `Spec (p₁ ≫ φ)` is surjective, so the sum has constant image too
+    have hδsurj : Function.Surjective (Spec.map (p₁ ≫ φ)).base := by
+      refine surjective_specMap_of_sq_ker_eq_bot _ ?_ ?_
+      · intro y
+        obtain ⟨z, hz⟩ := hφ y
+        exact ⟨⟨(z, z, z), rfl, rfl⟩, hz⟩
+      · rw [eq_bot_iff, pow_two]
+        refine Ideal.mul_le.mpr fun a ha b hb => ?_
+        have ha1 : (a : ↥R × ↥R × ↥R).1 ∈ RingHom.ker φ.hom := RingHom.mem_ker.mpr ha
+        have hb1 : (b : ↥R × ↥R × ↥R).1 ∈ RingHom.ker φ.hom := RingHom.mem_ker.mpr hb
+        have ha2 : (a : ↥R × ↥R × ↥R).2.1 ∈ RingHom.ker φ.hom := by
+          rw [RingHom.mem_ker, ← a.2.1]; exact RingHom.mem_ker.mp ha1
+        have ha3 : (a : ↥R × ↥R × ↥R).2.2 ∈ RingHom.ker φ.hom := by
+          rw [RingHom.mem_ker, ← a.2.2]; exact RingHom.mem_ker.mp ha1
+        have hb2 : (b : ↥R × ↥R × ↥R).2.1 ∈ RingHom.ker φ.hom := by
+          rw [RingHom.mem_ker, ← b.2.1]; exact RingHom.mem_ker.mp hb1
+        have hb3 : (b : ↥R × ↥R × ↥R).2.2 ∈ RingHom.ker φ.hom := by
+          rw [RingHom.mem_ker, ← b.2.2]; exact RingHom.mem_ker.mp hb1
+        refine Ideal.mem_bot.mpr (Subtype.ext (Prod.ext ?_ (Prod.ext ?_ ?_)))
+        · exact hsq _ _ ha1 hb1
+        · exact hsq _ _ ha2 hb2
+        · exact hsq _ _ ha3 hb3
+    have hker0 : Spec.map p₁ ≫ (Pt d 0 + Pt 0 d').1 = q ≫ ab.zeroSection := by
+      have hs := hsum p₁ h₁
+      rw [hA₁, hB₁, add_zero] at hs
+      have hv : Spec.map p₁ ≫ (Pt d 0 + Pt 0 d').1 = (ab.zero q).1 := congrArg Subtype.val hs
+      rw [hv]; exact ab.zero_val q
+    have hfacsum : ∃ ζ : Γ(X, U) ⟶ JC,
+        Spec.map ζ ≫ affineOpenChart hU = (Pt d 0 + Pt 0 d').1 := by
+      refine exists_affineOpenChart_factor hU _ ?_
+      rintro _ ⟨p, rfl⟩
+      have hcond : Spec.map (p₁ ≫ φ) ≫ (Pt d 0 + Pt 0 d').1
+          = (Spec.map (p₁ ≫ φ) ≫ qJ) ≫ ab.zeroSection := by
+        rw [Spec.map_comp, Category.assoc (Spec.map φ) (Spec.map p₁) qJ, h₁, Category.assoc,
+          hker0, Category.assoc]
+      rw [base_comp_eq_zeroSection_of_infKernel ab (p₁ ≫ φ) hδsurj (Pt d 0 + Pt 0 d') hcond p]
+      exact hall _
+    obtain ⟨ζ, hζ⟩ := hfacsum
+    -- identify the three coordinates of `ζ`
+    have hcoord : ∀ (ρ : JC ⟶ R) (g : Γ(X, U) ⟶ R) (hs : Spec.map ρ ≫ qJ = q)
+        (hg : (Spec.map g ≫ affineOpenChart hU) ≫ f = q),
+        RelPoint.pre (Spec.map ρ) hs (Pt d 0 + Pt 0 d') = ⟨Spec.map g ≫ affineOpenChart hU, hg⟩ →
+        ζ ≫ ρ = g := by
+      intro ρ g hs hg hEq
+      refine affineOpenChart_injective hU R ?_
+      show Spec.map (ζ ≫ ρ) ≫ affineOpenChart hU = Spec.map g ≫ affineOpenChart hU
+      rw [Spec.map_comp, Category.assoc, hζ]
+      exact congrArg Subtype.val hEq
+    have hζ₁ : ζ ≫ p₁ = θ 0 := by
+      refine hcoord p₁ (θ 0) h₁ (hval 0) ?_
+      rw [hsum p₁ h₁, hA₁, hB₁, add_zero]
+      exact (Subtype.ext hzeroval).symm
+    have hζ₂ : ζ ≫ p₂ = θ d := by
+      refine hcoord p₂ (θ d) h₂ (hval d) ?_
+      rw [hsum p₂ h₂, hA₂, hB₂, add_zero]
+      exact (hDpt d).symm
+    have hζ₃ : ζ ≫ p₃ = θ d' := by
+      refine hcoord p₃ (θ d') h₃ (hval d') ?_
+      rw [hsum p₃ h₃, hA₃, hB₃, zero_add]
+      exact (hDpt d').symm
+    -- apply `σ` and read off additivity
+    have hζσ : ∀ b : ↥Γ(X, U),
+        (ζ ≫ sg).hom b = (θ d).hom b + (θ d').hom b - (θ 0).hom b := by
+      intro b
+      have e₁ := congrArg (fun (g : Γ(X, U) ⟶ R) => g.hom b) hζ₁
+      have e₂ := congrArg (fun (g : Γ(X, U) ⟶ R) => g.hom b) hζ₂
+      have e₃ := congrArg (fun (g : Γ(X, U) ⟶ R) => g.hom b) hζ₃
+      simp only [CommRingCat.hom_comp, RingHom.coe_comp, Function.comp_apply] at e₁ e₂ e₃
+      show (ζ.hom b).1.2.1 + (ζ.hom b).1.2.2 - (ζ.hom b).1.1 = _
+      rw [← e₁, ← e₂, ← e₃]
+      rfl
+    have hsgA : mk d 0 ≫ sg = θ d :=
+      CommRingCat.hom_ext (RingHom.ext fun b => by rw [hmkσ]; ring)
+    have hsgB : mk 0 d' ≫ sg = θ d' :=
+      CommRingCat.hom_ext (RingHom.ext fun b => by rw [hmkσ]; ring)
+    have hσsum : (d + d').1 = RelPoint.pre (Spec.map sg) hσ (Pt d 0 + Pt 0 d') := by
+      rw [hsum sg hσ, key d 0 sg (θ d) hsgA (hval d) hσ, key 0 d' sg (θ d') hsgB (hval d') hσ,
+        hDpt d, hDpt d']
+      rfl
+    have hθsum : θ (d + d') = ζ ≫ sg := by
+      refine affineOpenChart_injective hU R ?_
+      show Spec.map (θ (d + d')) ≫ affineOpenChart hU = Spec.map (ζ ≫ sg) ≫ affineOpenChart hU
+      rw [hθ (d + d'), Spec.map_comp, Category.assoc, hζ]
+      exact congrArg Subtype.val hσsum
+    intro b
+    show (θ (d + d')).hom b - (θ 0).hom b = _
+    rw [hθsum, hζσ b]
+    show _ = ((θ d).hom b - (θ 0).hom b) + ((θ d').hom b - (θ 0).hom b)
+    ring
+  -- THE FINISH: `t` is additive and injective, and `n` is a unit in `R`
+  have htzero : ∀ b, t (0 : ↥D) b = 0 := fun b => sub_self _
+  have hnsmul : ∀ (m : ℕ) (a : ↥D) (b : ↥Γ(X, U)), t (m • a) b = (m : ↥R) * t a b := by
+    intro m
+    induction m with
+    | zero => intro a b; rw [zero_smul, htzero]; simp
+    | succ k ih => intro a b; rw [succ_nsmul, hadd, ih]; push_cast; ring
+  have hd : x ∈ D := hres
+  set dd : ↥D := ⟨x, hd⟩
+  have hndd : (n • dd : ↥D) = 0 := Subtype.ext (by simpa using hnx)
+  have hun : IsUnit ((n : ℕ) : ↥R) := by
+    have hcast : ((n : ℕ) : ↥R) = qR.hom ((n : ℕ) : ↥B) := by simp
+    rw [hcast]
+    exact hn.map qR.hom
+  have htd : ∀ b, t dd b = 0 := by
+    intro b
+    have h1 : t (n • dd) b = (n : ↥R) * t dd b := hnsmul n dd b
+    rw [hndd, htzero] at h1
+    exact hun.mul_right_eq_zero.mp h1.symm
+  have hθd : θ dd = θ (0 : ↥D) := by
+    apply CommRingCat.hom_ext
+    refine RingHom.ext fun b => ?_
+    have hb := htd b
+    show (θ dd).hom b = (θ 0).hom b
+    rw [ht] at hb
+    exact sub_eq_zero.mp hb
+  refine Subtype.ext ?_
+  have hv : dd.1.1 = (0 : ↥D).1.1 := by rw [← hθ dd, ← hθ (0 : ↥D), hθd]
+  exact hv
+
+/-- **`[N]` IS FORMALLY UNRAMIFIED OVER A LOCAL BASE ON WHICH `N` IS
+INVERTIBLE** (**PROVEN 2026-07-30**; it was a sorry leaf for the length of one
+commit) — SGA 3 Exp. II, Mumford *AV* §11, Milne *AV* I.7.
+
+This is `formallyUnramified_mulByNat` (`AbelianSchemeIsogeny.lean`, base a
+FIELD) with the base replaced by a local RING, and the proof is the same three
+lines over the same functor-of-points criterion: `[N] ≫ f = f` puts the two
+lifts in one group of relative points, `nsmul_val` turns `g₁ ≫ [N] = g₂ ≫ [N]`
+into `n • (y₁ - y₂) = 0`, and `pre_sub` turns their agreement mod the
+square-zero ideal into `y₁ - y₂ ∈ infKernel`.  The content is the leaf
+`eq_zero_of_nsmul_eq_zero_of_squareZero_of_isLocalRing` above.
+
+**`[IsLocalRing ↥B]` IS USED IN EXACTLY ONE PLACE** —
+`exists_isAffineOpen_zeroSection_of_isLocalRing`, i.e. to fit the whole zero
+section into one affine chart — and the statement is true without it; see that
+lemma's docstring for the localisation that removes it.
+
+**`IsUnit` IS LOAD-BEARING.**  Over `B = ℤ_p` and `N = p` the statement is
+FALSE: `A[p]` is not étale in residue characteristic `p`, and
+`exists_pow_eq_stalkMap_mulByNat_prime` elsewhere in this file is the assertion
+that `[p]` is INSEPARABLE there.  What the hypothesis buys is exactly that
+`(N : R)` is a unit for every `B`-algebra `R`, which is the one arithmetic input
+of the argument. -/
+theorem formallyUnramified_mulByNat_of_isUnit_of_isLocalRing [IsLocalRing ↥B]
+    (ab : AbelianSchemeStruct f) (N : ℕ) (hN : IsUnit ((N : ℕ) : ↥B)) :
+    FormallyUnramified (ab.mulByNat N) := by
+  refine FormallyUnramified.of_hom_ext _ ?_
+  intro R R₀ φ hφ hker g₁ g₂ hres hcomp
+  have hq₂ : g₂ ≫ f = g₁ ≫ f := by
+    conv_lhs => rw [← ab.mulByNat_comp N]
+    rw [← Category.assoc, ← hcomp, Category.assoc, ab.mulByNat_comp]
+  letI := ab.addCommGroup (g₁ ≫ f)
+  letI := ab.addCommGroup (Spec.map φ ≫ (g₁ ≫ f))
+  set y₁ : RelPoint f (g₁ ≫ f) := ⟨g₁, rfl⟩
+  set y₂ : RelPoint f (g₁ ≫ f) := ⟨g₂, hq₂⟩
+  have hsub : y₁ - y₂ = 0 := by
+    refine eq_zero_of_nsmul_eq_zero_of_squareZero_of_isLocalRing ab N hN φ hφ hker _ ?_ ?_
+    · rw [ab.pre_sub, sub_eq_zero]
+      exact Subtype.ext hres
+    · rw [smul_sub, sub_eq_zero]
+      refine Subtype.ext ?_
+      rw [ab.nsmul_val, ab.nsmul_val]
+      exact hcomp
+  exact congrArg Subtype.val (sub_eq_zero.mp hsub)
+
+end GeneralBase
+
+end MulByNatUnramifiedBase
+
+open _root_.CategoryTheory.Limits in
 /-- **THE KERNEL OF REDUCTION IS TORSION-FREE AWAY FROM THE RESIDUE
-CHARACTERISTIC** (sorry leaf — the finite étale torsion subscheme; BLR
+CHARACTERISTIC** (**PROVEN 2026-07-30**, with no new leaf — BLR
 *Néron Models* 7.3, Mumford *AV* §6, Silverman *AEC* VII.3.1 in the
-elliptic case).
+elliptic case).  Everything the docstring below describes as classical is
+now written out, over the subsection immediately above.
 
 An `O`-point `u` of an abelian scheme over a LOCAL ring `O`, killed by
 `qⁿ` for `q` invertible on `O`, which reduces to `0` at the closed point,
@@ -12725,21 +16205,87 @@ and `π` is its residue map" — the kernel of a ring map is an ideal, so
 disconnected base a `qⁿ`-torsion section may vanish on one component and
 not on another, so the statement is false for a general `O`.
 
-`hq` is not needed — `hqO` alone drives the argument — and is carried
+`_hq` is not needed — `hqO` alone drives the argument — and is carried
 only because every consumer has it. -/
 theorem abelianSchemePt_eq_zero_of_pre_eq_of_isUnit
     {D : Type u} [Field D] [NumberField D]
     {O : CommRingCat.{u}} {κ : Type u} [Field κ] (π : O ⟶ CommRingCat.of κ)
     (hlocal : ∀ z : O, π.hom z = 0 ↔ ¬ IsUnit z)
     {𝒜 : Scheme.{u}} {fO : 𝒜 ⟶ Spec O} {abO : AbelianSchemeStruct fO}
-    (mO : Mult abO (𝓞 D)) (q n : ℕ) (hq : q.Prime) (hqO : IsUnit ((q : O)))
+    (mO : Mult abO (𝓞 D)) (q n : ℕ) (_hq : q.Prime) (hqO : IsUnit ((q : O)))
     (u : RelPoint fO (𝟙 (Spec O)))
     (hu : mO.act ((q : 𝓞 D) ^ n) u = abO.zero (𝟙 (Spec O)))
     (hred : RelPoint.pre (Spec.map π) (Category.comp_id (Spec.map π)) u
       = RelPoint.pre (Spec.map π) (Category.comp_id (Spec.map π))
           (abO.zero (𝟙 (Spec O)))) :
-    u = abO.zero (𝟙 (Spec O)) :=
-  sorry
+    u = abO.zero (𝟙 (Spec O)) := by
+  classical
+  -- `O` is a local ring: `ker π` is the set of non-units.
+  haveI hnt : Nontrivial ↥O := by
+    refine ⟨0, 1, fun h => ?_⟩
+    have h0 : π.hom (0 : O) = π.hom (1 : O) := by rw [h]
+    simp at h0
+  haveI hloc : IsLocalRing ↥O := by
+    refine IsLocalRing.of_nonunits_add ?_
+    intro a b ha hb
+    have ha' : π.hom a = 0 := (hlocal a).mpr ha
+    have hb' : π.hom b = 0 := (hlocal b).mpr hb
+    exact (hlocal (a + b)).mp (by rw [map_add, ha', hb', add_zero])
+  haveI : PreconnectedSpace (PrimeSpectrum ↥O) :=
+    preconnectedSpace_primeSpectrum_of_isLocalRing ↥O
+  haveI : PreconnectedSpace ↥(Spec O) :=
+    inferInstanceAs (PreconnectedSpace (PrimeSpectrum ↥O))
+  haveI : Nonempty ↥(Spec (CommRingCat.of κ)) :=
+    inferInstanceAs (Nonempty (PrimeSpectrum κ))
+  set N : ℕ := q ^ n with hNdef
+  have hNO : IsUnit ((N : ℕ) : ↥O) := by
+    rw [hNdef, Nat.cast_pow]
+    exact hqO.pow n
+  haveI hfu : FormallyUnramified (abO.mulByNat N) :=
+    formallyUnramified_mulByNat_of_isUnit_of_isLocalRing abO N hNO
+  haveI : LocallyOfFiniteType (abO.mulByNat N) := abO.locallyOfFiniteType_mulByNat N
+  haveI : IsSeparated (abO.mulByNat N) := (abO.isProper_mulByNat N).toIsSeparated
+  -- the torsion hypothesis, read as a factorisation through `[N]`
+  have hx : u.1 ≫ abO.mulByNat N = 𝟙 (Spec O) ≫ abO.zeroSection := by
+    letI := abO.addCommGroup (𝟙 (Spec O))
+    letI := mO.module (𝟙 (Spec O))
+    have hcast : mO.act ((q : 𝓞 D) ^ n) u = N • u := by
+      show ((q : 𝓞 D) ^ n) • u = N • u
+      rw [hNdef, ← Nat.cast_pow]
+      exact Nat.cast_smul_eq_nsmul (𝓞 D) (q ^ n) u
+    have h := congrArg Subtype.val (hcast ▸ hu :
+      (N • u : RelPoint fO (𝟙 (Spec O))) = abO.zero (𝟙 (Spec O)))
+    rw [abO.nsmul_val N u] at h
+    rw [h, abO.zero_val (𝟙 (Spec O))]
+  have h0 : abO.zeroSection ≫ abO.mulByNat N = 𝟙 (Spec O) ≫ abO.zeroSection := by
+    rw [abO.zeroSection_comp_mulByNat N, Category.id_comp]
+  set sx : Spec O ⟶ pullback (abO.mulByNat N) abO.zeroSection :=
+    pullback.lift u.1 (𝟙 _) hx with hsx
+  set s0 : Spec O ⟶ pullback (abO.mulByNat N) abO.zeroSection :=
+    pullback.lift abO.zeroSection (𝟙 _) h0 with hs0
+  have hsxs : sx ≫ pullback.snd (abO.mulByNat N) abO.zeroSection = 𝟙 _ :=
+    pullback.lift_snd _ _ _
+  have hs0s : s0 ≫ pullback.snd (abO.mulByNat N) abO.zeroSection = 𝟙 _ :=
+    pullback.lift_snd _ _ _
+  have hredval : Spec.map π ≫ u.1 = Spec.map π ≫ abO.zeroSection := by
+    have h := congrArg Subtype.val hred
+    rw [abO.pre_zero (Spec.map π) (Category.comp_id (Spec.map π)),
+      abO.zero_val (Spec.map π)] at h
+    exact h
+  have hw : Spec.map π ≫ sx = Spec.map π ≫ s0 := by
+    refine pullback.hom_ext ?_ ?_
+    · rw [Category.assoc, hsx, pullback.lift_fst, Category.assoc, hs0, pullback.lift_fst]
+      exact hredval
+    · rw [Category.assoc, hsx, pullback.lift_snd, Category.assoc, hs0, pullback.lift_snd]
+  haveI : FormallyUnramified (pullback.snd (abO.mulByNat N) abO.zeroSection) :=
+    MorphismProperty.pullback_snd (P := @FormallyUnramified) _ _ hfu
+  have heq : sx = s0 :=
+    section_eq_of_formallyUnramified_of_preconnectedSpace _ (Spec.map π) hsxs hs0s hw
+  refine Subtype.ext ?_
+  rw [abO.zero_val (𝟙 (Spec O)), Category.id_comp]
+  have hfin := congrArg (fun m => m ≫ pullback.fst (abO.mulByNat N) abO.zeroSection) heq
+  simp only [hsx, hs0, pullback.lift_fst] at hfin
+  exact hfin
 
 namespace IsAbelianReductionDatum
 
@@ -13634,7 +17180,276 @@ theorem exists_absFrobScheme_comp_eq_of_forall_exists_pow
     ∃ V : X ⟶ Y, absFrobScheme X p a hp hchar ≫ V = g :=
   ⟨absFrobRootScheme p a g H hp hchar, absFrobScheme_comp_absFrobRootScheme p a g H hp hchar⟩
 
-/-- **`[N]^{\#}` LANDS IN `p ^ a`-th POWERS** (sorry leaf, CUT 2026-07-28 —
+/-! #### Landing in `p`-th powers is MULTIPLICATIVE in the exponent
+
+The three lemmas here are what reduce the Verschiebung leaf below from the
+exponent `p ^ a` to the exponent `p`.  They are about arbitrary morphisms of
+schemes and contain no abelian-variety input at all; the content is the single
+observation that `g^{\#}` is a RING map, so it carries `r`-th powers to `r`-th
+powers and the two exponents multiply across a composite. -/
+
+/-- **A power-factorisation of a sheaf map transports along an EQUALITY of
+morphisms** (PROVEN 2026-07-28).  Pure bookkeeping, but it cannot be done with
+`rw`: the statement's TYPE mentions the morphism (through `g ⁻¹ᵁ U` and through
+the type of `t`), so rewriting under the binder hits a motive problem.  `subst`
+does not. -/
+theorem exists_pow_eq_app_of_eq {X Y : Scheme.{u}} {g g' : X ⟶ Y} (hgg : g = g') (q : ℕ)
+    (H : ∀ (U : Y.Opens) (s : Γ(Y, U)), ∃ t : Γ(X, g ⁻¹ᵁ U), t ^ q = (g.app U).hom s) :
+    ∀ (U : Y.Opens) (s : Γ(Y, U)), ∃ t : Γ(X, g' ⁻¹ᵁ U), t ^ q = (g'.app U).hom s := by
+  subst hgg; exact H
+
+/-- **The identity's sheaf map lands in FIRST powers** (PROVEN 2026-07-28) — the
+base case `a = 0` of the induction below, where `[p ^ 0] = [1] = 𝟙`. -/
+theorem exists_pow_eq_app_id {X : Scheme.{u}} (U : X.Opens) (s : Γ(X, U)) :
+    ∃ t : Γ(X, (𝟙 X :) ⁻¹ᵁ U), t ^ 1 = ((𝟙 X :).app U).hom s :=
+  ⟨s, by rw [pow_one]; rfl⟩
+
+/-- **LANDING IN POWERS COMPOSES, AND THE EXPONENTS MULTIPLY** (PROVEN
+2026-07-28): if `g^{\#}` lands in `q`-th powers and `h^{\#}` lands in `r`-th
+powers, then `(g ≫ h)^{\#}` lands in `q · r`-th powers.
+
+`(g ≫ h)^{\#} s = g^{\#}(h^{\#} s) = g^{\#}(u ^ r) = (g^{\#} u) ^ r = (v ^ q) ^ r`,
+the middle step being only that `g^{\#}` is a ring map.  `Scheme.comp_app` and
+`Scheme.Hom.comp_preimage` are both `rfl`, so no transport is needed.
+
+**This is the whole reason the leaf below is not `a` separate theorems.**  It
+turns `[p ^ a] = [p] ≫ [p ^ (a-1)]` (`mulByNat_mul`) into an induction whose
+only input is the single-prime case. -/
+theorem exists_pow_eq_app_comp {X Y Z : Scheme.{u}} (g : X ⟶ Y) (h : Y ⟶ Z) (q r : ℕ)
+    (Hg : ∀ (V : Y.Opens) (s : Γ(Y, V)), ∃ t : Γ(X, g ⁻¹ᵁ V), t ^ q = (g.app V).hom s)
+    (Hh : ∀ (W : Z.Opens) (s : Γ(Z, W)), ∃ t : Γ(Y, h ⁻¹ᵁ W), t ^ r = (h.app W).hom s)
+    (W : Z.Opens) (s : Γ(Z, W)) :
+    ∃ t : Γ(X, (g ≫ h) ⁻¹ᵁ W), t ^ (q * r) = ((g ≫ h).app W).hom s := by
+  obtain ⟨u, hu⟩ := Hh W s
+  obtain ⟨v, hv⟩ := Hg (h ⁻¹ᵁ W) u
+  refine ⟨v, ?_⟩
+  calc v ^ (q * r) = (v ^ q) ^ r := pow_mul v q r
+    _ = ((g.app (h ⁻¹ᵁ W)).hom u) ^ r := by rw [hv]
+    _ = (g.app (h ⁻¹ᵁ W)).hom (u ^ r) := (map_pow _ _ _).symm
+    _ = (g.app (h ⁻¹ᵁ W)).hom ((h.app W).hom s) := by rw [hu]
+    _ = ((g ≫ h).app W).hom s := rfl
+
+/-! #### Landing in `p ^ a`-th powers is LOCAL, and may be checked on STALKS
+
+**PROVEN 2026-07-30.**  The two lemmas here move the Verschiebung leaf off the
+sheaf and onto the LOCAL RINGS.  Both are about an arbitrary morphism of schemes
+out of a reduced scheme in characteristic `p` and contain no abelian-variety
+input; the single mechanism behind both is that a `p ^ a`-th root of a section
+of a REDUCED scheme is UNIQUE when it exists (`pow_left_injective_sections`), so
+locally-chosen roots need no coherence argument — they agree on overlaps
+automatically and glue. -/
+
+/-- **A SECTION THAT IS LOCALLY A `p ^ a`-th POWER IS A `p ^ a`-th POWER**
+(PROVEN 2026-07-30), on a reduced scheme in which `p` vanishes.
+
+Given a cover `V ≤ ⨆ i, W i` and a root of `σ|_{W i}` over each `W i`, the roots
+agree on `W i ⊓ W j` — both have `σ|_{W i ⊓ W j}` as their `p ^ a`-th power and
+the power map is injective — so the sheaf condition glues them
+(`existsUnique_gluing'`), and the glued section is a root of `σ` because it is
+one locally (`eq_of_locally_eq'`).
+
+The two hom-set arguments `W i ⊓ W j ⟶ W i ⟶ V` and `W i ⊓ W j ⟶ W j ⟶ V` are
+EQUAL rather than merely parallel — `X.Opens` is a poset category, so its
+hom-types are proof-carrying subsingletons — which is why the compatibility
+check closes by `rfl` after both sides are pushed through `X.presheaf.map_comp`. -/
+theorem exists_pow_eq_of_cover {X : Scheme.{u}} [AlgebraicGeometry.IsReduced X]
+    (p a : ℕ) (hp : p.Prime) (hchar : ∀ U : X.Opens, (p : Γ(X, U)) = 0)
+    {ι : Type*} (V : X.Opens) (W : ι → X.Opens) (hWV : ∀ i, W i ≤ V)
+    (hcover : V ≤ iSup W) (σ : Γ(X, V))
+    (H : ∀ i, ∃ t : Γ(X, W i), t ^ p ^ a = (X.presheaf.map (homOfLE (hWV i)).op).hom σ) :
+    ∃ t : Γ(X, V), t ^ p ^ a = σ := by
+  choose t ht using H
+  have hcompat : TopCat.Presheaf.IsCompatible X.presheaf W t := by
+    intro i j
+    refine pow_left_injective_sections p a hp hchar (W i ⊓ W j) ?_
+    rw [← map_pow, ← map_pow, ht, ht]
+    rw [← CategoryTheory.ConcreteCategory.comp_apply,
+      ← CategoryTheory.ConcreteCategory.comp_apply, ← X.presheaf.map_comp, ← X.presheaf.map_comp]
+    rfl
+  obtain ⟨u, hu, -⟩ :=
+    X.sheaf.existsUnique_gluing' W V (fun i => homOfLE (hWV i)) hcover t hcompat
+  have hu' : ∀ i, (X.presheaf.map (homOfLE (hWV i)).op).hom u = t i := hu
+  refine ⟨u, ?_⟩
+  refine X.sheaf.eq_of_locally_eq' W V (fun i => homOfLE (hWV i)) hcover _ _ ?_
+  intro i
+  have e : ((X.presheaf.map (homOfLE (hWV i)).op).hom u) ^ p ^ a
+      = (X.presheaf.map (homOfLE (hWV i)).op).hom σ := by rw [hu' i]; exact ht i
+  exact (map_pow (X.presheaf.map (homOfLE (hWV i)).op).hom u (p ^ a)).trans e
+
+/-- **A STALKWISE CRITERION FOR A SHEAF MAP TO LAND IN `p ^ a`-th POWERS**
+(PROVEN 2026-07-30).  If every STALK MAP of `g` has its image inside the
+`p ^ a`-th powers of the target stalk, then so does every `g^{\#}_U`, on a
+reduced `X` in which `p` vanishes.
+
+This is what takes the Verschiebung leaf below off the sheaf.  A germ-level root
+`τ` of the germ of `g^{\#}_U s` is represented by an honest section `t₀` on some
+neighbourhood; `t₀ ^ p ^ a` and `g^{\#}_U s` then have the SAME GERM at that
+point, hence agree on a smaller neighbourhood (`TopCat.Presheaf.germ_eq`); so
+each point of `g ⁻¹ᵁ U` has a neighbourhood carrying a root, and
+`exists_pow_eq_of_cover` glues them.
+
+**THE CONVERSE IS TRIVIAL**, so the two formulations are EQUIVALENT and nothing
+is gained or lost in strength by passing between them: if `g^{\#}_U s = t ^ p ^ a`
+then applying the germ map — a ring homomorphism — at any `x` exhibits the germ
+of `t` as a `p ^ a`-th root of the stalk image, and every stalk element is a germ
+(`exists_germ_eq`).  What the passage buys is METHOD, not strength: after it the
+remaining work happens inside LOCAL RINGS, where localisation, completion and
+formal-group arguments are available and no sheaf bookkeeping survives. -/
+theorem exists_pow_eq_app_of_forall_stalk {X Y : Scheme.{u}} [AlgebraicGeometry.IsReduced X]
+    (p a : ℕ) (hp : p.Prime) (hchar : ∀ U : X.Opens, (p : Γ(X, U)) = 0) (g : X ⟶ Y)
+    (H : ∀ (x : X) (y : Y.presheaf.stalk (g.base x)),
+      ∃ τ : X.presheaf.stalk x, τ ^ p ^ a = (g.stalkMap x).hom y)
+    (U : Y.Opens) (s : Γ(Y, U)) :
+    ∃ t : Γ(X, g ⁻¹ᵁ U), t ^ p ^ a = (g.app U).hom s := by
+  have key : ∀ x : X, ∀ hx : x ∈ g ⁻¹ᵁ U, ∃ (W : X.Opens) (_ : x ∈ W) (hWV : W ≤ g ⁻¹ᵁ U),
+      ∃ t : Γ(X, W),
+        t ^ p ^ a = (X.presheaf.map (homOfLE hWV).op).hom ((g.app U).hom s) := by
+    intro x hx
+    obtain ⟨τ, hτ⟩ := H x ((Y.presheaf.germ U (g.base x) hx).hom s)
+    obtain ⟨W₀, hxW₀, t₀, rfl⟩ := X.presheaf.exists_germ_eq τ
+    have hgerm : (X.presheaf.germ W₀ x hxW₀).hom (t₀ ^ p ^ a)
+        = (X.presheaf.germ (g ⁻¹ᵁ U) x hx).hom ((g.app U).hom s) := by
+      rw [map_pow]
+      refine hτ.trans ?_
+      exact g.germ_stalkMap_apply U x hx s
+    obtain ⟨W, hxW, iU, iV, hWeq⟩ :=
+      X.presheaf.germ_eq x hxW₀ hx (t₀ ^ p ^ a) ((g.app U).hom s) hgerm
+    refine ⟨W, hxW, iV.le, (X.presheaf.map iU.op).hom t₀, ?_⟩
+    rw [← map_pow]
+    exact hWeq
+  choose W hxW hWV t ht using key
+  refine exists_pow_eq_of_cover p a hp hchar (g ⁻¹ᵁ U)
+    (fun i : ↥(g ⁻¹ᵁ U) => W i.1 i.2) (fun i => hWV i.1 i.2) ?_ _ (fun i => ⟨t i.1 i.2, ht i.1 i.2⟩)
+  intro x hx
+  exact TopologicalSpace.Opens.mem_iSup.mpr ⟨⟨x, hx⟩, hxW x hx⟩
+
+/-- **THE STALK MAPS OF `[p]` LAND IN `p`-th POWERS** (sorry leaf, CUT
+2026-07-30 out of `exists_pow_eq_app_mulByNat_prime` immediately below, which is
+PROVEN over it; that statement was itself cut 2026-07-28 out of
+`exists_pow_eq_app_mulByNat` — Mumford *AV* §15, Milne *AV* §I.5).  This is all
+that is left of the Verschiebung, and it is now a statement about LOCAL RINGS
+alone: for every point `x` of `A'`, the image of the stalk map
+`𝒪_{A', [p] x} ⟶ 𝒪_{A', x}` lies inside the `p`-th powers.
+
+**THE CLASSICAL PROOF, and where perfectness enters.**  `[p] = V ∘ F` with
+`F = F_{A'/k} : A' → A'^{(p)}` the RELATIVE Frobenius and `V` Cartier's
+Verschiebung.  The ABSOLUTE Frobenius is `Fr = W ∘ F`, where
+`W : A'^{(p)} = A' ×_{k, φ} k ⟶ A'` is the projection and `φ` is the `p`-power
+map of `k`.  `W` is the base change of `Spec φ` along `A' ⟶ Spec k`, so **`W`
+is an isomorphism exactly when `φ` is, i.e. exactly when `k` is PERFECT** —
+and then `[p] = (V ∘ W⁻¹) ∘ Fr`, and `Fr` is `s ↦ s ^ p` on sections and the
+identity on the space, so it is `s ↦ s ^ p` on every stalk as well.
+
+**WHAT THIS CUT IS, AND WHAT IT IS NOT.**  It is an EQUIVALENCE, not a
+weakening: `exists_pow_eq_app_of_forall_stalk` above derives the section
+statement from this one, and the converse is the one-line germ argument recorded
+in that lemma's docstring.  So NO mathematical depth was removed here, and this
+should not be read as a reduction of the problem — say so plainly rather than
+counting it as progress.  What it buys is METHOD, and concretely:
+
+* the remaining work is now inside LOCAL RINGS, so localisation, completion and
+  formal-group arguments are all available, and a prover never has to construct
+  a scheme morphism, glue sections, or reason about `𝒪`-module sheaves;
+* in particular Kähler differentials become usable.  Mathlib at this pin has
+  them at the RING level (`Mathlib/RingTheory/Kaehler/`) and **not at the scheme
+  level** (re-verified 2026-07-30, as on 2026-07-28: `Mathlib/AlgebraicGeometry/`
+  contains no `Cotangent`/`Kaehler`/`Omega` module).  The differential criterion
+  — `d[p] = p · id = 0` on invariant differentials, and `{b : d b = 0} = B^p`
+  for `B` smooth over a perfect `k` — was therefore recorded as needing a
+  scheme-level interface written first.  Against the stalk statement it needs
+  only `Ω[𝒪_{A',x} ⁄ k]`, which exists.  That is the one concrete thing this cut
+  changes about the route, and it is why the cut was made in this direction.
+
+**WHAT IS LOAD-BEARING.**  The statement needs exactly that `k` is **PERFECT**.
+It needs neither finiteness, nor `p ^ a = #k`, nor any tie between an exponent
+and the size of `k`.  `hfin` is kept because it is what the caller holds and
+`PerfectField.ofFinite` is an INSTANCE, so a prover gets `PerfectField k` by
+synthesis alone; a successor may weaken `hfin` to `[PerfectField k]` together
+with `(p : k) = 0` without touching any consumer.
+
+**PERFECTNESS IS ALSO NECESSARY, with an explicit witness.**  Let `k` be
+IMPERFECT of characteristic `p` — say `k = 𝔽_p(u)`.  `[p]` is a `k`-morphism, so
+`([p])^{\#}` is a `k`-algebra map and fixes `u`, and so is every one of its stalk
+maps.  Were `u` a `p`-th power in a stalk `𝒪_{A', x}`, it would be a `p`-th power
+in the function field `k(A')`; but `A'` is geometrically integral, so `k(A')/k`
+is separable and `k` is algebraically closed in it, whence `u^{1/p} ∉ k(A')`.
+So the leaf is FALSE over every imperfect base — and TRUE over `𝔽̄_p`, which is
+infinite.  Imperfection, not infinitude, is the obstruction. -/
+theorem exists_pow_eq_stalkMap_mulByNat_prime
+    {k : Type u} [Field k] (hfin : Finite k) (p : ℕ) (hp : p.Prime)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    (hchar : ∀ U : A'.Opens, (p : Γ(A', U)) = 0)
+    (x : A') (y : A'.presheaf.stalk ((ab'.mulByNat p).base x)) :
+    ∃ τ : A'.presheaf.stalk x, τ ^ p = ((ab'.mulByNat p).stalkMap x).hom y :=
+  sorry
+
+/-- **`[p]^{\#}` LANDS IN `p`-th POWERS** (**PROVEN 2026-07-30** over the stalk
+leaf `exists_pow_eq_stalkMap_mulByNat_prime` immediately above; it was a sorry
+leaf from 2026-07-28 until then — Mumford *AV* §15, Milne *AV* §I.5).  This is
+all that is left of the Verschiebung at the level of SECTIONS, at the SINGLE
+prime `p` rather than at `p ^ a`.
+
+For `A'` an abelian variety over a field `k` of characteristic `p`, every
+section in the image of `([p])^{\#}` is a `p`-th power — equivalently, by
+`exists_absFrobScheme_comp_eq_of_forall_exists_pow` above, `[p]` factors
+through the absolute `p`-Frobenius.
+
+The proof is `exists_pow_eq_app_of_forall_stalk` with `a = 1`, together with
+`isReduced_of_smooth_over_field_stalkwise` for the reducedness of `A'` (which is
+what makes a `p`-th root of a section unique, hence local, hence checkable on
+stalks).  `ab'` enters twice: through `mulByNat` itself, and through
+`ab'.smooth`, which is what supplies that reducedness. -/
+theorem exists_pow_eq_app_mulByNat_prime
+    {k : Type u} [Field k] (hfin : Finite k) (p : ℕ) (hp : p.Prime)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    (hchar : ∀ U : A'.Opens, (p : Γ(A', U)) = 0)
+    (U : A'.Opens) (s : Γ(A', U)) :
+    ∃ t : Γ(A', ab'.mulByNat p ⁻¹ᵁ U), t ^ p = ((ab'.mulByNat p).app U).hom s := by
+  haveI := ab'.smooth
+  haveI : AlgebraicGeometry.IsReduced A' := isReduced_of_smooth_over_field_stalkwise f'
+  have h := exists_pow_eq_app_of_forall_stalk p 1 hp hchar (ab'.mulByNat p)
+    (fun x y => by
+      simpa only [pow_one] using
+        exists_pow_eq_stalkMap_mulByNat_prime hfin p hp ab' hchar x y) U s
+  simpa only [pow_one] using h
+
+/-- **FROM THE PRIME TO THE PRIME POWER** (PROVEN 2026-07-28): if `[p]^{\#}`
+lands in `p`-th powers then `[p ^ a]^{\#}` lands in `p ^ a`-th powers, for every
+`a`.  Induction on `a` over `mulByNat_mul` (`[p ^ (n+1)] = [p] ≫ [p ^ n]`) and
+`exists_pow_eq_app_comp`.
+
+Stated with the single-prime clause as a HYPOTHESIS rather than by citing the
+leaf, so that this half is a self-contained theorem about `mulByNat` and stays
+true however that leaf is later restated or weakened. -/
+theorem exists_pow_eq_app_mulByNat_primePow
+    {k : Type u} [Field k] (p : ℕ)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    (H1 : ∀ (U : A'.Opens) (s : Γ(A', U)),
+      ∃ t : Γ(A', ab'.mulByNat p ⁻¹ᵁ U), t ^ p = ((ab'.mulByNat p).app U).hom s)
+    (a : ℕ) :
+    ∀ (U : A'.Opens) (s : Γ(A', U)),
+      ∃ t : Γ(A', ab'.mulByNat (p ^ a) ⁻¹ᵁ U),
+        t ^ p ^ a = ((ab'.mulByNat (p ^ a)).app U).hom s := by
+  induction a with
+  | zero =>
+      refine exists_pow_eq_app_of_eq (g := 𝟙 A') ?_ 1 exists_pow_eq_app_id
+      rw [pow_zero, ab'.mulByNat_one]
+  | succ n ih =>
+      have hstep := exists_pow_eq_app_comp (ab'.mulByNat p) (ab'.mulByNat (p ^ n)) p (p ^ n) H1 ih
+      have heq : ab'.mulByNat p ≫ ab'.mulByNat (p ^ n) = ab'.mulByNat (p ^ (n + 1)) := by
+        rw [← ab'.mulByNat_mul, ← pow_succ]
+      have hres := exists_pow_eq_app_of_eq heq (p * p ^ n) hstep
+      rw [← pow_succ'] at hres
+      exact hres
+
+/-- **`[N]^{\#}` LANDS IN `p ^ a`-th POWERS** (**PROVEN 2026-07-28** over the
+single statement `exists_pow_eq_app_mulByNat_prime` above, which since
+2026-07-30 is itself PROVEN over the stalk leaf
+`exists_pow_eq_stalkMap_mulByNat_prime`, where the one remaining `sorry` of this
+cluster now lives; it was a sorry leaf from 2026-07-28 until then —
 Mumford *AV* §15, Milne *AV* §I.5).  This is the DEEP HALF of the Verschiebung,
 and after `exists_absFrobScheme_comp_eq_of_forall_exists_pow` above it is all
 that is left of it: an affine-local statement about the sheaf map of `[N]`,
@@ -13667,11 +17482,32 @@ bijection, so `V y := N · (σ⁻¹ · y)` satisfies it by `Mult.galSMul_act` al
 What is true only for a morphism — and what the Weil leaf needs — is that `V`
 is ALGEBRAIC.
 
-`hfin`, `hN` and `hpa` are what tie `p ^ a` to the size of `k`, and they are
-essential: over an infinite base of characteristic `p`, or for `p ^ a ≠ #k`,
-the statement is FALSE (the `N`-power Frobenius is then not even a
-`k`-morphism, and `[N]` does not factor through it).  `ab'` enters through the
-group law, which is where `ker Fr ⊆ ker [N]` lives.
+**HYPOTHESIS AUDIT — CORRECTED 2026-07-28, the previous note here was WRONG.**
+It read: "`hfin`, `hN` and `hpa` are what tie `p ^ a` to the size of `k`, and
+they are essential: over an infinite base of characteristic `p`, or for
+`p ^ a ≠ #k`, the statement is FALSE (the `N`-power Frobenius is then not even
+a `k`-morphism, and `[N]` does not factor through it)."  Three corrections, and
+they are why this theorem now reduces to a leaf carrying none of that:
+
+* **Infinitude is not the obstruction; IMPERFECTION is.**  Over `𝔽̄_p` — infinite,
+  of characteristic `p` — the statement is TRUE, because the projection
+  `A'^{(p)} ⟶ A'` is an isomorphism over any perfect base.  What genuinely fails
+  is the imperfect case, with the witness recorded on
+  `exists_pow_eq_stalkMap_mulByNat_prime` above (`u ∈ 𝔽_p(u)` is fixed by the
+  `k`-algebra map `([p])^{\#}` and is not a `p`-th power in `k(A')`, which is
+  separable over `k`).
+* **`hN` is not consumed at all.**  Nothing here needs `N` to be the size of `k`;
+  only `hpa : p ^ a = N` is used, to identify `N` as a power of the characteristic.
+  It is retained because the consumer supplies it and removing it would change
+  that consumer's statement for no gain.
+* **The stated REASON was about the wrong object.**  "The `N`-power Frobenius is
+  not a `k`-morphism" bears on the downstream Frobenius-ENDOMORPHISM consumer
+  `exists_verschiebung_of_frobEndomorphism_finiteBase`, where finiteness of `k`
+  really is essential (`Frob_q = id` on `𝔽_q` is what makes `Fr` a `k`-morphism).
+  It bears on nothing here: this conclusion carries no `k`-linearity clause at
+  all, and the sibling below records that `V ≫ f' = f'` was dropped as FREE.
+
+`ab'` does enter through the group law, and that part of the old note stands.
 
 WHERE THIS BELONGS: `Modularity/AbelianSchemeIsogeny.lean`, beside `mulByNat`,
 `isProper_mulByNat` and `isFinite_ker_mulByNat_of_field_char`; it is stated
@@ -13683,8 +17519,10 @@ theorem exists_pow_eq_app_mulByNat
     (ab' : AbelianSchemeStruct f')
     (hchar : ∀ U : A'.Opens, (p : Γ(A', U)) = 0)
     (U : A'.Opens) (s : Γ(A', U)) :
-    ∃ t : Γ(A', ab'.mulByNat N ⁻¹ᵁ U), t ^ p ^ a = ((ab'.mulByNat N).app U).hom s :=
-  sorry
+    ∃ t : Γ(A', ab'.mulByNat N ⁻¹ᵁ U), t ^ p ^ a = ((ab'.mulByNat N).app U).hom s := by
+  subst hpa
+  exact exists_pow_eq_app_mulByNat_primePow p ab'
+    (exists_pow_eq_app_mulByNat_prime hfin p hp ab' hchar) a U s
 
 /-- **`[N]` FACTORS THROUGH THE ABSOLUTE `p ^ a`-POWER FROBENIUS**
 (**PROVEN 2026-07-28** over the single sheaf-local leaf
@@ -13758,10 +17596,17 @@ above: `y ↦ σ · y` is a bijection there, with inverse `y ↦ σ⁻¹ · y`, 
 true only for a morphism — and what the Weil leaf needs — is that `V` is
 ALGEBRAIC.
 
-`hfin`, `hN` and `hpa` are what tie `p ^ a` to the size of `k`; they are
-passed straight through to `exists_pow_eq_app_mulByNat`, which is where they
-are consumed, and are what make the statement about an abelian variety over a
-FINITE field rather than about an arbitrary characteristic-`p` base. -/
+`hfin`, `hN` and `hpa` are passed straight through to
+`exists_pow_eq_app_mulByNat`.  **CORRECTED 2026-07-28**: this used to say they
+are "what make the statement about an abelian variety over a FINITE field
+rather than about an arbitrary characteristic-`p` base", and that is not right.
+`hN` is consumed nowhere; `hpa` only identifies `N` as a power of the
+characteristic; and of `hfin` all that is used is that a finite field is
+PERFECT.  See the HYPOTHESIS AUDIT on `exists_pow_eq_app_mulByNat` above for
+the corrected account and for the imperfect-base counterexample.  Finiteness of
+`k` is genuinely essential further down, at
+`exists_verschiebung_of_frobEndomorphism_finiteBase`, where `Frob_q = id` on
+`𝔽_q` is what makes `Fr` a `k`-morphism — but not here. -/
 theorem exists_comp_eq_mulByNat_absFrobScheme
     {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
     (p a : ℕ) (hp : p.Prime) (hpa : p ^ a = N)
@@ -14146,7 +17991,14 @@ correspondingly two new leaves rather than one:
 `exists_globalFrobCharScalar_atPrime_of_levelScalar_finiteBase`
 (integrality at one prime) and
 `exists_levelTateFrameTower_of_levelTateFrame_finiteBase` (one rank-two
-level propagates to a whole tower). -/
+level propagates to a whole tower).
+
+**UPDATED 2026-07-30**: the second of those two is now PROVEN, and it
+needed no abelian-variety input at all — its conclusion leaves the prime
+existential, so the tower is built at the SAME prime the hypothesis names
+and the `I`-independence step it was written for is never taken.  See its
+own docstring.  So the trace branch's residue is back to ONE leaf, the
+integrality. -/
 
 /-- **CAYLEY–HAMILTON IN DIMENSION TWO, COORDINATEWISE** (PROVEN).  For a
 `2 × 2` matrix `Φ` over any commutative ring, `Φ² + det Φ = tr Φ · Φ`,
@@ -15114,7 +18966,37 @@ REFUTING CHECK for that claim: look for `hdim'`, `c` or
 `σ` and `hσ` do not occur either: this statement is about the pairing and
 not about the Frobenius, and the multiplier `N` is produced in
 `exists_levelWeilPairing_of_qAdicPolarizedSystem_finiteBase`, where `hσ`
-is in scope. -/
+is in scope.
+
+**DO NOT CUT THIS THROUGH `DualStruct` — THE RESULTING LEAF WOULD BE
+FALSE** (audit 2026-07-30; the witness is written out on
+`exists_dualPolarization_of_mult`).  The obvious move is to mirror the
+characteristic-zero half: there `exists_qAdicWeilSystem_of_mult` is PROVEN
+over `exists_dualPolarization_of_mult`, which discharges six of that
+predicate's eight clauses from the axioms of `DualStruct` alone, and the
+same glue would discharge seven of the eight here (only the bounded-radical
+clause differs).  It does not work, and the obstruction is not about
+polarizations at all.
+
+`DualStruct.weil_nondegenerate` is asserted at every `(F', x', I, n)` with
+`(n : R) ∈ I`, and `weil` lands in `rootsOfUnity n (AlgebraicClosure F')`.
+Over a base of characteristic `p` take `I = (p)`, `n = p`: the target group
+is TRIVIAL, so the pairing is constantly `1`, the nondegeneracy hypothesis
+holds vacuously for every `p`-torsion point, and the axiom concludes
+`A'[p](k̄) = 0`.  An ORDINARY elliptic curve over `𝔽_p` has
+`A'[p](k̄) ≅ ℤ/p ≠ 0`, so `DualStruct ab' m'` is UNINHABITED for it — while
+that curve satisfies every hypothesis of this leaf (`D = ℚ` is totally
+real, `q` is any prime `≠ p`).  A leaf of the shape
+`∃ d : DualStruct ab' m', …` is therefore false here for a reason with no
+mathematical content, and proving it is impossible rather than hard.
+
+So a cut of this leaf must either repair `DualStruct` first (gate
+`weil_nondegenerate` on `(n : F) ≠ 0`, which is free in characteristic zero
+— see the audit cited above) or introduce a FIBRE-LOCAL dual-pairing datum
+carrying the pairing only at the prime-to-`p` levels `q^M` that this
+statement actually mentions.  Until one of those exists, this statement is
+already the minimal fibre-local form of "the polarized `q`-adic Weil system
+exists", and there is nothing to strip off it. -/
 theorem exists_qAdicPolarizedSystem_finiteBase
     {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
@@ -15128,9 +19010,115 @@ theorem exists_qAdicPolarizedSystem_finiteBase
   sorry
 
 open _root_.NumberField in
+/-- **THE LIMIT AND THE SCALING: THE `𝒪_D/Iⁿ`-VALUED LEVEL PAIRING, GIVEN
+THE PIN, THE DIFFERENT AND THE LOGARITHM** (SORRY LEAF — cut 2026-07-30 out
+of `exists_levelWeilPairing_of_qAdicPolarizedSystem_finiteBase`, which is now
+PROVEN over it).
+
+That leaf's docstring lists FOUR things left in it once the geometry is gone:
+"the different, the discrete logarithm on `μ_{q^M}(k̄)`, the limit along the
+`I`-adic tower, and one scaling".  The first two are now DISCHARGED and are
+handed in here as binders:
+
+* the DIFFERENT is `θ` with `hθ : IsTraceDualFunctional q I π j θ`, produced
+  by `exists_traceDualFunctional_of_adicPin` — pure algebraic number theory,
+  already proven, and it mentions no base field, exactly as that docstring
+  says ("REUSABLE VERBATIM");
+* the PIN `(O, j, π)` it needs is produced by `exists_adicCoefficientRing`
+  (`O = 𝒪_{D,I}`), also already proven and also base-field-free — the
+  characteristic-zero assembly `exists_tateWeilSystem_of_mult` receives this
+  from its caller, and the finite-base one now builds it, which is the step
+  the parent docstring flagged as "this leaf must build for itself";
+* the LOGARITHM is `L`, produced by `exists_frobeniusLog_finiteBase`
+  (PROVEN 2026-07-30, above).  This is the one that genuinely needed new
+  work: `exists_cyclotomicLog` is stated over a NUMBER field because its
+  multiplier is `χ_cyc`, and over a finite field the multiplier is the
+  CONSTANT `N`.  Its `hLgal` binder below is stated in exactly the form that
+  leaf produces — quantified over any `τ` acting as `z ↦ z ^ N` — so `hσ`
+  feeds it directly.
+
+WHAT IS LEFT, AND IT IS THE WHOLE MATHEMATICAL CONTENT.  Assemble the
+`ℤ_q`-bilinear form on `T_q A'` from `L M (w M · ·)` along the levels (the
+TOWER clause of `IsQAdicPolarizedSystem` is what makes that Cauchy), refine
+it by `θ` to an `𝒪_{D,I}`-bilinear `E` on `T_I A'`, divide by the largest
+power `π^t` of the uniformizer dividing every value (`t ≤ b · e(I/q)`, finite
+because the bounded-radical clause makes `E` not identically zero), and
+reduce modulo `Iⁿ` along lifts `T_I A' ↠ A'[Iⁿ]`.  `hne` and `b` are spent in
+the primitivization, which is what replaces perfectness; see the parent
+docstring for why a levelwise refinement CANNOT work (at an `I` ramified over
+`q` the `q`-power Weil pairing vanishes identically on `A'[I^k]`).
+
+**THIS IS NOT A REDUCTION IN LEAF COUNT — one `sorry` replaces one `sorry`,
+and it is said plainly here so nobody reads the diff as a closure.**  What it
+buys is that the residual statement's hypotheses are all CONSTRUCTED rather
+than assumed, so the next owner reads a statement whose content is only the
+limit and the scaling, and does not have to rediscover that the different and
+the pin are already in the tree.
+
+**FAITHFULNESS.**  This statement is `exists_levelWeilPairing_of_qAdic\
+PolarizedSystem_finiteBase` with strictly MORE hypotheses and the SAME
+conclusion, so it is implied by that leaf and cannot be false unless that one
+is; and the assembly below supplies witnesses for every added binder, so it
+is not vacuous in the other direction either.  The two are therefore
+equivalent, and the audit on the parent — `hσ`, `hne`, `hqN` and
+`IsTotallyReal` each load-bearing, with the counterexamples recorded there —
+transfers unchanged and is NOT restated here.  No binder was weakened or
+strengthened in the cut. -/
+theorem exists_levelWeilPairing_of_traceDualFrobeniusLog_finiteBase
+    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    (σ : Field.absoluteGaloisGroup k)
+    (hσ : ∀ z : AlgebraicClosure k,
+      (σ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k) z = z ^ N)
+    (q : ℕ) [Fact q.Prime] (hqN : ¬ q ∣ N)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I) (n : ℕ)
+    (hne : ∃ y ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).1,
+      y ≠ ab'.zero (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k))))
+    (b : ℕ) (w : ℕ → GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))) →
+        GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))) → (AlgebraicClosure k)ˣ)
+    (hw : IsQAdicPolarizedSystem m' (𝟙 (Spec (CommRingCat.of k))) q b w)
+    (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (O : Type u) [CommRing O] [IsLocalRing O] [Algebra ℤ_[q] O]
+    (j : NumberField.RingOfIntegers D →+* O)
+    (hcplt : IsAdicComplete (Ideal.span {j π}) O)
+    (hdense : ∀ (i : ℕ) (z : O), ∃ a : NumberField.RingOfIntegers D,
+      z - j a ∈ Ideal.span {j π} ^ i)
+    (hker : ∀ (i : ℕ) (a : NumberField.RingOfIntegers D),
+      j a ∈ Ideal.span {j π} ^ i ↔ a ∈ I ^ i)
+    (θ : O → ℤ_[q]) (hθ : IsTraceDualFunctional q I π j θ)
+    (L : ℕ → (AlgebraicClosure k)ˣ → ℤ_[q])
+    (hLadd : ∀ (M : ℕ) (ζ ξ : (AlgebraicClosure k)ˣ), ζ ^ q ^ M = 1 → ξ ^ q ^ M = 1 →
+      L M (ζ * ξ) - (L M ζ + L M ξ) ∈ Ideal.span {(q : ℤ_[q])} ^ M)
+    (hLgal : ∀ (M : ℕ) (τ : Field.absoluteGaloisGroup k),
+      (∀ z : AlgebraicClosure k,
+        (τ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k) z = z ^ N) →
+      ∀ ζ : (AlgebraicClosure k)ˣ, ζ ^ q ^ M = 1 →
+      L M (Units.map
+            ((τ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k).toAlgHom.toRingHom.toMonoidHom) ζ)
+        - (N : ℤ_[q]) * L M ζ ∈ Ideal.span {(q : ℤ_[q])} ^ M)
+    (hLtower : ∀ (M : ℕ) (ζ : (AlgebraicClosure k)ˣ), ζ ^ q ^ (M + 1) = 1 →
+      L (M + 1) ζ - L M (ζ ^ q) ∈ Ideal.span {(q : ℤ_[q])} ^ M)
+    (hLinj : ∀ (M : ℕ) (ζ : (AlgebraicClosure k)ˣ), ζ ^ q ^ M = 1 →
+      (L M ζ ∈ Ideal.span {(q : ℤ_[q])} ^ M ↔ ζ = 1))
+    (hLsurj : ∀ (M : ℕ) (r : ℤ_[q]), ∃ ζ : (AlgebraicClosure k)ˣ,
+      ζ ^ q ^ M = 1 ∧ L M ζ - r ∈ Ideal.span {(q : ℤ_[q])} ^ M) :
+    ∃ e : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))) →
+        GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))) →
+        NumberField.RingOfIntegers D ⧸ I ^ n,
+      IsLevelWeilPairing m' (𝟙 (Spec (CommRingCat.of k))) (I ^ n) σ
+        (Ideal.Quotient.mk (I ^ n) (N : NumberField.RingOfIntegers D)) e :=
+  sorry
+
+open _root_.NumberField in
 /-- **THE ARITHMETIC HALF: TRACE DUALITY REFINES THE `μ`-VALUED SYSTEM TO
-THE `𝒪_D/Iⁿ`-VALUED LEVEL PAIRING, WITH FROBENIUS MULTIPLIER `N`** (SORRY
-LEAF — the finite-base counterpart of
+THE `𝒪_D/Iⁿ`-VALUED LEVEL PAIRING, WITH FROBENIUS MULTIPLIER `N`**
+(**PROVEN 2026-07-30** over
+`exists_levelWeilPairing_of_traceDualFrobeniusLog_finiteBase`, which is the
+residual sorry leaf — the finite-base counterpart of
 `exists_tateWeilSystem_of_qAdicWeilSystem`, with the passage to the limit
 and the primitivization folded in and the cyclotomic character replaced
 by the constant `N`).
@@ -15138,6 +19126,21 @@ by the constant `N`).
 No geometry occurs here: the fibre enters only through the system `w`
 handed in.  What is left is the different, the discrete logarithm on
 `μ_{q^M}(k̄)`, the limit along the `I`-adic tower, and one scaling.
+
+**TWO OF THOSE FOUR ARE NOW DISCHARGED, AND THIS IS WHAT THE PROOF BELOW
+DOES** (2026-07-30).  The DIFFERENT and the PIN come from
+`exists_traceDualFunctional_of_adicPin` and `exists_adicCoefficientRing`,
+both already proven and both base-field-free.  The LOGARITHM is
+`exists_frobeniusLog_finiteBase`, PROVEN the same day: the obstruction
+recorded below — that `exists_cyclotomicLog` is stated over a NUMBER field
+because its multiplier is `χ_cyc`, and that over a finite field there is no
+such transport — is real, and the resolution is that `hσ` says `σ` acts as a
+POWER, so the clause reduces to `L M (ζ^N) ≡ N · L M ζ`, which is the power
+clause of `exists_qPowerLog` over ANY algebraically closed field where `q` is
+invertible.  What remains — the limit along the `I`-adic tower and the
+scaling — is the residual leaf, which receives all three as binders.  **The
+leaf count is unchanged by that cut; only the content of the open statement
+is smaller.**
 
 **THE ROUTE, AND THE TWO PLACES IT DIFFERS FROM CHARACTERISTIC ZERO.**
 
@@ -15229,8 +19232,28 @@ theorem exists_levelWeilPairing_of_qAdicPolarizedSystem_finiteBase
         GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))) →
         NumberField.RingOfIntegers D ⧸ I ^ n,
       IsLevelWeilPairing m' (𝟙 (Spec (CommRingCat.of k))) (I ^ n) σ
-        (Ideal.Quotient.mk (I ^ n) (N : NumberField.RingOfIntegers D)) e :=
-  sorry
+        (Ideal.Quotient.mk (I ^ n) (N : NumberField.RingOfIntegers D)) e := by
+  haveI : Fact q.Prime := ⟨hq⟩
+  -- `I` is nonzero: it contains the rational prime `q`.
+  have hI0 : I ≠ ⊥ := by
+    intro h
+    rw [h, Ideal.mem_bot, Nat.cast_eq_zero] at hqI
+    exact hq.ne_zero hqI
+  -- the pin `(O, j, π)` — this is the `𝒪_{D,I}` the docstring says the leaf
+  -- must build for itself, and it is base-field-free
+  obtain ⟨π, hπ, hπ2⟩ := exists_mem_notMem_sq_of_isMaximal hI hI0
+  obtain ⟨O, iCR, iTS, iTR, iAlg, iLoc, iFin, iFree, iMT, j, hcplt, hdense, hker⟩ :=
+    exists_adicCoefficientRing q I hI hqI π hπ hπ2
+  letI := iCR; letI := iTS; letI := iTR; letI := iAlg
+  letI := iLoc; letI := iFin; letI := iFree; letI := iMT
+  -- the different: trace duality is pure algebraic number theory and reusable verbatim
+  obtain ⟨θ, hθ⟩ :=
+    exists_traceDualFunctional_of_adicPin q I hI hqI π hπ hπ2 O j hcplt hdense hker
+  -- the discrete logarithm on `μ_{q^M}(k̄)`, with the multiplier the CONSTANT `N`
+  obtain ⟨L, hLadd, hLgal, hLtower, hLinj, hLsurj⟩ :=
+    exists_frobeniusLog_finiteBase hfin N hN q hqN
+  exact exists_levelWeilPairing_of_traceDualFrobeniusLog_finiteBase hfin N hN ab' m' σ hσ q hqN
+    I hI hqI n hne b w hw π hπ hπ2 O j hcplt hdense hker θ hθ L hLadd hLgal hLtower hLinj hLsurj
 
 open _root_.NumberField in
 /-- **THE `𝒪_D`-WEIL PAIRING ON `A'[Iⁿ]` OVER A FINITE FIELD, STATED WITH
@@ -15731,8 +19754,95 @@ def push {A B S : Scheme.{u}} (f : A ⟶ S) (ι : B ⟶ A) {T : Scheme.{u}} {g :
 end RelPoint
 
 open _root_.NumberField in
+/-- **THE ZARISKI CLOSURE OF A DIVISIBLE, GALOIS-STABLE, `𝒪_D`-STABLE
+SUBGROUP OF `A'(k̄)` IS AN ABELIAN SUBSCHEME** (SORRY LEAF — cut 2026-07-30
+out of `exists_abelianSubscheme_closure_torsionGeomPt_finiteBase`, which is
+now PROVEN over it; Chevalley's theorem that the closure of a subgroup of a
+group variety is a subgroup variety, together with "a reduced group scheme
+of finite type over a PERFECT field is smooth"; Mumford *Abelian
+Varieties* §II.4, Milne *Abelian Varieties* §I.1, SGA 3 VI_A 0.2 and
+VI_B 1.3.1).
+
+**WHAT THE CUT DID.**  The consuming leaf's docstring lists what its
+classical argument needs of the torsion `T = ⋃ₙ A'[Iⁿ](k̄)`: that it is a
+SUBGROUP, that it is `𝒪_D`-stable, that it is `Γ_k`-stable, and that it is
+DIVISIBLE.  All four are now PROVEN there and handed in here as binders,
+so this leaf sees an abstract `T` and its statement contains no ideal, no
+`q` and no torsion at all.  What is left is EXACTLY the geometry, in three
+steps and no more:
+
+* CHEVALLEY: the Zariski closure `Z` of `T` in `A'_{k̄}` is a closed
+  subgroup scheme, and `Z_red` is smooth because `k` is perfect (`hfin`);
+* CONNECTEDNESS: the components of `Z` are open, so `T` surjects onto the
+  finite component group `Z/Z⁰`, and a finite quotient of a DIVISIBLE group
+  is trivial — this is the only use of `hTdiv`, and it is what upgrades
+  "group variety" to "abelian variety";
+* DESCENT: `Z` is `Γ_k`-stable (`hTgal`), so it descends to a closed
+  subscheme `B` of `A'` over `k`; and the displayed equation
+  `closure … = Set.range ι.base` holds in `|A'|` because `|A'_{k̄}| → |A'|`
+  is continuous, closed and surjective.
+
+**DIVISIBILITY IS WHY `hTdiv` IS STATED FOR NATURAL NUMBERS AND NOT FOR
+`𝒪_D`.**  The component group is a finite ABELIAN group, so what kills it
+is divisibility by integers; asking for divisibility by every nonzero
+`a ∈ 𝒪_D` would be a strictly stronger hypothesis (it is true of the
+torsion, by `exists_mem_torsion_act_eq_of_ne_zero`) and would make this
+leaf weaker for no gain.  The `m'.act (M : 𝒪_D)` spelling rather than
+`M • ·` keeps the statement free of the `letI`-bound module instances.
+
+**FAITHFULNESS.**  Every binder is load-bearing.
+
+* Without `hTdiv` the leaf is FALSE: take `T = {0} ∪ {y}` for a point `y`
+  of order two on an elliptic curve — a `Γ_k`-stable, `𝒪_D`-stable
+  subgroup whose Zariski closure is two reduced points, which is a
+  group SCHEME but not CONNECTED, hence carries no
+  `AbelianSchemeStruct` (`connected` is a field of that structure).  This
+  is not a corner case: any finite subgroup refutes it.
+* Without `hTgal` the closure need not descend to `k` and there is no `B`
+  over `Spec k` at all; without `hTzero`/`hTadd`/`hTact` the closure is not
+  a subgroup and the two restriction clauses are unstatable.
+* The last conjunct `closure … = Set.range ι.base` is what pins `B`; drop
+  it and the leaf is discharged by `B = A'`, `ι = 𝟙`.  See the
+  FAITHFULNESS paragraph of the consumer, which records the same thing.
+
+**`hfin` IS USED ONLY FOR PERFECTNESS**, so a finite field is more than
+the argument needs; it is carried in this form because that is what the
+consumer has and because `Finite k → PerfectField k` is not the shape of
+any binder in this file. -/
+theorem exists_abelianSubscheme_closure_of_divisibleGaloisSubmodule_finiteBase
+    {k : Type u} [Field k] (hfin : Finite k)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    (T : Set (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))))
+    (hTzero : ab'.zero (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k))) ∈ T)
+    (hTadd : ∀ y ∈ T, ∀ z ∈ T, ab'.add y z ∈ T)
+    (hTact : ∀ a : NumberField.RingOfIntegers D, ∀ y ∈ T, m'.act a y ∈ T)
+    (hTgal : ∀ σ : Field.absoluteGaloisGroup k, ∀ y ∈ T,
+      ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y ∈ T)
+    (hTdiv : ∀ M : ℕ, M ≠ 0 → ∀ y ∈ T,
+      ∃ z ∈ T, m'.act (M : NumberField.RingOfIntegers D) z = y) :
+    ∃ (B : Scheme.{u}) (ι : B ⟶ A') (abB : AbelianSchemeStruct (ι ≫ f'))
+      (mB : Mult abB (NumberField.RingOfIntegers D)),
+      IsClosedImmersion ι ∧
+      (∀ {W : Scheme.{u}} {g : W ⟶ Spec (CommRingCat.of k)} (y z : RelPoint (ι ≫ f') g),
+        RelPoint.push f' ι (abB.add y z)
+          = ab'.add (RelPoint.push f' ι y) (RelPoint.push f' ι z)) ∧
+      (∀ {W : Scheme.{u}} {g : W ⟶ Spec (CommRingCat.of k)}
+        (a : NumberField.RingOfIntegers D) (y : RelPoint (ι ≫ f') g),
+        RelPoint.push f' ι (mB.act a y) = m'.act a (RelPoint.push f' ι y)) ∧
+      (∀ y ∈ T, ∃ z : GeomFibrePt (ι ≫ f') (𝟙 (Spec (CommRingCat.of k))),
+        RelPoint.push f' ι z = y) ∧
+      closure {x : A' | ∃ y ∈ T, x ∈ Set.range y.1.base} = Set.range ι.base :=
+  sorry
+
+open _root_.NumberField in
 /-- **THE ZARISKI CLOSURE OF THE `I`-POWER TORSION IS AN ABELIAN
-SUBSCHEME** (sorry leaf — the SUBGROUP half of the density argument;
+SUBSCHEME** (**PROVEN 2026-07-30** over
+`exists_abelianSubscheme_closure_of_divisibleGaloisSubmodule_finiteBase`
+immediately above, which is the residual sorry leaf — the SUBGROUP half of
+the density argument;
 Chevalley's theorem that the closure of a subgroup of a group variety is
 a subgroup variety, together with "a reduced group scheme of finite type
 over a PERFECT field is smooth"; Mumford *Abelian Varieties* §II.4,
@@ -15769,6 +19879,34 @@ and the displayed equation `closure T = Set.range ι.base` holds in `|A'|`
 because `|A'_{k̄}| → |A'|` is continuous (so the image of the closure
 upstairs lies in the closure downstairs) and closed and surjective (so
 the image of `Z` is closed and contains `T`).
+
+**WHAT THE PROOF BELOW DOES, AND WHAT IS LEFT** (2026-07-30).  The four
+properties of `T` that the sketch above uses are now all PROVEN here, and
+the residual leaf receives them as binders:
+
+* `T` is a SUBGROUP and is `𝒪_D`-STABLE — an increasing union, since
+  `Iⁿ⁺¹ ≤ Iⁿ` makes `A'[Iⁿ] ⊆ A'[Iⁿ⁺¹]`, so a sum lands at the max of the
+  two levels and `a·y` stays at the same level;
+* `T` is `Γ_k`-STABLE — this is literally the second component of
+  `Mult.torsion`, which carries that proof;
+* `T` is DIVISIBLE — `exists_mem_torsion_act_eq_of_ne_zero`, PROVEN the
+  same day.  This is the step the sketch above spends two bullet points on,
+  and the route taken is NOT the one it proposes: there is no case split on
+  whether `M` is prime to `q` and no primary decomposition of
+  `A'[q^{n+1}]`.  Instead, `·(M)` is surjective on all of `A'(k̄)` by
+  `exists_nsmul_eq_geomFibrePt`, and the partition of unity `1 = e + j`
+  coming from the coprimality of `I^{n+v}` with the prime-to-`I` part of
+  `(M)` projects the solution back into the `I`-primary part, one element
+  at a time.  That is available from `exists_pow_mul_not_le_of_isMaximal`
+  alone, and the primary decomposition of the torsion — which does not
+  exist in this tree — is never needed.
+
+What remains open is `exists_abelianSubscheme_closure_of_divisible\
+GaloisSubmodule_finiteBase`: Chevalley, smoothness over a perfect field,
+the connectedness argument, and Galois descent.  **The leaf count is
+unchanged by the cut — one `sorry` replaces one `sorry`** — and what it
+buys is that the open statement mentions no ideal, no `q` and no torsion,
+so its content is purely geometric.
 
 **`hqN` IS NOT NEEDED HERE, AND THAT IS THE POINT OF THE CUT.**  This
 half is true for EVERY maximal `I`, including one above the residue
@@ -15808,8 +19946,69 @@ theorem exists_abelianSubscheme_closure_torsionGeomPt_finiteBase
         ∃ z : GeomFibrePt (ι ≫ f') (𝟙 (Spec (CommRingCat.of k))),
           RelPoint.push f' ι z = y) ∧
       closure {x : A' | ∃ n : ℕ, ∃ y ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).1,
-        x ∈ Set.range y.1.base} = Set.range ι.base :=
-  sorry
+        x ∈ Set.range y.1.base} = Set.range ι.base := by
+  classical
+  haveI : I.IsMaximal := hI
+  -- a maximal ideal of `𝒪_D` is nonzero, because `𝒪_D` is not a field
+  have hI0 : I ≠ ⊥ :=
+    Ring.ne_bot_of_isMaximal_of_not_isField hI (NumberField.RingOfIntegers.not_isField D)
+  set T : Set (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
+    ⋃ n : ℕ, (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).1 with hTdef
+  -- `0 ∈ T`: the zero point is killed by everything, so it lies in `A'[I⁰]`
+  have hTzero : ab'.zero (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k))) ∈ T := by
+    refine Set.mem_iUnion.mpr ⟨0, (mem_torsion_iff m' _ _ _).mpr fun a _ => ?_⟩
+    letI : AddCommGroup (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
+      ab'.addCommGroup (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+    letI : Module (NumberField.RingOfIntegers D)
+        (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
+      m'.module (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+    exact smul_zero a
+  -- `T` is closed under addition: an increasing union of subgroups, since `Iⁿ⁺¹ ≤ Iⁿ`
+  have hTadd : ∀ y ∈ T, ∀ z ∈ T, ab'.add y z ∈ T := by
+    intro y hy z hz
+    obtain ⟨n, hn⟩ := Set.mem_iUnion.mp hy
+    obtain ⟨p, hp⟩ := Set.mem_iUnion.mp hz
+    refine Set.mem_iUnion.mpr ⟨max n p, (mem_torsion_iff m' _ _ _).mpr fun a ha => ?_⟩
+    have hy' := (mem_torsion_iff m' _ (I ^ n) y).mp hn a
+      (Ideal.pow_le_pow_right (le_max_left n p) ha)
+    have hz' := (mem_torsion_iff m' _ (I ^ p) z).mp hp a
+      (Ideal.pow_le_pow_right (le_max_right n p) ha)
+    rw [m'.act_addPt, hy', hz']
+    exact ab'.zero_add _
+  -- `T` is `𝒪_D`-stable, because each `A'[Iⁿ]` is
+  have hTact : ∀ a : NumberField.RingOfIntegers D, ∀ y ∈ T, m'.act a y ∈ T := by
+    intro a y hy
+    obtain ⟨n, hn⟩ := Set.mem_iUnion.mp hy
+    refine Set.mem_iUnion.mpr ⟨n, (mem_torsion_iff m' _ _ _).mpr fun c hc => ?_⟩
+    rw [← m'.act_mul]
+    exact (mem_torsion_iff m' _ (I ^ n) y).mp hn (c * a) (Ideal.mul_mem_right a _ hc)
+  -- `T` is `Γ_k`-stable: this is the second component of `Mult.torsion`
+  have hTgal : ∀ σ : Field.absoluteGaloisGroup k, ∀ y ∈ T,
+      ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y ∈ T := by
+    intro σ y hy
+    obtain ⟨n, hn⟩ := Set.mem_iUnion.mp hy
+    exact Set.mem_iUnion.mpr ⟨n, (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).2 σ y hn⟩
+  -- `T` is DIVISIBLE — the step the classical sketch does by primary decomposition
+  have hTdiv : ∀ M : ℕ, M ≠ 0 → ∀ y ∈ T,
+      ∃ z ∈ T, m'.act (M : NumberField.RingOfIntegers D) z = y := by
+    intro M hM y hy
+    obtain ⟨n, hn⟩ := Set.mem_iUnion.mp hy
+    obtain ⟨mm, z, _, hz, hzy⟩ :=
+      exists_mem_torsion_act_eq_of_ne_zero m' (𝟙 (Spec (CommRingCat.of k))) I hI hI0
+        ((M : ℕ) : NumberField.RingOfIntegers D) (Nat.cast_ne_zero.mpr hM) n y hn
+    exact ⟨z, Set.mem_iUnion.mpr ⟨mm, hz⟩, hzy⟩
+  obtain ⟨B, ι, abB, mB, hιcl, hadd, hact, hlift, hclos⟩ :=
+    exists_abelianSubscheme_closure_of_divisibleGaloisSubmodule_finiteBase hfin ab' m' T
+      hTzero hTadd hTact hTgal hTdiv
+  refine ⟨B, ι, abB, mB, hιcl, hadd, hact, fun n y hy => hlift y ?_, ?_⟩
+  · exact Set.mem_iUnion.mpr ⟨n, hy⟩
+  · rw [← hclos]
+    congr 1
+    ext x
+    simp only [Set.mem_setOf_eq, hTdef, Set.mem_iUnion]
+    constructor
+    · rintro ⟨n, y, hy, hx⟩; exact ⟨y, ⟨n, hy⟩, hx⟩
+    · rintro ⟨y, ⟨n, hy⟩, hx⟩; exact ⟨n, y, hy, hx⟩
 
 open _root_.NumberField in
 /-- **AN `𝒪_D`-STABLE ABELIAN SUBSCHEME CARRYING THE WHOLE `I`-ADIC TATE
@@ -15960,10 +20159,58 @@ theorem dense_torsionGeomPt_finiteBase
     ι abB mB hιcl hadd hact htor
 
 
+set_option linter.unusedVariables false in
 open _root_.NumberField in
-/-- **ONE RANK-TWO LEVEL FORCES A FULL PRIME-TO-`N` TOWER** (sorry leaf —
-the abelian-variety input of the `I`-independence cut; Mumford *Abelian
-Varieties* §6 and §19, Milne *Abelian Varieties* §I.7).
+/-- **ONE RANK-TWO LEVEL FORCES A FULL PRIME-TO-`N` TOWER** (**PROVEN
+2026-07-30** over the counting lemma `LevelFrame.card_tors_pow_eq` and
+the algebraic engine `LevelFrame.exists_linearEquiv_tors_pow`, hence over
+the single geometric leaf `exists_nsmul_eq_geomFibrePt` — which is itself
+PROVEN — and over NO new input; the abelian-variety input of the
+`I`-independence cut; Mumford *Abelian Varieties* §6 and §19, Milne
+*Abelian Varieties* §I.7).
+
+**HOW IT WAS PROVEN, AND WHY IT NEEDED NO ABELIAN-VARIETY THEORY AT ALL.**
+The route sketched below — `V_I A'` free of rank `2·dim A'/[D:ℚ]`
+independently of `I` — is not the one that was taken, and it is much more
+than the statement needs.  Take `q := q₁` and `I := I₁`: the conclusion
+leaves both EXISTENTIAL, so the tower may be built at the very prime the
+hypothesis is stated at, and then no comparison between two primes is
+required and neither `dim A'` nor `[D:ℚ]` is ever mentioned.
+
+What remains is the two-line observation that the frame gate at ONE level
+`n₁ ≠ 0` already contains the residual count that
+`exists_levelTateFrame_finiteBase` gets from `hdim'`:
+
+* the frame `c₁` is a bijection onto `A'[I₁^{n₁}]`, so
+  `#A'[I₁^{n₁}] = #(𝒪_D/I₁^{n₁})² = #(𝒪_D/I₁)^{2n₁}`
+  (`Submodule.cardQuot_pow_of_prime` for the middle step);
+* independently, `#A'[I₁ⁿ] = (#A'[I₁])ⁿ` for every `n`
+  (`LevelFrame.card_tors_pow_eq`, whose only input is surjectivity of
+  `·π` along the tower — `exists_mem_torsion_act_uniformizer_eq`, proven,
+  and stated over a bare field so it applies at a finite base unchanged);
+* comparing at `n = n₁` gives
+  `(#A'[I₁])^{n₁} = (#(𝒪_D/I₁)²)^{n₁}`, and `n₁ ≠ 0` lets one take
+  `n₁`-th roots in `ℕ` (`Nat.pow_left_injective`) — which is EXACTLY
+  where `hn₁` is spent, and it is the same degeneracy the audit below
+  describes: at `n₁ = 0` both sides are `1` and nothing is learned.
+
+That count is the hypothesis `hcard` of
+`LevelFrame.exists_linearEquiv_tors_pow`, which then produces the frame
+at every level `I₁ⁿ` — the same final assembly as
+`exists_levelTateFrame_finiteBase`, minus `hdim'`.
+
+`hfin`, `hN`, `hq₁`, `hq₁N` and `hq₁I₁` are therefore carried but NOT
+consumed: they are what makes the conclusion's `¬ q ∣ N` and
+`(q : 𝒪_D) ∈ I` dischargeable by `q := q₁`, `I := I₁`, and nothing else
+in the proof looks at the residue characteristic.  That is not an
+accident of the proof — it is the reason the leaf was free: the
+prime-to-`N` condition is only ever needed to CREATE a rank-two level,
+and here one is handed in.  `[NumberField.IsTotallyReal D]` is likewise
+unused, for the same reason (it enters `hdim'`'s route through the
+polarization, which is bypassed).
+
+The original docstring's route, kept because it records what the
+statement means rather than how it was closed:
 
 If `A'[I₁^{n₁}]` is free of rank two over `𝒪_D/I₁^{n₁}` for a SINGLE
 maximal `I₁` of residue characteristic prime to `N` and a single
@@ -15999,7 +20246,27 @@ is false.
 
 `q` and `I` are left EXISTENTIAL in the conclusion rather than returning
 the tower at `I₁` itself: a prover is free to pick a convenient auxiliary
-prime, and the only consumer needs just one. -/
+prime, and the only consumer needs just one.
+
+**A RIVAL CUT WAS DECLINED HERE AT RELEASE 24 (2026-07-30), and the reason
+is recorded because it is the more instructive half.**  Branch
+`flt-lean-156` reached this same theorem by the classical route — rank two
+at one level pins the RELATIVE DIMENSION, after which
+`exists_levelTateFrame_finiteBase` (proven, and needing exactly one extra
+input, `hdim'`) reinstates the tower level by level — and cut the
+dimension transfer out as a new named leaf,
+`smoothOfRelativeDimension_of_levelTateFrame_finiteBase`.  That cut is
+correct mathematics and it costs ONE OPEN LEAF.  The proof below costs
+none: because the conclusion leaves `q` and `I` EXISTENTIAL, the tower may
+be built at the very prime the hypothesis is stated at, no comparison
+between two primes is needed, and neither `dim A'` nor `[D : ℚ]` is ever
+mentioned.  Fewer open leaves after decides it (CLAUDE.md), so the rival
+leaf was deleted with the proof that consumed it.
+
+What that rival's docstring got right, and is worth keeping: a successor
+should NOT rebuild the tower recursion (the `LevelFrame` namespace, the
+`π`-divisibility step, `card_torsion_of_isMaximal_finiteBase`) at a fresh
+auxiliary prime.  All of it already exists and none of it is a leaf. -/
 theorem exists_levelTateFrameTower_of_levelTateFrame_finiteBase
     {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
@@ -16018,13 +20285,278 @@ theorem exists_levelTateFrameTower_of_levelTateFrame_finiteBase
         (q : NumberField.RingOfIntegers D) ∈ I ∧
         ∀ n : ℕ, ∃ c : (Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ n) →
             GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
-          IsLevelTateFrame m' (𝟙 (Spec (CommRingCat.of k))) (I ^ n) c :=
+          IsLevelTateFrame m' (𝟙 (Spec (CommRingCat.of k))) (I ^ n) c := by
+  classical
+  refine ⟨q₁, hq₁, hq₁N, I₁, hI₁, hq₁I₁, ?_⟩
+  haveI : I₁.IsMaximal := hI₁
+  have hI0 : I₁ ≠ ⊥ :=
+    (I₁.bot_lt_of_maximal (NumberField.RingOfIntegers.not_isField D)).ne'
+  obtain ⟨π, hπ, hπ2⟩ := exists_mem_notMem_sq_of_isMaximal hI₁ hI0
+  haveI : Finite (𝓞 D ⧸ I₁) := Ideal.finiteQuotientOfFreeOfNeBot I₁ hI0
+  letI := ab'.addCommGroup (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+  letI := m'.module (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+  -- ### surjectivity of `·π` along the tower, PROVEN upstream over a bare field
+  have hsurj : ∀ (j : ℕ) (y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))),
+      y ∈ Submodule.torsionBySet (𝓞 D) (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+        ((I₁ ^ j : Ideal (𝓞 D)) : Set (𝓞 D)) →
+      ∃ z ∈ Submodule.torsionBySet (𝓞 D) (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+        ((I₁ ^ (j + 1) : Ideal (𝓞 D)) : Set (𝓞 D)), π • z = y := fun j y hy =>
+    exists_mem_torsion_act_uniformizer_eq m' (𝟙 (Spec (CommRingCat.of k))) I₁ hI₁ π hπ hπ2 j y hy
+  -- ### the frame at level `n₁` COUNTS the `I₁ ^ n₁`-torsion
+  have hI1n0 : I₁ ^ n₁ ≠ ⊥ := pow_ne_zero _ hI0
+  haveI : Finite (𝓞 D ⧸ I₁ ^ n₁) := Ideal.finiteQuotientOfFreeOfNeBot _ hI1n0
+  have hbij : Nat.card (Submodule.torsionBySet (𝓞 D)
+        (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+        ((I₁ ^ n₁ : Ideal (𝓞 D)) : Set (𝓞 D)))
+      = Nat.card (Fin 2 → 𝓞 D ⧸ I₁ ^ n₁) := by
+    refine (Nat.card_congr (Equiv.ofBijective
+      (fun u => (⟨c₁ u, hc₁.1 u⟩ : Submodule.torsionBySet (𝓞 D)
+        (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+        ((I₁ ^ n₁ : Ideal (𝓞 D)) : Set (𝓞 D)))) ⟨?_, ?_⟩)).symm
+    · intro u v h
+      exact hc₁.2.2.1 (congrArg Subtype.val h)
+    · intro y
+      obtain ⟨u, hu⟩ := hc₁.2.2.2.1 y.1 y.2
+      exact ⟨u, Subtype.ext hu⟩
+  -- ### and the source of the frame has `#(𝒪_D/I₁)^{2 n₁}` elements
+  have hcardsrc : Nat.card (Fin 2 → 𝓞 D ⧸ I₁ ^ n₁) = (Nat.card (𝓞 D ⧸ I₁) ^ 2) ^ n₁ := by
+    have hpow : Nat.card (𝓞 D ⧸ I₁ ^ n₁) = Nat.card (𝓞 D ⧸ I₁) ^ n₁ := by
+      have := cardQuot_pow_of_prime (S := 𝓞 D) (P := I₁) hI0 (i := n₁)
+      rwa [Submodule.cardQuot_apply, Submodule.cardQuot_apply] at this
+    rw [Nat.card_fun, hpow]
+    simp [Nat.card_eq_fintype_card, pow_right_comm]
+  -- ### the residual count at `I₁`, by taking `n₁`-th roots — this is where `hn₁` is spent
+  have hcard : Nat.card (Submodule.torsionBySet (𝓞 D)
+        (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+        ((I₁ : Ideal (𝓞 D)) : Set (𝓞 D)))
+      = Nat.card (𝓞 D ⧸ I₁) ^ 2 := by
+    have key : Nat.card (Submodule.torsionBySet (𝓞 D)
+          (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+          ((I₁ : Ideal (𝓞 D)) : Set (𝓞 D))) ^ n₁
+        = (Nat.card (𝓞 D ⧸ I₁) ^ 2) ^ n₁ := by
+      rw [← LevelFrame.card_tors_pow_eq I₁ hI₁ hI0 hπ hπ2 hsurj n₁, hbij, hcardsrc]
+    exact Nat.pow_left_injective hn₁ key
+  -- ### the frame at every level, by the algebraic engine
+  intro n
+  obtain ⟨e⟩ :=
+    LevelFrame.exists_linearEquiv_tors_pow
+      (P := GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) I₁ hI₁ hI0 hπ hπ2 hsurj hcard n
+  refine ⟨fun u => (e u : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))),
+    fun u => (e u).2, ?_, ?_, ?_, ?_⟩
+  · intro u v
+    exact congrArg Subtype.val (e.map_add u v)
+  · intro u v huv
+    exact e.injective (Subtype.ext huv)
+  · intro y hy
+    obtain ⟨u, hu⟩ := e.surjective ⟨y, hy⟩
+    exact ⟨u, congrArg Subtype.val hu⟩
+  · intro a u
+    have hsmul : (fun i => Ideal.Quotient.mk (I₁ ^ n) a * u i) = a • u := by
+      funext i
+      show Ideal.Quotient.mk (I₁ ^ n) a * u i = a • u i
+      rw [Algebra.smul_def, Ideal.Quotient.algebraMap_eq]
+    rw [hsmul]
+    exact congrArg Subtype.val (e.map_smul a u)
+
+open _root_.NumberField in
+/-- **THE LEVEL SCALARS ARE COHERENT: `s_b ≡ s_a (mod Iᵃ)` FOR `a ≤ b`**
+(PROVEN 2026-07-30).
+
+This is the "compatibility across `n` is derivable inside" clause of
+`exists_globalFrobCharScalar_atPrime_of_levelScalar_finiteBase`'s
+docstring, extracted as a statement of its own so that the leaf beneath
+it can RECEIVE it rather than re-derive it.  It is not content — no
+abelian-variety theory occurs — but it is not nothing either: it is what
+turns the family `sₙ` into an element of the `I`-adic completion, and it
+is exactly the half of that leaf that is NOT the integrality.
+
+THE ARGUMENT.  `A'[Iᵃ] ⊆ A'[Iᵇ]` for `a ≤ b`, so the level-`b` equation
+holds on `A'[Iᵃ]` as well, and subtracting the level-`a` equation kills
+`s_b − s_a` on `F(A'[Iᵃ])`.  That image is ALL of `A'[Iᵃ]`, because `F` is
+the action of a GROUP element: `z = F (σ⁻¹ · z)` and the torsion is
+Galois-stable (the second component of `Mult.torsion`).  So `s_b − s_a`
+annihilates `A'[Iᵃ]`; feeding the frame's first basis vector `(1, 0)`
+through the semilinearity clause and using injectivity of `c` gives
+`s_b − s_a ↦ 0` in `𝒪_D ⧸ Iᵃ`.
+
+`hc` IS LOAD-BEARING, and the statement is FALSE without it: the
+annihilator of `A'[Iᵃ]` is `Iᵃ` only because the frame makes that module
+free of rank two over `𝒪_D ⧸ Iᵃ`.  With no frame, `A'[Iᵃ]` may be `0` —
+a relative-dimension-zero `f'` gives exactly that — the equations are
+then vacuous at every level, and `sₙ` is unconstrained. -/
+theorem frobLevelScalar_sub_mem_of_levelTateFrame_finiteBase
+    {k : Type u} [Field k] (N : ℕ)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    (σ : Field.absoluteGaloisGroup k)
+    (I : Ideal (NumberField.RingOfIntegers D))
+    (s : ℕ → NumberField.RingOfIntegers D)
+    (hs : ∀ n : ℕ, ∀ y ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).1,
+      ab'.add (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ
+          (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y))
+        (m'.act (N : NumberField.RingOfIntegers D) y)
+        = m'.act (s n) (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y))
+    (a b : ℕ) (hab : a ≤ b)
+    (c : (Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ a) →
+      GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+    (hc : IsLevelTateFrame m' (𝟙 (Spec (CommRingCat.of k))) (I ^ a) c) :
+    s b - s a ∈ I ^ a := by
+  classical
+  letI : AddCommGroup (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
+    ab'.addCommGroup (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+  letI : Module (NumberField.RingOfIntegers D)
+      (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
+    m'.module (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+  letI : DistribMulAction (Field.absoluteGaloisGroup k)
+      (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
+    ab'.geomFibreAction (𝟙 (Spec (CommRingCat.of k)))
+  -- ### every `I ^ a`-torsion point is killed by `s b - s a`
+  have hkill : ∀ z ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ a)).1,
+      m'.act (s b - s a) z = 0 := by
+    intro z hz
+    set y := ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ⁻¹ z with hy_def
+    have hy : y ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ a)).1 :=
+      (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ a)).2 σ⁻¹ z hz
+    have hyb : y ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ b)).1 :=
+      LevelFrame.tors_mono (Ideal.pow_le_pow_right hab) hy
+    have hFy : ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y = z := by
+      rw [hy_def]
+      show σ • (σ⁻¹ • z) = z
+      rw [smul_smul, mul_inv_cancel, one_smul]
+    have h1 := hs b y hyb
+    have h2 := hs a y hy
+    rw [hFy] at h1 h2
+    have h3 : m'.act (s b) z = m'.act (s a) z := by rw [← h1, ← h2]
+    show (s b - s a) • z = 0
+    rw [sub_smul, sub_eq_zero]
+    exact h3
+  -- ### the frame turns that into a congruence in `𝒪_D ⧸ I ^ a`
+  have hc0 : c 0 = 0 := by
+    have h := hc.2.1 0 0
+    rw [add_zero] at h
+    have h2 : c 0 + c 0 = c 0 + 0 := by rw [add_zero]; exact h.symm
+    exact add_left_cancel h2
+  set u : Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ a := fun i => if i = 0 then 1 else 0
+    with hu_def
+  have hcu := hkill (c u) (hc.1 u)
+  have hsem := hc.2.2.2.2 (s b - s a) u
+  have hzero : c (fun i => Ideal.Quotient.mk (I ^ a) (s b - s a) * u i) = c 0 := by
+    rw [hsem, hc0]
+    exact hcu
+  have huz := hc.2.2.1 hzero
+  have hev : Ideal.Quotient.mk (I ^ a) (s b - s a) = 0 := by
+    have h := congrFun huz 0
+    simpa [hu_def] using h
+  exact (Ideal.Quotient.eq_zero_iff_mem).mp hev
+
+set_option linter.unusedVariables false in
+open _root_.NumberField in
+/-- **THE FROBENIUS CHARACTERISTIC SCALAR IS INTEGRAL, AT ONE PRIME —
+THE `I`-ADIC LIMIT LANDS IN THE GLOBAL RING** (sorry leaf; **SHARPENED
+2026-07-30**, see the note at the end).
+
+The level scalars `sₙ` are handed in as a plain sequence together with
+their coherence `s_b ≡ s_a (mod Iᵃ)`, which
+`frobLevelScalar_sub_mem_of_levelTateFrame_finiteBase` above supplies for
+free; so this leaf carries no frame quantifier, no existential over `s`,
+and its conclusion is a statement of pure ideal arithmetic.  What is left
+is EXACTLY the integrality: the coherent family defines an element of the
+`I`-adic completion `𝒪_{D,I}`, and the content is that it lies in the
+GLOBAL ring `𝒪_D`.
+
+**FAITHFULNESS — `htower` CANNOT BE DROPPED, AND THIS IS THE ONE THING TO
+CHECK BEFORE WEAKENING THE STATEMENT.**  With `htower` removed the leaf is
+FALSE, and not marginally: take `f'` of relative dimension zero, so
+`A'[Iⁿ] = 0` at every level.  Then `hs` is VACUOUS (both sides are the
+zero point), `hcoh` is the only constraint on `s`, and any sequence of
+partial sums `sₙ = Σ_{j<n} cⱼ πʲ` whose `I`-adic limit is irrational over
+`𝒪_D` satisfies it — `𝒪_D` is DENSE in `𝒪_{D,I}` and strictly smaller, so
+such a sequence exists — while the conclusion demands `t − sₙ ∈ Iⁿ` for
+every `n`, which pins `t` to that limit.  `htower` is what forbids this:
+a frame at level `n ≥ 1` is an injection of `(𝒪_D ⧸ Iⁿ)²` into `A'[Iⁿ]`,
+so the torsion is large enough that `hs` determines `sₙ` modulo `Iⁿ`.
+
+`hσ`, `hq`, `hqN` and `hqI` are carried unchanged from the pre-sharpening
+statement; `hσ` is what identifies the Galois action with the Frobenius
+endomorphism, without which the displayed equation has constant term `N`
+for no reason.
+
+**THE AXIS THAT WOULD REDUCE IT FURTHER, AND WHICH IS NOT SEARCHED HERE**
+(inherited from the pre-sharpening docstring, and still accurate).  The
+level and frame axes are CLOSED: every restatement in terms of the matrix
+`Φ`, of `A'[Iⁿ]` or of the Galois action on torsion is equivalent to the
+above modulo the determinant leaf, and coherence across `n` is now
+discharged above rather than merely derivable.  The open axis is the
+ENDOMORPHISM axis: `End_k(A')` as a ring (which needs rigidity — a
+pointed morphism of abelian schemes is additive), faithfulness of the
+`I`-adic representation `End⁰_D(A') ↪ End_{D_I}(V_I A')`, and
+`𝒪_D = D ∩ End_k(A')`.  With those three STATED — not proven — the
+argument is short: `D[F]` is a commutative `D`-subalgebra acting
+`D_I`-linearly on a rank-two module, hence of degree at most two, so `F`
+satisfies a monic quadratic over `D` whose coefficients are integral
+because `F` preserves the lattice `T_I`; the `sₙ` are its reductions.
+None of `End_k(A')`, rigidity or Tate-module faithfulness exists in this
+tree, in mathlib (`grep -rli frobenius
+.lake/packages/mathlib/Mathlib/AlgebraicGeometry/` is empty) or in
+`~/cs/FLT`, which is why the cut stops here rather than one level lower.
+
+An archimedean route is the other classical one and is NOT cheaper here:
+it needs `#A'(k_m) = deg(F^m − 1)` and positivity of the Rosati
+involution to get `|t| ≤ 2√N`, hence finitely many candidates in the
+lattice `𝒪_D`, hence a repeated value — and the degree formula is the
+same missing theory.
+
+**WHAT THE SHARPENING DID AND DID NOT DO.**  It did not reduce the leaf
+count: this is one `sorry` replacing one `sorry`.  It moved the
+frame-and-uniqueness bookkeeping OUT of the leaf (into the proven lemma
+above and into the consumer's assembly) and left the deep half alone, so
+the next owner reads a statement whose only mathematical content is
+integrality. -/
+theorem exists_globalFrobCharScalar_atPrime_of_coherentLevelScalar_finiteBase
+    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    (σ : Field.absoluteGaloisGroup k)
+    (hσ : ∀ z : AlgebraicClosure k,
+      (σ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k) z = z ^ N)
+    (q : ℕ) (hq : q.Prime) (hqN : ¬ q ∣ N)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    (htower : ∀ n : ℕ, ∃ c : (Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ n) →
+        GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
+      IsLevelTateFrame m' (𝟙 (Spec (CommRingCat.of k))) (I ^ n) c)
+    (s : ℕ → NumberField.RingOfIntegers D)
+    (hs : ∀ n : ℕ, ∀ y ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).1,
+      ab'.add (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ
+          (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y))
+        (m'.act (N : NumberField.RingOfIntegers D) y)
+        = m'.act (s n) (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y))
+    (hcoh : ∀ a b : ℕ, a ≤ b → s b - s a ∈ I ^ a) :
+    ∃ t : NumberField.RingOfIntegers D, ∀ n : ℕ, t - s n ∈ I ^ n :=
   sorry
 
 open _root_.NumberField in
 /-- **THE FROBENIUS CHARACTERISTIC SCALAR IS INTEGRAL, AT ONE PRIME**
-(sorry leaf — the INTEGRALITY half of Weil's rationality theorem; Mumford
+(**PROVEN 2026-07-30** over the sharpened leaf
+`exists_globalFrobCharScalar_atPrime_of_coherentLevelScalar_finiteBase`
+and the coherence lemma
+`frobLevelScalar_sub_mem_of_levelTateFrame_finiteBase`, both immediately
+above — the INTEGRALITY half of Weil's rationality theorem; Mumford
 *Abelian Varieties* §19, Milne *Abelian Varieties* §V, Tate 1966).
+
+THE ASSEMBLY, which is all that is left here.  `htower` chooses a frame
+at every level and `hlev` then a scalar `sₙ` at every level; the
+coherence lemma makes the family coherent; the sharpened leaf produces
+the global `t` with `t − sₙ ∈ Iⁿ`; and `Iⁿ` annihilates `A'[Iⁿ]`, which
+contains `F y` because the torsion is Galois-stable, so `t` and `sₙ` act
+identically there and the level-`n` equation transfers from `sₙ` to `t`.
+
+The original docstring, kept because it records what the statement means
+and which axes are exhausted:
 
 Fix ONE maximal ideal `I` of residue characteristic prime to `N` whose
 whole tower is rank two (`htower`).  Given the LEVELWISE characteristic
@@ -16113,8 +20645,38 @@ theorem exists_globalFrobCharScalar_atPrime_of_levelScalar_finiteBase
         ab'.add (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ
             (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y))
           (m'.act (N : NumberField.RingOfIntegers D) y)
-          = m'.act t (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y) :=
-  sorry
+          = m'.act t (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y) := by
+  classical
+  letI : AddCommGroup (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
+    ab'.addCommGroup (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+  letI : Module (NumberField.RingOfIntegers D)
+      (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
+    m'.module (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+  -- ### a frame and a scalar at every level
+  choose c hc using htower
+  choose s hs using fun n => hlev n (c n) (hc n)
+  -- ### the scalars are coherent, by the lemma above
+  have hcoh : ∀ a b : ℕ, a ≤ b → s b - s a ∈ I ^ a := fun a b hab =>
+    frobLevelScalar_sub_mem_of_levelTateFrame_finiteBase N ab' m' σ I s hs a b hab (c a) (hc a)
+  -- ### the integrality leaf
+  obtain ⟨t, ht⟩ := exists_globalFrobCharScalar_atPrime_of_coherentLevelScalar_finiteBase
+    hfin N hN ab' m' σ hσ q hq hqN I hI hqI (fun n => ⟨c n, hc n⟩) s hs hcoh
+  refine ⟨t, fun n y hy => ?_⟩
+  -- ### `Iⁿ` annihilates `F y`, so `t` and `s n` act identically on it
+  have hFy : ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y
+      ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).1 :=
+    (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).2 σ y hy
+  have hdiff : m'.act (t - s n) (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y)
+      = ab'.zero (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k))) :=
+    (mem_torsion_iff m' (𝟙 (Spec (CommRingCat.of k))) (I ^ n) _).mp hFy _ (ht n)
+  have hact : m'.act t (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y)
+      = m'.act (s n) (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y) := by
+    show t • (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y)
+        = s n • (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y)
+    rw [← sub_eq_zero, ← sub_smul]
+    exact hdiff
+  rw [hact]
+  exact hs n y hy
 
 open _root_.NumberField in
 /-- **THE LEVELWISE FROBENIUS SCALARS COME FROM ONE GLOBAL INTEGER OF

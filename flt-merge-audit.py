@@ -91,9 +91,34 @@ distinct innocent shape you will meet again:
 * `36e66b161` (flt-lean-77) DROP-TOTAL of a whole new module — a `-s ours`
   decline whose message explains it: the hoist it carried had already landed
   from a rival branch under a different home, and taking both would declare the
-  same name twice.  Note what the flag bought anyway: `-s ours` also discards
-  files that had nothing to do with the rivalry, and the message says the hoist
-  should be redone later.  That is a real cost, correctly paid, worth seeing.
+  same name twice.
+
+  **This bullet used to end with a claim that was FALSE, and it manufactured a
+  standing recovery task** (corrected 2026-07-30, flt-lean-187).  It said the
+  `-s ours` "also discards files that had nothing to do with the rivalry" and
+  that the hoist "should be redone later — a real cost, correctly paid".  It
+  was not a cost and there was nothing to redo.  Branch `flt-lean-77` touched
+  exactly three `.lean` files against its merge base `99681f7f`:
+  `MazurTorsion.lean` (+202), `Interface.lean` (−460), and the new module
+  `GaloisRepresentation/CyclotomicInertiaSurjective.lean` (+513).  That module
+  contains exactly ONE declaration —
+  `GaloisRepresentation.Modularity.exists_mem_localInertiaGroup_cyclotomicCharacter_toZModPow_eq`
+  — which IS the disputed theorem, so the module was 77's relocation
+  destination, not unrelated collateral.  The theorem is on the trunk at
+  `FreyCurve/MazurTorsion.lean:7245` in the same namespace, `diff`-identical
+  over all 423 proof lines except the binder placement of `{p} [Fact p.Prime]`
+  and eleven `IsIntegral` → `_root_.IsIntegral` disambiguations forced by the
+  enclosing namespace.  It is sorry-free and elaborates, as does the leaf it
+  was hoisted for (`exists_mem_localInertiaGroup_cyclotomicCharacterModL_eq`,
+  line 7695).
+
+  Note this script's OWN per-file verdict for that path was right all along —
+  `RELOCATED?  … a rename or a rival module, not a loss`.  The prose above
+  contradicted the tool's output, and the prose is what got believed.  **When
+  the calibration notes and a per-file verdict disagree, the verdict wins.**
+  What remains of the merge message's recommendation is an optional refactor
+  (move the theorem out of the 75 000-line `MazurTorsion.lean`), not a
+  recovery — and see the caution against it under `decl_names`.
 * `ee55a94dc` (flt-lean-15) DROP-PARTIAL at 99% landed — the merge deliberately
   substituted main's CURRENT text of a relocated block for the branch's stale
   base copy, which had been written before main grew twelve new declarations in
@@ -107,6 +132,28 @@ distinct innocent shape you will meet again:
   written three independent times.  Finding this needed a by-name search, and
   the first version of that search got it WRONG in the other direction — see
   `Git.defines` for why a substring grep is worse than useless here.
+* `ab4ad3864` (flt-lean-106) DROP-TOTAL of a new module,
+  `Mathlib/NumberTheory/ClassGroupNormSubgroup.lean` — the shape to study,
+  because the by-name relocation search finds NOTHING for it and it is still a
+  correct decline.  Its three declarations are absent from the merge tree and
+  not even mentioned there.  They relocated under RENAMED spellings:
+  `normClassSubgroup` -> `relNormClassSubgroup` and
+  `finrank_le_index_normClassSubgroup` -> `finrank_le_index_relNormClassSubgroup`,
+  both in `NumberField/UnramifiedClassFieldBound.lean` (lines 161 and 318),
+  which is also where the consumer the module existed to serve,
+  `finrank_le_card_classGroup_of_unramified_abelian_of_isUnramifiedAtInfinitePlaces`,
+  now sits PROVEN (line 358) — exactly as the merge message says.  So **a
+  silent relocation section is not evidence of loss**; it is the expected
+  output whenever the rival route renamed things, which is most of the time.
+  Follow the CONSUMER named in the dropped module's docstring, not the names.
+
+  Before the comment-stripping fix this entry read "1 of its 4 sampled
+  declarations ARE defined elsewhere ... may be a partial relocation".  All
+  three parts of that were wrong: the file defines 3 declarations, not 4 — the
+  fourth was `number`, harvested from the docstring line "class number `2`, so
+  its narrow Hilbert class field is a QUADRATIC extension" — and `number` was
+  also the single one that "resolved", against other files' docstrings.  The
+  reassurance was 100% phantom and it concerned a name that does not exist.
 * `d74aa7eaa`, `cdc865a5d` — flagged by the tree-only check as total no-ops,
   but their branches change no path at all against the merge base.  An empty
   payload cannot be dropped; this script says so and does not flag them.
@@ -284,12 +331,110 @@ class Git:
         theorems of a dropped module as "present elsewhere" when every hit was
         a docstring sentence and none of the three was defined anywhere in the
         tree. A grep proves a spelling present, not a theorem present.
+
+        The header pattern below narrows that a great deal but does NOT close
+        it, because `git grep` cannot tell code from comment either: a prose
+        line that happens to begin "theorem was proven on ..." matches the
+        header pattern exactly. So the grep is used only to pick candidate
+        FILES, and each candidate is then confirmed against the
+        comment-stripped text. See `strip_lean_comments`.
         """
         esc = re.escape(name).replace("/", r"\/")
         pat = (r"^(private |protected |noncomputable |public |@\[[^]]*\] *)*"
                r"(theorem|lemma|def|abbrev|instance|structure|class|inductive) +"
                + esc + r"( |\(|\{|\[|:|$)")
-        return self.grep_files(commit, pat, pathspec)
+        rx = re.compile(pat)
+        confirmed = []
+        for path in self.grep_files(commit, pat, pathspec):
+            blob = self.try_run("show", f"{commit}:{path}")
+            if blob is None:
+                # unreadable blob: keep the candidate rather than silently
+                # downgrading a real definition to an absence
+                confirmed.append(path)
+                continue
+            if any(rx.match(l) for l in strip_lean_comments(blob.splitlines())):
+                confirmed.append(path)
+        return confirmed
+
+
+def strip_lean_comments(lines: list[str]) -> list[str]:
+    """Blank out Lean comments, preserving line count and column alignment.
+
+    Every name-based scan in this repository needs this, and CLAUDE.md says so:
+    the modules open with 80-line block comments whose prose routinely begins a
+    sentence with "theorem ...", "def ..." or "instance ...", so a raw scan
+    harvests those sentences as declaration names.
+
+    Measured 2026-07-30 on the very module this script's calibration notes
+    discuss: `CyclotomicInertiaSurjective.lean` defines exactly ONE theorem and
+    the unstripped scan reported TWO. The phantom was named `was`, from the
+    header sentence "theorem was proven on 2026-07-24 inside ...", and it then
+    "resolved" against other files' docstrings because `Git.defines` was blind
+    in the same way. Here that produced the right verdict by luck — the one
+    real name is genuinely defined on the trunk — but the failure is not benign
+    in general:
+
+      * a phantom name that fails to resolve breaks `len(hits) == len(names)`
+        and DOWNGRADES a correct RELOCATED? to "partial relocation — check the
+        rest by name", which is exactly the shape that gets read as a loss and
+        dispatched as a recovery task; and
+      * `decl_names` samples only the FIRST `limit` matches, so in a
+        comment-heavy module the budget is spent on prose and the file's REAL
+        declarations are never checked at all.
+
+    Handles nested block comments (`/- /- -/ -/` is legal in Lean, and this
+    also covers doc comments `/-- ... -/`), line comments, and string literals
+    with backslash escapes — an unguarded `/-` inside a string would otherwise
+    open a phantom comment and swallow every declaration after it.
+    """
+    out: list[str] = []
+    depth = 0
+    for line in lines:
+        buf: list[str] = []
+        i, n = 0, len(line)
+        in_str = False
+        while i < n:
+            if depth > 0:
+                if line.startswith("-/", i):
+                    depth -= 1
+                    buf.append("  ")
+                    i += 2
+                elif line.startswith("/-", i):
+                    depth += 1
+                    buf.append("  ")
+                    i += 2
+                else:
+                    buf.append(" ")
+                    i += 1
+                continue
+            if in_str:
+                ch = line[i]
+                if ch == "\\" and i + 1 < n:
+                    buf.append(ch)
+                    buf.append(line[i + 1])
+                    i += 2
+                    continue
+                buf.append(ch)
+                if ch == '"':
+                    in_str = False
+                i += 1
+                continue
+            if line[i] == '"':
+                in_str = True
+                buf.append('"')
+                i += 1
+            elif line.startswith("/-", i):
+                depth += 1
+                buf.append("  ")
+                i += 2
+            elif line.startswith("--", i):
+                buf.append(" " * (n - i))
+                i = n
+            else:
+                buf.append(line[i])
+                i += 1
+        out.append("".join(buf))
+    return out
 
 
 DECL_RE = re.compile(
@@ -305,9 +450,18 @@ def decl_names(lines: list[str], limit: int = 12) -> list[str]:
     merge tree?" — absence by NAME is not absence by CONTENT, and the commonest
     innocent reason a whole new module is dropped is that the trunk already
     carried a rival module with the same theorems under a different path.
+
+    A RELOCATED? verdict answers "is the content still here", NOT "is the file
+    where it should be". `36e66b161` is the worked example: the theorem landed
+    from the rival branch into `MazurTorsion.lean`, which at 75 000 lines is one
+    of the two most expensive files in the tree, and the merge message
+    recommends moving it to a small upstream module. That recommendation is a
+    refactor, not a recovery, and it should be priced as one — the file is under
+    heavy concurrent edit, so deleting a 470-line block from it generates merge
+    conflicts for a sub-1% gain in a single-threaded elaboration.
     """
     names: list[str] = []
-    for line in lines:
+    for line in strip_lean_comments(lines):
         m = DECL_RE.match(line)
         if m and m.group(1) not in names:
             names.append(m.group(1))

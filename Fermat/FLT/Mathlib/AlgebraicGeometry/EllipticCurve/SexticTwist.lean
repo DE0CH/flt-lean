@@ -75,6 +75,16 @@ lemma isElliptic_sexticModel {F : Type*} [Field F] [CharZero F] {b : F} (hb : b 
   rw [sexticModel_Δ]
   exact (isUnit_iff_ne_zero).mpr (mul_ne_zero (by norm_num) (pow_ne_zero 2 hb))
 
+/-- **The normal form at `j = 0` really has `j = 0`.**  `y² = x³ + b` has `b₂ = b₄ = 0`,
+hence `c₄ = b₂² − 24 b₄ = 0`, and `WeierstrassCurve.j_eq_zero` does the rest.  The mirror of
+`j_quarticModel`, and it plays the same role: the sextic twist below is a `sexticModel` by
+construction, so recording the `j`-invariant of the curve it produces is free. -/
+lemma j_sexticModel {F : Type*} [Field F] [CharZero F] {b : F}
+    [(sexticModel b).IsElliptic] : (sexticModel b).j = 0 := by
+  refine WeierstrassCurve.j_eq_zero _ ?_
+  simp only [c₄, b₂, b₄, sexticModel_a₁, sexticModel_a₂, sexticModel_a₃, sexticModel_a₄]
+  ring
+
 /-- **The normal form at `j = 0`**: an elliptic curve with `j = 0` over a field of
 characteristic `0` is isomorphic, over that field, to `y² = x³ + b` for some `b ≠ 0`. -/
 lemma exists_smul_eq_sexticModel {K : Type*} [Field K] [CharZero K] (E : WeierstrassCurve K)
@@ -224,7 +234,7 @@ theorem exists_stableCyclic_sexticTwist_of_sextic {N : ℕ} (_hN : N ≠ 0) (E :
     (hγ : ∀ σ : Ω ≃ₐ[K] Ω, σ.toAlgHom γ = c σ * γ)
     (d : K) (hd : γ ^ 3 = algebraMap K Ω d) :
     ∃ (E' : WeierstrassCurve K) (_ : E'.IsElliptic) (g' : (E'⁄Ω).toAffine.Point),
-      addOrderOf g' = N ∧
+      E'.j = 0 ∧ addOrderOf g' = N ∧
       ∀ σ : Ω ≃ₐ[K] Ω, ∀ x ∈ AddSubgroup.zmultiples g',
         Affine.Point.map σ.toAlgHom x ∈ AddSubgroup.zmultiples g' := by
   have hδ0 : (δ : Ω) ≠ 0 := δ.ne_zero
@@ -242,14 +252,17 @@ theorem exists_stableCyclic_sexticTwist_of_sextic {N : ℕ} (_hN : N ≠ 0) (E :
   have hE'₄ : (E'⁄Ω).a₄ = 0 := by rw [hE', sexticModel_baseChange]; simp
   have hE'₆ : (E'⁄Ω).a₆ = (δ : Ω) ^ 6 * (E⁄Ω).a₆ := by
     rw [hE', sexticModel_baseChange, sexticModel_a₆, hδ6, hEa₆, map_mul]; ring
-  haveI : E'.IsElliptic := hE' ▸ isElliptic_sexticModel (mul_ne_zero hEa₆K hd0)
+  haveI hsm : (sexticModel (E.a₆ * d)).IsElliptic :=
+    isElliptic_sexticModel (mul_ne_zero hEa₆K hd0)
+  haveI : E'.IsElliptic := hE' ▸ hsm
+  have hjE' : E'.j = 0 := by simp_rw [hE']; exact j_sexticModel
   have hψ : (⟨δ, 0, 0, 0⟩ : VariableChange Ω) • (E'⁄Ω) = (E⁄Ω) :=
     smul_diag_twist_sextic h₁ h₂ h₃ h₄ hE'₁ hE'₂ hE'₃ hE'₄ δ hE'₆
   set ψ : (E⁄Ω).toAffine.Point ≃+ (E'⁄Ω).toAffine.Point :=
     (equivOfEq hψ.symm).trans (equivVariableChange (E'⁄Ω) ⟨δ, 0, 0, 0⟩) with hψdef
   have hψapp : ∀ P, ψ P = mapVariableChangeFun (E'⁄Ω) ⟨δ, 0, 0, 0⟩ (equivOfEq hψ.symm P) :=
     fun _ => rfl
-  refine ⟨E', inferInstance, ψ g, ?_, ?_⟩
+  refine ⟨E', inferInstance, ψ g, hjE', ?_, ?_⟩
   · rw [← hg]; exact ψ.addOrderOf_eq g
   intro σ x hx
   obtain ⟨n, hn⟩ := AddSubgroup.mem_zmultiples_iff.mp hx
@@ -330,7 +343,7 @@ theorem exists_stableCyclic_sexticTwist [IsAlgClosed Ω] {N : ℕ} (hN : N ≠ 0
     (hγ : ∀ σ : Ω ≃ₐ[K] Ω, σ.toAlgHom γ = c σ * γ)
     (d : K) (hd : γ ^ 3 = algebraMap K Ω d) :
     ∃ (E' : WeierstrassCurve K) (_ : E'.IsElliptic) (g' : (E'⁄Ω).toAffine.Point),
-      addOrderOf g' = N ∧
+      E'.j = 0 ∧ addOrderOf g' = N ∧
       ∀ σ : Ω ≃ₐ[K] Ω, ∀ x ∈ AddSubgroup.zmultiples g',
         Affine.Point.map σ.toAlgHom x ∈ AddSubgroup.zmultiples g' := by
   obtain ⟨C₀, b, hb, hC₀⟩ := exists_smul_eq_sexticModel E hj
