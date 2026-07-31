@@ -170,6 +170,8 @@ public import Mathlib.NumberTheory.ModularForms.BoundedAtCusp
 -- mentions it, and `X0.lean` reaches the same file only through its private
 -- `EllipticScheme` import, which this module does not inherit.
 import Fermat.FLT.Mathlib.AlgebraicGeometry.CurveAffineComplement
+public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
+public import Mathlib.FieldTheory.Finite.Basic
 
 @[expose] public section
 
@@ -442,45 +444,36 @@ open in them has been split along the theories it needed:
 
 | open leaf | theory | base |
 |---|---|---|
-| `exists_gamma1RigidifiedModuliScheme` | Katz-Mazur 4.7.1/4.7.2 + 5.1.1 + 6.6.2: the rigidified moduli problem of `[Γ₁(N)], [Γ(n)]` is REPRESENTABLE, affineness not mentioned.  Split off `exists_gamma1RigidifiedModuli` on 2026-07-30 — that node is now PROVEN over this row and the next, and it is still what `exists_gamma1Rigidification`, `exists_gamma1GITPresentation`, `nonempty_gamma1GITPresentation_of_rigidification`, `isDomain_of_`, `smoothOfRelativeDimension_of_` and `geometricallyConnected_of_gamma1GITPresentation` are PROVEN over. | any `K`, `char K ∤ N`, `char K ∤ n` |
-| `isAffine_of_gamma1RigidifiedModuliScheme` | Katz-Mazur, the affineness parenthesis of 8.1.1 and nothing else: `𝔐([Γ₁(N)], [Γ(n)])` is AFFINE.  The second half of the same 2026-07-30 split.  Legitimate as a `∀` because `universal` is a FINE moduli property; see its docstring. | any `K`, `char K ∤ N`, `char K ∤ n` |
+| `exists_gamma1RigidifiedModuli` | Katz-Mazur 4.7.2 + 5.1.1 + 6.6.2 and the affineness parenthesis of 8.1.1: the AFFINE FINE moduli scheme of `[Γ₁(N)], [Γ(n)]`.  The one citation half of the former `exists_gamma1Rigidification`, which is PROVEN over this row and the two below it (2026-07-28), as are `exists_gamma1GITPresentation`, `nonempty_gamma1GITPresentation_of_rigidification`, `isDomain_of_`, `smoothOfRelativeDimension_of_` and `geometricallyConnected_of_gamma1GITPresentation`. | any `K`, `char K ∤ N`, `char K ∤ n` |
 | `exists_torsionBasisCover_field` | Katz-Mazur 2.3.1 / 5.1.1, Silverman *AEC* III.6.4: after a flat surjective quasi-compact cover the `n`-torsion of an abelian scheme of relative dimension one acquires a basis.  Stated for a BARE abelian scheme — no `Gamma1Datum`, no moduli scheme — and it is all that is left under `exists_gamma1FullLevelStructure_cover`, which is PROVEN over it (2026-07-28).  It is the general-base form of `X0.lean`'s `exists_torsionBasis_geomPoint` + `exists_torsionBasis_cover_of_geomPoint`, both of which are stated only over `SpecQ`. | any `K`, `char K ∤ n` |
-| `isOpenImmersion_equalizer_of_abelianFullLevelStructure` | NO citation beyond Katz–Mazur 2.3.1 — the equalizer of two `n`-torsion sections of an elliptic scheme over an ARBITRARY base carrying a full level-`n` structure is OPEN.  Step 2, and after the 2026-07-30 cut the ONLY step, of `exists_openCover_twist_of_abelianFullLevelStructure`, which is now PROVEN over it and over `exists_openCover_comb_of_abelianFullLevelStructure`; that node in turn is what `exists_gamma1DeckAction` (REFUTED 2026-07-29, restated with its over-`S` clause, then PROVEN) rests on.  Identical to `X0.lean`'s `isOpenImmersion_equalizer_of_nsmul_eq_zero` except that `L` replaces `g : Z ⟶ SpecQ` as the source of invertibility of `n`. | any base scheme, no characteristic hypothesis — see its FALSITY AUDIT for why `L` already pins `n` invertible |
-| `smoothCurve_A_of_gamma1GITPresentation` | Katz-Mazur 8.2.1, stated ONCE and on the rigidified ring where 8.2.1 is proved: `Spec A` is a smooth affine curve over `K` (`Algebra.Smooth K A` and `ringKrullDim A = 1`).  Replaced `isReduced_A_of_gamma1GITPresentation` and the dimension conjunct of `smooth_coarseRing_of_gamma1GITPresentation` on 2026-07-28; BOTH of those are now PROVEN over it. | any `K`, `char K ∤ N` |
-| `formallySmoothInvariants_of_gamma1GITPresentation` | Deligne-Rapoport III.1, Katz-Mazur 8.2.1: `B = A^G` is FORMALLY smooth over `K`.  Cut 2026-07-30 out of `smoothInvariants_of_gamma1GITPresentation` (now PROVEN over it) by unfolding `Algebra.Smooth` and paying for the second conjunct: `finitePresentation_invariants_of_gamma1GITPresentation` is Noether's theorem on invariants, PROVEN over `smoothCurve_A_of_gamma1GITPresentation` and the new `Gamma1GITPresentation.isScalarTower`.  What is left still needs Stacks `02VL` plus freeness of the `G`-action, neither of which the structure supplies. | any `K`, `char K ∤ N` |
-| ~~`exists_weierstrassCurve_pointOfExactOrder`~~ | PROVEN 2026-07-30: Silverman *AEC* III.6.4 was already in cone as `WeierstrassCurve.n_torsion_dimension` (`EllipticCurve/Torsion.lean`), so the leaf was that theorem at `WeierstrassCurve.ofJ (0 : L)` plus additive-order bookkeeping; no longer a leaf | — |
+| `exists_gamma1DeckAction` | NO citation — the deck action, `strM_invariant`, `dM_equivariant` and the coequalising clause, all consequences of the fine moduli property.  `X0.lean`'s `exists_deckAction_of_torsion` proves the `Γ₀` analogue IN FULL, coequalising clause included (**corrected 2026-07-28**; the old claim that it left that clause sorried is stale).  What is open under the `Γ₀` node is the named leaf `exists_openCover_twist_of_fullLevelStructure`. | any base scheme `S` |
+| `smooth_coarseRing_of_gamma1GITPresentation` | Deligne-Rapoport III.1, Katz-Mazur 8.2.1: `B = A^G` is a smooth `K`-algebra of Krull dimension one.  (`locallyStandardSmooth_of_gamma1GITPresentation` is PROVEN over it, 2026-07-28, together with the release's `smoothOfRelativeDimension_specMap_algebraMap_of_smooth`.) | any `K`, `char K ∤ N` |
+| `exists_weierstrassCurve_pointOfExactOrder` | Silverman *AEC* III.6.4: over an algebraically closed field of characteristic prime to `N`, some elliptic curve carries a point of exact order `N`.  PURE elliptic-curve arithmetic — no schemes, no moduli.  Cut out of `exists_gamma1Datum_fieldExtension` 2026-07-28. | alg. closed `L`, `char L ∤ N` |
 | `nonempty_gamma1Datum_of_weierstrassPoint` | the base-generalisation of `nonempty_gamma1Datum_of_ratPoint`, which is the SAME statement at `ℚ` and is PROVEN.  Its whole obstruction is that `EllipticScheme.lean` is written at the concrete base `ℚ`; no new mathematics.  Cut out of `exists_gamma1Datum_fieldExtension` 2026-07-28, which is PROVEN over it and the row above (and `geometricComponents_of_gamma1GITPresentation` over that plus the two rows below, and `nontrivial_A_of_gamma1GITPresentation` over that alone). | any field `L` |
-| ~~`isReduced_A_of_gamma1GITPresentation`~~ | PROVEN 2026-07-28 over `smoothCurve_A_of_gamma1GITPresentation` and the in-tree `Algebra.Smooth.isReduced_of_isField`; no longer a leaf | — |
-| `transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation` | Deligne-Rapoport IV.5.5: `det` is onto, so `G` permutes the components of `Spec (A ⊗[K] L)` transitively for EVERY field extension `L/K`.  MERGED 2026-07-30 out of the two former leaves `transitiveMinimalPrimes_of_gamma1GITPresentation` and `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation`, BOTH of which are now PROVEN over it — the first at `L := K` through `Algebra.TensorProduct.rid`, the second through the new `isDomain_of_minimalPrimes_transitive_family` plus `smoothCurve_A_of_gamma1GITPresentation` and `nontrivial_A_of_gamma1GITPresentation`.  Two leaves stating one sentence of IV.5.5 at two generalities became one leaf at the stronger generality. | any `K`, `char K ∤ N`, any field extension `L/K` |
-| ~~`transitiveMinimalPrimes_of_gamma1GITPresentation`~~ | PROVEN 2026-07-30 over the row above at `L := K`; no longer a leaf | — |
-| ~~`isPrime_nilradical_tensorProduct_of_gamma1GITPresentation`~~ | PROVEN 2026-07-30 over the row above; no longer a leaf.  `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation` and `connectedSpace_tensorProduct_of_gamma1GITPresentation` are unchanged and still read it | — |
+| `isReduced_A_of_gamma1GITPresentation` | Katz-Mazur 8.2.1: `Spec A` is smooth over `K`, hence reduced | any `K`, `char K ∤ N` |
+| `transitiveMinimalPrimes_of_gamma1GITPresentation` | Deligne-Rapoport IV.5.5: `det` is onto, so `G` permutes the components of `Spec A` transitively | any `K`, `char K ∤ N` |
+| `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation` | Deligne-Rapoport IV.5.5 — `det` is onto for `[Γ₁(N)]`, i.e. `Frac B / K` is a regular extension (`K` algebraically closed in `Frac B`, separably generated).  `connectedSpace_tensorProduct_of_gamma1GITPresentation` is PROVEN over it, 2026-07-28. | any `K`, `char K ∤ N` |
 | `exists_rationalCuspPointsX1_field` | `φ(N)/2` rational cusps of `X_1(N)` (Deligne-Rapoport VI.5).  Base field FREED 2026-07-28: this single leaf now carries the former `exists_rationalCuspPointsX1` (over `ℚ`, PROVEN over it) and the `≥` half of the former `card_cuspLocusPoints_x1_finiteField` (over `𝔽_3`) — one sentence of Deligne-Rapoport that used to be two open leaves at two bases. | any `K` with `N` invertible |
-| `exists_isFineGamma1Moduli` | Katz–Mazur 4.7.1: `[Γ₁(N)]` is REPRESENTABLE at `N ≥ 4`, `ℓ` prime, `ℓ ∤ N` — a universal family `dM` over `M`, classified uniquely.  (`exists_fineGamma1Atlas` is PROVEN over it, 2026-07-28, through the formal `Gamma1Atlas.ofFineModuli`; that node was itself `nonempty_relPoint_atlas_of_relPoint`, REFUTED and restated the same day — see its FALSITY AUDIT.) | `𝔽_ℓ` |
+| `exists_fineGamma1Atlas` | fineness at `N ≥ 4`, `ℓ` prime, `ℓ ∤ N`: `[Γ₁(N)]` is representable, so some atlas has `M ⟶ Y` an isomorphism.  (Was `nonempty_relPoint_atlas_of_relPoint`, REFUTED and restated 2026-07-28 — see its FALSITY AUDIT; the `∀ atlas` form is false at the Katz–Mazur atlas itself.) | `𝔽_ℓ` |
 | `nonempty_gamma1Datum_baseChange` | base change of a `Γ₁(N)`-datum — formal, no arithmetic | any |
 | `exists_weierstrassModel_of_abelianSchemeStruct_finiteField` | **Riemann-Roch on a genus-one curve** — a Weierstrass model of an abelian scheme of relative dimension one over `Spec 𝔽_ℓ`; NO modular curves and no level structure.  Cut 2026-07-28 as the geometry half of `exists_weierstrassEquiv_of_gamma1Datum` (now PROVEN over it).  The ℚ-side chain in `EllipticScheme.lean` is hardcoded to `Spec ℚ` and its own three leaves are open, so there is nothing to instantiate. | `𝔽_ℓ` |
 | `exists_relPointAddEquiv_of_weierstrassModel_finiteField` | the transport half of the same cut: given the model, the `𝔽_ℓ`-SECTIONS are `W(𝔽_ℓ)`.  The content is that the abelian scheme's group law agrees with the chord-and-tangent law (rigidity); strictly easier than the ℚ-side `exists_geomFibreAddEquiv_of_weierstrassModel`, which needs a `Γ_ℚ`-equivariant equivalence on geometric fibres. | `𝔽_ℓ` |
-| `exists_cuspSymbolEmbedding_x1_finiteField` | the hard direction of Ogg's description, DECOMPOSED 2026-07-28 into geometry and arithmetic: the `𝔽_ℓ`-rational cusp points inject into the Frobenius-fixed cusp symbols `Γ_1(N)∖ℙ¹(ℚ)`.  Carries NO counting — that is `card_fixedCuspSymbolX1` (`ModularCurve/CuspSymbolX1.lean`), PROVEN, and `card_cuspLocusPoints_x1_finiteField_le` is PROVEN over the two.  The lower bound is the `exists_rationalCuspPointsX1_field` row above. | `𝔽_ℓ`, `ℓ ∤ N`, `N ≥ 5` |
-| `exists_x1SmoothProperCurveModel` | Deligne-Rapoport VI.6.9: the smooth proper model over `ℤ_(ℓ)` together with the identification of its GENERIC fibre.  NO moduli in the conclusion — the modular input is the hypothesis `hX`.  (Replaces `exists_x1CurveReductionModel`, which is **PROVEN** over this row alone since 2026-07-30: the special fibre is the pullback along the closed point, so `spX`/`spX_nat` are `fibreIdentPullback`, and `properX` is `bijective_pre_generic_of_isProper` — the three obligations that need no modular geometry, discharged as `X0.lean` had already done on the `Γ₀` side.) | `ℚ → 𝔽_ℓ` |
-| `exists_isX1Compactification_specialFibre` | Igusa / Katz-Mazur 5.1.1: the special fibre of that model IS `X_1(N)` over `𝔽_ℓ`.  (`exists_x1CurveModel_of_base` is PROVEN over this row and the one above, 2026-07-28, splitting the two classical theorems it had cited jointly; `exists_x1ReductionAt` is PROVEN over that plus the moduli-free `NeronReduction.lean`.  Since 2026-07-30 the row above is the weaker `exists_x1SmoothProperCurveModel`; the leaf COUNT here is unchanged.) | `ℚ → 𝔽_ℓ` |
+| `exists_geometricCuspEquiv_x1_finiteField` | the hard direction of Ogg's description, DECOMPOSED 2026-07-28 into geometry and arithmetic and again 2026-07-31 into moduli and scheme theory.  What is left is one Deligne-Rapoport sentence: the GEOMETRIC cusps of `X_1(N)_{𝔽_ℓ}` — ring maps `κ(c) →+* 𝔽̄_ℓ` for `c ∈ X ∖ Y` — are the primitive symbols of `CuspSymbolX1 N`, Galois-equivariantly for `cuspFrobX1 N ℓ`.  Carries NO counting (that is `card_fixedCuspSymbolX1`, PROVEN) and NO scheme theory (that is `geomFrobF_eq_self_of_residueFDegree_eq_one`, PROVEN).  `exists_cuspSymbolEmbedding_x1_finiteField` and `card_cuspLocusPoints_x1_finiteField_le` are PROVEN over it.  The lower bound is the `exists_rationalCuspPointsX1_field` row above. | `𝔽_ℓ`, `ℓ ∤ N`, `N ≥ 5` |
+| `exists_x1CurveModel_of_base` | the integral model — Deligne-Rapoport / Igusa for `Γ₁(N)`.  The reduction map is no longer part of the leaf: `exists_x1ReductionAt` is PROVEN over this plus the moduli-free `NeronReduction.lean` | `ℚ → 𝔽_ℓ` |
 | `exists_section_of_galoisInvariant` | Galois descent of a rational point to a section | `ℚ` |
 | `exists_heckeCorrespondenceFamilyGamma1` | the `Γ₁` Hecke correspondence as a natural family on points — the geometric half, and the `Γ₁` twin of `X0.lean`'s `exists_heckeCorrespondenceFamily`.  (`exists_heckeAction_isotypicQuotients_gamma1` was a leaf until 2026-07-28 and is now **PROVEN** over this row and the next, via the `Γ₁` moduli pin `IsModularHeckeActionGamma1`; `exists_modularHeckeAction_gamma1` is PROVEN over this row alone.) | `ℚ` |
-| `isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1` | Shimura's algebraicity theorem for `Γ₁(N)`: the `a n` are algebraic integers.  MENTIONS NO SCHEME — the only obligation of `IsIsotypicQuotient` that does not, and it can be attacked from the integral-homology side or from the Hecke recursions plus a bound.  Cannot be an instance of `X0.lean`'s `isIntegral_coeff_of_isWeightTwoEigenform`: the `Γ₁` coefficients generate `ℚ(χ)`. | `ℚ` |
-| `exists_isotypicHom_of_isWeightTwoEigenformOn_gamma1` | Eichler-Shimura non-vanishing on `Γ₁(N)`: a NONZERO `a`-isotypic homomorphism out of `J_1(N)`, given the PINNED Hecke action.  Intended witness `B := J`, `v := ` an integer multiple of the isotypic projector, `S := T` — so it needs NO quotient of an abelian scheme, and the `Γ₁`-specific content is only that `f` occurs in the `χ`-eigenspace of `H₁(X_1(N), ℚ)`.  Replaced `exists_isotypicQuotient_of_isIntegral_gamma1` as the leaf on 2026-07-31, when that node was cut on BOTH sides in one commit; the geometric half is not a twin but the SAME declaration, `X0.lean`'s shape-free `exists_isotypicQuotient_of_isIsotypicHom`, and `IsIsotypicHom` and `IsIsotypicQuotient` are both stated once there and reused verbatim.  `exists_isotypicQuotient_of_isIntegral_gamma1` and `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` are **PROVEN** over this row and the one above. | `ℚ` |
+| `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` | Shimura's `A_f` on `Γ₁(N)`, one factor, given the PINNED Hecke action — the "build one factor" half of Eichler-Shimura.  (`IsIsotypicQuotient` is reused verbatim from `X0.lean`; it is shape-free.) | `ℚ` |
 | `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` | the "assemble the factors" half: finiteness of the index set, the oldform multiplicities, `finite_ker`, and the `neben` labelling.  It no longer owns the `N = 0` case: that case was REFUTED on 2026-07-28 (`isEmpty_isHeckeIsotypicDecompositionGamma1_zero`) and the leaf now carries `hN : N ≠ 0`; see its docstring | `ℚ` |
+| `exists_cuspForm_gamma1GL_zero_lacunary` | a weight-two cusp form for `Γ₁(0) = ⟨T⟩` with `q`-expansion `∑ c^k q^(2^k)` — the lone analytic input of that refutation, and pure mathlib plumbing (locally-uniform convergence of a lacunary `q`-series; the only cusp of `⟨T⟩` is `∞`) | — |
 | `isTorsion_factor_of_heckeIsotypic_gamma1` | Kolyvagin-Logachev on an isotypic factor | `ℚ` |
-| `cuspPeriod_ne_zero_x1TwentyFive` | the `L`-value numerics — the DEEP one, and the only row where `25` survives.  (`lFunction_apply_one_ne_zero_x1TwentyFive` was decomposed along the period 2026-07-28; its analytic half `lFunction_apply_one_eq_two_pi_mul_cuspPeriod_gamma1` is PROVEN the same day, as the `G = Γ₁(N)` instance of `lFunction_apply_one_eq_two_pi_mul_cuspPeriodOn`, which is in turn the group-generic form of `X0.lean`'s proven theorem.) | `ℚ` |
-| `not_birationalOver_affineLine_of_one_le_x1Genus_algClosed` | the genus formula and nothing else — Diamond–Shurman Thm 3.1.1: a fibre of `X_1(N)` with `genus ≥ 1` is not birational to `𝔸¹` over an ALGEBRAICALLY CLOSED field.  The only declaration in the `Γ₁` genus formula that still mentions `N`.  (Cut 2026-07-30 out of `exists_nonconstant_toAbelianScheme_of_one_le_x1Genus`, which is PROVEN over it and the row below.)  **RESTATED 2026-07-30 with `hchar : (N : K) ≠ 0`**: without it the leaf and its three proven consumers are FALSE, refuted by the Igusa curve `Ig(11)` in characteristic `11` — the falsity audit and the genus computation are on the declaration, and the hypothesis is discharged at the `SpecQ` base of `hasNonconstantAbelianMap_of_one_le_x1Genus`. | alg. closed `K`, `char K ∤ N` |
-| `exists_nonconstant_toAbelianScheme_of_notGeometricallyRational` | `Pic⁰` and the degree-`n` Abel–Jacobi map: a GEOMETRICALLY non-rational fibre receives a nonconstant map to an abelian variety.  LEVEL-FREE — no `N` in it, and the `Γ₀` sibling leaf would close over it verbatim; see its RELOCATION NOTE.  The same statement with the hypothesis taken over `K` rather than over `K̄` is FALSE (pointless conic over `ℝ`); the falsity audit is on the declaration. | any |
+| `lFunction_apply_one_ne_zero_x1TwentyFive` | `L`-value numerics — the DEEP one | `ℚ` |
+| `hasNoFibreAffineLine_of_one_le_x1Genus` | the genus formula, fibrewise — `genus X_1(N) ≥ 1` puts no rational curve in any fibre.  (`hasNonconstantAbelianMap_of_one_le_x1Genus` is PROVEN over it, 2026-07-28, together with `X0.lean`'s level-free `mono_ajHom_of_hasNoFibreAffineLine` and `not_isIso_of_smoothOfRelativeDimension_one`.) | any |
 
 (Table regenerated at the release-10 integration, 2026-07-28, from the
 compiler's `declaration uses 'sorry'` set rather than from any branch's prose;
 it agrees row-for-row with a comment-stripped source scan.  Fourteen rows.
 The last row was replaced 2026-07-28 when the node above it closed; a stray
-duplicate of it, left by a merge, was removed at the same time.  It was
-replaced AGAIN later the same day, for the same reason: the fibrewise genus
-leaf `hasNoFibreAffineLine_of_one_le_x1Genus` was PROVEN by decomposition
-along the birational/Lüroth axis, and what is open in its place is the
-single arithmetic leaf now named in the row.
+duplicate of it, left by a merge, was removed at the same time.
 
 Four further rows — the analytic quartet `exists_frickeInvolutionOn`,
 `isBigO_atTop_axisRestrictOn`, `locallyIntegrableOn_axisRestrictOn` and
@@ -489,13 +482,7 @@ Four further rows — the analytic quartet `exists_frickeInvolutionOn`,
 `WeightTwoEigenform.lean` plus one new normalisation lemma
 (`frickeMatrix_conj_mem_of_le`) and mathlib's `Bounds.lean`.  Ten rows.
 `isBigO_atTop_coeffOn` gained a `hN : N ≠ 0` hypothesis at the same time —
-it was FALSE at `N = 0`; see its FALSITY AUDIT.
-
-The last row was replaced a THIRD time on 2026-07-30, and this time it
-became TWO rows: `exists_nonconstant_toAbelianScheme_of_one_le_x1Genus` was
-PROVEN by separating the genus formula from the `Pic⁰` construction, so the
-genus entry is now the arithmetic leaf plus the level-free geometric one.
-Eleven rows.)
+it was FALSE at `N = 0`; see its FALSITY AUDIT.)
 
 **This table was REGENERATED at integration (2026-07-27) from a
 comment-stripped scan of the merged source, not merged as prose** — three
@@ -528,6 +515,26 @@ level and no count.  The split also made the failure mode visible: the bound
 `≤ φ(N)/2` is FALSE for `ℓ ≡ ±1 (mod N)`, and what rules that out is the
 hypothesis `IsUnit (ℓ - 1) ∧ IsUnit (ℓ + 1)` in `ZMod N`, which the witness
 row `(25, 3, 10)` discharges by `2` and `4` being units mod `25`.
+
+**Reorganised a FIFTH time 2026-07-31, along the MODULI-vs-SCHEME-THEORY
+axis, and that closed `exists_cuspSymbolEmbedding_x1_finiteField` too.**  The
+2026-07-28 split had removed the arithmetic but left two sentences welded:
+the Deligne-Rapoport identification of the GEOMETRIC cusps, and the general
+fact that a point of residue degree one has its geometric points fixed by
+Frobenius.  Only the first is modular.  The second is
+`geomFrobF_eq_self_of_residueFDegree_eq_one` — three lines over
+`Algebra.finrank_eq_one_iff_bijective_algebraMap`, `RingHom.ext_zmod` and
+`ZMod.pow_card`, with `nonempty_geomPoint_of_residueFDegree_eq_one` supplying
+the geometric point — and once it is separate,
+`exists_cuspSymbolEmbedding_x1_finiteField` is ten lines of assembly over
+`exists_geometricCuspEquiv_x1_finiteField`, which is now the only open leaf
+of the cluster.  The lesson is the one this file keeps meeting: what looked
+atomic was a moduli theorem with a piece of general scheme theory stuck to
+it, and the scheme theory was cheap.  Note also that a geometric point is
+recorded as a bare `κ(c) →+* 𝔽̄_ℓ` with no algebra structure, because
+`RingHom.ext_zmod` makes every such map `𝔽_ℓ`-linear automatically — that is
+what keeps `residueFAlgebra`, which is a `letI` rather than an instance, out
+of the remaining leaf's statement.
 
 **Updated again 2026-07-27** for the reduction/descent cluster.
 `exists_inverse_of_smoothCompactification` is now PROVEN outright, over
@@ -574,18 +581,16 @@ along the GIT axis its own docstring named as NOT SEARCHED.  This is the
 | `exists_gamma0GITPresentation_of_rigidified` (PROVEN) | `nonempty_gamma1GITPresentation_of_rigidification` (PROVEN) |
 | `RigidifiedModuli` | `Gamma1RigidifiedModuli` |
 | `FullLevelStructure` | `AbelianFullLevelStructure` (a DUPLICATE — see the coordination note at the cut below) |
-| `exists_rigidifiedModuli` (PROVEN over `exists_rigidifiedModuliScheme` + `isAffine_of_rigidifiedModuliScheme`, both leaves) | `exists_gamma1RigidifiedModuli` (PROVEN 2026-07-30 over `exists_gamma1RigidifiedModuliScheme` + `isAffine_of_gamma1RigidifiedModuliScheme`, both leaves — the same three-way split, made here for the same reason) |
+| `exists_rigidifiedModuli` (leaf) | `exists_gamma1RigidifiedModuli` (leaf) |
 | `exists_fullLevelStructure_cover` (PROVEN, over `exists_torsionBasis_geomPoint` + `exists_torsionBasis_cover_of_geomPoint`, both `SpecQ`-only leaves) | `exists_gamma1FullLevelStructure_cover` (PROVEN 2026-07-28, over the single general-base leaf `exists_torsionBasisCover_field`, plus the PROVEN `nonempty_abelianFullLevelStructure_of_geomBasis` and the `IsBaseChangeOfGamma1.toRelPoint` API) |
-| `exists_deckAction` (PROVEN over `exists_openCover_twist_of_fullLevelStructure`) | `exists_gamma1DeckAction` (REFUTED, restated with `a ≫ strM = b ≫ strM` and PROVEN 2026-07-29, over the single leaf `exists_openCover_twist_of_abelianFullLevelStructure`) |
-| `FullLevelStructure.twist` API + `exists_fullLevelStructure_baseChange` + `twist_baseChange` (PROVEN) | `AbelianFullLevelStructure.twist` API + `exists_abelianFullLevelStructure_baseChange` + `twist_baseChange` (PROVEN 2026-07-29 — a TRANSCRIPTION, deletable once `X0.lean`'s `FullLevelStructure` is generalised to `AbelianSchemeStruct`) |
-| `exists_openCover_deckTranslation` (PROVEN) | `exists_openCover_gamma1DeckTranslation` (PROVEN 2026-07-29) |
+| `exists_deckAction` (leaf) | `exists_gamma1DeckAction` (leaf) |
 | — | `nonempty_gamma1Rigidification_of_rigidifiedModuli` (PROVEN); `exists_gamma1Rigidification` (PROVEN over the three leaves) |
 | `exists_descendClassify` (PROVEN) | `exists_descendClassifyGamma1` (PROVEN) |
 | `exists_gamma0Datum_baseChange` (PROVEN) | `exists_gamma1Datum_baseChange` (PROVEN) |
 | `gamma0Atlas_isIso` + `isAffine_of_gamma0Atlas` (PROVEN) | not needed — see the section comment on the geometry below |
-| `isDomain_of_gamma0GITPresentation` (leaf) | `geometricComponents_of_gamma1GITPresentation` (PROVEN 2026-07-28 over `exists_gamma1Datum_fieldExtension`, `isReduced_A_of_gamma1GITPresentation` — itself PROVEN later the same day over `smoothCurve_A_of_gamma1GITPresentation` — and `transitiveMinimalPrimes_of_gamma1GITPresentation`, itself PROVEN 2026-07-30 over `transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation`); `isDomain_of_gamma1GITPresentation` is PROVEN over it |
+| `isDomain_of_gamma0GITPresentation` (leaf) | `geometricComponents_of_gamma1GITPresentation` (PROVEN 2026-07-28 over three leaves — `exists_gamma1Datum_fieldExtension`, `isReduced_A_of_gamma1GITPresentation`, `transitiveMinimalPrimes_of_gamma1GITPresentation`); `isDomain_of_gamma1GITPresentation` is PROVEN over it |
 | `smoothOfRelativeDimension_of_gamma0GITPresentation` (leaf) | `locallyStandardSmooth_of_gamma1GITPresentation` (leaf); `smoothOfRelativeDimension_of_gamma1GITPresentation` is PROVEN over it |
-| `geometricallyConnected_of_gamma0GITPresentation` (leaf) | `transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation` (leaf, 2026-07-30); `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation`, `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation`, `connectedSpace_tensorProduct_of_gamma1GITPresentation` and `geometricallyConnected_of_gamma1GITPresentation` are PROVEN over it |
+| `geometricallyConnected_of_gamma0GITPresentation` (leaf) | `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation` (leaf); `connectedSpace_tensorProduct_of_gamma1GITPresentation` and `geometricallyConnected_of_gamma1GITPresentation` are PROVEN over it |
 | `Gamma0AffineModel` / `exists_gamma0AffineModel` (PROVEN) | `Gamma1AffineModel` / `exists_gamma1AffineModel` (PROVEN) |
 
 `specInvariants_universal` (`X0.lean`, PROVEN and sorry-free) is REUSED
@@ -644,12 +649,9 @@ they are three unrelated classical inputs:
 `exists_gamma1Datum_fieldExtension` (an elliptic curve with a point of
 exact order `N` over *some* field — no modular curves in it, and the only
 thing `Nontrivial A` needs), `isReduced_A_of_gamma1GITPresentation`
-(8.2.1, smoothness — itself PROVEN later the same day over
-`smoothCurve_A_of_gamma1GITPresentation`) and
+(8.2.1, smoothness) and
 `transitiveMinimalPrimes_of_gamma1GITPresentation` (IV.5.5, the
-`det`-surjectivity — itself PROVEN 2026-07-30 over its base-changed form
-`transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation`, which is
-where the open obligation now sits).  The ROUTE AUDIT on the last of those records why
+`det`-surjectivity).  The ROUTE AUDIT on the last of those records why
 neither `Algebra.IsInvariant.exists_smul_of_under_eq` nor an
 existentially-quantified algebra of components cuts it any further, and
 that the honest next step is a Weil-pairing FIELD on
@@ -11209,6 +11211,174 @@ theorem residueDegreeOver_eq_residueFDegree {ℓ : ℕ} [Fact (Nat.Prime ℓ)] {
     (strX : X ⟶ SpecF ℓ) (x : X) :
     residueDegreeOver (ZMod ℓ) strX x = residueFDegree strX x := rfl
 
+/-! ### Geometric points above a point of an `𝔽_ℓ`-scheme, and Frobenius
+
+Ogg's description of the cusps of `X_1(N)_{𝔽_ℓ}` is two statements welded
+together, and only ONE of them is modular:
+
+1. *moduli* — the GEOMETRIC cusps are `Γ_1(N)∖ℙ¹(ℚ)`, i.e. the primitive
+   symbols of `CuspSymbolX1 N`, and `Gal(𝔽̄_ℓ/𝔽_ℓ)` acts on them through the
+   cyclotomic character, i.e. by `cuspFrobX1 N ℓ` (Deligne–Rapoport VI.5;
+   Katz–Mazur; Diamond–Shurman §3.8 for the cusp set and §9.3 for the
+   action);
+2. *scheme theory* — a point of residue degree one has its geometric points
+   FIXED by Frobenius.
+
+This subsection proves (2) and nothing else, which is exactly what lets
+`exists_geometricCuspEquiv_x1_finiteField` below state (1) ALONE.  (1) is
+irreducible along the moduli axis in this tree today; (2) is not modular at
+all, and leaving the two welded together was what made the old single leaf
+look atomic.
+
+**A geometric point of `X` above `x` is a ring map `κ(x) →+* 𝔽̄_ℓ`, with no
+algebra structure carried.**  That is not a shortcut: `ZMod ℓ` is initial
+among rings of characteristic `ℓ` (`RingHom.ext_zmod`), so every such map is
+automatically `𝔽_ℓ`-linear, and the same fact is what makes
+`residueF_hom_subsingleton` above work.  It keeps `residueFAlgebra` — which
+is a `letI`, not an instance — out of the statement of the remaining leaf.
+
+The arithmetic Frobenius acts by post-composition with `x ↦ x^ℓ`, and (2) is
+then three lines: at residue degree one every element of `κ(x)` is
+`algebraMap r`, so its image lies in the prime field of `𝔽̄_ℓ`, where
+`r^ℓ = r` (`ZMod.pow_card`).  Nothing here is `Γ₁`-specific or even
+cuspidal. -/
+
+/-- **The arithmetic Frobenius on the geometric points above a point of an
+`𝔽_ℓ`-scheme** (PROVEN — a definition).
+
+`σ ↦ (x ↦ σ x ^ ℓ)`, the action of the topological generator of
+`Gal(𝔽̄_ℓ/𝔽_ℓ)` on `Hom(κ(x), 𝔽̄_ℓ)`.  This is the map that
+`exists_geometricCuspEquiv_x1_finiteField` matches against `cuspFrobX1`. -/
+noncomputable def geomFrobF (ℓ : ℕ) [Fact (Nat.Prime ℓ)] {X : Scheme.{0}} {x : X}
+    (σ : X.residueField x →+* AlgebraicClosure (ZMod ℓ)) :
+    X.residueField x →+* AlgebraicClosure (ZMod ℓ) :=
+  (frobenius (AlgebraicClosure (ZMod ℓ)) ℓ).comp σ
+
+/-- **A point of residue degree one has a geometric point above it**
+(PROVEN).
+
+`residueFDegree strX x = 1` makes `algebraMap (ZMod ℓ) κ(x)` bijective
+(`Algebra.finrank_eq_one_iff_bijective_algebraMap`, the same step as in
+`nonempty_residueF_hom_iff`), and its inverse followed by
+`algebraMap (ZMod ℓ) 𝔽̄_ℓ` is the geometric point.  Only the existence is
+recorded; uniqueness is `residueF_hom_subsingleton`'s business and is not
+consumed. -/
+theorem nonempty_geomPoint_of_residueFDegree_eq_one {ℓ : ℕ} [Fact (Nat.Prime ℓ)]
+    {X : Scheme.{0}} (strX : X ⟶ SpecF ℓ) {x : X} (h : residueFDegree strX x = 1) :
+    Nonempty (X.residueField x →+* AlgebraicClosure (ZMod ℓ)) := by
+  letI := residueFAlgebra strX x
+  have hbij : Function.Bijective (algebraMap (ZMod ℓ) (X.residueField x)) :=
+    Algebra.finrank_eq_one_iff_bijective_algebraMap.mp h
+  exact ⟨(algebraMap (ZMod ℓ) (AlgebraicClosure (ZMod ℓ))).comp
+    (RingEquiv.ofBijective _ hbij).symm.toRingHom⟩
+
+/-- **The geometric points above a point of residue degree one are
+Frobenius-fixed** (PROVEN).
+
+This is the ENTIRE scheme-theoretic content of Ogg's description, isolated
+from the moduli input.  At `residueFDegree strX x = 1` the structure map
+`ZMod ℓ → κ(x)` is bijective, so every `y : κ(x)` is `algebraMap r`; then
+`σ y = algebraMap r` in `𝔽̄_ℓ` because `σ ∘ algebraMap` and
+`algebraMap (ZMod ℓ) 𝔽̄_ℓ` are two ring maps out of `ZMod ℓ`
+(`RingHom.ext_zmod`), and `(algebraMap r) ^ ℓ = algebraMap (r ^ ℓ)
+= algebraMap r` by `ZMod.pow_card`.
+
+The CONVERSE is true as well — a Frobenius-fixed geometric point has image
+in the prime field, forcing degree one — and is deliberately not stated:
+only this direction is consumed, by
+`exists_cuspSymbolEmbedding_x1_finiteField` below, which is itself only the
+injection half of a bijection. -/
+theorem geomFrobF_eq_self_of_residueFDegree_eq_one {ℓ : ℕ} [Fact (Nat.Prime ℓ)]
+    {X : Scheme.{0}} (strX : X ⟶ SpecF ℓ) {x : X} (h : residueFDegree strX x = 1)
+    (σ : X.residueField x →+* AlgebraicClosure (ZMod ℓ)) : geomFrobF ℓ σ = σ := by
+  letI := residueFAlgebra strX x
+  show (frobenius (AlgebraicClosure (ZMod ℓ)) ℓ).comp σ = σ
+  have hbij : Function.Bijective (algebraMap (ZMod ℓ) (X.residueField x)) :=
+    Algebra.finrank_eq_one_iff_bijective_algebraMap.mp h
+  have hcomp : σ.comp (algebraMap (ZMod ℓ) (X.residueField x))
+      = algebraMap (ZMod ℓ) (AlgebraicClosure (ZMod ℓ)) := RingHom.ext_zmod _ _
+  ext y
+  obtain ⟨r, rfl⟩ := hbij.2 y
+  have h1 : σ (algebraMap (ZMod ℓ) (X.residueField x) r)
+      = algebraMap (ZMod ℓ) (AlgebraicClosure (ZMod ℓ)) r := by
+    have := congrArg (fun f : ZMod ℓ →+* AlgebraicClosure (ZMod ℓ) => f r) hcomp
+    simpa using this
+  simp only [RingHom.coe_comp, Function.comp_apply, h1, frobenius_def]
+  rw [← map_pow, ZMod.pow_card]
+
+/-- **Deligne–Rapoport: the geometric cusps of `X_1(N)_{𝔽_ℓ}` are the
+primitive cusp symbols, Galois-equivariantly** (sorry leaf, 2026-07-31 — the
+moduli half of the old `exists_cuspSymbolEmbedding_x1_finiteField`, which is
+now PROVEN over this).
+
+TRUE and classical (Ogg 1973; Deligne–Rapoport VI.5, *L'action de Galois sur
+les pointes*; Katz–Mazur; Diamond–Shurman §3.8 for the cusp set and §9.3 for
+the Galois action).  Two sentences, and both are moduli:
+
+* the cusp locus of the Deligne–Rapoport model of `X_1(N)` over `ℤ[1/N]` is
+  finite étale, and its GEOMETRIC points are `Γ_1(N)∖ℙ¹(ℚ)`, which written
+  mod `N` is exactly the set of PRIMITIVE symbols of `CuspSymbolX1 N` — the
+  non-primitive symbols are junk in the quotient type, not cusps;
+* `Gal(𝔽̄_ℓ/𝔽_ℓ)` acts through the cyclotomic character, so the arithmetic
+  Frobenius acts by `cuspFrobX1 N ℓ`.  See `CuspSymbolX1.lean`'s module
+  docstring for WHICH coordinate the character moves and why getting it
+  backwards would make this false.
+
+**Stated as an `Equiv` on the total space `Σ c, Hom(κ(c), 𝔽̄_ℓ)`** rather
+than as a family of bijections on fibres: a closed point of the cusp locus
+has `deg c` geometric points above it, so it is the SUM over the cusp locus
+that matches the symbol set, and that is what the classical statement says.
+Note `strX` does not appear in the conclusion — a ring map out of `κ(c)` is
+automatically `𝔽_ℓ`-linear (`RingHom.ext_zmod`), so the `𝔽_ℓ`-structure is
+carried by `X` alone.
+
+**No scheme theory beyond the identification is asked for.**  The step
+"residue degree one ⟹ Frobenius-fixed" is `geomFrobF_eq_self_of_residueFDegree_eq_one`
+above, PROVEN; that is the 2026-07-31 cut, and it is why this leaf mentions
+`residueFDegree` nowhere.
+
+**No arithmetic is asked for either.**  Nothing here counts cusps, mentions
+`ord_25(3)`, or mentions `φ(N)/2`; that is `card_fixedCuspSymbolX1`, PROVEN.
+The leaf is stated uniformly in `(N, ℓ)` and is TRUE uniformly, whereas the
+bound it ultimately feeds is FALSE for `ℓ ≡ ±1 (mod N)` — the arithmetic
+hypothesis lives entirely on the other factor.  In particular the obvious
+attempted refutation (`ℓ ≡ 1 (mod N)`, where every geometric cusp is
+Frobenius-fixed and at `N = 25` all `28` of them are `𝔽_ℓ`-rational against
+`φ(25)/2 = 10`) does NOT touch this leaf: all `28` are primitive symbols, so
+the bijection has exactly the room it needs.  It touches
+`card_fixedCuspSymbolX1`, which carries `IsUnit (ℓ - 1)` and
+`IsUnit (ℓ + 1)` for precisely that reason.
+
+**What each hypothesis is doing.**  `hℓN : ¬ ℓ ∣ N` is what makes the
+`Γ₁(N)`-problem étale at `ℓ` and the cusp locus finite étale — at `ℓ ∣ N`
+the reduction is not the Deligne–Rapoport one and no such description is
+claimed.  `hN : 5 ≤ N` is the standing hypothesis of the `Γ_1(N)∖ℙ¹(ℚ)`
+description: at `N ≤ 4` the `±` identification is not free (`-I ∈ Γ_1(N)`
+acts with fixed points on the symbols), so the symbol set is not the cusp
+set.  Both are discharged for free at the single witness row `(25, 3, 10)`.
+
+AXES SEARCHED.  The GEOMETRY-vs-MODULI axis is TAKEN — that is this cut.
+The BIJECTION-vs-INJECTION axis is NOT available here and this is a change
+from the old leaf: the consumer needs only an injection, but an injection of
+GEOMETRIC points would not let the degree-one points be separated, since two
+distinct cusps of the same degree are distinguished only by the fibre
+structure a bijection records.  The BASE-FIELD axis is NOT available: the
+statement is about Frobenius.  The SYMBOL-SET axis — replacing
+`CuspSymbolX1` by the moduli description (Néron `d`-gons with a point of
+order `N`) — is a REFORMULATION, not a reduction: the two index sets are
+isomorphic and the Galois actions correspond, so nothing is bought. -/
+theorem exists_geometricCuspEquiv_x1_finiteField (N ℓ : ℕ) [Fact (Nat.Prime ℓ)]
+    (_hN : 5 ≤ N) (_hℓN : ¬ ℓ ∣ N)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ} {jY : Y ⟶ X}
+    (_h : IsX1Compactification N strX strY jY) :
+    ∃ Φ : (Σ c : ((Set.range jY.base)ᶜ : Set X),
+              (X.residueField c.1 →+* AlgebraicClosure (ZMod ℓ))) ≃
+            {s : CuspSymbolX1 N // IsPrimitiveCuspSymbolX1 N s},
+      ∀ (c : ((Set.range jY.base)ᶜ : Set X))
+        (σ : X.residueField c.1 →+* AlgebraicClosure (ZMod ℓ)),
+        (Φ ⟨c, geomFrobF ℓ σ⟩).1 = cuspFrobX1 N ((ℓ : ℕ) : ZMod N) (Φ ⟨c, σ⟩).1 :=
+  sorry
+
 /-- **The `𝔽_ℓ`-rational points of the cusp locus of `X_1(N)_{𝔽_ℓ}` inject
 into the Frobenius-fixed cusp symbols** (sorry leaf — the hard direction of
 Ogg's description of the cusps, and after the 2026-07-28 decomposition ALL
@@ -11285,16 +11455,28 @@ SYMBOL-SET axis — replacing `CuspSymbolX1` by the moduli description (Néron
 `d`-gons with a point of order `N`) — is available and would be a
 REFORMULATION, not a reduction: the two index sets are isomorphic and the
 Galois actions correspond, so nothing is bought. -/
-theorem exists_cuspSymbolEmbedding_x1_finiteField (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hN : 5 ≤ N)
-    (_hℓN : ¬ ℓ ∣ N)
+theorem exists_cuspSymbolEmbedding_x1_finiteField (N ℓ : ℕ) (hℓ : ℓ.Prime) (hN : 5 ≤ N)
+    (hℓN : ¬ ℓ ∣ N)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ} {jY : Y ⟶ X}
-    (_h : IsX1Compactification N strX strY jY) :
+    (h : IsX1Compactification N strX strY jY) :
     ∃ f : {c : ((Set.range jY.base)ᶜ : Set X) // residueFDegree strX c.1 = 1} →
         CuspSymbolX1 N,
       Function.Injective f ∧
       ∀ x, IsPrimitiveCuspSymbolX1 N (f x) ∧
-        cuspFrobX1 N ((ℓ : ℕ) : ZMod N) (f x) = f x :=
-  sorry
+        cuspFrobX1 N ((ℓ : ℕ) : ZMod N) (f x) = f x := by
+  haveI : Fact (Nat.Prime ℓ) := ⟨hℓ⟩
+  obtain ⟨Φ, hΦ⟩ := exists_geometricCuspEquiv_x1_finiteField N ℓ hN hℓN h
+  have hpt : ∀ x : {c : ((Set.range jY.base)ᶜ : Set X) // residueFDegree strX c.1 = 1},
+      Nonempty (X.residueField x.1.1 →+* AlgebraicClosure (ZMod ℓ)) :=
+    fun x => nonempty_geomPoint_of_residueFDegree_eq_one strX x.2
+  refine ⟨fun x => (Φ ⟨x.1, (hpt x).some⟩).1, ?_, ?_⟩
+  · intro a b hab
+    exact Subtype.ext (congrArg Sigma.fst (Φ.injective (Subtype.ext hab)))
+  · intro x
+    refine ⟨(Φ ⟨x.1, (hpt x).some⟩).2, ?_⟩
+    have hfix := hΦ x.1 (hpt x).some
+    rw [geomFrobF_eq_self_of_residueFDegree_eq_one strX x.2] at hfix
+    exact hfix.symm
 
 /-- **AT MOST `m` points of the cusp locus of `X_1(N)_{𝔽_ℓ}` have residue
 degree one, at the witness rows** (PROVEN 2026-07-28 over
@@ -11562,16 +11744,20 @@ one still carries modular content:
   an abelian scheme of relative dimension one; 2026-07-28 —
   `exists_weierstrassPointOfOrder_of_gamma1Datum` is PROVEN over it and
   `addOrderOf_relPointOfSection_gamma1Datum`);
-* `exists_cuspSymbolEmbedding_x1_finiteField` — half 2, the cusp count on the
+* `exists_geometricCuspEquiv_x1_finiteField` — half 2, the cusp count on the
   special fibre, and the only one of the four that is Deligne-Rapoport at
   this base.  The whole chain above it is now PROVEN:
   `card_cusp_x1_finiteField` through `cuspEquivResidueDegreeOne` and
   `card_cuspLocusPoints_x1_finiteField`, which is `le_antisymm` of
   `exists_rationalCuspPointsX1_field` at `K = 𝔽_ℓ` and
   `card_cuspLocusPoints_x1_finiteField_le`, which is in turn PROVEN
-  (2026-07-28) over this leaf and the arithmetic `card_fixedCuspSymbolX1`.
-  What is STILL OPEN is therefore only the identification of `X ∖ Y` with
-  `Γ_1(N)∖ℙ¹(ℚ)` as a Galois set — no counting, no level, no prime.
+  (2026-07-28) over `exists_cuspSymbolEmbedding_x1_finiteField` and the
+  arithmetic `card_fixedCuspSymbolX1` — and that one is PROVEN in turn
+  (2026-07-31) over this leaf and the scheme-theoretic
+  `geomFrobF_eq_self_of_residueFDegree_eq_one`.  What is STILL OPEN is
+  therefore only the identification of the GEOMETRIC points of `X ∖ Y` with
+  `Γ_1(N)∖ℙ¹(ℚ)` as a Galois set — no counting, no level, no prime, and no
+  scheme theory.
 
 Note that no integral model appears in any of them: the special fibre is
 obtained as the coarse space of the problem over `𝔽_ℓ` directly, so the
