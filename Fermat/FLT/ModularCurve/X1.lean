@@ -10155,6 +10155,35 @@ particular the leaf is stated uniformly in `(N, ℓ)` and is TRUE uniformly,
 whereas the bound it feeds is false for `ℓ ≡ ±1 (mod N)` — the arithmetic
 hypothesis lives entirely on the other factor.
 
+## FAITHFULNESS AUDIT (2026-07-31) — the obvious refutation does NOT work
+
+Recorded because the numbers look damning and a prover who reaches for them will
+lose a cycle.  At `ℓ ≡ 1 (mod N)` the Frobenius parameter is `1`, so `cuspFrobX1`
+is the IDENTITY and every symbol is fixed; at `N = 25` that is all `28` cusps,
+against the `φ(25)/2 = 10` that `card_fixedCuspSymbolX1` counts.  It looks as
+though the leaf demands an injection of `28` things into `10`.
+
+It does not, for two independent reasons, and both are worth stating:
+
+* the `10` is the count of fixed primitive symbols UNDER `IsUnit (t - 1)` and
+  `IsUnit (t + 1)`, hypotheses `card_fixedCuspSymbolX1` carries and **this leaf
+  does not**.  Without them the fixed set is larger, and at `t = 1` it is
+  everything;
+* `IsPrimitiveCuspSymbolX1 N s` is `IsCoprime c a` in `ZMod N`
+  (`CuspSymbolX1.lean`), i.e. it says the symbol is the reduction of a genuine
+  point of `ℙ¹(ℚ)`.  So it holds of EVERY geometric cusp and is not a restriction
+  on the image at all — the non-primitive symbols are junk in the quotient TYPE,
+  not cusps the injection would have to miss.
+
+Enumerated over `(ℤ/25)²` modulo `cuspRelX1`: `33` symbol classes in all, of which
+`28` are primitive — and `28` is exactly the cusp count
+`½ Σ_{d ∣ 25} φ(d)φ(25/d)` of `X_1(25)`.  Fixed primitive classes: `28` at `t = 1`,
+`20` at `t = -1`, `10` at `t = 3`, reproducing the orbit multiset
+`{1 × 10, 4 × 2, 10 × 1}` quoted on `card_cuspLocusPoints_x1_finiteField_le` below.
+So at `ℓ ≡ 1` this leaf asserts an injection of `28` rational cusps into `28` fixed
+primitive symbols, which is true; what fails there is the CONSUMER's bound, and it
+fails on the other factor, exactly as the paragraph above says.
+
 AXES SEARCHED.  The BIJECTION-vs-INJECTION axis is TAKEN (weakened to the
 half that is consumed).  The BASE-FIELD axis is NOT available: the statement
 is about Frobenius, so it is specific to a finite base field; the `ℚ`-side
