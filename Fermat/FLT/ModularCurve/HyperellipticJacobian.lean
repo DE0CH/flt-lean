@@ -5563,6 +5563,43 @@ theorem mul_card_le_finrank_adjoin_of_ord_neg (D : PlaceData c₀ c₁ c₂ c₃
   simpa [Fintype.card_prod, Nat.mul_comm] using hcard
 
 set_option synthInstance.maxHeartbeats 1000000 in
+/-- **The residue field at a pole of a transcendental `g` is FINITE over `K`.**
+
+`degOf` is `Module.finrank`, whose junk value at an infinite-dimensional residue field is `0`;
+this is the statement that the junk branch is never taken at a pole, and it is what makes both
+halves of the fundamental identity say what they are meant to say there.  It is a strengthening
+of `mul_card_le_finrank_adjoin_of_ord_neg` rather than a corollary of the numeric bound: the
+bound holds for EVERY `K`-independent family of residues, so no independent family is longer
+than `[F : K⟮g⟯]`, and that is finite-dimensionality. -/
+theorem finite_residue_of_ord_neg (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    {g : D.F} (hg : Transcendental K g) (v : D.Places) (hv : D.ord v g < 0) :
+    Module.Finite K (D.residue v) := by
+  classical
+  set n := Module.finrank (IntermediateField.adjoin K {g}) D.F with hn
+  set e : ℕ := (-D.ord v g).toNat with he'
+  have he : D.ord v g = -(e : ℤ) := by rw [he']; omega
+  have he0 : 0 < e := by rw [he']; omega
+  rw [← Module.rank_lt_aleph0_iff]
+  refine lt_of_le_of_lt (b := (n : Cardinal)) ?_ (Cardinal.natCast_lt_aleph0 (n := n))
+  refine rank_le (fun S hSind => ?_)
+  set f := S.card with hf
+  set ε := S.equivFin.symm with hε
+  have hw : LinearIndependent K (fun i : Fin f => ((ε i : D.residue v))) :=
+    hSind.comp ε ε.injective
+  have hsurj : ∀ i : Fin f, ∃ x : D.valRing v,
+      Ideal.Quotient.mk (D.valMax v) x = (ε i : D.residue v) :=
+    fun i => Ideal.Quotient.mk_surjective _
+  choose s hs using hsurj
+  have hindep : LinearIndependent K (fun i => Ideal.Quotient.mk (D.valMax v) (s i)) := by
+    have hfe : (fun i => Ideal.Quotient.mk (D.valMax v) (s i))
+        = fun i : Fin f => ((ε i : D.residue v)) := funext hs
+    rw [hfe]
+    exact hw
+  have hmain := mul_card_le_finrank_adjoin_of_ord_neg D hg v he he0 s hindep
+  calc f ≤ e * f := Nat.le_mul_of_pos_left f he0
+    _ ≤ n := hmain
+
+set_option synthInstance.maxHeartbeats 1000000 in
 /-- **The single-place bound in the form the fundamental identity uses it:**
 `e_v · deg v ≤ [F : K⟮g⟯]` at every pole `v` of a transcendental `g`.
 
