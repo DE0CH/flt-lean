@@ -469,7 +469,7 @@ open in them has been split along the theories it needed:
 | `formallySmoothInvariants_of_gamma1GITPresentation` | Deligne-Rapoport III.1, Katz-Mazur 8.2.1: `B = A^G` is FORMALLY smooth over `K`.  Cut 2026-07-30 out of `smoothInvariants_of_gamma1GITPresentation` (now PROVEN over it) by unfolding `Algebra.Smooth` and paying for the second conjunct: `finitePresentation_invariants_of_gamma1GITPresentation` is Noether's theorem on invariants, PROVEN over `smoothCurve_A_of_gamma1GITPresentation` and the new `Gamma1GITPresentation.isScalarTower`.  What is left still needs Stacks `02VL` plus freeness of the `G`-action, neither of which the structure supplies. | any `K`, `char K ∤ N` |
 | ~~`exists_weierstrassCurve_pointOfExactOrder`~~ | PROVEN 2026-07-30: Silverman *AEC* III.6.4 was already in cone as `WeierstrassCurve.n_torsion_dimension` (`EllipticCurve/Torsion.lean`), so the leaf was that theorem at `WeierstrassCurve.ofJ (0 : L)` plus additive-order bookkeeping; no longer a leaf | — |
 | ~~`nonempty_gamma1Datum_of_weierstrassPoint`~~ | PROVEN 2026-07-30 over the row below; no longer a leaf.  The descent and the order transport it owed are now base-free — the `ℚ`-side's Galois descent and its `ℚ`-initiality detour through `exists_injective_pre_geomBase` both turned out to be artefacts of the `ℚ` proof rather than steps of the mathematics (see `epi_of_hom_spec_field`). | — |
-| `exists_ellipticScheme_of_weierstrass_field` | the base-generalisation of `X0.lean`'s `exists_ellipticScheme_of_weierstrass`, and all that is left of the row above: a Weierstrass curve over any field `L` is an elliptic scheme over `Spec L` whose `L`-SECTIONS are `E(L)`.  STRICTLY SIMPLER than the `ℚ` statement it generalises — no Galois action at all, because the section is produced from the `L`-point directly rather than descended.  The obstruction is that `EllipticScheme.lean` is written at the concrete base `ℚ`, in two load-bearing places (`ProjCoords.base_eq`, `hom_ext_spec_rat`, both by `Subsingleton.elim`, i.e. by initiality of `ℚ`); no new mathematics.  `exists_gamma1Datum_fieldExtension` is PROVEN over the row above and `exists_weierstrassCurve_pointOfExactOrder` (and `geometricComponents_of_gamma1GITPresentation` over that plus the two rows below, and `nontrivial_A_of_gamma1GITPresentation` over that alone). | any field `L` |
+| ~~`exists_ellipticScheme_of_weierstrass_field`~~ | **PROVEN 2026-07-31; no longer a leaf.**  The obstruction this row recorded — "`EllipticScheme.lean` is written at the concrete base `ℚ`, in two load-bearing places (`ProjCoords.base_eq`, `hom_ext_spec_rat`)" — was already FALSE when written: that file had grown its general-field layer the previous day (`d528fc99`), and its `exists_ellipticScheme_weierstrassChart_addEquiv_field` says strictly MORE than this row (it also produces the Weierstrass chart).  Nobody could see it: `EllipticScheme` is imported by `X0.lean` alone and NON-publicly, so it is invisible from here — the duplicate-cut blind spot recorded in CLAUDE.md.  The fix was one non-public `import` at the head of this file; neither statement here mentions that module's vocabulary, so proof bodies reach it and no re-export in `X0.lean` was needed. | any field `L` |
 | ~~`isReduced_A_of_gamma1GITPresentation`~~ | PROVEN 2026-07-28 over `smoothCurve_A_of_gamma1GITPresentation` and the in-tree `Algebra.Smooth.isReduced_of_isField`; no longer a leaf | — |
 | `transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation` | Deligne-Rapoport IV.5.5: `det` is onto, so `G` permutes the components of `Spec (A ⊗[K] L)` transitively for EVERY field extension `L/K`.  MERGED 2026-07-30 out of the two former leaves `transitiveMinimalPrimes_of_gamma1GITPresentation` and `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation`, BOTH of which are now PROVEN over it — the first at `L := K` through `Algebra.TensorProduct.rid`, the second through the new `isDomain_of_minimalPrimes_transitive_family` plus `smoothCurve_A_of_gamma1GITPresentation` and `nontrivial_A_of_gamma1GITPresentation`.  Two leaves stating one sentence of IV.5.5 at two generalities became one leaf at the stronger generality. | any `K`, `char K ∤ N`, any field extension `L/K` |
 | ~~`transitiveMinimalPrimes_of_gamma1GITPresentation`~~ | PROVEN 2026-07-30 over the row above at `L := K`; no longer a leaf | — |
@@ -5674,7 +5674,7 @@ with a section.  It is now PROVEN over that split.
 |---|---|---|
 | a Weierstrass curve over an algebraically closed field with a point of exact order `N` | `exists_weierstrassCurve_pointOfExactOrder` | **PROVEN** 2026-07-30 (Silverman *AEC* III.6.4 was already in cone as `WeierstrassCurve.n_torsion_dimension`) |
 | a Weierstrass point of order `N` over ANY field gives a `Γ₁(N)`-datum | `nonempty_gamma1Datum_of_weierstrassPoint` | **PROVEN** 2026-07-30 over the row below |
-| the scheme-theoretic bridge over ANY field | `exists_ellipticScheme_of_weierstrass_field` | **LEAF** (base-generalisation of a PROVEN `ℚ` theorem) |
+| the scheme-theoretic bridge over ANY field | `exists_ellipticScheme_of_weierstrass_field` | **PROVEN** 2026-07-31 over `EllipticScheme.lean`'s `exists_ellipticScheme_weierstrassChart_addEquiv_field`, which had said strictly more since 2026-07-30 and was invisible here behind a non-public import |
 | the assembly, at `L := AlgebraicClosure K` | `exists_gamma1Datum_fieldExtension` | **PROVEN** |
 
 **Why the split is worth making.**  The second leaf was *exactly*
@@ -5849,10 +5849,53 @@ theorem epi_of_hom_spec_field {L K : Type} [Field L] [Field K]
   exact epi_specMap_of_fieldHom _
 
 /-- **A Weierstrass curve over an arbitrary field `L` is an elliptic
-scheme over `Spec L` whose `L`-SECTIONS are `E(L)`** (sorry leaf, cut
-2026-07-30 out of `nonempty_gamma1Datum_of_weierstrassPoint`, which is now
-a THEOREM over it) — the base-generalisation of `X0.lean`'s
+scheme over `Spec L` whose `L`-SECTIONS are `E(L)`** (**PROVEN
+2026-07-31** over `EllipticScheme.lean`'s
+`exists_ellipticScheme_weierstrassChart_addEquiv_field`; a sorry leaf from
+2026-07-30, cut out of `nonempty_gamma1Datum_of_weierstrassPoint`, which
+is a THEOREM over it) — the base-generalisation of `X0.lean`'s
 `exists_ellipticScheme_of_weierstrass`.
+
+## WHAT CLOSED IT, and why it stood open for a day
+
+**The base-generalisation this leaf was cut to demand had already been
+done.**  The "What a prover owes" section below says the obstruction is
+that `EllipticScheme.lean` is written at the concrete base `ℚ` and
+load-bearingly so in `ProjCoords.base_eq` and `hom_ext_spec_rat`.  That
+was already false when it was written: on 2026-07-30 `d528fc99` added a
+general-field layer at the foot of that file —
+`exists_isIso_of_affineCharts_field`,
+`nonempty_addEquiv_of_weierstrassModel_field`, and the single leaf
+`exists_ellipticScheme_weierstrassChart_addEquiv_field`, which says
+strictly MORE than this statement (it also produces the Weierstrass
+chart, which nothing here consumes).
+
+**Why nobody could see it, and it is not carelessness.**
+`EllipticScheme.lean` is imported by exactly one module in the tree,
+`X0.lean`, and NON-publicly on purpose (a `public import` propagates the
+reserved token `over`).  This module imports `X0.lean` publicly and
+`EllipticScheme` not at all, so every declaration in it was invisible
+here — to grep, to `#check`, to completion.  The two statements share no
+identifier either: that one says `(E⁄k).Point` and a chart, this one says
+`E.toAffine.Point`.  So `own.py`, `leafstat.py` and every frontier scan
+correctly reported two honest unowned leaves.  See CLAUDE.md, "A
+NON-PUBLIC IMPORT UPSTREAM IS A DUPLICATE-CUT BLIND SPOT".
+
+The fix is the non-public `import` now at the head of this file.  Neither
+this statement nor
+`exists_ellipticSchemeSection_of_weierstrassPoint` below mentions that
+module's vocabulary, so a proof-body-only import is exactly enough and no
+re-export in `X0.lean` was needed.
+
+`(E⁄L)` IS `E.toAffine` — `baseChange` along `algebraMap L L =
+RingHom.id L`, `rfl` on the nose — so the two conclusions differ by
+`AddEquiv.symm` and nothing else.
+
+**The paragraphs below are RETAINED as written**, because their design
+reasoning (why the SECTION form rather than the geometric-fibre form, and
+why no `[PerfectField L]`) is still exactly right and is what makes the
+statement consumable; only their cost estimate for
+`EllipticScheme.lean` was overtaken.
 
 This is the WHOLE residue of that leaf: everything else in it — the
 descent, the order transport, and the `geom_order` field at every
@@ -6020,11 +6063,46 @@ theorem exists_injective_pre_geomBase_field {L : Type} [Field L] {A : Scheme.{0}
 
 /-- **`EllipticScheme.lean` OVER A GENERAL BASE FIELD: an elliptic curve
 over `L` with an `L`-rational point becomes an elliptic scheme over
-`Spec L` with a section of the same order** (sorry leaf, cut 2026-07-31
-out of `nonempty_gamma1Datum_of_weierstrassPoint` below, which is PROVEN
-over it).
+`Spec L` with a section of the same order** (**PROVEN 2026-07-31** over
+`exists_ellipticScheme_of_weierstrass_field` above; a sorry leaf cut the
+same day out of `nonempty_gamma1Datum_of_weierstrassPoint` below).
 
-## What the prover of this node owes
+## WHAT CLOSED IT — and a warning about this leaf's provenance
+
+Two things, and the second is the one worth carrying away.
+
+**It had NO CONSUMER.**  `nonempty_gamma1Datum_of_weierstrassPoint` below
+is proven over `exists_ellipticScheme_of_weierstrass_field`, not over
+this — so despite the header above, nothing in the tree consumed this
+declaration.  It was a third statement of one piece of mathematics,
+strictly weaker than the other two, and it would have been free-floating
+had it ever been proven in the shape its docstring imagined.  A leaf's
+own claim that it was "cut out of X, which is PROVEN over it" is a
+hypothesis: check by grepping for the name, which takes one command.
+
+**Its content was already available.**  The route below asks for the
+projective model over `L` and the whole group-law chain.  None of that
+had to be built: `EllipticScheme.lean`'s
+`exists_ellipticScheme_weierstrassChart_addEquiv_field` (2026-07-30)
+supplies the elliptic scheme, its smoothness and the `≃+` on `L`-sections
+outright, and this statement follows from it by transporting the order
+from the `L`-section UP to the geometric point — the direction the
+docstring below correctly calls free.  That transport is
+`nonempty_gamma1Datum_of_weierstrassPoint`'s own `geom_order` argument run
+at the single base point `specAlgClos L ≫ 𝟙`, and it needs both halves of
+the pair: `RelPoint.pre` is additive (`ab.pre_add`, `ab.pre_zero`), which
+alone gives only `addOrderOf P ∣ addOrderOf (section)`, and INJECTIVE
+(`epi_of_hom_spec_field` plus `relPoint_pre_injective_of_epi`), which
+supplies the reverse.
+
+The FALSITY AUDIT below still PASSES and is left as written; it was right
+that the statement is true, and right about why.  What it could not see is
+that the object it proposed to build already existed one module up, behind
+a non-public import — see CLAUDE.md, "A NON-PUBLIC IMPORT UPSTREAM IS A
+DUPLICATE-CUT BLIND SPOT", and the fuller account on
+`exists_ellipticScheme_of_weierstrass_field` above.
+
+## What the prover of this node owed (retained; overtaken)
 
 Exactly step 1 of the route recorded on
 `nonempty_gamma1Datum_of_weierstrassPoint` — the `L`-analogue of
