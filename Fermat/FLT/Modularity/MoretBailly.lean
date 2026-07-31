@@ -54702,6 +54702,54 @@ noncomputable def ProjGroupLawOverField.toAbelianSchemeStruct {F : Type u} [Fiel
     (SmoothOfRelativeDimension.smooth 1 (projToSpec E))
     (geometricallyConnected_projToSpecOverField F E)
 
+/-- **Group-law data from the multiplication ALONE, with the STANDARD unit and
+inversion** (PROVEN 2026-07-31, `flt-lean-81`).
+
+Six of the ten fields of `ProjGroupLawOverField` are now supplied here rather than
+owed by whoever proves the group law: `e := projInfty E` and `i := projNeg E` are
+`ProjectiveModel.lean`'s point at infinity and Weierstrass involution, both defined
+over an arbitrary commutative ring, and `he`/`hi` are
+`WeierstrassCurve.Projective.projInfty_comp_projToSpec` and
+`projNeg_comp_projToSpec` in `ProjectiveModelOverField.lean`, likewise over an
+arbitrary commutative ring.
+
+**Why this is not merely cosmetic.**  `ProjGroupLawOverField` pins nothing about its
+unit section, which is exactly why the leaf below has to bind `gl` EXISTENTIALLY (the
+`∀ gl` form was refuted at `ℚ` on 2026-07-27 by translating the chord–tangent law by
+a rational point).  Pinning `e` to `projInfty E` here removes that degree of freedom
+from the residual leaf without weakening anything: the leaf still produces its own
+`m`, and the equivariant `≃+` is still stated for the group law that `m` generates.
+So a prover of `exists_projMulOverField_geomFibreAddEquiv` below constructs ONE
+morphism and proves four equations about it, instead of choosing a ten-field
+structure and rediscovering that only one choice of `e` can support the `≃+`. -/
+noncomputable def ProjGroupLawOverField.ofMul {F : Type u} [Field F]
+    {E : WeierstrassCurve F}
+    (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
+    (hm : m ≫ projToSpec E =
+      Limits.pullback.fst (projToSpec E) (projToSpec E) ≫ projToSpec E)
+    (hassoc : Fermat.AbelianSchemeStruct.triAddLeft (projToSpec E) m hm =
+      Fermat.AbelianSchemeStruct.triAddRight (projToSpec E) m hm)
+    (hcomm : Limits.pullback.lift (Limits.pullback.snd (projToSpec E) (projToSpec E))
+      (Limits.pullback.fst (projToSpec E) (projToSpec E))
+      Limits.pullback.condition.symm ≫ m = m)
+    (hunit : Limits.pullback.lift (projToSpec E ≫ projInfty E) (𝟙 (proj E))
+      (by rw [Category.assoc, projInfty_comp_projToSpec, Category.comp_id,
+        Category.id_comp]) ≫ m = 𝟙 (proj E))
+    (hinv : Limits.pullback.lift (projNeg E) (𝟙 (proj E))
+      (by rw [projNeg_comp_projToSpec, Category.id_comp]) ≫ m =
+        projToSpec E ≫ projInfty E) :
+    ProjGroupLawOverField F E where
+  m := m
+  e := projInfty E
+  i := projNeg E
+  hm := hm
+  he := projInfty_comp_projToSpec E
+  hi := projNeg_comp_projToSpec E
+  hassoc := hassoc
+  hcomm := hcomm
+  hunit := hunit
+  hinv := hinv
+
 /-- **The chord–tangent group law on the projective Weierstrass model over an
 arbitrary field, together with the equivariant identification of its geometric
 fibre with `E(F̄)`** (sorry leaf, cut 2026-07-29 out of
@@ -54876,7 +54924,82 @@ the privilege.  The cost of the import is
 build SERIALISATION, not correctness: this module would then wait on
 `ProjectiveEquationAdd.lean`, which is one of the slowest in the tree.  Weigh that
 against the iteration cost before choosing; the recommendation here is to take the
-import. -/
+import.
+
+**RECUT 2026-07-31 (`flt-lean-81`), COUNT-NEUTRAL: the leaf now names `m` and nothing
+else.**  `e`, `i`, `he`, `hi` are supplied by `ProjGroupLawOverField.ofMul` above and
+are REAL CODE in the tree, so the residue is one morphism plus four equations about
+it.  The `≃+` clause is still stated for the group law this leaf's own `m` generates
+(through `ofMul`), so the existential binding that the 2026-07-27 refutation requires
+is preserved — `m` is chosen by the prover, not received.
+`exists_projGroupLawOverField_geomFibreAddEquiv` below is now a two-line PROVEN
+assembly over this.
+
+**AND THE ONE BRICK THE PORT WAS MISSING NOW EXISTS**:
+`WeierstrassCurve.Projective.fromOfGlobalSections_comp_projToSpec`
+(`ProjectiveModelOverField.lean`, added 2026-07-31, over an arbitrary commutative
+ring) says
+
+    Proj.fromOfGlobalSections (projGrading W) f hf ≫ projToSpec W
+      = X.toSpecΓ ≫ Spec.map (CommRingCat.ofHom (f.comp (algebraMap R (R[X,Y,Z] ⧸ (W)))))
+
+which is the GENERAL-BASE REPLACEMENT for `Fermat.hom_ext_spec_rat`.  This matters
+because the 59 comment-stripped `hom_ext_spec_rat` sites in `EllipticScheme.lean` are
+almost all the obligation of `Limits.pullback.lift c.toHom d.toHom _`, i.e.
+`c.toHom ≫ projToSpec E = d.toHom ≫ projToSpec E`, and `ProjCoords.toHom` IS
+`Proj.fromOfGlobalSections c.ringHom _` with `c.ringHom.comp (algebraMap R _) = c.base`
+on the nose.  So both sides rewrite to `X.toSpecΓ ≫ Spec.map (ofHom c.base)` and every
+one of those 59 sites becomes `congrArg` applied to `c.base = d.base` — confirming, and
+making checkable, the estimate recorded in `Fermat.ProjCoords`'s own docstring
+("all 77 follow from `base_eq` alone").  **A porter should repair those sites with this
+lemma, not by re-deriving commuting squares.**  What remains genuinely open in the port
+is then: `ProjCoords` loses `base_eq` and `@[ext]`-on-coordinates-alone (both are
+`Subsingleton.elim` out of `Rat.subsingleton_ringHom` and are FALSE over a general
+field), so `c.base = d.base` has to be threaded as a hypothesis at 11 `base_eq` and 14
+`ProjCoords.ext` call sites; and `ℚ ↦ F` plus `Scheme.{0} ↦ Scheme.{u}` is 611
+comment-stripped `ℚ` occurrences and 100 `Scheme.{0}` occurrences across 6 677 lines of
+code.  The `[Algebra ℚ S]` instance binders are the part that is NOT a substitution and
+should be costed separately. -/
+theorem exists_projMulOverField_geomFibreAddEquiv (F : Type u) [Field F]
+    (E : WeierstrassCurve F) [E.IsElliptic] :
+    letI : DecidableEq (AlgebraicClosure F) := Classical.typeDecidableEq _
+    ∃ (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
+      (hm : m ≫ projToSpec E =
+        Limits.pullback.fst (projToSpec E) (projToSpec E) ≫ projToSpec E)
+      (hassoc : Fermat.AbelianSchemeStruct.triAddLeft (projToSpec E) m hm =
+        Fermat.AbelianSchemeStruct.triAddRight (projToSpec E) m hm)
+      (hcomm : Limits.pullback.lift (Limits.pullback.snd (projToSpec E) (projToSpec E))
+        (Limits.pullback.fst (projToSpec E) (projToSpec E))
+        Limits.pullback.condition.symm ≫ m = m)
+      (hunit : Limits.pullback.lift (projToSpec E ≫ projInfty E) (𝟙 (proj E))
+        (by rw [Category.assoc, projInfty_comp_projToSpec, Category.comp_id,
+          Category.id_comp]) ≫ m = 𝟙 (proj E))
+      (hinv : Limits.pullback.lift (projNeg E) (𝟙 (proj E))
+        (by rw [projNeg_comp_projToSpec, Category.id_comp]) ≫ m =
+          projToSpec E ≫ projInfty E),
+      (letI := (ProjGroupLawOverField.ofMul m hm hassoc hcomm hunit
+          hinv).toAbelianSchemeStruct.addCommGroup (Fermat.specAlgClos F ≫
+          𝟙 (Spec (CommRingCat.of F)))
+       ∃ e : (WeierstrassCurve.Affine.baseChange E (AlgebraicClosure F)).Point ≃+
+           Fermat.GeomFibrePt (projToSpec E) (𝟙 (Spec (CommRingCat.of F))),
+         ∀ (σ : Field.absoluteGaloisGroup F)
+           (x : (WeierstrassCurve.Affine.baseChange E (AlgebraicClosure F)).Point),
+           e (WeierstrassCurve.Affine.Point.map
+               (σ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom x)
+             = (ProjGroupLawOverField.ofMul m hm hassoc hcomm hunit
+                 hinv).toAbelianSchemeStruct.galSMul
+                 (𝟙 (Spec (CommRingCat.of F))) σ (e x)) :=
+  sorry
+
+/-- **The chord–tangent group law together with the equivariant identification of the
+geometric fibre** (**PROVEN 2026-07-31** over
+`exists_projMulOverField_geomFibreAddEquiv`, which is the same statement with the unit
+section and the inversion pinned to `projInfty E` and `projNeg E`).
+
+The statement is unchanged — it is the form
+`exists_ellipticSchemeOverField` consumes — so no call site moved.  What changed is
+that `e`, `i`, `he`, `hi` are no longer part of what a prover owes; see
+`ProjGroupLawOverField.ofMul`. -/
 theorem exists_projGroupLawOverField_geomFibreAddEquiv (F : Type u) [Field F]
     (E : WeierstrassCurve F) [E.IsElliptic] :
     letI : DecidableEq (AlgebraicClosure F) := Classical.typeDecidableEq _
@@ -54890,8 +55013,10 @@ theorem exists_projGroupLawOverField_geomFibreAddEquiv (F : Type u) [Field F]
            e (WeierstrassCurve.Affine.Point.map
                (σ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom x)
              = gl.toAbelianSchemeStruct.galSMul
-                 (𝟙 (Spec (CommRingCat.of F))) σ (e x)) :=
-  sorry
+                 (𝟙 (Spec (CommRingCat.of F))) σ (e x)) := by
+  obtain ⟨m, hm, hassoc, hcomm, hunit, hinv, h⟩ :=
+    exists_projMulOverField_geomFibreAddEquiv F E
+  exact ⟨ProjGroupLawOverField.ofMul m hm hassoc hcomm hunit hinv, h⟩
 
 end EllipticSchemeOverField
 

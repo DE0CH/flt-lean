@@ -2396,26 +2396,61 @@ universe u
 variable {R : Type u} [CommRing R] (W : WeierstrassCurve R)
 
 set_option backward.isDefEq.respectTransparency false in
+/-- **EVERY morphism built by `Proj.fromOfGlobalSections` lies over the base in the
+one way it can**, over an arbitrary commutative ring: its composite with the structure
+morphism `projToSpec W` is the morphism `X ⟶ Spec R` classified by the composite
+`R → R[X, Y, Z] ⧸ (W) → Γ(X, ⊤)`.
+
+**THIS IS THE GENERAL-BASE REPLACEMENT FOR `Fermat.hom_ext_spec_rat`** (added
+2026-07-31, `flt-lean-81`), and it is the single brick the `ℚ ↝ F` port of
+`Fermat/FLT/ModularCurve/EllipticScheme.lean` needs before any of its 59
+`hom_ext_spec_rat` call sites can be repaired.  That module records (in the docstring
+of `Fermat.ProjCoords`, measured by `flt-lean-182`) that almost every one of those
+sites is the proof obligation of `Limits.pullback.lift c.toHom d.toHom _`, i.e.
+
+    c.toHom ≫ projToSpec E = d.toHom ≫ projToSpec E,
+
+and that over a general base they should all follow from `c.base = d.base` alone.  This
+theorem is what makes that true: `ProjCoords.toHom` is by definition
+`Proj.fromOfGlobalSections c.ringHom _`, and `c.ringHom.comp (algebraMap R _)` is `c.base`
+(both send `r` to `base r`, since `ringHom (mk (C r)) = eval₂ base coord (C r)`).  So both
+sides above rewrite to `X.toSpecΓ ≫ Spec.map (CommRingCat.ofHom c.base)` and the equality
+is `congrArg` on the base — no geometry, no subsingleton, no `ℚ`.
+
+The proof is `Proj.fromOfGlobalSections_toSpecZero` (mathlib) followed by the
+`R → (𝒜 0) → 𝒜`-vs-`R → 𝒜` scalar-tower identification, which is `rfl` here because
+`algebraMap R (MvPolynomial (Fin 3) R ⧸ _)` is `Ideal.Quotient.mk ∘ C` on the nose. -/
+theorem fromOfGlobalSections_comp_projToSpec {X : Scheme.{u}}
+    (f : (MvPolynomial (Fin 3) R ⧸ (polynomialHomogeneousIdeal W).toIdeal) →+* Γ(X, ⊤))
+    (hf : (HomogeneousIdeal.irrelevant (projGrading W)).toIdeal.map f = ⊤) :
+    Proj.fromOfGlobalSections (𝒜 := projGrading W) f hf ≫ projToSpec W =
+      X.toSpecΓ ≫ Spec.map (CommRingCat.ofHom
+        (f.comp (algebraMap R
+          (MvPolynomial (Fin 3) R ⧸ (polynomialHomogeneousIdeal W).toIdeal)))) := by
+  rw [projToSpec, ← Category.assoc,
+    Proj.fromOfGlobalSections_toSpecZero (𝒜 := projGrading W) f hf,
+    Category.assoc, ← Spec.map_comp, ← CommRingCat.ofHom_comp]
+  congr 2
+
+set_option backward.isDefEq.respectTransparency false in
 /-- **The point at infinity is a section of the structure morphism**, over an arbitrary
-commutative ring.  This is the field `he` of `ProjGroupLawOverField`. -/
+commutative ring.  This is the field `he` of `ProjGroupLawOverField`.
+
+Reproved 2026-07-31 as a corollary of `fromOfGlobalSections_comp_projToSpec` above: the
+only thing left after that rewrite is that `R → R[X, Y, Z] ⧸ (W) → Γ(Spec R, ⊤)` is the
+canonical iso, i.e. that evaluation at `[0 : 1 : 0]` fixes the constants. -/
 theorem projInfty_comp_projToSpec :
     projInfty W ≫ projToSpec W = 𝟙 (Spec (CommRingCat.of R)) := by
-  have key := Proj.fromOfGlobalSections_toSpecZero (𝒜 := projGrading W)
-      (X := Spec (CommRingCat.of R))
-      (((Scheme.ΓSpecIso (CommRingCat.of R)).inv).hom.comp (evalInftyQuot W))
-      (map_irrelevant_evalInfty_eq_top W)
-  rw [projToSpec, projInfty, ← Category.assoc, key, Category.assoc, ← Spec.map_comp,
-    ← CommRingCat.ofHom_comp]
+  have h := fromOfGlobalSections_comp_projToSpec W
+    (((Scheme.ΓSpecIso (CommRingCat.of R)).inv).hom.comp (evalInftyQuot W))
+    (map_irrelevant_evalInfty_eq_top W)
+  rw [projInfty, h]
   have hcomp :
-      ((((Scheme.ΓSpecIso (CommRingCat.of R)).inv).hom.comp (evalInftyQuot W)).comp
-          (algebraMap (projGrading W 0)
-            (MvPolynomial (Fin 3) R ⧸ (polynomialHomogeneousIdeal W).toIdeal))).comp
-        (algebraMap R (projGrading W 0)) =
-      ((Scheme.ΓSpecIso (CommRingCat.of R)).inv).hom := by
+      (((Scheme.ΓSpecIso (CommRingCat.of R)).inv).hom.comp (evalInftyQuot W)).comp
+          (algebraMap R (MvPolynomial (Fin 3) R ⧸ (polynomialHomogeneousIdeal W).toIdeal)) =
+        ((Scheme.ΓSpecIso (CommRingCat.of R)).inv).hom := by
     ext r
-    have h2 : (algebraMap (↥(projGrading W 0))
-          (MvPolynomial (Fin 3) R ⧸ (polynomialHomogeneousIdeal W).toIdeal))
-          ((algebraMap R ↥(projGrading W 0)) r)
+    have h2 : (algebraMap R (MvPolynomial (Fin 3) R ⧸ (polynomialHomogeneousIdeal W).toIdeal)) r
         = Ideal.Quotient.mk _ (MvPolynomial.C r) := rfl
     simp only [RingHom.comp_apply, h2, evalInftyQuot_mk]
     simp [evalInfty]
