@@ -181,3 +181,79 @@ publishing an unverified tree is the one thing worse than another hold.
   owner prefers, the LEAF's conclusion is the thing to change and the bridge then
   disappears; I did not, because a leaf statement change voids its faithfulness
   audit and this does not.
+
+---
+
+# RELEASE 32, SECOND HALF — written by the merge worker that finished it
+
+The half above was written mid-flight by the merge worker that made `X0.lean`
+green and left the full build running.  That build FAILED, and this is what was
+behind it.
+
+## The 24 dark targets held exactly one defect, and it was in the first of them
+
+The prediction in the half above was right in shape and generous in size.  The
+build stopped at target 5676/5695, `Fermat.FLT.ModularCurve.X1`, with three
+errors, and there was nothing wrong behind it: after the repair the whole tree
+built.  So six releases of accumulated invisibility cost one repair, not the
+three rounds budgeted.  Do not read that as a reason to budget less next time —
+X1 is the FIRST module after X0, and the reason nothing else broke is that
+nothing else was as heavily edited during the dark window.
+
+## What the defect was, since it is a shape worth recognising in one screen
+
+    X1.lean:1694: `smoothM` is not a field of structure `Gamma1GITPresentation`
+    X1.lean:1680: Fields missing: `transitiveM`
+    X1.lean:7063: Invalid field `smoothM`
+
+Two branches each repaired a DIFFERENT refuted `∀ P` theorem by the same move —
+hoisting its citation onto `Gamma1GITPresentation` as a new field.  `64651d82`
+(2026-07-30) added `smoothM`, Katz–Mazur 8.2.1; `420bd322` (2026-07-31) added
+`transitiveM`, Deligne–Rapoport IV.5.5.  The second forked before the first, so
+the merge took the STRUCTURE BODY from one side and a CONSTRUCTOR LITERAL from
+the other.  `smoothM` was lost from both `Gamma1GITPresentation` and
+`Gamma1Rigidification`, together with the `hsm` hypothesis of
+`nonempty_gamma1Rigidification_of_rigidifiedModuli` and its call-site argument;
+`transitiveM := R.transitiveM` was lost from the GIT-presentation constructor.
+
+**The tell is that the damage is SYMMETRIC.**  "X is not a field of S" and
+"fields missing: Y" in the same module cannot come from one dropped edit; only
+two rival copies of one declaration produce it.  The repair is the UNION, and it
+is right here because the three tests pass: different citations, different
+discharging leaves (`smoothOfRelativeDimension_of_gamma1RigidifiedModuli` and
+`transitiveOnGeometricComponents_of_gamma1RigidifiedModuli`, both still present
+and still open), disjoint consumers.  Restored verbatim from `64651d82`;
+nothing weakened, no leaf opened or closed.  Full account in `CLAUDE.md`.
+
+## The queue had FOUR copies of one task
+
+`queue1` carried three separate reconciliation tasks for the divisor-degree
+module pair and `queue2` a fourth, written by three prover agents and one merge
+worker on three days.  Dispatch is FIFO and blind, so that was four agents about
+to make four rival edits to two modules plus `X0.lean`.  Kept the most recent,
+folded the other three's unique facts into it under a `SUPERSEDES` heading, and
+HOISTED it to position 0 — it is the only task that can resolve an
+invisibility-class module, and structural repair outranks a single leaf.
+
+The coverage invariant cannot see this: it detects a leaf with no task and is
+blind to a task with three rivals, and the four texts share almost no
+identifiers, so nothing name-keyed pairs them.  **Cluster the queue by `TARGET:`
+line as the second half of the check**, and re-run coverage afterwards — a
+de-duplication is a queue deletion and can strand a leaf.
+
+## Two things left for you
+
+* **`flt-lean-273` is not merged and four `queue1` tasks now depend on it.**  It
+  was not in this release's batch.  Its four `*_sexticThirtySeven` leaves in
+  `MazurTorsion.lean` do not exist on `main`, so the tasks naming them would have
+  been guaranteed phantom dispatches; each now carries a PRECONDITION block
+  telling the agent to `git merge flt-lean-273` first (the branch is BEHIND main,
+  so it is an ordinary merge).  Merge it early next release and strip the four
+  preconditions — grep `PRECONDITION, ADDED AT RELEASE 32`.
+* **`Fermat/FLT/Mathlib/RingTheory/Localization/BaseChange.lean` is the SECOND
+  module unreachable from `Fermat.lean`** (96 lines, 5 declarations).  Unlike
+  `CurveDivisorDegree.lean` it has NO sorries, so it hides no frontier leaf and
+  is not urgent — but it is free-floating and nothing in the tree records it.
+  `cyclecheck.py` is clean; the reachability check that finds these is a BFS of
+  the `^(public )?import Fermat` edges from `Fermat.lean`, differenced against
+  the `.lean` files on disk, and it is ten lines.
