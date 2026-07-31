@@ -1296,6 +1296,15 @@ Three transferable pieces, since this shape recurs wherever a modular curve is i
   `matker` on 25 `q`-coefficients returns the hyperelliptic relation uniquely. It is faster
   than searching, and it is checkable: `disc` must be supported exactly on `N`'s primes, and
   `#C(𝔽_p)` must equal `p + 1 − Tr T_p` at several good `p` and must FAIL at `p ∣ N`.
+  **This is not limited to the hyperelliptic case, and that is the part worth knowing.**
+  Take `f₁, …, f_g` as the CANONICAL coordinates and run the same `matker` over the
+  degree-`d` monomials in `g` variables: it returned the plane quartic at `g = 3`, the
+  quadric-and-cubic at `g = 4`, and the three quadrics at `g = 5`, in seconds each, for
+  four levels nobody had a model for. Two free checks come with it — the NUMBER of
+  vanishing forms must be what canonical theory predicts (`1` quadric plus one new cubic
+  at `g = 4`; `3` quadrics at `g = 5`), and the projective point count over `𝔽_p` must
+  again equal `p + 1 − Tr T_p`. Twelve counts across three levels matched on the first
+  try. Deriving the model is the cheap half; do it before assuming a model is missing.
 * **No rational Weierstrass point does not mean no Cantor.** `#J(𝔽_ℓ)` odd forces no
   rational 2-torsion, hence no rational Weierstrass point, hence no degree-`2g+1` model —
   which looks like a dead end. It is not: pick `a` with `f(a)` a NON-SQUARE, so the fibre
