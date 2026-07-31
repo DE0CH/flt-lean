@@ -1267,10 +1267,11 @@ identity `x = ⟨x,t⟩·s`, the sheaf isomorphism `L|_W ≅ 𝒪_W` is CONSTRUC
 (`Γ(W,·)`-scalars versus `Γ(Z,·)`-scalars, and naturality across `restrict`)
 are discharged exactly as `ModDual.dualRestrictIso` discharges them.
 
-WHAT IS LEFT, and it is a genuine 1 → 2 split into DISCOVERY and SYMMETRY:
+WHAT IS LEFT.  The cut was into DISCOVERY and SYMMETRY; the discovery half is
+now proven, so the module is back to a 1 → 1 replacement of the original leaf:
 
 * `exists_modPair_eq_one` — a unimodular pair EXISTS near every point of `U`.
-  This is the local-surjectivity half.  `Mathlib/Algebra/Category/ModuleCat/
+  This is the local-surjectivity half, and it is **PROVEN** (2026-07-31).  `Mathlib/Algebra/Category/ModuleCat/
   Presheaf/Sheafify.lean` carries `instance : IsLocallySurjective J
   (toSheafify α φ)`, and `PresheafOfModules.
   toPresheaf_map_sheafificationAdjunction_unit_app` identifies `modTensorMk`
@@ -1283,8 +1284,8 @@ WHAT IS LEFT, and it is a genuine 1 → 2 split into DISCOVERY and SYMMETRY:
   `IsLocallySurjective` over `Opens.grothendieckTopology` into its pointwise
   form.
 
-* `ModTriv.eq_coord_smul_genAt` — THE SYMMETRY, and it is all of the
-  mathematics: `⟨s,t⟩ = 1` forces `x = ⟨x,t⟩·s`.
+* `ModTriv.eq_coord_smul_genAt` — THE SYMMETRY, and it is now the only thing
+  open here and all of the mathematics: `⟨s,t⟩ = 1` forces `x = ⟨x,t⟩·s`.
 
 **ROUTE AUDIT FOR THE SYMMETRY — 2026-07-31, and it CORRECTS the audit on
 `exists_trivialization_of_modTensor_trivial` below in one respect that changes
@@ -1390,6 +1391,14 @@ lemma modPair_res {V V' : Z.Opens} (hV : V ≤ U) (h : V' ≤ V) (x : Γ(L, V)) 
       Z.presheaf.map (homOfLE h).op (modPair ν hV x y) := by
   unfold modPair
   rw [← modTensorMkLin_res, ModDual.tr_nat (hV := hV)]
+
+/-- The pairing, bundled as an additive map out of the whole tensor product.  This
+is what lets `map_sum` fire on a section written as a finite sum of pure tensors,
+which is the only place it is needed. -/
+noncomputable def modPairHom {V : Z.Opens} (hV : V ≤ U) :
+    TensorProduct Γ(Z, V) Γ(L, V) Γ(N, V) →+ Γ(Z, V) :=
+  AddMonoidHom.mk' (fun ξ => ModDual.tr ν hV (modTensorMkLin L N V ξ))
+    (fun a b => by rw [map_add, ModDual.tr_add])
 
 end ModPair
 
@@ -1510,7 +1519,7 @@ noncomputable def trivOfPair : L.restrict W.ι ≅ modUnit (W : Scheme.{u}) := b
 
 end ModTriv
 
-/-- **LEAF — A UNIMODULAR PAIR EXISTS NEAR EVERY POINT.**
+/-- **A UNIMODULAR PAIR EXISTS NEAR EVERY POINT** (PROVEN 2026-07-31).
 
 The DISCOVERY half of Stacks 0B8L: `ν⁻¹(1)` is, near `z`, a finite sum of pure
 tensors, one of whose pairings is a unit, and rescaling that one makes the
@@ -1520,6 +1529,12 @@ FAITHFUL.  `= 1` on the nose (rather than "is a unit") costs nothing: if
 `⟨s,t⟩ = c` is invertible on `W` then `⟨c⁻¹ • s, t⟩ = 1` by
 `modPair_smul_left`, and `W` may always be shrunk to an affine basic open of
 `c` inside which `c` is a unit.
+
+The route below is the proof, step for step; the only surprise was step 4,
+which needs NO affineness — `RingedSpace.isUnit_res_basicOpen` says the
+restriction of a section to its own basic open is a unit over an arbitrary
+ringed space, so the affine-open detour the first draft of this note prescribed
+is unnecessary.
 
 ROUTE, in full, since none of it is categorical:
 
@@ -1537,17 +1552,62 @@ ROUTE, in full, since none of it is categorical:
     `modPair_add_left` and `ModDual.tr_trInv`.
 3.  Not every `⟨sᵢ,tᵢ⟩` can vanish at `z`: their images in the residue field
     `κ(z)` sum to `1 ≠ 0`.  So `z ∈ Z.basicOpen ⟨sᵢ,tᵢ⟩` for some `i`.
-4.  Intersect with an affine open around `z` and take the basic open there;
-    `c := ⟨sᵢ,tᵢ⟩` is a unit on it (`IsAffineOpen.basicOpen`), and
-    `(c⁻¹ • sᵢ|, tᵢ|)` is the required pair, using `modPair_res` to move the
-    pairing down to `W` and `modPair_smul_left` to rescale.
+4.  Take `W := Z.basicOpen ⟨sᵢ,tᵢ⟩`.  The restriction of `c := ⟨sᵢ,tᵢ⟩` to `W`
+    is a unit by `RingedSpace.isUnit_res_basicOpen`, and `(c⁻¹ • sᵢ|, tᵢ|)` is
+    the required pair, using `modPair_res` to move the pairing down to `W` and
+    `modPair_smul_left` to rescale.
 
 Nothing above needs `L` or `N` to be anything in particular, and nothing needs
 the scheme hypothesis beyond having affine opens and residue fields. -/
 theorem exists_modPair_eq_one {Z : Scheme.{u}} {L N : Z.Modules} {U : Z.Opens}
     (ν : (modTensor L N).restrict U.ι ≅ modUnit (U : Scheme.{u})) {z : Z} (hz : z ∈ U) :
     ∃ (W : Z.Opens) (hWU : W ≤ U) (_ : z ∈ W) (s : Γ(L, W)) (t : Γ(N, W)),
-      modPair ν hWU s t = 1 := sorry
+      modPair ν hWU s t = 1 := by
+  -- STEP 1.  The section of `L ⊗ N` that `ν` sends to `1`.
+  set w : Γ(modTensor L N, U) := ModDual.trInv ν (le_refl U) 1 with hw
+  -- STEP 2.  `modTensorMk` IS `CategoryTheory.toSheafify` on underlying presheaves (`rfl`),
+  -- and that is locally surjective, so `w` is locally a section of the PRESHEAF tensor.
+  have hcov := Presheaf.imageSieve_mem (Opens.grothendieckTopology Z)
+    (CategoryTheory.toSheafify (Opens.grothendieckTopology Z)
+      (PresheafOfModules.Monoidal.tensorObj (R := Z.presheaf) L.val N.val).presheaf) (U := op U) w
+  obtain ⟨V, fVU, ⟨ξ, hξ⟩, hzV⟩ := hcov z hz
+  have hVU : V ≤ U := leOfHom fVU
+  have hkey : modTensorMkLin L N V ξ = (modTensor L N).presheaf.map (homOfLE hVU).op w := hξ
+  have hsum1 : modPairHom ν hVU ξ = 1 := by
+    show ModDual.tr ν hVU (modTensorMkLin L N V ξ) = 1
+    rw [hkey, ModDual.tr_nat (hV := le_refl U), hw, ModDual.tr_trInv, map_one]
+  -- STEP 3.  A section of the presheaf tensor is a FINITE sum of pure tensors.
+  obtain ⟨S, hS⟩ := TensorProduct.exists_finset ξ
+  have hsum2 : ∑ i ∈ S, modPair ν hVU i.1 i.2 = 1 := by
+    rw [← hsum1, hS]
+    exact (map_sum (modPairHom ν hVU) _ S).symm
+  -- STEP 4.  Not every term can vanish at `z`: their germs would all lie in the
+  -- maximal ideal of the local ring `𝒪_{Z,z}`, and so would their sum, which is `1`.
+  have hex : ∃ i ∈ S, z ∈ Z.basicOpen (modPair ν hVU i.1 i.2) := by
+    by_contra hcon
+    have hcon' : ∀ i ∈ S, z ∉ Z.basicOpen (modPair ν hVU i.1 i.2) :=
+      fun i hi hmem => hcon ⟨i, hi, hmem⟩
+    have hsum : Z.presheaf.germ V z hzV (∑ i ∈ S, modPair ν hVU i.1 i.2) ∈
+        IsLocalRing.maximalIdeal (Z.presheaf.stalk z) := by
+      rw [map_sum]
+      refine Ideal.sum_mem _ (fun i hi => ?_)
+      rw [IsLocalRing.mem_maximalIdeal]
+      exact fun hu => hcon' i hi ((Z.mem_basicOpen _ z hzV).2 hu)
+    rw [hsum2, map_one, IsLocalRing.mem_maximalIdeal] at hsum
+    exact hsum isUnit_one
+  -- STEP 5.  On the basic open of that term the term is a UNIT — this needs no
+  -- affineness, only `RingedSpace.isUnit_res_basicOpen` — so rescaling normalises
+  -- the pairing to `1`.
+  obtain ⟨i, -, hzb⟩ := hex
+  have hWV : Z.basicOpen (modPair ν hVU i.1 i.2) ≤ V := Z.basicOpen_le _
+  have hunit : IsUnit (Z.presheaf.map (homOfLE hWV).op (modPair ν hVU i.1 i.2)) :=
+    Z.toLocallyRingedSpace.toRingedSpace.isUnit_res_basicOpen (modPair ν hVU i.1 i.2)
+  obtain ⟨v, hv⟩ := hunit.exists_left_inv
+  refine ⟨Z.basicOpen (modPair ν hVU i.1 i.2), hWV.trans hVU, hzb,
+    v • (L.presheaf.map (homOfLE hWV).op i.1),
+    N.presheaf.map (homOfLE hWV).op i.2, ?_⟩
+  rw [modPair_smul_left, modPair_res ν hVU hWV]
+  exact hv
 
 /-- **AN INVERTIBLE SHEAF OF MODULES IS LOCALLY FREE OF RANK ONE** (PROVEN
 2026-07-31 over `exists_modPair_eq_one` and `ModTriv.eq_coord_smul_genAt`;
