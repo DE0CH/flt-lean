@@ -29,7 +29,7 @@ import re, sys, os, collections
 DECL = re.compile(
     r'^\s*(?:@\[[^\]]*\]\s*)*(?:private\s+|protected\s+|noncomputable\s+|partial\s+|unsafe\s+|public\s+|local\s+|scoped\s+)*'
     r'(?:theorem|lemma|def|abbrev|instance|structure|class|inductive|opaque|axiom)\s+'
-    r"([A-Za-z_À-ɏᴀ-ᶿ℀-⅏][A-Za-z0-9_À-ɏᴀ-ᶿ₀-ₜ⁰-ⁿ℀-⅏.'!?]*)")
+    r"([A-Za-z_À-ɏͰ-Ͽᴀ-ᶿ℀-⅏][A-Za-z0-9_À-ɏͰ-Ͽᴀ-ᶿ₀-ₜ⁰-ⁿ℀-⅏.'!?]*)")
 NS = re.compile(r'^\s*namespace\s+(\S+)')
 ENDNS = re.compile(r'^\s*end\s*(\S*)\s*$')
 IMP = re.compile(r'^\s*(?:public\s+)?import\s+(Fermat[A-Za-z0-9_.]*)\s*$')
