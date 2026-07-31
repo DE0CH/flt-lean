@@ -135,3 +135,4 @@
 - [An exact degree beside a generator is over-determined](flt-overdetermined-degree-conjunct.md) — ask for ≤ plus ≠0 and derive =; here that deleted DR's whole single-Galois-orbit half
 - [ℚ-algebra diamond: use minpoly, not IntermediateField](flt-rat-algebra-diamond-use-minpoly.md) — IsCyclotomicExtension.finrank on ℚ⟮ζ⟯ does not unify AT THE BASE ℚ though it does over a variable field
 - [Read the module docstring first](flt-read-the-module-docstring-first.md) — a prompt's "this does not exist yet" is an unverified absence claim about OUR tree; read the named file's Main-definitions list and grep `^theorem <Ns>\.` before building it (End W and End.torsionRep already existed)
+- [Non-public import = duplicate-cut blind spot](flt-nonpublic-import-duplicate-cut.md) — X1 cannot see EllipticScheme, so two agents cut the same general-field leaf a day apart; grep the whole tree for the CONTENT, and a plain `import` in your own file closes it by `exact`

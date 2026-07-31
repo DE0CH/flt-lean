@@ -194,6 +194,7 @@ import Fermat.FLT.Mathlib.AlgebraicGeometry.BirationalBaseChange
 -- of `isRegularRing_tensorAlgebraicClosure_of_isInvariant` below, so the import is
 -- deliberately NON-public: nothing in this file's signatures mentions it.
 import Fermat.FLT.Mathlib.RingTheory.InvariantTensorRegular
+import Fermat.FLT.ModularCurve.EllipticScheme
 
 @[expose] public section
 
@@ -5920,7 +5921,7 @@ with a section.  It is now PROVEN over that split.
 |---|---|---|
 | a Weierstrass curve over an algebraically closed field with a point of exact order `N` | `exists_weierstrassCurve_pointOfExactOrder` | **PROVEN** 2026-07-30 (Silverman *AEC* III.6.4 was already in cone as `WeierstrassCurve.n_torsion_dimension`) |
 | a Weierstrass point of order `N` over ANY field gives a `Γ₁(N)`-datum | `nonempty_gamma1Datum_of_weierstrassPoint` | **PROVEN** 2026-07-30 over the row below |
-| the scheme-theoretic bridge over ANY field | `exists_ellipticScheme_of_weierstrass_field` | **LEAF** (base-generalisation of a PROVEN `ℚ` theorem) |
+| the scheme-theoretic bridge over ANY field | `exists_ellipticScheme_of_weierstrass_field` | **PROVEN** 2026-07-31 over `EllipticScheme.lean`'s `exists_ellipticScheme_weierstrassChart_addEquiv_field`, which had said strictly more since 2026-07-30 and was invisible here behind a non-public import |
 | the assembly, at `L := AlgebraicClosure K` | `exists_gamma1Datum_fieldExtension` | **PROVEN** |
 
 **Why the split is worth making.**  The second leaf was *exactly*
@@ -6095,10 +6096,53 @@ theorem epi_of_hom_spec_field {L K : Type} [Field L] [Field K]
   exact epi_specMap_of_fieldHom _
 
 /-- **A Weierstrass curve over an arbitrary field `L` is an elliptic
-scheme over `Spec L` whose `L`-SECTIONS are `E(L)`** (sorry leaf, cut
-2026-07-30 out of `nonempty_gamma1Datum_of_weierstrassPoint`, which is now
-a THEOREM over it) — the base-generalisation of `X0.lean`'s
+scheme over `Spec L` whose `L`-SECTIONS are `E(L)`** (**PROVEN
+2026-07-31** over `EllipticScheme.lean`'s
+`exists_ellipticScheme_weierstrassChart_addEquiv_field`; a sorry leaf from
+2026-07-30, cut out of `nonempty_gamma1Datum_of_weierstrassPoint`, which
+is a THEOREM over it) — the base-generalisation of `X0.lean`'s
 `exists_ellipticScheme_of_weierstrass`.
+
+## WHAT CLOSED IT, and why it stood open for a day
+
+**The base-generalisation this leaf was cut to demand had already been
+done.**  The "What a prover owes" section below says the obstruction is
+that `EllipticScheme.lean` is written at the concrete base `ℚ` and
+load-bearingly so in `ProjCoords.base_eq` and `hom_ext_spec_rat`.  That
+was already false when it was written: on 2026-07-30 `d528fc99` added a
+general-field layer at the foot of that file —
+`exists_isIso_of_affineCharts_field`,
+`nonempty_addEquiv_of_weierstrassModel_field`, and the single leaf
+`exists_ellipticScheme_weierstrassChart_addEquiv_field`, which says
+strictly MORE than this statement (it also produces the Weierstrass
+chart, which nothing here consumes).
+
+**Why nobody could see it, and it is not carelessness.**
+`EllipticScheme.lean` is imported by exactly one module in the tree,
+`X0.lean`, and NON-publicly on purpose (a `public import` propagates the
+reserved token `over`).  This module imports `X0.lean` publicly and
+`EllipticScheme` not at all, so every declaration in it was invisible
+here — to grep, to `#check`, to completion.  The two statements share no
+identifier either: that one says `(E⁄k).Point` and a chart, this one says
+`E.toAffine.Point`.  So `own.py`, `leafstat.py` and every frontier scan
+correctly reported two honest unowned leaves.  See CLAUDE.md, "A
+NON-PUBLIC IMPORT UPSTREAM IS A DUPLICATE-CUT BLIND SPOT".
+
+The fix is the non-public `import` now at the head of this file.  Neither
+this statement nor
+`exists_ellipticSchemeSection_of_weierstrassPoint` below mentions that
+module's vocabulary, so a proof-body-only import is exactly enough and no
+re-export in `X0.lean` was needed.
+
+`(E⁄L)` IS `E.toAffine` — `baseChange` along `algebraMap L L =
+RingHom.id L`, `rfl` on the nose — so the two conclusions differ by
+`AddEquiv.symm` and nothing else.
+
+**The paragraphs below are RETAINED as written**, because their design
+reasoning (why the SECTION form rather than the geometric-fibre form, and
+why no `[PerfectField L]`) is still exactly right and is what makes the
+statement consumable; only their cost estimate for
+`EllipticScheme.lean` was overtaken.
 
 This is the WHOLE residue of that leaf: everything else in it — the
 descent, the order transport, and the `geom_order` field at every
@@ -6178,8 +6222,22 @@ theorem exists_ellipticScheme_of_weierstrass_field (L : Type) [Field L] [Decidab
     ∃ (A : Scheme.{0}) (f : A ⟶ Spec (CommRingCat.of L)) (ab : AbelianSchemeStruct f),
       SmoothOfRelativeDimension 1 f ∧
         (letI := ab.addCommGroup (𝟙 (Spec (CommRingCat.of L)))
-         Nonempty (E.toAffine.Point ≃+ RelPoint f (𝟙 (Spec (CommRingCat.of L))))) :=
-  sorry
+         Nonempty (E.toAffine.Point ≃+ RelPoint f (𝟙 (Spec (CommRingCat.of L))))) := by
+  -- `EllipticScheme.lean`'s own general-field leaf says strictly more: it also produces
+  -- the Weierstrass CHART (the open immersion of `Spec L[E]` onto the complement of the
+  -- zero section), which nothing here consumes, and it orients the `≃+` the other way.
+  -- `(E⁄L)` is `E.toAffine` — `baseChange` along `algebraMap L L = RingHom.id L`, which
+  -- is `rfl` on the nose, structure eta doing the rest — so no transport is needed and
+  -- `AddEquiv.symm` is the whole of the difference.
+  obtain ⟨A, f, ab, hdim, -, he⟩ :=
+    exists_ellipticScheme_weierstrassChart_addEquiv_field (k := L) E
+  -- the `letI` must land BEFORE `.symm` is elaborated: `AddEquiv.symm`'s `[Add _]`
+  -- arguments are synthesised rather than read off `e`'s type, and the group structure
+  -- on `RelPoint f (𝟙 _)` is `letI`-bound inside the STATEMENT, so it is not in scope
+  -- for instance search until it is introduced here.
+  letI := ab.addCommGroup (𝟙 (Spec (CommRingCat.of L)))
+  obtain ⟨e⟩ := he
+  exact ⟨A, f, ab, hdim, ⟨e.symm⟩⟩
 
 /-- **A ring map out of a field into an algebraically closed field EXTENDS
 to the algebraic closure, and the extension COMMUTES** (PROVEN
@@ -6252,11 +6310,46 @@ theorem exists_injective_pre_geomBase_field {L : Type} [Field L] {A : Scheme.{0}
 
 /-- **`EllipticScheme.lean` OVER A GENERAL BASE FIELD: an elliptic curve
 over `L` with an `L`-rational point becomes an elliptic scheme over
-`Spec L` with a section of the same order** (sorry leaf, cut 2026-07-31
-out of `nonempty_gamma1Datum_of_weierstrassPoint` below, which is PROVEN
-over it).
+`Spec L` with a section of the same order** (**PROVEN 2026-07-31** over
+`exists_ellipticScheme_of_weierstrass_field` above; a sorry leaf cut the
+same day out of `nonempty_gamma1Datum_of_weierstrassPoint` below).
 
-## What the prover of this node owes
+## WHAT CLOSED IT — and a warning about this leaf's provenance
+
+Two things, and the second is the one worth carrying away.
+
+**It had NO CONSUMER.**  `nonempty_gamma1Datum_of_weierstrassPoint` below
+is proven over `exists_ellipticScheme_of_weierstrass_field`, not over
+this — so despite the header above, nothing in the tree consumed this
+declaration.  It was a third statement of one piece of mathematics,
+strictly weaker than the other two, and it would have been free-floating
+had it ever been proven in the shape its docstring imagined.  A leaf's
+own claim that it was "cut out of X, which is PROVEN over it" is a
+hypothesis: check by grepping for the name, which takes one command.
+
+**Its content was already available.**  The route below asks for the
+projective model over `L` and the whole group-law chain.  None of that
+had to be built: `EllipticScheme.lean`'s
+`exists_ellipticScheme_weierstrassChart_addEquiv_field` (2026-07-30)
+supplies the elliptic scheme, its smoothness and the `≃+` on `L`-sections
+outright, and this statement follows from it by transporting the order
+from the `L`-section UP to the geometric point — the direction the
+docstring below correctly calls free.  That transport is
+`nonempty_gamma1Datum_of_weierstrassPoint`'s own `geom_order` argument run
+at the single base point `specAlgClos L ≫ 𝟙`, and it needs both halves of
+the pair: `RelPoint.pre` is additive (`ab.pre_add`, `ab.pre_zero`), which
+alone gives only `addOrderOf P ∣ addOrderOf (section)`, and INJECTIVE
+(`epi_of_hom_spec_field` plus `relPoint_pre_injective_of_epi`), which
+supplies the reverse.
+
+The FALSITY AUDIT below still PASSES and is left as written; it was right
+that the statement is true, and right about why.  What it could not see is
+that the object it proposed to build already existed one module up, behind
+a non-public import — see CLAUDE.md, "A NON-PUBLIC IMPORT UPSTREAM IS A
+DUPLICATE-CUT BLIND SPOT", and the fuller account on
+`exists_ellipticScheme_of_weierstrass_field` above.
+
+## What the prover of this node owed (retained; overtaken)
 
 Exactly step 1 of the route recorded on
 `nonempty_gamma1Datum_of_weierstrassPoint` — the `L`-analogue of
@@ -6329,8 +6422,32 @@ theorem exists_ellipticSchemeSection_of_weierstrassPoint {L : Type} [Field L]
       letI := ab.addCommGroup (specAlgClos L ≫ 𝟙 (Spec (CommRingCat.of L)))
       addOrderOf
           (RelPoint.ofSection s hs (specAlgClos L ≫ 𝟙 (Spec (CommRingCat.of L))))
-        = addOrderOf P :=
-  sorry
+        = addOrderOf P := by
+  -- The section is the `≃+`-image of `P` among the `L`-SECTIONS; the order then travels
+  -- UP to the geometric point, which is the direction this leaf's own docstring records
+  -- as free.  This is `nonempty_gamma1Datum_of_weierstrassPoint`'s `geom_order` argument
+  -- run at the single base point `specAlgClos L ≫ 𝟙`, and it needs both halves: additivity
+  -- alone gives only `addOrderOf P ∣ addOrderOf (section)`, and it is INJECTIVITY that
+  -- supplies the reverse divisibility.
+  obtain ⟨A, f, ab, hdim, ⟨e⟩⟩ := exists_ellipticScheme_of_weierstrass_field L E
+  letI := ab.addCommGroup (𝟙 (Spec (CommRingCat.of L)))
+  refine ⟨A, f, ab, hdim, (e P).1, (e P).2, ?_⟩
+  letI := ab.addCommGroup (specAlgClos L ≫ 𝟙 (Spec (CommRingCat.of L)))
+  haveI : Epi (specAlgClos L ≫ 𝟙 (Spec (CommRingCat.of L))) :=
+    epi_of_hom_spec_field _
+  have hg : (specAlgClos L ≫ 𝟙 (Spec (CommRingCat.of L))) ≫ 𝟙 (Spec (CommRingCat.of L))
+      = specAlgClos L ≫ 𝟙 (Spec (CommRingCat.of L)) := Category.comp_id _
+  let Φ : RelPoint f (𝟙 (Spec (CommRingCat.of L))) →+
+      RelPoint f (specAlgClos L ≫ 𝟙 (Spec (CommRingCat.of L))) :=
+    { toFun := fun w => RelPoint.pre _ hg w
+      map_zero' := ab.pre_zero _ hg
+      map_add' := fun a b => ab.pre_add _ hg a b }
+  have hinj : Function.Injective Φ := relPoint_pre_injective_of_epi _ hg
+  -- `RelPoint.pre h hg x` is `⟨h ≫ x.1, _⟩` and `RelPoint.ofSection sec _ g` is
+  -- `⟨g ≫ sec, _⟩`; at `h = g` and `x.1 = sec` those are the same morphism.
+  have hΦ : Φ (e P) = RelPoint.ofSection (e P).1 (e P).2
+      (specAlgClos L ≫ 𝟙 (Spec (CommRingCat.of L))) := Subtype.ext rfl
+  rw [← hΦ, addOrderOf_injective Φ hinj, AddEquiv.addOrderOf_eq]
 
 /-- **A point of exact order `N` on an elliptic curve over an arbitrary
 field `L` gives a `Γ₁(N)`-structure over `Spec L`** (**PROVEN 2026-07-30**

@@ -9160,6 +9160,26 @@ loop will accept.**
 `j["prev_tokens"]` (line ~883). Its comment says a resumed job is the same job, so an
 earlier incarnation's result is still its result.
 
+**CORRECTED 2026-07-31 (`flt-lean-395`): `prev_tokens` IS written now, and the
+prompt's token therefore works again.** The original finding above was right when
+made — the field was read and never populated, so a resumed agent's prompt token was
+dead. It has since been fixed: `flt_loop_rows.py:504–505` does
+
+    j["prev_tokens"] = ((j.get("prev_tokens") or []) + [j["token"]])[-10:]
+    j["token"] = tok()
+
+on every resume, and `flt-loop.py:883` matches against that list. Measured on this
+job: prompt token `6df72ed9`, live token `8460ee68`, and
+`prev_tokens = ['6df72ed9', '21670961']` — so the prompt's token would have been
+accepted. Note the grep that produced the original verdict now finds **four**
+occurrences and the two new ones are in a DIFFERENT FILE, which is why re-running it
+against `flt-loop.py` alone still looks like the bug is live. Grep both files.
+
+**The recommendation below is unchanged, and is now belt-and-braces rather than
+essential**: write the token the RECORD holds. It is accepted under either
+implementation, it costs one command, and it does not depend on a fix staying in
+place.
+
 **CORRECTION (2026-07-31, `flt-lean-311`): `prev_tokens` IS NOW POPULATED, so a stale
 prompt token is no longer fatal.** This paragraph used to read "`grep -n prev_tokens
 flt-loop.py` finds exactly two occurrences … **nothing ever writes it**, it is always
@@ -10218,6 +10238,35 @@ green scratch means nothing. Check the names first; it takes one `git show`.
 the three things it structurally cannot do.  All three were live in one batch of 19
 branches and none of them shows in a diff, a conflict marker, or `check-dup`.)
 
+**0. A HOIST CAN ALSO MERGE AS A FORWARD REFERENCE, AND THE SYMPTOM IS AN
+`Unknown identifier` FOR A NAME DECLARED LATER IN THE SAME FILE** (2026-07-31,
+`flt-lean-395`, measured on `merger` at `9e7f6e4b`).  Case 1 below is the hoist
+whose *copy* lands twice.  This is the other half: the branch PROVED a consumer
+over a declaration it was simultaneously hoisting ABOVE it, the new proof merged
+(it is an addition), and the block move did not (it is a reorder).  The consumer
+then sits above its input.  Two instances in one file, both fatal:
+
+    X0.lean:15565  obtain ... := exists_nonConstant_qExpansion_gamma0GITPresentation ...
+    X0.lean:15956  theorem exists_nonConstant_qExpansion_gamma0GITPresentation      <- 391 lines BELOW
+    X0.lean:18083  obtain ⟨js⟩ := exists_jSection        (in exists_jSection_algClosModel)
+    X0.lean:30112  theorem exists_jSection                                          <- 12000 lines BELOW
+
+On `main` the same pair is in the right order (`exists_jSection` at 27386, used at
+27427), which is the tell that this is merge damage and not a bad branch.
+
+**Do not diagnose it as a missing declaration.**  This file already warns that an
+ERRORED declaration reports as `unknown constant`; this is a third cause of the
+same message, and the discriminator is one `grep -n`: if the name IS declared in
+the file but BELOW the use, nothing errored and nothing is missing — a relocation
+failed to merge.  The repair is to move the block, which is the worst shape for a
+merge and belongs in its own commit touching nothing else.
+
+**And it is invisible to every check in the list below**: no duplicate name, no
+scope imbalance, no missing branch-added declaration, comments balanced.  Only the
+build sees it.  Add the cheap positive check instead — for each branch that
+relocated a block, grep the RESOLVED file for the moved names and compare their
+line numbers against their use sites.
+
 **1. IT PROPAGATES ADDITIONS, NEVER DELETIONS — so a HOIST merges as pure
 DUPLICATION.**  `semmerge` iterates over THEIRS' declaration names; a name that is
 in the base and in ours but *not* in theirs is simply never considered, and ours
@@ -10302,6 +10351,16 @@ worktree, copy it with `ROOT` rewritten:
 The tell is that your own new declarations are absent from its output while the count
 looks plausible. Cross-check by grepping the output for a name you just added.
 
+**IT HARDCODES `ROOT = /home/chend/flt-staging`, so from a WORKTREE it reports the
+MERGE WORKER'S tree and not yours** (2026-07-31, `flt-lean-395`).  Same trap as
+[[flt-hidden-sorries-scans-main-repo]], and it is worse here because the output is
+per-file with line numbers, so it looks like an answer about the file you are editing.
+I had just PROVEN two leaves in `X1.lean` and the scan still listed both — at their
+PRE-EDIT line numbers, which is the tell.  A prover checking its own work with it will
+conclude the proof did not take.  Either run it with `ROOT` pointed at your worktree,
+or verify your own file the way the compiler does — `lake build` and read the
+`declaration uses 'sorry'` set.  **Any scanner in `tools/merge/` is the merge worker's
+and is rooted at staging by design; check `ROOT` before believing per-file output.**
 Two riders that cost real time here:
 
 * **Tokenise task text unicode-safely before matching leaf names against it.**  A
@@ -12494,3 +12553,54 @@ If that resolves, the module is imported and current and the problem is your nam
 does not, then suspect the build. `grep -n "^namespace \|^end "` on the target file gives the true
 prefix in one call — the docstrings do not, because they quote the name as an agent would type it
 from inside the namespace.
+## A NON-PUBLIC IMPORT UPSTREAM IS A DUPLICATE-CUT BLIND SPOT — GREP FOR THE CONTENT, NOT YOUR IMPORT CONE
+(2026-07-31, `flt-lean-395`.  Three leaves, one piece of mathematics, cut by two
+agents a day apart, and **every ownership and frontier check in this file passes on
+all three.**)
+`EllipticScheme.lean` is imported by exactly one module — `X0.lean` — and
+**non-publicly, on purpose**: a `public import` propagates the reserved token `over`
+and silently truncates a structure with a field of that name.  `X0.lean` records the
+consequence for CONSUMERS and solves it with re-exports.  What nobody recorded is the
+consequence for AUTHORS, one module further down:
+* `X1.lean` `public import`s `X0.lean` and does not import `EllipticScheme` at all.
+  So from `X1.lean` every declaration of `EllipticScheme.lean` is invisible — not
+  merely unusable in a signature, but **absent from completion, from `#check`, and
+  from any grep an author runs over their own import cone.**
+* On 2026-07-30 `d528fc99` cut `exists_ellipticScheme_weierstrassChart_addEquiv_field`
+  in `EllipticScheme.lean`: an elliptic scheme over ANY field `k`, with the chart and
+  `Nonempty (RelPoint f (𝟙 (Spec k)) ≃+ (E⁄k).Point)`.
+* On 2026-07-31 `f61f3888` cut `exists_ellipticScheme_of_weierstrass_field` in
+  `X1.lean` — the SAME statement minus the chart conjunct — and then
+  `exists_ellipticSchemeSection_of_weierstrassPoint`, weaker again.  Its docstring
+  says the obstruction is that "`EllipticScheme.lean` is written at the concrete base
+  `ℚ`" and budgets a ~12 000-line refactor.  **That was already false when written**:
+  the file had grown a general-field layer (`exists_isIso_of_affineCharts_field`,
+  `nonempty_addEquiv_of_weierstrassModel_field`) the previous day.
+Why no existing check sees it.  The three statements share **no identifier**: one says
+`(E⁄k).Point` and a chart, the others say `E.toAffine.Point` and an order.  `own.py`
+and `leafstat.py` correctly report all three unowned and open; the frontier scan counts
+three because there are three `sorry`s; the release build is green.  The duplication is
+visible only by reading the two files together, and the import barrier is exactly what
+stops an author from doing that.
+**So, before cutting a leaf that generalises a base, a coefficient ring or a level:**
+1. `grep -rn '<concept>_field\|{k : Type} \[Field k\]' --include=*.lean Fermat/` over
+   the WHOLE tree.  Not your cone — the whole tree.  The generalisation you are about
+   to budget for is routinely already half-done in the file you cannot see.
+2. Ask which modules import the file you are generalising, and **whether any of them
+   imports it non-publicly**.  A non-public import is a one-way mirror: that module can
+   consume the file in proof bodies while every module below it is blind to it.
+3. If your leaf's statement mentions none of the invisible module's vocabulary, you do
+   not need a re-export and you do not need `public`: **a plain `import` reaches proof
+   bodies**, so one non-public import line in YOUR file closes the leaf by `exact`.
+   That is what was done here — `X1.lean` gained
+   `import Fermat.FLT.ModularCurve.EllipticScheme`, and two leaves became two-line
+   theorems.  Prefer this to a re-export in `X0.lean`: `X0.lean` is the hottest file in
+   the tree (70 943 lines changed in the release-27 window alone) and every edit to it
+   is a merge hazard, whereas an import line in your own file conflicts with nobody.
+Corollary for docstrings, and it is the expensive half: **a leaf's "what a prover owes"
+paragraph is a claim about another file, and it decays at that file's edit rate, not at
+yours.**  This one named the obstruction precisely, priced it honestly, and was obsolete
+within 24 hours because someone else fixed it.  Re-grep the named file before believing
+a cost estimate about it — the same rule this file already states for
+`[[flt-inventory-audits-understate-what-exists]]`, now with the import graph as the
+reason the author could not have known.
