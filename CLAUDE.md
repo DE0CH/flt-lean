@@ -2973,6 +2973,25 @@ that has since been rewritten, and then proving or re-refuting against it.
 Do not "fix" the discrepancy by trusting the prompt's numbers and seeking around
 them. A prompt is a snapshot of a file you do not have.
 
+**A TARGET THAT DOES NOT EXIST IN YOUR WORKTREE IS A STALE WORKTREE FIRST, A
+PHANTOM SECOND** (2026-07-31). This is the same rule, but its sharpest instance,
+because a missing NAME looks like a completely different kind of failure from a
+stale ERROR and invites a completely wrong report. `flt-lean-116` was dispatched
+at `exists_neronModelData` in `X0.lean`, and the name occurred nowhere in its
+copy of that file — zero hits, comments included, which is exactly the evidence
+CLAUDE.md's own class-5 section says to read as a phantom dispatch. It was not.
+The worktree was simply behind: `HEAD` was an old `merger` commit that happened
+to be an ancestor of `main`, and one `git merge --ff-only main` brought the
+declaration in along with 43 000 lines of `X0.lean`.
+**So run these two commands before any `grep` for the target**, and note the
+second is what distinguishes the cases — a phantom leaf and an un-advanced
+worktree produce identical greps:
+    git log --oneline -1
+    git merge-base --is-ancestor HEAD main && echo "BEHIND: merge main first"
+"The leaf is not here" and "I am not there yet" are the same observation until
+you have run that. The dispatch hook normally fast-forwards a worktree at
+allocation, so this state means the pointer did not move — do not treat it as
+evidence about the frontier.
 **There is NO Lean MCP of any kind (Deyao, 2026-07-25).** Both the
 `lean-lsp` MCP and the per-worktree `report-flt-lean-N` servers are gone;
 `.mcp.json` holds exactly one entry, `annas-mcp`, which is for downloading
@@ -3686,6 +3705,34 @@ Two corollaries that cost nothing and were both worth more than the proof:
   the argument consumed. A leaf stated for "an arbitrary `Φ` with `hΦ`" was never a
   generalisation, and nobody had checked.
 
+**THE MCP DOES NOT EXIST FOR A LOOP-SPAWNED AGENT — USE THE OPEN WEB**
+(2026-07-31, prover on `exists_neronModelData`). A task prompt instructed
+"download BLR *Néron Models* through the Anna's Archive MCP
+(`download_annas`)". For an agent started by `flt-loop.py` that route is not
+available in either half: `annas-mcp` is not in the agent's tool set, and
+`ANNAS_KEY` is unset in the agent's environment — it is exported only in the
+shell that launches an interactive Claude Code session — so calling
+`annas-mcp.py` by hand fails too. **Task prompts should stop offering it**,
+the same way they stopped offering the Lean MCP.
+The open web served the whole book in fifteen seconds, and the fleet's network
+is unrestricted (`curl https://…` returns 200):
+    curl -sL -o blr.pdf \
+      "https://www.math.stonybrook.edu/~kamenova/homepage_files/Bosch_Raynaud_Neron_Model_tc.pdf"
+    pdftotext -layout blr.pdf blr.txt     # 15469 lines, the WHOLE book, no OCR
+Two things that could have stopped this and did not: the `_tc` in that filename
+is part of the scan's name and **not** an abbreviation for "table of contents" —
+the file is all ~350 pages; and a `WebSearch` summary said the page "doesn't
+provide direct access to the specific content", which was a statement about the
+snippet the search returned, not about the PDF. Fetch it and look.
+So the procedure is: **`WebSearch` for the title plus a distinctive internal
+section number, then `curl` the first university-mirror hit, then
+`pdftotext -layout`.** Do that before concluding a reference is unobtainable.
+Running text and theorem numbering survive extraction cleanly; displayed
+formulas do not, so read for the ARGUMENT and restate the mathematics yourself,
+exactly as the OCR section below prescribes.
+**Copy what you download to `~/sources/`** — outside the repo, since these are
+8–16 MB scans — so the next agent does not pay for it again. It currently holds
+Katz–Mazur and Bosch–Lütkebohmert–Raynaud, each as `.pdf` plus extracted `.txt`.
 ## PDF Text Extraction
 
 When extracting text from a PDF, the output will be read by an AI, not
