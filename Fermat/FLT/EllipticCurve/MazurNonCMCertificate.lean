@@ -582,6 +582,17 @@ end Fermat.MazurNonCMCertificate
 
 end
 
+-- SCOPE REPAIR, 2026-07-31: the `@[expose] public section` and `namespace` openers below were
+-- dropped by the same release-28 merge that damaged `MazurNonCMFrobenius.lean`.  This file is
+-- TWO generated documents concatenated — the `p = 11` rows and the `p = 17` rows — and the
+-- merge kept only the first one's header, leaving the second block's two `end`s (at the bottom
+-- of the file) unmatched and the whole `p = 17` half declared at ROOT level, where
+-- `ModularCurve/X0.lean`'s four `MazurNonCMCertificate.not_monic_dvd_preΨ_*_mod` citations
+-- cannot see it.  The two `end`s at the bottom are the surviving evidence of what was here.
+@[expose] public section
+
+namespace Fermat.MazurNonCMCertificate
+
 /-- The minimal model `[1, 1, 0, -660, -7600]` of the `p = 17`, `j = −882216989/131072` row, read over
 `ZMod 67`.  Definitionally `Fermat.nonCMModelSeventeenAmod`. -/
 def seventeenAMod : WeierstrassCurve (ZMod 67) := ⟨1, 1, 0, -660, -7600⟩

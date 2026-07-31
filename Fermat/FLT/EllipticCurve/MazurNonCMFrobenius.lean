@@ -63,7 +63,23 @@ open Polynomial
 set_option maxRecDepth 40000
 set_option maxHeartbeats 1000000
 
-namespace Fermat.MazurNonCMFrobenius
+-- SCOPE REPAIR, 2026-07-31.  This line read `namespace Fermat.MazurNonCMFrobenius`, which is
+-- a merge wound: release 28 concatenated TWO documents into this file — `gen_modules.py`'s
+-- `write_base` output (the `XPow` calculus and the four `hPoly*` certificates, which that
+-- generator emits under `namespace Fermat.MazurNonCMCertificate`, closed by the `end` ~100
+-- lines below) and a `MazurNonCMFrobeniusB.lean`-shaped block (`pow_frob`, `F1`..`F5`,
+-- `dvd_X_pow_sub_X_hPoly`, under `namespace Fermat.MazurNonCMFrobenius`, closed at the end of
+-- the file).  Only ONE of the two openers survived, and it was attached to the wrong block.
+--
+-- Lean reported it as `Invalid name after 'end': Expected 'Fermat.MazurNonCMFrobenius', but
+-- found 'Fermat.MazurNonCMCertificate'` — pointing at the `end`, ~100 lines from the damage —
+-- and it took X0.lean and everything downstream of it out of the build.
+--
+-- The two names are settled by the CONSUMERS, not by taste: `MazurNonCMFrobenius/ElevenA.lean`
+-- and `ElevenB.lean` open `namespace Fermat.MazurNonCMCertificate` and use `XPow`/`xpow_one`
+-- unqualified, and `MazurNonCMCertificate.lean` cites
+-- `Fermat.MazurNonCMFrobenius.dvd_X_pow_sub_X_hPoly` by its full name.
+namespace Fermat.MazurNonCMCertificate
 
 /-- `XPow f n a` is `f ∣ X ^ n - a`.  See the module docstring: the wrapper keeps the
 exponent out of unification, and without it nothing here elaborates. -/
@@ -169,6 +185,12 @@ noncomputable def hPolySeventeenB : (ZMod 67)[X] :=
     60*X + 41
 
 end Fermat.MazurNonCMCertificate
+
+-- SCOPE REPAIR, 2026-07-31: this opener was dropped by the same merge that mislabelled the
+-- one above.  Everything from here to the `end Fermat.MazurNonCMFrobenius` at the bottom of
+-- the file is the second of the two concatenated documents, and `MazurNonCMCertificate.lean`
+-- names its `dvd_X_pow_sub_X_hPoly` with the `Fermat.MazurNonCMFrobenius` prefix.
+namespace Fermat.MazurNonCMFrobenius
 
 /-- Over `ZMod 23` the Frobenius is the substitution `X ↦ X ^ 23`: raising to the `23`rd
 power is LINEAR. This is `Polynomial.map_frobenius_expand` specialised through
