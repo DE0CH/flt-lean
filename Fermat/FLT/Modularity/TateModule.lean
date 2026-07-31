@@ -23162,6 +23162,30 @@ def push {A B S : Scheme.{u}} (f : A ⟶ S) (ι : B ⟶ A) {T : Scheme.{u}} {g :
 @[simp] theorem push_val {A B S : Scheme.{u}} (f : A ⟶ S) (ι : B ⟶ A) {T : Scheme.{u}}
     {g : T ⟶ S} (y : RelPoint (ι ≫ f) g) : (push f ι y).1 = y.1 ≫ ι := rfl
 
+/-- **A relative point of `A`, pushed FORWARD along a morphism `π : A ⟶ C`
+over the base.**
+
+This is the QUOTIENT counterpart of `push`: where `push` moves a point of a
+subscheme into the ambient scheme along `ι : B ⟶ A`, `postComp` moves a
+point of `A` into a quotient along `π : A ⟶ C`, and the two are what let
+"`π` is a homomorphism" and "`π` is `𝒪_D`-equivariant" be written as plain
+equations of relative points.
+
+It is NOT `push h π` with `h : C ⟶ S`: that would need the structure
+morphism of `A` to be given SYNTACTICALLY as `π ≫ h`, and here it is a
+separate `f` identified with `π ≫ h` by `hπ`.  Carrying `hπ` as an explicit
+argument is what avoids a transport along that identification at every call
+site. -/
+def postComp {A C S : Scheme.{u}} {f : A ⟶ S} {h : C ⟶ S} (π : A ⟶ C) (hπ : π ≫ h = f)
+    {T : Scheme.{u}} {g : T ⟶ S} (y : RelPoint f g) : RelPoint h g :=
+  ⟨y.1 ≫ π, by rw [Category.assoc, hπ]; exact y.2⟩
+
+@[simp] theorem postComp_val {A C S : Scheme.{u}} {f : A ⟶ S} {h : C ⟶ S} (π : A ⟶ C)
+    (hπ : π ≫ h = f) {T : Scheme.{u}} {g : T ⟶ S} (y : RelPoint f g) :
+    (postComp π hπ y).1 = y.1 ≫ π := rfl
+
+end RelPoint
+
 /-- **`push` commutes with a change of test object.**  Both sides are
 `h ≫ y.1 ≫ ι` up to the associator, so this is `Category.assoc`; it is what
 turns the `pre_act` field of a `Mult` on the subscheme into the `pre_act`
@@ -23608,6 +23632,162 @@ theorem exists_abelianSubscheme_closure_torsionGeomPt_finiteBase
     · rintro ⟨y, ⟨n, hy⟩, hx⟩; exact ⟨n, y, hy, hx⟩
 
 open _root_.NumberField in
+/-- **THE QUOTIENT ABELIAN VARIETY `A'/B`, WITH ITS `𝒪_D`-ACTION** (sorry
+leaf — cut 2026-07-31 out of
+`range_eq_univ_of_abelianSubscheme_torsion_finiteBase`, which is now PROVEN
+over this leaf and the one below it; Mumford *Abelian Varieties* §12
+(quotients by finite and by abelian subgroup schemes), Milne *Abelian
+Varieties* §I.8, SGA 3 VI_A, stacks 03BJ).
+
+If `ι : B ⟶ A'` is a closed immersion of abelian schemes over a field `k`
+whose group law and `𝒪_D`-action are the RESTRICTIONS of those of `A'`
+(`hadd`, `hact`), and `ι` is NOT surjective, then the quotient `C = A'/B`
+exists as an abelian scheme over `k`, carries an `𝒪_D`-multiplication, and
+the projection `π : A' ⟶ C` is a homomorphism which
+
+* is `𝒪_D`-equivariant,
+* has kernel EXACTLY `B` on geometric points,
+* is SURJECTIVE on geometric points, and
+* has `C ≠ 0`, in the only form the consumer needs: `C(k̄)` has a nonzero
+  point.
+
+**WHY THIS IS THE RIGHT PLACE TO CUT.**  The consuming leaf's classical
+argument is "form `C = A'/B`, note `D` acts faithfully on it because `D` is
+a field, deduce `V_I C ≠ 0`, contradict `T_I B = T_I A'`".  Of that, only
+the FORMATION of `C` and the `I`-adic non-vanishing are geometry; the rest
+— moving between `A'[Iⁿ]` and `ker π`, and the partition of unity that
+projects onto the `I`-primary part — is ideal arithmetic in `𝒪_D` plus
+divisibility of `B(k̄)`, all of which is already PROVEN in this file
+(`exists_pow_mul_not_le_of_isMaximal`, `exists_nsmul_eq_geomFibrePt`) and is
+now written out in the consumer's proof.  So this leaf and the next one
+carry all of the missing theory and none of the bookkeeping.
+
+**FAITHFULNESS — the last two conjuncts are what pin `C`.**  Drop
+`∃ c ≠ 0` and the leaf is discharged by `C = Spec k`, `π = f'`, on which
+every relative point is zero; the kernel clause then reads
+`A'(k̄) = B(k̄)`, which is false under `hne`, but a prover would have to
+know that, so BOTH clauses are load-bearing and neither implies the other.
+Drop the SURJECTIVITY clause and the leaf is discharged by any `C` with
+`π = 0` and any nonzero point of `C`, since the kernel clause becomes
+"every geometric point of `A'` lifts to `B`", again false but not visibly
+so.  The `hπadd`/`hπact` clauses are what make `π` a homomorphism of
+`𝒪_D`-group schemes rather than an arbitrary morphism; without them a
+`C` carrying an unrelated abelian-scheme structure satisfies the rest.
+
+**`hne` IS LOAD-BEARING** and the leaf is FALSE without it: for `B = A'`,
+`ι = 𝟙` the quotient is `Spec k`, whose geometric fibre is a single point,
+so `∃ c ≠ 0` fails.  It is exactly the hypothesis that makes
+`dim C = dim A' − dim B > 0`.
+
+**`hιcl` IS LOAD-BEARING**: it is what makes `Set.range ι.base` closed, so
+that `hne` says `B` is a PROPER closed subvariety of the irreducible `A'`
+(an abelian scheme over a field is smooth, proper and geometrically
+connected, hence geometrically integral) rather than merely a non-dense
+subset.  Without it a non-closed image could be dense and `C` would be
+zero.
+
+**WHAT IS MISSING FROM THE TREE, AND WHERE IT IS NOT** (searched 2026-07-31
+and again by the owner of this cut).  Nothing in this tree, in the pin, or
+in `~/cs/FLT` constructs a quotient abelian variety or Poincaré
+reducibility.  `Mathlib/AlgebraicGeometry/Group/` contains exactly
+`Abelian.lean` (`isCommMonObj_of_isProper_of_geometricallyIntegral`,
+stacks 0BFD) and `Smooth.lean` (`smooth_of_grpObj`), both stated for
+mathlib's `GrpObj (Over.mk f)` rather than for this file's
+`AbelianSchemeStruct`; `~/cs/FLT/FLT/GroupScheme/` contains only
+`FiniteFlat.lean`.  So a prover must either build the fppf quotient here or
+first build the `AbelianSchemeStruct ↔ GrpObj` translation and then the
+quotient on the mathlib side. -/
+theorem exists_abelianQuotient_of_range_ne_univ
+    {k : Type u} [Field k]
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    {B : Scheme.{u}} (ι : B ⟶ A') (abB : AbelianSchemeStruct (ι ≫ f'))
+    (mB : Mult abB (NumberField.RingOfIntegers D))
+    (hιcl : IsClosedImmersion ι)
+    (hadd : ∀ {T : Scheme.{u}} {g : T ⟶ Spec (CommRingCat.of k)} (y z : RelPoint (ι ≫ f') g),
+      RelPoint.push f' ι (abB.add y z)
+        = ab'.add (RelPoint.push f' ι y) (RelPoint.push f' ι z))
+    (hact : ∀ {T : Scheme.{u}} {g : T ⟶ Spec (CommRingCat.of k)}
+      (a : NumberField.RingOfIntegers D) (y : RelPoint (ι ≫ f') g),
+      RelPoint.push f' ι (mB.act a y) = m'.act a (RelPoint.push f' ι y))
+    (hne : Set.range ι.base ≠ Set.univ) :
+    ∃ (C : Scheme.{u}) (h : C ⟶ Spec (CommRingCat.of k)) (abC : AbelianSchemeStruct h)
+      (mC : Mult abC (NumberField.RingOfIntegers D)) (π : A' ⟶ C) (hπ : π ≫ h = f'),
+      (∀ {T : Scheme.{u}} {g : T ⟶ Spec (CommRingCat.of k)} (y z : RelPoint f' g),
+        RelPoint.postComp π hπ (ab'.add y z)
+          = abC.add (RelPoint.postComp π hπ y) (RelPoint.postComp π hπ z)) ∧
+      (∀ {T : Scheme.{u}} {g : T ⟶ Spec (CommRingCat.of k)}
+        (a : NumberField.RingOfIntegers D) (y : RelPoint f' g),
+        RelPoint.postComp π hπ (m'.act a y) = mC.act a (RelPoint.postComp π hπ y)) ∧
+      (∀ y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
+        RelPoint.postComp π hπ y
+            = abC.zero (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k))) ↔
+          ∃ z : GeomFibrePt (ι ≫ f') (𝟙 (Spec (CommRingCat.of k))),
+            RelPoint.push f' ι z = y) ∧
+      (∀ c : GeomFibrePt h (𝟙 (Spec (CommRingCat.of k))),
+        ∃ y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
+          RelPoint.postComp π hπ y = c) ∧
+      (∃ c : GeomFibrePt h (𝟙 (Spec (CommRingCat.of k))),
+        c ≠ abC.zero (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))) :=
+  sorry
+
+open _root_.NumberField in
+/-- **A NONZERO ABELIAN VARIETY WITH AN `𝒪_D`-ACTION HAS NONZERO
+`I`-TORSION, AT EVERY `I` OF RESIDUE CHARACTERISTIC PRIME TO `#k`** (sorry
+leaf — cut 2026-07-31 out of
+`range_eq_univ_of_abelianSubscheme_torsion_finiteBase`; Mumford *Abelian
+Varieties* §19 Thm 3 (`Hom(A, B) ⊗ ℤ_ℓ ↪ Hom(T_ℓ A, T_ℓ B)`), Milne
+*Abelian Varieties* §I.10, Tate 1966).
+
+Classically.  `𝒪_D → End(C)` is INJECTIVE: its kernel is an ideal, and a
+nonzero `a` in it would make `[N_{D/ℚ}(a)] = [a] ∘ [b]` the zero
+endomorphism, whereas `[N]` is SURJECTIVE on `C(k̄)`
+(`exists_nsmul_eq_geomFibrePt`), which forces `C(k̄) = 0` against `hnz`.
+So `D ↪ End⁰(C)`; by Tate's injectivity `End⁰(C) ⊗ ℚ_q ↪ End(V_q C)` for
+`q ≠ char k`, hence `D ⊗ ℚ_q = ∏_{J ∣ q} D_J` acts faithfully on `V_q C`
+and every idempotent `e_J` acts nonzero.  In particular `V_I C ≠ 0`, so
+`T_I C ≠ 0`, so `C[I] = T_I C / I·T_I C ≠ 0` by Nakayama.
+
+**WHAT IS ACTUALLY MISSING, AND WHAT IS NOT.**  The FAITHFULNESS of
+`𝒪_D` on the point group is cheap and is spelled out above — it needs only
+divisibility, which this file already has.  It is NOT enough: faithfulness
+on `C(k̄) = ⊕_ℓ C[ℓ^∞]` is compatible with `C[I^∞] = 0`, because a nonzero
+`a ∈ 𝒪_D` prime to `ℓ` still acts injectively on the `ℓ`-primary part for
+every `ℓ ≠ q`.  What rules that out is the `ℓ`-INDEPENDENCE of the local
+ranks, i.e. genuine Tate-module theory, and that is the whole content of
+this leaf.  A prover who has proved faithfulness has not started.
+
+**`hqN` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT IT.**  At the
+residue characteristic of `k` a SUPERSINGULAR `C` has `C[pⁿ](k̄) = 0` for
+every `n`, so `C[I](k̄) = 0` while `C(k̄) ≠ 0`.  `hfin` and `hN` are
+carried for exactly that reason, and for no other: they are what makes
+`¬ q ∣ N` say `q ≠ char k`.  (The statement is in fact true over any field
+of characteristic `≠ q`; it is stated over a finite base because that is
+the shape the consumer has, and generalising it later costs nothing.)
+
+**`hnz` IS LOAD-BEARING**: for `C = Spec k` the geometric fibre is a
+single point and the conclusion is false, so the leaf is not discharged by
+the zero abelian variety.  No rank hypothesis (`hdim'`) and no
+`IsTotallyReal D` are needed — the argument never looks at the signature of
+`D` and never uses that `C[Iⁿ]` is free of rank two. -/
+theorem exists_ne_zero_mem_torsion_isMaximal_finiteBase
+    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
+    {C : Scheme.{u}} {h : C ⟶ Spec (CommRingCat.of k)}
+    (abC : AbelianSchemeStruct h)
+    {D : Type u} [Field D] [NumberField D]
+    (mC : Mult abC (NumberField.RingOfIntegers D))
+    (q : ℕ) (hq : q.Prime) (hqN : ¬ q ∣ N)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    (hnz : ∃ c : GeomFibrePt h (𝟙 (Spec (CommRingCat.of k))),
+      c ≠ abC.zero (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))) :
+    ∃ c ∈ (mC.torsion (𝟙 (Spec (CommRingCat.of k))) I).1,
+      c ≠ abC.zero (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k))) :=
+  sorry
+
+open _root_.NumberField in
 /-- **AN `𝒪_D`-STABLE ABELIAN SUBSCHEME CARRYING THE WHOLE `I`-ADIC TATE
 MODULE IS EVERYTHING** (sorry leaf — the ARITHMETIC half of the density
 argument, and the deep one; Mumford *Abelian Varieties* §19, Milne
@@ -23735,8 +23915,107 @@ theorem range_eq_univ_of_abelianSubscheme_torsion_finiteBase
     (htor : ∀ n : ℕ, ∀ y ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).1,
       ∃ z : GeomFibrePt (ι ≫ f') (𝟙 (Spec (CommRingCat.of k))),
         RelPoint.push f' ι z = y) :
-    Set.range ι.base = Set.univ :=
-  sorry
+    Set.range ι.base = Set.univ := by
+  classical
+  by_contra hne
+  -- the quotient `C = A'/B`, with its `𝒪_D`-action, and a nonzero point of it
+  obtain ⟨C, hC, abC, mC, π, hπ, hπadd, hπact, hker, hsurj, hnz⟩ :=
+    exists_abelianQuotient_of_range_ne_univ ab' m' ι abB mB hιcl hadd hact hne
+  -- a nonzero `I`-torsion point of `C`
+  obtain ⟨c, hcI, hc0⟩ :=
+    exists_ne_zero_mem_torsion_isMaximal_finiteBase hfin N hN abC mC q hq hqN I hI hqI hnz
+  letI : AddCommGroup (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
+    ab'.addCommGroup (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+  letI : Module (𝓞 D) (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
+    m'.module (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+  letI : AddCommGroup (GeomFibrePt (ι ≫ f') (𝟙 (Spec (CommRingCat.of k)))) :=
+    abB.addCommGroup (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+  letI : Module (𝓞 D) (GeomFibrePt (ι ≫ f') (𝟙 (Spec (CommRingCat.of k)))) :=
+    mB.module (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+  letI : AddCommGroup (GeomFibrePt hC (𝟙 (Spec (CommRingCat.of k)))) :=
+    abC.addCommGroup (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+  letI : Module (𝓞 D) (GeomFibrePt hC (𝟙 (Spec (CommRingCat.of k)))) :=
+    mC.module (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+  -- ### 1. `ι` and `π` as bundled additive maps on geometric points
+  have hP0 : RelPoint.push f' ι (0 : GeomFibrePt (ι ≫ f') (𝟙 (Spec (CommRingCat.of k))))
+      = (0 : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) := by
+    have hh := hact (0 : 𝓞 D) (0 : GeomFibrePt (ι ≫ f') (𝟙 (Spec (CommRingCat.of k))))
+    rw [mB.act_zero, m'.act_zero] at hh
+    exact hh
+  have hQ0 : RelPoint.postComp π hπ (0 : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+      = (0 : GeomFibrePt hC (𝟙 (Spec (CommRingCat.of k)))) := by
+    have hh := hπact (0 : 𝓞 D) (0 : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+    rw [m'.act_zero, mC.act_zero] at hh
+    exact hh
+  set P : GeomFibrePt (ι ≫ f') (𝟙 (Spec (CommRingCat.of k))) →+
+      GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))) :=
+    { toFun := RelPoint.push f' ι, map_zero' := hP0, map_add' := fun y z => hadd y z }
+  set Q : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))) →+
+      GeomFibrePt hC (𝟙 (Spec (CommRingCat.of k))) :=
+    { toFun := RelPoint.postComp π hπ, map_zero' := hQ0,
+      map_add' := fun y z => hπadd y z }
+  have hPact : ∀ (a : 𝓞 D) (y : GeomFibrePt (ι ≫ f') (𝟙 (Spec (CommRingCat.of k)))),
+      P (a • y) = a • P y := fun a y => hact a y
+  have hQact : ∀ (a : 𝓞 D) (y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))),
+      Q (a • y) = a • Q y := fun a y => hπact a y
+  have hker' : ∀ y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
+      Q y = 0 ↔ ∃ z, P z = y := fun y => hker y
+  -- ### 2. the `I`-adic factorisation of `(q)` and the partition of unity `1 = e + j`
+  have hq0 : ((q : ℕ) : 𝓞 D) ≠ 0 := Nat.cast_ne_zero.mpr hq.ne_zero
+  have hI0 : I ≠ ⊥ :=
+    Ring.ne_bot_of_isMaximal_of_not_isField hI (NumberField.RingOfIntegers.not_isField D)
+  have hspan0 : Ideal.span {((q : ℕ) : 𝓞 D)} ≠ ⊥ := by
+    simpa [Ideal.span_singleton_eq_bot] using hq0
+  obtain ⟨v, J, hJ, hJnotle⟩ := exists_pow_mul_not_le_of_isMaximal hI hI0 _ hspan0
+  have hsup : I ⊔ J = ⊤ := by
+    rcases eq_or_lt_of_le (le_sup_left : I ≤ I ⊔ J) with hh | hh
+    · exact absurd (le_sup_right.trans hh.ge) hJnotle
+    · exact hI.out.2 _ hh
+  have hcop : I ^ (max v 1) ⊔ J = ⊤ :=
+    Ideal.isCoprime_iff_sup_eq.mp (Ideal.isCoprime_iff_sup_eq.mpr hsup).pow_left
+  obtain ⟨e, he, j, hj, hej⟩ :=
+    Submodule.mem_sup.mp (hcop ▸ (Submodule.mem_top : (1 : 𝓞 D) ∈ (⊤ : Ideal (𝓞 D))))
+  -- ### 3. lift `c` to `A'`, and correct the lift into the `q`-torsion
+  obtain ⟨y, hy⟩ := hsurj c
+  have hy' : Q y = c := hy
+  have hqy : Q (((q : ℕ) : 𝓞 D) • y) = 0 := by
+    rw [hQact, hy']
+    exact (mem_torsion_iff mC _ I c).mp hcI _ hqI
+  obtain ⟨z, hz⟩ := (hker' _).mp hqy
+  obtain ⟨w, hw⟩ :=
+    exists_nsmul_eq_geomFibrePt abB (𝟙 (Spec (CommRingCat.of k))) q hq.ne_zero z
+  have hwq : ((q : ℕ) : 𝓞 D) • w = z := by rw [Nat.cast_smul_eq_nsmul]; exact hw
+  set u : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))) := y - P w with hu
+  have hqu : ((q : ℕ) : 𝓞 D) • u = 0 := by
+    rw [hu, smul_sub, ← hPact, hwq, hz, sub_self]
+  have hQu : Q u = c := by
+    rw [hu, map_sub, hy', (hker' (P w)).mpr ⟨w, rfl⟩, sub_zero]
+  -- ### 4. split `u` by `1 = e + j`: the `J`-part is `Iⁿ`-torsion, the `Iⁿ`-part dies in `C`
+  have hju : (j • u) ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ (max v 1))).1 := by
+    refine (mem_torsion_iff m' _ (I ^ (max v 1)) _).mpr fun a ha => ?_
+    show a • (j • u) = 0
+    rw [smul_smul]
+    have hmem : a * j ∈ Ideal.span {((q : ℕ) : 𝓞 D)} := by
+      rw [hJ]
+      exact Ideal.mul_mem_mul (Ideal.pow_le_pow_right (le_max_left v 1) ha) hj
+    obtain ⟨d, hd⟩ := Ideal.mem_span_singleton.mp hmem
+    rw [hd, mul_comm, mul_smul, hqu, smul_zero]
+  obtain ⟨zj, hzj⟩ := htor (max v 1) _ hju
+  have hzj' : P zj = j • u := hzj
+  have heu : Q (e • u) = 0 := by
+    rw [hQact, hQu]
+    have hei : e ∈ I ^ 1 := Ideal.pow_le_pow_right (le_max_right v 1) he
+    exact (mem_torsion_iff mC _ I c).mp hcI e (by simpa using hei)
+  obtain ⟨ze, hze⟩ := (hker' _).mp heu
+  -- ### 5. so `u` itself lies in `B`, and `c = π u = 0`
+  have hsplit : u = P (ze + zj) := by
+    rw [map_add, hze, hzj']
+    have hh := add_smul e j u
+    rw [hej, one_smul] at hh
+    exact hh
+  have hcz : Q u = 0 := (hker' u).mpr ⟨ze + zj, hsplit.symm⟩
+  rw [hQu] at hcz
+  exact hc0 hcz
 
 open _root_.NumberField in
 /-- **THE PRIME-TO-`p` TORSION OF AN ABELIAN SCHEME OVER A FINITE FIELD
