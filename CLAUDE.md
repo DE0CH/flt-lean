@@ -6824,6 +6824,70 @@ half-page structure literal. **Unbundle once** — state the two halves with `R`
 ordinary binders (`exists_lift_of_isProper`, `eq_of_isSeparated_of_lift`) and discharge
 them by `exact`, which sees through proj-reduction — and everything downstream goes
 through with plain rewrites.
+## TWO RIVAL CUTS THAT MERGE CLEANLY LEAVE AN ORPHAN LEAF *AND* A DUPLICATE LEAF — and both look like ordinary open work
+
+(2026-07-31, `flt-lean-96`, `HyperellipticJacobian.lean`.) The class-7 section warns that a
+merge can split ONE edit across the conflict boundary. This is the other half: when two
+branches decompose the SAME node in two different ways, and their leaves land in regions far
+enough apart not to collide, the merge takes **both cuts in full**. Nothing conflicts,
+nothing is dropped, the build is green — and the tree now permanently carries the loser's
+leaves as work nobody will ever consume.
+
+Measured here. `geomPic_bc_injective` was cut twice:
+
+* cut **A** → `GeomPic.below_surjective` + `GeomPic.exists_emb_of_divisor_invariant`
+  (packaged Hilbert 90), plus a proven `GeomPic.bcDiv_injective` over the first;
+* cut **B** → `geomPic_below_surjective` + `_exists_const_of_divisor_eq_zero` +
+  `_exists_finiteLevel` + `_exists_emb_of_fieldAct_fixed`, with the Hilbert-90 argument
+  written out INLINE in `geomPic_bc_injective`.
+
+What landed is a chimera: `geomPic_bc_injective` consumes cut **B**'s three analytic leaves
+*and* cut **A**'s `bcDiv_injective`. So the survivors are `GeomPic.below_surjective`
+(consumed) and three of B (consumed) — while `GeomPic.exists_emb_of_divisor_invariant` has
+**no consumer at all**, and `geomPic_below_surjective` is `GeomPic.below_surjective`
+**verbatim, declared ~500 lines away**. Two of the file's 25 sorried declarations were
+phantom work, and every frontier scan counted them as ordinary leaves.
+
+**Why nothing catches it.** The duplicate is not a duplicate NAME, so `check-dup` and
+`xdup.py` are silent; the orphan compiles, emits its `declaration uses 'sorry'` warning, and
+passes `own.py` and `leafstat.py`. The module's own dependency-tree docstring listed cut B's
+four leaves and did not mention cut A's two at all — while the CODE used one of them. Only
+grepping for CONSUMERS finds either.
+
+**So, before proving any leaf: grep the file for uses of its own name.** One command, and it
+distinguishes "open" from "open and worth closing":
+
+    grep -n '<leafName>' <file>     # hits that are docstrings only ⇒ nobody consumes it
+
+**The repairs are not symmetric, and the cheap one is not deletion.**
+
+* *The orphan*: do NOT delete a true, audited statement. The winner's INLINE block is almost
+  always your proof — cut B's STEPs 2–7 were `exists_emb_of_divisor_invariant`'s proof with
+  one particular `ḡ` in place of the statement's `u`. Abstracting it closed the leaf over
+  three leaves the consumer ALREADY depends on, so no `sorryAx` edge was added and the count
+  strictly dropped. Deleting would have scored the same on the count and thrown away a
+  reusable theorem.
+* *The duplicate*: delegate, and **the direction is forced by which copy is CONSUMED.** Make
+  the unconsumed name a one-line proof of the consumed one (`… := gp.below_surjective`), so
+  the sole remaining leaf is the one the tree actually rests on. Backwards, a prover who
+  closes the delegated name leaves the consumed copy open and moves nothing.
+
+**The orphan usually cannot be proven where it stands.** Cut A's leaf was declared ~500 lines
+ABOVE all three of cut B's, so its proof was not expressible at that point — Lean's linear
+order, the declaration-order leaf class again. Relocating it is part of the repair; restate
+it with explicit binders in the section-`variable` order (`{c₀ … c₅} {D} (gp) {u} (hu)
+(hinv)`) and the signature is preserved to the character, so no call site can break.
+
+**And the task prompt will describe the LOSING cut as current.** Mine said, in good faith,
+"the consumer `geomPic_bc_injective` was proven over this leaf" — true on the branch that cut
+it, false of what merged. A queue entry is written against the tree its author was looking at;
+that a prompt names a real leaf with a real audit is no evidence its consumer story survived
+the merge. Re-derive the consumer from the file, never from the prompt.
+
+Bookkeeping note, since it is the shape that hides this work: the module went 25 → 23 sorried
+declarations with **no new leaf and no mathematics done**. Neither closure was a proof of
+anything; both were merge damage. Report it that way.
+
 ## RIVAL CUTS ARE OFTEN COMPLEMENTARY — check before choosing
 
 (2026-07-30.) Nine of 57 branches in one batch were declined because another agent had cut the
@@ -9563,6 +9627,20 @@ recorded above, at tooling scope instead of Lean scope.
 Resume still mints a NEW token, deliberately, so the old `.started` marker goes inert, and
 the agent's prompt is the ORIGINAL payload carrying the ORIGINAL token. So on any job with
 `resume: true` / `retries > 0`:
+**FIXED SINCE, AND THE PARAGRAPH THAT WAS HERE IS NOW FALSE — do not act on it**
+(re-measured 2026-07-31, `flt-lean-96`). This section used to say that
+`grep -n prev_tokens flt-loop.py` finds only a read and a field-copy, that **nothing ever
+writes it**, and that it is always `None`. It is written now, by
+`flt_loop_rows.py:504` — `j["prev_tokens"] = ((j.get("prev_tokens") or []) + [j["token"]])[-10:]`
+— on every resume, keeping the last **10**. Measured on a live record: my prompt carried
+`beb58f3b` while `j["token"]` was `a9d91d5d` and
+`j["prev_tokens"] == ['beb58f3b', '505e23d5']`, so the prompt's token would have been
+accepted. The rule below is unchanged and still worth following; what changes is that
+getting it wrong is now recoverable rather than fatal, and an agent that notices the
+mismatch should NOT read it as evidence that the loop is broken.
+Resume mints a NEW token, deliberately, so the old `.started` marker goes inert. The
+agent's prompt is the ORIGINAL payload and still carries the ORIGINAL token. So on any job
+with `resume: true` / `retries > 0`:
 
 * the live token is in `~/.flt-loop/jobs/<name>.json` and `<name>.started`;
 * the prompt's token is the pre-resume one, and is now in `prev_tokens`;
@@ -9571,10 +9649,24 @@ the agent's prompt is the ORIGINAL payload carrying the ORIGINAL token. So on an
   conclude the agent died and dispatch a replacement at work already committed — is
   therefore no longer live. Only the last ten tokens are kept, which is far more than any
   job's retry count.
+* the prompt's token is the pre-resume one;
+* a sentinel written under the prompt's token is accepted **only while that token is still
+  inside the 10-deep `prev_tokens` window** — beyond that it is rejected, `j["sentinel"]`
+  stays `None`, and `started ∧ ¬alive ∧ ¬sentinel` makes the loop conclude the agent
+  **died**.
 
 **Read the record anyway.** It costs one command, it is the only thing that stays right if
 the retention window or the acceptance rule changes again, and the `prev_tokens` safety net
 is itself a fix that this file asserted did not exist for a day.
+That residual failure is still the worst shape this file catalogues: completed, committed,
+compiler-verified work thrown away, and a replacement dispatched at leaves that are already
+proven — a phantom dispatch manufactured out of a *successful* run. It just now needs ten
+resumes rather than one.
+
+**The lesson that outlives the fix: a claim in this file about what the LOOP'S SOURCE does
+is dated evidence in exactly the way a claim about the Lean tree is.** `flt-loop.py` and
+`flt_loop_rows.py` are edited daily and the loop re-execs onto the edited source itself. Two
+`grep`s cost seconds and settle it; quoting this file settles nothing.
 
 **So the check is one command, run it before writing the sentinel:**
 
