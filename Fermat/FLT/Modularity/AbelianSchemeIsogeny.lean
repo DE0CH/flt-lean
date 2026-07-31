@@ -3009,6 +3009,204 @@ theorem essFinitePresentation_comp_of_fg_ker {R P B : Type u}
     · rw [Ideal.mk_ker, ← hJmap]
       exact le_of_eq rfl
 
+section EssFinitePresentationCancellation
+
+open scoped TensorProduct
+
+attribute [local instance] Algebra.TensorProduct.rightAlgebra
+
+/-- If `r ∣ m` then `r` becomes a unit in any localization of `TA` away from `m`.
+
+Used twice inside `essFinitePresentation_of_essFinitePresentation_comp` below: once to
+see that the denominators of the images of the variables are invertible, once to see that
+the elements killing the relations are. -/
+theorem isUnit_algebraMap_of_dvd_away {TA S : Type u} [CommRing TA] [CommRing S] [Algebra TA S]
+    (m : TA) [IsLocalization.Away m S] {r : TA} (h : r ∣ m) :
+    IsUnit (algebraMap TA S r) := by
+  obtain ⟨c, rfl⟩ := h
+  have hu : IsUnit (algebraMap TA S (r * c)) :=
+    IsLocalization.map_units (M := Submonoid.powers (r * c)) S
+      ⟨r * c, Submonoid.mem_powers _⟩
+  rw [map_mul] at hu
+  exact isUnit_of_mul_isUnit_left hu
+
+/-- Every element of `Submonoid.powers r`, for `r ∣ m`, is a unit in `TA[1/m]`.  This is the
+shape `IsLocalization.lift` wants, and it is what produces the comparison map
+`TA[1/m₀] → TA[1/m₀m₂]` in the proof below. -/
+theorem isUnit_algebraMap_powers_of_dvd_away {TA S : Type u} [CommRing TA] [CommRing S]
+    [Algebra TA S] (m : TA) [IsLocalization.Away m S] {r : TA} (h : r ∣ m)
+    (y : Submonoid.powers r) : IsUnit (algebraMap TA S (y : TA)) := by
+  obtain ⟨i, hi⟩ := y.2
+  rw [← hi, map_pow]
+  exact (isUnit_algebraMap_of_dvd_away m h).pow i
+
+/-- **STEP 1 OF [Stacks 00F4] IN THE ESSENTIAL SETTING: a map out of a finitely presented
+algebra into a localization already lands in a localization at ONE element.**
+
+*Let `A = MA⁻¹TA`, let `R → TB` be of finite presentation, and let `ψ : TB → A` be a map of
+`R`-algebras.  Then there is `m ∈ MA` and a factorisation of `ψ` through `TA[1/m]`.*
+
+This is the only place where finite PRESENTATION of `TB` over `R` (rather than finite type)
+is used, and it is used exactly as [Stacks 00F4]'s proof uses it: the images of the finitely
+many variables supply finitely many denominators, whose product is `m₀`; the finitely many
+relations then die in `A`, hence are killed by finitely many elements of `MA`, whose product
+is `m₂`; and `m = m₀ * m₂` works.  Concretely this is the statement that
+`Hom_R(TB, −)` commutes with the filtered colimit `A = colim_{m ∈ MA} TA[1/m]`, written out
+for the one colimit it is needed for rather than in general.
+
+The conclusion carries THREE equations, not two: the third,
+`θ.comp gB = (algebraMap TA (Localization.Away m)).comp gA`, says that `θ` is a map of
+`R`-algebras.  It is not implied by the other two — `u` need not be injective — and it is
+exactly what lets `RingHom.FinitePresentation.of_comp_finiteType` be applied to `θ`
+downstream, so it is proven here where the construction of `θ` is in hand. -/
+theorem exists_away_lift_of_finitePresentation
+    {R TA TB A : Type u} [CommRing R] [CommRing TA] [CommRing TB] [CommRing A]
+    (gA : R →+* TA) (vA : TA →+* A) (MA : Submonoid TA)
+    (hloc : @IsLocalization TA _ MA A _ vA.toAlgebra)
+    (gB : R →+* TB) (hfpB : gB.FinitePresentation)
+    (ψ : TB →+* A) (hcomm : ψ.comp gB = vA.comp gA) :
+    ∃ m ∈ MA, ∃ (u : Localization.Away m →+* A) (θ : TB →+* Localization.Away m),
+      u.comp (algebraMap TA (Localization.Away m)) = vA ∧
+      u.comp θ = ψ ∧
+      θ.comp gB = (algebraMap TA (Localization.Away m)).comp gA := by
+  letI : Algebra TA A := vA.toAlgebra
+  haveI := hloc
+  letI : Algebra R TB := gB.toAlgebra
+  haveI : Algebra.FinitePresentation R TB := hfpB
+  obtain ⟨n, f, hfs, hfg⟩ := Algebra.FinitePresentation.out (R := R) (A := TB)
+  have hfC : ∀ r : R, f (MvPolynomial.C r) = gB r := by
+    intro r
+    have hCa : (MvPolynomial.C r : MvPolynomial (Fin n) R) = algebraMap R _ r := rfl
+    rw [hCa, AlgHom.commutes]
+    rfl
+  -- the denominators of the images of the variables
+  have hsurj : ∀ k : Fin n, ∃ p : TA × MA,
+      ψ (f (MvPolynomial.X k)) * algebraMap TA A (p.2 : TA) = algebraMap TA A p.1 :=
+    fun k => IsLocalization.surj MA _
+  choose p hp using hsurj
+  set num : Fin n → TA := fun k => (p k).1 with hnum
+  set den : Fin n → TA := fun k => ((p k).2 : TA) with hden
+  have hp' : ∀ k, ψ (f (MvPolynomial.X k)) * vA (den k) = vA (num k) := fun k => hp k
+  have hdenMA : ∀ k, den k ∈ MA := fun k => (p k).2.2
+  set m₀ : TA := ∏ k, den k with hm₀
+  have hm₀MA : m₀ ∈ MA := Submonoid.prod_mem _ fun k _ => hdenMA k
+  set e : Fin n → TA := fun k => ∏ l ∈ Finset.univ.erase k, den l with he
+  have hde : ∀ k, den k * e k = m₀ := fun k =>
+    Finset.mul_prod_erase Finset.univ den (Finset.mem_univ k)
+  -- STAGE ONE: the localization away from `m₀`, where the variables acquire values
+  set T₁ := Localization.Away m₀ with hT₁
+  set u₁ : T₁ →+* A := IsLocalization.lift (M := Submonoid.powers m₀) (g := vA)
+    (fun y => by
+      obtain ⟨i, hi⟩ := y.2
+      exact IsLocalization.map_units (M := MA) A ⟨(y : TA), hi ▸ pow_mem hm₀MA i⟩) with hu₁
+  set α : MvPolynomial (Fin n) R →+* T₁ :=
+    MvPolynomial.eval₂Hom ((algebraMap TA T₁).comp gA)
+      (fun k => IsLocalization.mk' T₁ (num k * e k)
+        (⟨m₀, Submonoid.mem_powers m₀⟩ : Submonoid.powers m₀)) with hα
+  have hαC : ∀ r : R, α (MvPolynomial.C r) = algebraMap TA T₁ (gA r) := by
+    intro r; simp [hα]
+  have hαX : ∀ k, α (MvPolynomial.X k) =
+      IsLocalization.mk' T₁ (num k * e k)
+        (⟨m₀, Submonoid.mem_powers m₀⟩ : Submonoid.powers m₀) := by
+    intro k; simp [hα]
+  have hu₁α : u₁.comp α = ψ.comp f.toRingHom := by
+    apply MvPolynomial.ringHom_ext
+    · intro r
+      simp only [RingHom.comp_apply, hαC, hu₁]
+      rw [IsLocalization.lift_eq]
+      have hr := congrArg (fun t : R →+* A => t r) hcomm
+      simpa [hfC r] using hr.symm
+    · intro k
+      simp only [RingHom.comp_apply, hαX, hu₁]
+      rw [IsLocalization.lift_mk'_spec]
+      have key : vA (num k * e k) = vA m₀ * ψ (f (MvPolynomial.X k)) := by
+        rw [map_mul, ← hp' k, ← hde k, map_mul]; ring
+      exact key
+  have hu₁a : ∀ x : TA, u₁ (algebraMap TA T₁ x) = vA x := fun x => IsLocalization.lift_eq _ x
+  -- STAGE TWO: the finitely many relations, and the elements of `MA` that kill them
+  obtain ⟨G, hG⟩ := hfg
+  have hkill : ∀ q ∈ G, ∃ s ∈ MA, algebraMap TA T₁ s * α q = 0 := by
+    intro q hq
+    letI : Algebra T₁ A := u₁.toAlgebra
+    haveI htow : IsScalarTower TA T₁ A :=
+      IsScalarTower.of_algebraMap_eq' (by ext x; exact (hu₁a x).symm)
+    haveI : IsLocalization (MA.map (algebraMap TA T₁)) A :=
+      IsLocalization.isLocalization_of_submonoid_le (S := T₁) (T := A)
+        (Submonoid.powers m₀) MA (Submonoid.powers_le.mpr hm₀MA)
+    have hfq : f.toRingHom q = 0 := by
+      have hmem : q ∈ RingHom.ker f.toRingHom := by
+        rw [← hG]; exact Ideal.subset_span (by exact_mod_cast hq)
+      exact hmem
+    have h0 : algebraMap T₁ A (α q) = 0 := by
+      show u₁ (α q) = 0
+      have hq' := congrArg (fun t : MvPolynomial (Fin n) R →+* A => t q) hu₁α
+      simp only [RingHom.comp_apply] at hq'
+      rw [hq', hfq, map_zero]
+    obtain ⟨c, hc⟩ :=
+      (IsLocalization.map_eq_zero_iff (S := A) (MA.map (algebraMap TA T₁)) (α q)).mp h0
+    obtain ⟨s, hsMA, hsc⟩ := c.2
+    exact ⟨s, hsMA, by rw [hsc]; exact hc⟩
+  choose! sq hsqMA hsq using hkill
+  set m₂ : TA := ∏ q ∈ G, sq q with hm₂
+  have hm₂MA : m₂ ∈ MA := Submonoid.prod_mem _ fun q hq => hsqMA q hq
+  set m : TA := m₀ * m₂ with hm
+  have hmMA : m ∈ MA := mul_mem hm₀MA hm₂MA
+  set T := Localization.Away m with hT
+  have hm₀dvd : m₀ ∣ m := Dvd.intro _ rfl
+  have hm₂dvd : m₂ ∣ m := Dvd.intro_left _ rfl
+  set κ : T₁ →+* T := IsLocalization.lift (M := Submonoid.powers m₀) (g := algebraMap TA T)
+    (isUnit_algebraMap_powers_of_dvd_away m hm₀dvd) with hκ
+  have hκa : ∀ x : TA, κ (algebraMap TA T₁ x) = algebraMap TA T x :=
+    fun x => IsLocalization.lift_eq _ x
+  set u : T →+* A := IsLocalization.lift (M := Submonoid.powers m) (g := vA)
+    (fun y => by
+      obtain ⟨i, hi⟩ := y.2
+      rw [← hi, map_pow]
+      exact (IsLocalization.map_units (M := MA) A ⟨m, hmMA⟩).pow i) with hu
+  have hua : ∀ x : TA, u (algebraMap TA T x) = vA x := fun x => IsLocalization.lift_eq _ x
+  set α₂ : MvPolynomial (Fin n) R →+* T := κ.comp α with hα₂
+  have hα₂G : ∀ q ∈ G, α₂ q = 0 := by
+    intro q hq
+    have h1 : algebraMap TA T (sq q) * α₂ q = 0 := by
+      have h2 := congrArg κ (hsq q hq)
+      rw [map_mul, hκa, map_zero] at h2
+      exact h2
+    have h3 : IsUnit (algebraMap TA T (sq q)) :=
+      isUnit_algebraMap_of_dvd_away m ((Finset.dvd_prod_of_mem sq hq).trans hm₂dvd)
+    exact h3.mul_right_eq_zero.mp h1
+  have hkerle : RingHom.ker f.toRingHom ≤ RingHom.ker α₂ := by
+    rw [← hG, Ideal.span_le]
+    intro q hq
+    exact hα₂G q (by exact_mod_cast hq)
+  obtain ⟨θ, hθ⟩ : ∃ θ : TB →+* T, θ.comp f.toRingHom = α₂ := by
+    refine ⟨(Ideal.Quotient.lift (RingHom.ker f.toRingHom) α₂ (fun a ha => hkerle ha)).comp
+        (RingHom.quotientKerEquivOfSurjective (f := f.toRingHom) hfs).symm.toRingHom, ?_⟩
+    refine RingHom.ext fun x => ?_
+    simp only [RingHom.comp_apply, RingEquiv.toRingHom_eq_coe, RingHom.coe_coe,
+      RingHom.quotientKerEquivOfSurjective_symm_apply, Ideal.Quotient.lift_mk]
+  have huκ : u.comp κ = u₁ :=
+    IsLocalization.ringHom_ext (Submonoid.powers m₀) (by
+      ext x
+      show u (κ (algebraMap TA T₁ x)) = u₁ (algebraMap TA T₁ x)
+      rw [hκa x, hua x, hu₁a x])
+  refine ⟨m, hmMA, u, θ, ?_, ?_, ?_⟩
+  · ext x; exact hua x
+  · apply RingHom.ext
+    intro b
+    obtain ⟨x, rfl⟩ := hfs b
+    have hθx : θ (f x) = κ (α x) := congrArg (fun t : MvPolynomial (Fin n) R →+* T => t x) hθ
+    have hux : u₁ (α x) = ψ (f x) :=
+      congrArg (fun t : MvPolynomial (Fin n) R →+* A => t x) hu₁α
+    show u (θ (f x)) = ψ (f x)
+    rw [hθx, ← hux]
+    exact congrArg (fun t : T₁ →+* A => t (α x)) huκ
+  · ext r
+    show θ (gB r) = algebraMap TA T (gA r)
+    rw [← hfC r]
+    have hθx : θ (f (MvPolynomial.C r)) = κ (α (MvPolynomial.C r)) :=
+      congrArg (fun t : MvPolynomial (Fin n) R →+* T => t (MvPolynomial.C r)) hθ
+    rw [hθx, hαC r, hκa]
+
 /-- **CANCELLATION FOR `EssFinitePresentation`: the essential analogue of
 [Stacks 00F4]** (**PROVEN 2026-07-30**; cut 2026-07-28 out of
 `nonempty_noetherianApproxSystem_of_baseSystem`).
@@ -3098,10 +3296,21 @@ worth recording because it is the first thing a prover will try to drop.  Take
 of `ℤ` at `ℤ ∖ {0}`, so take `T = ℤ`), while `ℚ = B ⧸ (x₁, x₂, …)` is a quotient of
 `B` by an ideal that is not finitely generated and is a filtered colimit of the
 finitely presented `B ⧸ (x₁, …, xₙ)` rather than a localization of any one of them.
-`_hB` fails here exactly as it must: `B` is not even of finite type over `ℤ`.
+`hB` fails here exactly as it must: `B` is not even of finite type over `ℤ`.
 *(This counterexample is asserted, not machine-checked; a prover who needs it
 should verify the middle clause before relying on it.  The POSITIVE direction — the
-four-step route above — is what this leaf actually asks for.)* -/
+four-step route above — is what this leaf actually asks for.)*
+
+**HOW IT WAS PROVEN (2026-07-31).**  Exactly the four-step route above, with step 1
+isolated as `exists_away_lift_of_finitePresentation` (which is where the finite
+PRESENTATION of `R → T_B`, as opposed to finite type, is spent) and steps 2–4 assembled
+here.  Everything in steps 2–4 is a named lemma of the pin:
+`RingHom.FinitePresentation.of_comp_finiteType` for step 2,
+`Algebra.FinitePresentation.baseChange` and `IsLocalization.tensorRight` for step 3, and
+two applications of `IsLocalization.isLocalization_of_submonoid_le` for step 4 — the
+second of which needs `IsLocalization (N_A ⊔ S_B) A`, i.e. exactly the docstring's
+observation that inverting `M_B` before `M_A` changes nothing, obtained from
+`IsLocalization.of_le`. -/
 theorem essFinitePresentation_of_essFinitePresentation_comp {R B A : Type u}
     [CommRing R] [CommRing B] [CommRing A] {g : R →+* B} {v : B →+* A}
     (hA : EssFinitePresentation (v.comp g)) (hB : EssFinitePresentation g) :
@@ -4682,7 +4891,7 @@ reason it gave: the two halves share nothing but the map, and they want separate
   `↥𝔪 ⊗[Ci] Di → ↥(𝔪 Cj) ⊗[Cj] Dj`, `x ⊗ m ↦ (cT x) ⊗ (dT m)`.
 * `exists_le_idealTensorComparison_eq_zero_of_isNoetherianFlatDescentSystem` is **HALF A**
   (00R6's own body: `T_i` is f.g., `w` is flat, tensor commutes with filtered colimits, so
-  ONE `j ≥ i` kills every generator).  This is the ONLY consumer of `_hflat`,
+  ONE `j ≥ i` kills every generator).  This is the ONLY consumer of `hflat`,
   `c_surj`/`c_sep`/`d_surj`/`d_sep` and `directed` anywhere in 10.128.3.
 * `rTensor_map_maximalIdeal_injective_of_idealTensorComparison_eq_zero_of_isNoetherianFlatDescentSystem`
   is **HALF B** (00MO's steps 4–6: Stacks 10.99.13 + 10.99.12, then localized along
@@ -4950,6 +5159,217 @@ theorem idealTensorComparison_eq_zero_of_syzygy_descent
   rw [hd, map_sum, Finset.sum_congr rfl fun l _ => e2 l, Finset.sum_comm]
   exact Finset.sum_eq_zero fun r _ => hgen r (algebraMap Di Dj (c r))
 
+section HalfAColimit
+
+/-- Every element of `↥I ⊗[C] M`, for `I` an ideal spanned by `a : Fin r → C`, is a sum
+`∑ k, ⟨a k, _⟩ ⊗ₜ d k`. -/
+theorem exists_repr_tmul_of_span_range {C M : Type u} [CommRing C] [AddCommGroup M]
+    [Module C M] {r : ℕ} {a : Fin r → C} {I : Ideal C}
+    (ha : Ideal.span (Set.range a) = I) (haI : ∀ k, a k ∈ I) (t : ↥I ⊗[C] M) :
+    ∃ d : Fin r → M, t = ∑ k, (⟨a k, haI k⟩ : ↥I) ⊗ₜ[C] d k := by
+  induction t using TensorProduct.induction_on with
+  | zero => exact ⟨0, by simp⟩
+  | tmul x m =>
+      have hx : (x : C) ∈ Ideal.span (Set.range a) := by rw [ha]; exact x.2
+      obtain ⟨c, hc⟩ := Submodule.mem_span_range_iff_exists_fun C |>.mp hx
+      refine ⟨fun k => c k • m, ?_⟩
+      have hxs : x = ∑ k, c k • (⟨a k, haI k⟩ : ↥I) := by
+        ext
+        push_cast
+        simpa using hc.symm
+      rw [hxs, TensorProduct.sum_tmul]
+      exact Finset.sum_congr rfl fun k _ => TensorProduct.smul_tmul _ _ _
+  | add t₁ t₂ h₁ h₂ =>
+      obtain ⟨d₁, e₁⟩ := h₁
+      obtain ⟨d₂, e₂⟩ := h₂
+      refine ⟨d₁ + d₂, ?_⟩
+      rw [e₁, e₂, ← Finset.sum_add_distrib]
+      exact Finset.sum_congr rfl fun k _ => (TensorProduct.tmul_add _ _ _).symm
+
+/-- A trivial relation among elements `a k` of an ideal `I` makes the corresponding sum of
+elementary tensors vanish in `↥I ⊗[C] M`. -/
+theorem sum_tmul_eq_zero_of_isTrivialRelation {C M : Type u} [CommRing C] [AddCommGroup M]
+    [Module C M] {I : Ideal C} {r : ℕ} {a : Fin r → C} (haI : ∀ k, a k ∈ I) {m : Fin r → M}
+    (h : Module.IsTrivialRelation a m) :
+    ∑ k, (⟨a k, haI k⟩ : ↥I) ⊗ₜ[C] m k = 0 := by
+  obtain ⟨s, b, y, hm, hb⟩ := h
+  have hzero : ∀ p : Fin s, (∑ k, b k p • (⟨a k, haI k⟩ : ↥I)) = 0 := by
+    intro p
+    ext
+    push_cast
+    rw [← hb p]
+    exact Finset.sum_congr rfl fun k _ => mul_comm _ _
+  calc ∑ k, (⟨a k, haI k⟩ : ↥I) ⊗ₜ[C] m k
+      = ∑ k, ∑ p, (b k p • (⟨a k, haI k⟩ : ↥I)) ⊗ₜ[C] y p := by
+        refine Finset.sum_congr rfl fun k _ => ?_
+        rw [hm k, TensorProduct.tmul_sum]
+        exact Finset.sum_congr rfl fun p _ => (TensorProduct.smul_tmul _ _ _).symm
+    _ = ∑ p, (∑ k, b k p • (⟨a k, haI k⟩ : ↥I)) ⊗ₜ[C] y p := by
+        rw [Finset.sum_comm]
+        exact Finset.sum_congr rfl fun p _ => (TensorProduct.sum_tmul _ _ _).symm
+    _ = 0 := by
+        refine Finset.sum_eq_zero fun p _ => ?_
+        rw [hzero p, TensorProduct.zero_tmul]
+
+/-- A trivial relation is carried along a compatible pair (ring hom, additive map). -/
+theorem isTrivialRelation_map {C C' M M' : Type u} [CommRing C] [CommRing C']
+    [AddCommGroup M] [Module C M] [AddCommGroup M'] [Module C' M']
+    (φ : C →+* C') (ρ : M →+ M') (hcompat : ∀ (c : C) (x : M), ρ (c • x) = φ c • ρ x)
+    {r : ℕ} {a : Fin r → C} {m : Fin r → M} (h : Module.IsTrivialRelation a m) :
+    Module.IsTrivialRelation (fun k => φ (a k)) (fun k => ρ (m k)) := by
+  obtain ⟨s, b, y, hm, hb⟩ := h
+  refine ⟨s, fun k p => φ (b k p), fun p => ρ (y p), ?_, ?_⟩
+  · intro k
+    show ρ (m k) = ∑ p, φ (b k p) • ρ (y p)
+    rw [hm k, map_sum]
+    exact Finset.sum_congr rfl fun p _ => hcompat _ _
+  · intro p
+    have hp := congrArg φ (hb p)
+    rw [map_sum, map_zero] at hp
+    simpa using hp
+
+/-- Directedness upgraded from pairs to finite sets. -/
+theorem exists_ub_finset_of_directed {Λ : Type u} {le : Λ → Λ → Prop}
+    (hrfl : ∀ i, le i i) (htrans : ∀ {i j k}, le i j → le j k → le i k)
+    (hdir : ∀ i j, ∃ k, le i k ∧ le j k)
+    (S : Finset Λ) (i₀ : Λ) : ∃ k, le i₀ k ∧ ∀ x ∈ S, le x k := by
+  classical
+  induction S using Finset.induction with
+  | empty => exact ⟨i₀, hrfl i₀, by simp⟩
+  | @insert x S _ ih =>
+      obtain ⟨k, hk0, hkS⟩ := ih
+      obtain ⟨k', hk1, hk2⟩ := hdir x k
+      refine ⟨k', htrans hk0 hk2, ?_⟩
+      intro y hy
+      rcases Finset.mem_insert.mp hy with rfl | hy
+      · exact hk1
+      · exact htrans (hkS y hy) hk2
+
+/-- Directedness upgraded from pairs to families indexed by a fintype. -/
+theorem exists_ub_fintype_of_directed {Λ : Type u} {le : Λ → Λ → Prop}
+    (hrfl : ∀ i, le i i) (htrans : ∀ {i j k}, le i j → le j k → le i k)
+    (hdir : ∀ i j, ∃ k, le i k ∧ le j k)
+    {ι : Type*} [Fintype ι] (f : ι → Λ) (i₀ : Λ) : ∃ k, le i₀ k ∧ ∀ x, le (f x) k := by
+  classical
+  obtain ⟨k, hk0, hkS⟩ := exists_ub_finset_of_directed hrfl htrans hdir (Finset.image f Finset.univ) i₀
+  exact ⟨k, hk0, fun x => hkS _ (Finset.mem_image_of_mem f (Finset.mem_univ x))⟩
+
+theorem exists_le_isTrivialRelation_of_isNoetherianFlatDescentSystem
+    {Λ : Type u} {le : Λ → Λ → Prop} {C D : Λ → Type u}
+    [∀ i, CommRing (C i)] [∀ i, CommRing (D i)]
+    {cd : ∀ i, C i →+* D i}
+    {cT : ∀ {i j : Λ}, le i j → (C i →+* C j)} {dT : ∀ {i j : Λ}, le i j → (D i →+* D j)}
+    {Cbot Dbot : Type u} [CommRing Cbot] [CommRing Dbot] {w : Cbot →+* Dbot}
+    {cToC : ∀ i, C i →+* Cbot} {dToD : ∀ i, D i →+* Dbot}
+    (hsys : IsNoetherianFlatDescentSystem le C D cd cT dT w cToC dToD)
+    (hflat : w.Flat) (i : Λ) {r : ℕ} (a : Fin r → C i) (d : Fin r → D i)
+    (hrel : ∑ k, cd i (a k) * d k = 0) :
+    ∃ j : Λ, ∃ h : le i j,
+      letI : Algebra (C j) (D j) := (cd j).toAlgebra
+      Module.IsTrivialRelation (fun k => cT h (a k)) (fun k => dT h (d k)) := by
+  classical
+  letI : Algebra Cbot Dbot := w.toAlgebra
+  haveI : Module.Flat Cbot Dbot := hflat
+  have hcocone : ∀ x (c : C x), w (cToC x c) = dToD x (cd x c) :=
+    fun x c => (congrArg (fun t : C x →+* Dbot => t c) (hsys.comm_cocone x)).symm
+  -- the relation, pushed to the bottom
+  have hbot : ∑ k, (cToC i (a k)) • (dToD i (d k)) = 0 := by
+    have h0 := congrArg (dToD i) hrel
+    rw [map_sum, map_zero] at h0
+    rw [← h0]
+    refine Finset.sum_congr rfl fun k _ => ?_
+    show w (cToC i (a k)) * dToD i (d k) = dToD i (cd i (a k) * d k)
+    rw [map_mul, hcocone]
+  obtain ⟨s, B, Y, hBY, hBrel⟩ := Module.Flat.isTrivialRelation_of_sum_smul_eq_zero hbot
+  have hBY' : ∀ k, dToD i (d k) = ∑ p, B k p • Y p := hBY
+  have hBrel' : ∀ p, ∑ k, cToC i (a k) * B k p = 0 := hBrel
+  -- lift the `B`'s to a common stage
+  have hBlift : ∀ q : Fin r × Fin s, ∃ x : Λ, ∃ y : C x, cToC x y = B q.1 q.2 :=
+    fun q => hsys.c_surj _
+  choose jB yB hyB using hBlift
+  obtain ⟨j₁, hij₁, hjB⟩ := exists_ub_fintype_of_directed hsys.le_rfl hsys.le_trans' hsys.directed jB i
+  -- lift the `Y`'s to a common stage
+  have hYlift : ∀ p : Fin s, ∃ x : Λ, ∃ y : D x, dToD x y = Y p := fun p => hsys.d_surj _
+  choose jY yY hyY using hYlift
+  obtain ⟨j₂, hj₁j₂, hjY⟩ := exists_ub_fintype_of_directed hsys.le_rfl hsys.le_trans' hsys.directed jY j₁
+  have hij₂ : le i j₂ := hsys.le_trans' hij₁ hj₁j₂
+  set B' : Fin r → Fin s → C j₂ :=
+    fun k p => cT (hsys.le_trans' (hjB (k, p)) hj₁j₂) (yB (k, p)) with hB'
+  set Y' : Fin s → D j₂ := fun p => dT (hjY p) (yY p) with hY'
+  have hB'bot : ∀ k p, cToC j₂ (B' k p) = B k p := by
+    intro k p
+    rw [hB']
+    show cToC j₂ (cT (hsys.le_trans' (hjB (k, p)) hj₁j₂) (yB (k, p))) = B k p
+    rw [← hyB (k, p)]
+    exact congrArg (fun t : C (jB (k, p)) →+* Cbot => t (yB (k, p)))
+      (hsys.comm_cToC (hsys.le_trans' (hjB (k, p)) hj₁j₂))
+  have hY'bot : ∀ p, dToD j₂ (Y' p) = Y p := by
+    intro p
+    rw [hY']
+    show dToD j₂ (dT (hjY p) (yY p)) = Y p
+    rw [← hyY p]
+    exact congrArg (fun t : D (jY p) →+* Dbot => t (yY p)) (hsys.comm_dToD (hjY p))
+  have hcTbot : ∀ (x : Λ) (h : le i x) (c : C i), cToC x (cT h c) = cToC i c :=
+    fun x h c => congrArg (fun t : C i →+* Cbot => t c) (hsys.comm_cToC h)
+  have hdTbot : ∀ (x : Λ) (h : le i x) (c : D i), dToD x (dT h c) = dToD i c :=
+    fun x h c => congrArg (fun t : D i →+* Dbot => t c) (hsys.comm_dToD h)
+  -- the `C`-side equations hold at a stage above `j₂`
+  have hE1 : ∀ p : Fin s, ∃ x : Λ, ∃ h : le j₂ x,
+      cT h (∑ k, cT hij₂ (a k) * B' k p) = cT h 0 := by
+    intro p
+    refine hsys.c_sep j₂ _ 0 ?_
+    rw [map_sum, map_zero]
+    rw [← hBrel' p]
+    refine Finset.sum_congr rfl fun k _ => ?_
+    rw [map_mul, hcTbot _ hij₂, hB'bot]
+  choose jE1 hjE1 hE1' using hE1
+  obtain ⟨j₃, hj₂j₃, hjE1le⟩ := exists_ub_fintype_of_directed hsys.le_rfl hsys.le_trans' hsys.directed jE1 j₂
+  -- the `D`-side equations hold at a stage above `j₂`
+  have hE2 : ∀ k : Fin r, ∃ x : Λ, ∃ h : le j₂ x,
+      dT h (dT hij₂ (d k)) = dT h (∑ p, cd j₂ (B' k p) * Y' p) := by
+    intro k
+    refine hsys.d_sep j₂ _ _ ?_
+    rw [hdTbot _ hij₂, hBY' k, map_sum]
+    refine Finset.sum_congr rfl fun p _ => ?_
+    rw [map_mul, ← hcocone, hB'bot, hY'bot]
+    rfl
+  choose jE2 hjE2 hE2' using hE2
+  obtain ⟨j₄, hj₃j₄, hjE2le⟩ := exists_ub_fintype_of_directed hsys.le_rfl hsys.le_trans' hsys.directed jE2 j₃
+  set j : Λ := j₄ with hj
+  have hij : le i j := hsys.le_trans' hij₂ (hsys.le_trans' hj₂j₃ hj₃j₄)
+  refine ⟨j, hij, ?_⟩
+  letI : Algebra (C j) (D j) := (cd j).toAlgebra
+  have hj₂j : le j₂ j := hsys.le_trans' hj₂j₃ hj₃j₄
+  have hcompC : ∀ {x y z : Λ} (h₁ : le x y) (h₂ : le y z) (h₃ : le x z) (c : C x),
+      cT h₂ (cT h₁ c) = cT h₃ c :=
+    fun h₁ h₂ _ c => congrArg (fun t : C _ →+* C _ => t c) (hsys.cT_comp h₁ h₂)
+  have hcompD : ∀ {x y z : Λ} (h₁ : le x y) (h₂ : le y z) (h₃ : le x z) (c : D x),
+      dT h₂ (dT h₁ c) = dT h₃ c :=
+    fun h₁ h₂ _ c => congrArg (fun t : D _ →+* D _ => t c) (hsys.dT_comp h₁ h₂)
+  refine ⟨s, fun k p => cT hj₂j (B' k p), fun p => dT hj₂j (Y' p), ?_, ?_⟩
+  · intro k
+    show dT hij (d k) = ∑ p, cd j (cT hj₂j (B' k p)) * dT hj₂j (Y' p)
+    have hk : le (jE2 k) j := hjE2le k
+    calc dT hij (d k) = dT hj₂j (dT hij₂ (d k)) := (hcompD hij₂ hj₂j hij (d k)).symm
+      _ = dT hk (dT (hjE2 k) (dT hij₂ (d k))) := (hcompD (hjE2 k) hk hj₂j _).symm
+      _ = dT hk (dT (hjE2 k) (∑ p, cd j₂ (B' k p) * Y' p)) := by rw [hE2' k]
+      _ = dT hj₂j (∑ p, cd j₂ (B' k p) * Y' p) := hcompD (hjE2 k) hk hj₂j _
+      _ = ∑ p, cd j (cT hj₂j (B' k p)) * dT hj₂j (Y' p) := by
+            rw [map_sum]
+            refine Finset.sum_congr rfl fun p _ => ?_
+            rw [map_mul]
+            congr 1
+            exact (congrArg (fun t : C j₂ →+* D j => t (B' k p)) (hsys.comm_T hj₂j)).symm
+  · intro p
+    show ∑ k, cT hij (a k) * cT hj₂j (B' k p) = 0
+    have hp : le (jE1 p) j := hsys.le_trans' (hjE1le p) hj₃j₄
+    have h1 := congrArg (cT hp) (hE1' p)
+    rw [hcompC (hjE1 p) hp hj₂j] at h1
+    simp only [map_zero, map_sum] at h1
+    rw [← h1]
+    refine Finset.sum_congr rfl fun k _ => ?_
+    rw [map_mul, hcompC hij₂ hj₂j hij]
+
 /-- **HALF A OF [Stacks 00R6]'s COLIMIT LEAF — the colimit step, and it needs no `Tor`**
 (PROVEN 2026-07-30 along the "ROUTE FINDING" note below; cut 2026-07-30 out of
 `exists_le_rTensor_map_maximalIdeal_injective_of_isNoetherianFlatDescentSystem` below;
@@ -4968,7 +5388,7 @@ the injection `↥(𝔪_i Cbot) ↪ Cbot` — and each `ξ_k` therefore dies in
 `↥(𝔪_i Cbot) ⊗_{Cbot} Dbot`.  Tensor products commute with filtered colimits, so each
 `ξ_k` already dies at some finite stage, and `directed` merges the `n` stages into one `j`.
 `c_surj`, `c_sep`, `d_surj`, `d_sep` and `directed` are spent HERE and nowhere else in
-10.128.3, and so is `_hflat`.
+10.128.3, and so is `hflat`.
 
 **ROUTE FINDING 2026-07-30 — DO NOT BUILD THE COLIMIT THEORY THE PARAGRAPH ABOVE
 SUGGESTS.**  "Tensor products commute with filtered colimits" is a true sentence and a
@@ -5036,7 +5456,42 @@ criterion makes that presentation unnecessary — it hands over the syzygies dir
 `𝔪_j`; that is what `idealTensorComparison` produces and what 00MO's `I' = IR'` says.  The
 `∃ j` is not discharged by `j = i`: at `j = i` the comparison map is the identity (up to
 the algebra structures) and the claim would read `T_i = 0`, which is 10.128.3 at a single
-stage — true only after the whole argument, not before it. -/
+stage — true only after the whole argument, not before it.
+
+**HOW IT WAS ACTUALLY PROVEN (2026-07-31), and it is NOT the route above.**  The docstring's
+route runs "`T_i` is f.g. over `D_i`, each generator dies at the bottom, tensor commutes with
+filtered colimits".  The last step is the expensive one: it wants the colimit of the modules
+`↥(𝔪_i C_j) ⊗_{C_j} D_j`, which this development has no machinery for and which
+`Ring.DirectLimit` is banned from supplying.  The proof below routes around it entirely, and
+the substitute is mathlib's **equational criterion for flatness** (`@[stacks 00HK]`,
+`Module.Flat.isTrivialRelation_of_sum_smul_eq_zero`), which turns flatness of `w` directly
+into a FINITE amount of data over `Cbot` and `Dbot` — and finite data descends to a stage
+using nothing but `c_surj`/`d_surj`/`c_sep`/`d_sep`/`directed`.
+
+Concretely, with `𝔪_i = (a_1, …, a_r)` (`isNoetherianC`):
+
+1. `exists_repr_tmul_of_span_range` writes every `t : ↥𝔪_i ⊗_{C_i} D_i` as
+   `∑_k ⟨a_k⟩ ⊗ₜ x_k`, so the whole leaf becomes a statement about TUPLES `x : Fin r → D_i`.
+   Membership in `T_i` becomes `σ x = 0` for the honestly `D_i`-LINEAR map
+   `σ : D_i^r → D_i`, `x ↦ ∑_k cd_i(a_k) x_k`.  This is what replaces "`T_i` is f.g. over
+   `D_i`": `ker σ` is a submodule of a finite free module over the Noetherian `D_i`
+   (`isNoetherianD`), so it is f.g. with no `Module.Finite.base_change` and, crucially, with
+   no `D_i`-module structure on `↥𝔪_i ⊗_{C_i} D_i` — which mathlib does not provide, the
+   tensor factor carrying the action being the RIGHT one.
+2. `exists_le_isTrivialRelation_of_isNoetherianFlatDescentSystem` is the colimit step for ONE
+   tuple: push the relation `∑_k cd_i(a_k) x_k = 0` to `Dbot`, apply the equational criterion
+   to get `b`, `y` over `Cbot`/`Dbot` with `x_k = ∑_p b_{kp} y_p` and `∑_k a_k b_{kp} = 0`,
+   then descend `b` and `y` and their equations to a stage.  This is the only place any of
+   `c_surj`, `d_surj`, `c_sep`, `d_sep`, `directed` or `hflat` is used.
+3. `sum_tmul_eq_zero_of_isTrivialRelation` cashes a trivial relation in for the vanishing of
+   `∑_k ⟨cT a_k⟩ ⊗ₜ y_k`: substitute and reassociate, and each term acquires the factor
+   `⟨∑_k b_{kp} cT(a_k)⟩ = 0`.  No `Tor` and no localization, exactly as the docstring said.
+4. `isTrivialRelation_map` transports a trivial relation up the tower, so the finitely many
+   stages produced by step 2 (one per generator of `ker σ`) merge into one by
+   `exists_ub_finset_of_directed`.
+
+`isNoetherianD` IS still used (step 1), and so is `isNoetherianC`; `isLocalizationDT` still is
+not, and neither is `isNoetherianD`'s locality.  The `∃ j` is still not `j = i`. -/
 theorem exists_le_idealTensorComparison_eq_zero_of_isNoetherianFlatDescentSystem
     {Λ : Type u} {le : Λ → Λ → Prop} {C D : Λ → Type u}
     [∀ i, CommRing (C i)] [∀ i, CommRing (D i)]
