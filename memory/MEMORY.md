@@ -160,3 +160,4 @@
 - [Atomicity verdicts audit hypotheses only](flt-atomicity-verdict-checks-hypotheses-only.md) — "no clause-shaped cut" misses the conclusion's quantifier over a finite set; the descent is in-tree even when the step is a citation
 - [A frozen main rots the queue](flt-frozen-main-rots-the-queue.md) — under a HELD release main does not move, so queue1 stays AUDITED and dispatchable while 18% of its tasks name leaves merger already closed; audit against merger
 - [A decl-order tangle is a graph](flt-decl-order-tangle-is-a-graph.md) — "the intended order is not recoverable from the text" is wrong: find the block that cannot move (hoistcheck HITS>0) and the rest is forced
+- [linarith drops provable hypotheses](linarith-drops-provable-hypotheses.md) — a Real.sqrt of a PERFECT SQUARE gets its bound discharged and dropped by norm_num preprocessing, leaving the atom unbounded; reproduce in a mathlib-only file to tell this from an atom mismatch
