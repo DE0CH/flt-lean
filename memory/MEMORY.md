@@ -69,3 +69,5 @@
 - [A private import suffices for proof bodies](lean-private-import-suffices-for-proof-bodies.md) — only STATEMENTS (and exposed def bodies) need `public import`; ModThree's docstring said otherwise for three days and made a leaf look like it needed a header edit it did not
 
 - [Hoist vs concurrent proof](flt-hoist-vs-concurrent-proof.md) — relocating a leaf and proving it in place merge into a duplicate declaration; keep the hoisted location, move the proof
+
+- [Runaway doc comment eats declarations](flt-runaway-doc-comment.md) — a `/--` with no terminator still PARSES and silently comments out ~1980 lines; the tell is `invalid use of explicit universe parameters, X is a local variable` hundreds of lines away, and the check is a comment-depth scan
