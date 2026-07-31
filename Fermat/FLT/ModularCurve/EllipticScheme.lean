@@ -798,8 +798,8 @@ So wherever the ℚ development discharged `c.base = d.base` by
 `ProjCoords.base_eq` AND already knew `c.toHom = d.toHom` — which is every
 rigidity/congruence lemma below — the general-base proof needs no new
 hypothesis at all. -/
-theorem base_eq_of_toHom_eq {c d : ProjCoords E X} (h : c.toHom = d.toHom) :
-    c.base = d.base := by
+theorem base_eq_of_comp_projToSpec_eq {c d : ProjCoords E X}
+    (h : c.toHom ≫ projToSpec E = d.toHom ≫ projToSpec E) : c.base = d.base := by
   have key : X.toSpecΓ ≫ Spec.map (CommRingCat.ofHom c.base) =
       X.toSpecΓ ≫ Spec.map (CommRingCat.ofHom d.base) := by
     rw [← toHom_comp_projToSpec, ← toHom_comp_projToSpec, h]
@@ -814,6 +814,35 @@ theorem base_eq_of_toHom_eq {c d : ProjCoords E X} (h : c.toHom = d.toHom) :
     AlgebraicGeometry.ext_to_Spec (congrArg
       (fun t => (Scheme.ΓSpecIso (CommRingCat.of F)).inv ≫ t) h2)
   exact congrArg CommRingCat.Hom.hom (Spec.map_injective h3)
+
+/-- **Two coordinate data whose morphisms agree have the same base** (PROVEN,
+the special case `h ▸ rfl` of the lemma above). -/
+theorem base_eq_of_toHom_eq {c d : ProjCoords E X} (h : c.toHom = d.toHom) :
+    c.base = d.base :=
+  base_eq_of_comp_projToSpec_eq (by rw [h])
+
+/-- **THE BASE EQUALITY IS AVAILABLE WHEREVER THE GROUP LAW NEEDS IT** (PROVEN)
+— the form that unblocks the whole `exists_projAdd` port, and the reason no
+`ProjCoords` datum has to gain a structure morphism.
+
+`ProjCoords.add`/`add2` need `c.base = d.base`, free over `ℚ` and a real
+condition over `F`.  In every group-law statement `c` and `d` are the two
+coordinate data whose morphisms are the two PROJECTIONS out of
+`Limits.pullback (projToSpec E) (projToSpec E)`, composed with a common
+`t : W ⟶ pullback …`.  `Limits.pullback.condition` says the two projections
+agree after `projToSpec E`, so `c.toHom ≫ projToSpec E = d.toHom ≫ projToSpec E`
+on the nose and `base_eq_of_comp_projToSpec_eq` closes it.
+
+So the 58 vanished `hom_ext_spec_rat` invocations cost NO new datum and NO new
+hypothesis on the structure: they cost exactly this lemma, applied at each site
+with the `t` the site already has. -/
+theorem base_eq_of_toHom_eq_pullback_proj {c d : ProjCoords E X}
+    (t : X ⟶ Limits.pullback (projToSpec E) (projToSpec E))
+    (hc : c.toHom = t ≫ Limits.pullback.fst (projToSpec E) (projToSpec E))
+    (hd : d.toHom = t ≫ Limits.pullback.snd (projToSpec E) (projToSpec E)) :
+    c.base = d.base := by
+  refine base_eq_of_comp_projToSpec_eq ?_
+  rw [hc, hd, Category.assoc, Category.assoc, Limits.pullback.condition]
 
 /-- **Rescaling the coordinates by a unit** (PROVEN) — the change of
 trivialisation that relates two charts on their overlap. -/
