@@ -1947,7 +1947,83 @@ When `a₁′ = 0` the companion collapses: `T = a₃′B`, so the requirement a
 the parity lever reaches it — they give `m ≤ ord_b P` and stop.  The same doubling happens
 at `∞` when `deg A > deg B`.
 
-**THE ROUTE (worked out 2026-07-31; valuations, not yet Lean).**  Put `γ = Cx/E`,
+**THE DERIVATIVE IDENTITY THE ROUTE NEEDS IS COMPILER-VERIFIED (2026-07-31) — PASTE IT.**
+It is not specific to `a₁′ = 0` and it costs nothing but this text; it is not committed as a
+declaration only because nothing in the cone would consume it until this leaf is proven.
+Differentiate `hcurve`, eliminate `G′` with the ring identity
+`B·G′ = (A² + a₄′B²)·P + B′·G` (`P = A′B − AB′`, true over any commutative ring), and fold
+`E²G` back to `B³N` by `hcurve` itself; the `B³B′N` terms cancel and what is left is
+
+    B⁴ · N′  =  E² · (A² + a₄′B²) · P ,
+
+with `N = Cx²f + D² + Cx·D·S` the bracket of `hcurve`.  In Lean, verbatim and green:
+
+    theorem charTwo_derivative_curveEq (h2 : (2 : F) = 0) {A B Cx D E : F[X]}
+        (hcurve : B ^ 3 * (Cx ^ 2 * (X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆) + D ^ 2
+            + Cx * D * (C W.a₁ * X + C W.a₃))
+          = E ^ 2 * (A ^ 3 + C W'.a₂ * A ^ 2 * B + C W'.a₄ * A * B ^ 2 + C W'.a₆ * B ^ 3)) :
+        B ^ 4 * (Cx ^ 2 * (X ^ 2 + C W.a₄) + derivative Cx * D * (C W.a₁ * X + C W.a₃)
+            + Cx * derivative D * (C W.a₁ * X + C W.a₃) + Cx * D * C W.a₁)
+          = E ^ 2 * (A ^ 2 + C W'.a₄ * B ^ 2) * (derivative A * B - A * derivative B) := by
+      have h2p : (2 : F[X]) = 0 := by
+        have h : (C (2 : F) : F[X]) = 0 := by rw [h2, map_zero]
+        rwa [map_ofNat] at h
+      have hd := congrArg derivative hcurve
+      simp only [derivative_add, derivative_mul, derivative_pow, derivative_C,
+        derivative_X, zero_mul, zero_add, add_zero, Nat.cast_ofNat,
+        Nat.add_one_sub_one, mul_one, map_ofNat, pow_one] at hd
+      linear_combination B * hd - derivative B * hcurve
+        + (-(B ^ 4 * (Cx * derivative Cx * (X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆)
+              + Cx ^ 2 * (X ^ 2 + C W.a₂ * X) + D * derivative D))
+          - B ^ 3 * derivative B * (Cx ^ 2 * (X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆)
+              + D ^ 2 + Cx * D * (C W.a₁ * X + C W.a₃))
+          + B * E * derivative E * (A ^ 3 + C W'.a₂ * A ^ 2 * B + C W'.a₄ * A * B ^ 2
+              + C W'.a₆ * B ^ 3)
+          + B * E ^ 2 * (A ^ 2 * derivative A + C W'.a₂ * A * derivative A * B
+              + C W'.a₄ * A * B * derivative B + C W'.a₆ * B ^ 2 * derivative B)) * h2p
+
+`map_ofNat` in that `simp only` is load-bearing: without it `derivative_pow` leaves `C 2`
+and `C 3` in `hd`, `ring` treats them as ATOMS unrelated to the numerals `2`, `3`, and the
+`linear_combination` fails with a residual full of `C 3 * … - … * 3`.
+
+**WITH THAT IDENTITY THE COUNT CLOSES AT EVERY FINITE `b` WITH `S(b) ≠ 0`** — checked by
+hand 2026-07-31, and it is the bulk of the leaf.  Fix such a `b` with `m := ord_b B > 0`
+(if `m = 0` there is nothing to prove, `T = a₃′B`), so `A(b) ≠ 0` by `hcop` and `G(b) ≠ 0`:
+
+* `hone` cancelled by `B` reads `a₃′·E = Cx·S`, so `x := ord_b E = ord_b Cx`;
+* `hcurve` gives `3m + ord_b N = 2x`, hence `ord_b N < 2x`, hence
+  `charTwo_AS_rootMultiplicity` applies and `ord_b N = 2·ord_b D`; so `m` is even (this is
+  `charTwo_rootMultiplicity_B_even`, i.e. `hparB`) and `d := ord_b D = x − 3m/2`;
+* the identity above gives `4m + ord_b N′ = 2x + ord_b(A² + a₄′B²) + ord_b P`, and
+  `ord_b(A² + a₄′B²) = 0` because `A(b) ≠ 0` while `ord_b(a₄′B²) = 2m > 0`;
+* the four terms of `N′` have orders `≥ 2x`, `≥ x − 1 + d`, `≥ x + d − 1`, `≥ x + d`
+  (`pow_sub_one_dvd_derivative_of_pow_dvd` for the two derivatives, `ord_b S = 0` here), so
+  `ord_b N′ ≥ x + d − 1 = 2x − 3m/2 − 1`;
+* therefore `ord_b P ≥ 4m − 3m/2 − 1 = 5m/2 − 1 ≥ 2m`, the last step because `m` is even
+  and positive, so `m ≥ 2`.  That is exactly the doubled bound the parent cannot reach.
+
+`N′ ≠ 0` is free: if it vanished the identity would force `P = 0` (`A² + a₄′B² ≠ 0`, since
+over an algebraically closed field of characteristic `2` it is `(A + √a₄′·B)²`, and `A = cB`
+with `A`, `B` coprime makes `B` a unit and `P = 0`), and `P = 0` is the trivial branch.
+
+**SO EXACTLY TWO PLACES ARE LEFT, and a prover should be sent at those and nothing else:**
+
+1. **the root `b₀` of `S`** (only when `a₁ ≠ 0`) **at which `B` also vanishes.**  There
+   `hparB` says nothing, `charTwo_AS_rootMultiplicity` does not apply (`S(b₀) = 0` is
+   exactly its excluded hypothesis, and it is excluded because the case split
+   `ord(z² + σz) = 2 ord z` needs `σ = Cx·S` to keep its order), and `hone` reads
+   `ord_{b₀} E = ord_{b₀} Cx + 1`.  The requirement is the weaker `2m ≤ ord_{b₀} P + 1`,
+   and the identity above reduces it to `ord_{b₀} N′ ≥ 2·ord_{b₀} Cx + 1 − 2m`, for which
+   the missing input is a lower bound on `ord_{b₀} D` — the analogue of the
+   Artin–Schreier step at a ramified place.  Geometrically `b₀` is the `2`-torsion point of
+   `W`, and `B(b₀) = 0` says it lies in the kernel, so this is a real configuration
+   (multiplication by `2` is an instance) and not a case to be excluded.
+2. **`∞`**, i.e. the degree bound `deg P + deg S ≤ 2·deg B`, and only when
+   `deg A > deg B`: otherwise `natDegree_wronskianPoly_succ_le` plus `deg S ≤ 1` closes it
+   as in the parent.  This is the same argument read at `∞`, with `deg A − deg B` in place
+   of `m`.
+
+**THE ROUTE, IN VALUATIONS (worked out 2026-07-31).**  Put `γ = Cx/E`,
 `δ = D/E`, `u = A/B`, `g(t) = t³ + a₂′t² + a₄′t + a₆′`, `f = X³ + a₂X² + a₄X + a₆`.  With
 `a₁′ = 0`, cancelling `B` from `hone` gives `Cx·S = a₃′·E`, i.e.
 
