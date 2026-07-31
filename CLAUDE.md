@@ -1306,6 +1306,77 @@ order" (false: an arbitrary connected socle can be `3`-dimensional and carry a u
 "the Hopf order is the flat model of a rank-`2` representation with a residually trivial
 quotient" (true: the residual socle is `2`-dimensional for free, which is the sharp bound).
 
+## A COUNTEREXAMPLE IS ONLY AS STRONG AS THE HYPOTHESIS LIST IT WAS TESTED AGAINST
+
+(2026-07-31, flt-lean-110.) `exists_hilbertFixing_rootsOfUnity_discrim_isSquare`
+carried a FALSITY AUDIT that three independent passes had confirmed — an explicit
+elliptic curve, an exhaustive matrix enumeration, and a by-hand derivation, all
+agreeing. I re-verified all three a fourth time (Python enumeration, PARI/GP on the
+curve) and they are right. The leaf IS false as stated.
+
+The audits were nevertheless leading the repair in the wrong direction, because
+none of them asked **which hypotheses the witness spends that the leaf does not
+state but its CONSUMERS do.** Here the witness forces `det ρ̄(Γ F) = {1}`, hence
+`Γ F ⊆ ker χ̄_ℓ`, hence `F ⊇ ℚ(ζ_ℓ)` — so **`F` is totally imaginary**. And
+`NumberField.IsTotallyReal F` is exactly what the eventual consumer carries, and is
+already threaded as an instance binder through 2 800 lines of the same file.
+
+So the refutation is of *the leaf as stated*; the leaf-plus-`htr` is untouched by
+it. The two repairs that follow differ by an order of magnitude — threading one
+plain hypothesis through eight signatures, discharged at the top, versus a
+coefficient-field enlargement `k ↝ k(√d)` rethreaded through a definition whose
+Selmer clause would have to move to `k'` — and the audit had recorded only the
+expensive one as "forced".
+
+The rule: **before accepting that a leaf needs a structural repair, diff its
+hypothesis list against its consumers', and check the witness against the
+difference.** A leaf is routinely stated more generally than any call site needs,
+and a counterexample living in the gap refutes only the generality. The cheap
+repair — push the consumer's hypothesis down to the leaf — is invisible unless
+that diff is taken, and it is a move this development has already made
+successfully at least once in the same file.
+
+Corollary, for whoever writes the audit: **say which hypotheses your witness
+satisfies, not merely that it satisfies "every hypothesis".** All three passes
+here truthfully verified every clause the leaf states, and that is precisely why
+the gap survived three reviews — the check they each performed cannot see it.
+
+## A LEAF'S OWN "WHAT IT COSTS" IS A HYPOTHESIS — unfold the DEFINITION first
+
+(2026-07-31, flt-lean-110.) `exists_finset_isUnramifiedAt_hilbert_of_notMem` carried a
+docstring saying it costs the CONVERSE of `MinkowskiUnramified.lean`'s
+`isUnramifiedAt_of_inertia_le_fixingSubgroup` ("`w` unramified in `L/F` ⟹ `I_w` fixes
+`L` pointwise"), that the converse is absent from the pin, and that it is SHARED with
+`finite_hilbertInertiaOutsideSubgroups` — so "the two leaves are natural companions and
+are best given to ONE owner."
+
+Every factual clause was true. The conclusion was wrong twice over. The converse is
+expensive (it needs local–global compatibility of ramification indices, which this tree
+does not have) and **it is not needed at all.** `localInertiaGroup v` is DEFINED as the
+inertia subgroup of the maximal ideal of `IntegralClosure 𝒪ᵥ Kᵥᵃˡᵍ` — "σx − x ∈ 𝔪 for
+every integral x" — so "inertia fixes `α`" is checkable DIRECTLY, with no discriminant,
+no ramification index and no dictionary: `α` and `σα` are congruent roots of
+`minpoly ℤ α` in a local domain, and Hensel-free simple-root separation forces them
+equal at every place off the finitely many dividing `(minpoly ℤ (P'(α))).coeff 0`. The
+identical retraction had been recorded at the `ℚ` level three days earlier on the twin
+leaf in `Modularity/Patching.lean`, and simply was not transferred.
+
+Two rules, the second the one that costs releases:
+
+- **Before buying a dictionary lemma a docstring names, unfold the definition of the
+  object it is about.** A "missing dictionary" is often a translation between two
+  spellings that the proof never has to cross.
+- **A leaf-PAIRING recommendation ("give these two to one owner, they share `X`") is a
+  claim about `X`, and it dies with `X`.** Re-derive it; do not inherit it. Here the
+  pairing would have chained an already-closable leaf to a genuinely hard one and hidden
+  that the hard one stands alone.
+
+Corollary for TWIN leaves generally: this development is full of `ℚ`-level/`F`-level
+twins whose docstrings were written by copying. **A correction applied to one twin is
+not applied to the other** — nothing propagates it — so when you touch a leaf whose
+docstring names a twin, read the twin's CURRENT docstring, not the sentence your leaf
+quotes from it.
+
 ## A `sorry` is a PROMISE that the statement is provable
 
 (2026-07-29, orchestrator error, caught only because an agent quoted the file's
