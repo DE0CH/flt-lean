@@ -5540,6 +5540,15 @@ delta-unfolding. Write instead
 `subst hx` recovers the concrete form inside the proof, the *type* matches
 syntactically at every call site, and `hx` is discharged by `rfl` — a defeq check
 on the ELEMENT, which is cheap, instead of one buried under a quotient type.
+**Reconfirmed 2026-07-31 on `exists_neronExtension_atSpecialGenericPoint`,
+with the ratio now WORSE and so the rule stronger: 45 s against ~20 min.**
+`X0.lean` no longer elaborates in 8 minutes — measure it yourself, but budget
+20 and plan for at most a handful of real-file verifies per run. The whole of
+that leaf (~90 lines, five mathlib mechanisms) was developed in the abstract
+`example` and pasted in with three trivial renames. **The corollary is a
+scheduling one: do not start a real-file build and then keep editing the file
+— `lean` reads the source at start, so the result is stale on arrival and you
+have burned 20 minutes.** Reach the final form in the scratch first.
 ## Sorry and have discipline (glue-first, no floating)
 
 - **Glue first.** At any frontier, first replace the bare `sorry` with
