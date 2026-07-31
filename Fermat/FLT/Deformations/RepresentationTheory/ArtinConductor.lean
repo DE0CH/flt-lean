@@ -3651,12 +3651,21 @@ THE AXIOMS, and why each is here:
   break sum exists at all whenever `P_v ≠ 1` acts nontrivially).
 
 * `gp_herbrand` — **THE ARITHMETIC ANCHOR** (added 2026-07-28, and the
-  whole point of the repair below). At every finite level `L/Kᵥ` the
-  image of `G^{φ(m)}` in `Gal(L/Kᵥ)` is the `m`-th LOWER-numbering group
-  `G_m(L/Kᵥ)`. This is Herbrand's theorem together with the definition
-  of the upper numbering for infinite extensions (Serre, *Corps Locaux*
-  IV §3): `G^u = G_{ψ(u)}` at each level, and `ψ(φ(m)) = m`. Written as
-  an equation of subgroups of `Γ Kᵥ`, "image in `Γ/lvl`" is `⊔ lvl`.
+  whole point of the repair below; STRENGTHENED 2026-07-31 from the
+  Herbrand values to EVERY real argument — see the THIRD FALSITY AUDIT).
+  At every finite level `L/Kᵥ` the image of `G^u` in `Gal(L/Kᵥ)` is a
+  LOWER-numbering group `G_{ψ(u)}(L/Kᵥ)`, and since the lower filtration
+  is indexed by `ℕ` with the left-continuous convention `G_t = G_{⌈t⌉}`,
+  the index is `⌈ψ(u)⌉` — which for `u` in the half-open Herbrand
+  interval `(φ(m), φ(m+1)]` is `m + 1`. This is Herbrand's theorem
+  together with the definition of the upper numbering for infinite
+  extensions (Serre, *Corps Locaux* IV §3). Written as an equation of
+  subgroups of `Γ Kᵥ`, "image in `Γ/lvl`" is `⊔ lvl`.
+* `gp_zero_herbrand` — the same statement at `u = 0`, where `ψ(0) = 0`
+  and the interval form has nothing to say. It is exactly the `m = 0`
+  case of the axiom as it stood before 2026-07-31, kept so that the
+  strengthening TRADES NOTHING AWAY: `gp_herbrand_phi` below rebuilds the
+  old axiom verbatim out of the two.
 
 FALSITY AUDIT, 2026-07-28 — **WITHOUT `gp_herbrand` THIS STRUCTURE MAKES
 `exists_isSwanExponentAt` FALSE**, and the refutation is by explicit
@@ -3801,6 +3810,68 @@ now protected against is the two failure modes that actually occur —
 falsity (by `gp_herbrand`) and vacuity (by the `Nonempty` conjunct of
 `GaloisRep.IsSwanExponentAt`).
 
+THIRD FALSITY AUDIT, 2026-07-31 — **THE ANCHOR AT THE HERBRAND VALUES
+ALONE LEAVES THE GAPS FREE, AND THAT IS WHERE THE BREAK DECOMPOSITION
+LIVES.** This is the audit the paragraph above ("`gp_herbrand` is not
+known here to determine `gp` uniquely … It does not have to") got wrong.
+It does have to, on the GAPS, and here is the accounting.
+
+`GaloisRep.exists_breaks_of_hasFiniteWildMonodromyAt` needs the
+codimension function `u ↦ dim V − dim V^{G^u}` to be the STEP function of
+one level, i.e. constant on each `(φ_D(m), φ_D(m+1)]`. Half of that is
+free (`fixedSubmodule_gp_le_of_lt_of_le`, pure antitonicity). The other
+half is the inclusion `G^u ≤ D.gp (m+1)` STRICTLY inside the gap, and the
+pre-2026-07-31 axioms did not give it: they gave only the sandwich
+`G^{φ_D(m+1)} ≤ G^u ≤ G^{φ_D(m)}`, and BOTH ends satisfy every one of
+them. Probing with other levels cannot close it either, because
+`gp_herbrand` relates every level to `F` and no two levels to each other
+— the derivation is circular by construction.
+
+*What the axioms cannot see.* The freedom is to let `F` "linger" at
+`G_m` past `φ_D(m)` and drop late, or drop early. Left continuity
+(`gp_of_forall_lt`) forbids a drop at a left endpoint but permits one
+just after any point, so it does not decide the question; and lingering
+is invisible to it altogether. Two things were checked before concluding
+that the gap is genuinely free rather than merely awkward:
+
+* The would-be counterexample "replace `G^u` by a DENSE subgroup" is
+  harmless — with `N ⊓ P_v` open in `P_v` and acting trivially, a dense
+  `H ≤ G^u` has `H ⊔ (N ⊓ P_v) = G^u ⊔ (N ⊓ P_v)`, so
+  `fixedSubmodule_sup_eq` gives `V^H = V^{G^u}`. The codimension function
+  does not see closure. A refuting `F` must therefore drop EARLY.
+* Herbrand values do NOT persist under refinement, so a rational `u` in a
+  gap need not be a Herbrand value of any DEEP level. `φ_{L'/Kᵥ}(ℕ) =
+  φ_{L/Kᵥ}(φ_{L'/L}(ℕ))` and `φ_{L'/L}(i) ≤ i` with equality only in the
+  unramified case, so `φ_{L'/Kᵥ}(ℕ) ⊉ φ_{L/Kᵥ}(ℕ)` in general. Hence
+  `F.gp u` is pinned only modulo the levels that happen to realise `u`,
+  which may all be shallow, leaving room for an early drop inside their
+  common `lvl`. (This corrects the route recorded on 2026-07-31 in the
+  docstring of the leaf that this strengthening removes, which asserted
+  the opposite persistence.)
+
+*The repair, which is the one this docstring already prescribed.* Not to
+weaken the break decomposition but to strengthen the structure: state
+Herbrand at EVERY real `u` through `ψ`, which is what the genuine upper
+numbering satisfies (`G^u(L/Kᵥ) = G_{⌈ψ(u)⌉}(L/Kᵥ)`, upper numbering
+being compatible with quotients) and is one of the two candidates named
+in the `fixedSubmodule` docstring. It COSTS THE CONSTRUCTION NOTHING:
+`upperRamificationFiltration v u = P_v ⊓ ⨅_D D.gp (D.psiNat u)` has
+`D.psiNat u = m + 1` throughout `(φ_D(m), φ_D(m+1)]`, so `≤` is
+`iInf_le`, and `≥` is the EXISTING leaf
+`gp_le_upperRamificationFiltration_sup_lvl` at `φ_D(m+1)` composed with
+antitonicity. No new leaf, and the three open leaves of
+`nonempty_ramificationFiltration` are unchanged.
+
+*What it costs elsewhere, stated so nobody has to rediscover it.* The
+class of admissible `F` SHRINKS, so `∀ F` theorems get weaker and
+`Nonempty` gets harder. Every consumer here is on the safe side of that:
+`IsSwanExponentAt` is `Nonempty ∧ ∀ F, …`, and every `F` reaching a proof
+comes from `nonempty_ramificationFiltration`. The uniqueness argument for
+`swanExponentAux` needs only ONE admissible `F`, which the `Nonempty`
+conjunct supplies. Faithfulness moves in the right direction: fewer junk
+filtrations, and the surviving class is closer to the singleton the
+mathematics has.
+
 *The one check that would refute the repair*, and it is worth running
 before building on any of this: `LowerRamificationData v` must be
 INHABITED. If it is empty — a formalisation slip in `unif_spec` or
@@ -3831,11 +3902,24 @@ structure RamificationFiltration (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K
   eq_one_of_forall_mem : ∀ σ : Field.absoluteGaloisGroup (v.adicCompletion K),
     (∀ u : ℚ, 0 < u → σ ∈ gp u) → σ = 1
   /-- **HERBRAND'S THEOREM, AS THE ARITHMETIC ANCHOR**: at every finite
-  level the image of `G^{φ(m)}` is the `m`-th lower-numbering group. This
-  is the ONLY axiom here that is not invariant under `u ↦ gp (c * u)`,
-  and therefore the only one that can fix the scale. -/
-  gp_herbrand : ∀ (D : LowerRamificationData v) (m : ℕ),
-    gp (D.phi m) ⊔ D.lvl = D.gp m
+  level the image of `G^u` is the lower-numbering group `G_{⌈ψ(u)⌉}`, and
+  `⌈ψ(u)⌉ = m + 1` exactly on the half-open Herbrand interval
+  `(φ(m), φ(m+1)]`. This is the ONLY axiom here that is not invariant
+  under `u ↦ gp (c * u)`, and therefore the only one that can fix the
+  scale.
+
+  STRENGTHENED 2026-07-31 from `gp (D.phi m) ⊔ D.lvl = D.gp m`, i.e. from
+  the Herbrand values alone to the whole interval. The old form is
+  recovered verbatim as `RamificationFiltration.gp_herbrand_phi`; what is
+  new is the value INSIDE the gap, which the old axioms left free and
+  which the break decomposition needs. See the THIRD FALSITY AUDIT. -/
+  gp_herbrand : ∀ (D : LowerRamificationData v) (m : ℕ) (u : ℚ),
+    D.phi m < u → u ≤ D.phi (m + 1) → gp u ⊔ D.lvl = D.gp (m + 1)
+  /-- **HERBRAND AT `u = 0`**, where `ψ(0) = 0` and the interval form of
+  `gp_herbrand` says nothing: `G⁰` maps onto `G_0(L/Kᵥ)` at every finite
+  level. This is exactly the `m = 0` case of the pre-2026-07-31 axiom,
+  kept so that the strengthening trades nothing away. -/
+  gp_zero_herbrand : ∀ D : LowerRamificationData v, gp 0 ⊔ D.lvl = D.gp 0
 
 /-!
 ### PASSAGE À LA LIMITE: the upper numbering as an inverse limit
@@ -4029,6 +4113,42 @@ lemma step_le_phi_one {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)}
   exact one_div_le_one_div_of_le h1 (by exact_mod_cast hle)
 
 end LowerRamificationData
+
+/-- **HERBRAND AT THE HERBRAND VALUES**, i.e. the axiom `gp_herbrand` as it
+stood before 2026-07-31: `G^{φ_D(m)} ⊔ D.lvl = G_m(L/Kᵥ)`.
+
+It is now a two-line consequence of the interval form, since `φ_D(m)` is the
+RIGHT endpoint of `(φ_D(m-1), φ_D(m)]` and `φ_D` is strictly increasing; the
+`m = 0` case is `gp_zero_herbrand`, `φ_D(0)` being `0`. Every consumer that
+wants only the Herbrand values — `fixedSubmodule_gp_phi_eq`, and through it
+the whole break-sum comparison — should go through this rather than through
+the axiom, so that the strengthening stays invisible to them. -/
+theorem RamificationFiltration.gp_herbrand_phi
+    {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)} (F : RamificationFiltration v)
+    (D : LowerRamificationData v) (m : ℕ) :
+    F.gp (D.phi m) ⊔ D.lvl = D.gp m := by
+  cases m with
+  | zero => rw [D.phi_zero]; exact F.gp_zero_herbrand D
+  | succ n =>
+      exact F.gp_herbrand D n (D.phi (n + 1)) (D.phi_strictMono (Nat.lt_succ_self n)) le_rfl
+
+/-- **THE FILTRATION IS TRAPPED BY EVERY LEVEL THROUGHOUT A HERBRAND
+INTERVAL**: for `u ∈ (φ_D(m), φ_D(m+1)]`, `G^u ≤ G_{m+1}(L/Kᵥ) ⊓ P_v`.
+
+This is the half of the strengthened `gp_herbrand` that the break
+decomposition consumes, and the half the pre-2026-07-31 axioms did not give
+inside a gap. The `P_v` factor is `gp_le_wild`, available because
+`u > φ_D(m) ≥ φ_D(0) = 0`. -/
+theorem RamificationFiltration.gp_le_gp_inf_wild
+    {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)} (F : RamificationFiltration v)
+    (D : LowerRamificationData v) (m : ℕ) (u : ℚ)
+    (hlt : D.phi m < u) (hle : u ≤ D.phi (m + 1)) :
+    F.gp u ≤ D.gp (m + 1) ⊓ wildInertiaGroup v := by
+  have h0 : (0 : ℚ) ≤ D.phi m := by
+    have h := D.phi_strictMono.monotone (Nat.zero_le m)
+    rwa [D.phi_zero] at h
+  exact le_inf (le_sup_left.trans (F.gp_herbrand D m u hlt hle).le)
+    (F.gp_le_wild u (lt_of_le_of_lt h0 hlt))
 
 /-- **THE UPPER-NUMBERING FILTRATION, CONSTRUCTED AS AN INVERSE LIMIT**
 over the finite levels (Serre, *Corps Locaux* IV §3, "Passage à la
@@ -4421,6 +4541,130 @@ and `wildInertiaGroup_le_gp_one` — the last through the pair
 `P_v`) and `mem_gp_one_of_dvd_smul_unif_sub` (Serre IV §1 Lemma 1), both proven.
 The ONE still open is `gp_le_upperRamificationFiltration_sup_lvl` (`hherb`,
 which is Herbrand's theorem itself and is the deep one). -/
+
+/-- **THE LOWER FILTRATION IS EVENTUALLY TRIVIAL**: `G_m(L/Kᵥ) = 1` for `m`
+large, i.e. `G_m ≤ N` at the level itself (Serre, *Corps Locaux* IV §2,
+Cor. 1 to Prop. 3). PROVEN 2026-07-31, cut out of the break-decomposition
+leaf, where it is the ONLY thing that makes the codimension function reach
+`0` — the half of `HasFiniteWildMonodromyAt` that the wild-inertia bound
+`gp_le_wild` cannot supply.
+
+THE PROOF, in three moves. Each is a theorem this file already had; nothing
+new about `Kᵥ` is used.
+
+1. **The chain stabilises.** `N ≤ G_m ≤ G_0` with `N` open in the compact
+   `Γ Kᵥ`, so `[Γ : G_m]` is a nonzero divisor of `[Γ : N]`, non-decreasing
+   in `m` and bounded. At an `m₀` where it is MAXIMAL,
+   `Subgroup.relIndex_mul_index` forces `G_m.relIndex G_{m₀} = 1` for every
+   `m ≥ m₀`, i.e. `G_{m₀} ≤ G_m` — and `gp_antitone` gives the same for
+   `m ≤ m₀`. So `G_{m₀} = ⋂_m G_m`.
+2. **Krull separation.** For `σ ∈ G_{m₀}`, `mem_gp` at every `m` says
+   `unif^{m+1} ∣ σ • x − x` for every `N`-fixed `x`, and
+   `eq_zero_of_forall_pow_dvd_integralClosure` (the spectral norm of `unif`
+   is `< 1`) turns that into `σ • x = x`.
+3. **Galois.** `smul_eq_self_of_forall_smul_integralClosure_eq_self` lifts
+   that from `Oᵥ` to `Kᵥᵃˡᵍ`, so `σ` fixes the fixed field of `N`
+   pointwise; `InfiniteGalois.fixingSubgroup_fixedField` at the CLOSED (=
+   open) subgroup `N` reads that back as `σ ∈ N`.
+
+Note where `lvl_relIndex_ne_zero` is NOT used: the bound in move 1 comes
+from `Subgroup.quotient_finite_of_isOpen`, i.e. from openness of the level
+in a compact group, which is the same fact that axiom was added to record.
+-/
+theorem exists_gp_le_lvl {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)}
+    (D : LowerRamificationData v) : ∃ m : ℕ, D.gp m ≤ D.lvl := by
+  classical
+  haveI : Finite (Field.absoluteGaloisGroup (v.adicCompletion K) ⧸ D.lvl) :=
+    Subgroup.quotient_finite_of_isOpen D.lvl D.lvl_isOpen
+  have hlvlidx : D.lvl.index ≠ 0 := Subgroup.index_ne_zero_of_finite
+  have hdvd : ∀ m : ℕ, (D.gp m).index ∣ D.lvl.index :=
+    fun m => Subgroup.index_dvd_of_le (D.lvl_le_gp m)
+  have hne : ∀ m : ℕ, (D.gp m).index ≠ 0 := by
+    intro m h
+    exact hlvlidx (Nat.eq_zero_of_zero_dvd (h ▸ hdvd m))
+  have hbdd : ∀ m : ℕ, (D.gp m).index ≤ D.lvl.index :=
+    fun m => Nat.le_of_dvd (Nat.pos_of_ne_zero hlvlidx) (hdvd m)
+  set T : Set ℕ := Set.range (fun m => (D.gp m).index) with hT
+  have hTne : T.Nonempty := ⟨_, ⟨0, rfl⟩⟩
+  have hTbdd : BddAbove T := ⟨D.lvl.index, by rintro _ ⟨m, rfl⟩; exact hbdd m⟩
+  obtain ⟨m₀, hm₀⟩ : sSup T ∈ T := Nat.sSup_mem hTne hTbdd
+  have hmax : ∀ m : ℕ, (D.gp m).index ≤ (D.gp m₀).index := by
+    intro m
+    have h : (D.gp m).index ≤ sSup T := le_csSup hTbdd ⟨m, rfl⟩
+    exact h.trans_eq hm₀.symm
+  have hle : ∀ m : ℕ, D.gp m₀ ≤ D.gp m := by
+    intro m
+    rcases le_total m m₀ with h | h
+    · exact D.gp_antitone h
+    · have hsub : D.gp m ≤ D.gp m₀ := D.gp_antitone h
+      have hmul := Subgroup.relIndex_mul_index hsub
+      have heq : (D.gp m).index = (D.gp m₀).index :=
+        le_antisymm (hmax m) (Nat.le_of_dvd (Nat.pos_of_ne_zero (hne m))
+          (Subgroup.index_dvd_of_le hsub))
+      have h1 : (D.gp m).relIndex (D.gp m₀) = 1 := by
+        have hthis := hmul
+        rw [heq] at hthis
+        have hpos : 0 < (D.gp m₀).index := Nat.pos_of_ne_zero (hne m₀)
+        nlinarith [hthis, hpos]
+      exact Subgroup.relIndex_eq_one.mp h1
+  refine ⟨m₀, ?_⟩
+  intro σ hσ
+  have hA : ∀ x : IntegralClosure (v.adicCompletionIntegers K)
+      (AlgebraicClosure (v.adicCompletion K)),
+      (∀ τ ∈ D.lvl, τ • x = x) → σ • x = x := by
+    intro x hx
+    have hall : ∀ m : ℕ, D.unif ^ m ∣ σ • x - x := by
+      intro m
+      rcases Nat.eq_zero_or_pos m with rfl | hm
+      · simp
+      · obtain ⟨j, rfl⟩ : ∃ j : ℕ, m = j + 1 := ⟨m - 1, by omega⟩
+        exact (D.mem_gp j σ).mp (hle j hσ) x hx
+    have hz := eq_zero_of_forall_pow_dvd_integralClosure v D.unif_not_isUnit hall
+    linear_combination (norm := abel) hz
+  have hfix : ∀ y : AlgebraicClosure (v.adicCompletion K),
+      (∀ τ ∈ D.lvl, τ • y = y) → σ • y = y :=
+    fun y hy => smul_eq_self_of_forall_smul_integralClosure_eq_self v hA hy
+  have hclosed : IsClosed (D.lvl : Set (Field.absoluteGaloisGroup (v.adicCompletion K))) :=
+    Subgroup.isClosed_of_isOpen _ D.lvl_isOpen
+  have hcorr : (IntermediateField.fixedField D.lvl).fixingSubgroup = D.lvl :=
+    InfiniteGalois.fixingSubgroup_fixedField
+      (⟨D.lvl, hclosed⟩ : ClosedSubgroup (Field.absoluteGaloisGroup (v.adicCompletion K)))
+  rw [← hcorr]
+  intro y
+  exact hfix y.1 ((IntermediateField.mem_fixedField_iff _ _).mp y.2)
+
+end LowerRamificationData
+
+/-! ### The arithmetic inputs to the construction, as NAMED leaves
+
+The four statements below were, until 2026-07-29, anonymous sorried `have`s
+called `hterm`, `hsep`, `hin` and `hherb` inside the proof of
+`GaloisRep.exists_isSwanExponentAt`. Behind ONE `declaration uses 'sorry'`
+warning they were invisible to every frontier scan this project runs — the
+warning set counts DECLARATIONS, not sorries — so they never had an owner.
+They are lifted here verbatim, with their statements unchanged, and the
+construction `nonempty_ramificationFiltration` below consumes them.
+
+`LowerRamificationData.wildInertiaGroup_le_gp_one` is a FIFTH leaf, and it is
+new rather than lifted: see its own docstring and
+`GaloisRep.pos_of_card_filter_eq`.
+
+**STATUS 2026-07-30 — two of the five are now THEOREMS, not leaves**, so do not
+dispatch at them: `iInf_gp_eq_lvl` (`hterm`) over the `KrullSeparation` section
+above, and `iInf_lvl_eq_bot` (`hsep`) over `exists_lowerRamificationData_lvl_eq`.
+The three still open are `localInertiaGroup_le_gp_zero` (`hin`),
+`wildInertiaGroup_le_gp_one`, and `gp_le_upperRamificationFiltration_sup_lvl`
+(`hherb`, which is Herbrand's theorem itself and is the deep one).
+
+**STATUS 2026-07-31 — re-read against the compiler's warning set, not against
+this list.** Of those three, `localInertiaGroup_le_gp_zero` is PROVEN and
+`wildInertiaGroup_le_gp_one` is proven modulo the single sub-leaf
+`mem_gp_one_of_dvd_smul_unif_sub`. So the construction now rests on exactly TWO
+open declarations, `mem_gp_one_of_dvd_smul_unif_sub` and
+`gp_le_upperRamificationFiltration_sup_lvl`, and the latter is what the
+strengthened `RamificationFiltration.gp_herbrand` (2026-07-31) is discharged
+from — at `φ_D(m+1)`, exactly as before, with antitonicity carrying it across
+the whole interval. The strengthening added NO leaf here. -/
 
 /-- **THE LOWER FILTRATION TERMINATES AT ITS LEVEL**, `⋂_m G_m = N`. An
 element moving every `x ∈ 𝒪_L` by arbitrarily high powers of the uniformizer
@@ -5263,30 +5507,50 @@ theorem nonempty_ramificationFiltration
       Subgroup.mem_iInf.mpr hlvl
     rw [LowerRamificationData.iInf_lvl_eq_bot v] at hbot
     simpa using hbot
-  -- HERBRAND COMPATIBILITY: `≤` from `psiNat_phi` and
-  -- `localInertiaGroup_le_gp_zero`, `≥` is
-  -- `gp_le_upperRamificationFiltration_sup_lvl`.
-  have hherbrand : ∀ (D : LowerRamificationData v) (m : ℕ),
-      upperRamificationFiltration v (D.phi m) ⊔ D.lvl = D.gp m := by
-    intro D m
-    refine le_antisymm (sup_le ?_ (D.lvl_le_gp m))
-      (D.gp_le_upperRamificationFiltration_sup_lvl m)
-    rcases Nat.eq_zero_or_pos m with rfl | hm
-    · rw [D.phi_zero, upperRamificationFiltration_of_not_pos v (lt_irrefl (0 : ℚ))]
-      exact D.localInertiaGroup_le_gp_zero
-    · have hpos : (0 : ℚ) < D.phi m := by
-        have h := D.phi_strictMono hm
-        rwa [D.phi_zero] at h
-      rw [upperRamificationFiltration_of_pos v hpos]
+  -- HERBRAND COMPATIBILITY THROUGHOUT `(φ_D(m), φ_D(m+1)]`: `≤` because
+  -- `psiNat` is CONSTANT `= m + 1` there, so `iInf_le` at `D` already lands in
+  -- `D.gp (m+1)`; `≥` is `gp_le_upperRamificationFiltration_sup_lvl` at the
+  -- RIGHT endpoint composed with `hmono`, since `u ≤ φ_D(m+1)`. Neither half
+  -- needs anything the Herbrand-values-only form did not already need.
+  have hherbrand : ∀ (D : LowerRamificationData v) (m : ℕ) (u : ℚ),
+      D.phi m < u → u ≤ D.phi (m + 1) →
+      upperRamificationFiltration v u ⊔ D.lvl = D.gp (m + 1) := by
+    intro D m u hlt hle
+    have h0 : (0 : ℚ) ≤ D.phi m := by
+      have h := D.phi_strictMono.monotone (Nat.zero_le m)
+      rwa [D.phi_zero] at h
+    have hupos : (0 : ℚ) < u := lt_of_le_of_lt h0 hlt
+    have hpsi : D.psiNat u = m + 1 := by
+      refine le_antisymm (D.psiNat_le hle) ?_
+      by_contra hcon
+      have h1 : D.psiNat u ≤ m := by omega
+      have h2 := D.le_phi_psiNat u
+      have h3 := D.phi_strictMono.monotone h1
+      linarith
+    refine le_antisymm (sup_le ?_ (D.lvl_le_gp (m + 1))) ?_
+    · rw [upperRamificationFiltration_of_pos v hupos]
       refine le_trans inf_le_right (le_trans (iInf_le _ D) ?_)
-      rw [D.psiNat_phi]
+      rw [hpsi]
+    · exact le_trans (D.gp_le_upperRamificationFiltration_sup_lvl (m + 1))
+        (sup_le_sup_right (hmono u (D.phi (m + 1)) hle) _)
+  -- HERBRAND AT `u = 0`: `≤` is `localInertiaGroup_le_gp_zero`, `≥` is the
+  -- same leaf at `m = 0`, where `φ_D(0) = 0`.
+  have hherbrand0 : ∀ D : LowerRamificationData v,
+      upperRamificationFiltration v 0 ⊔ D.lvl = D.gp 0 := by
+    intro D
+    refine le_antisymm (sup_le ?_ (D.lvl_le_gp 0)) ?_
+    · rw [upperRamificationFiltration_of_not_pos v (lt_irrefl (0 : ℚ))]
+      exact D.localInertiaGroup_le_gp_zero
+    · have h := D.gp_le_upperRamificationFiltration_sup_lvl 0
+      rwa [D.phi_zero] at h
   exact ⟨{ gp := upperRamificationFiltration v
            gp_le_gp := hmono
            gp_zero := hzero
            gp_le_wild := hwild
            gp_of_forall_lt := hcont
            eq_one_of_forall_mem := hone
-           gp_herbrand := hherbrand }⟩
+           gp_herbrand := hherbrand
+           gp_zero_herbrand := hherbrand0 }⟩
 
 namespace GaloisRep
 
@@ -5629,26 +5893,38 @@ naming where:
 `exists_nat_forall_sum_breaks_eq` (`hsum`, PROVEN)
       → `sum_eq_of_card_filter_eq_of_dense` (pure combinatorics, PROVEN)
       → `pos_of_card_filter_eq` (PROVEN: the breaks are POSITIVE)
-          → `LowerRamificationData.wildInertiaGroup_le_gp_one` (PROVEN
-            2026-07-30, over `dvd_smul_unif_sub_of_mem_wildInertiaGroup` and
-            `mem_gp_one_of_dvd_smul_unif_sub`)
+          → `LowerRamificationData.wildInertiaGroup_le_gp_one` (PROVEN since
+            2026-07-30, over `mem_gp_one_of_dvd_smul_unif_sub`)
       → `fixedSubmodule_gp_phi_eq` (PROVEN, and its proof is `gp_herbrand`
         plus Dedekind's modular law)
-      → `exists_lowerRamificationData_phi_mem_Ioc` (LEAF: the arithmetic
-        input, that Herbrand values are dense)
-      → `exists_nat_eq_sum_breaks` (PROVEN 2026-07-30: Hasse–Arf integrality,
-        by a Riemann-sum comparison against ONE finite level)
-          → `exists_nat_eq_sum_lowerSwan` (LEAF: Hasse–Arf at a finite level,
-            which is where the depth now sits)
-          → `exists_lowerRamificationData_phi_one_le` (PROVEN 2026-07-30: the
-            same arithmetic input as the density leaf, and the only one it
-            needs)
-              → `exists_level_smul_unif_eq_mul` (PROVEN: the selection of the
-                open normal level and of the prime modulus)
-                  → `exists_level_smul_unif_eq_mul_of_prime` (LEAF: a tamely
-                    ramified level whose uniformizer is an inertia eigenvector)
-          → `LowerRamificationData.exists_gp_eq_lvl` (PROVEN: the truncation
-            point).
+      → `exists_lowerRamificationData_phi_mem_Ioc` (PROVEN since 2026-07-30,
+        over `exists_lowerRamificationData_phi_one_le`: Herbrand values are
+        dense)
+      → `exists_nat_eq_sum_breaks` (LEAF: Hasse–Arf integrality).
+
+UPDATED 2026-07-31 — the `hbreak` side is now a chain too, and a short one:
+
+`exists_breaks_of_hasFiniteWildMonodromyAt` (`hbreak`, PROVEN)
+      → `exists_max_codim_gt` (PROVEN: the `k`-th break exists and is a
+        Herbrand value, so no supremum is taken and rationality is free)
+          → `LowerRamificationData.exists_gp_le_lvl` (PROVEN: `G_m = 1` for
+            `m` large — the half `gp_le_wild` cannot supply, and the only
+            place `HasFiniteWildMonodromyAt` is indispensable)
+          → `fixedSubmodule_gp_eq_of_lt_of_le` (PROVEN by `le_antisymm`)
+              → `fixedSubmodule_gp_le_of_lt_of_le` (PROVEN: the free half,
+                pure monotonicity)
+              → `le_fixedSubmodule_gp_of_mem_Ioo` (PROVEN: the other half of
+                "the codimension function is the step function of any
+                level" — cut as a LEAF on 2026-07-31 and closed the same day
+                by STRENGTHENING `RamificationFiltration.gp_herbrand` from
+                the Herbrand values to every real argument, which is what
+                the genuine upper numbering satisfies and what the
+                constructed filtration satisfies for free. It was not
+                derivable from the axioms as they stood; see the THIRD
+                FALSITY AUDIT there, and the analysis kept in its own
+                docstring)
+      → `finrank_le_finrank_of_le` (PROVEN: `finrank` monotonicity, which
+        over an arbitrary `CommRing` needs `finrank A M ≠ 0`).
 
 Delete `gp_herbrand` from `RamificationFiltration` and
 `fixedSubmodule_gp_phi_eq` fails immediately — which is the mechanical
@@ -5659,20 +5935,36 @@ of `one_le_break` landed: the comparison of counting functions used to start at
 `u = 1` on the strength of that theorem, and now starts at every `u > 0`. See
 the WITHDRAWN note below for the full list of edits.
 
-**WHERE THE RESIDUAL FALSITY RISK NOW SITS.** It sits in `hbreak`, i.e. in
-`exists_breaks_of_hasFiniteWildMonodromyAt`, and a future owner should know
-this before attacking it. `fixedSubmodule_gp_phi_eq` pins the codimension
-function `u ↦ dim V − dim V^{G^u}` of ANY admissible `F` at every Herbrand
-value, and `sum_eq_of_card_filter_eq_of_dense` then shows that a break list
-is determined by its counting function on a left-dense set. Consequently a
-filtration that is admissible but differs from the genuine one at some
-NON-Herbrand `u` — `gp_herbrand` constrains `gp` only at the rationals
-`D.phi m`, and only modulo `D.lvl` — could not admit a break list at all,
-and `hbreak` would be FALSE for it. The repair in that event is the one the
-FALSITY AUDIT prescribes and NOT a weakening of `hbreak`: strengthen
-`RamificationFiltration` (requiring each `gp u` to be CLOSED, or Herbrand
-compatibility at every real `u` via `ψ`, are the two candidates), so that
-the admissible class is exactly the genuine filtration. -/
+**WHERE THE RESIDUAL FALSITY RISK USED TO SIT, AND WHAT HAPPENED TO IT.**
+Written before 2026-07-31, and it called the shot exactly:
+
+> It sits in `hbreak`, i.e. in `exists_breaks_of_hasFiniteWildMonodromyAt`,
+> and a future owner should know this before attacking it.
+> `fixedSubmodule_gp_phi_eq` pins the codimension function
+> `u ↦ dim V − dim V^{G^u}` of ANY admissible `F` at every Herbrand value,
+> and `sum_eq_of_card_filter_eq_of_dense` then shows that a break list is
+> determined by its counting function on a left-dense set. Consequently a
+> filtration that is admissible but differs from the genuine one at some
+> NON-Herbrand `u` — `gp_herbrand` constrains `gp` only at the rationals
+> `D.phi m`, and only modulo `D.lvl` — could not admit a break list at all,
+> and `hbreak` would be FALSE for it. The repair in that event is the one
+> the FALSITY AUDIT prescribes and NOT a weakening of `hbreak`: strengthen
+> `RamificationFiltration` (requiring each `gp u` to be CLOSED, or Herbrand
+> compatibility at every real `u` via `ψ`, are the two candidates), so that
+> the admissible class is exactly the genuine filtration.
+
+That is precisely what occurred. Cutting `hbreak` down isolated the risk in
+ONE inclusion, `le_fixedSubmodule_gp_of_mem_Ioo`; the gap between Herbrand
+values turned out to be genuinely free under the old axioms (the analysis is
+in that theorem's docstring, including the correction of a refinement route
+that does not work); and the SECOND candidate repair above — Herbrand
+compatibility at every real `u` via `ψ` — was applied on 2026-07-31. It cost
+the construction nothing.
+
+**So the residual risk now sits in the three open leaves of
+`nonempty_ramificationFiltration`**, where an OVER-strong anchor would show up
+as an unprovable `Nonempty` rather than as a false theorem — which is the
+visible failure mode, by design. -/
 
 /-- **DEDEKIND'S MODULAR LAW**, in the one form used below: for `S ≤ P` and
 `N` NORMAL, `(S ⊔ N) ⊓ P = S ⊔ (N ⊓ P)`.
@@ -5786,7 +6078,7 @@ theorem fixedSubmodule_gp_phi_eq (ρ : GaloisRep K A M) (v : HeightOneSpectrum (
         (ρ.fixedSubmodule_sup_eq v _ _ hD).symm
     _ = ρ.fixedSubmodule v ((F.gp (D.phi m) ⊔ D.lvl) ⊓ wildInertiaGroup v) := by
         rw [sup_inf_eq_of_le_of_normal hle]
-    _ = ρ.fixedSubmodule v (D.gp m ⊓ wildInertiaGroup v) := by rw [F.gp_herbrand D m]
+    _ = ρ.fixedSubmodule v (D.gp m ⊓ wildInertiaGroup v) := by rw [F.gp_herbrand_phi D m]
 
 /-! ### WITHDRAWN 2026-07-29: `one_le_break` was FALSE
 
@@ -5980,6 +6272,137 @@ theorem sum_eq_of_card_filter_eq_of_dense (d : ℕ) (μ μ' : ℕ → ℚ)
     exact hall u
   exact congrArg Multiset.sum hms
 
+/-! ### THE BREAK DECOMPOSITION — the analysis
+
+**PROVEN 2026-07-31.** `exists_breaks_of_hasFiniteWildMonodromyAt` no longer
+lives here: it needs `exists_lowerRamificationData_phi_mem_Ioc`, so it has
+moved BELOW that theorem, where it is proved outright over the single new leaf
+`le_fixedSubmodule_gp_of_mem_Ioo` (the codimension function is the step
+function of any level) and over `LowerRamificationData.exists_gp_le_lvl`
+(PROVEN above). Everything below this line is the analysis that produced that
+proof and is kept verbatim, because it is the record of what was tried and of
+where the residual falsity risk sits — which is now concentrated in that one
+leaf. Read it with the new statements in hand.
+
+The old text, unchanged:
+
+`hbreak` of `GaloisRep.exists_isSwanExponentAt`: with finite wild
+monodromy, `V|_{I_v}` has a finite list of rational breaks whose layer cake
+is the codimension function `u ↦ dim V − dim V^{G^u}`.
+
+Serre, *Corps Locaux* VI §2; Katz, *Gauss Sums, Kloosterman Sums and
+Monodromy* 1.1.
+
+**THE POSITIVITY CLAUSE IS PART OF THE CONCLUSION (2026-07-30), and it is
+where the retired `gp_eq_wild` really lived.** `0 < μ k` for every
+`k < ρ.wildCodim v` is not decoration. What it says about the codimension
+function is that `c(u) = ρ.wildCodim v` for all SMALL `u > 0` (a
+non-positive entry is invisible to every test `u > 0`, so it would depress
+the counting function below `d` everywhere). That is the true content of
+the false axiom, in the one place it belongs: the axiom asserted
+`G^u = P_v` on `(0,1]`, which is a statement about a FIXED interval and is
+false; what holds is that the codimension function reaches its maximum
+near `0`, with no uniform interval on which it does so.
+
+It is a strictly stronger obligation than the counting clause alone, and
+a prover owes nothing extra for it: Serre's break decomposition produces
+positive breaks, the positive breaks being precisely the wild part.
+
+**A CLAIM MADE HERE ON 2026-07-30 AND WITHDRAWN THE SAME DAY**, because it
+misdirects the prover. This paragraph said the clause "cannot be proved
+from the repaired axioms", citing the WITHDRAWN note on `one_le_break`.
+What that note actually rules out is a `μ k ≥ c > 0` theorem with a
+UNIFORM `c` — and it is right about that. Positivity itself IS reachable
+from the repaired axioms, over ONE further input, and the derivation is
+written out in full in the THIRD FALSITY AUDIT on
+`GaloisRep.IsSwanExponentAt`. In brief: for a level `D` with `D.lvl ≤ N`,
+`gp_herbrand` at `m = 1` plus `P_v ≤ D.gp 1` plus Dedekind gives
+`P_v = F.gp (D.phi 1) ⊔ (D.lvl ⊓ P_v)`, whose second summand acts
+trivially — so `c (D.phi 1) = ρ.wildCodim v` at the POSITIVE value
+`D.phi 1`, and the counting clause there forces `D.phi 1 ≤ μ k` for every
+`k < d`. The bound is not uniform (it depends on the level), which is
+exactly why `one_le_break` is false and this is not.
+
+The further input, `P_v ≤ D.gp 1`, is a theorem about
+`LowerRamificationData.mem_gp` and not a strengthening of any axiom:
+`mem_gp` DEFINES `D.gp` elementwise, `D.gp 1` is therefore the pulled-back
+`G₁(L/Kᵥ)` of the finite level, `L ∩ Kᵥᵗᵃᵐᵉ = L^{G₁}`, and
+`P_v = Gal(Kᵥᵃˡᵍ/Kᵥᵗᵃᵐᵉ)` maps onto `G₁(L/Kᵥ)`. It is worth building
+independently of this leaf — it is small, it is the input the retired-axiom
+era kept reaching for and never named correctly, and it makes the clause
+below a derived fact.
+
+THE ROUTE, and the three facts it needs about `c(u) := dim V − dim V^{G^u}`:
+
+1. `c` is NON-INCREASING (`gp_le_gp` plus `fixedSubmodule_mono`) and equals
+   `ρ.wildCodim v` NEAR `0`. **CORRECTED 2026-07-29**: this bullet used to
+   read "equals `ρ.wildCodim v` on `(0, 1]` (`gp_eq_wild`), proved above as
+   `one_le_break`", and BOTH citations are dead — `gp_eq_wild` was retired as
+   false and `one_le_break` withdrawn with it. What is true, and all this
+   route needs, is that `c(u) = ρ.wildCodim v` for `u` small: at `u = φ_D(1)`
+   for a level `D` inside the open subgroup `hfin` supplies, that is
+   `fixedSubmodule_gp_phi_eq` plus
+   `LowerRamificationData.wildInertiaGroup_le_gp_one`. It is proved below, in
+   this shape, as `pos_of_card_filter_eq` — which is a CONSEQUENCE of the
+   counting clause rather than an input to it, so a prover of this leaf must
+   establish it directly and must NOT cite that theorem (circularity).
+2. `c` REACHES `0`. This is where `hfin` is indispensable: it supplies an
+   open `N` with `N ⊓ P_v` acting trivially, and one needs some `u` with
+   `G^u ≤ N`. Over `gp_herbrand` that reduces to the lower-numbering fact
+   that `G_m(L/Kᵥ) = 1` for `m` large, which is `mem_gp` plus
+   `⋂ₙ (unif)ⁿ = 0` at the finite level `L`.
+3. `c` is LEFT-CONTINUOUS and has finitely many jumps, all at rationals.
+   Left continuity is `gp_of_forall_lt` plus the fact that the fixed
+   submodule of an intersection of the `G^w` is the union of the
+   `V^{G^w}` — which again uses `hfin`, since past `u = 1` the action
+   factors through the finite group `ρ(P_v)` and a decreasing chain of
+   subgroups of a finite group stabilises.
+
+Given 1–3 the break list is `μ k := sup {u | c u > k}`, and the counting
+clause is exactly the statement that this sup is attained.
+
+FAITHFULNESS NOTE — this leaf is where the residual falsity risk of the
+whole section now lives; see the section docstring above. It is stated for
+EVERY admissible `F`, and `gp_herbrand` pins `F` only at the Herbrand
+values, so an admissible-but-not-genuine `F` would be a counterexample.
+Refuting it with such an `F` is a fully successful outcome, and the repair
+is then to strengthen `RamificationFiltration`, never to weaken this.
+
+**WHERE IN THIS STATEMENT THAT RISK IS, AND WHERE IT IS NOT (2026-07-30).**
+Adding the positivity clause did not add risk: by the derivation above it
+holds for EVERY admissible `F`, over the single input `P_v ≤ D.gp 1`. The
+risk lives entirely in the COUNTING clause, and specifically in the
+attainment of the suprema in step 3 — `c` non-increasing with values in
+`{0, …, d}` has at most `d` jumps for free, and `c` reaching both `d` (the
+derivation above) and `0` (`hfin`) is settled, but a break list exists only
+if `c` is LEFT-continuous at each jump. That is the sharp place to look for
+a refuting `F`: an admissible filtration whose `c` is `1` on `(0, 1)` and
+`0` on `[1, ∞)` admits no `μ`, since `μ 0` would have to be both `≥ u` for
+every `u < 1` and `< 1`. Whether `gp_of_forall_lt` already excludes it
+(with `hfin` converting the intersection of the `G^w` into a union of fixed
+submodules) is the one question a prover — or a refuter — should settle
+first. It is cheaper than the rest of the leaf and it decides which of the
+two outcomes to aim for.
+
+**HOW IT CAME OUT (2026-07-31).** Step 1 is `pos_of_card_filter_eq`'s own
+argument run directly (`fixedSubmodule_gp_phi_eq` at `m = 1` plus
+`wildInertiaGroup_le_gp_one`), step 2 is now
+`LowerRamificationData.exists_gp_le_lvl`, and step 3 — the left continuity,
+the place this docstring named as the sharp risk — is exactly
+`le_fixedSubmodule_gp_of_mem_Ioo`, which stood as a leaf for part of that day
+and was then closed by strengthening `RamificationFiltration.gp_herbrand` to
+every real argument. The attainment of the suprema is NOT a separate
+difficulty: over that theorem the break list is not a supremum at all but the
+explicit finite list `μ k = φ_D(m_k)` read off ONE level. See the two
+statements below.
+
+The instinct recorded above — that the sharp question is what an admissible
+`F` may do BETWEEN Herbrand values, and that it "decides which of the two
+outcomes to aim for" — was right, and the answer turned out to be neither
+"prove it" nor "refute it" but a THIRD outcome the FALSITY AUDIT had already
+named: the axioms did not determine `F` there, so the axioms were the thing
+that had to change. -/
+
 /-- **THE BREAK DECOMPOSITION** (SORRY LEAF, cut 2026-07-28 out of step
 `hbreak` of `GaloisRep.exists_isSwanExponentAt`): with finite wild
 monodromy, `V|_{I_v}` has a finite list of rational breaks whose layer cake
@@ -6135,7 +6558,54 @@ theorem exists_breaks_of_hasFiniteWildMonodromyAt (ρ : GaloisRep K A M)
     ∃ μ : ℕ → ℚ, (∀ k < ρ.wildCodim v, 0 < μ k) ∧
       ∀ u : ℚ, 0 < u →
         Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp u)) =
-          ((Finset.range (ρ.wildCodim v)).filter fun k => u ≤ μ k).card := sorry
+          ((Finset.range (ρ.wildCodim v)).filter fun k => u ≤ μ k).card := by
+  classical
+  by_cases hM : Module.finrank A M = 0
+  · have hd : ρ.wildCodim v = 0 := by rw [wildCodim, hM]; omega
+    refine ⟨fun _ => 1, ?_, ?_⟩
+    · intro k hk; rw [hd] at hk; omega
+    · intro u hu
+      rw [hM, hd]
+      simp
+  · have hanti : ∀ u w : ℚ, u ≤ w →
+        Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp w))
+          ≤ Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp u)) := by
+      intro u w h
+      exact Nat.sub_le_sub_left
+        (finrank_le_finrank_of_le hM (ρ.fixedSubmodule_mono v (F.gp_le_gp u w h))) _
+    have hbnd : ∀ u : ℚ, 0 < u →
+        Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp u))
+          ≤ ρ.wildCodim v := by
+      intro u hu
+      rw [wildCodim]
+      exact Nat.sub_le_sub_left
+        (finrank_le_finrank_of_le hM (ρ.fixedSubmodule_mono v (F.gp_le_wild u hu))) _
+    have key : ∀ k : ℕ, ∃ t : ℚ, 0 < t ∧ (k < ρ.wildCodim v →
+        (k < Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp t)) ∧
+          ∀ w : ℚ, t < w →
+            Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp w)) ≤ k)) := by
+      intro k
+      by_cases hk : k < ρ.wildCodim v
+      · obtain ⟨t, ht0, ht1, ht2⟩ := ρ.exists_max_codim_gt v hfin F hk
+        exact ⟨t, ht0, fun _ => ⟨ht1, ht2⟩⟩
+      · exact ⟨1, one_pos, fun h => absurd h hk⟩
+    choose μ hμ0 hμ using key
+    refine ⟨μ, fun k _ => hμ0 k, ?_⟩
+    intro u hu
+    have hset : ((Finset.range (ρ.wildCodim v)).filter fun k => u ≤ μ k)
+        = Finset.range (Module.finrank A M
+            - Module.finrank A (ρ.fixedSubmodule v (F.gp u))) := by
+      ext k
+      simp only [Finset.mem_filter, Finset.mem_range]
+      constructor
+      · rintro ⟨hkd, hku⟩
+        exact lt_of_lt_of_le (hμ k hkd).1 (hanti u (μ k) hku)
+      · intro hk
+        have hkd : k < ρ.wildCodim v := lt_of_lt_of_le hk (hbnd u hu)
+        refine ⟨hkd, ?_⟩
+        by_contra hlt
+        exact absurd ((hμ k hkd).2 u (not_le.mp hlt)) (by omega)
+    rw [hset, Finset.card_range]
 
 /-- **A TAMELY RAMIFIED LEVEL WHOSE UNIFORMIZER IS AN INERTIA EIGENVECTOR**
 (SORRY LEAF, cut 2026-07-30 out of `exists_lowerRamificationData_phi_one_le`
@@ -7194,6 +7664,310 @@ theorem exists_lowerRamificationData_phi_mem_Ioc
     · rw [D.phi_succ (D.psiNat w), ← heq]
       have hs := D.step_le_phi_one (D.psiNat w)
       linarith
+
+omit [TopologicalSpace A] in
+/-- **`finrank` IS MONOTONE ON SUBMODULES ONCE `finrank M ≠ 0`.** `A` is an
+arbitrary `CommRing` and `M` an arbitrary `A`-module here, so the usual
+`Submodule.finrank_mono` (which wants `Module.Finite`) is unavailable, and the
+bare statement is FALSE: with `Module.rank A M = ℵ₀` one has
+`finrank A M = 0` while a submodule can have `finrank = 5`, since
+`Cardinal.toNat` sends every infinite cardinal to `0`.
+
+`finrank A M ≠ 0` is exactly what excludes that: it forces
+`Module.rank A M < ℵ₀`, and then `Submodule.rank_mono` transports through
+`Cardinal.toNat_le_toNat`. The hypothesis is available wherever it is needed
+below, because the `finrank A M = 0` branch of
+`exists_breaks_of_hasFiniteWildMonodromyAt` is separately TRIVIAL: there
+`ρ.wildCodim v = 0` and every codimension is `0 - _ = 0` in `ℕ`. -/
+theorem finrank_le_finrank_of_le (hM : Module.finrank A M ≠ 0)
+    {N N' : Submodule A M} (h : N ≤ N') :
+    Module.finrank A N ≤ Module.finrank A N' := by
+  have hlt : Module.rank A M < Cardinal.aleph0 := by
+    by_contra hc
+    exact hM (Cardinal.toNat_eq_zero.mpr (Or.inr (not_lt.mp hc)))
+  exact Cardinal.toNat_le_toNat (Submodule.rank_mono h)
+    (lt_of_le_of_lt (Submodule.rank_le N') hlt)
+
+/-- **HALF OF THE STEP-FUNCTION PROPERTY IS FREE**, and it is worth having
+separately so that the leaf below is exactly the other half: on the whole
+half-open Herbrand interval `(φ_D(m), φ_D(m+1)]`, the codimension is at
+LEAST what it is at the right endpoint.
+
+Nothing but monotonicity: `F.gp (φ_D(m+1)) ≤ F.gp u` for `u ≤ φ_D(m+1)`, so
+`V^{G^u} ≤ V^{G^{φ_D(m+1)}}`, and the right-hand side is
+`fixedSubmodule_gp_phi_eq`. The hypothesis `0 < D.phi (m+1)` that theorem
+wants comes for free from `D.phi m < u`, since `φ` is monotone with
+`φ 0 = 0`. -/
+theorem fixedSubmodule_gp_le_of_lt_of_le (ρ : GaloisRep K A M)
+    (v : HeightOneSpectrum (𝓞 K)) (F : RamificationFiltration v)
+    (D : LowerRamificationData v)
+    (hD : ∀ σ ∈ D.lvl ⊓ wildInertiaGroup v, ∀ x : M, ρ.toLocal v σ x = x)
+    (m : ℕ) (u : ℚ) (hlt : D.phi m < u) (hle : u ≤ D.phi (m + 1)) :
+    ρ.fixedSubmodule v (F.gp u)
+      ≤ ρ.fixedSubmodule v (D.gp (m + 1) ⊓ wildInertiaGroup v) := by
+  have h0 : 0 ≤ D.phi m := by
+    have h := D.phi_strictMono.monotone (Nat.zero_le m)
+    rwa [D.phi_zero] at h
+  calc ρ.fixedSubmodule v (F.gp u)
+      ≤ ρ.fixedSubmodule v (F.gp (D.phi (m + 1))) :=
+        ρ.fixedSubmodule_mono v (F.gp_le_gp u (D.phi (m + 1)) hle)
+    _ = ρ.fixedSubmodule v (D.gp (m + 1) ⊓ wildInertiaGroup v) :=
+        ρ.fixedSubmodule_gp_phi_eq v F D hD (m + 1) (by linarith)
+
+/-- **THE CODIMENSION FUNCTION IS THE STEP FUNCTION OF ANY LEVEL** (cut
+2026-07-31 out of `exists_breaks_of_hasFiniteWildMonodromyAt` as a SORRY LEAF,
+and CLOSED the same day by strengthening `RamificationFiltration.gp_herbrand`
+rather than by proving it): for `u` STRICTLY between two consecutive Herbrand
+values of a level `D`, `V^{G^u}` is what it is at the RIGHT endpoint, namely
+`V^{G_{m+1}(L/Kᵥ) ⊓ P_v}`.
+
+**HOW IT CLOSED, AND WHY THIS IS NOT A DODGE.** The leaf is *not* derivable
+from the axioms as they stood, and the analysis kept below says why in detail:
+they gave only the sandwich `G^{φ_D(m+1)} ≤ G^u ≤ G^{φ_D(m)}`, both ends
+admissible, and probing with other levels is circular because `gp_herbrand`
+relates every level to `F` and no two levels to each other. Two proposed
+escapes were checked and closed off — a dense-subgroup counterexample is
+invisible to `fixedSubmodule` (`fixedSubmodule_sup_eq` under `hfin`), and
+Herbrand values do NOT persist under refinement, so `u` need not be a Herbrand
+value of any deep level. The repair the `RamificationFiltration` docstring had
+already prescribed for exactly this case is the one applied: state Herbrand at
+every real `u` through `ψ`, which is what the genuine upper numbering
+satisfies and what the CONSTRUCTED filtration satisfies with no new input.
+See the THIRD FALSITY AUDIT on `RamificationFiltration`.
+
+So this is now `RamificationFiltration.gp_le_gp_inf_wild` plus antitonicity of
+`fixedSubmodule`, and the hypothesis `hD` — which the sorried statement carried
+because the intended route went through `fixedSubmodule_sup_eq` — is GONE: the
+containment is a fact about subgroups, with no trivially-acting level needed.
+`u < φ_D(m+1)` is likewise not needed (`≤` suffices), but is kept so that
+`fixedSubmodule_gp_eq_of_lt_of_le` below still reads as the two-case split it
+is.
+
+Only ONE INCLUSION was open — the other is `fixedSubmodule_gp_le_of_lt_of_le`
+immediately above, which is pure monotonicity — and this was stated as that
+inclusion alone, so that a prover was never tempted to re-prove the free half.
+The equality on the half-open interval, `fixedSubmodule_gp_eq_of_lt_of_le`, is
+proven below by `le_antisymm`, this covering the open interval and
+`fixedSubmodule_gp_phi_eq` the endpoint.
+
+**EVERYTHING FROM HERE TO THE STATEMENT IS THE ANALYSIS THAT DECIDED THE CUT,
+AND EVERY "the axioms" IN IT MEANS THE PRE-2026-07-31 AXIOMS.** It is kept
+because it is what establishes that those axioms were genuinely insufficient —
+the fact that justifies strengthening them rather than trying harder — and
+because its last paragraph is the check that the strengthened axiom is
+satisfiable. One claim in it is now known to be WRONG and is corrected in
+place, under THE ROUTE below.
+
+**WHAT THE AXIOMS DO GIVE, and it is exactly the wrong direction.** For
+`u ≤ φ_D(m+1)`, antitonicity plus `gp_herbrand` at `m+1` give
+`D.gp (m+1) ≤ F.gp u ⊔ D.lvl`, i.e. the group is at least as big as it should
+be, whence the FREE inclusion above. The sandwich the axioms produce is
+`F.gp (φ_D (m+1)) ≤ F.gp u ≤ F.gp (φ_D m)`, and this leaf is the claim that
+`F` sits at the LOWER end of it throughout the gap — i.e. that an admissible
+filtration cannot linger at `G_m` past `φ_D(m)`.
+
+**WHY IT IS TRUE.** Serre, *Corps Locaux* IV §3: at a finite level,
+`G^u|_L = G_{ψ_{L/Kᵥ}(u)}(L/Kᵥ)`, and the lower numbering at a real argument
+`t` is `G_{⌈t⌉}`. Since `ψ` is the inverse of `φ`, `u ∈ (φ(m), φ(m+1))` gives
+`ψ(u) ∈ (m, m+1)`, hence `⌈ψ(u)⌉ = m + 1`. The level acts trivially, so only
+`G^u`'s image at the level is read, and that image is `G_{m+1}`.
+
+**WHY IT IS NOT FREE FROM THE AXIOMS, which is the whole difficulty.**
+`gp_herbrand` pins `F.gp` only AT the Herbrand values of `D`. In the gap the
+five shape axioms give only the sandwich
+`F.gp (φ_D (m+1)) ≤ F.gp u ≤ F.gp (φ_D m)`, and both ends are attainable by a
+filtration satisfying every axiom *of this level*. Equivalently, all that is
+open is ONE inclusion of submodules,
+
+  `ρ.fixedSubmodule v (F.gp (D.phi (m+1))) ≤ ρ.fixedSubmodule v (F.gp u)`,
+
+the other being `fixedSubmodule_mono` applied to `F.gp_le_gp`.
+
+**THE ROUTE: REFINE THE LEVEL — AND IT DOES NOT WORK. CORRECTED 2026-07-31,
+same day it was written.** The paragraph here said: Herbrand's transitivity
+`φ_{L'/Kᵥ} = φ_{L/Kᵥ} ∘ φ_{L'/L}` makes every Herbrand value of `D` a Herbrand
+value of every refinement `D'` of `D`, so applying `gp_herbrand` at a `D'` with
+`D'.lvl ≤ D.lvl` and a Herbrand value just below `u` pins `F.gp u` modulo
+`D'.lvl`, which acts trivially, so the FIXED submodule is pinned even though
+the group is not.
+
+**The persistence claim is FALSE, and it is the load-bearing half.** Herbrand
+values of `D` are `φ_{L/Kᵥ}(ℕ)`, of `D'` are `φ_{L/Kᵥ}(φ_{L'/L}(ℕ))`, and
+`φ_{L'/L}(i) ≤ i` with equality only in the unramified case — so refining
+generally MOVES the sample points rather than adding to them, and
+`φ_{L'/Kᵥ}(ℕ) ⊉ φ_{L/Kᵥ}(ℕ)`. Consequently a given rational `u` inside a gap
+need not be a Herbrand value of any DEEP level at all: the levels realising it
+may all be shallow, and then `F.gp u` is pinned only modulo their common
+`lvl`, which is exactly the room an early drop needs.
+
+**What survives, and it is not enough either.** Density
+(`exists_lowerRamificationData_phi_mem_Ioc`) plus left continuity does give
+`F.gp u = ⋂ {F.gp h : h < u, h a Herbrand value}`, hence the purely arithmetic
+upper bound `F.gp u ≤ ⋂_{h<u} D_h.gp j_h`. But making that land inside
+`D.gp (m+1)` requires comparing a deep level's lower filtration with `D`'s —
+Herbrand's theorem for the tower `L'/L/Kᵥ`, which is NOT among the axioms and
+is not derivable from `mem_gp` by valuations alone: the crude bound
+`v_{L'}(z) ≥ j+1 ⟹ v_L(z) ≥ ⌈(j+1)/e'⌉` lands one step short, in `D.gp m`, for
+exactly the `j` with `φ_{L'/L}(j) ∈ (m, m+1)` that the argument needs. Serre's
+proof averages `i_{L'/Kᵥ}` over a coset (IV §3, Prop. 3) rather than reading a
+single valuation, and that averaging is the missing content.
+
+That is what settled the question below in favour of strengthening the
+structure.
+
+**WHY THE OBVIOUS REFUTATION DOES NOT WORK, and where a real one would have to
+live.** The freedom the axioms leave is to replace each `F.gp u` by a subgroup
+with the same join with the levels — i.e. by a DENSE subgroup of the genuine
+`G^u`, `gp_herbrand` being blind to closure. That freedom is harmless here, and
+`hfin` is why: with `N ⊓ P_v` open in `P_v` and acting trivially, a dense
+`H ≤ G^u` has `H ⊔ (N ⊓ P_v) = G^u ⊔ (N ⊓ P_v)` (each `g ∈ G^u` meets `H` in
+its neighbourhood `g (N ⊓ P_v)`), so `fixedSubmodule_sup_eq` gives
+`V^H = V^{G^u}` — the codimension function does not see the difference. A
+genuine counterexample would therefore have to make `F` drop EARLY inside the
+gap, and left continuity (`gp_of_forall_lt`) permits that only at a point, with
+the drop placed just after it. Refinement does NOT exclude such a placement,
+for the reason corrected above. So the repair is to strengthen
+`RamificationFiltration` — the `fixedSubmodule` docstring names the two
+candidates (each `gp u` CLOSED, or Herbrand compatibility at every real `u`
+through `ψ`) — never to weaken the break decomposition. **The second candidate
+is the one taken, 2026-07-31.**
+
+**THE CONSTRUCTED FILTRATION SATISFIES IT, which is what makes the
+strengthening free rather than a bare assumption.** `upperRamificationFiltration
+v u` is `P_v ⊓ ⨅_D D.gp (D.psiNat u)`, and `D.psiNat u = m + 1` throughout
+`(φ_D(m), φ_D(m+1)]`; the reverse inclusion for it follows from
+`gp_le_upperRamificationFiltration_sup_lvl` at `φ_D(m+1)` together with
+antitonicity, with no new input. So `nonempty_ramificationFiltration` still
+rests on exactly the three leaves it rested on before, and the strengthened
+class is still inhabited. -/
+theorem le_fixedSubmodule_gp_of_mem_Ioo (ρ : GaloisRep K A M)
+    (v : HeightOneSpectrum (𝓞 K)) (F : RamificationFiltration v)
+    (D : LowerRamificationData v)
+    (m : ℕ) (u : ℚ) (hlt : D.phi m < u) (hu : u < D.phi (m + 1)) :
+    ρ.fixedSubmodule v (D.gp (m + 1) ⊓ wildInertiaGroup v)
+      ≤ ρ.fixedSubmodule v (F.gp u) :=
+  ρ.fixedSubmodule_mono v (F.gp_le_gp_inf_wild D m u hlt hu.le)
+
+/-- **THE CODIMENSION FUNCTION ON A HALF-OPEN HERBRAND INTERVAL.** The
+closed-endpoint form of the leaf above, and the shape every consumer wants:
+`ψ_D` lands in `(m, m+1]`, never in the open interval, so this is what
+`LowerRamificationData.psiNat` pairs with.
+
+The endpoint `u = φ_D(m+1)` is `fixedSubmodule_gp_phi_eq` — note its
+hypothesis `0 < D.phi (m+1)` comes for free from `D.phi m < u`, since
+`φ` is monotone with `φ 0 = 0`. -/
+theorem fixedSubmodule_gp_eq_of_lt_of_le (ρ : GaloisRep K A M)
+    (v : HeightOneSpectrum (𝓞 K)) (F : RamificationFiltration v)
+    (D : LowerRamificationData v)
+    (hD : ∀ σ ∈ D.lvl ⊓ wildInertiaGroup v, ∀ x : M, ρ.toLocal v σ x = x)
+    (m : ℕ) (u : ℚ) (hlt : D.phi m < u) (hle : u ≤ D.phi (m + 1)) :
+    ρ.fixedSubmodule v (F.gp u)
+      = ρ.fixedSubmodule v (D.gp (m + 1) ⊓ wildInertiaGroup v) := by
+  refine le_antisymm (ρ.fixedSubmodule_gp_le_of_lt_of_le v F D hD m u hlt hle) ?_
+  rcases lt_or_eq_of_le hle with hu | rfl
+  · exact ρ.le_fixedSubmodule_gp_of_mem_Ioo v F D m u hlt hu
+  · have h0 : 0 ≤ D.phi m := by
+      have h := D.phi_strictMono.monotone (Nat.zero_le m)
+      rwa [D.phi_zero] at h
+    exact (ρ.fixedSubmodule_gp_phi_eq v F D hD (m + 1) (by linarith)).ge
+
+/-- **THE `k`-TH BREAK EXISTS AND IS ATTAINED** — the codimension function
+exceeds `k` at a POSITIVE rational `t` and nowhere above it.
+
+This is the single fact the break decomposition needs beyond monotonicity, and
+the one the old `exists_breaks_of_hasFiniteWildMonodromyAt` docstring called
+"the sharp place to look for a refuting `F`": a non-increasing `c` with
+`c = d` near `0` and `c = 0` far out still admits no break list if some
+supremum `sup {u | c u > k}` fails to be attained, or fails to be rational.
+
+Over `fixedSubmodule_gp_eq_of_lt_of_le` neither can happen, and no supremum is
+taken at all: `c` is the step function of ONE level `D` (any level inside the
+open subgroup `hfin` supplies), so its jumps are literally the Herbrand values
+`φ_D(m)` — rational by construction — and the `k`-th break is the LARGEST `m`
+with `γ(m) > k`, where `γ(m) := dim V − dim V^{G_m(L/Kᵥ) ⊓ P_v}`.
+
+The three inputs, and where each comes from:
+
+* `γ 1 = ρ.wildCodim v`, so the list is nonempty above every `k < d` —
+  `LowerRamificationData.wildInertiaGroup_le_gp_one` collapses
+  `G_1 ⊓ P_v` to `P_v`. This is `pos_of_card_filter_eq`'s first move, run
+  directly rather than cited (that theorem is a CONSEQUENCE of the counting
+  clause, so citing it here would be circular).
+* `γ m = 0` for `m` large — `LowerRamificationData.exists_gp_le_lvl` puts
+  `G_m` inside the level, hence inside `N`, where `hfin` makes it act
+  trivially. This is the half `gp_le_wild` cannot supply.
+* `Nat.findGreatest` over `[1, m₁ + 1]` then produces the index, and
+  `LowerRamificationData.psiNat` converts any `w > φ_D(m₀)` into the interval
+  containing it.
+
+Note `Module.finrank A M ≠ 0` is NOT needed: monotonicity of `γ` is never
+used, only the two endpoint computations. -/
+theorem exists_max_codim_gt (ρ : GaloisRep K A M)
+    (v : HeightOneSpectrum (𝓞 K)) (hfin : ρ.HasFiniteWildMonodromyAt v)
+    (F : RamificationFiltration v) {k : ℕ} (hk : k < ρ.wildCodim v) :
+    ∃ t : ℚ, 0 < t ∧
+      k < Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp t)) ∧
+      ∀ w : ℚ, t < w →
+        Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp w)) ≤ k := by
+  classical
+  obtain ⟨N, hN, hNtriv⟩ := hfin
+  obtain ⟨D, -, hDN, -, -⟩ :=
+    exists_lowerRamificationData_phi_mem_Ioc v N hN 1 2 one_pos (by norm_num)
+  have hD : ∀ σ ∈ D.lvl ⊓ wildInertiaGroup v, ∀ x : M, ρ.toLocal v σ x = x := by
+    intro σ hσ x
+    obtain ⟨hσ1, hσ2⟩ := Subgroup.mem_inf.mp hσ
+    exact hNtriv σ (Subgroup.mem_inf.mpr ⟨hDN hσ1, hσ2⟩) x
+  set γ : ℕ → ℕ := fun m =>
+    Module.finrank A M
+      - Module.finrank A (ρ.fixedSubmodule v (D.gp m ⊓ wildInertiaGroup v)) with hγdef
+  have hγ1 : γ 1 = ρ.wildCodim v := by
+    show Module.finrank A M
+      - Module.finrank A (ρ.fixedSubmodule v (D.gp 1 ⊓ wildInertiaGroup v)) = _
+    rw [inf_eq_right.mpr D.wildInertiaGroup_le_gp_one, wildCodim]
+  obtain ⟨m₁, hm₁⟩ := D.exists_gp_le_lvl
+  have hγzero : ∀ m : ℕ, m₁ ≤ m → γ m = 0 := by
+    intro m hm
+    have hsub : D.gp m ⊓ wildInertiaGroup v ≤ N ⊓ wildInertiaGroup v :=
+      inf_le_inf_right _ (((D.gp_antitone hm).trans hm₁).trans hDN)
+    have htop : ρ.fixedSubmodule v (D.gp m ⊓ wildInertiaGroup v) = ⊤ :=
+      Submodule.eq_top_iff'.mpr fun x σ hσ => hNtriv σ (hsub hσ) x
+    have htf : Module.finrank A (⊤ : Submodule A M) = Module.finrank A M :=
+      Submodule.topEquiv.finrank_eq
+    show Module.finrank A M
+      - Module.finrank A (ρ.fixedSubmodule v (D.gp m ⊓ wildInertiaGroup v)) = 0
+    rw [htop, htf, Nat.sub_self]
+  set m₀ := Nat.findGreatest (fun m => k < γ m) (m₁ + 1) with hm₀def
+  have hP1 : k < γ 1 := by rw [hγ1]; exact hk
+  have hm₀spec : k < γ m₀ :=
+    Nat.findGreatest_spec (P := fun m => k < γ m) (Nat.succ_le_succ (Nat.zero_le m₁)) hP1
+  have hm₀pos : 1 ≤ m₀ :=
+    Nat.le_findGreatest (P := fun m => k < γ m) (Nat.succ_le_succ (Nat.zero_le m₁)) hP1
+  have hgreat : ∀ m : ℕ, m₀ < m → γ m ≤ k := by
+    intro m hm
+    by_cases hmb : m ≤ m₁ + 1
+    · have h := Nat.findGreatest_is_greatest (P := fun m => k < γ m) hm hmb
+      omega
+    · rw [hγzero m (by omega)]
+      omega
+  have ht0 : 0 < D.phi m₀ := by
+    have h := D.phi_strictMono (show 0 < m₀ by omega)
+    rwa [D.phi_zero] at h
+  refine ⟨D.phi m₀, ht0, ?_, ?_⟩
+  · have heq := ρ.fixedSubmodule_gp_eq_of_lt_of_le v F D hD (m₀ - 1) (D.phi m₀)
+      (D.phi_strictMono (by omega)) (by rw [Nat.sub_add_cancel hm₀pos])
+    rw [Nat.sub_add_cancel hm₀pos] at heq
+    rw [heq]
+    exact hm₀spec
+  · intro w hw
+    have hw0 : 0 < w := lt_trans ht0 hw
+    have hjpos : 0 < D.psiNat w := D.psiNat_pos hw0
+    have hjle : w ≤ D.phi (D.psiNat w) := D.le_phi_psiNat w
+    have hjlt : D.phi (D.psiNat w - 1) < w := D.phi_psiNat_pred_lt hw0
+    have heq := ρ.fixedSubmodule_gp_eq_of_lt_of_le v F D hD (D.psiNat w - 1) w hjlt
+      (by rw [Nat.sub_add_cancel hjpos]; exact hjle)
+    rw [Nat.sub_add_cancel hjpos] at heq
+    rw [heq]
+    exact hgreat _ (D.phi_strictMono.lt_iff_lt.mp (lt_of_lt_of_le hw hjle))
 
 /-- **THE COUNTING CLAUSE FORCES THE BREAKS TO BE POSITIVE** — the statement
 the `IsSwanExponentAt` docstring has claimed since 2026-07-28, now a theorem

@@ -426,6 +426,39 @@ seriously consider that it may be false rather than merely hard. Refuting one
 with an explicit counterexample and restating it correctly is a FULLY successful
 outcome; say so in task prompts.
 
+**THERE IS A THIRD OUTCOME, and this development's axiomatized structures produce
+it regularly (2026-07-31).** When a leaf is stated over a `structure` that
+AXIOMATIZES an object rather than over a construction, it can be neither provable
+nor refutable: **the axioms simply do not determine the object where the leaf
+looks.** `le_fixedSubmodule_gp_of_mem_Ioo` in `ArtinConductor.lean` was exactly
+this — `RamificationFiltration.gp_herbrand` pinned the upper-numbering filtration
+only AT the Herbrand values, and inside the gaps the axioms left a sandwich whose
+BOTH ends are admissible. Probing with other levels is circular, because the axiom
+relates every level to `F` and no two levels to each other. No counterexample can
+be exhibited in-tree either, since refuting a `∀ F` needs a filtration built over
+an arbitrary `Kᵥ`. So the leaf sits there forever, looking merely hard.
+
+The repair is to the STRUCTURE, and there are exactly two checks that turn it from
+a dodge into a decision:
+
+1. **Does the CONSTRUCTION that inhabits the structure satisfy the stronger axiom
+   for free?** If it needs new input, the strengthening is a disguised `sorry` and
+   the answer is no. (Here it was `iInf_le` one way and the ALREADY-OPEN leaf at
+   the interval's right endpoint composed with antitonicity the other — zero new
+   leaves.)
+2. **Which direction do consumers use the structure in?** Strengthening SHRINKS
+   the admissible class, so `∀ F` theorems get weaker and `Nonempty` gets harder.
+   Get this backwards and you have quietly weakened a theorem instead of
+   sharpening a model. (Here `IsSwanExponentAt = Nonempty ∧ ∀ F, …` and every `F`
+   reaching a proof comes from the construction, so both halves were safe — and
+   faithfulness improved, the genuine object being a singleton.)
+
+Record it as a numbered FALSITY AUDIT in the structure's own docstring, KEEP the
+analysis that showed the old axioms insufficient (it is the evidence for the
+repair, and without it the next reader sees only a convenient axiom), and correct
+in place any route the leaf's docstring proposed that you found does not work.
+Often the structure's own audit has already named the repair — this one had.
+
 The discriminating rule for the commonest trap in this development, from a sweep
 of every `𝒪ᵥ`-rational group-scheme leaf (2026-07-25): **over `𝒪ᵥ`, identities
 and VALUES descend from `𝒪^nr` (flatness/torsion-freeness, and inertia fixes
@@ -1704,6 +1737,26 @@ run ON THE HOST THAT OWNS THE WORKTREE'S `.lake`:
 running `lake` anywhere else finds no artifacts. `lake`/`lean`/`elan`
 are no longer in `permissions.deny`.
 
+**`lake` IS NOT ON PATH IN AN AGENT'S SHELL, AND THE FAILURE LOOKS LIKE A CLEAN
+BUILD** (2026-07-31, cost one round). The harness's `Bash` runs a non-login
+shell that never sources the profile, so `~/.elan/bin` is absent — *even when
+you are already on the owning host and no `ssh` is involved.* The existing note
+about this is filed under ssh, which is why it reads as not applying locally.
+It does apply. Export it yourself, every call:
+
+    export PATH="$HOME/.elan/bin:$PATH"
+
+The reason it costs a round rather than a second is the SHAPE of the failure.
+`lake: command not found` exits **127**, and the log contains no `error`, no
+`warning`, no traceback — so `grep -i error` is EMPTY and `grep -c "declaration
+uses 'sorry'"` is `0`. Read as "no errors, no sorries", that is indistinguishable
+from a perfect build, and it is the same trap the doctrine's truncated-log
+section describes arriving by a different route. **Require the positive
+terminators — a literal `EXIT=0` *and* a `Build completed successfully (NNNN
+jobs)` line with a plausible job count.** An `EXIT=` that is not `0` is a
+failure however empty the log looks; zero sorry warnings from a build that never
+ran is the most confident wrong answer available.
+
 **Why the change.** Every persistent-server failure mode this project
 hit came from documents that were opened and never closed, and from
 state shared between client processes: a stale `lake setup-file`
@@ -1919,6 +1972,22 @@ no continuity argument is available for `x(φP)`, which is not a polynomial in `
 So carry the gcd as an explicit third polynomial `G` and state every downstream lemma
 "for all `P` with `G(x P) ≠ 0`"; then absorb `G` by excluding the finitely many slopes
 it is attained at. Do not try to prove the reduced identity holds everywhere.
+
+## `omit [Inst] in` goes ABOVE the doc comment, not between it and the theorem
+
+(2026-07-31, one wasted build round.) The `unusedSectionVars` linter tells you to
+write `omit [TopologicalSpace A] in theorem ...`, and the obvious placement — after
+the `/-- … -/` docstring, immediately before `theorem` — is a **parse error**:
+`unexpected token 'omit'; expected 'lemma'`, reported at the END of the docstring
+line, which reads like a problem with the docstring. `omit … in` is a command
+combinator and takes the whole declaration, docstring included, so it belongs on
+the line ABOVE the `/--`.
+
+Same shape for `open scoped X in` and `set_option … in`. And note the reverse trap:
+`open scoped Classical in` on a theorem whose STATEMENT contains a `Finset.filter`
+changes which `Decidable` instance the statement elaborates with, so it can silently
+make your theorem a different statement from the one its consumers expect. Prefer
+the `classical` TACTIC inside the proof.
 
 ## Verify in a scratch module, not in the giant file
 
