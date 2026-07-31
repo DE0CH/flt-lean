@@ -71,7 +71,7 @@ def main():
             since = _j.loads(qb).get("since", 0)
             mins = int((time.time() - since) / 60)
             out.append("quota        : REFUSED %d min ago -- not spawning; probing "
-                       "every 5 min with the key on disk" % mins)
+                       "every tick with the key on disk" % mins)
         except Exception:
             out.append("quota        : REFUSED -- not spawning; probing")
 
