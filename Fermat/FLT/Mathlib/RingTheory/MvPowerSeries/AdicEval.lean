@@ -233,8 +233,376 @@ section KeyLemma
 
 variable {p : ℕ}
 
-/-- **THE KEY LEMMA OF FONTAINE'S STEP 3** (sorry leaf, cut 2026-07-31 out of
-`GaloisRepresentation.IsHardlyRamified.exists_pderiv_eq_of_minimalPresentation`):
+/-! ### The `p`-adic slice decomposition of a coefficient family
+
+The machinery the KEY LEMMA below runs on.  A multidegree `n` splits as
+`n = p • (expDiv p n) + expMod p n` with every digit of `expMod p n` less than `p`;
+`part p b f` collects the coefficients of `f` in the multidegrees congruent to `b`,
+and `pExpand p` puts them back.  Everything here is over an arbitrary `CommRing`. -/
+
+section Slices
+
+variable {σ : Type*} {R : Type*} [CommRing R]
+
+/-- `(expDiv p n) j = n j / p`. -/
+noncomputable def expDiv (p : ℕ) (n : σ →₀ ℕ) : σ →₀ ℕ := n.mapRange (· / p) (Nat.zero_div p)
+
+/-- `(expMod p n) j = n j % p`. -/
+noncomputable def expMod (p : ℕ) (n : σ →₀ ℕ) : σ →₀ ℕ := n.mapRange (· % p) (Nat.zero_mod p)
+
+@[simp] theorem expDiv_apply (p : ℕ) (n : σ →₀ ℕ) (j : σ) : expDiv p n j = n j / p :=
+  Finsupp.mapRange_apply
+
+@[simp] theorem expMod_apply (p : ℕ) (n : σ →₀ ℕ) (j : σ) : expMod p n j = n j % p :=
+  Finsupp.mapRange_apply
+
+theorem smul_expDiv_add_expMod (p : ℕ) (n : σ →₀ ℕ) :
+    p • expDiv p n + expMod p n = n := by
+  ext j
+  simp only [Finsupp.add_apply, Finsupp.smul_apply, expDiv_apply, expMod_apply, smul_eq_mul]
+  exact Nat.div_add_mod (n j) p
+
+theorem expMod_lt (hp : 0 < p) (n : σ →₀ ℕ) (j : σ) : expMod p n j < p := by
+  simpa using Nat.mod_lt _ hp
+
+theorem expMod_smul_add {a : σ →₀ ℕ} (ha : ∀ j, a j < p) (q : σ →₀ ℕ) :
+    expMod p (p • q + a) = a := by
+  ext j
+  simp only [expMod_apply, Finsupp.add_apply, Finsupp.smul_apply, smul_eq_mul]
+  rw [Nat.mul_add_mod, Nat.mod_eq_of_lt (ha j)]
+
+theorem expDiv_smul_add (hp : 0 < p) {a : σ →₀ ℕ} (ha : ∀ j, a j < p) (q : σ →₀ ℕ) :
+    expDiv p (p • q + a) = q := by
+  ext j
+  simp only [expDiv_apply, Finsupp.add_apply, Finsupp.smul_apply, smul_eq_mul]
+  rw [Nat.mul_add_div hp, Nat.div_eq_of_lt (ha j), Nat.add_zero]
+
+theorem expDiv_smul (hp : 0 < p) (q : σ →₀ ℕ) : expDiv p (p • q) = q := by
+  have h := expDiv_smul_add (a := (0 : σ →₀ ℕ)) hp (fun _ => by simpa using hp) q
+  simpa using h
+
+/-- The `b`-th `p`-adic slice of the coefficient family of `f`. -/
+noncomputable def part (p : ℕ) (b : σ →₀ ℕ) (f : MvPowerSeries σ R) : MvPowerSeries σ R :=
+  fun q => coeff (p • q + b) f
+
+@[simp] theorem coeff_part (p : ℕ) (b : σ →₀ ℕ) (f : MvPowerSeries σ R) (q : σ →₀ ℕ) :
+    coeff q (part p b f) = coeff (p • q + b) f := rfl
+
+/-- Divisibility by `p` in `MvPowerSeries` is tested coefficientwise. -/
+theorem mem_span_natCast_iff (f : MvPowerSeries σ R) :
+    f ∈ Ideal.span {(p : MvPowerSeries σ R)} ↔
+      ∀ n, coeff n f ∈ Ideal.span {(p : R)} := by
+  have hC : ((p : ℕ) : MvPowerSeries σ R) = C (p : R) := by simp
+  constructor
+  · rintro h n
+    rw [Ideal.mem_span_singleton'] at h
+    obtain ⟨g, rfl⟩ := h
+    rw [Ideal.mem_span_singleton']
+    exact ⟨coeff n g, by rw [hC, coeff_mul_C]⟩
+  · intro h
+    rw [Ideal.mem_span_singleton']
+    choose c hc using fun n => Ideal.mem_span_singleton'.mp (h n)
+    refine ⟨(fun n => c n : MvPowerSeries σ R), ?_⟩
+    ext n
+    rw [hC, coeff_mul_C, coeff_apply]
+    exact hc n
+
+theorem nsmul_mem_ideal {I : Ideal (MvPowerSeries σ R)} {x : MvPowerSeries σ R} (m : ℕ)
+    (h : x ∈ I) : m • x ∈ I := by
+  rw [nsmul_eq_mul]; exact Ideal.mul_mem_left _ _ h
+
+/-- The `a`-th slice of `∂f/∂Xⱼ` is `(aⱼ+1)` times the `(a+eⱼ)`-th slice of `f`, modulo `p`.
+No hypothesis on `a j` is needed: the correction term is literally `(p·qⱼ)·x`. -/
+theorem part_pderiv_sub_nsmul_mem {a : σ →₀ ℕ} {j : σ} (f : MvPowerSeries σ R) :
+    part p a (pderiv j f) - (a j + 1) • part p (a + Finsupp.single j 1) f ∈
+      Ideal.span {(p : MvPowerSeries σ R)} := by
+  rw [mem_span_natCast_iff]
+  intro q
+  rw [map_sub, coeff_part, coeff_pderiv, map_nsmul, coeff_part]
+  have hidx : p • q + a + Finsupp.single j 1 = p • q + (a + Finsupp.single j 1) := add_assoc _ _ _
+  rw [hidx]
+  have hcoef : (p • q + a) j = p * q j + a j := by simp
+  rw [hcoef]
+  set x := coeff (p • q + (a + Finsupp.single j 1)) f with hx
+  have hsplit : (p * q j + a j + 1) • x = (p * q j) • x + (a j + 1) • x := by
+    rw [add_assoc, add_smul]
+  rw [hsplit, add_sub_cancel_right]
+  refine Ideal.mem_span_singleton'.mpr ⟨((q j : ℕ) : R) * x, ?_⟩
+  rw [nsmul_eq_mul]
+  push_cast
+  ring
+
+/-- At the top digit `aⱼ + 1 = p` the `a`-th slice of `∂f/∂Xⱼ` dies modulo `p`. -/
+theorem part_pderiv_mem_of_succ_eq {a : σ →₀ ℕ} {j : σ} (haj : a j + 1 = p)
+    (f : MvPowerSeries σ R) :
+    part p a (pderiv j f) ∈ Ideal.span {(p : MvPowerSeries σ R)} := by
+  rw [mem_span_natCast_iff]
+  intro q
+  rw [coeff_part, coeff_pderiv]
+  have hcoef : (p • q + a) j + 1 = p * (q j + 1) := by
+    have h0 : (p • q + a) j = p * q j + a j := by simp
+    rw [h0, add_assoc, haj]; ring
+  rw [hcoef]
+  refine Ideal.mem_span_singleton'.mpr
+    ⟨((q j + 1 : ℕ) : R) * coeff (p • q + a + Finsupp.single j 1) f, ?_⟩
+  rw [nsmul_eq_mul]
+  push_cast
+  ring
+
+theorem sum_id_eq_zero {c : σ →₀ ℕ} (hc : (c.sum fun _ k => k) = 0) : c = 0 := by
+  ext j
+  by_contra hne
+  have hj : j ∈ c.support := Finsupp.mem_support_iff.mpr (by simpa using hne)
+  have hle : c j ≤ c.sum fun _ k => k :=
+    Finset.single_le_sum (f := fun a => c a) (fun _ _ => Nat.zero_le _) hj
+  simp only [Finsupp.coe_zero, Pi.zero_apply] at hne
+  omega
+
+section Expand
+
+variable [DecidableEq σ]
+
+/-- `pExpand p g` is `g` with every exponent multiplied by `p`. -/
+noncomputable def pExpand (p : ℕ) (g : MvPowerSeries σ R) : MvPowerSeries σ R :=
+  fun n => if p • expDiv p n = n then coeff (expDiv p n) g else 0
+
+theorem coeff_pExpand (p : ℕ) (g : MvPowerSeries σ R) (n : σ →₀ ℕ) :
+    coeff n (pExpand p g) =
+      if p • expDiv p n = n then coeff (expDiv p n) g else 0 := rfl
+
+theorem coeff_pExpand_smul (hp : 0 < p) (g : MvPowerSeries σ R) (q : σ →₀ ℕ) :
+    coeff (p • q) (pExpand p g) = coeff q g := by
+  rw [coeff_pExpand, expDiv_smul hp, if_pos rfl]
+
+theorem coeff_pExpand_of_ne {n : σ →₀ ℕ} (g : MvPowerSeries σ R)
+    (h : ¬ p • expDiv p n = n) : coeff n (pExpand p g) = 0 := by
+  rw [coeff_pExpand, if_neg h]
+
+theorem pExpand_sub (g₁ g₂ : MvPowerSeries σ R) :
+    pExpand p (g₁ - g₂) = pExpand p g₁ - pExpand p g₂ := by
+  ext n
+  simp only [coeff_pExpand, map_sub]
+  by_cases h : p • expDiv p n = n <;> simp [h]
+
+theorem pExpand_nsmul (m : ℕ) (g : MvPowerSeries σ R) :
+    pExpand p (m • g) = m • pExpand p g := by
+  ext n
+  simp only [coeff_pExpand, map_nsmul]
+  by_cases h : p • expDiv p n = n <;> simp [h]
+
+theorem pExpand_mem_of_mem {x : MvPowerSeries σ R}
+    (h : x ∈ Ideal.span {(p : MvPowerSeries σ R)}) :
+    pExpand p x ∈ Ideal.span {(p : MvPowerSeries σ R)} := by
+  rw [mem_span_natCast_iff] at h ⊢
+  intro n
+  rw [coeff_pExpand]
+  by_cases hd : p • expDiv p n = n
+  · rw [if_pos hd]; exact h _
+  · rw [if_neg hd]; exact Ideal.zero_mem _
+
+/-- **THE SLICE FORMULA.**  `pExpand p (part p b f) * X^b` is the part of `f` supported
+on the multidegrees congruent to `b` modulo `p`. -/
+theorem coeff_pExpand_part_mul_monomial (hp : 0 < p) {b : σ →₀ ℕ} (hb : ∀ j, b j < p)
+    (f : MvPowerSeries σ R) (n : σ →₀ ℕ) :
+    coeff n (pExpand p (part p b f) * monomial b (1 : R)) =
+      if expMod p n = b then coeff n f else 0 := by
+  rw [coeff_mul_monomial]
+  by_cases hmb : expMod p n = b
+  · have hble : b ≤ n := by
+      refine Finsupp.le_def.mpr fun j => ?_
+      have hbj : b j = n j % p := by rw [← hmb]; simp
+      rw [hbj]; exact Nat.mod_le _ _
+    rw [if_pos hble, if_pos hmb, mul_one]
+    have hnb : n - b = p • expDiv p n := by
+      ext j
+      simp only [Finsupp.coe_tsub, Pi.sub_apply, Finsupp.smul_apply, expDiv_apply, smul_eq_mul]
+      have hbj : b j = n j % p := by rw [← hmb]; simp
+      have hdm := Nat.div_add_mod (n j) p
+      omega
+    rw [hnb, coeff_pExpand_smul hp, coeff_part, ← hmb, smul_expDiv_add_expMod]
+  · rw [if_neg hmb]
+    by_cases hble : b ≤ n
+    · rw [if_pos hble]
+      have hne : ¬ p • expDiv p (n - b) = n - b := by
+        intro hcon
+        refine hmb (Finsupp.ext fun j => ?_)
+        have h1 : (p • expDiv p (n - b)) j = (n - b) j := by rw [hcon]
+        simp only [Finsupp.smul_apply, smul_eq_mul, expDiv_apply, Finsupp.coe_tsub,
+          Pi.sub_apply] at h1
+        have h2 : b j ≤ n j := Finsupp.le_def.mp hble j
+        have h4 : n j = p * ((n j - b j) / p) + b j := by omega
+        simp only [expMod_apply]
+        rw [h4, Nat.mul_add_mod, Nat.mod_eq_of_lt (hb j)]
+      rw [coeff_pExpand_of_ne _ hne, zero_mul]
+    · rw [if_neg hble]
+
+/-- Every partial derivative of a `p`-expanded series is divisible by `p`. -/
+theorem pderiv_pExpand_mem (j : σ) (g : MvPowerSeries σ R) :
+    pderiv j (pExpand p g) ∈ Ideal.span {(p : MvPowerSeries σ R)} := by
+  rw [mem_span_natCast_iff]
+  intro n
+  rw [coeff_pderiv]
+  by_cases hd : p • expDiv p (n + Finsupp.single j 1) = n + Finsupp.single j 1
+  · set d := expDiv p (n + Finsupp.single j 1) with hddef
+    have h1 : p * d j = n j + 1 := by
+      have h2 : (p • d : σ →₀ ℕ) j = (n + Finsupp.single j 1 : σ →₀ ℕ) j := by rw [hd]
+      simpa using h2
+    refine Ideal.mem_span_singleton'.mpr
+      ⟨((d j : ℕ) : R) * coeff (n + Finsupp.single j 1) (pExpand p g), ?_⟩
+    rw [nsmul_eq_mul, ← h1]
+    push_cast
+    ring
+  · rw [coeff_pExpand_of_ne _ hd, smul_zero]
+    exact Ideal.zero_mem _
+
+/-- The base case of the extraction: if every slice of `f` other than the `0`-th is
+divisible by `p`, the `0`-th slice, expanded, differs from `f` by a multiple of `p`. -/
+theorem pExpand_part_zero_mem (hp : 0 < p) {𝔞 : Ideal (MvPowerSeries σ R)}
+    (hpmem : (p : MvPowerSeries σ R) ∈ 𝔞) {f : MvPowerSeries σ R} (hf : f ∈ 𝔞)
+    (hzero : ∀ a, (∀ j, a j < p) → a ≠ 0 →
+      part p a f ∈ Ideal.span {(p : MvPowerSeries σ R)}) :
+    pExpand p (part p 0 f) ∈ 𝔞 := by
+  have hple : Ideal.span {(p : MvPowerSeries σ R)} ≤ 𝔞 := by
+    rw [Ideal.span_le]; rintro x hx; rw [Set.mem_singleton_iff] at hx; rw [hx]; exact hpmem
+  have hb0 : ∀ j, (0 : σ →₀ ℕ) j < p := fun _ => by simpa using hp
+  have hdiff : f - pExpand p (part p 0 f) * monomial (0 : σ →₀ ℕ) (1 : R) ∈
+      Ideal.span {(p : MvPowerSeries σ R)} := by
+    rw [mem_span_natCast_iff]
+    intro n
+    rw [map_sub, coeff_pExpand_part_mul_monomial hp hb0 f n]
+    by_cases hm : expMod p n = 0
+    · rw [if_pos hm, sub_self]; exact Ideal.zero_mem _
+    · rw [if_neg hm, sub_zero]
+      have ha := hzero (expMod p n) (expMod_lt hp n) hm
+      rw [mem_span_natCast_iff] at ha
+      have := ha (expDiv p n)
+      rwa [coeff_part, smul_expDiv_add_expMod] at this
+  have hs1 : pExpand p (part p 0 f) * monomial (0 : σ →₀ ℕ) (1 : R) =
+      pExpand p (part p 0 f) := by simp
+  rw [hs1] at hdiff
+  have h2 := Ideal.sub_mem 𝔞 hf (hple hdiff)
+  simpa using h2
+
+/-- **THE EXTRACTION.**  Induction on the total degree of `b`, peeling one derivative at
+a time: no iterated (Hasse) derivative is ever formed. -/
+theorem pExpand_part_mem (hp : p.Prime) {𝔞 : Ideal (MvPowerSeries σ R)}
+    (hpmem : (p : MvPowerSeries σ R) ∈ 𝔞)
+    (hstab : ∀ (j : σ) (f : MvPowerSeries σ R), f ∈ 𝔞 → pderiv j f ∈ 𝔞) :
+    ∀ (N : ℕ) (b : σ →₀ ℕ), (b.sum fun _ k => k) ≤ N → (∀ j, b j < p) →
+      ∀ f ∈ 𝔞,
+        (∀ a, (∀ j, a j < p) → b ≤ a → a ≠ b →
+          part p a f ∈ Ideal.span {(p : MvPowerSeries σ R)}) →
+        pExpand p (part p b f) ∈ 𝔞 := by
+  have hple : Ideal.span {(p : MvPowerSeries σ R)} ≤ 𝔞 := by
+    rw [Ideal.span_le]; rintro x hx; rw [Set.mem_singleton_iff] at hx; rw [hx]; exact hpmem
+  intro N
+  induction N with
+  | zero =>
+    intro b hdeg hb f hf hmax
+    have hb0 : b = 0 := sum_id_eq_zero (Nat.le_zero.mp hdeg)
+    subst hb0
+    exact pExpand_part_zero_mem hp.pos hpmem hf (fun a ha hne => hmax a ha (Finsupp.le_def.mpr fun _ => Nat.zero_le _) hne)
+  | succ N ih =>
+    intro b hdeg hb f hf hmax
+    by_cases hb0 : b = 0
+    · subst hb0
+      exact pExpand_part_zero_mem hp.pos hpmem hf (fun a ha hne => hmax a ha (Finsupp.le_def.mpr fun _ => Nat.zero_le _) hne)
+    · obtain ⟨j, hj⟩ : ∃ j, b j ≠ 0 := by
+        by_contra hcon
+        push Not at hcon
+        exact hb0 (Finsupp.ext fun j => by simpa using hcon j)
+      have hle : Finsupp.single j 1 ≤ b := Finsupp.single_le_iff.mpr (by omega)
+      set b' := b - Finsupp.single j 1 with hb'def
+      have hbb' : b' + Finsupp.single j 1 = b := tsub_add_cancel_of_le hle
+      have hb'j : b' j + 1 = b j := by
+        have h := congrArg (fun t : σ →₀ ℕ => t j) hbb'
+        simpa using h
+      have hb'box : ∀ k, b' k < p := by
+        intro k
+        have hkk : b' k ≤ b k := by
+          rw [← hbb']; simp
+        exact lt_of_le_of_lt hkk (hb k)
+      have hdeg' : (b'.sum fun _ k => k) ≤ N := by
+        have hsum : (b.sum fun _ k => k) = (b'.sum fun _ k => k) + 1 := by
+          conv_lhs => rw [← hbb']
+          rw [Finsupp.sum_add_index' (fun _ => rfl) (fun _ _ _ => rfl),
+            Finsupp.sum_single_index rfl]
+        omega
+      have hmax' : ∀ a, (∀ k, a k < p) → b' ≤ a → a ≠ b' →
+          part p a (pderiv j f) ∈ Ideal.span {(p : MvPowerSeries σ R)} := by
+        intro a ha hb'a hab'
+        by_cases haj : a j + 1 < p
+        · have hbox2 : ∀ k, (a + Finsupp.single j 1 : σ →₀ ℕ) k < p := by
+            intro k
+            by_cases hk : k = j
+            · subst hk; simpa using haj
+            · have : (a + Finsupp.single j 1 : σ →₀ ℕ) k = a k := by
+                simp [Ne.symm hk]
+              rw [this]; exact ha k
+          have hmem : part p (a + Finsupp.single j 1) f ∈
+              Ideal.span {(p : MvPowerSeries σ R)} := by
+            refine hmax (a + Finsupp.single j 1) hbox2 ?_ ?_
+            · rw [← hbb']
+              refine Finsupp.le_def.mpr fun k => ?_
+              simp only [Finsupp.add_apply]
+              exact Nat.add_le_add_right (Finsupp.le_def.mp hb'a k) _
+            · intro hcon
+              refine hab' ?_
+              rw [← hbb'] at hcon
+              exact add_right_cancel hcon
+          have hstep := part_pderiv_sub_nsmul_mem (p := p) (a := a) (j := j) f
+          have := Ideal.add_mem _ hstep (nsmul_mem_ideal (a j + 1) hmem)
+          simpa using this
+        · have haj' : a j + 1 = p := by have := ha j; omega
+          exact part_pderiv_mem_of_succ_eq haj' f
+      have hIH := ih b' hdeg' hb'box (pderiv j f) (hstab j f hf) hmax'
+      -- relate the `b'`-slice of `∂f` to `b j` times the `b`-slice of `f`
+      have hkey : pExpand p (part p b' (pderiv j f)) -
+          (b j) • pExpand p (part p b f) ∈ Ideal.span {(p : MvPowerSeries σ R)} := by
+        have h0 := part_pderiv_sub_nsmul_mem (p := p) (a := b') (j := j) f
+        rw [hb'j, hbb'] at h0
+        have h1 := pExpand_mem_of_mem h0
+        rwa [pExpand_sub, pExpand_nsmul] at h1
+      have hbjy : (b j) • pExpand p (part p b f) ∈ 𝔞 := by
+        have := Ideal.sub_mem 𝔞 hIH (hple hkey)
+        simpa using this
+      -- divide by `b j`, which is prime to `p`
+      have hcop : Nat.Coprime p (b j) := by
+        refine (Nat.Prime.coprime_iff_not_dvd hp).mpr ?_
+        intro hdvd
+        have := Nat.le_of_dvd (by omega) hdvd
+        have := hb j
+        omega
+      obtain ⟨A, B, hAB⟩ : ∃ A B : ℤ, (1 : ℤ) = (p : ℤ) * A + ((b j : ℕ) : ℤ) * B := by
+        refine ⟨Nat.gcdA p (b j), Nat.gcdB p (b j), ?_⟩
+        have h := Nat.gcd_eq_gcd_ab p (b j)
+        rw [hcop] at h
+        exact_mod_cast h
+      set y := pExpand p (part p b f) with hydef
+      have hone : (1 : MvPowerSeries σ R) =
+          (p : MvPowerSeries σ R) * ((A : ℤ) : MvPowerSeries σ R) +
+          ((b j : ℕ) : MvPowerSeries σ R) * ((B : ℤ) : MvPowerSeries σ R) := by
+        have h := congrArg (fun z : ℤ => (z : MvPowerSeries σ R)) hAB
+        push_cast at h
+        exact_mod_cast h
+      have hyeq : y = (p : MvPowerSeries σ R) * (((A : ℤ) : MvPowerSeries σ R) * y) +
+          ((((b j : ℕ) : MvPowerSeries σ R)) * y) * ((B : ℤ) : MvPowerSeries σ R) := by
+        calc y = 1 * y := (one_mul y).symm
+        _ = ((p : MvPowerSeries σ R) * ((A : ℤ) : MvPowerSeries σ R) +
+              ((b j : ℕ) : MvPowerSeries σ R) * ((B : ℤ) : MvPowerSeries σ R)) * y := by
+              rw [← hone]
+        _ = _ := by ring
+      rw [hyeq]
+      refine Ideal.add_mem _ (Ideal.mul_mem_right _ _ hpmem) (Ideal.mul_mem_right _ _ ?_)
+      rw [← nsmul_eq_mul]
+      exact hbjy
+
+end Expand
+
+end Slices
+
+/-- **THE KEY LEMMA OF FONTAINE'S STEP 3** (**PROVEN 2026-07-31**; cut the same day
+out of `GaloisRepresentation.IsHardlyRamified.exists_pderiv_eq_of_minimalPresentation`):
 *a differential ideal containing `p` is generated by `p` together with the
 elements whose derivatives are all divisible by `p`.*
 
@@ -270,7 +638,42 @@ guess is wrong; see the SECOND FALSITY AUDIT on `exists_fontainePresentation`).
    the cardinality of that support.
 
 The reverse inclusion is immediate: `p ∈ 𝔞` by hypothesis and the second half of
-the generating set is contained in `𝔞` by construction. -/
+the generating set is contained in `𝔞` by construction.
+
+# THE ROUTE ACTUALLY TAKEN, AND WHY IT IS CHEAPER THAN THE ONE PRESCRIBED ABOVE
+
+The sketch is correct and was followed for steps 1 and 3.  **Step 2 was NOT: no
+iterated derivative `T^{(b)}` is ever formed, and no Hasse-derivative API, no
+freeness of `R̄` over `S` on the box monomials, and no factorial is needed.**
+Three earlier route notes on this leaf and on its parent all priced a multivariate
+Hasse-derivative development (the pin has one only for univariate `Polynomial`) as
+the thing to build; that estimate was wrong, in the way CLAUDE.md's *ASK WHAT THE
+CRUDE BOUND ALREADY GIVES* section describes.
+
+What replaces it is `pExpand_part_mem` below: an induction on the TOTAL DEGREE of
+`b`, peeling ONE derivative at a time.  Writing `b = b' + eⱼ`, the `b'`-th slice of
+`∂f/∂Xⱼ` is `bⱼ` times the `b`-th slice of `f` **modulo `p`** — that is
+`part_pderiv_sub_nsmul_mem`, which holds with NO hypothesis at all because the
+error term is literally `(p·qⱼ)·x`.  So one derivative lowers the degree by one and
+multiplies the slice by the single factor `bⱼ`, and only `bⱼ` (not `∏ a₀ⱼ!`) has to
+be inverted mod `p`.  The digit at the top of the range, `aⱼ + 1 = p`, is the
+separate one-line `part_pderiv_mem_of_succ_eq`.  Primality of `p` is still used
+exactly once, for `Nat.Coprime p bⱼ` and the resulting Bézout relation.
+
+`S` is likewise never constructed.  `MvPowerSeries.expand`
+(`Mathlib/RingTheory/MvPowerSeries/Expand.lean`) would have supplied it, but it is
+built on `MvPowerSeries.Substitution` and so would have dragged a topology cone into
+this file and into everything below it — against the whole point of stating the lemma
+in the `p`-divisibility form.  The ten-line `pExpand` below has the two properties
+the proof consumes (`coeff_pExpand_smul`, `coeff_pExpand_of_ne`) and costs no import.
+
+The reusable pieces this leaves behind, all stated over an arbitrary `CommRing`:
+`expDiv`/`expMod` (the `p`-adic digits of a multidegree), `part` (the `b`-th slice of
+a coefficient family), `pExpand`, the coefficientwise criterion
+`mem_span_natCast_iff` for divisibility by `p` in `MvPowerSeries`, the slice formula
+`coeff_pExpand_part_mul_monomial`, and `pderiv_pExpand_mem` (a `p`-expanded series
+has every partial derivative divisible by `p` — the "a cube has vanishing
+derivative" half, over any base). -/
 theorem span_insert_setOf_forall_pderiv_mem_eq
     {σ : Type*} [Finite σ] [DecidableEq σ] {𝒪 : Type*} [CommRing 𝒪]
     [hp : Fact p.Prime] (𝔞 : Ideal (MvPowerSeries σ 𝒪))
@@ -278,7 +681,145 @@ theorem span_insert_setOf_forall_pderiv_mem_eq
     (hstab : ∀ (j : σ) (f : MvPowerSeries σ 𝒪), f ∈ 𝔞 → pderiv j f ∈ 𝔞) :
     𝔞 = Ideal.span ({(p : MvPowerSeries σ 𝒪)} ∪
       {f | f ∈ 𝔞 ∧ ∀ j, pderiv j f ∈ Ideal.span {(p : MvPowerSeries σ 𝒪)}}) := by
-  sorry
+  classical
+  have hppos : 0 < p := hp.out.pos
+  -- the box of multidegrees with all digits `< p` is finite because `σ` is
+  have hboxfin : Set.Finite {a : σ →₀ ℕ | ∀ j, a j < p} := by
+    haveI : Finite ↥{a : σ →₀ ℕ | ∀ j, a j < p} := by
+      refine Finite.of_injective
+        (fun (a : ↥{a : σ →₀ ℕ | ∀ j, a j < p}) => (fun j => (⟨a.1 j, a.2 j⟩ : Fin p))) ?_
+      rintro ⟨a, ha⟩ ⟨b, hb⟩ hab
+      refine Subtype.ext (Finsupp.ext fun j => ?_)
+      have h := congrFun hab j
+      simpa using h
+    exact Set.toFinite _
+  set 𝔟 := Ideal.span ({(p : MvPowerSeries σ 𝒪)} ∪
+      {f | f ∈ 𝔞 ∧ ∀ j, pderiv j f ∈ Ideal.span {(p : MvPowerSeries σ 𝒪)}}) with h𝔟
+  refine le_antisymm ?_ ?_
+  · -- the substantial direction
+    have hempty : ∀ f : MvPowerSeries σ 𝒪,
+        (∀ a, (∀ j, a j < p) → part p a f ∈ Ideal.span {(p : MvPowerSeries σ 𝒪)}) →
+        f ∈ Ideal.span {(p : MvPowerSeries σ 𝒪)} := by
+      intro f hall
+      rw [mem_span_natCast_iff]
+      intro n
+      have ha := hall (expMod p n) (expMod_lt hppos n)
+      rw [mem_span_natCast_iff] at ha
+      have h := ha (expDiv p n)
+      rwa [coeff_part, smul_expDiv_add_expMod] at h
+    have hpb : Ideal.span {(p : MvPowerSeries σ 𝒪)} ≤ 𝔟 :=
+      Ideal.span_mono Set.subset_union_left
+    have main : ∀ (N : ℕ) (f : MvPowerSeries σ 𝒪), f ∈ 𝔞 →
+        (hboxfin.toFinset.filter
+          (fun a => part p a f ∉ Ideal.span {(p : MvPowerSeries σ 𝒪)})).card ≤ N → f ∈ 𝔟 := by
+      intro N
+      induction N with
+      | zero =>
+        intro f hf hcard
+        refine hpb (hempty f fun a ha => ?_)
+        by_contra hcon
+        have hmem : a ∈ hboxfin.toFinset.filter
+            (fun a => part p a f ∉ Ideal.span {(p : MvPowerSeries σ 𝒪)}) := by
+          simp only [Finset.mem_filter, Set.Finite.mem_toFinset, Set.mem_setOf_eq]
+          exact ⟨ha, hcon⟩
+        have := Finset.card_pos.mpr ⟨a, hmem⟩
+        omega
+      | succ N ih =>
+        intro f hf hcard
+        by_cases hemp : (hboxfin.toFinset.filter
+            (fun a => part p a f ∉ Ideal.span {(p : MvPowerSeries σ 𝒪)})).Nonempty
+        · obtain ⟨b, hbmem, hbmax⟩ := Finset.exists_max_image _
+            (fun a : σ →₀ ℕ => a.sum fun _ k => k) hemp
+          simp only [Finset.mem_filter, Set.Finite.mem_toFinset, Set.mem_setOf_eq] at hbmem
+          obtain ⟨hbbox, hbpart⟩ := hbmem
+          -- a `deg`-maximal element of the support is maximal for the componentwise order
+          have hmaxord : ∀ a, (∀ j, a j < p) → b ≤ a → a ≠ b →
+              part p a f ∈ Ideal.span {(p : MvPowerSeries σ 𝒪)} := by
+            intro a ha hba hab
+            by_contra hcon
+            have haB : a ∈ hboxfin.toFinset.filter
+                (fun a => part p a f ∉ Ideal.span {(p : MvPowerSeries σ 𝒪)}) := by
+              simp only [Finset.mem_filter, Set.Finite.mem_toFinset, Set.mem_setOf_eq]
+              exact ⟨ha, hcon⟩
+            have h1 := hbmax a haB
+            have hsplit : b + (a - b) = a := add_tsub_cancel_of_le hba
+            have hne : a - b ≠ 0 := by
+              intro h0
+              exact hab (by rw [← hsplit, h0, add_zero])
+            have hsum : (a.sum fun _ k => k)
+                = (b.sum fun _ k => k) + ((a - b).sum fun _ k => k) := by
+              conv_lhs => rw [← hsplit]
+              exact Finsupp.sum_add_index' (fun _ => rfl) (fun _ _ _ => rfl)
+            have hpos : 0 < ((a - b).sum fun _ k => k) := by
+              rcases Nat.eq_zero_or_pos ((a - b).sum fun _ k => k) with h | h
+              · exact absurd (sum_id_eq_zero h) hne
+              · exact h
+            omega
+          set s := pExpand p (part p b f) with hsdef
+          have hs𝔞 : s ∈ 𝔞 :=
+            pExpand_part_mem hp.out hpmem hstab _ b le_rfl hbbox f hf hmaxord
+          have hsT : s ∈ ({(p : MvPowerSeries σ 𝒪)} ∪
+              {f | f ∈ 𝔞 ∧ ∀ j, pderiv j f ∈ Ideal.span {(p : MvPowerSeries σ 𝒪)}}) :=
+            Or.inr ⟨hs𝔞, fun j => pderiv_pExpand_mem j _⟩
+          set g := s * monomial b (1 : 𝒪) with hgdef
+          have hg𝔟 : g ∈ 𝔟 := Ideal.mul_mem_right _ _ (Ideal.subset_span hsT)
+          have hg𝔞 : g ∈ 𝔞 := Ideal.mul_mem_right _ _ hs𝔞
+          have hcoeff : ∀ n, coeff n (f - g) = if expMod p n = b then 0 else coeff n f := by
+            intro n
+            rw [map_sub, hgdef, hsdef, coeff_pExpand_part_mul_monomial hppos hbbox f n]
+            by_cases hm : expMod p n = b <;> simp [hm]
+          have hpart' : ∀ a, (∀ j, a j < p) →
+              part p a (f - g) = if a = b then 0 else part p a f := by
+            intro a ha
+            ext q
+            rw [coeff_part, hcoeff, expMod_smul_add ha]
+            by_cases hab : a = b <;> simp [hab]
+          have hcard' : (hboxfin.toFinset.filter
+              (fun a => part p a (f - g) ∉ Ideal.span {(p : MvPowerSeries σ 𝒪)})).card ≤ N := by
+            have hbB : b ∈ hboxfin.toFinset.filter
+                (fun a => part p a f ∉ Ideal.span {(p : MvPowerSeries σ 𝒪)}) := by
+              simp only [Finset.mem_filter, Set.Finite.mem_toFinset, Set.mem_setOf_eq]
+              exact ⟨hbbox, hbpart⟩
+            have hsub : (hboxfin.toFinset.filter
+                (fun a => part p a (f - g) ∉ Ideal.span {(p : MvPowerSeries σ 𝒪)})) ⊆
+                (hboxfin.toFinset.filter
+                  (fun a => part p a f ∉ Ideal.span {(p : MvPowerSeries σ 𝒪)})).erase b := by
+              intro a ha
+              simp only [Finset.mem_filter, Set.Finite.mem_toFinset, Set.mem_setOf_eq] at ha
+              obtain ⟨habox, hane⟩ := ha
+              have hab : a ≠ b := by
+                intro h
+                subst h
+                rw [hpart' a habox, if_pos rfl] at hane
+                exact hane (Ideal.zero_mem _)
+              refine Finset.mem_erase.mpr ⟨hab, ?_⟩
+              simp only [Finset.mem_filter, Set.Finite.mem_toFinset, Set.mem_setOf_eq]
+              refine ⟨habox, ?_⟩
+              rwa [hpart' a habox, if_neg hab] at hane
+            have h2 := Finset.card_le_card hsub
+            rw [Finset.card_erase_of_mem hbB] at h2
+            have h3 := Finset.card_pos.mpr ⟨b, hbB⟩
+            omega
+          have hfg : f = (f - g) + g := by ring
+          rw [hfg]
+          exact Ideal.add_mem _ (ih (f - g) (Ideal.sub_mem _ hf hg𝔞) hcard') hg𝔟
+        · rw [Finset.not_nonempty_iff_eq_empty] at hemp
+          refine hpb (hempty f fun a ha => ?_)
+          by_contra hcon
+          have hmem : a ∈ hboxfin.toFinset.filter
+              (fun a => part p a f ∉ Ideal.span {(p : MvPowerSeries σ 𝒪)}) := by
+            simp only [Finset.mem_filter, Set.Finite.mem_toFinset, Set.mem_setOf_eq]
+            exact ⟨ha, hcon⟩
+          rw [hemp] at hmem
+          simp at hmem
+    intro f hf
+    exact main _ f hf le_rfl
+  · rw [h𝔟, Ideal.span_le]
+    rintro x hx
+    rcases hx with hx | hx
+    · rw [Set.mem_singleton_iff] at hx
+      rw [hx]; exact hpmem
+    · exact hx.1
 
 end KeyLemma
 
