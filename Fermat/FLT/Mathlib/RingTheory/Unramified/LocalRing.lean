@@ -52,7 +52,14 @@ open AdjoinRoot in
 field of a discrete valuation ring `R` lifts to an unramified extension `L` of its fraction field
 `K`: there is a finite separable extension `L/K` with `[L : K] = [k' : k]` and a discrete
 valuation ring `S` with fraction field `L`, containing `R` via a local homomorphism, whose residue
-field is `k'`. (The residue degree being `[L : K]` forces ramification index `1`.) -/
+field is `k'`. (The residue degree being `[L : K]` forces ramification index `1`.)
+
+The `maximalIdeal S = (maximalIdeal R).map (algebraMap R S)` clause — "`e(S/R) = 1`", the
+unramifiedness itself — was EXPORTED on 2026-07-30. It had always been established inside the
+proof (`hmaxS`, from `isDiscreteValuationRing_of_irreducible_map_residue`) and merely not
+returned, so consumers wanting the unramifiedness rather than just the residue field had to
+re-derive it from `e·f = n`. The one existing consumer
+(`WeierstrassCurve.exists_quadraticTwist_hasSplitMultiplicativeReduction`) ignores it. -/
 theorem exists_unramified_extension_of_residueField
     (k' : Type u) [Field k'] [Algebra (ResidueField R) k']
     [FiniteDimensional (ResidueField R) k'] [Algebra.IsSeparable (ResidueField R) k'] :
@@ -62,6 +69,7 @@ theorem exists_unramified_extension_of_residueField
       (_ : Module.Finite R S) (_ : Algebra S L) (_ : IsScalarTower R S L) (_ : IsFractionRing S L)
       (_ : IsLocalHom (algebraMap R S)),
       Module.finrank K L = Module.finrank (ResidueField R) k'
+        ∧ maximalIdeal S = (maximalIdeal R).map (algebraMap R S)
         ∧ Nonempty (ResidueField S ≃ₐ[ResidueField R] k')
         ∧ ∃ (θ : L) (Q : Polynomial R), Q.Monic
             ∧ Algebra.adjoin K ({θ} : Set L) = ⊤
@@ -119,7 +127,7 @@ theorem exists_unramified_extension_of_residueField
     hP_monic.finite_adjoinRoot, algSL, htower,
     isFractionRing_map hPdeg hmaxS
       (by rw [halg]; exact map_comp_mk (algebraMap R K) hpK),
-    hSlocalhom, hLrank, ⟨e.extendScalarsOfSurjective residue_surjective⟩,
+    hSlocalhom, hLrank, hmaxS, ⟨e.extendScalarsOfSurjective residue_surjective⟩,
     AdjoinRoot.root pK, P, hP_monic, AdjoinRoot.adjoinRoot_eq_top,
     by rw [← hpK, AdjoinRoot.aeval_eq, AdjoinRoot.mk_self],
     by rw [hP_map]; exact hpbar_sep⟩

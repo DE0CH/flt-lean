@@ -7,6 +7,8 @@ module
 
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.ProjectiveAddition
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.ProjectiveEquationAdd
+public import Mathlib.Algebra.MvPolynomial.Division
+public import Mathlib.RingTheory.Polynomial.UniqueFactorization
 
 /-!
 # The SECOND chord–tangent addition law preserves the Weierstrass equation
@@ -71,7 +73,22 @@ integral domain, and in which `addZ ≠ 0` (witnessed by `y² = x³ + 1` with
 `[0 : 1 : 1]` and `[2 : 3 : 1]`, where `addZ = -8`).  Every `(R, W', P, Q)` with
 `W'.Equation P` and `W'.Equation Q` is a specialisation of it, so the identity
 transports.  That reduces the whole leaf to the single standard fact
-`Universal.idl_isPrime`.
+`Universal.idl_isPrime`, which is in turn PROVEN below from two shallower
+statements — `Pz` is a non-zerodivisor modulo the ideal, and the ideal is prime
+once `Pz` is inverted.  The FIRST of those is PROVEN
+(`Universal.mem_idl_of_Pz_mul_mem`, over `Universal.prime_gen₂`); the second is
+the sole remaining leaf of this module.
+
+Both statements currently appear TWICE, under two names each —
+`mem_idl_of_Pz_mul_mem` / `mem_idl_of_X7_mul_mem` and
+`exists_pow_Pz_mul_mem_idl` / `exists_pow_X7_mul_mem_idl` — because two branches
+decomposed `idl_isPrime` identically under different names and the union
+resolution kept both.  The `X7`-named pair should be DELETED once the saturation
+leaf is closed; see the note at `mem_idl_of_X7_mul_mem`.
+
+See the section docstring at `Universal.idl_ne_top` for a complete route in which
+BOTH halves are elementary: monic division for the first, degree-one primitivity
+over a UFD for the second.
 -/
 
 @[expose] public section
@@ -249,93 +266,477 @@ theorem equation_upt₂ : Equation ucurve upt₂ := by
   rw [ucurve, upt₂, map_polynomial, eval_map, ← eval₂_comp]
   exact h
 
-/-- **The universal ideal is prime** (sorry node) — equivalently, the generic
-Weierstrass curve with two generic marked points is an INTEGRAL scheme.  This is
-the sole remaining content of `equation_add2XYZ`.
+/-! ### The two generators, written out
 
-## Why it is true
+`gen₁` and `gen₂` are the two defining relations of `idl`, spelled out in the eleven
+indeterminates `a₁ = X 0, …, a₆ = X 4`, `Px = X 5, Py = X 6, Pz = X 7`,
+`Qx = X 8, Qy = X 9, Qz = X 10`. -/
 
-Write `Y = {(a, P) : W_a(P) = 0} ⊂ 𝔸⁵ × 𝔸³` (dimension `7`).  The zero set of
-`idl` is `Y ×_{𝔸⁵} Y`, of dimension `9` in `𝔸¹¹`.  `Y → 𝔸⁵` has irreducible
-generic fibre (the cone over the generic Weierstrass cubic, which is an
-irreducible surface), so exactly one component of the fibre product dominates
-`Y`.  Any other component lies over the discriminant locus `Δ ⊂ 𝔸⁵`, hence has
-dimension at most `4 + 2 + 2 = 8`; but every component of an intersection with a
-hypersurface has dimension at least `dim Y + 2 - 1 = 9`.  So there is no other
-component.  Generic reducedness plus the complete intersection (hence
-Cohen–Macaulay, hence unmixed) property gives reducedness, and `ℤ`-torsion-freeness
-— `Poly ⧸ idl` is `ℤ[…]`-free on `Px^i Qx^j`, `i, j ≤ 2`, since both generators are
-monic up to sign in `Px` resp. `Qx` — carries it over `Spec ℤ`.
+theorem gen₁_eq : gen₁ = (X 6) ^ 2 * X 7 + X 0 * X 5 * X 6 * X 7 + X 2 * X 6 * X 7 ^ 2
+    - ((X 5) ^ 3 + X 1 * (X 5) ^ 2 * X 7 + X 3 * X 5 * (X 7) ^ 2 + X 4 * (X 7) ^ 3) := by
+  simp [gen₁, curve, pt₁, eval_polynomial]
 
-## A concrete two-step route for the formalisation
+theorem gen₂_eq : gen₂ = (X 9) ^ 2 * X 10 + X 0 * X 8 * X 9 * X 10 + X 2 * X 9 * X 10 ^ 2
+    - ((X 8) ^ 3 + X 1 * (X 8) ^ 2 * X 10 + X 3 * X 8 * (X 10) ^ 2 + X 4 * (X 10) ^ 3) := by
+  simp [gen₂, curve, pt₂, eval_polynomial]
 
-`gen₁` and `gen₂` are, up to sign, MONIC cubics in `Px = X 5` resp. `Qx = X 8`,
-over `B = ℤ[a₁, a₂, a₃, a₄, a₆, Py, Pz, Qy, Qz]`, and their coefficients involve
-disjoint sets of the remaining variables.  So
-`Poly ⧸ idl ≅ (B[Px] ⧸ (f₁))[Qx] ⧸ (f₂)` and it suffices to show
+/-! ### `gen₂` is prime: it is LINEAR in `a₆`, with primitive coefficients
 
-1. `f₁` is irreducible over the UFD `B`.  **This half is easy**: `f₁` is of degree
-   `1` in `a₆ = X 4`, with coefficient `Pz³` and `a₆`-free part `g`; `Pz ∤ g`
-   because `g mod Pz = Px³`, so `f₁` is primitive, and a primitive degree-one
-   polynomial over a UFD is irreducible.
-2. `f₂` is irreducible over the domain `C = B[Px] ⧸ (f₁)`.  This half is the real
-   work: `C` need not be a UFD, so the primitivity argument is unavailable, and
-   one is asking that the generic Weierstrass cubic stay irreducible after
-   adjoining one generic point of itself.
+The whole point is that `gen₂` has degree `1` in `a₆ = X 4`, with leading coefficient
+`-Qz³` and `a₆`-free part `gen₂Rest`; and `Qz ∤ gen₂Rest`, because `gen₂Rest mod Qz = -Qx³`.
+A degree-one polynomial over a commutative ring whose two coefficients are relatively
+prime is irreducible (`Polynomial.irreducible_of_degree_eq_one_of_isRelPrime_coeff`), and
+`Poly` is a UFD, so irreducible is prime.
 
-Note that only a WEAKER statement is actually consumed below, and a proof of it
-would close the leaf just as well: that `addZ ucurve upt₁ upt₂` is a
-non-zerodivisor in `Univ`.
+Everything is transported along `a₆Equiv`, which exhibits `Poly` as a polynomial ring in
+`a₆` over the remaining ten indeterminates.  Its `Fin 10` indexing is the `Fin 11` one with
+`a₆` deleted and `a₁` moved into the hole: `a₁ ↦ X 3`, `a₂ ↦ X 0`, `a₃ ↦ X 1`, `a₄ ↦ X 2`,
+`Px ↦ X 4`, `Py ↦ X 5`, `Pz ↦ X 6`, `Qx ↦ X 7`, `Qy ↦ X 8`, `Qz ↦ X 9`. -/
 
-## A SECOND ROUTE, WITH THE HARD HALF RELOCATED (recorded 2026-07-30, not proven)
+/-- `Poly` as a polynomial ring in `a₆ = X 4` over the other ten indeterminates. -/
+noncomputable def a₆Equiv : Poly ≃ₐ[ℤ] Polynomial (MvPolynomial (Fin 10) ℤ) :=
+  (MvPolynomial.renameEquiv ℤ (Equiv.swap (0 : Fin 11) 4)).trans (MvPolynomial.finSuccEquiv ℤ 10)
 
-The two-step route above puts all the difficulty into "`f₂` is irreducible over a
-ring that need not be a UFD".  Localising instead of towering moves the whole
-difficulty somewhere else, and the half that survives is *elementary*.
+theorem a₆Equiv_X (i : Fin 11) (j : Fin 10) (h : Equiv.swap (0 : Fin 11) 4 i = Fin.succ j) :
+    a₆Equiv (X i) = Polynomial.C (X j) := by
+  rw [a₆Equiv, AlgEquiv.trans_apply, renameEquiv_apply, rename_X, h]
+  exact MvPolynomial.finSuccEquiv_X_succ
 
-Both generators are AFFINE-LINEAR in `(a₁, a₂, a₃, a₄, a₆)` — that is the one
-structural fact neither the dimension count nor the tower above uses.  Write
-`u`, `v` for the `a₆`-free parts of `gen₁`, `gen₂`, so `gen₁ = u - a₆ Pz³` and
-`gen₂ = v - a₆ Qz³`.  Over `Poly[1/Pz]` the first generator SOLVES for `a₆`
-(`a₆ = u / Pz³`), and substituting into the second leaves a single generator
-`w := Qz³ u - Pz³ v`, so
+theorem a₆Equiv_X_a₆ : a₆Equiv (X 4) = Polynomial.X := by
+  rw [a₆Equiv, AlgEquiv.trans_apply, renameEquiv_apply, rename_X,
+    show Equiv.swap (0 : Fin 11) 4 4 = 0 from by simp]
+  exact MvPolynomial.finSuccEquiv_X_zero
 
-> `Poly[1/Pz] ⧸ idl ≅ ℤ[a₁, a₂, a₃, a₄, Px, Py, Pz^{±1}, Qx, Qy, Qz] ⧸ (w)`.
+/-- Setting `Qz`'s image `X 9` to zero, inside the ten-variable coefficient ring. -/
+noncomputable def killQzImage : MvPolynomial (Fin 10) ℤ →+* MvPolynomial (Fin 10) ℤ :=
+  eval₂Hom (Int.castRingHom _) (fun i => if i = 9 then 0 else X i)
 
-**`w` is PRIME, and the proof is one Gauss argument.**  `w` is irreducible over
-`ℚ` — checked with `Singular`'s `factorize`, which returns the single factor `w`
-with multiplicity `1` (untrusted searcher, so this certifies the statement, not a
-proof) — and every coefficient of `w` is `±1`, so its `ℤ`-content is `1`; an
-irreducible-over-`ℚ` primitive polynomial is irreducible in `ℤ[…]`, hence prime.
-The route to that in Lean is the same trick step 1 above uses: `w` has degree `1`
-in `a₁` with coefficient `Pz Qz (Px Py Qz² - Qx Qy Pz²)`, whose irreducible factors
-are `Pz`, `Qz` and `Px Py Qz² - Qx Qy Pz²` (itself degree `1` and primitive in
-`Py`); none divides the `a₁`-free part of `w`, which is `-Qz³ Px³` mod `Pz`,
-`Pz³ Qx³` mod `Qz`, and `10 + a₃ + 3 a₂ + a₄` at
-`(Px, Py, Pz, Qx, Qy, Qz) = (1, 2, 1, 2, 1, 1)` — a point of the third factor's
-zero locus.  So `w` is primitive in `a₁` over a UFD, hence irreducible.  (Do NOT
-test that last non-divisibility on the diagonal `P = Q`: there the `a₁`-free part
-of `w` vanishes identically and the check reads as a false positive.)
+theorem killQzImage_X (i : Fin 10) : killQzImage (X i) = if i = 9 then 0 else X i := by
+  simp [killQzImage]
 
-**So the entire remaining gap is SATURATION**: that `Pz` is a non-zerodivisor on
-`Poly ⧸ idl`, equivalently `idl : Pz^∞ = idl`.  Given that, `Poly ⧸ idl` embeds in
-the domain `Poly[1/Pz] ⧸ idl` and the leaf follows.  This is a genuinely different
-reduction from step 2 above — it is a question about associated primes of a
-complete intersection rather than about irreducibility over a non-UFD — and it is
-the same question the consumer's weaker form asks, since `addZ` and `Pz` cut out
-comparable loci.
+/-- The `a₆`-free part of `gen₂`, in the `Fin 10` indexing produced by `a₆Equiv`. -/
+noncomputable def gen₂Rest : MvPolynomial (Fin 10) ℤ :=
+  (X 8) ^ 2 * X 9 + X 3 * X 7 * X 8 * X 9 + X 1 * X 8 * X 9 ^ 2
+    - ((X 7) ^ 3 + X 0 * (X 7) ^ 2 * X 9 + X 2 * X 7 * (X 9) ^ 2)
 
-Two supporting observations.  `{gen₁, gen₂}` is already a Gröbner basis for the
-degree-reverse-lex order: the leading terms are `Px³` and `Qx³`, which are coprime,
-so the single S-pair reduces to zero by Buchberger's first criterion — that is the
-mechanical justification for the `ℤ[…]`-freeness on `Px^i Qx^j` claimed above, and
-it says `(gen₁, gen₂)` is a regular sequence, hence a complete intersection, hence
-Cohen–Macaulay and unmixed.  With unmixedness the saturation reduces to a statement
-about MINIMAL primes only.  And the saturation is not merely unproven but
-unconfirmed: `Singular`'s `quotient(idl, Pz)` and `minAssGTZ(idl)` were both killed
-at 900 s in these eleven variables, so a successor should not expect the CAS to
-settle it either. -/
-theorem idl_isPrime : idl.IsPrime := sorry
+theorem a₆Equiv_gen₂ :
+    a₆Equiv gen₂ = Polynomial.C gen₂Rest - Polynomial.C ((X 9) ^ 3) * Polynomial.X := by
+  rw [gen₂_eq]
+  simp only [map_sub, map_add, map_mul, map_pow, a₆Equiv_X 0 3 (by simp),
+    a₆Equiv_X 1 0 (by decide), a₆Equiv_X 2 1 (by decide), a₆Equiv_X 3 2 (by decide),
+    a₆Equiv_X 8 7 (by decide), a₆Equiv_X 9 8 (by decide), a₆Equiv_X 10 9 (by decide),
+    a₆Equiv_X_a₆, gen₂Rest]
+  ring
+
+theorem not_dvd_gen₂Rest : ¬ ((X 9 : MvPolynomial (Fin 10) ℤ) ∣ gen₂Rest) := by
+  rintro ⟨t, ht⟩
+  have h := congrArg killQzImage ht
+  rw [map_mul, killQzImage_X] at h
+  simp only at h
+  rw [gen₂Rest] at h
+  simp only [map_sub, map_add, map_mul, map_pow, killQzImage_X] at h
+  norm_num at h
+  exact absurd h (by decide)
+
+/-- **`gen₂` is prime in `Poly`** (PROVEN): the generic Weierstrass cone through the
+generic second point is an integral hypersurface in `𝔸¹¹`. -/
+theorem prime_gen₂ : Prime gen₂ := by
+  have hX9 : Prime (X 9 : MvPolynomial (Fin 10) ℤ) := MvPolynomial.X_prime
+  have hrel0 : IsRelPrime (X 9 : MvPolynomial (Fin 10) ℤ) gen₂Rest :=
+    hX9.irreducible.isRelPrime_iff_not_dvd.mpr not_dvd_gen₂Rest
+  have hrel : IsRelPrime gen₂Rest (-((X 9 : MvPolynomial (Fin 10) ℤ) ^ 3)) :=
+    ((hrel0.pow_left (m := 3)).symm).neg_right
+  have hdeg : (a₆Equiv gen₂).degree = 1 := by
+    rw [a₆Equiv_gen₂]
+    have h9 : ((X 9 : MvPolynomial (Fin 10) ℤ)) ^ 3 ≠ 0 := pow_ne_zero _ (X_ne_zero _)
+    compute_degree!
+  have hc0 : (a₆Equiv gen₂).coeff 0 = gen₂Rest := by
+    rw [a₆Equiv_gen₂, Polynomial.coeff_sub, Polynomial.coeff_C_zero, Polynomial.coeff_C_mul,
+      Polynomial.coeff_X_zero]
+    ring
+  have hc1 : (a₆Equiv gen₂).coeff 1 = -((X 9 : MvPolynomial (Fin 10) ℤ) ^ 3) := by
+    rw [a₆Equiv_gen₂, Polynomial.coeff_sub, Polynomial.coeff_C, Polynomial.coeff_C_mul,
+      Polynomial.coeff_X_one]
+    norm_num
+  have hirr : Irreducible (a₆Equiv gen₂) :=
+    Polynomial.irreducible_of_degree_eq_one_of_isRelPrime_coeff hdeg (by rw [hc0, hc1]; exact hrel)
+  exact (MulEquiv.prime_iff a₆Equiv.toMulEquiv).mp
+    ((UniqueFactorizationMonoid.irreducible_iff_prime).mp hirr)
+
+/-! ### `Pz` is a non-zerodivisor modulo `idl`
+
+This is the first half of the reduction of `idl_isPrime`, and it needs no localisation:
+`gen₁ ≡ -Px³ mod Pz` while `gen₂` does not involve `Pz` at all, so a relation
+`Pz · h = c · gen₁ + d · gen₂` reduces mod `Pz` to `gen₂ ∣ c̄ · Px³`; `gen₂` is prime and
+does not divide `Px³` (kill `Qx, Qy, Qz`, which kills `gen₂` and not `Px`), so
+`c ≡ e · gen₂` and then necessarily `d ≡ -e · gen₁`, whence the leading terms cancel
+identically and `Pz` divides out. -/
+
+/-- Setting `Pz = X 7` to zero. -/
+noncomputable def killPz : Poly →+* Poly :=
+  eval₂Hom (Int.castRingHom Poly) (fun i => if i = 7 then 0 else X i)
+
+theorem killPz_X (i : Fin 11) : killPz (X i) = if i = 7 then 0 else X i := by
+  simp [killPz]
+
+theorem sub_killPz_dvd (x : Poly) : X 7 ∣ x - killPz x := by
+  induction x using MvPolynomial.induction_on with
+  | C a => simp [killPz]
+  | add p q hp hq =>
+      have h : p + q - killPz (p + q) = (p - killPz p) + (q - killPz q) := by rw [map_add]; ring
+      rw [h]; exact dvd_add hp hq
+  | mul_X p i hp =>
+      rcases eq_or_ne i 7 with rfl | hi
+      · have hk : killPz (p * X 7) = 0 := by rw [map_mul, killPz_X]; simp
+        rw [hk, sub_zero]
+        exact Dvd.intro_left p rfl
+      · have h : p * X i - killPz (p * X i) = (p - killPz p) * X i := by
+          rw [map_mul, killPz_X, if_neg hi]; ring
+        rw [h]; exact hp.mul_right _
+
+theorem killPz_gen₁ : killPz gen₁ = -(X 5) ^ 3 := by
+  rw [gen₁_eq]
+  simp only [map_sub, map_add, map_mul, map_pow, killPz_X]
+  norm_num [show ((5 : Fin 11) = 7) = False from by simp,
+    show ((6 : Fin 11) = 7) = False from by simp,
+    show ((7 : Fin 11) = 7) = True from by simp]
+
+theorem killPz_gen₂ : killPz gen₂ = gen₂ := by
+  rw [gen₂_eq]
+  simp only [map_sub, map_add, map_mul, map_pow, killPz_X]
+  simp
+
+/-- Setting the three coordinates of the second point to zero. -/
+noncomputable def killPt₂ : Poly →+* Poly :=
+  eval₂Hom (Int.castRingHom Poly) (fun i => if 7 < (i : ℕ) then 0 else X i)
+
+theorem killPt₂_X (i : Fin 11) : killPt₂ (X i) = if 7 < (i : ℕ) then 0 else X i := by
+  simp [killPt₂]
+
+theorem killPt₂_gen₂ : killPt₂ gen₂ = 0 := by
+  rw [gen₂_eq]
+  simp only [map_sub, map_add, map_mul, map_pow, killPt₂_X]
+  norm_num
+
+theorem gen₂_not_dvd_Px_cube : ¬ (gen₂ ∣ (X 5 : Poly) ^ 3) := by
+  rintro ⟨t, ht⟩
+  have h := congrArg killPt₂ ht
+  rw [map_pow, killPt₂_X, map_mul, killPt₂_gen₂, zero_mul] at h
+  norm_num at h
+
+theorem Px_cube_eq : (X 5 : Poly) ^ 3 = -gen₁ + X 7 *
+    ((X 6) ^ 2 + X 0 * X 5 * X 6 + X 2 * X 6 * X 7
+      - (X 1 * (X 5) ^ 2 + X 3 * X 5 * X 7 + X 4 * (X 7) ^ 2)) := by
+  rw [gen₁_eq]; ring
+
+/-- **`Pz` is a non-zerodivisor modulo `idl`** (PROVEN over `prime_gen₂`). -/
+theorem mem_idl_of_Pz_mul_mem {h : Poly} (hh : X 7 * h ∈ idl) : h ∈ idl := by
+  rw [idl, Ideal.mem_span_pair] at hh
+  obtain ⟨c, d, hcd⟩ := hh
+  have hk := congrArg killPz hcd
+  rw [map_add, map_mul, map_mul, killPz_gen₁, killPz_gen₂, map_mul, killPz_X] at hk
+  norm_num at hk
+  have hkey : gen₂ ∣ killPz c * (X 5) ^ 3 := ⟨killPz d, by linear_combination -hk⟩
+  have hEc : gen₂ ∣ killPz c := by
+    rcases prime_gen₂.dvd_or_dvd hkey with h1 | h1
+    · exact h1
+    · exact absurd h1 gen₂_not_dvd_Px_cube
+  obtain ⟨E, hE⟩ := hEc
+  have hd : killPz d = E * (X 5) ^ 3 := by
+    have h2 : gen₂ * killPz d = gen₂ * (E * (X 5) ^ 3) := by
+      rw [hE] at hk; linear_combination hk
+    exact mul_left_cancel₀ prime_gen₂.ne_zero h2
+  obtain ⟨c₀, hc₀⟩ := sub_killPz_dvd c
+  obtain ⟨d₀, hd₀⟩ := sub_killPz_dvd d
+  refine Ideal.mem_span_pair.mpr ⟨c₀, E * ((X 6) ^ 2 + X 0 * X 5 * X 6 + X 2 * X 6 * X 7
+      - (X 1 * (X 5) ^ 2 + X 3 * X 5 * X 7 + X 4 * (X 7) ^ 2)) + d₀, ?_⟩
+  refine mul_left_cancel₀ (X_ne_zero (7 : Fin 11)) ?_
+  have hcv : c = gen₂ * E + X 7 * c₀ := by linear_combination hc₀ + hE
+  have hdv : d = E * (X 5) ^ 3 + X 7 * d₀ := by linear_combination hd₀ + hd
+  rw [hcv, hdv, Px_cube_eq] at hcd
+  linear_combination hcd
+
+theorem mem_idl_of_pow_Pz_mul_mem {x : Poly} : ∀ k : ℕ, X 7 ^ k * x ∈ idl → x ∈ idl := by
+  intro k
+  induction k with
+  | zero => intro h; simpa using h
+  | succ n ih =>
+      intro h
+      refine ih (mem_idl_of_Pz_mul_mem ?_)
+      have he : (X 7 : Poly) * (X 7 ^ n * x) = X 7 ^ (n + 1) * x := by ring
+      rw [he]; exact h
+
+/-- `idl` is not the unit ideal: the zero curve with the zero point kills both
+generators and not `1`. -/
+theorem idl_ne_top : idl ≠ ⊤ := by
+  intro h
+  have h1 : (1 : Poly) ∈ idl := h ▸ Submodule.mem_top
+  have hP : Equation (⟨0, 0, 0, 0, 0⟩ : WeierstrassCurve ℤ) ![0, 0, 0] := by
+    rw [equation_iff]
+    norm_num [Matrix.cons_val_two, Matrix.tail_cons, Matrix.head_cons]
+  have h2 := spec_of_mem_idl hP hP h1
+  rw [map_one] at h2
+  exact one_ne_zero h2
+
+/-- **THE `Pz`-SATURATION OF `idl`** (sorry leaf, cut out of `idl_isPrime` on 2026-07-30) —
+the second and only remaining half of the primality of the universal ideal:
+
+    x * y ∈ idl  →  ∃ k, Pz ^ k * x ∈ idl  ∨  Pz ^ k * y ∈ idl.
+
+Together with `mem_idl_of_Pz_mul_mem` (PROVEN above, `Pz` is a non-zerodivisor modulo
+`idl`) this gives `idl_isPrime` at once, and it is *exactly* the statement that
+`Poly[1/Pz] ⧸ idl` is a domain.
+
+## Why this is the right cut, and why the route this file used to record is NOT needed
+
+The superseded plan was to write `Poly ⧸ idl ≅ (B[Px] ⧸ (f₁))[Qx] ⧸ (f₂)` and prove `f₂`
+irreducible over `C = B[Px] ⧸ (f₁)` — a non-UFD, so Gauss's lemma is unavailable — i.e. to
+prove that the generic Weierstrass cubic stays irreducible after adjoining one generic
+point of itself.  That is genuinely hard (it wants a ramification or Newton-polygon
+argument at the prime `(Pz)`), and it is **avoidable**: inverting `Pz` makes the FIRST
+relation solvable for `a₆`, after which only ONE relation is left and the base is again a
+UFD.  Concretely, with `Pz` inverted,
+
+    a₆ = (Py²Pz + a₁PxPyPz + a₃PyPz² − Px³ − a₂Px²Pz − a₄PxPz²) / Pz³,
+
+so `Poly[1/Pz] ⧸ idl ≅ A ⧸ (HH)` where `A = ℤ[a₁,a₂,a₃,a₄,Px,Py,Pz,Qx,Qy,Qz][1/Pz]`, a
+localisation of a polynomial ring hence a UFD, and
+
+    HH := Qz³ · gen₁' − Pz³ · gen₂'   (the `a₆` eliminated between the two relations).
+
+`HH` is IRREDUCIBLE in `A` by the same primitivity argument that `prime_gen₂` uses above,
+one variable over.  Concretely, in `Poly` itself,
+
+    hh := Qz³ * gen₁ − Pz³ * gen₂ = (X 10)³ * gen₁ − (X 7)³ * gen₂,
+
+which is `a₆`-free and manifestly a member of `idl`.  Its degree in `a₄` is `1`, with
+
+    coefficient of a₄  =  Qz³·(−PxPz²) − Pz³·(−QxQz²)  =  Pz²Qz²·(QxPz − PxQz)
+
+(the sign of the last factor is a unit and does not matter), so its prime factors are `Pz`,
+`Qz` and `L := QxPz − PxQz`.  **`L` needs its own primality**, and it is the same one-line
+argument a third time: `L` has degree `1` in `Qx` with coefficient `Pz`, `Qx`-free part
+`−PxQz`, and `Pz ∤ PxQz`.
+
+**And all three non-divisibility checks against the `a₄`-free part `hh₀` collapse to a
+SINGLE INTEGER EVALUATION each** — no polynomial reduction, no substitution of `Px = PzQx/Qz`
+(which is not even polynomial).  For a prime `q` and a `ℤ`-point `v` with `q(v) = 0`,
+`q ∣ hh₀` forces `hh₀(v) = 0`; so one exhibits `v` with `q(v) = 0` and `hh₀(v) ≠ 0`.  All
+three witnesses set every indeterminate not named to `0`, so in particular `a₄ = 0` and
+`hh₀(v) = hh(v)`; each value below is hand-checked:
+
+* `Pz ∤ hh₀`: take `Px = Qz = 1` (so `Pz = 0`).  Then `gen₁ = −1`, `gen₂ = 0`, `hh = −1`.
+* `Qz ∤ hh₀`: take `Qx = Pz = 1` (so `Qz = 0`).  Then `gen₁ = 0`, `gen₂ = −1`, `hh = 1`.
+* `L ∤ hh₀`:  take `Py = Pz = Qz = 1` (so `L = 0·1 − 0·1 = 0`).  Then `gen₁ = 1`,
+  `gen₂ = 0`, `hh = 1`.
+
+So `A ⧸ (HH)` is a domain, which is the leaf.  Note `Pz ∤ HH` as well (`A₁ mod Pz = −Px³`
+gives `HH mod Pz = Qz³Px³ ≠ 0`), which is what makes the `Pz`-powers in the statement
+harmless: `HH` prime and `HH ∣ Pz^m·u` forces `HH ∣ u`, since otherwise `HH ∣ Pz`.
+
+## The shape a formalisation should take
+
+`a₆Equiv` above already exhibits `Poly` as `R₁₀[a₆]` with `R₁₀ = MvPolynomial (Fin 10) ℤ`;
+in that presentation `gen₁ = C A₁ − C (Pz³) · a₆` and `gen₂ = C gen₂Rest − C (Qz³) · a₆`
+(`a₆Equiv_gen₂`), and `Pz`'s image is `X 6`, `Qz`'s is `X 9`, `a₄`'s is `X 2`.  Two steps:
+
+1. *Clearing `a₆`.*  For `f` of `a₆`-degree `d`, `Pz^(3d) · f ≡ f̃ mod (gen₁)` with `f̃`
+   `a₆`-free, by repeatedly rewriting `Pz³ · a₆ ≡ A₁`.  This reduces the leaf to `a₆`-free
+   `x, y`.
+2. *One relation over a UFD.*  For `a₆`-free `u`, `u ∈ idl` iff `HH ∣ Pz^m · u` in `R₁₀`
+   for some `m`, and `HH = Pz³ · gen₂Rest − Qz³ · A₁` is prime in `R₁₀` by the `a₄`-linear
+   primitivity argument above (note `Pz ∤ HH`, since `A₁ mod Pz = −Px³`, so
+   `HH mod Pz = Qz³Px³ ≠ 0` — this is what makes the `Pz^m` harmless).
+
+Neither step needs a field, a valuation, or a fraction field. -/
+theorem exists_pow_Pz_mul_mem_idl {x y : Poly} (h : x * y ∈ idl) :
+    ∃ k : ℕ, X 7 ^ k * x ∈ idl ∨ X 7 ^ k * y ∈ idl :=
+  sorry
+/-! ### A concrete specialisation
+
+`y² = x³ + 1` over `ℤ` with the two points `[0 : 1 : 1]` and `[2 : 3 : 1]`.  It is
+used twice: to see that the universal ideal is PROPER, and to see that the first
+law's `Z`-coordinate does not vanish universally (it specialises to `-8`). -/
+
+/-- `[0 : 1 : 1]` lies on `y² = x³ + 1`. -/
+theorem equation_test₁ : Equation (⟨0, 0, 0, 0, 1⟩ : WeierstrassCurve ℤ) ![0, 1, 1] := by
+  rw [equation_iff]
+  norm_num [Matrix.cons_val_two, Matrix.tail_cons, Matrix.head_cons]
+
+/-- `[2 : 3 : 1]` lies on `y² = x³ + 1`. -/
+theorem equation_test₂ : Equation (⟨0, 0, 0, 0, 1⟩ : WeierstrassCurve ℤ) ![2, 3, 1] := by
+  rw [equation_iff]
+  norm_num [Matrix.cons_val_two, Matrix.tail_cons, Matrix.head_cons]
+
+/-! ### The universal ideal is prime
+
+Equivalently: the generic Weierstrass curve with two generic marked points is an
+INTEGRAL scheme.  This is the sole remaining content of `equation_add2XYZ`.
+
+## THE ROUTE: invert `Pz`, and everything becomes a primitivity argument
+
+The docstring this replaces proposed the tower
+`Poly ⧸ idl ≅ (B[Px] ⧸ (f₁))[Qx] ⧸ (f₂)` over
+`B = ℤ[a₁, a₂, a₃, a₄, a₆, Py, Pz, Qy, Qz]`, and stopped at its second step —
+"`f₂` irreducible over `C = B[Px] ⧸ (f₁)`; **this half is the real work**, because
+`C` need not be a UFD, so the primitivity argument is unavailable".
+
+**`C` DOES become a UFD once `Pz = X 7` is inverted**, and that is the whole
+difficulty.  `f₁` is of degree `1` in `a₆` with coefficient `Pz³`; so in
+`C[1/Pz]` the relation `f₁ = 0` simply SOLVES for `a₆`, and
+
+  `C[1/Pz] ≅ ℤ[a₁, a₂, a₃, a₄, Py, Qy, Qz, Px][Pz^{±1}]`,
+
+a localisation of a polynomial ring — a UFD.  So both halves of the tower are the
+same easy kind of argument, and the leaf splits into a *localised primality*
+statement and a *saturation* statement, which is the decomposition below.
+
+### Half one: primality after inverting `Pz` (`exists_pow_X7_mul_mem_idl`)
+
+Inverting `Pz` and eliminating `a₆` by `gen₁` turns the second generator into
+
+  `h := Pz ^ 3 * gen₂ - Qz ^ 3 * gen₁`
+
+(the `a₆` terms cancel, so `h` does not involve `a₆ = X 4`), and
+
+  `Poly[1/Pz] ⧸ idl ≅ (ℤ[a₁, a₂, a₃, a₄, Px, Py, Qx, Qy, Qz][Pz^{±1}]) ⧸ (h)`.
+
+`h` is of degree `1` in `a₄ = X 3`, over the UFD
+`ℤ[a₁, a₂, a₃, Px, Py, Pz, Qx, Qy, Qz]`, with
+
+* coefficient `Pz ^ 2 * Qz ^ 2 * (Px * Qz - Qx * Pz)`;
+* `a₄`-free part `c = Pz ^ 3 * g₂ - Qz ^ 3 * g₁`, where `gᵢ` is `genᵢ` with
+  `a₄ = a₆ = 0`.
+
+It is PRIMITIVE, i.e. none of the three prime factors of the coefficient divides
+`c` — and this is the only computation in the whole route:
+
+* `Pz ∤ c`, since `g₁ ≡ -Px ^ 3 (mod Pz)`, so `c ≡ Px ^ 3 * Qz ^ 3 (mod Pz)`;
+* `Qz ∤ c`, since `g₂ ≡ -Qx ^ 3 (mod Qz)`, so `c ≡ -Pz ^ 3 * Qx ^ 3 (mod Qz)`;
+* `(Px * Qz - Qx * Pz) ∤ c` — this factor is itself irreducible (degree `1` in
+  `Px` with coefficient `Qz`, and `Qz ∤ Qx * Pz`), and substituting the generic
+  point `Px = t * Pz`, `Qx = t * Qz` of the hypersurface it cuts out gives
+
+  `c = Pz * Qz * (Pz * Qy - Qz * Py) * (Pz * Qy + Qz * Py + (a₁ * t + a₃) * Pz * Qz)`,
+
+  which is not `0` (the `a₂` and `t ^ 3` contributions cancel identically).
+
+A primitive polynomial of degree `1` over a UFD is irreducible, hence prime; and
+`h` stays prime after `Pz` is inverted because `Pz ∤ h` (indeed
+`h ≡ Px ^ 3 * Qz ^ 3 (mod Pz)`).
+
+### Half two: `Pz` is a non-zerodivisor modulo `idl` (`mem_idl_of_X7_mul_mem`)
+
+This is what lets the localised statement be contracted back.  **It needs no
+primality and no UFD at all** — only that division by a MONIC polynomial has a
+unique remainder, applied twice.  Write `f₁ = -gen₁`, `f₂ = -gen₂`, which are
+monic cubics in `Px` resp. `Qx` over `B = ℤ[a₁, a₂, a₃, a₄, a₆, Py, Pz, Qy, Qz]`,
+in DISJOINT variables (`f₁` does not involve `Qx`, nor `f₂` `Px`).
+
+*Normal form.*  Dividing by `f₁` in `Px` and then by `f₂` in `Qx` writes any
+`a ∈ Poly = B[Px, Qx]` as `a = q₁ f₁ + q₂ f₂ + r` with
+`deg_Px r ≤ 2` and `deg_Qx r ≤ 2`.
+
+*Uniqueness.*  If `g ∈ idl` has `deg_Px g ≤ 2` and `deg_Qx g ≤ 2` then `g = 0`.
+Indeed `B[Qx] ⧸ (f₂) =: C₂` is `B`-free on `1, Qx, Qx²` (`f₂` monic), and
+`C₂[Px] ⧸ (f₁)` is `C₂`-free on `1, Px, Px²` (`f₁` monic).  The image of `g` in
+the latter is `0`, and `g` has `Px`-degree `≤ 2`, so already `g = 0` in `C₂[Px]`;
+each `Px`-coefficient of `g` therefore vanishes in `C₂` while having
+`Qx`-degree `≤ 2`, hence is `0` in `B[Qx]`.
+
+Given those two: from `Pz * a ∈ idl`, put `a` in normal form; then `Pz * r ∈ idl`
+and `Pz * r` still has both degrees `≤ 2`, so `Pz * r = 0`, so `r = 0` (`Poly` is
+a domain), so `a ∈ idl`.
+
+The same argument shows more, and the stronger form may be worth stating: `Poly ⧸ idl`
+is a FREE `B`-module on the nine monomials `Px^i Qx^j`, `i, j ≤ 2`, so EVERY nonzero
+element of `B` is a non-zerodivisor modulo `idl` — `Pz` is nothing special.
+
+### What each half needs from mathlib
+
+Half two needs only `Polynomial.eq_zero_of_dvd_of_degree_lt` and
+`Polynomial.modByMonic` (or `AdjoinRoot.powerBasis'`, which packages the freeness
+directly).
+
+Half one's degree-one step is already in mathlib in exactly the form wanted, and
+does NOT have to go through Gauss's lemma:
+
+  `Polynomial.irreducible_C_mul_X_add_C : a ≠ 0 → IsRelPrime a b →`
+    `Irreducible (C a * X + C b)`
+
+(`Mathlib/Algebra/Polynomial/RingDivision.lean`; the underlying
+`irreducible_of_degree_eq_one_of_isRelPrime_coeff` takes any degree-one `p`).
+`IsRelPrime a b` — every common divisor is a unit — is precisely the primitivity
+check computed above, with `a = Pz ^ 2 * Qz ^ 2 * (Px * Qz - Qx * Pz)` and
+`b = c`.  Irreducible then upgrades to Prime because the base is a UFD
+(`UniqueFactorizationMonoid.irreducible_iff_prime`).  What is left is the explicit
+isomorphism `Poly[1/Pz] ⧸ idl ≅ (…)[Pz^{±1}] ⧸ (h)`.
+
+### The bookkeeping obstacle, and the refactor that removes it
+
+In both halves the mathematics is short and the cost is entirely in viewing
+`Poly = MvPolynomial (Fin 11) ℤ` as `B[Px][Qx]`, i.e. in `renameEquiv` +
+`finSuccEquiv` juggling and in computing the images of `gen₁`, `gen₂` through it.
+
+**If either half resists, the highest-value move is to stop fighting that and
+re-present the universal ring as `B[Px][Qx]` BY CONSTRUCTION**, i.e. take
+`Poly := Polynomial (Polynomial (MvPolynomial (Fin 9) ℤ))` with `Px`, `Qx` the two
+outer indeterminates.  Then `f₁`, `f₂` are visibly monic and both halves are
+direct.  The cost is rebuilding `curve`, `pt₁`, `pt₂`, `vals` and `spec` (the last
+as a two-stage `Polynomial.eval₂`), and reproving `spec_curve`, `spec_pt₁`,
+`spec_pt₂`; nothing below `idl` in this file depends on how `Poly` is presented.
+
+Note that only a WEAKER statement than `idl.IsPrime` is actually consumed below,
+and a proof of it would close the node just as well: that `addZ ucurve upt₁ upt₂`
+is a non-zerodivisor in `Univ`. -/
+
+/-- **`Pz = X 7` is a non-zerodivisor modulo the universal ideal** (PROVEN, by
+delegation).
+
+**This declaration is a DUPLICATE and should be deleted at the next integration.**
+It is verbatim the statement of `mem_idl_of_Pz_mul_mem` above, which is proven —
+the two arose from two branches decomposing `idl_isPrime` the same way under
+different names, and the union resolution kept both.  Nothing is gained by giving
+it a second, independent proof, so it delegates.
+
+For the record, the route the section docstring above prescribes for it (normal
+form by division by the monic cubics `-gen₁` in `Px` and `-gen₂` in `Qx`, then
+uniqueness) is correct but strictly more expensive than the one
+`mem_idl_of_Pz_mul_mem` actually takes: reduce a relation `Pz·h = c·gen₁ + d·gen₂`
+modulo `Pz`, where `gen₁ ≡ -Px³` and `gen₂` is `Pz`-free, and use `prime_gen₂`.
+That needs no presentation of `Poly` as `B[Px][Qx]` at all, which is where all of
+the prescribed route's cost sits. -/
+theorem mem_idl_of_X7_mul_mem {a : Poly} (ha : X 7 * a ∈ idl) : a ∈ idl :=
+  mem_idl_of_Pz_mul_mem ha
+
+/-- **The universal ideal is prime once `Pz = X 7` is inverted** (sorry leaf) —
+stated as a `Pz`-saturated primality, which is exactly the contraction to `Poly`
+of `IsPrime (idl ⬝ Poly[1/Pz])`.  See the section docstring above: inverting `Pz`
+solves `gen₁` for `a₆` and leaves the single relation
+`h = Pz ^ 3 * gen₂ - Qz ^ 3 * gen₁`, which is a PRIMITIVE polynomial of degree `1`
+in `a₄` over a polynomial ring over `ℤ`, hence irreducible, hence prime. -/
+theorem exists_pow_X7_mul_mem_idl {a b : Poly} (hab : a * b ∈ idl) :
+    (∃ n : ℕ, X 7 ^ n * a ∈ idl) ∨ (∃ n : ℕ, X 7 ^ n * b ∈ idl) := sorry
+
+/-- **The universal ideal is prime** (PROVEN from the two leaves above): a
+`Pz`-saturated primality plus the fact that `Pz` is a non-zerodivisor modulo
+`idl` is primality. -/
+theorem idl_isPrime : idl.IsPrime := by
+  refine ⟨idl_ne_top, ?_⟩
+  have key : ∀ (n : ℕ) (c : Poly), X 7 ^ n * c ∈ idl → c ∈ idl := by
+    intro n
+    induction n with
+    | zero => intro c hc; simpa using hc
+    | succ k ih =>
+      intro c hc
+      refine mem_idl_of_X7_mul_mem (ih (X 7 * c) ?_)
+      have hrw : X 7 ^ k * (X 7 * c) = X 7 ^ (k + 1) * c := by ring
+      rw [hrw]
+      exact hc
+  intro a b hab
+  rcases exists_pow_X7_mul_mem_idl hab with ⟨n, hn⟩ | ⟨n, hn⟩
+  · exact Or.inl (key n a hn)
+  · exact Or.inr (key n b hn)
 
 noncomputable instance : IsDomain Univ := (Ideal.Quotient.isDomain_iff_prime idl).mpr idl_isPrime
 
@@ -343,14 +744,8 @@ noncomputable instance : IsDomain Univ := (Ideal.Quotient.isDomain_iff_prime idl
 to `y² = x³ + 1` over `ℤ` at the points `[0 : 1 : 1]` and `[2 : 3 : 1]`, where the
 first law's `Z`-coordinate is `-8`. -/
 theorem addZ_upt_ne_zero : addZ ucurve upt₁ upt₂ ≠ 0 := by
-  have hP : Equation (⟨0, 0, 0, 0, 1⟩ : WeierstrassCurve ℤ) ![0, 1, 1] := by
-    rw [equation_iff]
-    norm_num [Matrix.cons_val_two, Matrix.tail_cons, Matrix.head_cons]
-  have hQ : Equation (⟨0, 0, 0, 0, 1⟩ : WeierstrassCurve ℤ) ![2, 3, 1] := by
-    rw [equation_iff]
-    norm_num [Matrix.cons_val_two, Matrix.tail_cons, Matrix.head_cons]
   set g : Univ →+* ℤ := Ideal.Quotient.lift idl (spec ⟨0, 0, 0, 0, 1⟩ ![0, 1, 1] ![2, 3, 1])
-    (fun _ ha => spec_of_mem_idl hP hQ ha) with hg
+    (fun _ ha => spec_of_mem_idl equation_test₁ equation_test₂ ha) with hg
   have hcomp : g.comp (Ideal.Quotient.mk idl) = spec ⟨0, 0, 0, 0, 1⟩ ![0, 1, 1] ![2, 3, 1] :=
     RingHom.ext fun _ => rfl
   intro hz

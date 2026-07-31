@@ -77,7 +77,7 @@ open WeierstrassCurve WeierstrassCurve.Affine
 open scoped nonZeroDivisors
 
 variable {F : Type*} [Field F] [DecidableEq F] [IsAlgClosed F]
-  {W : WeierstrassCurve.Affine F} {p : ℕ} [Fact p.Prime]
+  {W : WeierstrassCurve.Affine F} {p : ℕ} [Fact (1 < p)]
 
 /-- **Stage B cross-ratio bookkeeping (PROVEN)**: dividing the two
 evaluation stages cancels their common `g`-ratio `p`-th power.  With
@@ -890,7 +890,7 @@ theorem exists_pointEval_specialization (hΔ : W.Δ ≠ 0) (m : ℤ) {Q : W.Poin
     obtain ⟨rfl, rfl⟩ := hueq
     exact evalsTo_pointEval hZ.left hω.left hZ'.left hxe hye z
 
-omit [Fact p.Prime] in
+omit [Fact (1 < p)] in
 /-- **Stage B, leaf 1 (PROVEN): a generic `p`-division offset.**
 Given the Miller data (`Q = p•T'`, `a` generating
 `∏_κ I_{T'⊕κ}·I_{⊖κ}`), a `p`-torsion point `P`, and the setup's
@@ -1686,7 +1686,7 @@ theorem spanSingleton_pointEval_translate_neg (hΔ : W.Δ ≠ 0) {Q : W.Point}
   congr 1
   abel
 
-omit [IsAlgClosed F] [Fact p.Prime] in
+omit [IsAlgClosed F] [Fact (1 < p)] in
 /-- **The enumeration of `E[p]` is closed under negation.** -/
 lemma map_neg_eq {ι : Type*} [Fintype ι] {val : ι → W.Point}
     (hval_inj : Function.Injective val)
@@ -1709,7 +1709,7 @@ lemma map_neg_eq {ι : Type*} [Fintype ι] {val : ι → W.Point}
   rw [← h2]
   exact Multiset.map_congr rfl fun i _ => (hf i).symm
 
-omit [IsAlgClosed F] [Fact p.Prime] in
+omit [IsAlgClosed F] [Fact (1 < p)] in
 /-- **The cross-ratio divisor cancellation (step 1 of the telescope).**
 With `S(A) := Σ_{κ ∈ E[p]} (A ⊕ κ)` and `div a = S(T') − S(0)`,
 `div b = S(P') − S(0)`, `div v = S(0) + S(0)` (in the cleared
@@ -1810,7 +1810,7 @@ lemma crossRatio_divisor_eq {ι : Type*} [Fintype ι] {val : ι → W.Point}
 
 
 
-omit [IsAlgClosed F] [Fact p.Prime] in
+omit [IsAlgClosed F] [Fact (1 < p)] in
 /-- The fractional-ideal form of `crossRatio_divisor_eq`. -/
 lemma crossRatio_divisor_prod_eq {ι : Type*} [Fintype ι] {val : ι → W.Point}
     (hval_inj : Function.Injective val)
@@ -1856,7 +1856,7 @@ lemma crossRatio_divisor_prod_eq {ι : Type*} [Fintype ι] {val : ι → W.Point
   simpa only [Multiset.map_add, Multiset.prod_add, Multiset.map_map,
     Function.comp_def] using h
 
-omit [Fact p.Prime] in
+omit [Fact (1 < p)] in
 /-- **Stage B, leaf 3a-i-α (PROVEN): the CROSS-RATIO CONSTANT `γ`.**
 `Ξ(X) := [g_P(T' ⊖ X)·g(X)] / [g_P(⊖X)·g(P' ⊕ X)]` has trivial divisor
 (`crossRatio_divisor_eq`), hence is a constant `γ`; this is that
@@ -2095,7 +2095,7 @@ theorem exists_millerValue_crossRatio_read {ι : Type*} [Fintype ι]
   rw [← hgen] at hR
   exact hL.unique hR
 
-omit [Fact p.Prime] in
+omit [Fact (1 < p)] in
 /-- **Stage B, leaf 3a-ii-α (PROVEN): the TRANSLATION CHARACTER of `g`
 at the `p`-torsion point `P = p•P'`, in generic form.**  With
 `g = a/v` (`div g = S(T') − S(0)`), `g ∘ τ_P / g` has trivial divisor
@@ -2280,7 +2280,7 @@ theorem exists_millerValue_translationChar {ι : Type*} [Fintype ι]
   exact hL.unique hR
 
 
-omit [Fact p.Prime] in
+omit [Fact (1 < p)] in
 /-- **Stage B, leaf 3a-i-β (PROVEN 2026-07-26): the cross-ratio constant
 `γ` and the translation character `c` are INVERSE: `γ^p·c = 1`.**
 
@@ -2353,7 +2353,7 @@ for a reader of the proof below:
   step 2 at `n = p`.
 
 FAITHFULNESS AUDIT (2026-07-26, from the proof).  Two hypotheses are NOT
-consumed and are marked accordingly: `[Fact p.Prime]` is `omit`ted (the
+consumed and are marked accordingly: `[Fact (1 < p)]` is `omit`ted (the
 telescope is a statement about the integer `p` alone — for `p = 0` it
 degenerates correctly to `c = 1`, which `hc` already forces), and
 `_ha : a ≠ 0` is underscored (only `hspan` is used, to locate the zeros
@@ -2842,7 +2842,7 @@ theorem millerValue_crossRatio_pow_mul_translationChar {ι : Type*} [Fintype ι]
     (mul_ne_zero (haZ 0 (Nat.zero_le p)) (hvZ p le_rfl))) ?_
   linear_combination -hfin
 
-omit [Fact p.Prime] in
+omit [Fact (1 < p)] in
 /-- **Stage B, leaf 3a-i (PROVEN, sorry-free since 2026-07-26): the
 CROSS-RATIO CONSTANT `γ` of the two level-`p²` Miller functions, and its
 `p`-th power.**
@@ -2976,7 +2976,7 @@ theorem exists_millerValue_crossRatio_const {ι : Type*} [Fintype ι]
           AdjoinRoot.evalEval hPU.left (enumVertical W val) := by
         rw [hcγ]; ring
 
-omit [Fact p.Prime] in
+omit [Fact (1 < p)] in
 /-- **Stage B, leaf 3a-ii (PROVEN): the translation character of `g` at a
 `p`-torsion point is a `p`-th root of unity**, in cleared form.
 
@@ -3483,7 +3483,8 @@ theorem exists_millerValue_alternating {ι : Type*} [Fintype ι]
   --    `Z := b(M₂)a(V)v(M₁)v(U)`, `α := a(U)v(P⊕U)`, `β := a(P⊕U)v(U)`
   --    the two inputs read `X = γ·Z`, `γ^p·β = α`, `β^p = α^p`, and the
   --    goal is `X^p·α^{p−1} = Z^p·β^{p−1}`; multiply by `β ≠ 0`.
-  have hp1 : p - 1 + 1 = p := Nat.succ_pred_eq_of_pos (Fact.out : p.Prime).pos
+  have hp1 : p - 1 + 1 = p :=
+    Nat.succ_pred_eq_of_pos (Nat.zero_lt_of_lt (Fact.out : 1 < p))
   have halg : ∀ Xv Zv αv βv γv : F, βv ≠ 0 → Xv = γv * Zv →
       γv ^ p * βv = αv → βv ^ p = αv ^ p →
       Xv ^ p * αv ^ (p - 1) = Zv ^ p * βv ^ (p - 1) := by

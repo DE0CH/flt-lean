@@ -273,11 +273,19 @@ other direction it is not *too* strong: every symmetric very ample `L` on
 an abelian variety over `ℚ` supplies all five data, by the theorem of the
 cube and the projective Nullstellensatz.
 
-*It is cheap exactly when `A(ℚ) `is finite* — with `dim = 1`,
-`coords ≡ ![1]`, `cube = z`, `certDeg = 0`, `cert = 1` the whole package
-holds for the trivial group.  That is correct rather than a defect: a
-finite group is finitely generated, so the consumer's conclusion holds for
-that reason anyway.
+*It is cheap exactly when `A(ℚ)` is finite.*  That is correct rather than a
+defect: a finite group is finitely generated, so the consumer's conclusion
+holds for that reason anyway.
+
+**CORRECTED 2026-07-30 (flt-lean-167) — the witness this note used to quote
+covers only the TRIVIAL group.**  It read "`dim = 1`, `coords ≡ ![1]`,
+`cube = z`, `certDeg = 0`, `cert = 1`", and `dim = 1` is fatal to it *whatever
+`coords` is*: `coords_ne_zero` forces the single coordinate to be nonzero, so
+`coords P = (coords P i₀ / coords Q i₀) • coords Q` holds for every `P, Q`, and
+`injective_of_smul` then hands back `P = Q`.  Machine-checked as
+`cm.dim = 1 → Subsingleton A` against `CubeModel` (the same four fields appear
+here), so it is a refutation and not a reading.  The correct witness for a
+general finite `A` is on `CubeModel` below.
 
 *`dim = 0` is uninhabited*, since `coords_ne_zero` is unsatisfiable when
 there are no coordinates.  Nothing has to rule it out by hand.
@@ -607,10 +615,55 @@ used to *prove* `cube_eval` — for non-symmetric `L` the cube gives
 `σ*L ⊗ δ*L ≅ p₁*(L ⊗ [−1]*L) ⊗ p₂*(L ⊗ [−1]*L)` instead — and adding it as a
 field would record a hypothesis that no consumer reads.
 
-*It is cheap exactly when `A(ℚ)` is finite* — `dim = 1`, `coords ≡ ![1]`,
-`cube = z`, `relDim = 0`, and `cube_nonvanishing` holds because
-`z ≠ 0` forces `z (0,0) ≠ 0`.  That is correct rather than a defect: a finite
-group is finitely generated, so the consumer's conclusion holds anyway.
+*It is cheap exactly when `A(ℚ)` is finite.*  That is correct rather than a
+defect: a finite group is finitely generated, so the consumer's conclusion
+holds anyway.
+
+**THE WITNESS, CORRECTED 2026-07-30 (flt-lean-167).**  This note used to
+exhibit `dim = 1`, `coords ≡ ![1]`, `cube = z`, `relDim = 0`, with
+`cube_nonvanishing` holding "because `z ≠ 0` forces `z (0,0) ≠ 0`".  That
+package exists only for the TRIVIAL group, and the obstruction is `dim = 1`
+alone rather than the particular `coords`: `coords_ne_zero` makes the single
+coordinate nonzero, so `coords P = (coords P i₀ / coords Q i₀) • coords Q` for
+*every* pair, and `injective_of_smul` returns `P = Q`.  Machine-checked as
+`cm.dim = 1 → Subsingleton A`, from `coords_ne_zero` and `injective_of_smul`
+and nothing else.  `relDim = 0` is wrong for a second, independent reason:
+with no relations, `cube_nonvanishing` would have to hold at every nonzero
+`z`, not only on the cone over the Segre image.
+
+The construction that DOES work for an arbitrary finite `A`, and which a
+successor should use if this non-vacuity is ever wanted as a Lean term rather
+than as an audit, is the INDICATOR basis: `dim = Nat.card A` with `coords P`
+the indicator of `P`, so that the Segre point of `(P, Q)` is the indicator of
+`(P, Q)`.  Then
+
+* `cube k = ∑_{(P,Q) : P+Q = k.1, P−Q = k.2} z (P,Q) ^ 2`, homogeneous of
+  degree `2`, and `cube_eval` holds with `c = 1`;
+* `relDim` counts the pairs `m ≠ m'`, with `rel = z m * z m'` and
+  `relDeg = 2`; these vanish at every Segre point because at most one
+  coordinate there is nonzero;
+* `cube_nonvanishing`: those relations force a nonzero `z` on the cone to have
+  exactly one nonzero coordinate `z (P,Q) = t`, and then
+  `cube (P+Q, P−Q) z = t² ≠ 0` — every other summand of that form vanishes, so
+  no `2`-torsion coincidence in `P' + Q' = P + Q`, `P' − Q' = P − Q` can
+  cancel it.
+
+`coords_ne_zero` and `injective_of_smul` are immediate for the indicator basis.
+It is deliberately NOT declared as a lemma here: nothing in the root cone
+consumes it, so it would be free-floating code.
+
+**THE RECIPE THIS PARAGRAPH USED TO GIVE WAS FALSE** (found and corrected
+2026-07-31).  It read: "`dim = 1`, `coords ≡ ![1]`, `cube = z`, `relDim = 0`".
+Constant coordinates satisfy no such thing: `injective_of_smul P Q 1` applied to
+`coords P = 1 • coords Q` — which holds for ANY `P, Q` when `coords` is constant
+— returns `P = Q`, so that recipe forces `Subsingleton A` and is available only
+for the TRIVIAL group, not for every finite one.  (Checked in Lean; the
+refutation is three tactic lines and needs no hypothesis on `dim`.)  The claim
+was quoted onward into
+`Fermat/FLT/ModularCurve/HyperellipticJacobian.lean`'s `exists_cubeModel_pic`
+as its "not vacuous" argument, so an agent could have burned a cycle on it.
+The correct construction is the INDICATOR embedding, `dim = #A` and
+`coords P = e_P`, which is what `nonempty_cubeModel_of_finite` builds.
 
 **A WARNING ABOUT CUTTING THIS FURTHER, and the axis that was searched.**  The
 obvious next cut is to split the embedding (`dim`, `coords`,
@@ -703,5 +756,129 @@ theorem CubeModel.nonempty_cubeEmbedding (cm : CubeModel A) : Nonempty (CubeEmbe
            cert_eval := fun P Q k =>
              hcert (fun w : Fin cm.dim × Fin cm.dim => cm.coords P w.1 * cm.coords Q w.2)
                (cm.rel_eval P Q) k }⟩
+
+open MvPolynomial in
+/-- **A FINITE abelian group carries a `CubeModel`** (PROVEN) — the honest version of the
+"cheap when finite" remark on `CubeModel`, whose recorded recipe (`dim = 1`, `coords ≡ ![1]`)
+was FALSE; see the audit there.
+
+The construction is the INDICATOR embedding, which is the degenerate `|A|`-dimensional
+representation of "every point is its own coordinate hyperplane":
+
+* `dim = #A` and `coords P = e_{P}`, the standard basis vector, through any bijection
+  `e : A ≃ Fin #A`.  `injective_of_smul` is immediate: evaluating `coords P = c • coords Q`
+  at the index `e Q` gives `[P = Q] = c ≠ 0`.
+* The Segre point of `(P, Q)` is then the basis vector `e_{(e P, e Q)}` of the `#A²`
+  Segre variables, so **the Segre image is the set of coordinate points**, whose homogeneous
+  ideal is generated by the `z_m z_{m'}` with `m ≠ m'` — that is `rel`.
+* `cube k = Σ_{m : (m₁ + m₂, m₁ − m₂) = k} z_m²`, a sum of squares of variables, hence
+  homogeneous of degree `2`.  At the Segre point of `(P, Q)` exactly the term `m = (P, Q)`
+  survives, and it survives precisely when `k = (P + Q, P − Q)`, which is `cube_eval` with
+  `c = 1`.  Note the index map `m ↦ (m₁ + m₂, m₁ − m₂)` need NOT be injective — it is not
+  when `A` has `2`-torsion — and the construction does not need it to be, since the extra
+  terms of the sum vanish at every Segre point anyway.
+* `cube_nonvanishing`: `rel` forces a point of the cone to have at most one nonzero
+  coordinate, say at `m₀`, and then `cube (m₀₁ + m₀₂, m₀₁ − m₀₂)` evaluates to `z_{m₀}² ≠ 0`.
+
+This carries no arithmetic: the height it produces through
+`CubeModel.nonempty_cubeEmbedding` is bounded on all of `A`, and Northcott is vacuous
+because `A` is finite. -/
+theorem nonempty_cubeModel_of_finite (A : Type*) [AddCommGroup A] [Finite A] :
+    Nonempty (CubeModel A) := by
+  classical
+  obtain ⟨n, ⟨e⟩⟩ : ∃ n : ℕ, Nonempty (A ≃ Fin n) := ⟨Nat.card A, ⟨Finite.equivFin A⟩⟩
+  obtain ⟨N, ⟨ε⟩⟩ : ∃ N : ℕ, Nonempty (Fin N ≃ (Fin n × Fin n) × (Fin n × Fin n)) :=
+    ⟨Fintype.card ((Fin n × Fin n) × (Fin n × Fin n)), ⟨(Fintype.equivFin _).symm⟩⟩
+  refine ⟨
+    { dim := n
+      coords := fun P i => if i = e P then 1 else 0
+      coords_ne_zero := ?_
+      injective_of_smul := ?_
+      cube := fun k => ∑ m ∈ Finset.univ.filter
+        (fun m : Fin n × Fin n =>
+          (e (e.symm m.1 + e.symm m.2), e (e.symm m.1 - e.symm m.2)) = k), (X m) ^ 2
+      cube_homogeneous := ?_
+      cube_eval := ?_
+      relDim := N
+      relDeg := fun _ => 2
+      rel := fun i => if (ε i).1 = (ε i).2 then 0 else X (ε i).1 * X (ε i).2
+      rel_homogeneous := ?_
+      rel_eval := ?_
+      cube_nonvanishing := ?_ }⟩
+  · intro P hP
+    have := congrFun hP (e P)
+    simp at this
+  · intro P Q c hc hPQ
+    by_cases hEq : e Q = e P
+    · exact e.injective hEq.symm
+    · exfalso
+      have h := congrFun hPQ (e Q)
+      simp only [Pi.smul_apply, smul_eq_mul] at h
+      rw [if_neg hEq] at h
+      exact hc (by simpa using h.symm)
+  · intro k
+    refine MvPolynomial.IsHomogeneous.sum _ _ _ ?_
+    intro m _
+    simpa using (isHomogeneous_X ℚ m).pow 2
+  · intro P Q
+    refine ⟨1, one_ne_zero, ?_⟩
+    intro k
+    have hsq : ∀ m : Fin n × Fin n,
+        ((if m.1 = e P then (1 : ℚ) else 0) * (if m.2 = e Q then (1 : ℚ) else 0)) ^ 2
+          = if m = (e P, e Q) then 1 else 0 := by
+      intro m
+      by_cases h1 : m.1 = e P <;> by_cases h2 : m.2 = e Q <;>
+        simp [h1, h2, Prod.ext_iff]
+    rw [map_sum]
+    simp only [map_pow, eval_X, hsq]
+    rw [Finset.sum_ite_eq' _ (e P, e Q) (fun _ => (1 : ℚ))]
+    obtain ⟨k1, k2⟩ := k
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and,
+      Equiv.symm_apply_apply, Prod.mk.injEq, one_mul]
+    by_cases h1 : k1 = e (P + Q)
+    · subst h1
+      by_cases h2 : k2 = e (P - Q)
+      · subst h2; simp
+      · simp [h2, Ne.symm h2]
+    · by_cases h2 : k2 = e (P - Q)
+      · subst h2; simp [h1, Ne.symm h1]
+      · simp [h1, h2, Ne.symm h1, Ne.symm h2]
+  · intro i
+    by_cases h : (ε i).1 = (ε i).2
+    · rw [if_pos h]; exact isHomogeneous_zero _ _ _
+    · rw [if_neg h]
+      simpa using (isHomogeneous_X ℚ (ε i).1).mul (isHomogeneous_X ℚ (ε i).2)
+  · intro P Q i
+    by_cases h : (ε i).1 = (ε i).2
+    · simp [h]
+    · simp only [h, if_false, map_mul, eval_X]
+      have hz : ∀ m : Fin n × Fin n,
+          (if m.1 = e P then (1 : ℚ) else 0) * (if m.2 = e Q then (1 : ℚ) else 0)
+            = if m = (e P, e Q) then 1 else 0 := by
+        intro m
+        by_cases h1 : m.1 = e P <;> by_cases h2 : m.2 = e Q <;>
+          simp [h1, h2, Prod.ext_iff]
+      rw [hz, hz]
+      by_cases h1 : (ε i).1 = (e P, e Q) <;> by_cases h2 : (ε i).2 = (e P, e Q) <;>
+        simp_all
+  · intro z hz hrel
+    obtain ⟨m₀, hm₀⟩ : ∃ m₀, z m₀ ≠ 0 := by
+      by_contra hcon
+      exact hz (funext fun m => not_not.mp fun h => hcon ⟨m, h⟩)
+    have hvanish : ∀ m, m ≠ m₀ → z m = 0 := by
+      intro m hm
+      have hi := hrel (ε.symm (m, m₀))
+      simp only [Equiv.apply_symm_apply, hm, if_false, map_mul, aeval_X] at hi
+      exact (mul_eq_zero.mp hi).resolve_right hm₀
+    refine ⟨(e (e.symm m₀.1 + e.symm m₀.2), e (e.symm m₀.1 - e.symm m₀.2)), ?_⟩
+    rw [map_sum]
+    simp only [map_pow, aeval_X]
+    have hmem : m₀ ∈ Finset.univ.filter
+        (fun m : Fin n × Fin n =>
+          (e (e.symm m.1 + e.symm m.2), e (e.symm m.1 - e.symm m.2))
+            = (e (e.symm m₀.1 + e.symm m₀.2), e (e.symm m₀.1 - e.symm m₀.2))) :=
+      Finset.mem_filter.mpr ⟨Finset.mem_univ _, rfl⟩
+    rw [Finset.sum_eq_single_of_mem m₀ hmem (fun m _ hm => by rw [hvanish m hm]; ring)]
+    exact pow_ne_zero 2 hm₀
 
 end Fermat
