@@ -101,6 +101,14 @@ public import Fermat.FLT.Modularity.GeneralisedPicard
 -- "JACQUET–LANGLANDS CONSUMER" docstring block for what is consumed and why the
 -- parity hypothesis `hFeven` is what makes the consumption sound.
 public import Fermat.FLT.AutomorphicForm.QuaternionAlgebra.HeckeOperators.Concrete
+-- The general-base Weil pairing, `WeilPairingDet.exists_weilPairing_mu_nondeg_of
+-- _natCast_ne_zero`, and the single leaf `det ρ_{E,n} = χ_n` it now rests on
+-- (2026-07-31).  `exists_weilPairing_mu_nondeg_of_natCast_ne_zero` below is a
+-- one-line delegation to it.  The statement was HOISTED out of this module
+-- because `FreyCurve/MazurTorsion.lean` carries the same statement with the base
+-- fixed at `𝔽_q` and neither module imports the other; the new module sits
+-- directly on `EllipticCurve/Torsion.lean`, which is upstream of both.
+public import Fermat.FLT.EllipticCurve.WeilPairingDet
 public import Mathlib.NumberTheory.NumberField.Basic
 -- `Ideal.absNorm`: the absolute norm `Nw` is the constant coefficient of
 -- the parallel-weight-`2` Hecke polynomials in the STATEMENTS of the two
@@ -56237,8 +56245,30 @@ theorem isPrimitiveRoot_of_nondegenerate_fin_two {n : ℕ} (hn : 1 ≤ n)
       pow_orderOf_eq_one, one_pow]
 
 /-- **THE WEIL PAIRING OVER `k̄` IN SILVERMAN'S OWN FORM, OVER AN ARBITRARY BASE
-FIELD WITH `(n : k) ≠ 0`** (sorry leaf, cut 2026-07-30 out of
-`exists_weilPairing_mu_charZero` below).  This is Silverman *AEC* III.8.1(a)–(e)
+FIELD WITH `(n : k) ≠ 0`** (**PROVEN 2026-07-31**, and NO LONGER A LEAF — the
+body is now a one-line delegation to
+`WeilPairingDet.exists_weilPairing_mu_nondeg_of_natCast_ne_zero`
+(`EllipticCurve/WeilPairingDet.lean`), where the statement was HOISTED and where
+it is a proven assembly over the single new leaf
+`WeilPairingDet.galois_apply_primitiveRoot_eq_pow_det`, i.e. over
+`det ρ_{E,n} = χ_n`.  Cut 2026-07-30 out of `exists_weilPairing_mu_charZero`
+below; the frontier node moved, it did not close.
+
+WHAT MOVED AND WHY.  The hoist is not cosmetic: `FreyCurve/MazurTorsion.lean`
+carries this same statement with the base fixed at `𝔽_q`
+(`exists_weilPairing_mu_nondeg_of_coprime`), and neither module imports the
+other, so no implication between them was expressible from here.
+`EllipticCurve/WeilPairingDet.lean` sits directly on
+`EllipticCurve/Torsion.lean`, which is upstream of BOTH, so closing the new leaf
+now closes both consumers.  What the new module PROVES, permanently and at every
+base and level, is all of III.8.1 except its arithmetic input: the rank-two
+coordinate determinant form and the transport of every clause through the
+discrete logarithm.  What it leaves open is one equation in `k̄`,
+`σ ζ = ζ ^ (det (σ | E[n])).val`.  The paragraphs below describe that residual
+obligation; they are kept because they are still the best account of what it
+costs.
+
+This is Silverman *AEC* III.8.1(a)–(e)
 verbatim: on `E[n]` over `k̄` there is a bimultiplicative alternating pairing
 into `k̄ˣ`, killed by `n`, NONDEGENERATE, and natural for every `k`-automorphism
 of `k̄`.
@@ -56323,7 +56353,7 @@ theorem exists_weilPairing_mu_nondeg_of_natCast_ne_zero {k : Type u} [Field k]
           (TorsionCounting.endRestrict (WeierstrassCurve.Affine.Point.map (W' := E)
               σ.toAlgHom) (n : ℤ) y)
           = Units.map σ.toAlgHom.toRingHom.toMonoidHom (e x y)) :=
-  sorry
+  WeilPairingDet.exists_weilPairing_mu_nondeg_of_natCast_ne_zero E n hnk
 
 /-- **THE MOD-`n` GALOIS DETERMINANT IS THE CYCLOTOMIC CHARACTER, OVER AN
 ARBITRARY CHARACTERISTIC-ZERO FIELD** (sorry leaf, cut 2026-07-30 out of
