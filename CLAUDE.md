@@ -5447,15 +5447,12 @@ Corollary for a prover handed a leaf: **`grep` the tree for your target's consum
 it.** Zero consumers means the task is a deletion, not a proof, and the honest sentinel reports that.
 
 ## A "DO NOT CUT THIS WAY" PROHIBITION IS DATED EVIDENCE, EXACTLY LIKE AN AUDIT
-=======
-
 (2026-07-31, `exists_qAdicPolarizedSystem_finiteBase`.) The rule above says a falsity audit is
 VOID once the statement is restated. The same is true in the other direction, and it is easier to
 miss because the prose sounds permanent: a docstring paragraph headed **"DO NOT CUT THIS THROUGH
 `X` — THE RESULTING LEAF WOULD BE FALSE"** is a claim about `X` **as it stood on the day it was
 written**, not a standing law. When `X` changes, the prohibition expires with it — and a later
 agent who reads the heading and stops has been stopped by history.
-
 The concrete case. `exists_qAdicPolarizedSystem_finiteBase` (finite base field `k`, char `p`)
 carried such a paragraph forbidding the obvious cut through `DualStruct`, and the reasoning was
 right: `DualStruct.weil_nondegenerate` was asserted at every `(F, x, I, n)` with `(n : R) ∈ I`,
@@ -5463,13 +5460,11 @@ so at `I = (p)`, `n = p` — where `μ_p(k̄)` is trivial and the pairing is con
 concluded `A[p](k̄) = 0`, which an ordinary elliptic curve over `𝔽_p` refutes. `DualStruct` was
 UNINHABITED over any positive-characteristic fibre, so the cut really would have produced a false
 leaf.
-
 **But the same paragraph named the repair — "gate `weil_nondegenerate` on `(n : F) ≠ 0`, which is
 free in characteristic zero".** One binder in `Modularity/AbelianScheme.lean`, one construction
 site to fix (the base-change transport, which gets the new hypothesis handed to it and passes it
 straight through), and the cut became legal. The prohibition was not a wall; it was a work item
 with a wall-shaped heading.
-
 **AND AN EXPIRED PROHIBITION IS A MAGNET — THIS ONE WAS CUT TWICE, A DAY APART, AND NEITHER
 AGENT COULD SEE THE OTHER.** The paragraph above was first written as "and nobody had done it".
 That was false when written. The gate had ALREADY been made on 2026-07-30 by another agent, and
@@ -5482,7 +5477,6 @@ independently re-derived the gate, re-cut the same seam, wrote a rival predicate
 (`exists_dualPolarization_of_mult_finiteBase`) with the *same binders and same conclusion*, and
 verified all 390 lines green — all of it discardable, because two proofs of one theorem cannot
 both be carried.
-
 This is class 5 (the release window) with a specific accelerant, and it is worth naming because
 the accelerant is predictable: **a prohibition that names its own repair is the most attractive
 target in the file.** It reads as high-value and cheap, so it is exactly what an agent scanning
@@ -5490,15 +5484,11 @@ for tractable work picks — and several will pick it in the same window. The ge
 ("check `merger` before starting") did not fail here so much as it was not run; but the specific
 form is stronger and costs one command, so run it whenever a docstring hands you an unblocking
 task:
-
     git show merger:<file> | grep -n '<the leaf the prohibition blocks>'
-
 If that shows the leaf already proven, the prohibition has been spent and the follow-on work is
 done. Check `merger` for the CONSEQUENCE, not just for your own target's name — here the target
 was still `sorry` on `main` and already proven on `merger`, which is the whole of the trap.
-
 So, four things worth carrying:
-
 1. **Read the prohibition to its end.** This development's docstrings are unusually good about
    naming what would unblock them. A paragraph that says "this is impossible *until* Y" is a task
    description for Y, and Y is often much smaller than the leaf it blocks.
@@ -5517,26 +5507,19 @@ So, four things worth carrying:
    theorem it already has. The green work stays recoverable at its own sha (`git show 0025e539`),
    named in the revert's commit message. A decline that is committed and points at its own
    history costs nothing and can be reversed; one that is merged costs whoever resolves it.
-
 ## `pkill -f "lake build"` IS A FLEET-WIDE KILL SWITCH — IT MATCHES THE AGENTS THEMSELVES
-
 (2026-07-31, measured on gambit while stopping one worktree's own build.) `pkill`/`pgrep -f`
 match against the WHOLE command line of EVERY process on the host, and the fleet runs ~25
 worktrees on one machine. So a pattern chosen to mean "my build" means "everyone's build":
-
     pgrep -f "lake build" | wc -l          # 70 processes, across 25 worktrees
-
 **24 of those 70 were the agents' own `flt-job-*` Claude processes.** Not their builds — the
 agents. Every prover prompt contains the sentence *"Verify with `lake build` on the module"*, and
 the prompt is passed as an argv element, so the literal string `lake build` is in the command
 line of every running agent. `pkill -f "lake build"` therefore SIGTERMs two dozen live agents
 mid-proof along with every build on the box. Nothing about the command looks dangerous, which is
 the point of writing it down.
-
 Scope the pattern to the worktree PATH, which is the one string that is actually yours:
-
     pkill -f "/home/chend/flt-lean-N/Fermat"     # only this worktree's lean workers
-
 And note the two traps that follow from it. **`lake build`'s `lean` workers do not have "lake
 build" in their command line** — they are `.../bin/lean <path> -o <path>`, so killing the `lake`
 parent orphans the children, which keep elaborating and keep writing into `.lake`. Kill by path
@@ -5544,18 +5527,14 @@ or you leave writers behind. And **a module that reports `error: Lean exited wit
 SIGTERMed, not broken** — 143 is 128+15. Two modules failed that way here and neither had
 anything wrong with it; reading 143 as a defect is how a phantom "broken on main" report gets
 written.
-
 Before any `pkill`, run the same pattern through `pgrep -af` first and read what comes back. It
 costs one command and it is the only way to see the blast radius, which on this host is never
 just you.
-
 ## A "FALSE AS STATED, REPAIR QUEUED" AUDIT MAY BE DESCRIBING A REPAIR THAT ALREADY LANDED — the leaf is DISCARDING it, not missing it
-
 (2026-07-31, `HilbertModularity.lean`, `exists_hilbertAuxDiamondGenerators`.) The
 section below is about a decomposition putting a hypothesis on the wrong half. This
 is the commoner and cheaper variant: a decomposition **drops a hypothesis entirely**,
 and the FALSITY AUDIT copied onto the child then reads as an open cut-level task.
-
 That leaf was cut out of `exists_hilbertAuxDiamondQuotient_of_exponents` on
 2026-07-31 and carried, verbatim, an audit saying its control clause is FALSE —
 refuted by the power-series inflation `𝒟Q.R⟦y_1, …, y_N⟧`, which weak universality
@@ -5565,9 +5544,7 @@ owned cut-level task**". The audit's mathematics is right. The task does not exi
 `HilbertAuxDeformationDatum.IsTraceGenerated` had been defined on 2026-07-30, and
 **the sole call site was already holding `h𝒟Qt` and passing it nowhere.** The whole
 repair was one binder on two declarations and one argument at one call site.
-
 So, before queueing (or accepting) a repair a docstring names:
-
 * **grep for the repair, not for the leaf.** One `grep -n 'IsTraceGenerated'` over
   the file answered it. An audit is written at the moment the defect is seen and is
   never revisited when the fix lands somewhere else in the same file.
@@ -5580,20 +5557,16 @@ So, before queueing (or accepting) a repair a docstring names:
   evidence about the version the queue was written against.** Mine did, and by the
   time it arrived the clause was one binder from true. Losing that would have cost
   the whole run, because the leaf cannot be cut at all while half of it is false.
-
 Corollary for whoever writes such an audit: name the repair as a DECLARATION
 (`add h𝒟Qt : 𝒟Q.IsTraceGenerated`), not as a project ("transport the repair"). The
 first is refuted by the next reader in ten seconds; the second survives for days.
-
 ### The release-snapshot olean verifies a NEW block in seconds even when the file has moved on
-
 Same run, measured: `HilbertModularity.lean` was ~4 000 lines and one release ahead
 of `~/.flt-release-lake/build`, and the full cone rebuild ran for hours. The new
 cluster — one leaf, three proven lemmas, a restated leaf over the file's own
 `HilbertAuxDeformationDatum`, and the whole glue proof — was verified in **7
 seconds** by a scratch that `public import`s the module and restates everything
 under primed names, compiled against the SNAPSHOT's olean.
-
 That works, and is sound, exactly when **every name the block references predates
 the snapshot** — check each with `git show <snapshot-sha>:<file> | grep -c '<name>'`
 rather than assuming. Here one name (`HilbertAuxDeformationDatum.IsTraceGenerated`)
@@ -5602,44 +5575,36 @@ the residual risk was one binder of an existing `def`. Mirror the target's
 `namespace`, its `open` lines and its `local notation3` block verbatim — those are
 what the scratch is really testing, and they are what a hand-written minimal import
 list gets wrong.
-
 ## A DECOMPOSITION CAN LEAVE A HYPOTHESIS ON ONLY ONE HALF — and the child inherits the parent's audit, which then certifies nothing
-
 (2026-07-31, `card_relPoint_not_liesIn_le_of_finite_toAffineLine`.) The rule above is about a leaf
 restated TWICE. This is its decomposition analogue, and it is commoner, because decomposition is
 the main move this development makes.
-
 `card_relPoint_le_of_hasDoubleCoverOfAffineLine` was cut into two leaves along the `U` / `X ∖ U`
 seam. The parent's degree hypothesis — the three-point clause `_hthree`, which is what makes
 `deg φ ≤ 2` — was restated on the `U` half and **silently omitted from the complement half**,
 whose conclusion is the bare bound `≤ 2`. That bound *is* the degree. So the complement leaf was
 FALSE from the minute it was written.
-
 Counterexample, and it is not exotic: `S = K = 𝔽₂`, `X = ℙ¹`, `U = ℙ¹ ∖ {0, 1, ∞}`, and
 `φ = t + 1/t + 1/(t−1)`, whose polar divisor is `(0) + (1) + (∞)` so that `U = φ⁻¹(𝔸¹)` and `φ` is
 finite of degree `3`. Every surviving hypothesis holds — proper, smooth of relative dimension `1`,
 geometrically connected, `ι` an open immersion and dominant, `φ` finite over the base — and the
 conclusion reads `3 ≤ 2`. Raise `#D` to raise the count arbitrarily.
-
 **Why every ordinary check passed.** The child's docstring was the parent's audit, reproduced
 verbatim and correctly — it even *cites* the degree, "at most `d ≤ 2` points". The prose was
 true of the parent. It was not true of the child, because the hypothesis the prose depends on
 had gone to the sibling. An audit reproduced onto a child certifies the PARENT's statement; it
 carries no information about the child's, and its presence makes the child look checked.
-
 **The mechanical check, and it is cheap: after any decomposition, diff each child's hypothesis
 list against the parent's and justify every omission in writing.** "It is on the sibling" is a
 valid justification only when the children are ALTERNATIVES; when they are CONJOINED — two halves
 summed by the consumer, which is the usual shape here — a hypothesis the parent needed is needed
 by whichever half uses it, and possibly by both. `_hthree` was needed by both.
-
 **Corollary, a fast smell test for reviewers.** When a leaf's conclusion is a NUMERIC BOUND and no
 hypothesis mentions the quantity that bound measures (a degree, a rank, a genus, a conductor), the
 leaf is almost certainly false — look for the hypothesis on a sibling before looking for a proof.
 The repair here was free, in the shape the section above predicts: the consumer already held
 `hthree` from destructuring `HasDoubleCoverOfAffineLine` and was passing it to one child and
 discarding it at the other.
-
 ## A TASK PROMPT THAT CITES A REPAIR COMMIT IS CITING `merger`, NOT `main`
 (2026-07-31, `flt-lean-65`.) A prompt opened with "two repairs landed that day (commits
 `f1ca4452` and `b1225666`) and you must read the leaf's docstring before anything else — it
@@ -5805,12 +5770,10 @@ Corollary for the conjunct itself: state it as an **implication in the conclusio
 then keeps compiling with one extra `-` in its `obtain`, and a call site that has no `p`-adic data to
 offer is not forced to invent any.
 ## GENERALISING THE BASE VOIDS EVERY CHARACTERISTIC-`0` SENTENCE IN THE AUDIT
-
 (2026-07-31, `card_relPoint_not_liesIn_le_of_finite_toAffineLine`.) The section above is
 about a hypothesis lost at a DECOMPOSITION. This is the same failure at a
 GENERALISATION, and it is cheaper to commit and harder to see, because the edit that
 causes it changes no hypothesis at all.
-
 `HasDoubleCoverOfAffineLine` encodes "degree `≤ 2`" as *"no field fibre of `φ : U ⟶ 𝔸¹`
 has three points"*, and its docstring justifies the encoding **in characteristic `0`** —
 honestly, with the hypothesis written down, because the base was `Spec ℚ`. The base was
@@ -5820,7 +5783,6 @@ Nothing in the prose was re-read. In characteristic `p` the encoding does not bo
 degree: `φ : 𝔸¹_{𝔽ₚ} ⟶ 𝔸¹_{𝔽ₚ}`, `t ↦ tᵖ`, is finite of degree `p` and every field fibre
 is a SINGLE point, since any `L` receiving a map to `𝔸¹_{𝔽ₚ}` has `char L = p` and
 `x ↦ xᵖ` is injective there.
-
 **What survives and what dies is the useful part.** The STATEMENTS survive — the clause
 bounds the SEPARABLE degree, a purely inseparable morphism is a universal homeomorphism
 and so preserves fibre cardinalities, and over a perfect field a curve purely inseparably
@@ -5831,14 +5793,12 @@ which cannot be derived from the clause and would have been chased forever; and
 (`Mathlib/AlgebraicGeometry/Morphisms/FlatRank.lean`, the degree of a finite flat
 morphism, locally constant, with base change) — is the TOTAL degree and is therefore the
 one tool a prover will reach for and must not.
-
 So: **when a statement is generalised off a characteristic-`0` base, grep its own audit
 for "characteristic", "separable", "degree", "generic fibre" and re-run those paragraphs.**
 A cardinality-of-fibres encoding of a degree bound is the commonest casualty. The repair
 shape is to restate the leaf in the invariant that survives — here the complement bound
 was re-cut as *"at most the largest field fibre of `φ`"*, uniform in `m`, with the
 constant `2` recovered as the `m = 2` instance.
-
 Second thing this cost, and it is the standing lesson about absence claims: the leaf also
 carried *"blocked — this pin has no `ℙ¹` over a scheme"*. That is now **stale over a
 field**. `AlgebraicGeometry.exists_isOpenImmersion_isProper_of_isAffine`
@@ -5847,7 +5807,6 @@ affine finite-type scheme over a field) compactifies `𝔸¹_K = Spec K[t]` into
 `K`-scheme, which composed with `exists_unique_extension_of_isSmoothProperCurve` is exactly
 the extension the audit called impossible. A blocker recorded against the pin is a
 statement with a timestamp; re-check it before costing work off it.
-
 ## `merger` CAN BE RED — the base to develop on is `~/.flt-release-lake/sha`, not `merger` and not `main`
 (2026-07-31, flt-lean-354, cost ~80 minutes.) A prover was told its target's neighbourhood
 had gained new machinery "landed 2026-07-31". That machinery was not on `main` — it was on
@@ -5903,6 +5862,38 @@ silently removed gets re-derived by the next agent from the same parent.
 Corollary, and it cost one line of `gp`: **a leaf whose audit names a counterexample is worth
 EVALUATING the counterexample on.** Orbit `3` was named in three docstrings across two files and
 nobody had ever computed its value of the quantity actually in the statement.
+||||||| 5162faa1
+=======
+## A "GENUINELY MISSING" FACT MAY BE PROVEN INSIDE A BODY THAT EXPORTS A COMPARISON
+(2026-07-31, and it closed Mazur at `{43, 67, 163}` — one of the headline leaves — with
+**no new sorry anywhere in the tree**.)
+`nonempty_isCMByRamifiedMaximalOrder_geomPoint_mazurLevel` carried a 270-line docstring,
+audited twice, ending in a careful survey of the one alternative route and its single
+blocker: the kernel clause `ker (2φ − 1) = ⟨g⟩`, which the upstream `X0.lean` leaves "do
+not deliver and which `harith` needs; that is real arithmetic ... and would have to become
+a named leaf."
+It was already proven. `X0.lean`'s `not_twoStableLines_of_cmEndomorphism` establishes
+exactly that clause **twice** in its own body — once for each of its two lines — and then
+exports only the CONCLUSION IT WAS ASKED FOR, that the two lines coincide. Hoisting the
+inner steps out (`ker_cmSqrt_eq_zmultiples_of_stable`; the parent shrank to three lines)
+made the whole upstream route go through, and the leaf closed.
+**Why every audit missed it, and this is the transferable part: they searched for a
+declaration whose CONCLUSION is the fact.** A theorem that proves a fact internally and
+exports a *comparison of two instances of it* is invisible to that search — and a
+comparison is the commonest thing to export, because it is what the original consumer
+asked for. The same shape is already recorded once (`ProperPushforward`'s
+`surjective_appTop_of_isIso_appTop_fiber`, hoisted out of a Nakayama body that exported
+only `FiniteType`); this is the second, and the first to close a leaf of this size.
+So: **before believing a docstring that says a fact is missing, grep the BODIES of the
+theorems that would have had to know it** — not their statements. The cheap version is to
+list every theorem mentioning the same objects and read its proof, which cost about
+twenty minutes here against a leaf two agents had already surveyed.
+Corollary about the docstrings themselves: an audit's "this would have to become a named
+leaf" is a COST ESTIMATE written before anyone tried, exactly like "this needs missing
+lemma X". Treat it as a hypothesis. The rest of that docstring — including its repeated,
+CORRECT insistence that the CM chain in its own file is circular — was what made the fix
+findable, so the lesson is not that long docstrings are unreliable; it is that their
+*absence claims* are the perishable part.
 ## SEVENTH invisibility class: A CLEAN MERGE THAT DOES NOT COMPILE — the interface split
 
 (2026-07-30, release 22, three instances in one batch.) The six classes above are all about
