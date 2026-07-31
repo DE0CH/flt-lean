@@ -17382,12 +17382,16 @@ blocked on ONE input only: `d[p] = 0` on the invariant differentials of `A'`,
 i.e. `[p]^*` kills `Ω[k(A')⁄k]`.  **That input is not in the pin and is not
 queued** — it needs the invariant differentials of an abelian variety
 (`Ω_{A'/k} ≅ 𝒪_{A'} ⊗ Lie(A')^∨` and `[n]^* ω = n ω` on invariant `ω`), which is
-genuine missing theory, not a formalisation gap.  Note also the passage from the
-FUNCTION FIELD to the STALK is itself a step: `𝒪_{A', x} ↪ k(A')` for `A'`
-integral, and `d` is compatible with that inclusion, so a stalk element with
-`d = 0` is a `p`-th power IN `k(A')` and one still owes that its `p`-th root lies
-in the local ring — true because `𝒪_{A', x}` is normal (`A'` smooth), but it is a
-separate lemma.
+genuine missing theory, not a formalisation gap.
+
+The passage from the FUNCTION FIELD down to the STALK is also handled, by
+`FLT.D_algebraMap_eq_zero_iff_exists_pow` in the same file: for `R` an integrally
+closed domain with `Frac R = K`, an element of `R` killed by `d` has its `p`-th
+root **in `R`**, because that root is a zero of the monic `X ^ p - x`.  What a
+consumer still has to supply is that `𝒪_{A', x}` IS such a subring of `k(A')` —
+i.e. `A'` integral (it is: geometrically integral) and `𝒪_{A', x}` normal (it is:
+`A'` is smooth over a field), plus `IsFractionRing 𝒪_{A', x} k(A')`.  Those are
+instance-level facts about the scheme, not new theory.
 
 **WHAT IS LOAD-BEARING.**  The statement needs exactly that `k` is **PERFECT**.
 It needs neither finiteness, nor `p ^ a = #k`, nor any tie between an exponent

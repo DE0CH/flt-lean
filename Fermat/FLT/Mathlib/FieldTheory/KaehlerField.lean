@@ -32,6 +32,9 @@ i.e. the kernel of `d : K → Ω[K⁄k]` is exactly `K ^ p`.
 * `FLT.exists_partialDerivation_of_isTranscendenceBasis`: the dual family of partial
   derivations `∂ᵢ` with `∂ᵢ tⱼ = δᵢⱼ`.
 * `FLT.D_eq_zero_iff_exists_pow`: the headline criterion.
+* `FLT.D_algebraMap_eq_zero_iff_exists_pow`: the same criterion for an element of an
+  integrally closed subring `R` with `Frac R = K` — the `p`-th root is then in `R`.  This is
+  the step from a function field down to a local ring (a stalk of a smooth variety).
 
 ## Implementation notes
 
@@ -484,6 +487,37 @@ theorem D_eq_zero_iff_exists_pow (p : ℕ) [hp : Fact p.Prime] [CharP K p]
     exact derivation_map_pow_char p _ y
 
 end Main
+
+section Normal
+
+variable {k R K : Type*} [Field k] [CommRing R] [IsIntegrallyClosed R] [Field K]
+variable [Algebra R K] [IsFractionRing R K] [Algebra k K]
+
+/-- **The criterion descends to an integrally closed subring.**  If `R` is a normal domain with
+fraction field `K`, and `K / k` is finitely generated over a perfect field `k` of characteristic
+`p`, then an element of `R` killed by `d : K → Ω[K⁄k]` is a `p`-th power **in `R`**, not merely
+in `K`: its `p`-th root is integral over `R` (it is a root of the monic `X ^ p - x`) and lies in
+`K`, so normality puts it in `R`.
+
+This is the step from the function field to a local ring; the intended consumer is a stalk
+`𝒪_{X, x}` of a smooth — hence normal — variety. -/
+theorem D_algebraMap_eq_zero_iff_exists_pow (p : ℕ) [hp : Fact p.Prime] [CharP K p]
+    [PerfectField k] [Algebra.EssFiniteType k K] (x : R) :
+    KaehlerDifferential.D k K (algebraMap R K x) = 0 ↔ ∃ z : R, z ^ p = x := by
+  have hinj : Function.Injective (algebraMap R K) := IsFractionRing.injective R K
+  constructor
+  · intro hx
+    obtain ⟨y, hy⟩ := (D_eq_zero_iff_exists_pow k K p _).1 hx
+    obtain ⟨z, hz⟩ :=
+      IsIntegrallyClosed.exists_algebraMap_eq_of_isIntegral_pow (R := R) (K := K) hp.out.pos
+        (hy ▸ isIntegral_algebraMap)
+    refine ⟨z, hinj ?_⟩
+    rw [map_pow, hz, hy]
+  · rintro ⟨z, rfl⟩
+    rw [map_pow]
+    exact derivation_map_pow_char p _ _
+
+end Normal
 
 end FLT
 
