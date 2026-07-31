@@ -891,6 +891,181 @@ theorem exists_pointEval_specialization (hΔ : W.Δ ≠ 0) (m : ℤ) {Q : W.Poin
     exact evalsTo_pointEval hZ.left hω.left hZ'.left hxe hye z
 
 omit [Fact p.Prime] in
+/-- **Stage B, leaf 1, in its characteristic-free form (PROVEN 2026-07-31): a
+generic `p`-division offset, over FOUR point-inequations instead of a finite
+subfield.**
+
+This is the whole mathematical content of `exists_generic_pDivision_offset`
+below, which is now a wrapper over it.
+
+### Why the restatement, and what it costs (the genericity-layer audit)
+
+The `μ_p`-valued Weil pairing of `WeilPairing.lean` is built over `𝔽̄_q`, and the
+*recorded* obstruction to running the same construction over a characteristic-zero
+algebraically closed base was that this leaf and
+`exists_millerRatio_eval_translationChar` below both take
+`{F₁ F₂ : Subfield F}` with `(F₁ : Set F).Finite`, `(F₂ : Set F).Finite` — and a
+finite subfield containing the curve's coefficients exists only in characteristic
+`p`.  That reading is **wrong**, and the compiler says so: in the wrapper below
+both finiteness hypotheses are `_`-bound, i.e. the proof never looks at them.
+
+Reading the proof rather than the signature, the entire subfield apparatus — the
+coefficient memberships `ha₁…ha₆`, the subgroup `exists_pointSubgroup_of_subfield`
+extracts from them, `hbad`, `hxQF₁`, `hyQF₁`, `hxSF₂`, `hySF₂`, `hxRF₂` — is used
+for exactly one thing: the local `hkey : ∀ t ∈ G, S ⊖ R ≠ t`.  And `hkey` is
+applied at exactly FOUR values of `t`, namely `O`, `Q`, `⊖P` and `Q ⊖ P`.  So the
+subfield is an **avoidance device**: "pick `R` outside a small bad set",
+implemented in characteristic `p` by enumerating a large enough finite field.
+Nothing else about it is used, and `G` being a subgroup buys nothing beyond
+closure at those four points.
+
+Consequently the hypothesis this leaf really needs is
+
+    S ⊖ R ∉ {O, Q, ⊖P, Q ⊖ P},
+
+four inequations in `W.Point`, with no field theory and no characteristic
+anywhere.  **Characteristic zero is therefore EASIER here, not harder**: over an
+algebraically closed base of characteristic zero `W.Point` is infinite, so the
+avoidance is direct — choose `R` off four translates of `S` — whereas in
+characteristic `p` it had to be manufactured out of `exists_finite_subfield_containing`.
+
+The twelve subfield hypotheses of the wrapper collapse to these four, and the
+`p`-torsion hypothesis `hPtor`, the injectivity/surjectivity/cardinality of `val`
+and `a ≠ 0` drop out entirely (they were never used either).
+
+### Proof
+
+Unchanged from the wrapper's former body.  `p`-division points `S'`, `R'`, `P'`
+exist by `exists_zsmul_eq` (`(p : F) ≠ 0`, `F` algebraically closed).  `evalEval`
+at an affine point `ξ` kills `a` exactly when `ξ` lies in the divisor support
+`{T'⊕κ} ∪ {⊖κ}` and kills `v = ∏_κ (X − x_κ)` exactly when `ξ = ±κ`
+(`mem_of_evalEval_eq_zero` against `hspan` and `span_enumVertical`); every point of
+either support is killed by `[p]` or sent to `Q` by it, so a bad `U := S' ⊖ R'`
+forces `S ⊖ R ∈ {O, Q}` and a bad `V := P' ⊕ U` forces `S ⊖ R ∈ {⊖P, Q ⊖ P}` — and
+the same four values are what `U = O`, `V = O` force.  Those are precisely the four
+excluded configurations. -/
+theorem exists_generic_pDivision_offset_of_avoid {ι : Type*} [Fintype ι]
+    {val : ι → W.Point}
+    (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0)
+    (hval_tor : ∀ i, (p : ℤ) • val i = 0)
+    {P T' : W.Point} {xQ yQ : F} (hQ : W.Nonsingular xQ yQ)
+    (hT : (p : ℤ) • T' = WeierstrassCurve.Affine.Point.some xQ yQ hQ)
+    {a : W.CoordinateRing}
+    (hspan : Ideal.span {a} =
+      ((((Finset.univ.val.map fun i => T' + val i) +
+        Finset.univ.val.map fun i => -val i)).map (pointIdeal W)).prod)
+    {xS yS : F} (hS : W.Nonsingular xS yS)
+    {xR yR : F} (hR : W.Nonsingular xR yR)
+    (hne0 : (WeierstrassCurve.Affine.Point.some xS yS hS : W.Point) -
+      WeierstrassCurve.Affine.Point.some xR yR hR ≠ 0)
+    (hneQ : (WeierstrassCurve.Affine.Point.some xS yS hS : W.Point) -
+      WeierstrassCurve.Affine.Point.some xR yR hR ≠
+        WeierstrassCurve.Affine.Point.some xQ yQ hQ)
+    (hneP : (WeierstrassCurve.Affine.Point.some xS yS hS : W.Point) -
+      WeierstrassCurve.Affine.Point.some xR yR hR ≠ -P)
+    (hneQP : (WeierstrassCurve.Affine.Point.some xS yS hS : W.Point) -
+      WeierstrassCurve.Affine.Point.some xR yR hR ≠
+        (WeierstrassCurve.Affine.Point.some xQ yQ hQ : W.Point) - P) :
+    ∃ S' R' P' : W.Point,
+      (p : ℤ) • S' = WeierstrassCurve.Affine.Point.some xS yS hS ∧
+      (p : ℤ) • R' = WeierstrassCurve.Affine.Point.some xR yR hR ∧
+      (p : ℤ) • P' = P ∧
+      ∃ (xU yU : F) (hU : W.Nonsingular xU yU) (xV yV : F)
+        (hV : W.Nonsingular xV yV),
+        WeierstrassCurve.Affine.Point.some xU yU hU = S' - R' ∧
+        WeierstrassCurve.Affine.Point.some xV yV hV = P' + (S' - R') ∧
+        AdjoinRoot.evalEval hU.left a ≠ 0 ∧
+        AdjoinRoot.evalEval hU.left (enumVertical W val) ≠ 0 ∧
+        AdjoinRoot.evalEval hV.left a ≠ 0 ∧
+        AdjoinRoot.evalEval hV.left (enumVertical W val) ≠ 0 := by
+  classical
+  set Sp : W.Point := WeierstrassCurve.Affine.Point.some xS yS hS with hSpdef
+  set Rp : W.Point := WeierstrassCurve.Affine.Point.some xR yR hR with hRpdef
+  set Qp : W.Point := WeierstrassCurve.Affine.Point.some xQ yQ hQ with hQpdef
+  obtain ⟨S', hS'⟩ := exists_zsmul_eq hΔ hp Sp
+  obtain ⟨R', hR'⟩ := exists_zsmul_eq hΔ hp Rp
+  obtain ⟨P', hP'⟩ := exists_zsmul_eq hΔ hp P
+  have hpU : (p : ℤ) • (S' - R') = Sp - Rp := by rw [smul_sub, hS', hR']
+  have hpV : (p : ℤ) • (P' + (S' - R')) = P + (Sp - Rp) := by
+    rw [smul_add, hP', hpU]
+  -- vanishing of either factor at an affine point forces `[p]ξ ∈ {O, Q}`
+  have hbadZ : ∀ (x y : F) (h : W.Nonsingular x y),
+      AdjoinRoot.evalEval h.left a = 0 ∨
+        AdjoinRoot.evalEval h.left (enumVertical W val) = 0 →
+      (p : ℤ) • (WeierstrassCurve.Affine.Point.some x y h : W.Point) = 0 ∨
+        (p : ℤ) • (WeierstrassCurve.Affine.Point.some x y h : W.Point) = Qp := by
+    intro x y h hcase
+    rcases hcase with hz | hz
+    · have hmem := mem_of_evalEval_eq_zero hspan h hz
+      rw [Multiset.mem_add] at hmem
+      rcases hmem with hm | hm
+      · obtain ⟨i, -, hi⟩ := Multiset.mem_map.mp hm
+        exact Or.inr (by rw [← hi, smul_add, hT, hval_tor i, add_zero])
+      · obtain ⟨i, -, hi⟩ := Multiset.mem_map.mp hm
+        exact Or.inl (by rw [← hi, smul_neg, hval_tor i, neg_zero])
+    · have hmem := mem_of_evalEval_eq_zero (span_enumVertical val) h hz
+      rw [Multiset.mem_add] at hmem
+      refine Or.inl ?_
+      rcases hmem with hm | hm
+      · obtain ⟨i, -, hi⟩ := Multiset.mem_map.mp hm
+        rw [← hi]
+        exact hval_tor i
+      · obtain ⟨i, -, hi⟩ := Multiset.mem_map.mp hm
+        rw [← hi, smul_neg, hval_tor i, neg_zero]
+  -- `U = S' ⊖ R'` is affine
+  obtain ⟨xU, yU, hU, hUeq⟩ : ∃ (xU yU : F) (hU : W.Nonsingular xU yU),
+      (WeierstrassCurve.Affine.Point.some xU yU hU : W.Point) = S' - R' := by
+    cases hc : (S' - R' : W.Point) with
+    | zero =>
+      refine absurd ?_ hne0
+      rw [← hpU, hc]
+      exact smul_zero _
+    | some x y h => exact ⟨x, y, h, rfl⟩
+  -- `V = P' ⊕ U` is affine
+  obtain ⟨xV, yV, hV, hVeq⟩ : ∃ (xV yV : F) (hV : W.Nonsingular xV yV),
+      (WeierstrassCurve.Affine.Point.some xV yV hV : W.Point) =
+        P' + (S' - R') := by
+    cases hc : (P' + (S' - R') : W.Point) with
+    | zero =>
+      have h1 : P + (Sp - Rp) = 0 := by
+        rw [← hpV, hc]
+        exact smul_zero _
+      refine absurd ?_ hneP
+      rw [eq_neg_iff_add_eq_zero, add_comm]
+      exact h1
+    | some x y h => exact ⟨x, y, h, rfl⟩
+  refine ⟨S', R', P', hS', hR', hP', xU, yU, hU, xV, yV, hV, hUeq, hVeq,
+    ?_, ?_, ?_, ?_⟩
+  · intro h0
+    rcases hbadZ xU yU hU (Or.inl h0) with hz | hz
+    · exact hne0 (by rw [← hpU, ← hUeq, hz])
+    · exact hneQ (by rw [← hpU, ← hUeq, hz])
+  · intro h0
+    rcases hbadZ xU yU hU (Or.inr h0) with hz | hz
+    · exact hne0 (by rw [← hpU, ← hUeq, hz])
+    · exact hneQ (by rw [← hpU, ← hUeq, hz])
+  · intro h0
+    rcases hbadZ xV yV hV (Or.inl h0) with hz | hz
+    · refine hneP ?_
+      have h1 : P + (Sp - Rp) = 0 := by rw [← hpV, ← hVeq, hz]
+      rw [eq_neg_iff_add_eq_zero, add_comm]
+      exact h1
+    · refine hneQP ?_
+      have h1 : P + (Sp - Rp) = Qp := by rw [← hpV, ← hVeq, hz]
+      rw [eq_sub_iff_add_eq, add_comm]
+      exact h1
+  · intro h0
+    rcases hbadZ xV yV hV (Or.inr h0) with hz | hz
+    · refine hneP ?_
+      have h1 : P + (Sp - Rp) = 0 := by rw [← hpV, ← hVeq, hz]
+      rw [eq_neg_iff_add_eq_zero, add_comm]
+      exact h1
+    · refine hneQP ?_
+      have h1 : P + (Sp - Rp) = Qp := by rw [← hpV, ← hVeq, hz]
+      rw [eq_sub_iff_add_eq, add_comm]
+      exact h1
+
+omit [Fact p.Prime] in
 /-- **Stage B, leaf 1 (PROVEN): a generic `p`-division offset.**
 Given the Miller data (`Q = p•T'`, `a` generating
 `∏_κ I_{T'⊕κ}·I_{⊖κ}`), a `p`-torsion point `P`, and the setup's
@@ -929,7 +1104,14 @@ configuration `S ⊖ R = Q` is not excluded and the statement is FALSE,
 every `U` then lying in `[p]^{-1}(Q)`, which is exactly the support of
 `a`).  `hbad` does not give either: it constrains the `p²`-torsion
 translates of `T'`, not `p•T' = Q`, and says nothing about the
-coefficients. -/
+coefficients.
+
+**GENERICITY-LAYER AUDIT (2026-07-31).**  Everything in the paragraph
+above is a way of PRODUCING four point-inequations, and nothing else.
+The statement is now a thin wrapper over
+`exists_generic_pDivision_offset_of_avoid` below, which carries the whole
+proof and asks only for those four; see its docstring for why that matters
+(it is what makes the Stage-B genericity layer characteristic-free). -/
 theorem exists_generic_pDivision_offset {ι : Type*} [Fintype ι]
     {val : ι → W.Point}
     (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0)
@@ -971,11 +1153,10 @@ theorem exists_generic_pDivision_offset {ι : Type*} [Fintype ι]
   classical
   obtain ⟨G, hGin, hGout⟩ := exists_pointSubgroup_of_subfield (W := W)
     (hF₁₂ ha₁) (hF₁₂ ha₂) (hF₁₂ ha₃) (hF₁₂ ha₄) (hF₁₂ ha₆)
-  set Sp : W.Point := WeierstrassCurve.Affine.Point.some xS yS hS with hSpdef
-  set Rp : W.Point := WeierstrassCurve.Affine.Point.some xR yR hR with hRpdef
-  set Qp : W.Point := WeierstrassCurve.Affine.Point.some xQ yQ hQ with hQpdef
-  have hSG : Sp ∈ G := hGin xS yS hS hxSF₂ hySF₂
-  have hQG : Qp ∈ G := hGin xQ yQ hQ (hF₁₂ hxQF₁) (hF₁₂ hyQF₁)
+  have hSG : (WeierstrassCurve.Affine.Point.some xS yS hS : W.Point) ∈ G :=
+    hGin xS yS hS hxSF₂ hySF₂
+  have hQG : (WeierstrassCurve.Affine.Point.some xQ yQ hQ : W.Point) ∈ G :=
+    hGin xQ yQ hQ (hF₁₂ hxQF₁) (hF₁₂ hyQF₁)
   have hPG : P ∈ G := by
     cases hPc : P with
     | zero => exact zero_mem G
@@ -985,95 +1166,20 @@ theorem exists_generic_pDivision_offset {ι : Type*} [Fintype ι]
         (Or.inr (by rw [neg_neg, add_zero]; exact hPc.symm))
       exact hGin x y h (hF₁₂ hx) (hF₁₂ hy)
   -- the contradiction engine: `S ⊖ R` cannot be `F₂`-rational
-  have hkey : ∀ t : W.Point, t ∈ G → Sp - Rp ≠ t := by
+  have hkey : ∀ t : W.Point, t ∈ G →
+      (WeierstrassCurve.Affine.Point.some xS yS hS : W.Point) -
+        WeierstrassCurve.Affine.Point.some xR yR hR ≠ t := by
     intro t ht hc
-    have hRG : Rp ∈ G := by
-      have hrw : Rp = Sp - t := by rw [← hc]; abel
+    have hRG : (WeierstrassCurve.Affine.Point.some xR yR hR : W.Point) ∈ G := by
+      have hrw : (WeierstrassCurve.Affine.Point.some xR yR hR : W.Point) =
+          (WeierstrassCurve.Affine.Point.some xS yS hS : W.Point) - t := by
+        rw [← hc]; abel
       rw [hrw]
       exact sub_mem hSG ht
     exact hxRF₂ (hGout xR yR hR hRG).1
-  obtain ⟨S', hS'⟩ := exists_zsmul_eq hΔ hp Sp
-  obtain ⟨R', hR'⟩ := exists_zsmul_eq hΔ hp Rp
-  obtain ⟨P', hP'⟩ := exists_zsmul_eq hΔ hp P
-  have hpU : (p : ℤ) • (S' - R') = Sp - Rp := by rw [smul_sub, hS', hR']
-  have hpV : (p : ℤ) • (P' + (S' - R')) = P + (Sp - Rp) := by
-    rw [smul_add, hP', hpU]
-  -- vanishing of either factor at an affine point forces `[p]ξ ∈ {O, Q}`
-  have hbadZ : ∀ (x y : F) (h : W.Nonsingular x y),
-      AdjoinRoot.evalEval h.left a = 0 ∨
-        AdjoinRoot.evalEval h.left (enumVertical W val) = 0 →
-      (p : ℤ) • (WeierstrassCurve.Affine.Point.some x y h : W.Point) = 0 ∨
-        (p : ℤ) • (WeierstrassCurve.Affine.Point.some x y h : W.Point) = Qp := by
-    intro x y h hcase
-    rcases hcase with hz | hz
-    · have hmem := mem_of_evalEval_eq_zero hspan h hz
-      rw [Multiset.mem_add] at hmem
-      rcases hmem with hm | hm
-      · obtain ⟨i, -, hi⟩ := Multiset.mem_map.mp hm
-        exact Or.inr (by rw [← hi, smul_add, hT, hval_tor i, add_zero])
-      · obtain ⟨i, -, hi⟩ := Multiset.mem_map.mp hm
-        exact Or.inl (by rw [← hi, smul_neg, hval_tor i, neg_zero])
-    · have hmem := mem_of_evalEval_eq_zero (span_enumVertical val) h hz
-      rw [Multiset.mem_add] at hmem
-      refine Or.inl ?_
-      rcases hmem with hm | hm
-      · obtain ⟨i, -, hi⟩ := Multiset.mem_map.mp hm
-        rw [← hi]
-        exact hval_tor i
-      · obtain ⟨i, -, hi⟩ := Multiset.mem_map.mp hm
-        rw [← hi, smul_neg, hval_tor i, neg_zero]
-  -- `U = S' ⊖ R'` is affine
-  obtain ⟨xU, yU, hU, hUeq⟩ : ∃ (xU yU : F) (hU : W.Nonsingular xU yU),
-      (WeierstrassCurve.Affine.Point.some xU yU hU : W.Point) = S' - R' := by
-    cases hc : (S' - R' : W.Point) with
-    | zero =>
-      refine absurd ?_ (hkey 0 (zero_mem G))
-      rw [← hpU, hc]
-      exact smul_zero _
-    | some x y h => exact ⟨x, y, h, rfl⟩
-  -- `V = P' ⊕ U` is affine
-  obtain ⟨xV, yV, hV, hVeq⟩ : ∃ (xV yV : F) (hV : W.Nonsingular xV yV),
-      (WeierstrassCurve.Affine.Point.some xV yV hV : W.Point) =
-        P' + (S' - R') := by
-    cases hc : (P' + (S' - R') : W.Point) with
-    | zero =>
-      have h1 : P + (Sp - Rp) = 0 := by
-        rw [← hpV, hc]
-        exact smul_zero _
-      refine absurd ?_ (hkey (-P) (neg_mem hPG))
-      rw [eq_neg_iff_add_eq_zero, add_comm]
-      exact h1
-    | some x y h => exact ⟨x, y, h, rfl⟩
-  refine ⟨S', R', P', hS', hR', hP', xU, yU, hU, xV, yV, hV, hUeq, hVeq,
-    ?_, ?_, ?_, ?_⟩
-  · intro h0
-    rcases hbadZ xU yU hU (Or.inl h0) with hz | hz
-    · exact hkey 0 (zero_mem G) (by rw [← hpU, ← hUeq, hz])
-    · exact hkey Qp hQG (by rw [← hpU, ← hUeq, hz])
-  · intro h0
-    rcases hbadZ xU yU hU (Or.inr h0) with hz | hz
-    · exact hkey 0 (zero_mem G) (by rw [← hpU, ← hUeq, hz])
-    · exact hkey Qp hQG (by rw [← hpU, ← hUeq, hz])
-  · intro h0
-    rcases hbadZ xV yV hV (Or.inl h0) with hz | hz
-    · refine hkey (-P) (neg_mem hPG) ?_
-      have h1 : P + (Sp - Rp) = 0 := by rw [← hpV, ← hVeq, hz]
-      rw [eq_neg_iff_add_eq_zero, add_comm]
-      exact h1
-    · refine hkey (Qp - P) (sub_mem hQG hPG) ?_
-      have h1 : P + (Sp - Rp) = Qp := by rw [← hpV, ← hVeq, hz]
-      rw [eq_sub_iff_add_eq, add_comm]
-      exact h1
-  · intro h0
-    rcases hbadZ xV yV hV (Or.inr h0) with hz | hz
-    · refine hkey (-P) (neg_mem hPG) ?_
-      have h1 : P + (Sp - Rp) = 0 := by rw [← hpV, ← hVeq, hz]
-      rw [eq_neg_iff_add_eq_zero, add_comm]
-      exact h1
-    · refine hkey (Qp - P) (sub_mem hQG hPG) ?_
-      have h1 : P + (Sp - Rp) = Qp := by rw [← hpV, ← hVeq, hz]
-      rw [eq_sub_iff_add_eq, add_comm]
-      exact h1
+  exact exists_generic_pDivision_offset_of_avoid (val := val) hΔ hp hval_tor hQ hT
+    hspan hS hR (hkey 0 (zero_mem G)) (hkey _ hQG) (hkey (-P) (neg_mem hPG))
+    (hkey _ (sub_mem hQG hPG))
 
 /-- **Stage B, leaf 2 (ONE sorried sub-leaf + proven glue): the
 `[p]`-pullback evaluation of the `Q`-side Miller ratio.**  With `f_Q = aQ/(X − x_R)^p`
@@ -3610,12 +3716,39 @@ below.  Unlike leaf 2 the two halves are not a comparison against
 the `[p]`-fibres of `P⊕S` and `S`, i.e. to `div g_P`, not `div g` —
 which is why a character factor appears between them at all.
 
-Also proven here, from the field separation `xS ∈ F₂`, `xR ∉ F₂`: the
+Also proven here, from the abscissa avoidance `xS ≠ xR`: the
 telescope's base point `P⊕U` is affine and off `div g`
 (`p•(P⊕U) = S ⊖ R ≠ O`, so it is not `p`-torsion and the vertical
 product does not vanish there), which is what lets the character
-equation be read at `U` at all. -/
-theorem exists_millerRatio_eval_translationChar {ι : Type*} [Fintype ι]
+equation be read at `U` at all.
+
+### GENERICITY-LAYER AUDIT (2026-07-31) — why this no longer mentions a subfield
+
+Until 2026-07-31 this theorem took `{F₁ F₂ : Subfield F}` with both
+`(F₁ : Set F).Finite` and `(F₂ : Set F).Finite`, plus `hbad`, `hF₁₂` and eight
+membership hypotheses — and that finite-subfield requirement was the *recorded*
+reason the Stage-B genericity layer was believed to be characteristic-`p`-only
+(a finite subfield containing the curve's coefficients exists only in
+characteristic `p`).  The compiler disagreed: `hF₁fin`, `hF₂fin`, `hF₁₂`, `hbad`,
+`hySF₂`, `hxSF₁`, `hyPSF₂` and `hxPSF₁` were all flagged by the `unusedVariables`
+linter, i.e. the proof never looked at any of them.
+
+The four that were used — `hxSF₂`, `hxRF₂`, `hxPSF₂`, `hxQRF₂` — were used at
+exactly four places, and each time only to separate two abscissae.  So the whole
+field hierarchy was an **avoidance device**, and what the proof actually needs is
+the four inequations now taken as hypotheses:
+
+    x_S ≠ x_R,   x_{Q⊕R} ≠ x_S,   x_{Q⊕R} ≠ x_{P⊕S},   x_R ≠ x_{P⊕S},
+
+equivalently `S ≠ R`, `Q⊕R ≠ S`, `Q⊕R ≠ P⊕S`, `R ≠ P⊕S`.  These mention no field
+and no characteristic.  Over an algebraically closed base of characteristic zero
+`W.Point` is infinite, so they are *easier* to arrange than in characteristic `p`,
+where they had to be manufactured from `exists_finite_subfield_containing`.
+
+`exists_millerRatio_eval_translationChar` below is the old statement, recovered as
+a one-line wrapper, so no characteristic-`p` consumer changes.  The same audit
+applies to leaf 1; see `exists_generic_pDivision_offset_of_avoid`. -/
+theorem exists_millerRatio_eval_translationChar_of_avoid {ι : Type*} [Fintype ι]
     {val : ι → W.Point}
     (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0)
     (hval_inj : Function.Injective val)
@@ -3657,16 +3790,8 @@ theorem exists_millerRatio_eval_translationChar {ι : Type*} [Fintype ι]
         (CoordinateRing.XYIdeal W xS (Polynomial.C (W.negY xS yS))) ^ p)
     (hnzR : AdjoinRoot.evalEval hR.left aP ≠ 0)
     (hnzQR : AdjoinRoot.evalEval hQR.left aP ≠ 0)
-    {F₁ F₂ : Subfield F} (hF₁fin : (F₁ : Set F).Finite)
-    (hF₂fin : (F₂ : Set F).Finite) (hF₁₂ : F₁ ≤ F₂)
-    (hbad : ∀ κ lam : W.Point, (p : ℤ) • κ = 0 → ((p ^ 2 : ℕ) : ℤ) • lam = 0 →
-      ∀ (x y : F) (h : W.Nonsingular x y),
-        WeierstrassCurve.Affine.Point.some x y h = T' + κ + lam ∨
-          WeierstrassCurve.Affine.Point.some x y h = -κ + lam →
-        x ∈ F₁ ∧ y ∈ F₁)
-    (hxSF₂ : xS ∈ F₂) (hySF₂ : yS ∈ F₂) (hxSF₁ : xS ∉ F₁)
-    (hxRF₂ : xR ∉ F₂) (hxPSF₂ : xPS ∈ F₂) (hyPSF₂ : yPS ∈ F₂)
-    (hxPSF₁ : xPS ∉ F₁) (hxQRF₂ : xQR ∉ F₂)
+    (hxSR : xS ≠ xR) (hxQRS : xQR ≠ xS)
+    (hxQRPS : xQR ≠ xPS) (hxRPS : xR ≠ xPS)
     {S' R' P' : W.Point}
     (hS'p : (p : ℤ) • S' = WeierstrassCurve.Affine.Point.some xS yS hS)
     (hR'p : (p : ℤ) • R' = WeierstrassCurve.Affine.Point.some xR yR hR)
@@ -3690,8 +3815,7 @@ theorem exists_millerRatio_eval_translationChar {ι : Type*} [Fintype ι]
             (AdjoinRoot.evalEval hV.left a *
               AdjoinRoot.evalEval hU.left (enumVertical W val)) ^ p) := by
   classical
-  -- ── PROVEN: `S ≠ R`, since `F₂` separates their abscissae
-  have hxSR : xS ≠ xR := fun h => hxRF₂ (h ▸ hxSF₂)
+  -- ── PROVEN: `S ≠ R`, from the abscissa avoidance `hxSR`
   have hSR : (WeierstrassCurve.Affine.Point.some xS yS hS : W.Point) -
       WeierstrassCurve.Affine.Point.some xR yR hR ≠ 0 := by
     intro h0
@@ -4089,7 +4213,6 @@ theorem exists_millerRatio_eval_translationChar {ι : Type*} [Fintype ι]
     refine mul_right_cancel₀ hden ?_
     linear_combination hval
   -- ── PROVEN: `Q⊕R ≠ S`, since `F₂` separates their abscissae
-  have hxQRS : xQR ≠ xS := fun h => hxQRF₂ (h ▸ hxSF₂)
   have hQRS : (WeierstrassCurve.Affine.Point.some xQR yQR hQR : W.Point) -
       WeierstrassCurve.Affine.Point.some xS yS hS ≠ 0 := by
     intro h0
@@ -4250,7 +4373,7 @@ theorem exists_millerRatio_eval_translationChar {ι : Type*} [Fintype ι]
           WeierstrassCurve.Affine.Point.some xPS yPS hPS := by
         rw [hPSc, ← hQS]; abel
       rw [WeierstrassCurve.Affine.Point.some.injEq] at hQeq
-      exact hxQRF₂ (by rw [hQeq.1]; exact hxPSF₂)
+      exact hxQRPS hQeq.1
     · exact hQRS (by rw [← hpM1']; exact hm)
   have hM2b : AdjoinRoot.evalEval hM2.left b ≠ 0 := by
     intro h0
@@ -4264,7 +4387,7 @@ theorem exists_millerRatio_eval_translationChar {ι : Type*} [Fintype ι]
           WeierstrassCurve.Affine.Point.some xPS yPS hPS := by
         rw [hPSc, ← hRS]; abel
       rw [WeierstrassCurve.Affine.Point.some.injEq] at hReq
-      exact hxRF₂ (by rw [hReq.1]; exact hxPSF₂)
+      exact hxRPS hReq.1
     · refine hSR ?_
       have hz : -((WeierstrassCurve.Affine.Point.some xS yS hS : W.Point) -
           WeierstrassCurve.Affine.Point.some xR yR hR) = 0 := by
@@ -4364,5 +4487,99 @@ theorem exists_millerRatio_eval_translationChar {ι : Type*} [Fintype ι]
       AdjoinRoot.evalEval hU.left a ^ p) * hcQR -
     (AdjoinRoot.evalEval hQR.left ((CoordinateRing.XClass W xS) ^ p) *
       AdjoinRoot.evalEval hV.left a ^ p) * hcR'
+
+/-- **Stage B, leaf 3, in the shape its characteristic-`p` caller supplies
+(PROVEN).**  The old statement of `exists_millerRatio_eval_translationChar`,
+recovered verbatim as a wrapper over
+`exists_millerRatio_eval_translationChar_of_avoid` above.
+
+The field hierarchy `F₁ ≤ F₂` enters only through the four abscissa separations
+`x_S ∈ F₂`, `x_R ∉ F₂`, `x_{P⊕S} ∈ F₂`, `x_{Q⊕R} ∉ F₂`, which is exactly what the
+four lines of proof below produce; `hF₁fin`, `hF₂fin`, `hF₁₂`, `hbad`, `hySF₂`,
+`hxSF₁`, `hyPSF₂`, `hxPSF₁` were unused already and are kept only so that
+`WeilPairing.translationChar_setup_value` does not have to change.  See the audit
+in the docstring above. -/
+theorem exists_millerRatio_eval_translationChar {ι : Type*} [Fintype ι]
+    {val : ι → W.Point}
+    (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0)
+    (hval_inj : Function.Injective val)
+    (hval_tor : ∀ i, (p : ℤ) • val i = 0)
+    (hval_surj : ∀ Z : W.Point, (p : ℤ) • Z = 0 → ∃ i, val i = Z)
+    (hcard : Fintype.card ι = p ^ 2)
+    {a : W.CoordinateRing} (ha : a ≠ 0)
+    {T' : W.Point}
+    (hspan : Ideal.span {a} =
+      ((((Finset.univ.val.map fun i => T' + val i) +
+        Finset.univ.val.map fun i => -val i)).map (pointIdeal W)).prod)
+    {xP yP : F} (hP : W.Nonsingular xP yP)
+    {xQ yQ : F} (hQ : W.Nonsingular xQ yQ)
+    (hT : (p : ℤ) • T' = WeierstrassCurve.Affine.Point.some xQ yQ hQ)
+    {i₀ : ι} (hPval : val i₀ = WeierstrassCurve.Affine.Point.some xP yP hP)
+    {xκ yκ : W.FunctionField} {hκ : (curveK W).Nonsingular xκ yκ}
+    (hpt : constPoint W (val i₀) + tautPoint W hΔ =
+      WeierstrassCurve.Affine.Point.some xκ yκ hκ)
+    {c : F} (hc1 : c ≠ 1) (hcp : c ^ p = 1)
+    (hτa : pointEval (constHom W) hκ.left a ≠ 0)
+    (hτv : pointEval (constHom W) hκ.left (enumVertical W val) ≠ 0)
+    (heq : pointEval (constHom W) hκ.left a *
+        algebraMap W.CoordinateRing W.FunctionField (enumVertical W val) =
+      constHom W c * algebraMap W.CoordinateRing W.FunctionField a *
+        pointEval (constHom W) hκ.left (enumVertical W val))
+    {xS yS : F} (hS : W.Nonsingular xS yS)
+    {xR yR : F} (hR : W.Nonsingular xR yR)
+    {xPS yPS : F} (hPS : W.Nonsingular xPS yPS)
+    (hPSc : WeierstrassCurve.Affine.Point.some xPS yPS hPS =
+      WeierstrassCurve.Affine.Point.some xP yP hP +
+        WeierstrassCurve.Affine.Point.some xS yS hS)
+    {xQR yQR : F} (hQR : W.Nonsingular xQR yQR)
+    (hQRc : WeierstrassCurve.Affine.Point.some xQR yQR hQR =
+      WeierstrassCurve.Affine.Point.some xQ yQ hQ +
+        WeierstrassCurve.Affine.Point.some xR yR hR)
+    {aP : W.CoordinateRing}
+    (haP : Ideal.span {aP} =
+      (CoordinateRing.XYIdeal W xPS (Polynomial.C yPS)) ^ p *
+        (CoordinateRing.XYIdeal W xS (Polynomial.C (W.negY xS yS))) ^ p)
+    (hnzR : AdjoinRoot.evalEval hR.left aP ≠ 0)
+    (hnzQR : AdjoinRoot.evalEval hQR.left aP ≠ 0)
+    {F₁ F₂ : Subfield F} (_hF₁fin : (F₁ : Set F).Finite)
+    (_hF₂fin : (F₂ : Set F).Finite) (_hF₁₂ : F₁ ≤ F₂)
+    (_hbad : ∀ κ lam : W.Point, (p : ℤ) • κ = 0 → ((p ^ 2 : ℕ) : ℤ) • lam = 0 →
+      ∀ (x y : F) (h : W.Nonsingular x y),
+        WeierstrassCurve.Affine.Point.some x y h = T' + κ + lam ∨
+          WeierstrassCurve.Affine.Point.some x y h = -κ + lam →
+        x ∈ F₁ ∧ y ∈ F₁)
+    (hxSF₂ : xS ∈ F₂) (_hySF₂ : yS ∈ F₂) (_hxSF₁ : xS ∉ F₁)
+    (hxRF₂ : xR ∉ F₂) (hxPSF₂ : xPS ∈ F₂) (_hyPSF₂ : yPS ∈ F₂)
+    (_hxPSF₁ : xPS ∉ F₁) (hxQRF₂ : xQR ∉ F₂)
+    {S' R' P' : W.Point}
+    (hS'p : (p : ℤ) • S' = WeierstrassCurve.Affine.Point.some xS yS hS)
+    (hR'p : (p : ℤ) • R' = WeierstrassCurve.Affine.Point.some xR yR hR)
+    (hP'p : (p : ℤ) • P' = WeierstrassCurve.Affine.Point.some xP yP hP)
+    {xU yU : F} (hU : W.Nonsingular xU yU)
+    {xV yV : F} (hV : W.Nonsingular xV yV)
+    (hUeq : WeierstrassCurve.Affine.Point.some xU yU hU = S' - R')
+    (hVeq : WeierstrassCurve.Affine.Point.some xV yV hV = P' + (S' - R'))
+    (hUa : AdjoinRoot.evalEval hU.left a ≠ 0)
+    (hUv : AdjoinRoot.evalEval hU.left (enumVertical W val) ≠ 0)
+    (hVa : AdjoinRoot.evalEval hV.left a ≠ 0)
+    (hVv : AdjoinRoot.evalEval hV.left (enumVertical W val) ≠ 0) :
+    ∃ e : ℕ, (e = 1 ∨ e = p - 1) ∧
+      AdjoinRoot.evalEval hQR.left aP *
+          AdjoinRoot.evalEval hR.left ((CoordinateRing.XClass W xS) ^ p) *
+          (AdjoinRoot.evalEval hU.left a *
+            AdjoinRoot.evalEval hV.left (enumVertical W val)) ^ p =
+        c ^ e * (AdjoinRoot.evalEval hQR.left
+              ((CoordinateRing.XClass W xS) ^ p) *
+            AdjoinRoot.evalEval hR.left aP *
+            (AdjoinRoot.evalEval hV.left a *
+              AdjoinRoot.evalEval hU.left (enumVertical W val)) ^ p) :=
+  exists_millerRatio_eval_translationChar_of_avoid hΔ hp hval_inj hval_tor
+    hval_surj hcard ha hspan hP hQ hT hPval hpt hc1 hcp hτa hτv heq hS hR hPS
+    hPSc hQR hQRc haP hnzR hnzQR
+    (fun h => hxRF₂ (by rw [← h]; exact hxSF₂))
+    (fun h => hxQRF₂ (by rw [h]; exact hxSF₂))
+    (fun h => hxQRF₂ (by rw [h]; exact hxPSF₂))
+    (fun h => hxRF₂ (by rw [h]; exact hxPSF₂))
+    hS'p hR'p hP'p hU hV hUeq hVeq hUa hUv hVa hVv
 
 end WeilPairing
