@@ -3474,6 +3474,8 @@ theorem essFinitePresentation_of_essFinitePresentation_comp {R B A : Type u}
     show μ (ι (iL b)) = v b
     rw [hμι, hhiL]
   rwa [hvcomp] at hres
+end EssFinitePresentationCancellation
+
 
 section IsLocalizationTensorComp
 
