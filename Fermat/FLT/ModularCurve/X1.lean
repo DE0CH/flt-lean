@@ -15504,6 +15504,38 @@ for the twelve forms, which is the irreducible level-`25` input.
 `tsum_ne_zero_of_tail_lt_norm_sum` already takes the truncation point as a
 parameter, so `K = 2` costs nothing.
 
+**AND ONE MORE ITEM THAT THE LIST ABOVE HIDES, now that the partner is named:
+`frickeSlashOn 25 _ _ _ f` MUST BE GIVEN A `q`-EXPANSION.**  Every route to a
+series for the second integral runs through `hasSum_axisRestrictOn`, whose only
+input is `IsWeightTwoEigenformOn`'s `qExpansion` and `qExpansionSummable`
+fields — and nothing in this file attaches either to a Fricke transform.  That
+is the natural next CUT of this leaf, and it is the classical statement
+`W_N : S₂(N, χ) → S₂(N, χ̄)` carrying eigenforms to eigenforms with
+`bₙ = λ·conj(aₙ)`.  Cutting it costs one leaf and buys the whole analytic half,
+because with `b` in hand both integrals become the same explicit series and what
+is left is arithmetic on `1 − b₁ = 1 − λ` and `a₂ − b₂`.  Note the cut is only
+worth taking together with the `q`-expansion, not on its own: a bare
+"`W_N` preserves eigenforms" whose conclusion does not name the coefficients
+leaves the head of the series unidentified and closes nothing.
+
+**AN AXIS THAT IS CLOSED, so nobody spends a cycle reopening it (checked
+2026-07-31).**  Item 2 above is gated on Deligne through
+`realCoeff_norm_le_of_isWeightTwoEigenform`, and the obvious escape is to notice
+that the margin here is THREEFOLD at `K = 2` and to ask whether a WEAKER
+constant — `‖aₙ‖ ≤ C·n` for some `C` larger than `2`, obtainable from Hecke's
+elementary bound rather than from Deligne — would do.  Numerically it would:
+with `x = e^{−2π/5} = 0.2846…` the tail from `n = 3` is `2C·x³/(1 − x) = 0.0644·C`
+against a head of about `0.57`, so anything up to `C ≈ 6` clears it, and
+`tsum_two_mul_tail_lt`'s hard-wired `2` is the only thing standing in the way.
+**It does not work, and the obstruction is not the constant but its
+universality.**  Without `‖a_p‖ ≤ 2√p` the Hecke recursion
+`a_{p^{k+1}} = a_p a_{p^k} − χ(p) p a_{p^{k−1}}` gives only
+`‖aₙ‖ ≤ σ₁(n)`-shaped bounds, and `σ₁(n)/n = σ₋₁(n)` is UNBOUNDED
+(`lim sup σ₋₁(n)/log log n = e^γ`).  So no `C` works for all `n` at once, at any
+level, and the crude linear bound really is Deligne-strength.  The leaf is
+therefore genuinely SHARED with the `Γ₀` layer and closing it there closes it
+here; it is not a `Γ₁` obligation that could be dodged with a laxer constant.
+
 **THE PARTNER IS NOW NAMED, NOT QUANTIFIED** (2026-07-31, the day after
 this leaf was opened).  As first cut it took a bare `g : CuspForm (Gamma1GL
 25) 2` together with the functional equation `hFE` as hypotheses, and its
