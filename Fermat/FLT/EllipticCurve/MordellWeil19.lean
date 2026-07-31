@@ -129,11 +129,290 @@ public import Fermat.FLT.EllipticCurve.MordellWeil
 
 namespace MazurX0Nineteen
 
+/-! ### `ℤ[θ]` in coordinates: the descent map, its norm, and the square classes
+
+`θ³ + 2θ² + 4θ + 2 = 0`, so `θ³ = −2θ² − 4θ − 2` and `θ⁴ = 6θ + 4`.  The
+coordinate layer below is enough to STATE the descent and to run both prunings
+that consume it; it is not enough to PROVE it, because the proof factors `β` in
+`ℤ[θ]` and factoring needs the ring rather than its multiplication table.  So the
+cut is placed exactly where level `11` places it: `descent_unit_square` is the
+leaf, and everything above it is proven here.
+
+The two prunings, both PROVEN below:
+
+* the NORM pruning (`descent_square_class`): of the `16` square classes only the
+  `2` of norm `1` survive, because `N(β) = N(u)·N(δ)²` is a square and the other
+  fourteen have `N(u) ∈ {±1, ±2, ±19, ±38}`, none of which is;
+* the LOCAL condition (`epsilon_class_impossible`): the surviving nontrivial
+  class `ε = θ + 1` is impossible for a coprime point, and — exactly as at level
+  `11`, and again with no `19`-adic input — it is pure parity mod `4`.
+-/
+
+/-- Multiplication of `ℤ[θ] = ℤ[X]/(X³ + 2X² + 4X + 2)` in the `ℤ`-basis
+`1, θ, θ²`, with `(x₀, x₁, x₂)` denoting `x₀ + x₁θ + x₂θ²`.
+
+Derivation: `∑ xᵢyⱼ θⁱ⁺ʲ` with `θ³ = −2θ² − 4θ − 2` and `θ⁴ = 6θ + 4`, so the
+`θ³` term contributes `(−2, −4, −2)` and the `θ⁴` term `(4, 6, 0)`.  Certified by
+`zsNorm_zsMul`: no other table would make `zsNorm` multiplicative. -/
+def zsMul (x y : ℤ × ℤ × ℤ) : ℤ × ℤ × ℤ :=
+  (x.1 * y.1 - 2 * (x.2.1 * y.2.2 + x.2.2 * y.2.1) + 4 * (x.2.2 * y.2.2),
+   x.1 * y.2.1 + x.2.1 * y.1 - 4 * (x.2.1 * y.2.2 + x.2.2 * y.2.1) + 6 * (x.2.2 * y.2.2),
+   x.1 * y.2.2 + x.2.1 * y.2.1 + x.2.2 * y.1 - 2 * (x.2.1 * y.2.2 + x.2.2 * y.2.1))
+
+/-- The field norm `N : ℤ[θ] → ℤ`, as the determinant of multiplication-by-`x`
+in the basis `1, θ, θ²`.
+
+Spot values, all re-derived in PARI/GP: `N(θ) = −2`, `N(θ + 1) = 1` for the
+fundamental unit `ε`, `N(θ + 3) = 19`, `N(16 + 16θ + 12θ²) = 2⁸·19`. -/
+def zsNorm (x : ℤ × ℤ × ℤ) : ℤ :=
+  x.1 ^ 3 - 2 * x.1 ^ 2 * x.2.1 - 4 * x.1 ^ 2 * x.2.2 + 4 * x.1 * x.2.1 ^ 2
+    - 2 * x.1 * x.2.1 * x.2.2 + 8 * x.1 * x.2.2 ^ 2 - 2 * x.2.1 ^ 3
+    + 4 * x.2.1 ^ 2 * x.2.2 - 8 * x.2.1 * x.2.2 ^ 2 + 4 * x.2.2 ^ 3
+
+/-- **THE DESCENT MAP, in coordinates.**  The classical `2`-descent on
+`W² = U³ + 4U² + 16U + 16` sends a point to `x(P) − 2θ` modulo squares, `2θ`
+being the root of the cubic (`U = 2θ` turns `U³ + 4U² + 16U + 16` into
+`8(θ³ + 2θ² + 4θ + 2)`).  On the coprime integral point `(p, e, n)` with
+`U = p/e²` this is `β = p − 2θ·e² ∈ ℤ[θ]`, i.e. the triple `(p, −2e², 0)`.
+
+As at level `11`, what the descent needs is that the IMAGE is trivial, not that
+the map is a homomorphism with kernel `2E(ℚ)`; image-triviality is what
+`descent_unit_square` asserts and it is proved by factorisation in `ℤ[θ]`. -/
+def descentImage (p e : ℤ) : ℤ × ℤ × ℤ := (p, -2 * e ^ 2, 0)
+
+/-- **The multiplication table is right** (PROVEN 2026-07-31): `zsNorm` is
+multiplicative for `zsMul`. -/
+theorem zsNorm_zsMul (x y : ℤ × ℤ × ℤ) :
+    zsNorm (zsMul x y) = zsNorm x * zsNorm y := by
+  simp only [zsNorm, zsMul]
+  ring
+
+/-- **`N(β) = n²` on the curve** (PROVEN 2026-07-31): the norm of the descent
+image is exactly the curve's right-hand side, `N(p − 2θe²) = t³·P(p/t)` at
+`t = 2e²` for the minimal polynomial `P`.  This is why the descent map lands in
+the norm-square classes at all. -/
+theorem zsNorm_descentImage (p e : ℤ) :
+    zsNorm (descentImage p e) = p ^ 3 + 4 * p ^ 2 * e ^ 2 + 16 * p * e ^ 4 + 16 * e ^ 6 := by
+  simp only [zsNorm, descentImage]
+  ring
+
+/-- `1` is a left unit for `zsMul` (PROVEN 2026-07-31). -/
+theorem zsMul_one_left (x : ℤ × ℤ × ℤ) : zsMul (1, 0, 0) x = x := by
+  simp only [zsMul]
+  ring_nf
+
+/-- Sanity: `θ·θ·θ = −2 − 4θ − 2θ²`, the defining relation. -/
+example : zsMul (0, 1, 0) (zsMul (0, 1, 0) (0, 1, 0)) = (-2, -4, -2) := by decide
+
+/-- Sanity: `ε·(θ² + θ + 3) = 1` for the fundamental unit `ε = θ + 1`, so `ε`
+really is a unit. -/
+example : zsMul (1, 1, 0) (3, 1, 1) = (1, 0, 0) := by decide
+
+/-- Sanity, and a NON-VACUITY witness: `(2 + 2θ + θ²)² = −2θ`, so the one known
+rational point `(p, e) = (0, 1)` really does lie in the trivial square class.
+The leaf below is therefore not vacuously about an empty set of points. -/
+example : zsMul (2, 2, 1) (2, 2, 1) = descentImage 0 1 := by decide
+
+/-- **`β ≠ 0`, in the form `n ≠ 0`** (PROVEN 2026-07-31): no coprime integral
+point of `W² = U³ + 4U² + 16U + 16` has `W = 0`.
+
+`n = 0` forces `e² ∣ p³`, and `IsCoprime p e` then makes `e²` a unit, so `e = 1`;
+the remaining `p³ + 4p² + 16p + 16 = 0` has `p ∣ 16`, and none of the `33`
+candidates works.  Needed below because a zero norm would make the square-class
+pruning vacuous. -/
+theorem descentImage_norm_ne_zero {p e n : ℤ} (he : 0 < e) (hcop : IsCoprime p e)
+    (hn : zsNorm (descentImage p e) = n ^ 2) : n ≠ 0 := by
+  rintro rfl
+  rw [zsNorm_descentImage] at hn
+  have hdvd : e ^ 2 ∣ p ^ 3 :=
+    ⟨-(4 * p ^ 2) - 16 * p * e ^ 2 - 16 * e ^ 4, by linear_combination hn⟩
+  have hu : IsUnit (e ^ 2) :=
+    (hcop.pow (m := 3) (n := 2)).isUnit_of_dvd' hdvd dvd_rfl
+  have he1 : e = 1 := by
+    rcases Int.isUnit_iff.mp hu with h | h
+    · nlinarith
+    · nlinarith
+  subst he1
+  have hdvd16 : p ∣ 16 := ⟨-(p ^ 2) - 4 * p - 16, by linear_combination hn⟩
+  have hup : p ≤ 16 := Int.le_of_dvd (by norm_num) hdvd16
+  have hlo : -p ≤ 16 := Int.le_of_dvd (by norm_num) (neg_dvd.mpr hdvd16)
+  have hlo' : -16 ≤ p := by linarith
+  interval_cases p <;> norm_num at hn
+
+/-- `19` is not a square (PROVEN 2026-07-31). -/
+theorem not_isSquare_nineteen : ¬ IsSquare (19 : ℤ) :=
+  WeierstrassCurve.MazurLevel11.not_isSquare_of_bounded (by norm_num)
+    (by intro r h1 h2; interval_cases r <;> decide)
+
+/-- `38` is not a square (PROVEN 2026-07-31). -/
+theorem not_isSquare_thirtyEight : ¬ IsSquare (38 : ℤ) :=
+  WeierstrassCurve.MazurLevel11.not_isSquare_of_bounded (by norm_num)
+    (by intro r h1 h2; interval_cases r <;> decide)
+
+/-- **THE VALUATION BOOKKEEPING** (sorry leaf, cut 2026-07-31 out of
+`exists_halving_witness`): `β = p − 2θe²` is one of `16` explicit units times a
+square in `ℤ[θ]`.
+
+THIS IS THE ONLY REMAINING LEAF OF LEVEL `19`, and it is the exact analogue of
+`MazurLevel11.descent_unit_square`, which is PROVEN there over two statements
+about the cubic field — `Cubic.ZS.isPrincipalIdealRing_zs` (`𝓞_K = ℤ[s]`,
+`h(K) = 1`) and `Cubic.ZS.unit_sq_class` (units mod squares).
+
+THE SIXTEEN CLASSES, and why exactly these.  Write `θ = (0, 1, 0)`,
+`ε = θ + 1 = (1, 1, 0)`, `g = θ + 3 = (3, 1, 0)`.  Then the list below is
+`v·θ^r·g^t` for `v ∈ {1, −1, ε, −ε}` and `r, t ∈ {0, 1}`, in that order, with
+norms
+
+    1, 19, −2, −38,  −1, −19, 2, 38,  1, 19, −2, −38,  −1, −19, 2, 38.
+
+The unit part is `{±1, ±ε}` because `ℤ[θ]ˣ = {±1} × ⟨ε⟩` (rank `1`, torsion
+`{±1}`, fundamental unit `ε = θ + 1` of norm `1` — PARI/GP `bnfinit`, and the
+`ε·(θ² + θ + 3) = 1` above is the Lean-side witness).  The prime part is `θ` and
+`g` because THOSE ARE THE ONLY PRIMES THAT CAN DIVIDE `gcd(β, γ)`: with
+`γ = adj β = (p² + 4pe² + 16e⁴, 2pe² + 8e⁴, 4e⁴)` one has `β·γ = N(β) = n²` and
+the exact division
+
+    γ = Q·β + D·e⁴,   Q = (p + 4e², 4e², 0),   D = (16, 16, 12),
+
+with `N(D) = 2⁸·19 = 4864` and `D = uD·θ⁸·g` for the unit
+`uD = (191, 83, 61)`, `N(uD) = 1` — all four identities verified numerically
+against the multiplication table above.  So a prime dividing both `β` and `γ`
+divides `D·e⁴`, hence is `θ`, `g`, or divides `e`; and the last is excluded by
+`IsCoprime p e` through `β ≡ p mod θ`.
+
+A PROOF should follow `MordellWeil.lean` lines `659`–`1852`
+(`Cubic.ZS` through `descent_unit_square`) declaration by declaration.  The
+field data, re-derived in PARI/GP: `poldisc(X³ + 2X² + 4X + 2) = −76 = disc(K)`
+and `nfbasis` is `[1, θ, θ²]`, so the index is `1`; `h(K) = 1`; signature
+`(1, 1)`; unit rank `1`, torsion `{±1}`, fundamental unit `θ + 1`.  Note
+`−76 = −2²·19` is NOT squarefree, so — exactly as at level `11` — "the
+discriminants agree, hence index `1`" is a CONCLUSION and not an input; the
+minimal polynomial IS Eisenstein at `2`, which kills the `2`-part, and `19` must
+be killed separately.
+
+**ENLARGING THE LIST IS SAFE**; shrinking it is not.  A successor who finds the
+bookkeeping easier with more classes may add any units to the list: the two
+consumers (`descent_square_class`, then `epsilon_class_impossible`) prune by
+NORM and then by parity, and both are stated per-class. -/
+theorem descent_unit_square {p e n : ℤ} (he : 0 < e) (hcop : IsCoprime p e)
+    (hn : zsNorm (descentImage p e) = n ^ 2) :
+    ∃ u δ : ℤ × ℤ × ℤ, descentImage p e = zsMul u (zsMul δ δ) ∧
+      u ∈ [((1 : ℤ), (0 : ℤ), (0 : ℤ)), (3, 1, 0), (0, 1, 0), (0, 3, 1),
+        (-1, 0, 0), (-3, -1, 0), (0, -1, 0), (0, -3, -1),
+        (1, 1, 0), (3, 4, 1), (0, 1, 1), (-2, -1, 2),
+        (-1, -1, 0), (-3, -4, -1), (0, -1, -1), (2, 1, -2)] := sorry
+
+/-- **The norm pruning** (PROVEN 2026-07-31): of the `16` square classes only the
+two of norm `1` survive, so `β` is a square or `ε` times a square.
+
+`N(β) = N(u)·N(δ)²` with `N(β) = n²` and `N(δ) ≠ 0` (else `n = 0`, refuted by
+`descentImage_norm_ne_zero`), so `N(u)` must be a rational square.  The other
+fourteen classes have `N(u) ∈ {−38, −19, −2, −1, 2, 19, 38}`: the negatives die
+trivially and `2, 19, 38` by `sq_ne_mul_sq_of_not_isSquare`. -/
+theorem descent_square_class {p e n : ℤ} (he : 0 < e) (hcop : IsCoprime p e)
+    (hn : zsNorm (descentImage p e) = n ^ 2) :
+    ∃ a b c : ℤ, descentImage p e = zsMul (a, b, c) (a, b, c) ∨
+      descentImage p e = zsMul (1, 1, 0) (zsMul (a, b, c) (a, b, c)) := by
+  obtain ⟨u, δ, hbeta, hu⟩ := descent_unit_square he hcop hn
+  obtain ⟨a, b, c⟩ := δ
+  have hn0 : n ≠ 0 := descentImage_norm_ne_zero he hcop hn
+  obtain ⟨M, hM⟩ : ∃ M : ℤ, zsNorm (a, b, c) = M := ⟨_, rfl⟩
+  have hnorm : n ^ 2 = zsNorm u * M ^ 2 := by
+    rw [← hM, ← hn, hbeta, zsNorm_zsMul, zsNorm_zsMul]; ring
+  have hm0 : M ≠ 0 := by
+    rintro rfl
+    exact hn0 ((pow_eq_zero_iff two_ne_zero).mp (by rw [hnorm]; ring))
+  fin_cases hu
+  · exact ⟨a, b, c, Or.inl (by rw [hbeta, zsMul_one_left])⟩
+  · exact absurd (show n ^ 2 = 19 * M ^ 2 by rw [hnorm]; norm_num [zsNorm])
+      (WeierstrassCurve.MazurLevel11.sq_ne_mul_sq_of_not_isSquare not_isSquare_nineteen hm0)
+  · exact absurd (show n ^ 2 = -2 * M ^ 2 by rw [hnorm]; norm_num [zsNorm])
+      (WeierstrassCurve.MazurLevel11.sq_ne_mul_sq_of_not_isSquare
+        (WeierstrassCurve.MazurLevel11.not_isSquare_of_neg (by norm_num)) hm0)
+  · exact absurd (show n ^ 2 = -38 * M ^ 2 by rw [hnorm]; norm_num [zsNorm])
+      (WeierstrassCurve.MazurLevel11.sq_ne_mul_sq_of_not_isSquare
+        (WeierstrassCurve.MazurLevel11.not_isSquare_of_neg (by norm_num)) hm0)
+  · exact absurd (show n ^ 2 = -1 * M ^ 2 by rw [hnorm]; norm_num [zsNorm])
+      (WeierstrassCurve.MazurLevel11.sq_ne_mul_sq_of_not_isSquare
+        (WeierstrassCurve.MazurLevel11.not_isSquare_of_neg (by norm_num)) hm0)
+  · exact absurd (show n ^ 2 = -19 * M ^ 2 by rw [hnorm]; norm_num [zsNorm])
+      (WeierstrassCurve.MazurLevel11.sq_ne_mul_sq_of_not_isSquare
+        (WeierstrassCurve.MazurLevel11.not_isSquare_of_neg (by norm_num)) hm0)
+  · exact absurd (show n ^ 2 = 2 * M ^ 2 by rw [hnorm]; norm_num [zsNorm])
+      (WeierstrassCurve.MazurLevel11.sq_ne_mul_sq_of_not_isSquare
+        WeierstrassCurve.MazurLevel11.not_isSquare_two hm0)
+  · exact absurd (show n ^ 2 = 38 * M ^ 2 by rw [hnorm]; norm_num [zsNorm])
+      (WeierstrassCurve.MazurLevel11.sq_ne_mul_sq_of_not_isSquare
+        not_isSquare_thirtyEight hm0)
+  · exact ⟨a, b, c, Or.inr hbeta⟩
+  · exact absurd (show n ^ 2 = 19 * M ^ 2 by rw [hnorm]; norm_num [zsNorm])
+      (WeierstrassCurve.MazurLevel11.sq_ne_mul_sq_of_not_isSquare not_isSquare_nineteen hm0)
+  · exact absurd (show n ^ 2 = -2 * M ^ 2 by rw [hnorm]; norm_num [zsNorm])
+      (WeierstrassCurve.MazurLevel11.sq_ne_mul_sq_of_not_isSquare
+        (WeierstrassCurve.MazurLevel11.not_isSquare_of_neg (by norm_num)) hm0)
+  · exact absurd (show n ^ 2 = -38 * M ^ 2 by rw [hnorm]; norm_num [zsNorm])
+      (WeierstrassCurve.MazurLevel11.sq_ne_mul_sq_of_not_isSquare
+        (WeierstrassCurve.MazurLevel11.not_isSquare_of_neg (by norm_num)) hm0)
+  · exact absurd (show n ^ 2 = -1 * M ^ 2 by rw [hnorm]; norm_num [zsNorm])
+      (WeierstrassCurve.MazurLevel11.sq_ne_mul_sq_of_not_isSquare
+        (WeierstrassCurve.MazurLevel11.not_isSquare_of_neg (by norm_num)) hm0)
+  · exact absurd (show n ^ 2 = -19 * M ^ 2 by rw [hnorm]; norm_num [zsNorm])
+      (WeierstrassCurve.MazurLevel11.sq_ne_mul_sq_of_not_isSquare
+        (WeierstrassCurve.MazurLevel11.not_isSquare_of_neg (by norm_num)) hm0)
+  · exact absurd (show n ^ 2 = 2 * M ^ 2 by rw [hnorm]; norm_num [zsNorm])
+      (WeierstrassCurve.MazurLevel11.sq_ne_mul_sq_of_not_isSquare
+        WeierstrassCurve.MazurLevel11.not_isSquare_two hm0)
+  · exact absurd (show n ^ 2 = 38 * M ^ 2 by rw [hnorm]; norm_num [zsNorm])
+      (WeierstrassCurve.MazurLevel11.sq_ne_mul_sq_of_not_isSquare
+        not_isSquare_thirtyEight hm0)
+
+/-- **THE LOCAL CONDITION, AND IT IS PURE PARITY** (PROVEN 2026-07-31): the
+surviving nontrivial square class `ε = θ + 1` is impossible for a coprime point.
+
+This is the one place the arithmetic of the curve enters, and — exactly as at
+level `11` — it costs mod `4` and no `19`-adic input at all.  Writing
+`β = (1 + θ)·(a + bθ + cθ²)²` in coordinates gives
+
+    p    = a² − 2b² − 4ac + 4bc + 4c²,
+    −2e² = a² + 2ab − 4b² − 8ac + 4bc + 10c²,
+    0    = −b² + 2ab − 2ac − 4bc + 6c².
+
+The second forces `a` even; the third then forces `b` even and, with `a, b`
+even, `c` even (its `6c²` becomes divisible by `4`); the first then makes `p`
+even and the second makes `e` even — contradicting `IsCoprime p e`.  Brute force
+over `ℤ/4` independently confirms: zero solutions with `p, e` not both even, and
+`ℤ/2` alone is NOT enough (it leaves two residue solutions).
+
+Note what is NOT used: `he : 0 < e`, the curve equation, and any information
+about `n`.  The class is killed by coprimality alone. -/
+theorem epsilon_class_impossible {p e a b c : ℤ} (hcop : IsCoprime p e) :
+    descentImage p e ≠ zsMul (1, 1, 0) (zsMul (a, b, c) (a, b, c)) := by
+  intro h
+  simp only [descentImage, zsMul, Prod.mk.injEq] at h
+  obtain ⟨h1, h2, h3⟩ := h
+  have ha : (2 : ℤ) ∣ a := by
+    refine Int.prime_two.dvd_of_dvd_pow (n := 2)
+      ⟨-(e ^ 2) - a * b + 2 * b ^ 2 + 4 * (a * c) - 2 * (b * c) - 5 * c ^ 2, by linarith⟩
+  obtain ⟨a₁, rfl⟩ := ha
+  have hb : (2 : ℤ) ∣ b := by
+    refine Int.prime_two.dvd_of_dvd_pow (n := 2)
+      ⟨2 * (a₁ * b) - 2 * (a₁ * c) - 2 * (b * c) + 3 * c ^ 2, by linarith⟩
+  obtain ⟨b₁, rfl⟩ := hb
+  have hc : (2 : ℤ) ∣ c := by
+    refine Int.prime_two.dvd_of_dvd_pow (n := 2)
+      ⟨b₁ ^ 2 - 2 * (a₁ * b₁) + a₁ * c + 2 * (b₁ * c) - c ^ 2, by linarith⟩
+  obtain ⟨c₁, rfl⟩ := hc
+  have hp : (2 : ℤ) ∣ p :=
+    ⟨2 * a₁ ^ 2 - 4 * b₁ ^ 2 - 8 * (a₁ * c₁) + 8 * (b₁ * c₁) + 8 * c₁ ^ 2, by linarith⟩
+  have he : (2 : ℤ) ∣ e := by
+    refine Int.prime_two.dvd_of_dvd_pow (n := 2)
+      ⟨-(a₁ ^ 2) - 2 * (a₁ * b₁) + 4 * b₁ ^ 2 + 8 * (a₁ * c₁) - 4 * (b₁ * c₁)
+        - 10 * c₁ ^ 2, by linarith⟩
+  exact absurd (hcop.isUnit_of_dvd' hp he) (by decide)
+
 /-! ### The `2`-descent proper: the halving witness
 
-The ONE leaf of this file.  Everything below it is PROVEN, and the shape of the
-decomposition is transcribed from `MazurLevel11`, whose identical chain is fully
-proven in `MordellWeil.lean`.
+PROVEN 2026-07-31 over the single leaf `descent_unit_square`.
 -/
 
 /-- **THE `2`-DESCENT AT LEVEL `19`** (sorry leaf, cut 2026-07-31 out of
@@ -186,7 +465,14 @@ theorem exists_halving_witness {p e n : ℤ} (he : 0 < e) (hcop : IsCoprime p e)
     (h : n ^ 2 = p ^ 3 + 4 * p ^ 2 * e ^ 2 + 16 * p * e ^ 4 + 16 * e ^ 6) :
     ∃ a b c : ℤ, b ^ 2 + 2 * a * c - 4 * b * c = 0 ∧
       p = a ^ 2 - 4 * b * c + 4 * c ^ 2 ∧
-      e ^ 2 = -(a * b) + 4 * b * c - 3 * c ^ 2 := sorry
+      e ^ 2 = -(a * b) + 4 * b * c - 3 * c ^ 2 := by
+  obtain ⟨a, b, c, hsq | hbad⟩ :=
+    descent_square_class (n := n) he hcop (by rw [zsNorm_descentImage]; linarith)
+  · refine ⟨a, b, c, ?_, ?_, ?_⟩ <;>
+      · simp only [descentImage, zsMul, Prod.mk.injEq] at hsq
+        obtain ⟨h1, h2, h3⟩ := hsq
+        linarith
+  · exact absurd hbad (epsilon_class_impossible hcop)
 
 /-! ### `halving_descends`, decomposed: eliminate `m` and `c` first
 
