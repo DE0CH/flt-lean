@@ -127,8 +127,18 @@ run is for `pushoutSection`, not for `directImage`.
     theorem above adds is the lift-and-subtract step, which the maximal-ideal ↔ point
     dictionary (`exists_point_ker_Γevaluation_eq_of_isMaximal`,
     `surjective_appTop_fiberι_comp_appTop`, both PROVEN 2026-07-30) discharges.
-  * `self_mem_smul_adjoin_self_of_appTop_fiberι_eq_zero` — **LEAF** (RE-CUT 2026-07-30 out of
-    the theorem above), and as of that re-cut **the ONLY leaf in this file**: if `a` itself
+  * `exists_finiteFree_projectiveRange_ker_linearEquiv_appTop_of_isIso_appTop_fiber` —
+    **LEAF** (CUT 2026-07-31), and **the ONLY leaf in this file**: Grothendieck's finite free
+    complex in degree `0` (EGA III 6.10.5 / Mumford *AV* §5 / Hartshorne III.12.2), with
+    `Module.Projective R (range d)` in place of the usual flatness of the image.  The whole
+    commutative-algebra bridge from it to the statement below is proven, in
+    `ker_eq_span_of_projective_range_of_forall_isMaximal` immediately above it.  Its docstring
+    is where this file's remaining obligation is analysed, and it records a route — the flat
+    Čech complex, which needs NO coherence theory, plus a length dévissage that closes the
+    ARTINIAN case outright.
+  * `self_mem_smul_adjoin_self_of_appTop_fiberι_eq_zero` — **PROVEN** 2026-07-31 over the
+    leaf above, to which it is EQUIVALENT (RE-CUT 2026-07-30 out of
+    the theorem above), and until then **the ONLY leaf in this file**: if `a` itself
     restricts to zero on `X_s` then `a ∈ 𝔪·R[a]`.  It carries both of the leaves this file
     had before, and they are three-line corollaries of it — the general `x ∈ R[a]` form
     because **`x` is its own `a`** (apply the leaf to `x`, then `R[x] ≤ R[a]`), and the
@@ -295,8 +305,11 @@ run is for `pushoutSection`, not for `directImage`.
   `mem_smul_adjoin_of_appTop_fiberι_eq_zero` and `mem_smul_top_of_appTop_fiberι_eq_zero`, the
   fibre-vanishing forms of the same two statements, and **both of those are now proven as well**
   (2026-07-30, third pass) over the single one-element leaf
-  `self_mem_smul_adjoin_self_of_appTop_fiberι_eq_zero`, which is the current set and has one
-  member.  Read it off the compiler's warning set, not off this bullet.)  The mechanism is that the
+  `self_mem_smul_adjoin_self_of_appTop_fiberι_eq_zero` — **which is itself now PROVEN**
+  (2026-07-31, fourth pass) over
+  `exists_finiteFree_projectiveRange_ker_linearEquiv_appTop_of_isIso_appTop_fiber`, the
+  finite free complex, which is the current set and has one member.  Read it off the
+  compiler's warning set, not off this bullet.)  The mechanism is that the
   projection away from
   `X ×_S X` is an OPEN map once restricted to a fibre of `q`, because everything there is
   flat over the field `κ(s)`; the input is `Mathlib`'s
@@ -1507,7 +1520,7 @@ are EQUIVALENT** (the derivation in both directions is in that leaf's docstring)
 everything recorded below — including the audit blocks — is still live evidence, now about
 the complex.  Read that docstring for where the file stands; read this one for what was tried.
 It was itself RE-CUT 2026-07-30
-out of `mem_smul_adjoin_of_appTop_fiberι_eq_zero` immediately below, which is PROVEN over it).
+out of `mem_smul_adjoin_of_appTop_fiberι_eq_zero` immediately below, which is PROVEN over it.
 `𝔪` is `RingHom.ker (S.Γevaluation s)`, i.e. the maximal ideal cut out by `s` when `s` comes
 from `exists_point_ker_Γevaluation_eq_of_isMaximal`.
 
@@ -5154,8 +5167,9 @@ and the second has since been proven, as has `finiteType_appTop_of_isProper`; th
 `eq_span_one_sup_smul_top_appTop_of_isIso_appTop_fiber`, and both of those have since been
 proven too — the set was then `mem_smul_adjoin_of_appTop_fiberι_eq_zero` and
 `mem_smul_top_of_appTop_fiberι_eq_zero`, and those are now proven as well, over the single
-`self_mem_smul_adjoin_self_of_appTop_fiberι_eq_zero`.  Any count in this file is stale by
-construction; run the compiler.)
+`self_mem_smul_adjoin_self_of_appTop_fiberι_eq_zero`, and that in turn is now proven over
+`exists_finiteFree_projectiveRange_ker_linearEquiv_appTop_of_isIso_appTop_fiber`.  Any count
+in this file is stale by construction; run the compiler.)
 
 The concrete obstruction the earlier audit named is still worth recording, because it is
 what the covering step had to get past: the reduction to an affine target cannot be done
