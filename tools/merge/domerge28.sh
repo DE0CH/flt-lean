@@ -14,8 +14,11 @@ for b in "$@"; do
   lean=""; other=""
   for f in $files; do case "$f" in *.lean) lean="$lean $f";; *) other="$other $f";; esac; done
   if [ -n "$lean" ];  then for f in $lean; do echo "  --- semmerge $f"; python3 $T/semmerge.py "$b" "$f"; done; fi
-  if [ -n "$other" ]; then python3 $T/resolve_text.py $other; fi
-  # anything still unmerged (deletes, renames) -> report and stop
+  if [ -n "$other" ]; then python3 $T/resolve_text.py $other && git add $other; fi
+  if [ -n "$lean" ]; then git add $lean; fi
+  # anything still unmerged (deletes, renames) -> report; the resolvers write the
+  # working tree only, so this must be read AFTER the git add above or every
+  # successfully-resolved file reports as unresolved.
   rest=$(git diff --name-only --diff-filter=U)
   if [ -n "$rest" ]; then echo "  !! UNRESOLVED: $rest"; fi
   if [ -n "$lean" ]; then

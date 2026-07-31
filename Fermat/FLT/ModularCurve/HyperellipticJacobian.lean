@@ -303,6 +303,26 @@ public import Fermat.FLT.Mathlib.GroupTheory.Descent
 -- module to the cone of the only consumer of this file: `FreyCurve/MazurTorsion.lean`
 -- already `public import`s `ModularCurve/X0.lean`, which imports it.
 public import Fermat.FLT.Mathlib.NumberTheory.ProjectiveHeight
+-- `AbelianSchemeStruct`, `RelPoint` and `AbelianSchemeStruct.addCommGroup`: the vocabulary
+-- of `exists_abelianScheme_addEquiv_pic`, the Jacobian bridge that carries this file's
+-- geometric Mordell–Weil half onto `X0.lean`'s.  These names occur in a STATEMENT, so this
+-- edge must be `public`; it is a 2524-line module and adds nothing to the cone of the only
+-- consumer of this file (`FreyCurve/MazurTorsion.lean`, which already reaches it through
+-- `ModularCurve/X0.lean`).
+public import Fermat.FLT.Modularity.AbelianScheme
+-- `Fermat.exists_cubeModel_of_abelianScheme`.  DELIBERATELY NON-PUBLIC: it is used only
+-- inside the PROOF BODY of `exists_cubeModel_pic_of_infinite`, which a private import does
+-- reach (theorem bodies are elided by the module system), so none of `X0.lean`'s 107 000
+-- lines of names are re-exported through this file.  What the edge does cost is BUILD
+-- ORDER — `X0` must finish before this module starts — and that price is paid on a path
+-- that `MazurTorsion.lean` already serialises anyway.  A successor who wants it gone should
+-- hoist the two declarations `nonempty_cubeModel_of_isAmpleSheaf_cube` (a leaf) and
+-- `exists_cubeModel_of_abelianScheme` (its three-line assembly) out of `X0.lean` into
+-- `Modularity/AbelianSchemeIsogeny.lean`, which already carries their sibling
+-- `exists_isAmpleSheaf_symmetric_cube`; the only obstruction is that they are stated with
+-- `SpecQ`, an `abbrev` for `Spec (CommRingCat.of ℚ)` declared in `X0.lean`, so the hoisted
+-- copies must spell that out and `X0.lean` keeps two `rfl`-compatible delegations.
+import Fermat.FLT.ModularCurve.X0
 public import Mathlib.GroupTheory.FiniteAbelian.Basic
 public import Mathlib.RingTheory.Finiteness.Nakayama
 -- the construction of the function field `K(x)[y]/(y² − f)` in `exists_functionFieldData`:
@@ -6862,6 +6882,135 @@ theorem finite_of_fg_of_two_divisible {A : Type*} [AddCommGroup A]
     ⟨⟨r, mem_nonZeroDivisors_of_ne_zero hrne⟩, hr0 z Submodule.mem_top⟩
   exact Module.finite_of_fg_torsion A htor
 
+/-- **A cube model transports along an isomorphism of abelian groups** (PROVEN).
+
+Every field except `coords` is untouched: `cube`, `rel`, their degrees and — crucially —
+`cube_nonvanishing`, which does not mention the group at all.  `coords` is precomposed with
+`e`, and the three conditions on it survive because `e` is an injective group homomorphism:
+`injective_of_smul` picks up one extra `e.injective`, and `cube_eval` needs only
+`e (P + Q) = e P + e Q` and `e (P − Q) = e P − e Q`.
+
+**Why this is not the circular route.**  The docstring below records that routing a
+`CubeModel` leaf through "`D.Pic` is finitely generated" is CIRCULAR, and names *transport
+along an `AddEquiv`* and *a product construction* as the two structural facts such a route
+would want.  It is the PRODUCT construction that enables the circularity — it is what turns
+`CubeModel ℤ` and `CubeModel (ZMod n)` into a model for an arbitrary finitely generated
+group — and it is deliberately still absent.  Transport alone proves nothing about any new
+group and cannot start that induction; what it does is carry a model produced by GEOMETRY on
+one presentation of a group across to another presentation of the SAME group, which is
+exactly what `exists_abelianScheme_addEquiv_pic` below asks for.  A successor who adds a
+product construction must say in its docstring that it re-opens the circularity.
+
+**Where this belongs, and why it is here.**  Its natural home is beside `CubeModel` in
+`Fermat/FLT/Mathlib/NumberTheory/ProjectiveHeight.lean`.  It is stated here instead because
+that module is `public import`ed by `ModularCurve/X0.lean`, so an edit to it rebuilds the
+largest module in the tree for the sake of a fifteen-line `def` with one consumer — the
+"re-derive it downstream" case of CLAUDE.md's upstream/downstream rule.  Hoist it if a
+second consumer ever appears. -/
+def cubeModelCongr {A B : Type*} [AddCommGroup A] [AddCommGroup B]
+    (cm : CubeModel A) (e : B ≃+ A) : CubeModel B where
+  dim := cm.dim
+  coords P := cm.coords (e P)
+  coords_ne_zero P := cm.coords_ne_zero (e P)
+  injective_of_smul P Q c hc h := e.injective (cm.injective_of_smul _ _ c hc h)
+  cube := cm.cube
+  cube_homogeneous := cm.cube_homogeneous
+  cube_eval P Q := by
+    obtain ⟨c, hc, h⟩ := cm.cube_eval (e P) (e Q)
+    exact ⟨c, hc, fun k => by rw [map_add, map_sub]; exact h k⟩
+  relDim := cm.relDim
+  relDeg := cm.relDeg
+  rel := cm.rel
+  rel_homogeneous := cm.rel_homogeneous
+  rel_eval P Q i := cm.rel_eval (e P) (e Q) i
+  cube_nonvanishing := cm.cube_nonvanishing
+
+open AlgebraicGeometry CategoryTheory in
+/-- **LEAF (Mordell–Weil, geometric half — THE JACOBIAN BRIDGE): the Jacobian of the smooth
+model exists as an abelian scheme over `ℚ`, and its `ℚ`-points are `Pic⁰`.**
+
+This is the leaf the section docstring above has been calling *"the right long-term
+repair"* since 2026-07-28, and as of 2026-07-31 it is the only open obligation on this
+file's geometric half: `exists_cubeModel_pic_of_infinite` below is PROVEN over it.
+
+`SpecQ` is not named because it is declared in `X0.lean`; it is an `abbrev` for
+`Spec (CommRingCat.of ℚ)`, which is what appears here, so the two are interchangeable and
+`Fermat.exists_cubeModel_of_abelianScheme` applies to this `jstr` on the nose.
+
+## WHY THIS IS THE CUT
+
+The docstring below establishes that `CubeModel.cube_nonvanishing` is PROPERNESS, so no
+embedding of an infinite group into a non-complete group variety can satisfy it, and it
+refutes the two cheap coordinate witnesses outright.  A prover must therefore supply a
+genuine abelian variety — and once that is granted, everything from the abelian variety to
+the `CubeModel` **already exists in this tree, PROVEN**, and asking for it again here would
+be proving it twice:
+
+* `Fermat.exists_isAmpleSheaf_symmetric_cube` (`Modularity/AbelianSchemeIsogeny.lean`) —
+  a symmetric, normalized, ample invertible sheaf with `σ^*L ⊗ δ^*L ≅ p₁^*L² ⊗ p₂^*L²`;
+* `Fermat.nonempty_cubeModel_of_isAmpleSheaf_cube` (`X0.lean`) — the coordinate dictionary;
+* `Fermat.exists_cubeModel_of_abelianScheme` (`X0.lean`) — their three-line assembly;
+* `cubeModelCongr` (just above, PROVEN with this leaf) — transport of a `CubeModel` along
+  an `AddEquiv`, which is what lets the model produced on `RelPoint jstr (𝟙 SpecQ)` be read
+  on `D.Pic`.
+
+So the frontier count is unchanged (one leaf in, one leaf out) and what is bought is that
+the *shared* obligation is shared: the very-ample-symmetric-sheaf and theorem-of-the-cube
+content is now owed ONCE, in `X0`/`AbelianSchemeIsogeny`, instead of once there and once
+here.  Judge this cut by what is LEFT in the leaf — a Jacobian and a comparison theorem,
+with no mention of coordinates, Segre ideals, homogeneous forms or `ℙⁿ` — not by the delta.
+
+## TRUE, AND WHY
+
+`hsep` makes `sextPoly` a separable monic sextic, so the smooth projective model `X` of
+`y² = f(x)` is a curve of genus `2` over `ℚ`, and `PlaceData` pins it: `eqn`,
+`transcendental_xx` and `gen` pin `F` as the function field, and `ord_injective` together
+with `ord_complete` pin `Places` as exactly the normalised discrete valuations of `F`
+trivial on `ℚ` — i.e. the closed points of the smooth projective model.  So this is not the
+"`∀ P : <presentation structure>`" trap: no junk inhabitant with a different `Pic` exists,
+and in particular `D.Pic` is countable, which is the one thing that would refute both this
+leaf and its consumer (`coords` injective mod scalars forces `D.Pic ↪ ℙ^{dim−1}(ℚ)`).
+
+`J = Pic⁰_{X/ℚ}` is then an abelian surface over `ℚ`: proper, smooth and with geometrically
+connected fibres, with a functorial group law — the four fields of `AbelianSchemeStruct`.
+And the comparison `D.Pic ≃+ J(ℚ)` holds because `X` HAS A RATIONAL POINT: `D.picRel` is
+`princ ⊔ ℤ·[∞₊]` with `infPlus` a rational place of degree `1` (`PlaceData.infPlus`, and
+`pt_injective`), so `D.Pic` is the group of `ℚ`-rational divisor classes of degree `0`, and
+the map `Pic⁰_{div}(X/ℚ) → J(ℚ)` — always injective — is surjective exactly because
+`X(ℚ) ≠ ∅` kills the Brauer obstruction.  The leading coefficient of a MONIC sextic being a
+square is what puts the two points at infinity in `X(ℚ)`, and it is already recorded on
+`PlaceData.infPlus`.
+
+*Refuting check*: a `PlaceData` inhabitant over `ℚ` whose `Pic` is not the point group of
+any abelian variety over `ℚ` — e.g. an uncountable one.  `ord_complete` is the axiom that
+forecloses it, and its own docstring says so ("without it a presentation could omit points
+and make `Pic` anything at all").
+
+## NOT DEGENERATELY SATISFIABLE, AND WHERE `hinf` GOES
+
+`AbelianSchemeStruct` has NO nontriviality axiom — CLAUDE.md's standing warning — so the
+ZERO abelian scheme `J = SpecQ`, `jstr = 𝟙` satisfies `proper`, `smooth` and `connected`
+with fibres points.  It is not a witness here: `RelPoint (𝟙 SpecQ) (𝟙 SpecQ)` is a
+SINGLETON, so an `AddEquiv` out of `D.Pic` would force `Subsingleton D.Pic`, which `hinf`
+refutes.  So `hinf` is retained deliberately — it is what makes the degenerate witness
+inadmissible — even though the statement is true without it (the honest Jacobian works at
+every `D`).  `hsep` is genuinely load-bearing: without it `sextPoly` may be a square in
+`ℚ[x]`, and the "curve" is not a curve.
+
+*What a prover owes and what it does not.*  The `AddEquiv` is asked for RAW: no
+compatibility with `D.aj`, with `red`, or with the Galois action is required, because
+`cubeModelCongr` reads none of them.  A prover free to choose the comparison in whatever
+form its construction produces should not feel obliged to prove more; if a later consumer
+needs `aj`-compatibility, that is a separate strengthening and should be recorded as one. -/
+theorem exists_abelianScheme_addEquiv_pic {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℚ).Separable) (hinf : Infinite D.Pic) :
+    ∃ (J : Scheme.{0}) (jstr : J ⟶ Spec (CommRingCat.of ℚ))
+      (ab : AbelianSchemeStruct jstr),
+      letI := ab.addCommGroup (𝟙 (Spec (CommRingCat.of ℚ)))
+      Nonempty (D.Pic ≃+ RelPoint jstr (𝟙 (Spec (CommRingCat.of ℚ)))) := sorry
+
+open AlgebraicGeometry CategoryTheory in
 /-- **LEAF (Mordell–Weil, geometric half, ANALYSIS-FREE): `Pic⁰(X_ℚ)` embeds in projective
 space over `ℚ` by a symmetric very ample bundle satisfying the theorem of the cube**, for
 every separable monic sextic.
@@ -6966,11 +7115,29 @@ an `AddEquiv`, a product construction, hence a model for every finitely generate
 deliberately NOT built here, because routing this leaf through "`D.Pic` is finitely
 generated" is CIRCULAR: `exists_cubeModel_pic` feeds `exists_descentHeight_pic`, which feeds
 `fg_pic`, which is that very finite generation.  *Refuting check for the circularity claim*:
-a consumer of `exists_descentHeight_pic` that does not lie under `fg_pic`. -/
+a consumer of `exists_descentHeight_pic` that does not lie under `fg_pic`.  **That check was
+RUN on 2026-07-31** (comment-stripped token scan of this file, hits attributed to the
+enclosing declaration): `exists_descentHeight_pic` occurs exactly twice, at its own
+declaration and inside `fg_pic`, and nowhere else in `Fermat/`.  The circularity claim
+stands.
+
+**NO LONGER A LEAF (2026-07-31).**  It is PROVEN below over
+`exists_abelianScheme_addEquiv_pic` — the bridge this file's own section docstring has been
+calling "the right long-term repair" since 2026-07-28 — together with the PROVEN
+`Fermat.exists_cubeModel_of_abelianScheme` (`ModularCurve/X0.lean`) and the PROVEN
+`cubeModelCongr` (just above it, in this file).  Everything above
+is retained because it is still the argument for why the bridge is the ONLY route: the
+`cube_nonvanishing` field is properness, so a complete group variety is not avoidable, and
+both cheap coordinate witnesses are refuted outright. -/
 theorem exists_cubeModel_pic_of_infinite {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
     (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ)
     (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℚ).Separable) (hinf : Infinite D.Pic) :
-    Nonempty (CubeModel D.Pic) := sorry
+    Nonempty (CubeModel D.Pic) := by
+  obtain ⟨J, jstr, ab, he⟩ := exists_abelianScheme_addEquiv_pic D hsep hinf
+  letI := ab.addCommGroup (𝟙 (Spec (CommRingCat.of ℚ)))
+  obtain ⟨e⟩ := he
+  obtain ⟨cm⟩ := exists_cubeModel_of_abelianScheme ab
+  exact ⟨cubeModelCongr cm e⟩
 
 /-- **LEAF (Mordell–Weil, geometric half), now PROVEN by the finite/infinite case
 distinction** over `Fermat.nonempty_cubeModel_of_finite` and
