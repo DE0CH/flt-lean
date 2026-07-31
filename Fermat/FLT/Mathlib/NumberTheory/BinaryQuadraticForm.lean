@@ -1484,7 +1484,7 @@ This is the converse of the degree argument that used to prove independence FROM
 and it is what makes the `≥ 3` half of `natDegree_minpoly_weberAlpha` a theorem rather than an
 assumption: independence is now proven outright (`intCast_indep_of_cubic`), so the CM leaf could
 be stated as the `≤ 3` half alone (`natDegree_minpoly_weberAlpha_le`) — and has since been cut
-smaller still, to `exists_ratPoly_weberAlpha_pow_four`, which drops the class number too.
+smaller still, to `natDegree_minpoly_weberAlpha_le_pow_four`, which drops the class number too.
 
 If `deg α ≤ 2` then `ℚ(α)` has dimension `≤ 2` over `ℚ`, so `α⁴` — which lies in it — satisfies
 its own MONIC minimal polynomial of degree `≤ 2` (`minpoly.natDegree_le`, transported along
@@ -1719,11 +1719,43 @@ theorem intCast_indep_of_natDegree_minpoly_pow_four {α : ℂ}
     exact _root_.Polynomial.natDegree_le_iff_degree_le.mpr (le_trans hd hdq)
   omega
 
-/-- **LEAF 1b — WEBER'S DESCENT: `α` IS A RATIONAL POLYNOMIAL IN `α⁴`**, i.e. `α ∈ ℚ(α⁴)`.
+/-- **LEAF 1b — WEBER'S DESCENT: `deg α ≤ deg α⁴`**, equivalently `ℚ(α) = ℚ(α⁴)`.
 
-**RECUT 2026-07-31 FROM `natDegree_minpoly_weberAlpha_le`, AND `hcl` IS GONE.** The leaf used
-to read `deg α ≤ 3` and carried the class-number hypothesis; it now reads `α ∈ ℚ[α⁴]` and
-carries none, with `natDegree_minpoly_weberAlpha_le` PROVEN from it further down (it has to
+**RECUT AGAIN 2026-07-31 (`flt-lean-105`), FROM `exists_ratPoly_weberAlpha_pow_four`
+(`α ∈ ℚ[α⁴]`) TO THE DEGREE INEQUALITY. THE COUNT DID NOT MOVE, `1 → 1`**, and the old name is
+GONE rather than kept as a corollary — proving it from this leaf is a 25-line bridge with no
+consumer left, i.e. free-floating. Three reasons, of which the second is the substantive one:
+
+* **the leaf is now stated in the language its own faithfulness audit is written in.** Every
+  measurement below is a comparison of `deg α` with `deg α⁴`; the membership form needed the
+  unwritten inference `deg α = deg α⁴ ⟹ α ∈ ℚ(α⁴)` before the table said anything about it.
+  That gap is now closed by construction rather than by an argument nobody had made.
+* **the sole consumer was performing the membership → degree conversion inline, and it is
+  deleted.** `natDegree_minpoly_weberAlpha_le` used to spend ~20 lines turning `q` into
+  `α ∈ ℚ⟮α⁴⟯`, then into `ℚ⟮α⟯ ≤ ℚ⟮α⁴⟯`, then into a `finrank` inequality — and it needed
+  `isIntegral_weberAlpha` (hence `hcl`) purely to make `ℚ⟮α⁴⟯` finite-dimensional. All of that
+  is now `le_trans`, and that consumer no longer touches integrality at all.
+* the literature produces DEGREES: `[ring class field of disc −4p : ℚ] = h(−4p) = 3h(−p)`, and
+  the same for `ℚ(α⁴)`. A prover following Weber/Cox computes degrees, not memberships.
+
+**NOTHING WAS LOST, AND THE TWO FORMS ARE INTERCHANGEABLE.** `α ∈ ℚ[α⁴] ⟹ deg α ≤ deg α⁴` is
+the `finrank` argument just described; the converse, `deg α ≤ deg α⁴ ⟹ α ∈ ℚ[α⁴]`, needs
+`IsIntegral ℚ α` (without it, take `α` transcendental: both degrees are `0` and the membership
+is false) and is then `IntermediateField.eq_of_le_of_finrank_le` applied to
+`ℚ⟮α⁴⟯ ≤ ℚ⟮α⟯` together with `adjoin.finrank` on both sides, followed by
+`adjoin_simple_toSubalgebra_of_isAlgebraic` and `Algebra.adjoin_singleton_eq_range_aeval` to
+read the membership off as a polynomial. That was written and compiled during this recut before
+being dropped as free-floating; recover it from this commit's message if a consumer ever wants
+the membership shape. **A prover may attack either form** — but note that the degree form is
+formally WEAKER (it is implied by, and does not imply, the membership form without integrality),
+so it is the one to prove.
+
+--- the audit below is from the previous cut; every measurement in it still applies, and the
+`hcl` analysis is unchanged, since only the CONCLUSION's shape moved ---
+
+The leaf used
+to read `deg α ≤ 3` and carried the class-number hypothesis; it carries none now, with
+`natDegree_minpoly_weberAlpha_le` PROVEN from it further down (it has to
 live there: the degree bound needs `deg α⁴ ≤ 3`, which comes from `γ₂(τ₀) ∈ ℤ`, i.e. from
 `exists_int_gammaTwo` and hence from the OTHER CM leaf). The old docstring is kept below the
 new audit because its account of the mathematics is still correct.
@@ -1767,6 +1799,35 @@ and the recut one does not — the descent is insensitive to the factor.
 
 Refute this leaf by exhibiting a `p ≡ 3 mod 8` at which `α` is not a rational polynomial in
 `α⁴`; equivalently, by `deg α > deg α⁴` at such a `p`.
+
+**RE-VERIFIED INDEPENDENTLY AND EXTENDED, 2026-07-31 (`flt-lean-105`), BY TESTING THE
+CONCLUSION DIRECTLY RATHER THAN THE DEGREE PROXY.** The table above compares two `algdep`
+degrees; that is two hard LLL problems per row, and `algdep` on `α` is the badly conditioned
+one (it is what under-resolves `p = 131`). Testing membership directly is far better
+conditioned, because `α⁴` is small and its powers are the only large-height objects involved:
+with `d = deg α⁴` expected `= 3h(−p)`, run `lindep([α, 1, α⁴, α⁸, …, α^{4(d−1)}])` and read off
+the coefficient of `α`. A NONZERO coefficient exhibits `α ∈ ℚ[α⁴]` and so proves the leaf at
+that `p` — no second `algdep` and no appeal to `deg α` at all.
+
+Run at 300 digits over every `p ≡ 3 mod 8` up to `691` (34 primes, `h(−p) ∈ {1,3,5,7,9,11}`):
+the coefficient of `α` is nonzero with residual `< 10⁻²²²` at every one of them. In particular
+`p = 251` (`h = 7`), `p = 419` and `p = 491` (`h = 9`) are new — the leaf survives well past
+the `h ≤ 5` the table above reaches. Cross-checked at `p ≡ 7 mod 8` up to `199` (700 digits),
+where it holds at `h = 1, 3, 5, 7, 9, 11, 13`; that is the direct confirmation of the SHARP
+form `p % 4 = 3`, previously spot-checked only at `p = 7, 23, 31, 47`.
+
+**TWO ROWS OF THAT SWEEP LOOK LIKE REFUTATIONS AND ARE NOT — do not report them as such.** At
+`p = 571` and `p = 659` the 300-digit run returns a relation whose `α`-coefficient is `0` and
+whose height is `1`. That is `lindep` reporting that one BASIS VECTOR is numerically zero, not
+that `α` is independent of the others: `α ≈ 0.0004` at `p = 571`, so `α^{4(d−1)} = α^{56}`
+underflows `10⁻³⁰⁰`. Re-run at 700 digits and both give honest relations (`p = 571`:
+`α`-coefficient `−1.28⋯ × 10³³`, residual `10⁻⁶⁸²`; `p = 659`: `α`-coefficient
+`1.23⋯ × 10¹⁶`, residual `10⁻⁵⁵⁴`). The rule for this sweep: a returned height of `1` means the
+precision was too low for that `p`, never that the leaf failed.
+
+The `p ≡ 1 mod 4` refutation was re-run by the same method at 400 digits and reproduces the
+table above exactly, with `p = 53` added (`deg α = 10`, `deg α⁴ = 6`). So the falsity off
+`p ≡ 3 mod 4` is confirmed at seven primes, and `hp8` (or its sharp form) is not decorative.
 
 --- the account below is from the previous cut and remains correct about the mathematics ---
 
@@ -1822,10 +1883,10 @@ class-number computation above: drop `hcl` and `h(−p)` may exceed `1`, making
 forbade. That remains true of the inequality, and is exactly why `hcl` had to move DOWN to
 `natDegree_minpoly_weberAlpha_le` rather than simply be deleted: the membership statement here
 is class-number-free, the numerical VALUE `3` is not. -/
-theorem exists_ratPoly_weberAlpha_pow_four {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3)
+theorem natDegree_minpoly_weberAlpha_le_pow_four {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3)
     (h3 : 3 < p) :
-    ∃ q : Polynomial ℚ,
-      weberAlpha p hp.pos = Polynomial.aeval (weberAlpha p hp.pos ^ 4) q :=
+    (minpoly ℚ (weberAlpha p hp.pos)).natDegree
+      ≤ (minpoly ℚ (weberAlpha p hp.pos ^ 4)).natDegree :=
   sorry
 
 /-! `natDegree_minpoly_weberAlpha` — the EQUALITY `deg α = 3` — is no longer a leaf. It is
@@ -6880,44 +6941,21 @@ theorem natDegree_minpoly_weberAlpha_le {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 
       f.discr = -(p : ℤ) → g.discr = -(p : ℤ) → f.Equivalent g) :
     (minpoly ℚ (weberAlpha p hp.pos)).natDegree ≤ 3 := by
   obtain ⟨g, hg⟩ := exists_int_gammaTwo hp hp8 h3 hcl
-  obtain ⟨q, hq⟩ := exists_ratPoly_weberAlpha_pow_four hp hp8 h3
   have hcub := weberAlpha_pow_four_cubic p hp.pos
   rw [← hg] at hcub
-  have hint : IsIntegral ℚ (weberAlpha p hp.pos) :=
-    (isIntegral_weberAlpha hp hp8 h3 hcl).tower_top
-  have hint4 : IsIntegral ℚ (weberAlpha p hp.pos ^ 4) := hint.pow 4
   -- `α ^ 4` has degree at most `3`, from the cubic
   have hmon : (X ^ 3 - C (g : ℚ) * X - C 16 : Polynomial ℚ).Monic := by monicity!
-  have hpne : (X ^ 3 - C (g : ℚ) * X - C 16 : Polynomial ℚ) ≠ 0 := hmon.ne_zero
   have hae : (Polynomial.aeval (weberAlpha p hp.pos ^ 4))
       (X ^ 3 - C (g : ℚ) * X - C 16 : Polynomial ℚ) = 0 := by
     simp only [map_sub, map_mul, map_pow, aeval_X, aeval_C, eq_ratCast]
     push_cast
     linear_combination hcub
   have hdeg4 : (minpoly ℚ (weberAlpha p hp.pos ^ 4)).natDegree ≤ 3 := by
-    have hd := minpoly.degree_le_of_ne_zero ℚ (weberAlpha p hp.pos ^ 4) hpne hae
+    have hd := minpoly.degree_le_of_ne_zero ℚ (weberAlpha p hp.pos ^ 4) hmon.ne_zero hae
     have hdq : (X ^ 3 - C (g : ℚ) * X - C 16 : Polynomial ℚ).degree ≤ 3 := by compute_degree
     exact Polynomial.natDegree_le_iff_degree_le.mpr (le_trans hd hdq)
-  -- `α ∈ ℚ⟮α ^ 4⟯`, from Weber's descent
-  have hmem : weberAlpha p hp.pos ∈ ℚ⟮weberAlpha p hp.pos ^ 4⟯ := by
-    have h1 : weberAlpha p hp.pos
-        ∈ Algebra.adjoin ℚ ({weberAlpha p hp.pos ^ 4} : Set ℂ) := by
-      rw [Algebra.adjoin_singleton_eq_range_aeval]
-      exact ⟨q, hq.symm⟩
-    have h2 : Algebra.adjoin ℚ ({weberAlpha p hp.pos ^ 4} : Set ℂ)
-        ≤ (ℚ⟮weberAlpha p hp.pos ^ 4⟯).toSubalgebra := Algebra.adjoin_le (by simp)
-    exact h2 h1
-  have hle : ℚ⟮weberAlpha p hp.pos⟯ ≤ ℚ⟮weberAlpha p hp.pos ^ 4⟯ :=
-    IntermediateField.adjoin_simple_le_iff.mpr hmem
-  haveI : FiniteDimensional ℚ ℚ⟮weberAlpha p hp.pos ^ 4⟯ :=
-    IntermediateField.adjoin.finiteDimensional hint4
-  have hfr : Module.finrank ℚ ℚ⟮weberAlpha p hp.pos⟯
-      ≤ Module.finrank ℚ ℚ⟮weberAlpha p hp.pos ^ 4⟯ :=
-    LinearMap.finrank_le_finrank_of_injective
-      (f := (IntermediateField.inclusion hle).toLinearMap)
-      (IntermediateField.inclusion_injective hle)
-  rw [IntermediateField.adjoin.finrank hint, IntermediateField.adjoin.finrank hint4] at hfr
-  omega
+  -- and `deg α ≤ deg α⁴` is Weber's descent
+  exact le_trans (natDegree_minpoly_weberAlpha_le_pow_four hp hp8 h3) hdeg4
 
 /-- **LEAF 2 — the `ℤ`-independence of `1, α⁴, α⁸` — PROVEN OUTRIGHT (2026-07-30), with no
 degree hypothesis and no CM input beyond what the development already pays for.**
@@ -6963,7 +7001,7 @@ This was `LEAF 1b`, stated as an equality. Only the `≤ 3` half is complex mult
 `≥ 3` half is `three_le_natDegree_minpoly_of_intCast_indep` applied to the independence result
 just above, which is itself proven from `γ₂(τ₀) ≤ −16`. So the CM content is isolated in
 `natDegree_minpoly_weberAlpha_le` — and, since that was recut, in
-`exists_ratPoly_weberAlpha_pow_four`; this equality is bookkeeping.
+`natDegree_minpoly_weberAlpha_le_pow_four`; this equality is bookkeeping.
 
 Kept as an equality, under its original name, because `exists_intCubic_weberAlpha` and several
 docstrings refer to it and because `exists_intCubic_of_natDegree_minpoly` wants the exact
