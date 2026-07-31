@@ -38664,6 +38664,18 @@ leaf becomes an application of it plus the `Γ_ℚ` bridge — for which
 `galFieldRangeEquiv` and mathlib's `IntermediateField.fixingSubgroup_isOpen` /
 `InfiniteGalois.isOpen_iff_finite` are the pieces already in hand.
 
+**THE IMPORT IS AVAILABLE AND COSTS NOTHING — checked 2026-07-31, because this
+is the first question the next owner will have.** This module does NOT currently
+import any of the four files above, but nothing stops it: the import cone of
+`Fermat.FLT.NumberField.CyclotomicModelTransport` (the top of the cluster) does
+NOT contain `Fermat.FLT.Modularity.MoretBailly`, so a
+`public import Fermat.FLT.NumberField.HilbertClassFieldNormal` here creates NO
+cycle. The direction that already exists runs the other way and is one step
+further out: `Fermat.FLT.Modularity.Interface` imports BOTH this module and
+`HilbertClassFieldNormal`, and it is where `exists_unramifiedAbelian_normal_over_rat`
+consumes the cluster. So the ray-class machinery, once built in
+`UnramifiedClassFieldExistence.lean`, is directly importable at this leaf.
+
 Note also what the 2026-07-28 audit named as the check that would refute it —
 "find a declaration whose CONCLUSION has a Galois group or a field extension as
 its codomain and whose HYPOTHESES do not already contain one". **That check is
