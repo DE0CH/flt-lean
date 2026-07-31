@@ -5791,14 +5791,16 @@ one level down. Over a base of ramification index `12` at `q`, take `u = π^{v_q
     v(a₆') = −6d + 12b ≥ 0  ⟺  2b ≥ d      (hypothesis `h6`)
     v(Δ')  = −12d + 12d = 0                (always, by the CHOICE of `d`)
 
-and `preTranslationDatum_of_translationDatum` — PROVEN above, hypothesis-free and uniform
-in `q` — converts the result. So this route needs no valuation-group equality anywhere:
-every obligation is `∈ A`, which is exactly what `TameBaseAux.tame_mem_iff` decides.
+So this route needs no valuation-group equality anywhere: every obligation is `∈ A`,
+which is exactly what `TameBaseAux.tame_mem_iff` decides. (`preTranslationDatum_of_tameBase`
+below is this theorem followed by `preTranslationDatum_of_translationDatum`; until
+2026-07-31 the two were one theorem, with the `TranslationDatum` built inline and
+converted at the end, which made the tame base unreachable from the `q = 2` side.)
 
 Nothing here is specific to `q = 3`. At `5 ≤ q` the two hypotheses are FREE from
 `0 ≤ v_q(j)` (that is `padicValRat_Δ_le_of_jIntegral`); at `q = 3` they are not, and the
 case where they FAIL is the whole of what is left open. -/
-theorem WeierstrassCurve.preTranslationDatum_of_tameBase {q : ℕ} [Fact q.Prime]
+theorem WeierstrassCurve.translationDatum_of_tameBase {q : ℕ} [Fact q.Prime]
     (W : WeierstrassCurve ℚ) [W.IsElliptic] [W.IsShortNF]
     (L : Type) [Field L] [DecidableEq L] [Algebra ℚ L] [FiniteDimensional ℚ L]
     (A : ValuationSubring L) [IsDiscreteValuationRing A]
@@ -5808,7 +5810,7 @@ theorem WeierstrassCurve.preTranslationDatum_of_tameBase {q : ℕ} [Fact q.Prime
       (π ^ m * algebraMap ℚ L x ∈ A ↔ 0 ≤ m + 12 * padicValRat q x))
     (h4 : W.a₄ ≠ 0 → padicValRat q W.Δ ≤ 3 * padicValRat q W.a₄)
     (h6 : W.a₆ ≠ 0 → padicValRat q W.Δ ≤ 2 * padicValRat q W.a₆) :
-    Nonempty (W.PreTranslationDatum q) := by
+    Nonempty (W.TranslationDatum q) := by
   classical
   have hΔ0 : W.Δ ≠ 0 := W.isUnit_Δ.ne_zero
   set d : ℤ := padicValRat q W.Δ with hd
@@ -5826,16 +5828,15 @@ theorem WeierstrassCurve.preTranslationDatum_of_tameBase {q : ℕ} [Fact q.Prime
     simp only [Units.val_mk0]
     rw [← zpow_natCast (π ^ d) k, ← zpow_mul]
     ring_nf
-  refine WeierstrassCurve.preTranslationDatum_of_translationDatum W
-    { L := L
-      A := A
-      resEquiv := resEquiv
-      u := u
-      r := 0
-      ha₂ := ?_
-      ha₄ := ?_
-      ha₆ := ?_
-      hΔ := ?_ }
+  refine ⟨{ L := L
+            A := A
+            resEquiv := resEquiv
+            u := u
+            r := 0
+            ha₂ := ?_
+            ha₄ := ?_
+            ha₆ := ?_
+            hΔ := ?_ }⟩
   · simp
   · rcases eq_or_ne W.a₄ 0 with h0 | h0
     · simp [h0]
@@ -5860,21 +5861,43 @@ theorem WeierstrassCurve.preTranslationDatum_of_tameBase {q : ℕ} [Fact q.Prime
     rw [e, hmem _ (inv_ne_zero hΔ0), padicValRat.inv]
     omega
 
-/-- **The concrete tame instantiation, at the level of `PreTranslationDatum`** (PROVEN
-2026-07-28). The base is `ℚ(q^{1/12})`, exactly as in
-`exists_potentiallyGoodModel_of_isShortNF`, and the three non-arithmetic obligations —
-`FiniteDimensional ℚ L`, the DVR structure, and residue degree one AS A RING EQUIVALENCE —
-are discharged by the same three `TameBaseAux` facts that theorem uses. -/
-theorem WeierstrassCurve.nonempty_preTranslationDatum_of_padicValRat_le
-    (W : WeierstrassCurve ℚ) [W.IsElliptic] [W.IsShortNF] {q : ℕ} [Fact q.Prime]
+/-- **The same tame base, one level down** (PROVEN 2026-07-28; restated 2026-07-31 as a
+one-line corollary of `translationDatum_of_tameBase` above, which is what the body always
+was — the `TranslationDatum` was built inline and converted at the end). -/
+theorem WeierstrassCurve.preTranslationDatum_of_tameBase {q : ℕ} [Fact q.Prime]
+    (W : WeierstrassCurve ℚ) [W.IsElliptic] [W.IsShortNF]
+    (L : Type) [Field L] [DecidableEq L] [Algebra ℚ L] [FiniteDimensional ℚ L]
+    (A : ValuationSubring L) [IsDiscreteValuationRing A]
+    (resEquiv : IsLocalRing.ResidueField A ≃+* ZMod q)
+    (π : L) (hπ0 : π ≠ 0)
+    (hmem : ∀ (m : ℤ) {x : ℚ}, x ≠ 0 →
+      (π ^ m * algebraMap ℚ L x ∈ A ↔ 0 ≤ m + 12 * padicValRat q x))
     (h4 : W.a₄ ≠ 0 → padicValRat q W.Δ ≤ 3 * padicValRat q W.a₄)
     (h6 : W.a₆ ≠ 0 → padicValRat q W.Δ ≤ 2 * padicValRat q W.a₆) :
     Nonempty (W.PreTranslationDatum q) := by
+  obtain ⟨D⟩ := WeierstrassCurve.translationDatum_of_tameBase W L A resEquiv π hπ0 hmem h4 h6
+  exact WeierstrassCurve.preTranslationDatum_of_translationDatum W D
+
+/-- **The concrete tame instantiation, at the level of `TranslationDatum`** (PROVEN
+2026-07-28 one level down; lifted to `TranslationDatum` 2026-07-31). The base is
+`ℚ(q^{1/12})`, exactly as in `exists_potentiallyGoodModel_of_isShortNF`, and the three
+non-arithmetic obligations — `FiniteDimensional ℚ L`, the DVR structure, and residue
+degree one AS A RING EQUIVALENCE — are discharged by the same three `TameBaseAux` facts
+that theorem uses.
+
+Stated at the `TranslationDatum` level because `translationDatum_of_pre`, the way back up
+from `PreTranslationDatum`, is available only at `q = 3`; the wild case at `q = 2` needs
+the tame base too (for the `v_q(Δ) ≤ 0` branch), and gets it from here. -/
+theorem WeierstrassCurve.nonempty_translationDatum_of_padicValRat_le
+    (W : WeierstrassCurve ℚ) [W.IsElliptic] [W.IsShortNF] {q : ℕ} [Fact q.Prime]
+    (h4 : W.a₄ ≠ 0 → padicValRat q W.Δ ≤ 3 * padicValRat q W.a₄)
+    (h6 : W.a₆ ≠ 0 → padicValRat q W.Δ ≤ 2 * padicValRat q W.a₆) :
+    Nonempty (W.TranslationDatum q) := by
   classical
   obtain ⟨res, hres⟩ := TameBaseAux.exists_tameResidueHom q
   letI : DecidableEq (AdjoinRoot (TameBaseAux.qpoly q)) := Classical.decEq _
   haveI := hres
-  refine WeierstrassCurve.preTranslationDatum_of_tameBase W
+  refine WeierstrassCurve.translationDatum_of_tameBase W
     (AdjoinRoot (TameBaseAux.qpoly q)) (TameBaseAux.tameSubring q)
     (WeierstrassCurve.residueFieldEquivZModOfLocalHom res) (TameBaseAux.unif q)
     (TameBaseAux.unif_ne_zero q) ?_ h4 h6
@@ -5882,10 +5905,444 @@ theorem WeierstrassCurve.nonempty_preTranslationDatum_of_padicValRat_le
   rw [TameBaseAux.algebraMap_eq_ofQ]
   exact TameBaseAux.tame_mem_iff q m hx
 
-/-- **THE ARITHMETIC OF THE WILD CASE `q = 3`** (sorry leaf; opened 2026-07-27 by
-decomposing `exists_potentiallyGoodModel_of_jIntegral_three`, RESTATED 2026-07-28 over
-`PreTranslationDatum` once the two forced conditions were discharged, and RESTATED AGAIN
-2026-07-28 with the two free reductions below taken). What is owed is a
+/-- **The concrete tame instantiation, at the level of `PreTranslationDatum`** (PROVEN
+2026-07-28; restated 2026-07-31 over the `TranslationDatum` version above). -/
+theorem WeierstrassCurve.nonempty_preTranslationDatum_of_padicValRat_le
+    (W : WeierstrassCurve ℚ) [W.IsElliptic] [W.IsShortNF] {q : ℕ} [Fact q.Prime]
+    (h4 : W.a₄ ≠ 0 → padicValRat q W.Δ ≤ 3 * padicValRat q W.a₄)
+    (h6 : W.a₆ ≠ 0 → padicValRat q W.Δ ≤ 2 * padicValRat q W.a₆) :
+    Nonempty (W.PreTranslationDatum q) := by
+  obtain ⟨D⟩ := WeierstrassCurve.nonempty_translationDatum_of_padicValRat_le W h4 h6
+  exact WeierstrassCurve.preTranslationDatum_of_translationDatum W D
+
+/-- **The obligation the wild case `q = 2` owes, with every trace of reduction theory
+removed** (interface opened 2026-07-28 while extending
+`exists_potentiallyGoodModel_of_jIntegral` to `q = 2`). A `FullTranslationDatum W q` is: a
+number field `L`, a DVR valuation subring `A ⊆ L` with residue field `ZMod q`, and **four
+field elements** `u ∈ Lˣ`, `r, s, t ∈ L` such that the curve `y² = x³ + a₄x + a₆` becomes
+integral with invertible discriminant after the variable change `(u, r, s, t)`. Nothing
+else: no `IsMinimal`, no `HasGoodReduction`, no `IsIntegral`, no residue-field
+bookkeeping. Those all live in
+`exists_potentiallyGoodModel_of_fullTranslationDatum` below, which is PROVEN and is
+uniform in `q`.
+
+The five membership conditions are literally the transformed coefficients of a curve in
+short normal form (`a₁ = a₂ = a₃ = 0`), read off mathlib's `variableChange_aᵢ`:
+
+    a₁' = u⁻¹·(2s),                     a₂' = u⁻²·(3r − s²),
+    a₃' = u⁻³·(2t),                     a₄' = u⁻⁴·(a₄ + 3r² − 2st),
+    a₆' = u⁻⁶·(a₆ + r·a₄ + r³ − t²),
+
+and `hΔ` is `(Δ')⁻¹ ∈ A` for `Δ' = u⁻¹²·Δ`.
+
+**RELATION TO `TranslationDatum`.** Setting `s = t = 0` recovers it exactly, so this
+structure is weaker as a hypothesis and stronger as a conclusion — a `TranslationDatum`
+yields a `FullTranslationDatum` for the same `W` and `q`. The converse fails at `q = 2`
+by the computation in the section header above, and holds at every odd `q` by the
+completing-the-square argument in `TranslationDatum`'s docstring. Nothing here is
+specific to `2`.
+
+**NOT VACUOUS, and it is exactly as non-vacuous as `PotentiallyGoodModel`.** One
+direction is the theorem below. For the converse, a `PotentiallyGoodModel` of a `W` in
+short normal form comes with an integral `V = C • W_L` with unit `Δ`, and reading off the
+four components of that `C` gives back the five memberships verbatim — there is no
+normalisation step to lose, precisely because `s` and `t` are no longer being forced to
+`0`. So `Nonempty (W.FullTranslationDatum q)` and `Nonempty (W.PotentiallyGoodModel q)`
+are EQUIVALENT for `W` in short normal form: the structure is a faithful repackaging. -/
+structure WeierstrassCurve.FullTranslationDatum (W : WeierstrassCurve ℚ)
+    (q : ℕ) [Fact q.Prime] where
+  /-- The number field over which `W` acquires good reduction. -/
+  L : Type
+  [instField : Field L]
+  [instDec : DecidableEq L]
+  [instAlgebra : Algebra ℚ L]
+  [instFin : FiniteDimensional ℚ L]
+  /-- The local ring at the chosen prime of `L` above `q`. -/
+  A : ValuationSubring L
+  [instDVR : IsDiscreteValuationRing A]
+  /-- **Residue degree one**, exactly as in `PotentiallyGoodModel`. -/
+  resEquiv : IsLocalRing.ResidueField A ≃+* ZMod q
+  /-- The scaling. `hΔ` forces `v(u) = v(Δ)/12`. -/
+  u : Lˣ
+  /-- The translation `x ↦ x + r`. -/
+  r : L
+  /-- The shear `y ↦ y + sx`. It is what `TranslationDatum` sets to `0` and what a good
+  model at `2` cannot do without: in residue characteristic `2` a curve with `a₁ = 0` has
+  `Δ ≡ a₃⁴`, so a nonsingular reduction needs `a₁' ≠ 0` or `a₃' ≠ 0`. -/
+  s : L
+  /-- The translation `y ↦ y + t`. -/
+  t : L
+  /-- `a₁'` is integral. -/
+  ha₁ : ((u⁻¹ : Lˣ) : L) * (2 * s) ∈ A
+  /-- `a₂'` is integral. -/
+  ha₂ : ((u⁻¹ : Lˣ) : L) ^ 2 * (3 * r - s ^ 2) ∈ A
+  /-- `a₃'` is integral. -/
+  ha₃ : ((u⁻¹ : Lˣ) : L) ^ 3 * (2 * t) ∈ A
+  /-- `a₄'` is integral. -/
+  ha₄ : ((u⁻¹ : Lˣ) : L) ^ 4 *
+    (algebraMap ℚ L W.a₄ + 3 * r ^ 2 - 2 * s * t) ∈ A
+  /-- `a₆'` is integral. -/
+  ha₆ : ((u⁻¹ : Lˣ) : L) ^ 6 *
+    (algebraMap ℚ L W.a₆ + r * algebraMap ℚ L W.a₄ + r ^ 3 - t ^ 2) ∈ A
+  /-- `Δ'` is a unit. -/
+  hΔ : ((u : L)) ^ 12 * (algebraMap ℚ L W.Δ)⁻¹ ∈ A
+
+attribute [instance] WeierstrassCurve.FullTranslationDatum.instField
+  WeierstrassCurve.FullTranslationDatum.instDec
+  WeierstrassCurve.FullTranslationDatum.instAlgebra
+  WeierstrassCurve.FullTranslationDatum.instFin
+  WeierstrassCurve.FullTranslationDatum.instDVR
+
+/-- **A `TranslationDatum` IS a `FullTranslationDatum`, with `s = t = 0`** (PROVEN
+2026-07-31). The converse at odd `q` is `nonempty_translationDatum_of_full_of_ne_two`
+below; this direction is free at every `q`, including `2`, because setting `s = t = 0`
+turns `ha₁` and `ha₃` into `0 ∈ A` and leaves the other four conditions verbatim. It is
+what lets the tame base — which only ever produces `r`-translations — feed the uniform
+`FullTranslationDatum` statement. -/
+theorem WeierstrassCurve.fullTranslationDatum_of_translationDatum
+    (W : WeierstrassCurve ℚ) [W.IsElliptic] [W.IsShortNF] {q : ℕ} [Fact q.Prime]
+    (D : W.TranslationDatum q) : Nonempty (W.FullTranslationDatum q) := by
+  refine ⟨{ L := D.L, A := D.A, resEquiv := D.resEquiv, u := D.u, r := D.r,
+            s := 0, t := 0,
+            ha₁ := ?_, ha₂ := ?_, ha₃ := ?_, ha₄ := ?_, ha₆ := ?_, hΔ := D.hΔ }⟩
+  · simp
+  · simpa using D.ha₂
+  · simp
+  · simpa using D.ha₄
+  · simpa using D.ha₆
+
+/-- **At every `q ≠ 2` a FULL translation datum collapses to a `TranslationDatum`**
+(PROVEN 2026-07-30; MOVED here from `MazurTorsion.lean` on 2026-07-31, unchanged, so that
+it sits above the two per-prime consumers that need it — see
+`nonempty_fullTranslationDatum_of_jIntegral` below). This is the completing-the-square
+argument of `TranslationDatum`'s own docstring, formalized — and it is what lets the two
+wild primes share ONE arithmetic leaf instead of carrying one each.
+
+In residue characteristic `q ≠ 2` the element `2` is a unit of `A`
+(`TranslationAux.isUnit_natCast_of_not_dvd`), so `ha₁ : u⁻¹(2s) ∈ A` and
+`ha₃ : u⁻³(2t) ∈ A` give `u⁻¹s ∈ A` and `u⁻³t ∈ A` outright, and each of the three
+`s`/`t`-corrections is a product of those:
+
+    u⁻²s² = (u⁻¹s)²,   u⁻⁴(2st) = 2(u⁻¹s)(u⁻³t),   u⁻⁶t² = (u⁻³t)².
+
+Adding them back to `ha₂`, `ha₄`, `ha₆` gives the `s = t = 0` datum with the SAME `L`,
+`A`, `u` and `r`, and `hΔ` is copied verbatim. So no field is re-chosen and no valuation
+is re-estimated; the content is exactly "`2` is invertible".
+
+`q = 2` is genuinely excluded rather than merely unhandled: `TranslationDatum W 2` is
+EMPTY for every `W`, by the `16 ∣ Δ` computation in the `q = 2` section header below. -/
+theorem WeierstrassCurve.nonempty_translationDatum_of_full_of_ne_two
+    (W : WeierstrassCurve ℚ) [W.IsElliptic] [W.IsShortNF] {q : ℕ} [Fact q.Prime]
+    (hq2 : q ≠ 2) (D : W.FullTranslationDatum q) :
+    Nonempty (W.TranslationDatum q) := by
+  classical
+  have hq : q.Prime := Fact.out
+  have hnd : ¬ (q ∣ 2) :=
+    fun h => hq2 ((Nat.prime_dvd_prime_iff_eq hq Nat.prime_two).mp h)
+  have hhalf : ((2 : D.L))⁻¹ ∈ D.A := by
+    have h := WeierstrassCurve.TranslationAux.inv_natCast_mem D.A D.resEquiv (n := 2) hnd
+    simpa using h
+  haveI : CharZero D.L :=
+    charZero_of_injective_algebraMap (algebraMap ℚ D.L).injective
+  have hdiv : ∀ x : D.L, 2 * x ∈ D.A → x ∈ D.A := by
+    intro x hx
+    have hx2 : x = ((2 : D.L))⁻¹ * (2 * x) := by
+      rw [← mul_assoc, inv_mul_cancel₀ (two_ne_zero), one_mul]
+    rw [hx2]
+    exact mul_mem hhalf hx
+  have hs : ((D.u⁻¹ : D.Lˣ) : D.L) * D.s ∈ D.A := by
+    refine hdiv _ ?_
+    have h : (2 : D.L) * (((D.u⁻¹ : D.Lˣ) : D.L) * D.s)
+        = ((D.u⁻¹ : D.Lˣ) : D.L) * (2 * D.s) := by ring
+    rw [h]; exact D.ha₁
+  have ht : ((D.u⁻¹ : D.Lˣ) : D.L) ^ 3 * D.t ∈ D.A := by
+    refine hdiv _ ?_
+    have h : (2 : D.L) * (((D.u⁻¹ : D.Lˣ) : D.L) ^ 3 * D.t)
+        = ((D.u⁻¹ : D.Lˣ) : D.L) ^ 3 * (2 * D.t) := by ring
+    rw [h]; exact D.ha₃
+  refine ⟨{ L := D.L, A := D.A, resEquiv := D.resEquiv, u := D.u, r := D.r,
+            ha₂ := ?_, ha₄ := ?_, ha₆ := ?_, hΔ := D.hΔ }⟩
+  · have h : ((D.u⁻¹ : D.Lˣ) : D.L) ^ 2 * (3 * D.r)
+        = ((D.u⁻¹ : D.Lˣ) : D.L) ^ 2 * (3 * D.r - D.s ^ 2)
+          + (((D.u⁻¹ : D.Lˣ) : D.L) * D.s) * (((D.u⁻¹ : D.Lˣ) : D.L) * D.s) := by
+      ring
+    rw [h]
+    exact add_mem D.ha₂ (mul_mem hs hs)
+  · have h : ((D.u⁻¹ : D.Lˣ) : D.L) ^ 4 * (algebraMap ℚ D.L W.a₄ + 3 * D.r ^ 2)
+        = ((D.u⁻¹ : D.Lˣ) : D.L) ^ 4
+            * (algebraMap ℚ D.L W.a₄ + 3 * D.r ^ 2 - 2 * D.s * D.t)
+          + ((((D.u⁻¹ : D.Lˣ) : D.L) * D.s) * (((D.u⁻¹ : D.Lˣ) : D.L) ^ 3 * D.t)
+            + (((D.u⁻¹ : D.Lˣ) : D.L) * D.s) * (((D.u⁻¹ : D.Lˣ) : D.L) ^ 3 * D.t)) := by
+      ring
+    rw [h]
+    exact add_mem D.ha₄ (add_mem (mul_mem hs ht) (mul_mem hs ht))
+  · have h : ((D.u⁻¹ : D.Lˣ) : D.L) ^ 6
+          * (algebraMap ℚ D.L W.a₆ + D.r * algebraMap ℚ D.L W.a₄ + D.r ^ 3)
+        = ((D.u⁻¹ : D.Lˣ) : D.L) ^ 6
+            * (algebraMap ℚ D.L W.a₆ + D.r * algebraMap ℚ D.L W.a₄ + D.r ^ 3 - D.t ^ 2)
+          + (((D.u⁻¹ : D.Lˣ) : D.L) ^ 3 * D.t) * (((D.u⁻¹ : D.Lˣ) : D.L) ^ 3 * D.t) := by
+      ring
+    rw [h]
+    exact add_mem D.ha₆ (mul_mem ht ht)
+
+/-- **THE FULL LEAF IS INVARIANT UNDER RATIONAL SCALING** (PROVEN 2026-07-31, and it is
+strictly cheaper than `preTranslationDatum_of_scale` above because every condition here
+is a MEMBERSHIP rather than a valuation inequality). For `c ∈ ℚˣ` let `W'` be the short
+curve with `a₄ ↦ c⁴a₄`, `a₆ ↦ c⁶a₆` (so `Δ ↦ c¹²Δ` and `j` is unchanged). A
+`FullTranslationDatum` for `W'` with data `(u', r', s', t')` gives one for `W` over the
+SAME base with `(u'/c, r'/c², s'/c, t'/c³)`, and the six transformed quantities are then
+LITERALLY the same elements of `L` — each condition is homogeneous of the matching
+weight, so the factors of `γ = c` cancel identically and no valuation is estimated
+anywhere.
+
+`hΔ : W'.Δ = c¹²Δ` is a HYPOTHESIS rather than a derivation, which keeps the lemma
+instance-free; the caller discharges it from `Δ_of_isShortNF` with one `ring`. Taking
+`c = a₄.den · a₆.den` is what reduces the wild leaf to `a₄, a₆ ∈ ℤ` — see
+`nonempty_fullTranslationDatum_of_jIntegral` below. -/
+theorem WeierstrassCurve.fullTranslationDatum_of_scale {q : ℕ} [Fact q.Prime]
+    (W W' : WeierstrassCurve ℚ) {c : ℚ} (hc : c ≠ 0)
+    (h4 : W'.a₄ = c ^ 4 * W.a₄) (h6 : W'.a₆ = c ^ 6 * W.a₆) (hΔ : W'.Δ = c ^ 12 * W.Δ)
+    (D : W'.FullTranslationDatum q) : Nonempty (W.FullTranslationDatum q) := by
+  classical
+  have hγ0 : algebraMap ℚ D.L c ≠ 0 :=
+    (map_ne_zero_iff _ (algebraMap ℚ D.L).injective).mpr hc
+  set γ : D.L := algebraMap ℚ D.L c with hγdef
+  set X : D.L := ((D.u⁻¹ : D.Lˣ) : D.L) with hXdef
+  have h4L : algebraMap ℚ D.L W'.a₄ = γ ^ 4 * algebraMap ℚ D.L W.a₄ := by
+    rw [h4, map_mul, map_pow, hγdef]
+  have h6L : algebraMap ℚ D.L W'.a₆ = γ ^ 6 * algebraMap ℚ D.L W.a₆ := by
+    rw [h6, map_mul, map_pow, hγdef]
+  have hΔL : algebraMap ℚ D.L W'.Δ = γ ^ 12 * algebraMap ℚ D.L W.Δ := by
+    rw [hΔ, map_mul, map_pow, hγdef]
+  have hcoe : ((D.u * (Units.mk0 γ hγ0)⁻¹ : D.Lˣ) : D.L) = (D.u : D.L) * γ⁻¹ := by
+    simp
+  have hcoeinv : (((D.u * (Units.mk0 γ hγ0)⁻¹)⁻¹ : D.Lˣ) : D.L) = X * γ := by
+    rw [hXdef]; simp [mul_comm]
+  refine ⟨{
+    L := D.L
+    instField := D.instField
+    instDec := D.instDec
+    instAlgebra := D.instAlgebra
+    instFin := D.instFin
+    A := D.A
+    instDVR := D.instDVR
+    resEquiv := D.resEquiv
+    u := D.u * (Units.mk0 γ hγ0)⁻¹
+    r := D.r / γ ^ 2
+    s := D.s / γ
+    t := D.t / γ ^ 3
+    ha₁ := ?_
+    ha₂ := ?_
+    ha₃ := ?_
+    ha₄ := ?_
+    ha₆ := ?_
+    hΔ := ?_ }⟩
+  · have e : (((D.u * (Units.mk0 γ hγ0)⁻¹)⁻¹ : D.Lˣ) : D.L) * (2 * (D.s / γ))
+        = X * (2 * D.s) := by
+      rw [hcoeinv]; field_simp
+    rw [e, hXdef]; exact D.ha₁
+  · have e : (((D.u * (Units.mk0 γ hγ0)⁻¹)⁻¹ : D.Lˣ) : D.L) ^ 2
+          * (3 * (D.r / γ ^ 2) - (D.s / γ) ^ 2)
+        = X ^ 2 * (3 * D.r - D.s ^ 2) := by
+      rw [hcoeinv]; field_simp
+    rw [e, hXdef]; exact D.ha₂
+  · have e : (((D.u * (Units.mk0 γ hγ0)⁻¹)⁻¹ : D.Lˣ) : D.L) ^ 3 * (2 * (D.t / γ ^ 3))
+        = X ^ 3 * (2 * D.t) := by
+      rw [hcoeinv]; field_simp
+    rw [e, hXdef]; exact D.ha₃
+  · have e : (((D.u * (Units.mk0 γ hγ0)⁻¹)⁻¹ : D.Lˣ) : D.L) ^ 4
+          * (algebraMap ℚ D.L W.a₄ + 3 * (D.r / γ ^ 2) ^ 2 - 2 * (D.s / γ) * (D.t / γ ^ 3))
+        = X ^ 4 * (algebraMap ℚ D.L W'.a₄ + 3 * D.r ^ 2 - 2 * D.s * D.t) := by
+      rw [hcoeinv, h4L]; field_simp
+    rw [e, hXdef]; exact D.ha₄
+  · have e : (((D.u * (Units.mk0 γ hγ0)⁻¹)⁻¹ : D.Lˣ) : D.L) ^ 6
+          * (algebraMap ℚ D.L W.a₆ + (D.r / γ ^ 2) * algebraMap ℚ D.L W.a₄
+              + (D.r / γ ^ 2) ^ 3 - (D.t / γ ^ 3) ^ 2)
+        = X ^ 6 * (algebraMap ℚ D.L W'.a₆ + D.r * algebraMap ℚ D.L W'.a₄ + D.r ^ 3
+            - D.t ^ 2) := by
+      rw [hcoeinv, h4L, h6L]; field_simp
+    rw [e, hXdef]; exact D.ha₆
+  · have e : ((D.u * (Units.mk0 γ hγ0)⁻¹ : D.Lˣ) : D.L) ^ 12
+          * (algebraMap ℚ D.L W.Δ)⁻¹
+        = ((D.u : D.Lˣ) : D.L) ^ 12 * (algebraMap ℚ D.L W'.Δ)⁻¹ := by
+      rw [hcoe, hΔL]; field_simp
+    rw [e]; exact D.hΔ
+
+/-- **THE ARITHMETIC OF THE WILD CASES, UNIFORM IN `q`** (sorry leaf; opened 2026-07-30
+by `flt-lean-203` as `nonempty_fullTranslationDatum_of_jIntegral` in `MazurTorsion.lean`,
+MOVED here and NARROWED on 2026-07-31 — see "WHAT CHANGED" below). What is owed is a
+number field `L`, a DVR valuation subring `A ⊆ L` with residue field `ZMod q`, and four
+elements `u ∈ Lˣ`, `r, s, t ∈ L` making the five transformed coefficients integral and
+`Δ'` a unit, for a short curve with INTEGRAL coefficients, `0 ≤ v_q(j)`, `0 < v_q(Δ)`,
+and `q ∈ {2, 3}`.
+
+**WHAT CHANGED, AND WHY THE HYPOTHESES ARE FREE.** `flt-lean-203` merged the two
+per-prime leaves because they had the same residual obstruction written out twice. The
+hoist of this material into `IsogenySignature.lean` (`flt-lean-164`, the same day) then
+landed the merged leaf DOWNSTREAM of both of its intended consumers, which import-order
+forbids it to close — so all three were open on `merger` and the merged leaf had no
+consumer at all. This is the repair: the leaf is stated here, above both, and the three
+narrowing hypotheses cost the caller nothing.
+
+* `q = 2 ∨ q = 3` — at `5 ≤ q` the tame base `ℚ(q^{1/12})` already produces a
+  `TranslationDatum` (`nonempty_translationDatum_of_padicValRat_le`, PROVEN above, whose
+  two hypotheses are free from `0 ≤ v_q(j)` by `padicValRat_Δ_le_of_jIntegral`), hence a
+  `FullTranslationDatum` with `s = t = 0`. That derivation is
+  `nonempty_fullTranslationDatum_of_jIntegral` below, and it is the whole of the tame
+  case.
+* `a₄, a₆ ∈ ℤ` — by `fullTranslationDatum_of_scale` with `c = a₄.den · a₆.den`.
+* `0 < v_q(Δ)` — with integral coefficients `v_q(a₄), v_q(a₆) ≥ 0`, so `v_q(Δ) ≤ 0` makes
+  the two tame hypotheses vacuous and the tame base works with `r = 0`. (At `q = 2` this
+  branch is in fact empty, since `16 ∣ Δ` for an integral short model; the hypothesis is
+  free there rather than useful.)
+
+**FAITHFULNESS AUDIT (2026-07-30, re-checked 2026-07-31 against the narrowed statement —
+narrowing only ADDS hypotheses, so the earlier audit's argument still applies and the
+statement is if anything weaker).** `0 ≤ v_q(j)` makes `E` potentially good at `q`
+(Silverman *AEC* VII.5.5), so it acquires good reduction over some finite `M/ℚ_q`; the
+unramified layer comes off by the group-theoretic step (`G/N` is an extension of `Ẑ` by
+the finite `Φ = I/N`, the closure of a Frobenius lift is a complement because `Ẑ` is
+projective, and the fixed field of its preimage is totally ramified with good reduction),
+leaving a totally ramified `M'/ℚ_q` — residue field exactly `𝔽_q`, which is what
+`resEquiv` asks. `L` is then a number field with a prime `v` and `L_v = M'` (Krasner),
+`A` is the local ring at `v`, and `u, r, s, t` are taken in `L` close enough `v`-adically
+to the `M'`-solution, the five conditions and the unit-ness of `Δ'` all being open.
+
+Not vacuous: `resEquiv` forbids residue degree `> 1` and `hΔ` forces `Δ'` to be a unit,
+which is what makes `FullTranslationDatum` equivalent to `PotentiallyGoodModel` for `W`
+in short normal form (that structure's own docstring).
+
+**WHERE TO ATTACK IT — the reconnaissance is in the two per-prime docstrings BELOW**, and
+it is still current: the refutation of the tame base at `3` (`y² = x³ + 4`, with the full
+Newton-polygon computation `v(y₀ − 3^{1/3}) = 4/9 ∉ (1/12)ℤ`), Kraus's `e ∈ {8, 24}`
+obstruction at `2` (witness `y² = x³ − 2x`, conductor exponent `8`), the
+ordinary/supersingular dichotomy forced by `hΔ` at `2`, and the near-root recipe together
+with the `y² = x³ − 9x + 27` witness showing that "`f` splits over a residue-degree-`1`
+base" is FALSE and so cannot be cut out as a sub-leaf. What `0 < v_q(Δ)` buys at `q = 3`
+is recorded there too: it forces `3 ∣ a₄`, hence `f ≡ (X + a₆)³ mod 3` and `d ≥ 3`, which
+is exactly the setting a Newton-polygon argument wants.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: exhibit `E/ℚ` with `0 ≤ v_q(j(E))` acquiring
+good reduction over NO finite extension of `ℚ_q` of residue degree `1`. VII.5.5 supplies
+good reduction over *some* finite extension unconditionally, so such a witness would have
+to break the unramified-descent step. -/
+theorem WeierstrassCurve.nonempty_fullTranslationDatum_wild
+    (W : WeierstrassCurve ℚ) [W.IsElliptic] [W.IsShortNF]
+    {q : ℕ} [Fact q.Prime] (hq : q = 2 ∨ q = 3) (hj : 0 ≤ padicValRat q W.j)
+    (h4 : ∃ m : ℤ, W.a₄ = (m : ℚ)) (h6 : ∃ n : ℤ, W.a₆ = (n : ℚ))
+    (hd : 0 < padicValRat q W.Δ) :
+    Nonempty (W.FullTranslationDatum q) :=
+  sorry
+
+/-- **THE WILD ARITHMETIC, ASSEMBLED AND UNIFORM IN `q`** (PROVEN 2026-07-31 over
+`nonempty_fullTranslationDatum_wild`; opened 2026-07-30 by `flt-lean-203` as a leaf in
+`MazurTorsion.lean` and moved here). For any prime `q` and any short elliptic `W` with
+`0 ≤ v_q(j)` there is a `FullTranslationDatum W q`.
+
+The proof is the three reductions listed on the leaf above, and nothing else:
+
+* `5 ≤ q` is CLOSED here, not owed — `padicValRat_Δ_le_of_jIntegral` turns `0 ≤ v_q(j)`
+  into the two tame hypotheses, `nonempty_translationDatum_of_padicValRat_le` builds the
+  datum over `ℚ(q^{1/12})` with `r = 0`, and
+  `fullTranslationDatum_of_translationDatum` sets `s = t = 0`;
+* at `q ∈ {2, 3}` the curve is first scaled by `c = a₄.den · a₆.den` to integral
+  coefficients (`fullTranslationDatum_of_scale`, `j` unchanged), and then either
+  `v_q(Δ) ≤ 0`, in which case the tame base works for the same reason, or `0 < v_q(Δ)`
+  and the leaf applies.
+
+Both per-prime statements below are corollaries: `nonempty_fullTranslationDatum_two` is
+this theorem verbatim, and `nonempty_preTranslationDatum_three_of_intCoeff_pos` is the
+leaf followed by `nonempty_translationDatum_of_full_of_ne_two` and
+`preTranslationDatum_of_translationDatum`. -/
+theorem WeierstrassCurve.nonempty_fullTranslationDatum_of_jIntegral
+    (W : WeierstrassCurve ℚ) [W.IsElliptic] [W.IsShortNF]
+    {q : ℕ} [Fact q.Prime] (hj : 0 ≤ padicValRat q W.j) :
+    Nonempty (W.FullTranslationDatum q) := by
+  classical
+  by_cases hq : q = 2 ∨ q = 3
+  · -- Scale to integral coefficients, then split on `v_q(Δ)`.
+    have hd4 : ((W.a₄.den : ℚ)) ≠ 0 := Nat.cast_ne_zero.mpr W.a₄.den_nz
+    have hd6 : ((W.a₆.den : ℚ)) ≠ 0 := Nat.cast_ne_zero.mpr W.a₆.den_nz
+    set c : ℚ := (W.a₄.den : ℚ) * (W.a₆.den : ℚ) with hcdef
+    have hc0 : c ≠ 0 := mul_ne_zero hd4 hd6
+    set W' : WeierstrassCurve ℚ := ⟨0, 0, 0, c ^ 4 * W.a₄, c ^ 6 * W.a₆⟩ with hW'def
+    have h4' : W'.a₄ = c ^ 4 * W.a₄ := rfl
+    have h6' : W'.a₆ = c ^ 6 * W.a₆ := rfl
+    haveI hshort : W'.IsShortNF := ⟨rfl, rfl, rfl⟩
+    have hΔ' : W'.Δ = c ^ 12 * W.Δ := by
+      rw [WeierstrassCurve.Δ_of_isShortNF, WeierstrassCurve.Δ_of_isShortNF, h4', h6']
+      ring
+    have hΔ0 : W.Δ ≠ 0 := W.isUnit_Δ.ne_zero
+    haveI hell : W'.IsElliptic := by
+      refine ⟨?_⟩
+      rw [hΔ']
+      exact isUnit_iff_ne_zero.mpr (mul_ne_zero (pow_ne_zero _ hc0) hΔ0)
+    have hc4' : W'.c₄ = c ^ 4 * W.c₄ := by
+      rw [WeierstrassCurve.c₄_of_isShortNF, WeierstrassCurve.c₄_of_isShortNF, h4']; ring
+    have hjW : W.j = W.Δ⁻¹ * W.c₄ ^ 3 := by
+      simp only [WeierstrassCurve.j, Units.val_inv_eq_inv_val, WeierstrassCurve.coe_Δ']
+    have hjW' : W'.j = W'.Δ⁻¹ * W'.c₄ ^ 3 := by
+      simp only [WeierstrassCurve.j, Units.val_inv_eq_inv_val, WeierstrassCurve.coe_Δ']
+    have hjeq : W'.j = W.j := by
+      rw [hjW', hjW, hΔ', hc4']
+      field_simp
+    have hint4 : ∃ m : ℤ, W'.a₄ = (m : ℚ) := by
+      refine ⟨W.a₄.num * (W.a₄.den : ℤ) ^ 3 * (W.a₆.den : ℤ) ^ 4, ?_⟩
+      have hnum : W.a₄ * (W.a₄.den : ℚ) = (W.a₄.num : ℚ) := Rat.mul_den_eq_num _
+      rw [h4', hcdef]
+      push_cast
+      rw [← hnum]
+      ring
+    have hint6 : ∃ n : ℤ, W'.a₆ = (n : ℚ) := by
+      refine ⟨W.a₆.num * (W.a₄.den : ℤ) ^ 6 * (W.a₆.den : ℤ) ^ 5, ?_⟩
+      have hnum : W.a₆ * (W.a₆.den : ℚ) = (W.a₆.num : ℚ) := Rat.mul_den_eq_num _
+      rw [h6', hcdef]
+      push_cast
+      rw [← hnum]
+      ring
+    have hjW'0 : 0 ≤ padicValRat q W'.j := by rw [hjeq]; exact hj
+    have key : Nonempty (W'.FullTranslationDatum q) := by
+      rcases lt_or_ge 0 (padicValRat q W'.Δ) with hd | hd
+      · exact WeierstrassCurve.nonempty_fullTranslationDatum_wild W' hq hjW'0 hint4 hint6 hd
+      · have hh4 : W'.a₄ ≠ 0 → padicValRat q W'.Δ ≤ 3 * padicValRat q W'.a₄ := by
+          intro _
+          obtain ⟨m, hm⟩ := hint4
+          have hnn : (0 : ℤ) ≤ padicValRat q W'.a₄ := by
+            rw [hm, padicValRat.of_int]; exact Int.natCast_nonneg _
+          omega
+        have hh6 : W'.a₆ ≠ 0 → padicValRat q W'.Δ ≤ 2 * padicValRat q W'.a₆ := by
+          intro _
+          obtain ⟨n, hn⟩ := hint6
+          have hnn : (0 : ℤ) ≤ padicValRat q W'.a₆ := by
+            rw [hn, padicValRat.of_int]; exact Int.natCast_nonneg _
+          omega
+        obtain ⟨T⟩ := WeierstrassCurve.nonempty_translationDatum_of_padicValRat_le W' hh4 hh6
+        exact WeierstrassCurve.fullTranslationDatum_of_translationDatum W' T
+    obtain ⟨D⟩ := key
+    exact WeierstrassCurve.fullTranslationDatum_of_scale W W' hc0 h4' h6' hΔ' D
+  · -- `5 ≤ q`: the tame base, with both of its hypotheses free from `j`-integrality.
+    obtain ⟨h2, h3⟩ := not_or.mp hq
+    have hp : q.Prime := Fact.out
+    have hq5 : 5 ≤ q := by
+      have h2le := hp.two_le
+      have h4 : q ≠ 4 := by rintro rfl; norm_num at hp
+      omega
+    have hjden : ¬ (q ∣ W.j.den) := TameBaseAux.not_dvd_den_of_padicValRat_nonneg hj
+    obtain ⟨h4', h6'⟩ := WeierstrassCurve.padicValRat_Δ_le_of_jIntegral W hq5 hjden
+    obtain ⟨D⟩ := WeierstrassCurve.nonempty_translationDatum_of_padicValRat_le W h4' h6'
+    exact WeierstrassCurve.fullTranslationDatum_of_translationDatum W D
+
+/-- **THE ARITHMETIC OF THE WILD CASE `q = 3`** (**PROVEN 2026-07-31** over
+`nonempty_fullTranslationDatum_wild` above, which is the same obligation stated uniformly
+in `q`; opened 2026-07-27 by decomposing `exists_potentiallyGoodModel_of_jIntegral_three`,
+RESTATED 2026-07-28 over `PreTranslationDatum` once the two forced conditions were
+discharged, and RESTATED AGAIN 2026-07-28 with the two free reductions below taken).
+
+**THE DOCSTRING BELOW IS KEPT BECAUSE IT IS THE `q = 3` RECONNAISSANCE**, and it now
+describes the `q = 3` instance of that leaf rather than a separate obligation: its
+hypotheses are literally the wild leaf's at `q = 3`, and the proof is the leaf followed by
+`nonempty_translationDatum_of_full_of_ne_two` (legitimate, `3 ≠ 2`) and
+`preTranslationDatum_of_translationDatum`. What is owed is a
 base `L` with a residue-degree-`1` DVR at `3`, plus **two elements** `u, r` of `L`
 satisfying just TWO valuation inequalities. Write `A = W.a₄`, `B = W.a₆`,
 `f(X) = X³ + AX + B`, `d = v₃(Δ)`. Since `hu` pins `v(u) = d/12`, they are
@@ -6000,8 +6457,12 @@ theorem WeierstrassCurve.nonempty_preTranslationDatum_three_of_intCoeff_pos
     {q : ℕ} [Fact q.Prime] (hq3 : q = 3) (hj : 0 ≤ padicValRat q W.j)
     (h4 : ∃ m : ℤ, W.a₄ = (m : ℚ)) (h6 : ∃ n : ℤ, W.a₆ = (n : ℚ))
     (hd : 0 < padicValRat q W.Δ) :
-    Nonempty (W.PreTranslationDatum q) :=
-  sorry
+    Nonempty (W.PreTranslationDatum q) := by
+  have hq2 : q ≠ 2 := by omega
+  obtain ⟨D⟩ :=
+    WeierstrassCurve.nonempty_fullTranslationDatum_wild W (Or.inr hq3) hj h4 h6 hd
+  obtain ⟨T⟩ := WeierstrassCurve.nonempty_translationDatum_of_full_of_ne_two W hq2 D
+  exact WeierstrassCurve.preTranslationDatum_of_translationDatum W T
 
 /-- **The `d = 0` case of the wild leaf is not wild at all** (PROVEN 2026-07-28). With
 `a₄, a₆ ∈ ℤ` both `v₃(a₄)` and `v₃(a₆)` are `≥ 0`, so `v₃(Δ) ≤ 0` makes the two
@@ -6185,89 +6646,16 @@ integral, and `Δ` is never a unit at a place above `2`. (Conceptually: in resid
 characteristic `2` the equation `y² = cubic` is inseparable in `y`, so its reduction is
 singular at the point where the cubic's derivative vanishes.) A good model at `2`
 therefore has `a₁ ≠ 0` or `a₃ ≠ 0`, i.e. **both `s` and `t` are genuinely needed**, and
-the datum below carries all four components of the variable change.
+`FullTranslationDatum` carries all four components of the variable change. (That
+structure was declared just below this header until 2026-07-31, when it was hoisted
+ABOVE the `q = 3` chain so that one uniform leaf could serve both wild primes; it is now
+defined a few hundred lines above, immediately after
+`nonempty_preTranslationDatum_of_padicValRat_le`.)
 
 Everything else is unchanged, and in particular
 `exists_potentiallyGoodModel_of_fullTranslationDatum` below is uniform in `q` — nothing
 in it mentions `2`. -/
 
-/-- **The obligation the wild case `q = 2` owes, with every trace of reduction theory
-removed** (interface opened 2026-07-28 while extending
-`exists_potentiallyGoodModel_of_jIntegral` to `q = 2`). A `FullTranslationDatum W q` is: a
-number field `L`, a DVR valuation subring `A ⊆ L` with residue field `ZMod q`, and **four
-field elements** `u ∈ Lˣ`, `r, s, t ∈ L` such that the curve `y² = x³ + a₄x + a₆` becomes
-integral with invertible discriminant after the variable change `(u, r, s, t)`. Nothing
-else: no `IsMinimal`, no `HasGoodReduction`, no `IsIntegral`, no residue-field
-bookkeeping. Those all live in
-`exists_potentiallyGoodModel_of_fullTranslationDatum` below, which is PROVEN and is
-uniform in `q`.
-
-The five membership conditions are literally the transformed coefficients of a curve in
-short normal form (`a₁ = a₂ = a₃ = 0`), read off mathlib's `variableChange_aᵢ`:
-
-    a₁' = u⁻¹·(2s),                     a₂' = u⁻²·(3r − s²),
-    a₃' = u⁻³·(2t),                     a₄' = u⁻⁴·(a₄ + 3r² − 2st),
-    a₆' = u⁻⁶·(a₆ + r·a₄ + r³ − t²),
-
-and `hΔ` is `(Δ')⁻¹ ∈ A` for `Δ' = u⁻¹²·Δ`.
-
-**RELATION TO `TranslationDatum`.** Setting `s = t = 0` recovers it exactly, so this
-structure is weaker as a hypothesis and stronger as a conclusion — a `TranslationDatum`
-yields a `FullTranslationDatum` for the same `W` and `q`. The converse fails at `q = 2`
-by the computation in the section header above, and holds at every odd `q` by the
-completing-the-square argument in `TranslationDatum`'s docstring. Nothing here is
-specific to `2`.
-
-**NOT VACUOUS, and it is exactly as non-vacuous as `PotentiallyGoodModel`.** One
-direction is the theorem below. For the converse, a `PotentiallyGoodModel` of a `W` in
-short normal form comes with an integral `V = C • W_L` with unit `Δ`, and reading off the
-four components of that `C` gives back the five memberships verbatim — there is no
-normalisation step to lose, precisely because `s` and `t` are no longer being forced to
-`0`. So `Nonempty (W.FullTranslationDatum q)` and `Nonempty (W.PotentiallyGoodModel q)`
-are EQUIVALENT for `W` in short normal form: the structure is a faithful repackaging. -/
-structure WeierstrassCurve.FullTranslationDatum (W : WeierstrassCurve ℚ)
-    (q : ℕ) [Fact q.Prime] where
-  /-- The number field over which `W` acquires good reduction. -/
-  L : Type
-  [instField : Field L]
-  [instDec : DecidableEq L]
-  [instAlgebra : Algebra ℚ L]
-  [instFin : FiniteDimensional ℚ L]
-  /-- The local ring at the chosen prime of `L` above `q`. -/
-  A : ValuationSubring L
-  [instDVR : IsDiscreteValuationRing A]
-  /-- **Residue degree one**, exactly as in `PotentiallyGoodModel`. -/
-  resEquiv : IsLocalRing.ResidueField A ≃+* ZMod q
-  /-- The scaling. `hΔ` forces `v(u) = v(Δ)/12`. -/
-  u : Lˣ
-  /-- The translation `x ↦ x + r`. -/
-  r : L
-  /-- The shear `y ↦ y + sx`. It is what `TranslationDatum` sets to `0` and what a good
-  model at `2` cannot do without: in residue characteristic `2` a curve with `a₁ = 0` has
-  `Δ ≡ a₃⁴`, so a nonsingular reduction needs `a₁' ≠ 0` or `a₃' ≠ 0`. -/
-  s : L
-  /-- The translation `y ↦ y + t`. -/
-  t : L
-  /-- `a₁'` is integral. -/
-  ha₁ : ((u⁻¹ : Lˣ) : L) * (2 * s) ∈ A
-  /-- `a₂'` is integral. -/
-  ha₂ : ((u⁻¹ : Lˣ) : L) ^ 2 * (3 * r - s ^ 2) ∈ A
-  /-- `a₃'` is integral. -/
-  ha₃ : ((u⁻¹ : Lˣ) : L) ^ 3 * (2 * t) ∈ A
-  /-- `a₄'` is integral. -/
-  ha₄ : ((u⁻¹ : Lˣ) : L) ^ 4 *
-    (algebraMap ℚ L W.a₄ + 3 * r ^ 2 - 2 * s * t) ∈ A
-  /-- `a₆'` is integral. -/
-  ha₆ : ((u⁻¹ : Lˣ) : L) ^ 6 *
-    (algebraMap ℚ L W.a₆ + r * algebraMap ℚ L W.a₄ + r ^ 3 - t ^ 2) ∈ A
-  /-- `Δ'` is a unit. -/
-  hΔ : ((u : L)) ^ 12 * (algebraMap ℚ L W.Δ)⁻¹ ∈ A
-
-attribute [instance] WeierstrassCurve.FullTranslationDatum.instField
-  WeierstrassCurve.FullTranslationDatum.instDec
-  WeierstrassCurve.FullTranslationDatum.instAlgebra
-  WeierstrassCurve.FullTranslationDatum.instFin
-  WeierstrassCurve.FullTranslationDatum.instDVR
 
 /-- **A full translation datum produces the good model** (PROVEN 2026-07-28). This is the
 `q`-uniform half of the wild case at `2`, and it is pure bookkeeping over
@@ -6305,8 +6693,15 @@ theorem WeierstrassCurve.exists_potentiallyGoodModel_of_fullTranslationDatum
   · rw [variableChange_Δ, hC, hbΔ]
     simpa [mul_comm] using D.hΔ
 
-/-- **THE ARITHMETIC OF THE WILD CASE `q = 2`** (sorry leaf, opened 2026-07-28 while
-extending `exists_potentiallyGoodModel_of_jIntegral` to `q = 2`). What is owed is a base
+/-- **THE ARITHMETIC OF THE WILD CASE `q = 2`** (**PROVEN 2026-07-31** — it is
+`nonempty_fullTranslationDatum_of_jIntegral` above verbatim, `hq2` being unnecessary;
+opened 2026-07-28 while extending `exists_potentiallyGoodModel_of_jIntegral` to `q = 2`).
+
+**THE DOCSTRING BELOW IS KEPT BECAUSE IT IS THE `q = 2` RECONNAISSANCE** — Kraus's
+`e ∈ {8, 24}` obstruction, the ordinary/supersingular dichotomy, and the witnesses — all
+of which now bear on `nonempty_fullTranslationDatum_wild` above, where the obligation
+actually lives. Its closing paragraph proposed exactly the uniform decomposition that has
+since been made, so read "that cut is NOT made here" as historical. What is owed is a base
 `L` with a residue-degree-`1` DVR at `2`, plus **four elements** `u, r, s, t` of `L`
 making the five transformed coefficients integral and `Δ'` a unit. Write `A = W.a₄`,
 `B = W.a₆`, `d = v₂(Δ)`; `hΔ` pins `v(u) = d/12`.
@@ -6396,8 +6791,9 @@ Math. 69 (1990). -/
 theorem WeierstrassCurve.nonempty_fullTranslationDatum_two
     (W : WeierstrassCurve ℚ) [W.IsElliptic] [W.IsShortNF]
     {q : ℕ} [Fact q.Prime] (hq2 : q = 2) (hj : 0 ≤ padicValRat q W.j) :
-    Nonempty (W.FullTranslationDatum q) :=
-  sorry
+    Nonempty (W.FullTranslationDatum q) := by
+  subst hq2
+  exact WeierstrassCurve.nonempty_fullTranslationDatum_of_jIntegral W hj
 
 /-- **The WILD half of the arithmetic leaf at the wild prime: `q = 2`** (PROVEN
 2026-07-28 modulo `nonempty_fullTranslationDatum_two`, which carries all the remaining
