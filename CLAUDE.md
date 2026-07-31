@@ -7650,3 +7650,92 @@ Here that was seven names, all of them older than the release, so the shim prove
 exactly what a real build would have. It is NOT a substitute when your block
 consumes something added since — then the shim's `X0` is a *different theory* and a
 green scratch means nothing. Check the names first; it takes one `git show`.
+
+## WHAT A DECLARATION-LEVEL MERGE CANNOT SEE: DELETIONS, ORDER, AND `open … in`
+
+(2026-07-31, release 27.  `tools/merge/semmerge.py` is the right tool and these are
+the three things it structurally cannot do.  All three were live in one batch of 19
+branches and none of them shows in a diff, a conflict marker, or `check-dup`.)
+
+**1. IT PROPAGATES ADDITIONS, NEVER DELETIONS — so a HOIST merges as pure
+DUPLICATION.**  `semmerge` iterates over THEIRS' declaration names; a name that is
+in the base and in ours but *not* in theirs is simply never considered, and ours
+keeps it.  That is right for a branch that dropped something by accident and wrong
+for every branch that MOVED something.  flt-lean-86 hoisted ~80 declarations
+(`borelZMod` … `numCusps_le_order_qExpansion_norm`, the whole `Gamma0Cusp`
+namespace) out of `FreyCurve/MazurTorsion.lean` up into `ModularCurve/X0.lean`;
+the X0 copies landed, the MazurTorsion copies survived, and MazurTorsion imports
+X0.  Every one of those names would have been `has already been declared`.
+
+**No per-file check sees it, and the obvious cross-file check reports NOTHING.**
+`checks.py check-dup` is per file by construction.  A qualified-name cross-file
+scan is sound and silent here, because this tree's giant modules contain bare
+`end`s that a stack model mis-attributes — from some point in `X0.lean` onward
+every name loses its `Fermat.` prefix, so X0's `Fermat.borelZMod` is recorded as
+`borelZMod` and does not collide with MazurTorsion's.  What found it was matching
+on the LAST COMPONENT.  `tools/merge/xdup.py` now runs both passes: `XDUP`
+(qualified, an error) and `XDUP-LAST` (last component, ~7000 hits on this tree, so
+a REVIEW list that is only usable **differenced against pre-merge `main`**).  Run
+it after every batch; release 27's diff was empty in the qualified pass, which is
+the answer you want.
+
+**2. IT DOES NOT REORDER, AND MOVING A DECLARATION ALSO MOVES IT OUT OF SCOPE.**
+The README already says a hoisted helper can land below its consumer.  The half it
+does not say is worse: `open X in`, `set_option … in` and `open scoped Classical in`
+bind to ONE declaration, so relocating a declaration silently changes what is in
+scope for it.  Two shapes, both from this release:
+
+* `natDegree_minpoly_weberAlpha_le` (`BinaryQuadraticForm.lean`) took theirs' body
+  and ours' position, 4500 lines above the `exists_int_gammaTwo` it calls.  Moving
+  it down fixed that and broke it a second way: its old site was inside
+  `open _root_.Polynomial in`, its new one was not, so `X` and `C` became unknown
+  identifiers — **and the `ℚ⟮…⟯` adjoin notation stopped parsing, which reports as a
+  bare `expected token` at a column in the middle of a `have`.**  A parse error that
+  names no identifier and no namespace is this.  The branch carried
+  `open _root_.Polynomial _root_.IntermediateField in` on exactly that declaration;
+  the fix is to carry it with the declaration.
+* `geomPic_descent` (`HyperellipticJacobian.lean`) lost `open scoped Classical in`
+  entirely.  `semmerge` merges docstrings separately and keeps OURS when ours
+  evolved — and an `open … in` line is part of the ATTACHMENT RUN, i.e. part of the
+  docstring side.  Symptom: three `failed to synthesize Decidable/DecidableEq` in a
+  proof otherwise byte-identical to the branch's.
+
+So after any merge that reports `TOOK-THEIRS` on a declaration, **diff that
+declaration's ATTACHMENT RUN, not just its body**, and grep the branch for an
+`… in` line immediately above it.
+
+**3. A `whnf` TIMEOUT IS REPORTED AT THE START OF A DOCSTRING — which belongs to the
+declaration BELOW it.**  `MoretBailly.lean` reported
+`27690:0: (deterministic) timeout at whnf`, and line 27690 is the opening `/--` of a
+docstring whose theorem is 130 lines further down.  A `set_option maxHeartbeats … in`
+placed on the declaration ABOVE that docstring — the natural reading — changes
+nothing, and the run is wasted.  Read the line the error names, see whether it is
+`/--`, and if so bump the NEXT declaration.  (The consequent `(kernel) unknown
+constant` 700 lines below is the usual cascade; read the log from the top.)
+
+### `flt-frontier.py` UNDER-REPORTS, AND THE QUEUE INVARIANT IS COMPUTED FROM IT
+
+Same release, and it is the more dangerous finding because it is silent and it
+shrinks the work the fleet is given.  `flt-frontier.py` reported **5** open leaves
+in `Modularity/Interface.lean`; a comment-stripped token scan finds **15**, and two
+independent agents' reports say 20-21.  Its total was 321 against a true 333.
+
+`tools/merge/frontier.py` (added here) is the scan that was VALIDATED against the
+compiler: on all 25 modules that completed in release 27's first build round its
+per-file counts matched the `declaration uses 'sorry'` warning set exactly, 25 out
+of 25, including `HyperellipticJacobian` (25) and `MoretBailly` (14).  Use it for
+the coverage invariant, and re-validate it the same way — the check is ten lines and
+it is the only thing standing between a scanner bug and a release that queues 200
+tasks against a 333-leaf frontier.
+
+Two riders that cost real time here:
+
+* **Tokenise task text unicode-safely before matching leaf names against it.**  A
+  `[A-Za-z_][A-Za-z0-9_.']*` token regex misses every name containing `ι`, `Ψ`, `₁`
+  or `₂`, and this tree is full of them: the naive pass called 59 queue entries
+  obsolete, of which 43 named a live leaf under a subscripted name.  Splitting on
+  "not `isalnum()` and not `_ ' .`" — minus the bracket characters
+  ([[lean-identifier-regex-swallows-brackets]]) — took the false-obsolete count to
+  zero.
+* `Fermat/SorryGate.lean` contains the token `sorry` twice inside a STRING LITERAL in
+  its `elab`.  Any scan must exclude that file or strip string literals.
