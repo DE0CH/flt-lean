@@ -21722,7 +21722,173 @@ def IsQAdicBoundedPolarizationHom {A S : Scheme.{u}} {f : A ⟶ S}
 
 open _root_.NumberField in
 /-- **THE DUAL ABELIAN VARIETY AND AN `𝒪_D`-LINEAR POLARIZATION OF BOUNDED
-`q`-RADICAL, OVER A FINITE FIELD** (SORRY LEAF, cut 2026-07-30 out of
+`q`-RADICAL, OVER AN ARBITRARY FIELD** (SORRY LEAF; **RECUT 2026-07-31** out of
+`exists_dualPolarization_finiteBase` immediately below, which is now PROVEN over
+it in three lines — the direct-sorry count did NOT move, `1 → 1`).  Mumford
+*Abelian Varieties* §6, §13, §16, §23; Milne *AV* I.7.1 and I.13; Silverman
+*AEC* III.8.1.
+
+**WHAT THE RECUT DELETED, AND WHY IT WAS FREE.**  The finite-base form carried
+`hfin : Finite k`, `N`, `hN : Nat.card k = N` and `hqN : ¬ q ∣ N`.  Its
+docstring accounted for `hfin` like this, and the sentence is worth quoting
+because it is the thing that was wrong:
+
+> `hfin` also does real work of its own: over a FINITE field an abelian variety
+> is projective and carries an ample line bundle DEFINED OVER `k`, so averaging
+> `λ = Σ_i â_i ∘ λ₀ ∘ a_i` over a `ℤ`-basis of `𝒪_D` gives an `𝒪_D`-linear
+> polarization over `k`, which is the `Γ_k`-equivariance clause.
+
+Every clause of that is TRUE and the word FINITE is doing no work in any of
+them.  **An abelian variety over ANY field is projective over that field** —
+Milne *AV* I.7.1, Mumford *AV* §6 — so an ample `L` and a polarization
+`λ₀ : A' ⟶ Â'` exist over `k` outright, and the averaging step needs nothing
+but a `ℤ`-basis of `𝒪_D`.  The route the finite-base docstring describes for
+the `Γ_k`-equivariance clause — *`Hom^sym_{𝒪_D}(A'_{k̄}, Â'_{k̄})` is finitely
+generated with a continuous `Γ_k = Ẑ` action, so a power of Frobenius fixes a
+nonzero polarization and its orbit sum is again one, now defined over `k`* — is
+a way of DESCENDING a polarization from `k̄` to `k`.  It is a correct argument
+and it is unnecessary: there is nothing to descend, because the polarization is
+already over `k`.  It is also the only step in the whole route that reads the
+base at all.
+
+What `hfin` and `hqN` genuinely bought is `q ≠ char k`, and they bought it only
+through `natCast_ne_zero_of_coprime_natCard`.  So the hypothesis that carries
+the content is `(q : k) ≠ 0`, and that is what this leaf takes.  The wrapper
+below re-derives it from the finite-field data and hands it in.
+
+**WHERE THE HYPOTHESES GO.**
+
+* `[NumberField.IsTotallyReal D]` buys `weil_act` (the Rosati involution is
+  trivial on `𝒪_D`) and, with it, the strong `𝒪_D`-ALTERNATING clause
+  `e(a y, λ y) = 1`.  Without it the induced form is hermitian, the weak form
+  gives only `e(a y, λ y)^2 = 1`, and `q = 2` is lost — see
+  `IsQAdicPolarizationHom`.
+* `hqk : (q : k) ≠ 0` is what makes `μ_{q^M}(F̄)` nontrivial at every level of
+  the tower, for EVERY geometric point.  That last quantifier is why the
+  hypothesis is stated on `k` and not on one fibre field: `DualStruct` asks for
+  its pairing at every `x : Spec F ⟶ Spec k`, and every such `F` is a
+  `k`-algebra, hence of the same characteristic, so `(q : k) ≠ 0` propagates to
+  all of them and to no more than them.  It is also exactly the gate that
+  `DualStruct.weil_nondegenerate` now carries (`_hnF`), which is what makes the
+  structure inhabited in positive characteristic at all.
+* `hq : q.Prime` is the tower: the levels are the ideals `(q^M)`.
+
+**`hdim'` IS DELIBERATELY ABSENT, AND THAT IS WHY THE RADICAL IS BOUNDED
+RATHER THAN ZERO.**  The characteristic-zero counterpart
+`exists_dualPolarization_of_mult` carries `hdim` and spends it exactly on
+choosing `λ` of degree prime to `q`, i.e. on PERFECTNESS.  Here nothing bounds
+`NS(A')`, so the honest conclusion is `IsQAdicBoundedPolarizationHom` with `b`
+the exponent of the `q`-primary part of `ker λ`; see that predicate's docstring
+for why a perfectness clause here would be FALSE, and
+`exists_qAdicPolarizedSystem_finiteBase` for why adding `hdim'` would collapse
+the whole level-pairing statement into `det_frobLevelMatrix_eq_natCast_finiteBase`.
+
+**FALSITY AUDIT (2026-07-31) — `hqk` IS LOAD-BEARING, AND IT IS THE ONLY
+HYPOTHESIS THAT IS.**  Since the recut only DELETES hypotheses, every
+counterexample to this statement is a counterexample to the finite-base one, so
+the old audit transfers verbatim in the safe direction and only the new
+generality needs checking.  At `q = char k` the leaf is FALSE, with the witness
+the finite-base docstring already records: `rootsOfUnity (q^M) (AlgebraicClosure F)`
+is TRIVIAL in characteristic `q`, so `d.weil` at every level of the `q`-tower is
+constantly `1`; the hypothesis of the last clause of
+`IsQAdicBoundedPolarizationHom` is then satisfied by EVERY `y ∈ A'[q^M]`,
+whatever `hom` is, and its conclusion `y ∈ A'[q^b]` fails for any fixed `b` on
+an ORDINARY elliptic curve over `𝔽_p`, whose `A'[p^M](k̄) ≅ ℤ/p^M` is unbounded
+in `M`.  So no `b` exists and the leaf dies.  Nothing else in the statement
+mentions the base, which is the formal content of the paragraph above.
+
+**AUDIT (2026-07-31): `DualStruct` AT A RAMIFIED IDEAL — RUN, AND IT SURVIVES.**
+Recorded because it looks fatal on first reading and is the obvious next place
+to attack this seam, so the next owner should not have to re-derive it.
+`weil_nondegenerate` is asserted at EVERY pair `(I, n)` with `(n : 𝒪_D) ∈ I` and
+`(n : F) ≠ 0`, not only at `I = (n)`.  Take `D = ℚ(√2)`, `𝒪_D = ℤ[√2]`,
+`𝔭 = (√2)` ramified over `2`, `I = 𝔭`, `n = 2` — legal, since `2 = (√2)^2 ∈ 𝔭`
+— and `A'` an abelian surface with real multiplication by `ℤ[√2]` over a field
+of characteristic `≠ 2` with `T_2 A'` free over `ℤ_2[√2]`.  Then `A'[𝔭] = √2·A'[2]`
+and `Â'[𝔭] = √2·Â'[2]`, so for the CLASSICAL Weil pairing
+`e_2(√2 y', √2 z') = e_2(2y', z') = 1`, i.e. `e_2` is identically trivial on
+`A'[𝔭] × Â'[𝔭]` while `A'[𝔭] ≅ 𝔽_2^2 ≠ 0`.  Read as a statement about `e_2`
+that refutes the axiom.
+
+It does not refute the structure, and the reason is that **`weil` is a FIELD of
+`DualStruct`, not the classical pairing**: nothing in the structure ties
+`weil x I n hn` at one `(I, n)` to `weil` at another (the only compatibility in
+this file is `IsQAdicWeilTower`, a separate predicate, and it constrains the
+`q`-tower alone).  So one is free to choose `weil` at `(𝔭, 2)` to be the
+evaluation pairing of `Â'[𝔭] ≅ A'[𝔭]^∨`, which exists as a `Γ_F`-equivariant
+perfect `𝔽_2`-pairing because `√2 : A'[2]/A'[𝔭] ⟶ A'[𝔭]` is an isomorphism and
+`e_2` identifies `Â'[𝔭] = √2·Â'[2]` with `(A'[2]/A'[𝔭])^∨`.  The remaining
+axioms are then free at that level: `weil_gal` because `galRoot` is trivial on
+`μ_2`, and `weil_act` because `√2` KILLS both `A'[𝔭]` and `Â'[𝔭]`, so
+`weil (√2 y) z = weil 0 z = 1 = weil y 0 = weil y (√2 z)` and the integer scalars
+are automatic.  **The moral, which is the transferable part: an axiom of the
+shape "for every `(I, n)`" on a FIELD of a structure is much weaker than the
+same sentence about a named classical object, and the cheap refutation is
+usually a refutation of the classical object only.**  This audit applies verbatim
+to `exists_dualPolarization_of_mult`, which shares `DualStruct`.
+
+**ATOMICITY AUDIT (2026-07-31).**  Three cuts were considered and all three are
+refused; a successor should not spend the cycle re-deriving them.
+
+1. *Split off the dual: `∃ d, IsQAdicWeilTower d 𝟙 q` first, then the
+   polarization.*  REFUSED, and the reason needs stating carefully because the
+   obvious argument for refusing it does not work.
+
+   The second half would have to read
+   `∀ d : DualStruct ab' m', IsQAdicWeilTower d 𝟙 q → ∃ b hom, …`, and
+   `DualStruct`'s axioms DO NOT PIN `d`: `weil` is nondegenerate in the FIRST
+   variable only, so for any abelian `C` the datum `d.dualScheme = Â' × C`,
+   paired through the projection with `dualMult` acting diagonally, satisfies
+   every field — `weil_add_right` and `weil_act` componentwise, `weil_gal`
+   likewise, and nondegeneracy because `z = (z₁, 0)` already separates points of
+   `A'[I]`.  So the universally-quantified half quantifies over a class strictly
+   larger than "the dual", and a `∀ d` statement about that class is not the
+   theorem anybody means.
+
+   **That witness does NOT refute the split, and it is worth recording that it
+   does not, so the next reader does not over-read it.**  For exactly this `d`,
+   `hom y := (λ y, 0)` discharges all six clauses, since the sixth reads
+   `weil (y, λ z)` and is the bound for `λ` itself.  Whether some ADMISSIBLE `d`
+   admits no `hom` at all is OPEN; what one would have to beat is an arbitrary
+   choice of the `weil` FIELD compatible along the tower, and the tower
+   compatibility is the only thing constraining those choices across levels.
+   The refusal is therefore on the ground that the residue is a statement about
+   an undetermined class whose truth nobody has checked — not on a
+   counterexample.  **Keep `d` existentially bound with whatever is handed on**,
+   and if a successor wants this split, the thing to settle first is exactly the
+   open question just named.
+2. *Split off the bound `b`.*  Same defect one field further in: the residue
+   quantifies over `d` AND `hom`.
+3. *Split off "`A'` is projective / carries a polarization as a MORPHISM".*  Not
+   expressible: the target of such a morphism is `Pic⁰(A')`, and the only
+   representability statement in this tree is `exists_relPicZeroSubgroup`
+   (`ModularCurve/RelativePicard.lean`), which is itself open and is about
+   relative CURVES (`SmoothOfRelativeDimension 1`), not about abelian schemes.
+   Cutting here would trade one open leaf for two.
+
+So the leaf is ATOMIC on the axes available today, and what it is waiting for is
+a dual-abelian-variety development, not a cut.  The cheapest thing that would
+change that is a representability statement for `Pic⁰` of an abelian scheme; if
+one lands, cut (3) becomes available and (1) becomes unnecessary. -/
+theorem exists_dualPolarization_field
+    {k : Type u} [Field k]
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    (q : ℕ) (hq : q.Prime) (hqk : (q : k) ≠ 0) :
+    ∃ (b : ℕ) (d : DualStruct ab' m')
+      (hom : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))) →
+        GeomFibrePt d.dualMap (𝟙 (Spec (CommRingCat.of k)))),
+      IsQAdicWeilTower d (𝟙 (Spec (CommRingCat.of k))) q ∧
+      IsQAdicBoundedPolarizationHom d (𝟙 (Spec (CommRingCat.of k))) q b hom :=
+  sorry
+
+open _root_.NumberField in
+/-- **THE DUAL ABELIAN VARIETY AND AN `𝒪_D`-LINEAR POLARIZATION OF BOUNDED
+`q`-RADICAL, OVER A FINITE FIELD** (**PROVEN 2026-07-31** over
+`exists_dualPolarization_field` immediately above, which is the same statement
+with the finiteness of the base deleted; formerly a sorry leaf, cut 2026-07-30 out of
 `exists_qAdicPolarizedSystem_finiteBase` immediately below, which is PROVEN
 over it — Grothendieck representability of `Pic⁰`, Mumford *Abelian
 Varieties* §13, §16, §23, Milne *AV* §I.13, Silverman *AEC* III.8.1).
@@ -21753,32 +21919,22 @@ REFUTING CHECK for that claim, one grep:
 `grep -n 'hnF' Fermat/FLT/Modularity/AbelianScheme.lean`.  If the gate is not
 there, this leaf is false again and must be withdrawn, not `sorry`d.
 
-**WHERE THE HYPOTHESES GO.**
+**WHERE THE HYPOTHESES GO — CORRECTED 2026-07-31 BY THE RECUT.**  All four of
+`hfin`, `N`, `hN`, `hqN` are spent in ONE place, the three-line proof below:
+they produce `(q : k) ≠ 0`, through `natCast_ne_zero_of_coprime_natCard`, and
+that is the whole of their contribution.  The bullet that used to stand here
+claiming that `hfin` "does real work of its own", because "over a FINITE field
+an abelian variety is projective and carries an ample line bundle DEFINED OVER
+`k`", was true and misattributed: an abelian variety over ANY field is
+projective over that field (Milne *AV* I.7.1), so the projectivity and the
+averaging `λ = Σ_i â_i ∘ λ₀ ∘ a_i` never read the base, and the
+Frobenius-orbit descent the old route described is a way of solving a problem
+that does not arise.  See `exists_dualPolarization_field` above for the full
+account, the falsity audit on `(q : k) ≠ 0`, and the atomicity audit.
 
-* `[NumberField.IsTotallyReal D]` buys `weil_act` (Rosati trivial on `𝒪_D`)
-  and, with it, the strong `𝒪_D`-ALTERNATING clause `e(a y, λ y) = 1`.  Without
-  it the induced form is hermitian, the weak form gives only
-  `e(a y, λ y)^2 = 1`, and `q = 2` is lost — see `IsQAdicPolarizationHom`.
-* `hq`/`hqN` are what make `q ≠ char k`, hence `μ_{q^M}(k̄)` nontrivial and the
-  pairing nondegenerate at every level of the tower; `hfin`/`hN` occur only to
-  give `hqN` its meaning.  At `q = p` the leaf is FALSE for the reason recorded
-  on `exists_qAdicPolarizedSystem_finiteBase`: `w` is forced to `1`, so the
-  radical is everything and no `b` bounds it against a fibre of positive
-  `p`-rank.
-* `hfin` also does real work of its own: over a FINITE field an abelian variety
-  is projective and carries an ample line bundle DEFINED OVER `k`, so averaging
-  `λ = Σ_i â_i ∘ λ₀ ∘ a_i` over a `ℤ`-basis of `𝒪_D` gives an `𝒪_D`-linear
-  polarization over `k`, which is the `Γ_k`-equivariance clause.
-
-**`hdim'` IS DELIBERATELY ABSENT, AND THAT IS WHY THE RADICAL IS BOUNDED
-RATHER THAN ZERO.**  Its characteristic-zero counterpart carries `hdim` and
-spends it exactly on choosing `λ` of degree prime to `q`, i.e. on PERFECTNESS.
-Here nothing bounds `NS(A')`, so the honest conclusion is
-`IsQAdicBoundedPolarizationHom` with `b` the exponent of the `q`-primary part
-of `ker λ`; see that predicate's docstring for why a perfectness clause here
-would be FALSE, and `exists_qAdicPolarizedSystem_finiteBase` for why adding
-`hdim'` would collapse the whole level-pairing statement into
-`det_frobLevelMatrix_eq_natCast_finiteBase`.
+`[NumberField.IsTotallyReal D]` is forwarded unchanged and is where the strong
+`𝒪_D`-ALTERNATING clause comes from; `hdim'` is still deliberately absent, which
+is still why the radical is BOUNDED rather than zero.
 
 `σ` and `hσ` do not occur: this statement is about the pairing and not about
 the Frobenius, and the multiplier `N` is produced downstream in
@@ -21795,8 +21951,12 @@ theorem exists_dualPolarization_finiteBase
       (hom : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))) →
         GeomFibrePt d.dualMap (𝟙 (Spec (CommRingCat.of k)))),
       IsQAdicWeilTower d (𝟙 (Spec (CommRingCat.of k))) q ∧
-      IsQAdicBoundedPolarizationHom d (𝟙 (Spec (CommRingCat.of k))) q b hom :=
-  sorry
+      IsQAdicBoundedPolarizationHom d (𝟙 (Spec (CommRingCat.of k))) q b hom := by
+  haveI := hfin
+  refine exists_dualPolarization_field ab' m' q hq
+    (natCast_ne_zero_of_coprime_natCard ?_)
+  rw [hN]
+  exact hq.coprime_iff_not_dvd.mpr hqN
 
 open _root_.NumberField in
 /-- **THE FORMAL GLUE: A BOUNDED-RADICAL `𝒪_D`-LINEAR POLARIZATION TURNS THE
@@ -23199,6 +23359,15 @@ def postComp {A C S : Scheme.{u}} {f : A ⟶ S} {h : C ⟶ S} (π : A ⟶ C) (h�
 @[simp] theorem postComp_val {A C S : Scheme.{u}} {f : A ⟶ S} {h : C ⟶ S} (π : A ⟶ C)
     (hπ : π ≫ h = f) {T : Scheme.{u}} {g : T ⟶ S} (y : RelPoint f g) :
     (postComp π hπ y).1 = y.1 ≫ π := rfl
+
+-- NOTE (2026-07-31): a duplicated namespace terminator stood HERE and fenced
+-- `push_pre` and `push_injective` below out of `namespace RelPoint`, so their
+-- bodies could not resolve the unqualified `push` and their two consumers
+-- reported `Unknown constant Fermat.RelPoint.push_injective` / `…push_pre` for
+-- names that are visibly present in this file.  One opener at the top of this
+-- section, two terminators: the semmerge scope-line hole recorded in
+-- `tools/merge/README.md`, produced by two branches each adding a block that
+-- ended the namespace.  The terminator below closes it.
 
 /-- **`push` commutes with a change of test object.**  Both sides are
 `h ≫ y.1 ≫ ι` up to the associator, so this is `Category.assoc`; it is what
