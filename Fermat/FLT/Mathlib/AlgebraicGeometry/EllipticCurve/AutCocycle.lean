@@ -328,18 +328,27 @@ The ratio is handled WITHOUT inverting any map: for `y ∈ ⟨g⟩` pick `x ∈ 
 This is the whole `A = μ₂` content of the `j = 0` descent, and it is where `ι`, `hmove`,
 `hu6` and `hu2` are consumed.
 
-#### What has to be proved
+#### The proof
 
-Write `A := {C : C • (E⁄Ω) = (E⁄Ω) ∧ autMap C preserves ⟨g⟩}`.  On the normal form
-`y² = x³ + a₆` every automorphism is `⟨u,0,0,0⟩` with `u⁶ = 1` (`aut_eq_diag_sextic`), and
-`u` is injective on automorphisms, so `A ↪ μ₆`.  `A` contains `-1`, which acts as negation
-(`autMap_diag_neg`) and so preserves every `AddSubgroup`; `hmove` says `ι ∉ A`, and
-`hu6`/`hu2` say `ι.u` has order `3` or `6`.  The only subgroup of `μ₆` containing `μ₂` and
-not containing an element of order `3` or `6` is `μ₂` itself, so `u(A) = μ₂`.
+Write `A ⊆ μ₆` for the set of `u` with `u⁶ = 1` whose diagonal automorphism `[u]` carries
+`⟨g⟩` into itself.  On the normal form `y² = x³ + a₆` every automorphism is `⟨u,0,0,0⟩` with
+`u⁶ = 1` (`aut_eq_diag_sextic`), diagonal automorphisms compose by multiplying their `u`
+(`autMap_mul` through `VariableChange.mul_def`, since `⟨v,0,0,0⟩ * ⟨v',0,0,0⟩ = ⟨vv',0,0,0⟩`),
+and `[-v] = -[v]` (`autMap_diag_neg`), which every `AddSubgroup` absorbs.  So `A` is closed
+under multiplication and under `v ↦ -v`.
 
-Given `C` and `C'` both stable for the SAME `σ`, the ratio lies in `A`: `⟨g⟩` is finite
-(`hg`, `hN`) and `autMap` is injective (`autPoint_injective`), so `autMap C ∘ map σ` and
-`autMap C' ∘ map σ` are BIJECTIONS of `⟨g⟩`, whence `C'⁻¹C ∈ A` and `(C'.u)⁻¹C.u = ±1`.
+*The ratio lies in `A`.*  Put `w := C.u⁻¹C'.u`.  `⟨g⟩` is FINITE (`hg`, `hN`) and
+`autMap C ∘ map σ` is injective — `autMap` is a variable change composed with a transport,
+so `mapVariableChangeFun_injective` gives it — hence that map is ONTO `⟨g⟩`
+(`exists_mem_zmultiples_eq`).  Writing an arbitrary `y ∈ ⟨g⟩` as `autMap C (σ x)` with
+`x ∈ ⟨g⟩` turns `[w] y` into `autMap C' (σ x)`, which lies in `⟨g⟩` by `hmem'`.  So `w ∈ A`,
+and with it `w²`, `-w`, `-w²`.
+
+*`A` contains no element of order `3` or `6`.*  Suppose `w² ≠ 1`.  Then `w²` and `ι.u²` are
+both PRIMITIVE cube roots of unity: `z⁶ = 1` with `z² ≠ 1` forces `(z²)² + z² + 1 = 0` after
+cancelling `z² − 1` from `z⁶ − 1`.  A quadratic has at most two roots, and here they are
+`w²` and `(w²)²`, so `ι.u² = w²` or `ι.u² = (w²)²`; either way `ι.u = ±w` or `ι.u = ±w²`,
+all four of which lie in `A` — contradicting `hmove`.  Hence `w² = 1`, i.e. `C.u² = C'.u²`.
 
 #### Why the conclusion is `u²` and not `u`
 
@@ -598,9 +607,9 @@ theorem exists_finiteGaloisLevel_of_addOrder [Normal K Ω]
 
 /-- **THE `μ₃`-VALUED DESCENT COCYCLE AT `j = 0`, in normal form** (PROVEN 2026-07-28 over the
 two leaves `sq_u_eq_sq_u_of_autStable` and `exists_finiteGaloisLevel_of_addOrder`; the second
-of those was CLOSED 2026-07-30, so `sq_u_eq_sq_u_of_autStable` is now the only leaf left under
-this declaration.  Its `Algebra.IsAlgebraic K Ω` became `Normal K Ω` at the same time — see
-`exists_finiteGaloisLevel_of_addOrder` for why that strengthening is not cosmetic).
+was CLOSED 2026-07-30 and the first 2026-07-31, so **this declaration is now unconditional**.
+`exists_finiteGaloisLevel_of_addOrder`'s `Algebra.IsAlgebraic K Ω` became `Normal K Ω` when it
+closed — see there for why that strengthening is not cosmetic).
 
 Everything that is not "the `u` is determined up to sign" or "the level is finite" is proved
 here.  In particular the COCYCLE IDENTITY is proven outright, and it is the mathematically
@@ -694,7 +703,7 @@ theorem exists_muThreeCocycle_of_autStable_of_sextic {N : ℕ} (hN : N ≠ 0)
 
 /-- **THE `μ₃`-VALUED DESCENT COCYCLE AT `j = 0`** (PROVEN 2026-07-28 over the two leaves
 `sq_u_eq_sq_u_of_autStable` and `exists_finiteGaloisLevel_of_addOrder`; the latter was CLOSED
-2026-07-30, leaving `sq_u_eq_sq_u_of_autStable` as the only leaf here).
+2026-07-30 and the former 2026-07-31, so **this declaration is now unconditional**).
 
 This is `exists_muThreeCocycle_of_autStable_of_sextic` with the normal-form hypotheses
 replaced by `hj : E.j = 0`.  The proof puts `E` in the form `y² = x³ + b` over `K`
