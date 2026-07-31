@@ -1738,6 +1738,81 @@ reuse it.** The Picard leaf was cut on 2026-07-28 and the Albanese one on
 node, say in the docstring which classical theorem the pieces are, in words —
 that sentence is the only thing that will match.
 
+## AN AUDIT MARKED "RE-VERIFIED <yesterday>" CAN BE STALE ABOUT ITS OWN FILE
+
+(2026-07-31.) `exists_nonconstant_toAbelianScheme_of_one_le_x0Genus`'s docstring in
+`ModularCurve/X0.lean` carried a paragraph headed **RE-VERIFIED 2026-07-30**, whose
+operative claim was that the modular route's first step "is still unstated — the only
+dimension formula anywhere in the tree is `finrank_cuspForm_of_x0HeckeCharpolyTable`,
+table-driven and declared below this leaf". The uniform bridge it wanted —
+`finrank_cuspForm_eq_x0Genus`, `dim_ℂ S₂(Γ₀(N)) = x0Genus N` for **every** `N ≥ 1` —
+had been stated **in the same file, on the same day**, three thousand lines further
+down. The audit really was re-verified, against `85ee56a7`; the sibling leaf landed in
+a later release a few hours after.
+
+So the release window does not only invalidate OWNERSHIP records. It invalidates the
+**absence claims inside docstrings**, and those are the more dangerous half, because a
+docstring absence claim is read as a settled fact about the tree and carries a date
+that makes it look fresh. **"RE-VERIFIED <date>" is evidence about a commit, not about
+`main`** — and the same file is exactly where a rival leaf is most likely to appear,
+since that is where the neighbouring work is being dispatched.
+
+The check costs one `grep`: before believing any docstring clause of the form *"no such
+theorem exists"*, *"the only one is X"*, or *"it is not in scope here"*, re-grep the
+name and re-read the line numbers. Then **correct the docstring in place, next to the
+stale claim rather than over it** — the reasoning that produced the claim is usually
+still worth reading, and a leaf's audit history is how the next prover knows which axes
+are exhausted.
+
+Corollary, from the same leaf: when the correction lands, re-do the ARITHMETIC the stale
+claim supported. Here the audit's conclusion — "a decomposition along the modular axis
+produces two theory builds where there is now one leaf, which is why it has not been
+taken" — was the whole reason the axis was declined, and with the dimension bridge
+already stated it is off by one build.
+
+## A RELOCATION PLAN MUST BE MEASURED AGAINST `merger`, NOT `main` — THE BLOCK MOVES
+
+(2026-07-31, third consecutive decline of the same relocation.) The section above
+says an audit's *absence claims* go stale in the release window. This is the same
+mechanism doing something worse to a *plan*: **every coordinate in a relocation
+recipe — line ranges, line counts, which steps are still open, how many use sites
+need requalifying — describes a tree that no longer exists by the time anyone acts
+on it.** And unlike an absence claim, a plan looks actionable, so the next agent
+re-derives it from `main` and gets a *different wrong answer* rather than noticing.
+
+`exists_isWeilEigenvalues_galoisField` in `ModularCurve/X0.lean` is proven one
+module downstream, so closing it is a move, not a proof. Three agents in two days
+each measured that move against `main` and each recorded a different plan:
+
+| measured | block | length | open steps inside | requalify |
+|---|---|---|---|---|
+| 2026-07-30 vs `85ee56a7` | `Interface.lean:?` | 761 lines | 3 | ~50 sites |
+| 2026-07-31 vs `d451d20b` | `:54431–55801` | 1370 lines | 1 of 3 | ~50 sites |
+| 2026-07-31 vs `merger` `d4966bac` | `:55244–56742` | 1499 lines | **1**, renamed | **8**, in 7 decls |
+
+Every row was honest and correctly measured. The block doubled in size while
+getting *closer* to done, because proving its steps ADDED lines. And the third
+row is the only one you can act on: a branch cutting the move from `main` would
+delete `exists_riemannRochGrowth_of_isProperSmoothCurve`'s proof — **re-opening a
+leaf `merger` had already closed** — which is the "a branch that was right when
+dispatched is wrong when it lands" rule, arriving through a *plan* instead of
+through a diff.
+
+Two things follow, and the second is the one that keeps being missed:
+
+1. **Measure the source block on `merger`** (`git show merger:<path> > /tmp/x`),
+   never on `main`, and stamp the sha into whatever you write down.
+2. **The ~50-site figure was an unstripped whole-file `grep`.** The real count was
+   8, in 7 named declarations. A relocation's cost is dominated by exactly this
+   number, so an inflated one can kill a cheap move on its own — which is close to
+   what happened here. Strip comments and attribute hits to enclosing declarations
+   before quoting a use-site count, the same discipline the frontier scans use.
+
+Corollary for the decline itself: **a decline recorded on ownership grounds has an
+expiry date that nothing writes down**, so say in the docstring which job held the
+lock, and re-check `~/.flt-loop/jobs` before inheriting it. Two of these three
+declines were on ownership that had already lapsed.
+
 ## A `sorry` is a PROMISE that the statement is provable
 
 (2026-07-29, orchestrator error, caught only because an agent quoted the file's
