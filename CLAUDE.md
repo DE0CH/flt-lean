@@ -2167,3 +2167,50 @@ commutative algebra) and mathlib's `Module.nonempty_basis_of_flat_of_finrank_eq`
 resisted every cut for days is worth suspecting of being false *precisely because* falsity is what
 makes it uncuttable: no cut can be found, because there is nothing true underneath to cut into.
 "Atomic on every axis tried" is evidence about the statement, not only about the prover.
+
+## "FINITE FLAT" OVER A FIELD IS EMPTY — and the leaf it nearly made false
+
+(2026-07-31, caught before it was written down.) A leaf of the shape *"a closed
+subscheme of a `ℚ̄`-scheme is determined by its `ℚ̄`-points"* is the residue of at
+least three separate nodes in `ModularCurve/X0.lean`. The natural hypotheses to
+copy across from the object at hand — a `CyclicSubgroupOfOrder`, whose fields are
+`isClosedImmersion`, `isFinite`, `flat` — give a statement that is **FALSE**:
+
+* over a FIELD every module is flat, so `IsFinite + Flat` says only "finite", and
+  `A = 𝔸¹`, `C₁ = ` the origin, `C₂ = Spec ℚ̄[ε]` are two finite flat closed
+  subschemes with the same `ℚ̄`-points (the only `Spec ℚ̄ ⟶ Spec ℚ̄[ε]` kills `ε`)
+  that are not isomorphic.
+
+Reducedness here does **not** come from flatness; it comes from Cartier's theorem,
+which needs the GROUP structure — in this tree that is
+`CyclicSubgroupOfOrder.etale_of_specQBase`, and the hypothesis to state is
+`AlgebraicGeometry.Etale`, not `Flat`. Two further hypotheses are equally
+load-bearing and equally easy to drop: `IsAlgClosed` (over `ℚ`,
+`Spec ℚ[x]/(x²+1)` and `∅` have the same `ℚ`-points) and `IsClosedImmersion`
+(`Spec K ⊔ Spec K` onto one point versus `Spec K`).
+
+General form, and it is the cheap habit: **when a leaf says "determined by its
+points", write down what happens at a NON-REDUCED subscheme, at a NON-CLOSED
+point, and over a NON-ALGEBRAICALLY-CLOSED base, before you write the binders.**
+Each of the three has a two-line counterexample, and each survives review, because
+the hypotheses were copied verbatim from a structure where they were sufficient
+*in combination with a field the leaf no longer mentions*.
+
+## THE SAME MISSING LEMMA, RECORDED THREE TIMES UNDER THREE NAMES
+
+(2026-07-31.) Before cutting a bespoke leaf, grep the file for the gap you are
+about to name. `X0.lean` recorded one statement — the one above — in three
+places under three phrasings: as item 3 of
+`nonempty_isBaseChangeOf_of_isIso_isWeierstrassModel`'s itemisation ("both are
+finite étale, hence reduced, hence determined by their geometric points"), as the
+"WHAT REMAINS OF (b)" paragraph of
+`exists_gamma0Datum_specQ_isBaseChangeOf_liesIn_of_weierstrassQForm` ("the passage
+from `ℚ̄`-points to closed subschemes"), and as the SCOPE paragraph of
+`liesIn_spanScheme_iff_mem_zmultiples` ("the new conjunct is about `ℚ̄`-POINTS and
+NOT about `T`-points"). None of the three names the other two.
+
+Cutting it ONCE, in the generality that covers all three, turns a 1-leaf-for-2
+trade into a 1-leaf-for-2 where one of the two is already owed elsewhere — which
+is the difference between adding work and disclosing it. The tell is verbal
+rather than structural, so it takes a grep for the *mathematical content* ("points
+determine", "reduced", "subscheme"), not for a declaration name.
