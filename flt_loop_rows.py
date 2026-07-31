@@ -485,6 +485,15 @@ def r4_action(s):
         if died(j):
             j["started"] = False
             j["alive"] = False
+            # Keep the OLD token. A new one names the new process, which is
+            # what the liveness sweep needs -- but the sentinel is validated
+            # against the record's token, so rotating it silently discards a
+            # result the agent already wrote. flt-lean-204 finished, wrote a
+            # 17KB sentinel, and was then resumed NINETEEN times: each
+            # replacement found its work done, exited without writing anything,
+            # and the rotated token made the real sentinel invisible for ever.
+            j.setdefault("prev_tokens", []).append(j["token"])
+            j["prev_tokens"] = j["prev_tokens"][-10:]
             j["token"] = tok()
             j["retries"] += 1
             j["resume"] = bool(j.get("session"))

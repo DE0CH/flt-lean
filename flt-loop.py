@@ -871,7 +871,10 @@ def load():
         if sen:
             try:
                 d = json.loads(sen)
-                if d.get("token") == j["token"]:
+                # Accept a sentinel written under any token THIS job has held.
+                # The token identifies the process; a resumed job is the same
+                # job, and its earlier incarnation's result is still its result.
+                if d.get("token") in [j["token"]] + (j.get("prev_tokens") or []):
                     j["sentinel"] = d
             except json.JSONDecodeError:
                 j["sentinel"] = None      # truncated = not finished
@@ -1027,7 +1030,7 @@ def save(s):
         # exactly the churn the grace period exists to stop.
         rec = {k: j.get(k) for k in ("kind", "worktree", "payload", "token",
                                      "retries", "host", "pid", "session", "resume",
-                                     "spawned_at", "model", "inbox", "resume")}
+                                     "spawned_at", "model", "inbox", "resume", "prev_tokens")}
         wr(STATE / "jobs" / (n + ".json"), json.dumps(rec, indent=1))
         if j["started"]:
             wr(STATE / "jobs" / (n + ".started"), j["token"])
