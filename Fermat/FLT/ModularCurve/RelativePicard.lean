@@ -555,29 +555,23 @@ hoist its own docstring prescribed, made possible by
 `modLocW_whiskerLeft`/`Right` having been proven.  `AmpleSheaf.lean`
 inherits the whole block by import and is otherwise untouched.
 
-**Amended 2026-07-30 — and the paragraph this replaces was wrong in a way
-worth recording, because it talked three separate audits out of even
-looking.**  It read: "what is genuinely still open is exactly the part
-needing *sheafification to commute with PULLBACK*: one leaf,
-`nonempty_modPullback_modTensorPic` … **It must not be dispatched at
-independently** — hoisting it would drag [`AmpleSheaf.lean`'s
-`isIso_modPullbackTensorComparison`] up rather than remove one; the correct
-action is the hoist, once it is settled."
+**What is genuinely still open** is exactly the part needing
+*sheafification to commute with PULLBACK*: one leaf,
+`nonempty_modPullback_modTensorPic`, whose twin
+`nonempty_modPullback_modTensor` in `AmpleSheaf.lean` is proven only over
+the still-open `isIso_modPullbackTensorComparison` there.  **It must not be
+dispatched at independently** — hoisting it would drag that leaf up rather
+than remove one; the correct action is the hoist, once it is settled.
 
-**"Sheafification commutes with pullback" is FREE FROM THE PIN.** It is
-`SheafOfModules.sheafificationCompPullback` in
-`Mathlib/Algebra/Category/ModuleCat/Sheaf/PullbackContinuous.lean`, and it
-had been there the whole time.  So the diagnosis named the one ingredient
-that costs nothing, and the "do not dispatch" instruction it carried kept
-anyone from finding that out.  `nonempty_modPullback_modTensorPic` is now
-PROVEN over the presheaf-level leaf `nonempty_presheafPullback_tensor`; see
-the section note on it below for the reduction, for a falsity audit killing
-its mathlib-shaped generalisation, and for the two routes that remain.
-
-The general lesson, since this file has now made the same mistake twice
-(the unitors, the braiding, associativity, and now this): **a claim of the
-form "the pin does not have X" is a hypothesis to check against the pin, not
-a fact to build audits on** — and it must name the file it grepped. -/
+**Amended 2026-07-31 — the paragraph above is WITHDRAWN in full.**
+"Sheafification commutes with pullback" is not open and never was: it is
+`SheafOfModules.sheafificationCompPullback` in the pin.
+`nonempty_modPullback_modTensorPic` is PROVEN, the hoist is cancelled, and what
+is genuinely still open is the PRESHEAF-level
+`nonempty_presheafModPullback_tensor` — which is a statement about a filtered
+colimit on the site of opens and mentions no sheaf at all.  Its section header,
+just above it, also records the counterexample that shows it must NOT be
+generalised to an arbitrary continuous functor between sites. -/
 
 /-! #### Pseudo-functoriality of `modPullback` (PROVEN — free from the pin) -/
 
@@ -956,112 +950,134 @@ theorem nonempty_modTensor_assoc {Z : Scheme.{u}} (L M N : Z.Modules) :
       (modTensorLocIso L (modTensor M N)).symm
   exact ⟨{ hom := e.hom, inv := e.inv, hom_inv_id := e.hom_inv_id, inv_hom_id := e.inv_hom_id }⟩
 
-/-! #### Pullback commutes with `modTensor`, reduced to a PRESHEAF statement
+/-! #### Pullback and `modTensor`: the sheafification is FREE, the presheaf pullback is not
 
-**Cut 2026-07-30, and it retires the "wait for the hoist" instruction that stood
-on `nonempty_modPullback_modTensorPic` below.**  That instruction said the leaf
-was the verbatim twin of `Fermat.nonempty_modPullback_modTensor` in
-`Modularity/AmpleSheaf.lean` (open there over `isIso_modPullbackTensorComparison`,
-which is still open as of `85ee56a7`), so the only correct action was to wait and
-hoist.  It is no longer the only action: **everything sheaf-theoretic in the leaf
-is formal from the pin, and what is left is a statement about PRESHEAVES of
-modules with no sheafification, no invertibility and no scheme geometry in it.**
+**Amended 2026-07-31, and this REVERSES the route this section used to record.**
+The old docstring of `nonempty_modPullback_modTensorPic` said
 
-The reduction is four lines of mathlib plus this module's own localized-monoidal
-block, and it is worth spelling out because two of the three ingredients are
-easy to miss:
+> `Scheme.Modules.pullback` is a left adjoint and the presheaf pullback is
+> strong monoidal, so the content is again that sheafification is monoidal:
+> the sheafification inside `modTensor` has to move across the pullback.
 
-* `SheafOfModules.sheafificationCompPullback` (mathlib,
-  `Sheaf/PullbackContinuous.lean`) — **PULLBACK ALREADY COMMUTES WITH
-  SHEAFIFICATION at this pin**, `a ⋙ f^* ≅ p ⋙ a`, where `p` is the PRESHEAF
-  pullback.  Nothing had to be proven for this and no audit in this file
-  mentioned it;
-* `modSheafifyValIso` (above) — `a(L.val) ≅ L`, so `f^*L ≅ a(p L.val)`;
-* `Localization.Monoidal.μ` for `modLocW W` (this module's own block, PROVEN
-  over `modLocW_whiskerLeft`) — `a X ⊗ a Y ≅ a (X ⊗ Y)` in `ModLM W`.
+**Both halves are wrong, and they are wrong in opposite directions.**
 
-Chaining them turns both sides of the leaf into `a` applied to a presheaf:
-`f^*(L ⊗ M) ≅ a(p(L.val ⊗ M.val))` and
-`f^*L ⊗ f^*M ≅ a(p L.val ⊗ p M.val)`.  So the whole obligation is
-`p(A ⊗ B) ≅ pA ⊗ pB` — `nonempty_presheafPullback_tensor`.
+* *Moving sheafification across the pullback is FREE* — it is
+  `SheafOfModules.sheafificationCompPullback` in the pin,
+  `a_Z ⋙ f^*_{sheaf} ≅ f^*_{presheaf} ⋙ a_W`, together with
+  `SheafOfModules.pullbackIso`.  Nothing has to be proven for it.
+* *The presheaf pullback is NOT strong monoidal in general.*  It is the left
+  adjoint of `pushforward φ`, which factors as restriction of scalars along
+  `φ` (left adjoint = base change, strong monoidal) after precomposition with
+  `F` (left adjoint = a relative left Kan extension, **not** monoidal).  For
+  `F : C ⥤ D` collapsing two objects `x, y` of a discrete `C` to one object
+  `a` of `D`, with constant ring `k`, `(Lan M)(a) = M x ⊕ M y`, so
+  `Lan M ⊗ Lan N` has four summands where `Lan (M ⊗ N)` has two.  So a proof
+  of the leaf below may NOT be attempted at the generality of an arbitrary
+  morphism of presheaves of rings over an arbitrary continuous functor — it is
+  false there.
 
-**FALSITY AUDIT ON THE OBVIOUS GENERALISATION — do not state the leaf for a
-general functor between sites.**  Mathlib's `PresheafOfModules.pullback` is
-defined for an arbitrary `F : C ⥤ D` and `φ : S ⟶ F.op ⋙ R`, and the
-mathlib-shaped statement would be "`pullback φ` is strong monoidal".  **That is
-FALSE.**  Take `D` a single object with ring `k`, `C` two objects (discrete),
-`F` the unique functor, `φ = 𝟙`.  Then `pushforward` is the constant presheaf
-functor and its left adjoint is `p A = A(c₁) ⊕ A(c₂)`, so
-`p(A ⊗ B) = (A(c₁) ⊗ B(c₁)) ⊕ (A(c₂) ⊗ B(c₂))` while
-`pA ⊗ pB = (A(c₁) ⊕ A(c₂)) ⊗ (B(c₁) ⊕ B(c₂))` — four summands against two, and
-already different for `A = B = k` at both objects (`k²` against `k⁴`).
+What rescues it here is that the site is `Opens`: `Opens.map h.base` preserves
+finite meets, so `{U : Z.Opens // V ≤ h ⁻¹ᵁ U}` is CODIRECTED, the Kan extension
+`(Lan M)(V) = colim_{U ⊇ h(V)} M(U) ⊗_{Γ(Z,U)} Γ(W,V)` is a FILTERED colimit,
+and tensor products commute with filtered colimits.  That is the whole
+mathematical content, and it is now isolated in one leaf,
+`nonempty_presheafModPullback_tensor`, with no sheaf theory in it at all.
 
-What rescues the case at hand is that `F = Opens.map h.base`, for which the
-comma categories computing the left Kan extension are **filtered**: the index
-category at `V : W.Opens` is the opens `U ⊇ h(V)` ordered by reverse inclusion,
-closed under intersection.  Tensor products commute with filtered colimits, and
-that — not formal nonsense — is the content of the remaining leaf.  So the leaf
-is deliberately stated for a MORPHISM OF SCHEMES and must not be "generalised"
-to an arbitrary site map; the same warning applies to any attempt to upstream
-it.
+The consequence for dispatch is the reverse of what stood here: the leaf below
+is PROVEN and is no longer a dispatch target, and there is no hoist to wait for.
+Its twin `Fermat.nonempty_modPullback_modTensor` in
+`Fermat/FLT/Modularity/AmpleSheaf.lean` — which is DOWNSTREAM and is proven
+there only over that module's still-open `isIso_modPullbackTensorComparison` —
+should now be redirected to this declaration, and
+`isIso_modPullbackTensorComparison` together with `modPullbackTensorComparison`
+and `modPullbackTensorComparison_tensorSection` DELETED.  That is a strict
+removal of a leaf, not a hoist, and it is left to that module's owner because it
+is a downstream edit. -/
 
-**Route for whoever takes the remaining leaf.**  The honest next cut, if it is
-wanted, is `PresheafOfModules.pullbackComp` (mathlib) factoring
-`φ : S ⟶ F.op ⋙ R` as `S ⟶ 𝟭.op ⋙ (F.op ⋙ R)` followed by
-`(F.op ⋙ R) ⟶ F.op ⋙ R`, i.e. `p = (base change of scalars) ⋙ (Lan along
-F.op)`.  The first half is an objectwise `ModuleCat` base change, hence strong
-monoidal by `ModuleCat`-level algebra; the second is where filteredness is
-consumed.  Mathlib has no objectwise description of `pullback` at all — only
-`pullbackObjIsDefined_free_yoneda` and `SheafOfModules.pullbackObjFreeIso`
-(pullback of a FREE object is free), which with
-`PresheafOfModules.Generator.isColimitFreeYonedaCoproductsCokernelCofork` is
-the other available route: both sides preserve colimits, so it suffices to
-compare them on `freeYoneda` objects, where both are free.
+/-- **The PRESHEAF-level pullback** of presheaves of modules along a morphism of
+schemes, i.e. `Scheme.Modules.pullback h` before sheafification.
 
-**CORRECTION 2026-07-30 — "Mathlib has neither half's monoidality" was FALSE,
-and the true picture names the ONE missing declaration.**  The sentence above
-used to end that way; it has been deleted from it rather than left to mislead.
-Each clause below was checked by `inferInstance` in a scratch against this
-pin, not by grep, and the whole chain compiles except where marked ABSENT:
+`SheafOfModules.pullbackIso` and `SheafOfModules.sheafificationCompPullback`
+relate it to `modPullback`; it exists as a named abbreviation only so that the
+one genuine leaf about it can be stated. -/
+noncomputable abbrev presheafModPullback {Z W : Scheme.{u}} (h : W ⟶ Z) :
+    PresheafOfModules.{u} Z.ringCatSheaf.obj ⥤ PresheafOfModules.{u} W.ringCatSheaf.obj :=
+  PresheafOfModules.pullback.{u} (Scheme.Hom.toRingCatSheafHom h).hom
 
-* PRESENT, and STRONG rather than merely lax:
-  `(PresheafOfModules.pushforward₀OfCommRingCat F R).Monoidal`, in
-  `Presheaf/PushforwardZeroMonoidal.lean` — its `μIso` is literally
-  `Iso.refl`.  That is the `Lan` half's right adjoint;
-* PRESENT one level down: `(ModuleCat.restrictScalars f).LaxMonoidal`, in
-  `ModuleCat/Monoidal/Adjunction.lean`;
-* PRESENT, general machine: `Adjunction.leftAdjointOplaxMonoidal` in
-  `CategoryTheory/Monoidal/Functor.lean` — a left adjoint of a LAX monoidal
-  functor is OPLAX monoidal, i.e. it hands over the canonical
-  `δ : p(A ⊗ B) ⟶ pA ⊗ pB` for nothing;
-* PRESENT: a strong monoidal functor followed by a lax one is lax;
-* **ABSENT — and this is the whole gap**:
-  `(PresheafOfModules.restrictScalars α).LaxMonoidal`.  Synthesis fails.
+/-- **SHEAFIFYING A PRESHEAF TENSOR PRODUCT IS `modTensor` OF THE SHEAFIFICATIONS**
+(PROVEN — free from the localized monoidal structure): `a(A ⊗ B) ≅ a A ⊗ a B`.
 
-Since `PresheafOfModules.pushforward φ = pushforward₀ F R ⋙ restrictScalars φ`
-by definition (`Presheaf/Pushforward.lean`) and `pullback φ ⊣ pushforward φ` is
-`pullbackPushforwardAdjunction`, that single missing instance — an OBJECTWISE
-assembly of the `ModuleCat` one already present — is all that stands between
-this pin and a canonical comparison map on `presheafPullback`.
+This is the step that lets an identity proven for PRESHEAVES be pushed into
+`Z.Modules`, and it is exactly where `modLocW_isMonoidal` is spent: `μ` compares
+`a A ⊗ a B` with `a (A ⊗ B)` in `ModLM W`, and `modTensorLocIso` compares
+`modTensor (a A) (a B)` — which is `a ((a A).val ⊗ (a B).val)` by definition —
+with the same thing.  No comparison of `A` with `(a A).val` is needed anywhere,
+which is why the unit of the sheafification adjunction never appears. -/
+noncomputable def modSheafifyTensorIso {W : Scheme.{u}}
+    (A B : PresheafOfModules.{u} W.ringCatSheaf.obj) :
+    (PresheafOfModules.sheafification (𝟙 W.ringCatSheaf.obj)).obj (A ⊗ B) ≅
+      modTensor ((PresheafOfModules.sheafification (𝟙 W.ringCatSheaf.obj)).obj A)
+        ((PresheafOfModules.sheafification (𝟙 W.ringCatSheaf.obj)).obj B) :=
+  letI e : toModLM ((PresheafOfModules.sheafification (𝟙 W.ringCatSheaf.obj)).obj (A ⊗ B)) ≅
+      toModLM (modTensor ((PresheafOfModules.sheafification (𝟙 W.ringCatSheaf.obj)).obj A)
+        ((PresheafOfModules.sheafification (𝟙 W.ringCatSheaf.obj)).obj B)) :=
+    (Localization.Monoidal.μ _ (modLocW W) (modLocEps W) A B).symm ≪≫
+      (modTensorLocIso ((PresheafOfModules.sheafification (𝟙 W.ringCatSheaf.obj)).obj A)
+        ((PresheafOfModules.sheafification (𝟙 W.ringCatSheaf.obj)).obj B)).symm
+  { hom := e.hom, inv := e.inv, hom_inv_id := e.hom_inv_id, inv_hom_id := e.inv_hom_id }
 
-**What that buys, and why it is worth doing first.**  It does NOT prove the
-leaf: `δ` exists for any morphism of sites, including the two-object
-counterexample above, where it is the non-invertible `k² ⟶ k⁴`.  What it buys
-is the RESTATEMENT `IsIso (δ (presheafPullback h) A B)` in place of a bare
-`Nonempty ≅` — a named canonical map, so the remaining obligation becomes
-checkable objectwise and the filteredness argument has something concrete to
-act on.  The leaf's own docstring already invites exactly this ("a prover who
-finds it easier to build the canonical map and prove it invertible may of
-course do so and derive this"), and this correction says the canonical map is
-one instance away rather than a from-scratch construction.
+/-- **THE PRESHEAF PULLBACK IS STRONG MONOIDAL ON THE SITE OF OPENS** (sorry
+leaf, cut 2026-07-31 out of `nonempty_modPullback_modTensorPic`) — and this is
+now the ONLY open obligation behind "pullback commutes with `⊗`".
 
-**Consequence for `AmpleSheaf.lean`, which nobody should act on from here.**
-Once `nonempty_presheafPullback_tensor` is proven, `AmpleSheaf.lean`'s
-`nonempty_modPullback_modTensor` follows by IMPORT from
-`nonempty_modPullback_modTensorPic`, and its
-`modPullbackTensorComparison` / `isIso_modPullbackTensorComparison` block
-becomes optional rather than blocking.  That is a hoist for that module's owner
-to perform; it is recorded here only so it is not rediscovered. -/
+No sheaf, no sheafification, no Grothendieck topology: `PresheafOfModules.pullback`
+is the left adjoint of `PresheafOfModules.pushforward`, and the claim is that it
+carries the pointwise tensor product of presheaves of modules to the pointwise
+tensor product.
+
+**ROUTE, and the only one that can work** (see the section header for why the
+statement is FALSE at greater generality, with the two-point counterexample).
+
+`pushforward φ` is `precomposition with Opens.map h.base` followed by
+`restrictScalars φ`.  Take left adjoints in the other order:
+
+1. *Base change of rings* `Γ(W, h ⁻¹ᵁ −) ⊗_{Γ(Z,−)} −` is STRONG monoidal, by
+   `TensorProduct.congr`-style associativity of base change — no colimits.
+2. *The relative left Kan extension* along `Opens.map h.base` is the filtered
+   colimit `(Lan M)(V) = colim_{U ⊇ h(V)} M(U) ⊗_{Γ(Z,U)} Γ(W,V)`.  The index
+   poset `{U : Z.Opens // V ≤ h ⁻¹ᵁ U}` is CODIRECTED (it is closed under `⊓`,
+   because `h ⁻¹ᵁ (U₁ ⊓ U₂) = h ⁻¹ᵁ U₁ ⊓ h ⁻¹ᵁ U₂`, and contains `⊤`), so the
+   colimit is FILTERED, and `M ↦ M ⊗ N` commutes with filtered colimits.
+
+What the pin does NOT give is that formula: `PresheafOfModules.pullback` is
+defined abstractly as `(pushforward φ).leftAdjoint`, with existence obtained
+through `pullbackObjIsDefined_eq_top` and no description of the object.  So a
+prover has two honest options, and should price both before choosing:
+
+* establish the colimit formula above and run the argument, or
+* run the *generators* argument, which avoids the formula entirely.  Every
+  presheaf of modules is a colimit of `(free S).obj (yoneda.obj U)` — mathlib's
+  `PresheafOfModules.isColimitFreeYonedaCoproductsCokernelCofork` — the pullback
+  preserves colimits (left adjoint) and sends `(free S).obj (yoneda.obj U)` to
+  `(free R).obj (yoneda.obj (h ⁻¹ᵁ U))`
+  (`PresheafOfModules.pushforwardCompCoyonedaFreeYonedaCorepresentableBy`),
+  `− ⊗ N` preserves colimits (the tensor product is computed sectionwise and
+  colimits of presheaves of modules are sectionwise), and on generators
+  `free (yoneda U) ⊗ free (yoneda U') ≅ free (yoneda (U ⊓ U'))` **because
+  `Opens` is a poset with binary meets** — which is the same fact about the site
+  as in the colimit route, and the same fact that fails in the counterexample.
+
+**NOT VACUOUS and NOT trivially reducible.**  Take `h` a closed immersion of a
+point into `𝔸¹` and `P = Q` the ideal sheaf of the point: `h^*P` is the
+one-dimensional conormal space, `h^*(P ⊗ P)` is one-dimensional too, and the
+comparison is an isomorphism only because the tensor product is taken over the
+pulled-back ring `Γ(W, −)` and not over `Γ(Z, −)`.  Nothing here is formal in
+the sense of holding for any adjunction. -/
+theorem nonempty_presheafModPullback_tensor {Z W : Scheme.{u}} (h : W ⟶ Z)
+    (P Q : PresheafOfModules.{u} Z.ringCatSheaf.obj) :
+    Nonempty ((presheafModPullback h).obj (P ⊗ Q) ≅
+      (presheafModPullback h).obj P ⊗ (presheafModPullback h).obj Q) :=
+  sorry
 
 /-- **Pullback of PRESHEAVES of `𝒪`-modules along a morphism of schemes** — the
 functor mathlib's `sheafificationCompPullback` moves the sheafification past.
@@ -1146,16 +1162,15 @@ have to be waited for at all; see the section note above for the reduction, the
 falsity audit on its obvious generalisation, and what is left to prove. -/
 theorem nonempty_modPullback_modTensorPic {Z W : Scheme.{u}} (h : W ⟶ Z) (L M : Z.Modules) :
     Nonempty (modPullback h (modTensor L M) ≅ modTensor (modPullback h L) (modPullback h M)) := by
-  obtain ⟨ν⟩ := nonempty_presheafPullback_tensor h L.val M.val
-  have e : toModLM (modPullback h (modTensor L M))
-      ≅ toModLM (modTensor (modPullback h L) (modPullback h M)) :=
-    modPullbackTensorValIsoLM h L M ≪≫
-      (modLocA W).mapIso ν ≪≫
-      (Localization.Monoidal.μ _ (modLocW W) (modLocEps W)
-        ((presheafPullback h).obj L.val) ((presheafPullback h).obj M.val)).symm ≪≫
-      MonoidalCategory.tensorIso (modPullbackValIsoLM h L).symm (modPullbackValIsoLM h M).symm ≪≫
-      (modTensorLocIso (modPullback h L) (modPullback h M)).symm
-  exact ⟨{ hom := e.hom, inv := e.inv, hom_inv_id := e.hom_inv_id, inv_hom_id := e.inv_hom_id }⟩
+  obtain ⟨cmp⟩ := nonempty_presheafModPullback_tensor h L.val M.val
+  refine ⟨?_⟩
+  refine (SheafOfModules.sheafificationCompPullback
+    (Scheme.Hom.toRingCatSheafHom h)).app (L.val ⊗ M.val) ≪≫ ?_
+  refine (PresheafOfModules.sheafification (𝟙 W.ringCatSheaf.obj)).mapIso cmp ≪≫ ?_
+  refine modSheafifyTensorIso _ _ ≪≫ ?_
+  exact modTensorMapIso
+    ((SheafOfModules.pullbackIso (Scheme.Hom.toRingCatSheafHom h)).app L).symm
+    ((SheafOfModules.pullbackIso (Scheme.Hom.toRingCatSheafHom h)).app M).symm
 
 /-- **RESTRICTION COMMUTES WITH `modTensor`** (PROVEN over
 `nonempty_modPullback_modTensorPic`) — the special case the invertibility
@@ -3050,23 +3065,30 @@ The three leaves are then:
   the affine-local `inj` gives `p|ᵢ = q|ᵢ`, and an open cover is jointly
   epimorphic, so `p = q`.  Nothing in that consumes a hypothesis;
 * `surj_of_isRelPicOverAffines` — BLR 8.1/4, and the ONLY place `_o` and
-  `_hpush` are consumed.  **PROVEN 2026-07-30 over the single new leaf
-  `relPicEquiv_of_forall_restrict`**, so of the three cut here only the
-  first is still open, and the two hypotheses are now spent inside that
-  leaf rather than here.  Two corrections to the sketch below, both found
-  by writing it: the overlap agreement uses `hP.inj` DIRECTLY (an overlap
-  of two opens each lying over an affine open still lies over the first
-  one, so the affine-local field applies and the "previous leaf" is not
-  needed), and the gluing needs the two functoriality lemmas
-  `curveBaseChangeMap_comp` / `curveBaseChangeMap_congr` that no version
-  of this note anticipated.  What remains true of the sketch, and is now
-  the whole of the leaf, is the last step: concluding
+  `_hpush` are consumed.  Local classifying points `pᵢ` glue by the
+  previous leaf applied over the overlaps, but concluding
   `RelPicEquiv strX g (sheaf p) L` from its restrictions is precisely the
   Zariski-sheaf property of `T ↦ Pic(X_T)/Pic(T)`: separatedness needs
   `f_*𝒪 = 𝒪`, and the local twists `Nᵢ` glue into a global `N` only
   because the section kills the resulting class in `Br T`.  Drop either
   and this leaf is FALSE (for `X = S ⊔ S` the sequence
   `0 ⟶ Pic T ⟶ Pic X_T ⟶ P(T) ⟶ Br T` breaks) — see the section note.
+
+  **Amended 2026-07-31: `surj_of_isRelPicOverAffines` is PROVEN**, over one
+  new leaf `relPicEquiv_of_locally_relPicEquiv` — the Zariski-sheaf property
+  alone.  The gluing of the `pᵢ` is now a theorem rather than a sentence
+  (`Scheme.Cover.glueMorphisms` over `hP.inj`, with the overlaps taken as
+  honest `pullback`s of the two open immersions rather than identified with
+  intersections, which is what makes it cheap), so the count is unchanged at
+  three and the residue is strictly the mathematics.
+
+  **And the last sentence of the bullet above is WRONG in one half.**  `_o`
+  is NOT needed: the local twists are not merely isomorphic on overlaps,
+  they are the RESTRICTIONS of the single sheaf `f_*M`, so there is no
+  cocycle and no `Br T` class to kill.  See the new leaf's docstring for the
+  route and for the corrected `X = S ⊔ S` counterexample, which isolates
+  `_hpush` — the half that IS load-bearing — and which the sentence above
+  attributed to the absence of a section that `S ⊔ S ⟶ S` in fact has.
 
 **Not a relocation with extra steps.**  `IsRelPicOverAffines` is strictly
 weaker than `IsRelPicOf`: every `IsRelPicOf strX pstr` gives one, by
@@ -3243,6 +3265,79 @@ theorem inj_of_isRelPicOverAffines {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr :
   refine relPicEquiv_trans _ _ (relPicEquiv_modPullback strX (g ⁻¹ᵁ V).ι rfl h) ?_
   exact relPicEquiv_symm _ _ (hP.sheaf_pre (g ⁻¹ᵁ V).ι rfl q)
 
+/-- **THE RELATIVE PICARD RELATION IS A ZARISKI SHEAF CONDITION ON `T`**
+(sorry leaf, cut 2026-07-31 out of `surj_of_isRelPicOverAffines`) — two
+invertible sheaves on `X_T` that are `RelPicEquiv` locally on `T` are
+`RelPicEquiv`.
+
+This is the whole mathematical content of BLR 8.1/4 as this file needs it.
+The other half of `surj_of_isRelPicOverAffines` — gluing the local
+classifying points `pᵢ` into one `p : T ⟶ P` — is PROVEN below, over
+`hP.inj` and `Scheme.Cover.glueMorphisms`.
+
+**Route, and it is shorter than the parent's old note claimed.**  Write
+`f := curveBaseChangeProj strX g` and `M := L ⊗ L'⁻¹`, invertible by `_hL`,
+`_hL'` and `exists_modTensor_inv`.  The hypothesis says `M|_{f⁻¹Uᵢ} ≅ f^*Nᵢ`
+for an open cover `Uᵢ` of `T`.  Then:
+
+* **the local twists are CANONICAL, hence glue with nothing to check.**  The
+  projection formula for an INVERTIBLE `Nᵢ` is local on the base, so it needs
+  neither quasi-coherence nor properness, and it gives
+  `f_*(M|_{f⁻¹Uᵢ}) ≅ f_*(f^*Nᵢ) ≅ Nᵢ ⊗ f_*𝒪 ≅ Nᵢ` — the last step by
+  `_hpush`.  And `f_*(M|_{f⁻¹Uᵢ}) = (f_*M)|_{Uᵢ}`, because pushforward along
+  `f` of a restriction to `f⁻¹Uᵢ` is by definition the restriction to `Uᵢ`.
+  So `N := f_*M` is already invertible and `Nᵢ ≅ N|_{Uᵢ}`;
+* **the counit `f^*f_*M ⟶ M` is then an isomorphism**, because over `Uᵢ` it is
+  the counit at `f^*Nᵢ`, which the triangle identity makes the identity, and
+  being an isomorphism is local.
+
+So `M ≅ f^*N` with `N` invertible, which is `RelPicEquiv strX g L L'`.
+
+**WHICH HYPOTHESES ARE LOAD-BEARING — this CORRECTS the parent's old route
+note.**  That note said the descent had two hypothesis-consuming halves: a
+separatedness one needing `_hpush`, and a glueing one where `_o` "kills the
+resulting class in `Br T`".  The second half does not arise.  The `Nᵢ` are not
+merely isomorphic on overlaps, they are the RESTRICTIONS of one sheaf `f_*M`,
+so there is no cocycle to obstruct and no Brauer class to kill.  The route
+above consumes `_hpush` and nothing else.
+
+`_hproper`, `_hsmooth`, `_hconn` and `_o` are nevertheless kept in the
+signature: the caller has all four, keeping them costs a prover nothing, and
+someone who finds the rigidified route easier than the projection-formula one
+should feel free to spend `_o`.  Do NOT read their presence as a claim that
+they are needed.
+
+**FAITHFULNESS.**  `_hpush` is genuinely load-bearing, and the statement is
+FALSE for a proper morphism that has a section but has `f_*𝒪 ≠ 𝒪`.  Take
+`X = S ⊔ S` with `strX` the codiagonal — proper, and WITH a section, namely
+either inclusion — and `S = T = ℙ¹_k`, `g = 𝟙`.  Then `X_T = T ⊔ T`, a module
+on it is a pair, and `f^*N = (N, N)`, so `RelPicEquiv (A, B) (A', B')` says
+`A ≅ A' ⊗ N` and `B ≅ B' ⊗ N` for ONE `N`.  For `L = (𝒪, 𝒪(1))` and
+`L' = (𝒪, 𝒪)` that forces `𝒪(1) ≅ 𝒪`, which is false; but on every affine
+open `U ⊆ ℙ¹` the restriction `𝒪(1)|_U` IS trivial, so `L` and `L'` are
+`RelPicEquiv` locally on `T`.
+
+Note carefully what this does and does not show.  That `X` is not smooth of
+relative dimension `1` and not geometrically connected, so the counterexample
+refutes the statement for a GENERAL proper morphism with a section, not in the
+presence of `_hsmooth`/`_hconn` — from which `_hpush` follows anyway (`H⁰` of a
+proper geometrically connected curve over a field is the field).  `_hpush` is
+the property actually doing the work, which is precisely why the parent carries
+it as a hypothesis of its own.  The parent's old note cited the same
+`X = S ⊔ S` but attributed the failure to the absence of a section; that
+morphism has one, so the citation was right and its reading was not. -/
+theorem relPicEquiv_of_locally_relPicEquiv {X S : Scheme.{u}} {strX : X ⟶ S}
+    (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
+    (_hconn : GeometricallyConnected strX) (_o : RelPoint strX (𝟙 S))
+    (_hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX)
+    {T : Scheme.{u}} {g : T ⟶ S} {L L' : (curveBaseChange strX g).Modules}
+    (_hL : IsInvertibleSheaf L) (_hL' : IsInvertibleSheaf L')
+    (_hloc : ∀ t : T, ∃ U : T.Opens, t ∈ U ∧
+      RelPicEquiv strX (U.ι ≫ g) (modPullback (curveBaseChangeMap strX U.ι rfl) L)
+        (modPullback (curveBaseChangeMap strX U.ι rfl) L')) :
+    RelPicEquiv strX g L L' :=
+  sorry
+
 /-- **`Pic(X_-)/Pic(-)` IS A ZARISKI SHEAF — BLR 8.1/4** (sorry leaf).
 
 The genuine content of `surj_of_isRelPicOverAffines` below, cut out of it
@@ -3356,76 +3451,76 @@ theorem surj_of_isRelPicOverAffines {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr 
     (hP : IsRelPicOverAffines strX pstr) {T : Scheme.{u}} {g : T ⟶ S}
     (L : (curveBaseChange strX g).Modules) (hL : IsInvertibleSheaf L) :
     ∃ p : RelPoint pstr g, RelPicEquiv strX g (hP.sheaf p) L := by
-  -- The cover of `T` by preimages of affine opens of `S`.
-  have key : ∀ x : T, ∃ U : T.Opens, x ∈ U ∧ FactorsThroughAffineOpen (U.ι ≫ g) := by
-    intro x
+  -- an affine open of `S` around the image of each point of `T`
+  have hkey : ∀ t : T, ∃ V : S.Opens, IsAffineOpen V ∧ t ∈ g ⁻¹ᵁ V := fun t => by
     obtain ⟨V, hV, hxV, -⟩ :=
-      exists_isAffineOpen_mem_and_subset (X := S) (x := g.base x) (U := ⊤) trivial
-    exact ⟨g ⁻¹ᵁ V, hxV, ⟨V, hV, g ∣_ V, morphismRestrict_ι g V⟩⟩
-  choose U hxU hfac using key
-  -- The local classifying points.
-  have hlocal : ∀ x : T, ∃ q : RelPoint pstr ((U x).ι ≫ g),
-      RelPicEquiv strX ((U x).ι ≫ g) (hP.sheaf q)
-        (modPullback (curveBaseChangeMap strX (U x).ι rfl) L) :=
-    fun x => hP.surj (hfac x) _ (isInvertibleSheaf_modPullback _ hL)
-  choose q hq using hlocal
-  -- Compatibility on overlaps.
-  have hcompat : ∀ x y : T,
-      pullback.fst (U x).ι (U y).ι ≫ (q x).1 = pullback.snd (U x).ι (U y).ι ≫ (q y).1 := by
-    intro x y
-    set a := pullback.fst (U x).ι (U y).ι with ha
-    set b := pullback.snd (U x).ι (U y).ι with hb
-    have hcond : a ≫ (U x).ι = b ≫ (U y).ι := pullback.condition
-    have hga : a ≫ ((U x).ι ≫ g) = (a ≫ (U x).ι) ≫ g := (Category.assoc _ _ _).symm
-    have hgb : b ≫ ((U y).ι ≫ g) = (a ≫ (U x).ι) ≫ g := by
-      rw [← Category.assoc, hcond]
-    -- the overlap still lies over an affine open of `S`
-    have hfacW : FactorsThroughAffineOpen ((a ≫ (U x).ι) ≫ g) := by
-      obtain ⟨V, hV, gV, hgV⟩ := hfac x
-      exact ⟨V, hV, a ≫ gV, by rw [Category.assoc, hgV, ← Category.assoc]⟩
-    have hxx : RelPicEquiv strX ((a ≫ (U x).ι) ≫ g)
-        (hP.sheaf (RelPoint.pre a hga (q x)))
-        (modPullback (curveBaseChangeMap strX (a ≫ (U x).ι) rfl) L) := by
-      refine relPicEquiv_trans _ _ (hP.sheaf_pre a hga (q x)) ?_
-      refine relPicEquiv_trans _ _ (relPicEquiv_modPullback strX a hga (hq x)) ?_
-      exact relPicEquiv_of_iso _ _
-        (modPullbackCurveBaseChangeCompIso strX (U x).ι rfl a hga L)
-    have hyy : RelPicEquiv strX ((a ≫ (U x).ι) ≫ g)
-        (hP.sheaf (RelPoint.pre b hgb (q y)))
-        (modPullback (curveBaseChangeMap strX (a ≫ (U x).ι) rfl) L) := by
-      refine relPicEquiv_trans _ _ (hP.sheaf_pre b hgb (q y)) ?_
-      refine relPicEquiv_trans _ _ (relPicEquiv_modPullback strX b hgb (hq y)) ?_
-      refine relPicEquiv_of_iso _ _
-        (modPullbackCurveBaseChangeCompIso strX (U y).ι rfl b hgb L ≪≫ ?_)
-      exact modPullbackCongrIso
-        (curveBaseChangeMap_congr strX hcond.symm _ rfl) L
-    exact congrArg Subtype.val
-      (hP.inj hfacW _ _ (relPicEquiv_trans _ _ hxx (relPicEquiv_symm _ _ hyy)))
-  -- Glue.
+      exists_isAffineOpen_mem_and_subset (X := S) (x := g.base t) (U := ⊤) trivial
+    exact ⟨V, hV, hxV⟩
+  choose V hVaff hVmem using hkey
+  have hfac : ∀ t : T, FactorsThroughAffineOpen ((g ⁻¹ᵁ V t).ι ≫ g) :=
+    fun t => ⟨V t, hVaff t, g ∣_ V t, morphismRestrict_ι g (V t)⟩
+  -- the local classifying points, one over each `g ⁻¹ᵁ V t`
+  choose q hq using fun t : T => hP.surj (hfac t)
+    (modPullback (curveBaseChangeMap strX (g ⁻¹ᵁ V t).ι rfl) L)
+    (isInvertibleSheaf_modPullback _ hL)
+  -- they agree on the overlaps, by `hP.inj` over the pullback of the two opens
+  have hcompat : ∀ s t : T, pullback.fst (g ⁻¹ᵁ V s).ι (g ⁻¹ᵁ V t).ι ≫ (q s).1
+      = pullback.snd (g ⁻¹ᵁ V s).ι (g ⁻¹ᵁ V t).ι ≫ (q t).1 := by
+    intro s t
+    have hab : pullback.fst (g ⁻¹ᵁ V s).ι (g ⁻¹ᵁ V t).ι ≫ (g ⁻¹ᵁ V s).ι
+        = pullback.snd (g ⁻¹ᵁ V s).ι (g ⁻¹ᵁ V t).ι ≫ (g ⁻¹ᵁ V t).ι := pullback.condition
+    have hb : pullback.snd (g ⁻¹ᵁ V s).ι (g ⁻¹ᵁ V t).ι ≫ ((g ⁻¹ᵁ V t).ι ≫ g)
+        = pullback.fst (g ⁻¹ᵁ V s).ι (g ⁻¹ᵁ V t).ι ≫ ((g ⁻¹ᵁ V s).ι ≫ g) := by
+      rw [← Category.assoc, ← hab, Category.assoc]
+    have hfacW : FactorsThroughAffineOpen
+        (pullback.fst (g ⁻¹ᵁ V s).ι (g ⁻¹ᵁ V t).ι ≫ ((g ⁻¹ᵁ V s).ι ≫ g)) :=
+      ⟨V s, hVaff s, pullback.fst (g ⁻¹ᵁ V s).ι (g ⁻¹ᵁ V t).ι ≫ (g ∣_ V s), by
+        rw [Category.assoc, morphismRestrict_ι]⟩
+    -- the two ways of restricting `L` to the overlap agree
+    have hmm : curveBaseChangeMap strX (pullback.fst (g ⁻¹ᵁ V s).ι (g ⁻¹ᵁ V t).ι) rfl
+          ≫ curveBaseChangeMap strX (g ⁻¹ᵁ V s).ι rfl
+        = curveBaseChangeMap strX (pullback.snd (g ⁻¹ᵁ V s).ι (g ⁻¹ᵁ V t).ι) hb
+          ≫ curveBaseChangeMap strX (g ⁻¹ᵁ V t).ι rfl := by
+      apply pullback.hom_ext
+      · simp only [curveBaseChangeMap, Category.assoc, pullback.lift_fst]
+      · simp only [curveBaseChangeMap, Category.assoc, pullback.lift_snd, pullback.lift_snd_assoc]
+        rw [hab]
+    have heq : RelPicEquiv strX
+        (pullback.fst (g ⁻¹ᵁ V s).ι (g ⁻¹ᵁ V t).ι ≫ ((g ⁻¹ᵁ V s).ι ≫ g))
+        (hP.sheaf (RelPoint.pre (pullback.fst (g ⁻¹ᵁ V s).ι (g ⁻¹ᵁ V t).ι) rfl (q s)))
+        (hP.sheaf (RelPoint.pre (pullback.snd (g ⁻¹ᵁ V s).ι (g ⁻¹ᵁ V t).ι) hb (q t))) := by
+      refine relPicEquiv_trans _ _ (hP.sheaf_pre _ rfl (q s)) ?_
+      refine relPicEquiv_trans _ _ (relPicEquiv_modPullback strX _ rfl (hq s)) ?_
+      refine relPicEquiv_trans _ _ (relPicEquiv_of_iso _ _
+        (modPullbackCompIso _ _ L ≪≫ modPullbackCongrIso hmm L
+          ≪≫ (modPullbackCompIso _ _ L).symm)) ?_
+      exact relPicEquiv_symm _ _ (relPicEquiv_trans _ _ (hP.sheaf_pre _ hb (q t))
+        (relPicEquiv_modPullback strX _ hb (hq t)))
+    exact congrArg Subtype.val (hP.inj hfacW _ _ heq)
+  -- glue them into a single `T`-point of `P`
   let 𝒰 : T.OpenCover :=
-    { I₀ := T, X i := (U i), f i := (U i).ι,
+    { I₀ := T
+      X := fun t => ((g ⁻¹ᵁ V t : T.Opens) : Scheme.{u})
+      f := fun t => (g ⁻¹ᵁ V t).ι
       mem₀ := by
-        rw [AlgebraicGeometry.Scheme.presieve₀_mem_precoverage_iff]
-        exact ⟨fun x ↦ ⟨x, by simpa using hxU x⟩, inferInstance⟩ }
-  have hglue : ∀ x : T, (U x).ι ≫ 𝒰.glueMorphisms (fun i => (q i).1) hcompat = (q x).1 :=
-    fun x => 𝒰.ι_glueMorphisms (fun i => (q i).1) hcompat x
-  set p := 𝒰.glueMorphisms (fun i => (q i).1) hcompat with hpdef
-  have hpg : p ≫ pstr = g := by
-    apply AlgebraicGeometry.Scheme.hom_ext_of_forall
-    intro x
-    exact ⟨U x, hxU x, by rw [← Category.assoc, hglue x, (q x).2]⟩
-  refine ⟨⟨p, hpg⟩, ?_⟩
-  -- The classified sheaf agrees with `L` locally on `T`; the leaf makes it global.
-  refine relPicEquiv_of_forall_restrict strX hproper hsmooth hconn o hpush _ L
-    (hP.invertible ⟨p, hpg⟩) hL ?_
-  intro x
-  refine ⟨U x, hxU x, ?_⟩
-  have hpre : RelPoint.pre (U x).ι rfl (⟨p, hpg⟩ : RelPoint pstr g) = q x :=
-    Subtype.ext (hglue x)
-  refine relPicEquiv_trans _ _ ?_ (hq x)
-  have := hP.sheaf_pre (U x).ι (rfl : (U x).ι ≫ g = (U x).ι ≫ g) (⟨p, hpg⟩ : RelPoint pstr g)
-  rw [hpre] at this
-  exact relPicEquiv_symm _ _ this
+        rw [Scheme.presieve₀_mem_precoverage_iff]
+        exact ⟨fun x => ⟨x, by simpa using hVmem x⟩, inferInstance⟩ }
+  have hpi : ∀ t : T, (g ⁻¹ᵁ V t).ι ≫ 𝒰.glueMorphisms (fun t => (q t).1) hcompat = (q t).1 :=
+    fun t => 𝒰.ι_glueMorphisms _ hcompat t
+  have hp : 𝒰.glueMorphisms (fun t => (q t).1) hcompat ≫ pstr = g := by
+    refine Scheme.Cover.hom_ext 𝒰 _ _ (fun t => ?_)
+    rw [← Category.assoc]
+    show ((g ⁻¹ᵁ V t).ι ≫ _) ≫ pstr = _
+    rw [hpi t, (q t).2]
+  -- and the classification descends, which is the new leaf
+  refine ⟨⟨_, hp⟩, ?_⟩
+  refine relPicEquiv_of_locally_relPicEquiv hproper hsmooth hconn o hpush
+    (hP.invertible _) hL (fun t => ⟨g ⁻¹ᵁ V t, hVmem t, ?_⟩)
+  have hpre : RelPoint.pre (g ⁻¹ᵁ V t).ι rfl
+      (⟨_, hp⟩ : RelPoint pstr g) = q t := Subtype.ext (hpi t)
+  refine relPicEquiv_trans _ _ (relPicEquiv_symm _ _ ?_) (hq t)
+  rw [← hpre]
+  exact hP.sheaf_pre (g ⁻¹ᵁ V t).ι rfl _
 
 /-- **REPRESENTABILITY OF THE RELATIVE PICARD FUNCTOR IS ZARISKI-LOCAL ON
 THE BASE** — Stacks 01JJ for the gluing, BLR 8.1/4 for the descent of
@@ -3925,19 +4020,110 @@ theorem IsRelPicOf.eq_of_relPicEquiv_tensor {X P S T : Scheme.{u}} {strX : X ⟶
     (relPicEquiv_trans strX g (relPicEquiv_trans strX g hp (relPicEquiv_symm strX g hq))
       (relPicEquiv_of_iso strX g (modTensorSymmIso (hP.sheaf q) I)))
 
-/-! ### The ideal sheaf of a section, OFF the section
+/-! #### `𝒪(−σ)` OFF THE SECTION — the free half of `isInvertibleSheaf_sectionIdeal`
 
-`isInvertibleSheaf_sectionIdeal` below is a statement about every point of
-`X_T`, and the points fall into two classes that have nothing to do with each
-other.  Off the image of the section the ideal sheaf is not merely invertible,
-it is the STRUCTURE SHEAF, and that is provable here with no geometry at all —
-it is a fact about the kernel of a map into a pushforward whose sections vanish.
-On the image it is the local-coordinate statement, which is the whole geometric
-content and is cut out below as `exists_trivialization_sectionIdeal_at`.
+**Built 2026-07-31, and it discharges everything in that leaf except the local
+structure of a smooth curve at the section.**  The old docstring (kept verbatim
+below) split the work exactly here: "off the image the kernel is all of `𝒪_Y`
+and the statement is the (proven) `isInvertibleSheaf_modUnit` locally".  That
+half is now a theorem rather than a sentence, and it turned out to need three
+things none of which were in this file:
 
-The four declarations in this subsection are the off-image half.  They are
-stated for an arbitrary closed immersion `σ : T ⟶ Z` rather than for
-`relSection x`, because nothing in the argument knows about curves. -/
+* **restriction along an open immersion is LEFT EXACT.**  `restrictFunctor` is a
+  LEFT adjoint here (`Scheme.Modules.restrictAdjunction`), so preservation of
+  kernels does not come from that adjunction and mathlib has no instance for it.
+  What does work: `restrictFunctor f` is *definitionally*
+  `SheafOfModules.pushforward` along `f.opensFunctor`, and site-level
+  `SheafOfModules.pushforward` IS a right adjoint
+  (`SheafOfModules.pullbackPushforwardAdjunction`, whose `IsRightAdjoint`
+  instance needs `[SmallCategory C] [SmallCategory D]`, `HasWeakSheafify` and
+  `WEqualsLocallyBijective` — all three hold for `Opens.grothendieckTopology`
+  and `AddCommGrpCat.{u}`, checked).  So the instance below is `unfold` plus one
+  generic lemma whose only job is to let unification see the `φ` hidden inside
+  `restrictFunctor`; `infer_instance` alone does NOT find it.
+* **sections over `⊥` vanish** — `TopCat.Sheaf.isTerminalOfEmpty` gives
+  `IsTerminal Γ(M, ⊥)`, and `IsZero.iff_id_eq_zero` upgrades terminal to zero
+  without needing `HasZeroObject AddCommGrpCat` (which is NOT an instance at
+  this pin — the obvious `Limits.isZero_zero` route fails there).
+* **a section of a proper morphism is a CLOSED immersion** — properness is spent
+  only through separatedness, exactly as the leaf's faithfulness note says:
+  `relSection x ≫ curveBaseChangeProj strX g = 𝟙 T` is a closed immersion, the
+  projection is separated by base change, and `IsClosedImmersion.of_comp` does
+  the rest.  Closedness of the image is what makes the complement an OPEN on
+  which the argument above can run.
+
+The residue is `exists_trivialization_sectionIdeal_at_section`: local triviality
+at the points of the section, which is where `_hsmooth` is spent and where all
+the remaining mathematics is.  Note the count is unchanged — one leaf in, one
+leaf out — and the new one is strictly smaller. -/
+
+/-- **`SheafOfModules.pushforward` along a continuous functor of sites preserves
+finite limits**, because it is a right adjoint.
+
+Stated separately from the instance below only so that unification can see the
+morphism of sheaves of rings that `Scheme.Modules.restrictFunctor` hides inside
+a `letI`; `infer_instance` after `unfold` does not find it on its own. -/
+theorem sheafOfModulesPushforward_preservesFiniteLimits
+    {C D : Type u} [SmallCategory C] [SmallCategory D]
+    {J : GrothendieckTopology C} {K : GrothendieckTopology D} {F : C ⥤ D}
+    [F.IsContinuous J K] {S : Sheaf J RingCat.{u}} {R : Sheaf K RingCat.{u}}
+    (φ : S ⟶ (F.sheafPushforwardContinuous RingCat.{u} J K).obj R)
+    [HasWeakSheafify K AddCommGrpCat.{u}]
+    [K.WEqualsLocallyBijective AddCommGrpCat.{u}] :
+    PreservesFiniteLimits (SheafOfModules.pushforward.{u} φ) :=
+  inferInstance
+
+/-- **Restriction of `𝒪`-modules along an open immersion is left exact.**
+
+Not available from `Scheme.Modules.restrictAdjunction`, which exhibits
+`restrictFunctor` as a LEFT adjoint; it comes from the *other* description of the
+same functor, as a site-level `SheafOfModules.pushforward`. -/
+instance restrictFunctor_preservesFiniteLimits {X Y : Scheme.{u}} (f : X ⟶ Y)
+    [IsOpenImmersion f] : PreservesFiniteLimits (Scheme.Modules.restrictFunctor f) := by
+  unfold Scheme.Modules.restrictFunctor
+  exact sheafOfModulesPushforward_preservesFiniteLimits _
+
+/-- **A sheaf of modules has no nonzero sections over the empty open.** -/
+theorem isZero_sections_bot {T : Scheme.{u}} (M : T.Modules) :
+    Limits.IsZero (M.presheaf.obj (op (⊥ : T.Opens))) :=
+  (Limits.IsZero.iff_id_eq_zero _).2
+    ((TopCat.Sheaf.isTerminalOfEmpty
+      (⟨M.presheaf, M.isSheaf⟩ : TopCat.Sheaf Ab.{u} T.toTopCat)).hom_ext _ _)
+
+/-- **A morphism into a sectionwise-zero sheaf of modules is zero.** -/
+theorem hom_eq_zero_of_isZero {Z : Scheme.{u}} {A B : Z.Modules} (f : A ⟶ B)
+    (h : ∀ V : Z.Opens, Limits.IsZero (B.presheaf.obj (op V))) : f = 0 := by
+  ext V x
+  exact congrArg (fun m => AddCommGrpCat.Hom.hom m x) ((h V).eq_of_tgt _ _)
+
+/-- **`𝒪(−σ)` is the whole structure sheaf away from the section.**
+
+On an open `U` whose preimage under `σ` is empty, `σ_*σ^*𝒪` has no sections at
+all, so the defining map of `sectionIdeal` restricts to `0` and its kernel
+restricts to `𝒪_U`.  Left exactness of restriction — the instance above — is
+what lets the kernel be taken after restricting rather than before. -/
+noncomputable def sectionIdealRestrictIsoOfDisjoint {Z T : Scheme.{u}} (σ : T ⟶ Z)
+    (U : Z.Opens) (hU : σ ⁻¹ᵁ U = ⊥) :
+    (sectionIdeal σ).restrict U.ι ≅ modUnit (U : Scheme.{u}) := by
+  set φ := (Scheme.Modules.pullbackPushforwardAdjunction σ).unit.app (modUnit Z) with hφ
+  have hmap : (Scheme.Modules.restrictFunctor U.ι).map φ = 0 := by
+    refine hom_eq_zero_of_isZero _ (fun W => ?_)
+    have hbot : σ ⁻¹ᵁ (U.ι ''ᵁ W) = ⊥ :=
+      le_bot_iff.1 (hU ▸ Scheme.Hom.preimage_mono σ (Scheme.Opens.ι_image_le U W))
+    show Limits.IsZero (((Scheme.Modules.pullback σ).obj (modUnit Z)).presheaf.obj
+      (op (σ ⁻¹ᵁ (U.ι ''ᵁ W))))
+    rw [hbot]
+    exact isZero_sections_bot _
+  exact (PreservesKernel.iso (Scheme.Modules.restrictFunctor U.ι) φ) ≪≫
+    kernelIsoOfEq hmap ≪≫ kernelZeroIsoSource ≪≫ Scheme.Modules.restrictUnitIso U.ι
+
+/-- **`relSection` really is a section of the base-changed curve** — LOOKS like
+`rfl` and is not, since `relSection` is a `pullback.lift`. -/
+theorem relSection_proj {X S T : Scheme.{u}} {strX : X ⟶ S} {g : T ⟶ S}
+    (x : RelPoint strX g) :
+    relSection x ≫ curveBaseChangeProj strX g = 𝟙 T := by
+  simpa [relSection, curveBaseChangeProj] using pullback.lift_snd (f := strX) (g := g) x.1 (𝟙 T)
+    (by rw [x.2, Category.id_comp])
 
 /-- **Sections over a fixed open, as a functor `Z.Modules ⥤ Ab`.**
 
@@ -4027,13 +4213,43 @@ followed by `π_g` is the identity, hence a closed immersion, and
 `IsClosedImmersion.of_comp` then peels off the second factor because `π_g` is
 separated. -/
 theorem isClosedImmersion_relSection {X S T : Scheme.{u}} {strX : X ⟶ S}
-    (hproper : IsProper strX) {g : T ⟶ S} (x : RelPoint strX g) :
+    (_hproper : IsProper strX) {g : T ⟶ S} (x : RelPoint strX g) :
     IsClosedImmersion (relSection x) := by
-  haveI : IsProper strX := hproper
-  haveI : IsSeparated (curveBaseChangeProj strX g) := inferInstance
-  haveI : IsClosedImmersion (relSection x ≫ curveBaseChangeProj strX g) := by
-    rw [relSection_comp_proj]; infer_instance
-  exact IsClosedImmersion.of_comp (relSection x) (curveBaseChangeProj strX g)
+  have h3 : IsClosedImmersion (relSection x ≫ curveBaseChangeProj strX g) := by
+    rw [relSection_proj]; infer_instance
+  exact IsClosedImmersion.of_comp _ (curveBaseChangeProj strX g)
+
+/-- **`𝒪(−σ)` IS LOCALLY TRIVIAL AT THE SECTION** (sorry leaf, cut 2026-07-31 out
+of `isInvertibleSheaf_sectionIdeal`) — the whole geometric content of that leaf,
+and the only place `_hsmooth` is spent.
+
+Stacks 0C4S / EGA IV 17.12.1.  Near a point `σ(t)` of the image, `Y = X ×_S T` is
+smooth of relative dimension `1` over `T` (both properties are stable under base
+change), so the ideal of the section is generated by a single local coordinate
+which is a nonzerodivisor on every fibre; the quotient of that generator gives
+`𝒪(−σ)|_U ≅ 𝒪_U`.
+
+**What a prover may assume, and what is already done.**  The complementary case
+— a point NOT on the section — is PROVEN above
+(`sectionIdealRestrictIsoOfDisjoint` plus `isClosedImmersion_relSection`), so
+nothing here needs to say anything about points off the image, and the section's
+image being closed is already available.  The definition to work from is
+`sectionIdeal σ = ker (𝒪_Y ⟶ σ_*σ^*𝒪_Y)`; there is no divisor theory at this
+pin, which is why the leaf is stated as local triviality of that kernel rather
+than as "effective Cartier divisor".
+
+**FAITHFULNESS.**  Both hypotheses stay load-bearing and for the same reasons the
+parent records: the nodal cubic (drop `_hsmooth`) and `𝔸²_T` with the zero section
+(drop relative dimension `1`) both give a section whose ideal is not invertible AT
+THE SECTION, which is precisely this statement.  `_hproper` is retained because a
+prover will want the base-changed curve separated when localising, but it is no
+longer needed for the topology — the parent has already spent it. -/
+theorem exists_trivialization_sectionIdeal_at_section {X S T : Scheme.{u}} {strX : X ⟶ S}
+    (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
+    {g : T ⟶ S} (x : RelPoint strX g) (t : T) :
+    ∃ U : (curveBaseChange strX g).Opens, (relSection x).base t ∈ U ∧
+      Nonempty ((sectionIdeal (relSection x)).restrict U.ι
+        ≅ modUnit (U : Scheme.{u})) := sorry
 
 /-- **THE LOCAL COORDINATE AT A POINT OF THE SECTION** (sorry leaf, cut
 2026-07-30 out of `isInvertibleSheaf_sectionIdeal`) — the ON-IMAGE half, and
@@ -4138,12 +4354,16 @@ theorem isInvertibleSheaf_sectionIdeal {X S T : Scheme.{u}} {strX : X ⟶ S}
     (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
     {g : T ⟶ S} (x : RelPoint strX g) :
     IsInvertibleSheaf (sectionIdeal (relSection x)) := by
+  haveI := isClosedImmersion_relSection _hproper x
   intro z
   by_cases hz : z ∈ Set.range (relSection x).base
   · obtain ⟨t, rfl⟩ := hz
-    exact exists_trivialization_sectionIdeal_at _hproper _hsmooth x t
-  · exact sectionIdeal_restrict_iso_unit_of_notMem_range _
-      (isClosedImmersion_relSection _hproper x) z hz
+    exact exists_trivialization_sectionIdeal_at_section _hproper _hsmooth x t
+  · refine ⟨⟨(Set.range (relSection x).base)ᶜ,
+      ((relSection x).isClosedEmbedding.isClosed_range).isOpen_compl⟩, hz,
+      ⟨sectionIdealRestrictIsoOfDisjoint _ _ ?_⟩⟩
+    ext t
+    simp
 
 /-- **`T' = T ×_{X_T} X_{T'}`** (PROVEN) — the section square is cartesian too,
 which is the form in which the classical statement is usually quoted ("`D_{x'}`
