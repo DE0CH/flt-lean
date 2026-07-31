@@ -3533,6 +3533,29 @@ corpse of the one it replaced. And note the harness may report the survivor as y
 *failed* job (exit 143) when you kill what you think is the stray: the two are
 indistinguishable from the tool side, which is the whole reason to check `/proc` rather
 than reason from task ids.
+## THE TASK PROMPT'S LINE NUMBERS ARE A CHECKSUM ON THE WORKTREE
+(2026-07-31, flt-lean-359; the dispatch template already cited this section by name
+before it existed.) A task prompt is written against `main` at dispatch time and
+quotes declaration names, and often line numbers, from it. **The loop does sometimes
+hand out a worktree that is hundreds of commits stale**: `flt-lean-359` was dispatched
+720 commits behind `main` and `flt-lean-350` was 724 behind at the same moment, while
+their neighbours were 4 behind (i.e. current). So the first command of every task is
+    git rev-list --count HEAD..main      # MUST be 0
+and, if it is not, `git status --short` (must be empty) plus
+`git merge-base --is-ancestor HEAD main` (must hold) — those two are exactly the
+dispatch hook's own preconditions — and then `git merge --ff-only main`. That is a
+repair the agent may do itself; it is not a reason to panic the loop.
+Why it matters more than it sounds: on a stale tree the target declaration may not
+exist at all, or may exist with a DIFFERENT statement, and every ownership and
+"is it already proven" check silently answers about a tree nobody else is looking at.
+`flt-lean-359`'s two targets grepped as absent-and-present respectively, which read
+as "the leaf was renamed" and was in fact "your worktree predates it".
+**And the fast-forward is not the end of the check** — `main` is only the frontier as
+of the last release (fifth invisibility class above). After fast-forwarding, run
+    git show merger:<the file> | grep -n '<your target>'
+before writing any Lean. `flt-lean-359` found its target ALREADY DECOMPOSED on
+`merger`, under the same name and the same statement, by a branch that landed the
+same day the task was written.
 ## Verification is the COMMAND LINE. No MCP, no LSP, no servers.
 
 (Deyao, 2026-07-25 — supersedes every "trust the MCP diagnostics" rule
@@ -5453,6 +5476,30 @@ dropped-merge bug of class six.
    underscored; the signature edit merges cleanly and the body replacement lands in the
    conflicted half. Grep the resolved file for a signature binder `_foo` whose declaration body
    mentions `foo` — seconds, no build, and it catches the whole class.
+3. *Per merge: DECLARATION ORDER.* Both checks above ask whether a name is PRESENT. Lean also
+   requires it to be present **above its use**, and a merge can get that wrong while every
+   presence check passes. Found on `merger` at `9e7f6e4b` (release 27), in `X0.lean`: the branch
+   that closed `exists_qExpansion_gamma0GITPresentation` inserted three declarations
+   (`isAlgebraic_of_quotient_isMaximal`, `injective_of_not_isAlgebraic_apply`, and the replacement
+   leaf `exists_nonConstant_qExpansion_gamma0GITPresentation`) and MOVED
+   `isRegularRing_coarseRing_of_gamma0GITPresentation` up above them. The merge landed the new
+   proof body at the CONSUMER'S OLD LINE (15535) and the whole helper block 200–400 lines LOWER
+   (15743, 15820, 15846, 15933) — so the proof forward-references all four. Nothing is duplicated,
+   nothing is missing, the diff against the first parent is fat, and the file cannot compile.
+   The branch's own docstrings say what the intended order was ("was MOVED UP … to just above
+   `exists_qExpansion_gamma0GITPresentation`", "the strictly smaller replacement for
+   `exists_qExpansion_gamma0GITPresentation` immediately below") — **when a docstring says
+   "above"/"below"/"MOVED", that is an order assertion to check, not prose.**
+
+   The check is one command per merged file: for each name the branch newly declares, compare
+   `grep -n "^theorem <name>"` with the line of every use. A RELOCATION is the trigger — a merge
+   resolves a move as an insertion plus a deletion in two independent hunks, and only one of them
+   has to land at the old site for the order to invert.
+
+   Corollary for AUTHORS, and it is cheap: **do not relocate a declaration to reach something
+   below you if you can re-run its body instead.** `flt-lean-359` needed the same coarse-ring
+   package from the same below-it theorem and inlined its twenty-line body rather than hoisting
+   it; that version has no move, hence no hunk that can land at the wrong site.
 
 And the standing one, which is what caught the rest: **the release build is not optional and its
 first failure is not its last.** Fix, rebuild, repeat — FOUR rounds this release, and the reason is
