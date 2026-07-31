@@ -9292,12 +9292,178 @@ theorem coeff_mem_span_three_of_pderiv_eq {h : ℕ}
     · rw [h1]; simpa using isUnit_one
     · rw [h2]; simpa using isUnit_two_adicCompletionIntegers_three
 
+set_option maxHeartbeats 400000 in
+/-- **EVERY NATURAL NUMBER PRIME TO `3` IS A UNIT OF `𝒪₃ᵥ`** (PROVEN 2026-07-31), the
+form of `isUnit_two_adicCompletionIntegers_three` that the Taylor estimate below actually
+needs.
+
+`coeff_mem_span_three_of_pderiv_eq` above restricts to exponents `1` and `2` because that
+is all its own docstring's degree-`≤ 2` route asked for.  The route finally taken is not
+degree-bounded at all — it splits a relation into the part whose coefficients carry the
+`3` and the part all of whose EXPONENTS are divisible by `3` — so what is needed is the
+full statement: `3 ∤ k ⟹ (k : 𝒪₃ᵥ)ˣ`.
+
+Same one-line argument: `k = 3·(k / 3) + (k % 3)` with `k % 3 ∈ {1, 2}`; the first
+summand lies in the maximal ideal because the base is absolutely unramified, and the
+second is a unit, so the sum cannot lie in a proper ideal. -/
+theorem isUnit_natCast_adicCompletionIntegers_three {k : ℕ} (hk : ¬ (3 ∣ k)) :
+    IsUnit ((k : 𝒪₃ᵥ)) := by
+  have h3 : (3 : 𝒪₃ᵥ) ∈ IsLocalRing.maximalIdeal 𝒪₃ᵥ := by
+    rw [maximalIdeal_adicCompletionIntegers_eq_span Nat.prime_three]
+    have hc : ((3 : ℕ) : 𝒪₃ᵥ) = (3 : 𝒪₃ᵥ) := by norm_num
+    rw [← hc]
+    exact Ideal.subset_span rfl
+  refine IsLocalRing.notMem_maximalIdeal.mp fun hmem => ?_
+  have hkr : (k : 𝒪₃ᵥ) = 3 * ((k / 3 : ℕ) : 𝒪₃ᵥ) + ((k % 3 : ℕ) : 𝒪₃ᵥ) := by
+    have hk3 : k = 3 * (k / 3) + k % 3 := (Nat.div_add_mod k 3).symm ▸ by omega
+    conv_lhs => rw [hk3]
+    push_cast
+    ring
+  have hmod : (k % 3 : ℕ) = 1 ∨ (k % 3 : ℕ) = 2 := by omega
+  have hrmem : ((k % 3 : ℕ) : 𝒪₃ᵥ) ∈ IsLocalRing.maximalIdeal 𝒪₃ᵥ := by
+    have h1 : (3 : 𝒪₃ᵥ) * ((k / 3 : ℕ) : 𝒪₃ᵥ) ∈ IsLocalRing.maximalIdeal 𝒪₃ᵥ :=
+      Ideal.mul_mem_right _ _ h3
+    have h2 := Ideal.sub_mem _ hmem h1
+    rwa [hkr, add_sub_cancel_left] at h2
+  have hru : IsUnit (((k % 3 : ℕ) : 𝒪₃ᵥ)) := by
+    rcases hmod with h | h
+    · rw [h]; simp
+    · rw [h]; simpa using isUnit_two_adicCompletionIntegers_three
+  exact (IsLocalRing.notMem_maximalIdeal.mpr hru) hrmem
+
+set_option maxHeartbeats 1000000 in
+/-- **THE TAYLOR ESTIMATE, IN ITS ABSTRACT FORM** (PROVEN 2026-07-31; the whole content
+of `taylor_of_isFontainePresentation` below, with `IsFontainePresentation` and the
+Jacobian matrix stripped away).
+
+Nothing about `E`, `A`, `ū`, `α` or `J` is used — the only inputs are the relation `P`,
+its normalised Jacobian row `Q`, and the numerical hypotheses.  Stating it here for an
+arbitrary `𝒪₃ᵥ`-algebra `O` with an ideal `m` for which `O` is `m`-adically complete
+keeps the proof free of the presentation vocabulary and makes the arithmetic auditable
+on its own.
+
+WHERE EACH HYPOTHESIS IS SPENT, since the leaf below has always advertised that this is
+the only place `ht` and `he` are used:
+* `hPQ` (`∂P/∂Xⱼ = 3·Qⱼ`) gives, through `coeff_mem_span_of_pderiv_eq` and
+  `isUnit_natCast_adicCompletionIntegers_three`, exactly the coefficient hypothesis of
+  `MvPolynomial.taylor_mem_of_coeff`: any coefficient at a multi-index with SOME exponent
+  prime to `3` is divisible by `3`.  It is used for nothing else.
+* That lemma returns the error in `(μ)²·((3) + (μ))`.  With `μ ⊆ m^t` and `(3) = m^e`
+  this is inside `m^(2t+e) + m^(3t)`, and `he`, `ht` are spent precisely on
+  `2t + e ≥ t+e+1` (i.e. `t ≥ 1`, which `ht` forces) and `3t ≥ t+e+1` (i.e. `e < 2t`,
+  which is `ht` itself).
+* Adic completeness is spent three times, always as `adicEval_sub_mem_pow`: to replace
+  each of the two evaluations of `P` by the evaluation of its degree-`< n+1` truncation,
+  and to replace the evaluation of `∂P/∂Xⱼ` by that of its degree-`< n` truncation.  The
+  last one costs one degree, which is why `MvPolynomial.pderiv_truncTotal` shifts by one
+  and why the leftover is absorbed by `μⱼ ∈ m^t` with `t ≥ 1` rather than by the `3`. -/
+theorem taylor_adicEvalOfMem_mem {h : ℕ} {O : Type*} [CommRing O] [Algebra 𝒪₃ᵥ O]
+    (m : Ideal O) [IsAdicComplete m O]
+    (P : MvPowerSeries (Fin h) 𝒪₃ᵥ) (Qj : Fin h → MvPowerSeries (Fin h) 𝒪₃ᵥ)
+    (hPQ : ∀ j, MvPowerSeries.pderiv j P = 3 * Qj j)
+    (e t n : ℕ) (he : Ideal.span {(3 : O)} = m ^ e)
+    (ht : e < 2 * t) (htn : t + e = n)
+    (w μ : Fin h → O)
+    (hw : ∀ i, w i ∈ m) (hμ : ∀ i, μ i ∈ m ^ t) :
+    MvPowerSeries.adicEvalOfMem m (w + μ) P - MvPowerSeries.adicEvalOfMem m w P
+      - ∑ j, 3 * MvPowerSeries.adicEvalOfMem m w (Qj j) * μ j ∈ m ^ (n + 1) := by
+  classical
+  have ht1 : 1 ≤ t := by omega
+  have hwμ : ∀ i, (w + μ) i ∈ m := by
+    intro i
+    refine Ideal.add_mem _ (hw i) ?_
+    have hle : m ^ t ≤ m ^ 1 := Ideal.pow_le_pow_right ht1
+    simpa using hle (hμ i)
+  obtain ⟨p, hp⟩ : ∃ p, p = MvPowerSeries.truncTotal (n + 1) P := ⟨_, rfl⟩
+  -- the error ideal of the polynomial Taylor estimate sits inside `m ^ (n+1)`
+  have hNμle : Ideal.span (Set.range μ) ≤ m ^ t :=
+    Ideal.span_le.mpr (by rintro _ ⟨k, rfl⟩; exact hμ k)
+  have hMle : (Ideal.span (Set.range μ)) ^ 2 *
+      (Ideal.span {(3 : O)} + Ideal.span (Set.range μ)) ≤ m ^ (n + 1) := by
+    refine Ideal.mul_le.mpr fun r hr s hs => ?_
+    have hr' : r ∈ m ^ (2 * t) := by
+      have h1 : (Ideal.span (Set.range μ)) ^ 2 ≤ (m ^ t) ^ 2 :=
+        Ideal.pow_le_pow_left' hNμle 2
+      rw [← pow_mul, mul_comm t 2] at h1
+      exact h1 hr
+    rw [Ideal.add_eq_sup, Submodule.mem_sup] at hs
+    obtain ⟨s1, hs1, s2, hs2, rfl⟩ := hs
+    rw [mul_add]
+    refine Ideal.add_mem _ ?_ ?_
+    · have hmem : r * s1 ∈ m ^ (2 * t) * m ^ e := Ideal.mul_mem_mul hr' (he ▸ hs1)
+      rw [← pow_add] at hmem
+      exact Ideal.pow_le_pow_right (by omega) hmem
+    · have hmem : r * s2 ∈ m ^ (2 * t) * m ^ t := Ideal.mul_mem_mul hr' (hNμle hs2)
+      rw [← pow_add] at hmem
+      exact Ideal.pow_le_pow_right (by omega) hmem
+  -- the coefficient divisibility, transported to the truncation
+  have hcoeff : ∀ mm : Fin h →₀ ℕ, (∃ j, ¬ (3 ∣ mm j)) →
+      MvPolynomial.coeff mm p ∈ Ideal.span {(3 : 𝒪₃ᵥ)} := by
+    rintro mm ⟨j, hj⟩
+    rw [hp, MvPowerSeries.coeff_truncTotal_eq_ite]
+    split
+    · refine coeff_mem_span_of_pderiv_eq (3 : 𝒪₃ᵥ) P Qj (fun k => ?_) mm j
+        (isUnit_natCast_adicCompletionIntegers_three hj)
+      rw [hPQ k, map_ofNat]
+    · exact Ideal.zero_mem _
+  have hmain := MvPolynomial.taylor_mem_of_coeff w μ p hcoeff
+  -- the three comparison estimates against the truncations
+  have hA : MvPowerSeries.adicEvalOfMem m (w + μ) P
+      - MvPolynomial.aeval (w + μ) p ∈ m ^ (n + 1) := by
+    rw [MvPowerSeries.adicEvalOfMem_eq m hwμ, hp]
+    exact MvPowerSeries.adicEval_sub_mem_pow m (w + μ) hwμ (n + 1) P
+  have hB : MvPowerSeries.adicEvalOfMem m w P
+      - MvPolynomial.aeval w p ∈ m ^ (n + 1) := by
+    rw [MvPowerSeries.adicEvalOfMem_eq m hw, hp]
+    exact MvPowerSeries.adicEval_sub_mem_pow m w hw (n + 1) P
+  have hC : ∀ j, (3 * MvPowerSeries.adicEvalOfMem m w (Qj j)
+      - MvPolynomial.aeval w (MvPolynomial.pderiv j p)) * μ j ∈ m ^ (n + 1) := by
+    intro j
+    have hpd : MvPolynomial.pderiv j p
+        = MvPowerSeries.truncTotal n (MvPowerSeries.pderiv j P) := by
+      rw [hp]; exact MvPolynomial.pderiv_truncTotal n j P
+    have h3Q : (3 : O) * MvPowerSeries.adicEvalOfMem m w (Qj j)
+        = MvPowerSeries.adicEvalOfMem m w (MvPowerSeries.pderiv j P) := by
+      rw [hPQ j, map_mul, map_ofNat]
+    have hd : MvPowerSeries.adicEvalOfMem m w (MvPowerSeries.pderiv j P)
+        - MvPolynomial.aeval w (MvPowerSeries.truncTotal n (MvPowerSeries.pderiv j P))
+        ∈ m ^ n := by
+      rw [MvPowerSeries.adicEvalOfMem_eq m hw]
+      exact MvPowerSeries.adicEval_sub_mem_pow m w hw n _
+    rw [h3Q, hpd]
+    have hmem : (MvPowerSeries.adicEvalOfMem m w (MvPowerSeries.pderiv j P)
+        - MvPolynomial.aeval w (MvPowerSeries.truncTotal n (MvPowerSeries.pderiv j P)))
+        * μ j ∈ m ^ n * m ^ t := Ideal.mul_mem_mul hd (hμ j)
+    rw [← pow_add] at hmem
+    exact Ideal.pow_le_pow_right (by omega) hmem
+  -- assemble
+  have hsum : ∑ j, (3 * MvPowerSeries.adicEvalOfMem m w (Qj j)
+        - MvPolynomial.aeval w (MvPolynomial.pderiv j p)) * μ j
+      = (∑ j, 3 * MvPowerSeries.adicEvalOfMem m w (Qj j) * μ j)
+        - ∑ j, MvPolynomial.aeval w (MvPolynomial.pderiv j p) * μ j := by
+    rw [← Finset.sum_sub_distrib]
+    exact Finset.sum_congr rfl fun j _ => by ring
+  have hgoal : MvPowerSeries.adicEvalOfMem m (w + μ) P
+        - MvPowerSeries.adicEvalOfMem m w P
+        - ∑ j, 3 * MvPowerSeries.adicEvalOfMem m w (Qj j) * μ j
+      = ((MvPowerSeries.adicEvalOfMem m (w + μ) P - MvPolynomial.aeval (w + μ) p)
+          - (MvPowerSeries.adicEvalOfMem m w P - MvPolynomial.aeval w p)
+          + (MvPolynomial.aeval (w + μ) p - MvPolynomial.aeval w p
+              - ∑ j, MvPolynomial.aeval w (MvPolynomial.pderiv j p) * μ j))
+        - ∑ j, (3 * MvPowerSeries.adicEvalOfMem m w (Qj j)
+            - MvPolynomial.aeval w (MvPolynomial.pderiv j p)) * μ j := by
+    rw [hsum]; ring
+  rw [hgoal]
+  exact Ideal.sub_mem _
+    (Ideal.add_mem _ (Ideal.sub_mem _ hA hB) (hMle hmain))
+    (Ideal.sum_mem _ fun j _ => hC j)
+
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
-/-- **CLAUSE 4, THE TAYLOR ESTIMATE** (sorry leaf, created 2026-07-28; Fontaine's
-step 4, pp. 521–522): for `w ∈ 𝔪^h` and a perturbation `μ ∈ (𝔪^t)^h`,
-`P(w + μ) ≡ P w + 3·Q(w) *ᵥ μ  (mod 𝔪^(n+1))`.
+/-- **CLAUSE 4, THE TAYLOR ESTIMATE** (created 2026-07-28 as a sorry leaf; **PROVEN
+2026-07-31**; Fontaine's step 4, pp. 521-522): for `w ∈ 𝔪^h` and a perturbation
+`μ ∈ (𝔪^t)^h`, `P(w + μ) ≡ P w + 3·Q(w) *ᵥ μ  (mod 𝔪^(n+1))`.
 
 This is the ONLY leaf of the decomposition that consumes the threshold
 `ht : e < 2t`, the ONLY one that needs any power-series analysis, and the ONLY
@@ -9309,106 +9475,56 @@ lies in `𝔪^(n+1)` (his `R ∈ 3·I^[n+1]`), and the linear coefficient
 `(∂P_i/∂X_j)(w)` is `3·Q_ij(w)` up to `𝔪^n` (his `≡ 3·P_ij(u) mod 3I^[n]`,
 absorbed here because `𝔪^n · 𝔪^t ⊆ 𝔪^(n+1)`).
 
-ROUTE, and it needs NO divided powers — see the ROUTE CORRECTION in
-`exists_algHom_quotient_maximalIdeal_pow_succ`'s docstring below.  Write the
-expansion with Hasse derivatives, `P(w+μ) = Σ_r (∂^[r]P)(w)·μ^r`, an identity of
-formal power series requiring no division, and bound each `|r| ≥ 2` term against
-`3·𝔪^(t+1) = 𝔪^(e+t+1)` using only `r!·∂^[r]P = ∂^r P`.  If `v₃(r!) = 0` the
-coefficient is in `𝔪^e` and `μ^r ∈ 𝔪^(2t) ⊆ 𝔪^(t+1)`; if `v₃(r!) ≥ 1` then
-`3 ∣ r!` forces `|r| ≥ 3`, so `μ^r ∈ 𝔪^(3t) ⊆ 𝔪^(t+e+1)` by `ht`, and no
-information about the coefficient beyond integrality is used.  So the only
-arithmetic input replacing the divided-power estimate is `3 ∣ n! → 3 ≤ n`.
+The mathematics now lives in `taylor_adicEvalOfMem_mem` above, which is this statement
+with `IsFontainePresentation` and the Jacobian matrix stripped away; read that docstring
+for where each hypothesis is spent.  All this theorem does is rewrite `Matrix.mulVec`
+into a sum and feed it `hpres.pderiv_eq`.
 
-MACHINERY: `MvPowerSeries.subst` for the substitution `X ↦ w + μ`, plus a
-Hasse-derivative API for `MvPowerSeries` (the pin has one only for univariate
-`Polynomial`, `Mathlib/Algebra/Polynomial/HasseDeriv.lean`).  The evaluation
-itself is `MvPowerSeries.adicEvalOfMem`, already built.  The integrality of the
-iterated derivatives — `(∂^r P_i)(w) ∈ 3𝒪_E` — comes from `pderiv_eq` plus the
-Leibniz rule: for `f·Pᵢ ∈ ker α`, `∂(f·Pᵢ)/∂X_j = (∂f/∂X_j)·Pᵢ + f·3·Q_ij`
-again lies in `3·𝒪₃ᵥ[[X]] + ker α`, so induction on `|r|` goes through.
+# HOW THE ROUTE ACTUALLY WENT, AGAINST THREE SUCCESSIVE PREDICTIONS
 
-**MACHINERY CLAIMS RE-CHECKED 2026-07-28, and both are ACCURATE.**  `hasseDeriv`
-occurs in exactly four files of the pin — `Mathlib/Algebra/Polynomial/HasseDeriv.lean`
-(the definition) and `Mathlib/Algebra/Polynomial/Taylor.lean`,
-`Mathlib/RingTheory/LaurentSeries.lean`, `Mathlib/Algebra/Vertex/VertexOperator.lean`
-(consumers) — all univariate `Polynomial`.  There is NOTHING for `MvPolynomial`,
-`PowerSeries` or `MvPowerSeries`, and nothing in `~/cs/FLT` or in this project.
-`MvPowerSeries.subst` does exist, in `Mathlib/RingTheory/MvPowerSeries/Substitution.lean`
-(`subst` :190, `substAlgHom` :210, `subst_X` :288), gated on a `HasSubst` predicate.
+Worth keeping, because the estimates of what this leaf would cost were wrong three times
+in the same direction — each revision removed machinery that the previous one had called
+unavoidable, and the thing finally needed was smaller again.
 
-**A ROUTE SIMPLIFICATION WORTH TRYING FIRST — build the Hasse-derivative API for
-`MvPolynomial`, NOT for `MvPowerSeries`.**  The conclusion here is a membership in
-`𝔪^(n+1)`, and `MvPowerSeries.mk_adicEval` says that MODULO `𝔪^(n+1)` the value of
-`adicEval` at any tuple is `MvPolynomial.aeval` of the degree-`< n+1` TRUNCATION.  So
-the whole statement is equivalent to one about the honest polynomial
-`truncTotal (n+1) (P i)`, where supports are finite, `MvPolynomial.pderiv` already
-exists, and no `HasSubst` side conditions arise.  That converts "write a
-Hasse-derivative theory for multivariate power series" into "write one for
-multivariate polynomials", which is strictly smaller.  `MvPowerSeries.subst` would
-then not be needed at all.
+* *2026-07-28*: "write a Hasse-derivative API for `MvPowerSeries`, plus
+  `MvPowerSeries.subst`; bound each `|r| ≥ 2` term using `r!·∂^[r]P = ∂^r P` and
+  `3 ∣ r! → |r| ≥ 3`."  Correct mathematics, and the pin really has no multivariate
+  Hasse derivatives — but none of it is needed.
+* *same day, a sharpening*: "build the Hasse theory for `MvPolynomial` instead, since
+  `mk_adicEval` reduces everything to the degree-`< n+1` truncation."  The truncation
+  half of that is exactly right and is used below; the Hasse half is still not needed.
+* *2026-07-31, in this file*: "only the terms of `Y`-degree `≤ 2` need a divisibility
+  statement, and those follow from `pderiv_eq` and `coeff_pderiv` in three lines" — hence
+  `coeff_mem_span_of_pderiv_eq` and `coeff_mem_span_three_of_pderiv_eq` above.  Right
+  about the divisibility, and those two lemmas ARE the arithmetic input; but it then said
+  the residue was "the EXPANSION itself, an identity in `𝒪₃ᵥ[[X ⊕ Y]]`", to be got from
+  `MvPowerSeries.subst`.  That is also avoidable.
 
-BUT DO NOT READ THAT AS "THE QUADRATIC TERM IS AVOIDABLE" — it is not.  A plain
-monomial expansion gives a remainder only in `𝔪^(2t)`, and `𝔪^(2t) ⊆ 𝔪^(n+1) =
-𝔪^(t+e+1)` would need `t > e`, which is STRICTLY STRONGER than the hypothesis
-`ht : e < 2t` actually available.  The estimate closes only because the DEGREE-`2`
-coefficients carry their own factor of `3`.
-(Recorded from a source-level reading of the estimate, NOT verified by the compiler —
-treat it as a route to check first, not as a fact.)
+**What the expansion actually costs is one three-case induction over
+`MvPolynomial.induction_on`** — `MvPolynomial.taylor_sub_mem_sq`
+(`Fermat/FLT/Mathlib/RingTheory/MvPowerSeries/AdicEval.lean`), giving the FIRST-order
+remainder in `(μ)²` with no hypotheses at all.  The second-order refinement, which is the
+only place the prime enters, is then a case split on ONE multi-index at a time:
 
-# THE HASSE-DERIVATIVE THEORY IS NOT NEEDED AT ALL (2026-07-31)
+* if some exponent `m_j` is prime to `3` then `m_j` is a UNIT of `𝒪₃ᵥ`
+  (`isUnit_natCast_adicCompletionIntegers_three` above — this is where `p` odd is spent,
+  and it is the only place), so `coeff m P ∈ (3)` and the crude estimate scaled by `3`
+  suffices;
+* otherwise EVERY exponent is divisible by `3`, so the monomial is in the image of the
+  substitution `X_j ↦ X_j³`, and the crude estimate applied at the CUBED coordinates
+  suffices, because `(w+μ)³ − w³ = 3w²μ + 3wμ² + μ³` has its linear part supplied by the
+  chain rule `MvPolynomial.pderiv_cubeSub` and everything else visibly in `3(μ)² + (μ)³`.
 
-Everything above about `∂^[r]`, `r!`, and `v₃(r!)` is a correct but far heavier route
-than this leaf requires, and the sharpening is worth reading before any work starts,
-because it removes the single largest item from the route (a multivariate Hasse
-derivative API, which the pin does not have and which the note above proposes to
-write).  **Only the terms of Y-degree `≤ 2` ever need a divisibility statement, and
-for those the divisibility follows in three lines from `pderiv_eq` and
-`MvPowerSeries.coeff_pderiv`, with no divided powers anywhere.**
+So: no divided powers, no Hasse derivatives, no `MvPowerSeries.subst`, and no expansion
+in `𝒪₃ᵥ[[X ⊕ Y]]`.  The whole added machinery is ~200 lines in `AdicEval.lean`, and its
+statements are about `MvPolynomial` alone.
 
-Split the expansion of `P_i(w + μ)` by degree in `μ`:
-
-* degree `≥ 3`: the coefficient is merely INTEGRAL and `μ^r ∈ 𝔪^(3t)`, and
-  `3t ≥ t + e + 1 ⟺ 2t ≥ e + 1 ⟺ e < 2t`, which is exactly `ht`.  Nothing about the
-  coefficient is used.
-* degree `2`: `μ^r ∈ 𝔪^(2t)`, so it is enough that the coefficient lie in
-  `3𝒪₃ᵥ ⊆ 𝔪^e`, since `e + 2t ≥ t + e + 1 ⟺ t ≥ 1`, and `t ≥ 1` is forced by `ht`
-  (`e < 2t` fails at `t = 0`).
-* degree `1`: that is the term `3·Q(w) *ᵥ μ` already subtracted.
-
-So the ONLY arithmetic input is:
-
-> `MvPowerSeries.coeff m (P i) ∈ Ideal.span {(3 : 𝒪₃ᵥ)}` for every `m` with `|m| ≤ 2`
-> and `m ≠ 0`.
-
-and that is immediate from the structure field `pderiv_eq : pderiv j (P i) = 3 * Q i j`
-read through `MvPowerSeries.coeff_pderiv`
-(`Fermat/FLT/Mathlib/RingTheory/MvPowerSeries/AdicEval.lean:87`), which says
-`coeff n (pderiv j f) = (n j + 1) * coeff (n + single j 1) f`.  Take `n := m - single j 1`
-for any `j` with `m j ≥ 1`; then
-
-    (m j) * coeff m (P i) = 3 * coeff (m - single j 1) (Q i j),
-
-so `coeff m (P i) ∈ (3)` as soon as `m j` is a UNIT of `𝒪₃ᵥ`.  For `|m| = 1` that is
-`m j = 1`; for `|m| = 2` it is `m j ∈ {1, 2}` — and `2` is a unit of `𝒪₃ᵥ = ℤ₃`.  (This
-is the whole role of `v₃(r!) = 0` in the older route, specialised to the only degrees
-that matter.  It also shows exactly where the argument would break at the prime `2`: at
-`p = 2` the coefficient of `X_j²` is NOT forced into `(2)`, which is the usual reason
-Fontaine's estimate is stated at odd `p`.)
-
-WHAT REMAINS after that observation, and it is the honest residue of this leaf: the
-EXPANSION itself — an identity, in `𝒪₃ᵥ[[X ⊕ Y]]`, of the form
-
-    P_i(X + Y) = P_i(X) + Σ_j (pderiv j (P i))(X) · Y_j  +  (terms of Y-degree ≥ 2),
-
-with the degree-`2` block's coefficients being the `coeff m (P i)`-type quantities
-above.  `MvPowerSeries.subst` (`Mathlib/RingTheory/MvPowerSeries/Substitution.lean`,
-`subst` :190, `substAlgHom` :210, `subst_X` :288) is the tool; the evaluation at
-`(w, μ)` is then ONE algebra map `MvPowerSeries (Fin h ⊕ Fin h) 𝒪₃ᵥ →ₐ[𝒪₃ᵥ] 𝒪_E` built
-from `adicEvalOfMem`, and an algebra map carries the ideal membership
-`3·(Y)² + (Y)³` straight to `𝔪^(e+2t) + 𝔪^(3t) ⊆ 𝔪^(n+1)`.  Cutting the leaf again
-along that identity — "the shifted series minus its own degree-`≤1` part lies in
-`(Y)²`, and its degree-`2` part lies in `3·(Y)²`" — is the recommended next move if it
-does not go through in one piece. -/
+LESSON, and it is the same one `CLAUDE.md` records for cost estimates generally: a
+docstring's "this leaf needs theory `T`" is a hypothesis written before anybody tried,
+and the successive sharpenings of it are evidence that the FIRST framing (here: expand in
+divided powers and bound term by term) fixed the shape of every later estimate.  The cut
+that worked came from asking what the CRUDE bound already gives and what the smallest
+patch to it is — not from making the sharp bound cheaper to compute. -/
 theorem taylor_of_isFontainePresentation
     {A : Type} [CommRing A] [Algebra 𝒪₃ᵥ A] [Module.Flat 𝒪₃ᵥ A]
     [Module.Finite 𝒪₃ᵥ A]
@@ -9437,7 +9553,19 @@ theorem taylor_of_isFontainePresentation
       3 * ((Matrix.of fun a b => MvPowerSeries.adicEvalOfMem
         (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) w (Q a b)).mulVec μ) i ∈
     IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ (n + 1) := by
-  sorry
+  have hmv : (3 : IntegralClosure 𝒪₃ᵥ E) *
+        ((Matrix.of fun a b => MvPowerSeries.adicEvalOfMem
+          (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) w (Q a b)).mulVec μ) i
+      = ∑ j, 3 * MvPowerSeries.adicEvalOfMem
+          (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) w (Q i j) * μ j := by
+    show (3 : IntegralClosure 𝒪₃ᵥ E) *
+        (∑ j, MvPowerSeries.adicEvalOfMem
+          (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) w (Q i j) * μ j) = _
+    rw [Finset.mul_sum]
+    exact Finset.sum_congr rfl fun j _ => by ring
+  rw [hmv]
+  exact taylor_adicEvalOfMem_mem _ (P i) (Q i) (fun j => hpres.pderiv_eq i j) e t n he ht htn
+    w μ hw hμ
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
