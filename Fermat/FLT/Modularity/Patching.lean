@@ -19667,11 +19667,6 @@ theorem exists_cohenGenerators_maximalIdeal_auxDeformation.{uK, uW, uR}
   sorry
 
 set_option linter.checkUnivs false in
-/-- **The `q`-generator bound for the raised-level deformation ring** (PROVEN
-2026-07-30, `flt-lean-69`, as an ASSEMBLY over the single leaf
-`exists_cohenGenerators_maximalIdeal_auxDeformation` immediately above; was LEAF
-A2'-3a of the 2026-07-28 cut of `exists_auxDeformationRingPresentation` below):
-Greenberg-Wiles, in the one shape the presentation needs — a SURJECTION
 /-- **The Greenberg–Wiles tangent-space bound, in generator form** (sorry node,
 created 2026-07-30 as the SOLE remaining content of
 `exists_auxDeformationPresSurjection` below, which is now proven glue over it):
