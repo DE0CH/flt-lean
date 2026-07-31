@@ -21434,11 +21434,27 @@ clauses still may not be split, and clause 2 is additionally false.
 `IsWeaklyUniversalDeformation` (near the top of this file) is deliberately the
 existence half only — "keeping the clause existential keeps this statement at the
 representability strength and no more" — and existence-only universality pins
-`Runiv` in NO direction: `Runiv₀[[y]]` classifies everything `Runiv₀` does.  The
-Hilbert twin does not have this problem because
-`exists_hilbertAuxDeformationRingPresentation` carries `h𝒟t :
-𝒟.IsTraceGenerated` alongside `h𝒟w`, and trace generation is exactly what
-excludes `y`.  Note this also disposes of the `𝒟univ` route recorded on
+`Runiv` in NO direction: `Runiv₀[[y]]` classifies everything `Runiv₀` does.
+
+**CORRECTION 2026-07-31 — the sentence that stood here was TRUE OF THE WRONG
+RING, and that is how a second instance of this defect hid for three days.**  It
+read: "The Hilbert twin does not have this problem because
+`exists_hilbertAuxDeformationRingPresentation` carries
+`h𝒟t : 𝒟.IsTraceGenerated` alongside `h𝒟w`, and trace generation is exactly
+what excludes `y`."  Every clause of that is correct **about `𝒟`, the BASE-level
+datum**, and says nothing about `𝒟Q`, the RAISED-level one — which that Hilbert
+theorem also received, under nothing but
+`HilbertAuxDeformationDatum.IsWeaklyUniversal`, the same existence-only clause.
+The Hilbert twin had the problem after all, on the other ring, and was refuted
+and re-cut on 2026-07-31 (see the FALSITY AUDITs of
+`exists_hilbertAuxCotangentSpanningFamily` and
+`exists_hilbertAuxDiamondQuotient_of_exponents` in
+`Fermat/FLT/GaloisRepresentation/HardlyRamified/HilbertModularity.lean`).  The
+general lesson is in CLAUDE.md: **a protection note must name the RING it
+protects**, because "this development does not have that problem" reads as a
+verdict on the development and is only ever a verdict on one object in it.
+
+Note the `Runiv₀[[y]]` observation also disposes of the `𝒟univ` route recorded on
 `exists_auxDeformationRingPresentation` below: adding `𝒟univ.IsWeaklyUniversal`
 does not help either, since `Runiv₀[[y]]` is weakly universal at `Q = ∅` whenever
 `Runiv₀` is, for the same reason.
