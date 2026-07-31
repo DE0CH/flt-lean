@@ -15472,18 +15472,291 @@ theorem integral_Ioi_zero_eq_sub_of_fricke {F G : ℝ → ℂ}
     integral_Ici_eq_integral_Ioi, integral_Ioo_zero_one_eq_neg_of_fricke hFE]
   ring
 
-/-- **THE LEVEL-`25` ARITHMETIC, WITH THE ANALYSIS REMOVED** (sorry leaf,
-NEW 2026-07-31) — this is what is left of
-`cuspPeriod_ne_zero_x1TwentyFive` below once the Fricke fold above is
-applied, and it is the ONLY declaration in the cluster that still mentions
-`25`.
+/-- **EVERY CUSP FORM HAS A `q`-EXPANSION, AND MATHLIB SUPPLIES IT**
+(PROVEN 2026-07-31) — the step this cluster had recorded as needing a cut
+along Atkin–Lehner, and which needs no arithmetic input at all.
 
-**WHAT THE CUT BOUGHT.**  The leaf below used to be an assertion about
-`∫₀^∞`, where the `q`-series does not converge absolutely and no truncation
-is possible at all.  Here both integrals run over `[1, ∞)`, where
+The leaf below used to owe "`frickeSlashOn 25 _ _ _ f` MUST BE GIVEN A
+`q`-EXPANSION", and named the classical `W_N : S₂(N, χ) → S₂(N, χ̄)` as the
+natural next cut.  That reading conflated two obligations that are
+separable, and only the second is arithmetic:
+
+* the Fricke partner HAS a `q`-expansion — true of *every* cusp form, by
+  `UpperHalfPlane.hasSum_qExpansion`, which asks only for periodicity,
+  holomorphy and boundedness at `i∞`;
+* its coefficients are `λ · conj(aₙ)` — that is Atkin–Lehner, and it is
+  now sealed inside the arithmetic leaf below, where it belongs alongside
+  the numerics that consume `λ`.
+
+So no cut was needed here, and the frontier did not grow.  `h = 1` is a
+strict period of any `G ⊇ Γ₁(N)` by `one_mem_strictPeriodsOn`; the
+constant term vanishes by `CuspFormClass.qExpansion_coeff_zero`, which is
+what lets the sum be re-indexed from `n = 1`.
+
+`b` is abstracted behind `hb` rather than written as
+`(qExpansion 1 F).coeff` in the conclusion ON PURPOSE: with the
+coefficient function appearing only as `b (n + 1)`, matching this against
+a consumer's `∑ bₙ …` is first-order.  Written the other way the
+elaborator must solve `?b (n + 1) ≡ coeff (n + 1)`, which is not a
+pattern, and it does not terminate inside the heartbeat budget — measured,
+not guessed. -/
+theorem hasSum_qExpansion_cuspFormOn {G : Subgroup (GL (Fin 2) ℝ)}
+    (hp : (1 : ℝ) ∈ G.strictPeriods) (F : CuspForm G 2) {b : ℕ → ℂ}
+    (hb : ∀ m, b m = (UpperHalfPlane.qExpansion 1 (F : UpperHalfPlane → ℂ)).coeff m)
+    (τ : UpperHalfPlane) :
+    HasSum (fun n : ℕ => b (n + 1) *
+        Complex.exp (2 * Real.pi * Complex.I * (n + 1) * (τ : ℂ))) (F τ) := by
+  simp only [hb]
+  haveI : Fact (IsCusp OnePoint.infty G) := ⟨G.isCusp_of_mem_strictPeriods one_pos hp⟩
+  have hper := SlashInvariantFormClass.periodic_comp_ofComplex (k := (2 : ℤ)) F hp
+  have hbase := UpperHalfPlane.hasSum_qExpansion (h := 1) one_pos hper
+    (ModularFormClass.holo F) (ModularFormClass.bdd_at_infty F) τ
+  have hz : (UpperHalfPlane.qExpansion 1 (F : UpperHalfPlane → ℂ)).coeff 0 = 0 :=
+    CuspFormClass.qExpansion_coeff_zero (k := (2 : ℤ)) F one_pos hp
+  have hshift := (hasSum_nat_add_iff' (f := fun m : ℕ =>
+    (UpperHalfPlane.qExpansion 1 (F : UpperHalfPlane → ℂ)).coeff m •
+      Function.Periodic.qParam 1 (τ : ℂ) ^ m) 1).mpr hbase
+  have hzero : ∑ i ∈ Finset.range 1,
+      (UpperHalfPlane.qExpansion 1 (F : UpperHalfPlane → ℂ)).coeff i •
+        Function.Periodic.qParam 1 (τ : ℂ) ^ i = 0 := by
+    simp [hz]
+  rw [hzero, sub_zero] at hshift
+  refine hshift.congr_fun fun n => ?_
+  rw [smul_eq_mul, Function.Periodic.qParam, ← Complex.exp_nat_mul]
+  congr 2
+  push_cast
+  ring
+
+/-- **THE `q`-EXPANSION READ ALONG THE AXIS** (PROVEN 2026-07-31) — the
+`On`-form of `hasSum_axisRestrictOn` with the expansion taken as a
+hypothesis rather than read off an `IsWeightTwoEigenformOn`.
+
+That is the whole point of the restatement: the Fricke partner carries no
+eigenform structure, so every route to a series for it must go through a
+form of this lemma that does not demand one.  The proof is the same
+change of variable `τ = i y/√N` as `hasSum_axisRestrictOn`'s. -/
+theorem hasSum_axisRestrictOn_of_hasSum_qExpansion {N : ℕ} (hN : N ≠ 0)
+    {G : Subgroup (GL (Fin 2) ℝ)} {F : CuspForm G 2} {b : ℕ → ℂ}
+    (hq : ∀ τ : UpperHalfPlane, HasSum (fun n : ℕ =>
+      b (n + 1) * Complex.exp (2 * Real.pi * Complex.I * (n + 1) * (τ : ℂ))) (F τ))
+    {y : ℝ} (hy : 0 < y) :
+    HasSum (fun n : ℕ =>
+        b (n + 1) * ((Real.exp (-(2 * Real.pi / Real.sqrt N * ((n : ℝ) + 1)) * y) : ℝ) : ℂ))
+      (axisRestrictOn G N F y) := by
+  have h := hq (axisPoint N y ⟨hy, hN⟩)
+  rw [axisRestrictOn_of_pos hN F hy]
+  have hEq : (fun n : ℕ =>
+        b (n + 1) * ((Real.exp (-(2 * Real.pi / Real.sqrt N * ((n : ℝ) + 1)) * y) : ℝ) : ℂ))
+      = fun n : ℕ => b (n + 1) *
+        Complex.exp (2 * Real.pi * Complex.I * (n + 1) *
+          ((axisPoint N y ⟨hy, hN⟩ : UpperHalfPlane) : ℂ)) := by
+    funext n
+    congr 1
+    rw [Complex.ofReal_exp, coe_axisPoint]
+    congr 1
+    push_cast
+    linear_combination (-(2 * (Real.pi : ℂ) * ((n : ℂ) + 1) * (y : ℂ)) /
+      ((Real.sqrt N : ℝ) : ℂ)) * Complex.I_sq
+  rw [hEq]
+  exact h
+
+/-- **EVERY CUSP FORM ON A `G ⊇ Γ₁(N)` HAS AN AXIS `q`-EXPANSION**
+(PROVEN 2026-07-31) — the two lemmas above composed, and the form the
+consumers below use.
+
+`b` is essentially UNIQUE, which is what makes it safe for the arithmetic
+leaf to quantify over it: if two sequences satisfy this for all `y > 0`
+then, dividing by `e^{-2πy/√N}` and letting `y → ∞`, their first
+coefficients agree, and inductively all of them do.  So a hypothesis of
+this shape PINS the coefficients of the named form rather than
+generalising over unrelated sequences. -/
+theorem exists_hasSum_axisRestrictOn_cuspFormOn {N : ℕ} (hN : N ≠ 0)
+    {G : Subgroup (GL (Fin 2) ℝ)} (hp : (1 : ℝ) ∈ G.strictPeriods) (F : CuspForm G 2) :
+    ∃ b : ℕ → ℂ, ∀ y : ℝ, 0 < y →
+      HasSum (fun n : ℕ =>
+          b (n + 1) * ((Real.exp (-(2 * Real.pi / Real.sqrt N * ((n : ℝ) + 1)) * y) : ℝ) : ℂ))
+        (axisRestrictOn G N F y) :=
+  ⟨fun m => (UpperHalfPlane.qExpansion 1 (F : UpperHalfPlane → ℂ)).coeff m,
+    fun _ hy => hasSum_axisRestrictOn_of_hasSum_qExpansion hN
+      (hasSum_qExpansion_cuspFormOn hp F (fun _ => rfl)) hy⟩
+
+/-- **TERMWISE INTEGRATION ON `[1, ∞)`, GROUP-GENERICALLY** (PROVEN
+2026-07-31) — the `On`-form of `X0.lean`'s
+`hasSum_integral_Ioi_one_axisRestrict`, transposed verbatim with the
+`q`-expansion as a hypothesis.
+
+**No Deligne bound is used, and none is available here.**  The domination
+is the summability of the axis series at the single point `y = 1`
+(summability in `ℂ` is absolute summability) times the BOUNDED factor
+`1/n`; that is exactly the factor the `(0, ∞)` integral does not produce,
+and it is why the tail cut was made. -/
+theorem hasSum_integral_Ioi_one_axisRestrictOn {N : ℕ} (hN : N ≠ 0)
+    {G : Subgroup (GL (Fin 2) ℝ)} (f : CuspForm G 2) (b : ℕ → ℂ)
+    (hb : ∀ y : ℝ, 0 < y → HasSum (fun n : ℕ =>
+        b (n + 1) * ((Real.exp (-(2 * Real.pi / Real.sqrt N * ((n : ℝ) + 1)) * y) : ℝ) : ℂ))
+      (axisRestrictOn G N f y)) :
+    HasSum (fun n : ℕ => b (n + 1) *
+        ((Real.exp (-(2 * Real.pi / Real.sqrt N * ((n : ℝ) + 1)))
+          / (2 * Real.pi / Real.sqrt N * ((n : ℝ) + 1)) : ℝ) : ℂ))
+      (∫ y in Set.Ioi (1 : ℝ), axisRestrictOn G N f y) := by
+  have hsq : (0 : ℝ) < Real.sqrt N :=
+    Real.sqrt_pos.mpr (by exact_mod_cast Nat.pos_of_ne_zero hN)
+  have hc : (0 : ℝ) < 2 * Real.pi / Real.sqrt N :=
+    div_pos (by positivity) hsq
+  set c : ℝ := 2 * Real.pi / Real.sqrt N with hcdef
+  set F : ℕ → ℝ → ℂ := fun n y => b (n + 1) * ((Real.exp (-(c * ((n : ℝ) + 1)) * y) : ℝ) : ℂ)
+    with hFdef
+  have hk : ∀ n : ℕ, 0 < c * ((n : ℝ) + 1) := fun n => mul_pos hc (by positivity)
+  have hFint : ∀ n : ℕ, IntegrableOn (F n) (Set.Ioi (1 : ℝ)) := by
+    intro n
+    exact ((exp_neg_integrableOn_Ioi 1 (hk n)).ofReal).const_mul _
+  have hexp : ∀ k : ℝ, 0 < k →
+      (∫ y in Set.Ioi (1 : ℝ), Real.exp (-k * y)) = Real.exp (-k) / k := by
+    intro k hk0
+    have h := integral_comp_mul_left_Ioi (fun x : ℝ => Real.exp (-x)) 1 hk0
+    rw [mul_one, integral_exp_neg_Ioi] at h
+    rw [show (fun y : ℝ => Real.exp (-k * y)) = fun y : ℝ => (fun x : ℝ => Real.exp (-x)) (k * y)
+      from funext fun y => by rw [neg_mul]]
+    rw [h, smul_eq_mul, div_eq_inv_mul]
+  have hval : ∀ n : ℕ, (∫ y in Set.Ioi (1 : ℝ), F n y)
+      = b (n + 1) * ((Real.exp (-(c * ((n : ℝ) + 1))) / (c * ((n : ℝ) + 1)) : ℝ) : ℂ) := by
+    intro n
+    simp only [hFdef]
+    rw [MeasureTheory.integral_const_mul]
+    congr 1
+    rw [show (∫ y in Set.Ioi (1 : ℝ), ((Real.exp (-(c * ((n : ℝ) + 1)) * y) : ℝ) : ℂ))
+        = ((∫ y in Set.Ioi (1 : ℝ), Real.exp (-(c * ((n : ℝ) + 1)) * y) : ℝ) : ℂ) from
+      integral_ofReal, hexp _ (hk n)]
+  have habs : Summable fun n : ℕ => ‖b (n + 1)‖ * Real.exp (-(c * ((n : ℝ) + 1))) := by
+    have h := (hb 1 one_pos).summable
+    have h2 := summable_norm_iff.mpr h
+    refine h2.congr fun n => ?_
+    rw [norm_mul, Complex.norm_real, Real.norm_eq_abs, abs_of_pos (Real.exp_pos _), mul_one]
+  have hsum : Summable fun n : ℕ => ∫ y in Set.Ioi (1 : ℝ), ‖F n y‖ := by
+    have hnorm : ∀ n : ℕ, (∫ y in Set.Ioi (1 : ℝ), ‖F n y‖)
+        = ‖b (n + 1)‖ * (Real.exp (-(c * ((n : ℝ) + 1))) / (c * ((n : ℝ) + 1))) := by
+      intro n
+      have hpt : ∀ y : ℝ, ‖F n y‖ = ‖b (n + 1)‖ * Real.exp (-(c * ((n : ℝ) + 1)) * y) := by
+        intro y
+        simp only [hFdef, norm_mul, Complex.norm_real, Real.norm_eq_abs,
+          abs_of_pos (Real.exp_pos _)]
+      simp only [hpt]
+      rw [MeasureTheory.integral_const_mul, hexp _ (hk n)]
+    simp only [hnorm]
+    refine Summable.of_nonneg_of_le (fun n => by positivity)
+      (fun n => ?_) (habs.mul_left c⁻¹)
+    have hn0 : (0 : ℝ) ≤ (n : ℝ) := Nat.cast_nonneg n
+    have hge : c ≤ c * ((n : ℝ) + 1) := le_mul_of_one_le_right hc.le (by linarith)
+    have hdiv : Real.exp (-(c * ((n : ℝ) + 1))) / (c * ((n : ℝ) + 1))
+        ≤ Real.exp (-(c * ((n : ℝ) + 1))) / c := by
+      gcongr
+    calc ‖b (n + 1)‖ * (Real.exp (-(c * ((n : ℝ) + 1))) / (c * ((n : ℝ) + 1)))
+        ≤ ‖b (n + 1)‖ * (Real.exp (-(c * ((n : ℝ) + 1))) / c) := by
+          exact mul_le_mul_of_nonneg_left hdiv (norm_nonneg _)
+      _ = c⁻¹ * (‖b (n + 1)‖ * Real.exp (-(c * ((n : ℝ) + 1)))) := by ring
+  have key := hasSum_integral_of_summable_integral_norm hFint hsum
+  have htsum : (∫ y in Set.Ioi (1 : ℝ), ∑' n : ℕ, F n y)
+      = ∫ y in Set.Ioi (1 : ℝ), axisRestrictOn G N f y := by
+    refine setIntegral_congr_fun measurableSet_Ioi fun y hy => ?_
+    exact (hb y (lt_trans one_pos (Set.mem_Ioi.mp hy))).tsum_eq
+  rw [htsum] at key
+  simpa only [hval] using key
+
+/-- The same sum with the constant `√N/(2π)` pulled out — the shape the
+two consumers below want. -/
+theorem hasSum_integral_Ioi_one_axisRestrictOn' {N : ℕ} (hN : N ≠ 0)
+    {G : Subgroup (GL (Fin 2) ℝ)} (f : CuspForm G 2) (b : ℕ → ℂ)
+    (hb : ∀ y : ℝ, 0 < y → HasSum (fun n : ℕ =>
+        b (n + 1) * ((Real.exp (-(2 * Real.pi / Real.sqrt N * ((n : ℝ) + 1)) * y) : ℝ) : ℂ))
+      (axisRestrictOn G N f y)) :
+    HasSum (fun n : ℕ => ((Real.sqrt N / (2 * Real.pi) : ℝ) : ℂ) *
+        (b (n + 1) / ((n : ℂ) + 1) *
+          ((Real.exp (-(2 * Real.pi * ((n : ℝ) + 1) / Real.sqrt N)) : ℝ) : ℂ)))
+      (∫ y in Set.Ioi (1 : ℝ), axisRestrictOn G N f y) := by
+  have hsq : (0 : ℝ) < Real.sqrt N :=
+    Real.sqrt_pos.mpr (by exact_mod_cast Nat.pos_of_ne_zero hN)
+  have hpi : (0 : ℝ) < 2 * Real.pi := by positivity
+  have h := hasSum_integral_Ioi_one_axisRestrictOn hN f b hb
+  have hcongr : ∀ n : ℕ, b (n + 1) *
+      ((Real.exp (-(2 * Real.pi / Real.sqrt N * ((n : ℝ) + 1)))
+        / (2 * Real.pi / Real.sqrt N * ((n : ℝ) + 1)) : ℝ) : ℂ)
+      = ((Real.sqrt N / (2 * Real.pi) : ℝ) : ℂ) *
+        (b (n + 1) / ((n : ℂ) + 1) *
+          ((Real.exp (-(2 * Real.pi * ((n : ℝ) + 1) / Real.sqrt N)) : ℝ) : ℂ)) := by
+    intro n
+    have hn1 : ((n : ℝ) + 1) ≠ 0 := by positivity
+    have hn1C : ((n : ℂ) + 1) ≠ 0 := by
+      have h0 : ((((n : ℝ) + 1 : ℝ)) : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr hn1
+      push_cast at h0
+      exact h0
+    have hexpeq : -(2 * Real.pi / Real.sqrt N * ((n : ℝ) + 1))
+        = -(2 * Real.pi * ((n : ℝ) + 1) / Real.sqrt N) := by
+      field_simp
+    rw [hexpeq]
+    push_cast
+    field_simp
+  simpa only [hcongr] using h
+
+/-- **THE TAIL INTEGRAL IS THE COEFFICIENT SERIES, RESCALED** (PROVEN
+2026-07-31) — the `On`-form of `X0.lean`'s
+`integral_Ioi_one_axisRestrict_eq_tsum`:
+
+> `∫₁^∞ axisRestrictOn G N f = (√N / 2π) · ∑_{n ≥ 1} (bₙ/n) e^{-2πn/√N}`. -/
+theorem integral_Ioi_one_axisRestrictOn_eq_tsum {N : ℕ} (hN : N ≠ 0)
+    {G : Subgroup (GL (Fin 2) ℝ)} (f : CuspForm G 2) (b : ℕ → ℂ)
+    (hb : ∀ y : ℝ, 0 < y → HasSum (fun n : ℕ =>
+        b (n + 1) * ((Real.exp (-(2 * Real.pi / Real.sqrt N * ((n : ℝ) + 1)) * y) : ℝ) : ℂ))
+      (axisRestrictOn G N f y)) :
+    ∫ y in Set.Ioi (1 : ℝ), axisRestrictOn G N f y
+      = ((Real.sqrt N / (2 * Real.pi) : ℝ) : ℂ) *
+        ∑' n : ℕ, b (n + 1) / ((n : ℂ) + 1) *
+          ((Real.exp (-(2 * Real.pi * ((n : ℝ) + 1) / Real.sqrt N)) : ℝ) : ℂ) := by
+  rw [← (hasSum_integral_Ioi_one_axisRestrictOn' hN f b hb).tsum_eq, tsum_mul_left]
+
+/-- The coefficient series is summable — what a DIFFERENCE of two of them
+needs before `Summable.tsum_sub` may split it, and the reason the fold
+below is an identity rather than a hope. -/
+theorem summable_axisCoeffSeriesOn {N : ℕ} (hN : N ≠ 0)
+    {G : Subgroup (GL (Fin 2) ℝ)} (f : CuspForm G 2) (b : ℕ → ℂ)
+    (hb : ∀ y : ℝ, 0 < y → HasSum (fun n : ℕ =>
+        b (n + 1) * ((Real.exp (-(2 * Real.pi / Real.sqrt N * ((n : ℝ) + 1)) * y) : ℝ) : ℂ))
+      (axisRestrictOn G N f y)) :
+    Summable (fun n : ℕ => b (n + 1) / ((n : ℂ) + 1) *
+      ((Real.exp (-(2 * Real.pi * ((n : ℝ) + 1) / Real.sqrt N)) : ℝ) : ℂ)) := by
+  have hsq : (0 : ℝ) < Real.sqrt N :=
+    Real.sqrt_pos.mpr (by exact_mod_cast Nat.pos_of_ne_zero hN)
+  have hne : ((Real.sqrt N / (2 * Real.pi) : ℝ) : ℂ) ≠ 0 :=
+    Complex.ofReal_ne_zero.mpr (ne_of_gt (div_pos hsq (by positivity)))
+  exact (summable_mul_left_iff hne).mp
+    (hasSum_integral_Ioi_one_axisRestrictOn' hN f b hb).summable
+
+/-- **THE LEVEL-`25` ARITHMETIC, ON THE SERIES** (sorry leaf, opened
+2026-07-31 as a statement about two INTEGRALS and RESTATED the same day as
+this statement about one SERIES) — this is what is left of
+`cuspPeriod_ne_zero_x1TwentyFive` below once the Fricke fold above and the
+termwise integration above are applied, and it is the ONLY declaration in
+the cluster that still mentions `25`.
+
+**THE STATEMENT NO LONGER MENTIONS AN INTEGRAL, A MEASURE OR A `∫`.**  It
+is a head-versus-tail inequality on an explicit convergent series, exactly
+as `X0.lean`'s `frickeTailSum_ne_zero` is on the `Γ₀` side; everything
+analytic in front of it is discharged by the six theorems above.  `f` and
+its Fricke partner survive in the statement only as the objects that PIN
+`a` and `b`, and `hb` pins `b` uniquely — see the uniqueness note on
+`exists_hasSum_axisRestrictOn_cuspFormOn`, which is what makes quantifying
+over `b` safe rather than a generalisation over unrelated sequences.
+
+**RESTATEMENT VOIDS THE EARLIER AUDIT** (this development's own rule), so
+the paragraphs below have been re-read against the composite statement and
+stand; the one thing that CHANGED is the "what a prover owes" list, and it
+got shorter, not longer.
+
+**WHAT THE FIRST CUT BOUGHT.**  The leaf as first opened was an assertion
+about `∫₀^∞`, where the `q`-series does not converge absolutely and no
+truncation is possible at all.  Both integrals now run over `[1, ∞)`, where
 `hasSum_axisRestrictOn` converges GEOMETRICALLY, so
-`integral_Ioi_one_axisRestrict_eq_tsum`'s route turns each into
-`∑ₙ (coeff n)·e^{−2πn/5}/(2πn/5)` and the statement becomes a head-versus-tail
+`integral_Ioi_one_axisRestrictOn_eq_tsum` turns each into
+`∑ₙ (coeff n)·e^{−2πn/5}/n` and the statement becomes a head-versus-tail
 inequality on an explicit series.  Nothing analytic is left in it.
 
 **IT IS TRUE, AND THE MARGIN IS THREE-FOLD** — see the computed table on
@@ -15494,32 +15767,42 @@ the difference is `(√25/2π)·∑ₙ (aₙ − bₙ)·e^{−2πn/5}/n`, whose 
 `n = 2` exceeds the crude tail bound `4·e^{−3·2π/5}/(1 − e^{−2π/5})` at all
 twelve embeddings, the minimum ratio being `3.0256`.
 
-**WHAT A PROVER OWES**, and it is now a short list: the `On`-form of
-`X0.lean`'s `integral_Ioi_one_axisRestrict_eq_tsum` (termwise integration
-on `[1, ∞)`, whose `q`-series input `hasSum_axisRestrictOn` is already
-generic); `‖aₙ‖ ≤ 2n` with a nebentypus, which is a leaf SHARED with the
-`Γ₀` layer (`X0.lean`'s `norm_coeff_le_two_mul_self`, itself gated on the
-still-open `realCoeff_norm_le_of_isWeightTwoEigenform`); and `λ` and `a₂`
-for the twelve forms, which is the irreducible level-`25` input.
+**WHAT A PROVER OWES**, after the second cut, is TWO items and no analysis:
+
+* **Atkin–Lehner: `bₙ = λ·conj(aₙ)` with `‖λ‖ = 1`.**  `hb` gives `b` as the
+  `q`-expansion of the NAMED partner and says nothing about how it relates to
+  `a`; identifying the two is the classical `W_N : S₂(N, χ) → S₂(N, χ̄)`
+  carrying eigenforms to eigenforms, and it is the whole of the modular input
+  left here.  With it the series becomes `∑ₙ (1 − λ·conj(·))(aₙ)/n·e^{−2πn/5}`
+  and the head is `1 − λ` plus the `n = 2` term.
+* **`‖aₙ‖ ≤ 2n` with a nebentypus**, a leaf SHARED with the `Γ₀` layer
+  (`X0.lean`'s `norm_coeff_le_two_mul_self`, itself gated on the still-open
+  `realCoeff_norm_le_of_isWeightTwoEigenform`), together with `λ` and `a₂`
+  for the twelve forms — the irreducible level-`25` input.
+
 `tsum_ne_zero_of_tail_lt_norm_sum` already takes the truncation point as a
 parameter, so `K = 2` costs nothing.
 
-**AND ONE MORE ITEM THAT THE LIST ABOVE HIDES, now that the partner is named:
-`frickeSlashOn 25 _ _ _ f` MUST BE GIVEN A `q`-EXPANSION.**  Every route to a
-series for the second integral runs through `hasSum_axisRestrictOn`, whose only
-input is `IsWeightTwoEigenformOn`'s `qExpansion` and `qExpansionSummable`
-fields — and nothing in this file attaches either to a Fricke transform.  That
-is the natural next CUT of this leaf, and it is the classical statement
-`W_N : S₂(N, χ) → S₂(N, χ̄)` carrying eigenforms to eigenforms with
-`bₙ = λ·conj(aₙ)`.  Cutting it costs one leaf and buys the whole analytic half,
-because with `b` in hand both integrals become the same explicit series and what
-is left is arithmetic on `1 − b₁ = 1 − λ` and `a₂ − b₂`.  Note the cut is only
-worth taking together with the `q`-expansion, not on its own: a bare
-"`W_N` preserves eigenforms" whose conclusion does not name the coefficients
-leaves the head of the series unidentified and closes nothing.
+**AND THE ITEM THIS LIST USED TO CARRY IS GONE, WITH NO LEAF SPENT ON IT**
+(2026-07-31, the correction that produced the second cut).  It read:
+"`frickeSlashOn 25 _ _ _ f` MUST BE GIVEN A `q`-EXPANSION … that is the natural
+next CUT of this leaf, and it is the classical statement `W_N : S₂(N, χ) →
+S₂(N, χ̄)`".  The premise was that "every route to a series for the second
+integral runs through `hasSum_axisRestrictOn`, whose only input is
+`IsWeightTwoEigenformOn`'s `qExpansion` and `qExpansionSummable` fields".  That
+premise was FALSE, and its falsity is worth keeping because the shape recurs:
+**it read a limitation of THIS FILE'S packaging as a limitation of the
+mathematics.**  A `q`-expansion is not an eigenform property — it needs
+periodicity, holomorphy and boundedness at `i∞`, i.e. exactly `CuspForm` — and
+mathlib's `UpperHalfPlane.hasSum_qExpansion` supplies it for any of them.
+`hasSum_qExpansion_cuspFormOn` above is that, in six lines of transport.  So
+the obligation "give the partner a `q`-expansion" was discharged rather than
+cut, and the Atkin–Lehner statement is still owed but ONLY for what it was
+always really needed for: identifying the coefficients, which is the first
+bullet above.  Two obligations that looked like one.
 
 **AN AXIS THAT IS CLOSED, so nobody spends a cycle reopening it (checked
-2026-07-31).**  Item 2 above is gated on Deligne through
+2026-07-31).**  The second bullet above is gated on Deligne through
 `realCoeff_norm_le_of_isWeightTwoEigenform`, and the obvious escape is to notice
 that the margin here is THREEFOLD at `K = 2` and to ask whether a WEAKER
 constant — `‖aₙ‖ ≤ C·n` for some `C` larger than `2`, obtainable from Hecke's
@@ -15555,17 +15838,79 @@ assumption is gone with them, and what a prover must produce is the
 **`hf` IS LOAD-BEARING.**  Without it the coefficients of `f` are
 unconstrained and `a₁ = 1` — which is `hf.one`, and is what makes the head
 of the series `1 − λ` rather than nothing — is unavailable; the statement
-is then false, `f := 0` giving `0 − 0 = 0`.  The old `hFE` needs no
-separate load-bearing note now that it is a theorem: its content is that
-the second integral is over the Fricke transform of `f` and not over an
-arbitrary cusp form, which is visible in the statement. -/
+is then false, `f := 0` giving `0 − 0 = 0`.
+
+**AND SO IS `hb`, for the mirror reason.**  It is what makes `b` the
+expansion of the FRICKE TRANSFORM of `f` rather than of an arbitrary cusp
+form; drop it and `b` is a free sequence, `b := a` refutes the conclusion,
+and no arithmetic could save it.  The old `hFE` of the first cut needed a
+load-bearing note of its own; it does not appear here at all, its content
+having become the `frickeSlashOn` inside `hb`. -/
+theorem tsum_coeff_sub_frickePartner_ne_zero_x1TwentyFive
+    (χ : DirichletCharacter ℂ 25) (f : CuspForm (Gamma1GL 25) 2) (a : ℕ → ℂ)
+    (hf : IsWeightTwoEigenformOn (Gamma1GL 25) 25 χ f a) (b : ℕ → ℂ)
+    (hb : ∀ y : ℝ, 0 < y →
+      HasSum (fun n : ℕ => b (n + 1) *
+          ((Real.exp (-(2 * Real.pi / Real.sqrt (25 : ℕ) * ((n : ℝ) + 1)) * y) : ℝ) : ℂ))
+        (axisRestrictOn (Gamma1GL 25) 25
+          (frickeSlashOn 25 (by norm_num) le_rfl (gamma1GL_le_gamma0GL 25) f) y)) :
+    ∑' n : ℕ, (a (n + 1) - b (n + 1)) / ((n : ℂ) + 1) *
+        ((Real.exp (-(2 * Real.pi * ((n : ℝ) + 1) / Real.sqrt (25 : ℕ))) : ℝ) : ℂ) ≠ 0 :=
+  sorry
+
+/-- **THE DIFFERENCE OF TAIL INTEGRALS IS NONZERO** (**PROVEN 2026-07-31 by
+decomposition**; a sorry leaf for one day) — the shape
+`cuspPeriod_ne_zero_x1TwentyFive` below consumes, now assembled from the
+arithmetic leaf above and the termwise integration proven earlier in this
+section.
+
+**WHAT THE SECOND CUT MOVED.**  The leaf as opened on 2026-07-31 carried
+BOTH the analysis (interchange of sum and integral on `[1, ∞)`, and the
+existence of a `q`-expansion for the Fricke partner) and the arithmetic
+(Atkin–Lehner's `bₙ = λ·conj(aₙ)`, Deligne's `‖aₙ‖ ≤ 2n`, and the twelve
+level-`25` values of `λ` and `a₂`).  Its own docstring named the missing
+`q`-expansion as "the natural next CUT", to be paid for with a new
+Atkin–Lehner leaf.  **No leaf was needed**: `hasSum_qExpansion_cuspFormOn`
+above gives every cusp form its expansion out of mathlib, so the frontier
+went from one leaf to one leaf and the analysis is simply gone.  What is
+left above is arithmetic and nothing else, which is the same position
+`X0.lean` reached on 2026-07-28 with `frickeTailSum_ne_zero`.
+
+The assembly is three steps and no estimates: expand both integrals as
+coefficient series (`integral_Ioi_one_axisRestrictOn_eq_tsum`, applied to
+`f` through `hasSum_axisRestrictOn` and to the partner through
+`exists_hasSum_axisRestrictOn_cuspFormOn`), pull the common constant
+`√25/(2π) ≠ 0` out, and merge the two series with `Summable.tsum_sub`,
+whose two summability obligations are `summable_axisCoeffSeriesOn`. -/
 theorem integral_Ioi_one_sub_frickePartner_ne_zero_x1TwentyFive
     (χ : DirichletCharacter ℂ 25) (f : CuspForm (Gamma1GL 25) 2) (a : ℕ → ℂ)
     (hf : IsWeightTwoEigenformOn (Gamma1GL 25) 25 χ f a) :
     (∫ y in Set.Ioi (1 : ℝ), axisRestrictOn (Gamma1GL 25) 25 f y)
       - ∫ y in Set.Ioi (1 : ℝ), axisRestrictOn (Gamma1GL 25) 25
-          (frickeSlashOn 25 (by norm_num) le_rfl (gamma1GL_le_gamma0GL 25) f) y ≠ 0 :=
-  sorry
+          (frickeSlashOn 25 (by norm_num) le_rfl (gamma1GL_le_gamma0GL 25) f) y ≠ 0 := by
+  obtain ⟨b, hb⟩ := exists_hasSum_axisRestrictOn_cuspFormOn (N := 25) (by norm_num)
+    (one_mem_strictPeriodsOn 25 le_rfl)
+    (frickeSlashOn 25 (by norm_num) le_rfl (gamma1GL_le_gamma0GL 25) f)
+  have ha : ∀ y : ℝ, 0 < y →
+      HasSum (fun n : ℕ => a (n + 1) *
+          ((Real.exp (-(2 * Real.pi / Real.sqrt (25 : ℕ) * ((n : ℝ) + 1)) * y) : ℝ) : ℂ))
+        (axisRestrictOn (Gamma1GL 25) 25 f y) :=
+    fun _ hy => hasSum_axisRestrictOn (by norm_num) hf hy
+  rw [integral_Ioi_one_axisRestrictOn_eq_tsum (by norm_num) f a ha,
+    integral_Ioi_one_axisRestrictOn_eq_tsum (by norm_num) _ b hb, ← mul_sub]
+  refine mul_ne_zero (Complex.ofReal_ne_zero.mpr ?_) ?_
+  · exact ne_of_gt (div_pos (Real.sqrt_pos.mpr (by norm_num)) (by positivity))
+  · have hsa := summable_axisCoeffSeriesOn (N := 25) (by norm_num) f a ha
+    have hsb := summable_axisCoeffSeriesOn (N := 25) (by norm_num) _ b hb
+    rw [← hsa.tsum_sub hsb,
+      tsum_congr (fun n : ℕ => by ring :
+        ∀ n : ℕ, a (n + 1) / ((n : ℂ) + 1) *
+            ((Real.exp (-(2 * Real.pi * ((n : ℝ) + 1) / Real.sqrt (25 : ℕ))) : ℝ) : ℂ)
+          - b (n + 1) / ((n : ℂ) + 1) *
+            ((Real.exp (-(2 * Real.pi * ((n : ℝ) + 1) / Real.sqrt (25 : ℕ))) : ℝ) : ℂ)
+          = (a (n + 1) - b (n + 1)) / ((n : ℂ) + 1) *
+            ((Real.exp (-(2 * Real.pi * ((n : ℝ) + 1) / Real.sqrt (25 : ℕ))) : ℝ) : ℂ))]
+    exact tsum_coeff_sub_frickePartner_ne_zero_x1TwentyFive χ f a hf b hb
 
 end CuspPeriodFrickeOn
 
@@ -16286,6 +16631,39 @@ whose base is `SpecQ`: a `ℚ`-point gives a ring map `ℚ →+* K`
 (`nonempty_ringHom_of_hom_specQ`), hence `CharZero K`, hence `(N : K) ≠ 0`
 from `5 ≤ N`.  Nothing above that line changes, and `N = 25` over `ℚ` —
 the only level this file is built for — never meets the hypothesis.
+
+**DO NOT TRANSPOSE THIS AUDIT TO `X0.lean` WITHOUT REDOING IT — the `Γ₀`
+sibling is asymmetric, and the asymmetry runs the OTHER way** (checked
+2026-07-31; recorded because the natural reaction to the audit above is to
+"fix" `X0.lean`'s `exists_nonconstant_toAbelianScheme_of_one_le_x0Genus`
+and `not_birationalOver_affineLine_of_one_le_x0Genus`, neither of which
+carries a characteristic hypothesis, and that edit would cost their
+consumers a hypothesis for nothing).
+
+What makes the `Ig(11)` witness EXIST is rigidity: `[Γ₁(11)]` in
+characteristic `11` is a rigid problem, hence representable, and the scheme
+representing it is a smooth curve — so `IsX1Compactification`'s `smooth`,
+`isProper` and `connected` are all satisfiable there and only the GENUS is
+wrong.  `[Γ₀(p)]` is not rigid (`−1` fixes every cyclic subgroup), and in
+characteristic `p` its coarse space is the Deligne–Rapoport special fibre:
+TWO copies of the `j`-line crossing transversally at the supersingular
+points, because an ordinary `E` has exactly two order-`p` subgroup schemes
+(`μ_p` and `ℤ/p`) while a supersingular one has a single infinitesimal one.
+That curve is NOT smooth, so `IsX0Compactification.smooth` fails and the
+`Γ₀` hypotheses are unsatisfiable in the bad characteristic rather than
+satisfiable-with-the-wrong-genus.
+
+**What is checked and what is not**, stated so the next reader knows what
+they are standing on: the Deligne–Rapoport description, and hence the
+non-smoothness, is standard and is what this paragraph rests on.  What has
+NOT been verified is that the crossing curve is the INITIAL object of
+`IsCoarseModuliY0` — the disjoint normalisation `ℙ¹ ⊔ ℙ¹` receives no
+natural transformation from the problem (the type of `C` is not locally
+constant across a supersingular point), which is why the crossing curve is
+the expected answer, but that is an argument, not a proof.  So this is a
+reason NOT to add `hchar` to the `Γ₀` leaves reflexively; it is not yet a
+proof that they are safe without it.  A `Γ₀` owner who wants certainty owes
+that one check and nothing else.
 
 **THE THREE THEOREMS BELOW WERE FALSE TOO, and the same hypothesis repairs
 them.**  All three are marked PROVEN over this leaf, and a proof over a
