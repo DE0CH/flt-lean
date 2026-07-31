@@ -8929,6 +8929,7 @@ lemma geomPic_degHom_divAct {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData
   simp only [degHom, Finsupp.liftAddHom_apply, hd, Finsupp.sum_equivMapDomain, mulRightHom,
     AddMonoidHom.coe_mk, ZeroHom.coe_mk, geomPic_degOf_eq_one]
 
+open scoped Classical in
 /-- **LEAF (weak Mordell–Weil, 3 of 4): Galois descent — an invariant geometric class is
 rational.**
 

@@ -15730,6 +15730,15 @@ theorem mem_stepanovIdx {d q Kc i c j v : ℕ} :
   simp only [stepanovIdx, Finset.mem_sigma, Finset.mem_range]
   omega
 
+
+/-- The `Finset` index set has the same cardinality as the index TYPE, and this is the
+form the two rank counts below need: `Fintype.card_coe` sends `Fintype.card ↥s` to
+`s.card`, and `card_stepanovIdx` is about `Fintype.card (StepanovIdx …)`, so neither
+rewrites the other.  Proved directly from `Finset.card_sigma`, mirroring
+`card_stepanovIdx` one nesting level at a time. -/
+theorem card_stepanovIdx_finset (d q Kc : ℕ) :
+    (stepanovIdx d q Kc).card = stepanovUnknownCount d q Kc := by
+  simp only [stepanovIdx, Finset.card_sigma, Finset.card_range, stepanovUnknownCount]
 /-- The scalar attached to an unknown, extended by zero outside the index set. -/
 noncomputable def stepanovExt {k : Type*} [Field k] (d q Kc : ℕ)
     (cc : ↥(stepanovIdx d q Kc) → k) (i j c v : ℕ) : k :=
@@ -15825,7 +15834,7 @@ theorem exists_stepanovCoefficientParametrisationField {k : Type*} [Field k] (d 
       (∀ cc i j c, d ≤ i ∨ d ≤ c ∨ Kc < j + c → ι cc i j c = 0) := by
   classical
   have hcard : Fintype.card ↥(stepanovIdx d q Kc) = stepanovUnknownCount d q Kc := by
-    rw [Fintype.card_coe, card_stepanovIdx]
+    rw [Fintype.card_coe, card_stepanovIdx_finset]
   let e : ↥(stepanovIdx d q Kc) ≃ Fin (stepanovUnknownCount d q Kc) :=
     Fintype.equivFinOfCardEq hcard
   refine ⟨(stepanovParam (k := k) d q Kc).comp (LinearMap.funLeft k k e), ?_,
@@ -15858,7 +15867,7 @@ theorem exists_stepanovShapedSolution {k : Type*} [Field k] (d q Kc B : ℕ)
     have hle := LinearMap.finrank_le_finrank_of_injective (R := k)
       (LinearMap.ker_eq_bot.mp h)
     rw [Module.finrank_fintype_fun_eq_card, Module.finrank_fin_fun,
-      Fintype.card_coe, card_stepanovIdx] at hle
+      Fintype.card_coe, card_stepanovIdx_finset] at hle
     omega
   obtain ⟨cc, hmem, hne⟩ := Submodule.exists_mem_ne_zero_of_ne_bot hker
   refine ⟨stepanovParam d q Kc cc, stepanovParam_natDegree d q Kc cc,
@@ -27575,6 +27584,7 @@ theorem hypQuotAway_apply {e : ℕ} (g : MvPolynomial (Fin (e + 1)) ℤ)
 
 end LocalisedHypersurfaceMembership
 
+set_option maxHeartbeats 1600000 in
 /-- **LEAF (B‴): THE COORDINATES THEMSELVES, WITH NO IDEAL BOOKKEEPING** (SORRY LEAF,
 cut 2026-07-30 out of `exists_ratMembershipData_of_birationalNormalForm` below, which
 is PROVEN over it).

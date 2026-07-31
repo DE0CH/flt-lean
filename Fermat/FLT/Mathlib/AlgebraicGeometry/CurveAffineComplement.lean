@@ -193,708 +193,6 @@ noncomputable def affineLineOver (K : Type u) [Field K] :
     Spec (CommRingCat.of (Polynomial K)) ⟶ Spec (CommRingCat.of K) :=
   Spec.map (CommRingCat.ofHom (algebraMap K (Polynomial K)))
 
-/-- **RIEMANN–ROCH: a nonconstant regular function on the punctured curve** (sorry leaf, cut
-2026-07-28 out of `isAffineOpen_compl_singleton_of_isSmoothProperCurve`).
-
-This is the ONLY place Riemann–Roch enters the affineness statement.  Concretely it asks
-for a `K`-morphism `g : X ∖ {z} ⟶ 𝔸¹_K` with finite fibres — equivalently, for a
-nonconstant `f ∈ Γ(X, X ∖ {z})`, i.e. a rational function on `X` regular away from `z`.
-
-TRUE and classical.  `X` is a smooth proper geometrically connected curve over `K`, so it
-has a genus `g`, and Riemann–Roch gives `dim_K L(n·[z]) = n·deg[z] − g + 1` for
-`n·deg[z] > 2g − 2`.  In particular `L(n·[z]) ⊋ L(0) ⊇ K` for `n` large, and any element of
-the difference is a nonconstant function regular on `X ∖ {z}`.  Its fibres over `𝔸¹` are
-proper closed subsets of the integral curve `X ∖ {z}`, hence finite, which is
-`LocallyQuasiFinite`.
-
-**Why `LocallyQuasiFinite` rather than "nonconstant".**  The pin has no notion of a
-nonconstant morphism, and quasi-finiteness is the form Zariski's main theorem consumes
-directly.  On an integral curve the two agree: a constant morphism has a one-point image
-with infinite fibre, and `X ∖ {z}` is infinite by
-`infinite_of_smoothOfRelativeDimension_one`.
-
-**`hconn` IS LOAD-BEARING** — see the counterexample in
-`isAffineOpen_compl_singleton_of_isSmoothProperCurve`'s docstring: on a disjoint union of
-two copies of a curve, punctured in the first copy only, any regular function is constant on
-the whole second copy, so no quasi-finite `g` exists.
-
-**`SmoothOfRelativeDimension 1` IS LOAD-BEARING**: at relative dimension two, `X ∖ {z}` has
-the same global sections as the proper `X` (a finite extension of `K`), so every `g` is
-constant and none is quasi-finite.
-
-**The `≫`-clause IS LOAD-BEARING**: without it `g` is only a morphism of schemes over `ℤ`,
-and its restriction `K → Γ(X ∖ {z})` need not be the structure map, which breaks the
-finite-type hypotheses of the sibling leaf.  See `affineLineOver`.
-
-NOT VACUOUS: for `X` the projective model of an elliptic curve over `ℚ` and `z` the point at
-infinity, `x` (the first Weierstrass coordinate) is such a function.
-
-WHAT WOULD REFUTE THE "MISSING FROM THE PIN" DIAGNOSIS: a Riemann–Roch theorem, a genus, or
-a theory of linear systems, anywhere in `Fermat/`, `.lake/packages/mathlib` or `~/cs/FLT`.
-Re-searched 2026-07-28: absent from all three.
-
-**RE-SEARCHED AND RE-SCOPED 2026-07-30, when this became the file's only remaining `sorry`.**
-`grep -rln 'RiemannRoch\|riemannRoch' .lake/packages/mathlib/Mathlib/` and the same over
-`~/cs/FLT` still return nothing.  What HAS appeared since is `Fermat/FLT/Modularity/AmpleSheaf.lean`
-(2563 lines, `IsAmpleSheaf` and the tensor/pushforward plumbing around it) — but it defines
-ampleness, it does not prove that a point on a curve is ample, and it carries no genus and no
-cohomology, so it does not shorten this leaf.  Several SIBLINGS of this leaf carry the same
-gap and are stated independently in `Fermat/FLT/ModularCurve/EllipticScheme.lean`
-(`exists_weierstrassGenerators_of_affineComplement`,
-`exists_weierstrassModel_of_ellipticScheme`, and the leaves around line 10100 there).
-**Whoever attacks Riemann–Roch should cut it ONCE, for all of them, rather than here** — a
-cut made privately in this file would be a rival cut against those.
-
-**The minimal statement this leaf needs, and it is strictly weaker than Riemann–Roch:** a
-NONCONSTANT `f ∈ Γ(X, X ∖ {z})`, i.e. `Γ(X, X ∖ {z}) ≠ K`.  Everything else is already paid
-for.  The quasi-finiteness packaging is `LocallyQuasiFinite.of_finite_preimage_singleton`
-against `LocallyOfFiniteType`, and the morphism itself is built from the section exactly as
-`exists_extension_toAffineLine_of_coordinate_extends` below builds one — same adjunction,
-same `Polynomial.ringHom_ext`.
-
-**Why no cheaper route exists, checked 2026-07-30.**  The obvious dodges all fail on the same
-point.  A nonconstant rational function exists cheaply (`Γ(W)` is standard smooth of relative
-dimension one over `K` for any affine open `W`, hence not algebraic over `K`), and it extends
-to a finite `π : X ⟶ ℙ¹` — but its polar set is `π⁻¹(∞)`, a finite set that need not be
-`{z}`, and killing the unwanted poles is prescribing zeros, which is Riemann–Roch again.
-Nor does it help that `X ∖ π⁻¹(∞)` is affine: that is a SUBSET of `X ∖ {z}`, and affineness
-does not pass to opens that are larger.  The content is Riemann's inequality
-`dim_K L(n·z) ≥ n + 1 − g`, and nothing less. -/
-theorem exists_locallyQuasiFinite_toAffineLine_compl_singleton
-    {K : Type u} [Field K] {X : Scheme.{u}} (strX : X ⟶ Spec (CommRingCat.of K))
-    [IsProper strX] [SmoothOfRelativeDimension 1 strX]
-    (hconn : GeometricallyConnected strX)
-    {z : X} (hz : IsClosed ({z} : Set X)) :
-    ∃ g : Scheme.Opens.toScheme (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) ⟶
-        Spec (CommRingCat.of (Polynomial K)),
-      LocallyQuasiFinite g ∧
-        g ≫ affineLineOver K =
-          Scheme.Opens.ι (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) ≫ strX := by
-  haveI : IsIntegral X :=
-    isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected (n := 1) strX hconn
-  haveI : Infinite X := infinite_of_smoothOfRelativeDimension_one strX
-  haveI : Infinite ↥(⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) :=
-    (Set.Finite.infinite_compl (Set.finite_singleton z)).to_subtype
-  obtain ⟨f, hf⟩ := exists_notIsIntegralElem_section_compl_singleton strX hconn hz
-  obtain ⟨g, hcoord, hover⟩ := exists_toAffineLine_coordOf_eq strX _ f
-  exact ⟨g, locallyQuasiFinite_of_notIsIntegralElem_coordOf strX hconn _ g hover
-    (hcoord ▸ hf), hover⟩
-
-/-! ### The classifying local homomorphism of a `Spec (local ring)`-point, and its naturality
-
-`Scheme.stalkClosedPointTo f : 𝒪_{X, f(𝔪)} ⟶ R` is mathlib's packaging of "a morphism
-`Spec R ⟶ X` out of a LOCAL ring is a point of `X` plus a local homomorphism out of its stalk".
-The three lemmas below are what the pole argument needs from it and are absent from the pin;
-all three are PROVEN here with no sorry, and none of them mentions a curve.  -/
-
-/-- **A morphism out of the spectrum of a local ring misses a CLOSED point exactly when its
-closed point is not sent there** (PROVEN 2026-07-31, no sorry).
-
-Every prime of a local ring is contained in the maximal ideal, so every point of `Spec R`
-specializes to the closed point (`IsLocalRing.specializes_closedPoint`); continuous maps preserve
-specialization, and `{z}` being closed is stable under specialization.  So a single point has to
-be ruled out, not a whole range — this is step B1 of
-`notMem_range_of_valuativeLift_toAffineLine_compl_singleton`.
-
-`IsClosed {z}` IS LOAD-BEARING: for a non-closed `z` the conclusion is false — take `X = Spec R`
-itself, `l = 𝟙`, and `z` the generic point of a DVR. -/
-theorem notMem_range_of_closedPoint_ne {X : Scheme.{u}} {R : CommRingCat.{u}} [IsLocalRing R]
-    (l : Spec R ⟶ X) {z : X} (hz : IsClosed ({z} : Set X))
-    (hm : l.base (IsLocalRing.closedPoint R) ≠ z) : z ∉ Set.range l.base := by
-  rintro ⟨p, hp⟩
-  refine hm ?_
-  have hsp : l.base p ⤳ l.base (IsLocalRing.closedPoint R) :=
-    (IsLocalRing.specializes_closedPoint p).map l.base.hom.continuous
-  rw [hp] at hsp
-  have := hsp.mem_closed hz rfl
-  simpa using this
-
-/-- **The affine case of the naturality below** (PROVEN 2026-07-31, no sorry): on `Spec R` for
-`R` local, the specialization map from the closed point to the prime `α⁻¹𝔪_S`, followed by the
-classifying map of `Spec.map α`, is `α` itself.
-
-Both sides are maps out of `(Spec R).presheaf.stalk (closedPoint R)`, so
-`TopCat.Presheaf.stalk_hom_ext` reduces to opens containing the closed point — and there is only
-one, `⊤` (`IsLocalRing.closed_point_mem_iff`).  There the two sides are
-`germ_stalkClosedPointTo_Spec` and `germ_stalkClosedPointIso_hom`, both of which say
-`(ΓSpecIso R).hom`. -/
-theorem stalkSpecializes_stalkClosedPointTo_Spec {R S : CommRingCat.{u}}
-    [IsLocalRing R] [IsLocalRing S] (α : R ⟶ S) :
-    (Spec R).presheaf.stalkSpecializes
-        (IsLocalRing.specializes_closedPoint
-          ((Spec.map α).base (IsLocalRing.closedPoint S))) ≫
-      Scheme.stalkClosedPointTo (Spec.map α) =
-      (stalkClosedPointIso R).hom ≫ α := by
-  refine TopCat.Presheaf.stalk_hom_ext _ fun U hU => ?_
-  obtain rfl : U = ⊤ := IsLocalRing.closed_point_mem_iff.mp hU
-  rw [← Category.assoc, TopCat.Presheaf.germ_stalkSpecializes]
-  rw [Scheme.germ_stalkClosedPointTo_Spec α]
-  rw [← Category.assoc, germ_stalkClosedPointIso_hom]
-
-/-- **THE CLASSIFYING LOCAL HOMOMORPHISM IS NATURAL IN THE LOCAL RING, ALONG SPECIALIZATION**
-(PROVEN 2026-07-31, no sorry).
-
-For `l : Spec R ⟶ X` and ANY ring map `α : R ⟶ S` with `S` local, the square
-
-    𝒪_{X, l(𝔪_R)} --stalkClosedPointTo l--> R
-        |                                   |
-   stalkSpecializes                         α
-        v                                   v
-    𝒪_{X, (Spec α ≫ l)(𝔪_S)} ------------> S
-
-commutes.  **`α` is NOT assumed local, and that is the whole point of the lemma**: the case the
-pole argument needs is `α = algebraMap R L` into the fraction field, which sends `𝔪_S = 0` back
-to `(0)`, so `Spec α` hits the GENERIC point of `Spec R` and the two closed-point images differ.
-A local `α` would give the trivial statement with `stalkSpecializes` the identity.
-
-The proof is `stalkClosedPointTo_comp` to split off `Spec.map α`, then
-`Scheme.Hom.stalkSpecializes_stalkMap` to move the specialization across `l`, then the affine
-case above. -/
-theorem stalkSpecializes_stalkClosedPointTo {X : Scheme.{u}} {R S : CommRingCat.{u}}
-    [IsLocalRing R] [IsLocalRing S] (α : R ⟶ S) (l : Spec R ⟶ X)
-    (h : l.base ((Spec.map α).base (IsLocalRing.closedPoint S)) ⤳
-      l.base (IsLocalRing.closedPoint R)) :
-    X.presheaf.stalkSpecializes h ≫ Scheme.stalkClosedPointTo (Spec.map α ≫ l) =
-      Scheme.stalkClosedPointTo l ≫ α := by
-  rw [Scheme.stalkClosedPointTo_comp (Spec.map α) l,
-    Scheme.Hom.stalkSpecializes_stalkMap_assoc l _ _
-      (IsLocalRing.specializes_closedPoint ((Spec.map α).base (IsLocalRing.closedPoint S))),
-    stalkSpecializes_stalkClosedPointTo_Spec α, Scheme.stalkClosedPointTo, Category.assoc]
-
-/-- **The same statement with the composite named separately** (PROVEN 2026-07-31, no sorry).
-
-This is not cosmetic.  A consumer holds the composite in the form its own hypothesis gives it —
-here `hl₁ : Spec.map (algebraMap R L) ≫ l = i₁ ≫ ι` — and the two descriptions of the SAME
-morphism give two syntactically different points, hence two different `X.presheaf.stalk _`, and
-`rw` cannot bridge them inside a dependent type.  Taking the equation as a hypothesis and
-`subst`ing it does. -/
-theorem stalkSpecializes_stalkClosedPointTo' {X : Scheme.{u}} {R S : CommRingCat.{u}}
-    [IsLocalRing R] [IsLocalRing S] (α : R ⟶ S) (l : Spec R ⟶ X) (m : Spec S ⟶ X)
-    (hm : Spec.map α ≫ l = m)
-    (h : m.base (IsLocalRing.closedPoint S) ⤳ l.base (IsLocalRing.closedPoint R)) :
-    X.presheaf.stalkSpecializes h ≫ Scheme.stalkClosedPointTo m =
-      Scheme.stalkClosedPointTo l ≫ α := by
-  subst hm
-  exact stalkSpecializes_stalkClosedPointTo α l h
-
-/-- **THE POLE CONTRADICTION, IN ABSTRACT FORM** (PROVEN 2026-07-31, no sorry) — step B2 of
-`notMem_range_of_valuativeLift_toAffineLine_compl_singleton` with every trace of the curve, of
-`𝔸¹` and of the valuative square removed.
-
-Read it as: `w` is `1/f` at `z`, `v` is `f` at the generic point, `r` is `f`'s value on `Spec R`.
-Pushing `w · v = 1` through `θ` and using the compatibility square turns it into
-`algebraMap R L (ψ w · r) = 1`; `algebraMap R L` is injective because `R` is a domain with
-fraction field `L`, so `ψ w` is a UNIT of `R`; and `ψ` is local, so `w` would be a unit of the
-stalk — contradicting `w ∈ 𝔪`.
-
-**`IsLocalHom ψ.hom` IS LOAD-BEARING and the statement is FALSE without it**: drop it and take
-`ψ = 0`… more precisely, any `ψ` killing `𝔪` into a unit makes `ψ w · r = 1` consistent.  It is
-supplied for free by `Scheme.isLocalHom_stalkClosedPointTo`.
-
-**`IsFractionRing R L` IS LOAD-BEARING**: only injectivity of `R ⟶ L` is used, but without it
-`ψ w · r = 1` cannot be concluded from its image in `L`. -/
-theorem false_of_pole {X : Scheme.{u}} {R L : Type u} [CommRing R] [IsDomain R] [IsLocalRing R]
-    [Field L] [Algebra R L] [IsFractionRing R L]
-    {z x₀ : X} (hsp : x₀ ⤳ z)
-    (ψ : X.presheaf.stalk z ⟶ CommRingCat.of R) [IsLocalHom ψ.hom]
-    (θ : X.presheaf.stalk x₀ ⟶ CommRingCat.of L)
-    (hcompat : X.presheaf.stalkSpecializes hsp ≫ θ = ψ ≫ CommRingCat.ofHom (algebraMap R L))
-    (v : X.presheaf.stalk x₀) (r : R) (hr : θ.hom v = algebraMap R L r)
-    (w : X.presheaf.stalk z) (hwm : w ∈ IsLocalRing.maximalIdeal (X.presheaf.stalk z))
-    (hwid : (X.presheaf.stalkSpecializes hsp).hom w * v = 1) : False := by
-  have h2 : θ.hom ((X.presheaf.stalkSpecializes hsp).hom w) = algebraMap R L (ψ.hom w) := by
-    have := congrArg (fun (φ : X.presheaf.stalk z ⟶ CommRingCat.of L) => φ.hom w) hcompat
-    simpa using this
-  have h1 : algebraMap R L (ψ.hom w * r) = algebraMap R L 1 := by
-    rw [map_mul, map_one, ← h2, ← hr, ← map_mul, hwid, map_one]
-  have h3 : ψ.hom w * r = 1 := IsFractionRing.injective R L h1
-  exact (IsLocalRing.mem_maximalIdeal _ |>.mp hwm)
-    (‹IsLocalHom ψ.hom›.map_nonunit _ (IsUnit.of_mul_eq_one _ h3))
-
-/-! ### The extension obstruction: a global regular function on a proper curve is algebraic
-
-The four items below are what closes the "`f` does not extend across `z`" sub-sub-leaf, and
-none of them mentions a valuation ring, a DVR, `𝔪_z`, properness of a morphism to `𝔸¹`, or
-Zariski's main theorem.  The route they realise is SHORTER than the extend-then-ZMT dichotomy
-this file used to plan, and the reason is one lemma of the pin that the plan overlooked:
-`isIntegral_appTop_of_universallyClosed` (`Morphisms/Proper.lean`) says the global sections of
-a universally closed scheme over an affine base are INTEGRAL over it.  So an extension `F` of
-`f` is algebraic over `K` outright, `g` classifies a root of a nonzero polynomial, and `g` is
-therefore constant — no fibre dichotomy, no `IsFinite.of_isProper_of_locallyQuasiFinite`, and
-no need to build the morphism `ĝ : X ⟶ 𝔸¹_K` at all (only the SECTION `F` is needed). -/
-
-/-- **Two sections of an INTEGRAL scheme with the same germ at one common point glue**
-(PROVEN 2026-07-31, no sorry).
-
-On an integral scheme a germ determines a section (`germ_injective_of_isIntegral`), so equality
-of germs at the single point `x₀` upgrades to equality on EVERY open contained in both domains
-— which is exactly the compatibility that `TopCat.Sheaf.existsUnique_gluing'` wants.  Only the
-restriction of the glued section to `U` is returned, since that is all the consumer uses.
-
-`IsIntegral X` IS LOAD-BEARING: without irreducibility two sections can agree at `x₀` and
-disagree elsewhere on `U ⊓ V`, and nothing glues. -/
-theorem exists_res_eq_of_germ_eq {X : Scheme.{u}} [IsIntegral X] {U V : X.Opens}
-    (hcover : (⊤ : X.Opens) ≤ U ⊔ V) {x₀ : X} (hxU : x₀ ∈ U) (hxV : x₀ ∈ V)
-    (f : Γ(X, U)) (s : Γ(X, V))
-    (h : X.presheaf.germ U x₀ hxU f = X.presheaf.germ V x₀ hxV s) :
-    ∃ F : Γ(X, ⊤), X.presheaf.map (homOfLE (le_top : U ≤ ⊤)).op F = f := by
-  classical
-  have key : ∀ (W : X.Opens) (h1 : W ≤ U) (h2 : W ≤ V), x₀ ∈ W →
-      X.presheaf.map (homOfLE h1).op f = X.presheaf.map (homOfLE h2).op s := by
-    intro W h1 h2 hxW
-    refine germ_injective_of_isIntegral X x₀ hxW ?_
-    rw [X.presheaf.germ_res_apply, X.presheaf.germ_res_apply]
-    exact h
-  let 𝒰 : Bool → X.Opens := fun b => Bool.rec V U b
-  let sf : ∀ b, Γ(X, 𝒰 b) := fun b => Bool.rec s f b
-  have hcompat : TopCat.Presheaf.IsCompatible X.sheaf.1 𝒰 sf := by
-    rintro (_ | _) (_ | _)
-    · rfl
-    · exact (key _ inf_le_right inf_le_left ⟨hxV, hxU⟩).symm
-    · exact key _ inf_le_left inf_le_right ⟨hxU, hxV⟩
-    · rfl
-  have hcov : (⊤ : X.Opens) ≤ iSup 𝒰 := by
-    rw [iSup_bool_eq]
-    exact hcover
-  obtain ⟨F, hFspec, -⟩ :=
-    X.sheaf.existsUnique_gluing' 𝒰 ⊤ (fun _ => homOfLE le_top) hcov sf hcompat
-  exact ⟨F, hFspec true⟩
-
-/-- **IF THE CLASSIFIED FUNCTION EXTENDS TO A GLOBAL SECTION, `g` CANNOT BE QUASI-FINITE**
-(PROVEN 2026-07-31, no sorry) — the whole of the sub-sub-leaf's mathematics, with the puncture,
-the specialization and the stalks removed: only an OPEN `U` of a proper integral `X`, infinite,
-and a `K`-morphism `g : U ⟶ 𝔸¹_K` whose classified function is the restriction of a global one.
-
-THE ARGUMENT, in four moves:
-
-1. `isIntegral_appTop_of_universallyClosed strX` (pin, `Morphisms/Proper.lean`): `Γ(X, ⊤)` is
-   INTEGRAL over `K`.  So `F` satisfies a monic `p ∈ K[T]`.
-2. `coordHom_comp_C` transports that identity along the classifying map: `p` is in the kernel
-   of `coordHom U g`, because a ring map out of `K[T]` is `eval₂` of what it does to `K` and to
-   `T` (`Polynomial.ringHom_ext`), and those are the restriction `Γ(X, ⊤) ⟶ Γ(X, U)` and `f`.
-3. Hence `T`'s pull-back to the basic open of `p` is `0`, so `g` sends the GENERIC point of `U`
-   into `V(p)`; as `p ≠ 0` and `K[T]` is a PID, that prime is MAXIMAL, i.e. a closed point.
-4. A continuous map sends generizations to generizations, so the image of the whole of `U` is
-   contained in the closure of that closed point — a single point.  Its fibre is all of `U`,
-   which is infinite, while `Scheme.Hom.finite_preimage_singleton` makes it finite.
-
-**`IsProper strX` IS LOAD-BEARING**, through `UniversallyClosed` in move 1 — on an affine curve
-`Γ(X, ⊤)` is not algebraic over `K` and the extension carries no information.
-
-**`Infinite ↥U` IS LOAD-BEARING and the statement is FALSE without it**: on a finite `U` a
-constant `g` is perfectly quasi-finite.
-
-**`hover` IS LOAD-BEARING**: it is the only hypothesis tying `g` to the `K`-structure, and
-move 2 is where it is consumed.  See `affineLineOver`. -/
-theorem false_of_res_eq_coordOf_of_locallyQuasiFinite {K : Type u} [Field K] {X : Scheme.{u}}
-    (strX : X ⟶ Spec (CommRingCat.of K)) [IsProper strX] [IsIntegral X]
-    (U : X.Opens) [Infinite ↥U]
-    (g : U.toScheme ⟶ Spec (CommRingCat.of (Polynomial K)))
-    [LocallyQuasiFinite g] [QuasiCompact g]
-    (hover : g ≫ affineLineOver K = Scheme.Opens.ι U ≫ strX)
-    (F : Γ(X, ⊤))
-    (hF : X.presheaf.map (homOfLE (le_top : U ≤ ⊤)).op F = coordOf U g) :
-    False := by
-  classical
-  haveI : Nonempty ↥U := inferInstance
-  haveI : Nonempty ↥(U.toScheme) := inferInstanceAs (Nonempty ↥U)
-  haveI : Infinite ↥(U.toScheme) := inferInstanceAs (Infinite ↥U)
-  -- MOVE 1: `F` is integral over `K`.
-  have hint : ((Scheme.ΓSpecIso (CommRingCat.of K)).inv ≫ strX.appTop).hom.IsIntegral := by
-    apply RingHom.isIntegral_respectsIso.2
-      (e := (Scheme.ΓSpecIso (CommRingCat.of K)).symm.commRingCatIsoToRingEquiv)
-    exact isIntegral_appTop_of_universallyClosed strX
-  obtain ⟨p, hpm, hp0⟩ := hint F
-  -- MOVE 2: the same polynomial dies in the classifying map of `g`.
-  have hpsi : (coordHom U g).hom p = 0 := by
-    have hsplit : (coordHom U g).hom = Polynomial.eval₂RingHom
-        ((coordHom U g).hom.comp (Polynomial.C : K →+* Polynomial K))
-        ((coordHom U g).hom Polynomial.X) :=
-      Polynomial.ringHom_ext (fun a => by simp) (by simp)
-    have hcc := congrArg CommRingCat.Hom.hom (coordHom_comp_C strX U g hover)
-    rw [hsplit]
-    show Polynomial.eval₂ _ _ p = 0
-    rw [coordHom_apply_X, ← hF]
-    have hK : (coordHom U g).hom.comp (Polynomial.C : K →+* Polynomial K) =
-        (X.presheaf.map (homOfLE (le_top : U ≤ ⊤)).op).hom.comp
-          ((Scheme.ΓSpecIso (CommRingCat.of K)).inv ≫ strX.appTop).hom := hcc
-    rw [hK, ← Polynomial.hom_eval₂, hp0, map_zero]
-  -- MOVE 3: so `T`'s pull-back vanishes, and the image of the generic point is a closed point.
-  have hzero : g.appTop.hom
-      ((Scheme.ΓSpecIso (CommRingCat.of (Polynomial K))).inv.hom p) = 0 := by
-    have hexp : (coordHom U g).hom p =
-        (Scheme.Opens.topIso U).hom.hom
-          (g.appTop.hom ((Scheme.ΓSpecIso (CommRingCat.of (Polynomial K))).inv.hom p)) := rfl
-    rw [hexp] at hpsi
-    have h := congrArg (Scheme.Opens.topIso U).inv.hom hpsi
-    rw [map_zero, ← CommRingCat.comp_apply, Iso.hom_inv_id, CommRingCat.id_apply] at h
-    exact h
-  haveI : IsIntegral U.toScheme := isIntegral_of_isOpenImmersion (Scheme.Opens.ι U)
-  set η : U.toScheme := genericPoint U.toScheme with hη
-  set y : Spec (CommRingCat.of (Polynomial K)) := g.base η with hy
-  have hpy : p ∈ y.asIdeal := by
-    have hb : (Spec (CommRingCat.of (Polynomial K))).basicOpen
-        ((Scheme.ΓSpecIso (CommRingCat.of (Polynomial K))).inv.hom p) =
-        PrimeSpectrum.basicOpen p := basicOpen_eq_of_affine _
-    by_contra hcon
-    have hmem : y ∈ (Spec (CommRingCat.of (Polynomial K))).basicOpen
-        ((Scheme.ΓSpecIso (CommRingCat.of (Polynomial K))).inv.hom p) := by
-      rw [hb]; exact (PrimeSpectrum.mem_basicOpen p y).mpr hcon
-    have hmem2 : η ∈ (U.toScheme).basicOpen
-        (g.appTop.hom ((Scheme.ΓSpecIso (CommRingCat.of (Polynomial K))).inv.hom p)) := by
-      rw [← Scheme.preimage_basicOpen_top]; exact hmem
-    rw [hzero, Scheme.basicOpen_zero] at hmem2
-    exact hmem2
-  have hpne : p ≠ 0 := hpm.ne_zero
-  have hbot : y.asIdeal ≠ ⊥ := by
-    intro hb
-    rw [hb, Ideal.mem_bot] at hpy
-    exact hpne hpy
-  haveI : y.asIdeal.IsMaximal := _root_.IsPrime.to_maximal_ideal hbot
-  have hyclosed : IsClosed ({y} : Set (Spec (CommRingCat.of (Polynomial K)))) :=
-    (PrimeSpectrum.isClosed_singleton_iff_isMaximal y).mpr ‹_›
-  -- MOVE 4: so `g` is constant, and its one fibre is both all of `U` and finite.
-  have hconst : ∀ u : U.toScheme, g.base u = y := by
-    intro u
-    have h1 : η ⤳ u := (genericPoint_spec U.toScheme).specializes trivial
-    have h2 : y ⤳ g.base u := h1.map g.base.hom.continuous
-    simpa using h2.mem_closed hyclosed rfl
-  have hfin := g.finite_preimage_singleton y
-  have huniv : (⇑g ⁻¹' {y}) = Set.univ := by
-    ext u
-    simp [hconst u]
-  rw [huniv] at hfin
-  exact (Set.infinite_univ (α := ↥(U.toScheme))) hfin
-
-/-- **`f` DOES NOT EXTEND ACROSS `z`** (cut 2026-07-31 out of
-`exists_inv_coordOf_mem_maximalIdeal_compl_singleton` immediately below, which is proven over
-it; this is the WHOLE of the mathematics that leaf contained.  **PROVEN 2026-07-31 the same
-day, no sorry**, over the four items immediately above — so the affineness route's properness
-half is now closed outright and the file's only remaining leaf is Riemann–Roch.)
-
-Read it as `f ∉ 𝒪_{X,z}`, stated without the function field: `germ_{x₀} f` is not in the image
-of the specialization map `𝒪_{X,z} ⟶ 𝒪_{X,x₀}`.  On an integral `X` that image is exactly
-`𝒪_{X,z}` viewed inside `𝒪_{X,x₀} ⊆ K(X)` (both maps are injective), so the two readings agree
-— see `exists_inv_coordOf_mem_maximalIdeal_compl_singleton`'s proof, which does the conversion.
-
-**NO VALUATION RING, NO MAXIMAL IDEAL, NO RECIPROCAL.**  Everything about DVRs, `𝔪_z` and
-`1/f` that the parent leaf carried has been discharged; what is left is a single
-non-membership, and it is the only place `hqf` and `IsProper strX` are consumed.
-
-## PROOF (2026-07-31), AND IT DOES NOT BUILD `ĝ` AT ALL
-
-The plan this docstring used to record — extend `g` to `ĝ : X ⟶ 𝔸¹_K`, prove `ĝ` proper by
-cancelling against `affineLineOver K`, then run a fibre dichotomy ending in
-`IsFinite.of_isProper_of_locallyQuasiFinite` and `Module.Finite K K[T]` — is CORRECT but was
-strictly more work than necessary, and it is not what is implemented.  The pin already carries
-`isIntegral_appTop_of_universallyClosed` (`Morphisms/Proper.lean`): the global sections of a
-universally closed scheme over an affine base are INTEGRAL over it.  That collapses the
-dichotomy, because the "`ĝ` dominant" branch is then impossible outright rather than being
-excluded case by case, and the MORPHISM `ĝ` is never needed — only the SECTION.
-
-So the three steps actually taken are:
-
-* the hypothesis `a : 𝒪_{X,z}` with `stalkSpecializes a = germ_{x₀} f` gives a section `s` on
-  some open `V ∋ z` (`X.presheaf.exists_germ_eq`) whose germ at `x₀` is `germ_{x₀} f` — note
-  `x₀ ∈ V` for free, `V` being open and `x₀ ⤳ z`;
-* `U ⊔ V = ⊤`, since `U = {z}ᶜ` and `z ∈ V`, so `exists_res_eq_of_germ_eq` above glues `s` and
-  `f` into `F ∈ Γ(X, ⊤)` restricting to `f`.  Equality of the two germs at the SINGLE point
-  `x₀` suffices because `X` is integral;
-* `false_of_res_eq_coordOf_of_locallyQuasiFinite` above finishes: `F` is algebraic over `K`, so
-  `g` is constant, so its single fibre is the infinite `U` — and a quasi-finite quasi-compact
-  morphism has finite fibres.
-
-`QuasiCompact g` is obtained here exactly as in
-`isProper_of_locallyQuasiFinite_toAffineLine_compl_singleton` below: `X` is a NOETHERIAN scheme
-(`CompactSpace` from `QuasiCompact strX`, `IsLocallyNoetherian` from
-`LocallyOfFiniteType.isLocallyNoetherian`), hence so is the open `U`, and
-`quasiCompact_of_noetherianSpace_source` applies.
-
-**`hqf` IS LOAD-BEARING and the statement is FALSE without it**: `g` constant at `0` gives
-`f = 0`, which extends across `z` by `0`.
-
-**`IsProper strX` IS LOAD-BEARING**, and it is consumed twice: through `UniversallyClosed` for
-the integrality of `Γ(X, ⊤)`, and through `QuasiCompact`/`LocallyOfFiniteType` for
-`QuasiCompact g`.  On an affine curve `f` may extend across `z`.
-
-**`hconn` IS LOAD-BEARING**, through `IsIntegral X` — without irreducibility there is no
-generic point to compare germs at, the gluing step has no meaning, and `g` need not be constant
-on the whole of `U` even when its classified function is algebraic.
-
-**`SmoothOfRelativeDimension 1 strX` IS LOAD-BEARING**, and ONLY through
-`infinite_of_smoothOfRelativeDimension_one`: it is what makes `U` infinite, which is the last
-move.  On a zero-dimensional `X` the statement is false — every function extends. -/
-theorem not_exists_stalkSpecializes_eq_germ_coordOf_compl_singleton
-    {K : Type u} [Field K] {X : Scheme.{u}} (strX : X ⟶ Spec (CommRingCat.of K))
-    [IsProper strX] [SmoothOfRelativeDimension 1 strX]
-    (hconn : GeometricallyConnected strX)
-    {z : X} (hz : IsClosed ({z} : Set X))
-    (g : Scheme.Opens.toScheme (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) ⟶
-        Spec (CommRingCat.of (Polynomial K)))
-    (hqf : LocallyQuasiFinite g)
-    (hover : g ≫ affineLineOver K =
-      Scheme.Opens.ι (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) ≫ strX)
-    {x₀ : X} (hsp : x₀ ⤳ z)
-    (hx₀ : x₀ ∈ (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens)) :
-    ¬ ∃ a : X.presheaf.stalk z,
-        (X.presheaf.stalkSpecializes hsp).hom a =
-          (X.presheaf.germ _ x₀ hx₀).hom (coordOf _ g) := by
-  haveI : IsIntegral X :=
-    isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected (n := 1) strX hconn
-  haveI : Infinite X := infinite_of_smoothOfRelativeDimension_one strX
-  haveI : Infinite ↥(⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) :=
-    (Set.Finite.infinite_compl (Set.finite_singleton z)).to_subtype
-  haveI := hqf
-  -- `QuasiCompact g`, exactly as in the consumer two declarations below.
-  haveI : CompactSpace X := QuasiCompact.compactSpace_of_compactSpace strX
-  haveI : IsLocallyNoetherian X := LocallyOfFiniteType.isLocallyNoetherian strX
-  haveI : IsNoetherian X := ⟨⟩
-  haveI : NoetherianSpace
-      (Scheme.Opens.toScheme (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens)) := by
-    show NoetherianSpace (({z}ᶜ : Set X))
-    infer_instance
-  haveI : QuasiCompact g := inferInstance
-  rintro ⟨a, ha⟩
-  -- `a` is the germ of a section `s` on some open `V ∋ z`, and `x₀ ∈ V` since `x₀ ⤳ z`.
-  obtain ⟨V, hzV, s, hs⟩ := X.presheaf.exists_germ_eq a
-  have hx₀V : x₀ ∈ V := hsp.mem_open V.isOpen hzV
-  have hgerm : (X.presheaf.germ _ x₀ hx₀) (coordOf _ g) = (X.presheaf.germ V x₀ hx₀V) s := by
-    have h1 : (X.presheaf.germ V x₀ hx₀V) s
-        = (X.presheaf.stalkSpecializes hsp).hom ((X.presheaf.germ V z hzV) s) := by
-      rw [← CommRingCat.comp_apply, X.presheaf.germ_stalkSpecializes]
-    rw [h1, hs, ha]
-  -- `U ⊔ V = ⊤` because `U = {z}ᶜ` and `z ∈ V`, so `s` and `f` glue.
-  have hcover : (⊤ : X.Opens) ≤ (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) ⊔ V := by
-    rintro x -
-    rcases eq_or_ne x z with rfl | hx
-    · exact Or.inr hzV
-    · exact Or.inl hx
-  obtain ⟨F, hF⟩ := exists_res_eq_of_germ_eq hcover hx₀ hx₀V (coordOf _ g) s hgerm
-  exact false_of_res_eq_coordOf_of_locallyQuasiFinite strX _ g hover F hF
-
-/-- **SUB-LEAF 1 — `f` HAS A POLE AT `z`** (cut 2026-07-31 out of
-`notMem_range_of_valuativeLift_toAffineLine_compl_singleton`; **PROVEN the same day** over the
-single sub-leaf immediately above, which now carries all of its mathematics).
-
-Concretely: `1/f` lies in the maximal ideal of `𝒪_{X,z}`, stated without ever writing `1/f` —
-`w` is the reciprocal, and the clause `stalkSpecializes w · germ_{x₀} f = 1` says so inside
-`𝒪_{X,x₀}`, which is where both live.  **No valuation ring, no `L`, no lift `l` appears**: the
-statement mentions only `X`, `z`, `g` and a generization `x₀` of `z` inside `U`.
-
-WHY `x₀` IS THE GENERIC POINT, which is what makes the statement usable.  `x₀ ⤳ z`, `z` is
-closed and `x₀ ≠ z` (it lies in `{z}ᶜ`).  On the integral curve `X` the only proper generization
-of a closed point is the generic point, so `𝒪_{X,x₀} = X.functionField` and the displayed
-identity is literally `w = f⁻¹` in the function field.  The statement is phrased at a general
-`x₀` only so that the consumer does not have to prove that identification.
-
-## PROOF (2026-07-31) — the valuation-ring dichotomy, over the sub-leaf above
-
-`𝒪_{X,z}` is a VALUATION RING (`valuationRing_stalk_of_smoothOfRelativeDimension_one`,
-`CurveExtension.lean`) with fraction field `K(X)` (mathlib's
-`IsFractionRing (X.presheaf.stalk x) X.functionField` for integral `X`), so
-`ValuationRing.isInteger_or_isInteger` applied to `φ`, the image of `f` in `K(X)`, gives
-`φ ∈ 𝒪_{X,z}` or `φ⁻¹ ∈ 𝒪_{X,z}`.  The sub-leaf kills the first, so `φ⁻¹ = algebraMap w` for
-some `w`; and `w ∉ 𝒪_{X,z}ˣ`, since a unit `w` would make `φ = algebraMap (w⁻¹)` an integer
-after all.  That is `w ∈ 𝔪_z`.
-
-**No DVR is needed — only `ValuationRing`.**  The old plan went through
-`isDiscreteValuationRing_stalk_of_smoothOfRelativeDimension_one`, which needs
-`¬ IsField 𝒪_{X,z}` (i.e. `z` is not the generic point) as a side condition.  The dichotomy
-above needs none of that: at the generic point the stalk IS `K(X)`, every element is an
-integer, and the sub-leaf is simply false there — so the exclusion of the generic point is
-carried by the sub-leaf and never has to be proven separately.
-
-The transport back into `𝒪_{X,x₀}` is `IsFractionRing.injective` for `𝒪_{X,x₀} ⟶ K(X)`
-together with `TopCat.Presheaf.stalkSpecializes_comp` (the specialization `𝒪_{X,z} ⟶ 𝒪_{X,x₀}`
-followed by `𝒪_{X,x₀} ⟶ K(X)` IS `𝒪_{X,z} ⟶ K(X)`) — which is also what turns the sub-leaf's
-stalk-level non-membership into `¬ IsLocalization.IsInteger`.
-
-**`hqf`, `IsProper strX` and `hconn` are all LOAD-BEARING**, and after this cut all three are
-consumed inside the sub-leaf rather than here; see its docstring for the counterexamples.
-`hconn` is additionally used here, through `IsIntegral X`, for the `IsFractionRing` and
-`IsDomain` instances on the stalks. -/
-theorem exists_inv_coordOf_mem_maximalIdeal_compl_singleton
-    {K : Type u} [Field K] {X : Scheme.{u}} (strX : X ⟶ Spec (CommRingCat.of K))
-    [IsProper strX] [SmoothOfRelativeDimension 1 strX]
-    (hconn : GeometricallyConnected strX)
-    {z : X} (hz : IsClosed ({z} : Set X))
-    (g : Scheme.Opens.toScheme (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) ⟶
-        Spec (CommRingCat.of (Polynomial K)))
-    (hqf : LocallyQuasiFinite g)
-    (hover : g ≫ affineLineOver K =
-      Scheme.Opens.ι (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) ≫ strX)
-    {x₀ : X} (hsp : x₀ ⤳ z)
-    (hx₀ : x₀ ∈ (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens)) :
-    ∃ w : X.presheaf.stalk z, w ∈ IsLocalRing.maximalIdeal (X.presheaf.stalk z) ∧
-      (X.presheaf.stalkSpecializes hsp).hom w *
-        (X.presheaf.germ _ x₀ hx₀).hom (coordOf _ g) = 1 := by
-  haveI : IsIntegral X :=
-    isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected (n := 1) strX hconn
-  haveI : ValuationRing (X.presheaf.stalk z) :=
-    valuationRing_stalk_of_smoothOfRelativeDimension_one strX z
-  set fx₀ : X.presheaf.stalk x₀ := (X.presheaf.germ _ x₀ hx₀).hom (coordOf _ g) with hfx₀
-  set φ : X.functionField := algebraMap (X.presheaf.stalk x₀) X.functionField fx₀ with hφ
-  -- The specialization `𝒪_{X,z} ⟶ 𝒪_{X,x₀}` followed by `𝒪_{X,x₀} ⟶ K(X)` IS `𝒪_{X,z} ⟶ K(X)`.
-  have htri : ∀ a : X.presheaf.stalk z,
-      algebraMap (X.presheaf.stalk x₀) X.functionField
-          ((X.presheaf.stalkSpecializes hsp).hom a) =
-        algebraMap (X.presheaf.stalk z) X.functionField a := by
-    intro a
-    show (X.presheaf.stalkSpecializes _).hom ((X.presheaf.stalkSpecializes hsp).hom a) =
-      (X.presheaf.stalkSpecializes _).hom a
-    rw [← CommRingCat.comp_apply, TopCat.Presheaf.stalkSpecializes_comp]
-  -- The sub-leaf, transported across `IsFractionRing.injective`.
-  have hni : ¬ IsLocalization.IsInteger (X.presheaf.stalk z) φ := by
-    rintro ⟨a, ha⟩
-    refine not_exists_stalkSpecializes_eq_germ_coordOf_compl_singleton
-      strX hconn hz g hqf hover hsp hx₀ ⟨a, ?_⟩
-    refine IsFractionRing.injective (X.presheaf.stalk x₀) X.functionField ?_
-    rw [htri a, ha]
-  have hφ0 : φ ≠ 0 := by
-    intro h
-    exact hni (by rw [h]; exact IsLocalization.isInteger_zero)
-  -- The valuation-ring dichotomy: `φ ∉ 𝒪_{X,z}`, so `φ⁻¹ ∈ 𝒪_{X,z}`.
-  obtain hint | ⟨w, hw⟩ :=
-    ValuationRing.isInteger_or_isInteger (X.presheaf.stalk z) (K := X.functionField) φ
-  · exact absurd hint hni
-  refine ⟨w, ?_, ?_⟩
-  · -- `w` is not a unit: a unit `w` would make `φ = algebraMap w⁻¹` an integer after all.
-    rw [IsLocalRing.mem_maximalIdeal]
-    rintro ⟨u, rfl⟩
-    refine hni ⟨((u⁻¹ : (X.presheaf.stalk z)ˣ) : X.presheaf.stalk z), ?_⟩
-    calc algebraMap (X.presheaf.stalk z) X.functionField
-            ((u⁻¹ : (X.presheaf.stalk z)ˣ) : X.presheaf.stalk z)
-        = algebraMap (X.presheaf.stalk z) X.functionField
-            ((u⁻¹ : (X.presheaf.stalk z)ˣ) : X.presheaf.stalk z) * (φ⁻¹ * φ) := by
-          rw [inv_mul_cancel₀ hφ0, mul_one]
-      _ = (algebraMap (X.presheaf.stalk z) X.functionField
-            ((u⁻¹ : (X.presheaf.stalk z)ˣ) : X.presheaf.stalk z) *
-          algebraMap (X.presheaf.stalk z) X.functionField
-            ((u : (X.presheaf.stalk z)ˣ) : X.presheaf.stalk z)) * φ := by
-          rw [hw]; ring
-      _ = φ := by rw [← map_mul]; simp
-  · -- `w · f = 1` in `𝒪_{X,x₀}`, checked in `K(X)`, where it is `φ⁻¹ · φ = 1`.
-    refine IsFractionRing.injective (X.presheaf.stalk x₀) X.functionField ?_
-    rw [map_mul, map_one, htri w, hw, ← hφ, inv_mul_cancel₀ hφ0]
-
-/-- **The restriction `Γ(X, U) ⟶ Γ(U, ⊤)` along the inclusion IS `topIso U`'s inverse**
-(PROVEN 2026-07-31, no sorry).
-
-Both sides are `X.presheaf.map` of a morphism `op U ⟶ op (U.ι ''ᵁ ⊤)` in the poset `(X.Opens)ᵒᵖ`,
-written with `homOfLE` on one side and `eqToHom` on the other.  A poset has subsingleton hom-sets,
-so `congr 1` closes the gap — but only after `Scheme.Opens.ι_appLE` and the definition of
-`Scheme.Opens.topIso` have exposed both as `X.presheaf.map _`; `simp` alone does NOT do it, and
-`congr 1` applied to the full composite instead produces a bogus type-equality goal. -/
-theorem ι_appLE_top_eq_topIso_inv {X : Scheme.{u}} (U : X.Opens) (e) :
-    (Scheme.Opens.ι U).appLE U ⊤ e = (Scheme.Opens.topIso U).inv := by
-  rw [Scheme.Opens.ι_appLE]
-  rw [Scheme.Opens.topIso]
-  simp only [Functor.mapIso_inv, Iso.op_inv, eqToIso.inv]
-  congr 1
-
-/-- **`appLE ⊤ ⊤` is `appTop`** (PROVEN 2026-07-31, no sorry) — the `f ⁻¹ᵁ ⊤ = ⊤` bookkeeping
-that `Scheme.Hom.appLE_eq_app` does not do on its own. -/
-theorem appLE_top_top_eq_appTop {X Y : Scheme.{u}} (f : X ⟶ Y) (e) :
-    f.appLE ⊤ ⊤ e = f.appTop := by
-  simp [Scheme.Hom.appLE, Scheme.Hom.appTop]
-
-/-- **SUB-LEAF 2 — `f`'s VALUE AT THE `L`-POINT COMES FROM `R`** (cut 2026-07-31,
-**PROVEN 2026-07-31**).
-
-PURE BOOKKEEPING: no curve, no properness, no smoothness, no valuation ring, no `IsFractionRing`
-— just the commuting square `hcomm` read on global sections.  It is separated out because the
-identification of `Γ`-level data with stalk-level data is exactly the part that fights the
-elaborator, and it should not be entangled with the mathematics in SUB-LEAF 1.
-
-THE PROOF, in four rewrites, all of them in the pin:
-
-1. `Scheme.germ_stalkClosedPointTo (i₁ ≫ ι) U hx₀` turns
-   `germ_U ≫ stalkClosedPointTo (i₁ ≫ ι)` into `(i₁ ≫ ι).app U ≫ (…) ≫ (ΓSpecIso (of L)).hom`.
-   Normalise the `(…)` with `Scheme.Hom.app_eq_appLE` and `Scheme.Hom.appLE_map` to land on
-   `(i₁ ≫ ι).appLE U ⊤ _ ≫ (ΓSpecIso (of L)).hom`.
-2. `Scheme.Hom.appLE_comp_appLE` splits that as `ι.appLE U ⊤ _ ≫ i₁.appLE ⊤ ⊤ _`, and
-   `Scheme.Opens.ι_appLE` identifies the first factor with `(Scheme.Opens.topIso U).inv` — the
-   two differ only by which morphism of the poset `X.Opens` is written, and a poset has
-   subsingleton hom-sets.  So the whole thing is `topIso.inv ≫ i₁.appTop ≫ (ΓSpecIso _).hom`,
-   and `topIso.inv` cancels the `topIso.hom` inside `coordOf`.
-3. `Scheme.comp_appTop` applied to `hcomm` gives
-   `i₁.appTop (g.appTop t) = (Spec.map (ofHom (algebraMap R L))).appTop (i₂.appTop t)` for
-   `t = (ΓSpecIso (of K[T])).inv T`.
-4. `Scheme.ΓSpecIso_naturality (ofHom (algebraMap R L))` turns
-   `(ΓSpecIso (of L)).hom ∘ (Spec.map _).appTop` into `algebraMap R L ∘ (ΓSpecIso (of R)).hom`.
-
-So the witness is forced: `r = (ΓSpecIso (of R)).hom (i₂.appTop ((ΓSpecIso (of K[T])).inv T))`,
-i.e. `T`'s pull-back along `i₂`, which is what "the value lies in `R`" means.
-
-HOW IT WAS FINISHED, later the same day: exactly by the second of the two suggestions the
-previous note left — step 2 is now the standalone lemma `ι_appLE_top_eq_topIso_inv` above, whose
-`congr 1` closes on subsingleton poset hom-sets, together with `appLE_top_top_eq_appTop`.  Two
-further traps, recorded because both cost a round trip:
-
-* `simpa using <congrArg of the morphism-level identity>` does NOT produce the element-level
-  form — `simp` normalises `topIso.inv` to `X.presheaf.map (eqToHom ⋯)` on both sides and then
-  reports a type mismatch between two printed-identical terms.  Use
-  `rw [← CommRingCat.comp_apply, key, CommRingCat.comp_apply, CommRingCat.comp_apply]` instead;
-  `rw` keeps `topIso.inv` intact.
-* `simpa using <congrArg of ΓSpecIso_naturality>` simplifies that hypothesis all the way to
-  `True`, since `simp` proves the naturality square outright.  State step 4 as its own `have`
-  with the two sides written out and prove it by `rw`.
-
-**`hcomm` IS LOAD-BEARING and the statement is FALSE without it**: it is the ONLY hypothesis
-relating `g` to `R` at all.  Without it `i₁` may send `T` to any element of `L` whatever, in
-particular to one with a pole, and `r` need not exist.
-
-**`IsLocalRing R` IS LOAD-BEARING for the statement to typecheck** — `stalkClosedPointTo`
-is only defined for a local ring — and `IsLocalRing (of L)` comes free from `Field L`. -/
-theorem exists_algebraMap_eq_stalkClosedPointTo_germ_coordOf
-    {K : Type u} [Field K] {X : Scheme.{u}} (U : X.Opens)
-    (g : U.toScheme ⟶ Spec (CommRingCat.of (Polynomial K)))
-    {R : Type u} [CommRing R] [IsDomain R] [IsLocalRing R]
-    {L : Type u} [Field L] [Algebra R L]
-    (i₁ : Spec (CommRingCat.of L) ⟶ U.toScheme)
-    (i₂ : Spec (CommRingCat.of R) ⟶ Spec (CommRingCat.of (Polynomial K)))
-    (hcomm : i₁ ≫ g = Spec.map (CommRingCat.ofHom (algebraMap R L)) ≫ i₂)
-    (hx₀ : (i₁ ≫ Scheme.Opens.ι U).base (IsLocalRing.closedPoint (CommRingCat.of L)) ∈ U) :
-    ∃ r : R, (Scheme.stalkClosedPointTo (i₁ ≫ Scheme.Opens.ι U)).hom
-        ((X.presheaf.germ U _ hx₀).hom (coordOf U g)) = algebraMap R L r := by
-  set t := (Scheme.ΓSpecIso (CommRingCat.of (Polynomial K))).inv.hom Polynomial.X with ht
-  refine ⟨(Scheme.ΓSpecIso (CommRingCat.of R)).hom.hom (i₂.appTop.hom t), ?_⟩
-  -- STEP 2: the restriction `Γ(X, U) ⟶ Γ(Spec L, ⊤)` of the composite factors as
-  -- `topIso.inv ≫ i₁.appTop`.
-  have hfac : (i₁ ≫ Scheme.Opens.ι U).appLE U ⊤
-      (Scheme.preimage_eq_top_of_closedPoint_mem (i₁ ≫ Scheme.Opens.ι U) hx₀).ge =
-      (Scheme.Opens.topIso U).inv ≫ i₁.appTop := by
-    rw [← ι_appLE_top_eq_topIso_inv U (by simp), ← appLE_top_top_eq_appTop i₁ (by simp)]
-    exact (Scheme.Hom.appLE_comp_appLE i₁ (Scheme.Opens.ι U) U ⊤ ⊤ _ _).symm
-  -- STEP 1: `germ ≫ stalkClosedPointTo` is that restriction followed by `ΓSpecIso`.
-  have key : X.presheaf.germ U _ hx₀ ≫ Scheme.stalkClosedPointTo (i₁ ≫ Scheme.Opens.ι U) =
-      (Scheme.Opens.topIso U).inv ≫ i₁.appTop ≫
-        (Scheme.ΓSpecIso (CommRingCat.of L)).hom := by
-    rw [Scheme.germ_stalkClosedPointTo (i₁ ≫ Scheme.Opens.ι U) U hx₀]
-    rw [Iso.trans_hom, Functor.mapIso_hom, Iso.op_hom, eqToIso.hom,
-      ← Category.assoc, Scheme.Hom.app_eq_appLE, Scheme.Hom.appLE_map, hfac, Category.assoc]
-  -- STEP 3: `hcomm` on global sections.
-  have h3 : i₁.appTop.hom (g.appTop.hom t) =
-      (Spec.map (CommRingCat.ofHom (algebraMap R L))).appTop.hom (i₂.appTop.hom t) := by
-    have h := congrArg
-      (fun φ : Spec (CommRingCat.of L) ⟶ Spec (CommRingCat.of (Polynomial K)) => φ.appTop.hom t)
-      hcomm
-    simpa using h
-  -- STEP 4: naturality of `ΓSpecIso`.
-  have h4 : (Scheme.ΓSpecIso (CommRingCat.of L)).hom.hom
-        ((Spec.map (CommRingCat.ofHom (algebraMap R L))).appTop.hom (i₂.appTop.hom t))
-      = algebraMap R L ((Scheme.ΓSpecIso (CommRingCat.of R)).hom.hom (i₂.appTop.hom t)) := by
-    rw [← CommRingCat.comp_apply, Scheme.ΓSpecIso_naturality, CommRingCat.comp_apply]
-    rfl
-  have hco : (Scheme.Opens.topIso U).inv.hom (coordOf U g) = g.appTop.hom t := by
-    rw [ht, coordOf, ← CommRingCat.comp_apply, Iso.hom_inv_id, CommRingCat.id_apply]
-  have keyel : (Scheme.stalkClosedPointTo (i₁ ≫ Scheme.Opens.ι U)).hom
-      ((X.presheaf.germ U _ hx₀).hom (coordOf U g)) =
-      (Scheme.ΓSpecIso (CommRingCat.of L)).hom.hom
-        (i₁.appTop.hom ((Scheme.Opens.topIso U).inv.hom (coordOf U g))) := by
-    rw [← CommRingCat.comp_apply, key, CommRingCat.comp_apply, CommRingCat.comp_apply]
-  rw [keyel, hco, h3, h4]
-
 /-- **The affine line is of finite type over its base field** (PROVEN 2026-07-30).
 
 `K[T]` is generated as a `K`-algebra by `T` (`Polynomial.adjoin_X`), which is exactly
@@ -1607,6 +905,708 @@ theorem locallyQuasiFinite_of_notIsIntegralElem_coordOf
       (hycl.preimage g.base.hom.continuous) fun x hx => hcl x ?_
     intro hxg
     exact hy (by rw [← hxg]; exact (Set.mem_singleton_iff.mp hx).symm)
+
+/-- **RIEMANN–ROCH: a nonconstant regular function on the punctured curve** (sorry leaf, cut
+2026-07-28 out of `isAffineOpen_compl_singleton_of_isSmoothProperCurve`).
+
+This is the ONLY place Riemann–Roch enters the affineness statement.  Concretely it asks
+for a `K`-morphism `g : X ∖ {z} ⟶ 𝔸¹_K` with finite fibres — equivalently, for a
+nonconstant `f ∈ Γ(X, X ∖ {z})`, i.e. a rational function on `X` regular away from `z`.
+
+TRUE and classical.  `X` is a smooth proper geometrically connected curve over `K`, so it
+has a genus `g`, and Riemann–Roch gives `dim_K L(n·[z]) = n·deg[z] − g + 1` for
+`n·deg[z] > 2g − 2`.  In particular `L(n·[z]) ⊋ L(0) ⊇ K` for `n` large, and any element of
+the difference is a nonconstant function regular on `X ∖ {z}`.  Its fibres over `𝔸¹` are
+proper closed subsets of the integral curve `X ∖ {z}`, hence finite, which is
+`LocallyQuasiFinite`.
+
+**Why `LocallyQuasiFinite` rather than "nonconstant".**  The pin has no notion of a
+nonconstant morphism, and quasi-finiteness is the form Zariski's main theorem consumes
+directly.  On an integral curve the two agree: a constant morphism has a one-point image
+with infinite fibre, and `X ∖ {z}` is infinite by
+`infinite_of_smoothOfRelativeDimension_one`.
+
+**`hconn` IS LOAD-BEARING** — see the counterexample in
+`isAffineOpen_compl_singleton_of_isSmoothProperCurve`'s docstring: on a disjoint union of
+two copies of a curve, punctured in the first copy only, any regular function is constant on
+the whole second copy, so no quasi-finite `g` exists.
+
+**`SmoothOfRelativeDimension 1` IS LOAD-BEARING**: at relative dimension two, `X ∖ {z}` has
+the same global sections as the proper `X` (a finite extension of `K`), so every `g` is
+constant and none is quasi-finite.
+
+**The `≫`-clause IS LOAD-BEARING**: without it `g` is only a morphism of schemes over `ℤ`,
+and its restriction `K → Γ(X ∖ {z})` need not be the structure map, which breaks the
+finite-type hypotheses of the sibling leaf.  See `affineLineOver`.
+
+NOT VACUOUS: for `X` the projective model of an elliptic curve over `ℚ` and `z` the point at
+infinity, `x` (the first Weierstrass coordinate) is such a function.
+
+WHAT WOULD REFUTE THE "MISSING FROM THE PIN" DIAGNOSIS: a Riemann–Roch theorem, a genus, or
+a theory of linear systems, anywhere in `Fermat/`, `.lake/packages/mathlib` or `~/cs/FLT`.
+Re-searched 2026-07-28: absent from all three.
+
+**RE-SEARCHED AND RE-SCOPED 2026-07-30, when this became the file's only remaining `sorry`.**
+`grep -rln 'RiemannRoch\|riemannRoch' .lake/packages/mathlib/Mathlib/` and the same over
+`~/cs/FLT` still return nothing.  What HAS appeared since is `Fermat/FLT/Modularity/AmpleSheaf.lean`
+(2563 lines, `IsAmpleSheaf` and the tensor/pushforward plumbing around it) — but it defines
+ampleness, it does not prove that a point on a curve is ample, and it carries no genus and no
+cohomology, so it does not shorten this leaf.  Several SIBLINGS of this leaf carry the same
+gap and are stated independently in `Fermat/FLT/ModularCurve/EllipticScheme.lean`
+(`exists_weierstrassGenerators_of_affineComplement`,
+`exists_weierstrassModel_of_ellipticScheme`, and the leaves around line 10100 there).
+**Whoever attacks Riemann–Roch should cut it ONCE, for all of them, rather than here** — a
+cut made privately in this file would be a rival cut against those.
+
+**The minimal statement this leaf needs, and it is strictly weaker than Riemann–Roch:** a
+NONCONSTANT `f ∈ Γ(X, X ∖ {z})`, i.e. `Γ(X, X ∖ {z}) ≠ K`.  Everything else is already paid
+for.  The quasi-finiteness packaging is `LocallyQuasiFinite.of_finite_preimage_singleton`
+against `LocallyOfFiniteType`, and the morphism itself is built from the section exactly as
+`exists_extension_toAffineLine_of_coordinate_extends` below builds one — same adjunction,
+same `Polynomial.ringHom_ext`.
+
+**Why no cheaper route exists, checked 2026-07-30.**  The obvious dodges all fail on the same
+point.  A nonconstant rational function exists cheaply (`Γ(W)` is standard smooth of relative
+dimension one over `K` for any affine open `W`, hence not algebraic over `K`), and it extends
+to a finite `π : X ⟶ ℙ¹` — but its polar set is `π⁻¹(∞)`, a finite set that need not be
+`{z}`, and killing the unwanted poles is prescribing zeros, which is Riemann–Roch again.
+Nor does it help that `X ∖ π⁻¹(∞)` is affine: that is a SUBSET of `X ∖ {z}`, and affineness
+does not pass to opens that are larger.  The content is Riemann's inequality
+`dim_K L(n·z) ≥ n + 1 − g`, and nothing less. -/
+theorem exists_locallyQuasiFinite_toAffineLine_compl_singleton
+    {K : Type u} [Field K] {X : Scheme.{u}} (strX : X ⟶ Spec (CommRingCat.of K))
+    [IsProper strX] [SmoothOfRelativeDimension 1 strX]
+    (hconn : GeometricallyConnected strX)
+    {z : X} (hz : IsClosed ({z} : Set X)) :
+    ∃ g : Scheme.Opens.toScheme (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) ⟶
+        Spec (CommRingCat.of (Polynomial K)),
+      LocallyQuasiFinite g ∧
+        g ≫ affineLineOver K =
+          Scheme.Opens.ι (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) ≫ strX := by
+  haveI : IsIntegral X :=
+    isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected (n := 1) strX hconn
+  haveI : Infinite X := infinite_of_smoothOfRelativeDimension_one strX
+  haveI : Infinite ↥(⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) :=
+    (Set.Finite.infinite_compl (Set.finite_singleton z)).to_subtype
+  obtain ⟨f, hf⟩ := exists_notIsIntegralElem_section_compl_singleton strX hconn hz
+  obtain ⟨g, hcoord, hover⟩ := exists_toAffineLine_coordOf_eq strX _ f
+  exact ⟨g, locallyQuasiFinite_of_notIsIntegralElem_coordOf strX hconn _ g hover
+    (hcoord ▸ hf), hover⟩
+
+/-! ### The classifying local homomorphism of a `Spec (local ring)`-point, and its naturality
+
+`Scheme.stalkClosedPointTo f : 𝒪_{X, f(𝔪)} ⟶ R` is mathlib's packaging of "a morphism
+`Spec R ⟶ X` out of a LOCAL ring is a point of `X` plus a local homomorphism out of its stalk".
+The three lemmas below are what the pole argument needs from it and are absent from the pin;
+all three are PROVEN here with no sorry, and none of them mentions a curve.  -/
+
+/-- **A morphism out of the spectrum of a local ring misses a CLOSED point exactly when its
+closed point is not sent there** (PROVEN 2026-07-31, no sorry).
+
+Every prime of a local ring is contained in the maximal ideal, so every point of `Spec R`
+specializes to the closed point (`IsLocalRing.specializes_closedPoint`); continuous maps preserve
+specialization, and `{z}` being closed is stable under specialization.  So a single point has to
+be ruled out, not a whole range — this is step B1 of
+`notMem_range_of_valuativeLift_toAffineLine_compl_singleton`.
+
+`IsClosed {z}` IS LOAD-BEARING: for a non-closed `z` the conclusion is false — take `X = Spec R`
+itself, `l = 𝟙`, and `z` the generic point of a DVR. -/
+theorem notMem_range_of_closedPoint_ne {X : Scheme.{u}} {R : CommRingCat.{u}} [IsLocalRing R]
+    (l : Spec R ⟶ X) {z : X} (hz : IsClosed ({z} : Set X))
+    (hm : l.base (IsLocalRing.closedPoint R) ≠ z) : z ∉ Set.range l.base := by
+  rintro ⟨p, hp⟩
+  refine hm ?_
+  have hsp : l.base p ⤳ l.base (IsLocalRing.closedPoint R) :=
+    (IsLocalRing.specializes_closedPoint p).map l.base.hom.continuous
+  rw [hp] at hsp
+  have := hsp.mem_closed hz rfl
+  simpa using this
+
+/-- **The affine case of the naturality below** (PROVEN 2026-07-31, no sorry): on `Spec R` for
+`R` local, the specialization map from the closed point to the prime `α⁻¹𝔪_S`, followed by the
+classifying map of `Spec.map α`, is `α` itself.
+
+Both sides are maps out of `(Spec R).presheaf.stalk (closedPoint R)`, so
+`TopCat.Presheaf.stalk_hom_ext` reduces to opens containing the closed point — and there is only
+one, `⊤` (`IsLocalRing.closed_point_mem_iff`).  There the two sides are
+`germ_stalkClosedPointTo_Spec` and `germ_stalkClosedPointIso_hom`, both of which say
+`(ΓSpecIso R).hom`. -/
+theorem stalkSpecializes_stalkClosedPointTo_Spec {R S : CommRingCat.{u}}
+    [IsLocalRing R] [IsLocalRing S] (α : R ⟶ S) :
+    (Spec R).presheaf.stalkSpecializes
+        (IsLocalRing.specializes_closedPoint
+          ((Spec.map α).base (IsLocalRing.closedPoint S))) ≫
+      Scheme.stalkClosedPointTo (Spec.map α) =
+      (stalkClosedPointIso R).hom ≫ α := by
+  refine TopCat.Presheaf.stalk_hom_ext _ fun U hU => ?_
+  obtain rfl : U = ⊤ := IsLocalRing.closed_point_mem_iff.mp hU
+  rw [← Category.assoc, TopCat.Presheaf.germ_stalkSpecializes]
+  rw [Scheme.germ_stalkClosedPointTo_Spec α]
+  rw [← Category.assoc, germ_stalkClosedPointIso_hom]
+
+/-- **THE CLASSIFYING LOCAL HOMOMORPHISM IS NATURAL IN THE LOCAL RING, ALONG SPECIALIZATION**
+(PROVEN 2026-07-31, no sorry).
+
+For `l : Spec R ⟶ X` and ANY ring map `α : R ⟶ S` with `S` local, the square
+
+    𝒪_{X, l(𝔪_R)} --stalkClosedPointTo l--> R
+        |                                   |
+   stalkSpecializes                         α
+        v                                   v
+    𝒪_{X, (Spec α ≫ l)(𝔪_S)} ------------> S
+
+commutes.  **`α` is NOT assumed local, and that is the whole point of the lemma**: the case the
+pole argument needs is `α = algebraMap R L` into the fraction field, which sends `𝔪_S = 0` back
+to `(0)`, so `Spec α` hits the GENERIC point of `Spec R` and the two closed-point images differ.
+A local `α` would give the trivial statement with `stalkSpecializes` the identity.
+
+The proof is `stalkClosedPointTo_comp` to split off `Spec.map α`, then
+`Scheme.Hom.stalkSpecializes_stalkMap` to move the specialization across `l`, then the affine
+case above. -/
+theorem stalkSpecializes_stalkClosedPointTo {X : Scheme.{u}} {R S : CommRingCat.{u}}
+    [IsLocalRing R] [IsLocalRing S] (α : R ⟶ S) (l : Spec R ⟶ X)
+    (h : l.base ((Spec.map α).base (IsLocalRing.closedPoint S)) ⤳
+      l.base (IsLocalRing.closedPoint R)) :
+    X.presheaf.stalkSpecializes h ≫ Scheme.stalkClosedPointTo (Spec.map α ≫ l) =
+      Scheme.stalkClosedPointTo l ≫ α := by
+  rw [Scheme.stalkClosedPointTo_comp (Spec.map α) l,
+    Scheme.Hom.stalkSpecializes_stalkMap_assoc l _ _
+      (IsLocalRing.specializes_closedPoint ((Spec.map α).base (IsLocalRing.closedPoint S))),
+    stalkSpecializes_stalkClosedPointTo_Spec α, Scheme.stalkClosedPointTo, Category.assoc]
+
+/-- **The same statement with the composite named separately** (PROVEN 2026-07-31, no sorry).
+
+This is not cosmetic.  A consumer holds the composite in the form its own hypothesis gives it —
+here `hl₁ : Spec.map (algebraMap R L) ≫ l = i₁ ≫ ι` — and the two descriptions of the SAME
+morphism give two syntactically different points, hence two different `X.presheaf.stalk _`, and
+`rw` cannot bridge them inside a dependent type.  Taking the equation as a hypothesis and
+`subst`ing it does. -/
+theorem stalkSpecializes_stalkClosedPointTo' {X : Scheme.{u}} {R S : CommRingCat.{u}}
+    [IsLocalRing R] [IsLocalRing S] (α : R ⟶ S) (l : Spec R ⟶ X) (m : Spec S ⟶ X)
+    (hm : Spec.map α ≫ l = m)
+    (h : m.base (IsLocalRing.closedPoint S) ⤳ l.base (IsLocalRing.closedPoint R)) :
+    X.presheaf.stalkSpecializes h ≫ Scheme.stalkClosedPointTo m =
+      Scheme.stalkClosedPointTo l ≫ α := by
+  subst hm
+  exact stalkSpecializes_stalkClosedPointTo α l h
+
+/-- **THE POLE CONTRADICTION, IN ABSTRACT FORM** (PROVEN 2026-07-31, no sorry) — step B2 of
+`notMem_range_of_valuativeLift_toAffineLine_compl_singleton` with every trace of the curve, of
+`𝔸¹` and of the valuative square removed.
+
+Read it as: `w` is `1/f` at `z`, `v` is `f` at the generic point, `r` is `f`'s value on `Spec R`.
+Pushing `w · v = 1` through `θ` and using the compatibility square turns it into
+`algebraMap R L (ψ w · r) = 1`; `algebraMap R L` is injective because `R` is a domain with
+fraction field `L`, so `ψ w` is a UNIT of `R`; and `ψ` is local, so `w` would be a unit of the
+stalk — contradicting `w ∈ 𝔪`.
+
+**`IsLocalHom ψ.hom` IS LOAD-BEARING and the statement is FALSE without it**: drop it and take
+`ψ = 0`… more precisely, any `ψ` killing `𝔪` into a unit makes `ψ w · r = 1` consistent.  It is
+supplied for free by `Scheme.isLocalHom_stalkClosedPointTo`.
+
+**`IsFractionRing R L` IS LOAD-BEARING**: only injectivity of `R ⟶ L` is used, but without it
+`ψ w · r = 1` cannot be concluded from its image in `L`. -/
+theorem false_of_pole {X : Scheme.{u}} {R L : Type u} [CommRing R] [IsDomain R] [IsLocalRing R]
+    [Field L] [Algebra R L] [IsFractionRing R L]
+    {z x₀ : X} (hsp : x₀ ⤳ z)
+    (ψ : X.presheaf.stalk z ⟶ CommRingCat.of R) [IsLocalHom ψ.hom]
+    (θ : X.presheaf.stalk x₀ ⟶ CommRingCat.of L)
+    (hcompat : X.presheaf.stalkSpecializes hsp ≫ θ = ψ ≫ CommRingCat.ofHom (algebraMap R L))
+    (v : X.presheaf.stalk x₀) (r : R) (hr : θ.hom v = algebraMap R L r)
+    (w : X.presheaf.stalk z) (hwm : w ∈ IsLocalRing.maximalIdeal (X.presheaf.stalk z))
+    (hwid : (X.presheaf.stalkSpecializes hsp).hom w * v = 1) : False := by
+  have h2 : θ.hom ((X.presheaf.stalkSpecializes hsp).hom w) = algebraMap R L (ψ.hom w) := by
+    have := congrArg (fun (φ : X.presheaf.stalk z ⟶ CommRingCat.of L) => φ.hom w) hcompat
+    simpa using this
+  have h1 : algebraMap R L (ψ.hom w * r) = algebraMap R L 1 := by
+    rw [map_mul, map_one, ← h2, ← hr, ← map_mul, hwid, map_one]
+  have h3 : ψ.hom w * r = 1 := IsFractionRing.injective R L h1
+  exact (IsLocalRing.mem_maximalIdeal _ |>.mp hwm)
+    (‹IsLocalHom ψ.hom›.map_nonunit _ (IsUnit.of_mul_eq_one _ h3))
+
+/-! ### The extension obstruction: a global regular function on a proper curve is algebraic
+
+The four items below are what closes the "`f` does not extend across `z`" sub-sub-leaf, and
+none of them mentions a valuation ring, a DVR, `𝔪_z`, properness of a morphism to `𝔸¹`, or
+Zariski's main theorem.  The route they realise is SHORTER than the extend-then-ZMT dichotomy
+this file used to plan, and the reason is one lemma of the pin that the plan overlooked:
+`isIntegral_appTop_of_universallyClosed` (`Morphisms/Proper.lean`) says the global sections of
+a universally closed scheme over an affine base are INTEGRAL over it.  So an extension `F` of
+`f` is algebraic over `K` outright, `g` classifies a root of a nonzero polynomial, and `g` is
+therefore constant — no fibre dichotomy, no `IsFinite.of_isProper_of_locallyQuasiFinite`, and
+no need to build the morphism `ĝ : X ⟶ 𝔸¹_K` at all (only the SECTION `F` is needed). -/
+
+/-- **Two sections of an INTEGRAL scheme with the same germ at one common point glue**
+(PROVEN 2026-07-31, no sorry).
+
+On an integral scheme a germ determines a section (`germ_injective_of_isIntegral`), so equality
+of germs at the single point `x₀` upgrades to equality on EVERY open contained in both domains
+— which is exactly the compatibility that `TopCat.Sheaf.existsUnique_gluing'` wants.  Only the
+restriction of the glued section to `U` is returned, since that is all the consumer uses.
+
+`IsIntegral X` IS LOAD-BEARING: without irreducibility two sections can agree at `x₀` and
+disagree elsewhere on `U ⊓ V`, and nothing glues. -/
+theorem exists_res_eq_of_germ_eq {X : Scheme.{u}} [IsIntegral X] {U V : X.Opens}
+    (hcover : (⊤ : X.Opens) ≤ U ⊔ V) {x₀ : X} (hxU : x₀ ∈ U) (hxV : x₀ ∈ V)
+    (f : Γ(X, U)) (s : Γ(X, V))
+    (h : X.presheaf.germ U x₀ hxU f = X.presheaf.germ V x₀ hxV s) :
+    ∃ F : Γ(X, ⊤), X.presheaf.map (homOfLE (le_top : U ≤ ⊤)).op F = f := by
+  classical
+  have key : ∀ (W : X.Opens) (h1 : W ≤ U) (h2 : W ≤ V), x₀ ∈ W →
+      X.presheaf.map (homOfLE h1).op f = X.presheaf.map (homOfLE h2).op s := by
+    intro W h1 h2 hxW
+    refine germ_injective_of_isIntegral X x₀ hxW ?_
+    rw [X.presheaf.germ_res_apply, X.presheaf.germ_res_apply]
+    exact h
+  let 𝒰 : Bool → X.Opens := fun b => Bool.rec V U b
+  let sf : ∀ b, Γ(X, 𝒰 b) := fun b => Bool.rec s f b
+  have hcompat : TopCat.Presheaf.IsCompatible X.sheaf.1 𝒰 sf := by
+    rintro (_ | _) (_ | _)
+    · rfl
+    · exact (key _ inf_le_right inf_le_left ⟨hxV, hxU⟩).symm
+    · exact key _ inf_le_left inf_le_right ⟨hxU, hxV⟩
+    · rfl
+  have hcov : (⊤ : X.Opens) ≤ iSup 𝒰 := by
+    rw [iSup_bool_eq]
+    exact hcover
+  obtain ⟨F, hFspec, -⟩ :=
+    X.sheaf.existsUnique_gluing' 𝒰 ⊤ (fun _ => homOfLE le_top) hcov sf hcompat
+  exact ⟨F, hFspec true⟩
+
+/-- **IF THE CLASSIFIED FUNCTION EXTENDS TO A GLOBAL SECTION, `g` CANNOT BE QUASI-FINITE**
+(PROVEN 2026-07-31, no sorry) — the whole of the sub-sub-leaf's mathematics, with the puncture,
+the specialization and the stalks removed: only an OPEN `U` of a proper integral `X`, infinite,
+and a `K`-morphism `g : U ⟶ 𝔸¹_K` whose classified function is the restriction of a global one.
+
+THE ARGUMENT, in four moves:
+
+1. `isIntegral_appTop_of_universallyClosed strX` (pin, `Morphisms/Proper.lean`): `Γ(X, ⊤)` is
+   INTEGRAL over `K`.  So `F` satisfies a monic `p ∈ K[T]`.
+2. `coordHom_comp_C` transports that identity along the classifying map: `p` is in the kernel
+   of `coordHom U g`, because a ring map out of `K[T]` is `eval₂` of what it does to `K` and to
+   `T` (`Polynomial.ringHom_ext`), and those are the restriction `Γ(X, ⊤) ⟶ Γ(X, U)` and `f`.
+3. Hence `T`'s pull-back to the basic open of `p` is `0`, so `g` sends the GENERIC point of `U`
+   into `V(p)`; as `p ≠ 0` and `K[T]` is a PID, that prime is MAXIMAL, i.e. a closed point.
+4. A continuous map sends generizations to generizations, so the image of the whole of `U` is
+   contained in the closure of that closed point — a single point.  Its fibre is all of `U`,
+   which is infinite, while `Scheme.Hom.finite_preimage_singleton` makes it finite.
+
+**`IsProper strX` IS LOAD-BEARING**, through `UniversallyClosed` in move 1 — on an affine curve
+`Γ(X, ⊤)` is not algebraic over `K` and the extension carries no information.
+
+**`Infinite ↥U` IS LOAD-BEARING and the statement is FALSE without it**: on a finite `U` a
+constant `g` is perfectly quasi-finite.
+
+**`hover` IS LOAD-BEARING**: it is the only hypothesis tying `g` to the `K`-structure, and
+move 2 is where it is consumed.  See `affineLineOver`. -/
+theorem false_of_res_eq_coordOf_of_locallyQuasiFinite {K : Type u} [Field K] {X : Scheme.{u}}
+    (strX : X ⟶ Spec (CommRingCat.of K)) [IsProper strX] [IsIntegral X]
+    (U : X.Opens) [Infinite ↥U]
+    (g : U.toScheme ⟶ Spec (CommRingCat.of (Polynomial K)))
+    [LocallyQuasiFinite g] [QuasiCompact g]
+    (hover : g ≫ affineLineOver K = Scheme.Opens.ι U ≫ strX)
+    (F : Γ(X, ⊤))
+    (hF : X.presheaf.map (homOfLE (le_top : U ≤ ⊤)).op F = coordOf U g) :
+    False := by
+  classical
+  haveI : Nonempty ↥U := inferInstance
+  haveI : Nonempty ↥(U.toScheme) := inferInstanceAs (Nonempty ↥U)
+  haveI : Infinite ↥(U.toScheme) := inferInstanceAs (Infinite ↥U)
+  -- MOVE 1: `F` is integral over `K`.
+  have hint : ((Scheme.ΓSpecIso (CommRingCat.of K)).inv ≫ strX.appTop).hom.IsIntegral := by
+    apply RingHom.isIntegral_respectsIso.2
+      (e := (Scheme.ΓSpecIso (CommRingCat.of K)).symm.commRingCatIsoToRingEquiv)
+    exact isIntegral_appTop_of_universallyClosed strX
+  obtain ⟨p, hpm, hp0⟩ := hint F
+  -- MOVE 2: the same polynomial dies in the classifying map of `g`.
+  have hpsi : (coordHom U g).hom p = 0 := by
+    have hsplit : (coordHom U g).hom = Polynomial.eval₂RingHom
+        ((coordHom U g).hom.comp (Polynomial.C : K →+* Polynomial K))
+        ((coordHom U g).hom Polynomial.X) :=
+      Polynomial.ringHom_ext (fun a => by simp) (by simp)
+    have hcc := congrArg CommRingCat.Hom.hom (coordHom_comp_C strX U g hover)
+    rw [hsplit]
+    show Polynomial.eval₂ _ _ p = 0
+    rw [coordHom_apply_X, ← hF]
+    have hK : (coordHom U g).hom.comp (Polynomial.C : K →+* Polynomial K) =
+        (X.presheaf.map (homOfLE (le_top : U ≤ ⊤)).op).hom.comp
+          ((Scheme.ΓSpecIso (CommRingCat.of K)).inv ≫ strX.appTop).hom := hcc
+    rw [hK, ← Polynomial.hom_eval₂, hp0, map_zero]
+  -- MOVE 3: so `T`'s pull-back vanishes, and the image of the generic point is a closed point.
+  have hzero : g.appTop.hom
+      ((Scheme.ΓSpecIso (CommRingCat.of (Polynomial K))).inv.hom p) = 0 := by
+    have hexp : (coordHom U g).hom p =
+        (Scheme.Opens.topIso U).hom.hom
+          (g.appTop.hom ((Scheme.ΓSpecIso (CommRingCat.of (Polynomial K))).inv.hom p)) := rfl
+    rw [hexp] at hpsi
+    have h := congrArg (Scheme.Opens.topIso U).inv.hom hpsi
+    rw [map_zero, ← CommRingCat.comp_apply, Iso.hom_inv_id, CommRingCat.id_apply] at h
+    exact h
+  haveI : IsIntegral U.toScheme := isIntegral_of_isOpenImmersion (Scheme.Opens.ι U)
+  set η : U.toScheme := genericPoint U.toScheme with hη
+  set y : Spec (CommRingCat.of (Polynomial K)) := g.base η with hy
+  have hpy : p ∈ y.asIdeal := by
+    have hb : (Spec (CommRingCat.of (Polynomial K))).basicOpen
+        ((Scheme.ΓSpecIso (CommRingCat.of (Polynomial K))).inv.hom p) =
+        PrimeSpectrum.basicOpen p := basicOpen_eq_of_affine _
+    by_contra hcon
+    have hmem : y ∈ (Spec (CommRingCat.of (Polynomial K))).basicOpen
+        ((Scheme.ΓSpecIso (CommRingCat.of (Polynomial K))).inv.hom p) := by
+      rw [hb]; exact (PrimeSpectrum.mem_basicOpen p y).mpr hcon
+    have hmem2 : η ∈ (U.toScheme).basicOpen
+        (g.appTop.hom ((Scheme.ΓSpecIso (CommRingCat.of (Polynomial K))).inv.hom p)) := by
+      rw [← Scheme.preimage_basicOpen_top]; exact hmem
+    rw [hzero, Scheme.basicOpen_zero] at hmem2
+    exact hmem2
+  have hpne : p ≠ 0 := hpm.ne_zero
+  have hbot : y.asIdeal ≠ ⊥ := by
+    intro hb
+    rw [hb, Ideal.mem_bot] at hpy
+    exact hpne hpy
+  haveI : y.asIdeal.IsMaximal := _root_.IsPrime.to_maximal_ideal hbot
+  have hyclosed : IsClosed ({y} : Set (Spec (CommRingCat.of (Polynomial K)))) :=
+    (PrimeSpectrum.isClosed_singleton_iff_isMaximal y).mpr ‹_›
+  -- MOVE 4: so `g` is constant, and its one fibre is both all of `U` and finite.
+  have hconst : ∀ u : U.toScheme, g.base u = y := by
+    intro u
+    have h1 : η ⤳ u := (genericPoint_spec U.toScheme).specializes trivial
+    have h2 : y ⤳ g.base u := h1.map g.base.hom.continuous
+    simpa using h2.mem_closed hyclosed rfl
+  have hfin := g.finite_preimage_singleton y
+  have huniv : (⇑g ⁻¹' {y}) = Set.univ := by
+    ext u
+    simp [hconst u]
+  rw [huniv] at hfin
+  exact (Set.infinite_univ (α := ↥(U.toScheme))) hfin
+
+/-- **`f` DOES NOT EXTEND ACROSS `z`** (cut 2026-07-31 out of
+`exists_inv_coordOf_mem_maximalIdeal_compl_singleton` immediately below, which is proven over
+it; this is the WHOLE of the mathematics that leaf contained.  **PROVEN 2026-07-31 the same
+day, no sorry**, over the four items immediately above — so the affineness route's properness
+half is now closed outright and the file's only remaining leaf is Riemann–Roch.)
+
+Read it as `f ∉ 𝒪_{X,z}`, stated without the function field: `germ_{x₀} f` is not in the image
+of the specialization map `𝒪_{X,z} ⟶ 𝒪_{X,x₀}`.  On an integral `X` that image is exactly
+`𝒪_{X,z}` viewed inside `𝒪_{X,x₀} ⊆ K(X)` (both maps are injective), so the two readings agree
+— see `exists_inv_coordOf_mem_maximalIdeal_compl_singleton`'s proof, which does the conversion.
+
+**NO VALUATION RING, NO MAXIMAL IDEAL, NO RECIPROCAL.**  Everything about DVRs, `𝔪_z` and
+`1/f` that the parent leaf carried has been discharged; what is left is a single
+non-membership, and it is the only place `hqf` and `IsProper strX` are consumed.
+
+## PROOF (2026-07-31), AND IT DOES NOT BUILD `ĝ` AT ALL
+
+The plan this docstring used to record — extend `g` to `ĝ : X ⟶ 𝔸¹_K`, prove `ĝ` proper by
+cancelling against `affineLineOver K`, then run a fibre dichotomy ending in
+`IsFinite.of_isProper_of_locallyQuasiFinite` and `Module.Finite K K[T]` — is CORRECT but was
+strictly more work than necessary, and it is not what is implemented.  The pin already carries
+`isIntegral_appTop_of_universallyClosed` (`Morphisms/Proper.lean`): the global sections of a
+universally closed scheme over an affine base are INTEGRAL over it.  That collapses the
+dichotomy, because the "`ĝ` dominant" branch is then impossible outright rather than being
+excluded case by case, and the MORPHISM `ĝ` is never needed — only the SECTION.
+
+So the three steps actually taken are:
+
+* the hypothesis `a : 𝒪_{X,z}` with `stalkSpecializes a = germ_{x₀} f` gives a section `s` on
+  some open `V ∋ z` (`X.presheaf.exists_germ_eq`) whose germ at `x₀` is `germ_{x₀} f` — note
+  `x₀ ∈ V` for free, `V` being open and `x₀ ⤳ z`;
+* `U ⊔ V = ⊤`, since `U = {z}ᶜ` and `z ∈ V`, so `exists_res_eq_of_germ_eq` above glues `s` and
+  `f` into `F ∈ Γ(X, ⊤)` restricting to `f`.  Equality of the two germs at the SINGLE point
+  `x₀` suffices because `X` is integral;
+* `false_of_res_eq_coordOf_of_locallyQuasiFinite` above finishes: `F` is algebraic over `K`, so
+  `g` is constant, so its single fibre is the infinite `U` — and a quasi-finite quasi-compact
+  morphism has finite fibres.
+
+`QuasiCompact g` is obtained here exactly as in
+`isProper_of_locallyQuasiFinite_toAffineLine_compl_singleton` below: `X` is a NOETHERIAN scheme
+(`CompactSpace` from `QuasiCompact strX`, `IsLocallyNoetherian` from
+`LocallyOfFiniteType.isLocallyNoetherian`), hence so is the open `U`, and
+`quasiCompact_of_noetherianSpace_source` applies.
+
+**`hqf` IS LOAD-BEARING and the statement is FALSE without it**: `g` constant at `0` gives
+`f = 0`, which extends across `z` by `0`.
+
+**`IsProper strX` IS LOAD-BEARING**, and it is consumed twice: through `UniversallyClosed` for
+the integrality of `Γ(X, ⊤)`, and through `QuasiCompact`/`LocallyOfFiniteType` for
+`QuasiCompact g`.  On an affine curve `f` may extend across `z`.
+
+**`hconn` IS LOAD-BEARING**, through `IsIntegral X` — without irreducibility there is no
+generic point to compare germs at, the gluing step has no meaning, and `g` need not be constant
+on the whole of `U` even when its classified function is algebraic.
+
+**`SmoothOfRelativeDimension 1 strX` IS LOAD-BEARING**, and ONLY through
+`infinite_of_smoothOfRelativeDimension_one`: it is what makes `U` infinite, which is the last
+move.  On a zero-dimensional `X` the statement is false — every function extends. -/
+theorem not_exists_stalkSpecializes_eq_germ_coordOf_compl_singleton
+    {K : Type u} [Field K] {X : Scheme.{u}} (strX : X ⟶ Spec (CommRingCat.of K))
+    [IsProper strX] [SmoothOfRelativeDimension 1 strX]
+    (hconn : GeometricallyConnected strX)
+    {z : X} (hz : IsClosed ({z} : Set X))
+    (g : Scheme.Opens.toScheme (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) ⟶
+        Spec (CommRingCat.of (Polynomial K)))
+    (hqf : LocallyQuasiFinite g)
+    (hover : g ≫ affineLineOver K =
+      Scheme.Opens.ι (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) ≫ strX)
+    {x₀ : X} (hsp : x₀ ⤳ z)
+    (hx₀ : x₀ ∈ (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens)) :
+    ¬ ∃ a : X.presheaf.stalk z,
+        (X.presheaf.stalkSpecializes hsp).hom a =
+          (X.presheaf.germ _ x₀ hx₀).hom (coordOf _ g) := by
+  haveI : IsIntegral X :=
+    isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected (n := 1) strX hconn
+  haveI : Infinite X := infinite_of_smoothOfRelativeDimension_one strX
+  haveI : Infinite ↥(⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) :=
+    (Set.Finite.infinite_compl (Set.finite_singleton z)).to_subtype
+  haveI := hqf
+  -- `QuasiCompact g`, exactly as in the consumer two declarations below.
+  haveI : CompactSpace X := QuasiCompact.compactSpace_of_compactSpace strX
+  haveI : IsLocallyNoetherian X := LocallyOfFiniteType.isLocallyNoetherian strX
+  haveI : IsNoetherian X := ⟨⟩
+  haveI : NoetherianSpace
+      (Scheme.Opens.toScheme (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens)) := by
+    show NoetherianSpace (({z}ᶜ : Set X))
+    infer_instance
+  haveI : QuasiCompact g := inferInstance
+  rintro ⟨a, ha⟩
+  -- `a` is the germ of a section `s` on some open `V ∋ z`, and `x₀ ∈ V` since `x₀ ⤳ z`.
+  obtain ⟨V, hzV, s, hs⟩ := X.presheaf.exists_germ_eq a
+  have hx₀V : x₀ ∈ V := hsp.mem_open V.isOpen hzV
+  have hgerm : (X.presheaf.germ _ x₀ hx₀) (coordOf _ g) = (X.presheaf.germ V x₀ hx₀V) s := by
+    have h1 : (X.presheaf.germ V x₀ hx₀V) s
+        = (X.presheaf.stalkSpecializes hsp).hom ((X.presheaf.germ V z hzV) s) := by
+      rw [← CommRingCat.comp_apply, X.presheaf.germ_stalkSpecializes]
+    rw [h1, hs, ha]
+  -- `U ⊔ V = ⊤` because `U = {z}ᶜ` and `z ∈ V`, so `s` and `f` glue.
+  have hcover : (⊤ : X.Opens) ≤ (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) ⊔ V := by
+    rintro x -
+    rcases eq_or_ne x z with rfl | hx
+    · exact Or.inr hzV
+    · exact Or.inl hx
+  obtain ⟨F, hF⟩ := exists_res_eq_of_germ_eq hcover hx₀ hx₀V (coordOf _ g) s hgerm
+  exact false_of_res_eq_coordOf_of_locallyQuasiFinite strX _ g hover F hF
+
+/-- **SUB-LEAF 1 — `f` HAS A POLE AT `z`** (cut 2026-07-31 out of
+`notMem_range_of_valuativeLift_toAffineLine_compl_singleton`; **PROVEN the same day** over the
+single sub-leaf immediately above, which now carries all of its mathematics).
+
+Concretely: `1/f` lies in the maximal ideal of `𝒪_{X,z}`, stated without ever writing `1/f` —
+`w` is the reciprocal, and the clause `stalkSpecializes w · germ_{x₀} f = 1` says so inside
+`𝒪_{X,x₀}`, which is where both live.  **No valuation ring, no `L`, no lift `l` appears**: the
+statement mentions only `X`, `z`, `g` and a generization `x₀` of `z` inside `U`.
+
+WHY `x₀` IS THE GENERIC POINT, which is what makes the statement usable.  `x₀ ⤳ z`, `z` is
+closed and `x₀ ≠ z` (it lies in `{z}ᶜ`).  On the integral curve `X` the only proper generization
+of a closed point is the generic point, so `𝒪_{X,x₀} = X.functionField` and the displayed
+identity is literally `w = f⁻¹` in the function field.  The statement is phrased at a general
+`x₀` only so that the consumer does not have to prove that identification.
+
+## PROOF (2026-07-31) — the valuation-ring dichotomy, over the sub-leaf above
+
+`𝒪_{X,z}` is a VALUATION RING (`valuationRing_stalk_of_smoothOfRelativeDimension_one`,
+`CurveExtension.lean`) with fraction field `K(X)` (mathlib's
+`IsFractionRing (X.presheaf.stalk x) X.functionField` for integral `X`), so
+`ValuationRing.isInteger_or_isInteger` applied to `φ`, the image of `f` in `K(X)`, gives
+`φ ∈ 𝒪_{X,z}` or `φ⁻¹ ∈ 𝒪_{X,z}`.  The sub-leaf kills the first, so `φ⁻¹ = algebraMap w` for
+some `w`; and `w ∉ 𝒪_{X,z}ˣ`, since a unit `w` would make `φ = algebraMap (w⁻¹)` an integer
+after all.  That is `w ∈ 𝔪_z`.
+
+**No DVR is needed — only `ValuationRing`.**  The old plan went through
+`isDiscreteValuationRing_stalk_of_smoothOfRelativeDimension_one`, which needs
+`¬ IsField 𝒪_{X,z}` (i.e. `z` is not the generic point) as a side condition.  The dichotomy
+above needs none of that: at the generic point the stalk IS `K(X)`, every element is an
+integer, and the sub-leaf is simply false there — so the exclusion of the generic point is
+carried by the sub-leaf and never has to be proven separately.
+
+The transport back into `𝒪_{X,x₀}` is `IsFractionRing.injective` for `𝒪_{X,x₀} ⟶ K(X)`
+together with `TopCat.Presheaf.stalkSpecializes_comp` (the specialization `𝒪_{X,z} ⟶ 𝒪_{X,x₀}`
+followed by `𝒪_{X,x₀} ⟶ K(X)` IS `𝒪_{X,z} ⟶ K(X)`) — which is also what turns the sub-leaf's
+stalk-level non-membership into `¬ IsLocalization.IsInteger`.
+
+**`hqf`, `IsProper strX` and `hconn` are all LOAD-BEARING**, and after this cut all three are
+consumed inside the sub-leaf rather than here; see its docstring for the counterexamples.
+`hconn` is additionally used here, through `IsIntegral X`, for the `IsFractionRing` and
+`IsDomain` instances on the stalks. -/
+theorem exists_inv_coordOf_mem_maximalIdeal_compl_singleton
+    {K : Type u} [Field K] {X : Scheme.{u}} (strX : X ⟶ Spec (CommRingCat.of K))
+    [IsProper strX] [SmoothOfRelativeDimension 1 strX]
+    (hconn : GeometricallyConnected strX)
+    {z : X} (hz : IsClosed ({z} : Set X))
+    (g : Scheme.Opens.toScheme (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) ⟶
+        Spec (CommRingCat.of (Polynomial K)))
+    (hqf : LocallyQuasiFinite g)
+    (hover : g ≫ affineLineOver K =
+      Scheme.Opens.ι (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) ≫ strX)
+    {x₀ : X} (hsp : x₀ ⤳ z)
+    (hx₀ : x₀ ∈ (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens)) :
+    ∃ w : X.presheaf.stalk z, w ∈ IsLocalRing.maximalIdeal (X.presheaf.stalk z) ∧
+      (X.presheaf.stalkSpecializes hsp).hom w *
+        (X.presheaf.germ _ x₀ hx₀).hom (coordOf _ g) = 1 := by
+  haveI : IsIntegral X :=
+    isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected (n := 1) strX hconn
+  haveI : ValuationRing (X.presheaf.stalk z) :=
+    valuationRing_stalk_of_smoothOfRelativeDimension_one strX z
+  set fx₀ : X.presheaf.stalk x₀ := (X.presheaf.germ _ x₀ hx₀).hom (coordOf _ g) with hfx₀
+  set φ : X.functionField := algebraMap (X.presheaf.stalk x₀) X.functionField fx₀ with hφ
+  -- The specialization `𝒪_{X,z} ⟶ 𝒪_{X,x₀}` followed by `𝒪_{X,x₀} ⟶ K(X)` IS `𝒪_{X,z} ⟶ K(X)`.
+  have htri : ∀ a : X.presheaf.stalk z,
+      algebraMap (X.presheaf.stalk x₀) X.functionField
+          ((X.presheaf.stalkSpecializes hsp).hom a) =
+        algebraMap (X.presheaf.stalk z) X.functionField a := by
+    intro a
+    show (X.presheaf.stalkSpecializes _).hom ((X.presheaf.stalkSpecializes hsp).hom a) =
+      (X.presheaf.stalkSpecializes _).hom a
+    rw [← CommRingCat.comp_apply, TopCat.Presheaf.stalkSpecializes_comp]
+  -- The sub-leaf, transported across `IsFractionRing.injective`.
+  have hni : ¬ IsLocalization.IsInteger (X.presheaf.stalk z) φ := by
+    rintro ⟨a, ha⟩
+    refine not_exists_stalkSpecializes_eq_germ_coordOf_compl_singleton
+      strX hconn hz g hqf hover hsp hx₀ ⟨a, ?_⟩
+    refine IsFractionRing.injective (X.presheaf.stalk x₀) X.functionField ?_
+    rw [htri a, ha]
+  have hφ0 : φ ≠ 0 := by
+    intro h
+    exact hni (by rw [h]; exact IsLocalization.isInteger_zero)
+  -- The valuation-ring dichotomy: `φ ∉ 𝒪_{X,z}`, so `φ⁻¹ ∈ 𝒪_{X,z}`.
+  obtain hint | ⟨w, hw⟩ :=
+    ValuationRing.isInteger_or_isInteger (X.presheaf.stalk z) (K := X.functionField) φ
+  · exact absurd hint hni
+  refine ⟨w, ?_, ?_⟩
+  · -- `w` is not a unit: a unit `w` would make `φ = algebraMap w⁻¹` an integer after all.
+    rw [IsLocalRing.mem_maximalIdeal]
+    rintro ⟨u, rfl⟩
+    refine hni ⟨((u⁻¹ : (X.presheaf.stalk z)ˣ) : X.presheaf.stalk z), ?_⟩
+    calc algebraMap (X.presheaf.stalk z) X.functionField
+            ((u⁻¹ : (X.presheaf.stalk z)ˣ) : X.presheaf.stalk z)
+        = algebraMap (X.presheaf.stalk z) X.functionField
+            ((u⁻¹ : (X.presheaf.stalk z)ˣ) : X.presheaf.stalk z) * (φ⁻¹ * φ) := by
+          rw [inv_mul_cancel₀ hφ0, mul_one]
+      _ = (algebraMap (X.presheaf.stalk z) X.functionField
+            ((u⁻¹ : (X.presheaf.stalk z)ˣ) : X.presheaf.stalk z) *
+          algebraMap (X.presheaf.stalk z) X.functionField
+            ((u : (X.presheaf.stalk z)ˣ) : X.presheaf.stalk z)) * φ := by
+          rw [hw]; ring
+      _ = φ := by rw [← map_mul]; simp
+  · -- `w · f = 1` in `𝒪_{X,x₀}`, checked in `K(X)`, where it is `φ⁻¹ · φ = 1`.
+    refine IsFractionRing.injective (X.presheaf.stalk x₀) X.functionField ?_
+    rw [map_mul, map_one, htri w, hw, ← hφ, inv_mul_cancel₀ hφ0]
+
+/-- **The restriction `Γ(X, U) ⟶ Γ(U, ⊤)` along the inclusion IS `topIso U`'s inverse**
+(PROVEN 2026-07-31, no sorry).
+
+Both sides are `X.presheaf.map` of a morphism `op U ⟶ op (U.ι ''ᵁ ⊤)` in the poset `(X.Opens)ᵒᵖ`,
+written with `homOfLE` on one side and `eqToHom` on the other.  A poset has subsingleton hom-sets,
+so `congr 1` closes the gap — but only after `Scheme.Opens.ι_appLE` and the definition of
+`Scheme.Opens.topIso` have exposed both as `X.presheaf.map _`; `simp` alone does NOT do it, and
+`congr 1` applied to the full composite instead produces a bogus type-equality goal. -/
+theorem ι_appLE_top_eq_topIso_inv {X : Scheme.{u}} (U : X.Opens) (e) :
+    (Scheme.Opens.ι U).appLE U ⊤ e = (Scheme.Opens.topIso U).inv := by
+  rw [Scheme.Opens.ι_appLE]
+  rw [Scheme.Opens.topIso]
+  simp only [Functor.mapIso_inv, Iso.op_inv, eqToIso.inv]
+  congr 1
+
+/-- **`appLE ⊤ ⊤` is `appTop`** (PROVEN 2026-07-31, no sorry) — the `f ⁻¹ᵁ ⊤ = ⊤` bookkeeping
+that `Scheme.Hom.appLE_eq_app` does not do on its own. -/
+theorem appLE_top_top_eq_appTop {X Y : Scheme.{u}} (f : X ⟶ Y) (e) :
+    f.appLE ⊤ ⊤ e = f.appTop := by
+  simp [Scheme.Hom.appLE, Scheme.Hom.appTop]
+
+/-- **SUB-LEAF 2 — `f`'s VALUE AT THE `L`-POINT COMES FROM `R`** (cut 2026-07-31,
+**PROVEN 2026-07-31**).
+
+PURE BOOKKEEPING: no curve, no properness, no smoothness, no valuation ring, no `IsFractionRing`
+— just the commuting square `hcomm` read on global sections.  It is separated out because the
+identification of `Γ`-level data with stalk-level data is exactly the part that fights the
+elaborator, and it should not be entangled with the mathematics in SUB-LEAF 1.
+
+THE PROOF, in four rewrites, all of them in the pin:
+
+1. `Scheme.germ_stalkClosedPointTo (i₁ ≫ ι) U hx₀` turns
+   `germ_U ≫ stalkClosedPointTo (i₁ ≫ ι)` into `(i₁ ≫ ι).app U ≫ (…) ≫ (ΓSpecIso (of L)).hom`.
+   Normalise the `(…)` with `Scheme.Hom.app_eq_appLE` and `Scheme.Hom.appLE_map` to land on
+   `(i₁ ≫ ι).appLE U ⊤ _ ≫ (ΓSpecIso (of L)).hom`.
+2. `Scheme.Hom.appLE_comp_appLE` splits that as `ι.appLE U ⊤ _ ≫ i₁.appLE ⊤ ⊤ _`, and
+   `Scheme.Opens.ι_appLE` identifies the first factor with `(Scheme.Opens.topIso U).inv` — the
+   two differ only by which morphism of the poset `X.Opens` is written, and a poset has
+   subsingleton hom-sets.  So the whole thing is `topIso.inv ≫ i₁.appTop ≫ (ΓSpecIso _).hom`,
+   and `topIso.inv` cancels the `topIso.hom` inside `coordOf`.
+3. `Scheme.comp_appTop` applied to `hcomm` gives
+   `i₁.appTop (g.appTop t) = (Spec.map (ofHom (algebraMap R L))).appTop (i₂.appTop t)` for
+   `t = (ΓSpecIso (of K[T])).inv T`.
+4. `Scheme.ΓSpecIso_naturality (ofHom (algebraMap R L))` turns
+   `(ΓSpecIso (of L)).hom ∘ (Spec.map _).appTop` into `algebraMap R L ∘ (ΓSpecIso (of R)).hom`.
+
+So the witness is forced: `r = (ΓSpecIso (of R)).hom (i₂.appTop ((ΓSpecIso (of K[T])).inv T))`,
+i.e. `T`'s pull-back along `i₂`, which is what "the value lies in `R`" means.
+
+HOW IT WAS FINISHED, later the same day: exactly by the second of the two suggestions the
+previous note left — step 2 is now the standalone lemma `ι_appLE_top_eq_topIso_inv` above, whose
+`congr 1` closes on subsingleton poset hom-sets, together with `appLE_top_top_eq_appTop`.  Two
+further traps, recorded because both cost a round trip:
+
+* `simpa using <congrArg of the morphism-level identity>` does NOT produce the element-level
+  form — `simp` normalises `topIso.inv` to `X.presheaf.map (eqToHom ⋯)` on both sides and then
+  reports a type mismatch between two printed-identical terms.  Use
+  `rw [← CommRingCat.comp_apply, key, CommRingCat.comp_apply, CommRingCat.comp_apply]` instead;
+  `rw` keeps `topIso.inv` intact.
+* `simpa using <congrArg of ΓSpecIso_naturality>` simplifies that hypothesis all the way to
+  `True`, since `simp` proves the naturality square outright.  State step 4 as its own `have`
+  with the two sides written out and prove it by `rw`.
+
+**`hcomm` IS LOAD-BEARING and the statement is FALSE without it**: it is the ONLY hypothesis
+relating `g` to `R` at all.  Without it `i₁` may send `T` to any element of `L` whatever, in
+particular to one with a pole, and `r` need not exist.
+
+**`IsLocalRing R` IS LOAD-BEARING for the statement to typecheck** — `stalkClosedPointTo`
+is only defined for a local ring — and `IsLocalRing (of L)` comes free from `Field L`. -/
+theorem exists_algebraMap_eq_stalkClosedPointTo_germ_coordOf
+    {K : Type u} [Field K] {X : Scheme.{u}} (U : X.Opens)
+    (g : U.toScheme ⟶ Spec (CommRingCat.of (Polynomial K)))
+    {R : Type u} [CommRing R] [IsDomain R] [IsLocalRing R]
+    {L : Type u} [Field L] [Algebra R L]
+    (i₁ : Spec (CommRingCat.of L) ⟶ U.toScheme)
+    (i₂ : Spec (CommRingCat.of R) ⟶ Spec (CommRingCat.of (Polynomial K)))
+    (hcomm : i₁ ≫ g = Spec.map (CommRingCat.ofHom (algebraMap R L)) ≫ i₂)
+    (hx₀ : (i₁ ≫ Scheme.Opens.ι U).base (IsLocalRing.closedPoint (CommRingCat.of L)) ∈ U) :
+    ∃ r : R, (Scheme.stalkClosedPointTo (i₁ ≫ Scheme.Opens.ι U)).hom
+        ((X.presheaf.germ U _ hx₀).hom (coordOf U g)) = algebraMap R L r := by
+  set t := (Scheme.ΓSpecIso (CommRingCat.of (Polynomial K))).inv.hom Polynomial.X with ht
+  refine ⟨(Scheme.ΓSpecIso (CommRingCat.of R)).hom.hom (i₂.appTop.hom t), ?_⟩
+  -- STEP 2: the restriction `Γ(X, U) ⟶ Γ(Spec L, ⊤)` of the composite factors as
+  -- `topIso.inv ≫ i₁.appTop`.
+  have hfac : (i₁ ≫ Scheme.Opens.ι U).appLE U ⊤
+      (Scheme.preimage_eq_top_of_closedPoint_mem (i₁ ≫ Scheme.Opens.ι U) hx₀).ge =
+      (Scheme.Opens.topIso U).inv ≫ i₁.appTop := by
+    rw [← ι_appLE_top_eq_topIso_inv U (by simp), ← appLE_top_top_eq_appTop i₁ (by simp)]
+    exact (Scheme.Hom.appLE_comp_appLE i₁ (Scheme.Opens.ι U) U ⊤ ⊤ _ _).symm
+  -- STEP 1: `germ ≫ stalkClosedPointTo` is that restriction followed by `ΓSpecIso`.
+  have key : X.presheaf.germ U _ hx₀ ≫ Scheme.stalkClosedPointTo (i₁ ≫ Scheme.Opens.ι U) =
+      (Scheme.Opens.topIso U).inv ≫ i₁.appTop ≫
+        (Scheme.ΓSpecIso (CommRingCat.of L)).hom := by
+    rw [Scheme.germ_stalkClosedPointTo (i₁ ≫ Scheme.Opens.ι U) U hx₀]
+    rw [Iso.trans_hom, Functor.mapIso_hom, Iso.op_hom, eqToIso.hom,
+      ← Category.assoc, Scheme.Hom.app_eq_appLE, Scheme.Hom.appLE_map, hfac, Category.assoc]
+  -- STEP 3: `hcomm` on global sections.
+  have h3 : i₁.appTop.hom (g.appTop.hom t) =
+      (Spec.map (CommRingCat.ofHom (algebraMap R L))).appTop.hom (i₂.appTop.hom t) := by
+    have h := congrArg
+      (fun φ : Spec (CommRingCat.of L) ⟶ Spec (CommRingCat.of (Polynomial K)) => φ.appTop.hom t)
+      hcomm
+    simpa using h
+  -- STEP 4: naturality of `ΓSpecIso`.
+  have h4 : (Scheme.ΓSpecIso (CommRingCat.of L)).hom.hom
+        ((Spec.map (CommRingCat.ofHom (algebraMap R L))).appTop.hom (i₂.appTop.hom t))
+      = algebraMap R L ((Scheme.ΓSpecIso (CommRingCat.of R)).hom.hom (i₂.appTop.hom t)) := by
+    rw [← CommRingCat.comp_apply, Scheme.ΓSpecIso_naturality, CommRingCat.comp_apply]
+    rfl
+  have hco : (Scheme.Opens.topIso U).inv.hom (coordOf U g) = g.appTop.hom t := by
+    rw [ht, coordOf, ← CommRingCat.comp_apply, Iso.hom_inv_id, CommRingCat.id_apply]
+  have keyel : (Scheme.stalkClosedPointTo (i₁ ≫ Scheme.Opens.ι U)).hom
+      ((X.presheaf.germ U _ hx₀).hom (coordOf U g)) =
+      (Scheme.ΓSpecIso (CommRingCat.of L)).hom.hom
+        (i₁.appTop.hom ((Scheme.Opens.topIso U).inv.hom (coordOf U g))) := by
+    rw [← CommRingCat.comp_apply, key, CommRingCat.comp_apply, CommRingCat.comp_apply]
+  rw [keyel, hco, h3, h4]
 
 /-- **Restriction bookkeeping**: any two restriction routes between the same pair of opens
 agree, because `(Opens X)ᵒᵖ` is a poset and has subsingleton hom-sets. -/

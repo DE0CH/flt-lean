@@ -1908,119 +1908,6 @@ i.e. `p = 11, 19, 43, 67, 163`, `j(τ₀)` has `|Im j| = 0` to 80 digits and is 
 `−32, −96, −960, −5280, −640320`. So all three leaves below hold at every admissible `p`,
 with `v = 0` in the two `K`-valued ones. -/
 
-/-- **LEAF 1b — `α` HAS DEGREE AT MOST `3` OVER `ℚ`**, i.e. `α ∈ ℚ(α⁴)`.
-
-THIS LEAF REPLACES the former `natDegree_minpoly_weberAlpha` (degree EXACTLY `3`), which is
-now PROVEN further down from this one; and the replacement is strictly weaker in a way that
-removes the class number FORMULA from the development entirely. Read the two directions
-separately, because only one of them was ever deep:
-
-* `3 ≤ deg α` is now PROVEN with no class field theory at all. `α⁴` is a root of
-  `x³ − γ₂(τ₀)x − 16` (`weberAlpha_pow_four_cubic`, the definition of `γ₂` rearranged);
-  `γ₂(τ₀)` is a rational integer `g` (`exists_int_gammaTwo`) and `g ≤ −16` NUMERICALLY
-  (`gammaTwo_int_le`, from the `q`-expansion bound `exp(π√p) ≤ 745 − j(τ₀)` — the class
-  number enters only to make `γ₂` an integer, not to bound it); so the cubic has no rational
-  root and is the minimal polynomial of `α⁴`, giving `deg(α⁴) = 3`
-  (`natDegree_minpoly_eq_three_of_cubic`). Since `deg(α⁴) ≤ deg α`
-  (`natDegree_minpoly_pow_le`), `deg α ≥ 3`.
-* `deg α ≤ 3` — THIS LEAF — is the genuine CM input, and it is exactly Weber's theorem that
-  `f₂(τ₀)²`, not merely `f₂(τ₀)⁸`, lies in the ring class field: `α` lies in the ring class
-  field of the order `[1, √−p]` of discriminant `−4p`, whose class number is
-  `h(−4p) = 2·h(−p)·(1 − (−p|2)/2) = 3·h(−p) = 3` for `p ≡ 3 mod 8` with `h(−p) = 1`
-  (using `(−p|2) = −1` because `−p ≡ 5 mod 8`), and `α` is REAL, so it generates the real
-  cubic subfield.
-
-`hcl` IS LOAD-BEARING and does not appear in the conclusion: drop it and `h(−p)` may exceed
-`1`, making `h(−4p) = 3h(−p) > 3` and the degree larger than `3`. It is not decorative. Note
-that after this restatement `hcl` is load-bearing in ONE direction only, which is what makes
-the leaf smaller: nothing about the lower bound needs it beyond `γ₂(τ₀) ∈ ℤ`.
-
-MACHINE-CHECKED FAITHFULNESS: `polisirreducible(algdep(α,3)) = 1` at all five admissible `p`
-(table in `isIntegral_weberAlpha`), so the degree is exactly `3` — not `1` or `2` — in every
-case where the hypotheses are satisfiable. Refute by exhibiting an admissible `p` at which
-`α` satisfies a rational polynomial of degree `< 3`.
-
-**WEAKENED 2026-07-30 (`flt-lean-185`) FROM AN EQUALITY TO AN INEQUALITY.** The leaf used to
-read `natDegree = 3` and had two consumers; it now reads `natDegree ≤ 3` and the equality is a
-THEOREM. Two independent findings did that:
-
-* `intCast_indep_weberAlpha_pow_four` no longer uses this leaf — that statement is PROVEN
-  outright from `γ₂(τ₀) ≤ −16` (`intCast_indep_of_cubic`, `int_gammaTwo_le_neg_sixteen`);
-* independence in turn forces `deg α ≥ 3` (`three_le_natDegree_minpoly_of_intCast_indep`: if
-  `deg α ≤ 2` then `α⁴` satisfies a monic `ℚ`-polynomial of degree `≤ 2`, which is a nontrivial
-  relation among `1, α⁴, α⁸` after clearing denominators).
-
-So the `≥ 3` side of the degree is NOT complex multiplication, and what is left open here is
-only the `≤ 3` side — "`α` lies in a field of degree at most `3` over `ℚ`", which is the
-substantive half of Weber's ring-class-field computation. The remaining consumer,
-`exists_intCubic_weberAlpha`, is served through `natDegree_minpoly_weberAlpha` (the equality,
-proven below from this leaf), so no consumer or docstring reference had to change.
-
-`hcl`, `hp8` and `h3` are all still load-bearing, by the class-number computation above: drop
-`hcl` and `h(−p)` may exceed `1`, making `h(−4p) = 3h(−p) > 3` and the degree LARGER than `3` —
-which is exactly what this inequality forbids. Note the faithfulness note above is about the
-equality and therefore still covers this weaker statement; and note that the direction that
-survives here is the one `hcl` protects, so weakening did not make the leaf vacuous.
-
-**A COMPUTED WITNESS FOR THE `≤ 3` SIDE (2026-07-31, `flt-lean-360`).** `α⁴` is a root of the
-degree-`9` resolvent `(X³ − 16)³ − j(τ₀)X³ ∈ ℤ[X]`, obtained by eliminating `γ₂(τ₀)` from
-`weberAlpha_pow_four_cubic` over the three cube roots of `j(τ₀)`. At `p = 27` that polynomial
-is `X⁹ − 48X⁶ + 12288768X³ − 4096`, `PARI`'s `algdep` returns it as the EXACT minimal
-polynomial of `α⁴`, and `polisirreducible` returns `1`. So `[ℚ(α⁴) : ℚ] = 9` and
-`[ℚ(α) : ℚ] ≥ 9` at `p = 27` — three times what this leaf asserts. Since `27 % 8 = 3` and
-`3 < 27`, that settles that `hp8 + h3` alone are not enough.
-
-It does NOT isolate `hp` from `hcl`, because **`hcl` FAILS at `p = 27`**, and the reason is a
-trap worth naming: `hcl` is STRICTLY STRONGER than "`h(−p) = 1`" whenever `−p` admits
-IMPRIMITIVE forms, since `BinaryQuadraticForm` carries no primitivity condition. Here
-`qfbclassno(−27) = 1`, yet `(3, 3, 3) = 3·(1, 1, 1)` also has discriminant `−27` and is not
-equivalent to `(1, 1, 7)` (minimum `3` against `1`). The gloss "`hcl` says `h(−p) = 1`" used
-throughout this file is nevertheless SAFE at every actual use, because a prime `p` makes every
-form of discriminant `−p` primitive; the two notions part company only at composite `p`. -/
-theorem natDegree_minpoly_weberAlpha_le {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3) (h3 : 3 < p)
-    (hcl : ∀ f g : BinaryQuadraticForm, f.IsPosDef → g.IsPosDef →
-      f.discr = -(p : ℤ) → g.discr = -(p : ℤ) → f.Equivalent g) :
-    (minpoly ℚ (weberAlpha p hp.pos)).natDegree ≤ 3 := by
-  obtain ⟨g, hg⟩ := exists_int_gammaTwo hp hp8 h3 hcl
-  obtain ⟨q, hq⟩ := exists_ratPoly_weberAlpha_pow_four hp hp8 h3
-  have hcub := weberAlpha_pow_four_cubic p hp.pos
-  rw [← hg] at hcub
-  have hint : IsIntegral ℚ (weberAlpha p hp.pos) :=
-    (isIntegral_weberAlpha hp hp8 h3 hcl).tower_top
-  have hint4 : IsIntegral ℚ (weberAlpha p hp.pos ^ 4) := hint.pow 4
-  -- `α ^ 4` has degree at most `3`, from the cubic
-  have hmon : (X ^ 3 - C (g : ℚ) * X - C 16 : Polynomial ℚ).Monic := by monicity!
-  have hpne : (X ^ 3 - C (g : ℚ) * X - C 16 : Polynomial ℚ) ≠ 0 := hmon.ne_zero
-  have hae : (Polynomial.aeval (weberAlpha p hp.pos ^ 4))
-      (X ^ 3 - C (g : ℚ) * X - C 16 : Polynomial ℚ) = 0 := by
-    simp only [map_sub, map_mul, map_pow, aeval_X, aeval_C, eq_ratCast]
-    push_cast
-    linear_combination hcub
-  have hdeg4 : (minpoly ℚ (weberAlpha p hp.pos ^ 4)).natDegree ≤ 3 := by
-    have hd := minpoly.degree_le_of_ne_zero ℚ (weberAlpha p hp.pos ^ 4) hpne hae
-    have hdq : (X ^ 3 - C (g : ℚ) * X - C 16 : Polynomial ℚ).degree ≤ 3 := by compute_degree
-    exact Polynomial.natDegree_le_iff_degree_le.mpr (le_trans hd hdq)
-  -- `α ∈ ℚ⟮α ^ 4⟯`, from Weber's descent
-  have hmem : weberAlpha p hp.pos ∈ ℚ⟮weberAlpha p hp.pos ^ 4⟯ := by
-    have h1 : weberAlpha p hp.pos
-        ∈ Algebra.adjoin ℚ ({weberAlpha p hp.pos ^ 4} : Set ℂ) := by
-      rw [Algebra.adjoin_singleton_eq_range_aeval]
-      exact ⟨q, hq.symm⟩
-    have h2 : Algebra.adjoin ℚ ({weberAlpha p hp.pos ^ 4} : Set ℂ)
-        ≤ (ℚ⟮weberAlpha p hp.pos ^ 4⟯).toSubalgebra := Algebra.adjoin_le (by simp)
-    exact h2 h1
-  have hle : ℚ⟮weberAlpha p hp.pos⟯ ≤ ℚ⟮weberAlpha p hp.pos ^ 4⟯ :=
-    IntermediateField.adjoin_simple_le_iff.mpr hmem
-  haveI : FiniteDimensional ℚ ℚ⟮weberAlpha p hp.pos ^ 4⟯ :=
-    IntermediateField.adjoin.finiteDimensional hint4
-  have hfr : Module.finrank ℚ ℚ⟮weberAlpha p hp.pos⟯
-      ≤ Module.finrank ℚ ℚ⟮weberAlpha p hp.pos ^ 4⟯ :=
-    LinearMap.finrank_le_finrank_of_injective
-      (f := (IntermediateField.inclusion hle).toLinearMap)
-      (IntermediateField.inclusion_injective hle)
-  rw [IntermediateField.adjoin.finrank hint, IntermediateField.adjoin.finrank hint4] at hfr
-  omega
-
 /-- `τ₀` written out: `(3 + i√p)/2`. -/
 lemma coe_heegnerPoint (p : ℕ) (hp : 0 < p) :
     (heegnerPoint p hp : ℂ) = (3 + Complex.I * (Real.sqrt p : ℂ)) / 2 := rfl
@@ -6675,6 +6562,119 @@ theorem isIntegral_weberAlpha {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3) (h3 : 3
   simp only [algebraMap_int_eq, eq_intCast]
   push_cast
   linear_combination hcub
+
+/-- **LEAF 1b — `α` HAS DEGREE AT MOST `3` OVER `ℚ`**, i.e. `α ∈ ℚ(α⁴)`.
+
+THIS LEAF REPLACES the former `natDegree_minpoly_weberAlpha` (degree EXACTLY `3`), which is
+now PROVEN further down from this one; and the replacement is strictly weaker in a way that
+removes the class number FORMULA from the development entirely. Read the two directions
+separately, because only one of them was ever deep:
+
+* `3 ≤ deg α` is now PROVEN with no class field theory at all. `α⁴` is a root of
+  `x³ − γ₂(τ₀)x − 16` (`weberAlpha_pow_four_cubic`, the definition of `γ₂` rearranged);
+  `γ₂(τ₀)` is a rational integer `g` (`exists_int_gammaTwo`) and `g ≤ −16` NUMERICALLY
+  (`gammaTwo_int_le`, from the `q`-expansion bound `exp(π√p) ≤ 745 − j(τ₀)` — the class
+  number enters only to make `γ₂` an integer, not to bound it); so the cubic has no rational
+  root and is the minimal polynomial of `α⁴`, giving `deg(α⁴) = 3`
+  (`natDegree_minpoly_eq_three_of_cubic`). Since `deg(α⁴) ≤ deg α`
+  (`natDegree_minpoly_pow_le`), `deg α ≥ 3`.
+* `deg α ≤ 3` — THIS LEAF — is the genuine CM input, and it is exactly Weber's theorem that
+  `f₂(τ₀)²`, not merely `f₂(τ₀)⁸`, lies in the ring class field: `α` lies in the ring class
+  field of the order `[1, √−p]` of discriminant `−4p`, whose class number is
+  `h(−4p) = 2·h(−p)·(1 − (−p|2)/2) = 3·h(−p) = 3` for `p ≡ 3 mod 8` with `h(−p) = 1`
+  (using `(−p|2) = −1` because `−p ≡ 5 mod 8`), and `α` is REAL, so it generates the real
+  cubic subfield.
+
+`hcl` IS LOAD-BEARING and does not appear in the conclusion: drop it and `h(−p)` may exceed
+`1`, making `h(−4p) = 3h(−p) > 3` and the degree larger than `3`. It is not decorative. Note
+that after this restatement `hcl` is load-bearing in ONE direction only, which is what makes
+the leaf smaller: nothing about the lower bound needs it beyond `γ₂(τ₀) ∈ ℤ`.
+
+MACHINE-CHECKED FAITHFULNESS: `polisirreducible(algdep(α,3)) = 1` at all five admissible `p`
+(table in `isIntegral_weberAlpha`), so the degree is exactly `3` — not `1` or `2` — in every
+case where the hypotheses are satisfiable. Refute by exhibiting an admissible `p` at which
+`α` satisfies a rational polynomial of degree `< 3`.
+
+**WEAKENED 2026-07-30 (`flt-lean-185`) FROM AN EQUALITY TO AN INEQUALITY.** The leaf used to
+read `natDegree = 3` and had two consumers; it now reads `natDegree ≤ 3` and the equality is a
+THEOREM. Two independent findings did that:
+
+* `intCast_indep_weberAlpha_pow_four` no longer uses this leaf — that statement is PROVEN
+  outright from `γ₂(τ₀) ≤ −16` (`intCast_indep_of_cubic`, `int_gammaTwo_le_neg_sixteen`);
+* independence in turn forces `deg α ≥ 3` (`three_le_natDegree_minpoly_of_intCast_indep`: if
+  `deg α ≤ 2` then `α⁴` satisfies a monic `ℚ`-polynomial of degree `≤ 2`, which is a nontrivial
+  relation among `1, α⁴, α⁸` after clearing denominators).
+
+So the `≥ 3` side of the degree is NOT complex multiplication, and what is left open here is
+only the `≤ 3` side — "`α` lies in a field of degree at most `3` over `ℚ`", which is the
+substantive half of Weber's ring-class-field computation. The remaining consumer,
+`exists_intCubic_weberAlpha`, is served through `natDegree_minpoly_weberAlpha` (the equality,
+proven below from this leaf), so no consumer or docstring reference had to change.
+
+`hcl`, `hp8` and `h3` are all still load-bearing, by the class-number computation above: drop
+`hcl` and `h(−p)` may exceed `1`, making `h(−4p) = 3h(−p) > 3` and the degree LARGER than `3` —
+which is exactly what this inequality forbids. Note the faithfulness note above is about the
+equality and therefore still covers this weaker statement; and note that the direction that
+survives here is the one `hcl` protects, so weakening did not make the leaf vacuous.
+
+**A COMPUTED WITNESS FOR THE `≤ 3` SIDE (2026-07-31, `flt-lean-360`).** `α⁴` is a root of the
+degree-`9` resolvent `(X³ − 16)³ − j(τ₀)X³ ∈ ℤ[X]`, obtained by eliminating `γ₂(τ₀)` from
+`weberAlpha_pow_four_cubic` over the three cube roots of `j(τ₀)`. At `p = 27` that polynomial
+is `X⁹ − 48X⁶ + 12288768X³ − 4096`, `PARI`'s `algdep` returns it as the EXACT minimal
+polynomial of `α⁴`, and `polisirreducible` returns `1`. So `[ℚ(α⁴) : ℚ] = 9` and
+`[ℚ(α) : ℚ] ≥ 9` at `p = 27` — three times what this leaf asserts. Since `27 % 8 = 3` and
+`3 < 27`, that settles that `hp8 + h3` alone are not enough.
+
+It does NOT isolate `hp` from `hcl`, because **`hcl` FAILS at `p = 27`**, and the reason is a
+trap worth naming: `hcl` is STRICTLY STRONGER than "`h(−p) = 1`" whenever `−p` admits
+IMPRIMITIVE forms, since `BinaryQuadraticForm` carries no primitivity condition. Here
+`qfbclassno(−27) = 1`, yet `(3, 3, 3) = 3·(1, 1, 1)` also has discriminant `−27` and is not
+equivalent to `(1, 1, 7)` (minimum `3` against `1`). The gloss "`hcl` says `h(−p) = 1`" used
+throughout this file is nevertheless SAFE at every actual use, because a prime `p` makes every
+form of discriminant `−p` primitive; the two notions part company only at composite `p`. -/
+theorem natDegree_minpoly_weberAlpha_le {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3) (h3 : 3 < p)
+    (hcl : ∀ f g : BinaryQuadraticForm, f.IsPosDef → g.IsPosDef →
+      f.discr = -(p : ℤ) → g.discr = -(p : ℤ) → f.Equivalent g) :
+    (minpoly ℚ (weberAlpha p hp.pos)).natDegree ≤ 3 := by
+  obtain ⟨g, hg⟩ := exists_int_gammaTwo hp hp8 h3 hcl
+  obtain ⟨q, hq⟩ := exists_ratPoly_weberAlpha_pow_four hp hp8 h3
+  have hcub := weberAlpha_pow_four_cubic p hp.pos
+  rw [← hg] at hcub
+  have hint : IsIntegral ℚ (weberAlpha p hp.pos) :=
+    (isIntegral_weberAlpha hp hp8 h3 hcl).tower_top
+  have hint4 : IsIntegral ℚ (weberAlpha p hp.pos ^ 4) := hint.pow 4
+  -- `α ^ 4` has degree at most `3`, from the cubic
+  have hmon : (X ^ 3 - C (g : ℚ) * X - C 16 : Polynomial ℚ).Monic := by monicity!
+  have hpne : (X ^ 3 - C (g : ℚ) * X - C 16 : Polynomial ℚ) ≠ 0 := hmon.ne_zero
+  have hae : (Polynomial.aeval (weberAlpha p hp.pos ^ 4))
+      (X ^ 3 - C (g : ℚ) * X - C 16 : Polynomial ℚ) = 0 := by
+    simp only [map_sub, map_mul, map_pow, aeval_X, aeval_C, eq_ratCast]
+    push_cast
+    linear_combination hcub
+  have hdeg4 : (minpoly ℚ (weberAlpha p hp.pos ^ 4)).natDegree ≤ 3 := by
+    have hd := minpoly.degree_le_of_ne_zero ℚ (weberAlpha p hp.pos ^ 4) hpne hae
+    have hdq : (X ^ 3 - C (g : ℚ) * X - C 16 : Polynomial ℚ).degree ≤ 3 := by compute_degree
+    exact Polynomial.natDegree_le_iff_degree_le.mpr (le_trans hd hdq)
+  -- `α ∈ ℚ⟮α ^ 4⟯`, from Weber's descent
+  have hmem : weberAlpha p hp.pos ∈ ℚ⟮weberAlpha p hp.pos ^ 4⟯ := by
+    have h1 : weberAlpha p hp.pos
+        ∈ Algebra.adjoin ℚ ({weberAlpha p hp.pos ^ 4} : Set ℂ) := by
+      rw [Algebra.adjoin_singleton_eq_range_aeval]
+      exact ⟨q, hq.symm⟩
+    have h2 : Algebra.adjoin ℚ ({weberAlpha p hp.pos ^ 4} : Set ℂ)
+        ≤ (ℚ⟮weberAlpha p hp.pos ^ 4⟯).toSubalgebra := Algebra.adjoin_le (by simp)
+    exact h2 h1
+  have hle : ℚ⟮weberAlpha p hp.pos⟯ ≤ ℚ⟮weberAlpha p hp.pos ^ 4⟯ :=
+    IntermediateField.adjoin_simple_le_iff.mpr hmem
+  haveI : FiniteDimensional ℚ ℚ⟮weberAlpha p hp.pos ^ 4⟯ :=
+    IntermediateField.adjoin.finiteDimensional hint4
+  have hfr : Module.finrank ℚ ℚ⟮weberAlpha p hp.pos⟯
+      ≤ Module.finrank ℚ ℚ⟮weberAlpha p hp.pos ^ 4⟯ :=
+    LinearMap.finrank_le_finrank_of_injective
+      (f := (IntermediateField.inclusion hle).toLinearMap)
+      (IntermediateField.inclusion_injective hle)
+  rw [IntermediateField.adjoin.finrank hint, IntermediateField.adjoin.finrank hint4] at hfr
+  omega
 
 /-- **LEAF 2 — the `ℤ`-independence of `1, α⁴, α⁸` — PROVEN OUTRIGHT (2026-07-30), with no
 degree hypothesis and no CM input beyond what the development already pays for.**
