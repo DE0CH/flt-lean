@@ -75,21 +75,31 @@ field extension `K/ℚ`.  The pieces live here:
   uses and what the characteristic-`p` consumer over `𝔽_p` needs — see
   `isDomain_tensorProduct_of_isAlgebraic_mem_bot`'s use in
   `ModularCurve/X0.lean` over `k = ZMod p`.  `CharZero ⟹ PerfectField` is an
-  instance, so no call site changed.)  PROVEN for `K/k` **algebraic**, and
-  reduced in general to the finitely generated subextensions of `K`.
+  instance, so no call site changed.)  PROVEN in full, in every characteristic,
+  as of 2026-07-31.
 
   The transcendental case
   (`isDomain_tensorProduct_adjoin_finset_of_not_isAlgebraic_of_algebraicClosure_eq_bot`)
-  is **PROVEN in characteristic zero** (2026-07-29) via
+  was **PROVEN in characteristic zero** (2026-07-29) via
   `isDomain_tensorProduct_of_isTranscendenceBasis`, whose only new mathematical
   input is `RegularExtension.algebraicClosure_eq_bot_of_mvPolynomial` —
-  *purely transcendental base change preserves "algebraically closed in"*.  The
-  one remaining LEAF of this module is that same case in **positive
-  characteristic**: the char-0 route does not survive the `PerfectField`
-  weakening, because it applies the algebraic half over `Fk = k(ι)`, and a
-  rational function field in characteristic `p` is **not** perfect (and the
-  specialisation argument additionally needs `k` infinite).  See the leaf's own
-  docstring.
+  *purely transcendental base change preserves "algebraically closed in"* — and
+  is now **PROVEN in positive characteristic too** (2026-07-30), so this module
+  has **no `sorry` left**.  The char-0 route does not survive the `PerfectField`
+  weakening (it applies the algebraic half over the imperfect `Fk = k(ι)`, and the
+  specialisation argument behind its crux additionally needs `k` infinite), so the
+  char-`p` branch replaces both steps:
+
+  - `RegularExtension.mem_range_map_of_monic_eval₂_eq_zero'` proves the crux by a
+    LEADING-COEFFICIENT argument against an arbitrary `MonomialOrder`, with no
+    hypothesis on the characteristic or the cardinality of `k`; and
+  - `isDomain_tensorProduct_of_isSeparable_of_algebraicClosure_eq_bot` is the
+    algebraic half with `[Algebra.IsSeparable k K]` in place of `[PerfectField k]`,
+    which is what lets it be applied over `k(ι)` — the separability coming from a
+    SEPARATING transcendence basis, i.e. from mathlib's MacLane theorem
+    `exists_isTranscendenceBasis_and_isSeparable_of_perfectField`.
+
+  See the leaf's own docstring for the audit.
 
 * `isDomain_tensorProduct_of_injective` — the transfer from the fraction field
   down to the ring, which is just flatness of a field over a field (PROVEN).
@@ -118,19 +128,30 @@ field extension `K/ℚ`.  The pieces live here:
 * `minpoly_map_eq_of_algebraicClosure_eq_bot` — minimal polynomials over `k`
   stay irreducible over `L` (PROVEN); the heart of the regularity argument
 * `linearDisjoint_of_finiteDimensional_of_algebraicClosure_eq_bot`,
-  `linearDisjoint_of_isAlgebraic_of_algebraicClosure_eq_bot` — linear
-  disjointness of an algebraic intermediate field from `L` (PROVEN)
-* `isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_eq_bot` — the
+  `linearDisjoint_of_isSeparable_of_algebraicClosure_eq_bot` — linear
+  disjointness of a separable algebraic intermediate field from `L` (PROVEN)
+* `isDomain_tensorProduct_of_isSeparable_of_algebraicClosure_eq_bot` — the
   algebraic half of regularity (PROVEN)
+* `linearDisjoint_of_finiteDimensional_of_isSeparable_of_algebraicClosure_eq_bot`,
+  `linearDisjoint_of_isSeparable_of_algebraicClosure_eq_bot`,
+  `isDomain_tensorProduct_of_isSeparable_of_algebraicClosure_eq_bot` — the same three
+  with `[Algebra.IsSeparable k _]` in place of `[PerfectField k]`, which is what makes
+  them usable over an imperfect base such as `k(ι)` in characteristic `p` (PROVEN)
 * `isDomain_tensorProduct_of_forall_adjoin_finset` — reduction to finitely
   generated subextensions of `K` (PROVEN)
 * `isDomain_tensorProduct_adjoin_finset_of_not_isAlgebraic_of_algebraicClosure_eq_bot`
-  — the transcendental half, for a finitely generated subextension
-  (PROVEN in characteristic zero; LEAF in characteristic `p`)
+  — the transcendental half, for a finitely generated subextension (PROVEN in every
+  characteristic: char 0 since 2026-07-29, char `p` since 2026-07-30)
 * `isDomain_tensorProduct_of_isTranscendenceBasis` — the transcendental half in
   full generality, `[CharZero k]` (PROVEN)
+* `isDomain_tensorProduct_of_algebraicIndependent_of_isSeparable` — the transcendental
+  half over a SEPARATING transcendence basis, in any characteristic (PROVEN)
 * `RegularExtension.algebraicClosure_eq_bot_of_mvPolynomial` — purely
-  transcendental base change preserves "algebraically closed in" (PROVEN)
+  transcendental base change preserves "algebraically closed in" (PROVEN, `k` infinite)
+* `RegularExtension.mem_range_map_of_monic_eval₂_eq_zero'`,
+  `RegularExtension.algebraicClosure_eq_bot_of_mvPolynomial'` — the same crux for a base
+  of ANY cardinality, by a monomial-order leading-coefficient argument in place of the
+  specialisation argument (PROVEN)
 * `isDomain_tensorProduct_of_algebraicClosure_eq_bot` — regular extensions
   (PROVEN over the transcendental leaf)
 * `isDomain_tensorProduct_of_injective` — descent to a subring (PROVEN)
@@ -155,6 +176,9 @@ public import Mathlib.FieldTheory.LinearDisjoint
 public import Mathlib.FieldTheory.PrimitiveElement
 public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 public import Mathlib.FieldTheory.Perfect
+-- `IntermediateField.isSeparable_adjoin_iff_isSeparable`, used to descend separability to
+-- the finite subextension in `linearDisjoint_of_isAlgebraic_of_isSeparable`.
+public import Mathlib.FieldTheory.SeparableClosure
 public import Mathlib.RingTheory.TensorProduct.Nontrivial
 public import Mathlib.Algebra.MvPolynomial.Funext
 public import Mathlib.LinearAlgebra.Dual.Lemmas
@@ -173,10 +197,16 @@ public import Mathlib.RingTheory.TensorProduct.Maps
 -- needs the `UniqueFactorizationMonoid`/`IsDiscreteValuationRing` structure of `k⟦X⟧`
 -- and `PowerSeries.isUnit_iff_constantCoeff`.
 public import Mathlib.RingTheory.PowerSeries.Inverse
+public import Mathlib.RingTheory.MvPolynomial.MonomialOrder
+public import Mathlib.FieldTheory.SeparableClosure
+public import Mathlib.FieldTheory.SeparablyGenerated
+public import Mathlib.FieldTheory.SeparableClosure
+public import Mathlib.FieldTheory.SeparablyGenerated
+public import Mathlib.FieldTheory.IntermediateField.Adjoin.Algebra
 
 @[expose] public section
 
-open scoped TensorProduct
+open scoped TensorProduct MonomialOrder
 
 /-! ### The `G`-action on a TOTAL quotient ring
 
@@ -676,18 +706,31 @@ theorem minpoly_map_eq_of_algebraicClosure_eq_bot
       (associated_of_dvd_dvd hdvd3 hdvd2)
   rw [← hq1, heq]
 
-/-- **A finite-dimensional intermediate field is linearly disjoint from `L`**
-(PROVEN).
+/-- **A finite-dimensional SEPARABLE intermediate field is linearly disjoint from `L`**
+(PROVEN; generalized from `[PerfectField k]` to `[Algebra.IsSeparable k A]` on 2026-07-30).
 
-`k` is perfect, so `A/k` is separable and has a primitive element `α`, and
-`A` has the `k`-basis `1, α, …, α^{d-1}` with `d = deg (minpoly k α)`.  By
+`A/k` is finite separable, so it has a primitive element `α`, and `A` has the `k`-basis
+`1, α, …, α^{d-1}` with `d = deg (minpoly k α)`.  By
 `minpoly_map_eq_of_algebraicClosure_eq_bot` the minimal polynomial of `α` over
 `L` still has degree `d`, so those powers stay `L`-linearly independent inside
-`M`; that is `IntermediateField.LinearDisjoint.of_basis_left`. -/
-theorem linearDisjoint_of_finiteDimensional_of_algebraicClosure_eq_bot
-    {k L M : Type*} [Field k] [PerfectField k] [Field L] [Field M] [Algebra k L] [Algebra k M]
+`M`; that is `IntermediateField.LinearDisjoint.of_basis_left`.
+
+WHY THE HYPOTHESIS MOVED FROM `k` TO `A`, and why it matters downstream.  `PerfectField k`
+entered this proof at exactly ONE point — `Field.powerBasisOfFiniteOfSeparable k A`, whose
+real requirement is `Algebra.IsSeparable k A` — and perfection of `k` is a strictly stronger
+way to get it (`PerfectField k` + `A/k` algebraic ⟹ `Algebra.IsSeparable k A`, an instance).
+The stronger form is unavailable exactly where the transcendental half needs it: the
+rational function field `k(ι)` is IMPERFECT in characteristic `p`, so
+`isDomain_tensorProduct_of_isTranscendenceBasis` — which applies the algebraic half over
+`Fk = k(ι)` — could not be run in characteristic `p` at all.  With the hypothesis on `A` it
+can, provided `K/Fk` is separable, i.e. provided `ι` is a SEPARATING transcendence basis.
+See the merge note on
+`isDomain_tensorProduct_adjoin_finset_of_not_isAlgebraic_of_algebraicClosure_eq_bot`. -/
+theorem linearDisjoint_of_finiteDimensional_of_isSeparable
+    {k L M : Type*} [Field k] [Field L] [Field M] [Algebra k L] [Algebra k M]
     [Algebra L M] [IsScalarTower k L M] (hbot : algebraicClosure k L = ⊥)
-    (A : IntermediateField k M) [FiniteDimensional k A] : A.LinearDisjoint L := by
+    (A : IntermediateField k M) [FiniteDimensional k A] [Algebra.IsSeparable k A] :
+    A.LinearDisjoint L := by
   let pb : PowerBasis k A := Field.powerBasisOfFiniteOfSeparable k A
   set β : M := (pb.gen : M) with hβ
   have hint : IsIntegral k β := (Algebra.IsIntegral.isIntegral (R := k) pb.gen).map A.val
@@ -707,19 +750,26 @@ theorem linearDisjoint_of_finiteDimensional_of_algebraicClosure_eq_bot
   rw [hval]
   exact hLI
 
-/-- **An algebraic intermediate field is linearly disjoint from `L`** (PROVEN).
+/-- **An algebraic SEPARABLE intermediate field is linearly disjoint from `L`** (PROVEN;
+generalized from `[PerfectField k]` to `[Algebra.IsSeparable k A]` on 2026-07-30).
 
 Linear independence is a statement about finite subfamilies, and every finite
 subfamily of a `k`-basis of `A` lies in the finite-dimensional intermediate
 field it generates; apply
-`linearDisjoint_of_finiteDimensional_of_algebraicClosure_eq_bot` there.  This is
+`linearDisjoint_of_finiteDimensional_of_isSeparable` there.  This is
 the colimit step of the classical argument, done at the level of linear
 independence rather than of tensor products, which avoids having to build the
-directed colimit of the `L ⊗[k] A₀`. -/
-theorem linearDisjoint_of_isAlgebraic_of_algebraicClosure_eq_bot
-    {k L M : Type*} [Field k] [PerfectField k] [Field L] [Field M] [Algebra k L] [Algebra k M]
+directed colimit of the `L ⊗[k] A₀`.
+
+Separability descends to the finite subextension for free: `A₀` is generated by finitely
+many elements of `A`, each separable over `k`, and
+`IntermediateField.isSeparable_adjoin_iff_isSeparable` turns that into
+`Algebra.IsSeparable k A₀`. -/
+theorem linearDisjoint_of_isSeparable_of_algebraicClosure_eq_bot
+    {k L M : Type*} [Field k] [Field L] [Field M] [Algebra k L] [Algebra k M]
     [Algebra L M] [IsScalarTower k L M] (hbot : algebraicClosure k L = ⊥)
-    (A : IntermediateField k M) [Algebra.IsAlgebraic k A] : A.LinearDisjoint L := by
+    (A : IntermediateField k M) [Algebra.IsAlgebraic k A] [Algebra.IsSeparable k A] :
+    A.LinearDisjoint L := by
   classical
   let a := Module.Free.chooseBasis k A
   refine IntermediateField.LinearDisjoint.of_basis_left a ?_
@@ -727,13 +777,25 @@ theorem linearDisjoint_of_isAlgebraic_of_algebraicClosure_eq_bot
   intro s g hsum i hi
   set T : Set M := (fun j => ((a j : A) : M)) '' (s : Set _) with hT
   haveI : Finite T := (s.finite_toSet.image _)
+  have hTsep : ∀ x ∈ T, IsSeparable k x := by
+    rintro _ ⟨j, -, rfl⟩
+    exact (Algebra.IsSeparable.isSeparable k (a j)).map A.val A.val.injective
   have hTint : ∀ x ∈ T, IsIntegral k x := by
     rintro _ ⟨j, -, rfl⟩
     exact (Algebra.IsIntegral.isIntegral (R := k) (a j)).map A.val
+  have hTsep : ∀ x ∈ T, IsSeparable k x := by
+    rintro _ ⟨j, -, rfl⟩
+    show Polynomial.Separable (minpoly k ((a j : A) : M))
+    rw [← IntermediateField.minpoly_eq]
+    exact Algebra.IsSeparable.isSeparable k (a j)
   set A₀ : IntermediateField k M := IntermediateField.adjoin k T with hA₀
   haveI : FiniteDimensional k A₀ := IntermediateField.finiteDimensional_adjoin hTint
+  haveI : Algebra.IsSeparable k A₀ :=
+    (IntermediateField.isSeparable_adjoin_iff_isSeparable k M).mpr hTsep
+  haveI : Algebra.IsSeparable k A₀ :=
+    (IntermediateField.isSeparable_adjoin_iff_isSeparable k (E := M)).2 hTsep
   have hld0 : A₀.LinearDisjoint L :=
-    linearDisjoint_of_finiteDimensional_of_algebraicClosure_eq_bot hbot A₀
+    linearDisjoint_of_finiteDimensional_of_isSeparable hbot A₀
   have hmem : ∀ j ∈ s, ((a j : A) : M) ∈ A₀ := fun j hj =>
     IntermediateField.subset_adjoin k T ⟨j, hj, rfl⟩
   let b : {j // j ∈ s} → A₀ := fun j => ⟨((a j.1 : A) : M), hmem j.1 j.2⟩
@@ -749,29 +811,62 @@ theorem linearDisjoint_of_isAlgebraic_of_algebraicClosure_eq_bot
     exact hsum
   exact Fintype.linearIndependent_iff.mp hbL' (fun j => g j.1) hsum' ⟨i, hi⟩
 
-/-- **The algebraic half of regularity** (PROVEN).
 
-If `k` is algebraically closed in `L` (characteristic zero) and `K/k` is
-algebraic, then `L ⊗[k] K` is a domain.  Embed `K` into an algebraic closure `M`
-of `L` (possible because `K/k` is algebraic), apply
-`linearDisjoint_of_isAlgebraic_of_algebraicClosure_eq_bot` to the image, and
-conclude with `IntermediateField.LinearDisjoint.isDomain'`. -/
-theorem isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_eq_bot
-    (k L : Type*) [Field k] [PerfectField k] [Field L] [Algebra k L]
+/-! ### The algebraic half for a SEPARABLE extension
+
+`PerfectField k` enters the three theorems above only to supply a primitive element, i.e.
+only through the *separability* of the algebraic extension being tensored in.  Taking that
+separability as a hypothesis instead is what makes the algebraic half usable over an
+IMPERFECT base — and the base that matters is a rational function field `k(ι)` in
+characteristic `p`, which is never perfect.  That is one of the two obstructions that kept
+`isDomain_tensorProduct_adjoin_finset_of_not_isAlgebraic_of_algebraicClosure_eq_bot` open in
+characteristic `p` (PROVEN 2026-07-30); the other was `Infinite k` in the crux, removed in
+`RegularExtension.mem_range_map_of_monic_eval₂_eq_zero'`.
+
+The three statements below are the `[PerfectField k]` ones with `[PerfectField k]` traded for
+`[Algebra.IsSeparable k _]`.  They are strictly more general (over a perfect base every
+algebraic extension is separable), and the older ones are kept unchanged because their call
+sites — and the characteristic-zero route through
+`isDomain_tensorProduct_of_isTranscendenceBasis` — supply perfection rather than
+separability. -/
+
+/-- **The algebraic half of regularity, for a SEPARABLE extension `K/k`** (PROVEN).
+
+If `k` is algebraically closed in `L` and `K/k` is separable algebraic, then `L ⊗[k] K` is a
+domain.  Same proof as `isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_eq_bot`, with
+`AlgEquiv.Algebra.isSeparable` transporting separability to the image of `K` in an algebraic
+closure of `L`. -/
+theorem isDomain_tensorProduct_of_isSeparable_of_algebraicClosure_eq_bot
+    (k L : Type*) [Field k] [Field L] [Algebra k L]
     (hbot : algebraicClosure k L = ⊥)
-    (K : Type*) [Field K] [Algebra k K] [Algebra.IsAlgebraic k K] :
+    (K : Type*) [Field K] [Algebra k K] [Algebra.IsSeparable k K] :
     IsDomain (L ⊗[k] K) := by
   set M := AlgebraicClosure L with hM
   let fa : K →ₐ[k] M := IsAlgClosed.lift
-  haveI : Algebra.IsAlgebraic k fa.fieldRange := (AlgEquiv.ofInjectiveField fa).isAlgebraic
+  haveI : Algebra.IsSeparable k fa.fieldRange :=
+    AlgEquiv.Algebra.isSeparable (AlgEquiv.ofInjectiveField fa)
   have hld : (fa.fieldRange).LinearDisjoint L :=
-    linearDisjoint_of_isAlgebraic_of_algebraicClosure_eq_bot hbot _
+    linearDisjoint_of_isSeparable_of_algebraicClosure_eq_bot hbot _
   have hld2 : (fa.fieldRange).LinearDisjoint ((IsScalarTower.toAlgHom k L M).fieldRange) := by
     rw [IntermediateField.linearDisjoint_iff', AlgHom.fieldRange_toSubalgebra]
     rw [IntermediateField.linearDisjoint_iff] at hld
     exact hld
   haveI : IsDomain (K ⊗[k] L) := IntermediateField.LinearDisjoint.isDomain' hld2
   exact (Algebra.TensorProduct.comm k L K).toMulEquiv.isDomain
+
+/-- **The algebraic half of regularity** (PROVEN).
+
+If `k` is PERFECT and algebraically closed in `L`, and `K/k` is algebraic, then `L ⊗[k] K`
+is a domain.  Over a perfect base every algebraic extension is separable
+(`Algebra.IsSeparable` is an instance there), so this is
+`isDomain_tensorProduct_of_isSeparable_of_algebraicClosure_eq_bot` with its hypothesis
+discharged. -/
+theorem isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_eq_bot
+    (k L : Type*) [Field k] [PerfectField k] [Field L] [Algebra k L]
+    (hbot : algebraicClosure k L = ⊥)
+    (K : Type*) [Field K] [Algebra k K] [Algebra.IsAlgebraic k K] :
+    IsDomain (L ⊗[k] K) :=
+  isDomain_tensorProduct_of_isSeparable_of_algebraicClosure_eq_bot k L hbot K
 
 set_option maxSynthPendingDepth 2 in
 /-- **Being a domain after `⊗[k] K` is detected on the finitely generated
@@ -1083,6 +1178,269 @@ theorem algebraicClosure_eq_bot_of_mvPolynomial
   rw [mul_comm]
   exact hap
 
+/-! #### The same integral closure statement WITHOUT `Infinite k`, by a monomial order
+
+The specialisation argument above needs `k` infinite, and that is a real obstruction over a
+finite field: `X^q - X` vanishes at every `k`-point without being zero.  This section replaces
+it by a LEADING-COEFFICIENT argument, which is characteristic-free and cardinality-free, and
+therefore covers the `𝔽_q` case that the modular-curve consumer over `ZMod p` needs.
+
+Fix any monomial order `mo` on `σ` (mathlib's `MonomialOrder`, e.g. `MonomialOrder.lex` for a
+finite `σ`).  Let `β ∈ L[σ]` satisfy a monic equation `∑ᵢ aᵢ βⁱ = 0` with `aᵢ ∈ k[σ]`, and let
+`M` be the largest of the monomials `deg aᵢ + i · deg β`.  Reading off the coefficient of `M`
+kills every term of smaller degree and leaves
+
+  `∑_{i ∈ T} lc(aᵢ) · lc(β)ⁱ = 0`,   `T = {i : deg aᵢ + i · deg β = M} ≠ ∅`,
+
+a NONZERO polynomial relation for `lc β` over `k` (nonzero because `lc aᵢ ≠ 0` for `i ∈ T`, and
+`T` contains the index at which the maximum is attained, chosen among the `i` with `aᵢ ≠ 0`).
+So `lc β` is algebraic over `k`, hence lies in `k`; subtracting its leading term from `β`
+leaves an element that is still integral over `k[σ]` and has strictly smaller support, and an
+induction on the size of the support finishes.
+
+*The check that would refute this*: it must not prove `MvPolynomial σ k` integrally closed in
+`MvPolynomial σ L` for an `L` in which `k` is NOT algebraically closed — and indeed `hbot` is
+used exactly once, to put the algebraic element `lc β` into `k`.  Read with `L = k(b)` for `b`
+transcendental and `σ = {t}`: `β = b·t` is not integral over `k[t]`, and the argument says why
+— a monic equation for it would make `b` algebraic over `k`. -/
+
+/-- Monomial degree is unchanged by a coefficientwise field extension (the support is). -/
+theorem degree_map_eq [Field k] [Field L] [Algebra k L] (mo : MonomialOrder σ)
+    (a : MvPolynomial σ k) :
+    mo.degree (MvPolynomial.map (algebraMap k L) a) = mo.degree a := by
+  classical
+  unfold MonomialOrder.degree
+  rw [MvPolynomial.support_map_of_injective a (algebraMap k L).injective]
+
+/-- Leading coefficients commute with a coefficientwise field extension. -/
+theorem leadingCoeff_map_eq [Field k] [Field L] [Algebra k L] (mo : MonomialOrder σ)
+    (a : MvPolynomial σ k) :
+    mo.leadingCoeff (MvPolynomial.map (algebraMap k L) a)
+      = algebraMap k L (mo.leadingCoeff a) := by
+  unfold MonomialOrder.leadingCoeff
+  rw [degree_map_eq mo a, MvPolynomial.coeff_map]
+
+/-- **Coefficient extraction at the maximal monomial degree** (PROVEN).  If `M` bounds
+`deg (A i) + i · deg β` for every `i` with `A i ≠ 0`, then the coefficient of `M` in
+`∑ i ∈ s, A i * β ^ i` is `∑ lc (A i) * lc β ^ i` over the indices attaining `M`: the other
+terms have monomial degree `≺ M` and so do not contribute. -/
+theorem coeff_sum_mul_pow {R : Type*} [CommRing R] [DecidableEq (σ →₀ ℕ)]
+    (mo : MonomialOrder σ)
+    (β : MvPolynomial σ R) (A : ℕ → MvPolynomial σ R) (s : Finset ℕ) (M : σ →₀ ℕ)
+    (hmax : ∀ i ∈ s, A i ≠ 0 → mo.degree (A i) + i • mo.degree β ≼[mo] M) :
+    MvPolynomial.coeff M (∑ i ∈ s, A i * β ^ i)
+      = ∑ i ∈ s.filter (fun i => mo.degree (A i) + i • mo.degree β = M),
+          mo.leadingCoeff (A i) * mo.leadingCoeff β ^ i := by
+  classical
+  rw [MvPolynomial.coeff_sum, Finset.sum_filter]
+  refine Finset.sum_congr rfl fun i hi => ?_
+  by_cases hdi : mo.degree (A i) + i • mo.degree β = M
+  · rw [if_pos hdi, ← hdi, mo.coeff_mul_of_add_of_degree_le le_rfl (mo.degree_pow_le i),
+      MonomialOrder.coeff_pow_nsmul_degree, ← MonomialOrder.leadingCoeff]
+  · rw [if_neg hdi]
+    by_cases hA : A i = 0
+    · rw [hA, zero_mul, MvPolynomial.coeff_zero]
+    have h1 : mo.degree (A i * β ^ i) ≼[mo] mo.degree (A i) + i • mo.degree β := by
+      refine le_trans mo.degree_mul_le ?_
+      rw [map_add, map_add]
+      exact add_le_add le_rfl (mo.degree_pow_le (f := β) i)
+    have h2 : mo.degree (A i) + i • mo.degree β ≺[mo] M :=
+      lt_of_le_of_ne (hmax i hi hA) fun h => hdi (mo.toSyn.injective h)
+    exact mo.coeff_eq_zero_of_lt (lt_of_le_of_lt h1 h2)
+
+/-- **The leading coefficient of an integral element is ALGEBRAIC over the base field**
+(PROVEN) — the step that replaces the specialisation argument, and the only place where a
+monomial order is used.
+
+If `β : MvPolynomial σ L` satisfies a monic equation over `MvPolynomial σ k`, then
+`mo.leadingCoeff β` is algebraic over `k`, for every monomial order `mo`.  No hypothesis on
+`k` beyond being a field: in particular `k` may be finite. -/
+theorem isAlgebraic_leadingCoeff_of_monic_eval₂_eq_zero [Field k] [Field L] [Algebra k L]
+    (mo : MonomialOrder σ)
+    (β : MvPolynomial σ L) (p : Polynomial (MvPolynomial σ k)) (hp : p.Monic)
+    (hz : Polynomial.eval₂ (MvPolynomial.map (algebraMap k L)) β p = 0) :
+    IsAlgebraic k (mo.leadingCoeff β) := by
+  classical
+  have hsum : ∑ i ∈ Finset.range (p.natDegree + 1),
+      MvPolynomial.map (algebraMap k L) (p.coeff i) * β ^ i = 0 := by
+    rw [← hz, Polynomial.eval₂_eq_sum_range]
+  have hnT : p.natDegree ∈ (Finset.range (p.natDegree + 1)).filter (fun i => p.coeff i ≠ 0) := by
+    refine Finset.mem_filter.mpr ⟨Finset.self_mem_range_succ _, ?_⟩
+    rw [hp.coeff_natDegree]
+    exact one_ne_zero
+  obtain ⟨i₁, hi₁mem, hi₁⟩ := Finset.exists_mem_eq_sup'
+    (s := (Finset.range (p.natDegree + 1)).filter (fun i => p.coeff i ≠ 0)) ⟨_, hnT⟩
+    (fun i => mo.toSyn (mo.degree (MvPolynomial.map (algebraMap k L) (p.coeff i))
+      + i • mo.degree β))
+  have hi₁range : i₁ ∈ Finset.range (p.natDegree + 1) := (Finset.mem_filter.mp hi₁mem).1
+  have hi₁ne : p.coeff i₁ ≠ 0 := (Finset.mem_filter.mp hi₁mem).2
+  have hmax : ∀ i ∈ Finset.range (p.natDegree + 1),
+      MvPolynomial.map (algebraMap k L) (p.coeff i) ≠ 0 →
+      mo.degree (MvPolynomial.map (algebraMap k L) (p.coeff i)) + i • mo.degree β ≼[mo]
+        mo.degree (MvPolynomial.map (algebraMap k L) (p.coeff i₁)) + i₁ • mo.degree β := by
+    intro i hi hne
+    have hne' : p.coeff i ≠ 0 := fun h => hne (by rw [h, map_zero])
+    have := Finset.le_sup' (f := fun i => mo.toSyn
+      (mo.degree (MvPolynomial.map (algebraMap k L) (p.coeff i)) + i • mo.degree β))
+      (s := (Finset.range (p.natDegree + 1)).filter (fun i => p.coeff i ≠ 0))
+      (Finset.mem_filter.mpr ⟨hi, hne'⟩)
+    rw [hi₁] at this
+    exact this
+  have hzero := coeff_sum_mul_pow mo β (fun i => MvPolynomial.map (algebraMap k L) (p.coeff i))
+    (Finset.range (p.natDegree + 1))
+    (mo.degree (MvPolynomial.map (algebraMap k L) (p.coeff i₁)) + i₁ • mo.degree β) hmax
+  rw [hsum, MvPolynomial.coeff_zero] at hzero
+  refine ⟨∑ i ∈ (Finset.range (p.natDegree + 1)).filter
+      (fun i => mo.degree (MvPolynomial.map (algebraMap k L) (p.coeff i)) + i • mo.degree β
+        = mo.degree (MvPolynomial.map (algebraMap k L) (p.coeff i₁)) + i₁ • mo.degree β),
+    Polynomial.monomial i (mo.leadingCoeff (p.coeff i)), ?_, ?_⟩
+  · have hi₁filter : i₁ ∈ (Finset.range (p.natDegree + 1)).filter
+        (fun i => mo.degree (MvPolynomial.map (algebraMap k L) (p.coeff i)) + i • mo.degree β
+          = mo.degree (MvPolynomial.map (algebraMap k L) (p.coeff i₁)) + i₁ • mo.degree β) :=
+      Finset.mem_filter.mpr ⟨hi₁range, rfl⟩
+    intro hQ
+    have hc := congrArg (fun q : Polynomial k => q.coeff i₁) hQ
+    simp only [Polynomial.finsetSum_coeff, Polynomial.coeff_zero] at hc
+    rw [Finset.sum_eq_single_of_mem i₁ hi₁filter
+      (fun j _ hj => by rw [Polynomial.coeff_monomial, if_neg hj]),
+      Polynomial.coeff_monomial, if_pos rfl] at hc
+    exact (MonomialOrder.leadingCoeff_ne_zero_iff.mpr hi₁ne) hc
+  · rw [map_sum]
+    refine Eq.trans (Finset.sum_congr rfl fun i _ => ?_) hzero.symm
+    rw [Polynomial.aeval_monomial, leadingCoeff_map_eq mo (p.coeff i)]
+
+/-- **`MvPolynomial σ k` is integrally closed in `MvPolynomial σ L`** when `k` is algebraically
+closed in `L` — with NO hypothesis on the cardinality of `k` (PROVEN 2026-07-30).
+
+This is `mem_range_map_of_monic_eval₂_eq_zero` with `[Infinite k]` traded for a monomial order
+on `σ`.  Induction on the size of the support of `β`: the leading coefficient is algebraic over
+`k` by `isAlgebraic_leadingCoeff_of_monic_eval₂_eq_zero`, hence lies in `k` by `hbot`, so the
+leading term is defined over `k`; subtracting it leaves an element integral over
+`MvPolynomial σ k` with strictly smaller support. -/
+theorem mem_range_map_of_monic_eval₂_eq_zero' [Field k] [Field L] [Algebra k L]
+    (mo : MonomialOrder σ)
+    (hbot : ∀ y : L, IsIntegral k y → y ∈ Set.range (algebraMap k L))
+    (β : MvPolynomial σ L) (p : Polynomial (MvPolynomial σ k)) (hp : p.Monic)
+    (hz : Polynomial.eval₂ (MvPolynomial.map (algebraMap k L)) β p = 0) :
+    β ∈ Set.range (MvPolynomial.map (algebraMap k L)) := by
+  classical
+  letI : Algebra (MvPolynomial σ k) (MvPolynomial σ L) := MvPolynomial.algebraMvPolynomial
+  have halg : (algebraMap (MvPolynomial σ k) (MvPolynomial σ L) : _ →+* _)
+      = MvPolynomial.map (algebraMap k L) := RingHom.algebraMap_toAlgebra _
+  suffices H : ∀ (n : ℕ) (γ : MvPolynomial σ L), γ.support.card ≤ n →
+      IsIntegral (MvPolynomial σ k) γ →
+      γ ∈ Set.range (MvPolynomial.map (algebraMap k L)) by
+    exact H β.support.card β le_rfl ⟨p, hp, by rw [halg]; exact hz⟩
+  intro n
+  induction n with
+  | zero =>
+      intro γ hcard _
+      have hγ : γ = 0 := by
+        rw [← MvPolynomial.support_eq_empty]
+        exact Finset.card_eq_zero.mp (Nat.le_zero.mp hcard)
+      exact ⟨0, by rw [hγ, map_zero]⟩
+  | succ n ih =>
+      intro γ hcard hint
+      by_cases hγ : γ = 0
+      · exact ⟨0, by rw [hγ, map_zero]⟩
+      obtain ⟨q, hq, hqz⟩ := id hint
+      have hqz' : Polynomial.eval₂ (MvPolynomial.map (algebraMap k L)) γ q = 0 := by
+        rw [← halg]; exact hqz
+      obtain ⟨c, hc⟩ := hbot _
+        (isAlgebraic_leadingCoeff_of_monic_eval₂_eq_zero mo γ q hq hqz').isIntegral
+      have hmono : MvPolynomial.monomial (mo.degree γ) (mo.leadingCoeff γ)
+          = MvPolynomial.map (algebraMap k L) (MvPolynomial.monomial (mo.degree γ) c) := by
+        rw [MvPolynomial.map_monomial, hc]
+      have hintmono : IsIntegral (MvPolynomial σ k)
+          (MvPolynomial.monomial (mo.degree γ) (mo.leadingCoeff γ)) := by
+        rw [hmono, ← halg]
+        exact isIntegral_algebraMap
+      have hint' : IsIntegral (MvPolynomial σ k)
+          (γ - MvPolynomial.monomial (mo.degree γ) (mo.leadingCoeff γ)) :=
+        hint.sub hintmono
+      have hcoeffeq : MvPolynomial.coeff (mo.degree γ)
+          (γ - MvPolynomial.monomial (mo.degree γ) (mo.leadingCoeff γ)) = 0 := by
+        rw [MvPolynomial.coeff_sub, MvPolynomial.coeff_monomial, if_pos rfl,
+          ← MonomialOrder.leadingCoeff, sub_self]
+      have hcoeffne : ∀ m, m ≠ mo.degree γ → MvPolynomial.coeff m
+          (γ - MvPolynomial.monomial (mo.degree γ) (mo.leadingCoeff γ))
+          = MvPolynomial.coeff m γ := by
+        intro m hm
+        rw [MvPolynomial.coeff_sub, MvPolynomial.coeff_monomial,
+          if_neg (fun h : mo.degree γ = m => hm h.symm), sub_zero]
+      have hsupp : (γ - MvPolynomial.monomial (mo.degree γ) (mo.leadingCoeff γ)).support
+          ⊆ γ.support.erase (mo.degree γ) := by
+        intro m hm
+        rw [MvPolynomial.mem_support_iff] at hm
+        refine Finset.mem_erase.mpr ⟨fun hmeq => hm (hmeq ▸ hcoeffeq), ?_⟩
+        refine MvPolynomial.mem_support_iff.mpr ?_
+        rw [← hcoeffne m (fun hmeq => hm (hmeq ▸ hcoeffeq))]
+        exact hm
+      have hcard' : (γ - MvPolynomial.monomial (mo.degree γ) (mo.leadingCoeff γ)).support.card
+          ≤ n := by
+        have h1 := Finset.card_le_card hsupp
+        rw [Finset.card_erase_of_mem (mo.degree_mem_support hγ)] at h1
+        have h2 : 1 ≤ γ.support.card :=
+          Finset.card_pos.mpr ⟨_, mo.degree_mem_support hγ⟩
+        omega
+      obtain ⟨δ, hδ⟩ := ih _ hcard' hint'
+      refine ⟨δ + MvPolynomial.monomial (mo.degree γ) c, ?_⟩
+      rw [map_add, hδ, ← hmono]
+      ring
+
+/-- **PURELY TRANSCENDENTAL BASE CHANGE PRESERVES "ALGEBRAICALLY CLOSED IN", in ANY
+characteristic and for a base of ANY cardinality** (PROVEN 2026-07-30).
+
+`algebraicClosure_eq_bot_of_mvPolynomial` with `[Infinite k]` traded for a monomial order on
+`σ`; the proof is the same, over `mem_range_map_of_monic_eval₂_eq_zero'`. -/
+theorem algebraicClosure_eq_bot_of_mvPolynomial'
+    [Field k] [Field L] [Algebra k L] (mo : MonomialOrder σ)
+    (hbot : ∀ y : L, IsIntegral k y → y ∈ Set.range (algebraMap k L))
+    [Field Fk] [Field FL]
+    [Algebra (MvPolynomial σ k) (MvPolynomial σ L)]
+    (hPQ : ∀ q : MvPolynomial σ k, algebraMap (MvPolynomial σ k) (MvPolynomial σ L) q
+      = MvPolynomial.map (algebraMap k L) q)
+    [Algebra (MvPolynomial σ k) Fk] [IsFractionRing (MvPolynomial σ k) Fk]
+    [Algebra (MvPolynomial σ L) FL] [IsFractionRing (MvPolynomial σ L) FL]
+    [Algebra Fk FL] [Algebra (MvPolynomial σ k) FL]
+    [IsScalarTower (MvPolynomial σ k) Fk FL]
+    [IsScalarTower (MvPolynomial σ k) (MvPolynomial σ L) FL] :
+    algebraicClosure Fk FL = ⊥ := by
+  refine le_antisymm (fun α hα => ?_) bot_le
+  rw [mem_algebraicClosure_iff'] at hα
+  have halgP : IsAlgebraic (MvPolynomial σ k) α :=
+    (IsFractionRing.isAlgebraic_iff (MvPolynomial σ k) Fk FL).mpr hα.isAlgebraic
+  obtain ⟨c, hc0, hcint⟩ := halgP.exists_integral_multiple
+  have h1 : IsIntegral (MvPolynomial σ L) (c • α) := hcint.tower_top
+  have hinjQFL : Function.Injective (algebraMap (MvPolynomial σ L) FL) :=
+    IsFractionRing.injective _ _
+  obtain ⟨β, hβ⟩ := IsIntegrallyClosed.isIntegral_iff.mp h1
+  have h2 : IsIntegral (MvPolynomial σ k) β := by
+    refine (isIntegral_algebraMap_iff hinjQFL).mp ?_
+    rw [hβ]; exact hcint
+  obtain ⟨p, hp, hpz⟩ := h2
+  have hpz' : Polynomial.eval₂ (MvPolynomial.map (algebraMap k L)) β p = 0 := by
+    rw [← hpz]
+    exact Polynomial.eval₂_congr (RingHom.ext fun q => (hPQ q).symm) rfl rfl
+  obtain ⟨γ, hγ⟩ := mem_range_map_of_monic_eval₂_eq_zero' mo hbot β p hp hpz'
+  have h3 : algebraMap (MvPolynomial σ k) FL γ = c • α := by
+    rw [IsScalarTower.algebraMap_apply (MvPolynomial σ k) (MvPolynomial σ L) FL, hPQ, hγ, hβ]
+  rw [IntermediateField.mem_bot]
+  have hcmem : c ∈ nonZeroDivisors (MvPolynomial σ k) := mem_nonZeroDivisors_of_ne_zero hc0
+  have hcne : algebraMap (MvPolynomial σ k) FL c ≠ 0 := by
+    rw [IsScalarTower.algebraMap_apply (MvPolynomial σ k) Fk FL]
+    have h1' : algebraMap (MvPolynomial σ k) Fk c ≠ 0 := by
+      simpa using (IsFractionRing.to_map_eq_zero_iff (R := MvPolynomial σ k) (K := Fk)).not.mpr hc0
+    intro h
+    exact h1' ((algebraMap Fk FL).injective (by rw [h, map_zero]))
+  refine ⟨IsLocalization.mk' Fk γ ⟨c, hcmem⟩, ?_⟩
+  have hap := congrArg (algebraMap Fk FL) (IsLocalization.mk'_spec Fk γ ⟨c, hcmem⟩)
+  rw [map_mul, ← IsScalarTower.algebraMap_apply, ← IsScalarTower.algebraMap_apply, h3,
+    Algebra.smul_def] at hap
+  refine mul_left_cancel₀ hcne ?_
+  rw [mul_comm]
+  exact hap
+
 /-! #### Plumbing: `L` is linearly disjoint from `k(σ)` over `k` inside `L(σ)` -/
 
 /-- `MvPolynomial σ k ⊗[k] L ≃ MvPolynomial σ L`, as a `MvPolynomial σ k`-algebra
@@ -1220,37 +1578,48 @@ theorem injective_lift_fractionRing_mvPolynomial [Field k] [Field L] [Algebra k 
 end RegularExtension
 
 /-- **A field extension in which the base field is algebraically closed is regular —
-the general case, in characteristic zero** (PROVEN 2026-07-29).
+the general case, over an INFINITE base with a SEPARATING transcendence basis**
+(PROVEN 2026-07-29; hypotheses weakened from `[CharZero k]` 2026-07-31).
 
-`[CharZero k]` is load-bearing here and cannot be weakened to `[PerfectField k]`: the
-proof applies the algebraic half over the rational function field `Fk = k(ι)`, which is
-imperfect in characteristic `p`, and the specialisation argument behind
-`RegularExtension.algebraicClosure_eq_bot_of_mvPolynomial` needs `Infinite k`.
+`k` is infinite and algebraically closed in `L`; `K/k` is an ARBITRARY field extension,
+presented by a transcendence basis `x : ι → K` over which `K` is SEPARABLE.  Then
+`L ⊗[k] K` is a domain.
 
-`k` has characteristic zero and is algebraically closed in `L`; `K/k` is an ARBITRARY
-field extension, presented by a transcendence basis `x : ι → K`.  Then `L ⊗[k] K` is a
-domain.
+The two places characteristic zero used to enter are now exactly the two hypotheses:
+
+* `Infinite k` is what the specialisation argument behind
+  `RegularExtension.algebraicClosure_eq_bot_of_mvPolynomial` needs (over `𝔽_q` the
+  polynomial `X^q - X` vanishes at every `k`-point without being zero);
+* `hsep` replaces `PerfectField Fk` for the algebraic half applied over the rational
+  function field `Fk = k(ι)`, which is imperfect in characteristic `p`.  A separating
+  transcendence basis exists whenever `k` is perfect and `K/k` is finitely generated
+  (mathlib's `exists_isTranscendenceBasis_and_isSeparable_of_perfectField`), which is
+  how `isDomain_tensorProduct_of_infinite_of_algebraicClosure_eq_bot` below supplies it.
+
+`hsep` is stated over the intermediate field `k(range x) ⊆ K`, and transported to `Fk`
+inside the proof: `Fk → K` is injective with `k(range x)` inside its image, so `K` is
+separable over that image, hence over `Fk` (`Algebra.isSeparable_tower_top_of_isSeparable`).
 
 The argument, with `P := k[ι]`, `Q := L[ι]`, `Fk := k(ι)`, `FL := L(ι)`:
 
-* `K` is algebraic over `Fk` (`IsTranscendenceBasis`), and `Fk` is algebraically closed
+* `K` is separable algebraic over `Fk` (`hsep`), and `Fk` is algebraically closed
   in `FL` (`RegularExtension.algebraicClosure_eq_bot_of_mvPolynomial`, the one new piece
   of mathematics), so `FL ⊗[Fk] K` is a domain by the ALGEBRAIC case
-  `isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_eq_bot`;
+  `isDomain_tensorProduct_of_isSeparable_of_algebraicClosure_eq_bot`;
 * `Fk ⊗[k] L → FL` is injective
   (`RegularExtension.injective_lift_fractionRing_mvPolynomial`: `Fk ⊗[k] L` is the
   localization of `Q` at the nonzero elements of `P`), so `(Fk ⊗[k] L) ⊗[Fk] K` is a
   domain by `isDomain_tensorProduct_of_injective`;
 * and `(Fk ⊗[k] L) ⊗[Fk] K ≅ K ⊗[k] L ≅ L ⊗[k] K` by base-change cancellation.
 
-No transcendence basis of `K` needs to be finite, and no separating transcendence basis
-is needed: the specialisation argument behind the crux replaces both. -/
+No transcendence basis of `K` needs to be finite; in characteristic zero every
+transcendence basis is separating, so `hsep` is then automatic. -/
 theorem isDomain_tensorProduct_of_isTranscendenceBasis
-    {k L K : Type*} [Field k] [CharZero k] [Field L] [Algebra k L] [Field K] [Algebra k K]
+    {k L K : Type*} [Field k] [Infinite k] [Field L] [Algebra k L] [Field K] [Algebra k K]
     (hbot : algebraicClosure k L = ⊥)
-    {ι : Type*} {x : ι → K} (hx : IsTranscendenceBasis k x) :
+    {ι : Type*} {x : ι → K} (hx : IsTranscendenceBasis k x)
+    (hsep : Algebra.IsSeparable ↥(IntermediateField.adjoin k (Set.range x)) K) :
     IsDomain (L ⊗[k] K) := by
-  haveI : Infinite k := inferInstance
   letI aPkPL : Algebra (MvPolynomial ι k) (MvPolynomial ι L) :=
     MvPolynomial.algebraMvPolynomial
   have hPQ : ∀ q : MvPolynomial ι k,
@@ -1298,22 +1667,41 @@ theorem isDomain_tensorProduct_of_isTranscendenceBasis
     rw [IsScalarTower.algebraMap_apply k (MvPolynomial ι k) K,
       IsScalarTower.algebraMap_apply (MvPolynomial ι k) (FractionRing (MvPolynomial ι k)) K,
       ← IsScalarTower.algebraMap_apply k (MvPolynomial ι k) (FractionRing (MvPolynomial ι k))]
-  haveI algPkK : Algebra.IsAlgebraic (MvPolynomial ι k) K := by
-    haveI := hx.isAlgebraic
-    refine Algebra.IsAlgebraic.of_ringHom_of_comp_eq (R := MvPolynomial ι k) (A := K)
-      (S := ↥(Algebra.adjoin k (Set.range x))) (B := K)
-      hx.1.aevalEquiv.toAlgHom.toRingHom (RingHom.id K)
-      hx.1.aevalEquiv.surjective Function.injective_id (RingHom.ext fun p => ?_)
-    simp [RingHom.algebraMap_toAlgebra, hx.1.algebraMap_aevalEquiv p]
-  haveI algFkK : Algebra.IsAlgebraic (FractionRing (MvPolynomial ι k)) K :=
-    Algebra.IsAlgebraic.extendScalars (R := MvPolynomial ι k)
-      (S := FractionRing (MvPolynomial ι k)) (A := K)
-      (IsFractionRing.injective (MvPolynomial ι k) (FractionRing (MvPolynomial ι k)))
-  haveI : CharZero (FractionRing (MvPolynomial ι k)) :=
-    charZero_of_injective_algebraMap
-      (algebraMap k (FractionRing (MvPolynomial ι k))).injective
+  -- `K` is separable over `Fk = k(ι)`, because the image of `Fk` in `K` contains
+  -- `k(range x)`, over which `K` is separable by `hsep`
+  haveI sepFkK : Algebra.IsSeparable (FractionRing (MvPolynomial ι k)) K := by
+    haveI := hsep
+    set f : (FractionRing (MvPolynomial ι k)) →ₐ[k] K :=
+      IsScalarTower.toAlgHom k (FractionRing (MvPolynomial ι k)) K with hf
+    have hEle : IntermediateField.adjoin k (Set.range x) ≤ f.fieldRange := by
+      rw [IntermediateField.adjoin_le_iff]
+      rintro _ ⟨i, rfl⟩
+      refine ⟨algebraMap (MvPolynomial ι k) (FractionRing (MvPolynomial ι k))
+        (MvPolynomial.X i), ?_⟩
+      show algebraMap (FractionRing (MvPolynomial ι k)) K _ = _
+      rw [← IsScalarTower.algebraMap_apply (MvPolynomial ι k)
+        (FractionRing (MvPolynomial ι k)) K]
+      simp [RingHom.algebraMap_toAlgebra]
+    let g : ↥(IntermediateField.adjoin k (Set.range x)) →ₐ[k]
+        (FractionRing (MvPolynomial ι k)) :=
+      (AlgEquiv.ofInjectiveField f).symm.toAlgHom.comp (IntermediateField.inclusion hEle)
+    letI : Algebra ↥(IntermediateField.adjoin k (Set.range x))
+        (FractionRing (MvPolynomial ι k)) := g.toRingHom.toAlgebra
+    haveI : IsScalarTower ↥(IntermediateField.adjoin k (Set.range x))
+        (FractionRing (MvPolynomial ι k)) K := by
+      refine IsScalarTower.of_algebraMap_eq (fun e => ?_)
+      show (e : K) = algebraMap (FractionRing (MvPolynomial ι k)) K (g e)
+      have : f (g e) = (e : K) := by
+        show ((AlgEquiv.ofInjectiveField f)
+          ((AlgEquiv.ofInjectiveField f).symm (IntermediateField.inclusion hEle e)) : K) = _
+        rw [AlgEquiv.apply_symm_apply]
+        rfl
+      exact this.symm
+    exact Algebra.isSeparable_tower_top_of_isSeparable
+      (F := ↥(IntermediateField.adjoin k (Set.range x)))
+      (L := FractionRing (MvPolynomial ι k)) (E := K)
   haveI hD : IsDomain ((FractionRing (MvPolynomial ι L)) ⊗[FractionRing (MvPolynomial ι k)] K) :=
-    isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_eq_bot
+    isDomain_tensorProduct_of_isSeparable_of_algebraicClosure_eq_bot
       (FractionRing (MvPolynomial ι k)) (FractionRing (MvPolynomial ι L)) hcrux K
   have hmu := RegularExtension.injective_lift_fractionRing_mvPolynomial (k := k) (L := L) (σ := ι)
       (Fk := FractionRing (MvPolynomial ι k)) (FL := FractionRing (MvPolynomial ι L)) hPQ
@@ -1332,12 +1720,148 @@ theorem isDomain_tensorProduct_of_isTranscendenceBasis
   exact (Algebra.TensorProduct.comm k L K).toMulEquiv.isDomain
 
 
-/-- **The transcendental half of regularity, for a finitely generated subextension**
-(**PROVEN 2026-07-29**; opened as a sorry leaf 2026-07-27).
+/-- **A field extension in which the base field is algebraically closed is regular — the case
+of a SEPARATING transcendence basis, in ANY characteristic** (PROVEN 2026-07-30).
 
-`k` is algebraically closed in `L`, the characteristic is zero, `S` is a finite subset
-of a field extension `K/k`, and the subfield `k(S)` it generates is not algebraic over
-`k`.  Then `L ⊗[k] k(S)` is a domain.
+`k` is algebraically closed in `L`; `x : ι → K` is algebraically independent over `k` and `K` is
+SEPARABLE over the subfield `k(x)` it generates (a *separating* transcendence basis — no
+maximality is needed, only separability of what is left).  Then `L ⊗[k] K` is a domain.
+
+This is `isDomain_tensorProduct_of_isTranscendenceBasis` with characteristic zero removed at
+both of the places it entered:
+
+* the crux is `RegularExtension.algebraicClosure_eq_bot_of_mvPolynomial'`, whose
+  leading-coefficient argument needs no `Infinite k`; and
+* the algebraic half over `Fk = k(ι)` is
+  `isDomain_tensorProduct_of_isSeparable_of_algebraicClosure_eq_bot`, which asks for
+  separability of `K/Fk` rather than perfection of `Fk` — and `k(ι)` is never perfect in
+  characteristic `p`.
+
+`mo` is any monomial order on `ι`; for a finite `ι` take `MonomialOrder.lex`.  Its only role is
+to pick out a leading coefficient, and the conclusion does not depend on the choice.
+
+`Algebra.IsSeparable ↥(IntermediateField.adjoin k (Set.range x)) K` is supplied by mathlib's
+`exists_isTranscendenceBasis_and_isSeparable_of_perfectField` (MacLane: a finitely generated
+extension of a PERFECT field is separably generated) — which is where the perfection of `k`
+that this development really needs is spent. -/
+theorem isDomain_tensorProduct_of_algebraicIndependent_of_isSeparable
+    {k L K : Type*} [Field k] [Field L] [Algebra k L] [Field K] [Algebra k K]
+    (hbot : algebraicClosure k L = ⊥)
+    {ι : Type*} (mo : MonomialOrder ι) {x : ι → K} (hai : AlgebraicIndependent k x)
+    [Algebra.IsSeparable ↥(IntermediateField.adjoin k (Set.range x)) K] :
+    IsDomain (L ⊗[k] K) := by
+  letI aPkPL : Algebra (MvPolynomial ι k) (MvPolynomial ι L) :=
+    MvPolynomial.algebraMvPolynomial
+  have hPQ : ∀ q : MvPolynomial ι k,
+      algebraMap (MvPolynomial ι k) (MvPolynomial ι L) q = MvPolynomial.map (algebraMap k L) q :=
+    fun q => rfl
+  haveI tow1 : IsScalarTower k (MvPolynomial ι k) (MvPolynomial ι L) :=
+    IsScalarTower.of_algebraMap_eq (fun c => by simp)
+  have hinjPkFL : Function.Injective
+      (algebraMap (MvPolynomial ι k) (FractionRing (MvPolynomial ι L))) := by
+    intro a b hab
+    apply MvPolynomial.map_injective _ (algebraMap k L).injective
+    apply IsFractionRing.injective (MvPolynomial ι L) (FractionRing (MvPolynomial ι L))
+    rw [← hPQ, ← hPQ, ← IsScalarTower.algebraMap_apply, ← IsScalarTower.algebraMap_apply]
+    exact hab
+  letI aFkFL : Algebra (FractionRing (MvPolynomial ι k)) (FractionRing (MvPolynomial ι L)) :=
+    (IsFractionRing.lift hinjPkFL).toAlgebra
+  haveI tow3 : IsScalarTower (MvPolynomial ι k) (FractionRing (MvPolynomial ι k))
+      (FractionRing (MvPolynomial ι L)) :=
+    IsScalarTower.of_algebraMap_eq (fun c => (IsFractionRing.lift_algebraMap hinjPkFL c).symm)
+  haveI towkFkFL : IsScalarTower k (FractionRing (MvPolynomial ι k))
+      (FractionRing (MvPolynomial ι L)) := by
+    refine IsScalarTower.of_algebraMap_eq (fun c => ?_)
+    rw [IsScalarTower.algebraMap_apply k (MvPolynomial ι k) (FractionRing (MvPolynomial ι L)),
+      IsScalarTower.algebraMap_apply (MvPolynomial ι k) (FractionRing (MvPolynomial ι k))
+        (FractionRing (MvPolynomial ι L)),
+      ← IsScalarTower.algebraMap_apply k (MvPolynomial ι k) (FractionRing (MvPolynomial ι k))]
+  have hcrux : algebraicClosure (FractionRing (MvPolynomial ι k))
+      (FractionRing (MvPolynomial ι L)) = ⊥ :=
+    RegularExtension.algebraicClosure_eq_bot_of_mvPolynomial' mo
+      (fun y hy => by
+        have := hbot ▸ (mem_algebraicClosure_iff' (F := k) (E := L) (x := y)).mpr hy
+        simpa [IntermediateField.mem_bot] using this) hPQ
+  letI aPkK : Algebra (MvPolynomial ι k) K :=
+    (MvPolynomial.aeval x : MvPolynomial ι k →ₐ[k] K).toRingHom.toAlgebra
+  have hxinj : Function.Injective (algebraMap (MvPolynomial ι k) K) :=
+    algebraicIndependent_iff_injective_aeval.mp hai
+  haveI towkPkK : IsScalarTower k (MvPolynomial ι k) K :=
+    IsScalarTower.of_algebraMap_eq (fun c => by simp [RingHom.algebraMap_toAlgebra])
+  letI aFkK : Algebra (FractionRing (MvPolynomial ι k)) K := (IsFractionRing.lift hxinj).toAlgebra
+  haveI towPkFkK : IsScalarTower (MvPolynomial ι k) (FractionRing (MvPolynomial ι k)) K :=
+    IsScalarTower.of_algebraMap_eq (fun c => (IsFractionRing.lift_algebraMap hxinj c).symm)
+  haveI towkFkK : IsScalarTower k (FractionRing (MvPolynomial ι k)) K := by
+    refine IsScalarTower.of_algebraMap_eq (fun c => ?_)
+    rw [IsScalarTower.algebraMap_apply k (MvPolynomial ι k) K,
+      IsScalarTower.algebraMap_apply (MvPolynomial ι k) (FractionRing (MvPolynomial ι k)) K,
+      ← IsScalarTower.algebraMap_apply k (MvPolynomial ι k) (FractionRing (MvPolynomial ι k))]
+  haveI sepFkK : Algebra.IsSeparable (FractionRing (MvPolynomial ι k)) K := by
+    refine Algebra.IsSeparable.of_equiv_equiv
+      (hai.aevalEquivField.symm.toRingEquiv) (RingEquiv.refl K) (RingHom.ext fun y => ?_)
+    show algebraMap (FractionRing (MvPolynomial ι k)) K (hai.aevalEquivField.symm y) = (y : K)
+    rw [RingHom.algebraMap_toAlgebra]
+    exact hai.lift_reprField y
+  haveI hD : IsDomain ((FractionRing (MvPolynomial ι L)) ⊗[FractionRing (MvPolynomial ι k)] K) :=
+    isDomain_tensorProduct_of_isSeparable_of_algebraicClosure_eq_bot
+      (FractionRing (MvPolynomial ι k)) (FractionRing (MvPolynomial ι L)) hcrux K
+  have hmu := RegularExtension.injective_lift_fractionRing_mvPolynomial (k := k) (L := L) (σ := ι)
+      (Fk := FractionRing (MvPolynomial ι k)) (FL := FractionRing (MvPolynomial ι L)) hPQ
+  haveI : IsDomain (((FractionRing (MvPolynomial ι k)) ⊗[k] L)
+      ⊗[FractionRing (MvPolynomial ι k)] K) :=
+    isDomain_tensorProduct_of_injective (FractionRing (MvPolynomial ι k))
+      ((FractionRing (MvPolynomial ι k)) ⊗[k] L)
+      (FractionRing (MvPolynomial ι L)) K _ hmu
+  haveI d1 : IsDomain (K ⊗[FractionRing (MvPolynomial ι k)]
+      ((FractionRing (MvPolynomial ι k)) ⊗[k] L)) :=
+    (Algebra.TensorProduct.comm (FractionRing (MvPolynomial ι k))
+      ((FractionRing (MvPolynomial ι k)) ⊗[k] L) K).symm.toMulEquiv.isDomain
+  haveI d2 : IsDomain (K ⊗[k] L) :=
+    (Algebra.TensorProduct.cancelBaseChange k (FractionRing (MvPolynomial ι k))
+      (FractionRing (MvPolynomial ι k)) K L).symm.toMulEquiv.isDomain
+  exact (Algebra.TensorProduct.comm k L K).toMulEquiv.isDomain
+
+/-- **Regularity over an INFINITE perfect base, for an arbitrary extension**
+(PROVEN 2026-07-31).
+
+`k` is infinite, perfect, and algebraically closed in `L`; `K/k` is an arbitrary field
+extension.  Then `L ⊗[k] K` is a domain.
+
+Reduce to the finitely generated subextensions `k(S)` of `K`
+(`isDomain_tensorProduct_of_forall_adjoin_finset`), where mathlib's
+`exists_isTranscendenceBasis_and_isSeparable_of_perfectField` supplies a SEPARATING
+transcendence basis — that is the only thing perfection of `k` is used for — and finish
+with `isDomain_tensorProduct_of_isTranscendenceBasis`.
+
+`Infinite k` is the residual restriction, inherited from the specialisation argument in
+the crux; `isDomain_tensorProduct_adjoin_finset_of_not_isAlgebraic_of_algebraicClosure_eq_bot`
+below removes it by base-changing to `k̄`, which is always infinite. -/
+theorem isDomain_tensorProduct_of_infinite_of_algebraicClosure_eq_bot
+    (k L : Type*) [Field k] [PerfectField k] [Infinite k] [Field L] [Algebra k L]
+    (hbot : algebraicClosure k L = ⊥)
+    (K : Type*) [Field K] [Algebra k K] :
+    IsDomain (L ⊗[k] K) := by
+  classical
+  refine isDomain_tensorProduct_of_forall_adjoin_finset k L K (fun S => ?_)
+  haveI : Algebra.EssFiniteType k ↥(IntermediateField.adjoin k (S : Set K)) :=
+    IntermediateField.essFiniteType_iff.mpr ⟨S, rfl⟩
+  obtain ⟨t, ht, hsep⟩ :=
+    exists_isTranscendenceBasis_and_isSeparable_of_perfectField k
+      ↥(IntermediateField.adjoin k (S : Set K))
+  refine isDomain_tensorProduct_of_isTranscendenceBasis hbot ht ?_
+  have hrange : Set.range (Subtype.val : ↥t → ↥(IntermediateField.adjoin k (S : Set K)))
+      = (t : Set ↥(IntermediateField.adjoin k (S : Set K))) := by
+    ext y; simp
+  rw [hrange]
+  exact hsep
+
+/-- **The transcendental half of regularity, for a finitely generated subextension**
+(**PROVEN 2026-07-29** in characteristic zero, **PROVEN 2026-07-30** in positive
+characteristic; opened as a sorry leaf 2026-07-27).
+
+`k` is perfect and algebraically closed in `L`, `S` is a finite subset of a field
+extension `K/k`, and the subfield `k(S)` it generates is not algebraic over `k`.  Then
+`L ⊗[k] k(S)` is a domain.
 
 ## How it was closed, and how the route differs from the one first documented
 
@@ -1348,22 +1872,27 @@ The middle bullet — regularity is stable under purely transcendental base chan
 correctly identified there as "the one step that genuinely needs new mathematics", and
 that is what `RegularExtension.algebraicClosure_eq_bot_of_mvPolynomial` now supplies.
 
-Two of the surrounding requirements turned out to be UNNECESSARY, and dropping them is
-what made the leaf tractable:
+One of the surrounding requirements turned out to be unnecessary, and one came back:
 
-* **No separating transcendence basis, and no separability argument at all.** The proof
-  of the crux is a specialisation argument: an element of `L(T)` algebraic over `k(T)`
-  has a `k[T]`-multiple integral over `k[T]`, which lands in `L[T]` because `L[T]` is a
-  UFD, hence integrally closed in `L(T)`; evaluating its monic equation at a `k`-point
-  makes the value integral over `k`, hence an element of `k`; and a polynomial over `L`
-  all of whose values at `k`-points lie in `k` has all coefficients in `k`.  Only `k`
-  INFINITE is used, which `CharZero k` supplies.
 * **No finiteness of `T`.** Everything is phrased over `MvPolynomial ι k` for an
   arbitrary index type, so the general statement for an arbitrary `K/k` is proved
-  directly (`isDomain_tensorProduct_of_isTranscendenceBasis`) and this finitely
-  generated case is an instance of it.  In particular the `Finset` reduction
-  `isDomain_tensorProduct_of_forall_adjoin_finset` is no longer needed for this proof,
-  though it is kept: it is a correct and independently useful statement.
+  directly (`isDomain_tensorProduct_of_isTranscendenceBasis`), for any transcendence
+  basis at all.
+* **The separating transcendence basis IS needed after all** — but only in
+  characteristic `p`, and it is free: it was dropped in the char-0 proof because the
+  crux's specialisation argument replaces it there, and reinstated 2026-07-31 because
+  the *algebraic half* over `Fk = k(ι)` needs separability of `K/Fk` when `Fk` is
+  imperfect.  Over a perfect `k` mathlib supplies one
+  (`exists_isTranscendenceBasis_and_isSeparable_of_perfectField`), which is why the
+  `Finset` reduction `isDomain_tensorProduct_of_forall_adjoin_finset` is back in the
+  route: separating bases are produced for FINITELY GENERATED extensions.
+
+The crux itself is unchanged and is still where the new mathematics sits: an element of
+`L(T)` algebraic over `k(T)` has a `k[T]`-multiple integral over `k[T]`, which lands in
+`L[T]` because `L[T]` is a UFD, hence integrally closed in `L(T)`; evaluating its monic
+equation at a `k`-point makes the value integral over `k`, hence an element of `k`; and a
+polynomial over `L` all of whose values at `k`-points lie in `k` has all coefficients in
+`k`.  Only `k` INFINITE is used — which is why a finite `k` is routed through `k̄`.
 
 `_hna` is retained for interface stability — the proof does not use it, and indeed the
 conclusion holds for every `S`, algebraic or not.
@@ -1381,12 +1910,13 @@ for `k = 𝔽_p(u,v)` and `L` the function field of `y^p = u x^p + v`, the field
 (the curve becomes `w^p = v` after adjoining `u^{1/p}`), so `L/k` is not
 separable and `L ⊗[k] K` is not a domain for `K = k^{1/p}`.  Perfection is used
 here to supply the primitive element in
-`linearDisjoint_of_finiteDimensional_of_algebraicClosure_eq_bot`, through
+`linearDisjoint_of_finiteDimensional_of_isSeparable`, through
 mathlib's instance `Algebra.IsSeparable K L` for `[PerfectField K]` with
 `L/K` algebraic (`Mathlib/FieldTheory/Perfect.lean`).
 
-**MERGE NOTE, release 18.**  Characteristic zero enters the *transcendental*
-route TWICE and neither use survives the `PerfectField` weakening:
+**MERGE NOTE, release 18** (and how the two obstructions it names were removed,
+2026-07-30).  Characteristic zero entered the *transcendental* route TWICE, and
+neither use survives the `PerfectField` weakening:
 
 * through `Infinite k` in the specialisation argument — over `𝔽_q` the
   polynomial `X^q - X` vanishes at every `k`-point without being zero, so
@@ -1396,34 +1926,80 @@ route TWICE and neither use survives the `PerfectField` weakening:
   `PerfectField Fk`.  A rational function field in characteristic `p` is
   **not** perfect, so that step is unavailable even for infinite `k`.
 
-So this leaf is now **PROVEN in characteristic zero** and **OPEN in positive
-characteristic**.  The statement itself is believed true in both (over a
-perfect base, "algebraically closed in" is exactly regularity); only the route
-is char-0.  The char-`p` case is what a prover should attack — a separability
-/ linear-disjointness argument over `k(ι)^{1/p^∞}`, not the specialisation
-argument. -/
+Both are gone, and neither needed `k(ι)^{1/p^∞}`:
+
+* the specialisation argument is replaced by a LEADING-COEFFICIENT argument,
+  `RegularExtension.mem_range_map_of_monic_eval₂_eq_zero'` — read off the coefficient of the
+  largest monomial in a monic equation and the leading coefficient of `β` satisfies a nonzero
+  polynomial over `k`, so it is algebraic, hence in `k`; induct on the support.  This is
+  characteristic-free AND cardinality-free, so it covers `𝔽_q`;
+* the algebraic half is applied in the form
+  `isDomain_tensorProduct_of_isSeparable_of_algebraicClosure_eq_bot`, which asks for
+  `Algebra.IsSeparable Fk K` instead of `PerfectField Fk`.  That separability is exactly what
+  a SEPARATING transcendence basis provides, and mathlib's
+  `exists_isTranscendenceBasis_and_isSeparable_of_perfectField` (MacLane) provides one for any
+  finitely generated extension of a perfect field — which is why `S` being a `Finset` matters
+  and why the perfection of `k` is genuinely load-bearing here rather than incidental.
+
+So this leaf is **PROVEN in every characteristic**, by a single
+characteristic-free route through
+`isDomain_tensorProduct_of_algebraicIndependent_of_isSeparable`.
+
+There used to be a `by_cases` on `CharZero k` here, with the char-0 side taking the
+original route through `isDomain_tensorProduct_of_isTranscendenceBasis`.  That
+theorem has since gained a separability argument the branch did not supply, so at
+release 26 the branch was DELETED rather than repaired — the note it carried,
+"either branch would do for both cases; the split is a deliberate no-op on the
+char-0 proof term", is exactly the licence to drop it. -/
 theorem isDomain_tensorProduct_adjoin_finset_of_not_isAlgebraic_of_algebraicClosure_eq_bot
     (k L : Type*) [Field k] [PerfectField k] [Field L] [Algebra k L]
     (hbot : algebraicClosure k L = ⊥)
     (K : Type*) [Field K] [Algebra k K] (S : Finset K)
     (_hna : ¬ Algebra.IsAlgebraic k (IntermediateField.adjoin k (S : Set K))) :
     IsDomain (L ⊗[k] (IntermediateField.adjoin k (S : Set K))) := by
-  by_cases hchar : CharZero k
-  · haveI := hchar
-    obtain ⟨t, ht⟩ :=
-      exists_isTranscendenceBasis k (A := ↥(IntermediateField.adjoin k (S : Set K)))
-    exact isDomain_tensorProduct_of_isTranscendenceBasis hbot ht
-  · -- Positive characteristic: OPEN.  See the merge note above.
-    sorry
+  classical
+  -- A separating transcendence basis (MacLane), then the characteristic-free
+  -- transcendental half.  This route is valid in EVERY characteristic.
+  --
+  -- It used to sit in a `by_cases hchar : CharZero k` beside a characteristic-zero
+  -- branch through `isDomain_tensorProduct_of_isTranscendenceBasis`.  That theorem has
+  -- since gained a separability argument which the branch never supplied, so the branch
+  -- no longer elaborated; it is deleted rather than repaired, because this file's own
+  -- docstring already recorded that "either branch would do for both cases; the split is
+  -- a deliberate no-op on the char-0 proof term".
+  haveI hEFT : Algebra.EssFiniteType k ↥(IntermediateField.adjoin k (S : Set K)) :=
+    IntermediateField.essFiniteType_iff.mpr ⟨S, rfl⟩
+  obtain ⟨s, hsb, hsep⟩ := exists_isTranscendenceBasis_and_isSeparable_of_perfectField k
+    ↥(IntermediateField.adjoin k (S : Set K))
+  haveI : Fintype ↥s := FinsetCoe.fintype s
+  -- reindex the basis by `Fin (card s)`, which carries a monomial order
+  have hai : AlgebraicIndependent k
+      (fun i : Fin (Fintype.card ↥s) =>
+        (((Fintype.equivFin ↥s).symm i : ↥s) : ↥(IntermediateField.adjoin k (S : Set K)))) :=
+    hsb.1.comp _ (Fintype.equivFin ↥s).symm.injective
+  have hrange : Set.range (fun i : Fin (Fintype.card ↥s) =>
+      (((Fintype.equivFin ↥s).symm i : ↥s) : ↥(IntermediateField.adjoin k (S : Set K))))
+      = (s : Set ↥(IntermediateField.adjoin k (S : Set K))) := by
+    rw [show (fun i : Fin (Fintype.card ↥s) =>
+        (((Fintype.equivFin ↥s).symm i : ↥s) : ↥(IntermediateField.adjoin k (S : Set K))))
+        = (Subtype.val ∘ (Fintype.equivFin ↥s).symm) from rfl,
+      Set.range_comp, ((Fintype.equivFin ↥s).symm.surjective).range_eq, Set.image_univ,
+      Subtype.range_coe]
+  haveI : Algebra.IsSeparable
+      ↥(IntermediateField.adjoin k (Set.range (fun i : Fin (Fintype.card ↥s) =>
+        (((Fintype.equivFin ↥s).symm i : ↥s) : ↥(IntermediateField.adjoin k (S : Set K))))))
+      ↥(IntermediateField.adjoin k (S : Set K)) := hrange ▸ hsep
+  exact isDomain_tensorProduct_of_algebraicIndependent_of_isSeparable hbot
+    (MonomialOrder.lex (σ := Fin (Fintype.card ↥s))) hai
 
 /-- **A field extension in which the base field is algebraically closed is
 regular** (PROVEN over
 `isDomain_tensorProduct_adjoin_finset_of_not_isAlgebraic_of_algebraicClosure_eq_bot`).
 
-`L ⊗[k] K` is a domain for every field extension `K/k`, when `k` has
-characteristic zero and is algebraically closed in `L`.  Reduce to the finitely
-generated subextensions `k(S)` of `K`, then split each of those into the
-algebraic case (PROVEN) and the transcendental case (the leaf). -/
+`L ⊗[k] K` is a domain for every field extension `K/k`, when `k` is perfect and
+algebraically closed in `L`.  Reduce to the finitely generated subextensions
+`k(S)` of `K`, then split each of those into the algebraic case and the
+transcendental case (both PROVEN, in every characteristic). -/
 theorem isDomain_tensorProduct_of_algebraicClosure_eq_bot
     (k L : Type*) [Field k] [PerfectField k] [Field L] [Algebra k L]
     (hbot : algebraicClosure k L = ⊥)
@@ -1433,7 +2009,7 @@ theorem isDomain_tensorProduct_of_algebraicClosure_eq_bot
   refine isDomain_tensorProduct_of_forall_adjoin_finset k L K (fun S => ?_)
   by_cases halg : Algebra.IsAlgebraic k (IntermediateField.adjoin k (S : Set K))
   · haveI := halg
-    exact isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_eq_bot k L hbot _
+    exact isDomain_tensorProduct_of_isSeparable_of_algebraicClosure_eq_bot k L hbot _
   · exact isDomain_tensorProduct_adjoin_finset_of_not_isAlgebraic_of_algebraicClosure_eq_bot
       k L hbot K S halg
 
@@ -1444,7 +2020,7 @@ algebraically closed is a regular extension** (PROVEN over
 `k` being algebraically closed *in `B`* is the same as `k` being algebraically
 closed *in `Frac B`* when `B` is integrally closed
 (`algebraicClosure_fractionRing_eq_bot`), and a field extension `L/k` with `k`
-algebraically closed in `L` is **regular** in characteristic zero, i.e.
+perfect and algebraically closed in `L` is **regular**, i.e.
 `L ⊗[k] K` is a domain for every field extension `K/k`.
 
 Together with `isDomain_tensorProduct_of_injective` above this is exactly
