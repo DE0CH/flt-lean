@@ -39,8 +39,23 @@ the *affine chart* of a pointed curve exist — and it is the scheme-theoretic h
 * `isClosed_singleton_of_section` — the two combined: the image of a section of a
   separated morphism from the spectrum of a field is a closed point.  PROVEN.
 * `affineLineOver` — the structure morphism `𝔸¹_K ⟶ Spec K`, used only to say "over `K`".
-* `exists_locallyQuasiFinite_toAffineLine_compl_singleton` — **sorry leaf**: RIEMANN–ROCH,
-  a nonconstant regular function on `X ∖ {z}`.
+* `coordOf`, `structHom` — the regular function a morphism `U ⟶ 𝔸¹_K` classifies, and the
+  `K`-algebra structure `strX` puts on `Γ(X, U)`.  (`coordOf` was moved up here 2026-07-31 from
+  the stalk section, so that the Riemann–Roch decomposition can name it.)
+* `exists_toAffineLine_coordOf_eq` — **PROVEN 2026-07-31, no sorry**: every section of
+  `Γ(X, U)` classifies a `K`-morphism `U ⟶ 𝔸¹_K`.  Pure `Γ ⊣ Spec` adjunction
+  (`ΓSpecIso_inv_ΓSpec_adjunction_homEquiv`, `ext_to_Spec`), and it is what lets both
+  Riemann–Roch sub-leaves below be about SECTIONS rather than morphisms.
+* `exists_notIsIntegralElem_section_compl_singleton` — **sorry leaf, RIEMANN–ROCH**, and after
+  the 2026-07-31 cut this is all Riemann–Roch is asked for: ONE element of `Γ(X, X ∖ {z})` not
+  integral over `K`.  No morphism, no `𝔸¹`, no quasi-finiteness.
+* `locallyQuasiFinite_of_notIsIntegralElem_coordOf` — **sorry leaf**: a nonconstant section
+  classifies a QUASI-FINITE morphism.  Commutative algebra of a one-dimensional finite-type
+  domain; no Riemann–Roch, no genus, no divisor, and no puncture — it is stated at a general
+  open.  Independent of the leaf above and meant for a different owner.
+* `exists_locallyQuasiFinite_toAffineLine_compl_singleton` — **PROVEN 2026-07-31** over those
+  two, in four lines: a nonconstant regular function on `X ∖ {z}`, packaged as a quasi-finite
+  `K`-morphism.
 * `locallyOfFiniteType_affineLineOver` — `𝔸¹_K ⟶ Spec K` is locally of finite type.
   **PROVEN 2026-07-30**; the side condition of the right-cancellation used just below.
 * `isProper_of_locallyQuasiFinite_toAffineLine_compl_singleton` — the compactification step,
@@ -87,7 +102,6 @@ the *affine chart* of a pointed curve exist — and it is the scheme-theoretic h
   what let it close on its own.  Two helpers came out of it, both PROVEN and both absent from
   the pin: `ι_appLE_top_eq_topIso_inv` and `appLE_top_top_eq_appTop`.  Its docstring records the
   two `simp` traps that cost the round trips.
-* `coordOf` — the regular function on `U` that a morphism `U ⟶ 𝔸¹_K` classifies.
 * `isAffineOpen_compl_singleton_of_isSmoothProperCurve` — **PROVEN 2026-07-28** over those
   two, by Zariski's main theorem.  It does NOT go through ampleness; see the next section.
 * `exists_isOpenImmersion_range_eq_compl_of_section` — the packaged existential a consumer
@@ -108,12 +122,18 @@ proven here over exactly two named sub-leaves, along the Zariski's-main-theorem 
 
 * `exists_locallyQuasiFinite_toAffineLine_compl_singleton` — **RIEMANN–ROCH**, and the only
   place it enters: a nonconstant regular function on `X ∖ {z}`, packaged as a
-  `K`-morphism `X ∖ {z} ⟶ 𝔸¹_K` that is `LocallyQuasiFinite`.
+  `K`-morphism `X ∖ {z} ⟶ 𝔸¹_K` that is `LocallyQuasiFinite`.  **PROVEN 2026-07-31** over two
+  sub-leaves of its own, `exists_notIsIntegralElem_section_compl_singleton` (Riemann–Roch, a
+  SECTION) and `locallyQuasiFinite_of_notIsIntegralElem_coordOf` (nonconstant ⟹ quasi-finite).
 * `isProper_of_locallyQuasiFinite_toAffineLine_compl_singleton` — **the compactification
-  step**: any such morphism is proper.  Itself decomposed on 2026-07-30, so the file's second
-  leaf is now
-  `valuativeCriterionExistence_of_locallyQuasiFinite_toAffineLine_compl_singleton` rather
-  than this.  The two leaves are still independent, and the RIEMANN–ROCH one is untouched.
+  step**: any such morphism is proper.  Decomposed 2026-07-30 and **CLOSED OUTRIGHT on
+  2026-07-31**: everything under it, down through
+  `valuativeCriterionExistence_of_locallyQuasiFinite_toAffineLine_compl_singleton`,
+  `notMem_range_of_valuativeLift_toAffineLine_compl_singleton` and
+  `not_exists_stalkSpecializes_eq_germ_coordOf_compl_singleton`, is now sorry-free.
+
+**So as of 2026-07-31 the ONLY open leaves in this file are the two Riemann–Roch-side ones**,
+and the whole compactification half is done.
 
 and the glue between them, which is what this file newly PROVES:
 `IsFinite.of_isProper_of_locallyQuasiFinite` (Zariski's main theorem, stacks `02LS`) turns
@@ -217,8 +237,175 @@ noncomputable def affineLineOver (K : Type u) [Field K] :
     Spec (CommRingCat.of (Polynomial K)) ⟶ Spec (CommRingCat.of K) :=
   Spec.map (CommRingCat.ofHom (algebraMap K (Polynomial K)))
 
-/-- **RIEMANN–ROCH: a nonconstant regular function on the punctured curve** (sorry leaf, cut
-2026-07-28 out of `isAffineOpen_compl_singleton_of_isSmoothProperCurve`).
+/-- **The regular function on `U` that a morphism `U ⟶ 𝔸¹_K` classifies**: the pull-back of the
+coordinate `T`.
+
+`Spec K[T]` is affine, so a morphism out of `U` is a ring map `K[T] ⟶ Γ(U, ⊤) ≅ Γ(X, U)`, and it
+is determined by the image of `T`.  This is the `f` that the pole argument talks about.
+
+(Moved up here 2026-07-31, from the stalk section where it used to sit: the Riemann–Roch leaf's
+decomposition just below has to name it, and a `def` about `𝔸¹` belongs beside `affineLineOver`
+rather than among the `stalkClosedPointTo` lemmas.) -/
+noncomputable def coordOf {K : Type u} [Field K] {X : Scheme.{u}} (U : X.Opens)
+    (g : U.toScheme ⟶ Spec (CommRingCat.of (Polynomial K))) : Γ(X, U) :=
+  (Scheme.Opens.topIso U).hom.hom
+    (g.appTop.hom
+      ((Scheme.ΓSpecIso (CommRingCat.of (Polynomial K))).inv.hom Polynomial.X))
+
+/-- **The `K`-algebra structure that `strX` puts on `Γ(X, U)`.**
+
+"Nonconstant" for a section of `Γ(X, U)` means "not integral over `K` for THIS map", and
+writing it down is what stops an adversary from reading `K → Γ(X, U)` as some other ring map —
+the same freedom `affineLineOver` exists to forbid on the morphism side.  `coordHom_comp_C`
+below is the statement that a `K`-morphism `g : U ⟶ 𝔸¹_K` is `structHom`-linear. -/
+noncomputable def structHom {K : Type u} [Field K] {X : Scheme.{u}}
+    (strX : X ⟶ Spec (CommRingCat.of K)) (U : X.Opens) :
+    CommRingCat.of K ⟶ X.presheaf.obj (Opposite.op U) :=
+  (Scheme.ΓSpecIso (CommRingCat.of K)).inv ≫ strX.appTop ≫
+    X.presheaf.map (homOfLE (le_top : U ≤ ⊤)).op
+
+/-- **EVERY SECTION CLASSIFIES A `K`-MORPHISM TO `𝔸¹_K`** (PROVEN 2026-07-31, no sorry).
+
+The converse of `coordOf`, and the half of the Riemann–Roch leaf that is pure adjunction rather
+than mathematics: `Spec` is right adjoint to global sections, so a morphism `U ⟶ Spec K[T]` IS
+a ring map `K[T] ⟶ Γ(U, ⊤)`, and one is manufactured from `f` by `Polynomial.eval₂RingHom`
+against the structure map.  `ΓSpecIso_inv_ΓSpec_adjunction_homEquiv` computes its `appTop`, and
+`ext_to_Spec` — two morphisms into an affine scheme agree as soon as their `appTop`s do — gives
+the `≫`-clause from `Polynomial.eval₂_C`.
+
+So a prover of the Riemann–Roch leaf owes only a SECTION, never a morphism. -/
+theorem exists_toAffineLine_coordOf_eq {K : Type u} [Field K] {X : Scheme.{u}}
+    (strX : X ⟶ Spec (CommRingCat.of K)) (U : X.Opens) (f : Γ(X, U)) :
+    ∃ g : U.toScheme ⟶ Spec (CommRingCat.of (Polynomial K)),
+      coordOf U g = f ∧ g ≫ affineLineOver K = Scheme.Opens.ι U ≫ strX := by
+  set cU : CommRingCat.of K ⟶ Γ(U.toScheme, ⊤) :=
+    (Scheme.ΓSpecIso (CommRingCat.of K)).inv ≫ (Scheme.Opens.ι U ≫ strX).appTop with hcU
+  set φ : CommRingCat.of (Polynomial K) ⟶ Γ(U.toScheme, ⊤) :=
+    CommRingCat.ofHom
+      (Polynomial.eval₂RingHom cU.hom ((Scheme.Opens.topIso U).inv.hom f)) with hφ
+  set g : U.toScheme ⟶ Spec (CommRingCat.of (Polynomial K)) :=
+    (ΓSpec.adjunction.homEquiv U.toScheme
+      (Opposite.op (CommRingCat.of (Polynomial K)))) φ.op with hg
+  have key : (Scheme.ΓSpecIso (CommRingCat.of (Polynomial K))).inv ≫ g.appTop = φ :=
+    ΓSpecIso_inv_ΓSpec_adjunction_homEquiv φ
+  have hinner : g.appTop.hom
+      ((Scheme.ΓSpecIso (CommRingCat.of (Polynomial K))).inv.hom Polynomial.X)
+      = (Scheme.Opens.topIso U).inv.hom f := by
+    rw [← CommRingCat.comp_apply, key, hφ]
+    exact Polynomial.eval₂_X _ _
+  refine ⟨g, ?_, ?_⟩
+  · show (Scheme.Opens.topIso U).hom.hom
+      (g.appTop.hom ((Scheme.ΓSpecIso (CommRingCat.of (Polynomial K))).inv.hom Polynomial.X)) = f
+    rw [hinner, ← CommRingCat.comp_apply, Iso.inv_hom_id, CommRingCat.id_apply]
+  · refine ext_to_Spec ?_
+    show (Scheme.ΓSpecIso (CommRingCat.of K)).inv ≫ (g ≫ affineLineOver K).appTop =
+      (Scheme.ΓSpecIso (CommRingCat.of K)).inv ≫ (Scheme.Opens.ι U ≫ strX).appTop
+    rw [Scheme.Hom.comp_appTop, affineLineOver, ← Category.assoc,
+      ← Scheme.ΓSpecIso_inv_naturality, Category.assoc, key, ← hcU]
+    refine CommRingCat.hom_ext (RingHom.ext fun a => ?_)
+    rw [hφ, Polynomial.algebraMap_eq]
+    exact Polynomial.eval₂_C _ _
+
+/-- **RIEMANN–ROCH, AND AFTER THE 2026-07-31 CUT IT IS ALL THAT IS ASKED OF IT: a NONCONSTANT
+SECTION** (sorry leaf, cut out of `exists_locallyQuasiFinite_toAffineLine_compl_singleton`
+below, which is now PROVEN over this and one sibling).
+
+No morphism, no `𝔸¹`, no quasi-finiteness: one element of `Γ(X, X ∖ {z})` that is not integral
+over `K`.  On a geometrically connected `X` "not integral over `K`" is exactly "nonconstant",
+since the algebraic closure of `K` in `K(X)` is then `K` itself — so this is the classical
+statement and nothing more.
+
+TRUE and classical.  `X` is a smooth proper geometrically connected curve over `K`, so it has a
+genus `g`, and Riemann–Roch gives `dim_K L(n·[z]) = n·deg[z] − g + 1` for `n·deg[z] > 2g − 2`.
+In particular `L(n·[z]) ⊋ L(0) ⊇ K` for `n` large, and any element of the difference is a
+nonconstant function regular on `X ∖ {z}`.
+
+**`hconn` IS LOAD-BEARING** — see the counterexample in
+`isAffineOpen_compl_singleton_of_isSmoothProperCurve`'s docstring: on a disjoint union of two
+copies of a curve, punctured in the first copy only, every regular function is constant on the
+whole second copy, so `Γ(X, X ∖ {z})` is a product with a field factor and every element is
+integral over `K`.
+
+**`SmoothOfRelativeDimension 1` IS LOAD-BEARING**: at relative dimension two, `X ∖ {z}` has the
+same global sections as the proper `X`, a finite extension of `K`, so every section is integral.
+
+**`IsProper strX` IS LOAD-BEARING** in the same way — on a non-proper curve the statement is
+still true but for a different reason, and the intended proof consumes properness through the
+genus.
+
+NOT VACUOUS: for `X` the projective model of an elliptic curve over `ℚ` and `z` the point at
+infinity, `x` (the first Weierstrass coordinate) is such a section.
+
+WHAT WOULD REFUTE THE "MISSING FROM THE PIN" DIAGNOSIS: a Riemann–Roch theorem, a genus, or a
+theory of linear systems, anywhere in `Fermat/`, `.lake/packages/mathlib` or `~/cs/FLT`.
+Re-searched 2026-07-31, and the search is now sharper than the 2026-07-28 one it replaces: the
+pin DOES carry `Mathlib/AlgebraicGeometry/AlgebraicCycle/` and
+`Mathlib/AlgebraicGeometry/OrderOfVanishing.lean`, i.e. cycles and orders of vanishing, so a
+prover has divisors to work with — but `grep -ri riemann` over all of `Mathlib` returns nothing
+in algebraic geometry, there is no `genus`, and there is no coherent-sheaf cohomology.  So the
+divisor language exists and the finiteness theorem about it does not. -/
+theorem exists_notIsIntegralElem_section_compl_singleton
+    {K : Type u} [Field K] {X : Scheme.{u}} (strX : X ⟶ Spec (CommRingCat.of K))
+    [IsProper strX] [SmoothOfRelativeDimension 1 strX]
+    (hconn : GeometricallyConnected strX)
+    {z : X} (hz : IsClosed ({z} : Set X)) :
+    ∃ f : Γ(X, (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens)),
+      ¬ (structHom strX (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens)).hom.IsIntegralElem f :=
+  sorry
+
+/-- **A NONCONSTANT SECTION CLASSIFIES A QUASI-FINITE MORPHISM** (sorry leaf, cut 2026-07-31 out
+of `exists_locallyQuasiFinite_toAffineLine_compl_singleton` below).
+
+NO RIEMANN–ROCH, NO GENUS, NO DIVISOR, and no puncture: this is the commutative algebra of a
+curve.  It is stated at a general open `U` precisely because nothing about `{z}ᶜ` is used.
+
+TRUE.  Pick an affine open `V ⊆ U`.  `X` is integral
+(`isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected`), so `A := Γ(X, V)` is a
+domain, and it is a finite-type `K`-algebra of Krull dimension one — `SmoothOfRelativeDimension
+1` gives exactly that, via
+`ringKrullDim_le_of_isStandardSmoothOfRelativeDimension` in `CurveExtension.lean`.  `f|_V` is
+transcendental over `K` because `f` is and `Γ(X, V) ↪ K(X)` is injective on an integral scheme
+(`germ_injective_of_isIntegral`).  So `K[T] ↪ A` with `A` a one-dimensional finite-type domain,
+whence `A` is quasi-finite (indeed finite, by Noether normalisation) over `K[T]`, which is
+`RingHom.QuasiFinite` of `g.appLE`, which is `LocallyQuasiFinite` by the
+`HasRingHomProperty` instance for it.
+
+**WHAT THE PROVER SHOULD LOOK AT FIRST**, because it may collapse the work: the pin has
+`Algebra.QuasiFinite` and `Module.Finite.of_quasiFinite` (used already in
+`infinite_of_smoothOfRelativeDimension_one`), and
+`Algebra.QuasiFinite.iff_finite_comap_preimage_singleton` reduces `RingHom.QuasiFinite` to
+FINITE FIBRES of `Spec`.  Combined with `locallyQuasiFinite_iff_finite_preimage_singleton`
+(which wants `IsOfFiniteType g`, free here from `hover` and
+`locallyOfFiniteType_affineLineOver`) the whole leaf may be provable topologically: the fibre
+over a point of `𝔸¹_K` is a proper closed subset of the irreducible curve `U`, since the
+generic point is not in it — `f` transcendental is exactly the statement that `g` does not send
+the generic point of `U` to a closed point, which is the CONVERSE of MOVE 3 of
+`false_of_res_eq_coordOf_of_locallyQuasiFinite` below and can be read off the same
+`basicOpen`/`PrimeSpectrum.mem_basicOpen` chain.
+
+**`htr` IS LOAD-BEARING and the statement is FALSE without it**: `g` constant at `0` is a
+`K`-morphism on an infinite `U`, and its single fibre is all of `U`.
+
+**`hconn` IS LOAD-BEARING**, through `IsIntegral X`: on a reducible `X` the section may be
+transcendental on one component and constant on another, and the fibre over that constant value
+contains a whole component.
+
+**`Nonempty ↥U` IS LOAD-BEARING for the statement to be about anything**; it is free at the
+call site, `U = {z}ᶜ` on an infinite `X`. -/
+theorem locallyQuasiFinite_of_notIsIntegralElem_coordOf
+    {K : Type u} [Field K] {X : Scheme.{u}} (strX : X ⟶ Spec (CommRingCat.of K))
+    [IsProper strX] [SmoothOfRelativeDimension 1 strX]
+    (hconn : GeometricallyConnected strX)
+    (U : X.Opens) [Nonempty ↥U]
+    (g : U.toScheme ⟶ Spec (CommRingCat.of (Polynomial K)))
+    (hover : g ≫ affineLineOver K = Scheme.Opens.ι U ≫ strX)
+    (htr : ¬ (structHom strX U).hom.IsIntegralElem (coordOf U g)) :
+    LocallyQuasiFinite g :=
+  sorry
+
+/-- **RIEMANN–ROCH: a nonconstant regular function on the punctured curve** (cut 2026-07-28 out
+of `isAffineOpen_compl_singleton_of_isSmoothProperCurve`; **DECOMPOSED and PROVEN over its two
+sub-leaves 2026-07-31**, having been a bare `sorry` until then).
 
 This is the ONLY place Riemann–Roch enters the affineness statement.  Concretely it asks
 for a `K`-morphism `g : X ∖ {z} ⟶ 𝔸¹_K` with finite fibres — equivalently, for a
@@ -231,11 +418,33 @@ the difference is a nonconstant function regular on `X ∖ {z}`.  Its fibres ove
 proper closed subsets of the integral curve `X ∖ {z}`, hence finite, which is
 `LocallyQuasiFinite`.
 
+## DECOMPOSED 2026-07-31 — and the cut separates Riemann–Roch from everything else
+
+The three paragraphs of that sketch are three different kinds of work, and only the middle one
+is Riemann–Roch.  They are now three declarations, and this one is proven over them in four
+lines:
+
+* `exists_notIsIntegralElem_section_compl_singleton` — **the Riemann–Roch leaf**, and after the
+  cut it asks for a SECTION and nothing else: one element of `Γ(X, X ∖ {z})` not integral over
+  `K`.  No morphism, no `𝔸¹`, no quasi-finiteness.
+* `exists_toAffineLine_coordOf_eq` — **PROVEN, no sorry**: every section classifies a
+  `K`-morphism to `𝔸¹_K`.  This is the whole of the "package it as a morphism" work, and it is
+  pure `Γ ⊣ Spec` adjunction; it is also what discharges the `≫`-clause below.
+* `locallyQuasiFinite_of_notIsIntegralElem_coordOf` — **the second leaf**: nonconstant implies
+  quasi-finite.  Commutative algebra of a one-dimensional finite-type domain, with no
+  Riemann–Roch in it, and stated at a general open because the puncture is irrelevant to it.
+
+So a prover of Riemann–Roch never has to touch a scheme morphism, and a prover of
+quasi-finiteness never has to touch a genus.  The two are independent and can have separate
+owners.
+
 **Why `LocallyQuasiFinite` rather than "nonconstant".**  The pin has no notion of a
 nonconstant morphism, and quasi-finiteness is the form Zariski's main theorem consumes
 directly.  On an integral curve the two agree: a constant morphism has a one-point image
 with infinite fibre, and `X ∖ {z}` is infinite by
-`infinite_of_smoothOfRelativeDimension_one`.
+`infinite_of_smoothOfRelativeDimension_one`.  That equivalence is no longer folklore in this
+file: the ⟸ direction is the second sub-leaf, and the ⟹ direction is PROVEN as
+`false_of_res_eq_coordOf_of_locallyQuasiFinite` further down.
 
 **`hconn` IS LOAD-BEARING** — see the counterexample in
 `isAffineOpen_compl_singleton_of_isSmoothProperCurve`'s docstring: on a disjoint union of
@@ -255,7 +464,8 @@ infinity, `x` (the first Weierstrass coordinate) is such a function.
 
 WHAT WOULD REFUTE THE "MISSING FROM THE PIN" DIAGNOSIS: a Riemann–Roch theorem, a genus, or
 a theory of linear systems, anywhere in `Fermat/`, `.lake/packages/mathlib` or `~/cs/FLT`.
-Re-searched 2026-07-28: absent from all three. -/
+Re-searched 2026-07-31: absent from all three; see the Riemann–Roch sub-leaf's docstring for
+the sharper form of that search, which does turn up divisors. -/
 theorem exists_locallyQuasiFinite_toAffineLine_compl_singleton
     {K : Type u} [Field K] {X : Scheme.{u}} (strX : X ⟶ Spec (CommRingCat.of K))
     [IsProper strX] [SmoothOfRelativeDimension 1 strX]
@@ -265,8 +475,16 @@ theorem exists_locallyQuasiFinite_toAffineLine_compl_singleton
         Spec (CommRingCat.of (Polynomial K)),
       LocallyQuasiFinite g ∧
         g ≫ affineLineOver K =
-          Scheme.Opens.ι (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) ≫ strX :=
-  sorry
+          Scheme.Opens.ι (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) ≫ strX := by
+  haveI : IsIntegral X :=
+    isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected (n := 1) strX hconn
+  haveI : Infinite X := infinite_of_smoothOfRelativeDimension_one strX
+  haveI : Infinite ↥(⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) :=
+    (Set.Finite.infinite_compl (Set.finite_singleton z)).to_subtype
+  obtain ⟨f, hf⟩ := exists_notIsIntegralElem_section_compl_singleton strX hconn hz
+  obtain ⟨g, hcoord, hover⟩ := exists_toAffineLine_coordOf_eq strX _ f
+  exact ⟨g, locallyQuasiFinite_of_notIsIntegralElem_coordOf strX hconn _ g hover
+    (hcoord ▸ hf), hover⟩
 
 /-- **The affine line is of finite type over its base field** (PROVEN 2026-07-30).
 
@@ -381,17 +599,6 @@ theorem stalkSpecializes_stalkClosedPointTo' {X : Scheme.{u}} {R S : CommRingCat
   subst hm
   exact stalkSpecializes_stalkClosedPointTo α l h
 
-/-- **The regular function on `U` that a morphism `U ⟶ 𝔸¹_K` classifies**: the pull-back of the
-coordinate `T`.
-
-`Spec K[T]` is affine, so a morphism out of `U` is a ring map `K[T] ⟶ Γ(U, ⊤) ≅ Γ(X, U)`, and it
-is determined by the image of `T`.  This is the `f` that the pole argument talks about. -/
-noncomputable def coordOf {K : Type u} [Field K] {X : Scheme.{u}} (U : X.Opens)
-    (g : U.toScheme ⟶ Spec (CommRingCat.of (Polynomial K))) : Γ(X, U) :=
-  (Scheme.Opens.topIso U).hom.hom
-    (g.appTop.hom
-      ((Scheme.ΓSpecIso (CommRingCat.of (Polynomial K))).inv.hom Polynomial.X))
-
 /-- **THE POLE CONTRADICTION, IN ABSTRACT FORM** (PROVEN 2026-07-31, no sorry) — step B2 of
 `notMem_range_of_valuativeLift_toAffineLine_compl_singleton` with every trace of the curve, of
 `𝔸¹` and of the valuative square removed.
@@ -485,10 +692,10 @@ theorem coordHom_comp_C {K : Type u} [Field K] {X : Scheme.{u}}
     (g : U.toScheme ⟶ Spec (CommRingCat.of (Polynomial K)))
     (hover : g ≫ affineLineOver K = Scheme.Opens.ι U ≫ strX) :
     CommRingCat.ofHom (Polynomial.C : K →+* Polynomial K) ≫ coordHom U g =
-      ((Scheme.ΓSpecIso (CommRingCat.of K)).inv ≫ strX.appTop) ≫
-        X.presheaf.map (homOfLE (le_top : U ≤ ⊤)).op := by
+      structHom strX U := by
   have h := congrArg (fun m : U.toScheme ⟶ Spec (CommRingCat.of K) => m.appTop) hover
   simp only [Scheme.Hom.comp_appTop, affineLineOver] at h
+  rw [structHom, ← Category.assoc]
   have hC : (CommRingCat.ofHom (Polynomial.C : K →+* Polynomial K)) =
       CommRingCat.ofHom (algebraMap K (Polynomial K)) := by
     rw [Polynomial.algebraMap_eq]
