@@ -15,6 +15,8 @@ public import Mathlib.RingTheory.Polynomial.UniqueFactorization
 public import Mathlib.RingTheory.EuclideanDomain
 public import Mathlib.RingTheory.AdjoinRoot
 public import Mathlib.FieldTheory.Finiteness
+public import Fermat.FLT.EllipticCurve.MazurNonCMFrobenius
+public import Fermat.FLT.EllipticCurve.MazurNonCMFrobeniusB
 
 /-!
 # A mod-`ℓ` degree obstruction, and the `p = 11` certificate of Mazur's non-CM table
@@ -305,32 +307,27 @@ theorem eval_hPolyElevenA_ne_zero (a : ZMod 23) : hPolyElevenA.eval a ≠ 0 := b
   simp only [hPolyElevenA, eval_add, eval_mul, eval_pow, eval_X, eval_ofNat]
   decide
 
-/-- **THE ONE OPEN LEAF OF THIS FILE** (sorry leaf, cut 2026-07-30): `H` divides
-`X ^ (23 ^ 11) - X`, i.e. every irreducible factor of `H` has degree dividing `11`.
+/-- **`H ∣ X ^ (23 ^ 11) - X`** (PROVEN 2026-07-31), i.e. every irreducible factor of `H` has
+degree dividing `11`.  `eval_hPolyElevenA_ne_zero` above is what turns "dividing `11`" into
+"equal to `11`" where the obstruction needs it.
 
-TRUE, machine-checked in PARI/GP 2.15.4 (`Mod(x, H) ^ (23 ^ 11) == x`); `H` is in fact a
-product of five irreducibles of degree exactly `11`, and `eval_hPolyElevenA_ne_zero` above is
-what turns "dividing `11`" into "equal to `11`" where the obstruction needs it.
+The whole content is `Fermat.MazurNonCMFrobenius.dvd_X_pow_sub_X_hPoly`, in its own module
+because it is a few thousand lines of generated `ring` identities and elaboration is
+single-threaded per file.  `H` is the product of five irreducible polynomials of degree
+exactly `11`; the divisibility is proven for each factor separately, through a precomputed
+table of `(X ^ 23) ^ i mod hⱼ`, and the five are recombined by explicit Bézout certificates.
 
-**THE ROUTE, and it is entirely mechanical.**  Write `r_k := X ^ (23 ^ k) mod H`, so `r_0 = X`
-and the claim is `r_11 = X`.  Do NOT compute `r_k ^ 23` by repeated squaring: over `ZMod 23`
-the Frobenius is LINEAR, `r ^ 23 = Polynomial.expand 23 r` (`Polynomial.expand_char` together
-with `ZMod.pow_card`, which kills the coefficient-wise `c ↦ c ^ 23`).  So precompute the table
-`T_i := X ^ (23 * i) mod H` for `i ≤ 54` — each `T_{i+1}` is `T_i * T_1` reduced, one identity
-of degree `≤ 108` apiece — and then each of the eleven Frobenius steps is a single `ZMod 23`
-linear combination of the `T_i`, which `ring_nf` checks at degree `54`.
-
-Every identity is of the shape `A * B = Q * H + R`, verified by the same
-`reduce_mod_char; ring_nf; reduce_mod_char` idiom the chain above uses; `Q` and `R` come from
-PARI.  The count is about `65` identities and the arithmetic is `≈ 2·10⁵` `F₂₃` operations,
-which is the figure the `X0.lean` cost triage calls "comfortably kernel-checkable".
+The route the original cut proposed — reduce `X ^ (23 ^ k)` mod `H` itself — was tried and is
+about `5×` more `ring` work, because it needs a `55`-entry table of degree-`54` polynomials
+rather than five `10`-entry tables of degree-`10` ones.
 
 The same route closes the `p = 11`, `j = −24729001` row (same `ℓ`, same degrees) and, with one
 extra coprimality at `d = 2`, the two `p = 17` rows.  It does NOT close the `p = 37` rows:
 there `deg H = 666`, `ℓ = 397` and `m = 222`. -/
 theorem dvd_X_pow_card_pow_sub_X_hPolyElevenA :
-    hPolyElevenA ∣ X ^ (Nat.card (ZMod 23)) ^ 11 - X :=
-  sorry
+    hPolyElevenA ∣ X ^ (Nat.card (ZMod 23)) ^ 11 - X := by
+  rw [Nat.card_zmod, hPolyElevenA]
+  exact Fermat.MazurNonCMFrobenius.dvd_X_pow_sub_X_hPoly
 
 /-- **Row `p = 11`, `j = −121`: `Ψ₁₁ mod 23` has no monic divisor of degree `10`**
 (PROVEN 2026-07-30 over `dvd_X_pow_card_pow_sub_X_hPolyElevenA`).
@@ -354,6 +351,142 @@ theorem not_monic_dvd_preΨ_elevenA_mod (G : (ZMod 23)[X]) (hG : G.Monic)
   have hDlt : dPolyElevenA.natDegree < 10 := by omega
   exact not_monic_dvd_of_smallDegreePart hc preΨ'_eleven_elevenAMod hmn
     dvd_X_pow_card_pow_sub_X_hPolyElevenA eval_hPolyElevenA_ne_zero hD0 hDlt G hG hdeg
+
+/-! ### The `j = −24729001` row, the other member of isogeny class `121`
+
+Identical in every structural respect to the `j = −121` chain above — same `ℓ = 23`, same
+`m = 11`, same `n = 10`, same degree multiset `1⁵, 11⁵` for `Ψ₁₁ mod 23`, so `deg D = 5` and
+`deg H = 55` again.  The two curves are the two members of the isogeny class `121`, which is
+why the certificate has the same shape; the polynomials themselves are unrelated.
+
+Every number below was produced by re-running mathlib's own `preΨ'` recursion in an
+independent Python implementation of `F₂₃[X]`, VALIDATED by reproducing the six `elevenAMod`
+values above exactly — those are Lean-verified, so the validation is against the kernel and
+not against PARI.  PARI/GP 2.15.4 supplied only the factorisation, and its factors are
+multiplied back out and re-checked before use. -/
+
+/-- The minimal model `[1,1,1,-30,-76]` of the `p = 11`, `j = −24729001` row, read over
+`ZMod 23`.  Definitionally `Fermat.nonCMModelElevenBmod`. -/
+def elevenBMod : WeierstrassCurve (ZMod 23) := ⟨1, 1, 1, -30, -76⟩
+
+/-- The product of the five LINEAR irreducible factors of `Ψ₁₁ mod 23` for `elevenBMod`. -/
+noncomputable def dPolyElevenB : (ZMod 23)[X] :=
+  X^5 + 14*X^4 + 17*X^3 + 16*X^2 + 21
+
+/-- The product of the five irreducible factors of degree `11` of `Ψ₁₁ mod 23` for
+`elevenBMod`. -/
+noncomputable def hPolyElevenB : (ZMod 23)[X] :=
+  X^55 + 11*X^54 + 9*X^53 + 20*X^52 + X^51 + 13*X^50 + 2*X^49 + 3*X^48 + 2*X^47 + 8*X^46 + 8*X^45 +
+    4*X^44 + 9*X^42 + 4*X^41 + 17*X^40 + 22*X^39 + 7*X^38 + 11*X^37 + 20*X^36 + 8*X^34 + 17*X^33 +
+    9*X^32 + 16*X^31 + 16*X^30 + 3*X^29 + 18*X^28 + X^27 + 16*X^26 + 4*X^25 + 13*X^24 + 14*X^23 +
+    12*X^22 + 20*X^21 + 10*X^20 + 15*X^19 + 7*X^18 + 16*X^17 + 2*X^16 + 9*X^15 + 20*X^14 + 21*X^13 +
+    5*X^12 + X^11 + 15*X^10 + 7*X^9 + 22*X^8 + 9*X^7 + 18*X^6 + 2*X^5 + 20*X^4 + 22*X^3 + 22*X^2 +
+    6
+
+theorem Ψ₂Sq_elevenBMod : elevenBMod.Ψ₂Sq =
+    4*X^3 + 5*X^2 + 20*X + 19 := by
+  rw [WeierstrassCurve.Ψ₂Sq]
+  simp only [elevenBMod, WeierstrassCurve.b₂, WeierstrassCurve.b₄, WeierstrassCurve.b₆,
+    map_ofNat, C_neg, C_add, C_mul, C_pow, C_1]
+  reduce_mod_char
+
+theorem Ψ₃_elevenBMod : elevenBMod.Ψ₃ =
+    3*X^4 + 5*X^3 + 7*X^2 + 11*X + 16 := by
+  rw [WeierstrassCurve.Ψ₃]
+  simp only [elevenBMod, WeierstrassCurve.b₂, WeierstrassCurve.b₄, WeierstrassCurve.b₆,
+    WeierstrassCurve.b₈, map_ofNat, C_neg, C_add, C_sub, C_mul, C_pow, C_1]
+  reduce_mod_char
+
+theorem preΨ₄_elevenBMod : elevenBMod.preΨ₄ =
+    2*X^6 + 5*X^5 + 4*X^4 + 6*X^3 + 22*X^2 + 5*X + 6 := by
+  rw [WeierstrassCurve.preΨ₄]
+  simp only [elevenBMod, WeierstrassCurve.b₂, WeierstrassCurve.b₄, WeierstrassCurve.b₆,
+    WeierstrassCurve.b₈, map_ofNat, C_neg, C_add, C_sub, C_mul, C_pow, C_1]
+  reduce_mod_char
+
+theorem preΨ'_five_elevenBMod : elevenBMod.preΨ' 5 =
+    5*X^12 + 2*X^11 + 13*X^10 + 5*X^9 + 21*X^8 + 20*X^7 + 8*X^6 + 20*X^5 + 16*X^4 + 4*X^2 +
+      10*X + 2 := by
+  have h := elevenBMod.preΨ'_odd 0
+  norm_num [WeierstrassCurve.preΨ'_one, WeierstrassCurve.preΨ'_two] at h
+  rw [h, Ψ₃_elevenBMod, preΨ₄_elevenBMod, Ψ₂Sq_elevenBMod]
+  reduce_mod_char
+  ring_nf
+  reduce_mod_char
+
+theorem preΨ'_six_elevenBMod : elevenBMod.preΨ' 6 =
+    3*X^16 + 20*X^15 + 17*X^14 + 5*X^13 + 2*X^12 + 2*X^11 + 6*X^10 + 16*X^9 + 19*X^8 + 14*X^7 +
+    3*X^6 + 20*X^5 + 14*X^4 + 22*X^3 + 11*X^2 + 22*X + 8 := by
+  have h := elevenBMod.preΨ'_even 0
+  norm_num [WeierstrassCurve.preΨ'_one, WeierstrassCurve.preΨ'_two,
+    WeierstrassCurve.preΨ'_three, WeierstrassCurve.preΨ'_four] at h
+  rw [h, Ψ₃_elevenBMod, preΨ₄_elevenBMod, preΨ'_five_elevenBMod]
+  reduce_mod_char
+  ring_nf
+  reduce_mod_char
+
+theorem preΨ'_seven_elevenBMod : elevenBMod.preΨ' 7 =
+    7*X^24 + X^23 + 13*X^22 + 11*X^21 + 22*X^20 + 11*X^19 + 19*X^18 + 5*X^17 + 2*X^16 + 8*X^15 +
+    12*X^14 + 22*X^13 + 22*X^12 + 22*X^11 + 14*X^10 + 22*X^9 + 10*X^8 + X^7 + 8*X^6 + 9*X^5 +
+    19*X^4 + 22*X^3 + 15*X^2 + 10*X + 21 := by
+  have h := elevenBMod.preΨ'_odd 1
+  norm_num [WeierstrassCurve.preΨ'_two, WeierstrassCurve.preΨ'_three,
+    WeierstrassCurve.preΨ'_four] at h
+  rw [h, Ψ₃_elevenBMod, preΨ₄_elevenBMod, preΨ'_five_elevenBMod, Ψ₂Sq_elevenBMod]
+  reduce_mod_char
+  ring_nf
+  reduce_mod_char
+
+/-- **`Ψ₁₁ mod 23 = 11 · D · H`** for `elevenBMod` (PROVEN 2026-07-31).  Same shape as
+`preΨ'_eleven_elevenAMod`: `preΨ'_odd 3` needs exactly `preΨ' 7`, `preΨ' 5`, `preΨ₄`,
+`preΨ' 6` and `Ψ₂Sq`. -/
+theorem preΨ'_eleven_elevenBMod :
+    elevenBMod.preΨ' 11 = C 11 * (dPolyElevenB * hPolyElevenB) := by
+  have h := elevenBMod.preΨ'_odd 3
+  norm_num [WeierstrassCurve.preΨ'_four, Nat.even_iff] at h
+  rw [h, preΨ₄_elevenBMod, preΨ'_five_elevenBMod, preΨ'_six_elevenBMod,
+    preΨ'_seven_elevenBMod, Ψ₂Sq_elevenBMod, dPolyElevenB, hPolyElevenB]
+  simp only [map_ofNat]
+  reduce_mod_char
+  ring_nf
+  reduce_mod_char
+
+/-- `H` has no root in `ZMod 23`: it is a product of irreducibles of degree `11`. -/
+theorem eval_hPolyElevenB_ne_zero (a : ZMod 23) : hPolyElevenB.eval a ≠ 0 := by
+  revert a
+  simp only [hPolyElevenB, eval_add, eval_mul, eval_pow, eval_X, eval_ofNat]
+  decide
+
+/-- **`H ∣ X ^ (23 ^ 11) - X`** for the `j = −24729001` row (PROVEN 2026-07-31).
+
+The content is `Fermat.MazurNonCMFrobeniusB.dvd_X_pow_sub_X_hPoly`, generated by
+`flt-frobenius-cert.py` into its own module for the same reason as the `A` row: elaboration
+is single-threaded per file, so the two certificates elaborate in parallel. -/
+theorem dvd_X_pow_card_pow_sub_X_hPolyElevenB :
+    hPolyElevenB ∣ X ^ (Nat.card (ZMod 23)) ^ 11 - X := by
+  rw [Nat.card_zmod, hPolyElevenB]
+  exact Fermat.MazurNonCMFrobeniusB.dvd_X_pow_sub_X_hPoly
+
+/-- **Row `p = 11`, `j = −24729001`: `Ψ₁₁ mod 23` has no monic divisor of degree `10`**
+(PROVEN 2026-07-31).
+
+This is what `Fermat.not_monic_dvd_preΨ_mod_nonCMModelElevenB` in `X0.lean` consumes. -/
+theorem not_monic_dvd_preΨ_elevenB_mod (G : (ZMod 23)[X]) (hG : G.Monic)
+    (hdeg : G.natDegree = 10) : ¬ G ∣ elevenBMod.preΨ' 11 := by
+  have hp23 : Nat.Prime 23 := by decide
+  have hp11 : Nat.Prime 11 := by decide
+  have hc : (11 : ZMod 23) ≠ 0 := by decide
+  have hmn : ∀ d : ℕ, d ∣ 11 → d ≤ 10 → d = 1 := by
+    intro d hd hle
+    rcases hp11.eq_one_or_self_of_dvd d hd with h | h
+    · exact h
+    · omega
+  haveI : Fact (Nat.Prime 23) := ⟨hp23⟩
+  have hDdeg : dPolyElevenB.natDegree = 5 := by rw [dPolyElevenB]; compute_degree!
+  have hD0 : dPolyElevenB ≠ 0 := fun h => by rw [h, natDegree_zero] at hDdeg; omega
+  have hDlt : dPolyElevenB.natDegree < 10 := by omega
+  exact not_monic_dvd_of_smallDegreePart hc preΨ'_eleven_elevenBMod hmn
+    dvd_X_pow_card_pow_sub_X_hPolyElevenB eval_hPolyElevenB_ne_zero hD0 hDlt G hG hdeg
 
 end Fermat.MazurNonCMCertificate
 
