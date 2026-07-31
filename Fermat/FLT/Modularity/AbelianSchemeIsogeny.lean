@@ -85,20 +85,30 @@ listed here as OPEN until 2026-07-29; the list had gone stale by five bullets,
 which is exactly the phantom-dispatch failure mode.  Do not trust this list —
 re-run the scan.
 
-What is genuinely open (declaration, and what it is):
+**REGENERATED 2026-07-31** from the `declaration uses 'sorry'` warning set of a green
+`lake build` of this module — the list that stood here named FOUR entries of which
+THREE no longer existed (`nonempty_noetherianApproxSystem_of_baseSystem`,
+`exists_le_rTensor_map_maximalIdeal_injective_of_…`,
+`flat_quotientMap_map_maximalIdeal_of_…`, `exists_isAmpleSheaf_symmetric_cube` and
+`nonempty_modPullback_mulByNat_of_cube` are all either PROVEN or renamed away).  The
+warning set is still FIVE, and it is:
 
-* `nonempty_noetherianApproxSystem_of_baseSystem` — the noetherian
-  approximation system built from a base system;
-* `exists_le_rTensor_map_maximalIdeal_injective_of_isNoetherianFlatDescentSystem`
-  and `flat_quotientMap_map_maximalIdeal_of_isNoetherianFlatDescentSystem` — the
-  two remaining steps of the 10.128.3 two-tower engine
-  `exists_flat_index_of_isNoetherianFlatDescentSystem`.  See the section note
-  "10.128.3 IS ONE LEMMA APPLIED TWICE";
-* `exists_isAmpleSheaf_symmetric_cube` — the two-variable symmetric cube, the
-  primitive under BOTH `exists_isAmpleSheaf_cube_of_isAlgClosed` here and
-  `exists_cubeModel_of_abelianScheme` in `ModularCurve/X0.lean`;
-* `nonempty_modPullback_mulByNat_of_cube` — the theorem-of-the-cube pullback
-  identity.
+* `essFinitePresentation_of_essFinitePresentation_comp` and
+  `exists_noetherianLocalExtSystem_of_essFinitePresentation` — the two essential-finite-
+  presentation steps feeding the noetherian approximation of 10.128.3;
+* `exists_le_idealTensorComparison_eq_zero_of_isNoetherianFlatDescentSystem` — HALF A of
+  Stacks 00R6.  Half B, `rTensor_map_maximalIdeal_injective_of_idealTensorComparison_eq_
+  zero_of_isNoetherianFlatDescentSystem`, was closed 2026-07-30 and is sorry-free;
+* `exists_isAmpleSheaf_of_field` — PROJECTIVITY of an abelian variety.  Needs Weil
+  divisors, linear systems and `𝒪(D)`, none of which exist at this pin;
+* `nonempty_cubeIdentity` — THE THEOREM OF THE CUBE, cut 2026-07-31 out of
+  `hasCubeIso_of_symm_of_normalized` (which is now PROVEN over it).  Needs the seesaw
+  principle, hence coherent-sheaf cohomology and flat base change.
+
+The last two are the only mathlib-scale statements in the module, they are INDEPENDENT of
+each other, and each is a theory build rather than a proof problem.  As always: this list
+is stamped to a commit and is stale the moment anything merges — regenerate it from a
+build rather than quoting it.
 -/
 module
 
@@ -14229,7 +14239,26 @@ won — it is what `ModularCurve/X0.lean` consumes — and this is that branch's
 mathematics re-expressed in it.  Two of its five leaves turned out to exist
 already, upstream and PROVEN, as `nonempty_iso_of_modTensor_left` and
 `modTensorComm`; the third became the theorem
-`nonempty_modTensor_modPullback_mulByNat_cube` above. -/
+`nonempty_modTensor_modPullback_mulByNat_cube` above.
+
+**UPDATE 2026-07-31 — the block is down to TWO open leaves, and the cube half moved one
+level up.**  `hasCubeIso_of_symm_of_normalized` is PROVEN, over a new leaf
+`nonempty_cubeIdentity` (the theorem of the cube in Mumford's Corollary 2 form, for three
+independent points and over an arbitrary base).  The count is unchanged — one leaf out, one
+leaf in — and the trade is deliberate:
+
+* the open statement no longer carries `hsymm`, `hzero`, `[Field K]` or the two-variable
+  packaging; all four are discharged in the derivation, so the leaf is now the classical
+  statement rather than a project-specific corollary of it;
+* it is stated over an ARBITRARY base and for ARBITRARY `T'`-points, so the other classical
+  consequences — the theorem of the square, `[n]^* L ≅ L^{⊗n²}` — are reachable from the
+  same leaf when someone needs them, rather than needing their own cuts;
+* the `0^* L` correction term that Mumford drops is kept, which is what buys the arbitrary
+  base.  See the FALSITY AUDIT on the leaf: dropping it asserts `e^* L ≅ 𝒪`, which is free
+  over a field and false in general.
+
+So the two open leaves of this block are now `exists_isAmpleSheaf_of_field` and
+`nonempty_cubeIdentity`, still independent of each other, still one theory build each. -/
 
 /-- **AN ABELIAN VARIETY OVER A FIELD IS PROJECTIVE** (sorry leaf, cut 2026-07-30
 out of `exists_isAmpleSheaf_symmetric_cube` above) — Mumford *Abelian Varieties*
@@ -14469,6 +14498,97 @@ theorem nonempty_iso_modUnit_of_isInvertibleSheaf_of_field (K : Type u) [Field K
   exact ⟨hchain ≪≫ modPullbackMapIso (Spec (CommRingCat.of K)).topIso.inv α ≪≫
     modPullbackUnitIso (Spec (CommRingCat.of K)).topIso.inv⟩
 
+/-- **`M^{⊗2} ≅ M ⊗ M`** (PROVEN 2026-07-31, in one line) — `modTensorPow` is right-nested
+onto the unit, so `M^{⊗2}` is `M ⊗ (M ⊗ 𝒪)` and the right unitor is the whole content.
+
+Trivial, but it is needed twice by `hasCubeIso_of_symm_of_normalized` below, which produces
+`p_i^* L ⊗ p_i^* L` and has to hand back `p_i^*(L^{⊗2})`.  Like its neighbours it belongs in
+`Modularity/AmpleSheaf.lean` beside `nonempty_modTensorPow_mul`; it is here so that the
+2026-07-30 cut and its 2026-07-31 completion land in one file. -/
+theorem nonempty_modTensorPow_two {Z : Scheme.{u}} (M : Z.Modules) :
+    Nonempty (modTensorPow M 2 ≅ modTensor M M) :=
+  ⟨modTensorMapIso (Iso.refl M) (modTensorUnitRightIso M)⟩
+
+namespace AbelianSchemeStruct
+
+/-- **THE THEOREM OF THE CUBE** (sorry leaf, cut 2026-07-31 out of
+`hasCubeIso_of_symm_of_normalized` below) — Mumford, *Abelian Varieties* §6, Corollary 2;
+for an abelian SCHEME, Mumford *GIT* Ch. 6 §2 / Moret-Bailly, *Pinceaux de variétés
+abéliennes* I.
+
+For three `T'`-points `x, y, z` of `A` over a common base point,
+
+  `(x+y+z)^* L ⊗ x^* L ⊗ y^* L ⊗ z^* L  ≅  (x+y)^* L ⊗ (y+z)^* L ⊗ (x+z)^* L ⊗ 0^* L`.
+
+**WHAT THIS SAYS IN ONE LINE.**  `w ↦ w^* L` is a QUADRATIC function `A(T') → Pic(T')`:
+the displayed identity is exactly the vanishing of its third finite difference
+`Δ³q(x,y,z) = 0`.  That is the whole content of the theorem of the cube, and it is the form
+every downstream consequence factors through — the theorem of the square, `[n]^* L ≅ L^{⊗n²}`,
+and the two-variable parallelogram identity `HasCubeIso` below.
+
+**WHY THIS SHAPE AND NOT MUMFORD'S.**  Mumford writes the identity with inverses and
+WITHOUT the `0^* L` term, because he works over a field, where `0 : T' ⟶ A` factors through
+`Spec k` and `Pic (Spec k) = 0` makes `0^* L` trivial for free.  Two changes here:
+
+* the identity is written with all seven factors on the two SIDES rather than with
+  `L^{-1}`, because this development has no chosen inverse invertible sheaf and
+  `HasCubeIso` is written the same way;
+* the `0^* L` correction term is KEPT, which is what makes the statement true over an
+  ARBITRARY base `T` rather than only over a field.  See the audit below.
+
+**FALSITY AUDIT (2026-07-31, this statement, first time stated).**
+
+*The correction term is not decoration — dropping it makes the statement FALSE.*  Put
+`x = y = z = 0`.  Every one of the seven pullbacks is then `0^* L`, so the identity as
+written reads `(0^*L)^{⊗4} ≅ (0^*L)^{⊗4}` — a tautology, correctly.  With the `0^* L` term
+DROPPED it would read `(0^*L)^{⊗4} ≅ (0^*L)^{⊗3}`, i.e. `0^* L ≅ 𝒪_{T'}`, which is exactly
+the assertion `e^* L` is trivial.  Over a field that is true and free
+(`nonempty_iso_modUnit_of_isInvertibleSheaf_of_field` above); over a base with
+`Pic S ≠ 0` it is false for any `L` with nontrivial `e^* L`.  So the term is precisely the
+difference between the field statement and the base statement, and it is why this leaf
+needs no `[Field K]`.
+
+*Two further degeneracy checks, both of which the statement passes as tautologies —
+which is what a correct third-difference identity must do.*  With `z = 0` the two sides are
+`(x+y)^*L ⊗ x^*L ⊗ y^*L ⊗ 0^*L` in different orders, and likewise with any one of the three
+points zero.  A statement that asserted anything in those cases would be over-strong.
+
+*`hinv` is load-bearing.*  For a general quasi-coherent `L` the statement is false — the
+proof is through `Pic`, and the identity is an identity of ISOMORPHISM CLASSES OF LINE
+BUNDLES.  A prover who finds it unused has proved something else.
+
+*What is NOT assumed.*  No field, no algebraically closed field, no ampleness, no symmetry,
+no normalization, no smoothness beyond what `AbelianSchemeStruct` already carries.  The
+hypotheses of the cube are exactly `q` proper with geometrically connected fibres and a
+group structure, i.e. the fields of `AbelianSchemeStruct` itself.
+
+**MISSING MACHINERY — this is a THEORY BUILD, not a proof problem, and the survey on
+`hasCubeIso_of_symm_of_normalized` below is the survey for THIS leaf.**  At this pin there
+is no coherent-sheaf cohomology under `Mathlib/AlgebraicGeometry/` (`grep -rn
+"TheoremOfTheCube\|[Ss]eesaw"` over mathlib is empty; the only `*ohomolog*` file there is
+`Sites/ElladicCohomology.lean`), hence no flat base change and no seesaw principle.  The
+classical proof needs, in order: `H⁰` of an invertible sheaf on the fibres of a proper flat
+morphism; its upper semicontinuity in the base; the seesaw principle (a line bundle on
+`X ×_S T` trivial on every fibre `X_t` and on one section is pulled back from `T`); and then
+the cube by seesaw in two of the three variables.  Whoever takes this should expect to write
+that module — `Modularity/Seesaw.lean` — and should not expect a route through mathlib.
+
+**Do not attempt to prove it from the two-variable form below**: the implication runs the
+other way, for the reason recorded in the section note "WHY THE TWO-VARIABLE FORM IS THE
+RIGHT PRIMITIVE" — a statement about a pair of points does not see three independent
+ones. -/
+theorem nonempty_cubeIdentity {X T : Scheme.{u}} {q : X ⟶ T} (ab : AbelianSchemeStruct q)
+    (L : X.Modules) (hinv : IsInvertibleSheaf L)
+    {T' : Scheme.{u}} {g : T' ⟶ T} (x y z : RelPoint q g) :
+    Nonempty (
+      modTensor (modTensor (modPullback (ab.add (ab.add x y) z).1 L) (modPullback x.1 L))
+          (modTensor (modPullback y.1 L) (modPullback z.1 L))
+        ≅ modTensor (modTensor (modPullback (ab.add x y).1 L) (modPullback (ab.add y z).1 L))
+          (modTensor (modPullback (ab.add x z).1 L) (modPullback (ab.zero g).1 L))) :=
+  sorry
+
+end AbelianSchemeStruct
+
 /-- **THE THEOREM OF THE CUBE, FOR A SYMMETRIC NORMALIZED INVERTIBLE SHEAF**
 (sorry leaf, cut 2026-07-30 out of `exists_isAmpleSheaf_symmetric_cube` above):
 
@@ -14518,14 +14638,89 @@ principle, which needs `H⁰` of a coherent sheaf on the fibres of a proper flat
 its semicontinuity, and that is a module of its own.  Note also that the two leaves of this
 block are INDEPENDENT of each other and of everything else here: this one carries no
 ampleness hypothesis and `exists_isAmpleSheaf_of_field` says nothing about the cube, so they
-want separate owners and neither is blocked on the other. -/
+want separate owners and neither is blocked on the other.
+
+**PROVEN 2026-07-31 over `nonempty_cubeIdentity` immediately above** — the cut this
+docstring itself asked for ("a prover who wants the general Corollary 2 as a separate leaf
+should cut it … this statement is three formal steps below it").  It was three formal
+steps.  The specialisation is `x = p₁`, `y = p₂`, `z = −p₂` on `A ×_K A`, and the six
+morphism identities it needs are these:
+
+* `x + y + z = x`, because `z = −y` — hence the first factor is `p₁^* L`;
+* `x` and `y` ARE the projections, so their factors are `p₁^* L` and `p₂^* L` on the nose;
+* `z.1 = p₂ ≫ [−1]` (`neg_val`), and `hsymm` turns `(p₂ ≫ [−1])^* L` into `p₂^* L`.
+  THIS IS THE ONLY USE OF `hsymm`;
+* `(x + y).1 = σ` and `(x + z).1 = δ` are `rfl` — `sumHom` and `diffHom` are *defined* as
+  those two sums at those two points, so no transport lemma is needed;
+* `y + z = 0`, so the `(y+z)` factor is the SAME `0^* L` as the correction term of
+  `nonempty_cubeIdentity`, and `hzero` kills both.  THIS IS THE ONLY USE OF `hzero`, and
+  it is used twice.
+
+Each side then loses a unit factor by the right unitor, and
+`nonempty_modPullback_modTensorPow` together with `nonempty_modTensorPow_two` reads
+`p_i^* L ⊗ p_i^* L` back as `p_i^*(L^{⊗2})`.  `hinv` is passed straight through to
+`nonempty_cubeIdentity` and is used nowhere else here.
+
+Note what this does NOT change: the mathlib-scale content is still the theorem of the cube,
+and it is now `nonempty_cubeIdentity`.  The survey above stands verbatim as the survey for
+THAT leaf, and the seesaw module it asks for is still the work. -/
 theorem hasCubeIso_of_symm_of_normalized {X : Scheme.{u}} (K : Type u) [Field K]
     {fK : X ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct fK) (L : X.Modules)
     (hinv : IsInvertibleSheaf L)
     (hsymm : Nonempty (modPullback ab.negSelfHom L ≅ L))
     (hzero : Nonempty (modPullback ab.zeroSection L ≅ modUnit (Spec (CommRingCat.of K)))) :
-    ab.HasCubeIso L :=
-  sorry
+    ab.HasCubeIso L := by
+  obtain ⟨esymm⟩ := hsymm
+  obtain ⟨ezero⟩ := hzero
+  letI := ab.addCommGroup (pullback.fst fK fK ≫ fK)
+  -- the three test points `x = p₁`, `y = p₂`, `z = −p₂` on `A ×_K A`
+  set xx : RelPoint fK (pullback.fst fK fK ≫ fK) := ⟨pullback.fst fK fK, rfl⟩ with hxx
+  set yy : RelPoint fK (pullback.fst fK fK ≫ fK) :=
+    ⟨pullback.snd fK fK, pullback.condition.symm⟩ with hyy
+  set zz : RelPoint fK (pullback.fst fK fK ≫ fK) := ab.neg yy with hzz
+  -- the morphism identities the cube identity specialises to
+  have hA : (ab.add (ab.add xx yy) zz).1 = pullback.fst fK fK := by
+    have h : ab.add (ab.add xx yy) zz = xx := by
+      show xx + yy + -yy = xx
+      abel
+    exact congrArg Subtype.val h
+  have hD : zz.1 = pullback.snd fK fK ≫ ab.negSelfHom := ab.neg_val yy
+  have hF : (ab.add yy zz).1 = (ab.zero (pullback.fst fK fK ≫ fK)).1 := by
+    have h : ab.add yy zz = ab.zero (pullback.fst fK fK ≫ fK) := by
+      show yy + -yy = (0 : RelPoint fK (pullback.fst fK fK ≫ fK))
+      abel
+    exact congrArg Subtype.val h
+  have hS : (ab.add xx yy).1 = ab.sumHom := rfl
+  have hG : (ab.add xx zz).1 = ab.diffHom := rfl
+  -- `0^* L ≅ 𝒪`, i.e. NORMALIZATION, spread from `Spec K` to `A ×_K A`
+  have e0 : modPullback (ab.zero (pullback.fst fK fK ≫ fK)).1 L
+      ≅ modUnit (pullback fK fK) :=
+    modPullbackCongrIso (ab.zero_val (pullback.fst fK fK ≫ fK)) L ≪≫
+      (modPullbackCompIso (pullback.fst fK fK ≫ fK) ab.zeroSection L).symm ≪≫
+      modPullbackMapIso (pullback.fst fK fK ≫ fK) ezero ≪≫
+      modPullbackUnitIso (pullback.fst fK fK ≫ fK)
+  -- `(−p₂)^* L ≅ p₂^* L`, i.e. SYMMETRY
+  have eNeg : modPullback zz.1 L ≅ modPullback (pullback.snd fK fK) L :=
+    modPullbackCongrIso hD L ≪≫
+      (modPullbackCompIso (pullback.snd fK fK) ab.negSelfHom L).symm ≪≫
+      modPullbackMapIso (pullback.snd fK fK) esymm
+  obtain ⟨ec⟩ := ab.nonempty_cubeIdentity L hinv xx yy zz
+  obtain ⟨p1pow⟩ := nonempty_modPullback_modTensorPow (pullback.fst fK fK) L 2
+  obtain ⟨p2pow⟩ := nonempty_modPullback_modTensorPow (pullback.snd fK fK) L 2
+  obtain ⟨t1⟩ := nonempty_modTensorPow_two (modPullback (pullback.fst fK fK) L)
+  obtain ⟨t2⟩ := nonempty_modTensorPow_two (modPullback (pullback.snd fK fK) L)
+  refine ⟨?_⟩
+  refine modTensorMapIso (modTensorUnitRightIso (modPullback ab.sumHom L)).symm
+      (modTensorUnitRightIso (modPullback ab.diffHom L)).symm ≪≫ ?_
+  refine modTensorMapIso
+      (modTensorMapIso (modPullbackCongrIso hS L).symm
+        (modPullbackCongrIso hF L ≪≫ e0).symm)
+      (modTensorMapIso (modPullbackCongrIso hG L).symm e0.symm) ≪≫ ?_
+  refine ec.symm ≪≫ ?_
+  refine modTensorMapIso
+      (modTensorMapIso (modPullbackCongrIso hA L) (Iso.refl _))
+      (modTensorMapIso (Iso.refl _) eNeg) ≪≫ ?_
+  exact modTensorMapIso (t1.symm ≪≫ p1pow.symm) (t2.symm ≪≫ p2pow.symm)
 
 /-- **AN ABELIAN VARIETY OVER A FIELD CARRIES A SYMMETRIC, NORMALIZED, AMPLE
 INVERTIBLE SHEAF SATISFYING THE THEOREM OF THE CUBE** (**PROVEN 2026-07-30** over
