@@ -12177,10 +12177,293 @@ still PROVEN over TWO leaves, and they are now
 the first of the two got strictly weaker.
 -/
 
+/-! #### The `Γ₁` moduli axis over `ℤ_(ℓ)`, CUT INTO THREE (2026-07-31)
+
+`exists_x1IntegralSmoothProperModel` below is now a PROVEN assembly over the three
+leaves in this subsection, which are the `Γ₁` twins of the trio `X0.lean` arrived at
+on the `Γ₀` side.  Its own docstring used to decline the cut — *"deliberately NOT cut
+here: three leaves in place of one buys nothing until somebody is actually working
+the moduli axis"* — and that reason has expired, which is what this subsection is.
+
+**The count goes 1 → 3, and that is DISCLOSURE, not regression.**  What was one
+opaque citation naming three classical theorems in prose is now three statements each
+naming exactly one of them, and — the part that is worth more than the count —
+everything BETWEEN them and the node is Lean rather than promise: the generic
+classifying map, its naturality, the coarse structure of the generic fibre, the
+cusp-locus count and the three geometric fields are all proven here.
+
+**What is a transcription of `X0.lean` and what is not.**  `genericFibreClassifyGamma1`,
+`genericFibreClassifyGamma1_natural`, `isCoarseModuliY1_genericFibre` and
+`exists_genericFibreOpen_of_x1IntegralModel` are `X0.lean`'s `genericFibreClassify`,
+`genericFibreClassify_natural`, `isCoarseModuliY0_genericFibre` and
+`exists_genericFibreOpen_of_x0IntegralModel` with `Gamma0Datum` replaced by
+`Gamma1Datum` and `IsBaseChangeOf` by `IsBaseChangeOfGamma1` — nothing else changes,
+because none of those proofs looks at the level structure at all.  Everything they run
+on (`IsFibreIdent`, `fibreIdentPullback`, `IsFibreIdent.openSection`,
+`finite_compl_range_fibreBaseChangeMap_generic`, `fibreBaseChangeMap`,
+`smoothOfRelativeDimension_isStableUnderBaseChange`) is moduli-free and is imported
+from `X0.lean` verbatim.
+
+**THE ONE PLACE THE TRANSCRIPTION IS NOT VERBATIM, and it is a genuine `Γ₀`/`Γ₁`
+difference: `N = 0`.**  `X0.lean`'s `exists_unique_genericFibre_universal` carries no
+positivity hypothesis and is discharged at `N = 0` by emptiness —
+`isEmpty_of_gamma0Datum_zero`, because a cyclic subgroup scheme of order `0` cannot
+exist.  **That escape hatch does NOT transfer.**  `Gamma1Datum` carries a
+`PointOfExactOrder`, whose `geom_order` field reads `addOrderOf … = N`, and
+`addOrderOf x = 0` is the ordinary statement that `x` has INFINITE order — entirely
+satisfiable on an elliptic curve over an algebraically closed field.  So
+`Gamma1Datum 0 T` is inhabited where `Gamma0Datum 0 T` is not, `[Γ₁(0)]` is not a
+Katz–Mazur moduli problem, and nothing in this tree says what its coarse space does
+under base change.  `exists_unique_genericFibre_universal_gamma1` therefore carries
+`0 < N` explicitly.  It costs nothing: the only consumer is
+`exists_x1IntegralSmoothProperModel`, whose `hℓN : ¬ ℓ ∣ N` already forces `N ≠ 0`
+(every `ℓ` divides `0`).
+
+**A follow-up that is available and is NOT taken here.**  On the `Γ₀` side the
+compactification leaf has since been split again, into `exists_x0IntegralCompactifiedModel`
+plus the moduli-free `isX0Compactification_transport`.  The same split is available
+here as soon as somebody writes `isX1Compactification_transport` — which needs an
+isomorphism of coarse spaces OVER THE BASE compatible with nothing, i.e. the bare
+`exists_iso_of_isCoarseModuliY1` rather than the classify-compatible refinement, and
+`IsCoarseModuliY1.exists_inverse` is already here.  It is left undone because it
+trades one leaf for one leaf and this subsection is already the cut that pays. -/
+
+/-- **KATZ–MAZUR ch. 8: the `Γ₁(N)`-ATLAS EXISTS OVER `ℤ_(ℓ)`** (sorry leaf, NEW
+2026-07-31) — the twin of `X0.lean`'s `nonempty_gamma0AtlasOver_specLoc`, and the
+moduli half of `exists_x1IntegralSmoothProperModel` below.
+
+TRUE and classical: Katz–Mazur, *Arithmetic Moduli of Elliptic Curves*, (8.1.1)
+builds the rigidified moduli scheme `𝔐([Γ₁(N)], [Γ(n)])` and its GIT quotient over
+any base in which some `n ≥ 3` is invertible, and `ℤ_(ℓ)` with `ℓ ∤ N` is such a base.
+
+**Why the ATLAS and not the coarse space.**  `Gamma1Atlas.toIsCoarseModuliY1` is
+PROVEN, at an ARBITRARY base, so `exists_isCoarseModuliY1_loc` immediately below is
+free over this leaf; and the atlas is what the construction actually produces — the
+rigidified scheme, the universal family, the fpqc rigidifying cover and the
+categorical quotient — whereas the coarse space is only its shadow.  A leaf stated at
+the shadow would ask a Katz–Mazur specialist to throw away four fifths of what they
+built.  This is the shape `X0.lean` converged on after several rounds and it is
+transported here rather than re-derived.
+
+**The hypotheses, and one that could honestly be weakened.**  `_hℓ` and `_hbase` are
+carried because every call site holds them; what the citation actually needs is the
+Katz–Mazur proviso `∃ n : ℕ, 3 ≤ n ∧ IsUnit (n : ↥R)`, which `_hbase` supplies
+(`X0.lean`'s `exists_unit_natCast_of_isReductionBase`).  Restating this leaf over the
+proviso alone would make it the exact twin of `nonempty_gamma0AtlasOver_specLoc`,
+strictly stronger, and reusable at every subring of `ℚ` except `ℤ` itself; a prover
+who takes this leaf should feel free to do that, and no consumer changes.  `_hℓN` is
+good reduction and is load-bearing for TRUTH: at `ℓ ∣ N` the `Γ₁(N)`-problem is not
+étale over `ℤ_(ℓ)` and its special fibre acquires the Deligne–Rapoport singularities.
+It also forces `0 < N`, so the degenerate level never reaches this leaf. -/
+theorem nonempty_gamma1Atlas_specLoc (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
+    (R : Subring ℚ) (toF : R →+* ZMod ℓ) (_hbase : IsReductionBase ℓ R toF) :
+    Nonempty (Gamma1Atlas N (SpecLoc R)) :=
+  sorry
+
+/-- **The `Γ₁(N)`-coarse space exists over `ℤ_(ℓ)`** (PROVEN over the atlas leaf
+above, through `Gamma1Atlas.toIsCoarseModuliY1`) — the twin of `X0.lean`'s
+`exists_isCoarseModuliY0_loc`, and proven the same way. -/
+theorem exists_isCoarseModuliY1_loc (N ℓ : ℕ) (hℓ : ℓ.Prime) (hℓN : ¬ ℓ ∣ N)
+    (R : Subring ℚ) (toF : R →+* ZMod ℓ) (hbase : IsReductionBase ℓ R toF) :
+    ∃ (YZ : Scheme.{0}) (ystr : YZ ⟶ SpecLoc R), Nonempty (IsCoarseModuliY1 N ystr) := by
+  obtain ⟨A⟩ := nonempty_gamma1Atlas_specLoc N ℓ hℓ hℓN R toF hbase
+  exact ⟨A.Y, A.str, ⟨A.toIsCoarseModuliY1⟩⟩
+
+/-- **DELIGNE–RAPOPORT IV.3 / KATZ–MAZUR 13.11: the integral coarse space has a
+SMOOTH PROPER COMPACTIFICATION over `ℤ_(ℓ)`, with finite cusp locus** (sorry leaf,
+NEW 2026-07-31) — the twin of `X0.lean`'s
+`exists_isX0Compactification_of_isCoarseModuliY0_loc`.
+
+TRUE and classical.  `_hℓN` is what makes it true: at `ℓ ∤ N` the level structure is
+étale over the base, so the model is SMOOTH rather than merely semistable; at `ℓ ∣ N`
+no smooth model exists at all.
+
+**Why the compactification half keeps a MODULAR hypothesis where the field-base
+version does not**, inherited verbatim from the `Γ₀` side: over a FIELD the
+compactification of a smooth affine curve can be handed to general curve theory
+(`AlgebraicGeometry.exists_isSmoothCompactification_of_isAffine`), but over a discrete
+valuation base there is no such theorem — the compactification is constructed with the
+moduli problem, as the coarse space of the `Γ₁(N)`-structures on generalised elliptic
+curves.  So this leaf cites Deligne–Rapoport rather than curve theory.
+
+**`_hX` is load-bearing and is what rules out the degenerate level**, exactly as on the
+`Γ₀` side: it is the only hypothesis that says the level `N` is one at which the moduli
+problem has objects at all.  `_hc` is the coarse space to be compactified, and is
+handed in rather than produced so that this leaf and the one above are independently
+ownable. -/
+theorem exists_isX1Compactification_of_isCoarseModuliY1_loc (N ℓ : ℕ) (_hℓ : ℓ.Prime)
+    (_hℓN : ¬ ℓ ∣ N) (R : Subring ℚ) (toF : R →+* ZMod ℓ)
+    (_hbase : IsReductionBase ℓ R toF)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (_hX : IsX1Compactification N strX strY jY)
+    {YZ : Scheme.{0}} {ystr : YZ ⟶ SpecLoc R} (_hc : IsCoarseModuliY1 N ystr) :
+    ∃ (XZ : Scheme.{0}) (xstr : XZ ⟶ SpecLoc R) (jZ : YZ ⟶ XZ),
+      Nonempty (IsX1Compactification N xstr ystr jZ) :=
+  sorry
+
+/-- **The smooth proper integral model of `X_1(N)` over `ℤ_(ℓ)` exists** (PROVEN over
+the two leaves above) — the twin of `X0.lean`'s `exists_x0IntegralModel`.
+
+This is the pure citation with every identification stripped off: no generic fibre is
+claimed and no comparison with the given `X/ℚ` is made.  Both of those are supplied
+below. -/
+theorem exists_x1IntegralModel (N ℓ : ℕ) (hℓ : ℓ.Prime) (hℓN : ¬ ℓ ∣ N)
+    (R : Subring ℚ) (toF : R →+* ZMod ℓ) (hbase : IsReductionBase ℓ R toF)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX1Compactification N strX strY jY) :
+    ∃ (XZ YZ : Scheme.{0}) (xstr : XZ ⟶ SpecLoc R) (ystr : YZ ⟶ SpecLoc R)
+      (jZ : YZ ⟶ XZ), Nonempty (IsX1Compactification N xstr ystr jZ) := by
+  obtain ⟨YZ, ystr, ⟨hc⟩⟩ := exists_isCoarseModuliY1_loc N ℓ hℓ hℓN R toF hbase
+  obtain ⟨XZ, xstr, jZ, hmodel⟩ :=
+    exists_isX1Compactification_of_isCoarseModuliY1_loc N ℓ hℓ hℓN R toF hbase hX hc
+  exact ⟨XZ, YZ, xstr, ystr, jZ, hmodel⟩
+
+/-- **The classifying map of the generic fibre** (PROVEN) — the universal property of
+the pullback, not moduli theory; `X0.lean`'s `genericFibreClassify` transcribed.
+
+A `Γ₁(N)`-datum over `g : T ⟶ Spec ℚ` is a datum over the `ℤ_(ℓ)`-scheme
+`g ≫ SpecLoc.generic R`, which the integral coarse space classifies; pairing that
+point with `g` is `RelPoint.baseChangeUp`. -/
+noncomputable def genericFibreClassifyGamma1 {N : ℕ} {R : Subring ℚ} {XZ YZ : Scheme.{0}}
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (hmodel : IsX1Compactification N xstr ystr jZ)
+    {T : Scheme.{0}} (g : T ⟶ SpecQ) (d : Gamma1Datum N T) :
+    RelPoint (Limits.pullback.snd ystr (SpecLoc.generic R)) g :=
+  RelPoint.baseChangeUp (SpecLoc.generic R)
+    (hmodel.coarse.classify (g ≫ SpecLoc.generic R) d)
+
+/-- **`genericFibreClassifyGamma1` is natural** (PROVEN) — `baseChangeDown` is
+injective and carries both sides to the integral `classify_natural`. -/
+theorem genericFibreClassifyGamma1_natural {N : ℕ} {R : Subring ℚ} {XZ YZ : Scheme.{0}}
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (hmodel : IsX1Compactification N xstr ystr jZ)
+    {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
+    (hg : h ≫ g = g') {d' : Gamma1Datum N T'} {d : Gamma1Datum N T}
+    (hbc : IsBaseChangeOfGamma1 h d' d) :
+    genericFibreClassifyGamma1 hmodel g' d'
+      = RelPoint.pre h hg (genericFibreClassifyGamma1 hmodel g d) := by
+  apply RelPoint.baseChangeDown_injective (SpecLoc.generic R)
+  rw [genericFibreClassifyGamma1, RelPoint.baseChangeDown_baseChangeUp,
+    genericFibreClassifyGamma1, RelPoint.baseChangeDown_pre,
+    RelPoint.baseChangeDown_baseChangeUp]
+  exact hmodel.coarse.classify_natural h
+    (show h ≫ (g ≫ SpecLoc.generic R) = g' ≫ SpecLoc.generic R by
+      rw [← Category.assoc, hg]) hbc
+
+/-- **KATZ–MAZUR 8.1: INITIALITY of the generic fibre of `Y_1(N)`'s integral model**
+(sorry leaf, NEW 2026-07-31) — the twin of `X0.lean`'s
+`exists_unique_genericFibre_universal`, and the entire residue of
+`exists_genericFibreOpen_of_x1IntegralModel` below: `classify`, `classify_natural`,
+the open immersion and the cusp-locus count are PROVEN in this subsection, so what is
+left is the one clause that is genuinely Katz–Mazur.
+
+TRUE, and NOT formal.  The `Γ₁(N)`-moduli problem is defined over `ℤ[1/N]` and its
+coarse moduli space commutes with FLAT base change (Katz–Mazur 8.1; the `ℓ ∤ N`
+hypothesis, which reaches this leaf through `hmodel`, is what makes the problem étale,
+so no inseparability correction arises), and `ℤ_(ℓ) → ℚ` is flat.
+
+**Why no rearrangement of `hmodel.coarse.universal` proves it** — this is the first
+thing an attacker should check, and it is the reason this is a leaf and not a `have`.
+The argument is `X0.lean`'s verbatim: `hmodel.coarse.universal` quantifies over cocones
+defined on ALL `ℤ_(ℓ)`-schemes, while `c` here is defined only on `ℚ`-schemes, and
+there is no way to extend `c` — a `Γ₁(N)`-datum over a scheme lying over the CLOSED
+point has no `ℚ`-structure, so `c` assigns it nothing.  The integral initiality is
+therefore strictly weaker input than the conclusion.
+
+**`0 < N` IS LOAD-BEARING HERE AND IS NOT ON THE `Γ₀` TWIN, which is a real difference
+between the two moduli problems and not an oversight.**  `X0.lean`'s version is
+discharged at `N = 0` by emptiness (`isEmpty_of_gamma0Datum_zero`: a cyclic subgroup
+scheme of order `0` cannot exist, so `𝒴` is empty, hence initial, and the `∃!` is
+trivial).  For `Γ₁` that fails: `PointOfExactOrder`'s `geom_order` field says
+`addOrderOf … = N`, and `addOrderOf x = 0` is precisely "`x` has infinite order",
+which an elliptic curve over an algebraically closed field has in abundance.  So
+`Gamma1Datum 0 T` is inhabited, `[Γ₁(0)]` is not a Katz–Mazur moduli problem, and this
+statement at `N = 0` is neither refuted nor supported by anything in the tree.  It is
+excluded rather than gambled on.  No consumer pays: the only one is
+`exists_x1IntegralSmoothProperModel`, whose `hℓN` already gives `N ≠ 0`. -/
+theorem exists_unique_genericFibre_universal_gamma1 {N : ℕ} {R : Subring ℚ}
+    {XZ YZ : Scheme.{0}} {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (hmodel : IsX1Compactification N xstr ystr jZ) (_hN : 0 < N)
+    {Y' : Scheme.{0}} (str' : Y' ⟶ SpecQ)
+    (c : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ), Gamma1Datum N T → RelPoint str' g)
+    (_hc : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
+      (hg : h ≫ g = g') {d' : Gamma1Datum N T'} {d : Gamma1Datum N T},
+      IsBaseChangeOfGamma1 h d' d → c g' d' = RelPoint.pre h hg (c g d)) :
+    ∃! u : Limits.pullback ystr (SpecLoc.generic R) ⟶ Y',
+      u ≫ str' = Limits.pullback.snd ystr (SpecLoc.generic R) ∧
+        ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (d : Gamma1Datum N T),
+          (c g d).1 = (genericFibreClassifyGamma1 hmodel g d).1 ≫ u :=
+  sorry
+
+/-- **The generic fibre of an integral model IS a coarse moduli space** (PROVEN over
+the initiality leaf above) — `X0.lean`'s `isCoarseModuliY0_genericFibre` transcribed.
+
+It is a named definition rather than an anonymous `∃` for the reason recorded there:
+hiding it throws away the one fact a consumer needs about it, namely that its
+`classify` is `genericFibreClassifyGamma1 hmodel`, i.e. `RelPoint.baseChangeUp` of the
+INTEGRAL classifying point.  Nothing here consumes that yet — the node below quantifies
+its generic compactification existentially — but the `Γ₀` side had to repair two false
+leaves for want of it, so the information is kept rather than discarded. -/
+noncomputable def isCoarseModuliY1_genericFibre {N : ℕ} {R : Subring ℚ}
+    {XZ YZ : Scheme.{0}} {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (hmodel : IsX1Compactification N xstr ystr jZ) (hN : 0 < N) :
+    IsCoarseModuliY1 N (Limits.pullback.snd ystr (SpecLoc.generic R)) where
+  classify := genericFibreClassifyGamma1 hmodel
+  classify_natural := by
+    intro T' T h g g' hg d' d hbc
+    exact genericFibreClassifyGamma1_natural hmodel h hg hbc
+  universal := by
+    intro Y' str' c hc
+    exact exists_unique_genericFibre_universal_gamma1 hmodel hN str' c hc
+
+/-- **The generic fibre of an integral model carries the cuspidal open** (PROVEN over
+the initiality leaf above) — `X0.lean`'s `exists_genericFibreOpen_of_x0IntegralModel`
+transcribed.
+
+The open immersion and the finiteness of the cusp locus base change: an open immersion
+is stable under base change, and `Spec ℚ ⟶ Spec R` is a MONOMORPHISM
+(`mono_specLocGeneric`), hence universally injective, so the complement of the range of
+the base-changed immersion is the preimage of a finite set under an injection.  That is
+`finite_compl_range_fibreBaseChangeMap_generic`, which mentions no moduli problem at all
+and is imported from `X0.lean` unchanged; the only work here is transporting it along
+`eGen.compareIso`, which `IsFibreIdent.openSection_eq` supplies. -/
+theorem exists_genericFibreOpen_of_x1IntegralModel {N : ℕ} {R : Subring ℚ}
+    {XZ YZ : Scheme.{0}} {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (hmodel : IsX1Compactification N xstr ystr jZ) (hN : 0 < N)
+    {X₀ : Scheme.{0}} {strX₀ : X₀ ⟶ SpecQ}
+    (eGen : IsFibreIdent (SpecLoc.generic R) xstr strX₀) :
+    ∃ _ : IsCoarseModuliY1 N (Limits.pullback.snd ystr (SpecLoc.generic R)),
+      (Set.range (IsFibreIdent.openSection eGen hmodel.comm).base)ᶜ.Finite := by
+  refine ⟨isCoarseModuliY1_genericFibre hmodel hN, ?_⟩
+  have hfin := finite_compl_range_fibreBaseChangeMap_generic
+    (R := R) hmodel.comm hmodel.finite_compl
+  have hrange : Set.range (IsFibreIdent.openSection eGen hmodel.comm).base
+      = ⇑(Scheme.homeoOfIso eGen.compareIso.symm) ''
+        Set.range (fibreBaseChangeMap hmodel.comm (SpecLoc.generic R)).base := by
+    rw [← Set.range_comp, IsFibreIdent.openSection_eq eGen hmodel.comm]
+    rfl
+  rw [hrange, ← Set.image_compl_eq (Scheme.homeoOfIso eGen.compareIso.symm).bijective]
+  exact hfin.image _
+
 /-- **Deligne–Rapoport: `X_1(N)` has a SMOOTH PROPER MODEL over `ℤ_(ℓ)`, whose
-GENERIC FIBRE is SOME `X_1(N)/ℚ`** (sorry leaf, NEW 2026-07-31) — all of the
-modular content of `exists_x1SmoothProperCurveModel` immediately below, which is
-now PROVEN over this leaf alone.
+GENERIC FIBRE is SOME `X_1(N)/ℚ`** (**PROVEN 2026-07-31** over the three leaves of the
+subsection above — `nonempty_gamma1Atlas_specLoc`,
+`exists_isX1Compactification_of_isCoarseModuliY1_loc` and
+`exists_unique_genericFibre_universal_gamma1`; a sorry leaf earlier the same day) —
+all of the modular content of `exists_x1SmoothProperCurveModel` immediately below,
+which is PROVEN over this node alone.
+
+**The statement is UNCHANGED**, apart from the binders losing their underscores, so
+the assembly below calls it exactly as before.  What changed is that the three
+classical theorems it cited jointly are now cited separately, and that everything
+between them and this conclusion is Lean: the generic fibre is not posited but is
+`𝒳 ×_{ℤ_(ℓ)} ℚ`, with `X₀ = ` that pullback, `Y₀ = 𝒴 ×_{ℤ_(ℓ)} ℚ`, `j₀` the
+reconstructed open immersion `IsFibreIdent.openSection`, and the `IsFibreIdent` it
+returns literally `fibreIdentPullback (SpecLoc.generic R) xstr`.  The three geometric
+fields of `_h₀` are base change — `IsProper` and `GeometricallyConnected` are
+stable-under-base-change instances and `SmoothOfRelativeDimension 1` is
+`smoothOfRelativeDimension_isStableUnderBaseChange` — and `IsSmoothProperCurve xstr`
+is three fields of `hmodel` re-packaged.
 
 **Restated 2026-07-31, and this is the whole change at this node: the generic
 fibre is no longer required to be the `X` THE CALLER HANDED IN.**  It is
@@ -12263,35 +12546,67 @@ axis; the `Γ₁` analogues of the three `Γ₀` leaves it rests on are
 * INITIALITY of the generic fibre, i.e. coarse moduli commutes with the flat
   base change `ℤ_(ℓ) → ℚ` (Katz–Mazur 8.1).
 
-They are deliberately NOT cut here: three leaves in place of one buys
-nothing until somebody is actually working the moduli axis, and step (ii)'s
-`Γ₁` ingredients (`IsCoarseModuliY1.exists_inverse` and
-`exists_inverse_of_smoothCompactification`, both PROVEN and used together in
-`nonempty_relPointEquiv_of_isX1Compactification` above) are already here.
+**THEY ARE NOW CUT** (2026-07-31; this paragraph used to say "deliberately NOT
+cut here: three leaves in place of one buys nothing until somebody is actually
+working the moduli axis").  They are `nonempty_gamma1Atlas_specLoc`,
+`exists_isX1Compactification_of_isCoarseModuliY1_loc` and
+`exists_unique_genericFibre_universal_gamma1`, in the subsection immediately
+above, and this node is a fifteen-line assembly over them.  Step (ii)'s `Γ₁`
+ingredients (`IsCoarseModuliY1.exists_inverse` and
+`exists_inverse_of_smoothCompactification_field`, both PROVEN and used together
+in `nonempty_relPointEquiv_of_isX1Compactification` above) are spent one level
+DOWN, in `exists_x1SmoothProperCurveModel`, since the restatement of
+2026-07-31 moved the comparison with the caller's `X` out of this node.
 
-**Each hypothesis is load-bearing** (the underscores record only that a
-`sorry` consumes nothing): `_hℓ` makes `ZMod ℓ` a field, without which
-`IsReductionBase` is unsatisfiable; `_hℓN` is good reduction itself,
-refuted at `ℓ ∣ N`; `_hbase` pins `(R, toF)` as `ℤ_(ℓ)` with reduction mod
-`ℓ`, and since the conclusion is existential a junk base would make the
-leaf true and worthless; `_hX` is what makes the statement about `X_1(N)`
-— it is what forces the model's GENERIC fibre to be the given `X`, which
-`genX` then witnesses, and without it the pair (`xstr`, `ystrZ`) could be
-the moduli model at any other level.
+**Each hypothesis is load-bearing**: `hℓ` makes `ZMod ℓ` a field, without which
+`IsReductionBase` is unsatisfiable; `hℓN` is good reduction itself, refuted at
+`ℓ ∣ N`, and it is also what supplies `0 < N` to the initiality leaf (every `ℓ`
+divides `0`); `hbase` pins `(R, toF)` as `ℤ_(ℓ)` with reduction mod `ℓ`, and
+since the conclusion is existential a junk base would make the node true and
+worthless; `hX` is what makes the statement about `X_1(N)` — without it the
+pair (`xstr`, `ystr`) could be the moduli model at any other level.  All four
+are now genuinely consumed rather than merely recorded, `hℓN` twice.
 
 **WHAT IS NOT A ROUTE**, inherited from the node below: discharging the
 model with an `IsX0Compactification` at some other level `N'` is dead —
 `X_1(N)` is not `X_0(N')` for any `N'` in the range that matters (at
 `N = 25`, `X_0(25)` has genus `0` against `X_1(25)`'s `12`), and `N' = 0`
 is refuted by `isEmpty_of_gamma0Datum_zero`. -/
-theorem exists_x1IntegralSmoothProperModel (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
-    (R : Subring ℚ) (toF : R →+* ZMod ℓ) (_hbase : IsReductionBase ℓ R toF)
+theorem exists_x1IntegralSmoothProperModel (N ℓ : ℕ) (hℓ : ℓ.Prime) (hℓN : ¬ ℓ ∣ N)
+    (R : Subring ℚ) (toF : R →+* ZMod ℓ) (hbase : IsReductionBase ℓ R toF)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
-    (_hX : IsX1Compactification N strX strY jY) :
+    (hX : IsX1Compactification N strX strY jY) :
     ∃ (XZ X₀ Y₀ : Scheme.{0}) (xstr : XZ ⟶ SpecLoc R) (strX₀ : X₀ ⟶ SpecQ)
       (strY₀ : Y₀ ⟶ SpecQ) (j₀ : Y₀ ⟶ X₀) (_h₀ : IsX1Compactification N strX₀ strY₀ j₀),
-      IsSmoothProperCurve xstr ∧ Nonempty (IsFibreIdent (SpecLoc.generic R) xstr strX₀) :=
-  sorry
+      IsSmoothProperCurve xstr ∧ Nonempty (IsFibreIdent (SpecLoc.generic R) xstr strX₀) := by
+  have hN : 0 < N := by
+    rcases Nat.eq_zero_or_pos N with rfl | h
+    exacts [absurd (dvd_zero ℓ) hℓN, h]
+  obtain ⟨XZ, YZ, xstr, ystr, jZ, ⟨hmodel⟩⟩ :=
+    exists_x1IntegralModel N ℓ hℓ hℓN R toF hbase hX
+  haveI : IsOpenImmersion jZ := hmodel.isOpen
+  -- the three geometric fields of the generic compactification are base change,
+  -- exactly as in `X0.lean`'s `exists_x0IntegralCompactification`
+  haveI := hmodel.isProper
+  haveI := hmodel.connected
+  haveI := smoothOfRelativeDimension_isStableUnderBaseChange (n := 1)
+  obtain ⟨hcoarse, hfin⟩ :=
+    exists_genericFibreOpen_of_x1IntegralModel hmodel hN
+      (fibreIdentPullback (SpecLoc.generic R) xstr)
+  exact ⟨XZ, Limits.pullback xstr (SpecLoc.generic R),
+    Limits.pullback ystr (SpecLoc.generic R), xstr,
+    Limits.pullback.snd xstr (SpecLoc.generic R),
+    Limits.pullback.snd ystr (SpecLoc.generic R),
+    IsFibreIdent.openSection (fibreIdentPullback (SpecLoc.generic R) xstr) hmodel.comm,
+    { comm := IsFibreIdent.openSection_comp _ hmodel.comm
+      coarse := hcoarse
+      isOpen := IsFibreIdent.isOpenImmersion_openSection _ hmodel.comm
+      isProper := inferInstance
+      smooth := MorphismProperty.pullback_snd xstr (SpecLoc.generic R) hmodel.smooth
+      connected := inferInstance
+      finite_compl := hfin },
+    ⟨hmodel.isProper, hmodel.smooth, hmodel.connected⟩,
+    ⟨fibreIdentPullback (SpecLoc.generic R) xstr⟩⟩
 
 /-- **Deligne–Rapoport: `X_1(N)` has a SMOOTH PROPER MODEL over `ℤ_(ℓ)` whose
 GENERIC FIBRE is the given `X`** (**PROVEN 2026-07-31** over the single strictly

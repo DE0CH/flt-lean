@@ -7739,3 +7739,92 @@ Two riders that cost real time here:
   zero.
 * `Fermat/SorryGate.lean` contains the token `sorry` twice inside a STRING LITERAL in
   its `elab`.  Any scan must exclude that file or strip string literals.
+
+## VERIFY AGAINST THE LAST GREEN RELEASE'S OLEANS WHEN YOUR IMPORT CONE IS RED — and prove the shim sound by DIFFING THE API
+
+(2026-07-31, `flt-lean-115`.) A target can live only on `merger`, and `merger` can be
+RED in a module your file imports, for a reason that is not yours and whose repair is
+somebody else's multi-hour task. Release 27 was in exactly that state: it was **not
+published** (`tools/merge/RELEASE-27-HANDOVER.md`), `main` stayed at the last green
+release, and `ModularCurve/X0.lean` carried ~193 errors *inherited from release 25*. So
+`git merge merger` — which the doctrine correctly prescribes when your target exists
+nowhere else — buys you the declaration and takes away `lake build`, because
+`ModularCurve/X1.lean` imports `X0`.
+
+**You are not blocked, and you must not "fix" X0 to unblock yourself.** The scratch shim
+this file already documents for the *lake-deletes-the-target-olean* case is the general
+answer, and this is its strongest use:
+
+    cp -rs ~/.flt-release-lake/build/lib /tmp/relean-N/          # symlink farm, ~0.3 s
+    LP=$(lake env printenv LEAN_PATH); LSP=$(lake env printenv LEAN_SRC_PATH)
+    LEAN_PATH="/tmp/relean-N/lib/lean:$LP" LEAN_SRC_PATH="$LSP" lean Fermat/Scratch.lean
+
+The farm is the LAST GREEN RELEASE's artifacts, so the red module is replaced by its
+green predecessor and a scratch that `public import`s it elaborates in about a minute.
+Here it verified 440 lines — three new leaves, five proven transport declarations and
+the target's whole proof — first try, with exactly the three intended
+`declaration uses 'sorry'` warnings.
+
+**THE SOUNDNESS CONDITION IS NOT "the shim ran green"; it is that every name you use is
+PRESENT AND UNCHANGED at the snapshot's sha, and you check that mechanically:**
+
+    git show main:<the upstream file> > /tmp/up-main.lean
+    # then, per name, compare the declaration text in /tmp/up-main.lean with your tree's
+
+Nine names were compared this way (`IsFibreIdent`, `fibreIdentPullback`,
+`IsSmoothProperCurve`, `finite_compl_range_fibreBaseChangeMap_generic`,
+`genericFibreClassify`, and the four `Γ₁` structures) and all nine were byte-identical,
+which is what makes the green scratch a genuine verification of the text that goes into
+the file. The check also FOUND the one place it fails:
+`exists_unit_natCast_of_isReductionBase` is merger-only, so a leaf stated over the
+Katz–Mazur proviso `∃ n, 3 ≤ n ∧ IsUnit (n : ↥R)` could not have been verified — the
+leaf was stated over `IsReductionBase` instead, with the improvement named in its
+docstring for whoever takes it. **Design your cut around what the shim can verify**;
+that is a cheap constraint and it is much cheaper than an unverifiable commit.
+
+Two riders. Extract the scratch from the REAL FILE by line range once the edit is in
+place, rather than keeping a hand-typed parallel copy — that way the thing you verified
+and the thing you committed are the same characters. And a full shim run of the edited
+module itself is worth launching in the background as a second opinion, but it is only
+evidence about the parts that do not touch merger-only upstream names.
+
+## A DEGENERATE-CASE ESCAPE HATCH IS THE ONE PART OF A TWIN TRANSCRIPTION THAT DOES NOT TRANSFER
+
+(2026-07-31, the `Γ₀` → `Γ₁` transport of `X0.lean`'s integral-model trio into
+`X1.lean`.) This development is built out of twin layers, and transcribing one onto the
+other is a standard and highly productive move: five declarations came across here with
+`Gamma0Datum` → `Gamma1Datum` and `IsBaseChangeOf` → `IsBaseChangeOfGamma1` and *nothing
+else changed*, because none of those proofs ever looks at the level structure.
+
+**The exception is the degenerate parameter, and it is exactly where the two problems
+genuinely differ.** `X0.lean`'s `exists_unique_genericFibre_universal` carries no
+positivity hypothesis and discharges `N = 0` by EMPTINESS: `isEmpty_of_gamma0Datum_zero`,
+because a cyclic subgroup scheme of order `0` cannot exist, so the coarse space is empty,
+hence initial, and the `∃!` is trivial. Copy that and you have written a false
+justification: `Gamma1Datum` carries a `PointOfExactOrder`, whose clause is
+`addOrderOf … = N`, and `addOrderOf x = 0` is the ordinary statement that `x` has
+INFINITE order — which an elliptic curve over an algebraically closed field has in
+abundance. So `Gamma1Datum 0 T` is INHABITED where `Gamma0Datum 0 T` is not, `[Γ₁(0)]` is
+not a Katz–Mazur moduli problem, and the transcribed statement at `N = 0` is neither
+supported nor refuted by anything in the tree.
+
+That is the [[flt-third-outcome-strengthen-the-axioms]] situation, and the cheap response
+is to EXCLUDE rather than gamble: add `0 < N` to the leaf. It weakens the leaf, so it
+cannot make it false, and here it cost nothing at all — the only consumer already carried
+`¬ ℓ ∣ N`, and every `ℓ` divides `0`.
+
+**The general rule: when transcribing between twins, list the places the SOURCE proof
+discharges a degenerate case, and re-derive each one at the target.** They are easy to
+miss because they are usually a single `rcases … with hN | hN` branch inside an otherwise
+mechanical proof, and because the transcription compiles perfectly without them — the
+degenerate branch of the source is exactly the part you are NOT copying when the target's
+version is a `sorry`. Grep the source for `Nat.eq_zero_or_pos`, `isEmpty_of_`,
+`Subsingleton`, and `IsInitial`; those four cover most of them here.
+
+Corollary about the leaf count, since it is the shape of this whole task: cutting the
+trio took `X1.lean` from 24 direct sorries to 26. **One leaf became three and that is
+DISCLOSURE.** What changed is that a single citation naming three classical theorems in
+prose became three statements naming one theorem each, and that everything between them
+and the node — the generic classifying map, its naturality, the coarse structure of the
+generic fibre, the cusp-locus count and the three geometric fields — is Lean instead of
+promise. Judge it by what is LEFT in each leaf, not by the delta.

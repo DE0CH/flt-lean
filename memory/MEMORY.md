@@ -69,3 +69,7 @@
 - [A private import suffices for proof bodies](lean-private-import-suffices-for-proof-bodies.md) — only STATEMENTS (and exposed def bodies) need `public import`; ModThree's docstring said otherwise for three days and made a leaf look like it needed a header edit it did not
 
 - [Hoist vs concurrent proof](flt-hoist-vs-concurrent-proof.md) — relocating a leaf and proving it in place merge into a duplicate declaration; keep the hoisted location, move the proof
+
+- [Verify against the last green release's oleans](flt-verify-against-last-green-release-oleans.md) — when your target lives only on `merger` and `merger`'s upstream is red, bare `lean` over a `~/.flt-release-lake` symlink farm verifies your text; prove the shim sound by diffing the API you use
+
+- [A degenerate case does not transfer between twins](flt-degenerate-case-does-not-transfer-between-twins.md) — `Gamma0Datum 0` is EMPTY, `Gamma1Datum 0` is INHABITED (`addOrderOf x = 0` is infinite order); re-derive every degenerate branch a transcription's source discharges
