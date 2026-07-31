@@ -6735,10 +6735,28 @@ file."* That is true, and the token printed in the prompt is **not always the on
 loop will accept.**
 
 `flt-loop.py` accepts a sentinel whose token is `j["token"]` **or** a member of
-`j["prev_tokens"]` (line ~877). Its comment says a resumed job is the same job, so an
-earlier incarnation's result is still its result. But `grep -n prev_tokens flt-loop.py`
-finds exactly **two** occurrences — the read at 877 and the field-copy at 1033. **Nothing
-ever writes it.** It is always `None`.
+`j["prev_tokens"]` (line ~883). Its comment says a resumed job is the same job, so an
+earlier incarnation's result is still its result.
+
+**CORRECTED 2026-07-31 (`flt-lean-395`): `prev_tokens` IS written now, and the
+prompt's token therefore works again.** The original finding above was right when
+made — the field was read and never populated, so a resumed agent's prompt token was
+dead. It has since been fixed: `flt_loop_rows.py:504–505` does
+
+    j["prev_tokens"] = ((j.get("prev_tokens") or []) + [j["token"]])[-10:]
+    j["token"] = tok()
+
+on every resume, and `flt-loop.py:883` matches against that list. Measured on this
+job: prompt token `6df72ed9`, live token `8460ee68`, and
+`prev_tokens = ['6df72ed9', '21670961']` — so the prompt's token would have been
+accepted. Note the grep that produced the original verdict now finds **four**
+occurrences and the two new ones are in a DIFFERENT FILE, which is why re-running it
+against `flt-loop.py` alone still looks like the bug is live. Grep both files.
+
+**The recommendation below is unchanged, and is now belt-and-braces rather than
+essential**: write the token the RECORD holds. It is accepted under either
+implementation, it costs one command, and it does not depend on a fix staying in
+place.
 
 Meanwhile resume mints a NEW token, deliberately, so the old `.started` marker goes
 inert. The agent's prompt is the ORIGINAL payload and still carries the ORIGINAL token.
