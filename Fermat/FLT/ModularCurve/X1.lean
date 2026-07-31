@@ -11986,7 +11986,26 @@ where `-1/(Nz) = i/(√N y)` and `N z² = -y²` — is exactly the displayed
 statement.  On `Γ₁(N)` the involution moves the nebentypus,
 `S₂(N, χ) → S₂(N, χ̄)`, which changes which form appears on the other side
 of the functional equation and changes NOTHING about this statement,
-because `g` is quantified existentially and `χ` does not occur.
+because the partner is `frickeSlashOn` outright and `χ` does not occur.
+
+**THE PARTNER IS NAMED HERE, AND THE EXISTENTIAL BELOW IS THE COROLLARY**
+(2026-07-31; the two used to be one declaration, stated existentially).
+The proof always produced `frickeSlashOn N hN h1 h0 f` as its witness —
+`refine ⟨frickeSlashOn N hN h1 h0 f, …⟩` — so naming it costs nothing and
+is not a strengthening of the mathematics.  What it buys is downstream:
+a consumer that only has `∃ g, …` must either `choose` (which is what
+`cuspFEPairOn` below does) or carry `g` and the functional equation as two
+extra hypotheses through every statement it touches.  The level-`25`
+arithmetic leaf `integral_Ioi_one_sub_frickePartner_ne_zero_x1TwentyFive`
+did exactly that, and it forced its own docstring to record, as an
+UNRESOLVED assumption, that "the new leaf quantifies over ANY `g`
+satisfying the displayed functional equation, not over the Fricke partner
+specifically … that is sound because `g` is pinned by the relation" — a
+pinning argument (a holomorphic function on the connected upper half plane
+is determined by its values on the imaginary axis) that was never written
+in Lean and did not need to be.  With the partner named, the leaf is stated
+about `frickeSlashOn 25 _ _ _ f` and the assumption disappears rather than
+being discharged.
 
 The witness is `frickeSlashOn N hN h1 h0 f`; the sign `-1` and the weight
 `y²` come out of `|det W_N|^{k-1} · denom(W_N, z)^{-k} = N (i y √N)^{-2}
@@ -12003,11 +12022,11 @@ work here is `frickeMatrix_conj_mem_of_le` (normalisation of the abstract
 is not needed at this pin because mathlib's `CuspForm` quantifies its
 vanishing condition over ALL cusps and `OnePoint.IsZeroAt.smul_iff`
 converts it into a statement about `W_N`-translates. -/
-theorem exists_frickeInvolutionOn (N : ℕ) (hN : N ≠ 0) (G : Subgroup (GL (Fin 2) ℝ))
-    (h1 : Gamma1GL N ≤ G) (h0 : G ≤ Gamma0GL N) (f : CuspForm G 2) :
-    ∃ g : CuspForm G 2, ∀ y : ℝ, 0 < y →
-      axisRestrictOn G N f (1 / y) = -((y ^ (2 : ℝ) : ℝ) : ℂ) * axisRestrictOn G N g y := by
-  refine ⟨frickeSlashOn N hN h1 h0 f, fun y hy => ?_⟩
+theorem axisRestrictOn_one_div_eq_frickeSlashOn (N : ℕ) (hN : N ≠ 0)
+    (G : Subgroup (GL (Fin 2) ℝ)) (h1 : Gamma1GL N ≤ G) (h0 : G ≤ Gamma0GL N)
+    (f : CuspForm G 2) {y : ℝ} (hy : 0 < y) :
+    axisRestrictOn G N f (1 / y)
+      = -((y ^ (2 : ℝ) : ℝ) : ℂ) * axisRestrictOn G N (frickeSlashOn N hN h1 h0 f) y := by
   have hy' : (0 : ℝ) < 1 / y := by positivity
   rw [axisRestrictOn_of_pos hN f hy', axisRestrictOn_of_pos hN _ hy]
   simp only [coe_frickeSlashOn, ModularForm.slash_apply, frickeMatrix_smul_axisPoint N hN hy,
@@ -12024,6 +12043,17 @@ theorem exists_frickeInvolutionOn (N : ℕ) (hN : N ≠ 0) (G : Subgroup (GL (Fi
   field_simp
   rw [Complex.I_sq]
   ring
+
+/-- **The Fricke involution, existentially** (PROVEN 2026-07-28; a
+corollary of the named form above since 2026-07-31) — kept because
+`cuspFEPairOn` below consumes it through `.choose`, where the partner's
+identity is genuinely irrelevant. -/
+theorem exists_frickeInvolutionOn (N : ℕ) (hN : N ≠ 0) (G : Subgroup (GL (Fin 2) ℝ))
+    (h1 : Gamma1GL N ≤ G) (h0 : G ≤ Gamma0GL N) (f : CuspForm G 2) :
+    ∃ g : CuspForm G 2, ∀ y : ℝ, 0 < y →
+      axisRestrictOn G N f (1 / y) = -((y ^ (2 : ℝ) : ℝ) : ℂ) * axisRestrictOn G N g y :=
+  ⟨frickeSlashOn N hN h1 h0 f, fun _ hy =>
+    axisRestrictOn_one_div_eq_frickeSlashOn N hN G h1 h0 f hy⟩
 
 /-- **A cusp form decays faster than every power at `i∞`** (PROVEN
 2026-07-28).
@@ -15474,21 +15504,35 @@ for the twelve forms, which is the irreducible level-`25` input.
 `tsum_ne_zero_of_tail_lt_norm_sum` already takes the truncation point as a
 parameter, so `K = 2` costs nothing.
 
-**`hf` AND `hFE` ARE BOTH LOAD-BEARING.**  Without `hf` the coefficients of
-`f` are unconstrained and `a₁ = 1` — which is `hf.one`, and is what makes
-the head of the series `1 − λ` rather than nothing — is unavailable; the
-statement is then false, `f := 0` giving `0 − 0 = 0`.  Without `hFE` the
-form `g` is an arbitrary cusp form on `Γ₁(25)` and may be taken equal to
-`f`, making the difference `0`. -/
+**THE PARTNER IS NOW NAMED, NOT QUANTIFIED** (2026-07-31, the day after
+this leaf was opened).  As first cut it took a bare `g : CuspForm (Gamma1GL
+25) 2` together with the functional equation `hFE` as hypotheses, and its
+own docstring recorded, as an assumption "I am recording rather than
+resolving", that this was sound because *"`g` is pinned by the relation:
+`axisRestrictOn` determines a cusp form on the positive imaginary axis, and
+a holomorphic function on the connected upper half plane is determined by
+its values there."*  That pinning argument is correct and was never
+written in Lean — and it does not have to be.  The partner is
+`frickeSlashOn 25 _ _ _ f` outright: `exists_frickeInvolutionOn` always
+produced exactly that witness, and it is now available under its own name
+as `axisRestrictOn_one_div_eq_frickeSlashOn` (PROVEN, ~3500 lines above).
+So `g` and `hFE` are GONE from the signature, the identity-theorem
+assumption is gone with them, and what a prover must produce is the
+`q`-expansion of a NAMED form rather than of an unknown one.
+
+**`hf` IS LOAD-BEARING.**  Without it the coefficients of `f` are
+unconstrained and `a₁ = 1` — which is `hf.one`, and is what makes the head
+of the series `1 − λ` rather than nothing — is unavailable; the statement
+is then false, `f := 0` giving `0 − 0 = 0`.  The old `hFE` needs no
+separate load-bearing note now that it is a theorem: its content is that
+the second integral is over the Fricke transform of `f` and not over an
+arbitrary cusp form, which is visible in the statement. -/
 theorem integral_Ioi_one_sub_frickePartner_ne_zero_x1TwentyFive
     (χ : DirichletCharacter ℂ 25) (f : CuspForm (Gamma1GL 25) 2) (a : ℕ → ℂ)
-    (hf : IsWeightTwoEigenformOn (Gamma1GL 25) 25 χ f a)
-    (g : CuspForm (Gamma1GL 25) 2)
-    (hFE : ∀ y : ℝ, 0 < y →
-      axisRestrictOn (Gamma1GL 25) 25 f (1 / y)
-        = -((y ^ (2 : ℝ) : ℝ) : ℂ) * axisRestrictOn (Gamma1GL 25) 25 g y) :
+    (hf : IsWeightTwoEigenformOn (Gamma1GL 25) 25 χ f a) :
     (∫ y in Set.Ioi (1 : ℝ), axisRestrictOn (Gamma1GL 25) 25 f y)
-      - ∫ y in Set.Ioi (1 : ℝ), axisRestrictOn (Gamma1GL 25) 25 g y ≠ 0 :=
+      - ∫ y in Set.Ioi (1 : ℝ), axisRestrictOn (Gamma1GL 25) 25
+          (frickeSlashOn 25 (by norm_num) le_rfl (gamma1GL_le_gamma0GL 25) f) y ≠ 0 :=
   sorry
 
 end CuspPeriodFrickeOn
@@ -15785,14 +15829,18 @@ theorem cuspPeriod_ne_zero_x1TwentyFive (χ : DirichletCharacter ℂ 25)
     (f : CuspForm (Gamma1GL 25) 2) (a : ℕ → ℂ)
     (hf : IsWeightTwoEigenformOn (Gamma1GL 25) 25 χ f a) :
     cuspPeriod a ≠ 0 := by
-  obtain ⟨g, hg⟩ :=
-    exists_frickeInvolutionOn 25 (by norm_num) (Gamma1GL 25) le_rfl (gamma1GL_le_gamma0GL 25) f
+  have hg : ∀ y : ℝ, 0 < y →
+      axisRestrictOn (Gamma1GL 25) 25 f (1 / y)
+        = -((y ^ (2 : ℝ) : ℝ) : ℂ) * axisRestrictOn (Gamma1GL 25) 25
+            (frickeSlashOn 25 (by norm_num) le_rfl (gamma1GL_le_gamma0GL 25) f) y :=
+    fun _ hy => axisRestrictOn_one_div_eq_frickeSlashOn 25 (by norm_num) (Gamma1GL 25)
+      le_rfl (gamma1GL_le_gamma0GL 25) f hy
   rw [cuspPeriod_eq_inv_sqrt_smulOn (by norm_num) hf,
     integral_Ioi_zero_eq_sub_of_fricke
       (integrableOn_axisRestrictOn 25 (by norm_num) (Gamma1GL 25) le_rfl
         (gamma1GL_le_gamma0GL 25) f) hg]
   refine smul_ne_zero (inv_ne_zero ?_)
-    (integral_Ioi_one_sub_frickePartner_ne_zero_x1TwentyFive χ f a hf g hg)
+    (integral_Ioi_one_sub_frickePartner_ne_zero_x1TwentyFive χ f a hf)
   exact (Real.sqrt_pos.mpr (by norm_num)).ne'
 
 /-- **`L(f, 1) ≠ 0` for every weight-two eigenform on `Γ_1(25)`** (PROVEN
