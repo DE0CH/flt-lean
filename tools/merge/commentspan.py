@@ -80,6 +80,14 @@ def main():
     ap.add_argument("paths", nargs="*", help="files to scan (default: all of Fermat/)")
     ap.add_argument("--list", action="store_true",
                     help="print the swallowed declaration lines")
+    ap.add_argument("--min-decls", type=int, default=5,
+                    help="report a comment only if it contains at least this many "
+                         "top-level declarations (default 5). This project's "
+                         "docstrings quote Lean code at column 0 constantly, so 1 "
+                         "gives ~577 false positives on this tree and 5 gives 3 "
+                         "reports, all real. Lower it to 3 for an eyeball review "
+                         "list (15 reports) when hunting a wound you already "
+                         "suspect.")
     args = ap.parse_args()
 
     paths = args.paths
@@ -109,7 +117,7 @@ def main():
                 continue
             swallowed = [(i + 1, lines[i]) for i in range(op, cl - 1)
                          if DECL.match(lines[i])]
-            if swallowed:
+            if len(swallowed) >= args.min_decls:
                 print(f"{p}:{op}: SWALLOW — block comment closing at :{cl} "
                       f"({cl - op} lines) contains {len(swallowed)} top-level "
                       f"declaration(s), the first at :{swallowed[0][0]}")
