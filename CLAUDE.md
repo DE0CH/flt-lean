@@ -1157,6 +1157,62 @@ and a second consumer 79 000 lines away in another module from another branch, f
 4 after twenty minutes of elaboration. Budget three rounds minimum, and schedule nothing behind the
 first green one.
 
+## HOW TO CUT A LEAF YOU CANNOT PROVE: three moves that worked on three CM leaves in one run
+
+(2026-07-31, `flt-lean-175`, on `BinaryQuadraticForm.lean`'s Heegner cluster.) An agent handed
+three leaves each documented as "a project in its own right" — Weber's theorem, the modular
+polynomial `Φ_N`, the first main theorem of complex multiplication — closed all three AS STATED
+by recutting, adding zero net sorries across two of them. None of the three was proven. The
+moves generalise, and each has a mechanical obligation you must discharge.
+
+**1. MEASURE WHICH HYPOTHESIS EACH HALF NEEDS — the class-number hypothesis was on the wrong
+half.** `natDegree_minpoly_weberAlpha_le` (`deg α ≤ 3`, `α = ζ₈⁻¹f₂(τ₀)²`) carried `hcl`
+(`h(−p) = 1`). But the statement conflates a STRUCTURAL claim (`α ∈ ℚ(α⁴)` — Weber's descent)
+with a NUMERICAL one (that degree is `3`, because `h(−4p) = 3h(−p) = 3`). Only the second needs
+`hcl`. `PARI/GP` settled it in minutes: `deg α = deg α⁴` at `h(−p) = 1, 3, 5` alike, so the
+structural half is class-number-FREE, and it became the leaf while the arithmetic became glue.
+
+The same run found the sharp hypothesis the old statement had been MASKING: at `p ≡ 1 mod 4`,
+`deg α > deg α⁴` (`p = 5`: `4` vs `2`), so the new leaf is FALSE there — `p ≡ 3 mod 4` is
+load-bearing and nobody had noticed, because `hcl` is vacuous at those `p` and was covering it.
+**A hypothesis that makes a leaf vacuous also hides which OTHER hypothesis is doing the work.**
+
+So: before attacking a leaf, ask of each hypothesis "which HALF of the conclusion needs this",
+and test it numerically. `algdep` on a high-precision value answers degree questions directly
+(400 digits, accept only residual `< 10⁻²⁹⁰` AND coefficient height `< 10³⁰` — the height test
+is essential, `algdep` returns a spurious height-`10¹²³` relation at every degree otherwise).
+
+**2. A TWO-CLAUSE EXISTENTIAL SPLITS IFF THE FIRST CLAUSE PINS THE WITNESS.**
+`∃ Φ, P Φ ∧ Q Φ` becomes `∃ Φ, P Φ` and `∀ Φ, P Φ → Q Φ` — two independently ownable leaves —
+exactly when `P` determines `Φ`. That is the whole obligation, and it is usually easy: for
+`Φ_N`, `P` says `Φ.map (eval at j(z))` is a given product for every `z ∈ ℍ`, `Polynomial.map`
+is coefficientwise, and `j` is non-constant, so rival `Φ`s differ by coefficients vanishing at
+infinitely many points. Discharge it IN THE DOCSTRING; without it the second leaf is unusable,
+because a prover cannot tell which `Φ` it is talking about. The payoff is large: the second
+leaf gets to ASSUME the first, which for `Φ_N` removed the entire construction from Kronecker's
+`q`-expansion computation.
+
+**3. QUANTIFY OVER ROOTS OF THE MINIMAL POLYNOMIAL, NOT OVER A `Finset` OF CLASSES.** The CM
+leaf's docstring said a finer cut "needs a `Finset` of form classes and a `form ↦ τ_f` map,
+i.e. new infrastructure". Both halves of that obstruction evaporate if the leaf ranges over
+`aeval x (minpoly ℚ y) = 0` instead of over a class group, and RETURNS the point alongside the
+form. Neither the class group nor the `τ_f` map is then definable at all. Generally: when a cut
+looks blocked on infrastructure, check whether the infrastructure is only there to INDEX
+something the leaf could hand back existentially.
+
+**THE TRAP THAT COMES WITH MOVE 3, AND IT IS INVISIBLE IN THE STATEMENT.** `minpoly ℚ x = 0`
+for transcendental `x`, and `Polynomial.aeval x 0 = 0` holds for EVERY `x`. So a hypothesis
+"`x` is a root of `minpoly ℚ y`" is satisfied by ALL of `ℂ` when `y` is transcendental — and a
+conclusion that can hold for only countably many `x` then makes the leaf FALSE. Any leaf stated
+through `minpoly` has a silent ALGEBRAICITY dependency on its subject. Say so in the audit and
+name what discharges it; here it was the OTHER open leaf of the same file, which means the two
+CM leaves are not independent and a reviewer must not treat them as such.
+
+**AND THE COUNT IS NOT THE MEASURE.** Move 1 and move 3 were net zero (one leaf closed, one
+opened); move 2 was `+1`. What improved is that `hcl` now appears in ONE leaf instead of three,
+that the two `Φ_N` halves share no technique, and that each residue is a statement with a name
+in a textbook. Report the recut that way, not by the delta.
+
 ## RIVAL CUTS ARE OFTEN COMPLEMENTARY — check before choosing
 
 (2026-07-30.) Nine of 57 branches in one batch were declined because another agent had cut the
