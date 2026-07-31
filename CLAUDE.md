@@ -2021,6 +2021,33 @@ Corollary, general: **`minpoly` is rarely what you need** when a plain `IsIntegr
 witness will do — it drags in irreducibility and the `ℤ`-vs-`ℚ` integrally-closed
 bridge for nothing.
 
+## "That theorem HANDS BACK X" is a claim about its CONCLUSION, not about its proof
+
+(2026-07-31.) `exists_span_three_eq_maximalIdeal_and_finrank_eq_of_residueField`'s
+docstring said, twice and in bold, that the only thing its proof was missing was one
+`public import`, and that `exists_unramified_extension_of_residueField` "delivers
+`𝔪_S = 𝔪_R·S` verbatim". The import claim was exactly right and saved real time. The
+delivery claim was **false**: that theorem's proof does establish `𝔪_S = 𝔪_R·S`
+internally (it is a named `have` in its body, `hmaxS`) and its conclusion does **not**
+export it. So the consumer, having added the promised import, still could not close the
+leaf.
+
+The recovery was cheap once the shape was clear — `S` is free of rank `n` over `R` and
+its residue field already has degree `n`, so `n = e·f` forces `e = 1`, which is a
+general lemma (`maximalIdeal_eq_map_of_finrank_residueField_eq`, proved from mathlib's
+`IsLocalRing.finrank_quotient_map` plus rank–nullity, ~30 lines) — but it is work
+nobody had budgeted, and the docstring said it was not needed.
+
+So: **when a docstring tells you what an upstream theorem gives you, read that
+theorem's STATEMENT before believing it.** A `have` inside a proof is invisible to
+every consumer. And the repair when the fact really is only internal is a choice with
+different costs, worth making deliberately:
+* *export it* — add the clause to the upstream conclusion and fix its consumers. Two
+  lines, but it rebuilds everything downstream of a widely-imported module;
+* *re-derive it downstream* — a self-contained lemma in the file you already own. More
+  Lean, zero extra rebuild, no merge conflict with other agents.
+Prefer the second when the upstream module has consumers outside your cone.
+
 ## A `sorry` is a PROMISE that the statement is provable
 
 (2026-07-29, orchestrator error, caught only because an agent quoted the file's
@@ -2628,6 +2655,34 @@ worth QUOTING in the residue's docstring — not committing as a module,
 which would just be another unreachable file — because it states the
 sub-leaf in the one form that matters: stripped of everything the consumer
 does not actually use.
+
+**THE BEST SCRATCH IMPORTS THE TARGET MODULE ITSELF** (2026-07-31, measured on
+`ModThree.lean`: **18 s** per scratch round trip against **>30 min** for one
+`lake build` of the module). The rule above says "imports only what you need",
+which reads as "import as little as possible" and leads agents to reconstruct a
+minimal import list by hand. When the target module's own `.olean` is CURRENT,
+the fastest and most faithful scratch is
+
+    module
+    public import Fermat.FLT.<the module you are editing>
+    @[expose] public section
+    local notation "𝒪₃ᵥ" => …      -- re-declare its `local notation` lines verbatim
+    theorem my_attempt … := by …
+    end
+
+Loading one big `.olean` costs seconds; you get every lemma already proven in the
+file, the exact instance environment, and no guessing about which import supplies
+what. Copy the `local notation` block out of the target file — notations are
+`local` and do NOT come through the import, and that is the only thing that has to
+be repeated.
+
+Two caveats, both real:
+* it says NOTHING about the target file's own import surface or notation scope —
+  the existing warnings above still apply, and the one final verify is still
+  against the real file;
+* **`lake build <Module>` DELETES that `.olean` while it runs**, so a scratch
+  importing it fails with `object file … does not exist` for the whole duration.
+  Do the scratch iteration first and the build last; do not interleave them.
 
 ## Sorry and have discipline (glue-first, no floating)
 
@@ -6230,3 +6285,127 @@ Minor but it cost a compile cycle: `open Polynomial` at the top of this file is 
 at line 7000 — intervening `end`s closed it — so `aeval`, `X` and `ℚ[X]` are unknown there.
 Wrap a new block in `section ... open Polynomial ... end` rather than opening it globally,
 which would change name resolution for the 1500 lines below.
+
+## ASK WHAT THE CRUDE BOUND ALREADY GIVES — the sharp estimate is usually the wrong thing to make cheap
+
+(2026-07-31, `taylor_of_isFontainePresentation` in `ModThree.lean`.) That leaf carried
+THREE successive route notes, written on two different days by two different owners, each
+of which removed machinery the previous had called unavoidable — and all three still
+over-bought, because all three were estimating the cost of the same *shape* of argument:
+
+1. write a Hasse-derivative API for `MvPowerSeries` (the pin has one only for univariate
+   `Polynomial`), plus `MvPowerSeries.subst`, and bound each `|r| ≥ 2` term of
+   `P(w+μ) = Σ_r (∂^[r]P)(w)·μ^r` using `r!·∂^[r]P = ∂^r P` and `3 ∣ r! → |r| ≥ 3`;
+2. *(sharpening)* do the Hasse theory for `MvPolynomial` instead, since `mk_adicEval`
+   reduces the whole statement to the degree-`< n+1` truncation;
+3. *(sharpening)* only the terms of `μ`-degree `≤ 2` need a divisibility statement, and
+   those follow in three lines from `pderiv_eq` and `coeff_pderiv` — "what remains is the
+   EXPANSION itself, an identity in `𝒪₃ᵥ[[X ⊕ Y]]`", via `MvPowerSeries.subst`.
+
+Note (3) is *correct*, is the observation that unlocked the leaf, and STILL named the
+wrong residue. The expansion is not an identity anybody has to write. What closed the
+leaf was:
+
+* the CRUDE first-order estimate — remainder in `(μ)²`, **no hypotheses at all**, one
+  `MvPolynomial.induction_on` with one nontrivial case; then
+* a single case split per monomial, because the crude estimate is short by exactly one
+  factor of `3`: either the COEFFICIENT supplies it (some exponent prime to `3` ⟹ that
+  exponent is a unit ⟹ `coeff ∈ (3)`), or the monomial is `g(X³)` and the SUBSTITUTION
+  supplies it, since `(w+μ)³ − w³ = 3w²μ + 3wμ² + μ³` and the crude estimate applied at
+  the cubed coordinates already lands where it must.
+
+No divided powers, no Hasse derivatives, no `subst`, no `𝒪₃ᵥ[[X ⊕ Y]]`. ~200 lines, all
+of it statements about `MvPolynomial` alone.
+
+**The reusable rule: when a leaf's docstring says "this needs theory `T`", the first
+framing has usually fixed the SHAPE of every later estimate, and the sharpenings inherit
+it. Before costing `T`, ask what the crudest available bound gives and how far short it
+falls.** A crude bound with no hypotheses plus a patch for the one case where it is short
+is a different proof, not a cheaper version of the same one — and it is the one that is
+usually already in reach. This is the same failure the memory note "leaf cost estimates
+are hypotheses" records, one level up: not "the cost is wrong" but "the *shape* being
+costed was never questioned".
+
+Corollary for docstrings: when you close a leaf by a route its docstring did not
+prescribe, REWRITE the docstring to the route taken and keep the rejected ones with a
+one-line reason. The next owner of a sibling leaf is reading it for the shape, not the
+details.
+
+## "NOT IN MATHLIB, NOT IN `~/cs/FLT`" — CHECK YOUR OWN IMPORT LIST FIRST
+
+(2026-07-31, `exists_idempotentLocalQuotient`.) That leaf's docstring prescribed a
+four-step programme — `A` is `3`-adically complete, `A/3A` is artinian hence a product of
+local rings, lift the primitive idempotents along the complete surjection, take `ε` to be
+the lift of the sum of the ones `ū` kills — and called it "the half of the parent that can
+be attacked without any of the complete-intersection theory", i.e. a genuine but bounded
+piece of commutative algebra.
+
+The whole programme was already proven in-tree, sorry-free, in a file **`ModThree.lean`
+itself publicly imports** (line 435): `exists_isIdempotentElem_isLocalRing_quotient_of_moduleFinite`
+in `Fermat/FLT/Mathlib/RingTheory/AdicCompletion/Finite.lean`, whose own docstring opens
+by saying it supplies "what a survey of the mathlib pin found to be genuinely absent: the
+decomposition of a module-finite algebra over a complete Noetherian local ring into local
+factors". Given it, the leaf is ~30 lines: show `ker ū` is maximal (`A ⧸ ker ū` embeds in
+the FINITE residue field `𝒪_E/𝔪`, so it is a finite domain, hence a field), feed it in,
+and take `ε := 1 − e`.
+
+The existing memory note is "missing machinery may be DOWNSTREAM" — in a file that imports
+yours. This is the *easier* case and was missed anyway: it was UPSTREAM, in this module's
+own import list, put there by an earlier owner for a different consumer. So the check
+before writing any "expect to build it" in a docstring is mechanical:
+
+    grep -n "public import" <your module> | ...        # then grep those files for the concept
+    grep -rn "IsLocalRing\|IsIdempotentElem\|Henselian" Fermat/FLT/Mathlib/ | ...
+
+`Fermat/FLT/Mathlib/**` in particular is where every agent's general-purpose commutative
+algebra lands, it is small, and it is the first place to look — it exists precisely
+because the pin was missing something.
+
+## THE SENTINEL TOKEN IN YOUR PROMPT CAN BE STALE — READ IT FROM THE JOB RECORD
+
+(2026-07-31, `flt-lean-310`. Caught with four commits already on the branch and the
+sentinel already written under the wrong token.)
+
+Every prover agent is told: *"`token` — copy it verbatim or the loop ignores the whole
+file."* That is true, and the token printed in the prompt is **not always the one the
+loop will accept.**
+
+`flt-loop.py` accepts a sentinel whose token is `j["token"]` **or** a member of
+`j["prev_tokens"]` (line ~877). Its comment says a resumed job is the same job, so an
+earlier incarnation's result is still its result. But `grep -n prev_tokens flt-loop.py`
+finds exactly **two** occurrences — the read at 877 and the field-copy at 1033. **Nothing
+ever writes it.** It is always `None`.
+
+Meanwhile resume mints a NEW token, deliberately, so the old `.started` marker goes
+inert. The agent's prompt is the ORIGINAL payload and still carries the ORIGINAL token.
+So on any job with `resume: true` / `retries > 0`:
+
+* the live token is in `~/.flt-loop/jobs/<name>.json` and `<name>.started`;
+* the prompt's token is the pre-resume one;
+* a sentinel written under the prompt's token is rejected, `j["sentinel"]` stays `None`,
+  and `started ∧ ¬alive ∧ ¬sentinel` makes the loop conclude the agent **died**.
+
+The result is the worst shape of failure this file catalogues: completed, committed,
+compiler-verified work is thrown away, and a replacement is dispatched at leaves that are
+already proven — a phantom dispatch manufactured out of a *successful* run.
+
+**So the check is one command, run it before writing the sentinel:**
+
+    python3 -c "import json;j=json.load(open('/home/chend/.flt-loop/jobs/<name>.json'));print(j['token'], j.get('prev_tokens'))"
+    cat /home/chend/.flt-loop/jobs/<name>.started
+
+**Write the token the RECORD holds, not the token the prompt holds.** If they agree,
+nothing is lost by having checked. If they disagree, the record wins — the loop reads
+`j["token"]` out of that file and compares against it, and line 1039 shows the loop
+itself overwrites the sentinel's token with `j["token"]` once it accepts one, which
+settles which of the two is canonical.
+
+This is NOT a `to_medic` case on its own: the workaround is one line and an agent that
+performs it lands its work normally. It is a `to_merger` note, and it belongs here so the
+next agent does not have to rediscover it with its branch already committed.
+
+Generalisation, and it is the same shape as "a `sorry` is a PROMISE" and "ancestry is not
+content": **a value handed to you in a prompt is a claim about state at dispatch time, not
+state now.** Prompts are immutable; the state machine is not. Anything in a prompt that
+names live state — a token, a line number, a leaf that is "still open", a worktree said to
+be owned by someone else — is a hypothesis to check against the state itself.
