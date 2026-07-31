@@ -1089,8 +1089,22 @@ def save(s):
                                      "retries", "host", "pid", "session", "resume",
                                      "spawned_at", "model", "inbox", "resume", "prev_tokens")}
         wr(STATE / "jobs" / (n + ".json"), json.dumps(rec, indent=1))
+        # BOTH values, not just the true one. `started` is a marker FILE, and
+        # a save that can only ever create it cannot express "un-started" -- so
+        # a row that sets it False is amnesia one tick later, the same trap the
+        # key list above documents for JSON fields.
+        #
+        # It hid because the only other un-setter (row 8) also rotates the
+        # token, and load() requires the marker's CONTENTS to equal the current
+        # token -- so a stale marker reads as not-started there by accident.
+        # The refusal path does not rotate: it is not a death, the job keeps
+        # its identity. So the medic came back `started` on the very next tick,
+        # was judged dead by row 16 and STOPped the loop a second time, ten
+        # minutes after the fix for the first.
         if j["started"]:
             wr(STATE / "jobs" / (n + ".started"), j["token"])
+        else:
+            rm(STATE / "jobs" / (n + ".started"))
         if j["sentinel"] is not None:
             d = dict(j["sentinel"]); d["token"] = j["token"]
             wr(STATE / "jobs" / (n + ".sentinel"), json.dumps(d))
