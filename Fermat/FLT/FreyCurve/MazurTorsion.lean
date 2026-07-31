@@ -7325,134 +7325,18 @@ open IsDiscreteValuationRing IsDedekindDomain.HeightOneSpectrum IsLocalRing in
 attribute [instance] WeierstrassCurve.TranslationDatum.instField
 attribute [instance] WeierstrassCurve.FullTranslationDatum.instField
 attribute [instance] WeierstrassCurve.PreTranslationDatum.instField
-/-- **At every `q ≠ 2` a FULL translation datum collapses to a `TranslationDatum`**
-(PROVEN 2026-07-30). This is the completing-the-square argument of `TranslationDatum`'s
-own docstring, formalized — and it is what lets the two wild primes share ONE arithmetic
-leaf instead of carrying one each.
-
-In residue characteristic `q ≠ 2` the element `2` is a unit of `A`
-(`TranslationAux.isUnit_natCast_of_not_dvd`), so `ha₁ : u⁻¹(2s) ∈ A` and
-`ha₃ : u⁻³(2t) ∈ A` give `u⁻¹s ∈ A` and `u⁻³t ∈ A` outright, and each of the three
-`s`/`t`-corrections is a product of those:
-
-    u⁻²s² = (u⁻¹s)²,   u⁻⁴(2st) = 2(u⁻¹s)(u⁻³t),   u⁻⁶t² = (u⁻³t)².
-
-Adding them back to `ha₂`, `ha₄`, `ha₆` gives the `s = t = 0` datum with the SAME `L`,
-`A`, `u` and `r`, and `hΔ` is copied verbatim. So no field is re-chosen and no valuation
-is re-estimated; the content is exactly "`2` is invertible".
-
-`q = 2` is genuinely excluded rather than merely unhandled: `TranslationDatum W 2` is
-EMPTY for every `W`, by the `16 ∣ Δ` computation in the section header above. -/
-theorem WeierstrassCurve.nonempty_translationDatum_of_full_of_ne_two
-    (W : WeierstrassCurve ℚ) [W.IsElliptic] [W.IsShortNF] {q : ℕ} [Fact q.Prime]
-    (hq2 : q ≠ 2) (D : W.FullTranslationDatum q) :
-    Nonempty (W.TranslationDatum q) := by
-  classical
-  have hq : q.Prime := Fact.out
-  have hnd : ¬ (q ∣ 2) :=
-    fun h => hq2 ((Nat.prime_dvd_prime_iff_eq hq Nat.prime_two).mp h)
-  have hhalf : ((2 : D.L))⁻¹ ∈ D.A := by
-    have h := WeierstrassCurve.TranslationAux.inv_natCast_mem D.A D.resEquiv (n := 2) hnd
-    simpa using h
-  haveI : CharZero D.L :=
-    charZero_of_injective_algebraMap (algebraMap ℚ D.L).injective
-  have hdiv : ∀ x : D.L, 2 * x ∈ D.A → x ∈ D.A := by
-    intro x hx
-    have hx2 : x = ((2 : D.L))⁻¹ * (2 * x) := by
-      rw [← mul_assoc, inv_mul_cancel₀ (two_ne_zero), one_mul]
-    rw [hx2]
-    exact mul_mem hhalf hx
-  have hs : ((D.u⁻¹ : D.Lˣ) : D.L) * D.s ∈ D.A := by
-    refine hdiv _ ?_
-    have h : (2 : D.L) * (((D.u⁻¹ : D.Lˣ) : D.L) * D.s)
-        = ((D.u⁻¹ : D.Lˣ) : D.L) * (2 * D.s) := by ring
-    rw [h]; exact D.ha₁
-  have ht : ((D.u⁻¹ : D.Lˣ) : D.L) ^ 3 * D.t ∈ D.A := by
-    refine hdiv _ ?_
-    have h : (2 : D.L) * (((D.u⁻¹ : D.Lˣ) : D.L) ^ 3 * D.t)
-        = ((D.u⁻¹ : D.Lˣ) : D.L) ^ 3 * (2 * D.t) := by ring
-    rw [h]; exact D.ha₃
-  refine ⟨{ L := D.L, A := D.A, resEquiv := D.resEquiv, u := D.u, r := D.r,
-            ha₂ := ?_, ha₄ := ?_, ha₆ := ?_, hΔ := D.hΔ }⟩
-  · have h : ((D.u⁻¹ : D.Lˣ) : D.L) ^ 2 * (3 * D.r)
-        = ((D.u⁻¹ : D.Lˣ) : D.L) ^ 2 * (3 * D.r - D.s ^ 2)
-          + (((D.u⁻¹ : D.Lˣ) : D.L) * D.s) * (((D.u⁻¹ : D.Lˣ) : D.L) * D.s) := by
-      ring
-    rw [h]
-    exact add_mem D.ha₂ (mul_mem hs hs)
-  · have h : ((D.u⁻¹ : D.Lˣ) : D.L) ^ 4 * (algebraMap ℚ D.L W.a₄ + 3 * D.r ^ 2)
-        = ((D.u⁻¹ : D.Lˣ) : D.L) ^ 4
-            * (algebraMap ℚ D.L W.a₄ + 3 * D.r ^ 2 - 2 * D.s * D.t)
-          + ((((D.u⁻¹ : D.Lˣ) : D.L) * D.s) * (((D.u⁻¹ : D.Lˣ) : D.L) ^ 3 * D.t)
-            + (((D.u⁻¹ : D.Lˣ) : D.L) * D.s) * (((D.u⁻¹ : D.Lˣ) : D.L) ^ 3 * D.t)) := by
-      ring
-    rw [h]
-    exact add_mem D.ha₄ (add_mem (mul_mem hs ht) (mul_mem hs ht))
-  · have h : ((D.u⁻¹ : D.Lˣ) : D.L) ^ 6
-          * (algebraMap ℚ D.L W.a₆ + D.r * algebraMap ℚ D.L W.a₄ + D.r ^ 3)
-        = ((D.u⁻¹ : D.Lˣ) : D.L) ^ 6
-            * (algebraMap ℚ D.L W.a₆ + D.r * algebraMap ℚ D.L W.a₄ + D.r ^ 3 - D.t ^ 2)
-          + (((D.u⁻¹ : D.Lˣ) : D.L) ^ 3 * D.t) * (((D.u⁻¹ : D.Lˣ) : D.L) ^ 3 * D.t) := by
-      ring
-    rw [h]
-    exact add_mem D.ha₆ (mul_mem ht ht)
-
-/-- **THE ARITHMETIC OF THE WILD CASES, UNIFORM IN `q`** (sorry leaf, opened 2026-07-30
-by MERGING the two per-prime leaves `nonempty_preTranslationDatum_three_of_intCoeff_pos`
-and `nonempty_fullTranslationDatum_two`, both of which are now proven over it): for `W` in
-short normal form with `0 ≤ v_q(j)` there is a number field `L`, a DVR valuation subring
-`A ⊆ L` with residue field `ZMod q`, and four elements `u ∈ Lˣ`, `r, s, t ∈ L` making the
-five transformed coefficients integral and `Δ'` a unit.
-
-**WHY THIS CUT, AND WHAT IT COSTS.** The two leaves it replaces had, by their own
-docstrings, *the same* residual obstruction — "THE ONE REMAINING GAP IS THE SAME AS AT
-`q = 3`: residue degree `1`" — stated twice, once per prime, over two different datum
-structures. The `q = 2` docstring named this merge explicitly ("THE DECOMPOSITION THAT
-WOULD PAY FOR ITSELF, and it is uniform in `q`") and declined to make it only because
-`exists_potentiallyGoodModel_of_jIntegral_three` then had a live owner. It is made here,
-and it costs nothing: `q = 2` is this leaf verbatim, and `q = 3` is this leaf followed by
-`nonempty_translationDatum_of_full_of_ne_two` (PROVEN above) and
-`preTranslationDatum_of_translationDatum` (PROVEN below). Net effect on the frontier:
-TWO open leaves become ONE.
-
-**FAITHFULNESS AUDIT (2026-07-30).** The statement is TRUE at every `q`, and the argument
-is the one both replaced docstrings already recorded. `0 ≤ v_q(j)` makes `E` potentially
-good at `q` (Silverman *AEC* VII.5.5), so it acquires good reduction over some finite
-`M/ℚ_q`; the unramified layer comes off by the group-theoretic step those docstrings
-spell out (`G/N` is an extension of `Ẑ` by the finite `Φ = I/N`, the closure of a
-Frobenius lift is a complement, and the fixed field of its preimage is totally ramified
-with good reduction), leaving a totally ramified `M'/ℚ_q` — residue field exactly `𝔽_q`,
-which is what `resEquiv` asks. `L` is then a number field with a prime `v` and `L_v = M'`
-(Krasner), `A` is the local ring at `v` — a DVR whose membership relation is `v(·) ≥ 0`,
-i.e. integrality in `M'` — and `u, r, s, t` are taken in `L` close enough `v`-adically to
-the `M'`-solution, the five conditions and the unit-ness of `Δ'` all being open.
-
-Nothing here is WIDER than the two leaves it replaces, and in particular it is not
-vacuous: `resEquiv` forbids residue degree `> 1` and `hΔ` forces `Δ'` to be a unit, which
-is what makes `FullTranslationDatum` equivalent to `PotentiallyGoodModel` for `W` in short
-normal form (that structure's own docstring).
-
-**WHERE TO ATTACK IT.** Only `q ∈ {2, 3}` is genuinely open: at `5 ≤ q` the tame base
-`ℚ(q^{1/12})` already produces a `PreTranslationDatum`
-(`nonempty_preTranslationDatum_of_padicValRat_le`, PROVEN above), hence a
-`TranslationDatum`, hence — setting `s = t = 0` — a `FullTranslationDatum`. The
-statement is left uniform because the mathematics is uniform and because a prover who
-formalizes the unramified-layer step gets all three primes at once. The two per-prime
-docstrings below retain the reconnaissance that is specific to each: the refutation of
-the tame base at `3` (`y² = x³ + 4`), Kraus's `e ∈ {8, 24}` obstruction at `2`, the
-ordinary/supersingular dichotomy forced by `hΔ` at `2`, and the near-root recipe with
-the `y² = x³ − 9x + 27` witness showing that "`f` splits over a residue-degree-`1` base"
-is FALSE and so cannot be cut out as a sub-leaf.
-
-**THE CHECK THAT WOULD REFUTE THIS LEAF**: exhibit `E/ℚ` with `0 ≤ v_q(j(E))` acquiring
-good reduction over NO finite extension of `ℚ_q` of residue degree `1`. Such a witness
-would have to break the unramified-descent step, since VII.5.5 supplies good reduction
-over *some* finite extension unconditionally. -/
-theorem WeierstrassCurve.nonempty_fullTranslationDatum_of_jIntegral
-    (W : WeierstrassCurve ℚ) [W.IsElliptic] [W.IsShortNF]
-    {q : ℕ} [Fact q.Prime] (hj : 0 ≤ padicValRat q W.j) :
-    Nonempty (W.FullTranslationDatum q) :=
-  sorry
+/-! **RELOCATED 2026-07-31 to `Fermat/FLT/FreyCurve/IsogenySignature.lean`**:
+`WeierstrassCurve.nonempty_translationDatum_of_full_of_ne_two` (PROVEN) and the wild-case
+arithmetic leaf, which `flt-lean-203` opened here on 2026-07-30 as
+`nonempty_fullTranslationDatum_of_jIntegral`.  Both had to move UPSTREAM: the hoist that
+created `IsogenySignature.lean` left the merged leaf DOWNSTREAM of the two per-prime
+statements it was written to close (`nonempty_preTranslationDatum_three_of_intCoeff_pos`
+and `nonempty_fullTranslationDatum_two`), which import order forbids, so all three sat
+open and the merged leaf had no consumer at all.  In their new home the uniform statement
+is PROVEN at `5 ≤ q` outright and both per-prime statements are corollaries; what remains
+open is `WeierstrassCurve.nonempty_fullTranslationDatum_wild`, the same obligation at
+`q ∈ {2, 3}` with integral coefficients and `0 < v_q(Δ)`.  Nothing in this file used
+either declaration; they are re-exported through the `public import` above. -/
 
 open scoped Pointwise in
 open scoped Pointwise in
