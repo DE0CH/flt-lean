@@ -15255,3 +15255,129 @@ strictly stronger sorry adds no theorem; what it removes is a phantom frontier s
 will otherwise keep drawing dispatches — this one had already drawn mine.  Report it as
 merge repair, with the count delta stated (`2 → 1`), or the next reader will believe a
 theory gap closed.
+
+## A FROZEN `main` ROTS THE QUEUE SILENTLY — AUDIT queue1 AGAINST `merger`, NOT AGAINST `main`
+
+(2026-07-31, release 32.  Measured: **48 of 265 queue1 tasks, 18%, named a leaf
+that `merger` had already PROVEN**, plus 10 naming no open leaf at all.)
+
+Every release the loop refuses to publish is a release in which `main` does not
+move.  That is the correct outcome and it has a cost nobody had priced: because
+`main` does not move, `queue1`'s `AUDITED: <main sha>` stamp stays valid, the
+loop's `audit_current` guard keeps passing, and dispatch keeps running — off a
+task list that has not been re-audited since the last PUBLISHED release.
+Meanwhile the fleet keeps proving things, and every leaf it closes lands on
+`merger` and turns one queue entry into a guaranteed wasted agent-run.
+
+Five consecutive holds took that to nearly one dispatch in five.
+
+**The audit that works is against the tree the fleet's work actually lands in.**
+It is one script and it needs no build:
+
+    python3 tools/merge/frontier.py --root . > /tmp/frontier-merger.tsv   # YOUR merger tree
+    # then, per task, tokenise (isalnum plus _ and ') and keep it iff it names
+    # a short name still in that frontier
+
+Three things about doing it:
+
+* **Tokenise unicode-safely.** A `[A-Za-z_][A-Za-z0-9_.']*` regex misses every
+  name containing `ι`, `Ψ`, `₁`; splitting on "not `isalnum()` and not `_ '`"
+  does not.  Do NOT use an `À-￿` character class — it swallows `⟨⟩←▸`
+  ([[lean-identifier-regex-swallows-brackets]]).
+* **Match on the SHORT name** (last dotted component) and strip a trailing dot:
+  frontier rows for declarations with explicit universe parameters end in `.`,
+  and `split('.')[-1]` is then the empty string, which matches everything.
+* **The stamp must stay equal to `main`.**  `flt_loop_rows.py`'s `r15_guard`
+  refuses to dispatch at all when `queue1` is not `AUDITED` at main, so under a
+  hold you keep the old sha verbatim.  The stamp says which MAIN the queue was
+  audited against; it does not, and cannot, say the tasks are still live.  That
+  is the hole this section is about.
+* **Re-read both queues immediately before writing, and write with
+  `os.replace`.**  The loop pops tasks every ten seconds; a read-modify-write
+  with a wide window resurrects whatever it popped.
+
+Do the coverage arithmetic the same way — frontier minus (queue ∪ leaves live
+agents hold) — and expect exactly one residual, `<no-enclosing-decl>` in
+`Fermat/SorryGate.lean`, whose `elab` contains the token inside a STRING
+LITERAL.  Any scan that does not special-case that file is off by one.
+
+## A DECLARATION-ORDER TANGLE IS RECOVERABLE — FROM THE DEPENDENCY GRAPH, NOT FROM THE TEXT
+
+(2026-07-31, release 32, the `Gamma0GITPresentationOver` cluster in `X0.lean`.)
+
+Release 31 declined this cluster with an honest reason: *"the region 38750–43000
+has ~24 interleaved declarations and the intended order is not recoverable from
+the text alone; `git log -m -S` each name and re-apply the relocation."*  The
+`git log -m -S` route is a dead end here — every hit is a merge commit — and the
+intended order does not have to be recovered, because **the order is FORCED by
+the constraint graph, and the graph is one comment-stripped decl/use scan.**
+
+The method, and it is mechanical:
+
+1. scan each name for `DECL` and `USES` over comment-masked source, so a
+   docstring mention never counts as a use;
+2. write the edges `decl(X) must precede every use(X)`;
+3. **find the block that CANNOT move** — run `flt-hoistcheck.py` on each
+   candidate and keep the one with nonzero HITS.  Here it was
+   `exists_gamma0GITPresentationOver_zmod`, pinned by three real dependencies;
+4. everything else is then forced: dependencies rise to just above the pinned
+   block, consumers sink to just below it, in graph order.
+
+That gave five blocks and one arrangement.  `tools/merge/blockmove.py` (new)
+applies several moves ATOMICALLY in ORIGINAL coordinates — so the specs cannot
+invalidate each other's line numbers — and refuses to write unless the sorted
+line multiset is unchanged, which is the exact receipt for a pure permutation.
+
+**The one thing the graph does not tell you is SCOPE**, and it is the half that
+bites.  Two of the five blocks were inside a `section` whose only content was
+`open CategoryTheory.Limits`, and they left it.  Check by grepping the moved
+text for names from that `open` — in code, not in docstrings, where the false
+positive lives — and if it needs it, carry `open _root_.X in` on the moved
+declaration.  Also check for depth-0 `variable` lines in the jumped region; a
+scope-aware walk answers that in ten lines and a plain grep does not.
+
+## AN `Edit` THAT REPORTS TWO MATCHES HAS FOUND A DUPLICATE CUT
+
+(Same release.)  `exists_addSurjectiveAbelianImage_of_isAdditiveOn` and
+`…_of_isAdditiveOn_aux`, 1400 lines apart in `X0.lean`, are the SAME statement
+with the SAME 90-line proof, name for name.  I did not find that by scanning for
+it — I tried to repair one of them and the harness reported *"Found 2 matches of
+the string to replace"*.
+
+**Why no scan had it.**  `dupstmt.py`'s default scope is SORRIED declarations,
+and these are proven; `xdup.py` is about cross-FILE name collisions and these
+share no name; every frontier instrument was correct and silent.  A duplicate
+whose two copies are both PROVEN costs nothing until one of them breaks — and
+then it costs twice, because the same repair is owed in two places, which is
+exactly how this pair surfaced (both carried the same broken call to a deleted
+lemma).
+
+So: **when an exact-string Edit matches more than once in a 100k-line file, stop
+and diff the two neighbourhoods before disambiguating the edit.**  And when both
+copies have live consumers, neither can simply be deleted: make the LATER one a
+one-line delegation to the earlier.  That keeps both call sites, removes the
+duplicated proof, and leaves one place to repair next time.
+
+Corollary for `dupstmt.py`: run it with `--all`, not only over the frontier, on
+any file that a merge has touched more than once.
+
+## A DIFFERENTIAL ERROR SET HAS TWO KINDS OF NOISE, AND ONE OF THEM LOOKS LIKE A REGRESSION
+
+(Same release, and it is the practical companion to the "VERIFY DIFFERENTIALLY"
+section above.)  Keying errors on `(column, message)` and diffing multisets works,
+and the report is not clean even when the edit is:
+
+* **`?_uniq.NNNNNNN` metavariable ids are a global counter.**  One edit anywhere
+  shifts every later one, so a single unchanged error shows up as one GONE and one
+  NEW with different digits.  Truncate the message before the id, or read the pair
+  as cancelling.
+* **A repair can TRADE one error for another at the same site** and that is
+  progress, not a wash.  My first `genY_classify` fix replaced two
+  `Fields missing` errors with one `Type mismatch` at the same declaration —
+  i.e. the field was accepted and only my derivation of it was wrong, which is
+  what told me the named bridge `IsX0CurveModel.classify_genericOpen` was the
+  thing to reach for.  A raw count would have called that "one fixed, one
+  introduced".
+
+Read the GONE list against what you intended to fix, name by name, before
+believing either total.
