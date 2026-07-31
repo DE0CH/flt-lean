@@ -136,7 +136,17 @@ written and the frontier moves.
   `sorry` for one obligation the STRENGTH AUDIT had already shown it implies, so
   proving it closes FOUR declarations rather than two — FIVE counting this one,
   which is now the fifth because the leaf above discharges it)
-- `card_sha1Twist_le_card_dualNumberPoints` — **OPEN.** (re-cut 2026-07-28 in `ℕ`
+- ~~`card_sha1Twist_le_card_dualNumberPoints`~~ — **PROVEN 2026-07-31**, peeled
+  along the tangent space into
+  `card_sha1Twist_le_card_dualNumberDeformationClasses` (the arithmetic, OPEN,
+  still behind the GATE) and
+  `card_dualNumberDeformationClasses_le_card_dualNumberPoints` (the
+  pro-representability bookkeeping, PROVEN, gate-free).  Frontier unchanged, one
+  leaf in and one out; the surviving leaf's right-hand side is the deformation
+  functor's own tangent space rather than the universal ring's `k[ε]`-points, so
+  it no longer mentions `D.R`.  The record below is unchanged and still applies
+  to the assembled statement:
+  (re-cut 2026-07-28 in `ℕ`
   and over `D.IsUniversal`, then re-cut again the same day as a COUNT of
   `k[ε]`-points; `finrank_sha1Twist_le_cotangentFinrank` and
   `rank_sha1Twist_le_cotangentFinrank` are now both PROVEN over it. Gated on the
@@ -22647,7 +22657,262 @@ theorem card_dualNumberPoints_eq_pow_cotangentFinrankModL
     Nat.card (dualNumberPoints (ℓ := ℓ) R π) = Nat.card k ^ cotangentFinrankModL R ℓ := by
   rw [Nat.card_congr (dualNumberPointsEquivCotDual ℓ π hπ), card_cotDual π hπ]
 
-/-- **Greenberg–Wiles: `#Ш¹_S(ad⁰(1)) ≤ #{k[ε]-points of D.R}`** (sorry leaf,
+/-! ### The `k[ε]`-points of the hardly ramified deformation functor
+
+The peel of `card_sha1Twist_le_card_dualNumberPoints` below along the TANGENT
+SPACE, taken 2026-07-31.  The leaf used to compare `Ш¹` directly with the
+`k[ε]`-points of the universal ring; it now factors through the `k[ε]`-points of
+the FUNCTOR, i.e. through the hardly ramified deformations to `k[ε]` themselves:
+
+* `card_dualNumberDeformationClasses_le_card_dualNumberPoints` — the
+  pro-representability bookkeeping, **PROVEN** below, gate-free (no cup product,
+  no local invariant map, no Selmer group);
+* `card_sha1Twist_le_card_dualNumberDeformationClasses` — Greenberg–Wiles,
+  which is what stays behind THE GATE.
+
+The frontier does not move (one leaf in, one leaf out).  What changes is what is
+LEFT in the leaf: the surviving statement compares `Ш¹` with the deformation
+functor's own tangent space, which is the object Greenberg–Wiles computes, and
+mentions neither `D.R` nor `dualNumberPoints` in its right-hand side.  The
+universal datum survives in its hypothesis list for ONE reason and it is
+recorded on the leaf: it is what makes the middle object finite. -/
+
+/-- **A `k[ε]`-point of the hardly ramified deformation problem**: a hardly
+ramified deformation `D` of `ρbar` together with a `ℤ_ℓ`-compatible reduction of
+its coefficient ring to the dual numbers.
+
+**WHY THE RING IS NOT REQUIRED TO *BE* `DualNumber k`, WHICH IS THE WHOLE
+CONSTRUCTION.**  The classical object is "a hardly ramified deformation of `ρbar`
+to `k[ε]`", i.e. a `HardlyRamifiedDeformation` whose coefficient ring is the dual
+numbers on the nose.  Writing that down in Lean means producing
+`TopologicalSpace`, `IsTopologicalRing`, `IsLocalRing`, `Algebra ℤ_[ℓ]`,
+`IsNoetherianRing`, `IsAdic` and `IsAdicComplete` instances for `DualNumber k` —
+none of them deep, all of them work, and all of it avoidable.  A pair `(D, e)` as
+above carries exactly the same information, because the push-forward `e_* D.ρ` IS
+a hardly ramified framed representation over `k[ε]` reducing to `ρbar`
+(`isHardlyRamified_pushforwardFrame` above, PROVEN — its `Continuous e`
+side-condition is free, since `(e x).fst = D.π x` forces `e 𝔪² = 0` and `𝔪²` is
+open for the `𝔪`-adic topology `D.isAdic`), and conversely a deformation whose
+ring already is `k[ε]` is the pair `(D, id)`.  Nothing below needs that
+translation, which is why it is recorded here rather than proved.
+
+**AND THE EQUIVALENCE RELATION IS `charFrob`, NOT STRICT EQUIVALENCE**
+(`DualNumberDeformation.Rel` below).  That is this module's standing convention,
+not a weakening: see the docstring of `HardlyRamifiedDeformation.IsUniversal`
+above, which says in as many words that Mazur universality is "expressed through
+the trace data rather than through strict equivalence of representations, which
+keeps the statement inside the repository's charpoly vocabulary".  For `ρbar`
+absolutely irreducible the two agree — that is Carayol, and it is the same input
+`IsTraceGenerated` above isolates.  The consequence for the leaf below is
+recorded in its own faithfulness audit and must not be inherited from here. -/
+structure DualNumberDeformation (ρbar : GaloisRep ℚ k V) where
+  /-- The hardly ramified deformation being evaluated. -/
+  D : HardlyRamifiedDeformation hℓOdd ρbar
+  /-- A `ℤ_ℓ`-compatible reduction of `D.R` to the dual numbers `k[ε]`. -/
+  pt : letI := D.commRing; letI := D.algebra; dualNumberPoints (ℓ := ℓ) D.R D.π
+
+/-- **Two `k[ε]`-points are equivalent when they have the same characteristic
+polynomials of Frobenius**, computed in `DualNumber k` — i.e. when the two
+push-forwards to `k[ε]` are equal as trace data.  This is the charpoly spelling
+of strict equivalence of the two deformations to `k[ε]`, and for `ρbar`
+absolutely irreducible it is strict equivalence (Carayol).
+
+Nothing about the relation is deep: it is the kernel of a function into a product
+of polynomial rings, so reflexivity, symmetry and transitivity are `rfl`, `.symm`
+and `.trans` pointwise. -/
+def DualNumberDeformation.Rel {ρbar : GaloisRep ℚ k V}
+    (X Y : DualNumberDeformation hℓOdd ρbar) : Prop :=
+  letI := X.D.commRing; letI := X.D.topologicalSpace; letI := X.D.isTopologicalRing
+  letI := X.D.isLocalRing; letI := X.D.algebra
+  letI := Y.D.commRing; letI := Y.D.topologicalSpace; letI := Y.D.isTopologicalRing
+  letI := Y.D.isLocalRing; letI := Y.D.algebra
+  ∀ q (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+    (X.D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map X.pt.1 =
+      (Y.D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map Y.pt.1
+
+/-- `DualNumberDeformation.Rel` packaged as a `Setoid`. -/
+def dualNumberDeformationSetoid (ρbar : GaloisRep ℚ k V) :
+    Setoid (DualNumberDeformation hℓOdd ρbar) where
+  r := DualNumberDeformation.Rel hℓOdd
+  iseqv :=
+    { refl := fun _ _ _ _ _ => rfl
+      symm := fun hxy q hq h2 hl => (hxy q hq h2 hl).symm
+      trans := fun hxy hyz q hq h2 hl => (hxy q hq h2 hl).trans (hyz q hq h2 hl) }
+
+/-- **The tangent space of the hardly ramified deformation problem**: the
+`k[ε]`-points of the functor modulo equality of Frobenius characteristic
+polynomials.  Classically `H¹_L(ℚ, ad⁰ ρbar)`; that identification is exactly
+what the leaf `card_sha1Twist_le_card_dualNumberDeformationClasses` below still
+owes, together with Greenberg–Wiles. -/
+def DualNumberDeformationClasses (ρbar : GaloisRep ℚ k V) : Type _ :=
+  Quotient (dualNumberDeformationSetoid hℓOdd ρbar)
+
+omit [DiscreteTopology k] in
+/-- **Pro-representability, in the only direction this development needs**
+(PROVEN 2026-07-31, gate-free — no cup product, no local invariant map, no Selmer
+group, and no `DualNumber k` instances): the functor's `k[ε]`-points, modulo
+Frobenius charpolys, are at most as many as the universal ring's `k[ε]`-points.
+
+**THE PROOF IS THE *SURJECTION*, NOT THE INJECTION, AND THAT IS THE WHOLE
+TRICK.**  The obvious map runs `⟦X⟧ ↦ X.pt ∘ fₓ`, with `fₓ` the unique compatible
+homomorphism `D.R → X.D.R` supplied by `hu`; it is injective for free, because
+`hu`'s third clause turns `(D.ρ.charFrob v).map (X.pt ∘ fₓ)` into
+`(X.D.ρ.charFrob v).map X.pt`, which is the relation on the nose.  **But it does
+not obviously DESCEND to the quotient**: two `Rel`-equivalent `X`, `Y` are only
+known to have equal charpoly data, and concluding from that that the two
+homomorphisms `D.R → k[ε]` are equal is precisely trace generation
+(`IsTraceGenerated` above, i.e. Carayol).  So the injection is *not* free, and a
+route note that says it is has skipped this step.
+
+Run the correspondence the other way and nothing is owed.  The map
+`f ↦ ⟦⟨D, f⟩⟧` out of `dualNumberPoints D.R D.π` needs no well-definedness check
+at all — its source is not a quotient — and it is SURJECTIVE by the identical
+charpoly computation: `⟦⟨D, X.pt ∘ fₓ⟩⟧ = ⟦X⟧` for every `X`.  A surjection out of
+a finite type bounds the target, and finiteness of `dualNumberPoints D.R D.π` is
+`card_dualNumberPoints_eq_pow_cotangentFinrankModL` above (its cardinality is
+`#k ^ cotangentFinrankModL D.R ℓ`, which is nonzero).
+
+The two clauses that put `X.pt ∘ fₓ` into `dualNumberPoints D.R D.π` are
+literally `hu`'s first two conjuncts composed with `X.pt`'s own two, so there is
+nothing to prove there either. -/
+theorem card_dualNumberDeformationClasses_le_card_dualNumberPoints
+    {ρbar : GaloisRep ℚ k V}
+    (D : HardlyRamifiedDeformation hℓOdd ρbar) (hu : D.IsUniversal) :
+    letI := D.commRing; letI := D.algebra
+    Nat.card (DualNumberDeformationClasses hℓOdd ρbar) ≤
+      Nat.card (dualNumberPoints (ℓ := ℓ) D.R D.π) := by
+  letI := D.commRing; letI := D.topologicalSpace; letI := D.isTopologicalRing
+  letI := D.isLocalRing; letI := D.algebra; letI := D.isNoetherianRing
+  haveI : Finite (dualNumberPoints (ℓ := ℓ) D.R D.π) := by
+    refine Nat.finite_of_card_ne_zero ?_
+    rw [card_dualNumberPoints_eq_pow_cotangentFinrankModL (ℓ := ℓ) D.R D.π D.π_surjective]
+    exact pow_ne_zero _ (Nat.card_ne_zero.mpr ⟨inferInstance, inferInstance⟩)
+  show Nat.card (Quotient (dualNumberDeformationSetoid hℓOdd ρbar)) ≤
+    Nat.card (dualNumberPoints (ℓ := ℓ) D.R D.π)
+  refine Nat.card_le_card_of_surjective
+    (fun f : dualNumberPoints (ℓ := ℓ) D.R D.π =>
+      Quotient.mk (dualNumberDeformationSetoid hℓOdd ρbar) ⟨D, f⟩) ?_
+  intro b
+  refine Quotient.inductionOn b fun X => ?_
+  obtain ⟨g, ⟨hg1, hg2, hg3⟩, -⟩ := hu X.D
+  letI := X.D.commRing; letI := X.D.topologicalSpace; letI := X.D.isTopologicalRing
+  letI := X.D.isLocalRing; letI := X.D.algebra
+  refine ⟨⟨X.pt.1.comp g, fun a => ?_, fun x => ?_⟩, ?_⟩
+  · show X.pt.1 (g (algebraMap ℤ_[ℓ] D.R a)) = _
+    rw [show g (algebraMap ℤ_[ℓ] D.R a) = algebraMap ℤ_[ℓ] X.D.R a from
+      RingHom.congr_fun hg1 a]
+    exact X.pt.2.1 a
+  · show (X.pt.1 (g x)).fst = D.π x
+    rw [X.pt.2.2 (g x)]
+    exact RingHom.congr_fun hg2 x
+  · refine Quotient.sound ?_
+    intro q hq h2 hl
+    show (D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map (X.pt.1.comp g) =
+      (X.D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map X.pt.1
+    rw [← Polynomial.map_map, hg3 q hq h2 hl]
+
+/-- **Greenberg–Wiles: `#Ш¹_S(ad⁰(1)) ≤ #{hardly ramified deformations to `k[ε]`}`**
+(sorry leaf, cut out 2026-07-31 as the ARITHMETIC half of
+`card_sha1Twist_le_card_dualNumberPoints` below; the other half is
+`card_dualNumberDeformationClasses_le_card_dualNumberPoints` above, which is
+PROVEN and gate-free).
+
+**WHAT THIS LEAF STILL OWES, AND IT IS EXACTLY THE CLASSICAL STATEMENT.** Two
+things: the identification of `DualNumberDeformationClasses` with the tangent
+space `H¹_L(ℚ, ad⁰ ρbar)` of the hardly ramified problem, and the Greenberg–Wiles
+inequality `dim Ш¹_{L^⊥}(ad⁰(1)) ≤ dim H¹_L(ad⁰)` itself. What it no longer owes
+is the pro-representability bookkeeping — that the functor's `k[ε]`-points are
+counted by the universal ring's — which left through the theorem above.
+
+**IT IS STILL BEHIND THE GATE**, unchanged: every Greenberg–Wiles route runs
+through the DUAL Selmer group `H¹_{L^⊥}`, which cannot be STATED without the
+local Tate pairing. See the GATE paragraph on
+`card_sha1Twist_le_card_dualNumberPoints` below, which is unchanged by this cut
+and is where the build order and the three-tree greps live. This peel is a peel,
+not a dodge; what it buys is that the residual leaf's right-hand side is the
+object Greenberg–Wiles actually computes.
+
+**FAITHFULNESS AUDIT No. 3, 2026-07-31 — VERDICT: FAITHFUL.** Run because this is
+a NEW statement: the RE-AUDIT No. 2 on the declaration below certifies a
+right-hand side (`dualNumberPoints D.R D.π`, and the degenerate value
+`cotangentFinrankModL D.R ℓ = 0`) that this statement does not mention, so it is
+VOID here and is deliberately not inherited.
+
+* *The `Nat.card` junk value, on both sides.* On the LEFT it cannot falsify:
+  `Sha1Twist` is a submodule of `H¹(G_{ℚ,S}, ad⁰(1))`, which is
+  finite-dimensional over the finite field `k` by
+  `finiteDimensional_h1_adZeroTwistRestricted hℓOdd hdim hℓ5 h` above, so the
+  count is genuine and is `≥ 1` (a submodule contains `0`); and even a junk `0`
+  there would only weaken the statement. On the RIGHT a junk `0` WOULD falsify it,
+  and that is what `D` and `hu` are for: the theorem above exhibits a SURJECTION
+  onto `DualNumberDeformationClasses` from the finite type
+  `dualNumberPoints D.R D.π`, so the middle object is finite, and it is nonempty
+  because `Nat.card (dualNumberPoints D.R D.π) = #k ^ cotangentFinrankModL D.R ℓ`
+  is nonzero. So both sides are honest counts and `1 ≤` both.
+* *Truth.* `DualNumberDeformationClasses` is the tangent space of the problem:
+  `(D', e) ↦ e_* D'.ρ` sends it onto the hardly ramified deformations to `k[ε]`
+  (`isHardlyRamified_pushforwardFrame` above), the pair `(D', id)` recovers any
+  deformation whose ring already is `k[ε]`, and equality of Frobenius charpolys
+  is strict equivalence because `ρbar` is absolutely irreducible (Carayol). So the
+  right-hand side is `#H¹_L(ad⁰)` and the left is `#Ш¹_{L^⊥}(ad⁰(1))`, and
+  Greenberg–Wiles is the inequality between the two dimensions.
+* *`hirr` is load-bearing TWICE here*, which is new. It kills both `h⁰(ℚ, ad⁰)`
+  and `h⁰(ℚ, ad⁰(1))` in the Euler characteristic formula, exactly as recorded on
+  the declaration below; and it is ALSO what makes the charpoly quotient the
+  strict-equivalence quotient. Drop it and the middle object may be strictly
+  smaller than the tangent space, at which point the inequality is not available
+  from Greenberg–Wiles at all.
+* *`D` and `hu` are load-bearing for FINITENESS ONLY.* They appear in no other
+  role: the conclusion does not mention `D.R`. A prover who has an independent
+  proof that `DualNumberDeformationClasses` is finite may ignore them. They are
+  kept, rather than replaced by a bare `Finite` hypothesis, because the sole
+  consumer below already holds them and because a `Finite` hypothesis on a
+  quotient is exactly the thing a caller would then have to re-derive from them.
+* *This statement is a priori STRONGER than the declaration below*, and that is
+  inherent to cutting `a ≤ c` as `a ≤ b ≤ c` rather than a defect — but it must be
+  said, since the project rule is that a restatement voids its audit. The gap is
+  precisely INJECTIVITY of the surjection used above, i.e. trace generation of
+  `D.R` (Carayol again); with it the two counts are equal and the two statements
+  are equivalent. Nothing here needs that, so it is not proved; a successor who
+  wants it should prove
+  `Nat.card (dualNumberPoints D.R D.π) ≤ Nat.card (DualNumberDeformationClasses …)`
+  over `IsTraceGenerated` and get the equality by antisymmetry.
+* *The degenerate case survives the change of vocabulary.*
+  `cotangentFinrankModL D.R ℓ = 0` — the RIGID problem, `D.R = ℤ_ℓ` or `ℤ/ℓⁿ` —
+  makes `dualNumberPoints D.R D.π` a singleton, hence the middle object a
+  singleton, hence this leaf the assertion `Ш¹_S(ad⁰(1)) = 0`. That is a real
+  case with content, not a vacuity, exactly as recorded below.
+
+**CIRCULARITY GUARD — INHERITED VERBATIM from the declaration below**, and it
+binds this leaf in its place: see there for the BANNED INPUTS clause and for what
+`hℓ5` is doing.
+
+References: Washington's article in Cornell–Silverman–Stevens (the Greenberg–Wiles
+formula, and the local computations at `2`, `ℓ` and `∞`); Darmon–Diamond–Taylor,
+§2.6–2.7; Mazur, *Deforming Galois representations*, §1.6 (the tangent space);
+Neukirch–Schmidt–Wingberg, ch. VIII. -/
+theorem card_sha1Twist_le_card_dualNumberDeformationClasses
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (hu : D.IsUniversal) :
+    Nat.card ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) ≤
+      Nat.card (DualNumberDeformationClasses hℓOdd ρbar) :=
+  sorry
+
+/-- **Greenberg–Wiles: `#Ш¹_S(ad⁰(1)) ≤ #{k[ε]-points of D.R}`**
+(**PEELED AND PROVEN 2026-07-31 — no longer a sorry node**: it is
+`card_sha1Twist_le_card_dualNumberDeformationClasses` above, the arithmetic,
+which is still behind THE GATE, composed with
+`card_dualNumberDeformationClasses_le_card_dualNumberPoints` above, the
+pro-representability bookkeeping, which is PROVEN and gate-free.  The frontier
+did not move — one leaf in, one leaf out — and everything below is the
+mathematical record of this node, which is still where it belongs.  **The
+FAITHFULNESS RE-AUDIT No. 2 below certifies THIS statement and is NOT inherited
+by the leaf above**, which carries its own FAITHFULNESS AUDIT No. 3.)
+
+Originally a sorry leaf,
 cut out 2026-07-27 as the ARITHMETIC half of
 `rank_sha1_twist_le_of_tangent_span` below; the other half is
 `cotangentFinrankModL_le` above, which is PROVEN.  **RE-CUT 2026-07-28**: made
@@ -22656,7 +22921,7 @@ cut out 2026-07-27 as the ARITHMETIC half of
 the commutative algebra of the tangent identification could leave with
 `card_dualNumberPoints_eq_pow_cotangentFinrankModL` above — see the CUT
 paragraph on `finrank_sha1Twist_le_cotangentFinrank` below, which is now a
-short assembly over the two).
+short assembly over the two.
 
 **WHAT THE SECOND RE-CUT DID TO THIS STATEMENT, AND WHY IT IS THE SAME
 MATHEMATICS.**  The conclusion `dim_k Ш¹ ≤ cotangentFinrankModL D.R ℓ` became
@@ -23081,8 +23346,10 @@ theorem card_sha1Twist_le_card_dualNumberPoints
     (hu : D.IsUniversal) :
     letI := D.commRing; letI := D.algebra
     Nat.card ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) ≤
-      Nat.card (dualNumberPoints (ℓ := ℓ) D.R D.π) :=
-  sorry
+      Nat.card (dualNumberPoints (ℓ := ℓ) D.R D.π) := by
+  letI := D.commRing; letI := D.algebra
+  exact (card_sha1Twist_le_card_dualNumberDeformationClasses hℓOdd hdim hℓ5 h hirr D hu).trans
+    (card_dualNumberDeformationClasses_le_card_dualNumberPoints hℓOdd D hu)
 
 /-- **Greenberg–Wiles, assembled** (**PROVEN 2026-07-28** over the arithmetic
 leaf `card_sha1Twist_le_card_dualNumberPoints` immediately above and the
