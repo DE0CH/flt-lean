@@ -39881,6 +39881,43 @@ def IsSplitLevelStructure
     (∀ y, y ∈ (m.torsion x I).1 ↔ ∃ w, e w = y) ∧
     (∀ v w : Fin 2 → kI, pol.pairing x I n hn (e v) (e w) = Λ F v w)
 
+/-- **`Λ` is `kI`-BALANCED**: `Λ (a • v) w = Λ v (a • w)` for every scalar
+`a : kI`, uniformly in the base field.
+
+ADDED 2026-07-31, and it is not decoration — it is the clause without which the
+`galRoot`-equivariance of `IsStandardLevelModule` does NOT say `det ρ = χ̄_n`,
+which is the reading that declaration's own docstring and the `Γ`-ACTION AUDIT
+of `exists_twistedHilbertBlumenthalDescent_of_split` both rely on.
+
+WHY THE OLD PREDICATE WAS TOO WEAK (the refutation, so nobody weakens it back).
+`Λ` was only required BIADDITIVE, and a biadditive alternating nondegenerate
+`μ_n`-valued form on `kI²` need NOT be of the shape `φ ∘ det₂`: over
+`kI = 𝔽_{q^2}` one may take `Λ = ψ ∘ Tr ∘ H` for `H` the standard HERMITIAN form
+of `𝔽_{q^2}/𝔽_q`, which is biadditive, alternating and nondegenerate, and whose
+stabilizer contains the norm-one SCALARS `λ · 1` — elements of determinant
+`λ² ≠ 1`. So `Λ`-equivariance of `ρ` is strictly weaker than `det ρ = χ̄_n`, and
+a rank-two `ρ` twisted by a norm-one scalar character satisfies the old
+`IsStandardLevelModule` while having the wrong determinant.
+
+Balancedness kills exactly that: a balanced biadditive alternating form on a
+two-dimensional `kI`-space factors through `Λ²_{kI}(kI²) ≅ kI`, i.e. IS of the
+shape `φ ∘ det₂`, and then `Λ (M v) (M w) = Λ v w ^ (det M)` and nondegeneracy
+turns `galRoot`-equivariance into `det ρ = χ̄_n`. That derivation is
+`det_eq_cycCharModN_of_isStandardLevelModule`.
+
+IT IS FREE ON THE PRODUCING SIDE, which is why this is the right repair rather
+than a new hypothesis somewhere: the only producer is
+`exists_standardLevelModule_of_det`, whose witness is `stdPairing = φ ∘ det₂`,
+and `det₂ (a • v) w = a * det₂ v w = det₂ v (a • w)` by `ring`. It is also what
+the GEOMETRY supplies: the Weil pairing on `A[λ]` is `𝒪_D`-bilinear because `D`
+is totally real (`Fermat.DualStruct.weil_act`), so the normalization a real
+split level structure induces is balanced by construction. -/
+def IsLevelFormBalanced {n : ℕ} {kI : Type u} [Field kI]
+    (Λ : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → kI) → (Fin 2 → kI) →
+      rootsOfUnity n (AlgebraicClosure F)) : Prop :=
+  ∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F) (a : kI) (v w : Fin 2 → kI),
+    Λ F (a • v) w = Λ F v (a • w)
+
 open CategoryTheory in
 /-- **A standard (pairing-normalized) level module at `n`**: a rank-two
 `GaloisRep` over `kI` together with an alternating, nondegenerate,
@@ -39919,7 +39956,8 @@ def IsStandardLevelModule
       (σ : Field.absoluteGaloisGroup F) (v w : Fin 2 → kI),
       Λ F (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) v)
           (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) w)
-        = Fermat.galRoot σ (Λ F v w))
+        = Fermat.galRoot σ (Λ F v w)) ∧
+  IsLevelFormBalanced Λ
 
 open CategoryTheory AlgebraicGeometry in
 /-- **The split Hilbert–Blumenthal moduli space of level `λ𝔭` exists**:
@@ -40073,6 +40111,7 @@ def HasSplitHilbertBlumenthalModuli
     AlgebraicGeometry.Smooth fX₀ ∧ AlgebraicGeometry.IsSeparated fX₀ ∧
     AlgebraicGeometry.LocallyOfFiniteType fX₀ ∧ AlgebraicGeometry.QuasiCompact fX₀ ∧
     AlgebraicGeometry.GeometricallyIrreducible fX₀ ∧
+    (∀ s : Set X₀, s.Finite → ∃ U : X₀.Opens, IsAffineOpen U ∧ ∀ x ∈ s, x ∈ U) ∧
     AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fA₀ ∧
     (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F) (x : Spec (CommRingCat.of F) ⟶ X₀),
       x ≫ fX₀ = specRatMap F →
@@ -41081,6 +41120,72 @@ theorem isEffectiveQGaloisTwist_of_isOpenKernel {K : Type u} [Field K] [Algebra 
   · intro h0
     exact geometricallyConnected_of_isFormOver fX fX₀ hform h0
 
+open CategoryTheory AlgebraicGeometry in
+/-- **SERRE'S CRITERION DESCENDS ALONG A FORM** (sorry node, cut 2026-07-31):
+if `fX` is a `K`-form of `fX₀` for `K` an algebraic closure of `ℚ`, and every
+finite subset of `X₀` lies in an affine open, then the same holds of `X`.
+
+WHY THIS LEAF EXISTS. `horb` is the one clause of the split moduli package that
+the descent step `exists_splitHilbertBlumenthalFamily_of_standardLevelModule`
+was DROPPING: its input leaf
+`exists_splitHilbertBlumenthalCocycle_of_standardLevelModule` produces `horb`
+for its `ℚ`-model `X₁`, and the twist `X₀` inherited every other shape clause by
+fpqc descent while this one had no carrier. The consequence was recorded as the
+QUASI-PROJECTIVITY NOTE on `exists_twistedHilbertBlumenthalCocycle_of_split`: a
+consumer of `HasSplitHilbertBlumenthalModuli` could not discharge Serre's
+criterion for the space it was handed, even though the space is quasi-projective
+and the criterion was proven one step upstream. This leaf is that carrier, and
+with it `HasSplitHilbertBlumenthalModuli` now RECORDS `horb` (2026-07-31), so
+the obligation is discharged once at the producer instead of re-derived at every
+consumer.
+
+THE INTENDED PROOF, in four steps, all of them standard and none of them in the
+pin:
+
+1. *The preimage of a finite set is finite.* `X` is of finite type over `ℚ` and
+   `K` is algebraic over `ℚ`, so for `x ∈ X` the algebraic closure of `ℚ` inside
+   the finitely generated field `κ(x)` is a FINITE extension; hence
+   `κ(x) ⊗_ℚ K` is a finite product of domains and the fibre of
+   `X ⊗ K ⟶ X` over `x` is finite.
+2. *Move the problem upstairs.* `X ⊗ K ≅ X₀ ⊗ K` by the form, and affine opens
+   of `X₀` pull back to affine opens of `X₀ ⊗ K` along the affine morphism
+   `X₀ ⊗ K ⟶ X₀`; a finite subset of `X₀ ⊗ K` has finite image in `X₀`, so
+   `horb₀` gives an affine open of `X₀ ⊗ K` containing the transported finite
+   set.
+3. *Make it Galois-stable.* The cocycle data is trivial on an open subgroup, so
+   only finitely many `Γ`-translates of that affine open occur; their
+   INTERSECTION is affine because `fX` is SEPARATED, and it is Galois-stable and
+   still contains the (Galois-stable) preimage.
+4. *Descend.* A Galois-stable affine open of `X ⊗ K` is the preimage of an
+   affine open of `X`, by faithfully flat descent of open subschemes plus
+   descent of affineness along `Spec K ⟶ Spec ℚ`.
+
+WHERE THE HYPOTHESES GO: `hlft` is step 1, `hsep` is step 3 (the intersection of
+two affine opens of a separated scheme is affine), `hqc` bounds step 3's
+translate count together with `halg`, and `hac`/`halg` are what make `K` an
+algebraic closure so that step 1's fibres are finite at all. Note the statement
+is FALSE without algebraicity of `K` over `ℚ`: for `K` of infinite transcendence
+degree the fibres of step 1 are positive-dimensional and no finiteness is left.
+
+WHAT IS MISSING FROM THE PIN (checked 2026-07-31, and it is the same list the
+effectivity leaf records): descent of open subschemes, descent of affineness
+along a faithfully flat cover, and the quotient of a scheme by a finite group.
+`Mathlib/AlgebraicGeometry/Morphisms/Descent.lean` carries the open TODO "Show
+that affine morphisms descend along faithfully-flat morphisms", which is
+literally step 4. -/
+theorem affineOpen_of_finite_of_isFormOver {K : Type u} [Field K] [Algebra ℚ K]
+    (hac : IsAlgClosed K) (halg : Algebra.IsAlgebraic ℚ K)
+    {X X₀ : Scheme.{u}}
+    (fX : X ⟶ Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (fX₀ : X₀ ⟶ Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (hsep : AlgebraicGeometry.IsSeparated fX)
+    (hlft : AlgebraicGeometry.LocallyOfFiniteType fX)
+    (hqc : AlgebraicGeometry.QuasiCompact fX)
+    (hform : IsFormOver K fX fX₀)
+    (horb₀ : ∀ s : Set X₀, s.Finite → ∃ U : X₀.Opens, IsAffineOpen U ∧ ∀ x ∈ s, x ∈ U) :
+    ∀ s : Set X, s.Finite → ∃ U : X.Opens, IsAffineOpen U ∧ ∀ x ∈ s, x ∈ U :=
+  sorry
+
 /-! ##### The CANONICAL BASE for descent (2026-07-29, PROVEN)
 
 The two consumer leaves of the interface above both had to PRODUCE the base
@@ -41636,7 +41741,7 @@ theorem exists_standardLevelModule_of_det (n : ℕ) [NeZero n]
     ∃ (Λ : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → kI) → (Fin 2 → kI) →
         rootsOfUnity n (AlgebraicClosure F)),
       IsStandardLevelModule n ρ Λ := by
-  refine ⟨fun F _ _ => stdPairing n hchar F, ?_, ?_, ?_, ?_, ?_⟩
+  refine ⟨fun F _ _ => stdPairing n hchar F, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · intro F _ _ u v w
     refine Subtype.ext ?_
     show levelChar n hchar F (Multiplicative.ofAdd (det2 (u + v) w)) =
@@ -41675,6 +41780,14 @@ theorem exists_standardLevelModule_of_det (n : ℕ) [NeZero n]
         ((cycCharModN n (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) :
           (ZMod n)ˣ) : ZMod n).val
     rw [hd, ofAdd_nsmul, map_pow]
+  · intro F _ _ a v w
+    refine Subtype.ext ?_
+    show ((stdPairing n hchar F (a • v) w : (AlgebraicClosure F)ˣ)) =
+      ((stdPairing n hchar F v (a • w) : (AlgebraicClosure F)ˣ))
+    rw [stdPairing_val, stdPairing_val]
+    congr 2
+    simp only [det2, Pi.smul_apply, smul_eq_mul]
+    ring
 
 open CategoryTheory in
 /-- **LEAF A1 — the standard level module exists** (PROVEN 2026-07-27): the
@@ -42297,6 +42410,7 @@ theorem exists_splitHilbertBlumenthalFamily_of_standardLevelModule
       AlgebraicGeometry.IsSeparated fX₀ ∧
       AlgebraicGeometry.LocallyOfFiniteType fX₀ ∧ AlgebraicGeometry.QuasiCompact fX₀ ∧
       AlgebraicGeometry.GeometricallyConnected fX₀ ∧
+      (∀ s : Set X₀, s.Finite → ∃ U : X₀.Opens, IsAffineOpen U ∧ ∀ x ∈ s, x ∈ U) ∧
       AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fA₀ ∧
       (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F) (x : Spec (CommRingCat.of F) ⟶ X₀),
         x ≫ fX₀ = specRatMap F →
@@ -42320,7 +42434,7 @@ theorem exists_splitHilbertBlumenthalFamily_of_standardLevelModule
             (∀ (σ : Field.absoluteGaloisGroup F) y,
               φ (abB.galSMul (𝟙 (Spec (CommRingCat.of F))) σ y) = ab₀.galSMul x σ (φ y))) := by
   obtain ⟨X₁, fX₁, c, hsep₁, hlft₁,
-      hqc₁, hsrd₁, hgc₁, horb, hcoc, hopen, hmain⟩ :=
+      hqc₁, hsrd₁, hgc₁, horb₁, hcoc, hopen, hmain⟩ :=
     exists_splitHilbertBlumenthalCocycle_of_standardLevelModule hp hpℓ D lam frp hlam hfrp
       hlamℓ hfrpp hne k kp hres hresp 𝔞 h𝔞 ρ₀ ρ₀p Λ Λp hstd hstdp
   haveI : AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fX₁ := hsrd₁
@@ -42329,13 +42443,18 @@ theorem exists_splitHilbertBlumenthalFamily_of_standardLevelModule
   obtain ⟨X₀, fX₀, htw, hsm, hsep, hlft, hqc, hsrd, hgc⟩ :=
     isEffectiveQGaloisTwist_of_isOpenKernel (K := AlgebraicClosure (ULift.{u} ℚ))
       inferInstance isAlgebraic_ratAlgClosure ratGaloisBaseAction fX₁ hsm₁ hsep₁ hlft₁ hqc₁
-      horb c hcoc hopen
+      horb₁ c hcoc hopen
   have hsrd₀ : AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fX₀ :=
     hsrd _ hsrd₁
   have hgc₀ : AlgebraicGeometry.GeometricallyConnected fX₀ := hgc hgc₁
+  have horb₀ : ∀ s : Set X₀, s.Finite →
+      ∃ U : X₀.Opens, IsAffineOpen U ∧ ∀ x ∈ s, x ∈ U :=
+    affineOpen_of_finite_of_isFormOver (K := AlgebraicClosure (ULift.{u} ℚ))
+      inferInstance isAlgebraic_ratAlgClosure fX₀ fX₁ hsep hlft hqc
+      (isFormOver_of_isGaloisTwistForm htw) horb₁
   obtain ⟨A₀, fA₀, ab₀, m₀, d₀, pol₀, hrel, hlev, hfine⟩ :=
     hmain X₀ fX₀ htw hsrd₀ hsep hlft hqc hgc₀
-  exact ⟨X₀, fX₀, A₀, fA₀, ab₀, m₀, d₀, pol₀, hsrd₀, hsep, hlft, hqc, hgc₀,
+  exact ⟨X₀, fX₀, A₀, fA₀, ab₀, m₀, d₀, pol₀, hsrd₀, hsep, hlft, hqc, hgc₀, horb₀,
     hrel, hlev, hfine⟩
 
 open CategoryTheory in
@@ -42491,7 +42610,7 @@ theorem exists_splitHilbertBlumenthalModuli_of_standardLevelModule
     HasSplitHilbertBlumenthalModuli D ℓ p lam frp hlamℓ hfrpp 𝔞 k kp := by
   obtain ⟨ρ₀, Λ, hstd'⟩ := hstd
   obtain ⟨ρ₀p, Λp, hstdp'⟩ := hstdp
-  obtain ⟨X₀, fX₀, A₀, fA₀, ab₀, m₀, d₀, pol₀, hdimX, hsep, hlft, hqc, hconn, hdimA,
+  obtain ⟨X₀, fX₀, A₀, fA₀, ab₀, m₀, d₀, pol₀, hdimX, hsep, hlft, hqc, hconn, horb, hdimA,
       huniv, hfine⟩ :=
     exists_splitHilbertBlumenthalFamily_of_standardLevelModule hp hpℓ D lam frp hlam hfrp
       hlamℓ hfrpp hne k kp hres hresp 𝔞 h𝔞 ρ₀ ρ₀p Λ Λp hstd' hstdp'
@@ -42499,7 +42618,7 @@ theorem exists_splitHilbertBlumenthalModuli_of_standardLevelModule
   have hsm : AlgebraicGeometry.Smooth fX₀ :=
     AlgebraicGeometry.SmoothOfRelativeDimension.smooth (n := Module.finrank ℚ D) (f := fX₀)
   exact ⟨X₀, fX₀, A₀, fA₀, ab₀, m₀, d₀, pol₀, ρ₀, ρ₀p, Λ, Λp, hsm, hsep, hlft, hqc,
-    geometricallyIrreducible_of_smooth_of_geometricallyConnected fX₀ hsm hconn,
+    geometricallyIrreducible_of_smooth_of_geometricallyConnected fX₀ hsm hconn, horb,
     hdimA, huniv, hfine, hstd', hstdp'⟩
 
 open CategoryTheory in
@@ -42687,6 +42806,592 @@ def HasTwistedHilbertBlumenthalDescent
     (HasRealHilbertBlumenthalObject ρbar D lam frp ρbarp →
       HasRationalPoint fX (ULift.{u} ℝ))
 
+/-! ##### The LEVEL-CHANGING ACTION and Taylor's twisting cocycle (2026-07-31)
+
+This subsection is the ARITHMETIC half of leaf B1a. It writes, once, the objects
+the `Γ`-ACTION AUDIT below names in prose — Taylor's group `Γ`, its action on
+`X₀ ⊗ ℚ̄`, and the 1-cocycle `σ ↦ (ρbar(σ) ρ₀(σ)⁻¹, ρbarp(σ) ρ₀p(σ)⁻¹)` — and
+PROVES everything about the cocycle that is formal, so that what is left of leaf
+B1a is exactly three geometric or arithmetic statements with named owners.
+
+WHAT IS PROVEN HERE, and therefore what nobody has to prove again:
+
+* the cocycle identity `c (στ) ≫ baseAct σ = c σ ≫ baseAct σ ≫ c τ`
+  (`SplitModuliLevelAction.isQGaloisCocycle_twistCocycle`), from the group
+  identity `twistUnit_mul` and the three axioms of the action;
+* the OPEN KERNEL clause (`SplitModuliLevelAction.isOpen_kernel_twistCocycle`),
+  from finiteness of `k` and `kp`;
+* that `ρbar(σ) ρ₀(σ)⁻¹` has determinant `1`, hence lies in Taylor's `Γ`
+  (`twistUnit_mem_specialUnits`), GIVEN the two determinant leaves;
+* the ARCHIMEDEAN clause, which is Lemma 4.4 read at `F = ℝ` and is now a
+  one-line consequence of the fineness clause of
+  `exists_twistedFamily_of_isGaloisTwistForm` — the two statements are literally
+  the same text, `HasRealHilbertBlumenthalObject` being `IsTwistedLevelStructure`
+  at `𝟙 (Spec ℝ)` spelled out.
+
+WHY `Γ` IS `SL₂` AND NOT "THE `Λ`-PRESERVING SUBGROUP". Both readings were tried.
+The `Λ`-stabilizer version is REFUTED twice over, and the refutations are worth
+recording because the stabilizer version looks more faithful:
+
+1. *With DIFFERENT forms it is false.* `ρbar` carries its own normalization
+   `Λbar`, not `hsplit`'s `Λ`; and a `g` preserving `Λbar` need not preserve `Λ`.
+   At `n = 2`, `kI = 𝔽₄`, take `ρ₀ = 1` and `ρ` with image in
+   `Stab(Λbar) ∖ Stab(Λ)`: both are standard level modules, and
+   `twistUnit ρ ρ₀ = ρ` does not preserve `Λ`.
+2. *Even with the SAME form it is false, because of the `F`-quantifier.*
+   `IsStandardLevelModule`'s equivariance clause constrains `Λ F` only for `σ` in
+   the image of `Γ_F ⟶ Γ_ℚ`. Take `F = ℚ(i)`, `Λ ℚ(i)` a form unrelated to
+   `Λ ℚ`, and `ρ` factoring through `Gal(ℚ(i)/ℚ)` with `ρ(conj)` in
+   `Stab(Λ ℚ) ∖ Stab(Λ ℚ(i))`: every clause holds and `twistUnit ρ 1 (conj)`
+   does not preserve `Λ ℚ(i)`.
+
+`SL₂` has neither defect: it is the isometry group of the Weil pairing on a
+two-dimensional space (`Λ(Mv, Mw) = Λ(v, w)^{det M}` once `Λ` is balanced), it is
+base-field-independent, and membership of `ρbar(σ) ρ₀(σ)⁻¹` is exactly the
+determinant agreement the `Γ`-ACTION AUDIT already identifies as the condition
+for the construction to make sense.
+
+WHAT THAT COST, and it is the finding this cut turned up: making
+`det ρ₀ = χ̄_ℓ` derivable from `hsplit` required `IsStandardLevelModule` to gain
+the clause `IsLevelFormBalanced`. The 2026-07-28 strengthening of
+`HasSplitHilbertBlumenthalModuli` was made in order to export exactly that
+determinant identity, and — with `Λ` merely BIADDITIVE — it did not: see the
+hermitian-form counterexample in `IsLevelFormBalanced`'s docstring. The clause is
+free on the producing side and is now part of the predicate. -/
+
+/-- **A rank-two free module over a field is `k²`** (PROVEN): what lets `ρbar`,
+which lives on an abstract `W`, be compared with the framed `ρ₀`. -/
+theorem nonempty_linearEquiv_finTwo {k : Type u} [Field k] {W : Type v} [AddCommGroup W]
+    [Module k W] [Module.Finite k W] [Module.Free k W] (hW : Module.rank k W = 2) :
+    Nonempty (W ≃ₗ[k] (Fin 2 → k)) := by
+  have hfr : Module.finrank k W = 2 := by
+    simp [Module.finrank, hW]
+  exact ⟨(hfr ▸ Module.finBasis k W).equivFun⟩
+
+/-- **Taylor's `Γ` at one level**: `SL₂(kI)`, realized as a subgroup of the units
+of `End kI (kI²)`.
+
+This is the group of automorphisms of the level module preserving the Weil
+pairing: for a BALANCED alternating nondegenerate form,
+`Λ (M v) (M w) = Λ v w ^ (det M)`, so preserving `Λ` is `det = 1`. See the
+subsection docstring for why the literal `Λ`-stabilizer is the wrong object. -/
+def specialUnits (kI : Type u) [Field kI] :
+    Subgroup (Module.End kI (Fin 2 → kI))ˣ where
+  carrier := {g | LinearMap.det (g : Module.End kI (Fin 2 → kI)) = 1}
+  mul_mem' := by
+    intro a c ha hc
+    show LinearMap.det ((a * c : (Module.End kI (Fin 2 → kI))ˣ) :
+      Module.End kI (Fin 2 → kI)) = 1
+    rw [Units.val_mul, map_mul, ha, hc, one_mul]
+  one_mem' := by
+    show LinearMap.det ((1 : (Module.End kI (Fin 2 → kI))ˣ) :
+      Module.End kI (Fin 2 → kI)) = 1
+    rw [Units.val_one, map_one]
+  inv_mem' := by
+    intro a ha
+    show LinearMap.det ((a⁻¹ : (Module.End kI (Fin 2 → kI))ˣ) :
+      Module.End kI (Fin 2 → kI)) = 1
+    have h : LinearMap.det ((a : Module.End kI (Fin 2 → kI))) *
+        LinearMap.det ((a⁻¹ : (Module.End kI (Fin 2 → kI))ˣ) :
+          Module.End kI (Fin 2 → kI)) = 1 := by
+      rw [← map_mul, ← Units.val_mul, mul_inv_cancel, Units.val_one, map_one]
+    rw [ha, one_mul] at h
+    exact h
+
+/-- **A Galois representation, read into the UNIT GROUP** of the endomorphism
+ring (PROVEN): a monoid hom out of a GROUP lands in the units, which is what
+makes `ρ(σ) ρ₀(σ)⁻¹` writable at all. -/
+noncomputable def galRepUnits {kI : Type u} [Field kI] [TopologicalSpace kI]
+    {V : Type v} [AddCommGroup V] [Module kI V] (ρ : GaloisRep ℚ kI V) :
+    Field.absoluteGaloisGroup ℚ →* (Module.End kI V)ˣ :=
+  MonoidHom.toHomUnits (MonoidHomClass.toMonoidHom ρ)
+
+@[simp] theorem galRepUnits_val {kI : Type u} [Field kI] [TopologicalSpace kI]
+    {V : Type v} [AddCommGroup V] [Module kI V] (ρ : GaloisRep ℚ kI V)
+    (σ : Field.absoluteGaloisGroup ℚ) :
+    ((galRepUnits ρ σ : (Module.End kI V)ˣ) : Module.End kI V) = ρ σ := rfl
+
+/-- **Taylor's twisting element at `σ`**: `ρ(σ) ρ₀(σ)⁻¹`. -/
+noncomputable def twistUnit {kI : Type u} [Field kI] [TopologicalSpace kI]
+    (ρ ρ₀ : GaloisRep ℚ kI (Fin 2 → kI)) (σ : Field.absoluteGaloisGroup ℚ) :
+    (Module.End kI (Fin 2 → kI))ˣ :=
+  galRepUnits ρ σ * (galRepUnits ρ₀ σ)⁻¹
+
+@[simp] theorem twistUnit_one {kI : Type u} [Field kI] [TopologicalSpace kI]
+    (ρ ρ₀ : GaloisRep ℚ kI (Fin 2 → kI)) : twistUnit ρ ρ₀ 1 = 1 := by
+  simp [twistUnit]
+
+/-- **The 1-COCYCLE identity for the twisting element** (PROVEN), for the
+`ρ₀`-CONJUGATION action — this is the precise sense in which the twisting datum
+is a cocycle and not a homomorphism, which the `Γ`-ACTION AUDIT insists on. -/
+theorem twistUnit_mul {kI : Type u} [Field kI] [TopologicalSpace kI]
+    (ρ ρ₀ : GaloisRep ℚ kI (Fin 2 → kI)) (σ τ : Field.absoluteGaloisGroup ℚ) :
+    twistUnit ρ ρ₀ (σ * τ) =
+      twistUnit ρ ρ₀ σ *
+        (galRepUnits ρ₀ σ * twistUnit ρ ρ₀ τ * (galRepUnits ρ₀ σ)⁻¹) := by
+  simp only [twistUnit, map_mul]
+  group
+
+/-- The `ρ₀`-conjugate of the twisting element, in the shape the action's
+`act_baseAct` axiom consumes it (PROVEN). -/
+theorem conj_twistUnit {kI : Type u} [Field kI] [TopologicalSpace kI]
+    (ρ ρ₀ : GaloisRep ℚ kI (Fin 2 → kI)) (σ τ : Field.absoluteGaloisGroup ℚ) :
+    galRepUnits ρ₀ σ * twistUnit ρ ρ₀ τ * (galRepUnits ρ₀ σ)⁻¹ =
+      (twistUnit ρ ρ₀ σ)⁻¹ * twistUnit ρ ρ₀ (σ * τ) := by
+  rw [twistUnit_mul]
+  group
+
+/-- **The kernel of a framed Galois representation over a finite discrete field
+is OPEN** (PROVEN). -/
+theorem isOpen_ker_galRepUnits {V : Type u} [Field V] [Finite V] [TopologicalSpace V]
+    [DiscreteTopology V] (τ : GaloisRep ℚ V (Fin 2 → V)) :
+    IsOpen (((galRepUnits τ).ker) : Set (Field.absoluteGaloisGroup ℚ)) := by
+  have h := isOpen_setOf_framedGaloisRep_eq τ 1
+  have hset : (((galRepUnits τ).ker) : Set (Field.absoluteGaloisGroup ℚ)) =
+      {g : Field.absoluteGaloisGroup ℚ | τ g = τ 1} := by
+    ext g
+    simp only [SetLike.mem_coe, MonoidHom.mem_ker, Set.mem_setOf_eq, map_one]
+    exact ⟨fun hgk => congrArg (fun u : (Module.End V (Fin 2 → V))ˣ =>
+        (u : Module.End V (Fin 2 → V))) hgk,
+      fun hgk => Units.ext hgk⟩
+  rw [hset]; exact h
+
+/-- **LEAF DET — a standard level module has determinant `χ̄_n`** (sorry node,
+cut 2026-07-31): the CONVERSE of `exists_standardLevelModule_of_det`, and the
+identity that `HasSplitHilbertBlumenthalModuli`'s 2026-07-28 strengthening was
+made in order to export.
+
+THE INTENDED PROOF, in three steps and no geometry:
+
+1. `hbal` plus biadditivity and the alternating law make `Λ F` factor through the
+   `kI`-exterior square `Λ²_{kI}(kI²) ≅ kI`: there is an additive
+   `φ_F : kI → μ_n(Fᵃˡᵍ)` with `Λ F v w = φ_F (det₂ v w)`. (`det₂` is the
+   universal balanced alternating biadditive map; `det2_add_left`,
+   `det2_add_right`, `det2_self` and `exists_det2_eq_one` above are its API.)
+2. `det2_end` gives `det₂ (M v) (M w) = det M · det₂ v w`, so the
+   `galRoot`-equivariance clause reads
+   `φ_F ((det ρ σ) · x) = φ_F (χ̄_n(σ) · x)` for every `x` in the image of `det₂`,
+   which is all of `kI` by `exists_det2_eq_one`.
+3. If `det ρ σ ≠ χ̄_n(σ)` then their difference is a unit, so
+   `(det ρ σ − χ̄_n σ) · kI = kI` and `φ_F ≡ 1` — contradicting the nondegeneracy
+   clause. Hence `det ρ σ = χ̄_n(σ)` in `kI`, which is the statement.
+
+`hchar` is what makes `zmodCastOf` available and is not optional; see the
+`𝔽₅`/`n = 3` counterexample in the MODULE/GEOMETRY cut docstring.
+
+FAITHFULNESS: `hbal` is NOT removable. Without it the statement is FALSE, with
+the hermitian-form witness written out in `IsLevelFormBalanced`'s docstring — a
+norm-one scalar twist satisfies every other clause and moves the determinant by a
+square. That witness is the reason `IsLevelFormBalanced` was added to
+`IsStandardLevelModule` rather than assumed here. -/
+theorem det_eq_cycCharModN_of_isStandardLevelModule (n : ℕ) [NeZero n]
+    {kI : Type u} [Field kI] [Finite kI] [TopologicalSpace kI] [DiscreteTopology kI]
+    (hchar : (n : kI) = 0) (ρ : GaloisRep ℚ kI (Fin 2 → kI))
+    (Λ : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → kI) → (Fin 2 → kI) →
+      rootsOfUnity n (AlgebraicClosure F))
+    (h : IsStandardLevelModule n ρ Λ) (hbal : IsLevelFormBalanced Λ)
+    (τ : Field.absoluteGaloisGroup ℚ) :
+    ρ.det τ = zmodCastOf hchar ((cycCharModN n τ : (ZMod n)ˣ) : ZMod n) :=
+  sorry
+
+/-- **LEAF MODℓ — the mod-`ℓ` reduction of `IsHardlyRamified.det`** (sorry node,
+cut 2026-07-31).
+
+`IsHardlyRamified.det` says `det ρbar = algebraMap ℤ_[ℓ] k ∘ χ_ℓ` for the
+`ℓ`-ADIC cyclotomic character `cyclotomicCharacter (ℚᵃˡᵍ) ℓ`. This module's
+vocabulary for the same character is `cycCharModN ℓ`, valued in `(ℤ/ℓ)ˣ` and
+transported to `k` by `zmodCastOf`. The statement is the assertion that the two
+agree, i.e. that reduction `ℤ_[ℓ]ˣ ↠ (ℤ/ℓ)ˣ` carries one to the other.
+
+THE INTENDED PROOF: both characters are pinned by their action on roots of
+unity — `cyclotomicCharacter.spec` for the `ℓ`-adic one on `μ_{ℓ^n}`, and
+`modularCyclotomicCharacter.unique` (used already in `cycCharModN_eq_one` and
+`fixes_sqrtNegThree_iff_cycCharModN`) for the mod-`ℓ` one on `μ_ℓ`. Restricting
+the `ℓ`-adic spec to `μ_ℓ` and applying uniqueness identifies the reductions; the
+remaining step is that `algebraMap ℤ_[ℓ] k` factors through `ℤ/ℓ` because
+`(ℓ : k) = 0`, which is `zmodCastOf`.
+
+This is arithmetic only: no scheme, no moduli space, no descent. It is stated
+separately from `det_eq_cycCharModN_of_isStandardLevelModule` because the two
+have nothing in common but their conclusion's shape. -/
+theorem det_eq_cycCharModN_of_isHardlyRamified {ℓ : ℕ} [Fact ℓ.Prime] [NeZero ℓ]
+    (hℓodd : Odd ℓ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W] [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar) (hchar : (ℓ : k) = 0)
+    (τ : Field.absoluteGaloisGroup ℚ) :
+    ρbar.det τ = zmodCastOf hchar ((cycCharModN ℓ τ : (ZMod ℓ)ˣ) : ZMod ℓ) :=
+  sorry
+
+/-- **Two representations with the same determinant differ by an `SL₂`-cocycle**
+(PROVEN): this is the whole of "the cocycle lands in the pairing-preserving
+subgroup", once `Γ` is `SL₂`. -/
+theorem twistUnit_mem_specialUnits {kI : Type u} [Field kI] [TopologicalSpace kI]
+    [IsTopologicalRing kI]
+    (ρ ρ₀ : GaloisRep ℚ kI (Fin 2 → kI))
+    (hdet : ∀ τ, ρ.det τ = ρ₀.det τ) (σ : Field.absoluteGaloisGroup ℚ) :
+    twistUnit ρ ρ₀ σ ∈ specialUnits kI := by
+  have hu : LinearMap.det ((galRepUnits ρ₀ σ : (Module.End kI (Fin 2 → kI))ˣ) :
+      Module.End kI (Fin 2 → kI)) *
+      LinearMap.det (((galRepUnits ρ₀ σ)⁻¹ : (Module.End kI (Fin 2 → kI))ˣ) :
+        Module.End kI (Fin 2 → kI)) = 1 := by
+    rw [← map_mul, ← Units.val_mul, mul_inv_cancel, Units.val_one, map_one]
+  show LinearMap.det ((twistUnit ρ ρ₀ σ : (Module.End kI (Fin 2 → kI))ˣ) :
+    Module.End kI (Fin 2 → kI)) = 1
+  rw [twistUnit, Units.val_mul, map_mul, galRepUnits_val,
+    ← GaloisRep.det_apply, hdet σ, GaloisRep.det_apply, ← galRepUnits_val ρ₀ σ, hu]
+
+open CategoryTheory AlgebraicGeometry in
+/-- **The split Hilbert–Blumenthal moduli package AT A NAMED SPACE.**
+
+`HasSplitHilbertBlumenthalModuli` with `X₀`, `fX₀`, `ρ₀`, `ρ₀p`, `Λ`, `Λp` pulled
+out of the existential. Nothing is added or removed — `exists_isSplitHilbert-
+BlumenthalModuli` is a pure re-association — and the point is that the two leaves
+below need to talk about the space they act on, which the packed form hides. -/
+def IsSplitHilbertBlumenthalModuli
+    (D : Type u) [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (ℓ p : ℕ) (lam frp : Ideal (NumberField.RingOfIntegers D))
+    (hlamℓ : (ℓ : NumberField.RingOfIntegers D) ∈ lam)
+    (hfrpp : (p : NumberField.RingOfIntegers D) ∈ frp)
+    (𝔞 : Ideal (NumberField.RingOfIntegers D))
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {kp : Type u} [Field kp] [TopologicalSpace kp]
+    {X₀ : Scheme.{u}} (fX₀ : X₀ ⟶ Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (ρ₀ : GaloisRep ℚ k (Fin 2 → k)) (ρ₀p : GaloisRep ℚ kp (Fin 2 → kp))
+    (Λ : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → k) → (Fin 2 → k) →
+      rootsOfUnity ℓ (AlgebraicClosure F))
+    (Λp : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → kp) → (Fin 2 → kp) →
+      rootsOfUnity p (AlgebraicClosure F)) : Prop :=
+  ∃ (A₀ : Scheme.{u}) (fA₀ : A₀ ⟶ X₀) (ab₀ : Fermat.AbelianSchemeStruct fA₀)
+    (m₀ : Fermat.Mult ab₀ (NumberField.RingOfIntegers D))
+    (d₀ : Fermat.DualStruct ab₀ m₀)
+    (pol₀ : Fermat.PolarizationStruct d₀ {lam, frp} 𝔞 (totallyPositiveElts D)),
+    AlgebraicGeometry.Smooth fX₀ ∧ AlgebraicGeometry.IsSeparated fX₀ ∧
+    AlgebraicGeometry.LocallyOfFiniteType fX₀ ∧ AlgebraicGeometry.QuasiCompact fX₀ ∧
+    AlgebraicGeometry.GeometricallyIrreducible fX₀ ∧
+    (∀ s : Set X₀, s.Finite → ∃ U : X₀.Opens, IsAffineOpen U ∧ ∀ x ∈ s, x ∈ U) ∧
+    AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fA₀ ∧
+    (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F) (x : Spec (CommRingCat.of F) ⟶ X₀),
+      x ≫ fX₀ = specRatMap F →
+      IsSplitLevelStructure lam ℓ hlamℓ pol₀ ρ₀ Λ x ∧
+      IsSplitLevelStructure frp p hfrpp pol₀ ρ₀p Λp x) ∧
+    (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F)
+      (B : Scheme.{u}) (fB : B ⟶ Spec (CommRingCat.of F))
+      (abB : Fermat.AbelianSchemeStruct fB)
+      (mB : Fermat.Mult abB (NumberField.RingOfIntegers D))
+      (dB : Fermat.DualStruct abB mB)
+      (polB : Fermat.PolarizationStruct dB {lam, frp} 𝔞 (totallyPositiveElts D)),
+      AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fB →
+      IsSplitLevelStructure lam ℓ hlamℓ polB ρ₀ Λ (𝟙 (Spec (CommRingCat.of F))) →
+      IsSplitLevelStructure frp p hfrpp polB ρ₀p Λp (𝟙 (Spec (CommRingCat.of F))) →
+      ∃ x : Spec (CommRingCat.of F) ⟶ X₀, x ≫ fX₀ = specRatMap F ∧
+        ∃ φ : Fermat.GeomFibrePt fB (𝟙 (Spec (CommRingCat.of F))) →
+            Fermat.GeomFibrePt fA₀ x,
+          Function.Bijective φ ∧
+          (∀ y z, φ (abB.add y z) = ab₀.add (φ y) (φ z)) ∧
+          (∀ (a : NumberField.RingOfIntegers D) y, φ (mB.act a y) = m₀.act a (φ y)) ∧
+          (∀ (σ : Field.absoluteGaloisGroup F) y,
+            φ (abB.galSMul (𝟙 (Spec (CommRingCat.of F))) σ y) = ab₀.galSMul x σ (φ y))) ∧
+    IsStandardLevelModule ℓ ρ₀ Λ ∧ IsStandardLevelModule p ρ₀p Λp
+
+open CategoryTheory AlgebraicGeometry in
+/-- **Repackaging** (PROVEN): the split moduli hypothesis, at a NAMED space. -/
+theorem exists_isSplitHilbertBlumenthalModuli
+    (D : Type u) [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (ℓ p : ℕ) (lam frp : Ideal (NumberField.RingOfIntegers D))
+    (hlamℓ : (ℓ : NumberField.RingOfIntegers D) ∈ lam)
+    (hfrpp : (p : NumberField.RingOfIntegers D) ∈ frp)
+    (𝔞 : Ideal (NumberField.RingOfIntegers D))
+    (k : Type u) [Field k] [TopologicalSpace k]
+    (kp : Type u) [Field kp] [TopologicalSpace kp]
+    (h : HasSplitHilbertBlumenthalModuli D ℓ p lam frp hlamℓ hfrpp 𝔞 k kp) :
+    ∃ (X₀ : Scheme.{u}) (fX₀ : X₀ ⟶ Spec (CommRingCat.of (ULift.{u} ℚ)))
+      (ρ₀ : GaloisRep ℚ k (Fin 2 → k)) (ρ₀p : GaloisRep ℚ kp (Fin 2 → kp))
+      (Λ : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → k) → (Fin 2 → k) →
+        rootsOfUnity ℓ (AlgebraicClosure F))
+      (Λp : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → kp) → (Fin 2 → kp) →
+        rootsOfUnity p (AlgebraicClosure F)),
+      IsSplitHilbertBlumenthalModuli D ℓ p lam frp hlamℓ hfrpp 𝔞 fX₀ ρ₀ ρ₀p Λ Λp := by
+  obtain ⟨X₀, fX₀, A₀, fA₀, ab₀, m₀, d₀, pol₀, ρ₀, ρ₀p, Λ, Λp, hsm, hsep, hlft, hqc,
+    hgi, horb, hrel, huniv, hfine, hstd, hstdp⟩ := h
+  exact ⟨X₀, fX₀, ρ₀, ρ₀p, Λ, Λp, A₀, fA₀, ab₀, m₀, d₀, pol₀, hsm, hsep, hlft, hqc,
+    hgi, horb, hrel, huniv, hfine, hstd, hstdp⟩
+
+open CategoryTheory AlgebraicGeometry in
+/-- **The level-changing action of Taylor's `Γ` on `X₀ ⊗ K`.**
+
+`Γ = SL₂(k) × SL₂(kp)` acts on the split moduli space BASE-CHANGED TO `K` by
+precomposing the two universal level structures. It does NOT act on `X₀` over
+`ℚ`: the level structures are `ρ₀`-equivariant, so composing with `g` breaks the
+equivariance unless `g` centralizes `ρ₀`. Over an algebraically closed `K` the
+equivariance clause is vacuous at `K`-points and the whole of `Γ` acts — which is
+precisely the sentence the `Γ`-ACTION AUDIT below makes, now as data.
+
+`act_baseAct` is where the semilinearity of `Γ_ℚ` on `X₀ ⊗ K` shows up: moving an
+element of `Γ` past `baseAct σ` conjugates it by `ρ₀(σ)`, because the level
+structure the action precomposes is `ρ₀`-equivariant. That is the action for which
+`σ ↦ ρbar(σ) ρ₀(σ)⁻¹` is a 1-cocycle (`twistUnit_mul`), and it is stated with the
+conjugate supplied as data rather than constructed so that a user never has to
+produce a membership proof for `ρ₀(σ) g ρ₀(σ)⁻¹`.
+
+`Λ` and `Λp` do NOT appear: `specialUnits` is the isometry group of a balanced
+alternating form on a two-dimensional space whatever the form is, so the group
+does not depend on the normalization, only on the level. -/
+structure SplitModuliLevelAction
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {kp : Type u} [Field kp] [TopologicalSpace kp]
+    (ρ₀ : GaloisRep ℚ k (Fin 2 → k)) (ρ₀p : GaloisRep ℚ kp (Fin 2 → kp))
+    {K : Type u} [Field K] [Algebra ℚ K] (b : QGaloisBaseAction K)
+    {X₀ : Scheme.{u}} (fX₀ : X₀ ⟶ Spec (CommRingCat.of (ULift.{u} ℚ))) where
+  /-- the automorphism of `X₀ ⊗ K` induced by a pair of level changes -/
+  act : specialUnits k → specialUnits kp →
+    (Limits.pullback fX₀ (specRatMap K) ⟶ Limits.pullback fX₀ (specRatMap K))
+  /-- the action is `K`-linear, i.e. valued in the automorphisms over `Spec K` -/
+  act_snd : ∀ g gp, act g gp ≫ Limits.pullback.snd fX₀ (specRatMap K) =
+    Limits.pullback.snd fX₀ (specRatMap K)
+  /-- the action is unital -/
+  act_one : act 1 1 = 𝟙 _
+  /-- the action is multiplicative -/
+  act_mul : ∀ g₁ g₂ gp₁ gp₂, act (g₁ * g₂) (gp₁ * gp₂) = act g₁ gp₁ ≫ act g₂ gp₂
+  /-- `Γ_ℚ` moves the action by `ρ₀`-conjugation -/
+  act_baseAct : ∀ (σ : Field.absoluteGaloisGroup ℚ) (g g' : specialUnits k)
+      (gp gp' : specialUnits kp),
+    (g' : (Module.End k (Fin 2 → k))ˣ) =
+      galRepUnits ρ₀ σ * (g : (Module.End k (Fin 2 → k))ˣ) * (galRepUnits ρ₀ σ)⁻¹ →
+    (gp' : (Module.End kp (Fin 2 → kp))ˣ) =
+      galRepUnits ρ₀p σ * (gp : (Module.End kp (Fin 2 → kp))ˣ) * (galRepUnits ρ₀p σ)⁻¹ →
+    b.baseAct fX₀ σ ≫ act g gp = act g' gp' ≫ b.baseAct fX₀ σ
+
+open CategoryTheory AlgebraicGeometry in
+/-- **Taylor's twisting cocycle**, transported into the automorphisms of
+`X₀ ⊗ K`: `σ ↦ act (ρbar(σ) ρ₀(σ)⁻¹, ρbarp(σ) ρ₀p(σ)⁻¹)`. -/
+noncomputable def SplitModuliLevelAction.twistCocycle
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {kp : Type u} [Field kp] [TopologicalSpace kp]
+    {ρ₀ : GaloisRep ℚ k (Fin 2 → k)} {ρ₀p : GaloisRep ℚ kp (Fin 2 → kp)}
+    {K : Type u} [Field K] [Algebra ℚ K] {b : QGaloisBaseAction K}
+    {X₀ : Scheme.{u}} {fX₀ : X₀ ⟶ Spec (CommRingCat.of (ULift.{u} ℚ))}
+    (act : SplitModuliLevelAction ρ₀ ρ₀p b fX₀)
+    {ρ : GaloisRep ℚ k (Fin 2 → k)} {ρp : GaloisRep ℚ kp (Fin 2 → kp)}
+    (hg : ∀ σ, twistUnit ρ ρ₀ σ ∈ specialUnits k)
+    (hgp : ∀ σ, twistUnit ρp ρ₀p σ ∈ specialUnits kp)
+    (σ : Field.absoluteGaloisGroup ℚ) :
+    Limits.pullback fX₀ (specRatMap K) ⟶ Limits.pullback fX₀ (specRatMap K) :=
+  act.act ⟨twistUnit ρ ρ₀ σ, hg σ⟩ ⟨twistUnit ρp ρ₀p σ, hgp σ⟩
+
+open CategoryTheory AlgebraicGeometry in
+/-- **The twisting cocycle IS a 1-cocycle** (PROVEN): `twistUnit_mul` plus the
+three axioms of the action, and nothing else. -/
+theorem SplitModuliLevelAction.isQGaloisCocycle_twistCocycle
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {kp : Type u} [Field kp] [TopologicalSpace kp]
+    {ρ₀ : GaloisRep ℚ k (Fin 2 → k)} {ρ₀p : GaloisRep ℚ kp (Fin 2 → kp)}
+    {K : Type u} [Field K] [Algebra ℚ K] {b : QGaloisBaseAction K}
+    {X₀ : Scheme.{u}} {fX₀ : X₀ ⟶ Spec (CommRingCat.of (ULift.{u} ℚ))}
+    (act : SplitModuliLevelAction ρ₀ ρ₀p b fX₀)
+    {ρ : GaloisRep ℚ k (Fin 2 → k)} {ρp : GaloisRep ℚ kp (Fin 2 → kp)}
+    (hg : ∀ σ, twistUnit ρ ρ₀ σ ∈ specialUnits k)
+    (hgp : ∀ σ, twistUnit ρp ρ₀p σ ∈ specialUnits kp) :
+    IsQGaloisCocycle b fX₀ (act.twistCocycle hg hgp) := by
+  refine ⟨fun σ => act.act_snd _ _, ?_, ?_⟩
+  · have h1 : (⟨twistUnit ρ ρ₀ 1, hg 1⟩ : specialUnits k) = 1 :=
+      Subtype.ext (twistUnit_one ρ ρ₀)
+    have h2 : (⟨twistUnit ρp ρ₀p 1, hgp 1⟩ : specialUnits kp) = 1 :=
+      Subtype.ext (twistUnit_one ρp ρ₀p)
+    show act.act _ _ = _
+    rw [h1, h2, act.act_one]
+  · intro σ τ
+    have hconj := act.act_baseAct σ ⟨twistUnit ρ ρ₀ τ, hg τ⟩
+      (⟨twistUnit ρ ρ₀ σ, hg σ⟩⁻¹ * ⟨twistUnit ρ ρ₀ (σ * τ), hg (σ * τ)⟩)
+      ⟨twistUnit ρp ρ₀p τ, hgp τ⟩
+      (⟨twistUnit ρp ρ₀p σ, hgp σ⟩⁻¹ * ⟨twistUnit ρp ρ₀p (σ * τ), hgp (σ * τ)⟩)
+      (by rw [Subgroup.coe_mul, Subgroup.coe_inv]; exact (conj_twistUnit ρ ρ₀ σ τ).symm)
+      (by rw [Subgroup.coe_mul, Subgroup.coe_inv]; exact (conj_twistUnit ρp ρ₀p σ τ).symm)
+    simp only [SplitModuliLevelAction.twistCocycle]
+    rw [hconj, ← Category.assoc, ← act.act_mul, mul_inv_cancel_left, mul_inv_cancel_left]
+
+open CategoryTheory AlgebraicGeometry in
+/-- **The twisting cocycle has OPEN KERNEL** (PROVEN): all four representations
+are trivial on the intersection of their kernels, which is open because `k` and
+`kp` are finite and discrete. -/
+theorem SplitModuliLevelAction.isOpen_kernel_twistCocycle
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k] [DiscreteTopology k]
+    {kp : Type u} [Field kp] [Finite kp] [TopologicalSpace kp] [DiscreteTopology kp]
+    {ρ₀ : GaloisRep ℚ k (Fin 2 → k)} {ρ₀p : GaloisRep ℚ kp (Fin 2 → kp)}
+    {K : Type u} [Field K] [Algebra ℚ K] {b : QGaloisBaseAction K}
+    {X₀ : Scheme.{u}} {fX₀ : X₀ ⟶ Spec (CommRingCat.of (ULift.{u} ℚ))}
+    (act : SplitModuliLevelAction ρ₀ ρ₀p b fX₀)
+    {ρ : GaloisRep ℚ k (Fin 2 → k)} {ρp : GaloisRep ℚ kp (Fin 2 → kp)}
+    (hg : ∀ σ, twistUnit ρ ρ₀ σ ∈ specialUnits k)
+    (hgp : ∀ σ, twistUnit ρp ρ₀p σ ∈ specialUnits kp) :
+    ∃ N : Subgroup (Field.absoluteGaloisGroup ℚ), N.Normal ∧
+      IsOpen (N : Set (Field.absoluteGaloisGroup ℚ)) ∧
+      ∀ σ ∈ N, act.twistCocycle hg hgp σ = 𝟙 _ := by
+  refine ⟨(galRepUnits ρ).ker ⊓ (galRepUnits ρ₀).ker ⊓
+    ((galRepUnits ρp).ker ⊓ (galRepUnits ρ₀p).ker), inferInstance, ?_, ?_⟩
+  · exact ((isOpen_ker_galRepUnits ρ).inter (isOpen_ker_galRepUnits ρ₀)).inter
+      ((isOpen_ker_galRepUnits ρp).inter (isOpen_ker_galRepUnits ρ₀p))
+  · rintro σ ⟨⟨h1, h2⟩, h3, h4⟩
+    have e1 : (⟨twistUnit ρ ρ₀ σ, hg σ⟩ : specialUnits k) = 1 := by
+      refine Subtype.ext ?_
+      have h1' : galRepUnits ρ σ = 1 := h1
+      have h2' : galRepUnits ρ₀ σ = 1 := h2
+      show twistUnit ρ ρ₀ σ = 1
+      rw [twistUnit, h1', h2', inv_one, mul_one]
+    have e2 : (⟨twistUnit ρp ρ₀p σ, hgp σ⟩ : specialUnits kp) = 1 := by
+      refine Subtype.ext ?_
+      have h3' : galRepUnits ρp σ = 1 := h3
+      have h4' : galRepUnits ρ₀p σ = 1 := h4
+      show twistUnit ρp ρ₀p σ = 1
+      rw [twistUnit, h3', h4', inv_one, mul_one]
+    show act.act _ _ = _
+    rw [e1, e2, act.act_one]
+
+open CategoryTheory AlgebraicGeometry in
+/-- **LEAF Γ — Taylor's `Γ` acts on the split space over `ℚ̄`** (sorry node, cut
+2026-07-31): the split moduli space, base-changed to an algebraic closure of `ℚ`,
+carries an action of `SL₂(k) × SL₂(kp)` by automorphisms over `Spec ℚ̄`, semilinear
+for `Γ_ℚ` in the `ρ₀`-conjugation sense.
+
+THE MATHEMATICS. `X₀ ⊗ K` represents the split moduli problem over `K`-schemes:
+an HBAV with real multiplication, a polarization of class `𝔞`, and bases
+`α : k² ≅ A[λ]`, `αp : kp² ≅ A[𝔭]` normalized by `Λ`, `Λp`. `(g, gp)` acts by
+`(α, αp) ↦ (α ∘ g, αp ∘ gp)`. The `Λ`-normalization survives precisely because
+`det g = 1`: the Weil pairing is `𝒪_D`-bilinear (`Fermat.DualStruct.weil_act`, `D`
+totally real), so `Λ (g v) (g w) = Λ v w ^ (det g) = Λ v w`. This is the ONE place
+the `SL₂` choice has to be cashed in, and it is the reason `IsLevelFormBalanced`
+was added to `IsStandardLevelModule`: without balancedness, `Λ` need not be of the
+form `φ ∘ det₂` and `SL₂` need not preserve it (hermitian counterexample in that
+docstring). **A prover who finds the balancedness clause insufficient should
+strengthen it further rather than widen `specialUnits`** — widening reintroduces
+the two refutations in the subsection docstring above.
+
+`act_baseAct` is Yoneda plus the `ρ₀`-equivariance of the universal level
+structure: `baseAct σ` moves a `K`-point by `σ` on the coefficients, and the
+universal level structure at the moved point is the old one precomposed with
+`ρ₀(σ)`. Faithfulness is not asserted and is not needed.
+
+WHAT IS MISSING FROM THE PIN (2026-07-31): the moduli interpretation of the base
+change `X₀ ⊗ K` as a functor of points, i.e. the fineness clause read over
+`K`-schemes rather than over `ℚ`-algebra FIELDS. `IsSplitHilbertBlumenthalModuli`
+gives fineness only at field points, so a prover either extends it or builds the
+action from the field-point description by a separatedness/reducedness argument
+(`fX₀` is smooth and separated, so a morphism is determined by its effect on field
+points of a dense open — the standard route).
+
+`hpℓ` is RIGIDITY and it is not decoration: the action would not be by
+automorphisms of a SCHEME if the moduli problem had automorphisms, and coprime
+residue characteristics at `λ` and `𝔭` are exactly what rules those out. -/
+theorem exists_splitModuliLevelAction
+    (D : Type u) [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    {ℓ p : ℕ} [NeZero ℓ] [NeZero p]
+    {lam frp : Ideal (NumberField.RingOfIntegers D)}
+    {hlamℓ : (ℓ : NumberField.RingOfIntegers D) ∈ lam}
+    {hfrpp : (p : NumberField.RingOfIntegers D) ∈ frp}
+    (hlam : lam.IsMaximal) (hfrp : frp.IsMaximal) (hne : lam ≠ frp) (hpℓ : p ≠ ℓ)
+    {𝔞 : Ideal (NumberField.RingOfIntegers D)}
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k] [DiscreteTopology k]
+    {kp : Type u} [Field kp] [Finite kp] [TopologicalSpace kp] [DiscreteTopology kp]
+    {X₀ : Scheme.{u}} (fX₀ : X₀ ⟶ Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (ρ₀ : GaloisRep ℚ k (Fin 2 → k)) (ρ₀p : GaloisRep ℚ kp (Fin 2 → kp))
+    (Λ : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → k) → (Fin 2 → k) →
+      rootsOfUnity ℓ (AlgebraicClosure F))
+    (Λp : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → kp) → (Fin 2 → kp) →
+      rootsOfUnity p (AlgebraicClosure F))
+    (hmod : IsSplitHilbertBlumenthalModuli D ℓ p lam frp hlamℓ hfrpp 𝔞 fX₀ ρ₀ ρ₀p Λ Λp) :
+    Nonempty (SplitModuliLevelAction ρ₀ ρ₀p (ratGaloisBaseAction.{u}) fX₀) :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **LEAF 4.4 — what a twist of the split space by the twisting cocycle
+carries** (sorry node, cut 2026-07-31). This is Taylor, *On the meromorphic
+continuation of degree two `L`-functions*, Lemma 4.4, and it is the only
+statement of leaf B1a that mentions the abelian family.
+
+WHAT IT SAYS. Let `X` be ANY `ℚ`-form of `X₀` cut out by the cocycle
+`σ ↦ act (ρbar(σ) ρ₀(σ)⁻¹, ρbarp(σ) ρ₀p(σ)⁻¹)`. Then `X` carries an abelian
+family with real multiplication of relative dimension `[D:ℚ]` whose level
+structures are TWISTED — `ρbar`-equivariant at `λ` and `ρbarp`-equivariant at
+`𝔭`, in place of `ρ₀` and `ρ₀p` — at every `ℚ`-algebra field point, and it is
+FINE in the objects-to-points direction for that twisted problem.
+
+THE `∀`-OVER-TWISTS SHAPE IS NOT VACUOUS, and this is where the cocycle is
+pinned: `isGaloisTwistForm_one` makes `X₀` its own twist by the trivial cocycle,
+so at `c = 𝟙` the statement would assert `ρbar`-equivariant level structures on
+`X₀` itself, which is false whenever `ρbar ≇ ρ₀`. So the clause carries the whole
+"descend along the twist" content and cannot be discharged trivially.
+
+THE PROOF IS Taylor's points formula. A `ℚ`-algebra field point of `X` is a
+`K`-point `y` of `X₀` with `σ(y) = c(σ)·y` for `σ ∈ Γ_F`; the universal object at
+`y` therefore descends to `F` with its level structure twisted by `c`, which turns
+`ρ₀`-equivariance into `ρbar`-equivariance exactly because
+`c(σ) = ρbar(σ) ρ₀(σ)⁻¹`. Fineness transports the same way.
+
+THE TRANSPORT IS ALREADY WRITTEN, and this is the asymmetry the CUT-AXIS AUDIT's
+UPDATE 2026-07-28 records: nothing here carries a `DualStruct` or a polarization,
+so the `Fermat.PolarizationStruct` base-change obstruction — real, with a
+Weil-restriction counterexample — does not touch this leaf.
+`Fermat.AbelianSchemeStruct.baseChangeOfIsPullback` and
+`Fermat.Mult.baseChangeOfIsPullback` (`Modularity/AbelianScheme.lean`, reachable
+with no import change) move `ab` and `m`; `RelPoint.ofBaseChangeGeom_galSMul` and
+`ofBaseChangeGeom_act` move the two equivariances the level structures are stated
+with.
+
+WHY THE FINENESS CLAUSE IS HERE RATHER THAN IN THE CONSUMER. It is the
+ARCHIMEDEAN clause of leaf B1a: `HasRealHilbertBlumenthalObject ρbar D lam frp
+ρbarp` is, once unfolded, exactly `SmoothOfRelativeDimension` plus
+`IsTwistedLevelStructure` at `λ` and at `𝔭` for an object over `ULift ℝ` at the
+identity point, so feeding it to this clause at `F = ULift ℝ` gives
+`HasRationalPoint fX ℝ` in one line. Keeping fineness here is what makes that
+derivation free; the clause is stated in the WEAKEST form the derivation needs
+(the point exists; no comparison isomorphism is demanded), which is strictly less
+than the split-side fineness clause asks for. -/
+theorem exists_twistedFamily_of_isGaloisTwistForm
+    (D : Type u) [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    {ℓ p : ℕ} [NeZero ℓ] [NeZero p]
+    {lam frp : Ideal (NumberField.RingOfIntegers D)}
+    {hlamℓ : (ℓ : NumberField.RingOfIntegers D) ∈ lam}
+    {hfrpp : (p : NumberField.RingOfIntegers D) ∈ frp}
+    (hlam : lam.IsMaximal) (hfrp : frp.IsMaximal) (hne : lam ≠ frp) (hpℓ : p ≠ ℓ)
+    {𝔞 : Ideal (NumberField.RingOfIntegers D)}
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k] [DiscreteTopology k]
+    {kp : Type u} [Field kp] [Finite kp] [TopologicalSpace kp] [DiscreteTopology kp]
+    {X₀ : Scheme.{u}} {fX₀ : X₀ ⟶ Spec (CommRingCat.of (ULift.{u} ℚ))}
+    {ρ₀ : GaloisRep ℚ k (Fin 2 → k)} {ρ₀p : GaloisRep ℚ kp (Fin 2 → kp)}
+    {Λ : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → k) → (Fin 2 → k) →
+      rootsOfUnity ℓ (AlgebraicClosure F)}
+    {Λp : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → kp) → (Fin 2 → kp) →
+      rootsOfUnity p (AlgebraicClosure F)}
+    (hmod : IsSplitHilbertBlumenthalModuli D ℓ p lam frp hlamℓ hfrpp 𝔞 fX₀ ρ₀ ρ₀p Λ Λp)
+    (act : SplitModuliLevelAction ρ₀ ρ₀p (ratGaloisBaseAction.{u}) fX₀)
+    {W : Type v} [AddCommGroup W] [Module k W] (ρbar : GaloisRep ℚ k W)
+    (θ : W ≃ₗ[k] (Fin 2 → k)) (ρbarp : GaloisRep ℚ kp (Fin 2 → kp))
+    (hg : ∀ σ, twistUnit (ρbar.conj θ) ρ₀ σ ∈ specialUnits k)
+    (hgp : ∀ σ, twistUnit ρbarp ρ₀p σ ∈ specialUnits kp)
+    (X : Scheme.{u}) (fX : X ⟶ Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (htw : IsGaloisTwistForm (ratGaloisBaseAction.{u}) fX fX₀ (act.twistCocycle hg hgp))
+    (hsm : AlgebraicGeometry.Smooth fX) (hsep : AlgebraicGeometry.IsSeparated fX)
+    (hlft : AlgebraicGeometry.LocallyOfFiniteType fX)
+    (hqc : AlgebraicGeometry.QuasiCompact fX) :
+    ∃ (A : Scheme.{u}) (fA : A ⟶ X) (ab : Fermat.AbelianSchemeStruct fA)
+      (m : Fermat.Mult ab (NumberField.RingOfIntegers D)),
+      AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fA ∧
+      (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F)
+        (x : Spec (CommRingCat.of F) ⟶ X), x ≫ fX = specRatMap F →
+        IsTwistedLevelStructure lam m ρbar x ∧ IsTwistedLevelStructure frp m ρbarp x) ∧
+      (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F)
+        (B : Scheme.{u}) (fB : B ⟶ Spec (CommRingCat.of F))
+        (abB : Fermat.AbelianSchemeStruct fB)
+        (mB : Fermat.Mult abB (NumberField.RingOfIntegers D)),
+        AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fB →
+        IsTwistedLevelStructure lam mB ρbar (𝟙 (Spec (CommRingCat.of F))) →
+        IsTwistedLevelStructure frp mB ρbarp (𝟙 (Spec (CommRingCat.of F))) →
+        ∃ x : Spec (CommRingCat.of F) ⟶ X, x ≫ fX = specRatMap F) :=
+  sorry
+
+set_option linter.unusedVariables false in
 open CategoryTheory AlgebraicGeometry in
 /-- **LEAF B1a — Taylor's twisting cocycle, and what its twist carries**
 (sorry node, cut 2026-07-28 along the Galois-descent interface above).
@@ -42750,13 +43455,72 @@ twists, and the assembly takes its `X` from the effectivity leaf — so this is
 that leaf weakened by an extra hypothesis and a weaker conclusion, and no
 defect here can make it false.
 
-QUASI-PROJECTIVITY NOTE (2026-07-28), the one clause `hsplit` does not supply:
-`horb` is asserted of the `X₀` this leaf CHOOSES, and `hsplit`'s existential
-records nothing about quasi-projectivity, so a prover that destructures
-`hsplit` must recover it from the construction rather than from the
-hypothesis. That is a real, named, checkable obligation and the natural repair
-is to strengthen `HasSplitHilbertBlumenthalModuli` — not attempted here,
-because that definition has other owners. -/
+QUASI-PROJECTIVITY NOTE (2026-07-28) — **DISCHARGED 2026-07-31, by taking the
+repair this paragraph names.** It used to read: "`horb` is asserted of the `X₀`
+this leaf CHOOSES, and `hsplit`'s existential records nothing about
+quasi-projectivity, so a prover that destructures `hsplit` must recover it from
+the construction; the natural repair is to strengthen
+`HasSplitHilbertBlumenthalModuli` — not attempted here, because that definition
+has other owners."
+
+`HasSplitHilbertBlumenthalModuli` now CARRIES `horb`, and the clause is supplied
+where it belongs rather than re-derived at every consumer.
+`exists_splitHilbertBlumenthalCocycle_of_standardLevelModule` already produced it
+for its `ℚ`-model `X₁`; the descent step
+`exists_splitHilbertBlumenthalFamily_of_standardLevelModule` was DROPPING it,
+because Serre's criterion had no carrier across the twist. The carrier is the new
+leaf `affineOpen_of_finite_of_isFormOver`, and the three call sites were changed
+in the same commit. No consumer of `hsplit` destructured it besides this leaf, so
+the change is invisible to `exists_twistedHilbertBlumenthalDescent_of_split` and
+to `exists_twistedHilbertBlumenthalModuliTwist_of_datum_of_split`, which pass it
+through.
+
+**CUT PERFORMED 2026-07-31 — this declaration is now an ASSEMBLY.** Everything
+above is the record of why the cut is where it is; what follows is what it left.
+The ARITHMETIC is written and proven in the subsection "The LEVEL-CHANGING ACTION
+and Taylor's twisting cocycle" above, and three sorry nodes remain, each with a
+single subject:
+
+* `exists_splitModuliLevelAction` — Taylor's `Γ = SL₂(k) × SL₂(kp)` acts on
+  `X₀ ⊗ ℚ̄`, semilinearly for `Γ_ℚ` in the `ρ₀`-conjugation sense. Pure moduli
+  theory; no cocycle, no `ρbar`.
+* `exists_twistedFamily_of_isGaloisTwistForm` — Lemma 4.4: what a twist by that
+  cocycle carries, including fineness in the objects-to-points direction. The
+  only statement here that mentions the abelian family.
+* `det_eq_cycCharModN_of_isStandardLevelModule` and
+  `det_eq_cycCharModN_of_isHardlyRamified` — the two halves of "the determinants
+  agree", each pure arithmetic and independent of the other.
+
+and the fourth, shared with the `𝔞`-side chain:
+
+* `affineOpen_of_finite_of_isFormOver` — Serre's criterion descends along a form.
+
+WHAT IS PROVEN HERE, i.e. what the cut BOUGHT. The cocycle identity, the
+open-kernel clause, the membership `ρbar(σ) ρ₀(σ)⁻¹ ∈ SL₂` given the two
+determinant leaves, the comparison `W ≅ k²`, the pinning of `K` and `b` to
+`AlgebraicClosure (ULift ℚ)` and `ratGaloisBaseAction` (so a prover no longer owes
+an algebraic closure carrying its full Galois action), and — the one that would
+otherwise have been an anonymous inner obligation — the ARCHIMEDEAN clause, which
+is `HasRealHilbertBlumenthalObject` fed to Lemma 4.4's fineness clause at
+`F = ULift ℝ`, the two statements being literally the same text.
+
+A FINDING THIS CUT TURNED UP, recorded because it corrects a claim made above.
+The 2026-07-28 strengthening of `HasSplitHilbertBlumenthalModuli` was made so that
+a consumer could derive `det ρ₀ = χ̄_ℓ` from the `galRoot`-equivariance clause of
+`IsStandardLevelModule`. **It did not, as stated.** With `Λ` merely BIADDITIVE
+that implication is FALSE: over `kI = 𝔽_{q²}` the form `ψ ∘ Tr ∘ H` for `H`
+hermitian is biadditive, alternating and nondegenerate, and is preserved by the
+norm-one SCALARS, whose determinant is a nontrivial square. `IsStandardLevelModule`
+therefore gained the clause `IsLevelFormBalanced` (free on the producing side,
+since `stdPairing = φ ∘ det₂`), and with it the implication is the sorry node
+`det_eq_cycCharModN_of_isStandardLevelModule`. The two refutations that also kill
+the "`Λ`-preserving subgroup" reading of `Γ` are in the subsection docstring.
+
+HYPOTHESES THIS CUT DOES NOT CONSUME, so that a later recut can see it: `hℓ5`,
+`hirr` and `hdih`. `hdih` is consumed only in leaf B (the seam's second moduli
+condition), which the file already records; `hℓ5` and `hirr` are the residual
+package, live further downstream. `hpℓ` IS consumed — it is passed to both moduli
+leaves as the rigidity condition. -/
 theorem exists_twistedHilbertBlumenthalCocycle_of_split
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
@@ -42812,8 +43576,47 @@ theorem exists_twistedHilbertBlumenthalCocycle_of_split
             IsTwistedLevelStructure lam m ρbar x ∧
               IsTwistedLevelStructure frp m ρbarp x) ∧
           (HasRealHilbertBlumenthalObject ρbar D lam frp ρbarp →
-            HasRationalPoint fX (ULift.{u} ℝ))) :=
-  sorry
+            HasRationalPoint fX (ULift.{u} ℝ))) := by
+  haveI : NeZero ℓ := ⟨(Fact.out : ℓ.Prime).ne_zero⟩
+  haveI : NeZero p := ⟨hp.ne_zero⟩
+  have hchar : (ℓ : k) = 0 := natCast_eq_zero_of_residueFieldEquiv hlamℓ hres
+  have hcharp : (p : kp) = 0 := natCast_eq_zero_of_residueFieldEquiv hfrpp hresp
+  obtain ⟨θ⟩ := nonempty_linearEquiv_finTwo hW
+  obtain ⟨X₀, fX₀, ρ₀, ρ₀p, Λ, Λp, hmod⟩ :=
+    exists_isSplitHilbertBlumenthalModuli D ℓ p lam frp hlamℓ hfrpp 𝔞 k kp hsplit
+  obtain ⟨A₀, fA₀, ab₀, m₀, d₀, pol₀, hsm₀, hsep₀, hlft₀, hqc₀, hgi₀, horb, hrel₀,
+    huniv, hfine, hstd, hstd₀p⟩ := id hmod
+  obtain ⟨Λbarp, hΛbarp⟩ := hstdp
+  have hdet : ∀ τ, (ρbar.conj θ).det τ = ρ₀.det τ := by
+    intro τ
+    rw [GaloisRep.det_apply, GaloisRep.conj_apply, LinearEquiv.conj_apply,
+      LinearMap.comp_assoc, LinearMap.det_conj, ← GaloisRep.det_apply,
+      det_eq_cycCharModN_of_isHardlyRamified hℓodd hW hρbar hchar τ,
+      det_eq_cycCharModN_of_isStandardLevelModule ℓ hchar ρ₀ Λ hstd hstd.2.2.2.2.2 τ]
+  have hdetp : ∀ τ, ρbarp.det τ = ρ₀p.det τ := by
+    intro τ
+    rw [det_eq_cycCharModN_of_isStandardLevelModule p hcharp ρbarp Λbarp hΛbarp
+        hΛbarp.2.2.2.2.2 τ,
+      det_eq_cycCharModN_of_isStandardLevelModule p hcharp ρ₀p Λp hstd₀p
+        hstd₀p.2.2.2.2.2 τ]
+  have hg : ∀ σ, twistUnit (ρbar.conj θ) ρ₀ σ ∈ specialUnits k :=
+    twistUnit_mem_specialUnits _ _ hdet
+  have hgp : ∀ σ, twistUnit ρbarp ρ₀p σ ∈ specialUnits kp :=
+    twistUnit_mem_specialUnits _ _ hdetp
+  obtain ⟨act⟩ :=
+    exists_splitModuliLevelAction D hlam hfrp hne hpℓ fX₀ ρ₀ ρ₀p Λ Λp hmod
+  refine ⟨X₀, fX₀, AlgebraicClosure (ULift.{u} ℚ), inferInstance, inferInstance,
+    inferInstance, ratGaloisBaseAction, act.twistCocycle hg hgp,
+    isAlgebraic_ratAlgClosure, hsm₀, hsep₀, hlft₀, hqc₀, hgi₀, horb,
+    act.isQGaloisCocycle_twistCocycle hg hgp,
+    act.isOpen_kernel_twistCocycle hg hgp, ?_⟩
+  intro X fX htw hsm hsep hlft hqc
+  obtain ⟨A, fA, ab, m, hrel, hlev, hfineX⟩ :=
+    exists_twistedFamily_of_isGaloisTwistForm D hlam hfrp hne hpℓ hmod act ρbar θ ρbarp
+      hg hgp X fX htw hsm hsep hlft hqc
+  refine ⟨A, fA, ab, m, hrel, hlev, ?_⟩
+  rintro ⟨B, fB, abB, mB, hrelB, hlamB, hfrpB⟩
+  exact hfineX (ULift.{u} ℝ) inferInstance inferInstance B fB abB mB hrelB hlamB hfrpB
 
 open CategoryTheory in
 /-- **LEAF B1 — Taylor's Galois descent** (**PROVEN 2026-07-28** as an
