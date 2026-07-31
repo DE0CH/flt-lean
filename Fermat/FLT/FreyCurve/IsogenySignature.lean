@@ -3429,9 +3429,244 @@ theorem WeierstrassCurve.exists_localInertia_generator_galoisRep_five
   rw [Units.val_pow_eq_pow_val] at this
   exact this.symm
 
+/-- **The ring-theoretic core of leaf `D`** (PROVEN 2026-07-27): in a local
+ring `R` in which `N` is a UNIT, let `x` be an `N`-th root of unity whose
+geometric sum `1 + x + … + x^{N−1}` vanishes (the two identities an
+`N`-th primitive root satisfies, transported from wherever it lives).  If
+`x^i ≡ x` modulo the maximal ideal for some `i < N`, then `i = 1`.
+
+This is what makes leaf `D` a `ℓ`-uniform statement rather than a
+`3`-specific one.  The whole argument happens in the residue field `κ`,
+and needs no product formula:
+
+* `x̄^i = x̄` with `x̄` a unit gives `x̄^{i−1} = 1` (for `i ≥ 1`; `i = 0`
+  gives `x̄ = 1` outright), so `orderOf x̄` divides both `i − 1` and `N`.
+  `N` is prime and `0 < i − 1 < N`, so the order is `1`, i.e. `x̄ = 1`.
+* Then the geometric sum reads `0 = ∑_{j<N} x̄^j = N` in `κ`, i.e.
+  `N ∈ 𝔪` — contradicting that `N` is a unit.
+
+Stated over an arbitrary `CommRing` + `IsLocalRing` so that leaf `D` need
+only supply the two identities and the unit hypothesis; in `D` the ring is
+the integral closure of `𝒪ᵥ` in `ℚ̄ᵥ`, whose maximal ideal is what defines
+`localInertiaGroup`. -/
+theorem rootOfUnity_index_eq_one_of_sub_mem_maximalIdeal
+    {R : Type*} [CommRing R] [IsLocalRing R] {N : ℕ} (hN : N.Prime)
+    {x : R} (hgeom : ∑ j ∈ Finset.range N, x ^ j = 0)
+    (hxN : x ^ N = 1) (hNunit : IsUnit ((N : ℕ) : R))
+    {i : ℕ} (hiN : i < N) (hxi : x ^ i - x ∈ IsLocalRing.maximalIdeal R) :
+    i = 1 := by
+  classical
+  by_contra hne
+  -- pass to the residue field
+  have hres : IsLocalRing.residue R x ^ i = IsLocalRing.residue R x := by
+    have h0 : IsLocalRing.residue R (x ^ i - x) = 0 :=
+      (IsLocalRing.residue_eq_zero_iff _).mpr hxi
+    rw [map_sub, map_pow] at h0
+    exact sub_eq_zero.mp h0
+  have hxNres : IsLocalRing.residue R x ^ N = 1 := by
+    rw [← map_pow, hxN, map_one]
+  have hxu : IsUnit (IsLocalRing.residue R x) :=
+    IsUnit.of_pow_eq_one hxNres hN.ne_zero
+  -- the residue of `x` is `1`
+  have hx1 : IsLocalRing.residue R x = 1 := by
+    rcases Nat.eq_zero_or_pos i with rfl | hipos
+    · rw [pow_zero] at hres; exact hres.symm
+    · -- `i ≥ 2`, so `0 < i - 1 < N`
+      have hk : 0 < i - 1 := by omega
+      have hkN : i - 1 < N := by omega
+      have hpow : IsLocalRing.residue R x ^ (i - 1) = 1 := by
+        have h1 : IsLocalRing.residue R x ^ (i - 1) * IsLocalRing.residue R x
+            = 1 * IsLocalRing.residue R x := by
+          rw [one_mul, ← pow_succ, Nat.sub_add_cancel hipos]
+          exact hres
+        exact hxu.mul_right_cancel h1
+      have hd1 : orderOf (IsLocalRing.residue R x) ∣ (i - 1) :=
+        orderOf_dvd_of_pow_eq_one hpow
+      have hd2 : orderOf (IsLocalRing.residue R x) ∣ N :=
+        orderOf_dvd_of_pow_eq_one hxNres
+      rcases hN.eq_one_or_self_of_dvd _ hd2 with h1 | hNo
+      · exact orderOf_eq_one_iff.mp h1
+      · exact absurd (hNo ▸ hd1) (Nat.not_dvd_of_pos_of_lt hk hkN)
+  -- the geometric sum then reads `N = 0` in the residue field
+  have hNzero : ((N : ℕ) : IsLocalRing.ResidueField R) = 0 := by
+    have h := congrArg (IsLocalRing.residue R) hgeom
+    rw [map_sum, map_zero] at h
+    simp_rw [map_pow, hx1, one_pow] at h
+    simpa using h
+  have hNmem : ((N : ℕ) : R) ∈ IsLocalRing.maximalIdeal R := by
+    rw [← IsLocalRing.residue_eq_zero_iff, map_natCast]
+    exact hNzero
+  exact (mem_nonunits_iff.mp ((IsLocalRing.mem_maximalIdeal _).mp hNmem)) hNunit
+
+/-- **`D` — the mod-`N` cyclotomic character is unramified away from `N`**
+(PROVEN 2026-07-27, by generalizing the `ℓ = 3` proof to every prime `ℓ`):
+for primes `q ≠ N`, `χ_N` kills the inertia group at `q`.
+
+This is the general-`ℓ` form of
+`GaloisRepresentation.cyclotomicCharacterModL_eq_one_of_mem_localInertiaGroup`
+(`HardlyRamified/Threeadic.lean`), which exists only at `ℓ = 3` and is
+DOWNSTREAM of this module, so it cannot be reused here.
+
+Proof, transcribing the `ℓ = 3` proof: let `ι` be the embedding of
+algebraic closures underlying `absoluteGaloisGroup.map`, and `ζ` a
+primitive `N`-th root of unity in `ℚ̄`.  Then `ι ζ` is a primitive `N`-th
+root of unity, integral over `𝒪ᵥ`, and `σ` permutes the `N`-th roots, so
+`σ (ι ζ) = (ι ζ)^i` for some `i < N`; the inertia congruence puts
+`(ι ζ)^i − ι ζ` in `𝔪`.  The ring-theoretic core
+`rootOfUnity_index_eq_one_of_sub_mem_maximalIdeal` (just above) then
+forces `i = 1`, so `σ` fixes `ι ζ`, so `map σ` fixes `ζ`, and
+`modularCyclotomicCharacter.unique` evaluates the character to `1`
+(compare `cyclotomicCharacterModL_eq_one` in `Chebotarev.lean`).
+
+WHAT THE GENERALIZATION NEEDED, against the `ℓ = 3` proof and against the
+route this docstring originally drafted.  At `ℓ = 3` the index `i` ranges
+over `{0, 1, 2}` and `interval_cases` disposes of it; the only unit
+statement required is the special factorisation `(1 − ζ)(1 − ζ²) = 3`.
+The draft proposed replacing that by `∏_{j=1}^{N−1} (1 − ζ^j) = N` and
+peeling off the relevant factor.  That is correct mathematics but is NOT
+the cheapest route in Lean: it needs the whole product identity, and then
+a divisibility argument to extract `1 − ζ^{i−1}`.  What replaced it works
+entirely in the RESIDUE FIELD and needs no product at all — see the core
+lemma's own docstring. -/
+theorem cyclotomicCharacterModL_eq_one_of_mem_localInertiaGroup_of_ne
+    {N : ℕ} (hN : N.Prime) {q : ℕ} (hq : q.Prime) (hqN : q ≠ N) :
+    ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+      (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ)) = 1 := by
+  classical
+  haveI : Fact N.Prime := ⟨hN⟩
+  haveI : NeZero N := ⟨hN.ne_zero⟩
+  haveI : Fact (1 < N) := ⟨hN.one_lt⟩
+  set v := hq.toHeightOneSpectrumRingOfIntegersRat
+  set f : ℚ →+* IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v :=
+    algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)
+  set ι : AlgebraicClosure ℚ →+* AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) :=
+    AlgebraicClosure.map f
+  intro σ hσ
+  -- a primitive `N`-th root of unity in `ℚ̄` and its image downstairs
+  obtain ⟨ζ, hζ⟩ :=
+    HasEnoughRootsOfUnity.exists_primitiveRoot (AlgebraicClosure ℚ) N
+  have hη : IsPrimitiveRoot (ι ζ) N := hζ.map_of_injective ι.injective
+  -- the inertia element fixes `ζ`
+  have hfix : Field.absoluteGaloisGroup.map f σ ζ = ζ := by
+    have hmapζN : (Field.absoluteGaloisGroup.map f σ ζ) ^ N = 1 := by
+      rw [← map_pow, hζ.pow_eq_one, map_one]
+    obtain ⟨i, hiN, hiζ⟩ := hζ.eq_pow_of_pow_eq_one hmapζN
+    haveI hVR : ValuationRing (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+        (AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) :=
+      valuationRing_integralClosure v
+    haveI hLoc : IsLocalRing (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+        (AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) :=
+      inferInstance
+    have hση : σ (ι ζ) = (ι ζ) ^ i := by
+      have hL := Field.absoluteGaloisGroup.lift_map f σ ζ
+      rw [← hiζ] at hL
+      rw [← hL, map_pow]
+    -- move into the integral closure of `𝒪ᵥ`
+    have hint : IsIntegral
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+        (ι ζ) := by
+      refine ⟨Polynomial.X ^ N - Polynomial.C 1,
+        Polynomial.monic_X_pow_sub_C 1 hN.ne_zero, ?_⟩
+      simp [hη.pow_eq_one]
+    set x : IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+        (AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) :=
+      ⟨ι ζ, hint⟩ with hx
+    set j := algebraMap (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+        (AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)))
+      (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) with hj
+    have hjinj : Function.Injective j := fun a b h => Subtype.ext h
+    have hjx : j x = ι ζ := rfl
+    -- the two identities of a primitive `N`-th root, transported to `IC`
+    have hxN : x ^ N = 1 := by
+      apply hjinj
+      rw [map_pow, map_one, hjx]
+      exact hη.pow_eq_one
+    have hgeom : ∑ k ∈ Finset.range N, x ^ k = 0 := by
+      apply hjinj
+      rw [map_sum, map_zero]
+      simp_rw [map_pow, hjx]
+      exact hη.geom_sum_eq_zero hN.one_lt
+    -- `N` is a unit of the integral closure, since `q ≠ N`
+    have hNunit : IsUnit ((N : ℕ) : IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+        (AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) := by
+      have h1 := GaloisRepresentation.isUnit_natCast_adicCompletionIntegers
+        hN hq (Ne.symm hqN)
+      have h2 := h1.map (algebraMap
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+        (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))))
+      rwa [map_natCast] at h2
+    -- the inertia congruence: `σ • x - x = x^i - x ∈ 𝔪`
+    have hxi : x ^ i - x ∈ IsLocalRing.maximalIdeal
+        (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) := by
+      have h2 : σ • x - x ∈ IsLocalRing.maximalIdeal
+          (IntegralClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+            (AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) :=
+        (AddSubgroup.mem_inertia.mp hσ) x
+      have hsmul : σ • x = x ^ i := by
+        apply hjinj
+        have h1 : j (σ • x) = σ (ι ζ) := by
+          show (σ • x).1 = σ (ι ζ)
+          rw [IntegralClosure.coe_smul]
+          rfl
+        rw [h1, hση, map_pow, hjx]
+      rwa [hsmul] at h2
+    have hi1 : i = 1 :=
+      rootOfUnity_index_eq_one_of_sub_mem_maximalIdeal hN hgeom hxN hNunit hiN hxi
+    subst hi1
+    rw [pow_one] at hiζ
+    exact hiζ.symm
+  -- `map f σ` fixes every `N`-th root of unity, so the character is `1`
+  have hone : (1 : ZMod N) = modularCyclotomicCharacter (AlgebraicClosure ℚ)
+      (HasEnoughRootsOfUnity.natCard_rootsOfUnity (AlgebraicClosure ℚ) N)
+      (MulSemiringAction.toRingAut (Field.absoluteGaloisGroup ℚ)
+        (AlgebraicClosure ℚ) (Field.absoluteGaloisGroup.map f σ)) := by
+    refine modularCyclotomicCharacter.unique (AlgebraicClosure ℚ) _ _
+      fun t ht => ?_
+    rw [ZMod.val_one, pow_one]
+    rw [mem_rootsOfUnity] at ht
+    have htN : ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) ^ N = 1 := by
+      rw [← Units.val_pow_eq_pow_val, ht, Units.val_one]
+    obtain ⟨i, hiN, hiζ⟩ := hζ.eq_pow_of_pow_eq_one htN
+    show Field.absoluteGaloisGroup.map f σ
+      ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) =
+      ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ)
+    rw [← hiζ, map_pow, hfix]
+  have hid : modularCyclotomicCharacter (AlgebraicClosure ℚ)
+      (HasEnoughRootsOfUnity.natCard_rootsOfUnity (AlgebraicClosure ℚ) N)
+      (MulSemiringAction.toRingAut (Field.absoluteGaloisGroup ℚ)
+        (AlgebraicClosure ℚ) (Field.absoluteGaloisGroup.map f σ))
+      = (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩
+        (Field.absoluteGaloisGroup.map f σ) : (ZMod N)ˣ) := rfl
+  refine Units.ext ?_
+  rw [← hid, ← hone]
+  rfl
+
 /-- **`A₀-3a-i-b` — the mod-`5` representation has determinant `1` on the
-inertia group at `N`** (sorry leaf, cut 2026-07-30; Silverman *AEC* III.8.3 and
-the Weil pairing).
+inertia group at `N`** (PROVEN 2026-07-31; Silverman *AEC* III.8.3 and the Weil
+pairing).
 
 THE CONTENT IS THE WEIL PAIRING, and only that: `det ρ̄₅ = χ₅` globally on
 `Γ ℚ` (the determinant of the mod-`m` representation is the mod-`m` cyclotomic
@@ -3439,21 +3674,41 @@ character, because `ρ̄` preserves the Weil pairing `e₅ : E[5] × E[5] → μ
 to `χ₅`), together with `χ₅|_{I_N} = 1` because `ℚ_N(μ₅)/ℚ_N` is UNRAMIFIED for
 `N ≠ 5`.
 
-**The second half is ALREADY PROVEN IN THIS FILE**, as
-`cyclotomicCharacterModL_eq_one_of_mem_localInertiaGroup_of_ne` — instantiate it
-at `N := 5`, `q := N`, `hqN : N ≠ 5` (immediate from `19 < N`).  It is declared
-FURTHER DOWN IN THIS FILE (grep the name; it sits just below `A₀-3b`), which is
-the only reason this leaf is stated in the combined form rather than as the pure
-identity `det ρ̄₅ = χ₅`.  A prover has two
-honest routes: hoist that theorem above this point (it is self-contained), or
-state and prove `det ρ̄₅ = χ₅` on all of `Γ ℚ` above this point and consume it
-here — the second is strictly more useful, since the determinant identity is
-wanted elsewhere too.  **Do not restate the unramifiedness half as a new leaf:
-that would duplicate a proven declaration.**
+Both halves were already theorems when this leaf was cut, and neither had to be
+restated:
+
+* the global determinant identity is `WeilPairing.det_galoisRep_eq_cyclotomic`
+  (`EllipticCurve/WeilPairing.lean`, PROVEN 2026-07-17), publicly imported here;
+  composed with `WeilPairing.cyclotomicCharacterModL_eq_toZMod` it reads
+  `det (ρ̄_p σ) = (χ̄_p σ : ZMod p)` for every odd prime `p`, so the cut's
+  suggestion to "state and prove `det ρ̄₅ = χ₅` above this point" would have
+  DUPLICATED an imported declaration rather than adding anything;
+* the unramifiedness half is
+  `cyclotomicCharacterModL_eq_one_of_mem_localInertiaGroup_of_ne`, instantiated
+  at `N := 5`, `q := N`, `hqN : N ≠ 5` (immediate from `19 < N`).  That theorem
+  used to be declared ~1150 lines BELOW this point, which is the only reason the
+  leaf was stated in the combined form; it and its ring-theoretic core
+  `rootOfUnity_index_eq_one_of_sub_mem_maximalIdeal` were HOISTED above this
+  declaration (2026-07-31) as a pure move — statements, proofs and docstrings
+  unchanged, verified by sorting old and new file and diffing.  Nothing in the
+  moved block refers to a name declared between the two positions, and there is
+  no `section`/`variable`/`open` boundary in between.
 
 `hN19` is used only through `N ≠ 5`; `hN` only to name the place.  Nothing here
 needs `hj`, and nothing here is about good reduction — that is entirely
-`A₀-3a-i-c`'s job. -/
+`A₀-3a-i-c`'s job.
+
+AXIOM AUDIT (2026-07-31, `#print axioms` run in this file).  This declaration is
+DIRECTLY closed — no `sorry` in its body, no `declaration uses 'sorry'` warning
+— and its cone still reports `sorryAx`.  Every path out of it leaves this file:
+`WeilPairing.det_galoisRep_eq_cyclotomic` is itself `sorryAx`, through
+`WeilPairing.det_galoisRep_globalFrob`, and the only sorried declaration in
+`EllipticCurve/WeilPairing.lean` is `weilValue_self_config_eq_one` (the
+alternating clause of the Weil pairing, Silverman *AEC* III.8.1(b)), which is
+the likely source and has its own audit there.  That taint predates this proof
+and is not this cluster's to discharge; `cyclotomicCharacterModL_eq_one_of_`
+`mem_localInertiaGroup_of_ne`, the other input, is axiom-clean
+(`[propext, Classical.choice, Quot.sound]`). -/
 theorem WeierstrassCurve.det_galoisRep_five_eq_one_of_mem_localInertiaGroup
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {N : ℕ}
     (hN : N.Prime) (hN19 : 19 < N)
@@ -3464,8 +3719,21 @@ theorem WeierstrassCurve.det_galoisRep_five_eq_one_of_mem_localInertiaGroup
     LinearMap.det (E.galoisRep 5 Nat.prime_five.pos
       (Field.absoluteGaloisGroup.map (algebraMap ℚ
         (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-          hN.toHeightOneSpectrumRingOfIntegersRat)) τ)) = 1 :=
-  sorry
+          hN.toHeightOneSpectrumRingOfIntegersRat)) τ)) = 1 := by
+  haveI : Fact (Nat.Prime 5) := ⟨Nat.prime_five⟩
+  set σ := Field.absoluteGaloisGroup.map (algebraMap ℚ
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hN.toHeightOneSpectrumRingOfIntegersRat)) τ with hσ
+  -- the Weil pairing: `det ρ̄₅ = χ̄₅` on all of `Γ ℚ`
+  have hdet : LinearMap.det (E.galoisRep 5 Nat.prime_five.pos σ) =
+      ((GaloisRepresentation.cyclotomicCharacterModL 5 σ : (ZMod 5)ˣ) : ZMod 5) := by
+    rw [WeilPairing.cyclotomicCharacterModL_eq_toZMod]
+    exact WeilPairing.det_galoisRep_eq_cyclotomic E 5 Nat.prime_five.pos (by norm_num) σ
+  -- `ℚ_N(μ₅)/ℚ_N` is unramified because `N ≠ 5`
+  have hNne : N ≠ 5 := by omega
+  have hcyc : (GaloisRepresentation.cyclotomicCharacterModL 5 σ : (ZMod 5)ˣ) = 1 :=
+    cyclotomicCharacterModL_eq_one_of_mem_localInertiaGroup_of_ne Nat.prime_five hN hNne τ hτ
+  rw [hdet, hcyc, Units.val_one]
 
 /-- **`A₀-3a-i-c` — potentially good reduction: `5` does not divide the
 semistability defect** (sorry leaf, cut 2026-07-30; Serre–Tate, Ann. of Math.
@@ -3530,7 +3798,8 @@ automorphism group of the reduction** (DECOMPOSED and PROVEN 2026-07-30 over
 `A₀-3a-i-b` `det_galoisRep_five_eq_one_of_mem_localInertiaGroup` and
 `A₀-3a-i-c` `not_five_dvd_relIndex_of_padicValRat_j_nonneg`, its third input
 `A₀-3a-i-a` `exists_localInertia_generator_galoisRep_five` being PROVEN
-outright; Serre–Tate, Ann. of Math.
+outright.  **`A₀-3a-i-b` is PROVEN too since 2026-07-31**, so `A₀-3a-i-c` is
+the SOLE remaining leaf of this cluster; Serre–Tate, Ann. of Math.
 88 (1968), Thm. 2 and its Cor. 3; Serre, Invent. Math. 15 (1972), §5.6 and
 §1.12; Kraus, Manuscripta Math. 69 (1990), Thm. 2): the index `[I_N : J]` of
 the pointwise stabiliser of `E[5]` in the inertia group at `N` DIVIDES the
@@ -3614,9 +3883,11 @@ the first is proven:
   inertia: `#GL₂(𝔽₅) = 480 = 2⁵·3·5` is prime to `N > 19`, so wild inertia dies
   and the image is a quotient of the procyclic tame quotient.  This is where
   `hN19` is consumed, and it is exactly why the leaf is false at `N = 2, 3`.
-* `A₀-3a-i-b` `det_galoisRep_five_eq_one_of_mem_localInertiaGroup` — the Weil
-  pairing: `det ρ̄₅ = χ₅`, trivial on `I_N` since `N ≠ 5`.  Half of it is
-  already proven below in this file; see its docstring.
+* `A₀-3a-i-b` `det_galoisRep_five_eq_one_of_mem_localInertiaGroup` — **PROVEN**
+  (2026-07-31): the Weil pairing gives `det ρ̄₅ = χ₅` on all of `Γ ℚ`
+  (`WeilPairing.det_galoisRep_eq_cyclotomic`, imported), and `χ₅` is trivial on
+  `I_N` since `N ≠ 5` (`cyclotomicCharacterModL_eq_one_of_mem_localInertiaGroup_of_ne`,
+  hoisted above it in the same commit).  No new leaf; see its docstring.
 * `A₀-3a-i-c` `not_five_dvd_relIndex_of_padicValRat_j_nonneg` — **the whole of
   the Serre–Tate input, and the only consumer of `hj`.**  The refuting curve
   above (`N = 23`, `y² = x³ − 2x² − 7x + 6`, where `[I₂₃ : J] = 5`) refutes
@@ -4346,241 +4617,6 @@ theorem WeierstrassCurve.exists_isogenyLocalRamificationDataAt
       g hN hN19 hg lam hlam hN (not_le.mp hj)
     refine ⟨1, r, Or.inl rfl, hr1, by omega, ?_, by omega⟩
     simpa using hloc
-
-/-- **The ring-theoretic core of leaf `D`** (PROVEN 2026-07-27): in a local
-ring `R` in which `N` is a UNIT, let `x` be an `N`-th root of unity whose
-geometric sum `1 + x + … + x^{N−1}` vanishes (the two identities an
-`N`-th primitive root satisfies, transported from wherever it lives).  If
-`x^i ≡ x` modulo the maximal ideal for some `i < N`, then `i = 1`.
-
-This is what makes leaf `D` a `ℓ`-uniform statement rather than a
-`3`-specific one.  The whole argument happens in the residue field `κ`,
-and needs no product formula:
-
-* `x̄^i = x̄` with `x̄` a unit gives `x̄^{i−1} = 1` (for `i ≥ 1`; `i = 0`
-  gives `x̄ = 1` outright), so `orderOf x̄` divides both `i − 1` and `N`.
-  `N` is prime and `0 < i − 1 < N`, so the order is `1`, i.e. `x̄ = 1`.
-* Then the geometric sum reads `0 = ∑_{j<N} x̄^j = N` in `κ`, i.e.
-  `N ∈ 𝔪` — contradicting that `N` is a unit.
-
-Stated over an arbitrary `CommRing` + `IsLocalRing` so that leaf `D` need
-only supply the two identities and the unit hypothesis; in `D` the ring is
-the integral closure of `𝒪ᵥ` in `ℚ̄ᵥ`, whose maximal ideal is what defines
-`localInertiaGroup`. -/
-theorem rootOfUnity_index_eq_one_of_sub_mem_maximalIdeal
-    {R : Type*} [CommRing R] [IsLocalRing R] {N : ℕ} (hN : N.Prime)
-    {x : R} (hgeom : ∑ j ∈ Finset.range N, x ^ j = 0)
-    (hxN : x ^ N = 1) (hNunit : IsUnit ((N : ℕ) : R))
-    {i : ℕ} (hiN : i < N) (hxi : x ^ i - x ∈ IsLocalRing.maximalIdeal R) :
-    i = 1 := by
-  classical
-  by_contra hne
-  -- pass to the residue field
-  have hres : IsLocalRing.residue R x ^ i = IsLocalRing.residue R x := by
-    have h0 : IsLocalRing.residue R (x ^ i - x) = 0 :=
-      (IsLocalRing.residue_eq_zero_iff _).mpr hxi
-    rw [map_sub, map_pow] at h0
-    exact sub_eq_zero.mp h0
-  have hxNres : IsLocalRing.residue R x ^ N = 1 := by
-    rw [← map_pow, hxN, map_one]
-  have hxu : IsUnit (IsLocalRing.residue R x) :=
-    IsUnit.of_pow_eq_one hxNres hN.ne_zero
-  -- the residue of `x` is `1`
-  have hx1 : IsLocalRing.residue R x = 1 := by
-    rcases Nat.eq_zero_or_pos i with rfl | hipos
-    · rw [pow_zero] at hres; exact hres.symm
-    · -- `i ≥ 2`, so `0 < i - 1 < N`
-      have hk : 0 < i - 1 := by omega
-      have hkN : i - 1 < N := by omega
-      have hpow : IsLocalRing.residue R x ^ (i - 1) = 1 := by
-        have h1 : IsLocalRing.residue R x ^ (i - 1) * IsLocalRing.residue R x
-            = 1 * IsLocalRing.residue R x := by
-          rw [one_mul, ← pow_succ, Nat.sub_add_cancel hipos]
-          exact hres
-        exact hxu.mul_right_cancel h1
-      have hd1 : orderOf (IsLocalRing.residue R x) ∣ (i - 1) :=
-        orderOf_dvd_of_pow_eq_one hpow
-      have hd2 : orderOf (IsLocalRing.residue R x) ∣ N :=
-        orderOf_dvd_of_pow_eq_one hxNres
-      rcases hN.eq_one_or_self_of_dvd _ hd2 with h1 | hNo
-      · exact orderOf_eq_one_iff.mp h1
-      · exact absurd (hNo ▸ hd1) (Nat.not_dvd_of_pos_of_lt hk hkN)
-  -- the geometric sum then reads `N = 0` in the residue field
-  have hNzero : ((N : ℕ) : IsLocalRing.ResidueField R) = 0 := by
-    have h := congrArg (IsLocalRing.residue R) hgeom
-    rw [map_sum, map_zero] at h
-    simp_rw [map_pow, hx1, one_pow] at h
-    simpa using h
-  have hNmem : ((N : ℕ) : R) ∈ IsLocalRing.maximalIdeal R := by
-    rw [← IsLocalRing.residue_eq_zero_iff, map_natCast]
-    exact hNzero
-  exact (mem_nonunits_iff.mp ((IsLocalRing.mem_maximalIdeal _).mp hNmem)) hNunit
-
-/-- **`D` — the mod-`N` cyclotomic character is unramified away from `N`**
-(PROVEN 2026-07-27, by generalizing the `ℓ = 3` proof to every prime `ℓ`):
-for primes `q ≠ N`, `χ_N` kills the inertia group at `q`.
-
-This is the general-`ℓ` form of
-`GaloisRepresentation.cyclotomicCharacterModL_eq_one_of_mem_localInertiaGroup`
-(`HardlyRamified/Threeadic.lean`), which exists only at `ℓ = 3` and is
-DOWNSTREAM of this module, so it cannot be reused here.
-
-Proof, transcribing the `ℓ = 3` proof: let `ι` be the embedding of
-algebraic closures underlying `absoluteGaloisGroup.map`, and `ζ` a
-primitive `N`-th root of unity in `ℚ̄`.  Then `ι ζ` is a primitive `N`-th
-root of unity, integral over `𝒪ᵥ`, and `σ` permutes the `N`-th roots, so
-`σ (ι ζ) = (ι ζ)^i` for some `i < N`; the inertia congruence puts
-`(ι ζ)^i − ι ζ` in `𝔪`.  The ring-theoretic core
-`rootOfUnity_index_eq_one_of_sub_mem_maximalIdeal` (just above) then
-forces `i = 1`, so `σ` fixes `ι ζ`, so `map σ` fixes `ζ`, and
-`modularCyclotomicCharacter.unique` evaluates the character to `1`
-(compare `cyclotomicCharacterModL_eq_one` in `Chebotarev.lean`).
-
-WHAT THE GENERALIZATION NEEDED, against the `ℓ = 3` proof and against the
-route this docstring originally drafted.  At `ℓ = 3` the index `i` ranges
-over `{0, 1, 2}` and `interval_cases` disposes of it; the only unit
-statement required is the special factorisation `(1 − ζ)(1 − ζ²) = 3`.
-The draft proposed replacing that by `∏_{j=1}^{N−1} (1 − ζ^j) = N` and
-peeling off the relevant factor.  That is correct mathematics but is NOT
-the cheapest route in Lean: it needs the whole product identity, and then
-a divisibility argument to extract `1 − ζ^{i−1}`.  What replaced it works
-entirely in the RESIDUE FIELD and needs no product at all — see the core
-lemma's own docstring. -/
-theorem cyclotomicCharacterModL_eq_one_of_mem_localInertiaGroup_of_ne
-    {N : ℕ} (hN : N.Prime) {q : ℕ} (hq : q.Prime) (hqN : q ≠ N) :
-    ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
-      (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩
-        (Field.absoluteGaloisGroup.map (algebraMap ℚ
-          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-            hq.toHeightOneSpectrumRingOfIntegersRat)) σ)) = 1 := by
-  classical
-  haveI : Fact N.Prime := ⟨hN⟩
-  haveI : NeZero N := ⟨hN.ne_zero⟩
-  haveI : Fact (1 < N) := ⟨hN.one_lt⟩
-  set v := hq.toHeightOneSpectrumRingOfIntegersRat
-  set f : ℚ →+* IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v :=
-    algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)
-  set ι : AlgebraicClosure ℚ →+* AlgebraicClosure
-      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) :=
-    AlgebraicClosure.map f
-  intro σ hσ
-  -- a primitive `N`-th root of unity in `ℚ̄` and its image downstairs
-  obtain ⟨ζ, hζ⟩ :=
-    HasEnoughRootsOfUnity.exists_primitiveRoot (AlgebraicClosure ℚ) N
-  have hη : IsPrimitiveRoot (ι ζ) N := hζ.map_of_injective ι.injective
-  -- the inertia element fixes `ζ`
-  have hfix : Field.absoluteGaloisGroup.map f σ ζ = ζ := by
-    have hmapζN : (Field.absoluteGaloisGroup.map f σ ζ) ^ N = 1 := by
-      rw [← map_pow, hζ.pow_eq_one, map_one]
-    obtain ⟨i, hiN, hiζ⟩ := hζ.eq_pow_of_pow_eq_one hmapζN
-    haveI hVR : ValuationRing (IntegralClosure
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
-        (AlgebraicClosure
-          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) :=
-      valuationRing_integralClosure v
-    haveI hLoc : IsLocalRing (IntegralClosure
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
-        (AlgebraicClosure
-          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) :=
-      inferInstance
-    have hση : σ (ι ζ) = (ι ζ) ^ i := by
-      have hL := Field.absoluteGaloisGroup.lift_map f σ ζ
-      rw [← hiζ] at hL
-      rw [← hL, map_pow]
-    -- move into the integral closure of `𝒪ᵥ`
-    have hint : IsIntegral
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
-        (ι ζ) := by
-      refine ⟨Polynomial.X ^ N - Polynomial.C 1,
-        Polynomial.monic_X_pow_sub_C 1 hN.ne_zero, ?_⟩
-      simp [hη.pow_eq_one]
-    set x : IntegralClosure
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
-        (AlgebraicClosure
-          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) :=
-      ⟨ι ζ, hint⟩ with hx
-    set j := algebraMap (IntegralClosure
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
-        (AlgebraicClosure
-          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)))
-      (AlgebraicClosure
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) with hj
-    have hjinj : Function.Injective j := fun a b h => Subtype.ext h
-    have hjx : j x = ι ζ := rfl
-    -- the two identities of a primitive `N`-th root, transported to `IC`
-    have hxN : x ^ N = 1 := by
-      apply hjinj
-      rw [map_pow, map_one, hjx]
-      exact hη.pow_eq_one
-    have hgeom : ∑ k ∈ Finset.range N, x ^ k = 0 := by
-      apply hjinj
-      rw [map_sum, map_zero]
-      simp_rw [map_pow, hjx]
-      exact hη.geom_sum_eq_zero hN.one_lt
-    -- `N` is a unit of the integral closure, since `q ≠ N`
-    have hNunit : IsUnit ((N : ℕ) : IntegralClosure
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
-        (AlgebraicClosure
-          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) := by
-      have h1 := GaloisRepresentation.isUnit_natCast_adicCompletionIntegers
-        hN hq (Ne.symm hqN)
-      have h2 := h1.map (algebraMap
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
-        (IntegralClosure
-          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
-          (AlgebraicClosure
-            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))))
-      rwa [map_natCast] at h2
-    -- the inertia congruence: `σ • x - x = x^i - x ∈ 𝔪`
-    have hxi : x ^ i - x ∈ IsLocalRing.maximalIdeal
-        (IntegralClosure
-          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
-          (AlgebraicClosure
-            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) := by
-      have h2 : σ • x - x ∈ IsLocalRing.maximalIdeal
-          (IntegralClosure
-            (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
-            (AlgebraicClosure
-              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) :=
-        (AddSubgroup.mem_inertia.mp hσ) x
-      have hsmul : σ • x = x ^ i := by
-        apply hjinj
-        have h1 : j (σ • x) = σ (ι ζ) := by
-          show (σ • x).1 = σ (ι ζ)
-          rw [IntegralClosure.coe_smul]
-          rfl
-        rw [h1, hση, map_pow, hjx]
-      rwa [hsmul] at h2
-    have hi1 : i = 1 :=
-      rootOfUnity_index_eq_one_of_sub_mem_maximalIdeal hN hgeom hxN hNunit hiN hxi
-    subst hi1
-    rw [pow_one] at hiζ
-    exact hiζ.symm
-  -- `map f σ` fixes every `N`-th root of unity, so the character is `1`
-  have hone : (1 : ZMod N) = modularCyclotomicCharacter (AlgebraicClosure ℚ)
-      (HasEnoughRootsOfUnity.natCard_rootsOfUnity (AlgebraicClosure ℚ) N)
-      (MulSemiringAction.toRingAut (Field.absoluteGaloisGroup ℚ)
-        (AlgebraicClosure ℚ) (Field.absoluteGaloisGroup.map f σ)) := by
-    refine modularCyclotomicCharacter.unique (AlgebraicClosure ℚ) _ _
-      fun t ht => ?_
-    rw [ZMod.val_one, pow_one]
-    rw [mem_rootsOfUnity] at ht
-    have htN : ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) ^ N = 1 := by
-      rw [← Units.val_pow_eq_pow_val, ht, Units.val_one]
-    obtain ⟨i, hiN, hiζ⟩ := hζ.eq_pow_of_pow_eq_one htN
-    show Field.absoluteGaloisGroup.map f σ
-      ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) =
-      ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ)
-    rw [← hiζ, map_pow, hfix]
-  have hid : modularCyclotomicCharacter (AlgebraicClosure ℚ)
-      (HasEnoughRootsOfUnity.natCard_rootsOfUnity (AlgebraicClosure ℚ) N)
-      (MulSemiringAction.toRingAut (Field.absoluteGaloisGroup ℚ)
-        (AlgebraicClosure ℚ) (Field.absoluteGaloisGroup.map f σ))
-      = (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩
-        (Field.absoluteGaloisGroup.map f σ) : (ZMod N)ˣ) := rfl
-  refine Units.ext ?_
-  rw [← hid, ← hone]
-  rfl
 
 /-!
 ##### The resultant elimination, in kernel-checked arithmetic form
