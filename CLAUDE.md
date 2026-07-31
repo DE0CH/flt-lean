@@ -1377,6 +1377,57 @@ not applied to the other** — nothing propagates it — so when you touch a lea
 docstring names a twin, read the twin's CURRENT docstring, not the sentence your leaf
 quotes from it.
 
+## A "MISSING MACHINERY" AUDIT NAMES THEOREMS. GO READ THE THEOREMS.
+
+(2026-07-31, `flt-lean-246`.) A mature leaf in this tree carries an inventory
+paragraph — "what exists and is usable is X, Y, Z; what is missing is W". Those
+paragraphs are written carefully and are usually right about what is ABSENT.
+They are much less reliable about **how strong what is PRESENT is**, because the
+author summarised the cited theorem in one clause instead of quoting it.
+
+`exists_heightOneSpectrum_mul_span_eq_span_of_sup_eq_top` (Dirichlet for a
+narrow ray class) had, in its own docstring and in its consumer's, the sentence
+"`GaloisRepresentation/Chebotarev.lean` carries `infinite_setOf_isArithFrobAt`
+…, so the DENSITY half does not have to be rebuilt". Read as prose that says
+"some density material is available". The theorem's actual STATEMENT is **full
+Chebotarev in ideal-theoretic existence form**: for every finite normal `L/F`
+and every `τ ∈ Gal(L/F)`, infinitely many places of `F` are unramified in `L`
+and carry `τ` as an arithmetic Frobenius — proven, in a file with no `sorry` in
+it. Once that is read rather than summarised, the leaf becomes a fifteen-line
+assembly over a citation that asks only for the ray class FIELD, with no
+analysis in it at all. The same file also holds Weber's per-narrow-ray-class
+counting theorem, which none of the three audits in that block mentions.
+
+So the cheap check, before believing any inventory: `grep -n "theorem <name>"`
+the cited file and **read the statement and the sorry status**, not the
+docstring's clause about it. It costs one grep and it is the difference between
+"needs a theory" and "needs fifteen lines".
+
+**The check cuts BOTH ways, and the same agent got the other direction wrong an
+hour later.** Two new modules (`NumberField/ArtinSymbol.lean`,
+`NumberField/UnramifiedClassFieldExistence.lean`) had appeared on `main` with a
+promising declaration list, and I wrote "the unramified existence theorem has
+landed in the tree" into a docstring and a commit message on the strength of
+that list. It has not: their two core statements
+(`exists_hilbertClassField_artinIso`, `artinMap_toPrincipalIdeal`) are `sorry`.
+A declaration list is not a proof status. Run `grep -n sorry` on the file and
+attribute each hit to its enclosing declaration before writing "is in the tree"
+anywhere — the phrase is read downstream as "usable today", and an inventory
+that is wrong in this direction sends the next agent to import a leaf.
+
+**The reusable cut this exposed, which applies wherever a leaf asks for a PRIME
+with a prescribed splitting/class behaviour:** do not ask for the prime. Ask for
+the finite normal extension and the Galois element that CUT OUT the condition,
+and let in-tree Chebotarev produce the prime. That moves the whole analytic /
+density half out of the citation and leaves the abelian existence theorem,
+which is a different and much better-isolated obligation. Two things make the
+resulting leaf safe rather than vacuous, and both must be checked: exclude the
+places dividing the modulus explicitly (at `w ∣ 𝔣` the ray-class conclusion is
+*unsatisfiable*, so a leaf without that clause is FALSE, not merely hard), and
+note that Chebotarev itself forbids discharging the leaf by choosing an `L, τ`
+whose Frobenius set is empty — the set is infinite for every `L, τ`, and
+`Ideal.finite_factors` removes the finitely many divisors of the modulus.
+
 ## A `sorry` is a PROMISE that the statement is provable
 
 (2026-07-29, orchestrator error, caught only because an agent quoted the file's
@@ -4378,3 +4429,43 @@ Three notes from the two extra instances:
   `X ×_S T'` really is the pullback of `X ×_S T` along `T' ⟶ T` — was needed here and is also
   precisely the input step 2 of a *different* open leaf's route was asking for. Prove these as
   named lemmas, never inline in a `have`.
+
+## AN AUDIT'S REFUTATION CHECKS DECAY — BUT RE-RUNNING THEM IS ONLY HALF THE JOB
+
+(2026-07-31, `flt-lean-246`, on two atomicity-audited leaves of `KhareWintenberger.lean`.)
+
+A mature leaf here carries an ATOMICITY or CUT audit that names each axis it searched
+*and the one-line check that would refute the verdict*. Those checks are the most
+valuable thing in the docstring and they are cheap — three greps closed three axes in
+under a minute. **Run them; they decay.** Two of the three had moved since the audit was
+written: `exists_const_natCard_zeroLocus_sub_le` had gone from an open leaf to **PROVEN**
+(111 body lines, zero `sorry`), which turns "blocker 1 is a piece of mathematics" into
+"blocker 1 is a relocation job" — a completely different price on the same cut.
+
+**But an audit's checks only cover the axes it thought of, and the gap is systematic
+rather than accidental.** A CUT AUDIT that refutes *"derive the node's conclusion FROM
+the weaker shape"* says nothing about *"replace the node's conclusion BY the weaker
+shape and rewire the consumers"*. Those are different moves with different failure
+modes, and the second is the one an attacker actually tries first. Here the audit had
+carefully refuted direction one (purity cannot rebuild the point-count package —
+`Npt : ℕ → ℕ` effectivity) and was silent on direction two, which is where the whole
+decision lived.
+
+**And before weakening any leaf to "what its consumer needs", READ EVERY CONSUMER.**
+This is where the trap sprang. Every docstring in that block presented the node as
+feeding one lemma to produce `‖φ(a_w)‖ ≤ 2√(Nw)` — true of consumer 1. Consumer 2, 1400
+lines away, calls a *sharper* lemma twice and needs `‖γ i‖ = ‖γ j‖ = √q` **exactly**, an
+equality rather than a bound. Weakening the node to consumer 1's conclusion — the obvious
+move, and the one the prose invites — compiles nowhere. No docstring recorded this; only
+reading the second proof did. Generalise: **prose describes the consumer the author was
+thinking about**, so the consumer set is something to enumerate mechanically, never to
+inherit.
+
+**Finally, "strictly weaker" is not automatically better.** The purity shape here *is*
+strictly weaker (the audit's own effectivity argument separates them) and it was still
+declined, because it orphans ~190 lines of proven complex analysis into free-floating
+code while closing zero leaves and opening zero. Under this file's own tie-breaker —
+count OPEN leaves after, not leaves created — a reshaping that is leaf-neutral and
+destroys verified material is a loss. **Record the declined option with the condition
+that would reverse it** (here: a second consumer appearing for the orphaned lemmas), so
+the next owner inherits a decision rather than an open question.
