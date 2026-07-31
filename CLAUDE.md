@@ -8768,3 +8768,55 @@ The check is one grep per lemma in the block you are about to orphan:
     grep -rn '<lemma-name>' --include=*.lean . | grep -v '<the file>:'   # external consumers
     grep -n '<lemma-name>' <the file>                                    # internal, minus docstrings
 A cut is only free to reverse when the derivation it deletes is not the sole consumer of anything.
+## A DOCSTRING THAT INVITES YOU TO DROP A HYPOTHESIS IS A TRAP WITH A WELCOME MAT
+(2026-07-31, closing two of the three cases of `exists_ringHom_gamma0GITPresentationOver_of_atlas_aux`
+in `X0.lean`.) `exists_rigidifiedModuliData_specF` carried `hℓN : ¬ ℓ ∣ N` under a
+Faithfulness note saying it is "**not claimed** to be load-bearing … it is passed in
+because it is available at the call site and because whether the development's
+`CyclicSubgroupOfOrder` is the Drinfeld notion at `ℓ ∣ N` has not been checked. **A
+prover who does not need it should say so and drop it.**"
+Dropping it would have closed my leaf in one line. It would also have been the
+`one_le_break` failure in a new suit: the two leaves underneath are SORRIES, so widening
+them costs nothing at build time and cannot be caught by any test. **A hypothesis on a
+sorry leaf is the only thing standing between the leaf and being false; deleting one is
+not a simplification, it is an unaudited new claim.**
+The check the docstring said had not been run took ten minutes and was not in the
+literature — **it was in the file, in the structure definition**. `CyclicSubgroupOfOrder`'s
+`geom_cyclic` field demands, at every geometric point, an honest point of order exactly
+`N` generating the fibre — i.e. `N` DISTINCT geometric points. `ker F` on a supersingular
+curve in characteristic `p` has one. So the structure is the NAIVE notion, the Katz–Mazur
+6.6.1 citation attached to it (relative representability and finite flatness, which is a
+DRINFELD statement) is not about it at `ℓ ∣ N`, and the invitation was withdrawn in the
+docstring rather than accepted.
+Generalisable: **when a docstring says a hypothesis is "carried but probably not needed",
+treat that as an OPEN QUESTION with a named owner, never as a licence.** Two moves settle
+it cheaply, in this order: unfold the DEFINITION the hypothesis is about (not the theorem,
+and not the literature), and check what the statement's conclusion asserts about the
+degenerate case the hypothesis excludes. Only a written audit of both buys the deletion.
+## COUNT BOTH DIRECTIONS BEFORE DOING DECLARATION-ORDER SURGERY
+Same leaf, same day, and it is the reason the leaf was reachable at all. Its docstring
+recorded the blockage correctly — "a declaration-order artifact and nothing else",
+`exists_gamma0GITPresentationOver_zmod` proves the `p ∤ N` case verbatim ~2300 lines
+below — and prescribed the fix as **hoisting the producer UP**: the whole `𝔽_ℓ`
+rigidification chain, ~2000 lines, in an 82 000-line concurrently-edited module. Two
+successive task prompts repeated that as the plan.
+**Moving the CONSUMERS DOWN was six declarations and ~430 lines.** The producer's
+dependency cone is usually much larger than the consumer's, so the obvious direction is
+usually the expensive one. Count both before cutting; the cheap direction is found by
+grepping what sits BETWEEN the two positions and consumes the block (here: nothing — the
+furthest-reaching of the six is next used ~700 lines below the destination).
+**And a block move can be made SAFE in a contended file, which is what makes this
+tractable at all.** Do it with a script that slices line ranges, then verify the result is
+a PURE PERMUTATION of the original lines:
+    python3 - <<'PY'
+    from collections import Counter
+    a=Counter(open('/tmp/X0.before').read().split('\n'))
+    b=Counter(open('Fermat/.../X0.lean').read().split('\n'))
+    print("added:",dict(b-a)); print("removed:",dict(a-b))
+    PY
+Anything in `removed` is a bug in your slice indices; `added` must contain exactly the
+section/`open`/blank lines you meant to insert. That check costs a second and is stronger
+than reading the diff, because a 1200-line reordering diff is unreadable. Leave a
+breadcrumb at BOTH positions — the old one saying what left and where to, the new one
+saying what arrived and why — since the next reader of either site will otherwise
+rediscover the blockage.
