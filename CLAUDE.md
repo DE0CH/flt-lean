@@ -3921,6 +3921,44 @@ The repair here was free, in the shape the section above predicts: the consumer 
 `hthree` from destructuring `HasDoubleCoverOfAffineLine` and was passing it to one child and
 discarding it at the other.
 
+## A TASK PROMPT THAT CITES A REPAIR COMMIT IS CITING `merger`, NOT `main`
+(2026-07-31, `flt-lean-65`.) A prompt opened with "two repairs landed that day (commits
+`f1ca4452` and `b1225666`) and you must read the leaf's docstring before anything else — it
+now contains a FALSITY AUDIT and a step-by-step route". Neither commit was an ancestor of the
+worktree's HEAD: the dispatch hook fast-forwards to `main`, and both were still sitting on
+`merger`. So the docstring in the file was the OLD one, the statement was missing the `htors`
+binder the prompt described, and `IsTraceDualFunctional`'s third clause was the weak version
+the prompt said had been replaced. **Everything the prompt asserted was true, and none of it
+was true in the worktree.** This is the release window (class five) seen from the receiving
+end, and it is the normal case for any prompt written by an agent that just finished: the
+repair it is telling you about is *its own*, and it has not landed.
+The check is two commands and costs nothing:
+    git merge-base --is-ancestor <sha> HEAD || echo "NOT PRESENT — go get it"
+    git log --oneline main..<sha>          # usually a handful of commits
+Then **merge that sha directly, not `merger`.** Here `main..b1225666` was three commits over
+two files; merging `merger` wholesale would have dragged an entire release's payload onto a
+single-leaf branch for no reason, and made the merge worker's job harder rather than easier.
+Say in the report that your branch carries those commits, so the merger knows the duplication
+is deliberate.
+Corollary for whoever WRITES such a prompt: a sha is not a location. Write
+"`b1225666`, on `merger`, not yet on `main` — merge it first", because the reader's tree is
+`main` by construction.
+## `∉ (small ideal)` IS NOT `∉ 𝔪` — the commonest direction error in a duality argument
+(2026-07-31, found while proving `exists_tateWeilRawFamily_of_qAdicWeilSystem`.) A leaf's
+prescribed route ended "the contrapositive turns a nonzero pairing value into
+`C ∉ span {(q:O)}^N`, and then locality of `O` plus `hker` upgrade that to `IsUnit`". The
+first half is right; the second is not, and the error is worth naming because it reads as a
+routine last step.
+In a local ring, `IsUnit c` is `c ∉ 𝔪` — non-membership in the BIGGEST proper ideal.
+A duality hypothesis of the shape `c ∈ J ⟹ (θ-estimate)` contrapositives to `c ∉ J`, and `J`
+is always SMALL (here `span {(q:O)}^N ⊆ span {j π}^{eN} ⊆ 𝔪`). Non-membership in a subideal
+is *weaker* than non-membership in the whole maximal ideal, so the implication runs backwards.
+Getting `IsUnit` needs an UPPER bound on `θ` over `𝔪` itself, which is a different and usually
+missing clause — in this development the module's own docstring already recorded that no such
+estimate exists at exponents that are not multiples of the ramification index.
+Test before believing any "and therefore it is a unit": write down which ideal the argument
+actually excludes, and check it is `𝔪` and not something inside it. Eight formal clauses of
+that leaf went through exactly as prescribed; this one line was the whole of what was left.
 ## SEVENTH invisibility class: A CLEAN MERGE THAT DOES NOT COMPILE — the interface split
 
 (2026-07-30, release 22, three instances in one batch.) The six classes above are all about
