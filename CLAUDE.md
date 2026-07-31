@@ -4000,6 +4000,49 @@ that whole tree can also just be `rsync`ed over a stale `.lake/build` instead of
 
 This is what let one agent prove two independent leaves in the time of one build.
 
+### THE FARM ALSO WORKS WHEN YOUR TARGET'S MODULE CANNOT BE BUILT AT ALL — the soundness condition is a `git show`, not a build
+
+(2026-07-31, `flt-lean-319`.) The section above assumes the target's cone is merely
+*mid-build*. The stronger case is that it is **broken**: `merger` carried a genuine
+module import CYCLE (`X0 → IsogenySignature → HyperellipticJacobian → X0`), so
+`X0.olean` and `X1.olean` were unbuildable by anybody, for hours, and a
+`lake build Fermat.FLT.ModularCurve.X1` could never go green however correct the proof.
+
+The release farm still verifies your text, and the check that makes it HONEST is one
+command per name you consume from the broken module:
+
+    R=$(cat ~/.flt-release-lake/sha)
+    git show $R:<file>      | grep -A12 "^theorem <name>" > /tmp/a
+    git show merger:<file>  | grep -A12 "^theorem <name>" > /tmp/b
+    diff /tmp/a /tmp/b        # identical statement => the farm's olean is faithful FOR THIS NAME
+
+Here that was two names (`HasNoFibreAffineLine`, `birationalOver_affineLine_of_not_exists_section`),
+both byte-identical between the snapshot and `merger`, and the proof compiled green against
+the release `X0.olean` in **4 seconds**. Say in the commit which names you checked; that
+list is exactly the strength of the claim, and a reviewer can re-run it.
+
+**Two mechanical notes that make this practical.**
+
+* **Compile a NEW module into the build tree with `lake env lean -o`, never `lake build`.**
+  `lake env lean -o .lake/build/lib/lean/<path>.olean <src>` writes the olean directly, takes
+  seconds, and — unlike a second `lake build` — cannot start a rival elaboration of anything.
+  But the module system also wants `<name>.olean.server` (and `.olean.private`): copy the
+  WHOLE `X.olean*` set into the farm, or the scratch dies with
+  `failed to open file '….olean.server'`, which reads like a corrupt farm and is not.
+* **A declaration absent at the snapshot commit sinks the whole farm run.** Two
+  `RelativePicard` base-change wrappers postdated the snapshot, so the scratch reported
+  `unknown identifier` for them; the fix is to INLINE their one-line mathlib bodies in the
+  scratch (`MorphismProperty.pullback_snd (P := @…)`) and verify the named form separately
+  against the current olean. Do NOT overlay a current olean onto the release farm to "fix"
+  it — that is exactly the inconsistent-olean-set trap, and every diagnostic after it lies.
+
+**And match the scratch's SCOPE to the target's, not to what is convenient.** `X1.lean`
+does not `open Limits` — every declaration in it writes `Limits.pullback.…` — so a scratch
+that opens `Limits` proves nothing about whether your block resolves in the file. Read the
+target's own `open`/`namespace` header (and remember `^open ` greps hit prose in this
+project's docstrings) and reproduce it exactly; then, if you do need `Limits`, add
+`open Limits in` to your declaration — ABOVE the doc comment.
+
 **AND THE FIRST THING A SCRATCH WILL TELL YOU IS `unknown identifier` — that is
 almost never a missing import** (2026-07-31, cost one cycle). A scratch that
 `public import`s a giant `module` file and names one of its declarations gets
