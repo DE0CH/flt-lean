@@ -5658,6 +5658,8 @@ theorem exists_le_idealTensorComparison_eq_zero_of_isNoetherianFlatDescentSystem
     (fun r l s => cT hJ1 (β (l, ⟨r, s⟩)))
     (fun r s => dT hJ1 (η ⟨r, s⟩)) hb' hy' t ht
 
+end HalfAColimit
+
 /-- **HALF B OF [Stacks 00R6]'s COLIMIT LEAF — the surjectivity, and it is the ONLY
 genuinely homological statement left in 10.128.3** (sorry leaf, cut 2026-07-30 out of
 `exists_le_rTensor_map_maximalIdeal_injective_of_isNoetherianFlatDescentSystem` below;
