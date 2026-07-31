@@ -35173,6 +35173,262 @@ theorem exists_hilbertAuxCoeffRingHom
       𝒟Q.π 𝒟Q.π_surjective
   exact ⟨c, by rw [hc]; exact hκ⟩
 
+/-! ### The relative cotangent space `𝔪 ⧸ (𝔪² + J)`, and the tangent bound it encodes
+
+(New 2026-07-31, `flt-lean-120`.) Pure commutative algebra — no Galois
+representation, no deformation datum, no place of `F`, and no `Q`. It exists so
+that the ideal-theoretic bookkeeping can leave
+`exists_hilbertAuxCotangentSpanningFamily` below, whose remaining content is then
+a single inequality between natural numbers: Mazur's tangent-space identification
+followed by Greenberg–Wiles over `F`.
+
+This is the `F`-level twin of `HardlyRamified/Deformation.lean`'s
+`cotSub` / `CotangentModL` / `cotangentFinrankModL`, written HERE because that
+module is DOWNSTREAM of this one, and generalised in the one direction the raised
+level needs: the denominator is `𝔪² + J` for an ARBITRARY ideal `J`, where the
+`ℚ`-level copy hard-codes `J = (ℓ)`. (Our `J` is `c(𝔪_𝒪)` for the coefficient
+map `c`, which is `(ℓ)` only when `coeff` is absolutely unramified — the very
+hypothesis `hunram` that `exists_hilbertAuxCoeffRingHom` above has to carry and
+this leaf does not.)
+
+`hilbertRelCotangentFinrank_le` is `cotangentFinrankModL_le` transcribed with that
+one generalisation. `exists_fin_span_sup_of_hilbertRelCotangentFinrank_le` is the
+CONVERSE, which the `ℚ` level never needed; it is what makes the cut below an
+EQUIVALENT restatement rather than a strengthening, so the falsity audits already
+on that leaf transfer to its replacement with no re-derivation. -/
+
+universe wR
+
+section HilbertRelativeCotangent
+
+variable {R : Type wR} [CommRing R] [IsLocalRing R]
+
+variable (R) in
+/-- `(𝔪² ⊔ J) ∩ 𝔪`, viewed as a submodule of `𝔪`. Written as a `comap` along
+`𝔪.subtype` rather than as a sum of submodules of `↥𝔪`, so that membership is
+decided by the ambient statement `(x : R) ∈ 𝔪² ⊔ J` and no intersection has to be
+carried — exactly as `cotSub` does at the `ℚ` level. -/
+noncomputable def hilbertCotSub (J : Ideal R) :
+    Submodule R ↥(IsLocalRing.maximalIdeal R) :=
+  Submodule.comap (IsLocalRing.maximalIdeal R).subtype
+    (IsLocalRing.maximalIdeal R ^ 2 ⊔ J)
+
+variable (R) in
+/-- **The relative cotangent space `𝔪 ⧸ (𝔪² + J)` of a local ring.**
+
+For `J = c(𝔪_𝒪)` this is the space whose `k`-dual is the tangent space of a
+deformation functor over the coefficient ring `𝒪` — a map `R → k[ε]` of
+`𝒪`-algebras kills `c(𝔪_𝒪)`, so it factors through this quotient and not merely
+through `𝔪/𝔪²`. -/
+abbrev HilbertRelCotangent (J : Ideal R) : Type wR :=
+  ↥(IsLocalRing.maximalIdeal R) ⧸ hilbertCotSub R J
+
+/-- The relative cotangent space is killed by `𝔪`, which is what makes it a
+module over the residue field. -/
+lemma hilbertRelCotangent_isTorsionBySet (J : Ideal R) :
+    Module.IsTorsionBySet R (HilbertRelCotangent R J)
+      (IsLocalRing.maximalIdeal R : Set R) := by
+  rintro x ⟨a, (ha : a ∈ IsLocalRing.maximalIdeal R)⟩
+  induction x using Quotient.inductionOn' with
+  | h y =>
+    refine (Submodule.Quotient.mk_eq_zero _).mpr ?_
+    refine Submodule.mem_comap.mpr (Submodule.mem_sup_left ?_)
+    show a * (y : R) ∈ IsLocalRing.maximalIdeal R ^ 2
+    rw [pow_two]
+    exact Ideal.mul_mem_mul ha y.2
+
+/-- The residue-field module structure on the relative cotangent space. Kept as a
+`def` rather than an `instance` because `Module.IsTorsionBySet.module` cannot be
+inferred; consumers introduce it with `letI`. The scalar action is the `R`-action
+DEFINITIONALLY, which is what makes the two spanning computations below go through
+with no transfer lemmas. -/
+@[implicit_reducible] noncomputable def hilbertRelCotangentModule (J : Ideal R) :
+    Module (R ⧸ IsLocalRing.maximalIdeal R) (HilbertRelCotangent R J) :=
+  (hilbertRelCotangent_isTorsionBySet J).module
+
+variable (R) in
+/-- **The relative tangent dimension** `dim_{R/𝔪} 𝔪/(𝔪² + J)`, valued in `ℕ`. -/
+noncomputable def hilbertRelCotangentFinrank (J : Ideal R) : ℕ :=
+  letI := hilbertRelCotangentModule (R := R) J
+  Module.finrank (R ⧸ IsLocalRing.maximalIdeal R) (HilbertRelCotangent R J)
+
+/-- **Nakayama for the relative cotangent space** (PROVEN 2026-07-31): a family of
+`g` elements of `𝔪` whose span, together with `𝔪² ⊔ J`, exhausts `𝔪` bounds the
+relative tangent dimension by `g`.
+
+No Noetherian and no completeness hypothesis: the span hypothesis is taken in its
+strong form, so the images of `ts` generate the quotient outright and no lifting
+step is required. Transcribed from `cotangentFinrankModL_le`
+(`HardlyRamified/Deformation.lean`, which is downstream and therefore unusable
+here) with `Ideal.span {(ℓ : R)}` generalised to `𝔪 ^ 2 ⊔ J`.
+
+This is the direction that makes `hilbertAuxCotangentFinrank_le` below an
+EQUIVALENT restatement of the old `exists_hilbertAuxCotangentSpanningFamily`
+rather than a strengthening of it. -/
+theorem hilbertRelCotangentFinrank_le (J : Ideal R) (g : ℕ) (ts : Fin g → R)
+    (hts : ∀ i, ts i ∈ IsLocalRing.maximalIdeal R)
+    (hspan : IsLocalRing.maximalIdeal R ≤
+      Ideal.span (Set.range ts) ⊔ (IsLocalRing.maximalIdeal R ^ 2 ⊔ J)) :
+    hilbertRelCotangentFinrank R J ≤ g := by
+  letI := hilbertRelCotangentModule (R := R) J
+  haveI : Nontrivial (R ⧸ IsLocalRing.maximalIdeal R) :=
+    Ideal.Quotient.nontrivial_iff.mpr (IsLocalRing.maximalIdeal.isMaximal R).ne_top
+  haveI : StrongRankCondition (R ⧸ IsLocalRing.maximalIdeal R) :=
+    commRing_strongRankCondition _
+  set 𝔪 := IsLocalRing.maximalIdeal R with h𝔪
+  set κ := R ⧸ 𝔪 with hκ
+  set w : Fin g → HilbertRelCotangent R J :=
+    fun i => Submodule.Quotient.mk ⟨ts i, hts i⟩ with hw
+  have hsmul : ∀ (a : R) (t : ↥𝔪),
+      (Ideal.Quotient.mk 𝔪 a) • (Submodule.Quotient.mk t : HilbertRelCotangent R J)
+        = Submodule.Quotient.mk (a • t) := fun _ _ => rfl
+  have hgen : ∀ (t : R) (_ : t ∈ Set.range ts) (htm : t ∈ 𝔪),
+      (Submodule.Quotient.mk ⟨t, htm⟩ : HilbertRelCotangent R J)
+        ∈ Submodule.span κ (Set.range w) := by
+    rintro t ⟨j, rfl⟩ htm
+    exact Submodule.subset_span ⟨j, rfl⟩
+  have hspanmem : ∀ (x : R) (_ : x ∈ Ideal.span (Set.range ts)) (hxm : x ∈ 𝔪),
+      (Submodule.Quotient.mk ⟨x, hxm⟩ : HilbertRelCotangent R J)
+        ∈ Submodule.span κ (Set.range w) := by
+    intro x hx hxm
+    obtain ⟨n, f, gg, hsum⟩ := Submodule.mem_span_set'.mp hx
+    have hmem : ∀ i, ((gg i : R)) ∈ 𝔪 := by
+      intro i
+      obtain ⟨j, hj⟩ := (gg i).2
+      rw [← hj]; exact hts j
+    have hx' : (⟨x, hxm⟩ : ↥𝔪) = ∑ i, f i • (⟨(gg i : R), hmem i⟩ : ↥𝔪) := by
+      refine Subtype.ext ?_
+      show x = ((∑ i, f i • (⟨(gg i : R), hmem i⟩ : ↥𝔪) : ↥𝔪) : R)
+      rw [← hsum]
+      push_cast
+      rfl
+    rw [hx', show (Submodule.Quotient.mk (∑ i, f i • (⟨(gg i : R), hmem i⟩ : ↥𝔪))
+          : HilbertRelCotangent R J)
+        = ∑ i, (Ideal.Quotient.mk 𝔪 (f i)) •
+            (Submodule.Quotient.mk (⟨(gg i : R), hmem i⟩ : ↥𝔪) :
+              HilbertRelCotangent R J) from ?_]
+    · exact Submodule.sum_mem _ fun i _ =>
+        Submodule.smul_mem _ _ (hgen _ (gg i).2 (hmem i))
+    · simp only [hsmul]
+      exact map_sum (hilbertCotSub R J).mkQ _ _
+  have htop : Submodule.span κ (Set.range w) = ⊤ := by
+    refine Submodule.eq_top_iff'.mpr fun x => ?_
+    obtain ⟨y, rfl⟩ := Submodule.Quotient.mk_surjective (hilbertCotSub R J) x
+    obtain ⟨u, hu, z, hz, huz⟩ := Submodule.mem_sup.mp (hspan y.2)
+    have hum : u ∈ 𝔪 := Ideal.span_le.mpr (Set.range_subset_iff.mpr hts) hu
+    have hy : (Submodule.Quotient.mk y : HilbertRelCotangent R J)
+        = Submodule.Quotient.mk (⟨u, hum⟩ : ↥𝔪) := by
+      refine ((Submodule.Quotient.eq _).mpr ?_).symm
+      refine Submodule.mem_comap.mpr ?_
+      have hval : (((⟨u, hum⟩ : ↥𝔪) - y : ↥𝔪) : R) = -z := by
+        push_cast
+        rw [← huz]; ring
+      simpa only [Submodule.coe_subtype, hval] using
+        Submodule.neg_mem _ hz
+    rw [hy]
+    exact hspanmem u hu hum
+  have hcard := finrank_range_le_card (R := κ) w
+  rw [Set.finrank, htop, finrank_top] at hcard
+  simpa [hilbertRelCotangentFinrank] using hcard
+
+/-- **The converse: a relative tangent dimension `≤ g` produces `g` spanning
+elements** (PROVEN 2026-07-31). Noetherianness enters exactly once, to make the
+relative cotangent space finite-dimensional over the residue field; the `g − d`
+padding entries are `0`, which is free.
+
+Together with `hilbertRelCotangentFinrank_le` above this says the two statements
+
+* `∃ t : Fin g → R, 𝔪 = span (range t) ⊔ (𝔪² ⊔ J)`, and
+* `hilbertRelCotangentFinrank R J ≤ g`
+
+are EQUIVALENT for a Noetherian local `R` and any `J ≤ 𝔪`. That equivalence is the
+whole justification of the cut performed on
+`exists_hilbertAuxCotangentSpanningFamily` below. -/
+theorem exists_fin_span_sup_of_hilbertRelCotangentFinrank_le [IsNoetherianRing R]
+    (J : Ideal R) (hJ : J ≤ IsLocalRing.maximalIdeal R) (g : ℕ)
+    (hg : hilbertRelCotangentFinrank R J ≤ g) :
+    ∃ t : Fin g → R, (∀ i, t i ∈ IsLocalRing.maximalIdeal R) ∧
+      IsLocalRing.maximalIdeal R = Ideal.span (Set.range t) ⊔
+        (IsLocalRing.maximalIdeal R ^ 2 ⊔ J) := by
+  classical
+  letI := hilbertRelCotangentModule (R := R) J
+  letI : Field (R ⧸ IsLocalRing.maximalIdeal R) := Ideal.Quotient.field _
+  haveI := (hilbertRelCotangent_isTorsionBySet (R := R) J).isScalarTower (S := R)
+  haveI : Module.Finite R ↥(IsLocalRing.maximalIdeal R) := inferInstance
+  haveI : Module.Finite R (HilbertRelCotangent R J) :=
+    Module.Finite.of_surjective (hilbertCotSub R J).mkQ (Submodule.mkQ_surjective _)
+  haveI : Module.Finite (R ⧸ IsLocalRing.maximalIdeal R) (HilbertRelCotangent R J) :=
+    Module.Finite.of_restrictScalars_finite R _ _
+  set d := Module.finrank (R ⧸ IsLocalRing.maximalIdeal R) (HilbertRelCotangent R J) with hd
+  have hdg : d ≤ g := hg
+  set b := Module.finBasis (R ⧸ IsLocalRing.maximalIdeal R) (HilbertRelCotangent R J) with hb
+  set s : Fin g → HilbertRelCotangent R J :=
+    fun i => if h : (i : ℕ) < d then b ⟨(i : ℕ), h⟩ else 0 with hs
+  have hspans : Submodule.span (R ⧸ IsLocalRing.maximalIdeal R) (Set.range s) = ⊤ := by
+    refine top_le_iff.mp ?_
+    rw [← b.span_eq]
+    refine Submodule.span_le.mpr ?_
+    rintro _ ⟨j, rfl⟩
+    have hj : ((j : ℕ)) < d := j.2
+    refine Submodule.subset_span ⟨⟨(j : ℕ), lt_of_lt_of_le hj hdg⟩, ?_⟩
+    simp only [hs, dif_pos hj]
+  choose y hy using fun i : Fin g =>
+    Submodule.Quotient.mk_surjective (hilbertCotSub R J) (s i)
+  refine ⟨fun i => (y i : R), fun i => (y i).2, le_antisymm ?_ ?_⟩
+  · intro x hx
+    have hmem : (Submodule.Quotient.mk ⟨x, hx⟩ : HilbertRelCotangent R J) ∈
+        Submodule.span (R ⧸ IsLocalRing.maximalIdeal R) (Set.range s) := by
+      rw [hspans]; trivial
+    rw [Submodule.mem_span_range_iff_exists_fun] at hmem
+    obtain ⟨c, hc⟩ := hmem
+    choose a ha using fun i : Fin g => Ideal.Quotient.mk_surjective (c i)
+    have key : (Submodule.Quotient.mk (∑ i, a i • y i) : HilbertRelCotangent R J)
+        = ∑ i, c i • s i := by
+      show (hilbertCotSub R J).mkQ (∑ i, a i • y i) = ∑ i, c i • s i
+      rw [map_sum]
+      refine Finset.sum_congr rfl fun i _ => ?_
+      rw [← ha i, ← hy i]
+      rfl
+    have hdiff : (⟨x, hx⟩ : ↥(IsLocalRing.maximalIdeal R)) - (∑ i, a i • y i)
+        ∈ hilbertCotSub R J := by
+      refine (Submodule.Quotient.eq _).mp ?_
+      rw [key, hc]
+    have hdiffR : x - (∑ i, a i * (y i : R)) ∈
+        IsLocalRing.maximalIdeal R ^ 2 ⊔ J := by
+      have := Submodule.mem_comap.mp hdiff
+      simpa using this
+    refine Submodule.mem_sup.mpr ⟨∑ i, a i * (y i : R), ?_, x - ∑ i, a i * (y i : R),
+      hdiffR, by ring⟩
+    exact Ideal.sum_mem _ fun i _ =>
+      Ideal.mul_mem_left _ _ (Ideal.subset_span ⟨i, rfl⟩)
+  · refine sup_le (Ideal.span_le.mpr ?_) (sup_le ?_ hJ)
+    · rintro _ ⟨i, rfl⟩; exact (y i).2
+    · exact Ideal.pow_le_self (by norm_num)
+
+end HilbertRelativeCotangent
+
+/-- **`c(𝔪_𝒪) ≤ 𝔪_R` for a coefficient map inducing a surjection on residue
+fields** (PROVEN 2026-07-31): the side condition
+`exists_fin_span_sup_of_hilbertRelCotangentFinrank_le` needs, discharged from the
+hypotheses `exists_hilbertAuxCotangentSpanningFamily` already carries.
+
+Both kernels are maximal ideals of local rings, hence THE maximal ideal:
+`ker (π ∘ c) = 𝔪_𝒪` because `π ∘ c` is a surjection onto a field, and
+`ker π = 𝔪_R` for the same reason. -/
+theorem map_maximalIdeal_le_maximalIdeal_of_surjective_comp
+    {𝒪 : Type*} [CommRing 𝒪] [IsLocalRing 𝒪] {R : Type*} [CommRing R] [IsLocalRing R]
+    {k : Type*} [Field k] (π : R →+* k) (hπ : Function.Surjective π)
+    (c : 𝒪 →+* R) (hc : Function.Surjective (π.comp c)) :
+    Ideal.map c (IsLocalRing.maximalIdeal 𝒪) ≤ IsLocalRing.maximalIdeal R := by
+  rw [Ideal.map_le_iff_le_comap]
+  intro x hx
+  have hx' : x ∈ RingHom.ker (π.comp c) := by
+    rw [IsLocalRing.ker_eq_maximalIdeal (π.comp c) hc]; exact hx
+  have : c x ∈ RingHom.ker π := by
+    rw [RingHom.mem_ker]
+    exact hx'
+  rwa [IsLocalRing.ker_eq_maximalIdeal π hπ] at this
+
 /-- **The cotangent bound: `q` elements span `𝔪_{R_Q}` modulo `𝔪² + c(𝔪_𝒪)`**
 (LEAF — new 2026-07-30, piece 2 of the route recorded on
 `exists_hilbertAuxDeformationRingGenerators` below, **and the ONLY piece of that
@@ -35311,15 +35567,19 @@ bottom level exactly:
    be written (or opened as a leaf). Everything before step 4 is signature
    churn; step 4 is mathematics.
 
-**WHY THE REPAIR IS NOT TAKEN IN THIS COMMIT** (2026-07-31, and this is a
-decision, not a deferral): it is ten signatures and their call sites across a
-31 000-line module plus one producer that stops being provable, i.e. exactly
-the "interface edit and its call sites merging separately" hazard CLAUDE.md
-records as costing release 25 four build rounds. It belongs to ONE owner doing
-nothing else, and it is queued as such. Until then this leaf, the two diamond
-leaves and `exists_hilbertAuxDeformationRingGenerators` below are known-false
-and **must not be discharged**: a proof of any of them would be a proof of a
-falsehood, and everything above them is worthless.
+**THE REPAIR HAS SINCE BEEN TAKEN — this paragraph is kept for its reasoning and
+its verdict is STALE** (corrected 2026-07-31, `flt-lean-120`). What stood here
+said the repair was "ten signatures and their call sites across a 31 000-line
+module plus one producer that stops being provable", that it belonged to ONE
+owner doing nothing else, and that until then this leaf "must not be discharged".
+All four steps have landed: `HilbertAuxDeformationDatum.IsTraceGenerated` is
+defined above, `h𝒟Qt` is a hypothesis of this leaf and of the two diamond leaves,
+the threading is done, and the terminus
+`exists_isWeaklyUniversal_isTraceGenerated_hilbertAux_of_isWeaklyUniversal` above
+was opened as a named leaf rather than proved — which is step 4 taken in its
+"or opened as a leaf" form. So the statement below is no longer known-false and
+MAY be worked on; check the signature carries `h𝒟Qt` before believing that, since
+this paragraph is the kind of claim that goes stale in the release window.
 
 **WHAT WOULD CHANGE MY MIND**, stated so the next owner can check it cheaply
 rather than re-deriving the audit: exhibit a clause of
@@ -35330,10 +35590,136 @@ split-torus clause is the only genuinely new one, and a splitting is preserved
 by any base change. If some clause does fail, the whole raised-level cluster is
 fine as stated and this audit should be deleted rather than weakened.
 
+# THE CUT TAKEN 2026-07-31 (`flt-lean-120`), AND THE ONE THAT WAS REFUTED
+
+The ideal-theoretic half of this statement has moved out. What is a leaf now is
+`hilbertAuxCotangentFinrank_le` immediately below — the single inequality
+
+    hilbertRelCotangentFinrank 𝒟Q.R (c(𝔪_𝒪)) ≤ q ,
+
+with no `Ideal.span`, no `Fin q` and no generating family in it — and this
+declaration is PROVEN GLUE over it plus
+`exists_fin_span_sup_of_hilbertRelCotangentFinrank_le` and
+`map_maximalIdeal_le_maximalIdeal_of_surjective_comp`, both PROVEN above.
+
+**The restatement is an EQUIVALENCE, not a strengthening, and that is why every
+audit above transfers verbatim.** `hilbertRelCotangentFinrank_le` above is the
+other direction: a `Fin q`-indexed spanning family bounds the relative tangent
+dimension by `q`. So the two statements are interchangeable for a Noetherian
+local ring, the hypothesis list is unchanged, and CLAUDE.md's rule that a second
+restatement VOIDS the earlier audit does not bite — nothing about `𝒟Q`, `c` or
+`Q` moved.
+
+# WHY THIS LEAF IS **NOT** CUT ALONG A SELMER GROUP — a decomposition refuted
+
+A dispatch on 2026-07-31 prescribed the obvious-looking next cut: build the
+UNTWISTED adjoint vocabulary over `F` (the twisted `hilbertAdZeroTwist`,
+`hilbertLocResInertiaTwist1`, `hilbertLocResDecompTwist1`,
+`hilbertH1TwistUnramified`, `hilbertH1TwistLocalKer` above with the
+`det`-twist deleted), define `H¹_Q(F, ad⁰ρbar)` as "unramified outside
+`hilbertHardlyRamifiedPlaces ℓ F ∪ Q`, relaxed at `Q`", and split this leaf into
+
+* (a) MAZUR — the relative cotangent space is spanned by
+  `finrank_k H¹_Q(F, ad⁰ρbar)` elements, and
+* (b) GREENBERG–WILES — `finrank_k H¹_Q(F, ad⁰ρbar) = q`.
+
+**That cut produces a FALSE leaf, whichever way the local conditions at
+`S := hilbertHardlyRamifiedPlaces ℓ F` are spelled, and the two spellings fail in
+OPPOSITE directions.** Write `L_w` for the tangent space at `w` of the LOCAL
+hardly ramified deformation condition and `H¹_Q` for the honest Selmer group
+(`L_w` at `w ∈ S`, unramified off `S ∪ Q`, unrestricted at `w ∈ Q`). Both (a) and
+(b) are true of `H¹_Q` — Greenberg–Wiles gives `dim H¹_Q = dim H¹_{Q*} + #Q` and
+`hQ`'s second conjunct kills `H¹_{Q*}`, while Mazur gives
+`dim(cotangent) = dim H¹_Q` — and neither survives a change of `L`:
+
+* the RELAXED group `H^big` (NO condition at `w ∈ S`, i.e. the literal untwisted
+  transcription of `hilbertH1TwistUnramified ⊓ hilbertH1TwistLocalKer`, which is
+  what the dispatch prescribed) contains `H¹_Q`, so (a) stays true and **(b) is
+  FALSE**: the same Euler-characteristic formula gives
+  `dim H^big = q + Σ_{w ∈ S} (dim H¹(F_w, ad⁰) − dim L_w)`, and the correction is
+  strictly positive at every `w ∣ ℓ` — it is `[F_w : ℚ_ℓ]` for the flat condition,
+  the same local computation the `ℚ`-level audit on
+  `rank_sha1_twist_le_of_tangent_span` records as "`+1` at `ℓ`";
+* the STRICT group `H^small` (FULL local triviality at `w ∈ S`) is contained in
+  `H¹_Q`, so (b) becomes true and **(a) is FALSE** — `q` elements would be claimed
+  to span a space Mazur says has dimension `dim H¹_Q > dim H^small`.
+
+(a) and (b) squeeze from opposite sides, so the group has to be EXACTLY `H¹_Q`,
+and `L_w` at `w ∣ ℓ` is the FINITE-FLAT condition in cohomological form, which
+this tree does not have in any file. Note the contrast with the TWISTED side,
+where relaxing at `S` is harmless: there the clause is a VANISHING
+(`… = 0`), so enlarging the group makes it STRONGER and therefore safe — that is
+exactly the argument the section note "The dual-Selmer vocabulary over `F`" above
+gives, and it does not transfer to a DIMENSION COUNT.
+
+**`Deformation.lean` had already reached this verdict at the `ℚ` level, and it was
+never transferred here.** Its section note above `adZeroCycloChar` says, in as
+many words: *"A cut one step further was considered and REJECTED as unsafe.
+Introducing `selmerGroup L` for an arbitrary family of local conditions `L` is
+cheap (no pairing needed), but the resulting middle statement … is FALSE for
+arbitrary `L` … so it would have to quantify over the specific hardly ramified
+family `L_HR`, whose condition at `ℓ` is FLATNESS. Writing `L_HR` therefore costs
+the finite-flat-group-scheme condition in cohomological form, which is strictly
+more than the pairing this cut defers. Existentially quantifying (`∃ L, … ∧ …`)
+does not rescue it: an existential does not split into two leaves, which is the
+whole purpose of a cut."* Every clause of that applies here verbatim with `F` in
+place of `ℚ`, and the `∃ L` remark disposes of the parameterised variants too.
+
+**COROLLARY, and it is the actionable half: the missing untwisted vocabulary is
+NOT what blocks this leaf, and building it would be FREE-FLOATING CODE.**
+`hilbertAdZero`, its inertia/decomposition restrictions and a relaxed
+`hilbertH1Selmer` are about eighty lines — the twisted definitions above with the
+`det`-twist deleted, `HilbertAdZero.rep (ρbar.map (algebraMap ℚ F))` being already
+in the file and already the right object. There is simply no TRUE statement about
+the cotangent space of `𝒟Q.R` that they can occur in. **Do not dispatch a "build
+the untwisted Selmer vocabulary over `F`" task at this leaf.** The blocker is
+`L_HR`, not the vocabulary.
+
+**WHAT WOULD CHANGE MY MIND**, stated so the next owner can check it cheaply: a
+cohomological description of the hardly ramified local condition at `w ∣ ℓ` (i.e.
+`L_w` as an explicit `Submodule k (continuousCohomology 1 (ad⁰|_{Γ F_w}))`)
+appearing anywhere in `Fermat/` or in the pin — grep for `H1f`, `flatLocal`,
+`FontaineLaffaille`, `finiteFlatLocalCondition`; or an argument that the
+correction `Σ_{w ∈ S} (dim H¹(F_w, ad⁰) − dim L_w)` vanishes for a hardly ramified
+`ρbar` at `ℓ ≥ 5`, which would make the RELAXED group usable and revive cut (a)/(b)
+as stated. Either would retire this section.
+
 References: Greenberg, *Iwasawa theory and p-adic deformations*; Wiles, Ann. of
 Math. 141 (1995), ch. 2 (the Selmer-group formula); Darmon–Diamond–Taylor §2.7;
 Fujiwara, *Deformation rings and Hecke algebras in the totally real case*, §3;
 Mazur, *Deforming Galois representations*, §1.6. -/
+theorem hilbertAuxCotangentFinrank_le
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (htr : NumberField.IsTotallyReal F) (hgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (q : ℕ) (coeff : Modularity.TaylorWilesCoefficients)
+    (n : ℕ) (Q : Finset (HeightOneSpectrum (𝓞 F))) (hQcard : Q.card = q)
+    (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q)
+    (𝒟Q : HilbertAuxDeformationDatum ℓ F Q ρbar)
+    (h𝒟Q : 𝒟Q.IsWeaklyUniversal) (h𝒟Qt : 𝒟Q.IsTraceGenerated)
+    (c : coeff.carrier →+* 𝒟Q.R)
+    (hc : Function.Surjective (𝒟Q.π.comp c)) :
+    hilbertRelCotangentFinrank 𝒟Q.R
+      (Ideal.map c (IsLocalRing.maximalIdeal coeff.carrier)) ≤ q :=
+  sorry
+
+/-- **The cotangent bound in generating-family form** (PROVEN GLUE since
+2026-07-31 over `hilbertAuxCotangentFinrank_le` immediately above): the shape
+`exists_hilbertAuxDeformationRingGenerators` below consumes, unchanged in
+statement and in hypotheses.
+
+Three inputs, all above: the leaf, the converse Nakayama
+`exists_fin_span_sup_of_hilbertRelCotangentFinrank_le`, and the side condition
+`map_maximalIdeal_le_maximalIdeal_of_surjective_comp` which turns `hc` into
+`c(𝔪_𝒪) ≤ 𝔪_{R_Q}`.
+
+The whole mathematical content, and every falsity audit that used to sit on this
+declaration, is now on the leaf; read it there. -/
 theorem exists_hilbertAuxCotangentSpanningFamily
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     (F : Type u) [Field F] [NumberField F]
@@ -35353,8 +35739,15 @@ theorem exists_hilbertAuxCotangentSpanningFamily
     ∃ t : Fin q → 𝒟Q.R,
       IsLocalRing.maximalIdeal 𝒟Q.R = Ideal.span (Set.range t) ⊔
         (IsLocalRing.maximalIdeal 𝒟Q.R ^ 2 ⊔
-          Ideal.map c (IsLocalRing.maximalIdeal coeff.carrier)) :=
-  sorry
+          Ideal.map c (IsLocalRing.maximalIdeal coeff.carrier)) := by
+  obtain ⟨t, _, hspan⟩ :=
+    exists_fin_span_sup_of_hilbertRelCotangentFinrank_le
+      (Ideal.map c (IsLocalRing.maximalIdeal coeff.carrier))
+      (map_maximalIdeal_le_maximalIdeal_of_surjective_comp 𝒟Q.π 𝒟Q.π_surjective c hc)
+      q
+      (hilbertAuxCotangentFinrank_le ℓ hℓ5 F htr hgal hirrF q coeff n Q hQcard hQ
+        𝒟Q h𝒟Q h𝒟Qt c hc)
+  exact ⟨t, hspan⟩
 
 /-- **The `q`-generator bound for `R_Q`** (PROVEN GLUE since 2026-07-30 over the
 three-piece cut recorded below and now executed —
