@@ -13,6 +13,10 @@ public import Fermat.FLT.Mathlib.AlgebraicGeometry.Morphisms.SmoothReduced
 -- `exists_affineComplement_zeroSection` below in mathlib-facing form, together with the
 -- section/closed-point lemmas its assembly consumes.
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.CurveAffineComplement
+-- Supplies `Fermat.PoleOrder.exists_poleOrderValuation_of_affineComplement'`, which
+-- `exists_poleOrderValuation_of_affineComplement` below now delegates to, together with
+-- the pole-order `def` `Fermat.PoleOrder.poleOrd` and the three residual leaves.
+public import Fermat.FLT.ModularCurve.PoleOrderValuation
 public import Fermat.FLT.EllipticCurve.Torsion
 -- These two were imported for `WeierstrassCurve.nsmul_surjective` (divisibility of
 -- `E(K̄)`), which was what `exists_add_self_affinePoint_of_isAlgClosed` below wrapped.
@@ -154,17 +158,29 @@ GROUP-LAW-FREE halves of the chart: a commutative-algebra one
 
 ## THE LEAF STATUS OF THIS MODULE, FROM THE COMPILER (2026-07-31)
 
-**Read this before believing anything below about what is open.**  `lake build
-Fermat.FLT.ModularCurve.EllipticScheme` emits **exactly ONE** `declaration uses
-'sorry'` warning, and it is
+**Read this before believing anything below about what is open.**
 
-* `exists_poleOrderValuation_of_affineComplement` — the pole order `deg = -ord_O` at
-  the zero section, together with the three ELEMENTARY clauses that make its value
-  semigroup `⟨2, 3⟩`: no function has a simple pole (`genus ≥ 1`), some function has a
-  double pole and some a triple pole (`genus ≤ 1`), and two functions of equal pole
-  order differ by a `K`-multiple of smaller pole order (the residue field at `O` is
-  `K`).  Its docstring records that neither mathlib nor `~/cs/FLT` has Riemann–Roch or
-  an arithmetic genus at this pin.
+**UPDATED 2026-07-31 (LATEST)**: `exists_poleOrderValuation_of_affineComplement` is
+**PROVEN**, and this module's copy of the Riemann–Roch frontier has MOVED to
+`Fermat/FLT/ModularCurve/PoleOrderValuation.lean`, `public import`ed above.  That module
+builds the pole order `-ord_O` as an actual `def` (`Fermat.PoleOrder.poleOrd`) over
+`Mathlib/AlgebraicGeometry/OrderOfVanishing.lean`'s `Scheme.ord`, proves everything
+between `Scheme.ord` and the nine clauses — the embedding of the chart in
+`A.functionField`, the DVR at `O`, multiplicativity, the ultrametric inequality that
+makes `{r | deg r ≤ n}` a submodule, and the `ℤ`-to-`ℕ` normalisation — and leaves
+**three** named leaves:
+
+* `Fermat.PoleOrder.nonneg_poleOrd_and_eq_zero_iff` — `Γ(A, 𝒪_A) = K` (properness);
+* `Fermat.PoleOrder.exists_sub_smul_poleOrd_lt` — the residue field at `O` is `K`;
+* `Fermat.PoleOrder.poleOrd_ne_one_and_exists_two_three` — the genus is one.
+
+Only the third needs mathematics this tree does not have.  **Making the pole order a
+`def` is what made the split legal**: the valuation clauses do NOT pin `deg` (`2 · deg`
+satisfies all of them, and `hone`), so a genus leaf quantified over an arbitrary `deg`
+would be FALSE.  Note the direct-sorry count for this module drops to ONE
+(`exists_ellipticScheme_weierstrassChart_addEquiv_field`) while three appear in the new
+module: **1 → 3 overall, which is disclosure, not regression** — see that module's
+docstring for the accounting.
 
 **UPDATED 2026-07-31**: the warning used to sit on
 `exists_poleOrder_of_affineComplement`, which is now PROVEN over the leaf above.  The
@@ -10744,9 +10760,28 @@ theorem exists_weierstrassGenerators_of_poleOrder {K R : Type*} [Field K] [CommR
 end PoleOrderFiltration
 
 /-- **RIEMANN–ROCH, IN ELEMENTARY TERMS: the affine complement of the zero section
-carries a pole order whose value semigroup is `⟨2, 3⟩`** (sorry leaf, cut 2026-07-31
-out of `exists_poleOrder_of_affineComplement`, whose entire DIMENSION-COUNT content is
+carries a pole order whose value semigroup is `⟨2, 3⟩`** (cut 2026-07-31 out of
+`exists_poleOrder_of_affineComplement`, whose entire DIMENSION-COUNT content is
 now proven in `PoleOrderFiltration.finrank_poleFiltration`).
+
+**THIS DECLARATION HAS NO `sorry` OF ITS OWN ANY MORE (2026-07-31, later the same day).**
+It is a one-line delegation to
+`Fermat.PoleOrder.exists_poleOrderValuation_of_affineComplement'` in
+`Fermat/FLT/ModularCurve/PoleOrderValuation.lean`, where the pole order is BUILT — as the
+`def` `Fermat.PoleOrder.poleOrd r = -ord_O (φ r)` over mathlib's
+`AlgebraicGeometry.Scheme.ord` — and every clause that is pure valuation theory is proven.
+Three named leaves survive there: `nonneg_poleOrd_and_eq_zero_iff` (`Γ(A, 𝒪_A) = K`),
+`exists_sub_smul_poleOrd_lt` (the residue field at `O` is `K`) and
+`poleOrd_ne_one_and_exists_two_three` (the genus is one).  **The audit below is about a
+statement that is no longer a leaf; the live audits are the three there.**  What the audit
+below still says correctly is why each hypothesis is load-bearing, and those paragraphs are
+quoted, per hypothesis, on the two leaves that consume them.
+
+**Two of the nine clauses are REDUNDANT**, which the delegation exposes and which is worth
+knowing before anyone restates this: `deg 0 = 0` follows from the submodule clause
+(`0 ∈ L 0` forces `deg 0 ≤ 0`), and `⨆ n, L n = ⊤` is automatic for any `ℕ`-valued `deg`
+(every `r` lies in `L (deg r)`).  Neither was removed, because the consumers are stated
+against the nine-clause form and the removal buys a prover nothing.
 
 **This statement mentions no `Module.finrank`, and that is the point of the cut.**  The
 Riemann–Roch content that used to be packaged as `finrank K (L n) = n` is here in the
@@ -10862,7 +10897,7 @@ theorem exists_poleOrderValuation_of_affineComplement {K : Type} [Field K] {A : 
         ∃ c : K, deg (r - c • s) < deg r) ∧
       (∃ x : R, deg x = 2) ∧ (∃ y : R, deg y = 3) ∧
       (⨆ n, L n) = ⊤ :=
-  sorry
+  PoleOrder.exists_poleOrderValuation_of_affineComplement' ab hdim R ι hopen hstr hrange
 
 /-- **RIEMANN–ROCH: the affine complement of the zero section carries a pole-order
 filtration with the genus-one dimension counts** (PROVEN 2026-07-31 over the single
