@@ -43849,6 +43849,28 @@ There are two halves and both are classical:
    `IsRationalMap.isIsogeny` (PROVEN, `EllipticCurve/Isogeny.lean`) then puts it
    in `endSubring W`.
 
+**HALF 1 IS NO LONGER OWED — IT IS ONE LINE, AND THE PARAGRAPH ABOVE IS STALE**
+(measured 2026-07-31, flt-lean-101, by compiling it).  The general-field group
+identification landed in `X0.lean` on 2026-07-30/31 as
+`Fermat.exists_addEquiv_of_weierstrassModel_field` (`X0.lean:3392`, over
+`EllipticScheme.lean`'s `nonempty_addEquiv_of_weierstrassModel_field`), stated
+for an ARBITRARY field `k` — and this module carries
+`public import Fermat.FLT.ModularCurve.X0` (line 326), so it is visible here.
+Its `hmodel` hypothesis is `IsWeierstrassModel ab W` unfolded, conjunct for
+conjunct, so at `k = ℚ̄`
+
+    exists_addEquiv_of_weierstrassModel_field W d.ab hW
+      : Nonempty (RelPoint d.f (𝟙 _) ≃+ W.toAffine.Point)
+
+typechecks with no transport and no massaging (`(W⁄k) = W.toAffine` is `rfl`).
+So the warning above — that the `ℚ`-side model's `hom_specRat_eq_of_range_eq`
+step is a `ℚ`-only shortcut that "has to be replaced" — describes work that
+somebody else has since done, for a different consumer, in a module this one
+already imports.  **What remains of this leaf is HALF 2 ALONE**: the Yoneda
+realisation of `u` as an element of `WeierstrassCurve.End W`, for which
+`relPointEndo_apply_eq_comp` (PROVEN, immediately below) already supplies the
+scheme morphism `û`, leaving `IsRationalMap` / `IsIsogeny` for it.
+
 **THE CONCLUSION IS DELIBERATELY AT THE BASE POINT `𝟙` ONLY.**  `ψ` is asked to
 agree with `u` on `ℚ̄`-points and on nothing else.  That is all either consumer
 needs, and it is what keeps this leaf free of the second, independent geometric
