@@ -22109,6 +22109,59 @@ theorem frobLevelScalar_sub_mem_of_levelTateFrame_finiteBase
   exact (Ideal.Quotient.eq_zero_iff_mem).mp hev
 
 open _root_.NumberField in
+/-- **A LEVEL SCALAR EXISTS AT EVERY LEVEL AND EVERY FRAME, FOR FREE**
+(**PROVEN 2026-07-31**, by Cayley–Hamilton in rank two plus the
+determinant theorem; no leaf of its own).
+
+Given a level frame `c` at `Iⁿ`, the Galois action is a MATRIX `Φ` over
+`𝒪_D ⧸ Iⁿ` (`exists_frobLevelMatrix_of_levelTateFrame`) whose determinant
+is `N` (`det_frobLevelMatrix_eq_natCast_finiteBase`, the Weil pairing), so
+the `2 × 2` Cayley–Hamilton identity
+`mulVec_add_det_mul_eq_trace_mul_fin_two` gives the characteristic
+equation on the whole of `A'[Iⁿ]` with `s` ANY lift of `Φ.trace`.
+
+**THIS WAS STEP 2 OF `exists_frobLevelTrace_of_mult_finiteBase` BELOW**,
+proved inline there and invisible from outside.  It is named here because
+the surrounding cut turns on it: the archimedean leaf
+`exists_boundedLevelScalar_atPrime_finiteBase` below is EQUIVALENT to the
+conclusion of `exists_globalFrobCharScalar_atPrime_of_levelScalar_finiteBase`
+precisely because the `hlev` that the second consumes costs nothing, and
+that is this lemma.  See the CORRECTION section of the archimedean leaf's
+docstring, which cites it. -/
+theorem exists_frobLevelScalar_of_levelTateFrame_finiteBase
+    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    (σ : Field.absoluteGaloisGroup k)
+    (hσ : ∀ z : AlgebraicClosure k,
+      (σ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k) z = z ^ N)
+    (q : ℕ) (hq : q.Prime) (hqN : ¬ q ∣ N)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I) (n : ℕ)
+    (c : (Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ n) →
+        GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+    (hc : IsLevelTateFrame m' (𝟙 (Spec (CommRingCat.of k))) (I ^ n) c) :
+    ∃ s : NumberField.RingOfIntegers D,
+      ∀ y ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).1,
+        ab'.add (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ
+            (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y))
+          (m'.act (N : NumberField.RingOfIntegers D) y)
+          = m'.act s (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y) := by
+  obtain ⟨Φ, hΦ⟩ := exists_frobLevelMatrix_of_levelTateFrame ab' m' σ (I ^ n) c hc
+  have hdet := det_frobLevelMatrix_eq_natCast_finiteBase hfin N hN ab' m' σ hσ q hq hqN
+    I hI hqI n c hc Φ hΦ
+  obtain ⟨s, hs⟩ := Ideal.Quotient.mk_surjective Φ.trace
+  refine ⟨s, ?_⟩
+  obtain ⟨-, hadd, -, hsurj, hsmul⟩ := hc
+  intro y hy
+  obtain ⟨u, rfl⟩ := hsurj y hy
+  rw [hΦ u, hΦ (Φ.mulVec u), ← hsmul (N : NumberField.RingOfIntegers D) u, ← hdet,
+    ← hadd, ← hsmul s (Φ.mulVec u), hs]
+  exact congrArg c (funext fun i => mulVec_add_det_mul_eq_trace_mul_fin_two Φ u i)
+
+open _root_.NumberField in
 /-- **A COHERENT SEQUENCE IN `𝒪_D` WITH UNIFORMLY BOUNDED LEVEL
 REPRESENTATIVES CONVERGES INSIDE `𝒪_D`** (**PROVEN 2026-07-31**; Northcott
 finiteness `NumberField.Embeddings.finite_of_norm_le` plus the pigeonhole.
@@ -22196,8 +22249,11 @@ theorem exists_mem_pow_sub_of_coherent_of_bounded
 
 set_option linter.unusedVariables false in
 open _root_.NumberField in
-/-- **THE LEVEL SCALARS ADMIT ARCHIMEDEAN-BOUNDED REPRESENTATIVES — THE
-RIEMANN HYPOTHESIS FOR `A'`** (sorry leaf — **CUT 2026-07-31** out of
+/-- **THE LEVEL SCALARS ADMIT ARCHIMEDEAN-BOUNDED REPRESENTATIVES —
+THE TRACE OF FROBENIUS IS A GLOBAL ALGEBRAIC INTEGER** (sorry leaf.
+**THE TITLE USED TO READ "THE RIEMANN HYPOTHESIS FOR `A'`" AND THAT WAS
+WRONG; see the 2026-07-31 CORRECTION at the end of this docstring, which
+is machine-checked.**  Originally **CUT 2026-07-31** out of
 `exists_globalFrobCharScalar_atPrime_of_coherentLevelScalar_finiteBase`
 below, which is now PROVEN over it and over
 `exists_mem_pow_sub_of_coherent_of_bounded` above; Weil 1948, Mumford
@@ -22217,7 +22273,9 @@ The Riemann hypothesis for abelian varieties over a finite field says the
 eigenvalues of `F` have complex absolute value `√N` under every embedding,
 whence `‖φ t‖ ≤ 2√N` for every `φ : D →+* ℂ`.  So `C = 2√N` is the sharp
 value; the constant is left EXISTENTIAL because nothing downstream uses it
-and a prover should be free to reach any bound.
+and a prover should be free to reach any bound.  **AND THAT LAST CLAUSE IS
+EXACTLY WHY THE RIEMANN HYPOTHESIS IS NOT PART OF THIS LEAF — see the
+CORRECTION below before spending a day on Rosati positivity.**
 
 **WHAT THE CUT BOUGHT, HONESTLY.**  It did not reduce the leaf count — one
 `sorry` replaces one `sorry` — and it did not remove the endomorphism-axis
@@ -22244,7 +22302,97 @@ load-bearing: it identifies the Galois action with Frobenius, and without it
 the constant term `N` is unmotivated and no bound of the shape `2√N` holds.
 `hqN` is load-bearing through `htower` (at the residue characteristic of `k`
 no tower of rank-two levels exists) and through the bijectivity of `F` on
-`A'[Iⁿ]`. -/
+`A'[Iⁿ]`.
+
+---
+
+**CORRECTION, 2026-07-31 (`flt-lean-92`), MACHINE-CHECKED: THE ARCHIMEDEAN
+CLAUSE OF THIS LEAF IS FREE, SO THE RIEMANN HYPOTHESIS IS *NOT* PART OF
+THE RESIDUE.  A PROVER MUST NOT GO AND BUILD ROSATI POSITIVITY.**
+
+Because `C` is EXISTENTIALLY quantified and `D` is a number field, the
+bound costs nothing once a single global `t` is in hand: `D →+* ℂ` is a
+FINITE type (`NumberField.Embeddings` registers `Fintype (K →+* A)` for
+`A` algebraically closed of characteristic zero), so `Set.range (fun φ =>
+‖φ (algebraMap _ D t)‖)` is a finite set of reals and is therefore
+`BddAbove`.  Verbatim, and verified green:
+
+    obtain ⟨C, hC⟩ : ∃ C : ℝ, ∀ φ : D →+* ℂ,
+        ‖φ (algebraMap (NumberField.RingOfIntegers D) D t)‖ ≤ C := by
+      obtain ⟨C, hC⟩ := (Set.finite_range
+        (fun φ : D →+* ℂ => ‖φ (algebraMap (NumberField.RingOfIntegers D) D t)‖)).bddAbove
+      exact ⟨C, fun φ => hC ⟨φ, rfl⟩⟩
+
+So the leaf says NOTHING about the size of the trace.  Its entire content
+is that ONE `t ∈ 𝒪_D` — a GLOBAL algebraic integer, of no prescribed
+height — reduces to `s_n` at every level.  That is Weil's RATIONALITY
+half, not his Riemann hypothesis, and the two are a whole theory apart:
+rationality follows from finite generation of the endomorphism ring,
+`|φ t| ≤ 2√N` does not.  The paragraph above headed "An archimedean
+route" therefore over-prices this leaf, and the pre-correction TITLE named
+the wrong theorem.
+
+**WHAT IT IS EQUIVALENT TO, IN THIS FILE, IN BOTH DIRECTIONS.**  Write
+
+    (L')   ∃ t : 𝒪_D, ∀ n, ∀ y ∈ A'[Iⁿ],  F²y + N·y = t · (F y)
+
+— the conclusion of `exists_globalFrobCharScalar_atPrime_of_levelScalar_finiteBase`,
+some two hundred lines BELOW this leaf.
+
+* `this leaf ⟹ (L')` is already in the file: `…_of_coherentLevelScalar_…`
+  then `…_of_levelScalar_…`, the second consuming an `hlev`.
+* `(L') ⟹ this leaf` was proved on 2026-07-31 and elaborates in six
+  seconds.  Given `(L')`'s `t`, apply `hs n` and `(L')` at level `n` to
+  `y := σ⁻¹ · z` (so that `F y = z`), exactly as
+  `frobLevelScalar_sub_mem_of_levelTateFrame_finiteBase` above does for two
+  level scalars; that kills `t − s n` on `A'[Iⁿ]`, and the frame from
+  `htower n` turns it into `t − s n ∈ Iⁿ`; then `u := t` at every level and
+  `C` is the free bound displayed above.
+* and `hlev` is FREE — it is STEP 2 of `exists_frobLevelTrace_of_mult_finiteBase`
+  below, `exists_frobLevelMatrix_of_levelTateFrame` +
+  `det_frobLevelMatrix_eq_natCast_finiteBase` + Cayley–Hamilton in the
+  shape `mulVec_add_det_mul_eq_trace_mul_fin_two`, with no leaf of its own.
+
+So the two statements are interchangeable and a prover may attack whichever
+shape they prefer.  `(L')` is the better shape to think in — no `C`, no
+`s`, no norms — and it is visibly the same theorem as the PROVEN
+`exists_frobEndoCharEq_of_mult_finiteBase` further below, with `htower` in
+place of that theorem's `hdim'`.
+
+**DO NOT TRY TO CLOSE THIS LEAF WITH `exists_frobEndoCharEq_of_mult_finiteBase`.
+IT IS CIRCULAR, AND IT LOOKS EXACTLY LIKE A DECLARATION-ORDER LEAF.**  That
+theorem is PROVEN, its conclusion subsumes `(L')` at every geometric point,
+and it sits ~1050 lines below — so the natural reading is "hoist it, bridge
+`htower ⟹ hdim'`, done".  It is not: it is proven over
+`exists_frobTraceAct_of_mult_finiteBase`, whose STEP calling
+`exists_frobLevelTrace_of_mult_finiteBase` runs
+`… → …_of_levelScalar_… → …_of_coherentLevelScalar_… → THIS LEAF`.
+Lean's ordering is not what forbids the appeal; the dependency graph is.
+
+**THE SMALLEST KNOWN SUFFICIENT INPUT, which is much weaker than the
+Riemann hypothesis.**  `Fr + V` is a `k`-endomorphism of `A'` commuting
+with `𝒪_D` which acts on `T_I A'` as the SCALAR `t_I ∈ 𝒪_{D,I}`.  If the
+`ℤ`-module `M` generated by `𝒪_D` and `Fr + V` inside `End_k(A')` is
+FINITELY GENERATED, globality is immediate: `Fr + V ≡ s_n` modulo `Iⁿ M`
+for every `n`, so `Fr + V ∈ ⋂ₙ (L + Iⁿ M)` with `L` the image of `𝒪_D`,
+and `⋂ₙ qⁿ G = 0` for every finitely generated abelian group `G` gives
+`Fr + V ∈ L`.  So the residue is "the endomorphism module is finitely
+generated over `ℤ`" — Mumford *Abelian Varieties* §19 — and nothing
+archimedean.  This tree has no `End_k(A')` as a ring, which is the real
+cost, and it is the cost the four sibling leaves of this subsection are
+already paying in other coordinates.
+
+**AN OPTION CONSIDERED AND DECLINED, with the condition that reverses it.**
+Since the leaf and `(L')` are interchangeable, one could restate THIS leaf
+as `(L')` and reprove `…_of_levelScalar_…` from it in two lines.  That was
+declined: it is frontier-neutral (1 leaf for 1 leaf) and it orphans three
+PROVEN declarations — `frobLevelScalar_sub_mem_of_levelTateFrame_finiteBase`,
+`exists_mem_pow_sub_of_coherent_of_bounded` and
+`…_of_coherentLevelScalar_…`, about 350 lines including their docstrings —
+which would then have to be deleted as free-floating.  Reverse the decision
+if a SECOND consumer for the Northcott/pigeonhole lemma appears, or if a
+prover reports that the bound shape actively obstructed them; the
+mathematics is indifferent. -/
 theorem exists_boundedLevelScalar_atPrime_finiteBase
     {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
@@ -22889,19 +23037,11 @@ theorem exists_frobLevelTrace_of_mult_finiteBase
                   (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y))
                 (m'.act (N : NumberField.RingOfIntegers D) y)
                 = m'.act s (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y) := by
+    -- extracted 2026-07-31 as `exists_frobLevelScalar_of_levelTateFrame_finiteBase`
+    -- above; the proof used to be inline here.
     intro q hq hqN I hI hqI n c hc
-    obtain ⟨Φ, hΦ⟩ :=
-      exists_frobLevelMatrix_of_levelTateFrame ab' m' σ (I ^ n) c hc
-    have hdet := det_frobLevelMatrix_eq_natCast_finiteBase hfin N hN ab' m' σ hσ q hq hqN
-      I hI hqI n c hc Φ hΦ
-    obtain ⟨s, hs⟩ := Ideal.Quotient.mk_surjective Φ.trace
-    refine ⟨s, ?_⟩
-    obtain ⟨-, hadd, -, hsurj, hsmul⟩ := hc
-    intro y hy
-    obtain ⟨u, rfl⟩ := hsurj y hy
-    rw [hΦ u, hΦ (Φ.mulVec u), ← hsmul (N : NumberField.RingOfIntegers D) u, ← hdet,
-      ← hadd, ← hsmul s (Φ.mulVec u), hs]
-    exact congrArg c (funext fun i => mulVec_add_det_mul_eq_trace_mul_fin_two Φ u i)
+    exact exists_frobLevelScalar_of_levelTateFrame_finiteBase hfin N hN ab' m' σ hσ q hq hqN
+      I hI hqI n c hc
   -- STEP 3: the global scalar, read back as the trace in every frame.
   obtain ⟨t, ht⟩ :=
     exists_globalFrobCharScalar_of_levelScalar_finiteBase hfin N hN ab' m' σ hσ hlev
