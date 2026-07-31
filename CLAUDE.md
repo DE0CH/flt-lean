@@ -1320,3 +1320,15 @@ Three transferable pieces, since this shape recurs wherever a modular curve is i
 And one structural payoff worth looking for: `J(𝔽_ℓ)` turned out **cyclic**, so the
 order-`#J(ℚ)` subgroup is UNIQUE and `redPts` is pinned without identifying a single cusp.
 Check cyclicity first — it can delete the hardest half of the computation.
+
+**And you can check it WITHOUT computing the class group at all**, which is the part that
+generalises furthest. By Eichler–Shimura `F² − T_ℓF + ℓ = 0` on `H₁(X_0(N), ℤ) ⊗ ℤ_m`, and
+`(F−1)(F̄−1) = ℓ + 1 − T_ℓ`, so `G := H₁/(ℓ+1−T_ℓ)` is an **extension of `J(𝔽_ℓ)` by
+itself** — hence `J(𝔽_ℓ)` is a SUBGROUP of `G` and `exp J ∣ exp G`. `G` is one Smith
+normal form of an integer matrix (PARI, on the *saturated* cuspidal lattice — `mscuspidal`
+returns a ℚ-basis, so saturate with `matkerint(matkerint(M~)~)` or the SNF is meaningless).
+`exp G ≪ n` then PROVES not-cyclic. It cost seconds and settled four levels whose class
+groups are out of reach; it also bounds `#J(ℚ)`'s exponent, since `J(ℚ)` embeds too.
+Two cautions, both real: `G` need not SPLIT (at one level its invariant factors had odd
+multiplicities, so `G ≇ J ⊕ J` and the SNF does **not** determine `J`), and the argument
+sees only primes `m ∣ n` with `m ≠ ℓ` — check `ℓ ∤ n` before relying on it.
