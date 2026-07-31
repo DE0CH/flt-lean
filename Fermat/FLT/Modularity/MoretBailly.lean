@@ -15133,7 +15133,59 @@ not the weak `deg + d ≤ p/d` the parent exports — the `−(i + j + k)` is wh
 pays for the `X^{pj}` in step 3 and it may not be dropped. `hp : 250 d⁵ < p` is
 NOT needed here and is not taken.
 
-CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only.
+
+**DECLARATION-ORDER BLOCK, found 2026-07-31 by a scoping pass that did NOT start
+the proof. EVERY piece of machinery the four steps above name is defined BELOW
+this leaf in this same file, so as positioned the leaf cannot use any of it.**
+Concretely, at the commit that added this paragraph:
+
+* `stepanovDerivX` is defined ~300 lines above, but its ENTIRE API —
+  `stepanovDerivX_monomial`, `stepanovDerivX_add`, the chain rule
+  `stepanov_key_congr`, and the proven `stepanov_jet_dvd_core` — sits at
+  ~17280–17750, i.e. about 2100 lines below. Step 1 (Frobenius splitting) and
+  step 2 (Lemma 3A) are both inductions over `stepanovJet`'s recursion and both
+  need that API; between the definition and this leaf there is none.
+* The weighted degree `w(P) = maxₙ (deg (P.coeff n) + n)` that step 2 is stated
+  in ALREADY EXISTS, as `stepanovTotalFilt` (~16770) together with the
+  `StepanovFilt` structure (~16690) giving `mem_add`, `mem_sub`, `mem_mul`,
+  `mem_sum`, `mem_prod`, `mem_det` and `lift`. So the "weighted-degree
+  bookkeeping has to be written here" sentence above is STALE — it does not
+  have to be written, it has to be MOVED.
+* Step 3's "reduce `D^{(ν)}` modulo `F` in `Y`" is `stepanov_exists_wd_rem`
+  (~16875), which is exactly division by a monic `F` of total degree `d` WITH
+  the filtration preserved — again below.
+
+So the first move for whoever takes this leaf is a HOIST, not a proof: move
+`StepanovFilt`, `stepanovTotalFilt` and its lemmas, `stepanov_exists_wd_rem`,
+and the `stepanovDerivX`/`stepanovJet` calculus block up to immediately after
+`end StepanovAuxiliaryFunction`, which is where `stepanovDerivX` and
+`stepanovJet` are defined and which is above every consumer. Nothing in that
+material depends on anything between the two positions — it is about
+`Polynomial (Polynomial R)` for a bare `CommRing R`. Budget the hoist as its own
+verified step (it is a several-hundred-line move in a file with concurrent
+editors, i.e. exactly the merge shape CLAUDE.md's class-7 note warns about), and
+only then start on the mathematics.
+
+**COUNT AUDIT (same pass): `stepanovEquationCount` really is an upper bound, and
+the ℕ-truncation corner is safe.** The note above derives at most
+`(p/d − d + (2d−3)ν + 1)·d·(d−1)` coefficients for the reduced `d^{(ν)}` and
+compares it with `(p/d + (2d−3)ν)·d·(d−1)`; the comparison needs `1 ≤ d`, EXCEPT
+when `p < d`, where `p/d = 0` makes the right-hand side `(2d−3)ν` and the left
+`1 + (2d−3)ν`, which is larger at `ν = 0`. That corner is vacuous rather than a
+counterexample: `p/d = 0` makes `hAdeg` unsatisfiable except by `A i j k = 0`
+(it demands `natDegree + d + i + j + k ≤ 0` with `d ≥ 2`), so the ansatz is `0`
+and `Φ = 0` discharges the leaf. Likewise `M = 0` forces `B = 0` and the
+conclusion is vacuous. The leaf is TRUE as stated.
+
+**AND THE CHEAP LINEAR-ALGEBRA ROUTE DOES NOT WORK — do not spend a cycle on
+it.** The vanishing conditions live at the `≤ p` points `x ∈ 𝔽_p` and, for each,
+at the `≤ d` roots `y` of `F(x, ·)`; each condition is `≤ d` many `𝔽_p`-linear
+forms, so the naive count is `≤ p·d·M` forms per the whole system. That is NOT
+below `B = (d−1)pM + ½d(d−1)(2d−3)M²` in general: it needs `pM ≤ ½d(d−1)(2d−3)M²`,
+i.e. `p ≲ d³M`, and the regime this leaf is used in has `p ≥ 2(d−1)(M+8)²`,
+comfortably the other way. The `2d−3` savings are what buy the difference, which
+is the section note's own point. -/
 theorem exists_stepanovJetLinearForms (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Prime]
     (F : Polynomial (Polynomial (ZMod p)))
     (hmon : F.Monic) (hdegY : F.natDegree = d)
