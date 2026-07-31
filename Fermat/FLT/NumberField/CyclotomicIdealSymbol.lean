@@ -33,8 +33,9 @@ and the local ring hom `ℚ_ℓ → CF_w`, for which `CompletionTransport.lean`
 already supplies `adicCompletionMap`, `adicCompletionMap_coe` and
 `adicCompletionMap_mem_integers`.
 
-So the module's live frontier is TWO leaves:
-`exists_residueChar_adicCompletionHom` (plumbing) and
+`exists_residueChar_adicCompletionHom` was CLOSED on 2026-07-31, so
+`exists_conj_localInertia_rat_of_localInertia` is now unconditionally proven and
+the module's live frontier is the single leaf
 `globalFrob_map_mul_inv_mem_of_isArithFrobAt` (the Frobenius comparison).
 
 `exists_idealSymbolMonoidHom` is proven here and is pure Dedekind-domain
@@ -57,6 +58,9 @@ public import Fermat.FLT.GaloisRepresentation.Chebotarev
 public import Fermat.FLT.Deformations.RepresentationTheory.CompletionTransport
 -- `IsArithFrobAt`.
 public import Mathlib.RingTheory.Frobenius
+-- `Ring.HasFiniteQuotients.finiteQuotient`, for finiteness of the residue field
+-- of `w` (which is what makes its characteristic a prime).
+public import Mathlib.RingTheory.Ideal.Quotient.HasFiniteQuotients
 -- `cyclotomicCharacter`.
 public import Mathlib.NumberTheory.Cyclotomic.CyclotomicCharacter
 -- `IsCyclotomicExtension`.
@@ -268,17 +272,24 @@ theorem exists_conj_localInertia_of_adicCompletionHom
   group
 
 /-- **PLUMBING LEAF: THE COMPLETION OF `ℚ` AT THE PRIME BELOW `w` EMBEDS
-LOCALLY IN THE COMPLETION OF `CF` AT `w`** (SORRY LEAF, cut 2026-07-30 out of
-`exists_conj_localInertia_rat_of_localInertia` below, whose mathematical
-content is now proven above).
+LOCALLY IN THE COMPLETION OF `CF` AT `w`** (PROVEN 2026-07-31; cut 2026-07-30
+out of `exists_conj_localInertia_rat_of_localInertia` below, whose mathematical
+content is proven above).
 
 Standard local-field bookkeeping, with every ingredient already in
 `CompletionTransport.lean`:
 
 * `ℓ` is the residue characteristic of `w`, and
   `hℓ.toHeightOneSpectrumRingOfIntegersRat` must be identified with the prime of
-  `𝓞 ℚ` under `w` — the one step that needs `𝓞 ℚ ≅ ℤ` bookkeeping, and the
-  reason this is a leaf rather than three lines;
+  `𝓞 ℚ` under `w`.  **The `𝓞 ℚ ≅ ℤ` bookkeeping the leaf was cut for turns out
+  to be avoidable, and that is the one thing worth remembering here**: rather
+  than classify the nonzero primes of `𝓞 ℚ` (which does need the equivalence
+  with `ℤ`, a generator, and `Int.prime_iff_natAbs_prime`), take `ℓ` to be
+  `ringChar` of the RESIDUE FIELD `𝓞 CF ⧸ w` — finite by
+  `Ring.HasFiniteQuotients.finiteQuotient`, a domain because `w` is prime,
+  hence of prime characteristic — and observe that `(ℓ) ≤ w.under (𝓞 ℚ)` with
+  `(ℓ)` already MAXIMAL, so the inclusion is an equality for free.  Going down
+  from the residue field replaces the classification with one `Ideal.IsMaximal.eq_of_le`;
 * `φ` is `IsDedekindDomain.HeightOneSpectrum.adicCompletionMap v w (algebraMap ℚ CF) _`,
   whose uniform-continuity side condition is
   `WithVal.uniformContinuous_map_of_le` fed by `valuation_map_le_of_le_one`
@@ -300,8 +311,70 @@ theorem exists_residueChar_adicCompletionHom
           (hℓ.toHeightOneSpectrumRingOfIntegersRat.adicCompletion ℚ) x)
         = algebraMap CF (w.adicCompletion CF) (algebraMap ℚ CF x)) ∧
       (∀ y ∈ hℓ.toHeightOneSpectrumRingOfIntegersRat.adicCompletionIntegers ℚ,
-        φ y ∈ w.adicCompletionIntegers CF) :=
-  sorry
+        φ y ∈ w.adicCompletionIntegers CF) := by
+  classical
+  haveI hwp : w.asIdeal.IsPrime := w.isPrime
+  -- (1) `ℓ` is the residue characteristic of `w`: the residue field is a FINITE
+  -- domain, so its characteristic is a prime, and that prime lies in `w`.
+  obtain ⟨ℓ, hℓ, hℓw⟩ : ∃ (ℓ : ℕ) (_ : ℓ.Prime), ((ℓ : ℕ) : 𝓞 CF) ∈ w.asIdeal := by
+    haveI hfin : Finite (𝓞 CF ⧸ w.asIdeal) := Ring.HasFiniteQuotients.finiteQuotient w.ne_bot
+    haveI hdom : IsDomain (𝓞 CF ⧸ w.asIdeal) := Ideal.Quotient.isDomain w.asIdeal
+    refine ⟨ringChar (𝓞 CF ⧸ w.asIdeal), CharP.prime_ringChar _, ?_⟩
+    rw [← Ideal.Quotient.eq_zero_iff_mem, map_natCast]
+    exact (ringChar.spec (𝓞 CF ⧸ w.asIdeal) _).mpr dvd_rfl
+  -- (2) the prime of `𝓞 ℚ` under `w` IS the place attached to `ℓ`.  One inclusion
+  -- is `ℓ ∈ w`, and it is an equality because `(ℓ)` is already maximal.
+  have hvcomap : hℓ.toHeightOneSpectrumRingOfIntegersRat.asIdeal
+      = Ideal.comap (algebraMap (𝓞 ℚ) (𝓞 CF)) w.asIdeal := by
+    haveI hcp : (Ideal.comap (algebraMap (𝓞 ℚ) (𝓞 CF)) w.asIdeal).IsPrime :=
+      Ideal.IsPrime.comap _
+    have hle : hℓ.toHeightOneSpectrumRingOfIntegersRat.asIdeal
+        ≤ Ideal.comap (algebraMap (𝓞 ℚ) (𝓞 CF)) w.asIdeal := by
+      rw [asIdeal_toHeightOneSpectrumRingOfIntegersRat hℓ, Ideal.span_singleton_le_iff_mem,
+        Ideal.mem_comap, map_natCast]
+      exact hℓw
+    have hmax : hℓ.toHeightOneSpectrumRingOfIntegersRat.asIdeal.IsMaximal :=
+      hℓ.toHeightOneSpectrumRingOfIntegersRat.isPrime.isMaximal_of_ne_bot
+        hℓ.toHeightOneSpectrumRingOfIntegersRat.ne_bot
+    exact hmax.eq_of_le hcp.ne_top hle
+  -- (3) the commuting square `𝓞 ℚ → ℚ → CF` versus `𝓞 ℚ → 𝓞 CF → CF`
+  have hcomm : ∀ a : 𝓞 ℚ, algebraMap ℚ CF (algebraMap (𝓞 ℚ) ℚ a)
+      = algebraMap (𝓞 CF) CF (algebraMap (𝓞 ℚ) (𝓞 CF) a) := by
+    intro a
+    rw [← IsScalarTower.algebraMap_apply (𝓞 ℚ) ℚ CF,
+      ← IsScalarTower.algebraMap_apply (𝓞 ℚ) (𝓞 CF) CF]
+  have hmem : hℓ.toHeightOneSpectrumRingOfIntegersRat.asIdeal
+      ≤ Ideal.comap (algebraMap (𝓞 ℚ) (𝓞 CF)) w.asIdeal := le_of_eq hvcomap
+  have hcompl : ∀ s : 𝓞 ℚ, s ∉ hℓ.toHeightOneSpectrumRingOfIntegersRat.asIdeal →
+      algebraMap (𝓞 ℚ) (𝓞 CF) s ∉ w.asIdeal := by
+    intro s hs hcon
+    exact hs (hvcomap ▸ Ideal.mem_comap.mpr hcon)
+  -- (4) hence `ℚ → CF` is valuation-decreasing, so uniformly continuous, so it
+  -- completes to `ℚ_ℓ → CF_w`
+  have hle : ∀ x : ℚ, hℓ.toHeightOneSpectrumRingOfIntegersRat.valuation ℚ x ≤ 1 →
+      w.valuation CF (algebraMap ℚ CF x)
+        ≤ hℓ.toHeightOneSpectrumRingOfIntegersRat.valuation ℚ x :=
+    fun x hx => IsDedekindDomain.HeightOneSpectrum.valuation_map_le_of_le_one
+      hℓ.toHeightOneSpectrumRingOfIntegersRat w (algebraMap (𝓞 ℚ) (𝓞 CF))
+      (algebraMap ℚ CF) hcomm hmem hcompl x hx
+  have huc : UniformContinuous (WithVal.map
+      (hℓ.toHeightOneSpectrumRingOfIntegersRat.valuation ℚ) (w.valuation CF)
+      (algebraMap ℚ CF)) :=
+    WithVal.uniformContinuous_map_of_le _ _
+      (hℓ.toHeightOneSpectrumRingOfIntegersRat.valuation_surjective ℚ) _ hle
+  refine ⟨ℓ, hℓ, IsDedekindDomain.HeightOneSpectrum.adicCompletionMap
+    hℓ.toHeightOneSpectrumRingOfIntegersRat w (algebraMap ℚ CF) huc, fun x => ?_, fun y hy => ?_⟩
+  -- NOTE the same instance trap as in `exists_conj_localInertia_of_adicCompletionHom`
+  -- below, in mirror image: the STATEMENT's `algebraMap ℚ (ℚ_ℓ)` elaborates to
+  -- `DivisionRing.toRatAlgebra`, while `adicCompletionMap_coe` produces
+  -- `instAlgebraAdicCompletion`.  They are equal, but only up to
+  -- `Algebra.algebra_rat_subsingleton` — `RingHom.ext_rat` is the usable form.
+  · refine Eq.trans ?_ (IsDedekindDomain.HeightOneSpectrum.adicCompletionMap_coe
+      hℓ.toHeightOneSpectrumRingOfIntegersRat w (algebraMap ℚ CF) huc x)
+    congr 1
+    exact RingHom.congr_fun (RingHom.ext_rat _ _) x
+  · exact IsDedekindDomain.HeightOneSpectrum.adicCompletionMap_mem_integers _ _ _ huc
+      (algebraMap (𝓞 ℚ) (𝓞 CF)) hcomm hy
 
 /-- **INERTIA TRANSPORT: A LOCAL INERTIA ELEMENT OF A NUMBER FIELD, PUSHED
 DOWN TO `Γℚ`, IS A CONJUGATE OF A LOCAL INERTIA ELEMENT OF `ℚ`** (PROVEN
