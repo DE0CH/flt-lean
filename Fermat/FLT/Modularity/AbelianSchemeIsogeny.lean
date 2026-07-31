@@ -99,15 +99,19 @@ warning set is still FIVE, and it is:
 * `exists_le_idealTensorComparison_eq_zero_of_isNoetherianFlatDescentSystem` — HALF A of
   Stacks 00R6.  Half B, `rTensor_map_maximalIdeal_injective_of_idealTensorComparison_eq_
   zero_of_isNoetherianFlatDescentSystem`, was closed 2026-07-30 and is sorry-free;
-* `exists_isAmpleSheaf_of_field` — PROJECTIVITY of an abelian variety.  Needs Weil
-  divisors, linear systems and `𝒪(D)`, none of which exist at this pin;
+* `exists_isInvertibleSheaf_nonvanishingLocus_eq_of_isAffineOpen` and
+  `isAmpleSheaf_of_nonvanishingLocus_eq_of_field` — the 2026-07-31 CUT of
+  `exists_isAmpleSheaf_of_field` (PROJECTIVITY of an abelian variety), which is now
+  PROVEN over them.  The first is `𝒪(X ∖ U)` for an affine open `U` and needs Weil
+  divisors, `𝒪(D)` and nothing about the group law; the second is Mumford's
+  Application 1 and needs the theorem of the square and nothing about divisors;
 * `nonempty_cubeIdentity` — THE THEOREM OF THE CUBE, cut 2026-07-31 out of
   `hasCubeIso_of_symm_of_normalized` (which is now PROVEN over it).  Needs the seesaw
   principle, hence coherent-sheaf cohomology and flat base change.
 
-The last two are the only mathlib-scale statements in the module, they are INDEPENDENT of
-each other, and each is a theory build rather than a proof problem.  As always: this list
-is stamped to a commit and is stale the moment anything merges — regenerate it from a
+The last three are the only mathlib-scale statements in the module, they are INDEPENDENT
+of each other, and each is a theory build rather than a proof problem.  As always: this
+list is stamped to a commit and is stale the moment anything merges — regenerate it from a
 build rather than quoting it.
 -/
 module
@@ -14257,24 +14261,199 @@ leaf in — and the trade is deliberate:
   base.  See the FALSITY AUDIT on the leaf: dropping it asserts `e^* L ≅ 𝒪`, which is free
   over a field and false in general.
 
-So the two open leaves of this block are now `exists_isAmpleSheaf_of_field` and
-`nonempty_cubeIdentity`, still independent of each other, still one theory build each. -/
+**UPDATE 2026-07-31 (second, same day) — `exists_isAmpleSheaf_of_field` is PROVEN too, and
+its half is CUT IN TWO.**  The two pieces are mathematically disjoint and neither carries
+the other's machinery:
 
-/-- **AN ABELIAN VARIETY OVER A FIELD IS PROJECTIVE** (sorry leaf, cut 2026-07-30
-out of `exists_isAmpleSheaf_symmetric_cube` above) — Mumford *Abelian Varieties*
+* `exists_isInvertibleSheaf_nonvanishingLocus_eq_of_isAffineOpen` — the divisor input,
+  `𝒪(X ∖ U)` for a nonempty affine open `U`, stated for a smooth proper geometrically
+  connected `K`-scheme with NO group law in sight;
+* `isAmpleSheaf_of_nonvanishingLocus_eq_of_field` — Mumford's Application 1, that such an
+  `L` is ample, with NO divisor in sight.
+
+Read the FALSITY AUDIT on the second before cutting it further: the obvious next cut, in
+terms of `K`-automorphisms of `X` and the theorem of the square, is FALSE, and the witness
+is `y² + y = x³ + x + 1` over `𝔽₂`, which has exactly one rational point.
+
+So the open leaves of this block are `exists_isInvertibleSheaf_nonvanishingLocus_eq_of_
+isAffineOpen`, `isAmpleSheaf_of_nonvanishingLocus_eq_of_field` and `nonempty_cubeIdentity`
+— pairwise independent, one theory build each. -/
+
+/-- **AN EFFECTIVE CARTIER DIVISOR CUTTING OUT THE COMPLEMENT OF A GIVEN AFFINE OPEN**
+(sorry leaf, cut 2026-07-31 out of `exists_isAmpleSheaf_of_field` below) — Hartshorne II
+Prop. 6.11 + Ex. 3.5 / [Stacks 0BCQ]; the "geometric input" half of Mumford *Abelian
+Varieties* §6, Application 1.
+
+*On a smooth proper geometrically connected `K`-scheme, every affine open `U` is the
+non-vanishing locus of a global section of an invertible sheaf.*
+
+This is `L = 𝒪(D)` for `D = X ∖ U` with its canonical section, and it is the ONE place
+in the projectivity argument where divisors occur.  **It says nothing about the group
+law** — that is the point of the cut; a prover needs to know only that `X` is a smooth
+proper variety.
+
+**THE ROUTE, and every step of it is classical.**  `ab.proper` makes `X` Noetherian
+and separated over `K`; `ab.smooth` makes it regular, hence normal; normal plus
+`ab.connected` makes it IRREDUCIBLE, so `X` is a variety and the nonempty open `U` is
+dense.  Then:
+
+* the complement of a nonempty affine open in a Noetherian integral separated scheme
+  is of PURE CODIMENSION ONE (Hartshorne II Ex. 3.5 for varieties, [Stacks 0BCQ]; the
+  normality supplied by smoothness is what makes the algebraic-Hartogs proof run);
+* `X` regular is locally factorial, so that codimension-one closed subset, with its
+  reduced structure, is an effective CARTIER divisor `D` (Hartshorne II 6.11);
+* `𝒪(D)` is invertible and its canonical section `s_D` vanishes exactly on `D`, i.e.
+  `nonvanishingLocus 𝒪(D) s_D = X ∖ D = U`.
+
+None of `𝒪(D)`, Weil divisors, Cartier divisors or linear equivalence exists at this
+pin — see the SURVEY on the parent below — so this leaf is a THEORY BUILD, and the
+theory is divisors on a regular scheme.  It is however strictly smaller than the parent
+and completely independent of the abelian-variety half.
+
+**`hUne` IS NOT NEEDED FOR TRUTH, AND IS KEPT ANYWAY.**  At `U = ⊥` the statement is
+discharged by `L = 𝒪_X`, `s = 0`, whose non-vanishing locus is `∅` (`basicOpen 0 = ⊥`).
+It is kept because the caller has it for free and it removes a degenerate case a prover
+would otherwise have to dispose of before reaching the mathematics; and because the
+statement should not be stated wider than the single call site needs.
+
+**NON-VACUOUS AND NON-DEGENERATE.**  At `dim X = 0` (`X = Spec K`, the zero-dimensional
+abelian variety) the only nonempty affine open is `⊤` and the witness is `L = 𝒪_X`,
+`s = 1`, `nonvanishingLocus = ⊤` (`nonvanishingLocus_modUnit`, `basicOpen 1 = ⊤`) — so
+the statement is inhabited without any divisor theory.  The content is at `dim X ≥ 1`,
+where `U ≠ ⊤` and `D` is a genuine divisor. -/
+theorem exists_isInvertibleSheaf_nonvanishingLocus_eq_of_isAffineOpen {X : Scheme.{u}}
+    {K : Type u} [Field K] {fK : X ⟶ Spec (CommRingCat.of K)}
+    (hproper : IsProper fK) (hsmooth : Smooth fK) (hconn : GeometricallyConnected fK)
+    (U : X.Opens) (hU : IsAffineOpen U) (hUne : (U : Set X).Nonempty) :
+    ∃ (L : X.Modules) (s : Γ(L, ⊤)), IsInvertibleSheaf L ∧
+      nonvanishingLocus L s = (U : Set X) :=
+  sorry
+
+/-- **AN INVERTIBLE SHEAF WITH A SECTION WHOSE NON-VANISHING LOCUS IS A NONEMPTY AFFINE
+OPEN IS AMPLE, ON AN ABELIAN VARIETY** (sorry leaf, cut 2026-07-31 out of
+`exists_isAmpleSheaf_of_field` below) — Mumford *Abelian Varieties* §6, Application 1.
+
+*If `X ∖ D` is affine and nonempty for the effective divisor `D` cut out by `s`, then
+`L` is ample.*
+
+This is the abelian-variety half of the cut, and it is where the THEOREM OF THE SQUARE
+is spent.  It knows nothing about how `L` was produced: divisors do not occur in its
+statement, only a sheaf, a section, and the affineness of the section's non-vanishing
+locus.
+
+**THE CLASSICAL PROOF, over an algebraically closed field.**  For a closed point `a`,
+the theorem of the square (a formal consequence of the theorem of the cube —
+`nonempty_cubeIdentity` below, at `x = a`, `y = -a`, `z` arbitrary) gives
+`t_a^* L ⊗ t_{-a}^* L ≅ L^{⊗2}`.  The pulled-back sections `t_a^* s`, `t_{-a}^* s` have
+non-vanishing loci `t_a⁻¹(U)`, `t_{-a}⁻¹(U)` (this is
+`nonvanishingLocus_modPullback`, PROVEN in `AmpleSheaf.lean`), each affine because a
+translation is an isomorphism; their tensor is a section of `L^{⊗2}` whose locus is the
+INTERSECTION (`nonvanishingLocus_tensorSection` above), affine because `X` is separated
+over the affine `Spec K` (`IsAffineOpen.inf`, exactly as in `isAmpleSheaf_modTensor`
+above).  Given `z`, the set of `a` with `z ∈ D + a` is a proper closed subset, so over a
+field whose points are Zariski dense one may choose `a` avoiding it and its negative.
+
+**FALSITY AUDIT — THE OBVIOUS FURTHER CUT OF THIS LEAF IS FALSE, WITH A FINITE
+COUNTEREXAMPLE.**  The tempting move is to hand the translation argument out as its own
+leaf, in the shape
+
+> for every `z : X` there are `K`-automorphisms `f₁, …, f_k` of `X` with
+> `z ∈ ⋂ᵢ fᵢ⁻¹(U)` and `Nonempty (⨂ᵢ fᵢ^* L ≅ L^{⊗k})`,
+
+leaving only formal bookkeeping above it.  **Every such statement is FALSE over a field
+with too few rational points**, and the witness is finite and checkable by hand:
+
+  `E : y² + y = x³ + x + 1` over `K = 𝔽₂`.
+
+It is nonsingular (`b₂ = 0`, `b₄ = 2`, `b₆ = 1`, `b₈ = -1`, so `Δ = -91`, odd) and has
+`E(𝔽₂) = {O}`: over `𝔽₂` the left side `y² + y` is `0` for both `y`, while the right
+side `x³ + x + 1` is `1` for both `x`, so there is NO affine `𝔽₂`-point.  Take
+`U = E ∖ {O}` — affine, the Weierstrass chart — and `L = 𝒪((O))` with its canonical
+section, so `nonvanishingLocus L s = U` and every hypothesis of this leaf holds.  Now
+let `f` be ANY `K`-automorphism of the SCHEME `E`.  Then `f ∘ O` is again a `K`-rational
+point, hence `f(O) = O` since `O` is the only one; so `f` fixes the origin, is therefore
+a group automorphism, and `f⁻¹({O}) = {O}`, i.e.
+
+  **`f ⁻¹ᵁ U = U` for every `K`-automorphism `f` of `E`.**
+
+So every section obtainable as a tensor of pullbacks of `s` along automorphisms has
+non-vanishing locus exactly `U`, and `z = O` is in none of them.  The degree count says
+the same thing without automorphisms: `⨂ᵢ fᵢ^* L = 𝒪(P₁ + ⋯ + P_k)` with all `Pᵢ`
+`K`-RATIONAL, and `P₁ + ⋯ + P_k ∼ k(O)` forces `Σ Pᵢ = O` in the group, which with
+`E(K) = {O}` forces every `Pᵢ = O`.
+
+This is not a small-field pathology: the same argument kills the cut over `ℚ` for any
+elliptic curve with trivial Mordell–Weil group — `y² = x³ - 6x - 6` (conductor 1728) has
+trivial torsion and analytic rank `0` in PARI/GP, hence `E(ℚ) = 0` by Gross–Zagier and
+Kolyvagin.  That witness rests on an untrusted searcher and a hard theorem; the `𝔽₂` one
+above rests on four lines of arithmetic and is the one to quote.
+
+**WHAT THE CORRECT FIELD-INDEPENDENT ROUTE IS, since the audit forecloses the cheap
+one.**  Two options, and both need machinery that is absent at this pin:
+
+* base change to `K̄`, where closed points ARE Zariski dense, run the translation
+  argument there, and DESCEND ampleness along `K → K̄` (faithfully flat descent of
+  ampleness — note that it is `L` itself, produced over `K` by the sibling leaf, that is
+  base-changed, so no sheaf has to be descended, only the property);
+* stay over `K`: translate by a `κ`-point on `X_κ` for `κ/K` finite, then push the
+  resulting section down by the NORM along the finite flat `X_κ → X`, and use
+  Chevalley's theorem (a Noetherian scheme admitting a finite surjective morphism from
+  an affine scheme is affine) for affineness of the resulting locus.  On the `𝔽₂` curve
+  above this is exactly what produces the divisor `P + P^σ` with `P ∈ E(𝔽₄)`,
+  `P^σ = -P` — which exists because `#E(𝔽₄) = 5` — and `O` is not in its support.
+
+**`hUne` IS LOAD-BEARING HERE, unlike on the sibling leaf.**  Drop it and the statement
+is FALSE: take `s = 0`, whose non-vanishing locus is `∅`, an affine open; the conclusion
+would then say that `𝒪_X` is ample on `X`, i.e. (with `X` proper) that `X` is affine,
+which fails for every abelian variety of positive dimension.  It is the divisor being
+EFFECTIVE AND NONEMPTY-COMPLEMENT that carries the ampleness. -/
+theorem isAmpleSheaf_of_nonvanishingLocus_eq_of_field {X : Scheme.{u}} (K : Type u) [Field K]
+    {fK : X ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct fK)
+    {L : X.Modules} (hL : IsInvertibleSheaf L) (s : Γ(L, ⊤))
+    (U : X.Opens) (hU : IsAffineOpen U) (hUne : (U : Set X).Nonempty)
+    (hloc : nonvanishingLocus L s = (U : Set X)) :
+    IsAmpleSheaf L :=
+  sorry
+
+/-- **AN ABELIAN VARIETY OVER A FIELD IS PROJECTIVE** (**PROVEN 2026-07-31** over the two
+leaves immediately above, which are its 2026-07-31 CUT; cut 2026-07-30 out of
+`exists_isAmpleSheaf_symmetric_cube` above) — Mumford *Abelian Varieties*
 §6, Application 1 / §16; equivalently Weil's theorem that an abelian variety is
 projective.
 
 *There is an ample invertible sheaf on `A`.*
 
+**THE 2026-07-31 CUT, and what this proof still does itself.**  The leaf asserted two
+independent things at once, and they are now separated:
+
+* `exists_isInvertibleSheaf_nonvanishingLocus_eq_of_isAffineOpen` — the DIVISOR input,
+  `𝒪(X ∖ U)` for an affine open `U`.  Needs no group law, only that `X` is a smooth
+  proper variety;
+* `isAmpleSheaf_of_nonvanishingLocus_eq_of_field` — MUMFORD'S APPLICATION 1, that such
+  an `L` is ample.  Needs no divisors, only the group law and the theorem of the square.
+
+What is left here, and is proven: `X` is NONEMPTY — the zero section `ab.zero` is a
+`K`-point and `Spec K` has a point, which is the only use of the group structure in this
+assembly — and an affine open neighbourhood of that point exists, from
+`Scheme.isBasis_affineOpens`.  That neighbourhood is what supplies the sibling leaves'
+`U` and their `hUne`.
+
+Read the FALSITY AUDIT on the second leaf before attempting a further cut of it: the
+obvious one, handing the translation argument out in terms of `K`-automorphisms of `X`,
+is FALSE, with a four-line counterexample over `𝔽₂`.
+
 **THIS IS ONE OF THE TWO MATHLIB-SCALE HALVES, AND IT IS NOW ISOLATED FROM
 EVERYTHING ELSE.**  Nothing here mentions `[n]`, `[-1]`, normalization, symmetry
 or the cube: the consumer manufactures all four from this sheaf by formal
-operations.  The classical proof is the theta divisor — take an effective ample
-divisor `D`, show `3D` is base-point free, and conclude — and it needs divisors,
-linear systems and coherent cohomology, none of which exist at this pin
+operations.  The classical proof is the divisor `D = X ∖ U` for an affine open `U`
+together with the theorem of the square — that is exactly the 2026-07-31 cut above —
+and it needs divisors and linear systems, which do not exist at this pin
 (`grep -rl Ample Mathlib/AlgebraicGeometry/` is EMPTY; re-run it before believing
-this sentence).
+this sentence).  Note that the "`3D` is base-point free / very ample" route recorded
+here before that cut is NOT the cheapest one: `IsAmpleSheaf` as defined in
+`AmpleSheaf.lean` asks only that the basic opens `X_s` be affine and cover, so the
+translate-and-intersect argument suffices and no linear system, no base locus and no
+coherent cohomology is needed.
 
 **`IsInvertibleSheaf` is deliberately NOT asserted here.**  It is free:
 `isInvertibleSheaf_of_isAmpleSheaf` (`AmpleSheaf.lean`, PROVEN) derives local
@@ -14313,11 +14492,21 @@ so here is the answer rather than the instruction).  At this pin:
 
 So this leaf is not a proof problem but a THEORY-BUILDING problem, and the theory is the
 one `Fermat/FLT/Modularity/AmpleSheaf.lean` starts: whoever takes it should expect to add
-divisors and their sheaves there first, and should not expect a route through mathlib. -/
+divisors and their sheaves there first, and should not expect a route through mathlib.
+**The 2026-07-31 cut localizes that theory build in ONE of the two leaves**, the divisor
+one; the other needs no divisors at all. -/
 theorem exists_isAmpleSheaf_of_field {X : Scheme.{u}} (K : Type u) [Field K]
     {fK : X ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct fK) :
-    ∃ L : X.Modules, IsAmpleSheaf L :=
-  sorry
+    ∃ L : X.Modules, IsAmpleSheaf L := by
+  -- `X` is NONEMPTY: the zero section is a `K`-point of `X`, and `Spec K` has a point.
+  set x : X := ((ab.zero (𝟙 (Spec (CommRingCat.of K)))).1).base default with hx
+  -- an affine open neighbourhood of it, from the affine basis
+  obtain ⟨-, ⟨U, hU, rfl⟩, hxU, -⟩ :=
+    (X.isBasis_affineOpens).exists_subset_of_mem_open (Set.mem_univ x) isOpen_univ
+  obtain ⟨L, s, hLinv, hloc⟩ :=
+    exists_isInvertibleSheaf_nonvanishingLocus_eq_of_isAffineOpen
+      ab.proper ab.smooth ab.connected U hU ⟨x, hxU⟩
+  exact ⟨L, isAmpleSheaf_of_nonvanishingLocus_eq_of_field K ab hLinv s U hU ⟨x, hxU⟩ hloc⟩
 
 /-- **`(L ⊗ M)^{⊗k} ≅ L^{⊗k} ⊗ M^{⊗k}`** (PROVEN 2026-07-30, in three lines) — the
 `modTensorPow` half of what `isAmpleSheaf_modTensor` below needs.

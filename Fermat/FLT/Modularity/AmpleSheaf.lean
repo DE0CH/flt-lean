@@ -2179,6 +2179,40 @@ theorem exists_trivialization_modPullback {X Y : Scheme.{u}} (f : X ⟶ Y) {A : 
     Subtype.ext (morphismRestrict_base_coe f U ⟨x, hx⟩)]
   exact Iff.rfl
 
+/-- **THE NON-VANISHING LOCUS OF A PULLED-BACK SECTION IS THE PREIMAGE OF THE
+NON-VANISHING LOCUS** (PROVEN 2026-07-31) — for an INVERTIBLE sheaf and an
+ARBITRARY morphism of schemes, with no hypothesis on `f` whatsoever.
+
+This is the body of `nonvanishingLocus_modPullback_of_isAmpleSheaf` immediately
+below, hoisted out of it: that theorem's proof began by deriving
+`IsInvertibleSheaf (L^{⊗n})` from its ampleness hypothesis and then never looked
+at ampleness again, so the general statement was already proven there and was
+merely not named.  Naming it costs nothing (the consumer is now one `rw`) and it
+is what any argument that pulls a section back along a translation, a base change
+or an automorphism needs — in particular the translation argument of
+`exists_isAmpleSheaf_of_field` in `AbelianSchemeIsogeny.lean`, which pulls the
+canonical section of `𝒪(D)` back along `t_a` and must read off `t_a⁻¹(U)`.
+
+Both hypotheses of the consumer that were recorded there as unused
+(`[IsClosedImmersion f]`, `0 < n`, `IsAffineOpen V`) are absent here, which is
+the honest form of that observation: basic opens pull back along ANY morphism
+(`Scheme.preimage_basicOpen_top` applied to `f ∣_ U`), and invertibility is used
+only to produce the trivialization at which the two `NonvanishingAt` predicates
+can be compared. -/
+theorem nonvanishingLocus_modPullback {X Y : Scheme.{u}} (f : X ⟶ Y) {A : Y.Modules}
+    (hA : IsInvertibleSheaf A) (s : Γ(A, ⊤)) :
+    nonvanishingLocus (modPullback f A) (modPullbackSection f A s)
+      = f.base ⁻¹' nonvanishingLocus A s := by
+  ext x
+  obtain ⟨U, hU, ⟨φ⟩⟩ := hA (f.base x)
+  obtain ⟨ψ, hψ⟩ := exists_trivialization_modPullback f φ s
+  have hxU : x ∈ f ⁻¹ᵁ U := hU
+  rw [Set.mem_preimage]
+  show NonvanishingAt _ _ x ↔ NonvanishingAt _ _ (f.base x)
+  rw [nonvanishingAt_iff_trivializedSection _ ψ hxU,
+    nonvanishingAt_iff_trivializedSection s φ hU]
+  exact hψ x hxU
+
 /-- **The geometric step of EGA II 5.1.12** (PROVEN 2026-07-28): for a closed
 immersion `f`, the non-vanishing locus of a pulled-back section is the preimage
 of the non-vanishing locus.
@@ -2209,25 +2243,18 @@ pull back along ANY morphism of schemes (`Scheme.preimage_basicOpen`), so the
 whole argument is `Scheme.preimage_basicOpen_top` applied to `f ∣_ U`.  They are
 kept because removing them would churn the call site in
 `AbelianSchemeIsogeny.lean` for no gain, and because `isAmpleSheaf_modPullback`
-wants the instance anyway for `IsAffineOpen.preimage`. -/
+wants the instance anyway for `IsAffineOpen.preimage`.
+
+**2026-07-31: the body moved to `nonvanishingLocus_modPullback` above** and this
+is now one `rw` over it.  Nothing about the statement changed. -/
 theorem nonvanishingLocus_modPullback_of_isAmpleSheaf {X Y : Scheme.{u}} (f : X ⟶ Y)
     [IsClosedImmersion f] {L : Y.Modules} (hL : IsAmpleSheaf L) {n : ℕ} (_hn : 0 < n)
     (s : Γ(modTensorPow L n, ⊤)) (V : Y.Opens) (_hV : IsAffineOpen V)
     (hloc : nonvanishingLocus (modTensorPow L n) s = (V : Set Y)) :
     nonvanishingLocus (modPullback f (modTensorPow L n))
         (modPullbackSection f (modTensorPow L n) s) = f.base ⁻¹' (V : Set Y) := by
-  have hinv : IsInvertibleSheaf (modTensorPow L n) :=
-    isInvertibleSheaf_modTensorPow (isInvertibleSheaf_of_isAmpleSheaf hL) n
-  rw [← hloc]
-  ext x
-  obtain ⟨U, hU, ⟨φ⟩⟩ := hinv (f.base x)
-  obtain ⟨ψ, hψ⟩ := exists_trivialization_modPullback f φ s
-  have hxU : x ∈ f ⁻¹ᵁ U := hU
-  rw [Set.mem_preimage]
-  show NonvanishingAt _ _ x ↔ NonvanishingAt _ _ (f.base x)
-  rw [nonvanishingAt_iff_trivializedSection _ ψ hxU,
-    nonvanishingAt_iff_trivializedSection s φ hU]
-  exact hψ x hxU
+  rw [nonvanishingLocus_modPullback f
+    (isInvertibleSheaf_modTensorPow (isInvertibleSheaf_of_isAmpleSheaf hL) n) s, hloc]
 
 /-! ### The six original statements, now all PROVEN -/
 
