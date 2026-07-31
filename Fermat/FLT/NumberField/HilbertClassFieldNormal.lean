@@ -411,8 +411,18 @@ This one is NOT decoration: `finrank_le_card_classGroup_of_unramified_abelian_of
 — the only degree bound this development has — REQUIRES it, and the leaf's
 docstring records a PARI/GP counterexample (`ℚ(√3)`, `h = 1`, narrow `h⁺ = 2`)
 showing the bound is FALSE with unramifiedness only at the finite places. So
-the compositum argument below cannot be run at finite places alone. -/
-theorem isUnramifiedAtInfinitePlaces_sup
+the compositum argument below cannot be run at finite places alone.
+
+MERGE REPAIR 2026-07-31 — RENAMED from `isUnramifiedAtInfinitePlaces_sup`.
+`Fermat/FLT/NumberField/UnramifiedClassFieldExistence.lean:668`, which this module
+imports transitively, declares that name in the same `NumberField` namespace for the
+GENERAL base (`IntermediateField K (AlgebraicClosure K)`, no `IsGalois`, and still a
+`sorry` leaf); two branches merged cleanly into two declarations of one name. This
+copy is the `AlgebraicClosure ℚ`-relative one and is PROVEN, so it keeps the content
+and takes the longer name. Worth a follow-up the merge worker may want to queue: this
+proof may well close the general leaf, since the argument nowhere uses that the base
+of the algebraic closure is `ℚ`. -/
+theorem isUnramifiedAtInfinitePlaces_sup_ratAlgClosure
     (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K]
     (L₁ L₂ : IntermediateField (K : Type _) (AlgebraicClosure ℚ))
     [FiniteDimensional (K : Type _) L₁] [IsGalois (K : Type _) L₁]
@@ -967,7 +977,7 @@ theorem exists_hilbertClassField_normal_over_rat
     ⟨⟩
   haveI : IsUnramifiedAtInfinitePlaces (K : Type _)
       (N₀ ⊔ N₂ : IntermediateField (K : Type _) (AlgebraicClosure ℚ)) :=
-    isUnramifiedAtInfinitePlaces_sup K N₀ N₂
+    isUnramifiedAtInfinitePlaces_sup_ratAlgClosure K N₀ N₂
   haveI : FiniteDimensional ℚ
       ((N₀ ⊔ N₂ : IntermediateField (K : Type _) (AlgebraicClosure ℚ)) : Type _) :=
     FiniteDimensional.trans ℚ (K : Type _)

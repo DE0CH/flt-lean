@@ -174,11 +174,24 @@ Together with `restrictScalars_frobAt` below this is the Frobenius half of the c
 field DICTIONARY: this one gives the `≤` inclusion (norm classes fix the intermediate
 field), that one gives the `≥` inclusion (the norm classes fill it up).
 
-**Placement.** This belongs upstream beside `frobAt` in
-`Fermat/FLT/NumberField/ArtinSymbol.lean`; it is stated here only because that file's
-two open leaves are separately owned and a cross-file edit costs a release cycle. Move
-it when that file is next touched. -/
-theorem restrictNormalHom_frobAt (Q : Ideal (𝓞 L)) [Q.IsMaximal] (q : Ideal (𝓞 M))
+**Placement, and the 2026-07-31 RENAME.** The docstring used to say this belongs
+upstream beside `frobAt` in `Fermat/FLT/NumberField/ArtinSymbol.lean`, and was
+stated here only because that file's leaves were separately owned. **That move has
+since happened**: `ArtinSymbol.lean:662` now declares `restrictNormalHom_frobAt`,
+under a DIFFERENT signature — it takes `[Algebra.IsUnramifiedAt (𝓞 K) Q]` upstairs
+and concludes at `Q.under (𝓞 M)`, where this one takes the hypothesis downstairs at
+`q` and carries `hq : Q.under (𝓞 M) = q`. Two branches, one hoisting and one still
+editing here, merged cleanly into two declarations of one name and a
+`has already been declared` error no textual merge can see.
+
+This copy is therefore renamed `restrictNormalHom_frobAt_of_under` (2026-07-31, by
+the owner of `exists_riemannRochGrowth_of_pointCountRecursion`, which could not build
+its import cone otherwise). The rename, not a deletion, is deliberate: the three call
+sites below hold unramifiedness of `q`, NOT of `Q`, and `Algebra.IsUnramifiedAt`
+descends along `of_liesOver` in the opposite direction — so they cannot be rewritten
+against the upstream form without new work. Consolidating the two is a genuine
+(small) task, not a mechanical substitution. -/
+theorem restrictNormalHom_frobAt_of_under (Q : Ideal (𝓞 L)) [Q.IsMaximal] (q : Ideal (𝓞 M))
     [q.IsMaximal] [Algebra.IsUnramifiedAt (𝓞 K) q] (hq : Q.under (𝓞 M) = q) :
     AlgEquiv.restrictNormalHom M (frobAt K L Q) = frobAt K M q := by
   classical
@@ -251,7 +264,7 @@ theorem restrictScalars_frobAt [IsGalois M L] (Q : Ideal (𝓞 L)) [Q.IsMaximal]
         rw [pow_succ', mul_smul, hmk, ih, ← pow_mul, ← pow_succ]
   -- `σ ^ f` fixes `M` pointwise, so it is an `M`-algebra automorphism of `L`
   have hfix : AlgEquiv.restrictNormalHom M (σ ^ f) = 1 := by
-    rw [map_pow, restrictNormalHom_frobAt K M L Q q hq, hfdef]
+    rw [map_pow, restrictNormalHom_frobAt_of_under K M L Q q hq, hfdef]
     exact frobAt_pow_inertiaDeg K M q
   have hcomm : ∀ x : M, (σ ^ f).toRingEquiv (algebraMap M L x) = algebraMap M L x := by
     intro x
@@ -1304,7 +1317,7 @@ theorem exists_hilbertClassField_artinIso :
     -- the Artin map sends that class to `Frob_Q ^ f`, which restricts to `Frob_q ^ f = 1`
     rw [Subgroup.mem_comap, hbridge, MonoidHom.mem_ker,
       hkey q Q J hQover hJ, map_pow,
-      restrictNormalHom_frobAt K (IntermediateField.lift F) HCF Q q hQover]
+      restrictNormalHom_frobAt_of_under K (IntermediateField.lift F) HCF Q q hQover]
     exact frobAt_pow_inertiaDeg K (IntermediateField.lift F) q
   -- ## The `≥` half: Chebotarev for `HCF/(lift F)` fills up the fixing subgroup
   refine le_antisymm hsub ?_
@@ -1648,7 +1661,7 @@ theorem exists_surjective_aut_classGroupQuotient_intermediateField
         show AlgEquiv.restrictNormalHom HCF
           (AlgEquiv.restrictScalars K (frobAt M E Q)) = _
         rw [restrictScalars_frobAt K M E Q (Q.under (𝓞 M)) rfl, map_pow,
-          restrictNormalHom_frobAt K HCF E Q (Q.under (𝓞 HCF)) rfl, hJpow, map_pow, map_pow]
+          restrictNormalHom_frobAt_of_under K HCF E Q (Q.under (𝓞 HCF)) rfl, hJpow, map_pow, map_pow]
         congr 1
         refine (hArtFrob (Q.under (𝓞 HCF)) hPmax Jp ?_).symm
         show (Q.under (𝓞 M)).under (𝓞 K) = (Q.under (𝓞 HCF)).under (𝓞 K)

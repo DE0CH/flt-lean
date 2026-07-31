@@ -1065,7 +1065,11 @@ theorem exists_generic_pDivision_offset_of_avoid {ι : Type*} [Fintype ι]
       rw [eq_sub_iff_add_eq, add_comm]
       exact h1
 
-omit [Fact p.Prime] in
+-- MERGE REPAIR 2026-07-31: this read `omit [Fact p.Prime] in`, but the section
+-- variable at line 80 is `[Fact (1 < p)]` — one branch weakened the hypothesis
+-- while another added the `omit`, and the two merge cleanly into an `omit` that
+-- names a class nothing in scope carries (`did not match any variables`).
+omit [Fact (1 < p)] in
 /-- **Stage B, leaf 1 (PROVEN): a generic `p`-division offset.**
 Given the Miller data (`Q = p•T'`, `a` generating
 `∏_κ I_{T'⊕κ}·I_{⊖κ}`), a `p`-torsion point `P`, and the setup's

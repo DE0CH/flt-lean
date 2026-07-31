@@ -1990,6 +1990,66 @@ Two smaller traps hit on the way. **`lake` is not on `PATH` in a fresh worktree 
 launched before a session boundary **keeps running while the harness forgets it**: the
 notification says "no completion record", the process is alive, and the only truth is the
 `EXIT=` line you appended yourself plus `pgrep` filtered by `/proc/<pid>/cwd`.
+
+## RELAUNCHING A BACKGROUND `lake build` DOES NOT REPLACE THE OLD ONE — you get N of them in one worktree
+
+(2026-07-31, `flt-lean-367`, self-inflicted.) A `lake build` launched with
+`run_in_background: true` keeps running **after it prints errors**: `lake` reports the failed
+module and carries on building every other target in the cone, for another twenty minutes. So
+the natural loop — see errors → fix the file → launch the build again → see errors → fix →
+launch again — ends with **three concurrent `lake` processes in the same worktree**, all
+writing the same `.lake/build` and, because the command line was copied, **the same log file**.
+
+It is invisible by construction, and every check you would naturally run agrees with the
+mistake:
+
+* the log looks like ONE build, because the newest writer truncated it and the others append
+  into it — job counters from different builds interleave and read as monotone progress;
+* `grep EXIT=` finds nothing, since none of them has exited;
+* the harness's own completion notification for the older call never arrived, which reads as
+  "that call is over" and means the opposite.
+
+It was found only by `ps -eo pid,ppid,etimes,args | grep '[l]ake build'` returning three rows
+with three different `etimes`. This is the two-agents-one-worktree collision of the
+`flt-lean-86` incident with no second agent — the same shared `.lake`, the same interleaved
+`lean` workers writing one `.olean` — so treat it with the same seriousness.
+
+**Rules.** Before launching a build, list your own `lake`/`lean` processes and kill the stale
+ones BY PID after confirming `/proc/<pid>/cwd` is your worktree (never by pattern — see the
+doctrine). Give each launch its own log file. And do not read "errors appeared" as "the build
+stopped": only the `EXIT=` line you appended yourself says that.
+
+## A LEAF CAN EXIST ONLY ON `merger`, WHICH IS RED — then there is no green base and repairing the cone IS the task
+
+(2026-07-31, `flt-lean-367`.) The standing advice is "reset to `$(cat ~/.flt-release-lake/sha)`,
+rsync its build in" — a green base with warm artifacts. That is not always available. This
+target (`exists_riemannRochGrowth_of_pointCountRecursion`) was **cut during the release in
+progress**: it does not exist at the release sha, and neither does the `CurveGenus.lean` /
+`CurveDivisorDegree.lean` / `PrincipalDivisorDegree.lean` divisor vocabulary its decomposition
+needs. The only tree carrying them was `merger`, and `merger` mid-release was red in three
+unrelated files at once.
+
+All three were the SAME merge-interaction class — one branch hoisting a declaration upstream,
+another still editing the file it left, merging cleanly into two copies of one name:
+
+* `NumberField.ramifiedBelow` / `finite_ramifiedBelow` / `finrank_eq_one_of_forall_inertiaDeg_eq_one`
+  in `ArtinSymbol.lean`, hoisted to `Density.lean` (whose docstring says so) without the
+  matching deletion — and the `ArtinSymbol` copy of the density leaf was a `sorry` while
+  `Density.lean` **proves** it, so a duplicate declaration was also a duplicate FRONTIER LEAF;
+* `NumberField.restrictNormalHom_frobAt` in `UnramifiedClassFieldExistence.lean`, hoisted to
+  `ArtinSymbol.lean` under a DIFFERENT signature, so the three local call sites broke with
+  `Application type mismatch` — a shape that reads as a real type error and is not one;
+* `omit [Fact p.Prime] in` in `WeilPairingStageB.lean` against a section variable another
+  branch had weakened to `[Fact (1 < p)]`.
+
+The lesson is not "fix other people's files". It is that **when your leaf exists only on a red
+`merger`, the repair is on your critical path and is part of your task**, and that these
+repairs are cheap and mechanical when you recognise the class: grep the duplicated NAME across
+`Fermat/`, read both docstrings, and keep the copy whose file the other one's docstring points
+at. Do the repair minimally, say so in `to_merger`, and say which copy you kept and why — the
+merge worker is fixing the same three defects at the end of the release and needs to know
+whether to take yours or its own.
+
 ## SEED BEFORE SPAWNING THE NEXT MERGE WORKER — the snapshot comes from the staging `.lake`
 
 (2026-07-29, orchestrator error.) `flt-cycle.py release` seeds worktree artifacts by rsyncing

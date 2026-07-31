@@ -4518,6 +4518,15 @@ theorem exists_lowerRamificationData_lvl_eq
 
 end FiniteLevelInhabitation
 
+-- MERGE REPAIR 2026-07-31: this `namespace LowerRamificationData` was DROPPED by a
+-- merge while its `end` at the bottom of the block survived, so every declaration
+-- below (`exists_gp_le_lvl`, `wildInertiaGroup_le_gp_one`, …) was declared at top
+-- level while `D.exists_gp_le_lvl` downstream still looked for the dotted name, and
+-- the orphaned `end` popped the ENCLOSING section — which is what made the
+-- `local notation "Oᵥ"` further down vanish with `Unknown identifier`. Restored at
+-- the position it holds at `fb465b02`.
+namespace LowerRamificationData
+
 /-! ### The arithmetic inputs to the construction, as NAMED leaves
 
 The four statements below were, until 2026-07-29, anonymous sorried `have`s
@@ -5181,6 +5190,25 @@ theorem exists_pow_sub_one_mem_maximalIdeal_of_isUnit {x : Oᵥ} (hx : IsUnit x)
   exact exists_notMem_asIdeal_pow_sub_one_mem_maximalIdeal v x n hn0 hn
 
 end TeichmullerTorsion
+
+-- MERGE REPAIR 2026-07-31: this section HEADER — the `section` line, the implicit
+-- `variable {v}`, and the five `local notation`s — was dropped by a merge while
+-- `end SerreTameCharacterKernel` below survived. Restored verbatim from `27524d26`,
+-- where the same block reads identically. Note `v` is IMPLICIT here and EXPLICIT in
+-- `TeichmullerTorsion` above; that difference is in the original and is what the
+-- declarations below expect.
+section SerreTameCharacterKernel
+
+variable {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)}
+
+local notation "Kᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletion K v
+local notation "𝒪ᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v
+local notation "Kᵥᵃˡᵍ" => AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+local notation "Oᵥ" => IntegralClosure
+  (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+  (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+local notation "Γᵥ" => Field.absoluteGaloisGroup
+  (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
 
 /-- **SERRE, *CORPS LOCAUX* IV §1, LEMMA 1 — THE REMAINING INPUT TO
 `wildInertiaGroup_le_gp_one`** (PROVEN 2026-07-30; cut as a sorry leaf earlier

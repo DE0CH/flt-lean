@@ -5683,14 +5683,23 @@ were welded together only because they were cut out of
 `exists_relPicZeroSubgroup` in one motion, and one owner had to carry both.  See
 `smooth_of_isRelPicOf` and `isSeparated_of_isRelPicOf` below.  Nothing
 downstream changed: `exists_relPicZeroOf_of_relPicGroupLaw` still destructures
-this conjunction. -/
+this conjunction.
+
+MERGE REPAIR 2026-07-31: the two halves below gained a `(_o : RelPoint strX (𝟙 S))`
+argument — `exists_relPicFull`, which both now go through, needs a rational point —
+while this assembly kept the old five-argument shape, so its two applications broke
+with `Application type mismatch` naming `hP` where `_o` belongs. The consumer
+`exists_relPicZeroOf_of_relPicGroupLaw` was ALREADY calling this with `o` in that
+slot, so the repair is to restore `o` here rather than to remove it there: the
+consumer's call site is the branch that is right. -/
 theorem smooth_isSeparated_of_isRelPicOf {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
     (hproper : IsProper strX) (hsmooth : SmoothOfRelativeDimension 1 strX)
-    (hconn : GeometricallyConnected strX) (hP : IsRelPicOf strX pstr)
+    (hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S))
+    (hP : IsRelPicOf strX pstr)
     (hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX) :
     Smooth pstr ∧ IsSeparated pstr :=
-  ⟨smooth_of_isRelPicOf hproper hsmooth hconn hP hpush,
-    isSeparated_of_isRelPicOf hproper hsmooth hconn hP hpush⟩
+  ⟨smooth_of_isRelPicOf hproper hsmooth hconn o hP hpush,
+    isSeparated_of_isRelPicOf hproper hsmooth hconn o hP hpush⟩
 
 /-! ### The 2026-07-29 audit of `exists_relPicZeroSubgroup`
 

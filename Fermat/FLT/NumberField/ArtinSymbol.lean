@@ -1088,96 +1088,28 @@ theorem inertiaDeg_eq_one_of_forall_pow_natCard
   have hle : p ^ f - 1 ≤ p - 1 := Nat.le_of_dvd (by omega) hdvd
   omega
 
-omit [IsGalois K L] in
-/-- **The primes of `𝓞 K` that ramify in `L`**: those carrying a prime of `𝓞 L`
-at which `𝓞 L / 𝓞 K` is not unramified.
+/-! ### `ramifiedBelow`, `finite_ramifiedBelow` and the density leaf live in `Density.lean`
 
-Stated with `Q.IsPrime` rather than `Q.IsMaximal` so that it matches the shape of
-`Algebra.IsUnramifiedAt`; the zero ideal is harmless, being unramified in
-characteristic zero (`Algebra.isUnramifiedAt_bot`). -/
-def ramifiedBelow : Set (Ideal (𝓞 K)) :=
-  {𝔭 | ∃ (Q : Ideal (𝓞 L)) (_ : Q.IsPrime),
-    Q.under (𝓞 K) = 𝔭 ∧ ¬ Algebra.IsUnramifiedAt (𝓞 K) Q}
+**They used to be declared HERE, and the three declarations below were DELETED on
+2026-07-31** because `Fermat/FLT/NumberField/Density.lean` — which this module
+`public import`s — now carries all three under the same names and the same
+signatures. That file says so itself: *"Hoisted here from
+`Fermat/FLT/NumberField/ArtinSymbol.lean` … unchanged, so that the density theorem
+below can use it; `ArtinSymbol.lean` still consumes it under the same name and
+signature."* The hoist landed; the matching deletion here did not, and the two
+branches merged cleanly into two copies of three names — a `has already been
+declared` error that no textual merge can see (CLAUDE.md records the same class
+for `IsGamma1Isogeny`).
 
-omit [IsGalois K L] in
-/-- **ONLY FINITELY MANY PRIMES OF `𝓞 K` RAMIFY IN `L`** (PROVEN 2026-07-31).
+`Density.lean` keeps `k F` EXPLICIT through its `variable (k F)`, so the two
+consumers below (`closure_frobAt_eq_top`) call
+`ramifiedBelow K L` and `finrank_eq_one_of_forall_inertiaDeg_eq_one K M _ …`
+completely unchanged.
 
-A prime `Q` of `𝓞 L` is ramified exactly when it divides the different ideal
-`𝔡_{L/K}` (`dvd_differentIdeal_iff`), the different is nonzero
-(`differentIdeal_ne_bot`), and a nonzero ideal of a Dedekind domain has only
-finitely many prime divisors (`Ideal.finite_factors`). The set below is the image
-of that finite set under `Ideal.under`.
-
-The only friction is that both mathlib lemmas are stated with the hypothesis
-`Algebra.IsSeparable (FractionRing (𝓞 K)) (FractionRing (𝓞 L))`, and there is no
-`Algebra (FractionRing (𝓞 K)) (FractionRing (𝓞 L))` instance to state it against.
-It is built here with `FractionRing.liftAlgebra`, whose scalar tower plus
-`isAlgebraic_of_isFractionRing` gives algebraicity, hence separability in
-characteristic zero. -/
-theorem finite_ramifiedBelow : (ramifiedBelow K L).Finite := by
-  classical
-  letI : Algebra (FractionRing (𝓞 K)) (FractionRing (𝓞 L)) :=
-    FractionRing.liftAlgebra (𝓞 K) (FractionRing (𝓞 L))
-  haveI : IsScalarTower (𝓞 K) (FractionRing (𝓞 K)) (FractionRing (𝓞 L)) :=
-    FractionRing.isScalarTower_liftAlgebra _ _
-  haveI : Algebra.IsAlgebraic (FractionRing (𝓞 K)) (FractionRing (𝓞 L)) :=
-    isAlgebraic_of_isFractionRing (𝓞 K) (𝓞 L) (FractionRing (𝓞 K)) (FractionRing (𝓞 L))
-  haveI : Algebra.IsIntegral (FractionRing (𝓞 K)) (FractionRing (𝓞 L)) :=
-    Algebra.IsAlgebraic.isIntegral
-  haveI : Algebra.IsSeparable (FractionRing (𝓞 K)) (FractionRing (𝓞 L)) := inferInstance
-  have hne : differentIdeal (𝓞 K) (𝓞 L) ≠ 0 := differentIdeal_ne_bot
-  have hfin : {v : IsDedekindDomain.HeightOneSpectrum (𝓞 L) |
-      v.asIdeal ∣ differentIdeal (𝓞 K) (𝓞 L)}.Finite := Ideal.finite_factors hne
-  refine Set.Finite.subset (hfin.image (fun v => v.asIdeal.under (𝓞 K))) ?_
-  rintro 𝔭 ⟨Q, hQp, rfl, hQr⟩
-  haveI := hQp
-  have hQne : Q ≠ ⊥ := by
-    rintro rfl
-    exact hQr Algebra.isUnramifiedAt_bot
-  exact ⟨⟨Q, hQp, hQne⟩, dvd_differentIdeal_iff.mpr hQr, rfl⟩
-
-/-- **THE DENSITY INPUT OF CHEBOTAREV, AND THE ONLY THING LEFT OF IT HERE: a
-finite extension of number fields in which all but finitely many primes of the
-base split completely is trivial** (SORRY LEAF, cut 2026-07-31 out of
-`closure_frobAt_eq_top` below, which is now PROVEN over it).
-
-Only the residue degrees are constrained, not the ramification indices: the
-hypothesis is `f(q | 𝔭) = 1` for every maximal `q` of `𝓞 F` whose contraction
-avoids the finite set `S`. That is weaker than "splits completely" and makes the
-leaf STRONGER, which is what the consumer below needs (it controls `f` and never
-touches `e`).
-
-**Why it is true.** Let `N` be the Galois closure of `F/k`, `G = Gal(N/k)`,
-`H = Gal(N/F)`. For `𝔭` unramified in `N` the primes of `F` above `𝔭` are the
-orbits of `⟨Frob_𝔓⟩` on `G/H`, with `f(q | 𝔭)` the orbit length; so all residue
-degrees are `1` exactly when `Frob_𝔓` lies in the normal core `⋂_g g H g⁻¹`. If
-`F ≠ k` then `H ≠ G`, so the core is a proper normal subgroup, and Chebotarev
-supplies infinitely many `𝔭` whose Frobenius class avoids it — more than the
-finitely many that `S` may exclude. Hence `H = G` and `[F : k] = 1`.
-
-**What it needs that the pin does not have.** Dedekind zeta functions, their
-simple pole at `s = 1`, and the nonvanishing of `L(1, χ)`: this is the analytic
-half of class field theory and it must be built, not cited (mathlib at this pin
-has Dirichlet's theorem on primes in arithmetic progressions, i.e. the case
-`k = ℚ`, `N` cyclotomic, but nothing over a general number field). The weaker
-"infinitely many primes do not split completely", which is all that is used here,
-is not known to have an elementary proof either.
-
-**The finiteness hypothesis is load-bearing.** Without it the statement is false
-for a trivial reason: take `S` to be everything, and the hypothesis becomes
-vacuous while `F` may be any extension. With `S` finite the hypothesis still
-speaks about infinitely many primes, since `𝓞 k` has infinitely many maximal
-ideals.
-
-**The check that would refute it**: a nontrivial finite extension `F/k` of number
-fields and a finite set `S` of primes of `𝓞 k` such that every maximal ideal of
-`𝓞 F` contracting outside `S` has residue degree `1` over `𝓞 k`. -/
-theorem finrank_eq_one_of_forall_inertiaDeg_eq_one
-    (k F : Type*) [Field k] [NumberField k] [Field F] [NumberField F] [Algebra k F]
-    (S : Set (Ideal (𝓞 k))) (hS : S.Finite)
-    (h : ∀ q : Ideal (𝓞 F), q.IsMaximal → q.under (𝓞 k) ∉ S → q.inertiaDeg (𝓞 k) = 1) :
-    Module.finrank k F = 1 :=
-  sorry
+This deletion also removes a DUPLICATED SORRY: the density leaf
+`finrank_eq_one_of_forall_inertiaDeg_eq_one` was `sorry` here while `Density.lean`
+**PROVES** it over the Dedekind-zeta endgame, so the frontier loses a leaf that
+was never open in the first place. -/
 
 end Chebotarev
 
