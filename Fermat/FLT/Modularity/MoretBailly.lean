@@ -39430,8 +39430,8 @@ theorem exists_quadraticExtension_trivial_of_isTotallyReal
     rw [hg0, map_mul, map_mul, map_inv, hmain]
     simp
 
-/-- **An odd dihedral auxiliary level representation** (sorry node, cut
-2026-07-26 — the second ARITHMETIC leaf of the representability half; no
+/-- **An odd dihedral auxiliary level representation** (PROVEN; formerly a
+sorry node, cut 2026-07-26 — the second ARITHMETIC leaf of the representability half; no
 algebraic geometry appears in it; REFUTED AS ORIGINALLY STATED and
 REPAIRED 2026-07-26, see the FALSITY AUDIT below): over a finite field
 `kp` of characteristic `3` with MORE THAN THREE ELEMENTS there is a
@@ -43447,8 +43447,8 @@ theorem exists_twistedHilbertBlumenthalModuliTwist_of_datum_of_split
 
 open CategoryTheory in
 /-- **The twisted Hilbert–Blumenthal moduli space for a GIVEN auxiliary
-datum** (sorry node, cut 2026-07-26 — the GEOMETRY half of the
-representability leaf: Rapoport §1 and Galois descent, with every
+datum** (PROVEN; formerly a sorry node, cut 2026-07-26 — the GEOMETRY half
+of the representability leaf: Rapoport §1 and Galois descent, with every
 arithmetic choice moved into the hypotheses).
 
 Given the irreducible hardly ramified `ρbar` at `ℓ ≥ 5` AND an auxiliary
@@ -47820,8 +47820,9 @@ theorem det_nTorsion_eq_neg_one_of_conj_inv {F : Type u} [Field F] [CharZero F]
   rw [he, he, hdgal x y]
   ring
 
-/-- **CONJUGATION IS NEITHER `+1` NOR `−1` ON THE `n`-TORSION, `n ≥ 3`** (sorry
-leaf, cut 2026-07-27 out of `exists_realWeierstrassCurveWithConjTorsion`).  This
+/-- **CONJUGATION IS NEITHER `+1` NOR `−1` ON THE `n`-TORSION, `n ≥ 3`** (PROVEN;
+formerly a sorry leaf, cut 2026-07-27 out of
+`exists_realWeierstrassCurveWithConjTorsion`).  This
 is the WEIL PAIRING input, and — despite appearances — it is ALGEBRAIC, not
 archimedean: it holds over any base field for any `σ` acting nontrivially on
 `μ_n`.
@@ -48706,7 +48707,8 @@ theorem exists_tensorAbelianSchemeByRingOfIntegers
 
 open scoped TensorProduct in
 open CategoryTheory in
-/-- **THE GEOMETRIC LEAF of the archimedean node, in TENSOR form** (sorry leaf,
+/-- **THE GEOMETRIC LEAF of the archimedean node, in TENSOR form** (PROVEN;
+formerly a sorry leaf,
 cut 2026-07-27 out of `exists_realAbelianSchemeWithDivisibleLevelStructure`):
 one real abelian scheme with real multiplication by `𝒪_D`, carrying ONE level
 structure over the divisible `𝒪_D`-module `(𝒪_D ⊗_ℤ ℚ/ℤ)²`.
