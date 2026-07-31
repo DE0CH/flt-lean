@@ -12727,3 +12727,74 @@ linter's suggested `omit` would have made both leaves FALSE (witness: `R = 𝒪_
 infinitely ramified, where `𝔪² = 𝔪` and the tower collapses to the residue field). When the
 linter names an instance, check the file's falsity audits before obeying it; the fix is
 `set_option linter.unusedSectionVars false in` plus a comment saying why.
+## A MODULE BEHIND A RED IMPORT IS NEVER BUILT, AND MERGE DAMAGE ACCUMULATES IN IT SILENTLY — AND THE BALANCE SCAN CAN REPORT IT CLEAN
+(2026-07-31, `flt-lean-47`, on `merger` at `1ead8a94`.) Release 27's handover
+states *"Every module except `ModularCurve/X0.lean` builds"*, and lists nine X0
+wounds repaired. That sentence is FALSE, and its falsity is structural rather
+than careless: `Modularity/Interface.lean` `public import`s `X0`, so **it has
+not been built since release 25 either** — and neither has anything else behind
+X0. A release build stops at the first failing module in dependency order, so
+"everything else builds" is a statement about what lake *reached*, never about
+what is *sound*.
+What was in there: `Interface.lean` had **41 600 lines inside one block
+comment**. A docstring at line 39911 lost its closing delimiter *and* its
+declaration in the merge that created `merger`; a stray closer 41 600 lines
+below (left by the *other* half of the same class of wound, a truncated
+pre-rename header `pow_dvd_log_valuation_of_exists_fixed_rootOfUnity_of_not_
+forall_commute_localInertia` with no signature) closed it. Everything between
+was prose to Lean.
+**THE STANDING COMMENT-BALANCE SCAN REPORTED THE FILE CLEAN**, because the two
+wounds are of opposite sign and cancel: `depth = 0`, `strays = []`. That is the
+same layering the memory note [[flt-comment-wounds-are-layered]] records, in its
+worst form — the check that is supposed to find this class is the check that
+certifies the file. The scan is still worth running (it found the wound the
+moment I merged `merger` into a `main`-based branch, because the merge broke the
+cancellation), but **a clean balance is not evidence.** What IS evidence, and
+costs one pass:
+* trace the depth AT the line of a declaration you expect to be code. If
+  `depth > 0` there, that declaration does not exist as far as Lean is
+  concerned, however ordinary it looks in an editor;
+* scan for a `theorem`/`lemma`/`def` line with NO signature after it — the
+  truncated-header shape — over comment-MASKED source;
+* and note that both shapes are invisible to `git diff`, to conflict markers, to
+  the duplicate-declaration scan and to `verify_added.py`, because no
+  declaration is added, removed or renamed. Only the comment structure moved.
+Two riders, both of which cost a round here. **Do not write a comment delimiter
+inside a comment** — a repair note containing a backticked opener or closer in
+prose re-breaks the file, silently and in either direction (a backticked opener
+swallows the rest; a backticked closer ends the comment early). And when you
+delete an orphaned docstring, first check whether the declaration it documents
+was DECLINED rather than lost: here the leaf
+`isUnramifiedAt_muSubfield_of_localInertia_at_p` really is gone on purpose,
+because its consumer was proven outright by a rival cut, so restoring it would
+have been free-floating. Keep the prose as a plain block comment with a header
+saying which, and say why.
+## "THE CHECK THAT WOULD REFUTE THIS BLOCK" IS THE MOST VALUABLE LINE IN A DOCSTRING, AND IT IS THE ONE NOBODY RUNS
+(Same task.) This development writes a refuting check at the end of most audits.
+They are cheap by construction — the author chose them to be. They still go
+unrun for weeks, and the audit hardens into a fact in the meantime.
+`pow_dvd_log_valuation_of_exists_fixed_rootOfUnity_of_not_forall_commutator_fixed`
+carried, in two places and in bold, *"NO declaration in this tree produces a
+`Γ ℚᵖᵥ`-equivariant INJECTION `E_q[p ^ n] ↪ (σ₀.toLocal 𝔭ᵥ).Space"* and priced
+the repair as *"a seven-declaration surgery across six other owners' proven
+assemblies"*. Its own refuting check was *"find a declaration in this tree that
+already produces the equivariant injection named above"*. Running it takes one
+grep: `exists_toricTateModuleTower_of_weightTwoEigenform_pNew`, the terminal
+automorphic leaf **the audit itself names as where the datum would have to be
+born**, returns a toric `Module.Basis (Fin 2) R V` with its toric relation and a
+coherent tower of `p`-power torsion points of `E_q` — everything the injection
+is assembled from — and has done since it was restated on 2026-07-28.
+The audit was not careless; it was **reading its own stale sentence.** In the
+same bullet it observes that the automorphic leaf had MOVED ("the cocycle node
+named here having become a PROVEN assembly in the meantime") and then does not
+re-read the new leaf's CONCLUSION. So the general rule is sharper than "audits
+go stale": **an audit that notices a declaration was restated and keeps its
+verdict is the highest-risk kind there is**, because the noticing reads as
+diligence.
+**And the corrected verdict was not "the surgery is cheap".** The seven-count is
+right, for a different and much better reason: every intermediate assembly
+re-obtains `q` under an `∃` and forgets which one it was, so the injection
+cannot be fetched by a second call at the consumer and has to travel BESIDE `q`
+as a conjunct. That is the witness-forgetting-`∃` defect deciding a real cost.
+Correcting a blocker's REASON is worth as much as removing it: a blocker with
+the wrong reason attracts repairs that cannot work.
