@@ -577,6 +577,44 @@ python script run from that directory executed an unrelated group-theory
 computation at import time and printed its output ahead of the real answer.
 Renamed. Watch for scratch filenames that collide with stdlib modules.
 
+**THE RELEASE-WINDOW CHECK HAS MOVED TO THE PROVER (2026-07-31), because the loop
+cannot do it.**
+
+Everything above about the release window is addressed to a dispatcher that can run
+`own.py` and `leafstat.py` before sending anybody. Since 2026-07-30 the dispatcher is
+`flt-loop.py`, a Python state machine: it builds its task list from `main` and has no
+way to look at `merger`. `main` IS the frontier as of the last release, and `merger`
+runs hours ahead of it. So the check is now the PROVER's, and it is the prover's FIRST
+action — before reading the target, before seeding `.lake`:
+
+    git show merger:<the file> > /tmp/x.lean     # then READ the declaration
+
+Measured cost of skipping it, 2026-07-31, `flt-lean-300`: dispatched at three leaves in
+`HilbertModularity.lean`, **all three already resolved on `merger`** (release 24, while
+the worktree sat at release 23), and the session went into independently rebuilding one
+of them. The rebuilt cut turned out to be architecturally identical to the landed one —
+same three helper lemmas, and the same non-obvious extra hypothesis, that `ℓ` must be a
+NONZERODIVISOR in the coefficient ring (without it `ZMod 4 → ℤ_[2]` refutes the
+statement). Two agents converging independently on the same repair is reassuring about
+the mathematics and is still one worker-cycle thrown away.
+
+**Grep the NAME and you will conclude the opposite of the truth.** All three names were
+present on `merger`. Two carried full proofs. The third had been RESTATED — same name,
+different conclusion (`exists_hilbertAuxHeckeModuleData` now PRODUCES `diamond` and
+exports `ker diamond = 𝔟_ex`, the repair its own §5a audit demanded) — so a prover
+working from `main` would have spent the session proving a statement that has been
+withdrawn, and the `sorry` on `main` would have looked like ordinary open work the whole
+time. The check must read the DECLARATION, not match its name; and a docstring's own
+"DO NOT DISPATCH A PROVER HERE YET" is evidence about the version you are reading, not
+about the frontier.
+
+Corollary for what you commit: when `merger` already closes your target, **decline your
+own payload** rather than carrying a rival cut. The tie-break is "fewer OPEN leaves
+after", and a landed complete proof beats a fresh decomposition every time — carrying
+mine would have traded a closed leaf for an open one plus a large conflict. Say so in
+the sentinel's `to_merger`, so that an empty or tooling-only diff is not read as the
+dropped-merge bug of class six.
+
 ## SEED BEFORE SPAWNING THE NEXT MERGE WORKER — the snapshot comes from the staging `.lake`
 
 (2026-07-29, orchestrator error.) `flt-cycle.py release` seeds worktree artifacts by rsyncing
