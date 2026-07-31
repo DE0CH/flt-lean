@@ -68,22 +68,22 @@ on `19a1` instead would run in the SAME field but with `ℤ[ρ]` of index `152`
 this file descends on `19a3` and transports by the isogeny rather than the other
 way round.
 
-## THE ONE LEAF (recut 2026-07-31)
+## THE ONE LEAF (recut twice on 2026-07-31)
 
-`MazurX0Nineteen.exists_halving_witness` — the `2`-descent proper, in
-coordinates: from `n² = p³ + 4p²e² + 16pe⁴ + 16e⁶` with `gcd(p, e) = 1`, `e > 0`,
-
-    ∃ a b c : ℤ,  b² + 2ac − 4bc = 0 ∧ p = a² − 4bc + 4c² ∧ e² = −ab + 4bc − 3c²,
-
-which says exactly that `β = p − 2e²θ` is a SQUARE in `ℤ[θ]`,
-`θ³ + 2θ² + 4θ + 2 = 0`.  It is the ONLY place algebraic number theory enters,
-and it is the level-`19` transcription of `MazurLevel11.exists_halving_witness`
-(PROVEN there).
+`MazurX0Nineteen.descent_unit_square` — the valuation bookkeeping in
+`ℤ[θ]`, `θ³ + 2θ² + 4θ + 2 = 0`: the descent image `β = p − 2θe²` is one of
+`16` explicit units times a square.  It is the ONLY place algebraic number
+theory enters, and it is the level-`19` transcription of
+`MazurLevel11.descent_unit_square` (PROVEN there over `𝓞_K = ℤ[s]` with
+`h(K) = 1`, and units mod squares).
 
 **`integral_leaf` is PROVEN over it** (2026-07-31), together with the whole
-elementary half of the descent, which is now in this file:
+elementary half of the descent AND both prunings, which are now in this file:
 
-    exists_halving_witness  (the ℤ[θ] leaf)
+    descent_unit_square     (the ℤ[θ] leaf)
+      → descent_square_class      (norm pruning: 16 classes → {1, ε})
+      → epsilon_class_impossible  (local condition: ε dies, pure parity mod 4)
+      → exists_halving_witness    (β = δ², in coordinates)
       → halving_norm_relation / halving_x_relation / halving_relation
           (eliminate the halving coordinates m, c)
       → height_drop_or_small
@@ -288,7 +288,20 @@ and `nfbasis` is `[1, θ, θ²]`, so the index is `1`; `h(K) = 1`; signature
 `−76 = −2²·19` is NOT squarefree, so — exactly as at level `11` — "the
 discriminants agree, hence index `1`" is a CONCLUSION and not an input; the
 minimal polynomial IS Eisenstein at `2`, which kills the `2`-part, and `19` must
-be killed separately.
+be killed separately.  The trace, needed for the discriminant computation inside
+`ℤ[θ]`, is `Tr(a + bθ + cθ²) = 3a − 2b − 4c`.
+
+THE UNIT OBSTRUCTION, which is the step level `11`'s docstring flags as the one
+that is easy to get wrong.  `N(ε) = +1` here (level `11` has `−1`), and in
+NEITHER case does the norm alone force the exponent parity — what is needed is a
+quadratic-residue obstruction at a degree-one prime, and level `19` has one at
+**`q = 29`**: `X³ + 2X² + 4X + 2 ≡ 0 (mod 29)` at `θ ↦ 18`, so
+`φ(a + bθ + cθ²) = a + 18b + 5c (mod 29)` is a ring map (`18² ≡ 5`), and
+`φ(ε) = 19`, of which neither `19` nor `−19 = 10` is a square mod `29`.  This is
+the analogue of `MazurLevel11.phi13`; the search that found it ran over primes
+`q ≡ 1 (mod 4)` — that congruence is what makes `−1` a square, so that ONE
+non-residue check rules out both `ε` and `−ε` — and `29, 37, 41, 53, 89, …` all
+work.
 
 **ENLARGING THE LIST IS SAFE**; shrinking it is not.  A successor who finds the
 bookkeeping easier with more classes may add any units to the list: the two
@@ -415,8 +428,11 @@ theorem epsilon_class_impossible {p e a b c : ℤ} (hcop : IsCoprime p e) :
 PROVEN 2026-07-31 over the single leaf `descent_unit_square`.
 -/
 
-/-- **THE `2`-DESCENT AT LEVEL `19`** (sorry leaf, cut 2026-07-31 out of
-`integral_leaf`): the descent image `β = p − 2e²θ` of a coprime integral point of
+/-- **THE `2`-DESCENT AT LEVEL `19`** (PROVEN 2026-07-31 over
+`descent_square_class` and `epsilon_class_impossible`, hence over the single leaf
+`descent_unit_square`; it was itself a sorry leaf for a few hours the same day,
+cut out of `integral_leaf` before being decomposed one level further): the
+descent image `β = p − 2e²θ` of a coprime integral point of
 `W² = U³ + 4U² + 16U + 16` is a SQUARE in `ℤ[θ]`, `θ³ + 2θ² + 4θ + 2 = 0`, and
 this is that fact written out in coordinates.
 
@@ -436,11 +452,14 @@ on the whole derivation: `(a, b, c) = (2, 2, 1)` gives `4 + 4 − 8 = 0`,
 `p = 4 − 8 + 4 = 0` and `e² = −4 + 8 − 3 = 1`, i.e. `(p, e) = (0, 1)` — and
 `δ = θ² + 2θ + 2` is the square root recorded in the module docstring,
 `−2θ = (θ² + 2θ + 2)²`.  Since `(0, 1)` is the ONLY solution of the hypotheses
-(exhaustive search, `|p| ≤ 6000`, `1 ≤ e ≤ 300`), this leaf is TRUE as stated;
-what it costs is a proof, which is the `2`-descent itself.
+(exhaustive search, `|p| ≤ 6000`, `1 ≤ e ≤ 300`), this statement is TRUE as
+stated independently of the descent that proves it.
 
-WHAT A PROOF NEEDS, and why it is exactly `MazurLevel11.exists_halving_witness`
-with new constants — that declaration is PROVEN and is the template:
+WHAT THE PROOF NEEDED, and what of it is now DONE.  The bullets below were
+written when this was a leaf; the first three items are now discharged HERE — the
+`{1, ε}` reduction is `descent_square_class` and the `ε`-exclusion is
+`epsilon_class_impossible`, both PROVEN above — and only the LAST bullet, the
+valuation bookkeeping, survives, as `descent_unit_square`.
 
 * `ℤ[θ]` is the FULL ring of integers of the cubic field of discriminant `−76`
   (index `1`: `−76/f²` would have to be `−19` for `f = 2`, and `−19` is not a
@@ -458,9 +477,10 @@ with new constants — that declaration is PROVEN and is the template:
   `19 = 𝔮₁𝔮₂²` with both residue degrees `1` (level `11`:
   `Cubic.ZS.descent_zs`).
 
-A successor should follow `MordellWeil.lean` lines `463`–`2104`
-(`MazurLevel11.Cubic.ZS` through `exists_halving_witness`) declaration by
-declaration; the ONLY things that change are the constants. -/
+A successor should follow `MordellWeil.lean` lines `659`–`1852`
+(`MazurLevel11.Cubic.ZS` through `descent_unit_square`) declaration by
+declaration; the ONLY things that change are the constants, which are all
+gathered in `descent_unit_square`'s docstring. -/
 theorem exists_halving_witness {p e n : ℤ} (he : 0 < e) (hcop : IsCoprime p e)
     (h : n ^ 2 = p ^ 3 + 4 * p ^ 2 * e ^ 2 + 16 * p * e ^ 4 + 16 * e ^ 6) :
     ∃ a b c : ℤ, b ^ 2 + 2 * a * c - 4 * b * c = 0 ∧
