@@ -9449,6 +9449,29 @@ noncomputable def relPointWeierstrassEquiv {ℓ : ℕ} [Fact (Nat.Prime ℓ)]
       (coordinateRingHomEquivEquation W)).optionCongr.trans
         (weierstrassPointEquivOption W))
 
+/-- **The dictionary carries the zero section to the point at infinity** (PROVEN,
+and by construction).
+
+`relPointOfOption` sends `none` to the zero section, so the inverse of the splitting
+sends the zero section to `none`, and both remaining steps fix `none`.
+
+This is the base case of any rigidity argument for the leaf below — it is what says
+the two group laws being compared share an IDENTITY, without which the leaf would be
+false rather than merely open — so it is proven here rather than left inside it. -/
+theorem relPointWeierstrassEquiv_zero {ℓ : ℕ} [Fact (Nat.Prime ℓ)]
+    (W : WeierstrassCurve (ZMod ℓ)) [W.IsElliptic]
+    {A : Scheme.{0}} {f : A ⟶ SpecF ℓ} (ab : AbelianSchemeStruct f)
+    (ι : Spec (CommRingCat.of W.toAffine.CoordinateRing) ⟶ A) [IsOpenImmersion ι]
+    (hcomm : ι ≫ f = Spec.map (CommRingCat.ofHom
+      (algebraMap (ZMod ℓ) W.toAffine.CoordinateRing)))
+    (hrange : Set.range ι.base = (Set.range (ab.zero (𝟙 (SpecF ℓ))).1.base)ᶜ) :
+    relPointWeierstrassEquiv W ab ι hcomm hrange (ab.zero (𝟙 (SpecF ℓ)))
+      = WeierstrassCurve.Affine.Point.zero := by
+  have h : (relPointOptionEquiv ι hcomm (ab.zero (𝟙 (SpecF ℓ))) hrange).symm
+      (ab.zero (𝟙 (SpecF ℓ))) = none := (Equiv.symm_apply_eq _).mpr rfl
+  simp only [relPointWeierstrassEquiv, Equiv.trans_apply, h]
+  rfl
+
 /-- **RIGIDITY: the Weierstrass dictionary is ADDITIVE** (sorry leaf, NEW
 2026-07-31) — all that is left of
 `exists_relPointAddEquiv_of_weierstrassModel_finiteField`, which is PROVEN over
@@ -10608,9 +10631,11 @@ non-normal or non-reduced base the extension theorem fails — the
 valuative criterion is applied at `Spec 𝒪_{X,x}`, legitimate exactly
 because that is a valuation ring, which over a one-dimensional base fails
 at the closed points of the special fibre. -/
-theorem exists_inverse_of_smoothCompactification {ℓ : ℕ} (hℓ : ℓ.Prime)
-    {X₁ Y₁ X₂ Y₂ : Scheme.{0}} {strX₁ : X₁ ⟶ SpecF ℓ} {strY₁ : Y₁ ⟶ SpecF ℓ}
-    {jY₁ : Y₁ ⟶ X₁} {strX₂ : X₂ ⟶ SpecF ℓ} {strY₂ : Y₂ ⟶ SpecF ℓ} {jY₂ : Y₂ ⟶ X₂}
+theorem exists_inverse_of_smoothCompactification_field {K : Type} [Field K]
+    {X₁ Y₁ X₂ Y₂ : Scheme.{0}} {strX₁ : X₁ ⟶ Spec (CommRingCat.of K)}
+    {strY₁ : Y₁ ⟶ Spec (CommRingCat.of K)} {jY₁ : Y₁ ⟶ X₁}
+    {strX₂ : X₂ ⟶ Spec (CommRingCat.of K)} {strY₂ : Y₂ ⟶ Spec (CommRingCat.of K)}
+    {jY₂ : Y₂ ⟶ X₂}
     (hc₁ : jY₁ ≫ strX₁ = strY₁) (hc₂ : jY₂ ≫ strX₂ = strY₂)
     (ho₁ : IsOpenImmersion jY₁) (ho₂ : IsOpenImmersion jY₂)
     (hp₁ : IsProper strX₁) (hp₂ : IsProper strX₂)
@@ -10622,7 +10647,6 @@ theorem exists_inverse_of_smoothCompactification {ℓ : ℕ} (hℓ : ℓ.Prime)
     ∃ (w : X₁ ⟶ X₂) (w' : X₂ ⟶ X₁),
       w ≫ strX₂ = strX₁ ∧ w' ≫ strX₁ = strX₂ ∧
       w ≫ w' = 𝟙 X₁ ∧ w' ≫ w = 𝟙 X₂ ∧ jY₁ ≫ w = u ≫ jY₂ := by
-  haveI : Fact ℓ.Prime := ⟨hℓ⟩
   haveI := ho₁; haveI := ho₂; haveI := hp₁; haveI := hp₂; haveI := hs₁; haveI := hs₂
   obtain ⟨w, ⟨hw, hjw⟩, -⟩ :=
     _root_.AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve
@@ -10643,6 +10667,35 @@ theorem exists_inverse_of_smoothCompactification {ℓ : ℕ} (hℓ : ℓ.Prime)
   · refine (huniq₂ (w' ≫ w) ⟨by rw [Category.assoc, hw, hw'], ?_⟩).trans
       (huniq₂ (𝟙 X₂) ⟨Category.id_comp _, Category.comp_id _⟩).symm
     rw [← Category.assoc, hjw', Category.assoc, hjw, ← Category.assoc, hvu, Category.id_comp]
+
+/-- **The `𝔽_ℓ` instance of the theorem above** (PROVEN, by instantiation).
+
+**The base was freed on 2026-07-31** and the general statement is
+`exists_inverse_of_smoothCompactification_field` immediately above.  Nothing in the
+argument was `𝔽_ℓ`-specific — `exists_unique_extension_of_isSmoothProperCurve`, the
+only thing it cites, is already stated over `Spec (CommRingCat.of K)` for an arbitrary
+FIELD `K`, and `hℓ` was consumed for nothing but the `Field (ZMod ℓ)` instance, which
+is what it still supplies here.  This wrapper is kept so that the two existing callers
+are untouched; the `ℚ` instance is what
+`exists_x1SmoothProperCurveModel` below needs, and the paragraph in the docstring above
+about `hℓ` "wanting a FIELD base" is exactly right and is now what the statement says. -/
+theorem exists_inverse_of_smoothCompactification {ℓ : ℕ} (hℓ : ℓ.Prime)
+    {X₁ Y₁ X₂ Y₂ : Scheme.{0}} {strX₁ : X₁ ⟶ SpecF ℓ} {strY₁ : Y₁ ⟶ SpecF ℓ}
+    {jY₁ : Y₁ ⟶ X₁} {strX₂ : X₂ ⟶ SpecF ℓ} {strY₂ : Y₂ ⟶ SpecF ℓ} {jY₂ : Y₂ ⟶ X₂}
+    (hc₁ : jY₁ ≫ strX₁ = strY₁) (hc₂ : jY₂ ≫ strX₂ = strY₂)
+    (ho₁ : IsOpenImmersion jY₁) (ho₂ : IsOpenImmersion jY₂)
+    (hp₁ : IsProper strX₁) (hp₂ : IsProper strX₂)
+    (hs₁ : SmoothOfRelativeDimension 1 strX₁) (hs₂ : SmoothOfRelativeDimension 1 strX₂)
+    (hg₁ : GeometricallyConnected strX₁) (hg₂ : GeometricallyConnected strX₂)
+    (hf₁ : (Set.range jY₁.base)ᶜ.Finite) (hf₂ : (Set.range jY₂.base)ᶜ.Finite)
+    {u : Y₁ ⟶ Y₂} {v : Y₂ ⟶ Y₁} (hu : u ≫ strY₂ = strY₁) (hv : v ≫ strY₁ = strY₂)
+    (huv : u ≫ v = 𝟙 Y₁) (hvu : v ≫ u = 𝟙 Y₂) :
+    ∃ (w : X₁ ⟶ X₂) (w' : X₂ ⟶ X₁),
+      w ≫ strX₂ = strX₁ ∧ w' ≫ strX₁ = strX₂ ∧
+      w ≫ w' = 𝟙 X₁ ∧ w' ≫ w = 𝟙 X₂ ∧ jY₁ ≫ w = u ≫ jY₂ := by
+  haveI : Fact ℓ.Prime := ⟨hℓ⟩
+  exact exists_inverse_of_smoothCompactification_field hc₁ hc₂ ho₁ ho₂ hp₁ hp₂ hs₁ hs₂
+    hg₁ hg₂ hf₁ hf₂ hu hv huv hvu
 
 /-- **`X_1(N)` over `𝔽_ℓ` is unique up to isomorphism, hence its rational
 points up to bijection** (PROVEN).
@@ -10718,10 +10771,37 @@ still PROVEN over TWO leaves, and they are now
 the first of the two got strictly weaker.
 -/
 
-/-- **Deligne–Rapoport: `X_1(N)` has a SMOOTH PROPER MODEL over `ℤ_(ℓ)`
-whose GENERIC FIBRE is the given `X`** (sorry leaf, NEW 2026-07-30) — the
-whole of the modular content of `exists_x1CurveReductionModel` below, which
-is now PROVEN over this leaf alone.
+/-- **Deligne–Rapoport: `X_1(N)` has a SMOOTH PROPER MODEL over `ℤ_(ℓ)`, whose
+GENERIC FIBRE is SOME `X_1(N)/ℚ`** (sorry leaf, NEW 2026-07-31) — all of the
+modular content of `exists_x1SmoothProperCurveModel` immediately below, which is
+now PROVEN over this leaf alone.
+
+**Restated 2026-07-31, and this is the whole change at this node: the generic
+fibre is no longer required to be the `X` THE CALLER HANDED IN.**  It is
+existentially quantified, together with its own `IsX1Compactification`, and the
+comparison with the caller's `X` has moved DOWN into the assembly below, where it
+is discharged rather than promised:
+
+* `IsCoarseModuliY1` is an INITIALITY property, so `IsCoarseModuliY1.exists_inverse`
+  gives `Y₀ ≅ Y` over `ℚ` — PROVEN, and base-generic already;
+* a smooth curve over a FIELD has a unique smooth proper compactification, so that
+  isomorphism extends — `exists_inverse_of_smoothCompactification_field`, PROVEN,
+  and whose base was freed from `𝔽_ℓ` to an arbitrary field on the same day for
+  exactly this call;
+* `IsFibreIdent.congrFibre` transports the fibre identification along it.
+
+The count is unchanged, one `sorry` for one `sorry`, and the survivor is strictly
+smaller: a producer no longer has to recognise the caller's curve, only to build
+the model and say what its own generic fibre is — which it knows by construction.
+This is `X0.lean`'s shape, where `exists_x0IntegralCompactification` produces the
+model with an `IsX0Compactification` on its own generic fibre and
+`exists_x0CompactificationModel` does the comparison; the `Γ₁` side was still
+carrying the comparison inside the leaf.
+
+`hX` is kept, and is not now needed for the CONCLUSION to be true — `X_1(N)` has a
+smooth proper model over `ℤ_(ℓ)` for `ℓ ∤ N` unconditionally — but it is what a
+producer will actually use to know that the coarse space it builds over `ℤ_(ℓ)` has
+the right generic fibre, and dropping it would strengthen the leaf for no gain.
 
 TRUE, and classical: Deligne–Rapoport Thm. VI.6.9, or Katz–Mazur Thm. 5.1.1
 plus Cor. 6.7.2.  For `ℓ ∤ N` the level structure is étale over the base,
@@ -10795,13 +10875,51 @@ model with an `IsX0Compactification` at some other level `N'` is dead —
 `X_1(N)` is not `X_0(N')` for any `N'` in the range that matters (at
 `N = 25`, `X_0(25)` has genus `0` against `X_1(25)`'s `12`), and `N' = 0`
 is refuted by `isEmpty_of_gamma0Datum_zero`. -/
-theorem exists_x1SmoothProperCurveModel (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
+theorem exists_x1IntegralSmoothProperModel (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
     (R : Subring ℚ) (toF : R →+* ZMod ℓ) (_hbase : IsReductionBase ℓ R toF)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (_hX : IsX1Compactification N strX strY jY) :
-    ∃ (XZ : Scheme.{0}) (xstr : XZ ⟶ SpecLoc R),
-      IsSmoothProperCurve xstr ∧ Nonempty (IsFibreIdent (SpecLoc.generic R) xstr strX) :=
+    ∃ (XZ X₀ Y₀ : Scheme.{0}) (xstr : XZ ⟶ SpecLoc R) (strX₀ : X₀ ⟶ SpecQ)
+      (strY₀ : Y₀ ⟶ SpecQ) (j₀ : Y₀ ⟶ X₀) (_h₀ : IsX1Compactification N strX₀ strY₀ j₀),
+      IsSmoothProperCurve xstr ∧ Nonempty (IsFibreIdent (SpecLoc.generic R) xstr strX₀) :=
   sorry
+
+/-- **Deligne–Rapoport: `X_1(N)` has a SMOOTH PROPER MODEL over `ℤ_(ℓ)` whose
+GENERIC FIBRE is the given `X`** (**PROVEN 2026-07-31** over the single strictly
+smaller leaf `exists_x1IntegralSmoothProperModel` immediately above; a `sorry`
+leaf from 2026-07-30 until then) — the whole of the modular content of
+`exists_x1CurveReductionModel` below, which is PROVEN over this node alone.
+
+**The statement is UNCHANGED** apart from the binders losing their underscores,
+so `exists_x1CurveReductionModel` below calls it exactly as before.  What changed
+is that the comparison of the model's generic fibre with the caller's `X` — the
+uniqueness of `X_1(N)` over `ℚ`, which this file has PROVEN in both halves and had
+been asking a Deligne–Rapoport specialist to redo — is carried out here.  See the
+leaf's docstring for the accounting; it is `X0.lean`'s
+`exists_x0CompactificationModel` step for step, and its three ingredients are the
+same two used together in `nonempty_relPointEquiv_of_isX1Compactification` above,
+plus `IsFibreIdent.congrFibre`.
+
+The isomorphism is applied in the direction `e : X ≅ X₀` with
+`e.hom ≫ strX₀ = strX`, i.e. `e.hom = w'` and `e.inv = w`; `congrFibre` then
+replaces the fibre `strX₀` by `strX` and inherits naturality verbatim. -/
+theorem exists_x1SmoothProperCurveModel (N ℓ : ℕ) (hℓ : ℓ.Prime) (hℓN : ¬ ℓ ∣ N)
+    (R : Subring ℚ) (toF : R →+* ZMod ℓ) (hbase : IsReductionBase ℓ R toF)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX1Compactification N strX strY jY) :
+    ∃ (XZ : Scheme.{0}) (xstr : XZ ⟶ SpecLoc R),
+      IsSmoothProperCurve xstr ∧ Nonempty (IsFibreIdent (SpecLoc.generic R) xstr strX) := by
+  obtain ⟨XZ, X₀, Y₀, xstr, strX₀, strY₀, j₀, h₀, hcurve, ⟨eGen⟩⟩ :=
+    exists_x1IntegralSmoothProperModel N ℓ hℓ hℓN R toF hbase hX
+  -- the model's own generic fibre and the caller's `X` are two `X_1(N)`s over `ℚ`,
+  -- hence isomorphic: `IsCoarseModuliY1` is initial, and a smooth curve over a FIELD
+  -- has a unique smooth proper compactification
+  obtain ⟨u, v, hu, hv, huv, hvu⟩ := IsCoarseModuliY1.exists_inverse h₀.coarse hX.coarse
+  obtain ⟨w, w', hw, hw', hww', hw'w, -⟩ :=
+    exists_inverse_of_smoothCompactification_field h₀.comm hX.comm h₀.isOpen hX.isOpen
+      h₀.isProper hX.isProper h₀.smooth hX.smooth h₀.connected hX.connected
+      h₀.finite_compl hX.finite_compl hu hv huv hvu
+  exact ⟨XZ, xstr, hcurve, ⟨eGen.congrFibre ⟨w', w, hw'w, hww'⟩ hw'⟩⟩
 
 /-- **Deligne–Rapoport: `X_1(N)` has GOOD REDUCTION at every `ℓ ∤ N`**
 (**PROVEN 2026-07-30** over the single strictly weaker leaf
