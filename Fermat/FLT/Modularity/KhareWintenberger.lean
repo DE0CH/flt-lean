@@ -7183,65 +7183,364 @@ theorem eventually_valuation_eq_one (x : F) (hx : x ≠ 0) :
   have hstep : w.valuation F x * w.valuation F x⁻¹ ≤ w.valuation F x * 1 := by gcongr
   rwa [hmul, mul_one] at hstep
 
+section IntegralSplitting
+
+open scoped Matrix
+open MonoidWithZeroHom IsDedekindDomain.HeightOneSpectrum
+
+/-- **The value group of the valuation on a completion at a height-one prime is the whole of
+`ℤᵐ⁰ˣ`.** The valuation is surjective (`valuedAdicCompletion_surjective`), and
+`valueGroup_eq_range` turns that into the statement that every unit of `ℤᵐ⁰` is a value. -/
+theorem valueGroup_valuedAdicCompletion_eq_top (A : Type*) [CommRing A] [IsDedekindDomain A]
+    (Kf : Type*) [Field Kf] [Algebra A Kf] [IsFractionRing A Kf] (v : HeightOneSpectrum A) :
+    MonoidWithZeroHom.valueGroup
+        (.ofClass (Valued.v : Valuation (v.adicCompletion Kf)
+          (WithZero (Multiplicative ℤ)))) = ⊤ := by
+  refine top_unique fun γ _ => ?_
+  obtain ⟨x, hx⟩ := valuedAdicCompletion_surjective Kf v (γ : WithZero (Multiplicative ℤ))
+  have hmem : (γ : WithZero (Multiplicative ℤ)) ∈
+      Units.val '' ((MonoidWithZeroHom.valueGroup
+        (.ofClass (Valued.v : Valuation (v.adicCompletion Kf)
+          (WithZero (Multiplicative ℤ))))) : Set (WithZero (Multiplicative ℤ))ˣ) := by
+    rw [valueGroup_eq_range]
+    exact ⟨⟨x, hx⟩, by simp⟩
+  obtain ⟨δ, hδ, hval⟩ := hmem
+  exact (Units.ext hval : δ = γ) ▸ hδ
+
+/-- **`𝒪_w` is a PID.** Mathlib knows that the valuation subring of a valuation with cyclic
+nontrivial value group is a discrete valuation ring
+(`Valuation.valuationSubring_isPrincipalIdealRing`), but records no instance for
+`adicCompletionIntegers`; this supplies the two missing instances from surjectivity of the
+valuation. Stated as a theorem rather than an instance so that it is switched on only inside
+the proofs that need it. -/
+theorem isPrincipalIdealRing_adicCompletionIntegers (A : Type*) [CommRing A]
+    [IsDedekindDomain A] (Kf : Type*) [Field Kf] [Algebra A Kf] [IsFractionRing A Kf]
+    (v : HeightOneSpectrum A) : IsPrincipalIdealRing (v.adicCompletionIntegers Kf) := by
+  haveI : IsCyclic (MonoidWithZeroHom.valueGroup
+      (.ofClass (Valued.v : Valuation (v.adicCompletion Kf)
+        (WithZero (Multiplicative ℤ))))) := by
+    rw [valueGroup_valuedAdicCompletion_eq_top A Kf v]; infer_instance
+  haveI : Nontrivial (MonoidWithZeroHom.valueGroup
+      (.ofClass (Valued.v : Valuation (v.adicCompletion Kf)
+        (WithZero (Multiplicative ℤ))))) := by
+    rw [valueGroup_valuedAdicCompletion_eq_top A Kf v]; infer_instance
+  exact Valuation.valuationSubring_isPrincipalIdealRing
+    (Valued.v : Valuation (v.adicCompletion Kf) (WithZero (Multiplicative ℤ)))
+
+/-- **A FINITE MULTIPLICATIVELY CLOSED SPANNING FAMILY OF `2 × 2` MATRICES OVER THE FRACTION
+FIELD OF A PID CAN BE CONJUGATED INTO THE INTEGRAL MATRICES.**
+
+This is the lattice half of "a maximal order of `M₂(K)` is conjugate to `M₂(O)`", and it is
+where the classical argument lives. Let `Λ` be the `O`-span of the family. Its FIRST COLUMNS
+span an `O`-submodule `L ⊆ K²` which is
+
+* finitely generated (a span of finitely many vectors);
+* full, because the family spans `M₂(K)` over `K` and `A ↦ A · e₀` is onto `K²`;
+* stable under the family, because `α i · (α j · e₀) = (α i α j) · e₀` and `hmul` expands
+  `α i α j` integrally.
+
+So `L` is a lattice; over a PID it is free, of rank `2` by `IsLattice.finrank_of_pi`, and its
+`O`-basis is a `K`-basis of `K²` by `Basis.extendOfIsLattice`. Reading matrices in THAT basis
+is an algebra automorphism of `M₂(K)` — concretely
+`Matrix.toLinAlgEquiv'.trans (LinearMap.toMatrixAlgEquiv eK)`, which is conjugation by the
+basis-change matrix — and it carries the family into `M₂(O)` precisely because `L` is
+stable. No maximality is used here; maximality is spent separately, by the discriminant, to
+get the REVERSE inclusion. -/
+theorem exists_algEquiv_matrix_entries_mem {O Kf : Type*} [CommRing O] [IsDomain O]
+    [IsPrincipalIdealRing O] [Field Kf] [Algebra O Kf] [IsFractionRing O Kf]
+    {κ : Type*} [Fintype κ] (α : κ → Matrix (Fin 2) (Fin 2) Kf)
+    (hspan : Submodule.span Kf (Set.range α) = ⊤)
+    (hmul : ∀ i j, ∃ s : κ → O, α i * α j = ∑ k, algebraMap O Kf (s k) • α k) :
+    ∃ Ψ : Matrix (Fin 2) (Fin 2) Kf ≃ₐ[Kf] Matrix (Fin 2) (Fin 2) Kf,
+      ∀ i p q, ∃ o : O, Ψ (α i) p q = algebraMap O Kf o := by
+  classical
+  set col : κ → (Fin 2 → Kf) := fun i p => α i p 0 with hcol
+  set L : Submodule O (Fin 2 → Kf) := Submodule.span O (Set.range col) with hL
+  set φ : Matrix (Fin 2) (Fin 2) Kf →ₗ[Kf] (Fin 2 → Kf) :=
+    { toFun := fun A p => A p 0
+      map_add' := fun _ _ => rfl
+      map_smul' := fun _ _ => rfl } with hφ
+  have hφsurj : Function.Surjective φ := fun y => ⟨Matrix.of fun p _ => y p, rfl⟩
+  haveI : Submodule.IsLattice Kf L := by
+    refine ⟨Submodule.fg_span (Set.finite_range _), top_unique ?_⟩
+    have hsub : Submodule.span Kf (Set.range col) ≤ Submodule.span Kf (L : Set (Fin 2 → Kf)) :=
+      Submodule.span_mono (by rintro _ ⟨i, rfl⟩; exact Submodule.subset_span ⟨i, rfl⟩)
+    refine le_trans ?_ hsub
+    have hrange : Set.range col = φ '' (Set.range α) := by rw [← Set.range_comp]; rfl
+    rw [hrange, Submodule.span_image, hspan, Submodule.map_top]
+    rintro y -
+    exact hφsurj y
+  have hstable : ∀ i, ∀ x ∈ L, (α i) *ᵥ x ∈ L := by
+    intro i x hx
+    have hle : L ≤ Submodule.comap (((α i).mulVecLin).restrictScalars O) L := by
+      rw [hL]
+      refine Submodule.span_le.2 ?_
+      rintro _ ⟨j, rfl⟩
+      obtain ⟨s, hs⟩ := hmul i j
+      have hcomp : (α i) *ᵥ (col j) = fun p => (α i * α j) p 0 := by
+        funext p
+        simp [Matrix.mulVec, dotProduct, Matrix.mul_apply, hcol]
+      have hkey : (α i) *ᵥ (col j) = ∑ k, s k • col k := by
+        rw [hcomp, hs]
+        funext p
+        have e1 : ((∑ k, algebraMap O Kf (s k) • α k : Matrix (Fin 2) (Fin 2) Kf)) p 0
+            = ∑ k, algebraMap O Kf (s k) * α k p 0 := by
+          simp only [Matrix.sum_apply, Matrix.smul_apply, smul_eq_mul]
+        have e2 : ((∑ k, s k • col k : Fin 2 → Kf)) p
+            = ∑ k, algebraMap O Kf (s k) * α k p 0 := by
+          rw [Finset.sum_apply]
+          refine Finset.sum_congr rfl fun k _ => ?_
+          show s k • (α k p 0) = algebraMap O Kf (s k) * α k p 0
+          rw [Algebra.smul_def]
+        rw [e1, e2]
+      show (α i) *ᵥ (col j) ∈ L
+      rw [hkey]
+      exact Submodule.sum_mem _ fun k _ => Submodule.smul_mem _ _ (Submodule.subset_span ⟨k, rfl⟩)
+    exact hle hx
+  have hcard : Fintype.card (Module.Free.ChooseBasisIndex O L) = 2 := by
+    have h := Submodule.IsLattice.finrank_of_pi Kf L
+    rw [Module.finrank_eq_card_chooseBasisIndex] at h
+    simpa using h
+  set eL2 : Module.Basis (Fin 2) O L :=
+    (Module.Free.chooseBasis O L).reindex (Fintype.equivFinOfCardEq hcard) with heL2
+  set eK : Module.Basis (Fin 2) Kf (Fin 2 → Kf) := eL2.extendOfIsLattice Kf with heK
+  have heKapp : ∀ j, eK j = ((eL2 j : L) : Fin 2 → Kf) := fun j => by
+    rw [heK, Module.Basis.extendOfIsLattice_apply]
+  have hreprmem : ∀ (y : Fin 2 → Kf), y ∈ L → ∀ p,
+      ∃ o : O, eK.repr y p = algebraMap O Kf o := by
+    intro y hy p
+    refine ⟨eL2.repr ⟨y, hy⟩ p, ?_⟩
+    have hy' : y = ∑ j, algebraMap O Kf (eL2.repr ⟨y, hy⟩ j) • eK j := by
+      have h0 : ∑ j, ((eL2.repr ⟨y, hy⟩ j • eL2 j : L) : Fin 2 → Kf) = y := by
+        have h1 := congrArg (Subtype.val) (eL2.sum_repr ⟨y, hy⟩)
+        rw [Submodule.coe_sum] at h1
+        exact h1
+      refine h0.symm.trans (Finset.sum_congr rfl fun j _ => ?_)
+      rw [heKapp j, algebraMap_smul, Submodule.coe_smul]
+    conv_lhs => rw [hy']
+    rw [Module.Basis.repr_sum_self]
+  refine ⟨Matrix.toLinAlgEquiv'.trans (LinearMap.toMatrixAlgEquiv eK), fun i p q => ?_⟩
+  have hentry : (Matrix.toLinAlgEquiv'.trans (LinearMap.toMatrixAlgEquiv eK) (α i)) p q
+      = eK.repr ((α i) *ᵥ (eK q)) p := by
+    rw [AlgEquiv.trans_apply, LinearMap.toMatrixAlgEquiv_apply, Matrix.toLinAlgEquiv'_apply]
+  rw [hentry]
+  exact hreprmem _ (heKapp q ▸ hstable i _ (eL2 q).2) p
+
+/-- **An integral linear system with UNIT determinant has an integral solution.** The matrix
+is invertible already over `O`, so `c = t ᵥ* G⁻¹` has entries in `O`. This is the exact
+shape in which the unit-discriminant certificate is spent. -/
+theorem forall_exists_of_vecMul_of_isUnit_det {O Kf : Type*} [CommRing O] [CommRing Kf]
+    [Algebra O Kf] {κ : Type*} [Fintype κ] [DecidableEq κ] (G : Matrix κ κ O)
+    (hdet : IsUnit G.det) (c : κ → Kf) (t : κ → O)
+    (heq : c ᵥ* ((algebraMap O Kf).mapMatrix G) = fun j => algebraMap O Kf (t j)) :
+    ∀ i, ∃ o : O, c i = algebraMap O Kf o := by
+  obtain ⟨u, hu⟩ := (Matrix.isUnit_iff_isUnit_det G).2 hdet
+  have hGinv : ((algebraMap O Kf).mapMatrix G) *
+      ((algebraMap O Kf).mapMatrix (↑u⁻¹ : Matrix κ κ O)) = 1 := by
+    rw [← map_mul, ← hu, u.mul_inv, map_one]
+  have hc : c = (fun j => algebraMap O Kf (t j)) ᵥ*
+      ((algebraMap O Kf).mapMatrix (↑u⁻¹ : Matrix κ κ O)) := by
+    rw [← heq, Matrix.vecMul_vecMul, hGinv, Matrix.vecMul_one]
+  intro i
+  refine ⟨(t ᵥ* (↑u⁻¹ : Matrix κ κ O)) i, ?_⟩
+  rw [hc]
+  simp [Matrix.vecMul, dotProduct, map_sum, RingHom.mapMatrix_apply]
+
 /-- **STEP 1a-vi(b′′) — MAXIMAL ORDERS IN A SPLIT QUATERNION ALGEBRA OVER A COMPLETE DVR ARE
-CONJUGATE TO `M₂(𝒪_w)`** (sorry leaf; CUT 2026-07-30, ROUND-11, out of
-`eventually_exists_integralSplitting` below, which is now a PROVEN assembly over this leaf,
+CONJUGATE TO `M₂(𝒪_w)`** (**PROVEN 2026-07-31**; CUT 2026-07-30, ROUND-11, out of
+`eventually_exists_integralSplitting` below, which is a PROVEN assembly over this leaf,
 `traceDiscr_ne_zero_of_split` and `eventually_valuation_eq_one`).
 
-ONE PLACE, ONE LATTICE, AND THE MAXIMALITY HANDED OVER. The predecessor leaf asked for the
-same conclusion at ALMOST EVERY place and left the prover to discover, on the way, both that
-the `𝒪_w`-span of `b` is an order at almost every `w` and that it is MAXIMAL at almost every
-`w`. Those two are now hypotheses at a single `w`:
+**WHAT THE PROOF IS, and why it never needed the words "maximal order".** The classical
+statement is proved in two halves that pull in opposite directions and meet exactly:
 
-* `hone` and `hstruct` say the span `Λ_w := ⊕ᵢ 𝒪_w · (1 ⊗ b i)` contains `1` and is closed
-  under multiplication, i.e. `Λ_w` IS an `𝒪_w`-order;
-* `hdisc` says the Gram determinant of the regular trace form in the basis `b` is a UNIT at
-  `w`, which is the classical maximality certificate: for orders `Λ_w ⊆ Λ'` one has
-  `disc Λ_w = [Λ' : Λ_w]² · disc Λ'`, so a unit discriminant forces index one.
+* `exists_algEquiv_matrix_entries_mem` above conjugates the `𝒪_w`-span `Λ` of the `1 ⊗ b i`
+  INTO `M₂(𝒪_w)`, using only that `Λ` is finitely generated, spans, and is closed under
+  multiplication. That is the lattice-and-PID half.
+* The unit discriminant then gives the REVERSE inclusion, WITHOUT any index formula. The
+  Gram matrix `G` of the regular trace form in the conjugated basis has entries in `𝒪_w`
+  (the basis now lies in `M₂(𝒪_w)`, which is closed under multiplication, and the regular
+  trace of an integral matrix is `2 · tr`), and `det G` is the image of `traceDiscr F D b`,
+  hence a UNIT by `hdisc`. For an `x ∈ M₂(𝒪_w)` written `x = ∑ cᵢ βᵢ`, the pairings
+  `tⱼ := tr(x βⱼ)` are integral and satisfy `c ᵥ* G = t`, so `c = t ᵥ* G⁻¹` is integral:
+  this is `forall_exists_of_vecMul_of_isUnit_det`. Unimodularity of the trace form replaces
+  "`disc Λ = [Λ' : Λ]² disc Λ'`", and the two inclusions together are the `↔`.
 
-So WHAT REMAINS is exactly one classical theorem and nothing else: **a maximal order of
-`M₂(F_w)` is conjugate to `M₂(𝒪_w)`** — it is `End_{𝒪_w}(L)` for an `𝒪_w`-lattice `L` in
-`F_w²`, `𝒪_w` is a PID so `L` is free, and a basis of `L` is the conjugating matrix.
-Composing `hsplitw` with that conjugation is `f`, and the `↔` is then the statement that the
-conjugated `f` carries `Λ_w` ONTO `M₂(𝒪_w)`, which is what `f (Λ_w) = M₂(𝒪_w)` says
-coordinate-wise (`b` is a basis, so `c` is determined by `∑ c i ⊗ b i`).
+**`hone` IS NOT USED, and that is not an oversight.** The classical route needs `1 ∈ Λ` to
+call `Λ` an ORDER; the route above never does. It needs `Λ` to be multiplicatively closed
+(for stability of the lattice `L = Λ · e₀` and for integrality of `βᵢ βⱼ`), and it needs the
+discriminant to be a unit — nothing else. The hypothesis is retained because the statement
+is fixed by its consumer and dropping it would only strengthen the leaf.
 
-MISSING MACHINERY, re-checked 2026-07-30 against this pin. `IsMaximalOrder` / `maximalOrder`
-have zero hits in all of mathlib, so the maximal-order vocabulary has to be introduced; what
-is now PRESENT and did not exist when the predecessor leaf was written is the discriminant
-side of the argument — `traceDiscr` above, with `traceDiscr_ne_zero_of_split` and
-`eventually_valuation_eq_one` — so a prover no longer needs to build a discriminant theory
-to get at the maximality, only to SPEND the certificate. The alternative Azumaya route
-(`Mathlib/Algebra/Azumaya/{Defs,Basic,Matrix}.lean`, present) is unchanged and still starts
-from more: it needs Wedderburn over the residue field plus lifting along `𝒪_w` complete.
-
-FAITHFULNESS. TRUE as stated, and the hypotheses are jointly SATISFIABLE at all but finitely
-many `w` — that is exactly what the assembly below proves, so this leaf cannot be vacuous.
-Two hypotheses are load-bearing in ways worth recording.
+FAITHFULNESS, retained from the cut. The hypotheses are jointly SATISFIABLE at all but
+finitely many `w` — that is what the assembly below proves, so this statement is not
+vacuous. Two remarks worth keeping.
 
 * `hdisc` cannot hold at a place `w ∣ 2`, and this costs nothing. The Gram matrix of the
   REGULAR trace form of `M₂(𝒪_w)` in the standard basis has entries `2 · δ`, so its
   determinant is a unit times `2⁴`; at `w ∣ 2` no basis of any order has unit discriminant.
   The assembly only ever needs `hdisc` at almost every `w`, and the places over `2` are
-  finitely many, so they are simply among the exceptions. (Using the REDUCED trace would
-  remove the factor; it is not defined in this tree, and defining it is not worth it for a
-  statement that is only ever used a.e.)
-* `hsplitw` is retained even though a prover following the route above constructs `f`
-  outright, for the reason the predecessor leaf gave: keeping it makes this leaf strictly
-  weaker than the local content it replaces, so the cut cannot have introduced a
-  falsehood. -/
+  finitely many, so they are simply among the exceptions. Note the proof above never
+  computes that `2⁴` — it only needs `det G` to be a unit and the entries of `G` to be
+  integral, so the characteristic-`2` obstruction stays where it belongs, in the caller.
+* `hsplitw` is retained even though the conclusion produces a splitting outright, for the
+  reason the predecessor leaf gave: keeping it makes this statement strictly weaker than
+  the local content it replaces, so the cut cannot have introduced a falsehood. -/
+
 theorem exists_integralSplitting_of_valuation_traceDiscr_eq_one (b : Module.Basis ι F D)
     (w : HeightOneSpectrum (𝓞 F))
     (hsplitw : Nonempty ((w.adicCompletion F) ⊗[F] D ≃ₐ[w.adicCompletion F]
       M₂(w.adicCompletion F)))
-    (hone : ∀ k, w.valuation F (b.repr 1 k) ≤ 1)
+    (_hone : ∀ k, w.valuation F (b.repr 1 k) ≤ 1)
     (hstruct : ∀ i j k, w.valuation F (b.repr (b i * b j) k) ≤ 1)
     (hdisc : w.valuation F (traceDiscr F D b) = 1) :
     ∃ f : (w.adicCompletion F) ⊗[F] D ≃ₐ[w.adicCompletion F] M₂(w.adicCompletion F),
       ∀ c : ι → w.adicCompletion F,
         ((∀ i, c i ∈ w.adicCompletionIntegers F) ↔
-          ∀ p q, (f (∑ i, c i ⊗ₜ[F] b i)) p q ∈ w.adicCompletionIntegers F) :=
-  sorry
+          ∀ p q, (f (∑ i, c i ⊗ₜ[F] b i)) p q ∈ w.adicCompletionIntegers F) := by
+  classical
+  obtain ⟨g⟩ := hsplitw
+  haveI : Module.Finite F D := Module.Finite.of_basis b
+  haveI := isPrincipalIdealRing_adicCompletionIntegers (NumberField.RingOfIntegers F) F w
+  -- a global scalar of valuation `≤ 1` is a local integer
+  have hint : ∀ x : F, w.valuation F x ≤ 1 →
+      ∃ o : w.adicCompletionIntegers F,
+        algebraMap F (w.adicCompletion F) x =
+          algebraMap (w.adicCompletionIntegers F) (w.adicCompletion F) o := by
+    intro x hx
+    refine ⟨⟨algebraMap F (w.adicCompletion F) x, ?_⟩, rfl⟩
+    rw [mem_adicCompletionIntegers]
+    show Valued.v ((x : F) : w.adicCompletion F) ≤ 1
+    rw [valuedAdicCompletion_eq_valuation']
+    exact hx
+  -- the base-changed basis, the expansion of `1 ⊗ x`, and the structure constants
+  have hbbapp : ∀ i, (Algebra.TensorProduct.basis (w.adicCompletion F) b) i
+      = (1 : w.adicCompletion F) ⊗ₜ[F] b i := fun i => by
+    rw [Algebra.TensorProduct.basis_apply]
+  have hexp : ∀ x : D, (1 : w.adicCompletion F) ⊗ₜ[F] x
+      = ∑ k, algebraMap F (w.adicCompletion F) (b.repr x k) •
+          (Algebra.TensorProduct.basis (w.adicCompletion F) b) k := by
+    intro x
+    conv_lhs => rw [← b.sum_repr x]
+    rw [TensorProduct.tmul_sum]
+    refine Finset.sum_congr rfl fun k _ => ?_
+    rw [hbbapp k, algebraMap_smul, TensorProduct.tmul_smul]
+  have hmulconst : ∀ i j, (Algebra.TensorProduct.basis (w.adicCompletion F) b) i *
+        (Algebra.TensorProduct.basis (w.adicCompletion F) b) j
+      = ∑ k, algebraMap F (w.adicCompletion F) (b.repr (b i * b j) k) •
+          (Algebra.TensorProduct.basis (w.adicCompletion F) b) k := by
+    intro i j
+    rw [hbbapp i, hbbapp j, Algebra.TensorProduct.tmul_mul_tmul, one_mul, hexp]
+  -- conjugate the `𝒪_w`-order spanned by the basis onto the integral matrices
+  have hrangeeq :
+      Set.range (fun i => g ((Algebra.TensorProduct.basis (w.adicCompletion F) b) i))
+        = Set.range ((Algebra.TensorProduct.basis (w.adicCompletion F) b).map
+          g.toLinearEquiv) := by
+    congr 1
+  have hspan : Submodule.span (w.adicCompletion F)
+      (Set.range fun i => g ((Algebra.TensorProduct.basis (w.adicCompletion F) b) i)) = ⊤ := by
+    rw [hrangeeq]
+    exact Module.Basis.span_eq _
+  have hmulα : ∀ i j, ∃ s : ι → w.adicCompletionIntegers F,
+      g ((Algebra.TensorProduct.basis (w.adicCompletion F) b) i) *
+          g ((Algebra.TensorProduct.basis (w.adicCompletion F) b) j)
+        = ∑ k, algebraMap (w.adicCompletionIntegers F) (w.adicCompletion F) (s k) •
+            g ((Algebra.TensorProduct.basis (w.adicCompletion F) b) k) := by
+    intro i j
+    choose s hs using fun k => hint (b.repr (b i * b j) k) (hstruct i j k)
+    refine ⟨s, ?_⟩
+    rw [← map_mul, hmulconst i j, map_sum]
+    exact Finset.sum_congr rfl fun k _ => by rw [map_smul, hs k]
+  obtain ⟨Ψ, hΨ⟩ := exists_algEquiv_matrix_entries_mem _ hspan hmulα
+  refine ⟨g.trans Ψ, ?_⟩
+  have hN : ∀ i p q, ((g.trans Ψ) ((Algebra.TensorProduct.basis (w.adicCompletion F) b) i)) p q
+      ∈ w.adicCompletionIntegers F := by
+    intro i p q
+    obtain ⟨o, ho⟩ := hΨ i p q
+    rw [AlgEquiv.trans_apply, ho]
+    exact o.2
+  -- the Gram matrix of the regular trace form in the conjugated basis
+  have htracemem : ∀ X Y : M₂(w.adicCompletion F),
+      (∀ p q, X p q ∈ w.adicCompletionIntegers F) →
+      (∀ p q, Y p q ∈ w.adicCompletionIntegers F) →
+      mulTraceForm (w.adicCompletion F) (M₂(w.adicCompletion F)) X Y
+        ∈ w.adicCompletionIntegers F := by
+    intro X Y hX hY
+    rw [mulTraceForm_apply, regTrace_apply, trace_mulLeft_matrix, Matrix.trace]
+    refine mul_mem ?_ (sum_mem fun p _ => ?_)
+    · exact natCast_mem _ (Fintype.card (Fin 2))
+    · rw [Matrix.diag_apply, Matrix.mul_apply]
+      exact sum_mem fun r _ => mul_mem (hX p r) (hY r p)
+  set G : Matrix ι ι (w.adicCompletion F) :=
+    LinearMap.BilinForm.toMatrix (Algebra.TensorProduct.basis (w.adicCompletion F) b)
+      (mulTraceForm (w.adicCompletion F) ((w.adicCompletion F) ⊗[F] D)) with hGdef
+  have hGapp : ∀ i j, G i j = mulTraceForm (w.adicCompletion F) (M₂(w.adicCompletion F))
+      ((g.trans Ψ) ((Algebra.TensorProduct.basis (w.adicCompletion F) b) i))
+      ((g.trans Ψ) ((Algebra.TensorProduct.basis (w.adicCompletion F) b) j)) := by
+    intro i j
+    rw [hGdef, LinearMap.BilinForm.toMatrix_apply]
+    exact (mulTraceForm_algEquiv (g.trans Ψ) _ _).symm
+  have hGmem : ∀ i j, G i j ∈ w.adicCompletionIntegers F := fun i j => by
+    rw [hGapp i j]; exact htracemem _ _ (hN i) (hN j)
+  have hGdet : G.det = algebraMap F (w.adicCompletion F) (traceDiscr F D b) := by
+    rw [hGdef, toMatrix_mulTraceForm_tensor F (w.adicCompletion F) D b, ← RingHom.map_det,
+      ← traceDiscr_eq]
+  -- as a matrix over `𝒪_w`, the Gram matrix has UNIT determinant
+  set G' : Matrix ι ι (w.adicCompletionIntegers F) := fun i j => ⟨G i j, hGmem i j⟩ with hG'def
+  have hG'map : (algebraMap (w.adicCompletionIntegers F)
+      (w.adicCompletion F)).mapMatrix G' = G := by
+    ext i j
+    rfl
+  have hG'det : IsUnit G'.det := by
+    rw [adicCompletionIntegers.isUnit_iff_valued_eq_one]
+    have h1 : (G'.det : w.adicCompletion F) = G.det := by
+      conv_rhs => rw [← hG'map]
+      rw [← RingHom.map_det]
+      rfl
+    rw [show (G'.det).1 = (G'.det : w.adicCompletion F) from rfl, h1, hGdet]
+    show Valued.v ((traceDiscr F D b : F) : w.adicCompletion F) = 1
+    rw [valuedAdicCompletion_eq_valuation']
+    exact hdisc
+  -- expand the image of an arbitrary coordinate vector
+  intro c
+  have hXeq : (g.trans Ψ) (∑ i, c i ⊗ₜ[F] b i)
+      = ∑ i, c i • ((g.trans Ψ) ((Algebra.TensorProduct.basis (w.adicCompletion F) b) i)) := by
+    have hsum : (∑ i, c i ⊗ₜ[F] b i)
+        = ∑ i, c i • (Algebra.TensorProduct.basis (w.adicCompletion F) b) i :=
+      Finset.sum_congr rfl fun i _ => by
+        rw [hbbapp i, TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+    rw [hsum, map_sum]
+    exact Finset.sum_congr rfl fun i _ => map_smul _ _ _
+  have hXentry : ∀ p q, ((g.trans Ψ) (∑ i, c i ⊗ₜ[F] b i)) p q
+      = ∑ i, c i * ((g.trans Ψ)
+          ((Algebra.TensorProduct.basis (w.adicCompletion F) b) i)) p q := by
+    intro p q
+    rw [hXeq]
+    simp only [Matrix.sum_apply, Matrix.smul_apply, smul_eq_mul]
+  constructor
+  · intro hc p q
+    rw [hXentry p q]
+    exact sum_mem fun i _ => mul_mem (hc i) (hN i p q)
+  · intro hcX
+    have hteq : ∀ j, mulTraceForm (w.adicCompletion F) (M₂(w.adicCompletion F))
+        ((g.trans Ψ) (∑ i, c i ⊗ₜ[F] b i))
+        ((g.trans Ψ) ((Algebra.TensorProduct.basis (w.adicCompletion F) b) j))
+        = ∑ i, c i * G i j := by
+      intro j
+      rw [hXeq, map_sum, LinearMap.sum_apply]
+      exact Finset.sum_congr rfl fun i _ => by
+        rw [map_smul, LinearMap.smul_apply, smul_eq_mul, hGapp i j]
+    have htmem : ∀ j, mulTraceForm (w.adicCompletion F) (M₂(w.adicCompletion F))
+        ((g.trans Ψ) (∑ i, c i ⊗ₜ[F] b i))
+        ((g.trans Ψ) ((Algebra.TensorProduct.basis (w.adicCompletion F) b) j))
+        ∈ w.adicCompletionIntegers F := fun j => htracemem _ _ hcX (hN j)
+    intro i
+    obtain ⟨o, ho⟩ := forall_exists_of_vecMul_of_isUnit_det G' hG'det c
+      (fun j => ⟨_, htmem j⟩) (by funext j; rw [hG'map]; exact (hteq j).symm) i
+    rw [ho]
+    exact o.2
+
+end IntegralSplitting
 
 /-- **STEP 1a-vi(b′) — THE LOCAL ARITHMETIC of the rigidification leaf**
 (**PROVEN 2026-07-30, ROUND-11**; cut 2026-07-30, ROUND-10, out of
