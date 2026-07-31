@@ -171,6 +171,13 @@ public import Mathlib.NumberTheory.ModularForms.BoundedAtCusp
 -- `EllipticScheme` import, which this module does not inherit.
 import Fermat.FLT.Mathlib.AlgebraicGeometry.CurveAffineComplement
 
+-- `Fermat.InvariantTensorRegular.isRegularRing_tensorProduct_of_isInvariant`: the base
+-- change of an invariant ring along an ALGEBRAIC field extension is regular, over the
+-- single leaf `isRegularRing_of_isInvariant_of_smooth`.  Used ONLY inside the proof body
+-- of `isRegularRing_tensorAlgebraicClosure_of_isInvariant` below, so the import is
+-- deliberately NON-public: nothing in this file's signatures mentions it.
+import Fermat.FLT.Mathlib.RingTheory.InvariantTensorRegular
+
 @[expose] public section
 
 universe u
@@ -7488,16 +7495,57 @@ is available downstream at the cost of one extra leaf in the consumer.
 **Where this belongs.**  `Fermat/FLT/Mathlib/RingTheory/InvariantCoarseRing.lean`,
 next to `isRegularRing_of_isInvariant_of_isReduced`, which is the lemma step 5
 uses.  It is stated here only to keep this change inside one file; move it
-when that file is next touched. -/
+when that file is next touched.
+
+## STATUS 2026-07-31: PROVEN, over one strictly smaller leaf
+
+This is now a THEOREM over
+`Fermat.InvariantTensorRegular.isRegularRing_tensorProduct_of_isInvariant`
+(`Fermat/FLT/Mathlib/RingTheory/InvariantTensorRegular.lean`), and **the entire
+base change is paid for there**.  What survives as the single open leaf is
+`Fermat.InvariantTensorRegular.isRegularRing_of_isInvariant_of_smooth`:
+
+> the invariants of a finite group acting on a SMOOTH algebra of Krull
+> dimension one over a field form a REGULAR ring
+
+— which contains no tensor product, no base change and no algebraic closure.
+The statement above is recovered from it at `K := AlgebraicClosure k`.
+
+Two of the three "missing from the pin" items listed above are therefore
+DISCHARGED, and one of them was never needed:
+
+* **invariants commute with flat base change** was already in the tree, as
+  `Fermat.InvariantBaseChange.isInvariant_tensor` — the file
+  `Fermat/FLT/Mathlib/RingTheory/InvariantBaseChange.lean`, written for the
+  scheme-level GIT statement, proves exactly the ring-level fact this leaf
+  wanted, and the grep recorded above missed it because it searched
+  `Mathlib/RingTheory/Invariant/` rather than this tree.
+* **Krull dimension is invariant under base field extension** is NOT needed.
+  The extension here is `k̄/k`, which is ALGEBRAIC, so `S ⊗[k] k̄` is INTEGRAL
+  over `S` (`Algebra.IsIntegral.tensorProduct`) and `S` injects into it
+  (`Algebra.TensorProduct.includeLeft_injective`, `S` being flat over the field
+  `k`); `ringKrullDim_eq_of_isIntegral_of_injective` then gives the dimension
+  with no dimension theory of finite-type algebras at all.  The general
+  base-change statement is a real theorem and would have been real work; at an
+  algebraic extension it is three lines.
+* **smooth over a field ⇒ regular (hence normal)** is the one that survives, and
+  it is inside the residual leaf together with the non-domain difficulty.  See
+  that leaf's docstring for the measured absence list and for the route.
+
+The `_hinj`/`_hdim` binders lost their underscores with this commit, per the
+convention that a hypothesis a `sorry` cannot consume is written `_h`. -/
 theorem isRegularRing_tensorAlgebraicClosure_of_isInvariant
     (k R S : Type) [Field k] [CommRing R] [CommRing S]
     [Algebra k R] [Algebra R S] [Algebra k S] [IsScalarTower k R S]
     (G : Type) [Group G] [Finite G] [MulSemiringAction G S] [SMulCommClass G R S]
     [Algebra.IsInvariant R S G] [Algebra.Smooth k S]
-    (_hinj : Function.Injective (algebraMap R S))
-    (_hdim : ringKrullDim S = (1 : ℕ)) :
-    IsRegularRing (TensorProduct k (AlgebraicClosure k) R) :=
-  sorry
+    (hinj : Function.Injective (algebraMap R S))
+    (hdim : ringKrullDim S = (1 : ℕ)) :
+    IsRegularRing (TensorProduct k (AlgebraicClosure k) R) := by
+  haveI : Algebra.IsIntegral k (AlgebraicClosure k) :=
+    (AlgebraicClosure.isAlgebraic k).isIntegral
+  exact Fermat.InvariantTensorRegular.isRegularRing_tensorProduct_of_isInvariant
+    k (AlgebraicClosure k) R S G hinj hdim
 
 /-- **The coarse ring `B = A^G` is FORMALLY SMOOTH over `K`** (**PROVEN
 2026-07-30** over `smoothCurve_A_of_gamma1GITPresentation` and the general
