@@ -270,6 +270,7 @@ public import Mathlib.FieldTheory.Perfect
 public import Mathlib.Algebra.Algebra.ZMod
 public import Mathlib.Algebra.Module.ZMod
 public import Mathlib.GroupTheory.SpecificGroups.Cyclic
+public import Fermat.FLT.Mathlib.FieldTheory.KaehlerField
 
 @[expose] public section
 
