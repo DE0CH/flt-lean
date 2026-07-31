@@ -15147,13 +15147,166 @@ theorem maximalIdeal_eq_map_of_finrank_residueField_eq
     simpa using this
   exact (Ideal.Quotient.eq_zero_iff_mem).mp h2
 
+open _root_.Polynomial _root_.IsLocalRing in
+attribute [local instance] Ideal.Quotient.field in
+set_option maxHeartbeats 1000000 in
+/-- **THE MINIMAL POLYNOMIAL OF A MONOGENIC GENERATOR OF AN UNRAMIFIED EXTENSION SPLITS
+ALREADY IN THE EXTENSION** (PROVEN 2026-07-31; the general commutative-algebra core of
+`isGalois_of_span_three_eq_maximalIdeal` below, stated for an arbitrary unramified
+extension of local rings because nothing about `ℚ₃ᵥ` enters).
+
+`R ⊆ S` a finite free local extension with `𝔪_R·S = 𝔪_S` (`hram`, i.e. `e = 1`) and
+FINITE residue field of `S`; `θ` generates `S` over `R` as an algebra.  Then
+`minpoly R θ`, pushed to `S`, SPLITS.
+
+THE ROUTE, and note that it is NOT the Teichmüller route this leaf's docstring used to
+prescribe — it is shorter and needs no roots of unity, no cyclicity of `κˣ`, and no
+degree comparison between `K(μ_m)` and `U`:
+* `e = 1` gives `[κ_S : κ_R] = [S : R] = n = deg (minpoly R θ)` — the SAME
+  `n = e·f` bookkeeping as `maximalIdeal_eq_map_of_finrank_residueField_eq` above, run
+  through `IsLocalRing.finrank_quotient_map`;
+* the residue `θ̄` generates `κ_S` over `κ_R` (push `Algebra.adjoin R {θ} = ⊤` through
+  the residue map), so `minpoly κ_R θ̄` has degree `n` too, hence the REDUCTION of
+  `minpoly R θ` — monic of degree `n` and killing `θ̄` — IS `minpoly κ_R θ̄`;
+* `κ_S` is FINITE, so `κ_S/κ_R` is normal and separable for free: the reduction splits
+  in `κ_S` with `n` DISTINCT roots;
+* `S` is `𝔪_S`-adically complete, hence `HenselianLocalRing`, so every one of those `n`
+  simple roots lifts to a root in `S`.  Distinct residues force distinct lifts, so
+  `minpoly R θ` has `n` roots in `S` and therefore splits there.
+
+The `Finite (ResidueField S)` hypothesis is what replaces separability of `κ_S/κ_R`:
+this development gets it from `finite_residueField_integralClosure`. -/
+theorem card_roots_map_minpoly_of_unramified
+    {R : Type*} [CommRing R] [IsDomain R] [IsIntegrallyClosed R] [IsLocalRing R]
+    {S : Type*} [CommRing S] [IsDomain S] [IsLocalRing S] [Algebra R S]
+    [Module.Finite R S] [Module.Free R S] [Module.IsTorsionFree R S]
+    [IsLocalHom (algebraMap R S)]
+    [IsAdicComplete (maximalIdeal S) S]
+    [Finite (ResidueField S)]
+    (hram : Ideal.map (algebraMap R S) (maximalIdeal R) = maximalIdeal S)
+    (θ : S) (hθ : Algebra.adjoin R ({θ} : Set S) = ⊤) :
+    Polynomial.Splits ((minpoly R θ).map (algebraMap R S)) := by
+  classical
+  haveI : HenselianLocalRing S :=
+    ⟨fun g hg a₀ h₁ h₂ => HenselianRing.is_henselian g hg a₀ h₁ (h₂.map (Ideal.Quotient.mk _))⟩
+  have hint : IsIntegral R θ := IsIntegral.of_finite R θ
+  have hfm : (minpoly R θ).Monic := minpoly.monic hint
+  set n := (minpoly R θ).natDegree with hn
+  -- `finrank R S = n`
+  have hfr : Module.finrank R S = n := (PowerBasis.ofAdjoinEqTop' hint hθ).finrank
+  -- `finrank k κ = n`, i.e. the residue degree accounts for the whole rank
+  have hkr : Module.finrank (ResidueField R) (ResidueField S) = n := by
+    have h1 : Module.finrank (R ⧸ maximalIdeal R)
+        (S ⧸ Ideal.map (algebraMap R S) (maximalIdeal R)) = Module.finrank R S :=
+      IsLocalRing.finrank_quotient_map
+    rw [hfr] at h1
+    have e : (S ⧸ Ideal.map (algebraMap R S) (maximalIdeal R)) ≃ₗ[R ⧸ maximalIdeal R]
+        (S ⧸ maximalIdeal S) := by
+      refine { Ideal.quotEquivOfEq hram with map_smul' := ?_ }
+      rintro c x
+      induction c using Quotient.inductionOn' with | h r => ?_
+      induction x using Quotient.inductionOn' with | h s => ?_
+      rfl
+    exact e.finrank_eq.symm.trans h1
+  haveI : FiniteDimensional (ResidueField R) (ResidueField S) := Module.Finite.of_finite
+  -- the residue of `θ` generates the residue field extension
+  set θ' : ResidueField S := residue S θ with hθ'
+  have hcomm : ∀ p : R[X], residue S (Polynomial.aeval θ p) =
+      Polynomial.aeval θ' (p.map (algebraMap R (ResidueField R))) := by
+    intro p
+    rw [Polynomial.aeval_def, Polynomial.hom_eval₂, Polynomial.aeval_def, Polynomial.eval₂_map]
+    rfl
+  have hgen : Algebra.adjoin (ResidueField R) ({θ'} : Set (ResidueField S)) = ⊤ := by
+    rw [eq_top_iff]
+    rintro y -
+    obtain ⟨z, rfl⟩ := Ideal.Quotient.mk_surjective y
+    have hz : z ∈ Algebra.adjoin R ({θ} : Set S) := hθ ▸ Algebra.mem_top
+    rw [Algebra.adjoin_singleton_eq_range_aeval] at hz
+    obtain ⟨p, rfl⟩ := hz
+    show residue S (Polynomial.aeval θ p) ∈ _
+    rw [hcomm p, Algebra.adjoin_singleton_eq_range_aeval]
+    exact ⟨_, rfl⟩
+  have hint' : IsIntegral (ResidueField R) θ' := IsIntegral.of_finite _ _
+  have hmin' : (minpoly (ResidueField R) θ').natDegree = n := by
+    have h2 := (PowerBasis.ofAdjoinEqTop hint' hgen).finrank
+    rw [hkr] at h2
+    exact h2.symm
+  -- the reduction of the minimal polynomial IS the minimal polynomial of the residue
+  set fb := (minpoly R θ).map (algebraMap R (ResidueField R)) with hfb
+  have hfbm : fb.Monic := hfm.map _
+  have hfbdeg : fb.natDegree = n := hfm.natDegree_map _
+  have hrootb : (Polynomial.aeval θ') fb = 0 := by
+    rw [hfb, ← hcomm, minpoly.aeval, map_zero]
+  have hdvd : minpoly (ResidueField R) θ' ∣ fb := minpoly.dvd _ _ hrootb
+  have hfbeq : fb = minpoly (ResidueField R) θ' := by
+    refine (eq_of_monic_of_associated (minpoly.monic hint') hfbm ?_).symm
+    exact associated_of_dvd_of_natDegree_le hdvd hfbm.ne_zero (by rw [hfbdeg, hmin'])
+  -- over the (finite, hence normal and separable) residue extension, `fb` splits with
+  -- distinct roots
+  set fk := fb.map (algebraMap (ResidueField R) (ResidueField S)) with hfk
+  have hsplit : fk.Splits := by
+    rw [hfk, hfbeq]; exact Normal.splits inferInstance θ'
+  have hsep : fk.Separable := by
+    rw [hfk, hfbeq]
+    exact Polynomial.Separable.map (Algebra.IsSeparable.isSeparable (ResidueField R) θ')
+  have hfkdeg : fk.natDegree = n := by
+    rw [hfk, hfbm.natDegree_map, hfbdeg]
+  have hcard : Multiset.card fk.roots = n := by
+    rw [splits_iff_card_roots.mp hsplit, hfkdeg]
+  have hnodup : fk.roots.Nodup := nodup_roots hsep
+  -- Hensel: each of those roots lifts to a root of the minimal polynomial in `S`
+  set F := (minpoly R θ).map (algebraMap R S) with hF
+  have hFm : F.Monic := hfm.map _
+  have hFdeg : F.natDegree = n := hfm.natDegree_map _
+  have hFmap : F.map (residue S) = fk := by
+    rw [hF, hfk, hfb, Polynomial.map_map, Polynomial.map_map]
+    rfl
+  have hens : ∀ g : S[X], g.Monic → ∀ a₀ : ResidueField S, Polynomial.aeval a₀ g = 0 →
+      Polynomial.aeval a₀ (derivative g) ≠ 0 → ∃ a : S, g.IsRoot a ∧ residue S a = a₀ :=
+    ((HenselianLocalRing.TFAE S).out 0 1).mp ‹HenselianLocalRing S›
+  have haeval : ∀ q : S[X], ∀ a : ResidueField S,
+      Polynomial.aeval a q = Polynomial.eval a (q.map (residue S)) := by
+    intro q a; rw [Polynomial.eval_map]; rfl
+  have key : ∀ a ∈ fk.roots, ∃ b : S, F.IsRoot b ∧ residue S b = a := by
+    intro a ha
+    have haroot : fk.IsRoot a := isRoot_of_mem_roots ha
+    refine hens F hFm a ?_ ?_
+    · rw [haeval, hFmap]; exact haroot
+    · rw [haeval, ← Polynomial.derivative_map, hFmap]
+      exact hsep.eval₂_derivative_ne_zero (RingHom.id (ResidueField S)) haroot
+  choose lift hlift1 hlift2 using key
+  -- the lifts are distinct, so `F` has at least `n` roots in `S`
+  set g : ResidueField S → S := fun a => if ha : a ∈ fk.roots then lift a ha else 0 with hg
+  have hginj : Set.InjOn g fk.roots.toFinset := by
+    intro a ha c hc hac
+    simp only [Finset.mem_coe, Multiset.mem_toFinset] at ha hc
+    have h5 : residue S (g a) = a := by simp only [hg, dif_pos ha]; exact hlift2 a ha
+    have h6 : residue S (g c) = c := by simp only [hg, dif_pos hc]; exact hlift2 c hc
+    rw [← h5, ← h6, hac]
+  have hsub : fk.roots.toFinset.image g ⊆ F.roots.toFinset := by
+    intro x hx
+    simp only [Finset.mem_image, Multiset.mem_toFinset] at hx
+    obtain ⟨a, ha, rfl⟩ := hx
+    simp only [Multiset.mem_toFinset, mem_roots, hFm.ne_zero, ne_eq, not_false_eq_true]
+    simp only [hg, dif_pos ha]
+    exact hlift1 a ha
+  have hle : n ≤ Multiset.card F.roots := by
+    have h7 : (fk.roots.toFinset.image g).card = n := by
+      rw [Finset.card_image_of_injOn hginj, Multiset.toFinset_card_of_nodup hnodup, hcard]
+    calc n = (fk.roots.toFinset.image g).card := h7.symm
+      _ ≤ F.roots.toFinset.card := Finset.card_le_card hsub
+      _ ≤ Multiset.card F.roots := F.roots.toFinset_card_le
+  have hge : Multiset.card F.roots ≤ n := hFdeg ▸ F.card_roots'
+  exact splits_iff_card_roots.mpr (by rw [hFdeg]; omega)
+
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 1000000 in
-/-- **AN UNRAMIFIED SUBEXTENSION OF `ℚ₃ᵥᵃˡᵍ/ℚ₃ᵥ` IS GALOIS** (SORRY LEAF, created
-2026-07-31 as the LAST remaining piece of
-`exists_span_three_eq_maximalIdeal_and_finrank_eq_of_residueField` below, everything
-else in that theorem now being proved).
+/-- **AN UNRAMIFIED SUBEXTENSION OF `ℚ₃ᵥᵃˡᵍ/ℚ₃ᵥ` IS GALOIS** (created 2026-07-31 as the
+LAST remaining piece of
+`exists_span_three_eq_maximalIdeal_and_finrank_eq_of_residueField` below; **PROVEN the
+same day**, over the general lemma `card_roots_map_minpoly_of_unramified` immediately
+above).
 
 This is the classical statement that the unramified extensions of a local field with
 FINITE residue field are Galois (indeed cyclic, generated by Frobenius); only the
@@ -15166,37 +15319,78 @@ conclusion is normality: `L` is presented as `K(θ)` for a single root `θ` of `
 whether the OTHER roots of `P` lie in `L` is exactly the content of this leaf.  So the
 cut is along the real mathematical seam, not a bookkeeping one.
 
-SEPARABILITY IS FREE and should not be re-derived: `ℚ₃ᵥ` has characteristic zero, so
-`Algebra.IsSeparable ℚ₃ᵥ ↥U` is an instance.  The whole leaf is `Normal ℚ₃ᵥ ↥U`.
+SEPARABILITY IS FREE and is not re-derived: `ℚ₃ᵥ` has characteristic zero, so
+`Algebra.IsSeparable ℚ₃ᵥ ↥U` is an instance.  The whole leaf was `Normal ℚ₃ᵥ ↥U`.
 
-THE ROUTE, and it is the standard Teichmüller one — recorded here so the next owner does
-not have to rediscover it:
-* `𝒪_U := IntegralClosure 𝒪₃ᵥ ↥U` is a complete (hence HENSELIAN) DVR, and the
-  hypothesis `hU` says `3` generates its maximal ideal, i.e. `e = 1`, so its residue
-  field `κ` has `3^d` elements with `d = [U : ℚ₃ᵥ]`;
-* `κˣ` is cyclic of order `m := 3^d − 1`, so `X^m − 1` splits in `κ` with `m` DISTINCT
-  roots, and `m` is prime to `3`, so each root is simple;
-* Hensel lifts every one of them: `X^m − 1` splits in `𝒪_U`, so `U` contains the full
-  group `μ_m` of `m`-th roots of unity;
-* hence `ℚ₃ᵥ(μ_m) ⊆ U`, and `ℚ₃ᵥ(μ_m)` is the splitting field of the SEPARABLE
-  polynomial `X^m − 1` over `ℚ₃ᵥ`, so it is Galois over `ℚ₃ᵥ`
-  (`IsGalois.of_separable_splitting_field`);
-* the containment is an EQUALITY because the residues of `μ_m` already exhaust `κˣ`, so
-  the subfield `ℚ₃ᵥ(μ_m)` has residue degree `d` and therefore degree at least `d = [U :
-  ℚ₃ᵥ]` over `ℚ₃ᵥ`.
+THE ROUTE ACTUALLY TAKEN, which is NOT the Teichmüller one this docstring used to
+prescribe.  Teichmüller works, but it needs the cyclicity of `κˣ`, a Hensel lift of
+every `m`-th root of unity, and — the expensive step — a degree comparison proving
+`ℚ₃ᵥ(μ_m) = U` rather than merely `⊆`.  All of that is avoidable, because
+`exists_local_adjoin_eq_top` (above) already says `𝒪_U` is MONOGENIC over `𝒪₃ᵥ`:
+* take `θ` with `Algebra.adjoin 𝒪₃ᵥ {θ} = ⊤` in `𝒪_U := IntegralClosure 𝒪₃ᵥ ↥U`;
+* `card_roots_map_minpoly_of_unramified` says `minpoly 𝒪₃ᵥ θ` SPLITS in `𝒪_U` — that
+  lemma is where unramifiedness (`hU`, in the `𝔪_R·S = 𝔪_S` form), completeness and
+  finiteness of the residue field are spent;
+* `minpoly ℚ₃ᵥ x` for `x` the image of `θ` in `U` is the base change of `minpoly 𝒪₃ᵥ θ`
+  (`minpoly.isIntegrallyClosed_eq_field_fractions'`), so it splits in `U`;
+* `adjoin_eq_top_of_local_adjoin_eq_top` (above) turns monogenicity of `𝒪_U` into
+  `ℚ₃ᵥ⟮x⟯ = U`, so `U` IS a splitting field of `minpoly ℚ₃ᵥ x`, hence normal.
 
-The one thing to check before starting is which of these steps the pin already has:
-`IsGalois.of_separable_splitting_field` and the cyclicity of `κˣ` certainly, Hensel's
-lemma for a complete DVR through `IsHenselianLocalRing`; the `e = 1 ⟹ #κ = 3^d` count is
-the same `n = e·f` bookkeeping that
-`maximalIdeal_eq_map_of_finrank_residueField_eq` above runs in the OPPOSITE direction,
-and that lemma is very close to reusable for it. -/
+The one hypothesis that is genuinely load-bearing is `hU`: without `e = 1` the residue
+degree does not account for the whole rank, the reduction of `minpoly 𝒪₃ᵥ θ` is a proper
+power of the residue minimal polynomial, and Hensel produces too few roots. -/
 theorem isGalois_of_span_three_eq_maximalIdeal
     (U : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ U]
-    (_hU : Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ U)} =
+    (hU : Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ U)} =
       IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ U)) :
     IsGalois ℚ₃ᵥ U := by
-  sorry
+  haveI hMF : Module.Finite 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ U) :=
+    IsIntegralClosure.finite 𝒪₃ᵥ ℚ₃ᵥ U (IntegralClosure 𝒪₃ᵥ U)
+  haveI : IsFractionRing (IntegralClosure 𝒪₃ᵥ U) U :=
+    IsIntegralClosure.isFractionRing_of_finite_extension 𝒪₃ᵥ ℚ₃ᵥ U (IntegralClosure 𝒪₃ᵥ U)
+  haveI := isAdicComplete_maximalIdeal_integralClosure U
+  haveI := finite_residueField_integralClosure U
+  haveI : IsLocalization
+      (Algebra.algebraMapSubmonoid (IntegralClosure 𝒪₃ᵥ U) (nonZeroDivisors 𝒪₃ᵥ)) U :=
+    IsIntegralClosure.isLocalization_of_isSeparable 𝒪₃ᵥ ℚ₃ᵥ U (IntegralClosure 𝒪₃ᵥ U)
+  haveI : Module.IsTorsionFree 𝒪₃ᵥ U := Module.IsTorsionFree.trans_faithfulSMul 𝒪₃ᵥ ℚ₃ᵥ U
+  haveI : Module.Free 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ U) :=
+    IsIntegralClosure.module_free 𝒪₃ᵥ ℚ₃ᵥ U (IntegralClosure 𝒪₃ᵥ U)
+  haveI : Module.IsTorsionFree 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ U) := inferInstance
+  haveI : IsLocalHom (algebraMap 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ U)) := inferInstance
+  -- unramifiedness, in the `𝔪_R·S = 𝔪_S` form the general lemma wants
+  have hram : Ideal.map (algebraMap 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ U)) (IsLocalRing.maximalIdeal 𝒪₃ᵥ)
+      = IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ U) := by
+    rw [← hU, maximalIdeal_adicCompletionIntegers_eq_span Nat.prime_three, Ideal.map_span,
+      Set.image_singleton, map_natCast]
+    norm_num
+  obtain ⟨θ, hθ⟩ := exists_local_adjoin_eq_top U
+  have hsplitO := card_roots_map_minpoly_of_unramified hram θ hθ
+  -- transport to `U`
+  set x : U := algebraMap (IntegralClosure 𝒪₃ᵥ U) U θ with hx
+  have hinj : Function.Injective (algebraMap (IntegralClosure 𝒪₃ᵥ U) U) :=
+    IsIntegralClosure.algebraMap_injective (IntegralClosure 𝒪₃ᵥ U) 𝒪₃ᵥ U
+  have hxint : IsIntegral 𝒪₃ᵥ x := by
+    rw [hx]
+    exact (IsIntegral.of_finite 𝒪₃ᵥ θ).map (IsScalarTower.toAlgHom 𝒪₃ᵥ _ U)
+  have hmp1 : minpoly 𝒪₃ᵥ x = minpoly 𝒪₃ᵥ θ := minpoly.algebraMap_eq hinj θ
+  have hmp2 : minpoly ℚ₃ᵥ x = (minpoly 𝒪₃ᵥ θ).map (algebraMap 𝒪₃ᵥ ℚ₃ᵥ) := by
+    rw [minpoly.isIntegrallyClosed_eq_field_fractions' ℚ₃ᵥ hxint, hmp1]
+  have hsplitU : Polynomial.Splits ((minpoly ℚ₃ᵥ x).map (algebraMap ℚ₃ᵥ U)) := by
+    rw [hmp2, Polynomial.map_map, ← IsScalarTower.algebraMap_eq 𝒪₃ᵥ ℚ₃ᵥ U,
+      IsScalarTower.algebraMap_eq 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ U) U, ← Polynomial.map_map]
+    exact hsplitO.map _
+  -- `U` is a splitting field of `minpoly ℚ₃ᵥ x`
+  have hxmem : x ∈ (minpoly ℚ₃ᵥ x).rootSet U := by
+    rw [Polynomial.mem_rootSet]
+    exact ⟨minpoly.ne_zero (IsIntegral.of_finite ℚ₃ᵥ x), minpoly.aeval _ _⟩
+  haveI : Polynomial.IsSplittingField ℚ₃ᵥ U (minpoly ℚ₃ᵥ x) := by
+    refine ⟨hsplitU, ?_⟩
+    refine top_le_iff.mp ?_
+    rw [← adjoin_eq_top_of_local_adjoin_eq_top U θ hθ]
+    exact Algebra.adjoin_mono (Set.singleton_subset_iff.mpr hxmem)
+  haveI : Normal ℚ₃ᵥ U := Normal.of_isSplittingField (minpoly ℚ₃ᵥ x)
+  exact ⟨⟩
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
