@@ -3485,10 +3485,24 @@ section are now
 * `exists_levelOneFlag_space_of_charpoly` — the arithmetic, with `G` and `fG` removed
   entirely: an inertia-stable `𝔽_p`-flag on the `Γ ℚᵖᵥ`-module
   `((ρ.baseChange (R ⧸ I)).toLocal p).Space`. Its transport back to the points of `G` is
-  `exists_levelOneFlag_of_bijective_equivariant`, PROVEN.
+  `exists_levelOneFlag_of_bijective_equivariant`, PROVEN. **(2026-07-31: this is no longer
+  a leaf either. It is now the top of a four-link chain of two-line assemblies down to
+  `exists_inertiaEigenvector_space_of_charpoly`, which asks for ONE triangularisation step
+  — one vector, one scalar, modulo one given inertia-stable proper submonoid — and is the
+  only open statement left on this branch.)**
 * `isMultiplicativeType_corner_of_connected_of_inertiaLevelOneFlag` — Raynaud, with
   connectedness in the intrinsic form (`hconn`) that route (a) of the dévissage needs. The
   bridge `hprim₀ → hconn` is `isIdempotentElem_quotient_cornerIdeal_eq_zero_or_one`, PROVEN.
+  **(2026-07-31: this is no longer a leaf either — it is a two-line assembly over
+  `isMultiplicativeType_of_connected_of_inertiaLevelOneFlag`, the SAME citation stated on an
+  abstract `A` with both hypotheses intrinsic, and
+  `hasInertiaLevelOneFlag_quotient_cornerIdeal`, "the corner inherits the flag", whose
+  docstring carries the complete verified route down to
+  `exists_levelOneFlag_of_injective_equivariant` (PROVEN here, 2026-07-31) and names the one
+  thing still in the way — the commutativity `habel` of the point monoid, which is
+  available two levels up and has to be threaded down. So this branch's open statements are
+  now Raynaud-on-an-abstract-`A` plus one flag-transport, in place of
+  Raynaud-tangled-with-a-corner.)**
 * `exists_grouplike_family_spanning_baseChange_of_isMultiplicativeType` and the `(D2)`
   transport below, unchanged by this pass. -/
 
@@ -3510,9 +3524,26 @@ WHY A SUBMONOID CHAIN AND NOT A SUBGROUP CHAIN. The convolution `Group` structur
 (mathlib's `HopfAlgebra.convGroup`); on the bare hom type the project supplies a `Monoid`
 instance only, so `Additive` of it is an `AddMonoid` and `AddSubgroup` cannot be written in
 a statement without a local `Group` instance. The point group is FINITE
-(`finite_points_of_hopf_order`), so submonoids and subgroups of it coincide and nothing is
-lost; a prover who wants subgroups can install the `Group` instance the way
-`exists_repr_of_points_quadratic` does and transport.
+(`finite_points_of_hopf_order`, in the SIBLING module `Threeadic.lean` — not importable from
+here, but a one-line `inferInstanceAs`), so submonoids and subgroups of it coincide and
+nothing is lost.
+
+A prover who wants subgroups can install the `Group` instance and transport. **The pointer
+this paragraph used to give for how — `exists_repr_of_points_quadratic` — NAMES NOTHING: it
+does not exist in this tree, and `git log -S` finds it in no commit, so it is not a stale
+reference to something deleted but a name that was never written.** The two real models are
+`adjoin_cornerGroupLike_of_isSepClosed` above (line ~2143: it builds
+`Group (A →ₐ[k] k)` as `{ (inferInstance : Monoid _) with inv := · ∘ antipodeAlgHom }`, so
+the `mul` is the SAME and `Additive` of it has the same `+`, which is what makes the
+`AddSubmonoid`s interchangeable) and `Semistable.lean`'s `instG`/`instCG`/`instA` triple,
+which does the same on the `WithConv` synonym where there is no rival instance to collide
+with.
+
+BETTER STILL, AND WHAT THIS FILE NOW DOES: do not install anything. The only property of
+"subgroup" the flag lemmas need is that every element has finite additive order, and
+`exists_pos_nsmul_eq_zero_of_finite` below turns "finite + every point has a convolution
+inverse" into exactly that, as a HYPOTHESIS rather than an instance. That is how
+`exists_levelOneFlag_of_injective_equivariant` avoids the diamond.
 
 WHY `localInertiaGroup` AND NOT ALL OF `Γ ℚᵖᵥ`. The dévissage runs over the STRICT
 HENSELISATION, whose Galois group is exactly inertia, and the flag it needs is an inertia
@@ -3613,6 +3644,92 @@ theorem exists_levelOneFlag_of_bijective_equivariant
       rw [AddSubmonoid.comap_map_eq_of_injective hf.1] at key
       rw [hxsup, ← key, hclos]
 
+/-! ##### Level-one flags pull back along INJECTIVE equivariant maps
+
+`exists_levelOneFlag_of_bijective_equivariant` above is what the ARITHMETIC half of `(R1)`
+needs (the flag is produced on the representation space and transported to the points of
+`G` along an isomorphism). The GROUP-SCHEME half needs the other direction, and it is a
+strictly harder lemma: a level-one flag restricts to a SUBOBJECT of the point group — which
+is what the points of a quotient Hopf algebra are, by precomposition — and there the
+`comap` of the one-step-generation clause is no longer a one-step generation on the nose.
+
+The three lemmas below are that direction, and they are what route (a) of the Raynaud
+dévissage needs in order to state `HasInertiaLevelOneFlag` INTRINSICALLY on the corner; see
+`hasInertiaLevelOneFlag_quotient_cornerIdeal` far below.
+
+**THESE FOUR ARE MOMENTARILY FREE-FLOATING, KNOWINGLY** (2026-07-31): their consumer
+`hasInertiaLevelOneFlag_quotient_cornerIdeal` is still a `sorry`, and a sorried body
+contributes no dependency edges, so the census will report them until it is proven. That is
+the ordinary glue-first situation and not a reason to delete them — the consumer's proof
+skeleton is written out in full in its docstring, down to the one missing hypothesis
+(`habel`) and where to get it. Everything here is pure
+`AddSubmonoid` lattice theory over a TORSION additive commutative monoid: no groups, no
+finiteness of the ambient, no Hopf algebras, no arithmetic.
+
+WHY TORSION AND NOT `AddCommGroup`. The point "group" of a Hopf order reaches this file
+only through the project's bare-hom `Monoid` instance
+(`Deformations/RepresentationTheory/Etale.lean`); the `Group` structure lives on mathlib's
+`WithConv` synonym, so an `AddCommGroup` hypothesis would not be discharged at the call
+site without installing a rival instance on the same type — a diamond this file has no
+reason to create. The hypothesis actually used is
+`∀ w, ∃ k, 0 < k ∧ k • w = 0`, which says the monoid is TORSION; that is enough to
+manufacture inverses (`exists_add_eq_zero_of_torsion`) and — the clause that really matters
+— to see that every SUBMONOID is automatically closed under them
+(`mem_of_add_eq_zero_of_torsion`), which is exactly the "`Q i` is a subgroup" step of the
+classical argument. At a point group it is discharged by
+`exists_pos_nsmul_eq_zero_of_finite`, since the points are finite and every point has a
+convolution inverse (precomposition with the antipode). -/
+
+/-- **In a torsion additive commutative monoid every element has an inverse** (PROVEN
+2026-07-31): `u + (k - 1) • u = k • u = 0`. -/
+theorem exists_add_eq_zero_of_torsion {N₀ : Type*} [AddCommMonoid N₀]
+    (htor : ∀ w : N₀, ∃ k : ℕ, 0 < k ∧ k • w = 0) (u : N₀) : ∃ v, u + v = 0 := by
+  obtain ⟨k, hk, hku⟩ := htor u
+  exact ⟨(k - 1) • u, by rw [← succ_nsmul', Nat.sub_add_cancel hk]; exact hku⟩
+
+/-- **In a torsion additive commutative monoid every SUBMONOID is closed under inverses**
+(PROVEN 2026-07-31). Inverses in a commutative monoid are unique, and the inverse of
+`u` is the multiple `(k - 1) • u`, which lies in any submonoid containing `u`.
+
+This is the lemma that replaces "a submonoid of a finite group is a subgroup" in
+`exists_levelOneFlag_of_injective_equivariant` below, without ever naming a group. -/
+theorem mem_of_add_eq_zero_of_torsion {N₀ : Type*} [AddCommMonoid N₀]
+    (htor : ∀ w : N₀, ∃ k : ℕ, 0 < k ∧ k • w = 0) (Q : AddSubmonoid N₀) {u v : N₀}
+    (hu : u ∈ Q) (huv : u + v = 0) : v ∈ Q := by
+  obtain ⟨k, hk, hku⟩ := htor u
+  have hinv : u + (k - 1) • u = 0 := by
+    rw [← succ_nsmul', Nat.sub_add_cancel hk]; exact hku
+  have hvk : v = (k - 1) • u := by
+    calc v = v + 0 := (add_zero v).symm
+    _ = v + (u + (k - 1) • u) := by rw [hinv]
+    _ = (u + v) + (k - 1) • u := by abel
+    _ = (k - 1) • u := by rw [huv, zero_add]
+  rw [hvk]
+  exact nsmul_mem hu _
+
+/-- **A FINITE additive commutative monoid in which every element has an inverse is
+TORSION** (PROVEN 2026-07-31; pigeonhole). This is how the torsion hypothesis of the two
+lemmas above is discharged at a point group: the points of a Hopf order are finite
+(`finite_points_of_hopf_order`) and every point has a convolution inverse, namely its
+precomposition with the antipode. -/
+theorem exists_pos_nsmul_eq_zero_of_finite {N₀ : Type*} [AddCommMonoid N₀] [Finite N₀]
+    (hinv : ∀ w : N₀, ∃ v, w + v = 0) (w : N₀) : ∃ k : ℕ, 0 < k ∧ k • w = 0 := by
+  obtain ⟨v, hv⟩ := hinv w
+  obtain ⟨i, j, hij, hEq⟩ : ∃ i j : ℕ, i < j ∧ i • w = j • w := by
+    obtain ⟨i, j, hne, hEq⟩ := Finite.exists_ne_map_eq_of_infinite (fun n : ℕ => n • w)
+    rcases lt_or_gt_of_ne hne with h | h
+    · exact ⟨i, j, h, hEq⟩
+    · exact ⟨j, i, h, hEq.symm⟩
+  have hiv : i • w + i • v = 0 := by rw [← nsmul_add, hv, nsmul_zero]
+  have hsplit : j • w = (j - i) • w + i • w := by
+    rw [← add_nsmul]; congr 1; omega
+  refine ⟨j - i, by omega, ?_⟩
+  calc (j - i) • w = (j - i) • w + (i • w + i • v) := by rw [hiv, add_zero]
+  _ = ((j - i) • w + i • w) + i • v := by abel
+  _ = j • w + i • v := by rw [← hsplit]
+  _ = i • w + i • v := by rw [← hEq]
+  _ = 0 := hiv
+
 /-- **A level-one GENERATING SEQUENCE gives a level-one flag** (PROVEN 2026-07-30; pure
 lattice theory of `AddSubmonoid`s, no arithmetic, no Hopf algebras and no finiteness).
 
@@ -3697,6 +3814,550 @@ theorem exists_levelOneFlag_of_levelOneGeneratingSeq
     refine ⟨x i, AddSubmonoid.subset_closure ⟨i, by simp, rfl⟩, htor i hi, ?_⟩
     rw [hins i, AddSubmonoid.closure_union]
 
+/-- **Two level-one generating sequences concatenate** (PROVEN 2026-07-31; pure
+`AddSubmonoid` lattice theory, no arithmetic, no finiteness).
+
+`x` is a level-one generating sequence for the submonoid `X := closure (x '' Iio n)` it
+generates, and `y` is one for the quotient *relative to `X`* — its clauses are the same two
+but with `X ⊔ ·` inserted everywhere. Then the concatenation
+`z k = if k < n then x k else y (k - n)` is a level-one generating sequence for `X ⊔ Y`.
+
+The conclusion is stated as the identity `closure (z '' Iio (n + m)) = X ⊔ Y` rather than as
+`= ⊤`, so that the lemma composes with itself along a chain without any hypothesis relating
+the two halves; `exists_levelOneGeneratingSeq_of_scalarChain` below is that composition.
+
+Everything reduces to the one set identity
+`z '' Iio j = x '' Iio (min j n) ∪ y '' Iio (j - n)`, whose `closure` splits as a `⊔` by
+`AddSubmonoid.closure_union`; the three clauses are then the hypotheses read off at
+`j = n + m`, `j = k` and `j = k + 1`, with `ℕ`-subtraction handled by `omega`. -/
+theorem levelOneGeneratingSeq_append
+    {Grp : Type*} [Monoid Grp] {M₀ : Type*} [AddCommGroup M₀] [DistribMulAction Grp M₀]
+    (q : ℕ) (S : Grp → Prop) (n m : ℕ) (x y : ℕ → M₀)
+    (hxtor : ∀ k < n, q • x k ∈ AddSubmonoid.closure (x '' Set.Iio k))
+    (hxstab : ∀ σ, S σ → ∀ k < n, σ • x k ∈ AddSubmonoid.closure (x '' Set.Iio (k + 1)))
+    (hytor : ∀ k < m, q • y k ∈
+      AddSubmonoid.closure (x '' Set.Iio n) ⊔ AddSubmonoid.closure (y '' Set.Iio k))
+    (hystab : ∀ σ, S σ → ∀ k < m, σ • y k ∈
+      AddSubmonoid.closure (x '' Set.Iio n) ⊔ AddSubmonoid.closure (y '' Set.Iio (k + 1))) :
+    ∃ z : ℕ → M₀,
+      AddSubmonoid.closure (z '' Set.Iio (n + m)) =
+        AddSubmonoid.closure (x '' Set.Iio n) ⊔ AddSubmonoid.closure (y '' Set.Iio m) ∧
+      (∀ k < n + m, q • z k ∈ AddSubmonoid.closure (z '' Set.Iio k)) ∧
+      (∀ σ, S σ → ∀ k < n + m,
+        σ • z k ∈ AddSubmonoid.closure (z '' Set.Iio (k + 1))) := by
+  classical
+  set z : ℕ → M₀ := fun k => if k < n then x k else y (k - n) with hz
+  have himg : ∀ j : ℕ, z '' Set.Iio j = x '' Set.Iio (min j n) ∪ y '' Set.Iio (j - n) := by
+    intro j
+    ext w
+    constructor
+    · rintro ⟨k, hk, rfl⟩
+      simp only [Set.mem_Iio] at hk
+      by_cases hkn : k < n
+      · exact Or.inl ⟨k, by simp only [Set.mem_Iio, lt_min_iff]; exact ⟨hk, hkn⟩,
+          by simp [hz, hkn]⟩
+      · exact Or.inr ⟨k - n, by simp only [Set.mem_Iio]; omega, by simp [hz, hkn]⟩
+    · rintro (⟨k, hk, rfl⟩ | ⟨k, hk, rfl⟩)
+      · simp only [Set.mem_Iio, lt_min_iff] at hk
+        exact ⟨k, by simp only [Set.mem_Iio]; exact hk.1, by simp [hz, hk.2]⟩
+      · simp only [Set.mem_Iio] at hk
+        refine ⟨n + k, by simp only [Set.mem_Iio]; omega, ?_⟩
+        simp [hz, Nat.not_lt.mpr (Nat.le_add_right n k)]
+  have hclos : ∀ j : ℕ, AddSubmonoid.closure (z '' Set.Iio j) =
+      AddSubmonoid.closure (x '' Set.Iio (min j n)) ⊔
+        AddSubmonoid.closure (y '' Set.Iio (j - n)) := by
+    intro j; rw [himg j, AddSubmonoid.closure_union]
+  refine ⟨z, ?_, ?_, ?_⟩
+  · have h1 : min (n + m) n = n := by omega
+    have h2 : n + m - n = m := by omega
+    rw [hclos (n + m), h1, h2]
+  · intro k hk
+    by_cases hkn : k < n
+    · have hzk : z k = x k := by simp [hz, hkn]
+      rw [hzk, hclos k]
+      have h1 : min k n = k := by omega
+      have h2 : k - n = 0 := by omega
+      rw [h1, h2]
+      exact AddSubmonoid.mem_sup_left (hxtor k hkn)
+    · have hzk : z k = y (k - n) := by simp [hz, hkn]
+      rw [hzk, hclos k]
+      have h1 : min k n = n := by omega
+      rw [h1]
+      exact hytor (k - n) (by omega)
+  · intro σ hσ k hk
+    by_cases hkn : k < n
+    · have hzk : z k = x k := by simp [hz, hkn]
+      rw [hzk, hclos (k + 1)]
+      have h1 : min (k + 1) n = k + 1 := by omega
+      have h2 : k + 1 - n = 0 := by omega
+      rw [h1, h2]
+      exact AddSubmonoid.mem_sup_left (hxstab σ hσ k hkn)
+    · have hzk : z k = y (k - n) := by simp [hz, hkn]
+      rw [hzk, hclos (k + 1)]
+      have h1 : min (k + 1) n = n := by omega
+      have h2 : k + 1 - n = (k - n) + 1 := by omega
+      rw [h1, h2]
+      exact hystab σ hσ (k - n) (by omega)
+
+/-- **A chain whose graded pieces are `q`-torsion with a SCALAR `S`-action refines to a
+level-one generating sequence** (PROVEN 2026-07-31; pure `AddSubmonoid` lattice theory, no
+arithmetic, no finiteness, no `Finite` instance anywhere).
+
+This is step 4's second half — *"refining the `k`-flag to an `𝔽_p`-flag"* in the docstring
+of `exists_inertiaEigenvector_space_of_charpoly` below — discharged once and for all.
+
+The input is a chain `⊥ = N 0 ≤ … ≤ N r = ⊤` in which each step is generated over its
+predecessor by a listed finite family `gen i 0, …, gen i (len i - 1)` (`hstep`) subject to
+two conditions, both stated MODULO `N i`:
+
+* `htor`: `q • gen i k ∈ N i` — the graded piece is killed by `q`;
+* `hscal`: for each `σ` with `S σ` there is ONE natural number `c` (depending on `σ`, `i`
+  and `k`, but not required to be uniform in `k`) with `σ • gen i k - c • gen i k ∈ N i` —
+  i.e. `σ` acts on the graded piece as a scalar in the prime field.
+
+Neither condition asks for anything triangular *inside* a block, and no stability hypothesis
+on the `N i` themselves is needed: stability of `N i` is a CONSEQUENCE (`N i` is the closure
+of the earlier generators, each of whose `σ`-image the induction has already placed inside
+it), which is why it does not appear in the hypothesis list.
+
+WHAT THIS BUYS THE ARITHMETIC PROVER, and it is exactly one step of the argument. Step 2–3
+of `exists_inertiaEigenvector_space_of_charpoly` triangularise over the RESIDUE FIELD `k` of
+`R ⧸ I`, so what falls out is a chain of `k`-lines with inertia acting by an `𝔽_p`-valued
+character — a graded piece of `𝔽_p`-dimension `[k : 𝔽_p]`, not `1`. Here `len i` is that
+dimension and `gen i` is any `𝔽_p`-basis of the line: the conclusion's one-generator-at-a-
+time flag is produced from it by this lemma rather than by hand. The two statements are
+nevertheless EQUIVALENT (take `len i = 1`, `gen i 0 = x i`, `N i = closure (x '' Iio i)`; the
+conclusion's `σ • x i ∈ N i ⊔ closure {x i}` gives the scalar `c` by
+`AddSubmonoid.mem_sup`), so this is a reformulation and not a weakening.
+
+Proof: induction on `r`, one `levelOneGeneratingSeq_append` per step, with `hscal`'s
+decomposition `σ • g = (σ • g - c • g) + c • g` supplying the appended half's stability
+clause — the first summand lands in `N i` and the second in `closure {g}`. -/
+theorem exists_levelOneGeneratingSeq_of_scalarChain
+    {Grp : Type*} [Monoid Grp] {M₀ : Type*} [AddCommGroup M₀] [DistribMulAction Grp M₀]
+    (q : ℕ) (S : Grp → Prop) (r : ℕ) (N : ℕ → AddSubmonoid M₀)
+    (len : ℕ → ℕ) (gen : ℕ → ℕ → M₀)
+    (h0 : N 0 = ⊥) (hr : N r = ⊤)
+    (hstep : ∀ i < r, N (i + 1) = N i ⊔ AddSubmonoid.closure (gen i '' Set.Iio (len i)))
+    (htor : ∀ i < r, ∀ k < len i, q • gen i k ∈ N i)
+    (hscal : ∀ i < r, ∀ σ, S σ → ∀ k < len i, ∃ c : ℕ, σ • gen i k - c • gen i k ∈ N i) :
+    ∃ (n : ℕ) (x : ℕ → M₀),
+      AddSubmonoid.closure (x '' Set.Iio n) = ⊤ ∧
+      (∀ k < n, q • x k ∈ AddSubmonoid.closure (x '' Set.Iio k)) ∧
+      (∀ σ, S σ → ∀ k < n, σ • x k ∈ AddSubmonoid.closure (x '' Set.Iio (k + 1))) := by
+  classical
+  have key : ∀ i ≤ r, ∃ (n : ℕ) (x : ℕ → M₀),
+      AddSubmonoid.closure (x '' Set.Iio n) = N i ∧
+      (∀ k < n, q • x k ∈ AddSubmonoid.closure (x '' Set.Iio k)) ∧
+      (∀ σ, S σ → ∀ k < n, σ • x k ∈ AddSubmonoid.closure (x '' Set.Iio (k + 1))) := by
+    intro i
+    induction i with
+    | zero =>
+      intro _
+      refine ⟨0, fun _ => 0, ?_, ?_, ?_⟩
+      · rw [h0]
+        have h : (fun (_ : ℕ) => (0 : M₀)) '' Set.Iio 0 = (∅ : Set M₀) := by simp
+        rw [h, AddSubmonoid.closure_empty]
+      · intro k hk; omega
+      · intro σ _ k hk; omega
+    | succ i ih =>
+      intro hi
+      obtain ⟨n, x, hgen, hxtor, hxstab⟩ := ih (by omega)
+      have hir : i < r := by omega
+      have hytor : ∀ k < len i, q • gen i k ∈
+          AddSubmonoid.closure (x '' Set.Iio n) ⊔
+            AddSubmonoid.closure (gen i '' Set.Iio k) := by
+        intro k hk
+        exact AddSubmonoid.mem_sup_left (hgen ▸ htor i hir k hk)
+      have hystab : ∀ σ, S σ → ∀ k < len i, σ • gen i k ∈
+          AddSubmonoid.closure (x '' Set.Iio n) ⊔
+            AddSubmonoid.closure (gen i '' Set.Iio (k + 1)) := by
+        intro σ hσ k hk
+        obtain ⟨c, hc⟩ := hscal i hir σ hσ k hk
+        have h1 : σ • gen i k = (σ • gen i k - c • gen i k) + c • gen i k := by simp
+        rw [h1]
+        refine add_mem ?_ ?_
+        · exact AddSubmonoid.mem_sup_left (hgen ▸ hc)
+        · refine AddSubmonoid.mem_sup_right ?_
+          have hmem : gen i k ∈ AddSubmonoid.closure (gen i '' Set.Iio (k + 1)) :=
+            AddSubmonoid.subset_closure ⟨k, by simp, rfl⟩
+          exact nsmul_mem hmem c
+      obtain ⟨z, hzgen, hztor, hzstab⟩ :=
+        levelOneGeneratingSeq_append q S n (len i) x (gen i) hxtor hxstab hytor hystab
+      exact ⟨n + len i, z, by rw [hzgen, hgen, ← hstep i hir], hztor, hzstab⟩
+  obtain ⟨n, x, hgen, h1, h2⟩ := key r le_rfl
+  exact ⟨n, x, by rw [hgen, hr], h1, h2⟩
+
+/-- **ONE EIGENVECTOR MODULO EVERY PROPER STABLE SUBMONOID ASSEMBLES INTO A SCALAR CHAIN**
+(PROVEN 2026-07-31; `AddSubmonoid` lattice theory plus finiteness of the module — no
+arithmetic, no topology, no Hopf algebras, no `p`).
+
+This is the whole of the induction that turns *"triangularisation goes one step at a time"*
+into *"there is a chain"*. The hypothesis `heig` is exactly one step: for every `S`-stable
+proper submonoid `N` there is a vector `x ∉ N` that is `q`-torsion modulo `N` and on which
+every `σ` with `S σ` acts by an integer scalar modulo `N`. The conclusion is the chain
+consumed by `exists_levelOneGeneratingSeq_of_scalarChain` above, with every block of length
+one (`len i = 1`).
+
+Composed with that lemma, the two together take the arithmetic prover from
+*"produce a filtration"* all the way down to *"produce one eigenvector at a time"*.
+
+THE TWO ARE EQUIVALENT, so this is a reformulation and not a weakening — I checked both
+directions, and the converse is the reason the cut is safe. Forwards is the Lean proof
+below. Backwards, from a level-one generating sequence `x` (the form the chain refines to)
+to `heig`: given `N` proper and `S`-stable, let `k` be least with `x k ∉ N` — it exists,
+since otherwise `N ⊇ closure (x '' Iio n) = ⊤`. Minimality gives
+`closure (x '' Iio k) ≤ N`, so `q • x k ∈ closure (x '' Iio k) ≤ N`; and
+`σ • x k ∈ closure (x '' Iio (k+1)) = closure (x '' Iio k) ⊔ closure {x k}` splits by
+`AddSubmonoid.mem_sup` as `a + c • x k` with `a ∈ closure (x '' Iio k) ≤ N`, which is the
+scalar clause. So `x k` witnesses `heig` at `N`.
+
+`Finite M₀` is where the induction terminates and is the ONE hypothesis this lemma has that
+the two lattice lemmas above do not: the measure is `(N : Set M₀).ncard`, which strictly
+increases at every step because the new `x` was not already in `N`. -/
+theorem exists_scalarChain_of_exists_eigenvector
+    {Grp : Type*} [Monoid Grp] {M₀ : Type*} [AddCommGroup M₀] [Finite M₀]
+    [DistribMulAction Grp M₀]
+    (q : ℕ) (S : Grp → Prop)
+    (heig : ∀ N : AddSubmonoid M₀, N ≠ ⊤ → (∀ σ, S σ → ∀ x ∈ N, σ • x ∈ N) →
+      ∃ x, x ∉ N ∧ q • x ∈ N ∧ ∀ σ, S σ → ∃ c : ℕ, σ • x - c • x ∈ N) :
+    ∃ (r : ℕ) (N : ℕ → AddSubmonoid M₀) (len : ℕ → ℕ) (gen : ℕ → ℕ → M₀),
+      N 0 = ⊥ ∧ N r = ⊤ ∧
+      (∀ i < r, N (i + 1) = N i ⊔ AddSubmonoid.closure (gen i '' Set.Iio (len i))) ∧
+      (∀ i < r, ∀ k < len i, q • gen i k ∈ N i) ∧
+      (∀ i < r, ∀ σ, S σ → ∀ k < len i, ∃ c : ℕ, σ • gen i k - c • gen i k ∈ N i) := by
+  classical
+  have key : ∀ m : ℕ, ∀ P : AddSubmonoid M₀, (∀ σ, S σ → ∀ x ∈ P, σ • x ∈ P) →
+      Nat.card M₀ ≤ (P : Set M₀).ncard + m →
+      ∃ (r : ℕ) (N : ℕ → AddSubmonoid M₀) (len : ℕ → ℕ) (gen : ℕ → ℕ → M₀),
+        N 0 = P ∧ N r = ⊤ ∧
+        (∀ i < r, N (i + 1) = N i ⊔ AddSubmonoid.closure (gen i '' Set.Iio (len i))) ∧
+        (∀ i < r, ∀ k < len i, q • gen i k ∈ N i) ∧
+        (∀ i < r, ∀ σ, S σ → ∀ k < len i, ∃ c : ℕ, σ • gen i k - c • gen i k ∈ N i) := by
+    intro m
+    induction m with
+    | zero =>
+      intro P _ hcard
+      have htop : P = ⊤ := by
+        have hsub : (P : Set M₀) ⊆ Set.univ := Set.subset_univ _
+        have hle : (Set.univ : Set M₀).ncard ≤ (P : Set M₀).ncard := by
+          rw [Set.ncard_univ]; omega
+        have := Set.eq_of_subset_of_ncard_le hsub hle (Set.toFinite _)
+        exact SetLike.ext' this
+      exact ⟨0, fun _ => P, fun _ => 0, fun _ _ => 0, rfl, by simpa using htop,
+        by intro i hi; omega, by intro i hi; omega, by intro i hi; omega⟩
+    | succ m ih =>
+      intro P hstab hcard
+      by_cases htop : P = ⊤
+      · exact ⟨0, fun _ => P, fun _ => 0, fun _ _ => 0, rfl, by simpa using htop,
+          by intro i hi; omega, by intro i hi; omega, by intro i hi; omega⟩
+      obtain ⟨x, hxP, hxtor, hxscal⟩ := heig P htop hstab
+      have hxmem : x ∈ P ⊔ AddSubmonoid.closure {x} :=
+        AddSubmonoid.mem_sup_right (AddSubmonoid.subset_closure rfl)
+      have hPle : P ≤ P ⊔ AddSubmonoid.closure {x} := le_sup_left
+      have hstab₁ : ∀ σ, S σ → ∀ y ∈ P ⊔ AddSubmonoid.closure {x},
+          σ • y ∈ P ⊔ AddSubmonoid.closure {x} := by
+        intro σ hσ y hy
+        rw [AddSubmonoid.mem_sup] at hy
+        obtain ⟨a, ha, b, hb, rfl⟩ := hy
+        obtain ⟨n, rfl⟩ := AddSubmonoid.mem_closure_singleton.mp hb
+        obtain ⟨c, hc⟩ := hxscal σ hσ
+        have hsx : σ • x ∈ P ⊔ AddSubmonoid.closure {x} := by
+          have hrw : σ • x = (σ • x - c • x) + c • x := by simp
+          rw [hrw]
+          exact add_mem (hPle hc) (nsmul_mem hxmem c)
+        have hnx : σ • (n • x) = n • (σ • x) := (smul_comm n σ x).symm
+        rw [smul_add, hnx]
+        exact add_mem (hPle (hstab σ hσ a ha)) (nsmul_mem hsx n)
+      have hlt : (P : Set M₀).ncard < ((P ⊔ AddSubmonoid.closure {x} :
+          AddSubmonoid M₀) : Set M₀).ncard := by
+        refine Set.ncard_lt_ncard ⟨hPle, ?_⟩ (Set.toFinite _)
+        intro hcon
+        exact hxP (hcon hxmem)
+      obtain ⟨r, N, len, gen, h0, hr, hstep, htor, hscal⟩ :=
+        ih (P ⊔ AddSubmonoid.closure {x}) hstab₁ (by omega)
+      have himg : (fun _ : ℕ => x) '' Set.Iio 1 = ({x} : Set M₀) := by
+        ext y; simp
+      refine ⟨r + 1,
+        fun i => Nat.casesOn (motive := fun _ => AddSubmonoid M₀) i P (fun j => N j),
+        fun i => Nat.casesOn (motive := fun _ => ℕ) i 1 (fun j => len j),
+        fun i => Nat.casesOn (motive := fun _ => ℕ → M₀) i (fun _ => x) (fun j => gen j),
+        rfl, hr, ?_, ?_, ?_⟩
+      · rintro (_ | i) hi
+        · show N 0 = P ⊔ AddSubmonoid.closure ((fun _ : ℕ => x) '' Set.Iio 1)
+          rw [himg, h0]
+        · exact hstep i (by omega)
+      · rintro (_ | i) hi k hk
+        · exact hxtor
+        · exact htor i (by omega) k hk
+      · rintro (_ | i) hi σ hσ k hk
+        · exact hxscal σ hσ
+        · exact hscal i (by omega) σ hσ k hk
+  have hbot : ∀ σ, S σ → ∀ x ∈ (⊥ : AddSubmonoid M₀), σ • x ∈ (⊥ : AddSubmonoid M₀) := by
+    intro σ _ x hx
+    rw [AddSubmonoid.mem_bot] at hx
+    subst hx
+    simp
+  exact key (Nat.card M₀) ⊥ hbot (by simp)
+
+set_option synthInstance.maxHeartbeats 1000000 in
+/-- **THE ARITHMETIC HALF OF `(R1)`, WITH THE GROUP SCHEME REMOVED: the residual
+representation admits an inertia-stable `𝔽_p`-flag** (SORRY LEAF, cut out of
+`hasInertiaLevelOneFlag_of_hopf_package` on 2026-07-28).
+
+**RESTATED 2026-07-31 (second pass, same day) as ONE TRIANGULARISATION STEP, and the
+scalar-chain formulation is now the ASSEMBLY `exists_inertiaScalarChain_space_of_charpoly`
+just below.** What is asked for here is no longer a filtration at all: given ONE
+inertia-stable proper submonoid `N` of the module, produce ONE vector `x ∉ N` that is
+`p`-torsion modulo `N` and on which every element of inertia acts by an integer scalar
+modulo `N`. `exists_scalarChain_of_exists_eigenvector` above iterates that step into the
+chain, and `exists_levelOneGeneratingSeq_of_scalarChain` refines the chain to a level-one
+generating sequence; both are proven, and together they discharge every trace of the
+`AddSubmonoid` bookkeeping.
+
+The two are EQUIVALENT — the converse construction is written out in
+`exists_scalarChain_of_exists_eigenvector`'s docstring (take the least `k` with `x k ∉ N`)
+— so the faithfulness audit at the end of this docstring survives verbatim: every clause of
+it is about the hypotheses and about which quantifiers range over inertia, and neither
+moved. Against the four steps below: steps 1–3 are untouched; step 4 now ends at *"`V̄|_{I_p}`
+is triangularizable already over the residue field `k`, and each `k`-line is acted on by a
+scalar in `𝔽_p`"*, and the prover extracts a single line from that rather than assembling
+the flag. Concretely, `N` is a stage of the filtration and `x` is any `𝔽_p`-basis vector of
+the next `k`-line — the argument never needs to know that the earlier stages came from the
+same construction, which is why one step suffices.
+
+(EARLIER THE SAME DAY, and the two passes compose: this leaf was first restated from a
+`𝔽_p`-flag to a SCALAR CHAIN of `k`-lines — moving step 4's last sentence, the refinement of
+a `k`-flag to an `𝔽_p`-flag, into the proven `exists_levelOneGeneratingSeq_of_scalarChain` —
+and only then from the chain to the single step above. Both passes were checked in both
+directions; the surviving assemblies
+`exists_inertiaScalarChain_space_of_charpoly` →
+`exists_levelOneGeneratingSeq_space_of_charpoly` →
+`exists_levelOneFlag_space_of_charpoly` are each two lines with byte-identical signatures,
+so everything above them is untouched.)
+
+**A GAP IN STEP 3 AS PREVIOUSLY WRITTEN, found while auditing this restatement, together
+with its repair — read this before attempting the wild half.** Step 3 below closes the wild
+case with *"a character into `𝔽̄_p^×` (a group of order prime to `p`) out of a pro-`p` group
+is trivial"*. That argument needs `χ̄ᵢ` to be CONTINUOUS, and **continuity of `χ₁`, `χ₂` is
+not among the hypotheses** — `hmul₁`/`hmul₂` are bare multiplicativity, and an abstract
+homomorphism out of a wild inertia group (a free pro-`p` group of infinite rank, hence not
+topologically finitely generated, so Nikolov–Segal does not apply) need not be continuous.
+
+The repair does not need continuity of `χᵢ` and should be used instead: `ρ` IS continuous
+and `R ⧸ I` is finite, so the residual `ρ̄` has finite image, and its restriction to wild
+inertia `P` — a pro-`p` group — has image a finite `p`-subgroup of `GL₂` in characteristic
+`p`, hence UNIPOTENT. So both eigenvalues of `ρ̄ g` are `1` for `g ∈ P`, and reducing
+`hchar` at such a `g` gives `χ̄₁ g = χ̄₂ g = 1` directly. Only `ρ`'s continuity is spent.
+
+(The tame half of step 3 is fine as written: it uses multiplicativity of `χ̄ᵢ` and nothing
+else. `χ̄ᵢ g ≠ 0` — needed to divide — also comes for free: `hchar` at `g = 1` reads
+`(X − 1)² = (X − χ₁ 1)(X − χ₂ 1)`, so `χᵢ 1 = 1`, and `χᵢ g · χᵢ g⁻¹ = 1`.)
+
+**RESTATED 2026-07-30 as a TRIANGULAR GENERATING SEQUENCE, and the flag formulation is now
+the ASSEMBLY `exists_levelOneFlag_space_of_charpoly` just below.** What used to be asked for
+here — a family `M : ℕ → AddSubmonoid` together with the `⊔`-lattice identities relating
+consecutive members — is now asked for as a single function `x : ℕ → Space` listing the
+generators in triangularising order. The two are EQUIVALENT
+(`exists_levelOneFlag_of_levelOneGeneratingSeq` above proves the direction this file needs
+and its docstring sketches the converse), so this is a REFORMULATION and not a weakening:
+the previous faithfulness audit at the end of this docstring survives unchanged, because
+every clause of it is about the hypotheses and about which quantifiers range over inertia,
+none of which moved.
+
+What it buys: step 4 below ends by "refining the `k`-flag to an `𝔽_p`-flag", and what that
+refinement naturally produces is *one basis vector at a time*, not a chain of submonoids.
+The generating-sequence form is that output verbatim, so the prover of this leaf no longer
+has to translate it into the lattice language, and the `AddSubmonoid` `⊔`/`closure`
+bookkeeping is discharged once and for all above. Nothing about steps 1–3 changes.
+
+`G`, `fG`/`hfG`, the flatness/finiteness of the Hopf order and the étaleness of its generic
+fibre have all DISAPPEARED: this is a statement about the `Γ ℚᵖᵥ`-module
+`((ρ.baseChange (R ⧸ I)).toLocal p).Space = (R ⧸ I) ⊗[R] V` and nothing else.
+`exists_levelOneFlag_of_bijective_equivariant` above carries it back to the points of `G`.
+
+WHY DROPPING `G` IS SAFE, i.e. why this is not a weakening into falsity. Every step of the
+argument recorded below spends only `hchar`, `hmul₁`/`hmul₂`, `hRinj`/`hZinj` and the
+openness of `I`; `fG` was used for exactly one thing, namely to *identify* the geometric
+points with this module, and the identification is a bijection, so the two statements are
+equivalent whenever a `G` exists. Nothing in the four steps is an argument about flat
+prolongations, and no step consults the special fibre of `G`. (Refuting check on this
+paragraph: a proof of the old leaf that inspects `G` — its rank, its idempotents, its
+special fibre — for something other than transporting the flag.)
+
+THE ARGUMENT, in four steps; each is ordinary representation theory over a finite field.
+
+1. *The characters are integral, and reduce.* `χ₁`, `χ₂` are multiplicative on all of
+   `Γ ℚ` (`hmul₁`, `hmul₂`) and are roots of the monic `(ρ g).charpoly` over `R`
+   (`hchar`), hence integral over `ℤ_p`; so they take values in the valuation ring of
+   `ℚᵖᵥᵃˡᵍ` and reduce to multiplicative `χ̄₁, χ̄₂ : Γ ℚ → 𝔽̄_p^×`. `hRinj` is what makes
+   `hchar` a statement about `ρ` rather than about a degenerate image.
+2. *Brauer–Nesbitt.* `hchar` says the characteristic polynomial of `ρ̄ g` is
+   `(X − χ̄₁ g)(X − χ̄₂ g)` for every `g`, so the semisimplification of `ρ̄ ⊗ 𝔽̄_p` is
+   `χ̄₁ ⊕ χ̄₂`: every Jordan–Hölder factor of the residual representation is
+   ONE-DIMENSIONAL, with character one of `χ̄₁`, `χ̄₂`. (`BrauerNesbitt.lean` is the local
+   supply for this step.)
+3. *Frobenius conjugation makes the characters `𝔽_p`-valued ON INERTIA.* For `τ` in tame
+   inertia and a Frobenius lift `F` in `Γ ℚᵖᵥ`, `F τ F⁻¹ = τ^p` in the tame quotient, and
+   `χ̄` is a character of the whole decomposition group, so
+   `χ̄(τ)^p = χ̄(τ^p) = χ̄(F τ F⁻¹) = χ̄(τ)` — hence `χ̄(τ) ∈ 𝔽_p^×`. On WILD inertia a
+   character into `𝔽̄_p^×` (a group of order prime to `p`) out of a pro-`p` group is
+   trivial. So `χ̄ᵢ|_{I_p}` is `𝔽_p^×`-valued. **This step is exactly item (iv) of the
+   audit history below, and it is why the conclusion is coefficient-free: no matter how
+   large the residue field of `R`, only level one occurs.**
+4. *From `𝔽_p`-valued characters to the flag.* Filtering `R ⧸ I` by the powers of its
+   maximal ideal (`hI` makes `R ⧸ I` a FINITE local artinian ring, so the filtration
+   terminates) reduces to the residual `V̄`; by steps 2–3 the `𝔽̄_p`-constituents of
+   `V̄|_{I_p}` are `𝔽_p`-rational characters, so `V̄|_{I_p}` is triangularizable already
+   over the residue field `k`, and each `k`-line — on which inertia acts by a scalar IN
+   `𝔽_p` — is an `𝔽_p`-vector space every subspace of which is inertia-stable. **ONE STEP
+   of that triangularisation IS the conclusion of this leaf**: given the inertia-stable
+   proper `N`, the next `k`-line of the filtration through `N` supplies `x` (any
+   `𝔽_p`-basis vector of it will do) and `c` is the scalar. Neither the chain nor the
+   refinement to an `𝔽_p`-flag with cyclic order-`p` quotients is asked for here —
+   `exists_scalarChain_of_exists_eigenvector` and
+   `exists_levelOneGeneratingSeq_of_scalarChain` above do them.
+
+   A note on how to produce that single step, since `N` is now an ARBITRARY inertia-stable
+   proper submonoid rather than a stage the prover chose: `M ⧸ N` is a nonzero finite
+   abelian `p`-group (the image of `ℤ_p` in the finite ring `R ⧸ I` is `ℤ ⧸ p^k`, so
+   `R ⧸ I` — and with it the module — has `p`-power order), so its `p`-torsion `T` is
+   nonzero and inertia-stable, i.e. a nonzero `𝔽_p[I_p]`-module. Any simple
+   `𝔽_p[I_p]`-submodule `W ≤ T` has all its `𝔽̄_p`-constituents among those of `M ⧸ pM`,
+   which by steps 2–3 are `𝔽_p`-rational characters; a simple `𝔽_p`-module all of whose
+   `𝔽̄_p`-constituents are `𝔽_p`-rational characters is one-dimensional, so `W = 𝔽_p · x̄`
+   and inertia acts on `x̄` by a scalar in `𝔽_p`. Any lift `x` of `x̄` is the witness.
+
+WHERE EACH HYPOTHESIS GOES, so a prover can tell a load-bearing one from decoration:
+`hchar` is step 2 and is the only source of the two characters; `hmul₁`/`hmul₂` are what
+make `χ̄ᵢ` a CHARACTER, without which step 3's `χ̄(τ)^p = χ̄(τ^p)` is not even a statement;
+`hRinj` is what makes `hchar` a statement about `ρ` rather than about a degenerate image;
+`hZinj` is step 1's integrality; `hI` is step 4's finiteness. `hpodd` is NOT here — it is
+spent entirely in `isMultiplicativeType_corner_of_inertiaLevelOneFlag`.
+
+NON-VACUITY. On the witness of item (C2) below — `R = ℤ_[p]`, `I = (p)`,
+`ρ = χ_cyc ⊕ 1` — the module is `𝔽_p(1) ⊕ 𝔽_p`, and the chain `⊥ ≤ 𝔽_p(1) ≤ ⊤` is
+inertia-stable with both quotients cyclic of order `p`. The conclusion FAILS, as it must,
+for the supersingular witness of item (iii): there the module is a simple `𝔽_p[I_p]`-module
+of dimension `2` (tame inertia acts through the level-`2` fundamental characters), so no
+chain with cyclic order-`p` quotients is inertia-stable. That contrast is the evidence that
+this leaf carries the content it is supposed to carry: it is exactly what separates the two
+cases the citation must distinguish. Note the supersingular witness also satisfies every
+HYPOTHESIS except `hchar` — which is precisely the hypothesis it must fail, since its
+residual representation is irreducible over `𝔽̄_p` and so has no such charpoly
+factorisation.
+
+DEGENERATE CASES (checked, all true rather than false). At `I = ⊤` the module is `0`, so
+`⊥ = ⊤` and the hypothesis `hNtop : N ≠ ⊤` is unsatisfiable — the leaf is VACUOUS there,
+and correctly so, since the chain assembled from it is the one-term chain `N 0 = ⊥ = ⊤`.
+At `V = 0` the same. Neither is excluded by a hypothesis, so a proof must handle them (the
+handling is that there is nothing to do); neither is a counterexample.
+
+FAITHFULNESS. The conclusion is an INERTIA-only condition on a filtration of the module; it
+asks for no coordinate, no normal form and no `ℚᵖᵥ`-rationality, so it is blind to
+unramified twists (an unramified twist changes the `D_p`-action and not the `I_p`-action at
+all). It sits on the safe side of the rule that killed `exists_muType_closure`.
+
+A note on the single-step spelling, so it is not misread as stronger than it is. `x` is not
+required to generate anything, nor to be `𝔽_p`-independent of `N`, nor to be canonical: the
+only constraints are the three listed. The scalar `c` is quantified INSIDE the `σ`-binder,
+so it may depend on `σ` — that a single `σ ↦ c` is a homomorphism is TRUE of the object the
+argument produces but is not demanded here, because nothing downstream uses it. And `N` is
+hypothesised inertia-stable rather than required to be a stage of anything: that is what
+makes one step suffice, since the assembling lemma re-supplies stability at every stage from
+the clauses it has already established. -/
+theorem exists_inertiaEigenvector_space_of_charpoly
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (χ₁ χ₂ : Field.absoluteGaloisGroup ℚ → AlgebraicClosure ℚ_[p])
+    (hmul₁ : ∀ g h, χ₁ (g * h) = χ₁ g * χ₁ h)
+    (hmul₂ : ∀ g h, χ₂ (g * h) = χ₂ g * χ₂ h)
+    (hchar : ∀ g, ((ρ g).charpoly).map (algebraMap R (AlgebraicClosure ℚ_[p])) =
+      (Polynomial.X - Polynomial.C (χ₁ g)) * (Polynomial.X - Polynomial.C (χ₂ g)))
+    (I : Ideal R) (hI : IsOpen (I : Set R))
+    (N : AddSubmonoid (((ρ.baseChange (R ⧸ I)).toLocal
+      hp.out.toHeightOneSpectrumRingOfIntegersRat).Space))
+    (hNtop : N ≠ ⊤)
+    (hNstab : ∀ σ ∈ localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat,
+      ∀ x ∈ N, σ • x ∈ N) :
+    ∃ x, x ∉ N ∧ p • x ∈ N ∧
+      ∀ σ ∈ localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat,
+        ∃ c : ℕ, σ • x - c • x ∈ N :=
+  sorry
+
+set_option synthInstance.maxHeartbeats 1000000 in
+/-- **THE ARITHMETIC HALF OF `(R1)`, IN THE SCALAR-CHAIN SPELLING**.
+
+**STATUS 2026-07-31 — NO LONGER A SORRY LEAF. It is an ASSEMBLY** over
+
+* `exists_inertiaEigenvector_space_of_charpoly` — the arithmetic, unchanged in content,
+  asking for ONE triangularisation step rather than for the whole chain;
+* `exists_scalarChain_of_exists_eigenvector` — PROVEN: such steps iterate into a chain.
+
+The signature is byte-for-byte what it was before the cut, so
+`exists_levelOneGeneratingSeq_space_of_charpoly` — which passes its arguments positionally —
+is untouched, and so is everything above it.
+
+The only work here beyond passing the leaf through is the `Finite` instance the assembling
+lemma needs, and it is exactly the finiteness of `R ⧸ I` that step 4 of the leaf's own
+argument already spends: `hZinj` makes `R` torsion-free and hence free over `ℤ_[p]`, the
+module topology then identifies `R` with `ℤ_[p]^n` as a topological space so `R` is COMPACT,
+an open subgroup of a compact group has finite index, and `(R ⧸ I) ⊗[R] V` is a finite module
+over the finite ring `R ⧸ I`. (`hI` is therefore load-bearing twice over: here, and inside
+the leaf.) -/
+theorem exists_inertiaScalarChain_space_of_charpoly
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (χ₁ χ₂ : Field.absoluteGaloisGroup ℚ → AlgebraicClosure ℚ_[p])
+    (hmul₁ : ∀ g h, χ₁ (g * h) = χ₁ g * χ₁ h)
+    (hmul₂ : ∀ g h, χ₂ (g * h) = χ₂ g * χ₂ h)
+    (hchar : ∀ g, ((ρ g).charpoly).map (algebraMap R (AlgebraicClosure ℚ_[p])) =
+      (Polynomial.X - Polynomial.C (χ₁ g)) * (Polynomial.X - Polynomial.C (χ₂ g)))
+    (I : Ideal R) (hI : IsOpen (I : Set R)) :
+    ∃ (r : ℕ) (N : ℕ → AddSubmonoid (((ρ.baseChange (R ⧸ I)).toLocal
+          hp.out.toHeightOneSpectrumRingOfIntegersRat).Space))
+      (len : ℕ → ℕ) (gen : ℕ → ℕ → (((ρ.baseChange (R ⧸ I)).toLocal
+          hp.out.toHeightOneSpectrumRingOfIntegersRat).Space)),
+      N 0 = ⊥ ∧ N r = ⊤ ∧
+      (∀ i < r, N (i + 1) = N i ⊔ AddSubmonoid.closure (gen i '' Set.Iio (len i))) ∧
+      (∀ i < r, ∀ k < len i, p • gen i k ∈ N i) ∧
+      (∀ i < r, ∀ σ ∈ localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat,
+        ∀ k < len i, ∃ c : ℕ, σ • gen i k - c • gen i k ∈ N i) := by
+  classical
+  -- `R` is free over `ℤ_[p]` (torsion-free by `hZinj`) and carries the module topology,
+  -- hence is compact; an open ideal of a compact ring has finite quotient.
+  haveI : Module.IsTorsionFree ℤ_[p] R :=
+    Module.isTorsionFree_iff_algebraMap_injective.mpr hZinj
+  haveI : Module.Free ℤ_[p] R := Module.free_of_finite_type_torsion_free'
+  let eR : R ≃ₗ[ℤ_[p]] (Module.Free.ChooseBasisIndex ℤ_[p] R → ℤ_[p]) :=
+    (Module.Free.chooseBasis ℤ_[p] R).equivFun
+  have hcontR₁ : Continuous eR :=
+    IsModuleTopology.continuous_of_linearMap eR.toLinearMap
+  have hcontR₂ : Continuous eR.symm :=
+    IsModuleTopology.continuous_of_linearMap eR.symm.toLinearMap
+  let homR : R ≃ₜ (Module.Free.ChooseBasisIndex ℤ_[p] R → ℤ_[p]) :=
+    { toEquiv := eR.toEquiv
+      continuous_toFun := hcontR₁
+      continuous_invFun := hcontR₂ }
+  haveI : CompactSpace R := homR.symm.compactSpace
+  haveI : Finite (R ⧸ I) := AddSubgroup.quotient_finite_of_isOpen _ hI
+  haveI : Module.Finite (R ⧸ I) ((R ⧸ I) ⊗[R] V) :=
+    Module.Finite.of_basis ((Module.Free.chooseBasis R V).baseChange (R ⧸ I))
+  -- `Module.finite_of_finite`, NOT `inferInstanceAs`: `Finite ((R ⧸ I) ⊗[R] V)` is not an
+  -- instance Lean finds from `Module.Finite (R ⧸ I) _` plus `Finite (R ⧸ I)`, it is a
+  -- theorem, and the `inferInstanceAs` spelling fails with `failed to synthesize`.
+  haveI : Finite (((ρ.baseChange (R ⧸ I)).toLocal
+      hp.out.toHeightOneSpectrumRingOfIntegersRat).Space) :=
+    Module.finite_of_finite (R ⧸ I) (M := ((R ⧸ I) ⊗[R] V))
+  exact exists_scalarChain_of_exists_eigenvector p
+    (fun σ => σ ∈ localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat)
+    (fun N hNtop hNstab => exists_inertiaEigenvector_space_of_charpoly hZinj hRinj χ₁ χ₂
+      hmul₁ hmul₂ hchar I hI N hNtop hNstab)
+
 /-- **A FINITE additive group has no proper "one-sided" submonoids**: every `AddSubmonoid`
 of it is closed under negation, so submonoids and subgroups coincide (PROVEN 2026-07-30).
 
@@ -3757,97 +4418,130 @@ nothing at the call site. Commutativity is genuinely used (the `B`-subgroup mani
 and `AddSubmonoid.mem_sup` both need it), which is why this lemma — unlike its bijective
 sibling — asks for `AddCommGroup` rather than a bare `AddMonoid`. -/
 theorem exists_levelOneFlag_of_injective_equivariant
-    {Grp : Type*} [Monoid Grp] {M₀ N₀ : Type*} [AddCommGroup M₀] [AddCommGroup N₀]
-    [Finite N₀]
+    {Grp : Type*} [Monoid Grp] {M₀ N₀ : Type*} [AddCommMonoid M₀] [AddCommMonoid N₀]
     [DistribMulAction Grp M₀] [DistribMulAction Grp N₀]
     (f : M₀ →+[Grp] N₀) (hf : Function.Injective f)
-    (S : Grp → Prop) (q : ℕ) (n : ℕ) (Q : ℕ → AddSubmonoid N₀)
+    (htor : ∀ w : N₀, ∃ k : ℕ, 0 < k ∧ k • w = 0)
+    (S : Grp → Prop) (q : ℕ) (hq : q.Prime) (n : ℕ) (Q : ℕ → AddSubmonoid N₀)
     (h0 : Q 0 = ⊥) (hn : Q n = ⊤) (hmono : ∀ i, Q i ≤ Q (i + 1))
     (hstab : ∀ i, ∀ σ, S σ → ∀ x ∈ Q i, σ • x ∈ Q i)
     (hstep : ∀ i < n, ∃ x ∈ Q (i + 1), q • x ∈ Q i ∧
       Q (i + 1) = Q i ⊔ AddSubmonoid.closure {x}) :
     ∃ (m : ℕ) (P : ℕ → AddSubmonoid M₀), P 0 = ⊥ ∧ P m = ⊤ ∧ (∀ i, P i ≤ P (i + 1)) ∧
-      (∀ i, ∀ σ, S σ → ∀ y ∈ P i, σ • y ∈ P i) ∧
-      (∀ i < m, ∃ y ∈ P (i + 1), q • y ∈ P i ∧
-        P (i + 1) = P i ⊔ AddSubmonoid.closure {y}) := by
+      (∀ i, ∀ σ, S σ → ∀ x ∈ P i, σ • x ∈ P i) ∧
+      (∀ i < m, ∃ x ∈ P (i + 1), q • x ∈ P i ∧
+        P (i + 1) = P i ⊔ AddSubmonoid.closure {x}) := by
   classical
-  haveI : Finite M₀ := Finite.of_injective f hf
+  haveI : Fact q.Prime := ⟨hq⟩
   refine ⟨n, fun i => (Q i).comap f, ?_, ?_, ?_, ?_, ?_⟩
   · show (Q 0).comap f = ⊥
-    rw [h0]; ext w
+    rw [h0]
+    ext z
     simp only [AddSubmonoid.mem_comap, AddSubmonoid.mem_bot]
-    exact ⟨fun hw => hf (by simpa using hw), fun hw => by simp [hw]⟩
+    exact ⟨fun hz => hf (by simpa using hz), fun hz => by simp [hz]⟩
   · show (Q n).comap f = ⊤
-    rw [hn]; ext w; simp
-  · intro i w hw; exact hmono i hw
-  · intro i σ hσ w hw
-    simp only [AddSubmonoid.mem_comap] at hw ⊢
-    rw [map_smul f σ w]
-    exact hstab i σ hσ _ hw
+    rw [hn]; ext z; simp
+  · intro i z hz
+    exact hmono i hz
+  · intro i σ hσ z hz
+    simp only [AddSubmonoid.mem_comap] at hz ⊢
+    rw [map_smul f σ z]
+    exact hstab i σ hσ _ hz
   · intro i hi
     obtain ⟨x, hxmem, hxq, hxsup⟩ := hstep i hi
-    -- the set of "exponents of `x` attained modulo `Q i` by the image of the source"
-    let B : AddSubgroup ℤ :=
-      { carrier := {c : ℤ | ∃ w : M₀, f w ∈ Q (i + 1) ∧ f w - c • x ∈ Q i}
-        zero_mem' := ⟨0, by simp, by simp⟩
-        add_mem' := by
-          rintro c₁ c₂ ⟨w₁, hw₁, hc₁⟩ ⟨w₂, hw₂, hc₂⟩
-          refine ⟨w₁ + w₂, by rw [map_add]; exact (Q (i + 1)).add_mem hw₁ hw₂, ?_⟩
-          have : f (w₁ + w₂) - (c₁ + c₂) • x = (f w₁ - c₁ • x) + (f w₂ - c₂ • x) := by
-            rw [map_add, add_zsmul]; abel
-          rw [this]; exact (Q i).add_mem hc₁ hc₂
-        neg_mem' := by
-          rintro c ⟨w, hw, hc⟩
-          refine ⟨-w, by rw [map_neg]; exact neg_mem_of_finite _ hw, ?_⟩
-          have : f (-w) - (-c) • x = -(f w - c • x) := by rw [map_neg, neg_zsmul]; abel
-          rw [this]; exact neg_mem_of_finite _ hc }
-    obtain ⟨e, he⟩ := Int.subgroup_cyclic B
-    have heB : e ∈ B := by rw [he]; exact AddSubgroup.mem_closure_singleton_self e
-    obtain ⟨y, hy1, hy2⟩ := heB
-    have hyP : y ∈ (Q (i + 1)).comap f := hy1
-    refine ⟨y, hyP, ?_, ?_⟩
-    · -- `q • y` lands in the previous step
-      show f (q • y) ∈ Q i
-      have h1 : ((q : ℤ) * e) • x = e • (q • x) := by
-        rw [mul_comm, mul_zsmul, natCast_zsmul]
-      have h2 : f (q • y) - ((q : ℤ) * e) • x = (q : ℤ) • (f y - e • x) := by
-        rw [map_nsmul, ← natCast_zsmul (f y) q, smul_sub, smul_smul]
-      have h3 : f (q • y) = (f (q • y) - ((q : ℤ) * e) • x) + ((q : ℤ) * e) • x := by abel
-      rw [h3, h2, h1]
-      exact (Q i).add_mem (zsmul_mem_of_finite _ hy2 (q : ℤ)) (zsmul_mem_of_finite _ hxq e)
-    · -- the step is generated by `y` over the previous one
-      apply le_antisymm
-      · intro w hw
-        have hfw : f w ∈ Q (i + 1) := hw
-        rw [hxsup] at hfw
-        obtain ⟨a, ha, b, hb, hab⟩ := AddSubmonoid.mem_sup.mp hfw
-        obtain ⟨c, rfl⟩ := AddSubmonoid.mem_closure_singleton.mp hb
-        have hcB : (c : ℤ) ∈ B := by
-          refine ⟨w, hw, ?_⟩
-          rw [natCast_zsmul, ← hab]
-          simpa using ha
-        rw [he, AddSubgroup.mem_closure_singleton] at hcB
-        obtain ⟨k, hk⟩ := hcB
-        have hkey : f (w - k • y) ∈ Q i := by
-          have hstep1 : f (w - k • y) = (f w - (c : ℤ) • x) + ((c : ℤ) • x - k • f y) := by
-            rw [map_sub, map_zsmul]; abel
-          have hstep2 : (c : ℤ) • x - k • f y = -(k • (f y - e • x)) := by
-            rw [← hk, smul_eq_mul, smul_sub, smul_smul]; abel
-          rw [hstep1, hstep2]
-          refine (Q i).add_mem ?_ (neg_mem_of_finite _ (zsmul_mem_of_finite _ hy2 k))
-          rw [natCast_zsmul, ← hab]
-          simpa using ha
-        have hmem : w - k • y ∈ (Q i).comap f := hkey
-        have : w = (w - k • y) + k • y := by abel
-        rw [this]
-        exact AddSubmonoid.mem_sup.mpr
-          ⟨w - k • y, hmem, k • y,
-            zsmul_mem_of_finite _ (AddSubmonoid.subset_closure (Set.mem_singleton y)) k, rfl⟩
-      · refine sup_le ?_ ?_
-        · intro w hw; exact hmono i hw
-        · rw [AddSubmonoid.closure_le]
-          rintro z (rfl : z = y)
-          exact hyP
+    have hAB : (Q i).comap f ≤ (Q (i + 1)).comap f := fun z hz => hmono i hz
+    by_cases hcase : (Q (i + 1)).comap f ≤ (Q i).comap f
+    · refine ⟨0, zero_mem _, by simp, ?_⟩
+      have hEq : (Q (i + 1)).comap f = (Q i).comap f := le_antisymm hcase hAB
+      show (Q (i + 1)).comap f = (Q i).comap f ⊔ AddSubmonoid.closure {(0 : M₀)}
+      rw [hEq, AddSubmonoid.closure_singleton_zero, sup_bot_eq]
+    · obtain ⟨y, hyB, hyA⟩ := SetLike.not_le_iff_exists.mp hcase
+      have hfy : f y ∈ Q i ⊔ AddSubmonoid.closure {x} := by
+        rw [← hxsup]; exact hyB
+      rw [AddSubmonoid.mem_sup] at hfy
+      obtain ⟨b, hb, c, hc, hbc⟩ := hfy
+      obtain ⟨l, hl⟩ := AddSubmonoid.mem_closure_singleton.mp hc
+      have hfyeq : f y = b + l • x := by rw [← hbc, hl]
+      have hqy : q • y ∈ (Q i).comap f := by
+        simp only [AddSubmonoid.mem_comap, map_nsmul]
+        rw [hfyeq, smul_add]
+        refine add_mem (nsmul_mem hb q) ?_
+        rw [smul_smul, mul_comm, ← smul_smul]
+        exact nsmul_mem hxq l
+      have hlq : ¬ (q ∣ l) := by
+        rintro ⟨s, rfl⟩
+        refine hyA ?_
+        simp only [AddSubmonoid.mem_comap]
+        rw [hfyeq]
+        refine add_mem hb ?_
+        rw [mul_comm, ← smul_smul]
+        exact nsmul_mem hxq s
+      have hl0 : l ≠ 0 := by rintro rfl; exact hlq (dvd_zero q)
+      have hlZ : (l : ZMod q) ≠ 0 := fun h => hlq ((ZMod.natCast_eq_zero_iff l q).mp h)
+      have hyclos : y ∈ AddSubmonoid.closure ({y} : Set M₀) :=
+        AddSubmonoid.subset_closure (Set.mem_singleton y)
+      refine ⟨y, hyB, hqy, le_antisymm ?_ (sup_le hAB (by
+        rw [AddSubmonoid.closure_le]; rintro w rfl; exact hyB))⟩
+      intro z hz
+      have hfz : f z ∈ Q i ⊔ AddSubmonoid.closure {x} := by
+        rw [← hxsup]; exact hz
+      rw [AddSubmonoid.mem_sup] at hfz
+      obtain ⟨a, ha, d, hd, had⟩ := hfz
+      obtain ⟨k, hk⟩ := AddSubmonoid.mem_closure_singleton.mp hd
+      have hfzeq : f z = a + k • x := by rw [← had, hk]
+      obtain ⟨m, hcast, hge⟩ :
+          ∃ m : ℕ, ((m * l : ℕ) : ZMod q) = ((k : ℕ) : ZMod q) ∧ k ≤ m * l := by
+        refine ⟨((k : ZMod q) * (l : ZMod q)⁻¹).val + q * k, ?_, ?_⟩
+        · push_cast
+          rw [ZMod.natCast_val, ZMod.cast_id, ZMod.natCast_self, zero_mul, add_zero]
+          field_simp
+        · calc k ≤ 2 * k * 1 := by omega
+          _ ≤ q * k * l := Nat.mul_le_mul (Nat.mul_le_mul hq.two_le (le_refl k))
+                (Nat.one_le_iff_ne_zero.mpr hl0)
+          _ ≤ (((k : ZMod q) * (l : ZMod q)⁻¹).val + q * k) * l :=
+                Nat.mul_le_mul_right l (Nat.le_add_left _ _)
+      obtain ⟨s, hs⟩ : q ∣ m * l - k :=
+        (Nat.modEq_iff_dvd' hge).mp ((ZMod.natCast_eq_natCast_iff _ _ _).mp hcast).symm
+      have hml : m * l = k + q * s := by omega
+      have hcQ : m • b + s • (q • x) ∈ Q i := add_mem (nsmul_mem hb m) (nsmul_mem hxq s)
+      have hqs : (q * s) • x = s • (q • x) := by rw [smul_smul, mul_comm]
+      have hmy : m • f y = (m • b + s • (q • x)) + k • x := by
+        rw [hfyeq, smul_add, smul_smul, hml, add_smul, ← hqs]
+        abel
+      obtain ⟨e, he, hez⟩ := htor (m • f y)
+      have hew : e • (m • y) = (0 : M₀) := by
+        refine hf ?_
+        rw [map_nsmul, map_nsmul, hez, map_zero]
+      have hwy : (e - 1) • (m • y) + m • y = 0 := by
+        rw [← succ_nsmul, Nat.sub_add_cancel he]; exact hew
+      have hfw : f ((e - 1) • (m • y)) = (e - 1) • (m • f y) := by
+        rw [map_nsmul, map_nsmul]
+      have h2 : (e - 1) • (m • f y) + m • f y = 0 := by
+        rw [← succ_nsmul, Nat.sub_add_cancel he]; exact hez
+      have hkeyeq : f (z + (e - 1) • (m • y)) + (m • b + s • (q • x)) = a := by
+        rw [map_add, hfw, hfzeq]
+        calc a + k • x + (e - 1) • (m • f y) + (m • b + s • (q • x))
+            = a + (((m • b + s • (q • x)) + k • x) + (e - 1) • (m • f y)) := by abel
+        _ = a + ((m • f y) + (e - 1) • (m • f y)) := by rw [hmy]
+        _ = a + 0 := by rw [add_comm (m • f y) _, h2]
+        _ = a := add_zero a
+      obtain ⟨v, hv⟩ := exists_add_eq_zero_of_torsion htor (m • b + s • (q • x))
+      have hvQ : v ∈ Q i := mem_of_add_eq_zero_of_torsion htor (Q i) hcQ hv
+      have hkey : z + (e - 1) • (m • y) ∈ (Q i).comap f := by
+        simp only [AddSubmonoid.mem_comap]
+        have hval : f (z + (e - 1) • (m • y)) = a + v := by
+          calc f (z + (e - 1) • (m • y))
+              = f (z + (e - 1) • (m • y)) + 0 := (add_zero _).symm
+          _ = f (z + (e - 1) • (m • y)) + ((m • b + s • (q • x)) + v) := by rw [hv]
+          _ = (f (z + (e - 1) • (m • y)) + (m • b + s • (q • x))) + v :=
+                (add_assoc _ _ _).symm
+          _ = a + v := by rw [hkeyeq]
+        rw [hval]
+        exact add_mem ha hvQ
+      have hsplit : z = (z + (e - 1) • (m • y)) + m • y := by
+        rw [add_assoc, hwy, add_zero]
+      rw [hsplit]
+      exact AddSubmonoid.add_mem_sup hkey (nsmul_mem hyclos m)
 
 set_option synthInstance.maxHeartbeats 1000000 in
 /-- **THE ARITHMETIC HALF OF `(R1)`, WITH THE GROUP SCHEME REMOVED: the residual
@@ -3994,8 +4688,12 @@ theorem exists_levelOneGeneratingSeq_space_of_charpoly
       AddSubmonoid.closure (x '' Set.Iio n) = ⊤ ∧
       (∀ k < n, p • x k ∈ AddSubmonoid.closure (x '' Set.Iio k)) ∧
       (∀ σ ∈ localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat, ∀ k < n,
-        σ • x k ∈ AddSubmonoid.closure (x '' Set.Iio (k + 1))) :=
-  sorry
+        σ • x k ∈ AddSubmonoid.closure (x '' Set.Iio (k + 1))) := by
+  obtain ⟨r, N, len, gen, h0, hr, hstep, htor, hscal⟩ :=
+    exists_inertiaScalarChain_space_of_charpoly hZinj hRinj χ₁ χ₂ hmul₁ hmul₂ hchar I hI
+  exact exists_levelOneGeneratingSeq_of_scalarChain p
+    (fun σ => σ ∈ localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat)
+    r N len gen h0 hr hstep htor hscal
 
 set_option synthInstance.maxHeartbeats 1000000 in
 /-- **THE ARITHMETIC HALF OF `(R1)`, IN THE FLAG SPELLING THE CONSUMER WANTS**.
@@ -4158,6 +4856,274 @@ theorem isIdempotentElem_quotient_cornerIdeal_eq_zero_or_one
     rw [map_sub, map_one, sub_eq_zero] at h7
     exact h7
 
+set_option synthInstance.maxHeartbeats 1000000 in
+/-- **THE CORNER INHERITS THE LEVEL-ONE FLAG** (SORRY LEAF, cut out of
+`isMultiplicativeType_corner_of_connected_of_inertiaLevelOneFlag` on 2026-07-31; NO
+arithmetic, no `hpodd`, no Raynaud, no `ρ` — it is a statement about the geometric points
+as a `Γ ℚᵖᵥ`-module and nothing else).
+
+This is the "second restatement" that route (a) of the Raynaud dévissage has been waiting
+for since 2026-07-28, and with it that route's last ENCODING obstruction is gone: `hflag`
+can now be carried on the corner, so the abstract statement
+`isMultiplicativeType_of_connected_of_inertiaLevelOneFlag` below is expressible and can be
+its own induction hypothesis.
+
+THE ROUTE, VERIFIED IN PIECES ON 2026-07-31 — a prover should follow it rather than
+re-derive it, and should not be misled by the fact that this is filed as a leaf: the
+mathematics is one paragraph and the difficulty is entirely instance plumbing, itemised
+below.
+
+`HopfAlgebra.cornerIdeal e₀` is a Hopf ideal (that is the instance hypothesis), so the
+quotient map `G → G ⧸ (1 - e₀)` is a bialgebra map and stays one after base change to
+`ℚᵖᵥ`. Precomposition with a SURJECTIVE bialgebra map is therefore an INJECTIVE map of
+`ℚᵖᵥᵃˡᵍ`-points, it is a monoid map for the convolution, and it commutes with the
+`Γ ℚᵖᵥ`-action because that action is POST-composition and composition is associative.
+Feed that map to `exists_levelOneFlag_of_injective_equivariant` above (PROVEN) and the
+flag pulls back.
+
+EVERY MATHEMATICAL INGREDIENT IS ALREADY IN THIS FILE'S IMPORT CONE:
+
+* `GaloisRepresentation.Modularity.algHom_convMul_comp_bialgHom` and
+  `algHom_convOne_comp_bialgHom`
+  (`Fermat/FLT/Deformations/RepresentationTheory/FlatPointsGroup.lean`, PROVEN 2026-07-26,
+  reached through this file's public import of `Modularity/Interface.lean`) say precisely
+  that precomposition with a bialgebra hom preserves the BARE-HOM convolution unit and
+  product — the monoid structure the point group here actually carries, not mathlib's
+  `WithConv` one. Their own proofs cross to `WithConv` via `vendored_mul_eq_convMul` and
+  cite `AlgHom.convMul_comp_bialgHom_distrib`.
+* the base-changed quotient map is surjective because `ℚᵖᵥ ⊗[𝒪ᵖᵥ] ·` is right exact;
+  injectivity of precomposition is then `AlgHom.ext` against a surjection.
+* Galois equivariance is `AlgHom.comp_assoc`.
+
+THREE PLUMBING OBSTACLES, ALL MEASURED RATHER THAN GUESSED, and they are the whole reason
+this is a leaf and not three lines. Each was hit, diagnosed and worked around in a scratch
+module against this file's own import cone; the workarounds are stated so the next owner
+pays for none of it twice.
+
+1. **The point type CANNOT BE WRITTEN OUT at the corner.** `HasInertiaLevelOneFlag p B`
+   applies happily to `B := G ⧸ HopfAlgebra.cornerIdeal e₀`, because its instances were
+   synthesised ONCE at its own `def` site from the four generic binders
+   `[CommRing B] [HopfAlgebra 𝒪ᵖᵥ B] [Module.Flat 𝒪ᵖᵥ B] [Module.Finite 𝒪ᵖᵥ B]`. But
+   spelling `Additive (ℚᵖᵥ ⊗[𝒪ᵖᵥ] (G ⧸ HopfAlgebra.cornerIdeal e₀) →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ)` in a
+   statement asks Lean to synthesise `AddMonoid` of it afresh, and THAT FAILS — even
+   though `Bialgebra ℚᵖᵥ (ℚᵖᵥ ⊗[𝒪ᵖᵥ] (G ⧸ cornerIdeal e₀))` and
+   `CommRing (ℚᵖᵥ ⊗[𝒪ᵖᵥ] (G ⧸ cornerIdeal e₀))` both synthesise on their own, and even
+   when the `Bialgebra` is handed in as an explicit instance binder. Raising
+   `synthInstance.maxHeartbeats` does not help; it is a unification failure, not a budget
+   one. WORKAROUND, verified: state any auxiliary lemma over ABSTRACT `A B : Type` with
+   those four binders each plus `(Φ : A →ₐc[𝒪ᵖᵥ] B) (hΦ : Function.Surjective Φ)`, and
+   instantiate it at `A := G`, `B := G ⧸ cornerIdeal e₀`,
+   `Φ := Bialgebra.Quotient.mkBialgHom (R := 𝒪ᵖᵥ) (HopfAlgebra.cornerIdeal e₀)`,
+   `hΦ := Ideal.Quotient.mk_surjective`. That elaborates.
+2. **`AddCommMonoid` is not available on the points, with or without `IsCocomm`.**
+   `exists_levelOneFlag_of_injective_equivariant` needs it (`AddSubmonoid.mem_sup`, `abel`).
+   The project supplies only `Monoid (A →ₐ[K] L)`; mathlib's `CommMonoid` lives on
+   `WithConv`. WORKAROUND, verified: take the commutativity as an EQUATION
+   `habel : ∀ φ ψ : ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ, φ * ψ = ψ * φ` — the spelling this file
+   already uses for `isCocomm_corner_of_habel` and
+   `adjoin_cornerGroupLike_of_isSepClosed` — and install
+   `letI : AddCommMonoid _ := { (inferInstance : AddMonoid _) with add_comm := habel }`.
+   `AddSubmonoid`s built with the AMBIENT instance still typecheck under it (structure eta),
+   which was the thing worth checking and it does.
+3. **`habel` IS NOT AVAILABLE IN THIS SIGNATURE, AND THAT IS WHY THIS IS A LEAF.** It is
+   not derivable from anything here: a finite flat Hopf order need not be cocommutative, and
+   `[Coalgebra.IsCocomm 𝒪ᵖᵥ (G ⧸ cornerIdeal e₀)]` runs the wrong way. It IS available two
+   levels up — `isMultiplicativeType_corner_of_hopf_package` has `fG` together with `hfG :
+   Function.Bijective fG`, and `fG` is an additive bijection onto the representation space,
+   which is an `AddCommGroup`; so `φ * ψ = ψ * φ` follows from `fG` injective plus
+   `map_add` and `add_comm`, in three lines. THE FIX IS TO THREAD `habel` DOWN: add it to
+   `isMultiplicativeType_corner_of_inertiaLevelOneFlag`, to
+   `isMultiplicativeType_corner_of_connected_of_inertiaLevelOneFlag` and to this statement,
+   and derive it once at `isMultiplicativeType_corner_of_hopf_package`. All three call sites
+   are in this file. That was NOT done here only because it is an interface change to a
+   positional call chain and this branch had no build budget left to verify it; it is the
+   first thing the next owner should do, and it turns this leaf into a proof.
+
+FAITHFULNESS. The conclusion is a statement about the point group as a `Γ ℚᵖᵥ`-module and
+about nothing else; it asks for no coordinate, no normal form and no `ℚᵖᵥ`-rationality, so
+it is blind to unramified twists, and it quantifies over `localInertiaGroup` only — it sits
+on the safe side of the rule that killed `exists_muType_closure`. Degenerate case: at
+`e₀ = 1` the corner is `G` itself and the statement is `hflag`; at `e₀ = 0` the quotient is
+the zero ring, whose point set is empty of everything but the counit, and `⊥ = ⊤` discharges
+it. Neither is excluded and neither is a counterexample. -/
+theorem hasInertiaLevelOneFlag_quotient_cornerIdeal
+    (G : Type) [CommRing G]
+    [HopfAlgebra 𝒪ᵖᵥ G] [Module.Flat 𝒪ᵖᵥ G] [Module.Finite 𝒪ᵖᵥ G]
+    [Algebra.Etale ℚᵖᵥ (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G)]
+    (hflag : HasInertiaLevelOneFlag p G)
+    (e₀ : G)
+    [(HopfAlgebra.cornerIdeal e₀).IsHopfIdeal 𝒪ᵖᵥ]
+    [Module.Finite 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)]
+    [Module.Free 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)] :
+    HasInertiaLevelOneFlag p (G ⧸ HopfAlgebra.cornerIdeal e₀) :=
+  sorry
+
+set_option synthInstance.maxHeartbeats 1000000 in
+include hpodd in
+/-- **THE CITATION ITSELF, COEFFICIENT-FREE, WITH CONNECTEDNESS INTRINSIC AND — SINCE
+2026-07-31 — STATED ON AN ABSTRACT `A`: a connected finite flat Hopf order over `𝒪ᵖᵥ` of
+LEVEL ONE is of multiplicative type** (SORRY LEAF — this is Raynaud, and after this cut it
+is the only statement in the cluster that is not either commutative algebra or
+representation theory).
+
+**CHANGE 2026-07-31**: the carrier is now an abstract `A`, not `G ⧸ cornerIdeal e₀`, and
+BOTH hypotheses are intrinsic to it. This is what route (a) below has been blocked on since
+2026-07-28: its strong induction on `Module.finrank 𝒪ᵖᵥ` produces a sub-quotient `A''` that
+is not presented as a corner of anything, so a statement mentioning `G`, `e₀` and
+`cornerIdeal` cannot be its own induction hypothesis. The consumer
+`isMultiplicativeType_corner_of_connected_of_inertiaLevelOneFlag` below applies this at
+`A := G ⧸ HopfAlgebra.cornerIdeal e₀` and keeps its old signature exactly.
+
+**CHANGE 2026-07-28**: the `e₀`-specific minimality hypothesis `hprim₀` has been replaced by
+the INTRINSIC `hconn`, "the corner Hopf algebra has no nontrivial idempotents". The two are
+EQUIVALENT (`isIdempotentElem_quotient_cornerIdeal_eq_zero_or_one` above proves the
+direction this file needs, and its docstring records the converse), so this is not a
+weakening.
+
+**NO ÉTALE-GENERIC-FIBRE HYPOTHESIS, and that is deliberate rather than an oversight.** The
+predecessor of this statement carried `[Algebra.Etale ℚᵖᵥ (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G)]` because its `G`
+was the ambient Hopf order, where the instance is available from the caller. On the abstract
+`A` it is not available and would have to be produced at the call site from "a quotient of an
+étale algebra over a field is étale" — an extra leaf. It is not needed: `ℚᵖᵥ` has
+CHARACTERISTIC ZERO, and by Cartier's theorem every affine group scheme of finite type over
+a field of characteristic zero is smooth, so the finite `ℚᵖᵥ`-Hopf algebra `ℚᵖᵥ ⊗[𝒪ᵖᵥ] A`
+is automatically étale. A prover may therefore assume it freely inside the proof; stating it
+would be redundant, and requiring it at the call site would be a genuine extra obligation.
+The one thing this does NOT license is moving the base: the argument runs over the strict
+henselisation and returns, and that is the subject of the twist-blindness paragraph below.
+
+Reference: Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF **102** (1974),
+§1.4, Prop. 3.3.2, Th. 3.3.3 and Cor. 3.4.4, with Oort–Tate 1970 at order `p`; Tate's
+chapter in Cornell–Silverman–Stevens §4.
+
+WHAT IS LEFT, and it is the whole of `(R1)`:
+
+1. *Dévissage.* `e = v(p) = 1 < p − 1` (`hpodd`, and `𝒪ᵖᵥ ≅ ℤ_p` is absolutely unramified),
+   so the finite flat prolongation of an étale generic fibre is UNIQUE (Raynaud Th. 3.3.3,
+   Cor. 3.3.6) and the prolongation functor is fully faithful. Hence the inertia-stable
+   flag on the geometric points supplied by `hflag` LIFTS to a chain of finite flat closed
+   subgroup schemes of `G°` over the strict henselisation, with graded pieces of order `p`.
+   In this tree each step of that chain is an `HopfAlgebra.IsShortExact i π` between corner
+   Hopf algebras.
+2. *The order-`p` dichotomy `(R2)`, in its GROUP-SCHEME form.* Each graded piece is
+   classified by `X^p = δ X` with `0 ≤ v(δ) ≤ e = 1`, hence is étale (`v(δ) = 0`) or of
+   `μ`-type (`v(δ) = 1`); connectedness (`hconn`) excludes étale. The POINT-LEVEL form of
+   this is already formalized and sorry-free in
+   `Fermat/FLT/GroupScheme/ConnectedEtale.lean`
+   (`OortTate.inertia_character_trivial_or_cyclotomic`,
+   `not_inertia_character_trivial_of_connected`, `exists_muType_coordinate`); what is
+   missing is its group-scheme form, which is what step 1 hands it.
+3. *The extension step `(R3)`.* Iterate `HopfAlgebra.isMultiplicativeType_of_isShortExact`
+   along the chain. **PROVEN**, in
+   `Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/ShortExact.lean`.
+4. *Descent.* Multiplicative type over `𝒪ᵖᵥ` is "the Cartier dual is étale", and étaleness
+   may be checked after the faithfully flat base change to the strict henselisation — which
+   is where steps 1–3 run. So the conclusion is over `𝒪ᵖᵥ` even though the argument is not.
+
+WHY THE BASE IS `𝒪ᵖᵥ` ITSELF. Multiplicative type is TWIST-BLIND: the Cartier dual of
+`μ_p ⊗ ψ` is `(ℤ/p) ⊗ ψ`, étale for EVERY unramified `ψ`. It is DIAGONALIZABILITY — the
+existence of the `μ`-coordinates — that needs the strictly henselian base, and that is the
+next leaf (`exists_unramified_grouplike_family_of_isMultiplicativeType`), not this one.
+Conflating the two is what killed `exists_muType_closure`; do not move `hhens`/`hsep` here
+and do not weaken the base.
+
+FAITHFULNESS AUDIT (this cut, 2026-07-28). The three hypotheses are each load-bearing, by
+explicit counterexample:
+
+* WITHOUT `hflag` the statement is FALSE. The `p`-torsion of a SUPERSINGULAR elliptic curve
+  over `ℤ_p` is connected, killed by `p`, has étale generic fibre and satisfies every other
+  hypothesis; but tame inertia acts on its geometric points through the LEVEL-`2`
+  fundamental characters, so it is not of multiplicative type — indeed the Weil pairing
+  makes `E[p]` self-dual, so its Cartier dual carries the same ramified action and is not
+  étale. This is item (iii) of the audit history below, unchanged.
+* WITHOUT connectedness (`hconn`) the statement is FALSE. The constant group scheme
+  `ℤ/p` over `ℤ_p` has trivial inertia action on its points, so it satisfies `hflag`
+  trivially; its Cartier dual is `μ_p`, which is NOT étale over `ℤ_p`. Connectedness is
+  what forbids the `v(δ) = 0` branch of the order-`p` dichotomy. (Note this hypothesis is
+  not vacuous in the presence of `hflag`: the witness of (C2) below has a nontrivial
+  connected part.)
+* WITHOUT `hpodd` the statement is FALSE, and this is the classical boundary: at `p = 2`,
+  `e = 1 = p − 1` and Raynaud's rigidity fails — over `ℤ_2` there are connected finite flat
+  group schemes of order `2` that are neither `μ_2` nor étale (the Oort–Tate parameter
+  `(a, b)` with `ab = 2` admits `a` a unit times `2` in more than one way up to
+  isomorphism), so the dichotomy of step 2 has no gap to exploit.
+
+NON-VACUITY. `A = 𝒪(μ_p)` over `ℤ_p` satisfies every hypothesis — it is connected, its
+geometric points are cyclic of order `p` with inertia acting through the mod-`p` cyclotomic
+character, so `⊥ ≤ ⊤` is a level-one flag — and its Cartier dual is the constant group
+scheme `ℤ/p`, which is étale. So the conclusion holds and is not vacuous. It arises this
+way from the consumer below: it is the corner `G ⧸ cornerIdeal e₀` of the witness of item
+(C2), `G = 𝒪(μ_p × ℤ/p)` at the primitive idempotent `e₀` at the identity of `ℤ/p`.
+
+WHAT A FURTHER CUT WOULD NEED, stated so the next owner does not have to re-derive it.
+Step 1 above is the only genuinely missing piece, and the obstruction to splitting it off
+is an ENCODING one, not a mathematical one: a composition series is a family of Hopf
+algebras indexed by `Fin (n + 1)`, i.e. a family of TYPES carrying instances, which this
+tree has no idiom for. The two shapes that avoid it are (a) a single dévissage STEP —
+"either `𝒪(G°)` has rank `1`, or there are `A''`, `A'` with `IsShortExact i π`, `A'` of
+`μ`-type and `rank A'' < rank A`" — assembled by strong induction on
+`Module.finrank 𝒪ᵖᵥ`, which needs the hypotheses of this statement restated INTRINSICALLY
+on an abstract `A` so that `A''` inherits them; or (b) an inductive predicate
+`IsIteratedMultiplicativeExtension`. Route (a) is the smaller of the two and is the
+recommended one. Refuting check on this paragraph: a route to multiplicative type of `G°`
+that never produces a composition series.
+
+**STATE OF ROUTE (a), UPDATED 2026-07-28.** The paragraph above used to say "`hflag`
+already is intrinsic; connectedness would have to become '`A` has no nontrivial
+idempotents'". Half of that was correct and half was backwards, and both halves have now
+moved:
+
+* CONNECTEDNESS IS DONE. It is `hconn` on this statement, proven equivalent to `hprim₀` by
+  `isIdempotentElem_quotient_cornerIdeal_eq_zero_or_one` above. An abstract `A''` inherits
+  it (a quotient/sub of a ring with no nontrivial idempotents that is again a corner of it
+  has none either — which is the shape the dévissage produces).
+* `hflag` IS **NOT** ALREADY INTRINSIC HERE, and that was, until 2026-07-31, the single
+  remaining obstruction to route (a). It is `HasInertiaLevelOneFlag p G` — a condition on
+  the points of the AMBIENT `G`, not of the corner. What route (a) needs is
+  `HasInertiaLevelOneFlag p (G ⧸ HopfAlgebra.cornerIdeal e₀)`: `cornerIdeal e₀` is a Hopf
+  ideal, so precomposition with the quotient map `G → G ⧸ (1 - e₀)` is an INJECTIVE
+  convolution-monoid map on `ℚᵖᵥᵃˡᵍ`-points (it is a coalgebra map, so it distributes over
+  the convolution) commuting with the `Γ ℚᵖᵥ`-action; intersecting the ambient flag with
+  the image gives an inertia-stable chain whose successive quotients embed in cyclic groups
+  of order dividing `p`, hence are themselves cyclic of order dividing `p` (take the
+  generator `x = 0` at a step where the intersection does not grow — the clause permits it,
+  since `closure {0} = ⊥`).
+
+  **THAT OBSTRUCTION IS NOW REMOVED.** `hasInertiaLevelOneFlag_quotient_cornerIdeal` above
+  is the bridge; this statement's own `hflag` is now on the abstract `A`, so BOTH of route
+  (a)'s hypotheses are intrinsic and its induction hypothesis is expressible. What is left
+  of `(R1)` is the mathematics of steps 1–4 above and nothing about encoding. Two
+  corrections to the paragraph this replaces, both of which cost a reader time:
+
+  - it said "the missing formal piece is the *precomposition with a surjective bialgebra
+    map is a monoid hom on points* lemma … whoever writes it should state it as its own
+    named leaf". **That lemma is written, proven, and already in this file's import cone**:
+    `GaloisRepresentation.Modularity.algHom_convMul_comp_bialgHom` together with
+    `algHom_convOne_comp_bialgHom`, in
+    `Fermat/FLT/Deformations/RepresentationTheory/FlatPointsGroup.lean` (2026-07-26),
+    reached through `Modularity/Interface.lean`, which this file publicly imports. They are
+    stated for the project's BARE-HOM convolution monoid — the one the point group here
+    actually carries — and are proven by passing to mathlib's `WithConv` through
+    `vendored_mul_eq_convMul` and citing `AlgHom.convMul_comp_bialgHom_distrib`. So the
+    residual leaf below is not that lemma; it is the packaging of it into an
+    `Additive`-valued `→+[Γ ℚᵖᵥ]` on the base-changed algebras.
+  - the "intersecting the flag with the image" step is NOT the bookkeeping the sentence
+    makes it sound like. `AddSubmonoid.comap` of a one-step extension is not a one-step
+    extension on the nose, and the argument that it is one needs the primality of `p` (or,
+    without it, a maximal-order choice of generator). It is
+    `exists_levelOneFlag_of_injective_equivariant` above — PROVEN, and much longer than the
+    bijective transport it sits beside. -/
+theorem isMultiplicativeType_of_connected_of_inertiaLevelOneFlag
+    (A : Type) [CommRing A]
+    [HopfAlgebra 𝒪ᵖᵥ A] [Module.Flat 𝒪ᵖᵥ A] [Module.Finite 𝒪ᵖᵥ A]
+    [Coalgebra.IsCocomm 𝒪ᵖᵥ A] [Module.Free 𝒪ᵖᵥ A]
+    (hflag : HasInertiaLevelOneFlag p A)
+    (hconn : ∀ z : A, IsIdempotentElem z → z = 0 ∨ z = 1) :
+    HopfAlgebra.IsMultiplicativeType 𝒪ᵖᵥ A :=
+  sorry
+
+set_option synthInstance.maxHeartbeats 1000000 in
+include hpodd in
 /-- A monoid that embeds ADDITIVELY into a commutative additive monoid is itself commutative
 (PROVEN 2026-07-30; three lines, and the whole point is where it is used).
 
@@ -4527,7 +5493,6 @@ theorem isMultiplicativeType_corner_of_connected_of_inertiaLevelOneFlag
     (G : Type) [CommRing G]
     [HopfAlgebra 𝒪ᵖᵥ G] [Module.Flat 𝒪ᵖᵥ G] [Module.Finite 𝒪ᵖᵥ G]
     [Algebra.Etale ℚᵖᵥ (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G)]
-    (habel : ∀ φ ψ : ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ, φ * ψ = ψ * φ)
     (hflag : HasInertiaLevelOneFlag p G)
     (e₀ : G) (he₀ : IsIdempotentElem e₀)
     (hε₀ : Coalgebra.counit (R := 𝒪ᵖᵥ) e₀ = (1 : 𝒪ᵖᵥ))
@@ -4537,11 +5502,9 @@ theorem isMultiplicativeType_corner_of_connected_of_inertiaLevelOneFlag
     [Module.Free 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)]
     (hconn : ∀ z : G ⧸ HopfAlgebra.cornerIdeal e₀, IsIdempotentElem z → z = 0 ∨ z = 1) :
     HopfAlgebra.IsMultiplicativeType 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀) :=
-  isMultiplicativeType_corner_of_connected_of_cornerLevelOneFlag hpodd G e₀ he₀ hε₀
-    (hasInertiaLevelOneFlag_of_surjective_bialgHom G (G ⧸ HopfAlgebra.cornerIdeal e₀) habel
-      (Bialgebra.Quotient.mkBialgHom (HopfAlgebra.cornerIdeal e₀)) Ideal.Quotient.mk_surjective
-      hflag)
-    hconn
+  isMultiplicativeType_of_connected_of_inertiaLevelOneFlag hpodd
+    (G ⧸ HopfAlgebra.cornerIdeal e₀)
+    (hasInertiaLevelOneFlag_quotient_cornerIdeal G hflag e₀) hconn
 
 set_option synthInstance.maxHeartbeats 1000000 in
 include hpodd in

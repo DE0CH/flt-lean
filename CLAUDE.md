@@ -218,6 +218,39 @@ lines of text; moving the two consumers down would have been 300. **Move whichev
 is smaller** — and note the docstring's own suggestion ("re-run its three-line domain
 half here") was wrong about the price: the "three-line" half is a thirty-line proof.
 
+## A DISPATCHED WORKTREE IS NOT NECESSARILY AT `main` — check before calling a target a phantom
+
+(2026-07-31, `flt-lean-109`.) The dispatch hook is supposed to fast-forward the worktree to
+`main`. Mine arrived **575 commits behind** it, clean and on its own branch, so `HEAD` was a
+perfectly ordinary ancestor of `main` and nothing looked wrong. One of the two named targets,
+`exists_levelOneGeneratingSeq_space_of_charpoly`, **did not exist anywhere in the tree** — and a
+`git log -S`/`git log -m -S` sweep across `--all` found only merge commits, which reads exactly
+like the "cut, merged, and deliberately declined" case documented below.
+
+It was none of those. The task prompt's line numbers (`:3800`, `:4093`) matched `main` **exactly**,
+which is the cheap tell: prompts are stamped against `main` at queue time, so *line numbers that do
+not match your file are a statement about your checkout, not about the leaf.* One
+`git merge --ff-only main` and both targets were there at the quoted lines.
+
+So the first three commands of any task, before any archaeology:
+
+    git rev-list --count HEAD..main      # MUST be 0; if not, you are not looking at the frontier
+    git merge --ff-only main
+    sed -n '<quoted line>p' <the file>   # the declaration should be right there
+
+Corollary for the `.lake` seeding, and it is worth 20 seconds against a multi-hour build:
+`~/.flt-release-lake/sha` names the commit the snapshot was built at. If
+
+    git diff --stat $(cat ~/.flt-release-lake/sha) main -- Fermat/
+
+is EMPTY, the snapshot is bit-for-bit `main`'s Lean state (only tooling commits landed since), so
+`rsync -a --delete ~/.flt-release-lake/build/ /scratch/chend-flt/flt-lean-N/.lake/build/` gives a
+fully warm tree. Mine was, and it did.
+
+And `lake` is **not on `PATH`** in a fresh agent shell even when running locally on the owning
+host — `export PATH="$HOME/.elan/bin:$PATH"` first, or the build dies instantly with
+`lake: command not found` and an `EXIT=127` that is easy to misread as a build failure.
+
 ## Missing tools: brew install is pre-authorized
 
 (Deyao, 2026-07-21.) If a needed tool is missing and available through
@@ -5659,3 +5692,41 @@ was a build round. **A theorem whose signature you change is not done until
 `git grep` over its name is clean** — and if the caller is a branch of a `by_cases`
 whose own comment says the other branch covers every case, delete it rather than repair
 it. The comment is a licence; use it.
+
+## A DOCSTRING'S "MISSING PIECE" LIST IS ABOUT ABSENCE — GREP THE IMPORT CONE BEFORE BELIEVING IT
+
+(2026-07-31, `flt-lean-109`.) `isMultiplicativeType_corner_of_connected_of_inertiaLevelOneFlag`'s
+docstring named exactly one obstruction and told the next owner what to do about it: *"The missing
+formal piece is the 'precomposition with a surjective bialgebra map is a monoid hom on points'
+lemma; `AlgHom.comp_convMul_distrib` is the POST-composition analogue and is the model to copy.
+Whoever writes it should state it as its own named leaf."* Precise, actionable, and **wrong in both
+directions**:
+
+* mathlib already has the precomposition lemma — `AlgHom.convMul_comp_bialgHom_distrib`, sitting
+  four lines above the postcomposition one the docstring cites as the model;
+* and this project had ALREADY wrapped it for its own bare-hom convolution monoid five days
+  earlier, as `algHom_convMul_comp_bialgHom` / `algHom_convOne_comp_bialgHom` in
+  `Deformations/RepresentationTheory/FlatPointsGroup.lean` — reachable from the file in question
+  through its own `public import` of `Modularity/Interface.lean`.
+
+This is the same failure the memory `flt-inventory-audits-understate-what-exists` records, one
+level up: an audit is reliable about *what the argument needs* and unreliable about *what exists*.
+The docstring writer searched for the shape they expected to write and did not search the tree.
+
+The check is two greps and it is worth running against EVERY "missing"/"unwritten"/"needs a new
+lemma" claim before you write a line:
+
+    grep -rn '<the mathlib-ish name>' .lake/packages/mathlib/Mathlib/ | head
+    grep -rn '<the concept, 2-3 spellings>' --include=*.lean Fermat/ | head
+
+and when the docstring names a "model to copy", **read the model's file** — the analogue you want
+is usually its neighbour.
+
+Second half of the same lesson, and it cuts the other way: the docstring ALSO described the
+remaining step as bookkeeping (*"intersecting the ambient flag with the image gives an
+inertia-stable chain"*). That one was harder than advertised — `AddSubmonoid.comap` of a one-step
+extension is not a one-step extension on the nose, and the proof needs the primality of `p` (via
+`ZMod p` being a field) or else a maximal-order choice of generator. It came to ~120 lines against
+the ~25 of the bijective transport beside it. **So a docstring's difficulty estimates are
+hypotheses in both directions: the "missing" piece was already written, and the "bookkeeping" piece
+was the real work.** Cost of not checking: one leaf re-proven, one leaf under-budgeted.
