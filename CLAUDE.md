@@ -6740,6 +6740,17 @@ earlier incarnation's result is still its result. But `grep -n prev_tokens flt-l
 finds exactly **two** occurrences — the read at 877 and the field-copy at 1033. **Nothing
 ever writes it.** It is always `None`.
 
+**CORRECTED 2026-07-31 (`flt-lean-95`): `prev_tokens` IS written now, and the safety net
+it provides is real.** Measured on a live resumed job:
+`{'token': 'dacb1063', 'prev_tokens': ['1256ab5b', 'b2168cd5'], 'resume': True}`, with the
+prompt still carrying `1256ab5b` — i.e. the loop had rotated the token TWICE and kept both
+old ones. So a sentinel copied verbatim from the prompt would have been accepted after all.
+**The advice below is unchanged and should still be followed**: read the token from
+`jobs/<name>.json` / `<name>.started` rather than from the prompt, because the fallback is
+somebody else's implementation detail and was absent for at least one release. What changes
+is only the diagnosis if you find your work discarded — an unaccepted sentinel is no longer
+the likeliest cause.
+
 Meanwhile resume mints a NEW token, deliberately, so the old `.started` marker goes
 inert. The agent's prompt is the ORIGINAL payload and still carries the ORIGINAL token.
 So on any job with `resume: true` / `retries > 0`:
