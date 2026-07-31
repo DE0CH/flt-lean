@@ -3649,6 +3649,62 @@ and a second consumer 79 000 lines away in another module from another branch, f
 4 after twenty minutes of elaboration. Budget three rounds minimum, and schedule nothing behind the
 first green one.
 
+### GET THE WHOLE MODULE'S ERROR LIST IN ONE RUN: `lake env lean -D maxErrors=2000`
+
+(2026-07-31, `flt-lean-58`, measured on `merger`'s `X0.lean`.) The release-build
+rule above says budget three rounds because the errors are serialised behind each
+other by the import graph. That is true ACROSS modules. WITHIN one module you do
+not have to pay rounds at all: `lake build` stops at `maxErrors` (100) and prints
+`maximum number of errors … reached, exiting`, but once the module's dependencies
+are built you can run the elaborator directly with the cap lifted —
+
+    lake env lean -D maxErrors=2000 Fermat/FLT/ModularCurve/X0.lean
+
+— and get the complete list in ONE elaboration. Here that was **~4.5 minutes** for
+a 107 000-line module whose dependency build had just taken **50**, and it turned
+"89 sites, cap reached" into the module's real inventory. Do this before reporting
+a red module: a capped list is not a list, and the next 40 000 lines of the file
+have not been looked at.
+
+Two riders. The cap being reached is itself the tell — grep the log for
+`maximum number of errors`. And a PARSE error truncates everything after it, so a
+capped-and-truncated log can be wrong about the count in both directions at once.
+
+### AN ORPHANED PROSE BLOCK IS REPAIRED WITH `--`, NEVER BY RE-OPENING IT
+
+Same run, and it cost several build cycles to learn. The doctrine already says a
+merge can strand a docstring body without its opener, and that a stray `-/` or an
+unterminated `/--` takes the whole module down. What it does not say is how to put
+one back, and the obvious repair is a trap:
+
+* **Do not re-open the block with `/-!`.** Block comments NEST, so any `/-` or `-/`
+  *inside* the stranded prose — and this project's prose is full of quoted
+  delimiters — opens or closes a level and leaves the file worse. I re-opened one
+  block and turned 81 errors into 122, twice, because my own explanatory note
+  quoted the delimiters it was explaining.
+* **`--` line comments are delimiter-safe.** Verified on a three-line scratch:
+  `-- a comment with -/ inside it` and `-- another with /- inside it` both
+  elaborate clean. So converting a stranded block line-by-line to `--` preserves
+  every word and cannot nest. That is the repair.
+* **Better still, check whether the block is a DUPLICATE first.** One of the two
+  here was byte-identical to a live copy 380 lines below (`diff <(sed -n 'a,bp')
+  <(sed -n 'c,dp')` — one command), so the right repair was deletion, not rescue.
+
+**And do not trust a hand-rolled comment scanner over Lean.** Mine reported
+`depth 0, no strays` on a file Lean rejected with `unterminated comment`, because
+it did not skip string literals; with strings handled it found the opener
+immediately. Even then it disagreed with Lean about nesting in the damaged region.
+Use the scanner to LOCATE candidates and `lake env lean` to decide.
+
+**Finally, know when to stop.** These wounds are layered: each repair reveals the
+next, and the count can go UP because a broken comment was hiding real errors
+inside itself. Repairing them is reconstructing another author's prose across a
+100 000-line file. If the merge worker is mid-flight on that same file — check its
+last few commits — the higher-value move is to REVERT your comment edits, keep your
+own payload minimal and conflict-free, and hand over the uncapped error inventory
+plus a per-wound diagnosis. That costs them one command instead of a release round,
+and it cannot collide with their in-flight repairs.
+
 ### WHEN TWO RIVAL CUTS OF ONE LEAF BOTH LAND, THE **CALL SITE** IS THE ARBITER
 
 (2026-07-31, `flt-lean-58`, on `not_forall_galoisScalar_of_cmEndomorphism` in `X0.lean`.)
