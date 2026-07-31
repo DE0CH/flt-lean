@@ -460,7 +460,7 @@ open in them has been split along the theories it needed:
 | `isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1` | Shimura's algebraicity theorem for `Γ₁(N)`: the `a n` are algebraic integers.  MENTIONS NO SCHEME — the only obligation of `IsIsotypicQuotient` that does not, and it can be attacked from the integral-homology side or from the Hecke recursions plus a bound.  Cannot be an instance of `X0.lean`'s `isIntegral_coeff_of_isWeightTwoEigenform`: the `Γ₁` coefficients generate `ℚ(χ)`. | `ℚ` |
 | `exists_isotypicQuotient_of_isIntegral_gamma1` | Shimura's `A_f` on `Γ₁(N)`, one factor, given the PINNED Hecke action AND algebraicity — the "build one factor" half of Eichler-Shimura, and the `Γ₁` twin of `X0.lean`'s `exists_isotypicQuotient_of_isIntegral`.  (`IsIsotypicQuotient` is reused verbatim from `X0.lean`; it is shape-free.  `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` is **PROVEN** over this row and the one above since 2026-07-30, transporting the `Γ₀` recut of the same day; its FALSITY AUDIT was discharged that day too and the statement is TRUE.) | `ℚ` |
 | `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` | the "assemble the factors" half: finiteness of the index set, the oldform multiplicities, `finite_ker`, and the `neben` labelling.  It no longer owns the `N = 0` case: that case was REFUTED on 2026-07-28 (`isEmpty_isHeckeIsotypicDecompositionGamma1_zero`) and the leaf now carries `hN : N ≠ 0`; see its docstring | `ℚ` |
-| `isTorsion_factor_of_heckeIsotypic_gamma1` | Kolyvagin-Logachev on an isotypic factor | `ℚ` |
+| `isTorsion_factor_of_heckeIsotypic_gamma1_of_ne_zero` | Kolyvagin-Logachev on an isotypic factor.  Carries `hN : N ≠ 0` since 2026-07-31; the unguarded name `isTorsion_factor_of_heckeIsotypic_gamma1` is now a PROVEN wrapper over it, so no consumer changed | `ℚ` |
 | `cuspPeriod_ne_zero_x1TwentyFive` | the `L`-value numerics — the DEEP one, and the only row where `25` survives.  (`lFunction_apply_one_ne_zero_x1TwentyFive` was decomposed along the period 2026-07-28; its analytic half `lFunction_apply_one_eq_two_pi_mul_cuspPeriod_gamma1` is PROVEN the same day, as the `G = Γ₁(N)` instance of `lFunction_apply_one_eq_two_pi_mul_cuspPeriodOn`, which is in turn the group-generic form of `X0.lean`'s proven theorem.) | `ℚ` |
 | `not_birationalOver_affineLine_of_one_le_x1Genus_algClosed` | the genus formula and nothing else — Diamond–Shurman Thm 3.1.1: a fibre of `X_1(N)` with `genus ≥ 1` is not birational to `𝔸¹` over an ALGEBRAICALLY CLOSED field.  The only declaration in the `Γ₁` genus formula that still mentions `N`.  (Cut 2026-07-30 out of `exists_nonconstant_toAbelianScheme_of_one_le_x1Genus`, which is PROVEN over it and the row below.)  **RESTATED 2026-07-30 with `hchar : (N : K) ≠ 0`**: without it the leaf and its three proven consumers are FALSE, refuted by the Igusa curve `Ig(11)` in characteristic `11` — the falsity audit and the genus computation are on the declaration, and the hypothesis is discharged at the `SpecQ` base of `hasNonconstantAbelianMap_of_one_le_x1Genus`. | alg. closed `K`, `char K ∤ N` |
 | `exists_nonconstant_toAbelianScheme_of_notGeometricallyRational` | `Pic⁰` and the degree-`n` Abel–Jacobi map: a GEOMETRICALLY non-rational fibre receives a nonconstant map to an abelian variety.  LEVEL-FREE — no `N` in it, and the `Γ₀` sibling leaf would close over it verbatim; see its RELOCATION NOTE.  The same statement with the hypothesis taken over `K` rather than over `K̄` is FALSE (pointless conic over `ℝ`); the falsity audit is on the declaration. | any |
@@ -14631,9 +14631,45 @@ theorem exists_heckeIsotypicDecomposition_gamma1 (N : ℕ) (hN : N ≠ 0)
   exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1 N hN h jac
     (exists_heckeAction_isotypicQuotients_gamma1 N hN h jac)
 
+/-- **A `Γ₁` HECKE-ISOTYPIC DATUM REFUTES LEVEL `0` ALL BY ITSELF** (PROVEN
+2026-07-31) — one line over `isEmpty_isHeckeIsotypicDecompositionGamma1_zero`
+above, and it corrects a claim that was true where it was written and is FALSE
+of every statement that takes a `D`.
+
+`exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1`'s docstring says
+that at `N = 0` "the hypotheses `h` and `jac` are not refutable at level `0` —
+`IsCoarseModuliY1` carries no bijectivity clause, so the `Γ₀` rescue
+`isEmpty_of_isCoarseModuliY0_zero` has no analogue", and that is exactly right
+*there*: that leaf's conclusion is `Nonempty (…)`, so `N ≠ 0` has to be a
+hypothesis because nothing in its context can produce it.
+
+It does not carry over to the leaves BELOW it, and the difference is the
+direction of the arrow.  A statement that CONSUMES a
+`IsHeckeIsotypicDecompositionGamma1 N h jac` has the datum in hand, and the
+datum is what level `0` refutes — `cover` demands an index for each of the
+pairwise-distinct systems `lacunaryTwoCoeff c`, `c : ℂ`, against a finite
+`idx`.  So a `Γ₁` prover downstream never has to thread `hN` and never has to
+re-derive it; the level guard is FREE, and this is the lemma that hands it over.
+
+Contrast the `Γ₀` side, where the same guard is free for a different reason and
+one level higher up: `pos_of_isX0Compactification_of_fieldPoint` (`X0.lean`)
+reads it off `h` and a `ℚ`-point alone, so there it is available even to the
+`Nonempty`-shaped statements. -/
+theorem ne_zero_of_isHeckeIsotypicDecompositionGamma1 {N : ℕ}
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    {h : ModularLevelShape.IsCompactification .gamma1 N strX strY jY} {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    {jac : IsJacobianOf strX ab o}
+    (D : IsHeckeIsotypicDecompositionGamma1 N h jac) : N ≠ 0 := by
+  rintro rfl
+  exact (isEmpty_isHeckeIsotypicDecompositionGamma1_zero h jac).elim D
+
 /-- **KOLYVAGIN–LOGACHEV for `Γ₁(N)`: a Hecke-isotypic factor of `J_1(N)`
-has torsion Mordell–Weil group** (sorry node, new 2026-07-28) — the second
-of the two leaves, and the one carrying the Euler system.
+has torsion Mordell–Weil group** (sorry node, new 2026-07-28; **the level
+guard `hN : N ≠ 0` was ADDED 2026-07-31**, see
+`ne_zero_of_isHeckeIsotypicDecompositionGamma1` above and the note at the foot
+of this docstring) — the second of the two leaves, and the one carrying the
+Euler system.
 
 The intended proof uses only `hL (D.neben i) (D.form i) (D.coeff i)
 (D.isEigen i)`: `A i` is the modular abelian variety attached to the
@@ -14746,8 +14782,23 @@ searched as a source of sub-leaves.
 
 `D.u_surj`, `D.isotypic`, `D.cover`, `D.equivariant` and `D.integral` are
 all available to a prover and none is decoration: the first carries the
-rank bound, the rest identify which eigenform `A i` belongs to. -/
-theorem isTorsion_factor_of_heckeIsotypic_gamma1 (N : ℕ)
+rank bound, the rest identify which eigenform `A i` belongs to.
+
+**`hN : N ≠ 0` ADDED 2026-07-31, AND IT COSTS THE CONSUMER NOTHING.**  The
+wrapper below discharges it from `D` itself
+(`ne_zero_of_isHeckeIsotypicDecompositionGamma1`), so the shape-free chain and
+`isTorsion_jacobian_of_lFunction_ne_zero_gamma1` are untouched — no signature
+above this leaf changed.  It is not decoration either: everything the intended
+route names is level-`0`-degenerate.  `hL` at `N = 0` is CONTRADICTORY
+(`not_lFunctionHypothesis_gamma1GL_zero` above, witness `lacunaryTwoCoeff 8`),
+"the newform `g` of level `M ∣ N`" is meaningless when every `M` divides `N`,
+and the `Γ₁` Hecke pin is the empty conjunction there because `¬ ℓ ∣ 0` is
+false for every `ℓ`.  A prover who did not have `hN` would have to notice all
+three and re-derive the guard; having it in the binder means the Euler-system
+argument may be written for a genuine level without a word about the degenerate
+one.  The hypothesis is therefore a strict weakening of the obligation, not a
+restatement: the leaf as it stood was provable only by first proving this. -/
+theorem isTorsion_factor_of_heckeIsotypic_gamma1_of_ne_zero (N : ℕ) (hN : N ≠ 0)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     {h : ModularLevelShape.IsCompactification .gamma1 N strX strY jY} {jstr : J ⟶ SpecQ}
     {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
@@ -14758,6 +14809,27 @@ theorem isTorsion_factor_of_heckeIsotypic_gamma1 (N : ℕ)
     letI := (D.abA i).addCommGroup (𝟙 SpecQ)
     AddMonoid.IsTorsion (RelPoint (D.astr i) (𝟙 SpecQ)) :=
   sorry
+
+/-- **KOLYVAGIN–LOGACHEV for `Γ₁(N)`, with the level guard discharged**
+(PROVEN 2026-07-31, over the leaf immediately above and
+`ne_zero_of_isHeckeIsotypicDecompositionGamma1`) — the name every consumer in
+this file uses, unchanged in statement since 2026-07-28.
+
+This wrapper exists only so that adding `hN` to the leaf changed no signature
+anywhere above it.  All of the mathematics, and the whole of the audit, is on
+the leaf. -/
+theorem isTorsion_factor_of_heckeIsotypic_gamma1 (N : ℕ)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    {h : ModularLevelShape.IsCompactification .gamma1 N strX strY jY} {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    {jac : IsJacobianOf strX ab o} (D : IsHeckeIsotypicDecompositionGamma1 N h jac)
+    (hL : ∀ (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ),
+      IsWeightTwoEigenformOn (Gamma1GL N) N χ f a →
+      ∀ L : ℂ → ℂ, IsLFunctionOf a L → L 1 ≠ 0) (i : D.idx) :
+    letI := (D.abA i).addCommGroup (𝟙 SpecQ)
+    AddMonoid.IsTorsion (RelPoint (D.astr i) (𝟙 SpecQ)) :=
+  isTorsion_factor_of_heckeIsotypic_gamma1_of_ne_zero N
+    (ne_zero_of_isHeckeIsotypicDecompositionGamma1 D) D hL i
 
 /-- **Kolyvagin–Logachev for `Γ₁(N)`: analytic rank `0` forces the
 Jacobian of `X_1(N)` to have torsion Mordell–Weil group** (PROVEN
@@ -16461,7 +16533,7 @@ disappearing:
 | `exists_isotypicQuotient_of_isIntegral_gamma1` | Shimura's `A_f` given algebraicity | no | here, NEW 2026-07-30 — the `Γ₁` twin of `X0.lean`'s `exists_isotypicQuotient_of_isIntegral` |
 | `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` | multiplicities, `finite_ker`, `neben` (now under `hN : N ≠ 0`) | no | here |
 | `exists_cuspForm_gamma1GL_zero_lacunary` | the lacunary level-`0` cusp form; input to the `N = 0` refutation | no | here, **PROVEN 2026-07-30** — the `LacunaryLevelZero` section, six lemmas, no theory |
-| `isTorsion_factor_of_heckeIsotypic_gamma1` | Kolyvagin–Logachev | no | here |
+| `isTorsion_factor_of_heckeIsotypic_gamma1_of_ne_zero` | Kolyvagin–Logachev (under `hN : N ≠ 0` since 2026-07-31) | no | here |
 | `lFunction_apply_one_eq_two_pi_mul_cuspPeriod_gamma1` | Hecke's Mellin transform at `s = 1` | no | here, **PROVEN 2026-07-30** — the `G = Γ₁(N)` instance of `lFunction_apply_one_eq_two_pi_mul_cuspPeriodOn_of_le` |
 | `cuspPeriod_ne_zero_x1TwentyFive` | `L`-value numerics (`lFunction_apply_one_ne_zero_x1TwentyFive` is PROVEN over this and the row above) | **yes** | here |
 | `injective_aj_of_not_isIso_jacobian` | Riemann–Roch | no | `X0.lean`, REUSED |
