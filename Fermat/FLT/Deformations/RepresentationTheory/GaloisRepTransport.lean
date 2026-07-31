@@ -54,7 +54,16 @@ API that makes that precise:
   which is what discharges the unramifiedness hypothesis of the
   transport lemma at all but finitely many places; proven from the
   arithmetic leaf
-  `Field.absoluteGaloisGroup.exists_finset_conj_localInertiaGroup_le`.
+  `Field.absoluteGaloisGroup.exists_finset_conj_localInertiaGroup_le`;
+* `GaloisRep.isUnramifiedAt_map_of_under` (2026-07-31) — the PLACE-INDEXED
+  form of the same fact, over the place-indexed arithmetic core
+  `Field.absoluteGaloisGroup.exists_conj_localInertiaGroup_le_under`:
+  unramifiedness at the place BELOW `w` is inherited at `w` itself. The
+  finite-set form returns an opaque `v` and an uncontrolled exceptional set,
+  so a consumer holding a NAMED bad set cannot use it; this one pins the
+  exceptional places of the restriction to those over the exceptional places
+  of `ρ`. The finiteness in the older statement was never needed for the
+  construction — only to arrange `v ∉ S`.
 
 The module is now sorry-free. The last two leaves were the purely
 arithmetic statements
@@ -715,6 +724,143 @@ theorem GaloisRep.exists_finset_isUnramifiedAt_map [Algebra K L] (ρ : GaloisRep
         (algebraMap K (v.adicCompletion K)) κ * (τ₀⁻¹ * τ)⁻¹
       = τ₀⁻¹ * (τ * Field.absoluteGaloisGroup.map
         (algebraMap K (v.adicCompletion K)) κ * τ⁻¹) * τ₀ from by group, h1]
+    group
+  rw [GaloisRep.toLocal_apply, GaloisRep.map_apply, hX, map_mul, map_mul, hker,
+    mul_one, ← map_mul, mul_inv_cancel, map_one]
+
+/-- **Local inertia at `w` comes from local inertia at the place BELOW `w`**
+(PROVEN 2026-07-31; the place-indexed form of
+`Field.absoluteGaloisGroup.exists_finset_conj_localInertiaGroup_le`): for
+EVERY finite place `w` of `L` there is ONE conjugator `τ ∈ Γ K` such that each
+inertia element at `w`, read into `Γ K` along `K → L → L_w`, is the
+`τ`-conjugate of an inertia element at `w.under (𝓞 K)` read into `Γ K` along
+`K → K_v`.
+
+**WHY THIS EXISTS BESIDE THE FINITE-SET FORM, and it is not a generalisation
+for its own sake.** The finite-set form returns an EXISTENTIAL place `v ∉ S`
+and an existential finite exceptional set `T`, so a consumer that needs the
+conclusion at a NAMED place — one it can identify with a rational prime, say,
+and therefore rule in or out of a named bad set — cannot use it: the `v` it
+gets back is opaque, and `T` is uncontrolled. Every hypothesis of the
+finite-set proof is in fact discharged for an ARBITRARY `w` with
+`v := w.under (𝓞 K)`; the finiteness was only ever used to arrange `v ∉ S`.
+So this is the statement the proof actually proves, and the finite-set form is
+the corollary obtained by taking `T` to be the places over `S`.
+
+The body is the body of the finite-set leaf with the `T`-bookkeeping deleted:
+`v.asIdeal` is the contraction of `w.asIdeal` by definition of `under`, so
+`WithVal.uniformContinuous_map_of_le` extends `K → L` to a continuous
+`K_v →+* L_w` which is LOCAL, hence carries `localInertiaGroup w` into
+`localInertiaGroup v` (`map_mem_localInertiaGroup`); and
+`exists_conj_map_comp'` supplies the single argument-independent `τ`
+comparing the two factorisations of `K → L_w`.
+
+SOUNDNESS AUDIT: no hypotheses beyond a finite extension of number fields and
+a place of the upper one; no vacuity route — the conclusion is an honest ∀/∃
+over all inertia elements at the given place, and the given place is
+arbitrary. -/
+theorem Field.absoluteGaloisGroup.exists_conj_localInertiaGroup_le_under [Algebra K L]
+    (w : HeightOneSpectrum (NumberField.RingOfIntegers L)) :
+    ∃ τ : Field.absoluteGaloisGroup K,
+      ∀ ι ∈ localInertiaGroup w,
+        ∃ κ ∈ localInertiaGroup (w.under (NumberField.RingOfIntegers K)),
+          Field.absoluteGaloisGroup.map
+              ((algebraMap L (w.adicCompletion L)).comp (algebraMap K L)) ι =
+            τ * Field.absoluteGaloisGroup.map
+              (algebraMap K ((w.under (NumberField.RingOfIntegers K)).adicCompletion K)) κ
+              * τ⁻¹ := by
+  classical
+  set v : HeightOneSpectrum (NumberField.RingOfIntegers K) :=
+    w.under (NumberField.RingOfIntegers K) with hvdef
+  have hcomm : ∀ a : NumberField.RingOfIntegers K,
+      (algebraMap K L) (algebraMap (NumberField.RingOfIntegers K) K a)
+        = algebraMap (NumberField.RingOfIntegers L) L
+            (algebraMap (NumberField.RingOfIntegers K) (NumberField.RingOfIntegers L) a) := by
+    intro a
+    rw [← IsScalarTower.algebraMap_apply, ← IsScalarTower.algebraMap_apply]
+  have hmem : v.asIdeal ≤ Ideal.comap
+      (algebraMap (NumberField.RingOfIntegers K) (NumberField.RingOfIntegers L))
+      w.asIdeal := le_rfl
+  have hcompl : ∀ s : NumberField.RingOfIntegers K, s ∉ v.asIdeal →
+      algebraMap (NumberField.RingOfIntegers K) (NumberField.RingOfIntegers L) s
+        ∉ w.asIdeal := fun _ hs => hs
+  have hψ : UniformContinuous
+      (WithVal.map (v.valuation K) (w.valuation L) (algebraMap K L)) :=
+    WithVal.uniformContinuous_map_of_le _ _
+      (IsDedekindDomain.HeightOneSpectrum.valuation_surjective K v) _
+      (fun x hx => IsDedekindDomain.HeightOneSpectrum.valuation_map_le_of_le_one v w _ _
+        hcomm hmem hcompl x hx)
+  have hint : ∀ x ∈ v.adicCompletionIntegers K,
+      IsDedekindDomain.HeightOneSpectrum.adicCompletionMap v w (algebraMap K L) hψ x
+        ∈ w.adicCompletionIntegers L :=
+    fun x hx => IsDedekindDomain.HeightOneSpectrum.adicCompletionMap_mem_integers v w _ hψ
+      _ hcomm hx
+  obtain ⟨τ, hτ⟩ := Field.absoluteGaloisGroup.exists_conj_map_comp'
+    (algebraMap K (v.adicCompletion K))
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletionMap v w (algebraMap K L) hψ)
+    ((algebraMap L (w.adicCompletion L)).comp (algebraMap K L))
+    (RingHom.ext fun x =>
+      IsDedekindDomain.HeightOneSpectrum.adicCompletionMap_coe v w (algebraMap K L) hψ x)
+  exact ⟨τ, fun ι hι =>
+    ⟨Field.absoluteGaloisGroup.map _ ι,
+      Field.absoluteGaloisGroup.map_mem_localInertiaGroup v w _ hint ι hι, hτ ι⟩⟩
+
+omit [IsTopologicalRing A] [Module.Finite A M] [Module.Free A M] in
+/-- **Unramifiedness at a NAMED place is inherited by restriction to a finite
+extension** (PROVEN 2026-07-31; the place-indexed form of
+`GaloisRep.exists_finset_isUnramifiedAt_map`): if `ρ` is unramified at the
+place of `K` BELOW `w`, then its restriction to `L` is unramified at `w`.
+
+This is the form a consumer with a named bad set needs. The finite-set form
+answers "outside SOME finite set", which cannot be compared with a bad set
+handed down from elsewhere; here the exceptional places of the restriction are
+pinned to be exactly those lying over the exceptional places of `ρ`. Typical
+use: `ρ` hardly ramified over `ℚ` is unramified at every rational prime
+`≠ 2, ℓ`, so `ρ|_{G_F}` is unramified at every `w` whose residue
+characteristic is neither `2` nor `ℓ` — and a `badF` containing the places
+over `2` and `ℓ` therefore contains every place where `ρ|_{G_F}` can ramify.
+
+The body is the body of the finite-set leaf over the place-indexed arithmetic
+core above: the transported inertia element is `τ * κ * τ⁻¹` with `κ` inertia
+at `w.under (𝓞 K)`, `ρ κ = 1` by hypothesis, and `ker ρ` does not see the
+conjugation.
+
+SOUNDNESS AUDIT: the hypothesis is at the place below `w` and is exactly what
+is consumed; there is no vacuity route (it applies to every representation and
+every place at which the hypothesis holds), and the statement is the standard
+fact that inertia over `w` maps into inertia over `v`. -/
+theorem GaloisRep.isUnramifiedAt_map_of_under [Algebra K L] (ρ : GaloisRep K A M)
+    (w : HeightOneSpectrum (NumberField.RingOfIntegers L))
+    (h : ρ.IsUnramifiedAt (w.under (NumberField.RingOfIntegers K))) :
+    (ρ.map (algebraMap K L)).IsUnramifiedAt w := by
+  classical
+  refine ⟨fun ι hι => ?_⟩
+  obtain ⟨τ, hτ⟩ :=
+    Field.absoluteGaloisGroup.exists_conj_localInertiaGroup_le_under (K := K) (L := L) w
+  obtain ⟨κ, hκ, hmain⟩ := hτ ι hι
+  obtain ⟨τ₀, hτ₀⟩ := Field.absoluteGaloisGroup.exists_conj_map_comp' (algebraMap K L)
+    (algebraMap L (w.adicCompletion L))
+    ((algebraMap L (w.adicCompletion L)).comp (algebraMap K L)) rfl
+  obtain ⟨μ, hμ⟩ : ∃ μ : Field.absoluteGaloisGroup K, τ₀⁻¹ * τ = μ := ⟨_, rfl⟩
+  have hker : ρ (Field.absoluteGaloisGroup.map
+      (algebraMap K ((w.under (NumberField.RingOfIntegers K)).adicCompletion K)) κ) = 1 := by
+    have h1 : ρ.toLocal (w.under (NumberField.RingOfIntegers K)) κ = 1 :=
+      h.localInertiaGroup_le hκ
+    rwa [GaloisRep.toLocal_apply] at h1
+  show (ρ.map (algebraMap K L)).toLocal w ι = 1
+  have hX : Field.absoluteGaloisGroup.map (algebraMap K L)
+      (Field.absoluteGaloisGroup.map (algebraMap L (w.adicCompletion L)) ι)
+      = μ * Field.absoluteGaloisGroup.map
+          (algebraMap K ((w.under (NumberField.RingOfIntegers K)).adicCompletion K)) κ
+          * μ⁻¹ := by
+    have h1 := hτ₀ ι
+    rw [hmain] at h1
+    rw [← hμ, show τ₀⁻¹ * τ * Field.absoluteGaloisGroup.map
+        (algebraMap K ((w.under (NumberField.RingOfIntegers K)).adicCompletion K)) κ
+          * (τ₀⁻¹ * τ)⁻¹
+      = τ₀⁻¹ * (τ * Field.absoluteGaloisGroup.map
+        (algebraMap K ((w.under (NumberField.RingOfIntegers K)).adicCompletion K)) κ
+          * τ⁻¹) * τ₀ from by group, h1]
     group
   rw [GaloisRep.toLocal_apply, GaloisRep.map_apply, hX, map_mul, map_mul, hker,
     mul_one, ← map_mul, mul_inv_cancel, map_one]

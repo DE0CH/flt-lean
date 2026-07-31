@@ -9594,8 +9594,203 @@ theorem nonempty_carayolPackage_of_carayolJacobianPackage
            rank_eigenspace := hrank
            det_frob := hdet }⟩
 
+open scoped NumberField in
+/-- **A HARDLY RAMIFIED `ρ` RESTRICTS TO `F` UNRAMIFIED OUTSIDE `badF`**
+(PROVEN 2026-07-31): if `badF` contains every place of `F` over `2` and every
+place over `ℓ`, then `ρ|_{G_F}` is unramified at every `w ∉ badF`.
+
+**WHY THIS IS HERE.** This is the first sentence of the ROUND-5 argument of
+`exists_eigenform_minimalLevel_subset_badF` below — "`hρ` makes `ρ` hardly
+ramified, so `σ_ℓ` is unramified outside the places over `2` and `ℓ`, and
+`hbad2`/`hbadℓ` place those inside `badF`" — and it was PROSE in three
+docstrings of this cluster (this leaf's, and the FAITHFULNESS notes of
+`exists_frobEigenvalues_of_totallyDefinite_heckeCharacter` and the node above
+it) rather than a theorem. It is now checked, and the leaf below cites it
+instead of asserting it.
+
+**WHAT MADE IT AVAILABLE, since a 2026-07-25 audit of this file recorded the
+opposite.** `GaloisRep.exists_finset_isUnramifiedAt_map` (`GaloisRepTransport`)
+returns an EXISTENTIAL exceptional set `T` of places of `F` and an opaque
+place `v` of `ℚ` below each `w ∉ T`, so it cannot be compared with a bad set
+handed down from elsewhere; both call sites of it in this file (in
+`heckeSystemDescendsTo_bot` and below) consequently enlarge their bad set by
+that uncontrolled `T`. Reading the proof rather than the statement shows the
+finiteness was used for ONE thing — arranging `v ∉ S` — and that the whole
+construction goes through for an ARBITRARY `w` with `v := w.under (𝓞 ℚ)`. That
+place-indexed form is now `GaloisRep.isUnramifiedAt_map_of_under`, proven in
+`GaloisRepTransport.lean`, and it is what makes the statement below expressible
+against a NAMED `badF`.
+
+The rest is the residue-characteristic bookkeeping already used by
+`exists_prime_place_rat` in this file: `w.under (𝓞 ℚ)` is the place of a
+rational prime `q` (`IsHardlyRamified.exists_prime_eq_toHeightOneSpectrumRingOfIntegersRat`),
+`q` lies in `w.asIdeal` by contraction, so `hbad2` and `hbadℓ` force `q ≠ 2`
+and `q ≠ ℓ` for `w ∉ badF`, and `hρ.isUnramified` applies at `q`.
+
+FAITHFULNESS. `hbad2` and `hbadℓ` are both load-bearing and neither is
+bookkeeping: without `hbadℓ` a place over `ℓ` may sit outside `badF`, where
+`IsHardlyRamified` asserts FLATNESS and not unramifiedness, and the conclusion
+is then false for every `ρ` genuinely ramified at `ℓ` (the cyclotomic character
+occurs in `det ρ`, so `ρ` is ramified at `ℓ` whenever `ℓ > 2`); without
+`hbad2`, likewise at `2`, where `IsHardlyRamified` asserts only tameness.
+`hbad3` is NOT needed and is deliberately absent. -/
+theorem isUnramifiedAt_map_of_notMem_badF
+    {ℓ : ℕ} [Fact ℓ.Prime] {hℓodd : Odd ℓ}
+    {O : Type*} [CommRing O] [TopologicalSpace O] [IsTopologicalRing O] [IsLocalRing O]
+    [Algebra ℤ_[ℓ] O]
+    {ρ : GaloisRep ℚ O (Fin 2 → O)} {hrank : Module.rank O (Fin 2 → O) = 2}
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    (F : Type*) [Field F] [NumberField F]
+    (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (hbad2 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (2 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (w : HeightOneSpectrum (NumberField.RingOfIntegers F)) (hw : w ∉ badF) :
+    (ρ.map (algebraMap ℚ F)).IsUnramifiedAt w := by
+  classical
+  obtain ⟨q, hq, hpq⟩ :=
+    IsHardlyRamified.exists_prime_eq_toHeightOneSpectrumRingOfIntegersRat
+      (w.under (NumberField.RingOfIntegers ℚ))
+  -- the residue characteristic `q` lies in `w`
+  have hqw : (q : NumberField.RingOfIntegers F) ∈ w.asIdeal := by
+    have h1 : (q : NumberField.RingOfIntegers ℚ) ∈
+        hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal := by
+      rw [asIdeal_toHeightOneSpectrumRingOfIntegersRat]
+      exact Ideal.mem_span_singleton_self _
+    rw [← hpq] at h1
+    have h2 : (q : NumberField.RingOfIntegers ℚ) ∈
+        Ideal.comap (algebraMap (NumberField.RingOfIntegers ℚ)
+          (NumberField.RingOfIntegers F)) w.asIdeal := h1
+    rw [Ideal.mem_comap, map_natCast] at h2
+    exact h2
+  have hq2 : q ≠ 2 := by
+    rintro rfl
+    exact hw (hbad2 w (by exact_mod_cast hqw))
+  have hqℓ : q ≠ ℓ := by
+    rintro rfl
+    exact hw (hbadℓ w hqw)
+  have hun : ρ.IsUnramifiedAt (w.under (NumberField.RingOfIntegers ℚ)) := by
+    rw [hpq]
+    exact hρ.isUnramified q hq ⟨hq2, hqℓ⟩
+  exact GaloisRep.isUnramifiedAt_map_of_under (K := ℚ) (L := F) ρ w hun
+
+/-- **STEP 2a″-α₀-i — LEVEL–CONDUCTOR: an eigensystem whose `ℓ`-adic Galois
+representation is UNRAMIFIED OUTSIDE `badF` is quaternionic-automorphic AT A
+LEVEL INSIDE `badF`** (sorry leaf; CUT 2026-07-31 out of
+`exists_eigenform_minimalLevel_subset_badF` immediately below, which is now a
+PROVEN ASSEMBLY over this leaf and `isUnramifiedAt_map_of_notMem_badF` above).
+
+**WHAT CHANGED, AND WHY IT IS A CUT AND NOT A RENAME.** The ROUND-10 leaf below
+carried the hard-ramification hypothesis `hρ` together with the three bad-set
+clauses `hbad2`, `hbad3`, `hbadℓ`, and its own docstring's ROUND-5 argument used
+all four for exactly ONE consequence: that `ρ|_{G_F}` is unramified at every
+`w ∉ badF`. That consequence is now a THEOREM of this file
+(`isUnramifiedAt_map_of_notMem_badF`, proven over the place-indexed transport
+lemma `GaloisRep.isUnramifiedAt_map_of_under` added to `GaloisRepTransport.lean`
+on the same day), so the citation can take it as its hypothesis and drop all
+four. What is left in this leaf is the level–conductor theorem and nothing else:
+
+* **local–global compatibility** — at `w ∤ ℓ`, `σ_ℓ` unramified at `w` makes
+  `π_w` unramified; at `w ∣ ℓ` the same conclusion is the `ℓ`-adic Hodge-theory
+  half of local–global compatibility;
+* **strong multiplicity one** — the input datum and the minimal-level datum
+  have the same eigensystem, so the conductor of `π` bounds the level;
+* **the conductor–level dictionary** for the quaternionic transfer, `D` being
+  split at every finite place by `WithRigidification`.
+
+NONE of the three is in this tree, and none is expressible against the objects
+that are: there is no automorphic representation `π` here, only the eigensystem
+`b` and the predicate `IsQuaternionicEigensystem` recording that SOME level
+datum realises it. That is why the leaf is a citation rather than an assembly,
+and it is also why no further clause-shaped cut is available — every remaining
+hypothesis is consumed by the classical argument above, and the conclusion is
+the input datum with ONE clause added.
+
+`hbad3` IS DELIBERATELY GONE. It appeared in the leaf below and in no step of
+its own recorded argument; it is a downstream convenience of the chain (the
+places over `3` are enlarged into `badF` by
+`IsQuaternionicEigensystem.mono` where they are needed) and asserting it here
+would only make the citation weaker for no gain.
+
+FAITHFULNESS. TRUE by the classical package above. The two clauses that keep it
+from being vacuous or false, and both must survive any later restatement:
+
+* `hσun` is LOAD-BEARING and is the whole content of the input side. Without it
+  the statement asserts that EVERY quaternionic-automorphic eigensystem has its
+  level inside an arbitrary `badF` — refuted by any `badF = ∅` and any form of
+  level `> 1`, and this is exactly the objection the ROUND-10 docstring below
+  raised against pushing the clause into `IsQuaternionicEigensystem` itself.
+* the residual package `hirr`/`hπ` (and `hirrF`) is LOAD-BEARING for the reason
+  recorded in `IsHardlyRamified`'s own docstring and re-derived here: `hρ` is
+  gone, so nothing else excludes a REDUCIBLE `ρ`, whose eigensystem is
+  Eisenstein (`a_w = Nw + 1`) and is NOT cuspidal, and for which the conductor
+  argument — which runs through the cuspidal newform attached to `π` — has no
+  content. `hirr` on `ρbar` together with the link `hπ` forces `ρ` irreducible
+  by Chebotarev and Brauer–Nesbitt; `hirrF` does the same over `F`.
+
+CHECK THAT WOULD REFUTE THIS AUDIT: exhibit a `badF`, an eigensystem `b`
+satisfying `hauto`, and a `ρ` satisfying `hσun` and `hmod`, whose every
+quaternionic realisation has a level meeting the complement of `badF`.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem exists_eigenform_minimalLevel_of_isUnramifiedOutside
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (E : Type u) [Field E] [NumberField E]
+    (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (heckeF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+      Polynomial E)
+    (ψℓ : E →+* AlgebraicClosure ℚ_[ℓ])
+    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
+    (hmod : ∀ w ∉ badF,
+      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
+        (heckeF w).map ψℓ)
+    -- THE RAMIFICATION INPUT, replacing `hρ`, `hbad2`, `hbad3`, `hbadℓ`: it is
+    -- the ONLY consequence of them that the ROUND-5 argument uses, and it is
+    -- PROVEN from them by `isUnramifiedAt_map_of_notMem_badF` above.
+    (hσun : ∀ w ∉ badF, (ρ.map (algebraMap ℚ F)).IsUnramifiedAt w)
+    (hauto : IsQuaternionicEigensystem F E badF
+      (fun w => -(heckeF w).coeff 1))
+    (D : Type u) [DivisionRing D] [Algebra F D]
+    [_root_.IsQuaternionAlgebra F D]
+    [_root_.IsQuaternionAlgebra.IsTotallyDefinite F D]
+    [_root_.IsQuaternionAlgebra.NumberField.WithRigidification F D]
+    (p : ℕ) (hp : p.Prime)
+    (hcyc : 2 < Module.finrank F (CyclotomicField p F)) :
+    ∃ (𝒮 : _root_.TotallyDefiniteQuaternionAlgebra.U₁Data F E p)
+      (a : HeightOneSpectrum (NumberField.RingOfIntegers F) → E)
+      (f : (_root_.TotallyDefiniteQuaternionAlgebra.U₁ 𝒮).toStruct.form D E),
+      𝒮.Q = ∅ ∧ (∀ w ∈ 𝒮.S, w ∈ badF) ∧ f ≠ 0 ∧
+      (∀ (w : HeightOneSpectrum (NumberField.RingOfIntegers F)) (hwS : w ∉ 𝒮.S),
+        _root_.TotallyDefiniteQuaternionAlgebra.HeckeOperator.T D E 𝒮 w hwS f = a w • f) ∧
+      (∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F), w ∉ 𝒮.S → w ∉ badF →
+        (heckeF w).coeff 1 = - a w) := by
+  sorry
+
 /-- **STEP 2a″-α₀ — MINIMALITY OF THE JACQUET–LANGLANDS LEVEL: the
-quaternionic eigenform may be taken with `𝒮.S ⊆ badF`** (sorry leaf; CUT
+quaternionic eigenform may be taken with `𝒮.S ⊆ badF`** (PROVEN ASSEMBLY
+2026-07-31; CUT
 2026-07-28, ROUND-9, out of
 `exists_totallyDefinite_heckeCharacter_level_subset_badF` immediately below,
 which is a PROVEN ASSEMBLY over this leaf together with two declarations
@@ -9650,6 +9845,27 @@ outright and `f ≠ 0` and the eigenvalue matching, i.e. all four of the other
 conjuncts), and the residual obligation is the single clause
 `∀ w ∈ 𝒮.S, w ∈ badF`. That is the ROUND-5 argument below and nothing else.
 
+**ROUND-11 (2026-07-31) — THE FIRST SENTENCE OF THE ROUND-5 ARGUMENT IS NOW
+IN-TREE, AND THIS DECLARATION IS A PROVEN ASSEMBLY.** The argument below opens
+with "`hρ` makes `ρ` hardly ramified, so `σ_ℓ` is unramified outside the places
+over `2` and `ℓ`, and `hbad2` and `hbadℓ` place those inside `badF`", and that
+is the ONLY use it makes of `hρ`, `hbad2`, `hbad3` and `hbadℓ`. It is now the
+theorem `isUnramifiedAt_map_of_notMem_badF` above — proven over the new
+place-indexed transport lemma `GaloisRep.isUnramifiedAt_map_of_under`
+(`GaloisRepTransport.lean`, added the same day) — so the four hypotheses are
+consumed HERE and the residual citation
+`exists_eigenform_minimalLevel_of_isUnramifiedOutside` (immediately above)
+takes the conclusion `hσun` instead. The frontier count is unchanged; what
+changed is that the citation is now the level–conductor theorem alone, with no
+ramification bookkeeping left inside it.
+
+Why the transport lemma had to be written rather than cited: the tree's
+existing `GaloisRep.exists_finset_isUnramifiedAt_map` returns an EXISTENTIAL
+exceptional finite set, which cannot be compared with a `badF` handed down
+from elsewhere. Reading its PROOF (not its statement) shows the finiteness is
+used only to arrange `v ∉ S`, and the construction goes through verbatim at
+`v := w.under (𝓞 ℚ)` for an arbitrary `w`.
+
 REMAINING OPTION, reported and NOT taken. The clause could be pushed one step
 further out, into `IsQuaternionicEigensystem` itself (add `∀ w ∈ 𝒮.S, w ∈ bad`
 to its existential), which would make this leaf a one-line assembly exactly
@@ -9662,9 +9878,12 @@ module used by four other consumers, so it is a genuine cross-file cut; and it
 would assert, uniformly in `bad`, that the transfer's level is inside `bad` —
 true when `bad` contains the ramified places, which is the case in this chain
 but is NOT a consequence of the predicate's own hypotheses. Asserting it
-unchecked would be a promise this owner cannot vouch for.
+unchecked would be a promise this owner cannot vouch for. **ROUND-11 note:
+that second objection is now sharp rather than prophylactic — the missing
+input is exactly `hσun`, which the residual citation above takes as a
+hypothesis, and which no instance of `IsQuaternionicEigensystem` carries.**
 
-Content, i.e. what a prover of this leaf owes — the ROUND-5 argument, and
+Content, i.e. what the residual citation above owes — the ROUND-5 argument, and
 NOTE THAT IT IS AN ARGUMENT ABOUT THE EIGENSYSTEM, NOT ABOUT THE FORM, which
 is why an arbitrary input level `𝒮₀` is harmless. `hirrF` gives
 `ρbar|_{G_F}` irreducible, hence `ρ|_{G_F}` irreducible; the compatible
@@ -9754,7 +9973,14 @@ theorem exists_eigenform_minimalLevel_subset_badF
         _root_.TotallyDefiniteQuaternionAlgebra.HeckeOperator.T D E 𝒮 w hwS f = a w • f) ∧
       (∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F), w ∉ 𝒮.S → w ∉ badF →
         (heckeF w).coeff 1 = - a w) := by
-  sorry
+  -- The ONLY use the ROUND-5 argument makes of `hρ`, `hbad2`, `hbad3`, `hbadℓ`
+  -- is that `ρ|_{G_F}` is unramified outside `badF`; that step is in-tree
+  -- (`isUnramifiedAt_map_of_notMem_badF`), and the rest is the level–conductor
+  -- citation `exists_eigenform_minimalLevel_of_isUnramifiedOutside`.
+  exact exists_eigenform_minimalLevel_of_isUnramifiedOutside hℓodd hℓ5 hZinj hrank hW
+    hρbar hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ ιO hιO hmod
+    (fun w hw => isUnramifiedAt_map_of_notMem_badF hρ F badF hbad2 hbadℓ w hw)
+    hauto D p hp hcyc
 
 /-- **STEP 2a″-α — the JACQUET–LANGLANDS DATUM, WITH ITS LEVEL INSIDE
 `badF`** (PROVEN ASSEMBLY since 2026-07-28, ROUND-9; CUT 2026-07-28, ROUND-8,
