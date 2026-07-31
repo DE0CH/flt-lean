@@ -425,7 +425,8 @@ theorem exists_quadraticTwist_hasSplitMultiplicativeReduction [E.HasMultiplicati
   have : Algebra.IsSeparable (ResidueField R) (AdjoinRoot P) :=
     AdjoinRoot.isSeparable_of_separable (separable_nodePoly_map E R)
   -- Lift `k'` to the unramified quadratic extension `L/K` (`LiftSeparableExtension`).
-  obtain ⟨L, _, _, _, _, _, _, S, _, _, _, _, _, _, _, _, _, hLrank, ⟨resIso⟩,
+  -- (the `_` after `hLrank` is the `𝔪_S = 𝔪_R·S` clause exported 2026-07-30; unused here)
+  obtain ⟨L, _, _, _, _, _, _, S, _, _, _, _, _, _, _, _, _, hLrank, _, ⟨resIso⟩,
       θL, Q, hQmonic, hθtop, hθQ, hQsep⟩ :=
     exists_unramified_extension_of_residueField (R := R) (K := K) (AdjoinRoot P)
   have : Algebra.IsQuadraticExtension K L := ⟨hLrank.trans hk'rank⟩

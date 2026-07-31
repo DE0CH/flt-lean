@@ -13,6 +13,10 @@ public import Mathlib.FieldTheory.Finite.Extension
 public import Mathlib.Algebra.Polynomial.FieldDivision
 public import Mathlib.RingTheory.Polynomial.UniqueFactorization
 public import Mathlib.RingTheory.EuclideanDomain
+public import Mathlib.RingTheory.AdjoinRoot
+public import Mathlib.FieldTheory.Finiteness
+public import Fermat.FLT.EllipticCurve.MazurNonCMFrobenius
+public import Fermat.FLT.EllipticCurve.MazurNonCMFrobeniusB
 
 /-!
 # A mod-`ℓ` degree obstruction, and the `p = 11` certificate of Mazur's non-CM table
@@ -23,11 +27,23 @@ monic rational divisor of degree `p − 1`.  The `ℚ`-side of that is
 (`Fermat/FLT/Mathlib/RingTheory/Polynomial/ReductionModPrime.lean`), which reduces it to a
 statement over `ZMod ℓ`.  This file supplies the finite-field side:
 
-* `not_monic_dvd_of_smallDegreePart` — the UNIFORM degree obstruction, over any finite field.
-  Given a factorisation `Ψ = C c * (D * H)` in which `H` divides `X ^ (#K ^ m) - X` and has no
-  root in `K`, and given that `1` is the only divisor of `m` that is `≤ n`, no monic divisor of
-  `Ψ` of degree `n > deg D` exists.  Note it needs neither `Ψ` squarefree nor `H` factored:
-  squarefreeness is what makes such a certificate TRUE, not what makes the proof go.
+* `not_monic_dvd_of_bigDegreePart` — the UNIFORM degree obstruction, in the form that applies
+  at every row.  Given a factorisation `Ψ = C c * (D * H)` in which every irreducible factor of
+  `H` has degree `> n`, no monic divisor of `Ψ` of degree `n > deg D` exists.  It needs neither
+  `Ψ` squarefree nor `H` factored nor `K` finite: squarefreeness is what makes such a
+  certificate TRUE, not what makes the proof go.
+* `not_monic_dvd_of_smallDegreePart` — the corollary in which the hypothesis on `H` is the one a
+  computation certifies: `H ∣ X ^ (#K ^ m) - X`, `H` has no root in `K`, and `1` is the only
+  divisor of `m` that is `≤ n`.
+* `not_monic_dvd_of_coprimeSmallDegreeParts` — the corollary for the rows where that last clause
+  FAILS.  At `m = 34, n = 16` (`p = 17`) and at `m = 222, n = 36` (`p = 37`) there are divisors
+  `d ∣ m` with `1 < d ≤ n`, and the no-root hypothesis is exactly the `d = 1` instance of the
+  right one: `IsCoprime H (X ^ (#K ^ d) - X)` for every such `d`.  That is the form in which
+  each clause is a single `gcd` computation.
+* `dvd_X_pow_card_pow_natDegree_sub_X_of_irreducible` — the converse of mathlib's
+  `Irreducible.natDegree_dvd_of_dvd_X_pow_card_pow_sub_X`, and the reason the previous item can
+  exist at all: an irreducible `π` of degree `d` over a finite field divides `X ^ (#K ^ d) - X`,
+  so a `gcd` certificate at `d` really does exclude factors of degree `d`.
 * `not_monic_dvd_preΨ_elevenA_mod` — the instance at the `p = 11`, `j = −121` row of Mazur's
   table: `ℓ = 23`, `m = 11`, `n = 10`, `deg D = 5`, `deg H = 55`.
 
@@ -51,22 +67,28 @@ set_option maxHeartbeats 1000000
 
 namespace Fermat.MazurNonCMCertificate
 
-/-- **THE DEGREE OBSTRUCTION** (PROVEN 2026-07-30), uniform over finite fields.
+/-- **THE DEGREE OBSTRUCTION** (PROVEN 2026-07-30; generalised 2026-07-31), in the form that
+applies at every row of the table and not only at the `p = 11` ones.
 
-`hmn` says `1` is the only divisor of `m` that is at most `n`; at `m = 11`, `n = 10` that is
-the primality of `11`, and at `m = 34`, `n = 16` it FAILS for `d = 2`, which is why the
-`p = 17` rows need a second coprimality and the `p = 11` rows do not.
+The hypothesis on `H` is exactly what the argument uses: every irreducible factor of `H` has
+degree `> n`.  Nothing about `X ^ (#K ^ m) - X`, nothing about roots, and `K` need not even be
+finite — the finite-field input enters only when a *certificate* for `hHbig` is produced, which
+is what the two corollaries below do.
 
-The proof is three steps.  `G` and `H` share no irreducible factor `π`: such a `π` would have
-`deg π ∣ m` by `Irreducible.natDegree_dvd_of_dvd_X_pow_card_pow_sub_X` and `deg π ≤ n` by
-`natDegree_le_of_dvd`, hence `deg π = 1` by `hmn`, hence a root of `π` — which is a root of
-`H`, against `hHroot`.  So `IsCoprime G H`, so `G ∣ C c * D`, so `G ∣ D` since `C c` is a unit;
-and then `n = deg G ≤ deg D < n`. -/
-theorem not_monic_dvd_of_smallDegreePart {K : Type*} [Field K] [Finite K]
+The proof is three steps.  `G` and `H` share no irreducible factor `π`: such a `π` would divide
+`G`, so `deg π ≤ deg G = n` by `natDegree_le_of_dvd`, against `hHbig`.  So `IsCoprime G H`, so
+`G ∣ C c * D`, so `G ∣ D` since `C c` is a unit; and then `n = deg G ≤ deg D < n`.
+
+**Why this shape, and not the `hmn` one it replaces** (2026-07-31).  The previous statement
+asked that `1` be the only divisor of `m` that is `≤ n`.  That is the primality of `11` at the
+`p = 11` rows, and it is FALSE at every other row of Mazur's table: `m = 34, n = 16` has
+`d = 2`, and `m = 222, n = 36` has `d = 2, 3, 6`.  So the lemma as originally stated did not
+apply to four of the six rows — a defect recorded in
+`Fermat.not_monic_dvd_preΨ_mod_nonCMModelThirtySevenB`'s docstring on the day it was measured.
+Splitting the certificate off from the obstruction fixes that once for all rows. -/
+theorem not_monic_dvd_of_bigDegreePart {K : Type*} [Field K]
     {Ψ D H : K[X]} {c : K} (hc : c ≠ 0) (hfac : Ψ = C c * (D * H))
-    {m n : ℕ} (hmn : ∀ d : ℕ, d ∣ m → d ≤ n → d = 1)
-    (hHdvd : H ∣ X ^ (Nat.card K) ^ m - X)
-    (hHroot : ∀ a : K, H.eval a ≠ 0)
+    {n : ℕ} (hHbig : ∀ π : K[X], Irreducible π → π ∣ H → n < π.natDegree)
     (hD0 : D ≠ 0) (hD : D.natDegree < n)
     (G : K[X]) (hG : G.Monic) (hGdeg : G.natDegree = n) : ¬ G ∣ Ψ := by
   classical
@@ -80,18 +102,114 @@ theorem not_monic_dvd_of_smallDegreePart {K : Type*} [Field K] [Finite K]
     obtain ⟨π, hπ, hπdvd⟩ := WfDvdMonoid.exists_irreducible_factor hu hne
     have hπG : π ∣ G := hπdvd.trans (EuclideanDomain.gcd_dvd_left G H)
     have hπH : π ∣ H := hπdvd.trans (EuclideanDomain.gcd_dvd_right G H)
-    have hdeg1 : π.natDegree = 1 :=
-      hmn _ (hπ.natDegree_dvd_of_dvd_X_pow_card_pow_sub_X (hπH.trans hHdvd))
-        (hGdeg ▸ natDegree_le_of_dvd hπG hG0)
-    obtain ⟨a, ha⟩ := exists_root_of_degree_eq_one
-      (by rw [degree_eq_natDegree hπ.ne_zero, hdeg1]; rfl)
-    exact hHroot a (by obtain ⟨t, ht⟩ := hπH; rw [ht, eval_mul, ha, zero_mul])
+    exact absurd (hGdeg ▸ natDegree_le_of_dvd hπG hG0) (not_le.mpr (hHbig π hπ hπH))
   have h2 : G ∣ C c * D := by
     rw [hfac, ← mul_assoc] at hdvd
     exact hcop.dvd_of_dvd_mul_right hdvd
   have h3 : G ∣ D := (isUnit_C.mpr (isUnit_iff_ne_zero.mpr hc)).dvd_mul_left.mp h2
   have := natDegree_le_of_dvd h3 hD0
   omega
+
+/-- **AN IRREDUCIBLE OF DEGREE `d` OVER A FINITE FIELD DIVIDES `X ^ (#K ^ d) - X`**
+(2026-07-31), the converse of mathlib's
+`Irreducible.natDegree_dvd_of_dvd_X_pow_card_pow_sub_X`.
+
+Standard, and the proof is the standard one: `K[X]/(π)` is a field with `#K ^ deg π` elements,
+so its generator `x` satisfies `x ^ (#K ^ deg π) = x`, so the minimal polynomial of `x` — which
+is `π` up to the unit `C (leadingCoeff π)⁻¹` — divides `X ^ (#K ^ deg π) - X`.
+
+It is what makes `not_monic_dvd_of_coprimeSmallDegreeParts` possible: without it, a `gcd`
+computation `gcd(H, X ^ (#K ^ d) - X) = 1` would rule out only those degree-`d` factors that
+one already knew how to see, whereas the two directions together say that the degree-`d`
+irreducible factors of `H` are EXACTLY the ones this `gcd` sees. -/
+theorem dvd_X_pow_card_pow_natDegree_sub_X_of_irreducible {K : Type*} [Field K] [Finite K]
+    {π : K[X]} (hπ : Irreducible π) : π ∣ X ^ (Nat.card K) ^ π.natDegree - X := by
+  haveI : Fact (Irreducible π) := ⟨hπ⟩
+  have hπ0 : π ≠ 0 := hπ.ne_zero
+  haveI : Module.Finite K (AdjoinRoot π) :=
+    Module.Finite.of_basis (AdjoinRoot.powerBasis hπ0).basis
+  haveI : Finite (AdjoinRoot π) := Module.finite_of_finite (R := K)
+  haveI := Fintype.ofFinite (AdjoinRoot π)
+  have hcard : Nat.card (AdjoinRoot π) = Nat.card K ^ π.natDegree := by
+    rw [Module.natCard_eq_pow_finrank (K := K) (V := AdjoinRoot π),
+      (AdjoinRoot.powerBasis hπ0).finrank, AdjoinRoot.powerBasis_dim]
+  have hroot : (AdjoinRoot.root π) ^ (Nat.card K ^ π.natDegree) = AdjoinRoot.root π := by
+    rw [← hcard, Nat.card_eq_fintype_card]
+    exact FiniteField.pow_card _
+  have hdvd : minpoly K (AdjoinRoot.root π) ∣ X ^ (Nat.card K) ^ π.natDegree - X :=
+    minpoly.dvd _ _ (by simp [hroot])
+  rw [AdjoinRoot.minpoly_root hπ0] at hdvd
+  exact (dvd_mul_right π (C π.leadingCoeff⁻¹)).trans hdvd
+
+/-- **THE DEGREE OBSTRUCTION, `gcd`-CERTIFICATE FORM** (2026-07-31) — the shape every row of
+Mazur's table can use, including the four the `hmn` form below cannot reach.
+
+`hHdvd` says the irreducible factors of `H` have degree dividing `m`; `hHsmall` kills, one
+`gcd` at a time, each degree `d ∣ m` that is small enough to matter.  At `m = 11, n = 10` the
+only such `d` is `1` and `hHsmall` is the no-root hypothesis; at `m = 34, n = 16` they are
+`1, 2`; at `m = 222, n = 36` they are `1, 2, 3, 6`.
+
+The `d = 0` case is vacuous and is discharged inside rather than excluded by hypothesis: an
+irreducible has positive degree, so `d = deg π ≠ 0` whenever the clause is invoked. -/
+theorem not_monic_dvd_of_coprimeSmallDegreeParts {K : Type*} [Field K] [Finite K]
+    {Ψ D H : K[X]} {c : K} (hc : c ≠ 0) (hfac : Ψ = C c * (D * H))
+    {m n : ℕ}
+    (hHdvd : H ∣ X ^ (Nat.card K) ^ m - X)
+    (hHsmall : ∀ d : ℕ, d ∣ m → d ≤ n → IsCoprime H (X ^ (Nat.card K) ^ d - X))
+    (hD0 : D ≠ 0) (hD : D.natDegree < n)
+    (G : K[X]) (hG : G.Monic) (hGdeg : G.natDegree = n) : ¬ G ∣ Ψ := by
+  refine not_monic_dvd_of_bigDegreePart hc hfac (fun π hπ hπH => ?_) hD0 hD G hG hGdeg
+  by_contra hle
+  rw [not_lt] at hle
+  have hdmul : π.natDegree ∣ m :=
+    hπ.natDegree_dvd_of_dvd_X_pow_card_pow_sub_X (hπH.trans hHdvd)
+  exact hπ.not_isUnit
+    ((hHsmall _ hdmul hle).isUnit_of_dvd' hπH (dvd_X_pow_card_pow_natDegree_sub_X_of_irreducible hπ))
+
+/-- **THE `d = 1` CERTIFICATE IS EXACTLY THE NO-ROOT HYPOTHESIS** (2026-07-31).
+
+`X ^ (#K ^ 1) - X` is the product of the linear factors, so `IsCoprime H (X ^ #K - X)` says
+precisely that `H` has no linear factor, i.e. no root.  Proved in the direction that is used —
+no root implies coprime — through the degree argument rather than through the product
+decomposition, so no `Splits`/`roots` bookkeeping is needed. -/
+theorem isCoprime_X_pow_card_sub_X_of_eval_ne_zero {K : Type*} [Field K] [Finite K]
+    {H : K[X]} (hHroot : ∀ a : K, H.eval a ≠ 0) :
+    IsCoprime H (X ^ (Nat.card K) ^ 1 - X) := by
+  classical
+  rw [← EuclideanDomain.gcd_isUnit_iff]
+  by_contra hu
+  have hH0 : H ≠ 0 := fun h => hHroot 0 (by simp [h])
+  have hne : EuclideanDomain.gcd H (X ^ (Nat.card K) ^ 1 - X) ≠ 0 := fun h => hH0 (by
+    simpa using EuclideanDomain.gcd_eq_zero_iff.mp h |>.1)
+  obtain ⟨π, hπ, hπdvd⟩ := WfDvdMonoid.exists_irreducible_factor hu hne
+  have hπH : π ∣ H := hπdvd.trans (EuclideanDomain.gcd_dvd_left _ _)
+  have hπX : π ∣ X ^ (Nat.card K) ^ 1 - X := hπdvd.trans (EuclideanDomain.gcd_dvd_right _ _)
+  have hdeg1 : π.natDegree = 1 :=
+    Nat.dvd_one.mp (hπ.natDegree_dvd_of_dvd_X_pow_card_pow_sub_X hπX)
+  obtain ⟨a, ha⟩ := exists_root_of_degree_eq_one
+    (by rw [degree_eq_natDegree hπ.ne_zero, hdeg1]; rfl)
+  exact hHroot a (by obtain ⟨t, ht⟩ := hπH; rw [ht, eval_mul, ha, zero_mul])
+
+/-- **THE DEGREE OBSTRUCTION, PRIME-`m` FORM** (PROVEN 2026-07-30; since 2026-07-31 a corollary
+of `not_monic_dvd_of_coprimeSmallDegreeParts`, with its statement unchanged).
+
+`hmn` says `1` is the only divisor of `m` that is at most `n`; at `m = 11`, `n = 10` that is
+the primality of `11`, and at `m = 34`, `n = 16` it FAILS for `d = 2`, which is why the
+`p = 17` and `p = 37` rows must use `not_monic_dvd_of_coprimeSmallDegreeParts` instead.  Under
+`hmn` the only small divisor is `d = 1`, and `hHroot` is that instance — which is the content
+of `isCoprime_X_pow_card_sub_X_of_eval_ne_zero`, and the reason the general form is a genuine
+generalisation and not a different theorem. -/
+theorem not_monic_dvd_of_smallDegreePart {K : Type*} [Field K] [Finite K]
+    {Ψ D H : K[X]} {c : K} (hc : c ≠ 0) (hfac : Ψ = C c * (D * H))
+    {m n : ℕ} (hmn : ∀ d : ℕ, d ∣ m → d ≤ n → d = 1)
+    (hHdvd : H ∣ X ^ (Nat.card K) ^ m - X)
+    (hHroot : ∀ a : K, H.eval a ≠ 0)
+    (hD0 : D ≠ 0) (hD : D.natDegree < n)
+    (G : K[X]) (hG : G.Monic) (hGdeg : G.natDegree = n) : ¬ G ∣ Ψ := by
+  refine not_monic_dvd_of_coprimeSmallDegreeParts hc hfac hHdvd (fun d hd hle => ?_)
+    hD0 hD G hG hGdeg
+  rw [hmn d hd hle]
+  exact isCoprime_X_pow_card_sub_X_of_eval_ne_zero hHroot
 
 /-! ### The `p = 11`, `j = −121` row over `ZMod 23`
 
@@ -189,32 +307,27 @@ theorem eval_hPolyElevenA_ne_zero (a : ZMod 23) : hPolyElevenA.eval a ≠ 0 := b
   simp only [hPolyElevenA, eval_add, eval_mul, eval_pow, eval_X, eval_ofNat]
   decide
 
-/-- **THE ONE OPEN LEAF OF THIS FILE** (sorry leaf, cut 2026-07-30): `H` divides
-`X ^ (23 ^ 11) - X`, i.e. every irreducible factor of `H` has degree dividing `11`.
+/-- **`H ∣ X ^ (23 ^ 11) - X`** (PROVEN 2026-07-31), i.e. every irreducible factor of `H` has
+degree dividing `11`.  `eval_hPolyElevenA_ne_zero` above is what turns "dividing `11`" into
+"equal to `11`" where the obstruction needs it.
 
-TRUE, machine-checked in PARI/GP 2.15.4 (`Mod(x, H) ^ (23 ^ 11) == x`); `H` is in fact a
-product of five irreducibles of degree exactly `11`, and `eval_hPolyElevenA_ne_zero` above is
-what turns "dividing `11`" into "equal to `11`" where the obstruction needs it.
+The whole content is `Fermat.MazurNonCMFrobenius.dvd_X_pow_sub_X_hPoly`, in its own module
+because it is a few thousand lines of generated `ring` identities and elaboration is
+single-threaded per file.  `H` is the product of five irreducible polynomials of degree
+exactly `11`; the divisibility is proven for each factor separately, through a precomputed
+table of `(X ^ 23) ^ i mod hⱼ`, and the five are recombined by explicit Bézout certificates.
 
-**THE ROUTE, and it is entirely mechanical.**  Write `r_k := X ^ (23 ^ k) mod H`, so `r_0 = X`
-and the claim is `r_11 = X`.  Do NOT compute `r_k ^ 23` by repeated squaring: over `ZMod 23`
-the Frobenius is LINEAR, `r ^ 23 = Polynomial.expand 23 r` (`Polynomial.expand_char` together
-with `ZMod.pow_card`, which kills the coefficient-wise `c ↦ c ^ 23`).  So precompute the table
-`T_i := X ^ (23 * i) mod H` for `i ≤ 54` — each `T_{i+1}` is `T_i * T_1` reduced, one identity
-of degree `≤ 108` apiece — and then each of the eleven Frobenius steps is a single `ZMod 23`
-linear combination of the `T_i`, which `ring_nf` checks at degree `54`.
-
-Every identity is of the shape `A * B = Q * H + R`, verified by the same
-`reduce_mod_char; ring_nf; reduce_mod_char` idiom the chain above uses; `Q` and `R` come from
-PARI.  The count is about `65` identities and the arithmetic is `≈ 2·10⁵` `F₂₃` operations,
-which is the figure the `X0.lean` cost triage calls "comfortably kernel-checkable".
+The route the original cut proposed — reduce `X ^ (23 ^ k)` mod `H` itself — was tried and is
+about `5×` more `ring` work, because it needs a `55`-entry table of degree-`54` polynomials
+rather than five `10`-entry tables of degree-`10` ones.
 
 The same route closes the `p = 11`, `j = −24729001` row (same `ℓ`, same degrees) and, with one
 extra coprimality at `d = 2`, the two `p = 17` rows.  It does NOT close the `p = 37` rows:
 there `deg H = 666`, `ℓ = 397` and `m = 222`. -/
 theorem dvd_X_pow_card_pow_sub_X_hPolyElevenA :
-    hPolyElevenA ∣ X ^ (Nat.card (ZMod 23)) ^ 11 - X :=
-  sorry
+    hPolyElevenA ∣ X ^ (Nat.card (ZMod 23)) ^ 11 - X := by
+  rw [Nat.card_zmod, hPolyElevenA]
+  exact Fermat.MazurNonCMFrobenius.dvd_X_pow_sub_X_hPoly
 
 /-- **Row `p = 11`, `j = −121`: `Ψ₁₁ mod 23` has no monic divisor of degree `10`**
 (PROVEN 2026-07-30 over `dvd_X_pow_card_pow_sub_X_hPolyElevenA`).
@@ -238,6 +351,142 @@ theorem not_monic_dvd_preΨ_elevenA_mod (G : (ZMod 23)[X]) (hG : G.Monic)
   have hDlt : dPolyElevenA.natDegree < 10 := by omega
   exact not_monic_dvd_of_smallDegreePart hc preΨ'_eleven_elevenAMod hmn
     dvd_X_pow_card_pow_sub_X_hPolyElevenA eval_hPolyElevenA_ne_zero hD0 hDlt G hG hdeg
+
+/-! ### The `j = −24729001` row, the other member of isogeny class `121`
+
+Identical in every structural respect to the `j = −121` chain above — same `ℓ = 23`, same
+`m = 11`, same `n = 10`, same degree multiset `1⁵, 11⁵` for `Ψ₁₁ mod 23`, so `deg D = 5` and
+`deg H = 55` again.  The two curves are the two members of the isogeny class `121`, which is
+why the certificate has the same shape; the polynomials themselves are unrelated.
+
+Every number below was produced by re-running mathlib's own `preΨ'` recursion in an
+independent Python implementation of `F₂₃[X]`, VALIDATED by reproducing the six `elevenAMod`
+values above exactly — those are Lean-verified, so the validation is against the kernel and
+not against PARI.  PARI/GP 2.15.4 supplied only the factorisation, and its factors are
+multiplied back out and re-checked before use. -/
+
+/-- The minimal model `[1,1,1,-30,-76]` of the `p = 11`, `j = −24729001` row, read over
+`ZMod 23`.  Definitionally `Fermat.nonCMModelElevenBmod`. -/
+def elevenBMod : WeierstrassCurve (ZMod 23) := ⟨1, 1, 1, -30, -76⟩
+
+/-- The product of the five LINEAR irreducible factors of `Ψ₁₁ mod 23` for `elevenBMod`. -/
+noncomputable def dPolyElevenB : (ZMod 23)[X] :=
+  X^5 + 14*X^4 + 17*X^3 + 16*X^2 + 21
+
+/-- The product of the five irreducible factors of degree `11` of `Ψ₁₁ mod 23` for
+`elevenBMod`. -/
+noncomputable def hPolyElevenB : (ZMod 23)[X] :=
+  X^55 + 11*X^54 + 9*X^53 + 20*X^52 + X^51 + 13*X^50 + 2*X^49 + 3*X^48 + 2*X^47 + 8*X^46 + 8*X^45 +
+    4*X^44 + 9*X^42 + 4*X^41 + 17*X^40 + 22*X^39 + 7*X^38 + 11*X^37 + 20*X^36 + 8*X^34 + 17*X^33 +
+    9*X^32 + 16*X^31 + 16*X^30 + 3*X^29 + 18*X^28 + X^27 + 16*X^26 + 4*X^25 + 13*X^24 + 14*X^23 +
+    12*X^22 + 20*X^21 + 10*X^20 + 15*X^19 + 7*X^18 + 16*X^17 + 2*X^16 + 9*X^15 + 20*X^14 + 21*X^13 +
+    5*X^12 + X^11 + 15*X^10 + 7*X^9 + 22*X^8 + 9*X^7 + 18*X^6 + 2*X^5 + 20*X^4 + 22*X^3 + 22*X^2 +
+    6
+
+theorem Ψ₂Sq_elevenBMod : elevenBMod.Ψ₂Sq =
+    4*X^3 + 5*X^2 + 20*X + 19 := by
+  rw [WeierstrassCurve.Ψ₂Sq]
+  simp only [elevenBMod, WeierstrassCurve.b₂, WeierstrassCurve.b₄, WeierstrassCurve.b₆,
+    map_ofNat, C_neg, C_add, C_mul, C_pow, C_1]
+  reduce_mod_char
+
+theorem Ψ₃_elevenBMod : elevenBMod.Ψ₃ =
+    3*X^4 + 5*X^3 + 7*X^2 + 11*X + 16 := by
+  rw [WeierstrassCurve.Ψ₃]
+  simp only [elevenBMod, WeierstrassCurve.b₂, WeierstrassCurve.b₄, WeierstrassCurve.b₆,
+    WeierstrassCurve.b₈, map_ofNat, C_neg, C_add, C_sub, C_mul, C_pow, C_1]
+  reduce_mod_char
+
+theorem preΨ₄_elevenBMod : elevenBMod.preΨ₄ =
+    2*X^6 + 5*X^5 + 4*X^4 + 6*X^3 + 22*X^2 + 5*X + 6 := by
+  rw [WeierstrassCurve.preΨ₄]
+  simp only [elevenBMod, WeierstrassCurve.b₂, WeierstrassCurve.b₄, WeierstrassCurve.b₆,
+    WeierstrassCurve.b₈, map_ofNat, C_neg, C_add, C_sub, C_mul, C_pow, C_1]
+  reduce_mod_char
+
+theorem preΨ'_five_elevenBMod : elevenBMod.preΨ' 5 =
+    5*X^12 + 2*X^11 + 13*X^10 + 5*X^9 + 21*X^8 + 20*X^7 + 8*X^6 + 20*X^5 + 16*X^4 + 4*X^2 +
+      10*X + 2 := by
+  have h := elevenBMod.preΨ'_odd 0
+  norm_num [WeierstrassCurve.preΨ'_one, WeierstrassCurve.preΨ'_two] at h
+  rw [h, Ψ₃_elevenBMod, preΨ₄_elevenBMod, Ψ₂Sq_elevenBMod]
+  reduce_mod_char
+  ring_nf
+  reduce_mod_char
+
+theorem preΨ'_six_elevenBMod : elevenBMod.preΨ' 6 =
+    3*X^16 + 20*X^15 + 17*X^14 + 5*X^13 + 2*X^12 + 2*X^11 + 6*X^10 + 16*X^9 + 19*X^8 + 14*X^7 +
+    3*X^6 + 20*X^5 + 14*X^4 + 22*X^3 + 11*X^2 + 22*X + 8 := by
+  have h := elevenBMod.preΨ'_even 0
+  norm_num [WeierstrassCurve.preΨ'_one, WeierstrassCurve.preΨ'_two,
+    WeierstrassCurve.preΨ'_three, WeierstrassCurve.preΨ'_four] at h
+  rw [h, Ψ₃_elevenBMod, preΨ₄_elevenBMod, preΨ'_five_elevenBMod]
+  reduce_mod_char
+  ring_nf
+  reduce_mod_char
+
+theorem preΨ'_seven_elevenBMod : elevenBMod.preΨ' 7 =
+    7*X^24 + X^23 + 13*X^22 + 11*X^21 + 22*X^20 + 11*X^19 + 19*X^18 + 5*X^17 + 2*X^16 + 8*X^15 +
+    12*X^14 + 22*X^13 + 22*X^12 + 22*X^11 + 14*X^10 + 22*X^9 + 10*X^8 + X^7 + 8*X^6 + 9*X^5 +
+    19*X^4 + 22*X^3 + 15*X^2 + 10*X + 21 := by
+  have h := elevenBMod.preΨ'_odd 1
+  norm_num [WeierstrassCurve.preΨ'_two, WeierstrassCurve.preΨ'_three,
+    WeierstrassCurve.preΨ'_four] at h
+  rw [h, Ψ₃_elevenBMod, preΨ₄_elevenBMod, preΨ'_five_elevenBMod, Ψ₂Sq_elevenBMod]
+  reduce_mod_char
+  ring_nf
+  reduce_mod_char
+
+/-- **`Ψ₁₁ mod 23 = 11 · D · H`** for `elevenBMod` (PROVEN 2026-07-31).  Same shape as
+`preΨ'_eleven_elevenAMod`: `preΨ'_odd 3` needs exactly `preΨ' 7`, `preΨ' 5`, `preΨ₄`,
+`preΨ' 6` and `Ψ₂Sq`. -/
+theorem preΨ'_eleven_elevenBMod :
+    elevenBMod.preΨ' 11 = C 11 * (dPolyElevenB * hPolyElevenB) := by
+  have h := elevenBMod.preΨ'_odd 3
+  norm_num [WeierstrassCurve.preΨ'_four, Nat.even_iff] at h
+  rw [h, preΨ₄_elevenBMod, preΨ'_five_elevenBMod, preΨ'_six_elevenBMod,
+    preΨ'_seven_elevenBMod, Ψ₂Sq_elevenBMod, dPolyElevenB, hPolyElevenB]
+  simp only [map_ofNat]
+  reduce_mod_char
+  ring_nf
+  reduce_mod_char
+
+/-- `H` has no root in `ZMod 23`: it is a product of irreducibles of degree `11`. -/
+theorem eval_hPolyElevenB_ne_zero (a : ZMod 23) : hPolyElevenB.eval a ≠ 0 := by
+  revert a
+  simp only [hPolyElevenB, eval_add, eval_mul, eval_pow, eval_X, eval_ofNat]
+  decide
+
+/-- **`H ∣ X ^ (23 ^ 11) - X`** for the `j = −24729001` row (PROVEN 2026-07-31).
+
+The content is `Fermat.MazurNonCMFrobeniusB.dvd_X_pow_sub_X_hPoly`, generated by
+`flt-frobenius-cert.py` into its own module for the same reason as the `A` row: elaboration
+is single-threaded per file, so the two certificates elaborate in parallel. -/
+theorem dvd_X_pow_card_pow_sub_X_hPolyElevenB :
+    hPolyElevenB ∣ X ^ (Nat.card (ZMod 23)) ^ 11 - X := by
+  rw [Nat.card_zmod, hPolyElevenB]
+  exact Fermat.MazurNonCMFrobeniusB.dvd_X_pow_sub_X_hPoly
+
+/-- **Row `p = 11`, `j = −24729001`: `Ψ₁₁ mod 23` has no monic divisor of degree `10`**
+(PROVEN 2026-07-31).
+
+This is what `Fermat.not_monic_dvd_preΨ_mod_nonCMModelElevenB` in `X0.lean` consumes. -/
+theorem not_monic_dvd_preΨ_elevenB_mod (G : (ZMod 23)[X]) (hG : G.Monic)
+    (hdeg : G.natDegree = 10) : ¬ G ∣ elevenBMod.preΨ' 11 := by
+  have hp23 : Nat.Prime 23 := by decide
+  have hp11 : Nat.Prime 11 := by decide
+  have hc : (11 : ZMod 23) ≠ 0 := by decide
+  have hmn : ∀ d : ℕ, d ∣ 11 → d ≤ 10 → d = 1 := by
+    intro d hd hle
+    rcases hp11.eq_one_or_self_of_dvd d hd with h | h
+    · exact h
+    · omega
+  haveI : Fact (Nat.Prime 23) := ⟨hp23⟩
+  have hDdeg : dPolyElevenB.natDegree = 5 := by rw [dPolyElevenB]; compute_degree!
+  have hD0 : dPolyElevenB ≠ 0 := fun h => by rw [h, natDegree_zero] at hDdeg; omega
+  have hDlt : dPolyElevenB.natDegree < 10 := by omega
+  exact not_monic_dvd_of_smallDegreePart hc preΨ'_eleven_elevenBMod hmn
+    dvd_X_pow_card_pow_sub_X_hPolyElevenB eval_hPolyElevenB_ne_zero hD0 hDlt G hG hdeg
 
 end Fermat.MazurNonCMCertificate
 
