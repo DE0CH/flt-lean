@@ -7093,7 +7093,66 @@ separability of the sextic forbids.
 **Not vacuous.**  `pt` is a structure field with `pt_injective`, and `ord_pt_affine` /
 `ord_pt_infinite` pin its values, so the statement is a genuine constraint on `Places` and
 not a definition in disguise; the leaf asserts that `ord_complete` produces nothing beyond
-the points already named. -/
+the points already named.
+
+## PROOF PLAN (worked out 2026-07-31, not yet written; every input named below is IN THIS
+## FILE and PROVEN)
+
+The plan splits into UNIQUENESS (a place with given chart values IS the named point) and
+EXISTENCE (every place has chart values in one of the two charts).  Uniqueness is the half
+that looks hard and is not, because of one observation about an existing theorem.
+
+**The observation: `PlaceData.exists_localDenom_chart` is stated for an ARBITRARY place `v`
+carrying the two chart congruences** — it is not special to `v = pt P`.  Its two consumers
+(`exists_localDenom_affine`, `exists_localDenom_infinite`) instantiate it at `pt P` and get
+their congruences from `ord_pt_affine` / `ord_pt_infinite`, but the theorem itself only ever
+uses the congruences.  So `O_v` is described in terms of `(α, β)` alone: every `z` with
+`ord_v z ≥ 0` is a chart fraction whose denominator has NONZERO value at `(α, β)`.
+
+1. **A place is determined by its valuation ring.**  If `∀ z, 0 ≤ ord v z ↔ 0 ≤ ord v' z`
+   then `v = v'`.  Purely formal from the interface: for `u ≠ 0`, `ord v u = 0` iff `u` and
+   `u⁻¹` both have order `≥ 0` (`ord_inv`), so the hypothesis transports `ord = 0` and hence
+   `ord > 0`; picking `t` with `ord v t = 1` (`ord_surjective`) and testing `z · t^(−ord v z)`
+   gives `ord v' z = ord v z · ord v' t` for every `z ≠ 0`, and `ord v'`'s own surjectivity
+   plus `ord v' t > 0` forces `ord v' t = 1`.  Then `ord_injective`.  (~45 lines; needs a
+   `zpow` version of `ord_pow`.)
+2. **Generalise `exists_localDenom_affine` / `exists_localDenom_infinite` to an arbitrary
+   place with the chart congruences.**  Mechanical: their proofs use `ord_pt_affine` /
+   `ord_pt_infinite` ONLY to produce the two `VanishesAt`s that `exists_localDenom_chart`
+   wants, so take those as hypotheses and keep the present statements as one-line corollaries.
+3. **Uniqueness.**  If `v` and `pt P` have the same chart values then `O_v = O_{pt P}`: for
+   `z ∈ O_v`, step 2 at `v` writes `z · den = num` with `den` of nonzero VALUE at the chart
+   point; at `pt P` that same `den` has `ord = 0` (`vanishesAt_chart_sub` +
+   `ord_eq_zero_of_vanishesAt_sub`) and `num ∈ O_{pt P}` (`chart_mem_valRing`), so
+   `ord_{pt P} z ≥ 0`.  Symmetric in the other direction, then step 1.
+4. **EXISTENCE — `ord v` is not trivial on `K(xx)`.**  Suppose `ord v (aeval xx h) = 0` for
+   every `h` with `aeval xx h ≠ 0`.  Take `t` with `ord v t = 1` and write it by `gen` as
+   `t · d = a + b·yy` (`d = aeval xx D`, etc.).  Then `(t·d − a)² = b²·f(xx)` expands to
+   `t²d² − 2adt + (a² − b²f) = 0`, whose three terms have orders `2`, `1`, `0` — distinct,
+   so `ord_add_of_lt` gives `ord (t²d² − 2adt) = 0` against `ord (a² − b²f) = 0`.  The
+   degenerate branches are honest: `a = 0` gives `ord (t²d²) = 2 = ord (b²f) = 0`, and
+   `a² − b²f = 0` gives `yy = a/b ∈ K(xx)`, whence `ord (t·d) = 0 ≠ 1`.  (`2 ≠ 0` is
+   `PlaceData.two_ne_zero`; characteristic `0` here anyway.)
+5. **EXISTENCE — from a nonzero order to a chart value.**  `K` is algebraically closed, so
+   induct on `natDegree h`: if `ord v (xx − α) = 0` for EVERY `α ∈ K` then
+   `ord v (aeval xx h) = 0` for every `h ≠ 0` (split off a root, `ord_mul`), contradicting
+   step 4.  So some `α` has `ord v (xx − α) ≠ 0`.
+   * `ord v (xx − α) > 0`: then `ord v xx ≥ 0`, and `yy² − f(α) = f(xx) − f(α)` vanishes at
+     `v` because `xx − α` divides it; taking `β` with `β² = f(α)` (`IsAlgClosed.exists_pow_nat_eq`
+     or `exists_root` on `X² − C (f α)`), `(yy − β)(yy + β)` vanishes at `v`, so one factor
+     does — that is the chart value, and `(α, ±β)` is an honest `AffPt`.
+   * `ord v (xx − α) < 0`: then `ord v xx < 0`, so `u := xx⁻¹` has `ord v u > 0`, i.e. `u ≡ 0`;
+     and `w := yy·u³` satisfies `w² = u⁶·f(xx) = g(u)` with `g` the reversed sextic, `g(0) = 1`
+     (the sextic is MONIC — this is the same computation `exists_localDenom_infinite` does).
+     So `ord v w = 0` and `(w − 1)(w + 1) = w² − 1 ≡ 0`, giving `w ≡ ±1`, i.e. the chart value
+     of the infinite chart, and the `Bool` is that sign.
+6. **Assembly.**  Steps 5 and 3 give `v = pt P` for the `P` named in step 5.  Note step 5
+   never needs `ord v u = 1` at infinity: `exists_localDenom_infinite`'s congruences are
+   `u ≡ 0` and `w ≡ ε`, and `ord_pt_infinite`'s `ord xx = −1` is only used to SEPARATE the
+   charts, which step 5 already did by the sign of `ord v xx`.
+
+Nothing in the plan needs the degree theory (`degOf_poleDivisor_eq_finrank`, itself still a
+leaf), the residue field, or Riemann–Roch — which is the point of doing this over `ℚ̄`. -/
 theorem pt_surjective_of_isAlgClosed {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
     [IsAlgClosed K] (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
     (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) :
