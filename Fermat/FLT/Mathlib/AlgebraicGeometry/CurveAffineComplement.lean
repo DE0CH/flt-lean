@@ -426,14 +426,58 @@ genus.
 NOT VACUOUS: for `X` the projective model of an elliptic curve over `ℚ` and `z` the point at
 infinity, `x` (the first Weierstrass coordinate) is such a section.
 
-WHAT WOULD REFUTE THE "MISSING FROM THE PIN" DIAGNOSIS: a Riemann–Roch theorem, a genus, or a
-theory of linear systems, anywhere in `Fermat/`, `.lake/packages/mathlib` or `~/cs/FLT`.
-Re-searched 2026-07-31, and the search is now sharper than the 2026-07-28 one it replaces: the
-pin DOES carry `Mathlib/AlgebraicGeometry/AlgebraicCycle/` and
-`Mathlib/AlgebraicGeometry/OrderOfVanishing.lean`, i.e. cycles and orders of vanishing, so a
-prover has divisors to work with — but `grep -ri riemann` over all of `Mathlib` returns nothing
-in algebraic geometry, there is no `genus`, and there is no coherent-sheaf cohomology.  So the
-divisor language exists and the finiteness theorem about it does not. -/
+## WHAT THE PIN ACTUALLY HAS, read rather than grepped (2026-07-31)
+
+The older note here said only "Riemann–Roch is absent".  That is true and useless on its own;
+below is the inventory a prover needs, and the headline is that **ORDERS OF VANISHING ARE
+ALREADY IN THE PIN, and every hypothesis they need is already discharged for this file's
+curves.**
+
+PRESENT — `Mathlib/AlgebraicGeometry/OrderOfVanishing.lean`, for
+`[IsIntegral X] [IsLocallyNoetherian X]`:
+
+* `AlgebraicGeometry.Scheme.ord (f : X.functionField) (z : X) : ℤ`, the order of vanishing at a
+  point of codimension one, junk value `0` when `f = 0` or `coheight z ≠ 1`;
+* `ord_mul`, `ord_add` (this one wants `IsDiscreteValuationRing (X.presheaf.stalk x)`),
+  `ord_of_isUnit`, `le_ord_iff`, `ord_le_ord_iff`, `ord_eq_zero_of_coheight_neq_one`, `ord_zero`,
+  `ord_le_smul`, and `ordHom` into `ℤᵐ⁰`.
+
+PRESENT — `Mathlib/AlgebraicGeometry/AlgebraicCycle/Basic.lean`:
+
+* `AlgebraicCycle X R := Function.locallyFinsupp X R` — a cycle is a function on points with
+  locally finite support, using generic points to index irreducible closed subsets;
+* pushforward `AlgebraicCycle.map` along a quasi-compact morphism, with `mapCoeff` built from
+  `Scheme.Hom.residueDegree`.
+
+AND EVERY SIDE CONDITION IS FREE HERE, which is the part worth knowing before starting:
+`IsIntegral X` is `isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected`;
+`IsLocallyNoetherian X` is `LocallyOfFiniteType.isLocallyNoetherian strX` (used twice in this
+file already); the DVR hypothesis of `ord_add` is
+`isDiscreteValuationRing_stalk_of_smoothOfRelativeDimension_one` (`CurveExtension.lean`); and the
+codimension-one condition `coheight z = 1` holds at exactly the non-generic points, because
+`isClosed_singleton_of_ne_genericPoint` below makes every one of them closed and
+`ringKrullDim_stalk_le_of_smoothOfRelativeDimension` bounds the chains.
+
+ABSENT, verified by reading and not only by name-grep — every `Divisor` hit under
+`Mathlib/AlgebraicGeometry/` and `Mathlib/RingTheory/OrderOfVanishing/` is `nonZeroDivisors`:
+
+* no `principalDivisor` / `div f` packaging `ord f ·` as an `AlgebraicCycle`, and no proof that
+  its support is locally finite;
+* no degree homomorphism on cycles, no divisor class group, no `genus`;
+* no coherent-sheaf cohomology, and `grep -ri riemann` over all of `Mathlib` returns nothing in
+  algebraic geometry.  `~/cs/FLT` has none of it either.
+
+So the VALUATION-THEORETIC half of divisor theory is done and the GLOBAL half — `deg`, finiteness
+of `L(D)`, and the Riemann inequality — is what has to be built.  A prover should start by
+defining `L(n·[z])` directly as `{f : X.functionField | 0 ≤ ord f y for y ≠ z}` using `ord`, not
+by building an order of vanishing from scratch.
+
+ONE BRIDGE THIS LEAF WILL NEED, and it is not in the pin either: a rational function whose `ord`
+is `≥ 0` at every point of an open `U` is the germ of an actual SECTION in `Γ(X, U)` — i.e.
+`Γ(X, U) = ⋂_{x ∈ U} 𝒪_{X,x}` inside `K(X)`.  `exists_res_eq_of_germ_eq` below is the
+two-open case of the gluing that argument needs; the general case is the same
+`TopCat.Sheaf.existsUnique_gluing'` over an affine cover, plus the commutative-algebra fact that
+a noetherian domain is the intersection of its localisations at primes. -/
 theorem exists_notIsIntegralElem_section_compl_singleton
     {K : Type u} [Field K] {X : Scheme.{u}} (strX : X ⟶ Spec (CommRingCat.of K))
     [IsProper strX] [SmoothOfRelativeDimension 1 strX]
