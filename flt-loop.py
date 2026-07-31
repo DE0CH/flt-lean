@@ -1187,6 +1187,25 @@ def panic(why):
     os._exit(1)
 
 
+def _excepthook(exc_type, exc, tb):
+    """Last resort: anything that escapes the tick's own handler.
+
+    sys.excepthook is what Python calls when an exception propagates out of the
+    main thread instead of being caught -- so it covers startup, main() outside
+    the loop, and anything after it. It does NOT cover the tick body, which
+    catches its own exceptions and calls panic() directly; the two are layers,
+    not alternatives, and deliberately so: a flaky ssh or a git hiccup should
+    be retried, not treated as a broken machine.
+
+    It cannot recurse. If an excepthook raises, Python prints "Error in
+    sys.excepthook" and the original traceback rather than re-entering, and
+    panic() wraps its own body and ends in os._exit anyway. SystemExit never
+    reaches here -- the interpreter special-cases it -- so a clean shutdown is
+    not mistaken for a fault.
+    """
+    panic("".join(traceback.format_exception(exc_type, exc, tb)))
+
+
 def tick(dry=False):
     s = load()
     rows, firing = evaluate(s)
@@ -1230,6 +1249,7 @@ def main():
                 v = r["why"][:70]
             print("  %-3s %-58s %s" % (r["id"], r["label"][:58], v))
         return
+    sys.excepthook = _excepthook
     take_lock()
     startup_digest = source_digest()
     print("flt-loop running, pid %d, state %s, source %s"
