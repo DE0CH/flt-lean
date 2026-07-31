@@ -15155,3 +15155,159 @@ is therefore load-bearing for TRUTH, and in this instance it is the only thing t
 universal datum `D`/`hu` is still doing in the leaf's hypothesis list — which is
 worth saying in the docstring, because otherwise the next reader will think they
 have to use it.
+
+## A CHECK THAT REPORTS CLEAN IS ONLY AS GOOD AS ITS MODEL — RE-RUN IT AFTER MERGING A FIX TO IT
+
+(2026-07-31, release 31.) `tools/merge/xdup.py` reported **0 qualified duplicate
+pairs** on `merger`'s tree. Nine branches later — none of which touched a single
+Lean declaration involved — it reported **21**, and both clusters were HARD
+`environment already contains …` import failures, i.e. they stop a module before
+one line of it elaborates. Nothing about the tree had changed. What had changed
+is that one of the nine branches (`flt-lean-307`) carried a two-line fix to
+`xdup.py` itself.
+
+The bug is worth knowing because the same modelling error is easy to make again:
+the pair test was `a in cone[b]` — *does one of the two modules IMPORT the
+other?* Lean's condition is strictly weaker. **A collision happens as soon as
+SOME SINGLE module sees both**, whether or not either sees the other. Two sibling
+modules under a common consumer collide, and no import-cone pair test can see it.
+
+So the rule, and it generalises past this one script: **when a merge brings in a
+change to a CHECKER, re-run that checker on the tree you have already certified
+with the old one.** A checker is not payload — its diff is three lines and its
+blast radius is every previous clean verdict. The natural reading ("tooling
+change, no Lean impact, no need to re-verify") is exactly backwards.
+
+Corollary for reading a previous release's handover: "check X was clean" is a
+statement about X *as it stood then*. Release 30's handover truthfully reported
+zero qualified duplicates and the tree had two release-blocking collisions in it.
+
+The two found this way, both the "TWO BRANCHES HOISTING OVERLAPPING BLOCKS"
+shape CLAUDE.md already predicts by name:
+
+* `Modularity/HeckeAtkinLehner.lean` (196 declarations hoisted out of
+  `Interface.lean`) against `Modularity/HeckeQExpansion.lean` (19, a strict
+  SUBSET), with `Interface.lean` `public import`ing both — 19 pairs. Resolved
+  as prescribed: keep both modules, larger imports smaller, delete the overlap
+  from the larger. `tools/merge/dedup_cross.py` body-compares first, which is
+  what makes this mechanical: 18 bodies were byte-identical and one
+  (`qCoeff_heckeOp`) was the same STATEMENT with a different proof, which the
+  tool correctly refused to delete and left for a decision.
+* `Mathlib/AlgebraicGeometry/PrincipalDivisorDegree.lean` against
+  `…/CurveDivisorDegree.lean` on `Scheme.ord_one`/`Scheme.ord_inv`, seen by
+  `ModularCurve/X0.lean`, the only module importing both.
+
+## A DECLINED BRANCH'S NOTE NAMES THE ONE THING THAT MUST SURVIVE — READ IT BEFORE DECLINING
+
+(Same release.) `flt-lean-357`'s headline payload was the removal of 249
+cross-file duplicates from `MazurTorsion.lean`. By the time it reached the merge
+worker that work was **entirely redundant**: the duplicates were gone, and
+merger's copy of the file was 519 lines SHORTER than the branch's own
+de-duplicated version. Its ArtinConductor, WeilPairingStageB, RelativePicard,
+HyperellipticJacobian and X0 hunks were likewise all repairs merger had since
+made by another route. Declining the whole Lean payload was right.
+
+**It would also have silently reverted a proof**, and the branch said so, in one
+sentence, in its handover:
+
+> THE ONE EXCEPTION, and it must survive or my de-duplication silently reverts a
+> proof: my transplant of `X0GenusOne.finrank_cuspForm_eq_one_of_x0Genus_eq_one`
+
+That declaration was `sorry` on merger and had a three-line proof on the branch,
+over a theorem 48 000 lines above it in the same file. Nothing in any diff, any
+duplicate scan or any frontier count distinguishes it from the 17 000 redundant
+lines around it.
+
+**So a decline is not a diff-level decision.** Before `git checkout HEAD -- ` on
+a branch's files, read its `to_merger` note for a sentence of the form *"this one
+thing must survive"* and check that ONE thing by hand. Branch authors write it
+precisely because they can see the merge coming and you cannot see their reason.
+And when you decline, say in the commit message what you took and what would
+change your mind — an empty-looking payload otherwise reads as the class-six
+dropped-merge bug.
+
+Rider on how to make the check cheap: the redundancy verdict itself was one
+command per claim rather than a reading of 17 000 lines. `xdup.py`'s qualified
+pass for the de-duplication; `grep` for the branch's own canary
+(`GaloisRepresentation.globalValuationSubring`, declared once, in the upstream
+module); `wc -l` on the three copies of the file. **Price a branch's payload
+against the tree with the branch's OWN success criteria, not by reading its
+diff.**
+## "NO FURTHER CLAUSE-SHAPED CUT" IS A VERDICT ABOUT HYPOTHESES — THE QUANTIFIER IS A CUT TOO
+(2026-07-31, `flt-lean-242`.) A mature leaf in this tree often carries an
+atomicity verdict of the form "no further cut is available — every remaining
+hypothesis is consumed by the classical argument, and the conclusion is the input
+datum with ONE clause added". That sentence is usually **true and useless**,
+because it audits the wrong axis. It asks whether a HYPOTHESIS can be split off.
+It does not ask whether the CONCLUSION quantifies over a finite index set.
+`exists_eigenform_minimalLevel_of_isUnramifiedOutside` concluded "there is a
+quaternionic level datum `𝒮` with `𝒮.S ⊆ badF`". Its verdict was right about
+hypotheses — there is no automorphic representation in this tree, so nothing is
+splittable off the input side. But the classical argument reaches `𝒮.S ⊆ badF`
+by removing the places of `𝒮.S \ badF` **one at a time**, and a finite descent is
+in-tree Lean work even when its single step is a citation. The node is now a
+proven induction on `𝒮.S.card` over a ONE-PLACE leaf.
+**The trade, stated honestly, because it is not a leaf-count win.** One leaf
+becomes one leaf. What changes is the SIZE of what is cited: the old leaf owed
+the conductor–level dictionary over a whole set plus the finiteness argument that
+terminates the descent; the new one owes local–global compatibility and the
+newvector statement at a SINGLE place. And the input sharpens with it — the
+ramification hypothesis went from `∀ w ∉ badF, ρ unramified at w` to
+`ρ unramified at w₀`, because one step needs one place.
+**The pattern to look for**, since it recurs wherever a leaf's conclusion is a
+containment or a bound over a finite set:
+* conclusion mentions a finite set (`S ⊆ bad`, `supp 𝔫 ⊆ …`, `∀ i ∈ s, P i`);
+* the classical proof is a descent / induction / one-at-a-time removal;
+* the ambient structure lets you build the smaller object cheaply (here
+  `U₁Data`'s only constraint on `S` was inherited by subsets, so `eraseS` was
+  six lines and the measure `S.card` was three).
+Then the loop is yours and only the step is owed. Two Lean-level notes that made
+it cheap: pick the measure that needs NO `DecidableEq` in the *statement*
+(`𝒮.S.card`, not `(𝒮.S \ bad).card` — `\` forces a `SDiff` instance into the
+`suffices`), and put `open scoped Classical in` on the `erase`-based definition,
+which then needs `noncomputable`.
+**Corollary for anyone writing an atomicity verdict:** say which axis you
+checked. "No hypothesis splits off" and "no cut is available" are different
+claims, and only the first is usually supported.
+## TWO CUTS OF ONE PARENT, MERGED CLEANLY: THE LOSER'S DOCSTRING SAYS IT WON, AND SO DOES THE PARENT'S — ONLY THE `by` BLOCK KNOWS
+(2026-07-31, `flt-lean-296`, on `exists_pointwiseCommutingHeckeAlbaneseFamily` in
+`ModularCurve/X0.lean`.)  Two agents cut the SAME parent leaf on the SAME DAY along two
+different seams, and release 29 merged both — no conflict, because each landed its new
+declaration in a region the other never touched.  The parent kept ONE proof, so one cut
+became live and the other became an orphaned `sorry` that no proof term in the project
+reaches.  The task prompt I was handed named the orphan, described it as "the consumer is
+PROVEN over it", and was quoting the orphan's own docstring accurately.
+**What makes this sharper than the orphan classes already recorded above: BOTH DOCSTRINGS
+NAMED THE LOSER.**  The orphan's docstring opens *"`exists_commutingHeckeAlbaneseFamily`
+below is PROVEN over this and nothing else"*; the PARENT's docstring says *"PROVEN over
+`exists_pointwiseCommutingHeckeAlbaneseFamily` immediately above"* — twice, in bold — and
+the parent's actual `by` block calls `exists_commutingHeckeAlbaneseFamily_values`, a
+different leaf 19 700 lines away.  So the existing rule *"read the PROOF of the theorem the
+prompt says your leaf unblocks"* is not merely good practice here: **the proof body is the
+ONLY artefact in the file that is not lying**, and it is lying in both directions at once
+(the parent's docstring even says "immediately above" about a declaration far below it,
+which is a free extra tell — a stale DIRECTION word).
+Three checks, in the order that costs least:
+* **`grep -n '<your target>' <the file>` and classify every hit.**  Own declaration plus
+  docstrings only ⇒ orphaned.  Four hits here, three of them prose.
+* **Read the parent's `by` block, never its docstring.**  If your target's name is not in
+  it, you are on the losing cut whatever the prose says.
+* **A "immediately above/below" in a docstring is an ORDER ASSERTION — check the line
+  numbers.**  A merge that lands a relocation as an insertion elsewhere falsifies it
+  silently, and it is the cheapest signal that two cuts collided.
+**THE RESOLUTION, and it is decidable rather than a matter of taste.**  Compare the two
+cuts' STRENGTH and their POSITION.  Here the winner (`_values`, morphism-level commutation
+at every pair of arities plus a value clause) is strictly stronger than the orphan
+(points-level, pinned primes only) and sits ABOVE it — so the orphan is a fifteen-line
+corollary of the winner, and closing it that way takes the cluster from two open leaves to
+one with a diff of one theorem body.  **Prefer that to the "better" repair** — hoisting the
+orphan above the winner, strengthening it, and proving the winner over it — whenever the
+file is contended: the good repair was ~150 lines of movement in the most-edited file in the
+repository, and the presentational gain does not buy a merge conflict.  Say in `to_merger`
+that you took the cheap one and what the expensive one would have been; that is a decision
+recorded, which the merge worker can reverse, rather than a question nobody will answer.
+**And do not read "closed the leaf" as "did mathematics".**  Deriving an orphan from a
+strictly stronger sorry adds no theorem; what it removes is a phantom frontier slot that
+will otherwise keep drawing dispatches — this one had already drawn mine.  Report it as
+merge repair, with the count delta stated (`2 → 1`), or the next reader will believe a
+theory gap closed.
