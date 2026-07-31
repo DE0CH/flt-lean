@@ -14377,6 +14377,43 @@ construction does need is now PROVEN outright as
 `isRaisedLevelHardlyRamified_pushforwardFrame` above — so carrying `hfunc` here
 would leave it unconsumed.  It is still consumed by the assembly's caller.
 
+**THE UNIVERSE OBSTRUCTION TO A VERBATIM TRANSCRIPTION, AND THE ESCAPE**
+(2026-07-31, `flt-lean-244`, found while assembling the consumer; this is the
+one thing a prover must settle before writing a line).
+
+The base-level `FrameRing` section of `HardlyRamified/Deformation.lean` builds
+
+    FrameGen k   := (Γ ℚ × Fin 2 × Fin 2) ⊕ k          -- `Type uK`
+    framePoly    := MvPolynomial (FrameGen k) ℤ_[p]     -- `Type uK`
+    frameRing    := framePoly ⧸ frameRel                -- `Type uK`
+
+— the Teichmüller generators `T_x`, one per element of `k`, put the ring in
+**`k`'s** universe.  This statement demands `P : Type uR` with `uR` INDEPENDENT
+of `uK`, because its consumer feeds `P` to
+`exists_universalFrame_profinite_of_levelIdealSystem`, whose `{P : Type w}` and
+`∃ (R : Type w)` are the same `w`, and that `w` is `uR`.  So a verbatim
+transcription produces `P : Type uK` and **does not typecheck**, and no `ULift`
+repairs it (`ULift.{uR} (frameRing p k) : Type (max uK uR)`).
+
+The escape is already in the hypotheses.  `𝒟₀ : AuxDeformationDatum.{uR, uK, uW}`
+carries `𝒟₀.R : Type uR` together with `𝒟₀.π : 𝒟₀.R →+* k` and
+`𝒟₀.π_surjective`, so
+
+    k₀ := 𝒟₀.R ⧸ RingHom.ker 𝒟₀.π   :   Type uR
+
+is a finite field with `k₀ ≃+* k` — a SMALL MODEL of the residual field, in the
+coefficient universe.  Build the frame ring over `k₀` (`FrameGen k₀ : Type uR`,
+since `Γ ℚ` contributes nothing above `Type 0`), and transport the conclusion's
+`evbar : P →+* k` and `hres` clause along that isomorphism.  `𝒟₀` is thus spent
+twice — for nonemptiness of the category AND for the universe — which is worth
+saying in the reproof, since it looks like an unused hypothesis until then.
+
+The same remark applies to making the base-level section PREDICATE-GENERIC: that
+part is the mechanical half the 2026-07-28 route audit priced correctly, but it
+is NOT sufficient on its own, and the audit does not mention the residual-field
+universe at all (it discusses only the COEFFICIENT universe, which `flt-lean-39`
+did fix).
+
 CIRCULARITY GUARD: as for `exists_auxDeformationDatum` above.
 
 References: Schlessinger, *Functors of Artin rings*, Thm. 2.11; Mazur,
@@ -14433,7 +14470,37 @@ theorem exists_levelIdealSystem_aux_of_clauses.{uK, uW, uR}
 set_option linter.checkUnivs false in
 open scoped TensorProduct in
 /-- **From STRICT universality on frames to the WEAK raised-level universality**
-(sorry node, LEAF A2′-2d′-i-2 — new 2026-07-30, `flt-lean-166`).
+(PROVEN 2026-07-31, `flt-lean-244`; was LEAF A2′-2d′-i-2, new 2026-07-30,
+`flt-lean-166`).
+
+**TWO CORRECTIONS TO THE ROUTE BELOW, both found by carrying it out.**
+
+1. *"Push `ρuniv` forward along `πuniv` itself, at `A := k`" DOES NOT
+   TYPECHECK.*  `hquotPF` quantifies over test rings in `Type uR`, and
+   `k : Type uK` with the two universes deliberately independent — `@hquotPF k`
+   is a hard universe error, not a defeq problem.  What works is the RESIDUE
+   QUOTIENT `R ⧸ RingHom.ker πuniv`, which is a finite discrete local
+   `ℤ_p`-algebra **in `Type uR` by construction** and so is a legal test object.
+   `hquotPF` there pins `ρuniv.det g` modulo `ker πuniv`, which is exactly
+   enough to pin `πuniv (ρuniv.det g)`, and `hres` transports that to `ρbar`.
+   Only the DETERMINANT is needed, so no raised-level condition on `ρbar` is
+   ever asserted and the circularity guard is untouched.  (Finiteness of the
+   quotient comes from `Ideal.Quotient.lift 𝔪 πuniv` being injective into the
+   finite `k`; note `πuniv` is NOT assumed surjective here, and is not needed
+   to be.  Locality is `IsLocalRing.of_surjective'` over
+   `isLocalHom_of_le_jacobson_bot`, the recipe of
+   `ProfiniteLocalNoetherian.lean`.)
+2. *`hπalg` is used by the proof but is NOT a real hypothesis.*  `k` is FINITE,
+   so `ringHom_padicInt_ext_finite` equates ANY two ring maps `ℤ_[p] →+* k`,
+   and the caller discharges it with `ringHom_padicInt_ext_finite _ _`.  So the
+   "one-line change upstream" that this node and its consumer both prescribed —
+   adding the equation to `exists_universalFrame_profinite_of_levelIdealSystem`'s
+   conclusion — is **NOT needed**, and `Deformation.lean` was left untouched.
+   The hypothesis is kept in the signature only for interface stability.
+
+Also note `det_pushforwardFrame` (`Deformation.lean`, PROVEN) is what computes
+the pushforward's determinant; do NOT add a second copy of it — that duplicate
+has broken this module's build before.
 
 `exists_universalFrame_profinite_of_levelIdealSystem` concludes with
 `IsStrictlyUniversalOnFramesFor`, whose test objects arrive carrying a STRICT
@@ -14510,13 +14577,148 @@ theorem isAuxWeaklyUniversalOnFrames_of_isStrictlyUniversalOnFramesFor.{uK, uW, 
         letI := iCR; letI := iTS; letI := iTR; letI := iLR; letI := iAlg
         IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun A) ρA)
       ρbar ρuniv πuniv) :
-    IsAuxWeaklyUniversalOnFrames.{uR, uK, uW} hpodd Q ρbar ρuniv πuniv ∅ :=
-  sorry
+    IsAuxWeaklyUniversalOnFrames.{uR, uK, uW} hpodd Q ρbar ρuniv πuniv ∅ := by
+  classical
+  letI : Algebra R k := πuniv.toAlgebra
+  letI : ContinuousSMul R k := continuousSMul_of_algebraMap R k
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hπcont)
+  obtain ⟨e₀, he₀⟩ := hres
+  -- **`ρbar`'s determinant is the cyclotomic character.**  It is not a
+  -- hypothesis, and the route recorded on this node — instantiate `hquotPF` at
+  -- `A := k` — DOES NOT TYPECHECK: `hquotPF` quantifies over test rings in
+  -- `Type uR`, and `k : Type uK` with the two universes independent.  What
+  -- works instead is the residue quotient `R ⧸ ker πuniv`, which is a finite
+  -- discrete local `ℤ_p`-algebra IN `Type uR` by construction; `hquotPF` there
+  -- pins `ρuniv.det` modulo `ker πuniv`, which is exactly enough to pin
+  -- `πuniv (ρuniv.det g)`, and `hres` transports that to `ρbar`.
+  have hρbardet : ∀ g, ρbar.det g = algebraMap ℤ_[p] k
+      (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv) := by
+    have hdetconj : ∀ (σ : GaloisRep ℚ k (k ⊗[R] (Fin 2 → R)))
+        (e : (k ⊗[R] (Fin 2 → R)) ≃ₗ[k] W) (g : Field.absoluteGaloisGroup ℚ),
+        (σ.conj e).det g = σ.det g := by
+      intro σ e g
+      rw [GaloisRep.det_apply, GaloisRep.conj_apply, LinearEquiv.conj_apply,
+        LinearMap.comp_assoc, LinearMap.det_conj]
+      rfl
+    have hdetbc : ∀ g : Field.absoluteGaloisGroup ℚ,
+        (ρuniv.baseChange k).det g = algebraMap R k (ρuniv.det g) := by
+      intro g
+      show LinearMap.det ((ρuniv.baseChange k) g) = _
+      rw [show (((ρuniv.baseChange k) g) :
+          Module.End k (k ⊗[R] (Fin 2 → R))) =
+        LinearMap.baseChange k (ρuniv g) from rfl, LinearMap.det_baseChange]
+      rfl
+    set 𝔪 : Ideal R := RingHom.ker πuniv with h𝔪
+    have h𝔪top : 𝔪 ≠ ⊤ := by
+      intro h
+      have h1 : (1 : R) ∈ 𝔪 := h ▸ Submodule.mem_top
+      rw [h𝔪, RingHom.mem_ker, map_one] at h1
+      exact one_ne_zero h1
+    have h𝔪open : IsOpen ((𝔪 : Ideal R) : Set R) := by
+      rw [h𝔪, show ((RingHom.ker πuniv : Ideal R) : Set R) = πuniv ⁻¹' {0} from
+        Set.ext fun x => by simp [RingHom.mem_ker]]
+      exact (isOpen_discrete _).preimage hπcont
+    haveI : Nontrivial (R ⧸ 𝔪) := by
+      rw [← not_subsingleton_iff_nontrivial, Ideal.Quotient.subsingleton_iff]
+      exact h𝔪top
+    haveI : IsLocalHom (Ideal.Quotient.mk 𝔪) :=
+      isLocalHom_of_le_jacobson_bot 𝔪 (by
+        rw [IsLocalRing.jacobson_eq_maximalIdeal (⊥ : Ideal R) bot_ne_top]
+        exact IsLocalRing.le_maximalIdeal h𝔪top)
+    haveI : IsLocalRing (R ⧸ 𝔪) :=
+      IsLocalRing.of_surjective' (Ideal.Quotient.mk 𝔪)
+        Ideal.Quotient.mk_surjective
+    have hmk : Continuous (Ideal.Quotient.mk 𝔪) :=
+      (QuotientRing.isOpenQuotientMap_mk 𝔪).continuous
+    haveI : DiscreteTopology (R ⧸ 𝔪) := by
+      rw [discreteTopology_iff_isOpen_singleton_zero]
+      have himg : (Ideal.Quotient.mk 𝔪) '' ((𝔪 : Ideal R) : Set R) = {0} := by
+        ext x
+        constructor
+        · rintro ⟨y, hy, rfl⟩
+          exact Ideal.Quotient.eq_zero_iff_mem.mpr hy
+        · rintro rfl
+          exact ⟨0, 𝔪.zero_mem, map_zero _⟩
+      rw [← himg]
+      exact (QuotientRing.isOpenQuotientMap_mk 𝔪).isOpenMap _ h𝔪open
+    haveI : Finite (R ⧸ 𝔪) := by
+      refine Finite.of_injective
+        (Ideal.Quotient.lift 𝔪 πuniv (fun a ha => ha)) ?_
+      intro x y hxy
+      obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective x
+      obtain ⟨b, rfl⟩ := Ideal.Quotient.mk_surjective y
+      rw [Ideal.Quotient.lift_mk, Ideal.Quotient.lift_mk] at hxy
+      rw [Ideal.Quotient.eq, h𝔪, RingHom.mem_ker, map_sub, hxy, sub_self]
+    have halg₀ : (Ideal.Quotient.mk 𝔪).comp (algebraMap ℤ_[p] R) =
+        algebraMap ℤ_[p] (R ⧸ 𝔪) := rfl
+    have hpf₀ := hquotPF (R ⧸ 𝔪) (Ideal.Quotient.mk 𝔪) hmk halg₀
+    intro g
+    have hd := det_pushforwardFrame (Ideal.Quotient.mk 𝔪) hmk ρuniv g
+    have hquot : Ideal.Quotient.mk 𝔪 (ρuniv.det g) =
+        Ideal.Quotient.mk 𝔪 (algebraMap ℤ_[p] R
+          (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv)) := by
+      rw [← hd, hpf₀.det g]
+      exact (RingHom.congr_fun halg₀ _).symm
+    have hker : πuniv (ρuniv.det g) = πuniv (algebraMap ℤ_[p] R
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv)) := by
+      have hsub : ρuniv.det g - algebraMap ℤ_[p] R
+          (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv) ∈ 𝔪 :=
+        Ideal.Quotient.eq.mp hquot
+      rw [h𝔪, RingHom.mem_ker, map_sub, sub_eq_zero] at hsub
+      exact hsub
+    rw [← he₀, hdetconj, hdetbc, RingHom.algebraMap_toAlgebra,
+      hker, ← RingHom.comp_apply, hπalg]
+  intro A _ _ _ _ _ _ _ ρA hρA πA hπAsurj SA hcf
+  have hπA : Continuous πA := continuous_of_discreteTopology
+  have hπAalg : πA.comp (algebraMap ℤ_[p] A) = algebraMap ℤ_[p] k :=
+    ringHom_padicInt_ext_finite _ _
+  letI : Algebra A k := πA.toAlgebra
+  letI : ContinuousSMul A k := continuousSMul_of_algebraMap A k
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hπA)
+  have halgπA : (algebraMap A k : A →+* k) = πA := RingHom.algebraMap_toAlgebra πA
+  have hrk : Module.rank k (k ⊗[A] (Fin 2 → A)) = 2 := by
+    rw [Module.rank_baseChange, rank_finTwoFun]
+    simp
+  -- **Brauer–Nesbitt at rank 2**: matching linear `charFrob` coefficients away
+  -- from `SA`, plus the determinant pinning of both sides, reconstruct the FULL
+  -- characteristic polynomials, hence a conjugation onto `ρbar`.
+  have hid : ∃ e : (k ⊗[A] (Fin 2 → A)) ≃ₗ[k] W,
+      (ρA.baseChange k).conj e = ρbar := by
+    refine exists_conj_of_charFrob_eq_away hW hirr hrk (ρA.baseChange k) SA ?_
+    intro q hq hqSA
+    have hbc : (ρA.baseChange k).charFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat =
+        (ρA.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map
+          (algebraMap A k) :=
+      charFrob_baseChange _ ρA
+    refine monic_natDegree_two_ext (charFrob_monic _ (ρA.baseChange k))
+      (charFrob_monic _ ρbar) (charFrob_natDegree _ (ρA.baseChange k) hrk)
+      (charFrob_natDegree _ ρbar hW) ?_ ?_
+    · rw [hbc, Polynomial.coeff_map, halgπA]
+      exact coeff_zero_charFrob_eq_of_det_eq (rank_finTwoFun A) hρA.det hW
+        hρbardet πA hπAalg _
+    · rw [hbc, Polynomial.coeff_map, halgπA]
+      exact hcf q hq hqSA
+  obtain ⟨ψ, hψcont, hψalg, hψπ, e', he'⟩ :=
+    hstrict A ρA hρA πA hπAsurj hπA hid
+  refine ⟨ψ, hψcont, hψalg, hψπ, ?_⟩
+  intro q hq _ _
+  letI : Algebra R A := ψ.toAlgebra
+  letI : ContinuousSMul R A := continuousSMul_of_algebraMap R A
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hψcont)
+  have halgψ : (algebraMap R A : R →+* A) = ψ := RingHom.algebraMap_toAlgebra ψ
+  have hchain : ρA.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
+      (ρuniv.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map
+        (algebraMap R A) := by
+    rw [← he', charFrob_conj, charFrob_baseChange]
+  rw [hchain, Polynomial.coeff_map, halgψ]
 
 set_option linter.checkUnivs false in
 open scoped TensorProduct in
 /-- **Pro-representability of the RAISED-LEVEL problem over `ℚ`, PROFINITE
-form** (sorry node, LEAF A2′-2d′-i — new 2026-07-28, the CONSTRUCTION half of
+form** (PROVEN 2026-07-31, `flt-lean-244`, as an ASSEMBLY over the ONE
+remaining leaf `exists_levelIdealSystem_aux_of_clauses`; was LEAF A2′-2d′-i —
+new 2026-07-28, the CONSTRUCTION half of
 the 2026-07-28 cut of `exists_universalFrame_auxDeformation_of_clauses` below,
 and the exact `ℚ`-side raised-level twin of the base-level
 `exists_universalFrame_profinite_of_deformationCondition` in
@@ -14609,37 +14811,40 @@ and the machine's levelwise `pushforwardFrame` clause is converted to this
 statement's `baseChange` clause by
 `isRaisedLevelHardlyRamified_baseChange_of_pushforwardFrame`.
 
-What remains, and what the assembly here is waiting on:
+What remains (2026-07-31, `flt-lean-244`: the SECOND of the two is now PROVEN,
+and this node is an assembly over the first alone):
 
 * `exists_levelIdealSystem_aux_of_clauses` (the arithmetic; `hglue`, `hfin` and
-  `𝒟₀` are spent there and nowhere else), and
-* `isAuxWeaklyUniversalOnFrames_of_isStrictlyUniversalOnFramesFor` (the machine
-  concludes with STRICT universality, whose test objects arrive residually
-  identified; this statement's conclusion asks only for matching linear
-  `charFrob` coefficients away from a finite set, which is strictly weaker, so
-  the bridge is Brauer–Nesbitt at rank 2 and is a genuine obligation).
+  `𝒟₀` are spent there and nowhere else) — STILL OPEN, and see its docstring
+  for the UNIVERSE obstruction that a verbatim transcription of the base-level
+  `FrameRing` section runs into;
+* `isAuxWeaklyUniversalOnFrames_of_isStrictlyUniversalOnFramesFor` — PROVEN.
 
-**THE ONE BLOCKER TO WRITING THE ASSEMBLY NOW, recorded so it is not
-rediscovered.**  The universality bridge needs the determinant of `ρbar` pinned
-to the cyclotomic character, and this statement does not hypothesise it.  It IS
-recoverable — push `ρuniv` forward along `πuniv` itself, `k` being a finite
-discrete local `ℤ_p`-algebra, and transport along `hres` — but that application
-needs `πuniv.comp (algebraMap ℤ_[p] R) = algebraMap ℤ_[p] k`, which
-`exists_universalFrame_profinite_of_levelIdealSystem` establishes internally (as
-a `have`, from its own hypothesis `hevalg`) and does NOT state in its conclusion.
-So the bridge carries it as the explicit hypothesis `hπalg`, and the assembly
-cannot discharge it from the machine's conclusion as that conclusion currently
-stands.
+**THE "ONE BLOCKER" WAS NOT A BLOCKER — RESOLVED 2026-07-31, `flt-lean-244`,
+and recorded so the false claim does not come back.**  The superseded text read:
+the universality bridge needs `πuniv.comp (algebraMap ℤ_[p] R) =
+algebraMap ℤ_[p] k`, which the machine's conclusion does not state, so
+`exists_universalFrame_profinite_of_levelIdealSystem`'s conclusion must be
+strengthened by one line — an edit in another owner's file that changes the
+destructuring of all three of its proven consumers.
 
-The fix is one line upstream — add that equation to
-`exists_universalFrame_profinite_of_levelIdealSystem`'s conclusion and to its
-final `refine`, where `hπalg` is already in scope.  It was NOT done here because
-adding a conjunct changes the destructuring for all three of its proven
-consumers in `Deformation.lean`, a file with other active owners; that edit
-belongs to whoever owns that chain, and it is the cheapest way to unblock this
-assembly.  A prover who closes the universality bridge should also report whether
-`hπalg` was genuinely needed — if another route to `ρbar`'s determinant exists,
-the hypothesis should simply be dropped and no upstream change is required.
+**`k` IS FINITE.**  `ringHom_padicInt_ext_finite` equates any two ring maps
+`ℤ_[p] →+* k`, so `hπalg` is discharged here by `ringHom_padicInt_ext_finite _ _`
+and NOTHING upstream had to change.  `Deformation.lean` is untouched by this
+node.
+
+The other half of that paragraph — "push `ρuniv` forward along `πuniv` itself,
+`k` being a finite discrete local `ℤ_p`-algebra" — is a genuine UNIVERSE ERROR
+and is corrected on the bridge itself; see the two numbered corrections there.
+
+`hfunc` is NOT consumed by this assembly (it is renamed `_hfunc` for the linter
+and kept only so the positional call from
+`exists_universalFrame_auxDeformation_of_clauses` is unchanged).  The functoriality
+the construction needs is `isRaisedLevelHardlyRamified_pushforwardFrame`, which is
+proven outright above and is strictly more general than `IsAuxFunctorialityClause`'s
+quotient conjunct.  `hfunc` is still consumed by
+`AuxDeformationDatum.isWeaklyUniversal_of_frames` downstream, so it stays in the
+signature.
 
 Superseded note, kept because it was the recorded reason for this node's shape
 and is no longer true: "the base-level chain is NOT predicate-generic" and "binds
@@ -14665,7 +14870,7 @@ theorem exists_universalFrame_profinite_auxDeformation_of_clauses.{uK, uW, uR}
     (hirr : ρbar.IsIrreducible)
     (Q : Finset ℕ)
     (𝒟₀ : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar)
-    (hfunc : IsAuxFunctorialityClause.{uR} hpodd Q)
+    (_hfunc : IsAuxFunctorialityClause.{uR} hpodd Q)
     (hglue : IsAuxFibreProductClause.{uR, uK, uW} hpodd Q ρbar)
     (hfin : IsAuxFiniteFramesClause.{uR} hpodd Q) :
     ∃ (R : Type uR) (_ : CommRing R) (_ : TopologicalSpace R)
@@ -14699,8 +14904,71 @@ theorem exists_universalFrame_profinite_auxDeformation_of_clauses.{uK, uW, uR}
         pushforwardFrame φ₁ hφ₁ ρuniv = pushforwardFrame φ₂ hφ₂ ρuniv →
         φ₁ = φ₂) ∧
       IsAuxWeaklyUniversalOnFrames.{uR, uK, uW} hpodd Q ρbar ρuniv πuniv
-        Suniv :=
-  sorry
+        Suniv := by
+  classical
+  obtain ⟨e0, P, iPCR, iPAlg, evbar, hevsurj, hevalg, M, 𝒥, hne, hdir, hkerJ,
+      hlev, hresM, hrep, hclass, hsepP⟩ :=
+    exists_levelIdealSystem_aux_of_clauses.{uK, uW, uR} hpodd hW hirr Q 𝒟₀
+      hglue hfin
+  letI := iPCR
+  letI := iPAlg
+  obtain ⟨R, iCR, iTS, iTR, iLR, iAlg, iCompact, iT2, ρuniv, πuniv, hπsurj,
+      hπcont, hbasis, hresid, hquotPF, hinj, hstrict⟩ :=
+    exists_universalFrame_profinite_of_levelIdealSystem (ρbar := ρbar)
+      (Cond := fun A iCR iTS iTR iLR iAlg ρA =>
+        letI := iCR; letI := iTS; letI := iTR; letI := iLR; letI := iAlg
+        IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun A) ρA)
+      (hCondConj := by
+        intro A _ _ _ _ _ ρA hρA e
+        exact isRaisedLevelHardlyRamified_conj Q _ hρA e)
+      (hbase := by
+        intro B _ _ _ _ _ A _ _ _ _ _ _ ψ hψ halg ρ hρ
+        exact isRaisedLevelHardlyRamified_pushforwardFrame Q ψ hψ halg hρ)
+      e0 evbar hevsurj hevalg M 𝒥 hne hdir hkerJ hlev hresM hrep hclass hsepP
+  refine ⟨R, iCR, iTS, iTR, iLR, iAlg, iCompact, iT2, ρuniv, πuniv, hπsurj,
+    hπcont, ∅, hbasis, ?_, ?_, hquotPF, hinj, ?_⟩
+  · -- the linear `charFrob` coefficients, at `Suniv = ∅`
+    intro q hq _
+    have hmap := charFrob_map_of_isResidualIdentifiedFrame ρuniv πuniv hπcont
+      hresid hq.toHeightOneSpectrumRingOfIntegersRat
+    calc πuniv ((ρuniv.charFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
+        = ((ρuniv.charFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat).map πuniv).coeff 1 :=
+          (Polynomial.coeff_map _ _).symm
+      _ = (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 := by
+          rw [hmap]
+  · -- the `baseChange` clause at an open ideal, from the `pushforwardFrame` one
+    intro I hIopen _ hdimI
+    have hmk : Continuous (Ideal.Quotient.mk I) :=
+      (QuotientRing.isOpenQuotientMap_mk I).continuous
+    haveI hdisc : DiscreteTopology (R ⧸ I) := by
+      rw [discreteTopology_iff_isOpen_singleton_zero]
+      have himg : (Ideal.Quotient.mk I) '' ((I : Ideal R) : Set R) = {0} := by
+        ext x
+        constructor
+        · rintro ⟨y, hy, rfl⟩
+          exact Ideal.Quotient.eq_zero_iff_mem.mpr hy
+        · rintro rfl
+          exact ⟨0, I.zero_mem, map_zero _⟩
+      rw [← himg]
+      exact (QuotientRing.isOpenQuotientMap_mk I).isOpenMap _ hIopen
+    haveI : CompactSpace (R ⧸ I) :=
+      Function.Surjective.compactSpace hmk
+        (QuotientRing.isOpenQuotientMap_mk I).surjective
+    haveI : Finite (R ⧸ I) := finite_of_compact_of_discrete
+    have halg : (Ideal.Quotient.mk I).comp (algebraMap ℤ_[p] R) =
+        algebraMap ℤ_[p] (R ⧸ I) := rfl
+    exact isRaisedLevelHardlyRamified_baseChange_of_pushforwardFrame Q I hmk
+      hdimI (hquotPF (R ⧸ I) (Ideal.Quotient.mk I) hmk halg)
+  · -- weak universality on raised-level frames, from strict universality;
+    -- `hπalg` is FREE because `k` is finite (`ringHom_padicInt_ext_finite`),
+    -- so the upstream one-line change to
+    -- `exists_universalFrame_profinite_of_levelIdealSystem` this node's
+    -- docstring called for is NOT needed.
+    exact isAuxWeaklyUniversalOnFrames_of_isStrictlyUniversalOnFramesFor
+      hpodd hW hirr Q ρuniv πuniv hπcont
+      (ringHom_padicInt_ext_finite _ _) hresid hquotPF hstrict
 
 set_option linter.checkUnivs false in
 open scoped TensorProduct in
