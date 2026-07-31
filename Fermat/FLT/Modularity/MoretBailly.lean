@@ -10928,8 +10928,163 @@ theorem exists_irreducible_hypersurface_fractionRing_ringEquiv_perfectField
   obtain ⟨g, hg, ⟨e⟩⟩ := exists_irreducible_hypersurface_fractionRing_of_separating_basis w hw
   exact ⟨t.card + 1, g, hg, ⟨e.symm⟩⟩
 
+/-- **A FINITE SEPARABLE EXTENSION OF `Frac P` IS THE FUNCTION FIELD OF A
+HYPERSURFACE OVER `P`** (**PROVEN 2026-07-31**), for `P` any unique factorisation
+domain. This is the whole mathematical content of
+`exists_irreducible_hypersurface_fractionRing_ringEquiv_rat` below; that theorem
+is Noether normalisation followed by this lemma followed by `finSuccEquiv`.
+
+THE ARGUMENT. `L / Frac P` is finite and separable, so `Field.exists_primitive_element`
+gives `θ` with `(Frac P)⟮θ⟯ = ⊤`; let `h := minpoly (Frac P) θ`. Clearing
+denominators (`IsLocalization.integerNormalization`) and passing to the PRIMITIVE
+PART produces `g₁ ∈ P[X]` whose image in `(Frac P)[X]` is `C (b / content) * h`,
+i.e. associated to `h`; Gauss's lemma
+(`Polynomial.IsPrimitive.irreducible_iff_irreducible_map_fraction_map`) turns the
+irreducibility of `h` into irreducibility of `g₁` over `P`, and Gauss again
+(`IsPrimitive.dvd_of_fraction_map_dvd_fraction_map`) identifies the kernel of
+`eval₂ (P → Frac P → L) θ : P[X] → L` with `(g₁)` — that is what makes the induced
+`ρ : P[X] ⧸ (g₁) → L` INJECTIVE, and it is the only step where primitivity is used
+twice. Finally every `z : L` lies in `Algebra.adjoin (Frac P) {θ}` (because
+`(Frac P)⟮θ⟯ = ⊤` and `θ` is integral), so `z = aeval θ q` for some `q` over
+`Frac P`, and clearing denominators in `q` writes `z` as a quotient of two elements
+of the image of `ρ`. `IsFractionRing.of_field` then says `L` IS `Frac (P[X] ⧸ (g₁))`.
+
+Note this is where separability — hence characteristic zero, at the one place the
+consumer uses it — enters, and nowhere else. -/
+theorem exists_irreducible_polynomial_fractionRing_ringEquiv_of_finiteSeparable
+    (P : Type*) [CommRing P] [IsDomain P] [UniqueFactorizationMonoid P]
+    (L : Type*) [Field L] [Algebra (FractionRing P) L]
+    [FiniteDimensional (FractionRing P) L] [Algebra.IsSeparable (FractionRing P) L] :
+    ∃ g₁ : Polynomial P, Irreducible g₁ ∧
+      Nonempty (FractionRing (Polynomial P ⧸ Ideal.span {g₁}) ≃+* L) := by
+  classical
+  letI : NormalizedGCDMonoid P := Nonempty.some inferInstance
+  obtain ⟨θ, hθ⟩ := Field.exists_primitive_element (FractionRing P) L
+  have hθint : IsIntegral (FractionRing P) θ := Algebra.IsIntegral.isIntegral θ
+  have hhirr : Irreducible (minpoly (FractionRing P) θ) := minpoly.irreducible hθint
+  have hhne : minpoly (FractionRing P) θ ≠ 0 := minpoly.ne_zero hθint
+  -- clear denominators in the minimal polynomial and take the primitive part
+  obtain ⟨b, hbM, hbmap⟩ :=
+    IsLocalization.integerNormalization_spec (nonZeroDivisors P) (minpoly (FractionRing P) θ)
+  set n : Polynomial P :=
+    IsLocalization.integerNormalization (nonZeroDivisors P) (minpoly (FractionRing P) θ) with hn
+  have hnne : n ≠ 0 := by
+    rw [hn, Ne, IsFractionRing.integerNormalization_eq_zero_iff]
+    exact hhne
+  have hcontent : (algebraMap P (FractionRing P)) n.content ≠ 0 := by
+    simp only [ne_eq, map_eq_zero_iff _ (IsFractionRing.injective P (FractionRing P)),
+      Polynomial.content_eq_zero_iff]
+    exact hnne
+  have hbne : (algebraMap P (FractionRing P)) b ≠ 0 := by
+    simp only [ne_eq, map_eq_zero_iff _ (IsFractionRing.injective P (FractionRing P))]
+    exact nonZeroDivisors.ne_zero hbM
+  -- `n.primPart` maps to a unit multiple of the minimal polynomial
+  have hmapeq : (n.primPart).map (algebraMap P (FractionRing P)) =
+      Polynomial.C ((algebraMap P (FractionRing P)) b /
+        (algebraMap P (FractionRing P)) n.content) * minpoly (FractionRing P) θ := by
+    have h1 : n.map (algebraMap P (FractionRing P)) =
+        Polynomial.C ((algebraMap P (FractionRing P)) n.content) *
+          (n.primPart).map (algebraMap P (FractionRing P)) := by
+      conv_lhs => rw [n.eq_C_content_mul_primPart]
+      rw [Polynomial.map_mul, Polynomial.map_C]
+    rw [h1] at hbmap
+    rw [Algebra.smul_def, Polynomial.algebraMap_apply] at hbmap
+    have hCne : (Polynomial.C ((algebraMap P (FractionRing P)) n.content)) ≠ 0 := by
+      simpa [Polynomial.C_eq_zero] using hcontent
+    refine mul_left_cancel₀ hCne ?_
+    have hdiv : (algebraMap P (FractionRing P)) n.content *
+        ((algebraMap P (FractionRing P)) b / (algebraMap P (FractionRing P)) n.content)
+        = (algebraMap P (FractionRing P)) b := by
+      field_simp
+    rw [hbmap, ← mul_assoc, ← Polynomial.C_mul, hdiv]
+  have hunit : IsUnit (Polynomial.C ((algebraMap P (FractionRing P)) b /
+      (algebraMap P (FractionRing P)) n.content)) :=
+    Polynomial.isUnit_C.mpr
+      (isUnit_iff_ne_zero.mpr (by simp [div_eq_zero_iff, hbne, hcontent]))
+  have hassoc : Associated (minpoly (FractionRing P) θ)
+      ((n.primPart).map (algebraMap P (FractionRing P))) := by
+    refine ⟨hunit.unit, ?_⟩
+    rw [hmapeq, IsUnit.unit_spec, mul_comm]
+  have hg1prim : (n.primPart).IsPrimitive := n.isPrimitive_primPart
+  have hirr : Irreducible n.primPart :=
+    hg1prim.irreducible_iff_irreducible_map_fraction_map.mpr (hassoc.irreducible hhirr)
+  refine ⟨n.primPart, hirr, ?_⟩
+  -- the evaluation map `P[X] → L` at `θ`
+  set ι : P →+* L := (algebraMap (FractionRing P) L).comp (algebraMap P (FractionRing P)) with hι
+  have hιinj : Function.Injective ι := by
+    rw [hι]
+    exact (algebraMap (FractionRing P) L).injective.comp (IsFractionRing.injective P _)
+  set φL : Polynomial P →+* L := Polynomial.eval₂RingHom ι θ with hφL
+  have hφLeq : ∀ q : Polynomial P,
+      φL q = Polynomial.aeval θ (q.map (algebraMap P (FractionRing P))) := by
+    intro q
+    rw [hφL, Polynomial.aeval_def, Polynomial.eval₂_map]
+    simp [hι]
+  have hker : ∀ q : Polynomial P, φL q = 0 ↔ n.primPart ∣ q := by
+    intro q
+    rw [hφLeq q]
+    constructor
+    · intro h0
+      refine hg1prim.dvd_of_fraction_map_dvd_fraction_map (K := FractionRing P) ?_
+      refine dvd_trans (hassoc.symm.dvd) ?_
+      exact minpoly.dvd (FractionRing P) θ h0
+    · rintro ⟨r, rfl⟩
+      rw [Polynomial.map_mul, map_mul]
+      have hzero : Polynomial.aeval θ ((n.primPart).map (algebraMap P (FractionRing P))) = 0 := by
+        rw [hmapeq, map_mul]
+        simp [minpoly.aeval]
+      rw [hzero, zero_mul]
+  have hspanle : Ideal.span {n.primPart} ≤ RingHom.ker φL := by
+    rw [Ideal.span_le]
+    rintro x hx
+    simp only [Set.mem_singleton_iff] at hx
+    subst hx
+    exact (hker _).mpr dvd_rfl
+  haveI hprime : (Ideal.span {n.primPart}).IsPrime :=
+    (Ideal.span_singleton_prime hirr.ne_zero).mpr
+      (UniqueFactorizationMonoid.irreducible_iff_prime.mp hirr)
+  haveI : IsDomain (Polynomial P ⧸ Ideal.span {n.primPart}) := Ideal.Quotient.isDomain _
+  set ρ : (Polynomial P ⧸ Ideal.span {n.primPart}) →+* L :=
+    Ideal.Quotient.lift _ φL (fun a ha => hspanle ha) with hρ
+  have hρmk : ∀ q : Polynomial P, ρ (Ideal.Quotient.mk _ q) = φL q := fun _ => rfl
+  have hρinj : Function.Injective ρ := by
+    rw [injective_iff_map_eq_zero]
+    intro x hx
+    obtain ⟨q, rfl⟩ := Ideal.Quotient.mk_surjective x
+    rw [hρmk] at hx
+    exact Ideal.Quotient.eq_zero_iff_mem.mpr (Ideal.mem_span_singleton.mpr ((hker q).mp hx))
+  letI : Algebra (Polynomial P ⧸ Ideal.span {n.primPart}) L := ρ.toAlgebra
+  haveI : FaithfulSMul (Polynomial P ⧸ Ideal.span {n.primPart}) L :=
+    (faithfulSMul_iff_algebraMap_injective _ _).mpr hρinj
+  haveI : IsFractionRing (Polynomial P ⧸ Ideal.span {n.primPart}) L := by
+    refine IsFractionRing.of_field _ L (fun z => ?_)
+    -- every `z : L` is a polynomial in `θ` over `Frac P`
+    have hz : z ∈ Algebra.adjoin (FractionRing P) ({θ} : Set L) := by
+      have h1 : (IntermediateField.adjoin (FractionRing P) ({θ} : Set L)).toSubalgebra =
+          Algebra.adjoin (FractionRing P) ({θ} : Set L) :=
+        IntermediateField.adjoin_simple_toSubalgebra_of_isAlgebraic hθint.isAlgebraic
+      rw [← h1, hθ]
+      trivial
+    rw [Algebra.adjoin_singleton_eq_range_aeval] at hz
+    obtain ⟨q, hq⟩ := hz
+    replace hq : (Polynomial.aeval θ) q = z := hq
+    obtain ⟨c, hcM, hcmap⟩ := IsLocalization.integerNormalization_spec (nonZeroDivisors P) q
+    have hcne : ι c ≠ 0 := fun h => nonZeroDivisors.ne_zero hcM (hιinj (by simpa using h))
+    refine ⟨Ideal.Quotient.mk _ (IsLocalization.integerNormalization (nonZeroDivisors P) q),
+      Ideal.Quotient.mk _ (Polynomial.C c), ?_⟩
+    have hcalc : φL (IsLocalization.integerNormalization (nonZeroDivisors P) q) = ι c * z := by
+      rw [hφLeq, hcmap, Algebra.smul_def, Polynomial.algebraMap_apply, map_mul]
+      simp [hq, hι]
+    have hCc : φL (Polynomial.C c) = ι c := by simp [hφL]
+    show z = ρ _ / ρ _
+    rw [hρmk, hρmk, hcalc, hCc]
+    field_simp
+  exact ⟨(IsLocalization.algEquiv (nonZeroDivisors (Polynomial P ⧸ Ideal.span {n.primPart}))
+    (FractionRing (Polynomial P ⧸ Ideal.span {n.primPart})) L).toRingEquiv⟩
+
 /-- **BIRATIONAL HYPERSURFACE NORMAL FORM FOR A FINITELY GENERATED DOMAIN OVER
-`ℚ`** — Poonen §3.2 step (c) (SORRY LEAF, cut 2026-07-28 out of
+`ℚ`** — Poonen §3.2 step (c) (**PROVEN 2026-07-31**; it was a sorry leaf, cut
+2026-07-28 out of
 `exists_fractionRing_ringEquiv_hypersurface_integralSystemModel_rat` below).
 
 This is the mathematical core of the cut: every finitely generated domain over `ℚ`
@@ -16258,7 +16413,59 @@ not the weak `deg + d ≤ p/d` the parent exports — the `−(i + j + k)` is wh
 pays for the `X^{pj}` in step 3 and it may not be dropped. `hp : 250 d⁵ < p` is
 NOT needed here and is not taken.
 
-CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only.
+
+**DECLARATION-ORDER BLOCK, found 2026-07-31 by a scoping pass that did NOT start
+the proof. EVERY piece of machinery the four steps above name is defined BELOW
+this leaf in this same file, so as positioned the leaf cannot use any of it.**
+Concretely, at the commit that added this paragraph:
+
+* `stepanovDerivX` is defined ~300 lines above, but its ENTIRE API —
+  `stepanovDerivX_monomial`, `stepanovDerivX_add`, the chain rule
+  `stepanov_key_congr`, and the proven `stepanov_jet_dvd_core` — sits at
+  ~17280–17750, i.e. about 2100 lines below. Step 1 (Frobenius splitting) and
+  step 2 (Lemma 3A) are both inductions over `stepanovJet`'s recursion and both
+  need that API; between the definition and this leaf there is none.
+* The weighted degree `w(P) = maxₙ (deg (P.coeff n) + n)` that step 2 is stated
+  in ALREADY EXISTS, as `stepanovTotalFilt` (~16770) together with the
+  `StepanovFilt` structure (~16690) giving `mem_add`, `mem_sub`, `mem_mul`,
+  `mem_sum`, `mem_prod`, `mem_det` and `lift`. So the "weighted-degree
+  bookkeeping has to be written here" sentence above is STALE — it does not
+  have to be written, it has to be MOVED.
+* Step 3's "reduce `D^{(ν)}` modulo `F` in `Y`" is `stepanov_exists_wd_rem`
+  (~16875), which is exactly division by a monic `F` of total degree `d` WITH
+  the filtration preserved — again below.
+
+So the first move for whoever takes this leaf is a HOIST, not a proof: move
+`StepanovFilt`, `stepanovTotalFilt` and its lemmas, `stepanov_exists_wd_rem`,
+and the `stepanovDerivX`/`stepanovJet` calculus block up to immediately after
+`end StepanovAuxiliaryFunction`, which is where `stepanovDerivX` and
+`stepanovJet` are defined and which is above every consumer. Nothing in that
+material depends on anything between the two positions — it is about
+`Polynomial (Polynomial R)` for a bare `CommRing R`. Budget the hoist as its own
+verified step (it is a several-hundred-line move in a file with concurrent
+editors, i.e. exactly the merge shape CLAUDE.md's class-7 note warns about), and
+only then start on the mathematics.
+
+**COUNT AUDIT (same pass): `stepanovEquationCount` really is an upper bound, and
+the ℕ-truncation corner is safe.** The note above derives at most
+`(p/d − d + (2d−3)ν + 1)·d·(d−1)` coefficients for the reduced `d^{(ν)}` and
+compares it with `(p/d + (2d−3)ν)·d·(d−1)`; the comparison needs `1 ≤ d`, EXCEPT
+when `p < d`, where `p/d = 0` makes the right-hand side `(2d−3)ν` and the left
+`1 + (2d−3)ν`, which is larger at `ν = 0`. That corner is vacuous rather than a
+counterexample: `p/d = 0` makes `hAdeg` unsatisfiable except by `A i j k = 0`
+(it demands `natDegree + d + i + j + k ≤ 0` with `d ≥ 2`), so the ansatz is `0`
+and `Φ = 0` discharges the leaf. Likewise `M = 0` forces `B = 0` and the
+conclusion is vacuous. The leaf is TRUE as stated.
+
+**AND THE CHEAP LINEAR-ALGEBRA ROUTE DOES NOT WORK — do not spend a cycle on
+it.** The vanishing conditions live at the `≤ p` points `x ∈ 𝔽_p` and, for each,
+at the `≤ d` roots `y` of `F(x, ·)`; each condition is `≤ d` many `𝔽_p`-linear
+forms, so the naive count is `≤ p·d·M` forms per the whole system. That is NOT
+below `B = (d−1)pM + ½d(d−1)(2d−3)M²` in general: it needs `pM ≤ ½d(d−1)(2d−3)M²`,
+i.e. `p ≲ d³M`, and the regime this leaf is used in has `p ≥ 2(d−1)(M+8)²`,
+comfortably the other way. The `2d−3` savings are what buy the difference, which
+is the section note's own point. -/
 theorem exists_stepanovJetLinearForms (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Prime]
     (F : Polynomial (Polynomial (ZMod p)))
     (hmon : F.Monic) (hdegY : F.natDegree = d)
