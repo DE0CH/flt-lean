@@ -6563,6 +6563,7 @@ theorem isIntegral_weberAlpha {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3) (h3 : 3
   push_cast
   linear_combination hcub
 
+open _root_.Polynomial _root_.IntermediateField in
 /-- **LEAF 1b — `α` HAS DEGREE AT MOST `3` OVER `ℚ`**, i.e. `α ∈ ℚ(α⁴)`.
 
 THIS LEAF REPLACES the former `natDegree_minpoly_weberAlpha` (degree EXACTLY `3`), which is

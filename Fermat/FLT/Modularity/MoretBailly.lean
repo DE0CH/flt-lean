@@ -27584,7 +27584,6 @@ theorem hypQuotAway_apply {e : ℕ} (g : MvPolynomial (Fin (e + 1)) ℤ)
 
 end LocalisedHypersurfaceMembership
 
-set_option maxHeartbeats 1600000 in
 /-- **LEAF (B‴): THE COORDINATES THEMSELVES, WITH NO IDEAL BOOKKEEPING** (SORRY LEAF,
 cut 2026-07-30 out of `exists_ratMembershipData_of_birationalNormalForm` below, which
 is PROVEN over it).
@@ -27697,6 +27696,7 @@ theorem exists_hypEvalData_of_birationalNormalForm
               * P (Fin.last n) - 1)) = 0 :=
   sorry
 
+set_option maxHeartbeats 1600000 in
 /-- **LEAF (B″): THE DENOMINATOR BOOKKEEPING ALONE** (cut 2026-07-30
 out of `exists_ratMembershipHypersurfaceCertificate` immediately below, which is
 now PROVEN over this leaf plus the three lemmas above plus the PROVEN packaged
