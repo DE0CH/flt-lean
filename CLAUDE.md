@@ -1187,3 +1187,67 @@ same edit would have traded one closed leaf for three re-opened ones. Re-derive 
 accounting against the release, never against its base; and when you decline for this reason, queue
 the follow-up, because the work usually got CHEAPER (here: generalise the PROOFS, and both targets
 close with no new sorry).
+
+## A HOIST'S REFERENCE SCAN IS WRONG IN TWO WAYS THAT ONLY THE BUILD FINDS
+
+(2026-07-31, both hit while hoisting 196 declarations out of `Interface.lean`.) The
+transitive-closure scan that justifies a hoist — "the moved block references nothing outside
+itself" — is the whole safety argument for the move, and a naive one is wrong twice over.
+Both bugs produce the same symptom: a green scan, a red build, and an error that reads like a
+missing import.
+
+**1. A whole-token scan cannot see DOT NOTATION.** `hA.gamma0_mul` never contains the string
+`IsAtkinLehnerMatrix.gamma0_mul`, so a scan keyed on declared names misses every dotted
+declaration reached that way. Two theorems were left behind and the build died on
+`Invalid field 'gamma0_mul': The environment does not contain …` — which looks like a
+structure-field problem, not a missing move. Index dotted declarations by LAST COMPONENT, but
+**also require the declaration's PREFIX to appear in the same body**: a bare suffix match on
+`.one`/`.mul`/`.prod` dragged an unrelated power-series cluster (`EulerLowOne`,
+`PowerSeriesLogDerivEq`) into the closure, +8 declarations of pure noise. The prefix guard works
+because dot notation needs a term of that type, and the type is named in the signature.
+
+**2. A Lean command continues onto INDENTED following lines.** This is ONE command:
+
+    open UpperHalfPlane ModularForm Matrix.SpecialLinearGroup CongruenceSubgroup
+      ConjAct
+
+A context scanner that reads only column-0 lines silently loses `open ConjAct`, and the moved
+block then fails ~12 lines later on `Unknown identifier toConjAct` — under `autoImplicit` it
+surfaces as `Function expected at toConjAct`, which points at the wrong thing entirely. Join
+continuation lines before classifying any `open`/`variable`/`section` line.
+
+**And the context that must NOT come along is as important as the context that must.** At the
+moved block's original position there were four `attribute [instance] …Package.addCommGroup`
+lines, three `local notation`s and a `variable {p : ℕ} … {ρ : GaloisRep ℚ R V}` package, all
+naming declarations that stay behind. Reproducing the `variable` line put `GaloisRep` in the new
+module and broke it; dropping it is safe **because Lean includes a section variable only where it
+is referenced**, and every `p`/`hp`/`hv` in the moved text was a binder of its own that shadowed
+it. Check that by name before dropping, not by hope.
+
+The mechanical purity check that IS reliable, and it costs a second: the **multiset of lines
+removed from the source file must equal the multiset of moved lines**, and the only line added to
+the source file must be the import. Then a comment-stripped duplicate-declaration-name scan
+ACROSS both files. Neither of those can be fooled by a scan bug.
+
+## TWO BRANCHES HOISTING OVERLAPPING BLOCKS COLLIDE ACROSS FILES, NOT WITHIN ONE
+
+(2026-07-31.) `flt-lean-77` hoisted 19 `q`-expansion declarations out of `Interface.lean` into a
+new `Modularity/HeckeQExpansion.lean`; `flt-lean-147` hoisted 196 into a new
+`Modularity/HeckeAtkinLehner.lean`, and the 19 are a strict SUBSET of the 196. Both branches
+delete their own copies from `Interface.lean`, so neither introduces a duplicate on its own — the
+duplicate appears only when both are ancestors of the same `main`, in two files git never saw in
+conflict.
+
+This is the cross-file half of the class-7 interface split, with an extra twist: the two branches
+were dispatched at DIFFERENT leaves (an `X0.lean` Hecke charpoly leaf and the Atkin–Lehner
+multiplicity-one leaves), so no ownership check on declaration names could have flagged it. What
+would have flagged it: **before hoisting, `git ls-tree` every branch for NEW FILES in the target
+directory**, not just for edits to the file you are cutting from.
+
+    for b in $(git branch --list --format='%(refname:short)'); do
+      git ls-tree --name-only $b Fermat/FLT/<dir>/ ; done | sort -u
+
+Resolution when it happens: keep both modules and make the larger one `public import` the smaller,
+deleting its copies of the overlap. That preserves both agents' work and keeps the small module's
+cone small for the consumer that only needs it — importing the 8000-line one into `X0.lean` to get
+19 declarations is exactly the cone growth that turns unedited modules red.
