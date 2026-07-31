@@ -459,7 +459,9 @@ open in them has been split along the theories it needed:
 | `exists_heckeCorrespondenceFamilyGamma1` | the `Γ₁` Hecke correspondence as a natural family on points — the geometric half, and the `Γ₁` twin of `X0.lean`'s `exists_heckeCorrespondenceFamily`.  (`exists_heckeAction_isotypicQuotients_gamma1` was a leaf until 2026-07-28 and is now **PROVEN** over this row and the next, via the `Γ₁` moduli pin `IsModularHeckeActionGamma1`; `exists_modularHeckeAction_gamma1` is PROVEN over this row alone.) | `ℚ` |
 | `isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1` | Shimura's algebraicity theorem for `Γ₁(N)`: the `a n` are algebraic integers.  MENTIONS NO SCHEME — the only obligation of `IsIsotypicQuotient` that does not, and it can be attacked from the integral-homology side or from the Hecke recursions plus a bound.  Cannot be an instance of `X0.lean`'s `isIntegral_coeff_of_isWeightTwoEigenform`: the `Γ₁` coefficients generate `ℚ(χ)`. | `ℚ` |
 | `exists_isotypicQuotient_of_isIntegral_gamma1` | Shimura's `A_f` on `Γ₁(N)`, one factor, given the PINNED Hecke action AND algebraicity — the "build one factor" half of Eichler-Shimura, and the `Γ₁` twin of `X0.lean`'s `exists_isotypicQuotient_of_isIntegral`.  (`IsIsotypicQuotient` is reused verbatim from `X0.lean`; it is shape-free.  `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` is **PROVEN** over this row and the one above since 2026-07-30, transporting the `Γ₀` recut of the same day; its FALSITY AUDIT was discharged that day too and the statement is TRUE.) | `ℚ` |
-| `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` | the "assemble the factors" half: finiteness of the index set, the oldform multiplicities, `finite_ker`, and the `neben` labelling.  It no longer owns the `N = 0` case: that case was REFUTED on 2026-07-28 (`isEmpty_isHeckeIsotypicDecompositionGamma1_zero`) and the leaf now carries `hN : N ≠ 0`; see its docstring | `ℚ` |
+| `finite_setOf_isWeightTwoEigenformOn_gamma1` | finiteness of the set of weight-two eigen-SYSTEMS on `Γ₁(N)` — pure modular forms, no scheme, no Hecke correspondence; the "finiteness of the index set" half of the assembly, split off 2026-07-31.  FALSE at `N = 0`, by `exists_isWeightTwoEigenformOn_gamma1GL_zero`, hence the `hN`.  The `Γ₀` twin `finite_setOf_isWeightTwoEigenform` is already PROVEN on the merge worker's branch. | — |
+| `exists_isotypicQuotientFamily_finiteKer_gamma1` | the geometry of the assembly, split off 2026-07-31: the isotypic quotients can be CHOSEN so that their kernels jointly meet in a finite set — Poincaré reducibility plus the Eichler–Shimura dimension count.  The `∃` is load-bearing: for an ARBITRARY family the statement is FALSE (single copies `A_g` where the isotypic part is `A_g^{σ₀(N/M)}`). | `ℚ` |
+| ~~`exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1`~~ | the "assemble the factors" half — **PROVEN 2026-07-31** over the two rows above.  `idx` IS the set of eigen-systems; the oldform multiplicities live inside `A i` (the maximal quotient is `A_g^{σ₀(N/M)}`), not in the index set, which is what the earlier reading of this row got wrong.  It never owned the `N = 0` case: that was REFUTED on 2026-07-28 (`isEmpty_isHeckeIsotypicDecompositionGamma1_zero`) and the leaf carries `hN : N ≠ 0`; see its docstring | `ℚ` |
 | `isTorsion_factor_of_heckeIsotypic_gamma1` | Kolyvagin-Logachev on an isotypic factor | `ℚ` |
 | `cuspPeriod_ne_zero_x1TwentyFive` | the `L`-value numerics — the DEEP one, and the only row where `25` survives.  (`lFunction_apply_one_ne_zero_x1TwentyFive` was decomposed along the period 2026-07-28; its analytic half `lFunction_apply_one_eq_two_pi_mul_cuspPeriod_gamma1` is PROVEN the same day, as the `G = Γ₁(N)` instance of `lFunction_apply_one_eq_two_pi_mul_cuspPeriodOn`, which is in turn the group-generic form of `X0.lean`'s proven theorem.) | `ℚ` |
 | `not_birationalOver_affineLine_of_one_le_x1Genus_algClosed` | the genus formula and nothing else — Diamond–Shurman Thm 3.1.1: a fibre of `X_1(N)` with `genus ≥ 1` is not birational to `𝔸¹` over an ALGEBRAICALLY CLOSED field.  The only declaration in the `Γ₁` genus formula that still mentions `N`.  (Cut 2026-07-30 out of `exists_nonconstant_toAbelianScheme_of_one_le_x1Genus`, which is PROVEN over it and the row below.)  **RESTATED 2026-07-30 with `hchar : (N : K) ≠ 0`**: without it the leaf and its three proven consumers are FALSE, refuted by the Igusa curve `Ig(11)` in characteristic `11` — the falsity audit and the genus computation are on the declaration, and the hypothesis is discharged at the `SpecQ` base of `hasNonconstantAbelianMap_of_one_le_x1Genus`. | alg. closed `K`, `char K ∤ N` |
@@ -14384,9 +14386,111 @@ theorem not_lFunctionHypothesis_gamma1GL_zero
     rw [hLof.eq_lseries z hz.1, hzero z (le_of_lt hz.2)]
   exact key (Set.mem_univ 1)
 
-/-- **THE `Γ₁` ISOTYPIC DECOMPOSITION, GIVEN THE FACTORS** (sorry leaf,
-new 2026-07-28; **`hN : N ≠ 0` ADDED 2026-07-28 after the level-`0` case
-was REFUTED** — see the section docstring above and
+/-- **THE SET OF WEIGHT-TWO EIGEN-SYSTEMS OF LEVEL `N` ON `Γ₁(N)` IS
+FINITE** (sorry leaf, new 2026-07-31) — the "finiteness of the index set"
+bullet of `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1`
+below, split off as a statement of pure modular-forms content: no scheme,
+no Jacobian, no Hecke correspondence, no compactification datum.
+
+TRUE, and classical.  A system `a` determines its form `f` (the
+`qExpansion` field reads `f` off `a` pointwise), distinct systems give
+linearly independent forms by the simultaneous-eigenvector argument, and
+`S₂(Γ₁(N))` is finite-dimensional; a linearly independent family in a
+finite-dimensional space is finite.
+
+**`hN` IS LOAD-BEARING AND THE LEVEL-`0` COUNTEREXAMPLE IS ALREADY IN
+THIS FILE.**  At `N = 0` the set is INFINITE:
+`exists_isWeightTwoEigenformOn_gamma1GL_zero` (~100 lines above) exhibits
+`lacunaryTwoCoeff c` as an eigen-system for every `c : ℂ`, and
+`lacunaryTwoCoeff_two` separates them.  That is the same computation
+`isEmpty_isHeckeIsotypicDecompositionGamma1_zero` runs, which is why the
+two `hN`s are the same `hN`.
+
+**WHERE THE PROOF IS.**  The `Γ₀` twin `finite_setOf_isWeightTwoEigenform`
+was PROVEN on 2026-07-31 on the merge worker's branch, and its docstring
+records the audit error that had made it look expensive: this project has
+had `FiniteDimensional ℂ (CuspForm (Gamma0GL N) 2)` since 2026-07-24 as
+`cuspForm_finiteDimensional`, invisible from here only because
+`Modularity/Interface.lean` carries `public import
+Fermat.FLT.ModularCurve.X0` and is therefore DOWNSTREAM.  That branch
+HOISTS the Sturm bound and the finite-dimensionality into a new upstream
+module `ModularCurve/WeightTwoEigenform.lean`.  So a prover of this `Γ₁`
+statement should first check whether that hoist has landed, and if it has,
+the work here is the `Γ₁` instance of the same three steps — a
+finite-dimensionality for `CuspForm (Gamma1GL N) 2` (the Sturm-bound route
+is level-shape agnostic), Fourier uniqueness, and linear independence.
+Note the nebentypus costs nothing: `χ` is quantified inside the set, and
+two systems with different nebentypus are still two systems. -/
+theorem finite_setOf_isWeightTwoEigenformOn_gamma1 (N : ℕ) (hN : N ≠ 0) :
+    {a : ℕ → ℂ | ∃ (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2),
+      IsWeightTwoEigenformOn (Gamma1GL N) N χ f a}.Finite :=
+  sorry
+
+/-- **THE ISOTYPIC QUOTIENTS CAN BE CHOSEN JOINTLY SEPARATING** (sorry
+leaf, new 2026-07-31) — the geometric bullet of
+`exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` below:
+the old-form MULTIPLICITIES and `finite_ker` in one statement, with the
+finiteness of the index set and the whole `neben`/`form` labelling
+removed.
+
+TRUE.  Take for each system `a` the MAXIMAL quotient of `J_1(N)` carrying
+`a` at the arities coprime to `N` — `A_a := J / K_a` where `K_a` is the
+abelian subvariety generated by the images of `(minpoly ℤ (a n))(T n)`
+for `n` coprime to `N`.  It is an `IsIsotypicQuotient`: surjective by
+construction, nontrivial because the system occurs in `J_1(N)`
+(Eichler–Shimura), equivariant at EVERY arity because `K_a` is stable
+under every endomorphism of `J_1(N)` (distinct anemic-isotypic pieces are
+non-isogenous, so `Hom` between them vanishes).  For a newform `g` of
+level `M ∣ N` the maximal quotient is `A_g^{σ₀(N/M)}`, and
+`J_1(N) ∼ ∏_g A_g^{σ₀(N/M)}` gives `∩_a ker(u_a)` finite.  Poincaré
+complete reducibility: Mumford, *Abelian Varieties* §19;
+Diamond–Shurman Thm 6.6.6.
+
+**WHY THE FAMILY IS EXISTENTIAL AND NOT UNIVERSAL — THE OBVIOUS
+STRONGER-LOOKING CUT IS FALSE.**  The tidy statement would be "for EVERY
+family `Q` of isotypic quotients, one per system, the joint kernel is
+finite".  It is FALSE, and `hquot` is exactly a witness generator for it:
+`IsIsotypicQuotient` asks only that the factor be a nontrivial surjective
+isotypic quotient, so a single copy `A_g` satisfies every field where the
+isotypic part is `A_g^{σ₀(N/M)}` with `σ₀(N/M) > 1`.  Take `N = p³M`,
+`p ∤ M`, `g` a newform of level `M`: the family `a ↦ A_g` (one copy) has
+`∩_a ker(u_a) ⊇ ` a positive-dimensional abelian subvariety, hence
+infinite.  So the choice of factors is part of the content, and the
+quantifier has to be `∃`.  This is the same freedom that
+`IsUniversalIsotypicFactor`'s docstring in `X0.lean` records as "a
+producer cannot supply a factor that is *too small* — a single copy `A_g`
+where the isotypic part is `A_g^m`".
+
+**`hquot` IS AVAILABLE AND MAY WELL BE UNUSED**, stated plainly rather
+than hidden.  It is kept because it is the hypothesis the parent has and
+because a prover may prefer to ENLARGE its quotients rather than build
+the maximal ones from scratch; but the `Γ₀` twin's residual proof
+(2026-07-31, merge worker's branch) takes its factors from a maximal-quotient
+leaf and leaves `hquot` unused, renaming the binder `_hquot`.  Expect the
+same here. -/
+theorem exists_isotypicQuotientFamily_finiteKer_gamma1 (N : ℕ) (hN : N ≠ 0)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (h : ModularLevelShape.IsCompactification .gamma1 N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (T : ℕ → (J ⟶ J))
+    (T_comp : ∀ n, T n ≫ jstr = jstr) (T_add : ∀ n, IsAdditiveOn ab ab (T n) (T_comp n))
+    (hmod : IsModularHeckeActionGamma1 N h.some jac T T_comp)
+    (hquot : ∀ (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ),
+      IsWeightTwoEigenformOn (Gamma1GL N) N χ f a → Nonempty (IsIsotypicQuotient ab T N a)) :
+    ∃ Q : ∀ a : ℕ → ℂ, (∃ (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2),
+        IsWeightTwoEigenformOn (Gamma1GL N) N χ f a) → IsIsotypicQuotient ab T N a,
+      {x : RelPoint jstr (𝟙 SpecQ) | ∀ (a : ℕ → ℂ)
+          (ha : ∃ (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2),
+            IsWeightTwoEigenformOn (Gamma1GL N) N χ f a),
+          RelPoint.post (Q a ha).u (Q a ha).u_comp x = (Q a ha).abA.zero (𝟙 SpecQ)}.Finite :=
+  sorry
+
+/-- **THE `Γ₁` ISOTYPIC DECOMPOSITION, GIVEN THE FACTORS** (**PROVEN
+2026-07-31** over `finite_setOf_isWeightTwoEigenformOn_gamma1` and
+`exists_isotypicQuotientFamily_finiteKer_gamma1` immediately above; a
+sorry leaf from 2026-07-28 until then; **`hN : N ≠ 0` ADDED 2026-07-28
+after the level-`0` case was REFUTED** — see the section docstring above
+and
 `isEmpty_isHeckeIsotypicDecompositionGamma1_zero`) — the "ASSEMBLE the
 factors" half of the cut of `exists_heckeIsotypicDecomposition_gamma1`
 below, and the `Γ₁` transport of `X0.lean`'s
@@ -14497,6 +14601,63 @@ term from `h.some` and would not have matched the field, so the fix is a
 statement change AND a proof change, not just a widening.)  That theorem
 is PROVEN and stays proven; only this leaf's hypothesis got stronger.
 
+**THE CUT TAKEN 2026-07-31, AND THE CLAIM IT CORRECTS: `idx` *IS* THE SET
+OF EIGEN-SYSTEMS, BECAUSE THE MULTIPLICITIES LIVE INSIDE `A i`.**  The
+"MULTIPLICITIES" bullet above, and the corresponding paragraph on
+`X0.lean`'s twin, both conclude that `idx` cannot be the set of
+eigen-systems and that `σ₀(N/M)` copies of `A_g` must be carried by
+`σ₀(N/M)` distinct degeneracy-twisted surjections.  That is a statement
+about a decomposition into COPIES OF `A_g`, and the structure does not ask
+for one.  Nothing in `IsHeckeIsotypicDecompositionGamma1` says `A i` is the
+abelian variety of a newform: `isotypic` only asks that `minpoly ℤ (coeff i n)`
+annihilate `S i n` at the arities coprime to `N`, and `A i := A_g^{σ₀(N/M)}`
+— the whole `g`-old quotient — satisfies it just as well as a single copy.
+Taking the MAXIMAL isotypic quotient at each system therefore discharges
+the multiplicities without ever indexing them, and it is also what makes
+`equivariant` hold at the junk arities `IsModularHeckeActionGamma1` does
+not pin, since the maximal kernel is stable under every endomorphism.
+
+The degeneracy maps are worse than unnecessary here: they do not commute
+with `U_p` at `p ∣ N/M`, so an individual twisted copy `J_1(N) ↠ A_g` need
+not admit any `S i p` at all, and `equivariant` quantifies over EVERY `n`.
+
+So the cut is into exactly two pieces, and both are strictly smaller than
+this node was:
+
+* `finite_setOf_isWeightTwoEigenformOn_gamma1` — pure modular forms, no
+  geometry, and the `Γ₀` twin of it is already PROVEN;
+* `exists_isotypicQuotientFamily_finiteKer_gamma1` — the geometry, i.e.
+  Poincaré reducibility plus the Eichler–Shimura dimension count, with
+  the labelling and the finiteness of the index set removed.
+
+Everything else — the `neben`/`form`/`isEigen` labelling, `coeff`,
+`integral`, `cover`, and the transport of `finite_ker` across
+`Subtype.forall` — is the residual proof below and costs nothing.  Note
+`hquot` IS consumed, by being passed to the second leaf; the honest
+caveat is recorded on that leaf, namely that its own prover will probably
+not need it.
+
+**THE `Γ₀` TWIN WAS CUT THE SAME WAY, INDEPENDENTLY AND ONE DAY EARLIER**
+(merge worker's branch, 2026-07-31), which is worth recording because the two
+cuts must not be re-unified carelessly.  There
+`exists_heckeIsotypicDecomposition_of_isotypicQuotients` is PROVEN over
+three leaves — `finite_setOf_isWeightTwoEigenform`,
+`exists_universalIsotypicQuotient` and
+`finite_jointKernel_of_universalIsotypicQuotients` — with a new structure
+`IsUniversalIsotypicQuotient` carrying the maximality as a FIELD.  This
+`Γ₁` cut deliberately does NOT introduce a second copy of that structure:
+`IsUniversalIsotypicQuotient` is level-shape agnostic (it mentions no
+compactification and no `Gamma0GL`), so re-declaring it here would be a
+`has already been declared` error the moment that branch lands, and no
+textual merge could see it.  The `Γ₁` conclusion does not require
+maximality — it has no `IsUniversalIsotypicFactor` clause — so plain
+`IsIsotypicQuotient` suffices, and the maximality is pushed into the proof
+obligation of the second leaf rather than into its statement.  The tidy
+follow-up, once that branch is on `main`, is to split
+`exists_isotypicQuotientFamily_finiteKer_gamma1` along the same seam
+(`exists_universalIsotypicQuotient_gamma1` plus a shared joint-kernel
+statement) and reuse the structure.
+
 **AXIS NOT SEARCHED**, inherited from the `Γ₀` node: the complex-analytic
 route through `Γ₁(N)\ℍ*`, which is how the classical proof identifies the
 factors in the first place.  Everything above is the algebraic-moduli
@@ -14534,8 +14695,44 @@ theorem exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1 (N : ℕ) 
         ∀ (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ),
           IsWeightTwoEigenformOn (Gamma1GL N) N χ f a →
             Nonempty (IsIsotypicQuotient ab T N a)) :
-    Nonempty (IsHeckeIsotypicDecompositionGamma1 N h jac) :=
-  sorry
+    Nonempty (IsHeckeIsotypicDecompositionGamma1 N h jac) := by
+  classical
+  obtain ⟨T, T_comp, T_add, hmod, hq⟩ := hquot
+  -- the index set: the eigen-SYSTEMS of level `N`, of every nebentypus
+  set 𝒜 : Set (ℕ → ℂ) := {a : ℕ → ℂ | ∃ (χ : DirichletCharacter ℂ N)
+    (f : CuspForm (Gamma1GL N) 2), IsWeightTwoEigenformOn (Gamma1GL N) N χ f a}
+  have hfin : 𝒜.Finite := finite_setOf_isWeightTwoEigenformOn_gamma1 N hN
+  -- the factors: one per system, chosen so that they jointly separate
+  obtain ⟨Q, hker⟩ :=
+    exists_isotypicQuotientFamily_finiteKer_gamma1 N hN h jac T T_comp T_add hmod hq
+  -- the nebentypus and the form labelling each system
+  choose neb frm hfrm using fun x : 𝒜 => x.2
+  exact ⟨{ T := T
+           T_comp := T_comp
+           T_add := T_add
+           heckeModuli := hmod
+           idx := ↥𝒜
+           fintypeIdx := hfin.fintype
+           A := fun i => (Q i.1 i.2).A
+           astr := fun i => (Q i.1 i.2).astr
+           abA := fun i => (Q i.1 i.2).abA
+           u := fun i => (Q i.1 i.2).u
+           u_comp := fun i => (Q i.1 i.2).u_comp
+           u_add := fun i => (Q i.1 i.2).u_add
+           u_surj := fun i => (Q i.1 i.2).u_surj
+           neben := neb
+           form := frm
+           coeff := fun i => i.1
+           isEigen := hfrm
+           S := fun i => (Q i.1 i.2).S
+           S_comp := fun i => (Q i.1 i.2).S_comp
+           S_add := fun i => (Q i.1 i.2).S_add
+           equivariant := fun i n => (Q i.1 i.2).equivariant n
+           integral := fun i n => (Q i.1 i.2).integral n
+           isotypic := fun i => (Q i.1 i.2).isotypic
+           cover := fun χ f a hf => ⟨⟨a, ⟨χ, f, hf⟩⟩, rfl⟩
+           -- the joint kernel over `↥𝒜` is the joint kernel over `(a, ha)`
+           finite_ker := hker.subset (fun x hx a ha => hx ⟨a, ha⟩) }⟩
 
 /-- **EICHLER–SHIMURA for `Γ₁(N)`: the Hecke-isotypic decomposition
 exists** (**PROVEN 2026-07-28**, over the two leaves
@@ -16459,7 +16656,9 @@ disappearing:
 | `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` | Shimura's `A_f`, one factor | no | here, **PROVEN 2026-07-30** over the two rows below.  (This row read "**FALSE as stated**" until 2026-07-30; that was STALE — the FALSITY AUDIT's own header records the repair, which strengthened `IsModularHeckeActionGamma1` and left this statement untouched.) |
 | `isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1` | Shimura's algebraicity, no scheme in it | no | here, NEW 2026-07-30 |
 | `exists_isotypicQuotient_of_isIntegral_gamma1` | Shimura's `A_f` given algebraicity | no | here, NEW 2026-07-30 — the `Γ₁` twin of `X0.lean`'s `exists_isotypicQuotient_of_isIntegral` |
-| `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` | multiplicities, `finite_ker`, `neben` (now under `hN : N ≠ 0`) | no | here |
+| `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` | multiplicities, `finite_ker`, `neben` (under `hN : N ≠ 0`) | no | here, **PROVEN 2026-07-31** over the two rows below |
+| `finite_setOf_isWeightTwoEigenformOn_gamma1` | finiteness of the set of eigen-systems; no scheme in it | no | here, NEW 2026-07-31 |
+| `exists_isotypicQuotientFamily_finiteKer_gamma1` | jointly-separating isotypic quotients: Poincaré reducibility + the dimension count | no | here, NEW 2026-07-31 |
 | `exists_cuspForm_gamma1GL_zero_lacunary` | the lacunary level-`0` cusp form; input to the `N = 0` refutation | no | here, **PROVEN 2026-07-30** — the `LacunaryLevelZero` section, six lemmas, no theory |
 | `isTorsion_factor_of_heckeIsotypic_gamma1` | Kolyvagin–Logachev | no | here |
 | `lFunction_apply_one_eq_two_pi_mul_cuspPeriod_gamma1` | Hecke's Mellin transform at `s = 1` | no | here, **PROVEN 2026-07-30** — the `G = Γ₁(N)` instance of `lFunction_apply_one_eq_two_pi_mul_cuspPeriodOn_of_le` |
