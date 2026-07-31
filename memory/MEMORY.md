@@ -33,3 +33,5 @@
 - [Preflight finds unowned leaves](flt-preflight-finds-unowned-leaves.md) — the only check that catches sorries no agent reported; run it BETWEEN releases; count leaves back when grouping into tasks
 - [flt-loop spawn/liveness race](flt-loop-spawn-liveness-race.md) — the loop can put TWO live agents in one worktree; check your token against jobs/<name>.json first, and a discarded incarnation yields WITHOUT writing its sentinel
 - [flt-loop runs on mystique](flt-loop-runs-on-mystique.md) — not on the medic's host, so ps says "dead" for a healthy loop; it re-execs onto edited source itself (do NOT hand-restart), and a live Claude session there respawns it if killed
+- [Structure supplies a numeric constraint](flt-structure-supplies-a-numeric-constraint.md) — generalising a leaf away from `P` can silently drop a degree/rank/length condition and make it FALSE; read an invariant off both sides of the conclusion before "simplifying" a statement
+- [Import the parent, not the giant file](flt-import-the-parent-not-the-giant-file.md) — to iterate inside X0.lean, import RelativePicard and hand-copy the 2 downstream declarations you name: 90s instead of 40min
