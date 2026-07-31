@@ -50696,6 +50696,29 @@ conditions on `m`, `e`, `i`.  A successor porting `exists_projAdd` must therefor
 carry the "lies over the base" clauses through the gluing rather than dropping
 them.
 
+**TWO OF THE THREE ARE NOW PROVEN, over an arbitrary `[CommRing R]` (2026-07-31),
+and a witness must not re-prove them:**
+
+* `he` is `WeierstrassCurve.Projective.projInfty_comp_projToSpec`,
+* `hi` is `WeierstrassCurve.Projective.projNeg_comp_projToSpec`,
+
+both in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveModelOverField.lean`,
+which this module already imports.  Neither needs a field, an ellipticity
+hypothesis, or any gluing: `projInfty` comes from `Proj.fromOfGlobalSections` and
+`projNeg` from `Proj.map` of a graded automorphism, so both are universal
+properties.  The `projNeg` one is the substantial of the two — mathlib has NO
+naturality lemma for `Proj.toSpecZero` along `Proj.map`, so it goes through the
+affine open cover `Proj.mapAffineOpenCover` and bottoms out in
+`negGradedHom_apply_zero` (the Weierstrass involution fixes the degree-zero part
+of the homogeneous coordinate ring pointwise, because that part is the image of
+the constants).
+
+**`hm` is the one that is left, and it is not separable from `m`**: it is a
+statement ABOUT the group law, so it can only be discharged alongside the
+`exists_projAdd` port, chart by chart as `m` is glued.  The count below is
+therefore a count of what remains, not of what the whole port costs.
+
 **MEASURE THE COST BEFORE COMMITTING TO A PORT: `hom_ext_spec_rat` is invoked
 99 times in `EllipticScheme.lean`** (counted 2026-07-29; **RE-COUNTED 2026-07-30
 as 60** — the 99 was a raw `grep` including this module's many docstring mentions,
@@ -50821,7 +50844,12 @@ which each is defined, `projInfty` supplies `e` and `projNeg` supplies `i`; the
 `≃+` then comes from reading the morphism-level law on `F̄`-points and comparing
 with mathlib's affine chord–tangent law.  **The three "lies over the base" fields
 are NOT free here** — see the note on `ProjGroupLawOverField` — which is the one
-respect in which the ℚ route does not transfer unchanged.
+respect in which the ℚ route does not transfer unchanged.  **Two of the three are
+now PROVEN (2026-07-31)**: `he := WeierstrassCurve.Projective.projInfty_comp_projToSpec E`
+and `hi := WeierstrassCurve.Projective.projNeg_comp_projToSpec E`, both over an
+arbitrary commutative ring, in the already-imported
+`.../EllipticCurve/ProjectiveModelOverField.lean`.  Only `hm` remains, and it is
+inseparable from the construction of `m`.
 
 **RE-MEASURED 2026-07-30 — three of the numbers above had drifted, and one piece
 of the port has since been BUILT.**  All four figures are from a comment-stripped
@@ -50855,9 +50883,89 @@ scan of the tree at this commit; the line numbers in the paragraphs above are fr
   `isPushout_awayBaseChange`, `isPullback_projBaseChangeMap` — over `R : Type u`
   commutative, with no `ℚ` and no `Scheme.{0}`.  `ProjCoords` is a chart interface
   over exactly those localisations, so this is the layer the port would otherwise
-  have had to write first.  What is NOT there is the `base : X ⟶ Spec R` datum
-  that `ProjCoords` has to gain in place of `hom_ext_spec_rat`, nor anything about
-  the addition formulas. -/
+  have had to write first.  What is NOT there is anything about the addition
+  formulas.
+
+  **The other half of this bullet was WRONG and is corrected here (2026-07-31):
+  `Fermat.ProjCoords` ALREADY CARRIES ITS BASE.**  Its first field is
+  `base : ℚ →+* Γ(X, ⊤)`, explicitly and on purpose — its own docstring explains
+  that an `Algebra ℚ Γ(X, ⊤)` instance argument was rejected because a general
+  scheme carries no such instance.  So "`ProjCoords` has to gain a
+  `base : X ⟶ Spec R` datum" names an obstruction that was discharged before it was
+  written down, and the `ℚ → F` substitution in that structure is mechanical.
+  What `ProjCoords` really LOSES over a general base is the UNIQUENESS of that
+  field: `ProjCoords.base_eq` is `Subsingleton.elim` for `ℚ →+* A`, and
+  `@[ext] ProjCoords.ext` (equality from `coord` alone) is built on it.  Over `F`
+  both must take the base as a hypothesis, and every call site must supply it.
+  Comment-stripped counts in `EllipticScheme.lean` at `7080929d`: `hom_ext_spec_rat`
+  **59** occurrences (58 call sites + the declaration), `base_eq` **11**,
+  `ProjCoords.ext` **14**.  Also worth knowing before quoting the module's size at
+  anyone: of its 12 686 lines only **6 249** are non-blank code — it is half
+  docstring.
+
+  **AND THE TWO `hom_ext_spec_rat` FIGURES IN THIS FILE DO NOT CONTRADICT EACH
+  OTHER**, which is worth saying because they look as though they do.  The
+  per-range breakdown in the `ProjGroupLawOverField` docstring above sums to 75 and
+  is a RAW `grep`, i.e. it counts the module's many docstring mentions; the raw
+  total is **76**, one of which is the declaration.  Comment-stripped it is 59.
+  Both were re-measured here at `7080929d` and, independently, on the `merger` tip
+  — identical on both (76 raw / 59 stripped), so neither figure has drifted and
+  nobody needs to count it a fourth time.
+
+**UPDATE 2026-07-31 — `e`, `i` AND THEIR TWO COMPATIBILITIES ARE NOW COMPLETE OVER
+AN ARBITRARY COMMUTATIVE RING, so what is left of this leaf is `m` and the `≃+`.**
+`ProjectiveModel.lean` already defined `projInfty` and `projNeg` over any
+`[CommRing R]`, and the missing halves of the data — the two "lies over the base"
+equations — were added to `ProjectiveModelOverField.lean`:
+`WeierstrassCurve.Projective.projInfty_comp_projToSpec` (`he`) and
+`WeierstrassCurve.Projective.projNeg_comp_projToSpec` (`hi`).  So a witness for
+this leaf now supplies
+
+    e := projInfty E,  i := projNeg E,
+    he := projInfty_comp_projToSpec E,  hi := projNeg_comp_projToSpec E
+
+with no work at all, and the residue is exactly:
+
+1. `m` — the port of `exists_projAdd`, gluing the two Bosma–Lenstra laws
+   (`WeierstrassCurve.Projective.addXYZ` in the pin and `add2XYZ` in
+   `.../EllipticCurve/ProjectiveAddition.lean`, BOTH already stated over an
+   arbitrary `[CommRing R]`) over the cover of `A ×_F A`.  This is where the
+   `hom_ext_spec_rat` uses concentrate;
+2. `hm` — proved chart by chart alongside (1), not separable from it;
+3. `hassoc`, `hcomm`, `hunit`, `hinv` — equations between morphisms built from
+   `m`, hence downstream of (1);
+4. the Galois-equivariant `≃+` with `(E/F̄).Point`.
+
+Two facts a successor should NOT rediscover: the addition formulas are already
+ring-level, so no `linear_combination` work remains at the polynomial layer
+(`ProjectiveAddition.lean` and `ProjectiveEquationAdd.lean` are siblings and cost
+4173 s of elaboration between them — do not merge or re-derive them); and
+`projNeg_comp_projNeg` (inversion is an involution) is likewise already in
+`ProjectiveModel.lean`.
+
+**AND THE ARCHITECTURAL CONSTRAINT EVERYONE HAS BEEN ASSUMING DOES NOT EXIST
+(measured 2026-07-31, and it changes which module the port should be written in).**
+`ProjectiveModelOverField.lean`'s header said this module is upstream of
+`EllipticScheme.lean`, so that the ℚ development could not be reached from here
+and the port had to be a REWRITE.  Both closures were computed at this commit,
+with no module missing from either walk:
+
+* `EllipticScheme.lean` reaches 56 `Fermat.*` modules; `MoretBailly` is NOT one.
+* `MoretBailly.lean` reaches 170; `EllipticScheme` is NOT one.
+
+They are INCOMPARABLE, so `MoretBailly.lean` may import `EllipticScheme.lean`
+(acyclic; +7 modules to this module's closure).  That makes the far cheaper route
+available: **generalise `ProjCoords` and `exists_projAdd` IN PLACE inside
+`EllipticScheme.lean`** — where the 58 `hom_ext_spec_rat` call sites live, where the
+proofs already are, and where the ℚ instance is recovered as `(F := ℚ)` — then add
+one import here and discharge this leaf as an application.  The alternative,
+re-deriving that chart interface (6 249 lines of code under 12 686 lines of file)
+inside this 51 000-line module, pays a full re-elaboration of it per iteration for
+the privilege.  The cost of the import is
+build SERIALISATION, not correctness: this module would then wait on
+`ProjectiveEquationAdd.lean`, which is one of the slowest in the tree.  Weigh that
+against the iteration cost before choosing; the recommendation here is to take the
+import. -/
 theorem exists_projGroupLawOverField_geomFibreAddEquiv (F : Type u) [Field F]
     (E : WeierstrassCurve F) [E.IsElliptic] :
     letI : DecidableEq (AlgebraicClosure F) := Classical.typeDecidableEq _
