@@ -1,6 +1,7 @@
 # Memory index
 
 - [FLT continuous-loop directives](flt-continuous-loop-directives.md) — Deyao 2026-07-16: top-down dependency tree, continuous tool-call loop (no wakeups, never stop after N iterations), no deferral: every sorry is an active frontier node
+- [Cut a chapter leaf by ASSEMBLY](flt-cut-a-chapter-leaf-by-assembly.md) — a new definition parked beside an untouched `sorry` is free-floating; rewrite the target's body as `obtain leafA; exact leafB` so the new module lands in the cone, and hoist the leaf's cheap existential burdens (an auxiliary prime, a boundary scheme) out first
 - [FLT PROGRESS.md is generated](flt-progress-md-is-generated.md) — edit progress-entries.json + run progress-tree.py; proven leaves auto-hide; never hand-edit the tree
 - [No private-shielded floating work](flt-no-private-shielded-floating.md) — Deyao 2026-07-18: never use `private` to dodge the free-floating check; open the consumer sorry first, always top-down
 - [Glue-first, no floating haves](flt-glue-first-no-floating-haves.md) — Deyao 2026-07-21/22: write the assembly first; sorry only against a stated goal; every have/let consumed (PreToolUse hook enforces)
