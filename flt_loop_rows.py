@@ -172,6 +172,7 @@ def host_of(s, worktree):
 # others cannot: the cap bounds total concurrency, the veto refuses a machine
 # that would swap, and utilisation decides which of the acceptable machines
 # gets the next job.
+MAX_RESUME = 100         # resumes before a job is declared unrecoverable
 MAX_WORKERS = 150
 SPAWNS_PER_TICK = 5      # a herd of 47 at once is what this prevents
 MIN_AVAIL_GB = 120.0     # below this a host is vetoed outright
@@ -493,6 +494,70 @@ def r3_action(s):
         note(s, "3  %d queued branch(es) already in main -> dropped from the "
                 "merge queue: %s%s" % (len(done), ", ".join(sorted(drop)[:6]),
                                        " ..." if len(drop) > 6 else ""))
+
+
+def r_wedged_guard(s):
+    """An agent has been resumed MAX_RESUME times without ever finishing.
+
+    Row 8 resumes a dead agent forever, and for a genuinely interrupted agent
+    that is right -- its transcript is the work. But a session can reach a
+    state where `continue` produces nothing: two agents answered it with the
+    four bytes `No.` and exited, 52 and 48 times, each a full API call. Row 8
+    cannot tell that apart from a killed agent, because both are
+    `started ∧ ¬alive ∧ ¬sentinel`.
+
+    So the cap is not a judgement about the agent -- it is an admission that
+    inference is random and a conversation can land somewhere it cannot leave.
+    A hundred resumes is far past any legitimate interruption.
+    """
+    hits = sorted(n for n, j in jobs_of(s, "agent").items()
+                  if (j.get("retries") or 0) > MAX_RESUME)
+    if not hits:
+        return (False, f"no agent has been resumed more than {MAX_RESUME} times")
+    return (True, "%s at %d resumes" % (hits[0], s["jobs"][hits[0]]["retries"]))
+
+
+def r_wedged_action(s):
+    """Throw the work away and start the SAME task over from a clean slate.
+
+    Deliberately not a re-queue and deliberately not a free worktree. The task
+    is re-run in the same worktree from the same prompt, because the defect is
+    presumed to be in the conversation rather than in the task -- a different
+    roll of the dice on the same problem is the cheapest thing that can work.
+
+    Reset target is the commit the job STARTED on, not `main`. Main moves
+    while an agent works; resetting to it would hand the replacement a
+    different tree than the one its prompt was written against, and would
+    silently import every release that landed in between.
+
+    Everything discarded is archived first (worktree, job record, prompt, job
+    logs, transcript) under ~/flt-graveyard, so "throw away" is recoverable.
+    The record is rebuilt rather than edited: no session, no resume, no token
+    history -- a fresh slate is the whole point, and a surviving field is
+    exactly how a stale conversation would come back.
+    """
+    for n in sorted(s["jobs"]):
+        j = s["jobs"][n]
+        if j["kind"] != "agent" or (j.get("retries") or 0) <= MAX_RESUME:
+            continue
+        tomb = GRAVEYARD(n, j) if GRAVEYARD else "(not archived)"
+        s["jobs"][n] = {
+            "kind": "agent", "worktree": j["worktree"], "payload": j["payload"],
+            "host": j.get("host"), "base": j.get("base"),
+            "token": tok(), "retries": 0, "started": False, "alive": False,
+            "sentinel": None,
+        }
+        s["email"].append(
+            "flt-loop: %s hit the %d-resume cap and was RESTARTED FROM SCRATCH.\n"
+            "Its session kept exiting without finishing, so the work, the "
+            "transcript and the job record were archived to %s, the worktree "
+            "was hard-reset to the commit it started on (%s) and the SAME task "
+            "was started again with a new session."
+            % (n, MAX_RESUME, tomb, (j.get("base") or "unknown")[:12]))
+        commit(s, "%s exceeded %d resumes -> archived and restarted clean"
+                  % (n, MAX_RESUME))
+        note(s, "22 %s wedged after %d resumes -> %s, reset, restarted"
+                % (n, j["retries"], tomb))
 
 
 def r4_guard(s):
@@ -1037,6 +1102,7 @@ def inferred_panic(s):
 # what to do about it in the table like everything else.
 PROBE = None            # () -> None, sends a probe
 CONSUME_REFUSAL = None  # (name, job) -> None, moves the log aside
+GRAVEYARD = None         # injected: archive a wedged job, reset its worktree
 
 
 def now(s):
@@ -1246,6 +1312,8 @@ ROWS = [
     (6, "agent finished -> integrate, awaiting_merge", r2_guard, r2_action),
     (7, "branch landed -> free its worker, drop it from the merge queue",
      r3_guard, r3_action),
+    (22, "agent wedged past the resume cap -> archive, reset, restart clean",
+     r_wedged_guard, r_wedged_action),
     (8, "agent died -> resume its session", r4_guard, r4_action),
     (9, "merger died without releasing -> restore .inflight", r6_guard, r6_action),
     (10, "merger delivered main+snapshot+audit -> ADOPT", r7_guard, r7_action),
