@@ -125,13 +125,23 @@ STATED.  EXACTLY ONE LEAF REMAINS:**
 
 * `exists_diffCharScalar_poly` — `(A′B − AB′)·E = c·C·B²` for some `c`.  Genuinely
   geometric (Abel–Jacobi); see the note on it for why no `linear_combination` exists.
-  It is now written GLUE-FIRST: its polynomial bookkeeping is discharged and its ONE inner
-  `sorry` is the point-level statement "the pullback ratio takes the same value at any two
-  points off the finite bad locus", i.e. translation invariance of `ω`.  Its docstring also
-  records a ROUTE CORRECTION with a characteristic-`2` counterexample: the leaf may NOT be
-  generalised to arbitrary `(u, γ) ∈ F(X)²` satisfying `Ψ_{W′}(u) = γ²Ψ_W`, because in
-  characteristic `2` that relation says nothing about the `y`-witness `D` and so does not
-  pin a morphism.
+  Its docstring records a ROUTE CORRECTION with a characteristic-`2` counterexample: the
+  leaf may NOT be generalised to arbitrary `(u, γ) ∈ F(X)²` satisfying
+  `Ψ_{W′}(u) = γ²Ψ_W`, because in characteristic `2` that relation says nothing about the
+  `y`-witness `D` and so does not pin a morphism.
+
+**ON 2026-07-31 THAT LEAF WAS PROVEN** over `exists_diffCharScalar_polyData`, whose
+characteristic-`≠ 2` branch is `exists_wronskianPoly_scalar` (PROVEN) and whose
+characteristic-`2` branch is `exists_wronskianPoly_scalar_charTwo`.  **The file's one
+remaining `sorry` is `exists_wronskianPoly_scalar_charTwo_coprime`** — the
+characteristic-`2` valuation count, now with BOTH of its parity inputs proved
+(`charTwo_rootMultiplicity_B_even`, `charTwo_rootMultiplicity_T_even`, over the single
+Artin–Schreier step `charTwo_AS_rootMultiplicity` and the smoothness fact
+`charTwo_twoTorsion_partialX_ne_zero`) and supplied to it as hypotheses.  Its docstring
+writes out the three remaining cases of the count and the derivative identity the one hard
+sub-case needs.  Also deleted that day: `diffChar_pullbackRatio_eq`, a hoisted leaf that
+the 2026-07-30 re-proof of `exists_diffCharScalar_poly` had orphaned — it had no consumer
+and every frontier scan was reporting it as live work.
 
 `chordSum_xWitness` and `chordSum_yMultiplier` are **PROVEN**, and both needed a
 correction first: their hypotheses did not include `φ ≠ 0` and `ψ ≠ 0`, and without those
@@ -1532,9 +1542,553 @@ theorem lineOfDiff_ne_zero_of_charTwo {W : Affine F} [W.IsElliptic] (h2 : (2 : F
       - 216 * W.a₆ ^ 2 + 144 * W.a₂ * W.a₄ * W.a₆) * h2
   exact W.isUnit_Δ.ne_zero hΔ
 
-/-- **THE ONE OPEN LEAF OF THIS FILE (2026-07-31): THE CHARACTERISTIC-`2` HALF of
-`exists_diffCharScalar_polyData`, with `E` and `Cx` already eliminated from the
-conclusion.**  Everything else in this file is PROVEN; this is what is left.
+/-! #### The characteristic-`2` parity, proved (2026-07-31)
+
+The three lemmas below supply what the count in characteristic `2` was missing, and they
+are the whole of the new mathematics: **every ramification index of `u = x ∘ φ` is EVEN
+away from the root of `S = a₁X + a₃`.**  See `exists_wronskianPoly_scalar_charTwo_coprime`
+for how they feed the count. -/
+
+omit [DecidableEq F] in
+/-- `ord_b (-p) = ord_b p`. -/
+theorem rootMultiplicity_neg' (p : F[X]) (b : F) :
+    (-p).rootMultiplicity b = p.rootMultiplicity b := by
+  by_cases hp : p = 0
+  · simp [hp]
+  · have hC : (-p) = C (-1 : F) * p := by simp
+    rw [hC, rootMultiplicity_mul (by simpa using hp), rootMultiplicity_C, zero_add]
+
+omit [DecidableEq F] in
+/-- `ord_b (p ^ k) = k · ord_b p`. -/
+theorem rootMultiplicity_pow' {p : F[X]} (hp : p ≠ 0) (b : F) (k : ℕ) :
+    (p ^ k).rootMultiplicity b = k * p.rootMultiplicity b := by
+  induction k with
+  | zero => simp
+  | succ n ih =>
+      rw [pow_succ, rootMultiplicity_mul (mul_ne_zero (pow_ne_zero _ hp) hp), ih]
+      ring
+
+omit [DecidableEq F] in
+/-- The ultrametric equality: a strictly smaller order wins in a sum. -/
+theorem rootMultiplicity_add_of_lt {p q : F[X]} {b : F} (hp : p ≠ 0)
+    (h : p.rootMultiplicity b < q.rootMultiplicity b) :
+    (p + q).rootMultiplicity b = p.rootMultiplicity b := by
+  have hq : q ≠ 0 := by rintro rfl; simp at h
+  have hpq : p + q ≠ 0 := by
+    intro hh
+    have hqp : q = -p := by linear_combination hh
+    rw [hqp, rootMultiplicity_neg'] at h
+    omega
+  have h1 : min (p.rootMultiplicity b) (q.rootMultiplicity b) ≤ (p + q).rootMultiplicity b :=
+    rootMultiplicity_add b hpq
+  have h2 : min ((p + q).rootMultiplicity b) ((-q).rootMultiplicity b)
+      ≤ p.rootMultiplicity b := by
+    have := rootMultiplicity_add (p := p + q) (q := -q) b (by simpa using hp)
+    simpa using this
+  rw [rootMultiplicity_neg'] at h2
+  omega
+
+omit [DecidableEq F] in
+/-- **THE ARTIN–SCHREIER VALUATION STEP.**  If the "norm form"
+`N = Cx²·f + D² + Cx·D·S` vanishes at `b` to order STRICTLY LESS than `2·ord_b Cx`, then
+that order is `2·ord_b D` — in particular it is EVEN.
+
+This one lemma is the whole of the characteristic-`2` parity; both parity statements below
+are it, applied at a different place with a different `D`.  It is not itself a
+characteristic-`2` statement: the factorisation `D² + Cx·D·S = D·(D + Cx·S)` holds in any
+commutative ring, and the argument is the usual "in `z² + σz` the square wins unless the
+orders tie" case split.  `S` must be a unit at `b`; that is exactly why the root of
+`S = a₁X + a₃` — the branch point of `W → ℙ¹_X` — is excluded from both statements. -/
+theorem charTwo_AS_rootMultiplicity {Cx D S f : F[X]} {b : F}
+    (hCx : Cx ≠ 0) (hSb : S.eval b ≠ 0)
+    (hN0 : Cx ^ 2 * f + D ^ 2 + Cx * D * S ≠ 0)
+    (hlt : (Cx ^ 2 * f + D ^ 2 + Cx * D * S).rootMultiplicity b
+      < 2 * Cx.rootMultiplicity b) :
+    (Cx ^ 2 * f + D ^ 2 + Cx * D * S).rootMultiplicity b = 2 * D.rootMultiplicity b := by
+  classical
+  set N := Cx ^ 2 * f + D ^ 2 + Cx * D * S with hNdef
+  set x := Cx.rootMultiplicity b with hxdef
+  set n := N.rootMultiplicity b with hndef
+  set M := D + Cx * S with hMdef
+  have hS : S ≠ 0 := fun h => hSb (by rw [h]; simp)
+  have hSm : S.rootMultiplicity b = 0 :=
+    rootMultiplicity_eq_zero (by simpa [IsRoot.def] using hSb)
+  have hdvdCx : ∀ k : ℕ, k ≤ 2 * x → (X - C b) ^ k ∣ Cx ^ 2 * f := by
+    intro k hk
+    refine dvd_trans (pow_dvd_pow _ hk) ?_
+    have h1 : (X - C b) ^ x ∣ Cx := pow_rootMultiplicity_dvd Cx b
+    have : (X - C b) ^ (2 * x) = ((X - C b) ^ x) ^ 2 := by ring
+    rw [this]
+    exact Dvd.dvd.mul_right (pow_dvd_pow_of_dvd h1 2) f
+  have hsplit : N = Cx ^ 2 * f + D * M := by rw [hNdef, hMdef]; ring
+  have hDM0 : D * M ≠ 0 := by
+    intro h
+    have hNeq : N = Cx ^ 2 * f := by rw [hsplit, h, add_zero]
+    have : 2 * x ≤ n := (le_rootMultiplicity_iff hN0).2 (by rw [hNeq]; exact hdvdCx _ le_rfl)
+    omega
+  have hD : D ≠ 0 := fun h => hDM0 (by rw [h, zero_mul])
+  have hM : M ≠ 0 := fun h => hDM0 (by rw [h, mul_zero])
+  have hDMn : (D * M).rootMultiplicity b = n := by
+    have hge : n ≤ (D * M).rootMultiplicity b := by
+      refine (le_rootMultiplicity_iff hDM0).2 ?_
+      have h1 : (X - C b) ^ n ∣ N := pow_rootMultiplicity_dvd N b
+      have h2 : (X - C b) ^ n ∣ Cx ^ 2 * f := hdvdCx n (by omega)
+      have : D * M = N - Cx ^ 2 * f := by rw [hsplit]; ring
+      rw [this]; exact dvd_sub h1 h2
+    have hle : (D * M).rootMultiplicity b ≤ n := by
+      by_contra hcon
+      replace hcon := not_le.mp hcon
+      have h1 : (X - C b) ^ (n + 1) ∣ D * M :=
+        (le_rootMultiplicity_iff hDM0).1 (by omega)
+      have h2 : (X - C b) ^ (n + 1) ∣ Cx ^ 2 * f := hdvdCx _ (by omega)
+      have : (X - C b) ^ (n + 1) ∣ N := by rw [hsplit]; exact dvd_add h2 h1
+      have := (le_rootMultiplicity_iff hN0).2 this
+      omega
+    omega
+  have hadd : D.rootMultiplicity b + M.rootMultiplicity b = n := by
+    rw [← hDMn]; exact (rootMultiplicity_mul hDM0).symm
+  have hCxS : (Cx * S).rootMultiplicity b = x := by
+    rw [rootMultiplicity_mul (mul_ne_zero hCx hS), hSm, add_zero]
+  have hDx : D.rootMultiplicity b < x := by
+    by_contra hcon
+    replace hcon := not_lt.mp hcon
+    have h1 : (X - C b) ^ x ∣ D := (le_rootMultiplicity_iff hD).1 hcon
+    have h2 : (X - C b) ^ x ∣ Cx * S :=
+      (le_rootMultiplicity_iff (mul_ne_zero hCx hS)).1 (by omega)
+    have : x ≤ M.rootMultiplicity b :=
+      (le_rootMultiplicity_iff hM).2 (by rw [hMdef]; exact dvd_add h1 h2)
+    omega
+  have hMeq : M.rootMultiplicity b = D.rootMultiplicity b := by
+    rw [hMdef]; exact rootMultiplicity_add_of_lt hD (by omega)
+  omega
+
+omit [DecidableEq F] in
+/-- **In characteristic `2` the `x`-partial of an elliptic Weierstrass equation is NONZERO
+at the `2`-torsion point.**  If `a₁r + a₃ = 0` (so `(r, c)` is the `2`-torsion point) and
+`c² = r³ + a₂r² + a₄r + a₆` (so it is on the curve), then `a₁c + r² + a₄ ≠ 0`.
+
+Proof: the vanishing of that quantity, with the two displayed relations, forces
+`Δ = a₁⁴·(a₁c + a₄ + r²)² = 0` — that is `Δ_of_char_two` with `a₃ = a₁r` and
+`a₄ = a₁c + r²` substituted.  Geometrically it is smoothness of `W` at its `2`-torsion
+point, where in characteristic `2` the `y`-partial `2y + a₁x + a₃` vanishes identically, so
+the `x`-partial has to carry the smoothness on its own.  This is the ONLY place the
+ellipticity of `W'` enters the characteristic-`2` count, exactly as
+`exists_twoTorsionPolynomial_roots` is the only place it enters the count away from `2`. -/
+theorem charTwo_twoTorsion_partialX_ne_zero {W : Affine F} [W.IsElliptic] (h2 : (2 : F) = 0)
+    {r c : F} (hr : W.a₁ * r + W.a₃ = 0)
+    (hc : c ^ 2 = r ^ 3 + W.a₂ * r ^ 2 + W.a₄ * r + W.a₆) :
+    W.a₁ * c + r ^ 2 + W.a₄ ≠ 0 := by
+  intro h
+  have ha₃ : W.a₃ = W.a₁ * r := by linear_combination hr - W.a₁ * r * h2
+  have ha₄ : W.a₄ = W.a₁ * c + r ^ 2 := by linear_combination h - (W.a₁ * c + r ^ 2) * h2
+  have hc' : c ^ 2 = r ^ 3 + W.a₂ * r ^ 2 + (W.a₁ * c + r ^ 2) * r + W.a₆ := by
+    rw [← ha₄]; exact hc
+  have hΔ : W.Δ = 0 := by
+    simp only [WeierstrassCurve.Δ, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+      WeierstrassCurve.b₆, WeierstrassCurve.b₈, ha₃, ha₄]
+    linear_combination (W.a₁^6 + 8*W.a₁^4*W.a₂ - 160*W.a₁^4*r - 64*W.a₁^3*c
+        + 16*W.a₁^2*W.a₂^2 - 192*W.a₁^2*r^2) * hc'
+      + (W.a₁^7*c*r + 2*W.a₁^6*r^3 + 8*W.a₁^5*W.a₂*c*r - 94*W.a₁^5*c*r^2
+        - 2*W.a₁^4*W.a₂*W.a₆ - 50*W.a₁^4*W.a₂*r^3 - 62*W.a₁^4*W.a₆*r - 188*W.a₁^4*r^4
+        + 16*W.a₁^3*W.a₂^2*c*r + 12*W.a₁^3*W.a₂*c*r^2 + 4*W.a₁^3*W.a₆*c - 256*W.a₁^3*c*r^3
+        - 16*W.a₁^2*W.a₂^2*W.a₆ + 24*W.a₁^2*W.a₂^2*r^3 + 72*W.a₁^2*W.a₂*W.a₆*r
+        - 56*W.a₁^2*W.a₂*r^4 - 168*W.a₁^2*W.a₆*r^2 - 240*W.a₁^2*r^5 + 16*W.a₁*W.a₂^2*c*r^2
+        + 144*W.a₁*W.a₂*W.a₆*c - 96*W.a₁*c*r^4 - 32*W.a₂^3*W.a₆ + 8*W.a₂^2*r^4
+        + 144*W.a₂*W.a₆*r^2 - 216*W.a₆^2 - 32*r^6) * h2
+  exact W.isUnit_Δ.ne_zero hΔ
+
+omit [DecidableEq F] in
+/-- **PARITY AT A POLE (`β`).**  Off the root of `S = a₁X + a₃`, and away from the common
+zeros of `A` and `B`, the pole order of `u = x ∘ φ = A/B` is EVEN.
+
+Geometrically: `e(W → ℙ¹_u) = e(W → W′)·e(W′ → ℙ¹_u)` and the second factor is `2` over
+`u = ∞`, while `W → ℙ¹_X` is unramified at `b` because `S(b) ≠ 0`.
+
+The proof is `charTwo_AS_rootMultiplicity` applied at `b`: `hone` gives
+`ord_b Cx + ord_b B = ord_b E + ord_b T`, `hcurve` gives
+`3·ord_b B + ord_b N = 2·ord_b E`, and any `ord_b B > 0` makes their difference the strict
+inequality the Artin–Schreier step needs.  Note that no case split on `a₁′` is required —
+`ord_b T` cancels out of the inequality. -/
+theorem charTwo_rootMultiplicity_B_even {W W' : Affine F}
+    {A B Cx D E : F[X]} {b : F} (hB : B ≠ 0) (hE : E ≠ 0) (hCx : Cx ≠ 0)
+    (hone : E * (C W'.a₁ * A + C W'.a₃ * B) = Cx * B * (C W.a₁ * X + C W.a₃))
+    (hcurve : B ^ 3 * (Cx ^ 2 * (X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆) + D ^ 2
+        + Cx * D * (C W.a₁ * X + C W.a₃))
+      = E ^ 2 * (A ^ 3 + C W'.a₂ * A ^ 2 * B + C W'.a₄ * A * B ^ 2 + C W'.a₆ * B ^ 3))
+    (hSb : (C W.a₁ * X + C W.a₃).eval b ≠ 0) (hAb : A.eval b ≠ 0) :
+    Even (B.rootMultiplicity b) := by
+  classical
+  set S : F[X] := C W.a₁ * X + C W.a₃ with hSdef
+  set f : F[X] := X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆ with hfdef
+  set T : F[X] := C W'.a₁ * A + C W'.a₃ * B with hTdef
+  set G : F[X] := A ^ 3 + C W'.a₂ * A ^ 2 * B + C W'.a₄ * A * B ^ 2 + C W'.a₆ * B ^ 3 with hGdef
+  set N : F[X] := Cx ^ 2 * f + D ^ 2 + Cx * D * S with hNdef
+  have hS : S ≠ 0 := fun h => hSb (by rw [h]; simp)
+  have hSm : S.rootMultiplicity b = 0 :=
+    rootMultiplicity_eq_zero (by simpa [IsRoot.def] using hSb)
+  by_cases hm : B.rootMultiplicity b = 0
+  · simp [hm]
+  have hBb : B.eval b = 0 := by
+    by_contra hc
+    exact hm (rootMultiplicity_eq_zero (by simpa [IsRoot.def] using hc))
+  have hGb : G.eval b ≠ 0 := by
+    rw [hGdef]
+    simp only [eval_add, eval_mul, eval_pow, eval_C, hBb]
+    simpa using pow_ne_zero 3 hAb
+  have hG : G ≠ 0 := fun h => hGb (by rw [h]; simp)
+  have hGm : G.rootMultiplicity b = 0 :=
+    rootMultiplicity_eq_zero (by simpa [IsRoot.def] using hGb)
+  have hRHS : E ^ 2 * G ≠ 0 := mul_ne_zero (pow_ne_zero _ hE) hG
+  have hN : N ≠ 0 := by
+    intro h
+    apply hRHS
+    rw [← hcurve, h, mul_zero]
+  have hT : T ≠ 0 := by
+    intro h
+    have : Cx * B * S ≠ 0 := mul_ne_zero (mul_ne_zero hCx hB) hS
+    exact this (by rw [← hone, h, mul_zero])
+  have eq1 : 3 * B.rootMultiplicity b + N.rootMultiplicity b = 2 * E.rootMultiplicity b := by
+    have hL : (B ^ 3 * N).rootMultiplicity b
+        = 3 * B.rootMultiplicity b + N.rootMultiplicity b := by
+      rw [rootMultiplicity_mul (mul_ne_zero (pow_ne_zero _ hB) hN), rootMultiplicity_pow' hB]
+    have hR : (E ^ 2 * G).rootMultiplicity b = 2 * E.rootMultiplicity b := by
+      rw [rootMultiplicity_mul hRHS, rootMultiplicity_pow' hE, hGm, add_zero]
+    rw [← hL, ← hR, hcurve]
+  have eq2 : E.rootMultiplicity b + T.rootMultiplicity b
+      = Cx.rootMultiplicity b + B.rootMultiplicity b := by
+    have hL : (E * T).rootMultiplicity b
+        = E.rootMultiplicity b + T.rootMultiplicity b := rootMultiplicity_mul (mul_ne_zero hE hT)
+    have hR : (Cx * B * S).rootMultiplicity b
+        = Cx.rootMultiplicity b + B.rootMultiplicity b := by
+      rw [rootMultiplicity_mul (mul_ne_zero (mul_ne_zero hCx hB) hS),
+        rootMultiplicity_mul (mul_ne_zero hCx hB), hSm, add_zero]
+    rw [← hL, ← hR, hone]
+  have hlt : N.rootMultiplicity b < 2 * Cx.rootMultiplicity b := by omega
+  have hAS : N.rootMultiplicity b = 2 * D.rootMultiplicity b :=
+    charTwo_AS_rootMultiplicity hCx hSb hN hlt
+  exact Nat.even_iff.mpr (by omega)
+
+omit [DecidableEq F] in
+/-- **PARITY AT A `2`-TORSION FIBRE (`α`).**  Off the root of `S = a₁X + a₃`, and away from
+the zeros of `B`, the order of `T = a₁′A + a₃′B` is EVEN.
+
+`T/B = a₁′u + a₃′` is `ψ₂′` evaluated at `u = x ∘ φ`, so this says: the fibre of `u` over
+the `x`-coordinate `r′ = a₃′/a₁′` of the `2`-torsion point of `W′` is ramified to an EVEN
+order.  Geometrically, again `e(W → ℙ¹_u) = e(W → W′)·e(W′ → ℙ¹_u)`, and the second factor
+is `2` because `W′ → ℙ¹_u` is ramified over `r′` — in characteristic `2` those are the only
+two branch points, `r′` and `∞`, which is why `α` and `β` together exhaust the count.
+
+The proof is the same Artin–Schreier step, run after translating the `y`-witness by the
+`2`-torsion ordinate `c` (`D ↦ D₁ = D + cE`).  The identity
+
+  `a₁′³·B³·(Cx²f + D₁² + Cx·D₁·S) = E²·T·R`,
+  `R = T² + (a₃′ + a₂′a₁′)·B·T + (a₃′² + a₄′a₁′² + a₁′³c)·B²`
+
+follows from `hcurve` and `hone` alone: the `B³`-coefficient of `a₁′³·G` is `a₁′³·g(r′)`,
+which the defining relation `c² = g(r′)` cancels against the translation term, leaving `T`
+as a factor.  And `R(b) ≠ 0` is EXACTLY `charTwo_twoTorsion_partialX_ne_zero` scaled by
+`a₁′²`, since `T(b) = 0`. -/
+theorem charTwo_rootMultiplicity_T_even [IsAlgClosed F] {W W' : Affine F} [W'.IsElliptic]
+    (h2 : (2 : F) = 0)
+    {A B Cx D E : F[X]} {b : F} (hB : B ≠ 0) (hE : E ≠ 0) (hCx : Cx ≠ 0)
+    (hone : E * (C W'.a₁ * A + C W'.a₃ * B) = Cx * B * (C W.a₁ * X + C W.a₃))
+    (hcurve : B ^ 3 * (Cx ^ 2 * (X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆) + D ^ 2
+        + Cx * D * (C W.a₁ * X + C W.a₃))
+      = E ^ 2 * (A ^ 3 + C W'.a₂ * A ^ 2 * B + C W'.a₄ * A * B ^ 2 + C W'.a₆ * B ^ 3))
+    (hSb : (C W.a₁ * X + C W.a₃).eval b ≠ 0) (hBb : B.eval b ≠ 0) :
+    Even ((C W'.a₁ * A + C W'.a₃ * B).rootMultiplicity b) := by
+  classical
+  have h2P : (2 : F[X]) = 0 := by rw [← map_ofNat C 2, h2, map_zero]
+  have hS : (C W.a₁ * X + C W.a₃ : F[X]) ≠ 0 := fun h => hSb (by rw [h]; simp)
+  have hSm : (C W.a₁ * X + C W.a₃ : F[X]).rootMultiplicity b = 0 :=
+    rootMultiplicity_eq_zero (by simpa [IsRoot.def] using hSb)
+  have hBm : B.rootMultiplicity b = 0 :=
+    rootMultiplicity_eq_zero (by simpa [IsRoot.def] using hBb)
+  by_cases hk : (C W'.a₁ * A + C W'.a₃ * B : F[X]).rootMultiplicity b = 0
+  · simp [hk]
+  have ha₁ : W'.a₁ ≠ 0 := by
+    intro h
+    apply hk
+    by_cases ha₃ : W'.a₃ = 0
+    · rw [h, ha₃]; simp
+    · rw [h, show (C (0 : F) * A + C W'.a₃ * B : F[X]) = C W'.a₃ * B by simp,
+        rootMultiplicity_mul (mul_ne_zero (C_ne_zero.mpr ha₃) hB), rootMultiplicity_C, zero_add,
+        hBm]
+  obtain ⟨r, hra⟩ : ∃ r : F, W'.a₁ * r = W'.a₃ := ⟨W'.a₃ / W'.a₁, by field_simp⟩
+  obtain ⟨c, hc⟩ := IsAlgClosed.exists_pow_nat_eq
+    (r ^ 3 + W'.a₂ * r ^ 2 + W'.a₄ * r + W'.a₆) (n := 2) two_pos
+  have hrr : W'.a₁ * r + W'.a₃ = 0 := by linear_combination hra + W'.a₃ * h2
+  have hkey := charTwo_twoTorsion_partialX_ne_zero (W := W') h2 hrr hc
+  have hR0 : W'.a₃ ^ 2 + W'.a₄ * W'.a₁ ^ 2 + W'.a₁ ^ 3 * c ≠ 0 := by
+    intro h
+    apply hkey
+    have hsq : W'.a₁ ^ 2 * (W'.a₁ * c + r ^ 2 + W'.a₄) = 0 := by
+      linear_combination h + (W'.a₁ * r + W'.a₃) * hra
+    exact (mul_eq_zero.mp hsq).resolve_left (pow_ne_zero 2 ha₁)
+  have hc3 : W'.a₁ ^ 3 * c ^ 2 = W'.a₃ ^ 3 + W'.a₂ * W'.a₁ * W'.a₃ ^ 2
+      + W'.a₄ * W'.a₁ ^ 2 * W'.a₃ + W'.a₆ * W'.a₁ ^ 3 := by
+    linear_combination (W'.a₁ ^ 3) * hc
+      + (W'.a₁ ^ 2 * r ^ 2 + W'.a₁ * r * W'.a₃ + W'.a₃ ^ 2
+        + W'.a₂ * W'.a₁ * (W'.a₁ * r + W'.a₃) + W'.a₄ * W'.a₁ ^ 2) * hra
+  have hc3P : (C W'.a₁ : F[X]) ^ 3 * C c ^ 2 = C W'.a₃ ^ 3 + C W'.a₂ * C W'.a₁ * C W'.a₃ ^ 2
+      + C W'.a₄ * C W'.a₁ ^ 2 * C W'.a₃ + C W'.a₆ * C W'.a₁ ^ 3 := by
+    simpa only [map_add, map_mul, map_pow] using congrArg (C : F → F[X]) hc3
+  have hid : C W'.a₁ ^ 3 * (B ^ 3 * (Cx ^ 2 * (X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆)
+        + (D + C c * E) ^ 2 + Cx * (D + C c * E) * (C W.a₁ * X + C W.a₃)))
+      = E ^ 2 * ((C W'.a₁ * A + C W'.a₃ * B)
+        * ((C W'.a₁ * A + C W'.a₃ * B) ^ 2
+           + (C W'.a₃ + C W'.a₂ * C W'.a₁) * B * (C W'.a₁ * A + C W'.a₃ * B)
+           + (C W'.a₃ ^ 2 + C W'.a₄ * C W'.a₁ ^ 2 + C W'.a₁ ^ 3 * C c) * B ^ 2)) := by
+    linear_combination (C W'.a₁ ^ 3) * hcurve
+      - (C W'.a₁ ^ 3 * C c * E * B ^ 2) * hone
+      + (E ^ 2 * B ^ 3) * hc3P
+      + (C W'.a₁ ^ 3 * C c * D * E * B ^ 3
+         + E ^ 2 * (-2 * A ^ 2 * B * (C W'.a₁ ^ 2 * C W'.a₃)
+           - A * B ^ 2 * (C W'.a₁ ^ 2 * C W'.a₂ * C W'.a₃)
+           - 3 * A * B ^ 2 * (C W'.a₁ * C W'.a₃ ^ 2)
+           + B ^ 3 * (C W'.a₁ ^ 3 * C W'.a₆) - B ^ 3 * C W'.a₃ ^ 3)) * h2P
+  set T : F[X] := C W'.a₁ * A + C W'.a₃ * B with hTdef
+  set D₁ : F[X] := D + C c * E with hD₁def
+  set N₁ : F[X] := Cx ^ 2 * (X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆) + D₁ ^ 2
+      + Cx * D₁ * (C W.a₁ * X + C W.a₃) with hN₁def
+  set R : F[X] := T ^ 2 + (C W'.a₃ + C W'.a₂ * C W'.a₁) * B * T
+      + (C W'.a₃ ^ 2 + C W'.a₄ * C W'.a₁ ^ 2 + C W'.a₁ ^ 3 * C c) * B ^ 2 with hRdef
+  have hT0 : T ≠ 0 := fun h => hk (by rw [h]; simp)
+  have hTb : T.eval b = 0 := by
+    have := (rootMultiplicity_pos hT0 (x := b)).mp (Nat.pos_of_ne_zero hk)
+    simpa [IsRoot.def] using this
+  have hRb : R.eval b ≠ 0 := by
+    rw [hRdef]
+    simp only [eval_add, eval_mul, eval_pow, eval_C, hTb]
+    simpa using mul_ne_zero hR0 (pow_ne_zero 2 hBb)
+  have hR' : R ≠ 0 := fun h => hRb (by rw [h]; simp)
+  have hCa1 : (C W'.a₁ : F[X]) ≠ 0 := C_ne_zero.mpr ha₁
+  have hN₁0 : N₁ ≠ 0 := by
+    intro h
+    have hne : E ^ 2 * (T * R) ≠ 0 :=
+      mul_ne_zero (pow_ne_zero _ hE) (mul_ne_zero hT0 hR')
+    exact hne (by rw [← hid, h, mul_zero, mul_zero])
+  have hRm : R.rootMultiplicity b = 0 :=
+    rootMultiplicity_eq_zero (by simpa [IsRoot.def] using hRb)
+  have eq1 : N₁.rootMultiplicity b = 2 * E.rootMultiplicity b + T.rootMultiplicity b := by
+    have hL : (C W'.a₁ ^ 3 * (B ^ 3 * N₁)).rootMultiplicity b = N₁.rootMultiplicity b := by
+      rw [rootMultiplicity_mul (mul_ne_zero (pow_ne_zero _ hCa1)
+            (mul_ne_zero (pow_ne_zero _ hB) hN₁0)),
+        rootMultiplicity_mul (mul_ne_zero (pow_ne_zero _ hB) hN₁0),
+        rootMultiplicity_pow' hB, rootMultiplicity_pow' hCa1, rootMultiplicity_C, hBm]
+      ring
+    have hRr : (E ^ 2 * (T * R)).rootMultiplicity b
+        = 2 * E.rootMultiplicity b + T.rootMultiplicity b := by
+      rw [rootMultiplicity_mul (mul_ne_zero (pow_ne_zero _ hE) (mul_ne_zero hT0 hR')),
+        rootMultiplicity_mul (mul_ne_zero hT0 hR'), rootMultiplicity_pow' hE, hRm]
+      ring
+    rw [← hL, ← hRr, hid]
+  have eq2 : E.rootMultiplicity b + T.rootMultiplicity b = Cx.rootMultiplicity b := by
+    have hL : (E * T).rootMultiplicity b = E.rootMultiplicity b + T.rootMultiplicity b :=
+      rootMultiplicity_mul (mul_ne_zero hE hT0)
+    have hRr : (Cx * B * (C W.a₁ * X + C W.a₃)).rootMultiplicity b = Cx.rootMultiplicity b := by
+      rw [rootMultiplicity_mul (mul_ne_zero (mul_ne_zero hCx hB) hS),
+        rootMultiplicity_mul (mul_ne_zero hCx hB), hSm, hBm]
+      ring
+    rw [← hL, ← hRr, hone]
+  have hlt : N₁.rootMultiplicity b < 2 * Cx.rootMultiplicity b := by omega
+  have hAS : N₁.rootMultiplicity b = 2 * D₁.rootMultiplicity b :=
+    charTwo_AS_rootMultiplicity hCx hSb hN₁0 hlt
+  exact Nat.even_iff.mpr (by omega)
+
+omit [DecidableEq F] in
+/-- **In characteristic `2` the derivative of a SQUARE vanishes**, `(w²)′ = 2ww′ = 0`. -/
+theorem charTwo_derivative_sq (h2 : (2 : F) = 0) (w : F[X]) :
+    derivative (w ^ 2) = 0 := by
+  have h2p : (2 : F[X]) = 0 := by
+    have h : (C (2 : F) : F[X]) = 0 := by rw [h2, map_zero]
+    rwa [map_ofNat] at h
+  rw [show w ^ 2 = w * w from sq w, derivative_mul]
+  linear_combination (derivative w * w) * h2p
+
+omit [DecidableEq F] in
+/-- **THE PARITY LEVER.**  In characteristic `2`, an EVEN power that divides `p` divides
+`p′` as well: writing `q^{2m}·v = (q^m)²·v`, the Leibniz term `((q^m)²)′·v` vanishes by
+`charTwo_derivative_sq`.
+
+This is what pays for the `−1` in `rootMultiplicity_le_wronskianPoly_left`/`_right`: at a
+place where the relevant multiplicity is EVEN those two lemmas improve from
+`ord_b G ≤ ord_b(A′B − AB′) + 1` to `ord_b G ≤ ord_b(A′B − AB′)`, which is exactly the
+inequality the characteristic-`2` count needs and cannot get otherwise. -/
+theorem charTwo_even_pow_dvd_derivative {p q : F[X]} {k : ℕ} (h2 : (2 : F) = 0)
+    (hk : Even k) (hd : q ^ k ∣ p) : q ^ k ∣ derivative p := by
+  obtain ⟨v, rfl⟩ := hd
+  obtain ⟨m, hm⟩ := hk
+  subst hm
+  rw [show q ^ (m + m) = (q ^ m) ^ 2 by ring, derivative_mul,
+    charTwo_derivative_sq h2 (q ^ m), zero_mul, zero_add]
+  exact dvd_mul_right _ _
+
+/-- **THE ONE OPEN LEAF OF THIS FILE (2026-07-31, RECUT): the characteristic-`2` count at
+a SUPERSINGULAR TARGET, `W'.a₁ = 0`.**
+
+`exists_wronskianPoly_scalar_charTwo_coprime` below is now PROVEN over this, and this is
+all that is left of it.  In characteristic `2` an elliptic curve has `a₁ = 0` exactly when
+it is supersingular (`j = 0`), and `lineOfDiff_ne_zero_of_charTwo` then forces `a₃′ ≠ 0`,
+so the hypothesis `ha₁'` says `T := a₁′A + a₃′B` degenerates to `a₃′·B` and the conclusion
+degenerates to `P·S = c·a₃′·B²`, i.e. `u′·S = c·a₃′` for `u = A/B` — "the invariant
+derivation `D = S·d/dX` sends `u` to a CONSTANT".
+
+**WHY THIS CASE AND NO OTHER.**  When `a₁′ ≠ 0` one has `T = a₁′·(A − r′B)` with
+`r′ = a₃′/a₁′`, so `T` is a Wronskian-companion of `B` — `wronskianPoly_sub` says the pair
+`(A − r′B, B)` has the SAME Wronskian `P` as `(A, B)` — and the two crude bounds
+`rootMultiplicity_le_wronskianPoly_left/_right`, sharpened by `charTwo_even_pow_dvd_derivative`
+at the places where `hparB`/`hparT` supply an even multiplicity, give
+`ord_b T + ord_b B ≤ ord_b P + ord_b S` at every `b`, and `deg P + 1 ≤ deg T + deg B` at
+`∞`.  Every step of that is in the proof below.
+
+When `a₁′ = 0` the companion collapses: `T = a₃′B`, so the requirement at a pole of `u`
+(`m := ord_b B > 0`) is the DOUBLED `2m ≤ ord_b P + ord_b S`, and neither crude bound nor
+the parity lever reaches it — they give `m ≤ ord_b P` and stop.  The same doubling happens
+at `∞` when `deg A > deg B`.
+
+**THE DERIVATIVE IDENTITY THE ROUTE NEEDS IS COMPILER-VERIFIED (2026-07-31) — PASTE IT.**
+It is not specific to `a₁′ = 0` and it costs nothing but this text; it is not committed as a
+declaration only because nothing in the cone would consume it until this leaf is proven.
+Differentiate `hcurve`, eliminate `G′` with the ring identity
+`B·G′ = (A² + a₄′B²)·P + B′·G` (`P = A′B − AB′`, true over any commutative ring), and fold
+`E²G` back to `B³N` by `hcurve` itself; the `B³B′N` terms cancel and what is left is
+
+    B⁴ · N′  =  E² · (A² + a₄′B²) · P ,
+
+with `N = Cx²f + D² + Cx·D·S` the bracket of `hcurve`.  In Lean, verbatim and green:
+
+    theorem charTwo_derivative_curveEq (h2 : (2 : F) = 0) {A B Cx D E : F[X]}
+        (hcurve : B ^ 3 * (Cx ^ 2 * (X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆) + D ^ 2
+            + Cx * D * (C W.a₁ * X + C W.a₃))
+          = E ^ 2 * (A ^ 3 + C W'.a₂ * A ^ 2 * B + C W'.a₄ * A * B ^ 2 + C W'.a₆ * B ^ 3)) :
+        B ^ 4 * (Cx ^ 2 * (X ^ 2 + C W.a₄) + derivative Cx * D * (C W.a₁ * X + C W.a₃)
+            + Cx * derivative D * (C W.a₁ * X + C W.a₃) + Cx * D * C W.a₁)
+          = E ^ 2 * (A ^ 2 + C W'.a₄ * B ^ 2) * (derivative A * B - A * derivative B) := by
+      have h2p : (2 : F[X]) = 0 := by
+        have h : (C (2 : F) : F[X]) = 0 := by rw [h2, map_zero]
+        rwa [map_ofNat] at h
+      have hd := congrArg derivative hcurve
+      simp only [derivative_add, derivative_mul, derivative_pow, derivative_C,
+        derivative_X, zero_mul, zero_add, add_zero, Nat.cast_ofNat,
+        Nat.add_one_sub_one, mul_one, map_ofNat, pow_one] at hd
+      linear_combination B * hd - derivative B * hcurve
+        + (-(B ^ 4 * (Cx * derivative Cx * (X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆)
+              + Cx ^ 2 * (X ^ 2 + C W.a₂ * X) + D * derivative D))
+          - B ^ 3 * derivative B * (Cx ^ 2 * (X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆)
+              + D ^ 2 + Cx * D * (C W.a₁ * X + C W.a₃))
+          + B * E * derivative E * (A ^ 3 + C W'.a₂ * A ^ 2 * B + C W'.a₄ * A * B ^ 2
+              + C W'.a₆ * B ^ 3)
+          + B * E ^ 2 * (A ^ 2 * derivative A + C W'.a₂ * A * derivative A * B
+              + C W'.a₄ * A * B * derivative B + C W'.a₆ * B ^ 2 * derivative B)) * h2p
+
+`map_ofNat` in that `simp only` is load-bearing: without it `derivative_pow` leaves `C 2`
+and `C 3` in `hd`, `ring` treats them as ATOMS unrelated to the numerals `2`, `3`, and the
+`linear_combination` fails with a residual full of `C 3 * … - … * 3`.
+
+**WITH THAT IDENTITY THE COUNT CLOSES AT EVERY FINITE `b` WITH `S(b) ≠ 0`** — checked by
+hand 2026-07-31, and it is the bulk of the leaf.  Fix such a `b` with `m := ord_b B > 0`
+(if `m = 0` there is nothing to prove, `T = a₃′B`), so `A(b) ≠ 0` by `hcop` and `G(b) ≠ 0`:
+
+* `hone` cancelled by `B` reads `a₃′·E = Cx·S`, so `x := ord_b E = ord_b Cx`;
+* `hcurve` gives `3m + ord_b N = 2x`, hence `ord_b N < 2x`, hence
+  `charTwo_AS_rootMultiplicity` applies and `ord_b N = 2·ord_b D`; so `m` is even (this is
+  `charTwo_rootMultiplicity_B_even`, i.e. `hparB`) and `d := ord_b D = x − 3m/2`;
+* the identity above gives `4m + ord_b N′ = 2x + ord_b(A² + a₄′B²) + ord_b P`, and
+  `ord_b(A² + a₄′B²) = 0` because `A(b) ≠ 0` while `ord_b(a₄′B²) = 2m > 0`;
+* the four terms of `N′` have orders `≥ 2x`, `≥ x − 1 + d`, `≥ x + d − 1`, `≥ x + d`
+  (`pow_sub_one_dvd_derivative_of_pow_dvd` for the two derivatives, `ord_b S = 0` here), so
+  `ord_b N′ ≥ x + d − 1 = 2x − 3m/2 − 1`;
+* therefore `ord_b P ≥ 4m − 3m/2 − 1 = 5m/2 − 1 ≥ 2m`, the last step because `m` is even
+  and positive, so `m ≥ 2`.  That is exactly the doubled bound the parent cannot reach.
+
+`N′ ≠ 0` is free: if it vanished the identity would force `P = 0` (`A² + a₄′B² ≠ 0`, since
+over an algebraically closed field of characteristic `2` it is `(A + √a₄′·B)²`, and `A = cB`
+with `A`, `B` coprime makes `B` a unit and `P = 0`), and `P = 0` is the trivial branch.
+
+**SO EXACTLY TWO PLACES ARE LEFT, and a prover should be sent at those and nothing else:**
+
+1. **the root `b₀` of `S`** (only when `a₁ ≠ 0`) **at which `B` also vanishes.**  There
+   `hparB` says nothing, `charTwo_AS_rootMultiplicity` does not apply (`S(b₀) = 0` is
+   exactly its excluded hypothesis, and it is excluded because the case split
+   `ord(z² + σz) = 2 ord z` needs `σ = Cx·S` to keep its order), and `hone` reads
+   `ord_{b₀} E = ord_{b₀} Cx + 1`.  The requirement is the weaker `2m ≤ ord_{b₀} P + 1`,
+   and the identity above reduces it to `ord_{b₀} N′ ≥ 2·ord_{b₀} Cx + 1 − 2m`, for which
+   the missing input is a lower bound on `ord_{b₀} D` — the analogue of the
+   Artin–Schreier step at a ramified place.  Geometrically `b₀` is the `2`-torsion point of
+   `W`, and `B(b₀) = 0` says it lies in the kernel, so this is a real configuration
+   (multiplication by `2` is an instance) and not a case to be excluded.
+2. **`∞`**, i.e. the degree bound `deg P + deg S ≤ 2·deg B`, and only when
+   `deg A > deg B`: otherwise `natDegree_wronskianPoly_succ_le` plus `deg S ≤ 1` closes it
+   as in the parent.  This is the same argument read at `∞`, with `deg A − deg B` in place
+   of `m`.
+
+**THE ROUTE, IN VALUATIONS (worked out 2026-07-31).**  Put `γ = Cx/E`,
+`δ = D/E`, `u = A/B`, `g(t) = t³ + a₂′t² + a₄′t + a₆′`, `f = X³ + a₂X² + a₄X + a₆`.  With
+`a₁′ = 0`, cancelling `B` from `hone` gives `Cx·S = a₃′·E`, i.e.
+
+    γ = a₃′/S,
+
+and `hcurve` divided by `B³E²` becomes the ARTIN–SCHREIER equation
+
+    δ² + a₃′·δ = g(u) + (a₃′/S)²·f.                                        (♦)
+
+Differentiating (♦) — in characteristic `2` both squares differentiate to `0`, and
+`((a₃′/S)²)′ = 0` for the same reason — gives, with `f′ = X² + a₄`,
+
+    a₃′·δ′ = (u² + a₄′)·u′ + (a₃′/S)²·(X² + a₄).                           (♣)
+
+Now fix `b` with `m := ord_b B > 0` and `S(b) ≠ 0`; `hparB` gives `m` EVEN, and `hcop`
+gives `ord_b u = −m` exactly.  Then:
+
+* `ord_b g(u) = −3m` and `ord_b((a₃′/S)²f) ≥ 0`, so the right side of (♦) has order
+  `−3m < 0`; on the left `ord_b(a₃′δ) = ord_b δ > 2·ord_b δ = ord_b(δ²)` once `ord_b δ < 0`,
+  so the ultrametric case split forces `2·ord_b δ = −3m`, i.e. **`ord_b δ = −3m/2`** (this
+  is `charTwo_AS_rootMultiplicity`, the same lemma `charTwo_rootMultiplicity_B_even` above
+  already uses, and it is where `m` even is spent a second time);
+* `ord_b δ′ ≥ ord_b δ − 1 = −3m/2 − 1`, and the last term of (♣) has order `≥ 0`, so
+  `ord_b((u² + a₄′)·u′) ≥ −3m/2 − 1`;
+* `ord_b(u² + a₄′) = −2m` exactly, whence `ord_b u′ ≥ 2m − 3m/2 − 1 = m/2 − 1 ≥ 0`,
+  the last step because `m` is even and positive, so `m ≥ 2`.
+
+Since `u′ = P/B²`, that is `ord_b P ≥ 2m + m/2 − 1 ≥ 2m`, which is the missing inequality.
+The place `∞` runs identically with `deg A > deg B` in place of `ord_b B > 0`.
+
+**WHAT MUST BE DONE IN LEAN, and it is bookkeeping rather than new mathematics.**  (♦) and
+(♣) have to be cleared of denominators before they can be stated: (♦) is `hcurve` with
+`Cx·S = a₃′E` substituted, and (♣) is its formal derivative, so both are polynomial
+identities in `A, B, D, E, S` obtainable by `linear_combination` from `hcurve`, the
+cancelled `hone`, and their derivatives.  The three valuation steps are then
+`rootMultiplicity` arithmetic of exactly the kind `charTwo_rootMultiplicity_B_even` above
+performs, with `rootMultiplicity_add_of_lt` for the ultrametric case splits.
+
+**THE REMAINING PLACE `S(b) = 0`** (only possible when `a₁ ≠ 0`) needs `B(b) ≠ 0`: there
+`hparB` gives nothing, and the crude bound `m ≤ ord_b P + 1` is short of `2m ≤ ord_b P + 1`
+for every `m ≥ 1`.  It is the point where `W → ℙ¹` is ramified, and `γ = a₃′/S` has a pole
+there, so `hone` forces `ord_b Cx < ord_b E`; the same (♦)/(♣) analysis applies with
+`ord_b S = 1` carried through.  A prover should do the two together.
+
+**THE CHECK THAT WOULD REFUTE IT** is unchanged from the parent: a morphism of elliptic
+curves over `F̄₂` with `a₁′ = 0` whose pullback of `ω′` is not a constant multiple of `ω`.
+The obvious candidate does not work: `x = X³`, `γ = 1` on `y² + y = x³` satisfies
+`Ψ_{W′}(x) = γ²Ψ_W` with `x′ = X²` not constant, and `hcurve` kills it because it would
+need `δ² + δ = X⁹ + X³`, which has no polynomial solution (the degree would be `9/2`). -/
+theorem exists_wronskianPoly_scalar_charTwo_supersingular [IsAlgClosed F]
+    [W.IsElliptic] [W'.IsElliptic]
+    {A B Cx D E : F[X]} (h2 : (2 : F) = 0) (hB : B ≠ 0) (hE : E ≠ 0) (hCx : Cx ≠ 0)
+    (hcop : IsCoprime A B) (ha₁' : W'.a₁ = 0)
+    (hone : E * (C W'.a₁ * A + C W'.a₃ * B) = Cx * B * (C W.a₁ * X + C W.a₃))
+    (hcurve : B ^ 3 * (Cx ^ 2 * (X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆) + D ^ 2
+        + Cx * D * (C W.a₁ * X + C W.a₃))
+      = E ^ 2 * (A ^ 3 + C W'.a₂ * A ^ 2 * B + C W'.a₄ * A * B ^ 2 + C W'.a₆ * B ^ 3))
+    (hparB : ∀ b : F, (C W.a₁ * X + C W.a₃).eval b ≠ 0 → Even (B.rootMultiplicity b)) :
+    ∃ c : F, (derivative A * B - A * derivative B) * (C W.a₁ * X + C W.a₃)
+      = C c * (C W'.a₁ * A + C W'.a₃ * B) * B :=
+  sorry
+
+/-- **PROVEN 2026-07-31 over `exists_wronskianPoly_scalar_charTwo_supersingular`: THE
+CHARACTERISTIC-`2` HALF of `exists_diffCharScalar_polyData`**, with `E` and `Cx` already
+eliminated from the conclusion.
 
 Writing `S = C a₁·X + C a₃` (nonzero, `lineOfDiff_ne_zero_of_charTwo`) and
 `T = C a₁′·A + C a₃′·B`, the two hypotheses are `hone` and `hcurve` in the shape they
@@ -1558,35 +2112,213 @@ a SQUARE and `4 = 0`, so the cubic degenerates and the identity becomes
 degeneracy the parent's char-`2` remark records, and it is why `hcurve` is the load-bearing
 hypothesis here and `D` may not be thrown away.
 
-**HOW FAR THE COUNT GETS, AND EXACTLY WHAT IS MISSING** (worked out 2026-07-31).
+**HOW THE COUNT RUNS, and where it stops** (worked out 2026-07-31, and the whole of it is
+below except the one case that is now `exists_wronskianPoly_scalar_charTwo_supersingular`).
 `T = a₁′(A − r′B)` (`r′ = a₃′/a₁′`) is one of the parent's `Gᵢ`, so
 `ord_b T ≤ ord_b(A′B − AB′) + 1` and `ord_b B ≤ ord_b(A′B − AB′) + 1` are the SAME two
 lemmas `rootMultiplicity_le_wronskianPoly_left`/`_right` above, and the inequality the
 conclusion needs is `ord_b T + ord_b B ≤ ord_b(A′B − AB′) + ord_b S` at every `b` (plus the
 matching degree bound).  So the count closes EXCEPT where one of the two is tight — and in
 characteristic `2` tightness happens only when the multiplicity `m` in question is ODD,
-because `(t^m·v)′ = t^m·v′` when `m` is even.  What must therefore be proved is:
+because `(t^m·v)′ = t^m·v′` when `m` is even.  What was therefore needed is:
 
-  **the order of the zero of `A − r′B` — equivalently of the pole of `A/B` — is EVEN
+  **the order of the zero of `A − r′B`, and the order of the pole of `A/B`, are EVEN
   unless `b` is the root of `S`.**
 
-That is a RAMIFICATION statement, and `hcurve` is where it has to come from.  Geometrically
-it is forced: `W′ → ℙ¹_x` is ramified exactly over `x = r′` and `x = ∞` (the fibre
-`y² + Ty = g(x)` is inseparable exactly when `T` vanishes), `W → ℙ¹_X` exactly over `X = r`
-and `∞`, and `e_{W→ℙ¹_x} = e_{W→W′}·e_{W′→ℙ¹_x} = e_{W→ℙ¹_X}·e_{ℙ¹→ℙ¹}` forces
-`e_{ℙ¹→ℙ¹} = 2` above `r′` except over `X = r`, which is exactly the excluded place.
-Algebraically, comparing orders in `hcurve` gives the parity as soon as
-`ord_b Cx ≠ ord_b D` — the two squares `Cx²f` and `D²` then have DISTINCT EVEN orders and
-the cross term `Cx·D·S` is strictly larger, so `ord_b` of the bracket is even, and `hcurve`
-forces `3·ord_b B + even = 2·ord_b E + ord_b(A³ + …)`.  The case `ord_b Cx = ord_b D` is
-what is not settled; the Artin–Schreier character of the characteristic-`2` fibre
-(`ρ² + ρ·(T·S) = S²·g(x) + T²·f` for `ρ = δ·S`, which is `hcurve` cleared) is presumably
-what decides it.
+**BOTH ARE NOW PROVED** — `charTwo_rootMultiplicity_T_even` and
+`charTwo_rootMultiplicity_B_even` above, and this leaf takes them as HYPOTHESES `hparT`,
+`hparB` so that what is left is the count and nothing else.  The docstring's earlier guess
+("the Artin–Schreier character of the characteristic-`2` fibre is presumably what decides
+it") was right, and the argument is short: with `γ = Cx/E`, `δ = D/E`, `hcurve` is
+`γ²f + δ² + γδS = g(u)`, whose left side factors as `γ²f + δ(δ + γS)`; at a place where the
+`γ²f` term is provably the largest, the ultrametric case split forces
+`ord_b(LHS) = 2·ord_b δ`.  That is `charTwo_AS_rootMultiplicity`, and it is applied twice —
+directly for the pole, and after translating `δ` by the `2`-torsion ordinate `c` for the
+fibre over `r′`.  The ellipticity of `W′` enters exactly once, as
+`charTwo_twoTorsion_partialX_ne_zero`.
+
+**THE COUNT, IN THE FORM IT IS CARRIED OUT BELOW** (no curve, no `Cx`, no `D`, no `E` —
+`hone` and `hcurve` are not used at all once `a₁′ ≠ 0`, and are forwarded untouched to the
+supersingular leaf):
+
+* *divisibility* — at every `b`, `ord_b T + ord_b B ≤ ord_b P + ord_b S`, where
+  `P = A′B − AB′`.  Since `a₁′ ≠ 0`, `T = a₁′·G` with `G = A − r′B`, and `wronskianPoly_sub`
+  says `(G, B)` has the same Wronskian `P` as `(A, B)`.  Two cases at each `b`:
+  - `S(b) = 0` (at most one place, and only when `a₁ ≠ 0`): then `ord_b S ≥ 1` pays for the
+    `+1` in the crude bounds directly — `rootMultiplicity_le_wronskianPoly_left` on `(G, B)`
+    when `B(b) ≠ 0`, and `rootMultiplicity_le_wronskianPoly_right` when `B(b) = 0` (where
+    coprimality makes `G(b) = A(b) ≠ 0`, so `ord_b T = 0`).
+  - `S(b) ≠ 0`: then `hparB`/`hparT` apply and `charTwo_even_pow_dvd_derivative` upgrades
+    the crude bound to the sharp one.  When `B(b) ≠ 0` it is `ord_b G` that is even, and
+    `(X − b)^{ord_b G}` divides both `G` and `G′`, hence `P = G′B − GB′`.  When `B(b) = 0`
+    it is `ord_b B` that is even, `ord_b G = 0` by coprimality, and `(X − b)^{ord_b B}`
+    divides both `B` and `B′`, hence `P = A′B − AB′`.
+* *degrees* — `deg P + deg S ≤ deg T + deg B` is FREE: `natDegree_wronskianPoly_succ_le` on
+  `(G, B)` gives `deg P + 1 ≤ deg G + deg B = deg T + deg B`, and `deg S ≤ 1`.
+
+Then `PS = c·TB` follows exactly as in `exists_wronskianPoly_scalar_coprime`'s assembly:
+a divisor of no larger degree is a constant multiple.  (The scalar picked up here is
+`c/a₁′`, since the divisor produced is `G·B` and not `T·B`.)
+
+**WHERE `a₁′ = 0` BREAKS IT, in one line**: `T` degenerates to `a₃′·B`, so at a pole of
+`A/B` the requirement `ord_b T + ord_b B ≤ ord_b P` DOUBLES to `2·ord_b B ≤ ord_b P`, and
+the parity lever gives only `ord_b B ≤ ord_b P`.  The same doubling happens at `∞` when
+`deg A > deg B`.  That case, and only that case, is
+`exists_wronskianPoly_scalar_charTwo_supersingular` above, whose docstring carries the
+Artin–Schreier route that closes it.
 
 **THE CHECK THAT WOULD REFUTE IT** must exhibit `D`.  The obvious candidate does not:
 `x = X³`, `γ = 1` on the supersingular `y² + y = x³` over `F̄₂` satisfies
 `Ψ_{W′}(x) = γ²Ψ_W` with `x′ = X²` not constant, and `hcurve` kills it because it would
 need `δ² + δ = X⁹ + X³`, which has no polynomial solution (the degree would be `9/2`). -/
+theorem exists_wronskianPoly_scalar_charTwo_coprime [IsAlgClosed F] [W.IsElliptic]
+    [W'.IsElliptic]
+    {A B Cx D E : F[X]} (h2 : (2 : F) = 0) (hB : B ≠ 0) (hE : E ≠ 0) (hCx : Cx ≠ 0)
+    (hcop : IsCoprime A B)
+    (hone : E * (C W'.a₁ * A + C W'.a₃ * B) = Cx * B * (C W.a₁ * X + C W.a₃))
+    (hcurve : B ^ 3 * (Cx ^ 2 * (X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆) + D ^ 2
+        + Cx * D * (C W.a₁ * X + C W.a₃))
+      = E ^ 2 * (A ^ 3 + C W'.a₂ * A ^ 2 * B + C W'.a₄ * A * B ^ 2 + C W'.a₆ * B ^ 3))
+    (hparB : ∀ b : F, (C W.a₁ * X + C W.a₃).eval b ≠ 0 → Even (B.rootMultiplicity b))
+    (hparT : ∀ b : F, (C W.a₁ * X + C W.a₃).eval b ≠ 0 →
+      Even ((C W'.a₁ * A + C W'.a₃ * B).rootMultiplicity b)) :
+    ∃ c : F, (derivative A * B - A * derivative B) * (C W.a₁ * X + C W.a₃)
+      = C c * (C W'.a₁ * A + C W'.a₃ * B) * B := by
+  classical
+  by_cases ha₁' : W'.a₁ = 0
+  · exact exists_wronskianPoly_scalar_charTwo_supersingular h2 hB hE hCx hcop ha₁' hone
+      hcurve hparB
+  have h2p : (2 : F[X]) = 0 := by
+    have h : (C (2 : F) : F[X]) = 0 := by rw [h2, map_zero]
+    rwa [map_ofNat] at h
+  set S : F[X] := C W.a₁ * X + C W.a₃ with hSdef
+  set T : F[X] := C W'.a₁ * A + C W'.a₃ * B with hTdef
+  set P : F[X] := derivative A * B - A * derivative B with hPdef
+  by_cases hP : P = 0
+  · exact ⟨0, by rw [hP, zero_mul, map_zero, zero_mul, zero_mul]⟩
+  have hS : S ≠ 0 := lineOfDiff_ne_zero_of_charTwo (W := W) h2
+  -- `T = a₁′·G` with `G = A − r′B`, and `(G, B)` has the same Wronskian `P` as `(A, B)`.
+  set r' : F := W'.a₃ / W'.a₁ with hr'def
+  set G : F[X] := A - C r' * B with hGdef
+  have hmul : W'.a₁ * r' = W'.a₃ := by rw [hr'def]; field_simp
+  have hcc : (C W'.a₁ : F[X]) * C r' = C W'.a₃ := by rw [← C_mul, hmul]
+  have hTG : T = C W'.a₁ * G := by
+    rw [hTdef, hGdef]
+    linear_combination B * hcc + (C W'.a₃ * B) * h2p
+  have hWG : derivative G * B - G * derivative B = P := by
+    rw [hGdef, hPdef]; exact wronskianPoly_sub A B r'
+  have hG0 : G ≠ 0 := by
+    intro h
+    apply hP
+    rw [← hWG, h]
+    simp
+  -- `B(b) = 0` forces `A(b) ≠ 0` by coprimality, hence `G(b) = A(b) ≠ 0`.
+  have hGzero : ∀ b : F, B.rootMultiplicity b ≠ 0 → G.rootMultiplicity b = 0 := by
+    intro b hm
+    have hBb : B.IsRoot b := (rootMultiplicity_pos hB).mp (Nat.pos_of_ne_zero hm)
+    have hAb : ¬ A.IsRoot b := by
+      obtain ⟨p, q, hpq⟩ := hcop
+      intro h
+      have hev := congrArg (Polynomial.eval b) hpq
+      simp only [eval_add, eval_mul, eval_one] at hev
+      rw [IsRoot] at h hBb
+      rw [h, hBb, mul_zero, mul_zero, add_zero] at hev
+      exact zero_ne_one hev
+    apply rootMultiplicity_eq_zero
+    rw [hGdef]
+    simp only [IsRoot, eval_sub, eval_mul, eval_C]
+    rw [IsRoot] at hBb
+    rw [hBb, mul_zero, sub_zero]
+    exact hAb
+  ---------------------------------------------------------------------------
+  -- STEP 1 : divisibility, place by place
+  ---------------------------------------------------------------------------
+  have hdvd : G * B ∣ P * S := by
+    have hsp : (G * B).Splits := IsAlgClosed.splits _
+    refine (hsp.dvd_iff_roots_le_roots (mul_ne_zero hG0 hB) (mul_ne_zero hP hS)).mpr ?_
+    rw [Multiset.le_iff_count]
+    intro b
+    rw [count_roots, count_roots, rootMultiplicity_mul (mul_ne_zero hG0 hB),
+      rootMultiplicity_mul (mul_ne_zero hP hS)]
+    by_cases hSb : S.eval b = 0
+    · -- at the root of `S` the crude `+1` bounds suffice
+      have hSm : 1 ≤ S.rootMultiplicity b := (rootMultiplicity_pos hS).mpr hSb
+      by_cases hm : B.rootMultiplicity b = 0
+      · have hb := rootMultiplicity_le_wronskianPoly_left (A := G) (B := B) (b := b)
+          (by rw [hWG]; exact hP)
+        rw [hWG] at hb
+        omega
+      · have hGm := hGzero b hm
+        have hb := rootMultiplicity_le_wronskianPoly_right (A := A) (B := B) (b := b)
+          (by rw [← hPdef]; exact hP)
+        rw [← hPdef] at hb
+        omega
+    · -- off the root of `S` the parities pay for the `+1`
+      have hBeven : Even (B.rootMultiplicity b) := hparB b hSb
+      have hTeven : Even (T.rootMultiplicity b) := hparT b hSb
+      have hTGm : T.rootMultiplicity b = G.rootMultiplicity b := by
+        rw [hTG, rootMultiplicity_mul (mul_ne_zero (C_ne_zero.mpr ha₁') hG0),
+          rootMultiplicity_C]
+        omega
+      by_cases hm : B.rootMultiplicity b = 0
+      · have hGeven : Even (G.rootMultiplicity b) := hTGm ▸ hTeven
+        have hd1 : (X - C b) ^ (G.rootMultiplicity b) ∣ G := pow_rootMultiplicity_dvd G b
+        have hd2 : (X - C b) ^ (G.rootMultiplicity b) ∣ derivative G :=
+          charTwo_even_pow_dvd_derivative h2 hGeven hd1
+        have hd3 : (X - C b) ^ (G.rootMultiplicity b) ∣ P := by
+          rw [← hWG]; exact dvd_sub (hd2.mul_right _) (hd1.mul_right _)
+        have := (le_rootMultiplicity_iff hP).2 hd3
+        omega
+      · have hGm := hGzero b hm
+        have hd1 : (X - C b) ^ (B.rootMultiplicity b) ∣ B := pow_rootMultiplicity_dvd B b
+        have hd2 : (X - C b) ^ (B.rootMultiplicity b) ∣ derivative B :=
+          charTwo_even_pow_dvd_derivative h2 hBeven hd1
+        have hd3 : (X - C b) ^ (B.rootMultiplicity b) ∣ P := by
+          rw [hPdef]; exact dvd_sub (hd1.mul_left _) (hd2.mul_left _)
+        have := (le_rootMultiplicity_iff hP).2 hd3
+        omega
+  ---------------------------------------------------------------------------
+  -- STEP 2 : the degree bound — free, `deg S ≤ 1`
+  ---------------------------------------------------------------------------
+  have hSdeg : S.natDegree ≤ 1 := by
+    rw [hSdef]
+    refine (natDegree_add_le _ _).trans (max_le ?_ ?_)
+    · exact natDegree_mul_le.trans (by simp)
+    · simp
+  have hdeg : (P * S).natDegree ≤ (G * B).natDegree := by
+    rw [natDegree_mul hP hS, natDegree_mul hG0 hB]
+    have h1 : P.natDegree + 1 ≤ G.natDegree + B.natDegree := by
+      have hh := natDegree_wronskianPoly_succ_le (A := G) (B := B) (by rw [hWG]; exact hP)
+      rwa [hWG] at hh
+    omega
+  ---------------------------------------------------------------------------
+  -- ASSEMBLY : a divisor of no larger degree is a constant multiple
+  ---------------------------------------------------------------------------
+  obtain ⟨u, hu⟩ := hdvd
+  have hu0 : u ≠ 0 := by
+    intro h
+    rw [h, mul_zero] at hu
+    exact (mul_ne_zero hP hS) hu
+  have hdu : u.natDegree = 0 := by
+    have hnd := natDegree_mul (mul_ne_zero hG0 hB) hu0
+    rw [← hu] at hnd
+    omega
+  obtain ⟨c, hc⟩ : ∃ c : F, u = C c := ⟨u.coeff 0, eq_C_of_natDegree_eq_zero hdu⟩
+  refine ⟨c / W'.a₁, ?_⟩
+  have hcc2 : (C (c / W'.a₁) : F[X]) * C W'.a₁ = C c := by
+    rw [← C_mul, div_mul_cancel₀ _ ha₁']
+  rw [hu, hc, hTG, ← hcc2]
+  ring
+
+/-- **The characteristic-`2` count, with its two parity inputs DISCHARGED (2026-07-31).**
+
+A common factor `g` of `A` and `B` cancels exactly as in `exists_wronskianPoly_scalar`
+(the Wronskian gains `g²`, `T` and `B` gain `g` each, and both hypotheses lose `g`
+respectively `g³`), so the coprime case is the whole content; and on the coprime witnesses
+`charTwo_rootMultiplicity_B_even` and `charTwo_rootMultiplicity_T_even` supply `hparB` and
+`hparT` at every place off the root of `S`.  The two boundary cases of `hparT` are
+elementary: over a zero of `B` the value `T(b) = a₁′A(b)` is nonzero when `a₁′ ≠ 0`, and
+when `a₁′ = 0` one has `T = a₃′B` outright, so `hparT` reduces to `hparB`. -/
 theorem exists_wronskianPoly_scalar_charTwo [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
     {A B Cx D E : F[X]} (h2 : (2 : F) = 0) (hB : B ≠ 0) (hE : E ≠ 0) (hCx : Cx ≠ 0)
     (hone : E * (C W'.a₁ * A + C W'.a₃ * B) = Cx * B * (C W.a₁ * X + C W.a₃))
@@ -1594,8 +2326,65 @@ theorem exists_wronskianPoly_scalar_charTwo [IsAlgClosed F] [W.IsElliptic] [W'.I
         + Cx * D * (C W.a₁ * X + C W.a₃))
       = E ^ 2 * (A ^ 3 + C W'.a₂ * A ^ 2 * B + C W'.a₄ * A * B ^ 2 + C W'.a₆ * B ^ 3)) :
     ∃ c : F, (derivative A * B - A * derivative B) * (C W.a₁ * X + C W.a₃)
-      = C c * (C W'.a₁ * A + C W'.a₃ * B) * B :=
-  sorry
+      = C c * (C W'.a₁ * A + C W'.a₃ * B) * B := by
+  classical
+  obtain ⟨g, A₀, B₀, hg0, hAg, hBg, hcop⟩ :
+      ∃ g A₀ B₀ : F[X], g ≠ 0 ∧ A = g * A₀ ∧ B = g * B₀ ∧ IsCoprime A₀ B₀ := by
+    have hgcd : GCDMonoid.gcd A B ≠ 0 := fun h => hB (gcd_eq_zero_iff A B |>.mp h).2
+    exact ⟨GCDMonoid.gcd A B, A / GCDMonoid.gcd A B, B / GCDMonoid.gcd A B, hgcd,
+      (EuclideanDomain.mul_div_cancel' hgcd (GCDMonoid.gcd_dvd_left A B)).symm,
+      (EuclideanDomain.mul_div_cancel' hgcd (GCDMonoid.gcd_dvd_right A B)).symm,
+      isCoprime_div_gcd_div_gcd hB⟩
+  have hB₀ : B₀ ≠ 0 := fun h => hB (by rw [hBg, h, mul_zero])
+  have hone₀ : E * (C W'.a₁ * A₀ + C W'.a₃ * B₀) = Cx * B₀ * (C W.a₁ * X + C W.a₃) := by
+    apply mul_left_cancel₀ hg0
+    rw [hAg, hBg] at hone
+    linear_combination hone
+  have hcurve₀ : B₀ ^ 3 * (Cx ^ 2 * (X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆) + D ^ 2
+        + Cx * D * (C W.a₁ * X + C W.a₃))
+      = E ^ 2 * (A₀ ^ 3 + C W'.a₂ * A₀ ^ 2 * B₀ + C W'.a₄ * A₀ * B₀ ^ 2 + C W'.a₆ * B₀ ^ 3) := by
+    apply mul_left_cancel₀ (pow_ne_zero 3 hg0)
+    rw [hAg, hBg] at hcurve
+    linear_combination hcurve
+  have hnocommon : ∀ b : F, B₀.eval b = 0 → A₀.eval b ≠ 0 := by
+    intro b hb hab
+    obtain ⟨u, v, huv⟩ := hcop
+    have := congrArg (eval b) huv
+    simp only [eval_add, eval_mul, eval_one, hb, hab, mul_zero, add_zero] at this
+    exact one_ne_zero this.symm
+  have hparB : ∀ b : F, (C W.a₁ * X + C W.a₃).eval b ≠ 0 → Even (B₀.rootMultiplicity b) := by
+    intro b hSb
+    by_cases hb : B₀.eval b = 0
+    · exact charTwo_rootMultiplicity_B_even hB₀ hE hCx hone₀ hcurve₀ hSb (hnocommon b hb)
+    · rw [rootMultiplicity_eq_zero (by simpa [IsRoot.def] using hb)]
+      exact Even.zero
+  have hparT : ∀ b : F, (C W.a₁ * X + C W.a₃).eval b ≠ 0 →
+      Even ((C W'.a₁ * A₀ + C W'.a₃ * B₀).rootMultiplicity b) := by
+    intro b hSb
+    by_cases hb : B₀.eval b = 0
+    · by_cases ha₁ : W'.a₁ = 0
+      · rw [show (C W'.a₁ * A₀ + C W'.a₃ * B₀ : F[X]) = C W'.a₃ * B₀ by rw [ha₁]; simp]
+        by_cases ha₃ : W'.a₃ = 0
+        · rw [ha₃]; simp
+        · rw [rootMultiplicity_mul (mul_ne_zero (C_ne_zero.mpr ha₃) hB₀), rootMultiplicity_C,
+            zero_add]
+          exact hparB b hSb
+      · have hTb : (C W'.a₁ * A₀ + C W'.a₃ * B₀).eval b ≠ 0 := by
+          simp only [eval_add, eval_mul, eval_C, hb, mul_zero, add_zero]
+          exact mul_ne_zero ha₁ (hnocommon b hb)
+        rw [rootMultiplicity_eq_zero (by simpa [IsRoot.def] using hTb)]
+        exact Even.zero
+    · exact charTwo_rootMultiplicity_T_even h2 hB₀ hE hCx hone₀ hcurve₀ hSb hb
+  obtain ⟨c, hc⟩ := exists_wronskianPoly_scalar_charTwo_coprime (W := W) (W' := W') (D := D)
+    h2 hB₀ hE hCx hcop hone₀ hcurve₀ hparB hparT
+  refine ⟨c, ?_⟩
+  have hw : derivative A * B - A * derivative B
+      = g ^ 2 * (derivative A₀ * B₀ - A₀ * derivative B₀) := by
+    rw [hAg, hBg]
+    simp only [derivative_mul]
+    ring
+  rw [hw, hAg, hBg]
+  linear_combination g ^ 2 * hc
 
 /-- **The characteristic-`2` half of `exists_diffCharScalar_polyData`, PROVEN over
 `exists_wronskianPoly_scalar_charTwo`** — the reduction that removes `E` and `Cx` from the
@@ -1746,158 +2535,6 @@ theorem exists_diffCharScalar_polyData [IsAlgClosed F] [W.IsElliptic] [W'.IsElli
     linear_combination hpsisq
   exact exists_wronskianPoly_scalar h4 h12 h13 h23 hPdeg hB hE hCx hstar
 
-/-- **LEAF (hoisted out of `exists_diffCharScalar_poly` on 2026-07-30): the pullback
-ratio takes the SAME VALUE at any two good points.**
-
-With `p := (A′B − AB′)·E` and `q := Cx·B²`, this says `p/q` is constant on the
-complement of the finite bad locus (the roots of `B·E·Cx` together with the `x`-image
-of `ker φ`), with the denominators cleared so that no division appears.  It was an
-anonymous inner `have … := sorry` inside `exists_diffCharScalar_poly`; a warning counts
-DECLARATIONS, so an inner sorry is ownerless by construction and no frontier scan can
-dispatch at it.  Naming it costs the parent nothing — everything else in
-`exists_diffCharScalar_poly` is real code, and it now consumes this.
-
-**WHAT IT REALLY IS, in one line: `Λ(S) ∈ F` for the function-field point `S`.**  Put
-`K := F(W)`, the function field of `W`, and let `D` be the invariant derivation on `K`
-(`D x = ψ₂ = 2y + a₁x + a₃`, `D y = 3x² + 2a₂x + a₄ − a₁y`; equivalently `D = ψ₂·d/dx`,
-which kills the Weierstrass polynomial).  For a `K`-point `S = (α, β)` of `W′` put
-
-  `Λ(S) := D(α) / (2β + a₁′α + a₃′)`.
-
-The witnesses of `φ` give one such point, `S = (u, γ·y + δ)` with `u = A/B`, `γ = Cx/E`,
-`δ = D/E`, and `Λ(S) = u′/γ = p/q`.  So the leaf says exactly `Λ(S) ∈ F`.
-
-**THE HOMOMORPHISM HYPOTHESIS IS NOT NEEDED — and seeing why is what makes the route
-concrete (2026-07-30).**  `(u, γy + δ)` lies on `W′` over `K` iff two identities hold:
-the `y`-part `2δ = γ(a₁x + a₃) − a₁′u − a₃′`, which is exactly
-`diffChar_yWitness_onePart`, and the `1`-part, which is `W′`'s equation.  `φ` being a
-group homomorphism is used ONLY to produce the first.  So the leaf is an instance of
-
-  *for every `K`-point `S` of `W′`, `Λ(S)` is a constant*,
-
-which is true because a `K`-point of `W′` is the same thing as a morphism `W → W′` of
-curves, i.e. an isogeny followed by a translation, and every such pulls `ω′` back to a
-constant multiple of `ω`.  This reframing is not a weakening of the leaf: it is the
-statement in the form in which the proof below is written.
-
-**THE ROUTE, in five pieces, each of which is a self-contained obligation.**  Fix a
-nonzero `T ∈ W(F)`; write `τ` for the tautological point `(x, y) ∈ W(K)` and `x₃, y₃`
-for the coordinates of `τ + T` (the chord formulas, elements of `K`; note `x ≠ x(T)`
-in `K` because `x` is transcendental over `F`, so only the CHORD case is ever needed —
-no tangent case, no `2`-torsion case).
-
-* (A) `D` exists.  `InvariantDerivation.lean` builds this for the UNIVERSAL curve
-  (`PsiSumCompanion.Dham`, `DB`, `DK`), but repeating that route here would drag in its
-  hand-rolled fraction-field extension (there is no derivation-of-a-localisation in
-  mathlib, which is why `DK` is ~250 lines of quotient-rule bookkeeping).  **Take
-  `K := AdjoinRoot p` over `𝔽 := RatFunc F` instead, with**
-
-    `p := Y² + C (a₁X + a₃) · Y − C f`,   `f := X³ + a₂X² + a₄X + a₆`,
-
-  which is ALREADY a field — no localisation step at all.  Two things make this cheap.
-  (i) `p` is irreducible over `𝔽`: a root `g = r/s` in lowest terms gives
-  `r² + (a₁X + a₃)rs = f s²`, so `s ∣ r²` forces `s` constant, and then no degree works
-  (`2·deg g = 3` is impossible, and `deg g ≤ 1` makes the left side of degree `≤ 2`).
-  (ii) The derivation on `𝔽[Y]` is the Hamiltonian one, `𝒟 := ψ₂·∂_X + (f′ − a₁Y)·∂_Y`
-  with `∂_X` differentiating COEFFICIENTS (`RationalDerivation.rderiv`, bundled as a
-  `Derivation F 𝔽 𝔽`, then `Derivation.mapCoeffs`), and it kills `p` ON THE NOSE:
-  `∂_X p = a₁Y − f′` and `∂_Y p = 2Y + a₁X + a₃ = ψ₂`, so
-  `𝒟 p = ψ₂(a₁Y − f′) + (f′ − a₁Y)ψ₂ = 0`.  So `Derivation.liftOfSurjective` descends it
-  to `K` with no residue calculation — contrast mathlib's `Differential (AdjoinRoot p)`
-  instance, which is not usable here anyway because it assumes `CharZero`.  On `K` then
-  `𝒟 x = ψ₂` and `𝒟 y = f′ − a₁y = 3x² + 2a₂x + a₄ − a₁y`.
-* (B) **Translation invariance**, `D x₃ = 2y₃ + a₁x₃ + a₃`.  This is *AEC* III.5.1, and
-  it is PURE FIELD ALGEBRA over an arbitrary derivation of an arbitrary field — the same
-  shape as `RationalDerivation.chordDeriv_core`: with `L(x − x₂) = y − y₂`,
-  `DL·(x − x₂)² = Dy·(x − x₂) − (y − y₂)·Dx`, `x₃ = L² + a₁L − a₂ − x − x₂` one has
-  `Dx₃ = (2L + a₁)·DL − Dx`, and the claim is a `linear_combination` of the two curve
-  equations.  More generally, and this is the form actually used, the identity is
-  HOMOGENEOUS OF DEGREE ONE in `D`: if `Dx = c·ψ₂` and `Dy = c·φ₂` then
-  `Dx₃ = c·ψ₂(x₃, y₃)`.
-* (C) The chain rule, `D(A.eval z) = (derivative A).eval z · D z` for `z ∈ K`
-  (`Derivation.aeval`), which is what turns `Λ` of a point built from `A, B, Cx, D, E`
-  into `p/q` evaluated at a coordinate.
-* (D) `S_T = S + φ(T)` in `W′(K)`, where `S_T` is `S` with `x, y` replaced by `x₃, y₃`.
-  This is the ONLY place `φ`'s additivity enters, and it is a density argument: both
-  sides are `K`-points whose coordinates agree under evaluation at every good `P ∈ W(F)`,
-  by `φ (P + T) = φ P + φ T`; an element of `W.CoordinateRing` vanishing at cofinitely
-  many `F`-points is `0`, because `p(X) + q(X)·Y` vanishing at both points above a given
-  `x₀` forces `q(x₀) = p(x₀) = 0`.
-* (E) The glue: `Λ(S_T) = h(x₃)` by (B) on `W` and (C); `Λ(S + φT) = Λ(S) = h(x)` by (B)
-  on `W′` (translation by the constant point `φ T`, using that `D α = Λ(S)·ψ₂′(S)` and
-  `D β = Λ(S)·φ₂′(S)` — the latter by differentiating `W′`'s equation); so
-  `h(x₃) = h(x)`, and `x₃` ranges over the `x`-coordinates of all translates of `τ`.
-
-Note (E) needs only invariance of `Λ` under translation by a CONSTANT point, not the
-full additivity of `Λ` on `W′(K)`, because (B) is homogeneous in `D`.  That is what
-keeps the group law out of the proof.
-
-**HOW FAR `rderiv` ALONE GETS, and exactly where it stops.**  Translation invariance has
-a SYMMETRISED form that needs no field extension whatsoever.  Fix `T ∉ W[2]`, `T ≠ 0`,
-and put `x₊ = x(P + T)`, `x₋ = x(P − T)`.  Under `P ↦ −P` we have `x₊ ↔ x₋`, so
-`e₁ := x₊ + x₋` and `e₂ := x₊x₋` are EXPLICIT elements of `F(X)`; and `ψ₂(P + T)` picks
-up a sign, so `ψ₂(P+T) + ψ₂(P−T)` and `x₋ψ₂(P+T) + x₊ψ₂(P−T)` are anti-invariant, hence
-`ψ₂(P)·g₁(x)` and `ψ₂(P)·g₂(x)` with `g₁, g₂ ∈ F(X)` explicit.  Translation invariance is
-then exactly
-
-  `g₁ = rderiv e₁`  and  `g₂ = rderiv e₂`,
-
-two identities between explicit rational functions — `field_simp`/`linear_combination`
-territory, with `RationalDerivation.rderiv` and nothing else.  And they PIN
-`ψ₂(P ± T)` individually, since `x₊ ≠ x₋` off the finite locus:
-`ψ₂(P+T)·(x₊ − x₋) = ψ₂(P)·(e₁′x₊ − e₂′)`.
-
-What `rderiv` does NOT reach is (C) at the translated point: the chain-rule step produces
-`u′(x₊)·x₊′`, and `x₊′` is the derivative of an element that is quadratic over `F(X)`.
-Symmetrising that expression re-introduces `u(x₊)` and `u(x₋)` separately, so it does not
-descend.  **That single step is the whole reason (A) is needed** — everything else in
-(B) is `F(X)` algebra.
-
-**FAITHFULNESS CHECK (PARI/GP, 2026-07-30 — the leaf is NOT false as stated).**  Feeding
-the isogenies `ellisogeny` produces (which returns `[f, g, h]` with `x′ = f/h²` and
-`y′ = g/h³`, so `A = f`, `B = h²`, `Cx = coeff_y g`, `D = coeff_1 g`, `E = h³`) into the
-parent's conclusion `(A′B − AB′)·E = c·Cx·B²`:
-
-| curve / kernel | deg | `c` |
-|---|---|---|
-| `y² = x³ + x² − x`, ker `(0,0)` | 2 | `1` |
-| `y² = x³ − 4x`, ker `(0,0)` | 2 | `1` |
-| `y² + xy + y = x³ − x` (`a₁ = a₃ = 1`), ker `(0,0)` | 2 | `1` |
-| `19a1`, ker the `3`-torsion point `(5, 9)` | 3 | `1` |
-| `11a1`, ker the `5`-torsion point `(5, 5)` | 5 | `1` |
-| `y² = x³ + x² − x` over `𝔽₁₀₁`, ker `(0,0)` | 2 | `1` |
-| `y² + xy = x³ + 1` over `𝔽₂`, ker `(0,1)` | 2 | `1` |
-| `[2]` on `y² = x³ + 7x + 11` | 4 | `2` |
-
-The ratio is a constant in every case, exactly (not numerically), and the `[2]` row
-confirms the scalar is genuinely a variable and not always `1` — Vélu's normalisation is
-what makes the isogeny rows all read `1`.  The residual of the `y`-part identity
-`2·D·B + a₁′AE + a₃′BE − Cx·B·(a₁X + a₃)` (that is `diffChar_yWitness_onePart`) is `0` in
-every row too.  Inseparable maps are consistent as well: Frobenius on `y² + xy = x³ + 1`
-over `𝔽₂` has `A = X²`, `B = 1`, `Cx = X`, `D = X³ + 1`, `E = 1`, so `A′B − AB′ = 0` and
-`c = 0`, while the `y`-part reads `0 = X·X − X² = 0`.
-
-**THE CHECK THAT WOULD REFUTE IT**: a rational map of Weierstrass curves over an
-algebraically closed field, with witnesses `A, …, E`, and two points off the bad locus
-at which `p/q` takes different values.  Note that the refutation of the *`φ`-free*
-generalisation recorded on `exists_diffCharScalar_poly` (the characteristic-`2` pair
-`u = X + 1`, `γ = (X + 1)/X` on `y² + xy = x³ + 1`) is NOT a refutation of this leaf:
-that pair satisfies `Ψ_{W′}(u) = γ²Ψ_W` but admits no `δ`, so it is not a `K`-point of
-`W′` and the `y`-part identity fails for it. -/
-theorem diffChar_pullbackRatio_eq [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
-    {φ : W.Point →+ W'.Point} {A B Cx D E : F[X]} (hφ0 : φ ≠ 0) (hB : B ≠ 0) (hE : E ≠ 0)
-    (hrat : ∀ P : W.Point, φ P ≠ 0 →
-      veluPointX (φ P) * B.eval (veluPointX P) = A.eval (veluPointX P) ∧
-      veluPointY (φ P) * E.eval (veluPointX P)
-        = Cx.eval (veluPointX P) * veluPointY P + D.eval (veluPointX P))
-    (P₁ P₂ : W.Point) (hP₁ : P₁ ≠ 0) (hP₂ : P₂ ≠ 0) (hφ₁ : φ P₁ ≠ 0) (hφ₂ : φ P₂ ≠ 0)
-    (hZ₁ : (B * E * Cx).eval (veluPointX P₁) ≠ 0)
-    (hZ₂ : (B * E * Cx).eval (veluPointX P₂) ≠ 0) :
-    ((derivative A * B - A * derivative B) * E).eval (veluPointX P₁)
-        * (Cx * B ^ 2).eval (veluPointX P₂)
-      = ((derivative A * B - A * derivative B) * E).eval (veluPointX P₂)
-        * (Cx * B ^ 2).eval (veluPointX P₁) := sorry
-
 /-- **LEAF: the pullback ratio `φ*ω'/ω` is a CONSTANT.**
 
 This is the ONE geometric input of `exists_isDiffChar`, isolated from all of its
@@ -1992,33 +2629,23 @@ constant.  So the leaf's `D`-witness — equivalently the full `hrat` — must b
 reduction that discards it needs a `CharZero`/`2 ≠ 0` hypothesis that this leaf does not
 have.
 
-**GLUE-FIRST RESTRUCTURE (2026-07-30): the polynomial bookkeeping below is DISCHARGED,
-and this declaration is now `sorry`-FREE** — its one remaining input is the NAMED leaf
-`diffChar_pullbackRatio_eq` above (hoisted out of the `have hconst` that used to sit
-here, so that the open node has a name a frontier scan can dispatch at, and carries the
-route notes).  Its statement is "the pullback ratio takes the same value at any two
-points off the finite bad locus", with denominators cleared:
+**THIS DECLARATION IS `sorry`-FREE, AND ITS WHOLE DEBT IS ONE POLYNOMIAL LEAF
+(re-checked 2026-07-31).**  It is a three-line assembly over
+`exists_diffCharScalar_polyData`, whose characteristic-`≠ 2` branch is PROVEN
+(`exists_wronskianPoly_scalar`) and whose characteristic-`2` branch descends to
+`exists_wronskianPoly_scalar_charTwo_coprime` — the ONE open node under this theorem.
 
-  `(A′B − AB′)(x P₁)·E(x P₁) · (Cx·B²)(x P₂)
-     = (A′B − AB′)(x P₂)·E(x P₂) · (Cx·B²)(x P₁)`
-
-for `P₁, P₂ ≠ 0` off `ker φ` and off the roots of `B·E·Cx`.  Everything else is real code:
-`Cx ≠ 0` from `diffChar_yMultiplier_ne_zero`, the bad locus finite, a base point `t₀` in
-its (infinite) complement, `c := p(t₀)/q(t₀)` with `p = (A′B − AB′)E` and `q = Cx·B²`, then
-`p·C q(t₀) = C p(t₀)·q` by `Polynomial.eq_zero_of_infinite_isRoot` out of `hconst`, and
-finally cancellation of the nonzero constant `C q(t₀)`.
-
-So a successor has ONE point-level statement to prove, and it is exactly translation
-invariance: because `φ` is a homomorphism, `φ ∘ τ_Q = τ_{φQ} ∘ φ`, so `h = φ*ω′/ω`
-satisfies `h(P + Q) = h(P)` for every `Q`; taking `Q = P₂ − P₁` gives `h(P₁) = h(P₂)`.  It
-is VOUCHED — it is Silverman *AEC* III.5.1 and it is equivalent to the leaf itself, so
-nothing has been assumed beyond what the leaf already asserts.  Note the missing machinery
-is a DERIVATION ON THE COORDINATE RING of `W`, not on `F(X)`: `x(P + Q)` genuinely involves
-`y(P)`, so `RationalDerivation.rderiv` (which lives on `RatFunc F`) does not reach it.  The
-one case where the `y` does drop out is `Q ∈ W[2]`, since `x(−P + T) = x(P + T)` for
-`2T = 0` — but that identifies only finitely many points and is not enough.  The five-piece
-route for building that derivation and using it is written out on
-`diffChar_pullbackRatio_eq`, which is where a successor should start. -/
+**A NOTE FOR ANYONE READING AN OLDER COPY OF THIS DOCSTRING.**  It used to name
+`diffChar_pullbackRatio_eq` as "the one remaining input" — a point-level statement (the
+pullback ratio takes the same value at any two good points) hoisted out of a `have hconst`
+during a 2026-07-30 glue-first restructure.  That route was SUPERSEDED the same day when
+this theorem was rebuilt over `exists_diffCharScalar_polyData`, which needs no derivation
+on the coordinate ring at all; the hoisted declaration was left behind with NO CONSUMER,
+i.e. a free-floating `sorry` that every frontier scan reported as an ordinary open leaf.
+It was deleted on 2026-07-31.  Recover it, and the five-piece
+`AdjoinRoot`/`Derivation.liftOfSurjective` route written on it, from git history if the
+polynomial route ever needs a fallback — but note the polynomial route is strictly cheaper
+and is the one that is nearly finished. -/
 theorem exists_diffCharScalar_poly [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
     {φ : W.Point →+ W'.Point} {A B Cx D E : F[X]} (hφ0 : φ ≠ 0) (hB : B ≠ 0) (hE : E ≠ 0)
     (hrat : ∀ P : W.Point, φ P ≠ 0 →

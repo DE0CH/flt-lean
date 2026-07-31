@@ -5,6 +5,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 module
 
 public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.CartierDual
+public import Fermat.FLT.Mathlib.RingTheory.LocalProperties.Semilocal
 public import Mathlib.RingTheory.RingHom.FaithfullyFlat
 public import Mathlib.RingTheory.Etale.Basic
 public import Mathlib.RingTheory.Smooth.Fiber
@@ -123,10 +124,18 @@ the antipode, so this is the same thing as a homomorphism of group schemes.
   **On 2026-07-31 `exists_lift_ker_le_span_cartierDual` was REFUTED as stated** — an explicit
   counterexample over `ℤ[√-5]` is written out in its docstring, and the two earlier falsity audits
   are marked there as computations in a degenerate sub-family. It and the four statements above it
-  in the chain now carry `[IsLocalRing R]`, in which form it is **PROVEN**, over the strictly
-  smaller and Zariski-local `IsShortExact.flat_finrank_cartierDual` — now the only sorry in this
-  file. The rest, including `etale_of_isShortExact`, is untouched and still holds over an
-  arbitrary base.
+  in the chain now carry `[IsLocalRing R]`, in which form it is **PROVEN**. The rest, including
+  `etale_of_isShortExact`, is untouched and still holds over an arbitrary base.
+
+  **The single sorry in this file is `IsShortExact.exists_lift_span_sup_jacobson_cartierDual`**
+  (2026-07-31). Two rival arrangements of the dual normal basis reached this file from two
+  branches — one rooted at that leaf, one rooted at `IsShortExact.flat_finrank_cartierDual` — and
+  they are mutually exclusive, since together they close a cycle. The Jacobson-radical one is
+  kept, because `flat_finrank_cartierDual` *implies* it (see the section on that declaration), so
+  rooting the file there leaves the file owing strictly less. `flat_finrank_cartierDual` and
+  `nonempty_basis_chooseBasisIndex_cartierDual` survive as PROVEN corollaries, moved below
+  `exists_basis_cartierDual`; do not move them back above it without deleting the Jacobson leaf,
+  which would be a cycle.
 * `HopfAlgebra.IsShortExact.apply_comp` — `π ∘ i` is `ε` followed by the unit. **PROVEN.**
 * `AlgHom.flat_quotient_range_of_faithfullyFlat` — the cokernel of a faithfully flat algebra map
   is a flat `R`-module. **PROVEN** (2026-07-28) by the diagram chase in the `FaithfullyFlatSplit`
@@ -225,59 +234,6 @@ shim was deleted on 2026-07-27 and the mathlib lemma is used directly. See the n
 open TensorProduct Coalgebra
 
 universe u v w x
-
-/-- **A finite algebra over a local ring is semilocal.**
-
-Root-namespace commutative algebra with no Hopf content; it belongs in mathlib, which has
-`Module.free_of_flat_of_finrank_eq` for semilocal rings (phrased as
-`[Finite (MaximalSpectrum R)]`) but no way to produce that hypothesis from a local base.
-
-Proof: `S` is integral over `R`, so every maximal ideal of `S` contracts to a maximal ideal of
-`R`, which is `𝔪`; hence every maximal ideal of `S` contains `I = 𝔪 · S`, and `P ↦ P.map (mk I)`
-is an injection of `MaximalSpectrum S` into `MaximalSpectrum (S ⧸ I)`. And `S ⧸ I` is a finite
-algebra over the field `R ⧸ 𝔪`, hence an artinian ring, which has finitely many maximal ideals.
-
-Used to make `CartierDual R A'` semilocal in
-`HopfAlgebra.IsShortExact.nonempty_basis_chooseBasisIndex_cartierDual`, which is where the
-`[IsLocalRing R]` hypothesis of that half of the file is actually spent. -/
-theorem finite_maximalSpectrum_of_isLocalRing_of_module_finite
-    (R : Type*) (S : Type*) [CommRing R] [IsLocalRing R] [CommRing S] [Algebra R S]
-    [Module.Finite R S] : Finite (MaximalSpectrum S) := by
-  classical
-  set I : Ideal S := Ideal.map (algebraMap R S) (IsLocalRing.maximalIdeal R) with hI
-  haveI : Algebra.IsIntegral R S := Algebra.IsIntegral.of_finite R S
-  have hle : ∀ P : Ideal S, P.IsMaximal → I ≤ P := by
-    intro P hP
-    haveI := hP
-    have hcm : (P.comap (algebraMap R S)).IsMaximal :=
-      Ideal.isMaximal_comap_of_isIntegral_of_isMaximal (R := R) (S := S) P
-    rw [hI, Ideal.map_le_iff_le_comap]
-    exact le_of_eq (IsLocalRing.eq_maximalIdeal hcm).symm
-  haveI : Module.Finite (R ⧸ IsLocalRing.maximalIdeal R) (S ⧸ I) := by
-    have : Module.Finite R (S ⧸ I) := Module.Finite.of_surjective
-      (Ideal.Quotient.mkₐ R I).toLinearMap (Ideal.Quotient.mk_surjective)
-    exact Module.Finite.of_restrictScalars_finite R _ _
-  haveI : IsArtinianRing (S ⧸ I) := by
-    letI : Field (R ⧸ IsLocalRing.maximalIdeal R) := fast_instance% Ideal.Quotient.field _
-    exact IsArtinianRing.of_finite (R ⧸ IsLocalRing.maximalIdeal R) (S ⧸ I)
-  have hmax : ∀ P : MaximalSpectrum S,
-      (P.asIdeal.map (Ideal.Quotient.mk I)).IsMaximal := by
-    intro P
-    haveI := P.isMaximal
-    have hf : IsField (S ⧸ P.asIdeal) :=
-      (Ideal.Quotient.maximal_ideal_iff_isField_quotient _).mp P.isMaximal
-    exact Ideal.Quotient.maximal_of_isField _
-      ((DoubleQuot.quotQuotEquivQuotOfLE (hle _ P.isMaximal)).toMulEquiv.isField hf)
-  refine Finite.of_injective
-    (fun P : MaximalSpectrum S => (⟨P.asIdeal.map (Ideal.Quotient.mk I), hmax P⟩ :
-      MaximalSpectrum (S ⧸ I))) ?_
-  intro P Q hPQ
-  have h := congrArg (fun J : MaximalSpectrum (S ⧸ I) => J.asIdeal.comap (Ideal.Quotient.mk I)) hPQ
-  simp only [Ideal.comap_map_of_surjective _ Ideal.Quotient.mk_surjective,
-    ← RingHom.ker_eq_comap_bot, Ideal.mk_ker] at h
-  refine MaximalSpectrum.ext ?_
-  rw [← sup_eq_left.mpr (hle _ P.isMaximal), ← sup_eq_left.mpr (hle _ Q.isMaximal)]
-  exact h
 
 namespace Bialgebra
 
@@ -682,9 +638,12 @@ consequence one wants from it:
 
 `Module.free_of_flat_of_finrank_eq` (`Mathlib/RingTheory/LocalRing/Module.lean`, stacks `02M9`)
 says a finite flat module over a **semilocal** ring — `[Finite (MaximalSpectrum B)]` — whose
-fibre dimension is the constant `n` at every maximal ideal is FREE of rank `n`. An Artinian ring
-is semilocal (`IsArtinianRing.primeSpectrumEquivMaximalSpectrum` plus `Finite (PrimeSpectrum B)`),
-so over the fibre the tower formula is just `Module.finrank_mul_finrank` for free modules.
+fibre dimension is the constant `n` at every maximal ideal is FREE of rank `n`. A finite algebra
+over a field is semilocal — `finite_maximalSpectrum_of_isLocalRing_of_module_finite` at `R = κ`,
+a field being a local ring — so over the fibre the tower formula is just
+`Module.finrank_mul_finrank` for free modules. (The step used to go the long way round, through
+`IsArtinianRing` and `IsArtinianRing.primeSpectrumEquivMaximalSpectrum`; that is the same fact
+and one lemma more.)
 
 So the proof is four steps, and no step needs the non-reduced `IsArtinianRing.equivPi` that this
 docstring used to name as "the concrete gap to fill":
@@ -695,8 +654,8 @@ docstring used to name as "the concrete gap to fill":
    after `Algebra.IsPushout.cancelBaseChange R κ S B M : B ⊗[S] M ≃ₗ[κ] κ ⊗[R] M`, where
    `B := κ ⊗[R] S`. (That is the *left*-handed cancellation, which is what a tower needs;
    `AlgebraTensorModule.cancelBaseChange` cancels on the right and does not apply here.)
-2. `B` is a finite-dimensional `κ`-algebra, hence `IsArtinianRing` (`isArtinian_of_tower`),
-   hence semilocal.
+2. `B` is a finite-dimensional `κ`-algebra, hence semilocal
+   (`finite_maximalSpectrum_of_isLocalRing_of_module_finite`).
 3. `N := B ⊗[S] M` has fibre dimension `n` at every maximal ideal `P` of `B`: cancel the base
    change the other way, `(B ⧸ P) ⊗[B] (B ⊗[S] M) ≃ₗ[B ⧸ P] (B ⧸ P) ⊗[S] M`
    (`AlgebraTensorModule.cancelBaseChange`), then read that dimension as a rank at a stalk of the
@@ -779,10 +738,12 @@ theorem Module.finrank_eq_finrank_mul_of_rankAtStalk_eq
     rw [(Algebra.IsPushout.cancelBaseChange R κ S B M).finrank_eq]
     exact Module.finrank_baseChange
   have hS : Module.finrank κ B = Module.finrank R S := Module.finrank_baseChange
-  -- `B` is a finite-dimensional `κ`-algebra, hence artinian, hence semilocal.
-  haveI : IsArtinianRing B := isArtinian_of_tower κ inferInstance
+  -- `B` is a finite-dimensional algebra over the field `κ`, hence semilocal. (A field is a local
+  -- ring, so this is the `R = κ` case of `finite_maximalSpectrum_of_isLocalRing_of_module_finite`;
+  -- it replaces the two-step "artinian, hence its primes are its maximal ideals" argument that
+  -- used to stand here.)
   haveI : Finite (MaximalSpectrum B) :=
-    Finite.of_equiv _ (IsArtinianRing.primeSpectrumEquivMaximalSpectrum (R := B))
+    finite_maximalSpectrum_of_isLocalRing_of_module_finite κ B
   -- The fibre dimension of `N` is `n` at every maximal ideal of `B`.
   have hrk : ∀ P : MaximalSpectrum B, Module.finrank (B ⧸ P.1) ((B ⧸ P.1) ⊗[B] N) = n := by
     intro P
@@ -1832,11 +1793,13 @@ which are proven. The split is by *where the mathematics is*:
 | `nonempty_linearEquiv_baseChange` | **PROVEN** (2026-07-30) | the torsor identity `A ⊗_{A''} A ≅ A ⊗_R A'` |
 | `Module.finrank_eq_finrank_mul_of_rankAtStalk_eq` | **PROVEN** (2026-07-30) | the degree of a tower (root namespace, no Hopf content) |
 | `exists_basis_cartierDual` | **PROVEN** from those two | `D(A)` is `D(A')`-free of rank `rk_R A''` |
+| `flat_finrank_cartierDual` | **PROVEN** (2026-07-31) from the above | `D(A)` is `D(A')`-flat with every fibre of dimension `rk_R A''` |
+| `nonempty_basis_chooseBasisIndex_cartierDual` | **PROVEN** from the above, semilocally | the same basis, reached through Stacks 02M9 |
 | `ker_cartierDual_le` | **PROVEN** from the cut | the hard half: a character trivial on `Spec A'` descends |
 | `faithfullyFlat_cartierDual` | **PROVEN** from the cut | `(Spec A)^D → (Spec A')^D` is faithfully flat |
 
-So exactly **one** statement is open in this file as of release 24 (2026-07-30), and it is
-Hopf-theoretic on the `A`-side:
+So exactly **one** statement is open in this file, and it is Hopf-theoretic on the `A`-side. As of
+release 24 (2026-07-30) that statement was
 `exists_lift_ker_le_span_cartierDual` (the residual form of the generation half —
 `exists_spanning_cartierDual` is PROVEN from it together with the formal
 `span_sup_ker_cartierDual_map_eq_top`). Its two former companions are both closed:
@@ -1855,13 +1818,23 @@ and the whole rank count below it is unconditional.
 
 **On 2026-07-31 that statement was REFUTED** (counterexample over `ℤ[√-5]` in its own docstring),
 repaired with `[IsLocalRing R]` — which it and the four rows below it now carry — and then
-**PROVEN** in the repaired form. The single remaining sorry in this file is the strictly smaller
-`IsShortExact.flat_finrank_cartierDual`: flatness of `D(A)` over `D(A')` together with the
-constant fibre rank `rk_R A''`. That statement is Zariski/fppf-local, so it is not exposed to the
-`Pic`-theoretic obstruction that killed the global form; the local-to-global step is done once, in
-`nonempty_basis_chooseBasisIndex_cartierDual`, by semilocality of `D(A')`. Rows above it in the
-table, and `finrank_eq_mul` / `nonempty_linearEquiv_*` / `nonempty_linearEquiv_baseChange` /
+**PROVEN** in the repaired form, by Nakayama from
+`exists_lift_span_sup_jacobson_cartierDual`, which is the single open row of the table. Rows above
+it, and `finrank_eq_mul` / `nonempty_linearEquiv_*` / `nonempty_linearEquiv_baseChange` /
 `Module.finrank_eq_finrank_mul_of_rankAtStalk_eq`, are unaffected and remain unconditional.
+
+**The two rows after `exists_basis_cartierDual` came from a rival arrangement and are now
+corollaries, not leaves** (2026-07-31). A second branch cut the same cluster the other way round,
+making `flat_finrank_cartierDual` — flatness of `D(A)` over `D(A')` plus constant fibre rank
+`rk_R A''`, which is Zariski/fppf-local and so escapes the `Pic`-theoretic obstruction that killed
+the global form — the root leaf, and deriving `exists_lift_ker_le_span_cartierDual` from it
+through `nonempty_basis_chooseBasisIndex_cartierDual` and the semilocality of `D(A')`. Both
+branches reached this file. The two arrangements cannot coexist: each derives the other's root
+from its own, so keeping both is a cycle. The Jacobson one is kept because
+`flat_finrank_cartierDual` implies it, so the file's one open obligation is the weaker of the two;
+the rival's two declarations are kept below `exists_basis_cartierDual`, proven. The full argument
+is on `flat_finrank_cartierDual` itself, and a prover who wants the remaining mathematics should
+read `exists_lift_span_sup_jacobson_cartierDual` instead.
 
 (An older version of this list also named `Module.Flat.quotient_range_of_rTensor_injective` as
 what the surjectivity field rests on. **That is stale**: no such declaration is in this file, or
@@ -2206,86 +2179,6 @@ theorem IsShortExact.exists_lift_span_sup_jacobson_cartierDual (h : IsShortExact
         Submodule.span (CartierDual R A') (Set.range c) ⊔
           Ideal.jacobson (⊥ : Ideal (CartierDual R A')) •
             (⊤ : Submodule (CartierDual R A') (CartierDual R A)) := sorry
-
-/-- **The torsor `Spec D(A) → Spec D(A')` is finite locally free of rank `rk_R A''`**, in the two
-clauses the semilocal freeness criterion consumes: `D(A)` is a FLAT `D(A')`-module, and its fibre
-at every maximal ideal of `D(A')` has dimension `rk_R A''`.
-
-OPEN, and this is the classical input the whole generation half now rests on. It is
-Kreimer–Takeuchi in the form used by Waterhouse ch. 14–16: a quotient map of a finite locally free
-group scheme by a finite locally free subgroup is faithfully flat and finite, so
-`Spec D(A) → Spec D(A')` — the quotient of `G^D` by `(G'')^D`, with `(G'')^D` finite locally free
-of rank `rk_R A''` — is a `(G'')^D`-torsor and hence finite locally free of that rank.
-
-**This replaces the global statement that was here before.** The previous leaf
-(`exists_lift_ker_le_span_cartierDual`, now PROVEN from this one) asserted GLOBAL freeness of
-`D(A)` over `D(A')`, and that is FALSE over a general base — see the REFUTATION on that
-declaration. Flatness and fibre rank are Zariski/fppf-local, so they are not vulnerable to the
-`Pic`-theoretic obstruction the refutation exploits; the passage from local to global is done
-once and for all by `[IsLocalRing R]` plus
-`finite_maximalSpectrum_of_isLocalRing_of_module_finite` plus mathlib's
-`Module.nonempty_basis_of_flat_of_finrank_eq`, in
-`IsShortExact.nonempty_basis_chooseBasisIndex_cartierDual` below.
-
-## FAITHFULNESS
-
-Both clauses are implied by `exists_basis_cartierDual` (a basis makes the module free, hence flat,
-with every fibre of dimension the cardinality of the index set), so this is not stronger than the
-cut it replaces. It is strictly weaker: it says nothing about the module globally, and over
-`ℤ[√-5]` with `G' = μ₄`, `G'' = ℤ/2` — the refutation's witness — both clauses hold while global
-freeness fails.
-
-Not vacuous: over a field it is the assertion `dim D(A) = dim A'' · dim D(A')`, and the flatness
-clause is what makes the fibre dimension an invariant at all. -/
-theorem IsShortExact.flat_finrank_cartierDual [IsLocalRing R] (h : IsShortExact i π) :
-    letI : Algebra (CartierDual R A') (CartierDual R A) :=
-      ((CartierDual.map π).toAlgHom.toRingHom :
-        CartierDual R A' →+* CartierDual R A).toAlgebra
-    Module.Flat (CartierDual R A') (CartierDual R A) ∧
-      ∀ P : MaximalSpectrum (CartierDual R A'),
-        Module.finrank (CartierDual R A' ⧸ P.asIdeal)
-          ((CartierDual R A' ⧸ P.asIdeal) ⊗[CartierDual R A'] CartierDual R A)
-          = Module.finrank R A'' := sorry
-
-/-- **The dual normal basis**, in the form the generation half consumes: `CartierDual R A` is a
-free `CartierDual R A'`-module on `Module.Free.ChooseBasisIndex R A''`.
-
-**PROVEN** (2026-07-31) from `IsShortExact.flat_finrank_cartierDual` by the semilocal criterion,
-and this is the only place the `[IsLocalRing R]` hypothesis is spent:
-
-* `CartierDual R A'` is a finite `R`-algebra and `R` is local, so it is **semilocal**
-  (`finite_maximalSpectrum_of_isLocalRing_of_module_finite`);
-* over a semilocal ring a finite flat module whose fibre dimension is constant is free
-  (mathlib's `Module.nonempty_basis_of_flat_of_finrank_eq`, Stacks 02M9);
-* the index set is `Fin (rk_R A'')`, reindexed to `Module.Free.ChooseBasisIndex R A''` by
-  `Module.finrank_eq_card_chooseBasisIndex`.
-
-Note this is *not* the same statement as `IsShortExact.exists_basis_cartierDual` below, which is
-proven independently by Orzech's property from generation plus the rank count; the two routes are
-kept apart on purpose, so that neither depends on the other. -/
-theorem IsShortExact.nonempty_basis_chooseBasisIndex_cartierDual [IsLocalRing R]
-    (h : IsShortExact i π) :
-    letI : Algebra (CartierDual R A') (CartierDual R A) :=
-      ((CartierDual.map π).toAlgHom.toRingHom :
-        CartierDual R A' →+* CartierDual R A).toAlgebra
-    Nonempty (Module.Basis (Module.Free.ChooseBasisIndex R A'')
-      (CartierDual R A') (CartierDual R A)) := by
-  classical
-  letI : Algebra (CartierDual R A') (CartierDual R A) :=
-    ((CartierDual.map π).toAlgHom.toRingHom :
-      CartierDual R A' →+* CartierDual R A).toAlgebra
-  haveI : IsScalarTower R (CartierDual R A') (CartierDual R A) :=
-    IsScalarTower.of_algebraMap_eq fun r => ((CartierDual.map π).toAlgHom.commutes r).symm
-  obtain ⟨hflat, hrk⟩ := h.flat_finrank_cartierDual
-  haveI := hflat
-  haveI : Finite (MaximalSpectrum (CartierDual R A')) :=
-    finite_maximalSpectrum_of_isLocalRing_of_module_finite R (CartierDual R A')
-  haveI : Module.Finite (CartierDual R A') (CartierDual R A) :=
-    Module.Finite.of_restrictScalars_finite R _ _
-  obtain ⟨bb⟩ := Module.nonempty_basis_of_flat_of_finrank_eq (CartierDual R A')
-    (CartierDual R A) (Module.finrank R A'') hrk
-  exact ⟨bb.reindex (Fintype.equivFinOfCardEq
-    (Module.finrank_eq_card_chooseBasisIndex R A'').symm).symm⟩
 
 /-- **The dual normal basis, generation half, in its residual form**: there is an `R`-basis `b` of
 `CartierDual R A''` and a family `c` lifting it along `CartierDual.map i` whose
@@ -3016,6 +2909,117 @@ theorem IsShortExact.exists_basis_cartierDual [IsLocalRing R] (h : IsShortExact 
     OrzechProperty.injective_of_surjective_of_injective (R := R) e.toLinearMap
       (F.restrictScalars R) e.injective hFsurj
   exact ⟨Module.Basis.ofRepr (LinearEquiv.ofBijective F ⟨hFinj, hFsurj⟩).symm⟩
+
+/-- **The torsor `Spec D(A) → Spec D(A')` is finite locally free of rank `rk_R A''`**, in the two
+clauses the semilocal freeness criterion consumes: `D(A)` is a FLAT `D(A')`-module, and its fibre
+at every maximal ideal of `D(A')` has dimension `rk_R A''`.
+
+**PROVEN** (2026-07-31) from `IsShortExact.exists_basis_cartierDual` directly above: a
+`D(A')`-basis of `D(A)` indexed by `Module.Free.ChooseBasisIndex R A''` makes `D(A)` free, hence
+flat, and base-changes to a basis of every fibre (`Module.Basis.baseChange`), whose cardinality is
+`rk_R A''` by `Module.finrank_eq_card_chooseBasisIndex`.
+
+## WHY THIS IS BELOW `exists_basis_cartierDual` AND NOT ABOVE IT — read before rearranging
+
+This statement was introduced on 2026-07-31 as the *root* leaf of the dual normal basis, with the
+arrows pointing the other way: `flat_finrank_cartierDual` (open) →
+`nonempty_basis_chooseBasisIndex_cartierDual` → `exists_lift_ker_le_span_cartierDual` →
+`exists_spanning_cartierDual` → `exists_basis_cartierDual`. That arrangement and the one here are
+**mutually exclusive** — together they are a cycle — and the file must carry exactly one of them.
+
+The one here is kept, and the choice is not a matter of taste:
+
+* the root leaf under this arrangement is
+  `IsShortExact.exists_lift_span_sup_jacobson_cartierDual`, generation modulo the Jacobson radical
+  of `D(A')`;
+* that statement is **implied by** this one. Given a `D(A')`-basis `d` of `D(A)`, the derivation
+  written out in the "WHY `[IsLocalRing R]` IS THE RIGHT REPAIR" section of
+  `exists_lift_ker_le_span_cartierDual`'s docstring produces the pair `(b, c)` with
+  `b j := map i (d j)` and `c := d`, which spans on the nose, a fortiori modulo `Jac (D(A'))`;
+* so making the Jacobson statement the root leaf leaves the file's single open obligation
+  **weaker** than making this one the root leaf. A file that owes less is strictly better, and
+  nothing else in the file changes.
+
+The cost is that this declaration is no longer where the remaining mathematics is. It is not a
+leaf any more; it is a corollary. The mathematics is one file-place up, at
+`exists_lift_span_sup_jacobson_cartierDual`, and its docstring is where a prover should start.
+
+## FAITHFULNESS
+
+Both clauses are implied by `exists_basis_cartierDual` (a basis makes the module free, hence flat,
+with every fibre of dimension the cardinality of the index set) — which is exactly the proof
+below, so the implication is now checked by the compiler rather than asserted. It is strictly
+weaker than global freeness: it says nothing about the module globally, and over `ℤ[√-5]` with
+`G' = μ₄`, `G'' = ℤ/2` — the refutation's witness, recorded on
+`exists_lift_ker_le_span_cartierDual` — both clauses hold while global freeness fails.
+
+Not vacuous: over a field it is the assertion `dim D(A) = dim A'' · dim D(A')`, and the flatness
+clause is what makes the fibre dimension an invariant at all. -/
+theorem IsShortExact.flat_finrank_cartierDual [IsLocalRing R] (h : IsShortExact i π) :
+    letI : Algebra (CartierDual R A') (CartierDual R A) :=
+      ((CartierDual.map π).toAlgHom.toRingHom :
+        CartierDual R A' →+* CartierDual R A).toAlgebra
+    Module.Flat (CartierDual R A') (CartierDual R A) ∧
+      ∀ P : MaximalSpectrum (CartierDual R A'),
+        Module.finrank (CartierDual R A' ⧸ P.asIdeal)
+          ((CartierDual R A' ⧸ P.asIdeal) ⊗[CartierDual R A'] CartierDual R A)
+          = Module.finrank R A'' := by
+  classical
+  letI : Algebra (CartierDual R A') (CartierDual R A) :=
+    ((CartierDual.map π).toAlgHom.toRingHom :
+      CartierDual R A' →+* CartierDual R A).toAlgebra
+  obtain ⟨b⟩ := h.exists_basis_cartierDual
+  haveI : Module.Free (CartierDual R A') (CartierDual R A) := Module.Free.of_basis b
+  refine ⟨inferInstance, fun P => ?_⟩
+  haveI : P.asIdeal.IsMaximal := P.isMaximal
+  letI : Field (CartierDual R A' ⧸ P.asIdeal) := Ideal.Quotient.field _
+  rw [Module.finrank_eq_card_basis (b.baseChange (CartierDual R A' ⧸ P.asIdeal)),
+    Module.finrank_eq_card_chooseBasisIndex]
+
+/-- **The dual normal basis**, in the form the generation half consumes: `CartierDual R A` is a
+free `CartierDual R A'`-module on `Module.Free.ChooseBasisIndex R A''`.
+
+**PROVEN** (2026-07-31) from `IsShortExact.flat_finrank_cartierDual` by the semilocal criterion,
+and this is the only place that criterion is exercised:
+
+* `CartierDual R A'` is a finite `R`-algebra and `R` is local, so it is **semilocal**;
+* over a semilocal ring a finite flat module whose fibre dimension is constant is free
+  (mathlib's `Module.nonempty_basis_of_flat_of_finrank_eq`, Stacks 02M9);
+* `Module.Finite (CartierDual R A') (CartierDual R A)` from finiteness over `R` down the tower.
+
+Those three are packaged as `Module.nonempty_basis_of_flat_of_finrank_eq_of_isLocalRing_base` in
+`Fermat/FLT/Mathlib/RingTheory/LocalProperties/Semilocal.lean`, which is also where the
+semilocality criterion `finite_maximalSpectrum_of_isLocalRing_of_module_finite` lives — it was
+moved out of this file on 2026-07-31, having no Hopf content. All that is left here is that the
+index set is `Fin (rk_R A'')`, reindexed to `Module.Free.ChooseBasisIndex R A''` by
+`Module.finrank_eq_card_chooseBasisIndex`.
+
+Under the arrangement this file settled on (see the section on `flat_finrank_cartierDual` above)
+this is a *restatement* of `IsShortExact.exists_basis_cartierDual`, reached by a different route:
+`exists_basis_cartierDual` gets there by Orzech's property from generation plus the rank count,
+and this one by flatness plus constant fibre rank over a semilocal ring. It is kept because it is
+the form the intended henselian-base consumer asks for, and because the round trip through the
+semilocal criterion is a live check that the criterion's hypotheses really are met here — if the
+arrangement is ever inverted again, this is the declaration that becomes the load-bearing one. -/
+theorem IsShortExact.nonempty_basis_chooseBasisIndex_cartierDual [IsLocalRing R]
+    (h : IsShortExact i π) :
+    letI : Algebra (CartierDual R A') (CartierDual R A) :=
+      ((CartierDual.map π).toAlgHom.toRingHom :
+        CartierDual R A' →+* CartierDual R A).toAlgebra
+    Nonempty (Module.Basis (Module.Free.ChooseBasisIndex R A'')
+      (CartierDual R A') (CartierDual R A)) := by
+  classical
+  letI : Algebra (CartierDual R A') (CartierDual R A) :=
+    ((CartierDual.map π).toAlgHom.toRingHom :
+      CartierDual R A' →+* CartierDual R A).toAlgebra
+  haveI : IsScalarTower R (CartierDual R A') (CartierDual R A) :=
+    IsScalarTower.of_algebraMap_eq fun r => ((CartierDual.map π).toAlgHom.commutes r).symm
+  obtain ⟨hflat, hrk⟩ := h.flat_finrank_cartierDual
+  haveI := hflat
+  obtain ⟨bb⟩ := Module.nonempty_basis_of_flat_of_finrank_eq_of_isLocalRing_base R
+    (CartierDual R A') (CartierDual R A) (Module.finrank R A'') hrk
+  exact ⟨bb.reindex (Fintype.equivFinOfCardEq
+    (Module.finrank_eq_card_chooseBasisIndex R A'').symm).symm⟩
 
 /-- **The hard half of the dual kernel condition**: a functional on `A` vanishing on the
 sub-bialgebra `i(A'')` lies in the ideal of `CartierDual R A` generated by

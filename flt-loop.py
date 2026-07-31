@@ -22,6 +22,7 @@ import os
 import pathlib
 import re
 import shlex
+import socket
 import subprocess
 import traceback
 import urllib.request
@@ -170,7 +171,32 @@ def is_ancestor(branch):
     return git_repo("merge-base", "--is-ancestor", branch, "main").returncode == 0
 
 
+LOCALHOST = socket.gethostname().split(".")[0]
+
+
 def ssh(host, cmd, timeout=60):
+    """Run `cmd` on `host` -- WITHOUT ssh when that host is this machine.
+
+    Deyao, 2026-07-30: the medic must not reach its own worktree over ssh. It
+    is the loop's self-repair and it runs on mystique, which is where the loop
+    itself runs, so an ssh hop there buys nothing and adds a dependency -- a
+    refused key or a full connection table would take out the one job whose
+    entire purpose is to be startable when other things are broken.
+    """
+    if host in (None, LOCALHOST, "localhost"):
+        # A local spawn must be ENVIRONMENT-EQUIVALENT to the ssh spawn it
+        # replaces, or it is not the same operation. `ssh` starts a fresh login
+        # environment and forwards nothing; `bash -c` inherits whatever shell
+        # launched the loop -- and the shell that launched it had
+        # CLAUDE_CONFIG_DIR=~/.claude-monitor set, so the medic resumed into a
+        # config dir that holds none of the fleet's transcripts and died with
+        # "No conversation found with session ID" against a session that was
+        # sitting right there in ~/.claude. Nothing about the job was wrong;
+        # the spawn had quietly changed meaning.
+        env = {k: v for k, v in os.environ.items()
+               if not k.startswith(("CLAUDE_", "ANTHROPIC_"))}
+        return subprocess.run(["bash", "-c", cmd], env=env,
+                              capture_output=True, text=True, timeout=timeout)
     return subprocess.run(["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10",
                            host, cmd], capture_output=True, text=True, timeout=timeout)
 
@@ -553,6 +579,21 @@ DO ALL FIVE, IN ORDER
     "there is no snapshot to dispatch against", and a wrong one seeds every
     agent in the fleet with a .lake for the wrong main.
 
+HOLDING THE RELEASE IS A SUPPORTED OUTCOME. USE IT RATHER THAN PUBLISH RED.
+If the tree you built does not compile, do not publish it. Publishing replaces a
+green main with a red one and seeds every worktree in the fleet from a snapshot
+whose oleans do not match it -- which is a worse day than a late release, and it
+is the whole reason the merge batch exists. So: merge what you can into the
+integration branch, leave main alone, do not write the snapshot marker, say in
+`to_merger` what is still red and what you learned about it, and stop. The loop
+has a row for exactly this (21, HELD): your claim goes back to the batch, your
+notes reach your successor, and a fresh merger is created. Nothing is lost and
+nothing panics.
+
+Release 27 did this correctly and the loop panicked anyway, because the row did
+not exist yet. It does now. A held release costs one cycle; a red main costs
+every agent dispatched until somebody notices.
+
 FINALLY, write your sentinel to %(sentinel)s as your last act:
 
     {"token": "%(token)s", "queue": [], "to_merger": [], "to_medic": ""}
@@ -752,11 +793,31 @@ def consume_refusal(name, j):
 GRACE = 120     # seconds a freshly spawned job is presumed alive
 
 
+def session_exists(j):
+    """Is there already a transcript for this job's session id?
+
+    Sessions live per PROJECT DIRECTORY: the cwd with every `/` and `.` mapped
+    to `-`. $HOME is shared across the fleet, so asking locally answers for
+    whichever host the job runs on.
+    """
+    if not j.get("session"):
+        return False
+    wt = pathlib.Path.home() / j["worktree"]
+    proj = str(wt).replace("/", "-").replace(".", "-")
+    return (pathlib.Path.home() / ".claude" / "projects" / proj
+            / (j["session"] + ".jsonl")).exists()
+
+
 def do_spawn(s, name, j):
     """Start a real, detached claude process on the worker host."""
     # Stamped BEFORE the ssh, so the grace period covers the launch itself.
     j["spawned_at"] = time.time()
-    host = j.get("host") or flt_loop_rows.MEDIC_HOST
+    # The medic's host is a CONSTANT, not a record field. A record written
+    # before that rule existed carries a worker host (this one said
+    # "nightcrawler"), and a stale field would quietly send the loop's own
+    # repair job to a machine it does not live on.
+    host = (flt_loop_rows.MEDIC_HOST if j["kind"] == "medic"
+            else (j.get("host") or flt_loop_rows.MEDIC_HOST))
     prompt = compose(j["kind"], name, j, s)
     wr(STATE / "jobs" / (name + ".prompt"), prompt)
     pf = STATE / "jobs" / (name + ".prompt")
@@ -789,7 +850,16 @@ def do_spawn(s, name, j):
     # spawn path. Every job record reaching here has been through save() at
     # least once, so this is the normal case, not the corner one.
     j["session"] = j.get("session") or str(uuid.uuid4())
-    if j.get("resume"):
+    # ...and a session that ALREADY EXISTS on disk can only be resumed:
+    # `--session-id <existing>` is an error, so the flag alone is not a safe
+    # basis for the choice. It went wrong exactly once and it mattered: the
+    # medic was refused for quota mid-conversation, having already written a
+    # 440 KB transcript, and the refusal path returns a record to unspawned
+    # WITHOUT setting `resume` -- it is not a death, so nothing had reason to.
+    # Re-spawning it would then have tried to create a session that was already
+    # there. Deriving the branch from the transcript's existence makes it true
+    # by observation rather than by whoever last set the flag.
+    if j.get("resume") or session_exists(j):
         # Continue the actual conversation. No prompt file: the agent already
         # knows its task, what it tried and what failed, which is the whole
         # point of resuming instead of starting a stranger in its worktree.
@@ -972,6 +1042,17 @@ def load():
         # that has no tree. They get the answer, not the means of computing it.
         "snapshot_current": bool(snap) and lean_equiv(snap["sha"], sha),
         "audit_current": lean_equiv(aud, sha),
+        # "has main gained any Lean content since the baseline we adopted" --
+        # i.e. is there a release here at all. Raw `main != rebaselined` said
+        # yes to every tooling commit, and with a finished merger record in
+        # hand row 10 then read one as that merger's release. Release 27 held
+        # its release on purpose (a red X0.lean), three flt-loop commits moved
+        # main afterwards, and ADOPT would have signed for a delivery that was
+        # never made -- discharging the claim and advancing the baseline over a
+        # snapshot nobody rebuilt. Same lean_equiv question as the other two,
+        # asked about the baseline instead of the snapshot.
+        "rebaseline_current": lean_equiv(canon_sha(rd(STATE / "rebaselined", "")
+                                                  or ""), sha),
         "queue1": {"audited": aud, "tasks": split_tasks("\n".join(q1))},
         "queue2": split_tasks(rd(STATE / "queue2", "") or ""),
         # Messages agents addressed to the merge worker. They are held here
@@ -1045,8 +1126,22 @@ def save(s):
                                      "retries", "host", "pid", "session", "resume",
                                      "spawned_at", "model", "inbox", "resume", "prev_tokens")}
         wr(STATE / "jobs" / (n + ".json"), json.dumps(rec, indent=1))
+        # BOTH values, not just the true one. `started` is a marker FILE, and
+        # a save that can only ever create it cannot express "un-started" -- so
+        # a row that sets it False is amnesia one tick later, the same trap the
+        # key list above documents for JSON fields.
+        #
+        # It hid because the only other un-setter (row 8) also rotates the
+        # token, and load() requires the marker's CONTENTS to equal the current
+        # token -- so a stale marker reads as not-started there by accident.
+        # The refusal path does not rotate: it is not a death, the job keeps
+        # its identity. So the medic came back `started` on the very next tick,
+        # was judged dead by row 16 and STOPped the loop a second time, ten
+        # minutes after the fix for the first.
         if j["started"]:
             wr(STATE / "jobs" / (n + ".started"), j["token"])
+        else:
+            rm(STATE / "jobs" / (n + ".started"))
         if j["sentinel"] is not None:
             d = dict(j["sentinel"]); d["token"] = j["token"]
             wr(STATE / "jobs" / (n + ".sentinel"), json.dumps(d))

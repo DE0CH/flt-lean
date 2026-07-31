@@ -4518,8 +4518,6 @@ theorem exists_lowerRamificationData_lvl_eq
 
 end FiniteLevelInhabitation
 
-namespace LowerRamificationData
-
 /-! ### The arithmetic inputs to the construction, as NAMED leaves
 
 The four statements below were, until 2026-07-29, anonymous sorried `have`s
@@ -4534,15 +4532,15 @@ construction `nonempty_ramificationFiltration` below consumes them.
 new rather than lifted: see its own docstring and
 `GaloisRep.pos_of_card_filter_eq`.
 
-**STATUS 2026-07-30 (second pass) — four of the five are now THEOREMS, not
-leaves**, so do not dispatch at them: `iInf_gp_eq_lvl` (`hterm`) over the
-`KrullSeparation` section above, `iInf_lvl_eq_bot` (`hsep`) over
-`exists_lowerRamificationData_lvl_eq`, `localInertiaGroup_le_gp_zero` (`hin`),
-and `wildInertiaGroup_le_gp_one` — the last through the pair
-`dvd_smul_unif_sub_of_mem_wildInertiaGroup` (the tame character is trivial on
-`P_v`) and `mem_gp_one_of_dvd_smul_unif_sub` (Serre IV §1 Lemma 1), both proven.
-The ONE still open is `gp_le_upperRamificationFiltration_sup_lvl` (`hherb`,
-which is Herbrand's theorem itself and is the deep one). -/
+**STATUS 2026-07-31 — four of the five are now THEOREMS, not leaves**, so do not
+dispatch at them: `iInf_gp_eq_lvl` (`hterm`) over the `KrullSeparation` section
+above, `iInf_lvl_eq_bot` (`hsep`) over `exists_lowerRamificationData_lvl_eq`,
+`localInertiaGroup_le_gp_zero` (`hin`), and — since 2026-07-31 —
+`wildInertiaGroup_le_gp_one`, whose last input
+`mem_gp_one_of_dvd_smul_unif_sub` was closed over
+`exists_pow_sub_self_mem_maximalIdeal`. ONE is still open:
+`gp_le_upperRamificationFiltration_sup_lvl` (`hherb`, which is Herbrand's
+theorem itself and is the deep one). -/
 
 /-- **THE LOWER FILTRATION IS EVENTUALLY TRIVIAL**: `G_m(L/Kᵥ) = 1` for `m`
 large, i.e. `G_m ≤ N` at the level itself (Serre, *Corps Locaux* IV §2,
@@ -5017,6 +5015,71 @@ The route is stated so that no residue-field *theory* is needed downstream:
 the conclusion is a divisibility in `Oᵥ`.
 -/
 
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **EVERY ELEMENT OF `Oᵥ` SATISFIES `x ^ Q ≡ x` MODULO `𝔪` FOR SOME `Q ≡ 0`**
+(PROVEN 2026-07-31) — i.e. the residue field of `Oᵥ` is ALGEBRAIC OVER A FINITE
+FIELD, said without ever naming the residue characteristic: the `Q` returned is
+the cardinality of a finite field, so `Q` is a power of `p` and lands in `𝔪`,
+and `x ^ Q − x` lands in `𝔪` because `x̄` lies in that finite field.
+
+This is the ONE arithmetic input that
+`LowerRamificationData.mem_gp_one_of_dvd_smul_unif_sub` needs and that its
+`LowerRamificationData` axioms do not contain; see that docstring for what it
+replaces (monogenicity of `𝒪_L` over the unramified subring).
+
+THE PROOF is the classical two-line one. `Oᵥ` is integral over `𝒪ᵥ`
+(`Algebra.IsIntegral`), the map `𝒪ᵥ → Oᵥ` is LOCAL (`𝔪ᵥ` is the contraction of
+`𝔪`, which is `Ideal.LiesOver.over` — the same step as
+`natCast_mem_maximalIdeal_integralClosure_of_mem_asIdeal`), so reducing an
+integral equation gives `x̄` integral over the residue field `κ(𝒪ᵥ)`, which is
+FINITE (that instance is `AbsoluteGaloisGroup.lean`'s, and is where the
+arithmetic of a number field finally enters). Hence `κ(𝒪ᵥ)⟮x̄⟯` is a finite
+field, and `FiniteField.pow_card` / `FiniteField.cast_card_eq_zero` supply the
+two conclusions with `Q = #κ(𝒪ᵥ)⟮x̄⟯`. -/
+theorem exists_pow_sub_self_mem_maximalIdeal (x : Oᵥ) :
+    ∃ Q : ℕ, ((Q : ℕ) : Oᵥ) ∈ IsLocalRing.maximalIdeal Oᵥ ∧
+      x ^ Q - x ∈ IsLocalRing.maximalIdeal Oᵥ := by
+  haveI hlh : IsLocalHom (algebraMap 𝒪ᵥ Oᵥ) := by
+    constructor
+    intro a ha
+    by_contra hnu
+    have hmem : a ∈ IsLocalRing.maximalIdeal 𝒪ᵥ := (IsLocalRing.mem_maximalIdeal _).mpr hnu
+    have hlies : IsLocalRing.maximalIdeal 𝒪ᵥ =
+        Ideal.comap (algebraMap 𝒪ᵥ Oᵥ) (IsLocalRing.maximalIdeal Oᵥ) :=
+      Ideal.LiesOver.over
+    rw [hlies, Ideal.mem_comap] at hmem
+    exact ((IsLocalRing.mem_maximalIdeal _).mp hmem) ha
+  letI : Algebra (IsLocalRing.ResidueField 𝒪ᵥ) (IsLocalRing.ResidueField Oᵥ) :=
+    (IsLocalRing.ResidueField.map (algebraMap 𝒪ᵥ Oᵥ)).toAlgebra
+  set xb : IsLocalRing.ResidueField Oᵥ := IsLocalRing.residue Oᵥ x with hxb
+  have hint : IsIntegral (IsLocalRing.ResidueField 𝒪ᵥ) xb := by
+    obtain ⟨P, hPm, hPe⟩ := Algebra.IsIntegral.isIntegral (R := 𝒪ᵥ) x
+    refine ⟨P.map (IsLocalRing.residue 𝒪ᵥ), hPm.map _, ?_⟩
+    rw [Polynomial.eval₂_map]
+    have hcomp : (algebraMap (IsLocalRing.ResidueField 𝒪ᵥ) (IsLocalRing.ResidueField Oᵥ)).comp
+        (IsLocalRing.residue 𝒪ᵥ) = (IsLocalRing.residue Oᵥ).comp (algebraMap 𝒪ᵥ Oᵥ) := rfl
+    rw [hcomp, hxb, ← Polynomial.hom_eval₂, hPe, map_zero]
+  set E := IntermediateField.adjoin (IsLocalRing.ResidueField 𝒪ᵥ) {xb} with hE
+  haveI : FiniteDimensional (IsLocalRing.ResidueField 𝒪ᵥ) E :=
+    IntermediateField.adjoin.finiteDimensional hint
+  haveI : Finite E := Module.finite_of_finite (IsLocalRing.ResidueField 𝒪ᵥ)
+  letI : Fintype E := Fintype.ofFinite _
+  refine ⟨Fintype.card E, ?_, ?_⟩
+  · rw [← IsLocalRing.residue_eq_zero_iff, map_natCast]
+    have h0 : ((Fintype.card E : ℕ) : E) = 0 := FiniteField.cast_card_eq_zero E
+    have h1 : (algebraMap E (IsLocalRing.ResidueField Oᵥ)) ((Fintype.card E : ℕ) : E)
+        = ((Fintype.card E : ℕ) : IsLocalRing.ResidueField Oᵥ) := map_natCast _ _
+    rw [← h1, h0, map_zero]
+  · rw [← IsLocalRing.residue_eq_zero_iff]
+    have hmem : xb ∈ E := IntermediateField.mem_adjoin_simple_self _ _
+    have h0 : (⟨xb, hmem⟩ : E) ^ Fintype.card E = ⟨xb, hmem⟩ := FiniteField.pow_card _
+    have h1 := congrArg (algebraMap E (IsLocalRing.ResidueField Oᵥ)) h0
+    simp only [map_pow] at h1
+    have h2 : (algebraMap E (IsLocalRing.ResidueField Oᵥ)) ⟨xb, hmem⟩ = xb := rfl
+    rw [h2] at h1
+    rw [map_sub, map_pow, ← hxb, h1, sub_self]
+
 set_option synthInstance.maxHeartbeats 4000000 in
 set_option maxHeartbeats 1000000 in
 /-- **A UNIT OF `Oᵥ` IS A ROOT OF UNITY MODULO `𝔪`** (PROVEN 2026-07-30), with
@@ -5173,133 +5236,98 @@ makes `S` a unit, and without it the statement fails already for an unramified
 hypothesis is vacuous, while `σ ∉ D.gp 1`). Stated only at `i = 1`, which is
 all `wildInertiaGroup_le_gp_one` consumes. -/
 theorem LowerRamificationData.mem_gp_one_of_dvd_smul_unif_sub
-    {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)} (D : LowerRamificationData v)
+    (D : LowerRamificationData v)
     {σ : Field.absoluteGaloisGroup (v.adicCompletion K)}
     (hσ : σ ∈ localInertiaGroup v)
     (h : D.unif ^ 2 ∣ σ • D.unif - D.unif) :
     σ ∈ D.gp 1 := by
-  classical
   rw [D.mem_gp]
-  -- `σ ∈ G_0`: every level-fixed element is moved by a multiple of `unif`.
-  have hg0 : ∀ y : IntegralClosure
-      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
-      (AlgebraicClosure (v.adicCompletion K)),
-      (∀ τ ∈ D.lvl, τ • y = y) → D.unif ∣ σ • y - y := by
+  intro x hx
+  -- `σ ∈ G_0`: the inertia moves every level-fixed element by at least `unif`.
+  have hgp0 : ∀ y : Oᵥ, (∀ τ ∈ D.lvl, τ • y = y) → D.unif ∣ σ • y - y := by
     intro y hy
     simpa using (D.mem_gp 0 σ).mp (D.localInertiaGroup_le_gp_zero hσ) y hy
-  -- dividing a level-fixed element by `unif` keeps it level-fixed
-  have hdiv : ∀ y z : IntegralClosure
-      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
-      (AlgebraicClosure (v.adicCompletion K)),
-      (∀ τ ∈ D.lvl, τ • y = y) → y = D.unif * z → (∀ τ ∈ D.lvl, τ • z = z) := by
-    intro y z hy hyz τ hτ
-    have h1 := hy τ hτ
-    rw [hyz, smul_mul', D.unif_fixed τ hτ] at h1
-    exact mul_left_cancel₀ D.unif_ne_zero h1
-  intro x hx
-  show D.unif ^ 2 ∣ σ • x - x
-  by_cases hu : IsUnit x
-  · -- THE UNIT CASE.  `x` is a root of unity mod `𝔪` of order `n` prime to `p`.
-    obtain ⟨n, hn, hxn⟩ := exists_pow_sub_one_mem_maximalIdeal_of_isUnit v hu
-    -- `x ^ n - 1` is level-fixed and a non-unit, hence `unif * c`
-    have hxnfix : ∀ τ ∈ D.lvl, τ • (x ^ n - 1) = x ^ n - 1 := by
-      intro τ hτ
-      rw [smul_sub, smul_one, smul_pow_integralClosure, hx τ hτ]
-    obtain ⟨c, hc⟩ := D.unif_spec _ hxnfix ((IsLocalRing.mem_maximalIdeal _).mp hxn)
-    have hcfix := hdiv _ _ hxnfix hc
-    -- `unif ^ 2` divides `σ • (x ^ n) - x ^ n`
-    have hxnpow : σ • x ^ n - x ^ n = (σ • D.unif - D.unif) * (σ • c) +
-        D.unif * (σ • c - c) := by
-      have hxeq : x ^ n = 1 + D.unif * c := by linear_combination hc
-      rw [hxeq, smul_add, smul_one, smul_mul']
+  -- the `unif · c` step, FREE from `h` plus `σ ∈ G_0`. This is the only use of `h`.
+  have hmul : ∀ c : Oᵥ, (∀ τ ∈ D.lvl, τ • c = c) →
+      D.unif ^ 2 ∣ σ • (D.unif * c) - D.unif * c := by
+    intro c hc
+    have hkey : σ • (D.unif * c) - D.unif * c
+        = (σ • D.unif - D.unif) * (σ • c) + D.unif * (σ • c - c) := by
+      rw [smul_mul']
       ring
-    have hkey : D.unif ^ 2 ∣ σ • x ^ n - x ^ n := by
-      rw [hxnpow]
-      refine dvd_add (h.mul_right _) ?_
-      obtain ⟨e, he⟩ := hg0 c hcfix
-      exact ⟨e, by rw [he]; ring⟩
-    -- the geometric factorisation `(σ • x) ^ n - x ^ n = S * (σ • x - x)`
-    set S : IntegralClosure
-      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
-      (AlgebraicClosure (v.adicCompletion K)) :=
-      ∑ i ∈ Finset.range n, (σ • x) ^ i * x ^ (n - 1 - i) with hS
-    have hgeom : S * (σ • x - x) = σ • x ^ n - x ^ n := by
-      rw [hS, geom_sum₂_mul, smul_pow_integralClosure]
-    -- `S` is a unit, because it is `n * x ^ (n-1)` modulo `𝔪`
-    have hSm : S - (n : IntegralClosure
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
-        (AlgebraicClosure (v.adicCompletion K))) * x ^ (n - 1) ∈
-        IsLocalRing.maximalIdeal _ := by
-      have hcong : ∀ i ∈ Finset.range n,
-          (σ • x) ^ i * x ^ (n - 1 - i) - x ^ (n - 1)
-            = ((σ • x) ^ i - x ^ i) * x ^ (n - 1 - i) := by
-        intro i hi
-        have hin : i < n := Finset.mem_range.mp hi
-        have hxx : x ^ i * x ^ (n - 1 - i) = x ^ (n - 1) := by
-          rw [← pow_add]
-          congr 1
-          omega
-        rw [sub_mul, hxx]
-      -- `Finset.sum_sub_distrib` does NOT fire at the `IntegralClosure` type synonym
-      -- (its `AddCommGroup` instance is not found by keyed matching through the `def`
-      -- barrier), exactly as `sum_pow_sub_one_range` records; so split by induction.
-      have hgen : ∀ m : ℕ,
-          ∑ i ∈ Finset.range m, ((σ • x) ^ i * x ^ (n - 1 - i) - x ^ (n - 1))
-            = (∑ i ∈ Finset.range m, (σ • x) ^ i * x ^ (n - 1 - i))
-              - (m : IntegralClosure
-                  (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
-                  (AlgebraicClosure (v.adicCompletion K))) * x ^ (n - 1) := by
-        intro m
-        induction m with
-        | zero => simp
-        | succ j ih =>
-            rw [Finset.sum_range_succ, Finset.sum_range_succ, ih]
-            push_cast
-            ring
-      have hsplit : S - (n : IntegralClosure
-          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
-          (AlgebraicClosure (v.adicCompletion K))) * x ^ (n - 1)
-          = ∑ i ∈ Finset.range n,
-              ((σ • x) ^ i * x ^ (n - 1 - i) - x ^ (n - 1)) := by
-        rw [hS]
-        exact (hgen n).symm
-      rw [hsplit, Finset.sum_congr rfl hcong]
-      refine Ideal.sum_mem _ fun i _ => Ideal.mul_mem_right _ _ ?_
-      obtain ⟨w, hw⟩ : σ • x - x ∣ (σ • x) ^ i - x ^ i := sub_dvd_pow_sub_pow _ _ i
-      rw [hw]
-      exact Ideal.mul_mem_right _ _ (hσ x)
-    have hSunit : IsUnit S := by
-      rw [← IsLocalRing.notMem_maximalIdeal]
-      intro hSmem
-      have hnx : (n : IntegralClosure
-          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
-          (AlgebraicClosure (v.adicCompletion K))) * x ^ (n - 1) ∈
-          IsLocalRing.maximalIdeal _ := by
-        have := Ideal.sub_mem _ hSmem hSm
-        simpa using this
-      exact (IsLocalRing.notMem_maximalIdeal.mpr
-        ((isUnit_natCast_integralClosure_of_notMem_asIdeal v hn).mul (hu.pow (n - 1)))) hnx
-    -- assemble: invert `S`
-    obtain ⟨Su, hSu⟩ := hSunit
-    have hinv : ((Su⁻¹ : _ˣ) : IntegralClosure
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
-        (AlgebraicClosure (v.adicCompletion K))) * S = 1 := by
-      rw [← hSu, ← Units.val_mul, inv_mul_cancel, Units.val_one]
-    have hrw : σ • x - x = ((Su⁻¹ : _ˣ) : IntegralClosure
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
-        (AlgebraicClosure (v.adicCompletion K))) * (σ • x ^ n - x ^ n) := by
-      rw [← hgeom, ← mul_assoc, hinv, one_mul]
+    obtain ⟨a, ha⟩ := h
+    obtain ⟨b, hb⟩ := hgp0 c hc
+    exact ⟨a * (σ • c) + b, by rw [hkey, ha, hb]; ring⟩
+  -- the residue field is algebraic over a FINITE field: `x ^ Q ≡ x`, `Q ≡ 0`.
+  obtain ⟨Q, hQm, hQx⟩ := exists_pow_sub_self_mem_maximalIdeal x
+  have hQfix : ∀ τ ∈ D.lvl, τ • ((Q : ℕ) : Oᵥ) = ((Q : ℕ) : Oᵥ) := by
+    intro τ _
+    show (MulSemiringAction.toRingHom Γᵥ Oᵥ τ) ((Q : ℕ) : Oᵥ) = ((Q : ℕ) : Oᵥ)
+    exact map_natCast _ _
+  have hQdvd : D.unif ∣ ((Q : ℕ) : Oᵥ) :=
+    D.unif_spec _ hQfix ((IsLocalRing.mem_maximalIdeal _).mp hQm)
+  have hxQfix : ∀ τ ∈ D.lvl, τ • (x ^ Q - x) = x ^ Q - x := by
+    intro τ hτ
+    rw [smul_sub, smul_pow_integralClosure, hx τ hτ]
+  obtain ⟨c, hc⟩ : D.unif ∣ x ^ Q - x :=
+    D.unif_spec _ hxQfix ((IsLocalRing.mem_maximalIdeal _).mp hQx)
+  have hcfix : ∀ τ ∈ D.lvl, τ • c = c := by
+    intro τ hτ
+    have h1 := hxQfix τ hτ
+    rw [hc, smul_mul', D.unif_fixed τ hτ] at h1
+    exact mul_left_cancel₀ D.unif_ne_zero h1
+  -- `unif ² ∣ σ • x ^ Q − x ^ Q`, because the geometric cofactor is `≡ Q x ^ (Q−1)`.
+  obtain ⟨t, ht⟩ := hgp0 x hx
+  have hsplit : ∀ n : ℕ,
+      (∑ i ∈ Finset.range n, ((σ • x) ^ i * x ^ (Q - 1 - i) - x ^ (Q - 1)))
+        = (∑ i ∈ Finset.range n, (σ • x) ^ i * x ^ (Q - 1 - i)) - (n : Oᵥ) * x ^ (Q - 1) := by
+    intro n
+    induction n with
+    | zero => simp
+    | succ m ih =>
+      rw [Finset.sum_range_succ, Finset.sum_range_succ, ih]
+      push_cast
+      ring
+  have hterm : ∀ i ∈ Finset.range Q,
+      D.unif ∣ ((σ • x) ^ i * x ^ (Q - 1 - i) - x ^ (Q - 1)) := by
+    intro i hi
+    rw [Finset.mem_range] at hi
+    have hxi : i + (Q - 1 - i) = Q - 1 := by omega
+    have hrw : (σ • x) ^ i * x ^ (Q - 1 - i) - x ^ (Q - 1)
+        = ((σ • x) ^ i - x ^ i) * x ^ (Q - 1 - i) := by
+      rw [sub_mul, ← pow_add, hxi]
     rw [hrw]
-    exact hkey.mul_left _
-  · -- THE NON-UNIT CASE.  `x = unif * y`, and no residue theory is needed.
-    obtain ⟨y, hy⟩ := D.unif_spec x hx hu
-    have hyfix := hdiv _ _ hx hy
-    have hrw : σ • x - x = (σ • D.unif - D.unif) * (σ • y) + D.unif * (σ • y - y) := by
-      rw [hy, smul_mul']; ring
-    rw [hrw]
-    refine dvd_add (h.mul_right _) ?_
-    obtain ⟨e, he⟩ := hg0 y hyfix
-    exact ⟨e, by rw [he]; ring⟩
+    exact Dvd.dvd.mul_right (dvd_trans ⟨t, ht⟩ (sub_dvd_pow_sub_pow _ _ i)) _
+  have hSdvd : D.unif ∣ ∑ i ∈ Finset.range Q, (σ • x) ^ i * x ^ (Q - 1 - i) := by
+    have h1 : D.unif ∣
+        (∑ i ∈ Finset.range Q, (σ • x) ^ i * x ^ (Q - 1 - i)) - (Q : Oᵥ) * x ^ (Q - 1) := by
+      rw [← hsplit Q]
+      exact Finset.dvd_sum hterm
+    have h2 : D.unif ∣ (Q : Oᵥ) * x ^ (Q - 1) := hQdvd.mul_right _
+    have h3 : (∑ i ∈ Finset.range Q, (σ • x) ^ i * x ^ (Q - 1 - i))
+        = ((∑ i ∈ Finset.range Q, (σ • x) ^ i * x ^ (Q - 1 - i)) - (Q : Oᵥ) * x ^ (Q - 1))
+          + (Q : Oᵥ) * x ^ (Q - 1) := by ring
+    rw [h3]
+    exact dvd_add h1 h2
+  obtain ⟨s, hs⟩ := hSdvd
+  have hS : D.unif ^ 2 ∣ σ • (x ^ Q) - x ^ Q := by
+    refine ⟨s * t, ?_⟩
+    have hgeom : (∑ i ∈ Finset.range Q, (σ • x) ^ i * x ^ (Q - 1 - i)) * (σ • x - x)
+        = (σ • x) ^ Q - x ^ Q := geom_sum₂_mul _ _ _
+    rw [smul_pow_integralClosure, ← hgeom, hs, ht]
+    ring
+  -- assemble along `x ^ Q = x + unif · c`.
+  obtain ⟨p1, hp1⟩ := hS
+  obtain ⟨p2, hp2⟩ := hmul c hcfix
+  have hxQ : x ^ Q = x + D.unif * c := by linear_combination hc
+  have hid : σ • (x ^ Q) - x ^ Q
+      = (σ • x - x) + (σ • (D.unif * c) - D.unif * c) := by
+    rw [hxQ, smul_add]
+    ring
+  rw [hid, hp2] at hp1
+  exact ⟨p1 - p2, by linear_combination hp1⟩
+
+end SerreTameCharacterKernel
 
 /-- **THE WILD INERTIA LANDS IN `G_1` AT EVERY LEVEL**, `P_v ≤ G_1(L/Kᵥ)`.
 
@@ -5335,6 +5363,315 @@ theorem LowerRamificationData.wildInertiaGroup_le_gp_one
     wildInertiaGroup v ≤ D.gp 1 := fun _ hσ =>
   D.mem_gp_one_of_dvd_smul_unif_sub (wildInertiaGroup_le_localInertiaGroup v hσ)
     (D.dvd_smul_unif_sub_of_mem_wildInertiaGroup hσ)
+
+/-! ### Herbrand's theorem: the passage from one level to all of them
+
+`gp_le_upperRamificationFiltration_sup_lvl` at the end of this block is the
+crux of the whole upper-numbering construction, and the FAITHFULNESS AUDIT of
+2026-07-30 (recorded on the theorem itself) decomposed it into four steps, of
+which only cofinality of the levels was then available. This block DISCHARGES
+steps 1 and 4 and reorganises 2–3, so that what is left is TWO named leaves
+instead of one opaque one:
+
+* `gp_le_gp_psiNat_phi_sup_lvl` — Herbrand for a tower (Serre IV §3 Prop. 14
+  plus transitivity of `φ`), stated directly between two arbitrary levels so
+  that NO relative `LowerRamificationData` has to be built. This is where the
+  arithmetic is.
+* `iInf_gp_one_le_wildInertiaGroup` — `⋂_D G_1(L_D/Kᵥ) ≤ P_v`, the inverse
+  limit of the wild parts. Independent of the above; see its docstring.
+
+**WHY THE RELATIVE THEORY IS NOT NEEDED, which is the point of this block.**
+The audit expected a prover to build the ramification data of `L''/L` and its
+own `φ`, because Serre's Prop. 14 is a statement about a tower. It is not
+needed, for two reasons found on 2026-07-31.
+
+*First*, the relative lower-numbering groups are already here:
+`mem_gp` is an ELEMENTWISE condition on the valuation that does not mention
+the base at all, so `G_i(L''/L) = G_i(L''/Kᵥ) ∩ Gal(L''/L)`, which in the
+pullback language of this file is literally `D''.gp i ⊓ D.lvl`. That is Serre
+IV §1 Prop. 2, and here it is a definitional identity rather than a theorem.
+
+*Second*, and this is what removes the relative `φ`: transitivity
+`φ_{L''/Kᵥ} = φ_{L/Kᵥ} ∘ φ_{L''/L}` is only ever used to say that the index
+`ψ_{L''/L}(m)` produced by Prop. 14 equals `ψ_{D''}(φ_D m)`. If the leaf is
+stated with the index already written as `ψ_{D''}(φ_D m)` — which is the form
+`upperRamificationFiltration` consumes — the composite is never taken apart
+and the relative `φ` never appears. `gp_le_gp_psiNat_phi_sup_lvl` is exactly
+that restatement, and it subsumes step 3.
+
+What that buys, all PROVEN below: the compatibility of the upper-numbering
+groups under refinement (`gp_psiNat_le_of_lvl_le`) is a COROLLARY of the leaf
+rather than a second leaf; the compactness step 4 goes through
+(`exists_mem_lvl_forall_mem_gp_psiNat`) on `isClosed_gp`; and the `m = 0` case,
+which the audit flagged as "also true and not free either", is discharged
+outright by `iInf_gp_zero_eq_localInertiaGroup`.
+-/
+
+/-- **EVERY LOWER RAMIFICATION GROUP IS CLOSED** — step 4 of the audit on
+`gp_le_upperRamificationFiltration_sup_lvl`, which needs the `D'.gp i` closed
+in order to intersect a downward-directed family of them inside the compact
+`D.lvl`.
+
+`mem_gp` rewrites the carrier as `⋂_{x level-fixed} {σ | unif ^ (i+1) ∣ σ • x − x}`,
+and each factor is CLOPEN by the same argument as `isClosed_localInertiaGroup`:
+its complement is the union over the `y` with `unif ^ (i+1) ∤ y − x` of the
+sets `{σ | σ • x = y}`, which `ContinuousSMulDiscrete` makes open. -/
+theorem LowerRamificationData.isClosed_gp
+    {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)} (D : LowerRamificationData v)
+    (i : ℕ) :
+    IsClosed ((D.gp i : Set (Field.absoluteGaloisGroup (v.adicCompletion K)))) := by
+  have hrw : (D.gp i : Set (Field.absoluteGaloisGroup (v.adicCompletion K)))
+      = ⋂ (x : IntegralClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+            (AlgebraicClosure (v.adicCompletion K)))
+          (_ : ∀ τ ∈ D.lvl, τ • x = x),
+        {σ : Field.absoluteGaloisGroup (v.adicCompletion K) |
+          D.unif ^ (i + 1) ∣ σ • x - x} := by
+    ext σ
+    simp only [Set.mem_iInter, Set.mem_setOf_eq, SetLike.mem_coe]
+    exact D.mem_gp i σ
+  rw [hrw]
+  refine isClosed_iInter fun x => isClosed_iInter fun _ => ?_
+  rw [← isOpen_compl_iff]
+  have hc : {σ : Field.absoluteGaloisGroup (v.adicCompletion K) |
+        D.unif ^ (i + 1) ∣ σ • x - x}ᶜ =
+      ⋃ (y : IntegralClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+            (AlgebraicClosure (v.adicCompletion K)))
+        (_ : ¬ D.unif ^ (i + 1) ∣ y - x),
+        {σ : Field.absoluteGaloisGroup (v.adicCompletion K) | σ • x = y} := by
+    ext σ
+    simp only [Set.mem_compl_iff, Set.mem_setOf_eq, Set.mem_iUnion]
+    exact ⟨fun h => ⟨σ • x, h, rfl⟩, by rintro ⟨y, hy, rfl⟩; exact hy⟩
+  rw [hc]
+  exact isOpen_iUnion fun y => isOpen_iUnion fun _ =>
+    ContinuousSMulDiscrete.isOpen_smul_eq _ x y
+
+/-- **EVERY INTEGRAL ELEMENT IS FIXED BY AN OPEN NORMAL SUBGROUP.** The
+stabilizer of `x` is open (`ContinuousSMulDiscrete`), hence a neighbourhood of
+`1`, and `exists_openNormal_subset_of_mem_nhds_one` puts an open normal
+subgroup inside it. This is what lets an ARBITRARY element of the big integral
+closure be tested at a FINITE level, and it is the only input to
+`iInf_gp_zero_eq_localInertiaGroup` beyond the inhabitation theorem. -/
+theorem exists_openNormal_smul_eq_self (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
+    (x : IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure (v.adicCompletion K))) :
+    ∃ U : Subgroup (Field.absoluteGaloisGroup (v.adicCompletion K)), U.Normal ∧
+      IsOpen (U : Set (Field.absoluteGaloisGroup (v.adicCompletion K))) ∧
+      ∀ τ ∈ U, τ • x = x := by
+  have hopen : IsOpen {σ : Field.absoluteGaloisGroup (v.adicCompletion K) | σ • x = x} :=
+    ContinuousSMulDiscrete.isOpen_smul_eq _ x x
+  obtain ⟨U, hUn, hUo, hUsub⟩ :=
+    exists_openNormal_subset_of_mem_nhds_one v _ (hopen.mem_nhds (by simp))
+  exact ⟨U, hUn, hUo, fun τ hτ => hUsub hτ⟩
+
+/-- **THE FINITE LEVELS COMPUTE THE INERTIA**: `⋂_D G_0(L_D/Kᵥ) = I_v`.
+
+`≥` is `localInertiaGroup_le_gp_zero` at every level. `≤` is the statement
+that an element acting trivially on every FINITE residue field `k_L` acts
+trivially on the residue field of `Kᵥᵃˡᵍ`, and it is proved by descending an
+arbitrary `x` of the big integral closure to a level that fixes it
+(`exists_openNormal_smul_eq_self`, then `exists_lowerRamificationData_lvl_eq`):
+there `unif ∣ σ • x − x`, and `unif` is a non-unit, so `σ • x − x` is a
+non-unit, i.e. lies in `𝔪`.
+
+This is the `m = 0` half of `gp_le_upperRamificationFiltration_sup_lvl`, which
+the FAITHFULNESS AUDIT flagged as "also true and not free either". It is free
+once the elements are allowed to choose their own level, which is exactly what
+the inhabitation theorem made possible. -/
+theorem LowerRamificationData.iInf_gp_zero_eq_localInertiaGroup
+    (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)) :
+    (⨅ D : LowerRamificationData v, D.gp 0) = localInertiaGroup v := by
+  refine le_antisymm ?_ (le_iInf fun D => D.localInertiaGroup_le_gp_zero)
+  intro σ hσ
+  rw [Subgroup.mem_iInf] at hσ
+  intro x
+  obtain ⟨U, hUn, hUo, hUfix⟩ := exists_openNormal_smul_eq_self v x
+  obtain ⟨D, hD⟩ := exists_lowerRamificationData_lvl_eq v U hUn hUo
+  have hdvd : D.unif ^ (0 + 1) ∣ σ • x - x :=
+    (D.mem_gp 0 σ).mp (hσ D) x (by rw [hD]; exact hUfix)
+  rw [zero_add, pow_one] at hdvd
+  exact (IsLocalRing.mem_maximalIdeal _).mpr fun hu =>
+    D.unif_not_isUnit (isUnit_of_dvd_unit hdvd hu)
+
+/-- **HERBRAND'S THEOREM FOR A TOWER**, in the form the upper numbering
+consumes: the image of `G_m(L_D/Kᵥ)` in `Gal(L_{D'}/Kᵥ)` lands inside
+`G^{φ_D(m)}(L_{D'}/Kᵥ) = G_{⌈ψ_{D'}(φ_D m)⌉}(L_{D'}/Kᵥ)`, for ANY two levels
+`D`, `D'`. Serre, *Corps Locaux* IV §3, Prop. 14 together with the
+transitivity of `φ` (IV §3 Prop. 15).
+
+**SORRY LEAF**, cut 2026-07-31 out of
+`gp_le_upperRamificationFiltration_sup_lvl` below, which is now PROVEN over it
+and over `iInf_gp_one_le_wildInertiaGroup`. Its own `D' := D` case is trivial
+(`psiNat_phi` makes the index `m` again), so nothing is being assumed twice.
+
+WHAT IT IS AND WHY IT IS STATED BETWEEN TWO ARBITRARY LEVELS. Classically one
+proves it for a TOWER `Kᵥ ⊆ L ⊆ L''`, where it reads: `G_m(L/Kᵥ)` is the image
+of `G_{ψ_{L''/L}(m)}(L''/Kᵥ)`. The general case follows by taking a common
+refinement of `L` and `L'` — given `σ ∈ G_m(L/Kᵥ)`, lift it to
+`G^{φ_D(m)}(L''/Kᵥ)` for `L''` containing both, which changes `σ` by an
+element of `D.lvl` (that is the `⊔ D.lvl`), and then push down to `L'`.
+Stating it in the general form is what makes `gp_psiNat_le_of_lvl_le` below a
+COROLLARY rather than a second leaf.
+
+WHY NO RELATIVE `LowerRamificationData` IS NEEDED — see the section docstring
+above: the relative groups are `D''.gp i ⊓ D.lvl` on the nose, and writing the
+index as `ψ_{D'}(φ_D m)` rather than `ψ_{L''/L}(m)` is what absorbs the
+transitivity of `φ`. So a prover of this leaf needs Serre's Prop. 14 and
+Prop. 15 as ARITHMETIC, but no new structure and no new definitions.
+
+THE ARITHMETIC THAT IS STILL OWED. Serre's proof of Prop. 14 runs on the
+function `i_{L/Kᵥ}(σ) = min_x v_L(σx − x)` (here: the largest `i` with
+`σ ∈ G_{i-1}`) and on the two identities
+`i_{L/Kᵥ}(σ) − 1 = ∑_{σ'' ↦ σ} (i_{L''/Kᵥ}(σ'') − 1) / e_{L''/L}` (IV §1
+Lemma 5, which needs `𝒪_{L''} = 𝒪_L[y]` — monogenicity — for a generator `y`)
+and `φ_{L''/L}(i_{L''/L}(σ'') − 1) = i_{L/Kᵥ}(σ) − 1`. Neither is in this file
+and neither is in mathlib; `Mathlib/RingTheory/Valuation/RamificationGroup.lean`
+stops at `inertiaSubgroup`. Monogenicity of the integral closure at a finite
+level is the one prerequisite that is plausibly already reachable here, since
+the levels are `IntegralClosure 𝒪ᵥ L` with `𝒪ᵥ` a complete DVR. -/
+theorem LowerRamificationData.gp_le_gp_psiNat_phi_sup_lvl
+    {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)} (D D' : LowerRamificationData v)
+    (m : ℕ) :
+    D.gp m ≤ D'.gp (D'.psiNat (D.phi m)) ⊔ D.lvl := sorry
+
+/-- **THE UPPER-NUMBERING GROUPS ARE COMPATIBLE UNDER REFINEMENT**: if
+`L_{D''} ⊇ L_{D'}` then `G^u(L_{D''}/Kᵥ) ≤ G^u(L_{D'}/Kᵥ)` as subgroups of
+`Γ Kᵥ`, for every `u`. This is what makes the inverse limit defining
+`upperRamificationFiltration` a limit of a DIRECTED system, and it is what
+supplies the directedness hypothesis of the compactness step below.
+
+PROVEN, as a corollary of `gp_le_gp_psiNat_phi_sup_lvl` at
+`m := ψ_{D''}(u)`: the index produced there is `ψ_{D'}(φ_{D''}(ψ_{D''} u))`,
+and `u ≤ φ_{D''}(ψ_{D''} u)` (`le_phi_psiNat`) makes it at least `ψ_{D'}(u)`
+(`psiNat_mono`), so the group is at most `G_{ψ_{D'}(u)}` (`gp_antitone`); the
+`⊔ D''.lvl` is absorbed because `D''.lvl ≤ D'.lvl ≤ D'.gp _` (`lvl_le_gp`).
+That this is a corollary rather than a second leaf is the whole reason
+`gp_le_gp_psiNat_phi_sup_lvl` is stated between two ARBITRARY levels. -/
+theorem LowerRamificationData.gp_psiNat_le_of_lvl_le
+    {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)} (D'' D' : LowerRamificationData v)
+    (h : D''.lvl ≤ D'.lvl) (u : ℚ) :
+    D''.gp (D''.psiNat u) ≤ D'.gp (D'.psiNat u) := by
+  refine le_trans (D''.gp_le_gp_psiNat_phi_sup_lvl D' (D''.psiNat u)) (sup_le ?_ ?_)
+  · exact D'.gp_antitone (D'.psiNat_mono (D''.le_phi_psiNat u))
+  · exact le_trans h (D'.lvl_le_gp _)
+
+/-- **THE COMPACTNESS STEP** — step 4 of the FAITHFULNESS AUDIT: ONE `λ` in
+the level `D.lvl` works for EVERY other level at once.
+
+`gp_le_gp_psiNat_phi_sup_lvl` gives, for each single `D'`, SOME `λ ∈ D.lvl`
+with `σλ ∈ G^{φ_D(m)}(L_{D'}/Kᵥ)`; the inverse limit needs one `λ` good for
+all of them simultaneously. The sets
+
+  `S_{D''} = D.lvl ∩ {λ | σλ ∈ D''.gp (ψ_{D''}(φ_D m))}`,
+
+indexed by the REFINEMENTS `D''` of `D`, are closed (`isClosed_gp`, and
+`D.lvl` is closed because it is open), nonempty (the leaf), contained in the
+compact `D.lvl`, and downward directed — the last because
+`exists_lowerRamificationData_lvl_eq` builds a datum at the intersection of
+two levels and `gp_psiNat_le_of_lvl_le` then compares. Cantor's intersection
+theorem finishes, and a general `D'` is reached by refining `D ⊓ D'`.
+
+PROVEN 2026-07-31. Note the family must be indexed by refinements of `D` and
+not by all levels: `λ` has to stay inside `D.lvl`, so the fix-up `λ ↦ λν⁻¹`
+that moves between levels is only legitimate when `ν` lies in `D.lvl`. -/
+theorem LowerRamificationData.exists_mem_lvl_forall_mem_gp_psiNat
+    {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)} (D : LowerRamificationData v) (m : ℕ)
+    {σ : Field.absoluteGaloisGroup (v.adicCompletion K)} (hσ : σ ∈ D.gp m) :
+    ∃ lam ∈ D.lvl, ∀ D' : LowerRamificationData v,
+      σ * lam ∈ D'.gp (D'.psiNat (D.phi m)) := by
+  classical
+  haveI : Nonempty {E : LowerRamificationData v // E.lvl ≤ D.lvl} := ⟨⟨D, le_rfl⟩⟩
+  let S : {E : LowerRamificationData v // E.lvl ≤ D.lvl} →
+      Set (Field.absoluteGaloisGroup (v.adicCompletion K)) := fun t =>
+    (D.lvl : Set (Field.absoluteGaloisGroup (v.adicCompletion K))) ∩
+      {lam | σ * lam ∈ t.1.gp (t.1.psiNat (D.phi m))}
+  -- any two levels have a common refinement, which is what makes `S` directed
+  have hrefine : ∀ E F : LowerRamificationData v, ∃ G : LowerRamificationData v,
+      G.lvl ≤ E.lvl ∧ G.lvl ≤ F.lvl := by
+    intro E F
+    haveI := E.lvl_normal
+    haveI := F.lvl_normal
+    obtain ⟨G, hG⟩ := exists_lowerRamificationData_lvl_eq v (E.lvl ⊓ F.lvl) inferInstance
+      (by rw [Subgroup.coe_inf]; exact E.lvl_isOpen.inter F.lvl_isOpen)
+    exact ⟨G, by rw [hG]; exact inf_le_left, by rw [hG]; exact inf_le_right⟩
+  have hne : ∀ t, (S t).Nonempty := by
+    intro t
+    haveI := D.lvl_normal
+    have hmem : σ ∈ t.1.gp (t.1.psiNat (D.phi m)) ⊔ D.lvl :=
+      D.gp_le_gp_psiNat_phi_sup_lvl t.1 m hσ
+    rw [← SetLike.mem_coe, Subgroup.mul_normal] at hmem
+    obtain ⟨g, hg, n, hn, hgn⟩ := hmem
+    refine ⟨n⁻¹, D.lvl.inv_mem hn, ?_⟩
+    show σ * n⁻¹ ∈ t.1.gp (t.1.psiNat (D.phi m))
+    rw [← hgn]
+    simpa using hg
+  have hcl : ∀ t, IsClosed (S t) := by
+    intro t
+    refine IsClosed.inter (Subgroup.isClosed_of_isOpen _ D.lvl_isOpen) ?_
+    have hcont : Continuous fun lam : Field.absoluteGaloisGroup (v.adicCompletion K) =>
+        σ * lam := continuous_const.mul continuous_id
+    exact (t.1.isClosed_gp (t.1.psiNat (D.phi m))).preimage hcont
+  have hdir : Directed (· ⊇ ·) S := by
+    intro t1 t2
+    obtain ⟨G, hG1, hG2⟩ := hrefine t1.1 t2.1
+    refine ⟨⟨G, le_trans hG1 t1.2⟩, ?_, ?_⟩
+    · exact Set.inter_subset_inter_right _ fun lam hlam =>
+        G.gp_psiNat_le_of_lvl_le t1.1 hG1 (D.phi m) hlam
+    · exact Set.inter_subset_inter_right _ fun lam hlam =>
+        G.gp_psiNat_le_of_lvl_le t2.1 hG2 (D.phi m) hlam
+  obtain ⟨lam, hlam⟩ := IsCompact.nonempty_iInter_of_directed_nonempty_isCompact_isClosed
+    S hdir hne (fun t => (hcl t).isCompact) hcl
+  rw [Set.mem_iInter] at hlam
+  refine ⟨lam, (hlam ⟨D, le_rfl⟩).1, fun D' => ?_⟩
+  obtain ⟨G, hG1, hG2⟩ := hrefine D' D
+  exact G.gp_psiNat_le_of_lvl_le D' hG1 (D.phi m) (hlam ⟨G, hG2⟩).2
+
+/-- **THE WILD INERTIA IS THE INVERSE LIMIT OF THE `G_1`**, `⋂_D G_1(L_D/Kᵥ) ≤ P_v`.
+Together with `wildInertiaGroup_le_gp_one`, which is the reverse containment at
+every level and is PROVEN, this says `⋂_D G_1(L_D/Kᵥ) = P_v`.
+
+**SORRY LEAF**, cut 2026-07-31 out of
+`gp_le_upperRamificationFiltration_sup_lvl`. It is the exact mirror of
+`iInf_gp_zero_eq_localInertiaGroup`, which IS proven — the inertia is the
+inverse limit of the `G_0` — and it is genuinely harder for the reason that
+makes `G_1` the wild part: `G_0` is cut out by a divisibility, `G_1` by the
+vanishing of the tame character.
+
+WHAT IT REPLACES. The natural-looking form is `D.gp 1 ≤ P_v ⊔ D.lvl` at a
+single level, i.e. "`P_v` surjects onto `G_1(L/Kᵥ)`". That is equivalent to
+this one modulo the compactness step above, and this form is better: it has no
+`⊔`, it composes directly with `exists_mem_lvl_forall_mem_gp_psiNat` (which
+already delivers membership in every `D'.gp (ψ_{D'} u)`, and `ψ_{D'}(u) ≥ 1`
+for `u > 0` by `psiNat_pos`), and it removes the need to decompose an element
+of `P_v ⊔ D''.lvl` as a product level by level.
+
+THE ROUTE, for whoever proves it. The `I_v` conjunct of
+`wildInertiaGroup = I_v ⊓ tameFixingSubgroup` is FREE: `gp_antitone` gives
+`⋂_D G_1 ≤ ⋂_D G_0 = I_v` by `iInf_gp_zero_eq_localInertiaGroup`. So the
+content is `⋂_D G_1 ≤ tameFixingSubgroup v`, i.e. that such a `σ` fixes every
+`x` with `x ^ n ∈ 𝒪ᵥ` for `n` prime to the residue characteristic. The
+cheapest argument found is to CHOOSE THE LEVEL rather than to work at an
+arbitrary one: take a level `L ⊇ Kᵥ(ζ_n, x)`, which is TAMELY ramified
+(`e(L/Kᵥ)` divides `n · [unramified part]`, prime to `p`), so `G_1(L/Kᵥ)` is
+the trivial group — `G_1` is the `p`-Sylow of `G_0` and `|G_0| = e` is prime
+to `p` — whence `σ ∈ D.gp 1 = D.lvl` fixes `L` pointwise, in particular fixes
+`x`. In this file's language the statement to prove at such a level is
+`D.gp 1 = D.lvl`, and `coprime_card_quotient_wildInertiaGroup` is the
+order-coprimality input already available.
+
+The naive route — `(σ • x) ^ n = x ^ n` forces `σ • x = ζ x` with `ζ ^ n = 1`,
+and `unif ^ 2 ∣ σ • x − x` forces `ζ ≡ 1 mod 𝔪`, hence `ζ = 1` because
+`ζ = 1 + t` gives `0 = t · (n + t · (…))` with `n` a unit
+(`isUnit_natCast_integralClosure_of_notMem_asIdeal`) — does NOT close as
+stated: `σ • x − x = (ζ − 1) x` only bounds `v_L(ζ − 1) + v_L(x) ≥ 2`, which
+is weaker than `v_L(ζ − 1) ≥ 1` as soon as `v_L(x) ≥ 2`. That is why the level
+has to be chosen so that `x` is close to a uniformizer, and choosing it tame
+is the same choice made once and for all. -/
+theorem LowerRamificationData.iInf_gp_one_le_wildInertiaGroup
+    (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)) :
+    (⨅ D : LowerRamificationData v, D.gp 1) ≤ wildInertiaGroup v := sorry
 
 /-- **HERBRAND'S THEOREM**, the crux: `Γ^{φ(m)}` SURJECTS onto `G_m` at every
 finite level. The reverse containment is proved in
@@ -5401,7 +5738,25 @@ same fact. -/
 theorem LowerRamificationData.gp_le_upperRamificationFiltration_sup_lvl
     {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)} (D : LowerRamificationData v)
     (m : ℕ) :
-    D.gp m ≤ upperRamificationFiltration v (D.phi m) ⊔ D.lvl := sorry
+    D.gp m ≤ upperRamificationFiltration v (D.phi m) ⊔ D.lvl := by
+  intro σ hσ
+  obtain ⟨lam, hlam, hall⟩ := D.exists_mem_lvl_forall_mem_gp_psiNat m hσ
+  have key : σ * lam ∈ upperRamificationFiltration v (D.phi m) := by
+    by_cases hpos : 0 < D.phi m
+    · rw [upperRamificationFiltration_of_pos v hpos]
+      refine Subgroup.mem_inf.mpr ⟨LowerRamificationData.iInf_gp_one_le_wildInertiaGroup v ?_, ?_⟩
+      · rw [Subgroup.mem_iInf]
+        exact fun D' => D'.gp_antitone (D'.psiNat_pos hpos) (hall D')
+      · rw [Subgroup.mem_iInf]
+        exact hall
+    · rw [upperRamificationFiltration_of_not_pos v hpos,
+        ← LowerRamificationData.iInf_gp_zero_eq_localInertiaGroup v, Subgroup.mem_iInf]
+      intro D'
+      have hz : D'.psiNat (D.phi m) = 0 :=
+        Nat.le_antisymm (D'.psiNat_le (by rw [D'.phi_zero]; exact not_lt.mp hpos))
+          (Nat.zero_le _)
+      exact hz ▸ hall D'
+  simpa using Subgroup.mul_mem_sup key (D.lvl.inv_mem hlam)
 
 /-- **THE UPPER-NUMBERING FILTRATION EXISTS** — step `hexists` of
 `GaloisRep.exists_isSwanExponentAt`, promoted to a named theorem 2026-07-29.
@@ -8241,8 +8596,8 @@ theorem exists_isSwanExponentAt (ρ : GaloisRep K A M)
     ∃ s : ℕ, ρ.IsSwanExponentAt v s := by
   -- STEP 1 (`hexists`): the upper-numbering filtration exists — CONSTRUCTED
   -- as Serre's inverse limit `upperRamificationFiltration v` over the finite
-  -- levels, in `nonempty_ramificationFiltration`, over named leaves (three of
-  -- the five still open as of 2026-07-30).
+  -- levels, in `nonempty_ramificationFiltration`, over named leaves (one of
+  -- the five still open as of 2026-07-31).
   obtain ⟨F₀⟩ := nonempty_ramificationFiltration v
   -- STEP 3 (`hsum`): the break sum is a natural number, the same for every
   -- admissible `F` — `exists_nat_forall_sum_breaks_eq`.

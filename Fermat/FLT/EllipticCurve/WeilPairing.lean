@@ -4117,6 +4117,180 @@ theorem weilValue_two_torsion_config_eq_one {F : Type*} [Field F]
         c₁ * (yQR - (L₁ * (xQR - xPS) + yPS)) ^ 2) * eB1
   exact mul_right_cancel₀ hA (by rw [heq, one_mul, hAB])
 
+/-- **The self-pair value computation at an ARBITRARY level** (sorry leaf, cut
+2026-07-31 out of `weilValueProp_self_of_even_of_ne_two` below; Silverman *AEC*
+III.8.1(b)): in any admissible Miller setup for the self-pair of a `p`-torsion
+point `P`, the value `z` is `1`.
+
+This is the exact level-`p` analogue of `weilValue_two_torsion_config_eq_one`
+above — same engine hypotheses, same configuration, same value equation, with
+`2` replaced by `p` and the `2`-torsion input `⊖P = P` replaced by the honest
+torsion hypothesis `htor : p•P = 0`.  It is stated for EVERY `p` and therefore
+SUBSUMES the `p = 2` node (which is PROVEN independently, by the line-square
+factorization, and is deliberately left resting on its own proof: rerouting a
+proven theorem through a `sorry` would only enlarge the sorried cone).
+
+**WHAT THE VALUE EQUATION SAYS.**  Write `v_S := XClass x_S`, `v_R := XClass x_R`
+and read the ideal clauses as divisors on the affine curve:
+`div aP = p(P⊕S) + p(⊖S)`, `div v_S = (S) + (⊖S)`, so
+
+    g_S := aP / v_S^p     has     div g_S = p(P⊕S) − p(S),
+
+and likewise `g_R := aQ / v_R^p` has `div g_R = p(P⊕R) − p(R)`.  Dividing `heq`
+through by the four vertical factors turns it into the Miller cross-ratio
+
+    z = g_S(D_R) / g_R(D_S),     D_R := (P⊕R) − (R),  D_S := (P⊕S) − (S),
+
+which is `e_p(P, P) = f_P(D_P')/f_{P}(D_P)` in Silverman's notation.
+
+**WHY NOTHING FORMAL CLOSES THIS, AND WHY THE SWAP CANNOT.**  Let `f` be the
+untranslated Miller generator, `div f = p(P) − p(O)`; then `g_S = c·(f ∘ τ_{⊖S})`
+for a constant `c`, and substituting gives, with `W := R ⊖ S` and
+`Ψ(V) := f(P⊕V)/f(V)`,
+
+    z = Ψ(W) / Ψ(⊖W).
+
+So the ONLY thing the configuration is symmetric under is `W ↦ ⊖W`, which
+inverts `z` — i.e. the swap construction of `exists_weilPairing_mu` extracts
+exactly `z² = 1` and can never do better.  Nor can the algebra downstream:
+`B((x₁,x₂),(y₁,y₂)) = x₁y₂ − x₂y₁ + 2x₁y₁` over `ZMod 4` is bilinear, skew
+(`B(x,y) + B(y,x) = 4x₁y₁ = 0`), nondegenerate (determinant `1`) and has
+`B(x,x) = 2x₁² ≠ 0` for odd `x₁`, so bilinearity + skew-symmetry +
+nondegeneracy + `μ_p`-valuedness do not imply alternation at even level.  (The
+swap construction does prove genuine skew-symmetry `e(x,y)·e(y,x) = 1` for a
+general pair, independently of alternation — it is only stated for self-pairs
+in `exists_weilPairing_mu` because that is all the μ-proof needed.  The
+counterexample above says that adding it changes nothing.)  Nor does level
+compatibility `e_m(nP, nQ) = e_{mn}(P, Q)^n`: at `4 ∣ p` it reads
+`e_2(·,·) = e_p(P,P)^{p/2} = 1`, which is vacuous.  Alternation at even level
+is a GEOMETRIC input.
+
+**ROUTE 1 — THE TWO-TORSION TRANSLATE (cheapest, and BLOCKED only by a
+genericity clause; re-examine this before starting Route 2).**  Suppose the two
+auxiliary translates differ by a NONZERO `2`-torsion point, `R = S ⊕ t`,
+`2t = O`.  Then `⊖t = t`, so
+
+    div (τ_t^* aP) = p(P⊕S⊖t) + p(⊖S⊖t) = p(P⊕R) + p(⊖R) = div aQ,
+    div (τ_t^* v_S) = (S⊖t) + (⊖S⊖t) = (R) + (⊖R)         = div v_R,
+
+whence `aQ = c·τ_t^*(aP)` and `v_R = c'·τ_t^*(v_S)` for constants `c, c'`
+(units of the coordinate ring are constants — `hCunits`).  Since
+`(τ_t^* b)(X) = b(X ⊕ t)`, the four evaluations on the two sides of `heq` pair
+up exactly — `aQ(S) = c·aP(R)`, `aQ(P⊕S) = c·aP(P⊕R)`,
+`v_R^p(S) = c'^p·v_S^p(R)`, `v_R^p(P⊕S) = c'^p·v_S^p(P⊕R)` — and `c`, `c'`
+cancel between numerator and denominator.  So `z = 1` on the nose, at EVERY
+level and with no `p`-division point anywhere.  The divisor transport is not
+hand-waving: it is `WeilPairing.spanSingleton_pointEval_translate`
+(`WeilPairingDescent.lean`, PROVEN),
+`span(τ_Q^* b) · I_{⊖Q}^{|D|} = ∏_{X ∈ D} I_{X ⊖ Q}`.
+
+WHAT BLOCKS IT, EXACTLY: `weilValueProp` demands `x_S ∈ F'` and `x_R ∉ F'`.
+With `R = S ⊕ t` that forces `t ∉ E(F')`, and `F'` contains `F`, which is
+forced to contain `frobFixed q (2·m)` — a field that may already contain the
+whole of `E[2]` (`E[2]` is defined over `𝔽_{q^{n₂}}` with `n₂ ∣ 6`; if
+`n₂ ∣ 2m` the route dies).  The `F`/`F'` clauses are a DEVICE for the transport
+and uniqueness proofs, not part of the mathematics — the value equation only
+needs the two divisors to be disjoint — so the honest ways out are (i) find a
+`t` and a legal `F'` when `n₂ ∤ 2m`, and handle the remaining `n₂ ∣ 2m` case
+separately, or (ii) prove the value equation for a NON-`F'`-generic
+configuration and transport it to the given one.  Neither has been attempted.
+
+**ROUTE 2 — SILVERMAN III.8.1(b) VERBATIM** (what the original leaf's docstring
+prescribed; heavier, but unconditional).  `div (∏_{i<p} f ∘ τ_{[i]P}) = 0`
+because `i ↦ (1−i)P` and `i ↦ (−i)P` enumerate the same multiset of `⟨P⟩`, so
+that product is a constant `c`.  Pick `P'` with `[p]P' = P`
+(`TorsionCard.smul_surjective`, which is why `hp : (p : F) ≠ 0` is carried) and
+`g` with `g^p = f ∘ [p]`; then `h := ∏_{i<p} g ∘ τ_{[i]P'}` has `h^p = c`, so
+`h` is constant, translating by `P'` permutes its factors cyclically, and
+cancelling the `p − 1` common factors leaves `g ∘ τ_P = g`, i.e. `e(P,P) = 1`.
+Every ingredient exists in `WeilPairingDescent.lean`
+(`exists_smul_tautPoint_eq`, `exists_span_eq_prod_pointIdeal`,
+`exists_translationChar`, `spanSingleton_pointEval_translate`); what is missing
+is the bridge from the generic-point evaluations that file works with to the
+honest point evaluations `AdjoinRoot.evalEval` that `weilValueProp` uses.
+
+**FAITHFULNESS AUDIT (2026-07-31).**  TRUE: `e_m` is alternating at every level
+`m ≥ 1` (Silverman *AEC* III.8.1(b), stated there for arbitrary `m` with
+`char k ∤ m`, which is `hp` here).  No hypothesis is vacuous: the configuration
+is inhabited — `exists_weilValueSetup_avoiding` constructs one for every pair of
+affine `p`-torsion representatives — and `hA` is exactly its nonvanishing
+clause, so `z` is pinned to `num/den` and the statement is an equation between
+two nonzero field elements, not a vacuous implication.  `hΔ`, `hDD`, `hp`,
+`hCunits`, `hline` and the eight abscissa-avoidance clauses are all retained
+DEFENSIVELY: each is supplied by the single call site below at no cost, and
+adding a hypothesis cannot make the leaf false.  `htor` is NOT defensive — it is
+load-bearing, and without it `aP` and `aQ` need not exist. -/
+theorem weilValue_self_config_eq_one {F : Type*} [Field F]
+    [DecidableEq F] [IsAlgClosed F] (W : WeierstrassCurve.Affine F)
+    (hΔ : W.Δ ≠ 0) (hDD : IsDedekindDomain W.CoordinateRing)
+    (p : ℕ) (hp : (p : F) ≠ 0)
+    (hCunits : ∀ u : W.CoordinateRing, IsUnit u →
+      ∃ c : F, c ≠ 0 ∧ u = AdjoinRoot.of W.polynomial (Polynomial.C c))
+    (hline : ∀ (x₁ y₁ x₂ y₂ : F)
+      (_ : W.Nonsingular x₁ y₁) (_ : W.Nonsingular x₂ y₂)
+      (_ : ¬(x₁ = x₂ ∧ y₁ = W.negY x₂ y₂)),
+      WeierstrassCurve.Affine.CoordinateRing.YIdeal W
+        (WeierstrassCurve.Affine.linePolynomial x₁ y₁
+          (W.slope x₁ x₂ y₁ y₂)) =
+      WeierstrassCurve.Affine.CoordinateRing.XYIdeal W x₁
+        (Polynomial.C y₁) *
+      WeierstrassCurve.Affine.CoordinateRing.XYIdeal W x₂
+        (Polynomial.C y₂) *
+      WeierstrassCurve.Affine.CoordinateRing.XYIdeal W
+        (W.addX x₁ x₂ (W.slope x₁ x₂ y₁ y₂))
+        (Polynomial.C (W.negY (W.addX x₁ x₂ (W.slope x₁ x₂ y₁ y₂))
+          (W.addY x₁ x₂ y₁ (W.slope x₁ x₂ y₁ y₂)))))
+    (hevvert : ∀ (c x y : F) (hE : W.Equation x y),
+      AdjoinRoot.evalEval (p := W.polynomial) hE
+        (WeierstrassCurve.Affine.CoordinateRing.XClass W c) = x - c)
+    (xP yP xS yS xR yR xPS yPS xQR yQR z : F)
+    (hP : W.Nonsingular xP yP) (hS : W.Nonsingular xS yS)
+    (hR : W.Nonsingular xR yR) (hPS : W.Nonsingular xPS yPS)
+    (hQR : W.Nonsingular xQR yQR)
+    (htor : (p : ℤ) • (WeierstrassCurve.Affine.Point.some xP yP hP :
+      W.Point) = 0)
+    (hPSc : WeierstrassCurve.Affine.Point.some xPS yPS hPS =
+      WeierstrassCurve.Affine.Point.some xP yP hP +
+        WeierstrassCurve.Affine.Point.some xS yS hS)
+    (hQRc : WeierstrassCurve.Affine.Point.some xQR yQR hQR =
+      WeierstrassCurve.Affine.Point.some xP yP hP +
+        WeierstrassCurve.Affine.Point.some xR yR hR)
+    (hxSP : xS ≠ xP) (hxRP : xR ≠ xP) (hxPSP : xPS ≠ xP)
+    (hxQRP : xQR ≠ xP)
+    (hxRS : xR ≠ xS) (hxRPS : xR ≠ xPS)
+    (hxQRS : xQR ≠ xS) (hxQRPS : xQR ≠ xPS)
+    (aP aQ : W.CoordinateRing)
+    (haP : Ideal.span {aP} =
+      (WeierstrassCurve.Affine.CoordinateRing.XYIdeal W xPS
+        (Polynomial.C yPS)) ^ p *
+      (WeierstrassCurve.Affine.CoordinateRing.XYIdeal W xS
+        (Polynomial.C (W.negY xS yS))) ^ p)
+    (haQ : Ideal.span {aQ} =
+      (WeierstrassCurve.Affine.CoordinateRing.XYIdeal W xQR
+        (Polynomial.C yQR)) ^ p *
+      (WeierstrassCurve.Affine.CoordinateRing.XYIdeal W xR
+        (Polynomial.C (W.negY xR yR))) ^ p)
+    (hA : (AdjoinRoot.evalEval hQR.left
+        ((WeierstrassCurve.Affine.CoordinateRing.XClass W xS) ^ p) *
+      AdjoinRoot.evalEval hR.left aP *
+      AdjoinRoot.evalEval hS.left
+        ((WeierstrassCurve.Affine.CoordinateRing.XClass W xR) ^ p) *
+      AdjoinRoot.evalEval hPS.left aQ) ≠ 0)
+    (heq : z * (AdjoinRoot.evalEval hQR.left
+        ((WeierstrassCurve.Affine.CoordinateRing.XClass W xS) ^ p) *
+      AdjoinRoot.evalEval hR.left aP *
+      AdjoinRoot.evalEval hS.left
+        ((WeierstrassCurve.Affine.CoordinateRing.XClass W xR) ^ p) *
+      AdjoinRoot.evalEval hPS.left aQ) =
+      AdjoinRoot.evalEval hQR.left aP *
+      AdjoinRoot.evalEval hR.left
+        ((WeierstrassCurve.Affine.CoordinateRing.XClass W xS) ^ p) *
+      AdjoinRoot.evalEval hS.left aQ *
+      AdjoinRoot.evalEval hPS.left
+        ((WeierstrassCurve.Affine.CoordinateRing.XClass W xR) ^ p)) :
+    z = 1 :=
+  sorry
+
 end MillerEngine
 
 /-- **`p = 2` alternation core** (PROVEN — Silverman AEC III.8.1(b)
@@ -4203,10 +4377,11 @@ theorem weilValueProp_self_of_two (q : ℕ) [Fact q.Prime]
       hxRS hxRPS hxQRnS hxQRnPS
       aP aQ haP haQ hA heq)
 
-/-- **Alternation at an EVEN level greater than `2`** (sorry leaf, opened
-2026-07-30 while generalizing this file's Weil-pairing chain from a prime `p`
-to an arbitrary level `p ≥ 2`; Silverman *AEC* III.8.1(b)): an admissible
-Miller value for a self-pair `(x, x)` is `1`.
+/-- **Alternation at an EVEN level greater than `2`** (PROVEN 2026-07-31 over
+`weilValue_self_config_eq_one` above — the configuration-level leaf this node
+was cut into; it was opened 2026-07-30 while generalizing this file's
+Weil-pairing chain from a prime `p` to an arbitrary level `p ≥ 2`; Silverman
+*AEC* III.8.1(b)): an admissible Miller value for a self-pair `(x, x)` is `1`.
 
 **WHY THIS LEAF EXISTS, AND WHY IT IS EXACTLY THE ODD-`p` GAP.**  In
 `exists_weilPairing_mu` alternation is obtained from two facts the construction
@@ -4223,42 +4398,41 @@ auxiliary configurations of the admissible setup), and the order clause gives
   applies.  That is this leaf, and it is empty at prime level: no prime is
   even and `> 2`.  It is the ONLY node of the chain that primality was hiding.
 
-**THE ARGUMENT OWED** (Silverman *AEC* III.8.1(b), verbatim at level `p`; it is
-geometric and does not go through bilinearity at all, so it covers every `p`
-uniformly and would subsume `weilValueProp_self_of_two` if written).  Let
-`P = x` and let `f` be the Miller generator, `div f = p(P) − p(O)`.  Then
+**WHAT IS LEFT, AND WHERE (2026-07-31).**  This node is now pure bookkeeping:
+destructure the admissible setup out of `hz`, read off the four abscissa
+avoidances from the `F`/`F'` memberships exactly as `weilValueProp_self_of_two`
+does, and hand the configuration to `weilValue_self_config_eq_one` above.  The
+whole mathematical content — Silverman *AEC* III.8.1(b), the argument that
+`z = 1` for a Miller cross-ratio of a self-pair — now lives THERE, stated over
+an arbitrary algebraically closed field with no `ZMod q`, no `nTorsion`
+subtype, no Frobenius and no `huniq`, and level-uniformly (so it also subsumes
+`weilValue_two_torsion_config_eq_one`, which stays on its own proof).  That
+docstring carries the route analysis: the reading of the value equation as
+`z = Ψ(R⊖S)/Ψ(S⊖R)`, why the swap construction can only ever give `z² = 1`,
+the `ZMod 4` bilinear-skew-nondegenerate counterexample showing no formal route
+exists, the cheap two-torsion-translate route and the exact genericity clause
+that blocks it, and the ingredients of the unconditional route.
 
-    div (∏_{i=0}^{p−1} f ∘ τ_{[i]P}) = Σ_{i=0}^{p−1} p((1−i)P) − p((−i)P) = 0,
-
-because `i ↦ (1−i)P` and `i ↦ (−i)P` enumerate the same multiset of points of
-`⟨P⟩`; so that product is a constant `c`.  Pick `P'` with `[p]P' = P` and `g`
-with `g ^ p = f ∘ [p]` (the descent's L4-1/L4-7 data, already available in
-`WeilPairingDescent.lean`).  Then `(∏_{i=0}^{p−1} g ∘ τ_{[i]P'}) ^ p = c` is
-constant, hence so is `h := ∏_{i=0}^{p−1} g ∘ τ_{[i]P'}`.  Translating by `P'`
-permutes the factors cyclically, `h ∘ τ_{P'} = h`, and cancelling the `p − 1`
-common factors leaves `g ∘ τ_{[p]P'} = g`, i.e. `g ∘ τ_P = g` — which is
-precisely `e(P, P) = 1`.
-
-**FAITHFULNESS AUDIT (2026-07-30).**  The statement is TRUE: the Weil pairing
-`e_m` is alternating at every level `m ≥ 1`, not merely at prime level
-(Silverman *AEC* III.8.1(b) is stated for arbitrary `m` with `char k ∤ m`, which
-is exactly `hqp` here).  The hypotheses are the same ones
+**FAITHFULNESS AUDIT (2026-07-30), UNCHANGED.**  The statement is TRUE: the
+Weil pairing `e_m` is alternating at every level `m ≥ 1`, not merely at prime
+level (Silverman *AEC* III.8.1(b) is stated for arbitrary `m` with
+`char k ∤ m`, which is exactly `hqp` here).  The hypotheses are the same ones
 `weilValueProp_self_of_two` carries, so this is a drop-in for the branch it
-covers; `huniq` is what lets the value be pinned once an admissible setup is
-evaluated, and `hqp` is what makes `[p]` separable so that `P'` above exists.
-No quantifier here ranges more widely than in the prime-level statement it
-generalizes: `x` ranges over `p`-torsion exactly as before.
+covers; `hqp` is what makes `[p]` separable so that the `p`-division point of
+the III.8.1(b) argument exists.  No quantifier here ranges more widely than in
+the prime-level statement it generalizes: `x` ranges over `p`-torsion exactly
+as before.  The audit transfers verbatim because the STATEMENT of this node did
+not change — only its proof did.
 
-Reduction to a smaller leaf, if a later owner wants one: only the `p = 2^k`
-part is genuinely new, since for `p = 2^k·m` with `m` odd the argument above is
-level-uniform anyway — there is no cheaper cut that does not just re-run
-III.8.1(b). -/
+`_hp2`, `_hne` and `_huniq` are now unused: the cut is level-uniform, and the
+value is pinned by the setup destructured from `hz` rather than by uniqueness.
+They are kept so that the call site in `exists_weilPairing_mu` is unchanged. -/
 theorem weilValueProp_self_of_even_of_ne_two (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic]
-    (p : ℕ) [Fact (1 < p)] (hqp : ¬ q ∣ p) (hp2 : 2 ∣ p) (hne : p ≠ 2)
+    (p : ℕ) [Fact (1 < p)] (hqp : ¬ q ∣ p) (_hp2 : 2 ∣ p) (_hne : p ≠ 2)
     (hDD : IsDedekindDomain (Wbar.map (algebraMap (ZMod q)
       (AlgebraicClosure (ZMod q)))).toAffine.CoordinateRing)
-    (huniq : ∀ (v w : (Wbar.map (algebraMap (ZMod q)
+    (_huniq : ∀ (v w : (Wbar.map (algebraMap (ZMod q)
         (AlgebraicClosure (ZMod q)))).nTorsion p)
       (z₁ z₂ : (AlgebraicClosure (ZMod q))ˣ),
       weilValueProp q Wbar p v w z₁ → weilValueProp q Wbar p v w z₂ →
@@ -4266,8 +4440,55 @@ theorem weilValueProp_self_of_even_of_ne_two (q : ℕ) [Fact q.Prime]
     (x : (Wbar.map (algebraMap (ZMod q)
       (AlgebraicClosure (ZMod q)))).nTorsion p)
     (z : (AlgebraicClosure (ZMod q))ˣ)
-    (hz : weilValueProp q Wbar p x x z) : z = 1 :=
-  sorry
+    (hz : weilValueProp q Wbar p x x z) : z = 1 := by
+  classical
+  rcases hcx : x.val with _ | ⟨xP, yP, hP⟩
+  · exact hz.1 (Or.inl (hcx.trans WeierstrassCurve.Affine.Point.zero_def))
+  · -- destructure the admissible setup for the affine self-pair
+    obtain ⟨F, F', hFfin, hF'fin, hFF', hK2F, hxPF, hyPF, hxQF, hyQF,
+      xS, yS, hS, hxSF', hySF', hxSF, xR, yR, hR, hxRF',
+      xPS, yPS, hPS, hPSc, hxPSF', hyPSF', hxPSF,
+      xQR, yQR, hQR, hQRc, hxQRnS, hxQRnPS, hxQRF',
+      aP, aQ, haP, haQ, hA, heq⟩ := hz.2 xP yP hP xP yP hP hcx hcx
+    -- the curve is elliptic, so its discriminant is a unit
+    have hΔ : (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).toAffine.Δ ≠ 0 :=
+      (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).isUnit_Δ.ne_zero
+    -- `q ∤ p` is `(p : 𝔽̄_q) ≠ 0`
+    have hp0 : ((p : ℕ) : AlgebraicClosure (ZMod q)) ≠ 0 := by
+      haveI : CharP (AlgebraicClosure (ZMod q)) q :=
+        charP_of_injective_algebraMap
+          (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))).injective q
+      exact fun h0 =>
+        hqp ((CharP.cast_eq_zero_iff (AlgebraicClosure (ZMod q)) q p).mp h0)
+    -- the torsion hypothesis, on the affine representative
+    have hvp : (p : ℤ) • (WeierstrassCurve.Affine.Point.some xP yP hP :
+        (Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).toAffine.Point) = 0 := by
+      have h := (Submodule.mem_torsionBy_iff _ _).mp x.property
+      rw [hcx] at h
+      exact h
+    -- affine genericity from the setup's F-avoidances
+    have hxSP : xS ≠ xP := fun h => hxSF (by rw [h]; exact hxPF)
+    have hxRP : xR ≠ xP := fun h => hxRF' (by rw [h]; exact hFF' hxPF)
+    have hxPSP : xPS ≠ xP := fun h => hxPSF (by rw [h]; exact hxPF)
+    have hxQRP : xQR ≠ xP := fun h => hxQRF' (by rw [h]; exact hFF' hxPF)
+    have hxRS : xR ≠ xS := fun h => hxRF' (by rw [h]; exact hxSF')
+    have hxRPS : xR ≠ xPS := fun h => hxRF' (by rw [h]; exact hxPSF')
+    exact Units.ext (weilValue_self_config_eq_one
+      ((Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).toAffine) hΔ hDD p hp0
+      (coordRing_isUnit_constant q (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))))
+      (coordRing_line_span q (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))))
+      (coordRing_evalEval_XClass q (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))))
+      xP yP xS yS xR yR xPS yPS xQR yQR (z : AlgebraicClosure (ZMod q))
+      hP hS hR hPS hQR hvp hPSc hQRc
+      hxSP hxRP hxPSP hxQRP hxRS hxRPS hxQRnS hxQRnPS
+      aP aQ haP haQ hA heq)
 
 section TranslationCharDegenerate
 

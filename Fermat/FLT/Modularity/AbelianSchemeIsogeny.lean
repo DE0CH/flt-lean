@@ -3794,7 +3794,9 @@ end IsLocalizationTensorComp
 
 /-! ### THE CUT OF 10.127.11 INTO A MODEL HALF AND A LOCALIZATION HALF
 
-(2026-07-30.)  `exists_noetherianLocalExtSystem_of_essFinitePresentation` below used to
+(2026-07-30; the model half was PROVEN 2026-07-31, so of the three pieces below only
+`exists_isLocalization_tensorProduct_localizationAtPrime` is still open.)
+`exists_noetherianLocalExtSystem_of_essFinitePresentation` below used to
 be one sorry leaf carrying the whole of 10.127.11.  Its own SURVEY paragraph already
 named the seam — finding 1 said the MODEL half is in the pin
 (`Algebra.Presentation.HasCoeffs`), finding 2 said "what is NOT supplied is everything
@@ -3807,7 +3809,7 @@ the leaf is cut along exactly that line, into three pieces of which the FIRST is
   contracted prime `𝔮 = vT⁻¹(𝔪_B)`, so `B = T_𝔮`.  This is the step every write-up of
   10.127.11 opens with, and it is what lets the rest of the argument work with a single
   prime per stage instead of a submonoid it would have to descend as well.
-* `exists_noetherianModelTower_of_finitePresentation` (**LEAF**) — the model half:
+* `exists_noetherianModelTower_of_finitePresentation` (**PROVEN 2026-07-31**) — the model half:
   a finitely presented `R`-algebra `T` is, from some stage on, the filtered colimit of
   finitely presented models `T_λ` over `R_λ` that base-change to one another.  No
   localization, no locality, no prime occurs in it.
@@ -3956,7 +3958,439 @@ structure NoetherianModelTower {R T : Type u} [CommRing R] [CommRing T]
       (IsScalarTower.toAlgHom (bs.Base i) (Mod i) (Mod j))
       fun _ _ => Commute.all _ _)
 
-/-- **THE MODEL HALF OF 10.127.11** (sorry leaf, cut 2026-07-30 out of
+/-- Directedness upgraded from pairs to finite sets. -/
+theorem exists_ub_finset_of_directed {Λ : Type u} {le : Λ → Λ → Prop}
+    (hrfl : ∀ i, le i i) (htrans : ∀ {i j k}, le i j → le j k → le i k)
+    (hdir : ∀ i j, ∃ k, le i k ∧ le j k)
+    (S : Finset Λ) (i₀ : Λ) : ∃ k, le i₀ k ∧ ∀ x ∈ S, le x k := by
+  classical
+  induction S using Finset.induction with
+  | empty => exact ⟨i₀, hrfl i₀, by simp⟩
+  | @insert x S _ ih =>
+      obtain ⟨k, hk0, hkS⟩ := ih
+      obtain ⟨k', hk1, hk2⟩ := hdir x k
+      refine ⟨k', htrans hk0 hk2, ?_⟩
+      intro y hy
+      rcases Finset.mem_insert.mp hy with rfl | hy
+      · exact hk1
+      · exact htrans (hkS y hy) hk2
+
+/-- Directedness upgraded from pairs to families indexed by a fintype. -/
+theorem exists_ub_fintype_of_directed {Λ : Type u} {le : Λ → Λ → Prop}
+    (hrfl : ∀ i, le i i) (htrans : ∀ {i j k}, le i j → le j k → le i k)
+    (hdir : ∀ i j, ∃ k, le i k ∧ le j k)
+    {ι : Type*} [Fintype ι] (f : ι → Λ) (i₀ : Λ) : ∃ k, le i₀ k ∧ ∀ x, le (f x) k := by
+  classical
+  obtain ⟨k, hk0, hkS⟩ := exists_ub_finset_of_directed hrfl htrans hdir (Finset.image f Finset.univ) i₀
+  exact ⟨k, hk0, fun x => hkS _ (Finset.mem_image_of_mem f (Finset.mem_univ x))⟩
+
+/-! ### THE MODEL HALF OF 10.127.11: THE CONSTRUCTION
+
+(2026-07-31.)  Everything in `NoetherianModelHalf` exists to prove
+`exists_noetherianModelTower_of_finitePresentation` below, and nothing else consumes it.
+The block is in three layers:
+
+* three DESCENT helpers, upgrading `bs.base_surj`/`bs.base_sep` from ring elements to
+  POLYNOMIALS.  A polynomial has finitely many coefficients, so each is one use of
+  `exists_ub_finset_of_directed` above and nothing more.
+* `bijective_tensorLift_of_polyQuot`, the one piece of real algebra: if `C` is a quotient
+  of `A[σ]` and `D` the quotient of `B[σ]` by the extended ideal, then `D = B ⊗[A] C`.
+  It is stated with `C` and `D` ABSTRACT, presented by ring maps out of the polynomial
+  rings, and that is not decoration.  With `C` written literally as `A[σ] ⧸ I`, the
+  `Module A C` instance Lean picks is `Submodule.Quotient.module'`, whereas the one in
+  `isPushoutModT`'s statement — where `Mod i` is an opaque `CommRingCat` — is
+  `Algebra.toModule`; the two are defeq only through `AddMonoidAlgebra.mul'`, which the
+  module system does not expose, so the application fails with an "application type
+  mismatch" that no amount of `show` will fix.  Abstract `C` and `D` make the instances
+  agree syntactically.  The proof builds the inverse `D → B ⊗[A] C` by hand out of the
+  universal property of `B[σ]`, for the same reason: every route through
+  `Algebra.TensorProduct.tensorQuotientEquiv` reintroduces the quotient instances.
+* the models themselves, `T_λ = R_λ[x] ⧸ (F^λ)`, and the twelve fields.
+
+**WHY THE CONSTRUCTION IS STATED OVER A BARE BASE SYSTEM WITH A BOTTOM INDEX** rather
+than over `bs.restrict i₀` directly.  `(bs.restrict i₀).Base i` and `bs.Base i.1` are
+definitionally equal but NOT syntactically equal, and instance search is syntactic: with
+the interior written in the second spelling, `Ideal.Quotient.mk` cannot synthesize
+`Ideal.IsTwoSided` against a goal written in the first.  Taking
+`(bs, b₀, hb₀ : ∀ i, bs.le b₀ i)` and instantiating at
+`(bs.restrict i₀, ⟨i₀, le_rfl⟩, fun i => i.2)` removes every `.1` and every `restrict`
+from the interior, so the mismatch cannot arise. -/
+
+namespace NoetherianModelHalf
+
+open MvPolynomial
+
+section Descent
+
+variable {R : Type u} [CommRing R]
+
+/-- Lift ONE polynomial over the colimit `R` to a polynomial over some stage. -/
+theorem exists_lift_mvPolynomial_one (bs : NoetherianLocalBaseSystem R) {σ : Type v}
+    (p : MvPolynomial σ R) (i₀ : bs.Λ) :
+    ∃ i, ∃ _ : bs.le i₀ i, ∃ P : MvPolynomial σ (bs.Base i),
+      MvPolynomial.map (bs.baseToR i) P = p := by
+  classical
+  have hc : ∀ d : σ →₀ ℕ, ∃ j, ∃ y : bs.Base j, bs.baseToR j y = MvPolynomial.coeff d p :=
+    fun d => bs.base_surj _
+  choose j y hy using hc
+  obtain ⟨k, hk0, hkS⟩ :=
+    exists_ub_finset_of_directed bs.le_rfl bs.le_trans' bs.directed (p.support.image j) i₀
+  have hle : ∀ d ∈ p.support, bs.le (j d) k := fun d hd =>
+    hkS _ (Finset.mem_image_of_mem j hd)
+  refine ⟨k, hk0,
+    ∑ d ∈ p.support.attach, MvPolynomial.monomial d.1 (bs.baseT (hle d.1 d.2) (y d.1)), ?_⟩
+  rw [map_sum]
+  have step : ∀ d ∈ p.support.attach,
+      MvPolynomial.map (bs.baseToR k)
+        (MvPolynomial.monomial (d : σ →₀ ℕ) (bs.baseT (hle d.1 d.2) (y d.1)))
+      = MvPolynomial.monomial (d : σ →₀ ℕ) (MvPolynomial.coeff (d : σ →₀ ℕ) p) := by
+    intro d _
+    rw [MvPolynomial.map_monomial]
+    congr 1
+    have h1 := DFunLike.congr_fun (bs.comm_baseToR (hle d.1 d.2)) (y d.1)
+    simp only [RingHom.comp_apply] at h1
+    rw [h1, hy d.1]
+  rw [Finset.sum_congr rfl step]
+  rw [Finset.sum_attach p.support (fun d => MvPolynomial.monomial d (MvPolynomial.coeff d p))]
+  exact MvPolynomial.support_sum_monomial_coeff p
+
+/-- Lift a FINITE FAMILY of polynomials over `R` to one common stage. -/
+theorem exists_lift_mvPolynomial (bs : NoetherianLocalBaseSystem R) {σ : Type v}
+    {ι : Type*} [Fintype ι] (p : ι → MvPolynomial σ R) (i₀ : bs.Λ) :
+    ∃ i, ∃ _ : bs.le i₀ i, ∃ P : ι → MvPolynomial σ (bs.Base i),
+      ∀ k, MvPolynomial.map (bs.baseToR i) (P k) = p k := by
+  classical
+  choose j hj P hP using fun k => exists_lift_mvPolynomial_one bs (p k) i₀
+  obtain ⟨i, hi0, hik⟩ :=
+    exists_ub_fintype_of_directed bs.le_rfl bs.le_trans' bs.directed j i₀
+  refine ⟨i, hi0, fun k => MvPolynomial.map (bs.baseT (hik k)) (P k), ?_⟩
+  intro k
+  rw [MvPolynomial.map_map]
+  rw [bs.comm_baseToR (hik k)]
+  exact hP k
+
+/-- Separation, upgraded from ring elements to polynomials. -/
+theorem exists_map_baseT_eq (bs : NoetherianLocalBaseSystem R) {σ : Type v} (i : bs.Λ)
+    (P Q : MvPolynomial σ (bs.Base i))
+    (h : MvPolynomial.map (bs.baseToR i) P = MvPolynomial.map (bs.baseToR i) Q) :
+    ∃ j, ∃ hij : bs.le i j,
+      MvPolynomial.map (bs.baseT hij) P = MvPolynomial.map (bs.baseT hij) Q := by
+  classical
+  have hco : ∀ d : σ →₀ ℕ,
+      bs.baseToR i (MvPolynomial.coeff d P) = bs.baseToR i (MvPolynomial.coeff d Q) := by
+    intro d
+    have := congrArg (MvPolynomial.coeff d) h
+    simpa [MvPolynomial.coeff_map] using this
+  have hsep : ∀ d : σ →₀ ℕ, ∃ j, ∃ hij : bs.le i j,
+      bs.baseT hij (MvPolynomial.coeff d P) = bs.baseT hij (MvPolynomial.coeff d Q) := by
+    intro d
+    obtain ⟨j, hij, hj⟩ := bs.base_sep i _ _ (hco d)
+    exact ⟨j, hij, hj⟩
+  choose j hij hj using hsep
+  set S : Finset (σ →₀ ℕ) := P.support ∪ Q.support with hS
+  obtain ⟨k, hk0, hkS⟩ :=
+    exists_ub_finset_of_directed bs.le_rfl bs.le_trans' bs.directed (S.image j) i
+  refine ⟨k, hk0, ?_⟩
+  ext d
+  rw [MvPolynomial.coeff_map, MvPolynomial.coeff_map]
+  by_cases hd : d ∈ S
+  · have hjk : bs.le (j d) k := hkS _ (Finset.mem_image_of_mem j hd)
+    have hcomp := bs.baseT_comp (hij d) hjk
+    have h1 := congrArg (fun (t : bs.Base i →+* bs.Base k) => t (MvPolynomial.coeff d P)) hcomp
+    have h2 := congrArg (fun (t : bs.Base i →+* bs.Base k) => t (MvPolynomial.coeff d Q)) hcomp
+    simp only [RingHom.comp_apply] at h1 h2
+    rw [← h1, ← h2, hj d]
+  · have hP0 : MvPolynomial.coeff d P = 0 := by
+      by_contra hne
+      exact hd (Finset.mem_union_left _ (MvPolynomial.mem_support_iff.mpr hne))
+    have hQ0 : MvPolynomial.coeff d Q = 0 := by
+      by_contra hne
+      exact hd (Finset.mem_union_right _ (MvPolynomial.mem_support_iff.mpr hne))
+    rw [hP0, hQ0]
+
+end Descent
+
+/-- **BASE CHANGE OF A QUOTIENT OF A POLYNOMIAL RING.**  If `C` is a quotient of `A[σ]`
+and `D` is the quotient of `B[σ]` by the extended ideal, then `D = B ⊗[A] C`.
+
+Stated with `C` and `D` abstract, presented by ring maps out of the polynomial rings, so
+that the tensor product carries the algebra-derived module structure and no `Submodule`
+quotient instance can intrude. -/
+theorem bijective_tensorLift_of_polyQuot
+    {A B C D : Type*} [CommRing A] [CommRing B] [CommRing C] [CommRing D]
+    [Algebra A B] [Algebra A C] [Algebra A D] [Algebra B D] [Algebra C D]
+    [IsScalarTower A B D] [IsScalarTower A C D] {σ : Type*}
+    (πC : MvPolynomial σ A →+* C) (πD : MvPolynomial σ B →+* D)
+    (hπC : Function.Surjective πC) (hπD : Function.Surjective πD)
+    (hCalg : ∀ a : A, πC (MvPolynomial.C a) = algebraMap A C a)
+    (hDalg : ∀ b : B, πD (MvPolynomial.C b) = algebraMap B D b)
+    (hcomm : ∀ p : MvPolynomial σ A,
+      πD (MvPolynomial.map (algebraMap A B) p) = algebraMap C D (πC p))
+    (hker : RingHom.ker πD = (RingHom.ker πC).map (MvPolynomial.map (algebraMap A B))) :
+    Function.Bijective (Algebra.TensorProduct.lift (IsScalarTower.toAlgHom A B D)
+      (IsScalarTower.toAlgHom A C D) fun _ _ => Commute.all _ _) := by
+  classical
+  set Φ := Algebra.TensorProduct.lift (IsScalarTower.toAlgHom A B D)
+      (IsScalarTower.toAlgHom A C D) (fun _ _ => Commute.all _ _) with hΦdef
+  have hΦtmul : ∀ (b : B) (c : C), Φ (b ⊗ₜ c) = algebraMap B D b * algebraMap C D c :=
+    fun b c => Algebra.TensorProduct.lift_tmul _ _ _ _ _
+  -- the candidate inverse, first on polynomials over `B`
+  set ψ : MvPolynomial σ B →+* B ⊗[A] C :=
+    MvPolynomial.eval₂Hom Algebra.TensorProduct.includeLeftRingHom
+      (fun s => 1 ⊗ₜ πC (MvPolynomial.X s)) with hψdef
+  have hψC : ∀ b : B, ψ (MvPolynomial.C b) = b ⊗ₜ 1 := by
+    intro b; rw [hψdef]; simp [Algebra.TensorProduct.includeLeftRingHom]
+  have hψX : ∀ s : σ, ψ (MvPolynomial.X s) = 1 ⊗ₜ πC (MvPolynomial.X s) := by
+    intro s; rw [hψdef]; simp
+  -- `ψ` on the image of `A[σ]` is `1 ⊗ πC`
+  have hψmap : ∀ p : MvPolynomial σ A,
+      ψ (MvPolynomial.map (algebraMap A B) p) = 1 ⊗ₜ πC p := by
+    have hcomp : ψ.comp (MvPolynomial.map (algebraMap A B))
+        = (Algebra.TensorProduct.includeRight : C →ₐ[A] B ⊗[A] C).toRingHom.comp πC := by
+      refine MvPolynomial.ringHom_ext (fun a => ?_) (fun s => ?_)
+      · simp only [RingHom.comp_apply, MvPolynomial.map_C, hψC, hCalg,
+          AlgHom.toRingHom_eq_coe, RingHom.coe_coe, Algebra.TensorProduct.includeRight_apply]
+        rw [Algebra.algebraMap_eq_smul_one (R := A) (A := B),
+          Algebra.algebraMap_eq_smul_one (R := A) (A := C), TensorProduct.smul_tmul]
+      · simp only [RingHom.comp_apply, MvPolynomial.map_X, hψX,
+          AlgHom.toRingHom_eq_coe, RingHom.coe_coe, Algebra.TensorProduct.includeRight_apply]
+    exact fun p => congrArg (fun t : MvPolynomial σ A →+* B ⊗[A] C => t p) hcomp
+  -- `ψ` kills `ker πD`, so it descends to `D`
+  have hkerle : RingHom.ker πD ≤ RingHom.ker ψ := by
+    rw [hker, Ideal.map_le_iff_le_comap]
+    intro x hx
+    simp only [Ideal.mem_comap, RingHom.mem_ker, hψmap]
+    rw [show πC x = 0 from hx, TensorProduct.tmul_zero]
+  have hH : ∀ a ∈ RingHom.ker πD, ψ a = 0 := fun a ha => hkerle ha
+  obtain ⟨Ψ, hΨ⟩ : ∃ Ψ : D →+* B ⊗[A] C, ∀ q, Ψ (πD q) = ψ q := by
+    refine ⟨(Ideal.Quotient.lift (RingHom.ker πD) ψ hH).comp
+      (RingHom.quotientKerEquivOfSurjective hπD).symm.toRingHom, fun q => ?_⟩
+    have hq : (RingHom.quotientKerEquivOfSurjective hπD).symm (πD q)
+        = Ideal.Quotient.mk (RingHom.ker πD) q := by
+      apply (RingHom.quotientKerEquivOfSurjective hπD).injective
+      rw [RingEquiv.apply_symm_apply]
+      rfl
+    show Ideal.Quotient.lift (RingHom.ker πD) ψ hH
+        ((RingHom.quotientKerEquivOfSurjective hπD).symm (πD q)) = ψ q
+    rw [hq, Ideal.Quotient.lift_mk]
+  -- `Ψ ∘ Φ = id`
+  have hΨΦ : ∀ x : B ⊗[A] C, Ψ (Φ x) = x := by
+    intro x
+    induction x using TensorProduct.induction_on with
+    | zero => simp
+    | tmul b c =>
+        obtain ⟨p, rfl⟩ := hπC c
+        rw [hΦtmul, map_mul]
+        have h1 : Ψ (algebraMap B D b) = b ⊗ₜ 1 := by
+          rw [← hDalg b, hΨ, hψC]
+        have h2 : Ψ (algebraMap C D (πC p)) = 1 ⊗ₜ πC p := by
+          rw [← hcomm p, hΨ, hψmap]
+        rw [h1, h2, Algebra.TensorProduct.tmul_mul_tmul, mul_one, one_mul]
+    | add x y hx hy => rw [map_add, map_add, hx, hy]
+  -- `Φ ∘ ψ = πD`
+  have hΦψ : ∀ q : MvPolynomial σ B, Φ (ψ q) = πD q := by
+    have hcomp : (Φ : B ⊗[A] C →+* D).comp ψ = πD := by
+      refine MvPolynomial.ringHom_ext (fun b => ?_) (fun s => ?_)
+      · simp only [RingHom.comp_apply, hψC, RingHom.coe_coe]
+        rw [hΦtmul, map_one, mul_one, hDalg]
+      · simp only [RingHom.comp_apply, hψX, RingHom.coe_coe]
+        rw [hΦtmul, map_one, one_mul, ← hcomm, MvPolynomial.map_X]
+    exact fun q => congrArg (fun t : MvPolynomial σ B →+* D => t q) hcomp
+  refine ⟨fun x y hxy => by rw [← hΨΦ x, ← hΨΦ y, hxy], fun d => ?_⟩
+  obtain ⟨q, rfl⟩ := hπD d
+  exact ⟨ψ q, hΦψ q⟩
+
+noncomputable section Construction
+
+variable {R T : Type u} [CommRing R] [CommRing T] (bs : NoetherianLocalBaseSystem R)
+  (gT : R →+* T) {n m : ℕ} (b₀ : bs.Λ) (hb₀ : ∀ i, bs.le b₀ i)
+  (F : Fin m → MvPolynomial (Fin n) (bs.Base b₀))
+  (f : MvPolynomial (Fin n) R →+* T)
+
+
+/-- `I_λ`, the relation ideal at stage `λ`. -/
+def relIdeal (i : bs.Λ) : Ideal (MvPolynomial (Fin n) (bs.Base i)) :=
+  Ideal.span (Set.range fun k => MvPolynomial.map (bs.baseT (hb₀ i)) (F k))
+
+/-- `T_λ = R_λ[x] ⧸ (F^λ)`. -/
+abbrev modCarrier (i : bs.Λ) : Type u :=
+  MvPolynomial (Fin n) (bs.Base i) ⧸ relIdeal bs b₀ hb₀ F i
+
+theorem isNoetherian_modCarrier (i : bs.Λ) :
+    IsNoetherianRing (modCarrier bs b₀ hb₀ F i) := by
+  haveI := bs.isNoetherianBase i
+  haveI : IsNoetherianRing (MvPolynomial (Fin n) (bs.Base i)) := MvPolynomial.isNoetherianRing
+  infer_instance
+
+/-- Generators go to generators. -/
+theorem map_gen {i j : bs.Λ} (h : bs.le i j) (k : Fin m) :
+    MvPolynomial.map (bs.baseT h) (MvPolynomial.map (bs.baseT (hb₀ i)) (F k))
+      = MvPolynomial.map (bs.baseT (hb₀ j)) (F k) := by
+  rw [MvPolynomial.map_map, bs.baseT_comp]
+
+/-- The relation ideal at `μ` is the extension of the one at `λ`. -/
+theorem relIdeal_map {i j : bs.Λ} (h : bs.le i j) :
+    relIdeal bs b₀ hb₀ F j
+      = (relIdeal bs b₀ hb₀ F i).map (MvPolynomial.map (bs.baseT h)) := by
+  rw [relIdeal, relIdeal, Ideal.map_span, ← Set.range_comp]
+  exact congrArg Ideal.span
+    (congrArg Set.range (funext fun k => (map_gen bs b₀ hb₀ F h k).symm))
+
+/-- `T_λ → T_μ`. -/
+def modTOf {i j : bs.Λ} (h : bs.le i j) :
+    modCarrier bs b₀ hb₀ F i →+* modCarrier bs b₀ hb₀ F j :=
+  Ideal.Quotient.lift _ ((Ideal.Quotient.mk _).comp (MvPolynomial.map (bs.baseT h))) (by
+    have hle : relIdeal bs b₀ hb₀ F i ≤ RingHom.ker
+        ((Ideal.Quotient.mk (relIdeal bs b₀ hb₀ F j)).comp
+          (MvPolynomial.map (bs.baseT h))) := by
+      rw [relIdeal, Ideal.span_le]
+      rintro _ ⟨k, rfl⟩
+      simp only [SetLike.mem_coe, RingHom.mem_ker, RingHom.comp_apply]
+      rw [map_gen bs b₀ hb₀ F h k]
+      exact Ideal.Quotient.eq_zero_iff_mem.mpr (Ideal.subset_span ⟨k, rfl⟩)
+    exact fun a ha => hle ha)
+
+@[simp] theorem modTOf_mk {i j : bs.Λ} (h : bs.le i j)
+    (p : MvPolynomial (Fin n) (bs.Base i)) :
+    modTOf bs b₀ hb₀ F h (Ideal.Quotient.mk _ p)
+      = Ideal.Quotient.mk _ (MvPolynomial.map (bs.baseT h) p) := rfl
+
+/-- `T_λ → T`. -/
+def modToTOf (hker : RingHom.ker f
+      = Ideal.span (Set.range fun k => MvPolynomial.map (bs.baseToR b₀) (F k)))
+    (i : bs.Λ) : modCarrier bs b₀ hb₀ F i →+* T :=
+  Ideal.Quotient.lift _ (f.comp (MvPolynomial.map (bs.baseToR i))) (by
+    have hle : relIdeal bs b₀ hb₀ F i
+        ≤ RingHom.ker (f.comp (MvPolynomial.map (bs.baseToR i))) := by
+      rw [relIdeal, Ideal.span_le]
+      rintro _ ⟨k, rfl⟩
+      simp only [SetLike.mem_coe, RingHom.mem_ker, RingHom.comp_apply]
+      rw [MvPolynomial.map_map, bs.comm_baseToR (hb₀ i)]
+      have : MvPolynomial.map (bs.baseToR b₀) (F k) ∈ RingHom.ker f := by
+        rw [hker]; exact Ideal.subset_span ⟨k, rfl⟩
+      exact this
+    exact fun a ha => hle ha)
+
+@[simp] theorem modToTOf_mk (hker : RingHom.ker f
+      = Ideal.span (Set.range fun k => MvPolynomial.map (bs.baseToR b₀) (F k)))
+    (i : bs.Λ) (p : MvPolynomial (Fin n) (bs.Base i)) :
+    modToTOf bs b₀ hb₀ F f hker i (Ideal.Quotient.mk _ p)
+      = f (MvPolynomial.map (bs.baseToR i) p) := rfl
+
+include hb₀ in
+/-- **THE MODEL TOWER, GIVEN A DESCENDED PRESENTATION.**  If the coefficients of a finite
+presentation `T = R[x] ⧸ (f₁,…,f_m)` already live at the bottom stage `b₀` of a base
+system for `R`, the models `T_λ = R_λ[x] ⧸ (F^λ)` form a `NoetherianModelTower`. -/
+theorem nonempty_noetherianModelTower_of_descended
+    (hfC : ∀ r, f (MvPolynomial.C r) = gT r)
+    (hfsurj : Function.Surjective f)
+    (hker : RingHom.ker f
+      = Ideal.span (Set.range fun k => MvPolynomial.map (bs.baseToR b₀) (F k))) :
+    Nonempty (NoetherianModelTower bs gT) := by
+  classical
+  refine ⟨{
+    Mod := fun i => CommRingCat.of (modCarrier bs b₀ hb₀ F i)
+    isNoetherianMod := fun i => isNoetherian_modCarrier bs b₀ hb₀ F i
+    baseToMod := fun i => (Ideal.Quotient.mk _).comp MvPolynomial.C
+    modT := fun h => modTOf bs b₀ hb₀ F h
+    modToT := fun i => modToTOf bs b₀ hb₀ F f hker i
+    modT_comp := ?_
+    comm_baseT := ?_
+    comm_baseMod := ?_
+    comm_modToT := ?_
+    mod_surj := ?_
+    mod_sep := ?_
+    isPushoutModT := ?_ }⟩
+  · intro i j k h₁ h₂
+    refine Ideal.Quotient.ringHom_ext (RingHom.ext fun p => ?_)
+    simp only [RingHom.comp_apply, modTOf_mk, MvPolynomial.map_map, bs.baseT_comp]
+  · intro i j h
+    exact RingHom.ext fun x =>
+      congrArg (Ideal.Quotient.mk (relIdeal bs b₀ hb₀ F j)) (MvPolynomial.map_C _ _).symm
+  · intro i
+    exact RingHom.ext fun x => (congrArg f (MvPolynomial.map_C _ _)).trans (hfC _)
+  · intro i j h
+    refine Ideal.Quotient.ringHom_ext (RingHom.ext fun p => ?_)
+    simp only [RingHom.comp_apply, modTOf_mk, modToTOf_mk, MvPolynomial.map_map,
+      bs.comm_baseToR h]
+  · intro t
+    obtain ⟨p, rfl⟩ := hfsurj t
+    obtain ⟨i, _, P, hP⟩ := exists_lift_mvPolynomial_one bs p b₀
+    exact ⟨i, Ideal.Quotient.mk _ P, by rw [modToTOf_mk]; rw [hP]⟩
+  · intro i x y hxy
+    obtain ⟨P, rfl⟩ := Ideal.Quotient.mk_surjective x
+    obtain ⟨Q, rfl⟩ := Ideal.Quotient.mk_surjective y
+    rw [modToTOf_mk, modToTOf_mk] at hxy
+    have hmem : MvPolynomial.map (bs.baseToR i) (P - Q) ∈
+        Ideal.span (Set.range fun k => MvPolynomial.map (bs.baseToR b₀) (F k)) := by
+      have hk0 : MvPolynomial.map (bs.baseToR i) (P - Q) ∈ RingHom.ker f := by
+        simp only [RingHom.mem_ker, map_sub, hxy, sub_self]
+      rwa [hker] at hk0
+    obtain ⟨c, hc⟩ := Ideal.mem_span_range_iff_exists_fun.mp hmem
+    obtain ⟨j, hij, C, hC⟩ := exists_lift_mvPolynomial bs c i
+    set D : MvPolynomial (Fin n) (bs.Base j) :=
+      MvPolynomial.map (bs.baseT hij) (P - Q)
+        - ∑ k, C k * MvPolynomial.map (bs.baseT (hb₀ j)) (F k) with hD
+    have hterm : ∀ x : Fin m,
+        MvPolynomial.map (bs.baseToR j) (C x * MvPolynomial.map (bs.baseT (hb₀ j)) (F x))
+          = c x * MvPolynomial.map (bs.baseToR b₀) (F x) := by
+      intro x
+      rw [map_mul, hC x, MvPolynomial.map_map, bs.comm_baseToR (hb₀ j)]
+    have hD0 : MvPolynomial.map (bs.baseToR j) D = MvPolynomial.map (bs.baseToR j) 0 := by
+      rw [map_zero, hD, map_sub, map_sum, MvPolynomial.map_map, bs.comm_baseToR hij]
+      simp only [hterm]
+      rw [hc, sub_self]
+    obtain ⟨ν, hjν, hν⟩ := exists_map_baseT_eq bs j D 0 hD0
+    rw [map_zero] at hν
+    refine ⟨ν, bs.le_trans' hij hjν, ?_⟩
+    rw [modTOf_mk, modTOf_mk, Ideal.Quotient.eq, ← map_sub]
+    have key : MvPolynomial.map (bs.baseT (bs.le_trans' hij hjν)) (P - Q)
+        = ∑ k, MvPolynomial.map (bs.baseT hjν) (C k)
+            * MvPolynomial.map (bs.baseT (hb₀ ν)) (F k) := by
+      have h1 : MvPolynomial.map (bs.baseT (bs.le_trans' hij hjν)) (P - Q)
+          = MvPolynomial.map (bs.baseT hjν) (MvPolynomial.map (bs.baseT hij) (P - Q)) := by
+        rw [MvPolynomial.map_map, bs.baseT_comp]
+      rw [h1]
+      have h2 : MvPolynomial.map (bs.baseT hij) (P - Q)
+          = D + ∑ k, C k * MvPolynomial.map (bs.baseT (hb₀ j)) (F k) := by
+        rw [hD]; ring
+      rw [h2, map_add, hν, zero_add, map_sum]
+      refine Finset.sum_congr rfl fun k _ => ?_
+      rw [map_mul, MvPolynomial.map_map, bs.baseT_comp]
+    rw [key]
+    refine Ideal.sum_mem _ fun k _ => Ideal.mul_mem_left _ _ ?_
+    exact Ideal.subset_span ⟨k, rfl⟩
+  · intro i j h
+    letI : Algebra (bs.Base i) (modCarrier bs b₀ hb₀ F i) :=
+      ((Ideal.Quotient.mk (relIdeal bs b₀ hb₀ F i)).comp MvPolynomial.C).toAlgebra
+    letI : Algebra (bs.Base i) (bs.Base j) := (bs.baseT h).toAlgebra
+    letI : Algebra (bs.Base i) (modCarrier bs b₀ hb₀ F j) :=
+      (((Ideal.Quotient.mk (relIdeal bs b₀ hb₀ F j)).comp MvPolynomial.C).comp
+        (bs.baseT h)).toAlgebra
+    letI : Algebra (bs.Base j) (modCarrier bs b₀ hb₀ F j) :=
+      ((Ideal.Quotient.mk (relIdeal bs b₀ hb₀ F j)).comp MvPolynomial.C).toAlgebra
+    letI : Algebra (modCarrier bs b₀ hb₀ F i) (modCarrier bs b₀ hb₀ F j) :=
+      (modTOf bs b₀ hb₀ F h).toAlgebra
+    haveI : @IsScalarTower (bs.Base i) (bs.Base j) (modCarrier bs b₀ hb₀ F j)
+        Algebra.toSMul Algebra.toSMul Algebra.toSMul :=
+      IsScalarTower.of_algebraMap_eq fun _ => rfl
+    haveI : @IsScalarTower (bs.Base i) (modCarrier bs b₀ hb₀ F i) (modCarrier bs b₀ hb₀ F j)
+        Algebra.toSMul Algebra.toSMul Algebra.toSMul :=
+      IsScalarTower.of_algebraMap_eq fun x =>
+        congrArg (Ideal.Quotient.mk (relIdeal bs b₀ hb₀ F j)) (MvPolynomial.map_C _ _).symm
+    exact bijective_tensorLift_of_polyQuot
+      (Ideal.Quotient.mk (relIdeal bs b₀ hb₀ F i)) (Ideal.Quotient.mk (relIdeal bs b₀ hb₀ F j))
+      Ideal.Quotient.mk_surjective Ideal.Quotient.mk_surjective
+      (fun _ => rfl) (fun _ => rfl) (fun _ => rfl)
+      (by rw [Ideal.mk_ker, Ideal.mk_ker]; exact relIdeal_map bs b₀ hb₀ F h)
+
+
+end Construction
+
+end NoetherianModelHalf
+
+/-- **THE MODEL HALF OF 10.127.11** (**PROVEN 2026-07-31**, over the block
+`NoetherianModelHalf` immediately above; cut 2026-07-30 out of
 `exists_noetherianLocalExtSystem_of_essFinitePresentation` below; read the section note
 "THE CUT OF 10.127.11 INTO A MODEL HALF AND A LOCALIZATION HALF" above first).
 
@@ -3985,14 +4419,19 @@ would not be compatible and `isPushoutModT` would fail:
 * `isPushoutModT` is base change of a quotient of a polynomial ring:
   `R_μ ⊗_{R_λ} R_λ[x]/(F^λ) ≅ R_μ[x]/(F^μ)`.
 
-**WHAT IS IN THE PIN.**  `Mathlib/RingTheory/Extension/Presentation/Core.lean` supplies
-the coefficient-lifting step directly — `Algebra.Presentation.HasCoeffs R₀` asks exactly
-`coeffs ⊆ Set.range (algebraMap R₀ R)`, `relationOfHasCoeffs` is the lift, and
-`ModelOfHasCoeffs R₀` with `tensorModelOfHasCoeffsEquiv` is `T = R ⊗_{R₀} T_{i₀}` for the
-BOTTOM stage.  It does NOT give the tower, because `relationOfHasCoeffs` is a `choose` and
-so gives unrelated lifts at different stages; take the lift ONCE at `i₀` and push it up
-with `baseT`.  `Mathlib/RingTheory/Smooth/NoetherianDescent.lean` is a worked example of
-the same idiom and is worth reading first.
+**WHAT IS IN THE PIN, AND WHAT THE PROOF ACTUALLY USED.**  The survey pointed at
+`Algebra.Presentation.HasCoeffs`/`ModelOfHasCoeffs`/`tensorModelOfHasCoeffsEquiv` in
+`Mathlib/RingTheory/Extension/Presentation/Core.lean`.  The proof does NOT go through
+them, and the reason is worth recording: `HasCoeffs` gives the model at ONE stage, and
+`relationOfHasCoeffs` is a `choose`, so at two stages it gives unrelated lifts and
+`isPushoutModT` is then unprovable.  What the tower needs is one lift, taken once at
+`i₀` and pushed up by `baseT` — which is `Algebra.FinitePresentation.out` plus the three
+descent helpers above, and never mentions `HasCoeffs`.  The pin's real contribution is
+elsewhere: `MvPolynomial.isNoetherianRing` (Hilbert) and, for `isPushoutModT`, nothing at
+all — see `bijective_tensorLift_of_polyQuot`, which had to be proved by building the
+inverse `B[x]/J → B ⊗ (A[x]/I)` by hand because every mathlib route through
+`Algebra.TensorProduct.tensorQuotientEquiv` puts `Submodule.Quotient.module'` on the
+quotient where the field's statement has `Algebra.toModule`.
 
 **FAITHFULNESS.**  This is 10.127.11's construction with every localization deleted, so it
 is true if 10.127.11 is; and it is strictly weaker than the leaf it was cut from, since
@@ -4003,9 +4442,32 @@ inhabited, and the conclusion is not satisfiable by a constant tower (see the st
 NON-DEGENERACY note). -/
 theorem exists_noetherianModelTower_of_finitePresentation {R T : Type u}
     [CommRing R] [CommRing T]
-    (bs : NoetherianLocalBaseSystem R) (gT : R →+* T) (_hfp : gT.FinitePresentation) :
-    ∃ i₀ : bs.Λ, Nonempty (NoetherianModelTower (bs.restrict i₀) gT) :=
-  sorry
+    (bs : NoetherianLocalBaseSystem R) (gT : R →+* T) (hfp : gT.FinitePresentation) :
+    ∃ i₀ : bs.Λ, Nonempty (NoetherianModelTower (bs.restrict i₀) gT) := by
+  classical
+  letI : Algebra R T := gT.toAlgebra
+  haveI : Algebra.FinitePresentation R T := hfp
+  obtain ⟨n, φ, hφs, hφg⟩ := Algebra.FinitePresentation.out (R := R) (A := T)
+  have hφC : ∀ r : R, φ (MvPolynomial.C r) = gT r := by
+    intro r
+    have hCa : (MvPolynomial.C r : MvPolynomial (Fin n) R) = algebraMap R _ r := rfl
+    rw [hCa, AlgHom.commutes]
+    rfl
+  obtain ⟨G, hG⟩ := hφg
+  -- index the finite generating set of the relation ideal by a `Fin`
+  set g : Fin G.card → MvPolynomial (Fin n) R := fun k => ((G.equivFin.symm k : G) : _) with hg
+  have hrange : Set.range g = (G : Set (MvPolynomial (Fin n) R)) := by
+    rw [hg]
+    rw [show (fun k => ((G.equivFin.symm k : G) : MvPolynomial (Fin n) R))
+        = (Subtype.val ∘ G.equivFin.symm) from rfl, Set.range_comp]
+    rw [G.equivFin.symm.range_eq_univ, Set.image_univ, Subtype.range_coe]
+  obtain ⟨i₀, _, F, hF⟩ := NoetherianModelHalf.exists_lift_mvPolynomial bs g bs.nonemptyΛ.some
+  refine ⟨i₀, NoetherianModelHalf.nonempty_noetherianModelTower_of_descended (bs.restrict i₀) gT
+    ⟨i₀, bs.le_rfl i₀⟩ (fun i => i.2) F φ.toRingHom hφC hφs ?_⟩
+  show RingHom.ker φ.toRingHom
+    = Ideal.span (Set.range fun k => MvPolynomial.map (bs.baseToR i₀) (F k))
+  rw [← hG, ← hrange]
+  exact congrArg Ideal.span (congrArg Set.range (funext fun k => (hF k).symm))
 
 /-- **BASE CHANGE OF A LOCALIZATION AT A PRIME, THEN LOCALIZE AGAIN** (sorry leaf, cut
 2026-07-30 out of `exists_noetherianLocalExtSystem_of_noetherianModelTower` below, of
@@ -5250,31 +5712,9 @@ theorem isTrivialRelation_map {C C' M M' : Type u} [CommRing C] [CommRing C']
     rw [map_sum, map_zero] at hp
     simpa using hp
 
-/-- Directedness upgraded from pairs to finite sets. -/
-theorem exists_ub_finset_of_directed {Λ : Type u} {le : Λ → Λ → Prop}
-    (hrfl : ∀ i, le i i) (htrans : ∀ {i j k}, le i j → le j k → le i k)
-    (hdir : ∀ i j, ∃ k, le i k ∧ le j k)
-    (S : Finset Λ) (i₀ : Λ) : ∃ k, le i₀ k ∧ ∀ x ∈ S, le x k := by
-  classical
-  induction S using Finset.induction with
-  | empty => exact ⟨i₀, hrfl i₀, by simp⟩
-  | @insert x S _ ih =>
-      obtain ⟨k, hk0, hkS⟩ := ih
-      obtain ⟨k', hk1, hk2⟩ := hdir x k
-      refine ⟨k', htrans hk0 hk2, ?_⟩
-      intro y hy
-      rcases Finset.mem_insert.mp hy with rfl | hy
-      · exact hk1
-      · exact htrans (hkS y hy) hk2
-
-/-- Directedness upgraded from pairs to families indexed by a fintype. -/
-theorem exists_ub_fintype_of_directed {Λ : Type u} {le : Λ → Λ → Prop}
-    (hrfl : ∀ i, le i i) (htrans : ∀ {i j k}, le i j → le j k → le i k)
-    (hdir : ∀ i j, ∃ k, le i k ∧ le j k)
-    {ι : Type*} [Fintype ι] (f : ι → Λ) (i₀ : Λ) : ∃ k, le i₀ k ∧ ∀ x, le (f x) k := by
-  classical
-  obtain ⟨k, hk0, hkS⟩ := exists_ub_finset_of_directed hrfl htrans hdir (Finset.image f Finset.univ) i₀
-  exact ⟨k, hk0, fun x => hkS _ (Finset.mem_image_of_mem f (Finset.mem_univ x))⟩
+/- `exists_ub_finset_of_directed` and `exists_ub_fintype_of_directed` were MOVED UP on
+2026-07-31, to just above the model half of 10.127.11, which is the first consumer in
+file order.  Nothing about them changed. -/
 
 theorem exists_le_isTrivialRelation_of_isNoetherianFlatDescentSystem
     {Λ : Type u} {le : Λ → Λ → Prop} {C D : Λ → Type u}

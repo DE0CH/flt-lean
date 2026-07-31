@@ -303,6 +303,26 @@ public import Fermat.FLT.Mathlib.GroupTheory.Descent
 -- module to the cone of the only consumer of this file: `FreyCurve/MazurTorsion.lean`
 -- already `public import`s `ModularCurve/X0.lean`, which imports it.
 public import Fermat.FLT.Mathlib.NumberTheory.ProjectiveHeight
+-- `AbelianSchemeStruct`, `RelPoint` and `AbelianSchemeStruct.addCommGroup`: the vocabulary
+-- of `exists_abelianScheme_addEquiv_pic`, the Jacobian bridge that carries this file's
+-- geometric Mordell–Weil half onto `X0.lean`'s.  These names occur in a STATEMENT, so this
+-- edge must be `public`; it is a 2524-line module and adds nothing to the cone of the only
+-- consumer of this file (`FreyCurve/MazurTorsion.lean`, which already reaches it through
+-- `ModularCurve/X0.lean`).
+public import Fermat.FLT.Modularity.AbelianScheme
+-- `Fermat.exists_cubeModel_of_abelianScheme`, used only inside the PROOF BODY of
+-- `exists_cubeModel_pic_of_infinite`, which a NON-PUBLIC import reaches (theorem
+-- bodies are elided by the module system).
+--
+-- This USED TO BE `import Fermat.FLT.ModularCurve.X0` (2026-07-31, flt-lean-389),
+-- whose comment asserted "there is no cycle, since `X0.lean` does not mention"
+-- this file.  That checked the DIRECT edge only and was WRONG: X0 imports
+-- `FreyCurve/IsogenySignature`, which imports THIS file, so the edge closed a loop
+-- and `lake build` failed on the ROOT target with `build cycle detected` -- i.e.
+-- the whole project stopped building, not just these three modules.  The two
+-- declarations were moved out of X0 into the module below, which sits upstream of
+-- both and carries no cycle.
+import Fermat.FLT.Modularity.AbelianCubeModel
 public import Mathlib.GroupTheory.FiniteAbelian.Basic
 public import Mathlib.RingTheory.Finiteness.Nakayama
 -- the construction of the function field `K(x)[y]/(y² − f)` in `exists_functionFieldData`:
@@ -341,6 +361,7 @@ public import Mathlib.RingTheory.Henselian
 public import Mathlib.RingTheory.AdicCompletion.Completeness
 public import Mathlib.RingTheory.Valuation.LocalSubring
 public import Mathlib.RingTheory.DedekindDomain.Factorization
+public import Mathlib.RingTheory.Polynomial.Resultant.Basic
 
 @[expose] public section
 
@@ -626,7 +647,7 @@ discharge:
 |---|---|---|
 | 1 | `exists_placeData` — the function field, its places, and the divisor theory exist | PROVEN 2026-07-28 from `exists_functionFieldData`, `exists_placeSystem`, `exists_isPlaceOfPt` |
 | 2 | `aj_injective_of_separable` — Abel–Jacobi is injective, because the genus is `2 ≥ 1` | PROVEN 2026-07-28 from `exists_degreeMap`, `sub_single_pt_notMem_princ` |
-| 3 | `exists_reduction` — good reduction: the homomorphism, its compatibility with `redPt`, and torsion-freeness of its kernel | PROVEN 2026-07-28 from `exists_reductionFiltration`, itself PROVEN the same day from `exists_smoothModel` |
+| 3 | `exists_reduction` — good reduction: the homomorphism, its compatibility with `redPt`, and torsion-freeness of its kernel | PROVEN 2026-07-28 from `exists_reductionFiltration`, itself PROVEN the same day from `exists_smoothModel`, itself PROVEN 2026-07-31 from `exists_picReduction` |
 | 4 | `X18.finite_pic`, `X13.finite_pic` — Mordell–Weil together with `rank J(ℚ) = 0` | PROVEN 2026-07-28 from `fg_pic` (over `exists_descentHeight_pic`, `finite_quotient_psmul_pic`) and `two_divisible_pic` |
 
 and `X18.exists_jacobianPackage` / `X13.exists_jacobianPackage` become PROVEN assemblies.
@@ -5188,6 +5209,460 @@ theorem finiteDimensional_adjoin_of_transcendental {c₀ c₁ c₂ c₃ c₄ c�
   rw [htop] at hfd
   exact (IntermediateField.topEquiv (F := ↥E) (E := D.F)).toLinearEquiv.finiteDimensional
 
+/-! ### The SINGLE-PLACE half of Stichtenoth I.4.11(a), PROVEN 2026-07-31
+
+The leaf below records, in its own docstring, that the single-place bound `e_v·f_v ≤ n` needs
+no approximation theorem and is available from `ord_aeval_of_ord_neg` in the `Genus` section.
+That is what this block does, and `mul_degOf_le_finrank_adjoin_of_ord_neg` is the statement in
+the form the leaf uses.  What remains of that leaf is exactly the passage from ONE place to the
+SUM over all poles, which is where the approximation theorem enters — see the leaf's docstring
+for what is and is not now missing.
+
+The argument, in the order the declarations appear:
+
+* `ord_sum_ge` / `ord_sum_eq_of_unique_min` — the ultrametric for FINITE SUMS.  `ord_add_of_lt`
+  gives the two-term strict equality; the second lemma is the form actually used, "a finite sum
+  with a strict unique minimum order is nonzero", which is what forbids a relation between
+  elements of pairwise distinct orders.
+* `vanishesAt_aeval_mul_inv_pow` — the residue computation.  `p(g)·g^{−d}` lies in `O_v` and is
+  congruent to the CONSTANT `p.coeff d`, because the lower terms `a_j·g^{j−d}` have order
+  `(d−j)·e > 0`.  This is where `ord_v g = −e` does its work.
+* `not_vanishesAt_combination` — `K`-independence of residues, transported to `F`.
+* `mul_card_le_finrank_adjoin_of_ord_neg` — the bound itself.  Given `f` elements of `O_v` with
+  `K`-independent residues, the `e·f` products `s_i·t^k` (`t` a uniformiser, `0 ≤ k < e`) are
+  independent over `K⟮g⟯`: clear denominators so the coefficients are `λ_{ik} = p_{ik}(g)`, group
+  by `k` as `z_k = Σ_i p_{ik}(g)·s_i`, and read off `ord_v z_k = −e·d_k` from the residue
+  computation.  The `ord_v (z_k·t^k) = −e·d_k + k` are then pairwise distinct mod `e`.
+
+Nothing here needs `hsep`, the sextic, or the characteristic. -/
+
+section SinglePlaceBound
+
+open Polynomial
+
+namespace PlaceData
+
+variable {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+
+/-- A finite sum of terms each of which is `0` or has order at least `m` is itself `0` or has
+order at least `m` (the disjunction is forced by the junk convention `ord v 0 = 0`). -/
+lemma ord_sum_ge (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places)
+    {ι : Type*} (S : Finset ι) (z : ι → D.F) (m : ℤ) :
+    (∀ i ∈ S, z i = 0 ∨ m ≤ D.ord v (z i)) →
+      (∑ i ∈ S, z i) = 0 ∨ m ≤ D.ord v (∑ i ∈ S, z i) := by
+  classical
+  induction S using Finset.induction_on with
+  | empty => intro _; exact Or.inl (by simp)
+  | insert a S ha ih =>
+    intro h
+    rw [Finset.sum_insert ha]
+    have hB := ih (fun i hi => h i (Finset.mem_insert_of_mem hi))
+    rcases eq_or_ne (z a) 0 with h0 | h0
+    · rw [h0, zero_add]; exact hB
+    have hA : m ≤ D.ord v (z a) := (h a (Finset.mem_insert_self a S)).resolve_left h0
+    rcases eq_or_ne (∑ i ∈ S, z i) 0 with h1 | h1
+    · rw [h1, add_zero]; exact Or.inr hA
+    have hB' : m ≤ D.ord v (∑ i ∈ S, z i) := hB.resolve_left h1
+    rcases eq_or_ne (z a + ∑ i ∈ S, z i) 0 with h2 | h2
+    · exact Or.inl h2
+    · exact Or.inr (by have := D.ord_add v (z a) (∑ i ∈ S, z i) h0 h1 h2; omega)
+
+/-- **A finite sum with a STRICT unique minimum order is nonzero, with that order.**
+
+The strict ultrametric equality `ord_add_of_lt` in its finite-sum form: this is what makes a
+relation between elements of pairwise distinct orders impossible. -/
+lemma ord_sum_eq_of_unique_min (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places)
+    {ι : Type*} [DecidableEq ι] (S : Finset ι) (z : ι → D.F) {i₀ : ι} (hi₀ : i₀ ∈ S)
+    (hz₀ : z i₀ ≠ 0)
+    (h : ∀ i ∈ S, i ≠ i₀ → z i = 0 ∨ D.ord v (z i₀) < D.ord v (z i)) :
+    (∑ i ∈ S, z i) ≠ 0 ∧ D.ord v (∑ i ∈ S, z i) = D.ord v (z i₀) := by
+  have hsplit : ∑ i ∈ S, z i = z i₀ + ∑ i ∈ S.erase i₀, z i :=
+    (Finset.add_sum_erase S z hi₀).symm
+  have htail : (∑ i ∈ S.erase i₀, z i) = 0 ∨
+      D.ord v (z i₀) + 1 ≤ D.ord v (∑ i ∈ S.erase i₀, z i) := by
+    refine ord_sum_ge D v _ z _ (fun i hi => ?_)
+    have hne : i ≠ i₀ := Finset.ne_of_mem_erase hi
+    rcases h i (Finset.mem_of_mem_erase hi) hne with hzi | hzi
+    · exact Or.inl hzi
+    · exact Or.inr (by omega)
+  rcases eq_or_ne (∑ i ∈ S.erase i₀, z i) 0 with h0 | h0
+  · rw [hsplit, h0, add_zero]; exact ⟨hz₀, rfl⟩
+  · have hlt : D.ord v (z i₀) < D.ord v (∑ i ∈ S.erase i₀, z i) := by
+      have := htail.resolve_left h0; omega
+    have hne0 : z i₀ + ∑ i ∈ S.erase i₀, z i ≠ 0 := by
+      intro hzero
+      have heq : (∑ i ∈ S.erase i₀, z i) = -z i₀ := by linear_combination hzero
+      rw [heq, ord_neg D v _ hz₀] at hlt
+      exact lt_irrefl _ hlt
+    exact ⟨by rw [hsplit]; exact hne0,
+      by rw [hsplit]; exact D.ord_add_of_lt v hz₀ h0 hlt⟩
+
+/-- Vanishing at a place is closed under finite sums. -/
+lemma vanishesAt_sum (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places)
+    {ι : Type*} (S : Finset ι) (z : ι → D.F) (h : ∀ i ∈ S, D.VanishesAt v (z i)) :
+    D.VanishesAt v (∑ i ∈ S, z i) := by
+  classical
+  induction S using Finset.induction_on with
+  | empty => exact Or.inl (by simp)
+  | insert a S ha ih =>
+    rw [Finset.sum_insert ha]
+    exact vanishesAt_add (h a (Finset.mem_insert_self a S))
+      (ih (fun i hi => h i (Finset.mem_insert_of_mem hi)))
+
+/-- Constants lie in the valuation ring at every place. -/
+lemma ord_algebraMap_nonneg (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places) (a : K) :
+    0 ≤ D.ord v (algebraMap K D.F a) := by
+  rcases eq_or_ne a 0 with rfl | ha
+  · simp [D.ord_zero]
+  · rw [D.ord_algebraMap v a ha]
+
+/-- **The residue of `p(g)·g^(−d)` at a pole `v` of `g` is the `d`-th coefficient of `p`.**
+
+At a place where `ord_v g = −e < 0` and `deg p ≤ d`, the element `p(g)·g^{−d}` lies in `O_v`
+and is congruent to the constant `p.coeff d`: the lower-degree terms `a_j·g^{j−d}` all have
+order `(d−j)·e > 0`.  This is the computation that turns `K`-independence of residues into
+`K⟮g⟯`-independence upstairs. -/
+lemma vanishesAt_aeval_mul_inv_pow (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places)
+    {g : D.F} (hg0 : g ≠ 0) {e : ℤ} (he : D.ord v g = -e) (he0 : 0 < e)
+    (p : K[X]) (d : ℕ) (hd : p.natDegree ≤ d) :
+    D.VanishesAt v (aeval g p * (g⁻¹) ^ d - algebraMap K D.F (p.coeff d)) := by
+  have hgi0 : g⁻¹ ≠ 0 := inv_ne_zero hg0
+  have hordi : D.ord v g⁻¹ = e := by rw [D.ord_inv v g hg0, he, neg_neg]
+  have key : ∀ j : ℕ, j ≤ d → g ^ j * (g⁻¹) ^ d = (g⁻¹) ^ (d - j) := by
+    intro j hj
+    have hjd : j + (d - j) = d := by omega
+    calc g ^ j * (g⁻¹) ^ d = g ^ j * ((g⁻¹) ^ j * (g⁻¹) ^ (d - j)) := by
+          rw [← pow_add, hjd]
+      _ = g ^ j * (g⁻¹) ^ j * (g⁻¹) ^ (d - j) := by ring
+      _ = (g⁻¹) ^ (d - j) := by
+          rw [← mul_pow, mul_inv_cancel₀ hg0, one_pow, one_mul]
+  have hexp : aeval g p * (g⁻¹) ^ d
+      = ∑ j ∈ Finset.range (d + 1), algebraMap K D.F (p.coeff j) * (g⁻¹) ^ (d - j) := by
+    rw [aeval_eq_sum_range' (n := d + 1) (by omega) g, Finset.sum_mul]
+    refine Finset.sum_congr rfl (fun j hj => ?_)
+    have hjd : j ≤ d := by simpa [Nat.lt_succ_iff] using Finset.mem_range.mp hj
+    rw [Algebra.smul_def, mul_assoc, key j hjd]
+  rw [hexp, Finset.sum_range_succ]
+  have hlast : algebraMap K D.F (p.coeff d) * (g⁻¹) ^ (d - d) = algebraMap K D.F (p.coeff d) := by
+    simp
+  rw [hlast, add_sub_cancel_right]
+  refine vanishesAt_sum D v _ _ (fun j hj => ?_)
+  have hjd : j < d := Finset.mem_range.mp hj
+  refine vanishesAt_mul_left (ord_algebraMap_nonneg D v _) (Or.inr ?_)
+  rw [ord_pow D v _ hgi0, hordi]
+  have : (1 : ℤ) ≤ ((d - j : ℕ) : ℤ) := by
+    have : 1 ≤ d - j := by omega
+    exact_mod_cast this
+  nlinarith
+
+/-- **`K`-independent residues stay independent as a congruence statement upstairs.**
+
+If the residues of `s_1, …, s_f ∈ O_v` are `K`-linearly independent in `κ(v)`, then no
+nontrivial `K`-combination of the `s_i` vanishes at `v`. -/
+lemma not_vanishesAt_combination (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places)
+    {f : ℕ} (s : Fin f → D.valRing v)
+    (hs : LinearIndependent K (fun i => Ideal.Quotient.mk (D.valMax v) (s i)))
+    (a : Fin f → K) {i₀ : Fin f} (ha : a i₀ ≠ 0) :
+    ¬ D.VanishesAt v (∑ i, algebraMap K D.F (a i) * (s i : D.F)) := by
+  intro hvan
+  have hmem : (∑ i, a i • s i) ∈ D.valMax v := by
+    show D.VanishesAt v ((∑ i, a i • s i : D.valRing v) : D.F)
+    have hcoe : ((∑ i, a i • s i : D.valRing v) : D.F)
+        = ∑ i, algebraMap K D.F (a i) * (s i : D.F) := by
+      push_cast
+      exact Finset.sum_congr rfl (fun i _ => by rw [Algebra.smul_def])
+    rw [hcoe]
+    exact hvan
+  have h0 : ∑ i, a i • (Ideal.Quotient.mk (D.valMax v) (s i)) = 0 := by
+    have h1 : Ideal.Quotient.mk (D.valMax v) (∑ i, a i • s i) = 0 :=
+      Ideal.Quotient.eq_zero_iff_mem.mpr hmem
+    have h2 : ∀ i : Fin f, Ideal.Quotient.mk (D.valMax v) (a i • s i)
+        = a i • Ideal.Quotient.mk (D.valMax v) (s i) := by
+      intro i
+      rw [← Ideal.Quotient.mkₐ_eq_mk K, map_smul]
+    rw [map_sum, Finset.sum_congr rfl (fun i _ => h2 i)] at h1
+    exact h1
+  exact ha (Fintype.linearIndependent_iff.mp hs a h0 i₀)
+
+/-- Something that vanishes at `v` lies in the valuation ring there. -/
+lemma ord_nonneg_of_vanishesAt (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {v : D.Places} {x : D.F}
+    (h : D.VanishesAt v x) : 0 ≤ D.ord v x := by
+  rcases h with rfl | h
+  · rw [D.ord_zero]
+  · omega
+
+/-- **THE SINGLE-PLACE BOUND, `e_v · f_v ≤ [F : K⟮g⟯]`** — Stichtenoth I.4.11(a) at ONE place. -/
+theorem mul_card_le_finrank_adjoin_of_ord_neg (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    {g : D.F} (hg : Transcendental K g) (v : D.Places) {e : ℕ} (he : D.ord v g = -(e : ℤ))
+    (he0 : 0 < e) {f : ℕ} (s : Fin f → D.valRing v)
+    (hs : LinearIndependent K (fun i => Ideal.Quotient.mk (D.valMax v) (s i))) :
+    e * f ≤ Module.finrank (IntermediateField.adjoin K {g}) D.F := by
+  classical
+  haveI hfd : FiniteDimensional (IntermediateField.adjoin K {g}) D.F :=
+    finiteDimensional_adjoin_of_transcendental D hg
+  have he0' : (0 : ℤ) < (e : ℤ) := by exact_mod_cast he0
+  have hg0 : g ≠ 0 := by
+    intro h; rw [h, D.ord_zero] at he; omega
+  have haeval0 : ∀ p : K[X], aeval g p = 0 → p = 0 := by
+    intro p hp
+    by_contra h
+    exact hg ⟨p, h, hp⟩
+  obtain ⟨t, ht⟩ := D.ord_surjective v
+  have ht0 : t ≠ 0 := by intro h; rw [h, D.ord_zero] at ht; omega
+  have hsmul : ∀ (y : ↥(IntermediateField.adjoin K {g})) (x : D.F), y • x = (y : D.F) * x :=
+    fun _ _ => rfl
+  have hindep : LinearIndependent (↥(IntermediateField.adjoin K {g}))
+      (fun q : Fin f × Fin e => (s q.1 : D.F) * t ^ (q.2 : ℕ)) := by
+    rw [Fintype.linearIndependent_iff]
+    intro c hc q₀
+    by_contra hcq0
+    -- STEP 1: clear denominators.  Every coefficient is `p(g)/w(g)` with `w(g) ≠ 0`.
+    have hden : ∀ q : Fin f × Fin e, ∃ p w : K[X], aeval g w ≠ 0 ∧
+        (c q : D.F) * aeval g w = aeval g p := by
+      intro q
+      obtain ⟨r, u, hru⟩ :=
+        (IntermediateField.mem_adjoin_simple_iff (F := K) (α := g) ((c q : D.F))).mp (c q).2
+      rcases eq_or_ne (aeval g u) 0 with hu0 | hu0
+      · exact ⟨0, 1, by simp, by rw [hru, hu0, div_zero]; simp⟩
+      · exact ⟨r, u, hu0, by rw [hru]; field_simp⟩
+    choose pp ww hww hcw using hden
+    set W : K[X] := ∏ q : Fin f × Fin e, ww q with hWdef
+    have hWne : aeval g W ≠ 0 := by
+      rw [hWdef, map_prod]
+      exact Finset.prod_ne_zero_iff.mpr (fun q _ => hww q)
+    have hPex : ∀ q, ∃ P : K[X], (c q : D.F) * aeval g W = aeval g P := by
+      intro q
+      refine ⟨pp q * ∏ q' ∈ Finset.univ.erase q, ww q', ?_⟩
+      simp only [map_mul, map_prod, hWdef]
+      rw [← Finset.mul_prod_erase Finset.univ (fun q' => aeval g (ww q')) (Finset.mem_univ q),
+        ← mul_assoc, hcw q]
+    choose P hP using hPex
+    have hPq0 : P q₀ ≠ 0 := by
+      intro h
+      apply hcq0
+      have hz := hP q₀
+      rw [h, map_zero] at hz
+      rcases mul_eq_zero.mp hz with h1 | h1
+      · exact Subtype.ext h1
+      · exact absurd h1 hWne
+    -- STEP 2: the relation with polynomial coefficients, grouped by the power of `t`.
+    have hrel : ∑ q : Fin f × Fin e, aeval g (P q) * ((s q.1 : D.F) * t ^ (q.2 : ℕ)) = 0 := by
+      have h1 := congrArg (fun x : D.F => x * aeval g W) hc
+      simp only [zero_mul, Finset.sum_mul] at h1
+      rw [← h1]
+      refine Finset.sum_congr rfl (fun q _ => ?_)
+      rw [← hP q, hsmul]
+      ring
+    set z : Fin e → D.F := fun k => ∑ i : Fin f, aeval g (P (i, k)) * (s i : D.F) with hzdef
+    have hgrp : ∑ k : Fin e, z k * t ^ (k : ℕ) = 0 := by
+      rw [← hrel, Fintype.sum_prod_type, Finset.sum_comm]
+      refine Finset.sum_congr rfl (fun k _ => ?_)
+      rw [hzdef]
+      simp only [Finset.sum_mul]
+      exact Finset.sum_congr rfl (fun i _ => by ring)
+    -- STEP 3: at each `k` where the coefficients are not all zero, `ord_v (z k) = −e·d k`.
+    set d : Fin e → ℕ := fun k => Finset.univ.sup (fun i : Fin f => (P (i, k)).natDegree)
+      with hddef
+    have hkey : ∀ k : Fin e, (∃ i, P (i, k) ≠ 0) →
+        z k ≠ 0 ∧ D.ord v (z k) = -(e : ℤ) * (d k : ℤ) := by
+      intro k hk
+      obtain ⟨i₁, hi₁⟩ := hk
+      have hdle : ∀ i : Fin f, (P (i, k)).natDegree ≤ d k := fun i =>
+        Finset.le_sup (f := fun i : Fin f => (P (i, k)).natDegree) (Finset.mem_univ i)
+      have hcoeff : ∃ i, (P (i, k)).coeff (d k) ≠ 0 := by
+        obtain ⟨i₂, -, hi₂⟩ := Finset.exists_mem_eq_sup (Finset.univ : Finset (Fin f))
+          ⟨i₁, Finset.mem_univ i₁⟩ (fun i : Fin f => (P (i, k)).natDegree)
+        rcases eq_or_ne (P (i₂, k)) 0 with h0 | h0
+        · refine ⟨i₁, ?_⟩
+          have hd0 : d k = 0 := by rw [hddef]; simp only []; rw [hi₂, h0, Polynomial.natDegree_zero]
+          have hdeg : (P (i₁, k)).natDegree = 0 := Nat.le_zero.mp (hd0 ▸ hdle i₁)
+          rw [hd0, ← hdeg]
+          exact Polynomial.leadingCoeff_ne_zero.mpr hi₁
+        · refine ⟨i₂, ?_⟩
+          have : d k = (P (i₂, k)).natDegree := by rw [hddef]; exact hi₂
+          rw [this]
+          exact Polynomial.leadingCoeff_ne_zero.mpr h0
+      obtain ⟨i₀, hi₀⟩ := hcoeff
+      set B : D.F := ∑ i, algebraMap K D.F ((P (i, k)).coeff (d k)) * (s i : D.F) with hBdef
+      set A : D.F := z k * (g⁻¹) ^ (d k) with hAdef
+      have hcong : D.VanishesAt v (A - B) := by
+        have hexp : A - B = ∑ i : Fin f, (aeval g (P (i, k)) * (g⁻¹) ^ (d k)
+            - algebraMap K D.F ((P (i, k)).coeff (d k))) * (s i : D.F) := by
+          rw [hAdef, hBdef, hzdef]
+          simp only [Finset.sum_mul, ← Finset.sum_sub_distrib]
+          exact Finset.sum_congr rfl (fun i _ => by ring)
+        rw [hexp]
+        refine vanishesAt_sum D v _ _ (fun i _ => ?_)
+        rw [mul_comm]
+        exact vanishesAt_mul_left (s i).2
+          (vanishesAt_aeval_mul_inv_pow D v hg0 he he0' _ _ (hdle i))
+      have hnvB : ¬ D.VanishesAt v B := not_vanishesAt_combination D v s hs _ hi₀
+      have hnvA : ¬ D.VanishesAt v A := by
+        intro h
+        refine hnvB ?_
+        have hBeq : B = A + (-(A - B)) := by ring
+        rw [hBeq]
+        exact vanishesAt_add h (vanishesAt_neg hcong)
+      have hAnonneg : 0 ≤ D.ord v A := by
+        have hBmem : B ∈ D.valRing v := by
+          rw [hBdef]
+          exact Subalgebra.sum_mem _ (fun i _ =>
+            Subalgebra.mul_mem _ (Subalgebra.algebraMap_mem _ _) (s i).2)
+        have hABmem : A - B ∈ D.valRing v := ord_nonneg_of_vanishesAt D hcong
+        have : A = B + (A - B) := by ring
+        rw [this]
+        exact Subalgebra.add_mem _ hBmem hABmem
+      obtain ⟨hAne, hAnpos⟩ := not_or.mp hnvA
+      have hA0 : D.ord v A = 0 := by omega
+      have hzk0 : z k ≠ 0 := by
+        intro h; exact hAne (by rw [hAdef, h, zero_mul])
+      refine ⟨hzk0, ?_⟩
+      have hgi0 : g⁻¹ ≠ 0 := inv_ne_zero hg0
+      have hsplit : D.ord v A = D.ord v (z k) + (d k : ℤ) * D.ord v g⁻¹ := by
+        rw [hAdef, D.ord_mul v _ _ hzk0 (pow_ne_zero _ hgi0), ord_pow D v _ hgi0]
+      have hordi : D.ord v g⁻¹ = (e : ℤ) := by rw [D.ord_inv v g hg0, he, neg_neg]
+      rw [hordi] at hsplit
+      rw [hA0] at hsplit
+      linarith [hsplit]
+    -- STEP 4: the surviving `z k · t^k` have pairwise distinct orders, so they cannot cancel.
+    have hPz : ∀ k : Fin e, (∀ i, P (i, k) = 0) → z k = 0 := by
+      intro k h
+      rw [hzdef]
+      simp only []
+      exact Finset.sum_eq_zero (fun i _ => by rw [h i, map_zero, zero_mul])
+    set T : Finset (Fin e) := Finset.univ.filter (fun k => z k ≠ 0) with hTdef
+    have hordT : ∀ k ∈ T, D.ord v (z k * t ^ (k : ℕ)) = -(e : ℤ) * (d k : ℤ) + (k : ℕ) := by
+      intro k hk
+      have hzk : z k ≠ 0 := by
+        have := Finset.mem_filter.mp (hTdef ▸ hk)
+        exact this.2
+      have hex : ∃ i, P (i, k) ≠ 0 := by
+        by_contra h
+        push Not at h
+        exact hzk (hPz k h)
+      have hkk := (hkey k hex).2
+      rw [D.ord_mul v _ _ hzk (pow_ne_zero _ ht0), ord_pow D v _ ht0, ht, hkk]
+      ring
+    have hq0T : q₀.2 ∈ T := by
+      rw [hTdef, Finset.mem_filter]
+      exact ⟨Finset.mem_univ _, (hkey q₀.2 ⟨q₀.1, by simpa using hPq0⟩).1⟩
+    have hsumT : ∑ k ∈ T, z k * t ^ (k : ℕ) = 0 := by
+      rw [Finset.sum_subset (Finset.subset_univ T) ?_]
+      · exact hgrp
+      · intro k _ hk
+        have : z k = 0 := by
+          by_contra h
+          exact hk (by rw [hTdef, Finset.mem_filter]; exact ⟨Finset.mem_univ _, h⟩)
+        rw [this, zero_mul]
+    obtain ⟨k₀, hk₀T, hk₀min⟩ :=
+      T.exists_min_image (fun k => D.ord v (z k * t ^ (k : ℕ))) ⟨q₀.2, hq0T⟩
+    have hzk₀ : z k₀ * t ^ (k₀ : ℕ) ≠ 0 := by
+      have hmem := hk₀T
+      rw [hTdef] at hmem
+      have hzk : z k₀ ≠ 0 := (Finset.mem_filter.mp hmem).2
+      exact mul_ne_zero hzk (pow_ne_zero _ ht0)
+    have hfinal := ord_sum_eq_of_unique_min D v T (fun k => z k * t ^ (k : ℕ)) hk₀T hzk₀ ?_
+    · exact hfinal.1 hsumT
+    · intro k hk hkne
+      right
+      have hne : D.ord v (z k₀ * t ^ (k₀ : ℕ)) ≠ D.ord v (z k * t ^ (k : ℕ)) := by
+        rw [hordT k₀ hk₀T, hordT k hk]
+        intro heq
+        have hkl : ((k : ℕ) : ℤ) < (e : ℤ) := by exact_mod_cast k.isLt
+        have hk₀l : ((k₀ : ℕ) : ℤ) < (e : ℤ) := by exact_mod_cast k₀.isLt
+        have hkne' : ((k : ℕ) : ℤ) ≠ ((k₀ : ℕ) : ℤ) := by
+          intro h
+          exact hkne (Fin.ext (by exact_mod_cast h))
+        have hm : (e : ℤ) * ((d k : ℤ) - (d k₀ : ℤ)) = ((k : ℕ) : ℤ) - ((k₀ : ℕ) : ℤ) := by
+          linarith [heq]
+        rcases lt_trichotomy ((d k : ℤ) - (d k₀ : ℤ)) 0 with hlt | hz0 | hgt
+        · nlinarith [Int.le_of_lt_add_one (by omega : (d k : ℤ) - (d k₀ : ℤ) < 0 + 1)]
+        · rw [hz0, mul_zero] at hm; omega
+        · nlinarith
+      exact lt_of_le_of_ne (hk₀min k hk) hne
+  have hcard := hindep.fintype_card_le_finrank
+  simpa [Fintype.card_prod, Nat.mul_comm] using hcard
+
+set_option synthInstance.maxHeartbeats 1000000 in
+/-- **The residue field at a pole of a transcendental `g` is FINITE over `K`.**
+
+`degOf` is `Module.finrank`, whose junk value at an infinite-dimensional residue field is `0`;
+this is the statement that the junk branch is never taken at a pole, and it is what makes both
+halves of the fundamental identity say what they are meant to say there.  It is a strengthening
+of `mul_card_le_finrank_adjoin_of_ord_neg` rather than a corollary of the numeric bound: the
+bound holds for EVERY `K`-independent family of residues, so no independent family is longer
+than `[F : K⟮g⟯]`, and that is finite-dimensionality. -/
+theorem finite_residue_of_ord_neg (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    {g : D.F} (hg : Transcendental K g) (v : D.Places) (hv : D.ord v g < 0) :
+    Module.Finite K (D.residue v) := by
+  classical
+  set n := Module.finrank (IntermediateField.adjoin K {g}) D.F with hn
+  set e : ℕ := (-D.ord v g).toNat with he'
+  have he : D.ord v g = -(e : ℤ) := by rw [he']; omega
+  have he0 : 0 < e := by rw [he']; omega
+  rw [← Module.rank_lt_aleph0_iff]
+  refine lt_of_le_of_lt (b := (n : Cardinal)) ?_ (Cardinal.natCast_lt_aleph0 (n := n))
+  refine rank_le (fun S hSind => ?_)
+  set f := S.card with hf
+  set ε := S.equivFin.symm with hε
+  have hw : LinearIndependent K (fun i : Fin f => ((ε i : D.residue v))) :=
+    hSind.comp ε ε.injective
+  have hsurj : ∀ i : Fin f, ∃ x : D.valRing v,
+      Ideal.Quotient.mk (D.valMax v) x = (ε i : D.residue v) :=
+    fun i => Ideal.Quotient.mk_surjective _
+  choose s hs using hsurj
+  have hindep : LinearIndependent K (fun i => Ideal.Quotient.mk (D.valMax v) (s i)) := by
+    have hfe : (fun i => Ideal.Quotient.mk (D.valMax v) (s i))
+        = fun i : Fin f => ((ε i : D.residue v)) := funext hs
+    rw [hfe]
+    exact hw
+  have hmain := mul_card_le_finrank_adjoin_of_ord_neg D hg v he he0 s hindep
+  calc f ≤ e * f := Nat.le_mul_of_pos_left f he0
+    _ ≤ n := hmain
+
+set_option synthInstance.maxHeartbeats 1000000 in
+/-- **The single-place bound in the form the fundamental identity uses it:**
+`e_v · deg v ≤ [F : K⟮g⟯]` at every pole `v` of a transcendental `g`.
+
+In particular the residue degree at a pole is FINITE — `Module.finrank`'s junk value `0` is
+not being exploited here: if `[κ(v) : K]` were infinite the left-hand side would read `0` and
+the statement would be vacuous, so the content is exactly that a basis of `κ(v)` cannot be
+longer than `[F : K⟮g⟯]/e_v`. -/
+theorem mul_degOf_le_finrank_adjoin_of_ord_neg (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    {g : D.F} (hg : Transcendental K g) (v : D.Places) (hv : D.ord v g < 0) :
+    (-D.ord v g) * D.degOf v
+      ≤ (Module.finrank (IntermediateField.adjoin K {g}) D.F : ℤ) := by
+  classical
+  set n := Module.finrank (IntermediateField.adjoin K {g}) D.F with hn
+  set f := Module.finrank K (D.residue v) with hf
+  have hdeg : D.degOf v = (f : ℤ) := rfl
+  rcases Nat.eq_zero_or_pos f with h0 | h0
+  · rw [hdeg, h0]
+    simp
+  haveI : Module.Finite K (D.residue v) := Module.finite_of_finrank_pos h0
+  set b : Module.Basis (Fin f) K (D.residue v) := Module.finBasis K (D.residue v) with hb
+  have hsurj : ∀ i : Fin f, ∃ x : D.valRing v, Ideal.Quotient.mk (D.valMax v) x = b i :=
+    fun i => Ideal.Quotient.mk_surjective (b i)
+  choose s hs using hsurj
+  have hindep : LinearIndependent K (fun i => Ideal.Quotient.mk (D.valMax v) (s i)) := by
+    have : (fun i => Ideal.Quotient.mk (D.valMax v) (s i)) = fun i => b i := funext hs
+    rw [this]
+    exact b.linearIndependent
+  set e : ℕ := (-D.ord v g).toNat with he'
+  have he : D.ord v g = -(e : ℤ) := by rw [he']; omega
+  have he0 : 0 < e := by rw [he']; omega
+  have hmain := mul_card_le_finrank_adjoin_of_ord_neg D hg v he he0 s hindep
+  have : ((e * f : ℕ) : ℤ) ≤ (n : ℤ) := by exact_mod_cast hmain
+  rw [hdeg]
+  have hee : (-D.ord v g) = (e : ℤ) := by rw [he']; omega
+  rw [hee]
+  push_cast at this ⊢
+  exact this
+
+end PlaceData
+
+end SinglePlaceBound
+
 /-- **LEAF (fundamental identity, first inequality): `deg (div_∞ g) ≤ [F : K⟮g⟯]`.**
 
 [Stichtenoth, *Algebraic Function Fields and Codes*, Thm. 1.4.11, part (a)]:
@@ -6232,6 +6707,12 @@ divisor specialisation along the smooth `ℤ_p`-model together with the formal l
 the Jacobian — again in ONE existential, so that `red` is derived from the model rather
 than postulated.  See the section note before `padicLevel` below.
 
+A THIRD cut, 2026-07-31 (axis 4): the divisor specialisation is no longer ASKED for either.
+`exists_smoothModel` is PROVEN from `exists_picReduction`, which asks only for the reduction
+of divisor CLASSES together with the logarithm — still ONE existential, so the bundling
+warning above is respected, and in fact sharpened: see the note before `exists_picReduction`
+for why `∀ S, ∃ log` is not merely uneconomical but UNSOUND.
+
 What that buys: the group-theoretic half of Silverman *AEC* VII.3.2 / IV.6.1 — "a separated
 filtration with elementary-abelian `p`-graded pieces on which `[p]` shifts the level by
 exactly one has no torsion" — becomes PROVEN here, and the remaining leaf is the concrete
@@ -6594,6 +7075,374 @@ noncomputable def toReductionFiltration (M : SmoothModel p D D') :
 
 end SmoothModel
 
+/-!
+### AXIS 4 (2026-07-31): the divisor-level `Specialisation` is DERIVED, not asked for
+
+The audit below closes axes 1, 2 and 3, and its closing paragraph records — in prose — that
+"producing a `Specialisation` and producing a `redPt`-compatible reduction homomorphism are
+interchangeable".  **That paragraph is now a theorem** (`exists_specialisation_of_picHom`),
+and with it the leaf no longer asks for a map of DIVISORS at all: `exists_picReduction` asks
+only for the reduction homomorphism on `Pic` together with the formal logarithm on its
+kernel, and `exists_smoothModel` is PROVEN from it.
+
+**What this buys and what it does not.**  It does NOT reduce the mathematical content: the
+two statements are EQUIVALENT — the forward direction is `M.spec.red`, `M.spec.red_aj`,
+`M.log` — so axis 2's accounting still applies and nobody should re-cut this expecting a
+smaller theorem.  What it removes is the FORMALISATION obligation to construct `sp` on
+divisors and to check `sp_princ`: a prover who reaches `red` by any route — the `ℤ_p`-model,
+a Jacobian scheme, Mumford representations, an `ℓ`-torsion argument — no longer has to
+manufacture the divisor-level map afterwards.  The construction is elementary: lift each
+place `v` of `X_ℚ` to any divisor of `X_𝔽ₚ` in the class `ψ [v]`, corrected by a multiple of
+`[∞₊]` — which is `0` in `Pic` and has degree `1` — so as to have degree `deg v`.  Then
+`sp_pt` holds by fiat at the rational points, where `deg = deg' = 1` and the class is right
+by hypothesis; and `sp_princ` holds because a principal divisor has degree `0`, so the
+`ℤ·[∞₊]` component of its image must vanish.
+
+**A sharpening of axis 1's witness, free from the same theorem.**  Two `Specialisation`s of
+one `red` differ by a homomorphism killing every `aj P`, and CONVERSELY every such
+perturbation is realised: apply `exists_specialisation_of_picHom` to `S.red - Δ`, whose
+`redPt`-compatibility is immediate.  So the ambiguity of `Specialisation` is exactly
+`Hom(Pic(X_ℚ) ⧸ ⟨aj P : P ∈ X(ℚ)⟩, Pic(X_𝔽ₚ))`, which is strictly bigger than the
+`λ(·) • w` family the audit exhibits — unlike that family it need NOT kill torsion, since
+`Pic(X_𝔽ₚ)` is finite.  Axis 1 is therefore not merely uneconomical, as the audit says, but
+UNSOUND whenever `X(ℚ)` fails to generate the torsion of `Pic⁰(X_ℚ)`: a junk `Specialisation`
+with a torsion class in the kernel of its `red` can then be built, and it admits no injective
+`log`.  The bundling is load-bearing, and the leaf below keeps it.
+
+`ℚ`-separability of the sextic, which `exists_degreeMap` needs on the `ℚ` side and which the
+statement does not hand us, comes from `hsep` through the RESULTANT: `Res(f, f')` is an
+INTEGER, it is a unit modulo `p` because the reduction is separable, hence it is nonzero,
+hence a unit in `ℚ`.
+-/
+
+section PicHom
+
+variable {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
+
+/-- The sextic has degree `6` over any nontrivial commutative ring (PROVEN).  The version in
+the divisor-theory layer is stated over a field; the resultant computation below has to run
+over `ℤ` as well. -/
+lemma natDegree_sextPoly' (R : Type*) [CommRing R] [Nontrivial R] :
+    (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ R).natDegree = 6 := by
+  unfold sextPoly
+  compute_degree!
+
+/-- The derivative of the sextic has degree at most `5` (PROVEN).  It can be SMALLER: at
+`p = 3` the leading coefficient `6` of `f'` vanishes, which is why the resultant below is
+taken with the explicit size arguments `(6, 5)` rather than with the default degrees. -/
+lemma natDegree_derivative_sextPoly_le (R : Type*) [CommRing R] [Nontrivial R] :
+    (derivative (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ R)).natDegree ≤ 5 := by
+  have h := Polynomial.natDegree_derivative_le (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ R)
+  rw [natDegree_sextPoly'] at h
+  exact h
+
+/-- Padding the second size argument of the resultant up to `5` costs a power of the leading
+coefficient of the sextic, which is `1` (PROVEN). -/
+lemma resultant_deriv_sextPoly (R : Type*) [CommRing R] [Nontrivial R] :
+    Polynomial.resultant (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ R)
+        (derivative (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ R)) 6 5
+      = Polynomial.resultant (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ R)
+        (derivative (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ R)) := by
+  have hn := natDegree_derivative_sextPoly_le (c₀ := c₀) (c₁ := c₁) (c₂ := c₂) (c₃ := c₃)
+    (c₄ := c₄) (c₅ := c₅) R
+  have h6 := natDegree_sextPoly' (c₀ := c₀) (c₁ := c₁) (c₂ := c₂) (c₃ := c₃) (c₄ := c₄)
+    (c₅ := c₅) R
+  have hk : (5 : ℕ) = (derivative (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ R)).natDegree
+      + (5 - (derivative (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ R)).natDegree) := by omega
+  rw [hk, Polynomial.resultant_add_right_deg _ _ _ _ _ le_rfl, h6]
+  have hc : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ R).coeff 6 = 1 := by
+    have h := (monic_sextPoly (c₀ := c₀) (c₁ := c₁) (c₂ := c₂) (c₃ := c₃) (c₄ := c₄)
+      (c₅ := c₅) R).coeff_natDegree
+    rwa [h6] at h
+  rw [hc, one_pow, one_mul]
+
+/-- **Separability of the sextic is a unit condition on `Res(f, f')`** (PROVEN, from
+`Polynomial.isUnit_resultant_iff_isCoprime` and monicity).  This is the form that transfers
+along a ring homomorphism, which `Separable` itself does not. -/
+lemma separable_sextPoly_iff (R : Type*) [CommRing R] [Nontrivial R] :
+    (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ R).Separable ↔
+      IsUnit (Polynomial.resultant (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ R)
+        (derivative (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ R)) 6 5) := by
+  rw [resultant_deriv_sextPoly,
+    Polynomial.isUnit_resultant_iff_isCoprime (monic_sextPoly (c₀ := c₀) (c₁ := c₁) (c₂ := c₂)
+      (c₃ := c₃) (c₄ := c₄) (c₅ := c₅) R)]
+  exact Polynomial.separable_def _
+
+/-- The resultant of the sextic and its derivative is the image of an INTEGER (PROVEN): the
+sextic has integral coefficients, and the Sylvester determinant commutes with `Int.cast`. -/
+lemma resultant_sextPoly_map (R : Type*) [CommRing R] :
+    Polynomial.resultant (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ R)
+        (derivative (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ R)) 6 5
+      = (Int.castRingHom R) (Polynomial.resultant (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℤ)
+        (derivative (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℤ)) 6 5) := by
+  rw [← Polynomial.resultant_map_map, map_sextPoly, ← Polynomial.derivative_map, map_sextPoly]
+
+/-- **PROVEN: good reduction at `p` forces smoothness over `ℚ`.**  `Res(f, f') ∈ ℤ` is a unit
+mod `p`, hence nonzero, hence a unit in `ℚ`.  This is the sentence the audit of
+`exists_reductionFiltration` needed in order to feed `hsep` to `exists_degreeMap` and to
+`fg_pic` on the `ℚ` side. -/
+theorem separable_sextPoly_rat_of_zmod {p : ℕ} [Fact p.Prime]
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ (ZMod p)).Separable) :
+    (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℚ).Separable := by
+  rw [separable_sextPoly_iff, resultant_sextPoly_map] at hsep ⊢
+  set r : ℤ := Polynomial.resultant (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℤ)
+    (derivative (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℤ)) 6 5 with hr
+  have hr0 : r ≠ 0 := by
+    rintro h
+    rw [h] at hsep
+    simp at hsep
+  simpa using isUnit_iff_ne_zero.mpr (show ((r : ℚ)) ≠ 0 by exact_mod_cast hr0)
+
+variable {p : ℕ} [Fact p.Prime]
+  {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} {D' : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ (ZMod p)}
+
+/-- The quotient map `Div → Pic`, packaged as a homomorphism with `Pic` as its CODOMAIN.
+`PlaceData.Pic` is a `def`, so a bare `QuotientAddGroup.mk` elaborates at the unfolded
+quotient type and then `rw` refuses to fire inside `ψ`; naming the map fixes the type once. -/
+noncomputable def mkPic {K : Type} [Field K] (E : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) :
+    E.Divisors →+ E.Pic := QuotientAddGroup.mk' E.picRel
+
+lemma mkPic_apply {K : Type} [Field K] (E : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (z : E.Divisors) :
+    mkPic E z = (QuotientAddGroup.mk z : E.Pic) := rfl
+
+lemma mkPic_eq_zero_iff {K : Type} [Field K] (E : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (z : E.Divisors) : mkPic E z = 0 ↔ z ∈ E.picRel := QuotientAddGroup.eq_zero_iff z
+
+lemma aj_eq_mkPic {K : Type} [Field K] (E : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (P : Pt c₀ c₁ c₂ c₃ c₄ c₅ K) : E.aj P = mkPic E (Finsupp.single (E.pt P) (1 : ℤ)) := rfl
+
+/-- The class of the base point `[∞₊]` is `0` in `Pic` (PROVEN) — it is one of the two
+generators of `picRel`.  This is what makes the degree correction below invisible on
+classes. -/
+lemma mkPic_single_infPlus {K : Type} [Field K] (E : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) :
+    mkPic E (Finsupp.single (E.pt PlaceData.infPlus) (1 : ℤ)) = 0 :=
+  (mkPic_eq_zero_iff E _).mpr
+    ((le_sup_right : AddSubgroup.zmultiples _ ≤ E.picRel) (AddSubgroup.mem_zmultiples _))
+
+/-- The degree homomorphism kills every principal divisor (PROVEN): `princ` is the subgroup
+GENERATED by the `div g`, and each of those has degree `0`.  Extracted from the proof of
+`aj_injective_of_separable`, which had it inline. -/
+lemma degHom_eq_zero_of_mem_princ {K : Type} [Field K] (E : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    {deg : E.Places → ℤ} (hdeg0 : ∀ g : E.F, degHom E deg (E.divisor g) = 0)
+    {z : E.Divisors} (hz : z ∈ E.princ) : degHom E deg z = 0 := by
+  have hle : AddSubgroup.closure (Set.range E.divisor) ≤ (degHom E deg).ker := by
+    rw [AddSubgroup.closure_le]
+    rintro _ ⟨g, rfl⟩
+    simpa [AddMonoidHom.mem_ker] using hdeg0 g
+  have hz' : z ∈ AddSubgroup.closure (Set.range E.divisor) := hz
+  simpa [AddMonoidHom.mem_ker] using hle hz'
+
+/-- **PROVEN: a `redPt`-compatible reduction homomorphism on `Pic` LIFTS to a
+`Specialisation` of divisors inducing it.**
+
+This is the audit's closing paragraph, machine-checked.  `D.Divisors` is free on `D.Places`,
+so `sp` is specified by a choice of divisor `w v` on `X_𝔽ₚ` for each place `v` of `X_ℚ`,
+subject to two conditions: its class must be `ψ [v]`, and its degree must be `deg v`.  Both
+are arrangeable simultaneously because `[∞₊]` has class `0` and degree `1`, so adding a
+multiple of it corrects the degree without moving the class.  At `v = pt P` the prescribed
+value `single (pt' (redPt P)) 1` already satisfies both — its class is
+`aj' (redPt P) = ψ (aj P)` by hypothesis and its degree is `1 = deg (pt P)` — so `sp_pt`
+costs nothing, and `pt` being injective makes the prescription consistent.
+
+`sp_princ` is then the degree argument of `aj_injective_of_separable` run backwards: for `z`
+principal the class of `sp z` is `ψ 0 = 0`, so `sp z = y + n·[∞₊]` with `y` principal; taking
+degrees, `0 = deg z = deg' (sp z) = 0 + n`, so `n = 0` and `sp z = y`.
+
+Both degree maps are needed, which is why `hsepQ` appears; `separable_sextPoly_rat_of_zmod`
+supplies it from `hsep` at the one call site. -/
+theorem exists_specialisation_of_picHom
+    (hsepQ : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℚ).Separable)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ (ZMod p)).Separable)
+    (ψ : D.Pic →+ D'.Pic)
+    (hψ : ∀ P, ψ (D.aj P) = D'.aj (redPt c₀ c₁ c₂ c₃ c₄ c₅ P)) :
+    ∃ S : Specialisation p D D', S.red = ψ := by
+  classical
+  obtain ⟨deg, hdeg1, hdeg0⟩ := exists_degreeMap D hsepQ
+  obtain ⟨deg', hdeg1', hdeg0'⟩ := exists_degreeMap D' hsep
+  set s : D'.Divisors :=
+    Finsupp.single (D'.pt (PlaceData.infPlus : Pt c₀ c₁ c₂ c₃ c₄ c₅ (ZMod p))) (1 : ℤ) with hs
+  have hs0 : mkPic D' s = 0 := mkPic_single_infPlus D'
+  have hsdeg : degHom D' deg' s = 1 := by
+    rw [hs, degHom_single, hdeg1' PlaceData.infPlus, one_mul]
+  -- for every place of `X_ℚ`, a divisor of `X_𝔽ₚ` of the right class and the right degree,
+  -- prescribed at the rational points
+  have hgood : ∀ v : D.Places, ∃ u : D'.Divisors,
+      mkPic D' u = ψ (mkPic D (Finsupp.single v (1 : ℤ))) ∧
+      degHom D' deg' u = deg v ∧
+      ∀ P : Pt c₀ c₁ c₂ c₃ c₄ c₅ ℚ, D.pt P = v →
+        u = Finsupp.single (D'.pt (redPt c₀ c₁ c₂ c₃ c₄ c₅ P)) (1 : ℤ) := by
+    intro v
+    by_cases hv : ∃ P : Pt c₀ c₁ c₂ c₃ c₄ c₅ ℚ, D.pt P = v
+    · obtain ⟨P, rfl⟩ := hv
+      refine ⟨Finsupp.single (D'.pt (redPt c₀ c₁ c₂ c₃ c₄ c₅ P)) (1 : ℤ), ?_, ?_, ?_⟩
+      · rw [← aj_eq_mkPic, ← aj_eq_mkPic, hψ P]
+      · rw [degHom_single, hdeg1' _, hdeg1 P, one_mul]
+      · intro Q hQ
+        rw [D.pt_injective hQ]
+    · obtain ⟨u₀, hu₀⟩ :=
+        (QuotientAddGroup.mk_surjective : Function.Surjective (mkPic D'))
+          (ψ (mkPic D (Finsupp.single v (1 : ℤ))))
+      refine ⟨u₀ + (deg v - degHom D' deg' u₀) • s, ?_, ?_, ?_⟩
+      · rw [map_add, mkPic_apply, hu₀, map_zsmul, hs0, smul_zero, add_zero]
+      · rw [map_add, map_zsmul, hsdeg, smul_eq_mul, mul_one]
+        ring
+      · exact fun P hP => absurd ⟨P, hP⟩ hv
+  choose w hw₁ hw₂ hw₃ using hgood
+  set sp : D.Divisors →+ D'.Divisors :=
+    Finsupp.liftAddHom (fun v => (zmultiplesHom D'.Divisors (w v))) with hspdef
+  have hsp_single : ∀ (v : D.Places) (n : ℤ), sp (Finsupp.single v n) = n • w v := by
+    intro v n; simp [hspdef]
+  have hclass : ∀ z : D.Divisors, mkPic D' (sp z) = ψ (mkPic D z) := by
+    intro z
+    induction z using Finsupp.induction_linear with
+    | zero => simp
+    | add f g hf hg => rw [map_add, map_add, map_add, map_add, hf, hg]
+    | single x y =>
+        rw [hsp_single, map_zsmul, hw₁ x, ← map_zsmul, ← map_zsmul]
+        congr 2
+        simp
+  have hdegsp : ∀ z : D.Divisors, degHom D' deg' (sp z) = degHom D deg z := by
+    intro z
+    induction z using Finsupp.induction_linear with
+    | zero => simp
+    | add f g hf hg => rw [map_add, map_add, map_add, hf, hg]
+    | single x y =>
+        rw [hsp_single, map_zsmul, hw₂ x, degHom_single, smul_eq_mul, mul_comm]
+  refine ⟨⟨sp, ?_, ?_⟩, ?_⟩
+  · intro P
+    rw [hsp_single, one_smul, hw₃ (D.pt P) P rfl]
+  · intro z hz
+    have hzero : mkPic D' (sp z) = 0 := by
+      rw [hclass z, (mkPic_eq_zero_iff D z).mpr ((le_sup_left : D.princ ≤ D.picRel) hz),
+        map_zero]
+    have hmem : sp z ∈ D'.picRel := (mkPic_eq_zero_iff D' _).mp hzero
+    rw [PlaceData.picRel, AddSubgroup.mem_sup] at hmem
+    obtain ⟨y, hy, t, ht, hsum⟩ := hmem
+    obtain ⟨n, rfl⟩ := AddSubgroup.mem_zmultiples_iff.mp ht
+    have hn : n = 0 := by
+      have h1 := congrArg (degHom D' deg') hsum
+      rw [map_add, degHom_eq_zero_of_mem_princ D' hdeg0' hy, zero_add, map_zsmul, ← hs, hsdeg,
+        smul_eq_mul, mul_one, hdegsp z, degHom_eq_zero_of_mem_princ D hdeg0 hz] at h1
+      exact h1
+    rw [hn, zero_smul, add_zero] at hsum
+    exact hsum ▸ hy
+  · refine AddMonoidHom.ext fun z => ?_
+    refine QuotientAddGroup.induction_on z fun v => ?_
+    exact hclass v
+
+end PicHom
+
+/-- **LEAF (obligation 3a): the reduction homomorphism on `Pic` exists, and the formal
+logarithm of the Jacobian is injective on its kernel.**
+
+This is what remains of `exists_reductionFiltration` after the second cut of 2026-07-28; see
+the section note above for why the two halves are bundled.  What has to be built:
+
+* the smooth proper model `𝒳/ℤ_p` of `y² = f(x)`.  `hsep` says the sextic is separable mod
+  `p`, i.e. `disc f ∈ ℤ_p^×`, and `hp` says `2 ∈ ℤ_p^×`, so the weighted-projective model of
+  the file is already smooth over `ℤ_p` — no change of model is needed, which is why the
+  integral coordinates of `exists_int_coords` are literally the `ℤ_p`-points;
+* ~~specialisation of divisors~~ — **NO LONGER ASKED FOR (2026-07-31, axis 4).**  The
+  divisor-level map is now DERIVED from `ψ` by `exists_specialisation_of_picHom`; see the
+  section note above.  Only the reduction of divisor CLASSES, `ψ`, is asked for, and it may
+  be produced by any route.  (The geometry that used to be demanded here: the closure of a
+  closed point of `X_ℚ` is finite flat over `ℤ_p` and cuts an effective divisor on `X_𝔽ₚ`,
+  a rational point's closure is a section, and the vertical part of `div_𝒳(g)` is a multiple
+  of `div_𝒳(p)`.  It is still the natural way to BUILD `ψ`, but it is no longer an
+  obligation of the statement);
+* the formal group `Ĵ` of the Jacobian along the identity section, `ker ψ ⊆ Ĵ(pℤ_p)`, and
+  its logarithm.  For `e = 1 < p − 1`, i.e. `p ≠ 2`, `log = Σ (−1)ⁿ⁺¹ Tⁿ/n`-style series
+  converge on `pℤ_p` and `log` is an isomorphism `Ĵ(pℤ_p) ≅ (pℤ_p)^g`, `g = 2`; only its
+  injectivity and the containment `log(ker red) ⊆ (pℤ_p)²` are asked for here.  This is
+  Silverman *AEC* IV.6.4 / VII.3.2 for a Jacobian rather than an elliptic curve.
+
+**`hp : p ≠ 2` is load-bearing and not decorative.**  At `p = 2` with `e = 1` the series
+does not converge on `Ĵ(2ℤ_2)`, and the conclusion genuinely fails: `Ĵ(2ℤ_2)` can contain
+`2`-torsion, so no injective homomorphism into the torsion-free `ℤ_2²` exists.
+
+This leaf is generic in the sextic and the prime, so proving it closes obligation 3 at both
+levels at once.
+
+## AXIS-BY-AXIS AUDIT 2026-07-28: this leaf STAYS ATOMIC
+
+Faithfulness first, then each candidate cut and why it is not taken.
+
+**FAITHFUL, and two candidate refutations closed.**
+
+* *Rank.*  `ker red` sits inside `J(ℚ)`, whose rank is unbounded over the sextics this leaf
+  quantifies over, while the target `ℤ_[p] × ℤ_[p]` has `ℤ_p`-rank `2`.  That is not a
+  contradiction: `log` is injective on ALL of `Ĵ(pℤ_p)` (it is an isomorphism onto
+  `(pℤ_p)²` for `e < p − 1`), and `ℤ_[p]` has INFINITE rank as an abelian group — `ℚ_p` is
+  uncountable and `ℚ` is countable, so `ℚ_p` is an infinite-dimensional `ℚ`-vector space and
+  `ℤ^k ↪ ℤ_[p]` for every finite `k`.  A positive-rank Jacobian does not refute the leaf.
+* *`sp_pt` at a point with `p ∣ x.den`.*  Such a point's closure meets the special fibre at
+  infinity, and `redPt` agrees: `redTriple` branches on `(b : ZMod p) ≠ 0` and returns
+  `Sum.inr (decide (t / a³ = 1))` in the divisible case.  So `sp_pt` is not silently false
+  on the points where the naive affine reduction would be.
+
+**Axis 1 — split `Specialisation` off from `log` (`∀ S, ∃ log …`).  NOT TAKEN.**  The
+section note above forbids it; here is the witness that `Specialisation` really is not
+rigid.  If `λ : D.Divisors →+ ℤ` kills `D.princ` and kills `single (D.pt P) 1` for every
+rational `P`, then for any `w : D'.Divisors` the map `sp + λ(·) • w` satisfies `sp_pt` and
+`sp_princ` again.  A nonzero such `λ` exists exactly when `Pic⁰(X_ℚ)` modulo the subgroup
+generated by the classes of rational points has positive rank — which happens already for
+`rank J(ℚ) ≥ 2` with `X(ℚ)` the two points at infinity, since those generate a subgroup of
+rank at most `1`.  Honesty about what this witness does and does not show:
+it does NOT refute the split, because `λ` kills torsion (`ℤ` is torsion-free), so the junk
+`red` has the same kernel torsion as the true one; and adding preservation of degree to
+`Specialisation` would kill every member with `deg'(w) ≠ 0`, since `deg' (sp' v) = deg v`
+forces `λ(v) · deg'(w) = 0`.  The decisive objection is a different one, and it survives any
+amount of such pinning: the second half's prover, handed an arbitrary `S`, would have to
+RECOVER the model from the axioms before it could produce a logarithm.  That is strictly
+more work than the bundled leaf, not less, so this cut cannot pay even where it is sound.
+
+**Axis 2 — replace `log` by "`ker red` is torsion-free", still in one existential.  NOT
+TAKEN, and here is the honest accounting for the cut that was.**  Modulo the Mordell–Weil
+already in this file (`fg_pic`, over `exists_descentHeight_pic` and
+`finite_quotient_psmul_pic`) the two are EQUIVALENT: `⇒` because subgroups of
+`ℤ_[p] × ℤ_[p]` are torsion-free, `⇐` because `ker red ≤ D.Pic` is then finitely generated,
+hence free of some finite rank `k` when torsion-free, and `ℤ^k ↪ ℤ_[p] × ℤ_[p]` by the rank
+remark above.  (`fg_pic` wants separability over `ℚ`, which `hsep` gives: the resultant of
+`f` and `f'` is an integer, nonzero mod `p`.)  So this leaf is, modulo Mordell–Weil,
+`exists_reduction` with `red` additionally required to lift to the divisor level: the second
+cut of 2026-07-28 did NOT make the remaining obligation smaller.  What it bought is that the
+group theory of Silverman *AEC* VII.3.2 — a separated filtration with `p`-killed graded
+pieces on which `[p]` shifts the level by exactly one has no torsion — is now machine-checked
+instead of asserted.  Recorded so that nobody re-cuts this leaf expecting a reduction in
+content.
+
+**Axis 3 — weaken to "`ker red` is a `p`-group", dropping `smul_p_notMem` and with it
+`hp`.  REJECTED.**  It is genuinely weaker mathematics: the kernel of reduction is pro-`p`
+for EVERY `p`, needing no convergence, and `filt_one`, `filt_separated` and `smul_p_mem`
+alone already give "no prime-to-`p` torsion" by the same Bézout step used in
+`nsmul_ne_zero_of_notMem`.  But it discharges the consumer only together with
+`gcd(#J(ℚ), p) = 1`, i.e. with `#J(ℚ)` known exactly (`21` and `19`) — a strictly harder
+arithmetic input than the finiteness this file proves.  That is the same reason
+`card_coprime` is deliberately absent from `JacobianPackage`; do not "simplify" this way.
+
+**`log_mem_one` is FREE, and this leaf does NOT ask for it** (2026-07-31).  Given ANY
+injective `φ : ↥ψ.ker →+ ℤ_[p] × ℤ_[p]`, the rescaled `p • φ` is still injective — `ℤ_[p]`
+is a domain and `(p : ℤ_[p]) ≠ 0`, so `p • x = p • y` cancels coordinatewise — and lands in
+`(pℤ_p)²` on the nose, since `(p • φ z).1 = (p : ℤ_[p]) * (φ z).1`.  The field survives in
+the `SmoothModel` structure because reindexing `filt` by `padicLevel p (n − 1)` would shift
+all four remaining axioms for no gain, and because it is what makes `filt n` mean
+`J(ℚ) ∩ Ĵ(pⁿℤ_p)` on the nose; it is discharged by the rescaling in `exists_smoothModel`.
+
+**And `sp` is not a way around building the model — this is now a THEOREM, not a caveat.**
+`D.Divisors` is free on `D.Places`, so any `ψ : D.Pic →+ D'.Pic` with
+`ψ (D.aj P) = D'.aj (redPt P)` lifts basis-wise to a map satisfying `sp_pt`, and
+representatives can be corrected to the right degree by multiples of
+`single (D'.pt infPlus) 1`, which is `0` in `D'.Pic` — so, given the degree maps of
+`exists_degreeMap`, producing a `Specialisation` and producing a `redPt`-compatible
+reduction homomorphism are interchangeable.  `exists_specialisation_of_picHom` proves it,
+which is why this leaf asks for `ψ` and not for `sp`.  The content is the model and its
+formal group; there is no cheaper packaging of it. -/
+theorem exists_picReduction {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {p : ℕ} [Fact p.Prime] (hp : p ≠ 2)
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ) (D' : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ (ZMod p))
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ (ZMod p)).Separable) :
+    ∃ ψ : D.Pic →+ D'.Pic, (∀ P, ψ (D.aj P) = D'.aj (redPt c₀ c₁ c₂ c₃ c₄ c₅ P)) ∧
+      ∃ log : ↥ψ.ker →+ ℤ_[p] × ℤ_[p], Function.Injective log := sorry
+
 /-- **LEAF (obligation 3a): the smooth `ℤ_p`-model exists, with its specialisation of
 divisors and the formal logarithm of its Jacobian.**
 
@@ -6704,7 +7553,30 @@ there is no cheaper packaging of it. -/
 theorem exists_smoothModel {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {p : ℕ} [Fact p.Prime] (hp : p ≠ 2)
     (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ) (D' : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ (ZMod p))
     (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ (ZMod p)).Separable) :
-    Nonempty (SmoothModel p D D') := sorry
+    Nonempty (SmoothModel p D D') := by
+  obtain ⟨ψ, hψ, log, hlog⟩ := exists_picReduction hp D D' hsep
+  obtain ⟨S, hS⟩ :=
+    exists_specialisation_of_picHom (separable_sextPoly_rat_of_zmod hsep) hsep ψ hψ
+  have hle : S.red.ker ≤ ψ.ker := hS ▸ le_rfl
+  set ι : ↥S.red.ker →+ ℤ_[p] × ℤ_[p] := log.comp (AddSubgroup.inclusion hle) with hι
+  have hιinj : Function.Injective ι := hlog.comp (AddSubgroup.inclusion_injective hle)
+  refine ⟨{ spec := S
+            log := AddMonoidHom.mk' (fun z => (p : ℕ) • ι z) (fun a b => by
+              simp [smul_add])
+            log_injective := ?_
+            log_mem_one := ?_ }⟩
+  · intro a b hab
+    refine hιinj (Prod.ext ?_ ?_)
+    · have h := congrArg Prod.fst hab
+      simp only [AddMonoidHom.mk'_apply, nsmul_eq_mul] at h
+      exact mul_left_cancel₀ (padicInt_p_ne_zero p) h
+    · have h := congrArg Prod.snd hab
+      simp only [AddMonoidHom.mk'_apply, nsmul_eq_mul] at h
+      exact mul_left_cancel₀ (padicInt_p_ne_zero p) h
+  · intro z
+    rw [mem_padicLevel]
+    exact ⟨⟨(ι z).1, by simp [AddMonoidHom.mk'_apply, nsmul_eq_mul]⟩,
+      ⟨(ι z).2, by simp [AddMonoidHom.mk'_apply, nsmul_eq_mul]⟩⟩
 
 /-- **LEAF (obligation 3a), now PROVEN from `exists_smoothModel` and
 `SmoothModel.toReductionFiltration`.**
@@ -6862,6 +7734,135 @@ theorem finite_of_fg_of_two_divisible {A : Type*} [AddCommGroup A]
     ⟨⟨r, mem_nonZeroDivisors_of_ne_zero hrne⟩, hr0 z Submodule.mem_top⟩
   exact Module.finite_of_fg_torsion A htor
 
+/-- **A cube model transports along an isomorphism of abelian groups** (PROVEN).
+
+Every field except `coords` is untouched: `cube`, `rel`, their degrees and — crucially —
+`cube_nonvanishing`, which does not mention the group at all.  `coords` is precomposed with
+`e`, and the three conditions on it survive because `e` is an injective group homomorphism:
+`injective_of_smul` picks up one extra `e.injective`, and `cube_eval` needs only
+`e (P + Q) = e P + e Q` and `e (P − Q) = e P − e Q`.
+
+**Why this is not the circular route.**  The docstring below records that routing a
+`CubeModel` leaf through "`D.Pic` is finitely generated" is CIRCULAR, and names *transport
+along an `AddEquiv`* and *a product construction* as the two structural facts such a route
+would want.  It is the PRODUCT construction that enables the circularity — it is what turns
+`CubeModel ℤ` and `CubeModel (ZMod n)` into a model for an arbitrary finitely generated
+group — and it is deliberately still absent.  Transport alone proves nothing about any new
+group and cannot start that induction; what it does is carry a model produced by GEOMETRY on
+one presentation of a group across to another presentation of the SAME group, which is
+exactly what `exists_abelianScheme_addEquiv_pic` below asks for.  A successor who adds a
+product construction must say in its docstring that it re-opens the circularity.
+
+**Where this belongs, and why it is here.**  Its natural home is beside `CubeModel` in
+`Fermat/FLT/Mathlib/NumberTheory/ProjectiveHeight.lean`.  It is stated here instead because
+that module is `public import`ed by `ModularCurve/X0.lean`, so an edit to it rebuilds the
+largest module in the tree for the sake of a fifteen-line `def` with one consumer — the
+"re-derive it downstream" case of CLAUDE.md's upstream/downstream rule.  Hoist it if a
+second consumer ever appears. -/
+def cubeModelCongr {A B : Type*} [AddCommGroup A] [AddCommGroup B]
+    (cm : CubeModel A) (e : B ≃+ A) : CubeModel B where
+  dim := cm.dim
+  coords P := cm.coords (e P)
+  coords_ne_zero P := cm.coords_ne_zero (e P)
+  injective_of_smul P Q c hc h := e.injective (cm.injective_of_smul _ _ c hc h)
+  cube := cm.cube
+  cube_homogeneous := cm.cube_homogeneous
+  cube_eval P Q := by
+    obtain ⟨c, hc, h⟩ := cm.cube_eval (e P) (e Q)
+    exact ⟨c, hc, fun k => by rw [map_add, map_sub]; exact h k⟩
+  relDim := cm.relDim
+  relDeg := cm.relDeg
+  rel := cm.rel
+  rel_homogeneous := cm.rel_homogeneous
+  rel_eval P Q i := cm.rel_eval (e P) (e Q) i
+  cube_nonvanishing := cm.cube_nonvanishing
+
+open AlgebraicGeometry CategoryTheory in
+/-- **LEAF (Mordell–Weil, geometric half — THE JACOBIAN BRIDGE): the Jacobian of the smooth
+model exists as an abelian scheme over `ℚ`, and its `ℚ`-points are `Pic⁰`.**
+
+This is the leaf the section docstring above has been calling *"the right long-term
+repair"* since 2026-07-28, and as of 2026-07-31 it is the only open obligation on this
+file's geometric half: `exists_cubeModel_pic_of_infinite` below is PROVEN over it.
+
+`SpecQ` is not named because it is declared in `X0.lean`; it is an `abbrev` for
+`Spec (CommRingCat.of ℚ)`, which is what appears here, so the two are interchangeable and
+`Fermat.exists_cubeModel_of_abelianScheme` applies to this `jstr` on the nose.
+
+## WHY THIS IS THE CUT
+
+The docstring below establishes that `CubeModel.cube_nonvanishing` is PROPERNESS, so no
+embedding of an infinite group into a non-complete group variety can satisfy it, and it
+refutes the two cheap coordinate witnesses outright.  A prover must therefore supply a
+genuine abelian variety — and once that is granted, everything from the abelian variety to
+the `CubeModel` **already exists in this tree, PROVEN**, and asking for it again here would
+be proving it twice:
+
+* `Fermat.exists_isAmpleSheaf_symmetric_cube` (`Modularity/AbelianSchemeIsogeny.lean`) —
+  a symmetric, normalized, ample invertible sheaf with `σ^*L ⊗ δ^*L ≅ p₁^*L² ⊗ p₂^*L²`;
+* `Fermat.nonempty_cubeModel_of_isAmpleSheaf_cube` (`X0.lean`) — the coordinate dictionary;
+* `Fermat.exists_cubeModel_of_abelianScheme` (`X0.lean`) — their three-line assembly;
+* `cubeModelCongr` (just above, PROVEN with this leaf) — transport of a `CubeModel` along
+  an `AddEquiv`, which is what lets the model produced on `RelPoint jstr (𝟙 SpecQ)` be read
+  on `D.Pic`.
+
+So the frontier count is unchanged (one leaf in, one leaf out) and what is bought is that
+the *shared* obligation is shared: the very-ample-symmetric-sheaf and theorem-of-the-cube
+content is now owed ONCE, in `X0`/`AbelianSchemeIsogeny`, instead of once there and once
+here.  Judge this cut by what is LEFT in the leaf — a Jacobian and a comparison theorem,
+with no mention of coordinates, Segre ideals, homogeneous forms or `ℙⁿ` — not by the delta.
+
+## TRUE, AND WHY
+
+`hsep` makes `sextPoly` a separable monic sextic, so the smooth projective model `X` of
+`y² = f(x)` is a curve of genus `2` over `ℚ`, and `PlaceData` pins it: `eqn`,
+`transcendental_xx` and `gen` pin `F` as the function field, and `ord_injective` together
+with `ord_complete` pin `Places` as exactly the normalised discrete valuations of `F`
+trivial on `ℚ` — i.e. the closed points of the smooth projective model.  So this is not the
+"`∀ P : <presentation structure>`" trap: no junk inhabitant with a different `Pic` exists,
+and in particular `D.Pic` is countable, which is the one thing that would refute both this
+leaf and its consumer (`coords` injective mod scalars forces `D.Pic ↪ ℙ^{dim−1}(ℚ)`).
+
+`J = Pic⁰_{X/ℚ}` is then an abelian surface over `ℚ`: proper, smooth and with geometrically
+connected fibres, with a functorial group law — the four fields of `AbelianSchemeStruct`.
+And the comparison `D.Pic ≃+ J(ℚ)` holds because `X` HAS A RATIONAL POINT: `D.picRel` is
+`princ ⊔ ℤ·[∞₊]` with `infPlus` a rational place of degree `1` (`PlaceData.infPlus`, and
+`pt_injective`), so `D.Pic` is the group of `ℚ`-rational divisor classes of degree `0`, and
+the map `Pic⁰_{div}(X/ℚ) → J(ℚ)` — always injective — is surjective exactly because
+`X(ℚ) ≠ ∅` kills the Brauer obstruction.  The leading coefficient of a MONIC sextic being a
+square is what puts the two points at infinity in `X(ℚ)`, and it is already recorded on
+`PlaceData.infPlus`.
+
+*Refuting check*: a `PlaceData` inhabitant over `ℚ` whose `Pic` is not the point group of
+any abelian variety over `ℚ` — e.g. an uncountable one.  `ord_complete` is the axiom that
+forecloses it, and its own docstring says so ("without it a presentation could omit points
+and make `Pic` anything at all").
+
+## NOT DEGENERATELY SATISFIABLE, AND WHERE `hinf` GOES
+
+`AbelianSchemeStruct` has NO nontriviality axiom — CLAUDE.md's standing warning — so the
+ZERO abelian scheme `J = SpecQ`, `jstr = 𝟙` satisfies `proper`, `smooth` and `connected`
+with fibres points.  It is not a witness here: `RelPoint (𝟙 SpecQ) (𝟙 SpecQ)` is a
+SINGLETON, so an `AddEquiv` out of `D.Pic` would force `Subsingleton D.Pic`, which `hinf`
+refutes.  So `hinf` is retained deliberately — it is what makes the degenerate witness
+inadmissible — even though the statement is true without it (the honest Jacobian works at
+every `D`).  `hsep` is genuinely load-bearing: without it `sextPoly` may be a square in
+`ℚ[x]`, and the "curve" is not a curve.
+
+*What a prover owes and what it does not.*  The `AddEquiv` is asked for RAW: no
+compatibility with `D.aj`, with `red`, or with the Galois action is required, because
+`cubeModelCongr` reads none of them.  A prover free to choose the comparison in whatever
+form its construction produces should not feel obliged to prove more; if a later consumer
+needs `aj`-compatibility, that is a separate strengthening and should be recorded as one. -/
+theorem exists_abelianScheme_addEquiv_pic {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℚ).Separable) (hinf : Infinite D.Pic) :
+    ∃ (J : Scheme.{0}) (jstr : J ⟶ Spec (CommRingCat.of ℚ))
+      (ab : AbelianSchemeStruct jstr),
+      letI := ab.addCommGroup (𝟙 (Spec (CommRingCat.of ℚ)))
+      Nonempty (D.Pic ≃+ RelPoint jstr (𝟙 (Spec (CommRingCat.of ℚ)))) := sorry
+
+open AlgebraicGeometry CategoryTheory in
 /-- **LEAF (Mordell–Weil, geometric half, ANALYSIS-FREE): `Pic⁰(X_ℚ)` embeds in projective
 space over `ℚ` by a symmetric very ample bundle satisfying the theorem of the cube**, for
 every separable monic sextic.
@@ -6966,11 +7967,29 @@ an `AddEquiv`, a product construction, hence a model for every finitely generate
 deliberately NOT built here, because routing this leaf through "`D.Pic` is finitely
 generated" is CIRCULAR: `exists_cubeModel_pic` feeds `exists_descentHeight_pic`, which feeds
 `fg_pic`, which is that very finite generation.  *Refuting check for the circularity claim*:
-a consumer of `exists_descentHeight_pic` that does not lie under `fg_pic`. -/
+a consumer of `exists_descentHeight_pic` that does not lie under `fg_pic`.  **That check was
+RUN on 2026-07-31** (comment-stripped token scan of this file, hits attributed to the
+enclosing declaration): `exists_descentHeight_pic` occurs exactly twice, at its own
+declaration and inside `fg_pic`, and nowhere else in `Fermat/`.  The circularity claim
+stands.
+
+**NO LONGER A LEAF (2026-07-31).**  It is PROVEN below over
+`exists_abelianScheme_addEquiv_pic` — the bridge this file's own section docstring has been
+calling "the right long-term repair" since 2026-07-28 — together with the PROVEN
+`Fermat.exists_cubeModel_of_abelianScheme` (`ModularCurve/X0.lean`) and the PROVEN
+`cubeModelCongr` (just above it, in this file).  Everything above
+is retained because it is still the argument for why the bridge is the ONLY route: the
+`cube_nonvanishing` field is properness, so a complete group variety is not avoidable, and
+both cheap coordinate witnesses are refuted outright. -/
 theorem exists_cubeModel_pic_of_infinite {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
     (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ)
     (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℚ).Separable) (hinf : Infinite D.Pic) :
-    Nonempty (CubeModel D.Pic) := sorry
+    Nonempty (CubeModel D.Pic) := by
+  obtain ⟨J, jstr, ab, he⟩ := exists_abelianScheme_addEquiv_pic D hsep hinf
+  letI := ab.addCommGroup (𝟙 (Spec (CommRingCat.of ℚ)))
+  obtain ⟨e⟩ := he
+  obtain ⟨cm⟩ := exists_cubeModel_of_abelianScheme ab
+  exact ⟨cubeModelCongr cm e⟩
 
 /-- **LEAF (Mordell–Weil, geometric half), now PROVEN by the finite/infinite case
 distinction** over `Fermat.nonempty_cubeModel_of_finite` and
@@ -7504,40 +8523,605 @@ lemma divAct_bcDiv (σ : QbarGal) (δ : D.Divisors) :
   rw [divAct_apply, bcDiv_apply, bcDiv_apply]
   rw [← gp.below_placeAct σ ((gp.placeAct σ).symm w), Equiv.apply_symm_apply]
 
-/-- **LEAF (weak Mordell–Weil, 2a of 4): every place of `F` lies under a geometric place**,
-i.e. `below` is surjective.
+namespace PlaceExtend
 
-`GeomPic.ord_emb` says that a geometric place RESTRICTS to a place of `F` with no
-ramification; this is the converse direction, that the restriction map is ONTO. Together they
-say `below` realises `Places(F̄) ↠ Places(F)`, which is the fibration
-[Stichtenoth, *Algebraic Function Fields and Codes*, III.6.3] describes — the sharp form
-counts the fibre over `v` as `deg v`, and only NON-EMPTINESS is needed here.
+open Polynomial IsDedekindDomain
+open PlaceFromDedekind PlaceClassify
+open scoped WithZero
 
-Route.  This is the extension theorem for valuations, specialised to a constant field
-extension.  Given `v`, its valuation ring `O_v ⊆ F` extends to a valuation ring of
-`F̄ = F·ℚ̄` (Chevalley; concretely, `O_v ⊗_ℚ L` is contained in a valuation ring of `F·L` for
-each finite `L/ℚ`, and the system is directed), and the extension is again DISCRETE and
-NORMALISED because the extension is by constants — the same unramifiedness that `ord_emb`
-records for the places that do exist.  `Dbar.ord_complete` then turns the resulting valuation
-FUNCTION into a place, exactly as `ConstFieldExt.exists_below` does in the other direction.
+section Poly
+
+variable {K K' : Type} [Field K] [Field K'] [Algebra K K']
+variable [Algebra K[X] K'[X]]
+  (hmap : ∀ p : K[X], algebraMap K[X] K'[X] p = p.map (algebraMap K K'))
+
+include hmap
+
+/-- With the coefficientwise algebra structure, `K[X] ⊆ K'[X]` is a scalar tower over `K`. -/
+lemma isScalarTower_poly : IsScalarTower K K[X] K'[X] :=
+  IsScalarTower.of_algebraMap_eq fun a => by
+    rw [hmap]
+    simp [Polynomial.algebraMap_eq]
+
+/-- **`K'[X]` is integral over `K[X]` when `K'` is integral over `K`** — the coefficients are
+integral and `X` is in the base, so every monomial is, and integral elements form a ring. -/
+lemma isIntegral_poly [Algebra.IsIntegral K K'] : Algebra.IsIntegral K[X] K'[X] := by
+  haveI := isScalarTower_poly hmap
+  constructor
+  intro q
+  have hX : IsIntegral K[X] (X : K'[X]) := by
+    have : (X : K'[X]) = algebraMap K[X] K'[X] X := by rw [hmap]; simp
+    rw [this]; exact isIntegral_algebraMap
+  have hC : ∀ c : K', IsIntegral K[X] (C c : K'[X]) := by
+    intro c
+    have h1 : IsIntegral K c := Algebra.IsIntegral.isIntegral c
+    have h2 : IsIntegral K (algebraMap K' K'[X] c) :=
+      h1.map (IsScalarTower.toAlgHom K K' K'[X])
+    have h3 : (algebraMap K' K'[X] c) = C c := rfl
+    rw [h3] at h2
+    exact h2.tower_top
+  induction q using Polynomial.induction_on' with
+  | add p q hp hq => exact hp.add hq
+  | monomial n c =>
+    rw [← C_mul_X_pow_eq_monomial]
+    exact (hC c).mul (hX.pow n)
+
+end Poly
+
+section Main
+
+variable {K K' F F' : Type} [Field K] [Field K'] [Field F] [Field F']
+  [Algebra K F] [Algebra K[X] F] [IsScalarTower K K[X] F]
+  [Algebra (RatFunc K) F] [IsScalarTower K[X] (RatFunc K) F]
+  [FiniteDimensional (RatFunc K) F] [Algebra.IsSeparable (RatFunc K) F]
+  [Algebra K' F'] [Algebra K'[X] F'] [IsScalarTower K' K'[X] F']
+  [Algebra (RatFunc K') F'] [IsScalarTower K'[X] (RatFunc K') F']
+  [FiniteDimensional (RatFunc K') F'] [Algebra.IsSeparable (RatFunc K') F']
+  [Algebra K K'] [Algebra.IsIntegral K K']
+
+omit [Algebra (RatFunc K) F] [IsScalarTower K[X] (RatFunc K) F] [FiniteDimensional (RatFunc K) F]
+  [Algebra.IsSeparable (RatFunc K) F] [Algebra (RatFunc K') F']
+  [IsScalarTower K'[X] (RatFunc K') F'] [FiniteDimensional (RatFunc K') F']
+  [Algebra.IsSeparable (RatFunc K') F'] [Algebra.IsIntegral K K'] in
+/-- **The embedding takes `K[X]` to `K'[X]` coefficientwise**, as an equality of ring
+homomorphisms `K[X] →+* F'`.  Both sides are determined by their values on the constants and
+on `X`, which is exactly what the two hypotheses give. -/
+lemma comp_algebraMap_poly (emb : F →+* F')
+    (hembK : ∀ a : K, emb (algebraMap K F a) = algebraMap K' F' (algebraMap K K' a))
+    (hembX : emb (algebraMap K[X] F X) = algebraMap K'[X] F' X) :
+    emb.comp (algebraMap K[X] F)
+      = (algebraMap K'[X] F').comp (Polynomial.mapRingHom (algebraMap K K')) := by
+  refine Polynomial.ringHom_ext (fun a => ?_) ?_
+  · simp only [RingHom.coe_comp, Function.comp_apply, coe_mapRingHom, Polynomial.map_C]
+    have e1 : algebraMap K[X] F (C a) = algebraMap K F a := by
+      rw [show (C a : K[X]) = algebraMap K K[X] a by simp [Polynomial.algebraMap_eq],
+        ← IsScalarTower.algebraMap_apply K K[X] F]
+    have e2 : algebraMap K'[X] F' (C (algebraMap K K' a))
+        = algebraMap K' F' (algebraMap K K' a) := by
+      rw [show (C (algebraMap K K' a) : K'[X]) = algebraMap K' K'[X] (algebraMap K K' a) by
+        simp [Polynomial.algebraMap_eq], ← IsScalarTower.algebraMap_apply K' K'[X] F']
+    rw [e1, e2, hembK]
+  · simpa using hembX
+
+omit [Algebra (RatFunc K) F] [IsScalarTower K[X] (RatFunc K) F] [FiniteDimensional (RatFunc K) F]
+  [Algebra.IsSeparable (RatFunc K) F] [Algebra (RatFunc K') F']
+  [IsScalarTower K'[X] (RatFunc K') F'] [FiniteDimensional (RatFunc K') F']
+  [Algebra.IsSeparable (RatFunc K') F'] [Algebra.IsIntegral K K'] in
+/-- The embedding takes elements integral over `K[X]` to elements integral over `K'[X]`. -/
+lemma isIntegral_emb (emb : F →+* F')
+    (hembK : ∀ a : K, emb (algebraMap K F a) = algebraMap K' F' (algebraMap K K' a))
+    (hembX : emb (algebraMap K[X] F X) = algebraMap K'[X] F' X) {z : F}
+    (hz : IsIntegral K[X] z) : IsIntegral K'[X] (emb z) := by
+  obtain ⟨p, hmonic, hroot⟩ := hz
+  refine ⟨p.map (Polynomial.mapRingHom (algebraMap K K')), hmonic.map _, ?_⟩
+  rw [Polynomial.eval₂_map, ← comp_algebraMap_poly emb hembK hembX, ← Polynomial.hom_eval₂,
+    hroot, map_zero]
+
+/-- **Every place of `F` regular at the abscissa is dominated by a place of `F'`.**
+
+`emb` presents `F'` over `F` as a constant field extension: `K'` is integral over `K` and the
+abscissa goes to the abscissa.  The place produced restricts along `emb` to a POSITIVE MULTIPLE
+of `o`; that the multiple is `1` is not proven here (and is not needed by the consumer, which
+reads it off `GeomPic.ord_emb` instead).
+
+The construction is lying over, in the rings of integers of the two towers: `o` is the adic
+valuation of a height-one prime `𝔭` of `A = integralClosure K[X] F`, the ring
+`A' = integralClosure K'[X] F'` is integral over `A`, and a prime of `A'` over `𝔭` gives the
+place. -/
+theorem exists_isPlaceFun_comp_emb (emb : F →+* F')
+    (hembK : ∀ a : K, emb (algebraMap K F a) = algebraMap K' F' (algebraMap K K' a))
+    (hembX : emb (algebraMap K[X] F X) = algebraMap K'[X] F' X)
+    {o : F → ℤ} (ho : IsPlaceFun K F o) (hot : 0 ≤ o (algebraMap K[X] F X)) :
+    ∃ w : F' → ℤ, IsPlaceFun K' F' w ∧ ∃ e : ℤ, 0 < e ∧
+      ∀ z : F, z ≠ 0 → w (emb z) = e * o z := by
+  classical
+  -- `emb` carries integral elements to integral elements
+  have hemb_int : ∀ {z : F}, IsIntegral K[X] z → IsIntegral K'[X] (emb z) :=
+    fun {_} hz => isIntegral_emb emb hembK hembX hz
+  have hembinj : Function.Injective emb := emb.injective
+  -- the coefficientwise tower `K[X] ⊆ K'[X] ⊆ F'`
+  letI : Algebra K[X] K'[X] := (Polynomial.mapRingHom (algebraMap K K')).toAlgebra
+  have hmapKX : ∀ p : K[X], algebraMap K[X] K'[X] p = p.map (algebraMap K K') := fun _ => rfl
+  haveI : Algebra.IsIntegral K[X] K'[X] := isIntegral_poly hmapKX
+  letI : Algebra K[X] F' :=
+    ((algebraMap K'[X] F').comp (Polynomial.mapRingHom (algebraMap K K'))).toAlgebra
+  haveI : IsScalarTower K[X] K'[X] F' := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  -- the two rings of integers, and the map between them
+  have hcoeA : ∀ x : ↥(integralClosure K[X] F), algebraMap (↥(integralClosure K[X] F)) F x
+      = (x : F) := fun _ => rfl
+  have hcoeA' : ∀ x : ↥(integralClosure K'[X] F'), algebraMap (↥(integralClosure K'[X] F')) F' x
+      = (x : F') := fun _ => rfl
+  let ι : ↥(integralClosure K[X] F) →+* ↥(integralClosure K'[X] F') :=
+    { toFun := fun a => ⟨emb (a : F), hemb_int a.2⟩
+      map_one' := by ext; simp
+      map_mul' := fun a b => by ext; simp
+      map_zero' := by ext; simp
+      map_add' := fun a b => by ext; simp }
+  have hιcoe : ∀ a : ↥(integralClosure K[X] F), ((ι a : ↥(integralClosure K'[X] F')) : F')
+      = emb (a : F) := fun _ => rfl
+  have hιinj : Function.Injective ι := by
+    intro a b hab
+    exact Subtype.ext (hembinj (by simpa [hιcoe] using congrArg Subtype.val hab))
+  letI : Algebra (↥(integralClosure K[X] F)) (↥(integralClosure K'[X] F')) := ι.toAlgebra
+  letI : Algebra (↥(integralClosure K[X] F)) F' :=
+    (emb.comp (algebraMap (↥(integralClosure K[X] F)) F)).toAlgebra
+  haveI : IsScalarTower (↥(integralClosure K[X] F)) (↥(integralClosure K'[X] F')) F' :=
+    IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI : IsScalarTower K[X] (↥(integralClosure K[X] F)) F' := by
+    refine IsScalarTower.of_algebraMap_eq fun p => ?_
+    show algebraMap K'[X] F' (p.map (algebraMap K K'))
+      = emb (algebraMap (↥(integralClosure K[X] F)) F (algebraMap K[X] _ p))
+    rw [← IsScalarTower.algebraMap_apply K[X] (↥(integralClosure K[X] F)) F,
+      show emb (algebraMap K[X] F p) = _ from
+        congrArg (fun φ : K[X] →+* F' => φ p) (comp_algebraMap_poly emb hembK hembX)]
+    rfl
+  haveI : Algebra.IsIntegral (↥(integralClosure K[X] F)) (↥(integralClosure K'[X] F')) := by
+    constructor
+    intro z
+    have h2 : IsIntegral K[X] ((z : F')) := isIntegral_trans (A := K'[X]) _ z.2
+    have h3 : IsIntegral (↥(integralClosure K[X] F)) ((z : F')) := h2.tower_top
+    exact (isIntegral_algebraMap_iff (A := ↥(integralClosure K'[X] F')) (B := F')
+      (fun _ _ h => Subtype.ext h)).1 h3
+  -- the classification of `o` as an adic valuation
+  obtain ⟨pv, hp⟩ := PlaceClassify.exists_ordAt_eq ho (t := algebraMap K[X] F X) rfl hot
+  haveI : pv.asIdeal.IsPrime := pv.isPrime
+  -- lying over
+  have hinjAlg : Function.Injective
+      (algebraMap (↥(integralClosure K[X] F)) (↥(integralClosure K'[X] F'))) := hιinj
+  obtain ⟨Q, -, hQprime, hQcomap⟩ :=
+    Ideal.exists_ideal_over_prime_of_isIntegral (R := ↥(integralClosure K[X] F))
+      (S := ↥(integralClosure K'[X] F')) pv.asIdeal ⊥ (by
+        rw [← RingHom.ker_eq_comap_bot,
+          (RingHom.injective_iff_ker_eq_bot (algebraMap (↥(integralClosure K[X] F))
+            (↥(integralClosure K'[X] F')))).1 hinjAlg]
+        exact bot_le)
+  have hQ0 : Q ≠ ⊥ := by
+    intro h
+    refine pv.ne_bot ?_
+    rw [← hQcomap, h, Ideal.comap_bot_of_injective _ hinjAlg]
+  set q : HeightOneSpectrum (↥(integralClosure K'[X] F')) := ⟨Q, hQprime, hQ0⟩ with hq
+  refine ⟨ordAt (F := F') q, isPlaceFun_ordAt q, ?_⟩
+  -- the valuation ring of `o` maps into that of `ordAt q`
+  have key : ∀ z : F, 0 ≤ o z → 0 ≤ ordAt (F := F') q (emb z) := by
+    intro z hz
+    rcases eq_or_ne z 0 with rfl | hz0
+    · rw [map_zero, ordAt_zero]
+    have hzp : 0 ≤ ordAt (F := F) pv z := by rw [← hp]; exact hz
+    have hval : pv.valuation F z ≤ 1 := by
+      have hne : pv.valuation F z ≠ 0 := valuation_ne_zero pv hz0
+      refine (WithZero.log_le_log hne (one_ne_zero (α := ℤᵐ⁰))).1 ?_
+      simp only [WithZero.log_one]
+      simp only [ordAt] at hzp
+      omega
+    obtain ⟨n, d, hnd⟩ := pv.exists_primeCompl_mul_eq_of_integer z hval
+    rw [hcoeA, hcoeA] at hnd
+    have hd0 : ((d : ↥(integralClosure K[X] F)) : F) ≠ 0 := by
+      intro h0
+      have : (d : ↥(integralClosure K[X] F)) = 0 := Subtype.ext h0
+      exact d.2 (this ▸ Submodule.zero_mem _)
+    have hembd : emb ((d : ↥(integralClosure K[X] F)) : F) ≠ 0 := fun h =>
+      hd0 (hembinj (by simpa using h))
+    have hembz : emb z ≠ 0 := fun h => hz0 (hembinj (by simpa using h))
+    -- the denominator is a unit at `q`
+    have hwd : ordAt (F := F') q (emb ((d : ↥(integralClosure K[X] F)) : F)) = 0 := by
+      have hge : 0 ≤ ordAt (F := F') q (emb ((d : ↥(integralClosure K[X] F)) : F)) :=
+        ordAt_nonneg_of_isIntegral q (hemb_int (d : ↥(integralClosure K[X] F)).2)
+      by_contra hne
+      have hpos : 0 < ordAt (F := F') q (emb ((d : ↥(integralClosure K[X] F)) : F)) :=
+        lt_of_le_of_ne hge (Ne.symm hne)
+      have hmem := PlaceClassify.mem_of_ordAt_pos q
+        (a := ι (d : ↥(integralClosure K[X] F))) (by rw [hιcoe]; exact hembd)
+        (by rw [hιcoe]; exact hpos)
+      have hd' : ((d : ↥(integralClosure K[X] F))) ∈ Ideal.comap
+          (algebraMap (↥(integralClosure K[X] F)) (↥(integralClosure K'[X] F'))) Q := hmem
+      rw [hQcomap] at hd'
+      exact d.2 hd'
+    have hwn : 0 ≤ ordAt (F := F') q (emb ((n : ↥(integralClosure K[X] F)) : F)) :=
+      ordAt_nonneg_of_isIntegral q (hemb_int n.2)
+    have hmul : emb z * emb ((d : ↥(integralClosure K[X] F)) : F)
+        = emb ((n : ↥(integralClosure K[X] F)) : F) := by rw [← map_mul, hnd]
+    have hsplit := ordAt_mul (F := F') q (emb z)
+      (emb ((d : ↥(integralClosure K[X] F)) : F)) hembz hembd
+    rw [hmul, hwd] at hsplit
+    omega
+  -- hence it restricts to a multiple of `o`
+  obtain ⟨π, hπ⟩ := ho.normalised
+  have hπ0 : π ≠ 0 := by intro h0; rw [h0, ho.map_zero] at hπ; omega
+  have hembπ : emb π ≠ 0 := fun h => hπ0 (hembinj (by simpa using h))
+  have hunit : ∀ z : F, z ≠ 0 → o z = 0 → ordAt (F := F') q (emb z) = 0 := by
+    intro z hz hoz
+    have hembz : emb z ≠ 0 := fun h => hz (hembinj (by simpa using h))
+    have h1 : 0 ≤ ordAt (F := F') q (emb z) := key z (le_of_eq hoz.symm)
+    have h2 : 0 ≤ ordAt (F := F') q (emb z⁻¹) := key z⁻¹ (by
+      rw [isPlaceFun_inv ho hz, hoz]; simp)
+    rw [map_inv₀, isPlaceFun_inv (isPlaceFun_ordAt (K := K') q) hembz] at h2
+    omega
+  have hscale : ∀ z : F, z ≠ 0 →
+      ordAt (F := F') q (emb z) = ordAt (F := F') q (emb π) * o z := by
+    intro z hz
+    have hzp0 : (π ^ (o z) : F) ≠ 0 := zpow_ne_zero _ hπ0
+    have hu : z * (π ^ (o z))⁻¹ ≠ 0 := mul_ne_zero hz (inv_ne_zero hzp0)
+    have hou : o (z * (π ^ (o z))⁻¹) = 0 := by
+      rw [ho.map_mul _ _ hz (inv_ne_zero hzp0), isPlaceFun_inv ho hzp0,
+        isPlaceFun_zpow ho hπ0, hπ]
+      ring
+    have hres := hunit _ hu hou
+    have hembz : emb z ≠ 0 := fun h => hz (hembinj (by simpa using h))
+    have hembzp : emb (π ^ (o z) : F) ≠ 0 := fun h => hzp0 (hembinj (by simpa using h))
+    rw [map_mul, map_inv₀, isPlaceFun_ordAt (K := K') q |>.map_mul _ _ hembz
+      (inv_ne_zero hembzp), isPlaceFun_inv (isPlaceFun_ordAt (K := K') q) hembzp,
+      map_zpow₀, isPlaceFun_zpow (isPlaceFun_ordAt (K := K') q) hembπ] at hres
+    rw [mul_comm]
+    omega
+  refine ⟨ordAt (F := F') q (emb π), ?_, hscale⟩
+  -- and the multiple is positive, because the prime is
+  obtain ⟨a, ha, ha0⟩ := Submodule.ne_bot_iff _ |>.1 pv.ne_bot
+  have haF : ((a : ↥(integralClosure K[X] F)) : F) ≠ 0 := fun h => ha0 (Subtype.ext h)
+  have hιa0 : ι a ≠ 0 := fun h => ha0 (hιinj (by rw [h, map_zero]))
+  have hpos : 0 < ordAt (F := F') q (emb (a : F)) := by
+    have := ordAt_pos_of_mem (F := F') q (r := ι a) (by rw [← hQcomap] at ha; exact ha) hιa0
+    rwa [hcoeA', hιcoe] at this
+  have hoa : 0 ≤ o (a : F) := by
+    rw [hp]
+    exact ordAt_nonneg_of_isIntegral pv a.2
+  have hsc := hscale (a : F) haF
+  rcases eq_or_lt_of_le (key π (by omega)) with h | h
+  · rw [← h, zero_mul] at hsc
+    omega
+  · exact h
+
+
+/-- **The chart-level form of `exists_isPlaceFun_comp_emb`**: the tower instances that theorem
+quantifies over are installed here from raw chart data, on both sides at once.
+
+The chart data is exactly what `finite_isPlaceFun_aux` asks for: a transcendental `t` playing
+the role of the abscissa, an ordinate `yy` generating `F` over `K(t)` whose square lies in
+`K(t)` (as `P/Q`).  Both `t = x` and `t = 1/x` qualify, which is what lets the caller cover
+every place. -/
+theorem exists_isPlaceFun_comp_emb_of_chart
+    {K K' F F' : Type} [Field K] [Field K'] [Field F] [Field F']
+    [Algebra K F] [Algebra K' F'] [Algebra K K'] [Algebra.IsIntegral K K']
+    (h2 : (2 : K) ≠ 0) (h2' : (2 : K') ≠ 0)
+    {t yy : F} (htr : Transcendental K t) (hyy0 : yy ≠ 0)
+    (hgen : ∀ z : F, ∃ a b d : K[X], aeval t d ≠ 0 ∧
+      z * aeval t d = aeval t a + aeval t b * yy)
+    {P Q : K[X]} (hQ : aeval t Q ≠ 0) (hPQ : yy ^ 2 * aeval t Q = aeval t P)
+    {t' yy' : F'} (htr' : Transcendental K' t') (hyy0' : yy' ≠ 0)
+    (hgen' : ∀ z : F', ∃ a b d : K'[X], aeval t' d ≠ 0 ∧
+      z * aeval t' d = aeval t' a + aeval t' b * yy')
+    {P' Q' : K'[X]} (hQ' : aeval t' Q' ≠ 0) (hPQ' : yy' ^ 2 * aeval t' Q' = aeval t' P')
+    (emb : F →+* F')
+    (hembK : ∀ a : K, emb (algebraMap K F a) = algebraMap K' F' (algebraMap K K' a))
+    (hembt : emb t = t')
+    {o : F → ℤ} (ho : IsPlaceFun K F o) (hot : 0 ≤ o t) :
+    ∃ w : F' → ℤ, IsPlaceFun K' F' w ∧ ∃ e : ℤ, 0 < e ∧
+      ∀ z : F, z ≠ 0 → w (emb z) = e * o z := by
+  classical
+  letI : Algebra K[X] F := (Polynomial.aeval t : K[X] →ₐ[K] F).toRingHom.toAlgebra
+  have halgL : ∀ p : K[X], algebraMap K[X] F p = Polynomial.aeval t p := fun _ => rfl
+  haveI : IsScalarTower K K[X] F :=
+    IsScalarTower.of_algebraMap_eq fun a => by simp [halgL]
+  have hinjL : Function.Injective (algebraMap K[X] F) := by
+    rw [injective_iff_map_eq_zero]
+    intro p hp
+    by_contra hp0
+    exact htr ⟨p, hp0, by rw [← halgL]; exact hp⟩
+  letI : Algebra (RatFunc K) F := (IsFractionRing.lift (A := K[X]) hinjL).toAlgebra
+  haveI : IsScalarTower K[X] (RatFunc K) F :=
+    IsScalarTower.of_algebraMap_eq fun p => (IsFractionRing.lift_algebraMap hinjL p).symm
+  have hdownL : ∀ p : K[X], algebraMap (RatFunc K) F (algebraMap K[X] (RatFunc K) p)
+      = Polynomial.aeval t p := fun p => by rw [← IsScalarTower.algebraMap_apply, halgL]
+  have hQ0L : algebraMap K[X] (RatFunc K) Q ≠ 0 := fun h0 => hQ (by rw [← hdownL, h0, map_zero])
+  obtain ⟨cL, hcL⟩ : ∃ c : RatFunc K,
+      algebraMap K[X] (RatFunc K) P / algebraMap K[X] (RatFunc K) Q = c := ⟨_, rfl⟩
+  have hcFL : algebraMap (RatFunc K) F cL = yy ^ 2 := by
+    rw [← hcL, map_div₀, hdownL, hdownL, ← hPQ]
+    field_simp
+  have hc0L : cL ≠ 0 := by
+    intro h0
+    rw [h0, map_zero] at hcFL
+    exact (pow_ne_zero 2 hyy0) hcFL.symm
+  have hrootL : (Polynomial.aeval yy)
+      (Polynomial.X ^ 2 - Polynomial.C cL : (RatFunc K)[X]) = 0 := by
+    rw [map_sub, map_pow, Polynomial.aeval_X, Polynomial.aeval_C, hcFL, sub_self]
+  have hintL : IsIntegral (RatFunc K) yy :=
+    ⟨_, Polynomial.monic_X_pow_sub_C cL two_ne_zero, by
+      simpa [Polynomial.aeval_def] using hrootL⟩
+  have hadjL : IntermediateField.adjoin (RatFunc K) {yy} = ⊤ := by
+    refine eq_top_iff.mpr fun z _ => ?_
+    obtain ⟨a, b, d, hd, hz⟩ := hgen z
+    refine (IntermediateField.mem_adjoin_simple_iff (RatFunc K) z).2
+      ⟨Polynomial.C (algebraMap K[X] (RatFunc K) a / algebraMap K[X] (RatFunc K) d)
+        + Polynomial.C (algebraMap K[X] (RatFunc K) b / algebraMap K[X] (RatFunc K) d)
+          * Polynomial.X, 1, ?_⟩
+    have e1 : algebraMap (RatFunc K) F
+        (algebraMap K[X] (RatFunc K) a / algebraMap K[X] (RatFunc K) d)
+        = Polynomial.aeval t a / Polynomial.aeval t d := by rw [map_div₀, hdownL, hdownL]
+    have e2 : algebraMap (RatFunc K) F
+        (algebraMap K[X] (RatFunc K) b / algebraMap K[X] (RatFunc K) d)
+        = Polynomial.aeval t b / Polynomial.aeval t d := by rw [map_div₀, hdownL, hdownL]
+    simp only [map_add, map_mul, Polynomial.aeval_C, Polynomial.aeval_X, map_one, div_one, e1, e2]
+    field_simp
+    linear_combination hz
+  haveI : FiniteDimensional (RatFunc K) F := by
+    have h1 := IntermediateField.adjoin.finiteDimensional hintL
+    rw [hadjL] at h1
+    exact (IntermediateField.topEquiv (F := RatFunc K) (E := F)).toLinearEquiv.finiteDimensional
+  have hsepyyL : IsSeparable (RatFunc K) yy := by
+    have h2K : (((2 : ℕ)) : K) ≠ 0 := by push_cast; exact h2
+    have h2' : (((2 : ℕ)) : RatFunc K) ≠ 0 := by
+      rw [← map_natCast (algebraMap K (RatFunc K)) 2]
+      exact fun hh => h2K ((algebraMap K (RatFunc K)).injective (by rw [hh, map_zero]))
+    exact (Polynomial.separable_X_pow_sub_C _ h2' hc0L).of_dvd (minpoly.dvd _ _ hrootL)
+  haveI : Algebra.IsSeparable (RatFunc K) F := by
+    have h1 : Algebra.IsSeparable (RatFunc K) (IntermediateField.adjoin (RatFunc K) {yy}) :=
+      (IntermediateField.isSeparable_adjoin_simple_iff_isSeparable (RatFunc K) F).2 hsepyyL
+    rw [hadjL] at h1
+    exact Algebra.IsSeparable.of_algHom (F := RatFunc K) (E := F)
+      (↥(⊤ : IntermediateField (RatFunc K) F))
+      (f := (IntermediateField.topEquiv (F := RatFunc K) (E := F)).symm.toAlgHom)
+  have hxxXL : algebraMap K[X] F Polynomial.X = t := by rw [halgL]; simp
+  letI : Algebra K'[X] F' := (Polynomial.aeval t' : K'[X] →ₐ[K'] F').toRingHom.toAlgebra
+  have halgR : ∀ p : K'[X], algebraMap K'[X] F' p = Polynomial.aeval t' p := fun _ => rfl
+  haveI : IsScalarTower K' K'[X] F' :=
+    IsScalarTower.of_algebraMap_eq fun a => by simp [halgR]
+  have hinjR : Function.Injective (algebraMap K'[X] F') := by
+    rw [injective_iff_map_eq_zero]
+    intro p hp
+    by_contra hp0
+    exact htr' ⟨p, hp0, by rw [← halgR]; exact hp⟩
+  letI : Algebra (RatFunc K') F' := (IsFractionRing.lift (A := K'[X]) hinjR).toAlgebra
+  haveI : IsScalarTower K'[X] (RatFunc K') F' :=
+    IsScalarTower.of_algebraMap_eq fun p => (IsFractionRing.lift_algebraMap hinjR p).symm
+  have hdownR : ∀ p : K'[X], algebraMap (RatFunc K') F' (algebraMap K'[X] (RatFunc K') p)
+      = Polynomial.aeval t' p := fun p => by rw [← IsScalarTower.algebraMap_apply, halgR]
+  have hQ0R : algebraMap K'[X] (RatFunc K') Q' ≠ 0 := fun h0 => hQ' (by rw [← hdownR, h0, map_zero])
+  obtain ⟨cR, hcR⟩ : ∃ c : RatFunc K',
+      algebraMap K'[X] (RatFunc K') P' / algebraMap K'[X] (RatFunc K') Q' = c := ⟨_, rfl⟩
+  have hcFR : algebraMap (RatFunc K') F' cR = yy' ^ 2 := by
+    rw [← hcR, map_div₀, hdownR, hdownR, ← hPQ']
+    field_simp
+  have hc0R : cR ≠ 0 := by
+    intro h0
+    rw [h0, map_zero] at hcFR
+    exact (pow_ne_zero 2 hyy0') hcFR.symm
+  have hrootR : (Polynomial.aeval yy')
+      (Polynomial.X ^ 2 - Polynomial.C cR : (RatFunc K')[X]) = 0 := by
+    rw [map_sub, map_pow, Polynomial.aeval_X, Polynomial.aeval_C, hcFR, sub_self]
+  have hintR : IsIntegral (RatFunc K') yy' :=
+    ⟨_, Polynomial.monic_X_pow_sub_C cR two_ne_zero, by
+      simpa [Polynomial.aeval_def] using hrootR⟩
+  have hadjR : IntermediateField.adjoin (RatFunc K') {yy'} = ⊤ := by
+    refine eq_top_iff.mpr fun z _ => ?_
+    obtain ⟨a, b, d, hd, hz⟩ := hgen' z
+    refine (IntermediateField.mem_adjoin_simple_iff (RatFunc K') z).2
+      ⟨Polynomial.C (algebraMap K'[X] (RatFunc K') a / algebraMap K'[X] (RatFunc K') d)
+        + Polynomial.C (algebraMap K'[X] (RatFunc K') b / algebraMap K'[X] (RatFunc K') d)
+          * Polynomial.X, 1, ?_⟩
+    have e1 : algebraMap (RatFunc K') F'
+        (algebraMap K'[X] (RatFunc K') a / algebraMap K'[X] (RatFunc K') d)
+        = Polynomial.aeval t' a / Polynomial.aeval t' d := by rw [map_div₀, hdownR, hdownR]
+    have e2 : algebraMap (RatFunc K') F'
+        (algebraMap K'[X] (RatFunc K') b / algebraMap K'[X] (RatFunc K') d)
+        = Polynomial.aeval t' b / Polynomial.aeval t' d := by rw [map_div₀, hdownR, hdownR]
+    simp only [map_add, map_mul, Polynomial.aeval_C, Polynomial.aeval_X, map_one, div_one, e1, e2]
+    field_simp
+    linear_combination hz
+  haveI : FiniteDimensional (RatFunc K') F' := by
+    have h1 := IntermediateField.adjoin.finiteDimensional hintR
+    rw [hadjR] at h1
+    exact (IntermediateField.topEquiv (F := RatFunc K') (E := F')).toLinearEquiv.finiteDimensional
+  have hsepyyR : IsSeparable (RatFunc K') yy' := by
+    have h2K : (((2 : ℕ)) : K') ≠ 0 := by push_cast; exact h2'
+    have h2' : (((2 : ℕ)) : RatFunc K') ≠ 0 := by
+      rw [← map_natCast (algebraMap K' (RatFunc K')) 2]
+      exact fun hh => h2K ((algebraMap K' (RatFunc K')).injective (by rw [hh, map_zero]))
+    exact (Polynomial.separable_X_pow_sub_C _ h2' hc0R).of_dvd (minpoly.dvd _ _ hrootR)
+  haveI : Algebra.IsSeparable (RatFunc K') F' := by
+    have h1 : Algebra.IsSeparable (RatFunc K') (IntermediateField.adjoin (RatFunc K') {yy'}) :=
+      (IntermediateField.isSeparable_adjoin_simple_iff_isSeparable (RatFunc K') F').2 hsepyyR
+    rw [hadjR] at h1
+    exact Algebra.IsSeparable.of_algHom (F := RatFunc K') (E := F')
+      (↥(⊤ : IntermediateField (RatFunc K') F'))
+      (f := (IntermediateField.topEquiv (F := RatFunc K') (E := F')).symm.toAlgHom)
+  have hxxXR : algebraMap K'[X] F' Polynomial.X = t' := by rw [halgR]; simp
+  refine exists_isPlaceFun_comp_emb emb hembK ?_ ho (by rw [hxxXL]; exact hot)
+  rw [hxxXL, hxxXR]
+  exact hembt
+
+end Main
+
+
+section Chart
+
+variable {d₀ d₁ d₂ d₃ d₄ d₅ : ℤ} {K F : Type} [Field K] [Field F] [Algebra K F]
+
+/-- A transcendental element is nonzero. -/
+lemma ne_zero_of_transcendental {x : F} (htr : Transcendental K x) : x ≠ 0 :=
+  fun h0 => htr ⟨Polynomial.X, Polynomial.X_ne_zero, by simp [h0]⟩
+
+/-- The inverse of a transcendental element is transcendental. -/
+lemma transcendental_inv {x : F} (htr : Transcendental K x) : Transcendental K x⁻¹ :=
+  fun halg => htr (IsAlgebraic.inv_iff.1 halg)
+
+/-- The ordinate is nonzero, from the curve equation and transcendence of the abscissa. -/
+lemma ordinate_ne_zero {x y : F} (htr : Transcendental K x)
+    (heqn : y ^ 2 = sext d₀ d₁ d₂ d₃ d₄ d₅ x) : y ≠ 0 := by
+  intro h0
+  have hsext0 : sextPoly d₀ d₁ d₂ d₃ d₄ d₅ K ≠ 0 := fun hz => by
+    have hd := natDegree_sextPoly d₀ d₁ d₂ d₃ d₄ d₅ K
+    rw [hz] at hd; simp at hd
+  refine htr ⟨sextPoly d₀ d₁ d₂ d₃ d₄ d₅ K, hsext0, ?_⟩
+  rw [h0] at heqn
+  rw [aeval_sextPoly, ← heqn]
+  ring
+
+/-- **The presentation in the chart at infinity** (PROVEN, by reflecting the three
+polynomials): `F` is generated over `K(1/x)` by the same ordinate. -/
+lemma gen_inv {x y : F} (hx0 : x ≠ 0)
+    (hgen : ∀ z : F, ∃ a b d : K[X], aeval x d ≠ 0 ∧
+      z * aeval x d = aeval x a + aeval x b * y) :
+    ∀ z : F, ∃ a b d : K[X], aeval x⁻¹ d ≠ 0 ∧
+      z * aeval x⁻¹ d = aeval x⁻¹ a + aeval x⁻¹ b * y := by
+  intro z
+  obtain ⟨a, b, d, hd, hz⟩ := hgen z
+  have hine : x⁻¹ ≠ 0 := inv_ne_zero hx0
+  set m : ℕ := max d.natDegree (max a.natDegree b.natDegree) with hm
+  have hdm : d.natDegree ≤ m := by rw [hm]; exact le_max_left _ _
+  have ham : a.natDegree ≤ m := by
+    rw [hm]; exact le_trans (le_max_left _ b.natDegree) (le_max_right _ _)
+  have hbm : b.natDegree ≤ m := by
+    rw [hm]; exact le_trans (le_max_right a.natDegree _) (le_max_right _ _)
+  refine ⟨Polynomial.reflect m a, Polynomial.reflect m b, Polynomial.reflect m d, ?_, ?_⟩
+  · rw [PlaceClassify.aeval_inv_reflect hx0 d m hdm]
+    exact mul_ne_zero hd (pow_ne_zero _ hine)
+  · rw [PlaceClassify.aeval_inv_reflect hx0 d m hdm, PlaceClassify.aeval_inv_reflect hx0 a m ham,
+      PlaceClassify.aeval_inv_reflect hx0 b m hbm]
+    linear_combination (x⁻¹ ^ m) * hz
+
+/-- The curve equation in the chart at infinity: `y² · (1/x)⁶` is the reflected sextic. -/
+lemma sq_mul_eq_reflect {x y : F} (hx0 : x ≠ 0)
+    (heqn : y ^ 2 = sext d₀ d₁ d₂ d₃ d₄ d₅ x) :
+    y ^ 2 * aeval x⁻¹ (Polynomial.X ^ 6 : K[X])
+      = aeval x⁻¹ (Polynomial.reflect 6 (sextPoly d₀ d₁ d₂ d₃ d₄ d₅ K)) := by
+  rw [PlaceClassify.aeval_inv_reflect hx0 _ 6 (by rw [natDegree_sextPoly]), aeval_sextPoly,
+    ← heqn, map_pow, Polynomial.aeval_X]
+
+end Chart
+
+end PlaceExtend
+
+/-- **Every place of `F` lies under a geometric place** (PROVEN 2026-07-31): `below` is
+surjective.
+
+`GeomPic.ord_emb` says that a geometric place RESTRICTS to a place of `F` with no ramification;
+this is the converse direction, that the restriction map is ONTO.  Together they say `below`
+realises `Places(F̄) ↠ Places(F)`, which is the fibration
+[Stichtenoth, *Algebraic Function Fields and Codes*, III.6.3] describes — the sharp form counts
+the fibre over `v` as `deg v`, and only NON-EMPTINESS is needed here.
 
 **Why this is the missing half and not bookkeeping.**  `bcDiv` reads a divisor off `below`
-(`bcDiv δ w = δ (below w)`), so `bcDiv` is injective *precisely* when `below` is surjective:
-a place `v` outside the image would make `Finsupp.single v 1` a nonzero divisor with zero base
-change, and `geomPic_bc_injective` would be false at that divisor's class. That is why the
-whole of `geomPic_bc_injective` splits into this leaf and the descent leaf below and into
-nothing else.
+(`bcDiv δ w = δ (below w)`), so `bcDiv` is injective *precisely* when `below` is surjective: a
+place `v` outside the image would make `Finsupp.single v 1` a nonzero divisor with zero base
+change, and `geomPic_bc_injective` would be false at that divisor's class.
 
-**Not vacuous.**  `below` is not free data: `ord_emb` together with `D.ord_injective` pins it
-as *the* place whose valuation is `ord_w ∘ emb` (see the section docstring), so this is a
-statement about the honest restriction map of the honest constant field extension.
+## THE ROUTE TAKEN IS NOT THE ONE THIS LEAF'S DOCSTRING PROPOSED, and the difference is the
+## whole cost of the node
 
-**What would refute it**: a normalised `ℚ`-trivial valuation of `F` admitting no normalised
-extension to `F̄`. For an extension generated by CONSTANTS there is none; the phenomenon does
-occur for geometric extensions, where a place can ramify and the extension of `ord_v` is
-`e·ord_v` rather than `ord_v` — which is why the statement is about this `emb` and not about
-an arbitrary embedding of function fields. -/
-theorem below_surjective : Function.Surjective gp.below := sorry
+The sketch this leaf carried asked for a valuation FUNCTION on `F̄` restricting to `ord_v` ON
+THE NOSE — i.e. for the constant field extension to be unramified at `v`, which is
+[Stichtenoth III.6.3(b)] and is exactly what the sibling leaf
+`constFieldExt_exists_uniformizer` still asks for.  **That is not needed here, because
+`ord_emb` is an AXIOM OF THIS STRUCTURE and it supplies the unramifiedness for free.**  It is
+enough to produce ANY place `w` of `F̄` whose restriction along `emb` is a POSITIVE MULTIPLE
+`e · ord_v`: then `ord_emb` reads that restriction as `ord_{below w}`, and `D.ord_surjective`
+at `below w` gives a `t` with `e · ord_v t = 1`, so `e = 1` and `below w = v` by
+`D.ord_injective`.
+
+What is left is a pure existence statement, and it is LYING OVER:
+
+* `PlaceClassify.exists_ordAt_eq` presents `ord_v` as the adic valuation of a height-one prime
+  `𝔭` of `A = integralClosure ℚ[t] F`, in the chart `t = x` or the chart `t = 1/x` according to
+  the sign of `ord_v x` — the same two towers `finite_isPlaceFun_core` runs over, and the only
+  reason this proof has two cases;
+* `A' = integralClosure ℚ̄[t] F̄` is INTEGRAL over `A`: `ℚ̄[t]` is integral over `ℚ[t]`
+  coefficientwise (`PlaceExtend.isIntegral_poly`), and integrality is transitive;
+* `Ideal.exists_ideal_over_prime_of_isIntegral` produces a prime `𝔮` of `A'` whose contraction
+  to `A` is exactly `𝔭`, nonzero because that contraction is, so `ordAt 𝔮` is a normalised
+  place of `F̄`.  Writing a `z` with `ord_v z ≥ 0` as `n/d` with `n ∈ A` and `d ∉ 𝔭` (mathlib's
+  `exists_primeCompl_mul_eq_of_integer`, i.e. `O_{ord_v} = A_𝔭`) gives
+  `ordAt 𝔮 (emb z) ≥ 0`; and a valuation ring containing that of a NORMALISED place pins the
+  place up to a positive factor, which is the `e` above.
+
+`PlaceExtend.exists_isPlaceFun_comp_emb` is that argument, stated for an arbitrary integral
+extension of constant fields and an arbitrary embedding carrying abscissa to abscissa.  It
+mentions no curve, and `PlaceExtend.exists_isPlaceFun_comp_emb_of_chart` is its chart-level
+form, which installs the two towers from the raw data `finite_isPlaceFun_aux` asks for.
+
+**This does NOT close `constFieldExt_exists_uniformizer`, and nobody should read it as doing
+so.**  That leaf is what BUILDS `below` and `ord_emb` for a `ConstFieldExt`, which carries no
+`ord_emb`; the observation here is only that a consumer which already HAS `ord_emb` gets the
+unramifiedness for free and must not be sent to reprove it.
+
+**Not vacuous.**  `below` is not free data: `ord_emb` together with `D.ord_injective` pins it as
+*the* place whose valuation is `ord_w ∘ emb` (see the section docstring), so this is a statement
+about the honest restriction map of the honest constant field extension. -/
+theorem below_surjective : Function.Surjective gp.below := by
+  classical
+  intro v
+  haveI : Algebra.IsIntegral ℚ (AlgebraicClosure ℚ) :=
+    (AlgebraicClosure.isAlgebraic ℚ).isIntegral
+  have h2 : (2 : ℚ) ≠ 0 := by norm_num
+  have h2' : (2 : AlgebraicClosure ℚ) ≠ 0 := by norm_num
+  have ho : IsPlaceFun ℚ D.F (D.ord v) :=
+    ⟨D.ord_zero v, D.ord_mul v, D.ord_add v, D.ord_algebraMap v, D.ord_surjective v⟩
+  have hx0 : D.xx ≠ 0 := PlaceExtend.ne_zero_of_transcendental D.transcendental_xx
+  have hx0' : gp.Dbar.xx ≠ 0 := PlaceExtend.ne_zero_of_transcendental gp.Dbar.transcendental_xx
+  have hy0 : D.yy ≠ 0 := PlaceExtend.ordinate_ne_zero D.transcendental_xx D.eqn
+  have hy0' : gp.Dbar.yy ≠ 0 :=
+    PlaceExtend.ordinate_ne_zero gp.Dbar.transcendental_xx gp.Dbar.eqn
+  obtain ⟨w, hw, e, he, hwe⟩ :
+      ∃ w : gp.Dbar.F → ℤ, IsPlaceFun (AlgebraicClosure ℚ) gp.Dbar.F w ∧ ∃ e : ℤ, 0 < e ∧
+        ∀ z : D.F, z ≠ 0 → w (gp.emb z) = e * D.ord v z := by
+    rcases le_or_gt 0 (D.ord v D.xx) with hcase | hcase
+    · exact PlaceExtend.exists_isPlaceFun_comp_emb_of_chart h2 h2'
+        D.transcendental_xx hy0 D.gen (P := sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℚ) (Q := 1) (by simp)
+        (by rw [map_one, mul_one, aeval_sextPoly]; exact D.eqn)
+        gp.Dbar.transcendental_xx hy0' gp.Dbar.gen
+        (P' := sextPoly c₀ c₁ c₂ c₃ c₄ c₅ (AlgebraicClosure ℚ)) (Q' := 1) (by simp)
+        (by rw [map_one, mul_one, aeval_sextPoly]; exact gp.Dbar.eqn)
+        gp.emb gp.emb_algebraMap gp.emb_xx ho hcase
+    · exact PlaceExtend.exists_isPlaceFun_comp_emb_of_chart h2 h2'
+        (PlaceExtend.transcendental_inv D.transcendental_xx) hy0
+        (PlaceExtend.gen_inv hx0 D.gen)
+        (P := Polynomial.reflect 6 (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℚ)) (Q := Polynomial.X ^ 6)
+        (by rw [map_pow, Polynomial.aeval_X]; exact pow_ne_zero _ (inv_ne_zero hx0))
+        (PlaceExtend.sq_mul_eq_reflect hx0 D.eqn)
+        (PlaceExtend.transcendental_inv gp.Dbar.transcendental_xx) hy0'
+        (PlaceExtend.gen_inv hx0' gp.Dbar.gen)
+        (P' := Polynomial.reflect 6 (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ (AlgebraicClosure ℚ)))
+        (Q' := Polynomial.X ^ 6)
+        (by rw [map_pow, Polynomial.aeval_X]; exact pow_ne_zero _ (inv_ne_zero hx0'))
+        (PlaceExtend.sq_mul_eq_reflect hx0' gp.Dbar.eqn)
+        gp.emb gp.emb_algebraMap (by rw [map_inv₀, gp.emb_xx]) ho
+        (by rw [PlaceClassify.isPlaceFun_inv ho hx0]; omega)
+  obtain ⟨wp, hwp⟩ := gp.Dbar.ord_complete w hw.map_zero hw.map_mul hw.ultra hw.map_algebraMap
+    hw.normalised
+  refine ⟨wp, ?_⟩
+  have hrestrict : ∀ z : D.F, z ≠ 0 → D.ord (gp.below wp) z = e * D.ord v z := by
+    intro z hz
+    rw [← gp.ord_emb wp z hz, hwp]
+    exact hwe z hz
+  obtain ⟨t, ht⟩ := D.ord_surjective (gp.below wp)
+  have ht0 : t ≠ 0 := by intro h0; rw [h0, D.ord_zero] at ht; omega
+  have he1 : e = 1 := by
+    have h1 : e * D.ord v t = 1 := by rw [← hrestrict t ht0]; exact ht
+    have hdvd : e ∣ 1 := ⟨D.ord v t, h1.symm⟩
+    rcases Int.isUnit_iff.mp (isUnit_of_dvd_one hdvd) with h | h <;> omega
+  refine D.ord_injective (funext fun z => ?_)
+  rcases eq_or_ne z 0 with rfl | hz
+  · rw [D.ord_zero, D.ord_zero]
+  · rw [hrestrict z hz, he1, one_mul]
 
 /-- **Base change of divisors is injective** (PROVEN from `below_surjective`): `bcDiv δ` reads
 off `δ` at `below w`, so it determines `δ` at every place in the image of `below`, which is
@@ -7549,8 +9133,28 @@ lemma bcDiv_injective : Function.Injective gp.bcDiv := by
   have hw := congrArg (fun t : gp.Dbar.Divisors => t w) h
   simpa using hw
 
-/-- **LEAF (weak Mordell–Weil, 2b of 4): HILBERT 90 — a geometric function whose divisor is
-Galois-invariant is rational up to a constant.**
+/-! **HILBERT 90 — a geometric function whose divisor is Galois-invariant is rational up to
+a constant.**
+
+**NO LONGER A LEAF, AND MOVED — 2026-07-31.**  The declaration this note documents,
+`GeomPic.exists_emb_of_divisor_invariant`, is now PROVEN, and it lives further down this
+module: immediately after the four sub-leaves of `geomPic_bc_injective`, assembled over
+three of them (`geomPic_exists_const_of_divisor_eq_zero`, `geomPic_exists_finiteLevel`,
+`geomPic_exists_emb_of_fieldAct_fixed`) plus the outright-proven
+`Field.exists_ne_zero_forall_absoluteGalois_apply_eq_mul`.  It could not stay HERE for a
+purely mechanical reason: all three of those are declared later in the file, so the proof
+is not expressible at this point.  Its statement is unchanged, down to the argument order.
+
+Why it was a leaf at all, and then stopped being one: it was cut as sub-leaf `2b` of one
+proposed decomposition of `geomPic_bc_injective`, and a RIVAL four-leaf cut of the same
+node landed first and is what `geomPic_bc_injective` actually consumes.  The two cuts
+merged into one file without conflicting, leaving this statement with no consumer.  The
+rival's inline STEP 2–7 block IS this theorem's proof, written out against a specific
+`ḡ`; so the assembly below costs nothing new and closes the orphan honestly rather than
+deleting a true and audited statement.  See `to_merger` notes on branch `flt-lean-96`.
+
+The route and the faithfulness audit that follow are what that assembly follows; they are
+kept here, at the point where the cut was made.
 
 This is the arithmetic half of `geomPic_bc_injective`, and it is the step the leaf's docstring
 already named: "a `ℚ`-divisor that becomes `div ū + n·[∞₊]` over `ℚ̄` has `ū` Galois-invariant
@@ -7594,14 +9198,146 @@ load-bearing, and neither can be dropped:
 **Not vacuous.**  The hypothesis is a genuine constraint, not a disguised conclusion: it is
 satisfied by every `u ∈ emb (D.F)` and by every constant, and violated by, e.g., `xx − α` for
 `α ∈ ℚ̄ \ ℚ` (whose zero is moved by any `σ` with `σ α ≠ α`, and `Dbar.pt` is injective). -/
-theorem exists_emb_of_divisor_invariant {u : gp.Dbar.F} (hu : u ≠ 0)
-    (hinv : ∀ σ : QbarGal, gp.Dbar.divisor (gp.fieldAct σ u) = gp.Dbar.divisor u) :
-    ∃ (c : AlgebraicClosure ℚ) (g : D.F), c ≠ 0 ∧ g ≠ 0 ∧
-      u = algebraMap (AlgebraicClosure ℚ) gp.Dbar.F c * gp.emb g := sorry
 
 end GeomPic
 
 section ConstFieldExtension
+/-- **HILBERT 90 for the geometric function field: a geometric function whose divisor is
+Galois-invariant is rational up to a constant** (PROVEN — a LEAF from 2026-07-30 until
+2026-07-31, when it was closed over three of the four sub-leaves above).
+
+The full route and the faithfulness audit are on the note in `namespace GeomPic` where this
+was cut, and this proof follows that route exactly:
+
+1. `divisor (fieldAct σ u) = divisor u` makes `divisor (fieldAct σ u · u⁻¹) = 0`, so that
+   quotient is a CONSTANT `A σ ∈ ℚ̄ˣ` (`geomPic_exists_const_of_divisor_eq_zero`);
+2. `A` is a `1`-cocycle, `A (στ) = A σ · σ (A τ)` — this is where `fieldAct_mul` is spent,
+   and `GeomPic` does not postulate that `fieldAct` is an action, so it has to be the
+   PROVEN one derived from the uniqueness statement `fieldAct_eq_of`;
+3. `u` lives over a finite Galois level `L` (`geomPic_exists_finiteLevel`), so `A` is
+   inflated from `Gal(L/ℚ)` and its values lie in `L` automatically;
+4. `Field.exists_ne_zero_forall_absoluteGalois_apply_eq_mul` (PROVEN OUTRIGHT — mathlib has
+   Noether's theorem only for a FINITE extension) trivialises `A` as `σ γ / γ`;
+5. `u/γ` is then `fieldAct`-invariant, hence rational
+   (`geomPic_exists_emb_of_fieldAct_fixed`), and `u = γ · emb g`.
+
+**This adds NO sorry.**  Every input is either one of the three sub-leaves that
+`geomPic_bc_injective` already consumes, or proven outright; so the leaf count strictly
+drops.  The proof is the inline STEP 2–7 block of `geomPic_bc_injective` with its
+particular `ḡ` abstracted to the `u` of the statement — that block is the reason the
+statement was known to be provable, and the reason closing it was cheap.
+
+**Not free-floating in substance, but it does have NO CALL SITE yet**, because the rival
+four-leaf cut of `geomPic_bc_injective` won and is written inline.  Refactoring
+`geomPic_bc_injective` to route STEPs 2–7 through this theorem is the natural follow-up and
+would shorten it by ~90 lines; it is deliberately NOT done here, because that proof is
+green, is consumed, and is being edited concurrently — see the `to_merger` notes. -/
+theorem GeomPic.exists_emb_of_divisor_invariant {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
+    {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D)
+    {u : gp.Dbar.F} (hu : u ≠ 0)
+    (hinv : ∀ σ : QbarGal, gp.Dbar.divisor (gp.fieldAct σ u) = gp.Dbar.divisor u) :
+    ∃ (c : AlgebraicClosure ℚ) (g : D.F), c ≠ 0 ∧ g ≠ 0 ∧
+      u = algebraMap (AlgebraicClosure ℚ) gp.Dbar.F c * gp.emb g := by
+  classical
+  -- `IsGalois ℚ ℚ̄` is NOT an instance (the two `Algebra ℚ ℚ̄` instances form a diamond at
+  -- the literal base field `ℚ`), so it is introduced by hand; the same workaround as in
+  -- `geomPic_bc_injective`.  `InfiniteGalois.fixedField_fixingSubgroup` below needs it.
+  haveI : IsGalois ℚ (AlgebraicClosure ℚ) :=
+    Field.isGalois_of_isAlgClosed (AlgebraicClosure.isAlgebraic ℚ)
+  have hfa0 : ∀ σ : QbarGal, gp.fieldAct σ u ≠ 0 := by
+    intro σ h
+    exact hu ((gp.fieldAct σ).injective (h.trans (map_zero (gp.fieldAct σ)).symm))
+  -- STEP 1: `fieldAct σ u / u` has no zeros and no poles
+  have hc : ∀ σ : QbarGal, gp.Dbar.divisor (gp.fieldAct σ u * u⁻¹) = 0 := by
+    intro σ
+    rw [PlaceData.divisor_mul _ (hfa0 σ) (inv_ne_zero hu),
+      PlaceData.divisor_inv _ hu, hinv σ, add_neg_cancel]
+  -- so it IS a constant
+  choose Afun hAfun using fun σ : QbarGal =>
+    geomPic_exists_const_of_divisor_eq_zero gp
+      (h := gp.fieldAct σ u * u⁻¹) (mul_ne_zero (hfa0 σ) (inv_ne_zero hu)) (hc σ)
+  have hfieldAct : ∀ σ : QbarGal,
+      gp.fieldAct σ u = algebraMap (AlgebraicClosure ℚ) gp.Dbar.F (Afun σ) * u := by
+    intro σ
+    rw [hAfun σ, inv_mul_cancel_right₀ hu]
+  have hA0 : ∀ σ : QbarGal, Afun σ ≠ 0 := by
+    intro σ h
+    have := hfieldAct σ
+    rw [h, map_zero, zero_mul] at this
+    exact hfa0 σ this
+  -- STEP 2: the cocycle identity, over `fieldAct_mul`
+  have hcoc : ∀ σ τ : QbarGal, Afun (σ * τ) = Afun σ * σ (Afun τ) := by
+    intro σ τ
+    have h1 := gp.fieldAct_mul σ τ u
+    rw [hfieldAct (σ * τ), hfieldAct τ, map_mul, gp.fieldAct_algebraMap σ (Afun τ),
+      hfieldAct σ] at h1
+    have h2 : algebraMap (AlgebraicClosure ℚ) gp.Dbar.F (Afun (σ * τ))
+        = algebraMap (AlgebraicClosure ℚ) gp.Dbar.F (Afun σ * σ (Afun τ)) := by
+      refine mul_right_cancel₀ hu ?_
+      rw [h1, map_mul]; ring
+    exact (algebraMap (AlgebraicClosure ℚ) gp.Dbar.F).injective h2
+  -- STEP 3: inflation from a finite Galois level, and that the values lie there
+  obtain ⟨L, hLfin, hLgal, hLstab, hLfix⟩ := geomPic_exists_finiteLevel gp u
+  have hA1 : ∀ τ : QbarGal, (∀ z ∈ L, τ z = z) → Afun τ = 1 := by
+    intro τ hτ
+    have h1 := hfieldAct τ
+    rw [hLfix τ hτ] at h1
+    have h2 : algebraMap (AlgebraicClosure ℚ) gp.Dbar.F (Afun τ) = 1 := by
+      refine mul_right_cancel₀ hu ?_
+      rw [← h1, one_mul]
+    simpa using (algebraMap (AlgebraicClosure ℚ) gp.Dbar.F).injective
+      (h2.trans (map_one _).symm)
+  have hinfl : ∀ σ τ : QbarGal, (∀ z ∈ L, σ z = τ z) → Afun σ = Afun τ := by
+    intro σ τ hστ
+    have hρ : ∀ z ∈ L, (σ⁻¹ * τ) z = z := by
+      intro z hz
+      rw [AlgEquiv.mul_apply, ← hστ z hz, AlgEquiv.aut_inv, AlgEquiv.symm_apply_apply]
+    have h1 : Afun (σ * (σ⁻¹ * τ)) = Afun σ * σ (Afun (σ⁻¹ * τ)) := hcoc _ _
+    rw [hA1 _ hρ, map_one, mul_one, ← mul_assoc, mul_inv_cancel, one_mul] at h1
+    exact h1.symm
+  have hcmem : ∀ σ : QbarGal, Afun σ ∈ L := by
+    intro σ
+    rw [← InfiniteGalois.fixedField_fixingSubgroup L, IntermediateField.mem_fixedField_iff]
+    intro τ hτ
+    have hτfix : ∀ z ∈ L, (τ : QbarGal) z = z := fun z hz =>
+      (mem_fixingSubgroup_iff _).mp hτ z hz
+    have h1 : Afun ((τ : QbarGal) * σ) = Afun (τ : QbarGal) * (τ : QbarGal) (Afun σ) :=
+      hcoc _ _
+    rw [hA1 _ hτfix, one_mul] at h1
+    have h2 : Afun ((τ : QbarGal) * σ) = Afun σ :=
+      hinfl _ _ fun z hz => by rw [AlgEquiv.mul_apply, hτfix _ (hLstab σ z hz)]
+    exact h1.symm.trans h2
+  -- STEP 4: Hilbert 90 for `Γ_ℚ`.  `IsGalois ℚ ℚ̄` and the two `L`-instances are passed
+  -- POSITIONALLY, for the diamond reason recorded on `geomPic_bc_injective`'s STEP 6.
+  obtain ⟨γ, hγ0, hγ⟩ :=
+    @Field.exists_ne_zero_forall_absoluteGalois_apply_eq_mul ℚ _ (AlgebraicClosure ℚ) _ _
+      (Field.isGalois_of_isAlgClosed (AlgebraicClosure.isAlgebraic ℚ)) L hLfin hLgal
+      (fun σ => Afun σ) hcmem hA0 hcoc hinfl
+  have hγF : algebraMap (AlgebraicClosure ℚ) gp.Dbar.F γ ≠ 0 := by
+    simpa using (map_ne_zero_iff _
+      (algebraMap (AlgebraicClosure ℚ) gp.Dbar.F).injective).mpr hγ0
+  have hAF : ∀ σ : QbarGal,
+      algebraMap (AlgebraicClosure ℚ) gp.Dbar.F (Afun σ) ≠ 0 := fun σ => by
+    simpa using (map_ne_zero_iff _
+      (algebraMap (AlgebraicClosure ℚ) gp.Dbar.F).injective).mpr (hA0 σ)
+  -- STEP 5: `u/γ` is Galois-invariant, hence rational
+  have hggfix : ∀ σ : QbarGal,
+      gp.fieldAct σ (u * (algebraMap (AlgebraicClosure ℚ) gp.Dbar.F γ)⁻¹)
+        = u * (algebraMap (AlgebraicClosure ℚ) gp.Dbar.F γ)⁻¹ := by
+    intro σ
+    have hσγ : algebraMap (AlgebraicClosure ℚ) gp.Dbar.F (σ γ)
+        = algebraMap (AlgebraicClosure ℚ) gp.Dbar.F (Afun σ * γ) :=
+      congrArg (algebraMap (AlgebraicClosure ℚ) gp.Dbar.F) (hγ σ)
+    rw [map_mul, map_inv₀, gp.fieldAct_algebraMap σ γ, hσγ, map_mul, hfieldAct σ,
+      mul_inv, ← mul_assoc, mul_comm (algebraMap (AlgebraicClosure ℚ) gp.Dbar.F (Afun σ)) u,
+      mul_assoc u, mul_inv_cancel₀ (hAF σ), mul_one]
+  obtain ⟨g, hg⟩ := geomPic_exists_emb_of_fieldAct_fixed gp hggfix
+  refine ⟨γ, g, hγ0, ?_, ?_⟩
+  · intro h
+    rw [h, map_zero] at hg
+    exact (mul_ne_zero hu (inv_ne_zero hγF)) hg.symm
+  · rw [hg, mul_comm u, ← mul_assoc, mul_inv_cancel₀ hγF, one_mul]
+
 /-- A nonzero constant has trivial divisor (PROVEN from `ord_algebraMap`). -/
 lemma PlaceData.divisor_algebraMap {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
     (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {a : K} (ha : a ≠ 0) :
@@ -8022,22 +9758,39 @@ extension of `D.F` (both are `K(xx, yy)` for the same `xx, yy`, over `ℚ̄` and
 `Dbar.Places` really is all of its places.  In particular there is no junk model in which
 `below` misses a place, or in which `F̄^{Gal}` is bigger than `F`. -/
 
-/-- **LEAF (weak Mordell–Weil, 2a of 4): every place of `F` has a geometric place above
-it**, i.e. `below` is surjective.
+/-- **Every place of `F` has a geometric place above it** (PROVEN 2026-07-31), i.e. `below`
+is surjective.
 
-Extension of valuations along the constant field extension `F ↪ F̄`.  The valuation
-`ord v` of `F` extends to `F̄` — `F̄/F` is an algebraic (indeed integral) extension of
-fields, so every valuation of the base extends — and `ord_emb` pins `below` on that
-extension to be `v` itself, because `D.ord` is injective.  The extension is unramified
-(`e = 1`), which is what `ord_emb` asserts with no ramification index; if it were not, the
-witness would have to be rescaled, and `ord_surjective` for `Dbar` is what makes the
-rescaled valuation normalised.
+## THIS WAS A DUPLICATE LEAF, AND IT HAS NO CODE CONSUMER
 
-**Not vacuous.**  With `Dbar.Places` axiomatised as ALL normalised `ℚ̄`-trivial valuations
-of `Dbar.F` (`ord_complete`), the obligation is to produce a valuation FUNCTION on `Dbar.F`
-restricting to `ord v` on `emb '' F`, which is the honest content. -/
+It is character-for-character the statement of `GeomPic.below_surjective`, cut independently
+in this "four sub-leaves" block on 2026-07-30 while the namespace copy was cut for
+`GeomPic.bcDiv_injective`.  Neither cut could see the other — they share no identifier
+outside the statement itself — and a `sorry`-scan counted the one theorem twice, which is
+exactly the failure `CLAUDE.md` records under *AN "IRREDUCIBLE" VERDICT SEARCHES FOR A PROOF*.
+
+`geomPic_bc_injective` reaches surjectivity through `gp.bcDiv_injective`, not through this
+name; a comment-stripped scan of the whole module finds **no** use of `geomPic_below_surjective`
+in code (the three other hits are prose, at the module docstring, at `geomPic_bc_injective`
+and at `geomPic_exists_bcDiv_of_divAct_fixed`).  So this declaration is now a thin alias kept
+only so that nothing which cites the name breaks.
+
+**It should be DELETED**, together with any other member of this block that turns out to have
+no code consumer, by whoever next owns the `geomPic_bc_injective` cluster — that is an
+author-level decision about a block three of whose four members ARE consumed
+(`geomPic_exists_const_of_divisor_eq_zero`, `_exists_finiteLevel`,
+`_exists_emb_of_fieldAct_fixed`, at lines ~8756/8779/8835), and deleting a name a concurrent
+branch might re-point `geomPic_bc_injective` at is not worth the risk for one line.  Proving
+it costs nothing and takes it out of the frontier, which is what stops it drawing dispatches.
+
+The old route paragraph is retired: it asked for a valuation function restricting to `ord v`
+ON THE NOSE, i.e. for the constant field extension to be unramified — and that is NOT what the
+statement needs, because `ord_emb` is an axiom of `GeomPic` and supplies the unramifiedness for
+free.  See `GeomPic.below_surjective` for the argument and for why
+`constFieldExt_exists_uniformizer` is still owed where it stands. -/
 theorem geomPic_below_surjective {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
-    (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) : Function.Surjective gp.below := sorry
+    (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) : Function.Surjective gp.below :=
+  gp.below_surjective
 
 /-- **LEAF (weak Mordell–Weil, 2b of 4): a geometric function with no zeros and no poles is
 a constant.**

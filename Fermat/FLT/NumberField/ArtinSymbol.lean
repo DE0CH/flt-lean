@@ -17,6 +17,9 @@ public import Mathlib.RingTheory.ClassGroup.Basic
 -- and `differentIdeal` / `not_dvd_differentIdeal_iff` to be visible there.
 public import Mathlib.FieldTheory.Galois.Basic
 public import Mathlib.RingTheory.DedekindDomain.Different
+public import Fermat.FLT.NumberField.Density
+public import Mathlib.GroupTheory.FiniteAbelian.Duality
+public import Mathlib.RingTheory.RootsOfUnity.AlgebraicallyClosed
 
 /-!
 # The Artin symbol of a number field, and the two deep inputs of unramified CFT
@@ -551,6 +554,280 @@ theorem artinMap_apply_coe (habel : ∀ a b : L ≃ₐ[K] L, a * b = b * a)
   rw [hI]
   exact finprod_zpow_count_coe K (frobAtBelow K L) v
 
+/-! ### The cyclic reduction
+
+`artinMap_toPrincipalIdeal` is PROVEN below over the single sorried input
+`artinMap_toPrincipalIdeal_of_isCyclic`, which is the same statement for `L/K`
+CYCLIC. Everything between the two is proven here: tower functoriality of the
+Artin symbol and of the Artin map, the descent of both unramifiedness hypotheses
+to an intermediate field, and the separation of a finite abelian group by its
+cyclic quotients.
+
+**This reverses the "deliberately NOT decomposed" verdict recorded on 2026-07-30
+and re-recorded on 2026-07-31.** That verdict named three costs — tower
+functoriality of the Artin symbol, compatibility of `artinMap` with
+`restrictNormalHom` through the `∏ᶠ`, and the structure theorem for finite abelian
+groups — and priced them at "several hundred lines". Measured, the whole reduction
+is about 150, because each cost is either already in the pin or falls out of the
+`IsArithFrobAt` API:
+
+* the unramifiedness descent `𝓞 L ⊇ 𝓞 M ⊇ 𝓞 K`, which the earlier audit of
+  `closure_frobAt_eq_top` called out as the expensive part ("no mathlib lemma at
+  this pin does this"), IS in the pin: `Algebra.IsUnramifiedAt.of_liesOver` in
+  `Mathlib/NumberTheory/RamificationInertia/Unramified.lean`;
+* tower functoriality is 15 lines: the restriction of a Frobenius satisfies the
+  defining congruence on `𝓞 M` because `Ideal.under_under` makes the exponent the
+  same and `AlgEquiv.restrictNormal_commutes` moves the action across
+  `𝓞 M → 𝓞 L`; then `eq_of_isUnramifiedAt` plus `eq_one_of_smul_eq_self`;
+* the structure theorem is not needed. `CommGroup.exists_apply_ne_one_of_hasEnoughRootsOfUnity`
+  (finite-abelian duality, in the pin) gives a character `φ` with `φ g ≠ 1`, and a
+  finite subgroup of the units of a domain is cyclic (`isCyclic_subgroup_units`),
+  so `G ⧸ ker φ` is cyclic;
+* `IsGalois.of_fixedField_normal_subgroup`, `IsGalois.normalAutEquivQuotient` and
+  `IsUnramifiedAtInfinitePlaces.bot` supply the Galois correspondence and the
+  archimedean hypothesis for the subfield, all three already in the pin.
+
+The verdict was also right that this reduction removes no MATHEMATICS: the cyclic
+case is where every classical treatment spends its effort. It is made anyway
+because (a) the alternative the verdict held out for is not available — see the
+insufficiency argument in the docstring of the leaf below — and (b) every
+classical route to reciprocity (Artin's cyclotomic argument, the cohomological
+one, Chevalley's) passes through the cyclic case, so this is work that has to be
+done on any route. -/
+
+/-- **A FINITE ABELIAN GROUP IS SEPARATED BY ITS CYCLIC QUOTIENTS: for `g ≠ 1`
+there is a subgroup `H` with `g ∉ H` and `G ⧸ H` cyclic** (PROVEN 2026-07-31).
+
+Stated with a commutativity HYPOTHESIS rather than `[CommGroup G]` because the
+only consumer is `Gal(L/K)`, which carries a bare `Group` instance and gets its
+commutativity from `habel`; taking the hypothesis keeps `Subgroup G` in the
+statement attached to the ambient instance and avoids the instance juggling that
+`galCommGroup` would otherwise force on the caller.
+
+No structure theorem: `CommGroup.exists_apply_ne_one_of_hasEnoughRootsOfUnity`
+produces a character `φ : G →* (AlgebraicClosure ℚ)ˣ` with `φ g ≠ 1`, and
+`G ⧸ ker φ ≃* φ.range` is a finite subgroup of the units of a domain, hence cyclic
+(`isCyclic_subgroup_units`). `AlgebraicClosure ℚ` rather than `ℂ` only to keep the
+analysis library out of the import cone. -/
+theorem exists_subgroup_notMem_isCyclic_quotient {G : Type*} [Group G] [Finite G]
+    (hcomm : ∀ a b : G, a * b = b * a) {g : G} (hg : g ≠ 1) :
+    ∃ H : Subgroup G, ∃ _ : H.Normal, g ∉ H ∧ IsCyclic (G ⧸ H) := by
+  letI : CommGroup G := { ‹Group G› with mul_comm := hcomm }
+  haveI : NeZero (Monoid.exponent G) := ⟨Monoid.exponent_ne_zero_of_finite⟩
+  obtain ⟨φ, hφ⟩ :=
+    CommGroup.exists_apply_ne_one_of_hasEnoughRootsOfUnity G (AlgebraicClosure ℚ) hg
+  refine ⟨φ.ker, inferInstance, by simpa [MonoidHom.mem_ker] using hφ, ?_⟩
+  haveI : Finite ↥φ.range := Finite.of_surjective _ φ.rangeRestrict_surjective
+  exact isCyclic_of_surjective (QuotientGroup.quotientKerEquivRange φ).symm
+    (QuotientGroup.quotientKerEquivRange φ).symm.surjective
+
+section Tower
+
+variable (M : IntermediateField K L)
+
+omit [NumberField K] [NumberField L] [IsGalois K L] in
+/-- `𝓞 M → 𝓞 L → L` is `𝓞 M → M → L`. `rfl`, recorded because the two routes go
+through different `Algebra` instances and the unfolding is not otherwise visible. -/
+theorem coe_algebraMap_ringOfIntegers (y : 𝓞 M) :
+    ((algebraMap (𝓞 M) (𝓞 L) y : 𝓞 L) : L) = algebraMap M L (y : M) := rfl
+
+omit [NumberField K] [NumberField L] [IsGalois K L] in
+/-- The action of `Gal(L/K)` on `𝓞 L` restricts to the action of `Gal(M/K)` on
+`𝓞 M`. This is `AlgEquiv.restrictNormal_commutes` transported through the rings of
+integers, and it is what makes the restriction of a Frobenius a Frobenius. -/
+theorem algebraMap_restrictNormalHom_smul [Normal K M] (σ : L ≃ₐ[K] L) (y : 𝓞 M) :
+    algebraMap (𝓞 M) (𝓞 L) (AlgEquiv.restrictNormalHom M σ • y) =
+      σ • algebraMap (𝓞 M) (𝓞 L) y := by
+  apply RingOfIntegers.ext
+  simp only [coe_algebraMap_ringOfIntegers, coe_smul_ringOfIntegers]
+  exact σ.restrictNormal_commutes M (y : M)
+
+/-- **TOWER FUNCTORIALITY OF THE ARTIN SYMBOL: for `M` an intermediate field Galois
+over `K` and `Q` unramified, the restriction of `Frob_Q` to `M` is `Frob_{Q ∩ 𝓞 M}`**
+(PROVEN 2026-07-31).
+
+Named as missing by the 2026-07-30 audit of `closure_frobAt_eq_top` ("it needs
+`𝓞 M` for an `IntermediateField`, and multiplicativity of `e` in towers"); both
+are in the pin. The proof is the direct one: `τ = restrictNormalHom M σ` satisfies
+`τ y ≡ y ^ (N𝔭) (mod Q ∩ 𝓞 M)` for `y ∈ 𝓞 M`, because the congruence for `σ` holds
+in `Q` and both sides are images from `𝓞 M`, and the exponent is unchanged since
+`Ideal.under_under` gives `(Q ∩ 𝓞 M) ∩ 𝓞 K = Q ∩ 𝓞 K`. Uniqueness of the Frobenius
+at an unramified prime (`AlgHom.IsArithFrobAt.eq_of_isUnramifiedAt`) then identifies
+it, and faithfulness (`eq_one_of_smul_eq_self`) converts the equality of
+`𝓞 M`-maps back into an equality in `Gal(M/K)`.
+
+**Unramifiedness of `Q ∩ 𝓞 M` over `𝓞 K` is not an extra hypothesis**: it descends
+from that of `Q` by `Algebra.IsUnramifiedAt.of_liesOver`, which is the pin's
+tower-bottom lemma for `Algebra.IsUnramifiedAt`. -/
+theorem restrictNormalHom_frobAt [IsGalois K M]
+    (Q : Ideal (𝓞 L)) [Q.IsMaximal] [Algebra.IsUnramifiedAt (𝓞 K) Q] :
+    AlgEquiv.restrictNormalHom M (frobAt K L Q) = frobAt K M (Q.under (𝓞 M)) := by
+  set q : Ideal (𝓞 M) := Q.under (𝓞 M) with hq
+  haveI : q.IsMaximal := Ideal.isMaximal_comap_of_isIntegral_of_isMaximal Q
+  haveI : Algebra.IsUnramifiedAt (𝓞 K) q := Algebra.IsUnramifiedAt.of_liesOver (𝓞 K) q Q
+  set σ : L ≃ₐ[K] L := frobAt K L Q with hσ
+  set τ : M ≃ₐ[K] M := AlgEquiv.restrictNormalHom M σ with hτ
+  have hQ : IsArithFrobAt (𝓞 K) σ Q := isArithFrobAt_frobAt K L Q
+  have hunder : q.under (𝓞 K) = Q.under (𝓞 K) := Ideal.under_under Q
+  have hτfrob : IsArithFrobAt (𝓞 K) τ q := by
+    intro y
+    show algebraMap (𝓞 M) (𝓞 L) (τ • y - y ^ Nat.card (𝓞 K ⧸ q.under (𝓞 K))) ∈ Q
+    rw [map_sub, map_pow, algebraMap_restrictNormalHom_smul K L M σ y, hunder]
+    exact hQ (algebraMap (𝓞 M) (𝓞 L) y)
+  have heq := hτfrob.eq_of_isUnramifiedAt (isArithFrobAt_frobAt K M q)
+    q.primeCompl_le_nonZeroDivisors
+  have hsmul : ∀ y : 𝓞 M, τ • y = frobAt K M q • y := fun y ↦ DFunLike.congr_fun heq y
+  have hone : τ * (frobAt K M q)⁻¹ = 1 := by
+    refine eq_one_of_smul_eq_self _ fun y ↦ ?_
+    rw [mul_smul, hsmul, smul_inv_smul]
+  exact mul_inv_eq_one.mp hone
+
+omit [NumberField L] [IsGalois K L] in
+/-- The chosen prime of `𝓞 L` above a height-one prime `v` of `𝓞 K` is nonzero,
+because it contracts to `v.asIdeal ≠ ⊥`. -/
+theorem primeAbove_ne_bot (v : HeightOneSpectrum (𝓞 K)) : primeAbove K L v ≠ ⊥ := by
+  intro h
+  have hu := under_primeAbove K L v
+  rw [h] at hu
+  exact v.ne_bot (by simpa using hu.symm)
+
+/-- **TOWER FUNCTORIALITY OF THE ARTIN MAP** (PROVEN 2026-07-31): restriction to an
+intermediate field `M` carries `artinMap K L` to `artinMap K M`.
+
+`restrictNormalHom M` is a `MonoidHom` for the AMBIENT group instances, and
+`galCommGroup` keeps `mul`/`one`/`zpow` definitionally ambient, so it passes
+through the `∏ᶠ` by `MonoidHom.map_finprod` with the support finiteness already
+proven (`finite_mulSupport_zpow_count`). Termwise it is `restrictNormalHom_frobAt`
+at the chosen prime above `v`, followed by `frobAtBelow_eq_frobAt` over `M` to
+recognise the result as `M`'s own Artin symbol at `v` — the two files' choices of
+prime above `v` are unrelated, and `habelM` is exactly what makes that irrelevant. -/
+theorem restrictNormalHom_artinMap [IsGalois K M]
+    (habel : ∀ a b : L ≃ₐ[K] L, a * b = b * a)
+    (habelM : ∀ a b : M ≃ₐ[K] M, a * b = b * a)
+    (hunr : ∀ (Q : Ideal (𝓞 L)) (_ : Q.IsPrime), Q ≠ ⊥ → Algebra.IsUnramifiedAt (𝓞 K) Q)
+    (I : (FractionalIdeal (𝓞 K)⁰ K)ˣ) :
+    AlgEquiv.restrictNormalHom M (artinMap K L habel I) = artinMap K M habelM I := by
+  letI := galCommGroup K L habel
+  letI := galCommGroup K M habelM
+  have hbelow : ∀ v : HeightOneSpectrum (𝓞 K),
+      AlgEquiv.restrictNormalHom M (frobAtBelow K L v) = frobAtBelow K M v := by
+    intro v
+    haveI : Algebra.IsUnramifiedAt (𝓞 K) (primeAbove K L v) :=
+      hunr _ (isMaximal_primeAbove K L v).isPrime (primeAbove_ne_bot K L v)
+    rw [frobAtBelow, restrictNormalHom_frobAt K L M (primeAbove K L v)]
+    haveI : ((primeAbove K L v).under (𝓞 M)).IsMaximal :=
+      Ideal.isMaximal_comap_of_isIntegral_of_isMaximal _
+    exact (frobAtBelow_eq_frobAt K M habelM v ((primeAbove K L v).under (𝓞 M))
+      ((Ideal.under_under (primeAbove K L v)).trans (under_primeAbove K L v))).symm
+  show AlgEquiv.restrictNormalHom M (∏ᶠ v : HeightOneSpectrum (𝓞 K),
+      frobAtBelow K L v ^ FractionalIdeal.count K v (I : FractionalIdeal (𝓞 K)⁰ K)) = _
+  rw [MonoidHom.map_finprod _ (finite_mulSupport_zpow_count K (frobAtBelow K L) _)]
+  refine finprod_congr fun v => ?_
+  rw [map_zpow, hbelow v]
+
+omit [IsGalois K L] in
+/-- **UNRAMIFIEDNESS AT THE FINITE PRIMES DESCENDS TO AN INTERMEDIATE FIELD**
+(PROVEN 2026-07-31). Going-up supplies a maximal `Q` of `𝓞 L` over the given
+nonzero prime `q` of `𝓞 M` (a nonzero prime of the Dedekind domain `𝓞 M` is
+maximal), and `Algebra.IsUnramifiedAt.of_liesOver` transports unramifiedness over
+`𝓞 K` from `Q` down to `q`. -/
+theorem isUnramifiedAt_of_intermediateField
+    (hunr : ∀ (Q : Ideal (𝓞 L)) (_ : Q.IsPrime), Q ≠ ⊥ → Algebra.IsUnramifiedAt (𝓞 K) Q)
+    (q : Ideal (𝓞 M)) (hqp : q.IsPrime) (hq0 : q ≠ ⊥) :
+    Algebra.IsUnramifiedAt (𝓞 K) q := by
+  haveI := hqp
+  haveI : q.IsMaximal := hqp.isMaximal hq0
+  obtain ⟨Q, hQ, hQ'⟩ := Ideal.exists_ideal_over_maximal_of_isIntegral (S := 𝓞 L) q
+    (le_trans (le_of_eq
+      ((RingHom.injective_iff_ker_eq_bot _).mp (FaithfulSMul.algebraMap_injective (𝓞 M) (𝓞 L))))
+      bot_le)
+  haveI := hQ
+  haveI : Q.IsPrime := hQ.isPrime
+  haveI : Q.LiesOver q := ⟨hQ'.symm⟩
+  have hQ0 : Q ≠ ⊥ := by
+    rintro rfl
+    exact hq0 (by simpa using hQ'.symm)
+  haveI := hunr Q inferInstance hQ0
+  exact Algebra.IsUnramifiedAt.of_liesOver (𝓞 K) q Q
+
+end Tower
+
+/-- **ARTIN RECIPROCITY AT MODULUS `1` FOR CYCLIC EXTENSIONS: for `L/K` finite
+CYCLIC, unramified at every finite prime and at every infinite place, the Artin map
+kills the PRINCIPAL ideals** (SORRY LEAF, cut 2026-07-31 out of
+`artinMap_toPrincipalIdeal` below, which is now PROVEN over it).
+
+**THIS IS ONE OF THE TWO PLACES WHERE THE MISSING MATHEMATICS IS**, the other being
+the density input of Chebotarev. Everything else in this cluster — the construction
+of the Artin map, its tower functoriality, the reduction of the abelian case to this
+one, the descent to `Cl(𝓞 K)`, the norm clause of the consumer, its surjectivity,
+and the Hilbert-class-field material two files down — is proven over it.
+
+Unwound: if `(x) = ∏ 𝔭ᵢ^{aᵢ}` is the factorisation of a principal fractional ideal
+of `𝓞 K`, then `∏ Frob_{𝔭ᵢ}^{aᵢ} = 1` in the cyclic group `Gal(L/K)`.
+
+**FAITHFULNESS.** Inherited from `artinMap_toPrincipalIdeal`, whose audit applies
+verbatim with one extra hypothesis: `hcyc` only restricts the extension, so it can
+only make the statement weaker, and the `K = ℚ(√3)` counterexample showing
+`[IsUnramifiedAtInfinitePlaces K L]` to be load-bearing is itself CYCLIC (the narrow
+Hilbert class field there is quadratic), so it refutes this leaf too if that
+hypothesis is dropped. `habel` is implied by `hcyc` and is kept because `artinMap`
+cannot be stated without it. The degenerate case `L = K` is fine.
+
+**ROUTE, AND ONE ROUTE THAT IS RULED OUT.** Neukirch VI; Childress ch. 4–5; Lang
+*ANT* ch. X; Cassels–Fröhlich ch. VII. Artin's own proof adjoins `ζ_m`, where the
+Artin symbol is computable (`Frob_𝔭 : ζ ↦ ζ ^ N𝔭`, so reciprocity for `ℚ(ζ_m)/ℚ`
+is the elementary congruence `∏ pᵢ^{aᵢ} ≡ a (mod m)`), and descends by the
+translation theorem. See the docstring of `exists_classField_of_subgroup` in
+`Fermat/FLT/NumberField/UnramifiedClassFieldExistence.lean` for the PARI/GP
+refutation of the naive "descend an unramified abelian extension from `K(ζ_ℓ)`"
+cut, which must not be re-attempted.
+
+**WHY "THE SECOND INEQUALITY PLUS THE FIRST" IS NOT A CUT OF THIS LEAF**
+(checked 2026-07-31; recorded because the docstring this replaces proposed exactly
+that as the shape a real cut would take, and formalising the second inequality in
+the expectation that it closes this node would be a wasted development).
+
+Write `A` for `artinMap`, `T = ker A`, `S = A(P_K)`, `n = [L : K]`. Grant every
+input that route offers:
+
+* `N_{L/K} I_L ⊆ T` — in substance already PROVEN here (`frobAt_pow_inertiaDeg`
+  gives `Frob_𝔭 ^ f = 1`, and `N_{L/K} Q = 𝔭 ^ f`);
+* `A` surjective — Chebotarev, so `[I_K : T] = n`;
+* `[I_K : P_K · N_{L/K} I_L] = n` — the second inequality `≤ n` together with the
+  first `≥ n`.
+
+The conclusion wanted is `S = 1`, i.e. `P_K ⊆ T`. But `T` and `P_K · N_{L/K} I_L`
+are now two subgroups of `I_K` of the SAME index `n`, and equal index does not make
+two subgroups nested. All the counting yields is
+`[I_K : P_K · N_{L/K} I_L] ≥ n / |S|`, which every `S` satisfies; so `S ≠ 1` is not
+contradicted, and no refinement of the two inequalities can contradict it, since
+they constrain only that one index. The deep content of reciprocity is the
+statement `S = 1` itself, and it is not an index computation.
+
+**A SECOND DEAD END, for the same reason it looks attractive.** The only consumer of
+this whole cluster is `[L : K] ≤ h_K` for `L/K` abelian everywhere-unramified
+(`finrank_le_card_classGroup_of_unramified_abelian` in
+`Fermat/FLT/Modularity/Interface.lean`), and that is the FIRST inequality, which
+classically needs no reciprocity and no Chebotarev — only a Herbrand-quotient
+computation, and only for CYCLIC extensions. It does not follow for abelian `L/K` by
+dévissage along a chain of cyclic steps `K ⊂ F₁ ⊂ ⋯ ⊂ L`: each step gives
+`[Fᵢ₊₁ : Fᵢ] ≤ h_{Fᵢ}`, and multiplying them bounds `[L : K]` by `∏ h_{Fᵢ}`, not by
+`h_K`. Closing that gap would need `h_{F₁} ≤ h_K / [F₁ : K]` for an everywhere
+unramified `F₁/K`, which is not a theorem (class field towers do not have decreasing
+class numbers). The abelian statement really does go through the Artin map.
+
+**The check that would refute this leaf**: a finite cyclic `L/K` unramified at every
+finite prime and every infinite place, an `x : Kˣ`, and a factorisation of `(x)`
+into primes whose Frobenius elements do not multiply to `1`. -/
+theorem artinMap_toPrincipalIdeal_of_isCyclic [IsUnramifiedAtInfinitePlaces K L]
+    (habel : ∀ a b : L ≃ₐ[K] L, a * b = b * a)
+    (hunr : ∀ (Q : Ideal (𝓞 L)) (_ : Q.IsPrime), Q ≠ ⊥ →
+      Algebra.IsUnramifiedAt (𝓞 K) Q)
+    (hcyc : IsCyclic (L ≃ₐ[K] L)) (x : Kˣ) :
+    artinMap K L habel (toPrincipalIdeal (𝓞 K) K x) = 1 :=
+  sorry
+
 /-- **ARTIN RECIPROCITY AT MODULUS `1`: for `L/K` finite abelian, unramified at
 every finite prime and at every infinite place, the Artin map kills the PRINCIPAL
 ideals** (SORRY LEAF, cut 2026-07-30 out of `exists_classGroupHom_eq_frobAt`
@@ -643,8 +920,36 @@ theorem artinMap_toPrincipalIdeal [IsUnramifiedAtInfinitePlaces K L]
     (habel : ∀ a b : L ≃ₐ[K] L, a * b = b * a)
     (hunr : ∀ (Q : Ideal (𝓞 L)) (_ : Q.IsPrime), Q ≠ ⊥ →
       Algebra.IsUnramifiedAt (𝓞 K) Q) (x : Kˣ) :
-    artinMap K L habel (toPrincipalIdeal (𝓞 K) K x) = 1 :=
-  sorry
+    artinMap K L habel (toPrincipalIdeal (𝓞 K) K x) = 1 := by
+  by_contra hne
+  obtain ⟨H, hnorm, hmem, hcyc⟩ := exists_subgroup_notMem_isCyclic_quotient habel hne
+  haveI := hnorm
+  haveI : IsUnramifiedAtInfinitePlaces K (IntermediateField.fixedField H) :=
+    IsUnramifiedAtInfinitePlaces.bot (k := K)
+      (K := ↥(IntermediateField.fixedField H)) (F := L)
+  have habelM : ∀ a b : (IntermediateField.fixedField H) ≃ₐ[K]
+      (IntermediateField.fixedField H), a * b = b * a := by
+    intro a b
+    obtain ⟨a', rfl⟩ := AlgEquiv.restrictNormalHom_surjective
+      (K₁ := ↥(IntermediateField.fixedField H)) (E := L) a
+    obtain ⟨b', rfl⟩ := AlgEquiv.restrictNormalHom_surjective
+      (K₁ := ↥(IntermediateField.fixedField H)) (E := L) b
+    rw [← map_mul, ← map_mul, habel]
+  have hcycM : IsCyclic ((IntermediateField.fixedField H) ≃ₐ[K]
+      (IntermediateField.fixedField H)) :=
+    isCyclic_of_surjective (IsGalois.normalAutEquivQuotient H)
+      (IsGalois.normalAutEquivQuotient H).surjective
+  have hunrM : ∀ (q : Ideal (𝓞 (IntermediateField.fixedField H))) (_ : q.IsPrime), q ≠ ⊥ →
+      Algebra.IsUnramifiedAt (𝓞 K) q :=
+    fun q hq hq0 => isUnramifiedAt_of_intermediateField K L _ hunr q hq hq0
+  have key := restrictNormalHom_artinMap K L (IntermediateField.fixedField H) habel habelM hunr
+    (toPrincipalIdeal (𝓞 K) K x)
+  rw [artinMap_toPrincipalIdeal_of_isCyclic K (IntermediateField.fixedField H) habelM hunrM
+    hcycM x] at key
+  refine hmem ?_
+  rw [← IntermediateField.fixingSubgroup_fixedField H,
+    ← IntermediateField.restrictNormalHom_ker (IntermediateField.fixedField H)]
+  exact MonoidHom.mem_ker.mpr key
 
 /-- **THE ARTIN SYMBOL DESCENDS TO THE IDEAL CLASS GROUP** (PROVEN 2026-07-30 over
 `artinMap_toPrincipalIdeal`).
@@ -784,98 +1089,7 @@ theorem inertiaDeg_eq_one_of_forall_pow_natCard
   omega
 
 omit [IsGalois K L] in
-/-- **The primes of `𝓞 K` that ramify in `L`**: those carrying a prime of `𝓞 L`
-at which `𝓞 L / 𝓞 K` is not unramified.
-
-Stated with `Q.IsPrime` rather than `Q.IsMaximal` so that it matches the shape of
-`Algebra.IsUnramifiedAt`; the zero ideal is harmless, being unramified in
-characteristic zero (`Algebra.isUnramifiedAt_bot`). -/
-def ramifiedBelow : Set (Ideal (𝓞 K)) :=
-  {𝔭 | ∃ (Q : Ideal (𝓞 L)) (_ : Q.IsPrime),
-    Q.under (𝓞 K) = 𝔭 ∧ ¬ Algebra.IsUnramifiedAt (𝓞 K) Q}
-
-omit [IsGalois K L] in
-/-- **ONLY FINITELY MANY PRIMES OF `𝓞 K` RAMIFY IN `L`** (PROVEN 2026-07-31).
-
-A prime `Q` of `𝓞 L` is ramified exactly when it divides the different ideal
-`𝔡_{L/K}` (`dvd_differentIdeal_iff`), the different is nonzero
-(`differentIdeal_ne_bot`), and a nonzero ideal of a Dedekind domain has only
-finitely many prime divisors (`Ideal.finite_factors`). The set below is the image
-of that finite set under `Ideal.under`.
-
-The only friction is that both mathlib lemmas are stated with the hypothesis
-`Algebra.IsSeparable (FractionRing (𝓞 K)) (FractionRing (𝓞 L))`, and there is no
-`Algebra (FractionRing (𝓞 K)) (FractionRing (𝓞 L))` instance to state it against.
-It is built here with `FractionRing.liftAlgebra`, whose scalar tower plus
-`isAlgebraic_of_isFractionRing` gives algebraicity, hence separability in
-characteristic zero. -/
-theorem finite_ramifiedBelow : (ramifiedBelow K L).Finite := by
-  classical
-  letI : Algebra (FractionRing (𝓞 K)) (FractionRing (𝓞 L)) :=
-    FractionRing.liftAlgebra (𝓞 K) (FractionRing (𝓞 L))
-  haveI : IsScalarTower (𝓞 K) (FractionRing (𝓞 K)) (FractionRing (𝓞 L)) :=
-    FractionRing.isScalarTower_liftAlgebra _ _
-  haveI : Algebra.IsAlgebraic (FractionRing (𝓞 K)) (FractionRing (𝓞 L)) :=
-    isAlgebraic_of_isFractionRing (𝓞 K) (𝓞 L) (FractionRing (𝓞 K)) (FractionRing (𝓞 L))
-  haveI : Algebra.IsIntegral (FractionRing (𝓞 K)) (FractionRing (𝓞 L)) :=
-    Algebra.IsAlgebraic.isIntegral
-  haveI : Algebra.IsSeparable (FractionRing (𝓞 K)) (FractionRing (𝓞 L)) := inferInstance
-  have hne : differentIdeal (𝓞 K) (𝓞 L) ≠ 0 := differentIdeal_ne_bot
-  have hfin : {v : IsDedekindDomain.HeightOneSpectrum (𝓞 L) |
-      v.asIdeal ∣ differentIdeal (𝓞 K) (𝓞 L)}.Finite := Ideal.finite_factors hne
-  refine Set.Finite.subset (hfin.image (fun v => v.asIdeal.under (𝓞 K))) ?_
-  rintro 𝔭 ⟨Q, hQp, rfl, hQr⟩
-  haveI := hQp
-  have hQne : Q ≠ ⊥ := by
-    rintro rfl
-    exact hQr Algebra.isUnramifiedAt_bot
-  exact ⟨⟨Q, hQp, hQne⟩, dvd_differentIdeal_iff.mpr hQr, rfl⟩
-
-/-- **THE DENSITY INPUT OF CHEBOTAREV, AND THE ONLY THING LEFT OF IT HERE: a
-finite extension of number fields in which all but finitely many primes of the
-base split completely is trivial** (SORRY LEAF, cut 2026-07-31 out of
-`closure_frobAt_eq_top` below, which is now PROVEN over it).
-
-Only the residue degrees are constrained, not the ramification indices: the
-hypothesis is `f(q | 𝔭) = 1` for every maximal `q` of `𝓞 F` whose contraction
-avoids the finite set `S`. That is weaker than "splits completely" and makes the
-leaf STRONGER, which is what the consumer below needs (it controls `f` and never
-touches `e`).
-
-**Why it is true.** Let `N` be the Galois closure of `F/k`, `G = Gal(N/k)`,
-`H = Gal(N/F)`. For `𝔭` unramified in `N` the primes of `F` above `𝔭` are the
-orbits of `⟨Frob_𝔓⟩` on `G/H`, with `f(q | 𝔭)` the orbit length; so all residue
-degrees are `1` exactly when `Frob_𝔓` lies in the normal core `⋂_g g H g⁻¹`. If
-`F ≠ k` then `H ≠ G`, so the core is a proper normal subgroup, and Chebotarev
-supplies infinitely many `𝔭` whose Frobenius class avoids it — more than the
-finitely many that `S` may exclude. Hence `H = G` and `[F : k] = 1`.
-
-**What it needs that the pin does not have.** Dedekind zeta functions, their
-simple pole at `s = 1`, and the nonvanishing of `L(1, χ)`: this is the analytic
-half of class field theory and it must be built, not cited (mathlib at this pin
-has Dirichlet's theorem on primes in arithmetic progressions, i.e. the case
-`k = ℚ`, `N` cyclotomic, but nothing over a general number field). The weaker
-"infinitely many primes do not split completely", which is all that is used here,
-is not known to have an elementary proof either.
-
-**The finiteness hypothesis is load-bearing.** Without it the statement is false
-for a trivial reason: take `S` to be everything, and the hypothesis becomes
-vacuous while `F` may be any extension. With `S` finite the hypothesis still
-speaks about infinitely many primes, since `𝓞 k` has infinitely many maximal
-ideals.
-
-**The check that would refute it**: a nontrivial finite extension `F/k` of number
-fields and a finite set `S` of primes of `𝓞 k` such that every maximal ideal of
-`𝓞 F` contracting outside `S` has residue degree `1` over `𝓞 k`. -/
-theorem finrank_eq_one_of_forall_inertiaDeg_eq_one
-    (k F : Type*) [Field k] [NumberField k] [Field F] [NumberField F] [Algebra k F]
-    (S : Set (Ideal (𝓞 k))) (hS : S.Finite)
-    (h : ∀ q : Ideal (𝓞 F), q.IsMaximal → q.under (𝓞 k) ∉ S → q.inertiaDeg (𝓞 k) = 1) :
-    Module.finrank k F = 1 :=
-  sorry
-
 end Chebotarev
-
 /-- **CHEBOTAREV, IN THE ONLY FORM THIS DEVELOPMENT NEEDS: the Frobenius elements
 of the unramified primes GENERATE `Gal(L/K)`** (PROVEN 2026-07-31 over the single
 density leaf `finrank_eq_one_of_forall_inertiaDeg_eq_one`; itself cut 2026-07-30
