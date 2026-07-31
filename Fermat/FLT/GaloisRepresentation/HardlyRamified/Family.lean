@@ -3496,11 +3496,13 @@ section are now
   **(2026-07-31: this is no longer a leaf either — it is a two-line assembly over
   `isMultiplicativeType_of_connected_of_inertiaLevelOneFlag`, the SAME citation stated on an
   abstract `A` with both hypotheses intrinsic, and
-  `hasInertiaLevelOneFlag_quotient_cornerIdeal`, which is PROVEN over
-  `exists_levelOneFlag_of_injective_equivariant` and the one residual formality
-  `exists_injectiveEquivariantPoints_quotient_cornerIdeal`. So this branch's open
-  statements are now Raynaud-on-an-abstract-`A` plus one points-functoriality
-  formality, in place of Raynaud-tangled-with-a-corner.)**
+  `hasInertiaLevelOneFlag_quotient_cornerIdeal`, "the corner inherits the flag", whose
+  docstring carries the complete verified route down to
+  `exists_levelOneFlag_of_injective_equivariant` (PROVEN here, 2026-07-31) and names the one
+  thing still in the way — the commutativity `habel` of the point monoid, which is
+  available two levels up and has to be threaded down. So this branch's open statements are
+  now Raynaud-on-an-abstract-`A` plus one flag-transport, in place of
+  Raynaud-tangled-with-a-corner.)**
 * `exists_grouplike_family_spanning_baseChange_of_isMultiplicativeType` and the `(D2)`
   transport below, unchanged by this pass. -/
 
@@ -3653,7 +3655,14 @@ is what the points of a quotient Hopf algebra are, by precomposition — and the
 
 The three lemmas below are that direction, and they are what route (a) of the Raynaud
 dévissage needs in order to state `HasInertiaLevelOneFlag` INTRINSICALLY on the corner; see
-`hasInertiaLevelOneFlag_quotient_cornerIdeal` far below. Everything here is pure
+`hasInertiaLevelOneFlag_quotient_cornerIdeal` far below.
+
+**THESE FOUR ARE MOMENTARILY FREE-FLOATING, KNOWINGLY** (2026-07-31): their consumer
+`hasInertiaLevelOneFlag_quotient_cornerIdeal` is still a `sorry`, and a sorried body
+contributes no dependency edges, so the census will report them until it is proven. That is
+the ordinary glue-first situation and not a reason to delete them — the consumer's proof
+skeleton is written out in full in its docstring, down to the one missing hypothesis
+(`habel`) and where to get it. Everything here is pure
 `AddSubmonoid` lattice theory over a TORSION additive commutative monoid: no groups, no
 finiteness of the ambient, no Hopf algebras, no arithmetic.
 
@@ -4504,9 +4513,12 @@ theorem exists_inertiaScalarChain_space_of_charpoly
   haveI : Finite (R ⧸ I) := AddSubgroup.quotient_finite_of_isOpen _ hI
   haveI : Module.Finite (R ⧸ I) ((R ⧸ I) ⊗[R] V) :=
     Module.Finite.of_basis ((Module.Free.chooseBasis R V).baseChange (R ⧸ I))
+  -- `Module.finite_of_finite`, NOT `inferInstanceAs`: `Finite ((R ⧸ I) ⊗[R] V)` is not an
+  -- instance Lean finds from `Module.Finite (R ⧸ I) _` plus `Finite (R ⧸ I)`, it is a
+  -- theorem, and the `inferInstanceAs` spelling fails with `failed to synthesize`.
   haveI : Finite (((ρ.baseChange (R ⧸ I)).toLocal
       hp.out.toHeightOneSpectrumRingOfIntegersRat).Space) :=
-    inferInstanceAs (Finite ((R ⧸ I) ⊗[R] V))
+    Module.finite_of_finite (R ⧸ I) (M := ((R ⧸ I) ⊗[R] V))
   exact exists_scalarChain_of_exists_eigenvector p
     (fun σ => σ ∈ localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat)
     (fun N hNtop hNstab => exists_inertiaEigenvector_space_of_charpoly hZinj hRinj χ₁ χ₂
@@ -4726,20 +4738,31 @@ theorem isIdempotentElem_quotient_cornerIdeal_eq_zero_or_one
     exact h7
 
 set_option synthInstance.maxHeartbeats 1000000 in
-/-- **THE POINTS OF THE CORNER SIT INSIDE THE POINTS OF `G`** (SORRY LEAF, cut out of
-`isMultiplicativeType_corner_of_connected_of_inertiaLevelOneFlag` on 2026-07-31; PURE
-FORMALITY — no arithmetic, no `hpodd`, no Raynaud, no `ρ`, and `p` does not occur in the
-statement at all).
+/-- **THE CORNER INHERITS THE LEVEL-ONE FLAG** (SORRY LEAF, cut out of
+`isMultiplicativeType_corner_of_connected_of_inertiaLevelOneFlag` on 2026-07-31; NO
+arithmetic, no `hpodd`, no Raynaud, no `ρ` — it is a statement about the geometric points
+as a `Γ ℚᵖᵥ`-module and nothing else).
+
+This is the "second restatement" that route (a) of the Raynaud dévissage has been waiting
+for since 2026-07-28, and with it that route's last ENCODING obstruction is gone: `hflag`
+can now be carried on the corner, so the abstract statement
+`isMultiplicativeType_of_connected_of_inertiaLevelOneFlag` below is expressible and can be
+its own induction hypothesis.
+
+THE ROUTE, VERIFIED IN PIECES ON 2026-07-31 — a prover should follow it rather than
+re-derive it, and should not be misled by the fact that this is filed as a leaf: the
+mathematics is one paragraph and the difficulty is entirely instance plumbing, itemised
+below.
 
 `HopfAlgebra.cornerIdeal e₀` is a Hopf ideal (that is the instance hypothesis), so the
 quotient map `G → G ⧸ (1 - e₀)` is a bialgebra map and stays one after base change to
 `ℚᵖᵥ`. Precomposition with a SURJECTIVE bialgebra map is therefore an INJECTIVE map of
 `ℚᵖᵥᵃˡᵍ`-points, it is a monoid map for the convolution, and it commutes with the
 `Γ ℚᵖᵥ`-action because that action is POST-composition and composition is associative.
-Written additively, that is exactly the `f` below.
+Feed that map to `exists_levelOneFlag_of_injective_equivariant` above (PROVEN) and the
+flag pulls back.
 
-EVERY INGREDIENT IS ALREADY IN THIS FILE'S IMPORT CONE; what is missing is only the
-assembly, which is why this is filed as a formality rather than as mathematics:
+EVERY MATHEMATICAL INGREDIENT IS ALREADY IN THIS FILE'S IMPORT CONE:
 
 * `GaloisRepresentation.Modularity.algHom_convMul_comp_bialgHom` and
   `algHom_convOne_comp_bialgHom`
@@ -4753,56 +4776,57 @@ assembly, which is why this is filed as a formality rather than as mathematics:
   injectivity of precomposition is then `AlgHom.ext` against a surjection.
 * Galois equivariance is `AlgHom.comp_assoc`.
 
-THE TORSION CLAUSE IS BUNDLED WITH THE MAP, deliberately, and the bundling is the only
-thing about this statement that is not forced. `exists_levelOneFlag_of_injective_equivariant`
-needs to know that the TARGET point monoid is torsion — that is how it manufactures the
-subtractions the classical argument performs in a group — and the two facts are facts about
-the same object, proven from the same two inputs (the points of a Hopf order are finite, and
-every point has a convolution inverse, namely its precomposition with the antipode). Splitting
-them would create a second leaf whose sole consumer is the first. The finiteness half is
-`finite_points_of_hopf_order`, which lives in the SIBLING module `Threeadic.lean` and so is
-not available here; a prover who wants it should hoist it rather than reprove it, and
-`exists_pos_nsmul_eq_zero_of_finite` above turns it plus the antipode inverse into this
-clause in two lines.
+THREE PLUMBING OBSTACLES, ALL MEASURED RATHER THAN GUESSED, and they are the whole reason
+this is a leaf and not three lines. Each was hit, diagnosed and worked around in a scratch
+module against this file's own import cone; the workarounds are stated so the next owner
+pays for none of it twice.
 
-FAITHFULNESS. Both conjuncts are statements about the point group as a `Γ ℚᵖᵥ`-module and
-about nothing else; neither asks for a coordinate, a normal form or `ℚᵖᵥ`-rationality, so
-both are blind to unramified twists. The map is asserted only to EXIST — no canonicity is
-claimed and none is used, since the consumer feeds it straight into a `comap`. -/
-theorem exists_injectiveEquivariantPoints_quotient_cornerIdeal
-    (G : Type) [CommRing G]
-    [HopfAlgebra 𝒪ᵖᵥ G] [Module.Flat 𝒪ᵖᵥ G] [Module.Finite 𝒪ᵖᵥ G]
-    [Algebra.Etale ℚᵖᵥ (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G)]
-    (e₀ : G)
-    [(HopfAlgebra.cornerIdeal e₀).IsHopfIdeal 𝒪ᵖᵥ]
-    [Module.Finite 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)]
-    [Module.Free 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)] :
-    (∀ w : Additive (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ), ∃ k : ℕ, 0 < k ∧ k • w = 0) ∧
-      ∃ f : Additive (ℚᵖᵥ ⊗[𝒪ᵖᵥ] (G ⧸ HopfAlgebra.cornerIdeal e₀) →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ)
-          →+[Field.absoluteGaloisGroup ℚᵖᵥ]
-          Additive (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ),
-        Function.Injective f :=
-  sorry
+1. **The point type CANNOT BE WRITTEN OUT at the corner.** `HasInertiaLevelOneFlag p B`
+   applies happily to `B := G ⧸ HopfAlgebra.cornerIdeal e₀`, because its instances were
+   synthesised ONCE at its own `def` site from the four generic binders
+   `[CommRing B] [HopfAlgebra 𝒪ᵖᵥ B] [Module.Flat 𝒪ᵖᵥ B] [Module.Finite 𝒪ᵖᵥ B]`. But
+   spelling `Additive (ℚᵖᵥ ⊗[𝒪ᵖᵥ] (G ⧸ HopfAlgebra.cornerIdeal e₀) →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ)` in a
+   statement asks Lean to synthesise `AddMonoid` of it afresh, and THAT FAILS — even
+   though `Bialgebra ℚᵖᵥ (ℚᵖᵥ ⊗[𝒪ᵖᵥ] (G ⧸ cornerIdeal e₀))` and
+   `CommRing (ℚᵖᵥ ⊗[𝒪ᵖᵥ] (G ⧸ cornerIdeal e₀))` both synthesise on their own, and even
+   when the `Bialgebra` is handed in as an explicit instance binder. Raising
+   `synthInstance.maxHeartbeats` does not help; it is a unification failure, not a budget
+   one. WORKAROUND, verified: state any auxiliary lemma over ABSTRACT `A B : Type` with
+   those four binders each plus `(Φ : A →ₐc[𝒪ᵖᵥ] B) (hΦ : Function.Surjective Φ)`, and
+   instantiate it at `A := G`, `B := G ⧸ cornerIdeal e₀`,
+   `Φ := Bialgebra.Quotient.mkBialgHom (R := 𝒪ᵖᵥ) (HopfAlgebra.cornerIdeal e₀)`,
+   `hΦ := Ideal.Quotient.mk_surjective`. That elaborates.
+2. **`AddCommMonoid` is not available on the points, with or without `IsCocomm`.**
+   `exists_levelOneFlag_of_injective_equivariant` needs it (`AddSubmonoid.mem_sup`, `abel`).
+   The project supplies only `Monoid (A →ₐ[K] L)`; mathlib's `CommMonoid` lives on
+   `WithConv`. WORKAROUND, verified: take the commutativity as an EQUATION
+   `habel : ∀ φ ψ : ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ, φ * ψ = ψ * φ` — the spelling this file
+   already uses for `isCocomm_corner_of_habel` and
+   `adjoin_cornerGroupLike_of_isSepClosed` — and install
+   `letI : AddCommMonoid _ := { (inferInstance : AddMonoid _) with add_comm := habel }`.
+   `AddSubmonoid`s built with the AMBIENT instance still typecheck under it (structure eta),
+   which was the thing worth checking and it does.
+3. **`habel` IS NOT AVAILABLE IN THIS SIGNATURE, AND THAT IS WHY THIS IS A LEAF.** It is
+   not derivable from anything here: a finite flat Hopf order need not be cocommutative, and
+   `[Coalgebra.IsCocomm 𝒪ᵖᵥ (G ⧸ cornerIdeal e₀)]` runs the wrong way. It IS available two
+   levels up — `isMultiplicativeType_corner_of_hopf_package` has `fG` together with `hfG :
+   Function.Bijective fG`, and `fG` is an additive bijection onto the representation space,
+   which is an `AddCommGroup`; so `φ * ψ = ψ * φ` follows from `fG` injective plus
+   `map_add` and `add_comm`, in three lines. THE FIX IS TO THREAD `habel` DOWN: add it to
+   `isMultiplicativeType_corner_of_inertiaLevelOneFlag`, to
+   `isMultiplicativeType_corner_of_connected_of_inertiaLevelOneFlag` and to this statement,
+   and derive it once at `isMultiplicativeType_corner_of_hopf_package`. All three call sites
+   are in this file. That was NOT done here only because it is an interface change to a
+   positional call chain and this branch had no build budget left to verify it; it is the
+   first thing the next owner should do, and it turns this leaf into a proof.
 
-set_option synthInstance.maxHeartbeats 1000000 in
-/-- **THE CORNER INHERITS THE LEVEL-ONE FLAG** (PROVEN 2026-07-31 modulo the points-map
-formality above; this is the "second restatement" that route (a) of the Raynaud dévissage
-has been waiting for since 2026-07-28).
-
-`HasInertiaLevelOneFlag p G` is a condition on the geometric points of `G` as a
-`Γ ℚᵖᵥ`-module and on nothing else, so it descends to any equivariant SUBOBJECT of that
-module — and the points of the corner are one, by precomposition with the quotient map.
-The two halves are
-
-* `exists_injectiveEquivariantPoints_quotient_cornerIdeal` — the subobject, a formality;
-* `exists_levelOneFlag_of_injective_equivariant` — PROVEN: a level-one flag pulls back
-  along an injective equivariant map of torsion modules, `p` prime.
-
-Note the asymmetry with `hasInertiaLevelOneFlag_of_hopf_package` far above, which transports
-a flag along a BIJECTION and is three lines of `comap` bookkeeping. Restriction to a
-subobject is not bookkeeping: the pulled-back chain can stall for several steps and then
-jump, which is why the flag's step clause is stated with an existential generator that is
-allowed to be `0` rather than with a length-preserving indexing. -/
+FAITHFULNESS. The conclusion is a statement about the point group as a `Γ ℚᵖᵥ`-module and
+about nothing else; it asks for no coordinate, no normal form and no `ℚᵖᵥ`-rationality, so
+it is blind to unramified twists, and it quantifies over `localInertiaGroup` only — it sits
+on the safe side of the rule that killed `exists_muType_closure`. Degenerate case: at
+`e₀ = 1` the corner is `G` itself and the statement is `hflag`; at `e₀ = 0` the quotient is
+the zero ring, whose point set is empty of everything but the counit, and `⊥ = ⊤` discharges
+it. Neither is excluded and neither is a counterexample. -/
 theorem hasInertiaLevelOneFlag_quotient_cornerIdeal
     (G : Type) [CommRing G]
     [HopfAlgebra 𝒪ᵖᵥ G] [Module.Flat 𝒪ᵖᵥ G] [Module.Finite 𝒪ᵖᵥ G]
@@ -4812,12 +4836,8 @@ theorem hasInertiaLevelOneFlag_quotient_cornerIdeal
     [(HopfAlgebra.cornerIdeal e₀).IsHopfIdeal 𝒪ᵖᵥ]
     [Module.Finite 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)]
     [Module.Free 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)] :
-    HasInertiaLevelOneFlag p (G ⧸ HopfAlgebra.cornerIdeal e₀) := by
-  obtain ⟨n, M, h0, hn, hmono, hstab, hstep⟩ := hflag
-  obtain ⟨htor, f, hfinj⟩ := exists_injectiveEquivariantPoints_quotient_cornerIdeal G e₀
-  exact exists_levelOneFlag_of_injective_equivariant f hfinj htor
-    (fun σ => σ ∈ localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat)
-    p hp.out n M h0 hn hmono hstab hstep
+    HasInertiaLevelOneFlag p (G ⧸ HopfAlgebra.cornerIdeal e₀) :=
+  sorry
 
 set_option synthInstance.maxHeartbeats 1000000 in
 include hpodd in
@@ -4991,8 +5011,9 @@ include hpodd in
 * `isMultiplicativeType_of_connected_of_inertiaLevelOneFlag` — the citation itself, now
   stated INTRINSICALLY on an abstract `A`, which is what route (a)'s strong induction on
   `Module.finrank 𝒪ᵖᵥ` needs and what this statement could not provide;
-* `hasInertiaLevelOneFlag_quotient_cornerIdeal` — PROVEN modulo the points-map formality:
-  the corner inherits the level-one flag.
+* `hasInertiaLevelOneFlag_quotient_cornerIdeal` — the corner inherits the level-one flag;
+  a leaf whose docstring carries the whole verified route, including the `habel` threading
+  that turns it into a proof.
 
 The signature is byte-for-byte what it was, so `isMultiplicativeType_corner_of_inertiaLevelOneFlag`
 — which passes its arguments positionally — and everything above it are untouched.
