@@ -4469,3 +4469,96 @@ count OPEN leaves after, not leaves created — a reshaping that is leaf-neutral
 destroys verified material is a loss. **Record the declined option with the condition
 that would reverse it** (here: a second consumer appearing for the orphaned lemmas), so
 the next owner inherits a decision rather than an open question.
+
+## CUTTING A LEAF DROPS THE ENCLOSING PROOF'S CONTEXT — and a vacuous hypothesis is the usual casualty
+
+(2026-07-31, `flt-lean-313`, two leaves in one file, both FALSE AS STATED.)
+
+`chordSum_xWitness` and `chordSum_yMultiplier` were cut out of
+`isDiffCharCert_add_of_ne` in `DifferentialCharacter.lean`. Both carried the witness
+certificates of the two summands,
+
+    hrat₁ : ∀ P, φ P ≠ 0 → x(φP)·B₁(x P) = A₁(x P) ∧ y(φP)·E₁(x P) = C₁(x P)·y P + D₁(x P)
+
+and neither carried `φ ≠ 0`. **For `φ = 0` that hypothesis is VACUOUS** — its premise
+never fires — so `A₁, …, E₁` is an ARBITRARY tuple and both identities are refutable in
+one line (`W = W'`, `φ = 0`, `ψ = id`, witnesses `X,1,1,0,1`, and `A₁ = 0, B₁ = E₁ = 1`,
+which even satisfies the nondegeneracy hypothesis `hG : A₂B₁ − A₁B₂ ≠ 0`).
+
+The enclosing proof had `φ ≠ 0` and `ψ ≠ 0` in scope from `hφP : φ P ≠ 0`, so nobody
+writing the cut noticed they were being used. That is the general shape:
+
+**A cut statement inherits the WRITTEN hypotheses and loses the AMBIENT ones. Before
+publishing a leaf, instantiate every hypothesis of the form `∀ …, <premise> → …` at the
+degenerate case where the premise is unsatisfiable, and check the conclusion still holds.**
+If it does not, the missing hypothesis is almost always already in the caller's hand — here
+`hφ0`/`hψ0` cost the consumer nothing and no statement above them changed.
+
+This file already recorded the same trap one level up ("the degenerate-witness trap" in
+`DifferentialCharacter.lean`'s own module docstring, for `IsDiffChar 0 c`). It recurred
+because the docstring warned about the DEFINITION, and the new leaves were about the
+WITNESSES. A trap documented at one level does not vaccinate the level below it.
+
+### `ring` treats `Polynomial.C 2` as an ATOM — `simp only [map_ofNat]` first
+
+Same day, cost one build cycle, and it will bite anyone moving one of this project's many
+`C`-headed polynomial lemmas from point level to polynomial level. `diffChar_yWitness_onePart`
+is stated with `C 2 * D * B + …`; every existing consumer uses it after `eval`, where
+`eval_C` has already turned `C 2` into the numeral `2`. The FIRST polynomial-level
+`linear_combination` over it failed with a residual of exactly the shape
+
+    -(… * C 2 * D * 2) + (… * D * 4) - (B ^ 3 * C 2 ^ 2 * D ^ 2) + (B ^ 3 * D ^ 2 * 4) = 0
+
+i.e. `(4 − 2·C 2)(…) + (4 − (C 2)²)(…)`, which is zero only once you know `C 2 = 2`.
+`ring` does not: `Polynomial.C 2` is an opaque application, not a numeral.
+
+    simp only [map_ofNat] at hone      -- turns `C 2` into `2`; then `linear_combination` closes it
+
+Read that residual shape as a diagnosis, not as "my coefficients are wrong": a failure whose
+leftover is a *numeral mismatch on a single atom* is this, and re-deriving the coefficients
+(which is what one does by reflex) will never fix it.
+
+## A PROOF ROUTE THAT DIES IN ONE CHARACTERISTIC: SPLIT THE LEAF, DO NOT WEAKEN THE PARENT
+
+(2026-07-31, `flt-lean-313`, `exists_diffCharScalar_polyData`.)
+
+The pullback-factor leaf of `DifferentialCharacter.lean` is proved by a valuation-and-degree
+count on `ℙ¹` run against `Ψ_{W′}(x) = γ²Ψ_W`. That identity is FREE — a `linear_combination`
+of the leaf's own two hypotheses, machine-checked and quoted in the docstring — and in
+characteristic `2` it is **VACUOUS**: `Ψ = 4X³ + b₂X² + 2b₄X + b₆ = (a₁X + a₃)²` is a square,
+`4 = 0`, and the identity collapses to the OTHER hypothesis squared. So the count proves the
+statement everywhere except at one prime, where it proves nothing — and the statement is
+still TRUE there (it is *AEC* III.5.2, which is characteristic-free).
+
+**A derived identity can be an identity and still be empty.** Nothing about its derivation
+warns you: it type-checks, `ring` closes it, and it is genuinely a theorem. Before building a
+count on one, instantiate it in the degenerate characteristic and check it still separates
+the things it is supposed to separate.
+
+Two ways out, and they are not equally good:
+
+* add `(2 : F) ≠ 0` to the parent — cheap on paper here, since the only consumer
+  (`MazurTorsion.lean`) is over `AlgebraicClosure ℚ`. But it moves an INTERFACE, and an
+  interface change together with its call sites is exactly what the seventh invisibility
+  class above says a merge can split across the conflict boundary;
+* **keep the parent's signature and `by_cases` on the characteristic, with the bad branch a
+  NEW NAMED LEAF.** Nothing upstream moves, no consumer in any worktree has to be found and
+  edited, and the residual is stated at exactly the generality where it is hard.
+
+The second is right by default. The cost is one declaration; a leaf is much cheaper than an
+interface.
+
+And go one further while the algebra is in front of you: in the char-`2` branch `hone`
+collapses (its `2DB` term dies) and `hcurve`'s two middle terms fold into it, which removes
+`E` and `Cx` from the CONCLUSION and takes the residual from five polynomials to four. That
+reduction is REVERSIBLE and cost ten lines, so what a successor is dispatched at is the small
+statement. A leaf handed on in its raw form makes the next agent re-derive the collapse
+before starting — and there is no reason for two agents to do that.
+
+### `omit [X] in` goes BEFORE the doc comment
+
+`omit [DecidableEq F] in` placed between a `/-- … -/` and its `theorem` is a syntax error —
+`unexpected token 'omit'; expected 'lemma'`, reported at the END of the doc comment's last
+line, which reads like a problem with the comment. A doc comment must be adjacent to its
+declaration. Put the `omit` above the doc comment; `DifferentialCharacter.lean` already does
+this in twenty places, so copy a neighbour rather than guessing.
