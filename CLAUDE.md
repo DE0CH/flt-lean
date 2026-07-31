@@ -7766,11 +7766,28 @@ Before believing a module is green, check whether it is downstream of the red on
          # truncates the walk and manufactures the answer you were hoping for
     EOF
 
-It costs seconds. And the cheap partial substitute for a build, when the cone genuinely
-cannot be compiled, is the structural scan: comment-nesting depth, scope balance, and — the
-one that caught both errors here — **extract every theorem's explicit binder list and diff
-it against each call site's argument list**. That is a pure text operation, it needs no
-oleans, and arity is exactly what a split interface breaks.
+It costs seconds. Then, since the cone genuinely cannot be compiled, the substitutes — and
+be honest about which of them actually works:
+
+* **READING the declaration your target is consumed by is what found both errors here**,
+  not any scan. They were three lines apart in the one theorem that calls the leaf I was
+  dispatched at. If your target is a leaf, its consumer is a cheap and high-yield place to
+  look, because a re-cut edits both and a merge can land only one side.
+* **Extracting explicit binder lists and diffing them against a call site VERIFIES an
+  arity suspicion in seconds** — `exists_auxDeformationPresSurjection` wants eighteen and
+  the call passed seventeen — and it is worth doing before you touch a signature. But run
+  tree-wide it is NOISE: mine produced nine hits across `Modularity/` and
+  `GaloisRepresentation/` and **all nine were false positives**, in modules that had just
+  built green. Implicit and instance arguments, partial application and named arguments all
+  defeat a text-level arity count. Use it to confirm, never to search.
+* **Comment-nesting depth plus the depth-0 stray count** is the one scan that does find
+  things blind, and the stray half is the half that pays — see the section below on an
+  orphaned opener scoring zero, of which `MazurTorsion.lean` was a live instance the same
+  afternoon.
+
+A scope-balance scan over these files is not worth running as an error check: this tree's
+bare `end`s and anonymous `section`s made mine report four modules, of which the ones I
+could check were legitimate. Difference it against pre-merge `main` or skip it.
 
 **The seeding note that made the check affordable**: `~/.flt-release-lake/build` rsynced over
 a `merger`-based worktree left only ~60 of 5597 targets to rebuild, because the release
