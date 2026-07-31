@@ -5085,46 +5085,331 @@ theorem isClosedImmersion_of_isSection {Y T : Scheme.{u}} (strY : Y ⟶ T)
   haveI : IsClosedImmersion (σ ≫ strY) := by rw [hσ]; infer_instance
   exact IsClosedImmersion.of_comp σ strY
 
-/-- **`𝒪(−σ)` IS LOCALLY TRIVIAL AT THE SECTION** (sorry leaf) — the ON-IMAGE
-half of `isInvertibleSheaf_sectionIdeal_of_isSection` below, which is now PROVEN
-over it, and the only place `_hsmooth` is spent anywhere in this development.
+/-! #### FROM A GENERATOR TO A TRIVIALIZATION — the sheaf-theoretic half, PROVEN
+
+**Why this subsection exists (2026-07-31).**  `exists_trivialization_sectionIdeal_at_section`
+below used to be a bare `sorry` whose conclusion is an isomorphism of `𝒪`-MODULES.
+That conclusion is not a shape a geometer can attack: before any of Stacks 0C4S can
+be used, the prover has to build a morphism in `(U : Scheme).Modules`, factor it
+through a kernel taken in a category of sheaves of modules, and check it is an
+isomorphism through `Scheme.Modules.Hom.isIso_iff_isIso_app`.  None of that is
+mathematics and all of it has to be redone by every successor.
+
+The four declarations here do it once, and the leaf that remains
+(`exists_generator_sectionIdeal_at_section`) is a statement about `σ^♯` and about
+multiplication of ring sections: **no `Z.Modules`, no kernel, no adjunction, no
+`modUnit`.**
+
+**THE TWO STATEMENTS ARE EQUIVALENT**, so nothing is made harder and the old
+faithfulness audit's content carries over (it is re-run on the new statement, at
+the leaf).  `⇐` is `nonempty_sectionIdeal_restrict_iso_of_generator`, formalized
+here.  `⇒` is not formalized because nothing needs it, and it is short: given
+`e : (sectionIdeal σ).restrict U.ι ≅ 𝒪_U`, put `s := kernel.ι (e.inv 1)` read at
+`V = ⊤`; for `W = U.ι ''ᵁ V ≤ U` — and every `W ≤ U` is of that form, via
+`V := U.ι ⁻¹ᵁ W` — the composite `Γ(Y, W) → Γ(sectionIdeal σ, W) → Γ(Y, W)` is
+multiplication by `s|_W` by `𝒪`-linearity of `e.inv`, it is injective because
+`e.inv` is an isomorphism and `kernel.ι` is injective on sections, and its image
+is `ker (σ^♯_W)` — which is exactly `hnzd` and `hgen`.
+
+**THE ONE IDENTIFICATION THAT MAKES THIS SHORT** is `sectionIdealMap_app_eq_zero_iff`:
+on sections, the adjunction unit that DEFINES `sectionIdeal σ` is `σ^♯` up to an
+isomorphism, by exactly the route `toConstSheaf_eq` uses at the generic point
+(`SheafOfModules.unitToPushforwardObjUnit`, whose value on sections is `σ^♯` by
+`rfl`).  So `Γ(sectionIdeal σ, W) = ker (σ.app W)` and the leaf never has to
+mention the adjunction.
+
+**A NEAR-DUPLICATE, DELIBERATELY NOT MERGED.**  `modUnitSections` / `modUnitMul`
+at the end of this module do the same thing for a GLOBAL section of `𝒪_Z`; they
+are declared ~2000 lines below and cannot be used here, and neither subsumes the
+other (`(⊤ : Z.Opens) : Scheme` is not `Z`, so there is no instantiation of one at
+which it becomes the other).  If that section is ever hoisted above this one, the
+two pairs should be stated once over an arbitrary open. -/
+
+/-- **`s ∈ Γ(Z, U)`, READ AS A GLOBAL SECTION OF `𝒪_U`** — restrict `s` from `U`
+to `U.ι ''ᵁ V` for every open `V` of `U`.  Compatibility is presheaf
+functoriality plus the fact that `Opens` has at most one arrow between any two
+objects. -/
+noncomputable def modUnitSectionsOn {Z : Scheme.{u}} (U : Z.Opens) (s : Γ(Z, U)) :
+    (modUnit (U : Scheme.{u})).sections :=
+  PresheafOfModules.sectionsMk
+    (fun V => Z.presheaf.map (homOfLE (U.ι_image_le V.unop)).op s)
+    (by
+      intro V W f
+      show Z.presheaf.map _ (Z.presheaf.map _ s) = _
+      rw [← CategoryTheory.comp_apply, ← Z.presheaf.map_comp]
+      congr 1)
+
+/-- **MULTIPLICATION BY `s ∈ Γ(Z, U)`, AS AN ENDOMORPHISM OF `𝒪_U`** —
+`SheafOfModules.unitHomEquiv` turns a global section into "multiply by it". -/
+noncomputable def modUnitMulOn {Z : Scheme.{u}} (U : Z.Opens) (s : Γ(Z, U)) :
+    modUnit (U : Scheme.{u}) ⟶ modUnit (U : Scheme.{u}) :=
+  (modUnit (U : Scheme.{u})).unitHomEquiv.symm (modUnitSectionsOn U s)
+
+/-- **`modUnitMulOn` IS MULTIPLICATION BY `s`, ON SECTIONS** (PROVEN). -/
+theorem modUnitMulOn_app {Z : Scheme.{u}} (U : Z.Opens) (s : Γ(Z, U))
+    (V : (U : Scheme.{u}).Opens) (r : Γ(Z, U.ι ''ᵁ V)) :
+    Scheme.Modules.Hom.app (modUnitMulOn U s) V r
+      = r * Z.presheaf.map (homOfLE (U.ι_image_le V)).op s := by
+  simp [modUnitMulOn, modUnitSectionsOn, Scheme.Modules.Hom.app,
+    SheafOfModules.unitHomEquiv, PresheafOfModules.unitHomEquiv]
+  rfl
+
+/-- **`restrictUnitIso` IS THE IDENTITY ON SECTIONS** (PROVEN) — for an open
+immersion `U.ι` the comparison `Γ(𝒪_Z, U.ι ''ᵁ V) ≅ Γ(𝒪_U, V)` is
+`U.ι.appIso V`, which mathlib proves is `Iso.refl` (`Scheme.Opens.ι_appIso`).
+
+Stated for the INVERSE because that is the direction the multiplication map is
+composed with below; the `hom` direction is the two-line `simp` inside. -/
+theorem app_restrictUnitIso_inv {Z : Scheme.{u}} (U : Z.Opens) (V : (U : Scheme.{u}).Opens) :
+    Scheme.Modules.Hom.app (Scheme.Modules.restrictUnitIso U.ι).inv V = 𝟙 _ := by
+  have h1 : Scheme.Modules.Hom.app (Scheme.Modules.restrictUnitIso U.ι).hom V = 𝟙 _ := by
+    simp [Scheme.Modules.restrictUnitIso, Scheme.Modules.Hom.app]
+    rfl
+  have h2 := congrArg (fun f => Scheme.Modules.Hom.app f V)
+    (Scheme.Modules.restrictUnitIso U.ι).inv_hom_id
+  simp only [Scheme.Modules.Hom.comp_app, Scheme.Modules.Hom.id_app, h1] at h2
+  exact h2
+
+/-- **MULTIPLICATION BY `s ∈ Γ(Z, U)`, AS A MAP `𝒪_U ⟶ 𝒪_Z|_U`.**
+
+This is the map whose lift through `ker (𝒪_Z|_U ⟶ …)` is the trivialization.
+It is stated into `𝒪_Z|_U` rather than into `𝒪_U` so that no `restrictUnitIso`
+appears inside the kernel, which is what keeps the `IsIso` check on sections
+readable. -/
+noncomputable def modUnitMulRestrict {Z : Scheme.{u}} (U : Z.Opens) (s : Γ(Z, U)) :
+    modUnit (U : Scheme.{u}) ⟶ (modUnit Z).restrict U.ι :=
+  modUnitMulOn U s ≫ (Scheme.Modules.restrictUnitIso U.ι).inv
+
+/-- **`modUnitMulRestrict` IS MULTIPLICATION BY `s`, ON SECTIONS** (PROVEN).
+
+`rw` cannot be used for the middle step: the pattern
+`Scheme.Modules.Hom.app (restrictUnitIso _).inv _` is visibly present in the goal
+and the rewrite fails, because the goal is not type-correct at `instances`
+transparency (`(modUnit Z).restrict U.ι` presents its presheaf as a
+`TopCat.Presheaf`).  `congrArg` plus `Eq.trans` crosses it, which is the standing
+"printed pattern equals printed target ⟹ switch to a defeq-checking tactic"
+remedy. -/
+theorem modUnitMulRestrict_app {Z : Scheme.{u}} (U : Z.Opens) (s : Γ(Z, U))
+    (V : (U : Scheme.{u}).Opens) (r : Γ(Z, U.ι ''ᵁ V)) :
+    Scheme.Modules.Hom.app (modUnitMulRestrict U s) V r
+      = r * Z.presheaf.map (homOfLE (U.ι_image_le V)).op s := by
+  have h2 : ∀ y : Γ(modUnit (U : Scheme.{u}), V),
+      Scheme.Modules.Hom.app (Scheme.Modules.restrictUnitIso U.ι).inv V y = y := fun y => by
+    have hc := congrArg (fun (m : Γ(modUnit (U : Scheme.{u}), V) ⟶
+      Γ((modUnit Z).restrict U.ι, V)) => ConcreteCategory.hom m y) (app_restrictUnitIso_inv U V)
+    exact hc.trans rfl
+  refine Eq.trans (h2 (Scheme.Modules.Hom.app (modUnitMulOn U s) V r)) ?_
+  exact modUnitMulOn_app U s V r
+
+/-- **THE DEFINING MAP OF `sectionIdeal σ`** — the adjunction unit whose kernel
+`sectionIdeal σ` is, named so that statements about its sections can be made. -/
+noncomputable abbrev sectionIdealMap {Z T : Scheme.{u}} (σ : T ⟶ Z) :
+    modUnit Z ⟶ (Scheme.Modules.pushforward σ).obj (modPullback σ (modUnit Z)) :=
+  (Scheme.Modules.pullbackPushforwardAdjunction σ).unit.app (modUnit Z)
+
+/-- **ON SECTIONS, THE DEFINING MAP OF `sectionIdeal σ` VANISHES EXACTLY WHERE
+`σ^♯` DOES** (PROVEN) — i.e. `Γ(sectionIdeal σ, W) = ker (σ.app W)`.
+
+Same route as `toConstSheaf_eq` further down: the composite
+`unit ≫ σ_*(σ^*𝒪 ≅ 𝒪)` IS mathlib's `SheafOfModules.unitToPushforwardObjUnit`,
+whose value on sections is `σ^♯` by `rfl`, so no adjunction is unwound by hand;
+and the second factor is an isomorphism, hence injective on sections. -/
+theorem sectionIdealMap_app_eq_zero_iff {Z T : Scheme.{u}} (σ : T ⟶ Z) (W : Z.Opens)
+    (x : Γ(Z, W)) :
+    Scheme.Modules.Hom.app (sectionIdealMap σ) W x = 0 ↔ σ.app W x = 0 := by
+  have hcomp : sectionIdealMap σ ≫
+      (Scheme.Modules.pushforward σ).map (modPullbackUnitIso σ).hom =
+      SheafOfModules.unitToPushforwardObjUnit σ.toRingCatSheafHom := by
+    rw [← SheafOfModules.pullbackPushforwardAdjunction_homEquiv_pullbackObjUnitToUnit,
+      Adjunction.homEquiv_unit]
+    rfl
+  have h2 : Scheme.Modules.Hom.app (sectionIdealMap σ ≫
+      (Scheme.Modules.pushforward σ).map (modPullbackUnitIso σ).hom) W x = σ.app W x := by
+    rw [hcomp]
+    exact SheafOfModules.unitToPushforwardObjUnit_val_app_apply _ _
+  rw [Scheme.Modules.Hom.comp_app, CategoryTheory.comp_apply] at h2
+  constructor
+  · intro h
+    rw [← h2, h, map_zero]
+    rfl
+  · intro h
+    haveI : IsIso ((Scheme.Modules.pushforward σ).map (modPullbackUnitIso σ).hom) :=
+      Functor.map_isIso _ _
+    have hinj : Function.Injective (ConcreteCategory.hom (Scheme.Modules.Hom.app
+        ((Scheme.Modules.pushforward σ).map (modPullbackUnitIso σ).hom) W)) :=
+      (ConcreteCategory.isIso_iff_bijective _).1 inferInstance |>.1
+    apply hinj
+    rw [h2, h, map_zero]
+    rfl
+
+/-- **`σ^♯` KILLS THE RESTRICTION OF ANYTHING IT KILLS** (PROVEN) — naturality of
+`σ.c`, in the one shape the argument below uses. -/
+theorem app_eq_zero_of_le {Z T : Scheme.{u}} (σ : T ⟶ Z) {W W' : Z.Opens} (h : W' ≤ W)
+    (x : Γ(Z, W)) (hx : σ.app W x = 0) :
+    σ.app W' (Z.presheaf.map (homOfLE h).op x) = 0 := by
+  have hn : σ.app W' (Z.presheaf.map (homOfLE h).op x)
+      = T.presheaf.map (homOfLE (Scheme.Hom.preimage_mono σ h)).op (σ.app W x) :=
+    NatTrans.naturality_apply σ.c (homOfLE h).op x
+  rw [hn, hx, map_zero]
+
+/-- **A NONZERODIVISOR GENERATING THE IDEAL TRIVIALIZES IT** (PROVEN 2026-07-31)
+— the whole sheaf-theoretic content of
+`exists_trivialization_sectionIdeal_at_section`, with no geometry in it: no
+smoothness, no properness, `σ` need not even be a section.
+
+Given `s ∈ Γ(Z, U)` in the ideal (`hmem`), a nonzerodivisor on every open below
+`U` (`hnzd`), and generating the ideal there (`hgen`), multiplication by `s`
+lifts through the kernel and the lift is an isomorphism on sections at every
+open — injective by `hnzd`, surjective by `hgen`.
+
+Two mechanical points worth keeping.  Left exactness of restriction — the
+instance `restrictFunctor_preservesFiniteLimits` above — is what lets the kernel
+be taken after restricting; and `modSectionsAt` preserving kernels is what makes
+`kernel.ι` injective on sections, which is the only place the kernel's universal
+property is used concretely. -/
+theorem nonempty_sectionIdeal_restrict_iso_of_generator {Z T : Scheme.{u}} (σ : T ⟶ Z)
+    (U : Z.Opens) (s : Γ(Z, U))
+    (hnzd : ∀ (W : Z.Opens) (hW : W ≤ U) (r : Γ(Z, W)),
+      r * Z.presheaf.map (homOfLE hW).op s = 0 → r = 0)
+    (hmem : σ.app U s = 0)
+    (hgen : ∀ (W : Z.Opens) (hW : W ≤ U) (x : Γ(Z, W)),
+      σ.app W x = 0 → ∃ r : Γ(Z, W), x = r * Z.presheaf.map (homOfLE hW).op s) :
+    Nonempty ((sectionIdeal σ).restrict U.ι ≅ modUnit (U : Scheme.{u})) := by
+  have hzero : ∀ (V : (U : Scheme.{u}).Opens) (x : Γ(Z, U.ι ''ᵁ V)),
+      Scheme.Modules.Hom.app
+        ((Scheme.Modules.restrictFunctor U.ι).map (sectionIdealMap σ)) V x = 0
+        ↔ σ.app (U.ι ''ᵁ V) x = 0 :=
+    fun V x => sectionIdealMap_app_eq_zero_iff σ (U.ι ''ᵁ V) x
+  have hsmem : σ.app U s = 0 := hmem
+  have hm0 : modUnitMulRestrict U s ≫
+      (Scheme.Modules.restrictFunctor U.ι).map (sectionIdealMap σ) = 0 := by
+    refine Scheme.Modules.hom_ext _ _ (fun V => ?_)
+    ext x
+    show Scheme.Modules.Hom.app ((Scheme.Modules.restrictFunctor U.ι).map (sectionIdealMap σ)) V
+      (Scheme.Modules.Hom.app (modUnitMulRestrict U s) V x) = 0
+    rw [modUnitMulRestrict_app, hzero, map_mul,
+      app_eq_zero_of_le σ (U.ι_image_le V) s hsmem, mul_zero]
+  have hIinj : ∀ V : (U : Scheme.{u}).Opens,
+      Function.Injective (ConcreteCategory.hom (Scheme.Modules.Hom.app
+        (kernel.ι ((Scheme.Modules.restrictFunctor U.ι).map (sectionIdealMap σ))) V)) := by
+    intro V
+    have hmap : (modSectionsAt (U : Scheme.{u}) V).map
+        (kernel.ι ((Scheme.Modules.restrictFunctor U.ι).map (sectionIdealMap σ)))
+        = (PreservesKernel.iso (modSectionsAt (U : Scheme.{u}) V)
+            ((Scheme.Modules.restrictFunctor U.ι).map (sectionIdealMap σ))).hom ≫
+          kernel.ι ((modSectionsAt (U : Scheme.{u}) V).map
+            ((Scheme.Modules.restrictFunctor U.ι).map (sectionIdealMap σ))) := by
+      rw [← PreservesKernel.iso_inv_ι]
+      simp
+    haveI hmono : Mono (Scheme.Modules.Hom.app
+        (kernel.ι ((Scheme.Modules.restrictFunctor U.ι).map (sectionIdealMap σ))) V) := by
+      show Mono ((modSectionsAt (U : Scheme.{u}) V).map
+        (kernel.ι ((Scheme.Modules.restrictFunctor U.ι).map (sectionIdealMap σ))))
+      rw [hmap]; infer_instance
+    exact ConcreteCategory.injective_of_mono_of_preservesPullback _
+  have hLI : ∀ (V : (U : Scheme.{u}).Opens) (x : Γ(Z, U.ι ''ᵁ V)),
+      Scheme.Modules.Hom.app
+        (kernel.ι ((Scheme.Modules.restrictFunctor U.ι).map (sectionIdealMap σ))) V
+        (Scheme.Modules.Hom.app
+          (kernel.lift ((Scheme.Modules.restrictFunctor U.ι).map (sectionIdealMap σ))
+            (modUnitMulRestrict U s) hm0) V x)
+        = x * Z.presheaf.map (homOfLE (U.ι_image_le V)).op s := by
+    intro V x
+    refine Eq.trans ?_ (modUnitMulRestrict_app U s V x)
+    exact congrArg (fun (m : modUnit (U : Scheme.{u}) ⟶ (modUnit Z).restrict U.ι) =>
+      ConcreteCategory.hom (Scheme.Modules.Hom.app m V) x)
+      (kernel.lift_ι _ (modUnitMulRestrict U s) hm0)
+  haveI : IsIso (kernel.lift ((Scheme.Modules.restrictFunctor U.ι).map (sectionIdealMap σ))
+      (modUnitMulRestrict U s) hm0) := by
+    rw [Scheme.Modules.Hom.isIso_iff_isIso_app]
+    intro V
+    rw [ConcreteCategory.isIso_iff_bijective]
+    show Function.Bijective (fun x : Γ(Z, U.ι ''ᵁ V) =>
+      ConcreteCategory.hom (Scheme.Modules.Hom.app
+        (kernel.lift ((Scheme.Modules.restrictFunctor U.ι).map (sectionIdealMap σ))
+          (modUnitMulRestrict U s) hm0) V) x)
+    constructor
+    · intro a b hab
+      have ha : a * Z.presheaf.map (homOfLE (U.ι_image_le V)).op s
+          = b * Z.presheaf.map (homOfLE (U.ι_image_le V)).op s := by
+        rw [← hLI V a, ← hLI V b]
+        exact congrArg _ hab
+      have h2 : (a - b) * Z.presheaf.map (homOfLE (U.ι_image_le V)).op s = 0 := by
+        rw [sub_mul, ha, sub_self]
+      exact sub_eq_zero.mp (hnzd (U.ι ''ᵁ V) (U.ι_image_le V) _ h2)
+    · intro y
+      have hy0 : Scheme.Modules.Hom.app
+          ((Scheme.Modules.restrictFunctor U.ι).map (sectionIdealMap σ)) V
+          (Scheme.Modules.Hom.app
+            (kernel.ι ((Scheme.Modules.restrictFunctor U.ι).map (sectionIdealMap σ))) V y) = 0 := by
+        have hc := congrArg (fun (m : kernel
+          ((Scheme.Modules.restrictFunctor U.ι).map (sectionIdealMap σ)) ⟶
+            (Scheme.Modules.restrictFunctor U.ι).obj
+              ((Scheme.Modules.pushforward σ).obj (modPullback σ (modUnit Z)))) =>
+          ConcreteCategory.hom (Scheme.Modules.Hom.app m V) y)
+          (kernel.condition ((Scheme.Modules.restrictFunctor U.ι).map (sectionIdealMap σ)))
+        exact hc.trans rfl
+      obtain ⟨r, hr⟩ := hgen (U.ι ''ᵁ V) (U.ι_image_le V) _ ((hzero V _).1 hy0)
+      exact ⟨r, hIinj V (by rw [hLI V r, ← hr])⟩
+  exact ⟨(PreservesKernel.iso (Scheme.Modules.restrictFunctor U.ι) (sectionIdealMap σ)) ≪≫
+    (asIso (kernel.lift ((Scheme.Modules.restrictFunctor U.ι).map (sectionIdealMap σ))
+      (modUnitMulRestrict U s) hm0)).symm⟩
+
+/-- **THE IDEAL OF A SECTION IS LOCALLY GENERATED BY A NONZERODIVISOR** (sorry
+leaf) — the geometric residue of
+`exists_trivialization_sectionIdeal_at_section` below, which is now PROVEN over
+it and over `nonempty_sectionIdeal_restrict_iso_of_generator`, and the only place
+`_hsmooth` is spent anywhere in this development.
 
 Stacks 0C4S / EGA IV 17.12.1.  At `σ(t)`, `strY` is smooth of relative dimension
 `1`, so there is an affine neighbourhood on which `strY` is standard smooth of
 relative dimension `1` and the section is cut out by a single element `s` whose
 image in the fibre over `t` generates the maximal ideal of a regular
-one-dimensional local ring.  `s` is then a nonzerodivisor, so `𝒪 ⟶ 𝒪`, `1 ↦ s`
-is injective with image the ideal — i.e. `(sectionIdeal σ)|_U ≅ 𝒪_U`.
+one-dimensional local ring.  `s` is then a nonzerodivisor, and the ideal of the
+section is `s · 𝒪` — which is exactly what the three clauses say.
 
-**DEDUPLICATED AND RESHAPED 2026-07-31.**  Until today this slot held TWO leaves,
-`exists_trivialization_sectionIdeal_at_section` and
-`exists_trivialization_sectionIdeal_at`, whose statements were
-CHARACTER-FOR-CHARACTER IDENTICAL — two branches cut
-`isInvertibleSheaf_sectionIdeal` the same way on 2026-07-30 and 2026-07-31 under
-different names, and a union-style merge kept both.  Worse, by then BOTH were
-consumerless: the 2026-07-31 reshaping of `isInvertibleSheaf_sectionIdeal` routed
-it through the new `isInvertibleSheaf_sectionIdeal_of_isSection`, which is stated
-about a bare morphism and so could not consume either.  So the file was carrying
-one piece of mathematics three times, twice as free-floating code.  The survivor
-is restated here in the bare-morphism shape its consumer needs; the duplicate is
-deleted (recover it with `git show <this commit>^`).
+**RECUT 2026-07-31; THE DIRECT-SORRY COUNT DID NOT MOVE, 1 → 1.**  Until today
+the leaf here was the ISOMORPHISM statement
+`exists_trivialization_sectionIdeal_at_section`, whose conclusion is an iso of
+`𝒪`-modules.  Nothing in that conclusion is geometry, and all of it had to be
+rebuilt by every successor: a morphism in `(U : Scheme).Modules`, a factorization
+through a kernel of sheaves of modules, and an `IsIso` check through
+`Scheme.Modules.Hom.isIso_iff_isIso_app`.  That half is now PROVEN once, in the
+subsection `FROM A GENERATOR TO A TRIVIALIZATION` above, and **the two statements
+are equivalent** — the `⇐` direction is
+`nonempty_sectionIdeal_restrict_iso_of_generator` and the `⇒` direction is
+written out in that subsection's header (it is four lines and nothing needs it).
+So the recut makes nothing harder; what changed is that the surviving statement
+mentions `σ^♯`, ring sections and multiplication, and no category theory at all.
+
+**WHAT A PROVER OWES, AND WHAT THE THREE CLAUSES ARE FOR.**  `hmem` is `s ∈ I`.
+`hnzd` is that `s` is a nonzerodivisor on every open below `U`; over an affine
+`U = Spec A` on which `strY` is standard smooth it is the statement that `s` is a
+nonzerodivisor in `A` and in every localization, i.e. in every stalk.  `hgen` is
+`I(W) = s · Γ(Y, W)`.  The quantification over EVERY open `W ≤ U`, rather than
+over a basis, is not extra mathematics: given the affine case, `hnzd` is exactly
+what makes the local cofactors `rᵢ` agree on overlaps, so they glue, and `x = r·s`
+follows by separatedness of `𝒪_Y`.  A successor who would rather cut that gluing
+off as its own lemma should do so — it is a statement about a nonzerodivisor in a
+sheaf of rings with no geometry in it, and it belongs beside
+`nonempty_sectionIdeal_restrict_iso_of_generator`.
 
 **What a prover may assume, and what is already done.**  The complementary case
 — a point NOT on the section — is PROVEN above
 (`sectionIdeal_restrict_iso_unit_of_notMem_range`, over
 `sectionIdealRestrictIsoOfDisjoint` and `isClosedImmersion_of_isSection`), so
 nothing here needs to say anything about points off the image, and the section's
-image being closed is already available.  The definition to work from is
-`sectionIdeal σ = ker (𝒪_Y ⟶ σ_*σ^*𝒪_Y)`; there is no divisor theory at this
-pin, which is why the leaf is stated as local triviality of that kernel rather
-than as "effective Cartier divisor".
+image being closed is already available.  The ideal itself never has to be
+identified with the kernel of an adjunction unit: `Γ(sectionIdeal σ, W)` IS
+`ker (σ.app W)`, which is `sectionIdealMap_app_eq_zero_iff` above and is why the
+clauses below mention only `σ^♯`.
 
-**FAITHFULNESS — re-run against the reshaped statement, since the reshaping
-changes what `Y ⟶ T` ranges over (the old form quantified only over base changes
-of a fixed curve, this one over every proper smooth relative curve, so the class
-is strictly LARGER and an inherited audit would not transfer).  Both witnesses
-survive verbatim, because both were always stated as curves over a base rather
-than as base changes.**
+**FAITHFULNESS.  The 2026-07-31 recut leaves the audit INTACT, and the reason is
+short enough to state: the recut statement is EQUIVALENT to the isomorphism
+statement it replaced (both directions are recorded in the subsection header
+above), so every witness refuting one refutes the other, in both directions.
+What follows is therefore the audit written for the reshaping earlier that day,
+carried over — plus one correction to it, made while re-reading it.**
 
 * `_hsmooth` is the whole statement and cannot be dropped.  For the nodal cubic
   `y² = x³ + x²` over a field, the ideal of a section through the node needs two
@@ -5133,12 +5418,22 @@ than as base changes.**
   direction: at relative dimension `2` a section is a regular immersion of
   CODIMENSION `2`, so its ideal has rank `2` along the section — `𝔸²_T` with the
   zero section is the smallest witness.
-* `_hσ` — that `σ` is a SECTION — is load-bearing: an arbitrary `σ : T ⟶ Y` need
-  not be an immersion at all, and `ker (𝒪_Y ⟶ σ_*𝒪_T)` is then not the ideal of a
-  divisor.  Take `T = Y` and `σ = 𝟙 Y` for `Y` a curve of positive genus: the
-  kernel is `0`, which is not locally trivial.  In the old form this was implicit
-  in `σ = relSection x`; making it explicit is what lets the statement mention no
-  base change.
+* `_hσ` — that `σ` is a SECTION — is load-bearing in the sense that an arbitrary
+  `σ : T ⟶ Y` need not be an immersion at all, and `ker (𝒪_Y ⟶ σ_*𝒪_T)` is then
+  not the ideal of a divisor.  In the old form this was implicit in
+  `σ = relSection x`; making it explicit is what lets the statement mention no
+  base change.  **CORRECTION, 2026-07-31: the witness this bullet used to quote
+  is not one.**  It read "take `T = Y` and `σ = 𝟙 Y` for `Y` a curve of positive
+  genus: the kernel is `0`".  That forces `strY = 𝟙 Y`, which does not satisfy
+  `_hsmooth` — `𝟙` is smooth of relative dimension `0`, not `1` — so it refutes
+  nothing about THIS statement, and it is an instance of the standing rule that a
+  counterexample is only as strong as the hypothesis list it was tested against.
+  Note also that over a FIELD base `_hσ` is vacuous: `T = Spec k` makes every
+  `σ : T ⟶ Y` a section, since `Hom(Spec k, Spec k)` is a subsingleton.  So a
+  genuine witness has to have a base with a non-trivial endomorphism, and none
+  has been exhibited.  `_hσ` is nevertheless kept, because the only consumer
+  supplies it and because dropping a hypothesis from a leaf is a signature
+  change; a prover may treat its necessity as OPEN.
 * `_hproper` is **not known to be necessary for THIS half.**  The parent's audit
   refutes the properness-free statement with the affine line with doubled origin,
   and that witness works at the SECOND origin — a point which is *off* the image
@@ -5151,15 +5446,56 @@ than as base changes.**
   because dropping a hypothesis from a leaf is a signature change; a prover may
   ignore it.
 
-**NOT VACUOUS.**  `t` ranges over the points of `T`, which is nonempty whenever
-`T` is, and the conclusion is an honest local triviality — the trivial witness
-`U = ⊤` is *not* available, since `sectionIdeal σ ≅ 𝒪_Y` globally would say the
-divisor `[σ]` is trivial. -/
-theorem exists_trivialization_sectionIdeal_at_section {Y T : Scheme.{u}} (strY : Y ⟶ T)
+**NOT VACUOUS, AND NOT SATISFIABLE BY A JUNK GENERATOR.**  `t` ranges over the
+points of `T`, which is nonempty whenever `T` is.  `s = 1` does **not** satisfy
+the clauses: `σ.base t ∈ U` forces `t ∈ σ ⁻¹ᵁ U`, so `σ ⁻¹ᵁ U ≠ ∅` and
+`Γ(T, σ ⁻¹ᵁ U)` is not the zero ring, whence `σ.app U 1 = 1 ≠ 0` and `hmem`
+fails.  `s = 0` does not either: `hnzd` fails wherever `Γ(Y, W) ≠ 0`.  And the
+clauses are consistent with `W` disjoint from the image — there `hgen` says
+`s|_W` generates the unit ideal, which is what "the ideal sheaf is all of `𝒪`
+off the section" means. -/
+theorem exists_generator_sectionIdeal_at_section {Y T : Scheme.{u}} (strY : Y ⟶ T)
     (_hproper : IsProper strY) (_hsmooth : SmoothOfRelativeDimension 1 strY)
     {σ : T ⟶ Y} (_hσ : σ ≫ strY = 𝟙 T) (t : T) :
+    ∃ (U : Y.Opens) (_ : σ.base t ∈ U) (s : Γ(Y, U)),
+      σ.app U s = 0 ∧
+      (∀ (W : Y.Opens) (hW : W ≤ U) (r : Γ(Y, W)),
+        r * Y.presheaf.map (homOfLE hW).op s = 0 → r = 0) ∧
+      (∀ (W : Y.Opens) (hW : W ≤ U) (x : Γ(Y, W)),
+        σ.app W x = 0 → ∃ r : Γ(Y, W), x = r * Y.presheaf.map (homOfLE hW).op s) := sorry
+
+/-- **`𝒪(−σ)` IS LOCALLY TRIVIAL AT THE SECTION** (PROVEN 2026-07-31 over
+`exists_generator_sectionIdeal_at_section` and
+`nonempty_sectionIdeal_restrict_iso_of_generator`; a bare sorry leaf from
+2026-07-30 to 2026-07-31, and the audit above is the one written while it was) —
+the ON-IMAGE half of `isInvertibleSheaf_sectionIdeal_of_isSection` below.
+
+**DEDUPLICATED 2026-07-31, and the note is kept because the deletion is only
+recoverable from history.**  Until that day this slot held TWO leaves,
+`exists_trivialization_sectionIdeal_at_section` and
+`exists_trivialization_sectionIdeal_at`, whose statements were
+CHARACTER-FOR-CHARACTER IDENTICAL — two branches cut
+`isInvertibleSheaf_sectionIdeal` the same way on 2026-07-30 and 2026-07-31 under
+different names, and a union-style merge kept both.  Worse, by then BOTH were
+consumerless: the 2026-07-31 reshaping of `isInvertibleSheaf_sectionIdeal` routed
+it through `isInvertibleSheaf_sectionIdeal_of_isSection`, which is stated about a
+bare morphism and so could not consume either.  The survivor was restated in the
+bare-morphism shape its consumer needs; the duplicate was deleted.
+
+**What was already done, and is used here.**  The complementary case — a point
+NOT on the section — is PROVEN above
+(`sectionIdeal_restrict_iso_unit_of_notMem_range`, over
+`sectionIdealRestrictIsoOfDisjoint` and `isClosedImmersion_of_isSection`), which
+is where `_hproper` is genuinely spent; this half says nothing about points off
+the image. -/
+theorem exists_trivialization_sectionIdeal_at_section {Y T : Scheme.{u}} (strY : Y ⟶ T)
+    (hproper : IsProper strY) (hsmooth : SmoothOfRelativeDimension 1 strY)
+    {σ : T ⟶ Y} (hσ : σ ≫ strY = 𝟙 T) (t : T) :
     ∃ U : Y.Opens, σ.base t ∈ U ∧
-      Nonempty ((sectionIdeal σ).restrict U.ι ≅ modUnit (U : Scheme.{u})) := sorry
+      Nonempty ((sectionIdeal σ).restrict U.ι ≅ modUnit (U : Scheme.{u})) := by
+  obtain ⟨U, hU, s, hmem, hnzd, hgen⟩ :=
+    exists_generator_sectionIdeal_at_section strY hproper hsmooth hσ t
+  exact ⟨U, hU, nonempty_sectionIdeal_restrict_iso_of_generator σ U s hnzd hmem hgen⟩
 
 /-- **A SECTION OF A SMOOTH RELATIVE CURVE IS AN EFFECTIVE CARTIER DIVISOR**
 (PROVEN 2026-07-31 over `exists_trivialization_sectionIdeal_at_section` and
