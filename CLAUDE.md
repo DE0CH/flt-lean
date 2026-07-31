@@ -1580,6 +1580,52 @@ If `main` is behind, `git merge --ff-only merger` first and work there. The merg
 `merger`, so basing on `merger` costs nothing and a branch based on a stale `main` silently
 re-litigates hundreds of commits at merge time.
 
+## SEVENTH invisibility class: a RED module UPSTREAM hides your module's own errors
+(2026-07-31, `flt-lean-79`.) `lake build <Module>` builds an import closure and stops
+at the first red module in it. So when `X0.lean` is red — as it was on `merger` at
+release 27, 101 errors, mid-repair — **`Patching.lean` is never compiled**, and its own
+errors are invisible to `lake build`, to the `declaration uses 'sorry'` warning set, and
+to every frontier scan. On that day `Patching.lean` had **52 errors of its own** and
+nothing in the fleet could see one of them.
+This composes with the other six rather than replacing them: the red upstream module has
+a named owner and is being worked on, so the situation reads as "someone is on it" when
+in fact a second, unowned, unrelated breakage is sitting behind it.
+**The workaround is one command and it does not need the upstream repaired.**
+`lake env lean` consumes whatever `.olean`s are on disk and does not rebuild imports, so
+restore the red module's artifacts from the last good snapshot and elaborate YOUR file
+directly:
+    cp -p ~/.flt-release-lake/build/lib/lean/Fermat/FLT/ModularCurve/X0.* \
+          .lake/build/lib/lean/Fermat/FLT/ModularCurve/
+    lake env lean Fermat/FLT/Modularity/Patching.lean
+(A failed `lake build` DELETES the stale outputs of the module that failed, which is why
+the copy is needed at all — the first symptom is `object file '….olean' does not exist`.)
+The snapshot olean is stale, so treat cross-module errors with the usual suspicion; but
+errors internal to your file — parse errors, arity mismatches, unknown identifiers
+declared in the same file — are real and are yours to fix.
+## READING A MERGE SPLICE: three signatures, and one message that does not mean what it says
+Same day, same file. Textual merges in this development produce a recognisable damage
+pattern, and one of its symptoms is systematically misread.
+* **`error: unexpected token ':='; expected command`** — two declarations spliced: one's
+  signature followed by another's `:= by` and body. Seen as
+  `… = (taylorWilesAug p q).map diamond :=` immediately followed by
+  `Function.Surjective pres := by`.
+* **A stray line inside a proof body** (`      (∀ i, n ≤ e i) ∧` between two `obtain`s) —
+  a leftover of a conclusion that was edited on one side.
+* **A lost `/--`** — the deadliest, because it reports NOTHING at the damage site. The
+  prose of the next docstring is absorbed into the previous declaration's *value*, and
+  with `autoImplicit` on, every word becomes an auto-bound implicit and the declaration
+  elaborates to junk. `abbrev taylorWilesCoordModel … := Fin d → … ⧸ taylorWilesLevelIdeal p e`
+  silently swallowed `see the reduction audit recorded there.` and the six lines after it.
+**And the message that misleads:** `invalid use of explicit universe parameters, 'X' is a
+local variable`. This does NOT mean `X` is shadowed. It means **`X` IS NOT IN THE
+ENVIRONMENT AT ALL** — autoImplicit bound the unknown name as a local, and `X.{u, v}` on
+a local is then illegal. So the message is a report about a declaration that failed or
+was swallowed somewhere *above*, not about the line it points at. Four such messages
+(`IsCohenCoefficients`) plus a dozen `Function expected at` (`taylorWilesCoordModel`) all
+traced back to that one missing `/--` 8000 lines earlier.
+Corollary for triage order: fix the FIRST parse error and the FIRST swallowed declaration
+before believing any later diagnostic. In this instance 4 root defects accounted for
+about 40 of the 52 reported errors.
 ## SIXTH invisibility class: a merge that fails, records success, and drops the payload
 
 (2026-07-29.) `git merge flt-lean-243` printed `error: Unable to write index` and **still
