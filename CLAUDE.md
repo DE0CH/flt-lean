@@ -1046,3 +1046,63 @@ part". The repair here was one hypothesis (`hmm₀ram : ∀ w, IsRamifiedCharRay
 that the consumer **already held and was discarding** — so the fix cost nothing, and the consumer's
 statement did not change. That is the usual shape: the missing hypothesis is often already in the caller's
 hand.
+
+## `run_in_background: true` DOES NOT SURVIVE THE CLAUDE PROCESS — use `setsid --fork` for any long build
+
+(2026-07-31, `flt-lean-270`, twice in one run.) The doctrine file offers two shapes for a long
+build and says shape 1 — a plain foreground command issued with `run_in_background: true` — is
+safe because "the harness owns the lifetime". **It owns it only as long as the harness is alive.**
+A 45-minute `lake build` launched that way was killed twice when the Claude process was restarted
+mid-turn, each time leaving a log that ends mid-stream with **no `EXIT=` line** — the exact
+signature the doctrine warns about, produced by the *recommended* shape rather than by a bad one.
+
+The fix costs one wrapper and is unconditional for anything over a few minutes:
+
+    setsid --fork bash -c 'cd ~/flt-lean-N && export PATH="$HOME/.elan/bin:$PATH" \
+      && lake build <Mod> > /tmp/b.log 2>&1; echo "EXIT=$?" >> /tmp/b.log' </dev/null >/dev/null 2>&1
+    # verify ppid: `ps -o pid,ppid,sid -p <pid>` must show ppid 1
+    # then poll IN-TURN for the EXIT= line; a run_in_background waiter dies with the harness too
+
+Both halves matter. The build must be `ppid 1`, **and** the waiter must not be the only thing
+holding the result — a `run_in_background` poll loop is killed by the same event that kills a
+`run_in_background` build, so it reports nothing and looks identical to a hang. Poll in-turn.
+
+Also: `lake` is **not on PATH** in a fresh non-login shell here (`lake: command not found`,
+`EXIT=127` in under a second). `export PATH="$HOME/.elan/bin:$PATH"` inside the wrapper, not
+outside it.
+
+## AN EXISTENTIALLY-ASSERTED IDENTIFICATION IS NOT THE STRUCTURAL ONE — the `α`-gap
+
+(2026-07-31, found decomposing `nonempty_isNIsogenyPair_of_gamma0Model`.) A "pin" definition of the
+shape
+
+    IsModelOf X d := <structural clause tying d to X> ∧ ∃ e : <points of X> ≃ <points of d>, <e is nice>
+
+has a hole that no reading of either clause alone reveals: **nothing says the asserted `e` is the
+identification the structural clause induces.** Write `ε` for the structural one. Both are "nice"
+equivalences, so they differ by `α := ε⁻¹ ∘ e`, an automorphism satisfying every stated niceness
+condition — and every downstream clause stated about `e` is then about a *different* object from
+the one any construction out of the structural clause produces.
+
+Concretely here: `IsGamma0ModelOf`'s model clause (added 2026-07-28 to fix the previous version of
+this same hole) gives a Weierstrass chart `Spec ℚ[E] ↪ d.E`, hence `ε`; the level clause pins
+`d.cyc` to `e(⟨g⟩)`; and the isogeny one can actually build from the chart has kernel `ε(⟨g⟩)`.
+They agree iff `α(⟨g⟩) = ⟨g⟩`, which over `ℚ` is TRUE but only by **Tate/Faltings**
+(`End_{Γ_ℚ}(T_ℓE) = End(E)⊗ℤ_ℓ = ℤ_ℓ`, so `α` is a `ℤ̂ˣ`-scalar on torsion). So the 2026-07-28
+repair did not remove the Faltings-strength input the pin's own docstring says is absent — it
+**moved** it, from "produce a morphism" to "identify the two identifications". That is the
+characteristic failure mode: the hole reappears one level down, wearing the previous fix as
+evidence that it was closed.
+
+Two rules follow.
+
+- **When a definition carries both a structural clause and an existential identification, check
+  whether anything relates them.** If not, that gap is a leaf, and it is invisible to every
+  faithfulness audit that reads the clauses one at a time — each is individually true and
+  individually load-bearing (this is the same shape as the "two individually-correct repairs" entry
+  above, at definition granularity rather than across two edits).
+- **Isolate it as its own named leaf rather than burying it in the hard one.** Here it is
+  `Fermat.liesIn_congr_of_geomFibreAddEquiv`, whose docstring records both how to prove it
+  (Faltings) and how to make it *unnecessary* — strengthen the pin so `e` IS the chart map, which is
+  a change to a STATEMENT, not a theorem, since the producer builds both from one source. A leaf
+  that documents its own deletion route is worth more than one that documents only its proof.
