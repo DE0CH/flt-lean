@@ -1303,6 +1303,50 @@ prompt is a checksum on your base.** If the declaration is not at the named line
 hunting for a rename — check `HEAD..main` first. It costs one command and it is right more often
 than any of the interesting explanations.
 
+## THE RELEASE-WINDOW CHECK IS THE PROVER'S FIRST ACT, NOT THE ORCHESTRATOR'S
+
+(2026-07-31, flt-lean-106, and it cost a full duplicate of a day-old file.)
+The fifth-invisibility-class section above is written as advice to whoever
+DISPATCHES. It is at least as much advice to whoever RECEIVES: a prover agent's
+task prompt was built from `main`, and `main` is the frontier as of the last
+release. **Run `git show merger:<file> | grep -n <declName>` for every leaf in
+your prompt BEFORE your first edit** — it is one command per name and it is the
+only thing standing between you and re-doing finished work.
+
+What it cost here, concretely. Three leaves were named. On `merger`, two of the
+three were **already proven** (`intBasis_indep_of_isCMByRamifiedMaximalOrder`,
+`exists_isogenyCurve_thirtySeven`) and the third's missing bridge already existed
+as a better-stated leaf with its own owner (`exists_end_of_relPointEndo`, which
+strictly subsumes the `exists_endTransport_of_isCMByRamifiedMaximalOrder` this
+worktree cut). Worse, `merger` already carried a
+`Fermat/FLT/EllipticCurve/ThirtySevenKernelPolynomials.lean` at the SAME module
+path, closing the SAME two rows, reached by the SAME quadratic-twist-by-`37`
+insight, written a day earlier. Roughly a megabyte of generated Lean was
+produced, compiled and verified for nothing.
+
+Two things make this trap sharper than the section above suggests:
+
+- **The prompt's own leaf list is the bait.** Every ownership check said the
+  leaves were unowned, and every one was right: the owners had already stopped.
+  "Nobody is working on it" and "it is already done" are the same observation
+  from `main`.
+- **A NEW FILE you are about to create is the highest-risk case, and the one
+  nobody checks.** Ownership tests are written around declaration names in an
+  existing file. A file that does not exist on your base has no name to grep and
+  no `TARGET:` line to match, so it passes every test — while being exactly what
+  a sibling agent decomposing the same leaf would also create, under exactly the
+  same obvious name. So: **before writing a new module, `git show merger:<path>`
+  and `git ls-tree merger -- <dir>`.** One command, and it is the only check
+  that sees this.
+
+The salvage, which is worth knowing because it turns a wasted run into a real
+result: an independent second computation of a landed certificate is a genuine
+cross-check. `gen37.py` was re-pointed at `merger`'s two models — different from
+the ones it had generated — and re-confirmed `r_37 = 0` and the vanishing of the
+reduced `multComp` sum at both rows. So the report to the merger is not "I
+duplicated your work" but "your certificates are independently verified, decline
+mine".
+
 ## SEED BEFORE SPAWNING THE NEXT MERGE WORKER — the snapshot comes from the staging `.lake`
 
 (2026-07-29, orchestrator error.) `flt-cycle.py release` seeds worktree artifacts by rsyncing
@@ -2441,6 +2485,27 @@ jobs)` line with a plausible job count.** An `EXIT=` that is not `0` is a
 failure however empty the log looks; zero sorry warnings from a build that never
 ran is the most confident wrong answer available.
 
+**`lake` IS NOT ON THE AGENT'S PATH, EVEN LOCALLY, AND THE FAILURE LOOKS
+LIKE A FINISHED BUILD** (2026-07-31, flt-lean-106). Since the loop took
+over, a prover agent runs *on* its worktree's host and calls `lake`
+directly — no `ssh`, so the `cd`-plus-elan-PATH wrapper the ssh recipe
+above carries is skipped, and the agent's shell has only
+`~/node/bin:/usr/local/bin:/usr/bin:…`. The result is
+
+    /bin/bash: line 1: lake: command not found
+    EXIT=127
+
+which, launched in the background with output redirected, is a **6-line
+log that returns in one second and contains no `error:`** — i.e. it
+passes the "no errors in the log" eyeball test and the harness reports
+exit 0 for the wrapper. Export the PATH in every `lake` call:
+
+    export PATH="$HOME/.elan/bin:$PATH"
+
+and require `EXIT=0` *plus* `Build completed successfully` before
+believing a build, per the doctrine's positive-terminator rule. A
+127 is a missing binary, not a missing proof.
+
 **Why the change.** Every persistent-server failure mode this project
 hit came from documents that were opened and never closed, and from
 state shared between client processes: a stale `lake setup-file`
@@ -2672,6 +2737,41 @@ Same shape for `open scoped X in` and `set_option … in`. And note the reverse 
 changes which `Decidable` instance the statement elaborates with, so it can silently
 make your theorem a different statement from the one its consumers expect. Prefer
 the `classical` TACTIC inside the proof.
+
+## `ring` CANNOT SEE A RATIONAL NUMERAL IN `ℚ[X]` — pick the model for writability
+
+(2026-07-31, flt-lean-106, and it decided the shape of a whole leaf.) `ℚ[X]`
+carries a `Div` instance — `Polynomial.div`, the *Euclidean* one — and is **not
+a `DivisionRing`**. `ring` only evaluates `/` in a `DivisionRing`; everywhere
+else it treats the quotient as an **atom**. So in `ℚ[X]` the numeral `3/37` is
+opaque, `ring` cannot prove `(3/37)^2 = 9/1369`, and every polynomial identity
+containing a non-integral coefficient fails. Measured on a two-line `example`,
+not assumed — and the failure is silent in the sense that it looks like an
+ordinary `ring` defeat, not like a missing instance.
+
+Consequence for the explicit-certificate files (`GenusOneKernelPolynomials.lean`
+and its level-`37` analogue): **the model is chosen for INTEGRALITY of the
+derived polynomial, not for minimality of the curve.** At `p = 37` the minimal
+conductor-`1225` Mazur–Swinnerton-Dyer curve `[1,1,1,−208083,−36621194]` has a
+kernel polynomial with constant term `−N/37` — genuine, since `elldivpol(E,37)`
+has leading coefficient `37`, so Gauss's lemma does not force monic factors to
+be integral. Mathematically fine for `IsKernelPolynomial`, which asks only for
+monicity; unwritable in Lean.
+
+The repair is a change of model, and the arithmetic of *which* model is short:
+the models of a fixed `j` are the quadratic twists composed with the
+`u`-scalings, which multiply every `x`-coordinate by an arbitrary `c = d·w²`,
+and a derived polynomial's coefficients transform as `f_k ↦ c^(deg−k) f_k`. So
+integrality of `f_0` is a divisibility condition on `c`, and the optimal `c` is
+the smallest one meeting it — here `c = 37`, i.e. the quadratic twist by `37`
+(model `[1, 46, 1, −284864943, −1854973327019]`, conductor `1225·37²`), which
+clears the `1/37` exactly once and costs only a factor `37^(18−k)` on the
+coefficients. Scaling instead (`u = 1/37`, `c = 37²`) is legal and twice as
+expensive; there is nothing cheaper than `c = 37`.
+
+**So: compute the certificate polynomial BEFORE committing to a model, and check
+its denominators.** Doing it the other way round means generating a megabyte of
+Lean that cannot compile, and the diagnosis costs a full build.
 
 ## Verify in a scratch module, not in the giant file
 
