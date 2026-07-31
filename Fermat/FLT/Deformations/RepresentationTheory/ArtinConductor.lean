@@ -6405,209 +6405,6 @@ outcomes to aim for" — was right, and the answer turned out to be neither
 named: the axioms did not determine `F` there, so the axioms were the thing
 that had to change. -/
 
-/-- **THE BREAK DECOMPOSITION** (SORRY LEAF, cut 2026-07-28 out of step
-`hbreak` of `GaloisRep.exists_isSwanExponentAt`): with finite wild
-monodromy, `V|_{I_v}` has a finite list of rational breaks whose layer cake
-is the codimension function `u ↦ dim V − dim V^{G^u}`.
-
-Serre, *Corps Locaux* VI §2; Katz, *Gauss Sums, Kloosterman Sums and
-Monodromy* 1.1.
-
-**THE POSITIVITY CLAUSE IS PART OF THE CONCLUSION (2026-07-30), and it is
-where the retired `gp_eq_wild` really lived.** `0 < μ k` for every
-`k < ρ.wildCodim v` is not decoration. What it says about the codimension
-function is that `c(u) = ρ.wildCodim v` for all SMALL `u > 0` (a
-non-positive entry is invisible to every test `u > 0`, so it would depress
-the counting function below `d` everywhere). That is the true content of
-the false axiom, in the one place it belongs: the axiom asserted
-`G^u = P_v` on `(0,1]`, which is a statement about a FIXED interval and is
-false; what holds is that the codimension function reaches its maximum
-near `0`, with no uniform interval on which it does so.
-
-It is a strictly stronger obligation than the counting clause alone, and
-a prover owes nothing extra for it: Serre's break decomposition produces
-positive breaks, the positive breaks being precisely the wild part.
-
-**A CLAIM MADE HERE ON 2026-07-30 AND WITHDRAWN THE SAME DAY**, because it
-misdirects the prover. This paragraph said the clause "cannot be proved
-from the repaired axioms", citing the WITHDRAWN note on `one_le_break`.
-What that note actually rules out is a `μ k ≥ c > 0` theorem with a
-UNIFORM `c` — and it is right about that. Positivity itself IS reachable
-from the repaired axioms, over ONE further input, and the derivation is
-written out in full in the THIRD FALSITY AUDIT on
-`GaloisRep.IsSwanExponentAt`. In brief: for a level `D` with `D.lvl ≤ N`,
-`gp_herbrand` at `m = 1` plus `P_v ≤ D.gp 1` plus Dedekind gives
-`P_v = F.gp (D.phi 1) ⊔ (D.lvl ⊓ P_v)`, whose second summand acts
-trivially — so `c (D.phi 1) = ρ.wildCodim v` at the POSITIVE value
-`D.phi 1`, and the counting clause there forces `D.phi 1 ≤ μ k` for every
-`k < d`. The bound is not uniform (it depends on the level), which is
-exactly why `one_le_break` is false and this is not.
-
-The further input, `P_v ≤ D.gp 1`, is a theorem about
-`LowerRamificationData.mem_gp` and not a strengthening of any axiom:
-`mem_gp` DEFINES `D.gp` elementwise, `D.gp 1` is therefore the pulled-back
-`G₁(L/Kᵥ)` of the finite level, `L ∩ Kᵥᵗᵃᵐᵉ = L^{G₁}`, and
-`P_v = Gal(Kᵥᵃˡᵍ/Kᵥᵗᵃᵐᵉ)` maps onto `G₁(L/Kᵥ)`. **It is now BUILT** (2026-07-30):
-`LowerRamificationData.wildInertiaGroup_le_gp_one` above is exactly it, and it
-is sorry-free, so the positivity clause below is a derived fact rather than an
-extra obligation.
-
-THE ROUTE, and the three facts it needs about `c(u) := dim V − dim V^{G^u}`:
-
-1. `c` is NON-INCREASING (`gp_le_gp` plus `fixedSubmodule_mono`) and equals
-   `ρ.wildCodim v` NEAR `0`. **CORRECTED 2026-07-29**: this bullet used to
-   read "equals `ρ.wildCodim v` on `(0, 1]` (`gp_eq_wild`), proved above as
-   `one_le_break`", and BOTH citations are dead — `gp_eq_wild` was retired as
-   false and `one_le_break` withdrawn with it. What is true, and all this
-   route needs, is that `c(u) = ρ.wildCodim v` for `u` small: at `u = φ_D(1)`
-   for a level `D` inside the open subgroup `hfin` supplies, that is
-   `fixedSubmodule_gp_phi_eq` plus
-   `LowerRamificationData.wildInertiaGroup_le_gp_one`. It is proved below, in
-   this shape, as `pos_of_card_filter_eq` — which is a CONSEQUENCE of the
-   counting clause rather than an input to it, so a prover of this leaf must
-   establish it directly and must NOT cite that theorem (circularity).
-2. `c` REACHES `0`. This is where `hfin` is indispensable: it supplies an
-   open `N` with `N ⊓ P_v` acting trivially, and one needs some `u` with
-   `G^u ≤ N`. Over `gp_herbrand` that reduces to the lower-numbering fact
-   that `G_m(L/Kᵥ) = 1` for `m` large, which is `mem_gp` plus
-   `⋂ₙ (unif)ⁿ = 0` at the finite level `L`.
-3. `c` is LEFT-CONTINUOUS and has finitely many jumps, all at rationals.
-   Left continuity is `gp_of_forall_lt` plus the fact that the fixed
-   submodule of an intersection of the `G^w` is the union of the
-   `V^{G^w}` — which again uses `hfin`, since past `u = 1` the action
-   factors through the finite group `ρ(P_v)` and a decreasing chain of
-   subgroups of a finite group stabilises.
-
-Given 1–3 the break list is `μ k := sup {u | c u > k}`, and the counting
-clause is exactly the statement that this sup is attained.
-
-FAITHFULNESS NOTE — this leaf is where the residual falsity risk of the
-whole section now lives; see the section docstring above. It is stated for
-EVERY admissible `F`, and `gp_herbrand` pins `F` only at the Herbrand
-values, so an admissible-but-not-genuine `F` would be a counterexample.
-Refuting it with such an `F` is a fully successful outcome, and the repair
-is then to strengthen `RamificationFiltration`, never to weaken this.
-
-**WHERE IN THIS STATEMENT THAT RISK IS, AND WHERE IT IS NOT (2026-07-30).**
-Adding the positivity clause did not add risk: by the derivation above it
-holds for EVERY admissible `F`, over the single input `P_v ≤ D.gp 1`. The
-risk lives entirely in the COUNTING clause, and specifically in the
-attainment of the suprema in step 3 — `c` non-increasing with values in
-`{0, …, d}` has at most `d` jumps for free, and `c` reaching both `d` (the
-derivation above) and `0` (`hfin`) is settled, but a break list exists only
-if `c` is LEFT-continuous at each jump. That is the sharp place to look for
-a refuting `F`: an admissible filtration whose `c` is `1` on `(0, 1)` and
-`0` on `[1, ∞)` admits no `μ`, since `μ 0` would have to be both `≥ u` for
-every `u < 1` and `< 1`.
-
-**THAT DECIDING QUESTION, SETTLED 2026-07-30 — the answer is NO, and the
-missing ingredient is CLOSEDNESS of the `F.gp u`.** The question posed here
-was whether `gp_of_forall_lt`, with `hfin` converting the intersection of the
-`G^w` into a union of fixed submodules, already excludes such an `F`. Half of
-that conversion works and half does not, and it is worth being exact because
-the gap is a single group-theoretic identity.
-
-*What `hfin` DOES give.* Let `Q := N ⊓ P_v` be the subgroup it supplies; `Q`
-acts trivially on `M`, and `Q` is open in the compact `P_v`, so `[P_v : Q]` is
-finite and there are only FINITELY many subgroups of `P_v` containing `Q`. For
-`u > 0`, `gp_le_wild` puts `F.gp u ≤ P_v`, and since `Q` acts trivially
-`V^{F.gp u} = V^{F.gp u ⊔ Q}`. So `u ↦ F.gp u ⊔ Q` is an antitone map into a
-finite poset: for EVERY `u > 0` there is `0 < w₀ < u` with `F.gp w ⊔ Q`
-constant on `[w₀, u)`, hence **`c` is constant on a left-neighbourhood of every
-`u`**. In particular `c` has finitely many jumps for a second reason, and the
-only thing left is the value AT the jump.
-
-*What is left, and it is exactly one identity.* `gp_of_forall_lt` plus
-`gp_le_gp` give `F.gp u = ⋂_{0 < w < u} F.gp w`. Left continuity of `c` at `u`
-is therefore
-
-  `(⋂_{0 < w < u} F.gp w) ⊔ Q = ⋂_{0 < w < u} (F.gp w ⊔ Q)`,
-
-i.e. that `⊔ Q` commutes with a decreasing intersection. **This is NOT formal,
-and the axioms as they stand do not supply it.** Abstract counterexample, to
-show no rearrangement of the present axioms can work: in `ℤ_p` take
-`Q = pℤ_p` (open, index `p`) and `G_n = ℤ · a_n` with `a_n` units and
-`a_{n+1} = k_n a_n` for integers `k_n ≥ 2` prime to `p`. Every `G_n` is dense,
-so `G_n ⊔ Q = ℤ_p` for all `n`, while `⋂_n G_n = 0` and `0 ⊔ Q = Q ≠ ℤ_p`. A
-decreasing family of NON-CLOSED subgroups with constant `Q`-saturation and
-collapsing intersection is precisely the shape a refuting `F` would need.
-
-*Why this is a repair rather than a refutation.* With the `F.gp u` CLOSED the
-identity holds: pass to the normal core `Q₀ ≤ Q` (open, normal in the open
-subgroup `F.gp w₀ ⊔ Q`), note `F.gp w · Q₀` is then a genuine product subgroup,
-closed, and that a decreasing family of nonempty compact sets
-`(x Q₀) ∩ F.gp w` has nonempty intersection — which gives
-`(⋂ F.gp w) · Q₀ = ⋂ (F.gp w · Q₀)`, and saturating by `Q` finishes. And the
-genuine filtration IS closed-valued: `upperRamificationFiltration` is built
-from the `D.gp i`, each of which is an intersection of CLOPEN sets, because
-`ContinuousSMulDiscrete` makes `{σ | σ • x = y}` open and the condition
-`unif ^ (i+1) ∣ σ • x − x` is a union of such sets with open complement. That
-last step is compiler-checked (2026-07-30) — see step 4 of the audit on
-`LowerRamificationData.gp_le_upperRamificationFiltration_sup_lvl`, which needs
-the identical fact.
-
-So the recommended move is NOT to hunt a counterexample but to add a
-`gp_isClosed : ∀ u, IsClosed (F.gp u : Set (Γ Kᵥ))` field to
-`RamificationFiltration` and discharge it in `nonempty_ramificationFiltration`
-from the clopen-ness of `D.gp i`. That is a signature change to the structure,
-so it must land with its one construction site in the same commit. It also
-supplies step 4 of `gp_le_upperRamificationFiltration_sup_lvl` above, which
-needs the identical compactness fact — which is the reason to believe the
-axiom is the right one rather than a patch. -/
-theorem exists_breaks_of_hasFiniteWildMonodromyAt (ρ : GaloisRep K A M)
-    (v : HeightOneSpectrum (𝓞 K)) (hfin : ρ.HasFiniteWildMonodromyAt v)
-    (F : RamificationFiltration v) :
-    ∃ μ : ℕ → ℚ, (∀ k < ρ.wildCodim v, 0 < μ k) ∧
-      ∀ u : ℚ, 0 < u →
-        Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp u)) =
-          ((Finset.range (ρ.wildCodim v)).filter fun k => u ≤ μ k).card := by
-  classical
-  by_cases hM : Module.finrank A M = 0
-  · have hd : ρ.wildCodim v = 0 := by rw [wildCodim, hM]; omega
-    refine ⟨fun _ => 1, ?_, ?_⟩
-    · intro k hk; rw [hd] at hk; omega
-    · intro u hu
-      rw [hM, hd]
-      simp
-  · have hanti : ∀ u w : ℚ, u ≤ w →
-        Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp w))
-          ≤ Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp u)) := by
-      intro u w h
-      exact Nat.sub_le_sub_left
-        (finrank_le_finrank_of_le hM (ρ.fixedSubmodule_mono v (F.gp_le_gp u w h))) _
-    have hbnd : ∀ u : ℚ, 0 < u →
-        Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp u))
-          ≤ ρ.wildCodim v := by
-      intro u hu
-      rw [wildCodim]
-      exact Nat.sub_le_sub_left
-        (finrank_le_finrank_of_le hM (ρ.fixedSubmodule_mono v (F.gp_le_wild u hu))) _
-    have key : ∀ k : ℕ, ∃ t : ℚ, 0 < t ∧ (k < ρ.wildCodim v →
-        (k < Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp t)) ∧
-          ∀ w : ℚ, t < w →
-            Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp w)) ≤ k)) := by
-      intro k
-      by_cases hk : k < ρ.wildCodim v
-      · obtain ⟨t, ht0, ht1, ht2⟩ := ρ.exists_max_codim_gt v hfin F hk
-        exact ⟨t, ht0, fun _ => ⟨ht1, ht2⟩⟩
-      · exact ⟨1, one_pos, fun h => absurd h hk⟩
-    choose μ hμ0 hμ using key
-    refine ⟨μ, fun k _ => hμ0 k, ?_⟩
-    intro u hu
-    have hset : ((Finset.range (ρ.wildCodim v)).filter fun k => u ≤ μ k)
-        = Finset.range (Module.finrank A M
-            - Module.finrank A (ρ.fixedSubmodule v (F.gp u))) := by
-      ext k
-      simp only [Finset.mem_filter, Finset.mem_range]
-      constructor
-      · rintro ⟨hkd, hku⟩
-        exact lt_of_lt_of_le (hμ k hkd).1 (hanti u (μ k) hku)
-      · intro hk
-        have hkd : k < ρ.wildCodim v := lt_of_lt_of_le hk (hbnd u hu)
-        refine ⟨hkd, ?_⟩
-        by_contra hlt
-        exact absurd ((hμ k hkd).2 u (not_le.mp hlt)) (by omega)
-    rw [hset, Finset.card_range]
 
 /-- **A TAMELY RAMIFIED LEVEL WHOSE UNIFORMIZER IS AN INERTIA EIGENVECTOR**
 (SORRY LEAF, cut 2026-07-30 out of `exists_lowerRamificationData_phi_one_le`
@@ -7969,6 +7766,210 @@ theorem exists_max_codim_gt (ρ : GaloisRep K A M)
     rw [Nat.sub_add_cancel hjpos] at heq
     rw [heq]
     exact hgreat _ (D.phi_strictMono.lt_iff_lt.mp (lt_of_lt_of_le hw hjle))
+
+/-- **THE BREAK DECOMPOSITION** (SORRY LEAF, cut 2026-07-28 out of step
+`hbreak` of `GaloisRep.exists_isSwanExponentAt`): with finite wild
+monodromy, `V|_{I_v}` has a finite list of rational breaks whose layer cake
+is the codimension function `u ↦ dim V − dim V^{G^u}`.
+
+Serre, *Corps Locaux* VI §2; Katz, *Gauss Sums, Kloosterman Sums and
+Monodromy* 1.1.
+
+**THE POSITIVITY CLAUSE IS PART OF THE CONCLUSION (2026-07-30), and it is
+where the retired `gp_eq_wild` really lived.** `0 < μ k` for every
+`k < ρ.wildCodim v` is not decoration. What it says about the codimension
+function is that `c(u) = ρ.wildCodim v` for all SMALL `u > 0` (a
+non-positive entry is invisible to every test `u > 0`, so it would depress
+the counting function below `d` everywhere). That is the true content of
+the false axiom, in the one place it belongs: the axiom asserted
+`G^u = P_v` on `(0,1]`, which is a statement about a FIXED interval and is
+false; what holds is that the codimension function reaches its maximum
+near `0`, with no uniform interval on which it does so.
+
+It is a strictly stronger obligation than the counting clause alone, and
+a prover owes nothing extra for it: Serre's break decomposition produces
+positive breaks, the positive breaks being precisely the wild part.
+
+**A CLAIM MADE HERE ON 2026-07-30 AND WITHDRAWN THE SAME DAY**, because it
+misdirects the prover. This paragraph said the clause "cannot be proved
+from the repaired axioms", citing the WITHDRAWN note on `one_le_break`.
+What that note actually rules out is a `μ k ≥ c > 0` theorem with a
+UNIFORM `c` — and it is right about that. Positivity itself IS reachable
+from the repaired axioms, over ONE further input, and the derivation is
+written out in full in the THIRD FALSITY AUDIT on
+`GaloisRep.IsSwanExponentAt`. In brief: for a level `D` with `D.lvl ≤ N`,
+`gp_herbrand` at `m = 1` plus `P_v ≤ D.gp 1` plus Dedekind gives
+`P_v = F.gp (D.phi 1) ⊔ (D.lvl ⊓ P_v)`, whose second summand acts
+trivially — so `c (D.phi 1) = ρ.wildCodim v` at the POSITIVE value
+`D.phi 1`, and the counting clause there forces `D.phi 1 ≤ μ k` for every
+`k < d`. The bound is not uniform (it depends on the level), which is
+exactly why `one_le_break` is false and this is not.
+
+The further input, `P_v ≤ D.gp 1`, is a theorem about
+`LowerRamificationData.mem_gp` and not a strengthening of any axiom:
+`mem_gp` DEFINES `D.gp` elementwise, `D.gp 1` is therefore the pulled-back
+`G₁(L/Kᵥ)` of the finite level, `L ∩ Kᵥᵗᵃᵐᵉ = L^{G₁}`, and
+`P_v = Gal(Kᵥᵃˡᵍ/Kᵥᵗᵃᵐᵉ)` maps onto `G₁(L/Kᵥ)`. **It is now BUILT** (2026-07-30):
+`LowerRamificationData.wildInertiaGroup_le_gp_one` above is exactly it, and it
+is sorry-free, so the positivity clause below is a derived fact rather than an
+extra obligation.
+
+THE ROUTE, and the three facts it needs about `c(u) := dim V − dim V^{G^u}`:
+
+1. `c` is NON-INCREASING (`gp_le_gp` plus `fixedSubmodule_mono`) and equals
+   `ρ.wildCodim v` NEAR `0`. **CORRECTED 2026-07-29**: this bullet used to
+   read "equals `ρ.wildCodim v` on `(0, 1]` (`gp_eq_wild`), proved above as
+   `one_le_break`", and BOTH citations are dead — `gp_eq_wild` was retired as
+   false and `one_le_break` withdrawn with it. What is true, and all this
+   route needs, is that `c(u) = ρ.wildCodim v` for `u` small: at `u = φ_D(1)`
+   for a level `D` inside the open subgroup `hfin` supplies, that is
+   `fixedSubmodule_gp_phi_eq` plus
+   `LowerRamificationData.wildInertiaGroup_le_gp_one`. It is proved below, in
+   this shape, as `pos_of_card_filter_eq` — which is a CONSEQUENCE of the
+   counting clause rather than an input to it, so a prover of this leaf must
+   establish it directly and must NOT cite that theorem (circularity).
+2. `c` REACHES `0`. This is where `hfin` is indispensable: it supplies an
+   open `N` with `N ⊓ P_v` acting trivially, and one needs some `u` with
+   `G^u ≤ N`. Over `gp_herbrand` that reduces to the lower-numbering fact
+   that `G_m(L/Kᵥ) = 1` for `m` large, which is `mem_gp` plus
+   `⋂ₙ (unif)ⁿ = 0` at the finite level `L`.
+3. `c` is LEFT-CONTINUOUS and has finitely many jumps, all at rationals.
+   Left continuity is `gp_of_forall_lt` plus the fact that the fixed
+   submodule of an intersection of the `G^w` is the union of the
+   `V^{G^w}` — which again uses `hfin`, since past `u = 1` the action
+   factors through the finite group `ρ(P_v)` and a decreasing chain of
+   subgroups of a finite group stabilises.
+
+Given 1–3 the break list is `μ k := sup {u | c u > k}`, and the counting
+clause is exactly the statement that this sup is attained.
+
+FAITHFULNESS NOTE — this leaf is where the residual falsity risk of the
+whole section now lives; see the section docstring above. It is stated for
+EVERY admissible `F`, and `gp_herbrand` pins `F` only at the Herbrand
+values, so an admissible-but-not-genuine `F` would be a counterexample.
+Refuting it with such an `F` is a fully successful outcome, and the repair
+is then to strengthen `RamificationFiltration`, never to weaken this.
+
+**WHERE IN THIS STATEMENT THAT RISK IS, AND WHERE IT IS NOT (2026-07-30).**
+Adding the positivity clause did not add risk: by the derivation above it
+holds for EVERY admissible `F`, over the single input `P_v ≤ D.gp 1`. The
+risk lives entirely in the COUNTING clause, and specifically in the
+attainment of the suprema in step 3 — `c` non-increasing with values in
+`{0, …, d}` has at most `d` jumps for free, and `c` reaching both `d` (the
+derivation above) and `0` (`hfin`) is settled, but a break list exists only
+if `c` is LEFT-continuous at each jump. That is the sharp place to look for
+a refuting `F`: an admissible filtration whose `c` is `1` on `(0, 1)` and
+`0` on `[1, ∞)` admits no `μ`, since `μ 0` would have to be both `≥ u` for
+every `u < 1` and `< 1`.
+
+**THAT DECIDING QUESTION, SETTLED 2026-07-30 — the answer is NO, and the
+missing ingredient is CLOSEDNESS of the `F.gp u`.** The question posed here
+was whether `gp_of_forall_lt`, with `hfin` converting the intersection of the
+`G^w` into a union of fixed submodules, already excludes such an `F`. Half of
+that conversion works and half does not, and it is worth being exact because
+the gap is a single group-theoretic identity.
+
+*What `hfin` DOES give.* Let `Q := N ⊓ P_v` be the subgroup it supplies; `Q`
+acts trivially on `M`, and `Q` is open in the compact `P_v`, so `[P_v : Q]` is
+finite and there are only FINITELY many subgroups of `P_v` containing `Q`. For
+`u > 0`, `gp_le_wild` puts `F.gp u ≤ P_v`, and since `Q` acts trivially
+`V^{F.gp u} = V^{F.gp u ⊔ Q}`. So `u ↦ F.gp u ⊔ Q` is an antitone map into a
+finite poset: for EVERY `u > 0` there is `0 < w₀ < u` with `F.gp w ⊔ Q`
+constant on `[w₀, u)`, hence **`c` is constant on a left-neighbourhood of every
+`u`**. In particular `c` has finitely many jumps for a second reason, and the
+only thing left is the value AT the jump.
+
+*What is left, and it is exactly one identity.* `gp_of_forall_lt` plus
+`gp_le_gp` give `F.gp u = ⋂_{0 < w < u} F.gp w`. Left continuity of `c` at `u`
+is therefore
+
+  `(⋂_{0 < w < u} F.gp w) ⊔ Q = ⋂_{0 < w < u} (F.gp w ⊔ Q)`,
+
+i.e. that `⊔ Q` commutes with a decreasing intersection. **This is NOT formal,
+and the axioms as they stand do not supply it.** Abstract counterexample, to
+show no rearrangement of the present axioms can work: in `ℤ_p` take
+`Q = pℤ_p` (open, index `p`) and `G_n = ℤ · a_n` with `a_n` units and
+`a_{n+1} = k_n a_n` for integers `k_n ≥ 2` prime to `p`. Every `G_n` is dense,
+so `G_n ⊔ Q = ℤ_p` for all `n`, while `⋂_n G_n = 0` and `0 ⊔ Q = Q ≠ ℤ_p`. A
+decreasing family of NON-CLOSED subgroups with constant `Q`-saturation and
+collapsing intersection is precisely the shape a refuting `F` would need.
+
+*Why this is a repair rather than a refutation.* With the `F.gp u` CLOSED the
+identity holds: pass to the normal core `Q₀ ≤ Q` (open, normal in the open
+subgroup `F.gp w₀ ⊔ Q`), note `F.gp w · Q₀` is then a genuine product subgroup,
+closed, and that a decreasing family of nonempty compact sets
+`(x Q₀) ∩ F.gp w` has nonempty intersection — which gives
+`(⋂ F.gp w) · Q₀ = ⋂ (F.gp w · Q₀)`, and saturating by `Q` finishes. And the
+genuine filtration IS closed-valued: `upperRamificationFiltration` is built
+from the `D.gp i`, each of which is an intersection of CLOPEN sets, because
+`ContinuousSMulDiscrete` makes `{σ | σ • x = y}` open and the condition
+`unif ^ (i+1) ∣ σ • x − x` is a union of such sets with open complement. That
+last step is compiler-checked (2026-07-30) — see step 4 of the audit on
+`LowerRamificationData.gp_le_upperRamificationFiltration_sup_lvl`, which needs
+the identical fact.
+
+So the recommended move is NOT to hunt a counterexample but to add a
+`gp_isClosed : ∀ u, IsClosed (F.gp u : Set (Γ Kᵥ))` field to
+`RamificationFiltration` and discharge it in `nonempty_ramificationFiltration`
+from the clopen-ness of `D.gp i`. That is a signature change to the structure,
+so it must land with its one construction site in the same commit. It also
+supplies step 4 of `gp_le_upperRamificationFiltration_sup_lvl` above, which
+needs the identical compactness fact — which is the reason to believe the
+axiom is the right one rather than a patch. -/
+theorem exists_breaks_of_hasFiniteWildMonodromyAt (ρ : GaloisRep K A M)
+    (v : HeightOneSpectrum (𝓞 K)) (hfin : ρ.HasFiniteWildMonodromyAt v)
+    (F : RamificationFiltration v) :
+    ∃ μ : ℕ → ℚ, (∀ k < ρ.wildCodim v, 0 < μ k) ∧
+      ∀ u : ℚ, 0 < u →
+        Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp u)) =
+          ((Finset.range (ρ.wildCodim v)).filter fun k => u ≤ μ k).card := by
+  classical
+  by_cases hM : Module.finrank A M = 0
+  · have hd : ρ.wildCodim v = 0 := by rw [wildCodim, hM]; omega
+    refine ⟨fun _ => 1, ?_, ?_⟩
+    · intro k hk; rw [hd] at hk; omega
+    · intro u hu
+      rw [hM, hd]
+      simp
+  · have hanti : ∀ u w : ℚ, u ≤ w →
+        Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp w))
+          ≤ Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp u)) := by
+      intro u w h
+      exact Nat.sub_le_sub_left
+        (finrank_le_finrank_of_le hM (ρ.fixedSubmodule_mono v (F.gp_le_gp u w h))) _
+    have hbnd : ∀ u : ℚ, 0 < u →
+        Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp u))
+          ≤ ρ.wildCodim v := by
+      intro u hu
+      rw [wildCodim]
+      exact Nat.sub_le_sub_left
+        (finrank_le_finrank_of_le hM (ρ.fixedSubmodule_mono v (F.gp_le_wild u hu))) _
+    have key : ∀ k : ℕ, ∃ t : ℚ, 0 < t ∧ (k < ρ.wildCodim v →
+        (k < Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp t)) ∧
+          ∀ w : ℚ, t < w →
+            Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp w)) ≤ k)) := by
+      intro k
+      by_cases hk : k < ρ.wildCodim v
+      · obtain ⟨t, ht0, ht1, ht2⟩ := ρ.exists_max_codim_gt v hfin F hk
+        exact ⟨t, ht0, fun _ => ⟨ht1, ht2⟩⟩
+      · exact ⟨1, one_pos, fun h => absurd h hk⟩
+    choose μ hμ0 hμ using key
+    refine ⟨μ, fun k _ => hμ0 k, ?_⟩
+    intro u hu
+    have hset : ((Finset.range (ρ.wildCodim v)).filter fun k => u ≤ μ k)
+        = Finset.range (Module.finrank A M
+            - Module.finrank A (ρ.fixedSubmodule v (F.gp u))) := by
+      ext k
+      simp only [Finset.mem_filter, Finset.mem_range]
+      constructor
+      · rintro ⟨hkd, hku⟩
+        exact lt_of_lt_of_le (hμ k hkd).1 (hanti u (μ k) hku)
+      · intro hk
+        have hkd : k < ρ.wildCodim v := lt_of_lt_of_le hk (hbnd u hu)
+        refine ⟨hkd, ?_⟩
+        by_contra hlt
+        exact absurd ((hμ k hkd).2 u (not_le.mp hlt)) (by omega)
+    rw [hset, Finset.card_range]
 
 /-- **THE COUNTING CLAUSE FORCES THE BREAKS TO BE POSITIVE** — the statement
 the `IsSwanExponentAt` docstring has claimed since 2026-07-28, now a theorem
