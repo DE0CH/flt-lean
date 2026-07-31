@@ -1103,6 +1103,44 @@ that the consumer **already held and was discarding** — so the fix cost nothin
 statement did not change. That is the usual shape: the missing hypothesis is often already in the caller's
 hand.
 
+## A "DO NOT CUT THIS WAY" PROHIBITION IS DATED EVIDENCE, EXACTLY LIKE AN AUDIT
+
+(2026-07-31, `exists_qAdicPolarizedSystem_finiteBase`.) The rule above says a falsity audit is
+VOID once the statement is restated. The same is true in the other direction, and it is easier to
+miss because the prose sounds permanent: a docstring paragraph headed **"DO NOT CUT THIS THROUGH
+`X` — THE RESULTING LEAF WOULD BE FALSE"** is a claim about `X` **as it stood on the day it was
+written**, not a standing law. When `X` changes, the prohibition expires with it — and a later
+agent who reads the heading and stops has been stopped by history.
+
+The concrete case. `exists_qAdicPolarizedSystem_finiteBase` (finite base field `k`, char `p`)
+carried such a paragraph forbidding the obvious cut through `DualStruct`, and the reasoning was
+right: `DualStruct.weil_nondegenerate` was asserted at every `(F, x, I, n)` with `(n : R) ∈ I`,
+so at `I = (p)`, `n = p` — where `μ_p(k̄)` is trivial and the pairing is constantly `1` — it
+concluded `A[p](k̄) = 0`, which an ordinary elliptic curve over `𝔽_p` refutes. `DualStruct` was
+UNINHABITED over any positive-characteristic fibre, so the cut really would have produced a false
+leaf.
+
+**But the same paragraph named the repair — "gate `weil_nondegenerate` on `(n : F) ≠ 0`, which is
+free in characteristic zero" — and nobody had done it.** One binder in
+`Modularity/AbelianScheme.lean`, one construction site to fix (the base-change transport, which
+gets the new hypothesis handed to it and passes it straight through), and the cut became legal.
+The prohibition was not a wall; it was a work item with a wall-shaped heading.
+
+So, three things worth carrying:
+
+1. **Read the prohibition to its end.** This development's docstrings are unusually good about
+   naming what would unblock them. A paragraph that says "this is impossible *until* Y" is a task
+   description for Y, and Y is often much smaller than the leaf it blocks.
+2. **Check the premise against the source before obeying.** `git log`/`grep` the structure or
+   declaration the prohibition is about. It costs a minute; the paragraph may predate its own fix.
+3. **A false *hypothesis* leaf poisons more than a false conclusion.** The same defect had already
+   been audited on the char-0 sibling `exists_dualPolarization_of_mult`, which was recorded FALSE
+   AS STATED on 2026-07-30 with `exists_qAdicWeilSystem_of_mult` PROVEN over it — i.e. a proven
+   theorem resting on an uninhabitable hypothesis, worth nothing, and *not visible to any
+   sorry-count*. Repairing the structure fixed the char-0 half as a side effect of unblocking the
+   finite-base one. When you find an audit saying "leaf L is false and the defect is in shared
+   structure `X`", the fix belongs in `X` and it pays out at every consumer at once.
+
 ## SEVENTH invisibility class: A CLEAN MERGE THAT DOES NOT COMPILE — the interface split
 
 (2026-07-30, release 22, three instances in one batch.) The six classes above are all about
