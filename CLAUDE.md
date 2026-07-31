@@ -3901,6 +3901,52 @@ of the last release (fifth invisibility class above). After fast-forwarding, run
 before writing any Lean. `flt-lean-359` found its target ALREADY DECOMPOSED on
 `merger`, under the same name and the same statement, by a branch that landed the
 same day the task was written.
+## `pgrep -f "lake build <Module>"` COUNTS YOUR OWN SHELL AND EVERY OTHER WORKTREE
+(2026-07-31, and it cost a 25-minute elaboration.) Checking for rival builds with
+    pgrep -u chend -f "lake build Fermat.FLT.FreyCurve.MazurTorsion" | wc -l
+returned **5**, and `pgrep -f "[l]ean .*MazurTorsion.lean"` returned **3**. Both were
+wrong in the same two ways. The harness wraps every Bash call in
+`bash -c '… eval "pgrep -f …" …'`, so the pattern matches the *asking* shell — the
+`[l]ean` bracket trick defeats self-matching only for the bare word, not for a
+pattern that also appears inside the wrapper's own command line. And the module
+path is not worktree-qualified, so it matches `~/flt-lean-342`'s build of the same
+file. There was exactly ONE real process, and it was mine and healthy.
+Reading that as "rival elaborations" led to `pkill` plus deleting the `.olean` and
+`.trace` — destroying a build that was 13 minutes in and had nothing wrong with it.
+So: **always filter, and always qualify by worktree**:
+    pgrep -af "flt-lean-50.*MazurTorsion" | grep -v "bin/bash"
+Separately, and the reason the panic was plausible: **background Bash waiters do not
+survive a harness restart**, and each restart delivers a "no completion record …
+marked stopped" notification that looks like the *build* died. It did not — the
+`lean` child kept running with a new ppid. Re-arming a waiter each time works, but
+the robust shape is to detach the build itself so nothing can reap it:
+    setsid --fork bash -c 'cd ~/flt-lean-N && lake build M > /tmp/b.log 2>&1; echo "EXIT=$?" >> /tmp/b.log' < /dev/null
+then poll for the `EXIT=` marker you wrote yourself. Never conclude a build finished
+from the absence of errors in the log.
+## A REFERENCES paragraph's shorthand definition can be FALSE — check it against a case you can compute
+(2026-07-31, found while cutting `exists_eisensteinQuotientCert_of_jNeronDatum`.)
+Every docstring in `MazurTorsion.lean` describing Mazur's Eisenstein quotient says
+`I = (T_ℓ − ℓ − 1 : ℓ ∤ N)` and `J_e = J₀(N)/I·J₀(N)`. The first is right. **The
+second is the ZERO abelian variety.** `𝕋 ⊗ ℚ ≅ ∏_f K_f` over the newforms of level
+`N`; the component of `I` in the FIELD `K_f` vanishes only if `a_ℓ(f) = ℓ + 1` for
+every `ℓ ∤ N`, which Deligne's bound `|a_ℓ| ≤ 2√ℓ < ℓ + 1` forbids for every cusp
+form; so `I` has finite index `m` in `𝕋`, `m·1 ∈ I`, and `I·J ⊇ m·J = J` because
+multiplication by `m ≠ 0` is surjective on an abelian variety. The object Mazur
+means is `J₀(N)/℘·J₀(N)` with `℘ = ⋂_k I^k` — the `I`-adically-supported quotient,
+isogenous to `∏ A_f` over the `f` CONGRUENT to the Eisenstein series.
+Nobody wrote anything wrong: `J₀(N)/I J₀(N)` is standard shorthand in the
+literature, and a citation is written for a reader who already knows the object.
+But **a prover who formalises it literally gets `A = Spec ℚ`** — which here is
+exactly the degenerate witness the sibling `IsCuspFormalImmersionCert` exists to
+exclude, so the leaf would have been FALSE and its falsity would have looked like
+a successful decomposition.
+The check costs nothing and is the general rule: **before formalising an object
+off a REFERENCES line, evaluate the proposed definition at one case you can
+compute.** `N = 37`: `n = num((37−1)/12) = 3`, the Eisenstein prime is `(I, 3)`,
+`J_e = A_{37b}` (rank `0`) while `37a` (rank `1`) is excluded. A definition that
+returns `0`, or that returns all of `J₀(37)`, is refuted on the spot. This is the
+same discipline as the file's non-vacuity witnesses, applied one level earlier —
+to the DEFINITION rather than to the statement built from it.
 ## Verification is the COMMAND LINE. No MCP, no LSP, no servers.
 
 (Deyao, 2026-07-25 — supersedes every "trust the MCP diagnostics" rule
