@@ -69,3 +69,5 @@
 - [A private import suffices for proof bodies](lean-private-import-suffices-for-proof-bodies.md) — only STATEMENTS (and exposed def bodies) need `public import`; ModThree's docstring said otherwise for three days and made a leaf look like it needed a header edit it did not
 
 - [Hoist vs concurrent proof](flt-hoist-vs-concurrent-proof.md) — relocating a leaf and proving it in place merge into a duplicate declaration; keep the hoisted location, move the proof
+
+- [Delete × refactor orphans a leaf](flt-delete-times-refactor-orphans-a-leaf.md) — a branch deleting a declaration and a branch refactoring it merge CLEANLY into a sorry with no consumer; every frontier instrument calls it an ordinary open leaf
