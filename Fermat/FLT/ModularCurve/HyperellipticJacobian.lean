@@ -7477,8 +7477,6 @@ lemma act_one (y : gp.Dbar.Pic) : gp.act 1 y = y := by
     show QuotientAddGroup.mk (gp.divAct 1 δ) = _
     rw [gp.divAct_one]
 
-end GeomPic
-
 /-- Galois fixes the base point, read through the inverse permutation (PROVEN). -/
 lemma placeAct_symm_infPlus (σ : QbarGal) :
     (gp.placeAct σ).symm (gp.Dbar.pt PlaceData.infPlus) = gp.Dbar.pt PlaceData.infPlus :=
@@ -8294,6 +8292,10 @@ None of the four mentions `Pic`, `picRel` or `bc`; three of them do not mention 
 all.  They are faithful for the reason recorded on the sibling block above: `PlaceData` pins
 its model up to isomorphism, so `Dbar.F` really is the constant field extension of `D.F` and
 `Dbar.Places` really is all of its places. -/
+
+section GaloisTransitivity
+
+open Polynomial
 
 /-- `sextPoly` is compatible with base change (PROVEN); with `Polynomial.Separable.map` this
 is what carries separability of the sextic from `ℚ` to `ℚ̄`. -/
