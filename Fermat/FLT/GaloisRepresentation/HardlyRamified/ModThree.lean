@@ -20134,6 +20134,28 @@ halves are elementary once set up, and neither needs comodule theory.
 Step 2 is the one that uses the group structure, and `τ_g` is the entire content of "all
 components are translates of the identity component".
 
+**WHAT EXISTS AT THIS PIN FOR STEP 1, checked 2026-07-31 by reading mathlib — the descent is
+three named lemmas and not a project.**  The pessimism of the sibling leaves' inventories does
+not apply here; the base-change bookkeeping is done.
+
+* `Module.FaithfullyFlat.lTensor_bijective_iff_bijective`
+  (`Mathlib/RingTheory/Flat/FaithfullyFlat/Basic.lean`) — `Function.Bijective (f.lTensor M) ↔
+  Function.Bijective f`, i.e. the descent step itself, with no dimension count needed;
+* `Module.FaithfullyFlat` of `K` over a field `k` is an INSTANCE, via
+  `instance [Nontrivial M] [Module.Free R M] : FaithfullyFlat R M` — nothing to prove;
+* `Algebra.TensorProduct.quotientTensorEquiv S T A I :
+  (A ⧸ I) ⊗[R] T ≃ₐ[S] (A ⊗[R] T) ⧸ I.map (algebraMap A (A ⊗[R] T))`
+  (`Mathlib/RingTheory/TensorProduct/Quotient.lean`), with `_apply_tmul` and
+  `_symm_apply_tmul` both `rfl` — this is what moves BOTH quotients on the right-hand side
+  across the base change.
+
+What is NOT supplied and is the real remaining cost of step 1: that
+`(nilradical A).map (algebraMap A (A ⊗[k] K)) = nilradical (A ⊗[k] K)` for `K/k` SEPARABLE.
+`⊆` is formal; `⊇` is the reducedness of `A_red ⊗_k K`, which is the same fact
+`isReduced_tensor_self_of_etale` above already uses in the shape
+`Algebra.FormallyUnramified.isReduced_of_field`.  Taking `K` finite separable — which is
+allowed, `E` being étale — is what keeps that route open.
+
 **A CHEAPER-LOOKING ROUTE THAT DOES NOT CLOSE, recorded so it is not re-attempted blind.**  `E` is
 étale hence formally smooth, and `A ↠ E` has NILPOTENT kernel, so `Algebra.FormallySmooth.lift`
 produces a `k`-algebra SECTION `s : E →ₐ[k] A` for free.  That is genuinely available at this pin
