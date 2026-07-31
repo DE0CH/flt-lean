@@ -8340,6 +8340,17 @@ reading it costs one command. Cross-check `j["session"]` against your own sessio
 while you are there; it is the second, independent confirmation that you are the live
 owner rather than a discarded twin.
 
+**CORRECTED 2026-07-31 (evening), `flt-lean-281`: `prev_tokens` IS populated now.**
+Measured on a live record — prompt token `491e5dc5`, `j["token"] = e25b121a`,
+`j["prev_tokens"] = ['491e5dc5', '31a6a9f1']`, `resume: true`. So on that job a sentinel
+written with the PROMPT's token would have been accepted after all. **Read the two
+clauses separately, because only one of them changed**: the *mechanism* (resume rotates
+the token, the prompt is never re-read) is unchanged and is what makes the check
+necessary; the *consequence* ("a stale token is discarded outright") is now softened by
+`prev_tokens`. Do not rely on the softening — a two-generation-old token, or a loop
+version that stops recording, puts you back in the original hole. The one-command check
+below still costs nothing and still gives the right answer either way; write
+`j["token"]`.
 Meanwhile resume mints a NEW token, deliberately, so the old `.started` marker goes
 inert. The agent's prompt is the ORIGINAL payload and still carries the ORIGINAL token.
 So on any job with `resume: true` / `retries > 0`:
@@ -10769,3 +10780,107 @@ The general lesson, and it is not about algebraic geometry:
   it. This is the same failure as
   [Mathlib states point facts as morphism properties](memory/mathlib-states-point-facts-as-morphism-properties.md),
   one level up: there the theorem was spelled differently, here the whole theory was.
+## A CITATION LEAF OVER A FIBRE PRODUCT OF MODULI PROBLEMS HAS TWO FACTORISATIONS — a rejected cut in one order says NOTHING about the other
+(2026-07-31, `flt-lean-281`, on `exists_isAffine_gamma1RigidifiedModuliScheme` in
+`ModularCurve/X1.lean`.)
+The node asked for the rigidified moduli scheme `𝔐([Γ₁(N)], [Γ(n)])` — one object
+sitting over TWO moduli problems. Its docstring recorded, correctly, that the obvious
+decomposition had been **considered and rejected on 2026-07-30**: cut it as
+"`𝔐([Γ(n)])_K` is affine" plus "the forgetful morphism is affine", and you get two
+citations *plus* a new definition, because the file has no `𝔐([Γ(n)])` and no
+`Gamma nDatum` to state either half about. That verdict is right about that order.
+**It is silent about the other order, and the other order costs no new vocabulary.**
+Put `[Γ₁(N)]` at the BOTTOM: `Gamma1Datum` and `IsBaseChangeOfGamma1` have been in the
+file since the beginning, so the bottom leaf is stated in existing words, and the top
+leaf ("full level `n` is relatively representable, affine over the base") is stated with
+the existing `AbelianFullLevelStructure`. The new `structure Gamma1ModuliScheme` is a
+*packaging* of three existing fields and one existing `∃!`, not a new notion. The
+assembly is ~20 lines (`isAffine_of_isAffineHom` for the affineness, and the two `∃!`s
+compose through `IsBaseChangeOfGamma1.comp`), and it verified in **10 seconds** in a
+scratch module.
+**So when a docstring says a tower cut was rejected, check WHICH ORDER was priced.** A
+fibre product `A ×_C B` factors two ways, the two residues are different theorems from
+different chapters, and this development's vocabulary is almost never symmetric between
+them — one order will be expressible in words the file already has and the other will
+not.
+Three things the re-cut bought, and they are the terms on which a `1 -> 2` trade should
+be argued, since the count alone says the cycle went backwards:
+* **the bottom leaf is a STRICTLY SMALLER citation.** Katz–Mazur (4.10) + Corollary
+  4.7.1 give `[Γ₁(N)]` alone, representable by a *smooth affine curve* for `N ≥ 4` —
+  so (4.7.2), (5.1.1), (6.6.2) and the 8.1.1 affineness parenthesis all drop out, the
+  last because affineness is part of 4.7.1's own conclusion;
+* **the top leaf stopped being a citation.** Section `IsomTorsorCoverX1` in the same
+  file (written 2026-07-30) already builds the representing object — the clopen locus in
+  `E[n] ×_T E[n]` where the tautological sections are independent — and `IsAffineHom` is
+  free from it being CLOSED in a finite `T`-scheme. What is missing is the universal
+  property, i.e. Lean, not literature;
+* **a hypothesis stopped being decoration.** `_hN : 4 ≤ N` is genuinely not load-bearing
+  for the merged statement (the `n ≥ 3` level structure rigidifies whatever `N` is), and
+  it IS load-bearing for the bottom leaf: at `N = 3`, `j = 0`, the order-`3` automorphism
+  fixes a point of exact order `3`, so `[Γ₁(3)]` is not rigid and the bottom structure is
+  uninhabited. A binder that is inert in a merged node can be the whole content of one of
+  its factors — check before underscoring, and re-check when you cut.
+### The recon that decided it, and the numbers, so nobody re-derives them
+* **`~/cs/FLT` has NOTHING here.** `grep -rn 'moduli'` over `~/cs/FLT/FLT` returns two
+  prose mentions inside `KnownIn1980s/EllipticCurves/Flat.lean`; `IsAffine` returns
+  **zero** hits in the whole project; `representable` returns only Schlessinger
+  corepresentability in `Deformations/Representable.lean`. No `(Ell)`, no level
+  structure, no Weierstrass family over a general base. Pin drift never became a
+  question.
+* **Katz–Mazur is already downloaded**, at `~/flt-lean/sources/katzmazur1985ame.txt`
+  (OCR, 665 KB) — do NOT spend an Anna's Archive quota slot on it. 4.7.1 is at line
+  4637, 4.7.2 at 4662, the `N ≥ 4` sentence for `[Γ₁(N)]` at 4790, 5.1.1 at 6360,
+  6.6.2 at 6754, 8.1.1 at 8705.
+* **4.7.1 rests on ~110 book pages** — its own proof is four lines and every line is a
+  forward reference (4.7.0, the free quotients, the explicit equations 2.2.9/2.2.11,
+  rigidity 2.7.2, relative representability 3.7.1), i.e. all of Ch. 1–4.
+* **Size, calibrated against this repository rather than guessed:**
+  `ModularCurve/EllipticScheme.lean` is **13 629 lines** to give ONE Weierstrass curve,
+  over the FIXED base `Spec ℚ`, a projective model and an `AbelianSchemeStruct`
+  (`ProjCoords` is declared for `E : WeierstrassCurve ℚ`, and
+  `abelianSchemeStruct_of_projGroupLaw` is the only construction of an
+  `AbelianSchemeStruct` from a Weierstrass equation in the tree). A universal family
+  over a moduli scheme needs that at a GENERAL base ring. Honest estimate for the whole
+  node: **400–800 declarations, 15 000–30 000 lines.** Not a single run.
+## VERIFYING AN EDIT WHEN YOUR BASE BRANCH IS RED UPSTREAM — elaborate the ONE file against the RELEASE olean farm
+(Same run. `merger` at `9e7f6e4b` had `X0.lean` RED — release 27 was mid-repair — and
+`X1.lean` `public import`s it, so `lake build Fermat.FLT.ModularCurve.X1` cannot even
+start. The target declaration exists ONLY on `merger`, so dropping back to `main` was not
+an option either.)
+The scratch-module section above already gives the symlink-farm trick for the case where
+`lake build` has deleted your target's olean. It works just as well for a base that is
+broken, and the setup is the same three commands:
+    cp -rs ~/.flt-release-lake/build/lib /tmp/relean-N/                  # 0.3 s, no disk
+      ~/.elan/toolchains/leanprover--lean4---v4.32.0-rc1/bin/lean Fermat/FLT/.../X1.lean
+Four things make the result trustworthy rather than merely green-looking, and all four
+must be checked:
+1. **The farm is a COMPLETE, CONSISTENT olean set** — it is the last release's, built in
+   one go — so none of the inconsistent-olean pathologies apply. That is the whole reason
+   to use it rather than your own half-rebuilt `.lake`.
+2. **Confirm the release really is `main` for Lean purposes.**
+   `git diff --stat $(cat ~/.flt-release-lake/sha) main -- <your file> <its imports>`
+   empty means the farm's oleans match those sources exactly.
+3. **The residual errors are IDENTIFIABLE.** Here exactly three survived, and every one
+   named a declaration `merger` had ADDED to `X0.lean` since the release
+   (`algebraSmooth_of_smoothOfRelativeDimension`, …). An error of that shape is your
+   base's staleness, not your edit; an error inside your own line range is yours. Say
+   which in the commit message.
+4. **Diff the `declaration uses 'sorry'` set against your own expectation.** Mine went
+   `24 -> 25` with the target's warning GONE and two new ones at the leaves I cut — which
+   is the cut, exactly, and is a stronger statement than "it compiled".
+Bare `lean` must be the TOOLCHAIN's binary. The one on `PATH` is elan's default and dies
+instantly with `failed to read file '…/Init.olean', incompatible header` — which reads
+like a corrupt farm and is a wrong-binary error.
+### `tools/merge/frontier.py` SCANNED `/home/chend/flt-staging`, NOT YOUR WORKTREE
+Found by the check in point 4 and fixed in this commit. `ROOT` was hardcoded to the merge
+worker's staging worktree, so **run from any other worktree it silently reported that
+tree's counts and that tree's line numbers, under repo-relative paths** — indistinguishable
+from a scan of your own. It reported X1 unchanged at `24` across an edit the compiler said
+took it to `25`, and the line numbers it printed were of declarations at their PRE-edit
+positions, which reads as "the scan disagrees with the compiler" rather than as "the scan
+is looking somewhere else".
+`ROOT` now defaults to the repository the script lives in, with `--root DIR` to override;
+re-run in this worktree it matches the compiler's warning set for `X1.lean` exactly,
+`25 = 25`. This is the third script in this repo to carry a hardcoded absolute root (see
+the memory note `flt-hidden-sorries-scans-main-repo`), so **before quoting any frontier
+number, `grep -n 'ROOT' <the script>`** — it is one command and the failure is silent.

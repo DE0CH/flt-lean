@@ -2,7 +2,17 @@
 """Direct-sorry frontier: strip comments, then attribute each `sorry` token to the
 nearest declaration header ABOVE it. Emits `file<TAB>line<TAB>qualified-name`."""
 import re, pathlib, sys, collections
-ROOT = pathlib.Path('/home/chend/flt-staging')
+# ROOT used to be hardcoded to `/home/chend/flt-staging`, the merge worker's
+# worktree.  Run from anywhere else that silently scanned a DIFFERENT tree and
+# printed ITS counts and ITS line numbers under repo-relative paths, so the
+# output was indistinguishable from a scan of your own worktree — measured
+# 2026-07-31 in flt-lean-281, where it reported an unchanged count across an
+# edit that the compiler said added a leaf.  Same defect the memory note
+# `flt-hidden-sorries-scans-main-repo` records for its sibling script.
+# Default to the repository this file lives in; `--root DIR` overrides.
+ROOT = pathlib.Path(__file__).resolve().parents[2]
+if '--root' in sys.argv:
+    ROOT = pathlib.Path(sys.argv[sys.argv.index('--root') + 1]).resolve()
 DECL = re.compile(
     r'^\s*(?:@\[[^\]]*\]\s*)*(?:private\s+|protected\s+|noncomputable\s+|partial\s+|unsafe\s+|public\s+|local\s+|scoped\s+)*'
     r'(theorem|lemma|def|abbrev|instance|structure|class|inductive|opaque|example)\s+'

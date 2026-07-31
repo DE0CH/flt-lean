@@ -171,6 +171,12 @@ public import Mathlib.Analysis.Complex.UpperHalfPlane.Manifold
 public import Mathlib.Analysis.SpecificLimits.Normed
 public import Mathlib.Analysis.Real.Pi.Bounds
 public import Mathlib.NumberTheory.ModularForms.BoundedAtCusp
+-- `IsAffineHom` and `isAffine_of_isAffineHom`, for the tower cut of
+-- `exists_isAffine_gamma1RigidifiedModuliScheme`.  This one IS public, because
+-- `IsAffineHom p` occurs in the STATEMENT of `exists_isAffineHom_fullLevelModuli`;
+-- the file already reaches this module privately through `CurveAffineComplement`
+-- below, which is enough for proof bodies and not for a signature.
+public import Mathlib.AlgebraicGeometry.Morphisms.Affine
 -- `exists_isOpenImmersion_range_eq_compl_of_section`: the complement of the image of a
 -- `K`-point of a smooth proper geometrically connected curve is an affine open.  Used ONLY
 -- inside the proof body of `exists_weierstrassModel_of_abelianSchemeStruct_finiteField`
@@ -452,7 +458,9 @@ open in them has been split along the theories it needed:
 
 | open leaf | theory | base |
 |---|---|---|
-| `exists_isAffine_gamma1RigidifiedModuliScheme` | Katz-Mazur 4.7.1/4.7.2 + 5.1.1 + 6.6.2 + the affineness parenthesis of 8.1.1: the rigidified moduli problem of `[Γ₁(N)], [Γ(n)]` is representable by an AFFINE scheme.  RE-MERGED 2026-07-31 out of the two leaves `exists_gamma1RigidifiedModuliScheme` and `isAffine_of_gamma1RigidifiedModuliScheme` that the 2026-07-30 split had created; both are now PROVEN over this row, the second through the new `nonempty_iso_gamma1RigidifiedModuliScheme` (fine moduli ⇒ any two inhabitants are isomorphic ⇒ `IsAffine` transports).  The affineness clause of 8.1.1 is not a separable theorem in Katz-Mazur — it is a remark on the construction 4.7.2/5.1.1/6.6.2 carries out — so one prover discharges both.  Everything the old two rows fed is unchanged: `exists_gamma1RigidifiedModuli`, hence `exists_gamma1Rigidification`, `exists_gamma1GITPresentation`, `nonempty_gamma1GITPresentation_of_rigidification`, `isDomain_of_`, `smoothOfRelativeDimension_of_` and `geometricallyConnected_of_gamma1GITPresentation`. | any `K`, `char K ∤ N`, `char K ∤ n` |
+| ~~`exists_isAffine_gamma1RigidifiedModuliScheme`~~ | **PROVEN 2026-07-31 (evening)**, no longer a leaf — over the two-step tower `exists_isAffine_gamma1ModuliScheme` (bottom) + `exists_isAffineHom_fullLevelModuli` (top).  The row used to read as below and the reading is kept because it is the citation chain the two residues inherit.  Katz-Mazur 4.7.1/4.7.2 + 5.1.1 + 6.6.2 + the affineness parenthesis of 8.1.1: the rigidified moduli problem of `[Γ₁(N)], [Γ(n)]` is representable by an AFFINE scheme.  RE-MERGED 2026-07-31 out of the two leaves `exists_gamma1RigidifiedModuliScheme` and `isAffine_of_gamma1RigidifiedModuliScheme` that the 2026-07-30 split had created; both are now PROVEN over this row, the second through the new `nonempty_iso_gamma1RigidifiedModuliScheme` (fine moduli ⇒ any two inhabitants are isomorphic ⇒ `IsAffine` transports).  The affineness clause of 8.1.1 is not a separable theorem in Katz-Mazur — it is a remark on the construction 4.7.2/5.1.1/6.6.2 carries out — so one prover discharges both.  Everything the old two rows fed is unchanged: `exists_gamma1RigidifiedModuli`, hence `exists_gamma1Rigidification`, `exists_gamma1GITPresentation`, `nonempty_gamma1GITPresentation_of_rigidification`, `isDomain_of_`, `smoothOfRelativeDimension_of_` and `geometricallyConnected_of_gamma1GITPresentation`. | any `K`, `char K ∤ N`, `char K ∤ n` |
+| `exists_isAffine_gamma1ModuliScheme` | Katz-Mazur (4.10) + Corollary 4.7.1, rigidity 2.7.4: for `N ≥ 4` the moduli problem `[Γ₁(N)]` ALONE — no `[Γ(n)]` — is representable by a smooth AFFINE curve.  Cut 2026-07-31 (evening) as the bottom of the tower under `exists_isAffine_gamma1RigidifiedModuliScheme`; affineness is part of 4.7.1's own conclusion, so 8.1.1 does not reappear.  `4 ≤ N` is load-bearing for TRUTH here (at `N = 3`, `j = 0`, the order-3 automorphism fixes a point of exact order 3, so `[Γ₁(3)]` is not rigid). | any `K`, `char K ∤ N`, `4 ≤ N` |
+| `exists_isAffineHom_fullLevelModuli` | Katz-Mazur 3.7.1: full level-`n` structures on an ARBITRARY elliptic scheme are relatively representable, by a scheme AFFINE over the base.  The top of the same tower, and the half that is a LEAN job rather than a citation: section `IsomTorsorCoverX1` above already builds the representing object (the clopen independence locus in `E[n] ×_T E[n]`) and `IsAffineHom` is free from it being closed in a finite `T`-scheme; what is missing is only the universal property. | any `K`, `char K ∤ n`, `3 ≤ n` |
 | ~~`exists_gamma1RigidifiedModuliScheme`~~ | PROVEN 2026-07-31 over the row above (forget the affineness); no longer a leaf | — |
 | ~~`isAffine_of_gamma1RigidifiedModuliScheme`~~ | PROVEN 2026-07-31 over the row above plus `nonempty_iso_gamma1RigidifiedModuliScheme`; no longer a leaf | — |
 | `exists_torsionBasisCover_field` | Katz-Mazur 2.3.1 / 5.1.1, Silverman *AEC* III.6.4: after a flat surjective quasi-compact cover the `n`-torsion of an abelian scheme of relative dimension one acquires a basis.  Stated for a BARE abelian scheme — no `Gamma1Datum`, no moduli scheme — and it is all that is left under `exists_gamma1FullLevelStructure_cover`, which is PROVEN over it (2026-07-28).  It is the general-base form of `X0.lean`'s `exists_torsionBasis_geomPoint` + `exists_torsionBasis_cover_of_geomPoint`, both of which are stated only over `SpecQ`. | any `K`, `char K ∤ n` |
@@ -3542,7 +3550,7 @@ along the line `X0.lean` draws for the identical `Γ₀` node
 
 | what | where | status |
 |---|---|---|
-| representability AND affineness, in one existential | `exists_isAffine_gamma1RigidifiedModuliScheme` | **LEAF** (4.7.1/4.7.2, 5.1.1, 6.6.2, 8.1.1) |
+| representability AND affineness, in one existential | `exists_isAffine_gamma1RigidifiedModuliScheme` | **PROVEN 2026-07-31 (evening)**, over the tower `exists_isAffine_gamma1ModuliScheme` + `exists_isAffineHom_fullLevelModuli`; see the section comment before `Gamma1ModuliScheme` below |
 | rigidity of a fine moduli scheme | `nonempty_iso_gamma1RigidifiedModuliScheme` | **PROVEN 2026-07-31** |
 | representability, affineness not mentioned | `exists_gamma1RigidifiedModuliScheme` | **PROVEN 2026-07-31** |
 | affineness | `isAffine_of_gamma1RigidifiedModuliScheme` | **PROVEN 2026-07-31** |
@@ -3666,12 +3674,316 @@ theorem nonempty_iso_gamma1RigidifiedModuliScheme {N n : ℕ} {S : Scheme.{0}}
     · show R'.lvlM.Q.1 ≫ bc'.map ≫ bc.map = (m' ≫ m) ≫ R'.lvlM.Q.1
       rw [← Category.assoc, hm'Q, Category.assoc, hmQ, ← Category.assoc]
 
-/-- **KATZ–MAZUR, THE WHOLE CITATION IN ONE LEAF: the rigidified `Γ₁`
-moduli problem is representable by an AFFINE scheme** (sorry leaf; the
-2026-07-31 re-merge of `exists_gamma1RigidifiedModuliScheme` and
-`isAffine_of_gamma1RigidifiedModuliScheme`, which are now proven over it).
+/-! #### THE TOWER CUT, 2026-07-31 (evening): `Y₁(N)` FIRST, LEVEL `n` ON TOP
+
+`exists_isAffine_gamma1RigidifiedModuliScheme` below was RE-MERGED into one
+leaf earlier the same day, out of the representability/affineness split of
+2026-07-30.  That re-merge was right and is untouched here: those two halves
+really are one citation read off one construction.  What follows cuts the
+node along a DIFFERENT seam — not "representability vs affineness" but
+"`[Γ₁(N)]` vs `[Γ(n)]`" — and the two cuts are independent.
+
+## The reconnaissance that decided it
+
+Three things were measured before any Lean was written, because they decide
+whether the node is worth a prover's run at all.
+
+* **`~/cs/FLT` carries NOTHING reusable.**  `grep -rn 'moduli' --include=*.lean
+  ~/cs/FLT/FLT` returns two prose mentions of Katz–Mazur inside
+  `KnownIn1980s/EllipticCurves/Flat.lean`; `IsAffine` returns **zero** hits in
+  the whole project; `representable` returns only
+  `Deformations/Representable.lean`, which is Schlessinger corepresentability
+  of a deformation functor and has nothing to do with moduli of curves.  There
+  is no moduli scheme, no `(Ell)`, no level structure and no Weierstrass family
+  over a general base anywhere in it.  Pin drift never became a question.
+* **What (4.7.1) rests on, in Katz–Mazur** (`~/flt-lean/sources/katzmazur1985ame.txt`,
+  book pp. 115–117): its proof is four lines and every line is a forward
+  reference — (4.7.0) representability by an affine, the free quotients
+  `𝔐(𝒫,Legendre)/±` and `𝔐(𝒫, naive level 3)/F`, the explicit affine equations
+  (2.2.9)/(2.2.11), rigidity (2.7.2), and relative representability (3.7.1).
+  Those in turn need the whole of Ch. 1 (elliptic curves over a base,
+  Weierstrass models, `(Ell)` as a fibred category), Ch. 2 (§2.1–2.9), Ch. 3
+  (finite locally free group schemes, `E[N]`, `Hom`- and `Isom`-schemes) and
+  Ch. 4 (§4.1–4.7).  That is **roughly 110 book pages** underneath 4.7.1
+  alone, before (5.1.1), (6.6.2) and (8.1.1) are added.
+* **Size, in declarations.**  The calibration is in this repository:
+  `ModularCurve/EllipticScheme.lean` is **13 629 lines** and it does one
+  thing — give ONE Weierstrass curve, over the FIXED base `Spec ℚ`, a
+  projective model and an `AbelianSchemeStruct` (`ProjCoords` is declared for
+  `E : WeierstrassCurve ℚ`, and `abelianSchemeStruct_of_projGroupLaw` at line
+  8324 is the only construction of an `AbelianSchemeStruct` out of a
+  Weierstrass equation in the tree).  A universal family over a moduli scheme
+  needs that development at a GENERAL base ring, plus `E[n]` and the level
+  schemes there, plus free quotients by finite groups at the scheme level.
+  Honest estimate: **400–800 declarations, 15 000–30 000 lines**, i.e. a
+  multi-agent project of the same order as `EllipticScheme.lean` itself.  It
+  is not a single run, which is why the deliverable here is a decomposition.
+
+## The cut, and why it is not the one that was rejected
+
+The 2026-07-30 note on `exists_gamma1RigidifiedModuliScheme` considered
+splitting off "`𝔐([Γ(n)])_K` is affine" plus "the forgetful morphism is
+affine" and rejected it, correctly: this file has no `𝔐([Γ(n)])` and no
+`Gamma nDatum` to state either half about, so that cut buys two citations
+AND a new definition.
+
+The tower is factored the OTHER way here, and the tie-breaker changes because
+of a fact about this file rather than about Katz–Mazur: **the bottom of the
+tower is `[Γ₁(N)]`, whose moduli problem is already spelled out** — it is
+`Gamma1Datum` together with `IsBaseChangeOfGamma1`, both of which have been
+in this file since the beginning.  So the bottom half needs no new
+vocabulary, and the top half is stated with `AbelianFullLevelStructure`,
+which is also already here.  `Gamma1ModuliScheme` below adds a *packaging*
+(three existing fields and one existing `∃!`), not a new notion.
+
+| step | statement | status |
+|---|---|---|
+| `[Γ₁(N)]` is representable by an AFFINE scheme, `N ≥ 4` | `exists_isAffine_gamma1ModuliScheme` | **LEAF** (KM 4.10 + 4.7.1, rigidity 2.7.4) |
+| full level `n` is relatively representable, AFFINE over the base | `exists_isAffineHom_fullLevelModuli` | **LEAF** (KM 3.7.1; but see below — it is a Lean job here, not a citation) |
+| the tower assembles | `exists_isAffine_gamma1RigidifiedModuliScheme` | **PROVEN 2026-07-31** |
+
+**`1 -> 2` open leaves, and here is the case for paying it.**
+
+1. **The bottom leaf is a STRICTLY SMALLER citation.**  Katz–Mazur (4.10),
+   book p. 114: *"for `N ≥ 4` this problem is also rigid (by 2.7.4), hence
+   (4.7.1) representable by an elliptic curve `E` over a `Y(₁ₙ)` which is a
+   smooth curve over `Z`"* — `[Γ₁(N)]` alone, no `[Γ(n)]`, so (4.7.2),
+   (5.1.1) and (6.6.2) all drop out of it.  Affineness comes with it in the
+   same sentence ("smooth affine curve" is 4.7.1's own conclusion), so the
+   8.1.1 parenthesis drops out too.
+2. **The top leaf is not a citation in this file — it is a Lean job over
+   machinery that is already PROVEN here.**  Section `IsomTorsorCoverX1`
+   (written 2026-07-30, ~line 2224) builds exactly the object the top leaf
+   needs: the locus in `E[n] ×_T E[n]` where the two tautological sections
+   are independent, shown CLOPEN (`exists_clopen_equalizer`), shown to carry a
+   genuine basis at every geometric point (`geomBasis_of_indep_geomPoint`),
+   with `n` invertible falling out of independence rather than assumed.  That
+   locus IS the moduli scheme of the top leaf, and `IsAffineHom p` is then
+   free: it is a CLOSED subscheme of `E[n] ×_T E[n]`, which is finite over
+   `T`.  What is missing is the universal property, not the geometry.
+3. **`_hN : 4 ≤ N` stops being decoration.**  The merged leaf's own
+   faithfulness paragraph says, correctly, that `_hN` "is not load-bearing and
+   is carried only to match the consumers" — with an `n ≥ 3` full level
+   structure in the data, rigidity holds whatever `N` is.  For the BOTTOM leaf
+   in isolation it is load-bearing for TRUTH: at `N ≤ 3` there is no fine
+   moduli scheme for `[Γ₁(N)]`, because `(E, P)` has automorphisms — at
+   `N = 3` and `j = 0` the order-`3` automorphism of `E` fixes a point of
+   exact order `3`, so `[Γ₁(3)]` is not rigid and `Gamma1ModuliScheme 3` is
+   uninhabited.  The binder is therefore renamed `_hN -> hN` below.
+
+What this does NOT claim: that either residue is easy.  The bottom one is
+still the 110 pages measured above.  What changed is that it is 110 pages of
+Ch. 1–4 with `[Γ(n)]` and Ch. 5–6 removed, and that the top one has a route
+inside this file. -/
+
+/-- **The `Γ₁(N)`-only FINE moduli scheme** — `Gamma1RigidifiedModuliScheme`
+with the full level-`n` structure deleted, and nothing else.
+
+This is Katz–Mazur's `Y₁(N)` in its FINE (not coarse) reading, which is
+legitimate exactly for `N ≥ 4`; `IsCoarseModuliY1` far above is the coarse
+statement of the same problem and is deliberately weaker (initiality only,
+no `∃!`), because it is stated at every `N`.
+
+`universal` is `Gamma1RigidifiedModuliScheme.universal` with the two level
+clauses removed; the base-change datum is wrapped in `Nonempty` because
+nothing is left to say about it and `∃!` needs a `Prop`.  Every remark on
+`Gamma1RigidifiedModuliScheme` — in particular that a fine moduli property
+pins an inhabitant up to unique isomorphism, so quantifying over this
+structure is not the junk-witness trap — applies verbatim. -/
+structure Gamma1ModuliScheme (N : ℕ) (S : Scheme.{0}) where
+  /-- the moduli scheme -/
+  Y : Scheme.{0}
+  /-- its structure morphism to the base -/
+  strY : Y ⟶ S
+  /-- the universal `Γ₁(N)`-datum -/
+  dY : Gamma1Datum N Y
+  /-- **fine moduli**: a `Γ₁(N)`-datum over an `S`-scheme is the base change
+  of `dY` along a UNIQUE `S`-morphism -/
+  universal : ∀ {T : Scheme.{0}} (g : T ⟶ S) (d : Gamma1Datum N T),
+    ∃! m : T ⟶ Y, m ≫ strY = g ∧ Nonempty (IsBaseChangeOfGamma1 m d dY)
+
+/-- **KATZ–MAZUR (4.10) + (4.7.1): for `N ≥ 4` the moduli problem
+`[Γ₁(N)]` is representable by a SMOOTH AFFINE CURVE** (sorry leaf, cut
+2026-07-31 as the bottom of the tower described in the section comment
+above).
 
 ## What the prover of this node owes
+
+Book p. 114, verbatim, about the moduli problem `E/S ↦ Incl_{Z/N}(Z/N, E[N])`
+— which is `PointOfExactOrder ab N` here, `N` being invertible:
+
+> for `N > 4` this problem is also rigid (by 2.7.4), hence (4.7.1)
+> representable by an elliptic curve `E` over a `Y(1_N)` which is a smooth
+> curve over `Z`.
+
+(The OCR reads `N > 4`; the book has `N ≥ 4`, which is what 2.7.4 gives and
+what the hypothesis here is.)  Corollary 4.7.1 is:
+
+> Any relatively representable moduli problem `𝒫` which is affine and etale
+> over `(Ell)`, and rigid, is representable by a smooth affine curve over `Z`.
+
+so AFFINENESS is part of 4.7.1's own conclusion and is not a separate
+citation here — which is the whole reason the affineness half of the
+2026-07-30 split does not reappear at this level.  The base change of
+`Y₁(N)_{Z[1/N]}` along `Z[1/N] → K` is the `Y` wanted, `K` being a
+`Z[1/N]`-algebra by `hcharN`.
+
+## Faithfulness
+
+`hN : 4 ≤ N` is **load-bearing for TRUTH**, and this is the one place in the
+tower where that differs from the merged node.  At `N ≤ 3` the problem is not
+rigid, so no fine moduli scheme exists and `Gamma1ModuliScheme N (Spec K)` is
+UNINHABITED: at `N = 3` take `K = ℚ̄` and `E : y² = x³ + 1` (so `j = 0`), whose
+automorphism `ζ : (x, y) ↦ (ωx, y)` of order `3` fixes the point `(0, 1)` of
+exact order `3`.  A nontrivial automorphism of `(E, P)` makes the classifying
+map non-unique on the `S`-scheme `E`-torsor it generates, so the `∃!` of
+`universal` fails.  At `N ≤ 2` the automorphism `-1` fixes every point of
+order dividing `2`.
+
+`hcharN` is what makes `N` invertible, hence what makes `PointOfExactOrder`
+agree with Katz–Mazur's `Incl_{Z/N}` and `[Γ₁(N)]` etale rather than merely
+finite flat over `(Ell)`.
+
+### FALSITY AUDIT of the quantifier shape
+
+The audit recorded on `exists_isAffine_gamma1RigidifiedModuliScheme` below
+transfers verbatim, and the reason it transfers is that this statement is
+that one with a CONJUNCT DELETED from the `∃!`'s predicate and the outer
+existential left alone.  Deleting a conjunct of `P m` inside `∃! m, P m`
+does not preserve truth in general, so this was re-derived rather than
+inherited: the concern there is that `universal` quantifies over every
+`g : T ⟶ Spec K` while `Gamma1Datum N T` mentions `g` nowhere, and the
+resolution is that the representing bijection — not the functor — depends on
+`g`, since a `Spec K`-morphism `T ⟶ Y` over `g` is a pair (a `Z[1/N]`-morphism
+`T ⟶ Y₁(N)`, and `g` itself).  That argument is about the base field and the
+moduli scheme over `Z[1/N]`, and is untouched by which level structures the
+functor carries. -/
+theorem exists_isAffine_gamma1ModuliScheme (N : ℕ) (_hN : 4 ≤ N) (K : Type) [Field K]
+    (_hcharN : ¬ ringChar K ∣ N) :
+    ∃ R : Gamma1ModuliScheme N (Spec (CommRingCat.of K)), IsAffine R.Y :=
+  sorry
+
+/-- **KATZ–MAZUR (3.7.1): full level-`n` structures are RELATIVELY
+REPRESENTABLE, by a scheme AFFINE over the base** (sorry leaf, cut
+2026-07-31 as the top of the tower described in the section comment above).
+
+## What the prover of this node owes
+
+Given any `Γ₁(N)`-datum `dY` over any `Y` over `Spec K` with `n` invertible,
+a scheme `M` over `Y` carrying a pulled-back datum `dM` and a universal full
+level-`n` structure `lvlM` on it, such that level-`n` structures on the
+pullback of `dY` to `T` correspond to `Y`-morphisms `T ⟶ M`, and such that
+`M ⟶ Y` is AFFINE.
+
+Note what is NOT asked: nothing about `Y` itself, no moduli property of `Y`,
+and no `Γ₁`-level structure clause in the universal property — `dY` is an
+arbitrary datum and the level structure of `dY.pt` is carried along by
+`bcM`/`bc` and never inspected.  So this leaf is a statement about `[Γ(n)]`
+over an arbitrary elliptic scheme, which is Katz–Mazur's own formulation of
+relative representability (3.7.1) and NOT a statement about modular curves.
+
+## THIS IS A LEAN JOB, NOT A CITATION — the object already exists in this file
+
+Section `IsomTorsorCoverX1` (~line 2224, PROVEN 2026-07-30) constructs the
+representing object and all of its geometry:
+
+* `V := E[n] ×_Y E[n]` with `E[n] ⟶ Y` finite flat and, at `n` invertible,
+  ETALE (`etale_nTorsion_field` above);
+* the locus where the two tautological sections are INDEPENDENT is a finite
+  intersection of complements of equalizers, each CLOPEN — open because the
+  diagonal of an etale morphism is an open immersion, closed because `[n]` is
+  proper so `E[n] ⟶ Y` is separated (`exists_clopen_equalizer`);
+* independence UPGRADES to a basis at every geometric point
+  (`geomBasis_of_indep_geomPoint`), and conversely (`indep_of_geomBasis`), so
+  the locus really represents "full level-`n` structure" and not something
+  weaker.
+
+`M` is that locus.  `IsAffineHom p` is then free and needs no new geometry:
+the locus is CLOSED in `V`, `V ⟶ Y` is finite hence affine, and
+`IsAffineHom` is closed under composition (`Mathlib/AlgebraicGeometry/
+Morphisms/Affine.lean`) — a closed immersion being affine.
+
+What is genuinely missing is the UNIVERSAL PROPERTY: that a `T`-point of the
+locus over `g` is the same thing as a full level-`n` structure on the
+pullback.  Both directions run through the section-level dictionary this file
+already has — `exists_factor_nTorsion` / `nsmul_eq_zero_of_factor_nTorsion`
+("an `n`-torsion relative point is one that factors through `E[n]`") for the
+map to `V`, and `range_subset_eqLocus` plus the clopen decomposition for
+landing in the locus.  The uniqueness half is that `V`'s two projections
+recover the pair, i.e. `pullback.hom_ext`.
+
+Estimated at a few hundred lines by an owner who reads `IsomTorsorCoverX1`
+first.  It is the half of this node that should be dispatched at a
+formaliser rather than at a reader of Katz–Mazur.
+
+## Faithfulness
+
+`hn : 3 ≤ n` is not load-bearing for the EXISTENCE of `M` (the locus is
+defined at every `n`, and is empty where no basis exists) but is load-bearing
+for `M` to be nonempty and hence for every downstream consumer;
+`AbelianFullLevelStructure n` is outright unsatisfiable at `n = 0`, as its own
+docstring records.  `K` and `hcharn` enter only through `n` being invertible
+on `Y`, which is what makes `E[n] ⟶ Y` etale; `strY` is otherwise inert and is
+taken rather than an `Algebra`-style hypothesis because that is the idiom
+`etale_nTorsion_field` and the whole `IsomTorsorCoverX1` section already use.
+
+`_bcd` is a hypothesis, not decoration: without it `d` need bear no relation
+to `dY` and there is no reason for a classifying map over `g` to exist at all.
+It is discharged at the one call site from the bottom leaf's own base-change
+datum. -/
+theorem exists_isAffineHom_fullLevelModuli {N n : ℕ} (_hn : 3 ≤ n) (K : Type) [Field K]
+    (_hcharn : ¬ ringChar K ∣ n) {Y : Scheme.{0}} (_strY : Y ⟶ Spec (CommRingCat.of K))
+    (dY : Gamma1Datum N Y) :
+    ∃ (M : Scheme.{0}) (p : M ⟶ Y) (dM : Gamma1Datum N M)
+      (_bcM : IsBaseChangeOfGamma1 p dM dY) (lvlM : AbelianFullLevelStructure n dM.ab),
+      IsAffineHom p ∧
+      ∀ {T : Scheme.{0}} (g : T ⟶ Y) (d : Gamma1Datum N T)
+        (_bcd : IsBaseChangeOfGamma1 g d dY) (L : AbelianFullLevelStructure n d.ab),
+        ∃! m : T ⟶ M, m ≫ p = g ∧
+          ∃ bc : IsBaseChangeOfGamma1 m d dM,
+            L.P.1 ≫ bc.map = m ≫ lvlM.P.1 ∧ L.Q.1 ≫ bc.map = m ≫ lvlM.Q.1 :=
+  sorry
+
+/-- **KATZ–MAZUR, THE WHOLE CITATION: the rigidified `Γ₁` moduli problem is
+representable by an AFFINE scheme** — **PROVEN 2026-07-31 (evening)** over
+the two-step tower `exists_isAffine_gamma1ModuliScheme` +
+`exists_isAffineHom_fullLevelModuli`; see the section comment above for the
+reconnaissance that decided the cut and for the accounting.
+
+Written 2026-07-31 (morning) as the re-merge of
+`exists_gamma1RigidifiedModuliScheme` and
+`isAffine_of_gamma1RigidifiedModuliScheme`, which are still proven over it
+and whose signatures are unchanged.  Everything below is the record of the
+node as a leaf; it is kept because it is the citation chain and the
+faithfulness analysis, both of which the two residues inherit.
+
+## What the tower does with the citation chain
+
+`𝔐(𝒫, 𝒮) ⟶ 𝔐(𝒮)` is replaced by `M ⟶ Y₁(N)`, i.e. the tower is climbed in
+the other order: `[Γ₁(N)]` at the bottom (affine by 4.7.1 at `N ≥ 4`, which
+needs no `[Γ(n)]` at all) and `[Γ(n)]` relatively representable on top
+(3.7.1).  `IsAffine M` is then `isAffine_of_isAffineHom`, exactly the
+"scheme affine over an affine scheme is affine" step the paragraph below
+already identified as available in the pin and NOT a citation.
+
+## What the prover of this node owed
+
+That the moduli problem "`Γ₁(N)`-datum over a `K`-scheme together with a
+full level-`n` structure" is representable by an AFFINE scheme.  The
+citations are (4.7.2) with (4.7.1) behind it for `[Γ(n)]`, (5.1.1) for
+`[Γ₁(N)]`, combined by (6.6.2), plus the affineness parenthesis of
+(8.1.1):
+
+> It "exists" because `𝔐(𝒫, 𝒮)` is itself affine.
+
+Concretely: `𝔐(𝒮) = Y(n)_K` is affine by (4.7.2), `[Γ₁(N)]` is finite
+over `(Ell)` by (5.1.1), so `𝔐(𝒫, 𝒮) ⟶ 𝔐(𝒮)` is finite hence affine by
+(6.6.2), and a scheme affine over an affine scheme is affine.  That last
+step is NOT a citation and is available in the pin, so what is genuinely
+cited is representability together with "`𝔐(𝒮)` is affine" and
+"`𝔐(𝒫, 𝒮) ⟶ 𝔐(𝒮)` is finite".
+
+## Why the two halves belong in ONE leaf
 
 That the moduli problem "`Γ₁(N)`-datum over a `K`-scheme together with a
 full level-`n` structure" is representable by an AFFINE scheme.  The
@@ -3705,8 +4017,17 @@ single witness discharges both consumers.
 problem still has `-1`; at `char K ∣ n` the group scheme `E[n]` is not
 étale and `AbelianFullLevelStructure n dM.ab` is unsatisfiable over a
 nonempty base), `hcharN` is what makes `[Γ₁(N)]` étale rather than merely
-finite flat, and `_hN` is not load-bearing and is carried only to match
-the consumers.
+finite flat, and `_hN` is not load-bearing FOR THIS STATEMENT and is
+carried only to match the consumers.
+
+**That last clause is still true and is no longer the whole story
+(2026-07-31, evening).**  `4 ≤ N` is not load-bearing here because the
+`n ≥ 3` level structure in the data already rigidifies the problem
+whatever `N` is — but the tower cut spends it, since its bottom leaf
+`exists_isAffine_gamma1ModuliScheme` has NO level-`n` structure and is
+FALSE at `N ≤ 3`.  The binder is therefore renamed `_hN -> hN`.  A future
+prover who closes this node by a route that does not go through the tower
+may underscore it again.
 
 ### FALSITY AUDIT of the quantifier shape
 
@@ -3744,11 +4065,28 @@ not reducible to anything in this file or in `X0.lean` — the `Γ₀` twins
 `exists_rigidifiedModuliScheme` and `isAffine_of_rigidifiedModuliScheme`
 are themselves open leaves, and are over `Spec ℚ` rather than `Spec K`
 besides. -/
-theorem exists_isAffine_gamma1RigidifiedModuliScheme (N : ℕ) (_hN : 4 ≤ N) (n : ℕ)
+theorem exists_isAffine_gamma1RigidifiedModuliScheme (N : ℕ) (hN : 4 ≤ N) (n : ℕ)
     (hn : 3 ≤ n) (K : Type) [Field K] (hcharN : ¬ ringChar K ∣ N)
     (hcharn : ¬ ringChar K ∣ n) :
-    ∃ R : Gamma1RigidifiedModuliScheme N n (Spec (CommRingCat.of K)), IsAffine R.M :=
-  sorry
+    ∃ R : Gamma1RigidifiedModuliScheme N n (Spec (CommRingCat.of K)), IsAffine R.M := by
+  -- the bottom of the tower: the `Γ₁(N)`-only moduli scheme, affine
+  obtain ⟨Y₁, hYaff⟩ := exists_isAffine_gamma1ModuliScheme N hN K hcharN
+  -- the top: full level-`n` structures on ITS universal curve, affine over it
+  obtain ⟨M, p, dM, bcM, lvlM, hpaff, huniv⟩ :=
+    exists_isAffineHom_fullLevelModuli hn K hcharn Y₁.strY Y₁.dY
+  haveI : IsAffine Y₁.Y := hYaff
+  haveI : IsAffineHom p := hpaff
+  refine ⟨⟨M, p ≫ Y₁.strY, dM, lvlM, ?_⟩, isAffine_of_isAffineHom p⟩
+  intro T g d L
+  -- classify the datum downstairs, then lift the level structure along `p`
+  obtain ⟨m₁, ⟨hm₁str, ⟨bc₁⟩⟩, hm₁uniq⟩ := Y₁.universal g d
+  obtain ⟨m, ⟨hmp, bc, hmP, hmQ⟩, hmuniq⟩ := huniv m₁ d bc₁ L
+  refine ⟨m, ⟨?_, bc, hmP, hmQ⟩, ?_⟩
+  · rw [← Category.assoc, hmp, hm₁str]
+  · rintro m' ⟨hm'str, bc', hm'P, hm'Q⟩
+    -- `m' ≫ p` classifies `d` downstairs, so it IS `m₁`; then uniqueness upstairs
+    refine hmuniq m' ⟨?_, bc', hm'P, hm'Q⟩
+    exact hm₁uniq (m' ≫ p) ⟨by rw [Category.assoc]; exact hm'str, ⟨bc'.comp bcM⟩⟩
 
 /-- **Katz–Mazur representability of the rigidified `Γ₁` moduli problem**
 (sorry leaf, cut 2026-07-30 out of `exists_gamma1RigidifiedModuli` below)
