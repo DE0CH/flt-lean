@@ -24713,9 +24713,167 @@ theorem forall_map_eq_one_of_isHilbertSplitTorusAt_of_mul_eq_one {F : Type u}
     rw [map_mul, hpc, one_mul, map_one] at hd1
     exact hd1
 
+/-! #### The `μ_N`-reduction dictionary at a place of an arbitrary number field
+
+The five declarations below are the base-field-generic form of the `ℚ`-level
+development that `Modularity/Interface.lean` carries under the unsuffixed names
+(`isIntegral_of_pow_eq_one`, `pos_of_natCast_notMem_maximalIdeal`,
+`eq_of_sub_mem_maximalIdeal_of_pow_eq_one`,
+`map_fixes_of_pow_eq_one_of_mem_localInertiaGroup`,
+`natCast_pow_notMem_maximalIdeal`). Those are stated with `v` a place of `𝓞 ℚ`
+and are therefore unusable here — and `Interface.lean` is in `Modularity/*`,
+which this module's CIRCULARITY GUARD forbids importing in any case. The proofs
+transcribe with `ℚ` replaced by an arbitrary number field `K`; the only input
+that had to be re-sourced is unitness of `(n : 𝒪ᵥ)`, supplied at general `K` by
+`ArtinConductor.lean`'s `isUnit_natCast_integralClosure_of_notMem_asIdeal`
+(the `ℚ`-level route went through `Chebotarev.lean`'s
+`isUnit_natCast_adicCompletionIntegers`, which is hard-wired to two RATIONAL
+primes).
+
+The names carry the `…AtPlace` / `…IntegralClosureAtPlace` suffix DELIBERATELY:
+they are distinct declarations from `Interface.lean`'s, and if this module ever
+enters that file's import cone a shared name would be the duplicate-declaration
+trap rather than a merge. -/
+
+/-- **An `N`-th root of unity in `K̄ᵥ` is integral over `𝒪ᵥ`** (PROVEN
+2026-07-31): it kills the monic polynomial `X ^ N - 1`. -/
+theorem isIntegral_of_pow_eq_one_integralClosureAtPlace
+    {K : Type*} [Field K] [NumberField K]
+    {v : HeightOneSpectrum (𝓞 K)} {N : ℕ} (hN : 0 < N)
+    {z : AlgebraicClosure (v.adicCompletion K)} (hz : z ^ N = 1) :
+    IsIntegral (HeightOneSpectrum.adicCompletionIntegers K v) z := by
+  refine ⟨X ^ N - 1, ?_, ?_⟩
+  · have := Polynomial.monic_X_pow_sub_C
+      (R := HeightOneSpectrum.adicCompletionIntegers K v) (1 : _) (n := N) hN.ne'
+    simpa [Polynomial.C_1] using this
+  · simp [Polynomial.eval₂_sub, hz]
+
+/-- **If the `ℕ`-cast of `N` avoids the maximal ideal of `Oᵥ` then `N > 0`**
+(PROVEN 2026-07-31): `0` always lies in the maximal ideal. -/
+theorem pos_of_natCast_notMem_maximalIdeal_integralClosureAtPlace
+    {K : Type*} [Field K] [NumberField K]
+    {v : HeightOneSpectrum (𝓞 K)} {N : ℕ}
+    (hN : ((N : ℕ) : IntegralClosure
+      (HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure (v.adicCompletion K))) ∉
+      IsLocalRing.maximalIdeal _) : 0 < N := by
+  rcases Nat.eq_zero_or_pos N with rfl | h
+  · exact absurd (by simp) hN
+  · exact h
+
+/-- **Reduction is INJECTIVE on `μ_N` when `N` is a unit** (PROVEN 2026-07-31):
+two `N`-th roots of unity in `Oᵥ` whose difference lies in the maximal ideal are
+equal. Proof: the geometric cofactor `∑ᵢ aⁱ bᴺ⁻¹⁻ⁱ` kills `a - b ≠ 0`, hence
+vanishes, while modulo `𝔪` it equals `N · bᴺ⁻¹` with `b` a unit — so `N ∈ 𝔪`,
+contradicting `hN`. -/
+theorem eq_of_sub_mem_maximalIdeal_of_pow_eq_one_integralClosureAtPlace
+    {K : Type*} [Field K] [NumberField K]
+    {v : HeightOneSpectrum (𝓞 K)} {N : ℕ}
+    (hN : ((N : ℕ) : IntegralClosure
+      (HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure (v.adicCompletion K))) ∉
+      IsLocalRing.maximalIdeal _)
+    {a b : IntegralClosure (HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure (v.adicCompletion K))}
+    (ha : a ^ N = 1) (hb : b ^ N = 1)
+    (hab : a - b ∈ IsLocalRing.maximalIdeal _) : a = b := by
+  have hNpos : 0 < N := pos_of_natCast_notMem_maximalIdeal_integralClosureAtPlace hN
+  by_contra hne
+  have hsub0 : a - b ≠ 0 := sub_ne_zero_of_ne hne
+  have hgeom := geom_sum₂_mul a b N
+  rw [ha, hb, sub_self] at hgeom
+  have hzero : (∑ i ∈ Finset.range N, a ^ i * b ^ (N - 1 - i)) = 0 := by
+    rcases mul_eq_zero.mp hgeom with h | h
+    · exact h
+    · exact absurd h hsub0
+  have hcong : (∑ i ∈ Finset.range N, (a ^ i - b ^ i) * b ^ (N - 1 - i)) =
+      (∑ i ∈ Finset.range N, a ^ i * b ^ (N - 1 - i)) -
+        (∑ i ∈ Finset.range N, b ^ i * b ^ (N - 1 - i)) := by
+    simp only [sub_mul]
+    exact Finset.sum_sub_distrib _ _
+  have hmem : (∑ i ∈ Finset.range N, a ^ i * b ^ (N - 1 - i)) -
+      (∑ i ∈ Finset.range N, b ^ i * b ^ (N - 1 - i)) ∈
+      IsLocalRing.maximalIdeal (IntegralClosure
+        (HeightOneSpectrum.adicCompletionIntegers K v)
+        (AlgebraicClosure (v.adicCompletion K))) := by
+    rw [← hcong]
+    refine Ideal.sum_mem _ fun i _ => ?_
+    obtain ⟨c, hc⟩ := sub_dvd_pow_sub_pow a b i
+    rw [hc]
+    exact Ideal.mul_mem_right _ _ (Ideal.mul_mem_right _ _ hab)
+  rw [hzero, geom_sum₂_self, zero_sub, neg_mem_iff] at hmem
+  have hbunit : IsUnit (b ^ (N - 1)) := by
+    have hmul : b ^ (N - 1) * b = 1 := by
+      rw [← pow_succ, Nat.sub_add_cancel hNpos]
+      exact hb
+    exact IsUnit.of_mul_eq_one b hmul
+  exact hN ((Ideal.mul_unit_mem_iff_mem _ hbunit).mp hmem)
+
+/-- **The local inertia at `v` FIXES the `N`-th roots of unity of `Kᵃˡᵍ`** when
+`N` is a `v`-adic unit (PROVEN 2026-07-31): the image `ζ` of an `N`-th root of
+unity under the chosen embedding of algebraic closures is integral over `𝒪ᵥ`,
+`σ • ζ` is again an `N`-th root of unity, and `σ • ζ ≡ ζ` modulo the maximal
+ideal of `Oᵥ` by the very definition of `localInertiaGroup`; reduction is
+injective on `μ_N`, so `σ` fixes `ζ`, hence `map f σ` fixes the root of unity
+upstairs. -/
+theorem map_fixes_of_pow_eq_one_of_mem_localInertiaGroupAtPlace
+    {K : Type*} [Field K] [NumberField K]
+    {v : HeightOneSpectrum (𝓞 K)} {N : ℕ}
+    (hN : ((N : ℕ) : IntegralClosure
+      (HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure (v.adicCompletion K))) ∉
+      IsLocalRing.maximalIdeal _)
+    {σ : Γ (v.adicCompletion K)} (hσ : σ ∈ localInertiaGroup v)
+    {x : Kᵃˡᵍ} (hx : x ^ N = 1) :
+    Field.absoluteGaloisGroup.map (algebraMap K (v.adicCompletion K)) σ x = x := by
+  classical
+  set ζ : AlgebraicClosure (v.adicCompletion K) :=
+    AlgebraicClosure.map (algebraMap K (v.adicCompletion K)) x with hζdef
+  have hζpow : ζ ^ N = 1 := by rw [hζdef, ← map_pow, hx, map_one]
+  have hint : IsIntegral (HeightOneSpectrum.adicCompletionIntegers K v) ζ :=
+    isIntegral_of_pow_eq_one_integralClosureAtPlace
+      (pos_of_natCast_notMem_maximalIdeal_integralClosureAtPlace hN) hζpow
+  set y : IntegralClosure (HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure (v.adicCompletion K)) := ⟨ζ, hint⟩ with hydef
+  have hypow : y ^ N = 1 := by
+    apply Subtype.ext
+    push_cast [hydef]
+    exact hζpow
+  have hsmulpow : (σ • y) ^ N = 1 := by
+    rw [← smul_pow', hypow, smul_one]
+  have hdiff : σ • y - y ∈ IsLocalRing.maximalIdeal (IntegralClosure
+      (HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure (v.adicCompletion K))) :=
+    (AddSubgroup.mem_inertia.mp hσ) y
+  have hfix : σ • y = y :=
+    eq_of_sub_mem_maximalIdeal_of_pow_eq_one_integralClosureAtPlace hN hsmulpow hypow hdiff
+  apply (AlgebraicClosure.map (algebraMap K (v.adicCompletion K))).injective
+  rw [Field.absoluteGaloisGroup.lift_map (algebraMap K (v.adicCompletion K)) σ x]
+  have h1 := congrArg Subtype.val hfix
+  rw [IntegralClosure.coe_smul] at h1
+  exact h1
+
+/-- **A prime power `ℓ ^ n` avoids the maximal ideal of `Oᵥ` when `ℓ ∉ v`**
+(PROVEN 2026-07-31): `(ℓ : 𝓞 K) ∉ v.asIdeal` makes `ℓ` a unit of `𝒪ᵥ` and hence
+of `Oᵥ` (`isUnit_natCast_integralClosure_of_notMem_asIdeal`), so `ℓ ^ n` is a
+unit, and units are not in the maximal ideal. -/
+theorem natCast_pow_notMem_maximalIdealAtPlace
+    {K : Type*} [Field K] [NumberField K]
+    {v : HeightOneSpectrum (𝓞 K)} {ℓ : ℕ} (hv : ((ℓ : ℕ) : 𝓞 K) ∉ v.asIdeal) (n : ℕ) :
+    ((ℓ ^ n : ℕ) : IntegralClosure
+      (HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure (v.adicCompletion K))) ∉
+      IsLocalRing.maximalIdeal _ := by
+  have h3 := (isUnit_natCast_integralClosure_of_notMem_asIdeal v hv).pow n
+  intro hmem
+  refine ((IsLocalRing.mem_maximalIdeal _).mp hmem) ?_
+  push_cast
+  exact h3
+
 /-- **The `ℓ`-adic cyclotomic character is trivial on the inertia group at a place
 NOT above `ℓ`** (LEAF — new 2026-07-30, flt-lean-104; the one arithmetic input of
-`isHilbertSplitTorusAt_of_fibreProduct` below).
+`isHilbertSplitTorusAt_of_fibreProduct` below; **PROVEN 2026-07-31,
+flt-lean-290**).
 
 `ℚ(μ_{ℓⁿ})/ℚ` is unramified at every prime `p ∤ ℓ`, so the image in `Γ ℚ` of the
 local inertia group at a place `w ∤ ℓ` of `F` acts trivially on all `ℓⁿ`-th roots
@@ -24753,7 +24911,36 @@ from `IsHilbertTaylorWilesPrimeSet`, whose first clause demands `ℓ ∉ w` outr
 
 References: Neukirch, *Algebraic Number Theory*, I §10 and II §7 (the
 discriminant of `ℚ(μ_m)` is supported at the primes dividing `m`);
-Serre, *Abelian ℓ-adic representations*, I §1.2. -/
+Serre, *Abelian ℓ-adic representations*, I §1.2.
+
+# THE ROUTE ACTUALLY TAKEN (2026-07-31, flt-lean-290)
+
+Not the `ℓ = 3` template above — which contradicts `σ (ι ζ) = (ι ζ)^j` against
+the factorisation `∏_{0<i<ℓ} (1 − ζ^i) = ℓ`, and does not generalise past the
+level `ℓ¹` where that product is available — but the LEVEL-UNIFORM one, which is
+`Modularity/Interface.lean`'s
+`cyclotomicCharacter_map_eq_one_of_mem_localInertiaGroup` transposed to a base
+field `F` and composed with a second `Field.absoluteGaloisGroup.map`:
+
+1. reduction mod `𝔪_{Oᵥ}` is INJECTIVE on `μ_N` whenever `N` is a `w`-adic unit
+   (`eq_of_sub_mem_maximalIdeal_of_pow_eq_one_integralClosureAtPlace` above — the
+   geometric cofactor `∑ᵢ aⁱ bᴺ⁻¹⁻ⁱ` is `N · bᴺ⁻¹` mod `𝔪` and kills `a − b`), so
+   an inertia element, which fixes residues by DEFINITION of
+   `localInertiaGroup`, fixes `μ_{ℓⁿ}(Fᵃˡᵍ)` POINTWISE for EVERY `n`
+   (`map_fixes_of_pow_eq_one_of_mem_localInertiaGroupAtPlace`);
+2. the second map is handled by `Field.absoluteGaloisGroup.lift_map` together
+   with injectivity of `AlgebraicClosure.map (algebraMap ℚ F)`: an `ℓⁿ`-th root
+   of unity of `ℚᵃˡᵍ` maps to one of `Fᵃˡᵍ`, so step 1 applies to its image and
+   the equality descends. This is where the `F` in the middle of the composite
+   costs nothing;
+3. `modularCyclotomicCharacter.unique` then reads the value `1` at each level
+   `ℓⁿ`, and `PadicInt.ext_of_toZModPow` glues the levels into `1 ∈ ℤ_[ℓ]ˣ`.
+
+The hypothesis `hwℓ` is spent in exactly one place, and it is the one the
+FAITHFULNESS paragraph names: `natCast_pow_notMem_maximalIdealAtPlace` needs
+`ℓ ^ n` to be a `w`-adic UNIT to make reduction injective on `μ_{ℓⁿ}`. At
+`w ∣ ℓ` that fails at every level `n ≥ 1`, which is the mechanism by which the
+statement becomes false there. -/
 theorem cyclotomicCharacter_map_map_eq_one_of_mem_localInertiaGroup (ℓ : ℕ)
     [Fact ℓ.Prime] (F : Type u) [Field F] [NumberField F]
     (w : HeightOneSpectrum (𝓞 F)) (hwℓ : ((ℓ : ℕ) : 𝓞 F) ∉ w.asIdeal)
@@ -24761,8 +24948,40 @@ theorem cyclotomicCharacter_map_map_eq_one_of_mem_localInertiaGroup (ℓ : ℕ)
     cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ
       (Field.absoluteGaloisGroup.map (algebraMap ℚ F)
         (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F)) ι)).toRingEquiv
-      = 1 :=
-  sorry
+      = 1 := by
+  classical
+  set g : Γ F :=
+    Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F)) ι with hgdef
+  -- the composite fixes every root of unity of `ℓ`-power order in `ℚᵃˡᵍ`
+  have key : ∀ (n : ℕ) (y : ℚ ᵃˡᵍ), y ^ (ℓ ^ n) = 1 →
+      Field.absoluteGaloisGroup.map (algebraMap ℚ F) g y = y := by
+    intro n y hy
+    apply (AlgebraicClosure.map (algebraMap ℚ F)).injective
+    rw [Field.absoluteGaloisGroup.lift_map (algebraMap ℚ F) g y]
+    have hx : (AlgebraicClosure.map (algebraMap ℚ F) y) ^ (ℓ ^ n) = 1 := by
+      rw [← map_pow, hy, map_one]
+    exact map_fixes_of_pow_eq_one_of_mem_localInertiaGroupAtPlace
+      (natCast_pow_notMem_maximalIdealAtPlace hwℓ n) hι hx
+  refine Units.ext ?_
+  rw [Units.val_one]
+  refine PadicInt.ext_of_toZModPow.mp fun n => ?_
+  rcases Nat.eq_zero_or_pos n with rfl | hnpos
+  · haveI : Subsingleton (ZMod (ℓ ^ 0)) := by rw [pow_zero]; infer_instance
+    exact Subsingleton.elim _ _
+  haveI : NeZero (ℓ ^ n) := ⟨pow_ne_zero n (Fact.out : ℓ.Prime).ne_zero⟩
+  rw [map_one, cyclotomicCharacter.toZModPow]
+  refine (modularCyclotomicCharacter.unique (ℚ ᵃˡᵍ)
+    (HasEnoughRootsOfUnity.natCard_rootsOfUnity (ℚ ᵃˡᵍ) (ℓ ^ n)) _ ?_).symm
+  intro t ht
+  have hval1 : ((1 : ZMod (ℓ ^ n))).val = 1 := by
+    rw [ZMod.val_one_eq_one_mod,
+      Nat.mod_eq_of_lt (Nat.one_lt_pow hnpos.ne' (Fact.out : ℓ.Prime).one_lt)]
+  rw [hval1, pow_one]
+  have ht1 : ((t : (ℚ ᵃˡᵍ)ˣ) : ℚ ᵃˡᵍ) ^ (ℓ ^ n) = 1 := by
+    rw [← Units.val_pow_eq_pow_val, (mem_rootsOfUnity _ t).mp ht, Units.val_one]
+  show Field.absoluteGaloisGroup.map (algebraMap ℚ F) g
+      ((t : (ℚ ᵃˡᵍ)ˣ) : ℚ ᵃˡᵍ) = _
+  exact key n _ ht1
 
 end HilbertAuxSplitTorusFibreProduct
 
