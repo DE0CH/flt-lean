@@ -18588,9 +18588,25 @@ noncomputable def isAbelianReductionDatum_of_semilinearModel
     sp_add := sp_add
     sp_act := sp_act
     neron := neron
-    frobPt := relPointTwist (t := t) hΦ
-    gen_frob := relPointTwist_fibre (t := t) hΦ _ hι gen hgen
-    sp_frob := fun u => (relPointTwist_fibre (t := t) hΦ σ hπ sp hsp u).symm }
+    -- `frobPt` and `gen_frob` are no longer FIELDS: `frobPt` is defined as
+    -- "extend by `neron`, act by `Frob_w`, extend back" and `gen_frob` is the
+    -- theorem `Equiv.apply_symm_apply`.  `sp_frob` is the surviving field, and
+    -- it is stated with that definition INLINED -- so the bridge below rewrites
+    -- the inlined `frobPt` back to `relPointTwist hΦ` (which is what this
+    -- construction's `frobPt` used to be) using the old `gen_frob` value, and
+    -- then the old proof applies verbatim.
+    sp_frob := fun u => by
+      have hgf := relPointTwist_fibre (t := t) hΦ _ hι gen hgen u
+      -- `Equiv.ofBijective _ neron` IS `RelPoint.pre (Spec.map ι) _`, but only
+      -- definitionally, so `rw` cannot match its `symm_apply_apply` against the
+      -- `pre`-spelled goal.  State the step in the goal's spelling and let the
+      -- defeq check place the proof term.
+      have h2 : (Equiv.ofBijective _ neron).symm
+          (RelPoint.pre (Spec.map ι) (Category.comp_id (Spec.map ι))
+            (relPointTwist (t := t) hΦ u)) = relPointTwist (t := t) hΦ u :=
+        (Equiv.ofBijective _ neron).symm_apply_apply _
+      rw [AbelianSchemeStruct.galSMul_def, hgf, h2]
+      exact (relPointTwist_fibre (t := t) hΦ σ hπ sp hsp u).symm }
 
 /-- **A FROBENIUS-EQUIVARIANT PLACE OF `F̄` ABOVE `w`** (**PROVEN 2026-07-31**
 over the single residual leaf `exists_residueHom_placeAbove` immediately above;
