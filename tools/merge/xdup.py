@@ -19,6 +19,17 @@ TWO passes, because neither alone is trustworthy on this tree:
     qualified pass silently reports NOTHING.  That is exactly how the release-27
     duplicates were missed on the first run.
 
+  SIBLINGS -- a pair is reported when SOME SINGLE MODULE can see both, not only
+    when one of the two imports the other.  Until 2026-07-31 the test was
+    `a in cone[b]`, which is structurally blind to two files that do not import
+    each other while a third imports both -- and Lean rejects exactly that, with
+    `import M failed, environment already contains 'X' from M'`.  It cost a
+    release: `AlgebraicGeometry.divDegree_eq_zero` was declared in BOTH
+    `CurveDivisorDegree` (a `sorry` leaf) and `PrincipalDivisorDegree` (PROVEN),
+    neither importing the other, `X0.lean` importing both, and this scan printed
+    `zero qualified duplicates` on the tree that would not build.  Each pair is
+    now tagged ANCESTOR or SIBLING, and a SIBLING names a module that sees both.
+
   LAST-COMPONENT -- match on the final component only.  Over-reports (this tree
     has many legitimate same-last-component pairs in different namespaces), so it
     is a REVIEW list, not an error list.  Difference it against pre-merge `main`
@@ -98,6 +109,15 @@ def main(root):
     for m in mod: cl(m)
     dmap = {m: decls(p) for m, p in mod.items()}
 
+    # Modules that can SEE module x, i.e. x itself plus everything importing it
+    # transitively.  Two declarations of one name collide as soon as some single
+    # module sees both -- the two need NOT be in an import relation with each
+    # other.  See the SIBLING note in the header.
+    seers = collections.defaultdict(set)
+    for m in mod:
+        seers[m].add(m)
+        for x in cone.get(m, ()): seers[x].add(m)
+
     def report(key, label):
         by = collections.defaultdict(list)
         for m, d in dmap.items():
@@ -105,11 +125,25 @@ def main(root):
         n = 0
         for k, locs in sorted(by.items()):
             if len(locs) < 2: continue
-            for a in locs:
-                for b in locs:
-                    if a[0] != b[0] and a[0] in cone.get(b[0], ()):
-                        print('%s %s : %s:%d  and  %s:%d' % (label, k, a[0], a[1], b[0], b[1]))
-                        n += 1
+            for i, a in enumerate(locs):
+                for b in locs[i + 1:]:
+                    if a[0] == b[0]: continue
+                    if a[0] in cone.get(b[0], ()):
+                        rel = 'ANCESTOR'
+                    elif b[0] in cone.get(a[0], ()):
+                        rel = 'ANCESTOR'
+                    else:
+                        common = seers[a[0]] & seers[b[0]]
+                        if not common: continue
+                        # name the MOST SPECIFIC witness -- the module with the
+                        # smallest import cone that still sees both.  Picking the
+                        # alphabetically first names `Fermat.Basic` every time,
+                        # which is true and useless for locating the clash.
+                        rel = 'SIBLING via ' + min(
+                            common, key=lambda w: (len(cone.get(w, ())), w))
+                    print('%s %s : %s:%d  and  %s:%d  [%s]'
+                          % (label, k, a[0], a[1], b[0], b[1], rel))
+                    n += 1
         print('%s: %d pair(s)' % (label, n))
 
     report(lambda q: q, 'XDUP')
