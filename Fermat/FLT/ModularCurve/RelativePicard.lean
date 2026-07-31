@@ -273,6 +273,19 @@ here that is "not a dispatch target".  The moral, worth keeping: a
 "mathlib does not have X" grep answers a question about X, never about whether
 the leaf needs X.
 
+**Amended 2026-07-31 (same day, later): `isInvertibleSheaf_sectionIdeal` is
+PROVEN**, over the single new leaf
+`exists_trivialization_sectionIdeal_at_section` — local triviality of `𝒪(−σ)` AT
+the section.  Count still 9, member swapped again.  The half that closed is
+everything off the section, and it needed one fact about the pin that no audit
+in this file had: **restriction of `𝒪`-modules along an open immersion is LEFT
+EXACT**, now the instance `restrictFunctor_preservesFiniteLimits`.  That does not
+follow from `Scheme.Modules.restrictAdjunction`, which makes `restrictFunctor` a
+LEFT adjoint; it follows from the other description of the same functor, as a
+site-level `SheafOfModules.pushforward`, which IS a right adjoint.  Anyone who
+needs a kernel to survive a restriction — `nonempty_modPullback_sectionIdeal` is
+the obvious next customer — should use that instance rather than re-derive it.
+
 The 8 → 9 in that chain is a SPLIT, not a regression:
 `smooth_isSeparated_of_isRelPicOf` was a conjunction of BLR 8.4/2 and BLR
 8.2/1 — different chapters, different arguments, different hypotheses — and is
@@ -3468,9 +3481,161 @@ theorem IsRelPicOf.eq_of_relPicEquiv_tensor {X P S T : Scheme.{u}} {strX : X ⟶
     (relPicEquiv_trans strX g (relPicEquiv_trans strX g hp (relPicEquiv_symm strX g hq))
       (relPicEquiv_of_iso strX g (modTensorSymmIso (hP.sheaf q) I)))
 
+/-! #### `𝒪(−σ)` OFF THE SECTION — the free half of `isInvertibleSheaf_sectionIdeal`
+
+**Built 2026-07-31, and it discharges everything in that leaf except the local
+structure of a smooth curve at the section.**  The old docstring (kept verbatim
+below) split the work exactly here: "off the image the kernel is all of `𝒪_Y`
+and the statement is the (proven) `isInvertibleSheaf_modUnit` locally".  That
+half is now a theorem rather than a sentence, and it turned out to need three
+things none of which were in this file:
+
+* **restriction along an open immersion is LEFT EXACT.**  `restrictFunctor` is a
+  LEFT adjoint here (`Scheme.Modules.restrictAdjunction`), so preservation of
+  kernels does not come from that adjunction and mathlib has no instance for it.
+  What does work: `restrictFunctor f` is *definitionally*
+  `SheafOfModules.pushforward` along `f.opensFunctor`, and site-level
+  `SheafOfModules.pushforward` IS a right adjoint
+  (`SheafOfModules.pullbackPushforwardAdjunction`, whose `IsRightAdjoint`
+  instance needs `[SmallCategory C] [SmallCategory D]`, `HasWeakSheafify` and
+  `WEqualsLocallyBijective` — all three hold for `Opens.grothendieckTopology`
+  and `AddCommGrpCat.{u}`, checked).  So the instance below is `unfold` plus one
+  generic lemma whose only job is to let unification see the `φ` hidden inside
+  `restrictFunctor`; `infer_instance` alone does NOT find it.
+* **sections over `⊥` vanish** — `TopCat.Sheaf.isTerminalOfEmpty` gives
+  `IsTerminal Γ(M, ⊥)`, and `IsZero.iff_id_eq_zero` upgrades terminal to zero
+  without needing `HasZeroObject AddCommGrpCat` (which is NOT an instance at
+  this pin — the obvious `Limits.isZero_zero` route fails there).
+* **a section of a proper morphism is a CLOSED immersion** — properness is spent
+  only through separatedness, exactly as the leaf's faithfulness note says:
+  `relSection x ≫ curveBaseChangeProj strX g = 𝟙 T` is a closed immersion, the
+  projection is separated by base change, and `IsClosedImmersion.of_comp` does
+  the rest.  Closedness of the image is what makes the complement an OPEN on
+  which the argument above can run.
+
+The residue is `exists_trivialization_sectionIdeal_at_section`: local triviality
+at the points of the section, which is where `_hsmooth` is spent and where all
+the remaining mathematics is.  Note the count is unchanged — one leaf in, one
+leaf out — and the new one is strictly smaller. -/
+
+/-- **`SheafOfModules.pushforward` along a continuous functor of sites preserves
+finite limits**, because it is a right adjoint.
+
+Stated separately from the instance below only so that unification can see the
+morphism of sheaves of rings that `Scheme.Modules.restrictFunctor` hides inside
+a `letI`; `infer_instance` after `unfold` does not find it on its own. -/
+theorem sheafOfModulesPushforward_preservesFiniteLimits
+    {C D : Type u} [SmallCategory C] [SmallCategory D]
+    {J : GrothendieckTopology C} {K : GrothendieckTopology D} {F : C ⥤ D}
+    [F.IsContinuous J K] {S : Sheaf J RingCat.{u}} {R : Sheaf K RingCat.{u}}
+    (φ : S ⟶ (F.sheafPushforwardContinuous RingCat.{u} J K).obj R)
+    [HasWeakSheafify K AddCommGrpCat.{u}]
+    [K.WEqualsLocallyBijective AddCommGrpCat.{u}] :
+    PreservesFiniteLimits (SheafOfModules.pushforward.{u} φ) :=
+  inferInstance
+
+/-- **Restriction of `𝒪`-modules along an open immersion is left exact.**
+
+Not available from `Scheme.Modules.restrictAdjunction`, which exhibits
+`restrictFunctor` as a LEFT adjoint; it comes from the *other* description of the
+same functor, as a site-level `SheafOfModules.pushforward`. -/
+instance restrictFunctor_preservesFiniteLimits {X Y : Scheme.{u}} (f : X ⟶ Y)
+    [IsOpenImmersion f] : PreservesFiniteLimits (Scheme.Modules.restrictFunctor f) := by
+  unfold Scheme.Modules.restrictFunctor
+  exact sheafOfModulesPushforward_preservesFiniteLimits _
+
+/-- **A sheaf of modules has no nonzero sections over the empty open.** -/
+theorem isZero_sections_bot {T : Scheme.{u}} (M : T.Modules) :
+    Limits.IsZero (M.presheaf.obj (op (⊥ : T.Opens))) :=
+  (Limits.IsZero.iff_id_eq_zero _).2
+    ((TopCat.Sheaf.isTerminalOfEmpty
+      (⟨M.presheaf, M.isSheaf⟩ : TopCat.Sheaf Ab.{u} T.toTopCat)).hom_ext _ _)
+
+/-- **A morphism into a sectionwise-zero sheaf of modules is zero.** -/
+theorem hom_eq_zero_of_isZero {Z : Scheme.{u}} {A B : Z.Modules} (f : A ⟶ B)
+    (h : ∀ V : Z.Opens, Limits.IsZero (B.presheaf.obj (op V))) : f = 0 := by
+  ext V x
+  exact congrArg (fun m => AddCommGrpCat.Hom.hom m x) ((h V).eq_of_tgt _ _)
+
+/-- **`𝒪(−σ)` is the whole structure sheaf away from the section.**
+
+On an open `U` whose preimage under `σ` is empty, `σ_*σ^*𝒪` has no sections at
+all, so the defining map of `sectionIdeal` restricts to `0` and its kernel
+restricts to `𝒪_U`.  Left exactness of restriction — the instance above — is
+what lets the kernel be taken after restricting rather than before. -/
+noncomputable def sectionIdealRestrictIsoOfDisjoint {Z T : Scheme.{u}} (σ : T ⟶ Z)
+    (U : Z.Opens) (hU : σ ⁻¹ᵁ U = ⊥) :
+    (sectionIdeal σ).restrict U.ι ≅ modUnit (U : Scheme.{u}) := by
+  set φ := (Scheme.Modules.pullbackPushforwardAdjunction σ).unit.app (modUnit Z) with hφ
+  have hmap : (Scheme.Modules.restrictFunctor U.ι).map φ = 0 := by
+    refine hom_eq_zero_of_isZero _ (fun W => ?_)
+    have hbot : σ ⁻¹ᵁ (U.ι ''ᵁ W) = ⊥ :=
+      le_bot_iff.1 (hU ▸ Scheme.Hom.preimage_mono σ (Scheme.Opens.ι_image_le U W))
+    show Limits.IsZero (((Scheme.Modules.pullback σ).obj (modUnit Z)).presheaf.obj
+      (op (σ ⁻¹ᵁ (U.ι ''ᵁ W))))
+    rw [hbot]
+    exact isZero_sections_bot _
+  exact (PreservesKernel.iso (Scheme.Modules.restrictFunctor U.ι) φ) ≪≫
+    kernelIsoOfEq hmap ≪≫ kernelZeroIsoSource ≪≫ Scheme.Modules.restrictUnitIso U.ι
+
+/-- **`relSection` really is a section of the base-changed curve** — LOOKS like
+`rfl` and is not, since `relSection` is a `pullback.lift`. -/
+theorem relSection_proj {X S T : Scheme.{u}} {strX : X ⟶ S} {g : T ⟶ S}
+    (x : RelPoint strX g) :
+    relSection x ≫ curveBaseChangeProj strX g = 𝟙 T := by
+  simpa [relSection, curveBaseChangeProj] using pullback.lift_snd (f := strX) (g := g) x.1 (𝟙 T)
+    (by rw [x.2, Category.id_comp])
+
+/-- **A section of a proper relative curve is a closed immersion.**
+
+This is where — and the ONLY place where — `_hproper` is spent in
+`isInvertibleSheaf_sectionIdeal`, and it is spent only through separatedness,
+matching that leaf's faithfulness note (the doubled origin refutes the statement
+without it). -/
+theorem isClosedImmersion_relSection {X S T : Scheme.{u}} {strX : X ⟶ S}
+    (_hproper : IsProper strX) {g : T ⟶ S} (x : RelPoint strX g) :
+    IsClosedImmersion (relSection x) := by
+  have h3 : IsClosedImmersion (relSection x ≫ curveBaseChangeProj strX g) := by
+    rw [relSection_proj]; infer_instance
+  exact IsClosedImmersion.of_comp _ (curveBaseChangeProj strX g)
+
+/-- **`𝒪(−σ)` IS LOCALLY TRIVIAL AT THE SECTION** (sorry leaf, cut 2026-07-31 out
+of `isInvertibleSheaf_sectionIdeal`) — the whole geometric content of that leaf,
+and the only place `_hsmooth` is spent.
+
+Stacks 0C4S / EGA IV 17.12.1.  Near a point `σ(t)` of the image, `Y = X ×_S T` is
+smooth of relative dimension `1` over `T` (both properties are stable under base
+change), so the ideal of the section is generated by a single local coordinate
+which is a nonzerodivisor on every fibre; the quotient of that generator gives
+`𝒪(−σ)|_U ≅ 𝒪_U`.
+
+**What a prover may assume, and what is already done.**  The complementary case
+— a point NOT on the section — is PROVEN above
+(`sectionIdealRestrictIsoOfDisjoint` plus `isClosedImmersion_relSection`), so
+nothing here needs to say anything about points off the image, and the section's
+image being closed is already available.  The definition to work from is
+`sectionIdeal σ = ker (𝒪_Y ⟶ σ_*σ^*𝒪_Y)`; there is no divisor theory at this
+pin, which is why the leaf is stated as local triviality of that kernel rather
+than as "effective Cartier divisor".
+
+**FAITHFULNESS.**  Both hypotheses stay load-bearing and for the same reasons the
+parent records: the nodal cubic (drop `_hsmooth`) and `𝔸²_T` with the zero section
+(drop relative dimension `1`) both give a section whose ideal is not invertible AT
+THE SECTION, which is precisely this statement.  `_hproper` is retained because a
+prover will want the base-changed curve separated when localising, but it is no
+longer needed for the topology — the parent has already spent it. -/
+theorem exists_trivialization_sectionIdeal_at_section {X S T : Scheme.{u}} {strX : X ⟶ S}
+    (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
+    {g : T ⟶ S} (x : RelPoint strX g) (t : T) :
+    ∃ U : (curveBaseChange strX g).Opens, (relSection x).base t ∈ U ∧
+      Nonempty ((sectionIdeal (relSection x)).restrict U.ι
+        ≅ modUnit (U : Scheme.{u})) := sorry
+
 /-- **A SECTION OF A SMOOTH RELATIVE CURVE IS AN EFFECTIVE CARTIER DIVISOR**
-(sorry leaf, cut 2026-07-29 out of `exists_abelJacobiPoint`) — its ideal sheaf
-`𝒪(−σ)` is invertible.
+(**PROVEN 2026-07-31** over `exists_trivialization_sectionIdeal_at_section` and
+the off-the-section material in the subsection immediately above; formerly a bare
+sorry leaf, and the docstring below is the audit written while it was one) — its
+ideal sheaf `𝒪(−σ)` is invertible.
 
 Stacks 0C4S / EGA IV 17.12.1: for `f : Y ⟶ T` smooth of relative dimension `1`
 and separated, a section `σ` is a closed immersion whose ideal is locally
@@ -3514,7 +3679,17 @@ a `∀` over the points of `X ×_S T`, which is nonempty as soon as `T` is. -/
 theorem isInvertibleSheaf_sectionIdeal {X S T : Scheme.{u}} {strX : X ⟶ S}
     (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
     {g : T ⟶ S} (x : RelPoint strX g) :
-    IsInvertibleSheaf (sectionIdeal (relSection x)) := sorry
+    IsInvertibleSheaf (sectionIdeal (relSection x)) := by
+  haveI := isClosedImmersion_relSection _hproper x
+  intro z
+  by_cases hz : z ∈ Set.range (relSection x).base
+  · obtain ⟨t, rfl⟩ := hz
+    exact exists_trivialization_sectionIdeal_at_section _hproper _hsmooth x t
+  · refine ⟨⟨(Set.range (relSection x).base)ᶜ,
+      ((relSection x).isClosedEmbedding.isClosed_range).isOpen_compl⟩, hz,
+      ⟨sectionIdealRestrictIsoOfDisjoint _ _ ?_⟩⟩
+    ext t
+    simp
 
 /-- **`𝒪(−σ)` COMMUTES WITH BASE CHANGE** (sorry leaf, cut 2026-07-29 out of
 `exists_abelJacobiPoint`) — `φ^* 𝒪(−x) ≅ 𝒪(−x_{T'})` for
