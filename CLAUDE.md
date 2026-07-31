@@ -1151,6 +1151,45 @@ that CDN mirror. Retry the *same md5* with a different `domain_index`
 (free). **Keep certificate verification on** — never `verify=False`;
 a persistent TLS failure means the file is not safe to download.
 
+## "The pin has no Riemann–Roch" is TRUE and often IRRELEVANT — check for a NORM first
+
+(2026-07-31, flt-lean-133.) Three separate leaves in `ModularCurve/X0.lean` were
+priced at "needs `Γ(A,−)` as a functor to `R`-modules together with its rank", i.e. a
+Riemann–Roch development. For the pole-order one that price was wrong by a whole
+development, and the reason generalises.
+
+**A finite free algebra has a NORM, and the degree of the norm is the invariant you
+were about to build by hand.** `WeierstrassCurve.Affine.CoordinateRing` is free of
+rank 2 over `R[X]`, so `ord z := (Algebra.norm R[X] z).degree` is defined at this pin
+with no new theory, and it IS the pole order along the point at infinity (`ord x = 2`,
+`ord y = 3`). Everything a degree function needs is already proven upstream:
+`Algebra.norm` is a `MonoidHom` and `Polynomial.degree_mul` is additive over a domain,
+so `ord` is additive on products *for free*; `CoordinateRing.degree_norm_smul_basis`
+computes it as `max (2 • deg p) (2 • deg q + 3)` in the `{1, Y}` basis, which gives
+`max` on sums; and `CoordinateRing.degree_norm_ne_one` is exactly "the value semigroup
+is `⟨2,3⟩`". That was enough to prove the linear shape of any SURJECTIVE
+`R[W] → R[W']` over a domain — no sheaves, no cohomology, no `𝒪(nO)`.
+
+So before accepting "absent from the pin", ask what STRUCTURE the object already has:
+finite free ⟹ norm, trace, characteristic polynomial, discriminant. A `grep` for the
+missing *theory name* (`RiemannRoch`, `CartierDivisor`) will always come back empty
+and always feels conclusive; a grep for the *invariant you actually need* on the
+object you actually have will not.
+
+Two corollaries that cost nothing and were both worth more than the proof:
+
+- **Where an argument BREAKS tells you what the leaf is really about.** The
+  domain-only step was "leading terms do not cancel", i.e. `gr R[W] = R[t²,t³]` is a
+  domain iff `R` is. So the general-`R` residue is purely NILPOTENT — which promoted
+  the file's own `ℚ[ε]/(ε²)` counterexample from a peripheral warning to a statement
+  of the whole remaining problem, and re-priced the attack from Riemann–Roch to
+  deformation theory.
+- **Prove the hypothesis you wish you had.** The leaf took an arbitrary compatible
+  `Φ`; two open immersions with equal range plus `ι` being a monomorphism force `Φ`
+  to be the canonical equivalence, so surjectivity was free and was the only thing
+  the argument consumed. A leaf stated for "an arbitrary `Φ` with `hΦ`" was never a
+  generalisation, and nobody had checked.
+
 ## PDF Text Extraction
 
 When extracting text from a PDF, the output will be read by an AI, not
