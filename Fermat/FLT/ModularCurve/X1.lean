@@ -460,7 +460,7 @@ open in them has been split along the theories it needed:
 | `exists_isX1Compactification_specialFibre` | Igusa / Katz-Mazur 5.1.1: the special fibre of that model IS `X_1(N)` over `𝔽_ℓ`.  (`exists_x1CurveModel_of_base` is PROVEN over this row and the one above, 2026-07-28, splitting the two classical theorems it had cited jointly; `exists_x1ReductionAt` is PROVEN over that plus the moduli-free `NeronReduction.lean`.  Since 2026-07-30 the row above is the weaker `exists_x1SmoothProperCurveModel`; the leaf COUNT here is unchanged.) | `ℚ → 𝔽_ℓ` |
 | `exists_section_of_galoisInvariant` | Galois descent of a rational point to a section | `ℚ` |
 | `exists_heckeCorrespondenceFamilyGamma1` | the `Γ₁` Hecke correspondence as a natural family on points — the geometric half, and the `Γ₁` twin of `X0.lean`'s `exists_heckeCorrespondenceFamily`.  (`exists_heckeAction_isotypicQuotients_gamma1` was a leaf until 2026-07-28 and is now **PROVEN** over this row and the next, via the `Γ₁` moduli pin `IsModularHeckeActionGamma1`; `exists_modularHeckeAction_gamma1` is PROVEN over this row alone.) | `ℚ` |
-| `isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1` | Shimura's algebraicity theorem for `Γ₁(N)`: the `a n` are algebraic integers.  MENTIONS NO SCHEME — the only obligation of `IsIsotypicQuotient` that does not, and it can be attacked from the integral-homology side or from the Hecke recursions plus a bound.  Cannot be an instance of `X0.lean`'s `isIntegral_coeff_of_isWeightTwoEigenform`: the `Γ₁` coefficients generate `ℚ(χ)`. | `ℚ` |
+| `isIntegral_coeff_prime_of_isWeightTwoEigenformOn_gamma1` | Shimura's algebraicity theorem for `Γ₁(N)` AT A PRIME: `a p` is an algebraic integer.  MENTIONS NO SCHEME — the only obligation of `IsIsotypicQuotient` that does not.  Needs the integral homology `H₁(X_1(N), ℤ)` as a Hecke module; the archimedean bounds in this file cannot substitute.  Cannot be an instance of `X0.lean`'s `isIntegral_coeff_prime_of_isWeightTwoEigenform`: the `Γ₁` coefficients generate `ℚ(χ)`.  (The general-`n` form `isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1` is **PROVEN** over this since 2026-07-31, by multiplicativity and the prime-power recursions.) | `ℚ` |
 | `exists_isotypicQuotient_of_isIntegral_gamma1` | Shimura's `A_f` on `Γ₁(N)`, one factor, given the PINNED Hecke action AND algebraicity — the "build one factor" half of Eichler-Shimura, and the `Γ₁` twin of `X0.lean`'s `exists_isotypicQuotient_of_isIntegral`.  (`IsIsotypicQuotient` is reused verbatim from `X0.lean`; it is shape-free.  `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` is **PROVEN** over this row and the one above since 2026-07-30, transporting the `Γ₀` recut of the same day; its FALSITY AUDIT was discharged that day too and the statement is TRUE.) | `ℚ` |
 | `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` | the "assemble the factors" half: finiteness of the index set, the oldform multiplicities, `finite_ker`, and the `neben` labelling.  It no longer owns the `N = 0` case: that case was REFUTED on 2026-07-28 (`isEmpty_isHeckeIsotypicDecompositionGamma1_zero`) and the leaf now carries `hN : N ≠ 0`; see its docstring | `ℚ` |
 | `isTorsion_factor_of_heckeIsotypic_gamma1` | Kolyvagin-Logachev on an isotypic factor | `ℚ` |
@@ -15034,12 +15034,262 @@ subfield of `ℝ`, so no instance of the `Γ₀` statement implies it.  Nor may 
 fields still hold, `hecke`/`atkin` are the level-`0` degeneracy, and the
 transcendental witness `a (2 ^ k) = π ^ k` recorded above satisfies every field
 while `IsIntegral ℤ (a 2)` fails.  So `G := Gamma1GL N` is load-bearing in the
-leaf below, exactly as `hN : N ≠ 0` is. -/
-theorem isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1 (N : ℕ) (_hN : N ≠ 0)
+algebraicity leaf, exactly as `hN : N ≠ 0` is.
+
+## SECOND RECUT 2026-07-31, TO PRIMES — again transporting the `Γ₀` side
+
+`isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1` is now **PROVEN**, over the
+new leaf `isIntegral_coeff_prime_of_isWeightTwoEigenformOn_gamma1` (the same
+statement at a PRIME) plus the multiplicativity and the two Hecke recursions,
+all written out and compiling below.  `X0.lean` made exactly this cut on
+2026-07-30 — `isIntegral_coeff_prime_of_isWeightTwoEigenform` plus
+`coeff_prime_pow_mul` plus `isIntegral_coeff_prime_pow_of_isIntegral` — and the
+same reason to transport applies: the arithmetic that carries `p` to `n` is not
+level-shape-specific, so leaving one side cut and the other not is the drift
+this file has paid for before.
+
+**The nebentypus is the only difference, and it costs one lemma.**  The `Γ₁`
+recursion at `p ∤ N` is `a_{p^{k+2}} = a_p a_{p^{k+1}} − χ(p)·p·a_{p^k}`, so
+propagating integrality along it needs `IsIntegral ℤ (χ (p : ZMod N))`.  That is
+`isIntegral_mulChar_apply` below: a `MulChar` sends non-units to `0` and units
+into `μ_{|Mˣ|}`, both integral, so **no** hypothesis on `χ` is required and none
+is added.  Note where `N ≠ 0` comes from in that branch — it is DERIVED, not
+assumed: `¬ p ∣ N` forces `N ≠ 0` because `p ∣ 0`.  So the prime-power step,
+like its `Γ₀` twin, needs no level hypothesis at all, and `hN` survives only on
+the leaf.
+
+**FALSITY AUDIT OF THE NEW PRIME LEAF, RUN AGAINST ITS OWN STATEMENT AND NOT
+INHERITED** (per the standing rule that a restatement voids the earlier audit).
+`hN : N ≠ 0` IS STILL LOAD-BEARING after the cut to primes, and unlike the
+`Γ₀` side the witness here is already MECHANIZED in this file rather than
+merely described: `exists_isWeightTwoEigenformOn_gamma1GL_zero c` (PROVEN
+2026-07-28) produces, for EVERY `c : ℂ`, a level-`0` nebentypus `χ`, a genuine
+`f : CuspForm (Gamma1GL 0) 2` and the system `lacunaryTwoCoeff c` satisfying
+every field of `IsWeightTwoEigenformOn (Gamma1GL 0) 0 χ f`, with
+`lacunaryTwoCoeff c 2 = c` (`lacunaryTwoCoeff_two`).  Taking `c = 1/2` and
+`p = 2` — `2` is PRIME, so this refutes the prime-only statement directly and
+not merely its general-`n` consequence — gives a counterexample as soon as
+`(1/2 : ℂ)` is not integral over `ℤ`, which is `IsIntegrallyClosed ℤ` pulled
+back along the injection `ℚ ↪ ℂ`.  Verified to compile on 2026-07-31, as:
+
+    intro h
+    obtain ⟨χ, f, hf⟩ := exists_isWeightTwoEigenformOn_gamma1GL_zero (1 / 2)
+    have hint : IsIntegral ℤ (lacunaryTwoCoeff (1 / 2 : ℂ) 2) := h χ f _ hf 2 Nat.prime_two
+    rw [lacunaryTwoCoeff_two] at hint
+    have hq : (algebraMap ℚ ℂ) (1 / 2 : ℚ) = (1 / 2 : ℂ) := by simp [eq_ratCast]
+    rw [← hq, isIntegral_algebraMap_iff (FaithfulSMul.algebraMap_injective ℚ ℂ)] at hint
+    obtain ⟨k, hk⟩ := IsIntegrallyClosed.algebraMap_eq_of_integral hint
+    ...  -- `(k : ℚ) = 1/2` is impossible
+
+It is NOT committed as a declaration only because it would be free-floating (no
+consumer), which this development forbids; the script above is the whole proof
+and can be pasted in the day something consumes it.
+
+**WHAT REMAINS GENUINELY MISSING** is exactly what the `Γ₀` prime leaf records,
+plus the nebentypus: the integral homology `H₁(X_1(N), ℤ)` as a Hecke module
+exists neither here, nor in mathlib at this pin, nor in `~/cs/FLT`.  The
+archimedean bounds in this file cannot substitute — they bound `‖a_p‖` and
+integrality is not an archimedean condition.
+
+---
+
+**THIS DECLARATION** (PROVEN 2026-07-31) is the one new ingredient the `Γ₀`
+transport does not supply: a `MulChar M ℂ` on a monoid with finitely many units
+takes values that are algebraic integers.  A non-unit goes to `0`
+(`MulChar.map_nonunit`); a unit `u` satisfies `χ(u)^{|Mˣ|} = 1`
+(`MulChar.pow_card_eq_one`, read at `u`), so `IsIntegral.of_pow` finishes.  No
+hypothesis on `χ` and no primitivity are needed. -/
+theorem isIntegral_mulChar_apply {M : Type*} [CommMonoid M] [Fintype Mˣ]
+    (χ : MulChar M ℂ) (x : M) : IsIntegral ℤ (χ x) := by
+  by_cases hx : IsUnit x
+  · obtain ⟨u, rfl⟩ := hx
+    refine IsIntegral.of_pow (n := Fintype.card Mˣ) Fintype.card_pos ?_
+    have h : (χ ^ Fintype.card Mˣ) (u : M) = (1 : MulChar M ℂ) (u : M) := by
+      rw [χ.pow_card_eq_one]
+    rw [MulChar.pow_apply_coe, MulChar.one_apply_coe] at h
+    rw [h]; exact isIntegral_one
+  · rw [χ.map_nonunit hx]; exact isIntegral_zero
+
+/-- **A Dirichlet character mod `N ≠ 0` takes ALGEBRAIC-INTEGER values**
+(PROVEN 2026-07-31) — `isIntegral_mulChar_apply` at `M := ZMod N`, where
+`hN : N ≠ 0` is needed only to know that `(ZMod N)ˣ` is finite.
+
+Consumed by `isIntegral_coeff_prime_pow_of_isIntegral_gamma1` below, which meets
+`χ (p : ZMod N)` in the `p ∤ N` Hecke recursion. -/
+theorem isIntegral_dirichletCharacter_apply {N : ℕ} (hN : N ≠ 0)
+    (χ : DirichletCharacter ℂ N) (x : ZMod N) : IsIntegral ℤ (χ x) := by
+  haveI : NeZero N := ⟨hN⟩
+  exact isIntegral_mulChar_apply χ x
+
+/-- **The coefficients of a nebentypus eigenform are multiplicative at a prime
+power** (PROVEN 2026-07-31): `a_{p^k n} = a_{p^k} a_n` when `p ∤ n` — the `Γ₁`
+transport of `X0.lean`'s `coeff_prime_pow_mul`, which is this statement with
+`χ(p)` erased.
+
+Stated over a FREE `G` and a free `χ`, because nothing in it is level-shape
+specific: only the `hecke` and `atkin` fields of `IsWeightTwoEigenformOn` are
+used, and those are the same at every `G`.  (This is exactly the freedom the
+algebraicity leaf may NOT have — see the block above — because multiplicativity
+is a consequence of the recursions while integrality is an input to them.)
+
+Both cases of the level are used: `atkin` at `p ∣ M`, where `a` is completely
+multiplicative in `p` and a one-step induction suffices, and `hecke` at `p ∤ M`,
+where the recursion is two-term and the induction carries the pair `(k, k+1)`.
+The nebentypus factor `χ (p : ZMod M)` is a CONSTANT through the whole
+induction, so it rides along in the `linear_combination`/`ring` steps and
+changes nothing structurally. -/
+theorem IsWeightTwoEigenformOn.coeff_prime_pow_mul {G : Subgroup (GL (Fin 2) ℝ)} {M : ℕ}
+    {χ : DirichletCharacter ℂ M} {g : CuspForm G 2} {a : ℕ → ℂ}
+    (ha : IsWeightTwoEigenformOn G M χ g a) {p : ℕ} (hp : p.Prime)
+    (k n : ℕ) (hn : 0 < n) (hpn : ¬ p ∣ n) : a (p ^ k * n) = a (p ^ k) * a n := by
+  by_cases hpM : p ∣ M
+  · have key : ∀ j : ℕ, ∀ m : ℕ, 0 < m → a (p ^ j * m) = a p ^ j * a m := by
+      intro j
+      induction j with
+      | zero => intro m _; simp
+      | succ j ih =>
+        intro m hm
+        have h1 := ha.atkin p hp hpM (p ^ j * m) (Nat.mul_pos (pow_pos hp.pos j) hm)
+        rw [show p ^ (j + 1) * m = p ^ j * m * p by ring, h1, ih m hm]
+        ring
+    have h2 : a (p ^ k) = a p ^ k := by
+      have h := key k 1 one_pos
+      rwa [mul_one, ha.one, mul_one] at h
+    rw [key k n hn, h2]
+  · have hstep : ∀ (j : ℕ) (m : ℕ), 0 < m →
+        a (p ^ (j + 2) * m)
+          = a p * a (p ^ (j + 1) * m) - χ (p : ZMod M) * p * a (p ^ j * m) := by
+      intro j m hm
+      have hpos : 0 < p ^ (j + 1) * m := Nat.mul_pos (pow_pos hp.pos (j + 1)) hm
+      have h1 := ha.hecke p hp hpM (p ^ (j + 1) * m) hpos
+      have hdvd : p ∣ p ^ (j + 1) * m := (dvd_pow_self p (Nat.succ_ne_zero j)).mul_right m
+      rw [if_pos hdvd] at h1
+      have hdiv : p ^ (j + 1) * m / p = p ^ j * m := by
+        rw [show p ^ (j + 1) * m = p * (p ^ j * m) by ring, Nat.mul_div_cancel_left _ hp.pos]
+      rw [hdiv] at h1
+      rw [show p ^ (j + 2) * m = p ^ (j + 1) * m * p by ring]
+      linear_combination h1
+    have hbase : ∀ m : ℕ, 0 < m → ¬ p ∣ m → a (p ^ 1 * m) = a (p ^ 1) * a m := by
+      intro m hm hpm
+      have h1 := ha.hecke p hp hpM m hm
+      rw [if_neg hpm] at h1
+      rw [show p ^ 1 * m = m * p by ring, pow_one]
+      linear_combination h1
+    have key : ∀ j : ℕ, a (p ^ j * n) = a (p ^ j) * a n ∧
+        a (p ^ (j + 1) * n) = a (p ^ (j + 1)) * a n := by
+      intro j
+      induction j with
+      | zero => exact ⟨by simp [ha.one], hbase n hn hpn⟩
+      | succ j ih =>
+        refine ⟨ih.2, ?_⟩
+        have h1 := hstep j n hn
+        have h2 := hstep j 1 one_pos
+        rw [mul_one, mul_one, mul_one] at h2
+        rw [h1, ih.1, ih.2, h2]
+        ring
+    exact (key k).1
+
+/-- **Integrality propagates from a prime to its powers, with nebentypus**
+(PROVEN 2026-07-31) — the `Γ₁` transport of `X0.lean`'s
+`isIntegral_coeff_prime_pow_of_isIntegral`.
+
+Both cases of the level are handled and NEITHER needs a hypothesis on `M`: at
+`p ∣ M` `atkin` gives `a_{p^{k+1}} = a_p · a_{p^k}` with no `χ` in it, and at
+`p ∤ M` `hecke` gives `a_{p^{k+2}} = a_p · a_{p^{k+1}} − χ(p)·p·a_{p^k}`, whose
+induction carries the pair `(k, k+1)`.  In that second branch `M ≠ 0` is
+DERIVED from `¬ p ∣ M` (since `p ∣ 0`), which is what makes
+`isIntegral_dirichletCharacter_apply` applicable without assuming anything.
+Integral elements are closed under `+`, `−`, `·` and contain `algebraMap ℤ ℂ p`,
+so each recursion preserves integrality.
+
+Deliberately stated over a HYPOTHESIS `IsIntegral ℤ (a p)` rather than over the
+leaf below, so that it says what it proves — this is the recursion, not
+Shimura's theorem — and so that it is reusable at a single prime. -/
+theorem isIntegral_coeff_prime_pow_of_isIntegral_gamma1 {G : Subgroup (GL (Fin 2) ℝ)} {M : ℕ}
+    {χ : DirichletCharacter ℂ M} {g : CuspForm G 2} {a : ℕ → ℂ}
+    (ha : IsWeightTwoEigenformOn G M χ g a) {p : ℕ} (hp : p.Prime)
+    (hpi : IsIntegral ℤ (a p)) (k : ℕ) : IsIntegral ℤ (a (p ^ k)) := by
+  have hone : IsIntegral ℤ (a 1) := by rw [ha.one]; exact isIntegral_one
+  by_cases hpM : p ∣ M
+  · induction k with
+    | zero => simpa using hone
+    | succ k ih =>
+      have h := ha.atkin p hp hpM (p ^ k) (pow_pos hp.pos k)
+      rw [show p ^ (k + 1) = p ^ k * p by ring, h]
+      exact hpi.mul ih
+  · have hM0 : M ≠ 0 := by rintro rfl; exact hpM (dvd_zero p)
+    have hcint : IsIntegral ℤ (χ (p : ZMod M)) := isIntegral_dirichletCharacter_apply hM0 χ _
+    have hstep : ∀ k : ℕ, a (p ^ (k + 2))
+        = a p * a (p ^ (k + 1)) - χ (p : ZMod M) * p * a (p ^ k) := by
+      intro k
+      have h := ha.hecke p hp hpM (p ^ (k + 1)) (pow_pos hp.pos (k + 1))
+      have hdvd : p ∣ p ^ (k + 1) := dvd_pow_self p (Nat.succ_ne_zero k)
+      rw [if_pos hdvd] at h
+      have hdiv : p ^ (k + 1) / p = p ^ k := by
+        rw [show p ^ (k + 1) = p * p ^ k by ring, Nat.mul_div_cancel_left _ hp.pos]
+      rw [hdiv] at h
+      rw [show p ^ (k + 2) = p ^ (k + 1) * p by ring]
+      linear_combination h
+    have hpint : IsIntegral ℤ ((p : ℂ)) := by
+      have hcast : ((p : ℂ)) = algebraMap ℤ ℂ (p : ℤ) := by push_cast; ring
+      rw [hcast]; exact isIntegral_algebraMap
+    have key : ∀ k : ℕ, IsIntegral ℤ (a (p ^ k)) ∧ IsIntegral ℤ (a (p ^ (k + 1))) := by
+      intro k
+      induction k with
+      | zero => exact ⟨by simpa using hone, by simpa using hpi⟩
+      | succ k ih =>
+        refine ⟨ih.2, ?_⟩
+        rw [hstep k]
+        exact (hpi.mul ih.2).sub ((hcint.mul hpint).mul ih.1)
+    exact (key k).1
+
+/-- **SHIMURA'S ALGEBRAICITY THEOREM FOR `Γ₁(N)` AT A PRIME: `a_p` is an
+algebraic integer for every prime `p`** (sorry leaf, NEW 2026-07-31) — all that
+survives of `isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1` below, which is
+now PROVEN over this by multiplicativity and the prime-power recursion.
+
+TRUE, and classical (Shimura, *Introduction to the arithmetic theory of
+automorphic functions*, §3.5 and §7.5; Diamond–Shurman §6.5, where `Γ₁(N)` is
+the default level structure so the nebentypus case is the one actually
+written).  `T_n` preserves the integral homology `H₁(X_1(N), ℤ)`, a lattice on
+which the anemic Hecke algebra therefore acts by integer matrices, and `a p` is
+an eigenvalue of one of them — so it is a root of a monic integer characteristic
+polynomial.  The nebentypus does not weaken this: `χ` takes root-of-unity
+values, the coefficients generate `ℚ(χ)` rather than a real field, and the
+lattice statement is unchanged.
+
+The cut, the derivation of `N ≠ 0` inside the recursion, and the FALSITY AUDIT
+of THIS statement (level `0`, `c = 1/2`, `p = 2`, mechanized in this file up to
+one paste) are all recorded in the block docstring above; they are not repeated
+here.  `G := Gamma1GL N` is load-bearing exactly as recorded there. -/
+theorem isIntegral_coeff_prime_of_isWeightTwoEigenformOn_gamma1 (N : ℕ) (_hN : N ≠ 0)
     (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ)
-    (_hf : IsWeightTwoEigenformOn (Gamma1GL N) N χ f a) (n : ℕ) :
-    IsIntegral ℤ (a n) :=
+    (_hf : IsWeightTwoEigenformOn (Gamma1GL N) N χ f a) (p : ℕ) (_hp : p.Prime) :
+    IsIntegral ℤ (a p) :=
   sorry
+
+/-- **SHIMURA'S ALGEBRAICITY THEOREM FOR `Γ₁(N)`: every `a n` is an algebraic
+integer** (**PROVEN 2026-07-31** over
+`isIntegral_coeff_prime_of_isWeightTwoEigenformOn_gamma1` immediately above; a
+sorry leaf from 2026-07-30 until then).  The statement is UNCHANGED and its one
+consumer — the assembly below — calls it exactly as before.
+
+The reduction is `Nat.recOnPrimePow`: write `n = p^k · q` with `p ∤ q`, split
+with `IsWeightTwoEigenformOn.coeff_prime_pow_mul`, and get the prime-power
+factor from `isIntegral_coeff_prime_pow_of_isIntegral_gamma1`.  Both are proven
+above, for a free `G` and a free `χ`. -/
+theorem isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1 (N : ℕ) (hN : N ≠ 0)
+    (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ)
+    (hf : IsWeightTwoEigenformOn (Gamma1GL N) N χ f a) (n : ℕ) :
+    IsIntegral ℤ (a n) := by
+  induction n using Nat.recOnPrimePow with
+  | zero => rw [hf.zero]; exact isIntegral_zero
+  | one => rw [hf.one]; exact isIntegral_one
+  | prime_pow_mul q p k hp hpq hk ih =>
+    have hq0 : 0 < q := Nat.pos_of_ne_zero (by rintro rfl; exact hpq (dvd_zero p))
+    rw [hf.coeff_prime_pow_mul hp k q hq0 hpq]
+    exact (isIntegral_coeff_prime_pow_of_isIntegral_gamma1 hf hp
+      (isIntegral_coeff_prime_of_isWeightTwoEigenformOn_gamma1 N hN χ f a hf p hp) k).mul ih
 
 /-- **SHIMURA'S `A_f` FOR `Γ₁(N)`, GIVEN ALGEBRAICITY OF THE EIGENVALUES**
 (sorry leaf, NEW 2026-07-30) — the GEOMETRIC half of
@@ -18583,7 +18833,7 @@ disappearing:
 | `exists_heckeCorrespondenceFamilyGamma1` | the `Γ₁` Hecke correspondence, on points | no | here |
 | `exists_modularHeckeAction_gamma1` | `T_ℓ` as an endomorphism of `J_1(N)` | no | here, **PROVEN 2026-07-28** |
 | `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` | Shimura's `A_f`, one factor | no | here, **PROVEN 2026-07-30** over the two rows below.  (This row read "**FALSE as stated**" until 2026-07-30; that was STALE — the FALSITY AUDIT's own header records the repair, which strengthened `IsModularHeckeActionGamma1` and left this statement untouched.) |
-| `isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1` | Shimura's algebraicity, no scheme in it | no | here, NEW 2026-07-30 |
+| `isIntegral_coeff_prime_of_isWeightTwoEigenformOn_gamma1` | Shimura's algebraicity AT A PRIME, no scheme in it | no | here, NEW 2026-07-31 — the general-`n` `isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1` (NEW 2026-07-30) is **PROVEN** over it, transporting `X0.lean`'s 2026-07-30 cut to primes |
 | `exists_isotypicQuotient_of_isIntegral_gamma1` | Shimura's `A_f` given algebraicity | no | here, NEW 2026-07-30 — the `Γ₁` twin of `X0.lean`'s `exists_isotypicQuotient_of_isIntegral` |
 | `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` | multiplicities, `finite_ker`, `neben` (now under `hN : N ≠ 0`) | no | here |
 | `exists_cuspForm_gamma1GL_zero_lacunary` | the lacunary level-`0` cusp form; input to the `N = 0` refutation | no | here, **PROVEN 2026-07-30** — the `LacunaryLevelZero` section, six lemmas, no theory |
