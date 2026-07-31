@@ -36,10 +36,23 @@ that development at an **arbitrary base field `F : Type u`**, in `Scheme.{u}`:
 Both are consumed by `GaloisRepresentation.Modularity.exists_ellipticSchemeOverField`
 (`Fermat/FLT/Modularity/MoretBailly.lean`) through
 `Fermat.AbelianSchemeStruct.ofMorphisms`, which needs exactly `IsProper`, `Smooth` and
-`GeometricallyConnected`.  It lives here rather than in `MoretBailly.lean` because
-`EllipticScheme.lean` is DOWNSTREAM of that module and so cannot be imported there; and it is
-a separate module rather than 2 000 more lines of `MoretBailly.lean` because elaboration is
-single-threaded per file.
+`GeometricallyConnected`.  It is a separate module rather than 2 000 more lines of
+`MoretBailly.lean` because elaboration is single-threaded per file.
+
+**STALE RATIONALE CORRECTED, 2026-07-31.**  This paragraph used to say the module lives here
+because "`EllipticScheme.lean` is DOWNSTREAM of `MoretBailly.lean` and so cannot be imported
+there".  That is FALSE at this commit, in both directions, and the correction matters because
+the port that consumes this module was being planned around it.  Computing the two `Fermat.*`
+import closures (no module missing from either walk):
+
+* `EllipticScheme.lean` reaches 56 modules and `MoretBailly.lean` is NOT among them;
+* `MoretBailly.lean` reaches 170 and `EllipticScheme.lean` is NOT among them.
+
+The two are INCOMPARABLE.  So `MoretBailly.lean` may import `EllipticScheme.lean` — it is
+acyclic and would add only 7 modules to its closure — and `EllipticScheme.lean` may import
+THIS module, whose whole `Fermat.*` closure is `{ProjectiveModel, GradedAlgebra.Quotient}`.
+Both directions are available; the reason to keep this material in its own file is
+elaboration time, not the import graph.
 
 ## Relation to the `ℚ` development, and the two places it does not simply transfer
 
@@ -71,9 +84,29 @@ arbitrary commutative ring in the ℚ file.
 `EllipticScheme.lean`'s `isProper_projToSpec`, `smoothOfRelativeDimension_projToSpec` and
 `geometricallyConnected_projToSpec` are now instances of statements proved here (and in
 `MoretBailly.lean`, for properness); they can collapse to `… (F := ℚ)` applications, which
-would delete some 1 800 lines from that module.  That is not done here: this module is
-upstream of `MoretBailly.lean`, which is upstream of `EllipticScheme.lean`, so the
-substitution is a separate, purely subtractive change.
+would delete some 1 800 lines from that module.  That is not done here, but the reason given
+for not doing it — "this module is upstream of `MoretBailly.lean`, which is upstream of
+`EllipticScheme.lean`" — was WRONG (see the correction above): `MoretBailly.lean` is not
+upstream of `EllipticScheme.lean` at all, and this module's entire `Fermat.*` closure is
+`{ProjectiveModel, GradedAlgebra.Quotient}`, so `EllipticScheme.lean` can import it today.
+The cleanup is available now and is purely subtractive; only properness would still have to
+be re-proved or moved, since that one really does live in `MoretBailly.lean`.
+
+## What the group-law port still needs (2026-07-31)
+
+The section at the very bottom of this file adds the two "lies over the base" equations for
+`projInfty` and `projNeg` over an arbitrary `[CommRing R]`, which are the fields `he` and `hi`
+of `GaloisRepresentation.Modularity.ProjGroupLawOverField`.  What is NOT here, and is the
+whole of what `exists_projGroupLawOverField_geomFibreAddEquiv` still wants, is the group law
+`m` itself: the port of `Fermat.exists_projAdd`.  The addition polynomials it glues
+(`WeierstrassCurve.Projective.addXYZ` in the pin, `add2XYZ` in
+`.../EllipticCurve/ProjectiveAddition.lean`) are ALREADY stated over an arbitrary
+`[CommRing R]`, so no polynomial-identity work remains at that layer, and
+`Fermat.ProjCoords` ALREADY carries its base as an explicit field `base : ℚ →+* Γ(X, ⊤)`.
+What is genuinely lost over a general base is the UNIQUENESS of that base —
+`ProjCoords.base_eq` is `Subsingleton.elim` for `ℚ →+* A` and `@[ext] ProjCoords.ext` rests on
+it — together with `Fermat.hom_ext_spec_rat` itself.  Comment-stripped counts in
+`EllipticScheme.lean` at `7080929d`: `hom_ext_spec_rat` 59, `base_eq` 11, `ProjCoords.ext` 14.
 -/
 
 @[expose] public section
@@ -2320,5 +2353,117 @@ end ProjGeometryOverField
 
 
 end WeierstrassCurve.Projective.OverField
+
+/-! ## The two group-law data that lie over the base, over an ARBITRARY commutative ring
+
+`GaloisRepresentation.Modularity.ProjGroupLawOverField` (`Fermat/FLT/Modularity/MoretBailly.lean`)
+carries three "lies over the base" fields — `hm`, `he`, `hi` — which the `ℚ` development
+(`Fermat/FLT/ModularCurve/EllipticScheme.lean`) gets for free from
+`Fermat.hom_ext_spec_rat`: over `Spec ℚ` a scheme has at most one morphism to the base, so
+every morphism between `ℚ`-schemes is automatically a `ℚ`-morphism and all three are
+`Subsingleton.elim`.  Over a general base that lemma is FALSE and the three become real
+obligations.
+
+Two of the three are discharged HERE, over an arbitrary `[CommRing R]` — they concern
+`projInfty` and `projNeg`, which are exactly the two pieces of the chord–tangent law that
+need no gluing:
+
+* `projInfty_comp_projToSpec` — `[0 : 1 : 0]` is a SECTION of the structure morphism, i.e.
+  the field `he`;
+* `projNeg_comp_projToSpec` — inversion lies over the base, i.e. the field `hi`.
+
+`hm` is NOT here and cannot be: it is a statement about the group law `m`, which does not
+exist over a general base yet — constructing it is the `exists_projAdd` half of the port, and
+it is the one part of `exists_projGroupLawOverField_geomFibreAddEquiv` that is still open.
+
+Both proofs are the universal properties, not computations.  `projInfty` is
+`Proj.fromOfGlobalSections` of the evaluation `X ↦ 0, Y ↦ 1, Z ↦ 0`, so
+`Proj.fromOfGlobalSections_toSpecZero` reduces `he` to the statement that the composite
+`R → Γ(Spec R) → R[X,Y,Z]/(W) → Γ(Spec R)` back to `R` is the identity, which
+`toSpecΓ_SpecMap_ΓSpecIso_inv` supplies.  `projNeg` is `Proj.map` of a graded automorphism,
+and mathlib has no naturality lemma for `Proj.toSpecZero` along `Proj.map`, so the proof goes
+through the affine open cover `Proj.mapAffineOpenCover`: on each chart the two sides are
+`Spec` of maps out of `(projGrading W) 0`, and they agree because the Weierstrass involution
+`Y ↦ −Y − a₁X − a₃Z` fixes the degree-zero part pointwise (`negGradedHom_apply_zero` — the
+degree-zero part of the homogeneous coordinate ring is the image of the constants). -/
+
+namespace WeierstrassCurve.Projective
+
+attribute [local instance] MvPolynomial.gradedAlgebra
+
+universe u
+
+variable {R : Type u} [CommRing R] (W : WeierstrassCurve R)
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The point at infinity is a section of the structure morphism**, over an arbitrary
+commutative ring.  This is the field `he` of `ProjGroupLawOverField`. -/
+theorem projInfty_comp_projToSpec :
+    projInfty W ≫ projToSpec W = 𝟙 (Spec (CommRingCat.of R)) := by
+  have key := Proj.fromOfGlobalSections_toSpecZero (𝒜 := projGrading W)
+      (X := Spec (CommRingCat.of R))
+      (((Scheme.ΓSpecIso (CommRingCat.of R)).inv).hom.comp (evalInftyQuot W))
+      (map_irrelevant_evalInfty_eq_top W)
+  rw [projToSpec, projInfty, ← Category.assoc, key, Category.assoc, ← Spec.map_comp,
+    ← CommRingCat.ofHom_comp]
+  have hcomp :
+      ((((Scheme.ΓSpecIso (CommRingCat.of R)).inv).hom.comp (evalInftyQuot W)).comp
+          (algebraMap (projGrading W 0)
+            (MvPolynomial (Fin 3) R ⧸ (polynomialHomogeneousIdeal W).toIdeal))).comp
+        (algebraMap R (projGrading W 0)) =
+      ((Scheme.ΓSpecIso (CommRingCat.of R)).inv).hom := by
+    ext r
+    have h2 : (algebraMap (↥(projGrading W 0))
+          (MvPolynomial (Fin 3) R ⧸ (polynomialHomogeneousIdeal W).toIdeal))
+          ((algebraMap R ↥(projGrading W 0)) r)
+        = Ideal.Quotient.mk _ (MvPolynomial.C r) := rfl
+    simp only [RingHom.comp_apply, h2, evalInftyQuot_mk]
+    simp [evalInfty]
+  rw [hcomp]
+  simp
+
+/-- A polynomial homogeneous of degree `0` is a constant. -/
+theorem eq_C_of_isHomogeneous_zero {σ : Type*} {p : MvPolynomial σ R}
+    (hp : p.IsHomogeneous 0) : p = MvPolynomial.C (p.coeff 0) := by
+  have h : p.totalDegree = 0 :=
+    (MvPolynomial.totalDegree_zero_iff_isHomogeneous (σ := σ)).mpr hp
+  exact MvPolynomial.totalDegree_eq_zero_iff_eq_C.mp h
+
+/-- **The Weierstrass involution fixes the degree-zero part of the homogeneous coordinate
+ring pointwise**: in degree `0` every class is the class of a constant, and
+`Y ↦ −Y − a₁X − a₃Z` is an `R`-algebra map. -/
+theorem negGradedHom_apply_zero (a : ↥(projGrading W 0)) :
+    negGradedHom W (a : MvPolynomial (Fin 3) R ⧸ (polynomialHomogeneousIdeal W).toIdeal)
+      = (a : MvPolynomial (Fin 3) R ⧸ (polynomialHomogeneousIdeal W).toIdeal) := by
+  obtain ⟨p, hp, hpa⟩ := HomogeneousIdeal.mem_quotientGrading.mp a.2
+  rw [← hpa, negGradedHom_apply, negQuot_mk]
+  congr 1
+  rw [eq_C_of_isHomogeneous_zero (MvPolynomial.mem_homogeneousSubmodule _ _ |>.mp hp)]
+  simp [negAlgHom]
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Inversion lies over the base**, over an arbitrary commutative ring.  This is the field
+`hi` of `ProjGroupLawOverField`. -/
+theorem projNeg_comp_projToSpec :
+    projNeg W ≫ projToSpec W = projToSpec W := by
+  rw [projToSpec, projNeg, ← Category.assoc]
+  congr 1
+  refine (Proj.mapAffineOpenCover (negGradedHom W)
+    (irrelevant_le_map_negGradedHom W)).openCover.hom_ext _ _ fun s => ?_
+  simp only [Scheme.AffineOpenCover.openCover_f, Proj.mapAffineOpenCover_f]
+  rw [← Category.assoc, Proj.awayι_comp_map _ _ s.1.2 _ s.2.2, Category.assoc,
+    Proj.awayι_toSpecZero, Proj.awayι_toSpecZero, ← Spec.map_comp,
+    ← CommRingCat.ofHom_comp]
+  congr 1
+  ext a
+  simp only [CommRingCat.hom_ofHom, RingHom.coe_comp, Function.comp_apply,
+    HomogeneousLocalization.Away.map, HomogeneousLocalization.fromZeroRingHom,
+    RingHom.coe_mk, MonoidHom.coe_mk, OneHom.coe_mk, HomogeneousLocalization.map_mk,
+    HomogeneousLocalization.val_mk]
+  congr 1
+  · exact negGradedHom_apply_zero W a
+  · exact Subtype.ext (by simp)
+
+end WeierstrassCurve.Projective
 
 end
