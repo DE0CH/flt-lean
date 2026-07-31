@@ -150,18 +150,24 @@ exactly why none of their lists survives:
 `Heegner.exists_ratCube_jInvariant_heegnerPoint`.
 
 **AND THAT LIST IS ITSELF STALE (2026-07-31).** Three of those four are now PROVEN, each over a
-smaller statement; the frontier of this file is the FIVE leaves
+smaller statement; the frontier of this file is the SIX leaves
 
 * `Heegner.exists_ratPoly_weberAlpha_pow_four` — `LEAF 1b`, Weber's descent `α ∈ ℚ[α⁴]`,
   class-number-FREE (it replaced `natDegree_minpoly_weberAlpha_le`, which is now a theorem);
-* `Heegner.exists_intPolynomial_eq_prod_of_smul_invariant` — `LEAF 3a-i′`, the construction of
-  `Φ_N` GIVEN `Γ`-invariance of the product. It replaced `exists_intPolynomial_eq_prod`
-  (`LEAF 3a-i`), which is now a theorem: the `Γ`-invariance is
+* `Heegner.exists_complexPolynomial_eq_prod_of_smul_invariant` — `LEAF 3a-i″`, the coefficients
+  of the product are polynomials in `j` OVER `ℂ`, given `Γ`-invariance: rigidity, i.e. the
+  pole-order induction over `ModularForm.levelOne_weight_zero_const`;
+* `Heegner.exists_intPolynomial_map_of_eq_prod` — `LEAF 3a-i‴`, any such polynomial over `ℂ`
+  has INTEGER coefficients: the `ℤ[ζ_N]`-plus-Galois-stability argument, with no modular
+  content left in it beyond `j`'s own `q`-expansion. These two replaced
+  `exists_intPolynomial_eq_prod_of_smul_invariant` (`LEAF 3a-i′`, itself the replacement for
+  `exists_intPolynomial_eq_prod`, `LEAF 3a-i`), which is now a theorem: the `Γ`-invariance is
   `prod_triangularReps_jInvariant_smul`, PROVEN unconditionally over
   `exists_triangularReps_right_mul` (the permutation of triangular representatives under right
   multiplication by `γ`) and `triangularReps_eq_of_right_mul` (its injectivity, which is where
-  `triangular_unique` is spent). So this leaf is now PURE ANALYSIS — the group theory is gone
-  from it, and what is left is the pole-order induction and the `q`-expansion integrality;
+  `triangular_unique` is spent), and the two halves compose over one `Polynomial.map` glue.
+  `hinv` is spent entirely in the first half — the second gets `T`-invariance free from its own
+  hypothesis, because a polynomial in `j` is `T`-invariant automatically;
 * `Heegner.isUnit_leadingCoeff_diag_of_eq_prod` — `LEAF 3a-ii`, Kronecker (these two replaced
   `exists_modularPolynomial_prod`, now a theorem);
 * `Heegner.exists_posDefForm_root_of_aeval_minpoly_jInvariant` — `LEAF 4b″`, the conjugates of
@@ -4565,41 +4571,135 @@ theorem prod_triangularReps_jInvariant_smul {N : ℤ} (hN : 0 < N) (γ : SL(2, �
   · intro t ht
     rw [(hspec t ht).2.2 z]
 
-/-- **LEAF 3a-i′ — THE CONSTRUCTION OF `Φ_N`, WITH `Γ`-INVARIANCE DISCHARGED.** One
-`Φ ∈ ℤ[Y][X]` whose specialisation at `Y = j(z)` is the monic product
+/-- **LEAF 3a-i″ — THE COEFFICIENTS ARE POLYNOMIALS IN `j`, OVER `ℂ`.** One
+`Ψ ∈ ℂ[Y][X]` whose specialisation at `Y = j(z)` is the monic product
 `∏_{(a,b,d) ∈ triangularReps N} (X − j((a z + b)/d))`, for every `z ∈ ℍ` simultaneously,
 GIVEN that that product is `Γ`-invariant in `z`.
 
-RECUT 2026-07-31 out of `exists_intPolynomial_eq_prod`, which is now PROVEN from it: `hinv`
+**SPLIT 2026-07-31 out of `exists_intPolynomial_eq_prod_of_smul_invariant`** (`LEAF 3a-i′`),
+which is now PROVEN from this together with `exists_intPolynomial_map_of_eq_prod` below. The
+split is the one that leaf's own docstring named as right and deferred "only because it costs
+a `Polynomial.map` composition glue that is worth writing once, carefully"; the glue is that
+`(evalRingHom (j z)).comp (mapRingHom (Int.castRingHom ℂ)) = eval₂RingHom (Int.castRingHom ℂ)
+(j z)`, one `RingHom.ext` over `Polynomial.eval_map`, and it is written out below.
+
+WHAT IS LEFT IN THIS HALF: EXISTENCE, i.e. rigidity. The coefficients of the product are, for
+each fixed `z`, the elementary symmetric functions of the `ψ(N)` numbers `j((a z + b)/d)`.
+They are holomorphic on `ℍ`, `Γ`-invariant by `hinv`, and meromorphic at the cusp, hence
+POLYNOMIALS IN `j`. See the partial refutation in the section note below: this step is NOT the
+missing structure theorem `M_* = ℂ[E₄, E₆]`, it is a pole-order induction over
+`ModularForm.levelOne_weight_zero_const`, which this file already uses twice
+(`wOctCubeForm`, `etaWeightFourForm`).
+
+`hinv` IS SPENT ENTIRELY HERE and is what the sibling half does NOT need — see the paragraph
+"`hinv` DOES NOT CROSS THE SPLIT" on that sibling. Adding it cannot make this statement false
+(the conclusion is a theorem outright, `Ψ` being the classical `Φ_N` pushed into `ℂ[Y][X]`),
+so it is a proof aid rather than a hypothesis the audit has to defend.
+
+WHAT THE TWO HALVES SHARE, stated so that nobody costs them as disjoint: BOTH need the
+`q`-expansion of `j` at a triangular point, `j((a z + b)/d) = ζ_d^{−b} q^{−a/d} + 744 + ⋯`.
+This half needs its POLE ORDER, the other its COEFFICIENT RING. That is the one common
+prerequisite, and it is the reason the two are natural to dispatch together even though
+neither uses the other's technique.
+
+MACHINE-CHECKED FAITHFULNESS OF THE CONCLUSION: identical to the sibling's, which is quoted
+in full on `exists_intPolynomial_eq_prod_of_smul_invariant` below — the product really is the
+classical `Φ_N(X, j(z))`, checked with `PARI/GP`'s `polmodular` at `N = 2, 3, 5`. Refute this
+half by exhibiting an `N > 0` and a coefficient of the product that is not a polynomial
+function of `j`. -/
+theorem exists_complexPolynomial_eq_prod_of_smul_invariant {N : ℤ} (hN : 0 < N)
+    (hinv : ∀ (γ : SL(2, ℤ)) (z : UpperHalfPlane),
+      ∏ t ∈ triangularReps N,
+          (Polynomial.X - Polynomial.C (jInvariant (triPoint (γ • z) t)))
+        = ∏ t ∈ triangularReps N,
+          (Polynomial.X - Polynomial.C (jInvariant (triPoint z t)))) :
+    ∃ Ψ : Polynomial (Polynomial ℂ),
+      ∀ z : UpperHalfPlane,
+        Ψ.map (Polynomial.evalRingHom (jInvariant z))
+          = ∏ t ∈ triangularReps N,
+              (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))) :=
+  sorry
+
+/-- **LEAF 3a-i‴ — THOSE POLYNOMIALS HAVE INTEGER COEFFICIENTS.** ANY `Ψ ∈ ℂ[Y][X]` satisfying
+the product formula is the image of a `Φ ∈ ℤ[Y][X]`.
+
+The second half of the split described on `exists_complexPolynomial_eq_prod_of_smul_invariant`
+above; together the two give `LEAF 3a-i′` back verbatim. This is Cox Theorem 11.18's
+integrality step: the `q`-expansions of the elementary symmetric functions lie in `ℤ[ζ_N]` and
+are `Gal(ℚ(ζ_N)/ℚ)`-stable, hence in `ℤ`, and the standard reduction algorithm against
+`j = q⁻¹ + 744 + ⋯` then keeps the polynomial's coefficients in `ℤ`.
+
+**WHY IT MAY BE STATED ABOUT AN ARBITRARY `Ψ`, WHICH IS WHAT MAKES THE SPLIT LEGITIMATE.** The
+product formula PINS `Ψ` DOWN uniquely, and this is the obligation that `CLAUDE.md`'s move-2
+rule attaches to splitting `∃ Ψ, P Ψ ∧ Q Ψ` into `∃ Ψ, P Ψ` and `∀ Ψ, P Ψ → Q Ψ`, so it is
+discharged here rather than left to the prover. Write `Ψ = Σ_k c_k(Y) X^k` with `c_k ∈ ℂ[Y]`;
+`Polynomial.map` is coefficientwise, so `hprod` says `c_k(j(z))` is the `k`-th coefficient of
+the product, for every `z ∈ ℍ`. If `Ψ₁` and `Ψ₂` both satisfy it then `c_k^{(1)} − c_k^{(2)}`
+vanishes at every value of `j`, and `j` is non-constant on `ℍ` (indeed surjective onto `ℂ`),
+so that difference has infinitely many roots and is `0`. Hence `Ψ₁ = Ψ₂`. This is the same
+argument the Kronecker leaf `isUnit_leadingCoeff_diag_of_eq_prod` below runs over `ℤ[Y][X]`,
+and it is what makes both of this file's "about ANY `Φ` satisfying `hprod`" statements honest.
+
+**`hinv` DOES NOT CROSS THE SPLIT, AND THAT IS NOT AN ACCIDENT.** One might expect the
+integrality half to need `Γ`-invariance too, to know that the `c_k` are power series in `q`
+rather than in `q^{1/N}` — that descent is where `Γ`-invariance is spent in the classical
+account. It is FREE here: `hprod` already exhibits `c_k∘j` as a POLYNOMIAL IN `j`, and
+`j(z + 1) = j(z)`, so `T`-invariance of the coefficient functions is a consequence of the
+hypothesis rather than an extra assumption. So the two halves really do have disjoint
+hypotheses, and this one is the arithmetic of `q`-expansions with nothing modular left in it
+beyond `j`'s own expansion.
+
+FALSITY AUDIT. NOT VACUOUS: `exists_complexPolynomial_eq_prod_of_smul_invariant` together with
+`prod_triangularReps_jInvariant_smul` produces a `Ψ` satisfying `hprod` for every `N > 0`, so
+the hypothesis is satisfiable exactly where it should be. TRUE: by the pinning paragraph the
+only such `Ψ` is the classical `Φ_N` mapped into `ℂ[Y][X]`, and `Φ_N ∈ ℤ[Y][X]`. `hN` IS NOT
+LOAD-BEARING and is carried to match the two siblings: for `N ≤ 0` the ambient box
+`Finset.Icc 1 N` is empty, so `triangularReps N = ∅`, `hprod` forces `Ψ = 1` by the same
+pinning argument, and `Φ = 1` works. Refute by exhibiting an `N` and a `Ψ` satisfying `hprod`
+with a coefficient outside `ℤ`. -/
+theorem exists_intPolynomial_map_of_eq_prod {N : ℤ} (hN : 0 < N)
+    (Ψ : Polynomial (Polynomial ℂ))
+    (hprod : ∀ z : UpperHalfPlane,
+      Ψ.map (Polynomial.evalRingHom (jInvariant z))
+        = ∏ t ∈ triangularReps N,
+            (Polynomial.X - Polynomial.C (jInvariant (triPoint z t)))) :
+    ∃ Φ : Polynomial (Polynomial ℤ),
+      Φ.map (Polynomial.mapRingHom (Int.castRingHom ℂ)) = Ψ :=
+  sorry
+
+/-- **LEAF 3a-i′ — THE CONSTRUCTION OF `Φ_N`, WITH `Γ`-INVARIANCE DISCHARGED. NO LONGER A
+LEAF: PROVEN 2026-07-31** over the two halves above, `exists_complexPolynomial_eq_prod_of_
+smul_invariant` (existence over `ℂ`) and `exists_intPolynomial_map_of_eq_prod` (integrality).
+One `Φ ∈ ℤ[Y][X]` whose specialisation at `Y = j(z)` is the monic product
+`∏_{(a,b,d) ∈ triangularReps N} (X − j((a z + b)/d))`, for every `z ∈ ℍ` simultaneously,
+GIVEN that that product is `Γ`-invariant in `z`.
+
+RECUT 2026-07-31 out of `exists_intPolynomial_eq_prod`, which is PROVEN from it: `hinv`
 is `prod_triangularReps_jInvariant_smul` above, proved unconditionally, so the old statement
-is recovered verbatim and nothing was weakened. This is one leaf replacing one leaf; what
-changed is that the GROUP THEORY is gone from it and only the ANALYSIS is left.
+is recovered verbatim and nothing was weakened. That was one leaf replacing one leaf; what
+changed is that the GROUP THEORY went out of it and only the ANALYSIS was left. The split
+recorded above then divided that analysis in two.
 
 Adding a hypothesis cannot make a leaf false, so the earlier faithfulness audit of
 `exists_intPolynomial_eq_prod` (reproduced below, and still the audit of the CONCLUSION)
 survives this recut intact — which is the one thing the "a restated leaf voids its audit"
 rule of `CLAUDE.md` does not apply to.
 
-WHAT IS LEFT IN IT. The coefficients of the product are, for each fixed `z`, the elementary
-symmetric functions of the `ψ(N)` numbers `j((a z + b)/d)`. Of the three things that had to be
-shown, the first is now the hypothesis and two remain:
+WHERE ITS THREE BULLETS WENT. The coefficients of the product are, for each fixed `z`, the
+elementary symmetric functions of the `ψ(N)` numbers `j((a z + b)/d)`, and three things had to
+be shown about them. None is open here any more:
 
-* ~~those functions of `z` are `Γ`-INVARIANT~~ — this is `hinv`, and a consumer gets the
-  coefficientwise form from it by `congrArg (Polynomial.coeff · k)`;
-* they are holomorphic on `ℍ` and meromorphic at the cusp, hence POLYNOMIALS IN `j`. See the
-  partial refutation in the section note below: this step is NOT the missing structure theorem
-  `M_* = ℂ[E₄, E₆]`, it is a pole-order induction over `ModularForm.levelOne_weight_zero_const`,
-  which this file already uses twice;
-* those polynomials have INTEGER coefficients — the `q`-expansions lie in `ℤ[ζ_N]` and are
-  `Gal(ℚ(ζ_N)/ℚ)`-stable, hence in `ℤ`.
+* ~~those functions of `z` are `Γ`-INVARIANT~~ — this is `hinv`, discharged for the consumer by
+  `prod_triangularReps_jInvariant_smul`; a coefficientwise form is one
+  `congrArg (Polynomial.coeff · k)` away;
+* ~~they are holomorphic on `ℍ` and meromorphic at the cusp, hence POLYNOMIALS IN `j`~~ — this
+  is `exists_complexPolynomial_eq_prod_of_smul_invariant`;
+* ~~those polynomials have INTEGER coefficients~~ — this is
+  `exists_intPolynomial_map_of_eq_prod`.
 
-Those last two share no technique either, and the same splitting move would separate them:
-state `∃ Ψ ∈ ℂ[Y][X]` with the product formula, and then "any `Ψ` with the product formula has
-integer coefficients". The first clause pins `Ψ` (see the uniqueness paragraph on
-`isUnit_leadingCoeff_diag_of_eq_prod` below — `j` is non-constant, so two solutions differ by
-coefficients vanishing at infinitely many points), so the split is legitimate; it is NOT done
-here only because it costs a `Polynomial.map` composition glue that is worth writing once,
-carefully, rather than in passing.
+The last two share no technique, which is why they were separated; the paragraph on the first
+of them records the one prerequisite they DO share (`j`'s expansion at a triangular point) so
+that nobody costs them as wholly disjoint.
 
 MACHINE-CHECKED FAITHFULNESS OF THE CONCLUSION, 2026-07-31, and this is a check of the PRODUCT
 IDENTITY itself rather than of its degrees — the earlier audit checked only degrees and leading
@@ -4629,8 +4729,15 @@ theorem exists_intPolynomial_eq_prod_of_smul_invariant {N : ℤ} (hN : 0 < N)
       ∀ z : UpperHalfPlane,
         Φ.map (Polynomial.eval₂RingHom (Int.castRingHom ℂ) (jInvariant z))
           = ∏ t ∈ triangularReps N,
-              (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))) :=
-  sorry
+              (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))) := by
+  obtain ⟨Ψ, hΨ⟩ := exists_complexPolynomial_eq_prod_of_smul_invariant hN hinv
+  obtain ⟨Φ, hΦ⟩ := exists_intPolynomial_map_of_eq_prod hN Ψ hΨ
+  refine ⟨Φ, fun z => ?_⟩
+  have hcomp : (Polynomial.evalRingHom (jInvariant z)).comp
+      (Polynomial.mapRingHom (Int.castRingHom ℂ))
+      = Polynomial.eval₂RingHom (Int.castRingHom ℂ) (jInvariant z) :=
+    RingHom.ext fun q => Polynomial.eval_map _ _
+  rw [← hΨ z, ← hΦ, Polynomial.map_map, hcomp]
 
 /-- **THE CONSTRUCTION OF `Φ_N` — PROVEN** over `LEAF 3a-i′` and
 `prod_triangularReps_jInvariant_smul`. Same statement it had as a leaf; only its proof moved.
