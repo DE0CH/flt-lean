@@ -69,3 +69,4 @@
 - [A private import suffices for proof bodies](lean-private-import-suffices-for-proof-bodies.md) — only STATEMENTS (and exposed def bodies) need `public import`; ModThree's docstring said otherwise for three days and made a leaf look like it needed a header edit it did not
 
 - [Hoist vs concurrent proof](flt-hoist-vs-concurrent-proof.md) — relocating a leaf and proving it in place merge into a duplicate declaration; keep the hoisted location, move the proof
+- [Non-public import = duplicate-cut blind spot](flt-nonpublic-import-duplicate-cut.md) — X1 cannot see EllipticScheme, so two agents cut the same general-field leaf a day apart; grep the whole tree for the CONTENT, and a plain `import` in your own file closes it by `exact`

@@ -170,6 +170,22 @@ public import Mathlib.NumberTheory.ModularForms.BoundedAtCusp
 -- mentions it, and `X0.lean` reaches the same file only through its private
 -- `EllipticScheme` import, which this module does not inherit.
 import Fermat.FLT.Mathlib.AlgebraicGeometry.CurveAffineComplement
+-- **The general-field layer at the foot of `EllipticScheme.lean`.**  Added 2026-07-31.
+-- `exists_ellipticScheme_weierstrassChart_addEquiv_field` there is the leaf that
+-- `exists_ellipticScheme_of_weierstrass_field` below is now PROVEN over, and
+-- `exists_ellipticSchemeSection_of_weierstrassPoint` after it.  Both were cut here on
+-- 2026-07-31 as base-generalisations "owed by `EllipticScheme.lean`", one day after
+-- that file had already grown them — a duplicate cut that was invisible precisely
+-- because this module could not name the file (see CLAUDE.md, "A NON-PUBLIC IMPORT
+-- UPSTREAM IS A DUPLICATE-CUT BLIND SPOT").
+--
+-- NON-public, for the same reason `X0.lean`'s import of it is: a `public import`
+-- propagates the reserved token `over` through this whole cone and silently truncates
+-- any structure carrying a field of that name.  Nothing in this file's SIGNATURES
+-- mentions the module — the two statements below are written in `AbelianScheme.lean`'s
+-- vocabulary and mention neither `proj` nor `projToSpec` — so a proof-body-only import
+-- is exactly enough, and no re-export in `X0.lean` is needed.
+import Fermat.FLT.ModularCurve.EllipticScheme
 
 @[expose] public section
 
@@ -5916,8 +5932,16 @@ theorem exists_ellipticScheme_of_weierstrass_field (L : Type) [Field L] [Decidab
     ∃ (A : Scheme.{0}) (f : A ⟶ Spec (CommRingCat.of L)) (ab : AbelianSchemeStruct f),
       SmoothOfRelativeDimension 1 f ∧
         (letI := ab.addCommGroup (𝟙 (Spec (CommRingCat.of L)))
-         Nonempty (E.toAffine.Point ≃+ RelPoint f (𝟙 (Spec (CommRingCat.of L))))) :=
-  sorry
+         Nonempty (E.toAffine.Point ≃+ RelPoint f (𝟙 (Spec (CommRingCat.of L))))) := by
+  -- `EllipticScheme.lean`'s own general-field leaf says strictly more: it also produces
+  -- the Weierstrass CHART (the open immersion of `Spec L[E]` onto the complement of the
+  -- zero section), which nothing here consumes, and it orients the `≃+` the other way.
+  -- `(E⁄L)` is `E.toAffine` — `baseChange` along `algebraMap L L = RingHom.id L`, which
+  -- is `rfl` on the nose, structure eta doing the rest — so no transport is needed and
+  -- `AddEquiv.symm` is the whole of the difference.
+  obtain ⟨A, f, ab, hdim, -, he⟩ :=
+    exists_ellipticScheme_weierstrassChart_addEquiv_field (k := L) E
+  exact ⟨A, f, ab, hdim, he.map AddEquiv.symm⟩
 
 /-- **A ring map out of a field into an algebraically closed field EXTENDS
 to the algebraic closure, and the extension COMMUTES** (PROVEN
@@ -6067,8 +6091,32 @@ theorem exists_ellipticSchemeSection_of_weierstrassPoint {L : Type} [Field L]
       letI := ab.addCommGroup (specAlgClos L ≫ 𝟙 (Spec (CommRingCat.of L)))
       addOrderOf
           (RelPoint.ofSection s hs (specAlgClos L ≫ 𝟙 (Spec (CommRingCat.of L))))
-        = addOrderOf P :=
-  sorry
+        = addOrderOf P := by
+  -- The section is the `≃+`-image of `P` among the `L`-SECTIONS; the order then travels
+  -- UP to the geometric point, which is the direction this leaf's own docstring records
+  -- as free.  This is `nonempty_gamma1Datum_of_weierstrassPoint`'s `geom_order` argument
+  -- run at the single base point `specAlgClos L ≫ 𝟙`, and it needs both halves: additivity
+  -- alone gives only `addOrderOf P ∣ addOrderOf (section)`, and it is INJECTIVITY that
+  -- supplies the reverse divisibility.
+  obtain ⟨A, f, ab, hdim, ⟨e⟩⟩ := exists_ellipticScheme_of_weierstrass_field L E
+  letI := ab.addCommGroup (𝟙 (Spec (CommRingCat.of L)))
+  refine ⟨A, f, ab, hdim, (e P).1, (e P).2, ?_⟩
+  letI := ab.addCommGroup (specAlgClos L ≫ 𝟙 (Spec (CommRingCat.of L)))
+  haveI : Epi (specAlgClos L ≫ 𝟙 (Spec (CommRingCat.of L))) :=
+    epi_of_hom_spec_field _
+  have hg : (specAlgClos L ≫ 𝟙 (Spec (CommRingCat.of L))) ≫ 𝟙 (Spec (CommRingCat.of L))
+      = specAlgClos L ≫ 𝟙 (Spec (CommRingCat.of L)) := Category.comp_id _
+  let Φ : RelPoint f (𝟙 (Spec (CommRingCat.of L))) →+
+      RelPoint f (specAlgClos L ≫ 𝟙 (Spec (CommRingCat.of L))) :=
+    { toFun := fun w => RelPoint.pre _ hg w
+      map_zero' := ab.pre_zero _ hg
+      map_add' := fun a b => ab.pre_add _ hg a b }
+  have hinj : Function.Injective Φ := relPoint_pre_injective_of_epi _ hg
+  -- `RelPoint.pre h hg x` is `⟨h ≫ x.1, _⟩` and `RelPoint.ofSection sec _ g` is
+  -- `⟨g ≫ sec, _⟩`; at `h = g` and `x.1 = sec` those are the same morphism.
+  have hΦ : Φ (e P) = RelPoint.ofSection (e P).1 (e P).2
+      (specAlgClos L ≫ 𝟙 (Spec (CommRingCat.of L))) := Subtype.ext rfl
+  rw [← hΦ, addOrderOf_injective Φ hinj, AddEquiv.addOrderOf_eq]
 
 /-- **A point of exact order `N` on an elliptic curve over an arbitrary
 field `L` gives a `Γ₁(N)`-structure over `Spec L`** (**PROVEN 2026-07-30**
