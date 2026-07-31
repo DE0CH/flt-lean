@@ -11845,3 +11845,95 @@ Three riders, all of which cost something here:
   build and the merge worker must know which it is holding.
 * The scratch must repeat the target file's `local notation` and non-`public` imports, and
   must NOT inherit `open`s the target does not have — mirror the target, do not minimise.
+## TWO FILES CAN CARRY THE SAME CUT UNDER DIFFERENT NAMES — READ THE CONSUMER'S PROOF, NOT THE LEAF'S NAME
+(2026-07-31, `flt-lean-355`.)  `AlgebraicGeometry.mem_smoothLocus_of_comp_of_flat` in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/Morphisms/SmoothLocusPerfect.lean` and
+`Fermat.mem_smoothLocus_of_comp_of_smooth` in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/SmoothLocusDescent.lean` are the same theorem,
+cut ONE DAY APART into two different files that `X0.lean` `public import`s side by
+side.  Both are open, both compile, both pass the three-part ownership test, both are
+in the frontier scan.  One is consumed and one is dead.
+**Nothing keyed on the leaf's NAME can see this.**  The two names share no component;
+the two docstrings cite the same fact under two different Stacks tags (`02VL` and
+`036M`); `own.py` and `leafstat.py` both correctly report "unowned, still open" for
+each.  This is the sibling of the already-recorded
+"[A leaf can name the same theorem in a different vocabulary]" trap, with an extra
+twist: here the duplication is across FILES, so even reading the whole enclosing
+module does not reveal it.
+**The check that does work is one grep, and it is at the CONSUMER:** open the proof
+body of the theorem the leaf claims to serve and read which name it actually calls.
+    grep -n 'smoothLocus_pairSquareMap_le' -A6 Fermat/FLT/ModularCurve/X0.lean
+Two lines of proof term settled it: `Fermat.mem_smoothLocus_of_commSq`, i.e. the
+`SmoothLocusDescent` copy.  Then a comment-stripped scan of `Fermat/` for the other
+three names returned zero code hits — an OPEN leaf that is also DEAD, the seventh
+invisibility class, arrived at through duplication rather than through a dead
+consumer.
+**And the dead copy was the more GENERAL one, which is why it looked like the real
+target.**  It asked only `Flat p` where the live one asks `Smooth p`.  That extra
+generality is exactly the unreachable part — see the next section — so the leaf that
+read as "the same thing, stated better" was the one nobody could ever close and
+nobody needed.  **When two rival cuts differ by a hypothesis, price the DIFFERENCE
+before assuming the stronger statement is the one to keep.**
+## `Algebra.FormallySmooth` IS A CONJUNCTION AT THIS PIN — a formal-smoothness leaf splits with `refine ⟨?_, ?_⟩`
+(Same task, and it is what turned a leaf priced as "build a theory" into two named
+citations in an afternoon.)  It is natural to think of formal smoothness as the
+LIFTING property, and to conclude that a descent statement about it needs a
+lifting/torsor/obstruction argument.  At this pin that is backwards:
+    class Algebra.FormallySmooth : Prop where
+      projective_kaehlerDifferential : Module.Projective A Ω[A⁄R]
+      subsingleton_h1Cotangent       : Subsingleton (H1Cotangent R A)
+(`Mathlib/RingTheory/Smooth/Basic.lean`; `iff_comp_surjective` is a THEOREM about it,
+not the definition).  So **any leaf whose conclusion is `FormallySmooth` splits along
+that conjunction with nothing left over**, and in practice the two halves descend by
+completely different mechanisms — which is what makes the split worth taking even
+when it raises the leaf count.
+`Fermat.formallySmooth_of_comp_of_faithfullyFlat` (`R → S → T`, `S → T` faithfully
+flat and formally smooth, `R → T` formally smooth ⟹ `R → S` formally smooth) went
+`1 → 2` this way and both residues became literature citations:
+* the `H¹` half is the LEFT END of Jacobi–Zariski.  Mathlib proves exactness at the
+  middle term only — `Algebra.H1Cotangent.exact_liftBaseChange_map_of_flat`, Stacks
+  `00S2` — because the NAIVE cotangent complex has no `H₂` to continue with, and the
+  file's own header says so.  `FormallySmooth S T` is precisely what makes
+  `H₂(L_{T/S}) = 0`;
+* the `Ω` half is proven outright here: `H¹(L_{T/S}) = 0` makes
+  `KaehlerDifferential.mapBaseChange` injective by
+  `Algebra.H1Cotangent.exact_δ_mapBaseChange`; `Ω[T⁄S]` projective gives a section of
+  `Ω[T⁄R] ↠ Ω[T⁄S]`; `Function.Exact.split_tfae` converts that section into a
+  RETRACTION; `Module.Projective.of_split` then makes `T ⊗_S Ω[S⁄R]` projective over
+  `T`.  The residue is descent of projectivity along `S → T`, i.e. Raynaud–Gruson /
+  Stacks `058B` — the same statement mathlib names as the obstruction to its own
+  `proof_wanted` in `Mathlib/RingTheory/Etale/Descent.lean`.
+**The reusable toolkit, since none of it is obvious from the class name**:
+`Algebra.H1Cotangent.exact_δ_mapBaseChange`,
+`KaehlerDifferential.exact_mapBaseChange_map`, `KaehlerDifferential.map_surjective`,
+`Function.Exact.split_tfae` (section ⟺ retraction ⟺ direct-sum splitting),
+`Module.Projective.of_split`, `Module.projective_lifting_property`,
+`Module.FaithfullyFlat.lTensor_reflects_triviality` (`Subsingleton (T ⊗ M) ⟹
+Subsingleton M`), `Module.Flat.projective_of_finitePresentation`.  The whole
+decomposition above compiled on the FIRST attempt in a 100-line module that
+elaborates in four seconds.
+**What is NOT at this pin, measured rather than assumed** — three absences that
+between them decide which descent statements are reachable:
+* **Serre's criterion, in either direction.**  `grep -rn IsRegularLocalRing
+  .lake/packages/mathlib/Mathlib` returns only `RegularLocalRing/{Defs,Polynomial}`;
+  `RingTheory/Regular/ProjectiveDimension.lean` has `projectiveDimension_quotient_eq_length`
+  for a regular *sequence* and nothing else; there is no `Auslander`, no `Buchsbaum`.
+  So *"`A → B` flat local of Noetherian local rings, `B` regular ⟹ `A` regular"*
+  (Matsumura 23.7, Stacks `00OJ`) is out of reach, and with it the FLAT case of
+  Stacks `02VL`.  **Adding `PerfectField`/`CharZero` does not help** — the regularity
+  descent is needed over the residue field whatever its characteristic, which is the
+  trap in the natural reading of `Algebra.IsSmoothAt.of_formallySmooth_fiber`.
+* **Raynaud–Gruson** (projectivity descends along faithfully flat) — absent, and
+  recorded as such by mathlib itself.
+* **Flat descent along a faithfully flat map** — also absent, which matters because it
+  is the cheap escape from the previous item: for a FINITELY PRESENTED module
+  projectivity is flatness (`Module.Flat.projective_of_finitePresentation`), so a
+  successor who threads `[Module.FinitePresentation S Ω[S⁄R]]` needs only the ideal
+  criterion for flatness plus `Module.FaithfullyFlat.lTensor_injective_iff_injective`.
+Corollary about `Algebra.IsSmoothAt.of_formallySmooth_fiber`
+(`Mathlib/RingTheory/Smooth/Fiber.lean`), because it is the route every audit of this
+node reaches for first: it is real and it is proven, but its fibre clause asks for
+formal smoothness of `𝓀[R] ⊗_R S` over `𝓀[R]`, and over a perfect field that is
+regularity of a LOCAL ring — so it converts a smoothness-descent problem into a
+regularity-descent problem, i.e. into the first absence above.  It is the right tool
+for ASCENT and the wrong one for descent along the source.

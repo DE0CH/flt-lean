@@ -9,6 +9,8 @@ public import Mathlib.AlgebraicGeometry.Morphisms.Smooth
 public import Mathlib.AlgebraicGeometry.Morphisms.Flat
 public import Mathlib.RingTheory.Flat.FaithfullyFlat.Algebra
 public import Mathlib.RingTheory.RingHom.FaithfullyFlat
+public import Mathlib.RingTheory.RingHom.Smooth
+public import Mathlib.RingTheory.Kaehler.JacobiZariski
 
 /-!
 # The smooth locus along a composition
@@ -23,8 +25,12 @@ composition `p ≫ f`, both of which `mathlib` states only in the GLOBAL form
 * `Fermat.mem_smoothLocus_of_comp_of_smooth` — *smoothness DESCENDS along a smooth
   morphism*: if `p ≫ f` is smooth at `x` and `p` is smooth, then `f` is smooth at
   `p x`.  This is the pointwise form of Stacks `036M` ("smooth is fppf local on the
-  source") and it rests on the one sorry leaf of this file,
-  `Fermat.formallySmooth_of_comp_of_faithfullyFlat`.
+  source").  `Fermat.formallySmooth_of_comp_of_faithfullyFlat`, the ring-level
+  statement under it, was PROVEN on 2026-07-31 over the two sorry leaves of this file,
+  `Fermat.injective_liftBaseChange_h1Cotangent_of_formallySmooth` (the left end of the
+  Jacobi–Zariski sequence for a formally smooth upper map) and
+  `Fermat.projective_of_projective_tensorProduct_of_faithfullyFlat` (Raynaud–Gruson,
+  Stacks `058B`).
 
 Both are extracted from `Fermat/FLT/ModularCurve/X0.lean`, where the second is the
 whole content of the `⊆` half of `smoothLocus_pairSquareMap` — the last obstruction
@@ -42,12 +48,169 @@ universe u
 
 namespace Fermat
 
+open scoped TensorProduct
+
+section Descent
+
+variable (R S T : Type*) [CommRing R] [CommRing S] [CommRing T]
+variable [Algebra R S] [Algebra S T] [Algebra R T] [IsScalarTower R S T]
+
+/-- **THE JACOBI–ZARISKI SEQUENCE EXTENDS TO THE LEFT WITH A ZERO WHEN THE UPPER MAP
+IS FORMALLY SMOOTH** (sorry leaf, cut 2026-07-31 out of
+`formallySmooth_of_comp_of_faithfullyFlat` below).  For `R → S → T` with `T` FLAT and
+FORMALLY SMOOTH over `S`,
+
+    T ⊗[S] H¹(L_{S/R}) → H¹(L_{T/R})
+
+is INJECTIVE.
+
+**Why it is VOUCHED.**  In the derived world the transitivity triangle
+`L_{S/R} ⊗^L_S T → L_{T/R} → L_{T/S}` gives a long exact sequence
+
+    H₂(L_{T/S}) → H₁(L_{S/R} ⊗^L_S T) → H₁(L_{T/R}) → H₁(L_{T/S}) → …
+
+`T` flat over `S` collapses `L_{S/R} ⊗^L_S T` to `L_{S/R} ⊗_S T`, so its `H₁` is
+`T ⊗_S H₁(L_{S/R})` — that is precisely the hypothesis under which mathlib proves
+`Algebra.H1Cotangent.exact_liftBaseChange_map_of_flat`.  `T` formally smooth over `S`
+makes `L_{T/S}` a projective module in degree `0`, so `H₂(L_{T/S}) = 0` and the map is
+injective.
+
+**WHAT IS MISSING, checked against the pin on 2026-07-31.**  Mathlib's Jacobi–Zariski
+file (`Mathlib/RingTheory/Kaehler/JacobiZariski.lean`) proves exactness of
+
+    T ⊗[S] H¹(L_{S/R}) →ˡᵇᶜ H¹(L_{T/R}) → H¹(L_{T/S})
+
+at the MIDDLE term (`Algebra.H1Cotangent.exact_liftBaseChange_map_of_flat`, `[stacks
+00S2]`) and stops there, because the NAIVE cotangent complex has no `H₂` to continue
+with — the file's own header says as much.  So the missing input is either `H₂` of the
+full cotangent complex (absent at this pin), or, in the snake-lemma presentation
+mathlib actually uses, injectivity of
+
+    T ⊗[S] P.Cotangent → (Q.comp P).Cotangent
+
+for `P` a presentation of `S` over `R` and `Q` one of `T` over `S`.  That second form is
+the cheaper target: with `T` formally smooth over `S` the presentation `Q` may be chosen
+so that `Q.Cotangent → Q.CotangentSpace` is split injective, and the snake lemma then
+delivers the whole left end.  Everything else in `formallySmooth_of_comp_of_faithfullyFlat`
+is now proven over this one statement and over `Module.Projective`-descent below.
+
+**`Algebra.FormallySmooth S T` IS LOAD-BEARING.**  Without it the statement is the flat
+case of Stacks `02VL`, whose only known proof runs through *"`A → B` flat local of
+Noetherian local rings, `B` regular ⟹ `A` regular"* (Stacks `00OJ`), i.e. through Serre's
+criterion — which is at this pin in NEITHER direction.  See the deleted-block note in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/Morphisms/SmoothLocusPerfect.lean`. -/
+theorem injective_liftBaseChange_h1Cotangent_of_formallySmooth
+    [Module.Flat S T] [Algebra.FormallySmooth S T] :
+    Function.Injective ((Algebra.H1Cotangent.map R R S T).liftBaseChange T) :=
+  sorry
+
+/-- **PROJECTIVITY DESCENDS ALONG A FAITHFULLY FLAT RING MAP** (sorry leaf, cut
+2026-07-31 out of `formallySmooth_of_comp_of_faithfullyFlat` below) — Raynaud–Gruson,
+Stacks `058B`.
+
+This is the SAME statement mathlib names as the obstruction to its own `proof_wanted`
+`Algebra.FormallySmooth.of_formallySmooth_tensorProduct_of_faithfullyFlat`
+(`Mathlib/RingTheory/Etale/Descent.lean`), so it is a mathlib-facing target and not a
+project-specific one.
+
+**A cheaper escape, if a successor prefers it to Raynaud–Gruson.**  For a FINITELY
+PRESENTED `M` the statement is elementary — projective ⟺ flat and finitely presented,
+and flatness descends along a faithfully flat map — so adding
+`[Module.FinitePresentation S M]` here discharges it without any of the hard theory.  The
+consumer needs it at `M := Ω[S⁄R]`, and every `S` reaching it in this development is a
+stalk of a scheme locally of finite presentation, hence essentially of finite
+presentation over `R`.  Threading that hypothesis is an INTERFACE change through
+`mem_smoothLocus_of_comp_of_smooth`, `mem_smoothLocus_of_commSq` and
+`smoothLocus_pairSquareMap_le` in `Fermat/FLT/ModularCurve/X0.lean`, which is why it was
+not done here; it is a legitimate and much smaller alternative to proving this leaf. -/
+theorem projective_of_projective_tensorProduct_of_faithfullyFlat
+    [Module.FaithfullyFlat S T] (M : Type*) [AddCommGroup M] [Module S M]
+    [Module.Projective T (T ⊗[S] M)] :
+    Module.Projective S M :=
+  sorry
+
+/-- **`H¹(L_{S/R}) = 0` DESCENDS** (PROVEN 2026-07-31 over
+`injective_liftBaseChange_h1Cotangent_of_formallySmooth`) — half of
+`formallySmooth_of_comp_of_faithfullyFlat`.
+
+`T ⊗[S] H¹(L_{S/R})` injects into `H¹(L_{T/R})`, which vanishes because `T` is formally
+smooth over `R`; and a faithfully flat base change reflects triviality
+(`Module.FaithfullyFlat.lTensor_reflects_triviality`). -/
+theorem subsingleton_h1Cotangent_of_faithfullyFlat
+    [Module.FaithfullyFlat S T] [Algebra.FormallySmooth S T] [Algebra.FormallySmooth R T] :
+    Subsingleton (Algebra.H1Cotangent R S) := by
+  have hinj := injective_liftBaseChange_h1Cotangent_of_formallySmooth R S T
+  haveI : Subsingleton (T ⊗[S] Algebra.H1Cotangent R S) :=
+    ⟨fun _ _ => hinj (Subsingleton.elim _ _)⟩
+  exact Module.FaithfullyFlat.lTensor_reflects_triviality S T (Algebra.H1Cotangent R S)
+
+/-- **PROJECTIVITY OF `Ω[S⁄R]` DESCENDS** (PROVEN 2026-07-31 over
+`projective_of_projective_tensorProduct_of_faithfullyFlat`) — the other half of
+`formallySmooth_of_comp_of_faithfullyFlat`.
+
+The Jacobi–Zariski sequence
+
+    H¹(L_{T/S}) →ᵟ T ⊗[S] Ω[S⁄R] → Ω[T⁄R] → Ω[T⁄S] → 0
+
+has `H¹(L_{T/S}) = 0` because `T` is formally smooth over `S`, so its left map is
+INJECTIVE; and `Ω[T⁄S]` is projective for the same reason, so the surjection on the right
+has a section and the short exact sequence SPLITS.  Hence `T ⊗[S] Ω[S⁄R]` is a direct
+summand of `Ω[T⁄R]`, which is projective because `T` is formally smooth over `R`.  The
+descent along `S → T` is the only step that is not mathlib. -/
+theorem projective_kaehlerDifferential_of_faithfullyFlat
+    [Module.FaithfullyFlat S T] [Algebra.FormallySmooth S T] [Algebra.FormallySmooth R T] :
+    Module.Projective S (Ω[S⁄R]) := by
+  -- `H¹(L_{T/S}) = 0` makes the base-change map injective
+  have hinj : Function.Injective (KaehlerDifferential.mapBaseChange R S T) := by
+    intro x y hxy
+    have hx : KaehlerDifferential.mapBaseChange R S T (x - y) = 0 := by
+      rw [map_sub, hxy, sub_self]
+    obtain ⟨z, hz⟩ := (Algebra.H1Cotangent.exact_δ_mapBaseChange R S T (x - y)).mp hx
+    rw [Subsingleton.elim z 0, map_zero] at hz
+    exact sub_eq_zero.mp hz.symm
+  -- `Ω[T⁄S]` is projective, so the surjection `Ω[T⁄R] ↠ Ω[T⁄S]` has a section
+  obtain ⟨sec, hsec⟩ := Module.projective_lifting_property
+    (KaehlerDifferential.map R S T T) (LinearMap.id (R := T) (M := Ω[T⁄S]))
+    (KaehlerDifferential.map_surjective (R := R) (S := S) (B := T))
+  -- hence the short exact sequence splits and the base-change map is split injective
+  obtain ⟨ret, hret⟩ :=
+    (((KaehlerDifferential.exact_mapBaseChange_map R S T).split_tfae hinj
+      (KaehlerDifferential.map_surjective (R := R) (S := S) (B := T))).out 0 1 rfl rfl).mp
+      ⟨sec, hsec⟩
+  haveI : Module.Projective T (T ⊗[S] Ω[S⁄R]) :=
+    Module.Projective.of_split (KaehlerDifferential.mapBaseChange R S T) ret hret
+  exact projective_of_projective_tensorProduct_of_faithfullyFlat S T (Ω[S⁄R])
+
+end Descent
+
 /-- **FORMAL SMOOTHNESS DESCENDS ALONG A FAITHFULLY FLAT, FORMALLY SMOOTH RING MAP**
-(sorry leaf, cut 2026-07-30 out of `smoothLocus_pairSquareMap_le` in
-`Fermat/FLT/ModularCurve/X0.lean`).
+(cut 2026-07-30 out of `smoothLocus_pairSquareMap_le` in
+`Fermat/FLT/ModularCurve/X0.lean`; **PROVEN 2026-07-31** over the two leaves
+`injective_liftBaseChange_h1Cotangent_of_formallySmooth` and
+`projective_of_projective_tensorProduct_of_faithfullyFlat` above).
 
 `R →φ S →ψ T` with `ψ` faithfully flat and formally smooth, and `ψ ∘ φ` formally
 smooth: then `φ` is formally smooth.
+
+**WHAT THE 2026-07-31 CUT DID, and why it is a `1 → 2` trade worth making.**  At this
+pin `Algebra.FormallySmooth R S` is *by definition* the conjunction
+
+    Module.Projective S Ω[S⁄R]   ∧   Subsingleton (Algebra.H1Cotangent R S)
+
+(`Mathlib/RingTheory/Smooth/Basic.lean`, `Algebra.formallySmooth_iff`), so the leaf
+splits along that conjunction with nothing left over, and each half descends by a
+DIFFERENT mechanism:
+
+* the `H¹` half is the left end of the Jacobi–Zariski sequence, and needs only that
+  `H₂(L_{T/S}) = 0` — the residue is
+  `injective_liftBaseChange_h1Cotangent_of_formallySmooth`;
+* the `Ω` half is the splitting of `0 → T ⊗_S Ω[S⁄R] → Ω[T⁄R] → Ω[T⁄S] → 0`, which is
+  fully proven here, followed by descent of PROJECTIVITY along `S → T` — the residue is
+  `projective_of_projective_tensorProduct_of_faithfullyFlat`, i.e. Raynaud–Gruson.
+
+Both residues are statements a mathlib contributor would recognise and neither mentions
+a scheme, a stalk or anything from this development.  The count went `1 → 2`; what
+changed is that no glue is left in either.
 
 **WHY THE STATEMENT IS VOUCHED.**  It is the ring-level form of Stacks `036M`,
 "the property *smooth* is fppf local on the source": if `g : X' → X` is flat,
@@ -68,8 +231,9 @@ reduced, while faithful flatness forces `x ≠ 0` in `T` and `x² = 0` — which
 exactly why the theorem is TRUE and simultaneously why no cheap argument reaches
 it: every route passes through a regularity statement about `T`.
 
-**THE ROUTE, worked out on 2026-07-30 against the pin rather than left as "build a
-theory".**  `mathlib` states formal smoothness as a SPLIT INJECTION, and splitting
+**THE ROUTE RECORDED ON 2026-07-30, KEPT BECAUSE ITS STEP 2 IS STILL THE CHEAPEST
+ESCAPE FROM THE `Ω` RESIDUE — but its final paragraph was WRONG and is corrected
+below.**  `mathlib` states formal smoothness as a SPLIT INJECTION, and splitting
 is exactly what descends along a faithfully flat map — so the shape of the proof is
 fixed, and only one step of it is heavy.
 
@@ -105,22 +269,40 @@ A worker may therefore find it cheaper to prove the ESSENTIALLY-OF-FINITE-TYPE c
 and add that hypothesis here; the consumers in
 `Fermat/FLT/ModularCurve/X0.lean` all have it.
 
-**Why the pin's own `proof_wanted` is NOT evidence that this is out of reach.**
-`Mathlib/RingTheory/Etale/Descent.lean` leaves the BASE CHANGE form open,
-`Algebra.FormallySmooth.of_formallySmooth_tensorProduct_of_faithfullyFlat`, noting it
-needs Raynaud–Gruson descent of projectivity (Stacks `058B`) — because there `Ω[S⁄R]`
-must be recovered as projective from `Ω[S⁄R] ⊗_S T` projective, with no formal
-smoothness available in the middle.  Here `hψ` supplies the middle, the conclusion is
-a SPLITTING rather than PROJECTIVITY, and splittings descend by step 2.  The two
-statements look alike and their difficulty is not the same.
+**CORRECTION (2026-07-31), and it is the one factual error in the paragraph above.**
+The 2026-07-30 note ended: *"`Mathlib/RingTheory/Etale/Descent.lean` leaves the BASE
+CHANGE form open … noting it needs Raynaud–Gruson descent of projectivity (Stacks
+`058B`) — because there `Ω[S⁄R]` must be recovered as projective from `Ω[S⁄R] ⊗_S T`
+projective, with no formal smoothness available in the middle.  Here `hψ` supplies the
+middle, the conclusion is a SPLITTING rather than PROJECTIVITY, and splittings descend
+by step 2 … No Raynaud–Gruson anywhere."*
 
-Build it in `Fermat/FLT/Mathlib/RingTheory/` rather than inline. -/
+The diagnosis of mathlib's `proof_wanted` is right; the inference is not.  At this pin
+the CONCLUSION is not a splitting: `Algebra.FormallySmooth` is *defined* as
+`Module.Projective S Ω[S⁄R] ∧ Subsingleton (H1Cotangent R S)`, so the projectivity has
+to be produced literally, and `hψ` buys the SPLITTING of the Jacobi–Zariski sequence
+(hence projectivity of `T ⊗_S Ω[S⁄R]` over `T`) and nothing more.  Recovering
+`Module.Projective S Ω[S⁄R]` from that IS Stacks `058B`.
+
+So Raynaud–Gruson does appear — **unless** step 2's finiteness route is taken: for a
+finitely presented `M`, `Module.Projective` is `Module.Flat` plus finite presentation
+(`Module.Flat.projective_of_finitePresentation`), and flatness descends along a
+faithfully flat map by the ideal criterion.  That is why
+`projective_of_projective_tensorProduct_of_faithfullyFlat` carries an explicit note
+saying a `[Module.FinitePresentation S M]` hypothesis discharges it cheaply, at the
+price of threading essential finite presentation of the stalk maps through
+`mem_smoothLocus_of_comp_of_smooth` and its consumers in `X0.lean`.
+
+Build the residues in `Fermat/FLT/Mathlib/RingTheory/` rather than inline. -/
 theorem formallySmooth_of_comp_of_faithfullyFlat {R S T : Type*}
     [CommRing R] [CommRing S] [CommRing T] (φ : R →+* S) (ψ : S →+* T)
-    (_hff : ψ.FaithfullyFlat) (_hψ : ψ.FormallySmooth)
-    (_h : (ψ.comp φ).FormallySmooth) :
-    φ.FormallySmooth :=
-  sorry
+    (hff : ψ.FaithfullyFlat) (hψ : ψ.FormallySmooth)
+    (h : (ψ.comp φ).FormallySmooth) :
+    φ.FormallySmooth := by
+  algebraize [φ, ψ, ψ.comp φ]
+  haveI : IsScalarTower R S T := IsScalarTower.of_algebraMap_eq' rfl
+  exact ⟨projective_kaehlerDifferential_of_faithfullyFlat R S T,
+    subsingleton_h1Cotangent_of_faithfullyFlat R S T⟩
 
 /-- **POSTCOMPOSING WITH A SMOOTH MORPHISM PRESERVES THE SMOOTH LOCUS POINTWISE**
 (PROVEN 2026-07-30) — `Smooth` is stable under composition in `mathlib`, but the
