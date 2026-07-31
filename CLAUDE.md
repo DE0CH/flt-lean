@@ -5526,3 +5526,136 @@ lines so `isTorsion_factor_of_heckeIsotypic` could reach it. That hoist would ha
 that leaf nothing — the only thing it could do with the quasi-section is the circular
 step — and the resulting declaration would have been free-floating. A queued hoist is a
 dispatch; retiring one is worth the same as closing a leaf.
+
+## MERGING AT DECLARATION GRANULARITY: what it fixes, and the ONE thing it silently breaks
+
+(2026-07-31, release 26 — 24 conflicting branches over files both sides had rewritten
+heavily.) Release 24's textual union policy (hunk-level, "base empty ⇒ ours+theirs;
+base non-empty ⇒ ours + theirs' pure insertions") **dropped real payload here**: five
+branch-added declarations vanished from `MoretBailly.lean` alone, silently, and the
+declaration-presence check is the only reason anyone noticed. The reason is structural
+— when both sides edit adjacent lines, `difflib` reports one `replace` opcode and the
+"pure insertions" rule keeps nothing.
+
+**What worked instead: merge at DECLARATION granularity.** Split BASE / OURS / THEIRS
+into blocks (leading docstring+attributes, then the declaration), key them by
+namespace-qualified name, and decide per name:
+
+* theirs ADDED it (not in base, not in ours) → splice it in, anchored after the
+  theirs-predecessor that exists in ours;
+* theirs changed its CODE while ours left the code equal to base → take theirs;
+* both changed the code → keep ours and REPORT, with the `sorry`-status of each side
+  printed, because that is the only case a human has to look at. Twenty-four branches
+  produced **nine** such reports.
+
+Three refinements, each of which was a bug before it was a rule:
+
+1. **Decide on CODE, merge DOCSTRINGS separately.** Comparing whole blocks makes every
+   docstring edit look like a code conflict. `flt-lean-88`'s five-site arity repair was
+   reported as "both changed, kept ours" purely because merger had appended a paragraph
+   to one docstring — and keeping ours on two of the five sites is exactly the class-7
+   split that does not compile.
+2. **A block that CONSUMES one of theirs' new declarations must come from theirs.**
+   Otherwise the new leaf lands orphaned and the parent stays sorried: one closed leaf
+   traded for two open ones plus free-floating code. Guard it with "unless ours' body is
+   sorry-free and theirs' is not", so the rule cannot resurrect a `sorry`.
+3. **Widen the identifier class before you trust any of it.** The stock
+   `[A-Za-z0-9_À-ɏͰ-Ͽ℀-⅏.'!?₀-₉]` stops at U+2089, so `mulVecRightₗ` (U+2097) and
+   `mulVecRightₗ_apply` both truncate to `mulVecRight` and are reported as a duplicate
+   pair that does not exist. Use `₀-ₜ` and `ᴀ-ᵿ`; still avoid `À-￿`, which swallows
+   `⟨⟩←▸` (see [[lean-identifier-regex-swallows-brackets]]).
+
+**AND THE ONE THING IT BREAKS, which no check in this file previously covered: SCOPE
+LINES.** `namespace X`, `section X`, `variable`, `open … in` live in the glue BETWEEN
+declarations, and a block's extent runs to the next block's start — so trailing glue
+belongs to the preceding block, and replacing that block with theirs DELETES it. Four
+scopes were lost in one release. The symptom is never "missing namespace": it is
+`Invalid field 'foo': the environment does not contain X.foo` at every use site
+(RelativePicard: 75 errors from one dropped `namespace IsRelPicOf`), or
+`Unexpected name X after end: the current section is unnamed`.
+
+The check is ten lines and belongs in every merge:
+
+    walk the file, comment-masked; push on `namespace`/`section`, pop on `end`;
+    report an `end X` with nothing (or the wrong thing) open, and any scope left
+    open at EOF.
+
+**Run it on the RESULT and difference against PRE-MERGE `main`.** This tree has many
+legitimate `section Foo … end` + `end Foo` patterns that the naive check flags; only the
+NEW reports are yours. Three of the seven X0 reports were pre-existing and compile fine.
+
+**When you insert the recovered opener, put it where the GAP is, not where the branch's
+copy sits.** I inserted `namespace IsRelPicOf` immediately before an existing opener and
+gave a whole block the doubled name `Fermat.IsRelPicOf.IsRelPicOf.zeroPoint` — same 75
+errors, new cause. **Lean's `linter.dupNamespace` warning named it exactly**, and it was
+sitting three lines above the first error in the same log. Read the warnings before the
+errors when a merge goes red; they are about causes and the errors are about symptoms.
+
+### The four post-merge checks, in the order they pay off
+
+1. **Scope balance** (above) — seconds, catches whole-module failures.
+2. **Every branch-ADDED declaration present in the tree.** Compute "added" as
+   branch-decls minus MERGE-BASE-decls, and match on the LAST COMPONENT against the
+   whole tree — not the qualified name in the one file, or every relocation and every
+   re-nesting reads as a dropped payload. With last-component matching, 23 branches
+   reported **zero** missing; with qualified matching the same tree reported eight
+   false positives and I chased two of them.
+3. **Duplicate declaration names**, namespace-qualified, differenced against pre-merge.
+4. **Block-comment nesting depth zero** in every file.
+
+Then the build, three rounds minimum — the errors are serialised behind each other by
+the import graph, so round *n* only reveals what round *n−1* was hiding.
+
+## A DUPLICATE PAIR IS A DECISION, AND "DELETE THE LATER ONE" IS OFTEN WRONG
+
+(Release 26, `X0.lean`, five duplicates that predated the batch and made the module —
+and everything importing it — unbuildable.) `has already been declared` is a hard error,
+so a duplicate must go; but WHICH copy goes is a mathematical choice, and the two cases
+look identical to any scan.
+
+* **Byte-identical bodies** → delete the LATER copy. Consumers in both regions then
+  resolve upward to the survivor. Deleting the earlier one puts every consumer between
+  the two positions above its own declaration. (Three CM-table declarations, ~9k lines
+  apart, went this way.)
+* **DIFFERENT statements** → the later copy is usually a strengthening somebody landed
+  without retiring the original, and the naive "delete the later one" throws the
+  generalisation away. `isReduced_geomFibre_nTorsion_of_natCast_ne_zero` and
+  `etale_nTorsion_of_natCast_ne_zero` existed at `3 ≤ n` (three live consumers) and at
+  `n ≠ 0` (**no consumers anywhere**), the latter over a generalised
+  `isFinite_flat_nTorsion_of_ne_zero`. Deleting the later pair would have been the easy
+  move and would also have left that helper free-floating. Keeping the STRONGER pair
+  cost one hoist of three declarations and `(by omega)` at two call sites.
+
+The discriminator is not which copy is newer but **which consumers exist and what they
+pass**. Grep the call sites first; a copy with no consumers anywhere is the one that can
+move.
+
+## A `sorry`-FREE MODULE CAN STILL BE A RELEASE BLOCKER: the truncated-header wound
+
+(Release 26, `InvariantCoarseRing.lean`, `HyperellipticJacobian.lean`,
+`IsogenyTrace.lean` — three files no branch in the batch had touched, all red on
+`merger` before the batch began.)
+
+The shape, and it is what a textual union merge produces when two branches RENAME the
+same theorem: the union keeps BOTH headers, the first gets truncated after a binder
+line or two, and the second one's orphaned docstring tail lands between them as bare
+prose. Lean reports `unexpected token; expected ':'` at the prose line — a *syntax*
+error hundreds of lines from anything anyone edited, which reads like corruption rather
+than like a merge.
+
+Repairing it is mechanical once seen: delete the truncated header and the orphaned
+prose, keep the complete declaration, and **repoint the consumers of the dead name** —
+there are usually one or two, and the surviving signature usually accepts them
+unchanged (here a `[PerfectField k]` caller supplied `Algebra.IsSeparable` as an
+instance). Then look for the *other* half of the same wound: a declaration under the
+retired name whose body is byte-identical to the survivor's and which nothing consumes.
+
+**And the same release produced two more instances of the general rule that a signature
+can drift out from under a call site with nothing failing until much later:**
+`GeomPic.bcDiv_injective` had lost its surjectivity argument and one call site still
+passed it; `isDomain_tensorProduct_of_isTranscendenceBasis` had GAINED a separability
+argument and one caller did not. In both cases the fix was two characters and the cost
+was a build round. **A theorem whose signature you change is not done until
+`git grep` over its name is clean** — and if the caller is a branch of a `by_cases`
+whose own comment says the other branch covers every case, delete it rather than repair
+it. The comment is a licence; use it.
