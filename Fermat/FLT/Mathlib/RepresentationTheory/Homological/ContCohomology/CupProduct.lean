@@ -66,6 +66,17 @@ product; trimming the file to the one lemma needed costs ten lines and removes i
 The `81a5d2`-versus-`a3364fa` drift cost exactly one proof change in the whole port, in
 `Resolution.lean` (`lia` → `omega`); nothing in this file needed adjusting.
 
+## What was deliberately DROPPED from the reference file, and why
+
+Six declarations of the reference are not here — `cupPair_succ_apply`,
+`cupCochain_d_comp_d`, `d_cup_d`, `cupCocyclesAux`, `cupCocycles`, `cupCocycles_apply`.
+They are correct and they compiled here (see commit `cb8aa074`, which carries the port
+verbatim), but nothing in the tree reaches them: `cup` does not use them, and this
+project forbids free-floating declarations. `d_cup_d` is the Leibniz rule specialised to
+a coboundary second argument, and `cupCocycles` is the cup product on the CYCLES rather
+than on cohomology; both are natural API and a consumer will want them back. Restore
+them from `~/cs/FLT` or from that commit rather than re-deriving.
+
 ## TODO
 
 * Minimise the imports once the constructions are complete.
@@ -76,7 +87,7 @@ The `81a5d2`-versus-`a3364fa` drift cost exactly one proof change in the whole p
 set_option allowUnsafeReducibility true in
 attribute [local reducible] CategoryTheory.Functor.mapHomologicalComplex
 
-universe u v
+universe u v w
 
 open CategoryTheory ContinuousLinearMap.CompactOpen
 
@@ -86,7 +97,7 @@ variable {k : Type u} {G : Type v} [CommRing k] [TopologicalSpace k] [Group G]
 
 section Cup
 
-variable {M1 M2 M3 : Type v}
+variable {M1 M2 M3 : Type (max v w)}
   [AddCommGroup M1] [Module k M1] [TopologicalSpace M1] [IsTopologicalAddGroup M1]
   [ContinuousSMul k M1]
   [AddCommGroup M2] [Module k M2] [TopologicalSpace M2] [IsTopologicalAddGroup M2]
@@ -101,7 +112,7 @@ open TopRep
 
 section CupSucc
 
-variable {V W2 W3 : Type v}
+variable {V W2 W3 : Type (max v w)}
   [AddCommGroup V] [Module k V] [TopologicalSpace V] [IsTopologicalAddGroup V]
   [ContinuousSMul k V]
   [AddCommGroup W2] [Module k W2] [TopologicalSpace W2] [IsTopologicalAddGroup W2]
@@ -243,10 +254,6 @@ variable {ρ1 ρ2 ρ3}
 @[simp]
 lemma cupPair_zero (n : ℕ) : (cupPair f hp n 0).1 = cupZeroSucc f hp n := rfl
 
-lemma cupPair_succ_apply (n m : ℕ) (σ : ↥(resolutionX (of ρ1) (m + 1 + 1)))
-    (τ : ↥(resolutionX (of ρ2) (n + 1))) (x : G) :
-    (cupPair f hp n (m + 1)).1 σ τ x = (cupPair f hp n m).1 (σ x) τ := rfl
-
 /-- Cupping with a constant `0`-cochain acts through the functorial extension of `f v`. -/
 lemma cupZeroSucc_const_apply (n : ℕ) (v : M1) (τ : ↥(resolutionX (of ρ2) (n + 1))) :
     cupZeroSucc f hp n (ContinuousMap.const G v) τ = resolutionCLM ρ2 ρ3 (f v) (n + 1) τ := rfl
@@ -313,7 +320,7 @@ section Cup
 
 variable {k : Type u} {G : Type v} [CommRing k] [TopologicalSpace k] [Group G]
 
-variable {M1 M2 M3 : Type v}
+variable {M1 M2 M3 : Type (max v w)}
   [AddCommGroup M1] [Module k M1] [TopologicalSpace M1] [IsTopologicalAddGroup M1]
   [ContinuousSMul k M1]
   [AddCommGroup M2] [Module k M2] [TopologicalSpace M2] [IsTopologicalAddGroup M2]
@@ -405,34 +412,6 @@ lemma cupKerCLM_apply_coe (m n r : ℕ) (hr : r = m + n)
     (cupKerCLM f hp m n r hr σ τ).1 = cupCochain f hp m n r hr σ.1 τ.1 := rfl
 
 variable {ρ1 ρ2 ρ3} in
-/-- The cup product with a doubly-applied differential vanishes. -/
-lemma cupCochain_d_comp_d (m i j l r : ℕ) (hr : r = m + l)
-    (σ : (homogeneousCochains (.of ρ1)).X m) (τ : (homogeneousCochains (.of ρ2)).X i) :
-    cupCochain f hp m l r hr σ
-      ((homogeneousCochains (.of ρ2)).d j l ((homogeneousCochains (.of ρ2)).d i j τ)) = 0 := by
-  rw [homogeneousCochains.d_comp_d_apply]
-  exact map_zero (cupCochain f hp m l r hr σ : ↥((homogeneousCochains (.of ρ2)).X l) →L[k]
-    ↥((homogeneousCochains (.of ρ3)).X r))
-
-/-- The cup product of two coboundaries is a coboundary: `(d σ) ∪ (d τ) = d (σ ∪ d τ)`. This is
-the special case of the Leibniz rule `cup_d_comm` where the second argument is a coboundary.
-
-Note that `(d σ) ∪ (d τ)` is *not* zero in general: by the Leibniz rule it is the coboundary of
-`σ ∪ d τ`. -/
-lemma d_cup_d (m n r : ℕ) (hr : r = m + n) (σ : (homogeneousCochains (.of ρ1)).X m)
-    (τ : (homogeneousCochains (.of ρ2)).X n) :
-    cupCochain f hp (m + 1) (n + 1) (r + 2) (by omega)
-      ((homogeneousCochains (.of ρ1)).d m (m + 1) σ)
-      ((homogeneousCochains (.of ρ2)).d n (n + 1) τ) =
-    (homogeneousCochains (.of ρ3)).d (r + 1) (r + 2) (cupCochain f hp m (n + 1) (r + 1) (by omega) σ
-      ((homogeneousCochains (.of ρ2)).d n (n + 1) τ)) := by
-  subst hr
-  have h := cup_d_comm ρ1 ρ2 ρ3 f hp m (n + 1) (m + n + 1) rfl σ
-    ((homogeneousCochains (.of ρ2)).d n (n + 1) τ)
-  rw [cupCochain_d_comp_d] at h
-  simpa only [smul_zero, add_zero] using h.symm
-
-variable {ρ1 ρ2 ρ3} in
 /-- Cupping a coboundary with a cocycle gives a coboundary. -/
 lemma d_cupCochain_of_d_eq_zero (m n r : ℕ) (hr : r = m + n)
     (σ : (homogeneousCochains (.of ρ1)).X m) {τ : (homogeneousCochains (.of ρ2)).X n}
@@ -497,41 +476,6 @@ noncomputable def cupKerHom (f : ρ1 →ⁱL ρ2.linHom ρ3) (hp : Continuous fu
     (fun σ1 σ2 τ ↦ Subtype.ext (congr($(map_add (cupCochain f hp m n r hr).hom σ1.1 σ2.1) τ.1)))
     (fun c σ τ ↦ Subtype.ext (congr($(map_smul (cupCochain f hp m n r hr).hom c σ.1) τ.1)))
     (continuous_cupKerCLM_uncurry f hp m n r hr)
-
-/-- The cup product of two cocycles, as a cocycle: by the Leibniz rule `cup_d_comm`, the
-differential of `σ ∪ τ` vanishes when `d σ = 0` and `d τ = 0`. -/
-noncomputable abbrev cupCocyclesAux (f : ρ1 →ⁱL ρ2.linHom ρ3)
-    (hp : Continuous fun p : M1 × M2 ↦ f p.1 p.2) (m n r : ℕ) (hr : r = m + n)
-    (σ : (homogeneousCochains (.of ρ1)).cycles m)
-    (τ : (homogeneousCochains (.of ρ2)).cycles n) :
-    (homogeneousCochains (.of ρ3)).cycles r :=
-  letI σ' := ((homogeneousCochains (.of ρ1)).cyclesIsoKer m (m + 1) (by simp)).hom.hom σ
-  letI τ' := ((homogeneousCochains (.of ρ2)).cyclesIsoKer n (n + 1) (by simp)).hom.hom τ
-  ((homogeneousCochains (.of ρ3)).cyclesIsoKer r (r + 1) (by simp)).inv.hom
-    ⟨cupCochain f hp m n r hr σ' τ',
-      LinearMap.mem_ker.2 (d_cupCochain_eq_zero f hp m n r hr
-        (LinearMap.mem_ker.mp σ'.2) (LinearMap.mem_ker.mp τ'.2))⟩
-
-/-- The cup product pairing on the cycles of the homogeneous cochain complexes, transporting
-`cupKerHom` along the identification `cyclesIsoKer` of the cycles with the kernel models. -/
-noncomputable def cupCocycles (f : ρ1 →ⁱL ρ2.linHom ρ3)
-    (hp : Continuous fun p : M1 × M2 ↦ f p.1 p.2) (m n r : ℕ) (hr : r = m + n) :
-    (homogeneousCochains (.of ρ1)).cycles m ⟶
-      TopModuleCat.linHom ((homogeneousCochains (.of ρ2)).cycles n)
-        ((homogeneousCochains (.of ρ3)).cycles r) :=
-  ((homogeneousCochains (.of ρ1)).cyclesIsoKer m (m + 1) (by simp)).hom ≫
-    cupKerHom f hp m n r hr ≫
-      TopModuleCat.linHomMap
-        ((homogeneousCochains (.of ρ2)).cyclesIsoKer n (n + 1) (by simp)).hom
-        ((homogeneousCochains (.of ρ3)).cyclesIsoKer r (r + 1) (by simp)).inv
-
-variable {ρ1 ρ2 ρ3} in
-@[simp]
-lemma cupCocycles_apply (f : ρ1 →ⁱL ρ2.linHom ρ3) (hp : Continuous fun p : M1 × M2 ↦ f p.1 p.2)
-    (m n r : ℕ) (hr : r = m + n)
-    (σ : (homogeneousCochains (.of ρ1)).cycles m)
-    (τ : (homogeneousCochains (.of ρ2)).cycles n) :
-    cupCocycles ρ1 ρ2 ρ3 f hp m n r hr σ τ = cupCocyclesAux ρ1 ρ2 ρ3 f hp m n r hr σ τ := rfl
 
 variable {ρ1 ρ2 ρ3} in
 /-- Cupping a coboundary with a cocycle dies in the quotient by the coboundaries. -/

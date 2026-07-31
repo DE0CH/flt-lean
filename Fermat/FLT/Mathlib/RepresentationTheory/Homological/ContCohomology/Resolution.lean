@@ -57,7 +57,7 @@ open TopRep
 
 section Resolution
 
-variable {M2 M3 : Type v}
+variable {M2 M3 : Type (max v w)}
   [AddCommGroup M2] [Module k M2] [TopologicalSpace M2] [IsTopologicalAddGroup M2]
   [ContinuousSMul k M2]
   [AddCommGroup M3] [Module k M3] [TopologicalSpace M3] [IsTopologicalAddGroup M3]
