@@ -23,6 +23,7 @@ import pathlib
 import re
 import shlex
 import subprocess
+import traceback
 import urllib.request
 import uuid
 import sys
@@ -1227,8 +1228,34 @@ def main():
             # return if it re-execs.
             if "medic" not in s["jobs"]:
                 adopt_source(startup_digest)
-        except Exception as e:
-            notify("flt-loop: tick raised", repr(e))
+        except Exception:
+            # A tick that raises IS the loop being broken, which is the medic's
+            # domain -- so summon one, exactly as an unexplained state does.
+            #
+            # Spawned DIRECTLY rather than by creating a record and letting
+            # row 3 start it, and that exception is deliberate: if every tick
+            # raises, no row ever runs, so a record placed here would sit
+            # unspawned for ever while the fleet drifted. The table cannot
+            # dispatch the repair for a fault that stops the table.
+            #
+            # Retrying for ever continues underneath. The fault may be
+            # transient, and if it is not, the medic is already on it.
+            tb = traceback.format_exc()
+            try:
+                if not (STATE / "jobs" / "medic.json").exists():
+                    t = flt_loop_rows.tok()
+                    rec = {"kind": "medic", "worktree": "flt-lean",
+                           "payload": "the loop's tick raised:\n\n" + tb[-3000:],
+                           "token": t, "retries": 0, "host": flt_loop_rows.MEDIC_HOST}
+                    wr(STATE / "jobs" / "medic.json", json.dumps(rec, indent=1))
+                    do_spawn({"jobs": {}}, "medic", rec)
+                    wr(STATE / "jobs" / "medic.started", t)
+                    commit_state("tick raised -> medic spawned directly")
+                    notify("flt-loop: tick raised, medic summoned", tb[-1500:])
+                else:
+                    notify("flt-loop: tick raised (medic already in flight)", tb[-1500:])
+            except Exception:
+                notify("flt-loop: tick raised AND medic spawn failed", tb[-1500:])
             time.sleep(30)
         if a.once:
             return

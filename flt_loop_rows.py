@@ -932,7 +932,7 @@ def r_refused_guard(s):
 def r_refused_action(s):
     hits = refused_jobs(s)
     n = sorted(hits)[0]
-    s["quota_block"] = {"since": int(now(s)), "creds": s["probe"]["creds"],
+    s["quota_block"] = {"since": int(now(s)),
                         "why": hits[n]["refused"].strip().splitlines()[0][:200]}
     for m, j in hits.items():
         # A refusal is not a death: the record goes back to unspawned so it is
