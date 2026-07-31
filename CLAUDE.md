@@ -1187,3 +1187,60 @@ same edit would have traded one closed leaf for three re-opened ones. Re-derive 
 accounting against the release, never against its base; and when you decline for this reason, queue
 the follow-up, because the work usually got CHEAPER (here: generalise the PROOFS, and both targets
 close with no new sorry).
+
+## MATHLIB OFTEN STATES THE SAME LEMMA TWICE, AND THE GENERAL ONE IS INVISIBLE TO A GREP FOR THE SPECIAL ONE
+
+(2026-07-31, `flt-lean-261`.) A task prompt priced the Galois transport of
+`WeierstrassCurve.End` as "the work is the point-map: mathlib's addition formulas
+(`baseChange_addX`, `baseChange_addY`, `baseChange_slope`, `baseChange_nonsingular`) are all
+stated for ALGEBRA maps, so the `map_add'` obligation has to be re-derived, or those lemmas
+generalised." **Every one of those has a plain RING-HOMOMORPHISM twin fifteen lines above it in
+the same file** — `map_nonsingular` in `Affine/Basic.lean`, `map_negY`/`map_addX`/`map_addY`/
+`map_slope` in `Affine/Formula.lean` — and the `baseChange_*` versions are one-line corollaries
+of them (`rw [← RingHom.coe_coe, ← map_addX, map_baseChange]`). The "hard part" was mathlib's own
+`Point.map` proof with `baseChange_*` textually replaced by `map_*`: about fifteen lines,
+first try.
+
+The failure mode is structural, not careless. **A grep for the name you know finds only the
+consumer.** `baseChange_negY` is what appears at call sites, in docstrings and in every previous
+agent's notes, so that is the name an audit searches for; the `map_negY` it is derived from is
+never mentioned by anyone because nothing downstream uses it. So the audit correctly reports
+"only the algebra-map version is used here" and then wrongly concludes "only the algebra-map
+version exists".
+
+**The check costs one command and belongs in every "mathlib only has X at generality G" verdict:
+read the SECTION the lemma lives in, top to bottom.** Mathlib's convention is to prove the most
+general form first and specialise downward in the same file, so the general version is a screenful
+above the one you found — not in another module, not under another name, and invisible to any
+search keyed on the specialisation. Concretely:
+
+    sed -n '<start of the "Maps and base changes" section>,$p' <that file>
+
+Related but distinct from the entries above about machinery living DOWNSTREAM or in another
+module: here it is in the file you are already reading, which is why nobody looks.
+
+## AN ORPHANED `lean` BLOCKS FOREVER AND LOOKS EXACTLY LIKE A SLOW ELABORATION
+
+(2026-07-31, same worktree.) A backgrounded `lake build` had its `ssh` torn down at a turn
+boundary. `lake` died; its `lean` child survived with `ppid = 1` and **hung forever writing its
+`--json` diagnostics into the now-closed pipe.** After 2.4 hours of wall clock it showed
+`etimes = 8727`, `VmRSS = 12 GB`, and a plausible `cmdline` elaborating a 48k-line module.
+
+That is *precisely* the signature the standing doctrine tells you to leave alone — "rising
+`etimes` and multi-GB RSS = elaborating". **It is wrong for an orphan, and `etimes`/RSS cannot
+tell the two apart**, because a blocked process keeps its memory and keeps ageing.
+
+The discriminator is CPU time, and only a DELTA of it (the total is large and looks healthy —
+this one had burned 1636 s of real work before it stalled):
+
+    ssh $H 'p=<pid>; a=$(awk "{print \$14+\$15}" /proc/$p/stat); sleep 20; \
+            b=$(awk "{print \$14+\$15}" /proc/$p/stat); echo "ticks/20s: $((b-a))"'
+
+`0` means dead-but-not-exited: kill it by PID after confirming `/proc/<pid>/cwd` is yours. A
+healthy worker returns ~100 ticks per second of wall clock (one core), since elaboration is
+single-threaded.
+
+**And the prevention is free: never let `lake`'s output go to a pipe you might drop.** Redirect
+to a FILE inside the remote command — `bash -c "lake build > /tmp/log 2>&1; echo EXIT=\$? >> /tmp/log"`
+under `setsid --fork` — and the orphan finishes normally even if every parent dies. The
+truncated-log hazard the doctrine warns about is the same bug seen from the other end.
