@@ -1245,3 +1245,61 @@ fatal. And the reduction may need a hypothesis the leaf did not have: `smooth_of
 WEAKENS a leaf and is safe **only after checking the consumer can supply it** — here
 `exists_relPicZeroOf_of_relPicGroupLaw` already had `o` in scope, so the change cost one argument
 at one call site.
+
+## THE SAME DEFECT WEARS A SECOND DISGUISE: A LEAF STATED ABOUT A *BASE CHANGE* OF THE OBJECT ITS CITATION IS ABOUT
+
+(2026-07-31, `RelativePicard.lean`, the day after the "every representing object" section
+above, in the same file, from the same root cause.)
+
+The section above says a leaf must be stated in the shape its citation is stated in. The
+"every object" shape is one way to violate that. Here is the other, and it is much easier to
+miss because the statement looks perfectly ordinary:
+
+    theorem exists_relPicOf_isAffineOpen (strX : X ⟶ S)
+        (hproper : IsProper strX) (hsmooth : SmoothOfRelativeDimension 1 strX) …
+        (V : S.Opens) (hV : IsAffineOpen V) :
+        ∃ P pstr, Nonempty (IsRelPicOf (curveBaseChangeProj strX V.ι) pstr) ∧ …
+
+**The hypotheses are about `strX`; the conclusion is about `X ×_S V ⟶ V`.** BLR 8.2/1 is a
+theorem about a relative curve over an affine base. It is not a theorem about the base change
+of a relative curve over an open of some other scheme. So a prover arriving at this leaf must
+first prove step (i) — the hypotheses survive base change — before a single line of the
+citation applies, and step (i) is invisible: it is not in the statement, it is not a leaf, it
+is a sentence in the docstring.
+
+The docstring in this case said so explicitly, and priced it as a feature:
+
+> the base-change stability of `IsProper`, `SmoothOfRelativeDimension 1`,
+> `GeometricallyConnected`, `HasUniversallyTrivialPushforward` and of the section is routine
+> and belongs to whoever proves this, not to the assembly
+
+**That pricing is the bug.** It is 20 lines, it is entirely mechanical, and bundling it into
+a research-scale leaf hides it inside the one node nobody can finish. Discharged, the leaf
+becomes `exists_relPicOf_of_isAffineBase` — an arbitrary proper smooth geometrically connected
+relative curve with a section over an arbitrary affine base — which is *literally* BLR 8.2/1's
+hypothesis list, and the assembly is six lines.
+
+**The test, and it is purely syntactic, so run it on every leaf you are dispatched at:** read
+the hypotheses and the conclusion and ask whether they are about the SAME morphism. If the
+hypotheses name `f` and the conclusion names `pullback.snd f g`, `f ∣_ V`, `f.baseChange g` or
+any other derived morphism, the transport between them is a separate obligation. It is almost
+always cheap, it belongs OUTSIDE the leaf, and leaving it inside makes the leaf unciteable.
+
+Three mechanical notes that cost time on the way:
+
+* **mathlib's base-change stability is sometimes a `lemma`, not an `instance`.**
+  `smoothOfRelativeDimension_isStableUnderBaseChange` is a lemma, so
+  `MorphismProperty.pullback_snd` fails with
+  `failed to synthesize MorphismProperty.IsStableUnderBaseChangeAlong (@SmoothOfRelativeDimension 1) g`
+  — which reads like the fact is missing when it is merely not an instance. `haveI := …` first.
+  `IsProper` and `GeometricallyConnected` do have instances.
+* **a property defined as `P.universally` needs no stability theorem at all.**
+  `HasUniversallyTrivialPushforward f` is `hasTrivialPushforwardProperty.universally f`, and
+  `.universally` is stable under base change by construction, so `MorphismProperty.pullback_snd
+  (P := …universally)` closes it outright.
+* **a section transports by `pullback.lift_snd` and nothing else.** `relSection` of the constant
+  section is already the map; the proof obligation is `pullback.lift _ (𝟙 T) _ ≫ pullback.snd = 𝟙 T`.
+
+Corollary for reviewers of a cut: 1 → 1 on the leaf count is a *good* trade when what changes
+is that the leaf now matches its citation. Judge a decomposition by whether the remaining leaf
+can be handed to someone with the book open, not by the count alone.

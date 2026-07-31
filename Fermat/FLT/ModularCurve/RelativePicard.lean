@@ -210,6 +210,17 @@ leaves it moved to are, in dependency order:
   `smooth_of_isRelPicOf` and `isSeparated_of_isRelPicOf`; see the last
   paragraph of this section for why it is a 9 → 7 move and not a
   relocation;
+
+  **Amended again 2026-07-31 (later the same day): both of those two are now
+  PROVEN as well, over a decomposition.**  `exists_relPicOf_isAffineOpen`
+  reduces to `exists_relPicOf_of_isAffineBase` (the same statement over an
+  arbitrary affine base, which is the shape BLR 8.2/1 is stated in) plus five
+  base-change lemmas; the gluing leaf reduces to
+  `exists_gluedRelPic_of_forall_isAffineOpen` (the scheme, unconditional) and
+  `nonempty_isRelPicOverAffines_of_restrict` (the rigidified Poincaré bundle),
+  with its `Smooth ∧ IsSeparated` clause discharged here.  **The three dispatch
+  targets of this bullet are now those three, plus
+  `surj_of_isRelPicOverAffines`;**
 * `exists_relPicZeroOf_of_relPicGroupLaw` — BLR 9.4/4 with `f_*𝒪 = 𝒪`,
   the equivalence relation and the group law on `Pic`'s points supplied.
   **Amended 2026-07-29: this one is now PROVEN**, over a two-leaf cut of
@@ -237,11 +248,12 @@ leaves it moved to are, in dependency order:
     is PROVEN.  **Amended 2026-07-31: all three of those are now PROVEN**,
     so `exists_relPicZeroSubgroup` is the only leaf left in this bullet.
 
-So the direct-sorry set of this module is 7 (verified 2026-07-31 against the
-compiler's `declaration uses 'sorry'` warnings — `{902, 2717, 2914, 2996,
-3566, 3607, 3975}` at the commit that introduced this sentence — and against
-a comment-stripped token count, 7 = 7, so there are no anonymous inner
-sorries hiding behind a warning), and the three that belong to BLR 9.4/4 are
+So the direct-sorry set of this module was 7 when this sentence was written
+(verified 2026-07-31 against the compiler's `declaration uses 'sorry'`
+warnings — `{902, 2717, 2914, 2996, 3566, 3607, 3975}` at that commit — and
+against a comment-stripped token count, 7 = 7, so there are no anonymous inner
+sorries hiding behind a warning).  It is 8 later the same day; see the
+decomposition amendment below.  The three that belong to BLR 9.4/4 are
 `isInvertibleSheaf_sectionIdeal`, `nonempty_modPullback_sectionIdeal` and
 `exists_relPicZeroSubgroup`.  **Do not quote that number** — regenerate it;
 every previous version of this sentence went stale within a day, and the line
@@ -298,6 +310,47 @@ separatedness in hand anyway.  Two leaves became zero and no leaf was created,
 because the two existing leaves absorbed the clause.  Both were RESTATED, so
 their earlier faithfulness audits are VOID and re-run in place — see their
 docstrings.
+
+**Amended 2026-07-31 (later the same day): 7 → 8, and it is a DECOMPOSITION
+of the two leaves that absorbed the clause above.**  Both were monoliths
+that no single citation covers, and both were cut along seams their own
+docstrings had already drawn:
+
+* `exists_relPicOf_isAffineOpen` is **PROVEN**, over the new leaf
+  `exists_relPicOf_of_isAffineBase` (FGA 232 / BLR 8.2/1 for a relative curve
+  over an ARBITRARY affine base) plus five proven base-change lemmas
+  (`isProper_curveBaseChangeProj` and its four siblings).  This is the same
+  "a leaf must be stated in the shape its citation is stated in" move that
+  `IsRelPicOf.isoOver` made possible for the smoothness pair: BLR 8.2/1 is a
+  theorem about a curve over an affine base, not about the base change of a
+  curve over an open of some other scheme, and step (i) of the old leaf's own
+  route — that the hypotheses survive base change — was the entire difference.
+  It costs 20 lines and is now discharged.  1 → 1 on the count;
+* `exists_isRelPicOverAffines_of_forall_isAffineOpen` is **PROVEN**, over two
+  new leaves and one new proven lemma pair.  Its four-step route is three
+  different arguments with three different hypothesis sets, and they are now
+  three declarations: `exists_gluedRelPic_of_forall_isAffineOpen` (the SCHEME
+  glues — Stacks 01JJ/01LH, and stated with NO geometric hypothesis at all,
+  the same way `inj_of_isRelPicOverAffines` turned out to need none),
+  `nonempty_isRelPicOverAffines_of_restrict` (the SHEAF glues — the rigidified
+  Poincaré bundle, and the only consumer of `_o` and `_hpush`), and step 4,
+  the `Smooth ∧ IsSeparated` clause, which is now PROVEN here over
+  `of_forall_isAffineOpen_morphismRestrict` + `transport_of_forall_isAffineOpen`
+  because both properties are Zariski-local at the target.  1 → 2 on the count.
+
+Net 7 → 8, and every one of the three new leaves is smaller and more citable
+than what it replaced.  The interface between the two gluing leaves —
+"`pstr ∣_ V` represents `Pic` over `V`, for every affine `V`" — is
+compiler-checked rather than promised, because both consumers were written
+before the producer.
+
+**There is still no `IsProjective` and no relative ampleness anywhere in
+`Mathlib/AlgebraicGeometry/`** (re-checked 2026-07-31), which is why step (ii)
+of FGA 232 — "over an affine base the curve is projective" — could NOT be cut
+out as a leaf of its own: there is nothing to state it in terms of.  Whoever
+takes `exists_relPicOf_of_isAffineBase` must either state relative
+projectivity first or prove representability directly.  That is the file's one
+research-scale node and the cost is worth knowing before starting.
 
 Also PROVEN here and worth knowing about before re-deriving them:
 `modTensorMapIso`, `modTensorUnitLeftIso`, `modTensorUnitRightIso`,
@@ -2716,30 +2769,147 @@ at `V = ⊤` to recover the conclusion, because `IsAffineOpen (⊤ : S.Opens)`
 is exactly `IsAffine S`, which is not assumed; and the first half cannot be
 proved from the second, which consumes it. -/
 
-/-- **THE RELATIVE PICARD SCHEME OVER AN AFFINE OPEN OF THE BASE** — FGA
-exposé 232 / BLR 8.2/1 in the form it is actually stated, i.e. for a
-PROJECTIVE morphism (sorry leaf).
+/-! #### Step (i) of FGA 232: the hypotheses base-change
 
-This is where all of the geometry of the parent leaf lives.  The
-hypotheses are the parent's, stated for the original `strX` rather than
-for the restricted curve on purpose: the base-change stability of
-`IsProper`, `SmoothOfRelativeDimension 1`, `GeometricallyConnected`,
-`HasUniversallyTrivialPushforward` and of the section is routine and
-belongs to whoever proves this, not to the assembly, and putting it here
-keeps the assembly free of transport.
+All five are PROVEN, and they are what lets the leaf below be stated over
+an ARBITRARY affine base rather than over an affine open of `S`.  Each is
+one application of the corresponding mathlib stability instance to
+`curveBaseChangeProj strX g = pullback.snd strX g`; the section is the
+only one with any content, and even that content is `pullback.lift_snd`.
 
-So a prover owes, in order: (i) `X ×_S V ⟶ V` is again a proper smooth
-geometrically connected relative curve with a section, over an AFFINE
-base; (ii) it is therefore projective, by the finite constant-genus
-decomposition and `𝒪((2g+1)·o)` (see the section note above); (iii) FGA
-232 for a projective flat morphism with integral geometric fibres — the
-geometric fibres here are smooth connected curves over an algebraically
-closed field, hence integral; (iv) BLR 8.1/4 to identify the fppf sheaf
-with the naive quotient, which is what makes `surj` statable without
-sheafification.
+The docstring on `exists_relPicOf_isAffineOpen` used to say this transport
+"belongs to whoever proves this, not to the assembly".  That was a pricing
+decision, and it was wrong in the direction that matters: it left a leaf
+whose statement did not match its citation, which is the exact defect
+CLAUDE.md records under "A LEAF STATED FOR *EVERY* REPRESENTING OBJECT
+CANNOT CONSUME ITS OWN CITATION".  BLR 8.2/1 is a theorem about a relative
+curve over an affine base; it is not a theorem about a base change of a
+relative curve over an open of some other scheme.  Discharging step (i)
+here costs 20 lines and puts the leaf in the citation's own shape. -/
 
-Steps (i)–(ii) are the cheap ones; (iii) is Grothendieck's theorem and is
-the only genuinely research-scale obligation in this file.
+section BaseChangeOfHypotheses
+
+variable {X S T : Scheme.{u}} (strX : X ⟶ S) (g : T ⟶ S)
+
+/-- **Properness base-changes** (PROVEN) — step (i) of FGA 232. -/
+theorem isProper_curveBaseChangeProj (h : IsProper strX) :
+    IsProper (curveBaseChangeProj strX g) :=
+  MorphismProperty.pullback_snd (P := @IsProper) strX g h
+
+/-- **Smoothness of relative dimension `1` base-changes** (PROVEN).  The
+mathlib stability fact is a `lemma`, not an `instance`, so it has to be
+introduced by hand before `pullback_snd` can see it. -/
+theorem smoothOfRelativeDimension_curveBaseChangeProj (h : SmoothOfRelativeDimension 1 strX) :
+    SmoothOfRelativeDimension 1 (curveBaseChangeProj strX g) :=
+  haveI := smoothOfRelativeDimension_isStableUnderBaseChange (n := 1)
+  MorphismProperty.pullback_snd (P := @SmoothOfRelativeDimension 1) strX g h
+
+/-- **Geometric connectedness base-changes** (PROVEN). -/
+theorem geometricallyConnected_curveBaseChangeProj (h : GeometricallyConnected strX) :
+    GeometricallyConnected (curveBaseChangeProj strX g) :=
+  MorphismProperty.pullback_snd (P := @GeometricallyConnected) strX g h
+
+/-- **`f_*𝒪 = 𝒪` universally base-changes** (PROVEN) — and this one is
+free by construction rather than by a stability theorem:
+`HasUniversallyTrivialPushforward` is literally
+`hasTrivialPushforwardProperty.universally`, and `.universally` of any
+property is stable under base change. -/
+theorem hasUniversallyTrivialPushforward_curveBaseChangeProj
+    (h : AlgebraicGeometry.HasUniversallyTrivialPushforward strX) :
+    AlgebraicGeometry.HasUniversallyTrivialPushforward (curveBaseChangeProj strX g) :=
+  MorphismProperty.pullback_snd
+    (P := AlgebraicGeometry.hasTrivialPushforwardProperty.universally) strX g h
+
+/-- **The section base-changes** (PROVEN): `o : RelPoint strX (𝟙 S)` gives
+a section of `X ×_S T ⟶ T`, namely `relSection` of the constant section
+`o_T = relBasePoint o g`.  That `relSection x ≫ pullback.snd = 𝟙 T` is
+`pullback.lift_snd`, which is also the whole proof. -/
+noncomputable def relBasePointBaseChange (o : RelPoint strX (𝟙 S)) :
+    RelPoint (curveBaseChangeProj strX g) (𝟙 T) :=
+  ⟨relSection (relBasePoint o g), by
+    simp only [relSection, curveBaseChangeProj, pullback.lift_snd]⟩
+
+end BaseChangeOfHypotheses
+
+/-- **THE RELATIVE PICARD SCHEME OF A RELATIVE CURVE OVER AN AFFINE BASE**
+— FGA exposé 232 / BLR 8.2/1 (sorry leaf, cut 2026-07-31 out of
+`exists_relPicOf_isAffineOpen` by discharging that leaf's step (i)).
+
+This is where all of the geometry of the chain lives, and it is now stated
+about the curve the citation is about: an arbitrary proper smooth
+geometrically connected relative curve with a section over an AFFINE base.
+No base change appears in the statement.
+
+A prover owes, in order: (ii) `strY` is projective over `V`, by the finite
+constant-genus decomposition and `𝒪((2g+1)·o)` (see the section note
+above); (iii) FGA 232 for a projective flat morphism with integral
+geometric fibres — the geometric fibres here are smooth connected curves
+over an algebraically closed field, hence integral; (iv) BLR 8.1/4 to
+identify the fppf sheaf with the naive quotient, which is what makes
+`surj` statable without sheafification.
+
+Step (i) — that the hypotheses survive base change — used to be part of
+this obligation and is now PROVEN just above.
+
+**THERE IS NO PROJECTIVITY API AT THIS PIN, so step (ii) cannot be cut out
+as a leaf of its own.**  Re-checked 2026-07-31: `Mathlib/AlgebraicGeometry/`
+contains no `IsProjective`, no relative ampleness and no very-ample sheaf
+for MORPHISMS (the project's own `Fermat/FLT/Modularity/AmpleSheaf.lean`
+has `IsAmpleSheaf` for a sheaf on a single scheme, which is not the same
+predicate and does not carry a projective embedding).  So the reduction
+(ii) has nothing to reduce TO, and whoever takes this leaf must either
+state relative projectivity first or prove (iii) directly for a curve over
+an affine base.  That is the honest reason this is the file's one
+research-scale node, and it is worth knowing before starting rather than
+after.
+
+**FAITHFULNESS AUDIT (fresh — this is a NEW statement, so nothing is
+inherited).**  TRUE: it is BLR 8.2/1 + 8.4/2 verbatim, which construct
+`Pic_{Y/V}` as a smooth separated `V`-scheme locally of finite type for a
+projective flat family of integral curves, and over an affine `V` the
+hypotheses give exactly such a family.
+
+*Every hypothesis is load-bearing.*  Drop `IsAffine V` and (ii) fails —
+over a general base the constant-genus decomposition can be infinite and
+there is no single relatively very ample sheaf, which is precisely why FGA
+is stated for projective morphisms.  Drop `_hsmooth` and smoothness of
+`Pic` fails at relative dimension `2` (`H²(Y_s, 𝒪)` need not vanish; a K3
+over a non-reduced base is the standard witness).  Drop `_hpush` and
+separatedness fails, already for `Y = V ⊔ V`, where
+`0 ⟶ Pic T ⟶ Pic Y_T ⟶ P(T)` breaks.  Drop `_o` and BLR 8.1/4 is
+unavailable, so `surj` would need the fppf sheafification that this
+development cannot state.
+
+*NOT VACUOUS*: `Y = ℙ¹_V` satisfies every hypothesis, and
+`Pic_{ℙ¹_V/V} = ℤ × V ⟶ V` is étale (hence smooth) and separated.
+
+*The strengthened conclusion admits no junk witness*: `P = V`,
+`pstr = 𝟙 V` IS smooth and separated but fails `surj` at any curve of
+positive genus, by the `𝒪(Δ) ⊗ 𝒪(−o)` computation in the `IsRelPicOf`
+docstring. -/
+theorem exists_relPicOf_of_isAffineBase {Y V : Scheme.{u}} (strY : Y ⟶ V) [IsAffine V]
+    (_hproper : IsProper strY) (_hsmooth : SmoothOfRelativeDimension 1 strY)
+    (_hconn : GeometricallyConnected strY) (_o : RelPoint strY (𝟙 V))
+    (_hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strY) :
+    ∃ (P : Scheme.{u}) (pstr : P ⟶ V),
+      Nonempty (IsRelPicOf strY pstr) ∧ Smooth pstr ∧ IsSeparated pstr :=
+  sorry
+
+/-- **THE RELATIVE PICARD SCHEME OVER AN AFFINE OPEN OF THE BASE**
+(**PROVEN 2026-07-31**; formerly a bare sorry leaf, and the audit below is
+the docstring written while it was one).
+
+The proof is `exists_relPicOf_of_isAffineBase` applied to the restricted
+curve `X ×_S V ⟶ V`, whose hypotheses are supplied by the five base-change
+lemmas above.  `IsAffineOpen V` IS `IsAffine ↑V`, so the instance argument
+is discharged by `hV` itself.  Nothing mathematical happens here; the whole
+content moved to the new leaf, which is now stated in the shape BLR 8.2/1
+is stated in.
+
+The paragraphs below are the audit written while this was a leaf.  They are
+kept because they are the record of WHY the conclusion carries `Smooth ∧
+IsSeparated`, which is still live information for the new leaf's owner —
+that obligation did not disappear, it moved one step down.
 
 **RESTATED 2026-07-31, and the earlier audit is therefore VOID rather than
 inherited** (the rule is CLAUDE.md's, from
@@ -2785,7 +2955,13 @@ theorem exists_relPicOf_isAffineOpen {X S : Scheme.{u}} (strX : X ⟶ S)
     ∃ (P : Scheme.{u}) (pstr : P ⟶ (V : Scheme.{u})),
       Nonempty (IsRelPicOf (curveBaseChangeProj strX V.ι) pstr) ∧
         Smooth pstr ∧ IsSeparated pstr :=
-  sorry
+  haveI : IsAffine (V : Scheme.{u}) := _hV
+  exists_relPicOf_of_isAffineBase (curveBaseChangeProj strX V.ι)
+    (isProper_curveBaseChangeProj strX V.ι _hproper)
+    (smoothOfRelativeDimension_curveBaseChangeProj strX V.ι _hsmooth)
+    (geometricallyConnected_curveBaseChangeProj strX V.ι _hconn)
+    (relBasePointBaseChange strX V.ι _o)
+    (hasUniversallyTrivialPushforward_curveBaseChangeProj strX V.ι _hpush)
 
 /-! ### The Zariski-local half, cut again
 
@@ -2827,7 +3003,12 @@ The three leaves are then:
 * `exists_isRelPicOverAffines_of_forall_isAffineOpen` — the geometry:
   glue the `P_V` (Stacks 01JJ, or mathlib's
   `AlgebraicGeometry.Scheme.Cover.RelativeGluingData`, Stacks 01LH) and
-  the rigidified universal sheaves;
+  the rigidified universal sheaves.  **PROVEN 2026-07-31**, over a cut of
+  its own into `exists_gluedRelPic_of_forall_isAffineOpen` (the scheme,
+  and it needs NO geometric hypothesis) and
+  `nonempty_isRelPicOverAffines_of_restrict` (the sheaf, where `_o` and
+  `_hpush` are spent); its `Smooth ∧ IsSeparated` clause is discharged in
+  the assembly by `transport_of_forall_isAffineOpen`;
 * `inj_of_isRelPicOverAffines` — injectivity is Zariski-local on `T`.
   **PROVEN 2026-07-30, and the route below is what went through verbatim.**
   **Unconditional**: it needs neither `_o` nor `_hpush` nor any geometric
@@ -2899,14 +3080,200 @@ structure IsRelPicOverAffines {X P S : Scheme.{u}} (strX : X ⟶ S) (pstr : P �
     ∀ L : (curveBaseChange strX g).Modules, IsInvertibleSheaf L →
       ∃ p : RelPoint pstr g, RelPicEquiv strX g (sheaf p) L
 
-/-- **THE GLUING STEP** (sorry leaf) — Stacks 01JJ / 01LH, plus the
-rigidified Poincaré bundle.
+/-! #### A property that is Zariski-local at the target transports from the
+local Picard schemes to the glued one
+
+Both lemmas are PROVEN, and together they are step 4 of the gluing route
+below — the step that discharges the `Smooth ∧ IsSeparated` clause the
+2026-07-31 restatement added to that leaf's conclusion.  Nothing about
+`Pic` is used: the first is `IsZariskiLocalAtTarget.of_iSup_eq_top` over
+`iSup_affineOpens_eq_top`, and the second feeds it
+`transport_of_isRelPicOf`, which is where representability enters and is
+the only mathematical input. -/
+
+/-- **A Zariski-local-at-target property may be checked over the affine
+opens of the base** (PROVEN). -/
+theorem of_forall_isAffineOpen_morphismRestrict {P S : Scheme.{u}} (pstr : P ⟶ S)
+    (W : MorphismProperty Scheme.{u}) [IsZariskiLocalAtTarget W]
+    (h : ∀ V : S.Opens, IsAffineOpen V → W (pstr ∣_ V)) : W pstr :=
+  IsZariskiLocalAtTarget.of_iSup_eq_top
+    (fun i : S.affineOpens => (i : S.Opens)) (iSup_affineOpens_eq_top S) fun i => h _ i.2
+
+/-- **A Zariski-local-at-target property passes from the LOCAL Picard
+schemes to a GLOBAL scheme that restricts to them** (PROVEN).
+
+`hres` says `pstr ∣_ V` represents `Pic` over each affine `V`; `hloc` says
+SOME representing object over `V` has the property.  `transport_of_isRelPicOf`
+moves the property across the canonical isomorphism of the two, and
+`of_forall_isAffineOpen_morphismRestrict` globalises it.  Instantiated at
+`W = @Smooth` and `W = @IsSeparated` below. -/
+theorem transport_of_forall_isAffineOpen {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
+    (W : MorphismProperty Scheme.{u}) [IsZariskiLocalAtTarget W]
+    (hres : ∀ V : S.Opens, IsAffineOpen V →
+      Nonempty (IsRelPicOf (curveBaseChangeProj strX V.ι) (pstr ∣_ V)))
+    (hloc : ∀ V : S.Opens, IsAffineOpen V →
+      ∃ (Q : Scheme.{u}) (qstr : Q ⟶ (V : Scheme.{u})),
+        Nonempty (IsRelPicOf (curveBaseChangeProj strX V.ι) qstr) ∧ W qstr) :
+    W pstr := by
+  refine of_forall_isAffineOpen_morphismRestrict pstr W fun V hV => ?_
+  obtain ⟨hP⟩ := hres V hV
+  obtain ⟨Q, qstr, ⟨hQ⟩, hWQ⟩ := hloc V hV
+  exact transport_of_isRelPicOf hP hQ hWQ
+
+/-- **THE SCHEME-THEORETIC GLUING** (sorry leaf, cut 2026-07-31 out of
+`exists_isRelPicOverAffines_of_forall_isAffineOpen`) — Stacks 01JJ / 01LH.
+
+Glue the local Picard schemes into a single `P ⟶ S` whose restriction to
+each affine open of `S` again represents the local relative Picard functor.
+This is step 1 (and the `inj`/`surj` half of step 3) of the route recorded
+on the parent, and NOTHING ELSE: no classifying sheaf is produced here.
+
+**IT IS UNCONDITIONAL, and that is deliberate.**  No properness, no
+smoothness, no connectedness, no section, no `f_*𝒪 = 𝒪`.  The whole
+argument is Yoneda plus mathlib's relative gluing:
+
+1. The affine opens of `S`, ordered by inclusion, form a locally directed
+   open cover (given `x ∈ V ⊓ W` there is an affine open `⊆ V ⊓ W`
+   containing `x`, since affine opens are a basis), so
+   `AlgebraicGeometry.Scheme.Cover.RelativeGluingData` in
+   `Mathlib/AlgebraicGeometry/RelativeGluing.lean` applies once the `P_V`
+   are assembled into a functor with equifibered structure maps.
+2. The structure map for `W ≤ V` is `P_W ≅ P_V ×_V W ⟶ P_V`.  Two
+   sublemmas are wanted first and neither is stated as a leaf, because
+   both are routine and neither is consumed anywhere else in this file:
+   *`IsRelPicOf` is stable under base change of the base* (pullback
+   pasting: `RelPoint (pullback.snd pstr g) h ≃ RelPoint pstr (h ≫ g)`,
+   and `curveBaseChange (curveBaseChangeProj strX g) h ≅ curveBaseChange
+   strX (h ≫ g)`), and *`IsRelPicOf` transports along an isomorphism of
+   representing objects over the base* (relabel `RelPoint`s along the
+   iso).  The comparison isomorphism itself is `IsRelPicOf.isoOver`,
+   PROVEN above.
+3. Functoriality and equifiberedness are then FORCED rather than checked:
+   two maps `P_U ⟶ P_V` over `U ↪ V` are both `RelPoint`s of `pstr_V` at
+   the same base map and classify the same sheaf, so `IsRelPicOf.inj`
+   equates them.  This is the same "uniqueness makes the diagram
+   commute" move that `inj_of_isRelPicOverAffines` runs one level down.
+4. Finally `RelativeGluingData.isPullback_natTrans_ι_toBase` gives
+   `P_V ≅ pstr ⁻¹ᵁ V` over `V`, and the second sublemma of (2) carries
+   `IsRelPicOf` across it to `pstr ∣_ V`.
+
+**FAITHFULNESS AUDIT (fresh statement, nothing inherited).**  TRUE, by the
+route above.  The hypothesis is not vacuous — `exists_relPicOf_isAffineOpen`
+supplies it — and the conclusion is not vacuous either, since it is an
+existential whose witness the route constructs.
+
+*Why dropping all the geometric hypotheses is SAFE rather than reckless.*
+Dropping a hypothesis strengthens a leaf, so this is the direction that can
+turn a true statement false, and it deserves the explicit check: every step
+(1)–(4) above quantifies only over `IsRelPicOf` structures and mathlib
+gluing, and `IsRelPicOf` is a bare functor-of-points condition with no
+geometric content.  The precedent is `inj_of_isRelPicOverAffines`, which was
+likewise expected to need `_o` and `_hpush` and turned out to need nothing.
+**If a prover does find a step that needs one of them, the repair is local
+and costs nothing:** re-add it to this signature, and the sole consumer
+(`exists_isRelPicOverAffines_of_forall_isAffineOpen`, just below) has all
+five in scope and passes them.  Record the failure in this docstring if so —
+that is more valuable than the generality. -/
+theorem exists_gluedRelPic_of_forall_isAffineOpen {X S : Scheme.{u}} (strX : X ⟶ S)
+    (_hloc : ∀ V : S.Opens, IsAffineOpen V →
+      ∃ (P : Scheme.{u}) (pstr : P ⟶ (V : Scheme.{u})),
+        Nonempty (IsRelPicOf (curveBaseChangeProj strX V.ι) pstr)) :
+    ∃ (P : Scheme.{u}) (pstr : P ⟶ S),
+      ∀ V : S.Opens, IsAffineOpen V →
+        Nonempty (IsRelPicOf (curveBaseChangeProj strX V.ι) (pstr ∣_ V)) :=
+  sorry
+
+/-- **THE RIGIDIFIED POINCARÉ BUNDLE** (sorry leaf, cut 2026-07-31 out of
+`exists_isRelPicOverAffines_of_forall_isAffineOpen`) — step 2 of that
+leaf's route, and the ONLY place `_o` and `_hpush` are spent.
+
+Given a `pstr : P ⟶ S` whose restriction to every affine open of `S`
+represents the local relative Picard functor, produce the GLOBAL data of
+`IsRelPicOverAffines`: a classifying sheaf `sheaf p` for a `T`-point of `P`
+over an ARBITRARY `g : T ⟶ S`, its invertibility, its naturality
+`sheaf_pre`, and `inj`/`surj` relative to it over the affine opens.
+
+**Why this cannot be done by gluing the local `sheaf` functions**, which is
+the whole reason the cut is here and not one field earlier: `IsRelPicOf` is
+a `Nonempty` existence statement, so the hypothesis hands out one UNRELATED
+structure per affine open, and two structures on the same `pstr ∣_ V` need
+not agree — replace `sheaf` by `fun p => modDual (sheaf p)` and every field
+survives (`inj` because dualising is an involution on classes, `surj`
+because it is a bijection, `sheaf_pre` because pullback commutes with
+duals).  So the local `sheaf`s differ by an automorphism of the functor
+`Pic(X_-)/Pic(-)` and there is nothing to glue along.
+
+**The classical route.**  Apply the local `surj` to the identity point of
+`pstr ∣_ V` to get a universal sheaf on `X ×_S (pstr ⁻¹ᵁ V)`; rigidify it
+along `_o` — normalise its pullback along the section to `𝒪` — and glue the
+rigidified sheaves, which IS canonical because `_hpush` (`f_*𝒪 = 𝒪`
+universally) makes a rigidified sheaf have only the identity automorphism.
+`sheaf p` is then the pullback of the glued universal sheaf along the map
+`X_T ⟶ X_P` induced by `p`; `invertible` and `sheaf_pre` are immediate from
+that description, `sheaf_pre` because pullback along
+`X_{T'} ⟶ X_T ⟶ X_P` composes.  `inj` and `surj` over an affine open then
+transport the local structure through `pstr ∣_ V`, which is the hypothesis.
+
+**Both `_o` and `_hpush` are load-bearing and must not be dropped "because
+the gluing is formal"**: without them there is no canonical universal sheaf
+to glue.  Contrast the sibling leaf
+`exists_gluedRelPic_of_forall_isAffineOpen`, which needs neither — the
+SCHEME glues unconditionally, the SHEAF does not.
+
+**FAITHFULNESS AUDIT (fresh statement, nothing inherited).**  TRUE, by the
+route above.  Drop `_hpush` and it is FALSE, not merely unprovable: for
+`X = S ⊔ S` the sequence `0 ⟶ Pic T ⟶ Pic X_T ⟶ P(T) ⟶ Br T` breaks, a
+class is locally but not globally in the image, and `surj` fails at a `T`
+covered by two affine opens.  Drop `_o` and the Brauer obstruction is not
+killed, so the local universal sheaves have no cocycle to glue along.
+`_hproper`, `_hsmooth` and `_hconn` are the standing hypotheses of
+`_hpush`'s own provenance and are kept for that reason; a prover who finds
+them idle should say so rather than delete them, since deleting an input
+from a released signature churns consumers for no mathematical gain (the
+same policy `smooth_of_isRelPicOf` records for its own `_hpush`).
+
+NOT VACUOUS: the hypothesis `_hres` is what
+`exists_gluedRelPic_of_forall_isAffineOpen` produces. -/
+theorem nonempty_isRelPicOverAffines_of_restrict {X P S : Scheme.{u}} (strX : X ⟶ S)
+    {pstr : P ⟶ S}
+    (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
+    (_hconn : GeometricallyConnected strX) (_o : RelPoint strX (𝟙 S))
+    (_hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX)
+    (_hres : ∀ V : S.Opens, IsAffineOpen V →
+      Nonempty (IsRelPicOf (curveBaseChangeProj strX V.ι) (pstr ∣_ V))) :
+    Nonempty (IsRelPicOverAffines strX pstr) :=
+  sorry
+
+/-- **THE GLUING STEP** (**PROVEN 2026-07-31** as the assembly of
+`exists_gluedRelPic_of_forall_isAffineOpen`,
+`nonempty_isRelPicOverAffines_of_restrict` and
+`transport_of_forall_isAffineOpen`; formerly a bare sorry leaf, and the
+route note below is the docstring written while it was one) — Stacks
+01JJ / 01LH, plus the rigidified Poincaré bundle.
 
 From a relative Picard scheme over every affine open of `S`, produce a
 single `P ⟶ S` carrying a GLOBAL classifying sheaf and representing
-`Pic_{X/S}` over each affine open.  This is where all of the
-scheme-theoretic gluing lives, and the only leaf of the three that
-constructs anything.
+`Pic_{X/S}` over each affine open.
+
+**CUT IN THREE, 2026-07-31, along the route's own seams.**  The four steps
+below were one owner's problem and are three different arguments with three
+different hypothesis sets:
+
+* steps 1 and 3 — the SCHEME glues, `exists_gluedRelPic_of_forall_isAffineOpen`,
+  which needs NO geometric hypothesis at all;
+* step 2 — the SHEAF glues, `nonempty_isRelPicOverAffines_of_restrict`,
+  which is where `_o` and `_hpush` are spent;
+* step 4 — the `Smooth ∧ IsSeparated` clause, which is now PROVEN here over
+  `transport_of_forall_isAffineOpen` and cost nothing beyond noticing that
+  both properties are Zariski-local at the target.
+
+The load-bearing observation that makes the cut work is that step 1 must
+hand step 2 the local structures on `pstr ∣_ V` rather than merely the
+scheme `P`: the first leaf's conclusion is therefore stated as
+"`pstr ∣_ V` represents `Pic` over `V`, for every affine `V`", which is
+exactly what step 3 produces and exactly what steps 2 and 4 consume.  Both
+consumers were written before the leaf was, so the interface is
+compiler-checked rather than promised.
 
 Route, in the order a prover meets it:
 
@@ -2983,8 +3350,16 @@ theorem exists_isRelPicOverAffines_of_forall_isAffineOpen {X S : Scheme.{u}} (st
         Nonempty (IsRelPicOf (curveBaseChangeProj strX V.ι) pstr) ∧
           Smooth pstr ∧ IsSeparated pstr) :
     ∃ (P : Scheme.{u}) (pstr : P ⟶ S),
-      Nonempty (IsRelPicOverAffines strX pstr) ∧ Smooth pstr ∧ IsSeparated pstr :=
-  sorry
+      Nonempty (IsRelPicOverAffines strX pstr) ∧ Smooth pstr ∧ IsSeparated pstr := by
+  obtain ⟨P, pstr, hres⟩ := exists_gluedRelPic_of_forall_isAffineOpen strX
+    fun V hV => by obtain ⟨Q, qstr, hq, -⟩ := _hloc V hV; exact ⟨Q, qstr, hq⟩
+  refine ⟨P, pstr,
+    nonempty_isRelPicOverAffines_of_restrict strX _hproper _hsmooth _hconn _o _hpush hres,
+    ?_, ?_⟩
+  · exact transport_of_forall_isAffineOpen (W := @Smooth) hres
+      fun V hV => by obtain ⟨Q, qstr, hq, hs, -⟩ := _hloc V hV; exact ⟨Q, qstr, hq, hs⟩
+  · exact transport_of_forall_isAffineOpen (W := @IsSeparated) hres
+      fun V hV => by obtain ⟨Q, qstr, hq, -, hs⟩ := _hloc V hV; exact ⟨Q, qstr, hq, hs⟩
 
 /-- **INJECTIVITY IS ZARISKI-LOCAL ON THE BASE** (**PROVEN 2026-07-30**;
 formerly a sorry leaf) — and it is UNCONDITIONAL: no `_o`, no `_hpush`,
@@ -3338,9 +3713,13 @@ name the wrong gate.**
   `Mathlib/AlgebraicGeometry/` for `cartierdivisor`, `effectivecartier`
   and `weildivisor`, plus `ls Mathlib/AlgebraicGeometry/ | grep -i div`.
   Both empty.  There is also still no `IsProjective` and no ampleness for
-  MORPHISMS anywhere in `Mathlib/AlgebraicGeometry/` — which is why
-  `exists_relPicOf_isAffineOpen` below has to say "affine open of the
-  base" instead of "projective". -/
+  MORPHISMS anywhere in `Mathlib/AlgebraicGeometry/` — RE-CHECKED
+  2026-07-31, and the project's own `Fermat/FLT/Modularity/AmpleSheaf.lean`
+  does not close it either, since `IsAmpleSheaf` is a predicate on a sheaf
+  over ONE scheme and carries no projective embedding.  That is why
+  `exists_relPicOf_of_isAffineBase` above has to say "affine base" instead
+  of "projective", and why step (ii) of FGA 232 cannot be cut out as a leaf
+  of its own — there is nothing to state it in terms of. -/
 theorem exists_relPicOf_of_hasUniversallyTrivialPushforward {X S : Scheme.{u}} (strX : X ⟶ S)
     (hproper : IsProper strX) (hsmooth : SmoothOfRelativeDimension 1 strX)
     (hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S))
