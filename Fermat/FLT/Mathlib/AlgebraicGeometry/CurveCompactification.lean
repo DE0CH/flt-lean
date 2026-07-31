@@ -791,8 +791,6 @@ theorem nonempty_projChart_mvPolynomial (n : ℕ) :
 
 end ProjChartMvPolynomial
 
-/-- **Projective closure: a chart descends along a surjection** (PROVEN 2026-07-30 over
-`Fermat/FLT/Mathlib/RingTheory/GradedAlgebra/ProjectiveClosure.lean`).
 section ProjChartDescent
 
 /-!

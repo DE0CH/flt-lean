@@ -477,12 +477,6 @@ theorem sq_u_eq_sq_u_of_autStable {N : ℕ} (hN : N ≠ 0) (E : WeierstrassCurve
   field_simp at hkey
   exact hkey.symm
 
-/-- **THE FINITE GALOIS LEVEL** (opened as a sorry leaf 2026-07-28 by decomposing
-`exists_muThree_cocycle_of_autStable_of_j_eq_zero`; **PROVEN 2026-07-30**, with
-`Algebra.IsAlgebraic K Ω` REPLACED by the strictly stronger `Normal K Ω` — see below, and
-note that `Normal` already implies `Algebra.IsAlgebraic`, so no hypothesis was lost): the
-finitely many points of `⟨g⟩`, and the cube roots of unity, are all defined over ONE finite
-Galois extension of `K`.
 omit [DecidableEq Ω] [CharZero Ω] in
 /-- **A FINITE SET OF ELEMENTS OF A NORMAL ALGEBRAIC EXTENSION LIES IN A FINITE GALOIS
 SUBEXTENSION** (PROVEN 2026-07-30).

@@ -15759,9 +15759,6 @@ theorem exists_stepanovShapedSolution {k : Type*} [Field k] (d q Kc B : ℕ)
   exact hne (stepanovParam_injective d q Kc
     (by funext i j c; simpa using hcon i j c))
 
-/-- **THE REDUCTION TO A LINEAR SYSTEM** (SORRY LEAF, cut 2026-07-27 out of
-`exists_stepanovJetSolution`) — Schmidt Chapter III §4, pp. 110–112. This is the
-part of the dimension count that does MATHEMATICS; the two siblings only count.
 /-! #### The reduction to a linear system, steps 1 and 4 (PROVEN 2026-07-30)
 
 `exists_stepanovJetLinearForms` is no longer a leaf: it is PROVEN below over the

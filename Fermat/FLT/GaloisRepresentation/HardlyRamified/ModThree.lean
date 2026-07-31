@@ -50066,9 +50066,6 @@ theorem map_pow_muAction_iff_ray_class (F : Type u) [Field F] [NumberField F]
   have hkk : (k : ZMod m) = (k' : ZMod m) := he1.symm.trans he2
   rw [hspec ζ hζ, pow_eq_pow_val_ray_class hζ k', pow_eq_pow_val_ray_class hζ k, hkk]
 
-/-- **`AlgebraicClosure.map (algebraMap ℚ F)` IS BIJECTIVE** (PROVEN
-2026-07-30, axiom-clean; the first of the three seam lemmas that make
-`exists_badPrimes_mul_muFixer_eq_top_ray_class` below glue).
 /-- **Integers prime to `q` are units of the completed integer ring
 `ℤ_qˆ`** (PROVEN 2026-07-24 — cast-arithmetic helper for the
 unramifiedness bridge `map_localInertiaGroup_fixes_sqrt_neg_three`
