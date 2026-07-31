@@ -457,7 +457,7 @@ open in them has been split along the theories it needed:
 | `exists_isX1Compactification_specialFibre` | Igusa / Katz-Mazur 5.1.1: the special fibre of that model IS `X_1(N)` over `𝔽_ℓ`.  (`exists_x1CurveModel_of_base` is PROVEN over this row and the one above, 2026-07-28, splitting the two classical theorems it had cited jointly; `exists_x1ReductionAt` is PROVEN over that plus the moduli-free `NeronReduction.lean`.  Since 2026-07-30 the row above is the weaker `exists_x1SmoothProperCurveModel`; the leaf COUNT here is unchanged.) | `ℚ → 𝔽_ℓ` |
 | `exists_section_of_galoisInvariant` | Galois descent of a rational point to a section | `ℚ` |
 | `exists_heckeCorrespondenceFamilyGamma1` | the `Γ₁` Hecke correspondence as a natural family on points — the geometric half, and the `Γ₁` twin of `X0.lean`'s `exists_heckeCorrespondenceFamily`.  (`exists_heckeAction_isotypicQuotients_gamma1` was a leaf until 2026-07-28 and is now **PROVEN** over this row and the next, via the `Γ₁` moduli pin `IsModularHeckeActionGamma1`; `exists_modularHeckeAction_gamma1` is PROVEN over this row alone.) | `ℚ` |
-| `isIntegral_coeff_prime_of_isWeightTwoEigenformOn_gamma1` | Shimura's algebraicity theorem for `Γ₁(N)` AT A PRIME: `a p` is an algebraic integer.  MENTIONS NO SCHEME — the only obligation of `IsIsotypicQuotient` that does not.  Needs the integral homology `H₁(X_1(N), ℤ)` as a Hecke module; the archimedean bounds in this file cannot substitute.  Cannot be an instance of `X0.lean`'s `isIntegral_coeff_prime_of_isWeightTwoEigenform`: the `Γ₁` coefficients generate `ℚ(χ)`.  (The general-`n` form `isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1` is **PROVEN** over this since 2026-07-31, by multiplicativity and the prime-power recursions.) | `ℚ` |
+| `exists_integralHeckeEigensystem_of_isWeightTwoEigenformOn_gamma1` | the integral homology `H₁(X_1(N), ℤ)` as a Hecke module, with the period map of `ω_f` as a nonzero simultaneous left eigenvector — i.e. an `IntegralHeckeEigensystem` for the coefficient system.  NEW 2026-07-31, replacing `isIntegral_coeff_prime_of_isWeightTwoEigenformOn_gamma1`, which is now **PROVEN** over it (and `isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1` over that).  Cannot be an instance of `X0.lean`'s `Γ₀` twin — `f` lives on a smaller group and `hecke` carries `χ` — but the two leaves now share their CONSUMER, `IntegralHeckeEigensystem`, whose eigenvalue argument is PROVEN in `ModularCurve/HeckeLattice.lean`.  The archimedean bounds in this file cannot substitute; integrality is not an archimedean condition. | `ℚ` |
 | `exists_isotypicQuotient_of_isIntegral_gamma1` | Shimura's `A_f` on `Γ₁(N)`, one factor, given the PINNED Hecke action AND algebraicity — the "build one factor" half of Eichler-Shimura, and the `Γ₁` twin of `X0.lean`'s `exists_isotypicQuotient_of_isIntegral`.  (`IsIsotypicQuotient` is reused verbatim from `X0.lean`; it is shape-free.  `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` is **PROVEN** over this row and the one above since 2026-07-30, transporting the `Γ₀` recut of the same day; its FALSITY AUDIT was discharged that day too and the statement is TRUE.) | `ℚ` |
 | `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` | the "assemble the factors" half: finiteness of the index set, the oldform multiplicities, `finite_ker`, and the `neben` labelling.  It no longer owns the `N = 0` case: that case was REFUTED on 2026-07-28 (`isEmpty_isHeckeIsotypicDecompositionGamma1_zero`) and the leaf now carries `hN : N ≠ 0`; see its docstring | `ℚ` |
 | `isTorsion_factor_of_heckeIsotypic_gamma1` | Kolyvagin-Logachev on an isotypic factor | `ℚ` |
@@ -13452,6 +13452,27 @@ same reason to transport applies: the arithmetic that carries `p` to `n` is not
 level-shape-specific, so leaving one side cut and the other not is the drift
 this file has paid for before.
 
+## THIRD RECUT, LATER THE SAME DAY: THE LEAF IS NOW THE HOMOLOGY LATTICE
+
+`isIntegral_coeff_prime_of_isWeightTwoEigenformOn_gamma1` is **PROVEN** too as of
+2026-07-31, over `exists_integralHeckeEigensystem_of_isWeightTwoEigenformOn_gamma1`
+below — the integral homology `H₁(X_1(N), ℤ)` with its Hecke action and the
+period map of `ω_f`, packaged as an `IntegralHeckeEigensystem`
+(`ModularCurve/HeckeLattice.lean`, NEW the same day).  Everything the classical
+proof does after producing that lattice is now Lean code rather than the prose
+below: `IntegralHeckeEigensystem.isIntegral_coeff` reads `a n` off the monic
+integer characteristic polynomial of `T n`.  The `Γ₀` side was cut the same way
+on the same day by the same owner, onto the SAME consumer — see
+`exists_integralHeckeEigensystem_of_isWeightTwoEigenform` in `X0.lean` — so the
+two sides now share their downstream argument outright and can no longer drift.
+The FALSITY AUDIT of that new leaf, and why the level-`0` witness below refutes
+it unchanged, are on the leaf itself.
+
+**Everything from here to the end of this block remains accurate and is what
+the recut consumed**; the paragraphs below are about the ARITHMETIC (the
+recursions, the nebentypus, the level-`0` witness), all of which is still proven
+and still consumed, and none of which the lattice touches.
+
 **The nebentypus is the only difference, and it costs one lemma.**  The `Γ₁`
 recursion at `p ∤ N` is `a_{p^{k+2}} = a_p a_{p^{k+1}} − χ(p)·p·a_{p^k}`, so
 propagating integrality along it needs `IsIntegral ℤ (χ (p : ZMod N))`.  That is
@@ -13647,30 +13668,115 @@ theorem isIntegral_coeff_prime_pow_of_isIntegral_gamma1 {G : Subgroup (GL (Fin 2
         exact (hpi.mul ih.2).sub ((hcint.mul hpint).mul ih.1)
     exact (key k).1
 
-/-- **SHIMURA'S ALGEBRAICITY THEOREM FOR `Γ₁(N)` AT A PRIME: `a_p` is an
-algebraic integer for every prime `p`** (sorry leaf, NEW 2026-07-31) — all that
-survives of `isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1` below, which is
-now PROVEN over this by multiplicativity and the prime-power recursion.
+/-- **THE INTEGRAL HECKE LATTICE OF `X_1(N)`, FOR A WEIGHT-TWO EIGENFORM WITH
+NEBENTYPUS** (sorry leaf, NEW 2026-07-31) — the GEOMETRIC input to Shimura's
+algebraicity theorem on `Γ₁(N)`, and since 2026-07-31 the whole of what that
+theorem still owes here.  `isIntegral_coeff_prime_of_isWeightTwoEigenformOn_gamma1`
+immediately below is PROVEN over it, and
+`isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1` over that.
+
+**THE `Γ₁` TWIN OF `X0.lean`'s `exists_integralHeckeEigensystem_of_isWeightTwoEigenform`,
+CUT ON THE SAME DAY BY THE SAME OWNER.**  That is not a stylistic preference: the
+two algebraicity leaves have been cut twice before (to primes, on 2026-07-30 and
+2026-07-31), and this file's own standing rule is that a cut made on one side
+must be made on the other by ONE owner or the two drift into rival cuts of one
+node.  Both leaves now ask for the SAME object — an `IntegralHeckeEigensystem`
+for the coefficient system (`ModularCurve/HeckeLattice.lean`) — which is the
+strongest form of not drifting: the consumer is literally shared, and only the
+producer differs.
 
 TRUE, and classical (Shimura, *Introduction to the arithmetic theory of
 automorphic functions*, §3.5 and §7.5; Diamond–Shurman §6.5, where `Γ₁(N)` is
-the default level structure so the nebentypus case is the one actually
-written).  `T_n` preserves the integral homology `H₁(X_1(N), ℤ)`, a lattice on
-which the anemic Hecke algebra therefore acts by integer matrices, and `a p` is
-an eigenvalue of one of them — so it is a root of a monic integer characteristic
-polynomial.  The nebentypus does not weaken this: `χ` takes root-of-unity
-values, the coefficients generate `ℚ(χ)` rather than a real field, and the
-lattice statement is unchanged.
+the default level structure, so the nebentypus case is the one actually
+written).  The witness is the integral homology: `H₁(X_1(N), ℤ)` is free of rank
+`2g`; `T_n` is induced by a correspondence of curves and PRESERVES it, hence is
+an integer matrix in a `ℤ`-basis; the period map `φ : γ ↦ ∫_γ ω_f` is `ℤ`-linear
+with `φ ∘ T_n = a_n · φ` by adjointness of the Hecke action on cycles and on
+differentials; and `φ ≠ 0` because a nonzero holomorphic differential on a
+compact Riemann surface cannot have all periods zero.
+
+**The nebentypus does not weaken any of this, and this is worth being explicit
+about** because it is the only place the `Γ₁` statement could differ from the
+`Γ₀` one.  `χ` takes root-of-unity values, so the coefficients generate `ℚ(χ)`
+rather than a totally real field — but the lattice is `H₁(X_1(N), ℤ)` either
+way, `T_n` acts on it over `ℤ` either way, and the eigenvalue extracted from the
+monic integer charpoly is `a n` either way.  The `χ` that appears in the Hecke
+recursion `a_{p^{k+2}} = a_p a_{p^{k+1}} − χ(p)·p·a_{p^k}` is a fact about the
+COEFFICIENTS, downstream of this leaf, and is handled by
+`isIntegral_coeff_prime_pow_of_isIntegral_gamma1` above together with
+`isIntegral_dirichletCharacter_apply`; nothing about it reaches the lattice.
+That is why the leaf below carries no hypothesis on `χ` at all.
+
+**It still cannot be an instance of the `Γ₀` leaf.**  `IsWeightTwoEigenformOn
+(Gamma1GL N) N χ f a` is not `IsWeightTwoEigenform N f a` — `f` lives on a
+smaller group and `hecke` carries `χ` — so `X0.lean`'s producer does not apply.
+What IS shared is the consumer, `IntegralHeckeEigensystem`, which mentions only
+`a`.  The sharing is at the right place: the geometry differs (`X_1(N)` versus
+`X₀(N)`), the linear algebra does not.
+
+**FALSITY AUDIT, RE-RUN AGAINST THIS STATEMENT (2026-07-31) AND NOT INHERITED**,
+per the standing rule that a restatement voids the earlier audit.  Both
+`hN : N ≠ 0` and `G := Gamma1GL N` REMAIN LOAD-BEARING, and the mechanized
+level-`0` witness recorded in the block docstring above refutes THIS statement
+without modification — precisely because this statement is STRONGER than the one
+it was written against, so the implication carries the refutation backwards.  In
+detail: `exists_isWeightTwoEigenformOn_gamma1GL_zero (1/2)` (PROVEN 2026-07-28)
+produces a level-`0` nebentypus `χ`, a genuine `f : CuspForm (Gamma1GL 0) 2` and
+the system `lacunaryTwoCoeff (1/2)` satisfying every field of
+`IsWeightTwoEigenformOn (Gamma1GL 0) 0 χ f`, with
+`lacunaryTwoCoeff (1/2 : ℂ) 2 = 1/2` (`lacunaryTwoCoeff_two`).  Were this leaf to
+hold at `N = 0`, then `IntegralHeckeEigensystem.isIntegral_coeff` — a PROVEN
+theorem, so the implication is not in doubt — would give
+`IsIntegral ℤ (1/2 : ℂ)`, refuted by `IsIntegrallyClosed ℤ` pulled back along
+`ℚ ↪ ℂ` (the four-line script is quoted verbatim in the block docstring above).
+Hence no `IntegralHeckeEigensystem` exists for that system and `hN` cannot be
+dropped.  Geometrically: "`X_1(0)`" is not a curve with a homology lattice.
+
+**WHAT REMAINS GENUINELY MISSING** (re-checked 2026-07-31): the integral
+homology `H₁(X_1(N), ℤ)` as a Hecke module exists neither here, nor in mathlib
+at this pin, nor in `~/cs/FLT`.  The two routes worth costing are the same two
+listed on the `Γ₀` leaf in `X0.lean` — the Riemann-surface homology of
+Diamond–Shurman §6.5, and the `q`-expansion lattice `S₂(Γ₁(N), ℤ)` of Shimura
+§3.5 — and `Γ₁` is the better-documented side for both, since Diamond–Shurman
+takes `Γ₁(N)` as its default level structure.  **REFUTED ROUTE, do not retry:**
+the archimedean bounds in this file bound `‖a_p‖`, and integrality is not an
+archimedean condition; `1/2` satisfies every one of them. -/
+theorem exists_integralHeckeEigensystem_of_isWeightTwoEigenformOn_gamma1 (N : ℕ) (hN : N ≠ 0)
+    (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ)
+    (hf : IsWeightTwoEigenformOn (Gamma1GL N) N χ f a) :
+    Nonempty (IntegralHeckeEigensystem a) :=
+  sorry
+
+/-- **SHIMURA'S ALGEBRAICITY THEOREM FOR `Γ₁(N)` AT A PRIME: `a_p` is an
+algebraic integer for every prime `p`** (**PROVEN 2026-07-31** over the lattice
+leaf immediately above; a sorry leaf for a few hours earlier the same day).  The
+statement and the signature are UNCHANGED, so every call site is untouched.
+
+`IntegralHeckeEigensystem.isIntegral_coeff` (`ModularCurve/HeckeLattice.lean`)
+gives integrality for EVERY `n`; this theorem uses it at `n := p`.
+`Nonempty.elim` rather than `Nonempty.some` is deliberate — the target is a
+`Prop`, so no choice is needed and none is introduced.
+
+The prime shape is KEPT even though the lattice controls every `n`, for the
+reason spelled out on the `Γ₀` twin: collapsing the chain would delete
+`IsWeightTwoEigenformOn.coeff_prime_pow_mul`,
+`isIntegral_coeff_prime_pow_of_isIntegral_gamma1`,
+`isIntegral_dirichletCharacter_apply` and `isIntegral_mulChar_apply` from the
+cone, and would hide the one thing the prime cut made visible — that the
+arithmetic at the bad primes, nebentypus included, is independent of the
+geometry.
 
 The cut, the derivation of `N ≠ 0` inside the recursion, and the FALSITY AUDIT
-of THIS statement (level `0`, `c = 1/2`, `p = 2`, mechanized in this file up to
-one paste) are all recorded in the block docstring above; they are not repeated
-here.  `G := Gamma1GL N` is load-bearing exactly as recorded there. -/
-theorem isIntegral_coeff_prime_of_isWeightTwoEigenformOn_gamma1 (N : ℕ) (_hN : N ≠ 0)
+are recorded in the block docstring above and on the lattice leaf; they are not
+repeated here.  `G := Gamma1GL N` is load-bearing exactly as recorded there;
+`_hp` is now unused because the lattice controls composites as cheaply as
+primes, and is kept only so that the signature does not move. -/
+theorem isIntegral_coeff_prime_of_isWeightTwoEigenformOn_gamma1 (N : ℕ) (hN : N ≠ 0)
     (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ)
-    (_hf : IsWeightTwoEigenformOn (Gamma1GL N) N χ f a) (p : ℕ) (_hp : p.Prime) :
+    (hf : IsWeightTwoEigenformOn (Gamma1GL N) N χ f a) (p : ℕ) (_hp : p.Prime) :
     IsIntegral ℤ (a p) :=
-  sorry
+  (exists_integralHeckeEigensystem_of_isWeightTwoEigenformOn_gamma1 N hN χ f a hf).elim
+    fun H => H.isIntegral_coeff p
 
 /-- **SHIMURA'S ALGEBRAICITY THEOREM FOR `Γ₁(N)`: every `a n` is an algebraic
 integer** (**PROVEN 2026-07-31** over
@@ -16707,7 +16813,7 @@ disappearing:
 | `exists_heckeCorrespondenceFamilyGamma1` | the `Γ₁` Hecke correspondence, on points | no | here |
 | `exists_modularHeckeAction_gamma1` | `T_ℓ` as an endomorphism of `J_1(N)` | no | here, **PROVEN 2026-07-28** |
 | `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` | Shimura's `A_f`, one factor | no | here, **PROVEN 2026-07-30** over the two rows below.  (This row read "**FALSE as stated**" until 2026-07-30; that was STALE — the FALSITY AUDIT's own header records the repair, which strengthened `IsModularHeckeActionGamma1` and left this statement untouched.) |
-| `isIntegral_coeff_prime_of_isWeightTwoEigenformOn_gamma1` | Shimura's algebraicity AT A PRIME, no scheme in it | no | here, NEW 2026-07-31 — the general-`n` `isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1` (NEW 2026-07-30) is **PROVEN** over it, transporting `X0.lean`'s 2026-07-30 cut to primes |
+| `exists_integralHeckeEigensystem_of_isWeightTwoEigenformOn_gamma1` | `H₁(X_1(N), ℤ)` as a Hecke module, with the period map — an `IntegralHeckeEigensystem` | no | here, NEW 2026-07-31 — both `isIntegral_coeff_prime_of_isWeightTwoEigenformOn_gamma1` (NEW earlier that day) and `isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1` (NEW 2026-07-30) are **PROVEN** over it; the `Γ₀` twin `exists_integralHeckeEigensystem_of_isWeightTwoEigenform` was cut the same day onto the same consumer |
 | `exists_isotypicQuotient_of_isIntegral_gamma1` | Shimura's `A_f` given algebraicity | no | here, NEW 2026-07-30 — the `Γ₁` twin of `X0.lean`'s `exists_isotypicQuotient_of_isIntegral` |
 | `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` | multiplicities, `finite_ker`, `neben` (now under `hN : N ≠ 0`) | no | here |
 | `exists_cuspForm_gamma1GL_zero_lacunary` | the lacunary level-`0` cusp form; input to the `N = 0` refutation | no | here, **PROVEN 2026-07-30** — the `LacunaryLevelZero` section, six lemmas, no theory |
