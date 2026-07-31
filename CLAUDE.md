@@ -3866,6 +3866,112 @@ release build second did **not** fall through — `lean` reported the overlay's 
 as missing rather than finding the olean in the second entry. One farm dir, with
 `cp --remove-destination` for the modules you rebuild.)
 
+
+## A ONE-LINE `def` IS ONE MERGE REGION — prose about a table merges, the table does not
+
+(2026-07-31, `X0.lean`.) `x0HeckeCharpolyTable` is a `def` whose body is a single
+bracketed list. Two branches each added a row to it and each wrote a long dated note
+about that row into the surrounding docstring. **Both notes merged. Neither row did.**
+Docstring paragraphs land in distinct regions of the file and merge cleanly side by
+side; a bracketed list is ONE region, so concurrent editors serialise onto whichever
+side the merge picks, and the losers vanish with no conflict marker.
+
+What makes it worse than an ordinary dropped payload is where it surfaces. The table's
+consumers were merged too, so on `merger`:
+
+* `trace_heckeOpSq_x0OneSixtyNine` read as **fully proven** — a finished tactic proof,
+  no `sorry` token, a docstring ending "PROVEN 2026-07-30 from the `169` row";
+* `x0Genus_eq_of_mem_x0HeckeCharpolyTable` carried a `set_option maxRecDepth` bump
+  whose own comment said it existed *for the `169` row alone*;
+* and the row was not in the `def`, 31 000 lines above.
+
+So the failure is a HARD ERROR at `(…) ∈ x0HeckeCharpolyTable := by decide`, reported
+against a declaration that is not at fault, in a module that no frontier scan flags
+(no `sorry`, no missing declaration, nothing unreachable). Third invisibility class,
+reached by a new road.
+
+**The detector is redundancy that already exists.** This file prints every banked row
+in a prose table beside the `def`, precisely so rows can be eye-checked — and the prose
+described both missing rows in full. So: **when a table-driven proof fails at a `decide`
+on membership, suspect the table's `def` before the proof, and diff the `def` against
+its own docstring.** Corollary for authors: a table whose prose duplicates its data is
+not redundant, it is instrumented; keep writing them that way.
+
+Two further habits this argues for:
+* **Re-derive, do not copy back.** The dropped rows were recomputed from scratch in
+  PARI/GP rather than lifted out of the prose, with an untouched row reproduced in the
+  same session as a positive control. Prose that survived a merge its data did not is
+  exactly the prose you cannot use as a source.
+* **Count claims in docstrings rot silently.** This one said "the seventeen banked
+  Hecke rows" while the `def` held twenty, and had said so across several merges.
+
+## YOU CAN VERIFY AN EDIT INSIDE A FILE THAT HAS 178 ERRORS — `-DmaxErrors`, THEN A SHIFT-INVARIANT DIFF
+
+(2026-07-31, `X0.lean` at release 28.) The doctrine's "diff the shim against the
+unedited file" recipe assumes you can at least reach your own edit. In a giant red
+module you cannot, and the reason is a default nobody thinks about: **`maxErrors` is
+100, and Lean ABORTS elaboration when it trips.** `X0.lean`'s errors start at line
+4889 and the cap fired at 74693 — so everything below that, including both of the
+edits under test at 94158 and 94685, was simply never elaborated, and the build log
+says nothing at all about them. That reads as "no news", and no news here is no
+information.
+
+    lake env lean -DmaxErrors=4000 Fermat/FLT/ModularCurve/X0.lean
+
+took it to the end of the file (113 errors reported, max line 107958) and put both
+edits in reach. Do this before concluding that a red file cannot be worked in.
+
+**Then diff SHIFT-INVARIANTLY, or the diff is unreadable.** Any insertion moves every
+later error, so a naive line-set comparison reported 85 "new" and 83 "gone" errors on
+an edit that introduced none. Key each error by `(column, message)` instead of by line,
+compare the two multisets, and separately confirm the line offsets fall into a few
+constant buckets:
+
+    baseline 178 errors, mine 177
+    offsets: 0 (×87), +31 (×34), +60/+61 (×3)     <- exactly what was inserted, and where
+    only in mine:     `timeout at whnf` (col 39), `unknown metavariable ?_uniq.3080446`
+    only in baseline: `timeout at isDefEq` (col 39), `?_uniq.3080066`,
+                      `Tactic decide proved that the proposition … is false` (col 35)
+
+Two of those three pairs are NOISE and you must recognise them or you will chase them:
+a pre-existing heartbeat timeout reports its phase as `isDefEq` or `whnf` depending on
+which unification ran first, and a `?_uniq.NNNNNNN` metavariable id is a global counter
+that any edit shifts. The third is the real result — the `decide` that the edit fixed.
+So the honest verdict was "zero errors introduced, one removed, and the sorry-warning
+count 96 → 95", each number checkable by anyone from two logs.
+
+**And the baseline swap is safe if your work is committed first**: `cp` your file
+aside, `git checkout <parent> -- <path>`, elaborate, `cp` back, then `git add` the path
+— that last step matters, because the `checkout` STAGED the old version and `git status`
+will read `MM` until you do. Confirm with `git show HEAD:<path> | md5sum` against the
+worktree file before you stop.
+
+## THREE INDIVIDUALLY-DOCUMENTED IMPORTS CAN CLOSE A CYCLE
+
+(2026-07-31, same release.) Release 28 assembled `X0 → IsogenySignature →
+HyperellipticJacobian → X0` out of three merges, **every edge added by a different
+branch, every edge carrying a comment at its own site explaining why it was safe** —
+one of them stating outright "none of the four project modules below imports this one,
+so no cycle is created", which was true when written.
+
+`lake` reports this only as `build cycle detected`, and it takes down not just those
+three modules but everything downstream — `X0.lean` could not be built at all, so no
+agent dispatched into that file could verify anything. It is invisible to every check
+in this file: no `sorry`, no error inside any declaration, and each branch is green on
+its own base.
+
+The edge to cut is the **dead** one, and there usually is one, because these edges
+arrive with hoists: `IsogenySignature.lean` was created by hoisting Mazur steps 1–3 out
+of `MazurTorsion.lean` and **inherited that file's import header verbatim**, including
+`import Fermat.FLT.ModularCurve.HyperellipticJacobian` with a comment advertising a
+declaration (`MazurLevel18.no_noncuspidal_point_on_smooth_model`) that stayed behind.
+Neither that name nor anything else from the module occurs in its 14 655 lines.
+
+**So when a hoist creates a new module, audit the copied import header — an unused
+import is free until somebody closes a loop through it.** And when triaging a cycle,
+grep each edge for actual usage before arguing about which one is architecturally
+wrong; the dead edge is both the cheapest and the correct cut.
+
 ## A `sorry` is a PROMISE that the statement is provable
 
 (2026-07-29, orchestrator error, caught only because an agent quoted the file's

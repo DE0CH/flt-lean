@@ -273,14 +273,22 @@ import Mathlib.NumberTheory.FLT.Three
 -- `p`-torsion in characteristic `p`, the inseparability input of
 -- `exists_zsmul_eq_of_mem_torsionBy_of_charP` below.
 import Fermat.FLT.EllipticCurve.TorsionCharP
--- The genus-`2` hyperelliptic layer: the smooth projective model of a monic
--- sextic in `ℙ(1,3,1)`, its integral weighted-projective coordinates, the
--- reduction map `X(ℚ) → X(𝔽ₚ)`, and the Jacobian package (`Pic⁰` + Abel–Jacobi
--- + reduction + rank `0`).  Supplies
--- `Fermat.Hyperelliptic.X18.no_noncuspidal_point`, the smooth-model form of
--- `MazurLevel18.no_noncuspidal_point_on_smooth_model` below, together with the
--- machine-checked count `#X_1(18)(𝔽₅) = 6`.
-import Fermat.FLT.ModularCurve.HyperellipticJacobian
+-- REMOVED 2026-07-31: `import Fermat.FLT.ModularCurve.HyperellipticJacobian`.
+-- It was a DEAD import inherited verbatim from `FreyCurve/MazurTorsion.lean`'s header
+-- when Mazur steps 1-3 were hoisted into this file (`6ce5eb40`); the comment that came
+-- with it advertised `Fermat.Hyperelliptic.X18.no_noncuspidal_point` as feeding
+-- `MazurLevel18.no_noncuspidal_point_on_smooth_model` "below", and NEITHER name occurs
+-- anywhere in these 14 655 lines -- `MazurLevel18` stayed behind in `MazurTorsion.lean`.
+--
+-- Removing it breaks a THREE-EDGE IMPORT CYCLE that release 28 assembled out of three
+-- individually-correct merges, none of which could see the other two:
+--   `X0` -> `IsogenySignature`          (`6ce5eb40`, to cite Mazur steps 1-3)
+--   `IsogenySignature` -> `HyperellipticJacobian`  (this line, dead)
+--   `HyperellipticJacobian` -> `X0`     (for `exists_cubeModel_of_abelianScheme`)
+-- Each edge is documented on its own site as safe, and the cycle is invisible to all
+-- three authors: `lake` reports it only as `build cycle detected`, and X0.lean -- hence
+-- everything downstream of it -- could not be built at all while it stood.  The dead
+-- edge is the one to cut; the other two carry real citations.
 -- The Gaussian-integer infinite descent on `e² = X⁴ − 11X²Y² − Y⁴`: the
 -- arithmetic input of the `X_1(2,10)` node
 -- (`MazurTwoTen.quartic_no_solution`).
