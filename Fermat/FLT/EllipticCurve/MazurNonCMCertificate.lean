@@ -314,14 +314,12 @@ def elevenAMod : WeierstrassCurve (ZMod 23) := ⟨1, 1, 0, -2, -7⟩
 noncomputable def dPolyElevenA : (ZMod 23)[X] :=
   X^5 + 14*X^4 + 7*X^3 + 9*X^2 + 16*X + 1
 
-/-- The product of the five irreducible factors of `Ψ₁₁ mod 23` of degree `11`. -/
-noncomputable def hPolyElevenA : (ZMod 23)[X] :=
-  X^55 + 11*X^54 + 12*X^53 + 22*X^52 + 10*X^51 + 10*X^50 + 13*X^49 + 20*X^48 + X^47 + 12*X^46 +
-    13*X^45 + 10*X^44 + 11*X^43 + 2*X^42 + 7*X^41 + 9*X^40 + 16*X^39 + 2*X^38 + 5*X^37 + 16*X^36 +
-    5*X^35 + 17*X^34 + 17*X^33 + 16*X^31 + 19*X^30 + 20*X^29 + 19*X^28 + 21*X^27 + 3*X^26 +
-    8*X^25 + X^24 + 6*X^23 + 4*X^22 + 9*X^21 + 4*X^20 + 14*X^19 + 13*X^18 + 22*X^17 + 4*X^16 +
-    10*X^14 + 15*X^13 + 10*X^12 + 19*X^11 + 6*X^10 + 7*X^9 + 16*X^8 + 22*X^7 + 2*X^6 + 21*X^5 +
-    22*X^4 + 6*X^3 + X^2 + 4*X + 19
+-- (2026-07-31, flt-lean-230) `hPolyElevenA` — "the product of the five irreducible factors of
+-- `Ψ₁₁ mod 23` of degree `11`" — used to be re-declared HERE.  It is generated into
+-- `MazurNonCMFrobenius.lean` by `gen_modules.py`, which this file `public import`s, so the two
+-- collided (`has already been declared`) once the scope wound below was repaired and this file
+-- began to parse.  The two definitions were verified BYTE-IDENTICAL before this one was removed;
+-- every use below now resolves to the generated one.
 
 theorem Ψ₂Sq_elevenAMod : elevenAMod.Ψ₂Sq =
     4*X^3 + 5*X^2 + 15*X + 18 := by
@@ -397,15 +395,21 @@ theorem eval_hPolyElevenA_ne_zero (a : ZMod 23) : hPolyElevenA.eval a ≠ 0 := b
   simp only [hPolyElevenA, eval_add, eval_mul, eval_pow, eval_X, eval_ofNat]
   decide
 
-/-- **`H ∣ X ^ (23 ^ 11) - X`** (PROVEN 2026-07-31), i.e. every irreducible factor of `H` has
+/-! **`H ∣ X ^ (23 ^ 11) - X`** (PROVEN 2026-07-31), i.e. every irreducible factor of `H` has
 degree dividing `11`.  `eval_hPolyElevenA_ne_zero` above is what turns "dividing `11`" into
 "equal to `11`" where the obstruction needs it.
 
-The whole content is `Fermat.MazurNonCMFrobenius.dvd_X_pow_sub_X_hPoly`, in its own module
-because it is a few thousand lines of generated `ring` identities and elaboration is
-single-threaded per file.  `H` is the product of five irreducible polynomials of degree
-exactly `11`; the divisibility is proven for each factor separately, through a precomputed
-table of `(X ^ 23) ^ i mod hⱼ`, and the five are recombined by explicit Bézout certificates.
+(2026-07-31, flt-lean-230) `dvd_X_pow_card_pow_sub_X_hPolyElevenA` used to be re-declared here,
+over the OLD pre-split `Fermat.MazurNonCMFrobenius.dvd_X_pow_sub_X_hPoly`.  It is now generated
+into `MazurNonCMFrobenius/ElevenA.lean`, which this file `public import`s, under the SAME name
+and with the same statement — so the two collided (`has already been declared`) once the scope
+wound below was repaired and this file began to parse.  The local copy is removed and this
+docstring kept as a section comment; every use below resolves to the generated theorem.
+
+`H` is the product of five irreducible polynomials of degree exactly `11`; the divisibility is
+proven for each factor separately, through a precomputed table of `(X ^ 23) ^ i mod hⱼ`, and the
+five are recombined by explicit Bézout certificates.  It lives in its own module because it is a
+few thousand lines of generated `ring` identities and elaboration is single-threaded per file.
 
 The route the original cut proposed — reduce `X ^ (23 ^ k)` mod `H` itself — was tried and is
 about `5×` more `ring` work, because it needs a `55`-entry table of degree-`54` polynomials
@@ -414,10 +418,6 @@ rather than five `10`-entry tables of degree-`10` ones.
 The same route closes the `p = 11`, `j = −24729001` row (same `ℓ`, same degrees) and, with one
 extra coprimality at `d = 2`, the two `p = 17` rows.  It does NOT close the `p = 37` rows:
 there `deg H = 666`, `ℓ = 397` and `m = 222`. -/
-theorem dvd_X_pow_card_pow_sub_X_hPolyElevenA :
-    hPolyElevenA ∣ X ^ (Nat.card (ZMod 23)) ^ 11 - X := by
-  rw [Nat.card_zmod, hPolyElevenA]
-  exact Fermat.MazurNonCMFrobenius.dvd_X_pow_sub_X_hPoly
 
 /-- **Row `p = 11`, `j = −121`: `Ψ₁₁ mod 23` has no monic divisor of degree `10`**
 (PROVEN 2026-07-30 over `dvd_X_pow_card_pow_sub_X_hPolyElevenA`).
@@ -463,15 +463,11 @@ def elevenBMod : WeierstrassCurve (ZMod 23) := ⟨1, 1, 1, -30, -76⟩
 noncomputable def dPolyElevenB : (ZMod 23)[X] :=
   X^5 + 14*X^4 + 17*X^3 + 16*X^2 + 21
 
-/-- The product of the five irreducible factors of degree `11` of `Ψ₁₁ mod 23` for
-`elevenBMod`. -/
-noncomputable def hPolyElevenB : (ZMod 23)[X] :=
-  X^55 + 11*X^54 + 9*X^53 + 20*X^52 + X^51 + 13*X^50 + 2*X^49 + 3*X^48 + 2*X^47 + 8*X^46 + 8*X^45 +
-    4*X^44 + 9*X^42 + 4*X^41 + 17*X^40 + 22*X^39 + 7*X^38 + 11*X^37 + 20*X^36 + 8*X^34 + 17*X^33 +
-    9*X^32 + 16*X^31 + 16*X^30 + 3*X^29 + 18*X^28 + X^27 + 16*X^26 + 4*X^25 + 13*X^24 + 14*X^23 +
-    12*X^22 + 20*X^21 + 10*X^20 + 15*X^19 + 7*X^18 + 16*X^17 + 2*X^16 + 9*X^15 + 20*X^14 + 21*X^13 +
-    5*X^12 + X^11 + 15*X^10 + 7*X^9 + 22*X^8 + 9*X^7 + 18*X^6 + 2*X^5 + 20*X^4 + 22*X^3 + 22*X^2 +
-    6
+-- (2026-07-31, flt-lean-230) `hPolyElevenB` — "the product of the five irreducible factors of
+-- degree `11` of `Ψ₁₁ mod 23` for `elevenBMod`" — used to be re-declared HERE, and collided with
+-- the copy `gen_modules.py` generates into `MazurNonCMFrobenius.lean`, which this file
+-- `public import`s.  The two were verified to be the SAME polynomial before this one was removed
+-- (they differed only in line wrapping); every use below resolves to the generated one.
 
 theorem Ψ₂Sq_elevenBMod : elevenBMod.Ψ₂Sq =
     4*X^3 + 5*X^2 + 20*X + 19 := by
@@ -547,15 +543,16 @@ theorem eval_hPolyElevenB_ne_zero (a : ZMod 23) : hPolyElevenB.eval a ≠ 0 := b
   simp only [hPolyElevenB, eval_add, eval_mul, eval_pow, eval_X, eval_ofNat]
   decide
 
-/-- **`H ∣ X ^ (23 ^ 11) - X`** for the `j = −24729001` row (PROVEN 2026-07-31).
+/-! **`H ∣ X ^ (23 ^ 11) - X`** for the `j = −24729001` row (PROVEN 2026-07-31).
 
-The content is `Fermat.MazurNonCMFrobeniusB.dvd_X_pow_sub_X_hPoly`, generated by
-`flt-frobenius-cert.py` into its own module for the same reason as the `A` row: elaboration
-is single-threaded per file, so the two certificates elaborate in parallel. -/
-theorem dvd_X_pow_card_pow_sub_X_hPolyElevenB :
-    hPolyElevenB ∣ X ^ (Nat.card (ZMod 23)) ^ 11 - X := by
-  rw [Nat.card_zmod, hPolyElevenB]
-  exact Fermat.MazurNonCMFrobeniusB.dvd_X_pow_sub_X_hPoly
+The certificate is generated by `flt-frobenius-cert.py` into its own module for the same reason
+as the `A` row: elaboration is single-threaded per file, so the two elaborate in parallel.
+
+(2026-07-31, flt-lean-230) `dvd_X_pow_card_pow_sub_X_hPolyElevenB` used to be re-declared here
+over the OLD `Fermat.MazurNonCMFrobeniusB.dvd_X_pow_sub_X_hPoly`; it is now generated into
+`MazurNonCMFrobenius/ElevenB.lean`, which this file `public import`s, under the same name and
+statement, so the two collided.  The local copy is removed and this docstring kept as a section
+comment. -/
 
 /-- **Row `p = 11`, `j = −24729001`: `Ψ₁₁ mod 23` has no monic divisor of degree `10`**
 (PROVEN 2026-07-31).
