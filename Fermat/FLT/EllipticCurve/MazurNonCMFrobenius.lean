@@ -63,7 +63,15 @@ open Polynomial
 set_option maxRecDepth 40000
 set_option maxHeartbeats 1000000
 
-namespace Fermat.MazurNonCMFrobenius
+-- (2026-07-31, flt-lean-230) This opener read `namespace Fermat.MazurNonCMFrobenius`, which is a
+-- release-28 merge wound: `gen_modules.py`'s `BASE_BODY` emits `Fermat.MazurNonCMCertificate`
+-- here, `MazurNonCMFrobenius/ElevenA.lean` and `ElevenB.lean` open that namespace and name
+-- `XPow`, `xpow_one`, `sq_step`, `hPolyElevenA` … UNQUALIFIED, and the `end` at the close of this
+-- block already said `Fermat.MazurNonCMCertificate`.  With the wrong opener the file did not
+-- parse at all (`Invalid name after 'end'`), which made every module downstream — including
+-- `ModularCurve/X0.lean` and therefore most of the project — unbuildable.  See the note at the
+-- second namespace below for the rest of the wound, which is NOT repaired here.
+namespace Fermat.MazurNonCMCertificate
 
 /-- `XPow f n a` is `f ∣ X ^ n - a`.  See the module docstring: the wrapper keeps the
 exponent out of unification, and without it nothing here elaborates. -/
@@ -169,6 +177,23 @@ noncomputable def hPolySeventeenB : (ZMod 67)[X] :=
     60*X + 41
 
 end Fermat.MazurNonCMCertificate
+
+-- (2026-07-31, flt-lean-230) SCOPE REPAIR ONLY, and the rest of this wound is left for an owner.
+-- Everything from here to the `end Fermat.MazurNonCMFrobenius` at the bottom of this file is the
+-- OLD, pre-split generation of the `p = 11` row: it predates the `XPow` wrapper (it uses none of
+-- `XPow`/`xpow_one`/`sq_step`) and states the same certificate that
+-- `MazurNonCMFrobenius/ElevenA.lean` and `ElevenB.lean` now state.  A release-28 merge kept BOTH
+-- sides — this is the union-of-rival-cuts damage `CLAUDE.md` describes — and dropped the
+-- `namespace` opener that used to separate them, which is what this line restores.  The two
+-- copies do not collide only because they now sit in different namespaces.
+-- The real repair is to REGENERATE: `gen_modules.py`'s `write_base` emits this file as
+-- LICENSE + imports + doc + `BASE_BODY` + the four `hPoly` definitions + one
+-- `end Fermat.MazurNonCMCertificate`, and emits NOTHING below that point — so a regeneration
+-- deletes this whole block.  That is an authorial deletion of ~2270 lines and is deliberately
+-- not done here; see the queued task.
+namespace Fermat.MazurNonCMFrobenius
+
+open Fermat.MazurNonCMCertificate
 
 /-- Over `ZMod 23` the Frobenius is the substitution `X ↦ X ^ 23`: raising to the `23`rd
 power is LINEAR. This is `Polynomial.map_frobenius_expand` specialised through

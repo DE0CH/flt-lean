@@ -578,9 +578,14 @@ theorem not_monic_dvd_preΨ_elevenB_mod (G : (ZMod 23)[X]) (hG : G.Monic)
   exact not_monic_dvd_of_smallDegreePart hc preΨ'_eleven_elevenBMod hmn
     dvd_X_pow_card_pow_sub_X_hPolyElevenB eval_hPolyElevenB_ne_zero hD0 hDlt G hG hdeg
 
-end Fermat.MazurNonCMCertificate
-
-end
+-- (2026-07-31, flt-lean-230) An `end Fermat.MazurNonCMCertificate` followed by the `end` closing
+-- the file's `@[expose] public section` stood HERE.  It is a release-28 merge wound of the same
+-- shape as the one repaired in `MazurNonCMFrobenius.lean`: the merge kept one side's closers while
+-- the other side's `p = 17` half landed AFTER them, so lines 584–1040 sat outside both the
+-- namespace and the exposed section, and the file's real closers at the bottom then had nothing
+-- open to close.  Deleting these two closers puts the `p = 17` half back inside
+-- `Fermat.MazurNonCMCertificate`, which is where its consumers name it, and leaves the single
+-- namespace/section spanning the whole file.  No declaration moved and nothing else changed.
 
 /-- The minimal model `[1, 1, 0, -660, -7600]` of the `p = 17`, `j = −882216989/131072` row, read over
 `ZMod 67`.  Definitionally `Fermat.nonCMModelSeventeenAmod`. -/
