@@ -25517,6 +25517,51 @@ def IsCMJInvariant (n : ℤ) (x : AlgebraicClosure ℚ) : Prop :=
       ψ * ψ = ((-n : ℤ) : WeierstrassCurve.End W.toAffine) ∧
       Subring.closure ({ψ} : Set (WeierstrassCurve.End W.toAffine)) = ⊤
 
+/-- **PROVEN 2026-07-31 — `IsCMJInvariant n` IS `Gal(ℚ̄/ℚ)`-STABLE.**
+
+Conjugating the curve by `σ` gives `W^σ = W.map σ`, with `j(W^σ) = σ (j W)`
+(`WeierstrassCurve.map_j`) and a RING isomorphism
+`WeierstrassCurve.End.mapRingEquiv : End W ≃+* End W^σ` (`Isogeny.lean`, added
+2026-07-31 for exactly this). A ring isomorphism carries `ψ * ψ = [−n]` to
+`ψ^σ * ψ^σ = [−n]` (it fixes integer casts) and `Subring.closure {ψ} = ⊤` to
+`Subring.closure {ψ^σ} = ⊤` (it maps closures to closures and `⊤` to `⊤`), and
+those two are the whole of what `IsCMJInvariant` asks of `ψ`. Nothing about the
+order, about `n`, or about class field theory enters.
+
+**Why it is worth having.** This is the EASY half of the Galois picture. The hard
+half — that `Gal(ℚ̄/ℚ)` acts TRANSITIVELY on the CM `j`-invariants of one order
+(`exists_algEquiv_apply_eq_of_isCMJInvariant`) — is the first main theorem of
+complex multiplication and needs the ring class field. Stability needs none of it,
+and it is what lets `exists_isCMJInvariant_ne_of_not_equivalent` be cut down to a
+single-object statement.
+
+**Why mathlib's `Affine.Point.map` cannot do this**, in one line, because it is the
+trap this cost: that map moves points of ONE curve between base changes along an
+algebra map, so its `σ` must FIX the coefficients of the curve. Here `W` lives over
+`ℚ̄` with arbitrary coefficients and `σ` moves them; the curve itself is conjugated.
+See the section docstring of `Isogeny.lean`'s `GaloisTransport`. -/
+theorem IsCMJInvariant.map {n : ℤ} {x : AlgebraicClosure ℚ}
+    (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) (hx : IsCMJInvariant n x) :
+    IsCMJInvariant n (σ x) := by
+  obtain ⟨W, hW, hj, ψ, hsq, htop⟩ := hx
+  letI := hW
+  have hτx : (σ.toRingEquiv : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ) x = σ x := rfl
+  refine ⟨W.map (σ.toRingEquiv : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ), inferInstance, ?_,
+    WeierstrassCurve.End.mapRingEquiv W.toAffine σ.toRingEquiv ψ, ?_, ?_⟩
+  · rw [WeierstrassCurve.map_j, hj, hτx]
+  · rw [← map_mul, hsq, map_intCast]
+  · set Φ := WeierstrassCurve.End.mapRingEquiv W.toAffine σ.toRingEquiv with hΦ
+    have h1 : (Subring.closure ({ψ} : Set (WeierstrassCurve.End W.toAffine))).map
+        (Φ : WeierstrassCurve.End W.toAffine →+*
+          WeierstrassCurve.End (W.map (σ.toRingEquiv :
+            AlgebraicClosure ℚ →+* AlgebraicClosure ℚ)).toAffine)
+        = Subring.closure {Φ ψ} := by
+      rw [RingHom.map_closure, Set.image_singleton]
+      rfl
+    refine (Subring.eq_top_iff' _).mpr fun y => ?_
+    rw [← h1, htop, Subring.mem_map]
+    exact ⟨Φ.symm y, Subring.mem_top _, Φ.apply_symm_apply y⟩
+
 /-! ### THE FORM-TO-`ℍ` DICTIONARY, and the 2026-07-31 cut of
 `exists_isCMJInvariant_ne_of_not_equivalent`
 

@@ -4251,4 +4251,300 @@ theorem isIsogeny_of_veluMap [CharZero F] [IsAlgClosed F] [W.IsElliptic]
     IsIsogeny φ :=
   (isRationalMap_veluMap hS hodd hφ).isIsogeny
 
+/-! ### Galois transport: conjugating a curve by an isomorphism of the base field
+
+**Why this is not `WeierstrassCurve.Affine.Point.map` (checked against the pin,
+2026-07-31).** Mathlib's `Point.map` maps between BASE CHANGES `(W'⁄F).Point →
+(W'⁄K).Point` of ONE curve `W'` defined over a fixed base ring, along an
+`f : F →ₐ[S] K`. That is the right tool when the curve is already defined over the
+smaller field and only the field of coefficients of the POINTS grows — which is how
+`MoretBailly.lean` uses it, and it is why `σ` there is an `S`-algebra map: it must
+fix the coefficients of `W'`.
+
+Here the curve itself is the thing being moved. `W : Affine (ℚ̄)` has arbitrary
+coefficients, so a `σ ∈ Gal(ℚ̄/ℚ)` does NOT fix them; it carries `W` to the
+CONJUGATE curve `W.map σ`, a different curve. The absence in mathlib is real rather
+than a naming problem: no declaration relates `W.Point` to `(W.map f).Point`.
+
+**What it costs, and what already exists.** Very little, because mathlib's affine
+formulas are stated twice — once for algebra maps (`baseChange_addX`, …) and once
+for plain RING HOMOMORPHISMS (`map_nonsingular`, `map_negY`, `map_addX`, `map_addY`,
+`map_slope` in `Affine/Basic.lean` and `Affine/Formula.lean`). The ring-hom half is
+exactly what a curve conjugation needs, so `Point.mapRingHom` below is mathlib's own
+`Point.map` proof with `baseChange_*` replaced by `map_*` throughout.
+
+The rest is bookkeeping: `IsRationalMap`'s certificate is a tuple of polynomials over
+the base field, and applying `σ` coefficientwise (`Polynomial.map σ`) carries a
+certificate for `φ` to one for the conjugated map, because `σ` is a ring
+isomorphism and `veluPointX`/`veluPointY` commute with the point transport.
+`IsIsogeny`'s other two fields transport along a bijection. Both are stated below in
+the general "coordinate-compatible equivalences" form (`IsRationalMap.transport`,
+`IsIsogeny.transport`) so that the SAME lemma proves both directions of the
+resulting iff, applied once at `σ` and once at `σ.symm` — which is what makes
+`End.mapRingEquiv` an isomorphism rather than merely a homomorphism, and avoids
+having to cast along `(W.map σ).map σ.symm = W`.
+
+**The intended consumer** is `Fermat/FLT/FreyCurve/MazurTorsion.lean`'s
+`MazurCMForm.IsCMJInvariant.map`: with `WeierstrassCurve.map_j` giving
+`j (W.map σ) = σ (j W)`, the CM `j`-invariants of a fixed order are stable under
+`Gal(ℚ̄/ℚ)`, so "two distinct CM `j`-invariants" collapses to "one irrational CM
+`j`-invariant". -/
+
+section GaloisTransport
+
+variable {K : Type*} [Field K] [DecidableEq K]
+
+/-- **The point map of a curve conjugation.** The additive homomorphism on points
+induced by a ring homomorphism of fields `f : F →+* K`, from `W` to the CONJUGATED
+curve `W.map f`.
+
+This is mathlib's `WeierstrassCurve.Affine.Point.map` with the base-change formulas
+replaced by their ring-homomorphism counterparts; see the section docstring for why
+the two are genuinely different statements. `f` is injective automatically (a
+homomorphism of fields), which is what discharges `map_nonsingular`. -/
+noncomputable def Affine.Point.mapRingHom (W : Affine F) (f : F →+* K) :
+    W.Point →+ (W.map f).Point where
+  toFun P := match P with
+    | .zero => 0
+    | .some x y h => .some (f x) (f y) ((W.map_nonsingular f.injective x y).mpr h)
+  map_zero' := rfl
+  map_add' := by
+    rintro (_ | ⟨x₁, y₁, h₁⟩) (_ | ⟨x₂, y₂, h₂⟩)
+    any_goals rfl
+    by_cases hxy : x₁ = x₂ ∧ y₁ = W.negY x₂ y₂
+    · rw [Affine.Point.add_of_Y_eq hxy.left hxy.right,
+        Affine.Point.add_of_Y_eq (congrArg f hxy.left)
+          (by rw [hxy.right, map_negY])]
+    · simpa only [Affine.Point.add_some hxy, ← map_addX, ← map_addY, ← map_slope] using!
+        (Affine.Point.add_some fun h =>
+          hxy ⟨f.injective h.1, f.injective (map_negY f x₂ y₂ ▸ h).2⟩).symm
+
+@[simp] theorem veluPointX_mapRingHom (W : Affine F) (f : F →+* K) (P : W.Point) :
+    veluPointX (Affine.Point.mapRingHom W f P) = f (veluPointX P) := by
+  cases P with
+  | zero => exact (map_zero f).symm
+  | some x y h => rfl
+
+@[simp] theorem veluPointY_mapRingHom (W : Affine F) (f : F →+* K) (P : W.Point) :
+    veluPointY (Affine.Point.mapRingHom W f P) = f (veluPointY P) := by
+  cases P with
+  | zero => exact (map_zero f).symm
+  | some x y h => rfl
+
+/-- **Item (1) of the Galois transport: `W.Point ≃+ (W.map σ).Point`.** The inverse
+is written out by hand rather than obtained from `Point.mapRingHom (W.map σ) σ.symm`,
+because that lands in `(W.map σ).map σ.symm`, which is only PROPOSITIONALLY equal to
+`W`; casting `Point` along an equality of curves would then infect every downstream
+computation. -/
+noncomputable def Affine.Point.mapRingEquiv (W : Affine F) (σ : F ≃+* K) :
+    W.Point ≃+ (W.map (σ : F →+* K)).Point where
+  toFun := Affine.Point.mapRingHom W (σ : F →+* K)
+  invFun P := match P with
+    | .zero => 0
+    | .some x y h => .some (σ.symm x) (σ.symm y)
+        ((W.map_nonsingular (σ : F →+* K).injective (σ.symm x) (σ.symm y)).mp (by
+          rw [show ((σ : F →+* K) (σ.symm x)) = x from σ.apply_symm_apply x,
+            show ((σ : F →+* K) (σ.symm y)) = y from σ.apply_symm_apply y]
+          exact h))
+  left_inv := by
+    rintro (_ | ⟨x, y, h⟩)
+    · rfl
+    · exact velu_point_some_eq (σ.symm_apply_apply x) (σ.symm_apply_apply y)
+  right_inv := by
+    rintro (_ | ⟨x, y, h⟩)
+    · rfl
+    · exact velu_point_some_eq (σ.apply_symm_apply x) (σ.apply_symm_apply y)
+  map_add' := (Affine.Point.mapRingHom W (σ : F →+* K)).map_add
+
+theorem veluPointX_mapRingEquiv_symm (W : Affine F) (σ : F ≃+* K)
+    (Q : (W.map (σ : F →+* K)).Point) :
+    veluPointX ((Affine.Point.mapRingEquiv W σ).symm Q) = σ.symm (veluPointX Q) := by
+  have h1 := veluPointX_mapRingHom W (σ : F →+* K) ((Affine.Point.mapRingEquiv W σ).symm Q)
+  rw [show Affine.Point.mapRingHom W (σ : F →+* K) ((Affine.Point.mapRingEquiv W σ).symm Q) = Q
+    from (Affine.Point.mapRingEquiv W σ).apply_symm_apply Q] at h1
+  rw [h1]
+  exact (σ.symm_apply_apply _).symm
+
+theorem veluPointY_mapRingEquiv_symm (W : Affine F) (σ : F ≃+* K)
+    (Q : (W.map (σ : F →+* K)).Point) :
+    veluPointY ((Affine.Point.mapRingEquiv W σ).symm Q) = σ.symm (veluPointY Q) := by
+  have h1 := veluPointY_mapRingHom W (σ : F →+* K) ((Affine.Point.mapRingEquiv W σ).symm Q)
+  rw [show Affine.Point.mapRingHom W (σ : F →+* K) ((Affine.Point.mapRingEquiv W σ).symm Q) = Q
+    from (Affine.Point.mapRingEquiv W σ).apply_symm_apply Q] at h1
+  rw [h1]
+  exact (σ.symm_apply_apply _).symm
+
+/-- The conjugate `φ^σ` of an additive map of point groups along a field
+isomorphism: transport the argument back along `σ`, apply `φ`, transport forward. -/
+noncomputable def conjHom (σ : F ≃+* K) {W W' : Affine F} (φ : W.Point →+ W'.Point) :
+    (W.map (σ : F →+* K)).Point →+ (W'.map (σ : F →+* K)).Point :=
+  ((Affine.Point.mapRingEquiv W' σ).toAddMonoidHom.comp φ).comp
+    (Affine.Point.mapRingEquiv W σ).symm.toAddMonoidHom
+
+theorem conjHom_apply (σ : F ≃+* K) {W W' : Affine F} (φ : W.Point →+ W'.Point)
+    (Q : (W.map (σ : F →+* K)).Point) :
+    conjHom σ φ Q
+      = Affine.Point.mapRingEquiv W' σ (φ ((Affine.Point.mapRingEquiv W σ).symm Q)) := rfl
+
+/-- The defining intertwining property of `conjHom`: `φ^σ ∘ σ_* = σ_* ∘ φ`. -/
+theorem conjHom_mapRingEquiv (σ : F ≃+* K) {W W' : Affine F} (φ : W.Point →+ W'.Point)
+    (P : W.Point) :
+    conjHom σ φ (Affine.Point.mapRingEquiv W σ P) = Affine.Point.mapRingEquiv W' σ (φ P) := by
+  rw [conjHom_apply, AddEquiv.symm_apply_apply]
+
+/-- **Transport of `IsRationalMap` along coordinate-compatible equivalences.**
+
+Stated in this general form — arbitrary additive equivalences of point groups that
+intertwine `φ` with `ψ` and carry coordinates by a fixed ring homomorphism `f` —
+because it is then applied TWICE to prove `isRationalMap_conjHom_iff`: once at `σ`
+and once at `σ.symm`. A version phrased directly in terms of `conjHom σ` could only
+prove the forward direction, and the reverse direction cannot be obtained by
+conjugating a second time (that lands at `(W.map σ).map σ.symm`, not `W`).
+
+`f` is injective automatically, which is what keeps the transported denominators
+`B.map f` and `E.map f` nonzero — the only side condition of `IsRationalMap`. -/
+theorem IsRationalMap.transport {V V' : Affine K} (f : F →+* K)
+    (e : W.Point ≃+ V.Point) (e' : W'.Point ≃+ V'.Point)
+    (hex : ∀ P : W.Point, veluPointX (e P) = f (veluPointX P))
+    (hey : ∀ P : W.Point, veluPointY (e P) = f (veluPointY P))
+    (hex' : ∀ P : W'.Point, veluPointX (e' P) = f (veluPointX P))
+    (hey' : ∀ P : W'.Point, veluPointY (e' P) = f (veluPointY P))
+    {φ : W.Point →+ W'.Point} {ψ : V.Point →+ V'.Point}
+    (hcomm : ∀ P : W.Point, ψ (e P) = e' (φ P))
+    (h : IsRationalMap φ) : IsRationalMap ψ := by
+  obtain ⟨A, B, C, D, E, hB, hE, hcert⟩ := h
+  have hev : ∀ (p : F[X]) (t : F), (p.map f).eval (f t) = f (p.eval t) := fun p t => by
+    rw [Polynomial.eval_map, Polynomial.eval₂_at_apply]
+  refine ⟨A.map f, B.map f, C.map f, D.map f, E.map f,
+    (Polynomial.map_ne_zero_iff f.injective).mpr hB,
+    (Polynomial.map_ne_zero_iff f.injective).mpr hE, fun Q hQ => ?_⟩
+  obtain ⟨P, rfl⟩ : ∃ P : W.Point, e P = Q := ⟨e.symm Q, e.apply_symm_apply Q⟩
+  rw [hcomm P] at hQ ⊢
+  have hφP : φ P ≠ 0 := fun hc => hQ (by rw [hc, map_zero])
+  obtain ⟨hx, hy⟩ := hcert P hφP
+  refine ⟨?_, ?_⟩
+  · rw [hex' (φ P), hex P, hev, hev, ← map_mul]
+    exact congrArg f hx
+  · rw [hey' (φ P), hex P, hey P, hev, hev, hev, ← map_mul, ← map_mul, ← map_add]
+    exact congrArg f hy
+
+/-- **Transport of `IsIsogeny` along an intertwining pair of equivalences.**
+
+Note what is NOT here: no coordinate hypotheses. The `surjective` and `finite_ker`
+fields are pure bijection bookkeeping — the kernel of `ψ` is the `e`-image of the
+kernel of `φ` — and the only field that sees the base field at all is
+`isRationalMap`, which is therefore taken as the argument `hrat` rather than
+re-derived. That is what keeps this lemma and `IsRationalMap.transport` from
+duplicating each other's hypothesis lists. -/
+theorem IsIsogeny.transport {V V' : Affine K}
+    (e : W.Point ≃+ V.Point) (e' : W'.Point ≃+ V'.Point)
+    {φ : W.Point →+ W'.Point} {ψ : V.Point →+ V'.Point}
+    (hcomm : ∀ P : W.Point, ψ (e P) = e' (φ P))
+    (hrat : IsRationalMap ψ) (h : IsIsogeny φ) : IsIsogeny ψ := by
+  have key : ψ ≠ 0 → φ ≠ 0 := by
+    intro hne hc
+    refine hne (AddMonoidHom.ext fun Q => ?_)
+    obtain ⟨P, rfl⟩ : ∃ P : W.Point, e P = Q := ⟨e.symm Q, e.apply_symm_apply Q⟩
+    rw [hcomm P, hc]
+    simp
+  refine ⟨hrat, fun hne R => ?_, fun hne => ?_⟩
+  · obtain ⟨S, hS⟩ := h.surjective (key hne) (e'.symm R)
+    exact ⟨e S, by rw [hcomm S, hS, e'.apply_symm_apply]⟩
+  · have hset : (AddMonoidHom.ker ψ : Set V.Point) = e '' (AddMonoidHom.ker φ : Set W.Point) := by
+      ext Q
+      constructor
+      · intro hQ
+        simp only [SetLike.mem_coe, AddMonoidHom.mem_ker] at hQ
+        refine ⟨e.symm Q, ?_, e.apply_symm_apply Q⟩
+        have h1 : ψ (e (e.symm Q)) = e' (φ (e.symm Q)) := hcomm _
+        rw [e.apply_symm_apply, hQ] at h1
+        simp only [SetLike.mem_coe, AddMonoidHom.mem_ker]
+        exact e'.injective (by rw [map_zero, ← h1])
+      · rintro ⟨P, hP, rfl⟩
+        simp only [SetLike.mem_coe, AddMonoidHom.mem_ker] at hP ⊢
+        rw [hcomm P, hP, map_zero]
+    rw [hset]
+    exact (h.finite_ker (key hne)).image e
+
+/-- **Item (2), first half: `IsRationalMap` is a Galois-invariant condition.** -/
+theorem isRationalMap_conjHom_iff (σ : F ≃+* K) {W W' : Affine F} (φ : W.Point →+ W'.Point) :
+    IsRationalMap (conjHom σ φ) ↔ IsRationalMap φ := by
+  constructor
+  · intro h
+    exact h.transport (σ.symm : K →+* F) (Affine.Point.mapRingEquiv W σ).symm
+      (Affine.Point.mapRingEquiv W' σ).symm
+      (veluPointX_mapRingEquiv_symm W σ) (veluPointY_mapRingEquiv_symm W σ)
+      (veluPointX_mapRingEquiv_symm W' σ) (veluPointY_mapRingEquiv_symm W' σ)
+      (fun Q => ((Affine.Point.mapRingEquiv W' σ).symm_apply_apply _).symm)
+  · intro h
+    exact h.transport (σ : F →+* K) (Affine.Point.mapRingEquiv W σ)
+      (Affine.Point.mapRingEquiv W' σ)
+      (veluPointX_mapRingHom W (σ : F →+* K)) (veluPointY_mapRingHom W (σ : F →+* K))
+      (veluPointX_mapRingHom W' (σ : F →+* K)) (veluPointY_mapRingHom W' (σ : F →+* K))
+      (conjHom_mapRingEquiv σ φ)
+
+/-- **Item (2), second half: `IsIsogeny` is a Galois-invariant condition.** -/
+theorem isIsogeny_conjHom_iff (σ : F ≃+* K) {W W' : Affine F} (φ : W.Point →+ W'.Point) :
+    IsIsogeny (conjHom σ φ) ↔ IsIsogeny φ := by
+  constructor
+  · intro h
+    exact h.transport (Affine.Point.mapRingEquiv W σ).symm
+      (Affine.Point.mapRingEquiv W' σ).symm
+      (fun Q => ((Affine.Point.mapRingEquiv W' σ).symm_apply_apply _).symm)
+      ((isRationalMap_conjHom_iff σ φ).mp h.isRationalMap)
+  · intro h
+    exact h.transport (Affine.Point.mapRingEquiv W σ) (Affine.Point.mapRingEquiv W' σ)
+      (conjHom_mapRingEquiv σ φ)
+      ((isRationalMap_conjHom_iff σ φ).mpr h.isRationalMap)
+
+/-- Conjugation of additive endomorphisms along an additive equivalence, as a ring
+isomorphism `AddMonoid.End A ≃+* AddMonoid.End B`. Purely general; it is here rather
+than in `Fermat/FLT/Mathlib/` only to keep the blast radius of this addition inside
+one file. -/
+def _root_.AddEquiv.conjAddMonoidEnd {A B : Type*} [AddCommMonoid A] [AddCommMonoid B]
+    (e : A ≃+ B) : AddMonoid.End A ≃+* AddMonoid.End B where
+  toFun g := (e.toAddMonoidHom.comp (g : A →+ A)).comp e.symm.toAddMonoidHom
+  invFun g := (e.symm.toAddMonoidHom.comp (g : B →+ B)).comp e.toAddMonoidHom
+  left_inv g := AddMonoidHom.ext fun a => by
+    show e.symm (e (g (e.symm (e a)))) = g a
+    rw [e.symm_apply_apply, e.symm_apply_apply]
+  right_inv g := AddMonoidHom.ext fun b => by
+    show e (e.symm (g (e (e.symm b)))) = g b
+    rw [e.apply_symm_apply, e.apply_symm_apply]
+  map_mul' g h := AddMonoidHom.ext fun b => by
+    show e ((g * h) (e.symm b)) = e (g (e.symm (e (h (e.symm b)))))
+    rw [e.symm_apply_apply]
+    rfl
+  map_add' g h := AddMonoidHom.ext fun b => by
+    show e ((g + h) (e.symm b)) = e (g (e.symm b)) + e (h (e.symm b))
+    rw [show (g + h) (e.symm b) = g (e.symm b) + h (e.symm b) from rfl, map_add]
+
+/-- **Item (2), the payoff: `End W ≃+* End (W.map σ)`.**
+
+A ring isomorphism, so it carries `ψ * ψ = (n : End W)` to `ψ^σ * ψ^σ = (n : End Wᵒ)`
+and `Subring.closure {ψ} = ⊤` to `Subring.closure {ψ^σ} = ⊤` — which is the whole of
+what `MazurCMForm.IsCMJInvariant` asks of `ψ`, and hence the whole of why that
+predicate is `Gal(ℚ̄/ℚ)`-stable.
+
+`[IsAlgClosed K]` is not decoration: `endSubring` exists only over an algebraically
+closed field (`IsIsogeny.add` is FALSE otherwise — see the `𝔽₅` refutation earlier in
+this file), so the TARGET needs its own instance. In the intended application
+`K = F = ℚ̄` and both are the same instance. -/
+noncomputable def End.mapRingEquiv [IsAlgClosed F] [IsAlgClosed K] (W : Affine F) [W.IsElliptic]
+    (σ : F ≃+* K) : End W ≃+* End (W.map (σ : F →+* K)) :=
+  RingEquiv.restrict (Affine.Point.mapRingEquiv W σ).conjAddMonoidEnd
+    (endSubring W) (endSubring (W.map (σ : F →+* K)))
+    (fun g => (isIsogeny_conjHom_iff σ (g : W.Point →+ W.Point)).symm)
+
+/-! **Deliberately no `@[simp]` unfolding lemmas here** (`mapRingHom_zero`,
+`mapRingHom_some`, `mapRingEquiv_apply`, `conjAddMonoidEnd_apply`,
+`End.coe_mapRingEquiv`). Each is `rfl`, and each was written and then removed
+because nothing in the tree consumes it, which makes it free-floating (see the
+policy in `CLAUDE.md`). Add one back in the SAME commit as its first consumer —
+the definitions above are transparent enough that `rfl`, `show`, or
+`Affine.Point.mapRingEquiv W σ P = Affine.Point.mapRingHom W ↑σ P := rfl`
+inline does the job until then. -/
+
+end GaloisTransport
+
 end WeierstrassCurve
