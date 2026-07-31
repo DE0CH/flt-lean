@@ -14600,6 +14600,545 @@ noncomputable def stepanovAnsatz (d p K : ℕ) (A : ℕ → ℕ → ℕ → Poly
 
 end StepanovAuxiliaryFunction
 
+/-! #### A TOTAL-DEGREE FILTRATION, and what it buys (2026-07-28)
+
+The de-specialisation below needs a bound on the `X`-degree of the resultant
+`R(X,Y,Z)` AND on the `X`-degree of its reduction modulo `F`. Schmidt gets the
+second from his (2.3), `deg g_i^{(t)} ≤ t − 1 + i`, proven by induction on `t`.
+Both come out of ONE object here: the TOTAL `(X,Y)`-degree filtration
+`stepanovTotalFilt`, `mem B u ↔ ∀ i, u.coeff i = 0 ∨ deg_X (u.coeff i) + i ≤ B`
+— exactly the weighted shape `stepanov_natDegree_resultant_le` consumes.
+
+Two properties do all the work, and both are formal:
+
+* it is MULTIPLICATIVE (`mem B₁ x → mem B₂ y → mem (B₁+B₂) (x*y)`), hence passes
+  through a DETERMINANT with column weights (`StepanovFilt.mem_det`), which is
+  what bounds the resultant: the Sylvester matrix of `f(Z,W)` and `a(X,Y,Z,W)`
+  at `(m, n) = (d, d−1)` has `d` columns of `a`, of total degree `≤ p/d − 1`
+  each, and `d − 1` columns of `f(Z,W)`, which contains NO `X` and no `Y`. So
+  `B = d·(p/d − 1) ≤ p − d < p`, which is Schmidt's `d·deg_X a + d(d−1) < p`
+  with the reduction cost already included;
+* it is PRESERVED BY DIVISION by a monic `F` whose total degree equals its
+  `Y`-degree (`hcoeff`), because the division step subtracts
+  `monomial (m−d) u_m · F`, of total degree `deg u_m + (m−d) + d = deg u_m + m`.
+  That IS (2.3), and it costs no induction on `t`.
+
+`StepanovFilt` is stated for a general commutative ring and lifted to polynomial
+rings coefficientwise (`StepanovFilt.lift`), so the three nesting levels
+`𝔽_p[X][Y]`, `𝔽_p[X][Y][Z]`, `𝔽_p[X][Y][Z][W]` share one set of closure lemmas.
+-/
+
+/-- A filtration on a commutative ring: an increasing family of additive subgroups
+containing `1` in degree `0`, with `P B₁ · P B₂ ⊆ P (B₁ + B₂)`. -/
+structure StepanovFilt (S : Type*) [CommRing S] where
+  mem : ℕ → S → Prop
+  mem_zero : ∀ B, mem B 0
+  mem_one : mem 0 1
+  mem_add : ∀ {B x y}, mem B x → mem B y → mem B (x + y)
+  mem_neg : ∀ {B x}, mem B x → mem B (-x)
+  mem_mul : ∀ {B₁ B₂ x y}, mem B₁ x → mem B₂ y → mem (B₁ + B₂) (x * y)
+  mem_mono : ∀ {B₁ B₂ x}, B₁ ≤ B₂ → mem B₁ x → mem B₂ x
+
+namespace StepanovFilt
+
+variable {S : Type*} [CommRing S]
+
+theorem mem_sub (P : StepanovFilt S) {B : ℕ} {x y : S} (hx : P.mem B x) (hy : P.mem B y) :
+    P.mem B (x - y) := by
+  rw [sub_eq_add_neg]; exact P.mem_add hx (P.mem_neg hy)
+
+theorem mem_sum (P : StepanovFilt S) {ι : Type*} (s : Finset ι) (f : ι → S) (B : ℕ)
+    (h : ∀ i ∈ s, P.mem B (f i)) : P.mem B (∑ i ∈ s, f i) := by
+  classical
+  induction s using Finset.induction_on with
+  | empty => simpa using P.mem_zero B
+  | insert a s ha ih =>
+      rw [Finset.sum_insert ha]
+      exact P.mem_add (h a (Finset.mem_insert_self a s))
+        (ih fun i hi => h i (Finset.mem_insert_of_mem hi))
+
+theorem mem_prod (P : StepanovFilt S) {ι : Type*} (s : Finset ι) (f : ι → S) (c : ι → ℕ)
+    (h : ∀ i ∈ s, P.mem (c i) (f i)) : P.mem (∑ i ∈ s, c i) (∏ i ∈ s, f i) := by
+  classical
+  induction s using Finset.induction_on with
+  | empty => simpa using P.mem_one
+  | insert a s ha ih =>
+      rw [Finset.prod_insert ha, Finset.sum_insert ha]
+      exact P.mem_mul (h a (Finset.mem_insert_self a s))
+        (ih fun i hi => h i (Finset.mem_insert_of_mem hi))
+
+/-- **THE WEIGHTED DETERMINANT BOUND, FILTRATION FORM.** If every entry of column
+`j` lies in filtration level `c j`, the determinant lies in level `∑ j, c j`. -/
+theorem mem_det (P : StepanovFilt S) {n : Type*} [Fintype n] [DecidableEq n]
+    (M : Matrix n n S) (c : n → ℕ) (h : ∀ i j, P.mem (c j) (M i j)) :
+    P.mem (∑ j, c j) M.det := by
+  rw [Matrix.det_apply]
+  refine P.mem_sum _ _ _ fun σ _ => ?_
+  have hp : P.mem (∑ j, c j) (∏ i, M (σ i) i) :=
+    P.mem_prod _ _ _ fun i _ => h (σ i) i
+  rcases Int.units_eq_one_or (Equiv.Perm.sign σ) with hs | hs <;> rw [hs]
+  · simpa using hp
+  · simpa using P.mem_neg hp
+
+/-- Extend a filtration to the polynomial ring, coefficientwise. -/
+def lift (P : StepanovFilt S) : StepanovFilt (Polynomial S) where
+  mem B u := ∀ i, P.mem B (u.coeff i)
+  mem_zero B i := by simpa using P.mem_zero B
+  mem_one i := by
+    rw [Polynomial.coeff_one]
+    split
+    · simpa using P.mem_one
+    · exact P.mem_zero 0
+  mem_add hx hy i := by rw [Polynomial.coeff_add]; exact P.mem_add (hx i) (hy i)
+  mem_neg hx i := by rw [Polynomial.coeff_neg]; exact P.mem_neg (hx i)
+  mem_mul hx hy i := by
+    rw [Polynomial.coeff_mul]
+    exact P.mem_sum _ _ _ fun ab _ => P.mem_mul (hx ab.1) (hy ab.2)
+  mem_mono h hx i := P.mem_mono h (hx i)
+
+theorem lift_mem_monomial (P : StepanovFilt S) {B n : ℕ} {a : S} (h : P.mem B a) :
+    P.lift.mem B (Polynomial.monomial n a) := by
+  intro i
+  rw [Polynomial.coeff_monomial]
+  split
+  · exact h
+  · exact P.mem_zero B
+
+end StepanovFilt
+
+/-- **THE TOTAL-DEGREE FILTRATION on `R[X][Y]`**: `mem B u` says every monomial
+`X^a Y^b` occurring in `u` has `a + b ≤ B`. This is exactly the weighted-degree
+hypothesis shape that `stepanov_natDegree_resultant_le` consumes, and it is the
+right notion here because (a) it is multiplicative, and (b) it is preserved by
+division by a monic `F` whose total degree equals its `Y`-degree — which is
+Schmidt's (2.3) `deg g_i^{(t)} ≤ t − 1 + i`, obtained for free. -/
+def stepanovTotalFilt (R : Type*) [CommRing R] : StepanovFilt (Polynomial (Polynomial R)) where
+  mem B u := ∀ i, u.coeff i = 0 ∨ (u.coeff i).natDegree + i ≤ B
+  mem_zero B i := Or.inl (by simp)
+  mem_one i := by
+    by_cases h : i = 0
+    · subst h; right; simp
+    · left; simp [Polynomial.coeff_one, h]
+  mem_add hx hy i := by
+    rw [Polynomial.coeff_add]
+    rcases hx i with h1 | h1 <;> rcases hy i with h2 | h2
+    · left; rw [h1, h2, add_zero]
+    · right; rw [h1, zero_add]; exact h2
+    · right; rw [h2, add_zero]; exact h1
+    · right
+      exact le_trans (Nat.add_le_add_right (Polynomial.natDegree_add_le _ _) i) (by omega)
+  mem_neg hx i := by
+    rw [Polynomial.coeff_neg]
+    rcases hx i with h | h
+    · left; rw [h, neg_zero]
+    · right; rwa [Polynomial.natDegree_neg]
+  mem_mul {B₁ B₂ x y} hx hy i := by
+    rw [Polynomial.coeff_mul]
+    by_cases hall : ∀ ab ∈ Finset.antidiagonal i, x.coeff ab.1 * y.coeff ab.2 = 0
+    · exact Or.inl (Finset.sum_eq_zero hall)
+    · right
+      push Not at hall
+      obtain ⟨ab, hab, hne⟩ := hall
+      have hab' : ab.1 + ab.2 = i := Finset.mem_antidiagonal.mp hab
+      have hi : i ≤ B₁ + B₂ := by
+        rcases hx ab.1 with h1 | h1
+        · exact absurd (by rw [h1, zero_mul]) hne
+        rcases hy ab.2 with h2 | h2
+        · exact absurd (by rw [h2, mul_zero]) hne
+        omega
+      have hbd : ∀ ab' ∈ Finset.antidiagonal i,
+          (x.coeff ab'.1 * y.coeff ab'.2).natDegree ≤ B₁ + B₂ - i := by
+        intro ab' hab'
+        have hs : ab'.1 + ab'.2 = i := Finset.mem_antidiagonal.mp hab'
+        rcases hx ab'.1 with h1 | h1
+        · simp [h1]
+        rcases hy ab'.2 with h2 | h2
+        · simp [h2]
+        refine le_trans Polynomial.natDegree_mul_le ?_
+        omega
+      have := Polynomial.natDegree_sum_le_of_forall_le _ _ hbd
+      omega
+  mem_mono h hx i := by
+    rcases hx i with h1 | h1
+    · exact Or.inl h1
+    · exact Or.inr (le_trans h1 h)
+
+theorem stepanovTotalFilt_mem_monomial {R : Type*} [CommRing R] {B i : ℕ} {a : Polynomial R}
+    (h : a = 0 ∨ a.natDegree + i ≤ B) :
+    (stepanovTotalFilt R).mem B (Polynomial.monomial i a) := by
+  intro i'
+  rw [Polynomial.coeff_monomial]
+  split
+  · rename_i he; subst he; exact h
+  · left; rfl
+
+
+theorem StepanovFilt.lift_mem_iff {S : Type*} [CommRing S] (P : StepanovFilt S) (B : ℕ)
+    (u : Polynomial S) : P.lift.mem B u ↔ ∀ i, P.mem B (u.coeff i) := Iff.rfl
+
+theorem stepanovTotalFilt_mem_iff {R : Type*} [CommRing R] (B : ℕ)
+    (u : Polynomial (Polynomial R)) :
+    (stepanovTotalFilt R).mem B u ↔ ∀ i, u.coeff i = 0 ∨ (u.coeff i).natDegree + i ≤ B := Iff.rfl
+
+/-- **BASE-`p` SEPARATION** — this replaces Schmidt's `X = X₁ + X₂` substitution.
+If `∑_{j<N} g_j(X) X^{pj} = 0` with every `deg g_j < p`, then every `g_j = 0`:
+the monomial `X^{pj+v}`, `v < p`, receives a contribution from `g_{j'}` only when
+`j' = j`, by uniqueness of the base-`p` expansion of an exponent. -/
+theorem stepanov_eq_zero_of_sum_mul_X_pow {R : Type*} [CommRing R] {p N : ℕ} (hp : 0 < p)
+    (g : ℕ → Polynomial R) (hdeg : ∀ j, g j = 0 ∨ (g j).natDegree < p)
+    (hsum : ∑ j ∈ Finset.range N, g j * Polynomial.X ^ (p * j) = 0)
+    (j₀ : ℕ) (hj₀ : j₀ < N) : g j₀ = 0 := by
+  classical
+  have hd0 : (g j₀).natDegree < p := by
+    rcases hdeg j₀ with h | h
+    · rw [h, Polynomial.natDegree_zero]; exact hp
+    · exact h
+  refine Polynomial.ext fun v => ?_
+  rw [Polynomial.coeff_zero]
+  by_cases hv : v < p
+  · have hc := congrArg (fun t => Polynomial.coeff t (p * j₀ + v)) hsum
+    simp only [Polynomial.finsetSum_coeff, Polynomial.coeff_zero] at hc
+    rw [Finset.sum_eq_single j₀] at hc
+    · rwa [Polynomial.coeff_mul_X_pow', if_pos (by omega), Nat.add_sub_cancel_left] at hc
+    · intro b _ hbne
+      rcases Nat.lt_or_ge b j₀ with hblt | hbge
+      · have hmul : p * b + p ≤ p * j₀ := by
+          have h1 : p * (b + 1) ≤ p * j₀ := Nat.mul_le_mul_left p (by omega)
+          rwa [Nat.mul_succ] at h1
+        rw [Polynomial.coeff_mul_X_pow', if_pos (by omega)]
+        rcases hdeg b with h | h
+        · rw [h, Polynomial.coeff_zero]
+        · exact Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)
+      · have hmul : p * j₀ + p ≤ p * b := by
+          have h1 : p * (j₀ + 1) ≤ p * b := Nat.mul_le_mul_left p (by omega)
+          rwa [Nat.mul_succ] at h1
+        rw [Polynomial.coeff_mul_X_pow', if_neg (by omega)]
+    · intro h; exact absurd (Finset.mem_range.mpr hj₀) h
+  · exact Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)
+
+/-- **DIVISION BY A MONIC `F` OF TOTAL DEGREE `d` PRESERVES THE TOTAL-DEGREE
+FILTRATION** — this is Schmidt's (2.3), `deg g_i^{(t)} ≤ t − 1 + i`, obtained for
+free from the filtration being multiplicative: the step of the division algorithm
+subtracts `monomial (m−d) (u.coeff m) * F`, whose total degree is
+`(deg u_m) + (m − d) + d = (deg u_m) + m ≤ B`. -/
+theorem stepanov_exists_wd_rem {R : Type*} [CommRing R] (d : ℕ) (hd : 0 < d)
+    (F : Polynomial (Polynomial R)) (hmon : F.Monic) (hFd : F.natDegree = d)
+    (hFw : (stepanovTotalFilt R).mem d F) (B : ℕ) (n : ℕ) :
+    ∀ u : Polynomial (Polynomial R), u.natDegree ≤ n → (stepanovTotalFilt R).mem B u →
+      ∃ r, F ∣ (u - r) ∧ r.natDegree < d ∧ (stepanovTotalFilt R).mem B r := by
+  induction n with
+  | zero => exact fun u hun huw => ⟨u, by simp, by omega, huw⟩
+  | succ n ih =>
+      intro u hun huw
+      by_cases hlt : u.natDegree < d
+      · exact ⟨u, by simp, hlt, huw⟩
+      push Not at hlt
+      have hune : u ≠ 0 := by
+        intro h
+        rw [h, Polynomial.natDegree_zero] at hlt
+        omega
+      have hlead : u.coeff u.natDegree ≠ 0 := by
+        rw [← Polynomial.leadingCoeff]
+        exact Polynomial.leadingCoeff_ne_zero.mpr hune
+      have hwcoeff : ∀ i, (Polynomial.monomial (u.natDegree - d) (u.coeff u.natDegree) * F).coeff i
+          = if u.natDegree - d ≤ i then
+              u.coeff u.natDegree * F.coeff (i - (u.natDegree - d)) else 0 := by
+        intro i
+        have hrw : Polynomial.monomial (u.natDegree - d) (u.coeff u.natDegree) * F
+            = (Polynomial.C (u.coeff u.natDegree) * F) * Polynomial.X ^ (u.natDegree - d) := by
+          rw [← Polynomial.C_mul_X_pow_eq_monomial]; ring
+        rw [hrw, Polynomial.coeff_mul_X_pow']
+        split
+        · rw [Polynomial.coeff_C_mul]
+        · rfl
+      have hvz : ∀ i, u.natDegree ≤ i →
+          (u - Polynomial.monomial (u.natDegree - d) (u.coeff u.natDegree) * F).coeff i = 0 := by
+        intro i hi
+        rw [Polynomial.coeff_sub, hwcoeff, if_pos (by omega)]
+        rcases eq_or_lt_of_le hi with he | hlt'
+        · rw [← he, show u.natDegree - (u.natDegree - d) = d by omega, ← hFd,
+            hmon.coeff_natDegree, mul_one, sub_self]
+        · have hu0 : u.coeff i = 0 := Polynomial.coeff_eq_zero_of_natDegree_lt hlt'
+          have hF0 : F.coeff (i - (u.natDegree - d)) = 0 :=
+            Polynomial.coeff_eq_zero_of_natDegree_lt (by rw [hFd]; omega)
+          rw [hu0, hF0, mul_zero, sub_zero]
+      have hvdeg : (u - Polynomial.monomial (u.natDegree - d) (u.coeff u.natDegree) * F).natDegree
+          ≤ n := by
+        by_cases hz : u - Polynomial.monomial (u.natDegree - d) (u.coeff u.natDegree) * F = 0
+        · rw [hz, Polynomial.natDegree_zero]; omega
+        · have h1 : (u - Polynomial.monomial (u.natDegree - d) (u.coeff u.natDegree)
+              * F).natDegree < u.natDegree := by
+            by_contra hcon
+            push Not at hcon
+            exact (Polynomial.leadingCoeff_ne_zero.mpr hz)
+              (by rw [Polynomial.leadingCoeff]; exact hvz _ hcon)
+          omega
+      have hww : (stepanovTotalFilt R).mem B
+          (Polynomial.monomial (u.natDegree - d) (u.coeff u.natDegree) * F) := by
+        have h1 : (stepanovTotalFilt R).mem
+            ((u.coeff u.natDegree).natDegree + (u.natDegree - d))
+            (Polynomial.monomial (u.natDegree - d) (u.coeff u.natDegree)) :=
+          stepanovTotalFilt_mem_monomial (Or.inr le_rfl)
+        refine (stepanovTotalFilt R).mem_mono ?_ ((stepanovTotalFilt R).mem_mul h1 hFw)
+        rcases huw u.natDegree with h | h
+        · exact absurd h hlead
+        · omega
+      obtain ⟨r, hr1, hr2, hr3⟩ := ih _ hvdeg ((stepanovTotalFilt R).mem_sub huw hww)
+      refine ⟨r, ?_, hr2, hr3⟩
+      have hsplit : u - r = Polynomial.monomial (u.natDegree - d) (u.coeff u.natDegree) * F
+          + ((u - Polynomial.monomial (u.natDegree - d) (u.coeff u.natDegree) * F) - r) := by
+        ring
+      rw [hsplit]
+      exact dvd_add ⟨Polynomial.monomial (u.natDegree - d) (u.coeff u.natDegree), by ring⟩ hr1
+
+/-! #### The derivation calculus behind Schmidt §3 (PROVEN 2026-07-27)
+
+Six small lemmas, all of them about `stepanovDerivX`/`stepanovJet` and none of
+them about the curve, which together reduce `stepanov_pow_X_sub_C_dvd_of_jet_vanishing`
+to a single induction. The route they implement is NOT the one the leaf's
+docstring anticipated: **no power series, no Hensel lift and no branch are
+needed.** See the FOOTNOTE on that theorem. -/
+
+/-- `stepanovDerivX` differentiates the coefficient polynomials one by one. -/
+theorem stepanovDerivX_monomial {R : Type*} [CommRing R] (n : ℕ) (c : Polynomial R) :
+    stepanovDerivX (Polynomial.monomial n c) = Polynomial.monomial n (Polynomial.derivative c) := by
+  rw [stepanovDerivX, Polynomial.sum_monomial_index _ _ (by simp),
+    Polynomial.C_mul_X_pow_eq_monomial]
+
+theorem stepanovDerivX_add {R : Type*} [CommRing R] (b₁ b₂ : Polynomial (Polynomial R)) :
+    stepanovDerivX (b₁ + b₂) = stepanovDerivX b₁ + stepanovDerivX b₂ := by
+  rw [stepanovDerivX, stepanovDerivX, stepanovDerivX]
+  refine Polynomial.sum_add_index _ _ _ (by simp) ?_
+  intro i c₁ c₂
+  rw [Polynomial.derivative_add, map_add, add_mul]
+
+/-- **THE CHAIN RULE** `d/dX [b(X, η(X))] = b_X(X, η) + b_Y(X, η)·η′`, for a
+POLYNOMIAL section `η` of the `Y`-coordinate. Everything stays inside `S[X]`;
+this is what makes the whole of Schmidt §3 available without leaving polynomials. -/
+theorem stepanov_derivative_eval₂ {R S : Type*} [CommRing R] [CommRing S]
+    (ι : R →+* S) (η : Polynomial S) (b : Polynomial (Polynomial R)) :
+    Polynomial.derivative (Polynomial.eval₂ (Polynomial.mapRingHom ι) η b)
+      = Polynomial.eval₂ (Polynomial.mapRingHom ι) η (stepanovDerivX b)
+        + Polynomial.eval₂ (Polynomial.mapRingHom ι) η (Polynomial.derivative b)
+            * Polynomial.derivative η := by
+  induction b using Polynomial.induction_on' with
+  | add p q hp hq =>
+      rw [stepanovDerivX_add, Polynomial.derivative_add, Polynomial.eval₂_add,
+        Polynomial.eval₂_add, Polynomial.eval₂_add, Polynomial.derivative_add, hp, hq]
+      ring
+  | monomial n c =>
+      rw [stepanovDerivX_monomial, Polynomial.derivative_monomial, Polynomial.eval₂_monomial,
+        Polynomial.eval₂_monomial, Polynomial.eval₂_monomial, Polynomial.derivative_mul,
+        Polynomial.derivative_pow]
+      simp only [Polynomial.coe_mapRingHom, Polynomial.derivative_map, Polynomial.map_mul,
+        Polynomial.map_natCast, Polynomial.C_eq_natCast]
+      ring
+
+/-- **THE CLEARED DERIVATION.** Multiplying the chain rule by `F_Y(X, η)` removes
+`η′` in favour of `d/dX [F(X, η)]`: writing `𝒟b := F_Y ∂_X b − F_X ∂_Y b` for the
+polynomial derivation Schmidt's `D` is built from,
+
+  `F_Y(X,η) · (b(X,η))′ = (𝒟b)(X, η) + (∂_Y b)(X, η) · (F(X,η))′`.
+
+When `η` is an exact root the last term drops and this is `D`; in general it is
+the exact error term, and it is the ONLY place the hypothesis
+`(X − x)^M ∣ F(X, η)` is ever used. -/
+theorem stepanov_key_congr {R K : Type*} [CommRing R] [CommRing K]
+    (ι : R →+* K) (η : Polynomial K) (F b : Polynomial (Polynomial R)) :
+    Polynomial.eval₂ (Polynomial.mapRingHom ι) η (Polynomial.derivative F)
+        * Polynomial.derivative (Polynomial.eval₂ (Polynomial.mapRingHom ι) η b)
+      = Polynomial.eval₂ (Polynomial.mapRingHom ι) η
+          (Polynomial.derivative F * stepanovDerivX b - stepanovDerivX F * Polynomial.derivative b)
+        + Polynomial.eval₂ (Polynomial.mapRingHom ι) η (Polynomial.derivative b)
+            * Polynomial.derivative (Polynomial.eval₂ (Polynomial.mapRingHom ι) η F) := by
+  rw [stepanov_derivative_eval₂ ι η b, stepanov_derivative_eval₂ ι η F,
+    Polynomial.eval₂_sub, Polynomial.eval₂_mul, Polynomial.eval₂_mul]
+  ring
+
+/-- Differentiating drops the order of vanishing by at most one. -/
+theorem stepanov_pow_dvd_derivative {K : Type*} [CommRing K] (t h : Polynomial K) (N : ℕ)
+    (hdvd : t ^ (N + 1) ∣ h) : t ^ N ∣ Polynomial.derivative h := by
+  obtain ⟨s, rfl⟩ := hdvd
+  rw [Polynomial.derivative_mul, Polynomial.derivative_pow_succ]
+  exact dvd_add ⟨Polynomial.C ((N : K) + 1) * Polynomial.derivative t * s, by ring⟩
+    ⟨t * Polynomial.derivative s, by ring⟩
+
+/-- `stepanovEvalPoint`, which evaluates `(x, y)` coordinatewise, is the value at
+`x` of the one-variable polynomial `b(X, η(X))` whenever `y = η(x)`. -/
+theorem stepanovEvalPoint_eq_eval_eval₂ {R K : Type*} [CommRing R] [CommRing K]
+    (ι : R →+* K) (b : Polynomial (Polynomial R)) (x : R) (η : Polynomial K) :
+    (Polynomial.eval₂ (Polynomial.mapRingHom ι) η b).eval (ι x)
+      = stepanovEvalPoint ι b x (η.eval (ι x)) := by
+  rw [show (Polynomial.eval₂ (Polynomial.mapRingHom ι) η b).eval (ι x)
+      = Polynomial.evalRingHom (ι x) (Polynomial.eval₂ (Polynomial.mapRingHom ι) η b) from rfl,
+    Polynomial.hom_eval₂, stepanovEvalPoint, Polynomial.eval_map]
+  congr 1
+  refine RingHom.ext fun q => ?_
+  simp only [RingHom.comp_apply, Polynomial.coe_mapRingHom, Polynomial.coe_evalRingHom,
+    Polynomial.eval_map, Polynomial.eval₂_at_apply]
+
+/-- **SCHMIDT §3, THE WHOLE CONTENT**, over an arbitrary field and with no
+hypothesis whatever on `F` beyond the two that are used: that `F_Y(x, η(x)) ≠ 0`
+(`hunit` — simplicity of the root) and that `η` is an approximate root to order
+`M` (`hη`).
+
+The proof is one induction. Put `t = X − ι x`, `Φ b = b(X, η(X))`,
+`e = Φ(F_Y)`, `u = Φ F`, and `c_ν = e^{2(M−ν)}·Φ(a^{(ν)})`. Then
+
+* `t^{M−1} ∣ u′`, because `t^M ∣ u`;
+* `e·(c_ν′ − c_{ν+1}) = u′ · (…)` — a pure polynomial identity in the values of
+  `Φ` on the six atoms occurring in `stepanovJet`'s recursion, obtained by
+  applying `stepanov_key_congr` at `b = F_Y` and at `b = a^{(ν)}`. Since `t` is
+  prime and `t ∤ e`, this gives `t^{M−1} ∣ c_ν′ − c_{ν+1}`;
+* hence, by induction, `t^{M−ν} ∣ (d/dX)^ν(e^{2M}·Φ a) − c_ν` for `ν ≤ M`.
+
+At `ν < M` the right-hand side vanishes at `ι x` because `hjet` kills
+`Φ(a^{(ν)})` there, so all `M` first Taylor coefficients of `e^{2M}·Φ a` vanish
+— `hfact` is what converts the ordinary iterated derivative into the Hasse
+derivative that `pow_X_sub_C_dvd_iff_hasseDeriv` wants — and `t ∤ e` strips the
+`e^{2M}`.
+
+`hfact` is `∀ j < M, j ! ≠ 0 in K`; at the call site it is `M < p`. -/
+theorem stepanov_jet_dvd_core {R : Type*} [CommRing R] {K : Type*} [Field K]
+    (ι : R →+* K) (M : ℕ) (hfact : ∀ j < M, ((Nat.factorial j : ℕ) : K) ≠ 0)
+    (F a : Polynomial (Polynomial R)) (x : R) (η : Polynomial K)
+    (hunit : (Polynomial.eval₂ (Polynomial.mapRingHom ι) η
+      (Polynomial.derivative F)).eval (ι x) ≠ 0)
+    (hη : (Polynomial.X - Polynomial.C (ι x)) ^ M ∣
+      Polynomial.eval₂ (Polynomial.mapRingHom ι) η F)
+    (hjet : ∀ ℓ < M,
+      (Polynomial.eval₂ (Polynomial.mapRingHom ι) η (stepanovJet F M ℓ a)).eval (ι x) = 0) :
+    (Polynomial.X - Polynomial.C (ι x)) ^ M ∣
+      Polynomial.eval₂ (Polynomial.mapRingHom ι) η a := by
+  classical
+  rcases Nat.eq_zero_or_pos M with rfl | hM
+  · simp
+  have hΦeq : ∀ b : Polynomial (Polynomial R),
+      Polynomial.eval₂ (Polynomial.mapRingHom ι) η b
+        = Polynomial.eval₂RingHom (Polynomial.mapRingHom ι) η b := fun _ => rfl
+  have hkey0 : ∀ b : Polynomial (Polynomial R),
+      Polynomial.eval₂RingHom (Polynomial.mapRingHom ι) η (Polynomial.derivative F)
+          * Polynomial.derivative
+              (Polynomial.eval₂RingHom (Polynomial.mapRingHom ι) η b)
+        = Polynomial.eval₂RingHom (Polynomial.mapRingHom ι) η
+            (Polynomial.derivative F * stepanovDerivX b
+              - stepanovDerivX F * Polynomial.derivative b)
+          + Polynomial.eval₂RingHom (Polynomial.mapRingHom ι) η (Polynomial.derivative b)
+              * Polynomial.derivative
+                  (Polynomial.eval₂RingHom (Polynomial.mapRingHom ι) η F) := by
+    intro b
+    simpa only [hΦeq] using stepanov_key_congr ι η F b
+  simp only [hΦeq] at hunit hη hjet ⊢
+  set Φ : Polynomial (Polynomial R) →+* Polynomial K :=
+    Polynomial.eval₂RingHom (Polynomial.mapRingHom ι) η with hΦdef
+  set t : Polynomial K := Polynomial.X - Polynomial.C (ι x) with htdef
+  set e : Polynomial K := Φ (Polynomial.derivative F) with hedef
+  set u : Polynomial K := Φ F with hudef
+  have htprime : Prime t := Polynomial.prime_X_sub_C (ι x)
+  have hte : ¬ t ∣ e := by
+    intro h
+    rw [htdef] at h
+    exact hunit (Polynomial.dvd_iff_isRoot.mp h)
+  have hu' : t ^ (M - 1) ∣ Polynomial.derivative u := by
+    refine stepanov_pow_dvd_derivative t u (M - 1) ?_
+    rw [show M - 1 + 1 = M by omega]
+    exact hη
+  have hmain : ∀ ν, ν ≤ M →
+      t ^ (M - ν) ∣ (Polynomial.derivative^[ν]) (e ^ (2 * M) * Φ a)
+        - e ^ (2 * (M - ν)) * Φ (stepanovJet F M ν a) := by
+    intro ν
+    induction ν with
+    | zero => intro _; simp [stepanovJet]
+    | succ ν ih =>
+        intro hν
+        have hν' : ν ≤ M := by omega
+        obtain ⟨s', hs'⟩ : ∃ s', M - ν = s' + 1 := ⟨M - ν - 1, by omega⟩
+        have hs'' : M - (ν + 1) = s' := by omega
+        have h1 : t ^ s' ∣ Polynomial.derivative
+            ((Polynomial.derivative^[ν]) (e ^ (2 * M) * Φ a))
+              - Polynomial.derivative (e ^ (2 * (s' + 1)) * Φ (stepanovJet F M ν a)) := by
+          have hih := ih hν'
+          rw [hs'] at hih
+          have h1' := stepanov_pow_dvd_derivative t _ s' hih
+          rwa [Polynomial.derivative_sub] at h1'
+        have h2 : t ^ s' ∣ Polynomial.derivative (e ^ (2 * (s' + 1)) * Φ (stepanovJet F M ν a))
+            - e ^ (2 * s') * Φ (stepanovJet F M (ν + 1) a) := by
+          have hjrec : stepanovJet F M (ν + 1) a
+              = Polynomial.C (Polynomial.C ((2 * M - 2 * ν : ℕ) : R)) *
+                  (stepanovDerivX (Polynomial.derivative F) * Polynomial.derivative F -
+                    Polynomial.derivative (Polynomial.derivative F) * stepanovDerivX F) *
+                  stepanovJet F M ν a
+                + Polynomial.derivative F ^ 2 * stepanovDerivX (stepanovJet F M ν a)
+                - Polynomial.derivative F * stepanovDerivX F *
+                    Polynomial.derivative (stepanovJet F M ν a) := rfl
+          have hnat : (2 * M - 2 * ν : ℕ) = 2 * s' + 2 := by omega
+          have hcast : Φ (Polynomial.C (Polynomial.C ((2 * M - 2 * ν : ℕ) : R)))
+              = Polynomial.C ((2 * s' + 2 : ℕ) : K) := by
+            rw [hnat, hΦdef]
+            simp [map_ofNat]
+          have hderiv : Polynomial.derivative (e ^ (2 * (s' + 1)) * Φ (stepanovJet F M ν a))
+              = Polynomial.C ((2 * s' + 2 : ℕ) : K) * e ^ (2 * s' + 1)
+                  * Polynomial.derivative e * Φ (stepanovJet F M ν a)
+                + e ^ (2 * s' + 2) * Polynomial.derivative (Φ (stepanovJet F M ν a)) := by
+            rw [show 2 * (s' + 1) = 2 * s' + 1 + 1 from by ring, Polynomial.derivative_mul,
+              Polynomial.derivative_pow_succ]
+            have hCC : Polynomial.C (((2 * s' + 1 : ℕ) : K) + 1)
+                = Polynomial.C ((2 * s' + 2 : ℕ) : K) := by
+              congr 1
+              push_cast
+              ring
+            rw [hCC]
+          have hmul : e * (Polynomial.derivative (e ^ (2 * (s' + 1)) * Φ (stepanovJet F M ν a))
+                - e ^ (2 * s') * Φ (stepanovJet F M (ν + 1) a))
+              = Polynomial.derivative u *
+                  (Polynomial.C ((2 * s' + 2 : ℕ) : K) * e ^ (2 * s' + 1)
+                      * Φ (Polynomial.derivative (Polynomial.derivative F))
+                      * Φ (stepanovJet F M ν a)
+                    + e ^ (2 * s' + 2)
+                      * Φ (Polynomial.derivative (stepanovJet F M ν a))) := by
+            rw [hderiv, hjrec]
+            simp only [map_add, map_sub, map_mul, map_pow, hcast]
+            have k1 := hkey0 (Polynomial.derivative F)
+            have k2 := hkey0 (stepanovJet F M ν a)
+            simp only [map_sub, map_mul, ← hedef] at k1 k2
+            linear_combination (Polynomial.C ((2 * s' + 2 : ℕ) : K) * e ^ (2 * s' + 1)
+                * Φ (stepanovJet F M ν a)) * k1 + (e ^ (2 * s' + 2)) * k2
+          have hdvdM : t ^ (M - 1) ∣ e * (Polynomial.derivative
+              (e ^ (2 * (s' + 1)) * Φ (stepanovJet F M ν a))
+                - e ^ (2 * s') * Φ (stepanovJet F M (ν + 1) a)) := by
+            rw [hmul]
+            exact Dvd.dvd.mul_right hu' _
+          have hcancel := htprime.pow_dvd_of_dvd_mul_left (M - 1) hte hdvdM
+          exact dvd_trans (pow_dvd_pow t (by omega)) hcancel
+        rw [Function.iterate_succ_apply', hs'']
+        have h3 := dvd_add h1 h2
+        convert h3 using 1
+        ring
+  have hvanish : ∀ j < M, ((Polynomial.derivative^[j]) (e ^ (2 * M) * Φ a)).eval (ι x) = 0 := by
+    intro j hj
+    have h := hmain j (le_of_lt hj)
+    have hdvd1 : t ∣ (Polynomial.derivative^[j]) (e ^ (2 * M) * Φ a)
+        - e ^ (2 * (M - j)) * Φ (stepanovJet F M j a) :=
+      dvd_trans (by simpa using pow_dvd_pow t (show 1 ≤ M - j by omega)) h
+    rw [htdef] at hdvd1
+    have hroot := Polynomial.dvd_iff_isRoot.mp hdvd1
+    rw [Polynomial.IsRoot, Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_pow,
+      hjet j hj, mul_zero, sub_zero] at hroot
+    exact hroot
+  have hfinal : t ^ M ∣ e ^ (2 * M) * Φ a := by
+    rw [htdef, pow_X_sub_C_dvd_iff_hasseDeriv]
+    intro j hj
+    have hcf := congrFun (Polynomial.factorial_smul_hasseDeriv (R := K) (k := j))
+      (e ^ (2 * M) * Φ a)
+    rw [LinearMap.smul_apply, nsmul_eq_mul] at hcf
+    have h1 : ((Nat.factorial j : ℕ) : K)
+        * (Polynomial.hasseDeriv j (e ^ (2 * M) * Φ a)).eval (ι x) = 0 := by
+      have h2 := congrArg (Polynomial.eval (ι x)) hcf
+      rw [Polynomial.eval_mul, Polynomial.eval_natCast, hvanish j hj] at h2
+      exact h2
+    exact (mul_eq_zero.mp h1).resolve_left (hfact j hj)
+  exact htprime.pow_dvd_of_dvd_mul_left M (fun h => hte (htprime.dvd_of_dvd_pow h)) hfinal
+
 /-- **LEMMA 4A(iii), THE DEGREE BOUND** (PROVEN 2026-07-27) — mechanical, and
 proven here so that no sub-leaf has to carry it.
 
@@ -14839,7 +15378,31 @@ HOW IT IS PROVED. Four steps, all recorded in the section note above.
 MISSING AT THIS PIN (grepped 2026-07-27 across `Fermat/`, `.lake/packages/
 mathlib/` and `~/cs/FLT/`): nothing named `[Ss]tepanov` and no hyperderivative
 theory beyond `Polynomial.hasseDeriv`. `Polynomial.modByMonic` covers both
-reductions; the weighted-degree bookkeeping has to be written here.
+reductions.
+
+WHAT IS IN SCOPE ABOVE THIS LEAF (2026-07-31 — read this before believing the
+paragraph above). The sentence that used to end the paragraph, "the
+weighted-degree bookkeeping has to be written here", was STALE: it was written
+against a file in which every piece of that bookkeeping sat BELOW this leaf and
+was therefore invisible to it. That material has now been HOISTED, verbatim and
+unchanged, to immediately after `end StepanovAuxiliaryFunction`, so the four
+steps above may use all of it:
+
+* the weighted degree `w(P) = maxₙ (deg (P.coeff n) + n)` of step 2 IS
+  `stepanovTotalFilt`, with the `StepanovFilt` structure supplying `mem_add`,
+  `mem_sub`, `mem_mul`, `mem_sum`, `mem_prod`, `mem_det` and `lift`, and
+  `stepanovTotalFilt_mem_iff` / `_mem_monomial` unfolding it;
+* step 3's "reduce `D^{(ν)}` modulo `F` in `Y`" IS `stepanov_exists_wd_rem` —
+  division by a monic `F` of total degree `d` with the filtration preserved;
+* the whole `stepanovDerivX`/`stepanovJet` calculus that steps 1 and 2 induct
+  over — `stepanovDerivX_monomial`, `stepanovDerivX_add`,
+  `stepanov_derivative_eval₂`, the chain rule `stepanov_key_congr`,
+  `stepanov_pow_dvd_derivative`, `stepanovEvalPoint_eq_eval_eval₂` and the
+  PROVEN `stepanov_jet_dvd_core` — is likewise above, next to the definitions
+  it is about.
+
+Nothing new was proven by that hoist and no statement changed; it only made the
+existing API reachable from here.
 
 NOTE the hypothesis `hAdeg` is the SHARP constraint `deg + d + i + j + k ≤ p/d`,
 not the weak `deg + d ≤ p/d` the parent exports — the `−(i + j + k)` is what
@@ -16366,297 +16929,6 @@ theorem stepanov_dvd_specZ_resultant (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.
   rw [show d - 1 + 1 = d by omega] at hzero
   exact hzero
 
-/-! #### A TOTAL-DEGREE FILTRATION, and what it buys (2026-07-28)
-
-The de-specialisation below needs a bound on the `X`-degree of the resultant
-`R(X,Y,Z)` AND on the `X`-degree of its reduction modulo `F`. Schmidt gets the
-second from his (2.3), `deg g_i^{(t)} ≤ t − 1 + i`, proven by induction on `t`.
-Both come out of ONE object here: the TOTAL `(X,Y)`-degree filtration
-`stepanovTotalFilt`, `mem B u ↔ ∀ i, u.coeff i = 0 ∨ deg_X (u.coeff i) + i ≤ B`
-— exactly the weighted shape `stepanov_natDegree_resultant_le` consumes.
-
-Two properties do all the work, and both are formal:
-
-* it is MULTIPLICATIVE (`mem B₁ x → mem B₂ y → mem (B₁+B₂) (x*y)`), hence passes
-  through a DETERMINANT with column weights (`StepanovFilt.mem_det`), which is
-  what bounds the resultant: the Sylvester matrix of `f(Z,W)` and `a(X,Y,Z,W)`
-  at `(m, n) = (d, d−1)` has `d` columns of `a`, of total degree `≤ p/d − 1`
-  each, and `d − 1` columns of `f(Z,W)`, which contains NO `X` and no `Y`. So
-  `B = d·(p/d − 1) ≤ p − d < p`, which is Schmidt's `d·deg_X a + d(d−1) < p`
-  with the reduction cost already included;
-* it is PRESERVED BY DIVISION by a monic `F` whose total degree equals its
-  `Y`-degree (`hcoeff`), because the division step subtracts
-  `monomial (m−d) u_m · F`, of total degree `deg u_m + (m−d) + d = deg u_m + m`.
-  That IS (2.3), and it costs no induction on `t`.
-
-`StepanovFilt` is stated for a general commutative ring and lifted to polynomial
-rings coefficientwise (`StepanovFilt.lift`), so the three nesting levels
-`𝔽_p[X][Y]`, `𝔽_p[X][Y][Z]`, `𝔽_p[X][Y][Z][W]` share one set of closure lemmas.
--/
-
-/-- A filtration on a commutative ring: an increasing family of additive subgroups
-containing `1` in degree `0`, with `P B₁ · P B₂ ⊆ P (B₁ + B₂)`. -/
-structure StepanovFilt (S : Type*) [CommRing S] where
-  mem : ℕ → S → Prop
-  mem_zero : ∀ B, mem B 0
-  mem_one : mem 0 1
-  mem_add : ∀ {B x y}, mem B x → mem B y → mem B (x + y)
-  mem_neg : ∀ {B x}, mem B x → mem B (-x)
-  mem_mul : ∀ {B₁ B₂ x y}, mem B₁ x → mem B₂ y → mem (B₁ + B₂) (x * y)
-  mem_mono : ∀ {B₁ B₂ x}, B₁ ≤ B₂ → mem B₁ x → mem B₂ x
-
-namespace StepanovFilt
-
-variable {S : Type*} [CommRing S]
-
-theorem mem_sub (P : StepanovFilt S) {B : ℕ} {x y : S} (hx : P.mem B x) (hy : P.mem B y) :
-    P.mem B (x - y) := by
-  rw [sub_eq_add_neg]; exact P.mem_add hx (P.mem_neg hy)
-
-theorem mem_sum (P : StepanovFilt S) {ι : Type*} (s : Finset ι) (f : ι → S) (B : ℕ)
-    (h : ∀ i ∈ s, P.mem B (f i)) : P.mem B (∑ i ∈ s, f i) := by
-  classical
-  induction s using Finset.induction_on with
-  | empty => simpa using P.mem_zero B
-  | insert a s ha ih =>
-      rw [Finset.sum_insert ha]
-      exact P.mem_add (h a (Finset.mem_insert_self a s))
-        (ih fun i hi => h i (Finset.mem_insert_of_mem hi))
-
-theorem mem_prod (P : StepanovFilt S) {ι : Type*} (s : Finset ι) (f : ι → S) (c : ι → ℕ)
-    (h : ∀ i ∈ s, P.mem (c i) (f i)) : P.mem (∑ i ∈ s, c i) (∏ i ∈ s, f i) := by
-  classical
-  induction s using Finset.induction_on with
-  | empty => simpa using P.mem_one
-  | insert a s ha ih =>
-      rw [Finset.prod_insert ha, Finset.sum_insert ha]
-      exact P.mem_mul (h a (Finset.mem_insert_self a s))
-        (ih fun i hi => h i (Finset.mem_insert_of_mem hi))
-
-/-- **THE WEIGHTED DETERMINANT BOUND, FILTRATION FORM.** If every entry of column
-`j` lies in filtration level `c j`, the determinant lies in level `∑ j, c j`. -/
-theorem mem_det (P : StepanovFilt S) {n : Type*} [Fintype n] [DecidableEq n]
-    (M : Matrix n n S) (c : n → ℕ) (h : ∀ i j, P.mem (c j) (M i j)) :
-    P.mem (∑ j, c j) M.det := by
-  rw [Matrix.det_apply]
-  refine P.mem_sum _ _ _ fun σ _ => ?_
-  have hp : P.mem (∑ j, c j) (∏ i, M (σ i) i) :=
-    P.mem_prod _ _ _ fun i _ => h (σ i) i
-  rcases Int.units_eq_one_or (Equiv.Perm.sign σ) with hs | hs <;> rw [hs]
-  · simpa using hp
-  · simpa using P.mem_neg hp
-
-/-- Extend a filtration to the polynomial ring, coefficientwise. -/
-def lift (P : StepanovFilt S) : StepanovFilt (Polynomial S) where
-  mem B u := ∀ i, P.mem B (u.coeff i)
-  mem_zero B i := by simpa using P.mem_zero B
-  mem_one i := by
-    rw [Polynomial.coeff_one]
-    split
-    · simpa using P.mem_one
-    · exact P.mem_zero 0
-  mem_add hx hy i := by rw [Polynomial.coeff_add]; exact P.mem_add (hx i) (hy i)
-  mem_neg hx i := by rw [Polynomial.coeff_neg]; exact P.mem_neg (hx i)
-  mem_mul hx hy i := by
-    rw [Polynomial.coeff_mul]
-    exact P.mem_sum _ _ _ fun ab _ => P.mem_mul (hx ab.1) (hy ab.2)
-  mem_mono h hx i := P.mem_mono h (hx i)
-
-theorem lift_mem_monomial (P : StepanovFilt S) {B n : ℕ} {a : S} (h : P.mem B a) :
-    P.lift.mem B (Polynomial.monomial n a) := by
-  intro i
-  rw [Polynomial.coeff_monomial]
-  split
-  · exact h
-  · exact P.mem_zero B
-
-end StepanovFilt
-
-/-- **THE TOTAL-DEGREE FILTRATION on `R[X][Y]`**: `mem B u` says every monomial
-`X^a Y^b` occurring in `u` has `a + b ≤ B`. This is exactly the weighted-degree
-hypothesis shape that `stepanov_natDegree_resultant_le` consumes, and it is the
-right notion here because (a) it is multiplicative, and (b) it is preserved by
-division by a monic `F` whose total degree equals its `Y`-degree — which is
-Schmidt's (2.3) `deg g_i^{(t)} ≤ t − 1 + i`, obtained for free. -/
-def stepanovTotalFilt (R : Type*) [CommRing R] : StepanovFilt (Polynomial (Polynomial R)) where
-  mem B u := ∀ i, u.coeff i = 0 ∨ (u.coeff i).natDegree + i ≤ B
-  mem_zero B i := Or.inl (by simp)
-  mem_one i := by
-    by_cases h : i = 0
-    · subst h; right; simp
-    · left; simp [Polynomial.coeff_one, h]
-  mem_add hx hy i := by
-    rw [Polynomial.coeff_add]
-    rcases hx i with h1 | h1 <;> rcases hy i with h2 | h2
-    · left; rw [h1, h2, add_zero]
-    · right; rw [h1, zero_add]; exact h2
-    · right; rw [h2, add_zero]; exact h1
-    · right
-      exact le_trans (Nat.add_le_add_right (Polynomial.natDegree_add_le _ _) i) (by omega)
-  mem_neg hx i := by
-    rw [Polynomial.coeff_neg]
-    rcases hx i with h | h
-    · left; rw [h, neg_zero]
-    · right; rwa [Polynomial.natDegree_neg]
-  mem_mul {B₁ B₂ x y} hx hy i := by
-    rw [Polynomial.coeff_mul]
-    by_cases hall : ∀ ab ∈ Finset.antidiagonal i, x.coeff ab.1 * y.coeff ab.2 = 0
-    · exact Or.inl (Finset.sum_eq_zero hall)
-    · right
-      push Not at hall
-      obtain ⟨ab, hab, hne⟩ := hall
-      have hab' : ab.1 + ab.2 = i := Finset.mem_antidiagonal.mp hab
-      have hi : i ≤ B₁ + B₂ := by
-        rcases hx ab.1 with h1 | h1
-        · exact absurd (by rw [h1, zero_mul]) hne
-        rcases hy ab.2 with h2 | h2
-        · exact absurd (by rw [h2, mul_zero]) hne
-        omega
-      have hbd : ∀ ab' ∈ Finset.antidiagonal i,
-          (x.coeff ab'.1 * y.coeff ab'.2).natDegree ≤ B₁ + B₂ - i := by
-        intro ab' hab'
-        have hs : ab'.1 + ab'.2 = i := Finset.mem_antidiagonal.mp hab'
-        rcases hx ab'.1 with h1 | h1
-        · simp [h1]
-        rcases hy ab'.2 with h2 | h2
-        · simp [h2]
-        refine le_trans Polynomial.natDegree_mul_le ?_
-        omega
-      have := Polynomial.natDegree_sum_le_of_forall_le _ _ hbd
-      omega
-  mem_mono h hx i := by
-    rcases hx i with h1 | h1
-    · exact Or.inl h1
-    · exact Or.inr (le_trans h1 h)
-
-theorem stepanovTotalFilt_mem_monomial {R : Type*} [CommRing R] {B i : ℕ} {a : Polynomial R}
-    (h : a = 0 ∨ a.natDegree + i ≤ B) :
-    (stepanovTotalFilt R).mem B (Polynomial.monomial i a) := by
-  intro i'
-  rw [Polynomial.coeff_monomial]
-  split
-  · rename_i he; subst he; exact h
-  · left; rfl
-
-
-theorem StepanovFilt.lift_mem_iff {S : Type*} [CommRing S] (P : StepanovFilt S) (B : ℕ)
-    (u : Polynomial S) : P.lift.mem B u ↔ ∀ i, P.mem B (u.coeff i) := Iff.rfl
-
-theorem stepanovTotalFilt_mem_iff {R : Type*} [CommRing R] (B : ℕ)
-    (u : Polynomial (Polynomial R)) :
-    (stepanovTotalFilt R).mem B u ↔ ∀ i, u.coeff i = 0 ∨ (u.coeff i).natDegree + i ≤ B := Iff.rfl
-
-/-- **BASE-`p` SEPARATION** — this replaces Schmidt's `X = X₁ + X₂` substitution.
-If `∑_{j<N} g_j(X) X^{pj} = 0` with every `deg g_j < p`, then every `g_j = 0`:
-the monomial `X^{pj+v}`, `v < p`, receives a contribution from `g_{j'}` only when
-`j' = j`, by uniqueness of the base-`p` expansion of an exponent. -/
-theorem stepanov_eq_zero_of_sum_mul_X_pow {R : Type*} [CommRing R] {p N : ℕ} (hp : 0 < p)
-    (g : ℕ → Polynomial R) (hdeg : ∀ j, g j = 0 ∨ (g j).natDegree < p)
-    (hsum : ∑ j ∈ Finset.range N, g j * Polynomial.X ^ (p * j) = 0)
-    (j₀ : ℕ) (hj₀ : j₀ < N) : g j₀ = 0 := by
-  classical
-  have hd0 : (g j₀).natDegree < p := by
-    rcases hdeg j₀ with h | h
-    · rw [h, Polynomial.natDegree_zero]; exact hp
-    · exact h
-  refine Polynomial.ext fun v => ?_
-  rw [Polynomial.coeff_zero]
-  by_cases hv : v < p
-  · have hc := congrArg (fun t => Polynomial.coeff t (p * j₀ + v)) hsum
-    simp only [Polynomial.finsetSum_coeff, Polynomial.coeff_zero] at hc
-    rw [Finset.sum_eq_single j₀] at hc
-    · rwa [Polynomial.coeff_mul_X_pow', if_pos (by omega), Nat.add_sub_cancel_left] at hc
-    · intro b _ hbne
-      rcases Nat.lt_or_ge b j₀ with hblt | hbge
-      · have hmul : p * b + p ≤ p * j₀ := by
-          have h1 : p * (b + 1) ≤ p * j₀ := Nat.mul_le_mul_left p (by omega)
-          rwa [Nat.mul_succ] at h1
-        rw [Polynomial.coeff_mul_X_pow', if_pos (by omega)]
-        rcases hdeg b with h | h
-        · rw [h, Polynomial.coeff_zero]
-        · exact Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)
-      · have hmul : p * j₀ + p ≤ p * b := by
-          have h1 : p * (j₀ + 1) ≤ p * b := Nat.mul_le_mul_left p (by omega)
-          rwa [Nat.mul_succ] at h1
-        rw [Polynomial.coeff_mul_X_pow', if_neg (by omega)]
-    · intro h; exact absurd (Finset.mem_range.mpr hj₀) h
-  · exact Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)
-
-/-- **DIVISION BY A MONIC `F` OF TOTAL DEGREE `d` PRESERVES THE TOTAL-DEGREE
-FILTRATION** — this is Schmidt's (2.3), `deg g_i^{(t)} ≤ t − 1 + i`, obtained for
-free from the filtration being multiplicative: the step of the division algorithm
-subtracts `monomial (m−d) (u.coeff m) * F`, whose total degree is
-`(deg u_m) + (m − d) + d = (deg u_m) + m ≤ B`. -/
-theorem stepanov_exists_wd_rem {R : Type*} [CommRing R] (d : ℕ) (hd : 0 < d)
-    (F : Polynomial (Polynomial R)) (hmon : F.Monic) (hFd : F.natDegree = d)
-    (hFw : (stepanovTotalFilt R).mem d F) (B : ℕ) (n : ℕ) :
-    ∀ u : Polynomial (Polynomial R), u.natDegree ≤ n → (stepanovTotalFilt R).mem B u →
-      ∃ r, F ∣ (u - r) ∧ r.natDegree < d ∧ (stepanovTotalFilt R).mem B r := by
-  induction n with
-  | zero => exact fun u hun huw => ⟨u, by simp, by omega, huw⟩
-  | succ n ih =>
-      intro u hun huw
-      by_cases hlt : u.natDegree < d
-      · exact ⟨u, by simp, hlt, huw⟩
-      push Not at hlt
-      have hune : u ≠ 0 := by
-        intro h
-        rw [h, Polynomial.natDegree_zero] at hlt
-        omega
-      have hlead : u.coeff u.natDegree ≠ 0 := by
-        rw [← Polynomial.leadingCoeff]
-        exact Polynomial.leadingCoeff_ne_zero.mpr hune
-      have hwcoeff : ∀ i, (Polynomial.monomial (u.natDegree - d) (u.coeff u.natDegree) * F).coeff i
-          = if u.natDegree - d ≤ i then
-              u.coeff u.natDegree * F.coeff (i - (u.natDegree - d)) else 0 := by
-        intro i
-        have hrw : Polynomial.monomial (u.natDegree - d) (u.coeff u.natDegree) * F
-            = (Polynomial.C (u.coeff u.natDegree) * F) * Polynomial.X ^ (u.natDegree - d) := by
-          rw [← Polynomial.C_mul_X_pow_eq_monomial]; ring
-        rw [hrw, Polynomial.coeff_mul_X_pow']
-        split
-        · rw [Polynomial.coeff_C_mul]
-        · rfl
-      have hvz : ∀ i, u.natDegree ≤ i →
-          (u - Polynomial.monomial (u.natDegree - d) (u.coeff u.natDegree) * F).coeff i = 0 := by
-        intro i hi
-        rw [Polynomial.coeff_sub, hwcoeff, if_pos (by omega)]
-        rcases eq_or_lt_of_le hi with he | hlt'
-        · rw [← he, show u.natDegree - (u.natDegree - d) = d by omega, ← hFd,
-            hmon.coeff_natDegree, mul_one, sub_self]
-        · have hu0 : u.coeff i = 0 := Polynomial.coeff_eq_zero_of_natDegree_lt hlt'
-          have hF0 : F.coeff (i - (u.natDegree - d)) = 0 :=
-            Polynomial.coeff_eq_zero_of_natDegree_lt (by rw [hFd]; omega)
-          rw [hu0, hF0, mul_zero, sub_zero]
-      have hvdeg : (u - Polynomial.monomial (u.natDegree - d) (u.coeff u.natDegree) * F).natDegree
-          ≤ n := by
-        by_cases hz : u - Polynomial.monomial (u.natDegree - d) (u.coeff u.natDegree) * F = 0
-        · rw [hz, Polynomial.natDegree_zero]; omega
-        · have h1 : (u - Polynomial.monomial (u.natDegree - d) (u.coeff u.natDegree)
-              * F).natDegree < u.natDegree := by
-            by_contra hcon
-            push Not at hcon
-            exact (Polynomial.leadingCoeff_ne_zero.mpr hz)
-              (by rw [Polynomial.leadingCoeff]; exact hvz _ hcon)
-          omega
-      have hww : (stepanovTotalFilt R).mem B
-          (Polynomial.monomial (u.natDegree - d) (u.coeff u.natDegree) * F) := by
-        have h1 : (stepanovTotalFilt R).mem
-            ((u.coeff u.natDegree).natDegree + (u.natDegree - d))
-            (Polynomial.monomial (u.natDegree - d) (u.coeff u.natDegree)) :=
-          stepanovTotalFilt_mem_monomial (Or.inr le_rfl)
-        refine (stepanovTotalFilt R).mem_mono ?_ ((stepanovTotalFilt R).mem_mul h1 hFw)
-        rcases huw u.natDegree with h | h
-        · exact absurd h hlead
-        · omega
-      obtain ⟨r, hr1, hr2, hr3⟩ := ih _ hvdeg ((stepanovTotalFilt R).mem_sub huw hww)
-      refine ⟨r, ?_, hr2, hr3⟩
-      have hsplit : u - r = Polynomial.monomial (u.natDegree - d) (u.coeff u.natDegree) * F
-          + ((u - Polynomial.monomial (u.natDegree - d) (u.coeff u.natDegree) * F) - r) := by
-        ring
-      rw [hsplit]
-      exact dvd_add ⟨Polynomial.monomial (u.natDegree - d) (u.coeff u.natDegree), by ring⟩ hr1
-
 theorem stepanov_phi_eq (p : ℕ) :
     (Polynomial.eval₂RingHom
       (((Polynomial.C : Polynomial (Polynomial (ZMod p)) →+*
@@ -16988,254 +17260,6 @@ theorem stepanov_not_dvd_stepanovAnsatz (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact
     simpa [Polynomial.finsetSum_coeff, Polynomial.coeff_monomial, Finset.sum_ite_eq',
       Finset.mem_range] using h4
   exact h5 (by omega)
-
-/-! #### The derivation calculus behind Schmidt §3 (PROVEN 2026-07-27)
-
-Six small lemmas, all of them about `stepanovDerivX`/`stepanovJet` and none of
-them about the curve, which together reduce `stepanov_pow_X_sub_C_dvd_of_jet_vanishing`
-to a single induction. The route they implement is NOT the one the leaf's
-docstring anticipated: **no power series, no Hensel lift and no branch are
-needed.** See the FOOTNOTE on that theorem. -/
-
-/-- `stepanovDerivX` differentiates the coefficient polynomials one by one. -/
-theorem stepanovDerivX_monomial {R : Type*} [CommRing R] (n : ℕ) (c : Polynomial R) :
-    stepanovDerivX (Polynomial.monomial n c) = Polynomial.monomial n (Polynomial.derivative c) := by
-  rw [stepanovDerivX, Polynomial.sum_monomial_index _ _ (by simp),
-    Polynomial.C_mul_X_pow_eq_monomial]
-
-theorem stepanovDerivX_add {R : Type*} [CommRing R] (b₁ b₂ : Polynomial (Polynomial R)) :
-    stepanovDerivX (b₁ + b₂) = stepanovDerivX b₁ + stepanovDerivX b₂ := by
-  rw [stepanovDerivX, stepanovDerivX, stepanovDerivX]
-  refine Polynomial.sum_add_index _ _ _ (by simp) ?_
-  intro i c₁ c₂
-  rw [Polynomial.derivative_add, map_add, add_mul]
-
-/-- **THE CHAIN RULE** `d/dX [b(X, η(X))] = b_X(X, η) + b_Y(X, η)·η′`, for a
-POLYNOMIAL section `η` of the `Y`-coordinate. Everything stays inside `S[X]`;
-this is what makes the whole of Schmidt §3 available without leaving polynomials. -/
-theorem stepanov_derivative_eval₂ {R S : Type*} [CommRing R] [CommRing S]
-    (ι : R →+* S) (η : Polynomial S) (b : Polynomial (Polynomial R)) :
-    Polynomial.derivative (Polynomial.eval₂ (Polynomial.mapRingHom ι) η b)
-      = Polynomial.eval₂ (Polynomial.mapRingHom ι) η (stepanovDerivX b)
-        + Polynomial.eval₂ (Polynomial.mapRingHom ι) η (Polynomial.derivative b)
-            * Polynomial.derivative η := by
-  induction b using Polynomial.induction_on' with
-  | add p q hp hq =>
-      rw [stepanovDerivX_add, Polynomial.derivative_add, Polynomial.eval₂_add,
-        Polynomial.eval₂_add, Polynomial.eval₂_add, Polynomial.derivative_add, hp, hq]
-      ring
-  | monomial n c =>
-      rw [stepanovDerivX_monomial, Polynomial.derivative_monomial, Polynomial.eval₂_monomial,
-        Polynomial.eval₂_monomial, Polynomial.eval₂_monomial, Polynomial.derivative_mul,
-        Polynomial.derivative_pow]
-      simp only [Polynomial.coe_mapRingHom, Polynomial.derivative_map, Polynomial.map_mul,
-        Polynomial.map_natCast, Polynomial.C_eq_natCast]
-      ring
-
-/-- **THE CLEARED DERIVATION.** Multiplying the chain rule by `F_Y(X, η)` removes
-`η′` in favour of `d/dX [F(X, η)]`: writing `𝒟b := F_Y ∂_X b − F_X ∂_Y b` for the
-polynomial derivation Schmidt's `D` is built from,
-
-  `F_Y(X,η) · (b(X,η))′ = (𝒟b)(X, η) + (∂_Y b)(X, η) · (F(X,η))′`.
-
-When `η` is an exact root the last term drops and this is `D`; in general it is
-the exact error term, and it is the ONLY place the hypothesis
-`(X − x)^M ∣ F(X, η)` is ever used. -/
-theorem stepanov_key_congr {R K : Type*} [CommRing R] [CommRing K]
-    (ι : R →+* K) (η : Polynomial K) (F b : Polynomial (Polynomial R)) :
-    Polynomial.eval₂ (Polynomial.mapRingHom ι) η (Polynomial.derivative F)
-        * Polynomial.derivative (Polynomial.eval₂ (Polynomial.mapRingHom ι) η b)
-      = Polynomial.eval₂ (Polynomial.mapRingHom ι) η
-          (Polynomial.derivative F * stepanovDerivX b - stepanovDerivX F * Polynomial.derivative b)
-        + Polynomial.eval₂ (Polynomial.mapRingHom ι) η (Polynomial.derivative b)
-            * Polynomial.derivative (Polynomial.eval₂ (Polynomial.mapRingHom ι) η F) := by
-  rw [stepanov_derivative_eval₂ ι η b, stepanov_derivative_eval₂ ι η F,
-    Polynomial.eval₂_sub, Polynomial.eval₂_mul, Polynomial.eval₂_mul]
-  ring
-
-/-- Differentiating drops the order of vanishing by at most one. -/
-theorem stepanov_pow_dvd_derivative {K : Type*} [CommRing K] (t h : Polynomial K) (N : ℕ)
-    (hdvd : t ^ (N + 1) ∣ h) : t ^ N ∣ Polynomial.derivative h := by
-  obtain ⟨s, rfl⟩ := hdvd
-  rw [Polynomial.derivative_mul, Polynomial.derivative_pow_succ]
-  exact dvd_add ⟨Polynomial.C ((N : K) + 1) * Polynomial.derivative t * s, by ring⟩
-    ⟨t * Polynomial.derivative s, by ring⟩
-
-/-- `stepanovEvalPoint`, which evaluates `(x, y)` coordinatewise, is the value at
-`x` of the one-variable polynomial `b(X, η(X))` whenever `y = η(x)`. -/
-theorem stepanovEvalPoint_eq_eval_eval₂ {R K : Type*} [CommRing R] [CommRing K]
-    (ι : R →+* K) (b : Polynomial (Polynomial R)) (x : R) (η : Polynomial K) :
-    (Polynomial.eval₂ (Polynomial.mapRingHom ι) η b).eval (ι x)
-      = stepanovEvalPoint ι b x (η.eval (ι x)) := by
-  rw [show (Polynomial.eval₂ (Polynomial.mapRingHom ι) η b).eval (ι x)
-      = Polynomial.evalRingHom (ι x) (Polynomial.eval₂ (Polynomial.mapRingHom ι) η b) from rfl,
-    Polynomial.hom_eval₂, stepanovEvalPoint, Polynomial.eval_map]
-  congr 1
-  refine RingHom.ext fun q => ?_
-  simp only [RingHom.comp_apply, Polynomial.coe_mapRingHom, Polynomial.coe_evalRingHom,
-    Polynomial.eval_map, Polynomial.eval₂_at_apply]
-
-/-- **SCHMIDT §3, THE WHOLE CONTENT**, over an arbitrary field and with no
-hypothesis whatever on `F` beyond the two that are used: that `F_Y(x, η(x)) ≠ 0`
-(`hunit` — simplicity of the root) and that `η` is an approximate root to order
-`M` (`hη`).
-
-The proof is one induction. Put `t = X − ι x`, `Φ b = b(X, η(X))`,
-`e = Φ(F_Y)`, `u = Φ F`, and `c_ν = e^{2(M−ν)}·Φ(a^{(ν)})`. Then
-
-* `t^{M−1} ∣ u′`, because `t^M ∣ u`;
-* `e·(c_ν′ − c_{ν+1}) = u′ · (…)` — a pure polynomial identity in the values of
-  `Φ` on the six atoms occurring in `stepanovJet`'s recursion, obtained by
-  applying `stepanov_key_congr` at `b = F_Y` and at `b = a^{(ν)}`. Since `t` is
-  prime and `t ∤ e`, this gives `t^{M−1} ∣ c_ν′ − c_{ν+1}`;
-* hence, by induction, `t^{M−ν} ∣ (d/dX)^ν(e^{2M}·Φ a) − c_ν` for `ν ≤ M`.
-
-At `ν < M` the right-hand side vanishes at `ι x` because `hjet` kills
-`Φ(a^{(ν)})` there, so all `M` first Taylor coefficients of `e^{2M}·Φ a` vanish
-— `hfact` is what converts the ordinary iterated derivative into the Hasse
-derivative that `pow_X_sub_C_dvd_iff_hasseDeriv` wants — and `t ∤ e` strips the
-`e^{2M}`.
-
-`hfact` is `∀ j < M, j ! ≠ 0 in K`; at the call site it is `M < p`. -/
-theorem stepanov_jet_dvd_core {R : Type*} [CommRing R] {K : Type*} [Field K]
-    (ι : R →+* K) (M : ℕ) (hfact : ∀ j < M, ((Nat.factorial j : ℕ) : K) ≠ 0)
-    (F a : Polynomial (Polynomial R)) (x : R) (η : Polynomial K)
-    (hunit : (Polynomial.eval₂ (Polynomial.mapRingHom ι) η
-      (Polynomial.derivative F)).eval (ι x) ≠ 0)
-    (hη : (Polynomial.X - Polynomial.C (ι x)) ^ M ∣
-      Polynomial.eval₂ (Polynomial.mapRingHom ι) η F)
-    (hjet : ∀ ℓ < M,
-      (Polynomial.eval₂ (Polynomial.mapRingHom ι) η (stepanovJet F M ℓ a)).eval (ι x) = 0) :
-    (Polynomial.X - Polynomial.C (ι x)) ^ M ∣
-      Polynomial.eval₂ (Polynomial.mapRingHom ι) η a := by
-  classical
-  rcases Nat.eq_zero_or_pos M with rfl | hM
-  · simp
-  have hΦeq : ∀ b : Polynomial (Polynomial R),
-      Polynomial.eval₂ (Polynomial.mapRingHom ι) η b
-        = Polynomial.eval₂RingHom (Polynomial.mapRingHom ι) η b := fun _ => rfl
-  have hkey0 : ∀ b : Polynomial (Polynomial R),
-      Polynomial.eval₂RingHom (Polynomial.mapRingHom ι) η (Polynomial.derivative F)
-          * Polynomial.derivative
-              (Polynomial.eval₂RingHom (Polynomial.mapRingHom ι) η b)
-        = Polynomial.eval₂RingHom (Polynomial.mapRingHom ι) η
-            (Polynomial.derivative F * stepanovDerivX b
-              - stepanovDerivX F * Polynomial.derivative b)
-          + Polynomial.eval₂RingHom (Polynomial.mapRingHom ι) η (Polynomial.derivative b)
-              * Polynomial.derivative
-                  (Polynomial.eval₂RingHom (Polynomial.mapRingHom ι) η F) := by
-    intro b
-    simpa only [hΦeq] using stepanov_key_congr ι η F b
-  simp only [hΦeq] at hunit hη hjet ⊢
-  set Φ : Polynomial (Polynomial R) →+* Polynomial K :=
-    Polynomial.eval₂RingHom (Polynomial.mapRingHom ι) η with hΦdef
-  set t : Polynomial K := Polynomial.X - Polynomial.C (ι x) with htdef
-  set e : Polynomial K := Φ (Polynomial.derivative F) with hedef
-  set u : Polynomial K := Φ F with hudef
-  have htprime : Prime t := Polynomial.prime_X_sub_C (ι x)
-  have hte : ¬ t ∣ e := by
-    intro h
-    rw [htdef] at h
-    exact hunit (Polynomial.dvd_iff_isRoot.mp h)
-  have hu' : t ^ (M - 1) ∣ Polynomial.derivative u := by
-    refine stepanov_pow_dvd_derivative t u (M - 1) ?_
-    rw [show M - 1 + 1 = M by omega]
-    exact hη
-  have hmain : ∀ ν, ν ≤ M →
-      t ^ (M - ν) ∣ (Polynomial.derivative^[ν]) (e ^ (2 * M) * Φ a)
-        - e ^ (2 * (M - ν)) * Φ (stepanovJet F M ν a) := by
-    intro ν
-    induction ν with
-    | zero => intro _; simp [stepanovJet]
-    | succ ν ih =>
-        intro hν
-        have hν' : ν ≤ M := by omega
-        obtain ⟨s', hs'⟩ : ∃ s', M - ν = s' + 1 := ⟨M - ν - 1, by omega⟩
-        have hs'' : M - (ν + 1) = s' := by omega
-        have h1 : t ^ s' ∣ Polynomial.derivative
-            ((Polynomial.derivative^[ν]) (e ^ (2 * M) * Φ a))
-              - Polynomial.derivative (e ^ (2 * (s' + 1)) * Φ (stepanovJet F M ν a)) := by
-          have hih := ih hν'
-          rw [hs'] at hih
-          have h1' := stepanov_pow_dvd_derivative t _ s' hih
-          rwa [Polynomial.derivative_sub] at h1'
-        have h2 : t ^ s' ∣ Polynomial.derivative (e ^ (2 * (s' + 1)) * Φ (stepanovJet F M ν a))
-            - e ^ (2 * s') * Φ (stepanovJet F M (ν + 1) a) := by
-          have hjrec : stepanovJet F M (ν + 1) a
-              = Polynomial.C (Polynomial.C ((2 * M - 2 * ν : ℕ) : R)) *
-                  (stepanovDerivX (Polynomial.derivative F) * Polynomial.derivative F -
-                    Polynomial.derivative (Polynomial.derivative F) * stepanovDerivX F) *
-                  stepanovJet F M ν a
-                + Polynomial.derivative F ^ 2 * stepanovDerivX (stepanovJet F M ν a)
-                - Polynomial.derivative F * stepanovDerivX F *
-                    Polynomial.derivative (stepanovJet F M ν a) := rfl
-          have hnat : (2 * M - 2 * ν : ℕ) = 2 * s' + 2 := by omega
-          have hcast : Φ (Polynomial.C (Polynomial.C ((2 * M - 2 * ν : ℕ) : R)))
-              = Polynomial.C ((2 * s' + 2 : ℕ) : K) := by
-            rw [hnat, hΦdef]
-            simp [map_ofNat]
-          have hderiv : Polynomial.derivative (e ^ (2 * (s' + 1)) * Φ (stepanovJet F M ν a))
-              = Polynomial.C ((2 * s' + 2 : ℕ) : K) * e ^ (2 * s' + 1)
-                  * Polynomial.derivative e * Φ (stepanovJet F M ν a)
-                + e ^ (2 * s' + 2) * Polynomial.derivative (Φ (stepanovJet F M ν a)) := by
-            rw [show 2 * (s' + 1) = 2 * s' + 1 + 1 from by ring, Polynomial.derivative_mul,
-              Polynomial.derivative_pow_succ]
-            have hCC : Polynomial.C (((2 * s' + 1 : ℕ) : K) + 1)
-                = Polynomial.C ((2 * s' + 2 : ℕ) : K) := by
-              congr 1
-              push_cast
-              ring
-            rw [hCC]
-          have hmul : e * (Polynomial.derivative (e ^ (2 * (s' + 1)) * Φ (stepanovJet F M ν a))
-                - e ^ (2 * s') * Φ (stepanovJet F M (ν + 1) a))
-              = Polynomial.derivative u *
-                  (Polynomial.C ((2 * s' + 2 : ℕ) : K) * e ^ (2 * s' + 1)
-                      * Φ (Polynomial.derivative (Polynomial.derivative F))
-                      * Φ (stepanovJet F M ν a)
-                    + e ^ (2 * s' + 2)
-                      * Φ (Polynomial.derivative (stepanovJet F M ν a))) := by
-            rw [hderiv, hjrec]
-            simp only [map_add, map_sub, map_mul, map_pow, hcast]
-            have k1 := hkey0 (Polynomial.derivative F)
-            have k2 := hkey0 (stepanovJet F M ν a)
-            simp only [map_sub, map_mul, ← hedef] at k1 k2
-            linear_combination (Polynomial.C ((2 * s' + 2 : ℕ) : K) * e ^ (2 * s' + 1)
-                * Φ (stepanovJet F M ν a)) * k1 + (e ^ (2 * s' + 2)) * k2
-          have hdvdM : t ^ (M - 1) ∣ e * (Polynomial.derivative
-              (e ^ (2 * (s' + 1)) * Φ (stepanovJet F M ν a))
-                - e ^ (2 * s') * Φ (stepanovJet F M (ν + 1) a)) := by
-            rw [hmul]
-            exact Dvd.dvd.mul_right hu' _
-          have hcancel := htprime.pow_dvd_of_dvd_mul_left (M - 1) hte hdvdM
-          exact dvd_trans (pow_dvd_pow t (by omega)) hcancel
-        rw [Function.iterate_succ_apply', hs'']
-        have h3 := dvd_add h1 h2
-        convert h3 using 1
-        ring
-  have hvanish : ∀ j < M, ((Polynomial.derivative^[j]) (e ^ (2 * M) * Φ a)).eval (ι x) = 0 := by
-    intro j hj
-    have h := hmain j (le_of_lt hj)
-    have hdvd1 : t ∣ (Polynomial.derivative^[j]) (e ^ (2 * M) * Φ a)
-        - e ^ (2 * (M - j)) * Φ (stepanovJet F M j a) :=
-      dvd_trans (by simpa using pow_dvd_pow t (show 1 ≤ M - j by omega)) h
-    rw [htdef] at hdvd1
-    have hroot := Polynomial.dvd_iff_isRoot.mp hdvd1
-    rw [Polynomial.IsRoot, Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_pow,
-      hjet j hj, mul_zero, sub_zero] at hroot
-    exact hroot
-  have hfinal : t ^ M ∣ e ^ (2 * M) * Φ a := by
-    rw [htdef, pow_X_sub_C_dvd_iff_hasseDeriv]
-    intro j hj
-    have hcf := congrFun (Polynomial.factorial_smul_hasseDeriv (R := K) (k := j))
-      (e ^ (2 * M) * Φ a)
-    rw [LinearMap.smul_apply, nsmul_eq_mul] at hcf
-    have h1 : ((Nat.factorial j : ℕ) : K)
-        * (Polynomial.hasseDeriv j (e ^ (2 * M) * Φ a)).eval (ι x) = 0 := by
-      have h2 := congrArg (Polynomial.eval (ι x)) hcf
-      rw [Polynomial.eval_mul, Polynomial.eval_natCast, hvanish j hj] at h2
-      exact h2
-    exact (mul_eq_zero.mp h1).resolve_left (hfact j hj)
-  exact htprime.pow_dvd_of_dvd_mul_left M (fun h => hte (htprime.dvd_of_dvd_pow h)) hfinal
 
 /-- **THE JET/BRANCH BRIDGE** (PROVEN 2026-07-27 over `stepanov_jet_dvd_core`;
 cut 2026-07-27 out of `exists_stepanovAuxiliaryFunction`) — Schmidt Chapter III §3
