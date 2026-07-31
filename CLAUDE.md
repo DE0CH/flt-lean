@@ -1187,3 +1187,47 @@ same edit would have traded one closed leaf for three re-opened ones. Re-derive 
 accounting against the release, never against its base; and when you decline for this reason, queue
 the follow-up, because the work usually got CHEAPER (here: generalise the PROOFS, and both targets
 close with no new sorry).
+
+## THE CONSTANT SHEAF `𝒦_X` IS FREE AT THIS PIN — it is `𝒪` pushed forward along the generic point
+
+(2026-07-31.) There is no divisor theory at `a3364fa` — no `𝒪(D)`, no Cartier divisors, no
+sheaf of total quotient rings — and three separate audits priced "put this invertible sheaf
+inside `𝒦_X`" as new theory on that basis. It is not. For irreducible `X`,
+
+    g  := X.fromSpecStalk (genericPoint X) : Spec X.functionField ⟶ X
+    𝒦_X := (Scheme.Modules.pushforward g).obj (modUnit _)
+
+has `Γ(𝒦_X, U) = Γ(𝒪_{Spec K}, g ⁻¹ᵁ U)`, which is `K` for every nonempty `U` (the preimage is
+the whole one-point space) and `0` for `∅` — the constant sheaf, exactly. The canonical
+`𝒪_X ⟶ 𝒦_X` is the unit of `g^* ⊣ g_*` composed with `modPullbackUnitIso`, i.e. **the same
+three-line shape `sectionIdeal` already used**, and multiplication by `a ∈ K` is `pushforward` of
+the endomorphism `SheafOfModules.unitHomEquiv` attaches to a global section. The whole
+construction elaborated first try. Cost: two imports (`AlgebraicGeometry.FunctionField`,
+`AlgebraicGeometry.Stalk`) and about thirty lines.
+
+**And the finding that made obligation (1) of the `g¹₂` route correction cheap: an audit that
+bundles two properties into one obligation is usually hiding that one of them is FREE and the
+other is ALREADY OWNED.** The obligation read "`sectionIdeal (relSection x)` is INVERTIBLE and is
+a subsheaf of `𝒦_X`". The subsheaf half is `kernel.ι` — `sectionIdeal` is *defined* as a kernel,
+so it is monic into `𝒪_X` with no hypotheses at all, and `𝒪_X ↪ 𝒦_X` needs only integrality;
+neither `IsProper` nor `SmoothOfRelativeDimension 1` enters. The invertible half was already the
+named leaf `isInvertibleSheaf_sectionIdeal`, where those two hypotheses are spent. So the only new
+content was the `𝒦`-dictionary itself. **Before costing a conjunctive obligation, split it and
+price each half separately** — and check whether the second half is already somebody's leaf.
+
+## `Mono (kernel.ι f)` can fail instance search even where `Abelian` is available
+
+Same day, and it cost a cycle. `sectionIdeal σ` is `kernel (…)`, elaborated in one file with
+whatever `HasKernel` instance was found there; a later `mono_comp` in another file reconstructs a
+DEFEQ BUT NOT SYNTACTICALLY EQUAL instance, and the search for `Mono (kernel.ι …)` fails — while
+the abstract `example {C} [Abelian C] (f : X ⟶ Y) : Mono (kernel.ι f) := by infer_instance`
+succeeds, which is what makes it look impossible. Supplying the term via `haveI` does NOT help,
+for the same reason: the `haveI`'s own statement elaborates at the other instantiation.
+
+The fix is to force the instantiation from the goal rather than from a fresh elaboration:
+
+    refine @mono_comp _ _ _ _ _ _ ?_ _ (mono_of_the_second_factor)
+    exact equalizer.ι_mono          -- `?_` is at the goal's own instantiation
+
+General shape: when an instance search fails on a term that came out of another module's `def`,
+stop trying to name the instance and open a hole the goal will instantiate for you.
