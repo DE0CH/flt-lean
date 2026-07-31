@@ -9115,3 +9115,110 @@ worktree's own host, and the failure is `lake: command not found` with `EXIT=127
 which reads like a broken worktree rather than a shell setup. `export
 PATH="$HOME/.elan/bin:$PATH"` first, in every Bash call (shell state does not persist
 between calls).
+
+## AN IMPORT CYCLE IS A WHOLE-PROJECT OUTAGE, AND THE BRANCH THAT CAUSES IT CHECKS THE DIRECT EDGE ONLY
+
+(2026-07-31, release 28, and it cost the first two build rounds.) `flt-lean-389`
+closed a leaf in `ModularCurve/HyperellipticJacobian.lean` by adding
+`import Fermat.FLT.ModularCurve.X0`, under a comment that said in as many words
+*"there is no cycle, since `X0.lean` does not mention"* this file.  The direct edge
+really is absent.  The cycle is two hops long:
+
+    X0  -->  FreyCurve/IsogenySignature  -->  HyperellipticJacobian  -->  X0
+
+and both of the other edges are years-old and pre-existing.  The result is not a
+red module: `lake build` fails on the ROOT target with `build cycle detected` and
+**nothing in the project builds at all**, which reads like a catastrophically
+broken tree rather than like one bad import line.
+
+Three things follow, and the third is the one worth institutionalising.
+
+* **Any import you ADD must be checked against the transitive closure, not the
+  direct edge.**  Ten lines of Python, and it must ASSERT that every visited
+  module's file exists — a swallowed `FileNotFoundError` truncates the walk and
+  manufactures exactly the "incomparable, no cycle" answer you were hoping for.
+* **A cycle-breaking hoist should go into a NEW MODULE, not into the destination
+  the offending comment names.**  `flt-lean-389`'s note prescribed
+  `Modularity/AbelianSchemeIsogeny.lean`, which is right architecturally and
+  expensive in practice: `X0.lean` `public import`s it, so adding one import there
+  rebuilds the largest cone in the tree.  A new module rebuilds only its own
+  consumers, and it cannot conflict with anything.  Move the declarations
+  VERBATIM with their docstrings; the only edit should be spelling out any
+  `abbrev` (here `SpecQ`) that is declared in the module you are moving OUT of.
+  An `abbrev` is reducible, so every existing call site elaborates unchanged and
+  no delegation is needed.
+* **The merge worker must run a cycle check as a standing release check**, beside
+  the comment and scope scans.  It costs a second and its failure mode is total.
+
+## semmerge's SCOPE-LINE HOLE HAS THREE SHAPES, AND ONLY ONE OF THEM SAYS "end"
+
+(Same release, four instances in one batch.)  `tools/merge/README.md` already warns
+that `namespace`/`section`/`variable` live in the GLUE between declaration blocks,
+so taking theirs for a block deletes the glue that followed ours.  What it does not
+say is that the three ways this surfaces look nothing like each other:
+
+1. **A lost `end <Name>`** — reported at the END OF THE FILE as
+   `Invalid name after 'end': Expected X, but found Y`, thousands of lines from the
+   damage.  This is the only shape that mentions scopes at all.
+2. **An unclosed `section` whose `variable` stays in scope** — every later
+   declaration silently gains a binder, and the errors are `Function expected at`
+   and `Tactic introN failed` at the USE sites.  In `MoretBailly.lean` one lost
+   `end StepanovDerivationCalculus` produced 39 of these and no scope message
+   until the very last line of the file.
+3. **BOTH sides' closing `end`s kept** — the second half of the file lands OUTSIDE
+   the namespace, so its declarations get the wrong qualified names and consumers
+   report `Unknown identifier` on names `grep` finds.
+
+`scopecheck.py` sees all three, and it earns its 93 baseline false positives: every
+one of the four real wounds this release was in its DELTA against pre-merge merger,
+and two of them were in modules no build has ever REACHED (they sit behind X0), so
+nothing else could have found them.  **Difference against the baseline with the LINE
+NUMBERS NORMALISED AWAY** — most reports move by exactly the number of lines your
+edits inserted, and a naive set-diff calls all of them new.
+
+**Repair direction: restore the missing opener rather than deleting the surviving
+closer.** Deleting an `end` can leave a `variable` in scope past where its author
+intended, which is shape 2 — i.e. the cheap-looking repair is the bug.
+
+## semmerge DOES NOT REORDER: a branch's CONSUMERS can land above merger's PRODUCER
+
+(Same release, `MoretBailly.lean`.)  The README says an added helper can land BELOW
+its consumer.  The mirror happens too and is commoner when the branch RESTRUCTURED
+the file: `flt-lean-294` had `stepanovTotalFilt` at line 14885 and its new
+`stepanov_totalFilt_*` block after it; merger had `stepanovTotalFilt` at 18423.
+semmerge placed the branch's new block next to its merger-side neighbours, i.e. at
+~15500 — **2900 lines above the definition it consumes**.
+
+The symptom is `Function expected at` on `(stepanovTotalFilt R).mem`, which reads as
+an arity bug in a definition that is perfectly correct.  `grep` finds the name, so
+none of the phantom-declaration checks fire.
+
+**Diagnose by comparing the DECLARATION LINE with the first USE line**, and repair by
+computing the MINIMAL producer block: list the declarations below the first use, and
+keep only those actually named above it.  Here that took a 590-line candidate down to
+171 (`StepanovFilt` through `stepanovTotalFilt_mem_monomial`); everything past
+`stepanovTotalFilt_mem_monomial` was needed only by later consumers and could stay.
+Then hoist that block, with the standard receipt — sorted line multiset identical
+before and after, and a token scan showing the block uses none of the declarations it
+jumps over.
+
+## WRITING THE NOTE THAT RECORDS COMMENT DAMAGE CAN REOPEN IT
+
+(Same release, caught by re-running the scan.)  CLAUDE.md already says a comment
+delimiter spelled inside block-comment prose still NESTS.  It bites hardest in the
+one place you are guaranteed to write such prose: the note explaining the repair.
+My first draft of three "orphaned docstring body, reopened" notes contained the
+opener and closer as inline code, which added two levels of nesting per note and
+turned three STRAY reports into an UNCLOSED one.
+
+Name the delimiters in WORDS in any comment about comments, and say in the note that
+you did — the next editor will otherwise "improve" it back.  And re-run the scan
+after every such edit, not just after the repair it documents.
+
+`tools/merge/commentscan.py` (added this release) is the scanner: character-level,
+nesting-aware, and it reports **UNCLOSED and STRAY separately** because the two
+cancel.  `checks.py check-comment` walks LINES and clears a block at the first line
+containing a terminator, so it cannot see either shape — it reported the whole tree
+balanced while four files were wounded.  Run the new one tree-wide, every release,
+before the first build: it is the cheapest check there is and one parse error hides
+every later error in an 84 000-line module.
