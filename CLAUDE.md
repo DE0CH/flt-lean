@@ -682,6 +682,39 @@ Corollary for dispatch: **name the branch as an INSTRUCTION, not as attribution.
 "`flt-lean-311` proved X" in a credit line is not read as "merge `flt-lean-311`";
 three successors fast-forwarded to a `main` without X and found nothing.
 
+**THE UNDERSCORE TELL: on `merger`, read the BINDER LIST, not the body**
+(2026-07-31, and it is one `sed` instead of one build). This development has a
+hard convention — a hypothesis a `sorry` cannot consume is written `_hℓ`, and the
+underscores come OFF when the leaf is proven. So
+
+    git show merger:<file> | grep -n 'theorem <name>' -A6
+
+answers "was this closed while I was being dispatched?" at a glance, and it
+answers a second question no `sorry`-scan asks: **whether the SIGNATURE changed.**
+`exists_isX1Compactification_specialFibre` was still a `sorry` on `main` and
+proven on `merger` — and proven over a *different hypothesis*, the integral model
+carrying `IsX1Compactification` rather than only its generic fibre. A check that
+had only looked for the token `sorry` would have caught the first fact and missed
+the second, which is the one that decides whether your work is a rival cut.
+
+I had already written and VERIFIED GREEN a decomposition of that leaf when the
+check ran. Landing it would have re-opened a closed leaf and conflicted with the
+release; the right move was to revert my own green work. **A green build is not
+evidence that your edit is wanted.**
+
+**And check your payload against `merger` WITHOUT touching your worktree:**
+
+    git merge-tree --write-tree --name-only merger <your-branch>   # prints a tree sha + conflicts
+    git show <that-tree-sha>:<path> > /tmp/merged.lean             # the resolved file, markers and all
+
+This is the cheapest instance of the class-7 check two sections below: strip the
+markers, then grep the RESULT for every name your edit's interface touches. Mine
+was a five-site statement change, and the merged file confirmed all five sites
+landed and that no consumer on `merger`'s 3300 newer lines projects the changed
+clause — a class-7 "clean merge that does not compile" ruled out in seconds, and
+the one conflict located precisely enough to hand the merger a resolution instead
+of a warning. It writes nothing outside the object store.
+
 **The checks are TWO SCRIPTS answering DIFFERENT questions, and both must run**
 (2026-07-29). `own.py` answers *is somebody working on it*; `leafstat.py` answers
 *is it already done*. A dispatch this day named two leaves as "genuinely UNOWNED
@@ -4641,3 +4674,33 @@ already said *"whoever builds class field theory should build it once, in THIS f
 should be checked against the **docstrings of the files that would host that theory**,
 not only against declaration names — the owner of the gap has often already written
 down where the work goes.
+
+## A BLOCKED-LEAF SURVEY IS A HYPOTHESIS, AND ITS *NEGATIVE* CLAIMS ARE THE ONES THAT ROT
+
+(2026-07-31.) A leaf that resists often acquires a docstring survey — "here is what
+blocks this, here is what the tree does not have". Those surveys are worth their
+weight; the one on `exists_commutingHeckeAlbaneseFamilyGamma1` correctly identified
+the blocking object and correctly killed three cheap witnesses. But it also said
+closing the leaf needs "the density statement … plus a separatedness step — and
+neither is in the tree", and **the separatedness step was already in the tree**: it
+is the UNIQUENESS half of the structure's own universal property. Eleven lines,
+verified green in a scratch module the same day.
+
+The pattern generalises past that one leaf. **Universal properties in this
+development are stated with `∃!`** — `IsJacobianOf.universal` is `∃! u, …`, and so
+are its neighbours — and an `∃!` IS a rigidity lemma: two morphisms satisfying the
+same universal datum are equal, for free, no geometry. So **before writing (or
+dispatching at) a rigidity, separatedness, or "morphisms agreeing on points are
+equal" leaf, check whether the object you are working over already carries an `∃!`.**
+The Yoneda-style helper that converts a hypothesis about the representing morphism
+into the universal property's own clause is usually already there too
+(`IsJacobianOf.aj_val`).
+
+The asymmetry is the point, and it is the reusable part: a survey's POSITIVE claims
+("this is what blocks it", "this witness fails because …") are checked by the person
+writing them, because they had to do the work. Its NEGATIVE claims ("the tree does
+not have X") are a `grep` that was not run, and they cost a leaf each when wrong —
+the same failure shape as [Inventory audits understate what exists] and
+[Audits search production, not invariants], now in a third place. Treat "not in the
+tree" in a docstring exactly as CLAUDE.md already tells you to treat "still open,
+owned elsewhere" in a commit message: **a hypothesis to check, never a fact.**
