@@ -63,7 +63,7 @@ open Polynomial
 set_option maxRecDepth 40000
 set_option maxHeartbeats 1000000
 
-namespace Fermat.MazurNonCMFrobenius
+namespace Fermat.MazurNonCMCertificate
 
 /-- `XPow f n a` is `f ∣ X ^ n - a`.  See the module docstring: the wrapper keeps the
 exponent out of unification, and without it nothing here elaborates. -/
@@ -169,6 +169,8 @@ noncomputable def hPolySeventeenB : (ZMod 67)[X] :=
     60*X + 41
 
 end Fermat.MazurNonCMCertificate
+
+namespace Fermat.MazurNonCMFrobenius
 
 /-- Over `ZMod 23` the Frobenius is the substitution `X ↦ X ^ 23`: raising to the `23`rd
 power is LINEAR. This is `Polynomial.map_frobenius_expand` specialised through

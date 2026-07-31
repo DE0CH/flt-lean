@@ -1,5 +1,8 @@
 module
 
+public import Fermat.FLT.Modularity.AbelianSchemeIsogeny
+public import Fermat.FLT.Mathlib.NumberTheory.ProjectiveHeight
+
 /-!
 # The cube model of an abelian scheme's group of rational points
 
@@ -36,9 +39,6 @@ because `SpecQ` is an `abbrev` declared in `X0.lean` and therefore not available
 upstream of it.  `SpecQ` is reducible, so every existing call site in `X0.lean`
 elaborates against these statements unchanged and no delegation is needed.
 -/
-
-public import Fermat.FLT.Modularity.AbelianSchemeIsogeny
-public import Fermat.FLT.Mathlib.NumberTheory.ProjectiveHeight
 
 @[expose] public section
 
