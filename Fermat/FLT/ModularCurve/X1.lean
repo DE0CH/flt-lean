@@ -7934,6 +7934,117 @@ isomorphism with no cusps at all, and that is excluded only because
 `coarse` pins `Y` as the affine curve `Y_1(N)`, which is moduli input
 rather than scheme-theoretic bookkeeping.
 
+**ROUTE, RE-AUDITED 2026-07-31, correcting the two previous reconnaissances.**
+
+*The refutation axis is CLOSED — do not spend a session looking for a junk
+inhabitant.*  The paragraph immediately above is true of `finite_compl` taken
+alone and has twice been read as an invitation to refute the leaf by exhibiting
+a cusp-free model.  There is none.  `coarse.universal` says `Y` is INITIAL among
+the `S`-schemes receiving a natural transformation from `Gamma1Datum N`, and an
+initial object is unique up to unique isomorphism, so `Y` is *the* coarse space
+`Y_1(N)_K` and nothing else; `isOpen`, `isProper`, `smooth` and `connected` then
+exhibit `X` as a smooth compactification of `Y`, which for a smooth curve over a
+field is unique.  So `(X, Y, jY)` is pinned up to isomorphism by `(N, K)`: this
+leaf is a statement about ONE object, not about a family of models, and it
+cannot be refuted model-theoretically.  (What the fields do NOT give is a
+*proof* that `Y` is non-proper — that still needs `Y_1(N)` to be exhibited as an
+affine curve — so the sentence above is right that no cusp can be produced
+without moduli input.  It is the falsity reading of it that is wrong.)
+
+*A cusp does NOT have to be expressible as a `Gamma1Datum`, and the recorded
+blocker that it must be is a false wall.*  It is true that a Néron polygon is
+not a proper smooth group scheme, hence not a `Gamma1Datum`, hence never in the
+image of `coarse.classify`.  That does not close the route, because the cusp is
+not reached by classifying a degenerate object.  It is reached as the SPECIAL
+FIBRE of the classifying point of an honest elliptic curve: a
+`Gamma1Datum N (Spec (CommRingCat.of K⸨X⸩))` gives a point of `Y`, hence of `X`,
+over the field `K⸨X⸩`; `isProper` extends it uniquely over the discrete
+valuation ring `K⟦X⟧`; and evaluating at `X = 0` gives a `K`-rational point of
+`X`, which is a cusp exactly when the family degenerates.  `isProper` is the
+field of `IsX1Compactification` that the whole cusp subsection leaves unused,
+and this is what it is for.
+
+Every ingredient of that step is present at this pin, checked 2026-07-31:
+`AlgebraicGeometry.IsProper.eq_valuativeCriterion` and `ValuativeCommSq`
+(`Mathlib/AlgebraicGeometry/ValuativeCriterion.lean`), `IsDiscreteValuationRing
+K⟦X⟧` (`Mathlib/RingTheory/PowerSeries/Inverse.lean`) and
+`IsFractionRing K⟦X⟧ K⸨X⸩` (`Mathlib/RingTheory/LaurentSeries.lean`, line 298).
+`X0.lean`'s `bijective_pre_generic_of_isProper` is this very argument already
+written out and PROVEN, for the valuation ring `R ⊆ ℚ` of an `IsReductionBase`;
+generalising its thirty lines to an arbitrary DVR over `K` is the whole of the
+scheme-theoretic cost.  What is missing is therefore ONLY the degenerating
+family — the Tate curve `E_{q^N}` over `K⸨X⸩` with level point `q` — and the
+identification of the `φ(N)/2` limits as pairwise-distinct points off `Y`.
+
+*And the recorded claim that the Tate uniformisation is GONE from this
+development is STALE, which is the finding that most changes the cost of this
+leaf* (checked 2026-07-31).  It is true that `52297bf2` deleted
+`TateCurveConstruction` and `TateUniformization` as free-floating on 2026-07-18,
+and a task prompt for this leaf still says so and tells its reader to recover
+them with `git show`.  They were REBUILT and are in the tree now, larger and
+imported: `Fermat/FLT/KnownIn1980s/EllipticCurves/` holds `TateParameter`
+(`a₄Formal`, `a₆Formal`, `ΔFormal` in `ℤ⟦X⟧`, with `coeff_one_ΔFormal = 1`, so
+characteristic-free), `TateCurveConstruction` (the formal `X(u,q)`, `Y(u,q)` over
+`(RatFunc ℚ)⟦X⟧` and `weierstrass_equation`), `TateUniformization` (9 000 lines),
+`TateCurveBaseChange` and `TateSepClosure` — and `TateSepClosure` is
+`public import`ed by both `FreyCurve/Semistable.lean` and
+`Modularity/Interface.lean`, so the whole chain compiles on every build.
+
+That matters because of the shape of `TateCurve.lean`'s hypotheses: the Tate
+curve there is defined over `{k : Type*} [Field k] [TopologicalSpace k]`, by
+`tsum`s that converge for any complete rank-one nonarchimedean field — NOT over
+a local field of characteristic zero.  Mathlib gives `K⸨X⸩` exactly that
+structure for every field `K`: `Valued K⸨X⸩ ℤᵐ⁰` and `CompleteSpace K⸨X⸩`
+(`Mathlib/RingTheory/LaurentSeries.lean`, lines 483 and 803), with the
+`Valued → ValuativeRel` bridge in
+`Mathlib/Topology/Algebra/Valued/ValuativeRel.lean`.  So the honest attack on
+this leaf is to INSTANTIATE the in-tree Tate theory at `k = K⸨X⸩`, `q = X`,
+rather than to build a Tate curve from scratch.  `tateA₆`'s own docstring says
+the division by `12` is arranged "in every characteristic", so the DEFINITION is
+characteristic-free.
+
+**That much is not a reading — it is a compiler verdict** (flt-lean-289,
+2026-07-31, a four-line scratch against `TateCurve` and
+`Mathlib.RingTheory.LaurentSeries`).  For a bare `(K : Type) [Field K]`, all
+three of `TopologicalSpace K⸨X⸩`, `CompleteSpace K⸨X⸩` and
+`WeierstrassCurve.tateCurve q : WeierstrassCurve K⸨X⸩` elaborate with no
+hypothesis on `K` and no characteristic assumption.  So `E_q` over `K⸨X⸩` costs
+nothing; the leaf's difficulty is entirely in the LEVEL STRUCTURE and the
+limits, not in the curve.
+
+The instantiation does break, and it breaks EARLIER and more cheaply than the
+mathematics suggests.  Everything in `TateCurve.lean` past the definitions
+carries `[ValuativeRel k] [IsNonarchimedeanLocalField k]`, and the same scratch
+reports that the first missing instance is `ValuativeRel K⸨X⸩` — not local
+compactness.  Mathlib has `Valued K⸨X⸩ ℤᵐ⁰` (`RingTheory/LaurentSeries.lean`
+line 483) and a `Valued`-to-`ValuativeRel` bridge
+(`Topology/Algebra/Valued/ValuativeRel.lean`), and nobody has connected the two
+here; that is a small, self-contained job with no modular content in it, and it
+is the first thing the next attempt should do.
+
+Local compactness is the SECOND obstruction and it is real: mathlib defines
+`IsNonarchimedeanLocalField` as valuative topology + LOCALLY COMPACT +
+nontrivial (`NumberTheory/LocalField/Basic.lean`), so `𝔽_ℓ⸨X⸩` qualifies — the
+residue field is finite and the characteristic is unrestricted — while `ℚ⸨X⸩`
+does not.  The uniformisation `kˣ/q^ℤ ≅ E_q(k)` is therefore reachable on the
+`𝔽_ℓ` half of this leaf and not on the `ℚ` half.  That asymmetry is invisible
+from the statement, which is uniform in `K`; attack `K = 𝔽_ℓ` first, and treat
+`ℚ` either as the harder fibre or as a reason to generalise the uniformisation
+away from local compactness.
+
+*Do NOT flip this leaf into the residue-degree form of
+`exists_rationalCuspPointsX1_field`.*  It looks like the obviously better shape
+— the only consumer converts to points on the next line, and over `ℚ`
+`exists_rationalCuspsX1` converts back to sections, so the SECTIONS form reads
+as a pure round trip — and it is not free.  The general-base subsection above
+(`exists_rationalCuspPoints_of_sections`, `exists_residueSection_of_ratPoint`,
+`residueSectionAlgHom`, `residueDegreeOver_eq_one_of_residueSection`,
+`residueSection_unique`) has exactly ONE consumer in the whole tree, and reaches
+it only through this leaf being stated with sections; flipping the two orphans
+all of it into free-floating code.  The sections form is load-bearing for the
+root cone, which is a harder reason than the "the form Deligne–Rapoport
+delivers" one recorded above.
+
 **`hNK : IsUnit ((N : ℕ) : K)` is the ONLY hypothesis on the base**, and
 it is load-bearing rather than decorative: at `char K ∣ N` the `Γ₁(N)`
 problem is not the étale one, its cuspidal locus is not `Γ_1(N)\ℙ¹(ℚ)`,
