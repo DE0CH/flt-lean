@@ -235,7 +235,7 @@ a smooth proper curve — satisfies the hypotheses, and `divDegree strX f` is a 
 function of `f` in general (it is `0` for every `f` by this very statement, but the
 UNRESTRICTED `∑ᶠ z, n_z · [κ(z) : K]` obviously is not, which is what makes this a theorem
 rather than a definitional identity). -/
-theorem divDegree_eq_zero {strX : X ⟶ Spec (CommRingCat.of K)}
+theorem divDegree_eq_zero_curve {strX : X ⟶ Spec (CommRingCat.of K)}
     (hproper : IsProper strX) (hcurve : SmoothOfRelativeDimension 1 strX)
     {f : X.functionField} (hf : f ≠ 0) :
     divDegree strX f = 0 :=
@@ -272,7 +272,7 @@ lemma residueDegree_eq_of_ord_eq_sub {strX : X ⟶ Spec (CommRingCat.of K)}
     (hord0 : ∀ z : X, z ≠ x → z ≠ y → Scheme.ord f z = 0) :
     strX.residueDegree x = strX.residueDegree y := by
   have h := divDegree_of_ord_eq_sub (strX := strX) hxy hordx hordy hord0
-  rw [divDegree_eq_zero hproper hcurve hf] at h
+  rw [divDegree_eq_zero_curve hproper hcurve hf] at h
   omega
 
 /-! ### The sharp leaf: a single simple rational pole generates the function field -/
