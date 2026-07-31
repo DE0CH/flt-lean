@@ -20180,8 +20180,13 @@ theorem hasNoFibreAffineLine_baseChange {X S T : Scheme.{0}} {strX : X ⟶ S}
   · rw [Category.assoc, Limits.pullback.lift_fst]; exact hs
   · rw [Category.assoc, Limits.pullback.lift_snd]; exact hu
 
+-- `Limits` is NOT open in this file — every other declaration here writes
+-- `Limits.pullback.…` — and the proof below is a long chain of pullback lemmas, so it is
+-- opened for this one declaration.  `open … in` must sit ABOVE the doc comment: between the
+-- comment and the `theorem` it is a parse error.
+open Limits in
 /-- **RATIONALITY OF THE GEOMETRIC FIBRE CONTROLS RATIONAL CURVES OVER EVERY
-FIELD** (sorry leaf, NEW 2026-07-30) — the first of the two residues of
+FIELD** (PROVEN 2026-07-31) — the first of the two residues of
 `exists_nonconstant_toAbelianScheme_of_notGeometricallyRational` below, and
 the one that is pure birational geometry: no Picard scheme, no abelian
 variety, no genus, no `N`.
