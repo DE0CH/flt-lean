@@ -11318,7 +11318,7 @@ theorem exists_singular_of_Δ_eq_zero_charThree_b₂_eq_zero {K : Type} [Field K
     · refine h ?_
       linear_combination (E.a₁ * x + E.a₃) * h3
 
-/-- **A Weierstrass curve over a field in which `2` and `3` are invertible,
+/-! **A Weierstrass curve over a field in which `2` and `3` are invertible,
 with `Δ = 0`, has a RATIONAL singular point** (**PROVEN 2026-07-28** as the
 char-`0` half of leaf 3 of `exists_weierstrassModel_of_ellipticScheme`;
 `CharZero` weakened to `(2 : K) ≠ 0`, `(3 : K) ≠ 0` on 2026-07-30);
@@ -13128,9 +13128,15 @@ translation only needs them to be sections.
 NOT VACUOUS, and the `AddEquiv` is not canonical: it is the transport along
 `u` corrected by a translation, so it depends on `u`.  What is canonical is
 its existence, which is all any consumer here asks for. -/
-theorem nonempty_addEquiv_relPoint_of_isIso {S A B : Scheme.{u}} {fA : A ⟶ S} {fB : B ⟶ S}
+-- NOTE (2026-07-31, flt-lean-330): stated at `Scheme.{0}`, not `Scheme.{u}`.  The `{u}`
+-- form does not elaborate — its `map_add'` field is `relPointPost_add`, which is a
+-- `Scheme.{0}` theorem — and the merge that produced the `{u}` signature landed behind an
+-- `unterminated comment` in this file, so nothing had ever compiled it.  The sole consumer
+-- (`nonempty_addEquiv_of_weierstrassModel_field` below) is at `Scheme.{0}`.  To restore the
+-- `{u}` form, generalise `relPointPost_add` and the rigidity lemmas it cites first.
+theorem nonempty_addEquiv_relPoint_of_isIso {S A B : Scheme.{0}} {fA : A ⟶ S} {fB : B ⟶ S}
     (abA : AbelianSchemeStruct fA) (abB : AbelianSchemeStruct fB)
-    (u : A ⟶ B) [IsIso u] (hu : u ≫ fB = fA) {T : Scheme.{u}} (g : T ⟶ S) :
+    (u : A ⟶ B) [IsIso u] (hu : u ≫ fB = fA) {T : Scheme.{0}} (g : T ⟶ S) :
     letI := abA.addCommGroup g
     letI := abB.addCommGroup g
     Nonempty (RelPoint fA g ≃+ RelPoint fB g) := by

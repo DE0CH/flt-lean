@@ -805,7 +805,7 @@ pullback of (pre)sheaves of modules commutes with the sheafification", i.e.
 `p^*` is `PresheafOfModules.pullback`.  Since `modTensor L M` is *by definition*
 `a_Y (L.val ⊗ M.val)`, that iso applied at `L.val ⊗ M.val` identifies the SOURCE
 `f^*(L ⊗ M)` with `a_X (p^*(L.val ⊗ M.val))` on the nose
-(`modPullbackSheafifyIso`).  And `modTensor (f^*L) (f^*M)` is *by definition*
+(`modPullbackSheafifyTensorIso`).  And `modTensor (f^*L) (f^*M)` is *by definition*
 `a_X ((f^*L).val ⊗ (f^*M).val)`, so the TARGET needs no identification at all:
 choosing the presheaf-level comparison to land in the presheaf tensor of the
 `.val`s of the two SHEAF pullbacks — rather than in `p^*L.val ⊗ p^*M.val` — makes
@@ -946,8 +946,19 @@ noncomputable def modPullbackTensorPre {X Y : Scheme.{u}} (f : X ⟶ Y) (L M : Y
 
 /-- **The source identification**, and the whole reason the reduction is short:
 `modTensor L M` IS `a_Y (L.val ⊗ M.val)`, so mathlib's
-`SheafOfModules.sheafificationCompPullback` applies at that presheaf verbatim. -/
-noncomputable def modPullbackSheafifyIso {X Y : Scheme.{u}} (f : X ⟶ Y) (L M : Y.Modules) :
+`SheafOfModules.sheafificationCompPullback` applies at that presheaf verbatim.
+
+RENAMED from `modPullbackSheafifyIso` on 2026-07-31 (`flt-lean-330`): `RelativePicard.lean`,
+which this module imports, has since acquired a `Fermat.modPullbackSheafifyIso` of its own —
+the GENERAL `f^*(a A) ≅ a(p A)` at an arbitrary presheaf `A`, of which this is the case
+`A = L.val ⊗ M.val`. Both hoists are legitimate and neither conflicted textually, so the
+collision (`has already been declared`, plus two application-type mismatches at the use
+sites, where the name had silently rebound to the two-argument version) reached `merger`
+behind an `unterminated comment` in `EllipticScheme.lean` that stopped the build earlier.
+This declaration keeps the specialised form because its `rfl`-matching of the TARGET is what
+makes the reduction three lines; expressing it through the general one would reintroduce the
+identification it exists to avoid. -/
+noncomputable def modPullbackSheafifyTensorIso {X Y : Scheme.{u}} (f : X ⟶ Y) (L M : Y.Modules) :
     modPullback f (modTensor L M) ≅
       (modSheafification X).obj ((modPrePullback f).obj (L.val ⊗ M.val)) :=
   (SheafOfModules.sheafificationCompPullback (Scheme.Hom.toRingCatSheafHom f)).app
@@ -1103,7 +1114,7 @@ and the two `show`s are spelling bridges (`(f_* g).val` versus `p_*.map g.val`,
 not mathematical steps. -/
 theorem modPullbackTensorComparison_eq {X Y : Scheme.{u}} (f : X ⟶ Y) (L M : Y.Modules) :
     modPullbackTensorComparison f L M =
-      (modPullbackSheafifyIso f L M).hom ≫
+      (modPullbackSheafifyTensorIso f L M).hom ≫
         (modSheafification X).map (modPullbackTensorPre f L M) := by
   have hL : ((Scheme.Modules.pullbackPushforwardAdjunction f).homEquiv _ _)
       (modPullbackTensorComparison f L M) =
@@ -1124,7 +1135,7 @@ theorem modPullbackTensorComparison_eq {X Y : Scheme.{u}} (f : X ⟶ Y) (L M : Y
         (modPushforwardTensor f (modPullback f L) (modPullback f M)).val
       = modTensorMk L M ≫
         ((Scheme.Modules.pullbackPushforwardAdjunction f).unit.app (modTensor L M)).val ≫
-        ((Scheme.Modules.pushforward f).map (modPullbackSheafifyIso f L M).hom).val ≫
+        ((Scheme.Modules.pushforward f).map (modPullbackSheafifyTensorIso f L M).hom).val ≫
         ((Scheme.Modules.pushforward f).map
           ((modSheafification X).map (modPullbackTensorPre f L M))).val
   rw [← Category.assoc]
@@ -1144,7 +1155,7 @@ theorem modPullbackTensorComparison_eq {X Y : Scheme.{u}} (f : X ⟶ Y) (L M : Y
   rw [Adjunction.homEquiv_unit] at hd
   have hi : (modTensorMk L M ≫ ((Scheme.Modules.pullbackPushforwardAdjunction f).unit.app
         (modTensor L M)).val) ≫
-      ((Scheme.Modules.pushforward f).map (modPullbackSheafifyIso f L M).hom).val
+      ((Scheme.Modules.pushforward f).map (modPullbackSheafifyTensorIso f L M).hom).val
       = (modPreAdj f).unit.app (L.val ⊗ M.val) ≫
         (modPrePushforward f).map
           ((PresheafOfModules.sheafificationAdjunction (𝟙 X.ringCatSheaf.obj)).unit.app
@@ -1161,7 +1172,7 @@ theorem modPullbackTensorComparison_eq {X Y : Scheme.{u}} (f : X ⟶ Y) (L M : Y
   simp only [← Category.assoc] at hd ⊢
   show _ = ((modTensorMk L M ≫ ((Scheme.Modules.pullbackPushforwardAdjunction f).unit.app
         (modTensor L M)).val) ≫
-      ((Scheme.Modules.pushforward f).map (modPullbackSheafifyIso f L M).hom).val) ≫
+      ((Scheme.Modules.pushforward f).map (modPullbackSheafifyTensorIso f L M).hom).val) ≫
       (modPrePushforward f).map
         (((modSheafification X).map (modPullbackTensorPre f L M)).val)
   rw [hi, Category.assoc, Category.assoc, ← Functor.map_comp, hnat, Functor.map_comp,

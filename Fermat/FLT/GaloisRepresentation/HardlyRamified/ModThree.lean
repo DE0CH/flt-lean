@@ -31,6 +31,14 @@ public import Fermat.FLT.EllipticCurve.Velu
 public import Fermat.FLT.EllipticCurve.Isogeny
 public import Fermat.FLT.EllipticCurve.IsogenyTrace
 public import Fermat.FLT.GaloisRepresentation.Chebotarev
+-- The global norm-index inequality of class field theory, hoisted out of this file on
+-- 2026-07-31 (flt-lean-330).  It is the irreducible core of
+-- `exists_natCard_charDivisorImage_le_ray_class` below, which is now GLUE over it.  The
+-- reason for the move is wall-clock: that leaf is a theory-building project (Herbrand
+-- quotients, or ray class characters with their `L`-series) and whoever builds it will
+-- iterate hundreds of times.  This file elaborates single-threaded in of the order of an
+-- hour; `NormIndex.lean` builds in SIX SECONDS.  Nothing in it is `ModThree`-specific.
+public import Fermat.FLT.GaloisRepresentation.HardlyRamified.NormIndex
 -- `Ring.HasFiniteQuotients.finiteQuotient`: finiteness of `𝓞 K ⧸ I` for `I ≠ ⊥`,
 -- consumed by `exists_heightOneSpectrum_inertiaDeg_eq_one_ray_class` below.  It is
 -- already in this file's cone through `InertiaCardTransport`, but only NON-publicly,
@@ -54928,8 +54936,22 @@ theorem relIndex_narrowRayGroup_ne_zero_ray_class
 end RayClassNarrowFiniteness
 
 /-- **THE SECOND (NORM-INDEX) INEQUALITY OF GLOBAL CLASS FIELD THEORY, STRIPPED TO ITS
-IRREDUCIBLE CORE** (sorry node, created 2026-07-30 as the single sub-leaf of
-`exists_artinDivisorNormIndex_le_ray_class` just below, which is now PROVEN as glue over
+IRREDUCIBLE CORE** (**PROVEN 2026-07-31 AS GLUE** (flt-lean-330) — the head label read
+"sorry node" until then and is corrected here.  **THE OPEN LEAF IS NOW
+`exists_natCard_charDivisorImage_le_normIndex_primePow_ray_class`, IN
+`Fermat/FLT/GaloisRepresentation/HardlyRamified/NormIndex.lean`**, a module hoisted out of
+this file for one reason: this file elaborates single-threaded in of the order of an hour,
+that module builds in SIX SECONDS, and the leaf is a theory-building project that whoever
+takes it on will iterate hundreds of times.  Two bookkeeping steps were discharged in the
+move and are now this theorem's glue rather than the leaf's burden — the modulus is fixed
+as `mm₀ ^ (t + 1)`, so the existential is over an EXPONENT and the `mm₀ ∣ mm` and support
+clauses are automatic; and the case `Nat.card (Im.map φ) ≤ 1` is closed outright from
+`P.relIndex Im ≠ 0`, so the leaf may assume `χ` cuts out a NONTRIVIAL extension.  Nothing
+below is superseded: every audit in this docstring transfers verbatim, which is exactly
+why the leaf could be restated by strengthening to the prime-power witness class — the
+FAITHFULNESS paragraph below already names "a sufficiently high power of `mm₀`" as a
+witness.  Created 2026-07-30 as the single sub-leaf of
+`exists_artinDivisorNormIndex_le_ray_class` just below, which is PROVEN as glue over
 it.  **RESTATED 2026-07-30, THE SAME DAY, BY WEAKENING**: it now RECEIVES `P ≤ Im`,
 `N ≤ Im` and `P.relIndex Im ≠ 0`, all three proved or cited in the parent's glue — the
 first two outright, the third from
@@ -55053,7 +55075,11 @@ theorem exists_natCard_charDivisorImage_le_ray_class
         IsCyclic (Im.map φ) → Nat.card (Im.map φ) ∣ ℓ ^ k → N ≤ φ.ker →
         P ≤ Im → N ≤ Im → P.relIndex Im ≠ 0 →
         Nat.card (Im.map φ) ≤ (P ⊔ N).relIndex Im :=
-  sorry
+  -- `IsRamifiedCharRayClass` is a plain `def`, so `hmm₀ram` is definitionally the unfolded
+  -- hypothesis `NormIndex.lean` states (that module is upstream of the definition, which is
+  -- why it states it unfolded).  This application is what checks the two agree.
+  exists_natCard_charDivisorImage_le_normIndex_ray_class F χ hmul V hVopen hVker ℓ hℓ hℓ3 k
+    hord c hcmul hcfrob mm₀ hmm₀ hmm₀ram
 
 set_option maxHeartbeats 1000000 in
 /-- **THE GLOBAL CYCLIC NORM INDEX INEQUALITY, AT AN ADMISSIBLE MODULUS**
