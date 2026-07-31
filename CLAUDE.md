@@ -3882,6 +3882,41 @@ that the consumer **already held and was discarding** — so the fix cost nothin
 statement did not change. That is the usual shape: the missing hypothesis is often already in the caller's
 hand.
 
+### Its cheapest and commonest form: DELETE × REFACTOR = an ORPHAN LEAF, merged cleanly
+
+(2026-07-31, `X0.lean`.) One branch **collapsed** a cut: it deleted the two leaves
+`exists_isAbelianWeilEigenvalues` and `prod_one_sub_eq_of_isJacobianOf` and made their consumer
+`card_jacobian_of_isWeilEigenvalues` the single leaf. Concurrently, a second branch **refactored**
+one of those very declarations the way its curve-side neighbour is built — turning
+`exists_isAbelianWeilEigenvalues` into a proven assembly over a NEW leaf
+`exists_isAbelianWeilEigenvalues_galoisField`. Both edits are correct in isolation, and — this is the
+whole trap — they **do not conflict textually**, because the refactor's new declaration is added at a
+line the collapse never touched. So git merged both, silently, and the result was:
+
+* the assembly gone (the collapse deleted it), and
+* its sub-leaf still there, `sorry`, with **no consumer anywhere in the tree** — free-floating, and
+  carrying a docstring asserting it was "the sole remaining leaf of" a declaration that the same
+  commit had deleted.
+
+Net effect of two correct edits: `−2 + 1` instead of `−2`, and a theory build (Tate modules,
+Frobenius in char `p`, isogeny degree) still owed by the frontier for nothing at all.
+
+**Nothing in the frontier machinery can see this.** The orphan emits a perfectly ordinary
+`declaration uses 'sorry'` warning, contains a real `sorry` token in real source, and lives in a
+module on the root's import closure — so it is visible to the compiler, to `flt-frontier.py`, and to
+the census, and all three report it as an ordinary open leaf. It is exactly the free-floating-code
+condition, which is why the standing free-floating check is the one thing that catches it.
+
+**The rule: whenever a merge deletes a declaration, grep the merged tree for consumers of everything
+that declaration consumed.** A leaf whose only consumer was deleted is not "now unowned", it is
+**garbage** — delete it and record in its section docstring where to recover it from. Conversely,
+when you are about to delete a declaration, check whether anyone is refactoring it (`~/.flt-merge-batch`
+and the other worktrees' diffs), because the refactor will survive your deletion rather than conflict
+with it.
+
+Corollary for a prover handed a leaf: **`grep` the tree for your target's consumers before proving
+it.** Zero consumers means the task is a deletion, not a proof, and the honest sentinel reports that.
+
 ## A "DO NOT CUT THIS WAY" PROHIBITION IS DATED EVIDENCE, EXACTLY LIKE AN AUDIT
 
 (2026-07-31, `exists_qAdicPolarizedSystem_finiteBase`.) The rule above says a falsity audit is
