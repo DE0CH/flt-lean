@@ -70,8 +70,26 @@ covering collection.  Each namespace now reads top-down:
                                         formal logarithm, in one existential
       → exists_reductionFiltration PROVEN: red descends, the four filtration axioms
       → exists_reduction          PROVEN: torsion-freeness from the filtration
-    exists_descentHeight_pic      LEAF: a Northcott height on Pic⁰(X_ℚ)
-    finite_quotient_psmul_pic     LEAF: weak Mordell–Weil, Pic⁰/p·Pic⁰ is finite
+    exists_cubeModel_pic          LEAF: the cube structure — height theory, no analysis
+      → exists_descentHeight_pic  PROVEN: a Northcott height on Pic⁰(X_ℚ)
+    exists_geomPic                LEAF: the divisor theory over ℚ̄, with the Galois action
+    geomPic_below_surjective / _exists_const_of_divisor_eq_zero / _exists_finiteLevel
+      / _exists_emb_of_fieldAct_fixed
+                                  LEAF ×4: the constant field extension F̄ = F·ℚ̄
+      → geomPic_bc_injective      PROVEN: Pic⁰(X_ℚ) ↪ Pic⁰(X_ℚ̄), by Hilbert 90
+    geomPic_exists_const_of_ord_nonneg / _exists_bcDiv_of_divAct_fixed
+      / _exists_finiteLevel_divisor / geomPic_hilbert90
+                                  LEAF ×4: κ(w) = ℚ̄, Galois transitivity on fibres,
+                                  finite level of a divisor, Hilbert 90 for F̄/F
+      → geomPic_descent           PROVEN: the invariants are rational — the Brauer
+                                  obstruction killed by the rational point ∞₊
+    geomPic_divisible             LEAF: Pic⁰(X_ℚ̄) is divisible — [n] is surjective
+    geomPic_finite_torsion        LEAF: J[n](ℚ̄) is finite — [n] has a finite kernel
+    geomPic_exists_finiteCover_kummer
+                                  LEAF: one finite cover of Γ inflates every Kummer
+                                  cochain — Hermite–Minkowski, ALL the arithmetic
+      → finite_kummerCochains_pic PROVEN: finitely many Kummer cochains
+      → finite_quotient_psmul_pic PROVEN: weak Mordell–Weil, Pic⁰/p·Pic⁰ is finite
       → fg_pic                    PROVEN: Mordell–Weil, by the descent theorem
     X18.two_divisible_pic / X13.two_divisible_pic
                                   LEAF: rank 0 — every class is 2-divisible
@@ -127,8 +145,10 @@ arithmetic inputs that people usually hand-wave are discharged by the kernel:
 
 **DO NOT TRUST A LEAF COUNT WRITTEN HERE — ASK THE COMPILER.**  Two branches
 amended this paragraph on the same day, one saying "eight" and one saying "TEN",
-and the merged file has neither number: at the release-18 merge the
-`declaration uses 'sorry'` set of this module is
+and the merged file has neither number.  Regenerate it with `lake build`; the
+list below is stamped to the commit that decomposed `geomPic_descent`
+(2026-07-30), at which the `declaration uses 'sorry'` set of this module is
+these TWENTY-TWO:
 
     degOf_poleDivisor_eq_finrank_of_transcendental,
     exists_smoothModel, exists_cubeModel_pic, exists_geomPic,
@@ -303,6 +323,7 @@ public import Mathlib.LinearAlgebra.FiniteDimensional.Basic
 -- and `exists_associated_pow_of_mul_eq_pow'` in the UFD `L[X]`
 public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 public import Mathlib.FieldTheory.Perfect
+public import Fermat.FLT.Mathlib.FieldTheory.AbsoluteHilbert90
 public import Mathlib.Algebra.Polynomial.Expand
 public import Mathlib.Algebra.Polynomial.FieldDivision
 public import Mathlib.Algebra.Polynomial.Splits
@@ -5314,6 +5335,23 @@ theorem degOf_poleDivisor_eq_finrank {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : 
       finrank_adjoin_eq_zero_of_isAlgebraic D hg, Nat.cast_zero]
   · exact degOf_poleDivisor_eq_finrank_of_transcendental D g hg
 
+/-- **The degree formula with NO separability hypothesis** (PROVEN) — the same statement and
+the same proof as `degOf_divisor_eq_zero`, which now delegates to it.
+
+The hypothesis in `degOf_divisor_eq_zero` is deliberately unused and underscored, kept as the
+mechanical record that the degree formula is a fact about every function field of one
+variable (see that docstring).  That record is worth keeping, but it makes the theorem
+unusable exactly where the base field is one over which separability is not in hand — which
+is the case in the descent argument below, whose `Dbar` lives over `ℚ̄` and carries no
+`hsep`.  So the record stays where it was and the usable form is this one; nothing is proven
+twice. -/
+theorem degOf_divisor_eq_zero' {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (g : D.F) :
+    degHom D D.degOf (D.divisor g) = 0 := by
+  rw [PlaceData.divisor_eq_zeroDivisor_sub_poleDivisor, map_sub,
+    ← PlaceData.poleDivisor_inv D g, degOf_poleDivisor_eq_finrank D g⁻¹,
+    degOf_poleDivisor_eq_finrank D g, PlaceData.adjoin_inv_eq g, sub_self]
+
 /-- **LEAF (obligation 2a, second half): the degree formula.**
 
 `Σ_v ord_v(g)·[κ(v) : K] = 0` — a function on a projective curve has as many zeros as poles,
@@ -5342,10 +5380,8 @@ which is the mechanical record that the separation held here. -/
 theorem degOf_divisor_eq_zero {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
     (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
     (_hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (g : D.F) :
-    degHom D D.degOf (D.divisor g) = 0 := by
-  rw [PlaceData.divisor_eq_zeroDivisor_sub_poleDivisor, map_sub,
-    ← PlaceData.poleDivisor_inv D g, degOf_poleDivisor_eq_finrank D g⁻¹,
-    degOf_poleDivisor_eq_finrank D g, PlaceData.adjoin_inv_eq g, sub_self]
+    degHom D D.degOf (D.divisor g) = 0 :=
+  degOf_divisor_eq_zero' D g
 
 /-- **LEAF (obligation 2a), now PROVEN from `finrank_residue_pt_eq_one` and
 `degOf_divisor_eq_zero`.**
@@ -7149,9 +7185,165 @@ lemma act_bc (σ : QbarGal) (a : D.Pic) : gp.act σ (gp.bc a) = gp.bc a := by
     rw [divAct_apply, bcDiv_apply, bcDiv_apply]
     rw [← gp.below_placeAct σ ((gp.placeAct σ).symm w), Equiv.apply_symm_apply]
 
+/-! #### `fieldAct` is a genuine group action (PROVEN 2026-07-30)
+
+`GeomPic` does **not** postulate `fieldAct (σ * τ) = fieldAct σ ∘ fieldAct τ`, and it must
+not: the point of the structure is that `fieldAct σ` is PINNED rather than chosen, so any
+composition law has to be a theorem.  It is one.  `Dbar.F = ℚ̄(xx, yy)` — that is
+`PlaceData.gen` — so a ring hom of `Dbar.F` is determined by its action on the constants
+and on the two generators, and `fieldAct_algebraMap` together with `fieldAct_emb`,
+`emb_xx`, `emb_yy` pin all three.  `eq_fieldAct_of` is that uniqueness statement, and
+`fieldAct_mul` / `fieldAct_one` fall out of it.
+
+Without these the descent below cannot even STATE that `σ ↦ fieldAct σ ḡ / ḡ` is a
+`1`-cocycle, so this block is not convenience: it is what makes Hilbert 90 applicable. -/
+
+lemma fieldAct_xx (σ : QbarGal) : gp.fieldAct σ gp.Dbar.xx = gp.Dbar.xx := by
+  rw [← gp.emb_xx]; exact gp.fieldAct_emb σ D.xx
+
+lemma fieldAct_yy (σ : QbarGal) : gp.fieldAct σ gp.Dbar.yy = gp.Dbar.yy := by
+  rw [← gp.emb_yy]; exact gp.fieldAct_emb σ D.yy
+
+open Polynomial in
+/-- A ring hom acting as `σ` on the constants and fixing `xx` sends `p(xx)` to `(σp)(xx)`
+(PROVEN, by induction on `p`). -/
+lemma map_aeval_xx (σ : QbarGal) (φ : gp.Dbar.F →+* gp.Dbar.F)
+    (halg : ∀ a : AlgebraicClosure ℚ,
+      φ (algebraMap (AlgebraicClosure ℚ) gp.Dbar.F a)
+        = algebraMap (AlgebraicClosure ℚ) gp.Dbar.F (σ a))
+    (hx : φ gp.Dbar.xx = gp.Dbar.xx) (p : (AlgebraicClosure ℚ)[X]) :
+    φ (aeval gp.Dbar.xx p)
+      = aeval gp.Dbar.xx (p.map (σ : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ)) := by
+  induction p using Polynomial.induction_on with
+  | C a => simp [halg a]
+  | add p q hp hq => simp [hp, hq]
+  | monomial n a _ => simp [pow_succ, halg a, hx]
+
+open Polynomial in
+/-- `fieldAct σ` sends `p(xx)` to `(σp)(xx)` (PROVEN). -/
+lemma fieldAct_aeval (σ : QbarGal) (p : (AlgebraicClosure ℚ)[X]) :
+    gp.fieldAct σ (aeval gp.Dbar.xx p)
+      = aeval gp.Dbar.xx (p.map (σ : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ)) :=
+  gp.map_aeval_xx σ (gp.fieldAct σ).toRingHom (gp.fieldAct_algebraMap σ) (gp.fieldAct_xx σ) p
+
+open Polynomial in
+/-- **`fieldAct σ` is the ONLY ring hom acting as `σ` on the constants and fixing `xx` and
+`yy`** (PROVEN).  This is `PlaceData.gen` read as a uniqueness statement: writing
+`z · d(xx) = a(xx) + b(xx)·yy` and applying both maps gives the same equation with `a, b, d`
+replaced by their `σ`-conjugates, and `aeval_xx_ne_zero` lets the denominator be
+cancelled. -/
+lemma eq_fieldAct_of (σ : QbarGal) (φ : gp.Dbar.F →+* gp.Dbar.F)
+    (halg : ∀ a : AlgebraicClosure ℚ,
+      φ (algebraMap (AlgebraicClosure ℚ) gp.Dbar.F a)
+        = algebraMap (AlgebraicClosure ℚ) gp.Dbar.F (σ a))
+    (hx : φ gp.Dbar.xx = gp.Dbar.xx) (hy : φ gp.Dbar.yy = gp.Dbar.yy) (z : gp.Dbar.F) :
+    φ z = gp.fieldAct σ z := by
+  obtain ⟨a, b, d, hd, hz⟩ := gp.Dbar.gen z
+  have hd0 : d ≠ 0 := by rintro rfl; simp at hd
+  have hmapd : d.map (σ : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ) ≠ 0 := by
+    simpa [Polynomial.map_ne_zero_iff (f := (σ : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ))
+      (RingHom.injective _)] using hd0
+  have hdne : aeval gp.Dbar.xx (d.map (σ : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ)) ≠ 0 :=
+    PlaceData.aeval_xx_ne_zero gp.Dbar hmapd
+  have hφ : φ z * aeval gp.Dbar.xx (d.map (σ : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ))
+      = aeval gp.Dbar.xx (a.map (σ : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ))
+        + aeval gp.Dbar.xx (b.map (σ : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ))
+          * gp.Dbar.yy := by
+    have := congrArg φ hz
+    rwa [map_mul, map_add, map_mul, gp.map_aeval_xx σ φ halg hx,
+      gp.map_aeval_xx σ φ halg hx, gp.map_aeval_xx σ φ halg hx, hy] at this
+  have hψ : gp.fieldAct σ z
+        * aeval gp.Dbar.xx (d.map (σ : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ))
+      = aeval gp.Dbar.xx (a.map (σ : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ))
+        + aeval gp.Dbar.xx (b.map (σ : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ))
+          * gp.Dbar.yy := by
+    have := congrArg (gp.fieldAct σ) hz
+    rwa [map_mul, map_add, map_mul, gp.fieldAct_aeval σ, gp.fieldAct_aeval σ,
+      gp.fieldAct_aeval σ, gp.fieldAct_yy σ] at this
+  exact mul_right_cancel₀ hdne (hφ.trans hψ.symm)
+
+/-- **`fieldAct` is a group action** (PROVEN): both sides act as `σ ∘ τ` on the constants and
+fix `xx` and `yy`, so `eq_fieldAct_of` identifies them. -/
+lemma fieldAct_mul (σ τ : QbarGal) (z : gp.Dbar.F) :
+    gp.fieldAct (σ * τ) z = gp.fieldAct σ (gp.fieldAct τ z) :=
+  (gp.eq_fieldAct_of (σ * τ) ((gp.fieldAct σ).toRingHom.comp (gp.fieldAct τ).toRingHom)
+    (fun a => by
+      show gp.fieldAct σ (gp.fieldAct τ (algebraMap (AlgebraicClosure ℚ) gp.Dbar.F a)) = _
+      rw [gp.fieldAct_algebraMap τ a, gp.fieldAct_algebraMap σ (τ a), AlgEquiv.mul_apply])
+    (by show gp.fieldAct σ (gp.fieldAct τ gp.Dbar.xx) = _
+        rw [gp.fieldAct_xx, gp.fieldAct_xx])
+    (by show gp.fieldAct σ (gp.fieldAct τ gp.Dbar.yy) = _
+        rw [gp.fieldAct_yy, gp.fieldAct_yy]) z).symm
+
+/-- **`fieldAct 1` is the identity** (PROVEN). -/
+lemma fieldAct_one (z : gp.Dbar.F) : gp.fieldAct 1 z = z :=
+  (gp.eq_fieldAct_of 1 (RingHom.id _) (fun a => by simp) rfl rfl z).symm
+
+/-- **`placeAct` is a group action too** (PROVEN, and for the same reason `fieldAct` is):
+`placeAct σ` is PINNED by `ord_placeAct` together with `Dbar.ord_injective` — it is the
+permutation with `ord_{placeAct σ v} = ord_v ∘ (fieldAct σ)⁻¹` — so the composition law
+follows from `fieldAct_mul`.  Like that lemma this is not convenience: `divAct_mul` below is
+what turns a `1`-cochain relation between divisors into a `1`-cocycle relation between
+functions, and neither can be stated without it. -/
+lemma placeAct_mul (σ τ : QbarGal) (v : gp.Dbar.Places) :
+    gp.placeAct (σ * τ) v = gp.placeAct σ (gp.placeAct τ v) := by
+  refine gp.Dbar.ord_injective (funext fun g => ?_)
+  obtain ⟨h, rfl⟩ : ∃ h, gp.fieldAct (σ * τ) h = g :=
+    ⟨(gp.fieldAct (σ * τ)).symm g, by simp⟩
+  rw [gp.ord_placeAct (σ * τ) v h, gp.fieldAct_mul σ τ h,
+    gp.ord_placeAct σ (gp.placeAct τ v) (gp.fieldAct τ h), gp.ord_placeAct τ v h]
+
+/-- **The action on divisors is a group action** (PROVEN from `placeAct_mul`). -/
+lemma divAct_mul (σ τ : QbarGal) (δ : gp.Dbar.Divisors) :
+    gp.divAct (σ * τ) δ = gp.divAct σ (gp.divAct τ δ) := by
+  ext w
+  rw [divAct_apply, divAct_apply, divAct_apply]
+  congr 1
+  refine (Equiv.symm_apply_eq _).mpr ?_
+  rw [gp.placeAct_mul σ τ, Equiv.apply_symm_apply, Equiv.apply_symm_apply]
+
+/-- Galois fixes the base point, read through the inverse permutation (PROVEN). -/
+lemma placeAct_symm_infPlus (σ : QbarGal) :
+    (gp.placeAct σ).symm (gp.Dbar.pt PlaceData.infPlus) = gp.Dbar.pt PlaceData.infPlus :=
+  (Equiv.symm_apply_eq _).mpr (gp.placeAct_infPlus σ).symm
+
+/-- **The order of vanishing at the rational base point is Galois-invariant** (PROVEN from
+`placeAct_infPlus`).  This is what makes the normalisation "value `1` at `∞̄₊`" in the descent
+argument below `Γ`-equivariant, and hence what kills the Brauer obstruction. -/
+lemma ord_infPlus_fieldAct (σ : QbarGal) (z : gp.Dbar.F) :
+    gp.Dbar.ord (gp.Dbar.pt PlaceData.infPlus) (gp.fieldAct σ z)
+      = gp.Dbar.ord (gp.Dbar.pt PlaceData.infPlus) z := by
+  have h := gp.ord_placeAct σ (gp.Dbar.pt PlaceData.infPlus) z
+  rwa [gp.placeAct_infPlus σ] at h
+
+/-- **Base-changed divisors are Galois-invariant** (PROVEN) — the divisor-level content of
+`act_bc`, extracted because the descent argument needs it BEFORE passing to `Pic`. -/
+lemma divAct_bcDiv (σ : QbarGal) (δ : D.Divisors) : gp.divAct σ (gp.bcDiv δ) = gp.bcDiv δ := by
+  ext w
+  rw [divAct_apply, bcDiv_apply, bcDiv_apply,
+    ← gp.below_placeAct σ ((gp.placeAct σ).symm w), Equiv.apply_symm_apply]
+
+/-- **Base change of divisors is injective once every place has a place above it** (PROVEN).
+`bcDiv δ` reads off `δ` at `below w`, so injectivity is exactly surjectivity of `below`. -/
+lemma bcDiv_injective (hsurj : Function.Surjective gp.below) :
+    Function.Injective gp.bcDiv := by
+  intro δ ε h
+  ext v
+  obtain ⟨w, rfl⟩ := hsurj v
+  simpa using congrArg (fun d : gp.Dbar.Divisors => d w) h
+
 end GeomPic
 
 section ConstFieldExtension
+/-- A nonzero constant has trivial divisor (PROVEN from `ord_algebraMap`). -/
+lemma PlaceData.divisor_algebraMap {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {a : K} (ha : a ≠ 0) :
+    D.divisor (algebraMap K D.F a) = 0 := by
+  have h0 : algebraMap K D.F a ≠ 0 := by
+    simpa using (map_ne_zero_iff _ (algebraMap K D.F).injective).mpr ha
+  ext v
+  rw [PlaceData.divisor_apply D h0 v, D.ord_algebraMap v a ha, Finsupp.coe_zero, Pi.zero_apply]
+
 
 variable {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
 
@@ -7548,6 +7740,97 @@ theorem exists_geomPic (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ)
 
 end ConstFieldExtension
 
+/-! ### The four sub-leaves of `geomPic_bc_injective` (cut 2026-07-30)
+
+`geomPic_bc_injective` below is PROVEN over exactly these four statements.  Each is a
+standard, self-contained fact about the constant field extension `F̄ = F·ℚ̄`, and NONE of
+them mentions `Divisors`, `picRel`, `Pic` or `bc` — which is what makes the cut honest
+rather than a restatement of the conclusion.
+
+They are faithful because `PlaceData` pins its model up to isomorphism (see the `Picard`
+section docstring): `eqn`/`transcendental_xx`/`gen` say `F = K(xx, yy)`, and
+`ord_injective`/`ord_complete`/`ord_surjective` say `Places` is EXACTLY the set of
+normalised `K`-trivial discrete valuations.  So `Dbar.F` really is the constant field
+extension of `D.F` (both are `K(xx, yy)` for the same `xx, yy`, over `ℚ̄` and `ℚ`), and
+`Dbar.Places` really is all of its places.  In particular there is no junk model in which
+`below` misses a place, or in which `F̄^{Gal}` is bigger than `F`. -/
+
+/-- **LEAF (weak Mordell–Weil, 2a of 4): every place of `F` has a geometric place above
+it**, i.e. `below` is surjective.
+
+Extension of valuations along the constant field extension `F ↪ F̄`.  The valuation
+`ord v` of `F` extends to `F̄` — `F̄/F` is an algebraic (indeed integral) extension of
+fields, so every valuation of the base extends — and `ord_emb` pins `below` on that
+extension to be `v` itself, because `D.ord` is injective.  The extension is unramified
+(`e = 1`), which is what `ord_emb` asserts with no ramification index; if it were not, the
+witness would have to be rescaled, and `ord_surjective` for `Dbar` is what makes the
+rescaled valuation normalised.
+
+**Not vacuous.**  With `Dbar.Places` axiomatised as ALL normalised `ℚ̄`-trivial valuations
+of `Dbar.F` (`ord_complete`), the obligation is to produce a valuation FUNCTION on `Dbar.F`
+restricting to `ord v` on `emb '' F`, which is the honest content. -/
+theorem geomPic_below_surjective {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
+    (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) : Function.Surjective gp.below := sorry
+
+/-- **LEAF (weak Mordell–Weil, 2b of 4): a geometric function with no zeros and no poles is
+a constant.**
+
+The one place in this cluster where the completeness of `Places` is used as a theorem
+rather than as data.  If `h ∈ F̄ \ ℚ̄` then `h` is transcendental over `ℚ̄` (which is
+algebraically closed, so the only algebraic elements of `F̄` over it are the constants), so
+`ℚ̄(h) ⊆ F̄` is a rational subfield and the place of `ℚ̄(h)` at infinity extends to a place
+of `F̄` at which `ord h < 0`.  That contradicts `divisor h = 0`.
+
+Equivalently: `deg (div h) = 0` and `div h ≥ 0` force `div h = 0` force `h` constant; but
+`PlaceData` deliberately carries no degree map, so the argument above is the one available.
+
+**Not vacuous.**  `h ≠ 0` is load-bearing only through the junk convention `ord v 0 = 0`,
+which would otherwise make `divisor 0 = 0` and the conclusion false for `h = 0`. -/
+theorem geomPic_exists_const_of_divisor_eq_zero {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
+    {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D)
+    {h : gp.Dbar.F} (h0 : h ≠ 0) (hdiv : gp.Dbar.divisor h = 0) :
+    ∃ a : AlgebraicClosure ℚ, algebraMap (AlgebraicClosure ℚ) gp.Dbar.F a = h := sorry
+
+/-- **LEAF (weak Mordell–Weil, 2c of 4): every geometric function is defined over a finite
+Galois level.**
+
+`PlaceData.gen` writes `z · d(xx) = a(xx) + b(xx)·yy` with `a, b, d ∈ ℚ̄[X]`; let `L` be the
+Galois closure over `ℚ` of the field generated by their finitely many coefficients, a finite
+Galois extension of `ℚ` inside `ℚ̄`.  A `σ` fixing `L` pointwise fixes `a`, `b`, `d`
+coefficientwise, so `fieldAct_aeval` (PROVEN above) gives
+`fieldAct σ z · d(xx) = a(xx) + b(xx)·yy = z · d(xx)`, and `aeval_xx_ne_zero` cancels.
+
+The third conclusion — `L` is stable under every `σ ∈ Γ_ℚ` — is what
+`geomPic_bc_injective` uses to know that `τσ` and `σ` agree on `L` when `τ` fixes `L`; it is
+`Normal ℚ L` read through `AlgEquiv.restrictNormalHom_apply`.
+
+**Not vacuous.**  Without `IsGalois ℚ L` the conclusion would still be true but useless:
+Hilbert 90 needs a Galois level to inflate from. -/
+theorem geomPic_exists_finiteLevel {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
+    {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) (z : gp.Dbar.F) :
+    ∃ L : IntermediateField ℚ (AlgebraicClosure ℚ),
+      FiniteDimensional ℚ L ∧ IsGalois ℚ L ∧
+      (∀ (σ : QbarGal) (x : AlgebraicClosure ℚ), x ∈ L → σ x ∈ L) ∧
+      (∀ σ : QbarGal, (∀ x ∈ L, σ x = x) → gp.fieldAct σ z = z) := sorry
+
+/-- **LEAF (weak Mordell–Weil, 2d of 4): `F̄^{Gal} = F`.**
+
+Galois descent for the constant field extension.  `{1, yy}` is a basis of `F̄` over `ℚ̄(xx)`
+(and of `F` over `ℚ(xx)`), so `z = A(xx) + B(xx)·yy` with `A, B ∈ ℚ̄(X)` UNIQUELY; applying
+`fieldAct σ`, which fixes `xx` and `yy` and acts as `σ` on the constants, replaces `A, B` by
+their `σ`-conjugates.  Invariance of `z` therefore forces every coefficient of `A` and `B`
+to be `Γ_ℚ`-fixed, hence rational, and `emb` of the corresponding element of `F` is `z`.
+
+The `⊇` direction is `fieldAct_emb` and is already a structure axiom, so only this direction
+is a leaf.
+
+**Not vacuous.**  This is the step that genuinely needs `fieldAct_algebraMap`: for the junk
+action `fieldAct σ = id` the hypothesis is empty and the conclusion `F̄ = F` is false. -/
+theorem geomPic_exists_emb_of_fieldAct_fixed {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
+    {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D)
+    {z : gp.Dbar.F} (hz : ∀ σ : QbarGal, gp.fieldAct σ z = z) :
+    ∃ g : D.F, gp.emb g = z := sorry
+
 /-- **LEAF (weak Mordell–Weil, 2 of 4): `Pic⁰(X_ℚ) → Pic⁰(X_ℚ̄)` is injective.**
 
 TRUE and classical: for a smooth projective geometrically integral curve with a
@@ -7560,9 +7843,321 @@ descends it to `F`.
 `pt` and why `picRel` quotients by `ℤ·[∞₊]`.
 
 **Not vacuous.**  Without the rational point this can fail, and the failure is exactly the
-Brauer obstruction; the hypothesis is carried by the structure rather than stated here. -/
+Brauer obstruction; the hypothesis is carried by the structure rather than stated here.
+
+## DECOMPOSED 2026-07-30 — now PROVEN over four named sub-leaves
+
+The Hilbert-90 argument sketched above is now written out.  What the assembly does, in
+order, and what each step rests on:
+
+1. `bcDiv δ ∈ Dbar.picRel` unfolds to `bcDiv δ = div ḡ + n·[∞̄₊]` (`mem_princ_iff` and
+   `AddSubgroup.mem_sup`, both already proven);
+2. `divAct_bcDiv` (PROVEN here) says the left side is Galois-invariant, and
+   `divAct_single_infPlus` says `[∞̄₊]` is, so `div (fieldAct σ ḡ) = div ḡ` for every `σ`;
+3. hence `fieldAct σ ḡ / ḡ` has no zeros and no poles, so it is a CONSTANT
+   (`geomPic_exists_const_of_divisor_eq_zero`) — call it `A σ ∈ ℚ̄ˣ`;
+4. `A` is a `1`-cocycle, `A (στ) = A σ · σ(A τ)`.  This needs `fieldAct` to be a genuine
+   group action, which `GeomPic` does not postulate and which is PROVEN above as
+   `fieldAct_mul` out of the uniqueness statement `eq_fieldAct_of`;
+5. `ḡ` lives over a finite Galois level `L` (`geomPic_exists_finiteLevel`), so `A` is
+   inflated from `Gal(L/ℚ)`; its VALUES then lie in `L` automatically, because for `τ`
+   fixing `L` pointwise `A τ = 1` and `τσ|_L = σ|_L`, so `τ (A σ) = A σ`, and
+   `InfiniteGalois.fixedField_fixingSubgroup` turns that into membership;
+6. `Field.exists_ne_zero_forall_absoluteGalois_apply_eq_mul`
+   (`Fermat/FLT/Mathlib/FieldTheory/AbsoluteHilbert90.lean`, PROVEN OUTRIGHT — mathlib has
+   Noether's theorem only for a FINITE extension) trivialises `A` as `σ γ / γ`;
+7. `ḡ/γ` is then `fieldAct`-invariant, hence comes from `F` (`geomPic_exists_emb_of_fieldAct_fixed`),
+   and dividing by the constant `γ` did not change its divisor;
+8. so `bcDiv δ = bcDiv (div g + n·[∞₊])`, and `bcDiv` is injective because every place of
+   `F` has a place of `F̄` above it (`geomPic_below_surjective`).
+
+Steps 1–2, 4, 6 and 8's cancellation are Lean; the four leaves are steps 3, 5, 7 and the
+input to 8.  Each is a standard, self-contained statement of function-field theory or of
+Galois descent, and none of them mentions `Pic`. -/
 theorem geomPic_bc_injective {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
-    (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) : Function.Injective gp.bc := sorry
+    (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) : Function.Injective gp.bc := by
+  classical
+  -- `IsGalois ℚ ℚ̄` is NOT an instance (see `AbsoluteHilbert90`'s implementation notes: at
+  -- the literal base field `ℚ` the two `Algebra ℚ ℚ̄` instances form a diamond and
+  -- `Algebra.IsAlgebraic ℚ ℚ̄` does not synthesise), so it has to be introduced by hand
+  -- here; `InfiniteGalois.fixedField_fixingSubgroup` below needs it.
+  haveI : IsGalois ℚ (AlgebraicClosure ℚ) :=
+    Field.isGalois_of_isAlgClosed (AlgebraicClosure.isAlgebraic ℚ)
+  rw [injective_iff_map_eq_zero]
+  intro A
+  induction A using QuotientAddGroup.induction_on with
+  | _ δ =>
+  intro ha
+  have hmem : gp.bcDiv δ ∈ gp.Dbar.picRel := (QuotientAddGroup.eq_zero_iff _).mp ha
+  rw [PlaceData.picRel, AddSubgroup.mem_sup] at hmem
+  obtain ⟨x, hx, y, hy, hxy⟩ := hmem
+  obtain ⟨g0, hg0⟩ := (gp.Dbar.mem_princ_iff).mp hx
+  obtain ⟨n, hn⟩ := AddSubgroup.mem_zmultiples_iff.mp hy
+  -- normalise the function so that it is nonzero (`div 0 = div 1 = 0`)
+  set gbar : gp.Dbar.F := if g0 = 0 then 1 else g0 with hgbardef
+  have hgbar0 : gbar ≠ 0 := by
+    rw [hgbardef]; split
+    · exact one_ne_zero
+    · assumption
+  have hgdiv : gp.Dbar.divisor gbar = x := by
+    rw [hgbardef]; split
+    · next h => rw [gp.Dbar.divisor_one, ← hg0, h, gp.Dbar.divisor_zero]
+    · exact hg0
+  -- STEP 2: Galois moves `gbar` by something with no zeros and no poles
+  have key : ∀ σ : QbarGal,
+      gp.Dbar.divisor (gp.fieldAct σ gbar) = gp.Dbar.divisor gbar := by
+    intro σ
+    have h1 : gp.divAct σ (gp.bcDiv δ) = gp.bcDiv δ := gp.divAct_bcDiv σ δ
+    rw [← hxy, ← hgdiv, ← hn, map_add, gp.divAct_divisor, map_zsmul,
+      gp.divAct_single_infPlus] at h1
+    exact add_right_cancel h1
+  have hfa0 : ∀ σ : QbarGal, gp.fieldAct σ gbar ≠ 0 := by
+    intro σ h
+    exact hgbar0 ((gp.fieldAct σ).injective (h.trans (map_zero (gp.fieldAct σ)).symm))
+  have hc : ∀ σ : QbarGal,
+      gp.Dbar.divisor (gp.fieldAct σ gbar * gbar⁻¹) = 0 := by
+    intro σ
+    rw [PlaceData.divisor_mul _ (hfa0 σ) (inv_ne_zero hgbar0),
+      PlaceData.divisor_inv _ hgbar0, key σ, add_neg_cancel]
+  -- STEP 3: so it IS a constant
+  choose Afun hAfun using fun σ : QbarGal =>
+    geomPic_exists_const_of_divisor_eq_zero gp
+      (h := gp.fieldAct σ gbar * gbar⁻¹) (mul_ne_zero (hfa0 σ) (inv_ne_zero hgbar0)) (hc σ)
+  have hfieldAct : ∀ σ : QbarGal,
+      gp.fieldAct σ gbar = algebraMap (AlgebraicClosure ℚ) gp.Dbar.F (Afun σ) * gbar := by
+    intro σ
+    rw [hAfun σ, inv_mul_cancel_right₀ hgbar0]
+  have hA0 : ∀ σ : QbarGal, Afun σ ≠ 0 := by
+    intro σ h
+    have := hfieldAct σ
+    rw [h, map_zero, zero_mul] at this
+    exact hfa0 σ this
+  -- STEP 4: the cocycle identity, over `fieldAct_mul`
+  have hcoc : ∀ σ τ : QbarGal, Afun (σ * τ) = Afun σ * σ (Afun τ) := by
+    intro σ τ
+    have h1 := gp.fieldAct_mul σ τ gbar
+    rw [hfieldAct (σ * τ), hfieldAct τ, map_mul, gp.fieldAct_algebraMap σ (Afun τ),
+      hfieldAct σ] at h1
+    have h2 : algebraMap (AlgebraicClosure ℚ) gp.Dbar.F (Afun (σ * τ))
+        = algebraMap (AlgebraicClosure ℚ) gp.Dbar.F (Afun σ * σ (Afun τ)) := by
+      refine mul_right_cancel₀ hgbar0 ?_
+      rw [h1, map_mul]; ring
+    exact (algebraMap (AlgebraicClosure ℚ) gp.Dbar.F).injective h2
+  -- STEP 5: inflation from a finite Galois level, and that the values lie there
+  obtain ⟨L, hLfin, hLgal, hLstab, hLfix⟩ := geomPic_exists_finiteLevel gp gbar
+  have hA1 : ∀ τ : QbarGal, (∀ z ∈ L, τ z = z) → Afun τ = 1 := by
+    intro τ hτ
+    have h1 := hfieldAct τ
+    rw [hLfix τ hτ] at h1
+    have h2 : algebraMap (AlgebraicClosure ℚ) gp.Dbar.F (Afun τ) = 1 := by
+      refine mul_right_cancel₀ hgbar0 ?_
+      rw [← h1, one_mul]
+    simpa using (algebraMap (AlgebraicClosure ℚ) gp.Dbar.F).injective
+      (h2.trans (map_one _).symm)
+  have hinfl : ∀ σ τ : QbarGal, (∀ z ∈ L, σ z = τ z) → Afun σ = Afun τ := by
+    intro σ τ hστ
+    have hρ : ∀ z ∈ L, (σ⁻¹ * τ) z = z := by
+      intro z hz
+      rw [AlgEquiv.mul_apply, ← hστ z hz, AlgEquiv.aut_inv, AlgEquiv.symm_apply_apply]
+    have h1 : Afun (σ * (σ⁻¹ * τ)) = Afun σ * σ (Afun (σ⁻¹ * τ)) := hcoc _ _
+    rw [hA1 _ hρ, map_one, mul_one, ← mul_assoc, mul_inv_cancel, one_mul] at h1
+    exact h1.symm
+  have hcmem : ∀ σ : QbarGal, Afun σ ∈ L := by
+    intro σ
+    rw [← InfiniteGalois.fixedField_fixingSubgroup L, IntermediateField.mem_fixedField_iff]
+    intro τ hτ
+    have hτfix : ∀ z ∈ L, (τ : QbarGal) z = z := fun z hz =>
+      (mem_fixingSubgroup_iff _).mp hτ z hz
+    have h1 : Afun ((τ : QbarGal) * σ) = Afun (τ : QbarGal) * (τ : QbarGal) (Afun σ) :=
+      hcoc _ _
+    rw [hA1 _ hτfix, one_mul] at h1
+    have h2 : Afun ((τ : QbarGal) * σ) = Afun σ :=
+      hinfl _ _ fun z hz => by rw [AlgEquiv.mul_apply, hτfix _ (hLstab σ z hz)]
+    exact h1.symm.trans h2
+  -- STEP 6: Hilbert 90 for `Γ_ℚ`.  `IsGalois ℚ ℚ̄` and the two `L`-instances are passed
+  -- POSITIONALLY: at the literal base field `ℚ` the two `Algebra ℚ ℚ̄` instances form a
+  -- diamond (here `Algebra ℚ ↥L` resolves to `DivisionRing.toRatAlgebra` while the lemma
+  -- wants `IntermediateField.algebra'`), so instance search fails while `@` succeeds.  Same
+  -- workaround as `X0.lean`'s `exists_stableCyclic_twist_of_autStable_of_j_eq_zero`.
+  obtain ⟨γ, hγ0, hγ⟩ :=
+    @Field.exists_ne_zero_forall_absoluteGalois_apply_eq_mul ℚ _ (AlgebraicClosure ℚ) _ _
+      (Field.isGalois_of_isAlgClosed (AlgebraicClosure.isAlgebraic ℚ)) L hLfin hLgal
+      (fun σ => Afun σ) hcmem hA0 hcoc hinfl
+  -- STEP 7: `gbar/γ` is Galois-invariant, hence rational, and has the same divisor
+  set gg : gp.Dbar.F := gbar * (algebraMap (AlgebraicClosure ℚ) gp.Dbar.F γ)⁻¹ with hggdef
+  have hγF : algebraMap (AlgebraicClosure ℚ) gp.Dbar.F γ ≠ 0 := by
+    simpa using (map_ne_zero_iff _
+      (algebraMap (AlgebraicClosure ℚ) gp.Dbar.F).injective).mpr hγ0
+  have hAF : ∀ σ : QbarGal,
+      algebraMap (AlgebraicClosure ℚ) gp.Dbar.F (Afun σ) ≠ 0 := fun σ => by
+    simpa using (map_ne_zero_iff _
+      (algebraMap (AlgebraicClosure ℚ) gp.Dbar.F).injective).mpr (hA0 σ)
+  have hggfix : ∀ σ : QbarGal, gp.fieldAct σ gg = gg := by
+    intro σ
+    have hσγ : algebraMap (AlgebraicClosure ℚ) gp.Dbar.F (σ γ)
+        = algebraMap (AlgebraicClosure ℚ) gp.Dbar.F (Afun σ * γ) :=
+      congrArg (algebraMap (AlgebraicClosure ℚ) gp.Dbar.F) (hγ σ)
+    rw [hggdef, map_mul, map_inv₀, gp.fieldAct_algebraMap σ γ, hσγ, map_mul, hfieldAct σ,
+      mul_inv, ← mul_assoc, mul_comm (algebraMap (AlgebraicClosure ℚ) gp.Dbar.F (Afun σ)) gbar,
+      mul_assoc gbar, mul_inv_cancel₀ (hAF σ), mul_one]
+  obtain ⟨g, hg⟩ := geomPic_exists_emb_of_fieldAct_fixed gp hggfix
+  have hdivgg : gp.Dbar.divisor gg = x := by
+    rw [hggdef, PlaceData.divisor_mul _ hgbar0 (inv_ne_zero hγF),
+      PlaceData.divisor_inv _ hγF, gp.Dbar.divisor_algebraMap hγ0, neg_zero, add_zero, hgdiv]
+  -- STEP 8: read the conclusion back down along `bcDiv`
+  have hδ : δ = D.divisor g + n • Finsupp.single (D.pt PlaceData.infPlus) (1 : ℤ) := by
+    refine gp.bcDiv_injective (geomPic_below_surjective gp) ?_
+    rw [map_add, gp.bcDiv_divisor, map_zsmul, gp.bcDiv_single_infPlus, hg, hdivgg, hn, hxy]
+  show (QuotientAddGroup.mk δ : D.Divisors ⧸ D.picRel) = 0
+  rw [QuotientAddGroup.eq_zero_iff, hδ, PlaceData.picRel]
+  exact AddSubgroup.add_mem_sup (AddSubgroup.subset_closure ⟨g, rfl⟩)
+    (AddSubgroup.zsmul_mem _ (AddSubgroup.mem_zmultiples _) n)
+
+/-! ### The four sub-leaves of `geomPic_descent` (cut 2026-07-30)
+
+`geomPic_descent` below is PROVEN over exactly these four statements.  The obstruction it has
+to get past is the BRAUER obstruction — the cokernel of `Pic(X_ℚ) → Pic(X_ℚ̄)^{Gal}` injects
+into `Br(ℚ)`, which is very far from zero — and what kills it is the rational base point
+`∞₊`, through a normalisation that no cohomological machinery is needed to state.  See the
+docstring of `geomPic_descent` for the assembly in order.
+
+None of the four mentions `Pic`, `picRel` or `bc`; three of them do not mention Galois at
+all.  They are faithful for the reason recorded on the sibling block above: `PlaceData` pins
+its model up to isomorphism, so `Dbar.F` really is the constant field extension of `D.F` and
+`Dbar.Places` really is all of its places. -/
+
+/-- **LEAF (weak Mordell–Weil, 3a of 4): the residue field at a geometric place is `ℚ̄`**,
+i.e. every function regular at a geometric place has a VALUE there.
+
+Standard: `κ(w)` is a finite extension of the constant field for any place of a function
+field of one variable [Stichtenoth I.1.14], and `ℚ̄` is algebraically closed, so
+`κ(w) = ℚ̄`.  The statement is the surjectivity of `ℚ̄ → κ(w)` written out with `VanishesAt`
+in place of a quotient, which is the form both consumers want.
+
+Two things come out of it, and it is why the cut is worth making as ONE leaf rather than
+two:
+
+* `geomPic_degOf_eq_one` — every geometric place has degree `1`, which with the PROVEN degree
+  formula `degOf_divisor_eq_zero'` is what forces the `ℤ·[∞̄₊]` component of the descent's
+  divisor relation to VANISH.  Without it the relation carries an unknown multiple of the
+  base point and the cocycle below is not a cocycle;
+* the residue map itself, used as the `Γ`-equivariant normalisation `g ↦ g/g(∞̄₊)`.
+
+**FAITHFULNESS.**  `hz` is load-bearing: with `ord w z < 0` the conclusion is FALSE — a
+function with a pole at `w` is congruent to no constant there, since `ord w (z − a) < 0` for
+every `a`.  The junk convention `ord w 0 = 0` puts `z = 0` inside the hypothesis, where the
+conclusion holds with `a = 0`.  Note the statement is about `Dbar` alone and says nothing
+about `D`: over `ℚ` it is FALSE, the places of degree `> 1` being exactly the ones it fails
+at, and that asymmetry is the whole content of the constant field extension. -/
+theorem geomPic_exists_const_of_ord_nonneg {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
+    {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D)
+    (w : gp.Dbar.Places) {z : gp.Dbar.F} (hz : 0 ≤ gp.Dbar.ord w z) :
+    ∃ a : AlgebraicClosure ℚ,
+      gp.Dbar.VanishesAt w (z - algebraMap (AlgebraicClosure ℚ) gp.Dbar.F a) := sorry
+
+/-- **LEAF (weak Mordell–Weil, 3b of 4): a Galois-invariant geometric divisor is a base
+change.**
+
+`F̄/F` is Galois with group `Γ_ℚ` — `ℚ` is algebraically closed in `F`, the curve being
+geometrically irreducible — and Galois acts TRANSITIVELY on the places above a given place of
+`F` [Stichtenoth III.7.1].  So the fibres of `below` are exactly the `Γ`-orbits, an invariant
+divisor is constant on them, and `ε v := δ w` for any `w` above `v` (and `0` if the fibre is
+empty) is a divisor with `bcDiv ε = δ`.  Finite support of `ε` is `below '' supp δ`.
+
+Transitivity is the only input and it is the only thing `GeomPic` does not already carry:
+`below_placeAct` (PROVEN) says the action preserves each fibre, which is the trivial half.
+
+**Not the conclusion in disguise, and `below` surjective is NOT needed.**  This is a
+statement about `Divisors`, one level below `Pic`; the descent argument uses it after the
+function-theoretic work is finished, on a divisor that has been made invariant on the nose
+rather than merely modulo `picRel`.  A `v` with empty fibre contributes nothing to `bcDiv ε`,
+so the sibling leaf `geomPic_below_surjective` is not among its hypotheses.
+
+**FAITHFULNESS.**  `hδ` is load-bearing at the obvious place: the image of `bcDiv` is exactly
+the set of divisors constant on fibres, and a `δ` taking two different values on one fibre is
+not a base change. -/
+theorem geomPic_exists_bcDiv_of_divAct_fixed {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
+    {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D)
+    {δ : gp.Dbar.Divisors} (hδ : ∀ σ : QbarGal, gp.divAct σ δ = δ) :
+    ∃ ε : D.Divisors, gp.bcDiv ε = δ := sorry
+
+/-- **LEAF (weak Mordell–Weil, 3c of 4): every geometric divisor is defined over a finite
+Galois level.**
+
+The divisor analogue of `geomPic_exists_finiteLevel`, and the reason the cocycle below is
+INFLATED, which is what makes Hilbert 90 applicable to an infinite Galois group at all.
+
+`supp δ` is finite and each of its places lies in a finite fibre of `below`
+(`below_finite`), so the action of `Γ` on `supp δ` factors through the finite group of
+permutations of those fibres; the kernel is an open subgroup, and `L` is the finite Galois
+level it fixes.  Equivalently and closer to the source: a place of `F̄` is defined over a
+finite extension of `ℚ`, because `F̄ = ⋃_L F·L` over the finite subextensions.
+
+The conclusion asks only `divAct ρ δ = δ`, which is weaker than `placeAct ρ` fixing `supp δ`
+pointwise — that is all the assembly needs.
+
+**Not vacuous.**  `IsGalois ℚ L` is what the consumer needs and not merely `FiniteDimensional`:
+`Hilbert 90` inflates from `Gal(L/ℚ)`, and the stability of `L` under all of `Γ` that the
+argument uses is `Normal ℚ L` read through `AlgEquiv.restrictNormalHom_apply` (the same
+step `geomPic_exists_finiteLevel` records). -/
+theorem geomPic_exists_finiteLevel_divisor {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
+    {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D)
+    (δ : gp.Dbar.Divisors) :
+    ∃ L : IntermediateField ℚ (AlgebraicClosure ℚ),
+      FiniteDimensional ℚ L ∧ IsGalois ℚ L ∧
+      (∀ σ : QbarGal, (∀ x ∈ L, σ x = x) → gp.divAct σ δ = δ) := sorry
+
+/-- **LEAF (weak Mordell–Weil, 3d of 4): Hilbert 90 for the constant field extension**,
+`H¹(Γ_ℚ, F̄ˣ) = 1` for a cocycle inflated from a finite Galois level.
+
+The sibling of `Field.exists_ne_zero_forall_absoluteGalois_apply_eq_mul`
+(`Fermat/FLT/Mathlib/FieldTheory/AbsoluteHilbert90.lean`, PROVEN OUTRIGHT), one field up: the
+module is `F̄ˣ` with the `fieldAct` action rather than `ℚ̄ˣ` with the tautological one.  The
+same inflation proof applies once `F̄/F` is set up as a Galois extension with group `Γ_ℚ`,
+which is the work this leaf is:
+
+1. `A 1 = 1` from the cocycle identity at `σ = τ = 1` (using `fieldAct_one`);
+2. for `ρ` in the fixing subgroup `N` of `L`, `A ρ = A 1 = 1` by `hinfl`, and
+   `(ρσ)|_L = σ|_L` because `IsGalois ℚ L` makes `L` stable, so
+   `fieldAct ρ (A σ) = A (ρσ) = A σ`;
+3. hence every `A σ` lies in `F̄^{N} = F·L`, a FINITE Galois extension of `F` with group
+   `Gal(L/ℚ)` — this is where `ℚ` being algebraically closed in `F` is used, and it is the
+   step that has no analogue in the absolute case;
+4. Noether's theorem at that finite level, exactly as in `AbsoluteHilbert90`.
+
+**FAITHFULNESS — `hinfl` is NOT decoration.**  Dropping it asks for the vanishing of the
+ABSTRACT `H¹` of the profinite group `Γ_ℚ` with no continuity condition on the cochain, which
+is not what Hilbert 90 says and which there is no reason to believe: Hilbert 90 for an
+infinite Galois extension is a statement about CONTINUOUS cocycles, i.e. exactly about ones
+inflated from a finite level.  `hLgal` is load-bearing in step 2 and `hLfin` in step 4; both
+are passed explicitly rather than as instances because at the literal base field `ℚ` the two
+`Algebra ℚ ↥L` instances form a diamond (see `AbsoluteHilbert90`'s implementation notes and
+`geomPic_bc_injective`'s STEP 6). -/
+theorem geomPic_hilbert90 {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
+    {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D)
+    (L : IntermediateField ℚ (AlgebraicClosure ℚ))
+    (hLfin : FiniteDimensional ℚ L) (hLgal : IsGalois ℚ L)
+    (A : QbarGal → gp.Dbar.F) (hA0 : ∀ σ, A σ ≠ 0)
+    (hcoc : ∀ σ τ, A (σ * τ) = A σ * gp.fieldAct σ (A τ))
+    (hinfl : ∀ σ τ, (∀ x ∈ L, σ x = τ x) → A σ = A τ) :
+    ∃ γ : gp.Dbar.F, γ ≠ 0 ∧ ∀ σ, gp.fieldAct σ γ = A σ * γ := sorry
+
+/-- **Every geometric place has degree `1`** (PROVEN from `geomPic_exists_const_of_ord_nonneg`
+and `finrank_residue_eq_one_of_forall_exists_const`). -/
+lemma geomPic_degOf_eq_one {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
+    (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) (w : gp.Dbar.Places) : gp.Dbar.degOf w = 1 := by
+  rw [PlaceData.degOf,
+    PlaceData.finrank_residue_eq_one_of_forall_exists_const gp.Dbar w
+      (fun z hz => geomPic_exists_const_of_ord_nonneg gp w hz), Nat.cast_one]
+
+/-- **Degree is Galois-invariant** (PROVEN): `divAct σ` permutes the places, and every
+geometric place has the same degree `1`. -/
+lemma geomPic_degHom_divAct {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
+    (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) (σ : QbarGal) (δ : gp.Dbar.Divisors) :
+    degHom gp.Dbar gp.Dbar.degOf (gp.divAct σ δ) = degHom gp.Dbar gp.Dbar.degOf δ := by
+  have hd : gp.divAct σ δ = Finsupp.equivMapDomain (gp.placeAct σ) δ := rfl
+  simp only [degHom, Finsupp.liftAddHom_apply, hd, Finsupp.sum_equivMapDomain, mulRightHom,
+    AddMonoidHom.coe_mk, ZeroHom.coe_mk, geomPic_degOf_eq_one]
 
 /-- **LEAF (weak Mordell–Weil, 3 of 4): Galois descent — an invariant geometric class is
 rational.**
@@ -7575,10 +8170,261 @@ two together say `bc` identifies `Pic⁰(X_ℚ)` with the invariants.
 structure field, `act σ = 0` would satisfy every stated axiom and make this leaf vacuous —
 its hypothesis `∀ σ, act σ y = y` would read `y = 0`.  It is `fieldAct_algebraMap` (which
 forbids `fieldAct σ = id` for `σ ≠ 1`) plus the derivation of `act` from `placeAct` that
-makes the hypothesis mean what it says.  See the section docstring above. -/
+makes the hypothesis mean what it says.  See the section docstring above.
+
+## DECOMPOSED 2026-07-30 — now PROVEN over four named sub-leaves
+
+**What the obstruction is.**  For a smooth projective geometrically integral `X/K`, the
+Hochschild–Serre sequence reads `0 → Pic(X_K) → Pic(X_K̄)^{Gal} → Br(K) → Br(X_K)`, so this
+leaf is FALSE without the rational point — and `Br(ℚ)` is not zero, so no amount of
+Hilbert 90 alone can prove it.  The point `∞₊` makes `Br(K) → Br(X_K)` split injective
+(evaluate at the point), and the argument below is that splitting written out by hand, with
+no `H²` and no Brauer group anywhere in the statement or the proof.
+
+The assembly, in order:
+
+1. **Normalise the representative.**  `Pic` is `Div/(Prin + ℤ·[∞₊])`, so subtracting
+   `δ₀(∞̄₊)·[∞̄₊]` — a member of `picRel` on the nose — replaces `y`'s representative by a
+   `δ` with `δ(∞̄₊) = 0`.  This step is what the quotient by `ℤ·[∞₊]` is FOR.
+2. **The `ℤ·[∞̄₊]` component of the invariance relation vanishes.**  Invariance of `y` gives
+   `divAct σ δ − δ = div g + n_σ·[∞̄₊]`; applying the degree homomorphism kills the principal
+   part (`degOf_divisor_eq_zero'`) and the `divAct` part (`geomPic_degHom_divAct`), leaving
+   `n_σ · deg ∞̄₊ = 0`, and `deg ∞̄₊ = 1` by `geomPic_degOf_eq_one`.  So the relation is
+   PRINCIPAL: `divAct σ δ − δ = div g_σ`.  **Without this the whole argument fails**, because
+   `σ ↦ g_σ` is then a cocycle only up to the unknown `n_σ`.
+3. **`g_σ` is a unit at the base point**, since the relation has coefficient `0` at `∞̄₊`;
+   so it has a nonzero value there (leaf 3a) and can be scaled to `A σ := g_σ/g_σ(∞̄₊)`,
+   which satisfies `A σ ≡ 1` at `∞̄₊` and has the same divisor.
+4. **`A` is a genuine `1`-cocycle.**  `A (στ)` and `A σ · fieldAct σ (A τ)` have the same
+   divisor — this is `divAct_mul` and `divAct_divisor`, and `divAct_mul` rests on
+   `placeAct_mul`, which `GeomPic` does not postulate — so their ratio is a CONSTANT
+   (`geomPic_exists_const_of_divisor_eq_zero`).  **That constant is the Brauer obstruction**,
+   a `2`-cocycle with values in `ℚ̄ˣ`, and it is `1` because both sides are `≡ 1` at `∞̄₊` and
+   `ord_infPlus_fieldAct` makes that normalisation `Γ`-equivariant.  This is the step the
+   rational point buys, and the only one.
+5. **`A` is inflated** from the finite Galois level of `δ` (leaf 3c): a `ρ` fixing the level
+   pointwise has `divAct ρ δ = δ`, so `A ρ` is a constant `≡ 1` at `∞̄₊`, hence `A ρ = 1`, and
+   the cocycle identity turns that into `A σ = A τ` whenever `σ|_L = τ|_L`.
+6. **Hilbert 90** for `F̄/F` (leaf 3d) trivialises `A` as `fieldAct σ γ / γ`.
+7. **`δ − div γ` is Galois-invariant on the nose**, hence a base change (leaf 3b), and
+   `div γ ∈ picRel` so the class is unchanged.
+
+Steps 1–4, 5's cocycle manipulation and 7's bookkeeping are Lean; the leaves are 3a (used
+twice, in step 2 and step 3), 3b, 3c and 3d.  Note what does NOT appear: no `H¹`, no `H²`,
+no `Br`, no profinite topology — the only trace of continuity is `hinfl` in leaf 3d. -/
 theorem geomPic_descent {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
     (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) (y : gp.Dbar.Pic)
-    (hy : ∀ σ : QbarGal, gp.act σ y = y) : ∃ a : D.Pic, gp.bc a = y := sorry
+    (hy : ∀ σ : QbarGal, gp.act σ y = y) : ∃ a : D.Pic, gp.bc a = y := by
+  classical
+  -- ### The normalisation at the base point, as four closure properties of `z ≡ 1 (∞̄₊)`
+  have hN1 : ∀ z w : gp.Dbar.F, 0 ≤ gp.Dbar.ord (gp.Dbar.pt PlaceData.infPlus) z →
+      gp.Dbar.VanishesAt (gp.Dbar.pt PlaceData.infPlus) (z - 1) →
+      gp.Dbar.VanishesAt (gp.Dbar.pt PlaceData.infPlus) (w - 1) →
+      gp.Dbar.VanishesAt (gp.Dbar.pt PlaceData.infPlus) (z * w - 1) := by
+    intro z w hz hz1 hw1
+    have hid : z * w - 1 = z * (w - 1) + (z - 1) := by ring
+    rw [hid]
+    exact PlaceData.vanishesAt_add (PlaceData.vanishesAt_mul_left hz hw1) hz1
+  have hN2 : ∀ c : AlgebraicClosure ℚ,
+      gp.Dbar.VanishesAt (gp.Dbar.pt PlaceData.infPlus)
+        (algebraMap (AlgebraicClosure ℚ) gp.Dbar.F c - 1) → c = 1 := by
+    intro c hc
+    by_contra hne
+    have hc0 : c - 1 ≠ 0 := sub_ne_zero_of_ne hne
+    have hid : algebraMap (AlgebraicClosure ℚ) gp.Dbar.F c - 1
+        = algebraMap (AlgebraicClosure ℚ) gp.Dbar.F (c - 1) := by rw [map_sub, map_one]
+    rw [hid] at hc
+    rcases hc with h | h
+    · exact hc0 ((map_eq_zero_iff _
+        (algebraMap (AlgebraicClosure ℚ) gp.Dbar.F).injective).mp h)
+    · rw [gp.Dbar.ord_algebraMap _ _ hc0] at h; exact lt_irrefl 0 h
+  have hN3 : ∀ (σ : QbarGal) (z : gp.Dbar.F),
+      gp.Dbar.VanishesAt (gp.Dbar.pt PlaceData.infPlus) (z - 1) →
+      gp.Dbar.VanishesAt (gp.Dbar.pt PlaceData.infPlus) (gp.fieldAct σ z - 1) := by
+    intro σ z hz
+    have hid : gp.fieldAct σ z - 1 = gp.fieldAct σ (z - 1) := by rw [map_sub, map_one]
+    rw [hid]
+    rcases hz with h | h
+    · exact Or.inl (by rw [h, map_zero])
+    · exact Or.inr (by rw [gp.ord_infPlus_fieldAct σ (z - 1)]; exact h)
+  have hN4 : ∀ z : gp.Dbar.F, gp.Dbar.ord (gp.Dbar.pt PlaceData.infPlus) z = 0 → z ≠ 0 →
+      gp.Dbar.VanishesAt (gp.Dbar.pt PlaceData.infPlus) (z - 1) →
+      gp.Dbar.VanishesAt (gp.Dbar.pt PlaceData.infPlus) (z⁻¹ - 1) := by
+    intro z hz hz0 hz1
+    have hid : z⁻¹ - 1 = -(z⁻¹ * (z - 1)) := by
+      field_simp
+      ring
+    rw [hid]
+    refine PlaceData.vanishesAt_neg (PlaceData.vanishesAt_mul_left ?_ hz1)
+    rw [gp.Dbar.ord_inv _ _ hz0, hz, neg_zero]
+  induction y using QuotientAddGroup.induction_on with
+  | _ δ₀ =>
+  -- ## STEP 1: normalise the representative so that it does not meet the base point
+  obtain ⟨δ, hmk, hδP⟩ : ∃ δ : gp.Dbar.Divisors,
+      (QuotientAddGroup.mk δ : gp.Dbar.Pic) = QuotientAddGroup.mk δ₀ ∧
+      δ (gp.Dbar.pt PlaceData.infPlus) = 0 := by
+    refine ⟨δ₀ - (δ₀ (gp.Dbar.pt PlaceData.infPlus)) •
+      Finsupp.single (gp.Dbar.pt PlaceData.infPlus) 1, ?_, ?_⟩
+    · refine QuotientAddGroup.eq_iff_sub_mem.mpr ?_
+      have hs : δ₀ - (δ₀ (gp.Dbar.pt PlaceData.infPlus)) •
+            Finsupp.single (gp.Dbar.pt PlaceData.infPlus) (1 : ℤ) - δ₀
+          = -((δ₀ (gp.Dbar.pt PlaceData.infPlus)) •
+            Finsupp.single (gp.Dbar.pt PlaceData.infPlus) (1 : ℤ)) := by abel
+      rw [hs]
+      exact neg_mem (AddSubgroup.mem_sup_right
+        (AddSubgroup.zsmul_mem _ (AddSubgroup.mem_zmultiples _) _))
+    · simp
+  rw [← hmk]
+  have hact : ∀ σ : QbarGal,
+      (QuotientAddGroup.mk (gp.divAct σ δ) : gp.Dbar.Pic) = QuotientAddGroup.mk δ := by
+    intro σ
+    have h1 : gp.act σ (QuotientAddGroup.mk δ) = QuotientAddGroup.mk (gp.divAct σ δ) := rfl
+    rw [← h1, hmk, hy σ]
+  -- ## STEP 2: the difference is PRINCIPAL — the base-point part is killed by the degree
+  have hprin : ∀ σ : QbarGal, ∃ g : gp.Dbar.F, g ≠ 0 ∧
+      gp.divAct σ δ - δ = gp.Dbar.divisor g := by
+    intro σ
+    have h := QuotientAddGroup.eq_iff_sub_mem.mp (hact σ)
+    rw [PlaceData.picRel, AddSubgroup.mem_sup] at h
+    obtain ⟨x, hx, u, hu, hxu⟩ := h
+    obtain ⟨g0, hg0⟩ := gp.Dbar.mem_princ_iff.mp hx
+    obtain ⟨n, hn⟩ := AddSubgroup.mem_zmultiples_iff.mp hu
+    have hgdiv : gp.Dbar.divisor (if g0 = 0 then 1 else g0) = x := by
+      split
+      · next h => rw [gp.Dbar.divisor_one, ← hg0, h, gp.Dbar.divisor_zero]
+      · exact hg0
+    refine ⟨if g0 = 0 then 1 else g0, ?_, ?_⟩
+    · split
+      · exact one_ne_zero
+      · assumption
+    have hn0 : n = 0 := by
+      have h1 := congrArg (degHom gp.Dbar gp.Dbar.degOf) hxu
+      rw [map_add, ← hgdiv, ← hn, degOf_divisor_eq_zero', map_zsmul, degHom_single,
+        geomPic_degOf_eq_one, map_sub, geomPic_degHom_divAct, sub_self] at h1
+      simpa using h1
+    rw [hgdiv, ← hxu, ← hn, hn0, zero_smul, add_zero]
+  choose gfun hgfun0 hgfun using hprin
+  have hordP : ∀ σ : QbarGal,
+      gp.Dbar.ord (gp.Dbar.pt PlaceData.infPlus) (gfun σ) = 0 := by
+    intro σ
+    have h := congrArg (fun d : gp.Dbar.Divisors => d (gp.Dbar.pt PlaceData.infPlus))
+      (hgfun σ)
+    simp only [Finsupp.coe_sub, Pi.sub_apply, GeomPic.divAct_apply,
+      gp.placeAct_symm_infPlus, hδP, sub_zero,
+      gp.Dbar.divisor_apply (hgfun0 σ) (gp.Dbar.pt PlaceData.infPlus)] at h
+    exact h.symm
+  -- ## STEP 3: normalise each `gfun σ` to take the value `1` at the base point
+  have hnorm : ∀ σ : QbarGal, ∃ a : AlgebraicClosure ℚ, a ≠ 0 ∧
+      gp.Dbar.VanishesAt (gp.Dbar.pt PlaceData.infPlus)
+        (gfun σ - algebraMap (AlgebraicClosure ℚ) gp.Dbar.F a) := by
+    intro σ
+    obtain ⟨a, ha⟩ := geomPic_exists_const_of_ord_nonneg gp
+      (gp.Dbar.pt PlaceData.infPlus) (z := gfun σ) (le_of_eq (hordP σ).symm)
+    refine ⟨a, ?_, ha⟩
+    rintro rfl
+    rw [map_zero, sub_zero] at ha
+    rcases ha with h | h
+    · exact hgfun0 σ h
+    · rw [hordP σ] at h; exact lt_irrefl 0 h
+  choose afun hafun0 hafun using hnorm
+  set A : QbarGal → gp.Dbar.F :=
+    fun σ => gfun σ * algebraMap (AlgebraicClosure ℚ) gp.Dbar.F (afun σ)⁻¹
+  have hAval : ∀ σ : QbarGal,
+      A σ = gfun σ * algebraMap (AlgebraicClosure ℚ) gp.Dbar.F (afun σ)⁻¹ := fun σ => rfl
+  have hcinv : ∀ σ : QbarGal,
+      algebraMap (AlgebraicClosure ℚ) gp.Dbar.F (afun σ)⁻¹ ≠ 0 := fun σ => by
+    simpa using (map_ne_zero_iff _
+      (algebraMap (AlgebraicClosure ℚ) gp.Dbar.F).injective).mpr (inv_ne_zero (hafun0 σ))
+  have hA0 : ∀ σ : QbarGal, A σ ≠ 0 := fun σ => by
+    rw [hAval σ]; exact mul_ne_zero (hgfun0 σ) (hcinv σ)
+  have hAdiv : ∀ σ : QbarGal, gp.Dbar.divisor (A σ) = gp.divAct σ δ - δ := by
+    intro σ
+    rw [hAval σ, PlaceData.divisor_mul _ (hgfun0 σ) (hcinv σ),
+      gp.Dbar.divisor_algebraMap (inv_ne_zero (hafun0 σ)), add_zero, hgfun σ]
+  have hAord : ∀ σ : QbarGal,
+      gp.Dbar.ord (gp.Dbar.pt PlaceData.infPlus) (A σ) = 0 := by
+    intro σ
+    rw [hAval σ, gp.Dbar.ord_mul _ _ _ (hgfun0 σ) (hcinv σ), hordP σ,
+      gp.Dbar.ord_algebraMap _ _ (inv_ne_zero (hafun0 σ)), add_zero]
+  have hAnorm : ∀ σ : QbarGal,
+      gp.Dbar.VanishesAt (gp.Dbar.pt PlaceData.infPlus) (A σ - 1) := by
+    intro σ
+    have h1 : algebraMap (AlgebraicClosure ℚ) gp.Dbar.F (afun σ)⁻¹
+        * algebraMap (AlgebraicClosure ℚ) gp.Dbar.F (afun σ) = 1 := by
+      rw [← map_mul, inv_mul_cancel₀ (hafun0 σ), map_one]
+    have hid : A σ - 1
+        = algebraMap (AlgebraicClosure ℚ) gp.Dbar.F (afun σ)⁻¹
+          * (gfun σ - algebraMap (AlgebraicClosure ℚ) gp.Dbar.F (afun σ)) := by
+      rw [hAval σ]; linear_combination h1
+    rw [hid]
+    exact PlaceData.vanishesAt_mul_left
+      (gp.Dbar.ord_algebraMap _ _ (inv_ne_zero (hafun0 σ))).ge (hafun σ)
+  -- ## STEP 4: the cocycle identity — the Brauer constant is `1` because `∞̄₊` is rational
+  have hfa0 : ∀ σ τ : QbarGal, gp.fieldAct σ (A τ) ≠ 0 := fun σ τ h =>
+    hA0 τ ((gp.fieldAct σ).injective (h.trans (map_zero (gp.fieldAct σ)).symm))
+  have hcoc : ∀ σ τ : QbarGal, A (σ * τ) = A σ * gp.fieldAct σ (A τ) := by
+    intro σ τ
+    have hR0 : A σ * gp.fieldAct σ (A τ) ≠ 0 := mul_ne_zero (hA0 σ) (hfa0 σ τ)
+    have hRdiv : gp.Dbar.divisor (A σ * gp.fieldAct σ (A τ))
+        = gp.divAct (σ * τ) δ - δ := by
+      rw [PlaceData.divisor_mul _ (hA0 σ) (hfa0 σ τ), ← gp.divAct_divisor, hAdiv, hAdiv,
+        gp.divAct_mul, map_sub]
+      abel
+    have hRord : gp.Dbar.ord (gp.Dbar.pt PlaceData.infPlus)
+        (A σ * gp.fieldAct σ (A τ)) = 0 := by
+      rw [gp.Dbar.ord_mul _ _ _ (hA0 σ) (hfa0 σ τ), hAord σ,
+        gp.ord_infPlus_fieldAct σ (A τ), hAord τ, add_zero]
+    have hRnorm : gp.Dbar.VanishesAt (gp.Dbar.pt PlaceData.infPlus)
+        (A σ * gp.fieldAct σ (A τ) - 1) :=
+      hN1 _ _ (hAord σ).ge (hAnorm σ) (hN3 σ (A τ) (hAnorm τ))
+    have hquot : gp.Dbar.divisor (A (σ * τ) * (A σ * gp.fieldAct σ (A τ))⁻¹) = 0 := by
+      rw [PlaceData.divisor_mul _ (hA0 _) (inv_ne_zero hR0), PlaceData.divisor_inv _ hR0,
+        hAdiv, hRdiv, add_neg_cancel]
+    obtain ⟨c, hc⟩ := geomPic_exists_const_of_divisor_eq_zero gp
+      (mul_ne_zero (hA0 (σ * τ)) (inv_ne_zero hR0)) hquot
+    have hcnorm : gp.Dbar.VanishesAt (gp.Dbar.pt PlaceData.infPlus)
+        (algebraMap (AlgebraicClosure ℚ) gp.Dbar.F c - 1) := by
+      rw [hc]
+      exact hN1 _ _ (hAord (σ * τ)).ge (hAnorm (σ * τ)) (hN4 _ hRord hR0 hRnorm)
+    have hc1 : A (σ * τ) * (A σ * gp.fieldAct σ (A τ))⁻¹ = 1 := by
+      rw [← hc, hN2 c hcnorm, map_one]
+    rw [← div_eq_mul_inv, div_eq_one_iff_eq hR0] at hc1
+    exact hc1
+  -- ## STEP 5: the cocycle is inflated from the finite Galois level of `δ`
+  obtain ⟨L, hLfin, hLgal, hLfix⟩ := geomPic_exists_finiteLevel_divisor gp δ
+  have hA1 : ∀ ρ : QbarGal, (∀ x ∈ L, ρ x = x) → A ρ = 1 := by
+    intro ρ hρ
+    have hd : gp.Dbar.divisor (A ρ) = 0 := by rw [hAdiv, hLfix ρ hρ, sub_self]
+    obtain ⟨c, hc⟩ := geomPic_exists_const_of_divisor_eq_zero gp (hA0 ρ) hd
+    have hc1 : c = 1 := hN2 c (by rw [hc]; exact hAnorm ρ)
+    rw [← hc, hc1, map_one]
+  have hinfl : ∀ σ τ : QbarGal, (∀ x ∈ L, σ x = τ x) → A σ = A τ := by
+    intro σ τ hστ
+    have hρ : ∀ x ∈ L, (σ⁻¹ * τ) x = x := by
+      intro x hx
+      rw [AlgEquiv.mul_apply, ← hστ x hx, AlgEquiv.aut_inv, AlgEquiv.symm_apply_apply]
+    have h1 : A (σ * (σ⁻¹ * τ)) = A σ * gp.fieldAct σ (A (σ⁻¹ * τ)) := hcoc _ _
+    rw [hA1 _ hρ, map_one, mul_one, ← mul_assoc, mul_inv_cancel, one_mul] at h1
+    exact h1.symm
+  -- ## STEP 6: Hilbert 90 for the constant field extension
+  obtain ⟨γ, hγ0, hγ⟩ := geomPic_hilbert90 gp L hLfin hLgal A hA0 hcoc hinfl
+  -- ## STEP 7: the twisted divisor is invariant ON THE NOSE, hence a base change
+  have hinvar : ∀ σ : QbarGal,
+      gp.divAct σ (δ - gp.Dbar.divisor γ) = δ - gp.Dbar.divisor γ := by
+    intro σ
+    have h1 : gp.divAct σ (gp.Dbar.divisor γ)
+        = (gp.divAct σ δ - δ) + gp.Dbar.divisor γ := by
+      rw [gp.divAct_divisor, hγ σ, PlaceData.divisor_mul _ (hA0 σ) hγ0, hAdiv]
+    rw [map_sub, h1]
+    abel
+  obtain ⟨ε, hε⟩ := geomPic_exists_bcDiv_of_divAct_fixed gp hinvar
+  refine ⟨QuotientAddGroup.mk ε, ?_⟩
+  have h2 : gp.bc (QuotientAddGroup.mk ε) = QuotientAddGroup.mk (gp.bcDiv ε) := rfl
+  rw [h2, hε]
+  refine QuotientAddGroup.eq_iff_sub_mem.mpr ?_
+  have h3 : δ - gp.Dbar.divisor γ - δ = -gp.Dbar.divisor γ := by abel
+  rw [h3]
+  exact neg_mem (AddSubgroup.mem_sup_left (AddSubgroup.subset_closure ⟨γ, rfl⟩))
 
 /-- **Divisibility at every prime gives divisibility at every nonzero `n`** (PROVEN, pure
 group theory, no hypothesis on `G` beyond `AddCommGroup`).
@@ -7755,24 +8601,85 @@ theorem geomPic_divisible {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c
   divisible_of_prime
     (fun p hp y => divisible_of_finsuppSingle p (geomPic_divisible_place gp p hp) y) n hn y
 
+/-! ### The two sub-leaves of `finite_kummerCochains_pic` (cut 2026-07-30)
+
+The cut separates the two things the classical proof (Silverman *AEC* VIII.1.1) actually uses,
+which are of completely different natures:
+
+* `geomPic_finite_torsion` — `J[n](ℚ̄)` is finite.  GEOMETRY, and the same kind of statement
+  as `geomPic_divisible` beside it: both say `[n] : J → J` is a finite flat isogeny, one
+  asking for surjectivity and one for the size of the kernel.  Nothing arithmetic in it.
+* `geomPic_exists_finiteCover_kummer` — every Kummer cochain is constant on the blocks of ONE
+  finite cover of `Γ`.  ARITHMETIC, and all of it: this is where Hermite–Minkowski (or the
+  class group and the unit theorem) enters, and it is the only place.
+
+What is Lean between them is that the cochains take their values in `J[p]` — which is
+`act_bc` applied to `p·Q = bc P` — and the bookkeeping that a function determined on a finite
+cover, with values in a finite set, ranges over a finite set. -/
+
+/-- **LEAF (weak Mordell–Weil, arithmetic 1 of 2, geometric): `J[n](ℚ̄)` is finite.**
+
+For an abelian variety of dimension `g` over an algebraically closed field of characteristic
+`0`, `J[n] ≅ (ℤ/n)^{2g}`; here `g = 2`, so `#J[n] = n⁴`.  Only FINITENESS is asked for — the
+order is never used, and neither is the group structure of the kernel.
+
+The sibling of `geomPic_divisible`: that leaf is the surjectivity of `[n]` and this one is the
+finiteness of its kernel, both instances of "`[n]` is a finite flat isogeny of degree
+`n^{2g}`".  A prover closing one should look at the other.
+
+**FAITHFULNESS.**  `hn` is load-bearing and is the whole of it: at `n = 0` the set is all of
+`Pic⁰(X_ℚ̄)`, which is NOT finite — it is a `2`-dimensional abelian variety over an
+algebraically closed field, so it is not even countable.  Stated at every `n ≠ 0` rather than
+at a prime because the proof does not care and the consumer only needs one value. -/
+theorem geomPic_finite_torsion {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
+    (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) (n : ℕ) (hn : n ≠ 0) :
+    {y : gp.Dbar.Pic | n • y = 0}.Finite := sorry
+
+/-- **LEAF (weak Mordell–Weil, arithmetic 2 of 2): every Kummer cochain is constant on the
+blocks of ONE finite cover of `Γ`.**
+
+This is the arithmetic of weak Mordell–Weil and nothing else.  In the classical language: all
+the Kummer cochains attached to `p·Q = bc P` are inflated from a SINGLE finite Galois
+extension `M/ℚ` — the maximal exponent-`p` extension of `L = ℚ(J[p])` unramified outside the
+finite set of places over `p·disc(f)` — so each is constant on the cosets of `Gal(ℚ̄/M)`, and
+those cosets are a finite cover of `Γ`.  The statement is phrased as a finite COVER rather
+than as a subgroup or a quotient so that no Galois theory, no profinite topology and no
+`IntermediateField` appears in it: the consumer needs exactly "finitely many blocks, and each
+cochain is constant on each block", and `AlgEquiv.restrictNormalHom` brings with it the
+`Algebra ℚ ↥L` instance diamond that `AbsoluteHilbert90` documents.
+
+Two routes to it, and the second is the one `X0.lean` found cheaper:
+
+* the classical one — the cochains are unramified outside `S` and are therefore cut out by the
+  `p`-Selmer group of `L`, finite by finiteness of `Cl(L)` and Dirichlet's unit theorem;
+* **Hermite–Minkowski**, which `X0.lean` uses at
+  `exists_finiteIndex_divisible_of_abelianScheme` after recording that the class group and the
+  unit theorem are *not* what is needed: the assembly meets one division field `ℚ(J[p], Q)` at
+  a time, each of degree at most `#J[p]` over `ℚ(J[p])`, and there are only finitely many
+  number fields of bounded degree and bounded discriminant.
+
+**FAITHFULNESS — the trivial cover does NOT discharge it.**  `S = {univ}` is a finite cover,
+and with it the conclusion reads "`σ ↦ act σ Q − Q` is constant on all of `Γ`", hence (at
+`σ = 1`, where `act 1 = id` follows from `fieldAct_one`) identically `0` — i.e. every Kummer
+cochain vanishes, i.e. `Pic⁰(X_ℚ)/p·Pic⁰(X_ℚ) = 0` for EVERY separable monic sextic.  That is
+false: the family contains positive-rank Jacobians (`y² = x⁶ + x² + 1` has rank `1`).  So the
+number of blocks is genuinely bounded below by the arithmetic, and a prover cannot cheat by
+making the cover coarse.
+
+`hp` is inherited from the consumer and is used only through `p ≠ 0`; the intended proofs both
+want `J[p]` to be an `𝔽_p`-vector space, which is why it is kept rather than weakened. -/
+theorem geomPic_exists_finiteCover_kummer {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
+    {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D)
+    (p : ℕ) (hp : p.Prime) :
+    ∃ S : Set (Set QbarGal), S.Finite ∧ (∀ σ : QbarGal, ∃ s ∈ S, σ ∈ s) ∧
+      ∀ (P : D.Pic) (Q : gp.Dbar.Pic), p • Q = gp.bc P →
+        ∀ s ∈ S, ∀ σ ∈ s, ∀ τ ∈ s, gp.act σ Q - Q = gp.act τ Q - Q := sorry
+
 /-- **LEAF (weak Mordell–Weil, the arithmetic): only finitely many Kummer cochains occur.**
 
 This is the whole arithmetic content of weak Mordell–Weil, isolated by
 `Fermat.finite_quotient_nsmul_of_kummerCochains`, and it is the only one of the five leaves
 in this cluster that needs a finiteness theorem of algebraic number theory.
-
-Two routes, and the second is the one `X0.lean` found cheaper:
-
-* the classical one — the cochains land in `J[p](ℚ̄) ≅ (ℤ/p)⁴` and are unramified outside
-  the finite set `S` of places over `p·disc(f)`, so they are cut out by the `p`-Selmer group
-  of `L = ℚ(J[p])`, finite by finiteness of `Cl(L)` and Dirichlet's unit theorem;
-* **Hermite–Minkowski**, which `X0.lean` uses at
-  `exists_finiteIndex_divisible_of_abelianScheme` after recording that the class group and
-  the unit theorem are *not* what is needed: the assembly meets one division field
-  `ℚ(J[p], y)` at a time, each of degree at most `#J[p]` over `ℚ(J[p])`, and there are only
-  finitely many number fields of bounded degree and bounded discriminant.  A cochain is then
-  determined by its restriction to a finite quotient of `Γ` and takes values in a finite
-  group, so finitely many occur.
 
 **FAITHFULNESS.**  `hp` is load-bearing at least through `p ≠ 0`: at `p = 0` the condition
 `0 • Q = bc P` forces `bc P = 0`, hence `P = 0` by `geomPic_bc_injective`, but leaves `Q`
@@ -7780,11 +8687,55 @@ completely free, so the cochains `σ ↦ act σ Q − Q` range over an infinite 
 `Pic⁰(X_ℚ̄)` has a point with nontrivial Galois orbit — which it does.  Primality is not
 needed for TRUTH, but it is what makes the intended proof available (`J[p]` is an
 `𝔽_p`-vector space, and the sibling reduction `Fermat.finite_quotient_nsmul_of_prime`
-supplies every other `n`), so it is kept rather than weakened to `p ≠ 0`. -/
+supplies every other `n`), so it is kept rather than weakened to `p ≠ 0`.
+
+## DECOMPOSED 2026-07-30 — now PROVEN over two named sub-leaves
+
+The two routes that used to be recorded here are now recorded on
+`geomPic_exists_finiteCover_kummer`, which is where the arithmetic went; see the section
+docstring above for why the cut runs between geometry and arithmetic rather than along the
+two routes.  What the assembly does:
+
+1. **The values are `p`-torsion.**  `p·(act σ Q − Q) = act σ (p·Q) − p·Q = act σ (bc P) − bc P`,
+   which is `0` by `act_bc` (PROVEN) — so every cochain maps into the finite set
+   `J[p]` (leaf 1).  This step is the only place the hypothesis `p·Q = bc P` is used, and it
+   is why the leaf may be stated about `Dbar` alone.
+2. **A cochain is determined by one point of each block** of the finite cover (leaf 2), so
+   `c ↦ (block ↦ c (a chosen point of it))` is injective on the set of cochains and lands in
+   the functions from a finite type into a finite set.
+
+Note what does NOT appear, here or in either leaf: no `H¹`, no cocycle condition, no
+profinite topology, no `IntermediateField`.  The cover formulation is what buys that. -/
 theorem finite_kummerCochains_pic {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
     (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) (p : ℕ) (hp : p.Prime) :
     {c : QbarGal → gp.Dbar.Pic | ∃ (P : D.Pic) (Q : gp.Dbar.Pic),
-      p • Q = gp.bc P ∧ c = fun σ => gp.act σ Q - Q}.Finite := sorry
+      p • Q = gp.bc P ∧ c = fun σ => gp.act σ Q - Q}.Finite := by
+  classical
+  obtain ⟨S, hSfin, hScov, hSconst⟩ := geomPic_exists_finiteCover_kummer gp p hp
+  haveI := hSfin.to_subtype
+  choose blk hblkS hblkmem using hScov
+  refine Set.Finite.of_injOn (f := fun c : QbarGal → gp.Dbar.Pic => fun s : ↥S =>
+      if h : ∃ σ : QbarGal, σ ∈ (s : Set QbarGal) then c h.choose else 0)
+    (t := {f : ↥S → gp.Dbar.Pic | ∀ s, f s ∈ {y : gp.Dbar.Pic | p • y = 0}})
+    ?_ ?_ (Set.Finite.pi' (fun _ => geomPic_finite_torsion gp p hp.ne_zero))
+  · -- STEP 1: the values of a Kummer cochain are `p`-torsion, and so is the junk value `0`
+    rintro c ⟨P, Q, hQ, rfl⟩ s
+    show p • (if h : ∃ σ : QbarGal, σ ∈ (s : Set QbarGal)
+      then gp.act h.choose Q - Q else 0) = 0
+    split
+    · rw [smul_sub, ← map_nsmul, hQ, gp.act_bc, sub_self]
+    · rw [smul_zero]
+  · -- STEP 2: a Kummer cochain is determined by one point of each block
+    rintro c ⟨P, Q, hQ, rfl⟩ c' ⟨P', Q', hQ', rfl⟩ heq
+    funext σ
+    have hex : ∃ σ' : QbarGal, σ' ∈ blk σ := ⟨σ, hblkmem σ⟩
+    have hval := congrFun heq ⟨blk σ, hblkS σ⟩
+    dsimp only at hval
+    rw [dif_pos hex, dif_pos hex] at hval
+    show gp.act σ Q - Q = gp.act σ Q' - Q'
+    rw [hSconst P Q hQ (blk σ) (hblkS σ) σ (hblkmem σ) hex.choose hex.choose_spec,
+      hSconst P' Q' hQ' (blk σ) (hblkS σ) σ (hblkmem σ) hex.choose hex.choose_spec]
+    exact hval
 
 /-- **LEAF (Mordell–Weil, arithmetic half): weak Mordell–Weil at a prime —
 `Pic⁰(X_ℚ) / p·Pic⁰(X_ℚ)` is finite**, for every separable monic sextic and every prime `p`.
@@ -8041,11 +8992,32 @@ so the next reader can re-check a claim instead of redoing the survey.
   With `δ = 0` the residual obligation `ker δ ⊆ 2·Pic` IS this leaf's conclusion, verbatim
   — the junk-structure trap the `Picard` section docstring warns against.  An honest
   pinning must therefore constrain `δ` at a NON-rational closed point, which needs residue
-  fields `κ(v)` and the norms `N_{κ(v) ⊗ L / L}` — precisely the degree theory `PlaceData`
-  deliberately omits (see "Why `Pic` is `Pic⁰` although no degree map appears").  So the
-  cut is available exactly when someone extends `PlaceData` with residue fields.
+  fields `κ(v)` and the norms `N_{κ(v) ⊗ L / L}`.
   *Refuting check*: exhibit constraints on `δ` mentioning only rational points that the
   genuine descent map satisfies and the zero map does not.
+
+  **AMENDED 2026-07-30 — the "missing structure" is now HALF present, and the audit's
+  structural claim is stale.**  This bullet said the residue fields are "precisely the degree
+  theory `PlaceData` deliberately omits".  That was true of the interface as originally
+  written and is NOT true of the file today: the degree layer at the head of the `PlaceData`
+  namespace carries `valRing v` (a `K`-subalgebra of `F`), `valMax v` (an ideal of it),
+  `residue v = O_v/m_v` as a `K`-ALGEBRA, and `degOf v = [κ(v) : K]`, all PROVEN, and
+  `degOf_divisor_eq_zero'` is the degree formula over them.  `Algebra.norm` in mathlib then
+  supplies `N_{κ(v) ⊗ L / L}` for a finite `L`-algebra with no new interface at all.
+
+  What is genuinely still absent is ONE short step and one construction:
+
+  * `residue v` is **not proven to be a field** — `m_v` maximal, i.e. `ord v z = 0` makes `z`
+    a unit of `O_v`, which is `ord_inv` plus `mem_valRing_iff` and is a few lines.  The
+    `residue` docstring says so explicitly ("nothing below needs that, so it is not proven
+    here");
+  * nothing relates `κ(v)` to `L = ℚ[x]/(f)`, which is what the descent map is valued in.
+
+  **Do not go and prove the field lemma on its own.**  It would be FREE-FLOATING — no proof
+  reachable from `fermat_last_theorem` would consume it — and the project forbids that; work
+  top-down.  The correct next dispatch writes the `δ` SKELETON first (definition, the
+  non-rational-point pinning, and `ker δ ⊆ 2·Pic` as a sorried `have` with its exact
+  statement), and the field lemma and the norm then arrive with a consumer already waiting.
 * **REDUCTION axis — structurally empty, not merely unfinished.**  `exists_reduction` gives
   `red : D.Pic →+ D'.Pic` with torsion-free kernel.  For finitely generated `Pic` that
   makes `ker red ≅ ℤ^rank` and `Pic / ker red` embed in the finite `J(𝔽₅)`, so reduction
@@ -8067,9 +9039,11 @@ so the next reader can re-check a claim instead of redoing the survey.
   project, in mathlib, or in `~/cs/FLT`.  *Refuting check*: grep any of the three for an
   Euler system or a Gross–Zagier formula.
 
-**Do not manufacture a decomposition along the descent axis without the residue fields.**
-Every cut of the shape "a `δ` with `ker δ ⊆ 2·Pic` exists" plus "that `δ` vanishes" is
-discharged by `δ = 0` and is therefore vacuous, by the first bullet. -/
+**Do not manufacture a decomposition along the descent axis pinned only at rational
+points.**  Every cut of the shape "a `δ` with `ker δ ⊆ 2·Pic` exists" plus "that `δ`
+vanishes" is discharged by `δ = 0` and is therefore vacuous, by the first bullet.  Note the
+2026-07-30 amendment there: the obstruction is the PINNING, not the absence of residue
+fields, which the file has carried since the degree layer landed. -/
 theorem two_divisible_pic (D : PlaceData 1 (-2) 5 (-10) 10 (-4) ℚ) (z : D.Pic) :
     ∃ w : D.Pic, z = 2 • w := sorry
 
