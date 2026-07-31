@@ -1732,7 +1732,8 @@ theorem nonempty_gamma1GITPresentation_of_rigidification {N : ℕ} {S : Scheme.{
             cover := fun {_T} g d => R.cover g d
             strM_invariant := R.strM_invariant
             dM_equivariant := R.dM_equivariant
-            smoothM := R.smoothM }⟩
+            smoothM := R.smoothM
+            transitiveM := R.transitiveM }⟩
   · -- naturality: both sides agree after the rigidifying cover of `d'`, and
     -- that cover is an epimorphism.
     intro T' T h g g' hg d' d bch
