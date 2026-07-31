@@ -1,0 +1,1 @@
+- [Price the consumer's input, not the named theory](flt-price-the-consumers-input.md) — the proven downstream bridge often takes a strictly WEAKER input (a K-algebra MAP, not an isomorphism); read its signature before building the classical theorem a docstring names
