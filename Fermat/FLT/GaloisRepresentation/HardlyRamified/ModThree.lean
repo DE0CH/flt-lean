@@ -68,6 +68,17 @@ public import Mathlib.AlgebraicGeometry.EllipticCurve.NormalForms
 public import Mathlib.AlgebraicGeometry.EllipticCurve.IsomOfJ
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Reduction
 public import Mathlib.Data.Rat.Lemmas
+-- The Hopf-quotient package (`Ideal.IsHopfIdeal`, and the `HopfAlgebra R (A ⧸ I)` instance it
+-- carries) plus the artinian/étale commutative algebra consumed by the connected–étale block
+-- below.  `Ideal.IsHopfIdeal` occurs in the STATEMENTS of `isHopfIdeal_hopfConnectedIdeal` and
+-- `isHopfIdeal_nilradical`, so this edge has to be `public`; the rest could be private and are
+-- kept alongside it for readability.  Note `Fermat.FLT.GroupScheme.ConnectedEtale` is already
+-- imported (privately, below) and that is ENOUGH — proof bodies of theorems are elided by the
+-- module system, and no statement in the block names anything from it.
+public import Mathlib.RingTheory.HopfAlgebra.Quotient
+public import Mathlib.RingTheory.Etale.Field
+public import Mathlib.RingTheory.Artinian.Ring
+public import Mathlib.RingTheory.Artinian.Module
 -- The PROVEN quantitative local-to-global inertia transport
 -- (`inertia_card_dvd_of_card_map_localInertiaGroup_dvd`), consumed by
 -- `inertia_card_dvd_of_map_localInertiaGroup_card_dvd`.
@@ -19743,10 +19754,432 @@ theorem hasCompleteIntersectionPresentation_of_etale {k : Type*} [Field k]
 
 end CompleteIntersectionPresentation
 
-/-- **THE CONNECTED–ÉTALE SPLITTING over a PERFECT field** (SORRY LEAF, cut 2026-07-28 out of
-`exists_etale_tensor_algEquiv_of_finite_hopf`, which is now PROVEN over this leaf and
-`exists_monomial_quotient_algEquiv_of_local_finite_hopf`).  This is step 1 of the two-step cut
-that the parent docstring had recommended; base-generic, with no `𝒪₃ᵥ` anywhere in it.
+/-! ### The connected–étale block: the three cheap steps of the splitting, PROVEN
+
+Added 2026-07-31.  The docstring of `exists_local_hopf_tensor_etale_algEquiv_of_finite_hopf`
+below had recommended a three-step finer cut — (1) the nilradical is a HOPF ideal over a perfect
+field, (2) `A ⧸ nilradical A` is ÉTALE, (3) the splitting proper — and predicted that step 3
+would need infrastructure that does not exist at this pin.  Steps 1 and 2 are discharged here,
+together with a fourth piece that the recommendation did not list and that step 3 also needs:
+that `A ⧸ (1 − e₀)` is a LOCAL Hopf quotient, where `e₀` is the minimal counit-one idempotent
+supplied by `Bialgebra.exists_connected_counit_idempotent`.
+
+So the parent is now GLUE over a single leaf, `algEquiv_connected_tensor_reduced_of_finite_hopf`
+— the isomorphism itself, whose route is recorded on that declaration.
+
+The base ring throughout is a FIELD, which is where the `ConnectedEtale` package (stated over a
+complete Noetherian local domain) applies: a field's maximal ideal is `⊥`, so it is adically
+complete for free.  Nothing here is `𝒪₃ᵥ`-specific. -/
+
+/-- A pair of COMPLEMENTARY ideals of a commutative ring splits `1` into orthogonal idempotents:
+`1 = e + (1 − e)` with `e ∈ I`, `1 − e ∈ J`, and `e` idempotent because `e·(1 − e) ∈ I ⊓ J = ⊥`. -/
+theorem exists_isIdempotentElem_of_isCompl_ideal {R : Type*} [CommRing R] {I J : Ideal R}
+    (h : IsCompl I J) : ∃ e : R, IsIdempotentElem e ∧ e ∈ I ∧ (1 - e) ∈ J := by
+  have h1 : (1 : R) ∈ I ⊔ J := h.sup_eq_top ▸ Submodule.mem_top
+  rw [Submodule.mem_sup] at h1
+  obtain ⟨e, he, f, hf, hef⟩ := h1
+  have hfe : f = 1 - e := by rw [← hef]; ring
+  subst hfe
+  have hz : e * (1 - e) = 0 := by
+    have hmem : e * (1 - e) ∈ I ⊓ J :=
+      ⟨Ideal.mul_mem_right _ _ he, Ideal.mul_mem_left _ _ hf⟩
+    rw [h.inf_eq_bot] at hmem
+    exact hmem
+  refine ⟨e, ?_, he, hf⟩
+  show e * e = e
+  linear_combination -hz
+
+/-- **Every element of a commutative artinian ring with no nontrivial idempotents is a unit or
+nilpotent.**  Fitting's lemma applied to multiplication by `x`, viewed as an endomorphism of `R`
+as a module over ITSELF — which is exactly what makes its kernel and image IDEALS, so that the
+eventual complementation `ker (x·)^n ⊕ im (x·)^n = R` is a complementation of IDEALS and the
+idempotent it produces is subject to the hypothesis. -/
+theorem isUnit_or_isNilpotent_of_trivial_idempotents {R : Type*} [CommRing R]
+    [IsArtinianRing R] [IsNoetherianRing R]
+    (h : ∀ e : R, IsIdempotentElem e → e = 0 ∨ e = 1) (x : R) :
+    IsUnit x ∨ IsNilpotent x := by
+  obtain ⟨n, hn, hn1⟩ := ((LinearMap.eventually_isCompl_ker_pow_range_pow
+    (LinearMap.mulLeft R x : Module.End R R)).and (Filter.eventually_ge_atTop 1)).exists
+  rw [LinearMap.pow_mulLeft] at hn
+  obtain ⟨e, hidem, hemem, hfmem⟩ := exists_isIdempotentElem_of_isCompl_ideal hn
+  rcases h e hidem with rfl | rfl
+  · left
+    obtain ⟨c, hc⟩ := hfmem
+    simp only [LinearMap.mulLeft_apply, sub_zero] at hc
+    have hxn : IsUnit (x ^ n) := IsUnit.of_mul_eq_one _ hc
+    obtain ⟨m, rfl⟩ := Nat.exists_eq_add_of_le hn1
+    rw [pow_add, pow_one] at hxn
+    exact isUnit_of_mul_isUnit_left hxn
+  · right
+    rw [LinearMap.mem_ker, LinearMap.mulLeft_apply, mul_one] at hemem
+    exact ⟨n, hemem⟩
+
+/-- **A nontrivial commutative artinian ring with no nontrivial idempotents is LOCAL.**  This is
+the ring-theoretic form of "`Spec` connected + artinian ⟹ `Spec` a point"; it is what turns the
+PRIMITIVITY of the counit idempotent into locality of the connected component. -/
+theorem isLocalRing_of_trivial_idempotents {R : Type*} [CommRing R] [Nontrivial R]
+    [IsArtinianRing R] [IsNoetherianRing R]
+    (h : ∀ e : R, IsIdempotentElem e → e = 0 ∨ e = 1) : IsLocalRing R := by
+  refine IsLocalRing.of_isUnit_or_isUnit_one_sub_self fun a => ?_
+  rcases isUnit_or_isNilpotent_of_trivial_idempotents h a with hu | hnil
+  · exact Or.inl hu
+  · exact Or.inr hnil.isUnit_one_sub
+
+/-- Over a PERFECT field `k`, a REDUCED finite `k`-algebra is ÉTALE over `k`: it is artinian and
+reduced, hence a finite product of finite field extensions, each separable because `k` is
+perfect. -/
+theorem etale_of_isReduced_of_finite (k : Type) [Field k] [PerfectField k]
+    (E : Type) [CommRing E] [Algebra k E] [Module.Finite k E] [IsReduced E] :
+    Algebra.Etale k E := by
+  classical
+  haveI : IsArtinianRing E := isArtinian_of_tower k inferInstance
+  rw [Algebra.Etale.iff_exists_algEquiv_prod]
+  refine ⟨MaximalSpectrum E, inferInstance, fun m => E ⧸ m.asIdeal,
+    fun m => Ideal.Quotient.field m.asIdeal, fun m => inferInstance,
+    (IsArtinianRing.equivPi E).restrictScalars k, ?_⟩
+  intro m
+  haveI : Field (E ⧸ m.asIdeal) := Ideal.Quotient.field m.asIdeal
+  haveI : Module.Finite k (E ⧸ m.asIdeal) := Module.Finite.of_surjective
+    (Ideal.Quotient.mkₐ k m.asIdeal).toLinearMap Ideal.Quotient.mk_surjective
+  exact ⟨inferInstance, inferInstance⟩
+
+/-- **STEP 2 OF THE RECOMMENDED CUT.**  Over a PERFECT field `k`, the reduction
+`A ⧸ nilradical A` of a finite `k`-algebra is ÉTALE over `k`. -/
+theorem etale_quotient_nilradical (k : Type) [Field k] [PerfectField k]
+    (A : Type) [CommRing A] [Algebra k A] [Module.Finite k A] :
+    Algebra.Etale k (A ⧸ nilradical A) := by
+  haveI : Module.Finite k (A ⧸ nilradical A) := Module.Finite.of_surjective
+    (Ideal.Quotient.mkₐ k (nilradical A)).toLinearMap Ideal.Quotient.mk_surjective
+  haveI : IsReduced (A ⧸ nilradical A) :=
+    (Ideal.isRadical_iff_quotient_reduced _).mp (Ideal.radical_isRadical ⊥)
+  exact etale_of_isReduced_of_finite k _
+
+section HopfConnectedComponent
+
+variable (k : Type) [Field k] (A : Type) [CommRing A] [HopfAlgebra k A] [Module.Finite k A]
+
+/-- **The connected counit idempotent, specialised to a FIELD base.**  A field is a complete
+Noetherian local ring — its maximal ideal is `⊥` — so `Bialgebra.exists_connected_counit_idempotent`
+of `Fermat/FLT/GroupScheme/ConnectedEtale.lean` applies verbatim.  The four conclusions are:
+idempotence, counit `1`, MINIMALITY among counit-one idempotents in the corner `A·e₀`, and the
+comultiplication ABSORPTION `Δe₀·(e₀ ⊗ e₀) = e₀ ⊗ e₀`, which is what makes `(1 − e₀)` a coideal. -/
+theorem exists_connected_counit_idempotent_field :
+    ∃ e₀ : A, IsIdempotentElem e₀ ∧
+      Coalgebra.counit (R := k) e₀ = (1 : k) ∧
+      (∀ y : A, IsIdempotentElem y → y * e₀ = y →
+        Coalgebra.counit (R := k) y = (1 : k) → y = e₀) ∧
+      Bialgebra.comulAlgHom k A e₀ * (e₀ ⊗ₜ[k] e₀) = e₀ ⊗ₜ[k] e₀ := by
+  haveI : IsAdicComplete (IsLocalRing.maximalIdeal k) k := by
+    rw [IsLocalRing.maximalIdeal_eq_bot]
+    infer_instance
+  exact Bialgebra.exists_connected_counit_idempotent (A := k) (G := A)
+
+variable {k A}
+
+omit [Module.Finite k A] in
+/-- **The antipode fixes the connected component**: `S(e₀)·e₀ = e₀`.  By MINIMALITY applied to
+the idempotent `S(e₀)·e₀`, whose counit is `1` because `ε ∘ S = ε`. -/
+theorem antipode_mul_connected_idempotent {e₀ : A} (he₀ : IsIdempotentElem e₀)
+    (hε : Coalgebra.counit (R := k) e₀ = 1)
+    (hmin : ∀ y : A, IsIdempotentElem y → y * e₀ = y →
+      Coalgebra.counit (R := k) y = (1 : k) → y = e₀) :
+    HopfAlgebra.antipodeAlgHom k A e₀ * e₀ = e₀ := by
+  set S := HopfAlgebra.antipodeAlgHom k A with hS
+  have hSe : IsIdempotentElem (S e₀) := by
+    show S e₀ * S e₀ = S e₀
+    rw [← map_mul, he₀.eq]
+  refine hmin (S e₀ * e₀) ?_ ?_ ?_
+  · show (S e₀ * e₀) * (S e₀ * e₀) = S e₀ * e₀
+    calc (S e₀ * e₀) * (S e₀ * e₀) = (S e₀ * S e₀) * (e₀ * e₀) := by ring
+      _ = S e₀ * e₀ := by rw [hSe.eq, he₀.eq]
+  · rw [mul_assoc, he₀.eq]
+  · rw [Bialgebra.counit_mul, hε, mul_one, hS]
+    show Coalgebra.counit (R := k) (HopfAlgebra.antipode (R := k) e₀) = 1
+    rw [HopfAlgebra.counit_antipode, hε]
+
+/-- The ideal cutting out the CONNECTED COMPONENT of the identity: `I₀ = (1 − e₀)`, so that
+`A ⧸ I₀ ≅ A·e₀` is the local factor of `A` at the identity section. -/
+abbrev hopfConnectedIdeal (e₀ : A) : Ideal A := Ideal.span {1 - e₀}
+
+/-- `e₀` becomes `1` in the connected quotient. -/
+theorem mk_hopfConnectedIdeal_eq_one (e₀ : A) :
+    Ideal.Quotient.mk (hopfConnectedIdeal e₀) e₀ = 1 := by
+  have hmem : (1 : A) - e₀ ∈ hopfConnectedIdeal e₀ := Ideal.subset_span rfl
+  have := (Ideal.Quotient.eq_zero_iff_mem (I := hopfConnectedIdeal e₀)).mpr hmem
+  rw [map_sub, map_one, sub_eq_zero] at this
+  exact this.symm
+
+/-- Membership in `(1 − e₀)` is annihilation by `e₀`. -/
+theorem mem_hopfConnectedIdeal_iff {e₀ : A} (he₀ : IsIdempotentElem e₀) (x : A) :
+    x ∈ hopfConnectedIdeal e₀ ↔ x * e₀ = 0 := by
+  rw [Ideal.mem_span_singleton']
+  constructor
+  · rintro ⟨a, rfl⟩
+    calc a * (1 - e₀) * e₀ = a * (e₀ - e₀ * e₀) := by ring
+      _ = 0 := by rw [he₀.eq, sub_self, mul_zero]
+  · intro hx
+    exact ⟨x, by linear_combination -hx⟩
+
+omit [Module.Finite k A] in
+/-- **`(1 − e₀)` IS A HOPF IDEAL**, i.e. `G⁰ = Spec (A ⧸ (1 − e₀))` is a closed SUBGROUP scheme.
+The coideal condition is EXACTLY the comultiplication absorption `Δe₀·(e₀ ⊗ e₀) = e₀ ⊗ e₀`, read
+through the algebra map `A ⊗ A → A₀ ⊗ A₀`; the counit condition is `ε(1 − e₀) = 0`; and the
+antipode condition is `S(e₀)·e₀ = e₀`. -/
+theorem isHopfIdeal_hopfConnectedIdeal {e₀ : A} (he₀ : IsIdempotentElem e₀)
+    (hε : Coalgebra.counit (R := k) e₀ = 1)
+    (hmin : ∀ y : A, IsIdempotentElem y → y * e₀ = y →
+      Coalgebra.counit (R := k) y = (1 : k) → y = e₀)
+    (habs : Bialgebra.comulAlgHom k A e₀ * (e₀ ⊗ₜ[k] e₀) = e₀ ⊗ₜ[k] e₀) :
+    (hopfConnectedIdeal e₀).IsHopfIdeal k := by
+  set I : Ideal A := hopfConnectedIdeal e₀ with hI
+  -- the algebra map `Ψ : A ⊗ A → (A ⧸ I) ⊗ (A ⧸ I)`
+  set Ψ : A ⊗[k] A →ₐ[k] (A ⧸ I) ⊗[k] (A ⧸ I) :=
+    Algebra.TensorProduct.map (Ideal.Quotient.mkₐ k I) (Ideal.Quotient.mkₐ k I) with hΨ
+  have hΨe : Ψ (e₀ ⊗ₜ[k] e₀) = 1 := by
+    rw [hΨ]
+    show (Ideal.Quotient.mk I e₀) ⊗ₜ[k] (Ideal.Quotient.mk I e₀) = 1
+    rw [mk_hopfConnectedIdeal_eq_one]
+    rfl
+  -- absorption transports to `Ψ (Δ e₀) = 1`
+  have hΨΔ : Ψ (Bialgebra.comulAlgHom k A e₀) = 1 := by
+    have := congrArg Ψ habs
+    rw [map_mul, hΨe, mul_one] at this
+    exact this
+  have hkey : ∀ x ∈ I, Ψ (Bialgebra.comulAlgHom k A x) = 0 := by
+    intro x hx
+    rw [Ideal.mem_span_singleton'] at hx
+    obtain ⟨a, rfl⟩ := hx
+    rw [map_mul, map_mul, map_sub, map_sub, map_one, map_one, hΨΔ, sub_self, mul_zero]
+  haveI hco : (Submodule.restrictScalars k I).IsCoideal := by
+    refine ⟨?_, ?_⟩
+    · -- the counit vanishes on `I`
+      intro x hx
+      have hx' : x ∈ I := hx
+      rw [Ideal.mem_span_singleton'] at hx'
+      obtain ⟨a, rfl⟩ := hx'
+      rw [Bialgebra.counit_mul, map_sub, Bialgebra.counit_one, hε, sub_self, mul_zero]
+    · -- the comultiplication descends
+      intro x hx
+      exact hkey x hx
+  refine ⟨?_⟩
+  · -- the antipode preserves `I`
+    intro x hx
+    rw [mem_hopfConnectedIdeal_iff he₀] at hx ⊢
+    show HopfAlgebra.antipodeAlgHom k A x * e₀ = 0
+    have hSx : HopfAlgebra.antipodeAlgHom k A x * HopfAlgebra.antipodeAlgHom k A e₀ = 0 := by
+      rw [← map_mul, hx, map_zero]
+    calc HopfAlgebra.antipodeAlgHom k A x * e₀
+        = HopfAlgebra.antipodeAlgHom k A x *
+            (HopfAlgebra.antipodeAlgHom k A e₀ * e₀) := by
+          rw [antipode_mul_connected_idempotent he₀ hε hmin]
+      _ = 0 := by rw [← mul_assoc, hSx, zero_mul]
+
+omit [Module.Finite k A] in
+/-- **The connected quotient has only TRIVIAL idempotents** — this is exactly the MINIMALITY of
+`e₀`, applied to `a·e₀` (counit `1`) or to its complement `e₀ − a·e₀` (counit `0`).  The counit of
+an idempotent is an idempotent of the FIELD `k`, hence `0` or `1`, which is what makes the case
+split exhaustive; this is the one step that would fail over a base with idempotents of its own. -/
+theorem trivial_idempotents_connected_quotient {e₀ : A} (he₀ : IsIdempotentElem e₀)
+    (hε : Coalgebra.counit (R := k) e₀ = 1)
+    (hmin : ∀ y : A, IsIdempotentElem y → y * e₀ = y →
+      Coalgebra.counit (R := k) y = (1 : k) → y = e₀)
+    (u : A ⧸ hopfConnectedIdeal e₀) (hu : IsIdempotentElem u) : u = 0 ∨ u = 1 := by
+  obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective u
+  -- lift the idempotent into the corner `A·e₀`
+  have hae : a * a * e₀ = a * e₀ := by
+    have hmem : a * a - a ∈ hopfConnectedIdeal e₀ := by
+      rw [← Ideal.Quotient.eq_zero_iff_mem, map_sub, map_mul, sub_eq_zero]
+      exact hu.eq
+    rw [mem_hopfConnectedIdeal_iff he₀] at hmem
+    linear_combination hmem
+  set y : A := a * e₀ with hy
+  have he₀y : e₀ * y = y := by rw [hy, ← mul_assoc, mul_comm e₀ a, mul_assoc, he₀.eq]
+  have hyidem : IsIdempotentElem y := by
+    show y * y = y
+    calc a * e₀ * (a * e₀) = a * a * e₀ * e₀ := by ring
+      _ = a * e₀ * e₀ := by rw [hae]
+      _ = a * e₀ := by rw [mul_assoc, he₀.eq]
+  have hye : y * e₀ = y := by rw [hy, mul_assoc, he₀.eq]
+  have hmky : Ideal.Quotient.mk (hopfConnectedIdeal e₀) y
+      = Ideal.Quotient.mk (hopfConnectedIdeal e₀) a := by
+    rw [hy, map_mul, mk_hopfConnectedIdeal_eq_one, mul_one]
+  -- the counit of an idempotent is `0` or `1`, `k` being a field
+  have hcy : Coalgebra.counit (R := k) y = 0 ∨ Coalgebra.counit (R := k) y = 1 := by
+    have hsq : Coalgebra.counit (R := k) y * Coalgebra.counit (R := k) y
+        = Coalgebra.counit (R := k) y := by rw [← Bialgebra.counit_mul, hyidem.eq]
+    have h0 : Coalgebra.counit (R := k) y * (Coalgebra.counit (R := k) y - 1) = 0 := by
+      linear_combination hsq
+    rcases mul_eq_zero.mp h0 with h | h
+    · exact Or.inl h
+    · exact Or.inr (sub_eq_zero.mp h)
+  rcases hcy with h0 | h1
+  · -- the complement `e₀ − y` has counit `1`, so it IS `e₀`, so `y = 0`
+    left
+    have hcompl : e₀ - y = e₀ := by
+      refine hmin (e₀ - y) ?_ ?_ ?_
+      · show (e₀ - y) * (e₀ - y) = e₀ - y
+        calc (e₀ - y) * (e₀ - y) = e₀ * e₀ - e₀ * y - (y * e₀ - y * y) := by ring
+          _ = e₀ - y := by rw [he₀.eq, he₀y, hye, hyidem.eq]; ring
+      · calc (e₀ - y) * e₀ = e₀ * e₀ - y * e₀ := by ring
+          _ = e₀ - y := by rw [he₀.eq, hye]
+      · rw [map_sub, hε, h0, sub_zero]
+    have hy0 : y = 0 := by linear_combination -hcompl
+    rw [← hmky, hy0, map_zero]
+  · -- `y` itself has counit `1`, so `y = e₀`, whose class is `1`
+    right
+    have := hmin y hyidem hye h1
+    rw [← hmky, this, mk_hopfConnectedIdeal_eq_one]
+
+/-- **THE CONNECTED COMPONENT IS A LOCAL RING**, and hence — with the Hopf-ideal statement above
+— `A ⧸ (1 − e₀)` is a LOCAL finite Hopf `k`-algebra.  Nontriviality comes from `ε e₀ = 1 ≠ 0`. -/
+theorem isLocalRing_connected_quotient {e₀ : A} (he₀ : IsIdempotentElem e₀)
+    (hε : Coalgebra.counit (R := k) e₀ = 1)
+    (hmin : ∀ y : A, IsIdempotentElem y → y * e₀ = y →
+      Coalgebra.counit (R := k) y = (1 : k) → y = e₀) :
+    IsLocalRing (A ⧸ hopfConnectedIdeal e₀) := by
+  haveI hfin : Module.Finite k (A ⧸ hopfConnectedIdeal e₀) := Module.Finite.of_surjective
+    (Ideal.Quotient.mkₐ k (hopfConnectedIdeal e₀)).toLinearMap Ideal.Quotient.mk_surjective
+  haveI : Nontrivial (A ⧸ hopfConnectedIdeal e₀) := by
+    refine Ideal.Quotient.nontrivial_iff.mpr ?_
+    intro htop
+    have h1 : (1 : A) ∈ hopfConnectedIdeal e₀ := htop ▸ Submodule.mem_top
+    rw [mem_hopfConnectedIdeal_iff he₀, one_mul] at h1
+    rw [h1, map_zero] at hε
+    exact zero_ne_one hε
+  haveI : IsArtinianRing (A ⧸ hopfConnectedIdeal e₀) := isArtinian_of_tower k inferInstance
+  haveI : IsNoetherianRing (A ⧸ hopfConnectedIdeal e₀) := isNoetherian_of_tower k inferInstance
+  exact isLocalRing_of_trivial_idempotents (trivial_idempotents_connected_quotient he₀ hε hmin)
+
+end HopfConnectedComponent
+
+/-- The tensor square of an ÉTALE algebra over a field is REDUCED — étale is stable under base
+change and composition, and a formally unramified algebra over a field is reduced. -/
+theorem isReduced_tensor_self_of_etale (k : Type) [Field k] (E : Type) [CommRing E]
+    [Algebra k E] [Algebra.Etale k E] : IsReduced (E ⊗[k] E) := by
+  haveI : Algebra.Etale k (E ⊗[k] E) := Algebra.Etale.comp k E (E ⊗[k] E)
+  exact Algebra.FormallyUnramified.isReduced_of_field k (E ⊗[k] E)
+
+/-- **STEP 1 OF THE RECOMMENDED CUT: THE NILRADICAL IS A HOPF IDEAL over a PERFECT field.**  This
+is the statement that `G_red` is a closed SUBGROUP scheme, and it is the ONLY place perfectness is
+used.  Perfectness enters through `A_red ⊗_k A_red` being REDUCED — which is exactly what fails
+over an imperfect field, and is exactly what makes the composite
+`A --Δ--> A ⊗ A --> A_red ⊗ A_red` kill the nilradical.  The counit condition is free: the counit
+of a nilpotent is a nilpotent of the FIELD `k`, hence `0`.  The antipode condition is free too:
+an algebra map carries nilpotents to nilpotents. -/
+theorem isHopfIdeal_nilradical (k : Type) [Field k] [PerfectField k] (A : Type) [CommRing A]
+    [HopfAlgebra k A] [Module.Finite k A] : (nilradical A).IsHopfIdeal k := by
+  haveI : Algebra.Etale k (A ⧸ nilradical A) := etale_quotient_nilradical k A
+  haveI : IsReduced ((A ⧸ nilradical A) ⊗[k] (A ⧸ nilradical A)) :=
+    isReduced_tensor_self_of_etale k _
+  set Φ : A →ₐ[k] (A ⧸ nilradical A) ⊗[k] (A ⧸ nilradical A) :=
+    (Algebra.TensorProduct.map (Ideal.Quotient.mkₐ k (nilradical A))
+      (Ideal.Quotient.mkₐ k (nilradical A))).comp (Bialgebra.comulAlgHom k A) with hΦ
+  -- the counit of a nilpotent is a nilpotent of the FIELD `k`, hence `0`
+  have hcounit : ∀ x ∈ nilradical A, Coalgebra.counit (R := k) x = 0 := by
+    intro x hx
+    obtain ⟨n, hn⟩ := mem_nilradical.mp hx
+    have hpow : Coalgebra.counit (R := k) x ^ n = 0 := by
+      rw [← Bialgebra.counit_pow, hn, map_zero]
+    exact (pow_eq_zero_iff'.mp hpow).1
+  -- `Φ x` is a nilpotent of a REDUCED ring, hence `0`
+  have hkey : ∀ x ∈ nilradical A, Φ x = 0 := by
+    intro x hx
+    exact IsReduced.eq_zero _ ((mem_nilradical.mp hx).map Φ)
+  haveI hco : (Submodule.restrictScalars k (nilradical A)).IsCoideal := by
+    refine ⟨fun x hx => hcounit x hx, fun x hx => hkey x hx⟩
+  refine ⟨?_⟩
+  intro x hx
+  exact mem_nilradical.mpr ((mem_nilradical.mp hx).map (HopfAlgebra.antipodeAlgHom k A))
+
+/-- **THE SPLITTING PROPER** (SORRY LEAF, cut 2026-07-31 out of
+`exists_local_hopf_tensor_etale_algEquiv_of_finite_hopf` immediately below, which is now GLUE over
+this leaf and the block above).  Everything else in the parent's recommended three-step cut is
+PROVEN above; this is step 3, and it carries the whole of the connected–étale splitting.
+
+**WHAT IS ASKED FOR.**  With `e₀` the minimal counit-one idempotent (existence:
+`exists_connected_counit_idempotent_field`), the canonical multiplication map
+
+    G⁰ × G_red ⟶ G,        dually    φ = (π₀ ⊗ π_red) ∘ Δ : A ⟶ (A ⧸ (1 − e₀)) ⊗_k (A ⧸ nil A),
+
+is an isomorphism.  Only `Nonempty` of SOME `k`-algebra isomorphism is asked for, but every proof
+known to the author goes through `φ`, because the two SIDES are already pinned: `A₀` must be the
+local factor at the identity and `E` must be `A_red`, since `(A₀ ⊗ E) ⧸ nil = k ⊗ E = E`.
+
+**WHY IT IS TRUE, AND WHAT THE STATEMENT REALLY ASSERTS NUMERICALLY.**  Write `A ≅ ∏ᵢ Aᵢ` as a
+product of local artinian factors, `Aᵢ ⧸ nil = Kᵢ`.  Then `E = ∏ᵢ Kᵢ`, `A₀` is the factor at the
+identity (whose residue field is `k`, because the counit is a `k`-point of it), and the claim
+`dim_k A = dim_k A₀ · dim_k E` unwinds to `length Aᵢ = length A₀` for EVERY `i`: **all local
+factors of a finite commutative Hopf algebra have the same length.**  That is precisely the
+group-scheme input — all connected components are translates of the identity component — and it
+is what fails for a bare finite algebra: `k[x]/(x²) × k` has factors of length `2` and `1`.
+
+**THE ROUTE (base change + translation), which is what a successor should formalise.**  Both
+halves are elementary once set up, and neither needs comodule theory.
+
+1. *Descent.*  `φ` is a `k`-linear map between finite-dimensional `k`-vector spaces, and forming
+   `φ ⊗ K` for a field extension `K/k` commutes with the two constructions on the right (`⧸` and
+   `⊗`).  Faithful flatness of `K/k` — or, at this finiteness, `ker (φ) ⊗ K = ker (φ ⊗ K)` plus a
+   dimension count — reduces bijectivity of `φ` to bijectivity of `φ ⊗ K`.  So one may take `K`
+   large enough to split `E`, i.e. `E ⊗ K ≅ Kᵐ`, `m = dim_k E`; `K` may be taken finite separable
+   over `k` because `E` is étale.
+2. *Translation.*  Over such a `K`, `A' = A ⊗ K` is a finite Hopf `K`-algebra all of whose residue
+   fields are `K`, so its minimal idempotents correspond bijectively to the `K`-algebra maps
+   `g : A' → K` (the `K`-points of `G`).  For each such `g` the map `τ_g := (id ⊗ g) ∘ Δ : A' → A'`
+   is a `K`-ALGEBRA AUTOMORPHISM with inverse `τ_{g ∘ S}` — an entirely formal consequence of the
+   Hopf axioms — and it permutes the minimal idempotents simply transitively.  Composing `φ ⊗ K`
+   with the projection onto the `g`-component of `E ⊗ K = Kᵐ` gives exactly `π₀ ∘ τ_g`, i.e. the
+   projection of `A'` onto its local factor at `g` followed by an isomorphism of that factor with
+   `A'₀`.  Hence `φ ⊗ K` is the product of the factor projections, which is bijective.
+
+Step 2 is the one that uses the group structure, and `τ_g` is the entire content of "all
+components are translates of the identity component".
+
+**A CHEAPER-LOOKING ROUTE THAT DOES NOT CLOSE, recorded so it is not re-attempted blind.**  `E` is
+étale hence formally smooth, and `A ↠ E` has NILPOTENT kernel, so `Algebra.FormallySmooth.lift`
+produces a `k`-algebra SECTION `s : E →ₐ[k] A` for free.  That is genuinely available at this pin
+and it does split `A` into local factors indexed by the primitive idempotents of `E`.  It does
+NOT give the theorem: `s` is only an ALGEBRA section, and the untwisting `a ⊗ x ↦ a·s(x₍₁₎) ⊗ x₍₂₎`
+that would turn the comodule structure into a free one needs `s` to be a COALGEBRA map as well.
+Nothing in formal smoothness supplies that. (It is not stated as a hypothesis here for the same
+reason: it is not known to be usable.)
+
+**THE FAITHFULNESS CHECK.**  The statement is FALSE with the Hopf hypothesis dropped, by the
+length argument above; it is NOT vacuous, since `μ₃` over `𝔽₃` gives `A₀ = 𝔽₃[y]/(y³)`, `E = 𝔽₃`
+and the constant group `ℤ⧸3` gives `A₀ = 𝔽₃`, `E = 𝔽₃³`; and a check that would refute it is a
+finite commutative Hopf algebra over a perfect field two of whose local factors have different
+lengths.  `[PerfectField k]` is inherited from the parent and is used only through
+`isHopfIdeal_nilradical` above, i.e. only to know that `A ⧸ nil A` is a Hopf quotient at all — the
+STATEMENT below makes sense without it, but `A ⧸ nil A` is then not a group scheme and the
+translation argument has nothing to act on. -/
+theorem algEquiv_connected_tensor_reduced_of_finite_hopf (k : Type) [Field k] [PerfectField k]
+    (A : Type) [CommRing A] [HopfAlgebra k A] [Module.Finite k A]
+    {e₀ : A} (he₀ : IsIdempotentElem e₀)
+    (hε : Coalgebra.counit (R := k) e₀ = 1)
+    (hmin : ∀ y : A, IsIdempotentElem y → y * e₀ = y →
+      Coalgebra.counit (R := k) y = (1 : k) → y = e₀) :
+    Nonempty (A ≃ₐ[k] (A ⧸ hopfConnectedIdeal e₀) ⊗[k] (A ⧸ nilradical A)) :=
+  sorry
+
+/-- **THE CONNECTED–ÉTALE SPLITTING over a PERFECT field** (cut 2026-07-28 out of
+`exists_etale_tensor_algEquiv_of_finite_hopf`, which is PROVEN over this declaration and
+`exists_monomial_quotient_algEquiv_of_local_finite_hopf`.  **PROVEN AS GLUE, in turn, 2026-07-31**
+over the block immediately above and the single leaf `algEquiv_connected_tensor_reduced_of_finite_hopf`).
+This is step 1 of the two-step cut that the parent docstring had recommended; base-generic, with
+no `𝒪₃ᵥ` anywhere in it.
+
+**WHERE THE CONTENT NOW LIVES.**  The three-step finer cut this docstring recommended below has
+been carried out, and steps 1 and 2 of it are PROVEN: `isHopfIdeal_nilradical` (the nilradical is
+a Hopf ideal over a perfect field — this is where perfectness is spent) and
+`etale_quotient_nilradical` (the reduction is étale).  So is a fourth piece the recommendation did
+not list and which step 3 also needs: `isHopfIdeal_hopfConnectedIdeal` and
+`isLocalRing_connected_quotient`, which make `A ⧸ (1 − e₀)` a LOCAL finite Hopf `k`-algebra over
+the `ConnectedEtale` counit-idempotent package.  The body below is now six lines with no
+mathematics in it, and a successor should be dispatched at
+`algEquiv_connected_tensor_reduced_of_finite_hopf`, whose docstring carries the route (base change
+to a splitting field, then the translation automorphisms `τ_g = (id ⊗ g) ∘ Δ`) and records a
+cheaper-looking route that does NOT close.
+
+The rest of this docstring is retained as the SPECIFICATION for that leaf.
 
 A finite commutative Hopf algebra `A` over a perfect field `k` splits as
 
@@ -19827,13 +20260,34 @@ this leaf must add `public import Fermat.FLT.GroupScheme.ConnectedEtale` to this
 header — a transitively-reached or private import does not make the names available
 even in proof bodies.  `Fermat/FLT/GroupScheme/Cartier.lean` likewise exists and does
 contain a sorry-free `isReduced_of_charZero` (:456), so the sibling's claim is accurate
-too. -/
+too.
+
+**BOTH HALVES OF THE PRECEDING PARAGRAPH ARE WRONG, corrected 2026-07-31 by measurement, and
+the correction is worth more than the claim.**  (i) This file has carried
+`import Fermat.FLT.GroupScheme.ConnectedEtale` — a PRIVATE import — since before that note was
+written; it is in the header block below `public import Mathlib.Data.Rat.Lemmas`, added for
+`exists_connected_counit_idempotent_at_three`.  (ii) A private import DOES make the names
+available in proof bodies: the module system elides theorem proof bodies, so a theorem may use a
+privately-imported constant freely, and only a name occurring in a STATEMENT (or in an exposed
+`def`/`abbrev` body) needs a `public` edge.  Verified by elaborating the whole connected–étale
+block above against exactly this import configuration.  What did have to be added `public` is
+`Mathlib.RingTheory.HopfAlgebra.Quotient`, because `Ideal.IsHopfIdeal` occurs in two statements
+there.  No `public` edge to a `GroupScheme` module was needed at all. -/
 theorem exists_local_hopf_tensor_etale_algEquiv_of_finite_hopf (k : Type) [Field k]
     [PerfectField k] (A : Type) [CommRing A] [HopfAlgebra k A] [Module.Finite k A] :
     ∃ (A₀ : Type) (_ : CommRing A₀) (_ : HopfAlgebra k A₀) (_ : Module.Finite k A₀)
       (_ : IsLocalRing A₀) (E : Type) (_ : CommRing E) (_ : Algebra k E),
-      Algebra.Etale k E ∧ Nonempty (A ≃ₐ[k] A₀ ⊗[k] E) :=
-  sorry
+      Algebra.Etale k E ∧ Nonempty (A ≃ₐ[k] A₀ ⊗[k] E) := by
+  obtain ⟨e₀, he₀, hε, hmin, habs⟩ := exists_connected_counit_idempotent_field k A
+  haveI : (hopfConnectedIdeal e₀).IsHopfIdeal k := isHopfIdeal_hopfConnectedIdeal he₀ hε hmin habs
+  haveI : (nilradical A).IsHopfIdeal k := isHopfIdeal_nilradical k A
+  haveI hfin₀ : Module.Finite k (A ⧸ hopfConnectedIdeal e₀) := Module.Finite.of_surjective
+    (Ideal.Quotient.mkₐ k (hopfConnectedIdeal e₀)).toLinearMap Ideal.Quotient.mk_surjective
+  haveI hloc₀ : IsLocalRing (A ⧸ hopfConnectedIdeal e₀) :=
+    isLocalRing_connected_quotient he₀ hε hmin
+  exact ⟨A ⧸ hopfConnectedIdeal e₀, inferInstance, inferInstance, hfin₀, hloc₀,
+    A ⧸ nilradical A, inferInstance, inferInstance, etale_quotient_nilradical k A,
+    algEquiv_connected_tensor_reduced_of_finite_hopf k A he₀ hε hmin⟩
 
 /-! ### The Demazure–Gabriel normal form, split on the characteristic
 

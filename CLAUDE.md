@@ -349,6 +349,27 @@ check its HEADER before hunting for a missing consumer — and note that wiring 
 island in correctly RAISES the reported frontier, because its sorries become
 visible for the first time. That is disclosure, not regression.
 
+**Do NOT over-read that into "every name you use needs a `public import`" — that
+is false, and the false version has been sitting in a leaf docstring telling
+agents to edit a 71 000-line header** (measured and corrected 2026-07-31). A
+plain `import M` makes `M`'s names available for elaboration in the importing
+module; `public` only controls whether they are RE-EXPORTED to that module's own
+importers. Since **theorem proof bodies are elided by the module system**, a
+`public theorem` may use privately-imported constants freely. What needs a
+`public` edge is a name occurring in a **statement**, or in the body of a
+`def`/`abbrev`/`instance` that `@[expose]` publishes.
+`ModThree.lean`'s `exists_local_hopf_tensor_etale_algEquiv_of_finite_hopf`
+carried the note "whoever takes this leaf must add
+`public import Fermat.FLT.GroupScheme.ConnectedEtale` — a transitively-reached or
+private import does not make the names available even in proof bodies". The file
+had imported that module privately since before the note was written, and 300
+lines of new public theorems calling into it elaborate green against exactly that
+configuration. The one edge that did have to be `public` was
+`Mathlib.RingTheory.HopfAlgebra.Quotient`, because `Ideal.IsHopfIdeal` appears in
+two of the new STATEMENTS. Check WHERE the name occurs before touching a header:
+the test is one `lake env lean` on a scratch module mirroring the target's import
+lines, about ten seconds.
+
 **So a fourth standing check belongs in every bookkeeping cycle: enumerate
 modules under `Fermat/` and subtract the root's import closure.** A newly
 vendored subtree is the usual way modules land here — vendoring a directory

@@ -34,3 +34,4 @@
 - [flt-loop spawn/liveness race](flt-loop-spawn-liveness-race.md) — the loop can put TWO live agents in one worktree; check your token against jobs/<name>.json first, and a discarded incarnation yields WITHOUT writing its sentinel
 - [flt-loop runs on mystique](flt-loop-runs-on-mystique.md) — not on the medic's host, so ps says "dead" for a healthy loop; it re-execs onto edited source itself (do NOT hand-restart), and a live Claude session there respawns it if killed
 - [An ∃-finite-set leaf admits a cruder witness](flt-existential-finite-set-admits-a-cruder-witness.md) — a docstring's ROUTE is a cost hypothesis, not a spec: spanning set beats primitive element, any divisor beats the discriminant
+- [A private import suffices for proof bodies](lean-private-import-suffices-for-proof-bodies.md) — only STATEMENTS (and exposed def bodies) need `public import`; ModThree's docstring said otherwise for three days and made a leaf look like it needed a header edit it did not
