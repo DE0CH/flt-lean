@@ -154,13 +154,16 @@ smaller statement; the frontier of this file is the SIX leaves
 
 * `Heegner.exists_ratPoly_weberAlpha_pow_four` — `LEAF 1b`, Weber's descent `α ∈ ℚ[α⁴]`,
   class-number-FREE (it replaced `natDegree_minpoly_weberAlpha_le`, which is now a theorem);
-* `Heegner.exists_modularForm_coeff_prod_of_smul_invariant` — `LEAF 3a-i″`, the ANALYTIC
-  PACKAGING: each coefficient of the product, times a power of `Δ`, is a level-one modular
-  form. The rigidity that used to sit on top of it — a `Γ`-invariant holomorphic function with
-  a pole of order `≤ m` at the cusp is a polynomial in `j` — is now the THEOREM
-  `exists_polynomial_eval_jInvariant_of_modularForm`, proved over
-  `levelOne_weight_zero_const`, `ModularForm.toCuspForm` and `CuspForm.discriminantEquiv`, so
-  what is left here is holomorphy, `hinv` read coefficientwise, and a crude pole-order bound;
+* `Heegner.exists_isBoundedAtImInfty_coeff_prod` — `LEAF 3a-i″`, and it is now a SINGLE GROWTH
+  ESTIMATE: for each `k` some `m` makes `c_k(z)·Δ(z)^m` bounded as `Im z → ∞`, where `c_k` is
+  the `k`-th coefficient of `∏_t (X − j(t·z))`. Everything that used to sit on top of it is
+  proven: the rigidity (`exists_polynomial_eval_jInvariant_of_modularForm`, over
+  `levelOne_weight_zero_const`, `ModularForm.toCuspForm`, `CuspForm.discriminantEquiv`), the
+  holomorphy (`jInvariant_mdiff`, `jInvariant_triPoint_mdiff`, `coeff_prod_mdiff`), the
+  slash-invariance (`coeffDelta_slash`, which is where `hinv` is spent) and the `ModularForm`
+  packaging (`exists_modularForm_coeff_prod_of_smul_invariant`). A crude `m` suffices:
+  `Im((az+b)/d) = a·Im z/d` and `a/d ≤ N` give `c_k = O(|q|^{−kN})`, so `m = ψ(N)·N` serves
+  every `k`, and the one input still owed is a lower bound `|Δ(z)| ≥ c|q|` near the cusp;
 * `Heegner.exists_intPolynomial_map_of_eq_prod` — `LEAF 3a-i‴`, any such polynomial over `ℂ`
   has INTEGER coefficients: the `ℤ[ζ_N]`-plus-Galois-stability argument, with no modular
   content left in it beyond `j`'s own `q`-expansion. These two replaced
@@ -4689,6 +4692,142 @@ theorem exists_polynomial_eval_jInvariant_of_modularForm :
       Polynomial.eval_pow, Polynomial.eval_X]
     linear_combination hz
 
+/-- `j` is holomorphic on `ℍ` — PROVEN. `j = E₄³/Δ` with `Δ` nowhere zero. -/
+lemma jInvariant_mdiff : MDiff jInvariant := by
+  rw [UpperHalfPlane.mdifferentiable_iff]
+  have hE : DifferentiableOn ℂ
+      ((ModularForm.E₄ : UpperHalfPlane → ℂ) ∘ UpperHalfPlane.ofComplex) {z : ℂ | 0 < z.im} :=
+    UpperHalfPlane.mdifferentiable_iff.mp (ModularFormClass.holo ModularForm.E₄)
+  have hD : DifferentiableOn ℂ
+      ((ModularForm.discriminant : UpperHalfPlane → ℂ) ∘ UpperHalfPlane.ofComplex)
+      {z : ℂ | 0 < z.im} :=
+    UpperHalfPlane.mdifferentiable_iff.mp (CuspFormClass.holo CuspForm.discriminant)
+  exact (hE.pow 3).div hD
+    (fun z _ => ModularForm.discriminant_ne_zero (UpperHalfPlane.ofComplex z))
+
+/-- `z ↦ j((a z + b)/d)` is holomorphic on `ℍ` when `a, d > 0` — PROVEN.
+
+It has to go through `coe_triPoint` rather than through the definition of `triPoint`, which is
+TOTAL BY DESIGN with `z` itself as its junk value off the intended domain. -/
+lemma jInvariant_triPoint_mdiff {a b d : ℤ} (ha : 0 < a) (hd : 0 < d) :
+    MDiff (fun z : UpperHalfPlane => jInvariant (triPoint z (a, b, d))) := by
+  have hj := UpperHalfPlane.mdifferentiable_iff.mp jInvariant_mdiff
+  rw [UpperHalfPlane.mdifferentiable_iff]
+  have hdC : (d : ℂ) ≠ 0 := Int.cast_ne_zero.mpr hd.ne'
+  have hmob : DifferentiableOn ℂ
+      (fun w : ℂ => ((a : ℂ) * w + (b : ℂ)) / (d : ℂ)) {z : ℂ | 0 < z.im} := by
+    fun_prop (disch := simp [hdC])
+  have hmaps : Set.MapsTo (fun w : ℂ => ((a : ℂ) * w + (b : ℂ)) / (d : ℂ))
+      {z : ℂ | 0 < z.im} {z : ℂ | 0 < z.im} := by
+    intro w hw
+    exact im_pos_tri ⟨w, hw⟩ ha hd
+  have hcomp := hj.comp hmob hmaps
+  refine hcomp.congr fun w hw => ?_
+  have hz : ((UpperHalfPlane.ofComplex w) : ℂ) = w :=
+    UpperHalfPlane.ofComplex_apply_of_im_pos hw ▸ rfl
+  have hcoe : ((triPoint (UpperHalfPlane.ofComplex w) (a, b, d) : UpperHalfPlane) : ℂ)
+      = ((a : ℂ) * w + (b : ℂ)) / (d : ℂ) := by
+    rw [coe_triPoint _ ha hd, hz]
+  simp only [Function.comp_apply]
+  congr 1
+  apply UpperHalfPlane.ext
+  rw [hcoe, UpperHalfPlane.ofComplex_apply_of_im_pos (hmaps hw)]
+
+/-- **Each coefficient of `∏_t (X − j(t·z))` is holomorphic in `z` — PROVEN**, by induction
+over the `Finset` through `Polynomial.coeff_mul`'s antidiagonal sum. -/
+lemma coeff_prod_mdiff :
+    ∀ (s : Finset (ℤ × ℤ × ℤ)), (∀ t ∈ s, 0 < t.1 ∧ 0 < t.2.2) → ∀ k : ℕ,
+      MDiff (fun z : UpperHalfPlane =>
+        ((∏ t ∈ s, (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))) :
+          Polynomial ℂ).coeff k : ℂ)) := by
+  classical
+  intro s
+  induction s using Finset.induction_on with
+  | empty =>
+    intro _ k
+    rw [UpperHalfPlane.mdifferentiable_iff]
+    simp only [Finset.prod_empty, Polynomial.coeff_one, Function.comp_def]
+    exact differentiableOn_const _
+  | insert a s ha ih =>
+    intro hs k
+    have hsa := hs a (Finset.mem_insert_self a s)
+    have hs' : ∀ t ∈ s, 0 < t.1 ∧ 0 < t.2.2 :=
+      fun t ht => hs t (Finset.mem_insert_of_mem ht)
+    have hu : MDiff (fun z : UpperHalfPlane => jInvariant (triPoint z a)) := by
+      obtain ⟨a1, a2, a3⟩ := a
+      exact jInvariant_triPoint_mdiff hsa.1 hsa.2
+    rw [UpperHalfPlane.mdifferentiable_iff] at hu ⊢
+    have key : ∀ z : UpperHalfPlane,
+        (∏ t ∈ insert a s, (Polynomial.X - Polynomial.C (jInvariant (triPoint z t)))).coeff k
+          = ∑ x ∈ Finset.antidiagonal k,
+              ((Polynomial.X - Polynomial.C (jInvariant (triPoint z a))).coeff x.1)
+                * ((∏ t ∈ s,
+                    (Polynomial.X - Polynomial.C (jInvariant (triPoint z t)))).coeff x.2) := by
+      intro z
+      rw [Finset.prod_insert ha, Polynomial.coeff_mul]
+    simp only [Function.comp_def, key]
+    refine DifferentiableOn.fun_sum fun x _ => ?_
+    have h2 := UpperHalfPlane.mdifferentiable_iff.mp (ih hs' x.2)
+    simp only [Function.comp_def] at h2
+    have h1 : DifferentiableOn ℂ
+        (fun w : ℂ => (Polynomial.X
+            - Polynomial.C (jInvariant (triPoint (UpperHalfPlane.ofComplex w) a))).coeff x.1)
+        {z : ℂ | 0 < z.im} := by
+      have hrw : (fun w : ℂ => (Polynomial.X
+            - Polynomial.C (jInvariant (triPoint (UpperHalfPlane.ofComplex w) a))).coeff x.1)
+          = fun w : ℂ => (if x.1 = 1 then (1 : ℂ) else 0)
+              - (if x.1 = 0 then jInvariant (triPoint (UpperHalfPlane.ofComplex w) a) else 0) := by
+        funext w
+        simp [Polynomial.coeff_sub, Polynomial.coeff_X, Polynomial.coeff_C, eq_comm]
+      rw [hrw]
+      by_cases h0 : x.1 = 0
+      · simp only [h0, if_neg (by norm_num : ¬ (0 : ℕ) = 1)]
+        exact (differentiableOn_const _).sub hu
+      · simp only [if_neg h0, sub_zero]
+        exact differentiableOn_const _
+    exact h1.mul h2
+
+/-- **`c_k · Δ^m` is slash-invariant of weight `12m` — PROVEN.** `Γ`-invariance of `c_k` is
+`hinv` plus one `congrArg (Polynomial.coeff · k)`, and `Δ(γ • z) = denom^12 · Δ(z)` is `Δ`'s own
+slash law, so the automorphy factors cancel exactly. -/
+lemma coeffDelta_slash {N : ℤ}
+    (hinv : ∀ (γ : SL(2, ℤ)) (z : UpperHalfPlane),
+      ∏ t ∈ triangularReps N,
+          (Polynomial.X - Polynomial.C (jInvariant (triPoint (γ • z) t)))
+        = ∏ t ∈ triangularReps N,
+          (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))))
+    (k m : ℕ) (γ : SL(2, ℤ)) :
+    ((fun z : UpperHalfPlane =>
+        ((∏ t ∈ triangularReps N,
+            (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))) : Polynomial ℂ).coeff k)
+          * ModularForm.discriminant z ^ m) ∣[(12 * (m : ℤ))] γ)
+      = fun z : UpperHalfPlane =>
+        ((∏ t ∈ triangularReps N,
+            (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))) : Polynomial ℂ).coeff k)
+          * ModularForm.discriminant z ^ m := by
+  funext z
+  have hmem : (Matrix.SpecialLinearGroup.mapGL ℝ γ) ∈ 𝒮ℒ := ⟨γ, rfl⟩
+  have hs : (Matrix.SpecialLinearGroup.mapGL ℝ γ) • z = γ • z := rfl
+  have hD := SlashInvariantForm.slash_action_eqn'' CuspForm.discriminant hmem z
+  rw [hs] at hD
+  have hdc : ⇑CuspForm.discriminant = ModularForm.discriminant := CuspForm.coe_discriminant
+  rw [hdc] at hD
+  have hc : ((∏ t ∈ triangularReps N,
+        (Polynomial.X - Polynomial.C (jInvariant (triPoint (γ • z) t))) : Polynomial ℂ).coeff k)
+      = ((∏ t ∈ triangularReps N,
+        (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))) : Polynomial ℂ).coeff k) :=
+    congrArg (fun p : Polynomial ℂ => p.coeff k) (hinv γ z)
+  have hden : denom (Matrix.SpecialLinearGroup.mapGL ℝ γ) z ≠ 0 := denom_ne_zero _ z
+  have hbridge : denom (Matrix.SpecialLinearGroup.toGL
+      ((Matrix.SpecialLinearGroup.map (Int.castRingHom ℝ)) γ)) (z : ℂ)
+      = denom (Matrix.SpecialLinearGroup.mapGL ℝ γ) (z : ℂ) := rfl
+  rw [ModularForm.SL_slash_apply, hc, hD, mul_pow,
+    ← zpow_natCast (denom (Matrix.SpecialLinearGroup.mapGL ℝ γ) z ^ (12 : ℤ)) m, ← zpow_mul,
+    hbridge, zpow_neg]
+  have hDe : (denom (Matrix.SpecialLinearGroup.mapGL ℝ γ) (z : ℂ)) ^ ((m : ℤ) * 12) ≠ 0 :=
+    zpow_ne_zero _ hden
+  field_simp
+
 /-- **LEAF 3a-i″ — THE ANALYTIC PACKAGING: each coefficient of `∏_t (X − j(t·z))`, times a
 power of `Δ`, IS A MODULAR FORM.**
 
@@ -4738,6 +4877,22 @@ nobody costs them as disjoint: BOTH need the `q`-expansion of `j` at a triangula
 `j((a z + b)/d) = ζ_d^{−b} q^{−a/d} + 744 + ⋯`. This half needs its POLE ORDER, the other its
 COEFFICIENT RING. That is the one common prerequisite, and it is the reason the two are natural
 to dispatch together even though neither uses the other's technique. -/
+theorem exists_isBoundedAtImInfty_coeff_prod {N : ℤ} (hN : 0 < N) (k : ℕ) :
+    ∃ m : ℕ, UpperHalfPlane.IsBoundedAtImInfty
+      (fun z : UpperHalfPlane =>
+        ((∏ t ∈ triangularReps N,
+            (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))) : Polynomial ℂ).coeff k)
+          * ModularForm.discriminant z ^ m) :=
+  sorry
+
+/-- **THE ANALYTIC PACKAGING — PROVEN (2026-07-31)** over `exists_isBoundedAtImInfty_coeff_prod`
+and the four lemmas above. Same statement it had as a leaf; only its proof moved.
+
+`holo'` is `coeff_prod_mdiff` times `Δ^m`; `slash_action_eq'` is `coeffDelta_slash`, which is
+where `hinv` is spent; and `bdd_at_cusps'` reduces every cusp to `i∞` by
+`OnePoint.isBoundedAt_iff_forall_SL2Z` precisely because the slash by any `γ` returns the same
+function — the `wOctCubeForm` pattern. So the ONLY analytic input left is the boundedness
+hypothesis, which is the leaf above. -/
 theorem exists_modularForm_coeff_prod_of_smul_invariant {N : ℤ} (hN : 0 < N)
     (hinv : ∀ (γ : SL(2, ℤ)) (z : UpperHalfPlane),
       ∏ t ∈ triangularReps N,
@@ -4749,8 +4904,41 @@ theorem exists_modularForm_coeff_prod_of_smul_invariant {N : ℤ} (hN : 0 < N)
       ∀ z : UpperHalfPlane,
         (∏ t ∈ triangularReps N,
             (Polynomial.X - Polynomial.C (jInvariant (triPoint z t)))).coeff k
-          * ModularForm.discriminant z ^ m = G z :=
-  sorry
+          * ModularForm.discriminant z ^ m = G z := by
+  obtain ⟨m, hm⟩ := exists_isBoundedAtImInfty_coeff_prod hN k
+  have hpos : ∀ t ∈ triangularReps N, 0 < t.1 ∧ 0 < t.2.2 := by
+    intro t ht
+    obtain ⟨a, b, d⟩ := t
+    obtain ⟨ha, hd, -⟩ := triangularReps_spec ht
+    exact ⟨ha, hd⟩
+  have hcf := coeff_prod_mdiff (triangularReps N) hpos k
+  have hmul : MDiff (fun z : UpperHalfPlane =>
+      ((∏ t ∈ triangularReps N,
+        (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))) : Polynomial ℂ).coeff k)
+        * ModularForm.discriminant z ^ m) := by
+    rw [UpperHalfPlane.mdifferentiable_iff] at hcf ⊢
+    have hD : DifferentiableOn ℂ
+        ((ModularForm.discriminant : UpperHalfPlane → ℂ) ∘ UpperHalfPlane.ofComplex)
+        {z : ℂ | 0 < z.im} :=
+      UpperHalfPlane.mdifferentiable_iff.mp (CuspFormClass.holo CuspForm.discriminant)
+    exact hcf.mul (hD.pow m)
+  refine ⟨m,
+    { toFun := fun z : UpperHalfPlane =>
+        ((∏ t ∈ triangularReps N,
+          (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))) : Polynomial ℂ).coeff k)
+          * ModularForm.discriminant z ^ m
+      slash_action_eq' := ?_
+      holo' := hmul
+      bdd_at_cusps' := ?_ }, fun z => rfl⟩
+  · intro A hA
+    obtain ⟨A, rfl⟩ := hA
+    exact coeffDelta_slash hinv k m A
+  · intro c hc
+    rw [Subgroup.IsArithmetic.isCusp_iff_isCusp_SL2Z] at hc
+    rw [OnePoint.isBoundedAt_iff_forall_SL2Z hc]
+    intro γ _
+    rw [coeffDelta_slash hinv k m γ]
+    exact hm
 
 /-- **THE COEFFICIENTS ARE POLYNOMIALS IN `j`, OVER `ℂ` — PROVEN (2026-07-31)** over
 `exists_modularForm_coeff_prod_of_smul_invariant` (`LEAF 3a-i″`, the analytic packaging) and
