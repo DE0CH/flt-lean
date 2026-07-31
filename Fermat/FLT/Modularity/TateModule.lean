@@ -8496,20 +8496,8 @@ REFUTING CHECK for that claim: look for `PolarizationStruct`, `lam`, `𝔞` or
 `posElt` in the statement below.  There are none, and `hom` is a bare
 function whose every clause quantifies over `GeomFibrePt f x`.
 
-**FALSITY AUDIT (2026-07-30) — REPAIRED 2026-07-31; THE STATEMENT BELOW IS
-UNCHANGED AND IS NO LONGER FALSE.  READ THE AUDIT ANYWAY**, because it is
-the reason `DualStruct.weil_nondegenerate` carries the hypothesis it does,
-and anyone who "simplifies" that hypothesis away re-breaks this leaf and
-every consumer of the structure at the same time.  The repair the audit
-prescribed at its end — gate `weil_nondegenerate` on `(n : F) ≠ 0` — has
-been made in `Modularity/AbelianScheme.lean`; the hypothesis is free in
-characteristic zero, so nothing in THIS leaf's statement or in
-`exists_qAdicWeilSystem_of_mult`'s proof over it changed.  The audit is
-kept verbatim below, with only its final paragraph rewritten, since it is
-the only record of why the structure is shaped that way.
-
-**FALSITY AUDIT (2026-07-30) — THIS LEAF WAS FALSE AS STATED, AND THE
-DEFECT WAS IN `DualStruct`, NOT IN THE POLARIZATION.**  The audit of
+**FALSITY AUDIT (2026-07-30) — THIS LEAF IS FALSE AS STATED, AND THE
+DEFECT IS IN `DualStruct`, NOT IN THE POLARIZATION.**  The audit of
 2026-07-29 above found ONE way `weil_nondegenerate` can be read into
 contradiction (`R = ℤ`, `I = (2)`, `n = 4`) and repaired it by fixing the
 READING of `weil`.  There is a second way, and no reading repairs it: it is
@@ -8542,40 +8530,31 @@ the axiom forces that group to vanish.  Hence no `d : DualStruct ab m`
 exists over this `S`, while the hypotheses of this leaf are all satisfied:
 the statement is FALSE, not merely hard.
 
-WHAT THIS DID AND DID NOT INVALIDATE.  `exists_qAdicWeilSystem_of_mult` is
-proven over this leaf, so it was resting on a false hypothesis and nothing
-derived from it was trustworthy — a proven theorem worth nothing, and
-invisible to every sorry count, which is why the audit was worth writing
-down.  The CHARACTERISTIC-ZERO mathematics was untouched — the classical
-`q`-power Weil pairing at the single fibre `x` is fine, and so is every
-clause of `IsQAdicPolarizationHom`.  The defect was that `DualStruct`
-asserted its nondegeneracy axiom UNIFORMLY IN THE FIBRE while the axiom is
-only true at levels prime to the residue characteristic.
+WHAT THIS DOES AND DOES NOT INVALIDATE.  `exists_qAdicWeilSystem_of_mult`
+is proven over this leaf, so it is resting on a false hypothesis and cannot
+be completed as things stand; nothing derived from it is trustworthy.  The
+CHARACTERISTIC-ZERO mathematics is untouched — the classical `q`-power Weil
+pairing at the single fibre `x` is fine, and so is every clause of
+`IsQAdicPolarizationHom`.  The defect is that `DualStruct` asserts its
+nondegeneracy axiom UNIFORMLY IN THE FIBRE while the axiom is only true at
+levels prime to the residue characteristic.
 
-THE MINIMAL REPAIR, in `Modularity/AbelianScheme.lean`, not here — **DONE
-2026-07-31**: `weil_nondegenerate` is gated on invertibility of the level,
-`(hnF : (n : F) ≠ 0)`.  In characteristic zero that hypothesis is free, so
-no existing consumer over a number field changed; in characteristic `p` it
-removes exactly the levels at which the axiom was contradictory.  `weil`
-itself needed no change — a pairing landing in a trivial group is harmless,
-it is only the nondegeneracy claim about it that was false.  The one
-construction site, `DualStruct.baseChangeOfIsPullback`, transports the gate
-verbatim: the base-changed geometric point sits over the SAME field.
+THE MINIMAL REPAIR, and it is in `Modularity/AbelianScheme.lean`, not
+here: gate `weil_nondegenerate` on invertibility of the level, i.e. add
+`(n : F) ≠ 0` (equivalently `IsUnit (n : F)`) to its binders.  In
+characteristic zero that hypothesis is free, so no existing consumer over a
+number field changes; in characteristic `p` it removes exactly the levels
+at which the axiom is contradictory.  `weil` itself needs no change — a
+pairing landing in a trivial group is harmless, it is only the
+nondegeneracy claim about it that is false.
 
 CONSEQUENCE FOR THE FINITE-BASE SIBLING, which is why the audit was run
-here, and it has REVERSED with the repair.  Before it,
-`exists_qAdicPolarizedSystem_finiteBase` could not be cut along this seam:
-its base IS a finite field, so `DualStruct ab' m'` was uninhabited for
+here.  `exists_qAdicPolarizedSystem_finiteBase` must NOT be cut along this
+seam: its base IS a finite field, so `DualStruct ab' m'` is uninhabited for
 every fibre of positive `p`-rank (an ordinary elliptic curve over `𝔽_p`
-suffices) and a leaf of the shape `∃ d : DualStruct ab' m', …` would have
-been false for a reason having nothing to do with polarizations.  With the
-gate, the only levels that sibling mentions are the `q^M` with `q ≠ p`
-(its `hqN`), where `(q^M : k) ≠ 0` and the axiom is the classical true one.
-It is now PROVEN along exactly this seam, over
-`exists_dualPolarization_of_mult_finiteBase` — the finite-base twin of the
-statement below — so the two halves of the development ask for ONE dual
-abelian scheme with ONE Weil pairing, and a successor who builds it serves
-both. -/
+suffices) and a leaf of the shape `∃ d : DualStruct ab' m', …` would be
+false for a reason having nothing to do with polarizations.  That note is
+repeated on that leaf. -/
 theorem exists_dualPolarization_of_mult
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
@@ -18932,175 +18911,6 @@ def IsQAdicPolarizedSystem {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeS
         w M y z = 1) →
       y ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ b})).1)
 
-/-- **AN `𝒪_D`-LINEAR POLARIZATION OF THE GEOMETRIC FIBRE, WITH BOUNDED
-RADICAL ON `q`-POWER TORSION** — `IsQAdicPolarizationHom` with its last
-clause weakened in exactly the way `IsQAdicPolarizedSystem` weakens
-`IsQAdicWeilSystem`'s.
-
-The first five clauses are that predicate's, verbatim and in the same order
-(additivity, `𝒪_D`-linearity, preservation of `q^M`-torsion,
-`Γ_F`-equivariance, and the strong `𝒪_D`-ALTERNATING clause); read its
-docstring for what they say and why the alternating one is stated in the
-strong `e(a y, λ y) = 1` form rather than `e(y, λ y) = 1`.  The sixth,
-PERFECTNESS on `A[q^M]`, is replaced by
-
-  a `y` orthogonal to `λ (A[q^M])` lies in `A[q^b]`,
-
-for a bound `b` independent of `M`.
-
-WHY, AND IT IS THE SAME REASON AS ONE LEVEL UP.  Perfectness of
-`y, z ↦ e_{q^M}(y, λ z)` says exactly that `λ` is injective on `A[q^M]`,
-i.e. that `deg λ` is prime to `q`.  `IsQAdicPolarizationHom` may demand
-that because its consumer carries `hdim` and is in the Hilbert–Blumenthal
-case, where the polarization module is invertible and `𝔞` may be chosen
-prime to `q`.  The finite-base consumer has no `hdim` — deliberately, see
-`exists_qAdicPolarizedSystem_finiteBase` — so nothing bounds the
-polarization module and a perfectness clause would be FALSE, not merely
-hard.  What is true instead is the bounded-radical clause, with `b` the
-exponent of the `q`-primary part of `ker λ`; the argument is written out in
-full in the docstring of `IsQAdicPolarizedSystem` ("WHAT IS TRUE INSTEAD,
-AND WHY") and is not repeated here.
-
-`b = 0` recovers perfectness exactly, since `A[q^0] = A[(1)] = 0`.
-
-NON-VACUITY, IN BOTH DIRECTIONS.  The constant zero map `hom ≡ 0` satisfies
-the first five clauses over every fibre — by `DualStruct.weil_zero_right`,
-exactly as for `IsQAdicPolarizationHom` — and satisfies the sixth only when
-`A[q^M] ⊆ A[q^b]` for every `M`, which is true for a fibre of dimension `0`
-with `b = 0` and false as soon as the fibre has unbounded `q`-torsion.  So
-the last clause still carries the content. -/
-def IsQAdicPolarizedHom {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
-    {D : Type u} [Field D] [NumberField D]
-    {m : Mult ab (NumberField.RingOfIntegers D)}
-    (d : DualStruct ab m)
-    {F : Type u} [Field F]
-    (x : Spec (CommRingCat.of F) ⟶ S)
-    (q b : ℕ)
-    (hom : GeomFibrePt f x → GeomFibrePt d.dualMap x) : Prop :=
-  (∀ y z : GeomFibrePt f x, hom (ab.add y z) = d.dualAb.add (hom y) (hom z)) ∧
-  (∀ (a : NumberField.RingOfIntegers D) (y : GeomFibrePt f x),
-      hom (m.act a y) = d.dualMult.act a (hom y)) ∧
-  (∀ (M : ℕ) (y : GeomFibrePt f x),
-      y ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M})).1 →
-      hom y ∈ (d.dualMult.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M})).1) ∧
-  (∀ (σ : Field.absoluteGaloisGroup F) (y : GeomFibrePt f x),
-      hom (ab.galSMul x σ y) = d.dualAb.galSMul x σ (hom y)) ∧
-  (∀ (M : ℕ) (a : NumberField.RingOfIntegers D) (y : GeomFibrePt f x),
-      y ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M})).1 →
-      d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M}) (q ^ M)
-        (natCast_pow_mem_span_pow D q M) (m.act a y) (hom y) = 1) ∧
-  (∀ (M : ℕ) (y : GeomFibrePt f x),
-      y ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M})).1 →
-      (∀ z : GeomFibrePt f x,
-          z ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M})).1 →
-          d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M}) (q ^ M)
-            (natCast_pow_mem_span_pow D q M) y (hom z) = 1) →
-      y ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ b})).1)
-
-open _root_.NumberField in
-/-- **THE DUAL ABELIAN SCHEME AND AN `𝒪_D`-LINEAR POLARIZATION WITH
-BOUNDED RADICAL, OVER A FINITE BASE** (SORRY LEAF, cut 2026-07-31 out of
-`exists_qAdicPolarizedSystem_finiteBase`, which is now PROVEN over it;
-Mumford *Abelian Varieties* §13, §16, §23, Milne *Abelian Varieties* §I.13,
-Silverman *AEC* III.8.1).
-
-This is `exists_dualPolarization_of_mult` over a FINITE base field: the
-dual abelian scheme with its canonical Weil pairing (`DualStruct`), the
-integer-tower compatibility of that pairing (`IsQAdicWeilTower`, which
-`DualStruct` does not assert), and an `𝒪_D`-linear polarization read on
-geometric points of the fibre (`IsQAdicPolarizedHom`).  Everything said in
-that leaf's docstring about WHY the datum is cut this way — why the tower
-clause must be part of the CONCLUSION, why `PolarizationStruct` is the
-wrong shape, why `hom` is a bare function on the fibre rather than a global
-polarization (Raynaud: an abelian scheme over an arbitrary base need not be
-projective) — applies here verbatim and is not repeated.
-
-**THE THREE DIFFERENCES FROM THE CHARACTERISTIC-ZERO LEAF, AND EACH IS
-FORCED.**
-
-1. *`hdim` is absent, and the perfectness clause is replaced by a bounded
-   radical.*  `hdim'` would hand a rank-two level frame through
-   `exists_levelTateFrame_finiteBase`, and a frame collapses the whole
-   level-pairing statement into `det Φ = N` — the failure mode
-   `exists_levelWeilPairing_of_nonzeroTorsion_finiteBase` was cut to avoid.
-   Without it nothing bounds the polarization module, so perfectness would
-   be FALSE; see `IsQAdicPolarizedHom`.
-
-2. *`hqN` appears, and it is load-bearing.*  At the residue characteristic
-   `p` of `k` the group `μ_{p^M}(k̄)` is TRIVIAL, so any pairing there is
-   constantly `1` and the bounded-radical clause would demand
-   `A'[p^M] ⊆ A'[p^b]` for every `M` — false for every fibre of positive
-   `p`-rank.  `hfin` and `hN` occur only to give `hqN` its meaning: `N = #k`
-   is a power of `p`, so `¬ q ∣ N` says `q ≠ p`.
-
-3. *`[NumberField F]` is gone, and its job is done differently.*  In the
-   characteristic-zero leaf that instance is what makes the polarization
-   available OVER `F` rather than only over `F̄` (see its FAITHFULNESS
-   section).  Over a finite field the same conclusion is classical and
-   cheaper: `A'_{k̄}` is an abelian variety over an algebraically closed
-   field, hence projective; the averaged polarization
-   `λ = Σ_i â_i ∘ λ₀ ∘ a_i` over a `ℤ`-basis of `𝒪_D` is `𝒪_D`-linear; and
-   `Hom^sym_{𝒪_D}(A'_{k̄}, Â'_{k̄})` is finitely generated with a
-   continuous `Γ_k = Ẑ`-action, so a power of Frobenius fixes a nonzero
-   polarization and its `Γ_k`-orbit sum is again a polarization, now
-   defined over `k`.  That is the fourth clause of `IsQAdicPolarizedHom`.
-
-**WHY THIS CUT IS LEGAL NOW AND WAS NOT BEFORE — READ THIS BEFORE
-"CORRECTING" IT BACK.**  The docstring of `exists_qAdicPolarizedSystem_\
-finiteBase` used to say, correctly, that the leaf must NOT be cut through
-`DualStruct`, because `DualStruct.weil_nondegenerate` was asserted at EVERY
-`(F', x', I, n)` with `(n : R) ∈ I` — including `I = (p)`, `n = p` over a
-base of characteristic `p`, where `μ_p` is trivial, the hypothesis holds
-vacuously and the axiom concludes `A'[p](k̄) = 0`.  An ordinary elliptic
-curve over `𝔽_p` refutes that, so `DualStruct ab' m'` was UNINHABITED here
-and a leaf of this shape would have been false for a reason with no
-mathematical content.
-
-That defect has been REPAIRED (2026-07-31, in `Modularity/AbelianScheme.lean`):
-`weil_nondegenerate` is now gated on `(n : F) ≠ 0`.  The gate is free in
-characteristic zero, so the characteristic-zero leaf is unchanged; over `k`
-it removes exactly the levels at which the axiom was contradictory and
-leaves the prime-to-`p` levels — which are the only ones this statement
-mentions, since `hqN` gives `q ≠ p`.  The old prohibition was a statement
-about `DualStruct` as it then stood, and it no longer holds of the repaired
-structure.
-
-**THE ALTERNATIVE THE OLD DOCSTRING NAMED IS NOT NEEDED.**  It offered a
-second route — "introduce a FIBRE-LOCAL dual-pairing datum carrying the
-pairing only at the prime-to-`p` levels `q^M`" — which would have meant a
-private copy of `DualStruct` used nowhere else.  The gate achieves the same
-restriction inside the existing structure, so the char-0 and finite-base
-halves keep sharing one dual-pairing vocabulary and one base-change
-transport.
-
-**FAITHFULNESS.**  Every binder of `exists_qAdicPolarizedSystem_finiteBase`
-is kept, none is added beyond `[Fact q.Prime]`-free `hq`, and the assembly
-below spends each of them; `[NumberField.IsTotallyReal D]` is what makes
-the Rosati involution trivial on `𝒪_D`, i.e. clauses 4 and 5 of
-`IsQAdicPolarizedSystem` (`𝒪_D`-alternating and `𝒪_D`-adjoint), and without
-it the pairing is hermitian rather than bilinear and no `𝒪_D`-valued
-refinement exists downstream.  Do not drop it in a restatement.
-
-**THIS IS NOT A REDUCTION IN LEAF COUNT — one `sorry` replaces one `sorry`,
-and it is said plainly here so nobody reads the diff as a closure.**  What
-it buys is that the residual statement is the SAME datum the
-characteristic-zero half already asks for, so a successor building the dual
-abelian scheme and its Weil pairing once serves both halves, instead of the
-two halves asking for incomparable things. -/
-theorem exists_dualPolarization_of_mult_finiteBase
-    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
-    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
-    (ab' : AbelianSchemeStruct f')
-    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
-    (m' : Mult ab' (NumberField.RingOfIntegers D))
-    (q : ℕ) (hq : q.Prime) (hqN : ¬ q ∣ N) :
-    ∃ (d : DualStruct ab' m') (b : ℕ)
-      (hom : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))) →
-        GeomFibrePt d.dualMap (𝟙 (Spec (CommRingCat.of k)))),
-      IsQAdicWeilTower d (𝟙 (Spec (CommRingCat.of k))) q ∧
-        IsQAdicPolarizedHom d (𝟙 (Spec (CommRingCat.of k))) q b hom :=
-  sorry
-
 open _root_.NumberField in
 /-- **THE GEOMETRIC HALF: A FINITE FIBRE CARRIES THE `μ_{q^M}`-VALUED WEIL
 SYSTEM OF AN `𝒪_D`-LINEAR POLARIZATION** (SORRY LEAF — Mumford *Abelian
@@ -19158,41 +18968,35 @@ not about the Frobenius, and the multiplier `N` is produced in
 `exists_levelWeilPairing_of_qAdicPolarizedSystem_finiteBase`, where `hσ`
 is in scope.
 
-**THE CUT THROUGH `DualStruct` WAS BLOCKED, AND THE BLOCK HAS BEEN
-REMOVED** (2026-07-31; this paragraph replaces a "DO NOT CUT THIS THROUGH
-`DualStruct`" prohibition, whose reasoning was correct and whose premise is
-no longer true).  The prohibition read: `DualStruct.weil_nondegenerate` is
-asserted at every `(F', x', I, n)` with `(n : R) ∈ I`, and `weil` lands in
-`rootsOfUnity n (AlgebraicClosure F')`; over a base of characteristic `p`
-take `I = (p)`, `n = p`, and the target group is TRIVIAL, so the pairing is
-constantly `1`, the nondegeneracy hypothesis holds vacuously for every
-`p`-torsion point, and the axiom concludes `A'[p](k̄) = 0`.  An ORDINARY
-elliptic curve over `𝔽_p` has `A'[p](k̄) ≅ ℤ/p ≠ 0` while satisfying every
-hypothesis of this leaf (`D = ℚ` is totally real, `q` any prime `≠ p`), so
-`DualStruct ab' m'` was UNINHABITED and a leaf of the shape
-`∃ d : DualStruct ab' m', …` was false for a reason with no mathematical
-content.
+**DO NOT CUT THIS THROUGH `DualStruct` — THE RESULTING LEAF WOULD BE
+FALSE** (audit 2026-07-30; the witness is written out on
+`exists_dualPolarization_of_mult`).  The obvious move is to mirror the
+characteristic-zero half: there `exists_qAdicWeilSystem_of_mult` is PROVEN
+over `exists_dualPolarization_of_mult`, which discharges six of that
+predicate's eight clauses from the axioms of `DualStruct` alone, and the
+same glue would discharge seven of the eight here (only the bounded-radical
+clause differs).  It does not work, and the obstruction is not about
+polarizations at all.
 
-That paragraph named the repair — "gate `weil_nondegenerate` on
-`(n : F) ≠ 0`, which is free in characteristic zero" — and the repair has
-now been made, in `Modularity/AbelianScheme.lean`.  It removes exactly the
-levels at which the axiom was contradictory and leaves the prime-to-`p`
-levels, which are the only ones this statement mentions: `hqN` says `q ≠ p`,
-so `(q^M : k) ≠ 0` at every level of the tower.  The characteristic-zero
-half is untouched by the gate, so `exists_dualPolarization_of_mult` keeps
-its statement and stops being false as stated.
+`DualStruct.weil_nondegenerate` is asserted at every `(F', x', I, n)` with
+`(n : R) ∈ I`, and `weil` lands in `rootsOfUnity n (AlgebraicClosure F')`.
+Over a base of characteristic `p` take `I = (p)`, `n = p`: the target group
+is TRIVIAL, so the pairing is constantly `1`, the nondegeneracy hypothesis
+holds vacuously for every `p`-torsion point, and the axiom concludes
+`A'[p](k̄) = 0`.  An ORDINARY elliptic curve over `𝔽_p` has
+`A'[p](k̄) ≅ ℤ/p ≠ 0`, so `DualStruct ab' m'` is UNINHABITED for it — while
+that curve satisfies every hypothesis of this leaf (`D = ℚ` is totally
+real, `q` is any prime `≠ p`).  A leaf of the shape
+`∃ d : DualStruct ab' m', …` is therefore false here for a reason with no
+mathematical content, and proving it is impossible rather than hard.
 
-So this leaf is now PROVEN, by exactly the glue the old paragraph described
-as unavailable — the mirror of `exists_qAdicWeilSystem_of_mult`'s proof over
-`exists_dualPolarization_of_mult`.  Seven of the eight clauses come out of
-the axioms of `DualStruct` and the linearity of `λ` with no geometry at all;
-the eighth, the bounded radical, is the contrapositive-free reading of the
-last clause of `IsQAdicPolarizedHom`.  The residual geometry is
-`exists_dualPolarization_of_mult_finiteBase`, which asks for the SAME datum
-the characteristic-zero half already asks for, so a successor who builds the
-dual abelian scheme and its Weil pairing once serves both halves.  The
-docstring below is retained unchanged because every word of it still
-describes what that residual leaf must produce. -/
+So a cut of this leaf must either repair `DualStruct` first (gate
+`weil_nondegenerate` on `(n : F) ≠ 0`, which is free in characteristic zero
+— see the audit cited above) or introduce a FIBRE-LOCAL dual-pairing datum
+carrying the pairing only at the prime-to-`p` levels `q^M` that this
+statement actually mentions.  Until one of those exists, this statement is
+already the minimal fibre-local form of "the polarized `q`-adic Weil system
+exists", and there is nothing to strip off it. -/
 theorem exists_qAdicPolarizedSystem_finiteBase
     {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
@@ -19202,92 +19006,8 @@ theorem exists_qAdicPolarizedSystem_finiteBase
     (q : ℕ) (hq : q.Prime) (hqN : ¬ q ∣ N) :
     ∃ (b : ℕ) (w : ℕ → GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))) →
         GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))) → (AlgebraicClosure k)ˣ),
-      IsQAdicPolarizedSystem m' (𝟙 (Spec (CommRingCat.of k))) q b w := by
-  obtain ⟨d, b, hom, htower, hadd, hact, htors, hgal, halt, hrad⟩ :=
-    exists_dualPolarization_of_mult_finiteBase hfin N hN ab' m' q hq hqN
-  refine ⟨b, fun M y z =>
-    ((d.weil (𝟙 (Spec (CommRingCat.of k)))
-        (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M}) (q ^ M)
-        (natCast_pow_mem_span_pow D q M) y (hom z) : (AlgebraicClosure k)ˣ)),
-    ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
-  · -- values are `q^M`-th roots of unity: the target of `DualStruct.weil` says so
-    intro M y z
-    exact (mem_rootsOfUnity _ _).mp
-      (d.weil (𝟙 (Spec (CommRingCat.of k)))
-        (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M}) (q ^ M)
-        (natCast_pow_mem_span_pow D q M) y (hom z)).2
-  · -- additivity in the first variable: `DualStruct.weil_add_left`
-    intro M y y' z hy hy' hz
-    have h := d.weil_add_left (𝟙 (Spec (CommRingCat.of k)))
-      (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M}) (q ^ M)
-      (natCast_pow_mem_span_pow D q M) y y' (hom z) hy hy' (htors M z hz)
-    exact congrArg (fun t : rootsOfUnity (q ^ M) (AlgebraicClosure k) =>
-      (t : (AlgebraicClosure k)ˣ)) h
-  · -- additivity in the second variable: additivity of `hom`, then `weil_add_right`
-    intro M y z z' hy hz hz'
-    have h : d.weil (𝟙 (Spec (CommRingCat.of k)))
-          (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M}) (q ^ M)
-          (natCast_pow_mem_span_pow D q M) y (hom (ab'.add z z'))
-        = d.weil (𝟙 (Spec (CommRingCat.of k)))
-            (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M}) (q ^ M)
-            (natCast_pow_mem_span_pow D q M) y (hom z)
-          * d.weil (𝟙 (Spec (CommRingCat.of k)))
-            (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M}) (q ^ M)
-            (natCast_pow_mem_span_pow D q M) y (hom z') := by
-      rw [hadd z z']
-      exact d.weil_add_right (𝟙 (Spec (CommRingCat.of k)))
-        (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M}) (q ^ M)
-        (natCast_pow_mem_span_pow D q M) y (hom z) (hom z') hy
-        (htors M z hz) (htors M z' hz')
-    exact congrArg (fun t : rootsOfUnity (q ^ M) (AlgebraicClosure k) =>
-      (t : (AlgebraicClosure k)ˣ)) h
-  · -- `𝒪_D`-alternating: the strong clause of `IsQAdicPolarizedHom`, and the
-    -- one place where no formal argument would do (see its docstring for `q = 2`)
-    intro M a y hy
-    exact congrArg (fun t : rootsOfUnity (q ^ M) (AlgebraicClosure k) =>
-      (t : (AlgebraicClosure k)ˣ)) (halt M a y hy)
-  · -- `𝒪_D`-adjointness: `𝒪_D`-linearity of `hom`, then `DualStruct.weil_act`
-    intro M a y z hy hz
-    have h : d.weil (𝟙 (Spec (CommRingCat.of k)))
-          (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M}) (q ^ M)
-          (natCast_pow_mem_span_pow D q M) (m'.act a y) (hom z)
-        = d.weil (𝟙 (Spec (CommRingCat.of k)))
-            (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M}) (q ^ M)
-            (natCast_pow_mem_span_pow D q M) y (hom (m'.act a z)) := by
-      rw [hact a z]
-      exact d.weil_act (𝟙 (Spec (CommRingCat.of k)))
-        (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M}) (q ^ M)
-        (natCast_pow_mem_span_pow D q M) a y (hom z) hy (htors M z hz)
-    exact congrArg (fun t : rootsOfUnity (q ^ M) (AlgebraicClosure k) =>
-      (t : (AlgebraicClosure k)ˣ)) h
-  · -- `Γ_k`-equivariance: `hom` is defined over `k`, then `DualStruct.weil_gal`;
-    -- `galRoot σ` IS `Units.map σ` on the underlying unit, by definition
-    intro M σ y z hy hz
-    have h : d.weil (𝟙 (Spec (CommRingCat.of k)))
-          (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M}) (q ^ M)
-          (natCast_pow_mem_span_pow D q M) (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y)
-          (hom (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ z))
-        = galRoot σ (d.weil (𝟙 (Spec (CommRingCat.of k)))
-            (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M}) (q ^ M)
-            (natCast_pow_mem_span_pow D q M) y (hom z)) := by
-      rw [hgal σ z]
-      exact d.weil_gal (𝟙 (Spec (CommRingCat.of k)))
-        (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M}) (q ^ M)
-        (natCast_pow_mem_span_pow D q M) σ y (hom z) hy (htors M z hz)
-    exact congrArg (fun t : rootsOfUnity (q ^ M) (AlgebraicClosure k) =>
-      (t : (AlgebraicClosure k)ˣ)) h
-  · -- level compatibility along the integer tower: `IsQAdicWeilTower`, with
-    -- `𝒪_D`-linearity of `hom` moving `q` across it
-    intro M y z hy hz
-    have h := htower M y (hom z) hy (htors (M + 1) z hz)
-    rw [← hact (q : NumberField.RingOfIntegers D) z] at h
-    exact h
-  · -- bounded radical: the last clause of `IsQAdicPolarizedHom`, read directly.
-    -- This is the ONE clause that differs from the characteristic-zero glue:
-    -- there the corresponding clause is perfectness and is used by
-    -- contraposition; here it is an implication in the same direction.
-    intro M y hy hy1
-    exact hrad M y hy (fun z hz => Subtype.ext (hy1 z hz))
+      IsQAdicPolarizedSystem m' (𝟙 (Spec (CommRingCat.of k))) q b w :=
+  sorry
 
 open _root_.NumberField in
 /-- **THE LIMIT AND THE SCALING: THE `𝒪_D/Iⁿ`-VALUED LEVEL PAIRING, GIVEN

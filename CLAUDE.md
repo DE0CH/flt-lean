@@ -1121,12 +1121,39 @@ UNINHABITED over any positive-characteristic fibre, so the cut really would have
 leaf.
 
 **But the same paragraph named the repair — "gate `weil_nondegenerate` on `(n : F) ≠ 0`, which is
-free in characteristic zero" — and nobody had done it.** One binder in
-`Modularity/AbelianScheme.lean`, one construction site to fix (the base-change transport, which
-gets the new hypothesis handed to it and passes it straight through), and the cut became legal.
-The prohibition was not a wall; it was a work item with a wall-shaped heading.
+free in characteristic zero".** One binder in `Modularity/AbelianScheme.lean`, one construction
+site to fix (the base-change transport, which gets the new hypothesis handed to it and passes it
+straight through), and the cut became legal. The prohibition was not a wall; it was a work item
+with a wall-shaped heading.
 
-So, three things worth carrying:
+**AND AN EXPIRED PROHIBITION IS A MAGNET — THIS ONE WAS CUT TWICE, A DAY APART, AND NEITHER
+AGENT COULD SEE THE OTHER.** The paragraph above was first written as "and nobody had done it".
+That was false when written. The gate had ALREADY been made on 2026-07-30 by another agent, and
+that agent had gone on to make the whole downstream cut: `main` at 2026-07-31 had none of it,
+`merger` had all of it — `weil_nondegenerate` gated (plus `PolarizationStruct.\
+weil_hom_nondegenerate`, which the second cut missed), `exists_qAdicPolarizedSystem_finiteBase`
+PROVEN, and the residual geometry left as `exists_dualPolarization_finiteBase`. The second run
+independently re-derived the gate, re-cut the same seam, wrote a rival predicate
+(`IsQAdicPolarizedHom` against `IsQAdicBoundedPolarizationHom`) and a rival residual leaf
+(`exists_dualPolarization_of_mult_finiteBase`) with the *same binders and same conclusion*, and
+verified all 390 lines green — all of it discardable, because two proofs of one theorem cannot
+both be carried.
+
+This is class 5 (the release window) with a specific accelerant, and it is worth naming because
+the accelerant is predictable: **a prohibition that names its own repair is the most attractive
+target in the file.** It reads as high-value and cheap, so it is exactly what an agent scanning
+for tractable work picks — and several will pick it in the same window. The generic advice
+("check `merger` before starting") did not fail here so much as it was not run; but the specific
+form is stronger and costs one command, so run it whenever a docstring hands you an unblocking
+task:
+
+    git show merger:<file> | grep -n '<the leaf the prohibition blocks>'
+
+If that shows the leaf already proven, the prohibition has been spent and the follow-on work is
+done. Check `merger` for the CONSEQUENCE, not just for your own target's name — here the target
+was still `sorry` on `main` and already proven on `merger`, which is the whole of the trap.
+
+So, four things worth carrying:
 
 1. **Read the prohibition to its end.** This development's docstrings are unusually good about
    naming what would unblock them. A paragraph that says "this is impossible *until* Y" is a task
@@ -1140,6 +1167,43 @@ So, three things worth carrying:
    sorry-count*. Repairing the structure fixed the char-0 half as a side effect of unblocking the
    finite-base one. When you find an audit saying "leaf L is false and the defect is in shared
    structure `X`", the fix belongs in `X` and it pays out at every consumer at once.
+4. **When you DO find you were second, decline your own branch — and leave the receipt.** The
+   duplicate here was reverted to `main` on its own branch rather than shipped, so the merge
+   worker gets an empty Lean payload instead of a two-sided conflict in a 20 000-line file over a
+   theorem it already has. The green work stays recoverable at its own sha (`git show 0025e539`),
+   named in the revert's commit message. A decline that is committed and points at its own
+   history costs nothing and can be reversed; one that is merged costs whoever resolves it.
+
+## `pkill -f "lake build"` IS A FLEET-WIDE KILL SWITCH — IT MATCHES THE AGENTS THEMSELVES
+
+(2026-07-31, measured on gambit while stopping one worktree's own build.) `pkill`/`pgrep -f`
+match against the WHOLE command line of EVERY process on the host, and the fleet runs ~25
+worktrees on one machine. So a pattern chosen to mean "my build" means "everyone's build":
+
+    pgrep -f "lake build" | wc -l          # 70 processes, across 25 worktrees
+
+**24 of those 70 were the agents' own `flt-job-*` Claude processes.** Not their builds — the
+agents. Every prover prompt contains the sentence *"Verify with `lake build` on the module"*, and
+the prompt is passed as an argv element, so the literal string `lake build` is in the command
+line of every running agent. `pkill -f "lake build"` therefore SIGTERMs two dozen live agents
+mid-proof along with every build on the box. Nothing about the command looks dangerous, which is
+the point of writing it down.
+
+Scope the pattern to the worktree PATH, which is the one string that is actually yours:
+
+    pkill -f "/home/chend/flt-lean-N/Fermat"     # only this worktree's lean workers
+
+And note the two traps that follow from it. **`lake build`'s `lean` workers do not have "lake
+build" in their command line** — they are `.../bin/lean <path> -o <path>`, so killing the `lake`
+parent orphans the children, which keep elaborating and keep writing into `.lake`. Kill by path
+or you leave writers behind. And **a module that reports `error: Lean exited with code 143` was
+SIGTERMed, not broken** — 143 is 128+15. Two modules failed that way here and neither had
+anything wrong with it; reading 143 as a defect is how a phantom "broken on main" report gets
+written.
+
+Before any `pkill`, run the same pattern through `pgrep -af` first and read what comes back. It
+costs one command and it is the only way to see the blast radius, which on this host is never
+just you.
 
 ## SEVENTH invisibility class: A CLEAN MERGE THAT DOES NOT COMPILE — the interface split
 
