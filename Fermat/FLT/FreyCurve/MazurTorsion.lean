@@ -28057,9 +28057,16 @@ previous version of this paragraph asked a prover to find out whether
 for two independent reasons, both readable off its declaration:
 
 * it is stated only for `strX : X ⟶ SpecF ℓ` — a FINITE FIELD base —
-  whereas this leaf is over an arbitrary `S`, and nothing in the tree
-  transports an `IsJacobianOf` along a base change, so there is no route
-  from the fibres back to `jstr`;
+  whereas this leaf is over an arbitrary `S`, so there is no route from
+  the fibres back to `jstr`.  **The reason this clause used to give for
+  that was FALSE and is corrected (2026-07-31)**: it read "nothing in the
+  tree transports an `IsJacobianOf` along a base change".
+  `Fermat.isJacobianOf_baseChange` (`ModularCurve/X0.lean`) does exactly
+  that, and has since 2026-07-27.  The clause survives for a reason that
+  is not about the Jacobian at all — even with every fibre of `jstr`
+  identified as a Jacobian, nothing carries a fibrewise relative
+  dimension back up to `jstr`.  See the axis-2 entry below, which is
+  where both halves of this are now recorded;
 * its two fields are equations between COMPLEX NUMBERS
   (`#X_0(N)(𝔽_ℓ) = ℓ + 1 − Tr T_ℓ` and
   `#J_0(N)(𝔽_ℓ) = det((ℓ + 1) − T_ℓ)`), and a dimension is not a value of
@@ -28072,6 +28079,22 @@ for two independent reasons, both readable off its declaration:
 Refuting check for both clauses, and it is cheap: a base-change lemma for
 `IsJacobianOf`, or any statement in the tree relating `Nat.card (RelPoint
 jstr _)` to `SmoothOfRelativeDimension _ jstr`, refutes the verdict.
+
+**THE FIRST OF THOSE TWO CHECKS HAS FIRED, AND THE VERDICT SURVIVES IT
+ANYWAY** (2026-07-31).  `isJacobianOf_baseChange` is the base-change
+lemma the check names, so the check was not cheap-and-negative, it was
+cheap-and-POSITIVE and nobody ran it for three days.  What that shows is
+that the check was aimed at the wrong ingredient: the verdict never
+depended on the Jacobian transporting, it depends on
+`SmoothOfRelativeDimension` being unreflectable along `Spec κ(s) ⟶ S`,
+which is a fact about mathlib's smoothness API and not about `X_0(N)`.
+The corrected refuting check is therefore: **a fibrewise criterion —
+`Flat` (or proper flat) plus fibres smooth of relative dimension `n`
+implies `SmoothOfRelativeDimension n` — anywhere in mathlib or in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/`.**  Today there is none; the
+grep that would refute this is `grep -rn "SmoothOfRelativeDimension"
+.lake/packages/mathlib/Mathlib/` returning a file other than
+`AlgebraicGeometry/Morphisms/Smooth.lean` and `Morphisms/Etale.lean`.
 
 **ATOMICITY AUDIT (2026-07-28) — WHICH AXES WERE SEARCHED.**  Three, and
 naming them is the point, since a verdict is only as wide as its search:
@@ -28086,17 +28109,96 @@ naming them is the point, since a verdict is only as wide as its search:
    which is a subtree, not a structure.
 2. *The base axis.*  Reduce to a field base by locality of
    `SmoothOfRelativeDimension` on the target and stability under base
-   change.  BLOCKED on the same missing ingredient as the point-count
-   route: `IsJacobianOf` is a functor-of-points universal property and no
-   lemma says its base change is again one.  That lemma is a genuinely
-   separable and much smaller task, and is the one piece of this leaf a
-   successor could land independently.
+   change.  BLOCKED — but **NOT for the reason this entry used to give,
+   and the correction matters because that reason was an invitation to
+   duplicate work** (rewritten 2026-07-31).
+
+   The old entry read: *"`IsJacobianOf` is a functor-of-points universal
+   property and no lemma says its base change is again one.  That lemma
+   is a genuinely separable and much smaller task, and is the one piece
+   of this leaf a successor could land independently."*  Both clauses are
+   wrong, and independently so.
+
+   *The lemma EXISTS.*  `Fermat.isJacobianOf_baseChange`
+   (`ModularCurve/X0.lean`) is "the base change of the Jacobian IS a
+   Jacobian of the base-changed curve", PROVEN over
+   `universal_jacobianBaseChangeAj` (PROVEN 2026-07-27), which is in turn
+   assembled from `exists_comp_jacobianBaseChangeAj` and
+   `eq_of_comp_jacobianBaseChangeAj`.  The other three `IsJacobianOf`
+   fields are supplied by `jacobianBaseChangeAj`,
+   `jacobianBaseChangeAj_pre` and `jacobianBaseChangeAj_base`, all proven.
+   A successor dispatched at "a base-change lemma for `IsJacobianOf`"
+   re-cuts a node this tree had already cut the day BEFORE this audit was
+   written.
+
+   *And its residue is not small.*  The two halves left open there need,
+   by their own docstrings, representability of the rigidified relative
+   Picard functor (FGA exposé 232; BLR *Néron Models* 8.1, 9.4) and a
+   generation statement over `Sym^g` of a relative curve, which exists
+   nowhere in this development.  Neither is "much smaller" than this leaf.
+
+   *The formal reason, kept because it is general and reusable.*  Of
+   `IsJacobianOf`'s four fields, `aj`, `aj_pre` and `aj_base` speak about
+   maps INTO `J`, and maps into a base change transport for free —
+   `Hom_{S'}(T, J ×_S S') ≅ Hom_S(T, J)` is the defining adjunction of the
+   fibre product.  `universal` speaks about maps OUT of `J`, and maps out
+   of a base change are `Hom_S(J, Res_{S'/S} A')`: Weil restriction, an
+   abelian scheme only for `S' ⟶ S` finite locally free — a hypothesis no
+   consumer here supplies — and absent at this pin altogether
+   (`grep -rn "WeilRestriction\|weilRestriction"` over
+   `.lake/packages/mathlib/Mathlib/` and over `Fermat/` returns nothing in
+   both).  This is the same into/out-of split `IsCoarseModuliY0` already
+   paid for — see the `SpecialFibreCoarse` subsection of
+   `ModularCurve/X0.lean`, where two of three clauses base-change for free
+   and initiality does not — with the same resolution: replace the
+   universal property by the REPRESENTABILITY presentation.  Here that
+   presentation exists, as `Fermat.IsRelPicZeroOf`
+   (`ModularCurve/RelativePicard.lean`); every one of its fields is about
+   maps into `J`, so it base-changes by inspection, and
+   `exists_comp_jacobianBaseChangeAj`'s docstring records precisely that
+   as its classical proof.
+
+   *THE BLOCKER THAT ACTUALLY STOPS THIS AXIS, and it is not on the
+   Jacobian side.*  Grant the base-change lemma outright, fibres and all.
+   The plan was then to read the dimension of `jstr` off its fibres.
+   Nothing does that.  `SmoothOfRelativeDimension` is
+   `HasRingHomProperty (Locally (IsStandardSmoothOfRelativeDimension n))`,
+   hence Zariski-local on the TARGET — checkable on an affine open cover
+   of `S`, NOT on the fibres of `jstr` — and
+   `smoothOfRelativeDimension_isStableUnderBaseChange` runs FORWARD only:
+   it preserves the property along `Spec κ(s) ⟶ S`, it does not reflect
+   it.  The complete mathlib API at this pin is
+   `SmoothOfRelativeDimension.smooth`, the `HasRingHomProperty` instance,
+   stability under base change, `smoothOfRelativeDimension_comp`
+   (`n + m`), open immersions at `0`, and `Etale ↔ 0` — no fibrewise
+   criterion anywhere.
+   `Fermat/FLT/Mathlib/AlgebraicGeometry/SmoothConnectedCriteria.lean`'s
+   module docstring reaches the same conclusion independently
+   (2026-07-27): mathlib's smoothness files are "purely consequential …
+   not a single way to construct one from ring-theoretic data", and the
+   only constructors that exist anywhere in reach —
+   `smoothOfRelativeDimension_specMap_algebraMap_of_smooth` and
+   `…_of_isRegularRing` — are for an AFFINE morphism over a FIELD.  So
+   axis 2 is blocked TWICE, by two ingredients that have nothing to do
+   with each other, and closing the base-change lemma would not unblock
+   it.
 3. *The point-count axis*, i.e. `IsX0EichlerShimura`.  BLOCKED as above.
 
-Verdict: ATOMIC at this pin along all three, with axis 2's base-change
-lemma the only spin-off worth dispatching on its own.  The remaining
-content is Eichler–Shimura itself and belongs to whoever owns the
-`Modularity` subtree, not to a prover in this file. -/
+Verdict: ATOMIC at this pin along all three.  **Amended 2026-07-31: there
+is NO spin-off of this leaf worth dispatching on its own.**  The one the
+previous verdict advertised is already cut and already owned, so taking it
+again duplicates — and it would not move this leaf even if it were closed,
+because of the second blocker above.  The nearest genuinely separable task
+in the neighbourhood is not on this leaf but on its sibling
+`finrank_cuspForm_eq_one_of_x0Genus_eq_one`, whose own docstring records
+that the repair there is a MOVE rather than a proof: hoist
+`exists_cuspForm_sturm_bound` and `cuspForm_finiteDimensional` out of
+`Modularity/Interface.lean` (which `public import`s this file, hence is
+strictly downstream and unusable from here) up to
+`Modularity/HeckeOperator.lean`, which is upstream and carries no Sturm
+bound at all — its only one, `sturm_bound_levelOne`, is level `1`.  The
+remaining content of THIS leaf is Eichler–Shimura itself and belongs to
+whoever owns the `Modularity` subtree, not to a prover in this file. -/
 theorem smoothOfRelativeDimension_finrank_cuspForm {N : ℕ} (hN : 0 < N)
     {X Y J S : Scheme.{0}} {strX : X ⟶ S} {strY : Y ⟶ S} {jY : Y ⟶ X}
     (hmodel : IsX0Compactification N strX strY jY) {jstr : J ⟶ S}
