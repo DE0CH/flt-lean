@@ -12988,59 +12988,6 @@ theorem exists_pos_forall_prime_not_dvd_notMem_span_singleton_map
   obtain ⟨i, hi⟩ := hN₁ p hpN1 (fun e => c.coeff (boundedExpo k D e))
   exact hi (((hbridge (AlgebraicClosure (ZMod p)) _).mpr
     (by rw [coeffPoly_coeff_self k D hcD, hc]; ring)) i)
-        Ideal.span {MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) g} := by
-  classical
-  -- The coefficient bound is computed ONCE, over `ℤ`; total degree only drops on reduction.
-  set D := b.totalDegree with hDdef
-  set U := divisibilityUniv k D g b with hU
-  -- The criterion, uniformly in the base field: the equations of `U` vanish at `x`
-  -- exactly when `x` is a coefficient vector exhibiting `g ∣ b`.
-  have hcrit : ∀ (K : Type) [Field K] (x : (Fin k → Fin (D + 1)) → K),
-      (∀ m : Fin k →₀ ℕ, m ∈ U.support →
-          MvPolynomial.eval₂ (Int.castRingHom K) x (U.coeff m) = 0) ↔
-        coeffPoly k D x * MvPolynomial.map (Int.castRingHom K) g =
-          MvPolynomial.map (Int.castRingHom K) b := by
-    intro K _ x
-    rw [← sub_eq_zero, ← map_divisibilityUniv g b x, ← hU]
-    constructor
-    · intro hall
-      ext m
-      rw [MvPolynomial.coeff_map, MvPolynomial.coeff_zero]
-      by_cases hm : m ∈ U.support
-      · exact hall m hm
-      · rw [MvPolynomial.notMem_support_iff.mp hm]; simp
-    · intro h0 m _
-      have := congrArg (fun q => MvPolynomial.coeff m q) h0
-      simpa [MvPolynomial.coeff_map] using this
-  have hbridge : ∀ c : MvPolynomial (Fin k) ℤ,
-      MvPolynomial.map (algebraMap ℚ (AlgebraicClosure ℚ))
-          (MvPolynomial.map (Int.castRingHom ℚ) c) =
-        MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) c := by
-    intro c
-    rw [MvPolynomial.map_map]
-    congr 1
-  -- NO `ℚ̄`-SOLUTION: one would put `b` into `(g)` over `ℚ̄`, which descends to `ℚ`.
-  have hnosol : ∀ x : (Fin k → Fin (D + 1)) → AlgebraicClosure ℚ,
-      ∃ i : {m : Fin k →₀ ℕ // m ∈ U.support},
-        MvPolynomial.eval₂ (Int.castRingHom (AlgebraicClosure ℚ)) x (U.coeff i.1) ≠ 0 := by
-    intro x
-    by_contra hcon
-    push Not at hcon
-    have hsol := (hcrit (AlgebraicClosure ℚ) x).mp (fun m hm => hcon ⟨m, hm⟩)
-    have hdesc := notMem_span_singleton_map_of_notMem (L := AlgebraicClosure ℚ) hb
-    rw [hbridge b, hbridge g] at hdesc
-    exact hdesc (Ideal.mem_span_singleton'.mpr ⟨_, hsol⟩)
-  -- STEP 4: the arithmetic half of Noether–Ostrowski produces the single `N`.
-  obtain ⟨N, hN, hmain⟩ := exists_pos_forall_prime_not_dvd_exists_eval_ne_zero
-    (σ := (Fin k → Fin (D + 1))) (ι := {m : Fin k →₀ ℕ // m ∈ U.support})
-    (fun m => U.coeff m.1) hnosol
-  refine ⟨N, hN, ?_⟩
-  intro p _ hp hmem
-  have hdeg : (MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) b).totalDegree
-      ≤ D := totalDegree_map_le' _ b
-  obtain ⟨a, ha⟩ := (mem_span_singleton_iff_exists_coeffPoly hdeg).mp hmem
-  obtain ⟨i, hi⟩ := hmain p hp a
-  exact hi (((hcrit _ a).mpr ha) i.1 i.2)
 
 /-- **THE PURE DESCENT: A `ℚ`-DIAGRAM WITH AN INTEGRAL DENOMINATOR SPREADS OUT TO
 ALMOST EVERY FIBRE** (SORRY LEAF, cut 2026-07-30 out of
@@ -50935,7 +50882,6 @@ instantiations of these. -/
 theorem smoothOfRelativeDimension_projToSpecOverField (F : Type u) [Field F]
     (E : WeierstrassCurve F) [E.IsElliptic] :
     SmoothOfRelativeDimension 1 (projToSpec E) :=
-  _root_.WeierstrassCurve.Projective.OverField.smoothOfRelativeDimension_projToSpec E
   ProjChartOverField.smoothOfRelativeDimension_projToSpec E
 
 /-! #### Base change of `Proj`, and geometric connectedness of the projective model
