@@ -1797,6 +1797,25 @@ Corollary for dispatch: **name the branch as an INSTRUCTION, not as attribution.
 "`flt-lean-311` proved X" in a credit line is not read as "merge `flt-lean-311`";
 three successors fast-forwarded to a `main` without X and found nothing.
 
+**And the AGENT-side remedy, which costs two commands** (2026-07-31, `flt-lean-345`;
+salvaged from a discarded incarnation's commit `0a3d57db`, and confirmed by a second one
+the same day). When your TARGET does not exist anywhere in your tree, do not report a
+phantom and stop. Find where it does exist and base yourself there:
+
+    git grep -n '<declName>' merger -- '*.lean'          # usually merger has it
+    git merge-tree --write-tree HEAD <branch>            # memory dry run: clean?
+    git merge --no-edit <branch>                         # or: git merge --ff-only merger
+    git diff --stat HEAD^1 HEAD                          # MUST be non-empty (class six)
+
+The merge worker has usually merged the creating branch into `merger` already, so this is
+not a rival cut — it is you catching up to a release window. Fast-forward FIRST (a freshly
+dispatched worktree can be dozens of commits behind), and say in `to_merger` which base you
+took. **Basing on `merger` rather than `main` is the right call when the target only exists
+there**, and it is the only way to see the CURRENT layout: the second incarnation above
+found that a hoist had, in the meantime, moved the whole region into a new upstream module
+and stranded the leaf below its consumers — invisible from `main`, where the module does
+not exist at all.
+
 **THE UNDERSCORE TELL: on `merger`, read the BINDER LIST, not the body**
 (2026-07-31, and it is one `sed` instead of one build). This development has a
 hard convention — a hypothesis a `sorry` cannot consume is written `_hℓ`, and the
