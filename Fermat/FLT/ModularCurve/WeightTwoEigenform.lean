@@ -263,6 +263,191 @@ structure IsWeightTwoEigenform (N : ℕ) (f : CuspForm (Gamma0GL N) 2) (a : ℕ 
   `a p`.  `U_p` acts by `(U_p f)_n = a_{np}`. -/
   atkin : ∀ p : ℕ, p.Prime → p ∣ N → ∀ n : ℕ, 0 < n → a (n * p) = a p * a n
 
+/-! ### The carried sequence IS mathlib's `q`-expansion
+
+Added 2026-07-31.  `IsWeightTwoEigenform` carries its coefficients as a
+bare function `a : ℕ → ℂ` and ties them to `f` only through the
+`qExpansion`/`qExpansionSummable` fields, i.e. analytically.  The three
+lemmas below turn that analytic tie into the *identity*
+`(UpperHalfPlane.qExpansion 1 f).coeff m = a m`, which is what makes any
+statement about this carrier interchangeable with the same statement
+about mathlib's `qExpansion` — and hence with
+`GaloisRepresentation.Modularity.qCoeff N f m`, which is
+`(UpperHalfPlane.qExpansion 1 f).coeff m` **by definition**
+(`Modularity/Interface.lean`).
+
+This is the "one genuinely analytic new leaf" that the RIVAL CARRIERS
+survey in the module docstring above listed as the first cost of
+reconciling the two carriers.  It is **not** a leaf: mathlib's
+`ModularFormClass.qExpansion_coeff_unique` does the whole job, and the
+only work is repackaging the tsum in the `qExpansion` field as a
+`HasSum` over all of `ℕ` (the `m = 0` term vanishes by `zero`).  The
+survey's cost estimate for that item should be read as discharged. -/
+
+/-- `1` is a strict period of `Γ₀(N)` viewed in `GL(2, ℝ)`: the
+translation `τ ↦ τ + 1` lies in `Γ₀(N)` for every `N`, so the width-`1`
+`q`-expansion at the cusp `∞` is the classical Fourier expansion. -/
+theorem one_mem_strictPeriods_Gamma0GL (N : ℕ) :
+    (1 : ℝ) ∈ (Gamma0GL N).strictPeriods := by
+  show (1 : ℝ) ∈
+    (↑(CongruenceSubgroup.Gamma0 N) : Subgroup (GL (Fin 2) ℝ)).strictPeriods
+  rw [CongruenceSubgroup.strictPeriods_Gamma0]
+  exact AddSubgroup.mem_zmultiples 1
+
+/-- The width-`1` `q`-parameter to the `m`-th power is `e(mτ)`, which is
+the shape the `qExpansion` field of `IsWeightTwoEigenform` is written in. -/
+theorem qParam_one_pow (τ : ℍ) (m : ℕ) :
+    Function.Periodic.qParam 1 (τ : ℂ) ^ m
+      = Complex.exp (2 * Real.pi * Complex.I * m * (τ : ℂ)) := by
+  rw [Function.Periodic.qParam, ← Complex.exp_nat_mul]
+  congr 1
+  push_cast
+  ring
+
+/-- The Fourier series of `f` with the carried coefficients, as a
+`HasSum` over ALL of `ℕ` — which is the hypothesis shape mathlib's
+uniqueness lemma wants.  The `m = 0` summand is `a 0 • 1 = 0` by the
+`zero` field, so extending the `qExpansion` field's sum over `n ≥ 1`
+costs nothing. -/
+theorem hasSum_qExpansion_of_isWeightTwoEigenform {N : ℕ} {f : CuspForm (Gamma0GL N) 2}
+    {a : ℕ → ℂ} (hf : IsWeightTwoEigenform N f a) (τ : ℍ) :
+    HasSum (fun m : ℕ => a m • Function.Periodic.qParam 1 (τ : ℂ) ^ m) (f τ) := by
+  have hfun : ∀ n : ℕ,
+      a (n + 1) • Function.Periodic.qParam 1 (τ : ℂ) ^ (n + 1)
+        = a (n + 1) * Complex.exp (2 * Real.pi * Complex.I * (n + 1) * (τ : ℂ)) := by
+    intro n
+    rw [smul_eq_mul, qParam_one_pow]
+    push_cast
+    ring_nf
+  have h1 : HasSum
+      (fun n : ℕ => a (n + 1) * Complex.exp (2 * Real.pi * Complex.I * (n + 1) * (τ : ℂ)))
+      (f τ) := by
+    rw [hf.qExpansion τ]
+    exact (hf.qExpansionSummable τ).hasSum
+  have h2 : HasSum
+      (fun n : ℕ => a (n + 1) • Function.Periodic.qParam 1 (τ : ℂ) ^ (n + 1)) (f τ) := by
+    simpa only [funext hfun] using h1
+  have h3 := (hasSum_nat_add_iff (f := fun m : ℕ =>
+    a m • Function.Periodic.qParam 1 (τ : ℂ) ^ m) 1).mp h2
+  simpa [hf.zero] using h3
+
+/-- **FOURIER UNIQUENESS: the carried sequence is mathlib's
+`q`-expansion** (PROVEN 2026-07-31).
+
+Both `qExpansion` and `qExpansionSummable` are used — the first supplies
+the value of the sum, the second makes it a `HasSum` — which is a second,
+independent reason neither field may be dropped (the `SOUNDNESS AUDIT`
+in the module docstring gives the first).
+
+Consumed by `isIntegral_coeff_prime_of_isWeightTwoEigenform` in
+`ModularCurve/X0.lean`, which is now an assembly over
+`isIntegral_qExpansionCoeff_prime` below. -/
+theorem qExpansion_coeff_eq_of_isWeightTwoEigenform {N : ℕ} {f : CuspForm (Gamma0GL N) 2}
+    {a : ℕ → ℂ} (hf : IsWeightTwoEigenform N f a) (m : ℕ) :
+    (UpperHalfPlane.qExpansion 1 f).coeff m = a m :=
+  (ModularFormClass.qExpansion_coeff_unique one_pos (one_mem_strictPeriods_Gamma0GL N)
+    (hasSum_qExpansion_of_isWeightTwoEigenform hf) m).symm
+
+/-- **SHIMURA'S ALGEBRAICITY THEOREM AT A PRIME, CARRIER-FREE** (sorry
+leaf, new 2026-07-31) — `a_p` is an algebraic integer for every prime
+`p`, stated about mathlib's own `q`-expansion coefficients and about no
+project predicate at all.
+
+TRUE, and classical (Shimura, *Introduction to the arithmetic theory of
+automorphic functions* §3.5 and §7.5; Diamond–Shurman §6.5).  `T_n`
+preserves the integral homology `H₁(X₀(N), ℤ)`, a lattice on which the
+anemic Hecke algebra therefore acts by integer matrices, and `a p` is an
+eigenvalue of one of them — so it is a root of a monic integer
+characteristic polynomial.
+
+**WHY THIS STATEMENT AND NOT THE CARRIED ONE — THE PROJECT HELD TWO
+COPIES OF THIS THEOREM AND THIS IS THE COMMON REFINEMENT.**  As of
+2026-07-31 the tree contained
+
+* `Fermat.isIntegral_coeff_prime_of_isWeightTwoEigenform`
+  (`ModularCurve/X0.lean`), over the CARRIED carrier, and
+* `GaloisRepresentation.Modularity.isIntegral_qCoeff_prime_of_isWeightTwoEigenform`
+  (`Modularity/Interface.lean`), over `qCoeff` and
+  `Modularity.IsWeightTwoEigenform`,
+
+both sorried, in two files with two eigenform predicates, so that closing
+either closed nothing about the other.  The four hypotheses below are
+*exactly* the four fields of `Modularity.IsWeightTwoEigenform` with
+`qCoeff N f` unfolded to `(UpperHalfPlane.qExpansion 1 f).coeff` — which
+is its definition — so that leaf is a one-line consequence of this one;
+and `X0.lean`'s is now a PROVEN assembly over this one, through
+`qExpansion_coeff_eq_of_isWeightTwoEigenform` above plus the two
+prime-power specialisations of `hecke`/`atkin`.  **Closing this leaf
+closes both.**  This module is upstream of both files, which is why the
+common refinement can live here at all.
+
+**THE HYPOTHESES ARE THE WEAKER (Modularity) SET, DELIBERATELY.**  The
+carried carrier's general-`n` `hecke`/`atkin` fields IMPLY the two
+prime-power recursions below, not conversely — the converse is the
+second, elementary item in the RIVAL CARRIERS survey and is still
+unwritten.  Taking the weaker hypotheses is what makes this statement
+serve both consumers; it costs nothing, because every classical proof
+of the theorem uses only these.
+
+**FALSITY AUDIT, RUN AGAINST THIS STATEMENT AND NOT INHERITED**
+(2026-07-31), per the standing rule that a restatement voids the earlier
+audit.
+
+`hN : N ≠ 0` IS LOAD-BEARING, and the level-`0` witness recorded on
+`X0.lean`'s version transports here unchanged *because of Fourier
+uniqueness*: `a (2 ^ k) := π ^ k`, `a n := 0` off the powers of `2`,
+carried by `g τ = ∑_{k ≥ 1} π^k q^{2^k}`, has
+`(qExpansion 1 g).coeff m = a m` by the lemma above, so it satisfies
+`hone` (`a 1 = 1`), `hmul` (two coprime powers of `2` force one of them
+to be `1`), `hgood` VACUOUSLY (`q ∣ 0` for every `q`, so no `q` passes
+`¬ q ∣ N`) and `hbad` (`π^{r+1} = π · π^r` at `q = 2`, and `0 = 0 · 0`
+at odd `q`).  `π` is transcendental and `2` is prime, so the conclusion
+fails outright.
+
+**The eigenform hypotheses are jointly load-bearing** for the obvious
+reason: drop them and `f` is an arbitrary cusp form, whose coefficients
+may be scaled by any transcendental.
+
+**WHAT THIS STATEMENT NO LONGER NEEDS TO AUDIT.**  `X0.lean`'s version
+carries a paragraph on both `q`-expansion fields of the carrier being
+load-bearing, because without them the sequence `a` is junk-satisfiable
+and unattached to `f`.  Here the coefficients ARE read off `f`, so that
+failure mode does not exist and the audit item is discharged rather than
+inherited.
+
+**WHAT REMAINS GENUINELY MISSING** (re-checked 2026-07-31): the integral
+homology `H₁(X₀(N), ℤ)` as a Hecke module exists neither here, nor in
+mathlib at this pin, nor in `~/cs/FLT`.  Archimedean bounds cannot
+substitute — `X0.lean` has `‖a_p‖ ≤ 2√p` and integrality is not an
+archimedean condition; `1/2` satisfies every such bound.  A Hecke-stable
+lattice and `IsIntegral ℤ (heckeEndo N q)` DO exist in
+`Modularity/Interface.lean` and are sorry-free in source, but that file
+is strictly downstream of this one AND its chain is circular against its
+own copy of this theorem — read the CUT-OBSTRUCTION AUDIT on
+`exists_trace_heckeOpN_int` there, which exhibits the cycle and
+identifies the Eichler–Selberg trace formula (`Tr(T_m) ∈ ℤ`) as the
+single non-circular arithmetic entry point.  A prover sent here should
+take Eichler–Selberg or `H₁(X₀(N), ℤ)`, and should NOT start by building
+a Hecke-stable lattice. -/
+theorem isIntegral_qExpansionCoeff_prime (N : ℕ) (hN : N ≠ 0)
+    (f : CuspForm (Gamma0GL N) 2)
+    (hone : (UpperHalfPlane.qExpansion 1 f).coeff 1 = 1)
+    (hmul : ∀ m n : ℕ, Nat.Coprime m n →
+      (UpperHalfPlane.qExpansion 1 f).coeff (m * n)
+        = (UpperHalfPlane.qExpansion 1 f).coeff m * (UpperHalfPlane.qExpansion 1 f).coeff n)
+    (hgood : ∀ q : ℕ, q.Prime → ¬ q ∣ N → ∀ r : ℕ,
+      (UpperHalfPlane.qExpansion 1 f).coeff (q ^ (r + 2))
+        = (UpperHalfPlane.qExpansion 1 f).coeff q
+            * (UpperHalfPlane.qExpansion 1 f).coeff (q ^ (r + 1))
+          - q * (UpperHalfPlane.qExpansion 1 f).coeff (q ^ r))
+    (hbad : ∀ q : ℕ, q.Prime → q ∣ N → ∀ r : ℕ,
+      (UpperHalfPlane.qExpansion 1 f).coeff (q ^ (r + 1))
+        = (UpperHalfPlane.qExpansion 1 f).coeff q
+            * (UpperHalfPlane.qExpansion 1 f).coeff (q ^ r))
+    (p : ℕ) (hp : p.Prime) :
+    IsIntegral ℤ ((UpperHalfPlane.qExpansion 1 f).coeff p) :=
+  sorry
+
 /-- **`L` is *the* `L`-function of the coefficient sequence `a`.**
 
 Entire, and equal to the Dirichlet series `∑ aₙ n^{-s}` wherever that
