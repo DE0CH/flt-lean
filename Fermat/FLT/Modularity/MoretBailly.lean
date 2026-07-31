@@ -19302,6 +19302,14 @@ theorem stepanov_exists_wd_rem {R : Type*} [CommRing R] (d : ℕ) (hd : 0 < d)
       rw [hsplit]
       exact dvd_add ⟨Polynomial.monomial (u.natDegree - d) (u.coeff u.natDegree), by ring⟩ hr1
 
+/-! #### The derivation calculus behind Schmidt §3 (PROVEN 2026-07-27)
+
+Six small lemmas, all of them about `stepanovDerivX`/`stepanovJet` and none of
+them about the curve, which together reduce `stepanov_pow_X_sub_C_dvd_of_jet_vanishing`
+to a single induction. The route they implement is NOT the one the leaf's
+docstring anticipated: **no power series, no Hensel lift and no branch are
+needed.** See the FOOTNOTE on that theorem. -/
+
 theorem stepanov_phi_eq (p : ℕ) :
     (Polynomial.eval₂RingHom
       (((Polynomial.C : Polynomial (Polynomial (ZMod p)) →+*
