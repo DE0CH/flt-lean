@@ -20666,9 +20666,365 @@ theorem eval_C_comp_map_C {K : Type u} [CommRing K] {m N : ℕ}
 
 end BertiniSpecialisation
 
-/-- **SCHMIDT'S THEOREM 3D, STEP 2, IN HONEST-SECTION FORM (SORRY LEAF, cut 2026-07-31 out
-of `exists_basisPlane_irreducible_familyPlaneSection` below, which is now GLUE ONLY over
-this leaf and the PROVEN specialisation criterion
+/-! ### Bertini's irreducibility theorem: the COORDINATE-FREE cut (2026-07-31)
+
+`exists_basisPlane_irreducible_planeSection` below asks for a plane in a NORMALISED
+shape -- an invertible matrix `A` whose columns `0, 1` are the plane's directions and
+whose columns `2 …` carry the base point, plus the frame-dependent clause
+`h_d(A·e₀) ≠ 0`. None of that is Bertini. Everything in this block strips it off, so
+that the remaining leaf `exists_plane_irreducible_planeSection` mentions no matrix, no
+distinguished direction, and no `homogeneousComponent`: it asks only for ONE affine
+`2`-plane whose honest section is irreducible and suffers no degree collapse.
+
+The two things stripped off are:
+
+* the LINEAR-ALGEBRA normalisation (`exists_basis_eq_of_linearIndependent_pair`,
+  `exists_invertible_col_eq_of_linearIndependent_pair`,
+  `exists_basisPlane_of_linearIndependent_pair`) -- extend the plane's direction pair
+  to a basis, read the base point in that basis, and translate the surplus `u₁`, `u₂`
+  components away along the plane, which does not move the plane and is an invertible
+  substitution of `K[s, t]`, hence harmless to irreducibility;
+* the FRAME choice (`exists_frame_eval_homogeneousComponent_ne_zero`) -- "the section
+  has total degree `d`" is intrinsic to the PLANE, while "`h_d(u₁) ≠ 0`" names one
+  direction of the frame; the second follows from the first by rotating the frame
+  inside the plane, which again is an invertible substitution.
+
+That second reduction is the point of the cut, and it retires a trap the parent's
+docstring warns about at length. The parent says clauses (i) and (ii) "genuinely have
+to be arranged by one choice of plane rather than sequentially", and exhibits
+`h = X 1 ^ 2 - X 0`, `W = span(e₀, e₂)`: a plane that is good for irreducibility while
+`h_d` vanishes identically on it. That witness is REAL, and it is a witness about a
+PLANE -- on that plane the section is `s ^ 2 - t`-shaped and has total degree `1`, not
+`2`, so the plane fails "no degree collapse" as well. What is NOT true, and what the
+frame-dependent spelling made it look like, is that a good plane can be spoiled by a
+bad choice of `u₁` inside it. It cannot: `totalDegree = d` says the degree-`d` part of
+the section is a nonzero binary form, and over an infinite field a nonzero binary form
+misses some direction of the plane. So the leaf below is stated on the plane alone. -/
+
+open _root_.Module in
+/-- **PROVEN 2026-07-31**: a linearly independent PAIR of vectors of `Kⁿ⁺²` is the first
+half of a basis of `Kⁿ⁺²` indexed by `Fin (n + 2)`.
+
+`Module.Basis.extend` supplies a basis indexed by a SET containing `{u₁, u₂}`, and
+`Module.Basis.indexEquiv` against `Pi.basisFun` reindexes it by `Fin (n + 2)`; the only
+work is composing that equivalence with the permutation of `Fin (n + 2)` that puts the
+preimages of `u₁` and `u₂` at `0` and `1`, built from two transpositions. -/
+theorem exists_basis_eq_of_linearIndependent_pair {K : Type*} [Field K] {N : ℕ}
+    (u₁ u₂ : Fin (N + 2) → K) (hu : LinearIndependent K ![u₁, u₂]) :
+    ∃ b : Basis (Fin (N + 2)) K (Fin (N + 2) → K), b 0 = u₁ ∧ b 1 = u₂ := by
+  classical
+  have hne : u₁ ≠ u₂ := by
+    intro hEq
+    have h2 : ![u₁, u₂] 0 = ![u₁, u₂] 1 := by simpa using hEq
+    have := hu.injective h2
+    simp at this
+  have hrange : Set.range ![u₁, u₂] = ({u₁, u₂} : Set (Fin (N + 2) → K)) := by
+    ext x
+    constructor
+    · rintro ⟨i, rfl⟩
+      fin_cases i <;> simp
+    · rintro (rfl | rfl)
+      · exact ⟨0, by simp⟩
+      · exact ⟨1, by simp⟩
+  have hs : LinearIndepOn K id ({u₁, u₂} : Set (Fin (N + 2) → K)) := by
+    have h := hu.linearIndepOn_id
+    rwa [hrange] at h
+  have hsub : ({u₁, u₂} : Set (Fin (N + 2) → K)) ⊆ hs.extend (Set.subset_univ _) :=
+    hs.subset_extend _
+  have hu₁T : u₁ ∈ hs.extend (Set.subset_univ _) := hsub (by simp)
+  have hu₂T : u₂ ∈ hs.extend (Set.subset_univ _) := hsub (by simp)
+  let b : Basis (hs.extend (Set.subset_univ _)) K (Fin (N + 2) → K) := Basis.extend hs
+  have hbval : ∀ x : (hs.extend (Set.subset_univ _) : Set (Fin (N + 2) → K)),
+      b x = (x : Fin (N + 2) → K) := fun x => Basis.extend_apply_self hs x
+  let e := b.indexEquiv (Pi.basisFun K (Fin (N + 2)))
+  let a : Fin (N + 2) := e ⟨u₁, hu₁T⟩
+  let a' : Fin (N + 2) := e ⟨u₂, hu₂T⟩
+  have haa' : a ≠ a' := fun hEq => hne (congrArg Subtype.val (e.injective hEq))
+  let q : Equiv.Perm (Fin (N + 2)) := Equiv.swap 0 a
+  have hqa : q a = 0 := Equiv.swap_apply_right 0 a
+  have hd0 : q a' ≠ 0 := by
+    intro hEq
+    exact haa' (q.injective (hEq.trans hqa.symm)).symm
+  let p : Equiv.Perm (Fin (N + 2)) := (Equiv.swap 1 (q a')).trans q
+  have h01 : (0 : Fin (N + 2)) ≠ 1 := Fin.zero_ne_one
+  have hp0 : p 0 = a := by
+    have hr : Equiv.swap (1 : Fin (N + 2)) (q a') 0 = 0 :=
+      Equiv.swap_apply_of_ne_of_ne h01 (Ne.symm hd0)
+    show q (Equiv.swap (1 : Fin (N + 2)) (q a') 0) = a
+    rw [hr]
+    exact Equiv.swap_apply_left 0 a
+  have hp1 : p 1 = a' := by
+    show q (Equiv.swap (1 : Fin (N + 2)) (q a') 1) = a'
+    rw [Equiv.swap_apply_left]
+    exact q.symm_apply_apply a' ▸ (Equiv.swap_apply_self 0 a a')
+  refine ⟨b.reindex (e.trans p.symm), ?_, ?_⟩
+  · rw [Basis.reindex_apply]
+    have hsy : (e.trans p.symm).symm 0 = e.symm (p 0) := rfl
+    rw [hsy, hp0, hbval]
+    show ((e.symm (e ⟨u₁, hu₁T⟩) : (hs.extend (Set.subset_univ _) : Set (Fin (N + 2) → K)))
+      : Fin (N + 2) → K) = u₁
+    rw [Equiv.symm_apply_apply]
+  · rw [Basis.reindex_apply]
+    have hsy : (e.trans p.symm).symm 1 = e.symm (p 1) := rfl
+    rw [hsy, hp1, hbval]
+    show ((e.symm (e ⟨u₂, hu₂T⟩) : (hs.extend (Set.subset_univ _) : Set (Fin (N + 2) → K)))
+      : Fin (N + 2) → K) = u₂
+    rw [Equiv.symm_apply_apply]
+
+open _root_.Module in
+/-- **PROVEN 2026-07-31**: a linearly independent PAIR of vectors of `Kⁿ⁺²` extends to an
+INVERTIBLE MATRIX whose first two columns are the pair. The matrix is the change-of-basis
+matrix from `Pi.basisFun` to the basis produced by
+`exists_basis_eq_of_linearIndependent_pair`, so invertibility is
+`Module.Basis.toMatrix_mul_toMatrix_flip` and needs no determinant computation. -/
+theorem exists_invertible_col_eq_of_linearIndependent_pair {K : Type*} [Field K] {N : ℕ}
+    (u₁ u₂ : Fin (N + 2) → K) (hu : LinearIndependent K ![u₁, u₂]) :
+    ∃ A B : Matrix (Fin (N + 2)) (Fin (N + 2)) K, A * B = 1 ∧ B * A = 1 ∧
+      (∀ i, A i 0 = u₁ i) ∧ (∀ i, A i 1 = u₂ i) := by
+  classical
+  obtain ⟨b, hb0, hb1⟩ := exists_basis_eq_of_linearIndependent_pair u₁ u₂ hu
+  refine ⟨(Pi.basisFun K (Fin (N + 2))).toMatrix ⇑b,
+          b.toMatrix ⇑(Pi.basisFun K (Fin (N + 2))), ?_, ?_, ?_, ?_⟩
+  · exact Basis.toMatrix_mul_toMatrix_flip _ _
+  · exact Basis.toMatrix_mul_toMatrix_flip _ _
+  · intro i
+    rw [Basis.toMatrix_apply, hb0]
+    simp
+  · intro i
+    rw [Basis.toMatrix_apply, hb1]
+    simp
+
+/-- **PROVEN 2026-07-31** -- the LINEAR-ALGEBRA half of
+`exists_basisPlane_irreducible_planeSection`: an arbitrary affine `2`-plane, presented by a
+base point `v` and a linearly independent direction pair, is presentable in the normalised
+shape that leaf asks for.
+
+Two moves, neither of them mathematical:
+
+* extend `(u₁, u₂)` to an invertible `A` with those as its first two columns
+  (`exists_invertible_col_eq_of_linearIndependent_pair`), and read the base point in the
+  basis given by the columns of `A`: `v = A · (B · v)`, so `x₀` is the tail of `B · v`;
+* delete the `u₁`- and `u₂`-components of `v`. That MOVES THE BASE POINT ALONG THE PLANE,
+  so it does not change the plane, and by `planeSection_comp` it acts on `K[s, t]` as the
+  translation `(s, t) ↦ (s - y₀, t - y₁)`, whose linear part has determinant `1`; so
+  `irreducible_planeSection_of_det_ne_zero` carries irreducibility across it.
+
+Clause (i) is untouched by both moves, `A·e₀` being `u₁` on the nose. -/
+theorem exists_basisPlane_of_linearIndependent_pair {K : Type*} [Field K] {n d : ℕ}
+    (h : MvPolynomial (Fin (n + 3)) K) (v u₁ u₂ : Fin (n + 3) → K)
+    (hli : LinearIndependent K ![u₁, u₂])
+    (hlead : MvPolynomial.eval u₁ (MvPolynomial.homogeneousComponent d h) ≠ 0)
+    (hsec : Irreducible (planeSection h v u₁ u₂)) :
+    ∃ (A B : Matrix (Fin (n + 3)) (Fin (n + 3)) K) (x₀ : Fin (n + 1) → K),
+      A * B = 1 ∧ B * A = 1 ∧
+      MvPolynomial.eval (fun i => A i 0) (MvPolynomial.homogeneousComponent d h) ≠ 0 ∧
+      Irreducible (planeSection h (fun i => ∑ j, A i j.succ.succ * x₀ j)
+        (fun i => A i 0) (fun i => A i 1)) := by
+  classical
+  obtain ⟨A, B, hAB, hBA, hA0, hA1⟩ :=
+    exists_invertible_col_eq_of_linearIndependent_pair (N := n + 1) u₁ u₂ hli
+  have hA0' : (fun i => A i 0) = u₁ := funext hA0
+  have hA1' : (fun i => A i 1) = u₂ := funext hA1
+  set y : Fin (n + 3) → K := Matrix.mulVec B v with hy
+  have hAy : Matrix.mulVec A y = v := by
+    rw [hy, Matrix.mulVec_mulVec, hAB, Matrix.one_mulVec]
+  have hvsum : ∀ i, v i = ∑ j, A i j * y j := by
+    intro i
+    rw [← hAy]
+    simp [Matrix.mulVec, dotProduct]
+  refine ⟨A, B, fun j => y j.succ.succ, hAB, hBA, ?_, ?_⟩
+  · rw [hA0']; exact hlead
+  · have hsplit : ∀ i, v i - u₁ i * y 0 - u₂ i * y 1
+        = ∑ j : Fin (n + 1), A i j.succ.succ * y j.succ.succ := by
+      intro i
+      rw [hvsum i, Fin.sum_univ_succ, Fin.sum_univ_succ]
+      simp only [Fin.succ_zero_eq_one, hA0 i, hA1 i]
+      ring
+    have hdet : (![1, 0] : Fin 2 → K) 0 * (![0, 1] : Fin 2 → K) 1
+        - (![0, 1] : Fin 2 → K) 0 * (![1, 0] : Fin 2 → K) 1 ≠ 0 := by
+      simp
+    have hkey := irreducible_planeSection_of_det_ne_zero
+      (planeSection h v u₁ u₂) ![-(y 0), -(y 1)] ![1, 0] ![0, 1] hdet hsec
+    rw [planeSection_comp] at hkey
+    have e0 : (fun i => v i + u₁ i * (![-(y 0), -(y 1)] : Fin 2 → K) 0
+        + u₂ i * (![-(y 0), -(y 1)] : Fin 2 → K) 1)
+        = (fun i => ∑ j : Fin (n + 1), A i j.succ.succ * y j.succ.succ) := by
+      funext i
+      rw [← hsplit i]
+      simp
+      ring
+    have e1 : (fun i => u₁ i * (![1, 0] : Fin 2 → K) 0 + u₂ i * (![1, 0] : Fin 2 → K) 1)
+        = u₁ := by funext i; simp
+    have e2 : (fun i => u₁ i * (![0, 1] : Fin 2 → K) 0 + u₂ i * (![0, 1] : Fin 2 → K) 1)
+        = u₂ := by funext i; simp
+    rw [e0, e1, e2] at hkey
+    rw [hA0', hA1']
+    exact hkey
+
+/-- **PROVEN 2026-07-31** -- the FRAME half: on a plane whose section suffers NO DEGREE
+COLLAPSE, some direction of the plane is missed by the leading form `h_d`. So the
+frame-dependent clause `h_d(u₁) ≠ 0` is a consequence of the frame-free clause
+`(planeSection h v u₁ u₂).totalDegree = d`, and a Bertini prover never has to think about
+which direction of its plane comes first.
+
+The argument, in the order the proof takes it. Write `P` for the section. `P.totalDegree = d`
+gives `homogeneousComponent d P ≠ 0` (`homogeneousComponent_totalDegree_ne_zero`), and `K` is
+infinite, so `exists_eval_ne_zero_of_ne_zero` supplies `w : Fin 2 → K` with
+`P_d(w) ≠ 0`; `w ≠ 0` because a form of degree `d ≥ 2` vanishes at the origin. Complete `w`
+to an invertible `2 × 2` frame change `(w, w')` -- one case split on `w 0 = 0` -- and read
+`coeff_single_planeSection_eq_eval_homogeneousComponent` TWICE, once for `P` along `(w, w')`
+and once for `h` along the rotated frame. The two `s^d`-coefficients are the same number,
+because `planeSection_comp` identifies the two sections; so `h_d` of the rotated first
+direction is `P_d(w) ≠ 0`. Irreducibility survives the rotation by
+`irreducible_planeSection_of_det_ne_zero`, and linear independence survives it because the
+frame change has nonzero determinant.
+
+Note the hypothesis `2 ≤ d` is used only to know `d ≠ 0` twice (a nonzero polynomial has a
+nonzero total degree; a positive-degree form vanishes at the origin), and `hdeg` only to feed
+the coefficient lemma its degree bound. -/
+theorem exists_frame_eval_homogeneousComponent_ne_zero {K : Type*} [Field K] [Infinite K]
+    {N d : ℕ} (h : MvPolynomial (Fin N) K) (hdeg : h.totalDegree = d) (hd : 2 ≤ d)
+    (v u₁ u₂ : Fin N → K) (hPdeg : (planeSection h v u₁ u₂).totalDegree = d)
+    (hli : LinearIndependent K ![u₁, u₂]) (hsec : Irreducible (planeSection h v u₁ u₂)) :
+    ∃ w₁ w₂ : Fin N → K, LinearIndependent K ![w₁, w₂] ∧
+      MvPolynomial.eval w₁ (MvPolynomial.homogeneousComponent d h) ≠ 0 ∧
+      Irreducible (planeSection h v w₁ w₂) := by
+  classical
+  set P := planeSection h v u₁ u₂ with hP
+  have hPne : P ≠ 0 := by
+    intro h0
+    rw [h0, MvPolynomial.totalDegree_zero] at hPdeg
+    omega
+  have hPd : MvPolynomial.homogeneousComponent d P ≠ 0 := by
+    have hh := homogeneousComponent_totalDegree_ne_zero P hPne
+    rwa [hPdeg] at hh
+  obtain ⟨w, hw⟩ := exists_eval_ne_zero_of_ne_zero _ hPd
+  have hwne : w 0 ≠ 0 ∨ w 1 ≠ 0 := by
+    by_contra hcon
+    have h0 : w 0 = 0 := not_not.mp fun hx => hcon (Or.inl hx)
+    have h1 : w 1 = 0 := not_not.mp fun hx => hcon (Or.inr hx)
+    have hw0 : w = 0 := by
+      funext i
+      fin_cases i
+      · exact h0
+      · exact h1
+    rw [hw0] at hw
+    refine hw ?_
+    rw [MvPolynomial.eval_zero, MvPolynomial.constantCoeff_eq,
+      MvPolynomial.coeff_homogeneousComponent, if_neg]
+    intro hcon'
+    rw [show ((0 : Fin 2 →₀ ℕ).degree) = 0 from rfl] at hcon'
+    omega
+  obtain ⟨w', hdet⟩ : ∃ w' : Fin 2 → K, w 0 * w' 1 - w' 0 * w 1 ≠ 0 := by
+    rcases hwne with hc | hc
+    · exact ⟨![0, 1], by simpa using hc⟩
+    · refine ⟨![1, 0], ?_⟩
+      simpa using hc
+  have hcomp : planeSection P ![0, 0] w w'
+      = planeSection h v (fun i => u₁ i * w 0 + u₂ i * w 1)
+          (fun i => u₁ i * w' 0 + u₂ i * w' 1) := by
+    rw [hP, planeSection_comp]
+    congr 1
+    funext i
+    simp
+  refine ⟨fun i => u₁ i * w 0 + u₂ i * w 1, fun i => u₁ i * w' 0 + u₂ i * w' 1, ?_, ?_, ?_⟩
+  · rw [LinearIndependent.pair_iff] at hli ⊢
+    intro s t hst
+    have hst' : (s * w 0 + t * w' 0) • u₁ + (s * w 1 + t * w' 1) • u₂ = 0 := by
+      funext i
+      have hi := congrFun hst i
+      simp only [Pi.add_apply, Pi.smul_apply, smul_eq_mul, Pi.zero_apply] at hi ⊢
+      linear_combination hi
+    obtain ⟨h1, h2⟩ := hli _ _ hst'
+    constructor
+    · have hs : s * (w 0 * w' 1 - w' 0 * w 1) = 0 := by
+        linear_combination w' 1 * h1 - w' 0 * h2
+      rcases mul_eq_zero.mp hs with hs0 | hz
+      · exact hs0
+      · exact absurd hz hdet
+    · have ht : t * (w 0 * w' 1 - w' 0 * w 1) = 0 := by
+        linear_combination w 0 * h2 - w 1 * h1
+      rcases mul_eq_zero.mp ht with ht0 | hz
+      · exact ht0
+      · exact absurd hz hdet
+  · have h1 : (planeSection P ![0, 0] w w').coeff (Finsupp.single 0 d)
+        = MvPolynomial.eval w (MvPolynomial.homogeneousComponent d P) :=
+      coeff_single_planeSection_eq_eval_homogeneousComponent P (le_of_eq hPdeg) ![0, 0] w w'
+    have h2 := coeff_single_planeSection_eq_eval_homogeneousComponent h (le_of_eq hdeg) v
+      (fun i => u₁ i * w 0 + u₂ i * w 1) (fun i => u₁ i * w' 0 + u₂ i * w' 1)
+    rw [← h2, ← hcomp, h1]
+    exact hw
+  · have hkey := irreducible_planeSection_of_det_ne_zero P ![0, 0] w w' hdet hsec
+    rwa [hcomp] at hkey
+
+/-- **BERTINI'S IRREDUCIBILITY THEOREM FOR A HYPERSURFACE (SORRY LEAF, cut 2026-07-31 out of
+`exists_basisPlane_irreducible_planeSection` below, which is now GLUE ONLY over this leaf and
+the two PROVEN normalisations above)**.
+
+WHAT IS BEING ASKED. `K = K̄`, `h` irreducible of total degree `d ≥ 2` in `n + 3 ≥ 3`
+variables. Produce ONE affine `2`-plane -- a base point `v` and a linearly independent pair
+of directions `(u₁, u₂)` -- whose honest plane section
+
+* is IRREDUCIBLE in `K[s, t]`, and
+* has TOTAL DEGREE `d`, i.e. suffers no degree collapse.
+
+There is no matrix here, no `homogeneousComponent`, no `FractionRing`, no
+`AlgebraicClosure`, no generic fibre and no `hstep1`. Both clauses are properties of the
+PLANE and not of the frame `(u₁, u₂)` chosen inside it: rotating the frame is an invertible
+substitution of `K[s, t]` (`irreducible_planeSection_of_det_ne_zero`,
+`totalDegree_planeSection_of_det_ne_zero`) and changes neither. So a prover may pick whatever
+frame its argument produces.
+
+WHY BOTH CLAUSES ARE NEEDED, and why the second is not implied by the first. `h = X 0 + X 1 ^ 2 * X 2`
+is irreducible of degree `3`; the plane `X 1 = 0` with coordinates `(X 0, X 2)` has section `s`,
+which is irreducible and has degree `1`. So irreducibility alone does not pin the degree, and
+the leaf would be useless without the degree clause -- the consumer needs degree `d` to know
+the section still sees the leading form of `h`.
+
+WHY BOTH CAN BE ARRANGED AT ONCE. Both are dense open conditions on the plane. Irreducibility
+of the general plane section is Bertini's theorem in every characteristic (Jouanolou,
+*Théorèmes de Bertini et applications*, Thm 6.3; Schmidt, *Equations over Finite Fields*,
+Chapter V Theorem 3D; Fried–Jarden, *Field Arithmetic*, Prop. 10.4.2). No degree collapse is
+the condition `h_d|_W ≢ 0` on the direction plane `W`, nonempty because `h_d ≠ 0`
+(`hdeg` with `d ≥ 1`). Two dense opens of an irreducible parameter space meet.
+
+FALSITY AUDIT (2026-07-31, first audit of THIS statement; it inherits nothing, since the
+statement it was cut from is `exists_basisPlane_irreducible_planeSection` and that one's audit
+was written against a different conclusion -- see the CLAUDE.md rule that a restated leaf voids
+the earlier audit).
+
+* `hirr` is load-bearing: `h = X 0 * X 1` in `Fin 3` variables has `h_2 = X 0 * X 1 ≠ 0`, so
+  the degree clause is satisfiable, but every plane section is the product of the two
+  restricted linear forms, hence reducible whenever both restrictions are nonzero, and of
+  degree `< 2` otherwise. So no plane satisfies both clauses.
+* `hd : 2 ≤ d` is a convenience: `d = 0` is impossible by `totalDegree_ne_zero_of_irreducible`
+  and `d = 1` is PROVEN separately in
+  `exists_directionPlane_irreducible_familyPlaneSection_degree_one`. Every classical treatment
+  of Theorem 3D carries it.
+* `n + 3 ≥ 3` variables is the dimension hypothesis of Bertini in disguise: for `N = 2` a
+  "plane section" is `h` composed with an affine automorphism, so the statement degenerates to
+  `hirr` and is true but empty; for `N = 1` there is no plane.
+* `IsAlgClosed K` is used twice over: `K` infinite (a nonzero polynomial has a nonvanishing
+  point) and `K = K̄` (the section must be ABSOLUTELY irreducible -- over `ℝ`, `h = X 0 ^ 2 + X 1 ^ 2 + X 2 ^ 2 - 1`
+  has irreducible plane sections, but the statement its consumers need is the one over `K̄`).
+
+`LinearIndependent K ![u₁, u₂]` IS NOT A STRENGTHENING. It follows from the other two clauses
+(a degenerate pair makes the section a univariate polynomial in one linear form, which over
+`K = K̄` factors into `d ≥ 2` linear factors), but no construction of a genuine `2`-plane has
+to work for it, so it is asked for rather than re-derived. A prover who has a plane has it. -/
+theorem exists_plane_irreducible_planeSection {K : Type*} [Field K] [IsAlgClosed K]
+    (n d : ℕ) (h : MvPolynomial (Fin (n + 3)) K)
+    (hdeg : h.totalDegree = d) (hirr : Irreducible h) (hd : 2 ≤ d) :
+    ∃ v u₁ u₂ : Fin (n + 3) → K,
+      LinearIndependent K ![u₁, u₂] ∧
+      (planeSection h v u₁ u₂).totalDegree = d ∧
+      Irreducible (planeSection h v u₁ u₂) :=
+  sorry
+
+/-- **SCHMIDT'S THEOREM 3D, STEP 2, IN HONEST-SECTION FORM (PROVEN 2026-07-31 over ONE
+smaller leaf, `exists_plane_irreducible_planeSection` above; formerly a sorry leaf, cut
+2026-07-31 out of `exists_basisPlane_irreducible_familyPlaneSection` below, which is
+GLUE ONLY over this and the PROVEN specialisation criterion
 `irreducible_map_of_irreducible_eval_unit`)**.
 
 WHAT IS BEING ASKED, and it is the whole of Bertini's irreducibility theorem for a
@@ -20724,7 +21080,30 @@ nothing is inherited). Each hypothesis is load-bearing:
 WHAT A PROVER GETS FOR FREE, and should not re-derive: the section automatically has total
 degree exactly `d` once (i) holds, by
 `totalDegree_planeSection_of_eval_homogeneousComponent_ne_zero` -- so there is no separate
-"no degree collapse" obligation, and the criterion above does not ask for one either. -/
+"no degree collapse" obligation, and the criterion above does not ask for one either.
+
+**STATUS (2026-07-31): PROVEN, over the single smaller leaf
+`exists_plane_irreducible_planeSection` above**, which is the same theorem with every
+coordinate stripped off it. What was removed is packaging, in two independent pieces, and
+neither of them is Bertini:
+
+* the MATRIX. `exists_basisPlane_of_linearIndependent_pair` extends the plane's direction
+  pair to an invertible `A`, reads the base point in the basis of `A`'s columns, and
+  translates the surplus `u₁`, `u₂` components away ALONG the plane -- an invertible
+  substitution of `K[s, t]` with determinant `1`, so irreducibility survives it. This is the
+  formal content of the "WHY THE PARAMETRISATION IS NOT A RESTRICTION" paragraph above,
+  which until now was prose.
+* the FRAME, and this is the interesting half. The paragraph above is right that a plane
+  good for (ii) need not satisfy (i) -- the `h = X 1 ^ 2 - X 0`, `W = span(e₀, e₂)` witness
+  is real. But it invited the reading that a GOOD plane can still be spoiled by a bad choice
+  of `u₁` inside it, and that is false: by
+  `exists_frame_eval_homogeneousComponent_ne_zero`, "the section has total degree `d`" is a
+  property of the plane and implies (i) for SOME frame of that plane, since the degree-`d`
+  part of the section is then a nonzero binary form and `K` is infinite. So the leaf below
+  asks for a plane and never mentions a direction.
+
+The remaining leaf is therefore Bertini's irreducibility theorem and the non-degeneracy of
+the plane, and nothing else. -/
 theorem exists_basisPlane_irreducible_planeSection {K : Type*} [Field K]
     [IsAlgClosed K] (n d : ℕ) (h : MvPolynomial (Fin (n + 3)) K)
     (hdeg : h.totalDegree = d) (hirr : Irreducible h) (hd : 2 ≤ d) :
@@ -20732,8 +21111,12 @@ theorem exists_basisPlane_irreducible_planeSection {K : Type*} [Field K]
       A * B = 1 ∧ B * A = 1 ∧
       MvPolynomial.eval (fun i => A i 0) (MvPolynomial.homogeneousComponent d h) ≠ 0 ∧
       Irreducible (planeSection h (fun i => ∑ j, A i j.succ.succ * x₀ j)
-        (fun i => A i 0) (fun i => A i 1)) :=
-  sorry
+        (fun i => A i 0) (fun i => A i 1)) := by
+  obtain ⟨v, u₁, u₂, hli, hPdeg, hsec⟩ :=
+    exists_plane_irreducible_planeSection n d h hdeg hirr hd
+  obtain ⟨w₁, w₂, hli', hlead, hsec'⟩ :=
+    exists_frame_eval_homogeneousComponent_ne_zero h hdeg hd v u₁ u₂ hPdeg hli hsec
+  exact exists_basisPlane_of_linearIndependent_pair h v w₁ w₂ hli' hlead hsec'
 
 /-- **SCHMIDT'S THEOREM 3D, STEP 2 IN THE BASIS NORMALISATION (PROVEN 2026-07-31 over ONE
 smaller leaf, `exists_basisPlane_irreducible_planeSection` above; formerly a sorry leaf,
