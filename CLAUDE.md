@@ -54,6 +54,37 @@ The identical twin cluster in `ModularCurve/X1.lean`
 `IsBaseChangeOfGamma1.refl` / `.comp` already sit ~2500 lines ABOVE the leaves, so it needs
 no movement at all.
 
+**THE PATTERN REPEATS INSIDE ONE FILE, AND THE SECOND INSTANCE IS FREE.** Later the
+same day the `𝔽_ℓ` twin ~29000 lines further down in `X0.lean` —
+`exists_rigidifiedModuliScheme_specF` / `isAffine_of_rigidifiedModuliScheme_specF`
+over `RigidifiedModuliSchemeData.universal` — fused the same way, and the rigidity
+pair transcribed **verbatim**: `eq_id_of_isBaseChangeOf_self` and
+`nonempty_iso_rigidifiedModuliSchemeData` are the `ℚ`-side proofs with the type name
+changed and nothing else. That is not luck. The base `S` enters `universal` only as
+the type of a binder that is passed on and never inspected, so the whole two-step
+argument is base-agnostic — the same observation
+`nonempty_rigidifiedModuliData_of_iso` already records for its own transcription.
+**So when you pay this debt once, grep the file for the other `universal` fields
+before you stop**; each further instance is a copy-paste plus one build.
+
+Two things that made the second one cheaper, worth copying:
+
+* **Verify the transcription in a SCRATCH module against the still-unedited
+  `X0.olean`.** The structure you are transcribing onto is unchanged by your edit, so
+  a scratch that `public import`s the target file can compile the whole new cluster —
+  rigidity pair, fused leaf as a local `sorry` stand-in, and both derived theorems —
+  in ~1 minute, against ~25 for a rebuild of an 80 k-line module. That is the
+  general shape: a cut that only ADDS declarations over an unchanged interface is
+  fully checkable before you touch the file.
+* **When the fused halves were already `∃`-shaped on one side, the falsity audit is
+  INHERITED and you should say so explicitly.** The rule further down ("re-run the
+  audit when the quantifier flips") exists because a `∀`-vacuous hypothesis can become
+  load-bearing for truth. Here only the *affineness* half flipped; the other half was
+  `Nonempty` all along, so the fused statement is exactly as strong in `R` as that leaf
+  already was and its audit transfers verbatim. Write the one sentence that says WHY it
+  transfers — an audit labelled "inherited" with no argument is the failure mode
+  recorded under TWO INDIVIDUALLY-CORRECT REPAIRS below.
+
 **Same file, same day, the OTHER shape of unpaid debt: a docstring that has already
 worked out the CHEAPER CUT and not taken it.** `exists_qExpansion_gamma0GITPresentation`
 bundled one modular citation (the Tate curve over `ℚ((q))` fed to `P.classify`) with a
