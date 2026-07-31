@@ -1232,3 +1232,12 @@ mathematics from "global triviality of a torsor" into mathlib's
 `Module.free_of_flat_of_finrank_eq`. Cost: zero, because a grep showed every mention of the
 chain outside its own file was a docstring. **Grep for term-level consumers before assuming a
 hypothesis cannot be added; in this development most of the tree is not consumed yet.**
+
+**And the refutation paid for itself immediately, which is the general pattern.** Once the false
+GLOBAL statement was replaced by the true LOCAL one, the leaf stopped being atomic: it fell in one
+sitting to `flat + constant fibre rank` (a new, strictly smaller, Zariski-local sorry) plus two
+proven steps — `finite_maximalSpectrum_of_isLocalRing_of_module_finite` (new, ~35 lines, pure
+commutative algebra) and mathlib's `Module.nonempty_basis_of_flat_of_finrank_eq`. A leaf that has
+resisted every cut for days is worth suspecting of being false *precisely because* falsity is what
+makes it uncuttable: no cut can be found, because there is nothing true underneath to cut into.
+"Atomic on every axis tried" is evidence about the statement, not only about the prover.
