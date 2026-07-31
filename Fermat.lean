@@ -20,6 +20,7 @@ import Fermat.FLT.Slop.NumberTheory.TsumDivisorsAntidiagonal
 import Fermat.FLT.Deformations.RepresentationTheory.LocalInertiaFixedField
 import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
 import Fermat.FLT.Deformations.RepresentationTheory.FlatPointsGroup
+import Fermat.FLT.Mathlib.RingTheory.RegularLocalNormal
 import Fermat.SorryGate
 
 /-!
