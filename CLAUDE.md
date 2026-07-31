@@ -6799,23 +6799,41 @@ file."* That is true, and the token printed in the prompt is **not always the on
 loop will accept.**
 
 `flt-loop.py` accepts a sentinel whose token is `j["token"]` **or** a member of
-`j["prev_tokens"]` (line ~877). Its comment says a resumed job is the same job, so an
-earlier incarnation's result is still its result. But `grep -n prev_tokens flt-loop.py`
-finds exactly **two** occurrences — the read at 877 and the field-copy at 1033. **Nothing
-ever writes it.** It is always `None`.
+`j["prev_tokens"]` (line ~883). Its comment says a resumed job is the same job, so an
+earlier incarnation's result is still its result.
 
-Meanwhile resume mints a NEW token, deliberately, so the old `.started` marker goes
-inert. The agent's prompt is the ORIGINAL payload and still carries the ORIGINAL token.
-So on any job with `resume: true` / `retries > 0`:
+**FIXED SINCE, AND THE PARAGRAPH THAT WAS HERE IS NOW FALSE — do not act on it**
+(re-measured 2026-07-31, `flt-lean-96`). This section used to say that
+`grep -n prev_tokens flt-loop.py` finds only a read and a field-copy, that **nothing ever
+writes it**, and that it is always `None`. It is written now, by
+`flt_loop_rows.py:504` — `j["prev_tokens"] = ((j.get("prev_tokens") or []) + [j["token"]])[-10:]`
+— on every resume, keeping the last **10**. Measured on a live record: my prompt carried
+`beb58f3b` while `j["token"]` was `a9d91d5d` and
+`j["prev_tokens"] == ['beb58f3b', '505e23d5']`, so the prompt's token would have been
+accepted. The rule below is unchanged and still worth following; what changes is that
+getting it wrong is now recoverable rather than fatal, and an agent that notices the
+mismatch should NOT read it as evidence that the loop is broken.
+
+Resume mints a NEW token, deliberately, so the old `.started` marker goes inert. The
+agent's prompt is the ORIGINAL payload and still carries the ORIGINAL token. So on any job
+with `resume: true` / `retries > 0`:
 
 * the live token is in `~/.flt-loop/jobs/<name>.json` and `<name>.started`;
 * the prompt's token is the pre-resume one;
-* a sentinel written under the prompt's token is rejected, `j["sentinel"]` stays `None`,
-  and `started ∧ ¬alive ∧ ¬sentinel` makes the loop conclude the agent **died**.
+* a sentinel written under the prompt's token is accepted **only while that token is still
+  inside the 10-deep `prev_tokens` window** — beyond that it is rejected, `j["sentinel"]`
+  stays `None`, and `started ∧ ¬alive ∧ ¬sentinel` makes the loop conclude the agent
+  **died**.
 
-The result is the worst shape of failure this file catalogues: completed, committed,
-compiler-verified work is thrown away, and a replacement is dispatched at leaves that are
-already proven — a phantom dispatch manufactured out of a *successful* run.
+That residual failure is still the worst shape this file catalogues: completed, committed,
+compiler-verified work thrown away, and a replacement dispatched at leaves that are already
+proven — a phantom dispatch manufactured out of a *successful* run. It just now needs ten
+resumes rather than one.
+
+**The lesson that outlives the fix: a claim in this file about what the LOOP'S SOURCE does
+is dated evidence in exactly the way a claim about the Lean tree is.** `flt-loop.py` and
+`flt_loop_rows.py` are edited daily and the loop re-execs onto the edited source itself. Two
+`grep`s cost seconds and settle it; quoting this file settles nothing.
 
 **So the check is one command, run it before writing the sentinel:**
 
