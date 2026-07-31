@@ -30,21 +30,68 @@ material into `Interface.lean`.
 
 ## Main results
 
-* `NumberField.exists_hilbertClassField_artinIso` — **OPEN LEAF, and this is
-  where the class field theory is.** Unramified class field theory at modulus `1`
-  in one statement: the Hilbert class field exists inside `AlgebraicClosure K`,
-  the Artin map is an isomorphism `Cl(𝓞 K) ≃ Gal(HCF/K)`, and the norm class
-  group of an intermediate field is the subgroup fixing it. Cut 2026-07-30 out
-  of the existence theorem below, which it now proves.
+* `NumberField.restrictNormalHom_frobAt` and `NumberField.restrictScalars_frobAt` —
+  PROVEN 2026-07-30. Frobenius in a tower `K ⊆ M ⊆ L`: it restricts to the Frobenius of
+  `M/K` below, and the Frobenius of `L/M` is `Frob_{L/K} ^ f(q | 𝓞 K)`. These are the two
+  halves of the class field DICTIONARY, and they are pure ramification theory. They
+  belong upstream in `ArtinSymbol.lean`; see their docstrings.
+* `NumberField.relNormClassSubgroup_eq_of_algEquiv` and
+  `NumberField.isUnramifiedAt_ringOfIntegers_of_algEquiv` (over
+  `NumberField.ringOfIntegersAlgEquiv`, and over `NumberField.isUnramifiedAt_of_algEquiv`
+  hoisted here from `CyclotomicModelTransport.lean`) — PROVEN 2026-07-30, the `Transport`
+  section. The norm class group and unramifiedness at a finite prime are carried along a
+  `K`-algebra equivalence of number fields. Pure plumbing, absent from the pin, and what
+  lets an abstract `Algebra K L` be moved into `AlgebraicClosure K` beside the Hilbert
+  class field.
+* `NumberField.index_relNormClassSubgroup_le_finrank_of_isUnramifiedAtInfinitePlaces` —
+  **OPEN LEAF, cut 2026-07-31.** The SECOND FUNDAMENTAL INEQUALITY at modulus `1`:
+  `[I_K : P_K · N_{L/K} I_L] ≤ [L : K]`. The only statement in this cluster that bounds a
+  degree from BELOW, hence the only possible source of the degree in the existence theorem.
+  Read its docstring before concluding it duplicates `index_relNormClassSubgroup_le_finrank`
+  further down: that one drops the archimedean hypothesis and is proven THROUGH the
+  existence theorem, so citing it here would close a cycle.
+* `NumberField.exists_unramifiedAbelian_relNormClassSubgroup_eq_bot` — **OPEN LEAF, cut
+  2026-07-31.** The CONSTRUCTIVE half of the existence theorem, in norm-group form: `K` has
+  a finite abelian extension inside `AlgebraicClosure K`, unramified at every finite prime
+  and at every infinite place, with `relNormClassSubgroup K L = ⊥`. This is where Kummer
+  theory lives. No degree appears in it, which is what lets composita combine the cyclic
+  cases.
+* `NumberField.exists_unramifiedAbelian_card_classGroup_le_finrank` — **PROVEN 2026-07-31**
+  from the two leaves above and from nothing else. The
+  EXISTENCE theorem, alone: `K` has an abelian extension inside `AlgebraicClosure K`,
+  unramified at every finite prime and at every infinite place, of degree at least `h_K`
+  (hence, by the companion file's upper bound, exactly `h_K`). Cut 2026-07-30 out of the
+  Artin-isomorphism node below. Its docstring records why the compositum reduction worked
+  out on paper by `flt-lean-250` is CIRCULAR as written — it cites the companion's
+  inequality in the wrong direction — and what the correct division of labour is.
+* `NumberField.exists_hilbertClassField_artinIso` — **PROVEN 2026-07-30** from the
+  existence leaf above and from `ArtinSymbol.lean`'s two leaves (RECIPROCITY and
+  CHEBOTAREV), and from nothing else. Unramified class field theory at modulus `1` in one
+  statement: the Hilbert class field exists inside `AlgebraicClosure K`, the Artin map is
+  an isomorphism `Cl(𝓞 K) ≃ Gal(HCF/K)` sending `[𝔭]` to `Frob_𝔭`, and the norm class
+  group of an intermediate field is the subgroup fixing it. The Frobenius clause and the
+  dictionary clause are independent exports and have different consumers: only the first
+  is used by `exists_surjective_aut_classGroupQuotient`, only the second by
+  `exists_classField_of_subgroup`. The isomorphism is surjectivity (Chebotarev) plus
+  counting against the existence leaf; the dictionary is the two Frobenius tower lemmas,
+  with Chebotarev applied a second time — to `HCF/F` rather than to `HCF/K` — for the
+  inclusion that says the norm classes FILL UP the fixing subgroup.
 * `NumberField.exists_classField_of_subgroup` — PROVEN from the leaf above by the
   Galois correspondence. The existence theorem at modulus `1`: every subgroup of
   `Cl(𝓞 K)` is the norm class group of a finite abelian extension unramified at
   every finite prime and at every infinite place.
-* `NumberField.exists_surjective_aut_classGroupQuotient` — **OPEN LEAF.** The
-  Artin map in the direction `Gal(L/K) ↠ Cl(𝓞 K) ⧸ relNormClassSubgroup K L`,
-  cut out of the first inequality on 2026-07-30. The mirror image of the
-  companion file's `exists_surjective_classGroupHom_aut_of_unramified_abelian`,
-  and NOT implied by it: this one survives ramification at the infinite places.
+* `NumberField.exists_surjective_aut_classGroupQuotient_intermediateField` and
+  `NumberField.exists_surjective_aut_classGroupQuotient` — **PROVEN 2026-07-30** from
+  `exists_hilbertClassField_artinIso`'s Frobenius clause, `closure_frobAt_eq_top`
+  (CHEBOTAREV) and the two Frobenius tower lemmas, and from nothing else. The Artin map
+  in the direction `Gal(L/K) ↠ Cl(𝓞 K) ⧸ relNormClassSubgroup K L`, cut out of the first
+  inequality on 2026-07-30. The mirror image of the companion file's
+  `exists_surjective_classGroupHom_aut_of_unramified_abelian`, and NOT implied by it:
+  this one survives ramification at the infinite places. The content is one inclusion —
+  the class field of `N_{L/K}` is contained in `L` — obtained by CHEBOTAREV over `L`
+  applied to the compositum `HCF ⬝ L`; the first of the two statements is that argument
+  for an `L` already inside `AlgebraicClosure K`, the second adds the transport. Neither
+  needs `L/K` abelian.
 * `NumberField.index_relNormClassSubgroup_le_finrank` — PROVEN from the leaf
   above by counting. The first inequality `[I_K : P_K · N_{L/K} I_L] ≤ [L : K]`,
   in the direction OPPOSITE to `finrank_le_index_relNormClassSubgroup` of the
@@ -75,43 +122,561 @@ The companion file `UnramifiedClassFieldBound.lean` is SORRY-FREE as of
   modulus `1`;
 * `NumberField.closure_frobAt_eq_top` — OPEN, CHEBOTAREV.
 
-**Read that file before attacking either leaf below.** But note carefully that
-neither of its two leaves is enough for `index_relNormClassSubgroup_le_finrank`:
-both are stated at modulus `1`, i.e. under `IsUnramifiedAtInfinitePlaces`, and
-that leaf deliberately does NOT assume it. See that leaf's docstring for what is
-needed instead.
+**Read that file before attacking the remaining leaf below.** Its two leaves, plus the
+EXISTENCE leaf here, are now exactly the input of `exists_hilbertClassField_artinIso` —
+and, since 2026-07-30, of everything else in this file as well.
+
+A caution that used to read the other way. Those three are all stated at modulus `1`,
+i.e. under `IsUnramifiedAtInfinitePlaces`, while
+`index_relNormClassSubgroup_le_finrank` deliberately does NOT assume it, so this file
+long recorded that they could not suffice for it. They do, and the reason is worth
+keeping: RECIPROCITY is used only over the base `K`, where the hypothesis does hold
+(it is `HCF` that must be unramified at the infinite places, not `L`), and CHEBOTAREV
+— which assumes neither abelianness nor anything archimedean — is what is applied over
+the possibly-badly-ramified `L`. The asymmetry between the two ArtinSymbol leaves is
+exactly what makes the modulus-`1` machinery reach a statement that is false at
+modulus `1` for the companion file's opposite surjection.
+
+## Dependency direction inside this file — do not reverse it (2026-07-30)
+
+`exists_hilbertClassField_artinIso` does NOT use
+`exists_surjective_aut_classGroupQuotient`. That is deliberate and was paid for: an
+earlier version of its proof got the `≥` half of the dictionary by counting, out of that
+leaf, and the Chebotarev-over-`F` route was written precisely to remove the dependence.
+The reason is that the route to that leaf runs through the `HCF` produced here, so a
+dependency in this direction would close a cycle.
+
+**It paid off the same day.** That leaf is now PROVEN, and its proof does exactly what
+was anticipated — it forms the compositum of `L` with the `HCF` produced here. Had the
+counting shortcut survived, the file would not compile. The rule therefore still binds:
+`exists_hilbertClassField_artinIso` and everything it depends on must never be made to
+depend on anything below it.
 -/
 
 @[expose] public section
 
+open scoped nonZeroDivisors
+
 namespace NumberField
 
+section FrobeniusTower
+
+variable (K M L : Type*) [Field K] [NumberField K] [Field M] [NumberField M]
+  [Field L] [NumberField L] [Algebra K M] [Algebra M L] [Algebra K L]
+  [IsScalarTower K M L] [IsGalois K L] [IsGalois K M]
+
+/-- **FROBENIUS RESTRICTS TO FROBENIUS: in a tower `K ⊆ M ⊆ L` of number fields with
+`L/K` and `M/K` Galois, the restriction to `M` of the Frobenius at a maximal ideal `Q`
+of `𝓞 L` is the Frobenius at the prime `q = Q ∩ 𝓞 M` below it** (PROVEN 2026-07-30).
+
+Pure ramification theory, and proven exactly like `frobAt_pow_inertiaDeg`: the algebra
+map `𝓞 M → 𝓞 L` intertwines `σ|_M` with `σ` (`AlgEquiv.restrictNormal_commutes`), and
+the two Frobenius congruences use the SAME residue cardinality because
+`(Q ∩ 𝓞 M) ∩ 𝓞 K = Q ∩ 𝓞 K` (`Ideal.under_under`) — so `σ|_M` is an arithmetic
+Frobenius at `q`. The Frobenius at an unramified prime is unique
+(`AlgHom.IsArithFrobAt.eq_of_isUnramifiedAt`) and the action of `Gal(M/K)` on `𝓞 M` is
+faithful (`eq_one_of_smul_eq_self`), which turns that into an equality in `Gal(M/K)`.
+
+**Unramifiedness of `q` over `𝓞 K` is load-bearing**: it is what makes the Frobenius at
+`q` unique. At a ramified `q`, `arithFrobAt` makes an arbitrary choice inside the coset
+of the inertia group and the two sides differ by an element of it — the same phenomenon
+recorded on `frobAt_pow_inertiaDeg`, with the same `K = ℚ`, `L = ℚ(i)`, `Q = (1 + i)`
+witness.
+
+Together with `restrictScalars_frobAt` below this is the Frobenius half of the class
+field DICTIONARY: this one gives the `≤` inclusion (norm classes fix the intermediate
+field), that one gives the `≥` inclusion (the norm classes fill it up).
+
+**Placement.** This belongs upstream beside `frobAt` in
+`Fermat/FLT/NumberField/ArtinSymbol.lean`; it is stated here only because that file's
+two open leaves are separately owned and a cross-file edit costs a release cycle. Move
+it when that file is next touched. -/
+theorem restrictNormalHom_frobAt (Q : Ideal (𝓞 L)) [Q.IsMaximal] (q : Ideal (𝓞 M))
+    [q.IsMaximal] [Algebra.IsUnramifiedAt (𝓞 K) q] (hq : Q.under (𝓞 M) = q) :
+    AlgEquiv.restrictNormalHom M (frobAt K L Q) = frobAt K M q := by
+  classical
+  set σ : L ≃ₐ[K] L := frobAt K L Q with hσdef
+  set τ : M ≃ₐ[K] M := AlgEquiv.restrictNormalHom M σ with hτdef
+  have H : IsArithFrobAt (𝓞 K) σ Q := isArithFrobAt_frobAt K L Q
+  -- the algebra map `𝓞 M → 𝓞 L` intertwines `τ` and `σ`
+  have hint : ∀ x : 𝓞 M, algebraMap (𝓞 M) (𝓞 L) (τ • x) = σ • algebraMap (𝓞 M) (𝓞 L) x := by
+    intro x
+    have hinj : Function.Injective (algebraMap (𝓞 L) L) :=
+      FaithfulSMul.algebraMap_injective (𝓞 L) L
+    refine hinj ?_
+    show algebraMap M L ((τ • x : 𝓞 M) : M) = σ (algebraMap M L (x : M))
+    rw [coe_smul_ringOfIntegers]
+    exact AlgEquiv.restrictNormal_commutes σ M (x : M)
+  -- so `τ` is an arithmetic Frobenius at `q`
+  have Hτ : IsArithFrobAt (𝓞 K) τ q := by
+    intro x
+    have hcard : Nat.card (𝓞 K ⧸ q.under (𝓞 K)) = Nat.card (𝓞 K ⧸ Q.under (𝓞 K)) := by
+      rw [← hq, Ideal.under_under]
+    show τ • x - x ^ Nat.card (𝓞 K ⧸ q.under (𝓞 K)) ∈ q
+    rw [hcard, ← hq, Ideal.mem_under, map_sub, map_pow, hint x]
+    exact H (algebraMap (𝓞 M) (𝓞 L) x)
+  -- uniqueness of the Frobenius at the unramified prime `q`, then faithfulness
+  have heq := Hτ.eq_of_isUnramifiedAt (isArithFrobAt_frobAt K M q)
+    (Ideal.primeCompl_le_nonZeroDivisors q)
+  have hsmul : ∀ x : 𝓞 M, τ • x = frobAt K M q • x := fun x => DFunLike.congr_fun heq x
+  have hone : τ * (frobAt K M q)⁻¹ = 1 := by
+    refine eq_one_of_smul_eq_self _ fun y => ?_
+    rw [mul_smul, hsmul ((frobAt K M q)⁻¹ • y), smul_inv_smul]
+  rwa [mul_inv_eq_one] at hone
+
+/-- **THE FROBENIUS OF THE UPPER LAYER IS A POWER OF THE FROBENIUS OF THE WHOLE TOWER:
+in a tower `K ⊆ M ⊆ L` as above, `Frob_{L/M, Q} = Frob_{L/K, Q} ^ f(q | 𝓞 K)`, where
+`q = Q ∩ 𝓞 M`** (PROVEN 2026-07-30).
+
+This is the identity that converts CHEBOTAREV for `L/M` into a statement about the norm
+classes of `M` over `K`: the class of `N_{M/K} q` is sent by the Artin map of `L/K` to
+`Frob_{L/K, Q} ^ f(q | 𝓞 K)` (because `N_{M/K} q = 𝔭 ^ f`), and by this lemma that
+element IS `Frob_{L/M, Q}`. So the image of the norm classes contains every Frobenius of
+`L/M`, hence — by Chebotarev — all of `Gal(L/M)`.
+
+**Chain.** `Frob_{L/K, Q} ^ f` fixes `M` pointwise, by `restrictNormalHom_frobAt` above
+and `frobAt_pow_inertiaDeg`; so it is an `M`-algebra automorphism of `L`
+(`AlgEquiv.ofRingEquiv`). Its Frobenius congruence over `𝓞 M` is the `f`-fold iterate of
+its congruence over `𝓞 K`, and the two exponents agree because
+`#(𝓞 M / q) = #(𝓞 K / 𝔭) ^ f` (`Ideal.cardQuot_pow_inertiaDeg`). Uniqueness at the
+unramified `Q` and faithfulness finish, exactly as above.
+
+**Both unramifiedness hypotheses are load-bearing** — `Q` over `𝓞 M` for the uniqueness
+step here, `q` over `𝓞 K` for the appeal to `restrictNormalHom_frobAt`. -/
+theorem restrictScalars_frobAt [IsGalois M L] (Q : Ideal (𝓞 L)) [Q.IsMaximal]
+    [Algebra.IsUnramifiedAt (𝓞 M) Q] (q : Ideal (𝓞 M)) [q.IsMaximal]
+    [Algebra.IsUnramifiedAt (𝓞 K) q] (hq : Q.under (𝓞 M) = q) :
+    AlgEquiv.restrictScalars K (frobAt M L Q) = frobAt K L Q ^ q.inertiaDeg (𝓞 K) := by
+  classical
+  set σ : L ≃ₐ[K] L := frobAt K L Q with hσdef
+  set f : ℕ := q.inertiaDeg (𝓞 K) with hfdef
+  set c : ℕ := Nat.card (𝓞 K ⧸ Q.under (𝓞 K)) with hcdef
+  have H : IsArithFrobAt (𝓞 K) σ Q := isArithFrobAt_frobAt K L Q
+  have hmk : ∀ y : 𝓞 L, Ideal.Quotient.mk Q (σ • y) = (Ideal.Quotient.mk Q y) ^ c :=
+    fun y ↦ H.mk_apply y
+  have key : ∀ (k : ℕ) (x : 𝓞 L),
+      Ideal.Quotient.mk Q ((σ ^ k) • x) = (Ideal.Quotient.mk Q x) ^ (c ^ k) := by
+    intro k
+    induction k with
+    | zero => intro x; simp
+    | succ k ih =>
+        intro x
+        rw [pow_succ', mul_smul, hmk, ih, ← pow_mul, ← pow_succ]
+  -- `σ ^ f` fixes `M` pointwise, so it is an `M`-algebra automorphism of `L`
+  have hfix : AlgEquiv.restrictNormalHom M (σ ^ f) = 1 := by
+    rw [map_pow, restrictNormalHom_frobAt K M L Q q hq, hfdef]
+    exact frobAt_pow_inertiaDeg K M q
+  have hcomm : ∀ x : M, (σ ^ f).toRingEquiv (algebraMap M L x) = algebraMap M L x := by
+    intro x
+    have h := AlgEquiv.restrictNormal_commutes (σ ^ f) M x
+    rw [show (σ ^ f).restrictNormal M = AlgEquiv.restrictNormalHom M (σ ^ f) from rfl, hfix,
+      AlgEquiv.one_apply] at h
+    exact h.symm
+  set ρ : L ≃ₐ[M] L := AlgEquiv.ofRingEquiv hcomm with hρdef
+  have hρsmul : ∀ x : 𝓞 L, ρ • x = (σ ^ f) • x := fun x ↦ Subtype.ext rfl
+  -- `ρ` is an arithmetic Frobenius at `Q` over `𝓞 M`
+  have Hρ : IsArithFrobAt (𝓞 M) ρ Q := by
+    intro x
+    have hunder : Q.under (𝓞 K) = q.under (𝓞 K) := by rw [← hq, Ideal.under_under]
+    have hcard : Nat.card (𝓞 M ⧸ Q.under (𝓞 M)) = c ^ f := by
+      rw [hq, hcdef, hunder, hfdef, ← Submodule.cardQuot_apply, ← Submodule.cardQuot_apply]
+      exact (Ideal.cardQuot_pow_inertiaDeg (q.under (𝓞 K)) q).symm
+    rw [← Ideal.Quotient.eq_zero_iff_mem, map_sub, sub_eq_zero]
+    show Ideal.Quotient.mk Q (ρ • x) = _
+    rw [hcard, hρsmul x, key f x, map_pow]
+  -- uniqueness of the Frobenius at the unramified prime `Q`, then faithfulness
+  have heq := Hρ.eq_of_isUnramifiedAt (isArithFrobAt_frobAt M L Q)
+    (Ideal.primeCompl_le_nonZeroDivisors Q)
+  have hsmul : ∀ x : 𝓞 L, ρ • x = frobAt M L Q • x := fun x ↦ DFunLike.congr_fun heq x
+  have hone : ρ * (frobAt M L Q)⁻¹ = 1 := by
+    refine eq_one_of_smul_eq_self _ fun y ↦ ?_
+    rw [mul_smul, hsmul ((frobAt M L Q)⁻¹ • y), smul_inv_smul]
+  rw [mul_inv_eq_one] at hone
+  rw [← hone]
+  rfl
+
+end FrobeniusTower
+
+section Transport
+
+/-!
+### Transport along a `K`-algebra equivalence
+
+An abstract extension `L/K` and its image inside `AlgebraicClosure K` are `K`-isomorphic
+but not equal, and nothing in the pin carries the arithmetic of `L` across such an
+isomorphism: `relNormClassSubgroup` is defined from `Ideal.relNorm` on `𝓞 L`, and
+`Algebra.IsUnramifiedAt (𝓞 K) q` is `FormallyUnramified` of a LOCALIZATION of `𝓞 L`.
+Both must be moved by hand. This is the plumbing that
+`exists_surjective_aut_classGroupQuotient`'s docstring listed as its first missing
+ingredient; it is pure bookkeeping, but it is what lets that proof put the abstract `L`
+into the same field as the Hilbert class field.
+-/
+
+variable {K : Type*} [Field K] [NumberField K]
+variable {L₁ L₂ : Type*} [Field L₁] [NumberField L₁] [Field L₂] [NumberField L₂]
+  [Algebra K L₁] [Algebra K L₂]
+
+/-- **The `𝓞 K`-algebra equivalence of rings of integers induced by a `K`-algebra
+equivalence of number fields** (PROVEN 2026-07-30).
+
+`RingOfIntegers.mapRingEquiv` supplies the ring equivalence; all that is added here is
+that it is `𝓞 K`-linear, which is `AlgEquiv.commutes` for `e` pushed through the two
+scalar towers `𝓞 K ⊆ 𝓞 Lᵢ ⊆ Lᵢ` and `𝓞 K ⊆ K ⊆ Lᵢ`. -/
+noncomputable def ringOfIntegersAlgEquiv (e : L₁ ≃ₐ[K] L₂) : (𝓞 L₁) ≃ₐ[𝓞 K] (𝓞 L₂) :=
+  { RingOfIntegers.mapRingEquiv e.toRingEquiv with
+    commutes' := fun r => by
+      apply RingOfIntegers.ext
+      show e ((algebraMap (𝓞 K) (𝓞 L₁) r : 𝓞 L₁) : L₁) =
+        ((algebraMap (𝓞 K) (𝓞 L₂) r : 𝓞 L₂) : L₂)
+      rw [RingOfIntegers.coe_eq_algebraMap, RingOfIntegers.coe_eq_algebraMap,
+        ← IsScalarTower.algebraMap_apply (𝓞 K) (𝓞 L₁) L₁,
+        ← IsScalarTower.algebraMap_apply (𝓞 K) (𝓞 L₂) L₂,
+        IsScalarTower.algebraMap_apply (𝓞 K) K L₁,
+        IsScalarTower.algebraMap_apply (𝓞 K) K L₂, AlgEquiv.commutes] }
+
+private theorem relNormClassSubgroup_le_of_algEquiv (e : L₁ ≃ₐ[K] L₂) :
+    relNormClassSubgroup K L₁ ≤ relNormClassSubgroup K L₂ := by
+  refine (Subgroup.closure_le _).2 ?_
+  rintro c ⟨I, hI, rfl⟩
+  set σ := ringOfIntegersAlgEquiv e with hσ
+  have hI' : Ideal.map σ I ≠ ⊥ :=
+    fun h => hI ((Ideal.map_eq_bot_iff_of_injective σ.injective).1 h)
+  have hrel : Ideal.relNorm (𝓞 K) (Ideal.map σ I) = Ideal.relNorm (𝓞 K) I :=
+    Ideal.relNorm_map_algEquiv σ I
+  refine Subgroup.subset_closure ⟨Ideal.map σ I, hI', ?_⟩
+  congr 1
+  exact Subtype.ext hrel.symm
+
+/-- **THE NORM CLASS GROUP IS AN INVARIANT OF THE `K`-ISOMORPHISM CLASS OF `L`**
+(PROVEN 2026-07-30).
+
+Each generator `[N_{L₁/K} I]` of the left-hand side is the generator
+`[N_{L₂/K} (σ I)]` of the right-hand side, because `Ideal.relNorm_map_algEquiv` says the
+relative norm is unchanged by an `𝓞 K`-algebra automorphism of the top ring. Both
+inclusions are the same argument applied to `e` and to `e.symm`. -/
+theorem relNormClassSubgroup_eq_of_algEquiv (e : L₁ ≃ₐ[K] L₂) :
+    relNormClassSubgroup K L₁ = relNormClassSubgroup K L₂ :=
+  le_antisymm (relNormClassSubgroup_le_of_algEquiv e)
+    (relNormClassSubgroup_le_of_algEquiv e.symm)
+
+/-- **`Algebra.IsUnramifiedAt` IS CARRIED BY AN ISOMORPHISM OVER THE BASE**
+(PROVEN 2026-07-30).
+
+If `h : R ≃ₐ[A] P` and the prime `Q` of `P` pulls back to the prime `q` of
+`R`, then `A`-unramifiedness at `q` gives `A`-unramifiedness at `Q`. The proof
+is the only thing it can be: `h` carries `q.primeCompl` onto `Q.primeCompl`,
+so `IsLocalization.algEquivOfAlgEquiv` gives an `A`-algebra isomorphism of the
+two localisations, and `Algebra.FormallyUnramified.of_equiv` transports the
+definition (`IsUnramifiedAt A q` is by definition
+`FormallyUnramified A (Localization.AtPrime q)`).
+
+**Provenance.** This was written for
+`Fermat/FLT/NumberField/CyclotomicModelTransport.lean`, which imports this file, and was
+HOISTED here on 2026-07-30 when `exists_surjective_aut_classGroupQuotient` below needed
+the same statement — two copies of one declaration in one namespace do not compile
+together, so the choice was hoist or rename, and hoisting is what removes the
+duplication. Nothing about it is specific to either consumer; it belongs in mathlib
+beside `Algebra.IsUnramifiedAt`. -/
+theorem isUnramifiedAt_of_algEquiv {A R P : Type*} [CommRing A] [CommRing R] [CommRing P]
+    [Algebra A R] [Algebra A P] (h : R ≃ₐ[A] P) (q : Ideal R) [q.IsPrime]
+    (Q : Ideal P) [Q.IsPrime] (hQ : Ideal.comap (h : R →+* P) Q = q)
+    (hu : Algebra.IsUnramifiedAt A q) : Algebra.IsUnramifiedAt A Q := by
+  have hiff : ∀ x : R, x ∈ q ↔ h x ∈ Q := by
+    intro x; rw [← hQ]; rfl
+  have hmap : Submonoid.map (h : R →* P) q.primeCompl = Q.primeCompl := by
+    ext y
+    simp only [Submonoid.mem_map, Ideal.primeCompl, Submonoid.mem_mk, Subsemigroup.mem_mk,
+      Set.mem_compl_iff, SetLike.mem_coe]
+    constructor
+    · rintro ⟨x, hx, rfl⟩
+      exact fun hmem => hx ((hiff x).mpr hmem)
+    · intro hy
+      exact ⟨h.symm y, fun hmem => hy (by simpa using (hiff _).mp hmem), by simp⟩
+  exact Algebra.FormallyUnramified.of_equiv
+    (IsLocalization.algEquivOfAlgEquiv (Localization.AtPrime q) (Localization.AtPrime Q) h hmap)
+
+omit [NumberField K] [NumberField L₁] [NumberField L₂] in
+/-- **UNRAMIFIEDNESS AT EVERY FINITE PRIME TRANSPORTS ALONG A `K`-ALGEBRA EQUIVALENCE OF
+NUMBER FIELDS** (PROVEN 2026-07-30).
+
+The specialisation of `isUnramifiedAt_of_algEquiv` above to
+`ringOfIntegersAlgEquiv e : 𝓞 L₁ ≃ₐ[𝓞 K] 𝓞 L₂`. The hypothesis is stated over ALL
+nonzero primes rather than at the single prime `σ⁻¹ q`, purely because the caller holds
+it in exactly that form; nothing in the proof uses more than the one prime.
+
+Nonzero-ness has to be carried too, and it is the one step that is not formal: `⊥` is a
+prime of `𝓞 L₁` and the hypothesis deliberately excludes it, so the pullback `σ⁻¹ q` must
+be shown nonzero, which is `Ideal.map_comap_of_surjective` against `Ideal.map_bot`. -/
+theorem isUnramifiedAt_ringOfIntegers_of_algEquiv (e : L₁ ≃ₐ[K] L₂)
+    (h : ∀ (Q : Ideal (𝓞 L₁)) (_ : Q.IsPrime), Q ≠ ⊥ → Algebra.IsUnramifiedAt (𝓞 K) Q)
+    (q : Ideal (𝓞 L₂)) (hq : q.IsPrime) (hq0 : q ≠ ⊥) :
+    Algebra.IsUnramifiedAt (𝓞 K) q := by
+  haveI := hq
+  set σ : 𝓞 L₁ ≃ₐ[𝓞 K] 𝓞 L₂ := ringOfIntegersAlgEquiv e with hσ
+  set ρ : 𝓞 L₁ →+* 𝓞 L₂ := (σ : 𝓞 L₁ →+* 𝓞 L₂) with hρ
+  set Q : Ideal (𝓞 L₁) := q.comap ρ with hQ
+  haveI hQp : Q.IsPrime := Ideal.comap_isPrime _ _
+  have hqQ : Q.map ρ = q := by
+    rw [hQ, Ideal.map_comap_of_surjective ρ σ.surjective]
+  have hQ0 : Q ≠ ⊥ := by
+    intro hcon
+    exact hq0 (by rw [← hqQ, hcon, Ideal.map_bot])
+  exact isUnramifiedAt_of_algEquiv σ Q q rfl (h Q hQp hQ0)
+
+end Transport
+
 variable (K : Type*) [Field K] [NumberField K]
+
+/-- **THE SECOND FUNDAMENTAL INEQUALITY AT MODULUS `1`: for `L/K` finite abelian,
+unramified at every finite prime AND at every infinite place, the norm index
+`[I_K : P_K · N_{L/K} I_L]` is AT MOST the degree `[L : K]`** (SORRY LEAF, cut 2026-07-31
+out of `exists_unramifiedAbelian_card_classGroup_le_finrank` below).
+
+**This is the input that turns norm-group information into a DEGREE, and the existence
+theorem below cannot be proven without it or an equivalent.** Everything else this cluster
+has — the companion file's `finrank_le_index_relNormClassSubgroup`, its
+`exists_surjective_classGroupHom_aut_of_unramified_abelian`, and the whole Artin map — runs
+in the direction `Cl(𝓞 K) ↠ Gal(L/K)` and therefore bounds `[L : K]` from ABOVE. Nothing
+available upstream of this line bounds a degree from below, and a degree lower bound is
+exactly what the leaf below asserts.
+
+**⚠ IT IS NOT A DUPLICATE OF `index_relNormClassSubgroup_le_finrank` BELOW, AND THE
+APPARENT DUPLICATION IS FORCED BY THE DEPENDENCY ORDER.** That theorem is the SAME
+inequality with the archimedean hypothesis DROPPED, and it is PROVEN — but its proof runs
+`exists_surjective_aut_classGroupQuotient` → `exists_hilbertClassField_artinIso` →
+`exists_unramifiedAbelian_card_classGroup_le_finrank`, i.e. through the existence leaf
+below. Citing it here would close a cycle, and Lean's declaration order rejects it outright.
+The honest reading of the two is:
+
+* THIS one is an INPUT of the theory — classically the algebraic half of the class field
+  axiom, `#Ĥ⁰(Gal(L/K), C_L) = [L : K]` for `L/K` cyclic, extended to abelian `L` by
+  induction along a cyclic subextension using multiplicativity of the norm index in towers;
+* the one below is an OUTPUT — the same inequality *extended* to extensions ramified at
+  the archimedean places, obtained (as its own docstring already records) by enlarging the
+  modulus once the correspondence at modulus `1` is in hand.
+
+So a prover who closes this leaf does NOT make the theorem below redundant, and a prover
+who is tempted to "simplify" by deleting this leaf in favour of that theorem will get a
+`declaration ... not found` and should stop rather than reorder the file.
+
+**Route.** Neukirch VI (7.1) and V (7.1) (the cyclic case, via the Herbrand quotient of
+the idele class group); Lang *ANT* ch. IX–X; Cassels–Fröhlich ch. VII. Artin–Tate's
+*Class Field Theory* ch. VI–VII gives the class-formation version, which is the one that
+states exactly this inequality with no analysis in it.
+
+**Sanity checks.** `L = K`: `relNormClassSubgroup K K = ⊤`, index `1 ≤ 1`. `K = ℚ(√-5)`
+(`h = 2`), `L = K(i)` the Hilbert class field: norm index `2 ≤ 2`. `K = ℚ`, `L = ℚ(i)`
+(ramified at `2`, so not an instance of this statement, but the inequality still holds):
+`h_ℚ = 1`, index `1 ≤ 2`.
+
+**⚠ Do not drop `[IsUnramifiedAtInfinitePlaces K L]` "because the statement stays true".**
+It does stay true — that is precisely what `index_relNormClassSubgroup_le_finrank` below
+says — but the general form is not reachable from here, and a leaf stated more widely than
+it can be proven at this point in the file is a leaf nobody can close.
+
+**The check that would refute it**: a finite abelian extension `L/K` of number fields,
+unramified at every finite prime and at every infinite place, with
+`(relNormClassSubgroup K L).index > [L : K]`. -/
+theorem index_relNormClassSubgroup_le_finrank_of_isUnramifiedAtInfinitePlaces
+    (L : Type*) [Field L] [NumberField L] [Algebra K L] [IsGalois K L]
+    [IsUnramifiedAtInfinitePlaces K L]
+    (habel : ∀ a b : L ≃ₐ[K] L, a * b = b * a)
+    (hunr : ∀ (Q : Ideal (𝓞 L)) (_ : Q.IsPrime), Q ≠ ⊥ →
+      Algebra.IsUnramifiedAt (𝓞 K) Q) :
+    (relNormClassSubgroup K L).index ≤ Module.finrank K L :=
+  sorry
+
+/-- **THE EXISTENCE THEOREM OF UNRAMIFIED CLASS FIELD THEORY, IN ITS NORM-GROUP FORM: `K`
+has a finite ABELIAN extension inside `AlgebraicClosure K`, unramified at every finite
+prime and at every infinite place, EVERY ideal class of which is a norm class** (SORRY
+LEAF, cut 2026-07-31 out of `exists_unramifiedAbelian_card_classGroup_le_finrank` below).
+
+`relNormClassSubgroup K L = ⊥` says `P_K · N_{L/K} I_L = P_K`, i.e. the ideal group
+belonging to `L` is the trivial subgroup of `Cl(𝓞 K)` — classically, that `L` is the
+Hilbert class field. The DEGREE is deliberately not mentioned: it is supplied by the
+second fundamental inequality above, and separating the two is the whole point of this
+cut. See that leaf's docstring for why the separation is forced.
+
+**This is the half that is CONSTRUCTIVE, and it is where Kummer theory lives.** The
+classical proof (Takagi) is: reduce to a congruence subgroup with CYCLIC quotient; adjoin
+`ζ_ℓ`; run Kummer theory over `K(ζ_ℓ)` with a group of `ℓ`-virtual units; descend the NORM
+GROUP by the translation theorem (Verschiebungssatz). Norm groups behave well under
+composita — `Ideal.relNorm_relNorm` gives `relNormClassSubgroup K M ≤ relNormClassSubgroup
+K L` whenever `L ≤ M` — so the cyclic cases can be combined, and the intersection of the
+subgroups with cyclic quotient is `⊥` because characters separate a finite abelian group.
+**Do not re-cut the naive "descend an unramified abelian extension from `K(ζ_ℓ)`" leaf**:
+it is FALSE, with the PARI/GP witness recorded on `exists_classField_of_subgroup` below
+(`K = ℚ(√29)`, `h = h⁺ = 1`, `h(K(ζ_3)) = 3`).
+
+**Non-vacuity.** For `K = ℚ(√-5)` (`h_K = 2`) the witness is `ℚ(√-5, i)`, and
+`relNormClassSubgroup K K = ⊤ ≠ ⊥`, so `L = K` is NOT admissible. It is trivial exactly
+when `h_K = 1`.
+
+**PINNING.** `relNormClassSubgroup K L = ⊥` is the whole content: it cannot be satisfied
+by `L = K` unless `h_K = 1`, because `relNormClassSubgroup K K = ⊤`
+(`N_{K/K} I = I`). The four instance clauses and the finite-prime clause are exactly the
+hypotheses of the inequality above, which is the only consumer.
+
+**The check that would refute this leaf**: a number field `K` for which no finite abelian
+extension, unramified at every finite prime and at every infinite place, has every ideal
+class of `K` in the group generated by its relative norms. -/
+theorem exists_unramifiedAbelian_relNormClassSubgroup_eq_bot :
+    ∃ (L : IntermediateField K (AlgebraicClosure K)) (_ : FiniteDimensional K L)
+      (_ : NumberField L) (_ : IsAbelianGalois K L)
+      (_ : IsUnramifiedAtInfinitePlaces K L),
+      (∀ (Q : Ideal (𝓞 L)) (_ : Q.IsPrime), Q ≠ ⊥ →
+        Algebra.IsUnramifiedAt (𝓞 K) Q) ∧
+      relNormClassSubgroup K L = ⊥ :=
+  sorry
+
+/-- **THE EXISTENCE THEOREM OF UNRAMIFIED CLASS FIELD THEORY, IN THE ONLY FORM THE ARTIN
+ISOMORPHISM NEEDS: `K` has a finite ABELIAN extension inside `AlgebraicClosure K`,
+unramified at every finite prime and at every infinite place, of degree AT LEAST `h_K`**
+(cut 2026-07-30 out of `exists_hilbertClassField_artinIso` below, which is
+now PROVEN from it, from `exists_classGroupHom_eq_frobAt` (RECIPROCITY) and
+`closure_frobAt_eq_top` (CHEBOTAREV) of `Fermat/FLT/NumberField/ArtinSymbol.lean`, and
+from nothing else; **DECOMPOSED AND PROVEN 2026-07-31** from
+`exists_unramifiedAbelian_relNormClassSubgroup_eq_bot` and
+`index_relNormClassSubgroup_le_finrank_of_isUnramifiedAtInfinitePlaces` above, and from
+nothing else).
+
+**The cut, in one line.** `L` with `relNormClassSubgroup K L = ⊥` has
+`(relNormClassSubgroup K L).index = Nat.card (ClassGroup (𝓞 K))` by `Subgroup.index_bot`,
+and the second fundamental inequality turns that index into the degree. The CONSTRUCTION
+of `L` and the CONVERSION of its norm group into a degree are two entirely different
+theorems, proven by entirely different methods (Kummer theory; the class field axiom),
+and the whole value of this cut is that they are now separately ownable.
+
+**⚠ THE REDUCTION RECORDED BY `flt-lean-250` AND CARRIED IN THIS FILE'S DISPATCH PROMPTS
+IS WRONG IN ITS LAST STEP, AND THE ERROR IS NOT A TYPO — IT IS A CYCLE.** That reduction
+ends: "the companion file's `finrank_le_index_relNormClassSubgroup K M` … gives
+`Module.finrank K M ≥ (⊥ : Subgroup _).index = Nat.card (ClassGroup (𝓞 K))`". It does not.
+That theorem reads `Module.finrank K L ≤ (relNormClassSubgroup K L).index`, so at
+`relNormClassSubgroup K M = ⊥` it gives `finrank K M ≤ h_K` — the UPPER bound, which this
+cluster already has three times over and which is useless here. The inequality the
+reduction actually needs is the opposite one, `index ≤ finrank`; the file does contain it,
+as `index_relNormClassSubgroup_le_finrank` below, but that is proven THROUGH
+`exists_hilbertClassField_artinIso`, hence through this very leaf. Anyone re-deriving the
+compositum argument will rediscover this at the last line; the fix is the separate leaf
+above, not a rearrangement.
+
+The reduction's FIRST half — reduce to subgroups with cyclic quotient, combine by composita
+using `Ideal.relNorm_relNorm`, and use that the subgroups with cyclic quotient of a finite
+abelian group intersect in `⊥` — is correct, and it is a decomposition of
+`exists_unramifiedAbelian_relNormClassSubgroup_eq_bot` above, where degrees never appear.
+Note WHY it has to be phrased in norm groups: a compositum `M ⊇ L₁, L₂` satisfies
+`relNormClassSubgroup K M ≤ relNormClassSubgroup K Lᵢ` (norms compose) but only
+`Gal(M/K) ↪ Gal(L₁/K) × Gal(L₂/K)` on the Galois side, which bounds `[M : K]` from ABOVE.
+So a leaf phrased with degrees or with an injection `Cl(𝓞 K) ↪ Gal(L/K)` does not combine
+under composita at all, and a leaf phrased with norm groups does. That asymmetry is the
+reason this file's statements are in norm groups, and it is why the second inequality
+cannot be avoided by restating the leaf.
+
+**What remains open in the Hilbert-class-field half of this cluster** is the two leaves
+above plus the two in `ArtinSymbol.lean`. This statement itself is no longer one of them:
+no Artin map, no dictionary, no intermediate fields appear in its proof. Everything the
+old leaf also demanded — that the Artin map is an isomorphism, and that the norm class
+group of an intermediate field is the subgroup fixing it, in BOTH directions — is derived,
+over this statement and the two ArtinSymbol leaves, in `exists_hilbertClassField_artinIso`
+below.
+
+**The degree is automatically EXACT, so `≥` costs nothing and buys everything.** The
+companion file's
+`finrank_le_card_classGroup_of_unramified_abelian_of_isUnramifiedAtInfinitePlaces` gives
+`[HCF : K] ≤ h_K` for free from the hypotheses already listed here, so any witness has
+`[HCF : K] = h_K` — this really is the Hilbert class field. Stating the inequality in the
+`≥` direction is deliberate: it is the direction that is hard, and a prover never has to
+produce the other one.
+
+**Soundness — the intended inhabitant.** `HCF` is the maximal abelian extension of `K`
+inside `AlgebraicClosure K` unramified at every finite prime and at every infinite place;
+its degree is `h_K` by unramified class field theory at modulus `1`.
+
+**PINNING.** An adversary cannot take `HCF = K` unless `h_K = 1`: the degree clause
+forces `[HCF : K] ≥ h_K`, and with the companion's upper bound the extension produced is
+of degree exactly the class number. There is nothing else to pin — the four instance
+clauses and the finite-prime clause are the hypotheses of that upper bound, and the
+consumer uses only them.
+
+**⚠ `IsUnramifiedAtInfinitePlaces K HCF` IS LOAD-BEARING and must not be dropped.**
+Without it the companion's `finrank_le_index_relNormClassSubgroup` is FALSE
+(`K = ℚ(√3)` has `h_K = 1` but narrow class number `2`), the degree is no longer pinned
+to `h_K`, and the consumer's appeal to reciprocity — which is stated at modulus `1`, i.e.
+under exactly this hypothesis — is no longer available. Equivalently, `1` is an
+admissible modulus only for extensions unramified at the archimedean places too, and this
+is the SMALL (wide) Hilbert class field, not the narrow one.
+
+**Non-vacuity.** For `K = ℚ(√-5)` (`h_K = 2`) the leaf demands a quadratic extension
+unramified at every finite prime and at every infinite place — `ℚ(√-5, i)` — which is not
+`K`. It is trivial exactly when `h_K = 1`.
+
+**Route.** Neukirch VI (6.9) and (7.3) and the sections preceding them; Childress
+ch. 4–5; Lang *ANT* ch. X; Cassels–Fröhlich ch. VII–VIII. The classical proof reduces to
+a congruence subgroup of prime exponent, adjoins `ζ_ℓ`, runs Kummer theory over `K(ζ_ℓ)`
+and descends by the translation theorem (Verschiebungssatz) — a descent of NORM GROUPS,
+which is why the correspondence below is phrased in norm groups. **Do not re-cut the
+naive "descend an unramified abelian extension from `K(ζ_ℓ)`" leaf**: it is FALSE, with
+the PARI/GP witness recorded on `exists_classField_of_subgroup` below (`K = ℚ(√29)`,
+`h = h⁺ = 1`, `h(K(ζ_3)) = 3`).
+
+**The check that would refute this leaf**: a number field `K` admitting no abelian
+extension of degree `≥ h_K` unramified at every finite prime and at every infinite place
+— equivalently, one whose wide Hilbert class field has degree `< h_K`. -/
+theorem exists_unramifiedAbelian_card_classGroup_le_finrank :
+    ∃ (HCF : IntermediateField K (AlgebraicClosure K)) (_ : FiniteDimensional K HCF)
+      (_ : NumberField HCF) (_ : IsAbelianGalois K HCF)
+      (_ : IsUnramifiedAtInfinitePlaces K HCF),
+      (∀ (Q : Ideal (𝓞 HCF)) (_ : Q.IsPrime), Q ≠ ⊥ →
+        Algebra.IsUnramifiedAt (𝓞 K) Q) ∧
+      Nat.card (ClassGroup (𝓞 K)) ≤ Module.finrank K HCF := by
+  obtain ⟨L, hfd, hnf, habgal, hinf, hunr, hbot⟩ :=
+    exists_unramifiedAbelian_relNormClassSubgroup_eq_bot K
+  haveI := hfd; haveI := hnf; haveI := habgal; haveI := hinf
+  refine ⟨L, hfd, hnf, habgal, hinf, hunr, ?_⟩
+  have h := index_relNormClassSubgroup_le_finrank_of_isUnramifiedAtInfinitePlaces K L
+    (fun a b => mul_comm' a b) hunr
+  rwa [hbot, Subgroup.index_bot] at h
 
 /-- **UNRAMIFIED CLASS FIELD THEORY AT MODULUS `1`, IN ONE STATEMENT: the Hilbert
 class field `HCF` of `K` exists inside `AlgebraicClosure K`, the Artin map is an
 ISOMORPHISM `Cl(𝓞 K) ≃ Gal(HCF/K)`, and under it the norm class group of every
-intermediate field is exactly the subgroup fixing that field** (SORRY LEAF, cut
-2026-07-30 out of `exists_classField_of_subgroup` below, which is now PROVEN from
-it and from nothing else).
+intermediate field is exactly the subgroup fixing that field** (was this file's central
+SORRY LEAF; DECOMPOSED AND PROVEN 2026-07-30 from
+`exists_unramifiedAbelian_card_classGroup_le_finrank` above — the EXISTENCE theorem — and
+from `exists_classGroupHom_eq_frobAt` (RECIPROCITY) and `closure_frobAt_eq_top`
+(CHEBOTAREV) in `Fermat/FLT/NumberField/ArtinSymbol.lean`, and from nothing else).
 
-**THIS IS WHERE THE CLASS FIELD THEORY OF THIS CLUSTER NOW LIVES**, together with
-`exists_surjective_aut_classGroupQuotient` below and the companion file's
-`exists_surjective_classGroupHom_aut_of_unramified_abelian`. It is the canonical
-form — Neukirch VI (6.9), the theorem that "the ideal group belonging to `H` is
-`P_K · N_{H/K} I_H`" — rather than the "for every subgroup `N` there exists a
-field" shape it replaces: the classical proof constructs ONE field `HCF` and one
-map, and then the whole correspondence is the Galois correspondence, which is
-exactly how the consumer below now reads.
+It is the canonical form — Neukirch VI (6.9), the theorem that "the ideal group belonging
+to `H` is `P_K · N_{H/K} I_H`" — rather than the "for every subgroup `N` there exists a
+field" shape it replaces: the classical proof constructs ONE field `HCF` and one map, and
+then the whole correspondence is the Galois correspondence, which is exactly how the
+consumer below reads.
 
-**What is deep here, in decreasing order.** (i) `Art` is well defined on ideal
-CLASSES — Artin reciprocity, that principal ideals go to `1`. (ii) `Art` is
-SURJECTIVE — Chebotarev, or the analytic first inequality. (iii) The `≥` half of
-the dictionary — that the norm classes of `F` already fill up
-`Art⁻¹ Gal(HCF/F)`, again Chebotarev, applied to `HCF·F/F`. (iv) The `≤` half —
-the Frobenius computation `Frob_𝔭^{f(𝔓/𝔭)} = 1`, cheap once (i) exists. (v) The
-existence of `HCF` itself, i.e. the existence theorem. Nothing in the pin helps
-with any of these; see the survey below.
+**What was deep here, and where each piece went.** (i) `Art` is well defined on ideal
+CLASSES — Artin reciprocity: `exists_classGroupHom_eq_frobAt`. (ii) `Art` is SURJECTIVE —
+Chebotarev for `HCF/K`: `closure_frobAt_eq_top`, and then INJECTIVE by counting, because
+the existence leaf gives `h_K ≤ [HCF : K] = #Gal(HCF/K)` while surjectivity gives the
+reverse. (iii) The `≥` half of the dictionary — that the norm classes of `F` already fill
+up `Art⁻¹ Gal(HCF/F)` — is Chebotarev applied to `HCF/F`, which is the SAME leaf
+`closure_frobAt_eq_top` with `F` as the base field; the bridge from its Frobenius
+elements to the norm classes of `F` is `restrictScalars_frobAt` above. (iv) The `≤` half
+is the Frobenius computation `Frob_𝔭 ^ f(𝔓/𝔭) = 1`, i.e. `restrictNormalHom_frobAt` and
+`frobAt_pow_inertiaDeg`. (v) The existence of `HCF` itself is the leaf above.
+
+**The FROBENIUS clause (added 2026-07-30, and it is what makes the map an ARTIN map).**
+The second conjunct says `Art [𝔭] = Frob_𝔭`; without it `Art` is merely *an* isomorphism
+`Cl(𝓞 K) ≃ Gal(HCF/K)` and the dictionary clause pins it only up to an automorphism of
+the quotient. It costs the proof below nothing — `hfrob`, the defining property of the
+`φ` that `Art` is built from, is already in hand — and it is exactly the input that
+`exists_surjective_aut_classGroupQuotient` below needs. Note the dictionary clause is
+NOT needed by that consumer; the two clauses are independent exports.
+
+**No circularity with `exists_surjective_aut_classGroupQuotient` below, and keep it that
+way.** An earlier version of this proof got the `≥` half by counting, out of that leaf;
+the Chebotarev-over-`F` route replaces it, so this theorem does NOT depend on it. That
+was paid for and it paid off: the leaf below is now PROVEN, and its proof intersects
+`L` with the `HCF` produced HERE — which would have been a cycle if this file's proof
+had gone the other way. Do not reintroduce the counting shortcut.
 
 **Soundness — the intended inhabitant.** `HCF` is the maximal abelian extension
 of `K` inside `AlgebraicClosure K` unramified at every finite prime and at every
@@ -230,11 +795,199 @@ theorem exists_hilbertClassField_artinIso :
       (∀ (Q : Ideal (𝓞 HCF)) (_ : Q.IsPrime), Q ≠ ⊥ →
         Algebra.IsUnramifiedAt (𝓞 K) Q) ∧
       ∃ Art : ClassGroup (𝓞 K) ≃* (HCF ≃ₐ[K] HCF),
+        (∀ (Q : Ideal (𝓞 HCF)) (_ : Q.IsMaximal) (J : (Ideal (𝓞 K))⁰),
+            (J : Ideal (𝓞 K)) = Q.under (𝓞 K) →
+              Art (ClassGroup.mk0 J) = frobAt K HCF Q) ∧
         ∀ (F : IntermediateField K HCF) (_ : NumberField (IntermediateField.lift F)),
           relNormClassSubgroup K (IntermediateField.lift F) =
             (IntermediateField.fixingSubgroup F).comap
-              (Art : ClassGroup (𝓞 K) →* (HCF ≃ₐ[K] HCF)) :=
-  sorry
+              (Art : ClassGroup (𝓞 K) →* (HCF ≃ₐ[K] HCF)) := by
+  classical
+  obtain ⟨HCF, hfd, hnf, habgal, hinf, hunrHCF, hcard⟩ :=
+    exists_unramifiedAbelian_card_classGroup_le_finrank K
+  haveI := hfd; haveI := hnf; haveI := habgal; haveI := hinf
+  refine ⟨HCF, hfd, hnf, habgal, hinf, hunrHCF, ?_⟩
+  have habel : ∀ a b : HCF ≃ₐ[K] HCF, a * b = b * a := fun a b => mul_comm' a b
+  -- ## The Artin map, and why it is an isomorphism
+  obtain ⟨φ, hfrob⟩ := exists_classGroupHom_eq_frobAt K HCF habel hunrHCF
+  have hunder : ∀ (Q : Ideal (𝓞 HCF)), Q.IsMaximal → Q.under (𝓞 K) ≠ ⊥ := by
+    intro Q hQ
+    exact Ideal.under_ne_bot (𝓞 K)
+      (Ideal.bot_lt_of_maximal Q (NumberField.RingOfIntegers.not_isField HCF)).ne'
+  have hsurj : Function.Surjective φ := by
+    refine MonoidHom.range_eq_top.1 (top_le_iff.1 ?_)
+    rw [← closure_frobAt_eq_top K HCF]
+    refine (Subgroup.closure_le _).2 ?_
+    rintro σ ⟨Q, hQ, -, rfl⟩
+    exact ⟨ClassGroup.mk0 ⟨Q.under (𝓞 K), mem_nonZeroDivisors_of_ne_zero (hunder Q hQ)⟩,
+      hfrob Q hQ _ rfl⟩
+  have hcardeq : Nat.card (ClassGroup (𝓞 K)) = Nat.card (HCF ≃ₐ[K] HCF) := by
+    have h1 : Nat.card (HCF ≃ₐ[K] HCF) = Module.finrank K HCF :=
+      IsGalois.card_aut_eq_finrank K HCF
+    have h2 : Nat.card (HCF ≃ₐ[K] HCF) ≤ Nat.card (ClassGroup (𝓞 K)) :=
+      Nat.card_le_card_of_surjective _ hsurj
+    omega
+  have hbij : Function.Bijective φ := (Nat.bijective_iff_surjective_and_card φ).2 ⟨hsurj, hcardeq⟩
+  refine ⟨MulEquiv.ofBijective φ hbij, hfrob, ?_⟩
+  have hcoe : ((MulEquiv.ofBijective φ hbij : ClassGroup (𝓞 K) ≃* (HCF ≃ₐ[K] HCF)) :
+      ClassGroup (𝓞 K) →* (HCF ≃ₐ[K] HCF)) = φ := rfl
+  rw [hcoe]
+  intro F hNF
+  haveI := hNF
+  -- ## The intermediate field `lift F`, with the instances the dictionary needs
+  have hle : IntermediateField.lift F ≤ HCF := IntermediateField.lift_le F
+  letI : Algebra (IntermediateField.lift F) HCF :=
+    (IntermediateField.inclusion hle).toRingHom.toAlgebra
+  haveI : IsScalarTower K (IntermediateField.lift F) HCF :=
+    IsScalarTower.of_algebraMap_eq' (IntermediateField.inclusion hle).comp_algebraMap.symm
+  haveI : FiniteDimensional K (IntermediateField.lift F) :=
+    FiniteDimensional.of_injective (IntermediateField.inclusion hle).toLinearMap
+      (IntermediateField.inclusion hle).injective
+  haveI : IsAbelianGalois K (IntermediateField.lift F) :=
+    IsAbelianGalois.of_algHom (IntermediateField.inclusion hle)
+  haveI : Module.Finite (IntermediateField.lift F) HCF :=
+    Module.Finite.of_restrictScalars_finite K _ _
+  haveI : Algebra.IsAlgebraic (IntermediateField.lift F) HCF := Algebra.IsAlgebraic.of_finite _ _
+  haveI : IsUnramifiedAtInfinitePlaces K (IntermediateField.lift F) :=
+    IsUnramifiedAtInfinitePlaces.bot K (IntermediateField.lift F) HCF
+  have hunrM : ∀ (q : Ideal (𝓞 (IntermediateField.lift F))) (_ : q.IsPrime), q ≠ ⊥ →
+      Algebra.IsUnramifiedAt (𝓞 K) q := by
+    intro q hq hq0
+    haveI := hq
+    obtain ⟨Q, hQ, hQover⟩ :=
+      q.exists_ideal_over_prime_of_isIntegral_of_isDomain (S := 𝓞 HCF)
+        (by
+          have hinj : Function.Injective
+              (algebraMap (𝓞 (IntermediateField.lift F)) (𝓞 HCF)) :=
+            FaithfulSMul.algebraMap_injective _ _
+          simp [(RingHom.injective_iff_ker_eq_bot _).mp hinj])
+    haveI := hQ
+    haveI : Q.LiesOver q := ⟨hQover.symm⟩
+    haveI : Algebra.IsUnramifiedAt (𝓞 K) Q :=
+      hunrHCF Q hQ (Ideal.ne_bot_of_liesOver_of_ne_bot hq0 Q)
+    exact Algebra.IsUnramifiedAt.of_liesOver (𝓞 K) q Q
+  -- ## The bridge: `fixingSubgroup F` is the kernel of restriction to `lift F`
+  have hbridge : IntermediateField.fixingSubgroup F =
+      (AlgEquiv.restrictNormalHom (F := K) (K₁ := HCF)
+        (IntermediateField.lift F)).ker := by
+    have hinj : Function.Injective (algebraMap (IntermediateField.lift F) HCF) :=
+      (algebraMap (IntermediateField.lift F) HCF).injective
+    ext σ
+    have hRN : AlgEquiv.restrictNormalHom (F := K) (K₁ := HCF) (IntermediateField.lift F) σ =
+        σ.restrictNormal (IntermediateField.lift F) := rfl
+    rw [MonoidHom.mem_ker, hRN, IntermediateField.mem_fixingSubgroup_iff]
+    constructor
+    · intro hfix
+      refine AlgEquiv.ext fun y => ?_
+      refine hinj ?_
+      rw [AlgEquiv.restrictNormal_commutes σ (IntermediateField.lift F) y, AlgEquiv.one_apply]
+      exact hfix _ ((IntermediateField.mem_lift
+        (algebraMap (IntermediateField.lift F) HCF y)).1 y.2)
+    · intro hker x hx
+      have hx' : (x : AlgebraicClosure K) ∈ IntermediateField.lift F :=
+        (IntermediateField.mem_lift x).2 hx
+      have hxe : algebraMap (IntermediateField.lift F) HCF
+          ⟨(x : AlgebraicClosure K), hx'⟩ = x := rfl
+      have h := AlgEquiv.restrictNormal_commutes σ (IntermediateField.lift F)
+        ⟨(x : AlgebraicClosure K), hx'⟩
+      rw [hxe, hker, AlgEquiv.one_apply, hxe] at h
+      exact h.symm
+  haveI : IsGalois (IntermediateField.lift F) HCF :=
+    IsGalois.tower_top_of_isGalois K (IntermediateField.lift F) HCF
+  -- ## The value of the Artin map at a norm class: a power of the Frobenius
+  have hkey : ∀ (q : Ideal (𝓞 (IntermediateField.lift F))) [q.IsMaximal]
+      (Q : Ideal (𝓞 HCF)) [Q.IsMaximal] (J : (Ideal (𝓞 K))⁰),
+      Q.under (𝓞 (IntermediateField.lift F)) = q →
+      (J : Ideal (𝓞 K)) = Ideal.relNorm (𝓞 K) q →
+      φ (ClassGroup.mk0 J) = (frobAt K HCF Q) ^ q.inertiaDeg (𝓞 K) := by
+    intro q hqmax Q hQmax J hQq hJ
+    haveI := hqmax
+    haveI := hQmax
+    have hq0 : q ≠ ⊥ :=
+      (Ideal.bot_lt_of_maximal q (NumberField.RingOfIntegers.not_isField _)).ne'
+    have hpne : q.under (𝓞 K) ≠ ⊥ := Ideal.under_ne_bot (𝓞 K) hq0
+    have hunderQ : Q.under (𝓞 K) = q.under (𝓞 K) := by rw [← hQq, Ideal.under_under]
+    set Jp : (Ideal (𝓞 K))⁰ :=
+      ⟨q.under (𝓞 K), mem_nonZeroDivisors_of_ne_zero hpne⟩ with hJpdef
+    have hJpow : J = Jp ^ q.inertiaDeg (𝓞 K) := by
+      refine Subtype.ext ?_
+      rw [hJ, Ideal.relNorm_eq_pow_of_isMaximal q (q.under (𝓞 K)), SubmonoidClass.coe_pow]
+    rw [hJpow, map_pow, map_pow, hfrob Q hQmax Jp hunderQ.symm]
+  -- ## The `≤` half: the norm classes of `lift F` fix `F`
+  have hsub : relNormClassSubgroup K (IntermediateField.lift F) ≤
+      Subgroup.comap φ (IntermediateField.fixingSubgroup F) := by
+    refine (Subgroup.closure_le _).2 ?_
+    rintro c ⟨I, hI, rfl⟩
+    refine mem_of_relNorm_of_forall_isMaximal K (IntermediateField.lift F)
+      (H := Subgroup.comap φ (IntermediateField.fixingSubgroup F)) ?_ I _ rfl
+    intro q J hqmax hJ
+    haveI := hqmax
+    have hq0 : q ≠ ⊥ :=
+      (Ideal.bot_lt_of_maximal q (NumberField.RingOfIntegers.not_isField _)).ne'
+    haveI : Algebra.IsUnramifiedAt (𝓞 K) q := hunrM q hqmax.isPrime hq0
+    -- a prime `Q` of `𝓞 HCF` over `q`
+    obtain ⟨Q, hQ, hQover⟩ :=
+      q.exists_ideal_over_prime_of_isIntegral_of_isDomain (S := 𝓞 HCF)
+        (by
+          have hinj : Function.Injective
+              (algebraMap (𝓞 (IntermediateField.lift F)) (𝓞 HCF)) :=
+            FaithfulSMul.algebraMap_injective _ _
+          simp [(RingHom.injective_iff_ker_eq_bot _).mp hinj])
+    haveI := hQ
+    haveI : Q.LiesOver q := ⟨hQover.symm⟩
+    have hQ0 : Q ≠ ⊥ := Ideal.ne_bot_of_liesOver_of_ne_bot hq0 Q
+    haveI hQmax : Q.IsMaximal := hQ.isMaximal hQ0
+    -- the Artin map sends that class to `Frob_Q ^ f`, which restricts to `Frob_q ^ f = 1`
+    rw [Subgroup.mem_comap, hbridge, MonoidHom.mem_ker,
+      hkey q Q J hQover hJ, map_pow,
+      restrictNormalHom_frobAt K (IntermediateField.lift F) HCF Q q hQover]
+    exact frobAt_pow_inertiaDeg K (IntermediateField.lift F) q
+  -- ## The `≥` half: Chebotarev for `HCF/(lift F)` fills up the fixing subgroup
+  refine le_antisymm hsub ?_
+  have hge : IntermediateField.fixingSubgroup F ≤
+      Subgroup.map φ (relNormClassSubgroup K (IntermediateField.lift F)) := by
+    have hpush : Subgroup.map
+        (AlgEquiv.restrictScalarsHom (R := K) (S := IntermediateField.lift F) (A := HCF))
+        (⊤ : Subgroup (HCF ≃ₐ[IntermediateField.lift F] HCF)) ≤
+        Subgroup.map φ (relNormClassSubgroup K (IntermediateField.lift F)) := by
+      rw [← closure_frobAt_eq_top (IntermediateField.lift F) HCF, MonoidHom.map_closure]
+      refine (Subgroup.closure_le _).2 ?_
+      rintro _ ⟨τ, ⟨Q, hQmax, hQunr, rfl⟩, rfl⟩
+      haveI := hQmax
+      haveI := hQunr
+      have hQ0 : Q ≠ ⊥ :=
+        (Ideal.bot_lt_of_maximal Q (NumberField.RingOfIntegers.not_isField _)).ne'
+      have hq0 : Q.under (𝓞 (IntermediateField.lift F)) ≠ ⊥ :=
+        Ideal.under_ne_bot (𝓞 (IntermediateField.lift F)) hQ0
+      haveI hqmax : (Q.under (𝓞 (IntermediateField.lift F))).IsMaximal :=
+        (Ideal.IsPrime.under (𝓞 (IntermediateField.lift F)) (P := Q)).isMaximal hq0
+      haveI : Algebra.IsUnramifiedAt (𝓞 K) (Q.under (𝓞 (IntermediateField.lift F))) :=
+        hunrM _ hqmax.isPrime hq0
+      have hJne : Ideal.relNorm (𝓞 K) (Q.under (𝓞 (IntermediateField.lift F))) ≠ ⊥ := by
+        simpa using (Ideal.relNorm_eq_bot_iff (R := 𝓞 K)
+          (I := Q.under (𝓞 (IntermediateField.lift F)))).not.mpr hq0
+      refine ⟨ClassGroup.mk0 ⟨Ideal.relNorm (𝓞 K) (Q.under (𝓞 (IntermediateField.lift F))),
+        mem_nonZeroDivisors_of_ne_zero hJne⟩,
+        Subgroup.subset_closure ⟨Q.under (𝓞 (IntermediateField.lift F)), hq0, rfl⟩, ?_⟩
+      rw [hkey (Q.under (𝓞 (IntermediateField.lift F))) Q _ rfl rfl,
+        ← restrictScalars_frobAt K (IntermediateField.lift F) HCF Q
+          (Q.under (𝓞 (IntermediateField.lift F))) rfl]
+      rfl
+    rw [hbridge]
+    intro σ hσ
+    have hcomm : ∀ x : IntermediateField.lift F,
+        σ.toRingEquiv (algebraMap (IntermediateField.lift F) HCF x) =
+          algebraMap (IntermediateField.lift F) HCF x := by
+      intro x
+      have h := AlgEquiv.restrictNormal_commutes σ (IntermediateField.lift F) x
+      rw [show σ.restrictNormal (IntermediateField.lift F) =
+        AlgEquiv.restrictNormalHom (IntermediateField.lift F) σ from rfl,
+        MonoidHom.mem_ker.1 hσ, AlgEquiv.one_apply] at h
+      exact h.symm
+    exact hpush ⟨AlgEquiv.ofRingEquiv hcomm, trivial, rfl⟩
+  intro c hc
+  obtain ⟨n, hn, hnc⟩ := hge (Subgroup.mem_comap.1 hc)
+  rwa [← hbij.1 hnc]
 
 /-- **THE EXISTENCE THEOREM OF UNRAMIFIED CLASS FIELD THEORY, AT MODULUS `1`:
 every subgroup `N` of `Cl(𝓞 K)` is the norm class group of a finite abelian
@@ -362,7 +1115,7 @@ theorem exists_classField_of_subgroup (N : Subgroup (ClassGroup (𝓞 K))) :
         Algebra.IsUnramifiedAt (𝓞 K) Q) ∧
       relNormClassSubgroup K H = N := by
   classical
-  obtain ⟨HCF, hfd, hnf, habgal, hinf, hunrHCF, Art, hdict⟩ :=
+  obtain ⟨HCF, hfd, hnf, habgal, hinf, hunrHCF, Art, -, hdict⟩ :=
     exists_hilbertClassField_artinIso K
   -- The class field of `N`: the fixed field, inside the Hilbert class field, of the
   -- subgroup of `Gal(HCF/K)` that `N` becomes under the Artin isomorphism.
@@ -408,11 +1161,180 @@ theorem exists_classField_of_subgroup (N : Subgroup (ClassGroup (𝓞 K))) :
 
 variable (L : Type*) [Field L] [NumberField L] [Algebra K L]
 
+/-- **THE ARTIN MAP IN THE DIRECTION `Gal(M/K) ↠ Cl(𝓞 K)/N`, FOR `M` ALREADY INSIDE
+`AlgebraicClosure K`** (PROVEN 2026-07-30 from `exists_hilbertClassField_artinIso` above
+— its Artin isomorphism and its FROBENIUS clause, NOT its dictionary clause — together
+with `closure_frobAt_eq_top` (CHEBOTAREV) of `Fermat/FLT/NumberField/ArtinSymbol.lean`
+and the two Frobenius tower lemmas at the top of this file, and from nothing else).
+
+This is the whole mathematical content of `exists_surjective_aut_classGroupQuotient`
+below; that theorem is this one plus transport along an embedding. It is stated
+separately because the argument needs `M` and the Hilbert class field to live in ONE
+field, so that their compositum can be formed, and an abstract `Algebra K M` does not.
+
+**NEITHER `IsAbelianGalois` NOR `IsUnramifiedAtInfinitePlaces` APPEARS, and that is the
+point of the node.** `Gal(M/K)` may be nonabelian — the target is abelian, so `ψ` simply
+factors through the abelianization — and `M/K` may be ramified at a real place, which is
+exactly the case the companion file's `exists_surjective_classGroupHom_aut_of_unramified_`
+`abelian` cannot reach (`K = ℚ(√3)`, `h = 1`, narrow `h⁺ = 2`). Unramifiedness at the
+FINITE primes is load-bearing: it is what makes `restrictScalars_frobAt` applicable at
+the prime of `M` below each prime of the compositum.
+
+**The argument.** Write `N = relNormClassSubgroup K M`, let `HCF` and
+`Art : Cl(𝓞 K) ≃ Gal(HCF/K)` be the Hilbert class field and its Artin isomorphism, and
+let `F` be the fixed field, inside `HCF`, of the subgroup `Art N`. The theorem is the
+single geometric fact
+
+  **`F ⊆ M`** — the class field of the norm group of `M` is contained in `M`,
+
+after which everything is the Galois correspondence: restriction `Gal(M/K) ↠ Gal(F/K)`
+is surjective because `F/K` is normal (a subextension of the abelian `HCF/K`), and
+`Gal(F/K) ≃ Gal(HCF/K) ⧸ Art N ≃ Cl(𝓞 K) ⧸ N` by `IsGalois.normalAutEquivQuotient`
+(using `fixingSubgroup_fixedField`) and `QuotientGroup.congr` along `Art`.
+
+`F ⊆ M` is CHEBOTAREV over `M`, applied to the compositum `E = HCF ⬝ M`. Every
+`σ ∈ Gal(E/M)` restricts, on `HCF`, into `Art N`: by Chebotarev it is enough to check
+this on the Frobenius elements `Frob_{E/M, 𝔔}`, and for those the two tower lemmas give
+
+  `Frob_{E/M,𝔔}|_{HCF} = (Frob_{E/K,𝔔} ^ f(𝔮|𝔭))|_{HCF} = Frob_{HCF/K,𝔓} ^ f(𝔮|𝔭)
+                        = Art([𝔭]) ^ f(𝔮|𝔭) = Art([N_{M/K} 𝔮])`,
+
+where `𝔮 = 𝔔 ∩ 𝓞 M` and `𝔭 = 𝔔 ∩ 𝓞 K`, the third equality being the Frobenius clause of
+`exists_hilbertClassField_artinIso` and the fourth `N_{M/K} 𝔮 = 𝔭 ^ f`. That last class
+is a generator of `N`, so the restriction lies in `Art N`. Hence every element of `F`,
+which `Art N` fixes pointwise, is fixed by all of `Gal(E/M)` — and `E/M` is Galois, so
+it lies in `M`.
+
+**Why the DICTIONARY clause of `exists_hilbertClassField_artinIso` is not used, though
+its docstring's sketch suggested it would be.** That sketch intersected `M` with `HCF`
+and identified the norm class group of the intersection. The route taken here never
+forms the intersection: it goes straight for the fixed field `F` of `Art N`, for which
+`fixingSubgroup F = Art N` is `IsGalois.fixingSubgroup_fixedField` rather than a
+class-field statement. Only the Frobenius clause is needed, and the inclusion
+`N_{M∩HCF} ≤ N_M` that the sketch called "the theorem" is subsumed by `F ⊆ M`. -/
+theorem exists_surjective_aut_classGroupQuotient_intermediateField
+    (M : IntermediateField K (AlgebraicClosure K)) [FiniteDimensional K M] [NumberField M]
+    [IsGalois K M]
+    (hunr : ∀ (Q : Ideal (𝓞 M)) (_ : Q.IsPrime), Q ≠ ⊥ →
+      Algebra.IsUnramifiedAt (𝓞 K) Q) :
+    ∃ ψ : (M ≃ₐ[K] M) →* ClassGroup (𝓞 K) ⧸ relNormClassSubgroup K M,
+      Function.Surjective ψ := by
+  classical
+  obtain ⟨HCF, hfd, hnf, habgal, hinf, hunrHCF, Art, hArtFrob, -⟩ :=
+    exists_hilbertClassField_artinIso K
+  haveI := hfd; haveI := hnf; haveI := habgal
+  set N : Subgroup (ClassGroup (𝓞 K)) := relNormClassSubgroup K M with hNdef
+  set A : ClassGroup (𝓞 K) →* (HCF ≃ₐ[K] HCF) :=
+    (Art : ClassGroup (𝓞 K) →* (HCF ≃ₐ[K] HCF)) with hAdef
+  set H : Subgroup (HCF ≃ₐ[K] HCF) := N.map A with hHdef
+  haveI hHnormal : H.Normal := inferInstance
+  set F : IntermediateField K HCF := IntermediateField.fixedField H with hFdef
+  set F' : IntermediateField K (AlgebraicClosure K) := IntermediateField.lift F with hF'def
+  have hF'HCF : F' ≤ HCF := IntermediateField.lift_le F
+  -- ## The compositum `E = HCF ⬝ M`, and the tower instances it carries
+  set E : IntermediateField K (AlgebraicClosure K) := HCF ⊔ M with hEdef
+  have hHCFE : HCF ≤ E := le_sup_left
+  have hME : M ≤ E := le_sup_right
+  haveI : NumberField E := NumberField.of_module_finite K E
+  haveI : IsGalois K E := ⟨⟩
+  letI : Algebra HCF E := (IntermediateField.inclusion hHCFE).toRingHom.toAlgebra
+  haveI : IsScalarTower K HCF E :=
+    IsScalarTower.of_algebraMap_eq' (IntermediateField.inclusion hHCFE).comp_algebraMap.symm
+  letI : Algebra M E := (IntermediateField.inclusion hME).toRingHom.toAlgebra
+  haveI : IsScalarTower K M E :=
+    IsScalarTower.of_algebraMap_eq' (IntermediateField.inclusion hME).comp_algebraMap.symm
+  haveI : IsGalois M E := IsGalois.tower_top_of_isGalois K M E
+  -- ## CHEBOTAREV over `M`: the image of `Gal(E/M)` in `Gal(HCF/K)` lies in `Art N`
+  set Φ : (E ≃ₐ[M] E) →* (HCF ≃ₐ[K] HCF) :=
+    (AlgEquiv.restrictNormalHom (F := K) (K₁ := E) HCF).comp
+      (AlgEquiv.restrictScalarsHom (R := K) (S := M) (A := E)) with hΦdef
+  have hΦmem : ∀ σ : E ≃ₐ[M] E, Φ σ ∈ H := by
+    intro σ
+    have hgen : (⊤ : Subgroup (E ≃ₐ[M] E)) ≤ Subgroup.comap Φ H := by
+      rw [← closure_frobAt_eq_top M E]
+      refine (Subgroup.closure_le _).2 ?_
+      rintro _ ⟨Q, hQmax, hQunr, rfl⟩
+      haveI := hQmax
+      haveI := hQunr
+      have hQ0 : Q ≠ ⊥ :=
+        (Ideal.bot_lt_of_maximal Q (NumberField.RingOfIntegers.not_isField _)).ne'
+      have hq0 : Q.under (𝓞 M) ≠ ⊥ := Ideal.under_ne_bot (𝓞 M) hQ0
+      haveI hqmax : (Q.under (𝓞 M)).IsMaximal :=
+        (Ideal.IsPrime.under (𝓞 M) (P := Q)).isMaximal hq0
+      haveI : Algebra.IsUnramifiedAt (𝓞 K) (Q.under (𝓞 M)) := hunr _ hqmax.isPrime hq0
+      have hP0 : Q.under (𝓞 HCF) ≠ ⊥ := Ideal.under_ne_bot (𝓞 HCF) hQ0
+      haveI hPmax : (Q.under (𝓞 HCF)).IsMaximal :=
+        (Ideal.IsPrime.under (𝓞 HCF) (P := Q)).isMaximal hP0
+      haveI : Algebra.IsUnramifiedAt (𝓞 K) (Q.under (𝓞 HCF)) := hunrHCF _ hPmax.isPrime hP0
+      have hpne : (Q.under (𝓞 M)).under (𝓞 K) ≠ ⊥ := Ideal.under_ne_bot (𝓞 K) hq0
+      have hJne : Ideal.relNorm (𝓞 K) (Q.under (𝓞 M)) ≠ ⊥ := by
+        simpa using (Ideal.relNorm_eq_bot_iff (R := 𝓞 K)
+          (I := Q.under (𝓞 M))).not.mpr hq0
+      set J : (Ideal (𝓞 K))⁰ := ⟨Ideal.relNorm (𝓞 K) (Q.under (𝓞 M)),
+        mem_nonZeroDivisors_of_ne_zero hJne⟩ with hJdef
+      set Jp : (Ideal (𝓞 K))⁰ := ⟨(Q.under (𝓞 M)).under (𝓞 K),
+        mem_nonZeroDivisors_of_ne_zero hpne⟩ with hJpdef
+      have hmemN : ClassGroup.mk0 J ∈ N :=
+        Subgroup.subset_closure ⟨Q.under (𝓞 M), hq0, rfl⟩
+      have hJpow : J = Jp ^ (Q.under (𝓞 M)).inertiaDeg (𝓞 K) := by
+        refine Subtype.ext ?_
+        rw [SubmonoidClass.coe_pow]
+        exact Ideal.relNorm_eq_pow_of_isMaximal (Q.under (𝓞 M)) ((Q.under (𝓞 M)).under (𝓞 K))
+      have hval : Φ (frobAt M E Q) = A (ClassGroup.mk0 J) := by
+        show AlgEquiv.restrictNormalHom HCF
+          (AlgEquiv.restrictScalars K (frobAt M E Q)) = _
+        rw [restrictScalars_frobAt K M E Q (Q.under (𝓞 M)) rfl, map_pow,
+          restrictNormalHom_frobAt K HCF E Q (Q.under (𝓞 HCF)) rfl, hJpow, map_pow, map_pow]
+        congr 1
+        refine (hArtFrob (Q.under (𝓞 HCF)) hPmax Jp ?_).symm
+        show (Q.under (𝓞 M)).under (𝓞 K) = (Q.under (𝓞 HCF)).under (𝓞 K)
+        rw [Ideal.under_under, Ideal.under_under]
+      show Φ (frobAt M E Q) ∈ H
+      rw [hval, hHdef]
+      exact Subgroup.mem_map_of_mem A hmemN
+    exact Subgroup.mem_comap.1 (hgen trivial)
+  -- ## The class field of `N` sits inside `M`
+  have hFM : F' ≤ M := by
+    intro x hx
+    have hxHCF : x ∈ HCF := hF'HCF hx
+    have hxE : x ∈ E := hHCFE hxHCF
+    have hxF : (⟨x, hxHCF⟩ : HCF) ∈ F := (IntermediateField.mem_lift (⟨x, hxHCF⟩ : HCF)).1 hx
+    have hfix : ∀ σ : E ≃ₐ[M] E, σ ⟨x, hxE⟩ = ⟨x, hxE⟩ := by
+      intro σ
+      have h1 : Φ σ ⟨x, hxHCF⟩ = ⟨x, hxHCF⟩ :=
+        (IntermediateField.mem_fixedField_iff H _).1 hxF _ (hΦmem σ)
+      have h2 := AlgEquiv.restrictNormal_commutes (AlgEquiv.restrictScalars K σ) HCF
+        (⟨x, hxHCF⟩ : HCF)
+      rw [show (AlgEquiv.restrictScalars K σ).restrictNormal HCF = Φ σ from rfl, h1] at h2
+      exact h2.symm
+    obtain ⟨y, hy⟩ := (IsGalois.mem_range_algebraMap_iff_fixed (⟨x, hxE⟩ : E)).2 hfix
+    have hxy : (y : AlgebraicClosure K) = x := congrArg Subtype.val hy
+    rw [← hxy]
+    exact y.2
+  -- ## `Gal(M/K) ↠ Gal(F/K) ≃ Gal(HCF/K)/Art N ≃ Cl(𝓞 K)/N`
+  set F'' : IntermediateField K M := IntermediateField.restrict hFM with hF''def
+  set eFF'' : (F : IntermediateField K HCF) ≃ₐ[K] F'' :=
+    (IntermediateField.liftAlgEquiv F).trans (IntermediateField.restrict_algEquiv hFM) with heF
+  haveI : Normal K F'' := Normal.of_algEquiv eFF''
+  have hsurj0 : Function.Surjective
+      (AlgEquiv.restrictNormalHom (F := K) (K₁ := M) F'') :=
+    AlgEquiv.restrictNormalHom_surjective M
+  set ψ₁ : (F'' ≃ₐ[K] F'') ≃* (F ≃ₐ[K] F) := AlgEquiv.autCongr eFF''.symm with hψ₁
+  set ψ₂ : (F ≃ₐ[K] F) ≃* ((HCF ≃ₐ[K] HCF) ⧸ H) :=
+    (IsGalois.normalAutEquivQuotient H).symm with hψ₂
+  set ψ₃ : ((HCF ≃ₐ[K] HCF) ⧸ H) ≃* (ClassGroup (𝓞 K) ⧸ N) :=
+    (QuotientGroup.congr N H Art hHdef.symm).symm with hψ₃
+  refine ⟨((ψ₃.toMonoidHom.comp ψ₂.toMonoidHom).comp ψ₁.toMonoidHom).comp
+    (AlgEquiv.restrictNormalHom (F := K) (K₁ := M) F''), ?_⟩
+  simp only [MonoidHom.coe_comp]
+  exact ψ₃.surjective.comp (ψ₂.surjective.comp (ψ₁.surjective.comp hsurj0))
+
 /-- **THE ARTIN MAP AT MODULUS `1`, IN THE DIRECTION `Gal(L/K) ↠ Cl(𝓞 K)/N`: for
 `L/K` finite abelian and unramified at every finite prime there is a SURJECTIVE
-homomorphism `Gal(L/K) →* Cl(𝓞 K) ⧸ relNormClassSubgroup K L`** (SORRY LEAF, cut
-2026-07-30 out of `index_relNormClassSubgroup_le_finrank` below, which is now
-proven from it by counting).
+homomorphism `Gal(L/K) →* Cl(𝓞 K) ⧸ relNormClassSubgroup K L`** (was a SORRY LEAF, cut
+2026-07-30 out of `index_relNormClassSubgroup_le_finrank` below; PROVEN 2026-07-30 from
+`exists_surjective_aut_classGroupQuotient_intermediateField` above by transport along an
+embedding, and from nothing else).
 
 This is the mirror image of the cut the companion file made on 2026-07-28, where
 `finrank_le_index_relNormClassSubgroup` was reduced to
@@ -424,63 +1346,65 @@ this one is true for all of them — which is exactly why
 `IsUnramifiedAtInfinitePlaces` must NOT be added here (see the ⚠ note on the
 consumer below).
 
-**Soundness — the intended inhabitant.** Let `𝐇` be the Hilbert class field of
-`K` and `Art : Cl(𝓞 K) ≃ Gal(𝐇/K)` the Artin isomorphism. Both `𝐇/K` and `L/K`
-are Galois, so `M := 𝐇 ∩ L` is Galois over `K`, and the class field
-correspondence identifies `Art (N_{L/K} Cl(𝓞 L)) = Gal(𝐇/M)`, i.e.
-`Cl(𝓞 K) ⧸ relNormClassSubgroup K L ≃ Gal(M/K)`. Since `M ⊆ L`, restriction
-`Gal(L/K) ↠ Gal(M/K)` is surjective, and `ψ` is that restriction followed by the
-inverse of the isomorphism above. Note the two inclusions in
-`Art (N_{L/K} Cl(𝓞 L)) = Gal(𝐇/M)` are of very different depth: `≤` is the
-Frobenius computation `Frob_𝔭^{f(𝔓/𝔭)} = 1`, while `≥` is Chebotarev applied to
-`𝐇L/L`. It is the second one that makes this a genuine theorem of class field
-theory rather than bookkeeping — an arbitrary subgroup of `Cl(𝓞 K)` is not the
-norm group of anything, and the whole content is that the norm classes of `L`
-already fill up `Art⁻¹ Gal(𝐇/(𝐇 ∩ L))`.
+**What this theorem adds to the node above: TRANSPORT.** `L` is an abstract
+`Algebra K L`, while the Hilbert class field lives inside `AlgebraicClosure K`, and the
+argument needs the two in one field. `IsAlgClosed.lift` embeds `L` as the intermediate
+field `L' = ι.fieldRange`, and the three things that must be carried across
+`e : L ≃ₐ[K] L'` are `relNormClassSubgroup` (`relNormClassSubgroup_eq_of_algEquiv`),
+unramifiedness at the finite primes (`isUnramifiedAt_ringOfIntegers_of_algEquiv`) and `Gal`
+(`AlgEquiv.autCongr`); the quotient types are then identified by
+`QuotientGroup.quotientMulEquivOfEq`. The first two are the plumbing built in the
+`Transport` section at the top of this file, and they are the reusable part: the pin has
+no API for moving rings of integers and their primes along a `K`-algebra isomorphism.
 
-**Why a MONOID HOM and not merely a surjective function — this is the whole point
-of the cut.** A surjective FUNCTION `Gal(L/K) → Cl(𝓞 K) ⧸ N` exists if and only
-if the cardinality inequality below holds, so stating the node with a bare
-function would make it logically equivalent to its own consumer and the
-"decomposition" would be empty. Asking for a group homomorphism is strictly
-stronger, it is what the Artin map actually is, and it is what makes the
-consumer's proof three lines of counting.
+**⚠ `habel` IS NOT USED — and this is now a fact about the proof, not a claim about the
+mathematics.** The binder is retained (renamed `_habel`) because every consumer holds it
+and because removing it would change the signature; the argument never touches it, since
+`Cl(𝓞 K) ⧸ N` is abelian and `ψ` may simply factor through the abelianization of
+`Gal(L/K)`. `hunr` **is** load-bearing, at the finite primes only. Note in particular
+that the general (possibly nonabelian) statement is available directly from
+`exists_surjective_aut_classGroupQuotient_intermediateField` above.
 
 **PINNING.** Only surjectivity is used, and the inequality below follows from ANY
-surjective hom, so an adversary who post-composes an automorphism of the
-quotient, or produces a different surjection, still yields a true consumer. The
-intended `ψ` is the inverse Artin map and is canonical; asking for more (that `ψ`
-send `Frob_𝔭` to the class of `𝔭`) would make the leaf harder without helping the
-consumer, exactly as recorded for the companion file's sibling node.
+surjective hom, so an adversary who post-composes an automorphism of the quotient still
+yields a true consumer. The `ψ` produced here is the canonical one — restriction to the
+class field of `N`, followed by the inverse Artin map.
 
-**⚠ NEITHER HYPOTHESIS IS LOAD-BEARING** — the argument above never used them:
-`M/K` is Galois whether or not `L/K` is abelian, and enlarging the modulus by the
-ramified finite primes handles ramification (see the consumer's own audit, which
-records `K = ℚ`, `L = ℚ(√5)`, index `1 ≤ 2` as the sanity check). They are kept
-because every consumer already holds them, because the consumer's statement has
-them, and because a prover who has the companion file's node in hand can then
-reuse the same modulus. A prover who finds the general statement no harder is
-free to prove that and specialise.
-
-**Route.** Neukirch VI (7.3) and (6.9); Childress ch. 5; Lang *ANT* ch. X. The
-mathlib survey in the companion file's
-`exists_surjective_classGroupHom_aut_of_unramified_abelian` applies verbatim: ray
-class groups, the Hilbert class field, the Artin map, reciprocity and Chebotarev
-are all absent from this pin and from `~/cs/FLT`, so the correspondence must be
-built. Whoever builds it should look at all three leaves of this cluster at once
-— they are three faces of one theorem.
+**Sanity checks against the classical statement.** `L = K`: `N = ⊤`, the target is
+trivial and `ψ` is the trivial map. `K = ℚ(√-5)` (`h = 2`), `L = K(i)` the Hilbert class
+field: `N = ⊥` and `ψ` is an isomorphism of groups of order `2`. `K = ℚ(√3)` (`h = 1`,
+`h⁺ = 2`), `L` the NARROW Hilbert class field, ramified at a real place: `Cl(𝓞 K)` is
+trivial, so the target is trivial and `ψ` is again the trivial map — the case that makes
+the companion file's opposite surjection false and this one true.
 
 **The check that would refute it**: a finite abelian extension `L/K` of number
 fields, unramified at every finite prime, for which no group homomorphism
 `Gal(L/K) → Cl(𝓞 K) ⧸ relNormClassSubgroup K L` is surjective — equivalently
 (by the counting below) one with `(relNormClassSubgroup K L).index > [L : K]`. -/
 theorem exists_surjective_aut_classGroupQuotient [IsGalois K L]
-    (habel : ∀ a b : L ≃ₐ[K] L, a * b = b * a)
+    (_habel : ∀ a b : L ≃ₐ[K] L, a * b = b * a)
     (hunr : ∀ (Q : Ideal (𝓞 L)) (_ : Q.IsPrime), Q ≠ ⊥ →
       Algebra.IsUnramifiedAt (𝓞 K) Q) :
     ∃ ψ : (L ≃ₐ[K] L) →* ClassGroup (𝓞 K) ⧸ relNormClassSubgroup K L,
-      Function.Surjective ψ :=
-  sorry
+      Function.Surjective ψ := by
+  classical
+  set ι : L →ₐ[K] AlgebraicClosure K := IsAlgClosed.lift with hι
+  set L' : IntermediateField K (AlgebraicClosure K) := ι.fieldRange with hL'
+  set e : L ≃ₐ[K] L' := AlgEquiv.ofInjectiveField ι with he
+  haveI : FiniteDimensional K L' := e.toLinearEquiv.finiteDimensional
+  haveI : NumberField L' := NumberField.of_module_finite K L'
+  haveI : IsGalois K L' := IsGalois.of_algEquiv e
+  have hunr' : ∀ (Q : Ideal (𝓞 L')) (_ : Q.IsPrime), Q ≠ ⊥ →
+      Algebra.IsUnramifiedAt (𝓞 K) Q :=
+    fun Q hQ hQ0 => isUnramifiedAt_ringOfIntegers_of_algEquiv e hunr Q hQ hQ0
+  obtain ⟨ψ', hψ'⟩ := exists_surjective_aut_classGroupQuotient_intermediateField K L' hunr'
+  have hN : relNormClassSubgroup K L = relNormClassSubgroup K L' :=
+    relNormClassSubgroup_eq_of_algEquiv e
+  refine ⟨((QuotientGroup.quotientMulEquivOfEq hN.symm).toMonoidHom.comp ψ').comp
+    (AlgEquiv.autCongr e).toMonoidHom, ?_⟩
+  simp only [MonoidHom.coe_comp]
+  exact ((QuotientGroup.quotientMulEquivOfEq hN.symm).surjective.comp hψ').comp
+    (AlgEquiv.autCongr e).surjective
 
 /-- **THE FIRST INEQUALITY AT MODULUS `1`: for `L/K` finite abelian,
 `[I_K : P_K · N_{L/K} I_L] ≤ [L : K]`** (cut 2026-07-29 out of
