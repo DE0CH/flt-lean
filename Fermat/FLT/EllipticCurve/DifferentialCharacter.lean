@@ -81,11 +81,57 @@ form "the pullback ratio is constant"); the `y`-witnesses, the zero map and the
 crossing of the finite kernel by Zariski density are all discharged there.
 `psi_ne_zero_of_two_nsmul_ne_zero` is proven with it.
 
-Still open, and this is the whole remaining mathematics of the file:
+**STATUS AS OF 2026-07-30: exactly TWO leaves remain, and the first now mentions
+only polynomials.**
 
-* `exists_diffCharScalar` — the pullback ratio `φ*ω'/ω` is CONSTANT;
-* `isDiffChar_add` — `λ` is additive;
-* `isDiffChar_comp` — `λ` is multiplicative on composites.
+* `exists_diffCharScalar_poly` — `(A′B − AB′)·E = c·C·B²` for some `c`, i.e.
+  `(x ∘ φ)′ = c·γ` with `γ = C/E`. This replaced `exists_diffCharScalar` (which is
+  PROVEN over it): the `∀ P`, the `ψ₂`s and the image point are all gone, pushed out
+  by `diffChar_psi_image_eq`.
+* `isDiffCharCert_add_of_ne` — the chord branch of additivity.
+
+What closed on 2026-07-30: `isDiffChar_mulByHom_two` (`λ([2]) = 2`, the DOUBLING branch
+of additivity, along the route its docstring prescribed), `exists_diffCharScalar` (over
+the polynomial leaf), and two new pieces of reusable infrastructure —
+`diffChar_yWitness_onePart` (the `1`-part of a `y`-witness is forced by `φ` being a
+homomorphism) and `diffChar_psi_image_eq` (`ψ₂′(φP)·E = C·ψ₂(P)`). The second of these
+is what makes the differential character a statement about polynomials, and it is
+equally the tool the chord branch's own docstring asks for.
+
+(`isDiffChar_comp` was already proven; `isDiffChar_add` is an assembly over the chord
+branch alone now.)
+
+**LATER ON 2026-07-30 — the chord branch's MISSING MACHINERY is built and proven, and
+what is left of that leaf is group-law bookkeeping.**  `RationalDerivation.lean` (new,
+`public import`ed below) supplies `d/dX` on `F(X)` and `chordDeriv_core`, the
+differentiated chord formula over an arbitrary derivation of an arbitrary field; and
+four more bricks landed here:
+
+* `diffChar_polyForm` — a certificate at every nonzero point IS the polynomial
+  identity `(A′B − AB′)·E = c·Cx·B²`.  So `IsDiffChar φ c` and
+  `exists_diffCharScalar_poly` are the SAME statement, and the whole theory is a
+  computation in `F(X)`;
+* `diffChar_curveEq` — the target curve's equation at the image point, `y` eliminated;
+* `diffChar_yMultiplier_ne_zero` — `Cx ≠ 0` for `φ ≠ 0` (the map does not land in
+  `W'[2]`);
+* plus `diffChar_psi_image_eq` and `diffChar_yWitness_onePart` from earlier the same day.
+
+Together these are eight of `chordDeriv_core`'s ten hypotheses, and with
+`RationalDerivation.polyForm_add` (the instantiation at `RatFunc F`, denominators
+cleared) `isDiffCharCert_add_of_ne` is now **PROVEN**.
+
+**SO THE LEAF LIST IS NOW THREE, AND THIS IS THE ONE TO DISPATCH FROM:**
+
+* `exists_diffCharScalar_poly` — `(A′B − AB′)·E = c·C·B²` for some `c`.  Genuinely
+  geometric (Abel–Jacobi); see the note on it for why no `linear_combination` exists.
+* `chordSum_xWitness` — the chord formula for `x₃`, `y` eliminated, cleared.
+* `chordSum_yMultiplier` — the `y`-part of the chord formula for `y₃`, cleared.
+
+The last two are PURE GROUP-LAW BOOKKEEPING: no derivative, no `ψ₂`, no `c` or `d`
+anywhere in either statement, and each goes by the density pattern this file already
+uses four times.  The count went `2 → 3` and that is a decomposition, not a
+regression: what left the frontier is the differential geometry, which is now
+machine-checked, and what replaced it is the addition law written in coordinates.
 
 **Do not attack them from the raw definition.** The section "What the certificate
 really says" below is PROVEN infrastructure written for exactly this purpose:
@@ -109,7 +155,7 @@ identities are the actual remaining content.
 `IsRationalMap.add` is cut, into a doubling branch and a chord branch:
 
 * `isDiffChar_mulByHom_two` — `λ([2]) = 2`, which carries the case `φ = ψ`
-  through `isDiffChar_comp` and `φ + φ = φ ∘ [2]`;
+  through `isDiffChar_comp` and `φ + φ = φ ∘ [2]`. **PROVEN 2026-07-30**;
 * `isDiffCharCert_add_of_ne` — the certificate of a sum at a point where the
   chord formula applies (both maps nonzero at `P`, distinct image
   `x`-coordinates, denominators nonvanishing).
@@ -123,6 +169,11 @@ functoriality), *ATAEC* II.2.
 module
 
 public import Fermat.FLT.EllipticCurve.Isogeny
+-- `RationalDerivation.rderiv` (`d/dX` on `F(X)`) and `chordDeriv_core` (the chord
+-- formula differentiated, as pure field algebra).  Cut out of this file 2026-07-30;
+-- it is what `isDiffCharCert_add_of_ne` below calls THE MISSING MACHINERY.  Its own
+-- cone is `Mathlib.FieldTheory.RatFunc.Basic` and nothing from this project.
+public import Fermat.FLT.EllipticCurve.RationalDerivation
 
 @[expose] public section
 
@@ -426,6 +477,305 @@ theorem diffChar_wronskian_transfer {A₁ B₁ A₂ B₂ : F[X]} (h : A₁ * B�
   simp only [derivative_mul] at h'
   linear_combination (B₁ * B₂) * h' - (derivative B₁ * B₂ + derivative B₂ * B₁) * h
 
+/-- **The `1`-part of a `y`-witness is AUTOMATIC** (PROVEN 2026-07-30), and this is what
+lets the differential certificate be stated without any reference to `ψ₂` at all.
+
+Writing `y ∘ φ = (C·y + D)/E`, the two coefficients are not independent: because `φ` is a
+GROUP HOMOMORPHISM, `φ(−P) = −φ(P)`, and applying the `y`-witness at `−P` as well as at
+`P` and ADDING the two instances kills `y` and leaves
+
+  `2·D·E⁻¹ + a₁′·x(φP) + a₃′ = C·E⁻¹·(a₁x + a₃)`,
+
+i.e. after clearing `E` and `B` the polynomial identity below. (Subtracting the two
+instances gives back the witness itself, so no information is lost.)
+
+This is the observation recorded on `isDiffCharCert_add_of_ne` as "the second is automatic
+from `φ` being a group homomorphism", now proven. `hker` enters only through
+`exists_point_veluPointX_eq`: off the finite `x`-image of `ker φ` every `t` carries a point
+at which both instances are available, so the identity has cofinitely many roots.
+
+**`φ ≠ 0` is load-bearing** (it is what makes `hker` a real hypothesis rather than a
+vacuous one): for `φ = 0` the witness certificate is vacuous, so `A = 0, B = 1, C = 0,
+D = 1, E = 1` is a legal witness tuple and the conclusion reads `2 = 0`. -/
+theorem diffChar_yWitness_onePart [IsAlgClosed F] [W.IsElliptic]
+    {φ : W.Point →+ W'.Point} (hker : (AddMonoidHom.ker φ : Set W.Point).Finite)
+    {A B Cx D E : F[X]}
+    (hrat : ∀ P : W.Point, φ P ≠ 0 →
+      veluPointX (φ P) * B.eval (veluPointX P) = A.eval (veluPointX P) ∧
+      veluPointY (φ P) * E.eval (veluPointX P)
+        = Cx.eval (veluPointX P) * veluPointY P + D.eval (veluPointX P)) :
+    C 2 * D * B + C W'.a₁ * A * E + C W'.a₃ * B * E
+      = Cx * B * (C W.a₁ * X + C W.a₃) := by
+  classical
+  set p : F[X] := C 2 * D * B + C W'.a₁ * A * E + C W'.a₃ * B * E
+      - Cx * B * (C W.a₁ * X + C W.a₃) with hp
+  have hbad : (veluPointX '' (AddMonoidHom.ker φ : Set W.Point)).Finite := hker.image _
+  have hsub : (veluPointX '' (AddMonoidHom.ker φ : Set W.Point))ᶜ ⊆ {t : F | p.IsRoot t} := by
+    intro t ht
+    obtain ⟨P, hP0, hPx⟩ := exists_point_veluPointX_eq (W := W) t
+    have hφP : φ P ≠ 0 := fun hc => ht ⟨P, hc, hPx⟩
+    have hnP0 : -P ≠ 0 := neg_ne_zero.2 hP0
+    have hφnP : φ (-P) ≠ 0 := by rw [map_neg]; exact neg_ne_zero.2 hφP
+    obtain ⟨hx, hy⟩ := hrat P hφP
+    obtain ⟨-, hy'⟩ := hrat (-P) hφnP
+    rw [velu_pointX_neg, velu_pointY_neg P hP0, map_neg,
+      velu_pointY_neg (φ P) hφP] at hy'
+    rw [hPx] at hx hy hy'
+    show p.eval t = 0
+    rw [hp]
+    simp only [eval_sub, eval_add, eval_mul, eval_C, eval_X]
+    linear_combination (-(B.eval t)) * hy + (-(B.eval t)) * hy'
+      + (-(W'.a₁ * E.eval t)) * hx
+  have hzero : p = 0 :=
+    Polynomial.eq_zero_of_infinite_isRoot _ (Set.Infinite.mono hsub hbad.infinite_compl)
+  rw [hp] at hzero
+  linear_combination hzero
+
+/-- **`ψ₂′(φP)·E(x) = C(x)·ψ₂(P)`, after clearing `B`** (PROVEN 2026-07-30 over
+`diffChar_yWitness_onePart`): the denominator of `ω′` at the image point is the
+`y`-multiplier of `φ` times the denominator of `ω` at `P`.
+
+This is the single identity that removes `ψ₂` from the differential character. Substituted
+into the reduced certificate of `isDiffCharCert_reduced` it turns
+
+  `c · B(x)² · E(x) · ψ₂(φP) = (A′B − AB′)(x) · E(x) · ψ₂(P)`
+
+into `c · B(x)² · C(x) · ψ₂(P) = (A′B − AB′)(x) · E(x) · ψ₂(P)`, so away from the
+`2`-torsion the whole content of `IsDiffChar φ c` is the POLYNOMIAL proportionality
+`(A′B − AB′)·E = c·C·B²`, i.e. `(x ∘ φ)′ = c·γ` with `γ = C/E`. That is Silverman *AEC*
+III.5's definition of `λ(φ)` with every trace of the curve removed. -/
+theorem diffChar_psi_image_eq [IsAlgClosed F] [W.IsElliptic]
+    {φ : W.Point →+ W'.Point} (hker : (AddMonoidHom.ker φ : Set W.Point).Finite)
+    {A B Cx D E : F[X]}
+    (hrat : ∀ P : W.Point, φ P ≠ 0 →
+      veluPointX (φ P) * B.eval (veluPointX P) = A.eval (veluPointX P) ∧
+      veluPointY (φ P) * E.eval (veluPointX P)
+        = Cx.eval (veluPointX P) * veluPointY P + D.eval (veluPointX P))
+    (P : W.Point) (hφP : φ P ≠ 0) :
+    (2 * veluPointY (φ P) + W'.a₁ * veluPointX (φ P) + W'.a₃)
+        * E.eval (veluPointX P) * B.eval (veluPointX P)
+      = Cx.eval (veluPointX P) * B.eval (veluPointX P)
+        * (2 * veluPointY P + W.a₁ * veluPointX P + W.a₃) := by
+  obtain ⟨hx, hy⟩ := hrat P hφP
+  have hone := congrArg (Polynomial.eval (veluPointX P))
+    (diffChar_yWitness_onePart (W' := W') hker hrat)
+  simp only [eval_add, eval_mul, eval_C, eval_X] at hone
+  linear_combination 2 * B.eval (veluPointX P) * hy
+    + W'.a₁ * E.eval (veluPointX P) * hx + hone
+
+/-- **THE CERTIFICATE IS A POLYNOMIAL PROPORTIONALITY** (PROVEN 2026-07-30, over
+`diffChar_psi_image_eq`): a differential certificate holding at every nonzero point is
+EQUIVALENT to the single polynomial identity
+
+  `(A′B − AB′) · E = c · Cx · B²`,
+
+i.e. `(x ∘ φ)′ = c·γ` for `γ = Cx/E` the `y`-multiplier.  This is the form in which
+the differential character is a statement about `F(X)` and nothing else — no points,
+no `ψ₂`, no image point — and it is what feeds `RationalDerivation.chordDeriv_core`.
+
+The mechanism is one cancellation.  `isDiffCharCert_reduced` gives
+`c·B²·E·ψ₂′(φP) = (A′B − AB′)·E·ψ₂(P)`; multiplying by `B` and substituting
+`diffChar_psi_image_eq` (`ψ₂′(φP)·E·B = Cx·B·ψ₂(P)`) turns the left side into
+`c·Cx·B³·ψ₂(P)`, so `B·ψ₂(P)·((A′B − AB′)E − c·Cx·B²) = 0`; off the roots of `B`, the
+`x`-image of `ker φ` and the (finite) `2`-torsion both factors in front are nonzero, so
+the bracket has cofinitely many roots.
+
+`hE` is NOT needed, and neither is `φ ≠ 0`. -/
+theorem diffChar_polyForm [IsAlgClosed F] [W.IsElliptic] {φ : W.Point →+ W'.Point}
+    (hker : (AddMonoidHom.ker φ : Set W.Point).Finite) {A B Cx D E : F[X]} {c : F}
+    (hB : B ≠ 0)
+    (hrat : ∀ P : W.Point, φ P ≠ 0 →
+      veluPointX (φ P) * B.eval (veluPointX P) = A.eval (veluPointX P) ∧
+      veluPointY (φ P) * E.eval (veluPointX P)
+        = Cx.eval (veluPointX P) * veluPointY P + D.eval (veluPointX P))
+    (hcert : ∀ P : W.Point, P ≠ 0 → IsDiffCharCert W W' A B Cx D E c P) :
+    (derivative A * B - A * derivative B) * E = C c * Cx * B ^ 2 := by
+  classical
+  have hbad : ({t : F | B.eval t = 0}
+      ∪ (veluPointX '' (AddMonoidHom.ker φ : Set W.Point)
+        ∪ veluPointX '' {R : W.Point | (2 : ℕ) • R = 0})).Finite :=
+    (Polynomial.finite_setOf_isRoot hB).union
+      ((hker.image _).union ((finite_nsmulKer (W := W) two_ne_zero).image _))
+  have hsub : ({t : F | B.eval t = 0}
+      ∪ (veluPointX '' (AddMonoidHom.ker φ : Set W.Point)
+        ∪ veluPointX '' {R : W.Point | (2 : ℕ) • R = 0}))ᶜ
+      ⊆ {t : F | ((derivative A * B - A * derivative B) * E
+          - C c * Cx * B ^ 2).IsRoot t} := by
+    intro t ht
+    simp only [Set.mem_compl_iff, Set.mem_union, not_or, Set.mem_setOf_eq] at ht
+    obtain ⟨h1, h2, h3⟩ := ht
+    obtain ⟨P, hP0, hPx⟩ := exists_point_veluPointX_eq (W := W) t
+    have hφP : φ P ≠ 0 := fun hc => h2 ⟨P, AddMonoidHom.mem_ker.2 hc, hPx⟩
+    have hBt : B.eval (veluPointX P) ≠ 0 := by rw [hPx]; exact h1
+    have hψ : 2 * veluPointY P + W.a₁ * veluPointX P + W.a₃ ≠ 0 := by
+      intro hc
+      refine h3 ⟨P, ?_, hPx⟩
+      show (2 : ℕ) • P = 0
+      rw [two_nsmul]
+      exact add_self_eq_zero_of_denom_eq_zero hP0 hc
+    obtain ⟨hx, hy⟩ := hrat P hφP
+    have hred := isDiffCharCert_reduced hx hy (hcert P hP0)
+    have hpsi := diffChar_psi_image_eq (W' := W') hker hrat P hφP
+    have hkey : (B.eval (veluPointX P) * (2 * veluPointY P + W.a₁ * veluPointX P + W.a₃))
+        * (((derivative A).eval (veluPointX P) * B.eval (veluPointX P)
+              - A.eval (veluPointX P) * (derivative B).eval (veluPointX P))
+            * E.eval (veluPointX P) - c * Cx.eval (veluPointX P)
+              * B.eval (veluPointX P) ^ 2) = 0 := by
+      linear_combination (-(B.eval (veluPointX P))) * hred
+        + (c * B.eval (veluPointX P) ^ 2) * hpsi
+    show ((derivative A * B - A * derivative B) * E - C c * Cx * B ^ 2).eval t = 0
+    rw [← hPx]
+    simp only [eval_sub, eval_mul, eval_pow, eval_C]
+    rcases mul_eq_zero.mp hkey with h0 | h0
+    · exact absurd h0 (mul_ne_zero hBt hψ)
+    · exact h0
+  have hzero : (derivative A * B - A * derivative B) * E - C c * Cx * B ^ 2 = 0 :=
+    Polynomial.eq_zero_of_infinite_isRoot _ (Set.Infinite.mono hsub hbad.infinite_compl)
+  linear_combination hzero
+
+/-- **THE TARGET CURVE'S EQUATION AT THE IMAGE POINT, `y` ELIMINATED** (PROVEN
+2026-07-30): with `x₁ = A/B`, `γ = Cx/E`, `δ = D/E` the coordinates of `φP`, the
+equation of `W'` at `φP` is EQUIVALENT to the polynomial identity below, which is
+
+  `γ²f + δ² + a₁′x₁δ + a₃′δ = x₁³ + a₂′x₁² + a₄′x₁ + a₆′`,   `f = X³ + a₂X² + a₄X + a₆`,
+
+cleared by `E²B³`.  The `y`-coefficient of the substituted equation is
+`γ·(2δ − γ(a₁X + a₃) + a₁′x₁ + a₃′)`, which vanishes by
+`diffChar_yWitness_onePart` — so eliminating `y` loses nothing, and this is the
+second of the two `y`-free inputs `RationalDerivation.chordDeriv_core` wants. -/
+theorem diffChar_curveEq [IsAlgClosed F] [W.IsElliptic] {φ : W.Point →+ W'.Point}
+    (hker : (AddMonoidHom.ker φ : Set W.Point).Finite) {A B Cx D E : F[X]}
+    (hB : B ≠ 0) (hE : E ≠ 0)
+    (hrat : ∀ P : W.Point, φ P ≠ 0 →
+      veluPointX (φ P) * B.eval (veluPointX P) = A.eval (veluPointX P) ∧
+      veluPointY (φ P) * E.eval (veluPointX P)
+        = Cx.eval (veluPointX P) * veluPointY P + D.eval (veluPointX P)) :
+    Cx ^ 2 * (X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆) * B ^ 3 + D ^ 2 * B ^ 3
+        + C W'.a₁ * A * D * E * B ^ 2 + C W'.a₃ * D * E * B ^ 3
+      = E ^ 2 * (A ^ 3 + C W'.a₂ * A ^ 2 * B + C W'.a₄ * A * B ^ 2 + C W'.a₆ * B ^ 3) := by
+  classical
+  have hprod : B * E ≠ 0 := mul_ne_zero hB hE
+  have hbad : ({t : F | (B * E).eval t = 0}
+      ∪ veluPointX '' (AddMonoidHom.ker φ : Set W.Point)).Finite :=
+    (Polynomial.finite_setOf_isRoot hprod).union (hker.image _)
+  have hone := diffChar_yWitness_onePart (W' := W') hker hrat
+  have hsub : ({t : F | (B * E).eval t = 0}
+      ∪ veluPointX '' (AddMonoidHom.ker φ : Set W.Point))ᶜ
+      ⊆ {t : F | (Cx ^ 2 * (X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆) * B ^ 3
+            + D ^ 2 * B ^ 3 + C W'.a₁ * A * D * E * B ^ 2 + C W'.a₃ * D * E * B ^ 3
+          - E ^ 2 * (A ^ 3 + C W'.a₂ * A ^ 2 * B + C W'.a₄ * A * B ^ 2
+              + C W'.a₆ * B ^ 3)).IsRoot t} := by
+    intro t ht
+    simp only [Set.mem_compl_iff, Set.mem_union, not_or, Set.mem_setOf_eq] at ht
+    obtain ⟨h1, h2⟩ := ht
+    obtain ⟨P, hP0, hPx⟩ := exists_point_veluPointX_eq (W := W) t
+    have hφP : φ P ≠ 0 := fun hc => h2 ⟨P, AddMonoidHom.mem_ker.2 hc, hPx⟩
+    obtain ⟨hx, hy⟩ := hrat P hφP
+    have honeP := congrArg (Polynomial.eval (veluPointX P)) hone
+    simp only [eval_add, eval_mul, eval_C, eval_X] at honeP
+    have hEqP : veluPointY P ^ 2 + W.a₁ * veluPointX P * veluPointY P
+          + W.a₃ * veluPointY P
+        = veluPointX P ^ 3 + W.a₂ * veluPointX P ^ 2 + W.a₄ * veluPointX P + W.a₆ :=
+      (Affine.equation_iff ..).1 (velu_point_equation W hP0)
+    have hEqQ : veluPointY (φ P) ^ 2 + W'.a₁ * veluPointX (φ P) * veluPointY (φ P)
+          + W'.a₃ * veluPointY (φ P)
+        = veluPointX (φ P) ^ 3 + W'.a₂ * veluPointX (φ P) ^ 2
+          + W'.a₄ * veluPointX (φ P) + W'.a₆ :=
+      (Affine.equation_iff ..).1 (velu_point_equation W' hφP)
+    -- clear the image point's equation by `E²B³`, then substitute the two witnesses
+    have hEqQ' : (veluPointY (φ P) * E.eval (veluPointX P)) ^ 2 * B.eval (veluPointX P) ^ 3
+          + W'.a₁ * (veluPointX (φ P) * B.eval (veluPointX P))
+            * (veluPointY (φ P) * E.eval (veluPointX P))
+            * E.eval (veluPointX P) * B.eval (veluPointX P) ^ 2
+          + W'.a₃ * (veluPointY (φ P) * E.eval (veluPointX P))
+            * E.eval (veluPointX P) * B.eval (veluPointX P) ^ 3
+        = E.eval (veluPointX P) ^ 2
+          * ((veluPointX (φ P) * B.eval (veluPointX P)) ^ 3
+            + W'.a₂ * (veluPointX (φ P) * B.eval (veluPointX P)) ^ 2 * B.eval (veluPointX P)
+            + W'.a₄ * (veluPointX (φ P) * B.eval (veluPointX P))
+              * B.eval (veluPointX P) ^ 2
+            + W'.a₆ * B.eval (veluPointX P) ^ 3) := by
+      linear_combination (E.eval (veluPointX P) ^ 2 * B.eval (veluPointX P) ^ 3) * hEqQ
+    rw [hx, hy] at hEqQ'
+    show (Cx ^ 2 * (X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆) * B ^ 3 + D ^ 2 * B ^ 3
+        + C W'.a₁ * A * D * E * B ^ 2 + C W'.a₃ * D * E * B ^ 3
+      - E ^ 2 * (A ^ 3 + C W'.a₂ * A ^ 2 * B + C W'.a₄ * A * B ^ 2
+          + C W'.a₆ * B ^ 3)).eval t = 0
+    rw [← hPx]
+    simp only [eval_sub, eval_add, eval_mul, eval_pow, eval_C, eval_X]
+    linear_combination hEqQ'
+      - (Cx.eval (veluPointX P) ^ 2 * B.eval (veluPointX P) ^ 3) * hEqP
+      - (veluPointY P * Cx.eval (veluPointX P) * B.eval (veluPointX P) ^ 2) * honeP
+  have hzero : Cx ^ 2 * (X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆) * B ^ 3
+        + D ^ 2 * B ^ 3 + C W'.a₁ * A * D * E * B ^ 2 + C W'.a₃ * D * E * B ^ 3
+      - E ^ 2 * (A ^ 3 + C W'.a₂ * A ^ 2 * B + C W'.a₄ * A * B ^ 2 + C W'.a₆ * B ^ 3) = 0 :=
+    Polynomial.eq_zero_of_infinite_isRoot _ (Set.Infinite.mono hsub hbad.infinite_compl)
+  linear_combination hzero
+
+/-- **THE `y`-MULTIPLIER OF A NONZERO MAP IS NONZERO** (PROVEN 2026-07-30): `Cx ≠ 0`.
+
+This is the nondegeneracy input `RationalDerivation.chordDeriv_core` needs (`γᵢ ≠ 0`),
+and it is a genuine fact about the geometry rather than bookkeeping: `Cx = 0` says the
+`y`-coordinate of `φP` does not depend on `y(P)`, i.e. `y(φP) = y(−φP)`, i.e. `φ` lands
+in the `2`-torsion of `W'`.  That is finite (`finite_nsmulKer`), so `φ` has finite
+range, so `φ = 0` (`eq_zero_of_finite_range`).
+
+Concretely: with `Cx = 0`, `diffChar_psi_image_eq` reads `ψ₂′(φP)·E(x)·B(x) = 0`, so off
+the roots of `B·E` every `P` has `φP + φP = 0`; the exceptional locus is finite and
+`finite_veluPointX_preimage` turns it into a finite set of points, so `range (φ + φ)` is
+finite. -/
+theorem diffChar_yMultiplier_ne_zero [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
+    {φ : W.Point →+ W'.Point} (hφ0 : φ ≠ 0)
+    (hker : (AddMonoidHom.ker φ : Set W.Point).Finite) {A B Cx D E : F[X]}
+    (hB : B ≠ 0) (hE : E ≠ 0)
+    (hrat : ∀ P : W.Point, φ P ≠ 0 →
+      veluPointX (φ P) * B.eval (veluPointX P) = A.eval (veluPointX P) ∧
+      veluPointY (φ P) * E.eval (veluPointX P)
+        = Cx.eval (veluPointX P) * veluPointY P + D.eval (veluPointX P)) :
+    Cx ≠ 0 := by
+  classical
+  intro hCx
+  refine hφ0 ?_
+  have hprod : B * E ≠ 0 := mul_ne_zero hB hE
+  have hkill : ∀ P : W.Point, P ≠ 0 → (B * E).eval (veluPointX P) ≠ 0 → (φ + φ) P = 0 := by
+    intro P hP0 hbadP
+    by_cases hφP : φ P = 0
+    · show φ P + φ P = 0
+      rw [hφP, add_zero]
+    simp only [Polynomial.eval_mul] at hbadP
+    have hb : B.eval (veluPointX P) ≠ 0 := fun hc => hbadP (by rw [hc]; ring)
+    have he : E.eval (veluPointX P) ≠ 0 := fun hc => hbadP (by rw [hc]; ring)
+    have hpsi := diffChar_psi_image_eq (W' := W') hker hrat P hφP
+    rw [hCx] at hpsi
+    simp only [Polynomial.eval_zero, zero_mul] at hpsi
+    have hden : 2 * veluPointY (φ P) + W'.a₁ * veluPointX (φ P) + W'.a₃ = 0 := by
+      rcases mul_eq_zero.mp hpsi with h | h
+      · rcases mul_eq_zero.mp h with h' | h'
+        · exact h'
+        · exact absurd h' he
+      · exact absurd h hb
+    show φ P + φ P = 0
+    exact add_self_eq_zero_of_denom_eq_zero hφP hden
+  have hfin : (Set.range (φ + φ)).Finite := by
+    have hbadset : {P : W.Point | P ≠ 0 ∧
+        veluPointX P ∈ {t : F | (B * E).eval t = 0}}.Finite :=
+      finite_veluPointX_preimage (Polynomial.finite_setOf_isRoot hprod)
+    refine Set.Finite.subset ((hbadset.image (φ + φ)).insert 0) ?_
+    rintro Q ⟨P, rfl⟩
+    by_cases hP0 : P = 0
+    · exact Set.mem_insert_iff.2 (Or.inl (by rw [hP0]; simp))
+    by_cases hbadP : (B * E).eval (veluPointX P) = 0
+    · exact Set.mem_insert_iff.2 (Or.inr ⟨P, ⟨hP0, hbadP⟩, rfl⟩)
+    · exact Set.mem_insert_iff.2 (Or.inl (hkill P hP0 hbadP))
+  have hdouble : (φ + φ) = 0 := eq_zero_of_finite_range hfin
+  have hrange : (Set.range φ).Finite := by
+    refine Set.Finite.subset (finite_nsmulKer (W := W') two_ne_zero) ?_
+    rintro Q ⟨P, rfl⟩
+    show (2 : ℕ) • φ P = 0
+    rw [two_nsmul]
+    simpa using DFunLike.congr_fun hdouble P
+  exact eq_zero_of_finite_range hrange
+
 /-- **In characteristic zero a rational function with vanishing derivative is
 constant.** Cancel `g = gcd A B` to a coprime pair: the Wronskian is `g²`-homogeneous,
 so `A₀'B₀ = A₀B₀'`, hence `B₀ ∣ B₀'` by coprimality, hence `B₀' = 0` by degree, hence
@@ -709,9 +1059,9 @@ theorem IsDiffChar.isRationalMap {φ : W.Point →+ W'.Point} {c : F}
 /-! ### The open geometry
 
 The statements below were the six leaves of this cut. `isDiffChar_comp` is now
-PROVEN, and `isDiffChar_add` is now an ASSEMBLY over the two branch leaves
-`isDiffChar_mulByHom_two` and `isDiffCharCert_add_of_ne`; the rest remain open.
-Each is a standard fact
+PROVEN, and so is `isDiffChar_mulByHom_two` (2026-07-30), so `isDiffChar_add` is
+now an ASSEMBLY over the single branch leaf `isDiffCharCert_add_of_ne`.
+Each remaining statement is a standard fact
 about the invariant differential (Silverman, *AEC* III.5); none of them is in
 the mathlib pin, in `~/cs/FLT`, or elsewhere in `Fermat/` — the pin has the
 invariant differential nowhere, and this project has only the universal
@@ -775,7 +1125,64 @@ natural route to the general case.
 
 **THE CHECK THAT WOULD REFUTE THIS LEAF**: a rational map of Weierstrass curves
 over an algebraically closed field, with witnesses `A, …, E`, and two points off
-its kernel at which the displayed quotient takes different values. -/
+its kernel at which the displayed quotient takes different values.
+
+**RESTATED 2026-07-30 — THE LEAF IS NOW `exists_diffCharScalar_poly`, AND IT MENTIONS
+NO POINTS.** The geometry above is unchanged, but every trace of it has been pushed out
+of the statement by `diffChar_psi_image_eq` (`ψ₂′(φP)·E = C·ψ₂(P)`, PROVEN): the leaf
+that remains is the POLYNOMIAL proportionality
+
+  `(A′B − AB′) · E = c · C · B²`,
+
+i.e. `(x ∘ φ)′ = c·γ` for `γ = C/E` the `y`-multiplier — no `∀ P`, no `ψ₂`, no image
+point. `exists_diffCharScalar` below is PROVEN over it, and this docstring's route notes
+(the `y`-elimination to `(A′B − AB′)²·Ψ₂Sq_W = C(c²)·B·(4A³ + b₂′A²B + 2b₄′AB² + b₆′B³)`,
+and the `[n]`-case Wronskian behind `separable_preΨ'`) apply verbatim to the new leaf,
+which is the form they were written for. A successor should attack that name.
+
+**AND IT IS EXACTLY EQUIVALENT TO `IsDiffChar` (2026-07-30, `diffChar_polyForm`).**  That
+declaration proves the converse direction — a certificate at every nonzero point gives
+this very identity back — so nothing has been lost or gained in the restatement, and the
+leaf is precisely "the pullback ratio `(x ∘ φ)′/γ` is a CONSTANT".  Two consequences worth
+knowing before starting.
+
+*The `y`-multiplier drops out of the question.*  In `F(X)` the pair `(x₁, γ₁) = (A/B, Cx/E)`
+satisfies `Ψ_{W′}(x₁) = γ₁²·Ψ_W` (square both sides of `diffChar_psi_image_eq` and use
+`ψ₂² = 4X³ + b₂X² + 2b₄X + b₆`), which determines `γ₁` up to sign from `x₁` alone.  So the
+leaf is a statement about the single rational function `x ∘ φ`.
+
+*And it is NOT algebraic — do not look for a `linear_combination`.*  Differentiating
+`Ψ_{W′}(x₁) = γ₁²Ψ_W` gives only `Θ_{W′}(x₁)·x₁′ = γ₁γ₁′Ψ_W + γ₁²Θ_W` (with `2Θ = Ψ′`),
+which is one relation short of pinning `x₁′/γ₁`, and no further differentiation helps: the
+pair `(x₁, γ₁)` with `Ψ_{W′}(x₁) = γ₁²Ψ_W` is exactly a morphism `W → W′` of curves — an
+isogeny composed with a TRANSLATION — and "the pullback factor of a morphism is constant"
+is Abel–Jacobi, i.e. genuinely divisor theory.  That is why this leaf survived while the
+chord branch's did not: the chord branch has `c` and `d` handed to it, and this one has to
+produce one. -/
+theorem exists_diffCharScalar_poly [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
+    {φ : W.Point →+ W'.Point} {A B Cx D E : F[X]} (hφ0 : φ ≠ 0) (hB : B ≠ 0) (hE : E ≠ 0)
+    (hrat : ∀ P : W.Point, φ P ≠ 0 →
+      veluPointX (φ P) * B.eval (veluPointX P) = A.eval (veluPointX P) ∧
+      veluPointY (φ P) * E.eval (veluPointX P)
+        = Cx.eval (veluPointX P) * veluPointY P + D.eval (veluPointX P)) :
+    ∃ c : F, (derivative A * B - A * derivative B) * E = C c * Cx * B ^ 2 :=
+  sorry
+
+/-- **PROVEN 2026-07-30 over `exists_diffCharScalar_poly`**: the pullback ratio
+`φ*ω'/ω` is a constant, in the point-level form `exists_isDiffChar` consumes.
+
+The assembly is two lines of algebra once `diffChar_psi_image_eq` is available. At a
+point where `B(x) ≠ 0` and `E(x) ≠ 0`, multiply the goal by `E(x)·B(x)`: the left side
+becomes `c·B(x)²·C(x)·ψ₂(P)` by `diffChar_psi_image_eq`, and the polynomial leaf
+evaluated at `x` says that is `(A′B − AB′)(x)·E(x)·ψ₂(P)`, which is the right side.
+
+**THE TWO NONVANISHING HYPOTHESES ARE NEW (2026-07-30) and cost the consumer nothing.**
+They are needed: at an `x` with `E(x) = 0` and `P` off the `2`-torsion the witness
+relations force `C(x) = D(x) = 0` as well, so both sides of the polynomial leaf vanish
+identically there and it carries no information about `ψ₂(φP)` — which is genuinely
+undetermined by the witnesses at such an `x`. `exists_isDiffChar` supplies them for
+free, because it already extends the certificate across a finite bad locus by Zariski
+density and the roots of `B` and `E` are two more finite sets to put into it. -/
 theorem exists_diffCharScalar [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
     {φ : W.Point →+ W'.Point} {A B Cx D E : F[X]} (hB : B ≠ 0) (hE : E ≠ 0)
     (hrat : ∀ P : W.Point, φ P ≠ 0 →
@@ -783,12 +1190,25 @@ theorem exists_diffCharScalar [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
       veluPointY (φ P) * E.eval (veluPointX P)
         = Cx.eval (veluPointX P) * veluPointY P + D.eval (veluPointX P)) :
     ∃ c : F, ∀ P : W.Point, P ≠ 0 → φ P ≠ 0 →
+      B.eval (veluPointX P) ≠ 0 → E.eval (veluPointX P) ≠ 0 →
       c * B.eval (veluPointX P) ^ 2
           * (2 * veluPointY (φ P) + W'.a₁ * veluPointX (φ P) + W'.a₃)
         = ((derivative A).eval (veluPointX P) * B.eval (veluPointX P)
             - A.eval (veluPointX P) * (derivative B).eval (veluPointX P))
-          * (2 * veluPointY P + W.a₁ * veluPointX P + W.a₃) :=
-  sorry
+          * (2 * veluPointY P + W.a₁ * veluPointX P + W.a₃) := by
+  classical
+  by_cases hφ0 : φ = 0
+  · exact ⟨0, fun P _ hφP => absurd (by rw [hφ0]; rfl) hφP⟩
+  obtain ⟨c, hc⟩ := exists_diffCharScalar_poly (W' := W') hφ0 hB hE hrat
+  have hker : (AddMonoidHom.ker φ : Set W.Point).Finite :=
+    IsRationalMap.finite_ker ⟨A, B, Cx, D, E, hB, hE, hrat⟩ hφ0
+  refine ⟨c, fun P hP0 hφP hBP hEP => ?_⟩
+  have hpsi := diffChar_psi_image_eq (W' := W') hker hrat P hφP
+  have hct := congrArg (Polynomial.eval (veluPointX P)) hc
+  simp only [eval_mul, eval_sub, eval_pow, eval_C] at hct
+  refine mul_right_cancel₀ (mul_ne_zero hEP hBP) ?_
+  linear_combination c * B.eval (veluPointX P) ^ 2 * hpsi
+    - (2 * veluPointY P + W.a₁ * veluPointX P + W.a₃) * B.eval (veluPointX P) * hct
 
 /-- **PROVEN** (2026-07-28): every rational map acts on the invariant differential
 by some scalar.
@@ -828,11 +1248,13 @@ theorem exists_isDiffChar [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
     exact ⟨0, isDiffChar_zero⟩
   obtain ⟨A, B, Cx, D, E, hB, hE, hrat⟩ := id hφ
   obtain ⟨c, hc⟩ := exists_diffCharScalar hB hE hrat
-  -- The certificate off the kernel, with the `y`-witnesses restored.
+  -- The certificate off the kernel and off the roots of `B` and `E`, with the
+  -- `y`-witnesses restored.
   have hcertGood : ∀ P : W.Point, P ≠ 0 → φ P ≠ 0 →
+      B.eval (veluPointX P) ≠ 0 → E.eval (veluPointX P) ≠ 0 →
       IsDiffCharCert W W' A B Cx D E c P := by
-    intro P hP0 hφP
-    have hcol := hc P hP0 hφP
+    intro P hP0 hφP hBP hEP
+    have hcol := hc P hP0 hφP hBP hEP
     have hr := hrat P hφP
     unfold IsDiffCharCert
     linear_combination E.eval (veluPointX P) * hcol
@@ -855,21 +1277,32 @@ theorem exists_isDiffChar [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
   -- Both coefficients vanish at every `x` off a finite set, hence identically.
   have hker : (AddMonoidHom.ker φ : Set W.Point).Finite := hφ.finite_ker hφ0
   have htor : {P : W.Point | (2 : ℕ) • P = 0}.Finite := finite_nsmulKer (by norm_num)
-  have hTfin : (veluPointX '' ((AddMonoidHom.ker φ : Set W.Point)
-      ∪ {P : W.Point | (2 : ℕ) • P = 0})).Finite := (hker.union htor).image _
-  have hpq : ∀ t : F, t ∉ veluPointX '' ((AddMonoidHom.ker φ : Set W.Point)
-      ∪ {P : W.Point | (2 : ℕ) • P = 0}) → p.eval t = 0 ∧ q.eval t = 0 := by
+  have hTfin : ((veluPointX '' ((AddMonoidHom.ker φ : Set W.Point)
+      ∪ {P : W.Point | (2 : ℕ) • P = 0}))
+      ∪ ({t : F | B.IsRoot t} ∪ {t : F | E.IsRoot t})).Finite :=
+    ((hker.union htor).image _).union
+      ((Polynomial.finite_setOf_isRoot hB).union (Polynomial.finite_setOf_isRoot hE))
+  have hpq : ∀ t : F, t ∉ (veluPointX '' ((AddMonoidHom.ker φ : Set W.Point)
+      ∪ {P : W.Point | (2 : ℕ) • P = 0}))
+      ∪ ({t : F | B.IsRoot t} ∪ {t : F | E.IsRoot t}) →
+      p.eval t = 0 ∧ q.eval t = 0 := by
     intro t ht
     obtain ⟨P, hP0, hPx⟩ := exists_point_veluPointX_eq (W := W) t
     have hφP : φ P ≠ 0 := fun hcc =>
-      ht ⟨P, Or.inl (by simpa [AddMonoidHom.mem_ker] using hcc), hPx⟩
-    have hP2 : (2 : ℕ) • P ≠ 0 := fun hcc => ht ⟨P, Or.inr hcc, hPx⟩
+      ht (Or.inl ⟨P, Or.inl (by simpa [AddMonoidHom.mem_ker] using hcc), hPx⟩)
+    have hP2 : (2 : ℕ) • P ≠ 0 := fun hcc => ht (Or.inl ⟨P, Or.inr hcc, hPx⟩)
+    have hBP : B.eval (veluPointX P) ≠ 0 := by
+      rw [hPx]; exact fun hcc => ht (Or.inr (Or.inl hcc))
+    have hEP : E.eval (veluPointX P) ≠ 0 := by
+      rw [hPx]; exact fun hcc => ht (Or.inr (Or.inr hcc))
     have hψ : 2 * veluPointY P + W.a₁ * veluPointX P + W.a₃ ≠ 0 :=
       psi_ne_zero_of_two_nsmul_ne_zero hP2
     have hnP0 : -P ≠ 0 := neg_ne_zero.2 hP0
     have hφnP : φ (-P) ≠ 0 := by rw [map_neg]; exact neg_ne_zero.2 hφP
-    have e1 := (hΔ P).mp (hcertGood P hP0 hφP)
-    have e2 := (hΔ (-P)).mp (hcertGood (-P) hnP0 hφnP)
+    have hBnP : B.eval (veluPointX (-P)) ≠ 0 := by rw [velu_pointX_neg]; exact hBP
+    have hEnP : E.eval (veluPointX (-P)) ≠ 0 := by rw [velu_pointX_neg]; exact hEP
+    have e1 := (hΔ P).mp (hcertGood P hP0 hφP hBP hEP)
+    have e2 := (hΔ (-P)).mp (hcertGood (-P) hnP0 hφnP hBnP hEnP)
     rw [velu_pointX_neg, velu_pointY_neg P hP0] at e2
     rw [hPx] at e1 e2 hψ
     have hp0 : p.eval t = 0 := by
@@ -1185,7 +1618,158 @@ statement is not vacuous; note that `IsIsogeny.add` is FALSE (see the falsity
 audit there) — which is exactly why `IsDiffChar` is built over `IsRationalMap`
 rather than over `IsIsogeny`. -/
 
-/-- **LEAF (doubling branch of additivity): `λ([2]) = 2`.**
+/-! #### The doubling branch, PROVEN
+
+`isDiffChar_mulByHom_two` is closed (2026-07-30) by the route its own docstring
+prescribes: verify the certificate through `isDiffCharCert_of_cofinite` +
+`isDiffCharCert_of_reduced`, at the points off the (finite) `2`-torsion. Written out,
+the reduced certificate for the duplication witnesses `(Φ₂, Ψ₂Sq)` of
+`veluPointX_nsmul` is
+
+  `2 · Ψ₂Sq(x)² · ψ₂(2P) = (Φ₂′·Ψ₂Sq − Φ₂·Ψ₂Sq′)(x) · ψ₂(P)`,
+
+and since `Ψ₂Sq(x) = ψ₂(P)²` on the curve (`TorsionCard.eval_Ψ₂Sq_eq_sq`) this is
+`2·ψ₂(P)³·ψ₂(2P) = Wr(x)`, i.e. the duplication formula differentiated. The `y` in
+`ψ₂(2P)` cancels: the four lemmas below split the computation into
+
+* `eval_Φ_two` / `eval_derivative_Φ_two` / `eval_Ψ₂Sq'` / `eval_derivative_Ψ₂Sq` —
+  the explicit polynomials `Φ₂ = X⁴ − b₄X² − 2b₆X − b₈` and
+  `Ψ₂Sq = 4X³ + b₂X² + 2b₄X + b₆` and their derivatives, evaluated;
+* `diffChar_two_wronskian_eval` — the one-variable identity
+  `Wr = 2·(−2(3x² + 2a₂x + a₄)(Φ₂ − xΨ₂Sq) − 4f·Ψ₂Sq − a₁(a₁x + a₃)Φ₂
+        − a₃(a₁x + a₃)Ψ₂Sq)`, a `ring` call once `b₂ … b₈` are expanded;
+* `velu_two_nsmul_coords` — the tangent slope `L` of the doubling, with
+  `L·ψ₂(P) = 3x² + 2a₂x + a₄ − a₁y` and `y(2P)` in terms of `L` and `x(2P)`;
+* `diffChar_two_core` — the point-level algebra, one `linear_combination` over the
+  curve equation (cofactor `−8ψ₂³`), the slope relation (cofactor
+  `4ψ₂³(x − x(2P))`) and `x(2P)·ψ₂² = Φ₂`.
+
+The `y`-witnesses `C, D, E` of `exists_y_witness_two` never have to be written out:
+the reduced certificate carries `E(x)` as a common factor on both sides, so the
+whole content is the `x`-map, exactly as the note on `isDiffCharCert_add_of_ne`
+predicts.
+-/
+
+omit [DecidableEq F] in
+/-- `Φ₂ = X⁴ − b₄X² − 2b₆X − b₈`, evaluated. -/
+theorem eval_Φ_two (W : Affine F) (t : F) :
+    (W.Φ 2).eval t = t ^ 4 - W.b₄ * t ^ 2 - 2 * W.b₆ * t - W.b₈ := by
+  rw [Φ_two]; simp
+
+omit [DecidableEq F] in
+/-- `Φ₂′ = 4X³ − 2b₄X − 2b₆`, evaluated. -/
+theorem eval_derivative_Φ_two (W : Affine F) (t : F) :
+    (derivative (W.Φ 2)).eval t = 4 * t ^ 3 - 2 * W.b₄ * t - 2 * W.b₆ := by
+  rw [Φ_two]
+  simp only [derivative_sub, derivative_mul, derivative_C, derivative_X, derivative_X_pow,
+    zero_mul, zero_add, mul_one, eval_sub, eval_mul, eval_C, eval_X, eval_pow, eval_zero]
+  push_cast
+  ring
+
+omit [DecidableEq F] in
+/-- `Ψ₂Sq = 4X³ + b₂X² + 2b₄X + b₆`, evaluated. -/
+theorem eval_Ψ₂Sq' (W : Affine F) (t : F) :
+    W.Ψ₂Sq.eval t = 4 * t ^ 3 + W.b₂ * t ^ 2 + 2 * W.b₄ * t + W.b₆ := by
+  rw [Ψ₂Sq]; simp
+
+omit [DecidableEq F] in
+/-- `Ψ₂Sq′ = 12X² + 2b₂X + 2b₄`, evaluated. -/
+theorem eval_derivative_Ψ₂Sq (W : Affine F) (t : F) :
+    (derivative W.Ψ₂Sq).eval t = 12 * t ^ 2 + 2 * W.b₂ * t + 2 * W.b₄ := by
+  rw [Ψ₂Sq]
+  simp only [derivative_add, derivative_mul, derivative_C, derivative_X, derivative_X_pow,
+    zero_mul, zero_add, mul_one, eval_add, eval_mul, eval_C, eval_X, eval_pow, eval_zero]
+  push_cast
+  ring
+
+omit [DecidableEq F] in
+/-- **The Wronskian of the duplication `x`-witness pair**, in the shape the
+point-level computation of `isDiffChar_mulByHom_two` produces. Pure `ring` over the
+expansions of `b₂, b₄, b₆, b₈`. -/
+theorem diffChar_two_wronskian_eval (W : Affine F) (t : F) :
+    (derivative (W.Φ 2)).eval t * W.Ψ₂Sq.eval t
+        - (W.Φ 2).eval t * (derivative W.Ψ₂Sq).eval t
+      = 2 * (-2 * (3 * t ^ 2 + 2 * W.a₂ * t + W.a₄)
+              * ((W.Φ 2).eval t - t * W.Ψ₂Sq.eval t)
+            - 4 * (t ^ 3 + W.a₂ * t ^ 2 + W.a₄ * t + W.a₆) * W.Ψ₂Sq.eval t
+            - W.a₁ * (W.a₁ * t + W.a₃) * (W.Φ 2).eval t
+            - W.a₃ * (W.a₁ * t + W.a₃) * W.Ψ₂Sq.eval t) := by
+  rw [eval_Φ_two, eval_derivative_Φ_two, eval_Ψ₂Sq', eval_derivative_Ψ₂Sq, b₂, b₄, b₆, b₈]
+  ring
+
+/-- **The tangent slope of the doubling map, with `y(2P)` in terms of it.** Off the
+`2`-torsion `2 • P = P + P` is `Affine.Point.add_self_of_Y_ne`, whose slope is
+`(3x² + 2a₂x + a₄ − a₁y)/ψ₂(P)`; the `x`-coordinate is not asserted here because
+`veluPointX_nsmul` already supplies it in cleared form. -/
+theorem velu_two_nsmul_coords [W.IsElliptic] {P : W.Point} (hP : (2 : ℕ) • P ≠ 0) :
+    ∃ L : F,
+      L * (2 * veluPointY P + W.a₁ * veluPointX P + W.a₃)
+          = 3 * veluPointX P ^ 2 + 2 * W.a₂ * veluPointX P + W.a₄ - W.a₁ * veluPointY P
+        ∧ veluPointY ((2 : ℕ) • P)
+            = -(L * (veluPointX ((2 : ℕ) • P) - veluPointX P) + veluPointY P)
+              - W.a₁ * veluPointX ((2 : ℕ) • P) - W.a₃ := by
+  cases P with
+  | zero => exact absurd (smul_zero 2) hP
+  | some x y h =>
+    by_cases hy2 : y = -y - W.a₁ * x - W.a₃
+    · refine absurd ?_ hP
+      rw [two_nsmul]
+      exact Affine.Point.add_self_of_Y_eq (by simpa [Affine.negY] using hy2)
+    have hd : (2 * y + W.a₁ * x + W.a₃) ≠ 0 := fun hc => hy2 (by linear_combination hc)
+    have hy2' : y ≠ W.negY x y := by simpa [Affine.negY] using hy2
+    have hdbl : (2 : ℕ) • (Affine.Point.some x y h : W.Point)
+        = Affine.Point.some _ _
+            (Affine.nonsingular_add h h fun hxy => hy2' hxy.right) := by
+      rw [two_nsmul]; exact Affine.Point.add_self_of_Y_ne hy2'
+    refine ⟨W.slope x x y y, ?_, ?_⟩
+    · rw [Affine.slope_of_Y_ne' hy2,
+        show y - (-y - W.a₁ * x - W.a₃) = 2 * y + W.a₁ * x + W.a₃ from by ring]
+      simp only [veluPointX_some, veluPointY_some]
+      exact div_mul_cancel₀ _ hd
+    · rw [hdbl]
+      simp only [veluPointX_some, veluPointY_some, Affine.addY, Affine.negAddY, Affine.addX,
+        Affine.negY]
+
+omit [DecidableEq F] in
+/-- **The point-level algebra behind `λ([2]) = 2`**, isolated from the curve as a
+statement about a field and nothing else. `X₂ = x(2P)` and `Φ = Φ₂(x)` are related
+only by `hx`, and the whole identity is one `linear_combination`. -/
+theorem diffChar_two_core (a₁ a₂ a₃ a₄ a₆ t y L X₂ Φ : F)
+    (hEq : y ^ 2 + a₁ * t * y + a₃ * y = t ^ 3 + a₂ * t ^ 2 + a₄ * t + a₆)
+    (hLd : L * (2 * y + a₁ * t + a₃) = 3 * t ^ 2 + 2 * a₂ * t + a₄ - a₁ * y)
+    (hx : X₂ * (2 * y + a₁ * t + a₃) ^ 2 = Φ) :
+    2 * ((2 * y + a₁ * t + a₃) ^ 2) ^ 2
+        * (2 * (-(L * (X₂ - t) + y) - a₁ * X₂ - a₃) + a₁ * X₂ + a₃)
+      = 2 * (-2 * (3 * t ^ 2 + 2 * a₂ * t + a₄) * (Φ - t * (2 * y + a₁ * t + a₃) ^ 2)
+            - 4 * (t ^ 3 + a₂ * t ^ 2 + a₄ * t + a₆) * (2 * y + a₁ * t + a₃) ^ 2
+            - a₁ * (a₁ * t + a₃) * Φ
+            - a₃ * (a₁ * t + a₃) * (2 * y + a₁ * t + a₃) ^ 2)
+        * (2 * y + a₁ * t + a₃) := by
+  linear_combination (4 * (2 * y + a₁ * t + a₃) ^ 3 * (t - X₂)) * hLd
+    + (-4 * (3 * t ^ 2 + 2 * a₂ * t + a₄ - a₁ * y) * (2 * y + a₁ * t + a₃)
+        - 2 * a₁ * (2 * y + a₁ * t + a₃) ^ 2) * hx
+    + (-8 * (2 * y + a₁ * t + a₃) ^ 3) * hEq
+
+/-- **`[2]` is not the zero homomorphism**, which is what discharges the guard
+clause of `IsDiffChar` for `isDiffChar_mulByHom_two`. Its kernel is finite
+(`finite_nsmulKer`) while `W.Point` is not — `veluPointX` is onto the infinite
+field `F` by `exists_point_veluPointX_eq`. No hypothesis on the characteristic: in
+characteristic `2` the `2`-torsion is smaller still. -/
+theorem mulByHom_two_ne_zero [IsAlgClosed F] [W.IsElliptic] :
+    mulByHom W 2 ≠ (0 : W.Point →+ W.Point) := by
+  intro hc
+  have hall : ∀ P : W.Point, (2 : ℕ) • P = 0 := fun P => by
+    simpa using DFunLike.congr_fun hc P
+  have hfin : ({P : W.Point | (2 : ℕ) • P = 0}).Finite := finite_nsmulKer (W := W) two_ne_zero
+  have huniv : {P : W.Point | (2 : ℕ) • P = 0} = Set.univ :=
+    Set.eq_univ_of_forall fun P => hall P
+  haveI : Finite W.Point := Set.finite_univ_iff.mp (huniv ▸ hfin)
+  haveI : Finite F := Finite.of_surjective (veluPointX (W := W)) fun t => by
+    obtain ⟨P, -, hPx⟩ := exists_point_veluPointX_eq (W := W) t
+    exact ⟨P, hPx⟩
+  exact not_finite F
+
+/-- **PROVEN 2026-07-30 (doubling branch of additivity): `λ([2]) = 2`.**
 
 `[2] : W → W` is rational (`isRationalMap_mulByHom_two`, PROVEN in
 `Isogeny.lean`, with the `x`-witness `Φ₂/ΨSq₂` and the `y`-witness supplied by
@@ -1202,12 +1786,149 @@ duplication formula differentiated. Equivalently, by
 `isDiffCharCert_of_cofinite` it is enough to check it at a generic `P`, where
 every denominator may be inverted.
 
-**THE CHECK THAT WOULD REFUTE THIS LEAF**: an elliptic curve on which the
-pullback of `ω` along `[2]` is not `2·ω`. In characteristic `2` this is still
-true — `λ([2]) = 2 = 0` there, and `[2]` is then inseparable, which is exactly
-the `λ = 0` case the module docstring flags. -/
+**IT HOLDS IN CHARACTERISTIC `2` AS WELL** — `λ([2]) = 2 = 0` there, and `[2]` is
+then inseparable, which is exactly the `λ = 0` case the module docstring flags.
+Nothing in the proof divides by `2`: the guard clause is discharged by
+`mulByHom_two_ne_zero`, which counts points rather than inverting anything, and the
+bad locus is the `2`-torsion, still finite in characteristic `2`. -/
 theorem isDiffChar_mulByHom_two [IsAlgClosed F] [W.IsElliptic] :
-    IsDiffChar (mulByHom W 2) (2 : F) :=
+    IsDiffChar (mulByHom W 2) (2 : F) := by
+  classical
+  obtain ⟨Cp, Dp, Ep, hEp, hyw⟩ := exists_y_witness_two (W := W)
+  have hB : W.ΨSq (2 : ℤ) ≠ 0 := ΨSq_ne_zero' W (by norm_num)
+  have hrat : ∀ P : W.Point, mulByHom W 2 P ≠ 0 →
+      veluPointX (mulByHom W 2 P) * (W.ΨSq (2 : ℤ)).eval (veluPointX P)
+          = (W.Φ (2 : ℤ)).eval (veluPointX P) ∧
+        veluPointY (mulByHom W 2 P) * Ep.eval (veluPointX P)
+          = Cp.eval (veluPointX P) * veluPointY P + Dp.eval (veluPointX P) := by
+    intro P hP
+    refine ⟨?_, hyw P hP⟩
+    have h := veluPointX_nsmul (W := W) (n := 2) (by norm_num) P (by simpa using hP)
+    simp only [Nat.cast_ofNat] at h
+    simpa using h
+  refine ⟨fun hz => absurd hz mulByHom_two_ne_zero, W.Φ (2 : ℤ), W.ΨSq (2 : ℤ),
+    Cp, Dp, Ep, hB, hEp, hrat, ?_⟩
+  -- The certificate need only be checked off the (finite) `2`-torsion, where the
+  -- rational-map relations for `[2]` are available.
+  refine isDiffCharCert_of_cofinite_ne_zero
+    (S := veluPointX '' {P : W.Point | (2 : ℕ) • P = 0})
+    ((finite_nsmulKer (W := W) two_ne_zero).image _) ?_
+  intro P hP0 hPS
+  have h2P : (2 : ℕ) • P ≠ 0 := fun hcc => hPS ⟨P, hcc, rfl⟩
+  have h2P' : mulByHom W 2 P ≠ 0 := by simpa using h2P
+  obtain ⟨hx, hy⟩ := hrat P h2P'
+  refine isDiffCharCert_of_reduced hx hy ?_
+  obtain ⟨L, hLd, hY2⟩ := velu_two_nsmul_coords (W := W) h2P
+  have hEqP0 : W.Equation (veluPointX P) (veluPointY P) := velu_point_equation W hP0
+  -- `Ψ₂Sq(x) = ψ₂(P)²` on the curve, which is what turns the reduced certificate
+  -- into the differentiated duplication formula.
+  have hSq : (W.ΨSq (2 : ℤ)).eval (veluPointX P)
+      = (2 * veluPointY P + W.a₁ * veluPointX P + W.a₃) ^ 2 := by
+    rw [ΨSq_two, show (2 * veluPointY P + W.a₁ * veluPointX P + W.a₃)
+      = (2 * veluPointY P + (W.a₁ * veluPointX P + W.a₃)) from by ring]
+    haveI : (W⁄F).IsElliptic := inferInstanceAs W.IsElliptic
+    exact TorsionCard.eval_Ψ₂Sq_eq_sq W hEqP0
+  have hEqP : veluPointY P ^ 2 + W.a₁ * veluPointX P * veluPointY P
+        + W.a₃ * veluPointY P
+      = veluPointX P ^ 3 + W.a₂ * veluPointX P ^ 2 + W.a₄ * veluPointX P + W.a₆ :=
+    (Affine.equation_iff ..).1 hEqP0
+  have hWr := diffChar_two_wronskian_eval W (veluPointX P)
+  have hcore := diffChar_two_core W.a₁ W.a₂ W.a₃ W.a₄ W.a₆ (veluPointX P) (veluPointY P) L
+    (veluPointX ((2 : ℕ) • P)) ((W.Φ (2 : ℤ)).eval (veluPointX P)) hEqP hLd
+    (by rw [← hSq]; exact hx)
+  have hY2' : veluPointY (mulByHom W 2 P)
+      = -(L * (veluPointX ((2 : ℕ) • P) - veluPointX P) + veluPointY P)
+        - W.a₁ * veluPointX ((2 : ℕ) • P) - W.a₃ := by simpa using hY2
+  have hX2' : veluPointX (mulByHom W 2 P) = veluPointX ((2 : ℕ) • P) := by simp
+  rw [ΨSq_two] at hSq ⊢
+  rw [hWr, hY2', hX2', hSq]
+  linear_combination Ep.eval (veluPointX P) * hcore
+
+/-- **LEAF (opened 2026-07-30): THE CHORD FORMULA FOR THE `x`-COORDINATE, cleared.**
+
+Pure group-law bookkeeping — no differentials, no `c`, no `d`.  With
+`K = B₁B₂`, `G = A₂B₁ − A₁B₂`, `L = E₁E₂`, `N = C₂E₁ − C₁E₂`, `M = D₂E₁ − D₁E₂`,
+`S = A₁B₂ + A₂B₁` and `f = X³ + a₂X² + a₄X + a₆`, this is
+
+  `x₃ = λ² + a₁′λ − a₂′ − x₁ − x₂`,  `λ = (y₂ − y₁)/(x₂ − x₁)`
+
+with `y` eliminated by `y² = f − (a₁X + a₃)y` and denominators cleared by `B·L²K³`:
+pointwise it reads
+`x₃(x₂ − x₁)² = Γ²f + Δ² + a₁′Δ(x₂ − x₁) − (a₂′ + x₁ + x₂)(x₂ − x₁)²` for
+`Γ = γ₂ − γ₁`, `Δ = δ₂ − δ₁`, and `G = K(x₂ − x₁)`, `N = LΓ`, `M = LΔ`,
+`S = K(x₁ + x₂)`, `A = x₃B` turn that into the display below.
+
+Eliminating `y` is legitimate: the `y`-coefficient of `λ²` is
+`Γ·(2Δ − Γ(a₁X + a₃) + a₁′(x₂ − x₁))`, which `diffChar_yWitness_onePart` kills.
+
+THE ROUTE: the density pattern of `diffChar_xWitness_eq` /
+`isDiffCharCert_of_cofinite`.  Off the roots of `B₁B₂E₁E₂GB` and the `x`-images of
+`ker φ`, `ker ψ` and `ker (φ + ψ)`, take a point `P` over `t`; `hG` makes the two
+image `x`-coordinates differ there, so `Affine.Point.add_of_X_ne` applies and
+`Affine.slope_of_X_ne` gives `λ`; then divide the witness relations by the (nonzero)
+denominators to get `γᵢ = Cᵢ(t)/Eᵢ(t)`, `δᵢ = Dᵢ(t)/Eᵢ(t)` and read off the pointwise
+identity.  `Isogeny.lean`'s `chordAdd_x_core` is the same computation with `y` still
+present and may be reused.
+
+NOT VACUOUS: `hG` is satisfiable (two maps with different `x`-coordinate functions —
+e.g. `1` and `[2]`), and it is load-bearing, being what makes `x₂ − x₁` invertible. -/
+theorem chordSum_xWitness [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
+    {φ ψ : W.Point →+ W'.Point}
+    {A₁ B₁ C₁ D₁ E₁ A₂ B₂ C₂ D₂ E₂ A B Cp Dp E : F[X]}
+    (hB₁ : B₁ ≠ 0) (hE₁ : E₁ ≠ 0) (hB₂ : B₂ ≠ 0) (hE₂ : E₂ ≠ 0)
+    (hB : B ≠ 0) (hE : E ≠ 0) (hG : A₂ * B₁ - A₁ * B₂ ≠ 0)
+    (hrat₁ : ∀ P : W.Point, φ P ≠ 0 →
+      veluPointX (φ P) * B₁.eval (veluPointX P) = A₁.eval (veluPointX P) ∧
+      veluPointY (φ P) * E₁.eval (veluPointX P)
+        = C₁.eval (veluPointX P) * veluPointY P + D₁.eval (veluPointX P))
+    (hrat₂ : ∀ P : W.Point, ψ P ≠ 0 →
+      veluPointX (ψ P) * B₂.eval (veluPointX P) = A₂.eval (veluPointX P) ∧
+      veluPointY (ψ P) * E₂.eval (veluPointX P)
+        = C₂.eval (veluPointX P) * veluPointY P + D₂.eval (veluPointX P))
+    (hrat : ∀ P : W.Point, (φ + ψ) P ≠ 0 →
+      veluPointX ((φ + ψ) P) * B.eval (veluPointX P) = A.eval (veluPointX P) ∧
+      veluPointY ((φ + ψ) P) * E.eval (veluPointX P)
+        = Cp.eval (veluPointX P) * veluPointY P + Dp.eval (veluPointX P)) :
+    A * ((E₁ * E₂) ^ 2 * (A₂ * B₁ - A₁ * B₂) ^ 2 * (B₁ * B₂))
+      = B * ((B₁ * B₂) ^ 3 * ((C₂ * E₁ - C₁ * E₂) ^ 2
+              * (X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆) + (D₂ * E₁ - D₁ * E₂) ^ 2)
+          + C W'.a₁ * (D₂ * E₁ - D₁ * E₂) * (A₂ * B₁ - A₁ * B₂) * (B₁ * B₂) ^ 2 * (E₁ * E₂)
+          - (C W'.a₂ * (B₁ * B₂) + (A₁ * B₂ + A₂ * B₁))
+            * (A₂ * B₁ - A₁ * B₂) ^ 2 * (E₁ * E₂) ^ 2) :=
+  sorry
+
+/-- **LEAF (opened 2026-07-30): THE CHORD FORMULA FOR THE `y`-MULTIPLIER, cleared.**
+
+The `y`-part of `y₃ = −(λ(x₃ − x₁) + y₁) − a₁′x₃ − a₃′`, namely
+`γ₃(x₂ − x₁) = −Γ(x₃ − x₁) − γ₁(x₂ − x₁)`, cleared by `E·K·L·B`.  Again pure group
+law: no differentials, no `c`, no `d`.
+
+THE ROUTE, and it needs NO `±P` symmetrisation, which is what makes it short:
+`diffChar_psi_image_eq` applied to `φ + ψ` and to `φ` gives `ψ₂′(Q₃) = γ₃·ψ₂(P)` and
+`ψ₂′(Q₁) = γ₁·ψ₂(P)`; the group law gives
+`ψ₂′(Q₃) = −ψ₂′(Q₁) − (2λ + a₁′)(x₃ − x₁)`; and
+`(2λ + a₁′)(x₂ − x₁) = Γ·ψ₂(P)` by `diffChar_yWitness_onePart`.  So the whole relation
+carries a factor `ψ₂(P)`, nonzero off the (finite) `2`-torsion, and density finishes. -/
+theorem chordSum_yMultiplier [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
+    {φ ψ : W.Point →+ W'.Point}
+    {A₁ B₁ C₁ D₁ E₁ A₂ B₂ C₂ D₂ E₂ A B Cp Dp E : F[X]}
+    (hB₁ : B₁ ≠ 0) (hE₁ : E₁ ≠ 0) (hB₂ : B₂ ≠ 0) (hE₂ : E₂ ≠ 0)
+    (hB : B ≠ 0) (hE : E ≠ 0) (hG : A₂ * B₁ - A₁ * B₂ ≠ 0)
+    (hrat₁ : ∀ P : W.Point, φ P ≠ 0 →
+      veluPointX (φ P) * B₁.eval (veluPointX P) = A₁.eval (veluPointX P) ∧
+      veluPointY (φ P) * E₁.eval (veluPointX P)
+        = C₁.eval (veluPointX P) * veluPointY P + D₁.eval (veluPointX P))
+    (hrat₂ : ∀ P : W.Point, ψ P ≠ 0 →
+      veluPointX (ψ P) * B₂.eval (veluPointX P) = A₂.eval (veluPointX P) ∧
+      veluPointY (ψ P) * E₂.eval (veluPointX P)
+        = C₂.eval (veluPointX P) * veluPointY P + D₂.eval (veluPointX P))
+    (hrat : ∀ P : W.Point, (φ + ψ) P ≠ 0 →
+      veluPointX ((φ + ψ) P) * B.eval (veluPointX P) = A.eval (veluPointX P) ∧
+      veluPointY ((φ + ψ) P) * E.eval (veluPointX P)
+        = Cp.eval (veluPointX P) * veluPointY P + Dp.eval (veluPointX P)) :
+    Cp * (A₂ * B₁ - A₁ * B₂) * (E₁ * E₂) * B
+        + C₁ * (A₂ * B₁ - A₁ * B₂) * E * E₂ * B
+        + (C₂ * E₁ - C₁ * E₂) * (A * B₁ - A₁ * B) * E * B₂ = 0 :=
   sorry
 
 /-- **LEAF (chord branch of additivity): the differential certificate of a sum,
@@ -1243,15 +1964,75 @@ and `4 = 4`.) They say `Dλ = x₁ − x₃` in the first slot and `Dλ = x₂ �
 the second, which is Silverman *AEC* III.5.1 — translation invariance of `ω` —
 in coordinates.
 
-**THE MISSING MACHINERY** is `D` itself: this project has no derivation on the
+**THE MISSING MACHINERY** was `D` itself: this project had no derivation on the
 coordinate ring of a general `W/F` (only `PsiSumCompanion.DK` for the UNIVERSAL
-curve, in `InvariantDerivation.lean`). Two routes: build the rank-2 model
-`p(x) + q(x)y` of the coordinate ring with the explicit derivation
+curve, in `InvariantDerivation.lean`). Two routes were on offer: build the rank-2
+model `p(x) + q(x)y` of the coordinate ring with the explicit derivation
 `D(p + qy) = [2p' − (a₁x + a₃)q' − a₁q]·y + [(a₁x + a₃)p' + 2q'f + q(3x² + 2a₂x + a₄)]`
 and prove Leibniz; or eliminate `y` first — `x₃` is `y`-free because
 `x(−Q) = x(Q)`, so every quantity above can be pushed into `F(x)` and `D`
-becomes `ψ₂·d/dx` with ordinary `Polynomial.derivative`. The second route needs
-no new theory but pays for it in degree bookkeeping.
+becomes `ψ₂·d/dx` with ordinary `Polynomial.derivative`.
+
+**IT IS NO LONGER MISSING (2026-07-30): the SECOND route is built and PROVEN, and it
+turned out to need no coordinate ring at all.**  `RationalDerivation.lean` (`public
+import`ed here) supplies `rderiv : F(X) → F(X)` — `d/dX` on rational functions,
+`rderiv (A/B) = wr A B / B²` for every representation, additive and Leibniz — and
+`RationalDerivation.chordDeriv_core`, which is the whole display above with `y`
+eliminated, over an ARBITRARY derivation of an ARBITRARY field.  The two identities
+shown above are its internal `hI1`/`hI2`; they are `linear_combination`s exactly as
+predicted here, with integer coefficients, so no characteristic hypothesis is needed.
+
+**WHAT REMAINS IS PURE GROUP-LAW BOOKKEEPING, and here it is in full.**  Take the
+witnesses `A₁ … E₁` of `φ` and `A₂ … E₂` of `ψ`, and put
+
+  `K = B₁B₂`,  `G = A₂B₁ − A₁B₂`,  `L = E₁E₂`,
+  `N = C₂E₁ − C₁E₂`,  `M = D₂E₁ − D₁E₂`,  `S = A₁B₂ + A₂B₁`,
+  `f = X³ + a₂X² + a₄X + a₆`.
+
+Instantiate `chordDeriv_core` in `K := RatFunc F` at
+
+  `xᵢ = Aᵢ/Bᵢ`,  `γᵢ = Cᵢ/Eᵢ`,  `δᵢ = Dᵢ/Eᵢ`,  `x₃ = A/B`,  `γ₃ = Cp/E`,
+  `D = rderiv`,  `c, d, aⱼ, aⱼ′` the images of the constants.
+
+Then, of its ten hypotheses, EIGHT are already theorems in this file:
+
+* `D xᵢ = cᵢγᵢ` is `diffChar_polyForm` (PROVEN above);
+* `2δᵢ = γᵢp − a₁′xᵢ − a₃′` is `diffChar_yWitness_onePart` (PROVEN above);
+* the target-curve equation at `Qᵢ`, `y`-free, is `diffChar_curveEq` (PROVEN above);
+* `γᵢ ≠ 0` is `diffChar_yMultiplier_ne_zero` (PROVEN above);
+* `x₂ − x₁ ≠ 0` is `G ≠ 0`, which is discharged exactly as
+  `IsRationalMap.add_of_ne` discharges its own `hG` (from `φ ≠ ψ`, which `hxne`
+  gives, and `φ + ψ ≠ 0`, which `hsumP` gives, through
+  `eq_or_add_eq_zero_of_finite_compl`).
+
+TWO remain, and both are the CHORD FORMULA of the group law cleared of denominators —
+no differentials, no derivation, nothing about `c` or `d`.  Each is proven by the
+density pattern this file already uses three times (`diffChar_xWitness_eq`,
+`diffChar_yWitness_onePart`, `isDiffCharCert_of_cofinite`): pick a point over a
+generic `t`, read off the identity, conclude by `Polynomial.eq_zero_of_infinite_isRoot`.
+
+1. *The `x`-coordinate.*
+   `A·(L²G²K) = B·(K³(N²f + M²) + a₁′MGK²L − (a₂′K + S)G²L²)`.
+   Pointwise this is `x₃(x₂ − x₁)² = Γ²f + Δ² + a₁′Δ(x₂ − x₁) − (a₂′ + x₁ + x₂)(x₂ − x₁)²`
+   (`Γ = γ₂ − γ₁`, `Δ = δ₂ − δ₁`), i.e. `x₃ = λ² + a₁′λ − a₂′ − x₁ − x₂` with `y`
+   eliminated by `y² = f − py`; the `y`-coefficient of `λ²` is
+   `Γ·(2Δ − Γp + a₁′(x₂ − x₁))`, killed by `diffChar_yWitness_onePart`, which is why
+   the cleared form has no `y` in it.  Note `G = K(x₂ − x₁)`, `N = LΓ`, `M = LΔ`,
+   `S = K(x₁ + x₂)`, `A = x₃B`, so the displayed identity is literally the pointwise
+   one multiplied by `B·L²K³`.
+2. *The `y`-multiplier.*
+   `Cp·G·L·B·B₁ + C₁·G·E·E₂·B·B₁ + N·(AB₁ − A₁B)·E·K = 0`.
+   Pointwise this is `γ₃(x₂ − x₁) = −Γ(x₃ − x₁) − γ₁(x₂ − x₁)`, and it comes out of
+   `diffChar_psi_image_eq` applied to `φ + ψ` and to `φ` WITHOUT any `±P`
+   symmetrisation: those two give `ψ₂′(Q₃) = γ₃ψ₂(P)` and `ψ₂′(Q₁) = γ₁ψ₂(P)`, the
+   group law gives `ψ₂′(Q₃) = −ψ₂′(Q₁) − (2λ + a₁′)(x₃ − x₁)`, and
+   `(2λ + a₁′)(x₂ − x₁) = Γ·ψ₂(P)` (again by the `1`-part identity), so the whole
+   relation carries a factor `ψ₂(P)` which is nonzero off the `2`-torsion.
+
+With those two, `chordDeriv_core` returns `rderiv x₃ = (c + d)γ₃`, i.e. the polynomial
+identity `(A′B − AB′)·E = (c + d)·Cp·B²`; and the certificate AT THE GIVEN `P` then
+follows from `isDiffCharCert_of_reduced` plus `diffChar_psi_image_eq` for `φ + ψ`,
+cancelling the single factor `B(x P)` that `hBP` provides.
 
 **A SIMPLIFICATION WORTH KNOWING** (and the reason
 `isDiffCharCert_of_cofinite` is stated as it is): writing `y ∘ φ = γ(x)y + δ(x)`
@@ -1261,6 +2042,17 @@ polynomial identities `(A'B − AB')·E = c·C·B²` and
 `V(x)·y + U(x) = 0`. The second is automatic from `φ` being a group homomorphism
 (`φ(−P) = −φ(P)` forces it), so the whole content is the first, i.e.
 `(x ∘ φ)' = c·γ`.
+
+**THAT SECOND IDENTITY IS NOW PROVEN** (2026-07-30), as `diffChar_yWitness_onePart`,
+together with its point-level consequence `diffChar_psi_image_eq`
+(`ψ₂′(φP)·E = C·ψ₂(P)`). So this leaf may be attacked in exactly the form recommended
+here: away from the `2`-torsion, the certificate of a map with witnesses
+`A, B, C, D, E` and scalar `c` is EQUIVALENT to `(A′B − AB′)(x)·E(x) = c·C(x)·B(x)²`,
+and what is wanted is that identity for the SUM's witnesses given it for `φ`'s and for
+`ψ`'s. `IsRationalMap.add_of_x_ne` supplies the sum's witnesses explicitly (`V` over
+`Hp²K`), and `diffChar_xWitness_eq` plus `diffChar_wronskian_transfer` transfer the
+Wronskian from those to any other witness pair, so what genuinely remains is ONE
+polynomial identity: the chord formula differentiated.
 
 **THE CHECK THAT WOULD REFUTE THIS LEAF**: two rational maps and a point at
 which the chord formula applies and the certificate of the sum fails. -/
@@ -1272,12 +2064,93 @@ theorem isDiffCharCert_add_of_ne [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
       veluPointX ((φ + ψ) P) * B.eval (veluPointX P) = A.eval (veluPointX P) ∧
       veluPointY ((φ + ψ) P) * E.eval (veluPointX P)
         = Cp.eval (veluPointX P) * veluPointY P + D.eval (veluPointX P))
-    (P : W.Point) (hP : P ≠ 0) (hφP : φ P ≠ 0) (hψP : ψ P ≠ 0)
+    (P : W.Point) (_hP : P ≠ 0) (hφP : φ P ≠ 0) (hψP : ψ P ≠ 0)
     (hsumP : (φ + ψ) P ≠ 0)
     (hxne : veluPointX (φ P) ≠ veluPointX (ψ P))
-    (hBP : B.eval (veluPointX P) ≠ 0) (hEP : E.eval (veluPointX P) ≠ 0) :
-    IsDiffCharCert W W' A B Cp D E (c + d) P :=
-  sorry
+    (hBP : B.eval (veluPointX P) ≠ 0) (_hEP : E.eval (veluPointX P) ≠ 0) :
+    IsDiffCharCert W W' A B Cp D E (c + d) P := by
+  classical
+  obtain ⟨-, A₁, B₁, C₁, D₁, E₁, hB₁, hE₁, hrat₁, hdc₁⟩ := hφ
+  obtain ⟨-, A₂, B₂, C₂, D₂, E₂, hB₂, hE₂, hrat₂, hdc₂⟩ := hψ
+  have hφ0 : φ ≠ 0 := fun hc => hφP (by rw [hc]; rfl)
+  have hψ0 : ψ ≠ 0 := fun hc => hψP (by rw [hc]; rfl)
+  have hsum0 : φ + ψ ≠ 0 := fun hc => hsumP (by rw [hc]; rfl)
+  have hdiff : φ ≠ ψ := fun hc => hxne (by rw [hc])
+  have hkerφ : (AddMonoidHom.ker φ : Set W.Point).Finite :=
+    IsRationalMap.finite_ker ⟨A₁, B₁, C₁, D₁, E₁, hB₁, hE₁, hrat₁⟩ hφ0
+  have hkerψ : (AddMonoidHom.ker ψ : Set W.Point).Finite :=
+    IsRationalMap.finite_ker ⟨A₂, B₂, C₂, D₂, E₂, hB₂, hE₂, hrat₂⟩ hψ0
+  have hkers : (AddMonoidHom.ker (φ + ψ) : Set W.Point).Finite :=
+    IsRationalMap.finite_ker ⟨A, B, Cp, D, E, hB, hE, hrat⟩ hsum0
+  -- `G ≠ 0`: exactly the argument `IsRationalMap.add_of_ne` uses for its own `hG`
+  have hG : A₂ * B₁ - A₁ * B₂ ≠ 0 := by
+    intro hGz
+    have hBz : {R : W.Point | R ≠ 0 ∧ veluPointX R ∈ {t : F | (B₁ * B₂).eval t = 0}}.Finite :=
+      finite_veluPointX_preimage (Polynomial.finite_setOf_isRoot (mul_ne_zero hB₁ hB₂))
+    have hfin : {R : W.Point | φ R ≠ ψ R ∧ φ R ≠ -(ψ R)}.Finite := by
+      refine Set.Finite.subset (((hkerφ.union hkerψ).union hBz).insert 0) ?_
+      intro R hR
+      by_cases hR0 : R = 0
+      · exact Set.mem_insert_iff.2 (Or.inl hR0)
+      refine Set.mem_insert_iff.2 (Or.inr ?_)
+      by_cases hφR : φ R = 0
+      · exact Set.mem_union_left _ (Set.mem_union_left _ (AddMonoidHom.mem_ker.2 hφR))
+      by_cases hψR : ψ R = 0
+      · exact Set.mem_union_left _ (Set.mem_union_right _ (AddMonoidHom.mem_ker.2 hψR))
+      by_cases hBR : (B₁ * B₂).eval (veluPointX R) = 0
+      · exact Set.mem_union_right _ ⟨hR0, hBR⟩
+      exfalso
+      simp only [Polynomial.eval_mul, mul_eq_zero, not_or] at hBR
+      obtain ⟨hb1, hb2⟩ := hBR
+      have hx1 := (hrat₁ R hφR).1
+      have hx2 := (hrat₂ R hψR).1
+      have hGev : A₂.eval (veluPointX R) * B₁.eval (veluPointX R)
+          - A₁.eval (veluPointX R) * B₂.eval (veluPointX R) = 0 := by
+        have h := congrArg (Polynomial.eval (veluPointX R)) hGz
+        simpa only [Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_zero] using h
+      have hkey : veluPointX (ψ R) * (B₂.eval (veluPointX R) * B₁.eval (veluPointX R))
+          = veluPointX (φ R) * (B₂.eval (veluPointX R) * B₁.eval (veluPointX R)) := by
+        linear_combination B₁.eval (veluPointX R) * hx2 - B₂.eval (veluPointX R) * hx1 + hGev
+      have hxx : veluPointX (φ R) = veluPointX (ψ R) :=
+        (mul_right_cancel₀ (mul_ne_zero hb2 hb1) hkey).symm
+      rcases eq_or_eq_neg_of_veluPointX_eq hφR hψR hxx with h | h
+      · exact hR.1 h
+      · exact hR.2 h
+    rcases eq_or_add_eq_zero_of_finite_compl hfin with h | h
+    · exact hdiff h
+    · exact hsum0 h
+  -- the eight proven inputs of `RationalDerivation.polyForm_add`
+  have hpoly : (derivative A * B - A * derivative B) * E = C (c + d) * Cp * B ^ 2 :=
+    RationalDerivation.polyForm_add hB₁ hE₁ hB₂ hE₂ hB hE
+      (diffChar_yMultiplier_ne_zero hφ0 hkerφ hB₁ hE₁ hrat₁)
+      (diffChar_yMultiplier_ne_zero hψ0 hkerψ hB₂ hE₂ hrat₂) hG
+      (diffChar_polyForm hkerφ hB₁ hrat₁ hdc₁) (diffChar_polyForm hkerψ hB₂ hrat₂ hdc₂)
+      (diffChar_yWitness_onePart (W' := W') hkerφ hrat₁)
+      (diffChar_yWitness_onePart (W' := W') hkerψ hrat₂)
+      (diffChar_curveEq (W' := W') hkerφ hB₁ hE₁ hrat₁)
+      (diffChar_curveEq (W' := W') hkerψ hB₂ hE₂ hrat₂)
+      (chordSum_xWitness (φ := φ) (ψ := ψ) (Cp := Cp) (Dp := D)
+        hB₁ hE₁ hB₂ hE₂ hB hE hG hrat₁ hrat₂ hrat)
+      (chordSum_yMultiplier (φ := φ) (ψ := ψ) (Cp := Cp) (Dp := D)
+        hB₁ hE₁ hB₂ hE₂ hB hE hG hrat₁ hrat₂ hrat)
+  -- the certificate at `P`, by cancelling the single factor `B (x P)`
+  obtain ⟨hx, hy⟩ := hrat P hsumP
+  refine isDiffCharCert_of_reduced hx hy ?_
+  have hpsi := diffChar_psi_image_eq (W' := W') hkers hrat P hsumP
+  have hpolyP := congrArg (Polynomial.eval (veluPointX P)) hpoly
+  simp only [eval_sub, eval_mul, eval_pow, eval_C] at hpolyP
+  have hkey : B.eval (veluPointX P)
+      * ((c + d) * B.eval (veluPointX P) ^ 2 * E.eval (veluPointX P)
+            * (2 * veluPointY ((φ + ψ) P) + W'.a₁ * veluPointX ((φ + ψ) P) + W'.a₃)
+          - ((derivative A).eval (veluPointX P) * B.eval (veluPointX P)
+              - A.eval (veluPointX P) * (derivative B).eval (veluPointX P))
+            * E.eval (veluPointX P)
+            * (2 * veluPointY P + W.a₁ * veluPointX P + W.a₃)) = 0 := by
+    linear_combination ((c + d) * B.eval (veluPointX P) ^ 2) * hpsi
+      - (B.eval (veluPointX P) * (2 * veluPointY P + W.a₁ * veluPointX P + W.a₃)) * hpolyP
+  rcases mul_eq_zero.mp hkey with h0 | h0
+  · exact absurd h0 hBP
+  · linear_combination h0
 
 /-- **`λ` is additive** — an assembly over `isDiffChar_mulByHom_two` (doubling)
 and `isDiffCharCert_add_of_ne` (chord); see the section docstring above. -/

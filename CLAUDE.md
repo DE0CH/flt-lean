@@ -635,6 +635,26 @@ that reasons from ancestry — subsumption claims, "X carries Y's commit", the m
 the three-part ownership rule — inherits this hole. Ancestry is a claim about the commit graph;
 content is a claim about trees. Verify the tree when it matters.
 
+**And the honest, non-buggy version of this bites just as hard (2026-07-29).** A merge that
+resolves *against* a branch — `-s ours`, or "taking merger's side wholesale" — is CORRECT
+behaviour and still leaves the branch a full ancestor while its declarations are gone.
+`git merge-base --is-ancestor <branch> merger` returns SAFE; the leaf does not exist. An agent
+was dispatched at `projective_localizedModule_quotient_range_of_lTensor_injective`, whose
+defining commit `ace07c06` **is** an ancestor of `main`, and found the declaration nowhere in the
+tree: merge `8ce9528e` had declined that whole route in favour of a rival cut that ends at two
+leaves instead of three.
+
+**The detection trick, because the obvious command hides it: `git log -S <name>` shows only the
+commit that ADDED the name and nothing else, so the history reads as "added, never removed".
+Removal inside a merge is only visible with `-m`:**
+
+    git log -m -S '<declName>' --oneline -- <path>     # -m is what shows merge-side removals
+
+So a leaf can be absent for three different reasons that all look alike from `main`: never cut;
+cut on an unmerged branch (the release window); or **cut, merged, and deliberately declined**.
+Only the third is permanent, and only `-m` distinguishes it. Before reporting a phantom name,
+run that command — the merge's own subject line usually says which rival cut won and why.
+
 ## A `sorry` is a PROMISE that the statement is provable
 
 (2026-07-29, orchestrator error, caught only because an agent quoted the file's
@@ -899,6 +919,42 @@ because the tree was committed-clean. Rules: never `rm -rf` a path
 that differs from a real path only by case; prefer `git clean -n`
 (dry run); keep the tree committed before destructive operations.
 
+## A DECLINE IS A COMMIT, NOT A SHRUG — ancestry is the only receipt for a branch
+
+(2026-07-30, medic.) The loop hands a merge worker a list of branches and gets
+no itemised answer back — a sentinel says `panic: false` and one line of prose.
+So it has exactly one way to tell, per branch, whether that branch was dealt
+with: **is it an ancestor of the main you published?** Everything the merger is
+allowed to do produces one. A merge does. So does a DECLINE, *provided* it is
+recorded the way the class-7 section above prescribes — `git checkout HEAD --
+<the files>`, then commit the merge, so the diff against the first parent is
+empty on purpose and the message says the payload was declined.
+
+`git merge --abort` and moving on is not a decline. It leaves no receipt, and
+the branch is indistinguishable from one you never reached.
+
+That distinction used to cost the work. Adopting a release discharged the whole
+claim on the strength of the release being *complete* — main moved, snapshot
+and audit current — which says nothing about how much of the payload got
+merged. A merger that merged 18 of its 55 branches and was killed before
+reporting had the other 37 dropped in one assignment, their worktrees pinned in
+`awaiting_merge` for ever, because a worker is freed only by its branch
+BECOMING an ancestor of main and nothing was left to merge it. **78 worktrees —
+one full day of the fleet's output — were stranded that way**, and nothing
+noticed until an invariant check summed two numbers that had never been summed.
+
+Row 10 now folds the unlanded remainder of a claim back into the batch, so a
+merger running out of time is safe: merge what you can, publish, and the rest is
+re-offered next release. But that only works if a decline is a decline. An
+unrecorded one comes back to the next merge worker for ever.
+
+General form, and this is the third time it has bitten in a week: **an
+assignment to a field that holds a CLAIM ON WORK is a deletion of work.** Every
+other hand-off in the loop is a fold or a move. Both leaks — `r11_action`'s
+`.inflight = list(batch)` and `r7_action`'s `.inflight = None` — were single
+assignments, and both were invisible because the state they produced is
+indistinguishable from a state where the work never existed.
+
 ## What the merge batch is for: Lean edits that could turn a green build red
 
 (Deyao, 2026-07-26.) **The batch exists to protect a green build, and nothing
@@ -1046,3 +1102,88 @@ part". The repair here was one hypothesis (`hmm₀ram : ∀ w, IsRamifiedCharRay
 that the consumer **already held and was discarding** — so the fix cost nothing, and the consumer's
 statement did not change. That is the usual shape: the missing hypothesis is often already in the caller's
 hand.
+
+## SEVENTH invisibility class: A CLEAN MERGE THAT DOES NOT COMPILE — the interface split
+
+(2026-07-30, release 22, three instances in one batch.) The six classes above are all about
+*not seeing work*. This one is about *seeing a merge succeed*. Every check this file prescribes
+for a merge — no conflict markers, `git diff --stat HEAD^1 HEAD` non-empty, the sorry counts,
+the `declaration uses 'sorry'` warning set — passed on all three, and the tree did not build.
+
+The shape is always the same. **An interface change and its call sites are ONE edit, and a merge
+can split them across the conflict boundary.** The half that conflicts gets resolved; the half
+that does not conflict lands unexamined; and the two halves now contradict each other.
+
+- `RelativePicard.lean`: `flt-lean-133` CLOSED `nonempty_modTensor_assocPic` by hoisting, deleting
+  the leaf and re-pointing the call sites *its base had*. `main` had gained more call sites since.
+  Both edits merged without conflict; six calls to a deleted declaration survived.
+- `ArtinConductor.lean`: `flt-lean-197` split break POSITIVITY into its own clause, so one theorem
+  returns `⟨pos, counting⟩` and another takes two binders. The SIGNATURES were the non-conflicting
+  half; the CALL SITES were the conflicted half, resolved to `ours`, still passing one conjunction.
+- `Patching.lean`/`Interface.lean`: two owners threaded DIFFERENT hypotheses (`hp5`, `hgen`) through
+  the same six-theorem positional argument chain. Signature edits merged cleanly, so the callees
+  bind both; each side's call line passes only its own. **Neither `ours` nor `theirs` compiles** —
+  and the conflict looks like a trivial whitespace disagreement. Positional argument lists are
+  what make this a merge hazard at all.
+
+**Corollary, and it inverts the obvious rule: resolving every conflict to `ours` is NOT a safe way
+to decline a payload.** Twice this release it left the tree broken, because the branch's chain
+straddled the boundary:
+`flt-lean-366`'s three new leaves landed non-conflictingly while the two proven helpers they call
+sat in the dropped half (seven live references to nothing); `flt-lean-123`'s hoist inserted 5164
+lines into `X0.lean` while `MazurTorsion.lean` kept its copy (duplicate declarations). **To decline
+a payload, `git checkout HEAD -- <the files>`** and let the diff against the first parent be empty
+on purpose. Say so in the commit message, because an empty payload otherwise reads as the
+dropped-merge bug of class six.
+
+**Two checks catch this class before the build, and both cost seconds.**
+
+1. *Duplicate declaration names, WITHIN a file and ACROSS files*, diffed against the previous
+   release so the tree's many legitimate same-last-component names in different namespaces do not
+   drown the new ones. Two real errors this release: `Gamma0AtlasOver.bcUniversal_transport`
+   declared twice in `X0.lean` by two branches whose regions were too far apart to conflict, and
+   `Fermat.isInvertibleSheaf_modPullback` declared in two modules one of which imports the other.
+   A per-file scan cannot see the second.
+2. *Per merge: names declared on the BRANCH but absent from the resolved file, grepped
+   (comments stripped) against the resolved file.* This is what found `flt-lean-366`'s breakage
+   before a build ran.
+
+And the standing one, which is what caught the rest: **the release build is not optional and its
+first failure is not its last.** Fix, rebuild, repeat — FOUR rounds this release, and the reason is
+structural rather than bad luck. **The errors are serialised behind each other by the import
+graph**, so round *n* only reveals what round *n−1*'s failure was hiding: one interface change
+(`IsSwanExponentAt` gaining a third clause) broke a consumer in its own module, found in round 1,
+and a second consumer 79 000 lines away in another module from another branch, found only in round
+4 after twenty minutes of elaboration. Budget three rounds minimum, and schedule nothing behind the
+first green one.
+
+## RIVAL CUTS ARE OFTEN COMPLEMENTARY — check before choosing
+
+(2026-07-30.) Nine of 57 branches in one batch were declined because another agent had cut the
+same node differently. In one case that verdict would have been wrong. `flt-lean-134` proved
+sub-leaf (γ) of `exists_relNormDivisorHom_ray_class` OUTRIGHT and left (α) over a fresh sorry;
+`flt-lean-343` proved (α) OUTRIGHT and left (γ) over a fresh sorry. **Taking either branch whole
+keeps an avoidable open node; taking one proof from each closes both.** It cost one careful read
+of four hunks and netted zero new sorries where either alone netted one.
+
+So when two branches cut one node, the question is not "which cut is better" but "did they close
+different halves". Ask it first. The tie-breakers, in the order that has actually decided cases:
+
+- **fewer OPEN leaves after**, not fewer leaves created — `flt-lean-44`'s divisor-set cut left ONE
+  leaf and closed 23 of 32 cases outright, against a bound-cut that left TWO and closed none;
+- **named beats anonymous** — a cut leaving 8 NAMED leaves beats one leaving 4 declarations with 4
+  anonymous inner sorries inside them, even though the headline count is worse, because an inner
+  sorry is ownerless by construction;
+- **already integrated and consumed by neighbours**, which is the merge worker's only defensible
+  ground when the mathematics is genuinely equivalent (two complete proofs of one theorem cannot
+  both be carried — the name collides — so that is a CHOICE, not a merge, and it belongs to an
+  author; record the rejected branch's sha in the merge commit).
+
+**And a branch that was right when dispatched can be wrong when it lands.** `flt-lean-91` and
+`flt-lean-195` independently generalised `EllipticScheme.lean`'s reverse Riemann-Roch chain from
+`ℚ` to an arbitrary field, both truthfully reporting "NO LEAF WAS ADDED" — true at their base,
+where the three leaves were open. They were PROVEN at `ℚ` by the time the branches merged, so the
+same edit would have traded one closed leaf for three re-opened ones. Re-derive a branch's own
+accounting against the release, never against its base; and when you decline for this reason, queue
+the follow-up, because the work usually got CHEAPER (here: generalise the PROOFS, and both targets
+close with no new sorry).

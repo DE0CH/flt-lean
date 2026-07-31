@@ -47,13 +47,17 @@ on a rank-`0` Jacobian *is* — the Mazur–Tate decision procedure, involving n
 covering collection.  Each namespace now reads top-down:
 
       → exists_functionFieldData  PROVEN: the function field K(x)[y]/(y²−f), as AdjoinRoot
-    finite_isPlaceFun             LEAF: a nonzero function has finitely many zeros/poles
+      → finite_isPlaceFun         PROVEN 2026-07-30: finitely many zeros/poles, by classifying
+                                  every place as an `ordAt` of one of the two towers
       → exists_placeSystem        PROVEN: the TAUTOLOGICAL system; ord_complete is rfl
-    exists_isPlaceFun_of_affPt    LEAF: the valuation of an affine rational point
-    exists_isPlaceFun_of_infPt    LEAF: the valuation of a branch at infinity
+      → exists_isPlaceFun_of_affPt  PROVEN 2026-07-30: the affine place, via the Dedekind
+                                  ring of integers and the hyperelliptic involution
+      → exists_isPlaceFun_of_infPt  PROVEN 2026-07-30: the branches at infinity, by embedding
+                                  in K((t)) with x ↦ 1/t, which makes ord x = −1 exact
       → exists_isPlaceOfPt        PROVEN: from the two, through ord_complete
       → exists_placeData          PROVEN: assembled, with pt_injective proven
-    finrank_residue_pt_eq_one     LEAF: κ(v) = K at the place of a rational point
+      → finrank_residue_pt_eq_one PROVEN 2026-07-30: κ(v) = K, over the two `exists_localDenom`
+                                  leaves, both now proven by a descent on the denominator
     degOf_divisor_eq_zero         LEAF: Σ_v ord_v(g)·[κ(v):K] = 0  (Stichtenoth I.4.11)
       → exists_degreeMap          PROVEN: assembled over the constructed `degOf`
     isRationalGenerator_of_divisor_eq_sub_single
@@ -126,12 +130,19 @@ amended this paragraph on the same day, one saying "eight" and one saying "TEN",
 and the merged file has neither number: at the release-18 merge the
 `declaration uses 'sorry'` set of this module is
 
-    finite_isPlaceFun, exists_isPlaceFun_of_affPt, exists_isPlaceFun_of_infPt,
-    finrank_residue_pt_eq_one, degOf_divisor_eq_zero,
-    isRationalGenerator_of_divisor_eq_sub_single, not_isRationalGenerator,
+    degOf_poleDivisor_eq_finrank_of_transcendental,
     exists_smoothModel, exists_cubeModel_pic, exists_geomPic,
     geomPic_bc_injective, geomPic_descent, geomPic_divisible,
-    finite_kummerCochains_pic, and `two_divisible_pic` at BOTH levels.
+    finite_kummerCochains_pic, and `two_divisible_pic` at BOTH levels
+
+— TEN declarations, as of 2026-07-30 (a comment-stripped `sorry`-token count agrees, so there
+are no anonymous inner sorries).  The whole of obligations 1b and 1c, and obligation 2a's
+residue-field half, closed that day: `finite_isPlaceFun`, `exists_isPlaceFun_of_affPt`,
+`exists_isPlaceFun_of_infPt` and both `exists_localDenom_*` (hence
+`finrank_residue_pt_eq_one`).  `degOf_divisor_eq_zero`,
+`isRationalGenerator_of_divisor_eq_sub_single` and `not_isRationalGenerator` had already been
+reduced to `degOf_poleDivisor_eq_finrank_of_transcendental`, which is now the single remaining
+node of the divisor theory — Stichtenoth I.4.11, weak approximation plus a dimension count.
 
 `exists_functionFieldData`, `exists_placeSystem`, `exists_isPlaceOfPt`,
 `exists_degreeMap`, `sub_single_pt_notMem_princ`, `exists_descentHeight_pic`,
@@ -280,6 +291,26 @@ public import Mathlib.NumberTheory.Padics.PadicIntegers
 -- `finrank_residue_pt_eq_one` and the residue-field arguments around it
 public import Mathlib.FieldTheory.IntermediateField.Adjoin.Basic
 public import Mathlib.LinearAlgebra.FiniteDimensional.Basic
+-- `no_sextic_sq_of_ratFunc`, the genus: the pencil count needs an algebraic closure (six
+-- distinct roots, and every unit a square), Frobenius on a perfect field for the
+-- characteristic-`p` descent, `expand`/`contract` for the `p`-th-power shape, `a^n ∣ b^n → a ∣ b`
+-- and `exists_associated_pow_of_mul_eq_pow'` in the UFD `L[X]`
+public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
+public import Mathlib.FieldTheory.Perfect
+public import Mathlib.Algebra.Polynomial.Expand
+public import Mathlib.Algebra.Polynomial.FieldDivision
+public import Mathlib.Algebra.Polynomial.Splits
+public import Mathlib.Algebra.CharP.Lemmas
+public import Mathlib.RingTheory.UniqueFactorizationDomain.Multiplicity
+public import Mathlib.RingTheory.PrincipalIdealDomain
+public import Mathlib.RingTheory.Polynomial.Basic
+public import Mathlib.RingTheory.DedekindDomain.AdicValuation
+public import Mathlib.RingTheory.DedekindDomain.IntegralClosure
+public import Mathlib.RingTheory.LaurentSeries
+public import Mathlib.RingTheory.Henselian
+public import Mathlib.RingTheory.AdicCompletion.Completeness
+public import Mathlib.RingTheory.Valuation.LocalSubring
+public import Mathlib.RingTheory.DedekindDomain.Factorization
 
 @[expose] public section
 
@@ -1096,7 +1127,1235 @@ structure IsPlaceFun (K F : Type) [Field K] [Field F] [Algebra K F] (o : F → �
   /-- normalisation: the value group is all of `ℤ` -/
   normalised : ∃ t : F, o t = 1
 
-/-- **LEAF (obligation 1b, RESIDUE): a nonzero function has finitely many zeros and poles.**
+/-- **`o` is the valuation of the rational point `P`** — `IsPlaceOfPt` with the place
+replaced by a raw valuation function, so that a place can be produced through
+`PlaceSystem.ord_complete` rather than exhibited inside a given system. -/
+def IsPlaceFunOfPt {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    (E : FunctionFieldData c₀ c₁ c₂ c₃ c₄ c₅ K) (o : E.F → ℤ)
+    (P : Pt c₀ c₁ c₂ c₃ c₄ c₅ K) : Prop :=
+  match P with
+  | Sum.inl q => 0 < o (E.xx - algebraMap K E.F q.1.1) ∧ 0 < o (E.yy - algebraMap K E.F q.1.2)
+  | Sum.inr s => o E.xx = -1 ∧ -3 < o (E.yy - (if s then 1 else -1) * E.xx ^ 3)
+
+/-! ### Places from the Dedekind ring of integers (PROVEN, 2026-07-30)
+
+The machinery that closes the affine half of obligation 1c, and the reusable half of the
+infinite half.  It replaces the Laurent-series/Hensel route the docstring below proposes by
+the Dedekind one, which mathlib already carries: `A = integralClosure K[X] F` is a Dedekind
+domain with `Frac A = F` (`integralClosure.isDedekindDomain`, once the tower
+`K[X] ⊆ K(x) ⊆ F` is in place and `F/K(x)` is finite separable), and each of its height-one
+primes gives a normalised `K`-trivial discrete valuation of `F` — that is `ordAt`, whose
+five `IsPlaceFun` axioms are `isPlaceFun_ordAt`.
+
+The point `(a, b)` is then reached by LYING OVER the maximal ideal `(X − a)` of `K[X]`, and
+the two branches `y = ±b` are separated by the HYPERELLIPTIC INVOLUTION rather than by a
+count of primes: `exists_isPlaceFun_of_affPt_upToSign` produces a place at which `x − a` is
+positive and at least ONE of `y ∓ b` is, and precomposing with the `K(x)`-automorphism
+`y ↦ −y` (built through `AdjoinRoot (Y² − f)`, whose irreducibility is the file's own
+`not_isSquare_sextPoly`) exchanges the two disjuncts.  That is where `2 ≠ 0` is used, and
+`hsep` enters only through the irreducibility.
+-/
+
+section PlacesFromDedekind
+
+open IsDedekindDomain
+open scoped WithZero
+
+namespace PlaceFromDedekind
+
+variable {K F : Type} [Field K] [Field F] [Algebra K F]
+variable {A : Type} [CommRing A] [IsDedekindDomain A]
+  [Algebra A F] [IsFractionRing A F]
+
+/-- The `ℤ`-valued additive valuation attached to a height-one prime of `A`, on the
+fraction field `F`. -/
+noncomputable def ordAt (v : HeightOneSpectrum A) (z : F) : ℤ :=
+  - WithZero.log (v.valuation F z)
+
+lemma ordAt_zero (v : HeightOneSpectrum A) : ordAt (F := F) v 0 = 0 := by
+  simp [ordAt]
+
+lemma valuation_ne_zero (v : HeightOneSpectrum A) {z : F} (hz : z ≠ 0) :
+    v.valuation F z ≠ 0 := by
+  simpa [Valuation.ne_zero_iff] using hz
+
+lemma ordAt_mul (v : HeightOneSpectrum A) (a b : F) (ha : a ≠ 0) (hb : b ≠ 0) :
+    ordAt v (a * b) = ordAt v a + ordAt v b := by
+  simp only [ordAt, map_mul]
+  rw [WithZero.log_mul (valuation_ne_zero v ha) (valuation_ne_zero v hb)]
+  ring
+
+lemma ordAt_ultra (v : HeightOneSpectrum A) (a b : F) (ha : a ≠ 0) (hb : b ≠ 0)
+    (hab : a + b ≠ 0) : min (ordAt v a) (ordAt v b) ≤ ordAt v (a + b) := by
+  have hle : v.valuation F (a + b) ≤ max (v.valuation F a) (v.valuation F b) :=
+    (v.valuation F).map_add a b
+  have hmax : max (v.valuation F a) (v.valuation F b) ≠ 0 := by
+    rcases max_cases (v.valuation F a) (v.valuation F b) with ⟨h, _⟩ | ⟨h, _⟩ <;> rw [h]
+    · exact valuation_ne_zero v ha
+    · exact valuation_ne_zero v hb
+  have hlog : WithZero.log (v.valuation F (a + b))
+      ≤ WithZero.log (max (v.valuation F a) (v.valuation F b)) :=
+    (WithZero.log_le_log (valuation_ne_zero v hab) hmax).2 hle
+  have hmaxlog : WithZero.log (max (v.valuation F a) (v.valuation F b))
+      = max (WithZero.log (v.valuation F a)) (WithZero.log (v.valuation F b)) := by
+    rcases max_cases (v.valuation F a) (v.valuation F b) with ⟨h, hle'⟩ | ⟨h, hlt⟩
+    · rw [h, max_eq_left ((WithZero.log_le_log (valuation_ne_zero v hb)
+        (valuation_ne_zero v ha)).2 hle')]
+    · rw [h, max_eq_right (le_of_lt ((WithZero.log_lt_log (valuation_ne_zero v ha)
+        (valuation_ne_zero v hb)).2 hlt))]
+  rw [hmaxlog] at hlog
+  simp only [ordAt]
+  omega
+
+/-- `ordAt` is normalised: some element has order exactly `1`. -/
+lemma ordAt_normalised (v : HeightOneSpectrum A) : ∃ t : F, ordAt v t = 1 := by
+  obtain ⟨π, hπ⟩ := v.valuation_exists_uniformizer F
+  exact ⟨π, by simp [ordAt, hπ]⟩
+
+section Const
+
+variable [Algebra K A] [IsScalarTower K A F]
+
+/-- A nonzero constant is a unit of `A`, so it has valuation `1`. -/
+lemma valuation_algebraMap_eq_one (v : HeightOneSpectrum A) {a : K} (ha : a ≠ 0) :
+    v.valuation F (algebraMap K F a) = 1 := by
+  have hu : IsUnit (algebraMap K A a) :=
+    isUnit_iff_exists_inv.2 ⟨algebraMap K A a⁻¹,
+      by rw [← map_mul, mul_inv_cancel₀ ha, map_one]⟩
+  have hnm : algebraMap K A a ∉ v.asIdeal := fun hmem =>
+    v.isPrime.ne_top (Ideal.eq_top_of_isUnit_mem _ hmem hu)
+  rw [IsScalarTower.algebraMap_apply K A F]
+  exact (HeightOneSpectrum.valuation_eq_one_iff_notMem v).2 hnm
+
+lemma ordAt_algebraMap (v : HeightOneSpectrum A) (a : K) (ha : a ≠ 0) :
+    ordAt (F := F) v (algebraMap K F a) = 0 := by
+  simp [ordAt, valuation_algebraMap_eq_one (F := F) v ha]
+
+/-- **The place attached to a height-one prime**, in the shape `IsPlaceFun` asks for. -/
+theorem isPlaceFun_ordAt (v : HeightOneSpectrum A) :
+    IsPlaceFun K F (ordAt (F := F) v) where
+  map_zero := ordAt_zero v
+  map_mul := ordAt_mul v
+  ultra := ordAt_ultra v
+  map_algebraMap := ordAt_algebraMap v
+  normalised := ordAt_normalised v
+
+/-- An element of the prime has strictly positive order. -/
+lemma ordAt_pos_of_mem (v : HeightOneSpectrum A) {r : A} (hr : r ∈ v.asIdeal) (hr0 : r ≠ 0) :
+    0 < ordAt (F := F) v (algebraMap A F r) := by
+  have hlt : v.valuation F (algebraMap A F r) < 1 :=
+    (HeightOneSpectrum.valuation_lt_one_iff_mem (K := F) v r).2 hr
+  have hr0' : algebraMap A F r ≠ 0 :=
+    (map_ne_zero_iff (algebraMap A F) (IsFractionRing.injective A F)).2 hr0
+  have hne : v.valuation F (algebraMap A F r) ≠ 0 := valuation_ne_zero v hr0'
+  have : WithZero.log (v.valuation F (algebraMap A F r)) < WithZero.log (1 : ℤᵐ⁰) :=
+    (WithZero.log_lt_log hne one_ne_zero).2 hlt
+  simp only [WithZero.log_one] at this
+  simpa [ordAt] using this
+
+end Const
+
+/-! ### From a proper ideal of the ring of integers to a place -/
+
+section Tower
+
+variable {K F : Type} [Field K] [Field F]
+  [Algebra K F] [Algebra K[X] F] [Algebra (RatFunc K) F]
+  [IsScalarTower K K[X] F] [IsScalarTower K[X] (RatFunc K) F]
+  [FiniteDimensional (RatFunc K) F] [Algebra.IsSeparable (RatFunc K) F]
+
+noncomputable instance : IsFractionRing (↥(integralClosure K[X] F)) F :=
+  integralClosure.isFractionRing_of_finite_extension (RatFunc K) F
+
+noncomputable instance : IsDedekindDomain (↥(integralClosure K[X] F)) :=
+  integralClosure.isDedekindDomain K[X] (RatFunc K) F
+
+/-- **Every proper ideal of the ring of integers is cut out by a place.**  A maximal ideal
+containing it is a nonzero prime of a Dedekind domain, hence a height-one prime, and its
+adic valuation is a normalised `K`-trivial discrete valuation of `F` that is positive on
+every nonzero member of the ideal. -/
+theorem exists_isPlaceFun_of_ne_top (I : Ideal (↥(integralClosure K[X] F))) (hI : I ≠ ⊤)
+    (hI0 : I ≠ ⊥) :
+    ∃ o : F → ℤ, IsPlaceFun K F o ∧ ∀ z ∈ I, (z : F) ≠ 0 → 0 < o (z : F) := by
+  obtain ⟨m, hm, hIm⟩ := Ideal.exists_le_maximal I hI
+  have hm0 : m ≠ ⊥ := fun h => hI0 (le_bot_iff.1 (h ▸ hIm))
+  refine ⟨ordAt (F := F) ⟨m, hm.isPrime, hm0⟩, isPlaceFun_ordAt _, fun z hz hz0 => ?_⟩
+  have : (z : F) = algebraMap (↥(integralClosure K[X] F)) F z := rfl
+  rw [this]
+  exact ordAt_pos_of_mem _ (hIm hz) (fun h => hz0 (by rw [h]; simp))
+
+omit [Algebra K F] [IsScalarTower K K[X] F] in
+/-- An integral element has nonnegative order at every place of the ring of integers. -/
+lemma ordAt_nonneg_of_isIntegral
+    (v : HeightOneSpectrum ↥(integralClosure K[X] F)) {z : F} (hz : IsIntegral K[X] z) :
+    0 ≤ ordAt (F := F) v z := by
+  have hzA : z = algebraMap ↥(integralClosure K[X] F) F ⟨z, hz⟩ := rfl
+  have hle : v.valuation F z ≤ 1 := by
+    rw [hzA]; exact v.valuation_le_one _
+  rcases eq_or_ne z 0 with rfl | hz0
+  · simp [ordAt]
+  · have := (WithZero.log_le_log (valuation_ne_zero v hz0) (one_ne_zero (α := ℤᵐ⁰))).2 hle
+    simp only [WithZero.log_one] at this
+    simpa [ordAt] using this
+
+omit [Algebra K F] [IsScalarTower K K[X] F] [FiniteDimensional (RatFunc K) F]
+  [Algebra.IsSeparable (RatFunc K) F] in
+lemma algebraMap_poly_injective : Function.Injective (algebraMap K[X] F) := by
+  rw [IsScalarTower.algebraMap_eq K[X] (RatFunc K) F]
+  exact (algebraMap (RatFunc K) F).injective.comp (IsFractionRing.injective K[X] (RatFunc K))
+
+omit [Algebra K F] [IsScalarTower K K[X] F] in
+/-- **Lying over**: every nonzero maximal ideal of `K[X]` is dominated by a place of `F`. -/
+theorem exists_heightOneSpectrum_over_maximal (m : Ideal K[X]) [hm : m.IsMaximal]
+    (hm0 : m ≠ ⊥) :
+    ∃ v : HeightOneSpectrum ↥(integralClosure K[X] F),
+      ∀ p ∈ m, algebraMap K[X] F p ≠ 0 → 0 < ordAt (F := F) v (algebraMap K[X] F p) := by
+  have hinjF : Function.Injective (algebraMap K[X] F) := algebraMap_poly_injective (F := F)
+  have hinj : Function.Injective (algebraMap K[X] ↥(integralClosure K[X] F)) :=
+    fun p q hpq => hinjF (congrArg Subtype.val hpq)
+  obtain ⟨Q, hQ, hQm⟩ :=
+    Ideal.exists_ideal_over_maximal_of_isIntegral (S := ↥(integralClosure K[X] F)) m
+      (by rw [(RingHom.injective_iff_ker_eq_bot _).1 hinj]; exact bot_le)
+  have hQ0 : Q ≠ ⊥ := by
+    intro h
+    exact hm0 (by rw [← hQm, h, Ideal.comap_bot_of_injective _ hinj])
+  refine ⟨⟨Q, hQ.isPrime, hQ0⟩, fun p hp hp0 => ?_⟩
+  have hmem : (algebraMap K[X] ↥(integralClosure K[X] F) p) ∈ Q := by
+    have hc : p ∈ Q.comap (algebraMap K[X] ↥(integralClosure K[X] F)) := by rw [hQm]; exact hp
+    exact hc
+  have hne : (algebraMap K[X] ↥(integralClosure K[X] F) p) ≠ 0 := fun h => hp0 (by
+    have : algebraMap K[X] F p
+        = algebraMap ↥(integralClosure K[X] F) F (algebraMap K[X] _ p) := rfl
+    rw [this, h, map_zero])
+  simpa using ordAt_pos_of_mem (F := F) ⟨Q, hQ.isPrime, hQ0⟩ hmem hne
+
+omit [Algebra (RatFunc K) F] [IsScalarTower K[X] (RatFunc K) F] [FiniteDimensional (RatFunc K) F]
+  [Algebra.IsSeparable (RatFunc K) F] in
+lemma algebraMap_poly_eq_aeval {xx : F} (hxx : algebraMap K[X] F Polynomial.X = xx)
+    (p : K[X]) : algebraMap K[X] F p = Polynomial.aeval xx p := by
+  have h : (IsScalarTower.toAlgHom K K[X] F) = (Polynomial.aeval xx : K[X] →ₐ[K] F) :=
+    Polynomial.algHom_ext (by simpa using hxx)
+  exact congrArg (fun φ => φ p) h
+
+/-- **The place of an affine rational point, up to the sign of the ordinate.**
+
+Lying over `(X − a)` produces a place `v` at which `x − a` is positive; the factorisation
+`(y − b)(y + b) = (x − a)·h(x)` then forces at least one of `y ∓ b` to be positive there,
+since both are integral over `K[X]` and hence of nonnegative order.  Which of the two it is
+is not decided here — that is the hyperelliptic involution's job. -/
+theorem exists_isPlaceFun_of_affPt_upToSign {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
+    {xx yy : F} (hxx : algebraMap K[X] F Polynomial.X = xx)
+    (heqn : yy ^ 2 = sext c₀ c₁ c₂ c₃ c₄ c₅ xx) (a b : K)
+    (hab : b ^ 2 = sext c₀ c₁ c₂ c₃ c₄ c₅ a) :
+    ∃ o : F → ℤ, IsPlaceFun K F o ∧ 0 < o (xx - algebraMap K F a) ∧
+      (0 < o (yy - algebraMap K F b) ∨ 0 < o (yy + algebraMap K F b)) := by
+  classical
+  have hinjF : Function.Injective (algebraMap K[X] F) := algebraMap_poly_injective (F := F)
+  have halg := algebraMap_poly_eq_aeval hxx
+  have hCa : ∀ c : K, algebraMap K[X] F (Polynomial.C c) = algebraMap K F c := fun c => by
+    rw [IsScalarTower.algebraMap_apply K K[X] F c]; rfl
+  -- the maximal ideal `(X − a)` of `K[X]`
+  have hirr : Irreducible (Polynomial.X - Polynomial.C a : K[X]) := Polynomial.irreducible_X_sub_C a
+  have hXa0 : (Polynomial.X - Polynomial.C a : K[X]) ≠ 0 := hirr.ne_zero
+  haveI hmax : (Ideal.span {Polynomial.X - Polynomial.C a} : Ideal K[X]).IsMaximal :=
+    PrincipalIdealRing.isMaximal_of_irreducible hirr
+  have hm0 : (Ideal.span {Polynomial.X - Polynomial.C a} : Ideal K[X]) ≠ ⊥ := by
+    simpa [Ideal.span_singleton_eq_bot] using hXa0
+  obtain ⟨v, hv⟩ := exists_heightOneSpectrum_over_maximal (F := F) _ hm0
+  refine ⟨ordAt (F := F) v, isPlaceFun_ordAt v, ?_, ?_⟩
+  · have hXaF : algebraMap K[X] F (Polynomial.X - Polynomial.C a) = xx - algebraMap K F a := by
+      rw [map_sub, hxx, hCa]
+    have hne : algebraMap K[X] F (Polynomial.X - Polynomial.C a) ≠ 0 :=
+      fun h => hXa0 (hinjF (by rw [h, map_zero]))
+    have := hv _ (Ideal.mem_span_singleton_self _) hne
+    rwa [hXaF] at this
+  · -- the factorisation `(y − b)(y + b) = (x − a)·h(x)`
+    have hroot : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K - Polynomial.C (sext c₀ c₁ c₂ c₃ c₄ c₅ a)).IsRoot a := by
+      simp [Polynomial.IsRoot, eval_sextPoly]
+    obtain ⟨h, hh⟩ := (Polynomial.dvd_iff_isRoot).2 hroot
+    have hfac : (yy - algebraMap K F b) * (yy + algebraMap K F b)
+        = (xx - algebraMap K F a) * Polynomial.aeval xx h := by
+      have e1 : Polynomial.aeval xx (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K
+            - Polynomial.C (sext c₀ c₁ c₂ c₃ c₄ c₅ a))
+          = Polynomial.aeval xx ((Polynomial.X - Polynomial.C a) * h) := by rw [hh]
+      simp only [map_sub, map_mul, Polynomial.aeval_C, Polynomial.aeval_X,
+        aeval_sextPoly] at e1
+      have hb : (algebraMap K F b) ^ 2 = algebraMap K F (sext c₀ c₁ c₂ c₃ c₄ c₅ a) := by
+        rw [← map_pow, hab]
+      linear_combination heqn + e1 - hb
+    -- everything in sight is integral over `K[X]`, so of nonnegative order
+    have hyint : IsIntegral K[X] yy := by
+      refine ⟨Polynomial.X ^ 2 - Polynomial.C (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K),
+        Polynomial.monic_X_pow_sub_C _ two_ne_zero, ?_⟩
+      simp only [Polynomial.eval₂_sub, Polynomial.eval₂_X_pow, Polynomial.eval₂_C]
+      rw [halg, aeval_sextPoly, heqn, sub_self]
+    have hbint : IsIntegral K[X] (algebraMap K F b) := by
+      refine ⟨Polynomial.X - Polynomial.C (Polynomial.C b), Polynomial.monic_X_sub_C _, ?_⟩
+      simp only [Polynomial.eval₂_sub, Polynomial.eval₂_X, Polynomial.eval₂_C]
+      rw [hCa, sub_self]
+    have hhint : IsIntegral K[X] (Polynomial.aeval xx h) := by
+      refine ⟨Polynomial.X - Polynomial.C h, Polynomial.monic_X_sub_C _, ?_⟩
+      simp only [Polynomial.eval₂_sub, Polynomial.eval₂_X, Polynomial.eval₂_C]
+      rw [halg, sub_self]
+    have hn1 : 0 ≤ ordAt (F := F) v (yy - algebraMap K F b) :=
+      ordAt_nonneg_of_isIntegral v (hyint.sub hbint)
+    have hn2 : 0 ≤ ordAt (F := F) v (yy + algebraMap K F b) :=
+      ordAt_nonneg_of_isIntegral v (hyint.add hbint)
+    have hn3 : 0 ≤ ordAt (F := F) v (Polynomial.aeval xx h) :=
+      ordAt_nonneg_of_isIntegral v hhint
+    -- nonvanishing
+    have hxa : xx - algebraMap K F a ≠ 0 := by
+      intro hcon
+      exact hXa0 (hinjF (by
+        rw [map_zero, map_sub, hxx, hCa]; exact hcon))
+    have hprod : (yy - algebraMap K F b) * (yy + algebraMap K F b) ≠ 0 := by
+      rw [hfac]
+      refine mul_ne_zero hxa (fun hcon => ?_)
+      have hh0 : h = 0 := hinjF (by rw [map_zero, halg]; exact hcon)
+      have : sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K = Polynomial.C (sext c₀ c₁ c₂ c₃ c₄ c₅ a) := by
+        have := hh; rw [hh0, mul_zero, sub_eq_zero] at this; exact this
+      have hd := natDegree_sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K
+      rw [this, Polynomial.natDegree_C] at hd
+      simp at hd
+    have h1 : yy - algebraMap K F b ≠ 0 := left_ne_zero_of_mul hprod
+    have h2' : yy + algebraMap K F b ≠ 0 := right_ne_zero_of_mul hprod
+    have hh0 : Polynomial.aeval xx h ≠ 0 := by
+      intro hcon
+      rw [hfac, hcon, mul_zero] at hprod
+      exact hprod rfl
+    have hpos : 0 < ordAt (F := F) v (xx - algebraMap K F a) := by
+      have hXaF : algebraMap K[X] F (Polynomial.X - Polynomial.C a) = xx - algebraMap K F a := by
+        rw [map_sub, hxx, hCa]
+      have hne : algebraMap K[X] F (Polynomial.X - Polynomial.C a) ≠ 0 :=
+        fun hq => hXa0 (hinjF (by rw [hq, map_zero]))
+      have := hv _ (Ideal.mem_span_singleton_self _) hne
+      rwa [hXaF] at this
+    have hsum := ordAt_mul (F := F) v _ _ h1 h2'
+    rw [hfac, ordAt_mul (F := F) v _ _ hxa hh0] at hsum
+    omega
+
+omit [Algebra K[X] F] [Algebra (RatFunc K) F] [IsScalarTower K K[X] F]
+  [IsScalarTower K[X] (RatFunc K) F] [FiniteDimensional (RatFunc K) F]
+  [Algebra.IsSeparable (RatFunc K) F] in
+/-- Precomposing a place with a `K`-fixing surjective endomorphism gives a place. -/
+lemma isPlaceFun_comp {o : F → ℤ} (h : IsPlaceFun K F o) (σ : F →+* F)
+    (hsurj : Function.Surjective σ) (hK : ∀ a : K, σ (algebraMap K F a) = algebraMap K F a) :
+    IsPlaceFun K F (o ∘ σ) where
+  map_zero := by simpa using h.map_zero
+  map_mul a b ha hb := by
+    simp only [Function.comp_apply, map_mul]
+    exact h.map_mul _ _ (fun hc => ha (σ.injective (by rw [hc, map_zero])))
+      (fun hc => hb (σ.injective (by rw [hc, map_zero])))
+  ultra a b ha hb hab := by
+    simp only [Function.comp_apply, map_add]
+    exact h.ultra _ _ (fun hc => ha (σ.injective (by rw [hc, map_zero])))
+      (fun hc => hb (σ.injective (by rw [hc, map_zero])))
+      (fun hc => hab (σ.injective (by rw [map_add, map_zero]; exact hc)))
+  map_algebraMap a ha := by
+    simp only [Function.comp_apply, hK]
+    exact h.map_algebraMap a ha
+  normalised := by
+    obtain ⟨t, ht⟩ := h.normalised
+    obtain ⟨t', rfl⟩ := hsurj t
+    exact ⟨t', ht⟩
+
+end Tower
+
+section Affine
+
+variable {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+
+/-- The `K[X]`-algebra structure on `E.F` given by `X ↦ E.xx`. -/
+@[reducible] noncomputable def xAlg (E : FunctionFieldData c₀ c₁ c₂ c₃ c₄ c₅ K) : Algebra K[X] E.F :=
+  (Polynomial.aeval E.xx : K[X] →ₐ[K] E.F).toRingHom.toAlgebra
+
+/-- **LEAF (obligation 1c, AFFINE HALF), PROVEN**: an affine rational point carries a
+valuation. -/
+theorem exists_isPlaceFun_of_affPt' (E : FunctionFieldData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (h2 : (2 : K) ≠ 0)
+    (q : AffPt c₀ c₁ c₂ c₃ c₄ c₅ K) :
+    ∃ o : E.F → ℤ, IsPlaceFun K E.F o ∧
+      0 < o (E.xx - algebraMap K E.F q.1.1) ∧ 0 < o (E.yy - algebraMap K E.F q.1.2) := by
+  classical
+  letI : Algebra K[X] E.F := xAlg E
+  have halg : ∀ p : K[X], algebraMap K[X] E.F p = Polynomial.aeval E.xx p := fun _ => rfl
+  haveI : IsScalarTower K K[X] E.F :=
+    IsScalarTower.of_algebraMap_eq fun a => by simp [halg]
+  have hinj : Function.Injective (algebraMap K[X] E.F) := by
+    rw [injective_iff_map_eq_zero]
+    intro p hp
+    by_contra hp0
+    exact E.transcendental_xx ⟨p, hp0, by rw [← halg]; exact hp⟩
+  letI : Algebra (RatFunc K) E.F := (IsFractionRing.lift (A := K[X]) hinj).toAlgebra
+  haveI : IsScalarTower K[X] (RatFunc K) E.F :=
+    IsScalarTower.of_algebraMap_eq fun p => (IsFractionRing.lift_algebraMap hinj p).symm
+  have hdown : ∀ p : K[X],
+      algebraMap (RatFunc K) E.F (algebraMap K[X] (RatFunc K) p)
+        = Polynomial.aeval E.xx p := fun p => by
+    rw [← IsScalarTower.algebraMap_apply, halg]
+  have hsext0 : sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K ≠ 0 := fun h => by
+    have hd := natDegree_sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K
+    rw [h] at hd; simp at hd
+  have hα₀F : algebraMap (RatFunc K) E.F
+      (algebraMap K[X] (RatFunc K) (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K)) = E.yy ^ 2 := by
+    rw [hdown, aeval_sextPoly, E.eqn]
+  have hα₀0 : algebraMap K[X] (RatFunc K) (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) ≠ 0 := fun h =>
+    hsext0 ((IsFractionRing.injective K[X] (RatFunc K)) (by rw [h, map_zero]))
+  have hroot : (Polynomial.aeval E.yy)
+      (Polynomial.X ^ 2
+        - Polynomial.C (algebraMap K[X] (RatFunc K) (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K))
+        : (RatFunc K)[X]) = 0 := by
+    rw [map_sub, map_pow, Polynomial.aeval_X, Polynomial.aeval_C, hα₀F, sub_self]
+  have hint : IsIntegral (RatFunc K) E.yy :=
+    ⟨_, Polynomial.monic_X_pow_sub_C
+      (algebraMap K[X] (RatFunc K) (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K)) two_ne_zero, by
+      simpa [Polynomial.aeval_def] using hroot⟩
+  have hadj : IntermediateField.adjoin (RatFunc K) {E.yy} = ⊤ := by
+    refine eq_top_iff.mpr fun z _ => ?_
+    obtain ⟨a, b, d, hd, hz⟩ := E.gen z
+    refine (IntermediateField.mem_adjoin_simple_iff (RatFunc K) z).2
+      ⟨Polynomial.C (algebraMap K[X] (RatFunc K) a / algebraMap K[X] (RatFunc K) d)
+        + Polynomial.C (algebraMap K[X] (RatFunc K) b / algebraMap K[X] (RatFunc K) d)
+          * Polynomial.X, 1, ?_⟩
+    have e1 : algebraMap (RatFunc K) E.F
+        (algebraMap K[X] (RatFunc K) a / algebraMap K[X] (RatFunc K) d)
+        = Polynomial.aeval E.xx a / Polynomial.aeval E.xx d := by rw [map_div₀, hdown, hdown]
+    have e2 : algebraMap (RatFunc K) E.F
+        (algebraMap K[X] (RatFunc K) b / algebraMap K[X] (RatFunc K) d)
+        = Polynomial.aeval E.xx b / Polynomial.aeval E.xx d := by rw [map_div₀, hdown, hdown]
+    simp only [map_add, map_mul, Polynomial.aeval_C, Polynomial.aeval_X, map_one, div_one, e1, e2]
+    field_simp
+    linear_combination hz
+  haveI hfd : FiniteDimensional (RatFunc K) E.F := by
+    have h1 := IntermediateField.adjoin.finiteDimensional hint
+    rw [hadj] at h1
+    exact (IntermediateField.topEquiv (F := RatFunc K) (E := E.F)).toLinearEquiv.finiteDimensional
+  have hsepyy : IsSeparable (RatFunc K) E.yy := by
+    have h2K : ((2 : ℕ) : K) ≠ 0 := by push_cast; exact h2
+    have h2' : ((2 : ℕ) : RatFunc K) ≠ 0 := by
+      rw [← map_natCast (algebraMap K (RatFunc K)) 2]
+      exact fun hh => h2K ((algebraMap K (RatFunc K)).injective (by rw [hh, map_zero]))
+    exact (Polynomial.separable_X_pow_sub_C _ h2' hα₀0).of_dvd (minpoly.dvd _ _ hroot)
+  haveI : Algebra.IsSeparable (RatFunc K) E.F := by
+    have h1 : Algebra.IsSeparable (RatFunc K) (IntermediateField.adjoin (RatFunc K) {E.yy}) :=
+      (IntermediateField.isSeparable_adjoin_simple_iff_isSeparable (RatFunc K) E.F).2 hsepyy
+    rw [hadj] at h1
+    exact Algebra.IsSeparable.of_algHom (F := RatFunc K) (E := E.F)
+      (↥(⊤ : IntermediateField (RatFunc K) E.F))
+      (f := (IntermediateField.topEquiv (F := RatFunc K) (E := E.F)).symm.toAlgHom)
+  haveI : IsScalarTower K (RatFunc K) E.F :=
+    IsScalarTower.of_algebraMap_eq fun a => by
+      rw [IsScalarTower.algebraMap_apply K K[X] (RatFunc K) a, hdown]
+      simp
+  have hxx : algebraMap K[X] E.F Polynomial.X = E.xx := by rw [halg]; simp
+  -- the place, up to the sign of the ordinate
+  obtain ⟨o, ho, hx, hy⟩ :=
+    exists_isPlaceFun_of_affPt_upToSign (F := E.F) hxx E.eqn q.1.1 q.1.2 q.2
+  rcases hy with hy | hy
+  · exact ⟨o, ho, hx, hy⟩
+  -- the hyperelliptic involution swaps the two signs
+  have hsqf : Squarefree (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) := hsep.squarefree
+  have hnu : ¬ IsUnit (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) := by
+    intro hu
+    have h1 := Polynomial.natDegree_eq_zero_of_isUnit hu
+    rw [natDegree_sextPoly] at h1
+    norm_num at h1
+  have hirr : Irreducible (Polynomial.X ^ 2
+      - Polynomial.C (algebraMap K[X] (RatFunc K) (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K))
+      : (RatFunc K)[X]) :=
+    X_pow_sub_C_irreducible_of_prime Nat.prime_two (not_isSquare_sextPoly hsqf hnu)
+  haveI : Fact (Irreducible (Polynomial.X ^ 2
+      - Polynomial.C (algebraMap K[X] (RatFunc K) (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K))
+      : (RatFunc K)[X])) := ⟨hirr⟩
+  have hroot2 : (Polynomial.aeval (-E.yy))
+      (Polynomial.X ^ 2
+        - Polynomial.C (algebraMap K[X] (RatFunc K) (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K))
+        : (RatFunc K)[X]) = 0 := by
+    rw [map_sub, map_pow, Polynomial.aeval_X, Polynomial.aeval_C, hα₀F]
+    ring
+  set gpoly : (RatFunc K)[X] := Polynomial.X ^ 2
+    - Polynomial.C (algebraMap K[X] (RatFunc K) (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K)) with hgpoly
+  have hψ0 : gpoly.eval₂ (Algebra.ofId (RatFunc K) E.F).toRingHom E.yy = 0 := by
+    simpa [Polynomial.aeval_def] using hroot
+  have hτ0 : gpoly.eval₂ (Algebra.ofId (RatFunc K) E.F).toRingHom (-E.yy) = 0 := by
+    simpa [Polynomial.aeval_def] using hroot2
+  set ψ₀ : AdjoinRoot gpoly →ₐ[RatFunc K] E.F :=
+    AdjoinRoot.liftAlgHom gpoly (Algebra.ofId (RatFunc K) E.F) E.yy hψ0 with hψ₀
+  set τ : AdjoinRoot gpoly →ₐ[RatFunc K] E.F :=
+    AdjoinRoot.liftAlgHom gpoly (Algebra.ofId (RatFunc K) E.F) (-E.yy) hτ0 with hτ
+  have hψroot : ψ₀ (AdjoinRoot.root gpoly) = E.yy := AdjoinRoot.liftAlgHom_root _ _ _ _
+  have hτroot : τ (AdjoinRoot.root gpoly) = -E.yy := AdjoinRoot.liftAlgHom_root _ _ _ _
+  have hψsurj : Function.Surjective ψ₀ := by
+    intro z
+    have hz : z ∈ IntermediateField.adjoin (RatFunc K) {E.yy} := by rw [hadj]; trivial
+    have hle : IntermediateField.adjoin (RatFunc K) {E.yy} ≤ ψ₀.fieldRange :=
+      IntermediateField.adjoin_le_iff.2 (by
+        rintro w hw
+        rw [Set.mem_singleton_iff] at hw
+        subst hw
+        exact ⟨AdjoinRoot.root gpoly, hψroot⟩)
+    exact hle hz
+  set ψ : AdjoinRoot gpoly ≃ₐ[RatFunc K] E.F :=
+    AlgEquiv.ofBijective ψ₀ ⟨ψ₀.toRingHom.injective, hψsurj⟩ with hψ
+  set σ₀ : E.F →ₐ[RatFunc K] E.F := τ.comp ψ.symm.toAlgHom with hσ₀
+  have hσyy : σ₀ E.yy = -E.yy := by
+    have hs : ψ.symm E.yy = AdjoinRoot.root gpoly := by
+      rw [AlgEquiv.symm_apply_eq, hψ]
+      simpa using hψroot.symm
+    simp [hσ₀, hs, hτroot]
+  have hσK : ∀ a : K, σ₀ (algebraMap K E.F a) = algebraMap K E.F a := fun a => by
+    rw [IsScalarTower.algebraMap_apply K (RatFunc K) E.F a, AlgHom.commutes]
+  have hxxc : E.xx
+      = algebraMap (RatFunc K) E.F (algebraMap K[X] (RatFunc K) Polynomial.X) := by
+    rw [hdown]; simp
+  have hσxx : σ₀ E.xx = E.xx := by
+    conv_lhs => rw [hxxc]
+    rw [AlgHom.commutes, ← hxxc]
+  have hσsurj : Function.Surjective σ₀ := (AlgHom.bijective σ₀).2
+  -- transport the place along the involution
+  refine ⟨o ∘ σ₀, isPlaceFun_comp ho (σ₀ : E.F →+* E.F) hσsurj hσK, ?_, ?_⟩
+  · simpa [Function.comp_apply, map_sub, hσxx, hσK] using hx
+  · have hne : E.yy + algebraMap K E.F q.1.2 ≠ 0 := by
+      intro hc
+      rw [hc, ho.map_zero] at hy
+      exact lt_irrefl 0 hy
+    have hm1 : (-1 : E.F) = algebraMap K E.F (-1) := by simp
+    have : σ₀ (E.yy - algebraMap K E.F q.1.2)
+        = algebraMap K E.F (-1) * (E.yy + algebraMap K E.F q.1.2) := by
+      rw [map_sub, hσyy, hσK, ← hm1]; ring
+    simp only [Function.comp_apply, this]
+    rw [ho.map_mul _ _ (by rw [← hm1]; norm_num) hne, ho.map_algebraMap _ (by norm_num)]
+    omega
+
+end Affine
+
+end PlaceFromDedekind
+
+end PlacesFromDedekind
+
+/-! ### The CLASSIFICATION of places, and the finiteness of the divisor (PROVEN, 2026-07-30)
+
+`isPlaceFun_ordAt` above produces a place from a height-one prime of the ring of integers.  This
+block proves the CONVERSE, which is what `finite_isPlaceFun` needs and what
+`PlaceSystem.ord_complete` deliberately does not give: **every** normalised `K`-trivial discrete
+valuation of `F` is an `ordAt`, in one of the two towers `K[x] ⊆ F` and `K[1/x] ⊆ F`.
+
+Three steps, none of which needs the sextic or separability — only `2 ≠ 0`:
+
+1. `isPlaceFun_eq_of_le` — a normalised place is determined by its valuation RING, and in fact
+   by any place whose ring is contained in it.  Pure valuation theory: a uniformiser of the
+   smaller ring has minimal positive order for the larger, and normalisation makes that `1`.
+2. `isPlaceFun_nonneg_of_isIntegral` — the valuation ring is integrally closed, so it contains
+   `A = integralClosure K[X] F`.  Proven by the standard ultrametric argument over a `Finset`
+   sum (`isPlaceFun_sum_ge`) rather than through `IsIntegrallyClosed`, which would need an
+   algebra instance on the valuation ring; `valSubring` is nevertheless built, since packaging
+   the ring as a `ValuationSubring` is what makes `mem_or_inv_mem` available.
+3. `exists_ordAt_eq` — combine: `placeIdeal` is `m_o ∩ A`, a height-one prime, and mathlib's
+   `exists_primeCompl_mul_eq_of_integer` (`O_{ordAt v} = A_v`) gives the ring inclusion that
+   step 1 turns into equality of places.
+
+Then `finite_ordAt_ne_zero` is the finiteness of the divisor over `A` — `g = n/d` with
+`n, d ∈ A`, and a prime where `g` is not a unit divides `(n)` or `(d)`, finitely many by
+`Ideal.finite_factors` — and `finite_isPlaceFun_aux` packages the tower construction so that it
+can be run twice: at `t = x`, and at `t = 1/x` where `Polynomial.reflect` converts `gen` and the
+curve equation (`aeval_inv_reflect`).  A place with `o x < 0` has `o (1/x) > 0`, so the two
+towers between them see every place.
+
+**`hsep` IS NOT NEEDED for this leaf** and is underscored on it: the separability of `F/K(t)`
+that the Dedekind machinery wants is separability of `Y² − c`, which for a quadratic extension
+is exactly `2 ≠ 0`.  Separability of the SEXTIC is a statement about the curve, not about the
+extension, and finiteness of a divisor does not see it.
+-/
+
+section PlaceClassify
+
+namespace PlaceClassify
+
+open IsDedekindDomain
+open PlaceFromDedekind
+open scoped WithZero
+
+section Classify
+
+variable {K F : Type} [Field K] [Field F] [Algebra K F]
+
+/-- **The valuation ring of a place**, as a `ValuationSubring` of `F`.  Packaging it this way
+is what gives integral closedness for free (mathlib's
+`instance (V : ValuationSubring K) : IsIntegrallyClosed V`), which is the one nontrivial
+ingredient in the classification below. -/
+def valSubring {o : F → ℤ} (h : IsPlaceFun K F o) : ValuationSubring F where
+  carrier := {z | 0 ≤ o z}
+  mul_mem' := by
+    intro a b ha hb
+    have ha' : 0 ≤ o a := ha
+    have hb' : 0 ≤ o b := hb
+    show 0 ≤ o (a * b)
+    rcases eq_or_ne a 0 with rfl | ha0
+    · rw [zero_mul, h.map_zero]
+    rcases eq_or_ne b 0 with rfl | hb0
+    · rw [mul_zero, h.map_zero]
+    · rw [h.map_mul a b ha0 hb0]; omega
+  one_mem' := by
+    show 0 ≤ o 1
+    rw [show (1 : F) = algebraMap K F 1 by simp, h.map_algebraMap 1 one_ne_zero]
+  add_mem' := by
+    intro a b ha hb
+    have ha' : 0 ≤ o a := ha
+    have hb' : 0 ≤ o b := hb
+    show 0 ≤ o (a + b)
+    rcases eq_or_ne a 0 with rfl | ha0
+    · rwa [zero_add]
+    rcases eq_or_ne b 0 with rfl | hb0
+    · rwa [add_zero]
+    rcases eq_or_ne (a + b) 0 with hab | hab
+    · rw [hab, h.map_zero]
+    · have := h.ultra a b ha0 hb0 hab; omega
+  zero_mem' := by show 0 ≤ o 0; rw [h.map_zero]
+  neg_mem' := by
+    intro a ha
+    have ha' : 0 ≤ o a := ha
+    show 0 ≤ o (-a)
+    rcases eq_or_ne a 0 with rfl | ha0
+    · rw [neg_zero, h.map_zero]
+    · have hm : (-a) = algebraMap K F (-1) * a := by simp
+      have hne : algebraMap K F (-1 : K) ≠ 0 :=
+        (map_ne_zero_iff _ (algebraMap K F).injective).mpr (by norm_num)
+      rw [hm, h.map_mul _ _ hne ha0, h.map_algebraMap (-1) (by norm_num)]
+      omega
+  mem_or_inv_mem' := by
+    intro z
+    rcases eq_or_ne z 0 with rfl | hz
+    · left; show 0 ≤ o 0; rw [h.map_zero]
+    rcases le_or_gt 0 (o z) with hle | hlt
+    · exact Or.inl hle
+    · refine Or.inr ?_
+      show 0 ≤ o z⁻¹
+      have h1 := h.map_mul z z⁻¹ hz (inv_ne_zero hz)
+      rw [mul_inv_cancel₀ hz,
+        show (1 : F) = algebraMap K F 1 by simp, h.map_algebraMap 1 one_ne_zero] at h1
+      omega
+
+@[simp] lemma mem_valSubring {o : F → ℤ} (h : IsPlaceFun K F o) (z : F) :
+    z ∈ valSubring h ↔ 0 ≤ o z := Iff.rfl
+
+/-- `o (-z) = o z` (PROVEN). -/
+lemma isPlaceFun_neg {o : F → ℤ} (h : IsPlaceFun K F o) (z : F) : o (-z) = o z := by
+  rcases eq_or_ne z 0 with rfl | hz
+  · rw [neg_zero]
+  · have hne : algebraMap K F (-1 : K) ≠ 0 :=
+      (map_ne_zero_iff _ (algebraMap K F).injective).mpr (by norm_num)
+    rw [show (-z) = algebraMap K F (-1) * z by simp, h.map_mul _ _ hne hz,
+      h.map_algebraMap (-1) (by norm_num), zero_add]
+
+/-- `o 1 = 0` (PROVEN). -/
+lemma isPlaceFun_one {o : F → ℤ} (h : IsPlaceFun K F o) : o 1 = 0 := by
+  rw [show (1 : F) = algebraMap K F 1 by simp, h.map_algebraMap 1 one_ne_zero]
+
+/-- `o (z⁻¹) = − o z` (PROVEN). -/
+lemma isPlaceFun_inv {o : F → ℤ} (h : IsPlaceFun K F o) {z : F} (hz : z ≠ 0) :
+    o z⁻¹ = - o z := by
+  have h1 := h.map_mul z z⁻¹ hz (inv_ne_zero hz)
+  rw [mul_inv_cancel₀ hz, isPlaceFun_one h] at h1
+  omega
+
+/-- `o (zⁿ) = n · o z` (PROVEN). -/
+lemma isPlaceFun_pow {o : F → ℤ} (h : IsPlaceFun K F o) {z : F} (hz : z ≠ 0) (n : ℕ) :
+    o (z ^ n) = n * o z := by
+  induction n with
+  | zero => simpa using isPlaceFun_one h
+  | succ m ih =>
+    rw [pow_succ, h.map_mul _ _ (pow_ne_zero _ hz) hz, ih]
+    push_cast; ring
+
+/-- `o (z ^ (n : ℤ)) = n · o z` (PROVEN). -/
+lemma isPlaceFun_zpow {o : F → ℤ} (h : IsPlaceFun K F o) {z : F} (hz : z ≠ 0) (n : ℤ) :
+    o (z ^ n) = n * o z := by
+  rcases n with (m | m)
+  · simpa using isPlaceFun_pow h hz m
+  · rw [zpow_negSucc, isPlaceFun_inv h (pow_ne_zero _ hz), isPlaceFun_pow h hz (m + 1),
+      Int.negSucc_eq]
+    push_cast; ring
+
+/-- **Two normalised places with the same valuation ring are EQUAL** (PROVEN).
+
+Only the inclusion of valuation rings is needed, and the argument is pure valuation theory:
+a uniformiser of the smaller ring has minimal positive order for the larger one, and
+normalisation makes that minimum `1`. -/
+theorem isPlaceFun_eq_of_le {o w : F → ℤ} (ho : IsPlaceFun K F o) (hw : IsPlaceFun K F w)
+    (hle : ∀ z : F, 0 ≤ w z → 0 ≤ o z) {π : F} (hπ0 : π ≠ 0) (hπ : w π = 1) : o = w := by
+  have hoπ : o π = 1 := by
+    -- `o π ≥ 0` because `w π = 1 ≥ 0`; and `o` is normalised, so `o π ≤ 1`
+    have hge : 0 ≤ o π := hle π (by omega)
+    obtain ⟨t, ht⟩ := ho.normalised
+    have ht0 : t ≠ 0 := by intro h0; rw [h0, ho.map_zero] at ht; omega
+    -- every element of `w`-order `0` is an `o`-unit
+    have hunit : ∀ z : F, z ≠ 0 → w z = 0 → o z = 0 := by
+      intro z hz hwz
+      have h1 : 0 ≤ o z := hle z (by omega)
+      have h2 : 0 ≤ o z⁻¹ := hle z⁻¹ (by rw [isPlaceFun_inv hw hz]; omega)
+      rw [isPlaceFun_inv ho hz] at h2
+      omega
+    -- write `t = u · π ^ (w t)`
+    have hkey : ∀ z : F, z ≠ 0 → o z = (w z) * o π := by
+      intro z hz
+      have hz' : z * (π ^ (w z))⁻¹ ≠ 0 := by
+        exact mul_ne_zero hz (inv_ne_zero (zpow_ne_zero _ hπ0))
+      have hw' : w (z * (π ^ (w z))⁻¹) = 0 := by
+        rw [hw.map_mul _ _ hz (inv_ne_zero (zpow_ne_zero _ hπ0)),
+          isPlaceFun_inv hw (zpow_ne_zero _ hπ0), isPlaceFun_zpow hw hπ0, hπ]
+        ring
+      have ho' := hunit _ hz' hw'
+      rw [ho.map_mul _ _ hz (inv_ne_zero (zpow_ne_zero _ hπ0)),
+        isPlaceFun_inv ho (zpow_ne_zero _ hπ0), isPlaceFun_zpow ho hπ0] at ho'
+      omega
+    have h1 := hkey t ht0
+    rw [ht] at h1
+    -- `1 = (w t) * o π` with `o π ≥ 0` forces `o π = 1`
+    have hdvd : o π ∣ 1 := Dvd.intro_left (w t) h1.symm
+    have hu := Int.isUnit_iff.mp (isUnit_of_dvd_one hdvd)
+    omega
+  funext z
+  rcases eq_or_ne z 0 with rfl | hz
+  · rw [ho.map_zero, hw.map_zero]
+  · have hunit : ∀ y : F, y ≠ 0 → w y = 0 → o y = 0 := by
+      intro y hy hwy
+      have h1 : 0 ≤ o y := hle y (by omega)
+      have h2 : 0 ≤ o y⁻¹ := hle y⁻¹ (by rw [isPlaceFun_inv hw hy]; omega)
+      rw [isPlaceFun_inv ho hy] at h2
+      omega
+    have hz' : z * (π ^ (w z))⁻¹ ≠ 0 := mul_ne_zero hz (inv_ne_zero (zpow_ne_zero _ hπ0))
+    have hw' : w (z * (π ^ (w z))⁻¹) = 0 := by
+      rw [hw.map_mul _ _ hz (inv_ne_zero (zpow_ne_zero _ hπ0)),
+        isPlaceFun_inv hw (zpow_ne_zero _ hπ0), isPlaceFun_zpow hw hπ0, hπ]
+      ring
+    have ho' := hunit _ hz' hw'
+    rw [ho.map_mul _ _ hz (inv_ne_zero (zpow_ne_zero _ hπ0)),
+      isPlaceFun_inv ho (zpow_ne_zero _ hπ0), isPlaceFun_zpow ho hπ0, hoπ] at ho'
+    omega
+
+
+/-- The ultrametric inequality over a `Finset` sum (PROVEN). -/
+lemma isPlaceFun_sum_ge {o : F → ℤ} (ho : IsPlaceFun K F o) {ι : Type*} (s : Finset ι)
+    (f : ι → F) (c : ℤ) (hf : ∀ i ∈ s, f i = 0 ∨ c ≤ o (f i)) :
+    (∑ i ∈ s, f i) = 0 ∨ c ≤ o (∑ i ∈ s, f i) := by
+  classical
+  induction s using Finset.induction_on with
+  | empty => exact Or.inl (by simp)
+  | insert a s ha ih =>
+    rw [Finset.sum_insert ha]
+    have h2 := ih (fun i hi => hf i (Finset.mem_insert_of_mem hi))
+    rcases eq_or_ne (f a) 0 with ha0 | ha0
+    · rw [ha0, zero_add]; exact h2
+    have h1 : c ≤ o (f a) := (hf a (Finset.mem_insert_self a s)).resolve_left ha0
+    rcases eq_or_ne (∑ i ∈ s, f i) 0 with hs0 | hs0
+    · rw [hs0, add_zero]; exact Or.inr h1
+    have h2' : c ≤ o (∑ i ∈ s, f i) := h2.resolve_left hs0
+    rcases eq_or_ne (f a + ∑ i ∈ s, f i) 0 with hsum | hsum
+    · exact Or.inl hsum
+    · have := ho.ultra _ _ ha0 hs0 hsum
+      exact Or.inr (by omega)
+
+variable [Algebra K[X] F] [IsScalarTower K K[X] F]
+
+/-- Every polynomial in the abscissa has nonnegative order, when the abscissa does (PROVEN). -/
+lemma isPlaceFun_algebraMap_poly_nonneg {o : F → ℤ} (ho : IsPlaceFun K F o) {t : F}
+    (hxx : algebraMap K[X] F Polynomial.X = t) (ht : 0 ≤ o t) (p : K[X]) :
+    0 ≤ o (algebraMap K[X] F p) := by
+  have hconst : ∀ c : K, 0 ≤ o (algebraMap K F c) := by
+    intro c
+    rcases eq_or_ne c 0 with rfl | hc
+    · rw [map_zero, ho.map_zero]
+    · rw [ho.map_algebraMap c hc]
+  have hmem : (algebraMap K[X] F p) ∈ valSubring ho := by
+    rw [algebraMap_poly_eq_aeval hxx]
+    induction p using Polynomial.induction_on' with
+    | add p q hp hq => simpa [map_add] using Subring.add_mem _ hp hq
+    | monomial n c =>
+      rw [Polynomial.aeval_monomial]
+      refine Subring.mul_mem _ ?_ ?_
+      · exact hconst c
+      · exact Subring.pow_mem _ (show t ∈ valSubring ho from ht) n
+  exact hmem
+
+/-- **An element integral over `K[x]` has nonnegative order** (PROVEN) — the valuation ring is
+integrally closed, proven here by the standard ultrametric argument rather than through
+`IsIntegrallyClosed`, so that no extra algebra instance on the valuation ring is needed. -/
+lemma isPlaceFun_nonneg_of_isIntegral {o : F → ℤ} (ho : IsPlaceFun K F o) {t : F}
+    (hxx : algebraMap K[X] F Polynomial.X = t) (ht : 0 ≤ o t) {z : F}
+    (hz : IsIntegral K[X] z) : 0 ≤ o z := by
+  by_contra hlt
+  push_neg at hlt
+  obtain ⟨p, hmonic, hroot⟩ := hz
+  have hz0 : z ≠ 0 := by intro h0; rw [h0, ho.map_zero] at hlt; omega
+  set n := p.natDegree with hn
+  -- expand the integral equation, splitting off the leading term
+  have hexp : Polynomial.eval₂ (algebraMap K[X] F) z p
+      = (∑ i ∈ Finset.range n, algebraMap K[X] F (p.coeff i) * z ^ i) + z ^ n := by
+    rw [Polynomial.eval₂_eq_sum_range, Finset.sum_range_succ, hmonic.coeff_natDegree, map_one,
+      one_mul]
+  rw [hexp] at hroot
+  have hsum : (∑ i ∈ Finset.range n, algebraMap K[X] F (p.coeff i) * z ^ i) = - z ^ n := by
+    linear_combination hroot
+  have hbound : ∀ i ∈ Finset.range n,
+      (algebraMap K[X] F (p.coeff i) * z ^ i) = 0 ∨
+        ((n : ℤ) - 1) * o z ≤ o (algebraMap K[X] F (p.coeff i) * z ^ i) := by
+    intro i hi
+    rcases eq_or_ne (algebraMap K[X] F (p.coeff i)) 0 with h0 | h0
+    · exact Or.inl (by rw [h0, zero_mul])
+    refine Or.inr ?_
+    rw [ho.map_mul _ _ h0 (pow_ne_zero _ hz0), isPlaceFun_pow ho hz0]
+    have hc := isPlaceFun_algebraMap_poly_nonneg ho hxx ht (p.coeff i)
+    have hi' : (i : ℤ) ≤ (n : ℤ) - 1 := by
+      have := Finset.mem_range.mp hi
+      omega
+    nlinarith [hlt, hc, hi']
+  have hzn : o (- z ^ n) = (n : ℤ) * o z := by
+    rw [isPlaceFun_neg ho, isPlaceFun_pow ho hz0]
+  rcases isPlaceFun_sum_ge ho (Finset.range n) _ (((n : ℤ) - 1) * o z) hbound with hc | hc
+  · rw [hsum] at hc
+    have : z ^ n = 0 := by linear_combination -hc
+    exact (pow_ne_zero n hz0) this
+  · rw [hsum, hzn] at hc
+    nlinarith [hc, hlt]
+
+
+
+section Tower2
+
+variable [Algebra (RatFunc K) F] [IsScalarTower K[X] (RatFunc K) F]
+  [FiniteDimensional (RatFunc K) F] [Algebra.IsSeparable (RatFunc K) F]
+
+/-- **The prime of the ring of integers cut out by a place** (PROVEN), for a place at which the
+abscissa is regular. -/
+def placeIdeal {o : F → ℤ} (ho : IsPlaceFun K F o) {t : F}
+    (hxx : algebraMap K[X] F Polynomial.X = t) (ht : 0 ≤ o t) :
+    Ideal ↥(integralClosure K[X] F) where
+  carrier := {a | (a : F) = 0 ∨ 0 < o (a : F)}
+  add_mem' := by
+    intro a b ha hb
+    have ha' : (a : F) = 0 ∨ 0 < o (a : F) := ha
+    have hb' : (b : F) = 0 ∨ 0 < o (b : F) := hb
+    show ((a + b : ↥(integralClosure K[X] F)) : F) = 0 ∨ 0 < o ((a + b : ↥(integralClosure K[X] F)) : F)
+    have hab : ((a + b : ↥(integralClosure K[X] F)) : F) = (a : F) + (b : F) := by push_cast; ring
+    rw [hab]
+    rcases ha' with ha' | ha'
+    · rw [ha', zero_add]; exact hb'
+    rcases hb' with hb' | hb'
+    · rw [hb', add_zero]; exact Or.inr ha'
+    have ha0 : (a : F) ≠ 0 := by intro h0; rw [h0, ho.map_zero] at ha'; omega
+    have hb0 : (b : F) ≠ 0 := by intro h0; rw [h0, ho.map_zero] at hb'; omega
+    rcases eq_or_ne ((a : F) + (b : F)) 0 with h0 | h0
+    · exact Or.inl h0
+    · have := ho.ultra _ _ ha0 hb0 h0
+      exact Or.inr (by omega)
+  zero_mem' := Or.inl (by push_cast; ring)
+  smul_mem' := by
+    intro c a ha
+    have ha' : (a : F) = 0 ∨ 0 < o (a : F) := ha
+    show ((c • a : ↥(integralClosure K[X] F)) : F) = 0 ∨ 0 < o ((c • a : ↥(integralClosure K[X] F)) : F)
+    have hca : ((c • a : ↥(integralClosure K[X] F)) : F) = (c : F) * (a : F) := by
+      simp [smul_eq_mul]
+    rw [hca]
+    rcases ha' with ha' | ha'
+    · exact Or.inl (by rw [ha', mul_zero])
+    have ha0 : (a : F) ≠ 0 := by intro h0; rw [h0, ho.map_zero] at ha'; omega
+    rcases eq_or_ne (c : F) 0 with hc0 | hc0
+    · exact Or.inl (by rw [hc0, zero_mul])
+    · have hc : 0 ≤ o (c : F) := isPlaceFun_nonneg_of_isIntegral ho hxx ht c.2
+      exact Or.inr (by rw [ho.map_mul _ _ hc0 ha0]; omega)
+
+lemma mem_placeIdeal {o : F → ℤ} (ho : IsPlaceFun K F o) {t : F}
+    (hxx : algebraMap K[X] F Polynomial.X = t) (ht : 0 ≤ o t)
+    {a : ↥(integralClosure K[X] F)} :
+    a ∈ placeIdeal ho hxx ht ↔ ((a : F) = 0 ∨ 0 < o (a : F)) := Iff.rfl
+
+lemma placeIdeal_isPrime {o : F → ℤ} (ho : IsPlaceFun K F o) {t : F}
+    (hxx : algebraMap K[X] F Polynomial.X = t) (ht : 0 ≤ o t) :
+    (placeIdeal ho hxx ht).IsPrime := by
+  constructor
+  · intro htop
+    have h1 : (1 : ↥(integralClosure K[X] F)) ∈ placeIdeal ho hxx ht := by
+      rw [htop]; exact Submodule.mem_top
+    rw [mem_placeIdeal] at h1
+    have hone : ((1 : ↥(integralClosure K[X] F)) : F) = 1 := by push_cast; ring
+    rw [hone, isPlaceFun_one ho] at h1
+    rcases h1 with h1 | h1
+    · exact one_ne_zero h1
+    · omega
+  · intro a b hab
+    rw [mem_placeIdeal] at hab
+    have hprod : ((a * b : ↥(integralClosure K[X] F)) : F) = (a : F) * (b : F) := by
+      push_cast; ring
+    rw [hprod] at hab
+    rcases hab with hab | hab
+    · rcases mul_eq_zero.mp hab with h | h
+      · exact Or.inl (by rw [mem_placeIdeal]; exact Or.inl h)
+      · exact Or.inr (by rw [mem_placeIdeal]; exact Or.inl h)
+    · have ha0 : (a : F) ≠ 0 := by
+        intro h0; rw [h0, zero_mul, ho.map_zero] at hab; omega
+      have hb0 : (b : F) ≠ 0 := by
+        intro h0; rw [h0, mul_zero, ho.map_zero] at hab; omega
+      rw [ho.map_mul _ _ ha0 hb0] at hab
+      have hA : 0 ≤ o (a : F) := isPlaceFun_nonneg_of_isIntegral ho hxx ht a.2
+      have hB : 0 ≤ o (b : F) := isPlaceFun_nonneg_of_isIntegral ho hxx ht b.2
+      rcases lt_or_ge 0 (o (a : F)) with h | h
+      · exact Or.inl (by rw [mem_placeIdeal]; exact Or.inr h)
+      · exact Or.inr (by rw [mem_placeIdeal]; exact Or.inr (by omega))
+
+lemma placeIdeal_ne_bot {o : F → ℤ} (ho : IsPlaceFun K F o) {t : F}
+    (hxx : algebraMap K[X] F Polynomial.X = t) (ht : 0 ≤ o t) :
+    placeIdeal ho hxx ht ≠ ⊥ := by
+  obtain ⟨τ, hτ⟩ := ho.normalised
+  obtain ⟨n, d, hd0, hnd⟩ :=
+    IsFractionRing.div_surjective (A := ↥(integralClosure K[X] F)) τ
+  have hcoe : ∀ x : ↥(integralClosure K[X] F),
+      algebraMap (↥(integralClosure K[X] F)) F x = (x : F) := fun _ => rfl
+  rw [hcoe, hcoe] at hnd
+  have hdF : ((d : ↥(integralClosure K[X] F)) : F) ≠ 0 := by
+    simpa using hd0
+  have hτ0 : τ ≠ 0 := by intro h0; rw [h0, ho.map_zero] at hτ; omega
+  have hnF : ((n : ↥(integralClosure K[X] F)) : F) ≠ 0 := by
+    intro h0
+    rw [← hnd] at hτ0
+    exact hτ0 (by
+      have : ((n : ↥(integralClosure K[X] F)) : F) / ((d : ↥(integralClosure K[X] F)) : F) = 0 := by
+        rw [h0, zero_div]
+      simpa using this)
+  have hdnn : 0 ≤ o ((d : ↥(integralClosure K[X] F)) : F) :=
+    isPlaceFun_nonneg_of_isIntegral ho hxx ht d.2
+  have hon : 0 < o ((n : ↥(integralClosure K[X] F)) : F) := by
+    have hsplit : o ((n : ↥(integralClosure K[X] F)) : F)
+        = o τ + o ((d : ↥(integralClosure K[X] F)) : F) := by
+      have hmul : ((n : ↥(integralClosure K[X] F)) : F)
+          = τ * ((d : ↥(integralClosure K[X] F)) : F) := by
+        rw [← hnd]; field_simp
+      rw [hmul, ho.map_mul _ _ hτ0 hdF]
+    rw [hsplit, hτ]
+    omega
+  intro hbot
+  have hmem : (n : ↥(integralClosure K[X] F)) ∈ placeIdeal ho hxx ht := by
+    rw [mem_placeIdeal]; exact Or.inr hon
+  rw [hbot, Ideal.mem_bot] at hmem
+  exact hnF (by rw [hmem]; push_cast; ring)
+
+
+/-- `0 < ordAt v a` for an element of the ring of integers means `a ∈ v` (PROVEN), the converse
+of `ordAt_pos_of_mem`. -/
+lemma mem_of_ordAt_pos (v : HeightOneSpectrum ↥(integralClosure K[X] F))
+    {a : ↥(integralClosure K[X] F)} (ha : (a : F) ≠ 0)
+    (h : 0 < ordAt (F := F) v (a : F)) : a ∈ v.asIdeal := by
+  have hne : v.valuation F (a : F) ≠ 0 := valuation_ne_zero v ha
+  have hlt : v.valuation F (a : F) < 1 := by
+    refine (WithZero.log_lt_log hne (one_ne_zero (α := ℤᵐ⁰))).1 ?_
+    simp only [WithZero.log_one]
+    simp only [ordAt] at h
+    omega
+  exact (HeightOneSpectrum.valuation_lt_one_iff_mem (K := F) v a).1 hlt
+
+/-- **THE CLASSIFICATION** (PROVEN): a normalised place at which the abscissa is regular IS the
+adic valuation of a height-one prime of the ring of integers `A = integralClosure K[X] F`.
+
+This is the direction `PlaceSystem.ord_complete` does NOT give: `isPlaceFun_ordAt` produces a
+place from a prime, and this produces the prime from the place.  The two ingredients are
+`isPlaceFun_nonneg_of_isIntegral` (`A ⊆ O_o`, integral closedness of a valuation ring) and
+mathlib's `exists_primeCompl_mul_eq_of_integer` (`O_ordAt v = A_v`), and they combine through
+`isPlaceFun_eq_of_le`, which says a normalised place is determined by its valuation ring. -/
+theorem exists_ordAt_eq {o : F → ℤ} (ho : IsPlaceFun K F o) {t : F}
+    (hxx : algebraMap K[X] F Polynomial.X = t) (ht : 0 ≤ o t) :
+    ∃ v : HeightOneSpectrum ↥(integralClosure K[X] F), o = ordAt (F := F) v := by
+  refine ⟨⟨placeIdeal ho hxx ht, placeIdeal_isPrime ho hxx ht, placeIdeal_ne_bot ho hxx ht⟩, ?_⟩
+  obtain ⟨π, hπ⟩ := ordAt_normalised (F := F)
+    (⟨placeIdeal ho hxx ht, placeIdeal_isPrime ho hxx ht, placeIdeal_ne_bot ho hxx ht⟩ :
+      HeightOneSpectrum ↥(integralClosure K[X] F))
+  have hπ0 : π ≠ 0 := by
+    intro h0
+    rw [h0, ordAt_zero] at hπ
+    omega
+  refine isPlaceFun_eq_of_le ho (isPlaceFun_ordAt _) ?_ hπ0 hπ
+  intro z hz
+  rcases eq_or_ne z 0 with rfl | hz0
+  · rw [ho.map_zero]
+  set v : HeightOneSpectrum ↥(integralClosure K[X] F) :=
+    ⟨placeIdeal ho hxx ht, placeIdeal_isPrime ho hxx ht, placeIdeal_ne_bot ho hxx ht⟩ with hv
+  have hval : v.valuation F z ≤ 1 := by
+    have hne : v.valuation F z ≠ 0 := valuation_ne_zero v hz0
+    refine (WithZero.log_le_log hne (one_ne_zero (α := ℤᵐ⁰))).1 ?_
+    simp only [WithZero.log_one]
+    simp only [ordAt] at hz
+    omega
+  obtain ⟨n, d, hnd⟩ := v.exists_primeCompl_mul_eq_of_integer z hval
+  have hcoe : ∀ x : ↥(integralClosure K[X] F),
+      algebraMap (↥(integralClosure K[X] F)) F x = (x : F) := fun _ => rfl
+  rw [hcoe, hcoe] at hnd
+  have hdmem : (d : ↥(integralClosure K[X] F)) ∉ v.asIdeal := d.2
+  have hd' : ¬ (((d : ↥(integralClosure K[X] F)) : F) = 0 ∨
+      0 < o ((d : ↥(integralClosure K[X] F)) : F)) := by
+    intro hcon
+    exact hdmem ((mem_placeIdeal ho hxx ht).2 hcon)
+  have hdF : ((d : ↥(integralClosure K[X] F)) : F) ≠ 0 := fun h0 => hd' (Or.inl h0)
+  have hdle : o ((d : ↥(integralClosure K[X] F)) : F) ≤ 0 := by
+    by_contra hcon
+    exact hd' (Or.inr (by omega))
+  have hdge : 0 ≤ o ((d : ↥(integralClosure K[X] F)) : F) :=
+    isPlaceFun_nonneg_of_isIntegral ho hxx ht d.1.2
+  have hnge : 0 ≤ o ((n : ↥(integralClosure K[X] F)) : F) :=
+    isPlaceFun_nonneg_of_isIntegral ho hxx ht n.2
+  have hsplit : o z + o ((d : ↥(integralClosure K[X] F)) : F)
+      = o ((n : ↥(integralClosure K[X] F)) : F) := by
+    rw [← ho.map_mul _ _ hz0 hdF, hnd]
+  omega
+
+/-- **The divisor of a nonzero function has finite support** (PROVEN), over the ring of
+integers: a nonzero `g` is `n/d` with `n, d ∈ A`, and a prime at which `g` is not a unit
+divides `(n)` or `(d)` — finitely many, by `Ideal.finite_factors`. -/
+theorem finite_ordAt_ne_zero {g : F} (hg : g ≠ 0) :
+    {v : HeightOneSpectrum ↥(integralClosure K[X] F) | ordAt (F := F) v g ≠ 0}.Finite := by
+  obtain ⟨n, d, hd0, hnd⟩ := IsFractionRing.div_surjective (A := ↥(integralClosure K[X] F)) g
+  have hcoe : ∀ x : ↥(integralClosure K[X] F),
+      algebraMap (↥(integralClosure K[X] F)) F x = (x : F) := fun _ => rfl
+  rw [hcoe, hcoe] at hnd
+  have hdF : ((d : ↥(integralClosure K[X] F)) : F) ≠ 0 := by simpa using hd0
+  have hnF : ((n : ↥(integralClosure K[X] F)) : F) ≠ 0 := by
+    intro h0
+    rw [← hnd, h0, zero_div] at hg
+    exact hg rfl
+  have hn0 : (n : ↥(integralClosure K[X] F)) ≠ 0 := by
+    intro h0; exact hnF (by rw [h0]; push_cast; ring)
+  have hd0' : (d : ↥(integralClosure K[X] F)) ≠ 0 := by
+    intro h0; exact hdF (by rw [h0]; push_cast; ring)
+  refine Set.Finite.subset (Set.Finite.union
+    (Ideal.finite_factors (R := ↥(integralClosure K[X] F))
+      (I := Ideal.span {(n : ↥(integralClosure K[X] F))}) (by
+        simpa [Ideal.span_singleton_eq_bot] using hn0))
+    (Ideal.finite_factors (R := ↥(integralClosure K[X] F))
+      (I := Ideal.span {(d : ↥(integralClosure K[X] F))}) (by
+        simpa [Ideal.span_singleton_eq_bot] using hd0))) ?_
+  intro v hv
+  have hvg : ordAt (F := F) v g ≠ 0 := hv
+  have hgeq : g = ((n : ↥(integralClosure K[X] F)) : F) / ((d : ↥(integralClosure K[X] F)) : F) :=
+    hnd.symm
+  have hsplit : ordAt (F := F) v ((n : ↥(integralClosure K[X] F)) : F)
+      = ordAt (F := F) v g + ordAt (F := F) v ((d : ↥(integralClosure K[X] F)) : F) := by
+    have hmul : ((n : ↥(integralClosure K[X] F)) : F)
+        = g * ((d : ↥(integralClosure K[X] F)) : F) := by
+      rw [hgeq]; field_simp
+    rw [hmul, ordAt_mul v _ _ hg hdF]
+  have hnnn : 0 ≤ ordAt (F := F) v ((n : ↥(integralClosure K[X] F)) : F) :=
+    ordAt_nonneg_of_isIntegral v n.2
+  have hdnn : 0 ≤ ordAt (F := F) v ((d : ↥(integralClosure K[X] F)) : F) :=
+    ordAt_nonneg_of_isIntegral v d.2
+  rcases lt_or_ge 0 (ordAt (F := F) v ((n : ↥(integralClosure K[X] F)) : F)) with hn | hn
+  · left
+    show v.asIdeal ∣ Ideal.span {(n : ↥(integralClosure K[X] F))}
+    rw [Ideal.dvd_span_singleton]
+    exact mem_of_ordAt_pos v hnF hn
+  · right
+    show v.asIdeal ∣ Ideal.span {(d : ↥(integralClosure K[X] F))}
+    rw [Ideal.dvd_span_singleton]
+    refine mem_of_ordAt_pos v hdF ?_
+    omega
+
+
+/-- **Finiteness of the bad set among the places regular at the abscissa** (PROVEN): such a
+place IS an `ordAt`, and the primes at which `g` is not a unit are finitely many. -/
+theorem finite_isPlaceFun_of_nonneg {t : F} (hxx : algebraMap K[X] F Polynomial.X = t)
+    {g : F} (hg : g ≠ 0) :
+    {p : {o : F → ℤ // IsPlaceFun K F o} | 0 ≤ p.1 t ∧ p.1 g ≠ 0}.Finite := by
+  refine Set.Finite.subset ((finite_ordAt_ne_zero (K := K) (F := F) hg).image
+    (fun v : HeightOneSpectrum ↥(integralClosure K[X] F) =>
+      (⟨ordAt (F := F) v, isPlaceFun_ordAt v⟩ : {o : F → ℤ // IsPlaceFun K F o}))) ?_
+  intro p hp
+  obtain ⟨v, hv⟩ := exists_ordAt_eq p.2 hxx hp.1
+  refine ⟨v, ?_, ?_⟩
+  · show ordAt (F := F) v g ≠ 0
+    rw [← hv]
+    exact hp.2
+  · exact Subtype.ext hv.symm
+
+end Tower2
+
+
+
+end Classify
+
+/-! ### The frontier of obligation 1b: finiteness of the divisor -/
+
+section Finite
+
+variable {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+
+/-- The ordinate is nonzero (PROVEN): otherwise the abscissa would be a root of the sextic. -/
+lemma yy_ne_zero (E : FunctionFieldData c₀ c₁ c₂ c₃ c₄ c₅ K) : E.yy ≠ 0 := by
+  intro h0
+  have hsext0 : sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K ≠ 0 := fun hz => by
+    have hd := natDegree_sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K
+    rw [hz] at hd; simp at hd
+  refine E.transcendental_xx ⟨sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K, hsext0, ?_⟩
+  have := E.eqn
+  rw [h0] at this
+  rw [aeval_sextPoly, ← this]
+  ring
+
+/-- **Finiteness, in any generator of the abscissa's subfield** (PROVEN).
+
+`t` plays the role of the abscissa: it must be transcendental, `F` must be generated over `K(t)`
+by the ordinate, and the ordinate's square must lie in `K(t)`.  Both `t = x` and `t = 1/x`
+qualify, and between them they cover every place — which is what closes `finite_isPlaceFun`. -/
+theorem finite_isPlaceFun_aux (E : FunctionFieldData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (h2 : (2 : K) ≠ 0) {t : E.F} (htr : Transcendental K t)
+    (hgen : ∀ z : E.F, ∃ a b d : K[X], aeval t d ≠ 0 ∧
+      z * aeval t d = aeval t a + aeval t b * E.yy)
+    {P Q : K[X]} (hQ : aeval t Q ≠ 0) (hPQ : E.yy ^ 2 * aeval t Q = aeval t P)
+    {g : E.F} (hg : g ≠ 0) :
+    {p : {o : E.F → ℤ // IsPlaceFun K E.F o} | 0 ≤ p.1 t ∧ p.1 g ≠ 0}.Finite := by
+  classical
+  letI : Algebra K[X] E.F := (Polynomial.aeval t : K[X] →ₐ[K] E.F).toRingHom.toAlgebra
+  have halg : ∀ p : K[X], algebraMap K[X] E.F p = Polynomial.aeval t p := fun _ => rfl
+  haveI : IsScalarTower K K[X] E.F := IsScalarTower.of_algebraMap_eq fun a => by simp [halg]
+  have hinj : Function.Injective (algebraMap K[X] E.F) := by
+    rw [injective_iff_map_eq_zero]
+    intro p hp
+    by_contra hp0
+    exact htr ⟨p, hp0, by rw [← halg]; exact hp⟩
+  letI : Algebra (RatFunc K) E.F := (IsFractionRing.lift (A := K[X]) hinj).toAlgebra
+  haveI : IsScalarTower K[X] (RatFunc K) E.F :=
+    IsScalarTower.of_algebraMap_eq fun p => (IsFractionRing.lift_algebraMap hinj p).symm
+  have hdown : ∀ p : K[X], algebraMap (RatFunc K) E.F (algebraMap K[X] (RatFunc K) p)
+      = Polynomial.aeval t p := fun p => by rw [← IsScalarTower.algebraMap_apply, halg]
+  -- the ordinate's square is the nonzero constant `c = P/Q` of `K(t)`
+  set c : RatFunc K :=
+    algebraMap K[X] (RatFunc K) P / algebraMap K[X] (RatFunc K) Q with hc
+  have hQ0 : algebraMap K[X] (RatFunc K) Q ≠ 0 := fun h0 => hQ (by rw [← hdown, h0, map_zero])
+  have hcF : algebraMap (RatFunc K) E.F c = E.yy ^ 2 := by
+    rw [hc, map_div₀, hdown, hdown, ← hPQ]
+    field_simp
+  have hc0 : c ≠ 0 := by
+    intro h0
+    rw [h0, map_zero] at hcF
+    exact (pow_ne_zero 2 (yy_ne_zero E)) hcF.symm
+  have hroot : (Polynomial.aeval E.yy)
+      (Polynomial.X ^ 2 - Polynomial.C c : (RatFunc K)[X]) = 0 := by
+    rw [map_sub, map_pow, Polynomial.aeval_X, Polynomial.aeval_C, hcF, sub_self]
+  have hint : IsIntegral (RatFunc K) E.yy :=
+    ⟨_, Polynomial.monic_X_pow_sub_C c two_ne_zero, by simpa [Polynomial.aeval_def] using hroot⟩
+  have hadj : IntermediateField.adjoin (RatFunc K) {E.yy} = ⊤ := by
+    refine eq_top_iff.mpr fun z _ => ?_
+    obtain ⟨a, b, d, hd, hz⟩ := hgen z
+    refine (IntermediateField.mem_adjoin_simple_iff (RatFunc K) z).2
+      ⟨Polynomial.C (algebraMap K[X] (RatFunc K) a / algebraMap K[X] (RatFunc K) d)
+        + Polynomial.C (algebraMap K[X] (RatFunc K) b / algebraMap K[X] (RatFunc K) d)
+          * Polynomial.X, 1, ?_⟩
+    have e1 : algebraMap (RatFunc K) E.F
+        (algebraMap K[X] (RatFunc K) a / algebraMap K[X] (RatFunc K) d)
+        = Polynomial.aeval t a / Polynomial.aeval t d := by rw [map_div₀, hdown, hdown]
+    have e2 : algebraMap (RatFunc K) E.F
+        (algebraMap K[X] (RatFunc K) b / algebraMap K[X] (RatFunc K) d)
+        = Polynomial.aeval t b / Polynomial.aeval t d := by rw [map_div₀, hdown, hdown]
+    simp only [map_add, map_mul, Polynomial.aeval_C, Polynomial.aeval_X, map_one, div_one, e1, e2]
+    field_simp
+    linear_combination hz
+  haveI hfd : FiniteDimensional (RatFunc K) E.F := by
+    have h1 := IntermediateField.adjoin.finiteDimensional hint
+    rw [hadj] at h1
+    exact (IntermediateField.topEquiv (F := RatFunc K) (E := E.F)).toLinearEquiv.finiteDimensional
+  have hsepyy : IsSeparable (RatFunc K) E.yy := by
+    have h2K : ((2 : ℕ) : K) ≠ 0 := by push_cast; exact h2
+    have h2' : ((2 : ℕ) : RatFunc K) ≠ 0 := by
+      rw [← map_natCast (algebraMap K (RatFunc K)) 2]
+      exact fun hh => h2K ((algebraMap K (RatFunc K)).injective (by rw [hh, map_zero]))
+    exact (Polynomial.separable_X_pow_sub_C _ h2' hc0).of_dvd (minpoly.dvd _ _ hroot)
+  haveI : Algebra.IsSeparable (RatFunc K) E.F := by
+    have h1 : Algebra.IsSeparable (RatFunc K) (IntermediateField.adjoin (RatFunc K) {E.yy}) :=
+      (IntermediateField.isSeparable_adjoin_simple_iff_isSeparable (RatFunc K) E.F).2 hsepyy
+    rw [hadj] at h1
+    exact Algebra.IsSeparable.of_algHom (F := RatFunc K) (E := E.F)
+      (↥(⊤ : IntermediateField (RatFunc K) E.F))
+      (f := (IntermediateField.topEquiv (F := RatFunc K) (E := E.F)).symm.toAlgHom)
+  have hxxX : algebraMap K[X] E.F Polynomial.X = t := by rw [halg]; simp
+  exact finite_isPlaceFun_of_nonneg hxxX hg
+
+/-- `aeval` at `x⁻¹` of the reflected polynomial (PROVEN), mathlib's `eval₂_reflect_mul_pow`
+in the form the chart at infinity wants. -/
+lemma aeval_inv_reflect {F : Type*} [Field F] [Algebra K F] {x : F} (hx : x ≠ 0)
+    (p : K[X]) (m : ℕ) (hp : p.natDegree ≤ m) :
+    aeval x⁻¹ (Polynomial.reflect m p) = aeval x p * x⁻¹ ^ m := by
+  haveI : Invertible x := invertibleOfNonzero hx
+  have h := Polynomial.eval₂_reflect_mul_pow (algebraMap K F) x m p hp
+  have hinv : (⅟x : F) = x⁻¹ := invOf_eq_inv x
+  rw [hinv, ← Polynomial.aeval_def, ← Polynomial.aeval_def] at h
+  have hxu : x * x⁻¹ = 1 := mul_inv_cancel₀ hx
+  calc aeval x⁻¹ (Polynomial.reflect m p)
+      = aeval x⁻¹ (Polynomial.reflect m p) * (x * x⁻¹) ^ m := by rw [hxu, one_pow, mul_one]
+    _ = (aeval x⁻¹ (Polynomial.reflect m p) * x ^ m) * x⁻¹ ^ m := by ring
+    _ = aeval x p * x⁻¹ ^ m := by rw [h]
+
+/-- **The finiteness of the divisor** (PROVEN), in the two towers together: every place is
+regular at `x` or at `1/x`, so the classification applies to it in one tower or the other. -/
+theorem finite_isPlaceFun_core (E : FunctionFieldData c₀ c₁ c₂ c₃ c₄ c₅ K) (h2 : (2 : K) ≠ 0)
+    (g : E.F) (hg : g ≠ 0) :
+    {v : {o : E.F → ℤ // IsPlaceFun K E.F o} | v.1 g ≠ 0}.Finite := by
+  have hxne : E.xx ≠ 0 := by
+    intro h0
+    exact E.transcendental_xx ⟨Polynomial.X, Polynomial.X_ne_zero, by simp [h0]⟩
+  have hine : E.xx⁻¹ ≠ 0 := inv_ne_zero hxne
+  -- the affine tower `t = x`
+  have hA : {p : {o : E.F → ℤ // IsPlaceFun K E.F o} | 0 ≤ p.1 E.xx ∧ p.1 g ≠ 0}.Finite := by
+    refine finite_isPlaceFun_aux E h2 E.transcendental_xx E.gen
+      (P := sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) (Q := 1) (by simp) ?_ hg
+    rw [map_one, mul_one, aeval_sextPoly]
+    exact E.eqn
+  -- the tower at infinity `t = 1/x`
+  have htrinv : Transcendental K E.xx⁻¹ := by
+    intro halg
+    exact E.transcendental_xx (IsAlgebraic.inv_iff.1 halg)
+  have hgeninf : ∀ z : E.F, ∃ a b d : K[X], aeval E.xx⁻¹ d ≠ 0 ∧
+      z * aeval E.xx⁻¹ d = aeval E.xx⁻¹ a + aeval E.xx⁻¹ b * E.yy := by
+    intro z
+    obtain ⟨a, b, d, hd, hz⟩ := E.gen z
+    set m : ℕ := max d.natDegree (max a.natDegree b.natDegree) with hm
+    have hdm : d.natDegree ≤ m := by rw [hm]; exact le_max_left _ _
+    have ham : a.natDegree ≤ m := by
+      rw [hm]; exact le_trans (le_max_left _ b.natDegree) (le_max_right _ _)
+    have hbm : b.natDegree ≤ m := by
+      rw [hm]; exact le_trans (le_max_right a.natDegree _) (le_max_right _ _)
+    refine ⟨Polynomial.reflect m a, Polynomial.reflect m b, Polynomial.reflect m d, ?_, ?_⟩
+    · rw [aeval_inv_reflect hxne d m hdm]
+      exact mul_ne_zero hd (pow_ne_zero _ hine)
+    · rw [aeval_inv_reflect hxne d m hdm, aeval_inv_reflect hxne a m ham,
+        aeval_inv_reflect hxne b m hbm]
+      linear_combination (E.xx⁻¹ ^ m) * hz
+  have hB : {p : {o : E.F → ℤ // IsPlaceFun K E.F o} |
+      0 ≤ p.1 E.xx⁻¹ ∧ p.1 E.xx⁻¹ ≠ 0}.Finite := by
+    refine finite_isPlaceFun_aux E h2 htrinv hgeninf
+      (P := Polynomial.reflect 6 (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K)) (Q := Polynomial.X ^ 6) ?_ ?_ hine
+    · rw [map_pow, Polynomial.aeval_X]
+      exact pow_ne_zero _ hine
+    · rw [aeval_inv_reflect hxne _ 6 (by rw [natDegree_sextPoly]), aeval_sextPoly, ← E.eqn,
+        map_pow, Polynomial.aeval_X]
+  -- every place is covered by one of the two
+  refine Set.Finite.subset (Set.Finite.union hA hB) ?_
+  intro p hp
+  have hpg : p.1 g ≠ 0 := hp
+  rcases le_or_gt 0 (p.1 E.xx) with h | h
+  · exact Or.inl ⟨h, hpg⟩
+  · have hinv : p.1 E.xx⁻¹ = - p.1 E.xx := isPlaceFun_inv p.2 hxne
+    exact Or.inr ⟨by omega, by omega⟩
+
+
+end Finite
+
+end PlaceClassify
+
+end PlaceClassify
+
+/-- **LEAF (obligation 1b, RESIDUE), PROVEN 2026-07-30: a nonzero function has finitely many
+zeros and poles.**
+
+The route below is NOT the one that was taken: no norm and no counting of extensions of a place
+of `K(x)` appears.  What replaces it is the CLASSIFICATION of places in the section above --
+every place is an `ordAt` of a height-one prime of the ring of integers of one of the two
+towers `K[x]` and `K[1/x]` -- together with the finiteness of the divisor over a Dedekind
+domain.  See that section for the three steps, and note that `hsep` is NOT used.
 
 ## What happened to the rest of obligation 1b (2026-07-28)
 
@@ -1131,9 +2390,11 @@ divisor of a function) and III.1 (at most `[F : K(x)]` places above a place of `
 Generic in the sextic and the prime: proving it closes obligation 1b at both levels. -/
 theorem finite_isPlaceFun {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
     (E : FunctionFieldData c₀ c₁ c₂ c₃ c₄ c₅ K)
-    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (h2 : (2 : K) ≠ 0)
+    (_hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (h2 : (2 : K) ≠ 0)
     (g : E.F) (hg : g ≠ 0) :
-    {v : {o : E.F → ℤ // IsPlaceFun K E.F o} | v.1 g ≠ 0}.Finite := sorry
+    {v : {o : E.F → ℤ // IsPlaceFun K E.F o} | v.1 g ≠ 0}.Finite :=
+  PlaceClassify.finite_isPlaceFun_core E h2 g hg
+
 
 /-- **LEAF (obligation 1b), now PROVEN from `finite_isPlaceFun`.**
 
@@ -1154,15 +2415,6 @@ theorem exists_placeSystem {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Fie
      ord_complete := fun o h0 hmul hadd halg hsurj => ⟨⟨o, ⟨h0, hmul, hadd, halg, hsurj⟩⟩, rfl⟩
      ord_finite := finite_isPlaceFun E hsep h2 }⟩
 
-/-- **`o` is the valuation of the rational point `P`** — `IsPlaceOfPt` with the place
-replaced by a raw valuation function, so that a place can be produced through
-`PlaceSystem.ord_complete` rather than exhibited inside a given system. -/
-def IsPlaceFunOfPt {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
-    (E : FunctionFieldData c₀ c₁ c₂ c₃ c₄ c₅ K) (o : E.F → ℤ)
-    (P : Pt c₀ c₁ c₂ c₃ c₄ c₅ K) : Prop :=
-  match P with
-  | Sum.inl q => 0 < o (E.xx - algebraMap K E.F q.1.1) ∧ 0 < o (E.yy - algebraMap K E.F q.1.2)
-  | Sum.inr s => o E.xx = -1 ∧ -3 < o (E.yy - (if s then 1 else -1) * E.xx ^ 3)
 
 /-- **LEAF (obligation 1c, AFFINE HALF): an affine rational point carries a valuation.**
 
@@ -1182,9 +2434,461 @@ theorem exists_isPlaceFun_of_affPt {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Ty
     (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (h2 : (2 : K) ≠ 0)
     (q : AffPt c₀ c₁ c₂ c₃ c₄ c₅ K) :
     ∃ o : E.F → ℤ, IsPlaceFun K E.F o ∧
-      0 < o (E.xx - algebraMap K E.F q.1.1) ∧ 0 < o (E.yy - algebraMap K E.F q.1.2) := sorry
+      0 < o (E.xx - algebraMap K E.F q.1.1) ∧ 0 < o (E.yy - algebraMap K E.F q.1.2) :=
+  PlaceFromDedekind.exists_isPlaceFun_of_affPt' E hsep h2 q
 
-/-- **LEAF (obligation 1c, INFINITE HALF): each branch at infinity carries a valuation.**
+/-! ### The place of a branch at infinity, via Laurent series (PROVEN, 2026-07-30)
+
+The affine half above goes through the Dedekind ring of integers; that route CANNOT close the
+infinite half, because `ord x = -1` is an EXACTNESS statement — the ramification index of
+`1/x` at the place must be `1` — and lying over `(1/x)` only gives `ord (1/x) > 0`.  Getting
+`e = 1` from the Dedekind side is the degree count `Σ eᵢfᵢ = [F : K(1/x)] = 2` over the two
+branches.
+
+So this half takes the route the docstring below always proposed, and the exactness becomes
+true BY CONSTRUCTION: embed `F` into `K⸨t⸩` as a `K(x)`-algebra with `x ↦ t⁻¹` and pull back
+the `t`-adic order.  Then `ord x = order (t⁻¹) = -1` because `t` is the uniformiser of
+`K⸨t⸩`, with no ramification theory anywhere.
+
+The embedding exists because the reversed sextic `revSext u = u⁶·f(1/u)` has constant term
+`1` (the sextic is MONIC — the same fact that makes the two points at infinity rational), so
+Hensel's lemma in `K⟦t⟧` — which mathlib has, `K⟦t⟧` being `t`-adically complete — gives
+`√(revSext t) ≡ ±1`.  That square root is where `2 ≠ 0` is used, and it is the ONLY place.
+Then `x ↦ t⁻¹`, `y ↦ ±√(revSext t)·t⁻³` is a root of the same `Y² − f` that
+`exists_functionFieldData` built `F` from, so `AdjoinRoot.lift` produces the embedding and the
+`Bool` is the sign.
+
+Two turns of the API are worth recording, both of which cost a cycle:
+
+* `Polynomial.reflect` is NOT needed.  The only fact wanted about the reversed sextic is
+  `sext u⁻¹ = revSext u · u⁻⁶`, an identity of VALUES in a field, which `field_simp` proves
+  from the two explicit definitions (`sext_inv_eq`).  Reflection lemmas about polynomials —
+  and the squarefreeness of the reflected sextic, which would then be needed — are entirely
+  avoidable.
+* The `Algebra K (LaurentSeries K)` instance found by synthesis is
+  `HahnSeries.powerSeriesAlgebra` (through `K⟦t⟧`), NOT the `C`-based `HahnSeries.instAlgebra`.
+  The two are propositionally but not definitionally equal, so `HahnSeries.C_eq_algebraMap`
+  and `ofPowerSeriesAlg` do not apply to it and there is no `IsScalarTower K K[X] K⸨t⸩`
+  instance.  `order_algebraMap` and `aeval_TT_eq_algebraMap` are stated against the instance
+  that is actually there.
+-/
+
+section PlaceAtInfinity
+
+namespace PlaceAtInfinity
+
+/-- The reversed sextic, evaluated. -/
+def revSext (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) {R : Type*} [CommRing R] (u : R) : R :=
+  1 + (c₅ : R) * u + (c₄ : R) * u ^ 2 + (c₃ : R) * u ^ 3
+    + (c₂ : R) * u ^ 4 + (c₁ : R) * u ^ 5 + (c₀ : R) * u ^ 6
+
+/-- The reversed sextic has constant term `1`: `revSext u − 1` is `u` times something. -/
+lemma revSext_sub_one (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) {R : Type*} [CommRing R] (u : R) :
+    revSext c₀ c₁ c₂ c₃ c₄ c₅ u - 1 =
+      u * ((c₅ : R) + (c₄ : R) * u + (c₃ : R) * u ^ 2
+        + (c₂ : R) * u ^ 3 + (c₁ : R) * u ^ 4 + (c₀ : R) * u ^ 5) := by
+  simp only [revSext]; ring
+
+/-- The reversed sextic as a POLYNOMIAL: `1 + c₅X + c₄X² + c₃X³ + c₂X⁴ + c₁X⁵ + c₀X⁶`. -/
+noncomputable def revSextPoly (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) (R : Type*) [CommRing R] : R[X] :=
+  1 + (c₅ : R[X]) * X + (c₄ : R[X]) * X ^ 2 + (c₃ : R[X]) * X ^ 3
+    + (c₂ : R[X]) * X ^ 4 + (c₁ : R[X]) * X ^ 5 + (c₀ : R[X]) * X ^ 6
+
+lemma aeval_revSextPoly (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) {K F : Type*} [CommRing K] [CommRing F]
+    [Algebra K F] (u : F) :
+    aeval u (revSextPoly c₀ c₁ c₂ c₃ c₄ c₅ K)
+      = revSext c₀ c₁ c₂ c₃ c₄ c₅ u := by
+  simp [revSextPoly, revSext]
+
+/-- `revSext (1/x) = sext x / x⁶` (PROVEN), the reflection identity in the other direction. -/
+lemma revSext_inv_eq (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) {R : Type*} [Field R] {x : R} (hx : x ≠ 0) :
+    revSext c₀ c₁ c₂ c₃ c₄ c₅ x⁻¹
+      = sext c₀ c₁ c₂ c₃ c₄ c₅ x * (x⁻¹) ^ 6 := by
+  simp only [revSext, sext]
+  field_simp
+
+
+/-- **The reflection identity, as an identity of VALUES in a field**: no `Polynomial.reflect`
+is needed, because `u ≠ 0` lets `field_simp` do the work. -/
+lemma sext_inv_eq (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) {R : Type*} [Field R] {u : R} (hu : u ≠ 0) :
+    sext c₀ c₁ c₂ c₃ c₄ c₅ u⁻¹ = revSext c₀ c₁ c₂ c₃ c₄ c₅ u * (u⁻¹) ^ 6 := by
+  simp only [sext, revSext]
+  field_simp
+
+/-! ## Square roots in `K⟦X⟧` by Hensel -/
+
+/-- **Hensel's lemma gives the square root of a power series congruent to `1`.**  This is
+the one place `2 ≠ 0` is used in the infinite half. -/
+theorem exists_powerSeries_sqrt {K : Type} [Field K] (h2 : (2 : K) ≠ 0) (G : PowerSeries K)
+    (hG : G - 1 ∈ Ideal.span {(PowerSeries.X : PowerSeries K)}) :
+    ∃ s : PowerSeries K, s ^ 2 = G ∧ s - 1 ∈ Ideal.span {(PowerSeries.X : PowerSeries K)} := by
+  have h2u : IsUnit (2 : PowerSeries K) := by
+    have h : (2 : PowerSeries K) = PowerSeries.C (2 : K) :=
+      (map_ofNat (PowerSeries.C (R := K)) 2).symm
+    rw [h]
+    exact (PowerSeries.C (R := K)).isUnit_map (isUnit_iff_ne_zero.2 h2)
+  obtain ⟨a, ha, ha1⟩ :=
+    HenselianRing.is_henselian (R := PowerSeries K) (I := Ideal.span {PowerSeries.X})
+      (Polynomial.X ^ 2 - Polynomial.C G : (PowerSeries K)[X])
+      (monic_X_pow_sub_C G two_ne_zero) 1
+      (by
+        simp only [eval_sub, eval_pow, eval_X, eval_C, one_pow]
+        have h : (1 : PowerSeries K) - G = -(G - 1) := by ring
+        rw [h]
+        exact neg_mem hG)
+      (by
+        simp only [derivative_sub, derivative_X_pow, derivative_C, sub_zero, eval_mul,
+          eval_pow, eval_X, one_pow, mul_one, eval_C, Nat.cast_ofNat]
+        exact h2u.map _)
+  refine ⟨a, ?_, ha1⟩
+  have := ha
+  simp only [IsRoot, eval_sub, eval_pow, eval_X, eval_C, sub_eq_zero] at this
+  exact this
+
+/-! ## The `t`-adic order on `K⸨X⸩` -/
+
+section Order
+
+variable {K : Type} [Field K]
+
+/-- The image of a power series has nonnegative order. -/
+lemma order_ofPowerSeries_nonneg (p : PowerSeries K) :
+    0 ≤ (HahnSeries.ofPowerSeries ℤ K p).order := by
+  rcases eq_or_ne (HahnSeries.ofPowerSeries ℤ K p) 0 with h | h
+  · simp [h]
+  · by_contra hlt
+    have hc : (HahnSeries.ofPowerSeries ℤ K p).coeff
+        (HahnSeries.ofPowerSeries ℤ K p).order ≠ 0 :=
+      HahnSeries.coeff_order_eq_zero.not.2 h
+    exact hc (by rw [PowerSeries.coeff_coe, if_pos (by omega)])
+
+/-- A constant has order `0`.  (The `Algebra K (LaurentSeries K)` instance goes through
+`K⟦X⟧`, so this is `PowerSeries.coe_C` and not `HahnSeries.C_eq_algebraMap`.) -/
+lemma order_algebraMap (a : K) : (algebraMap K (LaurentSeries K) a).order = 0 := by
+  show (algebraMap K (HahnSeries ℤ K) a).order = 0
+  rw [HahnSeries.algebraMap_apply']
+  simp only [show (algebraMap K (PowerSeries K) a) = PowerSeries.C a from rfl, PowerSeries.coe_C]
+  exact HahnSeries.order_C
+
+/-- `T := ofPowerSeries X` has order `1`. -/
+lemma order_T : (HahnSeries.ofPowerSeries ℤ K PowerSeries.X).order = 1 := by
+  rw [HahnSeries.ofPowerSeries_X]
+  exact HahnSeries.order_single one_ne_zero
+
+lemma T_ne_zero : (HahnSeries.ofPowerSeries ℤ K PowerSeries.X) ≠ 0 := by
+  rw [HahnSeries.ofPowerSeries_X]
+  intro h
+  have := HahnSeries.order_single (a := (1 : ℤ)) (r := (1 : K)) one_ne_zero
+  rw [h] at this
+  simp at this
+
+/-- The order of a product, over a field. -/
+lemma order_mul' {x y : LaurentSeries K} (hx : x ≠ 0) (hy : y ≠ 0) :
+    (x * y).order = x.order + y.order :=
+  HahnSeries.order_mul_of_ne_zero
+    (mul_ne_zero (HahnSeries.leadingCoeff_ne_zero.mpr hx) (HahnSeries.leadingCoeff_ne_zero.mpr hy))
+
+/-- **The `t`-adic order, pulled back along a `K`-embedding, is a place.** -/
+theorem isPlaceFun_order_comp {F : Type} [Field F] [Algebra K F]
+    (φ : F →+* LaurentSeries K)
+    (hK : ∀ a : K, φ (algebraMap K F a) = algebraMap K (LaurentSeries K) a)
+    {t : F} (ht : (φ t).order = 1) :
+    IsPlaceFun K F (fun z => (φ z).order) where
+  map_zero := by simp
+  map_mul a b ha hb := by
+    have hφa : φ a ≠ 0 := (map_ne_zero_iff _ φ.injective).2 ha
+    have hφb : φ b ≠ 0 := (map_ne_zero_iff _ φ.injective).2 hb
+    simp only [map_mul]
+    exact order_mul' hφa hφb
+  ultra a b _ _ hab := by
+    have hφab : φ a + φ b ≠ 0 := by
+      rw [← map_add]
+      exact (map_ne_zero_iff _ φ.injective).2 hab
+    simpa only [map_add] using HahnSeries.min_order_le_order_add hφab
+  map_algebraMap a _ := by
+    rw [hK a]
+    exact order_algebraMap a
+  normalised := ⟨t, ht⟩
+
+end Order
+
+/-! ## The embedding `F ↪ K⸨t⸩` at a branch at infinity -/
+
+section Laurent
+
+variable {K : Type} [Field K]
+
+/-- The uniformiser `t` of `K⸨X⸩`. -/
+noncomputable def TT (K : Type) [Field K] : LaurentSeries K :=
+  HahnSeries.ofPowerSeries ℤ K PowerSeries.X
+
+lemma order_TT : (TT K).order = 1 := order_T
+
+lemma TT_ne_zero : (TT K) ≠ 0 := T_ne_zero
+
+lemma order_TT_inv : ((TT K)⁻¹).order = -1 := by
+  have h1 : (TT K) * (TT K)⁻¹ = 1 := mul_inv_cancel₀ TT_ne_zero
+  have h2 : ((TT K) * (TT K)⁻¹).order = (TT K).order + ((TT K)⁻¹).order :=
+    order_mul' TT_ne_zero (inv_ne_zero TT_ne_zero)
+  rw [h1] at h2
+  have h3 : (1 : LaurentSeries K).order = 0 := by
+    simp
+  rw [h3, order_TT] at h2
+  omega
+
+/-- `aeval t` on `K[X]` IS the canonical algebra map into `K⸨X⸩`.  (Stated as an equality of
+ring homs, because the `Algebra K (HahnSeries ℤ K)` instance found here is
+`HahnSeries.powerSeriesAlgebra`, not the `C`-based `HahnSeries.instAlgebra`, so the two
+`aeval`s are propositionally but not definitionally equal.) -/
+lemma aeval_TT_eq_algebraMap :
+    ((Polynomial.aeval (TT K) : K[X] →ₐ[K] LaurentSeries K) : K[X] →+* LaurentSeries K)
+      = algebraMap K[X] (HahnSeries ℤ K) := by
+  refine Polynomial.ringHom_ext ?_ ?_
+  · intro a
+    show Polynomial.aeval (TT K) (Polynomial.C a) = _
+    rw [Polynomial.aeval_C, Polynomial.algebraMap_hahnSeries_apply, Polynomial.coe_C]
+    show (algebraMap K (HahnSeries ℤ K)) a = _
+    rw [HahnSeries.algebraMap_apply']
+    rfl
+  · show Polynomial.aeval (TT K) Polynomial.X = _
+    rw [Polynomial.aeval_X, Polynomial.algebraMap_hahnSeries_apply, Polynomial.coe_X, TT]
+
+lemma aeval_TT_apply (p : K[X]) :
+    Polynomial.aeval (TT K) p = algebraMap K[X] (HahnSeries ℤ K) p :=
+  DFunLike.congr_fun aeval_TT_eq_algebraMap p
+
+lemma aeval_TT_injective :
+    Function.Injective (Polynomial.aeval (TT K) : K[X] →ₐ[K] LaurentSeries K) := by
+  intro p q hpq
+  refine Polynomial.algebraMap_hahnSeries_injective (Γ := ℤ) ?_
+  rw [← aeval_TT_apply, ← aeval_TT_apply]
+  exact hpq
+
+lemma transcendental_TT_inv : Transcendental K ((TT K)⁻¹) := by
+  intro halg
+  obtain ⟨p, hp0, hp⟩ : IsAlgebraic K (TT K) := IsAlgebraic.inv_iff.1 halg
+  exact hp0 (aeval_TT_injective (show Polynomial.aeval (TT K) p = Polynomial.aeval (TT K) 0 by
+    rw [hp, map_zero]))
+
+lemma aeval_TT_inv_ne_zero {p : K[X]} (hp : p ≠ 0) :
+    Polynomial.aeval ((TT K)⁻¹) p ≠ 0 := fun h => transcendental_TT_inv ⟨p, hp, h⟩
+
+/-- The embedding `K(x) ↪ K⸨t⸩` sending `x` to `t⁻¹`: the place at infinity. -/
+noncomputable def rho (K : Type) [Field K] : RatFunc K →+* LaurentSeries K :=
+  IsLocalization.lift (M := nonZeroDivisors K[X]) (S := RatFunc K)
+    (g := (Polynomial.aeval ((TT K)⁻¹) : K[X] →ₐ[K] LaurentSeries K).toRingHom)
+    (fun y => isUnit_iff_ne_zero.2 (aeval_TT_inv_ne_zero (nonZeroDivisors.coe_ne_zero y)))
+
+@[simp] lemma rho_poly (p : K[X]) :
+    rho K (algebraMap K[X] (RatFunc K) p) = Polynomial.aeval ((TT K)⁻¹) p :=
+  IsLocalization.lift_eq _ p
+
+lemma rho_const (a : K) : rho K (algebraMap K (RatFunc K) a) = algebraMap K (LaurentSeries K) a := by
+  rw [IsScalarTower.algebraMap_apply K K[X] (RatFunc K) a, rho_poly,
+    show (algebraMap K K[X] a) = Polynomial.C a from rfl, Polynomial.aeval_C]
+
+/-- **The square root at infinity.**  `revSext` has constant term `1`, so Hensel's lemma in
+`K⟦t⟧` produces a square root congruent to `1` modulo `t`. -/
+theorem exists_laurent_sqrt (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) (h2 : (2 : K) ≠ 0) :
+    ∃ w : LaurentSeries K, w ^ 2 = revSext c₀ c₁ c₂ c₃ c₄ c₅ (TT K) ∧
+      (w = 1 ∨ 1 ≤ (w - 1).order) := by
+  set G : PowerSeries K := revSext c₀ c₁ c₂ c₃ c₄ c₅ (PowerSeries.X : PowerSeries K) with hG
+  have hGmem : G - 1 ∈ Ideal.span {(PowerSeries.X : PowerSeries K)} := by
+    rw [hG, revSext_sub_one]
+    exact Ideal.mem_span_singleton'.2 ⟨_, mul_comm _ _⟩
+  obtain ⟨s, hs2, hs1⟩ := exists_powerSeries_sqrt h2 G hGmem
+  refine ⟨HahnSeries.ofPowerSeries ℤ K s, ?_, ?_⟩
+  · have h1 : (HahnSeries.ofPowerSeries ℤ K s) ^ 2 = HahnSeries.ofPowerSeries ℤ K (s ^ 2) := by
+      rw [map_pow]
+    rw [h1, hs2, hG]
+    show HahnSeries.ofPowerSeries ℤ K (revSext c₀ c₁ c₂ c₃ c₄ c₅ PowerSeries.X) = _
+    simp only [revSext, map_add, map_mul, map_pow, map_intCast, map_one]
+    rfl
+  · rcases eq_or_ne s 1 with rfl | hne
+    · left; simp
+    · right
+      obtain ⟨h, hh⟩ := Ideal.mem_span_singleton'.1 hs1
+      have hsub : HahnSeries.ofPowerSeries ℤ K s - 1
+          = (TT K) * HahnSeries.ofPowerSeries ℤ K h := by
+        have hstep : HahnSeries.ofPowerSeries ℤ K (s - 1)
+            = HahnSeries.ofPowerSeries ℤ K (h * PowerSeries.X) := by rw [hh]
+        rw [map_sub, map_one, map_mul] at hstep
+        rw [hstep, TT]
+        ring
+      have hh0 : h ≠ 0 := by
+        intro h0
+        rw [h0, zero_mul] at hh
+        exact hne (sub_eq_zero.mp hh.symm)
+      have hhne : HahnSeries.ofPowerSeries ℤ K h ≠ 0 := by
+        intro hz
+        exact hh0 (HahnSeries.ofPowerSeries_injective (by rw [hz, map_zero]))
+      rw [hsub, order_mul' TT_ne_zero hhne, order_TT]
+      have := order_ofPowerSeries_nonneg h
+      omega
+
+end Laurent
+
+/-! ## The place of a branch at infinity -/
+
+section InfTower
+
+variable {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K F : Type} [Field K] [Field F]
+  [Algebra K F] [Algebra K[X] F] [Algebra (RatFunc K) F]
+  [IsScalarTower K K[X] F] [IsScalarTower K[X] (RatFunc K) F]
+
+/-- **The place of a branch at infinity, with `ord x = −1` EXACT.**
+
+The embedding `F ↪ K⸨t⸩` is chosen with `x ↦ t⁻¹`, so the exactness is true by construction
+rather than by a ramification count: `ord x = −1` because `t` is the uniformiser of `K⸨t⸩`.
+Both branches are covered, the `Bool` being the sign of the square root of the reversed
+sextic supplied by Hensel's lemma. -/
+theorem exists_isPlaceFun_of_infPt_aux {xx yy : F}
+    (hxx : algebraMap K[X] F Polynomial.X = xx)
+    (heqn : yy ^ 2 = sext c₀ c₁ c₂ c₃ c₄ c₅ xx)
+    (hgen : ∀ z : F, ∃ a b d : K[X], Polynomial.aeval xx d ≠ 0 ∧
+      z * Polynomial.aeval xx d = Polynomial.aeval xx a + Polynomial.aeval xx b * yy)
+    (hsqf : Squarefree (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K))
+    (hnu : ¬ IsUnit (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K))
+    (h2 : (2 : K) ≠ 0) (sgn : Bool) :
+    ∃ o : F → ℤ, IsPlaceFun K F o ∧ o xx = -1 ∧
+      -3 < o (yy - (if sgn then 1 else -1) * xx ^ 3) := by
+  classical
+  -- the tower, in the shape the affine half uses
+  have halg : ∀ p : K[X], algebraMap K[X] F p = Polynomial.aeval xx p := fun p => by
+    have h : (IsScalarTower.toAlgHom K K[X] F) = (Polynomial.aeval xx : K[X] →ₐ[K] F) :=
+      Polynomial.algHom_ext (by simpa using hxx)
+    exact congrArg (fun φ => φ p) h
+  have hdown : ∀ p : K[X],
+      algebraMap (RatFunc K) F (algebraMap K[X] (RatFunc K) p) = Polynomial.aeval xx p :=
+    fun p => by rw [← IsScalarTower.algebraMap_apply, halg]
+  haveI : IsScalarTower K (RatFunc K) F := IsScalarTower.of_algebraMap_eq fun a => by
+    rw [IsScalarTower.algebraMap_apply K K[X] (RatFunc K) a, hdown,
+      show (algebraMap K K[X] a) = Polynomial.C a from rfl, Polynomial.aeval_C]
+  set α : RatFunc K := algebraMap K[X] (RatFunc K) (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) with hα
+  have hαF : algebraMap (RatFunc K) F α = yy ^ 2 := by
+    rw [hα, hdown, aeval_sextPoly, heqn]
+  -- `Y² − f` is irreducible over `K(x)`
+  have hirr : Irreducible (Polynomial.X ^ 2 - Polynomial.C α : (RatFunc K)[X]) :=
+    X_pow_sub_C_irreducible_of_prime Nat.prime_two (not_isSquare_sextPoly hsqf hnu)
+  set gpoly : (RatFunc K)[X] := Polynomial.X ^ 2 - Polynomial.C α with hgpoly
+  haveI : Fact (Irreducible gpoly) := ⟨hirr⟩
+  have hroot : gpoly.eval₂ (Algebra.ofId (RatFunc K) F).toRingHom yy = 0 := by
+    simp only [hgpoly, Polynomial.eval₂_sub, Polynomial.eval₂_X_pow, Polynomial.eval₂_C]
+    show yy ^ 2 - algebraMap (RatFunc K) F α = 0
+    rw [hαF, sub_self]
+  -- `F` is generated by `y` over `K(x)`
+  have hadj : IntermediateField.adjoin (RatFunc K) {yy} = ⊤ := by
+    refine eq_top_iff.mpr fun z _ => ?_
+    obtain ⟨a, b, d, hd, hz⟩ := hgen z
+    refine (IntermediateField.mem_adjoin_simple_iff (RatFunc K) z).2
+      ⟨Polynomial.C (algebraMap K[X] (RatFunc K) a / algebraMap K[X] (RatFunc K) d)
+        + Polynomial.C (algebraMap K[X] (RatFunc K) b / algebraMap K[X] (RatFunc K) d)
+          * Polynomial.X, 1, ?_⟩
+    have e1 : algebraMap (RatFunc K) F
+        (algebraMap K[X] (RatFunc K) a / algebraMap K[X] (RatFunc K) d)
+        = Polynomial.aeval xx a / Polynomial.aeval xx d := by rw [map_div₀, hdown, hdown]
+    have e2 : algebraMap (RatFunc K) F
+        (algebraMap K[X] (RatFunc K) b / algebraMap K[X] (RatFunc K) d)
+        = Polynomial.aeval xx b / Polynomial.aeval xx d := by rw [map_div₀, hdown, hdown]
+    simp only [map_add, map_mul, Polynomial.aeval_C, Polynomial.aeval_X, map_one, div_one, e1, e2]
+    field_simp
+    linear_combination hz
+  set ψ₀ : AdjoinRoot gpoly →ₐ[RatFunc K] F :=
+    AdjoinRoot.liftAlgHom gpoly (Algebra.ofId (RatFunc K) F) yy hroot with hψ₀
+  have hψroot : ψ₀ (AdjoinRoot.root gpoly) = yy := AdjoinRoot.liftAlgHom_root _ _ _ _
+  have hψsurj : Function.Surjective ψ₀ := by
+    intro z
+    have hz : z ∈ IntermediateField.adjoin (RatFunc K) {yy} := by rw [hadj]; trivial
+    have hle : IntermediateField.adjoin (RatFunc K) {yy} ≤ ψ₀.fieldRange :=
+      IntermediateField.adjoin_le_iff.2 (by
+        rintro w hw
+        rw [Set.mem_singleton_iff] at hw
+        subst hw
+        exact ⟨AdjoinRoot.root gpoly, hψroot⟩)
+    exact hle hz
+  set ψ : AdjoinRoot gpoly ≃ₐ[RatFunc K] F :=
+    AlgEquiv.ofBijective ψ₀ ⟨ψ₀.toRingHom.injective, hψsurj⟩ with hψ
+  -- the square root of the reversed sextic, and the point of `K⸨t⸩` over `t⁻¹`
+  obtain ⟨w, hw2, hw1⟩ := exists_laurent_sqrt (K := K) c₀ c₁ c₂ c₃ c₄ c₅ h2
+  set eL : LaurentSeries K := if sgn then 1 else -1 with heL
+  have heLsq : eL ^ 2 = 1 := by cases sgn <;> simp [heL]
+  have heL0 : eL ≠ 0 := by cases sgn <;> simp [heL]
+  have heLord : eL.order = 0 := by
+    rw [heL]; cases sgn <;> simp [HahnSeries.order_neg]
+  set sL : LaurentSeries K := eL * w * ((TT K)⁻¹) ^ 3 with hsL
+  have hTi0 : ((TT K)⁻¹) ≠ 0 := inv_ne_zero TT_ne_zero
+  have hρα : rho K α = revSext c₀ c₁ c₂ c₃ c₄ c₅ (TT K) * ((TT K)⁻¹) ^ 6 := by
+    rw [hα, rho_poly, aeval_sextPoly, sext_inv_eq _ _ _ _ _ _ TT_ne_zero]
+  have hsroot : gpoly.eval₂ (rho K) sL = 0 := by
+    simp only [hgpoly, Polynomial.eval₂_sub, Polynomial.eval₂_X_pow, Polynomial.eval₂_C, hρα, hsL]
+    rw [mul_pow, mul_pow, heLsq, hw2, one_mul, ← pow_mul]
+    ring
+  -- the embedding `F ↪ K⸨t⸩`
+  set φ : F →+* LaurentSeries K :=
+    (AdjoinRoot.lift (rho K) sL hsroot).comp (ψ.symm : F →+* AdjoinRoot gpoly) with hφ
+  have hφρ : ∀ c : RatFunc K, φ (algebraMap (RatFunc K) F c) = rho K c := fun c => by
+    have h1 : ψ.symm (algebraMap (RatFunc K) F c) = AdjoinRoot.of gpoly c := by
+      rw [AlgEquiv.commutes]
+      rfl
+    show (AdjoinRoot.lift (rho K) sL hsroot) (ψ.symm (algebraMap (RatFunc K) F c)) = rho K c
+    rw [h1, AdjoinRoot.lift_of]
+  have hφyy : φ yy = sL := by
+    have h1 : ψ.symm yy = AdjoinRoot.root gpoly := by
+      rw [AlgEquiv.symm_apply_eq, hψ]
+      simpa using hψroot.symm
+    show (AdjoinRoot.lift (rho K) sL hsroot) (ψ.symm yy) = sL
+    rw [h1, AdjoinRoot.lift_root]
+  have hxxc : xx = algebraMap (RatFunc K) F RatFunc.X := by
+    rw [← RatFunc.algebraMap_X, hdown]
+    simp
+  have hφxx : φ xx = ((TT K)⁻¹) := by
+    rw [hxxc, hφρ, ← RatFunc.algebraMap_X, rho_poly, Polynomial.aeval_X]
+  -- the three conclusions
+  refine ⟨fun z => (φ z).order, ?_, ?_, ?_⟩
+  · refine isPlaceFun_order_comp φ (fun a => ?_) (t := xx⁻¹) ?_
+    · rw [IsScalarTower.algebraMap_apply K (RatFunc K) F a, hφρ, rho_const]
+    · have hxx0 : xx ≠ 0 := by
+        intro h0
+        rw [h0] at hφxx
+        exact hTi0 (by rw [← hφxx, map_zero])
+      rw [map_inv₀, hφxx, inv_inv, order_TT]
+  · show (φ xx).order = -1
+    rw [hφxx, order_TT_inv]
+  · show -3 < (φ (yy - (if sgn then 1 else -1) * xx ^ 3)).order
+    rcases eq_or_ne (yy - (if sgn then 1 else -1) * xx ^ 3) 0 with hz | hz
+    · rw [hz, map_zero]
+      simp
+    · have hεF : φ ((if sgn then 1 else -1 : F)) = eL := by
+        cases sgn <;> simp [heL]
+      have hval : φ (yy - (if sgn then 1 else -1) * xx ^ 3) = eL * (w - 1) * ((TT K)⁻¹) ^ 3 := by
+        rw [map_sub, map_mul, map_pow, hφyy, hφxx, hεF, hsL]
+        ring
+      rcases hw1 with hw | hw
+      · rw [hval, hw, sub_self, mul_zero, zero_mul]
+        simp
+      · have hw0 : w - 1 ≠ 0 := by
+          intro h0
+          rw [h0] at hw
+          simp at hw
+        rw [hval, order_mul' (mul_ne_zero heL0 hw0) (pow_ne_zero _ hTi0),
+          order_mul' heL0 hw0, heLord, HahnSeries.order_pow, order_TT_inv]
+        simp only [nsmul_eq_mul, Nat.cast_ofNat]
+        omega
+
+end InfTower
+
+end PlaceAtInfinity
+
+end PlaceAtInfinity
+
+/-- **LEAF (obligation 1c, INFINITE HALF), PROVEN 2026-07-30**: each branch at infinity
+carries a valuation, and `ord x = −1` is EXACT.
+
+The route below is the one that was taken; see the section above for the construction and for
+why the Dedekind route of the affine half cannot reach the exactness.  The proof is
+`PlaceAtInfinity.exists_isPlaceFun_of_infPt_aux`, instantiated at the tower
+`K[X] ⊆ K(x) ⊆ E.F` that `xAlg` installs — the SAME tower the affine half uses; only the
+target of the embedding differs.
 
 In the chart `u = 1/x`, `w = y/x³` the equation becomes `w² = g(u) := u⁶f(1/u)`, a
 polynomial with constant term `1` (the sextic is MONIC — this is exactly why the two points
@@ -1199,9 +2903,30 @@ dichotomy is what `isPlaceOfPt_injective` consumes; here only the matching sign 
 asserted. -/
 theorem exists_isPlaceFun_of_infPt {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
     (E : FunctionFieldData c₀ c₁ c₂ c₃ c₄ c₅ K)
-    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (h2 : (2 : K) ≠ 0) (s : Bool) :
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (h2 : (2 : K) ≠ 0) (sgn : Bool) :
     ∃ o : E.F → ℤ, IsPlaceFun K E.F o ∧
-      o E.xx = -1 ∧ -3 < o (E.yy - (if s then 1 else -1) * E.xx ^ 3) := sorry
+      o E.xx = -1 ∧ -3 < o (E.yy - (if sgn then 1 else -1) * E.xx ^ 3) := by
+  classical
+  letI : Algebra K[X] E.F := PlaceFromDedekind.xAlg E
+  have halg : ∀ p : K[X], algebraMap K[X] E.F p = Polynomial.aeval E.xx p := fun _ => rfl
+  haveI : IsScalarTower K K[X] E.F :=
+    IsScalarTower.of_algebraMap_eq fun a => by simp [halg]
+  have hinj : Function.Injective (algebraMap K[X] E.F) := by
+    rw [injective_iff_map_eq_zero]
+    intro p hp
+    by_contra hp0
+    exact E.transcendental_xx ⟨p, hp0, by rw [← halg]; exact hp⟩
+  letI : Algebra (RatFunc K) E.F := (IsFractionRing.lift (A := K[X]) hinj).toAlgebra
+  haveI : IsScalarTower K[X] (RatFunc K) E.F :=
+    IsScalarTower.of_algebraMap_eq fun p => (IsFractionRing.lift_algebraMap hinj p).symm
+  have hxx : algebraMap K[X] E.F Polynomial.X = E.xx := by rw [halg]; simp
+  have hsqf : Squarefree (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) := hsep.squarefree
+  have hnu : ¬ IsUnit (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) := by
+    intro hu
+    have h1 := Polynomial.natDegree_eq_zero_of_isUnit hu
+    rw [natDegree_sextPoly] at h1
+    norm_num at h1
+  exact PlaceAtInfinity.exists_isPlaceFun_of_infPt_aux hxx E.eqn E.gen hsqf hnu h2 sgn
 
 /-- **LEAF (obligation 1c), now PROVEN from the two halves above.**
 
@@ -1988,9 +3713,797 @@ lemma adjoin_inv_eq {F : Type} [Field F] [Algebra K F] (g : F) :
     have h := inv_mem (IntermediateField.mem_adjoin_simple_self K g⁻¹)
     rwa [inv_inv] at h
 
+/-! ### Purely inseparable descent: a `PlaceData` cannot exist in characteristic `2`
+
+This block is the char-`2` half of `not_isRationalGenerator`, discharged once and for all
+rather than left as prose in that leaf's falsity audit.  See `two_ne_zero`. -/
+
+lemma aeval_xx_injective (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) :
+    Function.Injective (Polynomial.aeval D.xx : K[X] →ₐ[K] D.F) :=
+  transcendental_iff_injective.mp D.transcendental_xx
+
+lemma aeval_xx_ne_zero (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {p : K[X]} (hp : p ≠ 0) :
+    aeval D.xx p ≠ 0 := fun h => hp (D.aeval_xx_injective (by simpa using h))
+
+lemma xx_ne_zero (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) : D.xx ≠ 0 := by
+  simpa using D.aeval_xx_ne_zero (p := (X : K[X])) X_ne_zero
+
+/-- Auxiliary induction for `ord_aeval_of_ord_xx`. -/
+lemma ord_aeval_of_ord_xx_aux (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places)
+    (hv : D.ord v D.xx = -1) (n : ℕ) :
+    ∀ p : K[X], p.natDegree ≤ n → p ≠ 0 →
+      D.ord v (aeval D.xx p) = -(p.natDegree : ℤ) := by
+  induction n with
+  | zero =>
+      intro p hp hp0
+      obtain ⟨a, ha⟩ := Polynomial.natDegree_eq_zero.mp (Nat.le_zero.mp hp)
+      subst ha
+      have ha0 : a ≠ 0 := by
+        intro h
+        rw [h] at hp0
+        simp at hp0
+      simp [D.ord_algebraMap v a ha0]
+  | succ m ih =>
+      intro p hp hp0
+      rcases le_or_gt p.natDegree m with h | h
+      · exact ih p h hp0
+      have hxx := D.xx_ne_zero
+      have ha0 : p.leadingCoeff ≠ 0 := leadingCoeff_ne_zero.mpr hp0
+      have haF : algebraMap K D.F p.leadingCoeff ≠ 0 :=
+        (map_ne_zero_iff _ (algebraMap K D.F).injective).mpr ha0
+      have hleadval : aeval D.xx (C p.leadingCoeff * X ^ p.natDegree)
+          = algebraMap K D.F p.leadingCoeff * D.xx ^ p.natDegree := by simp
+      have hleadne : aeval D.xx (C p.leadingCoeff * X ^ p.natDegree) ≠ 0 := by
+        rw [hleadval]
+        exact mul_ne_zero haF (pow_ne_zero _ hxx)
+      have hlead : D.ord v (aeval D.xx (C p.leadingCoeff * X ^ p.natDegree))
+          = -(p.natDegree : ℤ) := by
+        rw [hleadval, D.ord_mul v _ _ haF (pow_ne_zero _ hxx),
+          D.ord_algebraMap v _ ha0, D.ord_pow v D.xx hxx, hv]
+        ring
+      have hsplit : aeval D.xx (C p.leadingCoeff * X ^ p.natDegree)
+          + aeval D.xx p.eraseLead = aeval D.xx p := by
+        rw [← map_add, add_comm]
+        exact congrArg _ p.eraseLead_add_C_mul_X_pow
+      rcases eq_or_ne p.eraseLead 0 with he | he
+      · rw [← hsplit, he, map_zero, add_zero]
+        exact hlead
+      · have hle : p.eraseLead.natDegree ≤ m := by
+          have h1 := Polynomial.eraseLead_natDegree_le p
+          omega
+        have herase := ih p.eraseLead hle he
+        have hne : aeval D.xx p.eraseLead ≠ 0 := D.aeval_xx_ne_zero he
+        have hltord : D.ord v (aeval D.xx (C p.leadingCoeff * X ^ p.natDegree))
+            < D.ord v (aeval D.xx p.eraseLead) := by
+          rw [hlead, herase]
+          have c1 : (p.eraseLead.natDegree : ℤ) ≤ (m : ℤ) := by exact_mod_cast hle
+          have c2 : (m : ℤ) < (p.natDegree : ℤ) := by exact_mod_cast h
+          omega
+        rw [← hsplit, D.ord_add_of_lt v hleadne hne hltord, hlead]
+
+/-- **At a place where `x` has a simple pole, `ord (p(x)) = −deg p`** (PROVEN).
+
+The strict ultrametric equality applied to the leading term: `ord (aₙxⁿ) = −n` while every
+lower term has strictly larger order, so the sum has order exactly `−n`. -/
+lemma ord_aeval_of_ord_xx (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places)
+    (hv : D.ord v D.xx = -1) {p : K[X]} (hp : p ≠ 0) :
+    D.ord v (aeval D.xx p) = -(p.natDegree : ℤ) :=
+  D.ord_aeval_of_ord_xx_aux v hv p.natDegree p le_rfl hp
+
+/-- **In characteristic `2`, a place is determined by `ord x = −1`** (PROVEN).
+
+The engine of `two_ne_zero`.  If `2 = 0` in `K` then squaring kills the cross term of the
+normal form `z·d(x) = a(x) + b(x)·y` supplied by `gen`, so
+
+    z² · d(x)² = a(x)² + b(x)²·f(x) = e(x),   e := a² + b²·f ∈ K[X],
+
+i.e. every SQUARE in `F` already lies in `K(x)` — which is `F/K(x)` being purely inseparable.
+At a place with `ord x = −1` the order of a polynomial in `x` is minus its degree
+(`ord_aeval_of_ord_xx`), so `2·ord z = ord (z²) = deg (d²) − deg e` is computed from `d` and
+`e` alone, with no reference to the place.  Two such places therefore have the same `ord`,
+and `ord_injective` makes them equal. -/
+lemma ord_eq_of_ord_xx_eq_neg_one (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (h2 : (2 : K) = 0)
+    {v w : D.Places} (hv : D.ord v D.xx = -1) (hw : D.ord w D.xx = -1) : v = w := by
+  refine D.ord_injective ?_
+  funext z
+  rcases eq_or_ne z 0 with rfl | hz
+  · rw [D.ord_zero, D.ord_zero]
+  obtain ⟨a, b, d, hd, hgen⟩ := D.gen z
+  have hd0 : d ≠ 0 := by
+    intro h
+    rw [h, map_zero] at hd
+    exact hd rfl
+  have h2F : (2 : D.F) = 0 := by
+    have h : algebraMap K D.F (2 : K) = 0 := by rw [h2, map_zero]
+    rwa [map_ofNat] at h
+  set e : K[X] := a ^ 2 + b ^ 2 * sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K with he
+  have hsq : z ^ 2 * aeval D.xx d ^ 2 = aeval D.xx e := by
+    have hyy : D.yy ^ 2 = aeval D.xx (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) := by
+      rw [aeval_sextPoly]
+      exact D.eqn
+    have hg2 : (z * aeval D.xx d) ^ 2 = (aeval D.xx a + aeval D.xx b * D.yy) ^ 2 := by
+      rw [hgen]
+    have hexp : (aeval D.xx a + aeval D.xx b * D.yy) ^ 2
+        = aeval D.xx a ^ 2 + aeval D.xx b ^ 2 * D.yy ^ 2
+          + 2 * (aeval D.xx a * (aeval D.xx b * D.yy)) := by ring
+    rw [hexp, h2F, zero_mul, add_zero, hyy] at hg2
+    have hE : aeval D.xx e = aeval D.xx a ^ 2
+        + aeval D.xx b ^ 2 * aeval D.xx (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) := by
+      rw [he]
+      simp only [map_add, map_mul, map_pow]
+    rw [hE, ← hg2]
+    ring
+  have hd2 : aeval D.xx d ^ 2 ≠ 0 := pow_ne_zero 2 (D.aeval_xx_ne_zero hd0)
+  have hz2 : z ^ 2 ≠ 0 := pow_ne_zero 2 hz
+  have he0 : e ≠ 0 := by
+    intro h
+    rw [h, map_zero] at hsq
+    exact (mul_ne_zero hz2 hd2) hsq
+  have hdsq0 : d ^ 2 ≠ 0 := pow_ne_zero 2 hd0
+  have hpow : aeval D.xx d ^ 2 = aeval D.xx (d ^ 2) := by rw [map_pow]
+  have key : ∀ u : D.Places, D.ord u D.xx = -1 →
+      2 * D.ord u z = ((d ^ 2).natDegree : ℤ) - (e.natDegree : ℤ) := by
+    intro u hu
+    have h1 : D.ord u (z ^ 2 * aeval D.xx d ^ 2) = D.ord u (aeval D.xx e) :=
+      congrArg (D.ord u) hsq
+    rw [D.ord_mul u _ _ hz2 hd2, D.ord_pow u z hz 2, hpow,
+      D.ord_aeval_of_ord_xx u hu hdsq0, D.ord_aeval_of_ord_xx u hu he0] at h1
+    push_cast at h1 ⊢
+    omega
+  have hfin := (key v hv).trans (key w hw).symm
+  omega
+
+/-- **A `PlaceData` forces `2 ≠ 0` in `K`** (PROVEN).
+
+The two points at infinity are distinct places (`pt_injective`) at both of which `ord x = −1`
+(`ord_pt_infinite`).  In characteristic `2` that is impossible:
+`ord_eq_of_ord_xx_eq_neg_one` shows a place with `ord x = −1` is unique there, because
+`F/K(x)` is purely inseparable and a purely inseparable extension has exactly one place above
+each place of the base.
+
+This is exactly the char-`2` half that the falsity audit above `not_isRationalGenerator`
+predicted: that leaf is true in characteristic `2` not because the pencil argument covers it
+— it does not, and over a perfect `K` of characteristic `2` the function field of a separable
+sextic really IS rational — but because no `PlaceData` exists there at all.  Rather than
+leaving that as prose, it is proven here once, so every consumer may simply use `2 ≠ 0`.
+
+Separability is NOT needed. -/
+theorem two_ne_zero (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) : (2 : K) ≠ 0 := by
+  intro h2
+  have h := D.ord_eq_of_ord_xx_eq_neg_one h2
+    (D.ord_pt_infinite true).1 (D.ord_pt_infinite false).1
+  have hb : (Sum.inr true : Pt c₀ c₁ c₂ c₃ c₄ c₅ K) = Sum.inr false := D.pt_injective h
+  simp at hb
+
+/-! ### `O_v` IS the local ring of a smooth chart point (PROVEN, 2026-07-30)
+
+The two `exists_localDenom_*` leaves below both say the same thing in a different chart: a
+function regular at the place of a rational point is a chart fraction whose DENOMINATOR does
+not vanish at that point, i.e. `O_v` is not merely a valuation ring DOMINATING the local ring
+of the plane model — it EQUALS it.
+
+The classical proof of that is "a valuation ring of `Frac R` dominating a DVR `R` is `R`",
+which needs the coordinate ring built as a Lean object, localised at the point, and shown to
+be regular.  None of that is needed here.  What replaces it is a DESCENT on `ord_v` of the
+denominator, over the interface's valuation axioms alone:
+
+* `ord_chart_eq_zero_iff`: a chart expression is a unit at `v` exactly when its value at the
+  point is nonzero.  So "admissible denominator" IS "denominator of order `0`", and the
+  descent's stopping condition is the conclusion.
+* if the denominator vanishes then so does the numerator (`chart_value_eq_zero`, since `z` is
+  regular), and one uniformiser cancels from both — `exists_localDenom_step`.
+* the order of the denominator drops by `ord_v` of that uniformiser, which is `≥ 1`, so the
+  descent terminates: `exists_localDenom_chart`.
+
+**Which uniformiser it is depends on the point, and this is exactly where smoothness enters.**
+At a point with `2β ≠ 0` it is `t − α`, and the cancellation is made visible by multiplying by
+the CONJUGATE `s + β`, a unit there, using `(s − β)(s + β) = g(t) − β² = (t − α)·h(t)`.  At a
+point with `β = 0` that fails — `s + β = s` is not a unit — and the uniformiser is `s`
+instead, with `t − α = s²/h(t)`; that needs `h(α) ≠ 0`, which for `β = 0` is `g'(α) ≠ 0`, i.e.
+separability.  The disjunction `2β ≠ 0 ∨ (β = 0 ∧ h(α) ≠ 0)` is smoothness of the chart at the
+point, and the audit on `finrank_residue_pt_eq_one` shows the leaf is FALSE without it.
+-/
+
+/-- A chart expression lies in the valuation ring (PROVEN). -/
+lemma chart_mem_valRing (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places) {t s : D.F} {α β : K}
+    (ht : D.VanishesAt v (t - algebraMap K D.F α))
+    (hs : D.VanishesAt v (s - algebraMap K D.F β)) (e₁ e₂ : K[X]) :
+    0 ≤ D.ord v (aeval t e₁ + aeval t e₂ * s) := by
+  have htm : t ∈ D.valRing v := mem_valRing_of_vanishesAt_sub D v ht
+  have hsm : s ∈ D.valRing v := mem_valRing_of_vanishesAt_sub D v hs
+  have h1 : aeval t e₁ ∈ D.valRing v := aeval_mem_valRing D v htm e₁
+  have h2 : aeval t e₂ ∈ D.valRing v := aeval_mem_valRing D v htm e₂
+  exact (D.valRing v).add_mem h1 ((D.valRing v).mul_mem h2 hsm)
+
+/-- A vanishing constant is `0` (PROVEN). -/
+lemma eq_zero_of_vanishesAt_algebraMap (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places) {c : K}
+    (h : D.VanishesAt v (algebraMap K D.F c)) : c = 0 := by
+  by_contra hc
+  rcases h with h | h
+  · exact hc ((map_eq_zero_iff _ (algebraMap K D.F).injective).1 h)
+  · rw [D.ord_algebraMap v c hc] at h
+    exact lt_irrefl 0 h
+
+/-- **A chart expression is a unit at `v` exactly when its value at the point is nonzero**
+(PROVEN).  This is what makes the induction below terminate in the right place: the order of
+the denominator is `0` precisely when the denominator is admissible. -/
+lemma ord_chart_eq_zero_iff (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places) {t s : D.F}
+    {α β : K} (ht : D.VanishesAt v (t - algebraMap K D.F α))
+    (hs : D.VanishesAt v (s - algebraMap K D.F β)) {e₁ e₂ : K[X]}
+    (hne : aeval t e₁ + aeval t e₂ * s ≠ 0) :
+    D.ord v (aeval t e₁ + aeval t e₂ * s) = 0 ↔ e₁.eval α + e₂.eval α * β ≠ 0 := by
+  have hV := vanishesAt_chart_sub D v ht hs e₁ e₂
+  constructor
+  · intro h0 hδ
+    rw [hδ, map_zero, sub_zero] at hV
+    rcases hV with hV | hV
+    · exact hne hV
+    · omega
+  · intro hδ
+    exact (ord_eq_zero_of_vanishesAt_sub D v hδ hV).2
+
+/-- The value of a chart expression whose order is positive is `0` (PROVEN). -/
+lemma chart_value_eq_zero (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places) {t s : D.F}
+    {α β : K} (ht : D.VanishesAt v (t - algebraMap K D.F α))
+    (hs : D.VanishesAt v (s - algebraMap K D.F β)) {e₁ e₂ : K[X]}
+    (hpos : 0 < D.ord v (aeval t e₁ + aeval t e₂ * s)) :
+    e₁.eval α + e₂.eval α * β = 0 := by
+  have hV := vanishesAt_chart_sub D v ht hs e₁ e₂
+  have hne : aeval t e₁ + aeval t e₂ * s ≠ 0 := by
+    intro h0; rw [h0, D.ord_zero] at hpos; exact lt_irrefl 0 hpos
+  refine eq_zero_of_vanishesAt_algebraMap D v (c := e₁.eval α + e₂.eval α * β) ?_
+  have hsum := vanishesAt_add (D := D) (v := v) (Or.inr hpos) (vanishesAt_neg hV)
+  have hid : (aeval t e₁ + aeval t e₂ * s)
+      + -(aeval t e₁ + aeval t e₂ * s - algebraMap K D.F (e₁.eval α + e₂.eval α * β))
+      = algebraMap K D.F (e₁.eval α + e₂.eval α * β) := by ring
+  rwa [hid] at hsum
+
+/-- **The identity that cancels the uniformiser at a point with `2β ≠ 0`** (PROVEN).
+
+At such a point `t − α` is the uniformiser, and multiplying a chart expression that VANISHES
+at the point by the conjugate `s + β` makes the factor `t − α` visible.  `s² = g(t)` and
+`g − β² = (X − α)·h` are what turn `(s − β)(s + β)` into `(t − α)·h(t)`. -/
+lemma chart_mul_conj (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {t s : D.F} {α β : K} {g h : K[X]}
+    (hcurve : s ^ 2 = aeval t g)
+    (hg : g = Polynomial.C (β ^ 2) + (Polynomial.X - Polynomial.C α) * h)
+    {P Q P₁ Q₁ : K[X]}
+    (hP : P = Polynomial.C (P.eval α) + (Polynomial.X - Polynomial.C α) * P₁)
+    (hQ : Q = Polynomial.C (Q.eval α) + (Polynomial.X - Polynomial.C α) * Q₁)
+    (hPQ : P.eval α + Q.eval α * β = 0) :
+    (aeval t P + aeval t Q * s) * (algebraMap K D.F β + s)
+      = (t - algebraMap K D.F α)
+        * (aeval t (P₁ * Polynomial.C β + Q₁ * g + Polynomial.C (Q.eval α) * h)
+            + aeval t (P₁ + Q₁ * Polynomial.C β) * s) := by
+  have hPe : aeval t P
+      = algebraMap K D.F (P.eval α) + (t - algebraMap K D.F α) * aeval t P₁ := by
+    rw [hP]; simp
+  have hQe : aeval t Q
+      = algebraMap K D.F (Q.eval α) + (t - algebraMap K D.F α) * aeval t Q₁ := by
+    rw [hQ]; simp
+  have hGe : aeval t g
+      = (algebraMap K D.F β) ^ 2 + (t - algebraMap K D.F α) * aeval t h := by
+    rw [hg]; simp [map_pow]
+  have hPQF : algebraMap K D.F (P.eval α)
+      + algebraMap K D.F (Q.eval α) * algebraMap K D.F β = 0 := by
+    rw [← map_mul, ← map_add, hPQ, map_zero]
+  rw [hGe] at hcurve
+  simp only [map_add, map_mul, aeval_C, hGe]
+  rw [hPe, hQe]
+  linear_combination (algebraMap K D.F (Q.eval α)
+      + (t - algebraMap K D.F α) * aeval t Q₁) * hcurve
+    + (s + algebraMap K D.F β) * hPQF
+
+/-- **The identity that cancels the uniformiser at a point with `β = 0` and `g'(α) ≠ 0`**
+(PROVEN).  There the uniformiser is `s`, not `t − α`: `t − α = s²/h(t)` with `h(α) = g'(α)`
+a unit, and multiplying by `h(t)` makes the factor `s` visible. -/
+lemma chart_mul_deriv (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {t s : D.F} {α : K} {g h : K[X]}
+    (hcurve : s ^ 2 = aeval t g)
+    (hg : g = (Polynomial.X - Polynomial.C α) * h)
+    {P Q P₁ : K[X]}
+    (hP : P = (Polynomial.X - Polynomial.C α) * P₁) :
+    (aeval t P + aeval t Q * s) * aeval t h
+      = s * (aeval t (Q * h) + aeval t P₁ * s) := by
+  have hPe : aeval t P = (t - algebraMap K D.F α) * aeval t P₁ := by rw [hP]; simp
+  have hGe : aeval t g = (t - algebraMap K D.F α) * aeval t h := by rw [hg]; simp
+  rw [hGe] at hcurve
+  simp only [map_mul]
+  rw [hPe]
+  linear_combination (-(aeval t P₁)) * hcurve
+
+
+/-- Taylor's formula to first order (PROVEN): `P = P(α) + (X − α)·P₁`. -/
+lemma exists_sub_eval_factor (P : K[X]) (α : K) :
+    ∃ P₁ : K[X], P = Polynomial.C (P.eval α) + (Polynomial.X - Polynomial.C α) * P₁ := by
+  obtain ⟨P₁, hP₁⟩ : (Polynomial.X - Polynomial.C α) ∣ (P - Polynomial.C (P.eval α)) :=
+    dvd_iff_isRoot.2 (by simp [IsRoot])
+  exact ⟨P₁, by rw [← hP₁]; ring⟩
+
+/-- **One step of the descent on the denominator** (PROVEN).
+
+If a chart fraction `z = (A(t) + B(t)s)/(e₁(t) + e₂(t)s)` has a denominator that VANISHES at
+the point, then so does its numerator (because `z` is regular), and one uniformiser can be
+cancelled from both — leaving another chart fraction for the SAME `z` whose denominator has
+strictly smaller order.  Which uniformiser it is depends on the point: `t − α` where
+`2β ≠ 0`, and `s` where `β = 0` and `g'(α) ≠ 0`.  Smoothness of the chart at the point is
+exactly the disjunction of those two. -/
+lemma exists_localDenom_step (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places)
+    {t s : D.F} {α β : K} {g h : K[X]}
+    (hcurve : s ^ 2 = aeval t g)
+    (hg : g = Polynomial.C (β ^ 2) + (Polynomial.X - Polynomial.C α) * h)
+    (ht : D.VanishesAt v (t - algebraMap K D.F α)) (ht0 : t - algebraMap K D.F α ≠ 0)
+    (hs : D.VanishesAt v (s - algebraMap K D.F β)) (hs0 : s ≠ 0)
+    (hsm : (2 : K) * β ≠ 0 ∨ (β = 0 ∧ h.eval α ≠ 0))
+    {z : D.F} (hz0 : z ≠ 0) (hz : 0 ≤ D.ord v z)
+    {A B e₁ e₂ : K[X]}
+    (hden : aeval t e₁ + aeval t e₂ * s ≠ 0)
+    (hdpos : 0 < D.ord v (aeval t e₁ + aeval t e₂ * s))
+    (heq : z * (aeval t e₁ + aeval t e₂ * s) = aeval t A + aeval t B * s) :
+    ∃ A' B' f₁ f₂ : K[X], (aeval t f₁ + aeval t f₂ * s ≠ 0) ∧
+      D.ord v (aeval t f₁ + aeval t f₂ * s) < D.ord v (aeval t e₁ + aeval t e₂ * s) ∧
+      z * (aeval t f₁ + aeval t f₂ * s) = aeval t A' + aeval t B' * s := by
+  have hnum0 : aeval t A + aeval t B * s ≠ 0 := by rw [← heq]; exact mul_ne_zero hz0 hden
+  have hnumpos : 0 < D.ord v (aeval t A + aeval t B * s) := by
+    rw [← heq, D.ord_mul v _ _ hz0 hden]; omega
+  have hδnum : A.eval α + B.eval α * β = 0 := chart_value_eq_zero D v ht hs hnumpos
+  have hδden : e₁.eval α + e₂.eval α * β = 0 := chart_value_eq_zero D v ht hs hdpos
+  have htm : t ∈ D.valRing v := mem_valRing_of_vanishesAt_sub D v ht
+  have htpos : 0 < D.ord v (t - algebraMap K D.F α) := by
+    rcases ht with hc | hc
+    · exact absurd hc ht0
+    · exact hc
+  rcases hsm with h2β | ⟨hβ0, hhα⟩
+  · -- the uniformiser is `t − α`; multiply by the conjugate `s + β`
+    obtain ⟨A₁, hA⟩ := exists_sub_eval_factor A α
+    obtain ⟨B₁, hB⟩ := exists_sub_eval_factor B α
+    obtain ⟨E₁, he₁⟩ := exists_sub_eval_factor e₁ α
+    obtain ⟨E₂, he₂⟩ := exists_sub_eval_factor e₂ α
+    have hμ : algebraMap K D.F β + s ≠ 0 ∧ D.ord v (algebraMap K D.F β + s) = 0 := by
+      refine ord_eq_zero_of_vanishesAt_sub D v (α := 2 * β) h2β ?_
+      have hid : algebraMap K D.F β + s - algebraMap K D.F (2 * β)
+          = s - algebraMap K D.F β := by
+        rw [map_mul, show (algebraMap K D.F) (2 : K) = 2 from map_ofNat _ 2]; ring
+      rw [hid]; exact hs
+    have hN := chart_mul_conj D hcurve hg hA hB hδnum
+    have hM := chart_mul_conj D hcurve hg he₁ he₂ hδden
+    refine ⟨A₁ * Polynomial.C β + B₁ * g + Polynomial.C (B.eval α) * h,
+      A₁ + B₁ * Polynomial.C β,
+      E₁ * Polynomial.C β + E₂ * g + Polynomial.C (e₂.eval α) * h,
+      E₁ + E₂ * Polynomial.C β, ?_, ?_, ?_⟩
+    · intro h0
+      rw [h0, mul_zero] at hM
+      exact (mul_ne_zero hden hμ.1) hM
+    · have hMc0 : aeval t (E₁ * Polynomial.C β + E₂ * g + Polynomial.C (e₂.eval α) * h)
+          + aeval t (E₁ + E₂ * Polynomial.C β) * s ≠ 0 := by
+        intro h0
+        rw [h0, mul_zero] at hM
+        exact (mul_ne_zero hden hμ.1) hM
+      have h3 : D.ord v (t - algebraMap K D.F α)
+          + D.ord v (aeval t (E₁ * Polynomial.C β + E₂ * g + Polynomial.C (e₂.eval α) * h)
+              + aeval t (E₁ + E₂ * Polynomial.C β) * s)
+          = D.ord v (aeval t e₁ + aeval t e₂ * s) + D.ord v (algebraMap K D.F β + s) := by
+        rw [← D.ord_mul v _ _ ht0 hMc0, ← D.ord_mul v _ _ hden hμ.1, hM]
+      rw [hμ.2] at h3
+      omega
+    · have hMc0 : aeval t (E₁ * Polynomial.C β + E₂ * g + Polynomial.C (e₂.eval α) * h)
+          + aeval t (E₁ + E₂ * Polynomial.C β) * s ≠ 0 := by
+        intro h0
+        rw [h0, mul_zero] at hM
+        exact (mul_ne_zero hden hμ.1) hM
+      refine mul_left_cancel₀ ht0 ?_
+      calc (t - algebraMap K D.F α) * (z *
+            (aeval t (E₁ * Polynomial.C β + E₂ * g + Polynomial.C (e₂.eval α) * h)
+              + aeval t (E₁ + E₂ * Polynomial.C β) * s))
+          = z * ((t - algebraMap K D.F α) *
+            (aeval t (E₁ * Polynomial.C β + E₂ * g + Polynomial.C (e₂.eval α) * h)
+              + aeval t (E₁ + E₂ * Polynomial.C β) * s)) := by ring
+        _ = z * ((aeval t e₁ + aeval t e₂ * s) * (algebraMap K D.F β + s)) := by rw [← hM]
+        _ = (z * (aeval t e₁ + aeval t e₂ * s)) * (algebraMap K D.F β + s) := by ring
+        _ = (aeval t A + aeval t B * s) * (algebraMap K D.F β + s) := by rw [heq]
+        _ = _ := hN
+  · -- the uniformiser is `s`; multiply by `h(t)`, a unit because `h(α) = g'(α) ≠ 0`
+    have hg' : g = (Polynomial.X - Polynomial.C α) * h := by
+      rw [hg, hβ0]; simp
+    have hAα : A.eval α = 0 := by rw [hβ0] at hδnum; simpa using hδnum
+    have he₁α : e₁.eval α = 0 := by rw [hβ0] at hδden; simpa using hδden
+    obtain ⟨A₁, hA⟩ : (Polynomial.X - Polynomial.C α) ∣ A := dvd_iff_isRoot.2 hAα
+    obtain ⟨E₁, he₁⟩ : (Polynomial.X - Polynomial.C α) ∣ e₁ := dvd_iff_isRoot.2 he₁α
+    have hμ : aeval t h ≠ 0 ∧ D.ord v (aeval t h) = 0 :=
+      ord_eq_zero_of_vanishesAt_sub D v hhα (vanishesAt_aeval_sub_eval D v htm ht h)
+    have hspos : 0 < D.ord v s := by
+      rw [hβ0, map_zero, sub_zero] at hs
+      rcases hs with hc | hc
+      · exact absurd hc hs0
+      · exact hc
+    have hN := chart_mul_deriv D hcurve hg' (Q := B) hA
+    have hM := chart_mul_deriv D hcurve hg' (Q := e₂) he₁
+    refine ⟨B * h, A₁, e₂ * h, E₁, ?_, ?_, ?_⟩
+    · intro h0
+      rw [h0, mul_zero] at hM
+      exact (mul_ne_zero hden hμ.1) hM
+    · have hMc0 : aeval t (e₂ * h) + aeval t E₁ * s ≠ 0 := by
+        intro h0
+        rw [h0, mul_zero] at hM
+        exact (mul_ne_zero hden hμ.1) hM
+      have h3 : D.ord v s + D.ord v (aeval t (e₂ * h) + aeval t E₁ * s)
+          = D.ord v (aeval t e₁ + aeval t e₂ * s) + D.ord v (aeval t h) := by
+        rw [← D.ord_mul v _ _ hs0 hMc0, ← D.ord_mul v _ _ hden hμ.1, hM]
+      rw [hμ.2] at h3
+      omega
+    · refine mul_left_cancel₀ hs0 ?_
+      calc s * (z * (aeval t (e₂ * h) + aeval t E₁ * s))
+          = z * (s * (aeval t (e₂ * h) + aeval t E₁ * s)) := by ring
+        _ = z * ((aeval t e₁ + aeval t e₂ * s) * aeval t h) := by rw [← hM]
+        _ = (z * (aeval t e₁ + aeval t e₂ * s)) * aeval t h := by ring
+        _ = (aeval t A + aeval t B * s) * aeval t h := by rw [heq]
+        _ = _ := hN
+
+/-- **`O_v` IS the local ring of the chart at the point** (PROVEN).
+
+Every function regular at `v` is a chart fraction whose denominator does not vanish at the
+point.  The proof is a descent on `ord_v` of the denominator: `exists_localDenom_step` cancels
+one uniformiser whenever the denominator vanishes, and `ord_chart_eq_zero_iff` says order `0`
+is exactly admissibility, so the descent stops precisely at the conclusion.
+
+This is the statement that `O_v` DOMINATES the local ring of the chart and no more — the
+classical route proves it by "a valuation ring dominating a DVR with the same fraction field
+IS that DVR", which needs the local ring built as a Lean object and shown regular; the descent
+needs neither, only the interface's valuation axioms and smoothness at the point. -/
+theorem exists_localDenom_chart (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places)
+    {t s : D.F} {α β : K} {g h : K[X]}
+    (hcurve : s ^ 2 = aeval t g)
+    (hg : g = Polynomial.C (β ^ 2) + (Polynomial.X - Polynomial.C α) * h)
+    (ht : D.VanishesAt v (t - algebraMap K D.F α)) (ht0 : t - algebraMap K D.F α ≠ 0)
+    (hs : D.VanishesAt v (s - algebraMap K D.F β)) (hs0 : s ≠ 0)
+    (hsm : (2 : K) * β ≠ 0 ∨ (β = 0 ∧ h.eval α ≠ 0))
+    (hgen : ∀ z : D.F, ∃ A B e₁ e₂ : K[X], (aeval t e₁ + aeval t e₂ * s ≠ 0) ∧
+      z * (aeval t e₁ + aeval t e₂ * s) = aeval t A + aeval t B * s)
+    {z : D.F} (hz : 0 ≤ D.ord v z) :
+    ∃ A B e₁ e₂ : K[X], e₁.eval α + e₂.eval α * β ≠ 0 ∧
+      z * (aeval t e₁ + aeval t e₂ * s) = aeval t A + aeval t B * s := by
+  have key : ∀ n : ℕ, ∀ A B e₁ e₂ : K[X], (aeval t e₁ + aeval t e₂ * s ≠ 0) →
+      D.ord v (aeval t e₁ + aeval t e₂ * s) ≤ (n : ℤ) →
+      z * (aeval t e₁ + aeval t e₂ * s) = aeval t A + aeval t B * s →
+      ∃ A' B' f₁ f₂ : K[X], f₁.eval α + f₂.eval α * β ≠ 0 ∧
+        z * (aeval t f₁ + aeval t f₂ * s) = aeval t A' + aeval t B' * s := by
+    intro n
+    induction n with
+    | zero =>
+      intro A B e₁ e₂ hden hle heq
+      have h0 : D.ord v (aeval t e₁ + aeval t e₂ * s) = 0 :=
+        le_antisymm (by exact_mod_cast hle) (chart_mem_valRing D v ht hs e₁ e₂)
+      exact ⟨A, B, e₁, e₂, (ord_chart_eq_zero_iff D v ht hs hden).1 h0, heq⟩
+    | succ m ih =>
+      intro A B e₁ e₂ hden hle heq
+      rcases eq_or_lt_of_le (chart_mem_valRing D v ht hs e₁ e₂) with h0 | hpos
+      · exact ⟨A, B, e₁, e₂, (ord_chart_eq_zero_iff D v ht hs hden).1 h0.symm, heq⟩
+      · rcases eq_or_ne z 0 with rfl | hz0
+        · exact ⟨0, 0, 1, 0, by simp, by simp⟩
+        · obtain ⟨A', B', f₁, f₂, hne', hlt', heq'⟩ :=
+            exists_localDenom_step D v hcurve hg ht ht0 hs hs0 hsm hz0 hz hden hpos heq
+          refine ih A' B' f₁ f₂ hne' ?_ heq'
+          push_cast at hle ⊢
+          omega
+  obtain ⟨A, B, e₁, e₂, hne, heq⟩ := hgen z
+  exact key (D.ord v (aeval t e₁ + aeval t e₂ * s)).toNat A B e₁ e₂ hne
+    (by rw [Int.toNat_of_nonneg (chart_mem_valRing D v ht hs e₁ e₂)]) heq
+
+
+
 end PlaceData
 
-/-- **LEAF: `O_v` at an affine rational point is the LOCAL RING of the plane model there.**
+section Genus
+
+variable {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+
+/-! ### Orders of polynomials at a pole, and the two consequences (PROVEN)
+
+The one valuation-theoretic input the genus and the fundamental identity both need:
+**at a place where `ord_v t < 0` the order of `p(t)` is `ord_v t · deg p`**
+(`ord_aeval_of_ord_neg`).  It is an induction on the degree over `divX`, the inductive step
+being the strict ultrametric equality `ord_add_of_lt` — the leading term `p.divX(t)·t` has
+strictly smaller order than the constant term, which has order `0`.
+
+Two things come out of it, and they are used in completely different places:
+
+* `ord_eq_zero_of_isAlgebraic`: every element algebraic over `K` is a unit at every place
+  (apply the above to `g` and to `g⁻¹`; a nonzero order of either sign produces a nonzero
+  `aeval g p` from the minimal polynomial).  Hence `poleDivisor` and `K⟮g⟯`-codimension both
+  vanish there, which is the **algebraic half of `degOf_poleDivisor_eq_finrank`** — the half
+  the leaf's own docstring already asserted in prose;
+* `ord_aeval_of_ord_eq_neg_one`, the `ord_v t = −1` case, is what pins a place in
+  characteristic `2` and eliminates that characteristic altogether. -/
+
+private theorem ord_aeval_aux (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places)
+    {t : D.F} {m : ℤ} (hm : m < 0) (ht : D.ord v t = m) :
+    ∀ (n : ℕ) (p : K[X]), p ≠ 0 → p.natDegree ≤ n →
+      aeval t p ≠ 0 ∧ D.ord v (aeval t p) = m * (p.natDegree : ℤ) := by
+  have ht0 : t ≠ 0 := by
+    intro h
+    rw [h, D.ord_zero] at ht
+    omega
+  intro n
+  induction n with
+  | zero =>
+    intro p hp hdeg
+    have hpc : p = C (p.coeff 0) := Polynomial.eq_C_of_natDegree_eq_zero (Nat.le_zero.mp hdeg)
+    have hc0 : p.coeff 0 ≠ 0 := by
+      intro h
+      exact hp (by rw [hpc, h, map_zero])
+    have hval : aeval t p = algebraMap K D.F (p.coeff 0) := by
+      conv_lhs => rw [hpc]
+      simp
+    refine ⟨?_, ?_⟩
+    · rw [hval]
+      exact (map_ne_zero_iff _ (algebraMap K D.F).injective).mpr hc0
+    · rw [hval, D.ord_algebraMap v _ hc0, Nat.le_zero.mp hdeg]
+      simp
+  | succ n ih =>
+    intro p hp hdeg
+    rcases eq_or_ne p.divX 0 with hq | hq
+    · -- `p` is a constant
+      have hpc : p = C (p.coeff 0) := Polynomial.divX_eq_zero_iff.mp hq
+      have hc0 : p.coeff 0 ≠ 0 := by
+        intro h
+        exact hp (by rw [hpc, h, map_zero])
+      have hdeg0 : p.natDegree = 0 := by
+        conv_lhs => rw [hpc]
+        exact Polynomial.natDegree_C _
+      have hval : aeval t p = algebraMap K D.F (p.coeff 0) := by
+        conv_lhs => rw [hpc]
+        simp
+      refine ⟨?_, ?_⟩
+      · rw [hval]
+        exact (map_ne_zero_iff _ (algebraMap K D.F).injective).mpr hc0
+      · rw [hval, D.ord_algebraMap v _ hc0, hdeg0]
+        simp
+    · have hdegpos : p.natDegree ≠ 0 := by
+        intro h
+        exact hq (Polynomial.divX_eq_zero_iff.mpr (Polynomial.eq_C_of_natDegree_eq_zero h))
+      have hqdeg : p.divX.natDegree = p.natDegree - 1 :=
+        Polynomial.natDegree_divX_eq_natDegree_tsub_one
+      have hqle : p.divX.natDegree ≤ n := by omega
+      obtain ⟨hqne, hqord⟩ := ih p.divX hq hqle
+      have hmulne : aeval t p.divX * t ≠ 0 := mul_ne_zero hqne ht0
+      have hmulord : D.ord v (aeval t p.divX * t) = m * (p.natDegree : ℤ) := by
+        rw [D.ord_mul v _ _ hqne ht0, hqord, ht]
+        have : (p.divX.natDegree : ℤ) + 1 = (p.natDegree : ℤ) := by omega
+        nlinarith [this]
+      have hneg : m * (p.natDegree : ℤ) < 0 := by
+        have h1 : (1 : ℤ) ≤ (p.natDegree : ℤ) := by
+          have : 1 ≤ p.natDegree := Nat.one_le_iff_ne_zero.mpr hdegpos
+          exact_mod_cast this
+        nlinarith
+      have hsplit : aeval t p = aeval t p.divX * t + algebraMap K D.F (p.coeff 0) := by
+        conv_lhs => rw [← Polynomial.divX_mul_X_add p]
+        simp
+      rcases eq_or_ne (p.coeff 0) 0 with hc | hc
+      · rw [hsplit, hc, map_zero, add_zero]
+        exact ⟨hmulne, hmulord⟩
+      · have hcne : algebraMap K D.F (p.coeff 0) ≠ 0 :=
+          (map_ne_zero_iff _ (algebraMap K D.F).injective).mpr hc
+        have hlt : D.ord v (aeval t p.divX * t) < D.ord v (algebraMap K D.F (p.coeff 0)) := by
+          rw [hmulord, D.ord_algebraMap v _ hc]
+          exact hneg
+        have hne : aeval t p ≠ 0 := by
+          rw [hsplit]
+          intro h0
+          have hcon := D.ord_add_of_lt v hmulne hcne hlt
+          rw [h0, D.ord_zero, hmulord] at hcon
+          omega
+        refine ⟨hne, ?_⟩
+        rw [hsplit, D.ord_add_of_lt v hmulne hcne hlt, hmulord]
+
+/-- **With `ord_v t < 0`, the order of `p(t)` is `ord_v t` times `deg p`** (PROVEN). -/
+theorem ord_aeval_of_ord_neg (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places)
+    {t : D.F} {m : ℤ} (hm : m < 0) (ht : D.ord v t = m) {p : K[X]} (hp : p ≠ 0) :
+    aeval t p ≠ 0 ∧ D.ord v (aeval t p) = m * (p.natDegree : ℤ) :=
+  ord_aeval_aux D v hm ht p.natDegree p hp le_rfl
+
+/-- The `ord_v t = −1` case of `ord_aeval_of_ord_neg` (PROVEN). -/
+theorem ord_aeval_of_ord_eq_neg_one (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places)
+    {t : D.F} (ht : D.ord v t = -1) {p : K[X]} (hp : p ≠ 0) :
+    aeval t p ≠ 0 ∧ D.ord v (aeval t p) = -(p.natDegree : ℤ) := by
+  obtain ⟨h1, h2⟩ := ord_aeval_of_ord_neg D v (by norm_num) ht hp
+  exact ⟨h1, by rw [h2]; ring⟩
+
+/-- **Every element algebraic over `K` is a unit at every place** (PROVEN): a nonzero order of
+either sign contradicts `ord_aeval_of_ord_neg` applied to the vanishing polynomial, at `g` or
+at `g⁻¹`. -/
+theorem ord_eq_zero_of_isAlgebraic (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places)
+    {g : D.F} (hg : IsAlgebraic K g) : D.ord v g = 0 := by
+  have main : ∀ z : D.F, IsAlgebraic K z → ¬ D.ord v z < 0 := by
+    intro z hz hlt
+    obtain ⟨p, hp0, hp⟩ := hz
+    exact (ord_aeval_of_ord_neg D v hlt rfl hp0).1 hp
+  rcases eq_or_ne g 0 with rfl | hg0
+  · exact D.ord_zero v
+  rcases lt_trichotomy (D.ord v g) 0 with h | h | h
+  · exact absurd h (main g hg)
+  · exact h
+  · have hinv : IsAlgebraic K g⁻¹ := hg.inv
+    have : D.ord v g⁻¹ < 0 := by rw [D.ord_inv v g hg0]; omega
+    exact absurd this (main g⁻¹ hinv)
+
+/-- `div_∞ g = 0` for `g` algebraic over `K` (PROVEN). -/
+theorem poleDivisor_eq_zero_of_isAlgebraic (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    {g : D.F} (hg : IsAlgebraic K g) : D.poleDivisor g = 0 := by
+  ext v
+  rcases eq_or_ne g 0 with rfl | hg0
+  · simp
+  · simp [PlaceData.divisor_apply D hg0 v, ord_eq_zero_of_isAlgebraic D v hg]
+
+/-- `[F : K⟮g⟯] = 0` — `Module.finrank`'s junk value — for `g` algebraic over `K` (PROVEN):
+otherwise `F` would be finite over `K⟮g⟯`, hence over `K`, contradicting
+`transcendental_xx`. -/
+theorem finrank_adjoin_eq_zero_of_isAlgebraic (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    {g : D.F} (hg : IsAlgebraic K g) :
+    Module.finrank (IntermediateField.adjoin K {g}) D.F = 0 := by
+  by_contra hne
+  have hfin1 : Module.Finite (IntermediateField.adjoin K {g}) D.F :=
+    Module.finite_of_finrank_pos (Nat.pos_of_ne_zero hne)
+  have hfin2 : FiniteDimensional K (IntermediateField.adjoin K {g}) :=
+    IntermediateField.adjoin.finiteDimensional hg.isIntegral
+  have : FiniteDimensional K D.F :=
+    FiniteDimensional.trans K (IntermediateField.adjoin K {g}) D.F
+  exact D.transcendental_xx ((Algebra.IsAlgebraic.of_finite K D.F).isAlgebraic D.xx)
+
+/-! ### Characteristic `2` is vacuous (PROVEN)
+
+The argument recorded on `not_isRationalGenerator` — `F/K(xx)` is purely inseparable, so
+there is only one place above each place of `K(xx)`, while `ord_pt_infinite` supplies two
+distinct ones over the infinite place — done by hand rather than through a theory of
+inseparable extensions.  With `2 = 0` the cross term of `(a(xx) + b(xx)·yy)²` vanishes, so
+every `z ∈ F` satisfies
+
+    z² · d(xx)² = N(xx),   N = a² + b²·f,
+
+by `gen` and `eqn`.  Taking `ord_v` of both sides at any place with `ord_v xx = −1` and using
+`ord_aeval_of_ord_eq_neg_one` on `d` and `N` determines `2·ord_v z` from the degrees of `d`
+and `N` alone — so any two such places have the same `ord`, and `ord_injective` collapses the
+two points at infinity, contradicting `pt_injective`. -/
+
+/-- In characteristic `2` a place is pinned by `ord_v xx = −1` (PROVEN). -/
+theorem ord_eq_of_two_eq_zero (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (h2 : (2 : K) = 0)
+    {v w : D.Places} (hv : D.ord v D.xx = -1) (hw : D.ord w D.xx = -1) :
+    D.ord v = D.ord w := by
+  have h2F : (2 : D.F) = 0 := by
+    rw [show (2 : D.F) = algebraMap K D.F 2 from (map_ofNat (algebraMap K D.F) 2).symm, h2,
+      map_zero]
+  funext z
+  rcases eq_or_ne z 0 with rfl | hz
+  · rw [D.ord_zero, D.ord_zero]
+  obtain ⟨a, b, d, hd, hab⟩ := D.gen z
+  set N : K[X] := a ^ 2 + b ^ 2 * sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K with hN
+  have hd0 : d ≠ 0 := by
+    intro h
+    rw [h, map_zero] at hd
+    exact hd rfl
+  have hkey : z ^ 2 * aeval D.xx d ^ 2 = aeval D.xx N := by
+    have hsq : (z * aeval D.xx d) ^ 2
+        = (aeval D.xx a) ^ 2 + (aeval D.xx b) ^ 2 * D.yy ^ 2 := by
+      rw [hab]
+      linear_combination (aeval D.xx a * (aeval D.xx b * D.yy)) * h2F
+    rw [mul_pow] at hsq
+    rw [hsq, D.eqn, hN, map_add, map_mul, map_pow, map_pow,
+      aeval_sextPoly c₀ c₁ c₂ c₃ c₄ c₅ D.xx]
+  have hNne : aeval D.xx N ≠ 0 := by
+    rw [← hkey]
+    exact mul_ne_zero (pow_ne_zero _ hz) (pow_ne_zero _ hd)
+  have hN0 : N ≠ 0 := by
+    intro h
+    rw [h, map_zero] at hNne
+    exact hNne rfl
+  have key : ∀ u : D.Places, D.ord u D.xx = -1 →
+      2 * D.ord u z = -(N.natDegree : ℤ) + 2 * (d.natDegree : ℤ) := by
+    intro u hu
+    have hdo := (ord_aeval_of_ord_eq_neg_one D u hu hd0).2
+    have hNo := (ord_aeval_of_ord_eq_neg_one D u hu hN0).2
+    have hz2 : D.ord u (z ^ 2) = 2 * D.ord u z := by
+      rw [D.ord_pow u z hz 2]; ring
+    have hprod : D.ord u (z ^ 2 * aeval D.xx d ^ 2)
+        = D.ord u (z ^ 2) + D.ord u (aeval D.xx d ^ 2) :=
+      D.ord_mul u _ _ (pow_ne_zero _ hz) (pow_ne_zero _ hd)
+    have hdd : D.ord u (aeval D.xx d ^ 2) = 2 * D.ord u (aeval D.xx d) := by
+      rw [D.ord_pow u _ hd 2]; ring
+    rw [hkey, hNo, hz2, hdd, hdo] at hprod
+    omega
+  have hkv := key v hv
+  have hkw := key w hw
+  omega
+
+/-- **No `PlaceData` exists in characteristic `2`** (PROVEN) — the two points at infinity
+collide.  This is what makes every `2 ≠ 0`-free statement in this layer safe: the
+characteristic-`2` case of `not_isRationalGenerator`, `finrank_residue_pt_eq_one` and
+`exists_localDenom_infinite` is not merely handled, it is empty. -/
+theorem placeData_elim_of_two_eq_zero (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (h2 : (2 : K) = 0) : False := by
+  have hv := (D.ord_pt_infinite true).1
+  have hw := (D.ord_pt_infinite false).1
+  have : D.pt (Sum.inr true) = D.pt (Sum.inr false) :=
+    D.ord_injective (ord_eq_of_two_eq_zero D h2 hv hw)
+  exact Bool.noConfusion (Sum.inr.injEq .. ▸ D.pt_injective this : (true : Bool) = false)
+
+/-! ### Transport of a rational generator to `RatFunc K` (PROVEN)
+
+A rational generator `t` generates (`adjoin_eq_top_of_isRationalGenerator`) and is
+transcendental (`transcendental_of_isRationalGenerator`, since otherwise `F` would be finite
+over `K`), so mathlib's `RatFunc.algEquivOfTranscendental` gives `F ≃ₐ[K] RatFunc K`.  The
+two facts carried across are the curve equation and the transcendence of the abscissa, which
+is exactly the hypothesis pair of `no_sextic_sq_of_ratFunc`. -/
+
+/-- A rational generator generates (PROVEN). -/
+theorem adjoin_eq_top_of_isRationalGenerator (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {t : D.F}
+    (h : D.IsRationalGenerator t) : IntermediateField.adjoin K {t} = ⊤ := by
+  refine eq_top_iff.mpr fun z _ => ?_
+  obtain ⟨a, b, hb, hab⟩ := h z
+  have hz : z = aeval t a / aeval t b := by
+    field_simp
+    exact hab
+  exact hz ▸ (IntermediateField.mem_adjoin_simple_iff K _).mpr ⟨a, b, rfl⟩
+
+/-- A rational generator is transcendental over `K` (PROVEN). -/
+theorem transcendental_of_isRationalGenerator (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {t : D.F}
+    (h : D.IsRationalGenerator t) : Transcendental K t := by
+  rw [Transcendental]
+  intro hal
+  have hint : IsIntegral K t := hal.isIntegral
+  have hfd : FiniteDimensional K (IntermediateField.adjoin K {t}) :=
+    IntermediateField.adjoin.finiteDimensional hint
+  rw [adjoin_eq_top_of_isRationalGenerator D h] at hfd
+  have : FiniteDimensional K D.F :=
+    (IntermediateField.topEquiv (F := K) (E := D.F)).toLinearEquiv.finiteDimensional
+  have halg : Algebra.IsAlgebraic K D.F := Algebra.IsAlgebraic.of_finite K D.F
+  exact D.transcendental_xx (halg.isAlgebraic D.xx)
+
+/-- `sext` commutes with any ring homomorphism (PROVEN). -/
+theorem map_sext {A₁ A₂ : Type*} [CommRing A₁] [CommRing A₂] (f : A₁ →+* A₂) (x : A₁) :
+    f (sext c₀ c₁ c₂ c₃ c₄ c₅ x) = sext c₀ c₁ c₂ c₃ c₄ c₅ (f x) := by
+  simp [sext]
+
+/-- A `PlaceData` with a rational generator is `K`-isomorphic to the rational function
+field (PROVEN). -/
+noncomputable def ratFuncEquivOfIsRationalGenerator (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    {t : D.F} (h : D.IsRationalGenerator t) : D.F ≃ₐ[K] RatFunc K :=
+  (((RatFunc.algEquivOfTranscendental t (transcendental_of_isRationalGenerator D h)).trans
+    ((IntermediateField.equivOfEq (adjoin_eq_top_of_isRationalGenerator D h)).trans
+      IntermediateField.topEquiv))).symm
+
+/-- The curve equation, transported to `RatFunc K` (PROVEN). -/
+theorem ratFuncEquiv_yy_sq (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {t : D.F}
+    (h : D.IsRationalGenerator t) :
+    ((ratFuncEquivOfIsRationalGenerator D h) D.yy) ^ 2
+      = sext c₀ c₁ c₂ c₃ c₄ c₅ ((ratFuncEquivOfIsRationalGenerator D h) D.xx) := by
+  set e := ratFuncEquivOfIsRationalGenerator D h
+  rw [← map_pow, D.eqn]
+  simpa using map_sext (c₀ := c₀) (c₁ := c₁) (c₂ := c₂) (c₃ := c₃) (c₄ := c₄) (c₅ := c₅)
+    (e : D.F →+* RatFunc K) D.xx
+
+/-- Transcendence of the abscissa, transported to `RatFunc K` (PROVEN). -/
+theorem transcendental_ratFuncEquiv_xx (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {t : D.F}
+    (h : D.IsRationalGenerator t) :
+    Transcendental K ((ratFuncEquivOfIsRationalGenerator D h) D.xx) := by
+  set e := ratFuncEquivOfIsRationalGenerator D h
+  intro hal
+  refine D.transcendental_xx ?_
+  obtain ⟨p, hp0, hp⟩ := hal
+  refine ⟨p, hp0, ?_⟩
+  have hstep : e (aeval D.xx p) = 0 :=
+    (Polynomial.aeval_algHom_apply (e : D.F →ₐ[K] RatFunc K) D.xx p).symm.trans hp
+  simpa using hstep
+
+end Genus
+
+/-- **LEAF, PROVEN 2026-07-30: `O_v` at an affine rational point is the LOCAL RING of the
+plane model there.**
+
+The proof is `PlaceData.exists_localDenom_chart` in the chart `(t, s) = (x, y)` at `(α, β) = q`
+— see the section docstring there for why the descent replaces the classical
+"valuation ring dominating a DVR" argument.  `hsep` IS used, exactly as the audit below
+predicted and only in the branch `β = 0`: there `2β = 0`, the conjugate `s + β` is not a unit,
+and the uniformiser is `s` rather than `x − α`, which needs `f'(α) = h(α) ≠ 0`.  That is
+supplied by `IsCoprime f f'` (which is what `Separable` unfolds to) together with
+`not_isUnit_X_sub_C`: a common root of `f` and `f'` would make `X − α` a unit.  For `β ≠ 0` the
+hypothesis is not needed, and `PlaceData.two_ne_zero` is what turns `β ≠ 0` into `2β ≠ 0`.
 
 Every `z` without a pole at `v = pt (a, b)` is a quotient of two elements of the coordinate
 ring `K[x, y] = K[x] ⊕ K[x]·y` whose denominator does not vanish at `(a, b)`.  This is the
@@ -2015,9 +4528,78 @@ theorem exists_localDenom_affine {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type
     ∃ a b e₁ e₂ : K[X],
       Polynomial.eval q.1.1 e₁ + Polynomial.eval q.1.1 e₂ * q.1.2 ≠ 0 ∧
       z * (aeval D.xx e₁ + aeval D.xx e₂ * D.yy)
-        = aeval D.xx a + aeval D.xx b * D.yy := sorry
+        = aeval D.xx a + aeval D.xx b * D.yy := by
+  set α : K := q.1.1 with hα
+  set β : K := q.1.2 with hβ
+  obtain ⟨hxo, hyo⟩ := D.ord_pt_affine q
+  -- the curve equation in the chart
+  have hcurve : D.yy ^ 2 = aeval D.xx (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) := by
+    rw [aeval_sextPoly]; exact D.eqn
+  -- the sextic factors through the point
+  have hroot : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).eval α = β ^ 2 := by
+    rw [eval_sextPoly, hα, hβ]; exact q.2.symm
+  obtain ⟨h, hh⟩ : (Polynomial.X - Polynomial.C α)
+      ∣ (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K - Polynomial.C (β ^ 2)) :=
+    dvd_iff_isRoot.2 (by simp [IsRoot, hroot])
+  have hg : sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K
+      = Polynomial.C (β ^ 2) + (Polynomial.X - Polynomial.C α) * h := by
+    rw [← hh]; ring
+  -- the abscissa is not a constant, and the ordinate is not zero
+  have hsext0 : sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K ≠ 0 := fun h0 => by
+    have hd := natDegree_sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K
+    rw [h0] at hd; simp at hd
+  have ht0 : D.xx - algebraMap K D.F α ≠ 0 := by
+    intro h0
+    refine D.transcendental_xx ⟨Polynomial.X - Polynomial.C α, ?_, ?_⟩
+    · exact Polynomial.X_sub_C_ne_zero α
+    · simpa using h0
+  have hs0 : D.yy ≠ 0 := by
+    intro h0
+    refine D.transcendental_xx ⟨sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K, hsext0, ?_⟩
+    rw [← hcurve, h0]
+    ring
+  -- smoothness at the point: `2β ≠ 0`, or `β = 0` and separability gives `h(α) = f'(α) ≠ 0`
+  have hsm : (2 : K) * β ≠ 0 ∨ (β = 0 ∧ h.eval α ≠ 0) := by
+    rcases eq_or_ne β 0 with hβ0 | hβ0
+    · refine Or.inr ⟨hβ0, fun hhα => ?_⟩
+      have hgf : sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K = (Polynomial.X - Polynomial.C α) * h := by
+        rw [hg, hβ0]; simp
+      have hdvd1 : (Polynomial.X - Polynomial.C α) ∣ h := dvd_iff_isRoot.2 hhα
+      have hdvd2 : (Polynomial.X - Polynomial.C α)
+          ∣ Polynomial.derivative (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) := by
+        rw [hgf, Polynomial.derivative_mul]
+        exact dvd_add (Dvd.dvd.mul_left hdvd1 _) (Dvd.dvd.mul_right dvd_rfl _)
+      have hdvd3 : (Polynomial.X - Polynomial.C α) ∣ sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K :=
+        ⟨h, hgf⟩
+      have hco : IsCoprime (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K)
+          (Polynomial.derivative (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K)) := hsep
+      exact Polynomial.not_isUnit_X_sub_C α (hco.isUnit_of_dvd' hdvd3 hdvd2)
+    · exact Or.inl (mul_ne_zero (D.two_ne_zero) hβ0)
+  -- the chart generates, with a denominator in the abscissa alone
+  have hgen : ∀ w : D.F, ∃ A B e₁ e₂ : K[X],
+      (aeval D.xx e₁ + aeval D.xx e₂ * D.yy ≠ 0) ∧
+      w * (aeval D.xx e₁ + aeval D.xx e₂ * D.yy) = aeval D.xx A + aeval D.xx B * D.yy := by
+    intro w
+    obtain ⟨A, B, d, hd, hw⟩ := D.gen w
+    exact ⟨A, B, d, 0, by simpa using hd, by simpa using hw⟩
+  exact PlaceData.exists_localDenom_chart D (D.pt (Sum.inl q)) hcurve hg (Or.inr hxo) ht0 (Or.inr hyo)
+    hs0 hsm hgen hz
 
-/-- **LEAF: `O_v` at a point at infinity is the LOCAL RING of the chart at infinity.**
+/-- **LEAF, PROVEN 2026-07-30: `O_v` at a point at infinity is the LOCAL RING of the chart at
+infinity.**
+
+`PlaceData.exists_localDenom_chart` again, in the chart `(t, s) = (1/x, y/x³)` at `(0, ±1)`,
+with `g = revSextPoly` the reversed sextic.  **`hsep` is NOT used and is underscored**, as the
+paragraph below predicted: the branch at infinity has `β = ±1`, so `2β ≠ 0` follows from
+`PlaceData.two_ne_zero` and the `β = 0` branch — the only one that needs separability — is
+never taken.
+
+The one piece of real work beyond the affine instantiation is that the chart at infinity must
+GENERATE: `gen` supplies `z = (a(x) + b(x)y)/d(x)`, and turning that into a fraction in
+`(1/x, y/x³)` is `Polynomial.reflect` — `aeval (1/x) (reflect m p) = aeval x p · x^{-m}`, which
+is mathlib's `eval₂_reflect_mul_pow` (`⅟x = x⁻¹`).  With `m` chosen `≥ deg d, deg a` and
+`≥ deg b + 3`, the three reflections clear the denominator `x^m` simultaneously, the `+3` being
+exactly the weight of `y`.
 
 The same statement as `exists_localDenom_affine`, in the chart `u = 1/x`, `w = y/x³`, where
 the curve becomes `w² = u⁶f(1/u) = 1 + c₅u + c₄u² + c₃u³ + c₂u⁴ + c₁u⁵ + c₀u⁶` and the two
@@ -2035,12 +4617,113 @@ The hypothesis is carried because every consumer has it and a weaker leaf is an 
 a proof that does not use it should underscore it. -/
 theorem exists_localDenom_infinite {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
     (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
-    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (s : Bool)
-    {z : D.F} (hz : 0 ≤ D.ord (D.pt (Sum.inr s)) z) :
+    (_hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (sgn : Bool)
+    {z : D.F} (hz : 0 ≤ D.ord (D.pt (Sum.inr sgn)) z) :
     ∃ a b e₁ e₂ : K[X],
-      Polynomial.eval 0 e₁ + Polynomial.eval 0 e₂ * (if s then (1 : K) else -1) ≠ 0 ∧
+      Polynomial.eval 0 e₁ + Polynomial.eval 0 e₂ * (if sgn then (1 : K) else -1) ≠ 0 ∧
       z * (aeval D.xx⁻¹ e₁ + aeval D.xx⁻¹ e₂ * (D.yy * D.xx⁻¹ ^ 3))
-        = aeval D.xx⁻¹ a + aeval D.xx⁻¹ b * (D.yy * D.xx⁻¹ ^ 3) := sorry
+        = aeval D.xx⁻¹ a + aeval D.xx⁻¹ b * (D.yy * D.xx⁻¹ ^ 3) := by
+  set v := D.pt (Sum.inr sgn) with hv
+  obtain ⟨hx1, hx2⟩ := D.ord_pt_infinite sgn
+  rw [← hv] at hx1 hx2
+  have hxne : D.xx ≠ 0 := by intro h0; rw [h0, D.ord_zero] at hx1; omega
+  have hine : D.xx⁻¹ ≠ 0 := inv_ne_zero hxne
+  have hiord : D.ord v D.xx⁻¹ = 1 := by rw [PlaceData.ord_inv D v _ hxne, hx1]; norm_num
+  have hsext0 : sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K ≠ 0 := fun h0 => by
+    have hd := natDegree_sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K
+    rw [h0] at hd; simp at hd
+  have hyne : D.yy ≠ 0 := by
+    intro h0
+    refine D.transcendental_xx ⟨sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K, hsext0, ?_⟩
+    have := D.eqn
+    rw [h0] at this
+    rw [aeval_sextPoly, ← this]
+    ring
+  -- the curve equation in the chart at infinity
+  have hcurve : (D.yy * D.xx⁻¹ ^ 3) ^ 2 = aeval D.xx⁻¹ (PlaceAtInfinity.revSextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) := by
+    rw [PlaceAtInfinity.aeval_revSextPoly, PlaceAtInfinity.revSext_inv_eq _ _ _ _ _ _ hxne,
+      ← D.eqn]
+    field_simp
+  -- the chart sextic has constant term `1 = ε²`
+  have hε2 : (if sgn then (1 : K) else -1) ^ 2 = 1 := by cases sgn <;> norm_num
+  have hg : PlaceAtInfinity.revSextPoly c₀ c₁ c₂ c₃ c₄ c₅ K
+      = Polynomial.C ((if sgn then (1 : K) else -1) ^ 2)
+        + (Polynomial.X - Polynomial.C (0 : K))
+          * ((c₅ : K[X]) + (c₄ : K[X]) * X + (c₃ : K[X]) * X ^ 2
+              + (c₂ : K[X]) * X ^ 3 + (c₁ : K[X]) * X ^ 4 + (c₀ : K[X]) * X ^ 5) := by
+    rw [hε2]
+    simp only [PlaceAtInfinity.revSextPoly, map_one, map_zero, sub_zero]
+    ring
+  -- the two chart congruences
+  have ht : D.VanishesAt v (D.xx⁻¹ - algebraMap K D.F (0 : K)) := by
+    rw [map_zero, sub_zero]
+    exact Or.inr (by rw [hiord]; norm_num)
+  have ht0 : D.xx⁻¹ - algebraMap K D.F (0 : K) ≠ 0 := by
+    rw [map_zero, sub_zero]; exact hine
+  have hεF : (if sgn then (1 : D.F) else -1)
+      = algebraMap K D.F (if sgn then (1 : K) else -1) := by cases sgn <;> simp
+  have hchart : D.yy * D.xx⁻¹ ^ 3 - algebraMap K D.F (if sgn then (1 : K) else -1)
+      = (D.yy - (if sgn then (1 : D.F) else -1) * D.xx ^ 3) * D.xx⁻¹ ^ 3 := by
+    rw [← hεF]; field_simp
+  have hs : D.VanishesAt v
+      (D.yy * D.xx⁻¹ ^ 3 - algebraMap K D.F (if sgn then (1 : K) else -1)) := by
+    rw [hchart]
+    rcases eq_or_ne (D.yy - (if sgn then (1 : D.F) else -1) * D.xx ^ 3) 0 with hA | hA
+    · exact Or.inl (by rw [hA, zero_mul])
+    · refine Or.inr ?_
+      rw [D.ord_mul v _ _ hA (pow_ne_zero _ hine), PlaceData.ord_pow D v _ hine 3, hiord]
+      push_cast
+      omega
+  have hs0 : D.yy * D.xx⁻¹ ^ 3 ≠ 0 := mul_ne_zero hyne (pow_ne_zero _ hine)
+  -- the chart at infinity is smooth at `(0, ±1)` because `2 ≠ 0`
+  have hsm : (2 : K) * (if sgn then (1 : K) else -1) ≠ 0 := by
+    have h2 := D.two_ne_zero
+    cases sgn <;> simpa using h2
+  -- the chart at infinity generates, by reflecting the polynomials of the affine chart
+  have hkey : ∀ (p : K[X]) (m : ℕ), p.natDegree ≤ m →
+      aeval D.xx⁻¹ (Polynomial.reflect m p) = aeval D.xx p * D.xx⁻¹ ^ m := by
+    intro p m hp
+    haveI : Invertible D.xx := invertibleOfNonzero hxne
+    have h := Polynomial.eval₂_reflect_mul_pow (algebraMap K D.F) D.xx m p hp
+    have hinv : (⅟D.xx : D.F) = D.xx⁻¹ := invOf_eq_inv D.xx
+    rw [hinv, ← Polynomial.aeval_def, ← Polynomial.aeval_def] at h
+    have hxu : D.xx * D.xx⁻¹ = 1 := mul_inv_cancel₀ hxne
+    calc aeval D.xx⁻¹ (Polynomial.reflect m p)
+        = aeval D.xx⁻¹ (Polynomial.reflect m p) * (D.xx * D.xx⁻¹) ^ m := by
+          rw [hxu, one_pow, mul_one]
+      _ = (aeval D.xx⁻¹ (Polynomial.reflect m p) * D.xx ^ m) * D.xx⁻¹ ^ m := by ring
+      _ = aeval D.xx p * D.xx⁻¹ ^ m := by rw [h]
+  have hgen : ∀ y : D.F, ∃ A B e₁ e₂ : K[X],
+      (aeval D.xx⁻¹ e₁ + aeval D.xx⁻¹ e₂ * (D.yy * D.xx⁻¹ ^ 3) ≠ 0) ∧
+      y * (aeval D.xx⁻¹ e₁ + aeval D.xx⁻¹ e₂ * (D.yy * D.xx⁻¹ ^ 3))
+        = aeval D.xx⁻¹ A + aeval D.xx⁻¹ B * (D.yy * D.xx⁻¹ ^ 3) := by
+    intro y
+    obtain ⟨a, b, d, hd, hy⟩ := D.gen y
+    set m : ℕ := max d.natDegree (max a.natDegree b.natDegree) with hm
+    have hdm : d.natDegree ≤ m + 3 := by rw [hm]; omega
+    have ham : a.natDegree ≤ m + 3 := by
+      rw [hm]
+      have : a.natDegree ≤ max d.natDegree (max a.natDegree b.natDegree) := by
+        exact le_trans (le_max_left _ b.natDegree) (le_max_right _ _)
+      omega
+    have hbm : b.natDegree ≤ m := by
+      rw [hm]
+      exact le_trans (le_max_right a.natDegree _) (le_max_right _ _)
+    refine ⟨Polynomial.reflect (m + 3) a, Polynomial.reflect m b,
+      Polynomial.reflect (m + 3) d, 0, ?_, ?_⟩
+    · rw [hkey d (m + 3) hdm]
+      simp only [map_zero, zero_mul, add_zero]
+      exact mul_ne_zero hd (pow_ne_zero _ hine)
+    · rw [hkey d (m + 3) hdm, hkey a (m + 3) ham, hkey b m hbm]
+      simp only [map_zero, zero_mul, add_zero]
+      have hxu : D.xx * D.xx⁻¹ = 1 := mul_inv_cancel₀ hxne
+      calc y * (aeval D.xx d * D.xx⁻¹ ^ (m + 3))
+          = (y * aeval D.xx d) * D.xx⁻¹ ^ (m + 3) := by ring
+        _ = (aeval D.xx a + aeval D.xx b * D.yy) * D.xx⁻¹ ^ (m + 3) := by rw [hy]
+        _ = aeval D.xx a * D.xx⁻¹ ^ (m + 3)
+              + aeval D.xx b * D.xx⁻¹ ^ m * (D.yy * D.xx⁻¹ ^ 3) := by
+          rw [pow_add]; ring
+  exact PlaceData.exists_localDenom_chart D v hcurve hg ht ht0 hs hs0 (Or.inl hsm) hgen hz
 
 /-- **PROVEN: at an affine rational point every element of `O_v` is congruent to a constant.**
 
@@ -2161,11 +4844,32 @@ approximation plus a dimension count.
 
 Applying it to `g` and to `g⁻¹` is what gives `deg (div_0 g) = deg (div_∞ g)`, since
 `div_∞ (g⁻¹) = div_0 g` and `K(g⁻¹) = K(g)`; applying it at the single value
-`deg (div_∞ g) = 1` is what gives `F = K(g)`. -/
+`deg (div_∞ g) = 1` is what gives `F = K(g)`.
+
+## DECOMPOSED 2026-07-30 — the algebraic case is now Lean, and only this leaf remains
+
+The paragraph above ("for `g` algebraic over `K` the pole divisor is `0` while `[F : K⟮g⟯]`
+is `Module.finrank`'s junk value `0`") was prose; it is now
+`poleDivisor_eq_zero_of_isAlgebraic` and `finrank_adjoin_eq_zero_of_isAlgebraic`,
+both proven from `ord_aeval_of_ord_neg` in the `Genus` section above.  So the side condition
+`Transcendental K g` here is free at every call site, and the transcendental case is the
+whole of Stichtenoth I.4.11: weak approximation plus a dimension count. -/
+theorem degOf_poleDivisor_eq_finrank_of_transcendental {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type}
+    [Field K] (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (g : D.F) (hg : Transcendental K g) :
+    degHom D D.degOf (D.poleDivisor g)
+      = (Module.finrank (IntermediateField.adjoin K {g}) D.F : ℤ) := sorry
+
+/-- **The fundamental identity with no side condition, PROVEN 2026-07-30** from
+`degOf_poleDivisor_eq_finrank_of_transcendental` together with the algebraic case; see the
+docstring there. -/
 theorem degOf_poleDivisor_eq_finrank {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
     (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (g : D.F) :
     degHom D D.degOf (D.poleDivisor g)
-      = (Module.finrank (IntermediateField.adjoin K {g}) D.F : ℤ) := sorry
+      = (Module.finrank (IntermediateField.adjoin K {g}) D.F : ℤ) := by
+  by_cases hg : IsAlgebraic K g
+  · rw [poleDivisor_eq_zero_of_isAlgebraic D hg, map_zero,
+      finrank_adjoin_eq_zero_of_isAlgebraic D hg, Nat.cast_zero]
+  · exact degOf_poleDivisor_eq_finrank_of_transcendental D g hg
 
 /-- **LEAF (obligation 2a, second half): the degree formula.**
 
@@ -2291,6 +4995,596 @@ theorem isRationalGenerator_of_divisor_eq_sub_single
     simp
   · exact ⟨r, s, h0, by rw [hrs, div_mul_cancel₀ _ h0]⟩
 
+section Genus2
+
+variable {L : Type*} [Field L]
+
+/-! ### The genus: the pencil count over an algebraically closed field (PROVEN)
+
+The mathematical heart of `not_isRationalGenerator`, with no `PlaceData` and no sextic in
+it: **if `A, B` are coprime polynomials over an algebraically closed field and six distinct
+members `A − rᵢB` of their pencil are squares, then `A` and `B` are both constant.**
+
+The count is the DERIVATIVE count, not the pencil count the old route note sketched.  From
+`A − rᵢB = Cᵢ²` one gets `A' − rᵢB' = 2CᵢCᵢ'`, hence `Cᵢ` divides the Wronskian
+
+    W := A'B − AB' = (A' − rᵢB')·B − (A − rᵢB)·B',
+
+both terms being divisible by `Cᵢ`.  The `Cᵢ` are pairwise coprime (a common factor of
+`A − rᵢB` and `A − rⱼB` divides `(rⱼ − rᵢ)B` and `A`), so `∏ Cᵢ ∣ W`.  At most ONE of the six
+can drop degree — two of them dropping forces both `A` and `B` below `n = max (deg A) (deg B)`
+— so `deg ∏ Cᵢ ≥ 5n/2`, while `deg W ≤ deg A + deg B ≤ 2n`.  In whole numbers: `5n ≤ 4n`,
+so `n = 0`.
+
+`W = 0` is the one case the count cannot see, and it is a genuine second branch rather than
+a degenerate one.  `A'B = AB'` with `A, B` coprime forces `A ∣ A'` and `B ∣ B'`, hence
+`A' = B' = 0`; a nonconstant polynomial with vanishing derivative has `(deg : L) = 0`, so the
+characteristic is a prime `p ∣ n`, and over the PERFECT field `L` we get `A = Ã^p`, `B = B̃^p`
+(Frobenius is bijective, and `expand_contract` supplies the `p`-th-power shape).  Then
+`A − rᵢB = (Ã − rᵢ^{1/p}B̃)^p` by `sub_pow_char`, and **this is where `2 ≠ 0` is used and
+nowhere else**: a `p`-th power that is a square is a square when `p` is ODD, so the same
+hypotheses hold for `(Ã, B̃)` with `max (deg Ã) (deg B̃) = n/p < n`, and the induction closes.
+
+In characteristic `2` the branch is not merely unavailable, it is forced: `2CᵢCᵢ' = 0` makes
+`A' − rᵢB' = 0` for two distinct `rᵢ`, hence `B' = A' = 0`, hence `W = 0` always — which is
+exactly why `no_sextic_sq_of_ratFunc` is false there.  See the witness on that leaf. -/
+
+/-- Two distinct members of the pencil spanned by coprime `A, B` are coprime. -/
+theorem isCoprime_pencil {A B : L[X]} (h : IsCoprime A B) {a b : L} (hab : a ≠ b) :
+    IsCoprime (A - C a * B) (A - C b * B) := by
+  obtain ⟨u, v, huv⟩ := h
+  have hba : b - a ≠ 0 := sub_ne_zero_of_ne (Ne.symm hab)
+  have he : C ((b - a)⁻¹) * (C b - C a) = 1 := by
+    rw [← C_sub, ← C_mul, inv_mul_cancel₀ hba, C_1]
+  exact ⟨C ((b - a)⁻¹) * (u * C b + v), C ((b - a)⁻¹) * (-(u * C a) - v), by
+    linear_combination (C ((b - a)⁻¹) * (C b - C a)) * huv + he⟩
+
+/-- A square member of the pencil divides the Wronskian. -/
+theorem dvd_wronskian_of_pencil_sq {A B G : L[X]} {a : L} (h : A - C a * B = G ^ 2) :
+    G ∣ derivative A * B - A * derivative B := by
+  have h1 := congrArg Polynomial.derivative h
+  rw [derivative_sub, derivative_C_mul, pow_two, derivative_mul] at h1
+  exact ⟨2 * derivative G * B - G * derivative B, by
+    linear_combination B * h1 - derivative B * h⟩
+
+/-- An odd power that is a square is a square. -/
+theorem isSquare_of_odd_pow_eq_sq {E G : L[X]} (hE : E ≠ 0) {m : ℕ}
+    (h : E ^ (2 * m + 1) = G ^ 2) : ∃ H : L[X], E = H ^ 2 := by
+  have hdvd : (E ^ m) ^ 2 ∣ G ^ 2 := ⟨E, by rw [← h]; ring⟩
+  obtain ⟨H, hH⟩ := (UniqueFactorizationMonoid.pow_dvd_pow_iff_dvd (two_ne_zero)).mp hdvd
+  refine ⟨H, mul_left_cancel₀ (pow_ne_zero 2 (pow_ne_zero m hE)) ?_⟩
+  calc (E ^ m) ^ 2 * E = E ^ (2 * m + 1) := by ring
+    _ = G ^ 2 := h
+    _ = (E ^ m * H) ^ 2 := by rw [hH]
+    _ = (E ^ m) ^ 2 * H ^ 2 := by ring
+
+/-- **The core count**: coprime `A, B` cannot have six members of their pencil be squares
+unless both are constant. -/
+theorem pencil_elim [PerfectField L] (h2 : (2 : L) ≠ 0) :
+    ∀ (N n : ℕ), n ≤ N → ∀ (A B : L[X]), max A.natDegree B.natDegree = n → IsCoprime A B →
+      ∀ (r : Fin 6 → L), Function.Injective r →
+        (∀ i, ∃ Ci : L[X], A - C (r i) * B = Ci ^ 2) → n = 0 := by
+  intro N
+  induction N with
+  | zero => intro n hn _ _ _ _ _ _ _; omega
+  | succ N ihN =>
+    intro n hnN A B hn hAB r hr hsq
+    classical
+    by_contra hn0
+    have hA0 : A ≠ 0 := by
+      rintro rfl
+      have hu : IsUnit B := isCoprime_zero_left.mp hAB
+      have : n = 0 := by rw [← hn, natDegree_zero, natDegree_eq_zero_of_isUnit hu]; simp
+      exact hn0 this
+    have hB0 : B ≠ 0 := by
+      rintro rfl
+      have hu : IsUnit A := isCoprime_zero_right.mp hAB
+      have : n = 0 := by rw [← hn, natDegree_zero, natDegree_eq_zero_of_isUnit hu]; simp
+      exact hn0 this
+    have hAn : A.natDegree ≤ n := hn ▸ le_max_left _ _
+    have hBn : B.natDegree ≤ n := hn ▸ le_max_right _ _
+    choose Ci hCi using hsq
+    -- each `Cᵢ` is nonzero
+    have hCine : ∀ i, Ci i ≠ 0 := by
+      intro i hzero
+      have hAeq : A = C (r i) * B := by
+        have h := hCi i
+        rw [hzero] at h
+        simpa [sub_eq_zero] using h
+      have hBu : IsUnit B := hAB.isUnit_of_dvd' ⟨C (r i), by rw [hAeq]; ring⟩ dvd_rfl
+      have hBdeg : B.natDegree = 0 := natDegree_eq_zero_of_isUnit hBu
+      have hAdeg : A.natDegree = 0 := by
+        rw [hAeq]
+        exact Nat.le_zero.mp (natDegree_mul_le.trans (by simp [hBdeg]))
+      exact hn0 (by rw [← hn, hAdeg, hBdeg]; simp)
+    -- pairwise coprime
+    have hCicop : ∀ i j, i ≠ j → IsCoprime (Ci i) (Ci j) := by
+      intro i j hij
+      have hp := isCoprime_pencil hAB (a := r i) (b := r j) (fun h => hij (hr h))
+      rw [hCi i, hCi j] at hp
+      exact (hp.of_isCoprime_of_dvd_left (dvd_pow_self _ two_ne_zero)).of_isCoprime_of_dvd_right
+        (dvd_pow_self _ two_ne_zero)
+    -- degree of each member
+    have hdegC : ∀ i, (A - C (r i) * B).natDegree = 2 * (Ci i).natDegree := by
+      intro i; rw [hCi i, natDegree_pow]
+    have hdegle : ∀ i, 2 * (Ci i).natDegree ≤ n := by
+      intro i
+      rw [← hdegC i]
+      refine (natDegree_sub_le _ _).trans ?_
+      rw [← hn]
+      exact max_le_max le_rfl (natDegree_C_mul_le _ _)
+    -- at most one member can drop degree
+    have hbad : ∀ i j, i ≠ j → 2 * (Ci i).natDegree < n → 2 * (Ci j).natDegree < n → False := by
+      intro i j hij hi hj
+      have hab : r i ≠ r j := fun h => hij (hr h)
+      have hba : r j - r i ≠ 0 := sub_ne_zero_of_ne (Ne.symm hab)
+      have hdi : (A - C (r i) * B).natDegree < n := by rw [hdegC i]; exact hi
+      have hdj : (A - C (r j) * B).natDegree < n := by rw [hdegC j]; exact hj
+      have hBlt : B.natDegree < n := by
+        have hdiff : C (r j - r i) * B = (A - C (r i) * B) - (A - C (r j) * B) := by
+          rw [C_sub]; ring
+        have h1 : (C (r j - r i) * B).natDegree < n := by
+          rw [hdiff]
+          exact lt_of_le_of_lt (natDegree_sub_le _ _) (max_lt hdi hdj)
+        rw [natDegree_mul (C_ne_zero.mpr hba) hB0, natDegree_C] at h1
+        simpa using h1
+      have hAlt : A.natDegree < n := by
+        have hdiff : C (r j - r i) * A
+            = C (r j) * (A - C (r i) * B) - C (r i) * (A - C (r j) * B) := by
+          rw [C_sub]; ring
+        have h1 : (C (r j - r i) * A).natDegree < n := by
+          rw [hdiff]
+          refine lt_of_le_of_lt (natDegree_sub_le _ _) (max_lt ?_ ?_)
+          · exact lt_of_le_of_lt (natDegree_C_mul_le _ _) hdi
+          · exact lt_of_le_of_lt (natDegree_C_mul_le _ _) hdj
+        rw [natDegree_mul (C_ne_zero.mpr hba) hA0, natDegree_C] at h1
+        simpa using h1
+      have hlt := max_lt hAlt hBlt
+      rw [hn] at hlt
+      exact absurd hlt (lt_irrefl n)
+    -- so at least five members have full degree
+    have hcompl : (Finset.univ.filter
+        (fun i : Fin 6 => ¬ (2 * (Ci i).natDegree = n))).card ≤ 1 := by
+      rw [Finset.card_le_one]
+      intro i hi j hj
+      by_contra hij
+      simp only [Finset.mem_filter] at hi hj
+      exact hbad i j hij (lt_of_le_of_ne (hdegle i) hi.2) (lt_of_le_of_ne (hdegle j) hj.2)
+    have hcard : 5 ≤ (Finset.univ.filter (fun i : Fin 6 => 2 * (Ci i).natDegree = n)).card := by
+      have := Finset.card_filter_add_card_filter_not
+        (s := (Finset.univ : Finset (Fin 6))) (p := fun i => 2 * (Ci i).natDegree = n)
+      simp only [Finset.card_univ, Fintype.card_fin] at this
+      omega
+    have hsum : 5 * n ≤ 2 * ∑ i, (Ci i).natDegree := by
+      calc 5 * n
+          ≤ (Finset.univ.filter (fun i : Fin 6 => 2 * (Ci i).natDegree = n)).card * n :=
+            Nat.mul_le_mul_right n hcard
+        _ = ∑ _i ∈ Finset.univ.filter (fun i : Fin 6 => 2 * (Ci i).natDegree = n), n := by
+            rw [Finset.sum_const, smul_eq_mul]
+        _ = ∑ i ∈ Finset.univ.filter (fun i : Fin 6 => 2 * (Ci i).natDegree = n),
+              2 * (Ci i).natDegree :=
+            Finset.sum_congr rfl (fun i hi => ((Finset.mem_filter.mp hi).2).symm)
+        _ ≤ ∑ i ∈ (Finset.univ : Finset (Fin 6)), 2 * (Ci i).natDegree :=
+            Finset.sum_le_sum_of_subset (Finset.filter_subset _ _)
+        _ = 2 * ∑ i, (Ci i).natDegree := by rw [Finset.mul_sum]
+    by_cases hWne : derivative A * B - A * derivative B = 0
+    · -- ### the `W = 0` branch: both derivatives vanish and we descend along Frobenius
+      have hdvdA : A ∣ derivative A :=
+        hAB.dvd_of_dvd_mul_right ⟨derivative B, by linear_combination hWne⟩
+      have hdvdB : B ∣ derivative B :=
+        hAB.symm.dvd_of_dvd_mul_right ⟨derivative A, by linear_combination -hWne⟩
+      have hderiv : ∀ P : L[X], P ≠ 0 → P ∣ derivative P → derivative P = 0 := by
+        intro P hP hd
+        by_contra hne
+        have h1 := natDegree_le_of_dvd hd hne
+        have h2 := natDegree_derivative_le P
+        have hP0 : P.natDegree = 0 := by omega
+        rw [eq_C_of_natDegree_eq_zero hP0, derivative_C] at hne
+        exact hne rfl
+      have hA' : derivative A = 0 := hderiv A hA0 hdvdA
+      have hB' : derivative B = 0 := hderiv B hB0 hdvdB
+      -- the degree of a nonconstant polynomial with vanishing derivative dies in `L`
+      have hdegcast : ∀ P : L[X], P ≠ 0 → derivative P = 0 → P.natDegree ≠ 0 →
+          ((P.natDegree : ℕ) : L) = 0 := by
+        intro P hP hd hne
+        obtain ⟨k, hk⟩ : ∃ k, P.natDegree = k + 1 := ⟨P.natDegree - 1, by omega⟩
+        have h := coeff_derivative P k
+        rw [hd, coeff_zero] at h
+        have hlc : P.coeff (k + 1) ≠ 0 := by
+          rw [← hk]; exact leadingCoeff_ne_zero.mpr hP
+        have hkc : (k : L) + 1 = 0 := by
+          rcases mul_eq_zero.mp h.symm with h' | h'
+          · exact absurd h' hlc
+          · exact h'
+        rw [hk]; push_cast; exact hkc
+      have hncast : ((n : ℕ) : L) = 0 := by
+        rcases max_cases A.natDegree B.natDegree with ⟨he, _⟩ | ⟨he, _⟩
+        · have hAeq : A.natDegree = n := by rw [← hn, he]
+          rw [← hAeq]; exact hdegcast A hA0 hA' (by omega)
+        · have hBeq : B.natDegree = n := by rw [← hn, he]
+          rw [← hBeq]; exact hdegcast B hB0 hB' (by omega)
+      -- the characteristic is an odd prime `p` dividing `n`
+      haveI hchar : CharP L (ringChar L) := ringChar.charP L
+      set p := ringChar L with hpdef
+      have hpn : p ∣ n := (CharP.cast_eq_zero_iff L p n).mp hncast
+      have hp0 : p ≠ 0 := by
+        intro h
+        rw [h] at hpn
+        exact hn0 (Nat.eq_zero_of_zero_dvd hpn)
+      haveI hpp : Fact p.Prime := ⟨CharP.char_prime_of_ne_zero L hp0⟩
+      have hp2 : p ≠ 2 := by
+        intro h
+        refine h2 ?_
+        have : ((2 : ℕ) : L) = 0 := by rw [CharP.cast_eq_zero_iff L p 2, h]
+        simpa using this
+      obtain ⟨m, hm⟩ : ∃ m, p = 2 * m + 1 := by
+        obtain ⟨m, hm⟩ := (Fact.out (p := p.Prime)).odd_of_ne_two hp2
+        exact ⟨m, by omega⟩
+      haveI : ExpChar L p := ExpChar.prime (Fact.out (p := p.Prime))
+      haveI : ExpChar L[X] p := ExpChar.prime (Fact.out (p := p.Prime))
+      -- descend along Frobenius
+      set σ : L →+* L := ((frobeniusEquiv L p).symm : L →+* L) with hσ
+      have hfrob : ∀ x : L, (σ x) ^ p = x := fun x => frobenius_apply_frobeniusEquiv_symm L p x
+      have hdesc : ∀ P : L[X], derivative P = 0 → P = (map σ (contract p P)) ^ p := by
+        intro P hP
+        have h1 : map (frobenius L p) P = (contract p P) ^ p := by
+          conv_lhs => rw [← Polynomial.expand_contract (p := p) hP hp0]
+          exact map_frobenius_expand p (contract p P)
+        calc P = map σ (map (frobenius L p) P) := by
+              rw [map_map, hσ, frobeniusEquiv_symm_comp_frobenius, map_id]
+          _ = map σ ((contract p P) ^ p) := by rw [h1]
+          _ = (map σ (contract p P)) ^ p := by rw [Polynomial.map_pow]
+      set A' : L[X] := map σ (contract p A) with hA'def
+      set B' : L[X] := map σ (contract p B) with hB'def
+      have hAp : A = A' ^ p := hdesc A hA'
+      have hBp : B = B' ^ p := hdesc B hB'
+      -- the descended data
+      have hcop' : IsCoprime A' B' := by
+        rw [hAp, hBp] at hAB
+        exact (hAB.of_isCoprime_of_dvd_left (dvd_pow_self _ hp0)).of_isCoprime_of_dvd_right
+          (dvd_pow_self _ hp0)
+      have hrinj : Function.Injective (fun i => σ (r i)) := by
+        intro i j hij
+        exact hr ((frobeniusEquiv L p).symm.injective hij)
+      have hsq' : ∀ i, ∃ D : L[X], A' - C (σ (r i)) * B' = D ^ 2 := by
+        intro i
+        have hEp : (A' - C (σ (r i)) * B') ^ p = Ci i ^ 2 := by
+          have hCr : C (r i) = (C (σ (r i))) ^ p := by
+            rw [← C_pow, hfrob]
+          calc (A' - C (σ (r i)) * B') ^ p
+              = A' ^ p - (C (σ (r i)) * B') ^ p := sub_pow_char A' (C (σ (r i)) * B')
+            _ = A - C (r i) * B := by rw [mul_pow, ← hCr, ← hAp, ← hBp]
+            _ = Ci i ^ 2 := hCi i
+        have hEne : A' - C (σ (r i)) * B' ≠ 0 := by
+          intro h0
+          rw [h0, zero_pow hp0] at hEp
+          exact hCine i (pow_eq_zero_iff two_ne_zero |>.mp hEp.symm)
+        rw [hm] at hEp
+        exact isSquare_of_odd_pow_eq_sq hEne hEp
+      -- the descended degree
+      have hdegA : A.natDegree = p * A'.natDegree := by rw [hAp, natDegree_pow]
+      have hdegB : B.natDegree = p * B'.natDegree := by rw [hBp, natDegree_pow]
+      have hmaxmul : max (p * A'.natDegree) (p * B'.natDegree)
+          = p * max A'.natDegree B'.natDegree := by
+        rcases le_total A'.natDegree B'.natDegree with h | h
+        · rw [max_eq_right h, max_eq_right (Nat.mul_le_mul (le_refl p) h)]
+        · rw [max_eq_left h, max_eq_left (Nat.mul_le_mul (le_refl p) h)]
+      have hnp : n = p * max A'.natDegree B'.natDegree := by
+        rw [← hn, hdegA, hdegB, hmaxmul]
+      have hp3 : 3 ≤ p := by
+        have := (Fact.out (p := p.Prime)).two_le
+        omega
+      have hn'0 : max A'.natDegree B'.natDegree ≠ 0 := by
+        intro h; rw [h, Nat.mul_zero] at hnp; exact hn0 hnp
+      have hn'le : max A'.natDegree B'.natDegree ≤ N := by
+        have : 2 * max A'.natDegree B'.natDegree + max A'.natDegree B'.natDegree ≤ n := by
+          calc 2 * max A'.natDegree B'.natDegree + max A'.natDegree B'.natDegree
+              = 3 * max A'.natDegree B'.natDegree := by ring
+            _ ≤ p * max A'.natDegree B'.natDegree := Nat.mul_le_mul hp3 (le_refl _)
+            _ = n := hnp.symm
+        omega
+      exact hn'0 (ihN _ hn'le A' B' rfl hcop' _ hrinj hsq')
+    · -- ### the `W ≠ 0` branch: the degree count
+      have hprod : (∏ i, Ci i) ∣ derivative A * B - A * derivative B :=
+        Finset.prod_dvd_of_coprime (fun i _ j _ hij => hCicop i j hij)
+          (fun i _ => dvd_wronskian_of_pencil_sq (hCi i))
+      have hdegprod : (∏ i, Ci i).natDegree = ∑ i, (Ci i).natDegree :=
+        natDegree_prod _ _ (fun i _ => hCine i)
+      have h1 : ∑ i, (Ci i).natDegree ≤ (derivative A * B - A * derivative B).natDegree := by
+        rw [← hdegprod]; exact natDegree_le_of_dvd hprod hWne
+      have h2 : (derivative A * B - A * derivative B).natDegree
+          ≤ A.natDegree + B.natDegree := by
+        refine (natDegree_sub_le _ _).trans (max_le ?_ ?_)
+        · exact natDegree_mul_le.trans (by have := natDegree_derivative_le A; omega)
+        · exact natDegree_mul_le.trans (by have := natDegree_derivative_le B; omega)
+      omega
+
+end Genus2
+
+/-- The homogenised sextic `B⁶·f(A/B)` over any commutative ring. -/
+noncomputable def hsextOf (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) {R : Type*} [CommRing R] (A B : R) : R :=
+  A ^ 6 + (c₅ : R) * A ^ 5 * B + (c₄ : R) * A ^ 4 * B ^ 2 + (c₃ : R) * A ^ 3 * B ^ 3
+    + (c₂ : R) * A ^ 2 * B ^ 4 + (c₁ : R) * A * B ^ 5 + (c₀ : R) * B ^ 6
+
+section Genus2Reduce
+
+variable {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
+
+/-! ### The reduction of the genus leaf to that count (PROVEN)
+
+`ψ² = f(φ)` with `φ = A/B` in lowest terms gives, after clearing denominators,
+`P²B⁶ = Q²·F(A, B)` with `ψ = P/Q` in lowest terms and `F` the HOMOGENISED sextic
+(`hsextOf`, i.e. `B⁶·f(A/B)`).  `F(A, B) ≡ A⁶` modulo `B`, so `F` is coprime to `B`; hence
+`Q² ∣ B⁶` and `B⁶ ∣ Q²`, the two are associate, and cancelling `B⁶` leaves
+`F(A, B) = unit · P²`.
+
+Base-changing to `L = AlgebraicClosure K` — only the POLYNOMIALS are base-changed, never
+`RatFunc K`, which is what keeps this elementary — the unit becomes a nonzero constant, and a
+constant is a square over `L`, so `F(A_L, B_L)` is a square.  Separability gives `f` SIX
+distinct roots over `L` (`exists_six_roots`), and `F(A, B) = ∏ᵢ (A − rᵢB)` — checked in
+`RatFunc L`, where it is `f(A/B)·B⁶` read two ways.  The six factors are pairwise coprime, so
+each is a square up to a unit by `exists_associated_pow_of_mul_eq_pow'`, and again the unit is
+a square over `L`.  That is exactly the hypothesis of `pencil_elim`, whose conclusion
+`max (deg A) (deg B) = 0` contradicts transcendence of `φ`. -/
+
+lemma map_hsextOf {R S : Type*} [CommRing R] [CommRing S] (f : R →+* S) (A B : R) :
+    f (hsextOf c₀ c₁ c₂ c₃ c₄ c₅ A B) = hsextOf c₀ c₁ c₂ c₃ c₄ c₅ (f A) (f B) := by
+  simp [hsextOf]
+
+lemma hsextOf_of_mul {R : Type*} [CommRing R] {z A B : R} (h : z * B = A) :
+    sext c₀ c₁ c₂ c₃ c₄ c₅ z * B ^ 6 = hsextOf c₀ c₁ c₂ c₃ c₄ c₅ A B := by
+  subst h
+  simp only [sext, hsextOf]
+  ring
+
+lemma map_sextPoly {K L : Type*} [CommRing K] [CommRing L] (f : K →+* L) :
+    (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).map f = sextPoly c₀ c₁ c₂ c₃ c₄ c₅ L := by
+  simp [sextPoly, Polynomial.map_add, Polynomial.map_mul, Polynomial.map_pow]
+
+lemma monic_sextPoly (K : Type*) [CommRing K] [Nontrivial K] :
+    (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Monic := by
+  unfold sextPoly
+  monicity!
+
+/-- A unit of `L[X]` over a field is a nonzero constant. -/
+lemma polynomial_eq_C_of_isUnit {L : Type*} [Field L] {u : L[X]} (hu : IsUnit u) :
+    ∃ d : L, d ≠ 0 ∧ u = C d := by
+  have hdeg : u.degree = 0 := Polynomial.isUnit_iff_degree_eq_zero.mp hu
+  refine ⟨u.coeff 0, ?_, Polynomial.eq_C_of_degree_eq_zero hdeg⟩
+  intro h
+  rw [Polynomial.eq_C_of_degree_eq_zero hdeg, h, map_zero] at hu
+  exact not_isUnit_zero hu
+
+/-- A monic separable sextic over an algebraically closed field is a product of six
+distinct linear factors. -/
+lemma exists_six_roots {L : Type} [Field L] [IsAlgClosed L]
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ L).Separable) :
+    ∃ r : Fin 6 → L, Function.Injective r ∧
+      sextPoly c₀ c₁ c₂ c₃ c₄ c₅ L = ∏ i, (X - C (r i)) := by
+  classical
+  set f := sextPoly c₀ c₁ c₂ c₃ c₄ c₅ L with hf
+  have hmo : f.Monic := monic_sextPoly L
+  have hsplit : f.Splits := IsAlgClosed.splits f
+  have hcard : Multiset.card f.roots = 6 := by
+    rw [(Polynomial.splits_iff_card_roots).mp hsplit, hf, natDegree_sextPoly]
+  have hnod : f.roots.Nodup := Polynomial.nodup_roots hsep
+  set s : Finset L := f.roots.toFinset with hs
+  have hscard : s.card = 6 := by
+    rw [hs, Multiset.toFinset_card_of_nodup hnod, hcard]
+  have hsval : s.val = f.roots := by rw [hs, Multiset.toFinset_val, Multiset.dedup_eq_self.mpr hnod]
+  set e : {x // x ∈ s} ≃ Fin 6 := (Finset.equivFin s).trans (finCongr hscard) with he
+  refine ⟨fun i => ((e.symm i : L)), ?_, ?_⟩
+  · intro i j hij
+    have : e.symm i = e.symm j := Subtype.ext hij
+    simpa using congrArg e this
+  · have h1 : f = (f.roots.map fun a => X - C a).prod := by
+      have := hsplit.eq_prod_roots_of_monic hmo
+      simpa using this
+    rw [h1, ← hsval]
+    rw [show (s.val.map fun a => X - C a).prod = ∏ a ∈ s, (X - C a) from rfl]
+    rw [← Finset.prod_coe_sort s (fun a => X - C a)]
+    exact Fintype.prod_equiv e _ _ (fun a => by simp)
+
+
+lemma ratFunc_mul_denom_eq_num {K : Type} [Field K] (x : RatFunc K) :
+    x * algebraMap K[X] (RatFunc K) x.denom = algebraMap K[X] (RatFunc K) x.num := by
+  have hd : algebraMap K[X] (RatFunc K) x.denom ≠ 0 :=
+    RatFunc.algebraMap_ne_zero x.denom_ne_zero
+  have h := RatFunc.num_div_denom x
+  rw [div_eq_iff hd] at h
+  exact h.symm
+
+lemma algebraMap_polynomial_C {K : Type} [Field K] (x : K) :
+    algebraMap K[X] (RatFunc K) (Polynomial.C x) = algebraMap K (RatFunc K) x := by
+  rw [RatFunc.algebraMap_C, RatFunc.algebraMap_eq_C]
+
+/-- **A separable sextic takes no square value on a transcendental rational function**
+(PROVEN 2026-07-30, over `pencil_elim`).
+
+`ψ² = f(φ)` is impossible in `K(T)` for `φ` transcendental over `K`, `f` a separable monic
+sextic and `2 ≠ 0`.  This is the whole content of `not_isRationalGenerator` — the genus —
+with the `PlaceData` removed: a statement about `K(T)` alone.
+
+**Both hypotheses are load-bearing, with explicit counterexamples.**
+
+* Without `hsep`: `f = (x³ + 1)²`, i.e. `c₀ = c₃ = 1` (over `ℚ`, say) and the rest `0`.  Then
+  `φ = T`, `ψ = T³ + 1` satisfies `ψ² = f(φ)` with `φ` transcendental.  This is the same
+  witness the docstring on `not_isRationalGenerator` records.
+* Without `h2` **the statement is FALSE, and separability does not save it** — this is the
+  characteristic-`2` audit on `not_isRationalGenerator` made concrete.  Take `K = 𝔽₂` and
+  `f = x⁶ + x`, i.e. `c₁ = 1` and the rest `0`.  It is separable: `f' = 6x⁵ + 1 = 1` in
+  characteristic `2`, so `gcd(f, f') = 1`.  And `φ = T²` (transcendental), `ψ = T⁶ + T` give
+  `ψ² = T¹² + T² = φ⁶ + φ = f(φ)`, the cross term `2·T⁷` vanishing.  So `h2` cannot be
+  dropped here.  It costs `not_isRationalGenerator` nothing, because no `PlaceData` exists in
+  characteristic `2` (`placeData_elim_of_two_eq_zero`).
+
+The proof is the two blocks above: `pencil_elim` (the derivative count and its Frobenius
+descent) and the reduction that feeds it.  Note where `2 ≠ 0` actually enters — **not** in
+the divisibility `Cᵢ ∣ W`, which is characteristic-free, but in the `W = 0` branch, where a
+`p`-th power that is a square must be a square.  In characteristic `2` that branch is
+unavoidable, since `2CᵢCᵢ' = 0` forces `W = 0`; so the argument fails there exactly where the
+statement does.  The earlier route note on this leaf attributed `2 ≠ 0` to the derivative
+step, and that was wrong. -/
+theorem no_sextic_sq_of_ratFunc {K : Type} [Field K] (h2 : (2 : K) ≠ 0)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable)
+    {φ ψ : RatFunc K} (hφ : Transcendental K φ)
+    (heq : ψ ^ 2 = sext c₀ c₁ c₂ c₃ c₄ c₅ φ) : False := by
+  classical
+  set A := φ.num with hAdef
+  set B := φ.denom with hBdef
+  set P := ψ.num with hPdef
+  set Q := ψ.denom with hQdef
+  have hBne : B ≠ 0 := φ.denom_ne_zero
+  have hQne : Q ≠ 0 := ψ.denom_ne_zero
+  have hιB : algebraMap K[X] (RatFunc K) B ≠ 0 := RatFunc.algebraMap_ne_zero hBne
+  have hιQ : algebraMap K[X] (RatFunc K) Q ≠ 0 := RatFunc.algebraMap_ne_zero hQne
+  have hφeq : φ * algebraMap K[X] (RatFunc K) B = algebraMap K[X] (RatFunc K) A := by
+    rw [hAdef, hBdef]; exact ratFunc_mul_denom_eq_num φ
+  have hψeq : ψ * algebraMap K[X] (RatFunc K) Q = algebraMap K[X] (RatFunc K) P := by
+    rw [hPdef, hQdef]; exact ratFunc_mul_denom_eq_num ψ
+  -- clear denominators: a polynomial identity
+  have hRF : (algebraMap K[X] (RatFunc K) P) ^ 2 * (algebraMap K[X] (RatFunc K) B) ^ 6
+      = (algebraMap K[X] (RatFunc K) Q) ^ 2
+        * hsextOf c₀ c₁ c₂ c₃ c₄ c₅ (algebraMap K[X] (RatFunc K) A)
+            (algebraMap K[X] (RatFunc K) B) := by
+    rw [← hsextOf_of_mul hφeq, ← heq, ← hψeq]; ring
+  have hkey : P ^ 2 * B ^ 6 = Q ^ 2 * hsextOf c₀ c₁ c₂ c₃ c₄ c₅ A B := by
+    apply IsFractionRing.injective K[X] (RatFunc K)
+    simpa [map_mul, map_pow, map_hsextOf] using hRF
+  set Fh := hsextOf c₀ c₁ c₂ c₃ c₄ c₅ A B with hFhdef
+  have hABcop : IsCoprime A B := φ.isCoprime_num_denom
+  have hPQcop : IsCoprime P Q := ψ.isCoprime_num_denom
+  have hFhB : IsCoprime Fh B := by
+    have h1 : Fh = A ^ 6 + B * ((c₅ : K[X]) * A ^ 5 + (c₄ : K[X]) * A ^ 4 * B
+        + (c₃ : K[X]) * A ^ 3 * B ^ 2 + (c₂ : K[X]) * A ^ 2 * B ^ 3
+        + (c₁ : K[X]) * A * B ^ 4 + (c₀ : K[X]) * B ^ 5) := by
+      rw [hFhdef, hsextOf]; ring
+    rw [h1]
+    exact hABcop.pow_left.add_mul_left_left _
+  have hQ2 : Q ^ 2 ≠ 0 := pow_ne_zero _ hQne
+  have hQ2dvd : Q ^ 2 ∣ B ^ 6 := hPQcop.symm.pow.dvd_of_dvd_mul_left ⟨Fh, hkey⟩
+  have hB6dvd : B ^ 6 ∣ Q ^ 2 :=
+    hFhB.symm.pow_left.dvd_of_dvd_mul_right ⟨P ^ 2, by rw [← hkey]; ring⟩
+  obtain ⟨u, hu⟩ := associated_of_dvd_dvd hQ2dvd hB6dvd
+  have hFheq : Fh = (u : K[X]) * P ^ 2 := by
+    refine mul_left_cancel₀ hQ2 ?_
+    calc Q ^ 2 * Fh = P ^ 2 * B ^ 6 := hkey.symm
+      _ = P ^ 2 * (Q ^ 2 * (u : K[X])) := by rw [hu]
+      _ = Q ^ 2 * ((u : K[X]) * P ^ 2) := by ring
+  -- base change to an algebraic closure
+  set L := AlgebraicClosure K with hLdef
+  set g : K →+* L := algebraMap K L with hgdef
+  have hginj : Function.Injective g := (algebraMap K L).injective
+  set ρ : K[X] →+* L[X] := Polynomial.mapRingHom g with hρdef
+  set AL : L[X] := A.map g with hALdef
+  set BL : L[X] := B.map g with hBLdef
+  set PL : L[X] := P.map g with hPLdef
+  have hρA : ρ A = AL := rfl
+  have hρB : ρ B = BL := rfl
+  have hρP : ρ P = PL := rfl
+  have h2L : (2 : L) ≠ 0 := by
+    intro h
+    refine h2 ((map_eq_zero_iff g hginj).mp ?_)
+    rw [map_ofNat]
+    exact h
+  have hABLcop : IsCoprime AL BL := by
+    have := hABcop.map ρ
+    rwa [hρA, hρB] at this
+  have hBLne : BL ≠ 0 := by
+    rw [← hρB]
+    exact fun h => hBne ((map_eq_zero_iff ρ (Polynomial.map_injective g hginj)).mp h)
+  -- the homogenised sextic is a square over `L`
+  obtain ⟨d, hdne, hdeq⟩ := polynomial_eq_C_of_isUnit (u.isUnit.map ρ)
+  obtain ⟨w, hw⟩ := IsAlgClosed.exists_pow_nat_eq d (n := 2) (by norm_num)
+  set χ : L[X] := Polynomial.C w * PL with hχdef
+  have hFhLsq : hsextOf c₀ c₁ c₂ c₃ c₄ c₅ AL BL = χ ^ 2 := by
+    have e1 : ρ Fh = hsextOf c₀ c₁ c₂ c₃ c₄ c₅ AL BL := by
+      rw [hFhdef, map_hsextOf, hρA, hρB]
+    rw [← e1, hFheq, map_mul, hdeq, map_pow, hρP, hχdef, mul_pow, ← Polynomial.C_pow, hw]
+  -- the six roots
+  have hsepL : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ L).Separable := by
+    have := hsep.map (f := g)
+    rwa [map_sextPoly] at this
+  obtain ⟨r, hrinj, hrfac⟩ := exists_six_roots hsepL
+  -- the product formula
+  have hprodeq : hsextOf c₀ c₁ c₂ c₃ c₄ c₅ AL BL = ∏ i, (AL - Polynomial.C (r i) * BL) := by
+    have hκB : algebraMap L[X] (RatFunc L) BL ≠ 0 := RatFunc.algebraMap_ne_zero hBLne
+    apply IsFractionRing.injective L[X] (RatFunc L)
+    obtain ⟨z, hzm⟩ : ∃ z : RatFunc L,
+        z * algebraMap L[X] (RatFunc L) BL = algebraMap L[X] (RatFunc L) AL :=
+      ⟨algebraMap L[X] (RatFunc L) AL / algebraMap L[X] (RatFunc L) BL,
+        div_mul_cancel₀ _ hκB⟩
+    have hsplit : sext c₀ c₁ c₂ c₃ c₄ c₅ z
+        = ∏ i, (z - algebraMap L (RatFunc L) (r i)) := by
+      have h1 : Polynomial.aeval z (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ L)
+          = sext c₀ c₁ c₂ c₃ c₄ c₅ z := aeval_sextPoly c₀ c₁ c₂ c₃ c₄ c₅ z
+      rw [← h1, hrfac, map_prod]
+      simp
+    calc algebraMap L[X] (RatFunc L) (hsextOf c₀ c₁ c₂ c₃ c₄ c₅ AL BL)
+        = hsextOf c₀ c₁ c₂ c₃ c₄ c₅ (algebraMap L[X] (RatFunc L) AL)
+            (algebraMap L[X] (RatFunc L) BL) := map_hsextOf _ _ _
+      _ = sext c₀ c₁ c₂ c₃ c₄ c₅ z * (algebraMap L[X] (RatFunc L) BL) ^ 6 :=
+          (hsextOf_of_mul hzm).symm
+      _ = (∏ i, (z - algebraMap L (RatFunc L) (r i)))
+            * (algebraMap L[X] (RatFunc L) BL) ^ 6 := by rw [hsplit]
+      _ = ∏ i, ((z - algebraMap L (RatFunc L) (r i))
+            * algebraMap L[X] (RatFunc L) BL) := by
+          rw [Finset.prod_mul_distrib, Finset.prod_const, Finset.card_univ, Fintype.card_fin]
+      _ = ∏ i, algebraMap L[X] (RatFunc L) (AL - Polynomial.C (r i) * BL) := by
+          refine Finset.prod_congr rfl (fun i _ => ?_)
+          rw [map_sub, map_mul, algebraMap_polynomial_C, ← hzm]
+          ring
+      _ = algebraMap L[X] (RatFunc L) (∏ i, (AL - Polynomial.C (r i) * BL)) := by rw [map_prod]
+  -- each factor is a square
+  have hsqfac : ∀ i, ∃ D : L[X], AL - Polynomial.C (r i) * BL = D ^ 2 := by
+    intro i
+    have hcop : IsCoprime (AL - Polynomial.C (r i) * BL)
+        (∏ j ∈ Finset.univ.erase i, (AL - Polynomial.C (r j) * BL)) :=
+      IsCoprime.prod_right (fun j hj =>
+        isCoprime_pencil hABLcop (fun h => (Finset.mem_erase.mp hj).1 (hrinj h).symm))
+    have hmul : (AL - Polynomial.C (r i) * BL)
+        * (∏ j ∈ Finset.univ.erase i, (AL - Polynomial.C (r j) * BL)) = χ ^ 2 := by
+      rw [Finset.mul_prod_erase Finset.univ (fun j => AL - Polynomial.C (r j) * BL)
+        (Finset.mem_univ i), ← hprodeq, hFhLsq]
+    obtain ⟨D, v, hv⟩ := exists_associated_pow_of_mul_eq_pow' hcop hmul
+    obtain ⟨d', hd'ne, hd'eq⟩ := polynomial_eq_C_of_isUnit v.isUnit
+    exact ⟨D * Polynomial.C (Classical.choose (IsAlgClosed.exists_pow_nat_eq d' (n := 2)
+        (by norm_num))), by
+      rw [← hv, hd'eq, mul_pow, ← Polynomial.C_pow,
+        Classical.choose_spec (IsAlgClosed.exists_pow_nat_eq d' (n := 2) (by norm_num))]⟩
+  -- the degrees, and the contradiction
+  have hdegA : AL.natDegree = A.natDegree := by rw [hALdef]; exact Polynomial.natDegree_map g
+  have hdegB : BL.natDegree = B.natDegree := by rw [hBLdef]; exact Polynomial.natDegree_map g
+  have hmaxne : max A.natDegree B.natDegree ≠ 0 := by
+    intro hmax
+    have hAd : A.natDegree = 0 := Nat.le_zero.mp (hmax ▸ le_max_left _ _)
+    have hBd : B.natDegree = 0 := Nat.le_zero.mp (hmax ▸ le_max_right _ _)
+    have hAC : A = Polynomial.C (A.coeff 0) := Polynomial.eq_C_of_natDegree_eq_zero hAd
+    have hBC : B = Polynomial.C (B.coeff 0) := Polynomial.eq_C_of_natDegree_eq_zero hBd
+    have hbne : B.coeff 0 ≠ 0 := by
+      intro h
+      rw [hBC, h, map_zero] at hBne
+      exact hBne rfl
+    have hbne' : algebraMap K (RatFunc K) (B.coeff 0) ≠ 0 := by
+      simpa using hbne
+    have h1 : φ * algebraMap K (RatFunc K) (B.coeff 0)
+        = algebraMap K (RatFunc K) (A.coeff 0) := by
+      have h0 := hφeq
+      rw [hAC, hBC, algebraMap_polynomial_C, algebraMap_polynomial_C] at h0
+      exact h0
+    have hφval : φ = algebraMap K (RatFunc K) (A.coeff 0 / B.coeff 0) := by
+      rw [map_div₀, eq_div_iff hbne']
+      exact h1
+    refine hφ ⟨Polynomial.X - Polynomial.C (A.coeff 0 / B.coeff 0),
+      Polynomial.X_sub_C_ne_zero _, ?_⟩
+    rw [map_sub, Polynomial.aeval_X, Polynomial.aeval_C, hφval, sub_self]
+  have hzero := pencil_elim h2L (max AL.natDegree BL.natDegree)
+    (max AL.natDegree BL.natDegree) le_rfl AL BL rfl hABLcop r hrinj hsqfac
+  rw [hdegA, hdegB] at hzero
+  exact hmaxne hzero
+
+end Genus2Reduce
+
 /-- **LEAF: the function field of a separable sextic is NOT rational** — "genus ≥ 1".
 
 `F ≠ K(t)` for every `t ∈ F`.  **This is the only leaf in the whole Picard layer that uses
@@ -2340,11 +5634,26 @@ The same remark applies to `finrank_residue_pt_eq_one`,
 `isRationalGenerator_of_divisor_eq_sub_single` and hence to `sub_single_pt_notMem_princ`
 itself, which has carried this since it was written: none of them says `2 ≠ 0`, and none of
 them needs to.  **Do not "repair" these statements by adding a characteristic hypothesis** —
-that would push a new obligation onto every consumer for a case that is already vacuous. -/
+that would push a new obligation onto every consumer for a case that is already vacuous.
+
+## DECOMPOSED 2026-07-30 — both halves of the split above are now Lean
+
+The characteristic-`2` audit is no longer prose: `placeData_elim_of_two_eq_zero` in the
+`Genus` section PROVES that no `PlaceData` exists there, by exactly the argument recorded
+above.  And the transport half — "`IsRationalGenerator t` into an isomorphism
+`F ≃ₐ[K] RatFunc K`", which the route note called the real work — is
+`ratFuncEquivOfIsRationalGenerator` together with `ratFuncEquiv_yy_sq` and
+`transcendental_ratFuncEquiv_xx`.  What is left is `no_sextic_sq_of_ratFunc` below, a
+statement about `K(T)` with no `PlaceData` in it at all. -/
 theorem not_isRationalGenerator {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
     (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
     (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (t : D.F) :
-    ¬ D.IsRationalGenerator t := sorry
+    ¬ D.IsRationalGenerator t := by
+  intro h
+  rcases eq_or_ne (2 : K) 0 with h2 | h2
+  · exact placeData_elim_of_two_eq_zero D h2
+  · exact no_sextic_sq_of_ratFunc h2 hsep (transcendental_ratFuncEquiv_xx D h)
+      (ratFuncEquiv_yy_sq D h)
 
 /-- **Obligation 2b, now PROVEN** from `isRationalGenerator_of_divisor_eq_sub_single` and
 `not_isRationalGenerator`, over `PlaceData.mem_princ_iff`. -/
@@ -3679,6 +6988,27 @@ downstream.  A FIFTH independent Magma run on 2026-07-28 reproduced every line o
 table above exactly — `genus 2`, `f` irreducible, `disc = 2²³·3⁴`, `TorsionSubgroup = ℤ/21`,
 `#TwoSelmerGroup = 1`, `RankBounds = [0, 0]`.
 
+RE-VERIFIED INDEPENDENTLY IN PARI, 2026-07-30 (a sixth run, and a different CAS): `f` is
+irreducible (`polisirreducible = 1`); `poldisc f = −2¹⁵·3⁴`, matching `separable_sextPoly`'s
+Bézout certificate above and differing from Magma's `Discriminant(C) = 2²³·3⁴` by exactly
+the model factor `2⁸` — the same `2⁸` appears at level `13` (`poldisc f₁₃ = −2¹²·13²`
+against Magma's `2²⁰·13²`), so the two normalisations are consistent and neither figure is
+wrong; and `hyperellcharpoly(f mod 5) = T⁴ − 5T² + 25`, whose `T³` coefficient `0` gives
+`#C(𝔽₅) = 5 + 1 + 0 = 6` (matching `card_X18_F5`) and whose value at `1` gives
+`#J(𝔽₅) = 1 − 5 + 25 = 21`.  `rank J(ℚ) = 0` remains the one input no such check reaches.
+
+## DECISION 2026-07-30: NOT DECOMPOSED, AND THE RE-CUT ARGUMENT RE-DERIVED
+
+Dispatched at as an unowned leaf and deliberately left atomic again.  The recorded rejection
+of the obvious re-cut — "`Pic` is torsion" plus "`J(ℚ)[2] = 0`" in place of `Pic = 2·Pic` —
+was re-derived rather than taken on trust, and it is correct: those two together are
+STRICTLY stronger.  They imply this leaf (no element of order `2` forces every order odd, so
+`z = 2 • ((n+1)/2 • z)` for `n` the odd order of `z`), while the converse fails — `ℚ` is
+`2`-divisible with `ℚ[2] = 0` and is not torsion.  So that re-cut trades one leaf for two
+strictly harder ones, and the `2`-divisible phrasing in force is the right one.  The one
+defect this pass found is in the DESCENT-axis bullet below: its target group was the
+odd-degree one.  Corrected there.
+
 ## ATOMICITY AUDIT (2026-07-28) — which AXES were searched, and what would refute each
 
 This leaf has now been left atomic by successive dispatches.  Per the standing rule that an
@@ -3687,8 +7017,20 @@ so the next reader can re-check a claim instead of redoing the survey.
 
 * **DESCENT axis (`2`-Selmer) — live, but blocked on MISSING STRUCTURE, not on difficulty.**
   The cut this leaf wants is `J(ℚ)/2J(ℚ) ↪ Sel₂ = 0`, over a descent map
-  `δ : Pic → L*/L*²` with `L = ℚ[x]/(f)` (a degree-`6` field, `f` being irreducible),
-  PINNED to be the genuine `∏ (x(Pᵢ) − θ)`.  The cheap way to pin a map — constrain its
+  `δ : Pic → L*/(L*² · ℚ*)` with `L = ℚ[x]/(f)` (a degree-`6` field, `f` being
+  irreducible), PINNED to be the genuine `∏ (x(Pᵢ) − θ)`.  **TARGET GROUP CORRECTED
+  2026-07-30: this said `L*/L*²`, which is the ODD-degree formula and would make the
+  leaf FALSE here.**  The model is the EVEN-degree one (`deg f = 6`), and `f` is
+  irreducible over `ℚ`, so `f` has no rational root and the curve has no rational
+  Weierstrass point — the hypothesis under which `x − θ` descends to `L*/L*²`.  Without
+  one, changing the divisor representing a class multiplies `∏ (x(Pᵢ) − θ)` by an
+  element of `ℚ*`, so `L*/L*²` is not a group the map lands in at all and only the
+  further quotient by `ℚ*` is well defined (Cassels, *The Mordell–Weil group of curves
+  of genus 2*, 1983; Schaefer, *2-descent on the Jacobians of hyperelliptic curves*,
+  J. Number Theory 51 (1995), which is the reference for the general even-degree case).
+  Note the axis verdict below is UNCHANGED by this: it turns on the genuine `δ` being
+  identically zero on `J(ℚ)`, which is a statement about `δ`'s values and not about its
+  target.  The cheap way to pin a map — constrain its
   VALUES on rational points — is **provably powerless here**, and that is the sharp
   obstruction: `#Sel₂ = 1` says the genuine `δ` is IDENTICALLY ZERO on `J(ℚ)`, so the junk
   model `δ = 0` satisfies every constraint that naming rational points can impose (and
@@ -4158,16 +7500,36 @@ independent Magma run on 2026-07-28 reproduced the table exactly — `genus 2`, 
 irreducible, `disc = 2²⁰·13²`, `TorsionSubgroup = ℤ/19`, `#TwoSelmerGroup = 1`,
 `RankBounds = [0, 0]`.
 
+RE-VERIFIED INDEPENDENTLY IN PARI, 2026-07-30: `f` irreducible (`polisirreducible = 1`);
+`poldisc f = −2¹²·13²`, i.e. Magma's `Discriminant(C) = 2²⁰·13²` divided by the model factor
+`2⁸` — the SAME factor that relates the two normalisations at level `18`, which is why
+neither figure is an error; and `hyperellcharpoly(f mod 3) = T⁴ + 2T³ + T² + 6T + 9`,
+reproducing the quoted numerator exactly, hence `#C(𝔽₃) = 3 + 1 + 2 = 6` and
+`#J(𝔽₃) = 1 + 2 + 1 + 6 + 9 = 19`.
+
+## DECISION 2026-07-30: NOT DECOMPOSED
+
+Left atomic for the reasons recorded at `X18.two_divisible_pic`, whose re-cut rejection was
+re-derived this cycle and holds verbatim here ("`Pic` torsion" + "`J(ℚ)[2] = 0`" is strictly
+stronger than `Pic = 2·Pic`, `ℚ` being the separating example).  The descent-axis target
+group is corrected below, as at level `18`.
+
 ## ATOMICITY AUDIT (2026-07-28)
 
 The axes searched, and the refuting check for each, are written out in full on
 `X18.two_divisible_pic`; every one of them applies verbatim here, the two leaves differing
 only in the sextic and the good prime.  The load-bearing item is the first: a `2`-descent
-cut needs the map `δ : Pic → L*/L*²`, `L = ℚ[x]/(f)`, pinned by a CONSTRUCTION, and pinning
-it by its values on rational points is powerless because `#Sel₂ = 1` makes the genuine `δ`
-identically zero on `J(ℚ)` — so the junk model `δ = 0` meets every such constraint and
-reduces the cut to this leaf's own conclusion.  Pinning needs residue fields `κ(v)` and
-their norms, which `PlaceData` deliberately does not carry.
+cut needs the map `δ : Pic → L*/(L*² · ℚ*)`, `L = ℚ[x]/(f)`, pinned by a CONSTRUCTION, and
+pinning it by its values on rational points is powerless because `#Sel₂ = 1` makes the
+genuine `δ` identically zero on `J(ℚ)` — so the junk model `δ = 0` meets every such
+constraint and reduces the cut to this leaf's own conclusion.  Pinning needs residue fields
+`κ(v)` and their norms, which `PlaceData` deliberately does not carry.
+
+**TARGET GROUP CORRECTED 2026-07-30, same correction as at level `18` and for the same
+reason**: this said `L*/L*²`, the ODD-degree formula.  `deg f = 6` and `f` is irreducible
+over `ℚ` (PARI, `polisirreducible`, this cycle), so there is no rational root and hence no
+rational Weierstrass point to move to infinity; the quotient by `ℚ*` is not optional and a
+sub-leaf stated over `L*/L*²` would be false.  The axis verdict is unaffected.
 
 The level-`13` specifics that strengthen the same verdict: `IsSimple(JOne(13)) = true`
 (Magma `ModAbVar`, 2026-07-28) confirms by a second, independent method the `ℚ`-simplicity

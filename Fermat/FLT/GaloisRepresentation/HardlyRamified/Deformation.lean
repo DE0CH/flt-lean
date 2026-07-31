@@ -58,38 +58,104 @@ each re-flowed the same prose paragraph. One name per line means two
 owners adding different leaves touch different lines, and git merges
 them without a human. Do not re-wrap it.
 
-- `frameLevels_classification`
-- `exists_universalFrame_profinite_of_levelIdealSystem`
-- `exists_levelIdealSystem_of_deformationCondition`
-- `hasFlatProlongationAt_of_pi_surjection`
-- `hasFlatProlongationAt_of_prod_injection`
-- `exists_cyclotomicCharacter_padicTwo_eq_two`
-- `exists_ringHom_matrix_quotient_of_finite`
+**STALENESS SWEEP 2026-07-30 — ELEVEN of the fifteen entries below were
+listed as open and are in fact PROVEN.** The list is append-mostly, so
+closures were being recorded on the declarations themselves and not here,
+and a leaf list is exactly what dispatch harvests: CLAUDE.md names a stale
+`(sorry leaf)` label as a standing source of phantom work. Every entry has
+now been checked against the compiler rather than against prose — the
+authority is the `declaration uses 'sorry'` warning set of a green
+`lake build`, not any claim in this file, including this one.
+
+**AS OF 2026-07-30 THIS MODULE HAS EXACTLY THREE OPEN LEAVES**, marked
+`OPEN` below, and a token scan agrees with the warning set (3 raw `sorry`
+tokens outside comments, 3 owning declarations, 3 warnings — so there are
+no anonymous inner sorries hiding behind a declaration count here, which
+is the failure mode CLAUDE.md records for `exists_isSwanExponentAt`).
+Regenerate rather than trusting this paragraph; it was accurate when
+written and the frontier moves.
+
+- ~~`frameLevels_classification`~~ — PROVEN (verified sorry-free 2026-07-30)
+- ~~`exists_universalFrame_profinite_of_levelIdealSystem`~~ — PROVEN (verified 2026-07-30)
+- ~~`exists_levelIdealSystem_of_deformationCondition`~~ — PROVEN (verified 2026-07-30)
+- ~~`hasFlatProlongationAt_of_pi_surjection`~~ — PROVEN (verified 2026-07-30)
+- ~~`hasFlatProlongationAt_of_prod_injection`~~ — PROVEN (verified 2026-07-30)
+- ~~`exists_cyclotomicCharacter_padicTwo_eq_two`~~ — PROVEN (verified 2026-07-30)
+- ~~`exists_ringHom_matrix_quotient_of_finite`~~ — PROVEN (verified 2026-07-30)
 - `exists_peirceGenerators_of_single_mem` — CLOSED 2026-07-26, and with it
   `exists_conj_entries_mem_of_single_mem` and
   `exists_conj_entries_mem_of_basis_repr_mem`: Carayol's step 2c is now
   entirely sorry-free
-- `exists_finiteIndex_isIntegral_charpolyCoeff_quotient_minimalPrime_of_isWeaklyUniversal_isTraceGenerated`
-- `exists_framedGaloisRep_baseChange_traceSubring`
-- `exists_relations_le_smul_of_minimal_mvPowerSeries_presentation`
-- `exists_obstructionCocycle_smallExtension_deformation`
-- `finiteDimensional_h1_adZeroTwistRestricted`
-- `finiteDimensional_sha2` (the finiteness half of
-  `exists_injective_sha2_dual_sha1Twist`, which is now PROVEN.  Cut out
-  2026-07-28 as `finiteDimensional_h2_adZeroRestricted`, about the AMBIENT
-  `H²(G_{ℚ,S}, ad⁰)`; WEAKENED to `Ш²` and renamed the same day — see the
-  OBLIGATION AUDIT on it, which shows the ambient form was strictly stronger
-  than anything the tree consumes and that its finiteness was a DERIVATION,
-  not the hidden input the cut recorded)
-- `finrank_sha2_le_finrank_sha1Twist` (cut out 2026-07-28; the Poitou–Tate
-  content of `exists_injective_sha2_dual_sha1Twist`, now PROVEN over these two)
-- `card_sha1Twist_le_card_dualNumberPoints` (re-cut 2026-07-28 in `ℕ` and over
-  `D.IsUniversal`, then re-cut again the same day as a COUNT of `k[ε]`-points;
-  `finrank_sha1Twist_le_cotangentFinrank` and `rank_sha1Twist_le_cotangentFinrank`
-  are now both PROVEN over it)
-- `card_dualNumberPoints_eq_pow_cotangentFinrankModL` (cut out 2026-07-28: the
-  COMMUTATIVE-ALGEBRA half of the tangent identification — no Galois theory, and
-  behind none of the gates that block its arithmetic sibling)
+- ~~`exists_finiteIndex_isIntegral_charpolyCoeff_quotient_minimalPrime_of_isWeaklyUniversal_isTraceGenerated`~~ — PROVEN (verified 2026-07-30)
+- ~~`exists_framedGaloisRep_baseChange_traceSubring`~~ — PROVEN (verified 2026-07-30)
+- ~~`exists_relations_le_smul_of_minimal_mvPowerSeries_presentation`~~ — PROVEN (verified 2026-07-30)
+- `exists_obstructionCocycle_smallExtension_deformation` — **OPEN.** Böckle's
+  obstruction cocycle along a small extension. Its binding sub-item is item (5)
+  of its own audit, which is NOT a preservation lemma (the naive "the lift of a
+  hardly ramified representation is hardly ramified" is FALSE, and every clause
+  of `IsHardlyRamified` fails it separately — see the WARNING FOR WHOEVER TAKES
+  IT on the declaration); expect one sub-leaf per clause
+- ~~`finiteDimensional_h1_adZeroTwistRestricted`~~ — PROVEN (verified 2026-07-30;
+  this one had already caused a phantom dispatch in the 2026-07-28 release
+  window, per CLAUDE.md's list of leaves agents were sent at after they closed)
+- `exists_poitouTateExactness_sha2_sha1Twist` — **OPEN.** (cut out 2026-07-30 as
+  the nine-term-sequence form of the Poitou–Tate input, and it is now the ONLY
+  open leaf of that subsection: the arrow `γ : H¹(G_{ℚ,S}, ad⁰(1))^∨ →
+  H²(G_{ℚ,S}, ad⁰)` of NSW VIII.6.7 together with the two exactness statements
+  flanking it, `range γ = Ш²_S(ad⁰)` and `ker γ = (Ш¹_S(ad⁰(1)))ᵃⁿⁿ`.
+  `exists_poitouTatePairing_sha2_sha1Twist` below is PROVEN over it, so it now
+  carries all FIVE declarations of the chain.  Frontier `1 → 1`.  The cut is
+  EXACT — the two statements are equivalent given the PROVEN
+  `finiteDimensional_h1_adZeroTwistRestricted`, so this is a decomposition and not
+  a strengthening — and it refutes the standing verdict that this axis "needs the
+  local pairing to even type-check": `range θ = (Ш¹)ᵃⁿⁿ` intrinsically, because
+  local duality is an isomorphism and `range (f^∨) = (ker f)ᵃⁿⁿ`.  It does NOT
+  reduce the infrastructure cost: the cup product and the local invariant map are
+  still the gate, and the build order is unchanged.  See its own docstring for the
+  faithfulness audit and for what the cut does and does not buy)
+- ~~`exists_poitouTatePairing_sha2_sha1Twist`~~ — **PROVEN 2026-07-30** over the
+  leaf above plus the nucleus `exists_nondegenerate_of_ker_eq_dualAnnihilator`.
+  (Cut out 2026-07-29; THE
+  Poitou–Tate input — a `k`-bilinear pairing `Ш²_S(ad⁰) × Ш¹_S(ad⁰(1)) → k`,
+  nondegenerate on both sides.  It REPLACES the two leaves
+  `finiteDimensional_sha2` and `finrank_sha2_le_finrank_sha1Twist`, which are
+  now PROVEN over it and over `finiteDimensional_h1_adZeroTwistRestricted`:
+  their own docstrings had said they were "two shadows of ONE input" and
+  should be discharged "in the same breath", and this is that input, named.
+  Frontier `2 → 1`.  It is STRICTLY STRONGER than the pair — see the STRENGTH
+  AUDIT on it for why that is free here and why it is NOT the mistake the
+  `finiteDimensional_h2_adZeroRestricted` episode was.  Its dominant cost is
+  local class field theory, absent from the pin, from `Fermat/` and from
+  `~/cs/FLT` — re-verified 2026-07-29 by statement shape, and AGAIN 2026-07-30
+  over all three trees by statement shape and not by name: the only mathlib hit
+  is a docstring pointer to the out-of-tree `LocalClassFieldTheory` repository,
+  and `~/cs/FLT`'s `ContCohomology/CupProduct.lean` is still present and still
+  sorry-free, so item (a) of the build order below is still shovel-ready.
+  **2026-07-30: this leaf also now discharges
+  `exists_injective_sha2_dual_sha1Twist_of_selfDual`**, which was a separate
+  `sorry` for one obligation the STRENGTH AUDIT had already shown it implies, so
+  proving it closes FOUR declarations rather than two — FIVE counting this one,
+  which is now the fifth because the leaf above discharges it)
+- `card_sha1Twist_le_card_dualNumberPoints` — **OPEN.** (re-cut 2026-07-28 in `ℕ`
+  and over `D.IsUniversal`, then re-cut again the same day as a COUNT of
+  `k[ε]`-points; `finrank_sha1Twist_le_cotangentFinrank` and
+  `rank_sha1Twist_le_cotangentFinrank` are now both PROVEN over it. Gated on the
+  SAME single object as `exists_poitouTateExactness_sha2_sha1Twist` above — the
+  local Tate pairing — so the
+  two are one cost and belong to one owner. **The 2026-07-30 nine-term cut of that
+  sibling did NOT narrow this leaf**: its gate is Greenberg–Wiles, which needs
+  `H¹_{L^⊥}` and therefore the local pairing itself, not merely a statement that
+  can name its annihilator — see the note added to its own docstring that day for
+  why the `Patching.lean` dodge does not transplant. **Its COMPOSITE FAITHFULNESS RE-AUDIT
+  is VOID as of the third re-cut and has been re-run 2026-07-30; verdict still
+  FAITHFUL — see the fresh audit on the declaration** for why the `Nat.card`
+  junk value cannot make it either vacuous or false)
+- ~~`card_dualNumberPoints_eq_pow_cotangentFinrankModL`~~ (cut out 2026-07-28 as
+  the COMMUTATIVE-ALGEBRA half of the tangent identification — no Galois theory,
+  and behind none of the gates that block its arithmetic sibling; **PROVEN
+  2026-07-29** over the section `DualNumberPointsCount`, so
+  `card_sha1Twist_le_card_dualNumberPoints` is now the ONLY open leaf of the
+  tangent identification)
 
 Both former strata above them were narrowed on 2026-07-25 into those
 leaves, and every statement they replace is now PROVEN here — including
@@ -1874,8 +1940,13 @@ cannot yet be phrased on a bundled deformation.
 
 Bundled as a definition rather than written inline so that the instance
 `letI`s live under plain parameters — the same elaborator constraint
-recorded on `IsResidualIdentified` and `IsTraceDescent`. -/
-def IsResidualIdentifiedFrame {R : Type u} [CommRing R] [TopologicalSpace R]
+recorded on `IsResidualIdentified` and `IsTraceDescent`.
+
+UNIVERSE GENERALIZATION (2026-07-29, `flt-lean-39`): `R` was `Type u`,
+the universe of the residual field `k`; it is now the independent `w`.
+Nothing here needs them equal, and the raised-level `ℚ`-side statements
+of `Modularity/Patching.lean` keep them independent. -/
+def IsResidualIdentifiedFrame {R : Type w} [CommRing R] [TopologicalSpace R]
     [IsTopologicalRing R] [IsLocalRing R] [Algebra ℤ_[ℓ] R]
     (ρbar : GaloisRep ℚ k V) (ρuniv : FramedGaloisRep ℚ R (Fin 2))
     (πuniv : R →+* k) (hπcont : Continuous πuniv) : Prop :=
@@ -1899,15 +1970,27 @@ it into an object of the category.
 
 Carries the same `[DiscreteTopology A]` clause on its test objects as
 `HardlyRamifiedDeformation.IsStrictlyUniversalOnFiniteFrames`, and for
-the same reason — see that definition's docstring. -/
-def IsStrictlyUniversalOnFrames
-    {R : Type u} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+the same reason — see that definition's docstring.
+
+PREDICATE-GENERIC AND UNIVERSE-INDEPENDENT FORM (2026-07-29,
+`flt-lean-39`): the deformation condition is now a PARAMETER `Cond`, and
+the coefficient universe `w` is independent of the residual field's `u`.
+`IsStrictlyUniversalOnFrames` below is the instantiation at
+`IsHardlyRamified`, definitionally — so every existing consumer is
+unaffected — and `IsRaisedLevelHardlyRamified` of
+`Modularity/Patching.lean` is the other intended instantiation. See the
+audit note on `exists_universalFrame_profinite_of_levelIdealSystem`. -/
+def IsStrictlyUniversalOnFramesFor
+    (Cond : ∀ (A : Type w) [CommRing A] [TopologicalSpace A]
+      [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[ℓ] A],
+      FramedGaloisRep ℚ A (Fin 2) → Prop)
+    {R : Type w} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
     [IsLocalRing R] [Algebra ℤ_[ℓ] R] (ρbar : GaloisRep ℚ k V)
     (ρuniv : FramedGaloisRep ℚ R (Fin 2)) (πuniv : R →+* k) : Prop :=
-  ∀ (A : Type u) [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+  ∀ (A : Type w) [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
     [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A] [DiscreteTopology A]
     (ρA : FramedGaloisRep ℚ A (Fin 2)),
-    IsHardlyRamified hℓOdd (rank_finTwoFun A) ρA →
+    Cond A ρA →
     ∀ πA : A →+* k, Function.Surjective πA → ∀ hπA : Continuous πA,
     (letI : Algebra A k := πA.toAlgebra
      letI : ContinuousSMul A k := continuousSMul_of_algebraMap A k
@@ -1921,6 +2004,22 @@ def IsStrictlyUniversalOnFrames
          (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
        ∃ e : (A ⊗[R] (Fin 2 → R)) ≃ₗ[A] (Fin 2 → A),
          (ρuniv.baseChange A).conj e = ρA)
+
+open scoped TensorProduct in
+/-- **Strict universality on finite frames, on a RAW package**, for the
+BASE-LEVEL hardly ramified condition — the instantiation of
+`IsStrictlyUniversalOnFramesFor` at `IsHardlyRamified`. Unfolds to the
+literal proposition it always was, so all existing consumers are
+unchanged. -/
+def IsStrictlyUniversalOnFrames
+    {R : Type u} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[ℓ] R] (ρbar : GaloisRep ℚ k V)
+    (ρuniv : FramedGaloisRep ℚ R (Fin 2)) (πuniv : R →+* k) : Prop :=
+  IsStrictlyUniversalOnFramesFor (ℓ := ℓ)
+    (fun A iCR iTS iTR iLR iAlg ρA =>
+      letI := iCR; letI := iTS; letI := iTR; letI := iLR; letI := iAlg
+      IsHardlyRamified hℓOdd (rank_finTwoFun A) ρA)
+    ρbar ρuniv πuniv
 
 set_option backward.isDefEq.respectTransparency false in
 open scoped TensorProduct in
@@ -2256,9 +2355,20 @@ hypotheses of its core leaf by name.
 This is the CANONICAL pushforward, carrying no framing ambiguity; the
 universality predicates deliberately quantify over an arbitrary framing
 `e` instead, because a classifying map only ever determines the
-pushforward up to the choice of frame. -/
+pushforward up to the choice of frame.
+
+UNIVERSE GENERALIZATION (2026-07-29, `flt-lean-39`). `A` used to share
+`B`'s universe `u`. Nothing in the definition needs that — the base
+change `A ⊗[B] (Fin 2 → B)` lands in `Type (max u v)` and
+`TensorProduct.piScalarRight` moves it back into `Type v` — and the
+restriction is what forced the RESIDUAL FIELD and the COEFFICIENT RING
+of the deformation machine below into a single universe, which is
+precisely the obstruction the raised-level `ℚ`-side statements in
+`Modularity/Patching.lean` (`k : Type uK`, `R : Type uR` independent)
+cannot live with. See the audit note on
+`exists_universalFrame_profinite_of_levelIdealSystem` below. -/
 noncomputable def pushforwardFrame {B : Type u} [CommRing B]
-    [TopologicalSpace B] [IsTopologicalRing B] {A : Type u} [CommRing A]
+    [TopologicalSpace B] [IsTopologicalRing B] {A : Type v} [CommRing A]
     [TopologicalSpace A] [IsTopologicalRing A] (ψ : B →+* A)
     (hψ : Continuous ψ) (ρ : FramedGaloisRep ℚ B (Fin 2)) :
     FramedGaloisRep ℚ A (Fin 2) :=
@@ -2614,7 +2724,7 @@ This is the handle that lets a fibre-product argument compare `ρ g` with
 `1` ENTRYWISE — which is the shape the injectivity of `b ↦ (p₁ b, p₂ b)`
 can act on. -/
 lemma pushforwardFrame_apply_map {B : Type u} [CommRing B]
-    [TopologicalSpace B] [IsTopologicalRing B] {A : Type u} [CommRing A]
+    [TopologicalSpace B] [IsTopologicalRing B] {A : Type v} [CommRing A]
     [TopologicalSpace A] [IsTopologicalRing A] (ψ : B →+* A)
     (hψ : Continuous ψ) (ρ : FramedGaloisRep ℚ B (Fin 2))
     (g : Field.absoluteGaloisGroup ℚ) (v : Fin 2 → B) (i : Fin 2) :
@@ -2650,7 +2760,7 @@ consume — a second, identical copy of this lemma sat next to
 `pushforwardFrame_apply` for their sake until 2026-07-26, when the
 duplicate declaration was found to be breaking the module's build. -/
 lemma det_pushforwardFrame {B : Type u} [CommRing B]
-    [TopologicalSpace B] [IsTopologicalRing B] {A : Type u} [CommRing A]
+    [TopologicalSpace B] [IsTopologicalRing B] {A : Type v} [CommRing A]
     [TopologicalSpace A] [IsTopologicalRing A] (ψ : B →+* A)
     (hψ : Continuous ψ) (ρ : FramedGaloisRep ℚ B (Fin 2))
     (g : Field.absoluteGaloisGroup ℚ) :
@@ -3911,7 +4021,7 @@ dictionary that lets a statement about `pushforwardFrame` over `R ⧸ I` be
 read back as a congruence in `R`, and it is what the descent clauses of
 `isHardlyRamified_of_forall_isOpen_quotient` below run on. -/
 lemma pushforwardFrame_apply {B : Type u} [CommRing B] [TopologicalSpace B]
-    [IsTopologicalRing B] {A : Type u} [CommRing A] [TopologicalSpace A]
+    [IsTopologicalRing B] {A : Type v} [CommRing A] [TopologicalSpace A]
     [IsTopologicalRing A] (ψ : B →+* A) (hψ : Continuous ψ)
     (ρ : FramedGaloisRep ℚ B (Fin 2)) (g : Field.absoluteGaloisGroup ℚ)
     (x : Fin 2 → B) :
@@ -6085,7 +6195,7 @@ standard basis vector `Pi.single j 1`, whose `ψ`-image is again
 `Pi.single j 1`; so the framing identification `A ⊗_B B² ≅ A²` never has
 to be inverted, and `piScalarRight_baseChange_apply` is not needed. -/
 lemma toMatrix'_pushforwardFrame {B : Type u} [CommRing B]
-    [TopologicalSpace B] [IsTopologicalRing B] {A : Type u} [CommRing A]
+    [TopologicalSpace B] [IsTopologicalRing B] {A : Type v} [CommRing A]
     [TopologicalSpace A] [IsTopologicalRing A] (ψ : B →+* A)
     (hψ : Continuous ψ) (ρ : FramedGaloisRep ℚ B (Fin 2))
     (g : Field.absoluteGaloisGroup ℚ) :
@@ -6642,7 +6752,7 @@ therefore unusable here; the entry form is a two-line consequence of
 `pushforwardFrame_apply_map`, which is proven above, applied to the basis vector
 `Pi.single j 1`. -/
 lemma entry_pushforwardFrame {B : Type u} [CommRing B] [TopologicalSpace B]
-    [IsTopologicalRing B] {A : Type u} [CommRing A] [TopologicalSpace A]
+    [IsTopologicalRing B] {A : Type v} [CommRing A] [TopologicalSpace A]
     [IsTopologicalRing A] (ψ : B →+* A) (hψ : Continuous ψ)
     (ρ : FramedGaloisRep ℚ B (Fin 2)) (g : Field.absoluteGaloisGroup ℚ) (i j : Fin 2) :
     LinearMap.toMatrix' (pushforwardFrame ψ hψ ρ g) i j =
@@ -7805,7 +7915,7 @@ theorem exists_levelIdealSystem_of_deformationCondition (hℓ5 : 5 ≤ ℓ)
 /-! #### Matrix bookkeeping for the strict-universality bridge
 
 The five lemmas below are the elementary linear algebra that
-`isStrictlyUniversalOnFrames_of_levelSystem` runs on. They are stated
+`isStrictlyUniversalOnFramesFor_of_levelSystem` runs on. They are stated
 here, immediately above their only consumer, rather than in the
 `FrameRing` section, because they mention neither `ρbar` nor the level
 system — they are statements about `Matrix (Fin 2) (Fin 2) R` and
@@ -7868,7 +7978,7 @@ theorem toMatrix'_symm_mul {R : Type*} [CommRing R]
 
 /-- **A matrix lifts entrywise along a surjective ring map** (PROVEN):
 choice on each of the four entries. -/
-theorem exists_matrix_map_eq {A : Type u} [CommRing A] {kk : Type u}
+theorem exists_matrix_map_eq {A : Type u} [CommRing A] {kk : Type v}
     [CommRing kk] (f : A →+* kk) (hf : Function.Surjective f)
     (C : Matrix (Fin 2) (Fin 2) kk) :
     ∃ L : Matrix (Fin 2) (Fin 2) A, L.map ⇑f = C := by
@@ -7925,9 +8035,27 @@ rather than over the inverse limit, so that it is provable without reopening
 the limit construction: everything it needs from the limit is `hdense` (the
 image of `P` is dense) and `hlift` (a map out of `P` killing a level ideal
 extends continuously to `R`). -/
-theorem isStrictlyUniversalOnFrames_of_levelSystem
+theorem isStrictlyUniversalOnFramesFor_of_levelSystem
+    (Cond : ∀ (A : Type w) [CommRing A] [TopologicalSpace A]
+      [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[ℓ] A],
+      FramedGaloisRep ℚ A (Fin 2) → Prop)
+    -- CONJUGATION INVARIANCE (added 2026-07-29, `flt-lean-39`): step (3)
+    -- of the bridge below conjugates the test object by a lift of the
+    -- residual change of frame, and needs the conjugate to still satisfy
+    -- the condition before it may be fed to `hclass`.  At the base level
+    -- this was `isHardlyRamified_conj`; the 2026-07-28 ROUTE AUDIT on
+    -- `exists_universalFrame_auxDeformation_of_clauses` in
+    -- `Modularity/Patching.lean` asserted that "nowhere does either proof
+    -- use a PROPERTY of the predicate", and THAT IS FALSE — this is the
+    -- one property used, and it must travel with `Cond`.  The raised-level
+    -- instantiation has it: `isRaisedLevelHardlyRamified_conj`, proven in
+    -- that file.
+    (hCondConj : ∀ (A : Type w) [CommRing A] [TopologicalSpace A]
+      [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[ℓ] A]
+      (ρA : FramedGaloisRep ℚ A (Fin 2)),
+      Cond A ρA → ∀ e : (Fin 2 → A) ≃ₗ[A] (Fin 2 → A), Cond A (ρA.conj e))
     {ρbar : GaloisRep ℚ k V} (e0 : V ≃ₗ[k] (Fin 2 → k))
-    {P : Type u} [CommRing P] [Algebra ℤ_[ℓ] P] (evbar : P →+* k)
+    {P : Type w} [CommRing P] [Algebra ℤ_[ℓ] P] (evbar : P →+* k)
     (M : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) P)
     (𝒥 : Set (Ideal P))
     (hres : ∀ g : Field.absoluteGaloisGroup ℚ,
@@ -7941,12 +8069,12 @@ theorem isStrictlyUniversalOnFrames_of_levelSystem
     -- lost: `IsStrictlyUniversalOnFrames` itself quantifies over test objects
     -- with `Function.Surjective πA`, so the eventual proof of this leaf has the
     -- witness in hand at every point where it needs to invoke `hclass`.
-    (hclass : ∀ (A : Type u) [CommRing A] [TopologicalSpace A]
+    (hclass : ∀ (A : Type w) [CommRing A] [TopologicalSpace A]
       [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A]
       [DiscreteTopology A] (πA : A →+* k) (hπA : Continuous πA),
       Function.Surjective πA →
       ∀ (ρA : FramedGaloisRep ℚ A (Fin 2)),
-      IsHardlyRamified hℓOdd (rank_finTwoFun A) ρA →
+      Cond A ρA →
       πA.comp (algebraMap ℤ_[ℓ] A) = algebraMap ℤ_[ℓ] k →
       pushforwardFrame πA hπA ρA = ρbar.conj e0 →
       ∃ f : P →+* A, f.comp (algebraMap ℤ_[ℓ] P) = algebraMap ℤ_[ℓ] A ∧
@@ -7954,12 +8082,12 @@ theorem isStrictlyUniversalOnFrames_of_levelSystem
         (∀ g : Field.absoluteGaloisGroup ℚ,
           (M g).map ⇑f = LinearMap.toMatrix' (ρA g)) ∧
         ∃ J ∈ 𝒥, J ≤ RingHom.ker f)
-    (hsep : ∀ (A : Type u) [CommRing A] [IsLocalRing A] [Finite A]
+    (hsep : ∀ (A : Type w) [CommRing A] [IsLocalRing A] [Finite A]
       (πA : A →+* k) (f₁ f₂ : P →+* A),
       πA.comp f₁ = evbar → πA.comp f₂ = evbar →
       (∀ g : Field.absoluteGaloisGroup ℚ, (M g).map ⇑f₁ = (M g).map ⇑f₂) →
       f₁ = f₂)
-    {R : Type u} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    {R : Type w} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
     [IsLocalRing R] [Algebra ℤ_[ℓ] R]
     (ι : P →+* R) (hdense : Dense (Set.range (ι : P → R)))
     (πuniv : R →+* k) (hπι : ∀ p : P, πuniv (ι p) = evbar p)
@@ -7969,11 +8097,11 @@ theorem isStrictlyUniversalOnFrames_of_levelSystem
     (ρuniv : FramedGaloisRep ℚ R (Fin 2))
     (hmat : ∀ g : Field.absoluteGaloisGroup ℚ,
       LinearMap.toMatrix' (ρuniv g) = (M g).map ⇑ι)
-    (hlift : ∀ (A : Type u) [CommRing A] [TopologicalSpace A]
+    (hlift : ∀ (A : Type w) [CommRing A] [TopologicalSpace A]
       [IsTopologicalRing A] [Finite A] [DiscreteTopology A] (f : P →+* A),
       (∃ J ∈ 𝒥, J ≤ RingHom.ker f) →
       ∃ ψ : R →+* A, Continuous ψ ∧ ∀ p : P, ψ (ι p) = f p) :
-    IsStrictlyUniversalOnFrames hℓOdd ρbar ρuniv πuniv := by
+    IsStrictlyUniversalOnFramesFor Cond ρbar ρuniv πuniv := by
   classical
   intro A iCR iTS iTR iLR iAlg iFin iDisc ρA hρA πA hπAsurj hπA hid
   -- (0) the `ℤ_ℓ`-compatibility of the TEST reduction, which `hclass` demands
@@ -8023,7 +8151,8 @@ theorem isStrictlyUniversalOnFrames_of_levelSystem
       exact Matrix.isUnit_det_of_right_inverse hCC')
   haveI iL : Invertible L := Matrix.invertibleOfIsUnitDet L hLdet
   -- (4) conjugating the test object by that lift makes it STRICTLY identified,
-  -- and `isHardlyRamified_conj` keeps it hardly ramified.
+  -- and `hCondConj` keeps it in the deformation condition (at the base level
+  -- that hypothesis is discharged by `isHardlyRamified_conj`).
   have hu : LinearMap.toMatrix'
       ((L.toLinearEquiv' iL : (Fin 2 → A) ≃ₗ[A] (Fin 2 → A)) :
         (Fin 2 → A) →ₗ[A] (Fin 2 → A)) = L := by
@@ -8054,9 +8183,8 @@ theorem isStrictlyUniversalOnFrames_of_levelSystem
           rw [mul_assoc]
       _ = LinearMap.toMatrix' (c.symm : (Fin 2 → k) →ₗ[k] (Fin 2 → k)) * 1 := by rw [h1]
       _ = _ := mul_one _
-  have hρA'hr : IsHardlyRamified hℓOdd (rank_finTwoFun A)
-      (ρA.conj (L.toLinearEquiv' iL)) :=
-    isHardlyRamified_conj hℓOdd (rank_finTwoFun A) hρA _
+  have hρA'hr : Cond A (ρA.conj (L.toLinearEquiv' iL)) :=
+    hCondConj A ρA hρA _
   have hstrict : pushforwardFrame πA hπA (ρA.conj (L.toLinearEquiv' iL)) =
       ρbar.conj e0 := by
     rw [← hpfc]
@@ -8099,7 +8227,7 @@ theorem isStrictlyUniversalOnFrames_of_levelSystem
       LevelLimit.conj_trans, LinearEquiv.self_trans_symm, LevelLimit.conj_refl]
 
 /-- **The profinite limit of a level system** (PROVEN 2026-07-26 over the
-single leaf `isStrictlyUniversalOnFrames_of_levelSystem` above — the
+single leaf `isStrictlyUniversalOnFramesFor_of_levelSystem` above — the
 ARITHMETIC-FREE half of the 2026-07-26 construction cut; see the section
 docstring above).
 
@@ -8177,19 +8305,63 @@ assembly's docstring for the full argument): without it both clauses are
 statements about the ALGEBRAIC cotangent space of `R`, which for a merely
 profinite `R` is strictly larger than the continuous one, and the
 construction cannot deliver them — they would silently require the very
-Noetherian input this cut defers to `ProfiniteLocalNoetherian.lean`. -/
+Noetherian input this cut defers to `ProfiniteLocalNoetherian.lean`.
+
+PREDICATE-GENERIC AND UNIVERSE-INDEPENDENT (2026-07-29, `flt-lean-39`).
+This node and `isStrictlyUniversalOnFramesFor_of_levelSystem` above no
+longer mention `IsHardlyRamified`: the deformation condition is the
+parameter `Cond`, so the same construction serves the RAISED-LEVEL
+`ℚ`-side problem of `Modularity/Patching.lean`
+(`IsRaisedLevelHardlyRamified hpodd Q`), which is what
+`exists_universalFrame_profinite_auxDeformation_of_clauses` there needs.
+The base-level instantiation is
+`exists_universalFrame_profinite_of_deformationCondition` below.
+
+TWO CORRECTIONS TO THE 2026-07-28 ROUTE AUDIT recorded on
+`exists_universalFrame_auxDeformation_of_clauses` in
+`Modularity/Patching.lean`, both found by carrying the refactor out:
+
+1. That audit states "Nowhere does either proof use a PROPERTY of the
+   predicate", and concludes the abstraction is a pure signature edit.
+   **It is not.**  Step (4) of the strict-universality bridge conjugates
+   the test object by a lift of the residual change of frame and must
+   know the conjugate still satisfies the condition; at the base level
+   that step was `isHardlyRamified_conj`.  So the generalized statements
+   carry `hCondConj`, conjugation invariance, as a hypothesis.  (The
+   raised-level predicate has it: `isRaisedLevelHardlyRamified_conj`.)
+
+2. The audit prices the refactor at "exactly three declarations", and
+   that count omits the UNIVERSE axis, which is the axis that actually
+   blocks the raised level.  The `ℚ`-side raised-level statements keep
+   the residual field `k : Type uK` and the coefficient ring
+   `R : Type uR` INDEPENDENT, while this chain bound both to the section
+   universe `u` — the same binding the audit attributes only to Mazur's
+   `Φ_ℓ` criterion, and it sat here too.  Coefficient rings therefore now
+   live in `w`; `pushforwardFrame`, `toMatrix'_pushforwardFrame`,
+   `exists_matrix_map_eq`, `IsResidualIdentifiedFrame` and
+   `IsStrictlyUniversalOnFramesFor` were universe-generalized to match.
+   Nothing mathematical changes and every consumer is unaffected — a
+   universe generalization is backward compatible — but the edit is five
+   declarations wider than the audit's estimate. -/
 theorem exists_universalFrame_profinite_of_levelIdealSystem
     {ρbar : GaloisRep ℚ k V}
-    (hbase : ∀ {B : Type u} [CommRing B] [TopologicalSpace B]
+    (Cond : ∀ (A : Type w) [CommRing A] [TopologicalSpace A]
+      [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[ℓ] A],
+      FramedGaloisRep ℚ A (Fin 2) → Prop)
+    (hCondConj : ∀ (A : Type w) [CommRing A] [TopologicalSpace A]
+      [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[ℓ] A]
+      (ρA : FramedGaloisRep ℚ A (Fin 2)),
+      Cond A ρA → ∀ e : (Fin 2 → A) ≃ₗ[A] (Fin 2 → A), Cond A (ρA.conj e))
+    (hbase : ∀ {B : Type w} [CommRing B] [TopologicalSpace B]
       [IsTopologicalRing B] [IsLocalRing B] [Algebra ℤ_[ℓ] B]
-      {A : Type u} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+      {A : Type w} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
       [IsLocalRing A] [Finite A] [Algebra ℤ_[ℓ] A]
       (ψ : B →+* A) (hψ : Continuous ψ),
       ψ.comp (algebraMap ℤ_[ℓ] B) = algebraMap ℤ_[ℓ] A →
       ∀ {ρ : FramedGaloisRep ℚ B (Fin 2)},
-      IsHardlyRamified hℓOdd (rank_finTwoFun B) ρ →
-      IsHardlyRamified hℓOdd (rank_finTwoFun A) (pushforwardFrame ψ hψ ρ))
-    (e0 : V ≃ₗ[k] (Fin 2 → k)) {P : Type u} [CommRing P] [Algebra ℤ_[ℓ] P]
+      Cond B ρ →
+      Cond A (pushforwardFrame ψ hψ ρ))
+    (e0 : V ≃ₗ[k] (Fin 2 → k)) {P : Type w} [CommRing P] [Algebra ℤ_[ℓ] P]
     (evbar : P →+* k) (hevsurj : Function.Surjective evbar)
     (hevalg : evbar.comp (algebraMap ℤ_[ℓ] P) = algebraMap ℤ_[ℓ] k)
     (M : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) P)
@@ -8205,13 +8377,13 @@ theorem exists_universalFrame_profinite_of_levelIdealSystem
       ∃ ρJ : FramedGaloisRep ℚ (P ⧸ J) (Fin 2),
         (∀ g : Field.absoluteGaloisGroup ℚ, LinearMap.toMatrix' (ρJ g) =
           (M g).map ⇑(Ideal.Quotient.mk J)) ∧
-        IsHardlyRamified hℓOdd (rank_finTwoFun (P ⧸ J)) ρJ)
-    (hclass : ∀ (A : Type u) [CommRing A] [TopologicalSpace A]
+        Cond (P ⧸ J) ρJ)
+    (hclass : ∀ (A : Type w) [CommRing A] [TopologicalSpace A]
       [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A]
       [DiscreteTopology A] (πA : A →+* k) (hπA : Continuous πA),
       Function.Surjective πA →
       ∀ (ρA : FramedGaloisRep ℚ A (Fin 2)),
-      IsHardlyRamified hℓOdd (rank_finTwoFun A) ρA →
+      Cond A ρA →
       πA.comp (algebraMap ℤ_[ℓ] A) = algebraMap ℤ_[ℓ] k →
       pushforwardFrame πA hπA ρA = ρbar.conj e0 →
       ∃ f : P →+* A, f.comp (algebraMap ℤ_[ℓ] P) = algebraMap ℤ_[ℓ] A ∧
@@ -8219,12 +8391,12 @@ theorem exists_universalFrame_profinite_of_levelIdealSystem
         (∀ g : Field.absoluteGaloisGroup ℚ,
           (M g).map ⇑f = LinearMap.toMatrix' (ρA g)) ∧
         ∃ J ∈ 𝒥, J ≤ RingHom.ker f)
-    (hsep : ∀ (A : Type u) [CommRing A] [IsLocalRing A] [Finite A]
+    (hsep : ∀ (A : Type w) [CommRing A] [IsLocalRing A] [Finite A]
       (πA : A →+* k) (f₁ f₂ : P →+* A),
       πA.comp f₁ = evbar → πA.comp f₂ = evbar →
       (∀ g : Field.absoluteGaloisGroup ℚ, (M g).map ⇑f₁ = (M g).map ⇑f₂) →
       f₁ = f₂) :
-    ∃ (R : Type u) (_ : CommRing R) (_ : TopologicalSpace R)
+    ∃ (R : Type w) (_ : CommRing R) (_ : TopologicalSpace R)
       (_ : IsTopologicalRing R) (_ : IsLocalRing R) (_ : Algebra ℤ_[ℓ] R)
       (_ : CompactSpace R) (_ : T2Space R)
       (ρuniv : FramedGaloisRep ℚ R (Fin 2))
@@ -8233,20 +8405,20 @@ theorem exists_universalFrame_profinite_of_levelIdealSystem
       (∀ U ∈ nhds (0 : R), ∃ I : Ideal R, IsOpen (I : Set R) ∧
         (I : Set R) ⊆ U) ∧
       IsResidualIdentifiedFrame (ℓ := ℓ) ρbar ρuniv πuniv hπcont ∧
-      (∀ (A : Type u) [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+      (∀ (A : Type w) [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
         [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A] [DiscreteTopology A]
         (φ : R →+* A) (hφ : Continuous φ),
         φ.comp (algebraMap ℤ_[ℓ] R) = algebraMap ℤ_[ℓ] A →
-        IsHardlyRamified hℓOdd (rank_finTwoFun A)
+        Cond A
           (pushforwardFrame φ hφ ρuniv)) ∧
-      (∀ (A : Type u) [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+      (∀ (A : Type w) [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
         [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A] [DiscreteTopology A]
         (πA : A →+* k)
         (φ₁ φ₂ : R →+* A) (hφ₁ : Continuous φ₁) (hφ₂ : Continuous φ₂),
         πA.comp φ₁ = πuniv → πA.comp φ₂ = πuniv →
         pushforwardFrame φ₁ hφ₁ ρuniv = pushforwardFrame φ₂ hφ₂ ρuniv →
         φ₁ = φ₂) ∧
-      IsStrictlyUniversalOnFrames hℓOdd ρbar ρuniv πuniv := by
+      IsStrictlyUniversalOnFramesFor Cond ρbar ρuniv πuniv := by
   classical
   -- ## the levels, with their discrete topologies
   letI ltop : ∀ J : 𝒥, TopologicalSpace (P ⧸ (J : Ideal P)) := fun _ => ⊥
@@ -8357,7 +8529,7 @@ theorem exists_universalFrame_profinite_of_levelIdealSystem
   have hrepJex : ∀ J : 𝒥, ∃ ρJ : FramedGaloisRep ℚ (P ⧸ (J : Ideal P)) (Fin 2),
       (∀ g : Field.absoluteGaloisGroup ℚ, LinearMap.toMatrix' (ρJ g) =
         (M g).map ⇑(Ideal.Quotient.mk (J : Ideal P))) ∧
-      IsHardlyRamified hℓOdd (rank_finTwoFun (P ⧸ (J : Ideal P))) ρJ :=
+      Cond (P ⧸ (J : Ideal P)) ρJ :=
     fun J => hrep (J : Ideal P) J.2
   choose ρJ hρJmat hρJhr using hrepJex
   set mat : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) (LevelLimit.Limit 𝒥) :=
@@ -8412,7 +8584,7 @@ theorem exists_universalFrame_profinite_of_levelIdealSystem
     intro g
     rw [hρunivdef]
     exact LevelLimit.toMatrix'_framedOfMatrices mat hone hmul hcont g
-  have hpush : ∀ {A : Type u} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+  have hpush : ∀ {A : Type w} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
       (ψ : (LevelLimit.Limit 𝒥) →+* A) (hψ : Continuous ψ)
       (g : Field.absoluteGaloisGroup ℚ),
       LinearMap.toMatrix' (pushforwardFrame ψ hψ ρuniv g) =
@@ -8420,7 +8592,7 @@ theorem exists_universalFrame_profinite_of_levelIdealSystem
     intro A _ _ _ ψ hψ g
     rw [toMatrix'_pushforwardFrame, hρmat, Matrix.map_map]
   -- ## a map out of `P` killing a level ideal extends continuously to the limit
-  have hlift : ∀ (A : Type u) [CommRing A] [TopologicalSpace A]
+  have hlift : ∀ (A : Type w) [CommRing A] [TopologicalSpace A]
       [IsTopologicalRing A] [Finite A] [DiscreteTopology A] (f : P →+* A),
       (∃ J ∈ 𝒥, J ≤ RingHom.ker f) →
       ∃ ψ : (LevelLimit.Limit 𝒥) →+* A, Continuous ψ ∧
@@ -8448,7 +8620,10 @@ theorem exists_universalFrame_profinite_of_levelIdealSystem
   · -- residual identification: the STRICT reduction, read through `e0`
     have hpf : pushforwardFrame πuniv hπcont ρuniv = ρbar.conj e0 := by
       refine GaloisRep.ext fun g => LinearMap.toMatrix'.injective ?_
-      rw [hpush πuniv hπcont g,
+      -- `hpush` below is a local `have`, hence monomorphic in the TEST
+      -- universe `w`; `πuniv` lands in the residual field `k : Type u`, so
+      -- its proof is inlined here (2026-07-29, `flt-lean-39`).
+      rw [toMatrix'_pushforwardFrame, hρmat, Matrix.map_map,
         show (⇑πuniv ∘ ⇑(LevelLimit.ofP 𝒥)) = ⇑evbar from funext hπι]
       exact hres g
     letI : Algebra (LevelLimit.Limit 𝒥) k := πuniv.toAlgebra
@@ -8504,7 +8679,8 @@ theorem exists_universalFrame_profinite_of_levelIdealSystem
     rintro x ⟨p, rfl⟩
     exact RingHom.congr_fun hg p
   · -- strict universality: the one clause with content, cut out above
-    exact isStrictlyUniversalOnFrames_of_levelSystem (hℓOdd := hℓOdd) (e0 := e0)
+    exact isStrictlyUniversalOnFramesFor_of_levelSystem
+      (Cond := Cond) (hCondConj := hCondConj) (e0 := e0)
       (evbar := evbar) (M := M) (𝒥 := 𝒥) (hres := hres) (hclass := hclass)
       (hsep := hsep) (ι := LevelLimit.ofP 𝒥)
       (hdense := LevelLimit.dense_range_ofP 𝒥 hne hdir) (πuniv := πuniv)
@@ -8687,7 +8863,16 @@ theorem exists_universalFrame_profinite_of_deformationCondition (hℓ5 : 5 ≤ �
       hschur hfin hbase hglue
   letI := iP
   letI := iPalg
-  exact exists_universalFrame_profinite_of_levelIdealSystem hℓOdd hbase
+  -- the deformation condition, as the predicate parameter of the now
+  -- predicate-generic construction (2026-07-29, `flt-lean-39`), together with
+  -- its conjugation invariance
+  exact exists_universalFrame_profinite_of_levelIdealSystem (ℓ := ℓ)
+    (fun A iCR iTS iTR iLR iAlg ρA =>
+      letI := iCR; letI := iTS; letI := iTR; letI := iLR; letI := iAlg
+      IsHardlyRamified hℓOdd (rank_finTwoFun A) ρA)
+    (fun A iCR iTS iTR iLR iAlg ρA hρA e =>
+      isHardlyRamified_conj hℓOdd (rank_finTwoFun A) hρA e)
+    hbase
     e0 evbar hevsurj hevalg M 𝒥 hne hdir hker hlev hresM hrep hclass hsep
 
 open scoped TensorProduct in
@@ -9488,7 +9673,7 @@ Needed because `pushforwardFrame` takes its continuity proof as an
 explicit argument, which makes the map argument occur in a
 dependently-typed position and blocks a plain `rw`. -/
 theorem pushforwardFrame_congr {B : Type u} [CommRing B] [TopologicalSpace B]
-    [IsTopologicalRing B] {A : Type u} [CommRing A] [TopologicalSpace A]
+    [IsTopologicalRing B] {A : Type v} [CommRing A] [TopologicalSpace A]
     [IsTopologicalRing A] {ψ χ : B →+* A} (hψ : Continuous ψ)
     (hχ : Continuous χ) (h : ψ = χ) (ρ : FramedGaloisRep ℚ B (Fin 2)) :
     pushforwardFrame ψ hψ ρ = pushforwardFrame χ hχ ρ := by
@@ -9500,8 +9685,8 @@ along `ψ` and then along `χ` is pushing forward along `χ ∘ ψ`. Read on
 matrices (`toMatrix'_pushforwardFrame`) this is just
 `Matrix.map_map`. -/
 theorem pushforwardFrame_comp {B : Type u} [CommRing B] [TopologicalSpace B]
-    [IsTopologicalRing B] {A : Type u} [CommRing A] [TopologicalSpace A]
-    [IsTopologicalRing A] {C : Type u} [CommRing C] [TopologicalSpace C]
+    [IsTopologicalRing B] {A : Type v} [CommRing A] [TopologicalSpace A]
+    [IsTopologicalRing A] {C : Type w} [CommRing C] [TopologicalSpace C]
     [IsTopologicalRing C] (ψ : B →+* A) (hψ : Continuous ψ) (χ : A →+* C)
     (hχ : Continuous χ) (hcomp : Continuous ⇑(χ.comp ψ))
     (ρ : FramedGaloisRep ℚ B (Fin 2)) :
@@ -9537,7 +9722,7 @@ theorem GaloisRep.conj_trans {A : Type*} [CommRing A] [TopologicalSpace A]
 (PROVEN 2026-07-25): the `pushforwardFrame` specialization of
 `charpoly_baseChange_conj`, with the algebra map read back as `ψ`. -/
 theorem charpoly_pushforwardFrame {B : Type u} [CommRing B]
-    [TopologicalSpace B] [IsTopologicalRing B] {A : Type u} [CommRing A]
+    [TopologicalSpace B] [IsTopologicalRing B] {A : Type v} [CommRing A]
     [TopologicalSpace A] [IsTopologicalRing A] (ψ : B →+* A)
     (hψ : Continuous ψ) (ρ : FramedGaloisRep ℚ B (Fin 2))
     (g : Field.absoluteGaloisGroup ℚ) :
@@ -19345,13 +19530,32 @@ theorem finiteDimensional_h1_adZeroTwistRestricted
     Set.finite_univ_iff.mp (hfin.subset hsub)
   exact Module.Finite.of_finite
 
-/-! ### Poitou–Tate, decomposed: linear-algebra glue and the two arithmetic halves
+/-! ### Poitou–Tate, decomposed: linear-algebra glue and the ONE arithmetic input
 
 Added 2026-07-28 by the decomposition of `exists_injective_sha2_dual_sha1Twist`
-below.  The first declaration mentions no Galois cohomology at all: it is the
-elementary fact that an injection into a DUAL space is exactly a dimension
-inequality, isolated so that the arithmetic leaves state dimensions rather than
-maps.
+below.  The first declarations mention no Galois cohomology at all: they are the
+elementary facts that an injection into a DUAL space is exactly a dimension
+inequality, and that left-nondegeneracy of a bilinear pairing is injectivity
+into the dual — isolated so that the arithmetic leaf states a PAIRING and
+everything else is compiler-checked linear algebra.
+
+**RESTRUCTURED 2026-07-29 — the section now has ONE arithmetic leaf, not two.**
+Everything below the horizontal rule in this header is the 2026-07-28 record of
+the `1 → 2` split; it is kept because its analysis is what motivated the
+present shape, and because its OBLIGATION AUDIT on the ambient-`H²` episode is
+still the reference for why a *stronger* leaf is usually a mistake.  What
+changed: both halves of that split said, in their own docstrings, that they were
+"two shadows of ONE input — the perfect Poitou–Tate pairing" and that "whoever
+produces the pairing discharges both in the same breath".  That input had no
+name, so nothing in the file recorded the dependency and the linear algebra
+joining the pairing to each half was written nowhere.  It is now
+`exists_poitouTatePairing_sha2_sha1Twist` below, both halves are PROVEN over it,
+and the leaf count is `2 → 1`.  The one thing that survives unchanged from the
+split is its central finding, which the compiler now enforces: the finiteness of
+`Ш²_S(ad⁰)` is a CONSEQUENCE of a map into the degree-`1` dual, never a separate
+arithmetic obligation.
+
+---
 
 **WHAT THE DECOMPOSITION DISCLOSES — read this before working either half.**
 As stated, `exists_injective_sha2_dual_sha1Twist` asks only for SOME injective
@@ -19435,12 +19639,438 @@ theorem exists_injective_toDual_of_finrank_le {K : Type*} [Field K]
     ∃ f : A →ₗ[K] Module.Dual K B, Function.Injective f :=
   exists_injective_of_finrank_le (by rwa [Subspace.dual_finrank_eq])
 
-/-- **`Ш²_S(ad⁰)` is finite-dimensional over `k`** (sorry leaf; the FINITENESS
-half of `exists_injective_sha2_dual_sha1Twist` below.  Cut out 2026-07-28 as
+/-- **Left-nondegeneracy of a bilinear pairing IS injectivity into the dual**
+(PROVEN, elementary; added 2026-07-29 as the glue between
+`exists_poitouTatePairing_sha2_sha1Twist` below and the two theorems that now
+consume it).  No finiteness anywhere: `T x = T x'` gives `T (x - x') y = 0` for
+every `y`, so `x - x' = 0` by hypothesis.  This is the reason the pairing leaf
+below can be stated with NO finiteness hypothesis on `Ш²_S(ad⁰)` and still
+deliver that finiteness — the injection lands in a space the degree-`1` leaf
+already knows to be finite-dimensional. -/
+theorem injective_of_forall_apply_eq_zero {K : Type*} [Field K] {A B : Type*}
+    [AddCommGroup A] [Module K A] [AddCommGroup B] [Module K B]
+    (T : A →ₗ[K] B →ₗ[K] K) (hT : ∀ x, (∀ y, T x y = 0) → x = 0) :
+    Function.Injective (T : A →ₗ[K] Module.Dual K B) := by
+  intro x x' hxx
+  have h0 : x - x' = 0 := hT _ fun y => by simp [map_sub, hxx]
+  exact sub_eq_zero.mp h0
+
+/-- **DUALITY FROM EXACTNESS: a map out of a dual space whose KERNEL is an
+annihilator and whose RANGE is a given submodule induces a pairing between that
+range and the annihilated submodule, nondegenerate on BOTH sides** (PROVEN,
+added 2026-07-30 as the nucleus of the nine-term-sequence cut of
+`exists_poitouTatePairing_sha2_sha1Twist` below; elementary, and it is the whole
+reason that cut is available).
+
+Read `γ : (Dual K X) →ₗ H` as the arrow `H¹(G_S, M*)^∨ → H²(G_S, M)` of the
+Poitou–Tate nine-term sequence, `W ≤ X` as `Ш¹_S(M*)` and `Z ≤ H` as `Ш²_S(M)`.
+Then the two hypotheses are exactness at those two spots (see the leaf below for
+why `range θ = ann Ш¹` is the intrinsic form of exactness at `H¹(G_S, M*)^∨`),
+and the conclusion is the perfect pairing.
+
+**NO FINITENESS ANYWHERE, which is what makes the cut exact rather than
+lossy.**  The proof is a chain of three isomorphisms, all of them available for
+arbitrary vector spaces over a field:
+`Z ≅ range γ ≅ (Dual K X) ⧸ ker γ = (Dual K X) ⧸ ann W ≅ Dual K W`, the last
+step being `Subspace.quotAnnihilatorEquiv` (which rests on
+`Submodule.dualRestrict_surjective`, i.e. on extending a functional from a
+subspace — a splitting, not a dimension count).  Since the composite is a
+`LinearEquiv`, LEFT nondegeneracy is injectivity and RIGHT nondegeneracy is
+surjectivity, so both clauses of the conclusion come out of the same object
+rather than needing separate arguments.  In particular the consumer below needs
+no finiteness hypothesis on `Ш²_S(ad⁰)` and none on `Ш¹_S(ad⁰(1))` — the latter
+is still consumed, but by `finiteDimensional_sha2` further below, exactly as
+before this cut. -/
+theorem exists_nondegenerate_of_ker_eq_dualAnnihilator {K : Type*} [Field K]
+    {X : Type*} [AddCommGroup X] [Module K X]
+    {H : Type*} [AddCommGroup H] [Module K H]
+    (W : Submodule K X) (Z : Submodule K H)
+    (γ : Module.Dual K X →ₗ[K] H)
+    (hker : LinearMap.ker γ = W.dualAnnihilator)
+    (hrange : LinearMap.range γ = Z) :
+    ∃ B : ↥Z →ₗ[K] ↥W →ₗ[K] K,
+      (∀ x, (∀ y, B x y = 0) → x = 0) ∧ (∀ y, (∀ x, B x y = 0) → y = 0) := by
+  let e : ↥Z ≃ₗ[K] Module.Dual K ↥W :=
+    (LinearEquiv.ofEq _ _ hrange.symm).trans <|
+      (γ.quotKerEquivRange.symm.trans
+        ((Submodule.quotEquivOfEq _ _ hker).trans (Subspace.quotAnnihilatorEquiv W)))
+  refine ⟨e.toLinearMap, ?_, ?_⟩
+  · intro x hx
+    have : e x = 0 := LinearMap.ext fun y => hx y
+    simpa using e.map_eq_zero_iff.mp this
+  · intro y hy
+    refine (Module.forall_dual_apply_eq_zero_iff K y).mp fun φ => ?_
+    obtain ⟨x, rfl⟩ := e.surjective φ
+    exact hy x
+
+/-- **THE Poitou–Tate input, stated in the nine-term sequence's OWN vocabulary:
+the arrow `H¹(G_{ℚ,S}, ad⁰(1))^∨ → H²(G_{ℚ,S}, ad⁰)`, with its kernel and its
+range** (sorry leaf, cut out 2026-07-30).  It is the sole arithmetic input of
+`exists_poitouTatePairing_sha2_sha1Twist` immediately below, which is PROVEN over
+it, and hence of the FOUR declarations that leaf discharges
+(`finiteDimensional_sha2`, `finrank_sha2_le_finrank_sha1Twist`,
+`exists_injective_sha2_dual_sha1Twist_of_selfDual`, and
+`exists_injective_sha2_dual_sha1Twist` through it).  Frontier `1 → 1`.
+
+**WHAT IT SAYS AND WHERE IT COMES FROM.**  Neukirch–Schmidt–Wingberg VIII.6.7
+gives, for a finite `G_S`-module `M` with dual `M* = Hom(M, μ)`, the nine-term
+exact sequence
+
+  `… → P¹_S(M) --θ--> H¹(G_S, M*)^∨ --γ--> H²(G_S, M) --loc--> P²_S(M) → …`
+
+where `Pⁱ_S(N) = ⊕_{v ∈ S} Hⁱ(ℚ_v, N)`.  This leaf asks for that `γ`, and for
+exactly the two exactness statements flanking it, specialised to `M = ad⁰ ρbar`
+and `M* ≅ ad⁰(1)`:
+
+* `range γ = Ш²_S(ad⁰)` is exactness at `H²(G_S, M)`, since `Ш²` is by
+  definition `ker loc`;
+* `ker γ = (Ш¹_S(ad⁰(1)))ᵃⁿⁿ` is exactness at `H¹(G_S, M*)^∨` — see the next
+  paragraph, which is the whole point of this cut.
+
+**WHY THIS CUT IS AVAILABLE, AND WHAT IT REFUTES.**  The IRREDUCIBILITY VERDICT
+on `exists_injective_sha2_dual_sha1Twist_of_selfDual` below lists this axis as
+*NOT searched*, with the reason "cutting there means stating the exact sequence,
+which needs the local pairing to even type-check.  So this axis is gated on the
+same object, not free of it."  **That reason is wrong, and this leaf is the
+counterexample.**  Exactness at `H¹(G_S, M*)^∨` says `ker γ = range θ`, and `θ`
+is the composite of the LOCAL DUALITY isomorphism `P¹_S(M) ≅ P¹_S(M*)^∨` with
+the dual of the localisation `loc¹ : H¹(G_S, M*) → P¹_S(M*)`.  Since the first
+factor is an isomorphism,
+
+  `range θ = range ((loc¹)^∨) = (ker loc¹)ᵃⁿⁿ = (Ш¹_S(M*))ᵃⁿⁿ`
+
+by `LinearMap.range_dualMap_eq_dualAnnihilator_ker`, which holds over a field
+with NO finiteness hypothesis.  So the local pairing, the local invariant map and
+the product objects `Pⁱ_S` are all needed to PROVE this leaf and none of them is
+needed to STATE it: the intrinsic description of `range θ` is an annihilator in
+the already-existing `Module.Dual k (continuousCohomology 1 …)`.  Neither
+`P¹_S`, nor `⊕_{v ∈ S}`, nor any pairing appears in the statement, which is why
+the earlier verdict's "would produce free-floating definitions" objection (see
+the SUPERSEDED note on the leaf below) also does not apply.
+
+**FAITHFULNESS AUDIT, 2026-07-30.  VERDICT: FAITHFUL.**
+
+* *Both exactness clauses are literally NSW VIII.6.7* for `S ⊇ {∞} ∪ {v : v ∣ #M}`.
+  `#ad⁰ = (#k)³` is a power of `ℓ`, and `ℓ ∈ hardlyRamifiedPlaces ℓ`, so the
+  hypothesis on `S` is met; `2 ∈ S` is extra and harmless (enlarging `S` is
+  allowed, and both `Ш` groups here are defined over the same `S`).
+* *The archimedean place.*  NSW's `Pⁱ_S` includes `v = ∞` while
+  `hardlyRamifiedPlaces` admits only height-one primes, so this leaf's `Ш` groups
+  omit it.  Harmless in BOTH clauses and for the SAME reason in both:
+  `Gal(ℂ/ℝ)` has order `2`, `ad⁰` and `ad⁰(1)` are `ℓ`-groups with `ℓ` odd, so
+  `Hⁱ(ℝ, −) = 0` for `i ≥ 1`; the `∞` component of `loc` into `P²` is zero (so
+  `ker loc` is unchanged, giving clause 1) and the `∞` summand of `P¹` is zero
+  (so `range θ` is unchanged, giving clause 2).  This is the same audit
+  `hardlyRamifiedPlaces` above and the leaf below already carry, now checked
+  against the two clauses individually rather than against a pairing.
+* *`γ = 0` is not a cheat.*  It satisfies the statement exactly when
+  `Ш²_S(ad⁰) = ⊥` and `(Ш¹_S(ad⁰(1)))ᵃⁿⁿ = ⊤`, i.e. when both `Ш` groups vanish
+  — which is the honest content of Poitou–Tate in that case, not a junk witness.
+  There is no other degenerate solution: the two clauses pin `range γ` and
+  `ker γ` outright.
+* *No junk-value hazard of the `Nat.card` kind* (contrast
+  `card_sha1Twist_le_card_dualNumberPoints` below): every object here is a
+  submodule or a kernel/range, and the statement asserts equalities of
+  submodules, so there is no numeric value that could silently be `0`.
+
+**THE CUT IS EXACT — this leaf is EQUIVALENT to the pairing leaf below, not
+stronger and not weaker.**  Recorded because the STRENGTH AUDIT on that leaf
+warns, correctly, that a sorry leaf logically equivalent to an already-PROVEN
+declaration is a circular re-cut rather than a decomposition; this is the other
+case, an equivalence with a still-open leaf, and the audit is what shows it.
+
+* *This leaf `⟹` the pairing* is the proof below, via
+  `exists_nondegenerate_of_ker_eq_dualAnnihilator` above; it uses no finiteness.
+* *The pairing `⟹` this leaf*, using `finiteDimensional_h1_adZeroTwistRestricted`
+  above (PROVEN).  Left nondegeneracy embeds `Ш²` in the finite-dimensional
+  `(Ш¹)^∨`, so `Ш²` is finite-dimensional with `dim Ш² ≤ dim Ш¹`; right
+  nondegeneracy embeds `Ш¹` in `(Ш²)^∨`, so `dim Ш¹ ≤ dim Ш²`.  Hence
+  `Ш² ≅ (Ш¹)^∨`, and `γ := (that iso)⁻¹ ∘ dualRestrict` has
+  `range γ = Ш²` (`Submodule.dualRestrict_surjective`) and
+  `ker γ = ker dualRestrict = (Ш¹)ᵃⁿⁿ`.
+* In particular this leaf still forces `dim Ш² = dim Ш¹_S(ad⁰(1))`, so it is
+  strictly stronger than `exists_injective_sha2_dual_sha1Twist` below exactly as
+  the pairing leaf was, and the circularity the STRENGTH AUDIT guards against is
+  avoided for the same reason.
+
+The converse direction is deliberately NOT written as Lean code: it would be a
+declaration with no consumer, i.e. free-floating.
+
+**WHAT THIS CUT BUYS, AND — SAID PLAINLY — WHAT IT DOES NOT.**  It does NOT
+reduce the infrastructure cost by one line: the nine-term sequence still needs
+the cup product and the local invariant map, and the build order recorded below
+is unchanged.  What it buys is that everything on the near side of the sequence
+now lives in compiler-checked linear algebra instead of inside the leaf.  A
+successor holding NSW VIII.6.7 previously had to (i) transport the `ℚ/ℤ`-valued
+pairing to a `k`-valued `k`-bilinear one, (ii) build a bilinear map out of the
+sequence by choosing preimages and proving well-definedness, (iii) prove
+nondegeneracy twice, and (iv) do the `range (f^∨) = ann (ker f)` step by hand.
+Steps (ii)–(iv) are now `exists_nondegenerate_of_ker_eq_dualAnnihilator` above,
+and step (i) is folded into the local duality that produces `θ` — where the
+reference performs it anyway.  The leaf that remains is read off the sequence
+line by line.
+
+**THE AUDITS THIS LEAF OWES ARE STATED ON THE DECLARATION IMMEDIATELY BELOW, and
+they transfer verbatim** — the FAITHFULNESS note on the `ℚ/ℤ`-to-`k` passage, the
+`ad⁰* ≅ ad⁰(1)` trace-form identification and why it needs `ℓ` odd, the PORTING
+AUDIT for the cup product from `~/cs/FLT`, the absence of local class field
+theory from all three trees, the shared-gate note with
+`card_sha1Twist_le_card_dualNumberPoints` below, and the CIRCULARITY GUARD.  They
+are left there rather than copied because they are unchanged by this cut and the
+text is long; the STATUS paragraph below says which leaf now owes them.  `hirr`
+is NOT an input here either, for the reason recorded there: Poitou–Tate holds for
+any finite `G_S`-module.
+
+References: Neukirch–Schmidt–Wingberg, *Cohomology of Number Fields*, VIII.6.7
+(the nine-term sequence — this leaf IS two of its exactness statements) and VII.2
+(local duality, which is what turns `range θ` into an annihilator);
+Darmon–Diamond–Taylor, §2.6–2.7. -/
+theorem exists_poitouTateExactness_sha2_sha1Twist
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar) :
+    ∃ γ : Module.Dual k (continuousCohomology 1
+          (adZeroTwistRestricted ℓ ρbar (hardlyRamifiedPlaces ℓ))) →ₗ[k]
+        continuousCohomology 2 (adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ)),
+      LinearMap.ker γ = (Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)).dualAnnihilator ∧
+      LinearMap.range γ = Sha2 ρbar (hardlyRamifiedPlaces ℓ) :=
+  sorry
+
+/-- **THE Poitou–Tate input: a nondegenerate `k`-bilinear pairing**
+`Ш²_S(ad⁰) × Ш¹_S(ad⁰(1)) → k` (**PROVEN 2026-07-30** over
+`exists_poitouTateExactness_sha2_sha1Twist` immediately above and the
+linear-algebra nucleus `exists_nondegenerate_of_ker_eq_dualAnnihilator` above —
+**NOT a sorry node any more**; cut out 2026-07-29 as the ONE arithmetic input
+behind the two theorems immediately below, both of which are PROVEN over it).
+
+**STATUS 2026-07-30: THIS NODE IS NO LONGER A LEAF, AND EVERY AUDIT BELOW IS NOW
+OWED BY THE LEAF ABOVE.**  It is the two-line assembly "take `γ` from the
+nine-term sequence, feed its kernel and range to
+`exists_nondegenerate_of_ker_eq_dualAnnihilator`".  Nothing in the STATEMENT
+changed, so all four consumers are untouched; what changed is that the leaf now
+sits one step further from the pairing and one step closer to NSW VIII.6.7.  See
+that leaf for why the axis is available at all — the earlier verdict that it
+"needs the local pairing to even type-check" is refuted there — and for the proof
+that the two statements are EQUIVALENT, so that this is a decomposition and not a
+strengthening.  **Everything from here down is the mathematical record and applies
+verbatim to the leaf ABOVE; the Poitou–Tate content is untouched and still gated
+on the local invariant map.**
+
+This is Neukirch–Schmidt–Wingberg VIII.6.7 (the nine-term Poitou–Tate sequence,
+whence the perfect pairing `Ш¹_S(M*) × Ш²_S(M) → ℚ/ℤ`) specialised to
+`M = ad⁰ ρbar`, `M* ≅ ad⁰(1)`, and read on `k`-dimensions.  See
+Darmon–Diamond–Taylor §2.6–2.7.
+
+**WHY THIS DECLARATION EXISTS (2026-07-29).**  `finiteDimensional_sha2` and
+`finrank_sha2_le_finrank_sha1Twist` below were two separate leaves, and both of
+their docstrings said the same thing: they are "two shadows of ONE input", the
+Poitou–Tate pairing, and "whoever produces the pairing discharges both in the
+same breath".  That input had no name, so nothing in the file recorded that the
+two leaves are not independent, and the linear algebra taking the pairing to
+each of them was written nowhere.  It is now written, and checked by the
+compiler: the two consumers below are ordinary two-line assemblies over this
+leaf plus `finiteDimensional_h1_adZeroTwistRestricted`.  Frontier `2 → 1`.
+
+**STRENGTH AUDIT — this leaf is STRICTLY STRONGER than the pair it replaces,
+deliberately, and the extra strength is free.**  Write `PT` for this statement,
+`S₂`/`P` for the two theorems below and `M` for
+`exists_injective_sha2_dual_sha1Twist` further below.  Under the degree-`1`
+leaf, the OBLIGATION AUDIT below establishes `{S₂, P} ⟺ M`.  Then:
+
+* `PT ⟹ {S₂, P}` — that is the content of the two proofs below, and only the
+  LEFT nondegeneracy clause is used;
+* `{S₂, P} ⇏ PT`, since `PT` forces `dim Ш² = dim Ш¹_S(ad⁰(1))` (both
+  nondegeneracies, both sides finite) whereas the pair gives only `≤`.
+
+The strengthening is nonetheless free, and this is the difference from the
+`finiteDimensional_h2_adZeroRestricted` episode audited below — *there* the
+stronger form (ambient `H²` finiteness) cost the local terms of the nine-term
+sequence ON TOP of everything the weaker form cost.  Here there is no cheaper
+input: the file's own intended proof of both consumers, recorded on each of
+them before this cut, is "Poitou–Tate gives a perfect pairing, hence
+`Ш² ≅ (Ш¹(1))^∨`", and Poitou–Tate is a PERFECTNESS theorem — no route to the
+`≤` alone is known, in this tree or in the literature.
+
+**WHY BOTH NONDEGENERACY CLAUSES, when only the left one is consumed.**  Drop
+the right clause and this statement becomes, by
+`injective_of_forall_apply_eq_zero` above and
+`exists_injective_toDual_of_finrank_le` above, EXACTLY equivalent to `M` —
+which is PROVEN below over `S₂` and `P`.  A sorry leaf logically equivalent to
+an already-proven declaration in the same file is a circular re-cut, not a
+decomposition, and it would leave the frontier where it was under a new name.
+Stating the theorem the reference actually proves avoids that and is what a
+successor will produce anyway.  A successor who finds only the left half
+reachable should say so LOUDLY rather than weaken this statement silently: it
+would mean the tree has a genuinely one-sided Poitou–Tate, which the literature
+does not.
+
+**FAITHFULNESS — the `ℚ/ℤ`-valued pairing is `𝔽_ℓ`-bilinear, and the passage to
+a `k`-VALUED `k`-bilinear one is a real (small) step, folded in here.**  NSW's
+pairing lands in `ℚ/ℤ`; on `ℓ`-torsion it lands in `(1/ℓ)ℤ/ℤ ≅ 𝔽_ℓ`, and the
+`ad⁰`-side identification `(x, y) ↦ tr(x y)` is `k`-BALANCED
+(`B (c • x) y = B x (c • y)`) rather than `k`-bilinear into `𝔽_ℓ`, which it
+cannot be.  Upgrading a `k`-balanced `𝔽_ℓ`-bilinear nondegenerate pairing to a
+`k`-bilinear `k`-valued one is the standard `Hom_{𝔽_ℓ}(W, 𝔽_ℓ) ≅ Hom_k(W, k)`
+transport along the nondegeneracy of `Tr_{k/𝔽_ℓ}`, which IS in our pin
+(`Algebra.traceForm_nondegenerate`, `Mathlib/RingTheory/Trace/Basic.lean:504`,
+applicable since a finite field extension is separable; the finite-field
+specialisation is `Mathlib/FieldTheory/Finite/Trace.lean`).  The previous
+wording on `finrank_sha2_le_finrank_sha1Twist` below — "the pairing is
+`k`-bilinear after the trace-form identification" — elided this; it is recorded
+here so that a successor budgets it.  Note `char k = ℓ` is not an extra
+hypothesis: it is forced by `Algebra ℤ_[ℓ] k` (`natCast_self_eq_zero` at the
+top of this module).
+
+**The `ad⁰* ≅ ad⁰(1)` identification is cheap ONLY because `ℓ` is odd.**
+`ad⁰* = Hom(ad⁰, μ_ℓ) = (ad⁰)^∨(1) ≅ ad⁰(1)` uses nondegeneracy of the trace
+form `(X, Y) ↦ tr(X Y)` on `sl₂`, which holds exactly when `char k ≠ 2`.
+`hℓOdd` supplies that, and it is why this leaf may not be restated for `ℓ = 2`.
+
+**The archimedean place is legitimately absent from `S`.**  `hardlyRamifiedPlaces`
+is a set of HEIGHT-ONE primes, so `Ш` here is cut out by the two finite places
+`2` and `ℓ` only, whereas NSW's `Ш^i_S` localises at `∞` as well.  That is
+harmless in BOTH degrees and not only in degree `2`: `Gal(ℂ/ℝ)` has order `2`,
+`ad⁰` and `ad⁰(1)` are `ℓ`-groups with `ℓ` odd, so `H^i(ℝ, −) = 0` for all
+`i ≥ 1` and the `∞` component of the localisation map is zero — the two `Ш`
+groups are unchanged.  (`hℓ5 : 5 ≤ ℓ` gives `ℓ` odd here; `hℓOdd` gives it in
+general.)  The vanishing used is the standard one — for `G` and `X` finite of
+coprime order, `H^i(G, X) = 0` for all `i > 0`; see `sources/css1997mfflt.txt`,
+L. C. Washington, *Galois cohomology*, p. 103, where it is spelled out for
+`G_ℝ` and `X` of odd order, which is precisely our case.
+
+**`hirr` IS NOT AN INPUT** (recorded 2026-07-28 by the previous owner,
+re-checked 2026-07-29 and now enforced by the compiler): Poitou–Tate holds for
+any finite `G_S`-module, so this leaf does not take it, and
+`finrank_sha2_le_finrank_sha1Twist` below no longer references its own copy —
+the binder is kept, renamed `_hirr`, purely so that the consumer's hypothesis
+surface and the CIRCULARITY GUARD are unchanged.  Do not hunt for a use of it.
+
+**PORTING AUDIT — INHERITED from `finrank_sha2_le_finrank_sha1Twist` below,
+which no longer owes it, and RE-CHECKED 2026-07-29 against our pin `a3364fa`,
+`~/cs/FLT` and `Fermat/`.  Every absence below still holds.**
+
+`/home/chend/cs/FLT/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/CupProduct.lean`
+is 582 lines and **sorry-free**, culminating in
+`cup (f : ρ1 →ⁱL ρ2.linHom ρ3) (hp) (m n r) (hr : r = m + n) :
+continuousCohomology m (of ρ1) ⟶ TopModuleCat.linHom (continuousCohomology n (of ρ2)) (continuousCohomology r (of ρ3))`.
+It does NOT stand alone on our pin.  The 2026-07-28 re-check enumerated the
+whole shim surface and found **none** of it upstream here:
+`ContinuousLinearMap.CompactOpen` (the scoped compact-open topology on
+`M1 →L[k] M2`, 48 lines), `ContinuousMap.continuous_prodMk` for `R1Space`
+(57 lines — our pin's `continuous_prodMk` in `Mathlib/Topology/CompactOpen.lean`
+is a DIFFERENT lemma and does not cover it), `continuous_of_discreteTopology_snd`,
+`TopModuleCat.linHom`/`linHomMap`/`homOfBilinear` (79 lines),
+`TopModuleCat.cokerDescCLM`/`cokerDescBilinear`/`isOpenQuotientMap_cokerπ`
+(179 lines, of which our
+`Fermat/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/Basic.lean`
+already carries `cokerDesc`, `cokerCongr`, `cyclesIsoKer`, `homologyIsoCoker`),
+`ContRepresentation.linHom`/`continuous_pair_of_discrete` (81 lines),
+`TopRep.iHom` (31 lines), and — absent from our partial vendoring of
+`ContCohomology/Basic.lean` — `resolutionCLM`, `resolutionXCast`,
+`invariantsObjIHom`, `d_hom_zero`, `d_hom_succ_apply`, `eqToHom_iHom_apply`
+(~130 lines).  Total to vendor: **≈ 1160 lines**, all sorry-free upstream.
+
+**And the cup product is only the FIRST half.**  The pairing also needs the
+local invariant map `H²(ℚ_v, μ) ≅ ℚ/ℤ` (local class field theory), plus the
+reciprocity `Σ_v inv_v = 0` that makes the global pairing well defined.
+RE-CHECKED 2026-07-29 by statement shape and not only by name — `poitou`,
+`tate.?duality`, `localInvariant`, `invariantMap`, `localClassField`,
+`class.?field.?theory`, `reciprocity`, `artin.?map`, `norm.?residue`,
+`brauer.?group`, case-insensitively, over the whole pin and over `~/cs/FLT` —
+and the absence holds.  What exists on the pin is unrelated:
+`Mathlib/Geometry/Manifold/LocalInvariantProperties.lean`,
+`Mathlib/Algebra/BrauerGroup/Defs.lean` (CSAs modulo Morita, no local invariant
+isomorphism), `Mathlib/RepresentationTheory/Homological/TateCohomology/Basic.lean`
+(Tate cohomology of a FINITE group, not local duality), and
+`Mathlib/NumberTheory/LegendreSymbol/QuadraticReciprocity.lean`.  From
+`~/cs/FLT` only two prose mentions (`Assumptions/README.md` lists Poitou–Tate as
+an ASSUMPTION; `Assumptions/Odlyzko.lean` cites Poitou's discriminant paper).
+**So local class field theory must be built, and it, not the cup product, is
+the dominant cost of this leaf.**
+
+**WHAT THIS LEAF NOW CARRIES, AND WHAT IT SHARES ITS GATE WITH (2026-07-30).**
+Two things arrived here on that date, neither of them new mathematics:
+
+* `exists_injective_sha2_dual_sha1Twist_of_selfDual` below is **PROVEN over this
+  leaf** — the LEFT nondegeneracy clause plus `injective_of_forall_apply_eq_zero`
+  above.  The STRENGTH AUDIT above had already established `PT ⟹ M` as a fact,
+  but the arrow to that intermediate leaf was never written, so the compiler
+  carried two `sorry`s for one obligation.  Discharging this leaf therefore now
+  discharges FOUR declarations, not two: `finiteDimensional_sha2`,
+  `finrank_sha2_le_finrank_sha1Twist`, that leaf, and `M` through it.
+* **The shared-gate note, MOVED here from that leaf, because this is where the
+  work is.**  This leaf and `card_sha1Twist_le_card_dualNumberPoints` below are
+  blocked on ONE object — the local Tate pairing
+  `H^i(ℚ_v, M) × H^{2−i}(ℚ_v, M*) → k`.  This leaf needs it for the global
+  duality; that leaf needs it because the dual Selmer group `H¹_{L^⊥}` cannot be
+  STATED without it.  They are ONE cost, not two, and should go to ONE owner, in
+  the order: (a) vendor the cup product from `~/cs/FLT`
+  (`ContCohomology/CupProduct.lean`, 582 lines, sorry-free) with its
+  `linHom`/`iHom` shims; (b) build the local invariant map; (c) then both leaves.
+  Before building anything, read the DODGE PRECEDENT recorded on that leaf —
+  `Modularity/Patching.lean` runs the same Greenberg–Wiles argument with no
+  pairing at all, by describing the dual Selmer source as an explicit
+  unramified-outside-`S` condition instead of as an orthogonal complement.  It
+  does not transplant by copying, and it is the cheapest lead in this subtree.
+
+**HOW TO DECOMPOSE IT FURTHER — SUPERSEDED 2026-07-30, and the paragraph that
+stood here was wrong about the reason.**  It read: "the nine-term sequence needs
+`P^i_S(M) = ⊕_{v ∈ S} H^i(ℚ_v, M)`, the local pairings, `inv_v`, and the
+exactness statements at `P¹`, at `H¹(G_S, M*)^∨` and at `H²(G_S, M)`.  Each of
+those is a `def` with no consumer until the assembly deriving THIS pairing from
+them is written, so cutting them now would produce free-floating definitions —
+exactly what the glue-first rule forbids."
+
+The conclusion followed from an unstated assumption: that exactness at
+`H¹(G_S, M*)^∨` can only be stated by naming `P¹_S(M)` and the local pairing.
+It cannot only be stated that way.  `range θ` has the intrinsic description
+`(Ш¹_S(M*))ᵃⁿⁿ` — the local duality is an isomorphism and
+`range (f^∨) = (ker f)ᵃⁿⁿ` over a field — so the two exactness statements this
+leaf needs can be written with NO new definitions at all, hence with nothing
+free-floating.  That is `exists_poitouTateExactness_sha2_sha1Twist` above, and the
+assembly it feeds is compiler-checked.  What survives of the old paragraph is
+only its positive advice, which still stands: a successor should write `P^i_S`,
+`inv_v` and the local pairings together with the proof of that leaf, in one
+module, consuming its statement as the target — and nothing above needs to change
+when they do.
+
+**CIRCULARITY GUARD — INHERITED VERBATIM** from
+`rank_sha2_le_rank_sha1_twist` below; see there for the BANNED INPUTS clause
+and for what `hℓ5` is doing.
+
+References: Neukirch–Schmidt–Wingberg, *Cohomology of Number Fields*, VIII.6.7
+(the nine-term sequence) and VII.2 (local duality); Darmon–Diamond–Taylor,
+§2.6–2.7. -/
+theorem exists_poitouTatePairing_sha2_sha1Twist
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar) :
+    ∃ B : ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) →ₗ[k]
+        ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) →ₗ[k] k,
+      (∀ x, (∀ y, B x y = 0) → x = 0) ∧ (∀ y, (∀ x, B x y = 0) → y = 0) := by
+  obtain ⟨γ, hker, hrange⟩ := exists_poitouTateExactness_sha2_sha1Twist hℓOdd hdim hℓ5 h
+  exact exists_nondegenerate_of_ker_eq_dualAnnihilator _ _ γ hker hrange
+
+/-- **`Ш²_S(ad⁰)` is finite-dimensional over `k`** (**PROVEN 2026-07-29** over
+`exists_poitouTatePairing_sha2_sha1Twist` immediately above plus
+`finiteDimensional_h1_adZeroTwistRestricted` — NOT a sorry node any more, see
+STATUS below.  Cut out 2026-07-28 as
 `finiteDimensional_h2_adZeroRestricted`, a statement about the AMBIENT
 `H²(G_{ℚ,S}, ad⁰)`; **WEAKENED to `Ш²` and renamed 2026-07-28 — see the
 OBLIGATION AUDIT below, which is the reason this declaration exists in its
 present form**).
+
+**STATUS 2026-07-29: THIS NODE IS NO LONGER A LEAF.**  It is the two-line
+assembly `pairing ⟹ injection into a finite-dimensional dual ⟹ finiteness`:
+`injective_of_forall_apply_eq_zero` above turns the LEFT nondegeneracy clause
+of `exists_poitouTatePairing_sha2_sha1Twist` into an injection
+`Ш²_S(ad⁰) ↪ (Ш¹_S(ad⁰(1)))^∨`, whose codomain is finite-dimensional from
+`finiteDimensional_h1_adZeroTwistRestricted` above by
+`Submodule.finiteDimensional`, and `FiniteDimensional.of_injective` finishes.
+Note this is the SAME derivation the OBLIGATION AUDIT below identifies inside
+`rank_sha2_le_rank_sha1_twist`; the audit's point was that the finiteness was
+always a consequence of a map into the degree-`1` dual, and now the map comes
+from a named arithmetic input rather than from a leaf that itself consumed this
+one.  Everything below this paragraph is the record of why the statement has
+the shape it has; the arithmetic it costs is now on the pairing leaf above.
 
 **OBLIGATION AUDIT, 2026-07-28 — the ambient form was a STRICTLY STRONGER
 obligation than anything this tree consumes, and two of the claims that
@@ -19502,21 +20132,58 @@ The second clause is true and is precisely the leak: the consumer wants only
 the `Ш` statement, so deriving it *from* the ambient one throws away the
 difference for nothing.
 
-**WHAT IS LEFT, AND WHAT IT COSTS.** Poitou–Tate gives a perfect pairing
-`Ш¹_S(ad⁰(1)) × Ш²_S(ad⁰) → ℚ/ℤ`, hence `Ш²_S(ad⁰) ≅ Ш¹_S(ad⁰(1))^∨`, and
-`Ш¹_S(ad⁰(1))` is finite-dimensional by `finiteDimensional_h1_adZeroTwistRestricted`
-above.  That is the intended proof, and it shows this leaf and
-`finrank_sha2_le_finrank_sha1Twist` below are the two shadows of ONE input and
-are best given to ONE owner: whoever produces the pairing discharges both in
-the same breath, and neither is reachable without it.  **They are not
-circular** — `finrank_sha2_le_finrank_sha1Twist` does not consume this leaf,
-and this leaf does not consume it.
+**WHAT IS LEFT, AND WHAT IT COSTS — SUPERSEDED 2026-07-29, kept because it is
+the paragraph that motivated the present structure.**  It read: Poitou–Tate
+gives a perfect pairing `Ш¹_S(ad⁰(1)) × Ш²_S(ad⁰) → ℚ/ℤ`, hence
+`Ш²_S(ad⁰) ≅ Ш¹_S(ad⁰(1))^∨`, with `Ш¹_S(ad⁰(1))` finite-dimensional by
+`finiteDimensional_h1_adZeroTwistRestricted` above; that is the intended proof,
+and it shows this statement and `finrank_sha2_le_finrank_sha1Twist` below are
+"the two shadows of ONE input", best given to ONE owner, since "whoever
+produces the pairing discharges both in the same breath".  **That input now has
+a name** — `exists_poitouTatePairing_sha2_sha1Twist` above — and both shadows
+are proven over it, so the observation is enforced by the compiler instead of
+by prose.  A cheaper discharge of THIS statement alone remains legitimate (any
+injection of `Ш²_S(ad⁰)` into a space already known finite-dimensional
+suffices) but is no longer separately useful: the bound below needs the pairing
+regardless.  The porting audit lives on the pairing leaf above; neither this
+statement nor the bound below independently owes the cup product or the local
+invariant map.
 
-A cheaper discharge is legitimate and would be a better outcome: any
-NONDEGENERATE `k`-bilinear pairing into `k`, or any injection of `Ш²_S(ad⁰)`
-into a space already known finite-dimensional, suffices.  The porting audit for
-the pairing itself lives on `finrank_sha2_le_finrank_sha1Twist` below; this
-leaf does **not** independently owe the cup product or the local invariant map.
+**A TENSION BETWEEN TWO DOCSTRINGS IN THIS FILE, RAISED AND SETTLED AGAINST THE
+LITERATURE 2026-07-29.**  `finiteDimensional_h1_adZeroTwistRestricted` above
+says "This is NSW VIII.3: for a FINITE set `S` of places and a FINITE
+`G_{ℚ,S}`-module `M`, **every** `Hⁱ(G_{ℚ,S}, M)` is finite" — all degrees,
+`i = 2` included.  The OBLIGATION AUDIT immediately above says instead that NSW
+gets degree-`2` finiteness only from degree `1` **plus the local terms of the
+Poitou–Tate sequence**.  Read as claims about the STATEMENT they contradict
+each other, and the difference matters: if degree `2` were available at the
+degree-`1` price, this statement would follow from the AMBIENT
+`H²(G_{ℚ,S}, ad⁰)` by `Submodule.finiteDimensional` with no Poitou–Tate at all,
+and only `finrank_sha2_le_finrank_sha1Twist` below would need the pairing —
+a strictly better decomposition than the present one.
+
+Checked against a source already on disk (`sources/css1997mfflt.txt`,
+L. C. Washington, *Galois cohomology*, in Cornell–Silverman–Stevens), and **the
+AUDIT is right**:
+
+* *Proposition 7* (p. 117): `H¹(G_Σ, X)` is finite for finite `X`.  Its proof
+  is elementary — an open normal `H` acting trivially on `X`, `H¹(H, X) =
+  Hom(H, X)` finite by **Hermite–Minkowski**, then inflation–restriction.  That
+  is exactly the route `finiteDimensional_h1_adZeroTwistRestricted`'s COST AUDIT
+  itemises, and it is confined to degree `1`.
+* *Proposition 11* (p. 120): "the groups `H^r(G_Σ, X)`, `r = 0, 1, 2`, are
+  finite", together with the global Euler-characteristic formula — and its
+  proof is **not given**, but cited: "For a proof, see [Mi, p. 82]", i.e. Milne,
+  *Arithmetic Duality Theorems* I.5.1, whose proof runs through Poitou–Tate
+  duality.
+
+So the degree-`1` docstring's STATEMENT (finiteness in every degree) is correct
+and standard; what is wrong is any inference that its degree-`1` PROOF covers
+degree `2`.  There is no known cheap route to degree-`2` finiteness, and the
+present structure — this statement derived from the pairing — stands.  A
+successor tempted to "just cite NSW VIII.3 in degree 2" should read this
+paragraph first: doing so imports the Euler-characteristic theorem, which
+imports the duality, which is the pairing leaf above under another name.
 
 **Over the full `Γ ℚ` this statement is FALSE**, exactly as in degree `1`: the
 computation on `rank_sha2_le_rank_sha1_twist` below shows
@@ -19536,93 +20203,69 @@ VIII.3; Darmon–Diamond–Taylor, §2.6. -/
 theorem finiteDimensional_sha2
     (hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar) :
-    FiniteDimensional k ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) :=
-  sorry
+    FiniteDimensional k ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) := by
+  haveI : FiniteDimensional k
+      (continuousCohomology 1 (adZeroTwistRestricted ℓ ρbar (hardlyRamifiedPlaces ℓ))) :=
+    finiteDimensional_h1_adZeroTwistRestricted hℓOdd hdim hℓ5 h
+  haveI : FiniteDimensional k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) := inferInstance
+  obtain ⟨B, hleft, -⟩ := exists_poitouTatePairing_sha2_sha1Twist hℓOdd hdim hℓ5 h
+  exact FiniteDimensional.of_injective _ (injective_of_forall_apply_eq_zero B hleft)
 
-/-- **Poitou–Tate: `dim_k Ш²_S(ad⁰) ≤ dim_k Ш¹_S(ad⁰(1))`** (sorry leaf, cut
-out 2026-07-28 as the DUALITY half of `exists_injective_sha2_dual_sha1Twist`
-below — it IS the whole Poitou–Tate content of that leaf, with the finiteness
-and the map-building removed).
+/-- **Poitou–Tate: `dim_k Ш²_S(ad⁰) ≤ dim_k Ш¹_S(ad⁰(1))`** (**PROVEN
+2026-07-29** over `exists_poitouTatePairing_sha2_sha1Twist` above plus
+`finiteDimensional_h1_adZeroTwistRestricted` — NOT a sorry node any more, see
+STATUS below; cut out 2026-07-28 as the DUALITY half of
+`exists_injective_sha2_dual_sha1Twist` below).
+
+**STATUS 2026-07-29: THIS NODE IS NO LONGER A LEAF.**  It is the assembly
+`dim Ш² ≤ dim (Ш¹(1))^∨ = dim Ш¹(1)`: the first step is
+`LinearMap.finrank_le_finrank_of_injective` applied to the injection that
+`injective_of_forall_apply_eq_zero` above extracts from the LEFT nondegeneracy
+clause of the pairing, and the second is `Subspace.dual_finrank_eq` under the
+finite-dimensionality supplied by `finiteDimensional_h1_adZeroTwistRestricted`
+above.  Everything below this paragraph is the record of what the statement
+means and why it has this shape; the arithmetic it costs now lives on the
+pairing leaf above, together with the PORTING AUDIT that used to stand here.
 
 Stated in `ℕ` on purpose.  Both sides are finite-dimensional — the left by
 `finiteDimensional_sha2` above, the right by
 `finiteDimensional_h1_adZeroTwistRestricted` above — so a `finrank` comparison
 loses nothing, and it keeps `Cardinal` arithmetic off the arithmetic owner's
-plate.  An owner may freely assume both finiteness facts by consuming those two
-leaves; doing so is NOT circular, since neither of them consumes this one.
+plate.
 
-**BEWARE THE DEGENERATE DISCHARGE.**  `Module.finrank k X = 0` when `X` is not
-finite-dimensional, so this statement is *vacuously true* of an
-infinite-dimensional `Ш²_S(ad⁰)`.  A proof that establishes it by exhibiting
-the left side as infinite-dimensional is worthless and is also inconsistent
-with `finiteDimensional_sha2` above; the two leaves are a package and an owner
-should discharge them together, from the same pairing.  This is the reason the
-finiteness half may not simply be dropped in favour of the `ℕ`-valued
-inequality.
+**BEWARE THE DEGENERATE DISCHARGE — and note that the proof does NOT fall into
+it.**  `Module.finrank k X = 0` when `X` is not finite-dimensional, so this
+statement is *vacuously true* of an infinite-dimensional `Ш²_S(ad⁰)`; a proof
+establishing it by exhibiting the left side as infinite-dimensional would be
+worthless.  The proof below is clear of that because
+`LinearMap.finrank_le_finrank_of_injective` derives the bound from an INJECTION
+into a space whose finite-dimensionality is an instance in scope, which is also
+exactly what makes `finiteDimensional_sha2` above true; the two statements are
+discharged from the same pairing, in the same breath, as their previous
+docstrings prescribed.  This is why the finiteness half was never droppable in
+favour of the `ℕ`-valued inequality alone.
 
 The nine-term Poitou–Tate sequence gives a PERFECT pairing
 `Ш¹_S(M) × Ш²_S(M*) → ℚ/ℤ` for a finite `G_S`-module `M`, where
 `M* = Hom(M, μ)`; taking `M = ad⁰` this is `Ш²_S(ad⁰) ≅ Ш¹_S(ad⁰(1))^∨`, and
-the inequality follows with `Subspace.dual_finrank_eq`.  Any NONDEGENERATE
-pairing suffices, so the leaf is strictly weaker than the duality theorem.
+the inequality follows with `Subspace.dual_finrank_eq`.  Any pairing
+nondegenerate on the LEFT suffices for the inequality — which is exactly the
+clause the proof below takes from `exists_poitouTatePairing_sha2_sha1Twist`
+above.  The `ad⁰* ≅ ad⁰(1)` trace-form identification, the passage from a
+`ℚ/ℤ`-valued pairing of finite groups to a `k`-bilinear `k`-valued one, and the
+PORTING AUDIT for the cup product and the local invariant map have all MOVED
+onto that leaf, which is the declaration that owes them.  **Do not re-derive
+them here, and do not read their absence from this docstring as their being
+free.**
 
-Two identifications are folded in and both are cheap ONLY because `ℓ` is odd:
-
-* `ad⁰* = Hom(ad⁰, μ_ℓ) = (ad⁰)^∨(1) ≅ ad⁰(1)`, using that the trace form
-  `(X, Y) ↦ tr(XY)` on `sl₂` is nondegenerate, which holds exactly when
-  `char k ≠ 2`.  `hℓOdd` is what supplies that, and it is why this leaf may not
-  be restated for `ℓ = 2`;
-* the passage to `k`-dimensions (rather than a pairing of finite abelian groups
-  into `ℚ/ℤ`): `ad⁰` and `ad⁰(1)` are `k`-vector spaces and the pairing is
-  `k`-bilinear after the trace-form identification.
-
-**`hirr` IS NOT CONSUMED BY THE INTENDED ARGUMENT** (recorded 2026-07-28 from
-the previous owner's search, and re-checked here): Poitou–Tate holds for any
-finite `G_S`-module, and only `hℓOdd` and the two finiteness facts are used.
-It is carried because the consumer carries it and because the circularity guard
-below wants the hypothesis surface unchanged.  **Do not hunt for a use of it**,
-and do not conclude from its idleness that the statement is wrong.
-
-**PORTING AUDIT for the local Tate pairing, which is what this leaf really
-needs** (inherited from `exists_injective_sha2_dual_sha1Twist` below, which no
-longer owes it; RE-CHECKED 2026-07-28 against our pin `a3364fa`, `~/cs/FLT`
-and `Fermat/`, and every absence below still holds):
-
-`/home/chend/cs/FLT/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/CupProduct.lean`
-is 582 lines and **sorry-free**, culminating in
-`cup (f : ρ1 →ⁱL ρ2.linHom ρ3) (hp) (m n r) (hr : r = m + n) :
-continuousCohomology m (of ρ1) ⟶ TopModuleCat.linHom (continuousCohomology n (of ρ2)) (continuousCohomology r (of ρ3))`.
-It does NOT stand alone on our pin.  The 2026-07-28 re-check enumerated the
-whole shim surface and found **none** of it upstream here:
-`ContinuousLinearMap.CompactOpen` (the scoped compact-open topology on
-`M1 →L[k] M2`, 48 lines), `ContinuousMap.continuous_prodMk` for `R1Space`
-(57 lines — our pin's `continuous_prodMk` in `Mathlib/Topology/CompactOpen.lean`
-is a DIFFERENT lemma and does not cover it), `continuous_of_discreteTopology_snd`,
-`TopModuleCat.linHom`/`linHomMap`/`homOfBilinear` (79 lines),
-`TopModuleCat.cokerDescCLM`/`cokerDescBilinear`/`isOpenQuotientMap_cokerπ`
-(179 lines, of which our
-`Fermat/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/Basic.lean`
-already carries `cokerDesc`, `cokerCongr`, `cyclesIsoKer`, `homologyIsoCoker`),
-`ContRepresentation.linHom`/`continuous_pair_of_discrete` (81 lines),
-`TopRep.iHom` (31 lines), and — absent from our partial vendoring of
-`ContCohomology/Basic.lean` — `resolutionCLM`, `resolutionXCast`,
-`invariantsObjIHom`, `d_hom_zero`, `d_hom_succ_apply`, `eqToHom_iHom_apply`
-(~130 lines).  Total to vendor: **≈ 1160 lines**, all sorry-free upstream.
-The `81a5d2` vs `a3364fa` drift was small for the portion already vendored
-here (no proof changes, compiled first try), so the estimate is dominated by
-volume rather than by drift.
-
-**And the cup product is only the FIRST half.**  The pairing also needs the
-local invariant map `H²(ℚ_v, μ) ≅ ℚ/ℤ` (local class field theory).  Re-checked
-2026-07-28 across ALL THREE trees: `grep -rniE "poitou|greenberg|shafarevich|
-tate.?duality|localInvariant|invariantMap|localClassField|brauer"` returns
-nothing usable from our mathlib pin (the only `localInvariant` hits are
-`Geometry/Manifold/LocalInvariantProperties`, and `BrauerGroup` is CSAs modulo
-Morita with no local invariant isomorphism), nothing from `Fermat/`, and from
-`~/cs/FLT` only two prose mentions (`Assumptions/README.md` lists Poitou–Tate
-as an ASSUMPTION, and `Assumptions/Odlyzko.lean` cites Poitou's discriminant
-paper — neither is the theorem).  **So local class field theory must be built,
-and it, not the cup product, is the dominant cost of this leaf.**
+**`hirr` IS NOT CONSUMED** (recorded 2026-07-28 from the previous owner's
+search, re-checked 2026-07-29, and now enforced by the compiler: the binder is
+`_hirr` and the proof below does not mention it).  Poitou–Tate holds for any
+finite `G_S`-module, so `exists_poitouTatePairing_sha2_sha1Twist` above does
+not take irreducibility at all; the binder survives here only because the
+consumer passes it positionally and because the circularity guard below wants
+the hypothesis surface unchanged.  **Do not hunt for a use of it**, and do not
+conclude from its idleness that the statement is wrong.
 
 **CIRCULARITY GUARD — INHERITED VERBATIM** from
 `rank_sha2_le_rank_sha1_twist` below; see there for the BANNED INPUTS clause
@@ -19634,10 +20277,20 @@ References: Neukirch–Schmidt–Wingberg, *Cohomology of Number Fields*, VIII.6
 theorem finrank_sha2_le_finrank_sha1Twist
     (hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
-    (hirr : ρbar.IsIrreducible) :
+    (_hirr : ρbar.IsIrreducible) :
     Module.finrank k ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) ≤
-      Module.finrank k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) :=
-  sorry
+      Module.finrank k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) := by
+  haveI : FiniteDimensional k
+      (continuousCohomology 1 (adZeroTwistRestricted ℓ ρbar (hardlyRamifiedPlaces ℓ))) :=
+    finiteDimensional_h1_adZeroTwistRestricted hℓOdd hdim hℓ5 h
+  haveI : FiniteDimensional k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) := inferInstance
+  obtain ⟨B, hleft, -⟩ := exists_poitouTatePairing_sha2_sha1Twist hℓOdd hdim hℓ5 h
+  calc Module.finrank k ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ))
+      ≤ Module.finrank k (Module.Dual k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ))) :=
+        LinearMap.finrank_le_finrank_of_injective
+          (injective_of_forall_apply_eq_zero B hleft)
+    _ = Module.finrank k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) :=
+        Subspace.dual_finrank_eq
 
 
 /-! #### NOTE (release-18 merge): TWO ROUTES TO THE SAME NODE COEXIST HERE
@@ -19821,12 +20474,72 @@ lemma adZeroTraceForm_nondegenerate {x : AdZero k V} (hx : x ≠ 0) :
   exact htr
 
 /-- **Poitou–Tate duality: `Ш²_S(ad⁰)` embeds `k`-linearly into the DUAL of
-`Ш¹_S(ad⁰(1))`, GIVEN the self-duality of the coefficients** (sorry leaf; cut
-out 2026-07-27 as the DUALITY half of `rank_sha2_le_rank_sha1_twist` below, and
-RECUT 2026-07-28 to receive the trace pairing rather than manufacture it — see
-STATUS immediately below).
+`Ш¹_S(ad⁰(1))`, GIVEN the self-duality of the coefficients** (**PROVEN
+2026-07-30** over `exists_poitouTatePairing_sha2_sha1Twist` above — NOT a sorry
+node any more, see STATUS 2026-07-30 immediately below; cut out 2026-07-27 as the
+DUALITY half of `rank_sha2_le_rank_sha1_twist` below, and RECUT 2026-07-28 to
+receive the trace pairing rather than manufacture it).
 
-**STATUS 2026-07-28 — WHAT THIS RECUT DID AND DID NOT DO.** The statement
+**STATUS 2026-07-30: THIS NODE IS NO LONGER A LEAF, AND THE FILE ALREADY SAID SO
+IN PROSE.** It is the two-line assembly
+
+  take the pairing `B : Ш²_S(ad⁰) × Ш¹_S(ad⁰(1)) → k` from
+  `exists_poitouTatePairing_sha2_sha1Twist` above, discard its RIGHT
+  nondegeneracy clause, and feed the LEFT one to
+  `injective_of_forall_apply_eq_zero` above — which is exactly the statement that
+  left-nondegeneracy IS injectivity into the dual, since `Module.Dual k U` is by
+  definition `U →ₗ[k] k`.
+
+**Why this was not done at the 2026-07-29 cut, and why it is not a circular
+re-cut.**  The STRENGTH AUDIT on the pairing leaf above records `PT ⟹ {S₂, P}`
+and `{S₂, P} ⟺ M`, where `M` is `exists_injective_sha2_dual_sha1Twist` below and
+`{S₂, P}` are `finiteDimensional_sha2`/`finrank_sha2_le_finrank_sha1Twist` above.
+Since `M` is proven over THIS declaration, `PT ⟹ M` was already established as a
+mathematical fact in that audit — but the arrow `PT ⟹` *this leaf* was never
+written down, so the compiler still carried two independent `sorry`s for one
+obligation.  It is written now.  This is NOT the circular re-cut that audit warns
+against: that warning is about WEAKENING the pairing leaf by dropping its right
+nondegeneracy clause, which would make it equivalent to `M`.  Nothing is weakened
+here; the strictly stronger leaf discharges the weaker one, which is the ordinary
+direction.  Frontier `2 → 1` in this subsection.
+
+The same audit's shared-gate note — **this statement and
+`card_sha1Twist_le_card_dualNumberPoints` below are ONE cost, the local Tate
+pairing, not two** — is therefore now a note about the PAIRING LEAF above and
+that leaf; it has been copied there, which is where the work still is.
+
+**WHAT THIS DOES NOT BUY, stated plainly so nobody reads the count as
+progress on the arithmetic.**  The Poitou–Tate content is untouched: it sits, in
+full and undivided, on `exists_poitouTatePairing_sha2_sha1Twist` above, still
+gated on the local invariant map `H²(ℚ_v, μ) ≅ ℚ/ℤ`.  What this buys is that a
+future owner of that leaf discharges this one for free instead of proving global
+duality twice, and that the tree no longer claims two independent obligations
+where the file's own prose had identified one.
+
+**THE THREE COEFFICIENT-SELF-DUALITY HYPOTHESES ARE NOT CONSUMED BY THIS PROOF,
+AND ARE DELIBERATELY RETAINED** (renamed `_hBrep`, `_hBnd` — and `hirr` to
+`_hirr` — following this file's established convention for a binder kept for its
+consumer's hypothesis surface, exactly as the pairing leaf above records for its
+own `_hirr`; `B` keeps its name because the other two binders' TYPES mention it.
+The renaming was forced by the compiler: while the body was `sorry` the
+unusedVariables linter was suppressed, and a real proof term makes it fire.)
+**Do not "clean them up" any further.**  Two reasons, and the second is a project
+rule:
+
+* The signature of this declaration and the proof of `M` below are UNCHANGED by
+  this commit, so nothing downstream moved.
+* `adZeroTraceForm`, `adZeroTraceForm_apply`, `adZeroTraceForm_rep` and
+  `adZeroTraceForm_nondegenerate` above have **exactly one consumer in the whole
+  tree** — `M`'s application of this declaration to them.  Dropping these three
+  binders would make that whole (proven, ~120-line) trace-form development
+  FREE-FLOATING, which the project forbids.  And the development is not
+  scaffolding to be deleted: it is genuinely needed material, because the
+  `ad⁰* ≅ ad⁰(1)` identification that the pairing leaf above must perform is
+  precisely nondegeneracy-of-the-trace-form (see that leaf's own paragraph on why
+  it is cheap only for odd `ℓ`).  So these binders keep it in the root cone until
+  the pairing leaf is proven and consumes it directly, at which point they may go.
+
+**STATUS 2026-07-28 — WHAT THAT EARLIER RECUT DID AND DID NOT DO.** The statement
 `exists_injective_sha2_dual_sha1Twist` below is UNCHANGED, still has the same
 consumer (`rank_sha2_le_rank_sha1_twist`), and is now PROVEN: it is this leaf
 applied to `adZeroTraceForm` above. What moved is one of the two identifications
@@ -19995,15 +20708,16 @@ References: Neukirch–Schmidt–Wingberg, *Cohomology of Number Fields*, VIII.6
 theorem exists_injective_sha2_dual_sha1Twist_of_selfDual
     (hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
-    (hirr : ρbar.IsIrreducible)
+    (_hirr : ρbar.IsIrreducible)
     (B : AdZero k V →ₗ[k] AdZero k V →ₗ[k] k)
-    (hBrep : ∀ (σ : Field.absoluteGaloisGroup ℚ) (x y : AdZero k V),
+    (_hBrep : ∀ (σ : Field.absoluteGaloisGroup ℚ) (x y : AdZero k V),
       B (AdZero.rep ρbar σ x) (AdZero.rep ρbar σ y) = B x y)
-    (hBnd : ∀ x : AdZero k V, x ≠ 0 → ∃ y : AdZero k V, B x y ≠ 0) :
+    (_hBnd : ∀ x : AdZero k V, x ≠ 0 → ∃ y : AdZero k V, B x y ≠ 0) :
     ∃ f : ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) →ₗ[k]
         Module.Dual k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)),
-      Function.Injective f :=
-  sorry
+      Function.Injective f := by
+  obtain ⟨PT, hleft, -⟩ := exists_poitouTatePairing_sha2_sha1Twist hℓOdd hdim hℓ5 h
+  exact ⟨PT, injective_of_forall_apply_eq_zero PT hleft⟩
 
 /-- **Poitou–Tate duality: `Ш²_S(ad⁰)` embeds `k`-linearly into the DUAL of
 `Ш¹_S(ad⁰(1))`** (**PROVEN 2026-07-28** over the leaf
@@ -20398,10 +21112,515 @@ def dualNumberPoints (R : Type w) [CommRing R] [Algebra ℤ_[ℓ] R] (π : R →
     (∀ a : ℤ_[ℓ], f (algebraMap ℤ_[ℓ] R a) = TrivSqZeroExt.inl (algebraMap ℤ_[ℓ] k a)) ∧
       ∀ x, (f x).fst = π x}
 
-/-- **The tangent-space count: `#R(k[ε]) = #k ^ dim_k 𝔪/(𝔪²+(ℓ))`** (sorry leaf,
-cut out 2026-07-28 as the COMMUTATIVE-ALGEBRA half of
+section DualNumberPointsCount
+
+variable {R : Type w} [CommRing R] [IsLocalRing R]
+
+omit [TopologicalSpace k] [DiscreteTopology k] in
+/-- `char k = ℓ`. -/
+lemma charP_coeff_field : CharP k ℓ := by
+  have hp : (ringChar k).Prime :=
+    (CharP.char_is_prime_or_zero k (ringChar k)).resolve_right
+      (CharP.char_ne_zero_of_finite k (ringChar k))
+  have hdvd : ringChar k ∣ ℓ :=
+    (CharP.cast_eq_zero_iff k (ringChar k) ℓ).mp natCast_self_eq_zero
+  have heq : ringChar k = ℓ :=
+    (Nat.prime_dvd_prime_iff_eq hp (Fact.out : ℓ.Prime)).mp hdvd
+  exact heq ▸ ringChar.charP k
+
+omit [TopologicalSpace k] [DiscreteTopology k] in
+lemma exists_card_coeff_eq_pow : ∃ n : ℕ, 0 < n ∧ Nat.card k = ℓ ^ n := by
+  haveI : Fintype k := Fintype.ofFinite k
+  haveI := charP_coeff_field (k := k) (ℓ := ℓ)
+  obtain ⟨n, -, hcard⟩ := FiniteField.card k ℓ
+  exact ⟨(n : ℕ), n.2, by rw [Nat.card_eq_fintype_card, hcard]⟩
+
+omit [TopologicalSpace k] [DiscreteTopology k] in
+lemma ell_le_card_coeff : ℓ ≤ Nat.card k := by
+  obtain ⟨n, hn, hcard⟩ := exists_card_coeff_eq_pow (k := k) (ℓ := ℓ)
+  rw [hcard]
+  calc ℓ = ℓ ^ 1 := (pow_one ℓ).symm
+    _ ≤ ℓ ^ n := Nat.pow_le_pow_right (Fact.out : ℓ.Prime).pos hn
+
+omit [TopologicalSpace k] [DiscreteTopology k] in
+lemma ell_dvd_card_coeff : ℓ ∣ Nat.card k := by
+  obtain ⟨n, hn, hcard⟩ := exists_card_coeff_eq_pow (k := k) (ℓ := ℓ)
+  rw [hcard]
+  exact dvd_pow_self ℓ hn.ne'
+
+/-! ### The ideal `𝔪² + (ℓ)` -/
+
+omit [TopologicalSpace k] [DiscreteTopology k] in
+variable (R) in
+/-- `𝔪² + (ℓ)`, the ideal whose trace on `𝔪` is `cotSub`. -/
+def cotIdeal (ℓ : ℕ) : Ideal R :=
+  IsLocalRing.maximalIdeal R ^ 2 ⊔ Ideal.span {(ℓ : R)}
+
+omit [Fact ℓ.Prime] [TopologicalSpace k] [DiscreteTopology k] in
+lemma mkCotangentModL_eq_iff {t t' : ↥(IsLocalRing.maximalIdeal R)} :
+    (Submodule.Quotient.mk t : CotangentModL R ℓ) = Submodule.Quotient.mk t'
+      ↔ (t : R) - (t' : R) ∈ cotIdeal R ℓ := by
+  rw [Submodule.Quotient.eq]
+  exact Iff.rfl
+
+omit [Fact ℓ.Prime] [TopologicalSpace k] [DiscreteTopology k] in
+lemma mkCotangentModL_eq_zero_iff {t : ↥(IsLocalRing.maximalIdeal R)} :
+    (Submodule.Quotient.mk t : CotangentModL R ℓ) = 0 ↔ (t : R) ∈ cotIdeal R ℓ := by
+  rw [Submodule.Quotient.mk_eq_zero]
+  exact Iff.rfl
+
+omit [TopologicalSpace k] [DiscreteTopology k] in
+lemma cotIdeal_le_maximalIdeal (π : R →+* k) (hπ : Function.Surjective π) :
+    cotIdeal R ℓ ≤ IsLocalRing.maximalIdeal R := by
+  refine sup_le (Ideal.pow_le_self two_ne_zero) ?_
+  rw [Ideal.span_le, Set.singleton_subset_iff]
+  exact natCast_mem_maximalIdeal π hπ
+
+omit [TopologicalSpace k] [DiscreteTopology k] in
+/-- The residue map descended to `R ⧸ (𝔪² + (ℓ))`. -/
+noncomputable def cotIdealResidue (π : R →+* k) (hπ : Function.Surjective π) :
+    R ⧸ cotIdeal R ℓ →+* k :=
+  Ideal.Quotient.lift _ π (fun a ha => by
+    rw [← RingHom.mem_ker, IsLocalRing.ker_eq_maximalIdeal π hπ]
+    exact cotIdeal_le_maximalIdeal π hπ ha)
+
+omit [Fact ℓ.Prime] [TopologicalSpace k] [DiscreteTopology k] in
+lemma natCast_ell_cotIdealQuot : ((ℓ : ℕ) : R ⧸ cotIdeal R ℓ) = 0 := by
+  rw [← map_natCast (Ideal.Quotient.mk (cotIdeal R ℓ)) ℓ, Ideal.Quotient.eq_zero_iff_mem]
+  exact Ideal.mem_sup_right (Ideal.mem_span_singleton_self _)
+
+omit [TopologicalSpace k] [DiscreteTopology k] in
+lemma charP_cotIdealQuot (π : R →+* k) (hπ : Function.Surjective π) :
+    CharP (R ⧸ cotIdeal R ℓ) ℓ := by
+  haveI := charP_coeff_field (k := k) (ℓ := ℓ)
+  refine ⟨fun n => ⟨fun h => ?_, fun h => ?_⟩⟩
+  · refine (CharP.cast_eq_zero_iff k ℓ n).mp ?_
+    rw [← map_natCast (cotIdealResidue (ℓ := ℓ) π hπ) n, h, map_zero]
+  · obtain ⟨m, rfl⟩ := h
+    push_cast
+    rw [natCast_ell_cotIdealQuot, zero_mul]
+
+/-! ### The universal `π`-derivation -/
+
+omit [TopologicalSpace k] [DiscreteTopology k] in
+/-- `x - x^{#k}` lies in the maximal ideal: the residue field is finite. -/
+lemma sub_pow_card_mem_maximalIdeal (π : R →+* k) (hπ : Function.Surjective π) (x : R) :
+    x - x ^ Nat.card k ∈ IsLocalRing.maximalIdeal R := by
+  haveI : Fintype k := Fintype.ofFinite k
+  rw [← IsLocalRing.ker_eq_maximalIdeal π hπ, RingHom.mem_ker, map_sub, map_pow,
+    Nat.card_eq_fintype_card, FiniteField.pow_card, sub_self]
+
+omit [TopologicalSpace k] [DiscreteTopology k] in
+variable (ℓ) in
+/-- The universal `π`-derivation `x ↦ [x - x^{#k}]` into the mod-`ℓ` cotangent space. -/
+noncomputable def cotFrob (π : R →+* k) (hπ : Function.Surjective π) (x : R) :
+    CotangentModL R ℓ :=
+  Submodule.Quotient.mk ⟨x - x ^ Nat.card k, sub_pow_card_mem_maximalIdeal π hπ x⟩
+
+omit [TopologicalSpace k] [DiscreteTopology k] in
+variable (ℓ) in
+lemma cotFrob_add (π : R →+* k) (hπ : Function.Surjective π) (x y : R) :
+    cotFrob ℓ π hπ (x + y) = cotFrob ℓ π hπ x + cotFrob ℓ π hπ y := by
+  obtain ⟨n, hn, hcard⟩ := exists_card_coeff_eq_pow (k := k) (ℓ := ℓ)
+  haveI := charP_cotIdealQuot (ℓ := ℓ) (k := k) (R := R) π hπ
+  have key : (x + y - (x + y) ^ Nat.card k)
+      - ((x - x ^ Nat.card k) + (y - y ^ Nat.card k)) ∈ cotIdeal R ℓ := by
+    rw [← Ideal.Quotient.eq_zero_iff_mem]
+    have hfd := add_pow_char_pow (R := R ⧸ cotIdeal R ℓ) (p := ℓ) (n := n)
+      (Ideal.Quotient.mk _ x) (Ideal.Quotient.mk _ y)
+    simp only [map_sub, map_add, map_pow, hcard]
+    rw [hfd]
+    ring
+  rw [cotFrob, cotFrob, cotFrob, ← Submodule.Quotient.mk_add, mkCotangentModL_eq_iff]
+  simpa using key
+
+variable (ℓ) in
+omit [Fact ℓ.Prime] [Algebra ℤ_[ℓ] k] [TopologicalSpace k] [DiscreteTopology k] in
+lemma cotFrob_mul (π : R →+* k) (hπ : Function.Surjective π) (x y : R) :
+    cotFrob ℓ π hπ (x * y) = x • cotFrob ℓ π hπ y + y • cotFrob ℓ π hπ x := by
+  have hm : (x - x ^ Nat.card k) * (y - y ^ Nat.card k)
+      ∈ IsLocalRing.maximalIdeal R ^ 2 := by
+    rw [pow_two]
+    exact Ideal.mul_mem_mul (sub_pow_card_mem_maximalIdeal π hπ x) (sub_pow_card_mem_maximalIdeal π hπ y)
+  have key : (x * y - (x * y) ^ Nat.card k)
+      - (x * (y - y ^ Nat.card k) + y * (x - x ^ Nat.card k)) ∈ cotIdeal R ℓ := by
+    have heq : (x * y - (x * y) ^ Nat.card k)
+        - (x * (y - y ^ Nat.card k) + y * (x - x ^ Nat.card k))
+        = -((x - x ^ Nat.card k) * (y - y ^ Nat.card k)) := by
+      rw [mul_pow]; ring
+    rw [heq]
+    exact Ideal.mem_sup_left (neg_mem hm)
+  rw [cotFrob, cotFrob, cotFrob, ← Submodule.Quotient.mk_smul, ← Submodule.Quotient.mk_smul,
+    ← Submodule.Quotient.mk_add, mkCotangentModL_eq_iff]
+  simpa [smul_eq_mul] using key
+
+variable (ℓ) in
+omit [Fact ℓ.Prime] [Algebra ℤ_[ℓ] k] [TopologicalSpace k] [DiscreteTopology k] in
+lemma cotFrob_one (π : R →+* k) (hπ : Function.Surjective π) :
+    cotFrob ℓ π hπ 1 = 0 := by
+  rw [cotFrob, mkCotangentModL_eq_zero_iff]
+  show (1 : R) - 1 ^ Nat.card k ∈ cotIdeal R ℓ
+  rw [one_pow, sub_self]
+  exact Submodule.zero_mem _
+
+omit [TopologicalSpace k] [DiscreteTopology k] in
+variable (ℓ) in
+lemma cotFrob_zero (π : R →+* k) (hπ : Function.Surjective π) :
+    cotFrob ℓ π hπ 0 = 0 := by
+  rw [cotFrob, mkCotangentModL_eq_zero_iff]
+  show (0 : R) - 0 ^ Nat.card k ∈ cotIdeal R ℓ
+  rw [zero_pow (by have := ((Fact.out : ℓ.Prime).two_le.trans (ell_le_card_coeff (k := k) (ℓ := ℓ))); omega), sub_zero]
+  exact Submodule.zero_mem _
+
+omit [TopologicalSpace k] [DiscreteTopology k] in
+variable (ℓ) in
+/-- On `𝔪` the universal derivation is the quotient map: `t^{#k} ∈ 𝔪²`. -/
+lemma cotFrob_coe (π : R →+* k) (hπ : Function.Surjective π)
+    (t : ↥(IsLocalRing.maximalIdeal R)) :
+    cotFrob ℓ π hπ (t : R) = Submodule.Quotient.mk t := by
+  have hpow : ((t : R)) ^ Nat.card k ∈ IsLocalRing.maximalIdeal R ^ 2 :=
+    Ideal.pow_le_pow_right (((Fact.out : ℓ.Prime).two_le.trans (ell_le_card_coeff (k := k) (ℓ := ℓ))))
+      (Ideal.pow_mem_pow t.2 (Nat.card k))
+  rw [cotFrob, mkCotangentModL_eq_iff]
+  show (t : R) - (t : R) ^ Nat.card k - (t : R) ∈ cotIdeal R ℓ
+  have heq : (t : R) - (t : R) ^ Nat.card k - (t : R) = -((t : R) ^ Nat.card k) := by ring
+  rw [heq]
+  exact Ideal.mem_sup_left (neg_mem hpow)
+
+/-! ### `ℤ_ℓ` lands in the prime field -/
+
+omit [TopologicalSpace k] [DiscreteTopology k] in
+lemma padicInt_ringHom_ext {S : Type*} [CommRing S] (f g : ℤ_[ℓ] →+* S)
+    (hf : f ((ℓ : ℕ) : ℤ_[ℓ]) = 0) (hg : g ((ℓ : ℕ) : ℤ_[ℓ]) = 0) : f = g := by
+  haveI : NeZero ℓ := ⟨(Fact.out : ℓ.Prime).pos.ne'⟩
+  ext a
+  have hspec : a - (((PadicInt.toZMod a).val : ℕ) : ℤ_[ℓ])
+      ∈ Ideal.span {((ℓ : ℕ) : ℤ_[ℓ])} := by
+    rw [← PadicInt.maximalIdeal_eq_span_p, ZMod.natCast_val]
+    exact PadicInt.toZMod_spec a
+  obtain ⟨b, hb⟩ := Ideal.mem_span_singleton.mp hspec
+  have ha : a = (((PadicInt.toZMod a).val : ℕ) : ℤ_[ℓ]) + ((ℓ : ℕ) : ℤ_[ℓ]) * b := by
+    linear_combination hb
+  rw [ha, map_add, map_add, map_mul, map_mul, hf, hg, zero_mul, zero_mul,
+    map_natCast, map_natCast]
+
+omit [IsLocalRing R] [TopologicalSpace k] [DiscreteTopology k] in
+lemma comp_algebraMap_eq_of_ringHom [Algebra ℤ_[ℓ] R] (π : R →+* k) (a : ℤ_[ℓ]) :
+    π (algebraMap ℤ_[ℓ] R a) = algebraMap ℤ_[ℓ] k a := by
+  have hcomp : π.comp (algebraMap ℤ_[ℓ] R) = (algebraMap ℤ_[ℓ] k : ℤ_[ℓ] →+* k) := by
+    refine padicInt_ringHom_ext _ _ ?_ ?_
+    · show π (algebraMap ℤ_[ℓ] R ((ℓ : ℕ) : ℤ_[ℓ])) = 0
+      rw [map_natCast, map_natCast]
+      exact natCast_self_eq_zero
+    · rw [map_natCast]
+      exact natCast_self_eq_zero
+  exact congrFun (congrArg (fun F : ℤ_[ℓ] →+* k => (F : ℤ_[ℓ] → k)) hcomp) a
+
+omit [TopologicalSpace k] [DiscreteTopology k] in
+variable (ℓ) in
+lemma cotFrob_algebraMap [Algebra ℤ_[ℓ] R] (π : R →+* k) (hπ : Function.Surjective π)
+    (a : ℤ_[ℓ]) : cotFrob ℓ π hπ (algebraMap ℤ_[ℓ] R a) = 0 := by
+  haveI : NeZero ℓ := ⟨(Fact.out : ℓ.Prime).pos.ne'⟩
+  obtain ⟨n, hn, hcard⟩ := exists_card_coeff_eq_pow (k := k) (ℓ := ℓ)
+  haveI := charP_cotIdealQuot (ℓ := ℓ) (k := k) (R := R) π hπ
+  set m : ℕ := (PadicInt.toZMod a).val with hm
+  have hspec : a - ((m : ℕ) : ℤ_[ℓ]) ∈ Ideal.span {((ℓ : ℕ) : ℤ_[ℓ])} := by
+    rw [← PadicInt.maximalIdeal_eq_span_p, hm, ZMod.natCast_val]
+    exact PadicInt.toZMod_spec a
+  obtain ⟨b, hb⟩ := Ideal.mem_span_singleton.mp hspec
+  have hz : (Ideal.Quotient.mk (cotIdeal R ℓ)) (algebraMap ℤ_[ℓ] R a)
+      = ((m : ℕ) : R ⧸ cotIdeal R ℓ) := by
+    have ha : algebraMap ℤ_[ℓ] R a
+        = ((m : ℕ) : R) + ((ℓ : ℕ) : R) * algebraMap ℤ_[ℓ] R b := by
+      rw [← map_natCast (algebraMap ℤ_[ℓ] R) m, ← map_natCast (algebraMap ℤ_[ℓ] R) ℓ,
+        ← map_mul, ← map_add]
+      congr 1
+      linear_combination hb
+    rw [ha, map_add, map_mul, map_natCast, map_natCast, natCast_ell_cotIdealQuot, zero_mul, add_zero]
+  have hfrob : ((m : ℕ) : R ⧸ cotIdeal R ℓ) ^ (ℓ ^ n) = ((m : ℕ) : R ⧸ cotIdeal R ℓ) := by
+    rw [← iterateFrobenius_def (R := R ⧸ cotIdeal R ℓ) (p := ℓ) (n := n)]
+    exact map_natCast (iterateFrobenius (R ⧸ cotIdeal R ℓ) ℓ n) m
+  rw [cotFrob, mkCotangentModL_eq_zero_iff]
+  show algebraMap ℤ_[ℓ] R a - (algebraMap ℤ_[ℓ] R a) ^ Nat.card k ∈ cotIdeal R ℓ
+  rw [← Ideal.Quotient.eq_zero_iff_mem, map_sub, map_pow, hz, hcard, hfrob, sub_self]
+
+/-! ### The residue field identification -/
+
+omit [TopologicalSpace k] [DiscreteTopology k] in
+/-- `R ⧸ 𝔪 →+* k` induced by a surjective `π`. -/
+noncomputable def residueHom (π : R →+* k) (hπ : Function.Surjective π) :
+    (R ⧸ IsLocalRing.maximalIdeal R) →+* k :=
+  Ideal.Quotient.lift _ π (fun a ha => by
+    rwa [← RingHom.mem_ker, IsLocalRing.ker_eq_maximalIdeal π hπ])
+
+omit [TopologicalSpace k] [DiscreteTopology k] in
+/-- The residue field of `R` IS `k`, via `π`. -/
+noncomputable def residueEquiv (π : R →+* k) (hπ : Function.Surjective π) :
+    (R ⧸ IsLocalRing.maximalIdeal R) ≃+* k :=
+  RingEquiv.ofBijective (residueHom π hπ) ⟨by
+      intro x y hxy
+      obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective x
+      obtain ⟨b, rfl⟩ := Ideal.Quotient.mk_surjective y
+      have hab : π (a - b) = 0 := by rw [map_sub, sub_eq_zero]; exact hxy
+      rw [← RingHom.mem_ker, IsLocalRing.ker_eq_maximalIdeal π hπ] at hab
+      exact Ideal.Quotient.eq.mpr hab,
+    fun a => by obtain ⟨x, hx⟩ := hπ a; exact ⟨Ideal.Quotient.mk _ x, hx⟩⟩
+
+omit [Finite k] [TopologicalSpace k] [DiscreteTopology k] in
+@[simp] lemma residueEquiv_mk (π : R →+* k) (hπ : Function.Surjective π) (x : R) :
+    residueEquiv π hπ (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) x) = π x := rfl
+
+omit [Finite k] [TopologicalSpace k] [DiscreteTopology k] in
+lemma residueEquiv_symm_pi (π : R →+* k) (hπ : Function.Surjective π) (a : R) :
+    (residueEquiv π hπ).symm (π a) = Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) a := by
+  rw [← residueEquiv_mk π hπ a, RingEquiv.symm_apply_apply]
+
+omit [TopologicalSpace k] [DiscreteTopology k] in
+lemma smul_residue_eq_mul (a : R) (c : R ⧸ IsLocalRing.maximalIdeal R) :
+    a • c = Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) a * c := by
+  rw [Algebra.smul_def, Ideal.Quotient.algebraMap_eq]
+
+omit [Finite k] [TopologicalSpace k] [DiscreteTopology k] in
+lemma pi_eq_zero_of_mem_maximalIdeal (π : R →+* k) (hπ : Function.Surjective π) {p : R}
+    (hp : p ∈ IsLocalRing.maximalIdeal R) : π p = 0 := by
+  rw [← RingHom.mem_ker, IsLocalRing.ker_eq_maximalIdeal π hπ]
+  exact hp
+
+/-! ### The tangent set -/
+
+omit [TopologicalSpace k] [DiscreteTopology k] in
+variable (ℓ) in
+/-- The `π`-semilinear dual of the mod-`ℓ` cotangent space. -/
+def cotDual (π : R →+* k) : Type _ :=
+  {D : CotangentModL R ℓ →+ k //
+    ∀ (a : R) (v : CotangentModL R ℓ), D (a • v) = π a * D v}
+
+/-! ### From a `k[ε]`-point to a semilinear functional -/
+
+omit [TopologicalSpace k] [DiscreteTopology k] in
+lemma snd_eq_zero_of_mem_cotIdeal (π : R →+* k) (hπ : Function.Surjective π)
+    (fr : R →+* DualNumber k) (hfst : ∀ x, (fr x).fst = π x) {z : R}
+    (hz : z ∈ cotIdeal R ℓ) : (fr z).snd = 0 := by
+  obtain ⟨u, hu, v, hv, rfl⟩ := Submodule.mem_sup.mp hz
+  have hu0 : (fr u).snd = 0 := by
+    rw [pow_two] at hu
+    refine Submodule.mul_induction_on hu ?_ ?_
+    · intro p hp q hq
+      rw [map_mul, TrivSqZeroExt.snd_mul, hfst p, hfst q,
+        pi_eq_zero_of_mem_maximalIdeal π hπ hp, pi_eq_zero_of_mem_maximalIdeal π hπ hq]
+      simp
+    · intro p q hp hq
+      rw [map_add, TrivSqZeroExt.snd_add, hp, hq, add_zero]
+  have hv0 : (fr v).snd = 0 := by
+    obtain ⟨w, rfl⟩ := Ideal.mem_span_singleton.mp hv
+    have hl : fr ((ℓ : ℕ) : R) = (((ℓ : ℕ)) : DualNumber k) := map_natCast fr ℓ
+    rw [map_mul, TrivSqZeroExt.snd_mul, hl, TrivSqZeroExt.fst_natCast,
+      TrivSqZeroExt.snd_natCast, natCast_self_eq_zero]
+    simp
+  rw [map_add, TrivSqZeroExt.snd_add, hu0, hv0, add_zero]
+
+omit [TopologicalSpace k] [DiscreteTopology k] in
+/-- The `𝔪`-restriction of a `k[ε]`-point, as an `R`-linear map to the residue field. -/
+noncomputable def pointDeriv (π : R →+* k) (hπ : Function.Surjective π)
+    (fr : R →+* DualNumber k) (hfst : ∀ x, (fr x).fst = π x) :
+    ↥(IsLocalRing.maximalIdeal R) →ₗ[R] (R ⧸ IsLocalRing.maximalIdeal R) where
+  toFun t := (residueEquiv π hπ).symm ((fr (t : R)).snd)
+  map_add' t t' := by
+    show (residueEquiv π hπ).symm ((fr ((t : R) + (t' : R))).snd) = _
+    rw [map_add, TrivSqZeroExt.snd_add, map_add]
+  map_smul' a t := by
+    show (residueEquiv π hπ).symm ((fr (a * (t : R))).snd) = _
+    rw [map_mul, TrivSqZeroExt.snd_mul, hfst (t : R), hfst a,
+      pi_eq_zero_of_mem_maximalIdeal π hπ t.2]
+    simp only [smul_eq_mul, MulOpposite.op_zero, zero_smul, add_zero, RingHom.id_apply]
+    rw [map_mul, smul_residue_eq_mul, residueEquiv_symm_pi]
+
+omit [Finite k] [TopologicalSpace k] [DiscreteTopology k] in
+lemma pointDeriv_apply (π : R →+* k) (hπ : Function.Surjective π)
+    (fr : R →+* DualNumber k) (hfst : ∀ x, (fr x).fst = π x)
+    (t : ↥(IsLocalRing.maximalIdeal R)) :
+    pointDeriv π hπ fr hfst t = (residueEquiv π hπ).symm ((fr (t : R)).snd) := rfl
+
+omit [TopologicalSpace k] [DiscreteTopology k] in
+lemma cotSub_le_ker_pointDeriv (π : R →+* k) (hπ : Function.Surjective π)
+    (fr : R →+* DualNumber k) (hfst : ∀ x, (fr x).fst = π x) :
+    cotSub R ℓ ≤ LinearMap.ker (pointDeriv π hπ fr hfst) := by
+  intro t ht
+  have h0 : (fr (t : R)).snd = 0 :=
+    snd_eq_zero_of_mem_cotIdeal (ℓ := ℓ) π hπ fr hfst ht
+  refine LinearMap.mem_ker.mpr ?_
+  rw [pointDeriv_apply, h0, map_zero]
+
+omit [TopologicalSpace k] [DiscreteTopology k] in
+variable (ℓ) in
+/-- A `k[ε]`-point of `R` gives a `π`-semilinear functional on the cotangent space. -/
+noncomputable def cotDualOfDualNumberPoint [Algebra ℤ_[ℓ] R] (π : R →+* k) (hπ : Function.Surjective π)
+    (f : dualNumberPoints (ℓ := ℓ) R π) : cotDual ℓ π :=
+  ⟨((residueEquiv π hπ : (R ⧸ IsLocalRing.maximalIdeal R) →+* k) : _ →+ k).comp
+      (Submodule.liftQ (cotSub R ℓ) (pointDeriv π hπ f.1 f.2.2)
+        (cotSub_le_ker_pointDeriv π hπ f.1 f.2.2)).toAddMonoidHom,
+    by
+      intro a v
+      show residueEquiv π hπ (Submodule.liftQ (cotSub R ℓ) (pointDeriv π hπ f.1 f.2.2)
+          (cotSub_le_ker_pointDeriv π hπ f.1 f.2.2) (a • v))
+        = π a * residueEquiv π hπ (Submodule.liftQ (cotSub R ℓ) (pointDeriv π hπ f.1 f.2.2)
+          (cotSub_le_ker_pointDeriv π hπ f.1 f.2.2) v)
+      rw [map_smul, smul_residue_eq_mul, map_mul, residueEquiv_mk]⟩
+
+omit [TopologicalSpace k] [DiscreteTopology k] in
+lemma cotDualOfDualNumberPoint_mk [Algebra ℤ_[ℓ] R] (π : R →+* k) (hπ : Function.Surjective π)
+    (f : dualNumberPoints (ℓ := ℓ) R π) (t : ↥(IsLocalRing.maximalIdeal R)) :
+    (cotDualOfDualNumberPoint ℓ π hπ f).1 (Submodule.Quotient.mk t) = (f.1 (t : R)).snd := by
+  show residueEquiv π hπ ((residueEquiv π hπ).symm ((f.1 (t : R)).snd)) = _
+  rw [RingEquiv.apply_symm_apply]
+
+/-! ### From a semilinear functional to a `k[ε]`-point -/
+
+omit [Finite k] [TopologicalSpace k] [DiscreteTopology k] in
+lemma snd_pow_card_eq_zero (hz : ((Nat.card k : ℕ) : k) = 0) (u : DualNumber k) :
+    (u ^ Nat.card k).snd = 0 := by
+  rw [TrivSqZeroExt.snd_pow, nsmul_eq_mul, hz, zero_mul]
+
+omit [TopologicalSpace k] [DiscreteTopology k] in
+variable (ℓ) in
+/-- A `π`-semilinear functional on the cotangent space gives a `k[ε]`-point of `R`. -/
+noncomputable def dualNumberPointOfCotDual [Algebra ℤ_[ℓ] R] (π : R →+* k) (hπ : Function.Surjective π)
+    (D : cotDual ℓ π) : dualNumberPoints (ℓ := ℓ) R π :=
+  ⟨{ toFun := fun x => ((π x, D.1 (cotFrob ℓ π hπ x)) : DualNumber k)
+     map_one' := by
+       refine TrivSqZeroExt.ext ?_ ?_
+       · simp
+       · simpa using congrArg D.1 (cotFrob_one ℓ π hπ)
+     map_mul' := fun x y => by
+       refine TrivSqZeroExt.ext ?_ ?_
+       · simp
+       · simp only [TrivSqZeroExt.snd_mk, TrivSqZeroExt.snd_mul, TrivSqZeroExt.fst_mk,
+           smul_eq_mul, MulOpposite.smul_eq_mul_unop, MulOpposite.unop_op]
+         rw [cotFrob_mul ℓ π hπ x y, map_add, D.2 x, D.2 y, mul_comm (D.1 _) (π y)]
+     map_zero' := by
+       refine TrivSqZeroExt.ext ?_ ?_
+       · simp
+       · simpa using congrArg D.1 (cotFrob_zero ℓ π hπ)
+     map_add' := fun x y => by
+       refine TrivSqZeroExt.ext ?_ ?_
+       · simp
+       · simp only [TrivSqZeroExt.snd_mk, TrivSqZeroExt.snd_add]
+         rw [cotFrob_add ℓ π hπ x y, map_add] },
+    by
+      intro a
+      refine TrivSqZeroExt.ext ?_ ?_
+      · simpa using comp_algebraMap_eq_of_ringHom π a
+      · simpa using congrArg D.1 (cotFrob_algebraMap ℓ π hπ a),
+    fun _ => rfl⟩
+
+omit [TopologicalSpace k] [DiscreteTopology k] in
+lemma dualNumberPointOfCotDual_snd [Algebra ℤ_[ℓ] R] (π : R →+* k) (hπ : Function.Surjective π)
+    (D : cotDual ℓ π) (x : R) :
+    ((dualNumberPointOfCotDual ℓ π hπ D).1 x).snd = D.1 (cotFrob ℓ π hπ x) := rfl
+
+/-! ### The bijection -/
+
+omit [TopologicalSpace k] [DiscreteTopology k] in
+variable (ℓ) in
+/-- **The `k[ε]`-points of `R` above `π` ARE the `π`-semilinear functionals on the
+mod-`ℓ` cotangent space.** -/
+noncomputable def dualNumberPointsEquivCotDual [Algebra ℤ_[ℓ] R] (π : R →+* k)
+    (hπ : Function.Surjective π) :
+    dualNumberPoints (ℓ := ℓ) R π ≃ cotDual ℓ π where
+  toFun := cotDualOfDualNumberPoint ℓ π hπ
+  invFun := dualNumberPointOfCotDual ℓ π hπ
+  left_inv f := by
+    refine Subtype.ext (RingHom.ext fun x => TrivSqZeroExt.ext ?_ ?_)
+    · show ((dualNumberPointOfCotDual ℓ π hπ (cotDualOfDualNumberPoint ℓ π hπ f)).1 x).fst = (f.1 x).fst
+      rw [(dualNumberPointOfCotDual ℓ π hπ (cotDualOfDualNumberPoint ℓ π hπ f)).2.2 x]
+      exact (f.2.2 x).symm
+    · have hz : ((Nat.card k : ℕ) : k) = 0 := by
+        haveI := charP_coeff_field (k := k) (ℓ := ℓ)
+        exact (CharP.cast_eq_zero_iff k ℓ _).mpr (ell_dvd_card_coeff (k := k) (ℓ := ℓ))
+      have hx : (f.1 (x - x ^ Nat.card k)).snd = (f.1 x).snd := by
+        rw [map_sub, TrivSqZeroExt.snd_sub, map_pow, snd_pow_card_eq_zero hz, sub_zero]
+      show (cotDualOfDualNumberPoint ℓ π hπ f).1 (cotFrob ℓ π hπ x) = (f.1 x).snd
+      rw [cotFrob, cotDualOfDualNumberPoint_mk]
+      exact hx
+  right_inv D := by
+    refine Subtype.ext (AddMonoidHom.ext fun v => ?_)
+    obtain ⟨t, rfl⟩ := Submodule.Quotient.mk_surjective (cotSub R ℓ) v
+    rw [cotDualOfDualNumberPoint_mk, dualNumberPointOfCotDual_snd, cotFrob_coe]
+
+/-! ### Counting -/
+
+omit [Fact ℓ.Prime] [Algebra ℤ_[ℓ] k] [TopologicalSpace k] [DiscreteTopology k] in
+theorem card_cotDual [IsNoetherianRing R] (π : R →+* k) (hπ : Function.Surjective π) :
+    Nat.card (cotDual ℓ π) = Nat.card k ^ cotangentFinrankModL R ℓ := by
+  classical
+  letI : Field (R ⧸ IsLocalRing.maximalIdeal R) := Ideal.Quotient.field _
+  letI := cotangentModLModule (R := R) ℓ
+  haveI hst : IsScalarTower R (R ⧸ IsLocalRing.maximalIdeal R) (CotangentModL R ℓ) := by
+    refine ⟨fun r c v => ?_⟩
+    obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective c
+    have h1 : r • (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) a)
+        = Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (r * a) := by
+      rw [smul_residue_eq_mul]
+      rfl
+    rw [h1]
+    exact mul_smul r a v
+  haveI : IsNoetherian R (CotangentModL R ℓ) :=
+    isNoetherian_of_surjective (cotSub R ℓ).mkQ (Submodule.range_mkQ _)
+  haveI : Module.Finite R (CotangentModL R ℓ) := ⟨IsNoetherian.noetherian ⊤⟩
+  haveI : Module.Finite (R ⧸ IsLocalRing.maximalIdeal R) (CotangentModL R ℓ) :=
+    Module.Finite.of_restrictScalars_finite R _ _
+  haveI : Finite (R ⧸ IsLocalRing.maximalIdeal R) :=
+    Finite.of_equiv k (residueEquiv π hπ).symm.toEquiv
+  haveI : Finite (CotangentModL R ℓ) :=
+    Module.finite_of_finite (R ⧸ IsLocalRing.maximalIdeal R)
+  have hequiv : cotDual ℓ π
+      ≃ Module.Dual (R ⧸ IsLocalRing.maximalIdeal R) (CotangentModL R ℓ) :=
+    { toFun := fun D =>
+      { toFun := fun v => (residueEquiv π hπ).symm (D.1 v)
+        map_add' := fun v w => by rw [map_add, map_add]
+        map_smul' := fun c v => by
+          obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective c
+          show (residueEquiv π hπ).symm (D.1 (a • v))
+            = Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) a * (residueEquiv π hπ).symm (D.1 v)
+          rw [D.2 a v, map_mul, residueEquiv_symm_pi] }
+      invFun := fun L =>
+      ⟨((residueEquiv π hπ : (R ⧸ IsLocalRing.maximalIdeal R) →+* k) : _ →+ k).comp
+          L.toAddMonoidHom,
+        fun a v => by
+          show residueEquiv π hπ (L (a • v)) = π a * residueEquiv π hπ (L v)
+          have : (a : R) • v = (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) a) • v := rfl
+          rw [this, map_smul, smul_eq_mul, map_mul, residueEquiv_mk]⟩
+      left_inv := fun D => by
+        refine Subtype.ext (AddMonoidHom.ext fun v => ?_)
+        show residueEquiv π hπ ((residueEquiv π hπ).symm (D.1 v)) = D.1 v
+        rw [RingEquiv.apply_symm_apply]
+      right_inv := fun L => by
+        refine LinearMap.ext fun v => ?_
+        show (residueEquiv π hπ).symm (residueEquiv π hπ (L v)) = L v
+        rw [RingEquiv.symm_apply_apply] }
+  rw [Nat.card_congr hequiv]
+  haveI : Finite (Module.Dual (R ⧸ IsLocalRing.maximalIdeal R) (CotangentModL R ℓ)) :=
+    Finite.of_injective (fun L => (L : CotangentModL R ℓ → _)) DFunLike.coe_injective
+  haveI : Fintype (R ⧸ IsLocalRing.maximalIdeal R) := Fintype.ofFinite _
+  haveI : Fintype (Module.Dual (R ⧸ IsLocalRing.maximalIdeal R) (CotangentModL R ℓ)) :=
+    Fintype.ofFinite _
+  rw [Nat.card_eq_fintype_card,
+    Module.card_eq_pow_finrank (K := R ⧸ IsLocalRing.maximalIdeal R)
+      (V := Module.Dual (R ⧸ IsLocalRing.maximalIdeal R) (CotangentModL R ℓ)),
+    Subspace.dual_finrank_eq]
+  congr 1
+  rw [← Nat.card_eq_fintype_card]
+  exact Nat.card_congr (residueEquiv π hπ).toEquiv
+
+end DualNumberPointsCount
+
+omit [TopologicalSpace k] [DiscreteTopology k] in
+/-- **The tangent-space count: `#R(k[ε]) = #k ^ dim_k 𝔪/(𝔪²+(ℓ))`** (**PROVEN
+2026-07-29**, over the section `DualNumberPointsCount` immediately above; cut out
+2026-07-28 as the COMMUTATIVE-ALGEBRA half of
 `finrank_sha1Twist_le_cotangentFinrank` below; the other half is
-`card_sha1Twist_le_card_dualNumberPoints` below, which is the arithmetic).
+`card_sha1Twist_le_card_dualNumberPoints` below, which is the arithmetic and
+still open).
 
 **There is no Galois theory in this statement and that is the point of the
 cut.**  The third bullet of the route recorded on
@@ -20420,13 +21639,44 @@ kills `(ℓ)` because `π ℓ = 0` in `k` (characteristic `ℓ`), whence `d` res
 to `𝔪` factors through `CotangentModL R ℓ` and is `R/𝔪`-linear.  Conversely
 `f` is RECOVERED from `d|𝔪`: `f` kills `𝔪² + (ℓ)`, so it factors through
 `A := R ⧸ (𝔪² + (ℓ))`, which is local artinian with `𝔪_A² = 0` and `ℓ = 0`,
-hence equicharacteristic; `k` is finite, so `A` carries a coefficient field by
-Hensel-lifting the `(#k − 1)`-st roots of unity — which this module already
-does, `exists_mem_teichmullerRoots_map_eq` above — and `A ≅ k ⊕ CotangentModL R ℓ`
-as a square-zero extension.  The ε-part of `f` on the coefficient field is
-forced to vanish, because a finite field admits no nonzero derivation.  So the
-`k[ε]`-points biject with `Hom_k(CotangentModL R ℓ, k)`, of which there are
-`#k ^ dim`.
+hence equicharacteristic; the coefficient field of `A` then splits it as
+`A ≅ k ⊕ CotangentModL R ℓ`, a square-zero extension.  The ε-part of `f` on the
+coefficient field is forced to vanish, because a finite field admits no nonzero
+derivation.  So the `k[ε]`-points biject with `Hom_k(CotangentModL R ℓ, k)`, of
+which there are `#k ^ dim`.
+
+**CORRECTION TO THE ROUTE, 2026-07-29 — THE COEFFICIENT FIELD NEEDS NEITHER
+HENSEL NOR COMPLETENESS, AND THE POINTER THAT STOOD HERE COULD NOT BE
+FOLLOWED.**  The paragraph above used to end "`k` is finite, so `A` carries a
+coefficient field by Hensel-lifting the `(#k − 1)`-st roots of unity — which
+this module already does, `exists_mem_teichmullerRoots_map_eq` above".  That
+lemma carries `[IsAdicComplete (IsLocalRing.maximalIdeal R) R]`, a hypothesis
+this leaf does NOT have and deliberately does not want, so the citation was not
+usable as written.
+
+It is also not needed.  `A` has characteristic `ℓ` (it surjects onto `k`, and
+`ℓ ∈ 𝔪² + (ℓ)`), so `u ↦ u ^ #k` is the `n`-fold Frobenius `iterateFrobenius A ℓ n`
+with `#k = ℓ ^ n` — a RING HOMOMORPHISM outright.  It kills `𝔪_A`, because
+`𝔪_A² = 0` and `#k ≥ 2`; hence it factors through `A ⧸ 𝔪_A ≅ k` and IS the
+coefficient-field section, for free.  Concretely this makes
+
+  `cotFrob π hπ x := [x − x ^ #k] ∈ CotangentModL R ℓ`
+
+the universal `π`-derivation (`cotFrob_add`, `cotFrob_mul`, `cotFrob_one`,
+`cotFrob_algebraMap` above), and `cotFrob_coe` says it restricts to the quotient
+map on `𝔪` — which is exactly the two round trips of
+`dualNumberPointsEquivCotDual`.  Neither Hensel's lemma nor `teichmullerRoots`
+appears anywhere in the proof.
+
+Two further things the executed proof records, both of which the cut left
+implicit and both of which turned out to be free:
+
+* the `ℤ_ℓ`-compatibility clause of `dualNumberPoints` costs nothing on the
+  derivation side — every `π`-derivation kills the image of `ℤ_[ℓ]`
+  (`cotFrob_algebraMap`), because `a ∈ ℤ_[ℓ]` is an integer plus `ℓ · ℤ_[ℓ]`;
+* `π ∘ algebraMap ℤ_[ℓ] R = algebraMap ℤ_[ℓ] k` is AUTOMATIC and did not have
+  to be hypothesised: any two ring homs `ℤ_[ℓ] →+* S` killing `ℓ` agree
+  (`padicInt_ringHom_ext` above), since both factor through the prime field.
 
 **WHY `IsNoetherianRing` IS LOAD-BEARING, AND THE COUNTEREXAMPLE IF IT IS
 DROPPED.**  `cotangentFinrankModL` is a `Module.finrank`, which is `0` by
@@ -20445,8 +21695,8 @@ it `π` could be a map onto a proper subfield and the count would be wrong. -/
 theorem card_dualNumberPoints_eq_pow_cotangentFinrankModL
     (R : Type w) [CommRing R] [IsLocalRing R] [IsNoetherianRing R] [Algebra ℤ_[ℓ] R]
     (π : R →+* k) (hπ : Function.Surjective π) :
-    Nat.card (dualNumberPoints (ℓ := ℓ) R π) = Nat.card k ^ cotangentFinrankModL R ℓ :=
-  sorry
+    Nat.card (dualNumberPoints (ℓ := ℓ) R π) = Nat.card k ^ cotangentFinrankModL R ℓ := by
+  rw [Nat.card_congr (dualNumberPointsEquivCotDual ℓ π hπ), card_cotDual π hπ]
 
 /-- **Greenberg–Wiles: `#Ш¹_S(ad⁰(1)) ≤ #{k[ε]-points of D.R}`** (sorry leaf,
 cut out 2026-07-27 as the ARITHMETIC half of
@@ -20682,6 +21932,39 @@ looks safe.
   addition, i.e. it needs the inverse direction of the degree-`1` dictionary
   (see the corrected machinery note above), so it does not dodge the
   infrastructure, it renames it.
+
+  **AMENDED 2026-07-30 — THIS AXIS IS REOPENED, because the ground on which it
+  was rejected was removed by the THIRD RE-CUT later the same day, and nobody
+  noticed the interaction.**  The objection is precisely that the middle object
+  needs a `Module k` structure, hence cocycle addition, hence the unbuilt inverse
+  direction of the degree-`1` dictionary.  That is a valid objection to the
+  `finrank` phrasing this verdict was written against — dimensions require a
+  vector space.  It does **not** apply to the statement as it now reads: with
+  `Nat.card` on BOTH sides, the middle object is only ever COUNTED, so the seam
+  can be a bijection of bare sets and no module structure on it is wanted.  This
+  is the same reason the third re-cut let the commutative-algebra half leave
+  through `card_dualNumberPoints_eq_pow_cotangentFinrankModL`, applied one step
+  further left; note it is an instance of the shape CLAUDE.md records as
+  TWO INDIVIDUALLY-CORRECT EDITS composing badly, except that here the
+  composition is benign and what went stale is a REJECTION rather than a proof.
+
+  What the reopened axis buys, and what it does not.  It peels off the
+  pro-representability bookkeeping as a GATE-FREE half — `#{hardly ramified
+  deformations to k[ε]}/∼ = #(dualNumberPoints D.R D.π)`, which is `hu` unwound
+  against `D' .R = DualNumber k`, `D'.π = TrivSqZeroExt.fst` (exactly the
+  specialisation `dualNumberPoints`' own docstring says it was shaped for), with
+  no cup product, no local invariant map and no Selmer group.  It does NOT
+  shorten the arithmetic half, which still contains the tangent identification
+  `#H¹_L(ad⁰) = #{deformations to k[ε]}/∼` and Greenberg–Wiles, and therefore
+  still sits behind THE GATE below.  So this is a peel, not a dodge — but it is a
+  gate-free peel, which is more than the other two axes offer, and a successor
+  should price it before assuming this leaf is atomic.  Two costs to budget
+  honestly: the quotient by strict equivalence has to be DEFINED, and the
+  push-forward of `D.ρ` along a point `f : D.R → k[ε]` has to be shown hardly
+  ramified for the correspondence to be onto — which is the clause CLAUDE.md
+  warns is FALSE in its naive "a lift of a hardly ramified representation is
+  hardly ramified" form, so it must be proved for push-forwards specifically and
+  not quoted.
 * *Insert the Selmer group.* Rejected already, one section above
   `adZeroTwistRep`, and for a reason that still stands: quantifying over
   arbitrary local conditions `L` makes the middle statement FALSE (take
@@ -20717,6 +22000,103 @@ hypothesis to lean on, and adding one would be restating the target to make it
 provable. The transplantable part is the DESCRIPTION of the dual Selmer group,
 not the hypothesis. Note also that `Patching.lean` is DOWNSTREAM of this module,
 so nothing there is consumable here; a shared version would have to be hoisted.
+
+**THE DODGE WAS READ, NOT MERELY CITED, ON 2026-07-30 — AND THERE IS NOTHING
+LEFT TO TRANSPLANT, BECAUSE THIS LEAF ALREADY HAS THE WHOLE BENEFIT OF IT.**
+(Recorded by the owner of the nine-term cut of
+`exists_poitouTateExactness_sha2_sha1Twist` above, who read
+`Patching.lean`'s `DualSelmerVocabulary` section — `h1TwistUnramified`,
+`h1TwistLocalKer`, `mem_h1TwistUnramified`, `h1TwistLocalKer_anti` — precisely
+because this paragraph calls it the cheapest lead in the subtree.)  Two findings,
+and the second is the one that saves a successor an afternoon.
+
+* The transplantable half — *describe the dual-Selmer source by an explicit
+  vanishing condition instead of as an orthogonal complement* — is ALREADY DONE
+  here, and was done before the dodge was noticed.  `Sha1Twist` above is
+  `⨅ v ∈ S, ker (locResTwist1 …)`, an explicit condition; no `L^⊥` occurs in this
+  leaf's statement, and none is needed to state it.  What `Patching.lean` gets
+  from the dodge that this leaf cannot is the other half — the dual-Selmer
+  VANISHING, which it takes as a hypothesis (the global conjunct of
+  `IsTaylorWilesPrimeSet`).  This leaf's consumer holds no such hypothesis, so
+  adding one would be restating the target to make it provable.  So the paragraph
+  above is right that the dodge does not transplant, but the reason recorded there
+  — "this leaf's consumer holds no dual-Selmer hypothesis to lean on" — understates
+  it: there is also no remaining benefit to import.
+* **Correction to the framing of THE GATE above.**  It says `H¹_{L^⊥}` "cannot even
+  be STATED without" the local Tate pairing, and reasons from that to the shared
+  gate.  The conclusion is right and the reason is not the operative one: this
+  leaf's statement names no `L^⊥` at all.  The gate is the PROOF — the
+  Greenberg–Wiles formula, whose local term is the aggregate
+  `Σ_v (dim L_v − dim H⁰(ℚ_v, ad⁰))` together with the archimedean `−1`.
+* **And that aggregate is exactly why the nine-term cut of the sibling leaf does
+  NOT have an analogue here.**  That cut worked because the local data entered the
+  Poitou–Tate statement only through `range θ`, an IMAGE, which has the intrinsic
+  global description `(Ш¹)ᵃⁿⁿ`.  Here the local data enters as a SUM OF LOCAL
+  DIMENSIONS, and a numeric aggregate over `v ∈ S` has no description that avoids
+  naming the local conditions `L_v` as objects.  So restating this leaf cannot
+  eliminate them, and a successor should not spend time looking for a way: the
+  local computations at `2`, at `ℓ` and at `∞` (Washington, in
+  Cornell–Silverman–Stevens) have to be built, and they are what the local Tate
+  pairing is for.
+
+**FAITHFULNESS RE-AUDIT No. 2, 2026-07-30 — THE COMPOSITE AUDIT ABOVE WAS VOID,
+AND THIS ONE REPLACES IT.  VERDICT: FAITHFUL.**
+
+Why it was void, which is a project rule and not a quibble: that audit says it
+was run because the statement had changed TWICE, and its four checks are all
+phrased against a right-hand side of `cotangentFinrankModL D.R ℓ`.  The statement
+was then re-cut a THIRD time, the same day, into a `Nat.card` of `k[ε]`-points —
+so the audit on the page certified a statement that no longer exists, while its
+LABEL survived to say the leaf had been checked.  CLAUDE.md records exactly this
+shape (`exists_artinDivisorNormIndex_le_ray_class`): two individually-correct
+edits composing into a false leaf, with an honest audit attached.  So the earlier
+audit is re-run below against the statement AS IT NOW READS, not inherited.
+
+**The new hazard the third re-cut introduces is the `Nat.card` JUNK VALUE**, and
+it is the only genuinely new thing to check: `Nat.card` is `0` on an infinite
+type, so each side has to be shown to be a real count.  The two sides fail
+differently, and only one direction is dangerous.
+
+* *RIGHT side — a junk `0` here would make the leaf FALSE, not vacuous.*  It
+  would read `Nat.card Ш¹_S(ad⁰(1)) ≤ 0`, i.e. that `Ш¹` is empty or infinite;
+  `Ш¹` is a `k`-submodule, so it contains `0` and is nonempty, and it is finite
+  (next bullet) — so a junk right side would refute the leaf outright.  **It
+  cannot occur.**  `card_dualNumberPoints_eq_pow_cotangentFinrankModL` above is
+  PROVEN and gives `Nat.card (dualNumberPoints R π) = Nat.card k ^
+  cotangentFinrankModL R ℓ` for `R` commutative, local, Noetherian, a
+  `ℤ_ℓ`-algebra, with `π` surjective — and `HardlyRamifiedDeformation` supplies
+  every one of those (`commRing`, `isLocalRing`, `isNoetherianRing`, `algebra`,
+  `π_surjective`).  `k` is a finite field, so `Nat.card k ≥ 2` and the right side
+  is a positive power, hence `≥ 1`.  Never junk.
+* *LEFT side — a junk `0` here would make the leaf VACUOUS but still true*
+  (`0 ≤` a positive number), which is the milder failure and would merely mean
+  the leaf carries no content.  It also cannot occur:
+  `finiteDimensional_h1_adZeroTwistRestricted` above (PROVEN) makes
+  `continuousCohomology 1 (adZeroTwistRestricted ℓ ρbar S)` finite-dimensional
+  over the finite field `k`, and `Sha1Twist` is a submodule of it, hence finite.
+
+**AND THE THIRD RE-CUT IS FAITHFULNESS-NEUTRAL, which is why the four checks of
+the void audit do transfer after all — but for a reason nobody had written
+down.**  `Sha1Twist` is a `k`-vector space, so `Nat.card Ш¹ = (Nat.card k) ^
+dim_k Ш¹`; and by the proven count above the right side is
+`(Nat.card k) ^ cotangentFinrankModL D.R ℓ`.  Since `Nat.card k ≥ 2`, the map
+`n ↦ (Nat.card k) ^ n` is strictly monotone, so this leaf is **equivalent** —
+not merely implied by, and not merely implying — the previous `finrank` form
+`dim_k Ш¹_S(ad⁰(1)) ≤ cotangentFinrankModL D.R ℓ`.  The re-cut exponentiated both
+sides of the same inequality.  So the void audit's substantive findings (that
+`D.R` is the unframed fixed-determinant ring and both mis-readings enlarge the
+RIGHT side; that `cotangent = 0` is the ordinary rigid case and not junk; that
+`hirr` is load-bearing twice over via `h⁰(ℚ, ad⁰)` and `h⁰(ℚ, ad⁰(1))`; that the
+archimedean convention is correct and must not be "repaired") all stand
+unchanged, and the degenerate case now reads `Nat.card Ш¹ ≤ 1`, i.e. `Ш¹ = 0`,
+which is what Greenberg–Wiles gives there.
+
+**A successor should NOT read this as licence to restate the leaf back into
+`finrank` form.**  The `Nat.card` form is what lets the commutative-algebra half
+leave through `card_dualNumberPoints_eq_pow_cotangentFinrankModL`, which is
+PROVEN; reverting would re-absorb that.  The equivalence above is recorded so
+that literature stated in dimensions can be applied to it without a further
+re-cut — and, per the rule, a fourth re-cut would void this audit too.
 
 **CIRCULARITY GUARD — INHERITED VERBATIM, and it binds this leaf** exactly as
 it binds `rank_sha2_le_rank_sha1_twist` above; see there for the BANNED INPUTS
