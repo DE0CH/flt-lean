@@ -13324,7 +13324,135 @@ The existential is per-`ℓ` and appears identically in the hypothesis and in th
 conclusion, so the leaf says exactly what it said before: the family handed back
 carries the SAME pin.  A prover taking `u := v` may take the same constant it was
 given, and in the vacuous-pin regime `u := fun _ => 𝟙 J` still works with any `e`
-whatever. -/
+whatever.
+
+## WHERE A PROOF FROM THE PIN ALONE STOPS, worked out 2026-07-31 so the next
+## owner does not re-derive it
+
+Three cheap witnesses were tried and all three fail, and the reason is the same
+each time, so it is worth stating once.
+
+* `u := fun _ => 𝟙 J` needs `aj [d] = ∑_k aj [d/D_k] + e` at every pinned `d`,
+  i.e. `∑_k aj[d/D_k] − aj[d]` constant in `d` — false unless the pin is vacuous.
+* `u := v` reduces the leaf to `v ℓ ≫ v ℓ' = v ℓ' ≫ v ℓ`, an equality of
+  MORPHISMS.  The pin controls `v ℓ` only on the relative points `aj [d]`, so
+  closing this needs the density statement "differences of `ℚ̄`-points classified
+  by `Gamma1Datum` generate `J_1(N)(ℚ̄)`" plus a separatedness step — the same
+  input `X0.lean`'s twin names, and neither is in the tree.
+* Iterating the recipe does not even get off the ground FORMALLY, which is the
+  part worth recording.  `RelPoint.post (v ℓ ≫ v ℓ') x = post (v ℓ') (post (v ℓ) x)`,
+  and `_v_add` does push `post (v ℓ')` through the sum, so the double sum
+  `∑_k ∑_j aj[(d/D_k)/D'_j]` is the right shape.  But the recipe is an
+  IMPLICATION whose antecedents the caller must discharge: to read it at `dq k`
+  one must EXHIBIT a family `dq'`, `iso' : ∀ j, IsGamma1Isogeny N ℓ' (dq k) (dq' j)`
+  that is injective on kernels and exhausts the cyclic `ℓ'`-subgroups.  Producing
+  that is the `IsGamma1Isogeny`-inhabitation question recorded on
+  `IsModularHeckeActionGamma1`, which the SETTLING CHECK of 2026-07-28 ran and
+  did not close.  So the symmetry of the double sum — the actual mathematics,
+  `gcd(ℓ, ℓ') = 1` making `D + D'` cyclic of order `ℓℓ'` with a unique
+  decomposition — is never reached.
+
+So this leaf is blocked on the SAME missing object as its `Γ₀` twin and as
+`exists_heckeCorrespondenceFamilyGamma1`: the correspondence scheme `X_1(N, ℓ)`
+with its two degeneracy maps, together with a morphism-level `IsGamma1Isogeny`.
+It adds no new missing theory, and it will close for free once that lands.
+Dispatching an owner at it BEFORE then is a wasted worker.
+
+## THE ATTACK PLAN, AND TWO CORRECTIONS TO THE SURVEY ABOVE (same day, second
+## owner of this worktree)
+
+The survey is right that the leaf is blocked and right about which object
+blocks it.  Two of its incidental claims are not right, and each changes what
+the next owner should write.
+
+**(1) MORPHISM-LEVEL RIGIDITY IS ALREADY IN THE TREE.  It is the UNIQUENESS
+half of `IsJacobianOf.universal`, it needs no separatedness input, and it is
+eleven lines.**  The survey says closing `u := v` needs the density statement
+"plus a separatedness step — the same input `X0.lean`'s twin names, and neither
+is in the tree".  The separatedness step is not needed.  `universal` returns an
+`∃!`, and that already gives
+
+> if `w w' : J ⟶ J` satisfy `w ≫ jstr = jstr` and `w' ≫ jstr = jstr`, `w` is
+> `IsAdditiveOn`, and `jac.ajHom ≫ w = jac.ajHom ≫ w'`, then `w = w'`.
+
+VERIFIED GREEN in a scratch module against this file on 2026-07-31, and
+reproduced here so the next owner pastes rather than re-derives it:
+
+    obtain ⟨u, -, huniq⟩ :=
+      jac.universal ab (fun g x => RelPoint.post w hw (jac.aj g x))
+        (by
+          intro T' T p g g' hg x
+          rw [jac.aj_pre p hg x]
+          exact Subtype.ext (Category.assoc _ _ _))
+        (by rw [jac.aj_base]; exact hadd.postZero _)
+    rw [huniq w ⟨hw, fun g x => rfl⟩,
+        huniq w' ⟨hw', fun g x => by
+          show (jac.aj g x).1 ≫ w = (jac.aj g x).1 ≫ w'
+          rw [jac.aj_val g x, Category.assoc, Category.assoc, h]⟩]
+
+(`IsJacobianOf.aj_val` — `(jac.aj g x).1 = x.1 ≫ jac.ajHom` — is what turns the
+hypothesis on `ajHom` into the second clause of `universal` at `w'`; it is
+PROVEN in `X0.lean` from `aj_pre` alone.  Note only `w` need be additive: it is
+used solely to make the family pointed, via `IsAdditiveOn.postZero`.)
+
+So the gap is NOT "the tree has no rigidity".  It is exactly one implication,
+and it is the only geometric input the whole argument still wants:
+
+> **(D)** if two additive endomorphisms of `J` agree on the Abel–Jacobi images
+> of the `ℚ̄`-points classified by `Gamma1Datum N (Spec ℚ̄)`, they agree after
+> `jac.ajHom` — i.e. those points are schematically dense in `X`.
+
+`(D)` is TRUE (`Y_1(N)` is open dense in `X_1(N)`, and `IsSchemeTheoreticallyDominant`
+is in the mathlib pin, so it can be *written* here rather than being missing
+theory).  It is also exactly what `X0.lean`'s twin wants, so it should be stated
+level-structure-free and shared.
+
+**(2) THE ARGUMENT MUST BE RUN ON DIFFERENCES `aj[d] − aj[d']`, NEVER ON
+`aj[d]` ALONE.**  This is a trap that is invisible until the constants are
+written out, and an attempt that ignores it stalls on a goal that looks like a
+missing lemma and is in fact an unprovable statement.  Iterating the recipe
+gives
+
+    post (v ℓ ≫ v ℓ') (aj[d])
+      = ∑_{k,j} aj[(d/D_k)/D'_j] + (ℓ+1)·e_{ℓ'} + post (v ℓ') e_ℓ
+
+and the mirror image with `ℓ ↔ ℓ'`.  The double sums agree — that is the real
+mathematics, `gcd(ℓ,ℓ') = 1`.  The CONSTANTS do not visibly agree; one would
+have to prove
+
+    (ℓ+1)·e_{ℓ'} + post (v ℓ') e_ℓ = (ℓ'+1)·e_ℓ + post (v ℓ) e_{ℓ'} .
+
+For the honest Hecke family this is true, because `e_ℓ = −∑_k aj[o/D_k]` — but
+that identity is read off the recipe **at the base point**, and `o` IS NOT A
+CLASSIFIED POINT.  At `Γ₁` and positive genus `o` is a rational CUSP (Mazur —
+the same fact the falsity witness on `exists_heckeCorrespondenceFamilyGamma1`
+turns on), while `Gamma1Datum` classifies elliptic curves with a point of exact
+order `N`; the cusps are precisely what it cannot reach.  So `e_ℓ` is pinned by
+nothing and the displayed identity is not derivable here.  Note this is a
+`Γ₁`-specific obstruction with the same root as the falsity witness, and it is
+the second time on this leaf that "`o` is a cusp" has changed the answer.
+
+Differencing kills the constants outright — subtract the recipe at `d'` from
+the recipe at `d` and every `e` cancels, at both levels and on both sides,
+because the two families have the same arity `ℓ+1`.  So the shape that closes
+is
+
+    post (v ℓ ≫ v ℓ') (aj[d]) − post (v ℓ ≫ v ℓ') (aj[d'])
+      = post (v ℓ' ≫ v ℓ) (aj[d]) − post (v ℓ' ≫ v ℓ) (aj[d'])
+
+and `(D)` must correspondingly be stated on DIFFERENCES of classified points.
+That is also its honest form: differences of geometric points are what generate
+a Jacobian, and `aj` is `x ↦ [x] − [o]` precisely so that they do.
+
+**THE DECOMPOSITION IS DELIBERATELY NOT WRITTEN.**  When the blocking object
+lands it is three named leaves plus an assembly: `(D)` on differences; the
+inhabitation "for every `d` and every prime `ℓ ∤ N` there are `m`, `dq`, `iso`
+injective on kernels and exhausting the cyclic `ℓ`-subgroups"; and the
+double-sum symmetry
+`∑_{k,j} aj[(d/D_k)/D'_j] = ∑_{j,k} aj[(d/D'_j)/D_k]`.  Landing it NOW trades
+one open leaf for three, none of which is closer than the object all three wait
+on, and the free-floating rule forbids landing them without the assembly that
+consumes them.  Write them in ONE commit WITH the assembly, or not at all. -/
 theorem exists_commutingHeckeAlbaneseFamilyGamma1 (N : ℕ)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (H : IsX1Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
