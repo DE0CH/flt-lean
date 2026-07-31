@@ -33814,6 +33814,22 @@ successor must add. It is a bounded, self-contained piece of local theory over a
 sorry-free base, NOT the multi-module tame-ramification project the withdrawn
 note implied. **Redirect accordingly: do not rebuild `tameCharacter`.**
 
+**DONE 2026-07-31 (second pass), AND STATED CHARACTER-FREE: the relation is now
+`exists_frobLift_conj_pow_mem_wildInertiaGroup`**, ~40 lines above
+`exists_hilbertAuxDiamondGenerators`, in the group-theoretic form
+`∃ Fr, ∀ σ ∈ I_v, Fr σ Fr⁻¹ (σ^{Nv})⁻¹ ∈ P_v` rather than as an identity between
+tame characters. The `θ`-form written above is the classical one and is the wrong
+shape for this file: it forces the consumer to identify ITS character with a
+`tameCharacter v hn hX0 hXn` for some `n` and some `X`, and nothing in the
+hypothesis package supplies that identification. The group-theoretic form needs
+no character at all — apply any homomorphism into a COMMUTATIVE group that kills
+`P_v` and `χ(σ)^{Nv−1} = 1` falls out in one line
+(`pow_natCard_residue_sub_one_eq_one_of_forall_mem_wildInertiaGroup`, PROVEN).
+The `ℓ'`-part of the argument sketched above is likewise now proven
+(`pow_pow_padicValNat_eq_one_of_sub_one_mem_maximalIdeal`), so the whole
+`𝔟_ex ≤ ker diamond` chain is glue and only the CONSTRUCTION of the characters
+remains open, in `exists_hilbertAuxDiamondGeneratorsPinned`.
+
 No cohomology is used here, and `coeff` is deliberately absent: the coefficient
 ring belongs to the generator bound, not to the diamonds.
 
@@ -35579,9 +35595,13 @@ statement about which map `toRuniv` is, so it can only be proven against a
   quotient, and `ex i` is the `ℓ`-valuation of `N w_i − 1` (that is `hexpin`),
   so `Δ_{w_i} ≅ ℤ/ℓ^{ex i}` is its `ℓ`-Sylow. The tame-character interface
   exists and is sorry-free — see the TAME-CHARACTER section of
-  `exists_hilbertAuxDiamondQuotient_of_exponents` above, which also names the
-  one genuinely missing ingredient (the Frobenius relation
-  `θ(F σ F⁻¹) = θ(σ)^{Nw}`). `hker` is the control theorem: killing the
+  `exists_hilbertAuxDiamondQuotient_of_exponents` above. The one ingredient that
+  section named as genuinely missing, the Frobenius relation, was ADDED
+  2026-07-31 as `exists_frobLift_conj_pow_mem_wildInertiaGroup` (group-theoretic
+  form, not the `θ`-identity), and the exponent bound `𝔟_ex ≤ ker diamond` is now
+  proven glue over it; what is still open in that direction is only the
+  CONSTRUCTION of the characters, in `exists_hilbertAuxDiamondGeneratorsPinned`.
+  `hker` is the control theorem: killing the
   diamonds is killing the level raising, so `R_Q ⧸ 𝔫 ≅ R_∅`.
 * **Fujiwara's form of the Taylor–Wiles freeness lemma** — the module `M`, its
   `R_Q`-action, its `Λ`-action through `diamond`, and the coordinate
@@ -36004,12 +36024,16 @@ than repaired.** The tame-character development exists, sorry-free, in
 (`tameCharacter`, `wildInertiaGroup`, `exists_pow_eq_of_mem_wildInertiaGroup`,
 `exists_localInertia_pow_eq_of_wildInertiaGroup_le_ker`) and is reachable in THIS
 file through a fully `public` import chain — verified by compilation. The full
-correction, with the derivation and with the one ingredient that genuinely IS
-missing (the Frobenius relation `θ(FσF⁻¹) = θ(σ)^{Nw}`, which is where the
+correction, with the derivation and with the one ingredient that genuinely WAS
+missing (the Frobenius relation, which is where the
 exponent `ℓ^{v_ℓ(Nw−1)}` comes from — inertia alone cannot bound `χ_w|_{I_w}`,
 since the `ℓ`-part of the tame quotient is `ℤ_ℓ`), is in the TAME-CHARACTER
 section of `exists_hilbertAuxDiamondQuotient_of_exponents` above. Read it before
-concluding this seam is expensive to close.
+concluding this seam is expensive to close. **That relation was ADDED 2026-07-31
+as `exists_frobLift_conj_pow_mem_wildInertiaGroup`** — in the group-theoretic
+form `Fr σ Fr⁻¹ ≡ σ^{Nw}` mod wild inertia rather than as the `θ`-identity, so
+that no consumer has to identify its own character with a `tameCharacter` — and
+the exponent bound is now proven glue over it.
 
 Until that relation is added the hazard would stay as recorded here — an open
 check, not a refutation, since nothing in `h𝒟Q` and `hQ` has been shown to
@@ -36116,10 +36140,12 @@ are all in this one leaf because they are all statements about `diamond`:
    the `ℓ`-valuation of `N w_i − 1`, so `Δ_{w_i} ≅ ℤ/ℓ^{ex i}` is its
    `ℓ`-Sylow. The tame-character interface this needs EXISTS and is sorry-free —
    see the TAME-CHARACTER section of
-   `exists_hilbertAuxDiamondQuotient_of_exponents` above, which also names the
-   one genuinely missing ingredient (the Frobenius relation
-   `θ(F σ F⁻¹) = θ(σ)^{Nw}`, which is where the exponent `ℓ^{v_ℓ(Nw − 1)}` comes
-   from at all — inertia alone cannot bound `χ_w|_{I_w}`). `hker` is the control
+   `exists_hilbertAuxDiamondQuotient_of_exponents` above. The one ingredient it
+   named as genuinely missing — the Frobenius relation, which is where the
+   exponent `ℓ^{v_ℓ(Nw − 1)}` comes from at all, inertia alone being unable to
+   bound `χ_w|_{I_w}` — was ADDED 2026-07-31 as
+   `exists_frobLift_conj_pow_mem_wildInertiaGroup`, and the exponent bound is now
+   proven glue over it. `hker` is the control
    theorem: killing the diamonds is killing the level raising, so
    `R_Q ⧸ 𝔫 ≅ R_∅`.
 1. **Fujiwara's form of the Taylor–Wiles freeness lemma** — the module `M`
