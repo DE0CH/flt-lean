@@ -189,6 +189,12 @@ public import Mathlib.RingTheory.Depth.Rees
 public import Mathlib.RingTheory.KrullDimension.NonZeroDivisors
 public import Mathlib.RingTheory.Nakayama
 public import Mathlib.RingTheory.Ideal.Colon
+-- `ker_multIdeal_le_span_idealTensorComparison` (10.99.12/13) needs exactly two
+-- more: `Ideal.Over` for `Algebra (R ⧸ p) (S ⧸ pS)` together with its scalar
+-- tower, and `Basis.VectorSpace` for `Module.Basis.ofVectorSpace` — a `k`-basis
+-- of `C_j / 𝔪 C_j` is the whole content of [Stacks 10.99.12].
+public import Mathlib.RingTheory.Ideal.Over
+public import Mathlib.LinearAlgebra.Basis.VectorSpace
 -- The going-down half of `ringKrullDim_stalk_eq_of_isFinite_endo` below.
 -- `Ideal.GoingDown` supplies `Algebra.HasGoingDown`, which occurs in the
 -- SIGNATURE of the leaf `hasGoingDown_stalkMap_of_isFinite_endo`, so it is
@@ -4129,7 +4135,363 @@ theorem injective_multIdeal_of_ker_le_span {R' N A : Type u} [CommRing R'] [Comm
         rw [LinearMap.lTensor_comp]; rfl
     _ = 0 := by rw [h5, map_zero]
 
-/-- **THE `Tor`-THEORETIC CORE OF HALF B, WITH THE LOCALIZATION REMOVED** (sorry leaf, cut
+/-! #### THE TAUTOLOGICAL FREE PRESENTATION, AND THE DIMENSION SHIFT ON IT
+
+The block below is the machinery of `ker_multIdeal_le_span_idealTensorComparison` (10.99.13
++ 10.99.12), and it is written against ONE presentation, chosen so that no base-change
+transport is ever needed:
+
+* `finsuppPresentation : (Di →₀ Ci) ↠ Di` is the tautological free presentation, the free
+  `C_i`-module on the SET `Di`;
+* `finsuppPresentationBase : (Di →₀ Cj) ↠ Cj ⊗[Ci] Di` is its base change — written
+  DIRECTLY as a `Finsupp` on the same index type rather than as `Cj ⊗[Ci] (Di →₀ Ci)`, which
+  is what keeps the coordinate argument in `mem_sup_span_finsuppBaseChange_of_coeff_mem`
+  free of `Basis.baseChange` bookkeeping;
+* `finsuppBaseChange` and `finsuppIdealComparison` are the two comparison maps between the
+  `C_i`- and `C_j`-levels.
+
+`ker_finsuppPresentationBase` — that `ker πj` is the `C_j`-span of `ι '' ker π` — IS right
+exactness of `Cj ⊗[Ci] −`, and it is proved here from the universal property directly: the
+inverse map `Cj ⊗[Ci] Di → (Di →₀ Cj) ⧸ span` is `AlgebraTensorModule.lift` of `d ↦ [single
+d 1]`, whose two well-definedness obligations are exactly the two families of relations
+`single (d + d') 1 − single d 1 − single d' 1` and `single (a • d) 1 − a • single d 1`, both
+visibly in `ker π`.  Going through mathlib's `lTensor_exact` instead would first require
+identifying `(Di →₀ Cj)` with `Cj ⊗[Ci] (Di →₀ Ci)`, which costs more than this proof.
+
+The DIMENSION SHIFT that the leaf's docstring says to state first is not stated as a
+separate isomorphism here, and deliberately: on THIS presentation it degenerates. `↥I ⊗ F →
+F` is injective because `Finsupp` is free (`injective_multIdeal_of_flat`), and its image is
+cut out COEFFICIENTWISE (`multIdeal_finsupp_apply_mem` and `mem_range_multIdeal_finsupp`),
+so `(K ∩ IF)/IK` never has to be built — the argument works with the tensors themselves and
+transports along `multIdeal`, which is injective. That is the one simplification that made
+this leaf tractable. -/
+
+/-- The tautological free presentation `π : (Di →₀ Ci) ↠ Di` — the free `Ci`-module on the
+SET `Di`, sending `single d c` to `c • d`. -/
+noncomputable def finsuppPresentation {Ci Di : Type u} [CommRing Ci] [CommRing Di]
+    [Algebra Ci Di] : (Di →₀ Ci) →ₗ[Ci] Di := Finsupp.linearCombination Ci id
+
+/-- Its base change `πj : (Di →₀ Cj) ↠ Cj ⊗[Ci] Di`, written directly on `Finsupp`. -/
+noncomputable def finsuppPresentationBase {Ci Cj Di : Type u} [CommRing Ci] [CommRing Cj]
+    [CommRing Di] [Algebra Ci Cj] [Algebra Ci Di] :
+    (Di →₀ Cj) →ₗ[Cj] Cj ⊗[Ci] Di :=
+  Finsupp.linearCombination Cj (fun d => (1 : Cj) ⊗ₜ[Ci] d)
+
+/-- The coefficientwise comparison `(Di →₀ Ci) → (Di →₀ Cj)`. -/
+noncomputable def finsuppBaseChange {Ci Cj Di : Type u} [CommRing Ci] [CommRing Cj]
+    [Algebra Ci Cj] : (Di →₀ Ci) →ₗ[Ci] (Di →₀ Cj) :=
+  Finsupp.mapRange.linearMap (Algebra.linearMap Ci Cj)
+
+@[simp] lemma finsuppPresentation_single {Ci Di : Type u} [CommRing Ci] [CommRing Di]
+    [Algebra Ci Di] (d : Di) (c : Ci) :
+    finsuppPresentation (Finsupp.single d c) = c • d := by
+  simp [finsuppPresentation]
+
+@[simp] lemma finsuppPresentationBase_single {Ci Cj Di : Type u} [CommRing Ci] [CommRing Cj]
+    [CommRing Di] [Algebra Ci Cj] [Algebra Ci Di] (d : Di) (c : Cj) :
+    finsuppPresentationBase (Ci := Ci) (Finsupp.single d c) = c ⊗ₜ[Ci] d := by
+  simp only [finsuppPresentationBase, Finsupp.linearCombination_single]
+  rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+
+@[simp] lemma finsuppBaseChange_apply {Ci Cj Di : Type u} [CommRing Ci] [CommRing Cj]
+    [Algebra Ci Cj] (x : Di →₀ Ci) (d : Di) :
+    finsuppBaseChange (Cj := Cj) x d = algebraMap Ci Cj (x d) := rfl
+
+@[simp] lemma finsuppBaseChange_single {Ci Cj Di : Type u} [CommRing Ci] [CommRing Cj]
+    [Algebra Ci Cj] (d : Di) (c : Ci) :
+    finsuppBaseChange (Cj := Cj) (Finsupp.single d c)
+      = Finsupp.single d (algebraMap Ci Cj c) := by
+  ext d'; by_cases h : d = d' <;> simp [h]
+
+lemma finsuppPresentationBase_surjective {Ci Cj Di : Type u} [CommRing Ci] [CommRing Cj]
+    [CommRing Di] [Algebra Ci Cj] [Algebra Ci Di] :
+    Function.Surjective (finsuppPresentationBase (Ci := Ci) (Cj := Cj) (Di := Di)) := by
+  intro n
+  induction n with
+  | zero => exact ⟨0, map_zero _⟩
+  | tmul c d => exact ⟨Finsupp.single d c, by simp⟩
+  | add x y hx hy =>
+      obtain ⟨a, ha⟩ := hx
+      obtain ⟨b, hb⟩ := hy
+      exact ⟨a + b, by simp [ha, hb]⟩
+
+lemma finsuppPresentationBase_finsuppBaseChange {Ci Cj Di : Type u} [CommRing Ci]
+    [CommRing Cj] [CommRing Di] [Algebra Ci Cj] [Algebra Ci Di] (x : Di →₀ Ci) :
+    finsuppPresentationBase (Cj := Cj) (finsuppBaseChange x)
+      = (1 : Cj) ⊗ₜ[Ci] (finsuppPresentation x) := by
+  induction x using Finsupp.induction_linear with
+  | zero => simp
+  | add x y hx hy => simp [hx, hy, TensorProduct.tmul_add]
+  | single d c =>
+      simp only [finsuppBaseChange_single, finsuppPresentationBase_single,
+        finsuppPresentation_single]
+      rw [← TensorProduct.smul_tmul]
+      congr 1
+      simp [Algebra.smul_def]
+
+/-- **RIGHT EXACTNESS OF `C_j ⊗_{C_i} −` ON THE TAUTOLOGICAL PRESENTATION**: `ker πj` is the
+`C_j`-span of `ι '' ker π`.  Proved from the universal property of the tensor product — see
+the section note above for why, and not through `lTensor_exact`. -/
+lemma ker_finsuppPresentationBase {Ci Cj Di : Type u} [CommRing Ci] [CommRing Cj]
+    [CommRing Di] [Algebra Ci Cj] [Algebra Ci Di] :
+    LinearMap.ker (finsuppPresentationBase (Ci := Ci) (Cj := Cj) (Di := Di))
+      = Submodule.span Cj (finsuppBaseChange (Cj := Cj) ''
+          ((LinearMap.ker (finsuppPresentation (Ci := Ci) (Di := Di)) :
+            Submodule Ci (Di →₀ Ci)) : Set (Di →₀ Ci))) := by
+  set Sp : Submodule Cj (Di →₀ Cj) :=
+    Submodule.span Cj (finsuppBaseChange (Cj := Cj) ''
+      ((LinearMap.ker (finsuppPresentation (Ci := Ci) (Di := Di)) :
+        Submodule Ci (Di →₀ Ci)) : Set (Di →₀ Ci))) with hSp
+  have hge : Sp ≤ LinearMap.ker (finsuppPresentationBase (Ci := Ci) (Cj := Cj) (Di := Di)) := by
+    rw [hSp, Submodule.span_le]
+    rintro _ ⟨x, hx, rfl⟩
+    simp only [SetLike.mem_coe, LinearMap.mem_ker, finsuppPresentationBase_finsuppBaseChange]
+    rw [LinearMap.mem_ker.mp hx, TensorProduct.tmul_zero]
+  refine le_antisymm ?_ hge
+  have hmem : ∀ x : Di →₀ Ci, finsuppPresentation x = 0 →
+      finsuppBaseChange (Cj := Cj) x ∈ Sp := by
+    intro x hx
+    rw [hSp]
+    exact Submodule.subset_span (Set.mem_image_of_mem _ (LinearMap.mem_ker.mpr hx))
+  have hadd : ∀ d d' : Di,
+      Finsupp.single (d + d') (1 : Cj)
+        - (Finsupp.single d (1 : Cj) + Finsupp.single d' (1 : Cj)) ∈ Sp := by
+    intro d d'
+    have h := hmem (Finsupp.single (d + d') (1 : Ci)
+      - (Finsupp.single d (1 : Ci) + Finsupp.single d' (1 : Ci))) (by simp)
+    simpa using h
+  have hsmul : ∀ (a : Ci) (d : Di),
+      Finsupp.single (a • d) (1 : Cj) - a • Finsupp.single d (1 : Cj) ∈ Sp := by
+    intro a d
+    have h := hmem (Finsupp.single (a • d) (1 : Ci) - a • Finsupp.single d (1 : Ci)) (by simp)
+    simpa [Algebra.algebraMap_eq_smul_one] using h
+  let g : Di →ₗ[Ci] ((Di →₀ Cj) ⧸ Sp) :=
+    { toFun := fun d => Submodule.Quotient.mk (Finsupp.single d (1 : Cj))
+      map_add' := fun d d' => by
+        rw [← Submodule.Quotient.mk_add, Submodule.Quotient.eq]
+        exact hadd d d'
+      map_smul' := fun a d => by
+        rw [RingHom.id_apply, ← Submodule.Quotient.mk_smul, Submodule.Quotient.eq]
+        exact hsmul a d }
+  let θ : (Cj ⊗[Ci] Di) →ₗ[Cj] ((Di →₀ Cj) ⧸ Sp) :=
+    TensorProduct.AlgebraTensorModule.lift
+      (LinearMap.toSpanSingleton Cj (Di →ₗ[Ci] ((Di →₀ Cj) ⧸ Sp)) g)
+  have hθ : ∀ z : Di →₀ Cj,
+      θ (finsuppPresentationBase (Ci := Ci) z) = Submodule.Quotient.mk z := by
+    intro z
+    induction z using Finsupp.induction_linear with
+    | zero => simp
+    | add x y hx hy => rw [map_add, map_add, hx, hy, Submodule.Quotient.mk_add]
+    | single d c =>
+        show θ (finsuppPresentationBase (Ci := Ci) (Finsupp.single d c)) = _
+        rw [finsuppPresentationBase_single]
+        show (c • g) d = _
+        rw [LinearMap.smul_apply]
+        show c • Submodule.Quotient.mk (Finsupp.single d (1 : Cj)) = _
+        rw [← Submodule.Quotient.mk_smul, Finsupp.smul_single, smul_eq_mul, mul_one]
+  intro z hz
+  have hq := hθ z
+  rw [LinearMap.mem_ker.mp hz, map_zero] at hq
+  exact (Submodule.Quotient.mk_eq_zero _).mp hq.symm
+
+/-- The comparison map on the two presentations, `↥𝔪 ⊗[Ci] F → ↥(𝔪 Cj) ⊗[Cj] Fj`. -/
+noncomputable def finsuppIdealComparison {Ci Cj Di : Type u} [CommRing Ci] [CommRing Cj]
+    [Algebra Ci Cj] (𝔪 : Ideal Ci) :
+    (↥𝔪 ⊗[Ci] (Di →₀ Ci)) →ₗ[Ci]
+      (↥(𝔪.map (algebraMap Ci Cj)) ⊗[Cj] (Di →₀ Cj)) :=
+  (TensorProduct.mapOfCompatibleSMul Cj Ci Ci
+      (↥(𝔪.map (algebraMap Ci Cj))) (Di →₀ Cj)).comp
+    (TensorProduct.map (idealMapRestrict 𝔪) (finsuppBaseChange (Cj := Cj) (Di := Di)))
+
+@[simp] lemma finsuppIdealComparison_tmul {Ci Cj Di : Type u} [CommRing Ci] [CommRing Cj]
+    [Algebra Ci Cj] (𝔪 : Ideal Ci) (y : ↥𝔪) (x : Di →₀ Ci) :
+    finsuppIdealComparison (Cj := Cj) 𝔪 (y ⊗ₜ[Ci] x)
+      = (idealMapRestrict (Cj := Cj) 𝔪 y) ⊗ₜ[Cj] (finsuppBaseChange (Cj := Cj) x) := rfl
+
+lemma idealMapRestrict_coe {Ci Cj : Type u} [CommRing Ci] [CommRing Cj]
+    [Algebra Ci Cj] (𝔪 : Ideal Ci) (x : ↥𝔪) :
+    ((idealMapRestrict (Cj := Cj) 𝔪 x : ↥(𝔪.map (algebraMap Ci Cj))) : Cj)
+      = algebraMap Ci Cj x := rfl
+
+/-- `multIdeal I P` is injective when `P` is FLAT — this is the only role freeness of the
+presentation plays, and it is what lets the whole argument stay at the level of tensors
+instead of building `(K ∩ IF)/IK`. -/
+lemma injective_multIdeal_of_flat {R : Type u} [CommRing R] (I : Ideal R) (P : Type u)
+    [AddCommGroup P] [Module R P] [Module.Flat R P] :
+    Function.Injective (multIdeal I P) := by
+  intro x y hxy
+  refine Module.Flat.rTensor_preserves_injective_linearMap (M := P) I.subtype
+    (Submodule.injective_subtype I) ?_
+  exact (TensorProduct.lid R P).injective hxy
+
+/-- The image of `multIdeal I (α →₀ R)` is cut out COEFFICIENTWISE, half one. -/
+lemma multIdeal_finsupp_apply_mem {R : Type u} [CommRing R] {α : Type u} (I : Ideal R)
+    (x : ↥I ⊗[R] (α →₀ R)) (a : α) : multIdeal I (α →₀ R) x a ∈ I := by
+  induction x with
+  | zero => simp
+  | tmul y f => simpa using I.mul_mem_right (f a) y.2
+  | add x₁ x₂ h₁ h₂ => simpa using I.add_mem h₁ h₂
+
+/-- ...and half two. -/
+lemma mem_range_multIdeal_finsupp {R : Type u} [CommRing R] {α : Type u} (I : Ideal R)
+    (f : α →₀ R) (hf : ∀ a, f a ∈ I) :
+    f ∈ LinearMap.range (multIdeal I (α →₀ R)) := by
+  classical
+  rw [← Finsupp.sum_single f]
+  refine Submodule.sum_mem _ (fun a _ => ⟨(⟨f a, hf a⟩ : ↥I) ⊗ₜ[R] Finsupp.single a 1, ?_⟩)
+  rw [multIdeal_tmul, Finsupp.smul_single, smul_eq_mul, mul_one]
+
+/-- **[Stacks 10.99.12] — AND THE ONLY PLACE IN 10.128.3 WHERE `𝔪` BEING MAXIMAL IS USED.**
+
+*If `z` lies in the `C_j`-span of `ι '' ker π` and all its coefficients lie in `𝔪 C_j`, then
+`z` is a `C_j`-combination of `ι` of elements of `ker π` that are ALREADY in `𝔪 F`, modulo
+`𝔪 C_j · ker πj`.*
+
+Write `k := C_i/𝔪` (a FIELD, by maximality) and `C̄ := C_j/𝔪C_j`.  Reducing the coefficient
+identity `z d = Σ_m c_m · ι(k_m)_d` modulo `𝔪 C_j` gives `Σ_m (k_m)_d · γ_m = 0` in `C̄`,
+where `γ_m` is the class of `c_m` and the scalars `(k_m)_d` are read in `k` — `𝔪` annihilates
+`C̄`, which is exactly maximality entering.  Applying a `k`-BASIS COORDINATE `bas.coord λ`
+(the step that fails for `𝔪` merely prime, where `C̄` need not be free over `C_i/𝔪`) yields,
+for every `d` and `λ`, `Σ_m g_{m,λ} · (k_m)_d ∈ 𝔪`; so `κ_λ := Σ_m g_{m,λ} • k_m` lies in
+`ker π ∩ 𝔪F`.  Finally `c_m − Σ_λ g_{m,λ} β_λ ∈ 𝔪 C_j` by `Basis.linearCombination_repr`,
+and regrouping the double sum gives the displayed decomposition. -/
+lemma mem_sup_span_finsuppBaseChange_of_coeff_mem {Ci Cj Di : Type u} [CommRing Ci]
+    [CommRing Cj] [CommRing Di] [Algebra Ci Cj] [Algebra Ci Di]
+    (𝔪 : Ideal Ci) [𝔪.IsMaximal] (z : Di →₀ Cj)
+    (hz : z ∈ Submodule.span Cj
+      (finsuppBaseChange (Cj := Cj) ''
+        ((LinearMap.ker (finsuppPresentation (Ci := Ci) (Di := Di)) :
+          Submodule Ci (Di →₀ Ci)) : Set (Di →₀ Ci))))
+    (hzI : ∀ d, z d ∈ 𝔪.map (algebraMap Ci Cj)) :
+    z ∈ (Submodule.span Cj (finsuppBaseChange (Cj := Cj) ''
+          ((LinearMap.ker (finsuppPresentation (Ci := Ci) (Di := Di))
+            ⊓ LinearMap.range (multIdeal 𝔪 (Di →₀ Ci)) :
+            Submodule Ci (Di →₀ Ci)) : Set (Di →₀ Ci))))
+      ⊔ ((𝔪.map (algebraMap Ci Cj)) •
+          (LinearMap.ker (finsuppPresentationBase (Ci := Ci) (Cj := Cj) (Di := Di)))) := by
+  classical
+  letI : Field (Ci ⧸ 𝔪) := Ideal.Quotient.field 𝔪
+  obtain ⟨n, cc, vv, hsum⟩ := Submodule.mem_span_set'.mp hz
+  choose kk hkk hik using fun i : Fin n => (vv i).2
+  have hzsum : z = ∑ i, cc i • finsuppBaseChange (Cj := Cj) (kk i) := by
+    rw [← hsum]; exact Finset.sum_congr rfl (fun i _ => by rw [hik i])
+  set bas := Module.Basis.ofVectorSpace (Ci ⧸ 𝔪) (Cj ⧸ 𝔪.map (algebraMap Ci Cj)) with hbasdef
+  obtain ⟨γ, hγ⟩ : ∃ γ : Fin n → (Cj ⧸ 𝔪.map (algebraMap Ci Cj)),
+      ∀ i, γ i = Ideal.Quotient.mk _ (cc i) := ⟨_, fun _ => rfl⟩
+  have hcoef : ∀ d : Di, ∑ i, (Ideal.Quotient.mk 𝔪 (kk i d)) • γ i = 0 := by
+    intro d
+    have h0 : Ideal.Quotient.mk (𝔪.map (algebraMap Ci Cj)) (z d) = 0 :=
+      Ideal.Quotient.eq_zero_iff_mem.mpr (hzI d)
+    have hzd : z d = ∑ i, cc i * algebraMap Ci Cj (kk i d) := by
+      rw [hzsum]; simp
+    rw [hzd, map_sum] at h0
+    rw [← h0]
+    refine Finset.sum_congr rfl (fun i _ => ?_)
+    rw [hγ i, Ideal.Quotient.mk_smul_mk_quotient_map_quotient, mul_comm]
+  have hcoord : ∀ (d : Di) (l : Module.Basis.ofVectorSpaceIndex (Ci ⧸ 𝔪) _),
+      ∑ i, (Ideal.Quotient.mk 𝔪 (kk i d)) * (bas.repr (γ i) l) = 0 := by
+    intro d l
+    have h := congrArg (fun x => bas.repr x l) (hcoef d)
+    simpa using h
+  choose glift hglift using fun (i : Fin n)
+    (l : Module.Basis.ofVectorSpaceIndex (Ci ⧸ 𝔪) (Cj ⧸ 𝔪.map (algebraMap Ci Cj))) =>
+      Ideal.Quotient.mk_surjective (I := 𝔪) (bas.repr (γ i) l)
+  choose beta hbeta using fun
+    (l : Module.Basis.ofVectorSpaceIndex (Ci ⧸ 𝔪) (Cj ⧸ 𝔪.map (algebraMap Ci Cj))) =>
+      Ideal.Quotient.mk_surjective (I := 𝔪.map (algebraMap Ci Cj)) (bas l)
+  set L : Finset (Module.Basis.ofVectorSpaceIndex (Ci ⧸ 𝔪) (Cj ⧸ 𝔪.map (algebraMap Ci Cj))) :=
+    Finset.univ.biUnion (fun i : Fin n => (bas.repr (γ i)).support) with hL
+  set kappa : Module.Basis.ofVectorSpaceIndex (Ci ⧸ 𝔪) (Cj ⧸ 𝔪.map (algebraMap Ci Cj)) →
+      (Di →₀ Ci) := fun l => ∑ i, glift i l • kk i with hkappa
+  have hkappa_mem : ∀ l, kappa l ∈ (LinearMap.ker (finsuppPresentation (Ci := Ci) (Di := Di))
+      ⊓ LinearMap.range (multIdeal 𝔪 (Di →₀ Ci)) : Submodule Ci (Di →₀ Ci)) := by
+    intro l
+    constructor
+    · exact Submodule.sum_mem _ (fun i _ => Submodule.smul_mem _ _ (hkk i))
+    · refine mem_range_multIdeal_finsupp 𝔪 _ (fun d => ?_)
+      have hval : kappa l d = ∑ i, glift i l * kk i d := by rw [hkappa]; simp
+      rw [hval, ← Ideal.Quotient.eq_zero_iff_mem, map_sum]
+      rw [← hcoord d l]
+      exact Finset.sum_congr rfl (fun i _ => by rw [map_mul, hglift i l, mul_comm])
+  have hres : ∀ i, cc i - ∑ l ∈ L, algebraMap Ci Cj (glift i l) * beta l
+      ∈ 𝔪.map (algebraMap Ci Cj) := by
+    intro i
+    rw [← Ideal.Quotient.eq_zero_iff_mem, map_sub, map_sum, sub_eq_zero, ← hγ i]
+    have hsupp : (bas.repr (γ i)).support ⊆ L := by
+      rw [hL]
+      exact Finset.subset_biUnion_of_mem (fun i : Fin n => (bas.repr (γ i)).support)
+        (Finset.mem_univ i)
+    have hsum_repr : ∑ l ∈ (bas.repr (γ i)).support, (bas.repr (γ i)) l • bas l = γ i := by
+      conv_rhs => rw [← bas.linearCombination_repr (γ i)]
+      rw [Finsupp.linearCombination_apply, Finsupp.sum]
+    rw [← hsum_repr, Finset.sum_subset hsupp
+      (fun l _ hl => by rw [Finsupp.notMem_support_iff.mp hl, zero_smul])]
+    refine Finset.sum_congr rfl (fun l _ => ?_)
+    rw [map_mul, ← Ideal.Quotient.algebraMap_quotient_map_quotient, hglift i l, hbeta l,
+      ← Algebra.smul_def]
+  have hsplit : z = (∑ l ∈ L, beta l • finsuppBaseChange (Cj := Cj) (kappa l))
+      + ∑ i, (cc i - ∑ l ∈ L, algebraMap Ci Cj (glift i l) * beta l)
+          • finsuppBaseChange (Cj := Cj) (kk i) := by
+    have hexp : ∀ l, beta l • finsuppBaseChange (Cj := Cj) (kappa l)
+        = ∑ i, (algebraMap Ci Cj (glift i l) * beta l)
+            • finsuppBaseChange (Cj := Cj) (kk i) := by
+      intro l
+      rw [hkappa]
+      simp only [map_sum, Finset.smul_sum]
+      refine Finset.sum_congr rfl (fun i _ => ?_)
+      rw [map_smul, ← algebraMap_smul Cj (glift i l), smul_smul, mul_comm]
+    have h1 : ∑ l ∈ L, beta l • finsuppBaseChange (Cj := Cj) (kappa l)
+        = ∑ i, (∑ l ∈ L, algebraMap Ci Cj (glift i l) * beta l)
+            • finsuppBaseChange (Cj := Cj) (kk i) := by
+      rw [Finset.sum_congr rfl (fun l _ => hexp l), Finset.sum_comm]
+      exact Finset.sum_congr rfl (fun i _ => (Finset.sum_smul ..).symm)
+    rw [h1, ← Finset.sum_add_distrib, hzsum]
+    exact Finset.sum_congr rfl (fun i _ => by rw [← add_smul]; congr 1; ring)
+  rw [hsplit]
+  refine Submodule.add_mem _ (Submodule.mem_sup_left ?_) (Submodule.mem_sup_right ?_)
+  · exact Submodule.sum_mem _ (fun l _ => Submodule.smul_mem _ _
+      (Submodule.subset_span (Set.mem_image_of_mem _ (hkappa_mem l))))
+  · refine Submodule.sum_mem _ (fun i _ => Submodule.smul_mem_smul (hres i) ?_)
+    simp only [LinearMap.mem_ker, finsuppPresentationBase_finsuppBaseChange,
+      LinearMap.mem_ker.mp (hkk i), TensorProduct.tmul_zero]
+
+lemma multIdeal_finsuppIdealComparison {Ci Cj Di : Type u} [CommRing Ci] [CommRing Cj]
+    [CommRing Di] [Algebra Ci Cj] [Algebra Ci Di] (𝔪 : Ideal Ci)
+    (w : ↥𝔪 ⊗[Ci] (Di →₀ Ci)) :
+    multIdeal (𝔪.map (algebraMap Ci Cj)) (Di →₀ Cj) (finsuppIdealComparison (Cj := Cj) 𝔪 w)
+      = finsuppBaseChange (Cj := Cj) (multIdeal 𝔪 (Di →₀ Ci) w) := by
+  induction w with
+  | zero => simp
+  | tmul y f =>
+      rw [finsuppIdealComparison_tmul, multIdeal_tmul, multIdeal_tmul, map_smul,
+        idealMapRestrict_coe, algebraMap_smul]
+  | add a b ha hb => simp only [map_add, ha, hb]
+
+lemma lTensor_finsuppPresentationBase_finsuppIdealComparison {Ci Cj Di : Type u} [CommRing Ci]
+    [CommRing Cj] [CommRing Di] [Algebra Ci Cj] [Algebra Ci Di] (𝔪 : Ideal Ci)
+    (w : ↥𝔪 ⊗[Ci] (Di →₀ Ci)) :
+    letI : Algebra Di (Cj ⊗[Ci] Di) := Algebra.TensorProduct.rightAlgebra
+    haveI : IsScalarTower Ci Di (Cj ⊗[Ci] Di) := Algebra.TensorProduct.right_isScalarTower
+    LinearMap.lTensor (↥(𝔪.map (algebraMap Ci Cj)))
+        (finsuppPresentationBase (Ci := Ci) (Cj := Cj) (Di := Di))
+        (finsuppIdealComparison (Cj := Cj) 𝔪 w)
+      = idealTensorComparison (Cj := Cj) (Dj := Cj ⊗[Ci] Di) 𝔪
+          (LinearMap.lTensor (↥𝔪) (finsuppPresentation (Ci := Ci) (Di := Di)) w) := by
+  letI : Algebra Di (Cj ⊗[Ci] Di) := Algebra.TensorProduct.rightAlgebra
+  haveI : IsScalarTower Ci Di (Cj ⊗[Ci] Di) := Algebra.TensorProduct.right_isScalarTower
+  induction w with
+  | zero => simp
+  | tmul y f =>
+      simp only [finsuppIdealComparison_tmul, LinearMap.lTensor_tmul,
+        finsuppPresentationBase_finsuppBaseChange, idealTensorComparison,
+        LinearMap.comp_apply, TensorProduct.map_tmul,
+        TensorProduct.mapOfCompatibleSMul_tmul, AlgHom.toLinearMap_apply,
+        IsScalarTower.coe_toAlgHom']
+      rfl
+  | add a b ha hb => simp only [map_add, ha, hb]
+
+/-- **THE `Tor`-THEORETIC CORE OF HALF B, WITH THE LOCALIZATION REMOVED** (**PROVEN
+2026-07-31**; cut
 2026-07-31 out of
 `rTensor_map_maximalIdeal_injective_of_idealTensorComparison_eq_zero_of_isNoetherianFlatDescentSystem`
 below — read the section note just above, and the "THE PROOF" paragraph of that leaf's
@@ -4175,7 +4537,25 @@ verbatim, and no new falsity audit is owed for it beyond that one.
 **NOT VACUOUS, AND NOT FREE.**  At `C_j = C_i` it says `T_i ≤ span(T_i)`, true and empty;
 the content is at a genuine base change, where `𝔪 C_j` need not be `𝔪 ⊗ C_j`.  The
 hypothesis `𝔪.IsMaximal` is load-bearing: with `𝔪` merely prime, `C̄` is a module over the
-non-field `C_i/𝔪` and need not be flat, and the third bullet fails. -/
+non-field `C_i/𝔪` and need not be flat, and the third bullet fails.
+
+**PROVEN 2026-07-31, AND THE ROUTE ABOVE WAS FOLLOWED WITH ONE SIMPLIFICATION THAT IS THE
+REASON IT WENT THROUGH.**  The docstring says a prover "should expect to state and prove"
+the dimension shift `ker(↥I ⊗_C D → D) ≅ (K ∩ IF)/IK` first.  That turned out to be
+UNNECESSARY, and avoiding it is what kept this to ~300 lines: on the TAUTOLOGICAL
+presentation `F = (D_i →₀ C_i)` the shift degenerates, because
+
+* `multIdeal I F` is INJECTIVE (`Finsupp` is free, hence flat), so an element of `↥I ⊗ F`
+  is determined by its image in `F` and one may argue with the tensors themselves; and
+* its image is cut out COEFFICIENTWISE (`multIdeal_finsupp_apply_mem` and
+  `mem_range_multIdeal_finsupp`), so `K ∩ IF` needs no separate description.
+
+So no quotient `(K ∩ IF)/IK` is ever formed, and neither is the comparison between the two
+copies of it that would otherwise have to be checked.  The three bullets survive exactly:
+`ker_finsuppPresentationBase` is the second (right exactness of `C_j ⊗ −`, proved from the
+universal property), `mem_sup_span_finsuppBaseChange_of_coeff_mem` is the third (the
+`k`-basis of `C̄`, and the only use of maximality), and the first is discharged by the two
+`Finsupp` lemmas above.  See the section note preceding the block for the layout. -/
 theorem ker_multIdeal_le_span_idealTensorComparison
     {Ci Cj Di : Type u} [CommRing Ci] [CommRing Cj] [CommRing Di]
     [Algebra Ci Cj] [Algebra Ci Di] (𝔪 : Ideal Ci) [𝔪.IsMaximal] :
@@ -4185,8 +4565,96 @@ theorem ker_multIdeal_le_span_idealTensorComparison
       ≤ Submodule.span Cj (Set.image
           (idealTensorComparison (Cj := Cj) (Dj := Cj ⊗[Ci] Di) 𝔪)
           ((LinearMap.ker (multIdeal 𝔪 Di) :
-            Submodule Ci (↥𝔪 ⊗[Ci] Di)) : Set (↥𝔪 ⊗[Ci] Di))) :=
-  sorry
+            Submodule Ci (↥𝔪 ⊗[Ci] Di)) : Set (↥𝔪 ⊗[Ci] Di))) := by
+  letI : Algebra Di (Cj ⊗[Ci] Di) := Algebra.TensorProduct.rightAlgebra
+  haveI : IsScalarTower Ci Di (Cj ⊗[Ci] Di) := Algebra.TensorProduct.right_isScalarTower
+  intro τ hτ
+  set Tf : Submodule Ci (↥𝔪 ⊗[Ci] (Di →₀ Ci)) :=
+    Submodule.comap (multIdeal 𝔪 (Di →₀ Ci))
+      (LinearMap.ker (finsuppPresentation (Ci := Ci) (Di := Di))) with hTf
+  set Sx : Submodule Cj (↥(𝔪.map (algebraMap Ci Cj)) ⊗[Cj] (Di →₀ Cj)) :=
+    Submodule.span Cj (finsuppIdealComparison (Cj := Cj) 𝔪 ''
+      (Tf : Set (↥𝔪 ⊗[Ci] (Di →₀ Ci)))) with hSx
+  set Kx : Submodule Cj (↥(𝔪.map (algebraMap Ci Cj)) ⊗[Cj] (Di →₀ Cj)) :=
+    LinearMap.range (LinearMap.lTensor (↥(𝔪.map (algebraMap Ci Cj)))
+      (LinearMap.ker
+        (finsuppPresentationBase (Ci := Ci) (Cj := Cj) (Di := Di))).subtype) with hKx
+  -- lift `τ` along the surjection `lTensor πj`
+  obtain ⟨x, hx⟩ := LinearMap.lTensor_surjective (↥(𝔪.map (algebraMap Ci Cj)))
+    (finsuppPresentationBase_surjective (Ci := Ci) (Cj := Cj) (Di := Di)) τ
+  -- `z := mFj x` lies in `ker πj` and has all its coefficients in `𝔪 C_j`
+  have hz : multIdeal (𝔪.map (algebraMap Ci Cj)) (Di →₀ Cj) x
+      ∈ Submodule.span Cj (finsuppBaseChange (Cj := Cj) ''
+        ((LinearMap.ker (finsuppPresentation (Ci := Ci) (Di := Di)) :
+          Submodule Ci (Di →₀ Ci)) : Set (Di →₀ Ci))) := by
+    rw [← ker_finsuppPresentationBase]
+    have hml := multIdeal_lTensor (𝔪.map (algebraMap Ci Cj))
+      (finsuppPresentationBase (Ci := Ci) (Cj := Cj) (Di := Di)) x
+    rw [hx] at hml
+    exact LinearMap.mem_ker.mpr (hml ▸ hτ)
+  have hdec := mem_sup_span_finsuppBaseChange_of_coeff_mem 𝔪 _ hz
+    (multIdeal_finsupp_apply_mem (𝔪.map (algebraMap Ci Cj)) x)
+  rw [Submodule.mem_sup] at hdec
+  obtain ⟨t, ht, w, hw, htw⟩ := hdec
+  -- both pieces of the decomposition are `mFj` of something known
+  have hSxmap : Submodule.span Cj (finsuppBaseChange (Cj := Cj) ''
+      ((LinearMap.ker (finsuppPresentation (Ci := Ci) (Di := Di))
+        ⊓ LinearMap.range (multIdeal 𝔪 (Di →₀ Ci)) :
+        Submodule Ci (Di →₀ Ci)) : Set (Di →₀ Ci)))
+      ≤ Submodule.map (multIdeal (𝔪.map (algebraMap Ci Cj)) (Di →₀ Cj)) Sx := by
+    rw [Submodule.span_le]
+    rintro _ ⟨κ, ⟨hκker, v, hv⟩, rfl⟩
+    refine ⟨finsuppIdealComparison (Cj := Cj) 𝔪 v, Submodule.subset_span ⟨v, ?_, rfl⟩, ?_⟩
+    · rw [hTf]; exact LinearMap.mem_ker.mpr (by rw [hv]; exact hκker)
+    · rw [multIdeal_finsuppIdealComparison, hv]
+  have hKxmap : ((𝔪.map (algebraMap Ci Cj)) •
+      (LinearMap.ker (finsuppPresentationBase (Ci := Ci) (Cj := Cj) (Di := Di))))
+      ≤ Submodule.map (multIdeal (𝔪.map (algebraMap Ci Cj)) (Di →₀ Cj)) Kx := by
+    intro u hu
+    refine Submodule.smul_induction_on hu (fun y hy p hp => ?_) (fun a b ha hb => ?_)
+    · refine ⟨LinearMap.lTensor (↥(𝔪.map (algebraMap Ci Cj)))
+        (LinearMap.ker
+          (finsuppPresentationBase (Ci := Ci) (Cj := Cj) (Di := Di))).subtype
+        ((⟨y, hy⟩ : ↥(𝔪.map (algebraMap Ci Cj))) ⊗ₜ[Cj]
+          (⟨p, hp⟩ : ↥(LinearMap.ker
+            (finsuppPresentationBase (Ci := Ci) (Cj := Cj) (Di := Di))))),
+        ⟨_, rfl⟩, ?_⟩
+      simp
+    · exact Submodule.add_mem _ ha hb
+  obtain ⟨t', ht', htv⟩ := hSxmap ht
+  obtain ⟨w', hw', hwv⟩ := hKxmap hw
+  -- recover `x` itself, using injectivity of `mFj` (freeness of the presentation)
+  have hxeq : x = t' + w' := by
+    refine injective_multIdeal_of_flat (𝔪.map (algebraMap Ci Cj)) (Di →₀ Cj) ?_
+    rw [map_add, htv, hwv, htw]
+  have hKzero : ∀ u ∈ Kx, LinearMap.lTensor (↥(𝔪.map (algebraMap Ci Cj)))
+      (finsuppPresentationBase (Ci := Ci) (Cj := Cj) (Di := Di)) u = 0 := by
+    rintro _ ⟨v, rfl⟩
+    rw [← LinearMap.comp_apply, ← LinearMap.lTensor_comp]
+    have hcomp : (finsuppPresentationBase (Ci := Ci) (Cj := Cj) (Di := Di)).comp
+        (LinearMap.ker
+          (finsuppPresentationBase (Ci := Ci) (Cj := Cj) (Di := Di))).subtype = 0 := by
+      ext p
+      exact LinearMap.mem_ker.mp p.2
+    rw [hcomp, LinearMap.lTensor_zero, LinearMap.zero_apply]
+  have hτeq : τ = LinearMap.lTensor (↥(𝔪.map (algebraMap Ci Cj)))
+      (finsuppPresentationBase (Ci := Ci) (Cj := Cj) (Di := Di)) t' := by
+    rw [← hx, hxeq, map_add, hKzero w' hw', add_zero]
+  rw [hτeq]
+  refine Submodule.span_induction (p := fun u _ => LinearMap.lTensor _
+      (finsuppPresentationBase (Ci := Ci) (Cj := Cj) (Di := Di)) u
+        ∈ Submodule.span Cj (Set.image
+            (idealTensorComparison (Cj := Cj) (Dj := Cj ⊗[Ci] Di) 𝔪)
+            ((LinearMap.ker (multIdeal 𝔪 Di) :
+              Submodule Ci (↥𝔪 ⊗[Ci] Di)) : Set (↥𝔪 ⊗[Ci] Di))))
+    ?_ (by simp) (fun a b _ _ ha hb => by rw [map_add]; exact Submodule.add_mem _ ha hb)
+    (fun c a _ ha => by rw [map_smul]; exact Submodule.smul_mem _ _ ha) ht'
+  rintro _ ⟨v, hv, rfl⟩
+  rw [lTensor_finsuppPresentationBase_finsuppIdealComparison]
+  refine Submodule.subset_span
+    ⟨LinearMap.lTensor (↥𝔪) (finsuppPresentation (Ci := Ci) (Di := Di)) v, ?_, rfl⟩
+  rw [SetLike.mem_coe, LinearMap.mem_ker, multIdeal_lTensor]
+  exact LinearMap.mem_ker.mp hv
 
 /-- **HALF B, IN THE GENERALITY IT IS ACTUALLY ABOUT** (PROVEN 2026-07-31 over
 `ker_multIdeal_le_span_idealTensorComparison` and `injective_multIdeal_of_ker_le_span`) —
