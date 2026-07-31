@@ -9201,6 +9201,25 @@ satisfied by every `u ∈ emb (D.F)` and by every constant, and violated by, e.g
 
 end GeomPic
 
+/-- **LEAF (weak Mordell–Weil, 2b of 4): a geometric function with no zeros and no poles is
+a constant.**
+
+The one place in this cluster where the completeness of `Places` is used as a theorem
+rather than as data.  If `h ∈ F̄ \ ℚ̄` then `h` is transcendental over `ℚ̄` (which is
+algebraically closed, so the only algebraic elements of `F̄` over it are the constants), so
+`ℚ̄(h) ⊆ F̄` is a rational subfield and the place of `ℚ̄(h)` at infinity extends to a place
+of `F̄` at which `ord h < 0`.  That contradicts `divisor h = 0`.
+
+Equivalently: `deg (div h) = 0` and `div h ≥ 0` force `div h = 0` force `h` constant; but
+`PlaceData` deliberately carries no degree map, so the argument above is the one available.
+
+**Not vacuous.**  `h ≠ 0` is load-bearing only through the junk convention `ord v 0 = 0`,
+which would otherwise make `divisor 0 = 0` and the conclusion false for `h = 0`. -/
+theorem geomPic_exists_const_of_divisor_eq_zero {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
+    {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D)
+    {h : gp.Dbar.F} (h0 : h ≠ 0) (hdiv : gp.Dbar.divisor h = 0) :
+    ∃ a : AlgebraicClosure ℚ, algebraMap (AlgebraicClosure ℚ) gp.Dbar.F a = h := sorry
+
 section ConstFieldExtension
 /-- **HILBERT 90 for the geometric function field: a geometric function whose divisor is
 Galois-invariant is rational up to a constant** (PROVEN — a LEAF from 2026-07-30 until
@@ -9791,25 +9810,6 @@ free.  See `GeomPic.below_surjective` for the argument and for why
 theorem geomPic_below_surjective {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
     (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) : Function.Surjective gp.below :=
   gp.below_surjective
-
-/-- **LEAF (weak Mordell–Weil, 2b of 4): a geometric function with no zeros and no poles is
-a constant.**
-
-The one place in this cluster where the completeness of `Places` is used as a theorem
-rather than as data.  If `h ∈ F̄ \ ℚ̄` then `h` is transcendental over `ℚ̄` (which is
-algebraically closed, so the only algebraic elements of `F̄` over it are the constants), so
-`ℚ̄(h) ⊆ F̄` is a rational subfield and the place of `ℚ̄(h)` at infinity extends to a place
-of `F̄` at which `ord h < 0`.  That contradicts `divisor h = 0`.
-
-Equivalently: `deg (div h) = 0` and `div h ≥ 0` force `div h = 0` force `h` constant; but
-`PlaceData` deliberately carries no degree map, so the argument above is the one available.
-
-**Not vacuous.**  `h ≠ 0` is load-bearing only through the junk convention `ord v 0 = 0`,
-which would otherwise make `divisor 0 = 0` and the conclusion false for `h = 0`. -/
-theorem geomPic_exists_const_of_divisor_eq_zero {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
-    {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D)
-    {h : gp.Dbar.F} (h0 : h ≠ 0) (hdiv : gp.Dbar.divisor h = 0) :
-    ∃ a : AlgebraicClosure ℚ, algebraMap (AlgebraicClosure ℚ) gp.Dbar.F a = h := sorry
 
 /-- **LEAF (weak Mordell–Weil, 2c of 4): every geometric function is defined over a finite
 Galois level.**

@@ -5274,7 +5274,7 @@ theorem LowerRamificationData.mem_gp_one_of_dvd_smul_unif_sub
     obtain ⟨b, hb⟩ := hgp0 c hc
     exact ⟨a * (σ • c) + b, by rw [hkey, ha, hb]; ring⟩
   -- the residue field is algebraic over a FINITE field: `x ^ Q ≡ x`, `Q ≡ 0`.
-  obtain ⟨Q, hQm, hQx⟩ := exists_pow_sub_self_mem_maximalIdeal x
+  obtain ⟨Q, hQm, hQx⟩ := exists_pow_sub_self_mem_maximalIdeal v x
   have hQfix : ∀ τ ∈ D.lvl, τ • ((Q : ℕ) : Oᵥ) = ((Q : ℕ) : Oᵥ) := by
     intro τ _
     show (MulSemiringAction.toRingHom Γᵥ Oᵥ τ) ((Q : ℕ) : Oᵥ) = ((Q : ℕ) : Oᵥ)
