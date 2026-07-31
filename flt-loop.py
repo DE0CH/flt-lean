@@ -1154,10 +1154,10 @@ QUIET = (IDLE, 4)
 def panic(why):
     """Machine-level panic: hand the loop to a medic and STOP.
 
-    Short on purpose. This runs when the loop itself is broken -- a tick that
-    raised -- so every line here is a line that can also fail while the ground
-    is already moving. It does three things and nothing else: record why, start
-    a detached medic, exit.
+    This is PANIC2: invoked directly when the state machine is not working.
+    panic1 is the row-based route (rows 5, 14, 17), which may assume the
+    machine still runs and lets medic1 wait its turn through row 3. This one
+    may assume nothing, so it spawns medic2 itself, locally, and exits.
 
     Distinct from the medic route THROUGH the table (rows 5, 14, 17), which
     handles states the loop can still reason about. This one is for faults that
@@ -1170,20 +1170,50 @@ def panic(why):
     summoned owns the machine now. The medic is detached (setsid, reparented to
     init), so it outlives this process by construction.
     """
+    # SPAWN MEDIC2 FIRST, LOCALLY, WITH NOTHING ELSE IN THE WAY.
+    #
+    # panic2 (this function) is invoked directly when the state machine is NOT
+    # working -- an unhandled exception -- as opposed to panic1, which is a ROW
+    # and may assume the machine still runs. So nothing here may depend on the
+    # machine: no rules module, no prompt composition, no file written before
+    # the spawn. Every one of those is a way to die before medic2 exists, and a
+    # panic with no medic is a dead loop nobody is coming for.
+    #
+    # LOCAL, not ssh. medic2 runs on mystique, which is THIS machine, so ssh
+    # would add sshd, the network and key auth as failure modes for a local
+    # process -- at the exact moment things are already broken. The previous
+    # version went through ssh and its richer path also went through do_spawn,
+    # which is where the fault that killed the loop actually lived: the panic
+    # path was broken by the same bug it was reporting.
+    t = "%08x" % (os.getpid() ^ int(time.time()))
+    prompt = ("The flt-loop raised an unhandled exception and STOPPED. You own "
+              "it now: the state is ~/.flt-loop, the source ~/flt-lean/flt-loop.py "
+              "and ~/flt-lean/flt_loop_rows.py. Fix it and restart it.\n\n" + why[-3000:])
     try:
-        t = flt_loop_rows.tok()
-        rec = {"kind": "medic", "worktree": "flt-lean", "token": t, "retries": 0,
-               "host": flt_loop_rows.MEDIC_HOST,
-               "payload": "the loop raised and stopped:\n\n" + why[-3000:]}
-        wr(STATE / "jobs" / "medic.json", json.dumps(rec, indent=1))
-        do_spawn({"jobs": {}}, "medic", rec)
-        wr(STATE / "jobs" / "medic.started", t)
+        subprocess.Popen(
+            [CLAUDE, "--model", MODEL, "--dangerously-skip-permissions",
+             "-p", prompt],
+            cwd=str(REPO), start_new_session=True,
+            stdin=subprocess.DEVNULL,
+            stdout=open(STATE / "joblogs" / ("medic2-%s.log" % t), "a"),
+            stderr=subprocess.STDOUT)
     except Exception:
         pass
-    try:
-        notify("flt-loop: PANIC -- loop stopped, medic summoned", why[-1500:])
-    except Exception:
-        pass
+    # Everything below is best-effort bookkeeping. It cannot prevent the exit,
+    # and none of it gates the medic already running.
+    for step in (
+        lambda: wr(STATE / "jobs" / "medic.json", json.dumps(
+            {"kind": "medic", "worktree": "flt-lean", "token": t, "retries": 0,
+             "host": "mystique", "panic2": True,
+             "payload": prompt}, indent=1)),
+        lambda: wr(STATE / "jobs" / "medic.started", t),
+        lambda: notify("flt-loop: PANIC2 -- loop stopped, medic2 running locally",
+                       why[-1500:]),
+    ):
+        try:
+            step()
+        except Exception:
+            pass
     os._exit(1)
 
 
