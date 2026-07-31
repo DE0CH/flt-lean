@@ -542,91 +542,6 @@ Neither step needs a field, a valuation, or a fraction field. -/
 theorem exists_pow_Pz_mul_mem_idl {x y : Poly} (h : x * y ∈ idl) :
     ∃ k : ℕ, X 7 ^ k * x ∈ idl ∨ X 7 ^ k * y ∈ idl :=
   sorry
-
-/-- **The universal ideal is prime** (PROVEN 2026-07-30 over the single leaf
-`exists_pow_Pz_mul_mem_idl`) — equivalently, the generic
-Weierstrass curve with two generic marked points is an INTEGRAL scheme.  This is
-the sole remaining content of `equation_add2XYZ`.
-
-## Why it is true
-
-Write `Y = {(a, P) : W_a(P) = 0} ⊂ 𝔸⁵ × 𝔸³` (dimension `7`).  The zero set of
-`idl` is `Y ×_{𝔸⁵} Y`, of dimension `9` in `𝔸¹¹`.  `Y → 𝔸⁵` has irreducible
-generic fibre (the cone over the generic Weierstrass cubic, which is an
-irreducible surface), so exactly one component of the fibre product dominates
-`Y`.  Any other component lies over the discriminant locus `Δ ⊂ 𝔸⁵`, hence has
-dimension at most `4 + 2 + 2 = 8`; but every component of an intersection with a
-hypersurface has dimension at least `dim Y + 2 - 1 = 9`.  So there is no other
-component.  Generic reducedness plus the complete intersection (hence
-Cohen–Macaulay, hence unmixed) property gives reducedness, and `ℤ`-torsion-freeness
-— `Poly ⧸ idl` is `ℤ[…]`-free on `Px^i Qx^j`, `i, j ≤ 2`, since both generators are
-monic up to sign in `Px` resp. `Qx` — carries it over `Spec ℤ`.
-
-## HOW IT IS NOW PROVED, and what is left
-
-Two halves, split at the prime `(Pz)`, both stated over `Poly` itself with no fraction
-field, no valuation and no localisation type in sight:
-
-1. **`Pz` is a non-zerodivisor modulo `idl`** — `mem_idl_of_Pz_mul_mem`, PROVEN above over
-   `prime_gen₂` (itself PROVEN, by the `a₆`-linearity of `gen₂`).
-2. **`Poly[1/Pz] ⧸ idl` is a domain** — `exists_pow_Pz_mul_mem_idl`, the file's one
-   remaining leaf, whose docstring carries the whole argument: inverting `Pz` solves the
-   first relation for `a₆`, leaving ONE relation over a UFD, irreducible by the same
-   primitivity argument one variable over (in `a₄`).
-
-Note that only a WEAKER statement is actually consumed below, and a proof of it
-would close the leaf just as well: that `addZ ucurve upt₁ upt₂` is a
-non-zerodivisor in `Univ`.
-
-## A SECOND ROUTE, WITH THE HARD HALF RELOCATED (recorded 2026-07-30, not proven)
-
-The two-step route above puts all the difficulty into "`f₂` is irreducible over a
-ring that need not be a UFD".  Localising instead of towering moves the whole
-difficulty somewhere else, and the half that survives is *elementary*.
-
-Both generators are AFFINE-LINEAR in `(a₁, a₂, a₃, a₄, a₆)` — that is the one
-structural fact neither the dimension count nor the tower above uses.  Write
-`u`, `v` for the `a₆`-free parts of `gen₁`, `gen₂`, so `gen₁ = u - a₆ Pz³` and
-`gen₂ = v - a₆ Qz³`.  Over `Poly[1/Pz]` the first generator SOLVES for `a₆`
-(`a₆ = u / Pz³`), and substituting into the second leaves a single generator
-`w := Qz³ u - Pz³ v`, so
-
-> `Poly[1/Pz] ⧸ idl ≅ ℤ[a₁, a₂, a₃, a₄, Px, Py, Pz^{±1}, Qx, Qy, Qz] ⧸ (w)`.
-
-**`w` is PRIME, and the proof is one Gauss argument.**  `w` is irreducible over
-`ℚ` — checked with `Singular`'s `factorize`, which returns the single factor `w`
-with multiplicity `1` (untrusted searcher, so this certifies the statement, not a
-proof) — and every coefficient of `w` is `±1`, so its `ℤ`-content is `1`; an
-irreducible-over-`ℚ` primitive polynomial is irreducible in `ℤ[…]`, hence prime.
-The route to that in Lean is the same trick step 1 above uses: `w` has degree `1`
-in `a₁` with coefficient `Pz Qz (Px Py Qz² - Qx Qy Pz²)`, whose irreducible factors
-are `Pz`, `Qz` and `Px Py Qz² - Qx Qy Pz²` (itself degree `1` and primitive in
-`Py`); none divides the `a₁`-free part of `w`, which is `-Qz³ Px³` mod `Pz`,
-`Pz³ Qx³` mod `Qz`, and `10 + a₃ + 3 a₂ + a₄` at
-`(Px, Py, Pz, Qx, Qy, Qz) = (1, 2, 1, 2, 1, 1)` — a point of the third factor's
-zero locus.  So `w` is primitive in `a₁` over a UFD, hence irreducible.  (Do NOT
-test that last non-divisibility on the diagonal `P = Q`: there the `a₁`-free part
-of `w` vanishes identically and the check reads as a false positive.)
-
-**So the entire remaining gap is SATURATION**: that `Pz` is a non-zerodivisor on
-`Poly ⧸ idl`, equivalently `idl : Pz^∞ = idl`.  Given that, `Poly ⧸ idl` embeds in
-the domain `Poly[1/Pz] ⧸ idl` and the leaf follows.  This is a genuinely different
-reduction from step 2 above — it is a question about associated primes of a
-complete intersection rather than about irreducibility over a non-UFD — and it is
-the same question the consumer's weaker form asks, since `addZ` and `Pz` cut out
-comparable loci.
-
-Two supporting observations.  `{gen₁, gen₂}` is already a Gröbner basis for the
-degree-reverse-lex order: the leading terms are `Px³` and `Qx³`, which are coprime,
-so the single S-pair reduces to zero by Buchberger's first criterion — that is the
-mechanical justification for the `ℤ[…]`-freeness on `Px^i Qx^j` claimed above, and
-it says `(gen₁, gen₂)` is a regular sequence, hence a complete intersection, hence
-Cohen–Macaulay and unmixed.  With unmixedness the saturation reduces to a statement
-about MINIMAL primes only.  And the saturation is not merely unproven but
-unconfirmed: `Singular`'s `quotient(idl, Pz)` and `minAssGTZ(idl)` were both killed
-at 900 s in these eleven variables, so a successor should not expect the CAS to
-settle it either. -/
-theorem idl_isPrime : idl.IsPrime := sorry
 /-! ### A concrete specialisation
 
 `y² = x³ + 1` over `ℤ` with the two points `[0 : 1 : 1]` and `[2 : 3 : 1]`.  It is
@@ -642,16 +557,6 @@ theorem equation_test₁ : Equation (⟨0, 0, 0, 0, 1⟩ : WeierstrassCurve ℤ)
 theorem equation_test₂ : Equation (⟨0, 0, 0, 0, 1⟩ : WeierstrassCurve ℤ) ![2, 3, 1] := by
   rw [equation_iff]
   norm_num [Matrix.cons_val_two, Matrix.tail_cons, Matrix.head_cons]
-
-/-- **The universal ideal is proper** (PROVEN).  If `1 ∈ idl` then the
-specialisation to `y² = x³ + 1` at `[0 : 1 : 1]`, `[2 : 3 : 1]` would give
-`(1 : ℤ) = 0`. -/
-theorem idl_ne_top : idl ≠ ⊤ := by
-  intro h
-  have h1 : (1 : Poly) ∈ idl := (Ideal.eq_top_iff_one idl).mp h
-  have h0 := spec_of_mem_idl equation_test₁ equation_test₂ h1
-  rw [map_one] at h0
-  exact one_ne_zero h0
 
 /-! ### The universal ideal is prime
 

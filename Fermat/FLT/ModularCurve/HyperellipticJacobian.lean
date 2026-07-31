@@ -7402,22 +7402,6 @@ lemma ord_infPlus_fieldAct (σ : QbarGal) (z : gp.Dbar.F) :
   have h := gp.ord_placeAct σ (gp.Dbar.pt PlaceData.infPlus) z
   rwa [gp.placeAct_infPlus σ] at h
 
-/-- **Base-changed divisors are Galois-invariant** (PROVEN) — the divisor-level content of
-`act_bc`, extracted because the descent argument needs it BEFORE passing to `Pic`. -/
-lemma divAct_bcDiv (σ : QbarGal) (δ : D.Divisors) : gp.divAct σ (gp.bcDiv δ) = gp.bcDiv δ := by
-  ext w
-  rw [divAct_apply, bcDiv_apply, bcDiv_apply,
-    ← gp.below_placeAct σ ((gp.placeAct σ).symm w), Equiv.apply_symm_apply]
-
-/-- **Base change of divisors is injective once every place has a place above it** (PROVEN).
-`bcDiv δ` reads off `δ` at `below w`, so injectivity is exactly surjectivity of `below`. -/
-lemma bcDiv_injective (hsurj : Function.Surjective gp.below) :
-    Function.Injective gp.bcDiv := by
-  intro δ ε h
-  ext v
-  obtain ⟨w, rfl⟩ := hsurj v
-  simpa using congrArg (fun d : gp.Dbar.Divisors => d w) h
-
 /-- **The base change of a rational divisor is Galois-stable** (PROVEN) — `act_bc` one level
 down, before the quotient by `picRel` is taken.
 
