@@ -1486,6 +1486,113 @@ can see it**, written in that module's vocabulary, which is the pattern `X0.lean
 already uses for `exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme`; or make
 the import public, which for `EllipticScheme` is known-bad.
 
+## COMMENT WOUNDS COME IN LAYERS, AND EACH LAYER MASKS THE NEXT — repair to a FIXPOINT
+
+(2026-07-31, `flt-lean-385`, on `merger` at release 27. `X0.lean` was RED with the
+`maxErrors` cap of 100 reached at line 74336; five comment wounds and one truncated
+declaration accounted for 18 of them and for every `Unknown identifier` in the file.)
+
+The existing sections already say to run a nesting scan and that `depth > 0` names its
+own culprit while `depth < 0` is "mostly noise". Three corrections, all measured.
+
+**1. `depth < 0` IS THE MIRROR DEFECT, AND EACH STRAY IS ITS OWN WOUND.** A `-/` seen at
+depth zero means a docstring's OPENER was dropped by the merge, so its prose sits in code
+position. That is a hard parse error every time. Do not dismiss the count — print the
+LINE of every stray and read the six lines above it. The tell is unmistakable: English
+immediately after a `theorem`/`def` body, ending in a `-/` with no `/--` above it.
+
+**2. THE LAYERS MASK EACH OTHER, SO THE SCAN MUST BE RE-RUN AFTER EVERY REPAIR.** Because
+block comments NEST, an orphaned OPENER swallows every later delimiter, so the strays
+inside its range are invisible while it stands. Here the first scan reported `depth = -5`
+with two swallowed regions; fixing those two exposed **three more** strays that had been
+counted as legitimate closers, and fixing one of those exposed a truncated `theorem`
+header. Iterate until the scan reports `depth = 0` with an EMPTY stray list — that is the
+only stable state, and it took four rounds.
+
+**3. THE REPAIR ITSELF CAN RE-BREAK THE FILE: NEVER WRITE A COMMENT DELIMITER INSIDE A
+COMMENT, EVEN IN BACKTICKS.** The note explaining the first repair spelled out the two
+delimiters in a Markdown code span; the closing one ended the module comment 120 lines
+early and moved the parse error to a new place. Lean's lexer knows nothing about code
+spans. Write "the closing delimiter" / "the doc-comment opener" in prose.
+
+**The three shapes seen, and the repair for each:**
+
+* *orphaned OPENER, block still wanted* — reopen it as a `/-!` module comment and close
+  it. Do this when a live docstring elsewhere cites the prose by name (one here did:
+  "the `THERE IS NO FORMAL PROOF` section remains accurate");
+* *foreign docstring spliced INTO another* — the inner one's `-/` ends the outer twelve
+  lines early. If the inner block is a verbatim duplicate of one that still has its own
+  declaration, DELETE it; if it is a section note that lost its opener, MOVE it out and
+  reopen it as `/-!` before the docstring it invaded;
+* *truncated declaration* — a `theorem` line followed by bare English. This is TWO
+  BRANCHES ADDING THE SAME DECLARATION UNDER TWO NAMES: the merge kept branch A's
+  docstring plus the FIRST LINE of A's signature, then B's docstring body (minus its
+  opener) and B's complete declaration. Here that was
+  `exists_gamma0Rigidification_of_rigidifiedModuli` versus
+  `…_of_rigidifiedModuli_motive`, same statement, same proof. Keep the copy that arrived
+  INTACT, join the two docstrings, and rename the call sites — the argument lists agree,
+  because both branches gave the new parameter the same position and type.
+
+**And check what the repair UNBLOCKS, not only what it silences.** A declaration whose
+signature fails to elaborate is absent from the environment, so every later use is an
+`Unknown identifier` and every theorem containing one is absent in turn — which is why
+one truncated header produced `Unknown identifier RigidifiedModuliData` 2000 lines below.
+Fixing it here also turned `exists_gamma0GITPresentationOver_normalModuli_zmod` from an
+errored (hence `sorryAx`-tainted, hence invisible-to-every-scan) declaration back into
+the proven theorem it was written as.
+
+**Budget note for whoever inherits a red giant file**: `lean -DmaxErrors=2000
+<file>` under a harvested `LEAN_PATH` elaborates all 108 k lines of `X0.lean` in about
+seven minutes and gives the COMPLETE error list; the default cap of 100 stops at 70% of
+the file and hides everything after it. Use `lake env printenv LEAN_PATH` to harvest, and
+invoke bare `lean` — `lake env lean` resets the variable.
+
+## A LEAF WHOSE OBSTRUCTION IS "THE RING IS NOT A DOMAIN" IS A STATEMENT ABOUT THE ACTION
+
+(2026-07-31, `isDomain_of_gamma0AtlasOver_zmod`.) Over `ℚ` the rigidified moduli scheme
+`𝔐([Γ₀(N)], [Γ(n)])` is integral, so the coarse ring `B = A^G ⊆ A` is a domain because `A`
+is. Over `𝔽_p` that is FALSE — at `n = 3`, `p = 7` both primitive cube roots of unity are
+`𝔽₇`-rational, Frobenius fixes them, and `A` is a product of two rings — and the file had
+recorded, correctly, that what saves the conclusion is that `det : GL₂(ℤ/n) → (ℤ/n)ˣ` is
+surjective and `e_n(gP, gQ) = e_n(P, Q)^{det g}`, so `G` permutes the components
+TRANSITIVELY even where Frobenius does not.
+
+That sentence is the whole cut, and the algebra under it is thirty lines:
+
+    S reduced + G transitive on `minimalPrimes S`  ⟹  S^G is a domain
+
+*Proof.* `x ≠ 0` in a reduced ring avoids SOME minimal prime (it is not nilpotent, so it
+avoids some prime, and `Ideal.exists_minimalPrimes_le` drops to a minimal one below it).
+The image of `S^G` is `G`-fixed (`SMulCommClass G R S`: `g • (r • 1) = r • (g • 1)`), so
+for such an element "lies in `q`" is a `G`-INVARIANT condition on `q`. Hence if `x, y` are
+both nonzero, transitivity carries a minimal prime missing `x` onto one missing `y`, and
+that prime misses both while containing `xy = 0`. ∎
+
+Two things worth copying beyond the instance.
+
+**Use MINIMAL PRIMES, not connected components.** The geometric sentence is about
+components, and the temptation is to formalise idempotents or a product decomposition.
+Minimal primes are what reducedness controls (`⋂ minimalPrimes = nilradical = 0`), they
+are all the argument consumes, and they need no topology. For a smooth scheme the two
+notions agree anyway, so nothing is lost.
+
+**A leaf whose stated obstruction is a property the object does NOT have is usually
+asking you to move the hypothesis onto a different object.** Here "`A` is not a domain" is
+true and final; the repair is not to weaken the conclusion but to notice that the
+conclusion is about `A^G` and that transitivity of the ACTION is a hypothesis nobody had
+tried to state. The leaf count is unchanged, `1 → 1`, and what the residue lost is every
+mention of the coarse ring, the invariants, an atlas and a scheme.
+
+**When you cannot merge two overlapping leaves, say WHY in the docstring.** The new leaf
+asserts `IsReduced P.A`, which its sibling
+`exists_gamma0GITPresentationOver_normalModuli_zmod` also asserts, and a reviewer will ask
+why they are not one leaf. They cannot be: the sibling is PROVEN by threading a
+`motive : (A : Type) → [CommRing A] → (Spec A ⟶ S) → Prop` through two structure
+transports, and a motive of that type cannot mention the deck group `G`. Adding the
+transitivity conjunct there would destroy a proof rather than extend one. That is a
+mechanical reason, it is invisible from the statements, and it is exactly what the next
+agent would otherwise spend an afternoon rediscovering.
+
 ## THE QUEUE AUDIT CHECKS THE RELEASE; THE FRONTIER IS `merger`. AUDIT AGAINST `merger`.
 
 (2026-07-31, `flt-lean-363`, measured: **three targets out of three** in one dispatch were

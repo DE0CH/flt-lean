@@ -631,6 +631,98 @@ theorem isRegularRing_of_isInvariant_of_isReduced (k R S : Type*) [CommRing k] [
   haveI := hded
   exact ⟨inferInstance, hft, ringKrullDim_eq_one_of_isInvariant R S G hinj hdim⟩
 
+/-! ### The invariants of a NON-domain: transitivity on minimal primes
+
+Every lemma above takes `[IsDomain R]` on the INVARIANT ring and produces something else;
+this one PRODUCES `IsDomain R`, from a hypothesis on the group action rather than on the
+ring `S`.  It is the missing half of the `𝔽_p` modular-curve story: over `ℚ` the rigidified
+moduli scheme `𝔐([Γ₀(N)], [Γ(n)])` is integral, so `R = S^G ⊆ S` is a domain because `S` is;
+over `𝔽_p` it is a *disjoint union* of smooth curves — `n = 3`, `p = 7` already gives two
+components, since both primitive cube roots of unity are `𝔽₇`-rational and Frobenius fixes
+them — so `S` is NOT a domain and that argument is unavailable.  What replaces it is that
+`det : GL₂(ℤ/n) → (ℤ/n)ˣ` is surjective and the Weil pairing satisfies
+`e_n(gP, gQ) = e_n(P, Q)^{det g}`, so `G` permutes the components TRANSITIVELY even where
+Frobenius does not.
+
+That is a statement about the ACTION, not about `S`, and it is all that is needed. -/
+
+/-- **The invariants of a reduced ring under a group acting transitively on its minimal
+primes form a DOMAIN** (PROVEN).
+
+The proof is three lines of prime-avoidance and does not use any finiteness, integrality or
+Noetherian hypothesis:
+
+* `S` is reduced, so a nonzero `a : S` lies outside SOME minimal prime (it is not nilpotent,
+  hence outside some prime, hence outside a minimal prime below that one);
+* the image of `R` is fixed by `G` (`SMulCommClass G R S` — `g • (r • 1) = r • (g • 1)`), so
+  for `a` in the image, `a ∉ q` implies `a ∉ Ideal.comap (g • ·) q`, i.e. membership of the
+  image in a minimal prime is a `G`-INVARIANT condition on that prime;
+* so if `x y : R` have `xy = 0` and both are nonzero, transitivity moves a minimal prime
+  missing `algebraMap x` onto one missing `algebraMap y`, and that prime then misses both
+  while containing their product.  Contradiction.
+
+**Minimal primes, not connected components.**  The geometric statement one starts from is
+"`G` is transitive on the connected components of `Spec S`", and for the modular application
+the two agree (`𝔐_{𝔽_p}` is smooth, so its irreducible components are disjoint).  Minimal
+primes are the right formal carrier: they are what reducedness controls
+(`⋂ minimalPrimes S = nilradical S = 0`), the argument needs nothing else, and no
+idempotent, product decomposition or topology has to be constructed.
+
+**Stated WITHOUT `[Algebra.IsInvariant R S G]`**, although it lives in that namespace.  Only
+two things about `R → S` are used — that it is injective and that its image is fixed — and
+the second is `SMulCommClass G R S`.  The `IsInvariant` direction (every fixed element comes
+from `R`) is not needed, and a consumer that has it loses nothing by the omission.
+
+`[Nontrivial S]` is REQUIRED and is not implied by the rest: over the trivial ring
+`minimalPrimes S = ∅`, so `htrans` holds vacuously, and `IsDomain R` fails for want of
+`Nontrivial R`.  Given it, `Nontrivial R` follows from `hinj`. -/
+theorem isDomain_of_transitive_minimalPrimes (R S : Type*) [CommRing R] [CommRing S]
+    [Algebra R S] (G : Type*) [Group G] [MulSemiringAction G S] [SMulCommClass G R S]
+    [IsReduced S] [Nontrivial S] (hinj : Function.Injective (algebraMap R S))
+    (htrans : ∀ q ∈ minimalPrimes S, ∀ q' ∈ minimalPrimes S,
+      ∃ g : G, Ideal.comap (MulSemiringAction.toRingHom G S g) q = q') :
+    IsDomain R := by
+  -- the image of `R` is fixed by `G`
+  have hfix : ∀ (g : G) (r : R), (MulSemiringAction.toRingHom G S g) (algebraMap R S r)
+      = algebraMap R S r := by
+    intro g r
+    show g • algebraMap R S r = algebraMap R S r
+    rw [Algebra.algebraMap_eq_smul_one, smul_comm, smul_one]
+  haveI : Nontrivial R := by
+    refine ⟨0, 1, fun h => ?_⟩
+    exact zero_ne_one (α := S)
+      (by rw [← map_zero (algebraMap R S), ← map_one (algebraMap R S), h])
+  -- a nonzero element of a reduced ring avoids some minimal prime
+  have key : ∀ a : S, a ≠ 0 → ∃ q ∈ minimalPrimes S, a ∉ q := by
+    intro a ha
+    have hnil : ¬ IsNilpotent a := fun h => ha (IsReduced.eq_zero a h)
+    rw [nilpotent_iff_mem_prime] at hnil
+    push Not at hnil
+    obtain ⟨J, hJ, haJ⟩ := hnil
+    haveI := hJ
+    obtain ⟨q, hq, hqJ⟩ := Ideal.exists_minimalPrimes_le (I := (⊥ : Ideal S)) (J := J) bot_le
+    exact ⟨q, hq, fun h => haJ (hqJ h)⟩
+  haveI : NoZeroDivisors R := by
+    refine ⟨fun {x y} hxy => ?_⟩
+    by_contra hcon
+    push Not at hcon
+    obtain ⟨hx, hy⟩ := hcon
+    obtain ⟨q, hq, hxq⟩ := key (algebraMap R S x) fun h => hx (hinj (by simpa using h))
+    obtain ⟨q', hq', hyq'⟩ := key (algebraMap R S y) fun h => hy (hinj (by simpa using h))
+    obtain ⟨g, hg⟩ := htrans q hq q' hq'
+    have hxq' : algebraMap R S x ∉ q' := by
+      rw [← hg]
+      intro h
+      exact hxq (by rwa [Ideal.mem_comap, hfix] at h)
+    haveI := hq'.isPrime
+    have hmem : algebraMap R S x * algebraMap R S y ∈ q' := by
+      rw [← map_mul, hxy, map_zero]
+      exact Submodule.zero_mem _
+    rcases Ideal.IsPrime.mem_or_mem (by assumption) hmem with h | h
+    · exact hxq' h
+    · exact hyq' h
+  exact NoZeroDivisors.to_isDomain R
+
 end Algebra.IsInvariant
 
 /-! ### Regular field extensions and geometric integrality -/
