@@ -859,7 +859,8 @@ theorem isDomain_tensorProduct_of_isSeparable_of_algebraicClosure_eq_bot
 If `k` is PERFECT and algebraically closed in `L`, and `K/k` is algebraic, then `L ⊗[k] K`
 is a domain.  Over a perfect base every algebraic extension is separable
 (`Algebra.IsSeparable` is an instance there), so this is
-`isDomain_tensorProduct_of_isAlgebraic_of_isSeparable` with its hypothesis discharged. -/
+`isDomain_tensorProduct_of_isSeparable_of_algebraicClosure_eq_bot` with its hypothesis
+discharged. -/
 theorem isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_eq_bot
     (k L : Type*) [Field k] [PerfectField k] [Field L] [Algebra k L]
     (hbot : algebraicClosure k L = ⊥)

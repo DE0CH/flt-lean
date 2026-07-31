@@ -4219,6 +4219,38 @@ The doctrine's kill rule already says scope by cwd. The prevention is upstream o
 A poll loop that gives up on a timeout does NOT stop the build it was watching, so every
 "poll, time out, fork another" cycle adds one. Three were live here at once.
 
+## AN AGENT WHOSE TARGETS ARE ALREADY PROVEN SHOULD STILL BUILD — that build IS the release build, run a day early
+
+(2026-07-31, `flt-lean-105`.) All three assigned TARGETs were already proven on `merger`
+— the release window, class five above — so the honest report was "nothing to do" and the
+worktree could have been freed in ten minutes. Building the merged tree anyway found a
+**duplicate-declaration blocker sitting on `merger` itself**: `Fermat.modPullbackSheafifyIso`
+declared in BOTH `ModularCurve/RelativePicard.lean` (general, at a presheaf) and
+`Modularity/AmpleSheaf.lean` (specialised, at a tensor of two sheaves), with the second file
+`public import`ing the first. Both files were byte-identical to `merger`, so this was not
+merge fallout in one worktree — it was the next release build, failing, found before the
+release started.
+
+It is the cross-FILE form of class 7 that the interface-split section already names, and it
+is worth restating because of how it hides: the two declarations are 60 000 lines and one
+file apart, neither branch conflicted with the other, `git diff` is clean, and the ONLY
+symptom is `` `X` has already been declared `` followed by application-type mismatches at
+the call sites — where the imported version silently wins and the arity is wrong. A per-file
+duplicate scan cannot see it. The repair is a rename plus its call sites: the general
+version keeps the short name, the specialisation takes the longer one.
+
+**So the rule: an agent that finds its targets already closed has not finished. Run
+`lake build` on its module anyway before writing the sentinel.** The cost is one build in a
+worktree that is otherwise idle; the payoff is that release-blocking breakage is found by a
+worker with time to fix it rather than by the merge worker with a hundred branches queued
+behind it. `to_merger` is then the channel, since the fix lives in files the agent was never
+assigned.
+
+Corollary for the same situation: the useful work is one level DOWN. The three targets'
+residues — the leaves their proofs opened — are named in their own docstrings, are unowned by
+construction (they did not exist when the queue was written), and are exactly what the next
+dispatch would have to find anyway.
+
 ## MERGING NINETY BRANCHES: the policy that works, and the four checks that must go with it
 
 (2026-07-31, release 24 — 92 branches, 51 clean, 41 conflicting, 1 declined.)
@@ -7459,3 +7491,162 @@ risk and not a formality (zero collisions, as it happened). And stage the block 
 throwaway module that `import`s the destination: an `already declared` error there IS the
 collision check, and it runs at scratch-module speed rather than at 25-minute
 destination-build speed.
+
+## THE ORPHANED HEADER: a merge-damage class that costs ONE RELEASE-BUILD ROUND EACH, and a script that finds all of them in seconds
+
+(2026-07-31, `flt-lean-105`, four instances in one release.) The "MERGING NINETY
+BRANCHES" section above already lists *"block-comment nesting depth returns to zero in
+every file"* as check 3 and calls it the cheapest in the list. It was not run for
+release 25, and four files were damaged: `EllipticCurve/IsogenyTrace.lean:804`,
+`EllipticCurve/MordellWeil19.lean:476`, `ModularCurve/EllipticScheme.lean:11144`,
+`Modularity/AmpleSheaf.lean:2293`. There is now a script, `flt-comment-balance.py`
+(repo root, `python3 flt-comment-balance.py`), so there is no longer an excuse:
+
+    Fermat/FLT/EllipticCurve/MordellWeil19.lean depth=1 unclosed_at=[476]
+
+**The mechanism is narrower than "a conflict inside a docstring", and knowing it gives
+you the repair for free.** In all four cases a branch had RENAMED a section header and
+MOVED its block elsewhere in the file. The merge then kept the OLD header's first line
+at the old position and the NEW block's body after it — so the old header lost its `-/`
+and the file now contains a stranded title line immediately above an unrelated `/-!`:
+
+    /-! ### Rank-two linear algebra for the `ℓ`-torsion        <- stranded, no `-/`
+    /-! ### The parallelogram law collapses to its UNIT SHIFT  <- the surviving block
+
+**So the repair is to DELETE the stranded line, not to close it with `-/`.** Grep its
+title first: in every one of the four cases the block it named was alive elsewhere in
+the same file under the new name (`### The Weil pairing on the ℓ-torsion` at ~1036;
+`THE level-19 statement` re-proved at ~1388; `#### Δ = 0 forces a rational singular
+point` on the very next line; `AN INVERTIBLE SHEAF … LOCALLY FREE OF RANK ONE` at
+~2672). Closing the orphan instead leaves a duplicated, stale header that the next
+reader will believe.
+
+**Why it is worth a scan rather than a build.** The orphan swallows *every* declaration
+after it, so the module emits exactly one diagnostic — `unterminated comment`, reported
+at EOF, thousands of lines from the damage — and every module importing it then fails on
+names that "do not exist". And because `lake build` stops at the first failing module in
+dependency order, **the four were serialised behind one another**: each would have cost
+its own release-build round, which is where the "budget three rounds minimum" figure in
+the class-7 section comes from. The scan finds all four at once in a couple of seconds.
+
+**`depth < 0` is MOSTLY noise and OCCASIONALLY the mirror defect — check it, cheaply,
+and do not "fix" it blind.** The scanner matches two characters and Lean's lexer does
+not, so a file Lean accepts can score negative: `X0.lean` scores `−11` and its comments
+are fine. But `InvariantCoarseRing.lean` scored `−2` and was genuinely broken, in the
+OTHER direction: a merge kept the first two lines of one branch's `theorem` signature
+and then the other branch's docstring BODY without its `/--`, so the surviving `-/`
+closed a comment that had never opened *and* ten lines of English were parsed as the
+continuation of a truncated signature. Lean's diagnostic for that is
+`unexpected token; expected ':'` — nothing about comments at all. So: `depth > 0` names
+its own culprit and is always real; `depth < 0` is a prompt to run `lake env lean` on
+that one file, which settles it in a couple of minutes.
+
+Corollary about doctrine generally, and it is the uncomfortable half: this check was
+already written down, in bold, one section up, described as the cheapest available — and
+it still did not run, because a prose instruction in a 3 900-line file competes with a
+hundred others at the moment somebody is merging ninety branches. **A check that is worth
+running every release should be a script with a name, not a paragraph.** Converting one
+costs ten minutes and is a full result for a task that has spare time.
+
+## AN ORPHANED OPENER CAN SCORE ZERO — because block comments NEST, and "unknown identifier" is its real symptom
+
+(2026-07-31, `flt-lean-105`, `ModularCurve/RelativePicard.lean`.) The section above
+says `depth > 0` names the culprit. That is true and it is not the whole story: **two
+defects of opposite sign cancel, and then the balance scan reports the file as clean.**
+
+`RelativePicard.lean` had an orphaned `/--` at ~4230 — the 2026-07-30 docstring of
+`𝒪(−σ) COMMUTES WITH BASE CHANGE`, left truncated mid-sentence when a branch replaced
+it — and a stray `-/` about 700 lines later, left by the *mirror* damage in a different
+docstring. The file scored `depth = 0`. It did not report `unterminated comment` either,
+because **Lean's block comments NEST**: the orphan simply swallowed everything up to the
+first unmatched `-/`, and the nested `/-!`/`/--` in between raised and lowered the depth
+on the way.
+
+**So the symptom is not a comment diagnostic at all. It is:**
+
+    error: Unknown identifier `relSection_comp_curveBaseChangeMap`
+    error: Unknown identifier `isPullback_curveBaseChangeMap`
+    error: Unknown identifier `exists_abelJacobiPoint`
+    error: Unknown identifier `exists_relPicZeroGroupScheme`
+
+for four declarations that `grep -c '^theorem <name>'` finds **exactly once each**. That
+combination — *the compiler says a name does not exist, and the source says it does* —
+has exactly two causes in this tree, and they are told apart in one command:
+
+* the declaration is BELOW its use (Lean's linear order), which
+  `grep -n` settles instantly; or
+* **the declaration is inside a comment nobody can see.** Look UP from the first
+  reported name for the nearest `/--` or `/-!` and check that it closes before the
+  declaration; a docstring that ends mid-sentence is the tell.
+
+Both were present here, which is why fixing the first alone changed nothing.
+
+**Consequences for the release checks.** The nesting-cancellation case is invisible to
+`flt-comment-balance.py` by construction, so the balance scan is a cheap FIRST pass and
+never a clearance. It stays worth running — it found four files in one release — but
+the only instrument that sees this one is `lake env lean` on the single file, which is
+minutes rather than a full build. Run it on any module whose errors are a list of
+"unknown identifier" for names that exist.
+
+And it argues for one habit when REPAIRING this class: after deleting an orphaned
+opener, re-run `lake env lean` even if the scan now reports the file balanced — the
+deletion *unmasks* whatever the stray `-/` was hiding, and here that was three further
+defects (a second orphaned header, a pair of `_`-prefixed binders used unprefixed in a
+body, and a genuine declaration-order break). Repairs in this class arrive in layers,
+for the same import-graph reason the release build takes three rounds.
+
+## A `variable` USED ONLY IN A PROOF BODY IS NOT INCLUDED — one root cause, thirty-four errors
+
+(2026-07-31, `flt-lean-105`, on inherited work that had never been compiled.)
+Lean 4 includes a section `variable` in a declaration only when the variable occurs
+in that declaration's **statement** (or is an instance-implicit). A hypothesis used
+solely inside the proof is simply not there:
+
+    variable (hv : v ≫ d.f = d.f) (hadd : IsAdditiveOn d.ab d.ab v hv)
+
+    theorem add_fixed {x y : RelPoint d.f g}
+        (hx : x.1 ≫ v = x.1) (hy : y.1 ≫ v = y.1) : (d.ab.add x y).1 ≫ v = … := by
+      rw [hadd x y, …]        -- error: Unknown identifier `hadd`
+
+**The reason this is worth a section is the BLAST RADIUS.** Six declarations in one
+block were affected, and because each then had the wrong arity, every later
+reference to them failed too: **34 errors from one cause**, almost all of them
+`Application type mismatch` or `Function expected at` pointing at call sites that
+are individually correct. Chasing them one at a time is hours; the fix is six
+`include` lines. So when a block reports a cloud of arity errors, look for
+`Unknown identifier` on a *section variable* in the FIRST error, not the loudest.
+
+Three mechanics, each of which cost a round here:
+
+* **Scope the `include` per declaration, not per section.** `include hv hadd` as a
+  bare command after the `variable` line over-includes: a sibling whose statement
+  already mentions `hv` (so `hv` was auto-included) now silently gains `hadd` too,
+  and its call sites fail with `Invalid projection … has function type` — a message
+  that says nothing about arity. Use `include hv hadd in` on exactly the
+  declarations whose *bodies* need them.
+* **`include … in` goes ABOVE the docstring.** Between the docstring and the
+  declaration it is `unexpected token 'include'; expected 'lemma'`.
+* A `def` whose result is a class (`Group …`, `AddCommGroup …`) wants
+  `@[reducible]`, or Lean warns.
+
+And the standing rule this violates: **work you inherit has not been compiled until
+you compile it.** The block carried a careful docstring, a correct design and a
+plausible proof, and it had never elaborated once.
+
+### Verifying against the RELEASE olean when the target's own cone is red
+
+The same run could not build `MazurTorsion` at all, because `X0.lean` was red from
+merge damage. The block was still verified, in ~90 s per iteration, by the shim the
+scratch-module section above describes — with the release snapshot as the source of
+the one olean that mattered:
+
+    cp -rs ~/.flt-release-lake/build/lib /tmp/relean-N/          # symlink farm, instant
+    LP=$(lake env printenv LEAN_PATH); LSP=$(lake env printenv LEAN_SRC_PATH)
+    LEAN_PATH="/tmp/relean-N/lib/lean:$LP" LEAN_SRC_PATH="$LSP" lean Scratch.lean
+
+**This is sound only under a check you must actually run**: every name the block
+uses has to be present and unchanged at the snapshot's sha (`~/.flt-release-lake/sha`).
+Here that was seven names, all of them older than the release, so the shim proved
+exactly what a real build would have. It is NOT a substitute when your block
+consumes something added since — then the shim's `X0` is a *different theory* and a
+green scratch means nothing. Check the names first; it takes one `git show`.
