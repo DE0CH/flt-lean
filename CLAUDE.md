@@ -15560,3 +15560,61 @@ from the move:
 So compute both ends with the same docstring-walk, and after any block move grep
 the file for a `-/` line whose next non-blank line opens another doc comment.
 `tools/merge/parsecheck.py` does not catch this — the delimiters are balanced.
+## A PROVEN PARENT WHOSE DOCSTRING NAMES A DIFFERENT LEAF FROM ITS PROOF BODY IS A DUPLICATE-CUT DETECTOR
+(2026-07-31, `flt-lean-272`, `ModularCurve/RelativePicard.lean`.) The duplicate-cut sections
+above give the shape — one node cut twice under two names, both kept by a merge, both counted
+as ordinary open work by every instrument — and `tools/merge/dupstmt.py` for finding it. This
+run found one that **all** of those missed, and the thing that gave it away is worth having as
+a check of its own, because it costs one `grep` and needs no tooling.
+`surj_of_isRelPicOverAffines` is PROVEN. Its docstring says, twice, that it is proven "over
+`relPicEquiv_of_forall_restrict`". Its proof body calls `relPicEquiv_of_locally_relPicEquiv`.
+Both exist, 60 lines apart, and they are the SAME STATEMENT — cut a day apart, kept by a
+merge, differing only by `{L L'}` against `(A B)`, `_hL/_hL'/_hloc` against `_hA/_hB/_hcov`,
+and one implicit-vs-explicit `strX`. The one the body calls is live; the other had **zero**
+code uses anywhere in `Fermat/` and a queued task naming it.
+**So when a proven declaration's docstring names the leaf it rests on, check that the PROOF
+BODY names the same one.** A mismatch is not sloppiness: a docstring is written once, at the
+moment of the cut, and cannot change under a merge, whereas the body is the half a merge
+resolves. The mismatch is therefore *evidence about the merge*, and in this instance the two
+names were the two halves of a duplicated cut. Same family as the class-7 interface split,
+detectable from the prose rather than from a build.
+* **A name-based duplicate scan cannot see this and neither could the statement-based one.**
+  `dupstmt.py` normalises binder GROUPING and the leading `_`; it did not normalise binder
+  ALPHA-RENAMING or explicit-vs-implicit brackets, which is exactly how this pair hid. It now
+  has a third, weakest key (`DUP-STMT-ALPHA`) that also renames the top-level binders
+  positionally AND the variables bound by `∀`/`∃`/`fun` inside the types — the last of those
+  mattered, since the two copies agreed in every component except `∀ t : T` against `∀ x : T`.
+  Calibration on the 2026-07-31 tree: with the pair present it reports that pair and nothing
+  else. **Re-run the calibration when you touch it; a scan that reports nothing is
+  indistinguishable from a scan that is broken.**
+* **Do not delete the loser blind — read what its docstring has that the winner's does not.**
+  Here the dead twin carried the `X = C ⊔ C` faithfulness witness and the `_o`/`Br T`
+  discussion, neither of which is in the survivor. It was PROVEN by one application of the
+  survivor, marked slated for deletion, and the fold-in named as the deleter's first job.
+  That keeps the frontier drop (`−1`) without losing prose that nothing else records.
+## `_o` IS NOT WHAT A ZARISKI-DESCENT LEAF RUNS ON — THERE IS NO CANONICAL MAP IN THE RIGIDIFIED DIRECTION
+(Same task, and it corrects a route note two docstrings had carried in this file.) The standard
+sketch for "`T ↦ Pic(X_T)/Pic(T)` is a Zariski sheaf" rigidifies along the section: put
+`N := σ^*M` and show `M ≅ π^*σ^*M`. That is the right MATHEMATICS and the wrong shape for Lean,
+for a reason that is visible before any proof is attempted: **`π^*σ^*M` is `(π ≫ σ)^*M`, and a
+map from it to `M` would need a natural transformation `π ≫ σ ⟶ 𝟙`, which does not exist for
+schemes.** So the rigidified route has no global morphism to test, and every step of it is a
+gluing argument about local isomorphisms.
+The counit `ε : π^*π_*M ⟶ M` of `Scheme.Modules.pullbackPushforwardAdjunction` is the ONLY
+canonical global morphism in the situation, and once it is written down both remaining
+obligations become local on the base and `isIso_of_locally_isIso` finishes them. So the leaf
+consumes `_hpush` (`π_*𝒪 = 𝒪`, universally) and **not** the section — which also retires the
+older claim, recorded twice in that file, that the glueing half needs `_o` "to kill a class in
+`Br T`". With `N := π_*M` the local twists are not merely isomorphic on overlaps, they are the
+restrictions of one sheaf, so no cocycle and no Brauer class arises.
+**The generalisable question, asked before choosing a route: which of the candidate
+constructions is the target of a CANONICAL MORPHISM?** In a category of sheaves the answer is
+almost always the one produced by an adjunction unit or counit, and a construction that is only
+"the obvious object" — a pullback along a section, a hand-glued limit — is a construction you
+will have to build every comparison map for by hand.
+And what the counit route then needs, which is what a successor should be dispatched at rather
+than at the whole leaf: base change of `π_*` along an open immersion of the TARGET, the
+Beck–Chevalley compatibility of the counit with it, and `π_*𝒪_Z ≅ 𝒪_T` as `𝒪_T`-MODULES out of
+`HasTrivialPushforward` (which is a statement about the map of sheaves of RINGS and does not
+hand you the module-level one). None of the three is at this pin; all three are stated in the
+docstring of `exists_modPullback_of_locally_modPullback`.

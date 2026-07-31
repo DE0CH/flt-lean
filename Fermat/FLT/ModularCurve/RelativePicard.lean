@@ -227,6 +227,19 @@ leaves it moved to are, in dependency order:
   leaf, whose docstring carries the refutation of dropping either.  The
   ONE remaining dispatch target of this cut is
   `exists_isRelPicOverAffines_of_forall_isAffineOpen` (the geometry);
+
+  **Amended a fourth time, 2026-07-31.**  That "single new leaf" was cut
+  TWICE — once as `relPicEquiv_of_forall_restrict` and once, the next day,
+  as `relPicEquiv_of_locally_relPicEquiv` — and a merge kept both, which
+  no duplicate-NAME scan can see because the two share no identifier.  The
+  live one (the one `surj_of_isRelPicOverAffines` calls) is
+  `relPicEquiv_of_locally_relPicEquiv`; it is now PROVEN, and the dead twin
+  is proven over it and slated for deletion.  What replaces both as the
+  frontier is `exists_modPullback_of_locally_modPullback`, which says the
+  same thing with the curve deleted: for `π : Z ⟶ T` with `π_*𝒪 = 𝒪`
+  universally, an invertible `M` on `Z` that is a pullback from the base
+  over each member of an open cover of `T` is a pullback from the base.
+  The reduction is pure tensor algebra and `isPullback_curveBaseChangeMap`;
 * `exists_relPicZeroOf_of_relPicGroupLaw` — BLR 9.4/4 with `f_*𝒪 = 𝒪`,
   the equivalence relation and the group law on `Pic`'s points supplied.
   **Amended 2026-07-29: this one is now PROVEN**, over a two-leaf cut of
@@ -2669,6 +2682,32 @@ theorem curveBaseChangeMap_congr {X S T T' : Scheme.{u}} (strX : X ⟶ S) {g : T
     curveBaseChangeMap strX h hg = curveBaseChangeMap strX h' hg' := by
   subst e; rfl
 
+/-- **THE BASE-CHANGE SQUARE OF THE CURVE IS CARTESIAN** (PROVEN 2026-07-31) —
+`X ×_S T' = (X ×_S T) ×_T T'`, in the `IsPullback` form, for the concrete
+`curveBaseChangeMap`.
+
+Pullback pasting: the outer rectangle `X ×_S T' ⟶ X`, `⟶ T' ⟶ T ⟶ S` and the
+right-hand square `X ×_S T ⟶ X`, `⟶ T ⟶ S` are both cartesian, so
+`IsPullback.of_right` gives the left-hand square.  The two side conditions are
+`pullback.lift_fst` and `pullback.lift_snd` on `curveBaseChangeMap`.
+
+The audit on `nonempty_modPullback_sectionIdeal` asserted this in prose ("and
+`X ×_S T' = (X ×_S T) ×_T T'`"); it is proven here so that the leaf can be
+restated over an abstract cartesian square. -/
+theorem isPullback_curveBaseChangeMap {X S T T' : Scheme.{u}} (strX : X ⟶ S)
+    {g : T ⟶ S} {g' : T' ⟶ S} (h : T' ⟶ T) (hg : h ≫ g = g') :
+    IsPullback (curveBaseChangeMap strX h hg) (curveBaseChangeProj strX g')
+      (curveBaseChangeProj strX g) h := by
+  subst hg
+  refine IsPullback.of_right (h₁₂ := pullback.fst strX g) ?_ ?_
+    (IsPullback.of_hasPullback strX g)
+  · have hfst : curveBaseChangeMap strX h rfl ≫ pullback.fst strX g
+        = pullback.fst strX (h ≫ g) := by
+      simp only [curveBaseChangeMap, pullback.lift_fst]
+    rw [hfst]
+    exact IsPullback.of_hasPullback strX (h ≫ g)
+  · simp only [curveBaseChangeMap, curveBaseChangeProj, pullback.lift_snd]
+
 /-- **`k^*(h^* L) ≅ (k ≫ h)^* L` at the level of base-changed curves** (PROVEN)
 — `modPullbackCompIso` transported along `curveBaseChangeMap_comp`.
 
@@ -4446,47 +4485,130 @@ theorem inj_of_isRelPicOverAffines {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr :
   refine relPicEquiv_trans _ _ (relPicEquiv_modPullback strX (g ⁻¹ᵁ V).ι rfl h) ?_
   exact relPicEquiv_symm _ _ (hP.sheaf_pre (g ⁻¹ᵁ V).ι rfl q)
 
+/-- **BEING A PULLBACK FROM THE BASE IS ZARISKI-LOCAL ON THE BASE**
+(sorry leaf, cut 2026-07-31 out of `relPicEquiv_of_locally_relPicEquiv`, which
+is now PROVEN over it).  This is BLR 8.1/4 with everything that is not the
+descent removed: there is no curve here, no `RelPicEquiv`, no base change of a
+curve and no second sheaf — only a morphism of schemes `π : Z ⟶ T` with
+`π_*𝒪 = 𝒪` universally, and one invertible sheaf `M` on `Z` that is a pullback
+from the base over each member of an open cover of `T`.
+
+**Why the hypothesis is phrased through an `IsPullback` square rather than
+through `π ⁻¹ᵁ U`.**  The consumer produces its "preimage of `U`" as
+`X ×_S U`, i.e. as a fibre product, not as an open subscheme of `X ×_S T`;
+the two are canonically isomorphic and identifying them is exactly the
+bookkeeping this cut exists to keep out of the caller.  Taking the square as
+a hypothesis costs the leaf nothing — `isPullback_curveBaseChangeMap` supplies
+it — and it is what makes the bridge below pure tensor algebra.
+
+**ROUTE, and it is the counit one.**  The only canonical global morphism in
+sight is the counit of `Scheme.Modules.pullbackPushforwardAdjunction π`:
+
+    N := (Scheme.Modules.pushforward π).obj M,
+    ε := (pullbackPushforwardAdjunction π).counit.app M : π^*N ⟶ M.
+
+There is no canonical map in the rigidified direction — `π^*σ^*M` is
+`(π ≫ σ)^*M` and a map from it to `M` would need a natural transformation
+`π ≫ σ ⟶ 𝟙`, which does not exist for schemes — so the section `_o` of the
+consumer is NOT what this leaf runs on, and it is not among its hypotheses.
+With `ε` in hand both remaining obligations are local on `T`:
+
+* `IsInvertibleSheaf N`.  Shrink `U` until the local twist `Nᵢ` is trivial;
+  then `M|_W ≅ πᵢ^*𝒪 ≅ 𝒪_W`, and `N|_U ≅ (πᵢ)_*(M|_W) ≅ (πᵢ)_*𝒪_W ≅ 𝒪_U`,
+  the last step by `_hpush` at the base change `πᵢ`.  **No projection formula
+  for a nontrivial `Nᵢ` is needed** once the shrinking is done first, and that
+  is the only reason the leaf does not need one;
+* `IsIso ε`, by `isIso_of_locally_isIso` on the cover `{jᵢ ''ᵁ ⊤}` of `Z`:
+  over each member `ε` is the counit at `𝒪`, which the triangle identity makes
+  an isomorphism.
+
+**WHAT IS GENUINELY MISSING AT THIS PIN, and it is three named statements.**
+`Mathlib.AlgebraicGeometry.Modules.Sheaf` gives `pushforward`, `pullback`,
+their adjunction, `restrictFunctor` (with `Γ(M.restrict f, U) = Γ(M, f ''ᵁ U)`
+by `rfl`) and `Γ((pushforward f).obj M, U) = Γ(M, f ⁻¹ᵁ U)` by `rfl`.  What it
+does not give:
+
+1. **base change of `π_*` along an open immersion of the target**:
+   `(π_*M)|_U ≅ (π ∣_ U)_*(M|_{π⁻¹U})`.  Both sides are `SheafOfModules`
+   pushforwards along the two composite functors of opens, and those functors
+   agree (`π⁻¹(ι ''ᵁ V) = j ''ᵁ ((π ∣_ U) ⁻¹ᵁ V)`), so this should be the same
+   `pushforwardNatIso ≪≫ pushforwardCongr ≪≫ pushforwardComp` pattern mathlib
+   itself uses for `restrictFunctorComp` and `restrictFunctorAdjCounitIso`;
+2. **compatibility of the counit with (1)** — the Beck–Chevalley/mate identity
+   saying that the restriction of `ε` to `π⁻¹U` IS the counit for `π ∣_ U`.
+   This is the one step with no obvious shortcut; `CategoryTheory`'s
+   `mateEquiv`/`conjugateEquiv` are the tools;
+3. **`π_*𝒪_Z ≅ 𝒪_T` as `𝒪_T`-modules from `HasTrivialPushforward π`.**  The
+   predicate is `∀ U : T.Opens, IsIso (π.app U)`, i.e. a statement about the
+   map of sheaves of RINGS; the module-level statement is
+   `(pullbackPushforwardAdjunction π).unit.app (modUnit T)` composed with
+   `π_*(modPullbackUnitIso π).hom`, and what has to be checked is that its
+   component at `U` is `π.app U`, after which `Scheme.Modules.Hom`'s
+   `isIso_iff_isIso_app` finishes.
+
+**FAITHFULNESS — `_hpush` is load-bearing and the witness is the consumer's.**
+Take `Z = T ⊔ T` with `π` the codiagonal and `T = ℙ¹_k`.  Then `π_*𝒪 = 𝒪 × 𝒪`,
+a module on `Z` is a pair, `π^*N = (N, N)`, and `M = (𝒪, 𝒪(1))` is a pullback
+from the base over every affine open of `T` (where `𝒪(1)` is trivial) and over
+no cover globally, since one `N` would force `𝒪(1) ≅ 𝒪`.  Note that this `π`
+HAS a section, so the witness isolates `_hpush` and says nothing about the
+consumer's `_o` — which this leaf does not carry at all.
+
+`_hM` is retained defensively because the caller has it (`M` is a tensor
+product of two invertible sheaves).  It is very likely derivable from `_hloc`,
+since `πᵢ^*Nᵢ` is invertible and the `Wᵢ` cover `Z`; nothing here reads it as a
+claim that it is needed. -/
+theorem exists_modPullback_of_locally_modPullback {Z T : Scheme.{u}} (π : Z ⟶ T)
+    (_hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward π)
+    {M : Z.Modules} (_hM : IsInvertibleSheaf M)
+    (_hloc : ∀ t : T, ∃ (U : T.Opens) (W : Scheme.{u}) (jW : W ⟶ Z) (πW : W ⟶ (U : Scheme.{u})),
+      t ∈ U ∧ IsPullback jW πW π U.ι ∧
+      ∃ N : (U : Scheme.{u}).Modules, IsInvertibleSheaf N ∧
+        Nonempty (modPullback jW M ≅ modPullback πW N)) :
+    ∃ N : T.Modules, IsInvertibleSheaf N ∧ Nonempty (M ≅ modPullback π N) :=
+  sorry
+
 /-- **THE RELATIVE PICARD RELATION IS A ZARISKI SHEAF CONDITION ON `T`**
-(sorry leaf, cut 2026-07-31 out of `surj_of_isRelPicOverAffines`) — two
-invertible sheaves on `X_T` that are `RelPicEquiv` locally on `T` are
-`RelPicEquiv`.
+(**PROVEN 2026-07-31** over `exists_modPullback_of_locally_modPullback`; cut
+2026-07-31 out of `surj_of_isRelPicOverAffines`) — two invertible sheaves on
+`X_T` that are `RelPicEquiv` locally on `T` are `RelPicEquiv`.
 
 This is the whole mathematical content of BLR 8.1/4 as this file needs it.
 The other half of `surj_of_isRelPicOverAffines` — gluing the local
 classifying points `pᵢ` into one `p : T ⟶ P` — is PROVEN below, over
 `hP.inj` and `Scheme.Cover.glueMorphisms`.
 
-**Route, and it is shorter than the parent's old note claimed.**  Write
-`f := curveBaseChangeProj strX g` and `M := L ⊗ L'⁻¹`, invertible by `_hL`,
-`_hL'` and `exists_modTensor_inv`.  The hypothesis says `M|_{f⁻¹Uᵢ} ≅ f^*Nᵢ`
-for an open cover `Uᵢ` of `T`.  Then:
+**WHAT IS PROVEN HERE, and it is exactly the part that is not descent.**  All
+that this theorem now contains is the reduction of TWO invertible sheaves to
+ONE: put `L''` for an inverse of `L'` (`exists_modTensor_inv`) and
+`M := L ⊗ L''`, and then
 
-* **the local twists are CANONICAL, hence glue with nothing to check.**  The
-  projection formula for an INVERTIBLE `Nᵢ` is local on the base, so it needs
-  neither quasi-coherence nor properness, and it gives
-  `f_*(M|_{f⁻¹Uᵢ}) ≅ f_*(f^*Nᵢ) ≅ Nᵢ ⊗ f_*𝒪 ≅ Nᵢ` — the last step by
-  `_hpush`.  And `f_*(M|_{f⁻¹Uᵢ}) = (f_*M)|_{Uᵢ}`, because pushforward along
-  `f` of a restriction to `f⁻¹Uᵢ` is by definition the restriction to `Uᵢ`.
-  So `N := f_*M` is already invertible and `Nᵢ ≅ N|_{Uᵢ}`;
-* **the counit `f^*f_*M ⟶ M` is then an isomorphism**, because over `Uᵢ` it is
-  the counit at `f^*Nᵢ`, which the triangle identity makes the identity, and
-  being an isomorphism is local.
+* over each `Uᵢ` of the cover, `M|_{X_{Uᵢ}} ≅ πᵢ^*Nᵢ` — associativity, the
+  braiding, `nonempty_modPullback_modTensorPic` and `modPullbackUnitIso`, with
+  the local twist `Nᵢ` carried over UNCHANGED (it is not shrunk, and no
+  trivialization of it is needed on this side of the cut);
+* and conversely `M ≅ π^*N` gives `L ≅ L' ⊗ π^*N`, by the same calculus.
 
-So `M ≅ f^*N` with `N` invertible, which is `RelPicEquiv strX g L L'`.
+The square `IsPullback (curveBaseChangeMap strX U.ι rfl) (curveBaseChangeProj
+strX (U.ι ≫ g)) (curveBaseChangeProj strX g) U.ι` — which is what makes
+`X ×_S U` the preimage of `U` — is `isPullback_curveBaseChangeMap`, already in
+the file.  So the descent leaf never sees a curve.
 
 **WHICH HYPOTHESES ARE LOAD-BEARING — this CORRECTS the parent's old route
-note.**  That note said the descent had two hypothesis-consuming halves: a
-separatedness one needing `_hpush`, and a glueing one where `_o` "kills the
-resulting class in `Br T`".  The second half does not arise.  The `Nᵢ` are not
-merely isomorphic on overlaps, they are the RESTRICTIONS of one sheaf `f_*M`,
-so there is no cocycle to obstruct and no Brauer class to kill.  The route
-above consumes `_hpush` and nothing else.
+note, and the correction survives the cut.**  That note said the descent had
+two hypothesis-consuming halves: a separatedness one needing `_hpush`, and a
+glueing one where `_o` "kills the resulting class in `Br T`".  The second half
+does not arise.  With `N := π_*M` the local twists are not merely isomorphic on
+overlaps, they are the RESTRICTIONS of one sheaf, so there is no cocycle to
+obstruct and no Brauer class to kill.  The route consumes `_hpush` and nothing
+else — which is why `exists_modPullback_of_locally_modPullback` below carries
+`_hpush` alone and no section.
 
-`_hproper`, `_hsmooth`, `_hconn` and `_o` are nevertheless kept in the
+`_hproper`, `_hsmooth`, `_hconn` and `_o` are nevertheless kept in this
 signature: the caller has all four, keeping them costs a prover nothing, and
-someone who finds the rigidified route easier than the projection-formula one
-should feel free to spend `_o`.  Do NOT read their presence as a claim that
-they are needed.
+they are what a prover consumes in PRODUCING `_hpush`.  Do NOT read their
+presence as a claim that they are needed; the proof below passes none of them
+to the leaf.
 
 **FAITHFULNESS.**  `_hpush` is genuinely load-bearing, and the statement is
 FALSE for a proper morphism that has a section but has `f_*𝒪 ≠ 𝒪`.  Take
@@ -4516,10 +4638,63 @@ theorem relPicEquiv_of_locally_relPicEquiv {X S : Scheme.{u}} {strX : X ⟶ S}
     (_hloc : ∀ t : T, ∃ U : T.Opens, t ∈ U ∧
       RelPicEquiv strX (U.ι ≫ g) (modPullback (curveBaseChangeMap strX U.ι rfl) L)
         (modPullback (curveBaseChangeMap strX U.ι rfl) L')) :
-    RelPicEquiv strX g L L' :=
-  sorry
+    RelPicEquiv strX g L L' := by
+  obtain ⟨L'', hL'', ⟨einv⟩⟩ := exists_modTensor_inv _hL'
+  have hM : IsInvertibleSheaf (modTensor L L'') := isInvertibleSheaf_modTensorPic _hL hL''
+  have hcov : ∀ t : T, ∃ (U : T.Opens) (W : Scheme.{u})
+      (jW : W ⟶ curveBaseChange strX g) (πW : W ⟶ (U : Scheme.{u})),
+      t ∈ U ∧ IsPullback jW πW (curveBaseChangeProj strX g) U.ι ∧
+      ∃ N : (U : Scheme.{u}).Modules, IsInvertibleSheaf N ∧
+        Nonempty (modPullback jW (modTensor L L'') ≅ modPullback πW N) := by
+    intro t
+    obtain ⟨U, htU, N_U, hN_U, ⟨eU⟩⟩ := _hloc t
+    obtain ⟨tp⟩ := nonempty_modPullback_modTensorPic (curveBaseChangeMap strX U.ι rfl) L L''
+    obtain ⟨tp2⟩ := nonempty_modPullback_modTensorPic (curveBaseChangeMap strX U.ι rfl) L' L''
+    obtain ⟨as1⟩ := nonempty_modTensor_assoc
+      (modPullback (curveBaseChangeProj strX (U.ι ≫ g)) N_U)
+      (modPullback (curveBaseChangeMap strX U.ι rfl) L')
+      (modPullback (curveBaseChangeMap strX U.ι rfl) L'')
+    exact ⟨U, curveBaseChange strX (U.ι ≫ g), curveBaseChangeMap strX U.ι rfl,
+      curveBaseChangeProj strX (U.ι ≫ g), htU,
+      isPullback_curveBaseChangeMap strX U.ι rfl, N_U, hN_U,
+      ⟨tp ≪≫ modTensorMapIso eU (Iso.refl _) ≪≫
+        modTensorMapIso (modTensorSymmIso _ _) (Iso.refl _) ≪≫ as1 ≪≫
+        modTensorMapIso (Iso.refl _) (tp2.symm ≪≫
+          modPullbackMapIso _ einv ≪≫ modPullbackUnitIso _) ≪≫
+        modTensorUnitRightIso _⟩⟩
+  obtain ⟨N, hN, ⟨eM⟩⟩ := exists_modPullback_of_locally_modPullback
+    (curveBaseChangeProj strX g)
+    (hasUniversallyTrivialPushforward_curveBaseChangeProj strX g _hpush) hM hcov
+  obtain ⟨a1⟩ := nonempty_modTensor_assoc L L' L''
+  obtain ⟨a2⟩ := nonempty_modTensor_assoc L' L L''
+  exact ⟨N, hN, ⟨(modTensorUnitRightIso L).symm ≪≫
+    modTensorMapIso (Iso.refl L) einv.symm ≪≫ a1.symm ≪≫
+    modTensorMapIso (modTensorSymmIso L L') (Iso.refl L'') ≪≫ a2 ≪≫
+    modTensorMapIso (Iso.refl L') eM⟩⟩
 
-/-- **`Pic(X_-)/Pic(-)` IS A ZARISKI SHEAF — BLR 8.1/4** (sorry leaf).
+/-- **`Pic(X_-)/Pic(-)` IS A ZARISKI SHEAF — BLR 8.1/4** (**PROVEN 2026-07-31**:
+it is a VERBATIM DUPLICATE of `relPicEquiv_of_locally_relPicEquiv` above, and is
+now proven by one application of it).
+
+**THE DUPLICATION, AND WHAT TO DO WITH THIS DECLARATION.**  The same node was
+cut twice, on 2026-07-30 (here) and on 2026-07-31 (as
+`relPicEquiv_of_locally_relPicEquiv`, 60 lines above), and a merge kept both.
+The two statements are identical modulo binder explicitness and the names
+`A B` / `L L'`; nothing distinguishes them, and they share no identifier, which
+is why no duplicate-NAME scan could see it (the `xdup.py`/`check-dup` family
+matches names).  `relPicEquiv_of_locally_relPicEquiv` is the one with a code
+consumer — `surj_of_isRelPicOverAffines` below calls it — and this one had
+**zero** code uses anywhere in `Fermat/` (only the prose references above), so
+it was an open leaf that was also DEAD.
+
+**This declaration is slated for DELETION** and is kept for one release only,
+because its docstring carries two things the other's does not: the `X = C ⊔ C`
+witness in the FALSITY AUDIT below, and the `_o`/`Br T` discussion.  Whoever
+deletes it should first fold those into
+`relPicEquiv_of_locally_relPicEquiv`'s docstring; recover the text with
+`git show <this commit>^:Fermat/FLT/ModularCurve/RelativePicard.lean`.  A task
+naming THIS name is queued (`queue1`, "TARGET: `relPicEquiv_of_forall_restrict`");
+it is now a phantom and must be dropped.
 
 The genuine content of `surj_of_isRelPicOverAffines` below, cut out of it
 2026-07-30 so that the scheme-theoretic gluing (which is bookkeeping) and
@@ -4587,11 +4762,14 @@ theorem relPicEquiv_of_forall_restrict {X S : Scheme.{u}} (strX : X ⟶ S)
         (modPullback (curveBaseChangeMap strX U.ι rfl) A)
         (modPullback (curveBaseChangeMap strX U.ι rfl) B)) :
     RelPicEquiv strX g A B :=
-  sorry
+  relPicEquiv_of_locally_relPicEquiv _hproper _hsmooth _hconn _o _hpush _hA _hB _hcov
 
 /-- **SURJECTIVITY IS ZARISKI-LOCAL ON THE BASE — BLR 8.1/4**
-(**PROVEN 2026-07-30** over `relPicEquiv_of_forall_restrict`; formerly a
-bare sorry leaf).  This is the one place `_o` and `_hpush` are consumed,
+(**PROVEN 2026-07-30** over `relPicEquiv_of_locally_relPicEquiv` — the
+docstring said `relPicEquiv_of_forall_restrict` until 2026-07-31, which was
+never what the proof body called; see the duplication note on that dead twin
+above; formerly a bare sorry leaf).  This is the one place `_o` and `_hpush`
+are consumed,
 and the statement is FALSE without them — but they are now consumed
 *through* that leaf rather than here, and this proof passes them straight
 along without touching them.
@@ -4608,10 +4786,12 @@ over `Vᵢ`, so the affine-local field applies directly, and
 glue to `p : T ⟶ P` via `Scheme.Cover.glueMorphisms`.  What is left is
 the genuine content: `sheaf p` and `L` are `RelPicEquiv` locally on `T`
 and must be shown `RelPicEquiv` globally, i.e. `T ↦ Pic(X_T)/Pic(T)` is a
-Zariski sheaf.  That last sentence IS `relPicEquiv_of_forall_restrict`,
-and its own docstring carries the two hypothesis-consuming halves
-(separatedness from `_hpush`, glueing from `_o`) together with the
-refutation that drops them.
+Zariski sheaf.  That last sentence IS `relPicEquiv_of_locally_relPicEquiv`,
+now PROVEN over the curve-free
+`exists_modPullback_of_locally_modPullback`.  Its docstring corrects the
+"two hypothesis-consuming halves" reading recorded here: only `_hpush` is
+consumed, `_o` is not, and the Brauer obstruction the old note attributed to
+its absence does not arise.
 
 **Two things this proof needed that the old note did not mention**, both
 now hoisted next to `curveBaseChangeMap_proj` above.  The overlap
@@ -6344,31 +6524,14 @@ theorem relSection_comp_curveBaseChangeProj {X S T : Scheme.{u}} {strX : X ⟶ S
     (x : RelPoint strX g) : relSection x ≫ curveBaseChangeProj strX g = 𝟙 T := by
   simp [relSection, curveBaseChangeProj, pullback.lift_snd]
 
-/-- **THE BASE-CHANGE SQUARE OF THE CURVE IS CARTESIAN** (PROVEN 2026-07-31) —
-`X ×_S T' = (X ×_S T) ×_T T'`, in the `IsPullback` form, for the concrete
-`curveBaseChangeMap`.
-
-Pullback pasting: the outer rectangle `X ×_S T' ⟶ X`, `⟶ T' ⟶ T ⟶ S` and the
-right-hand square `X ×_S T ⟶ X`, `⟶ T ⟶ S` are both cartesian, so
-`IsPullback.of_right` gives the left-hand square.  The two side conditions are
-`pullback.lift_fst` and `pullback.lift_snd` on `curveBaseChangeMap`.
-
-The audit on `nonempty_modPullback_sectionIdeal` asserted this in prose ("and
-`X ×_S T' = (X ×_S T) ×_T T'`"); it is proven here so that the leaf can be
-restated over an abstract cartesian square. -/
-theorem isPullback_curveBaseChangeMap {X S T T' : Scheme.{u}} (strX : X ⟶ S)
-    {g : T ⟶ S} {g' : T' ⟶ S} (h : T' ⟶ T) (hg : h ≫ g = g') :
-    IsPullback (curveBaseChangeMap strX h hg) (curveBaseChangeProj strX g')
-      (curveBaseChangeProj strX g) h := by
-  subst hg
-  refine IsPullback.of_right (h₁₂ := pullback.fst strX g) ?_ ?_
-    (IsPullback.of_hasPullback strX g)
-  · have hfst : curveBaseChangeMap strX h rfl ≫ pullback.fst strX g
-        = pullback.fst strX (h ≫ g) := by
-      simp only [curveBaseChangeMap, pullback.lift_fst]
-    rw [hfst]
-    exact IsPullback.of_hasPullback strX (h ≫ g)
-  · simp only [curveBaseChangeMap, curveBaseChangeProj, pullback.lift_snd]
+/-! `isPullback_curveBaseChangeMap` used to be declared HERE and was MOVED UP,
+verbatim, on 2026-07-31, to sit beside `curveBaseChangeMap_congr` (~line 2615).
+The move is a pure relocation — its proof cites only `curveBaseChangeMap`,
+`curveBaseChangeProj` and mathlib, all of which are above the new site, and its
+consumers in this region are far below it.  It had to move because
+`relPicEquiv_of_locally_relPicEquiv` (~line 3900) needs the cartesian square
+and Lean has no forward references; the leaf was, in that precise sense, blocked
+by declaration order rather than by mathematics. -/
 
 /-- **The two sections are compatible across the base change** (PROVEN):
 `σ' ≫ φ = h ≫ σ`.

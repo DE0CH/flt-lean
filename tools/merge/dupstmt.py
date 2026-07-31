@@ -30,6 +30,23 @@ Everything else is significant, so a genuine difference in a hypothesis or a
 conjunct keeps two leaves apart.  Grouping is normalised by expanding every
 `(a b c : T)` into `(a : T) (b : T) (c : T)`.
 
+THREE KEYS, in decreasing strength, reported separately because they carry
+different amounts of evidence:
+
+  DUP-STMT          exact after the normalisation above -- an error;
+  DUP-STMT-REORDER  additionally ignores the ORDER of the binders -- review;
+  DUP-STMT-ALPHA    additionally ignores their NAMES and the KIND of their
+                    brackets -- review, and the noisiest.
+
+The third was added 2026-07-31 after the first two BOTH missed a live pair:
+`relPicEquiv_of_locally_relPicEquiv` and `relPicEquiv_of_forall_restrict` in
+`ModularCurve/RelativePicard.lean` are one theorem cut twice a day apart and
+kept by a merge, differing only by `{L L'}` against `(A B)`, `_hL/_hloc`
+against `_hA/_hcov`, and one implicit-vs-explicit `strX`.  The second had ZERO
+code consumers and a queued task naming it.  Calibration on the tree of
+2026-07-31: with that pair present the alpha key reports it and NOTHING else,
+so `0 exact + 0 reordered + 0 alpha` is the state to expect from a clean tree.
+
 Usage:
     tools/merge/dupstmt.py                    # whole tree under Fermat/
     tools/merge/dupstmt.py path/to/File.lean  # one file
@@ -155,6 +172,72 @@ def reorder_key(norm):
     return (tuple(sorted(binders)), concl)
 
 
+IDENT = re.compile(r"(?<![\w.'])([A-Za-z_][A-Za-z0-9_'!?]*)")
+# `∀ t : T,` / `∃ U,` / `fun z =>` — a variable bound INSIDE a type, which the
+# positional renaming of the TOP-LEVEL binders cannot reach.  Measured
+# 2026-07-31: the two `RelativePicard.lean` copies of the Zariski-sheaf leaf
+# agreed under `alpha_key` in every component except `∀ t : T` against
+# `∀ x : T`, so without this the key still misses them by one character.
+LOCALBIND = re.compile(
+    r"(?:∀|∃|fun|λ|Σ|∑|⨆|⨅|⋃|⋂)\s+((?:[A-Za-z_][A-Za-z0-9_'!?]*\s*)+)(?=[:,]|=>)")
+
+
+def local_alpha(s, start=0):
+    """Rename variables bound inside `s` by `∀`/`∃`/`fun`/… to `b0, b1, …`, in
+    order of first binding.  A heuristic, and deliberately so: it is only ever
+    used for the WEAKEST of the three keys, whose hits are review signals."""
+    sub, n = {}, start
+    for m in LOCALBIND.finditer(s):
+        for nm in m.group(1).split():
+            if nm not in sub:
+                sub[nm] = f'b{n}'
+                n += 1
+    if not sub:
+        return s
+    return IDENT.sub(lambda m: sub.get(m.group(1), m.group(1)), s)
+
+
+def alpha_key(norm):
+    """A key that additionally ignores the NAMES of the binders and the KIND of
+    the brackets around them.
+
+    Measured 2026-07-31, `ModularCurve/RelativePicard.lean`:
+    `relPicEquiv_of_locally_relPicEquiv` and `relPicEquiv_of_forall_restrict`
+    are one theorem cut twice a day apart, and BOTH keys above miss them,
+    because the two copies differ by an alpha-renaming of the binders
+    (`{L L'}` against `(A B)`, `_hL/_hL'/_hloc` against `_hA/_hB/_hcov`) rather
+    than by grouping.  `split_binders` has already thrown the brackets away, so
+    explicit-vs-implicit is free here; renaming positionally is the rest.
+
+    This is the WEAKEST of the three keys and therefore the noisiest: two
+    genuinely different theorems whose statements differ only in the names of
+    their variables are, after all, the same statement, and in a tree with many
+    parallel `X`/`X'` developments that can be a legitimate pair.  Read the hit;
+    do not act on it unread.
+    """
+    binders, concl = split_binders(norm)
+    if binders is None or not concl:
+        return None
+    sub, shape = {}, []
+    for b in binders:
+        head, sep, ty = b.partition(':')
+        names = head.split() if sep else []
+        if names and all(re.fullmatch(r"[A-Za-z_][A-Za-z0-9_'!?]*", n) for n in names):
+            slots = []
+            for n in names:
+                sub.setdefault(n, f'v{len(sub)}')
+                slots.append(sub[n])
+            shape.append((tuple(slots), ty.strip()))
+        else:
+            # instance-implicit and anonymous binders: no name to rename
+            shape.append(((), b.strip()))
+
+    def ren(s):
+        return local_alpha(IDENT.sub(lambda m: sub.get(m.group(1), m.group(1)), s))
+
+    return (tuple((slots, ren(ty)) for slots, ty in shape), ren(concl))
+
+
 def decls(path):
     raw = pathlib.Path(path).read_text().split('\n')
     stripped = strip_comments(raw)
@@ -188,7 +271,8 @@ def main():
     else:
         files = sorted(pathlib.Path('Fermat').rglob('*.lean'))
 
-    groups, rgroups = defaultdict(list), defaultdict(list)
+    groups, rgroups, agroups = (defaultdict(list), defaultdict(list),
+                                defaultdict(list))
     for f in files:
         try:
             for d in decls(f):
@@ -200,6 +284,9 @@ def main():
                 rk = reorder_key(d['norm'])
                 if rk is not None:
                     rgroups[rk].append(d)
+                ak = alpha_key(d['norm'])
+                if ak is not None:
+                    agroups[ak].append(d)
         except Exception as e:                # a scanner bug must not read as "clean"
             print(f'ERROR scanning {f}: {e}', file=sys.stderr)
             return 2
@@ -226,11 +313,14 @@ def main():
     found = report('DUP-STMT ', groups, seen)
     found_r = report('DUP-STMT-REORDER (review: sound only if the moved binders '
                      'are independent)', rgroups, seen)
+    found_a = report('DUP-STMT-ALPHA (review: same statement up to RENAMING the '
+                     'binders; the weakest key, read before acting)', agroups, seen)
 
     scope = 'sorried' if only_sorried else 'all'
     print(f'scanned {len(files)} file(s), {scope} declarations; '
-          f'{found} exact + {found_r} reordered duplicate-statement group(s)')
-    return 1 if (found or found_r) else 0
+          f'{found} exact + {found_r} reordered + {found_a} alpha-renamed '
+          f'duplicate-statement group(s)')
+    return 1 if (found or found_r or found_a) else 0
 
 
 if __name__ == '__main__':
