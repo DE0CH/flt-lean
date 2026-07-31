@@ -462,7 +462,7 @@ open in them has been split along the theories it needed:
 | `exists_isFineGamma1Moduli` | Katz–Mazur 4.7.1: `[Γ₁(N)]` is REPRESENTABLE at `N ≥ 4`, `ℓ` prime, `ℓ ∤ N` — a universal family `dM` over `M`, classified uniquely.  (`exists_fineGamma1Atlas` is PROVEN over it, 2026-07-28, through the formal `Gamma1Atlas.ofFineModuli`; that node was itself `nonempty_relPoint_atlas_of_relPoint`, REFUTED and restated the same day — see its FALSITY AUDIT.) | `𝔽_ℓ` |
 | `nonempty_gamma1Datum_baseChange` | base change of a `Γ₁(N)`-datum — formal, no arithmetic | any |
 | ~~`exists_weierstrassModel_of_abelianSchemeStruct_finiteField`~~ | PROVEN 2026-07-30; no longer a leaf.  The row used to say "the ℚ-side chain in `EllipticScheme.lean` is hardcoded to `Spec ℚ` … so there is nothing to instantiate", and named the condition under which the row would die: that the chain be made base-generic.  It was — `exists_weierstrassModel_of_ellipticScheme_field` (`X0.lean`) holds over any PERFECT field, and a finite field is perfect — so this is now `exact`. | — |
-| ~~`exists_relPointAddEquiv_of_weierstrassModel_finiteField`~~ | PROVEN 2026-07-30 the same way, from `exists_addEquiv_of_weierstrassModel_field` (`X0.lean`) at `k = ZMod ℓ`; `(W⁄ZMod ℓ) = W.toAffine` is `rfl`, so no transport was needed.  Its rigidity content lives on in `EllipticScheme.lean`'s `nonempty_addEquiv_relPoint_of_isIso` and `exists_isIso_of_affineCharts_field`, and what is left open under BOTH former leaves is the single shared citation `exists_ellipticScheme_weierstrassChart_addEquiv_field`. | — |
+| ~~`exists_relPointAddEquiv_of_weierstrassModel_finiteField`~~ | PROVEN 2026-07-30 the same way, from `exists_addEquiv_of_weierstrassModel_field` (`X0.lean`) at `k = ZMod ℓ`; `(W⁄ZMod ℓ) = W.toAffine` is `rfl`, so no transport was needed.  Its rigidity content lives on in `EllipticScheme.lean`'s `nonempty_addEquiv_relPoint_of_isIso` and `exists_isIso_of_affineCharts_field`, and what is left open under BOTH former leaves is the single shared citation `exists_ellipticScheme_weierstrassChart_addEquiv_field`.  **2026-07-31**: its `Equiv`-only shadow `nonempty_relPointEquiv_of_weierstrassModel_finiteField` is proven OUTRIGHT over the `relPointWeierstrassEquiv` dictionary — no citation at all — and `MazurTorsion.lean`'s consumer, which only ever used `e.toEquiv`, was moved onto it.  `map_add_relPointWeierstrassEquiv`, the rigidity equation `8a6d1575` cut against a stale copy of this file, was DELETED the same day: it had no consumer and is strictly harder than the shared citation.  See the note beside the dictionary. | — |
 | `exists_cuspSymbolEmbedding_x1_finiteField` | the hard direction of Ogg's description, DECOMPOSED 2026-07-28 into geometry and arithmetic: the `𝔽_ℓ`-rational cusp points inject into the Frobenius-fixed cusp symbols `Γ_1(N)∖ℙ¹(ℚ)`.  Carries NO counting — that is `card_fixedCuspSymbolX1` (`ModularCurve/CuspSymbolX1.lean`), PROVEN, and `card_cuspLocusPoints_x1_finiteField_le` is PROVEN over the two.  The lower bound is the `exists_rationalCuspPointsX1_field` row above. | `𝔽_ℓ`, `ℓ ∤ N`, `N ≥ 5` |
 | `exists_x1SmoothProperCurveModel` | Deligne-Rapoport VI.6.9: the smooth proper model over `ℤ_(ℓ)` together with the identification of its GENERIC fibre.  NO moduli in the conclusion — the modular input is the hypothesis `hX`.  (Replaces `exists_x1CurveReductionModel`, which is **PROVEN** over this row alone since 2026-07-30: the special fibre is the pullback along the closed point, so `spX`/`spX_nat` are `fibreIdentPullback`, and `properX` is `bijective_pre_generic_of_isProper` — the three obligations that need no modular geometry, discharged as `X0.lean` had already done on the `Γ₀` side.) | `ℚ → 𝔽_ℓ` |
 | `exists_isX1Compactification_specialFibre` | Igusa / Katz-Mazur 5.1.1: the special fibre of that model IS `X_1(N)` over `𝔽_ℓ`.  (`exists_x1CurveModel_of_base` is PROVEN over this row and the one above, 2026-07-28, splitting the two classical theorems it had cited jointly; `exists_x1ReductionAt` is PROVEN over that plus the moduli-free `NeronReduction.lean`.  Since 2026-07-30 the row above is the weaker `exists_x1SmoothProperCurveModel`; the leaf COUNT here is unchanged.) | `ℚ → 𝔽_ℓ` |
@@ -10374,9 +10374,12 @@ of the Weierstrass model, which is bookkeeping about open immersions and the
 scheme is the chord-and-tangent law, which is RIGIDITY and is the mathematics).
 
 Everything in this subsection is the first half, carried out rather than
-promised; the leaf that remains is `map_add_relPointWeierstrassEquiv`, and it
-mentions no scheme-theoretic dictionary at all.  Nothing here is `Γ₁`-specific,
-nothing here uses `ab.add`, and the whole chain is
+promised.  **It contains no `sorry` at all** (2026-07-31): the additivity half
+was never a leaf of this file in the end — see the note below
+`nonempty_relPointEquiv_of_weierstrassModel_finiteField` — and what this
+subsection delivers is the BIJECTION, published as that theorem and consumed by
+`MazurTorsion.lean`.  Nothing here is `Γ₁`-specific, nothing here uses `ab.add`,
+and the whole chain is
 
     RelPoint f 𝟙  ≃  Option (RelPoint strU 𝟙)          `relPointOptionEquiv`
                   ≃  Option (𝒪(U) →+* 𝔽_ℓ)             `relPointSpecEquivRingHom`
@@ -10763,8 +10766,10 @@ of `exists_relPointAddEquiv_of_weierstrassModel_finiteField` except the group
 law).
 
 The composite of the four equivalences above.  Note it sends the zero section to
-the point at infinity by construction, so the leaf below has only additivity
-left to say. -/
+the point at infinity by construction (`relPointWeierstrassEquiv_zero`), so the
+only thing it does NOT say about the group structures is additivity — which is
+not a leaf of this file; see the note below
+`nonempty_relPointEquiv_of_weierstrassModel_finiteField`. -/
 noncomputable def relPointWeierstrassEquiv {ℓ : ℕ} [Fact (Nat.Prime ℓ)]
     (W : WeierstrassCurve (ZMod ℓ)) [W.IsElliptic]
     {A : Scheme.{0}} {f : A ⟶ SpecF ℓ} (ab : AbelianSchemeStruct f)
@@ -10784,9 +10789,10 @@ and by construction).
 `relPointOfOption` sends `none` to the zero section, so the inverse of the splitting
 sends the zero section to `none`, and both remaining steps fix `none`.
 
-This is the base case of any rigidity argument for the leaf below — it is what says
-the two group laws being compared share an IDENTITY, without which the leaf would be
-false rather than merely open — so it is proven here rather than left inside it. -/
+This is the base case of any rigidity argument for this dictionary — it is what says
+the two group laws being compared share an IDENTITY — and it is the only thing about
+the group structures that the bijection gives for free.  Additivity is NOT a leaf of
+this file; see the note below `nonempty_relPointEquiv_of_weierstrassModel_finiteField`. -/
 theorem relPointWeierstrassEquiv_zero {ℓ : ℕ} [Fact (Nat.Prime ℓ)]
     (W : WeierstrassCurve (ZMod ℓ)) [W.IsElliptic]
     {A : Scheme.{0}} {f : A ⟶ SpecF ℓ} (ab : AbelianSchemeStruct f)
@@ -10801,50 +10807,95 @@ theorem relPointWeierstrassEquiv_zero {ℓ : ℕ} [Fact (Nat.Prime ℓ)]
   simp only [relPointWeierstrassEquiv, Equiv.trans_apply, h]
   rfl
 
-/-- **RIGIDITY: the Weierstrass dictionary is ADDITIVE** (sorry leaf, NEW
-2026-07-31) — all that is left of
-`exists_relPointAddEquiv_of_weierstrassModel_finiteField`, which is PROVEN over
-this leaf alone.
+/-- **A Weierstrass model of an abelian scheme over `Spec 𝔽_ℓ` computes its
+`𝔽_ℓ`-sections AS A SET** (PROVEN 2026-07-31, outright — no `sorry` anywhere
+under it, and in particular NOT under
+`exists_ellipticScheme_weierstrassChart_addEquiv_field`).
 
-TRUE, and it is the classical rigidity lemma: two algebraic group structures on
-the same proper variety over a field sharing an identity element coincide.  Here
-`ι` identifies `A ∖ O` with the affine chart of `W`, so `A` is the smooth
-projective model of `W` with `O` the point at infinity; `ab.add` and the
-chord-and-tangent law are two group laws on it with the same identity — the
-dictionary `relPointWeierstrassEquiv` sends `ab.zero` to `Point.zero` by
-construction, since `relPointOfOption` sends `none` to `ab.zero` — so they agree.
+This is the `Equiv`-only shadow of
+`exists_relPointAddEquiv_of_weierstrassModel_finiteField` below, and it is what
+the dictionary of this subsection buys: the bijection needs no group law, so it
+is available a whole citation earlier than the `≃+`.
 
-**THIS IS THE SAME OBLIGATION THE ℚ SIDE MEETS AND DISCHARGES**, which is where
-a successor should look first: `X0.lean` proves
-`exists_geomFibreAddEquiv_of_weierstrassModel` through `relPointPost_add`, i.e.
-by transporting the group law along a morphism rather than by re-deriving it.
-The `𝔽_ℓ` statement here is STRICTLY WEAKER than that one (no `Γ_ℚ`-equivariance,
-sections rather than geometric fibres), so the route is available; what is NOT
-available is the statement itself, since that chain is hard-wired to `Spec ℚ` —
-see the route audit on `exists_weierstrassEquiv_of_gamma1Datum` below.
+**Why it is worth stating separately.**  Its consumer is
+`MazurTorsion.lean`'s `exists_x0Compactification_relPoint_equiv_point`, which
+took the `≃+` and then immediately projected it to `e.toEquiv`, twice, using no
+group structure at all.  Routing that consumer through here removes
+`exists_ellipticScheme_weierstrassChart_addEquiv_field` — the one open leaf
+under the `≃+` — from its cone.  (It still depends on
+`exists_weierstrassRingEquiv_of_abelianSchemeChart`, the Riemann–Roch half,
+through `exists_weierstrassModel_of_abelianSchemeStruct_finiteField`; that one
+is unaffected.)
 
-**What is NO LONGER part of this leaf** (2026-07-31): the bijection.  A prover
-here may take `relPointWeierstrassEquiv` as given and has to produce exactly one
-equation.  Every scheme-theoretic step — the open-immersion factorisation, the
-`Spec`–`Hom` adjunction, the coordinate-ring functor of points, the
-`Equation`/`Nonsingular` identification — is proven above and none of it is
-restated here.
-
-Stated with `ab.add x y` rather than `x + y` so that the statement does not
-depend on the `AddCommGroup` instance being in scope; the two are definitionally
-equal because `AbelianSchemeStruct.addCommGroup` is `@[reducible]`. -/
-theorem map_add_relPointWeierstrassEquiv {ℓ : ℕ} [Fact (Nat.Prime ℓ)]
+The `≃+` form below is NOT subsumed and stays: `exists_weierstrassPointOfOrder_of_gamma1Datum`
+transports an `addOrderOf` across it and genuinely needs the group law. -/
+theorem nonempty_relPointEquiv_of_weierstrassModel_finiteField {ℓ : ℕ} [Fact ℓ.Prime]
     (W : WeierstrassCurve (ZMod ℓ)) [W.IsElliptic]
     {A : Scheme.{0}} {f : A ⟶ SpecF ℓ} (ab : AbelianSchemeStruct f)
-    (ι : Spec (CommRingCat.of W.toAffine.CoordinateRing) ⟶ A) [IsOpenImmersion ι]
-    (hcomm : ι ≫ f = Spec.map (CommRingCat.ofHom
-      (algebraMap (ZMod ℓ) W.toAffine.CoordinateRing)))
-    (hrange : Set.range ι.base = (Set.range (ab.zero (𝟙 (SpecF ℓ))).1.base)ᶜ)
-    (x y : RelPoint f (𝟙 (SpecF ℓ))) :
-    relPointWeierstrassEquiv W ab ι hcomm hrange (ab.add x y)
-      = relPointWeierstrassEquiv W ab ι hcomm hrange x
-        + relPointWeierstrassEquiv W ab ι hcomm hrange y :=
-  sorry
+    (hmodel : ∃ ι : Spec (CommRingCat.of W.toAffine.CoordinateRing) ⟶ A,
+      IsOpenImmersion ι ∧
+        ι ≫ f = Spec.map (CommRingCat.ofHom
+          (algebraMap (ZMod ℓ) W.toAffine.CoordinateRing)) ∧
+        Set.range ι.base = (Set.range (ab.zero (𝟙 (SpecF ℓ))).1.base)ᶜ) :
+    Nonempty (RelPoint f (𝟙 (SpecF ℓ)) ≃ W.toAffine.Point) := by
+  obtain ⟨ι, hopen, hcomm, hrange⟩ := hmodel
+  haveI := hopen
+  exact ⟨relPointWeierstrassEquiv W ab ι hcomm hrange⟩
+
+/-! #### `map_add_relPointWeierstrassEquiv` was DELETED on 2026-07-31, and it was
+a FREE-FLOATING sorry rather than a leaf
+
+It said that `relPointWeierstrassEquiv` is ADDITIVE — classical rigidity, and a
+TRUE statement.  It is gone because it had **no consumer at all**, and because
+the obligation it names is already carried, in a strictly cheaper form, by a leaf
+that IS consumed.  Both halves of that were established by measurement, and both
+are worth writing down because the shape recurs.
+
+**How it became consumerless: a semantic merge, not a mistake by either author.**
+`8a6d1575` (2026-07-31 01:03) cut
+`exists_relPointAddEquiv_of_weierstrassModel_finiteField` into this dictionary
+plus that one rigidity equation, and re-pointed its body at them.  It was cut
+against a version of the file in which that theorem was still a `sorry`.  It had
+in fact been PROVEN the day before, on another branch, by the field-generic route
+(`X0.lean`'s `exists_addEquiv_of_weierstrassModel_field` at `k = ZMod ℓ`); the two
+landed together in `949b0b17` (release 27, merge `flt-lean-229`), the resolution
+correctly kept the PROOF, and the dictionary was left with nothing above it.
+This is the seventh-invisibility-class shape of `CLAUDE.md` in its quietest form:
+no conflict marker, no duplicate name, a green build, and a `sorry` that no
+declaration in the tree reaches.
+
+**Why restoring the consumption would have been a REGRESSION, which is the part
+that decided this.**  The two routes are not symmetric:
+
+* the field-generic route leaves ONE open leaf,
+  `exists_ellipticScheme_weierstrassChart_addEquiv_field`
+  (`EllipticScheme.lean`), and it is SHARED — the `Γ₀` consumer in `X0.lean`
+  needs it regardless of anything that happens in this file;
+* the dictionary route would have left that leaf standing for `Γ₀` **and** this
+  one for `Γ₁`, i.e. two leaves where there was one.
+
+Worse, the deleted statement is STRICTLY HARDER than the leaf it would have
+stood beside.  `exists_ellipticScheme_weierstrassChart_addEquiv_field` produces
+`Nonempty (… ≃+ (E⁄k).Point)` — SOME additive equivalence — and that does not
+give additivity of THIS bijection: `e ∘ φ⁻¹` is then just a bijection of
+`W.Point` fixing `0`, on which nothing is known.  Discharging the deleted
+statement needs a *pinned* form of that leaf (an `AbelianSchemeStruct` on `A`
+whose relative points are chord-and-tangent THROUGH `ι`, fed to `X0.lean`'s
+`isAdditiveOn_of_post_zero` at `u = 𝟙 A`).  So a prover sent here would have had
+to prove a strengthening of somebody else's open leaf in order to close a
+declaration nothing consumed.
+
+**What the dictionary is still for, and it is not nothing.**  Everything above
+this note is PROVEN and is now consumed, through
+`nonempty_relPointEquiv_of_weierstrassModel_finiteField` — the bijection is
+worth exactly one citation less than the `≃+`, and one real consumer wanted only
+the bijection.  That is the honest division of this subsection: the `Equiv` is
+free, the group law is not.
+
+Recover the deleted declaration with `git show 8a6d1575:Fermat/FLT/ModularCurve/X1.lean`
+if a consumer for the pinned rigidity ever appears; the right place to put the
+content, though, is `exists_ellipticScheme_weierstrassChart_addEquiv_field`
+itself, where it pays out at both consumers at once. -/
 
 /-- **A Weierstrass model of an abelian scheme over `Spec 𝔽_ℓ` computes
 its `𝔽_ℓ`-SECTIONS** (introduced 2026-07-28 as the TRANSPORT half of
