@@ -5967,6 +5967,102 @@ and a second consumer 79 000 lines away in another module from another branch, f
 4 after twenty minutes of elaboration. Budget three rounds minimum, and schedule nothing behind the
 first green one.
 
+### GET THE WHOLE MODULE'S ERROR LIST IN ONE RUN: `lake env lean -D maxErrors=2000`
+
+(2026-07-31, `flt-lean-58`, measured on `merger`'s `X0.lean`.) The release-build
+rule above says budget three rounds because the errors are serialised behind each
+other by the import graph. That is true ACROSS modules. WITHIN one module you do
+not have to pay rounds at all: `lake build` stops at `maxErrors` (100) and prints
+`maximum number of errors … reached, exiting`, but once the module's dependencies
+are built you can run the elaborator directly with the cap lifted —
+
+    lake env lean -D maxErrors=2000 Fermat/FLT/ModularCurve/X0.lean
+
+— and get the complete list in ONE elaboration. Here that was **~4.5 minutes** for
+a 107 000-line module whose dependency build had just taken **50**, and it turned
+"89 sites, cap reached" into the module's real inventory. Do this before reporting
+a red module: a capped list is not a list, and the next 40 000 lines of the file
+have not been looked at.
+
+Two riders. The cap being reached is itself the tell — grep the log for
+`maximum number of errors`. And a PARSE error truncates everything after it, so a
+capped-and-truncated log can be wrong about the count in both directions at once.
+
+### AN ORPHANED PROSE BLOCK IS REPAIRED WITH `--`, NEVER BY RE-OPENING IT
+
+Same run, and it cost several build cycles to learn. The doctrine already says a
+merge can strand a docstring body without its opener, and that a stray `-/` or an
+unterminated `/--` takes the whole module down. What it does not say is how to put
+one back, and the obvious repair is a trap:
+
+* **Do not re-open the block with `/-!`.** Block comments NEST, so any `/-` or `-/`
+  *inside* the stranded prose — and this project's prose is full of quoted
+  delimiters — opens or closes a level and leaves the file worse. I re-opened one
+  block and turned 81 errors into 122, twice, because my own explanatory note
+  quoted the delimiters it was explaining.
+* **`--` line comments are delimiter-safe.** Verified on a three-line scratch:
+  `-- a comment with -/ inside it` and `-- another with /- inside it` both
+  elaborate clean. So converting a stranded block line-by-line to `--` preserves
+  every word and cannot nest. That is the repair.
+* **Better still, check whether the block is a DUPLICATE first.** One of the two
+  here was byte-identical to a live copy 380 lines below (`diff <(sed -n 'a,bp')
+  <(sed -n 'c,dp')` — one command), so the right repair was deletion, not rescue.
+
+**And do not trust a hand-rolled comment scanner over Lean.** Mine reported
+`depth 0, no strays` on a file Lean rejected with `unterminated comment`, because
+it did not skip string literals; with strings handled it found the opener
+immediately. Even then it disagreed with Lean about nesting in the damaged region.
+Use the scanner to LOCATE candidates and `lake env lean` to decide.
+
+**Finally, know when to stop.** These wounds are layered: each repair reveals the
+next, and the count can go UP because a broken comment was hiding real errors
+inside itself. Repairing them is reconstructing another author's prose across a
+100 000-line file. If the merge worker is mid-flight on that same file — check its
+last few commits — the higher-value move is to REVERT your comment edits, keep your
+own payload minimal and conflict-free, and hand over the uncapped error inventory
+plus a per-wound diagnosis. That costs them one command instead of a release round,
+and it cannot collide with their in-flight repairs.
+
+### WHEN TWO RIVAL CUTS OF ONE LEAF BOTH LAND, THE **CALL SITE** IS THE ARBITER
+
+(2026-07-31, `flt-lean-58`, on `not_forall_galoisScalar_of_cmEndomorphism` in `X0.lean`.)
+The section above says how to DETECT an interface split and how to DECLINE a payload. It
+does not say what to do when the split is between two rival cuts of the *same* declaration
+and both are already ancestors of `merger` — which is the state a prover agent inherits,
+long after either author could be asked.
+
+The shape, and it is going to recur wherever this fleet cuts aggressively: branch A SPLITS
+a leaf into regimes over a parameter `q` and proves the original by a trichotomy; branch B
+NARROWS the same leaf to `q = p`, deletes the parameter and rewrites the hypotheses. Both
+are correct alone. The declaration-level merge takes A's binder list and body together with
+B's hypotheses, so the body passes `(p : ℤ) • u = 0` where A's regime lemmas want
+`(q : ℤ) • u = 0` — and separately B's re-pointed call site passes no `_hq`. Red, with no
+conflict marker, in a region neither author's diff looks wrong in.
+
+**Do not try to reconcile the two docstrings — read the CONSUMER's argument list.** A call
+site is the one artefact in the file that cannot be ambiguous about which signature is
+current: it either elaborates against a signature or it does not. Here
+`not_twoStableLines_of_cmEndomorphism` passed eleven arguments with no `_hq`, which settles
+it in one `grep` and needs no judgement about which cut is nicer.
+
+Then finish the job the arbitration implies, because it is never only a signature:
+
+* **Re-derive consumerlessness for every declaration the losing cut introduced.** Under the
+  narrowing, A's `…_two` was an OPEN leaf with no consumer (a guaranteed phantom dispatch)
+  and A's PROVEN `…_unramifiedOdd` plus its arithmetic residue were free-floating. Deleting
+  them took the cluster's frontier from 3 open leaves to 1.
+* **Quote the recovery command with the sha you deleted from** — `git show <sha>:<path>` —
+  and say what would reverse the decision. Deleted *proven* work is cheap to restore and
+  impossible to find if nobody wrote down where it went.
+* **Say "frontier 3 → 1" in the commit.** A warning-set delta of `−2` from a *repair* reads
+  exactly like a regression otherwise.
+
+Corollary for the merge worker, and it is the cheap prophylactic: when the per-declaration
+merge reports "both changed the code, kept ours" on a leaf, **also grep that leaf's name for
+call sites and diff their argument counts against both sides.** An arity mismatch at a call
+site is a two-second check and it is the single tell that separates this class from an
+ordinary docstring disagreement.
+
 ## A DOCSTRING'S "WHAT PROVING IT NEEDS" IS ABOUT A CONSTRUCTION, NOT ABOUT THE STATEMENT
 
 (2026-07-31, `flt-lean-214`.) `exists_involutionSignSplitting` in `X0.lean` had stood
