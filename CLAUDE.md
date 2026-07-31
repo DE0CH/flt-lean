@@ -5,6 +5,55 @@ This repository was split out of Deyao's dissertation repo on
 history of the formalization is preserved. The project root IS the
 Lean package (formerly the `fermat/` subfolder).
 
+## A "why the `∀` is legitimate" PARAGRAPH IS AN UNPAID FORMAL DEBT — pay it once and several citation leaves collapse into one
+
+(2026-07-31, `ModularCurve/X0.lean`.) A leaf stated `∀ R : SomeFineModuliStructure, P R`
+almost always carries a docstring paragraph of the form *"`universal` is a **fine** moduli
+property, so any two inhabitants are related by a unique isomorphism, and `P` is
+invariant under isomorphism; therefore the `∀` is not the junk-witness trap."* In `X0.lean`
+FOUR leaves carried that paragraph, in near-identical words, and in every case it was
+**prose only**. One of them even spelled out the price: *"the formal cost of the `∀` is
+exactly that uniqueness argument"* — and then did not pay it.
+
+Pay it. The argument is short, needs **no hypothesis, no citation and no inhabitant**
+(it is a theorem about the structure, so it holds vacuously where the structure is empty),
+and it is the same two steps every time:
+
+1. *an endomorphism that classifies the object's OWN universal family is `𝟙`* — the
+   uniqueness clause of `universal` applied at `(dM, lvlM)`, with `IsBaseChangeOf.refl`
+   witnessing that `𝟙` classifies it;
+2. *the two classifying maps between any `R` and `R'` are mutually inverse* — each
+   composite is such an endomorphism, via `IsBaseChangeOf.comp`.
+
+What that buys is bigger than one leaf. Once rigidity is a theorem, an **`∃`-shaped**
+citation delivers every **`∀`-shaped** consumer, so a cluster of leaves that split one
+indivisible citation "for dispatchability" can be **fused back into a single leaf with no
+statement and no call site changing**. Here `exists_rigidifiedModuliScheme`
+(representability, KM 4.7.2/5.1.1/6.6.1/6.6.2) and `isAffine_of_rigidifiedModuliScheme`
+(affineness, the parenthesis of KM 8.1.1) both became THEOREMS over the single leaf
+`exists_isAffine_rigidifiedModuliScheme`. Frontier −1, and the split was buying nothing:
+the affineness parenthesis is a remark *about* the object representability produces, so
+neither half was ever dischargeable alone.
+
+Two practical notes:
+
+* **`hn`-style hypotheses change role when you fuse.** In the old `∀` form `3 ≤ n` was
+  vacuously satisfiable and NOT load-bearing (no inhabitant exists at `n ≤ 2`, so the `∀`
+  was vacuously true). In the `∃` form it is load-bearing **for truth** — drop it and the
+  leaf is FALSE, not merely unprovable. Re-run the falsity audit when the quantifier flips;
+  an audit written for the `∀` does not transfer.
+* **`refl`/`comp` for the base-change relation are usually declared BELOW the leaves**,
+  because they were introduced later for a different consumer. Lean's declaration order
+  then forces the newly-proven `∀` (and its assembly) to move down past them. Move the
+  *consumers*, not the calculus — it is far less text — and leave a `used to be stated
+  HERE … MOVED DOWN` note in the file's existing style.
+
+The identical twin cluster in `ModularCurve/X1.lean`
+(`exists_gamma1RigidifiedModuliScheme` / `isAffine_of_gamma1RigidifiedModuliScheme`, over
+`Gamma1RigidifiedModuliScheme.universal`) is still unfused, and there
+`IsBaseChangeOfGamma1.refl` / `.comp` already sit ~2500 lines ABOVE the leaves, so it needs
+no movement at all.
+
 ## Missing tools: brew install is pre-authorized
 
 (Deyao, 2026-07-21.) If a needed tool is missing and available through
