@@ -4667,8 +4667,173 @@ theorem exists_extend_atkinLehnerModel_of_jNeronDatum (hq : q.Prime) (hqN : q �
   rw [hy]
   exact hgenv g g₀ h y
 
+/-- **ATKIN–LEHNER (1970) §2 ON THE CUSPS, PURELY OVER `ℚ`** (sorry leaf, new
+2026-07-31) — the RECUT residue of
+`exists_isCusp_ne_neronGenAut_of_atkinLehnerPin` below, which is now PROVEN over
+it.  **This is the whole of what the 1970 paper is asked for in this
+development**, and nothing else is left in it: no integral model, no `q`, no
+`R`, no reduction, no special fibre, no `IsX0JNeronDatum`.
+
+**WHAT IS ASKED.**  `X` is a smooth proper compactification of a coarse moduli
+space `Y = Y_0(N)_ℚ` (`hX`), `wYQ` is the Atkin–Lehner involution of `Y` — pinned
+as the genuine `w_N` by `hpin`, which says it realises the moduli action
+`al.dual` on the coarse space, and by `hc.universal` that determines it uniquely
+— and `v` is a `ℚ`-MORPHISM OF SCHEMES `X ⟶ X` extending it across the cusps
+(`hvj`).  Wanted: one `ℚ`-rational cusp that `v` moves.
+
+**TRUE.**  `w_N` exchanges the cusps above `e` and `N/e`, hence the cusps `1` and
+`N`, i.e. `∞` and `0`.  Both are `ℚ`-rational — `gcd(1, N) = gcd(N, 1) = 1`, so
+`φ(gcd) = 1` and `residueQDegree_eq_totient` (`X0.lean`) makes the residue field
+`ℚ` — and they are distinct for `1 < N`.  So `w_N` moves `∞`.
+
+**⚠ THE PIN IS LOAD-BEARING AND THE LEAF IS FALSE WITHOUT IT.**  The audit is
+INHERITED from the node below, whose hypotheses this leaf's are the image of, and
+it is reproduced because the shape of the junk witness changes: every other
+hypothesis is satisfied by `v := 𝟙 X`, `wYQ := 𝟙 Y`, for which `RelPoint.post v hv`
+fixes every cusp.  What excludes that witness is `hpin`: with `v = 𝟙 X`, `hvj`
+reads `hX.j = wYQ ≫ hX.j`, and `hX.j` is a MONOMORPHISM (`hX.isOpenImmersion`),
+so `wYQ = 𝟙 Y`; `hpin` then forces `classify g dd = classify g (al.dual g dd)` for
+every `Γ₀(N)`-datum, i.e. that `w_N` acts trivially on `Y_0(N)`, which is false at
+every `N > 1`.  **Do not delete `al` or `hpin`.**
+
+**⚠ AND `v` MUST STAY A MORPHISM OF SCHEMES — THIS IS *NOT* THE ABSTRACT-INVOLUTION
+CUT THE NODE BELOW REFUTES.**  That node's docstring records, correctly, that
+replacing the induced map by an abstract involution `σ` of `X(ℚ)` restricting to
+`RelPoint.post wYQ hwYQ` on the image of `Y(ℚ)` produces a FALSE leaf:
+`hX.IsCusp` is by definition "not in the image of `Y(ℚ)`", so `X(ℚ)` is the
+disjoint union of that image and the cusps, and `σ := RelPoint.post wYQ hwYQ` on
+the image together with the IDENTITY on the cusps satisfies every such hypothesis
+while fixing every cusp.  That counterexample dies here: `v` is a morphism of
+SCHEMES, `Y` is DENSE in `X` (`hX.isDominant`) and `X` is separated over `ℚ`
+(`hX.proper`), so `v` is the UNIQUE extension of `wYQ` across the cusps and its
+behaviour there is not free data.  What the node below achieves with an integral
+model (`eq_of_comp_open_x0JNeronModel`) is achieved here with `hvj` alone, which
+is why the model can be dropped and the `q`-adic apparatus with it.
+
+**WHERE THE HYPOTHESES ENTER.**  `hN : 1 < N` only: at `N = 1` there is a single
+cusp and `w_1 = 𝟙`, so the conclusion is false; at every `N > 1`, prime or not,
+`w_N` exchanges `0` and `∞`.  (`w_4` FIXES the cusp `1/2`, which is why the
+∀-form needs `N.Prime` — the counting step's business, not this leaf's.)
+`hvinv : v ≫ v = 𝟙 X` is RETAINED DEFENSIVELY rather than needed: the classical
+argument moves a cusp whether or not `v` is an involution, but the sole call site
+already holds it (it is `hinv` transported by
+`exists_genericFibreAut_of_atkinLehnerModel`), so carrying it costs the caller
+nothing and can only weaken the leaf.  A prover who does not want it may delete
+it together with the one argument at the one call site.
+
+**NON-VACUITY.**  `N = 37`: the genuine `w_37` on `X_0(37)_ℚ` witnesses the
+conclusion, swapping the two distinct rational cusps `0` and `∞`.
+
+**The check that refutes it**: a level `N > 1` and a `ℚ`-morphism `v` of the
+compactification restricting to the moduli-pinned `w_N` on `Y_0(N)` and fixing
+every rational cusp.
+
+**REFERENCES.**  Atkin–Lehner, *Hecke operators on `Γ₀(m)`*, Math. Ann. 185
+(1970), §2, for the action `e ↦ N/e` on the cusps; Ogg, *Rational points on
+certain elliptic modular curves* (1973).  Deligne–Rapoport is NOT cited: the
+étale cuspidal subscheme belongs to `redX_base_ne_of_isCusp`, and the extension
+of `w_N` over `ℤ[1/N]` to `exists_extend_atkinLehnerModel_of_jNeronDatum`. -/
+theorem exists_isCusp_ne_post_of_atkinLehnerPin (hN : 1 < N) (al : AtkinLehnerMorphism N)
+    (wYQ : Y ⟶ Y) (hwYQ : wYQ ≫ strY = strY)
+    (_hpin : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (dd : Gamma0Datum N T),
+      RelPoint.post wYQ hwYQ (hc.classify g dd) = hc.classify g (al.dual g dd))
+    (v : X ⟶ X) (hv : v ≫ strX = strX) (_hvj : hX.j ≫ v = wYQ ≫ hX.j)
+    (_hvinv : v ≫ v = 𝟙 X) :
+    ∃ c : RelPoint strX (𝟙 SpecQ), hX.IsCusp c ∧ RelPoint.post v hv c ≠ c :=
+  sorry
+
+/-- **AN AUTOMORPHISM OF THE INTEGRAL MODEL IS A `ℚ`-MORPHISM OF `X` ON THE
+GENERIC FIBRE, AND `neronGenAut` IS POSTCOMPOSITION BY IT** (PROVEN 2026-07-31)
+— the bridge that lets `exists_isCusp_ne_neronGenAut_of_atkinLehnerPin` be
+recut over the model-free leaf above.
+
+`IsX0JNeronDatum.genX` is only an identification of RELATIVE POINTS, not of
+schemes, so `neronGenAut d w hw` is *a priori* a bare function
+`X(ℚ) → X(ℚ)` with no morphism behind it — which is exactly what makes the
+naive "abstract involution of `X(ℚ)`" cut FALSE (see the leaf above).  But
+`genX` is functorial in the test scheme (`genX_nat`), so it is an isomorphism of
+FUNCTORS OF POINTS, and Yoneda applies: evaluating at `(T, g) := (X, strX)` on
+the tautological point `𝟙 X` produces a genuine `v : X ⟶ X` over `ℚ`, and
+`genX_nat` then says `neronGenAut d w hw` is `RelPoint.post v hv` at every
+rational point.  No properness, no density and no valuative criterion are used;
+the whole proof is naturality plus `Equiv.apply_symm_apply`.
+
+The other two conclusions come out of the same computation.  `hX.j ≫ v = wYQ ≫ hX.j`
+is `genX_j` (the identification carries the open immersion) composed with
+`post_relSectionAlong_of_comm` (`hcomm`, on the model) and `hgen` (the generic
+fibre of `w_𝒴` is `w_{Y,ℚ}`), read at the tautological point of `Y`; and
+`v ≫ v = 𝟙 X` is `hinv` transported the same way.
+
+`hinv` and `hcomm` are consumed here and nowhere else in the recut, which is why
+the leaf above can be stated without a model at all. -/
+theorem exists_genericFibreAut_of_atkinLehnerModel
+    (w : XZ ⟶ XZ) (hw : w ≫ xstr = xstr) (wY : YZ ⟶ YZ) (hwY : wY ≫ ystr = ystr)
+    (hcomm : wY ≫ jZ = jZ ≫ w) (hinv : w ≫ w = 𝟙 XZ)
+    (wYQ : Y ⟶ Y) (hwYQ : wYQ ≫ strY = strY)
+    (hgen : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R)
+        (h : g ≫ SpecLoc.generic R = g₀) (y : RelPoint strY g),
+      d.genY g g₀ h (RelPoint.post wYQ hwYQ y) = RelPoint.post wY hwY (d.genY g g₀ h y)) :
+    ∃ (v : X ⟶ X) (hv : v ≫ strX = strX),
+      hX.j ≫ v = wYQ ≫ hX.j ∧ v ≫ v = 𝟙 X ∧
+      ∀ c : RelPoint strX (𝟙 SpecQ), neronGenAut d w hw c = RelPoint.post v hv c := by
+  -- Yoneda: the generic fibre of `w`, read on the tautological point of `X`
+  obtain ⟨vR, hvR⟩ : ∃ vR : RelPoint strX strX,
+      d.genX strX (strX ≫ SpecLoc.generic R) rfl vR
+        = RelPoint.post w hw
+            (d.genX strX (strX ≫ SpecLoc.generic R) rfl ⟨𝟙 X, Category.id_comp strX⟩) :=
+    ⟨(d.genX strX (strX ≫ SpecLoc.generic R) rfl).symm _, Equiv.apply_symm_apply _ _⟩
+  -- naturality: postcomposing by `vR` IS `w` read through `genX`, at every base point
+  have hcompat : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R)
+      (hh : g ≫ SpecLoc.generic R = g₀) (x : RelPoint strX g),
+      d.genX g g₀ hh (RelPoint.post vR.1 vR.2 x)
+        = RelPoint.post w hw (d.genX g g₀ hh x) := by
+    intro T g g₀ hh x
+    obtain ⟨xv, hxv⟩ := x
+    have hx : (⟨xv, hxv⟩ : RelPoint strX g)
+        = RelPoint.pre xv hxv (⟨𝟙 X, Category.id_comp strX⟩ : RelPoint strX strX) :=
+      Subtype.ext (Category.comp_id _).symm
+    rw [show RelPoint.post vR.1 vR.2 (⟨xv, hxv⟩ : RelPoint strX g)
+          = RelPoint.pre xv hxv vR from rfl, hx,
+      d.genX_nat xv hxv rfl hh vR,
+      d.genX_nat xv hxv rfl hh (⟨𝟙 X, Category.id_comp strX⟩ : RelPoint strX strX),
+      hvR, relPoint_pre_post]
+  refine ⟨vR.1, vR.2, ?_, ?_, ?_⟩
+  · -- `v` extends `w_{Y,ℚ}`: `genX_j`, then `hcomm` on the model, then `hgen`
+    have hjv : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R)
+        (hh : g ≫ SpecLoc.generic R = g₀) (y : RelPoint strY g),
+        RelPoint.post vR.1 vR.2 (relSectionAlong hX.j hX.«over» y)
+          = relSectionAlong hX.j hX.«over» (RelPoint.post wYQ hwYQ y) := by
+      intro T g g₀ hh y
+      apply (d.genX g g₀ hh).injective
+      rw [hcompat, d.genX_j, d.genX_j,
+        post_relSectionAlong_of_comm jZ d.model.comm hw hwY hcomm, hgen]
+    have h2 : ((𝟙 Y ≫ hX.j) ≫ vR.1 : Y ⟶ X) = (𝟙 Y ≫ wYQ) ≫ hX.j :=
+      congrArg Subtype.val (hjv strY (strY ≫ SpecLoc.generic R) rfl
+        (⟨𝟙 Y, Category.id_comp strY⟩ : RelPoint strY strY))
+    simpa using h2
+  · -- `v` is an involution, because `w` is
+    have hpp : ∀ z : RelPoint xstr (strX ≫ SpecLoc.generic R),
+        RelPoint.post w hw (RelPoint.post w hw z) = z := by
+      intro z
+      apply Subtype.ext
+      show (z.1 ≫ w) ≫ w = z.1
+      rw [Category.assoc, hinv, Category.comp_id]
+    have hkey : RelPoint.post vR.1 vR.2 vR
+        = (⟨𝟙 X, Category.id_comp strX⟩ : RelPoint strX strX) := by
+      apply (d.genX strX (strX ≫ SpecLoc.generic R) rfl).injective
+      rw [hcompat, hvR, hpp]
+    exact congrArg Subtype.val hkey
+  · -- and `neronGenAut` is postcomposition by it
+    intro c
+    apply (d.genX (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _)).injective
+    rw [neronGenAut_apply, Equiv.apply_symm_apply, hcompat]
+
 /-- **The Atkin–Lehner involution of the integral model MOVES A CUSP of the
-GENERIC fibre** (sorry leaf, new 2026-07-30) — what is left of
+GENERIC fibre** (sorry leaf, new 2026-07-30; **RECUT AND PROVEN 2026-07-31** over
+`exists_isCusp_ne_post_of_atkinLehnerPin` and
+`exists_genericFibreAut_of_atkinLehnerModel`, both immediately above — the
+statement, the hypothesis order and the call sites are UNCHANGED, only the proof
+is new) — what is left of
 `exists_isCusp_ne_neronSpAut_of_atkinLehnerPin` below once the special fibre is
 removed from it, and **the whole of what Atkin–Lehner (1970) §2 is asked for**
 in this development.
@@ -4736,19 +4901,42 @@ model whose induced involution of `X_0(N)(ℚ)` fixes every rational cusp.
 **REFERENCES.**  Atkin–Lehner, *Hecke operators on `Γ₀(m)`*, Math. Ann. 185
 (1970), §2, for the action `e ↦ N/e` on the cusps; Ogg, *Rational points on
 certain elliptic modular curves* (1973).  Deligne–Rapoport is NO LONGER cited
-here — that half is `redX_base_ne_of_isCusp`. -/
-theorem exists_isCusp_ne_neronGenAut_of_atkinLehnerPin (_hN : 1 < N) (_hq : q.Prime)
+here — that half is `redX_base_ne_of_isCusp`.
+
+**⚠ RECUT AND PROVEN 2026-07-31, and the leaf count is unchanged (1 → 1).**
+What changed is what is LEFT in the leaf.  The classical input —
+`w_N` moves a rational cusp of `X_0(N)_ℚ` — is now
+`exists_isCusp_ne_post_of_atkinLehnerPin` above, stated over `hc`, `hX`, `al` and
+a bare `ℚ`-MORPHISM `v : X ⟶ X` extending `w_{Y,ℚ}`.  Everything else in this
+statement is glue: `q`, `R`, `toF`, `X'`, `Y'`, `jY'`, `hX'`, `hj`, `d`, `YZ`,
+`XZ`, `ystr`, `xstr`, `jZ`, `w`, `w_𝒴`, `hcomm`, `hinv` and `hgen` are all
+discharged by `exists_genericFibreAut_of_atkinLehnerModel`, which observes that
+`genX` is an isomorphism of FUNCTORS of points (`genX_nat`), hence by Yoneda
+comes from a genuine morphism of `X`.  A prover sent at the residue needs to know
+Atkin–Lehner §2 and no part of this file's integral-model apparatus.
+
+That also settles, in the other direction, the objection recorded two paragraphs
+up: the reason the model could not be dropped was that `neronGenAut` looked like
+free data on the cusps.  It is not — it is postcomposition by a scheme morphism —
+and once that is proven the model is only ever used to PRODUCE that morphism.
+`hvinv` is passed to the residue although the classical argument does not need it;
+see its docstring. -/
+theorem exists_isCusp_ne_neronGenAut_of_atkinLehnerPin (hN : 1 < N) (_hq : q.Prime)
     (_hqN : ¬ q ∣ N) (al : AtkinLehnerMorphism N)
     (wYQ : Y ⟶ Y) (hwYQ : wYQ ≫ strY = strY)
-    (_hpin : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (dd : Gamma0Datum N T),
+    (hpin : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (dd : Gamma0Datum N T),
       RelPoint.post wYQ hwYQ (hc.classify g dd) = hc.classify g (al.dual g dd))
     (w : XZ ⟶ XZ) (hw : w ≫ xstr = xstr) (wY : YZ ⟶ YZ) (hwY : wY ≫ ystr = ystr)
-    (_hcomm : wY ≫ jZ = jZ ≫ w) (_hinv : w ≫ w = 𝟙 XZ)
-    (_hgen : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R)
+    (hcomm : wY ≫ jZ = jZ ≫ w) (hinv : w ≫ w = 𝟙 XZ)
+    (hgen : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R)
         (h : g ≫ SpecLoc.generic R = g₀) (y : RelPoint strY g),
       d.genY g g₀ h (RelPoint.post wYQ hwYQ y) = RelPoint.post wY hwY (d.genY g g₀ h y)) :
-    ∃ c : RelPoint strX (𝟙 SpecQ), hX.IsCusp c ∧ neronGenAut d w hw c ≠ c :=
-  sorry
+    ∃ c : RelPoint strX (𝟙 SpecQ), hX.IsCusp c ∧ neronGenAut d w hw c ≠ c := by
+  obtain ⟨v, hv, hvj, hvinv, hvgen⟩ :=
+    exists_genericFibreAut_of_atkinLehnerModel d w hw wY hwY hcomm hinv wYQ hwYQ hgen
+  obtain ⟨c, hcusp, hne⟩ :=
+    exists_isCusp_ne_post_of_atkinLehnerPin hN al wYQ hwYQ hpin v hv hvj hvinv
+  exact ⟨c, hcusp, by rw [hvgen]; exact hne⟩
 
 /-- **The Atkin–Lehner involution of the integral model MOVES A CUSP of
 the special fibre** (sorry leaf, new 2026-07-28; **PIN RESTATED 2026-07-30**,

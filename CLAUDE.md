@@ -6272,6 +6272,8 @@ silently removed gets re-derived by the next agent from the same parent.
 Corollary, and it cost one line of `gp`: **a leaf whose audit names a counterexample is worth
 EVALUATING the counterexample on.** Orbit `3` was named in three docstrings across two files and
 nobody had ever computed its value of the quantity actually in the statement.
+=======
+
 ## A "GENUINELY MISSING" FACT MAY BE PROVEN INSIDE A BODY THAT EXPORTS A COMPARISON
 (2026-07-31, and it closed Mazur at `{43, 67, 163}` — one of the headline leaves — with
 **no new sorry anywhere in the tree**.)
@@ -14535,3 +14537,143 @@ single-threaded.
 to a FILE inside the remote command — `bash -c "lake build > /tmp/log 2>&1; echo EXIT=\$? >> /tmp/log"`
 under `setsid --fork` — and the orphan finishes normally even if every parent dies. The
 truncated-log hazard the doctrine warns about is the same bug seen from the other end.
+
+## A FUNCTORIAL FAMILY OF POINT-BIJECTIONS **IS** A MORPHISM — Yoneda, and it deletes a model
+
+(2026-07-31, `flt-lean-307`, `exists_isCusp_ne_neronGenAut_of_atkinLehnerPin` in
+`MazurTorsion.lean`.)  This development carries several structures whose fields are
+*identifications of relative points* rather than morphisms of schemes —
+`IsX0JNeronDatum.genX/genY/spX/spY`, `IsX0ReductionAt.redX`, and the `Equiv`-valued
+fields of their siblings — always with a docstring explaining that the object "does not
+exist at this pin", so the identification is presented on points.  Those docstrings are
+right about the FIELD and are routinely over-read into a claim about the CONTENT, and
+the over-reading is expensive: it makes every consumer look like it has to keep the whole
+model in its statement.
+
+**Check whether NATURALITY is also a field.**  `genX` comes with `genX_nat`, so the
+family `T ↦ (X(T) ≃ 𝒳(T))` is an isomorphism of FUNCTORS on schemes over `ℚ`, and Yoneda
+turns it into a morphism with two lines of tactic:
+
+    obtain ⟨vR, hvR⟩ : ∃ vR : RelPoint strX strX,
+        d.genX strX (strX ≫ SpecLoc.generic R) rfl vR
+          = RelPoint.post w hw (d.genX strX (strX ≫ SpecLoc.generic R) rfl ⟨𝟙 X, _⟩) :=
+      ⟨(d.genX strX (strX ≫ SpecLoc.generic R) rfl).symm _, Equiv.apply_symm_apply _ _⟩
+
+— evaluate at the object itself, on the tautological point `𝟙 X`.  `genX_nat` then gives
+`neronGenAut d w hw = RelPoint.post vR.1 vR.2` at *every* base point, and `genX_j` plus
+`post_relSectionAlong_of_comm` give the compatibility with the open immersion.  No
+properness, no density, no valuative criterion: it is naturality and
+`Equiv.apply_symm_apply` throughout, ~60 lines.
+
+What that bought here: the leaf's own docstring had (correctly) refuted the tempting cut
+to "an abstract involution `σ` of `X(ℚ)`" — `hX.IsCusp` is *by definition* "not in the
+image of `Y(ℚ)`", so `σ :=` the moduli action on the image together with the IDENTITY on
+the cusps satisfies every hypothesis while fixing every cusp — and concluded *"so the
+model may not be dropped"*.  The conclusion does not follow.  The counterexample is
+killed by `σ` being a MORPHISM (`Y` dense, `X` separated ⟹ unique extension), not by the
+model; and the morphism is available.  So the residue is now
+`exists_isCusp_ne_post_of_atkinLehnerPin`, Atkin–Lehner (1970) §2 over `hc`, `hX`, `al`
+and a bare `v : X ⟶ X` — **`q`, `R`, `toF`, `X'`, `Y'`, `hX'`, `hj`, `d`, `YZ`, `XZ`,
+`ystr`, `xstr`, `jZ`, `w`, `w_𝒴`, `hcomm`, `hinv` and `hgen` all gone**, leaf count 1 → 1.
+
+The generalisable question, and it is cheap: **when a docstring says "this is only a map
+of points, so the ambient apparatus is load-bearing", ask what makes the junk witness junk
+— then ask whether that property, rather than the apparatus, can be a hypothesis.**  Here
+the answer was one binder (`hvj : hX.j ≫ v = wYQ ≫ hX.j`) replacing eighteen.
+
+## VERIFY AGAINST `~/.flt-release-lake` WHEN YOUR MODULE CANNOT BE BUILT AT ALL
+
+(Same run, measured: **8 seconds** per iteration against a module whose own build did not
+finish in three hours and was killed twice by memory pressure.)
+
+The doctrine's scratch-module rule assumes you can build the target once.  Under fleet
+load on a 2 TB box with 32 GB free that assumption can simply fail — `WeilPairing.lean`
+took >50 minutes and the whole `bash -c` wrapper then vanished with no `EXIT=` line, twice.
+The release snapshot is a COMPLETE, CONSISTENT olean set at a known sha, and it is enough:
+
+    cp -rs ~/.flt-release-lake/build/lib /tmp/relean-N/          # symlink farm, 2 s
+    LP=$(lake env printenv LEAN_PATH); LSP=$(lake env printenv LEAN_SRC_PATH)
+    env LEAN_PATH="/tmp/relean-N/lib/lean:$LP" LEAN_SRC_PATH="$LSP" lean Scratch.lean
+
+Use the PRISTINE `~/.flt-release-lake/build`, not your own `.lake/build` — a `.lake` that
+has been partly rebuilt from newer sources is exactly the inconsistent olean set the
+doctrine warns about, and the shim is the way to avoid it rather than a way to live with it.
+
+**The soundness condition is a diff, and it must be run.**  A scratch verified this way
+proves something about the SNAPSHOT's theory.  For it to transfer, every declaration your
+proof names must be unchanged between `$(cat ~/.flt-release-lake/sha)` and your HEAD:
+
+    git show $(cat ~/.flt-release-lake/sha):<file> > /tmp/snap.lean
+    # then diff the STATEMENT lines of each name you use, not a -A window --
+    # a `grep -A 22` bleeds into the next docstring and reports spurious DIFFs
+
+Here that was twelve names (`relPoint_pre_post`, `post_relSectionAlong_of_comm`,
+`neronGenAut`, `neronGenAut_apply`, `IsX0JNeronDatum`, the section's `variable` block, …),
+all identical, and the two apparent DIFFs were both the `-A` window running into unrelated
+prose.  **A target that does not exist in the snapshot is the BEST case**: its name is free,
+so the scratch can use the real final names and is then a character-exact test of the text
+you are about to paste.
+
+And the reverse reading, which is what makes the shim safe to rely on: `lake build <Mod>`
+DELETES `<Mod>.olean` while it runs, so the two cannot be interleaved in `.lake` — but the
+shim reads a different directory entirely and is unaffected.  Iterate in the shim, build once.
+
+## A DETACHED BUILD WITH `ppid = 1` STILL DIES — the missing `EXIT=` is the only tell
+
+(Same run, twice.)  `setsid --fork bash -c '… ; echo EXIT=$? >> log'` gives `ppid = 1` and
+survives session teardown, which is what the doctrine asks for.  It does not survive the
+host's memory pressure: both runs ended with the log stopping mid-stream at
+`[5262/5272]`, no `EXIT=` line, no error text, and no process left.  `grep -i error` on
+that log is empty and `grep -c "declaration uses 'sorry'"` is a plausible number — i.e. by
+every check other than the positive terminator it reads as a finished, clean build.
+
+So the standing rule earns its keep in a third distinct way (after truncated `ssh` and
+`lake: command not found`): **require the literal `EXIT=` line you wrote yourself, and
+`Build completed successfully (NNNN jobs)`, before believing anything.**  When it is
+absent, check `free -g` before re-diagnosing the Lean: at 32 GB free out of 2015 with a
+load average of 117, the build was killed, not broken.
+
+## A DUPLICATE-DECLARATION SCAN THAT ONLY CHECKS THE IMPORT *CHAIN* MISSES THE COMMONEST SHAPE
+
+(2026-07-31, `flt-lean-307`, found by building merger release 29 and reading why
+`X0.lean` would not start.)  `tools/merge/xdup.py` reported **zero** qualified
+cross-file duplicates on a tree whose very next module failed with
+
+    error: import Fermat.FLT.Mathlib.AlgebraicGeometry.CurveDivisorDegree failed,
+    environment already contains 'AlgebraicGeometry.divDegree_eq_zero' from
+    Fermat.FLT.Mathlib.AlgebraicGeometry.PrincipalDivisorDegree
+
+The scan's pair test was `a in cone[b]` — it reported a pair only when one of the
+two modules IMPORTS the other.  **Two files that do not import each other, while a
+third imports both, are exactly what Lean rejects, and are exactly what the test
+cannot see.**  That is also the commonest shape here, because it is what two
+branches hoisting overlapping blocks into two NEW modules produce — neither new
+module imports the other, and the old consumer imports both.
+
+Fixed by computing, for each module, the set of modules that can SEE it (itself
+plus everything importing it transitively) and reporting a pair whenever those
+sets intersect.  Each pair is now tagged `ANCESTOR` or `SIBLING via <module>`,
+and the witness is the module with the SMALLEST cone that sees both — picking the
+alphabetically first names `Fermat.Basic` every time, which is true and useless.
+
+**It went from 0 to 22 qualified pairs on the same tree**, in two clusters, and
+both are live release blockers:
+
+* `CurveDivisorDegree` ⟷ `PrincipalDivisorDegree`, 3 pairs
+  (`divDegree_eq_zero`, `Scheme.ord_one`, `Scheme.ord_inv`), seen by `X0.lean`.
+  `divDegree_eq_zero` is a `sorry` LEAF upstream and a PROVEN theorem downstream,
+  with different statements (`hf : f ≠ 0` versus all `g`), so which copy survives
+  is an author's decision and not a merge step;
+* `HeckeQExpansion` ⟷ `HeckeAtkinLehner`, 19 pairs (`qCoeff`, `qCoeffL`,
+  `heckeRep*`, `qParam_*`, …), seen by `Modularity.Interface`.  This is the
+  collision the "TWO BRANCHES HOISTING OVERLAPPING BLOCKS" section above
+  PREDICTED, arriving as forecast: a 19-declaration hoist and a 196-declaration
+  hoist into two new modules, the smaller a strict subset of the larger.  The
+  resolution that section prescribes — keep both modules, make the larger
+  `public import` the smaller and delete its copies of the overlap — still applies.
+
+The general rule, and it is the same one release 29's own commit message states
+about its identifier class: **a scan that under-reports is worse than no scan,
+because it certifies.**  Before quoting a clean run of any duplicate scan, check
+that its notion of "can collide" is Lean's notion — which is *some single module
+sees both*, never *one imports the other*.
