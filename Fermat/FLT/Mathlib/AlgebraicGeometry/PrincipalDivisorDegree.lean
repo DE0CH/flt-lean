@@ -524,9 +524,14 @@ THIS BEFORE STARTING
 this whole theorem, and it is already decomposed:
 
 * `PlaceData.degOf_divisor_eq_zero` — `Σ_v ord_v(g)·[κ(v) : K] = 0` — is **PROVEN** there;
-* it rests on the single leaf **`degOf_poleDivisor_eq_finrank_of_transcendental`**:
+* it rests on `degOf_poleDivisor_eq_finrank_of_transcendental`:
   `deg (div_∞ g) = [F : K(g)]`, Stichtenoth I.4.11, "the single deep node of the whole
-  Picard layer" in that file's own words;
+  Picard layer" in that file's own words.  **That name is a moving target, so cite the
+  MATHEMATICS, not the name**: on `main` at `5b621e59` it is itself the leaf; on `merger`
+  as of 2026-07-31 it is PROVEN by `le_antisymm` over two fresh leaves,
+  `degOf_poleDivisor_le_finrank_of_transcendental` (weak approximation) and
+  `finrank_le_degOf_poleDivisor_of_transcendental` (Riemann spaces).  Check the tree before
+  quoting a count;
 * the bookkeeping this leaf's shape performs — `div = div_0 − div_∞`,
   `div_0 g = div_∞ g⁻¹`, `K(g) = K(g⁻¹)`, and the algebraic/constant case — is likewise
   already Lean there (`divisor_eq_zeroDivisor_sub_poleDivisor`, `poleDivisor_inv`,
@@ -541,14 +546,25 @@ Stichtenoth I.4.11.  Two consequences, both operational:
 2. `HyperellipticJacobian.lean`'s `PlaceSystem` (as opposed to `PlaceData`) is already a
    general function-field-of-one-variable interface: `ord_injective` and `ord_complete` say
    `Places` is EXACTLY the set of normalised `K`-trivial discrete valuations of `F`, and
-   `ord_finite` is `finite_divSupport`'s analogue.  The degree theorem there is stated over
-   `PlaceData` only because that is where `degOf` was written; its proof uses nothing about
-   the sextic (`_hsep` is already underscored in `degOf_divisor_eq_zero`).  **Hoisting it
-   from `PlaceData` to `PlaceSystem`, and then building the bridge
+   `ord_finite` is `finite_divSupport`'s analogue.  `PlaceData.toPlaceSystem` exists on
+   `merger` as of 2026-07-31, so the abstraction is live.  The degree theorem there is
+   stated over `PlaceData` only because that is where `degOf` was written; its proof uses
+   nothing about the sextic (`_hsep` is already underscored in `degOf_divisor_eq_zero`).
+   **Hoisting it from `PlaceData` to `PlaceSystem`, and then building the bridge
    "smooth proper curve `X/K` ⟹ `PlaceSystem K X.functionField` with
    `ord = Scheme.ord` and `degOf = residueDegree`", closes this leaf with no new
    mathematics.**  That is the cheapest route and it is why this audit is longer than the
    statement.
+
+   Where properness enters on that route, and it is worth knowing before starting: the one
+   `PlaceSystem` axiom that is NOT a local fact about `X` is `ord_complete` — every
+   normalised `K`-trivial discrete valuation of `X.functionField` is the order at a point
+   of `X`.  That is the valuative criterion, i.e. exactly `IsProper strX`, and
+   `Mathlib/AlgebraicGeometry/ValuativeCriterion.lean` plus
+   `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean` are where the machinery sits.
+   `ord_surjective` and `ord_add` come from the stalks being DVRs
+   (`isDiscreteValuationRing_stalk_of_smoothOfRelativeDimension_one`, PROVEN there), and
+   `ord_finite` is `finite_divSupport` above.
 
 The audit below is the leaf's own audit and stands on its own; it was written before the
 cross-check above was run, and nothing in it is changed by it.
