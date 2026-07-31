@@ -1234,7 +1234,323 @@ theorem isInvertibleSheaf_modTensorPow {Z : Scheme.{u}} {L : Z.Modules}
   | 0 => isInvertibleSheaf_modUnit Z
   | (n + 1) => isInvertibleSheaf_modTensor hL (isInvertibleSheaf_modTensorPow hL n)
 
-/-- **AN INVERTIBLE SHEAF OF MODULES IS LOCALLY FREE OF RANK ONE** (sorry leaf,
+/-! ### The LOCAL PAIRING attached to a trivialization of `L ⊗ N`
+
+ADDED 2026-07-31 (`flt-lean-89`).  This block replaces the bare `sorry` on
+`exists_trivialization_of_modTensor_trivial` by a WRITTEN construction over two
+strictly smaller leaves, and — this is the point — both residues are statements
+about SECTIONS ONLY.  No sheafification, no monoidal category, no `ModLM`, no
+`Nonempty`: after this block, a prover of Stacks 0B8L in this development never
+has to touch the categorical layer again.
+
+The dictionary is one definition.  A trivialization `ν : (L ⊗ N)|_U ≅ 𝒪_U`
+turns into an honest `Γ(Z,V)`-BILINEAR PAIRING
+
+    ⟨·,·⟩ : Γ(L,V) × Γ(N,V) ⟶ Γ(Z,V),   V ≤ U
+
+by composing `modTensorMk` (which lands a pure tensor of sections in the
+sheafified tensor product — the presheaf tensor is OBJECTWISE, so `x ⊗ₜ y` is
+literally an element of it) with `ModDual.tr`, the "read a trivialization at an
+AMBIENT open" calculus that `RelativePicard.lean` already carries.  That is
+`modPair` below, and `modPair_add_left` / `modPair_smul_left` / `modPair_res`
+are its whole API.  (The right-hand additivity and semilinearity are true and
+one line each — `TensorProduct.smul_tmul` and `TensorProduct.tmul_add` in place
+of `TensorProduct.smul_tmul'` and `TensorProduct.add_tmul` — and are omitted
+only because nothing here consumes them and this project forbids free-floating
+declarations.  Reinstate them when a consumer appears.)
+
+WHAT IS PROVEN HERE, unconditionally: a UNIMODULAR PAIR trivializes.  Given
+`s ∈ Γ(L,W)` and `t ∈ Γ(N,W)` with `⟨s,t⟩ = 1`, and given the generation
+identity `x = ⟨x,t⟩·s`, the sheaf isomorphism `L|_W ≅ 𝒪_W` is CONSTRUCTED
+(`ModTriv.trivOfPair`) — the additive equivalence at each ambient open is
+`x ↦ ⟨x,t⟩` with inverse `r ↦ r·s`, and the two crossing obligations
+(`Γ(W,·)`-scalars versus `Γ(Z,·)`-scalars, and naturality across `restrict`)
+are discharged exactly as `ModDual.dualRestrictIso` discharges them.
+
+WHAT IS LEFT, and it is a genuine 1 → 2 split into DISCOVERY and SYMMETRY:
+
+* `exists_modPair_eq_one` — a unimodular pair EXISTS near every point of `U`.
+  This is the local-surjectivity half.  `Mathlib/Algebra/Category/ModuleCat/
+  Presheaf/Sheafify.lean` carries `instance : IsLocallySurjective J
+  (toSheafify α φ)`, and `PresheafOfModules.
+  toPresheaf_map_sheafificationAdjunction_unit_app` identifies `modTensorMk`
+  with `CategoryTheory.toSheafify`, so `ν⁻¹(1)` is, on some open `V ∋ z`, in the
+  image of `modTensorMk` — hence a FINITE sum `Σᵢ ⟨sᵢ,tᵢ⟩ = 1`.  A sum of
+  sections equal to `1` cannot have every term in the maximal ideal at `z`
+  (`κ(z)` is a field), so some `c := ⟨sᵢ,tᵢ⟩` is a unit on an affine basic open
+  `W ∋ z`, and `(c⁻¹·sᵢ, tᵢ)` is unimodular by `modPair_smul_left`.  Nothing in
+  that argument is categorical; the only import is the unfolding of
+  `IsLocallySurjective` over `Opens.grothendieckTopology` into its pointwise
+  form.
+
+* `ModTriv.eq_coord_smul_genAt` — THE SYMMETRY, and it is all of the
+  mathematics: `⟨s,t⟩ = 1` forces `x = ⟨x,t⟩·s`.
+
+**ROUTE AUDIT FOR THE SYMMETRY — 2026-07-31, and it CORRECTS the audit on
+`exists_trivialization_of_modTensor_trivial` below in one respect that changes
+what a prover should do.**  That audit says the obstruction is "the ASSOCIATOR
+and the BRAIDING", read through `nonempty_modTensor_assoc` and the braiding of
+`ModLM Z`, and that those exist "only ABSTRACTLY".  Both halves are right, and
+the conclusion drawn from them — that a monoidal STALK functor is the way in —
+is not the only one, and probably not the cheapest.
+
+The symmetry is NOT a formal consequence of the monoidal structure, and it is
+worth saying why, because the derivation the audit quotes looks formal.
+`x ⊗ 1 = Σᵢ x ⊗ sᵢ ⊗ tᵢ ↦ Σᵢ sᵢ ⊗ x ⊗ tᵢ` uses the braiding `σ_{L,L}`, and in a
+general symmetric monoidal category `σ_{L,L}` on an invertible object is a
+SIGN, not the identity (super vector spaces are the standard witness).  What
+kills the sign here is that `Z.Modules` is an honest category of modules — i.e.
+it is exactly the input the formal argument does not have.  So no amount of
+coherence will produce this statement; something local must be used.
+
+THE ROUTE THAT AVOIDS STALKS ENTIRELY (recommended, and not previously
+recorded).  With `⟨s,t⟩ = 1` in hand, `π : x ↦ ⟨x,t⟩·s` is an IDEMPOTENT
+endomorphism of `L|_W` — idempotent by a two-line section computation
+(`π(π x) = ⟨x,t⟩⟨s,t⟩·s = π x`), needing nothing but `modPair_smul_left`.  Then:
+
+1.  `modTensorMap π (𝟙 N)` is an idempotent endomorphism of `(L ⊗ N)|_W`;
+    conjugating by `ν` makes it an idempotent endomorphism of `𝒪_W`, i.e.
+    multiplication by an IDEMPOTENT `d ∈ Γ(W,𝒪)` (this file already has that
+    dictionary: `unitEndoApply` / `unitEndoApply_eq`).
+2.  An idempotent section is `0` or `1` near any given point — `d(1-d) = 0`,
+    and `z` lies in `basicOpen d` or in `basicOpen (1-d)`, on which the other
+    factor dies.  Shrink `W` accordingly.  This is the step that replaces "the
+    local ring has no nontrivial idempotents" in Stacks' proof of 0B8J, and it
+    is elementary here (`Scheme.basicOpen_mul`, as used in
+    `nonvanishingLocus_modUnit` above).
+3.  `d = 0` is impossible: `π ≠ 0` because `π(s) = s` and `⟨s,t⟩ = 1` would
+    otherwise give `1 = 0` in `Γ(W,𝒪)`, i.e. `W = ∅`, against `z ∈ W`.
+4.  So `d = 1`, i.e. `modTensorMap π (𝟙 N) = 𝟙`.  The residue is exactly
+    FAITHFULNESS OF `- ⊗ N`, which IS formal — tensor with `L`, reassociate,
+    and use `N ⊗ L ≅ 𝒪` — and it is the ONLY step that touches the categorical
+    layer.  The missing input for it is not a stalk functor but the
+    compatibility of `modTensorMap` with `ModLM`'s `⊗` on MORPHISMS (the object
+    half is `modTensorLocIso`; the morphism half is naturality of
+    `Localization.Monoidal.μ` and is not yet declared anywhere in this
+    development).
+
+That is a strictly smaller ask than "a monoidal stalk functor", and it is worth
+weighing against it before a prover is sent at the stalks.  The stalk route
+still closes `modLocW_whiskerLeft`'s sibling problems, so the audit's
+"one machine, two leaves" observation is not withdrawn — only its premise that
+this leaf REQUIRES stalks. -/
+
+/-- `modTensorMk` at one open, as an honest linear map out of an honest tensor
+product of section modules.  Stating it this way is what makes `rw` usable, for
+the reason `RelativePicard.lean`'s `evLin` records: the `ModuleCat`-side
+instances are replaced by the ones a reader would write, and in particular the
+tensor is taken over `Γ(Z,V)` rather than over the `forget₂`-spelled ring that
+`PresheafOfModules.Monoidal.tensorObj` carries. -/
+noncomputable def modTensorMkLin {Z : Scheme.{u}} (L N : Z.Modules) (V : Z.Opens) :
+    TensorProduct Γ(Z, V) Γ(L, V) Γ(N, V) →ₗ[Γ(Z, V)] Γ(modTensor L N, V) :=
+  ModuleCat.Hom.hom ((modTensorMk L N).app (op V))
+
+/-- Naturality of `modTensorMkLin` on pure tensors.  The presheaf tensor is
+OBJECTWISE, so its restriction map is componentwise on pure tensors by `rfl`;
+what is left is `PresheafOfModules.naturality_apply` for `modTensorMk`. -/
+lemma modTensorMkLin_res {Z : Scheme.{u}} {L N : Z.Modules} {V V' : Z.Opens} (h : V' ≤ V)
+    (x : Γ(L, V)) (y : Γ(N, V)) :
+    (modTensor L N).presheaf.map (homOfLE h).op (modTensorMkLin L N V (x ⊗ₜ[Γ(Z, V)] y)) =
+      modTensorMkLin L N V' ((L.presheaf.map (homOfLE h).op x) ⊗ₜ[Γ(Z, V')]
+        (N.presheaf.map (homOfLE h).op y)) :=
+  (PresheafOfModules.naturality_apply (modTensorMk L N) (homOfLE h).op (x ⊗ₜ y)).symm
+
+/-- **THE LOCAL PAIRING** `⟨x,y⟩ ∈ Γ(Z,V)` attached to a trivialization `ν` of
+`L ⊗ N` over `U`, defined at every AMBIENT open `V ≤ U`.
+
+`ModDual.tr ν hV` is `RelativePicard.lean`'s "read the trivialization `ν` of
+`L ⊗ N` at the ambient open `V`" map; `modTensorMkLin` puts `x ⊗ y` into
+`Γ(L ⊗ N, V)`. -/
+noncomputable def modPair {Z : Scheme.{u}} {L N : Z.Modules} {U : Z.Opens}
+    (ν : (modTensor L N).restrict U.ι ≅ modUnit (U : Scheme.{u}))
+    {V : Z.Opens} (hV : V ≤ U) (x : Γ(L, V)) (y : Γ(N, V)) : Γ(Z, V) :=
+  ModDual.tr ν hV (modTensorMkLin L N V (x ⊗ₜ[Γ(Z, V)] y))
+
+section ModPair
+
+variable {Z : Scheme.{u}} {L N : Z.Modules} {U : Z.Opens}
+  (ν : (modTensor L N).restrict U.ι ≅ modUnit (U : Scheme.{u}))
+
+/-- The pairing is additive in the `L`-variable. -/
+lemma modPair_add_left {V : Z.Opens} (hV : V ≤ U) (x x' : Γ(L, V)) (y : Γ(N, V)) :
+    modPair ν hV (x + x') y = modPair ν hV x y + modPair ν hV x' y := by
+  unfold modPair
+  rw [TensorProduct.add_tmul, map_add, ModDual.tr_add]
+
+/-- The pairing is `Γ(Z,V)`-linear in the `L`-variable. -/
+lemma modPair_smul_left {V : Z.Opens} (hV : V ≤ U) (r : Γ(Z, V)) (x : Γ(L, V)) (y : Γ(N, V)) :
+    modPair ν hV (r • x) y = r * modPair ν hV x y := by
+  unfold modPair
+  rw [← TensorProduct.smul_tmul', map_smul, ModDual.tr_smul]
+
+/-- The pairing is natural: it commutes with restriction to a smaller ambient
+open. -/
+lemma modPair_res {V V' : Z.Opens} (hV : V ≤ U) (h : V' ≤ V) (x : Γ(L, V)) (y : Γ(N, V)) :
+    modPair ν (h.trans hV) (L.presheaf.map (homOfLE h).op x) (N.presheaf.map (homOfLE h).op y) =
+      Z.presheaf.map (homOfLE h).op (modPair ν hV x y) := by
+  unfold modPair
+  rw [← modTensorMkLin_res, ModDual.tr_nat (hV := hV)]
+
+end ModPair
+
+/-! ### From a UNIMODULAR PAIR to a trivialization
+
+The mirror image of `RelativePicard.lean`'s `ModDual.Bridge`: there a
+trivialization was consumed to produce section-level data, here section-level
+data is consumed to produce a trivialization.  The two crossing lemmas are the
+same two, and `ModDual.smul_restrict_eq` is reused verbatim. -/
+
+namespace ModTriv
+
+variable {Z : Scheme.{u}} {L N : Z.Modules} {U : Z.Opens}
+  (ν : (modTensor L N).restrict U.ι ≅ modUnit (U : Scheme.{u}))
+  {W : Z.Opens} (hWU : W ≤ U) (s : Γ(L, W)) (t : Γ(N, W))
+
+/-- The candidate generator of `L`, restricted to an ambient open `A ≤ W`. -/
+noncomputable def genAt {A : Z.Opens} (hA : A ≤ W) : Γ(L, A) :=
+  L.presheaf.map (homOfLE hA).op s
+
+/-- The candidate coordinate `x ↦ ⟨x, t⟩` at an ambient open `A ≤ W`. -/
+noncomputable def coord {A : Z.Opens} (hA : A ≤ W) (x : Γ(L, A)) : Γ(Z, A) :=
+  modPair ν (hA.trans hWU) x (N.presheaf.map (homOfLE hA).op t)
+
+lemma coord_add {A : Z.Opens} (hA : A ≤ W) (x x' : Γ(L, A)) :
+    coord ν hWU t hA (x + x') = coord ν hWU t hA x + coord ν hWU t hA x' :=
+  modPair_add_left ν _ _ _ _
+
+lemma coord_smul {A : Z.Opens} (hA : A ≤ W) (r : Γ(Z, A)) (x : Γ(L, A)) :
+    coord ν hWU t hA (r • x) = r * coord ν hWU t hA x :=
+  modPair_smul_left ν _ _ _ _
+
+lemma coord_nat {A A' : Z.Opens} (hA : A ≤ W) (h : A' ≤ A) (x : Γ(L, A)) :
+    coord ν hWU t (h.trans hA) (L.presheaf.map (homOfLE h).op x) =
+      Z.presheaf.map (homOfLE h).op (coord ν hWU t hA x) := by
+  unfold coord
+  rw [← modPair_res ν (hA.trans hWU) h]
+  congr 1
+  rw [← ConcreteCategory.comp_apply, ← Functor.map_comp, ← op_comp]
+  rfl
+
+/-- `⟨s,t⟩ = 1` restricts to `⟨s|_A, t|_A⟩ = 1`. -/
+lemma coord_genAt (hst : modPair ν hWU s t = 1) {A : Z.Opens} (hA : A ≤ W) :
+    coord ν hWU t hA (genAt s hA) = 1 := by
+  unfold coord genAt
+  rw [modPair_res ν hWU hA, hst, map_one]
+
+/-- **LEAF — THE SYMMETRY, and this is all of the mathematics of Stacks 0B8L /
+01CV / Hartshorne II.6.12 in this development.**
+
+A unimodular pair GENERATES: if `⟨s,t⟩ = 1` on `W`, then every section of `L`
+over every ambient `A ≤ W` is `⟨x,t⟩·s`.
+
+FAITHFUL, and true for an arbitrary ringed space with no hypothesis on `z`,
+`A` or the scheme.  The check is one localization: over a local ring `R`, an
+isomorphism `θ : M ⊗ N ≅ R` makes `M` and `N` free of rank one (Stacks 0B8J),
+say `M = R·g`, `N = R·h` with `u := θ(g ⊗ h)` a unit; writing `s = ag`,
+`t = bh`, the hypothesis `θ(s ⊗ t) = abu = 1` makes `a` and `b` units, and then
+for `x = cg` one gets `⟨x,t⟩·s = (cbu)(ag) = c(abu)g = cg = x`.  Both sides of
+the conclusion are sections of a sheaf, so the identity may be checked after
+localizing at every point of `A`, which is what makes the pointwise argument
+legitimate — but NOT what makes it available in Lean, since `Z.Modules` has no
+`Module` structure on stalks at this pin.
+
+Read the ROUTE AUDIT in the section docstring above before attacking this: the
+recommended route is the IDEMPOTENT one, which never mentions a stalk, and it
+reduces this leaf to the single categorical fact that `- ⊗ N` is FAITHFUL when
+`N` has a tensor inverse.  In particular the audit recorded on
+`exists_trivialization_of_modTensor_trivial` below — "the obstruction is the
+symmetry, and the machine that closes it is a monoidal stalk functor" — names a
+sufficient input, not a necessary one. -/
+theorem eq_coord_smul_genAt (hst : modPair ν hWU s t = 1) (A : Z.Opens) (hA : A ≤ W)
+    (x : Γ(L, A)) : x = coord ν hWU t hA x • genAt s hA := sorry
+
+variable (hst : modPair ν hWU s t = 1)
+
+/-- **`L` IS FREE OF RANK ONE ON `W`**, as an additive equivalence at each
+ambient open `A ≤ W`: the coordinate `x ↦ ⟨x,t⟩` against the generator `s`. -/
+noncomputable def equivAt {A : Z.Opens} (hA : A ≤ W) : Γ(L, A) ≃+ Γ(Z, A) where
+  toFun := coord ν hWU t hA
+  invFun := fun r => r • genAt s hA
+  left_inv := fun x => (eq_coord_smul_genAt ν hWU s t hst A hA x).symm
+  right_inv := fun r => by
+    rw [coord_smul, coord_genAt ν hWU s t hst, mul_one]
+  map_add' := coord_add ν hWU t hA
+
+/-- The scalar action crossing the `restrict` boundary, at `L`. -/
+lemma coord_smul_restrict (V : (W : Scheme.{u}).Opens) (r : Γ((W : Scheme.{u}), V))
+    (x : Γ(L.restrict W.ι, V)) :
+    coord ν hWU t (W.ι_image_le V) (((L.restrict W.ι).smul r).hom x) =
+      ((modUnit (W : Scheme.{u})).smul r).hom (coord ν hWU t (W.ι_image_le V) x) :=
+  (congrArg (coord ν hWU t (W.ι_image_le V)) (ModDual.smul_restrict_eq (U := W) V r x)).trans
+    (coord_smul ν hWU t (W.ι_image_le V) r x)
+
+/-- Naturality of the coordinate across the `restrict` boundary. -/
+lemma coord_map_restrict {V V' : (W : Scheme.{u}).Opens} (h : V' ≤ V)
+    (x : Γ(L.restrict W.ι, V)) :
+    coord ν hWU t (W.ι_image_le V') ((L.restrict W.ι).presheaf.map (homOfLE h).op x) =
+      Z.presheaf.map (homOfLE (Scheme.Hom.image_mono W.ι h)).op
+        (coord ν hWU t (W.ι_image_le V) x) :=
+  coord_nat ν hWU t (W.ι_image_le V) (Scheme.Hom.image_mono W.ι h) x
+
+set_option maxHeartbeats 1000000 in
+/-- **A UNIMODULAR PAIR TRIVIALIZES `L`** (PROVEN 2026-07-31, over the symmetry
+leaf and nothing else).  Note `Γ(L.restrict W.ι, V) = Γ(L, W.ι ''ᵁ V)` BY RFL,
+because `restrict` is a pushforward; there is no transport anywhere below. -/
+noncomputable def trivOfPair : L.restrict W.ι ≅ modUnit (W : Scheme.{u}) := by
+  refine (SheafOfModules.fullyFaithfulForget _).preimageIso <|
+    PresheafOfModules.isoMk (fun V ↦ ModuleCat.isoMk
+      (AddEquiv.toAddCommGrpIso (equivAt ν hWU s t hst (W.ι_image_le V.unop))) ?_) ?_
+  · intro r
+    ext x
+    exact (coord_smul_restrict ν hWU t V.unop r x).symm
+  · intro V V' f
+    ext x
+    rw [ConcreteCategory.comp_apply, ConcreteCategory.comp_apply]
+    exact coord_map_restrict ν hWU t (leOfHom f.unop) x
+
+end ModTriv
+
+/-- **LEAF — A UNIMODULAR PAIR EXISTS NEAR EVERY POINT.**
+
+The DISCOVERY half of Stacks 0B8L: `ν⁻¹(1)` is, near `z`, a finite sum of pure
+tensors, one of whose pairings is a unit, and rescaling that one makes the
+pairing exactly `1`.
+
+FAITHFUL.  `= 1` on the nose (rather than "is a unit") costs nothing: if
+`⟨s,t⟩ = c` is invertible on `W` then `⟨c⁻¹ • s, t⟩ = 1` by
+`modPair_smul_left`, and `W` may always be shrunk to an affine basic open of
+`c` inside which `c` is a unit.
+
+ROUTE, in full, since none of it is categorical:
+
+1.  `ν.inv` applied to `1 ∈ Γ(W,𝒪)` is a section of `L ⊗ N`.  `modTensorMk` is
+    `CategoryTheory.toSheafify` on underlying presheaves
+    (`PresheafOfModules.toPresheaf_map_sheafificationAdjunction_unit_app`), and
+    `Mathlib/Algebra/Category/ModuleCat/Presheaf/Sheafify.lean` carries
+    `instance : IsLocallySurjective J (toSheafify α φ)`.  Over
+    `Opens.grothendieckTopology`, "the image sieve is covering" unfolds to
+    "the opens on which the section lifts cover", so some `V ∋ z` carries a
+    preimage.
+2.  A preimage is an element of `Γ(L,V) ⊗_{Γ(Z,V)} Γ(N,V)`, hence a FINITE sum
+    `Σᵢ sᵢ ⊗ tᵢ` (`TensorProduct.exists_finset` / `TensorProduct.induction_on`).
+    Applying `ModDual.tr ν` gives `Σᵢ ⟨sᵢ,tᵢ⟩ = 1` in `Γ(Z,V)`, by
+    `modPair_add_left` and `ModDual.tr_trInv`.
+3.  Not every `⟨sᵢ,tᵢ⟩` can vanish at `z`: their images in the residue field
+    `κ(z)` sum to `1 ≠ 0`.  So `z ∈ Z.basicOpen ⟨sᵢ,tᵢ⟩` for some `i`.
+4.  Intersect with an affine open around `z` and take the basic open there;
+    `c := ⟨sᵢ,tᵢ⟩` is a unit on it (`IsAffineOpen.basicOpen`), and
+    `(c⁻¹ • sᵢ|, tᵢ|)` is the required pair, using `modPair_res` to move the
+    pairing down to `W` and `modPair_smul_left` to rescale.
+
+Nothing above needs `L` or `N` to be anything in particular, and nothing needs
+the scheme hypothesis beyond having affine opens and residue fields. -/
+theorem exists_modPair_eq_one {Z : Scheme.{u}} {L N : Z.Modules} {U : Z.Opens}
+    (ν : (modTensor L N).restrict U.ι ≅ modUnit (U : Scheme.{u})) {z : Z} (hz : z ∈ U) :
+    ∃ (W : Z.Opens) (hWU : W ≤ U) (_ : z ∈ W) (s : Γ(L, W)) (t : Γ(N, W)),
+      modPair ν hWU s t = 1 := sorry
+
+/-- **AN INVERTIBLE SHEAF OF MODULES IS LOCALLY FREE OF RANK ONE** (PROVEN
+2026-07-31 over `exists_modPair_eq_one` and `ModTriv.eq_coord_smul_genAt`;
 cut 2026-07-29 out of `exists_trivialization_of_modTensorPow`) — Stacks 0B8L /
 01CV, Hartshorne II.6.12, in its classical TWO-FACTOR form: if `L ⊗ N` is trivial
 on `U` for SOME `N`, then `L` is trivial near each point of `U`.
@@ -1318,7 +1634,10 @@ theorem exists_trivialization_of_modTensor_trivial {Z : Scheme.{u}} {L N : Z.Mod
     {U : Z.Opens}
     (hν : Nonempty ((modTensor L N).restrict U.ι ≅ modUnit (U : Scheme.{u})))
     {z : Z} (hz : z ∈ U) :
-    ∃ W : Z.Opens, W ≤ U ∧ z ∈ W ∧ Nonempty (L.restrict W.ι ≅ modUnit (W : Scheme.{u})) := sorry
+    ∃ W : Z.Opens, W ≤ U ∧ z ∈ W ∧ Nonempty (L.restrict W.ι ≅ modUnit (W : Scheme.{u})) := by
+  obtain ⟨ν⟩ := hν
+  obtain ⟨W, hWU, hzW, s, t, hst⟩ := exists_modPair_eq_one ν hz
+  exact ⟨W, hWU, hzW, ⟨ModTriv.trivOfPair ν hWU s t hst⟩⟩
 
 /-- **AN INVERTIBLE SHEAF OF MODULES IS LOCALLY FREE OF RANK ONE, in the tensor
 power form the audit needs** (PROVEN 2026-07-29 over
