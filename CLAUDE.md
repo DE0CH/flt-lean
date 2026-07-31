@@ -6691,3 +6691,271 @@ to the `ℚ` twins in the same file and was not done, because `IsBaseChangeOf.re
 declared ~600 lines BELOW them: the rigidity lemma cannot be stated where it would be
 consumed. Hoisting 34k-line-file material is its own merge hazard (see class seven), so
 that one was queued rather than attempted.
+
+## A "NEEDS NEW THEORY + A HOIST" VERDICT CAN BE AN ARTEFACT OF THE ROUTE, NOT OF THE STATEMENT
+
+(2026-07-31, `flt-lean-15`, on `eq_two_or_eq_three_of_stableCyclic_j_eq_zero` /
+`…_j_eq_1728` in `ModularCurve/X0.lean`.)
+
+Three separate audit passes (2026-07-28, -30) recorded a MACHINERY survey on those two
+leaves, by name, and it was accurate: closing them by the recorded route needed (a) a
+HOIST of `MazurCMForm` and `classNumberOne_of_end_closure_eq_top` out of
+`FreyCurve/MazurTorsion.lean`, which `public import`s `X0.lean` and therefore cannot be
+cited from it; and (b) at `j = 0`, "a genuine generalisation of the encoding
+(`ψ² = [−n] + b·ψ`)", because the conductor-`p` order `ℤ[pζ₃]` is not `ℤ[√−n]`. The two
+`j`-values were split apart precisely because that survey showed their costs differed.
+
+**Both requirements evaporated under a different proof of the same statement.** The
+class-number half (`C` not `𝒪_K`-stable ⟹ `h(p²·disc K) = 1`) has an elementary
+substitute: `C` and `ψC` are then distinct lines spanning `E[p]`, `G_K` acts by the SAME
+scalar on both, so `det ρ|_{G_K} = α²`, and `det ρ = χ_cyc` (Weil pairing) forces every
+element of `𝔽_p^×` to be a square. That needs `det_galoisRep_eq_cyclotomic`, which is
+PROVEN, and lives in `EllipticCurve/WeilPairing.lean` — **which does not import `X0.lean`**,
+so there is no hoist at all. Both leaves are now proven over ONE shared leaf; the frontier
+went 2 → 1 and the `j = 0`/`j = 1728` asymmetry that motivated the split disappeared.
+
+The tell, and it is checkable: **a machinery survey enumerates what the RECORDED argument
+needs. It never asks whether the conclusion has a second proof.** So when a survey ends in
+"hoist X and generalise Y", that is a report about one route, not a lower bound on the
+leaf. Spend one pass looking for another argument before paying for the hoist — and note
+the shape of the win here: the blocked module was blocked by an import CYCLE, and the
+substitute route's module simply was not in the cycle. Check the import direction of the
+alternative's dependencies early; it is a one-command discriminator between "expensive"
+and "free".
+
+### Corollary technique: NORMALISE OVER THE BASE FIELD, NOT OVER `ℚ̄`
+
+The construction that made the above writable is worth copying verbatim. To get the CM
+automorphism as an endomorphism of `(E⁄ℚ̄).Point` **carrying its Galois conjugation law**,
+do NOT put `E⁄ℚ̄` into Weierstrass normal form over `ℚ̄`: the normalising variable change is
+then irrational and the transport destroys the `hstab` hypothesis. `exists_smul_eq_quarticModel`
+/ `…_sexticModel` are stated over an arbitrary `CharZero` field, so apply them **over `ℚ`**;
+the change of variables is then `ℚ`-rational, `Affine.Point.equivVariableChangeBaseChange_galois`
+makes the transport `Gal(ℚ̄/ℚ)`-equivariant, and every Galois hypothesis survives it unchanged.
+The `ℚ̄`-only data (the root of unity) enters afterwards, as the `u` of a diagonal automorphism
+of the *rational* normal form. Same pattern applies to any leaf that has to combine a normal
+form with a Galois-stability hypothesis.
+
+## A BUNDLED STRUCTURE'S OBJECT FIELDS MAY CARRY NO CONTENT — TEST WITH AN `iff` FIRST
+
+(2026-07-31, `flt-lean-15`, on `exists_eisensteinFormalImmersionAt` in
+`ModularCurve/X0.lean` — the section above is the same failure in a different suit,
+and the two together are worth reading as one rule.)
+
+This development cuts leaves by BUNDLING: a leaf produces a `structure` whose fields
+name the inputs of the textbook argument, so that "a partial advance on any one of them
+is visible". `IsEisensteinFormalImmersionAt` is the archetype — five object fields
+(`Eis`, `EisRed`, `ajE`, `ajE'`, `redE`) spelling out Mazur's Eisenstein quotient
+`J_e(p)(ℚ)`, its reduction, and the two Abel–Jacobi maps — and **four separate audits
+recorded IRREDUCIBLE on the strength of them**: "`J_0(p)`, the Hecke algebra, the
+Eisenstein ideal and reduction of an abelian variety are all missing."
+
+All four were auditing a *docstring*. `Eis` and `EisRed` are bare `Type`s under an
+existential, so they can be taken to BE the special fibre, with `ajE = redX` and
+`ajE' = redE = id`; `red_ajE` is then `rfl` and `redE_inj` is `Function.injective_id`.
+The whole structure is inhabited **iff** two conditions on `redX` alone hold —
+injectivity on the cuspidal locus, and `cusp_lift`. No abelian variety is asked for
+anywhere in the statement. The `iff` is nine lines and now sits in the file.
+
+**The check, and it costs one theorem.** Before believing that a bundled leaf needs a
+missing THEORY, ask which of its fields are pinned by the others and which are free:
+
+- a field of type `Type` (or any `Sort`) inside an existential is FREE — nothing
+  outside the structure can observe it, so it can be instantiated at anything already
+  in scope, usually the object the leaf is quantified over;
+- a field whose value is forced by a stated equation (`red_ajE` here) is free once
+  its neighbours are chosen to make that equation `rfl`;
+- an injectivity/faithfulness field is free at the identity;
+- what is NOT free is any field constraining data the leaf receives as a HYPOTHESIS —
+  here `redX`, which arrives inside `IsX0JReductionAt` and is what the leaf really
+  demands a theorem about.
+
+Then state the reduced form and PROVE the `iff`. If it goes through, the reduced form
+is the honest target and the anatomy was decoration; if it does not, you have learned
+exactly which field is load-bearing. Either outcome is worth the theorem.
+
+**This is NOT a way to make a leaf cheap, and expecting that is the trap on the other
+side.** The reduced form here is still Mazur — the two junk reductions that `red_jm`
+permits each die against the condition the other satisfies, and (A) ∧ (B) at `q`
+already imply that no rational point of `Y_0(p)` has a `j`-pole at `q`. What the
+reduction buys is that the next prover is not sent to build `J_0(p)`, the Hecke
+algebra and the Eisenstein ideal in order to discharge fields that `id` discharges.
+Vacuous OBJECTS, undiminished CONTENT: keep the two apart when reporting.
+
+Corollary for writing new bundled leaves: the argument that bundling "leaves the least
+for a prover to invent" is right about the fields that are pinned and wrong about the
+free ones, and the free ones are pure noise in the statement. Carry the anatomy in the
+DOCSTRING, where it costs nothing and misleads nobody, and keep it in the type only
+where something outside the structure observes it.
+
+## `rw` FAILS ON A COERCION THE GOAL DISPLAYS IDENTICALLY — USE `refine Eq.trans`
+
+(2026-07-31, `flt-lean-15`, proving `eq_two_or_eq_three_of_stableCyclic_of_autPoint_not_stable`
+in `ModularCurve/X0.lean`. Three of five compile iterations went to this one trap.)
+
+`Field.absoluteGaloisGroup ℚ` reaches `AlgHom` by more than one coercion path — via
+`(σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom`, and via the `AlgHomClass`
+instance directly. **Both pretty-print as `↑σ`.** So the failure reads:
+
+    Tactic `rewrite` failed: Did not find an occurrence of the pattern
+      (Point.map ↑σ) (ψ g)
+    in the target expression
+      (Point.map ↑σ) (ψ g) = k • ψ g
+
+— the pattern and the target are *character-for-character identical on screen* and are
+different terms underneath. Restating the step in the hypothesis's own syntax does NOT
+help; a `have step : <hcomm's exact syntax> := by rw [hcomm …]` failed the same way,
+because it is the ELABORATION that differs, not the source text.
+
+**The fix is to stop using `rw` for that step.** `exact`, `refine` and `Eq.trans` unify
+up to defeq, so they cross the coercion boundary for free:
+
+    refine Eq.trans (hcomm (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) hσv g) ?_
+    refine Eq.trans (congrArg ψ hk.symm) ?_
+    exact map_zsmul ψ k g
+
+Same trap, same cure, three more times in that one proof: `↑G` vs `g` after `set`
+(fixed by `show _ = … • g`), an instance-level mismatch on `Module.finrank` inside
+`LinearMap.det_smul` (fixed by `exact hdetscal _` instead of `rw [hfr]`), and
+`(c • P).1` under a `Subtype.ext`. **Rule of thumb: when a rewrite fails and the printed
+pattern equals the printed target, the terms differ by a coercion or an instance — switch
+to a defeq-checking tactic rather than hunting for the right `simp` lemma.** Turning on
+`set_option pp.explicit true` shows the difference if you need to see it.
+
+Corollary, and it is why this cost so little in the end: **develop against a scratch
+module.** Iterations on `Scratch15.lean` (one `public import`, ~120 lines) were **5
+seconds** each; the same edits against `X0.lean` are a full rebuild of 82 000 lines. Five
+iterations of blind coercion-fighting is a fine trade at 5 s and unaffordable at 30 min.
+
+## A MACHINERY SURVEY THAT NAMES *ONE* MISSING ITEM IS USUALLY RIGHT — CUT EXACTLY THAT
+
+Same leaf, and it is the counterweight to the two sections above (a survey that ends in
+"hoist X and generalise Y" being an artefact of the route, and four audits auditing a
+docstring's anatomy). Those say surveys OVER-state. This one under-stated nothing:
+
+`eq_two_or_eq_three_of_stableCyclic_of_autPoint_not_stable`'s docstring ended
+"**GENUINELY MISSING, and the only thing that is**: `K ⊄ ℚ(μ_p)` for `p ≥ 5`". That was
+exactly true. Cutting precisely that sentence as its own leaf
+(`exists_galoisFixing_cyclotomic_not_isSquare`) and proving *everything else* closed the
+node — and the residue is a statement about cyclotomic fields with **no elliptic curve in
+it**, provable by someone who never reads `X0.lean`.
+
+The discriminator between this case and the two bad ones is cheap and worth applying:
+**does the survey name a specific PROPOSITION, or a body of THEORY to build?** "`K ⊄
+ℚ(μ_p)` for `p ≥ 5`" is a proposition — state it, sorry it, prove the rest. "the
+Eisenstein quotient, the Hecke algebra and reduction of an abelian variety" is a body of
+theory, and that is the shape that turns out to be decoration. A survey naming one
+proposition is a gift: the cut is already written.
+
+Two facts the formalisation turned up that no survey predicted, both worth the habit of
+re-reading hypotheses after the proof compiles: `hψ`, injectivity of the CM automorphism,
+is **never used** (`hnot : ψ g ∉ ⟨g⟩` already gives `ψ g ≠ 0`, since `0 ∈ ⟨g⟩`); and `ψ`
+is only ever an **additive** endomorphism, never an isogeny — additivity alone gives
+`ψ(E[p]) ⊆ E[p]` and `ψ(k·g) = k·ψ(g)`, which is the whole of what the determinant
+argument consumes.
+
+## CONSTRUCT THE ELEMENT; DO NOT PROVE THE GROUP IS BIG
+
+(2026-07-31, `flt-lean-15`, closing `exists_galoisFixing_cyclotomic_not_isSquare` — the
+leaf the section above says was correctly cut. It is the sequel to that section: the
+survey named the right PROPOSITION, and was still wrong about the ROUTE.)
+
+The leaf asks for `σ ∈ G_ℚ` fixing `v` (`v² = −1` or `v² + v + 1 = 0`) with `χ̄_cyc(σ)` a
+non-square mod `p ≥ 5`. Its docstring surveyed two routes and recommended the second:
+
+1. Frobenius + `cyclotomicCharacterModL_globalFrob` — rejected, needs **Dirichlet on
+   primes in arithmetic progressions**, which is genuinely not in this tree;
+2. a **degree computation**: `K ⊄ ℚ(μ_p)` because `φ(4p) = 2(p−1) ≠ p−1 = φ(p)`, hence
+   `K ∩ ℚ(μ_p) = ℚ`, hence `χ̄_cyc` is onto on `G_K` — via `IsCyclotomicExtension.finrank`,
+   `Nat.totient_mul` and "the bookkeeping of subfields of `AlgebraicClosure ℚ`".
+
+The proof that closed it does neither. It **never mentions `K`, never compares two
+degrees, and never intersects two subfields.** It builds `σ` directly: work at the
+COMPOSITE level `m = n·p` (`n = 4` or `3`), take `c` with `c ≡ 1 mod n` and `c ≡ a mod p`
+for `a` a non-square (`Nat.chineseRemainder`, legitimate exactly because `p ≥ 5` makes
+`gcd(n,p) = 1`), and realise `c` as an automorphism. It fixes `v` because `v ∈ μ_n` and
+`c ≡ 1 mod n`; it acts on `μ_p` by `a` because `c ≡ a mod p`. **90 lines, three mathlib
+citations, no number theory of `K` at all.**
+
+**The general shape, and it is worth reaching for by default.** Route 2 proves *the image
+of a character is large*, then extracts an element from a large group. Constructing the
+element skips the middle step — and the middle step is where all the cost was, because
+"the image is large" is a statement about a lattice of subfields while "here is the
+element" is a statement about one automorphism. Ask which one you actually need. A leaf
+of the form `∃ σ, P σ` almost never needs a surjectivity theorem.
+
+**Why it is specifically cheap here: irreducibility of `Φ_m` over `ℚ` is ONE theorem
+covering every `m` at once.** `Polynomial.cyclotomic.irreducible_rat` feeds
+`IsCyclotomicExtension.autEquivPow` (`Gal(ℚ(μ_m)/ℚ) ≃ (ℤ/m)ˣ`) at level `n·p`, and
+`AlgEquiv.liftNormal` extends to `ℚ̄`. The fact `K ∩ ℚ(μ_p) = ℚ` that route 2 would have
+established by a totient count is *carried for free* by that one citation. So when a
+survey proposes to prove a compositum is as large as possible, check whether a single
+irreducibility/degree theorem at the composite modulus already says it.
+
+Reusable pieces this left in `X0.lean`, both stated over an arbitrary modulus and worth
+knowing about before re-deriving them: `exists_algEquiv_pow_of_coprime` (surjectivity of
+the mod-`m` cyclotomic character of `ℚ`, phrased as "some `σ` raises every `m`-th root of
+unity to the `c`") and `exists_galoisFixing_cyclotomicCharacterModL_eq` (the CRT step).
+
+### The `Algebra ℚ ℚ̄` diamond bites every proof that touches `AlgebraicClosure ℚ`
+
+Already documented in `QuarticTwist.lean` and `ComplexConjugation.lean`, repeated here
+because it cost an iteration and the symptom is unhelpful: **`Algebra.IsAlgebraic ℚ ℚ̄`
+and `IsAlgClosure ℚ ℚ̄` do not synthesise anywhere in this tree**, because search finds
+`DivisionRing.toRatAlgebra` while mathlib's instances are stated for
+`AlgebraicClosure.instAlgebra`. `IsAlgClosed ℚ̄` *does* synthesise, so the failure looks
+arbitrary. Supply them by hand — the `Patching.lean` idiom, which is four lines and works:
+
+    haveI halgQ : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) := AlgebraicClosure.isAlgebraic ℚ
+    haveI hacQ  : IsAlgClosure ℚ (AlgebraicClosure ℚ) := ⟨inferInstance, halgQ⟩
+    haveI hnormQ : Normal ℚ (AlgebraicClosure ℚ) := IsAlgClosure.normal ℚ _
+    haveI hintQ : Algebra.IsIntegral ℚ (AlgebraicClosure ℚ) := halgQ.isIntegral
+
+Do not try to fix it by re-declaring the mathlib instance in your file; the diamond is in
+the `Algebra` instance itself, so no re-export reaches it.
+
+And the coercion trap two sections above fired **twice more** in this proof, both times
+in its documented shape — printed pattern equal to printed target, `rw` unable to cross:
+once on `absoluteGaloisGroup ℚ`'s type ascription (cured by `Eq.trans`), once on
+`autEquivPow`'s forward map versus `(zeta_spec …).autToPow`, which are the same function
+behind a `MonoidHom`/`MulEquiv` coercion (cured by *stating* the equation and closing it
+with `exact`, letting the defeq check do the work). Treat that pair as the standard cure.
+
+## YOUR SENTINEL TOKEN CAN GO STALE WHILE YOU WORK — RE-READ `.started` BEFORE WRITING IT
+
+(2026-07-31, `flt-lean-15`. Cost nothing only because it was noticed; the failure mode is
+total, silent, and looks exactly like dying.)
+
+The token in your task prompt is the token that was current **when you were spawned**. The
+loop ROTATES it whenever it resumes a job. So an agent that is resumed mid-run — which is
+routine, and is what a bare `continue` usually is — holds a prompt naming a token the loop
+no longer accepts. Concretely, on this run:
+
+    prompt said        115c51de
+    .started said      6c69a75c   (rewritten 5 minutes AFTER the sentinel was written)
+    .json said         6c69a75c   with "resume": true and this session's own id
+
+A sentinel written under the old token is **ignored in full** — `queue`, `to_merger` and
+all. The loop then sees no sentinel, concludes the agent died, and starts a replacement on
+the same worktree. Everything the run learned is discarded, and the branch is left for a
+successor who will re-derive it. Note the shape: the work was committed and green, the
+report was written and accurate, and it would still have evaporated.
+
+**So the sentinel write is a two-step, always:**
+
+    cat ~/.flt-loop/jobs/<worktree>.started      # the token the loop expects RIGHT NOW
+    # write the sentinel using THAT, not the one in your prompt
+
+`.started` is authoritative; `.json`'s `token` field agrees with it and is a fine
+cross-check. If they disagree with your prompt, your prompt is the stale one — you were
+resumed. Rewriting an already-written sentinel with the fresh token is correct and safe:
+the content is unchanged, only the freshness handshake moves.
+
+Corollary, and it is the general form of this and of the `flt-loop spawn/liveness race`
+note: **any identifier the loop handed you at spawn is a snapshot, not a fact.** Re-read it
+from disk at the moment you need it. The loop's whole state is on disk precisely so that
+this is possible; reasoning from what your prompt said is reasoning from a cached value.
+
+Second corollary, for whoever is checking whether work got lost: `~/.flt-worktree-pool`
+reading `batched` does NOT mean your sentinel was accepted. Those are independent pieces of
+state, and this run observed `batched` while its sentinel was being ignored.
