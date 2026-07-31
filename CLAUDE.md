@@ -3878,6 +3878,69 @@ may rotate underneath it. Either the prompt should be rewritten on resume (it is
 regenerated, but a running session never re-reads it), or the sentinel should be matched on the
 job's identity rather than on a value the agent must echo.
 
+## A DOCSTRING'S PRESCRIBED ROUTE CAN NAME A STEP THAT THE RIGHT PRESENTATION DELETES
+
+(2026-07-31, `ker_multIdeal_le_span_idealTensorComparison`, [Stacks 10.99.12/13].) The leaf's
+docstring named the dimension shift `ker(↥I ⊗_C D → D) ≅ (K ∩ IF)/IK` as the thing to state
+first, calling it "the real cost of this leaf" — and it would have been, because it has to be
+applied over two rings and the two copies then have to be compared. It was never needed. On
+the **tautological** free presentation `F = (D →₀ C)` — the free module on the underlying SET
+— the shift degenerates:
+
+* `multIdeal I F` is INJECTIVE (`Finsupp` is free, hence flat), so the tensors themselves are
+  a faithful representation and conclusions transport along it; and
+* its image is cut out COEFFICIENTWISE, so `K ∩ IF` needs no separate description.
+
+No quotient is ever formed and no comparison is ever checked. ~300 lines instead of a module.
+
+**The generalisable move: before building the machine a route asks for, try the most concrete
+model of the object the route quantifies over.** A route is written by someone reasoning
+abstractly ("take a free presentation"); an abstract presentation forces you to construct
+every identification by hand, while a *specific* one often makes several of them `rfl` or
+coefficientwise. Same reason `ker πj = span_{Cj}(ι '' ker π)` was cheaper proved from the
+universal property of `⊗` than through mathlib's `lTensor_exact`: the latter first demands
+identifying `(D →₀ Cj)` with `Cj ⊗[Ci] (D →₀ Ci)`, and that transport costs more than the
+whole proof.
+
+Corollary for cutting: a leaf's stated route is a *hypothesis about cost*, not a
+specification. Re-cost it against a concrete model before you accept its first bullet.
+
+**And an unknown-identifier error on a mathlib name that visibly exists in the source is a
+RENAME, not a missing import.** `Basis` is `Module.Basis` at this pin (`Basis.ofVectorSpace`
+→ `Module.Basis.ofVectorSpace`), and the error was `unknown namespace 'Basis'` even with the
+right file imported. Check `grep -n "^namespace" <the mathlib file>` before hunting imports or
+suspecting a partial `.lake`. (A genuinely missing olean gives `object file ... does not
+exist`, which looks nothing like this.)
+
+## A LEAF THAT INVITES A CUT AND DECLINES IT "BECAUSE NOTHING WOULD CONSUME IT" — the consumer is the leaf
+
+(2026-07-31, `hasCubeIso_of_symm_of_normalized`.) Its docstring said, correctly, "a prover who
+wants the general Corollary 2 as a separate leaf should cut it … this statement is three formal
+steps below it", and then declined to, "only because this project forbids free-floating
+declarations and nothing would yet consume it." That reason is wrong by one step: **the leaf
+itself is the consumer.** Cut the general statement, prove the leaf over it, and nothing floats.
+It was three formal steps, exactly as advertised — and two survey agents had already read that
+paragraph and moved on, because "this is a theory build" is true of the general form too and so
+reads as a reason to do nothing.
+
+The trade is worth taking even though the leaf COUNT does not move (one out, one in):
+
+- the open statement shed `[Field K]` and two of its three hypotheses, which were being
+  discharged in the derivation all along;
+- it is now the statement the literature proves, so a future prover can follow a book instead
+  of reverse-engineering a project-specific corollary;
+- it is stated for arbitrary points over an arbitrary base, so its OTHER classical consequences
+  are reachable from the same leaf rather than needing their own cuts later.
+
+**And when you hoist a field-based statement to an arbitrary base, KEEP THE CONSTANT TERM the
+reference drops.** Mumford's cube identity omits `0^* L` because over a field `Pic(Spec k) = 0`
+makes it free. Transcribing it verbatim over a general base silently asserts `e^* L ≅ 𝒪` — put
+`x = y = z = 0` and every one of the seven factors collapses to `0^* L`, so the identity reads
+`(0^*L)^{⊗4} ≅ (0^*L)^{⊗3}`. Restoring the term makes that case a tautology, which is what a
+correct third-difference identity must do. **The general test: specialise your statement to the
+degenerate point where a reference's ambient hypothesis was doing the work, and check you get a
+tautology and not a hidden assertion.**
+
 ## RIVAL CUTS ARE OFTEN COMPLEMENTARY — check before choosing
 
 (2026-07-30.) Nine of 57 branches in one batch were declined because another agent had cut the
@@ -7104,3 +7167,34 @@ groups are out of reach; it also bounds `#J(ℚ)`'s exponent, since `J(ℚ)` emb
 Two cautions, both real: `G` need not SPLIT (at one level its invariant factors had odd
 multiplicities, so `G ≇ J ⊕ J` and the SNF does **not** determine `J`), and the argument
 sees only primes `m ∣ n` with `m ≠ ℓ` — check `ℓ ∤ n` before relying on it.
+
+## TEST A PROPOSED CUT ON THE SMALLEST FIELD, NOT THE GENERIC ONE
+
+(2026-07-31, `exists_isAmpleSheaf_of_field`.) The obvious way to cut "an abelian variety is
+projective" is to hand out the translation argument as its own leaf: *for every `z` there are
+`K`-automorphisms `f₁ … f_k` of `X` with `z ∈ ⋂ fᵢ⁻¹(U)` and `⨂ fᵢ^*L ≅ L^{⊗k}`*, leaving only
+formal bookkeeping above it. It reads as obviously true — it IS what Mumford's proof produces —
+and **every version of it is FALSE**, for a reason no amount of thinking about the generic case
+surfaces.
+
+The witness is four lines of arithmetic. `E : y² + y = x³ + x + 1` over `𝔽₂` is nonsingular
+(`Δ = −91`, odd) and has `E(𝔽₂) = {O}`: over `𝔽₂` the left side is `0` for both `y` and the right
+side is `1` for both `x`, so there is no affine point. Take `U = E ∖ {O}` and `L = 𝒪((O))`. Any
+`K`-automorphism `f` of the SCHEME `E` sends the `K`-point `O` to a `K`-point, hence to `O`, hence
+is a group automorphism, hence `f ⁻¹ᵁ U = U`. So every section reachable from `s` by pullback
+along automorphisms has non-vanishing locus exactly `U`, and `z = O` is in none of them. Over `ℚ`
+the same argument kills it for any curve with trivial Mordell–Weil group.
+
+**The generalisable rule: when a proposed sub-leaf quantifies over AUTOMORPHISMS, RATIONAL POINTS,
+or anything else whose supply depends on the base field, instantiate it at `𝔽₂` before writing it
+down.** Arguments written over `K̄` silently use Zariski-density of the closed points; the density
+is invisible in the statement and is exactly what the cut drops. The smallest field is where a
+cut dies, and the test costs a brute-force point count you can run in ten lines of Python (or
+check by hand, as above) — far cheaper than dispatching an agent at a leaf that cannot be proven.
+
+Corollary for the ROUTE, not just the cut: once the audit forecloses the cheap sub-leaf, the
+docstring must say what the correct field-independent route IS, or the next agent re-derives the
+same dead end. Here it is either base change to `K̄` plus faithfully-flat descent OF THE PROPERTY
+(the sheaf itself is already defined over `K`, so nothing has to be descended but ampleness), or
+staying over `K` and taking norms along `X_κ → X` with Chevalley's affineness theorem. Both are
+recorded on the leaf.

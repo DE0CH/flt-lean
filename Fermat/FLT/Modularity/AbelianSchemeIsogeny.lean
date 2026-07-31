@@ -85,20 +85,34 @@ listed here as OPEN until 2026-07-29; the list had gone stale by five bullets,
 which is exactly the phantom-dispatch failure mode.  Do not trust this list —
 re-run the scan.
 
-What is genuinely open (declaration, and what it is):
+**REGENERATED 2026-07-31** from the `declaration uses 'sorry'` warning set of a green
+`lake build` of this module — the list that stood here named FOUR entries of which
+THREE no longer existed (`nonempty_noetherianApproxSystem_of_baseSystem`,
+`exists_le_rTensor_map_maximalIdeal_injective_of_…`,
+`flat_quotientMap_map_maximalIdeal_of_…`, `exists_isAmpleSheaf_symmetric_cube` and
+`nonempty_modPullback_mulByNat_of_cube` are all either PROVEN or renamed away).  The
+warning set is still FIVE, and it is:
 
-* `nonempty_noetherianApproxSystem_of_baseSystem` — the noetherian
-  approximation system built from a base system;
-* `exists_le_rTensor_map_maximalIdeal_injective_of_isNoetherianFlatDescentSystem`
-  and `flat_quotientMap_map_maximalIdeal_of_isNoetherianFlatDescentSystem` — the
-  two remaining steps of the 10.128.3 two-tower engine
-  `exists_flat_index_of_isNoetherianFlatDescentSystem`.  See the section note
-  "10.128.3 IS ONE LEMMA APPLIED TWICE";
-* `exists_isAmpleSheaf_symmetric_cube` — the two-variable symmetric cube, the
-  primitive under BOTH `exists_isAmpleSheaf_cube_of_isAlgClosed` here and
-  `exists_cubeModel_of_abelianScheme` in `ModularCurve/X0.lean`;
-* `nonempty_modPullback_mulByNat_of_cube` — the theorem-of-the-cube pullback
-  identity.
+* `essFinitePresentation_of_essFinitePresentation_comp` and
+  `exists_noetherianLocalExtSystem_of_essFinitePresentation` — the two essential-finite-
+  presentation steps feeding the noetherian approximation of 10.128.3;
+* `exists_le_idealTensorComparison_eq_zero_of_isNoetherianFlatDescentSystem` — HALF A of
+  Stacks 00R6.  Half B, `rTensor_map_maximalIdeal_injective_of_idealTensorComparison_eq_
+  zero_of_isNoetherianFlatDescentSystem`, was closed 2026-07-30 and is sorry-free;
+* `exists_isInvertibleSheaf_nonvanishingLocus_eq_of_isAffineOpen` and
+  `isAmpleSheaf_of_nonvanishingLocus_eq_of_field` — the 2026-07-31 CUT of
+  `exists_isAmpleSheaf_of_field` (PROJECTIVITY of an abelian variety), which is now
+  PROVEN over them.  The first is `𝒪(X ∖ U)` for an affine open `U` and needs Weil
+  divisors, `𝒪(D)` and nothing about the group law; the second is Mumford's
+  Application 1 and needs the theorem of the square and nothing about divisors;
+* `nonempty_cubeIdentity` — THE THEOREM OF THE CUBE, cut 2026-07-31 out of
+  `hasCubeIso_of_symm_of_normalized` (which is now PROVEN over it).  Needs the seesaw
+  principle, hence coherent-sheaf cohomology and flat base change.
+
+The last three are the only mathlib-scale statements in the module, they are INDEPENDENT
+of each other, and each is a theory build rather than a proof problem.  As always: this
+list is stamped to a commit and is stale the moment anything merges — regenerate it from a
+build rather than quoting it.
 -/
 module
 
@@ -196,6 +210,12 @@ public import Mathlib.RingTheory.Depth.Rees
 public import Mathlib.RingTheory.KrullDimension.NonZeroDivisors
 public import Mathlib.RingTheory.Nakayama
 public import Mathlib.RingTheory.Ideal.Colon
+-- `ker_multIdeal_le_span_idealTensorComparison` (10.99.12/13) needs exactly two
+-- more: `Ideal.Over` for `Algebra (R ⧸ p) (S ⧸ pS)` together with its scalar
+-- tower, and `Basis.VectorSpace` for `Module.Basis.ofVectorSpace` — a `k`-basis
+-- of `C_j / 𝔪 C_j` is the whole content of [Stacks 10.99.12].
+public import Mathlib.RingTheory.Ideal.Over
+public import Mathlib.LinearAlgebra.Basis.VectorSpace
 -- The going-down half of `ringKrullDim_stalk_eq_of_isFinite_endo` below.
 -- `Ideal.GoingDown` supplies `Algebra.HasGoingDown`, which occurs in the
 -- SIGNATURE of the leaf `hasGoingDown_stalkMap_of_isFinite_endo`, so it is
@@ -5662,10 +5682,787 @@ theorem exists_le_idealTensorComparison_eq_zero_of_isNoetherianFlatDescentSystem
 
 end HalfAColimit
 
+/-! #### THE LOCALIZATION IS SEPARATED OFF HALF B — cut 2026-07-31
+
+Half B's own docstring below lists its route in four bullets, of which the LAST — "`D_j` is
+flat over `N`, so `T_j = W⁻¹ T^N_j`" — is elementary and has nothing to do with `Tor`.  The
+block below performs exactly that step, unconditionally, and leaves the first three bullets
+as ONE named leaf `ker_multIdeal_le_span_idealTensorComparison` over the ring
+`N = C_j ⊗_{C_i} D_i` itself, where no localization occurs.
+
+The cut is worth taking because the two parts share nothing but the statement: the
+localization half is a common-denominator argument (`IsLocalization.surj` plus
+`IsLocalization.map_eq_zero_iff`), while the `N`-half is the dimension shift
+`Tor_1(M, C/I) ≅ ker(K/IK → F/IF)` that Half B's docstring identifies as "the real cost of
+this leaf".  Neither has to carry the other's hypotheses, and in particular the remaining
+leaf mentions no `Submonoid`, no `IsLocalization` and no `D_j`.
+
+**BOTH HALVES OF THIS CUT ARE NOW PROVEN** (later the same day) — the localization lemma
+below and `ker_multIdeal_le_span_idealTensorComparison` after it, so Half B is sorry-free
+and 10.128.3's colimit half is down to Half A alone.  The cut is recorded anyway because it
+is what made the second half small enough to attack: the remaining statement mentions no
+`Submonoid`, no `IsLocalization` and no `D_j`, and the counterexample of Half B's FALSITY
+AUDIT is invisible to it.
+
+Everything here is stated for the multiplication map `multIdeal I P : ↥I ⊗[R] P → P`,
+`y ⊗ₜ p ↦ y • p`, which is `LinearMap.rTensor P I.subtype` composed with the left unitor;
+`injective_rTensor_iff_injective_multIdeal` is the (trivial) translation, and it is there
+because the surrounding development states everything in the `rTensor` form while the
+localization argument is much easier to read in the `multIdeal` form. -/
+
+/-- The multiplication map `↥I ⊗[R] P → P`, `y ⊗ₜ p ↦ y • p`.  It is
+`LinearMap.rTensor P I.subtype` followed by the left unitor, so it is injective exactly
+when that `rTensor` is — see `injective_rTensor_iff_injective_multIdeal`. -/
+noncomputable def multIdeal {R : Type u} [CommRing R] (I : Ideal R) (P : Type u)
+    [AddCommGroup P] [Module R P] : ↥I ⊗[R] P →ₗ[R] P :=
+  (TensorProduct.lid R P).comp (LinearMap.rTensor P I.subtype)
+
+@[simp] lemma multIdeal_tmul {R : Type u} [CommRing R] (I : Ideal R) (P : Type u)
+    [AddCommGroup P] [Module R P] (y : ↥I) (p : P) :
+    multIdeal I P (y ⊗ₜ[R] p) = (y : R) • p := rfl
+
+/-- `LinearMap.rTensor P I.subtype` and `multIdeal I P` differ by the left unitor, hence
+are injective together. -/
+lemma injective_rTensor_iff_injective_multIdeal {R : Type u} [CommRing R] (I : Ideal R)
+    (P : Type u) [AddCommGroup P] [Module R P] :
+    Function.Injective (LinearMap.rTensor P I.subtype) ↔
+      Function.Injective (multIdeal I P) := by
+  constructor
+  · intro h
+    exact (TensorProduct.lid R P).injective.comp h
+  · intro h x y hxy
+    apply h
+    simp only [multIdeal, LinearMap.comp_apply, hxy]
+
+/-- `multIdeal` is natural in the second variable. -/
+lemma multIdeal_lTensor {R : Type u} [CommRing R] (I : Ideal R) {P Q : Type u}
+    [AddCommGroup P] [Module R P] [AddCommGroup Q] [Module R Q] (f : P →ₗ[R] Q)
+    (x : ↥I ⊗[R] P) :
+    multIdeal I Q (LinearMap.lTensor (↥I) f x) = f (multIdeal I P x) := by
+  induction x with
+  | zero => simp
+  | tmul y p => simp
+  | add x₁ x₂ h₁ h₂ => simp [h₁, h₂]
+
+/-- The structure map `N → A` of a tower `R' → N → A`, read as an `R'`-linear map. -/
+noncomputable def algebraMapLinearOfTower (R' : Type u) [CommRing R'] (N : Type u)
+    [CommRing N] (A : Type u) [CommRing A] [Algebra R' N] [Algebra R' A] [Algebra N A]
+    [IsScalarTower R' N A] : N →ₗ[R'] A :=
+  (IsScalarTower.toAlgHom R' N A).toLinearMap
+
+@[simp] lemma algebraMapLinearOfTower_apply {R' N A : Type u} [CommRing R'] [CommRing N]
+    [CommRing A] [Algebra R' N] [Algebra R' A] [Algebra N A] [IsScalarTower R' N A] (n : N) :
+    algebraMapLinearOfTower R' N A n = algebraMap N A n := rfl
+
+lemma lTensor_mulLeft_algebraMap_mul {R' N A : Type u} [CommRing R'] [CommRing N]
+    [CommRing A] [Algebra R' A] [Algebra N A] (I' : Ideal R') (w₁ w₂ : N)
+    (x : ↥I' ⊗[R'] A) :
+    LinearMap.lTensor (↥I') (LinearMap.mulLeft R' (algebraMap N A (w₁ * w₂))) x
+      = LinearMap.lTensor (↥I') (LinearMap.mulLeft R' (algebraMap N A w₁))
+          (LinearMap.lTensor (↥I') (LinearMap.mulLeft R' (algebraMap N A w₂)) x) := by
+  induction x with
+  | zero => simp
+  | tmul y a => simp [map_mul]
+  | add x₁ x₂ k₁ k₂ => simp only [map_add, k₁, k₂]
+
+lemma lTensor_algebraMapLinearOfTower_mulLeft {R' N A : Type u} [CommRing R'] [CommRing N]
+    [CommRing A] [Algebra R' N] [Algebra R' A] [Algebra N A] [IsScalarTower R' N A]
+    (I' : Ideal R') (w : N) (x : ↥I' ⊗[R'] N) :
+    LinearMap.lTensor (↥I') (algebraMapLinearOfTower R' N A)
+        (LinearMap.lTensor (↥I') (LinearMap.mulLeft R' w) x)
+      = LinearMap.lTensor (↥I') (LinearMap.mulLeft R' (algebraMap N A w))
+          (LinearMap.lTensor (↥I') (algebraMapLinearOfTower R' N A) x) := by
+  induction x with
+  | zero => simp
+  | tmul y n => simp
+  | add x₁ x₂ k₁ k₂ => simp [k₁, k₂]
+
+/-- Every element of `↥I' ⊗[R'] A`, for `A` a localization of `N` at `W`, becomes the image
+of an element of `↥I' ⊗[R'] N` after multiplication by a single `u ∈ W`. -/
+theorem exists_common_denominator_lTensor {R' N A : Type u} [CommRing R'] [CommRing N]
+    [CommRing A] [Algebra R' N] [Algebra R' A] [Algebra N A] [IsScalarTower R' N A]
+    (W : Submonoid N) [IsLocalization W A] (I' : Ideal R') (ξ : ↥I' ⊗[R'] A) :
+    ∃ u : W, ∃ z : ↥I' ⊗[R'] N,
+      LinearMap.lTensor (↥I') (LinearMap.mulLeft R' (algebraMap N A (u : N))) ξ
+        = LinearMap.lTensor (↥I') (algebraMapLinearOfTower R' N A) z := by
+  induction ξ with
+  | zero => exact ⟨1, 0, by simp⟩
+  | tmul y a =>
+      obtain ⟨⟨n, u⟩, hnu⟩ := IsLocalization.surj (M := W) a
+      refine ⟨u, y ⊗ₜ[R'] n, ?_⟩
+      simp only [LinearMap.lTensor_tmul, LinearMap.mulLeft_apply,
+        algebraMapLinearOfTower_apply]
+      rw [← hnu, mul_comm]
+  | add ξ₁ ξ₂ ih₁ ih₂ =>
+      obtain ⟨u₁, z₁, h₁⟩ := ih₁
+      obtain ⟨u₂, z₂, h₂⟩ := ih₂
+      refine ⟨u₁ * u₂,
+        LinearMap.lTensor (↥I') (LinearMap.mulLeft R' ((u₂ : N))) z₁
+          + LinearMap.lTensor (↥I') (LinearMap.mulLeft R' ((u₁ : N))) z₂, ?_⟩
+      have hcoe : ((u₁ * u₂ : W) : N) = (u₁ : N) * (u₂ : N) := rfl
+      have t1 : LinearMap.lTensor (↥I')
+            (LinearMap.mulLeft R' (algebraMap N A ((u₁ : N) * (u₂ : N)))) ξ₁
+          = LinearMap.lTensor (↥I') (LinearMap.mulLeft R' (algebraMap N A (u₂ : N)))
+              (LinearMap.lTensor (↥I')
+                (LinearMap.mulLeft R' (algebraMap N A (u₁ : N))) ξ₁) := by
+        rw [mul_comm, lTensor_mulLeft_algebraMap_mul]
+      have t2 : LinearMap.lTensor (↥I')
+            (LinearMap.mulLeft R' (algebraMap N A ((u₁ : N) * (u₂ : N)))) ξ₂
+          = LinearMap.lTensor (↥I') (LinearMap.mulLeft R' (algebraMap N A (u₁ : N)))
+              (LinearMap.lTensor (↥I')
+                (LinearMap.mulLeft R' (algebraMap N A (u₂ : N))) ξ₂) :=
+        lTensor_mulLeft_algebraMap_mul _ _ _ _
+      rw [hcoe, map_add, t1, t2, h₁, h₂, map_add, lTensor_algebraMapLinearOfTower_mulLeft,
+        lTensor_algebraMapLinearOfTower_mulLeft]
+
+/-- **THE LOCALIZATION STEP OF HALF B**, in its own right and with no descent system in
+sight: if the kernel of `↥I' ⊗[R'] N → N` is contained in the `R'`-span of a set `S` that
+the structure map `N → A` kills after tensoring, then `↥I' ⊗[R'] A → A` is injective, for
+`A` any localization of `N`.
+
+This is Half B's fourth bullet — "`D_j` is flat over `N`, so `T_j = W⁻¹T^N_j`" — done by
+hand rather than through flatness: a common denominator (`exists_common_denominator_lTensor`)
+moves any `ξ` into the image of `↥I' ⊗[R'] N`, `IsLocalization.map_eq_zero_iff` produces the
+`w ∈ W` that annihilates its image in `N`, the span hypothesis kills `w • z`, and
+`IsLocalization.map_units` divides the accumulated denominator back out. -/
+theorem injective_multIdeal_of_ker_le_span {R' N A : Type u} [CommRing R'] [CommRing N]
+    [CommRing A] [Algebra R' N] [Algebra R' A] [Algebra N A] [IsScalarTower R' N A]
+    (W : Submonoid N) [IsLocalization W A] (I' : Ideal R') (S : Set (↥I' ⊗[R'] N))
+    (hker : LinearMap.ker (multIdeal I' N) ≤ Submodule.span R' S)
+    (hS : ∀ s ∈ S, LinearMap.lTensor (↥I') (algebraMapLinearOfTower R' N A) s = 0) :
+    Function.Injective (multIdeal I' A) := by
+  rw [injective_iff_map_eq_zero]
+  intro ξ hξ
+  obtain ⟨u, z, huz⟩ := exists_common_denominator_lTensor (A := A) W I' ξ
+  -- `z` maps to zero in `A`
+  have h1 : algebraMap N A (multIdeal I' N z) = 0 := by
+    have := multIdeal_lTensor I' (algebraMapLinearOfTower R' N A) z
+    rw [← huz, multIdeal_lTensor, hξ] at this
+    simpa using this.symm
+  obtain ⟨w, hw⟩ := (IsLocalization.map_eq_zero_iff W A (multIdeal I' N z)).mp h1
+  -- `w • z` lies in the kernel, hence in the span of `S`, hence is killed by the structure map
+  have h3 : LinearMap.lTensor (↥I') (LinearMap.mulLeft R' (w : N)) z
+      ∈ LinearMap.ker (multIdeal I' N) := by
+    simp only [LinearMap.mem_ker, multIdeal_lTensor, LinearMap.mulLeft_apply]
+    exact hw
+  have h5 : LinearMap.lTensor (↥I') (algebraMapLinearOfTower R' N A)
+      (LinearMap.lTensor (↥I') (LinearMap.mulLeft R' (w : N)) z) = 0 := by
+    refine Submodule.span_induction (p := fun x _ =>
+      LinearMap.lTensor (↥I') (algebraMapLinearOfTower R' N A) x = 0)
+      (fun x hx => hS x hx) (map_zero _) (fun x y _ _ hx hy => by rw [map_add, hx, hy, add_zero])
+      (fun c x _ hx => by rw [map_smul, hx, smul_zero]) (hker h3)
+  -- so `w * u` kills `ξ`, and `w * u` is a unit in `A`
+  rw [lTensor_algebraMapLinearOfTower_mulLeft, ← huz, ← lTensor_mulLeft_algebraMap_mul] at h5
+  have hunit : IsUnit (algebraMap N A ((w : N) * (u : N))) := by
+    have := IsLocalization.map_units (M := W) A (w * u)
+    simpa using this
+  obtain ⟨v, hv⟩ := hunit
+  have hcomp : (LinearMap.mulLeft R' ((v⁻¹ : Aˣ) : A)).comp
+      (LinearMap.mulLeft R' (algebraMap N A ((w : N) * (u : N)))) = LinearMap.id := by
+    ext a
+    simp [← hv, ← mul_assoc]
+  calc ξ = LinearMap.lTensor (↥I') (LinearMap.id) ξ := by simp
+    _ = LinearMap.lTensor (↥I') ((LinearMap.mulLeft R' ((v⁻¹ : Aˣ) : A)).comp
+          (LinearMap.mulLeft R' (algebraMap N A ((w : N) * (u : N))))) ξ := by rw [hcomp]
+    _ = LinearMap.lTensor (↥I') (LinearMap.mulLeft R' ((v⁻¹ : Aˣ) : A))
+          (LinearMap.lTensor (↥I')
+            (LinearMap.mulLeft R' (algebraMap N A ((w : N) * (u : N)))) ξ) := by
+        rw [LinearMap.lTensor_comp]; rfl
+    _ = 0 := by rw [h5, map_zero]
+
+/-! #### THE TAUTOLOGICAL FREE PRESENTATION, AND THE DIMENSION SHIFT ON IT
+
+The block below is the machinery of `ker_multIdeal_le_span_idealTensorComparison` (10.99.13
++ 10.99.12), and it is written against ONE presentation, chosen so that no base-change
+transport is ever needed:
+
+* `finsuppPresentation : (Di →₀ Ci) ↠ Di` is the tautological free presentation, the free
+  `C_i`-module on the SET `Di`;
+* `finsuppPresentationBase : (Di →₀ Cj) ↠ Cj ⊗[Ci] Di` is its base change — written
+  DIRECTLY as a `Finsupp` on the same index type rather than as `Cj ⊗[Ci] (Di →₀ Ci)`, which
+  is what keeps the coordinate argument in `mem_sup_span_finsuppBaseChange_of_coeff_mem`
+  free of `Basis.baseChange` bookkeeping;
+* `finsuppBaseChange` and `finsuppIdealComparison` are the two comparison maps between the
+  `C_i`- and `C_j`-levels.
+
+`ker_finsuppPresentationBase` — that `ker πj` is the `C_j`-span of `ι '' ker π` — IS right
+exactness of `Cj ⊗[Ci] −`, and it is proved here from the universal property directly: the
+inverse map `Cj ⊗[Ci] Di → (Di →₀ Cj) ⧸ span` is `AlgebraTensorModule.lift` of `d ↦ [single
+d 1]`, whose two well-definedness obligations are exactly the two families of relations
+`single (d + d') 1 − single d 1 − single d' 1` and `single (a • d) 1 − a • single d 1`, both
+visibly in `ker π`.  Going through mathlib's `lTensor_exact` instead would first require
+identifying `(Di →₀ Cj)` with `Cj ⊗[Ci] (Di →₀ Ci)`, which costs more than this proof.
+
+The DIMENSION SHIFT that the leaf's docstring says to state first is not stated as a
+separate isomorphism here, and deliberately: on THIS presentation it degenerates. `↥I ⊗ F →
+F` is injective because `Finsupp` is free (`injective_multIdeal_of_flat`), and its image is
+cut out COEFFICIENTWISE (`multIdeal_finsupp_apply_mem` and `mem_range_multIdeal_finsupp`),
+so `(K ∩ IF)/IK` never has to be built — the argument works with the tensors themselves and
+transports along `multIdeal`, which is injective. That is the one simplification that made
+this leaf tractable. -/
+
+/-- The tautological free presentation `π : (Di →₀ Ci) ↠ Di` — the free `Ci`-module on the
+SET `Di`, sending `single d c` to `c • d`. -/
+noncomputable def finsuppPresentation {Ci Di : Type u} [CommRing Ci] [CommRing Di]
+    [Algebra Ci Di] : (Di →₀ Ci) →ₗ[Ci] Di := Finsupp.linearCombination Ci id
+
+/-- Its base change `πj : (Di →₀ Cj) ↠ Cj ⊗[Ci] Di`, written directly on `Finsupp`. -/
+noncomputable def finsuppPresentationBase {Ci Cj Di : Type u} [CommRing Ci] [CommRing Cj]
+    [CommRing Di] [Algebra Ci Cj] [Algebra Ci Di] :
+    (Di →₀ Cj) →ₗ[Cj] Cj ⊗[Ci] Di :=
+  Finsupp.linearCombination Cj (fun d => (1 : Cj) ⊗ₜ[Ci] d)
+
+/-- The coefficientwise comparison `(Di →₀ Ci) → (Di →₀ Cj)`. -/
+noncomputable def finsuppBaseChange {Ci Cj Di : Type u} [CommRing Ci] [CommRing Cj]
+    [Algebra Ci Cj] : (Di →₀ Ci) →ₗ[Ci] (Di →₀ Cj) :=
+  Finsupp.mapRange.linearMap (Algebra.linearMap Ci Cj)
+
+@[simp] lemma finsuppPresentation_single {Ci Di : Type u} [CommRing Ci] [CommRing Di]
+    [Algebra Ci Di] (d : Di) (c : Ci) :
+    finsuppPresentation (Finsupp.single d c) = c • d := by
+  simp [finsuppPresentation]
+
+@[simp] lemma finsuppPresentationBase_single {Ci Cj Di : Type u} [CommRing Ci] [CommRing Cj]
+    [CommRing Di] [Algebra Ci Cj] [Algebra Ci Di] (d : Di) (c : Cj) :
+    finsuppPresentationBase (Ci := Ci) (Finsupp.single d c) = c ⊗ₜ[Ci] d := by
+  simp only [finsuppPresentationBase, Finsupp.linearCombination_single]
+  rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+
+@[simp] lemma finsuppBaseChange_apply {Ci Cj Di : Type u} [CommRing Ci] [CommRing Cj]
+    [Algebra Ci Cj] (x : Di →₀ Ci) (d : Di) :
+    finsuppBaseChange (Cj := Cj) x d = algebraMap Ci Cj (x d) := rfl
+
+@[simp] lemma finsuppBaseChange_single {Ci Cj Di : Type u} [CommRing Ci] [CommRing Cj]
+    [Algebra Ci Cj] (d : Di) (c : Ci) :
+    finsuppBaseChange (Cj := Cj) (Finsupp.single d c)
+      = Finsupp.single d (algebraMap Ci Cj c) := by
+  ext d'; by_cases h : d = d' <;> simp [h]
+
+lemma finsuppPresentationBase_surjective {Ci Cj Di : Type u} [CommRing Ci] [CommRing Cj]
+    [CommRing Di] [Algebra Ci Cj] [Algebra Ci Di] :
+    Function.Surjective (finsuppPresentationBase (Ci := Ci) (Cj := Cj) (Di := Di)) := by
+  intro n
+  induction n with
+  | zero => exact ⟨0, map_zero _⟩
+  | tmul c d => exact ⟨Finsupp.single d c, by simp⟩
+  | add x y hx hy =>
+      obtain ⟨a, ha⟩ := hx
+      obtain ⟨b, hb⟩ := hy
+      exact ⟨a + b, by simp [ha, hb]⟩
+
+lemma finsuppPresentationBase_finsuppBaseChange {Ci Cj Di : Type u} [CommRing Ci]
+    [CommRing Cj] [CommRing Di] [Algebra Ci Cj] [Algebra Ci Di] (x : Di →₀ Ci) :
+    finsuppPresentationBase (Cj := Cj) (finsuppBaseChange x)
+      = (1 : Cj) ⊗ₜ[Ci] (finsuppPresentation x) := by
+  induction x using Finsupp.induction_linear with
+  | zero => simp
+  | add x y hx hy => simp [hx, hy, TensorProduct.tmul_add]
+  | single d c =>
+      simp only [finsuppBaseChange_single, finsuppPresentationBase_single,
+        finsuppPresentation_single]
+      rw [← TensorProduct.smul_tmul]
+      congr 1
+      simp [Algebra.smul_def]
+
+/-- **RIGHT EXACTNESS OF `C_j ⊗_{C_i} −` ON THE TAUTOLOGICAL PRESENTATION**: `ker πj` is the
+`C_j`-span of `ι '' ker π`.  Proved from the universal property of the tensor product — see
+the section note above for why, and not through `lTensor_exact`. -/
+lemma ker_finsuppPresentationBase {Ci Cj Di : Type u} [CommRing Ci] [CommRing Cj]
+    [CommRing Di] [Algebra Ci Cj] [Algebra Ci Di] :
+    LinearMap.ker (finsuppPresentationBase (Ci := Ci) (Cj := Cj) (Di := Di))
+      = Submodule.span Cj (finsuppBaseChange (Cj := Cj) ''
+          ((LinearMap.ker (finsuppPresentation (Ci := Ci) (Di := Di)) :
+            Submodule Ci (Di →₀ Ci)) : Set (Di →₀ Ci))) := by
+  set Sp : Submodule Cj (Di →₀ Cj) :=
+    Submodule.span Cj (finsuppBaseChange (Cj := Cj) ''
+      ((LinearMap.ker (finsuppPresentation (Ci := Ci) (Di := Di)) :
+        Submodule Ci (Di →₀ Ci)) : Set (Di →₀ Ci))) with hSp
+  have hge : Sp ≤ LinearMap.ker (finsuppPresentationBase (Ci := Ci) (Cj := Cj) (Di := Di)) := by
+    rw [hSp, Submodule.span_le]
+    rintro _ ⟨x, hx, rfl⟩
+    simp only [SetLike.mem_coe, LinearMap.mem_ker, finsuppPresentationBase_finsuppBaseChange]
+    rw [LinearMap.mem_ker.mp hx, TensorProduct.tmul_zero]
+  refine le_antisymm ?_ hge
+  have hmem : ∀ x : Di →₀ Ci, finsuppPresentation x = 0 →
+      finsuppBaseChange (Cj := Cj) x ∈ Sp := by
+    intro x hx
+    rw [hSp]
+    exact Submodule.subset_span (Set.mem_image_of_mem _ (LinearMap.mem_ker.mpr hx))
+  have hadd : ∀ d d' : Di,
+      Finsupp.single (d + d') (1 : Cj)
+        - (Finsupp.single d (1 : Cj) + Finsupp.single d' (1 : Cj)) ∈ Sp := by
+    intro d d'
+    have h := hmem (Finsupp.single (d + d') (1 : Ci)
+      - (Finsupp.single d (1 : Ci) + Finsupp.single d' (1 : Ci))) (by simp)
+    simpa using h
+  have hsmul : ∀ (a : Ci) (d : Di),
+      Finsupp.single (a • d) (1 : Cj) - a • Finsupp.single d (1 : Cj) ∈ Sp := by
+    intro a d
+    have h := hmem (Finsupp.single (a • d) (1 : Ci) - a • Finsupp.single d (1 : Ci)) (by simp)
+    simpa [Algebra.algebraMap_eq_smul_one] using h
+  let g : Di →ₗ[Ci] ((Di →₀ Cj) ⧸ Sp) :=
+    { toFun := fun d => Submodule.Quotient.mk (Finsupp.single d (1 : Cj))
+      map_add' := fun d d' => by
+        rw [← Submodule.Quotient.mk_add, Submodule.Quotient.eq]
+        exact hadd d d'
+      map_smul' := fun a d => by
+        rw [RingHom.id_apply, ← Submodule.Quotient.mk_smul, Submodule.Quotient.eq]
+        exact hsmul a d }
+  let θ : (Cj ⊗[Ci] Di) →ₗ[Cj] ((Di →₀ Cj) ⧸ Sp) :=
+    TensorProduct.AlgebraTensorModule.lift
+      (LinearMap.toSpanSingleton Cj (Di →ₗ[Ci] ((Di →₀ Cj) ⧸ Sp)) g)
+  have hθ : ∀ z : Di →₀ Cj,
+      θ (finsuppPresentationBase (Ci := Ci) z) = Submodule.Quotient.mk z := by
+    intro z
+    induction z using Finsupp.induction_linear with
+    | zero => simp
+    | add x y hx hy => rw [map_add, map_add, hx, hy, Submodule.Quotient.mk_add]
+    | single d c =>
+        show θ (finsuppPresentationBase (Ci := Ci) (Finsupp.single d c)) = _
+        rw [finsuppPresentationBase_single]
+        show (c • g) d = _
+        rw [LinearMap.smul_apply]
+        show c • Submodule.Quotient.mk (Finsupp.single d (1 : Cj)) = _
+        rw [← Submodule.Quotient.mk_smul, Finsupp.smul_single, smul_eq_mul, mul_one]
+  intro z hz
+  have hq := hθ z
+  rw [LinearMap.mem_ker.mp hz, map_zero] at hq
+  exact (Submodule.Quotient.mk_eq_zero _).mp hq.symm
+
+/-- The comparison map on the two presentations, `↥𝔪 ⊗[Ci] F → ↥(𝔪 Cj) ⊗[Cj] Fj`. -/
+noncomputable def finsuppIdealComparison {Ci Cj Di : Type u} [CommRing Ci] [CommRing Cj]
+    [Algebra Ci Cj] (𝔪 : Ideal Ci) :
+    (↥𝔪 ⊗[Ci] (Di →₀ Ci)) →ₗ[Ci]
+      (↥(𝔪.map (algebraMap Ci Cj)) ⊗[Cj] (Di →₀ Cj)) :=
+  (TensorProduct.mapOfCompatibleSMul Cj Ci Ci
+      (↥(𝔪.map (algebraMap Ci Cj))) (Di →₀ Cj)).comp
+    (TensorProduct.map (idealMapRestrict 𝔪) (finsuppBaseChange (Cj := Cj) (Di := Di)))
+
+@[simp] lemma finsuppIdealComparison_tmul {Ci Cj Di : Type u} [CommRing Ci] [CommRing Cj]
+    [Algebra Ci Cj] (𝔪 : Ideal Ci) (y : ↥𝔪) (x : Di →₀ Ci) :
+    finsuppIdealComparison (Cj := Cj) 𝔪 (y ⊗ₜ[Ci] x)
+      = (idealMapRestrict (Cj := Cj) 𝔪 y) ⊗ₜ[Cj] (finsuppBaseChange (Cj := Cj) x) := rfl
+
+lemma idealMapRestrict_coe {Ci Cj : Type u} [CommRing Ci] [CommRing Cj]
+    [Algebra Ci Cj] (𝔪 : Ideal Ci) (x : ↥𝔪) :
+    ((idealMapRestrict (Cj := Cj) 𝔪 x : ↥(𝔪.map (algebraMap Ci Cj))) : Cj)
+      = algebraMap Ci Cj x := rfl
+
+/-- `multIdeal I P` is injective when `P` is FLAT — this is the only role freeness of the
+presentation plays, and it is what lets the whole argument stay at the level of tensors
+instead of building `(K ∩ IF)/IK`. -/
+lemma injective_multIdeal_of_flat {R : Type u} [CommRing R] (I : Ideal R) (P : Type u)
+    [AddCommGroup P] [Module R P] [Module.Flat R P] :
+    Function.Injective (multIdeal I P) := by
+  intro x y hxy
+  refine Module.Flat.rTensor_preserves_injective_linearMap (M := P) I.subtype
+    (Submodule.injective_subtype I) ?_
+  exact (TensorProduct.lid R P).injective hxy
+
+/-- The image of `multIdeal I (α →₀ R)` is cut out COEFFICIENTWISE, half one. -/
+lemma multIdeal_finsupp_apply_mem {R : Type u} [CommRing R] {α : Type u} (I : Ideal R)
+    (x : ↥I ⊗[R] (α →₀ R)) (a : α) : multIdeal I (α →₀ R) x a ∈ I := by
+  induction x with
+  | zero => simp
+  | tmul y f => simpa using I.mul_mem_right (f a) y.2
+  | add x₁ x₂ h₁ h₂ => simpa using I.add_mem h₁ h₂
+
+/-- ...and half two. -/
+lemma mem_range_multIdeal_finsupp {R : Type u} [CommRing R] {α : Type u} (I : Ideal R)
+    (f : α →₀ R) (hf : ∀ a, f a ∈ I) :
+    f ∈ LinearMap.range (multIdeal I (α →₀ R)) := by
+  classical
+  rw [← Finsupp.sum_single f]
+  refine Submodule.sum_mem _ (fun a _ => ⟨(⟨f a, hf a⟩ : ↥I) ⊗ₜ[R] Finsupp.single a 1, ?_⟩)
+  rw [multIdeal_tmul, Finsupp.smul_single, smul_eq_mul, mul_one]
+
+/-- **[Stacks 10.99.12] — AND THE ONLY PLACE IN 10.128.3 WHERE `𝔪` BEING MAXIMAL IS USED.**
+
+*If `z` lies in the `C_j`-span of `ι '' ker π` and all its coefficients lie in `𝔪 C_j`, then
+`z` is a `C_j`-combination of `ι` of elements of `ker π` that are ALREADY in `𝔪 F`, modulo
+`𝔪 C_j · ker πj`.*
+
+Write `k := C_i/𝔪` (a FIELD, by maximality) and `C̄ := C_j/𝔪C_j`.  Reducing the coefficient
+identity `z d = Σ_m c_m · ι(k_m)_d` modulo `𝔪 C_j` gives `Σ_m (k_m)_d · γ_m = 0` in `C̄`,
+where `γ_m` is the class of `c_m` and the scalars `(k_m)_d` are read in `k` — `𝔪` annihilates
+`C̄`, which is exactly maximality entering.  Applying a `k`-BASIS COORDINATE `bas.coord λ`
+(the step that fails for `𝔪` merely prime, where `C̄` need not be free over `C_i/𝔪`) yields,
+for every `d` and `λ`, `Σ_m g_{m,λ} · (k_m)_d ∈ 𝔪`; so `κ_λ := Σ_m g_{m,λ} • k_m` lies in
+`ker π ∩ 𝔪F`.  Finally `c_m − Σ_λ g_{m,λ} β_λ ∈ 𝔪 C_j` by `Basis.linearCombination_repr`,
+and regrouping the double sum gives the displayed decomposition. -/
+lemma mem_sup_span_finsuppBaseChange_of_coeff_mem {Ci Cj Di : Type u} [CommRing Ci]
+    [CommRing Cj] [CommRing Di] [Algebra Ci Cj] [Algebra Ci Di]
+    (𝔪 : Ideal Ci) [𝔪.IsMaximal] (z : Di →₀ Cj)
+    (hz : z ∈ Submodule.span Cj
+      (finsuppBaseChange (Cj := Cj) ''
+        ((LinearMap.ker (finsuppPresentation (Ci := Ci) (Di := Di)) :
+          Submodule Ci (Di →₀ Ci)) : Set (Di →₀ Ci))))
+    (hzI : ∀ d, z d ∈ 𝔪.map (algebraMap Ci Cj)) :
+    z ∈ (Submodule.span Cj (finsuppBaseChange (Cj := Cj) ''
+          ((LinearMap.ker (finsuppPresentation (Ci := Ci) (Di := Di))
+            ⊓ LinearMap.range (multIdeal 𝔪 (Di →₀ Ci)) :
+            Submodule Ci (Di →₀ Ci)) : Set (Di →₀ Ci))))
+      ⊔ ((𝔪.map (algebraMap Ci Cj)) •
+          (LinearMap.ker (finsuppPresentationBase (Ci := Ci) (Cj := Cj) (Di := Di)))) := by
+  classical
+  letI : Field (Ci ⧸ 𝔪) := Ideal.Quotient.field 𝔪
+  obtain ⟨n, cc, vv, hsum⟩ := Submodule.mem_span_set'.mp hz
+  choose kk hkk hik using fun i : Fin n => (vv i).2
+  have hzsum : z = ∑ i, cc i • finsuppBaseChange (Cj := Cj) (kk i) := by
+    rw [← hsum]; exact Finset.sum_congr rfl (fun i _ => by rw [hik i])
+  set bas := Module.Basis.ofVectorSpace (Ci ⧸ 𝔪) (Cj ⧸ 𝔪.map (algebraMap Ci Cj)) with hbasdef
+  obtain ⟨γ, hγ⟩ : ∃ γ : Fin n → (Cj ⧸ 𝔪.map (algebraMap Ci Cj)),
+      ∀ i, γ i = Ideal.Quotient.mk _ (cc i) := ⟨_, fun _ => rfl⟩
+  have hcoef : ∀ d : Di, ∑ i, (Ideal.Quotient.mk 𝔪 (kk i d)) • γ i = 0 := by
+    intro d
+    have h0 : Ideal.Quotient.mk (𝔪.map (algebraMap Ci Cj)) (z d) = 0 :=
+      Ideal.Quotient.eq_zero_iff_mem.mpr (hzI d)
+    have hzd : z d = ∑ i, cc i * algebraMap Ci Cj (kk i d) := by
+      rw [hzsum]; simp
+    rw [hzd, map_sum] at h0
+    rw [← h0]
+    refine Finset.sum_congr rfl (fun i _ => ?_)
+    rw [hγ i, Ideal.Quotient.mk_smul_mk_quotient_map_quotient, mul_comm]
+  have hcoord : ∀ (d : Di) (l : Module.Basis.ofVectorSpaceIndex (Ci ⧸ 𝔪) _),
+      ∑ i, (Ideal.Quotient.mk 𝔪 (kk i d)) * (bas.repr (γ i) l) = 0 := by
+    intro d l
+    have h := congrArg (fun x => bas.repr x l) (hcoef d)
+    simpa using h
+  choose glift hglift using fun (i : Fin n)
+    (l : Module.Basis.ofVectorSpaceIndex (Ci ⧸ 𝔪) (Cj ⧸ 𝔪.map (algebraMap Ci Cj))) =>
+      Ideal.Quotient.mk_surjective (I := 𝔪) (bas.repr (γ i) l)
+  choose beta hbeta using fun
+    (l : Module.Basis.ofVectorSpaceIndex (Ci ⧸ 𝔪) (Cj ⧸ 𝔪.map (algebraMap Ci Cj))) =>
+      Ideal.Quotient.mk_surjective (I := 𝔪.map (algebraMap Ci Cj)) (bas l)
+  set L : Finset (Module.Basis.ofVectorSpaceIndex (Ci ⧸ 𝔪) (Cj ⧸ 𝔪.map (algebraMap Ci Cj))) :=
+    Finset.univ.biUnion (fun i : Fin n => (bas.repr (γ i)).support) with hL
+  set kappa : Module.Basis.ofVectorSpaceIndex (Ci ⧸ 𝔪) (Cj ⧸ 𝔪.map (algebraMap Ci Cj)) →
+      (Di →₀ Ci) := fun l => ∑ i, glift i l • kk i with hkappa
+  have hkappa_mem : ∀ l, kappa l ∈ (LinearMap.ker (finsuppPresentation (Ci := Ci) (Di := Di))
+      ⊓ LinearMap.range (multIdeal 𝔪 (Di →₀ Ci)) : Submodule Ci (Di →₀ Ci)) := by
+    intro l
+    constructor
+    · exact Submodule.sum_mem _ (fun i _ => Submodule.smul_mem _ _ (hkk i))
+    · refine mem_range_multIdeal_finsupp 𝔪 _ (fun d => ?_)
+      have hval : kappa l d = ∑ i, glift i l * kk i d := by rw [hkappa]; simp
+      rw [hval, ← Ideal.Quotient.eq_zero_iff_mem, map_sum]
+      rw [← hcoord d l]
+      exact Finset.sum_congr rfl (fun i _ => by rw [map_mul, hglift i l, mul_comm])
+  have hres : ∀ i, cc i - ∑ l ∈ L, algebraMap Ci Cj (glift i l) * beta l
+      ∈ 𝔪.map (algebraMap Ci Cj) := by
+    intro i
+    rw [← Ideal.Quotient.eq_zero_iff_mem, map_sub, map_sum, sub_eq_zero, ← hγ i]
+    have hsupp : (bas.repr (γ i)).support ⊆ L := by
+      rw [hL]
+      exact Finset.subset_biUnion_of_mem (fun i : Fin n => (bas.repr (γ i)).support)
+        (Finset.mem_univ i)
+    have hsum_repr : ∑ l ∈ (bas.repr (γ i)).support, (bas.repr (γ i)) l • bas l = γ i := by
+      conv_rhs => rw [← bas.linearCombination_repr (γ i)]
+      rw [Finsupp.linearCombination_apply, Finsupp.sum]
+    rw [← hsum_repr, Finset.sum_subset hsupp
+      (fun l _ hl => by rw [Finsupp.notMem_support_iff.mp hl, zero_smul])]
+    refine Finset.sum_congr rfl (fun l _ => ?_)
+    rw [map_mul, ← Ideal.Quotient.algebraMap_quotient_map_quotient, hglift i l, hbeta l,
+      ← Algebra.smul_def]
+  have hsplit : z = (∑ l ∈ L, beta l • finsuppBaseChange (Cj := Cj) (kappa l))
+      + ∑ i, (cc i - ∑ l ∈ L, algebraMap Ci Cj (glift i l) * beta l)
+          • finsuppBaseChange (Cj := Cj) (kk i) := by
+    have hexp : ∀ l, beta l • finsuppBaseChange (Cj := Cj) (kappa l)
+        = ∑ i, (algebraMap Ci Cj (glift i l) * beta l)
+            • finsuppBaseChange (Cj := Cj) (kk i) := by
+      intro l
+      rw [hkappa]
+      simp only [map_sum, Finset.smul_sum]
+      refine Finset.sum_congr rfl (fun i _ => ?_)
+      rw [map_smul, ← algebraMap_smul Cj (glift i l), smul_smul, mul_comm]
+    have h1 : ∑ l ∈ L, beta l • finsuppBaseChange (Cj := Cj) (kappa l)
+        = ∑ i, (∑ l ∈ L, algebraMap Ci Cj (glift i l) * beta l)
+            • finsuppBaseChange (Cj := Cj) (kk i) := by
+      rw [Finset.sum_congr rfl (fun l _ => hexp l), Finset.sum_comm]
+      exact Finset.sum_congr rfl (fun i _ => (Finset.sum_smul ..).symm)
+    rw [h1, ← Finset.sum_add_distrib, hzsum]
+    exact Finset.sum_congr rfl (fun i _ => by rw [← add_smul]; congr 1; ring)
+  rw [hsplit]
+  refine Submodule.add_mem _ (Submodule.mem_sup_left ?_) (Submodule.mem_sup_right ?_)
+  · exact Submodule.sum_mem _ (fun l _ => Submodule.smul_mem _ _
+      (Submodule.subset_span (Set.mem_image_of_mem _ (hkappa_mem l))))
+  · refine Submodule.sum_mem _ (fun i _ => Submodule.smul_mem_smul (hres i) ?_)
+    simp only [LinearMap.mem_ker, finsuppPresentationBase_finsuppBaseChange,
+      LinearMap.mem_ker.mp (hkk i), TensorProduct.tmul_zero]
+
+lemma multIdeal_finsuppIdealComparison {Ci Cj Di : Type u} [CommRing Ci] [CommRing Cj]
+    [CommRing Di] [Algebra Ci Cj] [Algebra Ci Di] (𝔪 : Ideal Ci)
+    (w : ↥𝔪 ⊗[Ci] (Di →₀ Ci)) :
+    multIdeal (𝔪.map (algebraMap Ci Cj)) (Di →₀ Cj) (finsuppIdealComparison (Cj := Cj) 𝔪 w)
+      = finsuppBaseChange (Cj := Cj) (multIdeal 𝔪 (Di →₀ Ci) w) := by
+  induction w with
+  | zero => simp
+  | tmul y f =>
+      rw [finsuppIdealComparison_tmul, multIdeal_tmul, multIdeal_tmul, map_smul,
+        idealMapRestrict_coe, algebraMap_smul]
+  | add a b ha hb => simp only [map_add, ha, hb]
+
+lemma lTensor_finsuppPresentationBase_finsuppIdealComparison {Ci Cj Di : Type u} [CommRing Ci]
+    [CommRing Cj] [CommRing Di] [Algebra Ci Cj] [Algebra Ci Di] (𝔪 : Ideal Ci)
+    (w : ↥𝔪 ⊗[Ci] (Di →₀ Ci)) :
+    letI : Algebra Di (Cj ⊗[Ci] Di) := Algebra.TensorProduct.rightAlgebra
+    haveI : IsScalarTower Ci Di (Cj ⊗[Ci] Di) := Algebra.TensorProduct.right_isScalarTower
+    LinearMap.lTensor (↥(𝔪.map (algebraMap Ci Cj)))
+        (finsuppPresentationBase (Ci := Ci) (Cj := Cj) (Di := Di))
+        (finsuppIdealComparison (Cj := Cj) 𝔪 w)
+      = idealTensorComparison (Cj := Cj) (Dj := Cj ⊗[Ci] Di) 𝔪
+          (LinearMap.lTensor (↥𝔪) (finsuppPresentation (Ci := Ci) (Di := Di)) w) := by
+  letI : Algebra Di (Cj ⊗[Ci] Di) := Algebra.TensorProduct.rightAlgebra
+  haveI : IsScalarTower Ci Di (Cj ⊗[Ci] Di) := Algebra.TensorProduct.right_isScalarTower
+  induction w with
+  | zero => simp
+  | tmul y f =>
+      simp only [finsuppIdealComparison_tmul, LinearMap.lTensor_tmul,
+        finsuppPresentationBase_finsuppBaseChange, idealTensorComparison,
+        LinearMap.comp_apply, TensorProduct.map_tmul,
+        TensorProduct.mapOfCompatibleSMul_tmul, AlgHom.toLinearMap_apply,
+        IsScalarTower.coe_toAlgHom']
+      rfl
+  | add a b ha hb => simp only [map_add, ha, hb]
+
+/-- **THE `Tor`-THEORETIC CORE OF HALF B, WITH THE LOCALIZATION REMOVED** (**PROVEN
+2026-07-31**; cut
+2026-07-31 out of
+`rTensor_map_maximalIdeal_injective_of_idealTensorComparison_eq_zero_of_isNoetherianFlatDescentSystem`
+below — read the section note just above, and the "THE PROOF" paragraph of that leaf's
+docstring, which is this leaf's specification).
+
+*For `𝔪` MAXIMAL in `C_i` and `N := C_j ⊗_{C_i} D_i`, the kernel of
+`↥(𝔪 C_j) ⊗_{C_j} N → N` lies in the `C_j`-span of the image, under
+`idealTensorComparison 𝔪`, of the kernel of `↥𝔪 ⊗_{C_i} D_i → D_i`.*
+
+This is [Stacks 10.99.13] + [Stacks 10.99.12] in the shape 00MO's step 4 uses them, i.e.
+the surjectivity of `Tor_1^{C_i}(D_i, C_i/𝔪) ⊗_{C_i} C_j → Tor_1^{C_j}(N, C_j/𝔪C_j)`,
+written with no derived functors: both `Tor_1`s are kernels of explicit multiplication maps
+(Remark 10.75.9).
+
+**THE PROOF, and it is the one place in 10.128.3 where `𝔪` being MAXIMAL is used.**  Fix a
+free presentation `0 → K → F → D_i → 0` over `C_i` and write `k := C_i/𝔪` (a FIELD),
+`C̄ := C_j/𝔪C_j`.
+
+* *The dimension shift.*  For any ideal `I` of a ring `C`, any `C`-module `D` and any
+  presentation `0 → K → F → D → 0` with `F` FLAT, `ker(↥I ⊗_C D → D) ≅ (K ∩ IF)/IK`.  The
+  isomorphism is elementary and needs nothing but flatness of `F`: `↥I ⊗ F → F` is
+  INJECTIVE with image `IF`, so an element of `↥I ⊗ D` lifts uniquely to `↥I ⊗ F` modulo
+  the image of `↥I ⊗ K`, and its image in `F` lands in `K ∩ IF` exactly when it dies in
+  `D`.  No `Tor` formalism and no snake lemma is required — this is worth stating as its
+  own lemma first, because it is applied TWICE, once over `C_i` and once over `C_j`.
+* *Base change of the presentation.*  `F_j := F ⊗_{C_i} C_j` is free over `C_j` and
+  `N = F_j/K'` with `K' := im(K ⊗_{C_i} C_j → F_j)`, by right exactness.  Hence
+  `K ⊗_{C_i} C̄ ↠ K' ⊗_{C_j} C̄`, while `F ⊗_{C_i} C̄ ≅ F_j ⊗_{C_j} C̄`.
+* *The field step, [Stacks 10.99.12], and the ONLY use of maximality.*  `𝔪` annihilates
+  `C̄`, so `K ⊗_{C_i} C̄ = (K/𝔪K) ⊗_k C̄` and `F ⊗_{C_i} C̄ = (F/𝔪F) ⊗_k C̄`, and the map
+  between them is `u ⊗_k id` for `u : K/𝔪K → F/𝔪F`.  `C̄` is a vector space over the FIELD
+  `k`, hence FLAT, so `ker(u ⊗_k id) = ker(u) ⊗_k C̄` — and `ker u` is `T_i` by the
+  dimension shift.  A `C̄`-span is a `C_j`-span, which is the conclusion.
+
+**WHY THE LOCALIZATION IS GONE.**  Half B's own FALSITY AUDIT (below) refutes the
+`C_j`-span statement for `D_j` with an explicit witness, `t/(1+u+v)`; the defect it exhibits
+is created by the localization `D_j = W⁻¹N` and is INVISIBLE here, where the ring is `N`
+itself.  Concretely, in that counterexample `N` is the image of `C_1 ⊗_{C_0} D_0` in `D_1`
+and `T^N_1 = t·N` IS the span — the audit says so in as many words ("`T^N_j` **is** the
+`C_j`-span of `φ_N(T_i)` — TRUE").  So this leaf is the audit's clause (a), stated
+verbatim, and no new falsity audit is owed for it beyond that one.
+
+**NOT VACUOUS, AND NOT FREE.**  At `C_j = C_i` it says `T_i ≤ span(T_i)`, true and empty;
+the content is at a genuine base change, where `𝔪 C_j` need not be `𝔪 ⊗ C_j`.  The
+hypothesis `𝔪.IsMaximal` is load-bearing: with `𝔪` merely prime, `C̄` is a module over the
+non-field `C_i/𝔪` and need not be flat, and the third bullet fails.
+
+**PROVEN 2026-07-31, AND THE ROUTE ABOVE WAS FOLLOWED WITH ONE SIMPLIFICATION THAT IS THE
+REASON IT WENT THROUGH.**  The docstring says a prover "should expect to state and prove"
+the dimension shift `ker(↥I ⊗_C D → D) ≅ (K ∩ IF)/IK` first.  That turned out to be
+UNNECESSARY, and avoiding it is what kept this to ~300 lines: on the TAUTOLOGICAL
+presentation `F = (D_i →₀ C_i)` the shift degenerates, because
+
+* `multIdeal I F` is INJECTIVE (`Finsupp` is free, hence flat), so an element of `↥I ⊗ F`
+  is determined by its image in `F` and one may argue with the tensors themselves; and
+* its image is cut out COEFFICIENTWISE (`multIdeal_finsupp_apply_mem` and
+  `mem_range_multIdeal_finsupp`), so `K ∩ IF` needs no separate description.
+
+So no quotient `(K ∩ IF)/IK` is ever formed, and neither is the comparison between the two
+copies of it that would otherwise have to be checked.  The three bullets survive exactly:
+`ker_finsuppPresentationBase` is the second (right exactness of `C_j ⊗ −`, proved from the
+universal property), `mem_sup_span_finsuppBaseChange_of_coeff_mem` is the third (the
+`k`-basis of `C̄`, and the only use of maximality), and the first is discharged by the two
+`Finsupp` lemmas above.  See the section note preceding the block for the layout. -/
+theorem ker_multIdeal_le_span_idealTensorComparison
+    {Ci Cj Di : Type u} [CommRing Ci] [CommRing Cj] [CommRing Di]
+    [Algebra Ci Cj] [Algebra Ci Di] (𝔪 : Ideal Ci) [𝔪.IsMaximal] :
+    letI : Algebra Di (Cj ⊗[Ci] Di) := Algebra.TensorProduct.rightAlgebra
+    haveI : IsScalarTower Ci Di (Cj ⊗[Ci] Di) := Algebra.TensorProduct.right_isScalarTower
+    LinearMap.ker (multIdeal (𝔪.map (algebraMap Ci Cj)) (Cj ⊗[Ci] Di))
+      ≤ Submodule.span Cj (Set.image
+          (idealTensorComparison (Cj := Cj) (Dj := Cj ⊗[Ci] Di) 𝔪)
+          ((LinearMap.ker (multIdeal 𝔪 Di) :
+            Submodule Ci (↥𝔪 ⊗[Ci] Di)) : Set (↥𝔪 ⊗[Ci] Di))) := by
+  letI : Algebra Di (Cj ⊗[Ci] Di) := Algebra.TensorProduct.rightAlgebra
+  haveI : IsScalarTower Ci Di (Cj ⊗[Ci] Di) := Algebra.TensorProduct.right_isScalarTower
+  intro τ hτ
+  set Tf : Submodule Ci (↥𝔪 ⊗[Ci] (Di →₀ Ci)) :=
+    Submodule.comap (multIdeal 𝔪 (Di →₀ Ci))
+      (LinearMap.ker (finsuppPresentation (Ci := Ci) (Di := Di))) with hTf
+  set Sx : Submodule Cj (↥(𝔪.map (algebraMap Ci Cj)) ⊗[Cj] (Di →₀ Cj)) :=
+    Submodule.span Cj (finsuppIdealComparison (Cj := Cj) 𝔪 ''
+      (Tf : Set (↥𝔪 ⊗[Ci] (Di →₀ Ci)))) with hSx
+  set Kx : Submodule Cj (↥(𝔪.map (algebraMap Ci Cj)) ⊗[Cj] (Di →₀ Cj)) :=
+    LinearMap.range (LinearMap.lTensor (↥(𝔪.map (algebraMap Ci Cj)))
+      (LinearMap.ker
+        (finsuppPresentationBase (Ci := Ci) (Cj := Cj) (Di := Di))).subtype) with hKx
+  -- lift `τ` along the surjection `lTensor πj`
+  obtain ⟨x, hx⟩ := LinearMap.lTensor_surjective (↥(𝔪.map (algebraMap Ci Cj)))
+    (finsuppPresentationBase_surjective (Ci := Ci) (Cj := Cj) (Di := Di)) τ
+  -- `z := mFj x` lies in `ker πj` and has all its coefficients in `𝔪 C_j`
+  have hz : multIdeal (𝔪.map (algebraMap Ci Cj)) (Di →₀ Cj) x
+      ∈ Submodule.span Cj (finsuppBaseChange (Cj := Cj) ''
+        ((LinearMap.ker (finsuppPresentation (Ci := Ci) (Di := Di)) :
+          Submodule Ci (Di →₀ Ci)) : Set (Di →₀ Ci))) := by
+    rw [← ker_finsuppPresentationBase]
+    have hml := multIdeal_lTensor (𝔪.map (algebraMap Ci Cj))
+      (finsuppPresentationBase (Ci := Ci) (Cj := Cj) (Di := Di)) x
+    rw [hx] at hml
+    exact LinearMap.mem_ker.mpr (hml ▸ hτ)
+  have hdec := mem_sup_span_finsuppBaseChange_of_coeff_mem 𝔪 _ hz
+    (multIdeal_finsupp_apply_mem (𝔪.map (algebraMap Ci Cj)) x)
+  rw [Submodule.mem_sup] at hdec
+  obtain ⟨t, ht, w, hw, htw⟩ := hdec
+  -- both pieces of the decomposition are `mFj` of something known
+  have hSxmap : Submodule.span Cj (finsuppBaseChange (Cj := Cj) ''
+      ((LinearMap.ker (finsuppPresentation (Ci := Ci) (Di := Di))
+        ⊓ LinearMap.range (multIdeal 𝔪 (Di →₀ Ci)) :
+        Submodule Ci (Di →₀ Ci)) : Set (Di →₀ Ci)))
+      ≤ Submodule.map (multIdeal (𝔪.map (algebraMap Ci Cj)) (Di →₀ Cj)) Sx := by
+    rw [Submodule.span_le]
+    rintro _ ⟨κ, ⟨hκker, v, hv⟩, rfl⟩
+    refine ⟨finsuppIdealComparison (Cj := Cj) 𝔪 v, Submodule.subset_span ⟨v, ?_, rfl⟩, ?_⟩
+    · rw [hTf]; exact LinearMap.mem_ker.mpr (by rw [hv]; exact hκker)
+    · rw [multIdeal_finsuppIdealComparison, hv]
+  have hKxmap : ((𝔪.map (algebraMap Ci Cj)) •
+      (LinearMap.ker (finsuppPresentationBase (Ci := Ci) (Cj := Cj) (Di := Di))))
+      ≤ Submodule.map (multIdeal (𝔪.map (algebraMap Ci Cj)) (Di →₀ Cj)) Kx := by
+    intro u hu
+    refine Submodule.smul_induction_on hu (fun y hy p hp => ?_) (fun a b ha hb => ?_)
+    · refine ⟨LinearMap.lTensor (↥(𝔪.map (algebraMap Ci Cj)))
+        (LinearMap.ker
+          (finsuppPresentationBase (Ci := Ci) (Cj := Cj) (Di := Di))).subtype
+        ((⟨y, hy⟩ : ↥(𝔪.map (algebraMap Ci Cj))) ⊗ₜ[Cj]
+          (⟨p, hp⟩ : ↥(LinearMap.ker
+            (finsuppPresentationBase (Ci := Ci) (Cj := Cj) (Di := Di))))),
+        ⟨_, rfl⟩, ?_⟩
+      simp
+    · exact Submodule.add_mem _ ha hb
+  obtain ⟨t', ht', htv⟩ := hSxmap ht
+  obtain ⟨w', hw', hwv⟩ := hKxmap hw
+  -- recover `x` itself, using injectivity of `mFj` (freeness of the presentation)
+  have hxeq : x = t' + w' := by
+    refine injective_multIdeal_of_flat (𝔪.map (algebraMap Ci Cj)) (Di →₀ Cj) ?_
+    rw [map_add, htv, hwv, htw]
+  have hKzero : ∀ u ∈ Kx, LinearMap.lTensor (↥(𝔪.map (algebraMap Ci Cj)))
+      (finsuppPresentationBase (Ci := Ci) (Cj := Cj) (Di := Di)) u = 0 := by
+    rintro _ ⟨v, rfl⟩
+    rw [← LinearMap.comp_apply, ← LinearMap.lTensor_comp]
+    have hcomp : (finsuppPresentationBase (Ci := Ci) (Cj := Cj) (Di := Di)).comp
+        (LinearMap.ker
+          (finsuppPresentationBase (Ci := Ci) (Cj := Cj) (Di := Di))).subtype = 0 := by
+      ext p
+      exact LinearMap.mem_ker.mp p.2
+    rw [hcomp, LinearMap.lTensor_zero, LinearMap.zero_apply]
+  have hτeq : τ = LinearMap.lTensor (↥(𝔪.map (algebraMap Ci Cj)))
+      (finsuppPresentationBase (Ci := Ci) (Cj := Cj) (Di := Di)) t' := by
+    rw [← hx, hxeq, map_add, hKzero w' hw', add_zero]
+  rw [hτeq]
+  refine Submodule.span_induction (p := fun u _ => LinearMap.lTensor _
+      (finsuppPresentationBase (Ci := Ci) (Cj := Cj) (Di := Di)) u
+        ∈ Submodule.span Cj (Set.image
+            (idealTensorComparison (Cj := Cj) (Dj := Cj ⊗[Ci] Di) 𝔪)
+            ((LinearMap.ker (multIdeal 𝔪 Di) :
+              Submodule Ci (↥𝔪 ⊗[Ci] Di)) : Set (↥𝔪 ⊗[Ci] Di))))
+    ?_ (by simp) (fun a b _ _ ha hb => by rw [map_add]; exact Submodule.add_mem _ ha hb)
+    (fun c a _ ha => by rw [map_smul]; exact Submodule.smul_mem _ _ ha) ht'
+  rintro _ ⟨v, hv, rfl⟩
+  rw [lTensor_finsuppPresentationBase_finsuppIdealComparison]
+  refine Submodule.subset_span
+    ⟨LinearMap.lTensor (↥𝔪) (finsuppPresentation (Ci := Ci) (Di := Di)) v, ?_, rfl⟩
+  rw [SetLike.mem_coe, LinearMap.mem_ker, multIdeal_lTensor]
+  exact LinearMap.mem_ker.mp hv
+
+/-- **HALF B, IN THE GENERALITY IT IS ACTUALLY ABOUT** (PROVEN 2026-07-31 over
+`ker_multIdeal_le_span_idealTensorComparison` and `injective_multIdeal_of_ker_le_span`) —
+a single square `C_i → C_j`, `D_i → D_j` with `D_j` a localization of `C_j ⊗_{C_i} D_i`
+and `𝔪` maximal.  No descent system, no colimit, no Noetherian hypothesis: exactly as for
+the fibre half (see "THE RING-LEVEL INPUTS OF 00MO's STEP 2" above), none of those is used.
+
+`halg` pins the `C_j ⊗_{C_i} D_i`-algebra structure on `D_j` to the one a descent system
+supplies through `isLocalizationDT`, namely `Algebra.TensorProduct.lift` of the two
+structure maps; it is what makes the comparison map factor through `↥(𝔪 C_j) ⊗ N`. -/
+theorem rTensor_map_injective_of_idealTensorComparison_eq_zero
+    {Ci Cj Di Dj : Type u} [CommRing Ci] [CommRing Cj] [CommRing Di] [CommRing Dj]
+    [Algebra Ci Cj] [Algebra Ci Di] [Algebra Ci Dj] [Algebra Cj Dj] [Algebra Di Dj]
+    [IsScalarTower Ci Cj Dj] [IsScalarTower Ci Di Dj]
+    [Algebra (Cj ⊗[Ci] Di) Dj]
+    (halg : ∀ (c : Cj) (d : Di), algebraMap (Cj ⊗[Ci] Di) Dj (c ⊗ₜ[Ci] d)
+      = algebraMap Cj Dj c * algebraMap Di Dj d)
+    (W : Submonoid (Cj ⊗[Ci] Di)) [IsLocalization W Dj]
+    (𝔪 : Ideal Ci) [𝔪.IsMaximal]
+    (hzero : ∀ t ∈ LinearMap.ker (LinearMap.rTensor Di 𝔪.subtype),
+      idealTensorComparison (Cj := Cj) (Dj := Dj) 𝔪 t = 0) :
+    Function.Injective
+      (LinearMap.rTensor Dj (𝔪.map (algebraMap Ci Cj)).subtype) := by
+  letI : Algebra Di (Cj ⊗[Ci] Di) := Algebra.TensorProduct.rightAlgebra
+  haveI : IsScalarTower Ci Di (Cj ⊗[Ci] Di) := Algebra.TensorProduct.right_isScalarTower
+  haveI : IsScalarTower Cj (Cj ⊗[Ci] Di) Dj := by
+    refine IsScalarTower.of_algebraMap_eq (fun c => ?_)
+    rw [show (algebraMap Cj (Cj ⊗[Ci] Di)) c = c ⊗ₜ[Ci] (1 : Di) from rfl, halg]
+    simp
+  rw [injective_rTensor_iff_injective_multIdeal]
+  refine injective_multIdeal_of_ker_le_span (N := Cj ⊗[Ci] Di) W _
+    (Set.image (idealTensorComparison (Cj := Cj) (Dj := Cj ⊗[Ci] Di) 𝔪)
+      ((LinearMap.ker (multIdeal 𝔪 Di) :
+        Submodule Ci (↥𝔪 ⊗[Ci] Di)) : Set (↥𝔪 ⊗[Ci] Di)))
+    ?_ ?_
+  · exact ker_multIdeal_le_span_idealTensorComparison 𝔪
+  · rintro s ⟨t, ht, rfl⟩
+    have key : ∀ t : ↥𝔪 ⊗[Ci] Di,
+        LinearMap.lTensor (↥(𝔪.map (algebraMap Ci Cj)))
+            (algebraMapLinearOfTower Cj (Cj ⊗[Ci] Di) Dj)
+            (idealTensorComparison (Cj := Cj) (Dj := Cj ⊗[Ci] Di) 𝔪 t)
+          = idealTensorComparison (Cj := Cj) (Dj := Dj) 𝔪 t := by
+      intro t
+      induction t with
+      | zero => simp
+      | tmul x m =>
+          simp only [idealTensorComparison, LinearMap.comp_apply, TensorProduct.map_tmul,
+            TensorProduct.mapOfCompatibleSMul_tmul, LinearMap.lTensor_tmul,
+            algebraMapLinearOfTower_apply]
+          congr 1
+          show algebraMap (Cj ⊗[Ci] Di) Dj ((1 : Cj) ⊗ₜ[Ci] (algebraMap Di Di m)) = _
+          rw [halg]
+          simp
+      | add t₁ t₂ h₁ h₂ => simp only [map_add, h₁, h₂]
+    rw [key t]
+    refine hzero t ?_
+    simpa [multIdeal, LinearMap.mem_ker] using ht
+
 /-- **HALF B OF [Stacks 00R6]'s COLIMIT LEAF — the surjectivity, and it is the ONLY
-genuinely homological statement left in 10.128.3** (sorry leaf, cut 2026-07-30 out of
+genuinely homological statement left in 10.128.3** (**PROVEN 2026-07-31** over
+`rTensor_map_injective_of_idealTensorComparison_eq_zero` immediately above, whose only
+remaining input is `ker_multIdeal_le_span_idealTensorComparison`; cut 2026-07-30 out of
 `exists_le_rTensor_map_maximalIdeal_injective_of_isNoetherianFlatDescentSystem` below;
 REFUTED AND RESTATED the same day — read the FALSITY AUDIT before anything else).
+
+**WHAT 2026-07-31 CHANGED.**  The body below is now `exact` over the general form above,
+which knows nothing about descent systems: this leaf's whole descent-system content is the
+`letI` block plus `hsys.isLocalizationDT h`, and the mathematics is the single square
+`C_i → C_j`, `D_i → D_j`.  Of the four bullets of "THE PROOF" below, the LAST — the
+localization — is now discharged (`injective_multIdeal_of_ker_le_span`), and the first
+three are the named leaf `ker_multIdeal_le_span_idealTensorComparison`.  The FALSITY AUDIT
+below is UNAFFECTED and still governs: it is exactly the audit's clause (b) that the new
+localization lemma supplies, and its clause (a) that the remaining leaf asserts.
 
 *In a `IsNoetherianFlatDescentSystem`, for every `i ≤ j`: if `idealTensorComparison 𝔪_i`
 kills `T_i = ker(𝔪_i ⊗_{C_i} D_i → D_i)`, then `T_j = ker(𝔪_i C_j ⊗_{C_j} D_j → D_j)` is
@@ -5791,8 +6588,28 @@ theorem rTensor_map_maximalIdeal_injective_of_idealTensorComparison_eq_zero_of_i
     letI := hsys.isLocalRingC i
     letI : Algebra (C j) (D j) := (cd j).toAlgebra
     Function.Injective (LinearMap.rTensor (D j)
-      ((IsLocalRing.maximalIdeal (C i)).map (cT h)).subtype) :=
-  sorry
+      ((IsLocalRing.maximalIdeal (C i)).map (cT h)).subtype) := by
+  letI := hsys.isLocalRingC i
+  letI : Algebra (C i) (D i) := (cd i).toAlgebra
+  letI : Algebra (C i) (C j) := (cT h).toAlgebra
+  letI : Algebra (C j) (D j) := (cd j).toAlgebra
+  letI : Algebra (C i) (D j) := ((cd j).comp (cT h)).toAlgebra
+  letI : Algebra (D i) (D j) := (dT h).toAlgebra
+  haveI : IsScalarTower (C i) (C j) (D j) := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI : IsScalarTower (C i) (D i) (D j) :=
+    IsScalarTower.of_algebraMap_eq fun x => DFunLike.congr_fun (hsys.comm_T h) x
+  letI : Algebra (C j ⊗[C i] D i) (D j) :=
+    (Algebra.TensorProduct.lift (IsScalarTower.toAlgHom (C i) (C j) (D j))
+      (IsScalarTower.toAlgHom (C i) (D i) (D j))
+      fun _ _ => Commute.all _ _).toRingHom.toAlgebra
+  obtain ⟨W, hW⟩ := hsys.isLocalizationDT h
+  haveI := hW
+  exact rTensor_map_injective_of_idealTensorComparison_eq_zero
+    (fun c d => by
+      show (Algebra.TensorProduct.lift _ _ _) (c ⊗ₜ[C i] d) = _
+      rw [Algebra.TensorProduct.lift_tmul]
+      rfl)
+    W (IsLocalRing.maximalIdeal (C i)) hzero
 
 /-- **THE `Tor_1` VANISHING AT A LARGE STAGE — the colimit half of [Stacks 00R6]**
 (**PROVEN 2026-07-30** over the two halves immediately above, which are its FURTHER CUT —
@@ -15051,23 +15868,217 @@ won — it is what `ModularCurve/X0.lean` consumes — and this is that branch's
 mathematics re-expressed in it.  Two of its five leaves turned out to exist
 already, upstream and PROVEN, as `nonempty_iso_of_modTensor_left` and
 `modTensorComm`; the third became the theorem
-`nonempty_modTensor_modPullback_mulByNat_cube` above. -/
+`nonempty_modTensor_modPullback_mulByNat_cube` above.
 
-/-- **AN ABELIAN VARIETY OVER A FIELD IS PROJECTIVE** (sorry leaf, cut 2026-07-30
-out of `exists_isAmpleSheaf_symmetric_cube` above) — Mumford *Abelian Varieties*
+**UPDATE 2026-07-31 — the block is down to TWO open leaves, and the cube half moved one
+level up.**  `hasCubeIso_of_symm_of_normalized` is PROVEN, over a new leaf
+`nonempty_cubeIdentity` (the theorem of the cube in Mumford's Corollary 2 form, for three
+independent points and over an arbitrary base).  The count is unchanged — one leaf out, one
+leaf in — and the trade is deliberate:
+
+* the open statement no longer carries `hsymm`, `hzero`, `[Field K]` or the two-variable
+  packaging; all four are discharged in the derivation, so the leaf is now the classical
+  statement rather than a project-specific corollary of it;
+* it is stated over an ARBITRARY base and for ARBITRARY `T'`-points, so the other classical
+  consequences — the theorem of the square, `[n]^* L ≅ L^{⊗n²}` — are reachable from the
+  same leaf when someone needs them, rather than needing their own cuts;
+* the `0^* L` correction term that Mumford drops is kept, which is what buys the arbitrary
+  base.  See the FALSITY AUDIT on the leaf: dropping it asserts `e^* L ≅ 𝒪`, which is free
+  over a field and false in general.
+
+**UPDATE 2026-07-31 (second, same day) — `exists_isAmpleSheaf_of_field` is PROVEN too, and
+its half is CUT IN TWO.**  The two pieces are mathematically disjoint and neither carries
+the other's machinery:
+
+* `exists_isInvertibleSheaf_nonvanishingLocus_eq_of_isAffineOpen` — the divisor input,
+  `𝒪(X ∖ U)` for a nonempty affine open `U`, stated for a smooth proper geometrically
+  connected `K`-scheme with NO group law in sight;
+* `isAmpleSheaf_of_nonvanishingLocus_eq_of_field` — Mumford's Application 1, that such an
+  `L` is ample, with NO divisor in sight.
+
+Read the FALSITY AUDIT on the second before cutting it further: the obvious next cut, in
+terms of `K`-automorphisms of `X` and the theorem of the square, is FALSE, and the witness
+is `y² + y = x³ + x + 1` over `𝔽₂`, which has exactly one rational point.
+
+So the open leaves of this block are `exists_isInvertibleSheaf_nonvanishingLocus_eq_of_
+isAffineOpen`, `isAmpleSheaf_of_nonvanishingLocus_eq_of_field` and `nonempty_cubeIdentity`
+— pairwise independent, one theory build each. -/
+
+/-- **AN EFFECTIVE CARTIER DIVISOR CUTTING OUT THE COMPLEMENT OF A GIVEN AFFINE OPEN**
+(sorry leaf, cut 2026-07-31 out of `exists_isAmpleSheaf_of_field` below) — Hartshorne II
+Prop. 6.11 + Ex. 3.5 / [Stacks 0BCQ]; the "geometric input" half of Mumford *Abelian
+Varieties* §6, Application 1.
+
+*On a smooth proper geometrically connected `K`-scheme, every affine open `U` is the
+non-vanishing locus of a global section of an invertible sheaf.*
+
+This is `L = 𝒪(D)` for `D = X ∖ U` with its canonical section, and it is the ONE place
+in the projectivity argument where divisors occur.  **It says nothing about the group
+law** — that is the point of the cut; a prover needs to know only that `X` is a smooth
+proper variety.
+
+**THE ROUTE, and every step of it is classical.**  `ab.proper` makes `X` Noetherian
+and separated over `K`; `ab.smooth` makes it regular, hence normal; normal plus
+`ab.connected` makes it IRREDUCIBLE, so `X` is a variety and the nonempty open `U` is
+dense.  Then:
+
+* the complement of a nonempty affine open in a Noetherian integral separated scheme
+  is of PURE CODIMENSION ONE (Hartshorne II Ex. 3.5 for varieties, [Stacks 0BCQ]; the
+  normality supplied by smoothness is what makes the algebraic-Hartogs proof run);
+* `X` regular is locally factorial, so that codimension-one closed subset, with its
+  reduced structure, is an effective CARTIER divisor `D` (Hartshorne II 6.11);
+* `𝒪(D)` is invertible and its canonical section `s_D` vanishes exactly on `D`, i.e.
+  `nonvanishingLocus 𝒪(D) s_D = X ∖ D = U`.
+
+None of `𝒪(D)`, Weil divisors, Cartier divisors or linear equivalence exists at this
+pin — see the SURVEY on the parent below — so this leaf is a THEORY BUILD, and the
+theory is divisors on a regular scheme.  It is however strictly smaller than the parent
+and completely independent of the abelian-variety half.
+
+**`hUne` IS NOT NEEDED FOR TRUTH, AND IS KEPT ANYWAY.**  At `U = ⊥` the statement is
+discharged by `L = 𝒪_X`, `s = 0`, whose non-vanishing locus is `∅` (`basicOpen 0 = ⊥`).
+It is kept because the caller has it for free and it removes a degenerate case a prover
+would otherwise have to dispose of before reaching the mathematics; and because the
+statement should not be stated wider than the single call site needs.
+
+**NON-VACUOUS AND NON-DEGENERATE.**  At `dim X = 0` (`X = Spec K`, the zero-dimensional
+abelian variety) the only nonempty affine open is `⊤` and the witness is `L = 𝒪_X`,
+`s = 1`, `nonvanishingLocus = ⊤` (`nonvanishingLocus_modUnit`, `basicOpen 1 = ⊤`) — so
+the statement is inhabited without any divisor theory.  The content is at `dim X ≥ 1`,
+where `U ≠ ⊤` and `D` is a genuine divisor. -/
+theorem exists_isInvertibleSheaf_nonvanishingLocus_eq_of_isAffineOpen {X : Scheme.{u}}
+    {K : Type u} [Field K] {fK : X ⟶ Spec (CommRingCat.of K)}
+    (hproper : IsProper fK) (hsmooth : Smooth fK) (hconn : GeometricallyConnected fK)
+    (U : X.Opens) (hU : IsAffineOpen U) (hUne : (U : Set X).Nonempty) :
+    ∃ (L : X.Modules) (s : Γ(L, ⊤)), IsInvertibleSheaf L ∧
+      nonvanishingLocus L s = (U : Set X) :=
+  sorry
+
+/-- **AN INVERTIBLE SHEAF WITH A SECTION WHOSE NON-VANISHING LOCUS IS A NONEMPTY AFFINE
+OPEN IS AMPLE, ON AN ABELIAN VARIETY** (sorry leaf, cut 2026-07-31 out of
+`exists_isAmpleSheaf_of_field` below) — Mumford *Abelian Varieties* §6, Application 1.
+
+*If `X ∖ D` is affine and nonempty for the effective divisor `D` cut out by `s`, then
+`L` is ample.*
+
+This is the abelian-variety half of the cut, and it is where the THEOREM OF THE SQUARE
+is spent.  It knows nothing about how `L` was produced: divisors do not occur in its
+statement, only a sheaf, a section, and the affineness of the section's non-vanishing
+locus.
+
+**THE CLASSICAL PROOF, over an algebraically closed field.**  For a closed point `a`,
+the theorem of the square (a formal consequence of the theorem of the cube —
+`nonempty_cubeIdentity` below, at `x = a`, `y = -a`, `z` arbitrary) gives
+`t_a^* L ⊗ t_{-a}^* L ≅ L^{⊗2}`.  The pulled-back sections `t_a^* s`, `t_{-a}^* s` have
+non-vanishing loci `t_a⁻¹(U)`, `t_{-a}⁻¹(U)` (this is
+`nonvanishingLocus_modPullback`, PROVEN in `AmpleSheaf.lean`), each affine because a
+translation is an isomorphism; their tensor is a section of `L^{⊗2}` whose locus is the
+INTERSECTION (`nonvanishingLocus_tensorSection` above), affine because `X` is separated
+over the affine `Spec K` (`IsAffineOpen.inf`, exactly as in `isAmpleSheaf_modTensor`
+above).  Given `z`, the set of `a` with `z ∈ D + a` is a proper closed subset, so over a
+field whose points are Zariski dense one may choose `a` avoiding it and its negative.
+
+**FALSITY AUDIT — THE OBVIOUS FURTHER CUT OF THIS LEAF IS FALSE, WITH A FINITE
+COUNTEREXAMPLE.**  The tempting move is to hand the translation argument out as its own
+leaf, in the shape
+
+> for every `z : X` there are `K`-automorphisms `f₁, …, f_k` of `X` with
+> `z ∈ ⋂ᵢ fᵢ⁻¹(U)` and `Nonempty (⨂ᵢ fᵢ^* L ≅ L^{⊗k})`,
+
+leaving only formal bookkeeping above it.  **Every such statement is FALSE over a field
+with too few rational points**, and the witness is finite and checkable by hand:
+
+  `E : y² + y = x³ + x + 1` over `K = 𝔽₂`.
+
+It is nonsingular (`b₂ = 0`, `b₄ = 2`, `b₆ = 1`, `b₈ = -1`, so `Δ = -91`, odd) and has
+`E(𝔽₂) = {O}`: over `𝔽₂` the left side `y² + y` is `0` for both `y`, while the right
+side `x³ + x + 1` is `1` for both `x`, so there is NO affine `𝔽₂`-point.  Take
+`U = E ∖ {O}` — affine, the Weierstrass chart — and `L = 𝒪((O))` with its canonical
+section, so `nonvanishingLocus L s = U` and every hypothesis of this leaf holds.  Now
+let `f` be ANY `K`-automorphism of the SCHEME `E`.  Then `f ∘ O` is again a `K`-rational
+point, hence `f(O) = O` since `O` is the only one; so `f` fixes the origin, is therefore
+a group automorphism, and `f⁻¹({O}) = {O}`, i.e.
+
+  **`f ⁻¹ᵁ U = U` for every `K`-automorphism `f` of `E`.**
+
+So every section obtainable as a tensor of pullbacks of `s` along automorphisms has
+non-vanishing locus exactly `U`, and `z = O` is in none of them.  The degree count says
+the same thing without automorphisms: `⨂ᵢ fᵢ^* L = 𝒪(P₁ + ⋯ + P_k)` with all `Pᵢ`
+`K`-RATIONAL, and `P₁ + ⋯ + P_k ∼ k(O)` forces `Σ Pᵢ = O` in the group, which with
+`E(K) = {O}` forces every `Pᵢ = O`.
+
+This is not a small-field pathology: the same argument kills the cut over `ℚ` for any
+elliptic curve with trivial Mordell–Weil group — `y² = x³ - 6x - 6` (conductor 1728) has
+trivial torsion and analytic rank `0` in PARI/GP, hence `E(ℚ) = 0` by Gross–Zagier and
+Kolyvagin.  That witness rests on an untrusted searcher and a hard theorem; the `𝔽₂` one
+above rests on four lines of arithmetic and is the one to quote.
+
+**WHAT THE CORRECT FIELD-INDEPENDENT ROUTE IS, since the audit forecloses the cheap
+one.**  Two options, and both need machinery that is absent at this pin:
+
+* base change to `K̄`, where closed points ARE Zariski dense, run the translation
+  argument there, and DESCEND ampleness along `K → K̄` (faithfully flat descent of
+  ampleness — note that it is `L` itself, produced over `K` by the sibling leaf, that is
+  base-changed, so no sheaf has to be descended, only the property);
+* stay over `K`: translate by a `κ`-point on `X_κ` for `κ/K` finite, then push the
+  resulting section down by the NORM along the finite flat `X_κ → X`, and use
+  Chevalley's theorem (a Noetherian scheme admitting a finite surjective morphism from
+  an affine scheme is affine) for affineness of the resulting locus.  On the `𝔽₂` curve
+  above this is exactly what produces the divisor `P + P^σ` with `P ∈ E(𝔽₄)`,
+  `P^σ = -P` — which exists because `#E(𝔽₄) = 5` — and `O` is not in its support.
+
+**`hUne` IS LOAD-BEARING HERE, unlike on the sibling leaf.**  Drop it and the statement
+is FALSE: take `s = 0`, whose non-vanishing locus is `∅`, an affine open; the conclusion
+would then say that `𝒪_X` is ample on `X`, i.e. (with `X` proper) that `X` is affine,
+which fails for every abelian variety of positive dimension.  It is the divisor being
+EFFECTIVE AND NONEMPTY-COMPLEMENT that carries the ampleness. -/
+theorem isAmpleSheaf_of_nonvanishingLocus_eq_of_field {X : Scheme.{u}} (K : Type u) [Field K]
+    {fK : X ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct fK)
+    {L : X.Modules} (hL : IsInvertibleSheaf L) (s : Γ(L, ⊤))
+    (U : X.Opens) (hU : IsAffineOpen U) (hUne : (U : Set X).Nonempty)
+    (hloc : nonvanishingLocus L s = (U : Set X)) :
+    IsAmpleSheaf L :=
+  sorry
+
+/-- **AN ABELIAN VARIETY OVER A FIELD IS PROJECTIVE** (**PROVEN 2026-07-31** over the two
+leaves immediately above, which are its 2026-07-31 CUT; cut 2026-07-30 out of
+`exists_isAmpleSheaf_symmetric_cube` above) — Mumford *Abelian Varieties*
 §6, Application 1 / §16; equivalently Weil's theorem that an abelian variety is
 projective.
 
 *There is an ample invertible sheaf on `A`.*
 
+**THE 2026-07-31 CUT, and what this proof still does itself.**  The leaf asserted two
+independent things at once, and they are now separated:
+
+* `exists_isInvertibleSheaf_nonvanishingLocus_eq_of_isAffineOpen` — the DIVISOR input,
+  `𝒪(X ∖ U)` for an affine open `U`.  Needs no group law, only that `X` is a smooth
+  proper variety;
+* `isAmpleSheaf_of_nonvanishingLocus_eq_of_field` — MUMFORD'S APPLICATION 1, that such
+  an `L` is ample.  Needs no divisors, only the group law and the theorem of the square.
+
+What is left here, and is proven: `X` is NONEMPTY — the zero section `ab.zero` is a
+`K`-point and `Spec K` has a point, which is the only use of the group structure in this
+assembly — and an affine open neighbourhood of that point exists, from
+`Scheme.isBasis_affineOpens`.  That neighbourhood is what supplies the sibling leaves'
+`U` and their `hUne`.
+
+Read the FALSITY AUDIT on the second leaf before attempting a further cut of it: the
+obvious one, handing the translation argument out in terms of `K`-automorphisms of `X`,
+is FALSE, with a four-line counterexample over `𝔽₂`.
+
 **THIS IS ONE OF THE TWO MATHLIB-SCALE HALVES, AND IT IS NOW ISOLATED FROM
 EVERYTHING ELSE.**  Nothing here mentions `[n]`, `[-1]`, normalization, symmetry
 or the cube: the consumer manufactures all four from this sheaf by formal
-operations.  The classical proof is the theta divisor — take an effective ample
-divisor `D`, show `3D` is base-point free, and conclude — and it needs divisors,
-linear systems and coherent cohomology, none of which exist at this pin
+operations.  The classical proof is the divisor `D = X ∖ U` for an affine open `U`
+together with the theorem of the square — that is exactly the 2026-07-31 cut above —
+and it needs divisors and linear systems, which do not exist at this pin
 (`grep -rl Ample Mathlib/AlgebraicGeometry/` is EMPTY; re-run it before believing
-this sentence).
+this sentence).  Note that the "`3D` is base-point free / very ample" route recorded
+here before that cut is NOT the cheapest one: `IsAmpleSheaf` as defined in
+`AmpleSheaf.lean` asks only that the basic opens `X_s` be affine and cover, so the
+translate-and-intersect argument suffices and no linear system, no base locus and no
+coherent cohomology is needed.
 
 **`IsInvertibleSheaf` is deliberately NOT asserted here.**  It is free:
 `isInvertibleSheaf_of_isAmpleSheaf` (`AmpleSheaf.lean`, PROVEN) derives local
@@ -15085,11 +16096,42 @@ then descend, not weaken this statement.
 
 **`ab` is genuinely used.**  "An ample sheaf exists" is false for a general proper
 `X` — it says exactly that `X` is quasi-projective — and it is the group structure
-that supplies the theta divisor. -/
+that supplies the theta divisor.
+
+**SURVEY RE-RUN AND CONFIRMED 2026-07-31** (the docstring above asks for exactly this,
+so here is the answer rather than the instruction).  At this pin:
+
+* `grep -rl Ample .lake/packages/mathlib/Mathlib/AlgebraicGeometry/` is EMPTY.  The only
+  `Ample` in all of mathlib is `Mathlib/Analysis/Convex/AmpleSet.lean` — ample sets in
+  convex geometry, for the h-principle, and unrelated.
+* `grep -rn "TheoremOfTheCube\|VeryAmple\|IsVeryAmple"` over mathlib finds NOTHING, and
+  over `Fermat/` and `~/cs/FLT/` finds only PROSE — six docstrings, including this one,
+  all saying the machinery is absent.  No definition anywhere.
+* There is no coherent-sheaf cohomology: the only `*ohomolog*` file under
+  `Mathlib/AlgebraicGeometry/` is `Sites/ElladicCohomology.lean`.
+* The nearest divisor-adjacent material is `Mathlib/AlgebraicGeometry/AlgebraicCycle/
+  Basic.lean` (two declarations: a coefficient map and a proper pushforward of cycles) and
+  `OrderOfVanishing.lean` (`ord`, `ordHom` at a codimension-one point).  There is no linear
+  equivalence, no `𝒪(D)`, no complete linear system and no Riemann–Roch, so the theta
+  divisor cannot even be STATED against them yet.
+
+So this leaf is not a proof problem but a THEORY-BUILDING problem, and the theory is the
+one `Fermat/FLT/Modularity/AmpleSheaf.lean` starts: whoever takes it should expect to add
+divisors and their sheaves there first, and should not expect a route through mathlib.
+**The 2026-07-31 cut localizes that theory build in ONE of the two leaves**, the divisor
+one; the other needs no divisors at all. -/
 theorem exists_isAmpleSheaf_of_field {X : Scheme.{u}} (K : Type u) [Field K]
     {fK : X ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct fK) :
-    ∃ L : X.Modules, IsAmpleSheaf L :=
-  sorry
+    ∃ L : X.Modules, IsAmpleSheaf L := by
+  -- `X` is NONEMPTY: the zero section is a `K`-point of `X`, and `Spec K` has a point.
+  set x : X := ((ab.zero (𝟙 (Spec (CommRingCat.of K)))).1).base default with hx
+  -- an affine open neighbourhood of it, from the affine basis
+  obtain ⟨-, ⟨U, hU, rfl⟩, hxU, -⟩ :=
+    (X.isBasis_affineOpens).exists_subset_of_mem_open (Set.mem_univ x) isOpen_univ
+  obtain ⟨L, s, hLinv, hloc⟩ :=
+    exists_isInvertibleSheaf_nonvanishingLocus_eq_of_isAffineOpen
+      ab.proper ab.smooth ab.connected U hU ⟨x, hxU⟩
+  exact ⟨L, isAmpleSheaf_of_nonvanishingLocus_eq_of_field K ab hLinv s U hU ⟨x, hxU⟩ hloc⟩
 
 /-- **`(L ⊗ M)^{⊗k} ≅ L^{⊗k} ⊗ M^{⊗k}`** (PROVEN 2026-07-30, in three lines) — the
 `modTensorPow` half of what `isAmpleSheaf_modTensor` below needs.
@@ -15270,6 +16312,97 @@ theorem nonempty_iso_modUnit_of_isInvertibleSheaf_of_field (K : Type u) [Field K
   exact ⟨hchain ≪≫ modPullbackMapIso (Spec (CommRingCat.of K)).topIso.inv α ≪≫
     modPullbackUnitIso (Spec (CommRingCat.of K)).topIso.inv⟩
 
+/-- **`M^{⊗2} ≅ M ⊗ M`** (PROVEN 2026-07-31, in one line) — `modTensorPow` is right-nested
+onto the unit, so `M^{⊗2}` is `M ⊗ (M ⊗ 𝒪)` and the right unitor is the whole content.
+
+Trivial, but it is needed twice by `hasCubeIso_of_symm_of_normalized` below, which produces
+`p_i^* L ⊗ p_i^* L` and has to hand back `p_i^*(L^{⊗2})`.  Like its neighbours it belongs in
+`Modularity/AmpleSheaf.lean` beside `nonempty_modTensorPow_mul`; it is here so that the
+2026-07-30 cut and its 2026-07-31 completion land in one file. -/
+theorem nonempty_modTensorPow_two {Z : Scheme.{u}} (M : Z.Modules) :
+    Nonempty (modTensorPow M 2 ≅ modTensor M M) :=
+  ⟨modTensorMapIso (Iso.refl M) (modTensorUnitRightIso M)⟩
+
+namespace AbelianSchemeStruct
+
+/-- **THE THEOREM OF THE CUBE** (sorry leaf, cut 2026-07-31 out of
+`hasCubeIso_of_symm_of_normalized` below) — Mumford, *Abelian Varieties* §6, Corollary 2;
+for an abelian SCHEME, Mumford *GIT* Ch. 6 §2 / Moret-Bailly, *Pinceaux de variétés
+abéliennes* I.
+
+For three `T'`-points `x, y, z` of `A` over a common base point,
+
+  `(x+y+z)^* L ⊗ x^* L ⊗ y^* L ⊗ z^* L  ≅  (x+y)^* L ⊗ (y+z)^* L ⊗ (x+z)^* L ⊗ 0^* L`.
+
+**WHAT THIS SAYS IN ONE LINE.**  `w ↦ w^* L` is a QUADRATIC function `A(T') → Pic(T')`:
+the displayed identity is exactly the vanishing of its third finite difference
+`Δ³q(x,y,z) = 0`.  That is the whole content of the theorem of the cube, and it is the form
+every downstream consequence factors through — the theorem of the square, `[n]^* L ≅ L^{⊗n²}`,
+and the two-variable parallelogram identity `HasCubeIso` below.
+
+**WHY THIS SHAPE AND NOT MUMFORD'S.**  Mumford writes the identity with inverses and
+WITHOUT the `0^* L` term, because he works over a field, where `0 : T' ⟶ A` factors through
+`Spec k` and `Pic (Spec k) = 0` makes `0^* L` trivial for free.  Two changes here:
+
+* the identity is written with all seven factors on the two SIDES rather than with
+  `L^{-1}`, because this development has no chosen inverse invertible sheaf and
+  `HasCubeIso` is written the same way;
+* the `0^* L` correction term is KEPT, which is what makes the statement true over an
+  ARBITRARY base `T` rather than only over a field.  See the audit below.
+
+**FALSITY AUDIT (2026-07-31, this statement, first time stated).**
+
+*The correction term is not decoration — dropping it makes the statement FALSE.*  Put
+`x = y = z = 0`.  Every one of the seven pullbacks is then `0^* L`, so the identity as
+written reads `(0^*L)^{⊗4} ≅ (0^*L)^{⊗4}` — a tautology, correctly.  With the `0^* L` term
+DROPPED it would read `(0^*L)^{⊗4} ≅ (0^*L)^{⊗3}`, i.e. `0^* L ≅ 𝒪_{T'}`, which is exactly
+the assertion `e^* L` is trivial.  Over a field that is true and free
+(`nonempty_iso_modUnit_of_isInvertibleSheaf_of_field` above); over a base with
+`Pic S ≠ 0` it is false for any `L` with nontrivial `e^* L`.  So the term is precisely the
+difference between the field statement and the base statement, and it is why this leaf
+needs no `[Field K]`.
+
+*Two further degeneracy checks, both of which the statement passes as tautologies —
+which is what a correct third-difference identity must do.*  With `z = 0` the two sides are
+`(x+y)^*L ⊗ x^*L ⊗ y^*L ⊗ 0^*L` in different orders, and likewise with any one of the three
+points zero.  A statement that asserted anything in those cases would be over-strong.
+
+*`hinv` is load-bearing.*  For a general quasi-coherent `L` the statement is false — the
+proof is through `Pic`, and the identity is an identity of ISOMORPHISM CLASSES OF LINE
+BUNDLES.  A prover who finds it unused has proved something else.
+
+*What is NOT assumed.*  No field, no algebraically closed field, no ampleness, no symmetry,
+no normalization, no smoothness beyond what `AbelianSchemeStruct` already carries.  The
+hypotheses of the cube are exactly `q` proper with geometrically connected fibres and a
+group structure, i.e. the fields of `AbelianSchemeStruct` itself.
+
+**MISSING MACHINERY — this is a THEORY BUILD, not a proof problem, and the survey on
+`hasCubeIso_of_symm_of_normalized` below is the survey for THIS leaf.**  At this pin there
+is no coherent-sheaf cohomology under `Mathlib/AlgebraicGeometry/` (`grep -rn
+"TheoremOfTheCube\|[Ss]eesaw"` over mathlib is empty; the only `*ohomolog*` file there is
+`Sites/ElladicCohomology.lean`), hence no flat base change and no seesaw principle.  The
+classical proof needs, in order: `H⁰` of an invertible sheaf on the fibres of a proper flat
+morphism; its upper semicontinuity in the base; the seesaw principle (a line bundle on
+`X ×_S T` trivial on every fibre `X_t` and on one section is pulled back from `T`); and then
+the cube by seesaw in two of the three variables.  Whoever takes this should expect to write
+that module — `Modularity/Seesaw.lean` — and should not expect a route through mathlib.
+
+**Do not attempt to prove it from the two-variable form below**: the implication runs the
+other way, for the reason recorded in the section note "WHY THE TWO-VARIABLE FORM IS THE
+RIGHT PRIMITIVE" — a statement about a pair of points does not see three independent
+ones. -/
+theorem nonempty_cubeIdentity {X T : Scheme.{u}} {q : X ⟶ T} (ab : AbelianSchemeStruct q)
+    (L : X.Modules) (hinv : IsInvertibleSheaf L)
+    {T' : Scheme.{u}} {g : T' ⟶ T} (x y z : RelPoint q g) :
+    Nonempty (
+      modTensor (modTensor (modPullback (ab.add (ab.add x y) z).1 L) (modPullback x.1 L))
+          (modTensor (modPullback y.1 L) (modPullback z.1 L))
+        ≅ modTensor (modTensor (modPullback (ab.add x y).1 L) (modPullback (ab.add y z).1 L))
+          (modTensor (modPullback (ab.add x z).1 L) (modPullback (ab.zero g).1 L))) :=
+  sorry
+
+end AbelianSchemeStruct
+
 /-- **THE THEOREM OF THE CUBE, FOR A SYMMETRIC NORMALIZED INVERTIBLE SHEAF**
 (sorry leaf, cut 2026-07-30 out of `exists_isAmpleSheaf_symmetric_cube` above):
 
@@ -15305,14 +16438,103 @@ where `c : A ×_K A ⟶ Spec K ⟶ A` is the constant zero map.  So:
 **A prover who wants the general Corollary 2 as a separate leaf should cut it.**
 It is the honest shape of the mathematics, and this statement is three formal
 steps below it; it is not cut here only because this project forbids
-free-floating declarations and nothing would yet consume it. -/
+free-floating declarations and nothing would yet consume it.
+
+**SURVEY RE-RUN AND CONFIRMED 2026-07-31.**  `grep -rn "TheoremOfTheCube\|[Ss]eesaw"` over
+mathlib finds NOTHING; over `Fermat/` and `~/cs/FLT/` it finds only prose saying so.  There
+is no coherent-sheaf cohomology at this pin (see the survey on
+`exists_isAmpleSheaf_of_field` above for the full list of what does exist), hence no flat
+base change for it and no seesaw principle, and those are the two inputs the cube needs.
+
+So the cut this docstring offers is not optional bookkeeping — it is the only way in.  A
+prover should NOT try to prove this statement directly; the work is to build the seesaw
+principle, which needs `H⁰` of a coherent sheaf on the fibres of a proper flat morphism and
+its semicontinuity, and that is a module of its own.  Note also that the two leaves of this
+block are INDEPENDENT of each other and of everything else here: this one carries no
+ampleness hypothesis and `exists_isAmpleSheaf_of_field` says nothing about the cube, so they
+want separate owners and neither is blocked on the other.
+
+**PROVEN 2026-07-31 over `nonempty_cubeIdentity` immediately above** — the cut this
+docstring itself asked for ("a prover who wants the general Corollary 2 as a separate leaf
+should cut it … this statement is three formal steps below it").  It was three formal
+steps.  The specialisation is `x = p₁`, `y = p₂`, `z = −p₂` on `A ×_K A`, and the six
+morphism identities it needs are these:
+
+* `x + y + z = x`, because `z = −y` — hence the first factor is `p₁^* L`;
+* `x` and `y` ARE the projections, so their factors are `p₁^* L` and `p₂^* L` on the nose;
+* `z.1 = p₂ ≫ [−1]` (`neg_val`), and `hsymm` turns `(p₂ ≫ [−1])^* L` into `p₂^* L`.
+  THIS IS THE ONLY USE OF `hsymm`;
+* `(x + y).1 = σ` and `(x + z).1 = δ` are `rfl` — `sumHom` and `diffHom` are *defined* as
+  those two sums at those two points, so no transport lemma is needed;
+* `y + z = 0`, so the `(y+z)` factor is the SAME `0^* L` as the correction term of
+  `nonempty_cubeIdentity`, and `hzero` kills both.  THIS IS THE ONLY USE OF `hzero`, and
+  it is used twice.
+
+Each side then loses a unit factor by the right unitor, and
+`nonempty_modPullback_modTensorPow` together with `nonempty_modTensorPow_two` reads
+`p_i^* L ⊗ p_i^* L` back as `p_i^*(L^{⊗2})`.  `hinv` is passed straight through to
+`nonempty_cubeIdentity` and is used nowhere else here.
+
+Note what this does NOT change: the mathlib-scale content is still the theorem of the cube,
+and it is now `nonempty_cubeIdentity`.  The survey above stands verbatim as the survey for
+THAT leaf, and the seesaw module it asks for is still the work. -/
 theorem hasCubeIso_of_symm_of_normalized {X : Scheme.{u}} (K : Type u) [Field K]
     {fK : X ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct fK) (L : X.Modules)
     (hinv : IsInvertibleSheaf L)
     (hsymm : Nonempty (modPullback ab.negSelfHom L ≅ L))
     (hzero : Nonempty (modPullback ab.zeroSection L ≅ modUnit (Spec (CommRingCat.of K)))) :
-    ab.HasCubeIso L :=
-  sorry
+    ab.HasCubeIso L := by
+  obtain ⟨esymm⟩ := hsymm
+  obtain ⟨ezero⟩ := hzero
+  letI := ab.addCommGroup (pullback.fst fK fK ≫ fK)
+  -- the three test points `x = p₁`, `y = p₂`, `z = −p₂` on `A ×_K A`
+  set xx : RelPoint fK (pullback.fst fK fK ≫ fK) := ⟨pullback.fst fK fK, rfl⟩ with hxx
+  set yy : RelPoint fK (pullback.fst fK fK ≫ fK) :=
+    ⟨pullback.snd fK fK, pullback.condition.symm⟩ with hyy
+  set zz : RelPoint fK (pullback.fst fK fK ≫ fK) := ab.neg yy with hzz
+  -- the morphism identities the cube identity specialises to
+  have hA : (ab.add (ab.add xx yy) zz).1 = pullback.fst fK fK := by
+    have h : ab.add (ab.add xx yy) zz = xx := by
+      show xx + yy + -yy = xx
+      abel
+    exact congrArg Subtype.val h
+  have hD : zz.1 = pullback.snd fK fK ≫ ab.negSelfHom := ab.neg_val yy
+  have hF : (ab.add yy zz).1 = (ab.zero (pullback.fst fK fK ≫ fK)).1 := by
+    have h : ab.add yy zz = ab.zero (pullback.fst fK fK ≫ fK) := by
+      show yy + -yy = (0 : RelPoint fK (pullback.fst fK fK ≫ fK))
+      abel
+    exact congrArg Subtype.val h
+  have hS : (ab.add xx yy).1 = ab.sumHom := rfl
+  have hG : (ab.add xx zz).1 = ab.diffHom := rfl
+  -- `0^* L ≅ 𝒪`, i.e. NORMALIZATION, spread from `Spec K` to `A ×_K A`
+  have e0 : modPullback (ab.zero (pullback.fst fK fK ≫ fK)).1 L
+      ≅ modUnit (pullback fK fK) :=
+    modPullbackCongrIso (ab.zero_val (pullback.fst fK fK ≫ fK)) L ≪≫
+      (modPullbackCompIso (pullback.fst fK fK ≫ fK) ab.zeroSection L).symm ≪≫
+      modPullbackMapIso (pullback.fst fK fK ≫ fK) ezero ≪≫
+      modPullbackUnitIso (pullback.fst fK fK ≫ fK)
+  -- `(−p₂)^* L ≅ p₂^* L`, i.e. SYMMETRY
+  have eNeg : modPullback zz.1 L ≅ modPullback (pullback.snd fK fK) L :=
+    modPullbackCongrIso hD L ≪≫
+      (modPullbackCompIso (pullback.snd fK fK) ab.negSelfHom L).symm ≪≫
+      modPullbackMapIso (pullback.snd fK fK) esymm
+  obtain ⟨ec⟩ := ab.nonempty_cubeIdentity L hinv xx yy zz
+  obtain ⟨p1pow⟩ := nonempty_modPullback_modTensorPow (pullback.fst fK fK) L 2
+  obtain ⟨p2pow⟩ := nonempty_modPullback_modTensorPow (pullback.snd fK fK) L 2
+  obtain ⟨t1⟩ := nonempty_modTensorPow_two (modPullback (pullback.fst fK fK) L)
+  obtain ⟨t2⟩ := nonempty_modTensorPow_two (modPullback (pullback.snd fK fK) L)
+  refine ⟨?_⟩
+  refine modTensorMapIso (modTensorUnitRightIso (modPullback ab.sumHom L)).symm
+      (modTensorUnitRightIso (modPullback ab.diffHom L)).symm ≪≫ ?_
+  refine modTensorMapIso
+      (modTensorMapIso (modPullbackCongrIso hS L).symm
+        (modPullbackCongrIso hF L ≪≫ e0).symm)
+      (modTensorMapIso (modPullbackCongrIso hG L).symm e0.symm) ≪≫ ?_
+  refine ec.symm ≪≫ ?_
+  refine modTensorMapIso
+      (modTensorMapIso (modPullbackCongrIso hA L) (Iso.refl _))
+      (modTensorMapIso (Iso.refl _) eNeg) ≪≫ ?_
+  exact modTensorMapIso (t1.symm ≪≫ p1pow.symm) (t2.symm ≪≫ p2pow.symm)
 
 /-- **AN ABELIAN VARIETY OVER A FIELD CARRIES A SYMMETRIC, NORMALIZED, AMPLE
 INVERTIBLE SHEAF SATISFYING THE THEOREM OF THE CUBE** (**PROVEN 2026-07-30** over
