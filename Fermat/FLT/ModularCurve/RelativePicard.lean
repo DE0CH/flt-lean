@@ -5686,11 +5686,12 @@ downstream changed: `exists_relPicZeroOf_of_relPicGroupLaw` still destructures
 this conjunction. -/
 theorem smooth_isSeparated_of_isRelPicOf {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
     (hproper : IsProper strX) (hsmooth : SmoothOfRelativeDimension 1 strX)
-    (hconn : GeometricallyConnected strX) (hP : IsRelPicOf strX pstr)
+    (hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S))
+    (hP : IsRelPicOf strX pstr)
     (hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX) :
     Smooth pstr ∧ IsSeparated pstr :=
-  ⟨smooth_of_isRelPicOf hproper hsmooth hconn hP hpush,
-    isSeparated_of_isRelPicOf hproper hsmooth hconn hP hpush⟩
+  ⟨smooth_of_isRelPicOf hproper hsmooth hconn o hP hpush,
+    isSeparated_of_isRelPicOf hproper hsmooth hconn o hP hpush⟩
 
 /-! ### The 2026-07-29 audit of `exists_relPicZeroSubgroup`
 

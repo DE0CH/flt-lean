@@ -7024,21 +7024,7 @@ theorem WeierstrassCurve.potentiallyGoodReduction_of_isogenyCharacter
     (E.stable_zmultiples_of_isogenyCharacter g lam hlam) hjr hv
   exact hB y hcusp
 
-open ValuativeRel IsDedekindDomain in
-open ValuativeRel in
-set_option backward.isDefEq.respectTransparency false in
-set_option maxHeartbeats 1000000 in
-open ValuativeRel in
-open ValuativeRel IsDedekindDomain in
-set_option maxHeartbeats 1000000 in
-open ValuativeRel IsDedekindDomain in
-open scoped WeierstrassCurve.Affine in
-open ValuativeRel IsDedekindDomain in
-open scoped WeierstrassCurve.Affine in
-open ValuativeRel IsDedekindDomain in
 namespace GaloisRepresentation.Modularity
-open _root_.IsDedekindDomain in
-set_option maxHeartbeats 2000000 in
 end GaloisRepresentation.Modularity
 open Polynomial in
 /-- **A CYCLIC IMAGE MAKES THE RELATIVE INDEX AN ORDER** (PROVEN 2026-07-30):
