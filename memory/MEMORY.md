@@ -33,3 +33,6 @@
 - [Preflight finds unowned leaves](flt-preflight-finds-unowned-leaves.md) — the only check that catches sorries no agent reported; run it BETWEEN releases; count leaves back when grouping into tasks
 - [flt-loop spawn/liveness race](flt-loop-spawn-liveness-race.md) — the loop can put TWO live agents in one worktree; check your token against jobs/<name>.json first, and a discarded incarnation yields WITHOUT writing its sentinel
 - [flt-loop runs on mystique](flt-loop-runs-on-mystique.md) — not on the medic's host, so ps says "dead" for a healthy loop; it re-execs onto edited source itself (do NOT hand-restart), and a live Claude session there respawns it if killed
+- [Field of moduli ≠ field of definition](flt-field-of-moduli-not-definition.md) — a coarse-moduli leaf asking for the datum over κ(x) is FALSE (N=4 cusp of X_0(4) is ℚ-rational, its datum needs ℚ(i)); quantify over an arbitrary base
+- [An exact degree beside a generator is over-determined](flt-overdetermined-degree-conjunct.md) — ask for ≤ plus ≠0 and derive =; here that deleted DR's whole single-Galois-orbit half
+- [ℚ-algebra diamond: use minpoly, not IntermediateField](flt-rat-algebra-diamond-use-minpoly.md) — IsCyclotomicExtension.finrank on ℚ⟮ζ⟯ does not unify AT THE BASE ℚ though it does over a variable field
