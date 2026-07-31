@@ -134,3 +134,4 @@
 - [Field of moduli ≠ field of definition](flt-field-of-moduli-not-definition.md) — a coarse-moduli leaf asking for the datum over κ(x) is FALSE (N=4 cusp of X_0(4) is ℚ-rational, its datum needs ℚ(i)); quantify over an arbitrary base
 - [An exact degree beside a generator is over-determined](flt-overdetermined-degree-conjunct.md) — ask for ≤ plus ≠0 and derive =; here that deleted DR's whole single-Galois-orbit half
 - [ℚ-algebra diamond: use minpoly, not IntermediateField](flt-rat-algebra-diamond-use-minpoly.md) — IsCyclotomicExtension.finrank on ℚ⟮ζ⟯ does not unify AT THE BASE ℚ though it does over a variable field
+- [Read the module docstring first](flt-read-the-module-docstring-first.md) — a prompt's "this does not exist yet" is an unverified absence claim about OUR tree; read the named file's Main-definitions list and grep `^theorem <Ns>\.` before building it (End W and End.torsionRep already existed)
