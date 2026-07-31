@@ -283,6 +283,39 @@ seriously consider that it may be false rather than merely hard. Refuting one
 with an explicit counterexample and restating it correctly is a FULLY successful
 outcome; say so in task prompts.
 
+**THERE IS A THIRD OUTCOME, and this development's axiomatized structures produce
+it regularly (2026-07-31).** When a leaf is stated over a `structure` that
+AXIOMATIZES an object rather than over a construction, it can be neither provable
+nor refutable: **the axioms simply do not determine the object where the leaf
+looks.** `le_fixedSubmodule_gp_of_mem_Ioo` in `ArtinConductor.lean` was exactly
+this — `RamificationFiltration.gp_herbrand` pinned the upper-numbering filtration
+only AT the Herbrand values, and inside the gaps the axioms left a sandwich whose
+BOTH ends are admissible. Probing with other levels is circular, because the axiom
+relates every level to `F` and no two levels to each other. No counterexample can
+be exhibited in-tree either, since refuting a `∀ F` needs a filtration built over
+an arbitrary `Kᵥ`. So the leaf sits there forever, looking merely hard.
+
+The repair is to the STRUCTURE, and there are exactly two checks that turn it from
+a dodge into a decision:
+
+1. **Does the CONSTRUCTION that inhabits the structure satisfy the stronger axiom
+   for free?** If it needs new input, the strengthening is a disguised `sorry` and
+   the answer is no. (Here it was `iInf_le` one way and the ALREADY-OPEN leaf at
+   the interval's right endpoint composed with antitonicity the other — zero new
+   leaves.)
+2. **Which direction do consumers use the structure in?** Strengthening SHRINKS
+   the admissible class, so `∀ F` theorems get weaker and `Nonempty` gets harder.
+   Get this backwards and you have quietly weakened a theorem instead of
+   sharpening a model. (Here `IsSwanExponentAt = Nonempty ∧ ∀ F, …` and every `F`
+   reaching a proof comes from the construction, so both halves were safe — and
+   faithfulness improved, the genuine object being a singleton.)
+
+Record it as a numbered FALSITY AUDIT in the structure's own docstring, KEEP the
+analysis that showed the old axioms insufficient (it is the evidence for the
+repair, and without it the next reader sees only a convenient axiom), and correct
+in place any route the leaf's docstring proposed that you found does not work.
+Often the structure's own audit has already named the repair — this one had.
+
 The discriminating rule for the commonest trap in this development, from a sweep
 of every `𝒪ᵥ`-rational group-scheme leaf (2026-07-25): **over `𝒪ᵥ`, identities
 and VALUES descend from `𝒪^nr` (flatness/torsion-freeness, and inertia fixes
