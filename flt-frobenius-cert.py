@@ -217,7 +217,7 @@ def fold_dvd_add(items):
 #  Per-factor Lean block
 # --------------------------------------------------------------------------- #
 
-def factor_block(j, h, m):
+def factor_block(j, h, m, cop=None):
     d = deg(h)
     t = divmod_poly(frob(X), h)[1]              # u_1 = X^P mod h
     u = [[1], t]
@@ -325,6 +325,35 @@ def factor_block(j, h, m):
         A(f"  have c{k+1} : h ∣ X ^ ({P} : ℕ) ^ {k+1} - {name(k+1)} := chain_step c{k} "
           f"{f'hX{P}' if k == 0 else f'fs{k}'}")
     A(f"  exact c{m}\n")
+
+    # The degree-`cop` coprimality, for rows where `hmn` fails at some d > 1.  `X ^ (P ^ cop)`
+    # is ALREADY reduced in the chain above (it is `p{cop}`), so this costs one small Bézout
+    # on `p{cop} - X` — degree `< d` — rather than one on `X ^ (P ^ cop) - X`, whose Bézout
+    # cofactor would have degree `P ^ cop`.
+    if cop is not None:
+        assert 2 <= cop < m, f"--coprime-exponent {cop} needs 2 <= cop < m"
+        r = sub(ps[cop], X)
+        assert r, f"factor {j} DIVIDES X ^ ({P} ^ {cop}) - X: THE COPRIMALITY IS FALSE"
+        s, t = bezout(h, r)
+        chain = "(by simp)" if cop == 0 else "(chain_step (by simp) hX%d)" % P
+        for k in range(1, cop):
+            chain = f"(chain_step {chain} fs{k})"
+        A(f"/-- `X ^ ({P} ^ {cop}) ≡ p{cop}`, the rung the coprimality below reduces through. -/")
+        A(f"theorem dvd_cop : h ∣ X ^ ({P} : ℕ) ^ {cop} - p{cop} :=\n  {chain}\n")
+        A(f"/-- `h` is coprime to the REDUCTION `p{cop} - X`, by an explicit Bézout "
+          f"certificate.\nBoth cofactors have degree `< {d}`; the unreduced statement would "
+          f"need one of degree `{P ** cop}`. -/")
+        A(f"theorem cop_red : IsCoprime h (p{cop} - X) :=")
+        A(f"  ⟨{wrap(L(s))},\n    {wrap(L(t))},\n"
+          f"    by simp only [h, p{cop}]; ring_nf; reduce_mod_char⟩\n")
+        A(f"/-- **`h` has no irreducible factor of degree dividing `{cop}`**, i.e. it is "
+          f"coprime to\n`X ^ ({P} ^ {cop}) - X`. -/")
+        A(f"theorem cop_pow : IsCoprime h (X ^ ({P} : ℕ) ^ {cop} - X) :=")
+        A(f"  isCoprime_of_dvd_sub cop_red (by")
+        A(f"    have e : (X : (ZMod {P})[X]) ^ ({P} : ℕ) ^ {cop} - X - (p{cop} - X)")
+        A(f"        = X ^ ({P} : ℕ) ^ {cop} - p{cop} := by ring")
+        A(f"    rw [e]; exact dvd_cop)\n")
+
     A(f"end F{j}\n")
     return "\n".join(o)
 
@@ -432,14 +461,23 @@ theorem chain_step {{h a b : (ZMod {P})[X]}} {{k : ℕ}}
   rw [e]
   exact dvd_add (h1.trans (sub_dvd_pow_sub_pow _ _ {P})) h2
 
+/-- Coprimality transports along a congruence: `IsCoprime a b` and `a ∣ c - b` give
+`IsCoprime a c`. This is what lets a coprimality against `X ^ ({P} ^ k) - X` be certified by a
+Bézout pair against its REDUCTION mod `a`, whose degree is `< deg a` instead of `{P} ^ k`. -/
+theorem isCoprime_of_dvd_sub {{R : Type*}} [CommRing R] {{a b c : R}}
+    (hab : IsCoprime a b) (hc : a ∣ c - b) : IsCoprime a c := by
+  obtain ⟨u, v, huv⟩ := hab
+  obtain ⟨k, hk⟩ := hc
+  exact ⟨u - v * k, v, by linear_combination huv + v * hk⟩
+
 '''
 
 
-def emit(factors, H, m, ns, target, path):
+def emit(factors, H, m, ns, target, path, cop=None):
     n = len(factors)
     out = [preamble(m, ns, target, [deg(f) for f in factors])]
     for j, h in enumerate(factors, 1):
-        out.append(factor_block(j, h, m))
+        out.append(factor_block(j, h, m, cop))
 
     for i in range(1, n + 1):
         for j in range(i + 1, n + 1):
@@ -466,16 +504,40 @@ def emit(factors, H, m, ns, target, path):
     # the pairwise certificates by `IsCoprime.mul_left`, and then `IsCoprime.mul_dvd` adds
     # `h_j` to the accumulated product.
     for j in range(2, n + 1):
-        cop = f"cop1{j}" if j == 2 else \
+        # NOT named `cop` -- that is this function's coprime-exponent parameter, and shadowing
+        # it here silently turned every run into a --coprime-exponent run.  Caught by the
+        # round-trip regression test, which is the whole reason that test exists.
+        pw = f"cop1{j}" if j == 2 else \
             "(" * (j - 2) + f"cop1{j}" + "".join(f".mul_left cop{i}{j})" for i in range(2, j))
         src = "F1.dvd_pow F2.dvd_pow" if j == 2 else f"d{j-1} F{j}.dvd_pow"
         if j == n:
-            body.append(f"  exact {cop}.mul_dvd {src}")
+            body.append(f"  exact {pw}.mul_dvd {src}")
         else:
             acc = " * ".join(f"F{i}.h" for i in range(1, j + 1))
             body.append(f"  have d{j} : {acc} ∣ X ^ ({P} : ℕ) ^ {m} - X :=")
-            body.append(f"    {cop}.mul_dvd {src}")
-    out.append("\n".join(body) + f"\n\nend {ns}\n\nend\n")
+            body.append(f"    {pw}.mul_dvd {src}")
+    out.append("\n".join(body) + "\n")
+
+    if cop is not None:
+        acc = "F1.cop_pow"
+        for j in range(2, n + 1):
+            acc = f"({acc}.mul_left F{j}.cop_pow)" if j < n else f"{acc}.mul_left F{j}.cop_pow"
+        out.append("\n".join([
+            f"/-- **NO SMALL FACTOR**: `H` is coprime to `X ^ ({P} ^ {cop}) - X`, i.e. it has no\n"
+            f"irreducible factor whose degree divides `{cop}`.  Needed wherever `{cop} ∣ m` and "
+            f"`{cop} ≤ n`, so\nthat the degree obstruction's `1`-is-the-only-small-divisor "
+            "hypothesis fails. -/",
+            f"theorem isCoprime_hPoly :",
+            f"    IsCoprime ({wrap(L(H), indent=' ' * 6)} : (ZMod {P})[X])",
+            f"      (X ^ ({P} : ℕ) ^ {cop} - X) := by",
+            f"  have hfac : ({wrap(L(H), indent=' ' * 6)} : (ZMod {P})[X]) = {prod} := by",
+            "    simp only [" + ", ".join(f"F{i}.h" for i in range(1, n + 1)) + "]",
+            "    ring_nf",
+            "    reduce_mod_char",
+            "  rw [hfac]",
+            f"  exact {acc}\n"]))
+
+    out.append(f"end {ns}\n\nend\n")
     open(path, 'w').write("\n".join(out))
 
 
@@ -515,6 +577,11 @@ def main():
                     help="the name this H has in MazurNonCMCertificate.lean")
     ap.add_argument("--poly-file", required=True, help="coefficients, HIGHEST degree first")
     ap.add_argument("--out", required=True)
+    ap.add_argument("--coprime-exponent", type=int, default=None,
+                    help="k: ALSO certify `IsCoprime H (X ^ (q ^ k) - X)`, i.e. that H has no "
+                         "irreducible factor of degree dividing k.  Needed when some d > 1 "
+                         "divides m and is <= n, where the degree obstruction's `hmn` fails. "
+                         "Requires 2 <= k < m.")
     a = ap.parse_args()
     P = a.prime
 
@@ -534,8 +601,16 @@ def main():
             sys.exit(f"factor {j} does NOT divide X ^ ({P} ^ {a.exponent}) - X: "
                      f"THE STATEMENT IS FALSE AS GIVEN")
 
-    emit(factors, H, a.exponent, a.namespace, a.module_doc_target, a.out)
-    print(f"wrote {a.out}: {len(factors)} factors of degrees {[deg(f) for f in factors]}",
+    k = a.coprime_exponent
+    if k is not None:
+        for j, f in enumerate(factors, 1):
+            if powmod(X, P ** k, f) == X:
+                sys.exit(f"factor {j} DIVIDES X ^ ({P} ^ {k}) - X: "
+                         f"THE COPRIMALITY IS FALSE AS GIVEN")
+
+    emit(factors, H, a.exponent, a.namespace, a.module_doc_target, a.out, k)
+    print(f"wrote {a.out}: {len(factors)} factors of degrees {[deg(f) for f in factors]}"
+          + (f", plus the degree-{k} coprimality" if k is not None else ""),
           file=sys.stderr)
 
 

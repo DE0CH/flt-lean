@@ -81,6 +81,15 @@ theorem chain_step {h a b : (ZMod 23)[X]} {k : ℕ}
   rw [e]
   exact dvd_add (h1.trans (sub_dvd_pow_sub_pow _ _ 23)) h2
 
+/-- Coprimality transports along a congruence: `IsCoprime a b` and `a ∣ c - b` give
+`IsCoprime a c`. This is what lets a coprimality against `X ^ (23 ^ k) - X` be certified by a
+Bézout pair against its REDUCTION mod `a`, whose degree is `< deg a` instead of `23 ^ k`. -/
+theorem isCoprime_of_dvd_sub {R : Type*} [CommRing R] {a b c : R}
+    (hab : IsCoprime a b) (hc : a ∣ c - b) : IsCoprime a c := by
+  obtain ⟨u, v, huv⟩ := hab
+  obtain ⟨k, hk⟩ := hc
+  exact ⟨u - v * k, v, by linear_combination huv + v * hk⟩
+
 
 namespace F1
 
