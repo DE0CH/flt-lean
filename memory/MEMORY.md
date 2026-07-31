@@ -69,3 +69,5 @@
 - [A private import suffices for proof bodies](lean-private-import-suffices-for-proof-bodies.md) — only STATEMENTS (and exposed def bodies) need `public import`; ModThree's docstring said otherwise for three days and made a leaf look like it needed a header edit it did not
 
 - [Hoist vs concurrent proof](flt-hoist-vs-concurrent-proof.md) — relocating a leaf and proving it in place merge into a duplicate declaration; keep the hoisted location, move the proof
+
+- [Char-0 machinery is base-generic](flt-char0-machinery-is-base-generic.md) — in TateModule.lean only `cyclotomicCharacter` needs `[NumberField F]`; generalise the char-0 statement instead of writing a finite-base copy
