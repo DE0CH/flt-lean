@@ -15485,6 +15485,180 @@ theorem stepanovDerivX_add {R : Type*} [CommRing R] (b₁ b₂ : Polynomial (Pol
   intro i c₁ c₂
   rw [Polynomial.derivative_add, map_add, add_mul]
 
+end StepanovDerivationCalculus
+
+/-! #### A TOTAL-DEGREE FILTRATION, and what it buys (2026-07-28)
+
+The de-specialisation below needs a bound on the `X`-degree of the resultant
+`R(X,Y,Z)` AND on the `X`-degree of its reduction modulo `F`. Schmidt gets the
+second from his (2.3), `deg g_i^{(t)} ≤ t − 1 + i`, proven by induction on `t`.
+Both come out of ONE object here: the TOTAL `(X,Y)`-degree filtration
+`stepanovTotalFilt`, `mem B u ↔ ∀ i, u.coeff i = 0 ∨ deg_X (u.coeff i) + i ≤ B`
+— exactly the weighted shape `stepanov_natDegree_resultant_le` consumes.
+
+Two properties do all the work, and both are formal:
+
+* it is MULTIPLICATIVE (`mem B₁ x → mem B₂ y → mem (B₁+B₂) (x*y)`), hence passes
+  through a DETERMINANT with column weights (`StepanovFilt.mem_det`), which is
+  what bounds the resultant: the Sylvester matrix of `f(Z,W)` and `a(X,Y,Z,W)`
+  at `(m, n) = (d, d−1)` has `d` columns of `a`, of total degree `≤ p/d − 1`
+  each, and `d − 1` columns of `f(Z,W)`, which contains NO `X` and no `Y`. So
+  `B = d·(p/d − 1) ≤ p − d < p`, which is Schmidt's `d·deg_X a + d(d−1) < p`
+  with the reduction cost already included;
+* it is PRESERVED BY DIVISION by a monic `F` whose total degree equals its
+  `Y`-degree (`hcoeff`), because the division step subtracts
+  `monomial (m−d) u_m · F`, of total degree `deg u_m + (m−d) + d = deg u_m + m`.
+  That IS (2.3), and it costs no induction on `t`.
+
+`StepanovFilt` is stated for a general commutative ring and lifted to polynomial
+rings coefficientwise (`StepanovFilt.lift`), so the three nesting levels
+`𝔽_p[X][Y]`, `𝔽_p[X][Y][Z]`, `𝔽_p[X][Y][Z][W]` share one set of closure lemmas.
+-/
+
+/-- A filtration on a commutative ring: an increasing family of additive subgroups
+containing `1` in degree `0`, with `P B₁ · P B₂ ⊆ P (B₁ + B₂)`. -/
+structure StepanovFilt (S : Type*) [CommRing S] where
+  mem : ℕ → S → Prop
+  mem_zero : ∀ B, mem B 0
+  mem_one : mem 0 1
+  mem_add : ∀ {B x y}, mem B x → mem B y → mem B (x + y)
+  mem_neg : ∀ {B x}, mem B x → mem B (-x)
+  mem_mul : ∀ {B₁ B₂ x y}, mem B₁ x → mem B₂ y → mem (B₁ + B₂) (x * y)
+  mem_mono : ∀ {B₁ B₂ x}, B₁ ≤ B₂ → mem B₁ x → mem B₂ x
+
+namespace StepanovFilt
+
+variable {S : Type*} [CommRing S]
+
+theorem mem_sub (P : StepanovFilt S) {B : ℕ} {x y : S} (hx : P.mem B x) (hy : P.mem B y) :
+    P.mem B (x - y) := by
+  rw [sub_eq_add_neg]; exact P.mem_add hx (P.mem_neg hy)
+
+theorem mem_sum (P : StepanovFilt S) {ι : Type*} (s : Finset ι) (f : ι → S) (B : ℕ)
+    (h : ∀ i ∈ s, P.mem B (f i)) : P.mem B (∑ i ∈ s, f i) := by
+  classical
+  induction s using Finset.induction_on with
+  | empty => simpa using P.mem_zero B
+  | insert a s ha ih =>
+      rw [Finset.sum_insert ha]
+      exact P.mem_add (h a (Finset.mem_insert_self a s))
+        (ih fun i hi => h i (Finset.mem_insert_of_mem hi))
+
+theorem mem_prod (P : StepanovFilt S) {ι : Type*} (s : Finset ι) (f : ι → S) (c : ι → ℕ)
+    (h : ∀ i ∈ s, P.mem (c i) (f i)) : P.mem (∑ i ∈ s, c i) (∏ i ∈ s, f i) := by
+  classical
+  induction s using Finset.induction_on with
+  | empty => simpa using P.mem_one
+  | insert a s ha ih =>
+      rw [Finset.prod_insert ha, Finset.sum_insert ha]
+      exact P.mem_mul (h a (Finset.mem_insert_self a s))
+        (ih fun i hi => h i (Finset.mem_insert_of_mem hi))
+
+/-- **THE WEIGHTED DETERMINANT BOUND, FILTRATION FORM.** If every entry of column
+`j` lies in filtration level `c j`, the determinant lies in level `∑ j, c j`. -/
+theorem mem_det (P : StepanovFilt S) {n : Type*} [Fintype n] [DecidableEq n]
+    (M : Matrix n n S) (c : n → ℕ) (h : ∀ i j, P.mem (c j) (M i j)) :
+    P.mem (∑ j, c j) M.det := by
+  rw [Matrix.det_apply]
+  refine P.mem_sum _ _ _ fun σ _ => ?_
+  have hp : P.mem (∑ j, c j) (∏ i, M (σ i) i) :=
+    P.mem_prod _ _ _ fun i _ => h (σ i) i
+  rcases Int.units_eq_one_or (Equiv.Perm.sign σ) with hs | hs <;> rw [hs]
+  · simpa using hp
+  · simpa using P.mem_neg hp
+
+/-- Extend a filtration to the polynomial ring, coefficientwise. -/
+def lift (P : StepanovFilt S) : StepanovFilt (Polynomial S) where
+  mem B u := ∀ i, P.mem B (u.coeff i)
+  mem_zero B i := by simpa using P.mem_zero B
+  mem_one i := by
+    rw [Polynomial.coeff_one]
+    split
+    · simpa using P.mem_one
+    · exact P.mem_zero 0
+  mem_add hx hy i := by rw [Polynomial.coeff_add]; exact P.mem_add (hx i) (hy i)
+  mem_neg hx i := by rw [Polynomial.coeff_neg]; exact P.mem_neg (hx i)
+  mem_mul hx hy i := by
+    rw [Polynomial.coeff_mul]
+    exact P.mem_sum _ _ _ fun ab _ => P.mem_mul (hx ab.1) (hy ab.2)
+  mem_mono h hx i := P.mem_mono h (hx i)
+
+theorem lift_mem_monomial (P : StepanovFilt S) {B n : ℕ} {a : S} (h : P.mem B a) :
+    P.lift.mem B (Polynomial.monomial n a) := by
+  intro i
+  rw [Polynomial.coeff_monomial]
+  split
+  · exact h
+  · exact P.mem_zero B
+
+end StepanovFilt
+
+/-- **THE TOTAL-DEGREE FILTRATION on `R[X][Y]`**: `mem B u` says every monomial
+`X^a Y^b` occurring in `u` has `a + b ≤ B`. This is exactly the weighted-degree
+hypothesis shape that `stepanov_natDegree_resultant_le` consumes, and it is the
+right notion here because (a) it is multiplicative, and (b) it is preserved by
+division by a monic `F` whose total degree equals its `Y`-degree — which is
+Schmidt's (2.3) `deg g_i^{(t)} ≤ t − 1 + i`, obtained for free. -/
+def stepanovTotalFilt (R : Type*) [CommRing R] : StepanovFilt (Polynomial (Polynomial R)) where
+  mem B u := ∀ i, u.coeff i = 0 ∨ (u.coeff i).natDegree + i ≤ B
+  mem_zero B i := Or.inl (by simp)
+  mem_one i := by
+    by_cases h : i = 0
+    · subst h; right; simp
+    · left; simp [Polynomial.coeff_one, h]
+  mem_add hx hy i := by
+    rw [Polynomial.coeff_add]
+    rcases hx i with h1 | h1 <;> rcases hy i with h2 | h2
+    · left; rw [h1, h2, add_zero]
+    · right; rw [h1, zero_add]; exact h2
+    · right; rw [h2, add_zero]; exact h1
+    · right
+      exact le_trans (Nat.add_le_add_right (Polynomial.natDegree_add_le _ _) i) (by omega)
+  mem_neg hx i := by
+    rw [Polynomial.coeff_neg]
+    rcases hx i with h | h
+    · left; rw [h, neg_zero]
+    · right; rwa [Polynomial.natDegree_neg]
+  mem_mul {B₁ B₂ x y} hx hy i := by
+    rw [Polynomial.coeff_mul]
+    by_cases hall : ∀ ab ∈ Finset.antidiagonal i, x.coeff ab.1 * y.coeff ab.2 = 0
+    · exact Or.inl (Finset.sum_eq_zero hall)
+    · right
+      push Not at hall
+      obtain ⟨ab, hab, hne⟩ := hall
+      have hab' : ab.1 + ab.2 = i := Finset.mem_antidiagonal.mp hab
+      have hi : i ≤ B₁ + B₂ := by
+        rcases hx ab.1 with h1 | h1
+        · exact absurd (by rw [h1, zero_mul]) hne
+        rcases hy ab.2 with h2 | h2
+        · exact absurd (by rw [h2, mul_zero]) hne
+        omega
+      have hbd : ∀ ab' ∈ Finset.antidiagonal i,
+          (x.coeff ab'.1 * y.coeff ab'.2).natDegree ≤ B₁ + B₂ - i := by
+        intro ab' hab'
+        have hs : ab'.1 + ab'.2 = i := Finset.mem_antidiagonal.mp hab'
+        rcases hx ab'.1 with h1 | h1
+        · simp [h1]
+        rcases hy ab'.2 with h2 | h2
+        · simp [h2]
+        refine le_trans Polynomial.natDegree_mul_le ?_
+        omega
+      have := Polynomial.natDegree_sum_le_of_forall_le _ _ hbd
+      omega
+  mem_mono h hx i := by
+    rcases hx i with h1 | h1
+    · exact Or.inl h1
+    · exact Or.inr (le_trans h1 h)
+
+theorem stepanovTotalFilt_mem_monomial {R : Type*} [CommRing R] {B i : ℕ} {a : Polynomial R}
+    (h : a = 0 ∨ a.natDegree + i ≤ B) :
+    (stepanovTotalFilt R).mem B (Polynomial.monomial i a) := by
+  intro i'
+  rw [Polynomial.coeff_monomial]
+  split
+  · rename_i he; subst he; exact h
+  · left; rfl
+
 /-! #### Steps 1 and 2 of Schmidt's reduction (PROVEN 2026-07-31)
 
 `exists_stepanovJetLinearForms` is a four-step argument (Schmidt III §4,
@@ -18305,178 +18479,6 @@ theorem stepanov_dvd_specZ_resultant (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.
     (d - 1) (d - 1) hf'mon hf'nd ((AdjoinRoot.root F) ^ p) hfroot haroot ha'nd
   rw [show d - 1 + 1 = d by omega] at hzero
   exact hzero
-
-/-! #### A TOTAL-DEGREE FILTRATION, and what it buys (2026-07-28)
-
-The de-specialisation below needs a bound on the `X`-degree of the resultant
-`R(X,Y,Z)` AND on the `X`-degree of its reduction modulo `F`. Schmidt gets the
-second from his (2.3), `deg g_i^{(t)} ≤ t − 1 + i`, proven by induction on `t`.
-Both come out of ONE object here: the TOTAL `(X,Y)`-degree filtration
-`stepanovTotalFilt`, `mem B u ↔ ∀ i, u.coeff i = 0 ∨ deg_X (u.coeff i) + i ≤ B`
-— exactly the weighted shape `stepanov_natDegree_resultant_le` consumes.
-
-Two properties do all the work, and both are formal:
-
-* it is MULTIPLICATIVE (`mem B₁ x → mem B₂ y → mem (B₁+B₂) (x*y)`), hence passes
-  through a DETERMINANT with column weights (`StepanovFilt.mem_det`), which is
-  what bounds the resultant: the Sylvester matrix of `f(Z,W)` and `a(X,Y,Z,W)`
-  at `(m, n) = (d, d−1)` has `d` columns of `a`, of total degree `≤ p/d − 1`
-  each, and `d − 1` columns of `f(Z,W)`, which contains NO `X` and no `Y`. So
-  `B = d·(p/d − 1) ≤ p − d < p`, which is Schmidt's `d·deg_X a + d(d−1) < p`
-  with the reduction cost already included;
-* it is PRESERVED BY DIVISION by a monic `F` whose total degree equals its
-  `Y`-degree (`hcoeff`), because the division step subtracts
-  `monomial (m−d) u_m · F`, of total degree `deg u_m + (m−d) + d = deg u_m + m`.
-  That IS (2.3), and it costs no induction on `t`.
-
-`StepanovFilt` is stated for a general commutative ring and lifted to polynomial
-rings coefficientwise (`StepanovFilt.lift`), so the three nesting levels
-`𝔽_p[X][Y]`, `𝔽_p[X][Y][Z]`, `𝔽_p[X][Y][Z][W]` share one set of closure lemmas.
--/
-
-/-- A filtration on a commutative ring: an increasing family of additive subgroups
-containing `1` in degree `0`, with `P B₁ · P B₂ ⊆ P (B₁ + B₂)`. -/
-structure StepanovFilt (S : Type*) [CommRing S] where
-  mem : ℕ → S → Prop
-  mem_zero : ∀ B, mem B 0
-  mem_one : mem 0 1
-  mem_add : ∀ {B x y}, mem B x → mem B y → mem B (x + y)
-  mem_neg : ∀ {B x}, mem B x → mem B (-x)
-  mem_mul : ∀ {B₁ B₂ x y}, mem B₁ x → mem B₂ y → mem (B₁ + B₂) (x * y)
-  mem_mono : ∀ {B₁ B₂ x}, B₁ ≤ B₂ → mem B₁ x → mem B₂ x
-
-namespace StepanovFilt
-
-variable {S : Type*} [CommRing S]
-
-theorem mem_sub (P : StepanovFilt S) {B : ℕ} {x y : S} (hx : P.mem B x) (hy : P.mem B y) :
-    P.mem B (x - y) := by
-  rw [sub_eq_add_neg]; exact P.mem_add hx (P.mem_neg hy)
-
-theorem mem_sum (P : StepanovFilt S) {ι : Type*} (s : Finset ι) (f : ι → S) (B : ℕ)
-    (h : ∀ i ∈ s, P.mem B (f i)) : P.mem B (∑ i ∈ s, f i) := by
-  classical
-  induction s using Finset.induction_on with
-  | empty => simpa using P.mem_zero B
-  | insert a s ha ih =>
-      rw [Finset.sum_insert ha]
-      exact P.mem_add (h a (Finset.mem_insert_self a s))
-        (ih fun i hi => h i (Finset.mem_insert_of_mem hi))
-
-theorem mem_prod (P : StepanovFilt S) {ι : Type*} (s : Finset ι) (f : ι → S) (c : ι → ℕ)
-    (h : ∀ i ∈ s, P.mem (c i) (f i)) : P.mem (∑ i ∈ s, c i) (∏ i ∈ s, f i) := by
-  classical
-  induction s using Finset.induction_on with
-  | empty => simpa using P.mem_one
-  | insert a s ha ih =>
-      rw [Finset.prod_insert ha, Finset.sum_insert ha]
-      exact P.mem_mul (h a (Finset.mem_insert_self a s))
-        (ih fun i hi => h i (Finset.mem_insert_of_mem hi))
-
-/-- **THE WEIGHTED DETERMINANT BOUND, FILTRATION FORM.** If every entry of column
-`j` lies in filtration level `c j`, the determinant lies in level `∑ j, c j`. -/
-theorem mem_det (P : StepanovFilt S) {n : Type*} [Fintype n] [DecidableEq n]
-    (M : Matrix n n S) (c : n → ℕ) (h : ∀ i j, P.mem (c j) (M i j)) :
-    P.mem (∑ j, c j) M.det := by
-  rw [Matrix.det_apply]
-  refine P.mem_sum _ _ _ fun σ _ => ?_
-  have hp : P.mem (∑ j, c j) (∏ i, M (σ i) i) :=
-    P.mem_prod _ _ _ fun i _ => h (σ i) i
-  rcases Int.units_eq_one_or (Equiv.Perm.sign σ) with hs | hs <;> rw [hs]
-  · simpa using hp
-  · simpa using P.mem_neg hp
-
-/-- Extend a filtration to the polynomial ring, coefficientwise. -/
-def lift (P : StepanovFilt S) : StepanovFilt (Polynomial S) where
-  mem B u := ∀ i, P.mem B (u.coeff i)
-  mem_zero B i := by simpa using P.mem_zero B
-  mem_one i := by
-    rw [Polynomial.coeff_one]
-    split
-    · simpa using P.mem_one
-    · exact P.mem_zero 0
-  mem_add hx hy i := by rw [Polynomial.coeff_add]; exact P.mem_add (hx i) (hy i)
-  mem_neg hx i := by rw [Polynomial.coeff_neg]; exact P.mem_neg (hx i)
-  mem_mul hx hy i := by
-    rw [Polynomial.coeff_mul]
-    exact P.mem_sum _ _ _ fun ab _ => P.mem_mul (hx ab.1) (hy ab.2)
-  mem_mono h hx i := P.mem_mono h (hx i)
-
-theorem lift_mem_monomial (P : StepanovFilt S) {B n : ℕ} {a : S} (h : P.mem B a) :
-    P.lift.mem B (Polynomial.monomial n a) := by
-  intro i
-  rw [Polynomial.coeff_monomial]
-  split
-  · exact h
-  · exact P.mem_zero B
-
-end StepanovFilt
-
-/-- **THE TOTAL-DEGREE FILTRATION on `R[X][Y]`**: `mem B u` says every monomial
-`X^a Y^b` occurring in `u` has `a + b ≤ B`. This is exactly the weighted-degree
-hypothesis shape that `stepanov_natDegree_resultant_le` consumes, and it is the
-right notion here because (a) it is multiplicative, and (b) it is preserved by
-division by a monic `F` whose total degree equals its `Y`-degree — which is
-Schmidt's (2.3) `deg g_i^{(t)} ≤ t − 1 + i`, obtained for free. -/
-def stepanovTotalFilt (R : Type*) [CommRing R] : StepanovFilt (Polynomial (Polynomial R)) where
-  mem B u := ∀ i, u.coeff i = 0 ∨ (u.coeff i).natDegree + i ≤ B
-  mem_zero B i := Or.inl (by simp)
-  mem_one i := by
-    by_cases h : i = 0
-    · subst h; right; simp
-    · left; simp [Polynomial.coeff_one, h]
-  mem_add hx hy i := by
-    rw [Polynomial.coeff_add]
-    rcases hx i with h1 | h1 <;> rcases hy i with h2 | h2
-    · left; rw [h1, h2, add_zero]
-    · right; rw [h1, zero_add]; exact h2
-    · right; rw [h2, add_zero]; exact h1
-    · right
-      exact le_trans (Nat.add_le_add_right (Polynomial.natDegree_add_le _ _) i) (by omega)
-  mem_neg hx i := by
-    rw [Polynomial.coeff_neg]
-    rcases hx i with h | h
-    · left; rw [h, neg_zero]
-    · right; rwa [Polynomial.natDegree_neg]
-  mem_mul {B₁ B₂ x y} hx hy i := by
-    rw [Polynomial.coeff_mul]
-    by_cases hall : ∀ ab ∈ Finset.antidiagonal i, x.coeff ab.1 * y.coeff ab.2 = 0
-    · exact Or.inl (Finset.sum_eq_zero hall)
-    · right
-      push Not at hall
-      obtain ⟨ab, hab, hne⟩ := hall
-      have hab' : ab.1 + ab.2 = i := Finset.mem_antidiagonal.mp hab
-      have hi : i ≤ B₁ + B₂ := by
-        rcases hx ab.1 with h1 | h1
-        · exact absurd (by rw [h1, zero_mul]) hne
-        rcases hy ab.2 with h2 | h2
-        · exact absurd (by rw [h2, mul_zero]) hne
-        omega
-      have hbd : ∀ ab' ∈ Finset.antidiagonal i,
-          (x.coeff ab'.1 * y.coeff ab'.2).natDegree ≤ B₁ + B₂ - i := by
-        intro ab' hab'
-        have hs : ab'.1 + ab'.2 = i := Finset.mem_antidiagonal.mp hab'
-        rcases hx ab'.1 with h1 | h1
-        · simp [h1]
-        rcases hy ab'.2 with h2 | h2
-        · simp [h2]
-        refine le_trans Polynomial.natDegree_mul_le ?_
-        omega
-      have := Polynomial.natDegree_sum_le_of_forall_le _ _ hbd
-      omega
-  mem_mono h hx i := by
-    rcases hx i with h1 | h1
-    · exact Or.inl h1
-    · exact Or.inr (le_trans h1 h)
-
-theorem stepanovTotalFilt_mem_monomial {R : Type*} [CommRing R] {B i : ℕ} {a : Polynomial R}
-    (h : a = 0 ∨ a.natDegree + i ≤ B) :
-    (stepanovTotalFilt R).mem B (Polynomial.monomial i a) := by
-  intro i'
-  rw [Polynomial.coeff_monomial]
-  split
-  · rename_i he; subst he; exact h
-  · left; rfl
 
 
 theorem StepanovFilt.lift_mem_iff {S : Type*} [CommRing S] (P : StepanovFilt S) (B : ℕ)
