@@ -34,8 +34,14 @@ leaves PROVEN, ~1470 lines): the whole development was transplanted into
 `X0.lean` at the hoisted location and `MazurTorsion.lean` kept only the one-line
 corollary. **The transplant is always available**, because a hoist moves a
 declaration UPSTREAM and its proof's import cone moves with it; the only blockers
-are helpers defined downstream of the destination and missing `import`s. Frontier
-went `−2` where either branch alone was `0`.
+are helpers defined downstream of the destination and missing `import`s.
+
+Frontier arithmetic, counted rather than asserted — an earlier version of this note
+said `−2`, which was wrong. Against release `7080929d`: `X0.lean` `101 → 103`,
+`MazurTorsion.lean` `39 → 37`, so the combination is **net `0`** (`+2` for the hoist
+alone, which must carry the statements up as fresh sorries; `−2` for the rival proofs
+alone). The case for the transplant is not the count but that one opaque leaf became
+three concrete ones with routes. Give the count separately and correctly.
 
 Two cheap checks make it safe: grep the destination for every declaration name the
 moved block introduces (destinations here are 74 000 lines with their own

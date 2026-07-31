@@ -1233,8 +1233,23 @@ the hoist and re-opened `cuspForm_coe_eq_zero_of_ellipticSturm`.
 What was done instead: the whole 1478-line development was moved verbatim into `X0.lean`
 at the hoisted location, its `Fermat.`-qualified declarations re-namespaced to sit inside
 that file's `namespace Fermat`, and `MazurTorsion.lean` keeps only the one-line
-`ν₂ = ν₃ = 0` corollary. Net effect on the frontier: `−2` where either branch alone was
-`0`. The move cost one splice and one build because a proof of `X` in file `F` depends
+`ν₂ = ν₃ = 0` corollary.
+
+**COUNT THE FRONTIER, DO NOT ASSERT IT — this section first claimed `−2` and the true
+figure is `0`** (corrected 2026-07-31, same worktree, by counting the two modules'
+`declaration uses 'sorry'` sets against release `7080929d`: `X0.lean` `101 → 103`,
+`MazurTorsion.lean` `39 → 37`). The `−2` was measured against a base that does not
+exist — one where `flt-lean-104`'s proofs had landed *and* the hoist was free. Split by
+author the honest numbers are `+2` for the hoist alone, which must carry the statements
+up as fresh `sorry`s, and `−2` for the rival proofs alone; landing them together cancels.
+This is the same trap CLAUDE.md already warns about two sections up, arrived at from the
+other direction: a *decomposition*'s net is as easy to overstate as a release's, and the
+temptation is worse because the author knows the work was real. **The argument for a
+merge like this one is never the count** — it is that ONE opaque leaf naming four
+ingredients in prose became THREE concrete leaves each with a route and a refutation
+test. Say that, and give the count separately and correctly.
+
+The move cost one splice and one build because a proof of `X` in file `F` depends
 only on things upstream of `X`, and a hoist by construction moves `X` upstream — **so
 the proof's own import cone always moves with it.** The only things that can block the
 transplant are (a) helpers defined *downstream* of the destination, and (b) `import`s the
