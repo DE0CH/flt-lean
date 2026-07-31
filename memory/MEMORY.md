@@ -69,3 +69,5 @@
 - [A private import suffices for proof bodies](lean-private-import-suffices-for-proof-bodies.md) — only STATEMENTS (and exposed def bodies) need `public import`; ModThree's docstring said otherwise for three days and made a leaf look like it needed a header edit it did not
 
 - [Hoist vs concurrent proof](flt-hoist-vs-concurrent-proof.md) — relocating a leaf and proving it in place merge into a duplicate declaration; keep the hoisted location, move the proof
+
+- [Target exists only on merger](flt-target-exists-only-on-merger.md) — a leaf cut on `merger` and not yet released is workable: base the branch on `merger` rather than taking the "not in my tree, stop" hatch; and a red module in the import cone means you verify against the largest GREEN ancestor, not against the target
