@@ -48,3 +48,20 @@ edge: the symptom is `Unknown identifier` on a name that `grep` finds. Three
 relocations were needed at release 26. Move code DOWN (it cannot break the moved
 code's own dependencies), and verify the move is byte-exact by sorting the whole
 file before and after and diffing the multiset.
+
+## `scopecheck.py` over-reports, and that is deliberate
+
+Lean allows a bare `end` to close a *named* `section`, and this tree interleaves
+`section`/`namespace` freely, so a strict stack model flags a dozen files that
+compile perfectly. Two consequences:
+
+* **Always difference against pre-merge `main`.** Only the NEW reports are yours.
+  Release 26: seven reports on `X0.lean`, three of them pre-existing.
+* **Run it over EVERY file under `Fermat/`, not just the ones your batch touched.**
+  The unclosed `section HalfAColimit` in `AbelianSchemeIsogeny.lean` — a
+  pre-existing wound that blocked most of the tree — was found by build round 5
+  and would have been found before round 1 by a tree-wide run.
+
+Do not tune the false positives away by weakening the model; tune them away by
+subtracting the baseline. A checker that reports nothing is the one that missed
+the four wounds this release had to find with the compiler.

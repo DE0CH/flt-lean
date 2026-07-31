@@ -58,15 +58,25 @@ for p in sys.argv[1:]:
             elif n == nm:
                 st.pop()
             else:
-                # allow closing a dotted prefix chain opened in pieces
-                probs.append('line %d: `end %s` but innermost open is %s %s (line %d)'
-                             % (i, nm, k, n, o))
-                # resync: pop until match if the name occurs anywhere
-                names = [x[1] for x in st]
-                if nm in names:
-                    while st and st[-1][1] != nm:
-                        st.pop()
+                # `end A.B.C` may close a chain opened as `namespace A` / `namespace B.C`,
+                # and `end C` may close `namespace A.B.C` when A.B are still wanted open.
+                parts = nm.split('.')
+                stack_tail = []
+                j = len(st)
+                while j > 0 and len('.'.join(stack_tail)) < len(nm):
+                    stack_tail.insert(0, st[j - 1][1]); j -= 1
+                if '.'.join(stack_tail) == nm:
+                    del st[j:]
+                elif n.endswith('.' + nm) or n == parts[-1]:
                     st.pop()
+                else:
+                    probs.append('line %d: `end %s` but innermost open is %s %s (line %d)'
+                                 % (i, nm, k, n, o))
+                    names = [x[1] for x in st]
+                    if nm in names:
+                        while st and st[-1][1] != nm:
+                            st.pop()
+                        st.pop()
     for k, n, o in st:
         probs.append('EOF: %s %s opened at line %d never closed' % (k, n, o))
     if probs:
