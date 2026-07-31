@@ -21815,17 +21815,32 @@ to `exists_dualPolarization_of_mult`, which shares `DualStruct`.
 refused; a successor should not spend the cycle re-deriving them.
 
 1. *Split off the dual: `∃ d, IsQAdicWeilTower d 𝟙 q` first, then the
-   polarization.*  ILLEGAL in the only shape it can take.  The second half would
-   have to read `∀ d : DualStruct ab' m', IsQAdicWeilTower d 𝟙 q → ∃ b hom, …`,
-   and `DualStruct`'s axioms do not pin `d` up to anything: `weil` is
-   nondegenerate in the FIRST variable only, so `d.dualScheme = Â' × C` for an
-   arbitrary abelian `C`, paired through the projection, satisfies every field.
-   The polarization clause then demands a `Γ_k`-equivariant `𝒪_D`-linear map of
-   POINT GROUPS `A'(k̄) ⟶ (Â' × C)(k̄)` with bounded radical, i.e. an equivariant
-   splitting of `d.dualMult.torsion ↠ A'[q^M]^∨`, and a surjection of `Γ_k`-modules
-   need not split equivariantly.  So the universally-quantified half is at best
-   unproven and quite possibly FALSE.  **Keep `d` existentially bound with
-   whatever is handed on.**
+   polarization.*  REFUSED, and the reason needs stating carefully because the
+   obvious argument for refusing it does not work.
+
+   The second half would have to read
+   `∀ d : DualStruct ab' m', IsQAdicWeilTower d 𝟙 q → ∃ b hom, …`, and
+   `DualStruct`'s axioms DO NOT PIN `d`: `weil` is nondegenerate in the FIRST
+   variable only, so for any abelian `C` the datum `d.dualScheme = Â' × C`,
+   paired through the projection with `dualMult` acting diagonally, satisfies
+   every field — `weil_add_right` and `weil_act` componentwise, `weil_gal`
+   likewise, and nondegeneracy because `z = (z₁, 0)` already separates points of
+   `A'[I]`.  So the universally-quantified half quantifies over a class strictly
+   larger than "the dual", and a `∀ d` statement about that class is not the
+   theorem anybody means.
+
+   **That witness does NOT refute the split, and it is worth recording that it
+   does not, so the next reader does not over-read it.**  For exactly this `d`,
+   `hom y := (λ y, 0)` discharges all six clauses, since the sixth reads
+   `weil (y, λ z)` and is the bound for `λ` itself.  Whether some ADMISSIBLE `d`
+   admits no `hom` at all is OPEN; what one would have to beat is an arbitrary
+   choice of the `weil` FIELD compatible along the tower, and the tower
+   compatibility is the only thing constraining those choices across levels.
+   The refusal is therefore on the ground that the residue is a statement about
+   an undetermined class whose truth nobody has checked — not on a
+   counterexample.  **Keep `d` existentially bound with whatever is handed on**,
+   and if a successor wants this split, the thing to settle first is exactly the
+   open question just named.
 2. *Split off the bound `b`.*  Same defect one field further in: the residue
    quantifies over `d` AND `hom`.
 3. *Split off "`A'` is projective / carries a polarization as a MORPHISM".*  Not
@@ -23329,7 +23344,14 @@ def postComp {A C S : Scheme.{u}} {f : A ⟶ S} {h : C ⟶ S} (π : A ⟶ C) (h�
     (hπ : π ≫ h = f) {T : Scheme.{u}} {g : T ⟶ S} (y : RelPoint f g) :
     (postComp π hπ y).1 = y.1 ≫ π := rfl
 
-end RelPoint
+-- NOTE (2026-07-31): a duplicated namespace terminator stood HERE and fenced
+-- `push_pre` and `push_injective` below out of `namespace RelPoint`, so their
+-- bodies could not resolve the unqualified `push` and their two consumers
+-- reported `Unknown constant Fermat.RelPoint.push_injective` / `…push_pre` for
+-- names that are visibly present in this file.  One opener at the top of this
+-- section, two terminators: the semmerge scope-line hole recorded in
+-- `tools/merge/README.md`, produced by two branches each adding a block that
+-- ended the namespace.  The terminator below closes it.
 
 /-- **`push` commutes with a change of test object.**  Both sides are
 `h ≫ y.1 ≫ ι` up to the associator, so this is `Category.assoc`; it is what
