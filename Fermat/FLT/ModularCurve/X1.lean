@@ -461,9 +461,7 @@ open in them has been split along the theories it needed:
 | ~~`exists_weierstrassCurve_pointOfExactOrder`~~ | PROVEN 2026-07-30: Silverman *AEC* III.6.4 was already in cone as `WeierstrassCurve.n_torsion_dimension` (`EllipticCurve/Torsion.lean`), so the leaf was that theorem at `WeierstrassCurve.ofJ (0 : L)` plus additive-order bookkeeping; no longer a leaf | — |
 | `nonempty_gamma1Datum_of_weierstrassPoint` | the base-generalisation of `nonempty_gamma1Datum_of_ratPoint`, which is the SAME statement at `ℚ` and is PROVEN.  Its whole obstruction is that `EllipticScheme.lean` is written at the concrete base `ℚ`; no new mathematics.  Cut out of `exists_gamma1Datum_fieldExtension` 2026-07-28, which is PROVEN over it and the row above (and `geometricComponents_of_gamma1GITPresentation` over that plus the two rows below, and `nontrivial_A_of_gamma1GITPresentation` over that alone). | any field `L` |
 | ~~`isReduced_A_of_gamma1GITPresentation`~~ | PROVEN 2026-07-28 over `smoothCurve_A_of_gamma1GITPresentation` and the in-tree `Algebra.Smooth.isReduced_of_isField`; no longer a leaf | — |
-| ~~`transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation`~~ | PROVEN 2026-07-31 over the new `Gamma1GITPresentation.transitiveM` field; no longer a leaf, and the citation now sits on `transitiveOnGeometricComponents_of_gamma1RigidifiedModuli` (the row below).  The move is the `smoothM`-style repair applied to IV.5.5 and it is leaf-NEUTRAL: what forced it is that `Gamma1GITPresentation` mentions no level-`n` structure anywhere, so the Weil pairing IV.5.5 runs on is not among the things its axioms can talk about.  The CLOSING AUDIT on the declaration records the three questions this closed, including the first positive evidence that the statement is TRUE (`classify_natural` pins the FIBRES of `π`, which refutes every “disjoint union” counterexample). | — |
-| `transitiveOnGeometricComponents_of_gamma1RigidifiedModuli` | Deligne-Rapoport IV.5.5 where it is legitimately universally quantified: `det` is onto, so `GL₂(ℤ/n)` permutes the components of `Spec (A ⊗[K] L)` transitively, for a `Gamma1RigidifiedModuli` — whose `universal` field pins `Spec A` up to unique isomorphism AND whose `lvlM` field carries the level-`n` structure the pairing is defined on.  Supplied as a hypothesis to `nonempty_gamma1Rigidification_of_rigidifiedModuli` exactly as `hcov` is, and carried down as a structure field through both assembly steps. | any `K`, `char K ∤ N`, `char K ∤ n`, any field extension `L/K` |
-| ~~(historical row for the row above)~~ | Deligne-Rapoport IV.5.5 as it stood 2026-07-30 to 2026-07-31.  MERGED 2026-07-30 out of the two former leaves `transitiveMinimalPrimes_of_gamma1GITPresentation` and `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation`, BOTH of which are now PROVEN over it — the first at `L := K` through `Algebra.TensorProduct.rid`, the second through the new `isDomain_of_minimalPrimes_transitive_family` plus `smoothCurve_A_of_gamma1GITPresentation` and `nontrivial_A_of_gamma1GITPresentation`.  Two leaves stating one sentence of IV.5.5 at two generalities became one leaf at the stronger generality. | any `K`, `char K ∤ N`, any field extension `L/K` |
+| `transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation` | Deligne-Rapoport IV.5.5: `det` is onto, so `G` permutes the components of `Spec (A ⊗[K] L)` transitively for EVERY field extension `L/K`.  MERGED 2026-07-30 out of the two former leaves `transitiveMinimalPrimes_of_gamma1GITPresentation` and `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation`, BOTH of which are now PROVEN over it — the first at `L := K` through `Algebra.TensorProduct.rid`, the second through the new `isDomain_of_minimalPrimes_transitive_family` plus `smoothCurve_A_of_gamma1GITPresentation` and `nontrivial_A_of_gamma1GITPresentation`.  Two leaves stating one sentence of IV.5.5 at two generalities became one leaf at the stronger generality. | any `K`, `char K ∤ N`, any field extension `L/K` |
 | ~~`transitiveMinimalPrimes_of_gamma1GITPresentation`~~ | PROVEN 2026-07-30 over the row above at `L := K`; no longer a leaf | — |
 | ~~`isPrime_nilradical_tensorProduct_of_gamma1GITPresentation`~~ | PROVEN 2026-07-30 over the row above; no longer a leaf.  `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation` and `connectedSpace_tensorProduct_of_gamma1GITPresentation` are unchanged and still read it | — |
 | `exists_rationalCuspPointsX1_field` | `φ(N)/2` rational cusps of `X_1(N)` (Deligne-Rapoport VI.5).  Base field FREED 2026-07-28: this single leaf now carries the former `exists_rationalCuspPointsX1` (over `ℚ`, PROVEN over it) and the `≥` half of the former `card_cuspLocusPoints_x1_finiteField` (over `𝔽_3`) — one sentence of Deligne-Rapoport that used to be two open leaves at two bases. | any `K` with `N` invertible |
@@ -476,7 +474,7 @@ open in them has been split along the theories it needed:
 | `exists_isX1Compactification_specialFibre` | Igusa / Katz-Mazur 5.1.1: the special fibre of that model IS `X_1(N)` over `𝔽_ℓ`.  (`exists_x1CurveModel_of_base` is PROVEN over this row and the one above, 2026-07-28, splitting the two classical theorems it had cited jointly; `exists_x1ReductionAt` is PROVEN over that plus the moduli-free `NeronReduction.lean`.  Since 2026-07-30 the row above is the weaker `exists_x1SmoothProperCurveModel`; the leaf COUNT here is unchanged.) | `ℚ → 𝔽_ℓ` |
 | `exists_section_of_galoisInvariant` | Galois descent of a rational point to a section | `ℚ` |
 | `exists_heckeCorrespondenceFamilyGamma1` | the `Γ₁` Hecke correspondence as a natural family on points — the geometric half, and the `Γ₁` twin of `X0.lean`'s `exists_heckeCorrespondenceFamily`.  (`exists_heckeAction_isotypicQuotients_gamma1` was a leaf until 2026-07-28 and is now **PROVEN** over this row and the next, via the `Γ₁` moduli pin `IsModularHeckeActionGamma1`; `exists_modularHeckeAction_gamma1` is PROVEN over this row alone.) | `ℚ` |
-| `isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1` | Shimura's algebraicity theorem for `Γ₁(N)`: the `a n` are algebraic integers.  MENTIONS NO SCHEME — the only obligation of `IsIsotypicQuotient` that does not, and it can be attacked from the integral-homology side or from the Hecke recursions plus a bound.  Cannot be an instance of `X0.lean`'s `isIntegral_coeff_of_isWeightTwoEigenform`: the `Γ₁` coefficients generate `ℚ(χ)`. | `ℚ` |
+| `exists_integralHeckeEigensystem_of_isWeightTwoEigenformOn_gamma1` | the integral homology `H₁(X_1(N), ℤ)` as a Hecke module, with the period map of `ω_f` as a nonzero simultaneous left eigenvector — i.e. an `IntegralHeckeEigensystem` for the coefficient system.  NEW 2026-07-31, replacing `isIntegral_coeff_prime_of_isWeightTwoEigenformOn_gamma1`, which is now **PROVEN** over it (and `isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1` over that).  Cannot be an instance of `X0.lean`'s `Γ₀` twin — `f` lives on a smaller group and `hecke` carries `χ` — but the two leaves now share their CONSUMER, `IntegralHeckeEigensystem`, whose eigenvalue argument is PROVEN in `ModularCurve/HeckeLattice.lean`.  The archimedean bounds in this file cannot substitute; integrality is not an archimedean condition. | `ℚ` |
 | `exists_isotypicQuotient_of_isIntegral_gamma1` | Shimura's `A_f` on `Γ₁(N)`, one factor, given the PINNED Hecke action AND algebraicity — the "build one factor" half of Eichler-Shimura, and the `Γ₁` twin of `X0.lean`'s `exists_isotypicQuotient_of_isIntegral`.  (`IsIsotypicQuotient` is reused verbatim from `X0.lean`; it is shape-free.  `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` is **PROVEN** over this row and the one above since 2026-07-30, transporting the `Γ₀` recut of the same day; its FALSITY AUDIT was discharged that day too and the statement is TRUE.) | `ℚ` |
 | `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` | the "assemble the factors" half: finiteness of the index set, the oldform multiplicities, `finite_ker`, and the `neben` labelling.  It no longer owns the `N = 0` case: that case was REFUTED on 2026-07-28 (`isEmpty_isHeckeIsotypicDecompositionGamma1_zero`) and the leaf now carries `hN : N ≠ 0`; see its docstring | `ℚ` |
 | `isTorsion_factor_of_heckeIsotypic_gamma1` | Kolyvagin-Logachev on an isotypic factor | `ℚ` |
@@ -597,7 +595,7 @@ along the GIT axis its own docstring named as NOT SEARCHED.  This is the
 | `gamma0Atlas_isIso` + `isAffine_of_gamma0Atlas` (PROVEN) | not needed — see the section comment on the geometry below |
 | `isDomain_of_gamma0GITPresentation` (leaf) | `geometricComponents_of_gamma1GITPresentation` (PROVEN 2026-07-28 over `exists_gamma1Datum_fieldExtension`, `isReduced_A_of_gamma1GITPresentation` — itself PROVEN later the same day over `smoothCurve_A_of_gamma1GITPresentation` — and `transitiveMinimalPrimes_of_gamma1GITPresentation`, itself PROVEN 2026-07-30 over `transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation`); `isDomain_of_gamma1GITPresentation` is PROVEN over it |
 | `smoothOfRelativeDimension_of_gamma0GITPresentation` (leaf) | `locallyStandardSmooth_of_gamma1GITPresentation` (leaf); `smoothOfRelativeDimension_of_gamma1GITPresentation` is PROVEN over it |
-| `geometricallyConnected_of_gamma0GITPresentation` (leaf) | `transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation` (PROVEN 2026-07-31 over the `transitiveM` field; the open leaf is now `transitiveOnGeometricComponents_of_gamma1RigidifiedModuli`); `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation`, `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation`, `connectedSpace_tensorProduct_of_gamma1GITPresentation` and `geometricallyConnected_of_gamma1GITPresentation` are PROVEN over it |
+| `geometricallyConnected_of_gamma0GITPresentation` (leaf) | `transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation` (leaf, 2026-07-30); `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation`, `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation`, `connectedSpace_tensorProduct_of_gamma1GITPresentation` and `geometricallyConnected_of_gamma1GITPresentation` are PROVEN over it |
 | `Gamma0AffineModel` / `exists_gamma0AffineModel` (PROVEN) | `Gamma1AffineModel` / `exists_gamma1AffineModel` (PROVEN) |
 
 `specInvariants_universal` (`X0.lean`, PROVEN and sorry-free) is REUSED
@@ -660,15 +658,12 @@ thing `Nontrivial A` needs), `isReduced_A_of_gamma1GITPresentation`
 `smoothCurve_A_of_gamma1GITPresentation`) and
 `transitiveMinimalPrimes_of_gamma1GITPresentation` (IV.5.5, the
 `det`-surjectivity — itself PROVEN 2026-07-30 over its base-changed form
-`transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation`, itself
-PROVEN 2026-07-31 over the new `transitiveM` field, so the open obligation
-now sits on `transitiveOnGeometricComponents_of_gamma1RigidifiedModuli`).
-The ROUTE AUDIT and the CLOSING AUDIT on that former leaf record why
+`transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation`, which is
+where the open obligation now sits).  The ROUTE AUDIT on the last of those records why
 neither `Algebra.IsInvariant.exists_smul_of_under_eq` nor an
-algebra of components cuts it any further — both are circular with the only
-consumer — and that the honest step was the structural one, which is what
-was taken on 2026-07-31: the citation is a FIELD, the same shape as
-`coequalises`. -/
+existentially-quantified algebra of components cuts it any further, and
+that the honest next step is a Weil-pairing FIELD on
+`Gamma1Rigidification` — the same shape as `coequalises`. -/
 
 /-- **A Katz–Mazur atlas for the `Γ₁(N)`-problem over a base scheme `S`.**
 
@@ -17574,6 +17569,85 @@ theorem isIntegral_coeff_prime_pow_of_isIntegral_gamma1 {G : Subgroup (GL (Fin 2
         exact (hpi.mul ih.2).sub ((hcint.mul hpint).mul ih.1)
     exact (key k).1
 
+/-- **THE INTEGRAL HECKE LATTICE OF `X_1(N)`, FOR A WEIGHT-TWO EIGENFORM WITH
+NEBENTYPUS** (sorry leaf, NEW 2026-07-31) — the GEOMETRIC input to Shimura's
+algebraicity theorem on `Γ₁(N)`, and since 2026-07-31 the whole of what that
+theorem still owes here.  `isIntegral_coeff_prime_of_isWeightTwoEigenformOn_gamma1`
+immediately below is PROVEN over it, and
+`isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1` over that.
+
+**THE `Γ₁` TWIN OF `X0.lean`'s `exists_integralHeckeEigensystem_of_isWeightTwoEigenform`,
+CUT ON THE SAME DAY BY THE SAME OWNER.**  That is not a stylistic preference: the
+two algebraicity leaves have been cut twice before (to primes, on 2026-07-30 and
+2026-07-31), and this file's own standing rule is that a cut made on one side
+must be made on the other by ONE owner or the two drift into rival cuts of one
+node.  Both leaves now ask for the SAME object — an `IntegralHeckeEigensystem`
+for the coefficient system (`ModularCurve/HeckeLattice.lean`) — which is the
+strongest form of not drifting: the consumer is literally shared, and only the
+producer differs.
+
+TRUE, and classical (Shimura, *Introduction to the arithmetic theory of
+automorphic functions*, §3.5 and §7.5; Diamond–Shurman §6.5, where `Γ₁(N)` is
+the default level structure, so the nebentypus case is the one actually
+written).  The witness is the integral homology: `H₁(X_1(N), ℤ)` is free of rank
+`2g`; `T_n` is induced by a correspondence of curves and PRESERVES it, hence is
+an integer matrix in a `ℤ`-basis; the period map `φ : γ ↦ ∫_γ ω_f` is `ℤ`-linear
+with `φ ∘ T_n = a_n · φ` by adjointness of the Hecke action on cycles and on
+differentials; and `φ ≠ 0` because a nonzero holomorphic differential on a
+compact Riemann surface cannot have all periods zero.
+
+**The nebentypus does not weaken any of this, and this is worth being explicit
+about** because it is the only place the `Γ₁` statement could differ from the
+`Γ₀` one.  `χ` takes root-of-unity values, so the coefficients generate `ℚ(χ)`
+rather than a totally real field — but the lattice is `H₁(X_1(N), ℤ)` either
+way, `T_n` acts on it over `ℤ` either way, and the eigenvalue extracted from the
+monic integer charpoly is `a n` either way.  The `χ` that appears in the Hecke
+recursion `a_{p^{k+2}} = a_p a_{p^{k+1}} − χ(p)·p·a_{p^k}` is a fact about the
+COEFFICIENTS, downstream of this leaf, and is handled by
+`isIntegral_coeff_prime_pow_of_isIntegral_gamma1` above together with
+`isIntegral_dirichletCharacter_apply`; nothing about it reaches the lattice.
+That is why the leaf below carries no hypothesis on `χ` at all.
+
+**It still cannot be an instance of the `Γ₀` leaf.**  `IsWeightTwoEigenformOn
+(Gamma1GL N) N χ f a` is not `IsWeightTwoEigenform N f a` — `f` lives on a
+smaller group and `hecke` carries `χ` — so `X0.lean`'s producer does not apply.
+What IS shared is the consumer, `IntegralHeckeEigensystem`, which mentions only
+`a`.  The sharing is at the right place: the geometry differs (`X_1(N)` versus
+`X₀(N)`), the linear algebra does not.
+
+**FALSITY AUDIT, RE-RUN AGAINST THIS STATEMENT (2026-07-31) AND NOT INHERITED**,
+per the standing rule that a restatement voids the earlier audit.  Both
+`hN : N ≠ 0` and `G := Gamma1GL N` REMAIN LOAD-BEARING, and the mechanized
+level-`0` witness recorded in the block docstring above refutes THIS statement
+without modification — precisely because this statement is STRONGER than the one
+it was written against, so the implication carries the refutation backwards.  In
+detail: `exists_isWeightTwoEigenformOn_gamma1GL_zero (1/2)` (PROVEN 2026-07-28)
+produces a level-`0` nebentypus `χ`, a genuine `f : CuspForm (Gamma1GL 0) 2` and
+the system `lacunaryTwoCoeff (1/2)` satisfying every field of
+`IsWeightTwoEigenformOn (Gamma1GL 0) 0 χ f`, with
+`lacunaryTwoCoeff (1/2 : ℂ) 2 = 1/2` (`lacunaryTwoCoeff_two`).  Were this leaf to
+hold at `N = 0`, then `IntegralHeckeEigensystem.isIntegral_coeff` — a PROVEN
+theorem, so the implication is not in doubt — would give
+`IsIntegral ℤ (1/2 : ℂ)`, refuted by `IsIntegrallyClosed ℤ` pulled back along
+`ℚ ↪ ℂ` (the four-line script is quoted verbatim in the block docstring above).
+Hence no `IntegralHeckeEigensystem` exists for that system and `hN` cannot be
+dropped.  Geometrically: "`X_1(0)`" is not a curve with a homology lattice.
+
+**WHAT REMAINS GENUINELY MISSING** (re-checked 2026-07-31): the integral
+homology `H₁(X_1(N), ℤ)` as a Hecke module exists neither here, nor in mathlib
+at this pin, nor in `~/cs/FLT`.  The two routes worth costing are the same two
+listed on the `Γ₀` leaf in `X0.lean` — the Riemann-surface homology of
+Diamond–Shurman §6.5, and the `q`-expansion lattice `S₂(Γ₁(N), ℤ)` of Shimura
+§3.5 — and `Γ₁` is the better-documented side for both, since Diamond–Shurman
+takes `Γ₁(N)` as its default level structure.  **REFUTED ROUTE, do not retry:**
+the archimedean bounds in this file bound `‖a_p‖`, and integrality is not an
+archimedean condition; `1/2` satisfies every one of them. -/
+theorem exists_integralHeckeEigensystem_of_isWeightTwoEigenformOn_gamma1 (N : ℕ) (hN : N ≠ 0)
+    (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ)
+    (hf : IsWeightTwoEigenformOn (Gamma1GL N) N χ f a) :
+    Nonempty (IntegralHeckeEigensystem a) :=
+  sorry
+
 /-- **SHIMURA'S ALGEBRAICITY THEOREM FOR `Γ₁(N)` AT A PRIME: `a_p` is an
 algebraic integer for every prime `p`** (sorry leaf, NEW 2026-07-31) — all that
 survives of `isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1` below, which is
@@ -17593,11 +17667,12 @@ The cut, the derivation of `N ≠ 0` inside the recursion, and the FALSITY AUDIT
 of THIS statement (level `0`, `c = 1/2`, `p = 2`, mechanized in this file up to
 one paste) are all recorded in the block docstring above; they are not repeated
 here.  `G := Gamma1GL N` is load-bearing exactly as recorded there. -/
-theorem isIntegral_coeff_prime_of_isWeightTwoEigenformOn_gamma1 (N : ℕ) (_hN : N ≠ 0)
+theorem isIntegral_coeff_prime_of_isWeightTwoEigenformOn_gamma1 (N : ℕ) (hN : N ≠ 0)
     (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ)
-    (_hf : IsWeightTwoEigenformOn (Gamma1GL N) N χ f a) (p : ℕ) (_hp : p.Prime) :
+    (hf : IsWeightTwoEigenformOn (Gamma1GL N) N χ f a) (p : ℕ) (_hp : p.Prime) :
     IsIntegral ℤ (a p) :=
-  sorry
+  (exists_integralHeckeEigensystem_of_isWeightTwoEigenformOn_gamma1 N hN χ f a hf).elim
+    fun H => H.isIntegral_coeff p
 
 /-- **SHIMURA'S ALGEBRAICITY THEOREM FOR `Γ₁(N)`: every `a n` is an algebraic
 integer** (**PROVEN 2026-07-31** over
