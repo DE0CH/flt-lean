@@ -1223,6 +1223,16 @@ dropped-merge bug of class six.
 2. *Per merge: names declared on the BRANCH but absent from the resolved file, grepped
    (comments stripped) against the resolved file.* This is what found `flt-lean-366`'s breakage
    before a build ran.
+3. *A binder RENAMED to `_x` in a SIGNATURE while the body still says `x`.* This is the
+   cheapest-to-detect shape of the split and it was live on `merger` at `f6755e85`
+   (2026-07-31): `ProperPushforward.lean`'s `eq_span_one_sup_smul_top_appTop_of_isIso_appTop_fiber`
+   read `(_hm : m.IsMaximal)` while its body still called
+   `exists_point_ker_Γevaluation_eq_of_isMaximal S m hm` — `unknown identifier 'hm'`, i.e. the
+   whole module red. It arises when a branch reproves a theorem from a new upstream fact (here
+   a hoisted `surjective_appTop_of_isIso_appTop_fiber`), so the hypothesis goes unused and gets
+   underscored; the signature edit merges cleanly and the body replacement lands in the
+   conflicted half. Grep the resolved file for a signature binder `_foo` whose declaration body
+   mentions `foo` — seconds, no build, and it catches the whole class.
 
 And the standing one, which is what caught the rest: **the release build is not optional and its
 first failure is not its last.** Fix, rebuild, repeat — FOUR rounds this release, and the reason is
