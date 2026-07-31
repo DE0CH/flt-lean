@@ -11814,6 +11814,252 @@ theorem exists_tateWeilApprox_of_rawFamily
     exact Ideal.add_mem _ h1 h2
   · exact hunit (Nn 1) (hNge 1)
 
+/-- **THE COPRIME SPLIT OF `cⁿ` AT A MAXIMAL IDEAL DIVIDING `c` EXACTLY**
+(PROVEN 2026-07-31): if `c ∈ I^e \ I^{e+1}` then for every `n ≥ 1` there is a
+decomposition `1 = α + β` with `α ∈ I^{e·n}` and `β · I^{e·n} ⊆ (cⁿ)`.
+
+This is the ring-theoretic half of `exists_tatePt_weil_ne_one` below, isolated
+because nothing in it is about abelian schemes: `α` and `β` are the two
+idempotent components of `𝒪/(cⁿ) ≅ 𝒪/I^{e·n} × 𝒪/J` under the Chinese
+remainder theorem, and the whole point is that the `I`-part of `(cⁿ)` is
+EXACTLY `I^{e·n}`.
+
+ROUTE, and it needs no valuation theory.  `Ideal.dvd_iff_le` (to divide is to
+contain, in a Dedekind domain) turns `(c) ≤ I^e` into a factorisation
+`(c) = I^e · K`.  `hce2` says `K ⊄ I`: otherwise `(c) = I^e K ≤ I^{e+1}`.
+Raising to the `n`-th power, `(cⁿ) = I^{e·n} · Kⁿ`, and `Kⁿ ⊄ I` because `I` is
+prime (`Ideal.IsPrime.pow_le_iff`, which is where `1 ≤ n` is spent).  `I`
+maximal and `Kⁿ ⊄ I` give `I ⊔ Kⁿ = ⊤`, hence `I^{e·n} ⊔ Kⁿ = ⊤` by
+`IsCoprime.pow_left`, and `1 ∈ I^{e·n} ⊔ Kⁿ` unfolds to the required `α + β`.
+The last clause is then `Ideal.mul_mem_mul` read through `(cⁿ) = I^{e·n} · Kⁿ`.
+
+**`hce2` MAY NOT BE DROPPED, and the failure is not a technicality.**  If
+`c ∈ I^{e+1}` then the `I`-part of `(cⁿ)` is `I^{e'·n}` for some `e' > e`, and
+`I^{e·n} ⊔ ((cⁿ) : I^{e·n})` is contained in `I`, so no such `α, β` exist:
+`α + β = 1` with `α ∈ I^{e·n} ⊆ I` would force `β ∉ I`, while
+`β · I^{e·n} ⊆ (cⁿ) ⊆ I^{e'·n}` and `e'·n > e·n` force `β ∈ I`.  The same
+sharpness is what makes `hqe2` load-bearing in the geometric statement below;
+see its docstring for the abelian-scheme form of the counterexample. -/
+theorem exists_add_eq_one_mul_mem_span_pow
+    {R : Type*} [CommRing R] [IsDedekindDomain R]
+    (I : Ideal R) (hI : I.IsMaximal) (c : R) (e : ℕ)
+    (hce : c ∈ I ^ e) (hce2 : c ∉ I ^ (e + 1)) (n : ℕ) (hn : 1 ≤ n) :
+    ∃ α β : R, α ∈ I ^ (e * n) ∧ α + β = 1 ∧
+      ∀ a ∈ I ^ (e * n), a * β ∈ (Ideal.span {c ^ n} : Ideal R) := by
+  classical
+  haveI : I.IsPrime := hI.isPrime
+  have hcle : (Ideal.span {c} : Ideal R) ≤ I ^ e := by
+    rw [Ideal.span_le, Set.singleton_subset_iff]
+    exact hce
+  obtain ⟨K, hK⟩ : (I ^ e) ∣ (Ideal.span {c} : Ideal R) := Ideal.dvd_iff_le.mpr hcle
+  have hKI : ¬ (K ≤ I) := by
+    intro h
+    apply hce2
+    have hle : (Ideal.span {c} : Ideal R) ≤ I ^ (e + 1) := by
+      rw [hK, pow_succ]
+      exact Ideal.mul_mono le_rfl h
+    exact hle (Ideal.mem_span_singleton_self _)
+  have hspan : (Ideal.span {c ^ n} : Ideal R) = I ^ (e * n) * K ^ n := by
+    rw [← Ideal.span_singleton_pow, hK, mul_pow, ← pow_mul]
+  have hKNI : ¬ (K ^ n ≤ I) := fun h =>
+    hKI ((Ideal.IsPrime.pow_le_iff (by omega)).mp h)
+  have hIK : I ⊔ K ^ n = ⊤ := by
+    refine hI.out.2 _ (lt_of_le_of_ne le_sup_left ?_)
+    intro h
+    exact hKNI (by rw [h]; exact le_sup_right)
+  have hsup : I ^ (e * n) ⊔ K ^ n = ⊤ :=
+    ((Ideal.isCoprime_iff_sup_eq.mpr hIK).pow_left).sup_eq
+  have h1 : (1 : R) ∈ I ^ (e * n) ⊔ K ^ n := by rw [hsup]; trivial
+  obtain ⟨α, hα, β, hβ, hab⟩ := Submodule.mem_sup.mp h1
+  refine ⟨α, β, hα, hab, fun a ha => ?_⟩
+  rw [hspan]
+  exact Ideal.mul_mem_mul ha hβ
+
+/-- **THE `q`-ADIC WEIL PAIRING IS STILL NONDEGENERATE ON THE VALUES OF TATE
+POINTS** (PROVEN 2026-07-31): for every `N ≥ 1` there are Tate points `t, s`
+with `w N (t.1 (e·N)) (s.1 (e·N)) ≠ 1`.
+
+This is the GEOMETRIC HALF that the docstring of `exists_isUnit_rawConstant`
+below records as available, written out; it is a strict prerequisite of that
+leaf however the leaf is eventually closed, and it is stated separately so that
+whoever attacks the arithmetic half (the `θ`-side upper bound) does not have to
+rebuild it.
+
+**WHY IT IS NOT `hwperf` READ TWICE.**  `IsQAdicWeilSystem`'s perfectness
+clause produces, for a nonzero `y ∈ A[q^N]`, a partner `z ∈ A[q^N]`.  But
+`A[q^N]` is strictly bigger than `A[I^{e·N}]` as soon as a second prime of
+`𝒪_D` lies over `q`, and only `I`-power torsion is the level-`e·N` component of
+a Tate point (`TatePt`'s first field asks for `t.1 n ∈ A[Iⁿ]`).  So the raw
+clause does not hand back an `s`, and the content of this lemma is that it can
+be made to.
+
+ROUTE, in four steps.
+
+1.  `htors` gives a nonzero `y₀ ∈ A[I]`, and `exists_tatePt_val_eq` lifts it to
+    a Tate point `t` with `t.1 1 = y₀`.  Then `t.1 (e·N) ≠ 0`, because
+    `π^{e·N-1}` carries `t.1 (e·N)` to `t.1 1 = y₀` (the `hactpow` induction
+    below) while it carries `0` to `0`; this is the only place `he1` is spent,
+    through `1 ≤ e·N`.
+2.  `t.1 (e·N)` lies in `A[q^N]`, since `(q^N) ≤ I^{e·N}` by `hqe`.  So
+    `hwperf` applies and yields `z ∈ A[q^N]` with `w N (t.1 (e·N)) z ≠ 1`.
+3.  SPLIT `z` along `exists_add_eq_one_mul_mem_span_pow`: `1 = α + β` with
+    `α ∈ I^{e·N}` and `β · I^{e·N} ⊆ (q^N)`.  Then `β z ∈ A[I^{e·N}]`, because
+    `a (β z) = (aβ) z = 0` for `a ∈ I^{e·N}`; and `α z` is ORTHOGONAL to
+    `t.1 (e·N)`, because `𝒪_D`-adjointness moves `α` across and `α` kills
+    `t.1 (e·N)`.  Bi-multiplicativity in the second slot then gives
+    `w N (t.1 (e·N)) z = w N (t.1 (e·N)) (β z)`, so the latter is `≠ 1`.
+4.  `exists_tatePt_val_eq` lifts `β z` — which is `I^{e·N}`-torsion — to a Tate
+    point `s` with `s.1 (e·N) = β z`.
+
+**`hqe2` IS LOAD-BEARING FOR TRUTH, AND `exists_isUnit_rawConstant` BELOW IS
+MISSING IT.**  Without `q ∉ I^{e+1}` the statement is FALSE, and the cleanest
+witness is `D = ℚ(i)`, `q = 2`, `I = (1+i)`, `e = 1`, `N = 1`, where
+`v_I(2) = 2` so that `hqe : 2 ∈ I` holds and `hqe2` fails.  There
+`A[I] = π·A[I²]` inside the `I`-part `A[I²]` of `A[2]`, so for `u = π u'` and
+`v = π v'` in `A[I]`,
+
+  `w 1 u v = w 1 (π u') (π v') = w 1 (π² u') v' = w 1 0 v' = 1`,
+
+using adjointness and `π² ∈ I²` killing `A[I²]`: the restricted pairing is
+IDENTICALLY trivial, so no `t, s` can exist.  In general the argument of step 3
+needs the `I`-part of `(q^N)` to be exactly `I^{e·N}`, which is precisely
+`v_I(q) = e`, i.e. `hqe` together with `hqe2`.
+
+The same witness refutes `exists_isUnit_rawConstant` as it currently stands.
+With the pairing identically `1` on the values of Tate points, `hLinj` puts
+every `Φ N t s b = L N (w N (b · t.1 (e·N)) (s.1 (e·N)))` in `(q)^N`, so
+`hCspec` gives `θ (j b * C N t s) ∈ (q)^N` for every `b`, and the FOURTH clause
+of `IsTraceDualFunctional` then forces `C N t s ∈ span {j π}^N ⊆ span {j π}`.
+That ideal is proper (`hker` at `n = 1` gives `j 1 ∈ span {j π} ↔ 1 ∈ I`, and
+`1 ∉ I`), hence contained in `𝔪` by locality, so `C N t s` is a NON-UNIT for
+every `t, s` and clause 9 fails at `N = 1`.  **So `exists_isUnit_rawConstant`
+needs `hqe2` added to its binder list.**  That costs nothing at its only call
+site: `exists_tateWeilRawFamily_of_qAdicWeilSystem` already carries `hqe2` and
+passes `hqe` from the same scope.  The change is deliberately NOT made here,
+because that declaration has a concurrent owner; see the note left for the merge
+worker.  (This is the standing "a decomposition can leave a hypothesis on only
+one half" failure of `CLAUDE.md`, arriving through a CUT rather than through a
+merge: `hqe2` was present in the parent, was not copied onto the child, and the
+child inherited the parent's route description, which reads as though it had
+been.)
+
+AXIOM STATUS.  This proof introduces no `sorry`.  `#print axioms` on it reports
+`sorryAx` only through `exists_tatePt_val_eq`, whose own cone reaches the
+pre-existing leaf under `exists_mem_torsion_act_uniformizer_eq`; nothing here
+depends on `exists_isUnit_rawConstant`. -/
+theorem exists_tatePt_weil_ne_one
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (q : ℕ)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (e : ℕ) (he1 : 1 ≤ e)
+    (hqe : (q : NumberField.RingOfIntegers D) ∈ I ^ e)
+    (hqe2 : (q : NumberField.RingOfIntegers D) ∉ I ^ (e + 1))
+    (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (w : ℕ → GeomFibrePt f x → GeomFibrePt f x → (AlgebraicClosure F)ˣ)
+    (hw : IsQAdicWeilSystem m x q w)
+    (htors : ∃ y ∈ (m.torsion x I).1, y ≠ ab.zero (specAlgClos F ≫ x)) :
+    ∀ N : ℕ, 1 ≤ N → ∃ t s : TatePt m x I π,
+      w N (t.1 (e * N)) (s.1 (e * N)) ≠ 1 := by
+  classical
+  letI : AddCommGroup (GeomFibrePt f x) := ab.addCommGroup (specAlgClos F ≫ x)
+  letI : Module (NumberField.RingOfIntegers D) (GeomFibrePt f x) :=
+    m.module (specAlgClos F ≫ x)
+  obtain ⟨hwtor, hwadd1, hwadd2, hwalt, hwadj, hwgal, hwtow, hwperf⟩ := hw
+  ------------------------------------------------------------------ POINT ALGEBRA
+  have hzz : ab.zero (specAlgClos F ≫ x) = (0 : GeomFibrePt f x) := rfl
+  have haddpt : ∀ y z : GeomFibrePt f x, ab.add y z = y + z := fun _ _ => rfl
+  have hactpt : ∀ (a : NumberField.RingOfIntegers D) (y : GeomFibrePt f x),
+      m.act a y = a • y := fun _ _ => rfl
+  have htors_zero : ∀ J : Ideal (NumberField.RingOfIntegers D),
+      (0 : GeomFibrePt f x) ∈ (m.torsion x J).1 := by
+    intro J
+    refine (mem_torsion_iff m x J _).mpr fun a _ => ?_
+    rw [hactpt, smul_zero, hzz]
+  have htors_smul : ∀ (J : Ideal (NumberField.RingOfIntegers D))
+      (a : NumberField.RingOfIntegers D) (y : GeomFibrePt f x),
+      y ∈ (m.torsion x J).1 → m.act a y ∈ (m.torsion x J).1 := by
+    intro J a y hy
+    rw [mem_torsion_iff] at hy ⊢
+    intro c hc
+    rw [← m.act_mul c a y, mul_comm, m.act_mul a c y, hy c hc, hzz, hactpt, smul_zero]
+  have htors_anti : ∀ (J J' : Ideal (NumberField.RingOfIntegers D)), J ≤ J' →
+      ∀ y : GeomFibrePt f x, y ∈ (m.torsion x J').1 → y ∈ (m.torsion x J).1 := by
+    intro J J' h y hy
+    rw [mem_torsion_iff] at hy ⊢
+    exact fun a ha => hy a (h ha)
+  have hw0 : ∀ (N : ℕ) (z : GeomFibrePt f x),
+      z ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N})).1 →
+      w N (0 : GeomFibrePt f x) z = 1 := by
+    intro N z hz
+    have h := hwadd1 N 0 0 z (htors_zero _) (htors_zero _) hz
+    rw [haddpt, add_zero] at h
+    have h2 : w N (0 : GeomFibrePt f x) z * 1 = w N (0 : GeomFibrePt f x) z
+        * w N (0 : GeomFibrePt f x) z := by rw [mul_one]; exact h
+    exact (mul_left_cancel h2).symm
+  have hactpow : ∀ (t : TatePt m x I π) (d i : ℕ), m.act (π ^ d) (t.1 (d + i)) = t.1 i := by
+    intro t d
+    induction d with
+    | zero => intro i; simpa using m.act_one (t.1 (0 + i))
+    | succ n ih =>
+        intro i
+        have h0 : n + 1 + i = (n + i) + 1 := by omega
+        have h1 : m.act (π ^ (n + 1)) (t.1 (n + 1 + i))
+            = m.act (π ^ n) (m.act π (t.1 ((n + i) + 1))) := by
+          rw [h0, pow_succ, m.act_mul]
+        rw [h1, t.2.2 (n + i), ih i]
+  have hqNI : ∀ N : ℕ,
+      (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N} : Ideal _) ≤ I ^ (e * N) := by
+    intro N
+    rw [Ideal.span_le, Set.singleton_subset_iff, SetLike.mem_coe, pow_mul]
+    exact Ideal.pow_mem_pow hqe N
+  ------------------------------------------------------------------ MAIN
+  intro N hN
+  obtain ⟨y0, hy0mem, hy0ne⟩ := htors
+  obtain ⟨t, ht1⟩ := exists_tatePt_val_eq m x I hI π hπ hπ2 1 y0
+    (by rw [pow_one]; exact hy0mem)
+  -- `t.1 (e·N) ≠ 0`, since `π^(e·N-1)` carries it to `t.1 1 = y₀ ≠ 0`
+  have htM : t.1 (e * N) ≠ ab.zero (specAlgClos F ≫ x) := by
+    intro h
+    apply hy0ne
+    have h1 := hactpow t (e * N - 1) 1
+    have h2 : e * N - 1 + 1 = e * N := by
+      have : 1 ≤ e * N := Nat.one_le_iff_ne_zero.mpr (by positivity)
+      omega
+    rw [h2, h, hactpt, hzz, smul_zero] at h1
+    rw [← ht1, ← h1]
+    exact hzz.symm
+  have htMtors :
+      t.1 (e * N) ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N})).1 :=
+    htors_anti _ _ (hqNI N) _ (t.2.1 (e * N))
+  obtain ⟨z, hzmem, hzne⟩ := hwperf N (t.1 (e * N)) htMtors htM
+  obtain ⟨α, β, hα, hab, hβq⟩ :=
+    exists_add_eq_one_mul_mem_span_pow I hI (q : NumberField.RingOfIntegers D) e hqe hqe2 N hN
+  -- `β z` is `I^(e·N)`-torsion, so it IS the level-`e·N` value of a Tate point
+  have hβz : m.act β z ∈ (m.torsion x (I ^ (e * N))).1 := by
+    rw [mem_torsion_iff]
+    intro a ha
+    rw [← m.act_mul a β z]
+    exact (mem_torsion_iff m x _ _).mp hzmem (a * β) (hβq a ha)
+  -- `α z` is orthogonal to `t.1 (e·N)`, because `α` kills `t.1 (e·N)`
+  have hαz : w N (t.1 (e * N)) (m.act α z) = 1 := by
+    have hadj := hwadj N α (t.1 (e * N)) z htMtors hzmem
+    have hkill : m.act α (t.1 (e * N)) = ab.zero (specAlgClos F ≫ x) :=
+      (mem_torsion_iff m x (I ^ (e * N)) _).mp (t.2.1 (e * N)) α hα
+    rw [hkill, hzz] at hadj
+    rw [← hadj]
+    exact hw0 N z hzmem
+  have hsum : ab.add (m.act α z) (m.act β z) = z := by
+    rw [← m.act_add, hab, m.act_one]
+  have hprod := hwadd2 N (t.1 (e * N)) (m.act α z) (m.act β z) htMtors
+    (htors_smul _ α _ hzmem) (htors_smul _ β _ hzmem)
+  rw [hsum, hαz, one_mul] at hprod
+  obtain ⟨s, hs⟩ := exists_tatePt_val_eq m x I hI π hπ hπ2 (e * N) (m.act β z) hβz
+  exact ⟨t, s, by rw [hs]; exact fun h => hzne (hprod.trans h)⟩
+
 /-- **THE PERFECTNESS CLAUSE OF `IsTateWeilRawFamily`, AND NOTHING ELSE**
 (SORRY LEAF, cut 2026-07-31 out of
 `exists_tateWeilRawFamily_of_qAdicWeilSystem`, whose other EIGHT clauses are
