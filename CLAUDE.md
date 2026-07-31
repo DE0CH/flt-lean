@@ -1148,6 +1148,22 @@ dropped-merge bug of class six.
    (comments stripped) against the resolved file.* This is what found `flt-lean-366`'s breakage
    before a build ran.
 
+**A HOIST MANUFACTURES THIS CLASS ON ITS OWN, with no second branch involved** (2026-07-31).
+The scan a hoist is told to run — the one every "moved verbatim" module docstring in this tree
+cites — asks *what does the block REFERENCE*, and it is the right question for whether the move
+is a cut-and-paste. It is the wrong question for duplicates, which are about *what already holds
+these names*. Moving the `q`-expansion layer out of `Interface.lean` into
+`Modularity/HeckeQExpansion.lean` collided on `qCoeff_heckeOp`: the source file had carried a
+one-line corollary of the moved block since 2026-07-25, **1500 lines away from it**, so it was in
+neither the block nor its reference list, and the mover re-derived it as new. `lake build` says
+`has already been declared` and it is a one-line fix — but it costs a full re-elaboration of the
+downstream cone, which for `Interface.lean` is forty minutes.
+
+So the hoist checklist has a third item: after cutting the block, **grep the SOURCE file for
+declarations DERIVED from it** (anything whose statement mentions a moved name) and decide
+per declaration whether it moves too. They sit far from the block by construction — a corollary
+is written where it is consumed, not where its input is defined.
+
 And the standing one, which is what caught the rest: **the release build is not optional and its
 first failure is not its last.** Fix, rebuild, repeat — FOUR rounds this release, and the reason is
 structural rather than bad luck. **The errors are serialised behind each other by the import
