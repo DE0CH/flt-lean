@@ -2276,10 +2276,14 @@ theorem exists_modUnitHom_isIso_modTensorMap {Y : Scheme.{u}} {A B : Y.Modules}
   rw [hfac]
   infer_instance
 
-/-- **AN INVERTIBLE SHEAF OF MODULES IS LOCALLY FREE OF RANK ONE** (was a leaf,
+/- **AN INVERTIBLE SHEAF OF MODULES IS LOCALLY FREE OF RANK ONE** (was a leaf,
 cut 2026-07-29 out of `exists_trivialization_of_modTensorPow`; **PROVEN
 2026-07-30** over `isIso_of_isIso_modTensorMap` and
 `exists_modUnitHom_isIso_modTensorMap` above, in three lines) — Stacks 0B8L /
+-/   -- ^ orphaned docstring, closed at release 25 (class-7 merge hazard: the
+     -- closing `-/` and the declaration it described were on the dropped side of a
+     -- conflict, which made the rest of the file one comment)
+
 /-! ### The LOCAL PAIRING attached to a trivialization of `L ⊗ N`
 
 ADDED 2026-07-31 (`flt-lean-89`).  This block replaces the bare `sorry` on

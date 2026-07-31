@@ -473,9 +473,22 @@ theorem hesse_kill {u v w : ℤ} (hw : w ≠ 0) (huv : IsCoprime u v)
   · exact h1
   · exact absurd h1 hw
 
-/-- **THE level-`19` statement** (PROVEN 2026-07-30 over `hesse_leaf`): the only
-coprime integral points of the monic model `W² = U³ + 4U² + 16U + 16` of `19a3`
-are `(p, e) = (0, 1)`, i.e. `U = 0`.
+/- ORPHANED DOCSTRING, recovered at release 25.  This text arrived as a bare
+`/--` header with no closing `-/` and no declaration under it, which made the
+whole rest of the file one comment (`unterminated comment` at line 1602).  It is
+the class-7 merge hazard: the docstring's closing half and the theorem it
+described were on the side of a conflict that was dropped.  It read:
+
+  **THE level-`19` statement** (PROVEN 2026-07-30 over `hesse_leaf`): the only
+  coprime integral points of the monic model `W² = U³ + 4U² + 16U + 16` of
+  `19a3` are `(p, e) = (0, 1)`, i.e. `U = 0`.
+
+The theorem itself is NOT in this tree and no copy of this text survives
+elsewhere in the file, so it is preserved here as prose rather than restored.
+`the_leaf_applied` immediately above is the proven consequence of `hesse_leaf`
+that this statement was assembled from; whoever wants the level-`19` statement
+back should re-derive it there rather than trust this description. -/
+
 /-! ### `ℤ[θ]` in coordinates: the descent map, its norm, and the square classes
 
 `θ³ + 2θ² + 4θ + 2 = 0`, so `θ³ = −2θ² − 4θ − 2` and `θ⁴ = 6θ + 4`.  The

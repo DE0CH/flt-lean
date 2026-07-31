@@ -11142,6 +11142,10 @@ theorem exists_weierstrassRingEquiv_of_affineComplement {K : Type} [Field K] {A 
     ⟨_root_.injective_of_surjective_coordinateRing E hnf φ.toRingHom hφ, hφ⟩).symm⟩⟩
 
 /-! ### The singular point of a `Δ = 0` Weierstrass cubic is rational over a PERFECT field
+-/   -- ^ orphaned docstring, closed at release 25 (class-7 merge hazard: the
+     -- closing `-/` and the declaration it described were on the dropped side of a
+     -- conflict, which made the rest of the file one comment)
+
 /-! #### `Δ = 0` forces a rational singular point — over any PERFECT field
 
 The four lemmas below are the characteristic-`2` and characteristic-`3`
