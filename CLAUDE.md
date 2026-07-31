@@ -7812,3 +7812,19 @@ must not name anything added to the substituted module since the release sha —
 and it is much more likely to hold when you substitute one olean than when you
 substitute the whole tree.  Say in the commit which oleans were substituted; a
 shim-verified edit is not a build and must not be reported as one.
+
+**AND WHEN THE SHIM ITSELF COMES BACK RED, DIFF IT AGAINST THE UNEDITED FILE —
+that turns an unusable log into a clean verdict.**  The run above produced 52
+errors, so on its own it says nothing about whether the edit is sound.  Running
+the SAME shim on `git show <base>:<path> > /tmp/Pre.lean` gave 52 errors too, and
+comparing the `(line, column)` pairs showed a single distinct offset —
+`(+151, same column)` — which is exactly the number of lines the edit inserted
+above them.  Identical error set, identical `declaration uses 'sorry'` set (8 in
+both, at the same shifted lines).  That is a complete answer to "did I break
+anything", and it costs one extra elaboration of a file you were going to
+elaborate anyway.  It also detects the reverse — an error that DISAPPEARS is as
+much a signal as one that appears, since it usually means a declaration stopped
+being reached.
+
+Do the comparison on `(line, column)` pairs and require the shift to be a single
+constant; a mixed shift set means your edit changed more than it inserted.
