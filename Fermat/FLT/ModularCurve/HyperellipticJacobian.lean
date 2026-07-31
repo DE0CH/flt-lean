@@ -66,8 +66,10 @@ covering collection.  Each namespace now reads top-down:
                                   place where separability does any work
       → sub_single_pt_notMem_princ PROVEN: assembled, over `princ = range divisor`
       → aj_injective_of_separable PROVEN: assembled
-    exists_smoothModel            LEAF: the ℤ_p-model — divisor specialisation and the
-                                        formal logarithm, in one existential
+    exists_picReduction           LEAF: the ℤ_p-model — the reduction of divisor CLASSES
+                                        and the formal logarithm, in one existential
+      → exists_smoothModel        PROVEN: the divisor-level specialisation is built from
+                                  the class map (axis 4, 2026-07-31)
       → exists_reductionFiltration PROVEN: red descends, the four filtration axioms
       → exists_reduction          PROVEN: torsion-freeness from the filtration
     exists_descentHeight_pic      LEAF: a Northcott height on Pic⁰(X_ℚ)
@@ -131,12 +133,15 @@ and the merged file has neither number: at the release-18 merge the
 `declaration uses 'sorry'` set of this module is
 
     degOf_poleDivisor_eq_finrank_of_transcendental,
-    exists_smoothModel, exists_cubeModel_pic, exists_geomPic,
+    exists_picReduction, exists_cubeModel_pic, exists_geomPic,
     geomPic_bc_injective, geomPic_descent, geomPic_divisible,
     finite_kummerCochains_pic, and `two_divisible_pic` at BOTH levels
 
-— TEN declarations, as of 2026-07-30 (a comment-stripped `sorry`-token count agrees, so there
-are no anonymous inner sorries).  The whole of obligations 1b and 1c, and obligation 2a's
+— TEN declarations, as of 2026-07-31 (a comment-stripped `sorry`-token count agrees, so there
+are no anonymous inner sorries).  `exists_smoothModel` left that set on 2026-07-31 and
+`exists_picReduction` — the same obligation with the divisor-level specialisation DERIVED
+rather than demanded — took its place; the count is unchanged, and deliberately so, because
+axis 4 is a reduction in formalisation surface and not in mathematical content.  The whole of obligations 1b and 1c, and obligation 2a's
 residue-field half, closed that day: `finite_isPlaceFun`, `exists_isPlaceFun_of_affPt`,
 `exists_isPlaceFun_of_infPt` and both `exists_localDenom_*` (hence
 `finrank_residue_pt_eq_one`).  `degOf_divisor_eq_zero`,
@@ -283,6 +288,7 @@ public import Mathlib.FieldTheory.RatFunc.AsPolynomial
 public import Mathlib.RingTheory.AdjoinRoot
 public import Mathlib.FieldTheory.KummerPolynomial
 public import Mathlib.RingTheory.Polynomial.RationalRoot
+public import Mathlib.RingTheory.Polynomial.Resultant.Basic
 public import Mathlib.Tactic.ComputeDegree
 -- the formal logarithm of the Jacobian over `ℤ_p`, whose target is `ℤ_[p] × ℤ_[p]`: this
 -- is what carries the filtration of `ker red` in `SmoothModel`, and `PadicInt`'s
@@ -596,7 +602,7 @@ discharge:
 |---|---|---|
 | 1 | `exists_placeData` — the function field, its places, and the divisor theory exist | PROVEN 2026-07-28 from `exists_functionFieldData`, `exists_placeSystem`, `exists_isPlaceOfPt` |
 | 2 | `aj_injective_of_separable` — Abel–Jacobi is injective, because the genus is `2 ≥ 1` | PROVEN 2026-07-28 from `exists_degreeMap`, `sub_single_pt_notMem_princ` |
-| 3 | `exists_reduction` — good reduction: the homomorphism, its compatibility with `redPt`, and torsion-freeness of its kernel | PROVEN 2026-07-28 from `exists_reductionFiltration`, itself PROVEN the same day from `exists_smoothModel` |
+| 3 | `exists_reduction` — good reduction: the homomorphism, its compatibility with `redPt`, and torsion-freeness of its kernel | PROVEN 2026-07-28 from `exists_reductionFiltration`, itself PROVEN the same day from `exists_smoothModel`, itself PROVEN 2026-07-31 from `exists_picReduction` |
 | 4 | `X18.finite_pic`, `X13.finite_pic` — Mordell–Weil together with `rank J(ℚ) = 0` | PROVEN 2026-07-28 from `fg_pic` (over `exists_descentHeight_pic`, `finite_quotient_psmul_pic`) and `two_divisible_pic` |
 
 and `X18.exists_jacobianPackage` / `X13.exists_jacobianPackage` become PROVEN assemblies.
@@ -5750,6 +5756,12 @@ divisor specialisation along the smooth `ℤ_p`-model together with the formal l
 the Jacobian — again in ONE existential, so that `red` is derived from the model rather
 than postulated.  See the section note before `padicLevel` below.
 
+A THIRD cut, 2026-07-31 (axis 4): the divisor specialisation is no longer ASKED for either.
+`exists_smoothModel` is PROVEN from `exists_picReduction`, which asks only for the reduction
+of divisor CLASSES together with the logarithm — still ONE existential, so the bundling
+warning above is respected, and in fact sharpened: see the note before `exists_picReduction`
+for why `∀ S, ∃ log` is not merely uneconomical but UNSOUND.
+
 What that buys: the group-theoretic half of Silverman *AEC* VII.3.2 / IV.6.1 — "a separated
 filtration with elementary-abelian `p`-graded pieces on which `[p]` shifts the level by
 exactly one has no torsion" — becomes PROVEN here, and the remaining leaf is the concrete
@@ -6112,8 +6124,265 @@ noncomputable def toReductionFiltration (M : SmoothModel p D D') :
 
 end SmoothModel
 
-/-- **LEAF (obligation 3a): the smooth `ℤ_p`-model exists, with its specialisation of
-divisors and the formal logarithm of its Jacobian.**
+/-!
+### AXIS 4 (2026-07-31): the divisor-level `Specialisation` is DERIVED, not asked for
+
+The audit below closes axes 1, 2 and 3, and its closing paragraph records — in prose — that
+"producing a `Specialisation` and producing a `redPt`-compatible reduction homomorphism are
+interchangeable".  **That paragraph is now a theorem** (`exists_specialisation_of_picHom`),
+and with it the leaf no longer asks for a map of DIVISORS at all: `exists_picReduction` asks
+only for the reduction homomorphism on `Pic` together with the formal logarithm on its
+kernel, and `exists_smoothModel` is PROVEN from it.
+
+**What this buys and what it does not.**  It does NOT reduce the mathematical content: the
+two statements are EQUIVALENT — the forward direction is `M.spec.red`, `M.spec.red_aj`,
+`M.log` — so axis 2's accounting still applies and nobody should re-cut this expecting a
+smaller theorem.  What it removes is the FORMALISATION obligation to construct `sp` on
+divisors and to check `sp_princ`: a prover who reaches `red` by any route — the `ℤ_p`-model,
+a Jacobian scheme, Mumford representations, an `ℓ`-torsion argument — no longer has to
+manufacture the divisor-level map afterwards.  The construction is elementary: lift each
+place `v` of `X_ℚ` to any divisor of `X_𝔽ₚ` in the class `ψ [v]`, corrected by a multiple of
+`[∞₊]` — which is `0` in `Pic` and has degree `1` — so as to have degree `deg v`.  Then
+`sp_pt` holds by fiat at the rational points, where `deg = deg' = 1` and the class is right
+by hypothesis; and `sp_princ` holds because a principal divisor has degree `0`, so the
+`ℤ·[∞₊]` component of its image must vanish.
+
+**A sharpening of axis 1's witness, free from the same theorem.**  Two `Specialisation`s of
+one `red` differ by a homomorphism killing every `aj P`, and CONVERSELY every such
+perturbation is realised: apply `exists_specialisation_of_picHom` to `S.red - Δ`, whose
+`redPt`-compatibility is immediate.  So the ambiguity of `Specialisation` is exactly
+`Hom(Pic(X_ℚ) ⧸ ⟨aj P : P ∈ X(ℚ)⟩, Pic(X_𝔽ₚ))`, which is strictly bigger than the
+`λ(·) • w` family the audit exhibits — unlike that family it need NOT kill torsion, since
+`Pic(X_𝔽ₚ)` is finite.  Axis 1 is therefore not merely uneconomical, as the audit says, but
+UNSOUND whenever `X(ℚ)` fails to generate the torsion of `Pic⁰(X_ℚ)`: a junk `Specialisation`
+with a torsion class in the kernel of its `red` can then be built, and it admits no injective
+`log`.  The bundling is load-bearing, and the leaf below keeps it.
+
+`ℚ`-separability of the sextic, which `exists_degreeMap` needs on the `ℚ` side and which the
+statement does not hand us, comes from `hsep` through the RESULTANT: `Res(f, f')` is an
+INTEGER, it is a unit modulo `p` because the reduction is separable, hence it is nonzero,
+hence a unit in `ℚ`.
+-/
+
+section PicHom
+
+variable {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
+
+/-- The sextic has degree `6` over any nontrivial commutative ring (PROVEN).  The version in
+the divisor-theory layer is stated over a field; the resultant computation below has to run
+over `ℤ` as well. -/
+lemma natDegree_sextPoly' (R : Type*) [CommRing R] [Nontrivial R] :
+    (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ R).natDegree = 6 := by
+  unfold sextPoly
+  compute_degree!
+
+/-- The derivative of the sextic has degree at most `5` (PROVEN).  It can be SMALLER: at
+`p = 3` the leading coefficient `6` of `f'` vanishes, which is why the resultant below is
+taken with the explicit size arguments `(6, 5)` rather than with the default degrees. -/
+lemma natDegree_derivative_sextPoly_le (R : Type*) [CommRing R] [Nontrivial R] :
+    (derivative (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ R)).natDegree ≤ 5 := by
+  have h := Polynomial.natDegree_derivative_le (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ R)
+  rw [natDegree_sextPoly'] at h
+  exact h
+
+/-- Padding the second size argument of the resultant up to `5` costs a power of the leading
+coefficient of the sextic, which is `1` (PROVEN). -/
+lemma resultant_deriv_sextPoly (R : Type*) [CommRing R] [Nontrivial R] :
+    Polynomial.resultant (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ R)
+        (derivative (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ R)) 6 5
+      = Polynomial.resultant (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ R)
+        (derivative (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ R)) := by
+  have hn := natDegree_derivative_sextPoly_le (c₀ := c₀) (c₁ := c₁) (c₂ := c₂) (c₃ := c₃)
+    (c₄ := c₄) (c₅ := c₅) R
+  have h6 := natDegree_sextPoly' (c₀ := c₀) (c₁ := c₁) (c₂ := c₂) (c₃ := c₃) (c₄ := c₄)
+    (c₅ := c₅) R
+  have hk : (5 : ℕ) = (derivative (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ R)).natDegree
+      + (5 - (derivative (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ R)).natDegree) := by omega
+  rw [hk, Polynomial.resultant_add_right_deg _ _ _ _ _ le_rfl, h6]
+  have hc : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ R).coeff 6 = 1 := by
+    have h := (monic_sextPoly (c₀ := c₀) (c₁ := c₁) (c₂ := c₂) (c₃ := c₃) (c₄ := c₄)
+      (c₅ := c₅) R).coeff_natDegree
+    rwa [h6] at h
+  rw [hc, one_pow, one_mul]
+
+/-- **Separability of the sextic is a unit condition on `Res(f, f')`** (PROVEN, from
+`Polynomial.isUnit_resultant_iff_isCoprime` and monicity).  This is the form that transfers
+along a ring homomorphism, which `Separable` itself does not. -/
+lemma separable_sextPoly_iff (R : Type*) [CommRing R] [Nontrivial R] :
+    (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ R).Separable ↔
+      IsUnit (Polynomial.resultant (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ R)
+        (derivative (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ R)) 6 5) := by
+  rw [resultant_deriv_sextPoly,
+    Polynomial.isUnit_resultant_iff_isCoprime (monic_sextPoly (c₀ := c₀) (c₁ := c₁) (c₂ := c₂)
+      (c₃ := c₃) (c₄ := c₄) (c₅ := c₅) R)]
+  exact Polynomial.separable_def _
+
+/-- The resultant of the sextic and its derivative is the image of an INTEGER (PROVEN): the
+sextic has integral coefficients, and the Sylvester determinant commutes with `Int.cast`. -/
+lemma resultant_sextPoly_map (R : Type*) [CommRing R] :
+    Polynomial.resultant (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ R)
+        (derivative (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ R)) 6 5
+      = (Int.castRingHom R) (Polynomial.resultant (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℤ)
+        (derivative (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℤ)) 6 5) := by
+  rw [← Polynomial.resultant_map_map, map_sextPoly, ← Polynomial.derivative_map, map_sextPoly]
+
+/-- **PROVEN: good reduction at `p` forces smoothness over `ℚ`.**  `Res(f, f') ∈ ℤ` is a unit
+mod `p`, hence nonzero, hence a unit in `ℚ`.  This is the sentence the audit of
+`exists_reductionFiltration` needed in order to feed `hsep` to `exists_degreeMap` and to
+`fg_pic` on the `ℚ` side. -/
+theorem separable_sextPoly_rat_of_zmod {p : ℕ} [Fact p.Prime]
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ (ZMod p)).Separable) :
+    (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℚ).Separable := by
+  rw [separable_sextPoly_iff, resultant_sextPoly_map] at hsep ⊢
+  set r : ℤ := Polynomial.resultant (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℤ)
+    (derivative (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℤ)) 6 5 with hr
+  have hr0 : r ≠ 0 := by
+    rintro h
+    rw [h] at hsep
+    simp at hsep
+  simpa using isUnit_iff_ne_zero.mpr (show ((r : ℚ)) ≠ 0 by exact_mod_cast hr0)
+
+variable {p : ℕ} [Fact p.Prime]
+  {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} {D' : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ (ZMod p)}
+
+/-- The quotient map `Div → Pic`, packaged as a homomorphism with `Pic` as its CODOMAIN.
+`PlaceData.Pic` is a `def`, so a bare `QuotientAddGroup.mk` elaborates at the unfolded
+quotient type and then `rw` refuses to fire inside `ψ`; naming the map fixes the type once. -/
+noncomputable def mkPic {K : Type} [Field K] (E : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) :
+    E.Divisors →+ E.Pic := QuotientAddGroup.mk' E.picRel
+
+lemma mkPic_apply {K : Type} [Field K] (E : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (z : E.Divisors) :
+    mkPic E z = (QuotientAddGroup.mk z : E.Pic) := rfl
+
+lemma mkPic_eq_zero_iff {K : Type} [Field K] (E : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (z : E.Divisors) : mkPic E z = 0 ↔ z ∈ E.picRel := QuotientAddGroup.eq_zero_iff z
+
+lemma aj_eq_mkPic {K : Type} [Field K] (E : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (P : Pt c₀ c₁ c₂ c₃ c₄ c₅ K) : E.aj P = mkPic E (Finsupp.single (E.pt P) (1 : ℤ)) := rfl
+
+/-- The class of the base point `[∞₊]` is `0` in `Pic` (PROVEN) — it is one of the two
+generators of `picRel`.  This is what makes the degree correction below invisible on
+classes. -/
+lemma mkPic_single_infPlus {K : Type} [Field K] (E : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) :
+    mkPic E (Finsupp.single (E.pt PlaceData.infPlus) (1 : ℤ)) = 0 :=
+  (mkPic_eq_zero_iff E _).mpr
+    ((le_sup_right : AddSubgroup.zmultiples _ ≤ E.picRel) (AddSubgroup.mem_zmultiples _))
+
+/-- The degree homomorphism kills every principal divisor (PROVEN): `princ` is the subgroup
+GENERATED by the `div g`, and each of those has degree `0`.  Extracted from the proof of
+`aj_injective_of_separable`, which had it inline. -/
+lemma degHom_eq_zero_of_mem_princ {K : Type} [Field K] (E : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    {deg : E.Places → ℤ} (hdeg0 : ∀ g : E.F, degHom E deg (E.divisor g) = 0)
+    {z : E.Divisors} (hz : z ∈ E.princ) : degHom E deg z = 0 := by
+  have hle : AddSubgroup.closure (Set.range E.divisor) ≤ (degHom E deg).ker := by
+    rw [AddSubgroup.closure_le]
+    rintro _ ⟨g, rfl⟩
+    simpa [AddMonoidHom.mem_ker] using hdeg0 g
+  have hz' : z ∈ AddSubgroup.closure (Set.range E.divisor) := hz
+  simpa [AddMonoidHom.mem_ker] using hle hz'
+
+/-- **PROVEN: a `redPt`-compatible reduction homomorphism on `Pic` LIFTS to a
+`Specialisation` of divisors inducing it.**
+
+This is the audit's closing paragraph, machine-checked.  `D.Divisors` is free on `D.Places`,
+so `sp` is specified by a choice of divisor `w v` on `X_𝔽ₚ` for each place `v` of `X_ℚ`,
+subject to two conditions: its class must be `ψ [v]`, and its degree must be `deg v`.  Both
+are arrangeable simultaneously because `[∞₊]` has class `0` and degree `1`, so adding a
+multiple of it corrects the degree without moving the class.  At `v = pt P` the prescribed
+value `single (pt' (redPt P)) 1` already satisfies both — its class is
+`aj' (redPt P) = ψ (aj P)` by hypothesis and its degree is `1 = deg (pt P)` — so `sp_pt`
+costs nothing, and `pt` being injective makes the prescription consistent.
+
+`sp_princ` is then the degree argument of `aj_injective_of_separable` run backwards: for `z`
+principal the class of `sp z` is `ψ 0 = 0`, so `sp z = y + n·[∞₊]` with `y` principal; taking
+degrees, `0 = deg z = deg' (sp z) = 0 + n`, so `n = 0` and `sp z = y`.
+
+Both degree maps are needed, which is why `hsepQ` appears; `separable_sextPoly_rat_of_zmod`
+supplies it from `hsep` at the one call site. -/
+theorem exists_specialisation_of_picHom
+    (hsepQ : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℚ).Separable)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ (ZMod p)).Separable)
+    (ψ : D.Pic →+ D'.Pic)
+    (hψ : ∀ P, ψ (D.aj P) = D'.aj (redPt c₀ c₁ c₂ c₃ c₄ c₅ P)) :
+    ∃ S : Specialisation p D D', S.red = ψ := by
+  classical
+  obtain ⟨deg, hdeg1, hdeg0⟩ := exists_degreeMap D hsepQ
+  obtain ⟨deg', hdeg1', hdeg0'⟩ := exists_degreeMap D' hsep
+  set s : D'.Divisors :=
+    Finsupp.single (D'.pt (PlaceData.infPlus : Pt c₀ c₁ c₂ c₃ c₄ c₅ (ZMod p))) (1 : ℤ) with hs
+  have hs0 : mkPic D' s = 0 := mkPic_single_infPlus D'
+  have hsdeg : degHom D' deg' s = 1 := by
+    rw [hs, degHom_single, hdeg1' PlaceData.infPlus, one_mul]
+  -- for every place of `X_ℚ`, a divisor of `X_𝔽ₚ` of the right class and the right degree,
+  -- prescribed at the rational points
+  have hgood : ∀ v : D.Places, ∃ u : D'.Divisors,
+      mkPic D' u = ψ (mkPic D (Finsupp.single v (1 : ℤ))) ∧
+      degHom D' deg' u = deg v ∧
+      ∀ P : Pt c₀ c₁ c₂ c₃ c₄ c₅ ℚ, D.pt P = v →
+        u = Finsupp.single (D'.pt (redPt c₀ c₁ c₂ c₃ c₄ c₅ P)) (1 : ℤ) := by
+    intro v
+    by_cases hv : ∃ P : Pt c₀ c₁ c₂ c₃ c₄ c₅ ℚ, D.pt P = v
+    · obtain ⟨P, rfl⟩ := hv
+      refine ⟨Finsupp.single (D'.pt (redPt c₀ c₁ c₂ c₃ c₄ c₅ P)) (1 : ℤ), ?_, ?_, ?_⟩
+      · rw [← aj_eq_mkPic, ← aj_eq_mkPic, hψ P]
+      · rw [degHom_single, hdeg1' _, hdeg1 P, one_mul]
+      · intro Q hQ
+        rw [D.pt_injective hQ]
+    · obtain ⟨u₀, hu₀⟩ :=
+        (QuotientAddGroup.mk_surjective : Function.Surjective (mkPic D'))
+          (ψ (mkPic D (Finsupp.single v (1 : ℤ))))
+      refine ⟨u₀ + (deg v - degHom D' deg' u₀) • s, ?_, ?_, ?_⟩
+      · rw [map_add, mkPic_apply, hu₀, map_zsmul, hs0, smul_zero, add_zero]
+      · rw [map_add, map_zsmul, hsdeg, smul_eq_mul, mul_one]
+        ring
+      · exact fun P hP => absurd ⟨P, hP⟩ hv
+  choose w hw₁ hw₂ hw₃ using hgood
+  set sp : D.Divisors →+ D'.Divisors :=
+    Finsupp.liftAddHom (fun v => (zmultiplesHom D'.Divisors (w v))) with hspdef
+  have hsp_single : ∀ (v : D.Places) (n : ℤ), sp (Finsupp.single v n) = n • w v := by
+    intro v n; simp [hspdef]
+  have hclass : ∀ z : D.Divisors, mkPic D' (sp z) = ψ (mkPic D z) := by
+    intro z
+    induction z using Finsupp.induction_linear with
+    | zero => simp
+    | add f g hf hg => rw [map_add, map_add, map_add, map_add, hf, hg]
+    | single x y =>
+        rw [hsp_single, map_zsmul, hw₁ x, ← map_zsmul, ← map_zsmul]
+        congr 2
+        simp
+  have hdegsp : ∀ z : D.Divisors, degHom D' deg' (sp z) = degHom D deg z := by
+    intro z
+    induction z using Finsupp.induction_linear with
+    | zero => simp
+    | add f g hf hg => rw [map_add, map_add, map_add, hf, hg]
+    | single x y =>
+        rw [hsp_single, map_zsmul, hw₂ x, degHom_single, smul_eq_mul, mul_comm]
+  refine ⟨⟨sp, ?_, ?_⟩, ?_⟩
+  · intro P
+    rw [hsp_single, one_smul, hw₃ (D.pt P) P rfl]
+  · intro z hz
+    have hzero : mkPic D' (sp z) = 0 := by
+      rw [hclass z, (mkPic_eq_zero_iff D z).mpr ((le_sup_left : D.princ ≤ D.picRel) hz),
+        map_zero]
+    have hmem : sp z ∈ D'.picRel := (mkPic_eq_zero_iff D' _).mp hzero
+    rw [PlaceData.picRel, AddSubgroup.mem_sup] at hmem
+    obtain ⟨y, hy, t, ht, hsum⟩ := hmem
+    obtain ⟨n, rfl⟩ := AddSubgroup.mem_zmultiples_iff.mp ht
+    have hn : n = 0 := by
+      have h1 := congrArg (degHom D' deg') hsum
+      rw [map_add, degHom_eq_zero_of_mem_princ D' hdeg0' hy, zero_add, map_zsmul, ← hs, hsdeg,
+        smul_eq_mul, mul_one, hdegsp z, degHom_eq_zero_of_mem_princ D hdeg0 hz] at h1
+      exact h1
+    rw [hn, zero_smul, add_zero] at hsum
+    exact hsum ▸ hy
+  · refine AddMonoidHom.ext fun z => ?_
+    refine QuotientAddGroup.induction_on z fun v => ?_
+    exact hclass v
+
+end PicHom
+
+/-- **LEAF (obligation 3a): the reduction homomorphism on `Pic` exists, and the formal
+logarithm of the Jacobian is injective on its kernel.**
 
 This is what remains of `exists_reductionFiltration` after the second cut of 2026-07-28; see
 the section note above for why the two halves are bundled.  What has to be built:
@@ -6122,11 +6391,15 @@ the section note above for why the two halves are bundled.  What has to be built
   `p`, i.e. `disc f ∈ ℤ_p^×`, and `hp` says `2 ∈ ℤ_p^×`, so the weighted-projective model of
   the file is already smooth over `ℤ_p` — no change of model is needed, which is why the
   integral coordinates of `exists_int_coords` are literally the `ℤ_p`-points;
-* specialisation of divisors: the closure of a closed point of `X_ℚ` is finite flat over
-  `ℤ_p` and cuts an effective divisor on `X_𝔽ₚ`.  `sp_pt` is that a rational point's
-  closure is a section; `sp_princ` is that the vertical part of `div_𝒳(g)` is a multiple of
-  `div_𝒳(p)`;
-* the formal group `Ĵ` of the Jacobian along the identity section, `ker red ⊆ Ĵ(pℤ_p)`, and
+* ~~specialisation of divisors~~ — **NO LONGER ASKED FOR (2026-07-31, axis 4).**  The
+  divisor-level map is now DERIVED from `ψ` by `exists_specialisation_of_picHom`; see the
+  section note above.  Only the reduction of divisor CLASSES, `ψ`, is asked for, and it may
+  be produced by any route.  (The geometry that used to be demanded here: the closure of a
+  closed point of `X_ℚ` is finite flat over `ℤ_p` and cuts an effective divisor on `X_𝔽ₚ`,
+  a rational point's closure is a section, and the vertical part of `div_𝒳(g)` is a multiple
+  of `div_𝒳(p)`.  It is still the natural way to BUILD `ψ`, but it is no longer an
+  obligation of the statement);
+* the formal group `Ĵ` of the Jacobian along the identity section, `ker ψ ⊆ Ĵ(pℤ_p)`, and
   its logarithm.  For `e = 1 < p − 1`, i.e. `p ≠ 2`, `log = Σ (−1)ⁿ⁺¹ Tⁿ/n`-style series
   converge on `pℤ_p` and `log` is an isomorphism `Ĵ(pℤ_p) ≅ (pℤ_p)^g`, `g = 2`; only its
   injectivity and the containment `log(ker red) ⊆ (pℤ_p)²` are asked for here.  This is
@@ -6196,23 +6469,68 @@ alone already give "no prime-to-`p` torsion" by the same Bézout step used in
 arithmetic input than the finiteness this file proves.  That is the same reason
 `card_coprime` is deliberately absent from `JacobianPackage`; do not "simplify" this way.
 
-**`log_mem_one` is redundant** (noted, not removed): reindexing `filt` by
-`padicLevel p (n − 1)` gives `filt 1 = ker red` from `padicLevel p 0 = ⊤`, and the four
-remaining axioms shift with it.  It is kept because the true logarithm satisfies it for
-free — `log (Ĵ(pℤ_p)) = (pℤ_p)²` — and because it is what makes `filt n` mean
-`J(ℚ) ∩ Ĵ(pⁿℤ_p)` on the nose.
+**`log_mem_one` is FREE, and this leaf does NOT ask for it** (2026-07-31).  Given ANY
+injective `φ : ↥ψ.ker →+ ℤ_[p] × ℤ_[p]`, the rescaled `p • φ` is still injective — `ℤ_[p]`
+is a domain and `(p : ℤ_[p]) ≠ 0`, so `p • x = p • y` cancels coordinatewise — and lands in
+`(pℤ_p)²` on the nose, since `(p • φ z).1 = (p : ℤ_[p]) * (φ z).1`.  The field survives in
+the `SmoothModel` structure because reindexing `filt` by `padicLevel p (n − 1)` would shift
+all four remaining axioms for no gain, and because it is what makes `filt n` mean
+`J(ℚ) ∩ Ĵ(pⁿℤ_p)` on the nose; it is discharged by the rescaling in `exists_smoothModel`.
 
-**And `sp` is not a way around building the model.**  `D.Divisors` is free on `D.Places`, so
-any `ψ : D.Pic →+ D'.Pic` with `ψ (D.aj P) = D'.aj (redPt P)` lifts basis-wise to a map
-satisfying `sp_pt`, and representatives can be corrected to the right degree by multiples of
+**And `sp` is not a way around building the model — this is now a THEOREM, not a caveat.**
+`D.Divisors` is free on `D.Places`, so any `ψ : D.Pic →+ D'.Pic` with
+`ψ (D.aj P) = D'.aj (redPt P)` lifts basis-wise to a map satisfying `sp_pt`, and
+representatives can be corrected to the right degree by multiples of
 `single (D'.pt infPlus) 1`, which is `0` in `D'.Pic` — so, given the degree maps of
 `exists_degreeMap`, producing a `Specialisation` and producing a `redPt`-compatible
-reduction homomorphism are interchangeable.  The content is the model and its formal group;
-there is no cheaper packaging of it. -/
+reduction homomorphism are interchangeable.  `exists_specialisation_of_picHom` proves it,
+which is why this leaf asks for `ψ` and not for `sp`.  The content is the model and its
+formal group; there is no cheaper packaging of it. -/
+theorem exists_picReduction {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {p : ℕ} [Fact p.Prime] (hp : p ≠ 2)
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ) (D' : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ (ZMod p))
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ (ZMod p)).Separable) :
+    ∃ ψ : D.Pic →+ D'.Pic, (∀ P, ψ (D.aj P) = D'.aj (redPt c₀ c₁ c₂ c₃ c₄ c₅ P)) ∧
+      ∃ log : ↥ψ.ker →+ ℤ_[p] × ℤ_[p], Function.Injective log := sorry
+
+/-- **LEAF (obligation 3a), now PROVEN from `exists_picReduction` and
+`exists_specialisation_of_picHom`** (2026-07-31, axis 4 of the audit above).
+
+The specialisation of divisors is built from `ψ` — that is the whole of
+`exists_specialisation_of_picHom`, and it is where `ℚ`-separability of the sextic
+(`separable_sextPoly_rat_of_zmod`, from `hsep` through the resultant) is consumed.  The
+logarithm is transported along `S.red = ψ` and rescaled by `p`, which is what discharges
+`log_mem_one` and costs nothing: `ℤ_[p]` is a domain, so multiplication by `p` is injective,
+and `(p • φ z).1 = (p : ℤ_[p]) * (φ z).1` is divisible by `p` by construction.
+
+`hp` is not used here — it is used inside `exists_picReduction`, where the logarithm lives
+and where `e = 1 < p − 1` is what makes it converge. -/
 theorem exists_smoothModel {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {p : ℕ} [Fact p.Prime] (hp : p ≠ 2)
     (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ) (D' : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ (ZMod p))
     (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ (ZMod p)).Separable) :
-    Nonempty (SmoothModel p D D') := sorry
+    Nonempty (SmoothModel p D D') := by
+  obtain ⟨ψ, hψ, log, hlog⟩ := exists_picReduction hp D D' hsep
+  obtain ⟨S, hS⟩ :=
+    exists_specialisation_of_picHom (separable_sextPoly_rat_of_zmod hsep) hsep ψ hψ
+  have hle : S.red.ker ≤ ψ.ker := hS ▸ le_rfl
+  set ι : ↥S.red.ker →+ ℤ_[p] × ℤ_[p] := log.comp (AddSubgroup.inclusion hle) with hι
+  have hιinj : Function.Injective ι := hlog.comp (AddSubgroup.inclusion_injective hle)
+  refine ⟨{ spec := S
+            log := AddMonoidHom.mk' (fun z => (p : ℕ) • ι z) (fun a b => by
+              simp [smul_add])
+            log_injective := ?_
+            log_mem_one := ?_ }⟩
+  · intro a b hab
+    refine hιinj (Prod.ext ?_ ?_)
+    · have h := congrArg Prod.fst hab
+      simp only [AddMonoidHom.mk'_apply, nsmul_eq_mul] at h
+      exact mul_left_cancel₀ (padicInt_p_ne_zero p) h
+    · have h := congrArg Prod.snd hab
+      simp only [AddMonoidHom.mk'_apply, nsmul_eq_mul] at h
+      exact mul_left_cancel₀ (padicInt_p_ne_zero p) h
+  · intro z
+    rw [mem_padicLevel]
+    exact ⟨⟨(ι z).1, by simp [AddMonoidHom.mk'_apply, nsmul_eq_mul]⟩,
+      ⟨(ι z).2, by simp [AddMonoidHom.mk'_apply, nsmul_eq_mul]⟩⟩
 
 /-- **LEAF (obligation 3a), now PROVEN from `exists_smoothModel` and
 `SmoothModel.toReductionFiltration`.**
