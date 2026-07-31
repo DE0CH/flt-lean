@@ -516,9 +516,38 @@ DO ALL FIVE, IN ORDER
  3. Rewrite %(state)s/queue1: remaining queue1 first, then everything in
     %(state)s/queue2, then empty queue2. Tasks are free text separated by
     lines reading exactly `=== TASK ===`. Drop tasks whose leaf is already
-    proven. Add tasks for open leaves nobody holds -- but a leaf a LIVE agent
-    is working on is NOT unowned, and queueing it hands the same target to a
-    second worker.
+    proven.
+
+    THEN SATISFY THIS INVARIANT, which is the whole point of the step:
+
+        EVERY OPEN SORRY IN THE REPO IS EITHER QUEUED OR BEING WORKED ON.
+
+    queue1 + the leaves live agents hold must COVER the frontier. Not a
+    sample, not the ones you noticed while merging -- every one. Check it,
+    do not assume it:
+
+        cd ~/flt-lean && python3 flt-frontier.py --json
+
+    That lists every open leaf on main; the count is in the hundreds. Subtract
+    the leaves live agents hold (%(state)s/jobs/*.json -- an agent record's
+    `payload` is its task text, and the leaf name appears in it) and the leaves
+    already named in queue1. Whatever is left is uncovered, and every one of
+    those gets a task.
+
+    WHY THIS MATTERS MORE THAN IT LOOKS: queue1 is the sole thing dispatch
+    reads and nothing else refills it, so the number of agents that can run
+    until the next release is exactly the number of tasks you leave here. A
+    release that queued 17 against a 320-leaf frontier left 403 worktrees
+    running 18 agents, with 300 leaves untouched. Under-filling is not
+    caution; it idles the fleet until the next release.
+
+    A leaf a LIVE agent is working on is NOT unowned -- queueing it hands the
+    same target to a second worker. `%(state)s/jobs/*.json` says who holds
+    what: an agent record's `payload` is its task.
+
+    Each task is the FULL prompt text for whoever picks it up: name the
+    declaration and its file, say what is known and what has been tried, and
+    use {{FLT_WORKTREE}} where the worktree path belongs.
  4. Set queue1's first line to `AUDITED: <the main sha you produced>`.
  5. LAST, after the artifacts are in place: write that same sha into
     %(snapshot_sha)s -- the file contents are the sha and nothing else.
