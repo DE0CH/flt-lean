@@ -7739,3 +7739,76 @@ Two riders that cost real time here:
   zero.
 * `Fermat/SorryGate.lean` contains the token `sorry` twice inside a STRING LITERAL in
   its `elab`.  Any scan must exclude that file or strip string literals.
+
+## A MODULE BEHIND A RED MODULE IS UNVERIFIED — "everything else builds" means "everything lake REACHED"
+
+(2026-07-31, `flt-lean-78`, on `Modularity/Patching.lean` at release 27.)
+
+`RELEASE-27-HANDOVER.md` says *"Every module except `ModularCurve/X0.lean` builds"*, and
+that sentence is true of the modules `lake` got to. It is not a statement about the tree.
+`lake build` walks the import graph and STOPS at a failed dependency, so every module
+DOWNSTREAM of the red one is not compiled, emits no diagnostic, and contributes nothing to
+the `declaration uses 'sorry'` set — while looking, in every report, exactly like a module
+that passed.
+
+`Patching.lean` sits behind `X0.lean` (via `FreyCurve/MazurTorsion`; 341 Fermat modules in
+its cone, checked rather than assumed) and was carrying **two hard errors**: a stranded
+conclusion fragment `(∀ i, n ≤ e i) ∧` inside a tactic block, and a call site passing 17
+arguments to an 18-binder theorem. Both would have surfaced as a *further* release-build
+round after X0 was repaired — which is the "budget three rounds minimum" rule arriving
+through the import graph rather than through the diff.
+
+**So when a release report names ONE blocker, the honest reading is "one blocker so far".**
+Before believing a module is green, check whether it is downstream of the red one:
+
+    python3 - <<'EOF'   # BFS the ^(public )?import Fermat... edges from your module
+    ...  # and ASSERT each visited file exists — a swallowed FileNotFoundError
+         # truncates the walk and manufactures the answer you were hoping for
+    EOF
+
+It costs seconds. And the cheap partial substitute for a build, when the cone genuinely
+cannot be compiled, is the structural scan: comment-nesting depth, scope balance, and — the
+one that caught both errors here — **extract every theorem's explicit binder list and diff
+it against each call site's argument list**. That is a pure text operation, it needs no
+oleans, and arity is exactly what a split interface breaks.
+
+**The seeding note that made the check affordable**: `~/.flt-release-lake/build` rsynced over
+a `merger`-based worktree left only ~60 of 5597 targets to rebuild, because the release
+snapshot is most of the cone even when 206 branches have landed. Seed first, always; the
+question "is my module reachable" is then minutes, not hours.
+
+## THE SEVENTH CLASS HAS A DOCUMENTARY FORM: A MERGE CAN KEEP ONE BRANCH'S DOCSTRING AND THE OTHER'S STATEMENT
+
+(Same task, and it is what dispatched the task.) The interface-split section above is about
+two halves of *code*. The same merge boundary runs through the DOCSTRING, and there the
+failure is worse, because **the loop writes task prompts out of docstrings**.
+
+Two branches repaired one falsity — `AuxDeformationDatum.IsWeaklyUniversal` being
+existence-only, so a received `𝒟Q` is unpinned and `𝒟Q.R := 𝒟Q⁰.R[[y_1, …, y_m]]` refutes any
+bound on it — in two RIVAL ways: `flt-lean-247` made the leaf PRODUCE its datum out of a
+guard `hwu`, and `flt-lean-69` kept the datum received and pinned it with
+`hgenQ : IsTraceGeneratedDeformation`. The merge took **247's prose and 69's statement**. The
+surviving paragraph then said, in the file, that the leaf "PRODUCES the datum rather than
+receiving it" and that "what arrives here instead is the nonemptiness guard `hwu`" — a
+signature that exists on one branch and in no tree.
+
+My task prompt was generated from that paragraph, verbatim, down to the `hwu` binder and a
+`# FALSITY AUDIT (2026-07-31)` heading that is not in the file. **Every freshness check
+passed**: the leaf name was real, the file was real, the worktree was current after one
+`git merge --ff-only main`, and the `merger` check confirmed the name was there. Only reading
+the STATEMENT next to the prose showed the prompt described nothing.
+
+Three things follow:
+
+* **A docstring is not evidence about the statement three lines below it.** This file already
+  says an audit can be stale about the tree; a docstring can be stale about *its own
+  declaration*, and a merge is how that happens without anyone writing a false sentence.
+* **When two branches repair one falsity, ask whether the repairs are RIVALS or
+  COMPLEMENTS before taking either half of either.** These were rivals: each pins `𝒟Q`
+  independently, and the union is not the repair (cf. the duplicated-hypothesis failure in
+  the ninety-branch section). Record in the docstring WHICH pin the tree took and why, or
+  the next reader gets to choose at random.
+* **If your prompt's binder list does not match the file, the prompt is the stale one.** The
+  existing rule reads line numbers as a checksum on your checkout; a SIGNATURE is a checksum
+  on your prompt. Diff them before writing any Lean — it is one `sed` and it is the whole
+  difference between a proof and a phantom.
