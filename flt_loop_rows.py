@@ -464,27 +464,37 @@ def r4_guard(s):
 
 
 def r4_action(s):
-    """Resume = respawn. It cannot be anything else.
+    """A died agent RESUMES its own conversation. It does not start over.
 
-    A stopped agent's conversation is not replayable from the loop's side: the
-    loop is a Python process, not a Claude session, and the ids it holds are
-    not resumable session ids. What survives is the WORK, in the worktree. So
-    the record is returned to unspawned and row 3 starts a fresh agent that is
-    told to read `git status`/`git diff` first and continue what it finds.
+    The loop chose the agent's session id when it spawned it, so the transcript
+    is addressable: row 3 re-launches with `--resume <session>` instead of a
+    fresh prompt, and the agent comes back knowing its task, what it had tried
+    and what had failed. Starting a stranger in the worktree instead throws all
+    of that away and makes it re-derive the situation from `git diff`.
 
-    A NEW token is minted. The old one is what the previous process advertised
-    and what its markers name, so reusing it would let a stale `.started` file
-    -- or a straggler process that is still exiting -- be mistaken for the
-    replacement.
+    A NEW token is minted even though the session is kept: the token names the
+    PROCESS (it is what the liveness sweep matches in argv[0]), the session
+    names the CONVERSATION. Reusing the token would let a stale `.started`
+    marker, or a straggler still exiting, be mistaken for the replacement.
+
+    Takeover -- a fresh agent told to read `git status` -- is the fallback for
+    a record with no session, which now means only the ones inherited from
+    before the loop existed.
     """
     for n, j in jobs_of(s, "agent").items():
         if died(j):
             j["started"] = False
             j["alive"] = False
             j["token"] = tok()
-            j["takeover"] = True
             j["retries"] += 1
-            note(s, f"4  {n} died -> re-dispatched as takeover (attempt {j['retries']})")
+            if j.get("session"):
+                j["resume"] = True
+                note(s, f"4  {n} died -> resuming its session "
+                        f"(attempt {j['retries']})")
+            else:
+                j["takeover"] = True
+                note(s, f"4  {n} died, no session -> fresh takeover "
+                        f"(attempt {j['retries']})")
 
 
 def r5_guard(s):
@@ -526,8 +536,17 @@ def r5_action(s):
             # from the worktree the record already names.
             j["host"] = (j.get("host") or host_of(s, j["worktree"])
                          or (MEDIC_HOST if j["kind"] == "medic" else None))
+            # `session` used to be recorded here for a transcript resume that
+            # does not exist and cannot: the loop is a Python process, not a
+            # Claude session, and the ids it can obtain are not resumable. It
+            # was written on every record and read by nothing, which made the
+            # capability look real. Dropped; what preserves a dead agent's work
+            # is its WORKTREE, and the takeover prompt tells its replacement to
+            # read it.
             host, pid, sess = SPAWN(s, n, j)
-            j["host"], j["pid"], j["session"] = host, pid, sess
+            j["host"], j["pid"] = host, pid
+            if sess:
+                j["session"] = sess
             # Name what was spawned: row 7 is the ONE spawner for every kind,
             # so a bare "SPAWN" in the transition log is unreadable -- two
             # consecutive firings look like a double-spawn when they are a
@@ -913,7 +932,7 @@ def r_refused_guard(s):
 def r_refused_action(s):
     hits = refused_jobs(s)
     n = sorted(hits)[0]
-    s["quota_block"] = {"since": int(now(s)), "creds": s["probe"]["creds"],
+    s["quota_block"] = {"since": int(now(s)),
                         "why": hits[n]["refused"].strip().splitlines()[0][:200]}
     for m, j in hits.items():
         # A refusal is not a death: the record goes back to unspawned so it is
@@ -1084,7 +1103,7 @@ ROWS = [
     (6, "agent finished -> integrate, awaiting_merge", r2_guard, r2_action),
     (7, "branch landed -> free its worker, drop it from the merge queue",
      r3_guard, r3_action),
-    (8, "agent died -> resume from transcript", r4_guard, r4_action),
+    (8, "agent died -> resume its session", r4_guard, r4_action),
     (9, "merger died without releasing -> restore .inflight", r6_guard, r6_action),
     (10, "merger delivered main+snapshot+audit -> ADOPT", r7_guard, r7_action),
     (11, "batch ∨ derived-from-main is stale -> create merger record", r11_guard, r11_action),
