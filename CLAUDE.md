@@ -833,6 +833,37 @@ but **not** `@[simp]` at `a3364fa`. A plain `simp` on a goal full of
 `pullback.lift` silently does nothing and reports "unsolved goals" with the goal
 unchanged, which reads as "this is hard". Name them in the simp set.
 
+## A STALE WORKTREE MAKES YOUR OWN TARGET LOOK LIKE A PHANTOM — check the base BEFORE the target
+
+(2026-07-31, `flt-lean-390`.) A task named three leaves with file-and-line references. Two of
+the three names did not exist anywhere in the tree, and the third sat ~3600 lines away from the
+line the prompt gave. Every naive reading of that is wrong in an expensive direction: "the queue
+is stale", "these were renamed", "already proven and the entry survived", "the line numbers were
+guessed". The correct reading was none of those — **the worktree was 704 commits behind `main`**,
+and the prompt had been written against `main`. After one `git merge --ff-only main` all three
+names resolved at exactly the lines the prompt gave, to the character.
+
+The dispatch hook is documented to fast-forward a worktree to `main` at allocation. It did not
+here, and nothing in the worktree announces that: `git status` was clean, the branch was a proper
+ancestor of `main`, and `git log -1` showed a perfectly ordinary recent-looking commit — a merge
+into `merger` from two days earlier, which reads like current work rather than like a stale base.
+
+**So the first command of any task, before reading the target file, is:**
+
+    git rev-list --count HEAD..main     # 0, or you are working against the past
+    git merge-base --is-ancestor HEAD main && git merge --ff-only main
+
+This is the same class as the RELEASE WINDOW entry above and its exact mirror image. There, the
+leaf is closed on a branch and `main` has not caught up; here, the leaf is *open on `main`* and
+your checkout has not caught up. Both make a real target look like a phantom, and both are
+invisible to every ownership check in this file, because those checks all reason about records
+and branches rather than about **which commit you are standing on**.
+
+Corollary, and it is what makes this cheap to get right: **a file-and-line reference in a task
+prompt is a checksum on your base.** If the declaration is not at the named line, do not start
+hunting for a rename — check `HEAD..main` first. It costs one command and it is right more often
+than any of the interesting explanations.
+
 ## SEED BEFORE SPAWNING THE NEXT MERGE WORKER — the snapshot comes from the staging `.lake`
 
 (2026-07-29, orchestrator error.) `flt-cycle.py release` seeds worktree artifacts by rsyncing
@@ -3977,3 +4008,33 @@ local `letI` from inside a structure-instance field. The one-line fix is to carr
 `AddMonoidHom` (`LinearMap.toAddMonoidHom`), whose `FunLike` needs no module structure; `map_add`,
 `map_zero` and `map_neg` all still apply, so no proof changes. Do the conversion at the `obtain`,
 not at the use site.
+
+## A DECLARATION-ORDER BLOCKAGE IS DISCHARGED BY AN OPEN LEAF ABOVE, NOT BY A RELOCATION
+
+(2026-07-31, `flt-lean-390`, and it closed `exists_x0GenusZeroJMapHauptmodul`.) A leaf whose
+proof needs a theorem declared THOUSANDS OF LINES BELOW it reads as a restructuring job, and
+`X0.lean`'s own docstrings said so twice: hoist the minimal closure, or split the `j`-theory
+into its own module. Both are large edits to an 81 000-line file with a dozen concurrent
+editors, so both stayed undone for days.
+
+The cheap third option is to look for an **open leaf declared ABOVE you that PRODUCES the same
+structure**. Here `exists_jSection` (`Nonempty IsJSection`, PROVEN) sits at line 27631 and is
+unreachable; `exists_jSection_algClosModel` sits at 16010, is a `sorry`, and its existential
+hands over an `IsJSection` — which is all the proof needed. Fifteen lines of `exists_jMap`
+replayed against it, and the blockage is gone with nothing moved.
+
+**The objection, and the accounting that answers it.** Citing a `sorry` to discharge a half that
+is not open mathematics looks like trading one leaf for two. Check whether that leaf ALREADY has
+consumers in your cone: `exists_jSection_algClosModel` had three, so the citation adds **no new
+`sorryAx` edge** and the transitive cone is unchanged. The direct-leaf delta is then whatever
+genuinely new leaf you cut, and nothing else. If the leaf has no other consumer the trade is
+real and you should say so — but check before assuming it.
+
+Two things this is NOT. It is not "open a local sorried copy of the theorem below" — that
+manufactures a phantom leaf, and this file warns against it in those words. And it does not
+retire the restructuring: the hoist or the module split is still worth doing, now for
+elaboration time rather than to unblock a proof.
+
+Generalises past this file: **before pricing a hoist, grep the region ABOVE you for a leaf whose
+conclusion is `∃ x : <the structure you need>, …`.** Existential leaves are usually stated to be
+consumed exactly once, so nobody thinks of them as a source of the structure they carry.
