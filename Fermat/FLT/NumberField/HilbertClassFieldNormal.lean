@@ -40,12 +40,20 @@ two:
   clause as well, which `exists_unramifiedAbelian_of_algebraicClosureEquiv`
   drops and which the upper bound of `UnramifiedClassFieldBound.lean` cannot do
   without.
-* `NumberField.conj_unramifiedAbelian`, `NumberField.sup_unramifiedAbelian` —
-  **SORRY LEAVES**, the rest of that node's decomposition (2026-07-31). The
-  first says a `ℚ`-conjugate of an everywhere-unramified abelian extension of
-  `K` is one again; the second — the deeper, and the "next piece of plumbing"
-  named in `exists_hilbertClassField_artinIso`'s docstring — says the
-  compositum of two is one. Neither needs class field theory or analysis.
+* `NumberField.restrictNormal_sup_eq_one`, `NumberField.sup_commutes`,
+  `NumberField.restrictNormalHom_eq_one_of_stabilizer`,
+  `NumberField.sup_isUnramifiedAtInfinitePlaces` — PROVEN 2026-07-31. Two of the
+  three clauses of `NumberField.sup_unramifiedAbelian`, the "next piece of
+  plumbing" named in `exists_hilbertClassField_artinIso`'s docstring: the
+  compositum of two everywhere-unramified abelian extensions of `K` is one
+  again. All three clauses run off ONE lemma, `restrictNormal_sup_eq_one`.
+* `NumberField.sup_isUnramifiedAt`, `NumberField.conj_unramifiedAbelian` —
+  **SORRY LEAVES**, what is left of that node (2026-07-31). The first is the
+  third clause of the compositum lemma, at the FINITE primes — the same
+  argument as the archimedean one with the inertia group in place of the
+  decomposition group; its docstring lists the plumbing. The second says a
+  `ℚ`-conjugate of an everywhere-unramified abelian extension of `K` is one
+  again. Neither needs class field theory or analysis.
 * `NumberField.corestrictFieldRange` / `NumberField.galFieldRangeEquiv` — the
   bookkeeping that lets `Interface.lean` state its conclusions through
   `{σ : M ≃ₐ[ℚ] M // σ fixes ι(CF) pointwise}` instead of through
@@ -326,9 +334,226 @@ theorem conj_unramifiedAbelian
       Module.finrank (K : Type _) N' = Module.finrank (K : Type _) N :=
   sorry
 
+/-- **AN AUTOMORPHISM FIXING `N₁` AND `N₂` POINTWISE FIXES `N₁ ⊔ N₂`
+POINTWISE** (PROVEN 2026-07-31).
+
+Equivalently, the restriction homomorphism
+`Gal(E/F) → Gal(N₁/F) × Gal(N₂/F)` has the same kernel as
+`Gal(E/F) → Gal(N₁ ⊔ N₂/F)`; since restriction to the compositum is surjective
+onto `Gal(N₁N₂/F)` when `E/F` is normal, that is exactly the injection
+`Gal(N₁N₂/F) ↪ Gal(N₁/F) × Gal(N₂/F)`.
+
+**THIS ONE LEMMA CARRIES ALL THREE CLAUSES of `sup_unramifiedAbelian` below** —
+commutativity, unramifiedness at the finite primes, unramifiedness at the
+infinite places — because each is the statement that some subgroup of
+`Gal(N₁N₂/K)` is trivial, and in each case the subgroup's image in the two
+factors is trivial by hypothesis.
+
+The proof is the Galois connection and nothing else: `σ` fixing `N₁` pointwise
+says `σ ∈ N₁.fixingSubgroup`, so `N₁ ≤ fixedField (closure {σ})`, and likewise
+for `N₂`; `sup_le` then puts `N₁ ⊔ N₂` inside that fixed field. -/
+theorem restrictNormal_sup_eq_one {F E : Type*} [Field F] [Field E] [Algebra F E]
+    (N₁ N₂ : IntermediateField F E) [Normal F N₁] [Normal F N₂]
+    (σ : E ≃ₐ[F] E) (h₁ : σ.restrictNormal N₁ = 1) (h₂ : σ.restrictNormal N₂ = 1) :
+    σ.restrictNormal ↥(N₁ ⊔ N₂) = 1 := by
+  rw [AlgEquiv.restrictNormal_eq_one_iff] at h₁ h₂ ⊢
+  intro x hx
+  have hsub : (N₁ ⊔ N₂ : IntermediateField F E) ≤
+      IntermediateField.fixedField (Subgroup.closure {σ}) := by
+    refine sup_le ?_ ?_ <;> rw [IntermediateField.le_iff_le] <;>
+      refine (Subgroup.closure_le _).mpr (Set.singleton_subset_iff.mpr ?_)
+    · exact (IntermediateField.mem_fixingSubgroup_iff _ _).mpr h₁
+    · exact (IntermediateField.mem_fixingSubgroup_iff _ _).mpr h₂
+  exact (IntermediateField.mem_fixedField_iff _ _).mp (hsub hx) σ
+    (Subgroup.subset_closure (Set.mem_singleton σ))
+
+/-- `ℚ̄` is normal over every intermediate field of `ℚ̄/ℚ` — it is an algebraic
+closure of it. Packaged as a theorem rather than left to instance search, which
+does not chain `IsAlgClosure → IsGalois → Normal` on its own. -/
+theorem normal_algebraicClosure_rat (K : IntermediateField ℚ (AlgebraicClosure ℚ))
+    [NumberField K] : Normal (K : Type _) (AlgebraicClosure ℚ) := by
+  haveI : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) := AlgebraicClosure.isAlgebraic ℚ
+  haveI : Algebra.IsAlgebraic (K : Type _) (AlgebraicClosure ℚ) :=
+    Algebra.IsAlgebraic.tower_top (K := ℚ) (K : Type _)
+  haveI : IsAlgClosure (K : Type _) (AlgebraicClosure ℚ) := ⟨inferInstance, inferInstance⟩
+  exact (IsAlgClosure.isGalois (K : Type _) (AlgebraicClosure ℚ)).to_normal
+
+/-- **THE COMPOSITUM IS ABELIAN** (PROVEN 2026-07-31), the first clause of
+`sup_unramifiedAbelian` below.
+
+Every automorphism of `N₁ ⊔ N₂` over `K` lifts to `ℚ̄`
+(`AlgEquiv.restrictNormalHom_surjective`), the commutator of two lifts restricts
+to a commutator in each of `Gal(N₁/K)` and `Gal(N₂/K)` — trivial by hypothesis —
+and `restrictNormal_sup_eq_one` above turns that into triviality on the
+compositum. -/
+theorem sup_commutes
+    (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K]
+    (N₁ N₂ : IntermediateField (K : Type _) (AlgebraicClosure ℚ))
+    [IsGalois (K : Type _) N₁] [IsGalois (K : Type _) N₂]
+    (hab₁ : ∀ a b : N₁ ≃ₐ[(K : Type _)] N₁, a * b = b * a)
+    (hab₂ : ∀ a b : N₂ ≃ₐ[(K : Type _)] N₂, a * b = b * a) :
+    ∀ a b : (↥(N₁ ⊔ N₂) ≃ₐ[(K : Type _)] ↥(N₁ ⊔ N₂)), a * b = b * a := by
+  haveI := normal_algebraicClosure_rat K
+  intro a b
+  obtain ⟨σ, rfl⟩ := AlgEquiv.restrictNormalHom_surjective
+    (F := (K : Type _)) (K₁ := ↥(N₁ ⊔ N₂)) (E := AlgebraicClosure ℚ) a
+  obtain ⟨ρ, rfl⟩ := AlgEquiv.restrictNormalHom_surjective
+    (F := (K : Type _)) (K₁ := ↥(N₁ ⊔ N₂)) (E := AlgebraicClosure ℚ) b
+  have hc : AlgEquiv.restrictNormalHom (↥(N₁ ⊔ N₂)) (σ * ρ * σ⁻¹ * ρ⁻¹) = 1 := by
+    refine restrictNormal_sup_eq_one N₁ N₂ _ ?_ ?_
+    · have h := hab₁ (AlgEquiv.restrictNormalHom (↥N₁) σ) (AlgEquiv.restrictNormalHom (↥N₁) ρ)
+      show AlgEquiv.restrictNormalHom (↥N₁) (σ * ρ * σ⁻¹ * ρ⁻¹) = 1
+      simp only [map_mul, map_inv, h]
+      group
+    · have h := hab₂ (AlgEquiv.restrictNormalHom (↥N₂) σ) (AlgEquiv.restrictNormalHom (↥N₂) ρ)
+      show AlgEquiv.restrictNormalHom (↥N₂) (σ * ρ * σ⁻¹ * ρ⁻¹) = 1
+      simp only [map_mul, map_inv, h]
+      group
+  simp only [map_mul, map_inv] at hc
+  rw [mul_inv_eq_one, mul_inv_eq_iff_eq_mul] at hc
+  exact hc
+
+/-- **AN AUTOMORPHISM OF `ℚ̄` STABILISING AN INFINITE PLACE OF `M` IS TRIVIAL ON
+EVERY UNRAMIFIED-AT-INFINITY SUBEXTENSION `N ≤ M`** (PROVEN 2026-07-31).
+
+The archimedean half of the "one injection" argument. The place `w` of `M`
+restricts along the inclusion `N ↪ M` to a place `w₁` of `N`, the restriction of
+`σ` to `N` stabilises `w₁` because `σ|_M` stabilises `w` and restriction commutes
+with the inclusion (`AlgEquiv.restrictNormal_commutes`), and
+`IsUnramified.stabilizer_eq_bot` then kills it. -/
+theorem restrictNormalHom_eq_one_of_stabilizer
+    (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K]
+    (M N : IntermediateField (K : Type _) (AlgebraicClosure ℚ))
+    [IsGalois (K : Type _) M] [IsGalois (K : Type _) N]
+    [IsUnramifiedAtInfinitePlaces (K : Type _) N]
+    (hle : N ≤ M) (w : NumberField.InfinitePlace ↥M)
+    (σ : AlgebraicClosure ℚ ≃ₐ[(K : Type _)] AlgebraicClosure ℚ)
+    (hσ : (AlgEquiv.restrictNormalHom (↥M) σ) • w = w) :
+    AlgEquiv.restrictNormalHom (↥N) σ = 1 := by
+  haveI := normal_algebraicClosure_rat K
+  set ι : (↥N) →ₐ[(K : Type _)] (↥M) := IntermediateField.inclusion hle with hι
+  have hcomm : ∀ x : ↥N,
+      (AlgEquiv.restrictNormalHom (↥M) σ) (ι x) = ι (AlgEquiv.restrictNormalHom (↥N) σ x) := by
+    intro x
+    have h1 : algebraMap (↥M) (AlgebraicClosure ℚ)
+        ((AlgEquiv.restrictNormalHom (↥M) σ) (ι x)) =
+        σ (algebraMap (↥M) (AlgebraicClosure ℚ) (ι x)) :=
+      AlgEquiv.restrictNormal_commutes σ (↥M) (ι x)
+    have h2 : algebraMap (↥N) (AlgebraicClosure ℚ)
+        ((AlgEquiv.restrictNormalHom (↥N) σ) x) =
+        σ (algebraMap (↥N) (AlgebraicClosure ℚ) x) :=
+      AlgEquiv.restrictNormal_commutes σ (↥N) x
+    have hι2 : ∀ y : ↥N, algebraMap (↥M) (AlgebraicClosure ℚ) (ι y)
+        = algebraMap (↥N) (AlgebraicClosure ℚ) y := fun _ => rfl
+    apply (algebraMap (↥M) (AlgebraicClosure ℚ)).injective
+    rw [h1, hι2, hι2]
+    exact h2.symm
+  have hfun : ((AlgEquiv.restrictNormalHom (↥M) σ).symm : ↥M →+* ↥M).comp (ι : ↥N →+* ↥M)
+      = (ι : ↥N →+* ↥M).comp ((AlgEquiv.restrictNormalHom (↥N) σ).symm : ↥N →+* ↥N) := by
+    refine RingHom.ext fun y => ?_
+    have hy := hcomm ((AlgEquiv.restrictNormalHom (↥N) σ).symm y)
+    rw [AlgEquiv.apply_symm_apply] at hy
+    show (AlgEquiv.restrictNormalHom (↥M) σ).symm (ι y)
+      = ι ((AlgEquiv.restrictNormalHom (↥N) σ).symm y)
+    rw [← hy, AlgEquiv.symm_apply_apply]
+  have hstab : (AlgEquiv.restrictNormalHom (↥N) σ) •
+      (w.comap (ι : ↥N →+* ↥M)) = w.comap (ι : ↥N →+* ↥M) := by
+    show (w.comap (ι : ↥N →+* ↥M)).comap
+      ((AlgEquiv.restrictNormalHom (↥N) σ).symm : ↥N →+* ↥N) = _
+    rw [← NumberField.InfinitePlace.comap_comp, ← hfun,
+      NumberField.InfinitePlace.comap_comp]
+    exact congrArg (fun v => NumberField.InfinitePlace.comap v (ι : ↥N →+* ↥M)) hσ
+  have hunr : NumberField.InfinitePlace.IsUnramified (K : Type _) (w.comap (ι : ↥N →+* ↥M)) :=
+    IsUnramifiedAtInfinitePlaces.isUnramified _
+  have hbot := hunr.stabilizer_eq_bot
+  have : AlgEquiv.restrictNormalHom (↥N) σ ∈
+      MulAction.stabilizer (↥N ≃ₐ[(K : Type _)] ↥N) (w.comap (ι : ↥N →+* ↥M)) := hstab
+  rw [hbot] at this
+  exact this
+
+/-- **THE COMPOSITUM IS UNRAMIFIED AT THE INFINITE PLACES** (PROVEN 2026-07-31),
+the third clause of `sup_unramifiedAbelian` below. -/
+theorem sup_isUnramifiedAtInfinitePlaces
+    (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K]
+    (N₁ N₂ : IntermediateField (K : Type _) (AlgebraicClosure ℚ))
+    [FiniteDimensional (K : Type _) N₁] [IsGalois (K : Type _) N₁]
+    [IsUnramifiedAtInfinitePlaces (K : Type _) N₁]
+    [FiniteDimensional (K : Type _) N₂] [IsGalois (K : Type _) N₂]
+    [IsUnramifiedAtInfinitePlaces (K : Type _) N₂] :
+    IsUnramifiedAtInfinitePlaces (K : Type _) ↥(N₁ ⊔ N₂) := by
+  haveI := normal_algebraicClosure_rat K
+  haveI : FiniteDimensional (K : Type _) ↥(N₁ ⊔ N₂) :=
+    IntermediateField.finiteDimensional_sup N₁ N₂
+  haveI : IsGalois (K : Type _) ↥(N₁ ⊔ N₂) := ⟨⟩
+  refine ⟨fun w => ?_⟩
+  rw [NumberField.InfinitePlace.isUnramified_iff_stabilizer_eq_bot, Subgroup.eq_bot_iff_forall]
+  intro τ hτ
+  obtain ⟨σ, rfl⟩ := AlgEquiv.restrictNormalHom_surjective
+    (F := (K : Type _)) (K₁ := ↥(N₁ ⊔ N₂)) (E := AlgebraicClosure ℚ) τ
+  exact restrictNormal_sup_eq_one N₁ N₂ σ
+    (restrictNormalHom_eq_one_of_stabilizer K _ N₁ le_sup_left w σ hτ)
+    (restrictNormalHom_eq_one_of_stabilizer K _ N₂ le_sup_right w σ hτ)
+
+/-- **THE COMPOSITUM IS UNRAMIFIED AT THE FINITE PRIMES** (SORRY LEAF, the one
+clause of `sup_unramifiedAbelian` below still open as of 2026-07-31; the other
+two — `sup_commutes` and `sup_isUnramifiedAtInfinitePlaces` — are proven above).
+
+**This is the exact analogue of `sup_isUnramifiedAtInfinitePlaces`, with the
+INERTIA group in place of the decomposition group at an archimedean place**, and
+the shared engine `restrictNormal_sup_eq_one` is already here. What is missing is
+only the finite-prime counterpart of
+`restrictNormalHom_eq_one_of_stabilizer`, i.e.
+
+    (K) (M N) [FiniteDimensional K M] [IsGalois K M] [FiniteDimensional K N]
+      [IsGalois K N] (hunr : N is unramified at every nonzero prime)
+      (hle : N ≤ M) (Q : Ideal (𝓞 M)) [Q.IsPrime] (hQ0 : Q ≠ ⊥)
+      (σ : ℚ̄ ≃ₐ[K] ℚ̄) (hQ : ∀ x : 𝓞 M, (restrictNormalHom M σ) • x - x ∈ Q) :
+      restrictNormalHom N σ = 1
+
+whose proof is `eq_one_of_mem_inertia_of_unramifiedAt` (top of this file) applied
+to `Q.under (𝓞 N)`, plus `restrictNormal_commutes` to see that the restriction of
+`σ` to `N` moves `y` by the same amount that `σ` moves it inside `M`.
+
+**The plumbing this needs, and where each piece lives.**
+
+* `Algebra ↥N ↥M` is NOT an instance — `N ≤ M` gives only
+  `IntermediateField.inclusion hle : ↥N →ₐ[K] ↥M`. Install it with
+  `letI : Algebra ↥N ↥M := (IntermediateField.inclusion hle).toRingHom.toAlgebra`
+  and `IsScalarTower.of_algebraMap_eq'`, exactly as
+  `exists_classField_of_subgroup` does in
+  `UnramifiedClassFieldExistence.lean`. `Algebra (𝓞 N) (𝓞 M)` then follows from
+  mathlib's `RingOfIntegers` instance.
+* `Q.under (𝓞 N) ≠ ⊥` is `Ideal.IsIntegral.comap_ne_bot` in
+  `Mathlib/RingTheory/Ideal/GoingUp.lean`, which wants
+  `Algebra.IsIntegral (𝓞 N) (𝓞 M)`.
+* Then the closing chain, which is `eq_one_of_mem_inertia_of_unramifiedAt` run
+  BACKWARDS on `M`: inertia trivial gives
+  `Nat.card (Q.inertia Gal(M/K)) = 1`, so
+  `Ideal.card_inertia_eq_ramificationIdxIn` and
+  `Ideal.ramificationIdxIn_eq_ramificationIdx` give
+  `Q.ramificationIdx (𝓞 K) = 1`, and `Ideal.ramificationIdx_eq_one_iff` converts
+  that to `Algebra.IsUnramifiedAt`. That last one carries a
+  `PerfectField (Q.under (𝓞 K)).ResidueField` side condition, which is free
+  because residue fields of `𝓞 K` are finite.
+
+No class field theory is used here, and no analysis. -/
+theorem sup_isUnramifiedAt
+    (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K]
+    (N₁ N₂ : IntermediateField (K : Type _) (AlgebraicClosure ℚ))
+    [FiniteDimensional (K : Type _) N₁] [IsGalois (K : Type _) N₁]
+    [FiniteDimensional (K : Type _) N₂] [IsGalois (K : Type _) N₂]
+    (hunr₁ : ∀ (Q : Ideal (𝓞 N₁)) (_ : Q.IsPrime), Q ≠ ⊥ →
+      Algebra.IsUnramifiedAt (𝓞 (K : Type _)) Q)
+    (hunr₂ : ∀ (Q : Ideal (𝓞 N₂)) (_ : Q.IsPrime), Q ≠ ⊥ →
+      Algebra.IsUnramifiedAt (𝓞 (K : Type _)) Q) :
+    ∀ (Q : Ideal (𝓞 ↥(N₁ ⊔ N₂))) (_ : Q.IsPrime), Q ≠ ⊥ →
+      Algebra.IsUnramifiedAt (𝓞 (K : Type _)) Q :=
+  sorry
+
 /-- **THE COMPOSITUM OF TWO EVERYWHERE-UNRAMIFIED ABELIAN EXTENSIONS OF `K` IS
-EVERYWHERE-UNRAMIFIED AND ABELIAN** (SORRY LEAF, cut 2026-07-31 out of
-`exists_hilbertClassField_normal_over_rat` below).
+EVERYWHERE-UNRAMIFIED AND ABELIAN** (cut 2026-07-31 out of
+`exists_hilbertClassField_normal_over_rat` below; two of its three clauses are
+PROVEN the same day, the third is `sup_isUnramifiedAt` just above).
 
 This is the "next piece of plumbing" that
 `exists_hilbertClassField_artinIso`'s docstring names — the MAXIMALITY of the
@@ -336,26 +561,14 @@ Hilbert class field, in the only form that does not presuppose it. With it, the
 upper bound `[N₁N₂ : K] ≤ h_K` follows from the companion file, and a class
 field of degree exactly `h_K` absorbs every conjugate of itself.
 
-**One injection proves all three clauses.** `N₁, N₂` are Galois over `K` inside
-`ℚ̄`, so restriction is a group homomorphism
-`Gal(N₁N₂/K) → Gal(N₁/K) × Gal(N₂/K)`, and it is INJECTIVE: an automorphism
-fixing `N₁` and `N₂` pointwise fixes `N₁ ⊔ N₂ = adjoin K (N₁ ∪ N₂)` pointwise.
-Then:
-
-* *abelian* — a subgroup of a product of abelian groups;
-* *unramified at a finite prime `Q`* — the inertia subgroup `Q.inertia Gal(M/K)`
-  maps into `(Q ⊓ 𝓞 N₁).inertia × (Q ⊓ 𝓞 N₂).inertia`, both trivial by
-  `eq_one_of_mem_inertia_of_unramifiedAt` above, so the inertia group at `Q` is
-  trivial, so `e(Q) = 1` (`Ideal.card_inertia_eq_ramificationIdxIn`), so `Q` is
-  unramified (`Ideal.ramificationIdx_eq_one_iff`, whose `PerfectField` side
-  condition is free — residue fields of `𝓞 K` are finite);
-* *unramified at an infinite place `w`* — mathlib's
-  `NumberField.InfinitePlace.isUnramified_iff_stabilizer_eq_bot` says
-  `IsUnramified K w ↔ MulAction.stabilizer Gal(M/K) w = ⊥`, and the stabiliser
-  maps into the product of the stabilisers of the restricted places, both
-  trivial. This is the SAME argument as the finite-prime one with "inertia"
-  replaced by "decomposition at an archimedean place", which is why the three
-  clauses are stated together rather than in three leaves.
+**One injection proves all three clauses**, which is why they are collected
+here. `N₁, N₂` are Galois over `K` inside `ℚ̄`, so an automorphism of `ℚ̄/K`
+restricting trivially to both restricts trivially to `N₁ ⊔ N₂`
+(`restrictNormal_sup_eq_one` above — the Galois connection and nothing else);
+combined with the surjectivity of restriction that is the injection
+`Gal(N₁N₂/K) ↪ Gal(N₁/K) × Gal(N₂/K)`. Each clause is then the triviality of
+some subgroup of `Gal(N₁N₂/K)`: the commutator subgroup, the inertia group at a
+finite prime, the decomposition group at an archimedean place.
 
 No class field theory is used, and no analysis. -/
 theorem sup_unramifiedAbelian
@@ -375,7 +588,8 @@ theorem sup_unramifiedAbelian
       (∀ (Q : Ideal (𝓞 ↥(N₁ ⊔ N₂))) (_ : Q.IsPrime), Q ≠ ⊥ →
         Algebra.IsUnramifiedAt (𝓞 (K : Type _)) Q) ∧
       IsUnramifiedAtInfinitePlaces (K : Type _) ↥(N₁ ⊔ N₂) :=
-  sorry
+  ⟨sup_commutes K N₁ N₂ hab₁ hab₂, sup_isUnramifiedAt K N₁ N₂ hunr₁ hunr₂,
+    sup_isUnramifiedAtInfinitePlaces K N₁ N₂⟩
 
 -- `hab`, `hunr` and `hrank` are deliberately unused; see the docstring.
 set_option linter.unusedVariables false in
