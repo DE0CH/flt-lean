@@ -959,9 +959,7 @@ def load():
         # Plain observed state, like batch or inflight. No decision is taken
         # here: the rows decide, and save() writes back whatever they set.
         "quota_block": json.loads(rd(STATE / "quota-blocked") or "null"),
-        "probe": {"sent_at": float((rd(STATE / "quota-probe", "") or "0").strip() or 0),
-                  "served": (STATE / "quota-probe.json").exists(),
-                  "creds": creds_stamp()},
+        "probe": {"served": (STATE / "quota-probe.json").exists()},
         "log": [], "git": [], "email": [],
     }
 
@@ -977,10 +975,6 @@ def save(s):
         wr(STATE / "quota-blocked", json.dumps(s["quota_block"]))
     else:
         rm(STATE / "quota-blocked")
-    if s.get("probe", {}).get("sent_at"):
-        wr(STATE / "quota-probe", str(s["probe"]["sent_at"]))
-    else:
-        rm(STATE / "quota-probe")
     if not s.get("probe", {}).get("served"):
         rm(STATE / "quota-probe.json")
     wr(STATE / "batch", "".join(b + "\n" for b in s["batch"]))

@@ -882,7 +882,6 @@ def inferred_panic(s):
 # what to do about it in the table like everything else.
 PROBE = None            # () -> None, sends a probe
 CONSUME_REFUSAL = None  # (name, job) -> None, moves the log aside
-PROBE_EVERY = 300
 
 
 def now(s):
@@ -938,36 +937,37 @@ def r_unblock_guard(s):
 
 def r_unblock_action(s):
     s["quota_block"] = None
-    s["probe"] = dict(s["probe"], served=False, sent_at=0)
+    s["probe"] = dict(s["probe"], served=False)
     note(s, "quota: a probe was served -- spawning resumes")
     s["email"].append("flt-loop: quota available again, resuming")
 
 
 def r_probe_guard(s):
-    """Ask the API whether it is still refusing, rather than wait out a clock.
+    """Blocked and no answer yet -- ask again. Every tick, no timer.
 
-    The refusal message carries a reset time, but it describes whichever
-    ACCOUNT was live when it was printed, and a rotator swaps credentials
-    underneath us. So the block is lifted on evidence, never on a deadline. A
-    credential change makes the last probe stale immediately, since a new
-    account is the likeliest reason the answer has changed.
+    A refused call costs nothing: the API rejects it immediately and it
+    consumes no quota, so there is nothing to ration and no reason to wait
+    between attempts. Probing on every cycle also removes two things that only
+    existed to approximate this one: the staleness interval, and the special
+    case that forced an immediate probe when the rotator swapped credentials.
+    Both were answering "has the answer changed yet?" indirectly. Asking every
+    tick answers it directly, and the block lifts the tick after the door
+    opens rather than up to five minutes later.
+
+    It stops on its own: a served probe fires row 19, which clears the block,
+    and this guard needs the block.
     """
-    b = s.get("quota_block")
-    if not b:
+    if not s.get("quota_block"):
         return (False, "not blocked")
     if s["probe"]["served"]:
         return (False, "a served probe is waiting to be consumed")
-    rotated = b.get("creds") and b["creds"] != s["probe"]["creds"]
-    if not rotated and now(s) - s["probe"]["sent_at"] < PROBE_EVERY:
-        return (False, "probed less than %ds ago" % PROBE_EVERY)
-    return (True, "credential rotated" if rotated else "")
+    return (True, "")
 
 
 def r_probe_action(s):
-    s["probe"] = dict(s["probe"], sent_at=now(s))
     if PROBE:
         PROBE()
-    note(s, "quota: probe sent with the credential now on disk")
+    note(s, "quota: probed with the credential now on disk")
 
 
 def anomalies(s):
@@ -1076,7 +1076,7 @@ ROWS = [
      rmedic_dead_guard, rmedic_dead_action),
     (18, "API refused a job -> halt spawning", r_refused_guard, r_refused_action),
     (19, "quota blocked ∧ probe served -> resume", r_unblock_guard, r_unblock_action),
-    (20, "quota blocked ∧ probe stale -> send a probe", r_probe_guard, r_probe_action),
+    (20, "quota blocked ∧ no answer yet -> probe again", r_probe_guard, r_probe_action),
     (3, "record ∧ ¬started ∧ no process -> SPAWN", r5_guard, r5_action),
     (4, "medic in flight -> SAFE MODE (all rows below suspended)",
      rmedic_wait_guard, rmedic_wait_action),
