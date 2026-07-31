@@ -384,6 +384,8 @@ module
 public import Mathlib.AlgebraicGeometry.Modules.Sheaf
 public import Mathlib.Algebra.Category.ModuleCat.Presheaf.Monoidal
 public import Mathlib.AlgebraicGeometry.Pullbacks
+public import Mathlib.AlgebraicGeometry.FunctionField
+public import Mathlib.AlgebraicGeometry.Stalk
 public import Mathlib.Algebra.Category.ModuleCat.Presheaf.Sheafification
 public import Mathlib.Algebra.Category.ModuleCat.Sheaf.PullbackFree
 public import Mathlib.CategoryTheory.Localization.Monoidal.Basic
@@ -6663,5 +6665,469 @@ theorem exists_relPicZero {X S : Scheme.{u}} (strX : X ⟶ S)
       Nonempty (IsRelPicZeroOf strX ab o) := by
   obtain ⟨_P, _pstr, ⟨hP⟩, -, -⟩ := exists_relPicFull strX hproper hsmooth hconn o
   exact exists_relPicZero_of_isRelPicOf hproper hsmooth hconn o hP
+
+/-! ## `𝒦_X`, AND `sectionIdeal` AS AN INVERTIBLE SUBSHEAF OF IT
+
+**Why this section exists.**  `hasDoubleCoverOfAffineLine_of_iso_sectionIdeal`
+(`ModularCurve/X0.lean`) received a ROUTE CORRECTION on 2026-07-31 which took
+Riemann–Roch, `h⁰` and base-point-free pencils OFF its critical path and
+replaced them by three obligations.  Obligation (1) is this section, quoted
+verbatim from that docstring:
+
+> `sectionIdeal` is defined in `ModularCurve/RelativePicard.lean` as the KERNEL
+> of an adjunction unit, not as an ideal inside `𝒦_X`, so "`𝒪(−x)` is
+> invertible, sits inside the constant sheaf, and `modTensor` of two of them is
+> the product ideal" has to be built before `f` can be extracted.  That is the
+> real first step, and it belongs in `RelativePicard.lean`, not in a divisor
+> theory.
+
+**What it buys.**  On an INTEGRAL scheme a morphism between two invertible
+subsheaves of `𝒦_X` is multiplication by a single element of `𝒦_X`, and an
+ISOMORPHISM is multiplication by some `f ∈ 𝒦_Xˣ`.  So the `_hiso` hypothesis of
+the `g¹₂` leaf HANDS THE RATIONAL FUNCTION BACK DIRECTLY, with
+`div f = (x₁ + x₂) − (y₁ + y₂)`.  That is `D ∼ E ⟺ D − E = div f` in the
+direction that consumes no cohomology; the `h⁰(D) ≥ 2` phrasing produces the
+SAME `f` (as the pencil `⟨1, f⟩`) through strictly more machinery.
+`exists_units_functionField_of_iso_sectionIdeal` at the end of this section is
+that hand-back, and it is PROVEN over the three leaves below.
+
+**THE CHECK THAT WOULD HAVE REFUTED THE WHOLE ROUTE — RUN, AND IT COMES BACK
+NEGATIVE.**  The route correction named one: "an isomorphism of `sectionIdeal`s
+that is NOT multiplication by a rational function — i.e. `sectionIdeal` failing
+to be an invertible subsheaf of `𝒦_X`."  It does not fail, and the reason
+makes obligation (1) cheaper than the correction supposed, because the SUBSHEAF
+half is FREE and needs neither smoothness nor properness:
+
+* `sectionIdeal σ` is by DEFINITION `ker (𝒪_Z ⟶ σ_*𝒪_T)`, so `kernel.ι` is a
+  mono `sectionIdeal σ ⟶ 𝒪_Z` — it is an IDEAL sheaf, a subsheaf of `𝒪_Z`,
+  unconditionally.  Kernels are monic in any category; nothing is assumed.
+* `𝒪_X ⟶ 𝒦_X` is a mono as soon as `X` is INTEGRAL, because on a nonempty open
+  it is `Scheme.germToFunctionField`, which mathlib proves injective
+  (`Scheme.germToFunctionField_injective`).  That is `mono_toConstSheaf` below.
+* Composing, `sectionIdeal σ ⟶ 𝒦_X` is a mono (`mono_sectionIdealToConst`,
+  PROVEN here).  INVERTIBILITY is the separate, already-existing leaf
+  `isInvertibleSheaf_sectionIdeal` above, which is where `_hproper` and
+  `_hsmooth` are spent and which this section does not duplicate.
+
+So obligation (1) splits into a free part and a part that was already a named
+leaf, plus the genuinely new dictionary below.  **A prover should NOT treat
+"is a subsheaf of `𝒦_X`" as new geometry; it is `kernel.ι` and integrality.**
+
+**HOW `𝒦_X` IS BUILT, and why it is not a new theory.**  The constant sheaf is
+the PUSHFORWARD OF `𝒪` ALONG THE GENERIC POINT,
+`𝒦_X = g_* 𝒪_{Spec K}` with `g : Spec X.functionField ⟶ X` the canonical
+`Scheme.fromSpecStalk` at `genericPoint X`.  Its sections over a nonempty `U`
+are `Γ(𝒪_{Spec K}, g ⁻¹ᵁ U) = K` — `g ⁻¹ᵁ U` is all of the one-point space
+`Spec K` — and `0` over `∅`, which is exactly the constant sheaf on an
+irreducible space.  This costs no new construction: it is the SAME shape as
+`sectionIdeal`'s own definition (pushforward along a point, unit of the
+`pullback ⊣ pushforward` adjunction), so the module needs no divisor theory,
+no `𝒪(D)` and no Cartier divisors — none of which exist at this pin.
+
+Multiplication by `a ∈ K` is likewise pushed forward from `Spec K`
+(`constSmul`), through the endomorphism of `𝒪_{Spec K}` that
+`SheafOfModules.unitHomEquiv` attaches to a global section (`modUnitMul`).
+
+**WHAT IS GENUINELY OPEN HERE — three leaves, and none of them is
+Riemann–Roch.**  `mono_toConstSheaf` (`𝒪_X ↪ 𝒦_X` on an integral scheme),
+`mono_modTensorToUnit` (the product-ideal map `I ⊗ J ⟶ 𝒪_X` is injective for
+invertible ideal sheaves on an integral scheme) and `exists_constSmul_of_iso`
+(THE dictionary: a morphism of invertible subsheaves of `𝒦_X` is multiplication
+by an element of `𝒦_X`).  The first two are local statements about integral
+schemes; the third is the generic-stalk argument written out in its own
+docstring.  Everything else in this section is a definition or is proven.
+
+**RESIDUAL OBLIGATION FOR THE CONSUMER, and it is NOT discharged here.**
+`exists_units_functionField_of_iso_sectionIdeal` needs
+`IsIntegral (curveBaseChange strX g)` — the base-changed curve must be
+integral, which is what makes `𝒦` a field and every statement in this section
+meaningful.  At `S = T = Spec ℚ` that follows from smooth (hence regular, hence
+normal) plus geometrically connected plus nonempty, but it is a real step and
+it belongs next to its consumer, not here. -/
+
+/-- **THE GENERIC POINT, AS A MORPHISM OF SCHEMES** — `Spec K ⟶ X` for
+`K = X.functionField`, i.e. mathlib's `Scheme.fromSpecStalk` at the generic
+point.  This is the map along which `𝒦_X` is pushed forward. -/
+noncomputable def genericPointHom (X : Scheme.{u}) [IrreducibleSpace X] :
+    Spec X.functionField ⟶ X :=
+  X.fromSpecStalk (genericPoint X)
+
+/-- **THE CONSTANT SHEAF `𝒦_X`** — the pushforward of `𝒪_{Spec K}` along the
+generic point, `K = X.functionField`.
+
+`Γ(𝒦_X, U) = Γ(𝒪_{Spec K}, g ⁻¹ᵁ U)`, which is `K` for every nonempty `U`
+(the preimage of a nonempty open under `g` is the whole one-point space) and
+`0` for `U = ∅`.  On an irreducible space that presheaf is already a sheaf,
+and it is the constant sheaf of rational functions. -/
+noncomputable def constSheaf (X : Scheme.{u}) [IrreducibleSpace X] : X.Modules :=
+  (Scheme.Modules.pushforward (genericPointHom X)).obj (modUnit _)
+
+/-- **THE CANONICAL `𝒪_X ⟶ 𝒦_X`** — the unit of `g^* ⊣ g_*` at `𝒪_X`,
+followed by `g_*` of `modPullbackUnitIso` (`g^*𝒪_X ≅ 𝒪_{Spec K}`).
+
+Exactly the shape of `sectionIdeal`'s own defining map, with the section
+`σ : T ⟶ Z` replaced by the generic point. -/
+noncomputable def toConstSheaf (X : Scheme.{u}) [IrreducibleSpace X] :
+    modUnit X ⟶ constSheaf X :=
+  (Scheme.Modules.pullbackPushforwardAdjunction (genericPointHom X)).unit.app (modUnit X) ≫
+    (Scheme.Modules.pushforward (genericPointHom X)).map (modPullbackUnitIso _).hom
+
+/-- **A GLOBAL SECTION OF `𝒪_Z`, READ AS A COMPATIBLE FAMILY** — restrict `a`
+from `⊤` to every open.  Compatibility is functoriality of the presheaf plus
+the fact that `Opens Z` has at most one arrow between any two objects. -/
+noncomputable def modUnitSections {Z : Scheme.{u}} (a : Γ(Z, ⊤)) : (modUnit Z).sections :=
+  PresheafOfModules.sectionsMk (fun _ => Z.presheaf.map (homOfLE le_top).op a)
+    (by
+      intro U V f
+      show Z.presheaf.map f (Z.presheaf.map (homOfLE le_top).op a) = _
+      rw [← CategoryTheory.comp_apply, ← Z.presheaf.map_comp]
+      congr 1)
+
+/-- **MULTIPLICATION BY A GLOBAL SECTION**, as an endomorphism of `𝒪_Z`.
+
+`SheafOfModules.unitHomEquiv` is the bijection `(𝒪 ⟶ M) ≃ M.sections`; taken
+at `M = 𝒪` it turns a global section into the endomorphism "multiply by it". -/
+noncomputable def modUnitMul {Z : Scheme.{u}} (a : Γ(Z, ⊤)) : modUnit Z ⟶ modUnit Z :=
+  (modUnit Z).unitHomEquiv.symm (modUnitSections a)
+
+/-- **`modTensor` IS FUNCTORIAL ON ARBITRARY MORPHISMS** — `modTensorMapIso`
+without the inverse.
+
+**HOISTED 2026-07-31 from `Modularity/AmpleSheaf.lean`**, where it was declared
+(byte-identically) for `modPullbackTensorComparison`.  `AmpleSheaf.lean` imports
+this module, so the two declarations would have collided — the same collision
+`isInvertibleSheaf_modUnit` caused when it was duplicated.  Its companion
+`modTensorMap_tensorSection` stays downstream, where its consumer is. -/
+noncomputable def modTensorMap {Z : Scheme.{u}} {L L' M M' : Z.Modules}
+    (e : L ⟶ L') (e' : M ⟶ M') : modTensor L M ⟶ modTensor L' M' :=
+  (PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)).map
+    (MonoidalCategory.tensorHom
+      ((SheafOfModules.forget _).map e) ((SheafOfModules.forget _).map e'))
+
+/-- **MULTIPLICATION BY `a ∈ K` ON `𝒦_X`** — push `modUnitMul` forward from
+`Spec K`, where the global sections of the structure sheaf are `K` itself
+(`Scheme.ΓSpecIso`).
+
+This is the "multiplication by a rational function" of the route correction:
+the payoff `exists_constSmul_of_iso` says an isomorphism of invertible
+subsheaves of `𝒦_X` IS one of these. -/
+noncomputable def constSmul {X : Scheme.{u}} [IrreducibleSpace X] (a : X.functionField) :
+    constSheaf X ⟶ constSheaf X :=
+  (Scheme.Modules.pushforward (genericPointHom X)).map
+    (modUnitMul ((Scheme.ΓSpecIso X.functionField).inv a))
+
+/-- **THE PRODUCT OF TWO IDEAL SHEAVES**, as a map `I ⊗ J ⟶ 𝒪_X`.
+
+Tensor the two inclusions and use the left unitor `𝒪 ⊗ 𝒪 ≅ 𝒪`.  Its image is
+the product ideal `IJ`; the pin has no ideal-sheaf image API, so what is
+recorded about it here is the part that is used — that it is INJECTIVE
+(`mono_modTensorToUnit`), which is what realises `I ⊗ J` as a subsheaf of
+`𝒪_X ⊆ 𝒦_X`. -/
+noncomputable def modTensorToUnit {X : Scheme.{u}} {L M : X.Modules}
+    (ιL : L ⟶ modUnit X) (ιM : M ⟶ modUnit X) : modTensor L M ⟶ modUnit X :=
+  modTensorMap ιL ιM ≫ (modTensorUnitLeftIso (modUnit X)).hom
+
+/-- **`ι` REALISES `L` AS AN INVERTIBLE SUBSHEAF OF `𝒦_X`.**
+
+Two clauses, deliberately not one: invertibility is about `L` and is proven
+elsewhere (`isInvertibleSheaf_sectionIdeal`, `isInvertibleSheaf_modTensorPic`),
+while monicity is about `ι` and is what "subsheaf" means.  The dictionary
+`exists_constSmul_of_iso` needs BOTH — monicity to make `L_η ↪ K`, and
+invertibility to make `L_η ≠ 0`, since a `K`-submodule of `K` is `0` or `K`
+and only the second case gives a well-defined ratio. -/
+def IsInvertibleSubsheaf {X : Scheme.{u}} [IrreducibleSpace X] {L : X.Modules}
+    (ι : L ⟶ constSheaf X) : Prop :=
+  IsInvertibleSheaf L ∧ Mono ι
+
+/-! ### `𝒪_X ↪ 𝒦_X` on an integral scheme
+
+**`mono_toConstSheaf` below is PROVEN**; this note is the audit written when it
+was introduced as a leaf, kept because it records why integrality is the
+hypothesis and what the two-line refutation is.  The four helpers between here
+and it are its proof.
+
+**`𝒪_X ↪ 𝒦_X`** is the one place integrality enters the subsheaf half of the
+dictionary.
+
+**Route, and it is short.**  A faithful functor reflects monomorphisms, and
+`SheafOfModules.forget` is faithful, so it suffices to be monic in presheaves of
+modules, where monicity is objectwise injectivity.  Over a nonempty `U` the map
+`Γ(X, U) ⟶ Γ(𝒦_X, U) = Γ(𝒪_{Spec K}, g ⁻¹ᵁ U) = K` is
+`Scheme.germToFunctionField U`, whose injectivity is
+`Scheme.germToFunctionField_injective` (mathlib, for `[IsIntegral X]`); over
+`∅` both sides are `0`.  The work is the IDENTIFICATION of the adjunction unit
+with the germ map, not the injectivity.
+
+**FAITHFULNESS.  `[IsIntegral X]` is load-bearing and cannot be weakened to
+`[IrreducibleSpace X]`.**  On `X = Spec k[ε]/(ε²)` — irreducible, one point, so
+`𝒦_X` is the stalk `k[ε]/(ε²)` and the map `𝒪_X ⟶ 𝒦_X` is the identity, which
+IS monic, so that is not a counterexample.  Take instead
+`X = Spec k[x,y]/(y², xy)`, whose reduction is a line: it is irreducible with
+generic point the generic point of the line, `K = k(x)`, and the germ map kills
+the embedded-primary component `y`, so `y ≠ 0` maps to `0` and `𝒪_X ⟶ 𝒦_X` is
+NOT monic.  Reducedness is exactly what `IsIntegral` adds and exactly what
+`germ_injective_of_isIntegral` uses.
+
+**NOT VACUOUS.**  Every smooth proper geometrically connected curve over a
+field is integral, which is the situation every consumer of this section is in.
+
+**PROVEN 2026-07-31**, exactly along the route above and over the four helpers
+immediately below.  Cost: about forty lines, no new mathematics, and the
+identification that made it short is `toConstSheaf_eq` — the composite
+`unit ≫ g_*(g^*𝒪 ≅ 𝒪)` defining `toConstSheaf` IS mathlib's
+`SheafOfModules.unitToPushforwardObjUnit`, whose sections map is `g^♯` by
+`rfl`.  So no adjunction had to be unwound by hand. -/
+
+/-- **THE PREIMAGE OF A NONEMPTY OPEN UNDER THE GENERIC POINT IS EVERYTHING**
+(PROVEN) — `Spec K` is a one-point space for `K` a field, and that point goes
+to the generic point (`Scheme.fromSpecStalk_closedPoint`), which lies in every
+nonempty open. -/
+theorem preimage_genericPointHom_eq_top (X : Scheme.{u}) [IsIntegral X] (U : X.Opens)
+    [Nonempty U] : (genericPointHom X) ⁻¹ᵁ U = ⊤ := by
+  haveI : Subsingleton (Spec X.functionField) :=
+    inferInstanceAs (Subsingleton (PrimeSpectrum X.functionField))
+  have hη : genericPoint X ∈ U :=
+    ((genericPoint_spec X).mem_open_set_iff U.isOpen).mpr (by simpa using ‹Nonempty U›)
+  rw [eq_top_iff]
+  intro p _
+  show (genericPointHom X).base p ∈ U
+  have hp : p = IsLocalRing.closedPoint X.functionField := Subsingleton.elim _ _
+  subst hp
+  rw [show (genericPointHom X).base (IsLocalRing.closedPoint X.functionField) = genericPoint X from
+    Scheme.fromSpecStalk_closedPoint]
+  exact hη
+
+/-- **RESTRICTION TO AN OPEN THAT IS KNOWN TO BE `⊤` IS INJECTIVE** (PROVEN) —
+after substituting the equation the map is `𝟙`.  Stated with the equation as a
+hypothesis rather than by rewriting at the use site, because rewriting `V = ⊤`
+inside `presheaf.map (homOfLE le_top : V ⟶ ⊤).op` changes the TYPE of the
+morphism and drags `eqToHom` through the whole proof. -/
+theorem injective_res_of_eq_top {Z : Scheme.{u}} (V : Z.Opens) (hV : V = ⊤) :
+    Function.Injective (Z.presheaf.map (homOfLE le_top : V ⟶ ⊤).op) := by
+  subst hV
+  rw [Subsingleton.elim (homOfLE le_top : (⊤ : Z.Opens) ⟶ ⊤) (𝟙 _)]
+  intro a b h
+  simpa using h
+
+/-- **`g^♯` IS INJECTIVE ON A NONEMPTY OPEN** (PROVEN) — this is where
+integrality is spent, through mathlib's `germ_injective_of_isIntegral`.
+
+`Scheme.fromSpecStalk_app` factors `g.app U` as
+`germ ≫ (ΓSpecIso K).inv ≫ restriction`, and all three factors are injective:
+the germ by integrality, the middle by being an isomorphism, and the
+restriction by `injective_res_of_eq_top` at
+`preimage_genericPointHom_eq_top`. -/
+theorem injective_genericPointHom_app (X : Scheme.{u}) [IsIntegral X] (U : X.Opens)
+    [Nonempty U] : Function.Injective ((genericPointHom X).app U) := by
+  have hη : genericPoint X ∈ U :=
+    ((genericPoint_spec X).mem_open_set_iff U.isOpen).mpr (by simpa using ‹Nonempty U›)
+  have happ : (genericPointHom X).app U =
+      X.presheaf.germ U (genericPoint X) hη ≫
+        (Scheme.ΓSpecIso X.functionField).inv ≫
+          (Spec X.functionField).presheaf.map (homOfLE le_top).op :=
+    Scheme.fromSpecStalk_app hη
+  rw [happ]
+  intro a b hab
+  simp only [CommRingCat.hom_comp, RingHom.coe_comp, Function.comp_apply] at hab
+  refine germ_injective_of_isIntegral X (genericPoint X) hη ?_
+  refine (ConcreteCategory.bijective_of_isIso (Scheme.ΓSpecIso X.functionField).inv).1 ?_
+  exact injective_res_of_eq_top _ (preimage_genericPointHom_eq_top X U) hab
+
+/-- **`toConstSheaf` IS mathlib's `unitToPushforwardObjUnit`** (PROVEN) — the
+identification that makes `mono_toConstSheaf` short.
+
+`toConstSheaf` is written as `η ≫ g_*(g^*𝒪_X ≅ 𝒪_{Spec K})`, which is the
+adjunction transpose of `pullbackObjUnitToUnit`; mathlib's
+`pullbackPushforwardAdjunction_homEquiv_pullbackObjUnitToUnit` says that
+transpose is `unitToPushforwardObjUnit`, whose value on sections is `g^♯`
+BY `rfl` (`unitToPushforwardObjUnit_val_app_apply`).  So the sections
+description costs no unwinding of the adjunction at all. -/
+theorem toConstSheaf_eq (X : Scheme.{u}) [IrreducibleSpace X] :
+    toConstSheaf X =
+      SheafOfModules.unitToPushforwardObjUnit (genericPointHom X).toRingCatSheafHom := by
+  rw [← SheafOfModules.pullbackPushforwardAdjunction_homEquiv_pullbackObjUnitToUnit,
+    Adjunction.homEquiv_unit]
+  rfl
+
+/-- **`𝒪_X ↪ 𝒦_X` ON AN INTEGRAL SCHEME** (PROVEN 2026-07-31) — the audit,
+including the two witnesses showing `[IsIntegral X]` cannot be weakened to
+`[IrreducibleSpace X]`, is the section note above. -/
+theorem mono_toConstSheaf (X : Scheme.{u}) [IsIntegral X] : Mono (toConstSheaf X) := by
+  refine (SheafOfModules.forget X.ringCatSheaf).mono_of_mono_map ?_
+  refine PresheafOfModules.mono_of_injective ?_
+  intro V a b hab
+  by_cases hne : Nonempty V.unop
+  · haveI := hne
+    rw [toConstSheaf_eq] at hab
+    exact injective_genericPointHom_app X V.unop hab
+  · have hbot : V.unop = ⊥ := by
+      ext x
+      simp only [Opens.coe_bot, Set.mem_empty_iff_false, iff_false]
+      exact fun hx => hne ⟨⟨x, hx⟩⟩
+    have hs : Subsingleton Γ(X, V.unop) := hbot ▸ inferInstance
+    exact hs.elim a b
+
+/-- **`𝒪(−σ) ⊆ 𝒦_X`** — the ideal sheaf of a section, read inside the constant
+sheaf. -/
+noncomputable def sectionIdealToConst {Z T : Scheme.{u}} [IrreducibleSpace Z] (σ : T ⟶ Z) :
+    sectionIdeal σ ⟶ constSheaf Z :=
+  kernel.ι _ ≫ toConstSheaf Z
+
+/-- **`𝒪(−σ)` IS A SUBSHEAF OF `𝒦_Z`** (PROVEN) — and this is the half of
+obligation (1) that is FREE.
+
+`sectionIdeal σ` is a KERNEL, so `kernel.ι` is monic with no hypotheses at all;
+compose with `mono_toConstSheaf`.  Neither `IsProper` nor
+`SmoothOfRelativeDimension 1` appears: those are spent on INVERTIBILITY
+(`isInvertibleSheaf_sectionIdeal`), which is a different statement.
+
+`mono_comp` is applied by hand rather than by instance search because the
+`HasKernel` instance inside `sectionIdeal`'s definition and the one instance
+search reconstructs are defeq but not syntactically equal, so the search for
+`Mono (kernel.ι …)` fails while `equalizer.ι_mono` at the goal's own
+instantiation succeeds. -/
+theorem mono_sectionIdealToConst {Z T : Scheme.{u}} [IsIntegral Z] (σ : T ⟶ Z) :
+    Mono (sectionIdealToConst σ) := by
+  refine @mono_comp _ _ _ _ _ _ ?_ _ (mono_toConstSheaf Z)
+  exact equalizer.ι_mono
+
+/-- **`𝒪(−σ − τ) ⊆ 𝒦_Z`** — the product of two section ideals, read inside the
+constant sheaf.  This is the sheaf the `g¹₂` leaf's `_hiso` compares. -/
+noncomputable def sectionIdealPairToConst {Z T : Scheme.{u}} [IrreducibleSpace Z]
+    (σ τ : T ⟶ Z) : modTensor (sectionIdeal σ) (sectionIdeal τ) ⟶ constSheaf Z :=
+  modTensorToUnit (kernel.ι _) (kernel.ι _) ≫ toConstSheaf Z
+
+/-- **THE PRODUCT-IDEAL MAP IS INJECTIVE** (sorry leaf, 2026-07-31) — for two
+INVERTIBLE ideal sheaves on an INTEGRAL scheme, `I ⊗ J ⟶ 𝒪_X` is monic, so
+`I ⊗ J` is again a subsheaf of `𝒪_X` (namely the product ideal `IJ`).
+
+**Route.**  Monicity is local, and both sheaves are locally trivial: near any
+point choose `U` on which `I|_U ≅ 𝒪_U` and `J|_U ≅ 𝒪_U`, with the inclusions
+becoming multiplication by sections `a, b ∈ Γ(X, U)`.  Then `(I ⊗ J)|_U ≅ 𝒪_U`
+and the map is multiplication by `ab`.  On an INTEGRAL scheme `Γ(X, U)` is a
+domain and `a, b ≠ 0` (they are nonzero because `I`, `J` are nonzero subsheaves
+of `𝒪`), so `ab ≠ 0` and multiplication by it is injective.
+
+**FAITHFULNESS.  Every hypothesis is load-bearing.**
+
+* Drop integrality: over `X = Spec k[x,y]/(xy)` take `I = (x)`, `J = (y)`.  Both
+  are invertible on the two components separately, `I ⊗ J` is nonzero, and the
+  product map is zero, so it is not monic.  A nonzerodivisor hypothesis is
+  exactly what a domain supplies.
+* Drop invertibility of `J`: for `X` a smooth affine surface and `J = 𝔪` the
+  maximal ideal at a point, `I = 𝒪`, the map `𝒪 ⊗ 𝔪 ⟶ 𝒪` is monic — so this
+  particular drop is not refuted by that witness; invertibility is used to make
+  the LOCAL model available at all, and without it `I ⊗ J` has torsion at the
+  points where the ideals are not principal and the map kills it.  The standard
+  witness is `X = Spec k[x,y]`, `I = J = (x, y)`: `I ⊗ J` has a torsion element
+  `x ⊗ y − y ⊗ x ≠ 0` that maps to `xy − yx = 0`.
+
+**NOT VACUOUS.**  Satisfied by `I = J = 𝒪`, and by the pair of section ideals
+of any two sections of a smooth proper relative curve — which is the only place
+it is consumed. -/
+theorem mono_modTensorToUnit {X : Scheme.{u}} [IsIntegral X] {L M : X.Modules}
+    {ιL : L ⟶ modUnit X} {ιM : M ⟶ modUnit X} (_hL : IsInvertibleSheaf L)
+    (_hM : IsInvertibleSheaf M) (_hιL : Mono ιL) (_hιM : Mono ιM) :
+    Mono (modTensorToUnit ιL ιM) := sorry
+
+/-- **THE DICTIONARY: AN ISOMORPHISM OF INVERTIBLE SUBSHEAVES OF `𝒦_X` IS
+MULTIPLICATION BY AN ELEMENT OF `𝒦_Xˣ`** (sorry leaf, 2026-07-31) — obligation
+(1) of the `g¹₂` route correction, and the statement that removes Riemann–Roch
+from `hasDoubleCoverOfAffineLine_of_iso_sectionIdeal`.
+
+**Route — the generic stalk, and nothing else.**  Write `η` for the generic
+point and `K = X.functionField = 𝒪_{X,η}`.  Taking stalks at `η` is exact, so
+
+* `ιL` monic gives an injection of `K`-modules `L_η ↪ (𝒦_X)_η = K`, whose image
+  is a `K`-submodule of `K`, hence `0` or `K`;
+* `L` invertible gives `L_η ≅ 𝒪_{X,η} = K ≠ 0`, so the image is `K` and
+  `(ιL)_η` is an ISOMORPHISM onto `K`; likewise for `M`;
+* put `f := (ιM)_η (e_η ((ιL)_η⁻¹ 1)) ∈ K`.  Then `(ιM)_η ∘ e_η = f · (ιL)_η`
+  by `K`-linearity, and `f ∈ Kˣ` because the same construction applied to
+  `e.symm` gives `g` with `fg = 1`.
+* Finally the identity of MORPHISMS follows from the identity on the generic
+  stalk, because `Γ(𝒦_X, U) ⟶ (𝒦_X)_η` is injective for every `U` — it is the
+  identity of `K` for `U` nonempty and `0 ⟶ K` for `U = ∅`.  This is the one
+  step that uses what `𝒦_X` IS rather than that it is a sheaf.
+
+**FAITHFULNESS.  This was the check named as able to refute the whole route
+correction, and it comes back NEGATIVE — with both hypotheses load-bearing.**
+
+* Drop `Mono ιL` and it is FALSE: take `ιL = 0` with `L = 𝒪_X` and `M = 𝒪_X`,
+  `ιM = ` the canonical inclusion, `e = Iso.refl`.  Then `e ≫ ιM ≠ 0 = ιL ≫ c`
+  for every `c`, since `ιM` is monic and nonzero.  Without monicity there is no
+  ratio to speak of.
+* Drop `IsInvertibleSheaf L` and it is FALSE: the generic stalk can vanish.  On
+  `X = Spec ℤ` let `L` be the kernel of `𝒪 ⟶ 𝒪/(p)`… which is invertible, so
+  instead take `L` the SKYSCRAPER `(p)/(p²)` at `(p)`, `ιL = 0` — already
+  covered — or, keeping `ιL` monic, note that no monic `ι` out of a torsion
+  sheaf exists into `𝒦_X` at all, so the honest statement of what invertibility
+  buys is `L_η ≠ 0`: the hypothesis could be weakened to that, and is left as
+  invertibility because that is what both call sites have in hand
+  (`isInvertibleSheaf_sectionIdeal`, `isInvertibleSheaf_modTensorPic`).
+* Drop `[IsIntegral X]` and `X.functionField` is not a field, `L_η ↪ K` has no
+  submodule dichotomy, and the ratio need not exist: on
+  `X = Spec k[x,y]/(xy)` (not irreducible, so not even statable) or on a
+  non-reduced irreducible `X` the germ map is not injective and `𝒦_X` is not a
+  constant sheaf of fields.
+
+**NOT VACUOUS, and not `Iso`-trivial.**  `L = M = 𝒪_X` with `ιL = ιM` the
+canonical inclusion and `e = Iso.refl` gives `f = 1`; and the content is real
+because for `L = 𝒪(−x)`, `M = 𝒪(−y)` on a curve with `x ∼ y` the `f` produced
+is a nonconstant rational function with `div f = x − y`, which is exactly what
+the consumer extracts. -/
+theorem exists_constSmul_of_iso {X : Scheme.{u}} [IsIntegral X] {L M : X.Modules}
+    {ιL : L ⟶ constSheaf X} {ιM : M ⟶ constSheaf X}
+    (_hL : IsInvertibleSubsheaf ιL) (_hM : IsInvertibleSubsheaf ιM) (e : L ≅ M) :
+    ∃ f : X.functionFieldˣ, e.hom ≫ ιM = ιL ≫ constSmul (f : X.functionField) :=
+  sorry
+
+/-- **THE HAND-BACK: AN ISOMORPHISM `𝒪(−x₁−x₂) ≅ 𝒪(−y₁−y₂)` IS MULTIPLICATION
+BY A RATIONAL FUNCTION** (PROVEN 2026-07-31 over the three leaves above) — the
+export obligation (1) of the `g¹₂` route correction asks for, in the form its
+consumer `hasDoubleCoverOfAffineLine_of_iso_sectionIdeal` can use.
+
+Given the isomorphism that leaf receives as `_hiso`, this produces
+`f ∈ K(X_T)ˣ` with `f · 𝒪(−x₁−x₂) = 𝒪(−y₁−y₂)` inside `𝒦`, i.e. classically
+`div f = (x₁ + x₂) − (y₁ + y₂)`.  **No cohomology, no `h⁰`, no linear system
+and no pencil is involved**, which is the whole point of the correction: the
+`h⁰(D) ≥ 2` phrasing produces the same `f` through strictly more machinery.
+
+**WHAT REMAINS FOR THE CONSUMER after this**, and neither is here: obligation
+(2), that `f` restricted to `X ∖ {y₁, y₂}` is a finite morphism to `𝔸¹`
+(proper + quasi-finite + separated, by the valuative criterion already in
+`Mathlib/AlgebraicGeometry/…/CurveExtension.lean`), and obligation (3), the
+degree theorem `deg (div g) = 0` for a nonconstant `g` on a smooth proper
+curve, which is shared with
+`card_relPoint_not_liesIn_le_of_finite_toAffineLine`.
+
+**THE FOUR DISJOINTNESS INEQUALITIES ARE NOT NEEDED HERE** and are deliberately
+absent from the statement: they are what makes `div f ≠ 0` and pins the polar
+divisor to `(y₁) + (y₂)` with no cancellation, which is obligation (2)'s
+business.  Passing them in would make this lemma look like it used them.
+
+**`[IsIntegral (curveBaseChange strX g)]` is an instance argument, not a
+derived fact.**  It is the residual obligation named in this section's header:
+the consumer must supply it, and at `S = T = Spec ℚ` it follows from smooth
+(hence regular, hence normal) + geometrically connected + nonempty.  It is not
+discharged here because the derivation belongs next to the curve hypotheses,
+in `X0.lean`, not in a module about `Pic`. -/
+theorem exists_units_functionField_of_iso_sectionIdeal {X S T : Scheme.{u}} {strX : X ⟶ S}
+    (hproper : IsProper strX) (hsmooth : SmoothOfRelativeDimension 1 strX) {g : T ⟶ S}
+    [IsIntegral (curveBaseChange strX g)] (x₁ x₂ y₁ y₂ : RelPoint strX g)
+    (e : modTensor (sectionIdeal (relSection x₁)) (sectionIdeal (relSection x₂)) ≅
+      modTensor (sectionIdeal (relSection y₁)) (sectionIdeal (relSection y₂))) :
+    ∃ f : (curveBaseChange strX g).functionFieldˣ,
+      e.hom ≫ sectionIdealPairToConst (relSection y₁) (relSection y₂) =
+        sectionIdealPairToConst (relSection x₁) (relSection x₂) ≫ constSmul (f : _) := by
+  have key : ∀ z₁ z₂ : RelPoint strX g,
+      IsInvertibleSubsheaf (sectionIdealPairToConst (relSection z₁) (relSection z₂)) := by
+    intro z₁ z₂
+    refine ⟨isInvertibleSheaf_modTensorPic (isInvertibleSheaf_sectionIdeal hproper hsmooth z₁)
+      (isInvertibleSheaf_sectionIdeal hproper hsmooth z₂), ?_⟩
+    refine @mono_comp _ _ _ _ _ _ ?_ _ (mono_toConstSheaf _)
+    exact mono_modTensorToUnit (isInvertibleSheaf_sectionIdeal hproper hsmooth z₁)
+      (isInvertibleSheaf_sectionIdeal hproper hsmooth z₂) equalizer.ι_mono equalizer.ι_mono
+  exact exists_constSmul_of_iso (key x₁ x₂) (key y₁ y₂) e
 
 end Fermat

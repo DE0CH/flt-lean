@@ -546,15 +546,14 @@ that make this work — `(tensorObj P Q).map g` on a pure tensor, and
 proof is four lines and mentions no bilinearity at all.  Anyone who still wants
 the general instance should note the residue is bookkeeping, not content. -/
 
-/-- **`modTensor` is functorial on arbitrary morphisms.**  The file already had
-`modTensorMapIso` for isomorphisms; this is the same construction without the
-inverse, needed because the comparison map below is transposed from
-`η ⊗ η`, and `η` is not invertible. -/
-noncomputable def modTensorMap {Z : Scheme.{u}} {L L' M M' : Z.Modules}
-    (e : L ⟶ L') (e' : M ⟶ M') : modTensor L M ⟶ modTensor L' M' :=
-  (PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)).map
-    (MonoidalCategory.tensorHom
-      ((SheafOfModules.forget _).map e) ((SheafOfModules.forget _).map e'))
+/-! **`modTensorMap` — `modTensor` functorial on arbitrary morphisms — WAS
+DECLARED HERE and was HOISTED to `ModularCurve/RelativePicard.lean` on
+2026-07-31**, byte-identically, because that module now needs it too
+(`modTensorToUnit`, the product of two ideal sheaves) and it imports this file's
+own upstream.  Two declarations of the same name would have collided exactly as
+`isInvertibleSheaf_modUnit` did.  Nothing here changes: the name still resolves,
+through the import, to the same term.  `modTensorMap_tensorSection` below stays
+here, where its consumer is. -/
 
 /-- **`modTensorMap` acts on `tensorSection` componentwise.**
 
