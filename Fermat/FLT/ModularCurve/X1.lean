@@ -1085,9 +1085,15 @@ theorem exists_gamma1Datum_baseChange {N : ℕ} {T' T : Scheme.{u}} (h : T' ⟶ 
 
 `refl`, `comp`, `cancelMap`, `cancelMap_fst`, `cancelMap_snd`, `cancel` and
 `along_injective` were moved VERBATIM into `Fermat/FLT/ModularCurve/X0.lean` on
-2026-07-31, together with the four structures above, at the same root namespace.
-`exists_descendClassifyGamma1` and `nonempty_gamma1RigidifiedModuli_of_iso` below
-consume `cancel` and `along_injective` unchanged. -/
+2026-07-31, at the same root namespace, together with the four structures whose
+relocation is recorded at the top of this file.  `exists_descendClassifyGamma1`
+and `nonempty_gamma1RigidifiedModuli_of_iso` below consume `cancel` and
+`along_injective` unchanged, through the `public import`.
+
+The two `namespace IsBaseChangeOfGamma1` blocks that remain in this file (the
+`toRelPoint` API and its `comb` compatibility) did NOT move: nothing hoisted into
+`X0.lean` reaches them, and they reopen the same root namespace, so splitting the
+namespace across the two modules costs nothing. -/
 
 /-! #### The rigidified moduli scheme, and the two halves of (8.1.1)/(8.1.3)
 

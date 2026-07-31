@@ -218,6 +218,30 @@ def main():
     for f in clo:
         ctok |= tok[f]
 
+    # WHERE each short name is used, so a hit can be refuted without a build.
+    # The matcher is deliberately an OVER-approximation on the SHORT name (see the
+    # module docstring), and in practice most reports on a common suffix — `refl`,
+    # `comp`, `along_injective`, `val_neg` — are `Equiv.refl` / `RingHom.comp` /
+    # the block's own homonym.  Printing one witness line per hit turns a
+    # five-minute investigation into a glance, and getting that investigation
+    # wrong is expensive in the OTHER direction: a spurious `CYCLE via …` line
+    # gets written into a docstring as prose and believed for weeks.
+    raw = open(src, encoding='utf-8').read().split('\n')
+
+    def witness(short):
+        """-> (declaration, source line) for the first use of `short` in the
+        closure, or None.  Matches the same dotted-part rule as `tokens`."""
+        for f in sorted(clo, key=lambda g: bodies[g][0]):
+            if short not in tok[f]:
+                continue
+            l1, l2, _ = bodies[f]
+            for ln in range(l1, min(l2, len(raw)) + 1):
+                text = raw[ln - 1]
+                if short in tokens(text):
+                    return f, ln, text.strip()
+            return f, l1, ''
+        return None
+
     mods = importers_of(a.dest, a.root)
     print(f'\nDEST   {a.dest}  ({len(mods)} modules transitively import it)')
     cycles = 0
@@ -234,10 +258,28 @@ def main():
         print(f'\n  CYCLE via {mod}  — {len(hit)} referenced, '
               f'{len(price)} declarations to relocate if moved upstream')
         for ln, f in hit:
-            print(f'    {ln:7d}  {f}')
+            short = mb[f][2]
+            print(f'    {ln:7d}  {f}   (matched on the short name {short!r})')
+            w = witness(short)
+            if w is None:
+                print('             no witness found — this is a bug in the scan')
+                continue
+            g, wln, text = w
+            print(f'             first use: {src}:{wln}  in {g}')
+            print(f'             | {text[:96]}')
     if cycles == 0:
         print('\n  NO CYCLE: the closure references nothing declared in any module '
               'that imports the destination.')
+    else:
+        print('\n  READ THE WITNESS LINES BEFORE COSTING ANY WORK OFF THIS REPORT.\n'
+              '  Every hit above is a SHORT-NAME match, so a hit on a common suffix\n'
+              '  (`refl`, `comp`, `map`, `val_neg`, …) is usually somebody else\'s\n'
+              '  homonym.  The decisive refutation is one grep for the QUALIFIED name,\n'
+              '  or for the type it hangs off, in the source module:\n'
+              f'      grep -c \'<Namespace>\' {src}\n'
+              '  A spurious CYCLE line gets copied into a docstring as prose and\n'
+              '  believed for weeks — that is how the `NeronModel.lean` verdict on\n'
+              '  `flt-hoist-genusone.py` survived after the leaves under it closed.')
     return 0
 
 
