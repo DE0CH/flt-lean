@@ -1303,3 +1303,42 @@ Three mechanical notes that cost time on the way:
 Corollary for reviewers of a cut: 1 → 1 on the leaf count is a *good* trade when what changes
 is that the leaf now matches its citation. Judge a decomposition by whether the remaining leaf
 can be handed to someone with the book open, not by the count alone.
+
+**AND THE DEFECT CLUSTERS — WHEN YOU FIND ONE, RUN THE TEST ON EVERY LEAF IN THE FILE.**
+
+(2026-07-31, same file, same day, two more instances found by doing exactly that.)
+
+The syntactic test above costs ten seconds per leaf: *are the hypotheses and the conclusion
+about the SAME morphism?* Having applied it once to `exists_relPicOf_isAffineOpen`, applying
+it to the file's other seven leaves immediately caught two more —
+`isInvertibleSheaf_sectionIdeal` and `nonempty_modPullback_sectionIdeal`, both with hypotheses
+on `strX : X ⟶ S` and conclusions about a section of `X ×_S T ⟶ T`. Stacks 0C4S is about a
+section of a smooth relative curve; neither leaf was stated about one.
+
+This is not a coincidence, and the reason tells you where else to look: **the mis-shaping is
+inherited from the file's central definition.** Everything here is stated relative to a fixed
+`strX` because that is what `IsRelPicOf`, `RelPoint` and `RelPicEquiv` are parameterised by, so
+a leaf about the base-changed curve gets written with `strX`'s hypotheses out of sheer local
+consistency. Any file with one pervasive ambient object will do the same. **So the unit of the
+audit is the FILE, not the leaf** — and the transport lemmas you prove for the first instance
+are exactly the ones the rest need, which is why instances two and three cost 3 lemmas and 30
+lines between them once the first was done.
+
+Three notes from the two extra instances:
+
+* **The hidden hypothesis surfaces as an explicit one, and that is the audit's job to catch.**
+  `relSection x` is a section *by construction*, so the old statement never had to say so.
+  The citation-shaped statement quantifies over an arbitrary `σ : T ⟶ Y` and therefore MUST
+  carry `σ ≫ strY = 𝟙 T` — without it the leaf is false for a silly reason (`σ = 𝟙 Y` makes
+  the kernel `0`). Restating always risks dropping such a constructional hypothesis on the
+  floor; enumerate what the old form got for free before writing the new one.
+* **Cartesianness is the commonest thing a base-change leaf assumes without saying.** The old
+  `nonempty_modPullback_sectionIdeal` had "the square is cartesian and the sections match" as a
+  docstring *remark* — the prover was expected to re-derive it. Both are now hypotheses of the
+  leaf and PROVEN lemmas at the call site (`IsPullback.of_right` for the pasting;
+  `pullback.hom_ext` for the section compatibility). A remark that a prover must re-derive is
+  an unowned obligation wearing prose.
+* **The transport lemmas pay for themselves elsewhere.** `isPullback_curveBaseChangeMap` — that
+  `X ×_S T'` really is the pullback of `X ×_S T` along `T' ⟶ T` — was needed here and is also
+  precisely the input step 2 of a *different* open leaf's route was asking for. Prove these as
+  named lemmas, never inline in a `have`.

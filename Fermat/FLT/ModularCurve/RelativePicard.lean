@@ -254,8 +254,12 @@ warnings — `{902, 2717, 2914, 2996, 3566, 3607, 3975}` at that commit — and
 against a comment-stripped token count, 7 = 7, so there are no anonymous inner
 sorries hiding behind a warning).  It is 8 later the same day; see the
 decomposition amendment below.  The three that belong to BLR 9.4/4 are
-`isInvertibleSheaf_sectionIdeal`, `nonempty_modPullback_sectionIdeal` and
-`exists_relPicZeroSubgroup`.  **Do not quote that number** — regenerate it;
+`isInvertibleSheaf_sectionIdeal_of_isSection`,
+`nonempty_modPullback_sectionIdeal_of_isPullback` and
+`exists_relPicZeroSubgroup` — the first two RENAMED (2026-07-31, third
+amendment) from `isInvertibleSheaf_sectionIdeal` /
+`nonempty_modPullback_sectionIdeal`, which are now PROVEN assemblies over them;
+see the section note there.  **Do not quote that number** — regenerate it;
 every previous version of this sentence went stale within a day, and the line
 numbers within hours.
 
@@ -3918,8 +3922,11 @@ why they are cut apart rather than left as one node:
   map `x ↦ [x] − [o]` as a map into the points of `Pic`.  No identity
   component enters it: it is a statement about `sectionIdeal` on a smooth
   relative curve, plus `surj`.  **PROVEN 2026-07-29**, leaving only its
-  two `sectionIdeal` obligations open (`isInvertibleSheaf_sectionIdeal`,
-  `nonempty_modPullback_sectionIdeal`);
+  two `sectionIdeal` obligations open — `isInvertibleSheaf_sectionIdeal` and
+  `nonempty_modPullback_sectionIdeal` then, and since 2026-07-31 their
+  citation-shaped forms `isInvertibleSheaf_sectionIdeal_of_isSection` and
+  `nonempty_modPullback_sectionIdeal_of_isPullback`, the originals having
+  become PROVEN assemblies over them;
 * the **geometry** — `exists_relPicZeroSubgroup` — cutting `Pic⁰` out of
   `Pic` and showing it is proper, smooth and geometrically connected over
   `S`.  It takes the Abel–Jacobi map as an INPUT, because "contains the
@@ -3962,16 +3969,85 @@ theorem IsRelPicOf.eq_of_relPicEquiv_tensor {X P S T : Scheme.{u}} {strX : X ⟶
     (relPicEquiv_trans strX g (relPicEquiv_trans strX g hp (relPicEquiv_symm strX g hq))
       (relPicEquiv_of_iso strX g (modTensorSymmIso (hP.sheaf q) I)))
 
-/-- **A SECTION OF A SMOOTH RELATIVE CURVE IS AN EFFECTIVE CARTIER DIVISOR**
-(sorry leaf, cut 2026-07-29 out of `exists_abelJacobiPoint`) — its ideal sheaf
-`𝒪(−σ)` is invertible.
+/-! #### Step (i) ONE MORE TIME: both `sectionIdeal` leaves were stated about a
+BASE CHANGE of the curve their citations are about
 
-Stacks 0C4S / EGA IV 17.12.1: for `f : Y ⟶ T` smooth of relative dimension `1`
-and separated, a section `σ` is a closed immersion whose ideal is locally
+(2026-07-31, and this is the third instance of the same defect in this file in
+two days — see the two CLAUDE.md sections it now has.)  Both leaves below took
+their hypotheses on `strX : X ⟶ S` and stated their conclusion about
+`relSection x`, which is a section of `curveBaseChangeProj strX g : X ×_S T ⟶ T`.
+Stacks 0C4S is a theorem about a section of a smooth relative curve.  It is not
+a theorem about a section of the base change of a smooth relative curve over
+some other scheme, so the transport had to be done before the citation applied —
+and it was invisible, being neither in the statement nor a leaf but a sentence
+in the docstring ("Here `Y = X ×_S T`, which is proper and smooth of relative
+dimension `1` over `T` because both properties are stable under base change").
+
+The three lemmas here discharge it, reusing the base-change stability lemmas
+proven for `exists_relPicOf_of_isAffineBase` above.  Nothing mathematical
+happens in any of them; the point is that after them the two leaves can be, and
+are, stated in the shape their citations are stated in. -/
+
+/-- **`relSection x` IS a section of the base-changed curve** (PROVEN) —
+`pullback.lift_snd`, and nothing else. -/
+theorem relSection_comp_curveBaseChangeProj {X S T : Scheme.{u}} {strX : X ⟶ S} {g : T ⟶ S}
+    (x : RelPoint strX g) : relSection x ≫ curveBaseChangeProj strX g = 𝟙 T := by
+  simp only [relSection, curveBaseChangeProj, pullback.lift_snd]
+
+/-- **`X ×_S T'` IS the pullback of `X ×_S T` along `h : T' ⟶ T`** (PROVEN) —
+the pasting law, `IsPullback.of_right`.
+
+The right-hand square `X ×_S T ⟶ X` over `T ⟶ S` is cartesian by definition,
+and the rectangle `X ×_S T' ⟶ X` over `T' ⟶ S` is cartesian for the same
+reason once `g'` is rewritten as `h ≫ g`; so the left-hand square is.
+
+This is what makes `curveBaseChangeMap` a genuine base change rather than an
+arbitrary morphism, and it is the hypothesis
+`nonempty_modPullback_sectionIdeal_of_isPullback` needs.  It is also exactly
+the pullback-pasting input that step 2 of
+`exists_gluedRelPic_of_forall_isAffineOpen`'s route asks for, so a prover of
+that leaf should consume this rather than re-derive it. -/
+theorem isPullback_curveBaseChangeMap {X S T T' : Scheme.{u}} (strX : X ⟶ S)
+    {g : T ⟶ S} {g' : T' ⟶ S} (h : T' ⟶ T) (hg : h ≫ g = g') :
+    IsPullback (curveBaseChangeMap strX h hg) (curveBaseChangeProj strX g')
+      (curveBaseChangeProj strX g) h := by
+  subst hg
+  refine IsPullback.of_right (h₁₂ := pullback.fst strX g) ?_ ?_
+    (IsPullback.of_hasPullback strX g)
+  · have hfst : curveBaseChangeMap strX h rfl ≫ pullback.fst strX g
+        = pullback.fst strX (h ≫ g) := by
+      simp only [curveBaseChangeMap, pullback.lift_fst]
+    rw [hfst]
+    exact IsPullback.of_hasPullback strX (h ≫ g)
+  · simp only [curveBaseChangeMap, curveBaseChangeProj, pullback.lift_snd]
+
+/-- **The two sections are compatible across the base change** (PROVEN):
+`σ' ≫ φ = h ≫ σ`.
+
+This is the identity the old docstring of `nonempty_modPullback_sectionIdeal`
+said "is the only part a prover has to check by hand".  It is checked here, by
+`pullback.hom_ext`: the two components are `pullback.lift_fst` (both sides have
+first component `h ≫ x.1`, definitionally, since `(RelPoint.pre h hg x).1` IS
+`h ≫ x.1`) and `pullback.lift_snd` (both have second component `h`). -/
+theorem relSection_pre_comp_curveBaseChangeMap {X S T T' : Scheme.{u}} {strX : X ⟶ S}
+    {g : T ⟶ S} {g' : T' ⟶ S} (h : T' ⟶ T) (hg : h ≫ g = g') (x : RelPoint strX g) :
+    relSection (RelPoint.pre h hg x) ≫ curveBaseChangeMap strX h hg = h ≫ relSection x := by
+  apply pullback.hom_ext
+  · simp only [relSection, curveBaseChangeMap, Category.assoc, pullback.lift_fst]
+    rfl
+  · simp only [relSection, curveBaseChangeMap, Category.assoc, pullback.lift_snd,
+      Category.comp_id]
+    rw [← Category.assoc, pullback.lift_snd, Category.id_comp]
+
+/-- **A SECTION OF A SMOOTH RELATIVE CURVE IS AN EFFECTIVE CARTIER DIVISOR**
+(sorry leaf, cut 2026-07-31 out of `isInvertibleSheaf_sectionIdeal` by
+discharging that leaf's base change) — its ideal sheaf `𝒪(−σ)` is invertible.
+
+Stacks 0C4S / EGA IV 17.12.1 verbatim, and now stated about the morphism the
+citation is about: `strY : Y ⟶ T` proper and smooth of relative dimension `1`,
+`σ` a section of it.  Then `σ` is a closed immersion whose ideal is locally
 generated by one element that is a nonzerodivisor on every fibre — the local
-coordinate of the smooth curve at `σ`.  Here `Y = X ×_S T`, which is proper and
-smooth of relative dimension `1` over `T` because both properties are stable
-under base change, and `σ = relSection x`.
+coordinate of the smooth curve at `σ`.  No base change appears in the statement.
 
 **This is one of the exactly TWO genuinely new geometric obligations of
 `exists_abelJacobiPoint`, and it is where the smoothness hypothesis of that leaf
@@ -3979,11 +4055,18 @@ is spent.**  Nothing in the pin says it: there is no divisor theory at `a3364fa`
 (no `𝒪(D)`, no Cartier divisors), which is why `sectionIdeal` is defined as a
 kernel in the first place.  So it has to be proven from that definition —
 `sectionIdeal σ = ker (𝒪_Y ⟶ σ_*𝒪_T)` — by trivializing on a neighbourhood of
-each point of the image and using `f` smooth of relative dimension `1` there;
+each point of the image and using `strY` smooth of relative dimension `1` there;
 off the image the kernel is all of `𝒪_Y` and the statement is the (proven)
 `isInvertibleSheaf_modUnit` locally.
 
-**FAITHFULNESS.  Both hypotheses are load-bearing, neither is decoration.**
+**FAITHFULNESS AUDIT (fresh — this is a NEW statement, so the previous audit is
+VOID rather than inherited, per CLAUDE.md's rule.  It survives essentially
+verbatim, and the reason is worth recording: both of its counterexamples were
+already stated as curves over a base rather than as base changes, so they were
+always really about THIS statement.  Restating has made the audit apply
+directly instead of through a transport.)**
+
+*Both hypotheses are load-bearing, neither is decoration.*
 
 * Drop `_hsmooth` and it is FALSE: for the nodal cubic `Y : y² = x³ + x²` over a
   field, a section through the node has ideal sheaf which is not invertible at
@@ -3999,58 +4082,125 @@ off the image the kernel is all of `𝒪_Y` and the statement is the (proven)
   doubled origin over `T = Spec k`, smooth of relative dimension `1`, and `σ`
   one of the two origins: the kernel is the ideal of a point whose closure meets
   the other origin, and it is not invertible at that second point.
+* Drop `_hσ` — that `σ` is a SECTION — and it is FALSE for a trivial reason: an
+  arbitrary `σ : T ⟶ Y` need not be an immersion at all, and `ker (𝒪_Y ⟶ σ_*𝒪_T)`
+  is then not the ideal of a divisor.  Take `T = Y` and `σ = 𝟙 Y` with `Y` a
+  curve of positive genus over `T' = Spec k`: the kernel is `0`, which is not
+  invertible.  This hypothesis is NEW here — in the old statement it was implicit
+  in `σ = relSection x`, which is a section by construction
+  (`relSection_comp_curveBaseChangeProj`), and making it explicit is what lets
+  the statement mention no base change.
 
-**NOT VACUOUS.**  Satisfied whenever `X ⟶ S` is a smooth proper relative curve
-with a section, which is the situation the whole module is about; `X = S`,
-`strX = 𝟙 S` is excluded because that is relative dimension `0`, and the
-statement is not vacuously true by an empty quantifier — `IsInvertibleSheaf` is
-a `∀` over the points of `X ×_S T`, which is nonempty as soon as `T` is. -/
+**NOT VACUOUS.**  `Y = ℙ¹_T` with the zero section satisfies every hypothesis,
+and `𝒪(−0)` is invertible.  The conclusion is not vacuously true by an empty
+quantifier either — `IsInvertibleSheaf` is a `∀` over the points of `Y`, which
+is nonempty as soon as `T` is. -/
+theorem isInvertibleSheaf_sectionIdeal_of_isSection {Y T : Scheme.{u}} (strY : Y ⟶ T)
+    (_hproper : IsProper strY) (_hsmooth : SmoothOfRelativeDimension 1 strY)
+    {σ : T ⟶ Y} (_hσ : σ ≫ strY = 𝟙 T) :
+    IsInvertibleSheaf (sectionIdeal σ) := sorry
+
+/-- **A SECTION OF A SMOOTH RELATIVE CURVE IS AN EFFECTIVE CARTIER DIVISOR**
+(**PROVEN 2026-07-31**; formerly a bare sorry leaf).
+
+`isInvertibleSheaf_sectionIdeal_of_isSection` applied to the base-changed curve
+`X ×_S T ⟶ T`, whose properness and smoothness are the base-change lemmas
+proven above and whose section is `relSection x`
+(`relSection_comp_curveBaseChangeProj`).  Nothing mathematical happens here; the
+whole content moved to the new leaf, which is stated in Stacks 0C4S's own shape.
+The audit lives there. -/
 theorem isInvertibleSheaf_sectionIdeal {X S T : Scheme.{u}} {strX : X ⟶ S}
     (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
     {g : T ⟶ S} (x : RelPoint strX g) :
-    IsInvertibleSheaf (sectionIdeal (relSection x)) := sorry
+    IsInvertibleSheaf (sectionIdeal (relSection x)) :=
+  isInvertibleSheaf_sectionIdeal_of_isSection (curveBaseChangeProj strX g)
+    (isProper_curveBaseChangeProj strX g _hproper)
+    (smoothOfRelativeDimension_curveBaseChangeProj strX g _hsmooth)
+    (relSection_comp_curveBaseChangeProj x)
 
-/-- **`𝒪(−σ)` COMMUTES WITH BASE CHANGE** (sorry leaf, cut 2026-07-29 out of
-`exists_abelJacobiPoint`) — `φ^* 𝒪(−x) ≅ 𝒪(−x_{T'})` for
-`φ = curveBaseChangeMap strX h hg`.
+/-- **`𝒪(−σ)` COMMUTES WITH BASE CHANGE** (sorry leaf, cut 2026-07-31 out of
+`nonempty_modPullback_sectionIdeal` by discharging that leaf's base change) —
+`φ^* 𝒪(−σ) ≅ 𝒪(−σ')` across a CARTESIAN SQUARE.
 
 The second of the two genuinely new geometric obligations, and the only one
-`aj_pre` needs beyond the tensor calculus.
+`aj_pre` needs beyond the tensor calculus.  It is now stated the way the fact is
+actually true: for an arbitrary cartesian square
 
-**The square is cartesian and the sections match**, which is what makes this
-true and is worth recording because it is the only part a prover has to check by
-hand: writing `σ = relSection x` and `σ' = relSection (RelPoint.pre h hg x)`,
+    Y' --φ--> Y
+    |         |
+  strY'     strY
+    ↓         ↓
+    T' --h--> T
 
-    σ' ≫ φ = h ≫ σ,
-
-since both have first component `h ≫ x.1` (`pullback.lift_fst`, `x'.1 = h ≫ x.1`
-by definition of `RelPoint.pre`) and second component `h` (`pullback.lift_snd`
-together with `curveBaseChangeMap_proj`).  And `X ×_S T' = (X ×_S T) ×_T T'`, so
-the divisor `D_{x'}` really is the pullback of `D_x`.
+with `strY` a proper smooth relative curve, `σ` a section of `strY`, `σ'` a
+section of `strY'`, and the two sections compatible (`σ' ≫ φ = h ≫ σ`).  No
+`pullback.lift` and no `curveBaseChange` appears; the consumer below supplies
+the square from `isPullback_curveBaseChangeMap` and the compatibility from
+`relSection_pre_comp_curveBaseChangeMap`, both PROVEN above.
 
 **Why it is not formal.**  `φ^*` is right exact, not left exact, so it does not
 commute with a kernel for free; the statement is exactly that the surjection
-`𝒪_{X_T} ↠ 𝒪_{D_x}` stays injective-on-the-ideal after pullback, i.e. that
-`D_x` is FLAT over `T` — which is the content of
-`isInvertibleSheaf_sectionIdeal` above (an effective relative Cartier divisor is
-flat over the base).  So this leaf DEPENDS on that one, and a proof should
-consume it rather than redo it.
+`𝒪_Y ↠ 𝒪_{D_σ}` stays injective-on-the-ideal after pullback, i.e. that `D_σ` is
+FLAT over `T` — which is the content of
+`isInvertibleSheaf_sectionIdeal_of_isSection` above (an effective relative
+Cartier divisor is flat over the base).  So this leaf DEPENDS on that one, and a
+proof should consume it rather than redo it.  Cartesianness of the square is
+what makes `D_{σ'}` the pullback of `D_σ` rather than an unrelated divisor, and
+it is now a hypothesis instead of a remark.
 
-**FAITHFULNESS.**  Same two hypotheses, same reason: drop either and `𝒪(−x)`
-need not be invertible, hence need not be flat over `T`, and the pullback map
-`φ^*𝒪(−x) ⟶ 𝒪(−x_{T'})` has a kernel.  Concretely, over the nodal cubic with
-`T' ⟶ T` the inclusion of the node's residue field, `φ^*` of the ideal has rank
-`2` while `𝒪(−x_{T'})` has rank `1`, so no isomorphism exists.
+**FAITHFULNESS AUDIT (fresh — NEW statement, previous audit VOID rather than
+inherited).**  TRUE by the route above.
 
-**NOT VACUOUS, and not a relocation.**  `h = 𝟙 T` gives a nontrivial instance
-(`φ` is then an automorphism of the pullback, not the identity, since
-`curveBaseChangeMap` is defined by `pullback.lift`), and the general case is
-consumed once in `aj_pre` at each of `x` and the base point `o`. -/
+* Drop `_hproper` or `_hsmooth` and it is FALSE: `𝒪(−σ)` need not be invertible,
+  hence need not be flat over `T`, and the pullback map `φ^*𝒪(−σ) ⟶ 𝒪(−σ')` has
+  a kernel.  Concretely, over the nodal cubic with `T' ⟶ T` the inclusion of the
+  node's residue field, `φ^*` of the ideal has rank `2` while `𝒪(−σ')` has rank
+  `1`, so no isomorphism exists.
+* Drop `_hsq` — cartesianness — and it is FALSE, and this is the hypothesis the
+  old statement hid rather than assumed.  Take `Y' = Y`, `T' = T`, `h = 𝟙 T`,
+  `φ = 𝟙 Y`, `σ' = σ`: the square commutes and every other hypothesis holds, but
+  now perturb it to `Y' = Y ⊔ Y` with `strY'` the fold map and `φ` the fold: the
+  square commutes, `σ'` into the first copy is a section, and `φ^*𝒪(−σ)` is
+  `𝒪(−σ)` on BOTH copies while `𝒪(−σ')` is trivial on the second, so they are
+  not isomorphic.  Cartesianness is exactly what excludes this.
+* Drop `_hcompat` and it is FALSE for the same reason at the level of a single
+  divisor: `σ'` could be a section through a different point of the fibre, and
+  `𝒪(−σ')` is then a different invertible sheaf.  For `Y = ℙ¹_T` and two distinct
+  constant sections the two ideals differ.
+
+**NOT VACUOUS.**  The consumer below instantiates it, and `h = 𝟙 T` already
+gives a nontrivial instance there (`φ` is then an automorphism of the pullback,
+not the identity, since `curveBaseChangeMap` is defined by `pullback.lift`). -/
+theorem nonempty_modPullback_sectionIdeal_of_isPullback {Y T Y' T' : Scheme.{u}}
+    (strY : Y ⟶ T) (strY' : Y' ⟶ T') (φ : Y' ⟶ Y) (h : T' ⟶ T)
+    (_hsq : IsPullback φ strY' strY h)
+    (_hproper : IsProper strY) (_hsmooth : SmoothOfRelativeDimension 1 strY)
+    {σ : T ⟶ Y} (_hσ : σ ≫ strY = 𝟙 T) {σ' : T' ⟶ Y'} (_hσ' : σ' ≫ strY' = 𝟙 T')
+    (_hcompat : σ' ≫ φ = h ≫ σ) :
+    Nonempty (modPullback φ (sectionIdeal σ) ≅ sectionIdeal σ') := sorry
+
+/-- **`𝒪(−σ)` COMMUTES WITH BASE CHANGE** (**PROVEN 2026-07-31**; formerly a
+bare sorry leaf).
+
+`nonempty_modPullback_sectionIdeal_of_isPullback` applied to the cartesian
+square `isPullback_curveBaseChangeMap`, with the section compatibility supplied
+by `relSection_pre_comp_curveBaseChangeMap`.  Both were remarks in this
+docstring when it was a leaf ("the square is cartesian and the sections match …
+the only part a prover has to check by hand"); they are now PROVEN lemmas, and
+the geometry that is left lives in the new leaf.  The audit lives there. -/
 theorem nonempty_modPullback_sectionIdeal {X S T T' : Scheme.{u}} {strX : X ⟶ S}
     (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
     {g : T ⟶ S} {g' : T' ⟶ S} (h : T' ⟶ T) (hg : h ≫ g = g') (x : RelPoint strX g) :
     Nonempty (modPullback (curveBaseChangeMap strX h hg) (sectionIdeal (relSection x))
-      ≅ sectionIdeal (relSection (RelPoint.pre h hg x))) := sorry
+      ≅ sectionIdeal (relSection (RelPoint.pre h hg x))) :=
+  nonempty_modPullback_sectionIdeal_of_isPullback (curveBaseChangeProj strX g)
+    (curveBaseChangeProj strX g') (curveBaseChangeMap strX h hg) h
+    (isPullback_curveBaseChangeMap strX h hg)
+    (isProper_curveBaseChangeProj strX g _hproper)
+    (smoothOfRelativeDimension_curveBaseChangeProj strX g _hsmooth)
+    (relSection_comp_curveBaseChangeProj x)
+    (relSection_comp_curveBaseChangeProj (RelPoint.pre h hg x))
+    (relSection_pre_comp_curveBaseChangeMap h hg x)
 
 /-- **THE ABEL–JACOBI MAP INTO `Pic`** (PROVEN 2026-07-29 over the two geometric
 leaves `isInvertibleSheaf_sectionIdeal` and `nonempty_modPullback_sectionIdeal`,
