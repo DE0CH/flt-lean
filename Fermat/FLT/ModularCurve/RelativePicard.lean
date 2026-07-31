@@ -3454,7 +3454,13 @@ The three leaves are then:
   and it needs NO geometric hypothesis) and
   `nonempty_isRelPicOverAffines_of_restrict` (the sheaf, where `_o` and
   `_hpush` are spent); its `Smooth ∧ IsSeparated` clause is discharged in
-  the assembly by `transport_of_forall_isAffineOpen`;
+  the assembly by `transport_of_forall_isAffineOpen`.
+  **Amended 2026-07-31 (`flt-lean-266`)**: the second of those is now PROVEN
+  too, over `exists_relPicPoincare_of_localUniversal` — the same cut, RECUT so
+  that the leaf receives universal SHEAVES rather than unrelated `IsRelPicOf`
+  structures.  `sheaf`, `invertible` and `sheaf_pre` are theorems as of that
+  recut, and `_o`/`_hpush` are now spent in
+  `exists_relPicPoincare_of_localUniversal` alone;
 * `inj_of_isRelPicOverAffines` — injectivity is Zariski-local on `T`.
   **PROVEN 2026-07-30, and the route below is what went through verbatim.**
   **Unconditional**: it needs neither `_o` nor `_hpush` nor any geometric
@@ -4004,36 +4010,219 @@ theorem exists_gluedRelPic_of_forall_isAffineOpen {X S : Scheme.{u}} (strX : X �
     d.isPullback_natTrans_ι_toBase ⟨V, hV⟩
   exact ⟨hP.ofIsoOver (h1.isoIsPullback _ _ h2) (h1.isoIsPullback_hom_fst _ _ h2)⟩
 
+/-! #### The Poincaré bundle: `sheaf`, `invertible` and `sheaf_pre` are FREE
+once the bundle exists, and the local structures pin down to universal sheaves
+
+**RECUT 2026-07-31 (`flt-lean-266`), direct-sorry count UNCHANGED, 1 → 1.**
+`nonempty_isRelPicOverAffines_of_restrict` below is now PROVEN, over the single
+new leaf `exists_relPicPoincare_of_localUniversal`.  Nothing became provable
+that was not provable before; what changed is what is LEFT in the leaf, and
+that is the thing to judge this by:
+
+* three of the five fields of `IsRelPicOverAffines` are now THEOREMS.  Define
+  `sheaf p := p^* poin` for a single sheaf `poin` on `X ×_S P` — that is
+  `relPicPullback` — and `invertible` is `isInvertibleSheaf_modPullback`, while
+  `sheaf_pre` is `curveBaseChangeMap_comp` plus `modPullbackCompIso`
+  (`relPicEquiv_relPicPullback_pre`).  The route note already called these
+  "immediate from that description"; they are now compiler-checked, and a
+  prover never has to look at them again;
+* the leaf no longer receives UNRELATED local structures.  The paragraph below
+  that explains why the local `sheaf` functions cannot be glued is correct and
+  is retained — and the repair is one formal step, `exists_relPicUniversal_of_isRelPicOf`:
+  a representing object's classifying function IS pullback of a single
+  universal sheaf on `X ×_S (pstr ⁻¹ᵁ V)`, by `sheaf_pre` at the tautological
+  point.  So the leaf's hypothesis now hands over PINNED OBJECTS, one per
+  affine open, and the "differ by an automorphism of the functor" obstacle is
+  discharged rather than described.  That step is step 1 of the classical
+  route, and it is done.
+
+**The two hypotheses are EQUIVALENT, so no faithfulness question arises.**
+`_hres → _hloc` is `exists_relPicUniversal_of_isRelPicOf`, and is proven and
+consumed below.  The converse holds too and is NOT in Lean because nothing
+needs it: from a universal `U` over `V`, `fun p => relPicPullback U p` is an
+`IsRelPicOf` structure, its `sheaf_pre` being the same
+`relPicEquiv_relPicPullback_pre` used here.  So the leaf is neither
+strengthened nor weakened by the restatement, and its FALSITY AUDIT (below)
+transfers verbatim.
+
+**What is left in the leaf, in the order a prover meets it.**
+
+1. *Transport.*  The hypothesis is stated in the LOCAL world — `RelPoint
+   (pstr ∣_ V) gV` and `curveBaseChange (curveBaseChangeProj strX V.ι) gV` —
+   and the conclusion in the GLOBAL one, `RelPoint pstr g` and
+   `curveBaseChange strX g`.  Bridging them is the pair of sublemmas the
+   route note on `exists_isRelPicOverAffines_of_forall_isAffineOpen` names and
+   dismisses: `RelPoint (pstr ∣_ V) gV ≃ RelPoint pstr (gV ≫ V.ι)` (because
+   `pstr ⁻¹ᵁ V` is `P ×_S V`, `isPullback_morphismRestrict`), and
+   `curveBaseChange (curveBaseChangeProj strX V.ι) gV ≅ curveBaseChange strX
+   (gV ≫ V.ι)` (pullback pasting), compatibly with the projections to `T` so
+   that `RelPicEquiv` crosses.  Neither is stated as a leaf here because
+   neither is a citation; both are routine and both are real work.
+2. *Rigidification and gluing*, which is the mathematics — see the route in
+   the leaf's own docstring.  `_o` and `_hpush` are spent here and only here.
+
+`isPullback_curveBaseChangeMap` (PROVEN, below) is half of (1). -/
+
+/-- **The sheaf on `X_T` classified by a `T`-point `p` of `P`**, given a
+Poincaré bundle `poin` on `X ×_S P`: the pullback of `poin` along the map
+`X_T ⟶ X_P` that `p` induces.
+
+This is the ONLY shape of classifying function a global `IsRelPicOverAffines`
+can have — see the section note — and pinning it here is what makes
+`invertible` and `sheaf_pre` theorems rather than obligations. -/
+noncomputable def relPicPullback {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
+    (poin : (curveBaseChange strX pstr).Modules) {T : Scheme.{u}} {g : T ⟶ S}
+    (p : RelPoint pstr g) : (curveBaseChange strX g).Modules :=
+  modPullback (curveBaseChangeMap strX p.1 p.2) poin
+
+/-- **The tautological point of `pstr`**, `𝟙 P` read as a `P`-point of `P` over
+its own structure morphism.  It is where the universal sheaf is read off. -/
+def relPicSelfPoint {P S : Scheme.{u}} (pstr : P ⟶ S) : RelPoint pstr pstr :=
+  ⟨𝟙 P, Category.id_comp pstr⟩
+
+/-- **Every point is a restriction of the tautological one** (PROVEN) —
+`Subtype.ext` plus `Category.comp_id`, not `rfl`.  This is the whole of
+`exists_relPicUniversal_of_isRelPicOf`'s content: `sheaf_pre` at
+`relPicSelfPoint` then computes `sheaf p` for every `p` at once. -/
+theorem relPicSelfPoint_pre {P S : Scheme.{u}} {pstr : P ⟶ S} {T : Scheme.{u}}
+    {g : T ⟶ S} (p : RelPoint pstr g) :
+    RelPoint.pre p.1 p.2 (relPicSelfPoint pstr) = p :=
+  Subtype.ext (Category.comp_id p.1)
+
+/-- **`relPicPullback` IS natural** (PROVEN) — the `sheaf_pre` field, for free.
+
+`RelPoint.pre h hg p` has underlying morphism `h ≫ p.1`, so the two sides are
+the pullbacks of `poin` along `curveBaseChangeMap strX (h ≫ p.1) _` and along
+the composite `curveBaseChangeMap strX h hg ≫ curveBaseChangeMap strX p.1 p.2`.
+Those two morphisms are EQUAL (`curveBaseChangeMap_comp`), so the two sheaves
+are isomorphic (`modPullbackCongrIso`, `modPullbackCompIso`), and an
+isomorphism is a relative-Picard equality (`relPicEquiv_of_iso`).  No twisting
+sheaf is needed: the witness is `𝒪_{T'}`. -/
+theorem relPicEquiv_relPicPullback_pre {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
+    (poin : (curveBaseChange strX pstr).Modules) {T' T : Scheme.{u}} (h : T' ⟶ T) {g : T ⟶ S}
+    {g' : T' ⟶ S} (hg : h ≫ g = g') (p : RelPoint pstr g) :
+    RelPicEquiv strX g' (relPicPullback poin (RelPoint.pre h hg p))
+      (modPullback (curveBaseChangeMap strX h hg) (relPicPullback poin p)) :=
+  relPicEquiv_of_iso strX g'
+    (modPullbackCongrIso (curveBaseChangeMap_comp strX p.1 p.2 h hg).symm poin ≪≫
+      (modPullbackCompIso _ _ poin).symm)
+
+/-- **`poin` classifies `Pic_{X/S}` at every test object**: `p ↦ p^* poin` is
+injective and surjective onto the invertible classes, with no locality
+restriction.
+
+Used for the LOCAL universal sheaves, whose base is already an affine open, so
+no restriction is wanted there. -/
+def RelPicClassifies {X P S : Scheme.{u}} (strX : X ⟶ S) {pstr : P ⟶ S}
+    (poin : (curveBaseChange strX pstr).Modules) : Prop :=
+  (∀ (T : Scheme.{u}) (g : T ⟶ S) (p q : RelPoint pstr g),
+      RelPicEquiv strX g (relPicPullback poin p) (relPicPullback poin q) → p = q) ∧
+    ∀ (T : Scheme.{u}) (g : T ⟶ S) (L : (curveBaseChange strX g).Modules), IsInvertibleSheaf L →
+      ∃ p : RelPoint pstr g, RelPicEquiv strX g (relPicPullback poin p) L
+
+/-- **`poin` classifies `Pic_{X/S}` at every test object lying over an affine
+open of `S`** — the `inj`/`surj` half of `IsRelPicOverAffines`, expressed for a
+classifying function of the pinned form `p ↦ p^* poin`. -/
+def RelPicClassifiesOverAffines {X P S : Scheme.{u}} (strX : X ⟶ S) {pstr : P ⟶ S}
+    (poin : (curveBaseChange strX pstr).Modules) : Prop :=
+  (∀ (T : Scheme.{u}) (g : T ⟶ S), FactorsThroughAffineOpen g →
+      ∀ p q : RelPoint pstr g,
+        RelPicEquiv strX g (relPicPullback poin p) (relPicPullback poin q) → p = q) ∧
+    ∀ (T : Scheme.{u}) (g : T ⟶ S), FactorsThroughAffineOpen g →
+      ∀ L : (curveBaseChange strX g).Modules, IsInvertibleSheaf L →
+        ∃ p : RelPoint pstr g, RelPicEquiv strX g (relPicPullback poin p) L
+
+/-- **A REPRESENTING OBJECT CARRIES A UNIVERSAL SHEAF** (PROVEN 2026-07-31) —
+step 1 of the rigidified-Poincaré route, and the step that removes the
+"unrelated local structures" obstacle from the leaf below.
+
+`IsRelPicOf` gives an arbitrary classifying FUNCTION, and the section note
+above is right that two such functions on one `pstr` need not agree.  But any
+ONE of them is pullback of a single sheaf: take `U := hP.sheaf` of the
+tautological point `relPicSelfPoint pstr`, and `hP.sheaf_pre` at that point
+says exactly `hP.sheaf p ~ p^* U` for every `p`, since
+`RelPoint.pre p.1 p.2 (relPicSelfPoint pstr) = p`.  `inj` and `surj` then
+transfer to `p ↦ p^* U` by transitivity and symmetry of `RelPicEquiv`.
+
+So the local data a gluing argument needs — a universal sheaf per affine open,
+rather than a classifying function per affine open — is FREE, and the leaf
+below is stated over it. -/
+theorem exists_relPicUniversal_of_isRelPicOf {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
+    (hP : IsRelPicOf strX pstr) :
+    ∃ U : (curveBaseChange strX pstr).Modules, IsInvertibleSheaf U ∧
+      RelPicClassifies strX U := by
+  refine ⟨hP.sheaf (relPicSelfPoint pstr), hP.invertible _, ?_, ?_⟩
+  · intro T g p q hpq
+    have hpU : RelPicEquiv strX g (hP.sheaf p)
+        (relPicPullback (hP.sheaf (relPicSelfPoint pstr)) p) := by
+      have h := hP.sheaf_pre p.1 p.2 (relPicSelfPoint pstr)
+      rw [relPicSelfPoint_pre p] at h
+      exact h
+    have hqU : RelPicEquiv strX g (hP.sheaf q)
+        (relPicPullback (hP.sheaf (relPicSelfPoint pstr)) q) := by
+      have h := hP.sheaf_pre q.1 q.2 (relPicSelfPoint pstr)
+      rw [relPicSelfPoint_pre q] at h
+      exact h
+    exact hP.inj p q (relPicEquiv_trans strX g (relPicEquiv_trans strX g hpU hpq)
+      (relPicEquiv_symm strX g hqU))
+  · intro T g L hL
+    obtain ⟨p, hp⟩ := hP.surj L hL
+    refine ⟨p, relPicEquiv_trans strX g (relPicEquiv_symm strX g ?_) hp⟩
+    have h := hP.sheaf_pre p.1 p.2 (relPicSelfPoint pstr)
+    rw [relPicSelfPoint_pre p] at h
+    exact h
+
 /-- **THE RIGIDIFIED POINCARÉ BUNDLE** (sorry leaf, cut 2026-07-31 out of
-`exists_isRelPicOverAffines_of_forall_isAffineOpen`) — step 2 of that
-leaf's route, and the ONLY place `_o` and `_hpush` are spent.
+`exists_isRelPicOverAffines_of_forall_isAffineOpen` and RESTATED the same day
+over `RelPicClassifies`) — step 2 of that leaf's route, and the ONLY place
+`_o` and `_hpush` are spent.
 
-Given a `pstr : P ⟶ S` whose restriction to every affine open of `S`
-represents the local relative Picard functor, produce the GLOBAL data of
-`IsRelPicOverAffines`: a classifying sheaf `sheaf p` for a `T`-point of `P`
-over an ARBITRARY `g : T ⟶ S`, its invertibility, its naturality
-`sheaf_pre`, and `inj`/`surj` relative to it over the affine opens.
+Given a universal sheaf over each affine open of `S`, produce a GLOBAL one on
+`X ×_S P`: a single invertible `poin` whose pullback along a `T`-point of `P`
+classifies `Pic(X_T)/Pic(T)` for every `T` lying over an affine open.
 
-**Why this cannot be done by gluing the local `sheaf` functions**, which is
-the whole reason the cut is here and not one field earlier: `IsRelPicOf` is
-a `Nonempty` existence statement, so the hypothesis hands out one UNRELATED
-structure per affine open, and two structures on the same `pstr ∣_ V` need
-not agree — replace `sheaf` by `fun p => modDual (sheaf p)` and every field
-survives (`inj` because dualising is an involution on classes, `surj`
-because it is a bijection, `sheaf_pre` because pullback commutes with
-duals).  So the local `sheaf`s differ by an automorphism of the functor
-`Pic(X_-)/Pic(-)` and there is nothing to glue along.
+**Why the hypothesis is stated with universal SHEAVES and not with the local
+`IsRelPicOf` structures.**  `IsRelPicOf` is a `Nonempty` existence statement,
+so a hypothesis in that form hands out one UNRELATED classifying FUNCTION per
+affine open, and two such functions on the same `pstr ∣_ V` need not agree —
+replace `sheaf` by `fun p => modDual (sheaf p)` and every field survives
+(`inj` because dualising is an involution on classes, `surj` because it is a
+bijection, `sheaf_pre` because pullback commutes with duals).  So the local
+`sheaf`s differ by an automorphism of the functor `Pic(X_-)/Pic(-)`, and there
+is nothing to glue along.  That observation is what made the cut, and its
+repair is `exists_relPicUniversal_of_isRelPicOf` above: each such function IS
+pullback of a single universal sheaf, so a universal sheaf per affine open is
+available for free and is what this leaf receives.
 
-**The classical route.**  Apply the local `surj` to the identity point of
-`pstr ∣_ V` to get a universal sheaf on `X ×_S (pstr ⁻¹ᵁ V)`; rigidify it
-along `_o` — normalise its pullback along the section to `𝒪` — and glue the
-rigidified sheaves, which IS canonical because `_hpush` (`f_*𝒪 = 𝒪`
-universally) makes a rigidified sheaf have only the identity automorphism.
-`sheaf p` is then the pullback of the glued universal sheaf along the map
-`X_T ⟶ X_P` induced by `p`; `invertible` and `sheaf_pre` are immediate from
-that description, `sheaf_pre` because pullback along
-`X_{T'} ⟶ X_T ⟶ X_P` composes.  `inj` and `surj` over an affine open then
-transport the local structure through `pstr ∣_ V`, which is the hypothesis.
+**The classical route.**  Rigidify each `U_V` along `_o` — normalise its
+pullback along the section to `𝒪` — and glue the rigidified sheaves, which IS
+canonical because `_hpush` (`f_*𝒪 = 𝒪` universally) makes a rigidified sheaf
+have only the identity automorphism.  The glued sheaf is `poin`, and
+`RelPicClassifiesOverAffines` for it is the local classification transported
+through `pstr ∣_ V`.
+
+Beyond the gluing itself, the work that is left is the TRANSPORT between the
+local and global worlds, and it is named here because no earlier note names
+it: `RelPoint (pstr ∣_ V) gV ≃ RelPoint pstr (gV ≫ V.ι)` (because `pstr ⁻¹ᵁ V`
+is `P ×_S V`, `isPullback_morphismRestrict`) and
+`curveBaseChange (curveBaseChangeProj strX V.ι) gV ≅ curveBaseChange strX
+(gV ≫ V.ι)` (pullback pasting), compatibly with the projections to `T`, so
+that `RelPicEquiv` crosses.  Neither is a citation; both are routine and both
+are real work.  `isPullback_curveBaseChangeMap` (PROVEN, below) is half of the
+second.
+
+**BOTH OF THOSE ARE WRITTEN AND VERIFIED**, in
+`HANDOFF-flt-lean-266-relpic-transport.md` at the repository root — ~35 lines,
+compiled against this module's olean, and not landed here only because nothing
+consumes them yet.  The fact that makes them cheap, and that no route note in
+this file records, is that mathlib's pasting isomorphism
+`pullbackLeftPullbackSndIso strX V.ι gV : (X ×_S V) ×_V T ≅ X ×_S T` commutes
+with the projection to `T` ON THE NOSE (`pullbackLeftPullbackSndIso_hom_snd`),
+which is exactly the map `RelPicEquiv` twists along — so the relation crosses
+with nothing to fight.  The handoff also says what the recut that consumes them
+looks like, and names the one further generalisation it needs
+(`relPicEquiv_modPullback` for an arbitrary comparison morphism commuting with
+the projections, rather than for `curveBaseChangeMap`).
 
 **Both `_o` and `_hpush` are load-bearing and must not be dropped "because
 the gluing is formal"**: without them there is no canonical universal sheaf
@@ -4041,20 +4230,69 @@ to glue.  Contrast the sibling leaf
 `exists_gluedRelPic_of_forall_isAffineOpen`, which needs neither — the
 SCHEME glues unconditionally, the SHEAF does not.
 
-**FAITHFULNESS AUDIT (fresh statement, nothing inherited).**  TRUE, by the
-route above.  Drop `_hpush` and it is FALSE, not merely unprovable: for
-`X = S ⊔ S` the sequence `0 ⟶ Pic T ⟶ Pic X_T ⟶ P(T) ⟶ Br T` breaks, a
-class is locally but not globally in the image, and `surj` fails at a `T`
-covered by two affine opens.  Drop `_o` and the Brauer obstruction is not
-killed, so the local universal sheaves have no cocycle to glue along.
-`_hproper`, `_hsmooth` and `_hconn` are the standing hypotheses of
-`_hpush`'s own provenance and are kept for that reason; a prover who finds
-them idle should say so rather than delete them, since deleting an input
-from a released signature churns consumers for no mathematical gain (the
-same policy `smooth_of_isRelPicOf` records for its own `_hpush`).
+**FAITHFULNESS AUDIT.**  TRUE, by the route above.  Drop `_hpush` and it is
+FALSE, not merely unprovable: for `X = S ⊔ S` the sequence
+`0 ⟶ Pic T ⟶ Pic X_T ⟶ P(T) ⟶ Br T` breaks, a class is locally but not
+globally in the image, and `surj` fails at a `T` covered by two affine opens.
+Drop `_o` and the Brauer obstruction is not killed, so the local universal
+sheaves have no cocycle to glue along.  `_hproper`, `_hsmooth` and `_hconn`
+are the standing hypotheses of `_hpush`'s own provenance and are kept for that
+reason; a prover who finds them idle should say so rather than delete them,
+since deleting an input from a released signature churns consumers for no
+mathematical gain (the same policy `smooth_of_isRelPicOf` records for its own
+`_hpush`).
 
-NOT VACUOUS: the hypothesis `_hres` is what
-`exists_gluedRelPic_of_forall_isAffineOpen` produces. -/
+*The audit is INHERITED from the pre-restatement form, and here is why it
+transfers rather than being asserted to.*  The 2026-07-31 restatement replaced
+the hypothesis `_hres` by `_hloc`, and the two are EQUIVALENT: `_hres → _hloc`
+is `exists_relPicUniversal_of_isRelPicOf`, proven above and consumed below,
+and `_hloc → _hres` holds because `fun p => relPicPullback U p` is an
+`IsRelPicOf` structure whose `sheaf_pre` is `relPicEquiv_relPicPullback_pre`
+(not in Lean: nothing consumes that direction).  The conclusion changed only
+by unfolding `IsRelPicOverAffines`'s two local fields at the pinned classifying
+function, which is exactly what the assembly below checks.  So no
+counterexample can distinguish the two statements.
+
+NOT VACUOUS: `_hloc` is what `exists_gluedRelPic_of_forall_isAffineOpen`
+produces, composed with `exists_relPicUniversal_of_isRelPicOf`. -/
+theorem exists_relPicPoincare_of_localUniversal {X P S : Scheme.{u}} (strX : X ⟶ S)
+    {pstr : P ⟶ S}
+    (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
+    (_hconn : GeometricallyConnected strX) (_o : RelPoint strX (𝟙 S))
+    (_hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX)
+    (_hloc : ∀ V : S.Opens, IsAffineOpen V →
+      ∃ U : (curveBaseChange (curveBaseChangeProj strX V.ι) (pstr ∣_ V)).Modules,
+        IsInvertibleSheaf U ∧ RelPicClassifies (curveBaseChangeProj strX V.ι) U) :
+    ∃ poin : (curveBaseChange strX pstr).Modules,
+      IsInvertibleSheaf poin ∧ RelPicClassifiesOverAffines strX poin :=
+  sorry
+
+/-- **THE GLOBAL CLASSIFYING SHEAF** (**PROVEN 2026-07-31**, `flt-lean-266`;
+formerly the sorry leaf that is now `exists_relPicPoincare_of_localUniversal`).
+
+Given a `pstr : P ⟶ S` whose restriction to every affine open of `S`
+represents the local relative Picard functor, produce the GLOBAL data of
+`IsRelPicOverAffines`.
+
+The proof is the assembly the section note above describes, and it is worth
+reading as the record of what is and is not free:
+
+* `_hres` is turned into a universal sheaf per affine open by
+  `exists_relPicUniversal_of_isRelPicOf` — the classifying function of ANY
+  representing object is pullback of a single sheaf, by `sheaf_pre` at the
+  tautological point;
+* `exists_relPicPoincare_of_localUniversal` glues those into one `poin` on
+  `X ×_S P`.  That is the whole mathematical content, and the only leaf;
+* `sheaf := relPicPullback poin` then makes `invertible`
+  (`isInvertibleSheaf_modPullback`) and `sheaf_pre`
+  (`relPicEquiv_relPicPullback_pre`) theorems, and `inj`/`surj` are the two
+  halves of `RelPicClassifiesOverAffines` verbatim.
+
+**RECUT, direct-sorry count UNCHANGED (1 → 1).**  A warning-set delta of
+`−1 +1` is indistinguishable from one closure plus one unrelated disclosure,
+so it is said here explicitly: nothing was closed, and what moved is that
+three of the five fields of `IsRelPicOverAffines`, and step 1 of the classical
+route, are now compiler-checked. -/
 theorem nonempty_isRelPicOverAffines_of_restrict {X P S : Scheme.{u}} (strX : X ⟶ S)
     {pstr : P ⟶ S}
     (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
@@ -4062,8 +4300,17 @@ theorem nonempty_isRelPicOverAffines_of_restrict {X P S : Scheme.{u}} (strX : X 
     (_hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX)
     (_hres : ∀ V : S.Opens, IsAffineOpen V →
       Nonempty (IsRelPicOf (curveBaseChangeProj strX V.ι) (pstr ∣_ V))) :
-    Nonempty (IsRelPicOverAffines strX pstr) :=
-  sorry
+    Nonempty (IsRelPicOverAffines strX pstr) := by
+  obtain ⟨poin, hpoin, hinj, hsurj⟩ :=
+    exists_relPicPoincare_of_localUniversal strX _hproper _hsmooth _hconn _o _hpush
+      (fun V hV => by
+        obtain ⟨hV'⟩ := _hres V hV
+        exact exists_relPicUniversal_of_isRelPicOf hV')
+  exact ⟨{ sheaf := fun {_T _g} p => relPicPullback poin p
+         , invertible := fun {_T _g} _p => isInvertibleSheaf_modPullback _ hpoin
+         , sheaf_pre := fun {_T' _T} h {_g _g'} hg p => relPicEquiv_relPicPullback_pre poin h hg p
+         , inj := fun {T g} hf p q hpq => hinj T g hf p q hpq
+         , surj := fun {T g} hf L hL => hsurj T g hf L hL }⟩
 
 /-- **THE GLUING STEP** (sorry leaf) — Stacks 01JJ / 01LH, plus the
 rigidified Poincaré bundle.
