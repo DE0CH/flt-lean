@@ -404,7 +404,15 @@ theorem mem_fixingSubgroup_of_isUnramifiedAtInfinitePlaces
   rw [NumberField.InfinitePlace.isUnramified_iff_stabilizer_eq_bot] at hu
   exact (Subgroup.eq_bot_iff_forall _).mp hu g hstab
 
+end Compositum
+section Archimedean
 /-- **A COMPOSITUM OF EXTENSIONS UNRAMIFIED AT THE INFINITE PLACES IS
+**RENAMED 2026-07-31 (release 29).**  `UnramifiedClassFieldExistence.lean`
+declares a theorem of the same name about `IntermediateField K
+(AlgebraicClosure K)`; this one is about `IntermediateField K
+(AlgebraicClosure ℚ)`, which is what this file works in.  The qualified
+names collided, so this one carries a suffix.
+
 UNRAMIFIED AT THE INFINITE PLACES** (PROVEN 2026-07-30).
 
 This one is NOT decoration: `finrank_le_card_classGroup_of_unramified_abelian_of_isUnramifiedAtInfinitePlaces`
@@ -412,7 +420,7 @@ This one is NOT decoration: `finrank_le_card_classGroup_of_unramified_abelian_of
 docstring records a PARI/GP counterexample (`ℚ(√3)`, `h = 1`, narrow `h⁺ = 2`)
 showing the bound is FALSE with unramifiedness only at the finite places. So
 the compositum argument below cannot be run at finite places alone. -/
-theorem isUnramifiedAtInfinitePlaces_sup
+theorem isUnramifiedAtInfinitePlaces_sup_algClosRat
     (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K]
     (L₁ L₂ : IntermediateField (K : Type _) (AlgebraicClosure ℚ))
     [FiniteDimensional (K : Type _) L₁] [IsGalois (K : Type _) L₁]
@@ -467,6 +475,7 @@ section Archimedean
 re-export it, and `exists_hilbertClassField` inherits that. The compositum
 argument needs it, so the three theorems below re-derive the Hilbert class
 field keeping it, and carry it into `ℚ̄`. -/
+
 
 /-- `mult` is invariant under pulling an infinite place back along a ring ISO:
 `InfinitePlace.mult_comap_le` in both directions. -/
@@ -967,7 +976,7 @@ theorem exists_hilbertClassField_normal_over_rat
     ⟨⟩
   haveI : IsUnramifiedAtInfinitePlaces (K : Type _)
       (N₀ ⊔ N₂ : IntermediateField (K : Type _) (AlgebraicClosure ℚ)) :=
-    isUnramifiedAtInfinitePlaces_sup K N₀ N₂
+    isUnramifiedAtInfinitePlaces_sup_algClosRat K N₀ N₂
   haveI : FiniteDimensional ℚ
       ((N₀ ⊔ N₂ : IntermediateField (K : Type _) (AlgebraicClosure ℚ)) : Type _) :=
     FiniteDimensional.trans ℚ (K : Type _)
